@@ -333,7 +333,8 @@ typedef union {
         cwmp_set_parameter_values_response_t *set_parameter_values_r;
         cwmp_get_parameter_values_response_t *get_parameter_values_r;
         cwmp_get_parameter_names_response_t  *get_parameter_names_r;
-        cwmp_get_parameter_attributes_t      *get_parameter_attributes_r;
+        cwmp_get_parameter_attributes_response_t
+                                             *get_parameter_attributes_r;
         cwmp_add_object_response_t           *add_object_r;
         cwmp_delete_object_response_t        *delete_object_r;
         cwmp_download_response_t             *download_r;

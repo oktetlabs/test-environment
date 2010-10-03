@@ -650,6 +650,198 @@ te_cwmp_pack__SetParameterAttributesStruct(
 }
 
 
+ssize_t
+te_cwmp_pack__ParameterAttributeStruct(
+                const cwmp__ParameterAttributeStruct *src,
+                void *msg, size_t max_len)
+{
+    CWMP_PACK_COMMON_VARS(cwmp__ParameterAttributeStruct);
+
+    CWMP_PACK_ROW(sizeof(*src));
+
+    CWMP_PACK_LEAF(string, Name);
+    CWMP_PACK_LEAF(AccessList, AccessList_);
+
+    return packed_length;
+}
+
+CWMP_PACK_LIST_FUNC(SetParameterAttributesList, SetParameterAttributesStruct)
+
+ssize_t
+te_cwmp_pack__SetParameterAttributes(
+                        const _cwmp__SetParameterAttributes *src,
+                        void *msg, size_t max_len)
+{
+    CWMP_PACK_COMMON_VARS(_cwmp__SetParameterAttributes); 
+    CWMP_PACK_ROW(sizeof(*src)); 
+    CWMP_PACK_LEAF(SetParameterAttributesList, ParameterList); 
+    return packed_length;
+}
+
+ssize_t
+te_cwmp_pack__GetParameterAttributes(
+                        const _cwmp__GetParameterAttributes *src,
+                        void *msg, size_t max_len)
+{
+    CWMP_PACK_COMMON_VARS(_cwmp__GetParameterAttributes); 
+    CWMP_PACK_ROW(sizeof(*src));
+    CWMP_PACK_LEAF(ParameterNames, ParameterNames_);
+    return packed_length;
+}
+
+CWMP_PACK_LIST_FUNC(ParameterAttributeList, ParameterAttributeStruct)
+
+ssize_t
+te_cwmp_pack__GetParameterAttributesResponse(
+                        const _cwmp__GetParameterAttributesResponse *src,
+                        void *msg, size_t max_len)
+{
+    CWMP_PACK_COMMON_VARS(_cwmp__GetParameterAttributesResponse); 
+    CWMP_PACK_ROW(sizeof(*src)); 
+    CWMP_PACK_LEAF(ParameterAttributeList, ParameterList); 
+    return packed_length;
+}
+
+
+ssize_t
+te_cwmp_pack__Upload(const _cwmp__Upload *src,
+                     void *msg, size_t max_len)
+{
+    CWMP_PACK_COMMON_VARS(_cwmp__Upload);
+
+    CWMP_PACK_ROW(sizeof(*src)); 
+
+    CWMP_PACK_LEAF(string, CommandKey);
+    CWMP_PACK_LEAF(string, FileType);
+    CWMP_PACK_LEAF(string, URL);
+    CWMP_PACK_LEAF(string, Username);
+    CWMP_PACK_LEAF(string, Password);
+
+    return packed_length;
+}
+
+ssize_t
+te_cwmp_pack__UploadResponse(const _cwmp__UploadResponse *src,
+                             void *msg, size_t max_len)
+{
+    size_t packed_length = 0;
+    CWMP_PACK_ROW(sizeof(*src)); 
+    return packed_length;
+}
+
+
+
+ssize_t
+te_cwmp_pack__ScheduleInform(const _cwmp__ScheduleInform *src,
+                             void *msg, size_t max_len)
+{
+    CWMP_PACK_COMMON_VARS(_cwmp__ScheduleInform);
+
+    CWMP_PACK_ROW(sizeof(*src)); 
+    CWMP_PACK_LEAF(string, CommandKey);
+    return packed_length;
+}
+
+
+
+ssize_t
+te_cwmp_pack__base64(const SOAP_ENC__base64 *src,
+                       void *msg, size_t max_len)
+{
+    size_t packed_length = 0;
+    size_t alig_padding = 0;
+    SOAP_ENC__base64 *dst = (SOAP_ENC__base64 *)msg; 
+
+    if (NULL == src->__ptr || 0 == src->__size)
+    {
+        dst->__ptr = (void*)0;
+        dst->__size = 0;
+        return sizeof(*src);
+    }
+
+    packed_length = sizeof(*src) + src->__size;
+    dst->__size = src->__size;
+    msg += sizeof(*src);
+
+    if ((alig_padding = (src->__size & 3)) != 0)
+        packed_length += 4 - alig_padding; 
+
+    if (packed_length > max_len)
+        return -1;
+
+    dst->__ptr = (void*)((char *)(msg) - (char*)(dst));
+
+    memcpy(msg, src->__ptr, src->__size);
+
+    return packed_length;
+}
+
+CWMP_PACK_LIST_FUNC(VoucherList, base64)
+
+ssize_t
+te_cwmp_pack__SetVouchers(const _cwmp__SetVouchers *src,
+                          void *msg, size_t max_len)
+{
+    CWMP_PACK_COMMON_VARS(_cwmp__SetVouchers);
+
+    CWMP_PACK_ROW(sizeof(*src)); 
+    CWMP_PACK_LEAF(VoucherList, VoucherList_); 
+    return packed_length;
+}
+
+
+ssize_t
+te_cwmp_pack__QueuedTransferStruct(const cwmp__QueuedTransferStruct *src,
+                                   void *msg, size_t max_len)
+{
+    CWMP_PACK_COMMON_VARS(cwmp__QueuedTransferStruct);
+
+    CWMP_PACK_ROW(sizeof(*src)); 
+    CWMP_PACK_LEAF(string, CommandKey); 
+    return packed_length;
+}
+
+CWMP_PACK_LIST_FUNC(TransferList, QueuedTransferStruct)
+
+ssize_t
+te_cwmp_pack__AllQueuedTransferStruct(const cwmp__AllQueuedTransferStruct *src,
+                                      void *msg, size_t max_len)
+{
+    CWMP_PACK_COMMON_VARS(cwmp__AllQueuedTransferStruct);
+
+    CWMP_PACK_ROW(sizeof(*src)); 
+    CWMP_PACK_LEAF(string, CommandKey); 
+    CWMP_PACK_LEAF(string, FileType); 
+    CWMP_PACK_LEAF(string, TargetFileName); 
+    return packed_length;
+}
+
+CWMP_PACK_LIST_FUNC(AllTransferList, AllQueuedTransferStruct)
+
+ssize_t
+te_cwmp_pack__GetQueuedTransfersResponse(
+                    const _cwmp__GetQueuedTransfersResponse *src,
+                    void *msg, size_t max_len)
+{
+    CWMP_PACK_COMMON_VARS(_cwmp__GetQueuedTransfersResponse);
+
+    CWMP_PACK_ROW(sizeof(*src)); 
+    CWMP_PACK_LEAF(TransferList, TransferList_); 
+    return packed_length;
+}
+
+ssize_t
+te_cwmp_pack__GetAllQueuedTransfersResponse(
+                    const _cwmp__GetAllQueuedTransfersResponse *src,
+                    void *msg, size_t max_len)
+{
+    CWMP_PACK_COMMON_VARS(_cwmp__GetAllQueuedTransfersResponse);
+
+    CWMP_PACK_ROW(sizeof(*src)); 
+    CWMP_PACK_LEAF(AllTransferList, TransferList_); 
+    return packed_length;
+}
+
 /*
  * ============= UN-PACK methods ================
  */
@@ -1051,6 +1243,154 @@ te_cwmp_unpack__SetParameterAttributesStruct(void *msg, size_t max_len)
     return unpack_size;
 }
 
+ssize_t
+te_cwmp_unpack__ParameterAttributeStruct(void *msg, size_t max_len)
+{
+    CWMP_UNPACK_VARS(cwmp__ParameterAttributeStruct);
+
+    CWMP_UNPACK_LEAF(string, Name);
+    CWMP_UNPACK_LEAF(AccessList, AccessList_);
+
+    return unpack_size;
+}
+
+
+CWMP_UNPACK_LIST_FUNC(SetParameterAttributesList, SetParameterAttributesStruct)
+
+ssize_t
+te_cwmp_unpack__SetParameterAttributes(void *msg, size_t max_len)
+{
+    CWMP_UNPACK_VARS(_cwmp__SetParameterAttributes); 
+    CWMP_UNPACK_LEAF(SetParameterAttributesList, ParameterList); 
+    return unpack_size;
+}
+
+ssize_t
+te_cwmp_unpack__GetParameterAttributes(void *msg, size_t max_len)
+{
+    CWMP_UNPACK_VARS(_cwmp__GetParameterAttributes); 
+    CWMP_UNPACK_LEAF(ParameterNames, ParameterNames_);
+    return unpack_size;
+}
+
+CWMP_UNPACK_LIST_FUNC(ParameterAttributeList, ParameterAttributeStruct)
+
+ssize_t
+te_cwmp_unpack__GetParameterAttributesResponse(void *msg, size_t max_len)
+{
+    CWMP_UNPACK_VARS(_cwmp__GetParameterAttributesResponse); 
+    CWMP_UNPACK_LEAF(ParameterAttributeList, ParameterList); 
+    return unpack_size;
+}
+
+
+ssize_t
+te_cwmp_unpack__Upload(void *msg, size_t max_len)
+{
+    CWMP_UNPACK_VARS(_cwmp__Upload);
+
+    CWMP_UNPACK_LEAF(string, CommandKey);
+    CWMP_UNPACK_LEAF(string, FileType);
+    CWMP_UNPACK_LEAF(string, URL);
+    CWMP_UNPACK_LEAF(string, Username);
+    CWMP_UNPACK_LEAF(string, Password);
+
+    return unpack_size;
+}
+ssize_t
+te_cwmp_unpack__UploadResponse(void *msg, size_t max_len)
+{
+    UNUSED(msg);
+    UNUSED(max_len);
+    return sizeof(_cwmp__UploadResponse);
+}
+
+
+ssize_t
+te_cwmp_unpack__ScheduleInform(void *msg, size_t max_len)
+{
+    CWMP_UNPACK_VARS(_cwmp__ScheduleInform); 
+    CWMP_UNPACK_LEAF(string, CommandKey);
+    return unpack_size;
+}
+
+
+
+ssize_t
+te_cwmp_unpack__base64(void *msg, size_t max_len)
+{
+    SOAP_ENC__base64 *res = msg; 
+    size_t unpack_size = sizeof(*res);
+    size_t alig_padding = (res->__size & 3); 
+    size_t ofs = (size_t)(res->__ptr);
+
+    unpack_size += res->__size;
+    if (alig_padding != 0)
+        unpack_size += 4 - alig_padding; 
+
+    if (ofs + res->__size >= max_len) return -1;
+
+    if (0 == ofs)
+        res->__ptr = NULL;
+    else
+        res->__ptr = msg + ofs;
+
+    return unpack_size;
+}
+
+
+CWMP_UNPACK_LIST_FUNC(VoucherList, base64)
+
+ssize_t
+te_cwmp_unpack__SetVouchers(void *msg, size_t max_len)
+{
+    CWMP_UNPACK_VARS(_cwmp__SetVouchers); 
+    CWMP_UNPACK_LEAF(VoucherList, VoucherList_); 
+    return unpack_size;
+}
+
+
+
+ssize_t
+te_cwmp_unpack__QueuedTransferStruct(void *msg, size_t max_len)
+{
+    CWMP_UNPACK_VARS(cwmp__QueuedTransferStruct);
+
+    CWMP_UNPACK_LEAF(string, CommandKey); 
+    return unpack_size;
+}
+
+CWMP_UNPACK_LIST_FUNC(TransferList, QueuedTransferStruct)
+
+ssize_t
+te_cwmp_unpack__GetQueuedTransfersResponse(void *msg, size_t max_len)
+{
+    CWMP_UNPACK_VARS(_cwmp__GetQueuedTransfersResponse);
+    CWMP_UNPACK_LEAF(TransferList, TransferList_); 
+    return unpack_size;
+}
+
+
+
+ssize_t
+te_cwmp_unpack__AllQueuedTransferStruct(void *msg, size_t max_len)
+{
+    CWMP_UNPACK_VARS(cwmp__AllQueuedTransferStruct); 
+    CWMP_UNPACK_LEAF(string, CommandKey); 
+    CWMP_UNPACK_LEAF(string, FileType); 
+    CWMP_UNPACK_LEAF(string, TargetFileName); 
+    return unpack_size;
+}
+
+CWMP_UNPACK_LIST_FUNC(AllTransferList, AllQueuedTransferStruct)
+
+ssize_t
+te_cwmp_unpack__GetAllQueuedTransfersResponse(void *msg, size_t max_len)
+{
+    CWMP_UNPACK_VARS(_cwmp__GetAllQueuedTransfersResponse);
+    CWMP_UNPACK_LEAF(AllTransferList, TransferList_); 
+    return unpack_size;
+}
 
 /*
  * ============= Generic utils ================
@@ -1067,14 +1407,22 @@ cwmp_pack_call_data(cwmp_data_to_cpe_t src,
 
     switch (rpc_cpe)
     {
-        case CWMP_RPC_set_parameter_attributes:
-        case CWMP_RPC_get_parameter_attributes:
-        case CWMP_RPC_upload:
-        case CWMP_RPC_schedule_inform:
         case CWMP_RPC_set_vouchers:
-            /* TODO */
-            RING("%s():%d TODO", __FUNCTION__, __LINE__);
-            return 0;
+            return te_cwmp_pack__SetVouchers(src.set_vouchers,
+                                             msg, len);
+        case CWMP_RPC_schedule_inform:
+            return te_cwmp_pack__ScheduleInform(src.schedule_inform,
+                                                msg, len);
+        case CWMP_RPC_upload:
+            return te_cwmp_pack__Upload(src.upload, msg, len);
+        case CWMP_RPC_set_parameter_attributes:
+            return te_cwmp_pack__SetParameterAttributes(
+                            src.set_parameter_attributes,
+                            msg, len);
+        case CWMP_RPC_get_parameter_attributes:
+            return te_cwmp_pack__GetParameterAttributes(
+                            src.get_parameter_attributes,
+                            msg, len);
         case CWMP_RPC_get_options:
             return te_cwmp_pack__GetOptions(
                             src.get_options,
@@ -1127,13 +1475,20 @@ cwmp_pack_response_data(cwmp_data_from_cpe_t src,
 
     switch (rpc_cpe)
     {
-        case CWMP_RPC_get_parameter_attributes:
-        case CWMP_RPC_upload:
         case CWMP_RPC_get_queued_transfers:
+            return te_cwmp_pack__GetQueuedTransfersResponse(
+                            src.get_queued_transfers_r,
+                            msg, len);
         case CWMP_RPC_get_all_queued_transfers:
-            /* TODO */
-            RING("%s():%d TODO", __FUNCTION__, __LINE__);
-            return 0;
+            return te_cwmp_pack__GetAllQueuedTransfersResponse(
+                            src.get_all_queued_transfers_r,
+                            msg, len);
+        case CWMP_RPC_upload:
+            return te_cwmp_pack__UploadResponse(src.upload_r, msg, len);
+        case CWMP_RPC_get_parameter_attributes:
+            return te_cwmp_pack__GetParameterAttributesResponse(
+                            src.get_parameter_attributes_r,
+                            msg, len);
         case CWMP_RPC_get_options:
             return te_cwmp_pack__GetOptionsResponse(
                             src.get_options_r, msg, len);
@@ -1152,14 +1507,14 @@ cwmp_pack_response_data(cwmp_data_from_cpe_t src,
         case CWMP_RPC_download:
             return te_cwmp_pack__DownloadResponse(
                             src.download_r, msg, len);
-        case CWMP_RPC_FAULT:
-            return te_cwmp_pack__Fault(src.fault, msg, len);
         case CWMP_RPC_add_object:
             return te_cwmp_pack__AddObjectResponse(
                             src.add_object_r, msg, len);
         case CWMP_RPC_delete_object:
             return te_cwmp_pack__DeleteObjectResponse(
                             src.delete_object_r, msg, len);
+        case CWMP_RPC_FAULT:
+            return te_cwmp_pack__Fault(src.fault, msg, len);
 
         /* Calls with no data */
         case CWMP_RPC_NONE:
@@ -1194,14 +1549,24 @@ cwmp_unpack_call_data(void *buf, size_t len,
 
     switch (rpc_cpe)
     {
-        case CWMP_RPC_set_parameter_attributes:
-        case CWMP_RPC_get_parameter_attributes:
-        case CWMP_RPC_upload:
-        case CWMP_RPC_schedule_inform:
         case CWMP_RPC_set_vouchers:
-            /* TODO */
-            RING("%s():%d TODO", __FUNCTION__, __LINE__);
-            return 0;
+            rc = (te_cwmp_unpack__SetVouchers(buf, len) > 0) ? 0 : TE_EFAIL;
+            break;
+            
+        case CWMP_RPC_schedule_inform:
+            rc = (te_cwmp_unpack__ScheduleInform(buf, len) > 0) ? 0 : TE_EFAIL;
+            break;
+        case CWMP_RPC_upload:
+            rc = (te_cwmp_unpack__Upload(buf, len) > 0) ? 0 : TE_EFAIL;  
+            break;
+        case CWMP_RPC_set_parameter_attributes:
+            rc = (te_cwmp_unpack__SetParameterAttributes(buf, len) > 0) 
+                    ? 0 : TE_EFAIL;  
+            break;
+        case CWMP_RPC_get_parameter_attributes:
+            rc = (te_cwmp_unpack__GetParameterAttributes(buf, len) > 0) 
+                    ? 0 : TE_EFAIL;  
+            break;
         case CWMP_RPC_get_options:
             rc = (te_cwmp_unpack__GetOptions(buf, len) > 0) 
                     ? 0 : TE_EFAIL;  
@@ -1257,13 +1622,22 @@ cwmp_unpack_response_data(void *buf, size_t len,
 
     switch (rpc_cpe)
     {
-        case CWMP_RPC_get_parameter_attributes:
-        case CWMP_RPC_upload:
         case CWMP_RPC_get_queued_transfers:
+            rc = (te_cwmp_unpack__GetQueuedTransfersResponse(buf, len) > 0)
+                    ? 0 : TE_EFAIL;
+            break;
         case CWMP_RPC_get_all_queued_transfers:
-            /* TODO */
-            WARN("%s():%d TODO", __FUNCTION__, __LINE__);
-            return 0;
+            rc = (te_cwmp_unpack__GetAllQueuedTransfersResponse(buf, len) > 0)
+                    ? 0 : TE_EFAIL;
+            break;
+        case CWMP_RPC_upload:
+            rc = (te_cwmp_unpack__UploadResponse(buf, len) > 0)
+                    ? 0 : TE_EFAIL;
+            break;
+        case CWMP_RPC_get_parameter_attributes:
+            rc = (te_cwmp_unpack__GetParameterAttributesResponse(buf, len) > 0) 
+                    ? 0 : TE_EFAIL;  
+            break;
         case CWMP_RPC_get_options:
             rc = (te_cwmp_unpack__GetOptionsResponse(buf, len) > 0) 
                     ? 0 : TE_EFAIL;  

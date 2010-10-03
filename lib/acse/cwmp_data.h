@@ -206,10 +206,10 @@ extern ssize_t te_cwmp_pack__SetParameterAttributesList(const SetParameterAttrib
 extern ssize_t te_cwmp_pack__ParameterAttributeList(const ParameterAttributeList *src, void *msg, size_t max_len);
 extern ssize_t te_cwmp_pack__TransferList(const TransferList *src, void *msg, size_t max_len);
 extern ssize_t te_cwmp_pack__AllTransferList(const AllTransferList *src, void *msg, size_t max_len);
-extern ssize_t te_cwmp_pack__VoucherList(const VoucherList *src, void *msg, size_t max_len);
 extern ssize_t te_cwmp_pack__OptionList(const OptionList *src, void *msg, size_t max_len);
 extern ssize_t te_cwmp_pack__FileTypeArg(const FileTypeArg *src, void *msg, size_t max_len);
-
+extern ssize_t te_cwmp_pack__VoucherList(const VoucherList *src, void *msg, size_t max_len);
+extern ssize_t te_cwmp_pack__base64(const SOAP_ENC__base64 *src, void *msg, size_t max_len);
 
 
 
@@ -285,6 +285,7 @@ extern ssize_t te_cwmp_unpack__VoucherList(void *msg, size_t max_len);
 extern ssize_t te_cwmp_unpack__OptionList(void *msg, size_t max_len);
 extern ssize_t te_cwmp_unpack__FileTypeArg(void *msg, size_t max_len);
 extern ssize_t te_cwmp_unpack__Fault_SetParameterValuesFault(void *msg, size_t max_len);
+extern ssize_t te_cwmp_unpack__base64(void *msg, size_t max_len);
 
 #ifdef __cplusplus
 }

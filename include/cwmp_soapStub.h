@@ -1119,6 +1119,7 @@ typedef struct OptionList OptionList;
 typedef struct FileTypeArg FileTypeArg;
 typedef struct _cwmp__ID _cwmp__ID;
 typedef struct _cwmp__HoldRequests _cwmp__HoldRequests;
+typedef struct SOAP_ENC__base64 SOAP_ENC__base64;
 
 /******************************************************************************\
  *                                                                            *
