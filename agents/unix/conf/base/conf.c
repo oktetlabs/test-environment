@@ -3046,6 +3046,16 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
                 if (if_indextoname(naddr->ifindex, tmp) == NULL)
                     strcpy(tmp, "unknown");
 
+                /* Do not exit with error if the address exists on needed
+                 * interface.
+                 */
+                if (ifindex == (unsigned int)naddr->ifindex)
+                {
+                    VERB("%s(): Address '%s' already exists "
+                         "on interface '%s'", __FUNCTION__, addr, tmp);
+                    return 0;
+                }
+
                 ERROR("%s(): Address '%s' already exists "
                       "on interface '%s'", __FUNCTION__, addr, tmp);
                 netconf_list_free(list);
