@@ -27,12 +27,17 @@
 int
 main(int argc, char *argv[])
 {
+    const char *ta_acse;
     char *cr_url = NULL;
     int   cr_url_wait_count; 
 
     tapi_acse_context_t *ctx;
 
     TEST_START;
+
+    TEST_GET_STRING_PARAM(ta_acse);
+
+    CHECK_RC(tapi_acse_start(ta_acse));
 
     TAPI_ACSE_CTX_INIT(ctx);
     
