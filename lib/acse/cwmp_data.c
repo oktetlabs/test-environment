@@ -842,6 +842,65 @@ te_cwmp_pack__GetAllQueuedTransfersResponse(
     return packed_length;
 }
 
+
+ssize_t
+te_cwmp_pack__AutonomousTransferComplete(
+            const _cwmp__AutonomousTransferComplete *src,
+            void *msg, size_t max_len)
+{
+    CWMP_PACK_COMMON_VARS(_cwmp__AutonomousTransferComplete);
+
+    CWMP_PACK_ROW(sizeof(*src)); 
+    CWMP_PACK_LEAF(string, AnnounceURL);
+    CWMP_PACK_LEAF(string, TransferURL);
+    CWMP_PACK_LEAF(string, FileType);
+    CWMP_PACK_LEAF(string, TargetFileName);
+    CWMP_PACK_LEAF(FaultStruct, FaultStruct);
+    return packed_length;
+}
+
+ssize_t
+te_cwmp_pack__ArgStruct(const cwmp__ArgStruct *src,
+                        void *msg, size_t max_len)
+{
+    CWMP_PACK_COMMON_VARS(cwmp__ArgStruct);
+
+    CWMP_PACK_ROW(sizeof(*src)); 
+    CWMP_PACK_LEAF(string, Name);
+    CWMP_PACK_LEAF(string, Value);
+    return packed_length;
+}
+
+CWMP_PACK_LIST_FUNC(FileTypeArg, ArgStruct)
+
+ssize_t
+te_cwmp_pack__RequestDownload(const _cwmp__RequestDownload *src,
+                              void *msg, size_t max_len)
+{
+    CWMP_PACK_COMMON_VARS(_cwmp__RequestDownload);
+
+    CWMP_PACK_ROW(sizeof(*src)); 
+    CWMP_PACK_LEAF(string, FileType);
+    CWMP_PACK_LEAF(FileTypeArg, FileTypeArg_);
+    return packed_length;
+}
+
+
+ssize_t
+te_cwmp_pack__Kicked(const _cwmp__Kicked *src, void *msg, size_t max_len)
+{
+    CWMP_PACK_COMMON_VARS(_cwmp__Kicked); 
+    CWMP_PACK_ROW(sizeof(*src)); 
+    CWMP_PACK_LEAF(string, Command);
+    CWMP_PACK_LEAF(string, Referer);
+    CWMP_PACK_LEAF(string, Arg);
+    CWMP_PACK_LEAF(string, Next);
+    return packed_length;
+}
+
+
+
+
 /*
  * ============= UN-PACK methods ================
  */
@@ -1392,6 +1451,59 @@ te_cwmp_unpack__GetAllQueuedTransfersResponse(void *msg, size_t max_len)
     return unpack_size;
 }
 
+
+ssize_t
+te_cwmp_unpack__AutonomousTransferComplete(void *msg, size_t max_len)
+{
+    CWMP_UNPACK_VARS(_cwmp__AutonomousTransferComplete);
+
+    CWMP_UNPACK_LEAF(string, AnnounceURL);
+    CWMP_UNPACK_LEAF(string, TransferURL);
+    CWMP_UNPACK_LEAF(string, FileType);
+    CWMP_UNPACK_LEAF(string, TargetFileName);
+    CWMP_UNPACK_LEAF(FaultStruct, FaultStruct);
+    return unpack_size;
+} 
+
+ssize_t
+te_cwmp_unpack__ArgStruct(void *msg, size_t max_len)
+{
+    CWMP_UNPACK_VARS(cwmp__ArgStruct);
+
+    CWMP_UNPACK_LEAF(string, Name);
+    CWMP_UNPACK_LEAF(string, Value);
+    return unpack_size;
+} 
+
+CWMP_UNPACK_LIST_FUNC(FileTypeArg, ArgStruct)
+
+ssize_t
+te_cwmp_unpack__RequestDownload(void *msg, size_t max_len)
+{
+    CWMP_UNPACK_VARS(_cwmp__RequestDownload);
+
+    CWMP_UNPACK_LEAF(string, FileType);
+    CWMP_UNPACK_LEAF(FileTypeArg, FileTypeArg_);
+    return unpack_size;
+} 
+
+ssize_t
+te_cwmp_unpack__Kicked(void *msg, size_t max_len)
+{
+    CWMP_UNPACK_VARS(_cwmp__Kicked); 
+    CWMP_UNPACK_LEAF(string, Command);
+    CWMP_UNPACK_LEAF(string, Referer);
+    CWMP_UNPACK_LEAF(string, Arg);
+    CWMP_UNPACK_LEAF(string, Next);
+    return unpack_size;
+}
+
+
+
+
+
+
+
 /*
  * ============= Generic utils ================
  */
@@ -1705,15 +1817,20 @@ cwmp_pack_acs_rpc_data(cwmp_data_from_cpe_t src,
         case CWMP_RPC_inform:
             return te_cwmp_pack__Inform(src.inform, msg, len);
 
-        case CWMP_RPC_ACS_get_rpc_methods:
         case CWMP_RPC_autonomous_transfer_complete: 
+            return te_cwmp_pack__AutonomousTransferComplete(
+                            src.aut_transfer_complete, msg, len);
         case CWMP_RPC_request_download:
+            return te_cwmp_pack__RequestDownload(
+                            src.request_download, msg, len); 
         case CWMP_RPC_kicked:
+            return te_cwmp_pack__Kicked(src.kicked, msg, len);
+
         case CWMP_RPC_ACS_FAULT:
-            /* TODO */
-            WARN("%s():%d TODO", __FUNCTION__, __LINE__);
-            return 0;
+            WARN("%s(): CWMP_RPC_ACS_FAULT detected, should not be",
+                 __FUNCTION__);
         case CWMP_RPC_ACS_NONE:
+        case CWMP_RPC_ACS_get_rpc_methods:
             /* nothing to do */
             return 0;
     }
@@ -1737,15 +1854,23 @@ cwmp_unpack_acs_rpc_data(void *buf, size_t len,
             rc = (te_cwmp_unpack__TransferComplete(buf, len) > 0)
                     ? 0 : TE_EFAIL;  
             break;
-        case CWMP_RPC_ACS_get_rpc_methods:
         case CWMP_RPC_autonomous_transfer_complete:
+            rc = (te_cwmp_unpack__AutonomousTransferComplete(buf, len) > 0)
+                    ? 0 : TE_EFAIL;  
+            break;
         case CWMP_RPC_request_download:
+            rc = (te_cwmp_unpack__RequestDownload(buf, len) > 0)
+                    ? 0 : TE_EFAIL;  
+            break;
         case CWMP_RPC_kicked:
-            /* TODO */
-            WARN("%s():%d TODO", __FUNCTION__, __LINE__);
-            return 0;
-        case CWMP_RPC_ACS_NONE:
+            rc = (te_cwmp_unpack__Kicked(buf, len) > 0)
+                    ? 0 : TE_EFAIL;  
+            break;
         case CWMP_RPC_ACS_FAULT:
+            WARN("%s(): CWMP_RPC_ACS_FAULT detected, should not be",
+                 __FUNCTION__);
+        case CWMP_RPC_ACS_get_rpc_methods:
+        case CWMP_RPC_ACS_NONE:
             /* nothing to do */
             return 0;
     }
