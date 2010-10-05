@@ -993,6 +993,7 @@ cwmp_conn_req(tarpc_cwmp_conn_req_in *in,
     msg.opcode = EPC_CWMP_CALL;
     msg.data.cwmp = &c_data;
     msg.length = sizeof(c_data);
+    msg.status = 0;
 
     memset(&c_data, 0, sizeof(c_data));
 
@@ -1035,6 +1036,7 @@ cwmp_op_call(tarpc_cwmp_op_call_in *in,
     msg.opcode = EPC_CWMP_CALL;
     msg.data.cwmp = &c_data;
     msg.length = sizeof(c_data);
+    msg.status = 0;
 
     memset(&c_data, 0, sizeof(c_data));
 
@@ -1092,6 +1094,7 @@ cwmp_op_check(tarpc_cwmp_op_check_in *in,
     msg.opcode = EPC_CWMP_CALL;
     msg.data.cwmp = &c_data;
     msg.length = sizeof(c_data);
+    msg.status = 0;
 
     memset(&c_data, 0, sizeof(c_data));
 
