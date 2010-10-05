@@ -266,7 +266,7 @@ tapi_acse_manage_vlist(const char *ta, const char *acs_name,
     }
     if (ACSE_OP_DEL == opcode)
     {
-        gen_rc = cfg_del_instance_fmt(TRUE,
+        gen_rc = cfg_del_instance_fmt(FALSE,
                                       "/agent:%s/acse:/acs:%s%s",
                                       ta, acs_name, cpe_name_buf);
         return gen_rc;
@@ -800,6 +800,8 @@ tapi_acse_get_parameter_values(tapi_acse_context_t *ctx,
     ParameterNames             par_list;
     _cwmp__GetParameterValues  req;
 
+    if (NULL == ctx || NULL == names)
+        return TE_EINVAL;
     cwmp_str_array_log(TE_LL_RING, "Issue GetParameterValues", names);
 
     req.ParameterNames_ = &par_list;
