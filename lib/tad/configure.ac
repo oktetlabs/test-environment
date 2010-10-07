@@ -123,6 +123,10 @@ AC_CHECK_LIB([pcap], [pcap_open_live], [PCAP_LIBS=-lpcap])
 AC_CHECK_LIB([nl], [nlmsg_alloc], [PCAP_LIBS="$PCAP_LIBS -lnl"])
 }
 
+[ test -n "${PCAP_LIBS}" ] && {
+AC_CHECK_LIB([nl], [lrint], [PCAP_LIBS="$PCAP_LIBS -lm"])
+}
+
 AC_ARG_WITH([eth],, 
 [if test "${withval}" = yes; then
    w_eth=true;
