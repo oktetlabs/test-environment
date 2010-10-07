@@ -119,9 +119,9 @@ AC_ARG_WITH([atm],,
 
 AC_CHECK_LIB([pcap], [pcap_open_live], [PCAP_LIBS=-lpcap])
 
-[ test -n "${PCAP_LIBS}" ] && {
-AC_CHECK_LIB([nl], [nlmsg_alloc], [PCAP_LIBS="$PCAP_LIBS -lnl"])
-}
+#[ test -n "${PCAP_LIBS}" ] && {
+#AC_CHECK_LIB([nl], [nlmsg_alloc], [PCAP_LIBS="$PCAP_LIBS -lnl"])
+#}
 
 AC_ARG_WITH([eth],, 
 [if test "${withval}" = yes; then
