@@ -37,15 +37,15 @@ AC_SUBST([SOAPH])
 AC_CHECK_HEADER([$SOAPH], [],
     [AC_MSG_ERROR([failed to find stdsoap2.h on path '$SOAP_PATH/../include', is gsoap toolkit installed properly?])])
 
-SOAPC="$SOAP_PATH"'/../include/gsoap/stdsoap2.c'
-AC_SUBST([SOAPC])
-AC_MSG_CHECKING([for $SOAPC])
-if test -r "$SOAPC"; then
-    AC_MSG_RESULT([yes])
-else
-    AC_MSG_RESULT([no])
-    AC_MSG_ERROR([failed to find stdsoap2.c on path '$SOAP_PATH/../include/gsoap', is gsoap toolkit installed properly?])
-fi
+#SOAPC="$SOAP_PATH"'/../include/gsoap/stdsoap2.c'
+#AC_SUBST([SOAPC])
+#AC_MSG_CHECKING([for $SOAPC])
+#if test -r "$SOAPC"; then
+#    AC_MSG_RESULT([yes])
+#else
+#    AC_MSG_RESULT([no])
+#    AC_MSG_ERROR([failed to find stdsoap2.c on path '$SOAP_PATH/../include/gsoap', is gsoap toolkit installed properly?])
+#fi
 
 WSDL2H_FLAGS='-cy'
 AC_SUBST([WSDL2H_FLAGS])
