@@ -50,7 +50,8 @@ for p in ${TE_BS_PLATFORMS} ; do
 
     if [ "${TE_EXT_LIBS}" ] ; then
         mkdir -p "$PREFIX/$p/lib"
-        pushd "$PREFIX/$p/lib" >/dev/null
+        mkdir -p "$PREFIX/$p/include"
+        pushd "$PREFIX/$p/" >/dev/null
         for i in ${!libs} ; do
             wget ${TE_EXT_LIBS}/${!dir}/$i.tgz && tar xzf $i.tgz
         done
