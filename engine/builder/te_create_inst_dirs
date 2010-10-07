@@ -41,7 +41,21 @@ if test -e builder.conf.processed ; then
 fi
 
 for p in ${TE_BS_PLATFORMS} ; do
+    libs=${p}_EXT_LIBS
+    dir=${p}_EXT_LIBS_DIR
+
     mkdir -p $PREFIX/$p
+
+    [ -d "$PREFIX/$p/lib" ] && continue
+
+    if [ "${TE_EXT_LIBS}" ] ; then
+        mkdir -p "$PREFIX/$p/lib"
+        pushd "$PREFIX/$p/lib" >/dev/null
+        for i in ${!libs} ; do
+            wget ${TE_EXT_LIBS}/${!dir}/$i.tgz && tar xzf $i.tgz
+        done
+        popd >/dev/nul
+    fi
 done
 
 mkdir -p $PREFIX/agents

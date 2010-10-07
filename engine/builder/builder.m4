@@ -67,6 +67,28 @@ eval `echo ${PLATFORM}_LDFLAGS=\"$5\"`
 eval `echo ${PLATFORM}_LIBS=\"$6\"`
 ])
 
+dnl Specifies list of external static libraries that should be 
+dnl loaded via http from the server specified in TE_EXT_LIBS
+dnl
+dnl Parameters:
+dnl       platform name in TE_INSTALL
+dnl       platform name on server
+dnl       list of libraries
+dnl
+define([TE_EXT_LIBS],
+[
+PLATFORM=$1
+if test -z "$PLATFORM" ; then
+    PLATFORM=default
+fi
+DIR=$2
+if test -z "$DIR" ; then
+    DIR=i686-pc-linux-gnu
+fi    
+eval `echo ${PLATFORM}_EXT_LIBS_DIR=\"$DIR\"`
+eval `echo ${PLATFORM}_EXT_LIBS=\"$3\"`
+])
+
 dnl Specifies additional parameters to be passed to configure script of the
 dnl mandatory or external library (common for all platforms). May be called 
 dnl once for each library.
