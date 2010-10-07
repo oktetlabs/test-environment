@@ -176,6 +176,19 @@ dnl
 AC_ARG_ENABLE([libdlpi], [Build Test Agent with libdlpi, if available],
 AC_CHECK_LIB([dlpi], [dlpi_open]))
 AC_CHECK_HEADERS([libdlpi.h])
+
+if test -n "$with_rcf_rpc" -o -n "$with_cfg_unix_daemons" ; then
+    dnl
+    dnl Dynamic linker functions are provided by:
+    dnl - -ldl in Linux;
+    dnl - -lc in FreeBSD;
+    dnl - N/A for NetBSD, since automatically included in every dynamically
+    dnl   linked program.
+    dnl
+    AC_CHECK_FUNC([dlopen], [],
+                  AC_CHECK_LIB([dl], [dlopen], [],
+                               AC_MSG_ERROR([No dynamic linker API found])))
+fi
    
 dnl
 dnl POSIX threads are provided by:
@@ -231,18 +244,6 @@ dnl
 AC_CHECK_TYPES([struct epoll_event], [], [],
                [#include <sys/epoll.h>])
 
-if test -n "$with_rcf_rpc" -o -n "$with_cfg_unix_daemons" ; then
-    dnl
-    dnl Dynamic linker functions are provided by:
-    dnl - -ldl in Linux;
-    dnl - -lc in FreeBSD;
-    dnl - N/A for NetBSD, since automatically included in every dynamically
-    dnl   linked program.
-    dnl
-    AC_CHECK_FUNC([dlopen], [],
-                  AC_CHECK_LIB([dl], [dlopen], [],
-                               AC_MSG_ERROR([No dynamic linker API found])))
-fi
 
 if test -n "$with_rcf_rpc" ; then
     dnl
@@ -494,11 +495,33 @@ fi
 AC_SUBST([EXTRA_CPPFLAGS])
 AC_SUBST([EXTRA_LDADD])
 
+DYNAMIC_LIBS="-ldl -lpthread"
+
 #if ! test "$cross_compiling" = "yes" ; then
 case "$host" in 
    sparc*linux*) TE_CPPFLAGS="$TE_CPPFLAGS -DNO_DL" ;;
    *uml*) LIBS="$LIBS -ldl";;
-   *) LIBS="-Wl,-Bdynamic $LIBS" ;;
+   *) 
+       S_LIBS=
+       D_LIBS=
+       for i in $LIBS ; do
+           echo Scan $i
+           found=
+           for k in ${DYNAMIC_LIBS} ; do
+               if test "${k}" = "${i}" ; then
+                   echo found
+                   found=yes
+                   break;
+               fi
+           done
+           if test -z "$found" ; then
+               S_LIBS="${S_LIBS} $i"
+           else
+               D_LIBS="${D_LIBS} $i"
+           fi
+       done
+       echo D_LIBS ${D_LIBS} 
+       LIBS="${S_LIBS} -Wl,-Bdynamic ${D_LIBS}" ;;
 esac
 
 dnl end of "conf" staff
