@@ -153,7 +153,8 @@ RCF_PCH_CFG_NODE_NA(node_sys, "sys", &node_tcp_sndbuf_max, NULL);
 te_errno
 ta_unix_conf_sys_init(void)
 {
-#if 1
+#if 0
+    /* disable code was disabled as normal linux is a prio */
     /* Temporarily disable to be able to run on openvz host */
     return 0;
 #endif
