@@ -41,8 +41,8 @@ acse_cli_SOURCES = acse_cli.c
 # acse_single_LDADD = -lacse_epc -lacse_cwmp -lgsoapssl -lz \
 #             -llogger_file -ltools -lcrypto -lrt -lssl
 
-acse_cli_LDADD = -lcwmp_data  -lacse_cwmp -lgsoapssl -lz -llogger_file \
-            -ltools -lcrypto -lrt -lssl -lpopt
+acse_cli_LDADD = -lcwmp_data  -lacse_cwmp -lgsoapssl -llogger_file \
+            -ltools -lrt -lssl -lcrypto -lz -lpopt -ldl
 # acse_cli_LDADD = -lacse_epc -llogger_file -ltools -lrt -lpopt
 
 install-exec-hook:

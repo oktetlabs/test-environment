@@ -67,9 +67,8 @@ MY_LIBS_SAVED=$LIBS
 
 # Try to find all the libs that are necessary for linking with TA
 AC_CHECK_LIB([z], [deflate], [], [AC_MSG_ERROR([failed to find z library])])
-AC_CHECK_LIB([crypto], [X509_sign], [], [AC_MSG_ERROR([failed to find crypto library])], [-lz])
-AC_CHECK_LIB([ssl], [SSL_new], [], [AC_MSG_ERROR([failed to find ssl library])], [-lz -lcrypto])
-
+AC_CHECK_LIB([crypto], [X509_sign], [], [AC_MSG_ERROR([failed to find crypto library])], [-lz -ldl])
+AC_CHECK_LIB([ssl], [SSL_new], [], [AC_MSG_ERROR([failed to find ssl library])], [-lz -lcrypto -ldl]) 
 # Restore the list of LIBS
 LIBS=$MY_LIBS_SAVED
 
