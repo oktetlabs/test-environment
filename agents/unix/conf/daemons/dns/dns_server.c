@@ -51,7 +51,8 @@ dns_update_config(void)
     if (config == NULL)
     {
         int rc = errno;
-        ERROR("Cannot open '%s' for writing: %s", strerror(rc));
+        ERROR("Cannot open '%s' for writing: %s",
+              ds_config(dns_index), strerror(rc));
         return rc;
     }
     
