@@ -77,7 +77,9 @@ extern const char *inet_ntop(int af, const void *src, char *dst,
 #if HAVE_NETINET_TCP_H
 #include <netinet/tcp.h>
 #endif
-#if HAVE_NETINET_UDP_H
+#if HAVE_LINUX_UDP_H
+#include <linux/udp.h>
+#elif HAVE_NETINET_UDP_H
 #include <netinet/udp.h>
 #endif
 #if HAVE_NET_IF_H
@@ -670,6 +672,7 @@ rpc_sockopt2level(rpc_sockopt opt)
             return RPC_SOL_TCP;
 
         case RPC_UDP_NOCHECKSUM:
+        case RPC_UDP_CORK:
             return RPC_SOL_UDP;
 
         default:
@@ -777,6 +780,7 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(TCP_DEFER_ACCEPT);
 
         RPC2STR(UDP_NOCHECKSUM);
+        RPC2STR(UDP_CORK);
 
         RPC2STR(SOCKOPT_UNKNOWN);
         default: return "<SOCKOPT_FATAL_ERROR>";
@@ -882,6 +886,7 @@ sockopt_rpc2h(rpc_sockopt opt)
         RPC2H_CHECK(TCP_INFO);
         RPC2H_CHECK(TCP_DEFER_ACCEPT);
         RPC2H_CHECK(UDP_NOCHECKSUM);
+        RPC2H_CHECK(UDP_CORK);
         default:
             WARN("%s is converted to RPC_SOCKOPT_MAX(%u)",
                  sockopt_rpc2str(opt), RPC_SOCKOPT_MAX);
@@ -1080,6 +1085,7 @@ sockopt_is_boolean(rpc_sockopt opt)
         case RPC_TCP_CORK:
 
         case RPC_UDP_NOCHECKSUM:
+        case RPC_UDP_CORK:
             return TRUE;
 
         default:
