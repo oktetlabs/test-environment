@@ -484,6 +484,9 @@ extern int rpc_cmsg_data_parse_ip_pktinfo(rcf_rpc_server *rpcs,
 extern int rpc_bind(rcf_rpc_server *rpcs,
                     int s, const struct sockaddr *my_addr);
 
+extern int rpc_bind_raw(rcf_rpc_server *rpcs, int s,
+                        const struct sockaddr *my_addr, socklen_t addrlen);
+
 /**
  * Attempt to associate a socket descriptor @b s with a peer process at 
  * address @b addr. This operation takes place on RPC server side.

@@ -138,6 +138,38 @@ rpc_bind(rcf_rpc_server *rpcs,
     RETVAL_INT(bind, out.retval);
 }
 
+int rpc_bind_raw(rcf_rpc_server *rpcs, int s,
+                 const struct sockaddr *my_addr, socklen_t addrlen)
+{
+    tarpc_bind_in  in;
+    tarpc_bind_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(bind, -1);
+    }
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+
+    in.fd = s;
+    sockaddr_raw2rpc(my_addr, addrlen, &in.addr);
+
+    rcf_rpc_call(rpcs, "bind", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(bind, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s): bind(%d, %p, %d) -> %d (%s)",
+                 rpcs->ta, rpcs->name,
+                 s, my_addr, addrlen, out.retval,
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(bind, out.retval);
+}
+
 int
 rpc_connect(rcf_rpc_server *rpcs,
             int s, const struct sockaddr *addr)
