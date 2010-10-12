@@ -825,8 +825,19 @@ TARPC_FUNC(bind, {},
 
 TARPC_FUNC(connect, {},
 {
-    PREPARE_ADDR(serv_addr, in->addr, 0);
-    MAKE_CALL(out->retval = func(in->fd, serv_addr, serv_addrlen));
+    if (in->addr.flags & TARPC_SA_RAW &&
+        in->addr.raw.raw_len > sizeof(struct sockaddr_storage))
+    {
+        MAKE_CALL(out->retval =
+                  func(in->fd,
+                       (const struct sockaddr *)(in->addr.raw.raw_val),
+                       in->addr.raw.raw_len));
+    }
+    else
+    {
+        PREPARE_ADDR(serv_addr, in->addr, 0);
+        MAKE_CALL(out->retval = func(in->fd, serv_addr, serv_addrlen));
+    }
 }
 )
 

@@ -501,6 +501,9 @@ extern int rpc_bind_raw(rcf_rpc_server *rpcs, int s,
 extern int rpc_connect(rcf_rpc_server *rpcs,
                        int s, const struct sockaddr *addr);
 
+extern int rpc_connect_raw(rcf_rpc_server *rpcs, int s,
+                           const struct sockaddr *addr, socklen_t addrlen);
+
 /**
  * Try to listen for incomming connections for connection oriented sockets
  * This operation takes place on RPC server side.
