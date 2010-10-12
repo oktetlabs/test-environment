@@ -881,22 +881,34 @@ TARPC_FUNC(recvfrom,
     COPY_ARG_ADDR(from);
 },
 {
-    PREPARE_ADDR(from, out->from, out->fromlen.fromlen_len == 0 ? 0 :
-                                  *out->fromlen.fromlen_val);
+    struct sockaddr *addr_ptr;
+    socklen_t addr_len;
+
+    if (out->from.raw.raw_len <= sizeof(struct sockaddr_storage))
+    {
+        PREPARE_ADDR(from, out->from, out->fromlen.fromlen_len == 0 ? 0 :
+                                        *out->fromlen.fromlen_val);
+        addr_ptr = from;
+        addr_len = fromlen;
+    }
+    else
+    {
+        addr_ptr = (struct sockaddr *)(out->from.raw.raw_val);
+        addr_len = out->from.raw.raw_len;
+    }
 
     INIT_CHECKED_ARG(out->buf.buf_val, out->buf.buf_len, in->len);
 
     MAKE_CALL(out->retval = func(in->fd, out->buf.buf_val, in->len,
-                                 send_recv_flags_rpc2h(in->flags), from,
+                                 send_recv_flags_rpc2h(in->flags), addr_ptr,
                                  out->fromlen.fromlen_len == 0 ? NULL :
                                  out->fromlen.fromlen_val));
 
-    sockaddr_output_h2rpc(from, fromlen,
-                          out->fromlen.fromlen_len == 0 ? 0 :
-                              *(out->fromlen.fromlen_val),
+    sockaddr_output_h2rpc(addr_ptr, addr_len, out->from.raw.raw_len,
                           &(out->from));
 }
 )
+
 
 
 /*-------------- recv() ------------------------------*/
