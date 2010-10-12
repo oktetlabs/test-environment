@@ -852,8 +852,8 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
     cpe = db_find_cpe(NULL, cwmp_pars->acs, cwmp_pars->cpe);
     if (cpe == NULL)
     {
-        ERROR("EPC CONN_REQ fails, '%s':'%s' not found\n",
-               cwmp_pars->acs, cwmp_pars->cpe);
+        ERROR("EPC op %d fails, '%s':'%s' not found\n",
+               cwmp_pars->op, cwmp_pars->acs, cwmp_pars->cpe);
         return TE_ENOENT;
     }
 

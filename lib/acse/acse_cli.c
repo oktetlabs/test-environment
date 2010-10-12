@@ -29,6 +29,8 @@
 
 #include "logger_file.h"
 
+#include "cli_utils.h"
+
 DEFINE_LGR_ENTITY("ACSE");
 
 #ifdef TE_LGR_USER
@@ -36,29 +38,30 @@ DEFINE_LGR_ENTITY("ACSE");
 #endif
 #define TE_LGR_USER     "CLI"
 
-/* TODO some normal way to parse command line?.. */
+#define NUM_OF(_arr) (sizeof(_arr)/sizeof(_arr [0]))
 
-/**
- * Copy token from line to separate place.
- * Tokens are sperated by spaces.
- *
- * @return offset in @p line of the end of token, i.e. offset
- *              of the first symbol after token.
- */
-static inline size_t 
-cli_token_copy(const char *line, char *token)
-{
-    size_t t, s;
 
-    for (s = 0; isspace(line[s]); s++);
-    line += s;
+static te_errno
+print_config_response(te_errno status, acse_epc_config_data_t *cfg_resp);
 
-    for (t = 0; line[t] && (!isspace(line[t])); t++)
-        token[t] = line[t];
-    token[t] = '\0';
+enum {
+    CMD_PARAM = 0x1000, 
+    CMD_RPC, 
+    CMD_CR, 
 
-    return s + t;
-}
+    PARAM_OBTAIN = 0x1010, 
+    PARAM_MODIFY, 
+    PARAM_LIST, 
+    PARAM_ADD, 
+    PARAM_DEL, 
+
+    RPC_SEND = 0x1020, 
+    RPC_CHECK, 
+
+    CR_SEND = 0x1030, 
+    CR_CHECK, 
+};
+
 
 static te_errno
 cli_args_acs_cpe(const char *args, size_t *offset, char *acs, char *cpe)
@@ -91,6 +94,148 @@ cli_args_acs_cpe(const char *args, size_t *offset, char *acs, char *cpe)
 
     return 0;
 }
+
+
+static int
+param_cmd_access(int argc, const int *arg_tags,
+                 const char *rest_line, void *opaque)
+{
+    acse_epc_msg_t          msg;
+    acse_epc_msg_t         *msg_resp = NULL;
+    acse_epc_config_data_t  cfg_data;
+
+    size_t      offset = 0;
+    te_errno    rc;
+
+    /* Command here:
+       'param acs|cpe modify|obtain <objnames> <par_names> <val>'
+    */
+
+    msg.opcode = EPC_CONFIG_CALL;
+    msg.data.cfg = &cfg_data;
+    msg.length = sizeof(cfg_data);
+    msg.status = 0;
+
+    if (EPC_CFG_ACS == arg_tags[1])
+    {
+        rest_line += cli_token_copy(rest_line, cfg_data.acs);
+        cfg_data.cpe[0] = '\0';
+    }
+    else 
+    {
+        cli_args_acs_cpe(rest_line, &offset, cfg_data.acs, cfg_data.cpe);
+        rest_line += offset;
+    }
+
+    rest_line += cli_token_copy(rest_line, cfg_data.oid);
+
+
+    cfg_data.op.magic = EPC_CONFIG_MAGIC;
+    cfg_data.op.level = arg_tags[1];
+    cfg_data.op.fun = arg_tags[2];
+
+    if (EPC_CFG_MODIFY == cfg_data.op.fun)
+        cli_token_copy(rest_line, cfg_data.value);
+    else
+        cfg_data.value[0] = '\0';
+
+    acse_epc_send(&msg);
+    rc = acse_epc_recv(&msg_resp);
+    if (TE_RC_GET_ERROR(rc) == TE_ENOTCONN)
+    {
+        printf("Connection broken\n");
+        return -1;
+    }
+    print_config_response(msg_resp->status,
+                          msg_resp->data.cfg);
+
+    return 0;
+}
+
+static int
+param_cmd_list(int argc, const int *arg_tags,
+               const char *rest_line, void *opaque)
+{
+    return 0;
+}
+
+static int
+param_cmd_ad(int argc, const int *arg_tags,
+              const char *rest_line, void *opaque)
+{
+    return 0;
+}
+
+static int
+rpc_issue(int argc, const int *arg_tags,
+          const char *rest_line, void *opaque)
+{
+    return 0;
+}
+
+static int
+rpc_check(int argc, const int *arg_tags,
+          const char *rest_line, void *opaque)
+{
+    return 0;
+}
+
+static int
+cr_issue(int argc, const int *arg_tags,
+         const char *rest_line, void *opaque)
+{
+    return 0;
+}
+
+static int
+cr_check(int argc, const int *arg_tags,
+         const char *rest_line, void *opaque)
+{
+    return 0;
+}
+
+static cli_cmd_descr_t cmd_param_actions[] = {
+    {"obtain", EPC_CFG_OBTAIN, "ACS config commands",
+            param_cmd_access, NULL},
+    {"modify", EPC_CFG_MODIFY, "CPE config commands",
+            param_cmd_access, NULL},
+    {"list", EPC_CFG_LIST, "ACS config commands",
+            param_cmd_list, NULL},
+    {"add", EPC_CFG_ADD, "ACS config commands",
+            param_cmd_ad, NULL},
+    {"del", EPC_CFG_DEL, "CPE config commands",
+            param_cmd_ad, NULL},
+    END_CMD_ARRAY
+};
+
+static cli_cmd_descr_t cmd_param_lev[] = {
+    {"acs", EPC_CFG_ACS, "ACS config commands", NULL, cmd_param_actions},
+    {"cpe", EPC_CFG_ACS, "CPE config commands", NULL, cmd_param_actions},
+    END_CMD_ARRAY
+};
+
+static cli_cmd_descr_t cmd_rpc_actions[] = {
+    {"issue", EPC_CFG_ACS, "Issue CWMP RPC", rpc_issue, NULL},
+    {"check", EPC_CFG_ACS, "Check RPC status", rpc_check, NULL},
+    END_CMD_ARRAY
+};
+
+static cli_cmd_descr_t cmd_cr_actions[] = {
+    {"issue", EPC_CFG_ACS, "Issue Connection Request", cr_issue, NULL},
+    {"check", EPC_CFG_ACS, "Check Connection Request", cr_check, NULL},
+    END_CMD_ARRAY
+};
+
+static cli_cmd_descr_t acse_cmd_list[] = {
+    {"param", EPC_CFG_ACS, "config parameters", NULL, cmd_param_lev},
+    {"rpc", EPC_CFG_ACS, "CWMP RPC commands", NULL, cmd_rpc_actions},
+    {"cr", EPC_CFG_ACS, "Connection Req. commands", NULL, cmd_cr_actions},
+    END_CMD_ARRAY
+};
+
+/* TODO some normal way to parse command line?.. */
+
+
 
 static te_errno
 cli_cfg_list(const char *args, acse_cfg_level_t level)
@@ -385,51 +530,6 @@ epc_parse_cli(const char *buf, size_t len)
     return 0;
 }
 
-static const char *
-rpc_cpe_to_string(te_cwmp_rpc_cpe_t rpc_cpe)
-{
-    switch (rpc_cpe)
-    {
-    case CWMP_RPC_NONE:
-        return "NONE";
-    case CWMP_RPC_get_rpc_methods: 
-        return "get_rpc_methods";
-    case CWMP_RPC_set_parameter_values: 
-        return "set_parameter_values";
-    case CWMP_RPC_get_parameter_values: 
-        return "get_parameter_values";
-    case CWMP_RPC_get_parameter_names: 
-        return "get_parameter_names";
-    case CWMP_RPC_set_parameter_attributes: 
-        return "set_parameter_attributes";
-    case CWMP_RPC_get_parameter_attributes: 
-        return "get_parameter_attributes";
-    case CWMP_RPC_add_object: 
-        return "add_object";
-    case CWMP_RPC_delete_object: 
-        return "delete_object";
-    case CWMP_RPC_reboot: 
-        return "reboot";
-    case CWMP_RPC_download: 
-        return "download";
-    case CWMP_RPC_upload: 
-        return "upload";
-    case CWMP_RPC_factory_reset: 
-        return "factory_reset";
-    case CWMP_RPC_get_queued_transfers: 
-        return "get_queued_transfers";
-    case CWMP_RPC_get_all_queued_transfers: 
-        return "get_all_queued_transfers";
-    case CWMP_RPC_schedule_inform: 
-        return "schedule_inform";
-    case CWMP_RPC_set_vouchers: 
-        return "set_vouchers";
-    case CWMP_RPC_get_options: 
-        return "get_options";
-    }
-    return "???";
-}
-
 
 static void
 print_rpc_response(acse_epc_cwmp_data_t *cwmp_resp)
@@ -486,12 +586,12 @@ print_cwmp_response(te_errno status, acse_epc_cwmp_data_t *cwmp_resp)
         break;
     case EPC_RPC_CALL:
         printf("RPC call '%s' to %s/%s, id %d\n",
-                rpc_cpe_to_string(cwmp_resp->rpc_cpe),
+                cwmp_rpc_cpe_string(cwmp_resp->rpc_cpe),
                 cwmp_resp->acs, cwmp_resp->cpe, cwmp_resp->request_id);
         break;
     case EPC_RPC_CHECK:
         printf("RPC check, '%s' to %s/%s, status %s\n",
-                rpc_cpe_to_string(cwmp_resp->rpc_cpe),
+                cwmp_rpc_cpe_string(cwmp_resp->rpc_cpe),
                 cwmp_resp->acs, cwmp_resp->cpe,
                 te_rc_err2str(status));
         if (status == 0)
@@ -558,7 +658,7 @@ struct poptOption acse_cli_opts[] =
     {"epc-socket", 'e', POPT_ARG_STRING, &epc_sock_name, 0,
             "filename for EPC socket", "EPC socket"},
     {"fork",       'f', POPT_ARG_NONE,   &acse_fork, 0,
-            "filename for EPC socket", "EPC socket"},
+            "whether to fork", "flag to fork"},
     {"script",     's', POPT_ARG_STRING, &script_name, 0, 
             "filename with list of commands to perform before operation",
             "script"},
@@ -695,9 +795,14 @@ main(int argc, const char **argv)
                     break;
 
                 buf[r] = '\0';
+#if 0
                 rc = epc_parse_cli(buf, r);
                 if (rc != 0)
                     RING("parse error %r", rc);
+#else
+                cli_perform_cmd(acse_cmd_list, buf);
+                printf("\n> ");
+#endif
             }
             if (pfd[1].revents)
             {
@@ -722,7 +827,6 @@ main(int argc, const char **argv)
                              msg_resp->opcode);
                 }
                 free(msg_resp);
-                printf("\n> ");
             }
         }
     }

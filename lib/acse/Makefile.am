@@ -15,6 +15,8 @@ bin_PROGRAMS = acse_cli
 
 include_HEADERS = acse_epc.h cwmp_data.h acse_user.h cwmp_utils.h
 
+noinst_HEADERS = cli_utils.h
+
 # acse_single_SOURCES = acse_dummy.c
 
 libacse_cwmp_la_SOURCES = acse.c \
@@ -32,7 +34,7 @@ libacse_cwmp_la_SOURCES = acse.c \
 
 libcwmp_data_la_SOURCES = cwmp_data.c cwmp_utils.c
                     
-acse_cli_SOURCES = acse_cli.c
+acse_cli_SOURCES = acse_cli.c cli_utils.c
 
 #libacse_a_LIBADD = /usr/lib/libssl.a /usr/lib/libcrypto.a /usr/lib/libz.a
 
