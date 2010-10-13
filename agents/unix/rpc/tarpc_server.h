@@ -314,16 +314,20 @@ check_args(checked_arg *list)
     socklen_t               _name ## len;                           \
     struct sockaddr        *_name;                                  \
                                                                     \
-    _name ## _rc = sockaddr_rpc2h(&(_value), SA(&_name ## _st),     \
-                                  sizeof(_name ## _st),             \
-                                  &_name, &_name ## len);           \
-    if (_name ## _rc != 0)                                          \
+    if (!(_value.flags & TARPC_SA_RAW &&                            \
+          _value.raw.raw_len > sizeof(struct sockaddr_storage)))    \
     {                                                               \
-         out->common._errno = _name ## _rc;                         \
-    }                                                               \
-    else                                                            \
-    {                                                               \
-        INIT_CHECKED_ARG((char *)_name, _name ## len, _wlen);       \
+        _name ## _rc = sockaddr_rpc2h(&(_value), SA(&_name ## _st), \
+                                      sizeof(_name ## _st),         \
+                                      &_name, &_name ## len);       \
+        if (_name ## _rc != 0)                                      \
+        {                                                           \
+             out->common._errno = _name ## _rc;                     \
+        }                                                           \
+        else                                                        \
+        {                                                           \
+            INIT_CHECKED_ARG((char *)_name, _name ## len, _wlen);   \
+        }                                                           \
     }
 
 /**

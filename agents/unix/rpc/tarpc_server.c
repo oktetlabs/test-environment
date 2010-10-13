@@ -884,17 +884,17 @@ TARPC_FUNC(recvfrom,
     struct sockaddr *addr_ptr;
     socklen_t addr_len;
 
-    if (out->from.raw.raw_len <= sizeof(struct sockaddr_storage))
-    {
-        PREPARE_ADDR(from, out->from, out->fromlen.fromlen_len == 0 ? 0 :
+    PREPARE_ADDR(from, out->from, out->fromlen.fromlen_len == 0 ? 0 :
                                         *out->fromlen.fromlen_val);
-        addr_ptr = from;
-        addr_len = fromlen;
-    }
-    else
+    if (out->from.raw.raw_len > sizeof(struct sockaddr_storage))
     {
         addr_ptr = (struct sockaddr *)(out->from.raw.raw_val);
         addr_len = out->from.raw.raw_len;
+    }
+    else
+    {
+        addr_ptr = from;
+        addr_len = fromlen;
     }
 
     INIT_CHECKED_ARG(out->buf.buf_val, out->buf.buf_len, in->len);
@@ -902,9 +902,11 @@ TARPC_FUNC(recvfrom,
     MAKE_CALL(out->retval = func(in->fd, out->buf.buf_val, in->len,
                                  send_recv_flags_rpc2h(in->flags), addr_ptr,
                                  out->fromlen.fromlen_len == 0 ? NULL :
-                                 out->fromlen.fromlen_val));
+                                    out->fromlen.fromlen_val));
 
-    sockaddr_output_h2rpc(addr_ptr, addr_len, out->from.raw.raw_len,
+    sockaddr_output_h2rpc(addr_ptr, addr_len,
+                          out->fromlen.fromlen_len == 0 ? 0 :
+                              *(out->fromlen.fromlen_val),
                           &(out->from));
 }
 )
@@ -2997,8 +2999,13 @@ TARPC_FUNC(recvmsg,
         struct tarpc_msghdr *rpc_msg = out->msg.msg_val;
 
         PREPARE_ADDR(name, rpc_msg->msg_name, rpc_msg->msg_namelen);
-
-        msg.msg_name = name;
+        
+        if (rpc_msg->msg_namelen < sizeof(struct sockaddr))
+        {
+            msg.msg_name = name;
+        }
+        else
+            msg.msg_name = rpc_msg->msg_name.raw.raw_val;
         msg.msg_namelen = rpc_msg->msg_namelen;
 
         msg.msg_iovlen = rpc_msg->msg_iovlen;
@@ -3058,14 +3065,16 @@ TARPC_FUNC(recvmsg,
 
         VERB("recvmsg(): in msg=%s", msghdr2str(&msg));
         MAKE_CALL(out->retval = func(in->s, &msg,
-                                     send_recv_flags_rpc2h(in->flags))
-                  );
+                                     send_recv_flags_rpc2h(in->flags)));
         VERB("recvmsg(): out msg=%s", msghdr2str(&msg));
 
         rpc_msg->msg_flags = send_recv_flags_h2rpc(msg.msg_flags);
-        sockaddr_output_h2rpc(name, namelen, msg.msg_namelen,
-                              &(rpc_msg->msg_name));
+        if (rpc_msg->msg_namelen < sizeof(struct sockaddr))
+            sockaddr_output_h2rpc(msg.msg_name, namelen,
+                                  rpc_msg->msg_name.raw.raw_len,
+                                  &(rpc_msg->msg_name));
         rpc_msg->msg_namelen = msg.msg_namelen;
+
         if (rpc_msg->msg_iov.msg_iov_val != NULL)
         {
             for (i = 0; i < rpc_msg->msg_iov.msg_iov_len; i++)
