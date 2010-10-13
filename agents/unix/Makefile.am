@@ -44,9 +44,7 @@ SYMTBL_LIBS+=\
 $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libiscsi_unh_target.a
 endif      
 
-if CURL_SYMTBL_USE
-SYMTBL_LIBS+=/usr/lib/libcurl.a
-endif
+SYMTBL_LIBS+=$(CURL_LIB)
 
 ta_DEPENDENCIES = @TE_DEPENDENCIES@ $(SYMTBL_LIBS) symtbl.o \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librpcxdr.a \

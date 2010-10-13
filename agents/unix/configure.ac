@@ -485,7 +485,10 @@ if test -n "$with_iscsi"; then
     EXTRA_LDADD="$EXTRA_LDADD -liscsi_unh_target -liscsi_initiator_conf"
 fi    
 
-AM_CONDITIONAL(CURL_SYMTBL_USE, test -n "$with_symtbl_curl")
+test "$with_symtbl_curl" && {
+    CURL_LIB=`$CC $CFLAGS -print-file-name libcurl.a`
+    AC_SUBST(CURL_LIB)
+}
 
 AM_CONDITIONAL(CFG_IPTABLES_SUPPORT, test -n "$with_iptables")
 if test -n "$with_iptables"; then
