@@ -41,8 +41,12 @@ DEFINE_LGR_ENTITY("ACSE");
 #define NUM_OF(_arr) (sizeof(_arr)/sizeof(_arr [0]))
 
 
-static te_errno
-print_config_response(te_errno status, acse_epc_config_data_t *cfg_resp);
+static te_errno print_config_response(te_errno status,
+                                      acse_epc_config_data_t *cfg_resp);
+
+
+static te_errno print_cwmp_response(te_errno status,
+                                    acse_epc_cwmp_data_t *cwmp_resp);
 
 enum {
     CMD_PARAM = 0x1000, 
@@ -184,6 +188,42 @@ static int
 cr_issue(int argc, const int *arg_tags,
          const char *rest_line, void *opaque)
 {
+    te_errno rc;
+    size_t   offset = 0;
+
+    acse_epc_msg_t        msg;
+    acse_epc_msg_t       *msg_resp = NULL;
+    acse_epc_cwmp_data_t  c_data;
+
+    UNUSED(opaque);
+
+    msg.opcode = EPC_CWMP_CALL;
+    msg.data.cwmp = &c_data;
+    msg.length = sizeof(c_data);
+
+    memset(&c_data, 0, sizeof(c_data));
+
+    c_data.op = EPC_CONN_REQ;
+
+    rc = cli_args_acs_cpe(rest_line, &offset, c_data.acs, c_data.cpe);
+    if (rc != 0)
+    {
+        fprintf(stderr, "Parse error 0x%x\n", rc);
+        return rc;
+    }
+    rest_line += offset;
+
+    rc = acse_epc_send(&msg);
+    if (rc != 0)
+        ERROR("%s(): EPC send failed %r", __FUNCTION__, rc);
+    rc = acse_epc_recv(&msg_resp);
+    if (TE_RC_GET_ERROR(rc) == TE_ENOTCONN)
+    {
+        printf("Connection broken\n");
+        return -1;
+    }
+    print_cwmp_response(msg_resp->status, msg_resp->data.cwmp);
+
     return 0;
 }
 

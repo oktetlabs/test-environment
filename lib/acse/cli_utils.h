@@ -5,7 +5,7 @@
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * $Id: acse_cli.c 64634 2010-06-07 18:46:13Z konst $
+ * $Id$
  */
 
 #include<string.h>
@@ -17,7 +17,8 @@
  * Tokens are sperated by spaces.
  *
  * @return offset in @p line of the end of token, i.e. offset
- *              of the first symbol after token.
+ *              of the first symbol after token;
+ *              or zero if there is no more token.
  */
 static inline size_t 
 cli_token_copy(const char *line, char *token)
@@ -29,6 +30,8 @@ cli_token_copy(const char *line, char *token)
 
     for (t = 0; line[t] && (!isspace(line[t])); t++)
         token[t] = line[t];
+    if (0 == t)
+        return 0;
     token[t] = '\0';
 
     return s + t;

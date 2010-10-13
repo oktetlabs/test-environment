@@ -5,7 +5,7 @@
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * $Id: acse_cli.c 64634 2010-06-07 18:46:13Z konst $
+ * $Id$
  */
 
 #include<string.h>
@@ -33,13 +33,15 @@ cli_perform_cmd(cli_cmd_descr_t *root_list, const char *line)
 
     do {
         ofs = cli_token_copy(line, token);
+        if (0 == ofs) 
+            break; /* there is no more token */
         while (NULL != cd->label)
         {
             if (strcmp(cd->label, token) == 0)
                 break;
             cd ++;
         }
-        if (NULL == cd->label)
+        if (NULL == cd->label) /* token was not found */
             break;
 
         if (NULL != cd->func)
@@ -61,12 +63,11 @@ cli_perform_cmd(cli_cmd_descr_t *root_list, const char *line)
     }
     else /* unsupported or syntax error */
     {
-        int i;
-        printf("Unexpected: ");
+        unsigned i;
+        printf("Unexpected, '");
         for (i = 0; i < level; i++)
-            printf(" %s", cd_stack[i]->label);
-        printf("; rest line '%s', help: %s\n", line,
-               cd->descr);
+            printf("%s ", cd_stack[i]->label);
+        printf("'; last label '%s', descr: %s\n", cd->label, cd->descr);
     }
     return 0;
 }
