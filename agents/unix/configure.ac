@@ -486,7 +486,11 @@ if test -n "$with_iscsi"; then
 fi    
 
 test "$with_symtbl_curl" && {
-    CURL_LIB=`$CC $CFLAGS -print-file-name libcurl.a`
+    if test -f ${TE_INSTALL}/${TE_PLATFORM}/lib/libcurl.a ; then
+        CURL_LIB=${TE_INSTALL}/${TE_PLATFORM}/lib/libcurl.a
+    else
+        CURL_LIB=`$CC $CFLAGS -print-file-name=libcurl.a`
+    fi
     AC_SUBST(CURL_LIB)
 }
 
