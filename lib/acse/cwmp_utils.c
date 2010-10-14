@@ -39,6 +39,7 @@
 #include "cwmp_utils.h"
 
 #include <string.h>
+#include <strings.h>
 
 int va_end_list_var = 10;
 void const * const va_end_list_ptr = &va_end_list_ptr;
@@ -107,13 +108,13 @@ cwmp_str_array_alloc(const char *b_name, const char *first_name, ...)
     te_errno        rc; 
     string_array_t *ret;
 
-    if (NULL == b_name || NULL == first_name)
-        return NULL;
-
     if (NULL == (ret = malloc(sizeof(*ret))))
         return NULL;
     ret->items = NULL;
     ret->size = 0;
+
+    if (NULL == b_name || NULL == first_name)
+        return ret;
 
     va_start(ap, first_name);
     rc = cwmp_str_array_add_va(ret, b_name, first_name, ap);
@@ -370,6 +371,51 @@ cwmp_val_array_free(cwmp_values_array_t *a)
     free(a->items);
     free(a);
 }
+
+
+
+/* see description in cwmp_utils.h */
+te_errno
+cwmp_val_array_get_int(cwmp_values_array_t *a, const char *name, 
+                       int *type, int *value)
+{
+    unsigned i;
+
+    if (NULL == a || NULL == name || NULL == value)
+        return TE_EINVAL;
+
+    for (i = 0; i < a->size; i++)
+    {
+        char *suffix = rindex(a->items[i]->Name, '.');
+        if (NULL == suffix)
+            continue;
+        if (strcmp(suffix + 1, name) == 0)
+        {
+            switch (a->items[i]->__type)
+            {
+                case SOAP_TYPE_xsd__boolean:         
+                case SOAP_TYPE_int:         
+                case SOAP_TYPE_unsignedInt:
+                    *value = *((int *)a->items[i]->Value);
+                    break;
+                case SOAP_TYPE_byte:
+                case SOAP_TYPE_unsignedByte:
+                    *value = *((int8_t *)a->items[i]->Value);
+                    break;
+                    
+                case SOAP_TYPE_time:
+                case SOAP_TYPE_string:
+                case SOAP_TYPE_SOAP_ENC__base64:
+                    return TE_EBADTYPE;
+            }
+            if (NULL != type)
+                *type = a->items[i]->__type;
+            return 0;
+        }
+    }
+    return TE_ENOENT;
+}
+
 
 
 #define VAL_LOG_MAX 512

@@ -170,7 +170,7 @@ extern te_errno cwmp_val_array_add(cwmp_values_array_t *a,
  * and value. 
  *
  * @param a             array with CWMP values
- * @param name          name for search value
+ * @param name          last part of name (from last dot to the end)
  * @param type          location for value type
  * @param value         location for value
  *
@@ -337,6 +337,26 @@ extern void cwmp_get_values_free(_cwmp__GetParameterValues *req);
  */
 extern void cwmp_get_values_resp_free(_cwmp__GetParameterValues *resp);
 
+
+
+/**
+ * Detect whether name is partial node name or Parameter (leaf) 
+ * full name. 
+ * Particulary, it is detected by ending doc '.'in the name
+ * according with TR069 standard. 
+ *
+ * @param name  parameter name
+ *
+ * @return FALSE if @p name is full Parameter name, 
+ *         TRUE  if @p name is partial node name.
+ */      
+static inline te_bool cwmp_is_node_name(const char *name) 
+{
+    size_t len;
+    assert(NULL != name);
+    len = strlen(name);
+    return name[len-1] == '.';
+}
 
 /**
  * Construct SetParameterValues argument.
