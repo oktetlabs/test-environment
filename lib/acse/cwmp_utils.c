@@ -381,7 +381,7 @@ cwmp_val_array_get_int(cwmp_values_array_t *a, const char *name,
 {
     unsigned i;
 
-    if (NULL == a || NULL == name || NULL == value)
+    if (NULL == a || NULL == value)
         return TE_EINVAL;
 
     for (i = 0; i < a->size; i++)
@@ -389,7 +389,7 @@ cwmp_val_array_get_int(cwmp_values_array_t *a, const char *name,
         char *suffix = rindex(a->items[i]->Name, '.');
         if (NULL == suffix)
             continue;
-        if (strcmp(suffix + 1, name) == 0)
+        if (NULL == name || strcmp(suffix + 1, name) == 0)
         {
             switch (a->items[i]->__type)
             {
@@ -416,6 +416,23 @@ cwmp_val_array_get_int(cwmp_values_array_t *a, const char *name,
     return TE_ENOENT;
 }
 
+
+te_errno
+cwmp_val_array_check_int(cwmp_values_array_t *a,
+                         const char *name, int type, int value)
+{
+    int r_type, r_value;
+    te_errno rc;
+
+    rc = cwmp_val_array_get_int(a, name, &r_type, &r_value);
+    if (0 != rc)
+        return rc;
+    if (r_type != type)
+        return TE_EBADTYPE;
+    if (r_value != value)
+        return TE_EFAULT;
+    return 0;
+}
 
 
 #define VAL_LOG_MAX 512

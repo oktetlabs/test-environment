@@ -171,7 +171,8 @@ extern te_errno cwmp_val_array_add(cwmp_values_array_t *a,
  *
  * @param a             array with CWMP values
  * @param name          last part of name (from last dot to the end)
- * @param type          location for value type
+ *                      or NULLfor first value in array
+ * @param type          location for value type or NULL
  * @param value         location for value
  *
  * @return status code: 0 on success,
