@@ -184,6 +184,11 @@ extern ssize_t rpc_sendto(rcf_rpc_server *rpcs,
                           rpc_send_recv_flags flags,
                           const struct sockaddr *to);
 
+extern ssize_t rpc_sendto_raw(rcf_rpc_server *rpcs,
+                              int s, const void *buf, size_t len,
+                              rpc_send_recv_flags flags,
+                              const struct sockaddr *to, socklen_t tolen);
+
 /**
  * Generic routine for receiving messages and store them in the buffer @b 
  * buf of length @b len. This operation takes place on RPC server side.

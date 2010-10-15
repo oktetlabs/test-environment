@@ -943,9 +943,21 @@ TARPC_FUNC(sendto, {},
 
     INIT_CHECKED_ARG(in->buf.buf_val, in->buf.buf_len, 0);
 
-    MAKE_CALL(out->retval = func(in->fd, in->buf.buf_val, in->len,
-                                 send_recv_flags_rpc2h(in->flags),
-                                 to, tolen));
+    if (!(in->to.flags & TARPC_SA_RAW &&
+          in->to.raw.raw_len > sizeof(struct sockaddr_storage)))
+    {
+        MAKE_CALL(out->retval = func(in->fd, in->buf.buf_val, in->len,
+                                     send_recv_flags_rpc2h(in->flags),
+                                     to, tolen));
+    }
+    else
+    {
+        MAKE_CALL(out->retval = func(in->fd, in->buf.buf_val, in->len,
+                                     send_recv_flags_rpc2h(in->flags),
+                                     (const struct sockaddr *)
+                                                (in->to.raw.raw_val),
+                                     in->to.raw.raw_len));
+    }
 }
 )
 
@@ -2897,10 +2909,14 @@ TARPC_FUNC(sendmsg,
         memset(&msg, 0, sizeof(msg));
 
         PREPARE_ADDR(name, rpc_msg->msg_name, 0);
-        msg.msg_name = name;
-        msg.msg_namelen = namelen;
-        if (rpc_msg->msg_namelen != 0)
-            WARN("'msg_namelen' is ignored by RPC sendmsg()");
+
+        if (rpc_msg->msg_namelen <= sizeof(struct sockaddr_storage))
+        {
+            msg.msg_name = name;
+        }
+        else
+            msg.msg_name = rpc_msg->msg_name.raw.raw_val;
+        msg.msg_namelen = rpc_msg->msg_namelen;
 
         msg.msg_iovlen = rpc_msg->msg_iovlen;
 
@@ -2957,6 +2973,7 @@ TARPC_FUNC(sendmsg,
 
         VERB("sendmsg(): s=%d, msg=%s, flags=0x%x", in->s,
              msghdr2str(&msg), send_recv_flags_rpc2h(in->flags));
+
         MAKE_CALL(out->retval = func(in->s, &msg,
                                      send_recv_flags_rpc2h(in->flags)));
         free(msg.msg_control);

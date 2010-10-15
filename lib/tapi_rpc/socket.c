@@ -573,6 +573,52 @@ rpc_sendto(rcf_rpc_server *rpcs,
 }
 
 ssize_t
+rpc_sendto_raw(rcf_rpc_server *rpcs,
+               int s, const void *buf, size_t len,
+               rpc_send_recv_flags flags,
+               const struct sockaddr *to, socklen_t tolen)
+{
+    rcf_rpc_op       op;
+    tarpc_sendto_in  in;
+    tarpc_sendto_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(sendto, -1);
+    }
+
+    op = rpcs->op;
+
+    in.fd = s;
+    in.len = len;
+    if (rpcs->op != RCF_RPC_WAIT)
+    {
+        sockaddr_raw2rpc(to, tolen, &in.to);
+    }
+    if (buf != NULL && rpcs->op != RCF_RPC_WAIT)
+    {
+        in.buf.buf_len = len;
+        in.buf.buf_val = (uint8_t *)buf;
+    }
+    in.flags = flags;
+
+    rcf_rpc_call(rpcs, "sendto", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(sendto, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: sendto(%d, %p, %u, %s, %p, %d) -> %d (%s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 s, buf, len, send_recv_flags_rpc2str(flags),
+                 to, tolen, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(sendto, out.retval);
+}
+
+ssize_t
 rpc_send(rcf_rpc_server *rpcs,
            int s, const void *buf, size_t len,
            rpc_send_recv_flags flags)
@@ -755,7 +801,9 @@ rpc_sendmsg(rcf_rpc_server *rpcs,
         }
         rpc_msg.msg_iovlen = msg->msg_iovlen;
 
-        sockaddr_input_h2rpc(msg->msg_name, &rpc_msg.msg_name);
+        rpc_msg.msg_namelen = msg->msg_namelen;
+        sockaddr_raw2rpc(msg->msg_name, msg->msg_rnamelen,
+                         &rpc_msg.msg_name);
 
         rpc_msg.msg_flags = (int)msg->msg_flags;
 
@@ -812,14 +860,16 @@ rpc_sendmsg(rcf_rpc_server *rpcs,
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(sendmsg, out.retval);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: sendmsg(%d, %p "
-                                    "(msg_name: %s, "
+                                    "(msg_name: %p, "
+                                "msg_namelen: %" TE_PRINTF_SOCKLEN_T "d, "
                                     " msg_iov: %p, msg_iovlen: %d,"
                                     " msg_control: %p, msg_controllen: %d,"
                                     " msg_flags: %s)"
          ", %s) -> %d (%s)",
          rpcs->ta, rpcs->name, rpcop2str(op),
          s, msg,
-         msg != NULL ? sockaddr_h2str(msg->msg_name) : NULL,
+         msg != NULL ? msg->msg_name : NULL,
+         msg != NULL ? msg->msg_namelen : NULL,
          msg != NULL ? msg->msg_iov : NULL,
          msg != NULL ? (int)msg->msg_iovlen : -1,
          msg != NULL ? msg->msg_control : NULL,
