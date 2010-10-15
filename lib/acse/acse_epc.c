@@ -53,6 +53,7 @@
 
 
 #define EPC_MMAP_AREA "/epc_mmap_area"
+#define EPC_MMAP_SIZE (128 * 1024)
 #define EPC_ACSE_SOCK "/tmp/epc_acse_sock"
 
 
@@ -236,7 +237,7 @@ acse_epc_open(const char *msg_sock_name, const char *shmem_name,
     VERB("%s(): sock_name = %s, shmem = %s, role = %d", 
         __FUNCTION__, msg_sock_name, shmem_name, (int)role);
 
-    epc_shmem_size = 32 * 1024;
+    epc_shmem_size = EPC_MMAP_SIZE;
 
     /* Create shared memory on the client, before EPC pipe connecting */
     if (role == ACSE_EPC_CLIENT)
@@ -389,6 +390,10 @@ acse_epc_send(const acse_epc_msg_t *user_message)
                 packed_len = epc_pack_response_data(buf, len, cwmp_data);
             if (packed_len < 0)
             {
+                /* TODO: if there is less mmap area size then necessary, 
+                  pass data via pipe. This would happen rarely, and 
+                  may be done via slow way. */
+                /* TODO 2: Do not fail ACSE totally if send failed? */
                 ERROR("%s(): pack data failed, not send", __FUNCTION__);
                 return TE_RC(TE_ACSE, TE_EFAIL);
             }
