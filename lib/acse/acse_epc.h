@@ -251,11 +251,11 @@ extern te_errno acse_epc_send(const acse_epc_msg_t *user_message);
  * user. Allocated block have size, stored in field @p length 
  * in the message, it may be used for boundary checks.
  *
- * @param user_message          Location for ptr to received message
+ * @param message          Location for received message
  *
  * @return status code 
  */
-extern te_errno acse_epc_recv(acse_epc_msg_t **user_message);
+extern te_errno acse_epc_recv(acse_epc_msg_t *message);
 
 
 /**

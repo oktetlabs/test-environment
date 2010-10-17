@@ -136,7 +136,7 @@ conf_acse_call(char const *oid, char const *acs, char const *cpe,
     te_errno    rc;
 
     acse_epc_msg_t          msg;
-    acse_epc_msg_t         *msg_resp;
+    acse_epc_msg_t          msg_resp;
     acse_epc_config_data_t  cfg_data;
     acse_cfg_level_t        level;
 
@@ -218,15 +218,14 @@ conf_acse_call(char const *oid, char const *acs, char const *cpe,
     rc = acse_epc_recv(&msg_resp);
     if (rc != 0)
     {
-        ERROR("EPC recv failed %r", rc);
+        ERROR("ACSE config: EPC recv failed %r", rc);
         return rc;
     }
 
-    *cfg_result = msg_resp->data.cfg;
-    if ((rc = msg_resp->status) != 0)
+    *cfg_result = msg_resp.data.cfg;
+    if ((rc = msg_resp.status) != 0)
         WARN("%s(): status of EPC operation %r", __FUNCTION__, rc);
 
-    free(msg_resp);
     return rc;
 }
 
@@ -930,7 +929,7 @@ cwmp_conn_req_util(const char *acs, const char *cpe,
                    acse_epc_cwmp_op_t op, int *request_id)
 {
     acse_epc_msg_t msg;
-    acse_epc_msg_t *msg_resp = NULL;
+    acse_epc_msg_t msg_resp;
     acse_epc_cwmp_data_t c_data;
 
     te_errno rc;
@@ -965,7 +964,7 @@ cwmp_conn_req_util(const char *acs, const char *cpe,
     if (rc != 0)
         ERROR("%s(): EPC recv failed %r", __FUNCTION__, rc);
 
-    out->status = msg_resp->status;
+    out->status = msg_resp.status;
 
     return 0;
 }
@@ -976,7 +975,7 @@ cwmp_conn_req(tarpc_cwmp_conn_req_in *in,
               tarpc_cwmp_conn_req_out *out)
 {
     acse_epc_msg_t msg;
-    acse_epc_msg_t *msg_resp = NULL;
+    acse_epc_msg_t msg_resp;
     acse_epc_cwmp_data_t c_data;
 
     te_errno rc;
@@ -1010,7 +1009,7 @@ cwmp_conn_req(tarpc_cwmp_conn_req_in *in,
     if (rc != 0)
         ERROR("%s(): EPC recv failed %r", __FUNCTION__, rc);
 
-    out->status = msg_resp->status;
+    out->status = msg_resp.status;
 
     return 0;
 }
@@ -1020,7 +1019,7 @@ cwmp_op_call(tarpc_cwmp_op_call_in *in,
              tarpc_cwmp_op_call_out *out)
 {
     acse_epc_msg_t msg;
-    acse_epc_msg_t *msg_resp = NULL;
+    acse_epc_msg_t msg_resp;
     acse_epc_cwmp_data_t c_data;
 
     te_errno rc;
@@ -1065,8 +1064,8 @@ cwmp_op_call(tarpc_cwmp_op_call_in *in,
     if (rc != 0)
         ERROR("%s(): EPC recv failed %r", __FUNCTION__, rc);
 
-    out->status = msg_resp->status;
-    out->request_id = msg_resp->data.cwmp->request_id;
+    out->status = msg_resp.status;
+    out->request_id = msg_resp.data.cwmp->request_id;
 
     return 0;
 }
@@ -1077,7 +1076,7 @@ cwmp_op_check(tarpc_cwmp_op_check_in *in,
               tarpc_cwmp_op_check_out *out)
 {
     acse_epc_msg_t msg;
-    acse_epc_msg_t *msg_resp = NULL;
+    acse_epc_msg_t msg_resp;
     acse_epc_cwmp_data_t c_data;
 
     te_errno rc;
@@ -1119,19 +1118,19 @@ cwmp_op_check(tarpc_cwmp_op_check_in *in,
     {
         ssize_t packed_len;
 
-        out->status = TE_RC(TE_ACSE, msg_resp->status);
-        INFO("%s(): status is %r", __FUNCTION__, msg_resp->status);
+        out->status = TE_RC(TE_ACSE, msg_resp.status);
+        INFO("%s(): status is %r", __FUNCTION__, msg_resp.status);
 
-        if (0 == msg_resp->status || TE_CWMP_FAULT == msg_resp->status)
+        if (0 == msg_resp.status || TE_CWMP_FAULT == msg_resp.status)
         { 
-            out->buf.buf_val = malloc(msg_resp->length);
-            out->buf.buf_len = msg_resp->length;
+            out->buf.buf_val = malloc(msg_resp.length);
+            out->buf.buf_len = msg_resp.length;
             packed_len = epc_pack_response_data(out->buf.buf_val, 
-                            msg_resp->length, msg_resp->data.cwmp);
+                            msg_resp.length, msg_resp.data.cwmp);
 #if 0 /* Debug print */
-            if (TE_CWMP_FAULT == msg_resp->status)
+            if (TE_CWMP_FAULT == msg_resp.status)
             {
-                _cwmp__Fault *f = msg_resp->data.cwmp->from_cpe.fault;
+                _cwmp__Fault *f = msg_resp.data.cwmp->from_cpe.fault;
                 RING("pass Fault %s (%s)", f->FaultCode, f->FaultString);
             }
 #endif
@@ -1141,10 +1140,10 @@ cwmp_op_check(tarpc_cwmp_op_check_in *in,
             out->buf.buf_val = NULL;
             out->buf.buf_len = 0;
         }
-        if (msg_resp->data.cwmp->rpc_cpe != CWMP_RPC_NONE)
-            out->cwmp_rpc = msg_resp->data.cwmp->rpc_cpe;
-        else if (msg_resp->data.cwmp->rpc_acs != CWMP_RPC_ACS_NONE)
-            out->cwmp_rpc = msg_resp->data.cwmp->rpc_acs;
+        if (msg_resp.data.cwmp->rpc_cpe != CWMP_RPC_NONE)
+            out->cwmp_rpc = msg_resp.data.cwmp->rpc_cpe;
+        else if (msg_resp.data.cwmp->rpc_acs != CWMP_RPC_ACS_NONE)
+            out->cwmp_rpc = msg_resp.data.cwmp->rpc_acs;
     }
 
     return 0;

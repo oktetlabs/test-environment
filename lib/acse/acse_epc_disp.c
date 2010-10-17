@@ -1013,8 +1013,8 @@ epc_before_poll(void *data, struct pollfd *pfd)
 te_errno
 epc_after_poll(void *data, struct pollfd *pfd)
 {
-    acse_epc_msg_t *msg;
-    te_errno        rc; 
+    acse_epc_msg_t msg;
+    te_errno       rc; 
 
     UNUSED(data);
 
@@ -1034,41 +1034,40 @@ epc_after_poll(void *data, struct pollfd *pfd)
 
         return TE_RC(TE_ACSE, rc);
     }
-    else if (msg == NULL || msg->data.p == NULL)
+    else if (msg.data.p == NULL)
     {
         ERROR("%s(): NULL in 'msg' after success 'epc_recv'", 
               __FUNCTION__);
         return TE_RC(TE_ACSE, TE_EFAIL);
     }
 
-    switch(msg->opcode)
+    switch(msg.opcode)
     {
         case EPC_CONFIG_CALL:
-            msg->status = acse_epc_config(msg->data.cfg);
-            msg->opcode = EPC_CONFIG_RESPONSE;
+            msg.status = acse_epc_config(msg.data.cfg);
+            msg.opcode = EPC_CONFIG_RESPONSE;
             break;
 
         case EPC_CWMP_CALL:
-            msg->status = acse_epc_cwmp(msg->data.cwmp);
-            msg->opcode = EPC_CWMP_RESPONSE;
+            msg.status = acse_epc_cwmp(msg.data.cwmp);
+            msg.opcode = EPC_CWMP_RESPONSE;
             break;
 
         default:
             ERROR("%s(): unexpected msg opcode 0x%x",
-                    __FUNCTION__, msg->opcode);
+                    __FUNCTION__, msg.opcode);
             return TE_RC(TE_ACSE, TE_EFAIL);
     }
 
     /* Now send response, all data prepared in specific calls above. */
-    rc = acse_epc_send(msg);
+    rc = acse_epc_send(&msg);
     VERB("%s(): send EPC response rc %r", __FUNCTION__, rc);
 
     /* Do NOT free cwmp params for RPC call operation - they are stored
        in queue, and will be free'd after recieve RPC response and 
        report about it. */
-    if (msg->opcode != EPC_CWMP_RESPONSE)
-        free(msg->data.p); 
-    free(msg);
+    if (msg.opcode != EPC_CWMP_RESPONSE)
+        free(msg.data.p); 
 
     if (rc != 0)
         ERROR("%s(): send EPC failed %r", __FUNCTION__, rc);

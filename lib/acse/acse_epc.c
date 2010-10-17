@@ -319,10 +319,12 @@ te_errno
 acse_epc_send(const acse_epc_msg_t *user_message)
 {
     ssize_t sendrc;
-    acse_epc_msg_t message = *user_message;
+    acse_epc_msg_t message;
 
     if (user_message == NULL || user_message->data.p == NULL)
         return TE_EINVAL;
+
+    message = *user_message;
     if (epc_socket == -1)
     {
         ERROR("Try send, but EPC is not initialized");
@@ -419,18 +421,17 @@ acse_epc_send(const acse_epc_msg_t *user_message)
 
 /* see description in acse_epc.h */
 te_errno
-acse_epc_recv(acse_epc_msg_t **user_message)
+acse_epc_recv(acse_epc_msg_t *message)
 {
     acse_epc_cwmp_data_t *cwmp_data;
     acse_epc_config_data_t *cfg_data;
-    acse_epc_msg_t message;
     ssize_t recvrc;
     te_errno rc = 0;
 
-    if (user_message == NULL)
+    if (message == NULL)
         return TE_EINVAL;
 
-    recvrc = recv(epc_socket, &message, sizeof(message), 0);
+    recvrc = recv(epc_socket, message, sizeof(*message), 0);
     if (recvrc < 0)
     {
         ERROR("%s(): recv failed , errno %d", __FUNCTION__, errno);
@@ -443,11 +444,11 @@ acse_epc_recv(acse_epc_msg_t **user_message)
         epc_socket = -1;
         return TE_ENOTCONN;
     }
-    if (recvrc != sizeof(message))
+    if (recvrc != sizeof(*message))
         ERROR("EPC recv: wrong recv rc %d", (int)recvrc);
     /* TODO with this error should be done something more serious */
 
-    switch (message.opcode) 
+    switch (message->opcode) 
     {/* check role */
         case EPC_CONFIG_CALL:
         case EPC_CWMP_CALL:
@@ -466,31 +467,31 @@ acse_epc_recv(acse_epc_msg_t **user_message)
             }
             break;
         default:
-            ERROR("Received EPC wrong opcode! %d", (int)message.opcode);
+            ERROR("Received EPC wrong opcode! %d", (int)message->opcode);
             return TE_EINVAL;
     }
 
     /* TODO check magic here */
 
-    message.data.p = malloc(message.length);
-    memcpy(message.data.p, epc_shmem, message.length);
+    message->data.p = malloc(message->length);
+    memcpy(message->data.p, epc_shmem, message->length);
 
-    cwmp_data = message.data.cwmp;
-    switch (message.opcode)
+    cwmp_data = message->data.cwmp;
+    switch (message->opcode)
     {
         case EPC_CWMP_CALL:
             rc = epc_unpack_call_data(cwmp_data->enc_start,
-                                      message.length, cwmp_data);
+                                      message->length, cwmp_data);
             break;
         case EPC_CWMP_RESPONSE:
-            if (0 == message.status || TE_CWMP_FAULT == message.status)
+            if (0 == message->status || TE_CWMP_FAULT == message->status)
                 rc = epc_unpack_response_data(cwmp_data->enc_start,
-                                              message.length, cwmp_data);
+                                              message->length, cwmp_data);
             break;
 
         case EPC_CONFIG_CALL:
         case EPC_CONFIG_RESPONSE:
-            cfg_data = message.data.cfg;
+            cfg_data = message->data.cfg;
 
 #if 0 /* Debug printf.. */
             if (cfg_data->value[0])
@@ -512,15 +513,13 @@ acse_epc_recv(acse_epc_msg_t **user_message)
             {
                 ERROR("EPC: wrong magic for config message: 0x%x",
                      (int)cfg_data->op.magic);
-                free(message.data.p);
+                free(message->data.p);
                 return TE_RC(TE_ACSE, TE_EFAIL);
             }
             VERB("%s(): recv cfg msg, cfg_data %p, value '%s', msglen %u", 
-                 __FUNCTION__, cfg_data, cfg_data->value, message.length);
+                 __FUNCTION__, cfg_data, cfg_data->value, message->length);
             break;
     }
-    *user_message = malloc(sizeof(acse_epc_msg_t));
-    memcpy(*user_message, &message, sizeof(message));
     return rc;
 }
 
