@@ -343,6 +343,7 @@ typedef enum {
     TE_TAD_BPF,         /**< TAD Ethernet using BPF */
     TE_TRC,             /**< Testing Results Comparator library */
     TE_ACSE,            /**< ACS Emulator */
+    TE_TA_ACSE,         /**< TA interface to ACS Emulator */
 } te_module;                             
 /*@}*/
 
@@ -431,6 +432,7 @@ te_rc_mod2str(te_errno err)
         MOD2STR(TOOL_EXT);
         MOD2STR(TRC);
         MOD2STR(ACSE);
+        MOD2STR(TA_ACSE);
         case 0: return "";
         default:
             snprintf(unknown_module, sizeof(unknown_module),

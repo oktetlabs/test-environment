@@ -74,15 +74,6 @@
 #include "cwmp_data.h"
 
 
-
-#if 0
-/** The ACSE instance */
-static struct {
-    pid_t     pid;         /**< ACSE process ID                         */
-} acse_inst = { .pid = -1, .params = NULL, .params_size = 0,
-                .sock = -1, .acse = 0 };
-#endif
-
 /** Process ID of ACSE */
 static pid_t acse_pid = -1;
 
@@ -96,12 +87,8 @@ const char *epc_mmap_area = NULL;
 const char *epc_acse_sock = NULL;
 
 /* Methods forward declarations */
-
-static te_errno prepare_params(acse_epc_config_data_t *config_params,
-                               char const *oid,
-                               char const *acs, char const *cpe);
-
 static te_errno stop_acse(void);
+static te_errno start_acse(void);
 
 /**
  * Determines whether ACSE is started and link to it is initialized.
@@ -119,115 +106,7 @@ acse_value(void)
 #endif
 }
 
-/**
- * Perform EPC configuration method and wait for result, 
- * which should come ASAP. 
- * Note: here is hardcoded timeout to wait response. 
- * TODO: think, maybe, make this timeout configurable?
- *
- * @return              Status code
- */
-te_errno
-conf_acse_call(char const *oid, char const *acs, char const *cpe,
-               const char *value,
-               acse_cfg_op_t fun,
-               acse_epc_config_data_t **cfg_result)
-{
-    te_errno    rc;
 
-    acse_epc_msg_t          msg;
-    acse_epc_msg_t          msg_resp;
-    acse_epc_config_data_t  cfg_data;
-    acse_cfg_level_t        level;
-
-    if (!acse_value())
-        return TE_ENOTCONN;
-
-    if (NULL == cfg_result)
-        return TE_EINVAL;
-
-    if (EPC_CFG_MODIFY == fun && NULL == value)
-        return TE_EINVAL;
-
-    memset(&cfg_data, 0, sizeof(cfg_data));
-
-    if (EPC_CFG_LIST == fun)
-    {
-        if (acs != NULL && acs[0]) /* check is there ACS label */
-            level = EPC_CFG_CPE; /* ACS specified, get list of its CPE */
-        else
-            level = EPC_CFG_ACS; /* ACS not specified, get list of ACS */
-    }
-    else
-    {
-        if (cpe != NULL && cpe[0]) /* check is there CPE label */
-            level = EPC_CFG_CPE; 
-        else
-            level = EPC_CFG_ACS;
-    }
-    msg.opcode = EPC_CONFIG_CALL;
-    msg.data.cfg = &cfg_data;
-    msg.length = sizeof(cfg_data);
-    msg.status = 0;
-
-    cfg_data.op.magic = EPC_CONFIG_MAGIC;
-    cfg_data.op.level = level;
-    cfg_data.op.fun = fun;
-
-    rc = prepare_params(&cfg_data, oid, acs, cpe);
-    if (rc != 0)
-    {
-        ERROR("wrong labels passed to ACSE configurator subtree");
-        return rc;
-    }
-
-    if (EPC_CFG_MODIFY == fun)
-        strncpy(cfg_data.value, value, sizeof(cfg_data.value));
-    else
-        cfg_data.value[0] = '\0';
-
-    rc = acse_epc_send(&msg);
-    VERB("EPC send rc %r", rc);
-
-    {
-        int             epc_socket = acse_epc_socket();
-#if 0
-        struct timespec epc_ts = {0, 300000000}; /* 300 ms */
-#else
-        struct timespec epc_ts = {2, 0}; /* 2 sec */
-#endif
-        struct pollfd   pfd = {0, POLLIN, 0};
-        int             pollrc;
-
-        pfd.fd = epc_socket;
-        pollrc = ppoll(&pfd, 1, &epc_ts, NULL);
-        if (pollrc < 0)
-        {
-            int saved_errno = errno;
-            ERROR("poll on EPC socket failed, sys errno: %s",
-                    strerror(saved_errno));
-            return TE_OS_RC(TE_TA_UNIX, saved_errno);
-        }
-        if (pollrc == 0)
-        {
-            ERROR("config EPC operation timed out");
-            return TE_RC(TE_TA_UNIX, TE_ETIMEDOUT);
-        }
-    }
-
-    rc = acse_epc_recv(&msg_resp);
-    if (rc != 0)
-    {
-        ERROR("ACSE config: EPC recv failed %r", rc);
-        return rc;
-    }
-
-    *cfg_result = msg_resp.data.cfg;
-    if ((rc = msg_resp.status) != 0)
-        WARN("%s(): status of EPC operation %r", __FUNCTION__, rc);
-
-    return rc;
-}
 
 /**
  * Initializes the list of instances to be empty.
@@ -249,62 +128,6 @@ empty_list(char **list)
 }
 
 
-/**
- * Initializes acse params substructure with the supplied parameters.
- *
- * @param gid           Group identifier
- * @param oid           Object identifier
- * @param acs           Name of the acs instance
- * @param cpe           Name of the cpe instance
- *
- * @return              Status code
- */
-static te_errno
-prepare_params(acse_epc_config_data_t *config_params,
-               char const *oid,
-               char const *acs, char const *cpe)
-{
-    if (oid != NULL)
-    {
-        const char *last_label = rindex(oid, '/');
-        unsigned i;
-
-        if (NULL == last_label)
-            last_label = oid;
-        else 
-            last_label++; /* shift to the label begin */
-        if (strlen(last_label) >= sizeof(config_params->oid))
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-        for (i = 0; last_label[i] != '\0' && last_label[i] != ':'; i++)
-            config_params->oid[i] = last_label[i];
-        config_params->oid[i] = '\0';
-    }
-    else
-        config_params->oid[0] = '\0';
-
-    if (acs != NULL)
-    {
-        if (strlen(acs) >= sizeof(config_params->acs))
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-        strcpy(config_params->acs, acs);
-    }
-    else
-        config_params->acs[0] = '\0';
-
-    if (cpe != NULL)
-    {
-        if (strlen(cpe) >= sizeof(config_params->cpe))
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-        strcpy(config_params->cpe, cpe);
-    }
-    else
-        config_params->cpe[0] = '\0';
-
-    return 0;
-}
 
 /**
  * Perform ACSE Config Get operation via EPC interface.
@@ -329,7 +152,7 @@ cfg_call_get(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(acse);
 
-    rc = conf_acse_call(oid, acs, cpe, NULL, EPC_CFG_OBTAIN, &cfg_result);
+    rc = acse_conf_op(oid, acs, cpe, NULL, EPC_CFG_OBTAIN, &cfg_result);
 
     if (TE_ENOTCONN == rc)
     { /* There is no connection with ACSE, cfg_result was not allocated. */
@@ -379,7 +202,7 @@ cfg_call_set(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(acse);
 
-    rc = conf_acse_call(oid, acs, cpe, value, EPC_CFG_MODIFY, &cfg_result);
+    rc = acse_conf_op(oid, acs, cpe, value, EPC_CFG_MODIFY, &cfg_result);
     if (rc != 0)
     {
         WARN("ACSE config EPC failed %r", rc);
@@ -415,8 +238,8 @@ call_list(char **list, char const *acs)
     if (!acse_value())
         return empty_list(list);
 
-    rc = conf_acse_call(NULL, acs, NULL, NULL, EPC_CFG_LIST, &cfg_result);
-    if (rc == 0)
+    rc = acse_conf_op(NULL, acs, NULL, NULL, EPC_CFG_LIST, &cfg_result);
+    if (0 == rc && list != NULL)
         *list = strdup(cfg_result->list);
 
     return rc;
@@ -446,7 +269,7 @@ acs_cpe_add(unsigned int gid, char const *oid,
     UNUSED(gid);
     UNUSED(acse);
 
-    rc = conf_acse_call(oid, acs, cpe, value, EPC_CFG_ADD, &cfg_result);
+    rc = acse_conf_op(oid, acs, cpe, value, EPC_CFG_ADD, &cfg_result);
 
     free(cfg_result);
 
@@ -474,7 +297,7 @@ acs_cpe_del(unsigned int gid, char const *oid,
     UNUSED(gid);
     UNUSED(acse);
 
-    rc = conf_acse_call(oid, acs, cpe, NULL, EPC_CFG_DEL, &cfg_result);
+    rc = acse_conf_op(oid, acs, cpe, NULL, EPC_CFG_DEL, &cfg_result);
     free(cfg_result);
 
     return rc;
@@ -524,7 +347,7 @@ acse_acs_add(unsigned int gid, char const *oid,
     UNUSED(gid);
     UNUSED(acse);
 
-    rc = conf_acse_call(oid, acs, NULL, value, EPC_CFG_ADD, &cfg_result);
+    rc = acse_conf_op(oid, acs, NULL, value, EPC_CFG_ADD, &cfg_result);
 
     free(cfg_result);
 
@@ -550,7 +373,7 @@ acse_acs_del(unsigned int gid, char const *oid,
     UNUSED(gid);
     UNUSED(acse);
 
-    rc = conf_acse_call(oid, acs, NULL, NULL, EPC_CFG_DEL, &cfg_result);
+    rc = acse_conf_op(oid, acs, NULL, NULL, EPC_CFG_DEL, &cfg_result);
 
     free(cfg_result);
 
@@ -677,55 +500,9 @@ start_acse(void)
 
     if (need_atexit)
     {
-        atexit(&stop_acse);
+        atexit(stop_acse);
     }
     
-#if 0
-    if (p != NULL)
-    {
-        memset(p, 0, size);
-
-        if ((sock_acse = unix_socket(lrpc_acse_sock, NULL)) != -1)
-        {
-            if ((sock_ta = unix_socket(lrpc_ta_sock, lrpc_acse_sock)) != -1)
-            {
-                switch (acse_inst.pid = fork())
-                {
-                    case -1:
-                        rc = TE_OS_RC(TE_TA_UNIX, errno);
-                        ERROR("%s: fork() failed: %r",
-                              __FUNCTION__, rc);
-                        close(sock_ta);
-                        close(sock_acse);
-                        break;
-                    case 0:
-                        rcf_pch_detach();
-                        setpgid(0, 0);
-                        logfork_register_user("ACSE");
-                        close(sock_ta);
-                        acse_loop(p, sock_acse);
-                        close(sock_acse);
-                        munmap(acse_inst.params,
-                               acse_inst.params_size);
-                        exit(0);
-                    default:
-                        acse_inst.params = p;
-                        acse_inst.params_size = size;
-                        acse_inst.acse = 1;
-                        acse_inst.sock = sock_ta;
-                        close(sock_acse);
-                        break;
-                }
-            }
-            else
-                rc = TE_OS_RC(TE_TA_UNIX, errno);
-        }
-        else
-            rc = TE_OS_RC(TE_TA_UNIX, errno);
-    }
-    else
-        rc = TE_OS_RC(TE_TA_UNIX, errno);
-#endif
 
     return rc;
 }
@@ -918,7 +695,7 @@ RCF_PCH_CFG_NODE_RW(node_acse, "acse",
  * @return Status code (see te_errno.h)
  */
 te_errno
-ta_unix_conf_acse_init()
+ta_unix_conf_acse_init(void)
 {
     return rcf_pch_add_node("/agent", &node_acse);
 }
@@ -974,10 +751,6 @@ int
 cwmp_conn_req(tarpc_cwmp_conn_req_in *in,
               tarpc_cwmp_conn_req_out *out)
 {
-    acse_epc_msg_t msg;
-    acse_epc_msg_t msg_resp;
-    acse_epc_cwmp_data_t c_data;
-
     te_errno rc;
 
     if (!acse_value())
@@ -986,30 +759,15 @@ cwmp_conn_req(tarpc_cwmp_conn_req_in *in,
         return -1;
     }
 
+
     INFO("Issue CWMP Connection Request to %s/%s ", 
          in->acs_name, in->cpe_name);
 
-    msg.opcode = EPC_CWMP_CALL;
-    msg.data.cwmp = &c_data;
-    msg.length = sizeof(c_data);
-    msg.status = 0;
+    rc = acse_cwmp_connreq(in->acs_name, in->cpe_name);
+    if (rc)
+        RING("issue CWMP ConnReq failed %r", rc);
 
-    memset(&c_data, 0, sizeof(c_data));
-
-    c_data.op = EPC_CONN_REQ ;
-        
-    strcpy(c_data.acs, in->acs_name);
-    strcpy(c_data.cpe, in->cpe_name);
-        
-    rc = acse_epc_send(&msg);
-    if (rc != 0)
-        ERROR("%s(): EPC send failed %r", __FUNCTION__, rc);
-
-    rc = acse_epc_recv(&msg_resp);
-    if (rc != 0)
-        ERROR("%s(): EPC recv failed %r", __FUNCTION__, rc);
-
-    out->status = msg_resp.status;
+    out->status = rc;
 
     return 0;
 }
@@ -1018,36 +776,23 @@ int
 cwmp_op_call(tarpc_cwmp_op_call_in *in,
              tarpc_cwmp_op_call_out *out)
 {
-    acse_epc_msg_t msg;
-    acse_epc_msg_t msg_resp;
-    acse_epc_cwmp_data_t c_data;
-
-    te_errno rc;
+    te_errno rc, status;
+    acse_epc_cwmp_data_t *cwmp_data = NULL;
 
     if (!acse_value())
-    {
         return -1;
-    }
 
     INFO("cwmp RPC %s to %s/%s called", 
          cwmp_rpc_cpe_string(in->cwmp_rpc), in->acs_name, in->cpe_name);
 
-    msg.opcode = EPC_CWMP_CALL;
-    msg.data.cwmp = &c_data;
-    msg.length = sizeof(c_data);
-    msg.status = 0;
+    rc = acse_cwmp_prepare(in->acs_name, in->cpe_name,
+                           EPC_RPC_CALL, &cwmp_data);
+    cwmp_data->rpc_cpe = in->cwmp_rpc; 
 
-    memset(&c_data, 0, sizeof(c_data));
-
-    c_data.op = EPC_RPC_CALL ;
-    strcpy(c_data.acs, in->acs_name);
-    strcpy(c_data.cpe, in->cpe_name);
-        
-    c_data.rpc_cpe = in->cwmp_rpc; 
     if (in->buf.buf_len > 0)
     {
         rc = epc_unpack_call_data(in->buf.buf_val, in->buf.buf_len,
-                                    &c_data);
+                                    cwmp_data);
         if (rc != 0)
         {
             ERROR("%s(): unpack cwmp data failed %r", __FUNCTION__, rc);
@@ -1056,16 +801,17 @@ cwmp_op_call(tarpc_cwmp_op_call_in *in,
         }
     }
 
-    rc = acse_epc_send(&msg);
-    if (rc != 0)
-        ERROR("%s(): EPC send failed %r", __FUNCTION__, rc);
-
-    rc = acse_epc_recv(&msg_resp);
-    if (rc != 0)
-        ERROR("%s(): EPC recv failed %r", __FUNCTION__, rc);
-
-    out->status = msg_resp.status;
-    out->request_id = msg_resp.data.cwmp->request_id;
+    rc = acse_cwmp_call(&status, NULL, &cwmp_data);
+    if (0 != rc)
+    {
+        ERROR("%s(): ACSE call failed %r", __FUNCTION__, rc);
+        out->status = TE_RC(TE_TA_ACSE, rc);
+    }
+    else
+    { 
+        out->request_id = cwmp_data->request_id;
+        out->status = TE_RC(TE_ACSE, status);
+    }
 
     return 0;
 }
@@ -1075,62 +821,47 @@ int
 cwmp_op_check(tarpc_cwmp_op_check_in *in,
               tarpc_cwmp_op_check_out *out)
 {
-    acse_epc_msg_t msg;
-    acse_epc_msg_t msg_resp;
-    acse_epc_cwmp_data_t c_data;
-
-    te_errno rc;
+    te_errno rc, status;
+    acse_epc_cwmp_data_t *cwmp_data = NULL;
+    size_t d_len;
 
     if (!acse_value())
-    {
         return -1;
-    }
 
     INFO("cwmp check operation No %d (rpc %s) to %s/%s called ", 
          (int)in->request_id, 
          cwmp_rpc_cpe_string(in->cwmp_rpc), in->acs_name, in->cpe_name);
 
-    msg.opcode = EPC_CWMP_CALL;
-    msg.data.cwmp = &c_data;
-    msg.length = sizeof(c_data);
-    msg.status = 0;
+    rc = acse_cwmp_prepare(in->acs_name, in->cpe_name,
+                           EPC_RPC_CHECK, &cwmp_data);
+    cwmp_data->request_id = in->request_id;
 
-    memset(&c_data, 0, sizeof(c_data));
-
-    c_data.op = EPC_RPC_CHECK;
-    strcpy(c_data.acs, in->acs_name);
-    strcpy(c_data.cpe, in->cpe_name);
-    c_data.request_id = in->request_id;
     if (in->cwmp_rpc != CWMP_RPC_ACS_NONE)
-        c_data.rpc_acs = in->cwmp_rpc;
+        cwmp_data->rpc_acs = in->cwmp_rpc;
 
-    rc = acse_epc_send(&msg);
-    if (rc != 0)
-        ERROR("%s(): EPC send failed %r", __FUNCTION__, rc);
-
-    rc = acse_epc_recv(&msg_resp);
+    rc = acse_cwmp_call(&status, &d_len, &cwmp_data);
     if (rc != 0)
     {
         ERROR("%s(): EPC recv failed %r", __FUNCTION__, rc);
-        out->status = TE_RC(TE_TA_UNIX, rc);
+        out->status = TE_RC(TE_TA_ACSE, rc);
     }
     else
     {
         ssize_t packed_len;
 
-        out->status = TE_RC(TE_ACSE, msg_resp.status);
-        INFO("%s(): status is %r", __FUNCTION__, msg_resp.status);
+        out->status = TE_RC(TE_ACSE, status);
+        INFO("%s(): status is %r", __FUNCTION__, status);
 
-        if (0 == msg_resp.status || TE_CWMP_FAULT == msg_resp.status)
+        if (0 == status || TE_CWMP_FAULT == status)
         { 
-            out->buf.buf_val = malloc(msg_resp.length);
-            out->buf.buf_len = msg_resp.length;
+            out->buf.buf_val = malloc(d_len);
+            out->buf.buf_len = d_len;
             packed_len = epc_pack_response_data(out->buf.buf_val, 
-                            msg_resp.length, msg_resp.data.cwmp);
+                                                d_len, cwmp_data);
 #if 0 /* Debug print */
             if (TE_CWMP_FAULT == msg_resp.status)
             {
-                _cwmp__Fault *f = msg_resp.data.cwmp->from_cpe.fault;
+                _cwmp__Fault *f = cwmp_data->from_cpe.fault;
                 RING("pass Fault %s (%s)", f->FaultCode, f->FaultString);
             }
 #endif
@@ -1140,10 +871,10 @@ cwmp_op_check(tarpc_cwmp_op_check_in *in,
             out->buf.buf_val = NULL;
             out->buf.buf_len = 0;
         }
-        if (msg_resp.data.cwmp->rpc_cpe != CWMP_RPC_NONE)
-            out->cwmp_rpc = msg_resp.data.cwmp->rpc_cpe;
-        else if (msg_resp.data.cwmp->rpc_acs != CWMP_RPC_ACS_NONE)
-            out->cwmp_rpc = msg_resp.data.cwmp->rpc_acs;
+        if (cwmp_data->rpc_cpe != CWMP_RPC_NONE)
+            out->cwmp_rpc = cwmp_data->rpc_cpe;
+        else if (cwmp_data->rpc_acs != CWMP_RPC_ACS_NONE)
+            out->cwmp_rpc = cwmp_data->rpc_acs;
     }
 
     return 0;
