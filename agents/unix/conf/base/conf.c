@@ -249,6 +249,10 @@ extern te_errno iscsi_initiator_conf_init();
 extern te_errno ta_unix_conf_iptables_init();
 #endif
 
+#ifdef WITH_TR069_SUPPORT
+extern te_errno ta_unix_conf_acse_init();
+#endif
+
 extern te_errno ta_unix_conf_sys_init();
 extern te_errno ta_unix_conf_phy_init();
 
