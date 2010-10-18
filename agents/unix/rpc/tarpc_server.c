@@ -2913,10 +2913,13 @@ TARPC_FUNC(sendmsg,
         if (rpc_msg->msg_namelen <= sizeof(struct sockaddr_storage))
         {
             msg.msg_name = name;
+            msg.msg_namelen = namelen;
         }
         else
+        {
             msg.msg_name = rpc_msg->msg_name.raw.raw_val;
-        msg.msg_namelen = rpc_msg->msg_namelen;
+            msg.msg_namelen = rpc_msg->msg_namelen;
+        }
 
         msg.msg_iovlen = rpc_msg->msg_iovlen;
 

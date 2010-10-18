@@ -801,9 +801,14 @@ rpc_sendmsg(rcf_rpc_server *rpcs,
         }
         rpc_msg.msg_iovlen = msg->msg_iovlen;
 
-        rpc_msg.msg_namelen = msg->msg_namelen;
-        sockaddr_raw2rpc(msg->msg_name, msg->msg_rnamelen,
-                         &rpc_msg.msg_name);
+        if (msg->msg_namelen <= sizeof(struct sockaddr_storage))
+            sockaddr_input_h2rpc(msg->msg_name, &rpc_msg.msg_name);
+        else
+        {
+            rpc_msg.msg_namelen = msg->msg_namelen;
+            sockaddr_raw2rpc(msg->msg_name, msg->msg_rnamelen,
+                             &rpc_msg.msg_name);
+        }
 
         rpc_msg.msg_flags = (int)msg->msg_flags;
 
@@ -869,7 +874,7 @@ rpc_sendmsg(rcf_rpc_server *rpcs,
          rpcs->ta, rpcs->name, rpcop2str(op),
          s, msg,
          msg != NULL ? msg->msg_name : NULL,
-         msg != NULL ? msg->msg_namelen : NULL,
+         msg != NULL ? msg->msg_namelen : -1,
          msg != NULL ? msg->msg_iov : NULL,
          msg != NULL ? (int)msg->msg_iovlen : -1,
          msg != NULL ? msg->msg_control : NULL,
