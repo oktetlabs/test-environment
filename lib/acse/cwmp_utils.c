@@ -105,7 +105,7 @@ string_array_t *
 cwmp_str_array_alloc(const char *b_name, const char *first_name, ...)
 {
     va_list         ap;
-    te_errno        rc; 
+    te_errno        rc = 0; 
     string_array_t *ret;
 
     if (NULL == (ret = malloc(sizeof(*ret))))
@@ -113,11 +113,10 @@ cwmp_str_array_alloc(const char *b_name, const char *first_name, ...)
     ret->items = NULL;
     ret->size = 0;
 
-    if (NULL == b_name || NULL == first_name)
-        return ret;
 
     va_start(ap, first_name);
-    rc = cwmp_str_array_add_va(ret, b_name, first_name, ap);
+    if (NULL != b_name && NULL != first_name)
+        rc = cwmp_str_array_add_va(ret, b_name, first_name, ap);
     va_end(ap);
     if (rc != 0)
     {
@@ -306,18 +305,18 @@ cwmp_val_array_add_va(cwmp_values_array_t *a,
 cwmp_values_array_t *
 cwmp_val_array_alloc(const char *b_name, const char *first_name, ...)
 {
-    va_list         ap;
-    te_errno        rc; 
+    va_list   ap;
+    te_errno  rc = 0; 
 
     cwmp_values_array_t *ret;
-
-    if (NULL == b_name || NULL == first_name)
-        return NULL;
 
     if (NULL == (ret = malloc(sizeof(*ret))))
         return NULL;
     ret->items = NULL;
     ret->size = 0;
+
+    if (NULL == b_name || NULL == first_name)
+        return ret;
 
     va_start(ap, first_name);
     rc = cwmp_val_array_add_va(ret, b_name, first_name, ap);
@@ -710,32 +709,39 @@ snprint_ParamValueStruct(char *buf, size_t len,
     return p - buf;
 }
 
+size_t
+snprint_cwmpFault(char *buf, size_t len, _cwmp__Fault *f)
+{
+    char *p = buf;
+
+    p += snprintf(p, len - (p - buf),
+                  "CWMP Fault: %s (%s)", f->FaultCode, f->FaultString);
+    if (f->__sizeSetParameterValuesFault > 0)
+    {
+        int i;
+        p += snprintf(p, len - (p - buf), "; Set details:");
+        for (i = 0; i < f->__sizeSetParameterValuesFault; i++)
+        {
+            struct _cwmp__Fault_SetParameterValuesFault *p_v_f = 
+                                        &(f->SetParameterValuesFault[i]);
+            p += snprintf(p, len - (p - buf), 
+                          "\n\tparam[%d], name %s, fault %s(%s);",
+                          i, p_v_f->ParameterName,
+                          p_v_f->FaultCode,
+                          p_v_f->FaultString);
+        }
+    }
+    p += snprintf(p, len - (p - buf), "\n");
+    return p - buf;
+}
+
 #define BUF_LOG_SIZE 32768
 static char buf_log[BUF_LOG_SIZE];
 
 void
 tapi_acse_log_fault(_cwmp__Fault *f)
 {
-    char *p = buf_log;
-
-    p += snprintf(p, BUF_LOG_SIZE - (p - buf_log), 
-                  "CWMP Fault: %s (%s)", f->FaultCode, f->FaultString);
-    if (f->__sizeSetParameterValuesFault > 0)
-    {
-        int i;
-        p += snprintf(p, BUF_LOG_SIZE - (p - buf_log), 
-                      "; Set details: ");
-        for (i = 0; i < f->__sizeSetParameterValuesFault; i++)
-        {
-            struct _cwmp__Fault_SetParameterValuesFault *p_v_f = 
-                                        &(f->SetParameterValuesFault[i]);
-            p += snprintf(p, BUF_LOG_SIZE - (p - buf_log), 
-                          "param[%d], name %s, fault %s(%s)",
-                          i, p_v_f->ParameterName,
-                          p_v_f->FaultCode,
-                          p_v_f->FaultString);
-        }
-    }
+    snprint_cwmpFault(buf_log, BUF_LOG_SIZE, f);
     WARN(buf_log);
     buf_log[0] = '\0';
 }

@@ -25,8 +25,8 @@
  *
  * $Id$
  */
-#ifndef __TE_LIB_ACSE_INTERNAL_H__
-#define __TE_LIB_ACSE_INTERNAL_H__
+#ifndef __TE_LIB_ACSE_USER_H__
+#define __TE_LIB_ACSE_USER_H__
 #include "te_config.h"
 
 #include "te_cwmp.h"
@@ -72,6 +72,33 @@ extern te_errno acse_conf_op(const char *acs, const char *cpe,
                              const char *oid,
                              const char *value, acse_cfg_op_t fun,
                              acse_epc_config_data_t **cfg_result);
+/**
+ * Prepare internal data for send EPC config operation ACSE.
+ * This function MUST be called before acse_conf_call(). 
+ *
+ * @param fun           Code of ACSE config operation
+ * @param cfg_data      Location for pointer to operation-specific data,
+ *                      to be filled by user specifically.
+ *                      It will points to the static memory area,
+ *                      and should NOT never be freed.
+ *                      May be NULL.
+ *
+ * @return              Local execution status code
+ */
+extern te_errno acse_conf_prepare(acse_cfg_op_t fun,
+                                  acse_epc_config_data_t **cfg_data);
+
+/**
+ * Prepare internal data for send EPC config operation ACSE.
+ * This function MUST be called before acse_conf_call(). 
+ *
+ * @param cfg_result    Location for pointer to result of config operation,
+ *                      it will points to the static memory area,
+ *                      and should NOT be freed.
+ *
+ * @return              Local execution status code
+ */
+extern te_errno acse_conf_call(acse_epc_config_data_t **cfg_result);
 
 /**
  * Prepare internal data for send CWMP operation request to ACSE.
@@ -117,7 +144,8 @@ extern te_errno acse_cwmp_call(te_errno *status, size_t *data_len,
  *
  * @return              status code
  */
-extern te_errno acse_cwmp_connreq(const char *acs, const char *cpe);
+extern te_errno acse_cwmp_connreq(const char *acs, const char *cpe,
+                                  acse_epc_cwmp_data_t **cwmp_data);
 
 /**
  * Call CWMP CPE RPC operation.
@@ -154,4 +182,4 @@ extern te_errno acse_cwmp_rpc_check(const char *acs, const char *cpe,
 extern te_errno acse_send_set_parameter_values(int *request_id,
                                                ...);
 
-#endif /* __TE_LIB_ACSE_INTERNAL_H__ */
+#endif /* __TE_LIB_ACSE_USER_H__ */

@@ -730,7 +730,9 @@ cwmp_accept_cpe_connection(acs_t *acs, int socket)
         len = recv(socket, buf, len, MSG_PEEK);
         if (strncmp(buf, "POST ", 5)) 
             return TE_ECONNREFUSED; /* It is not POST request */
-        if (strncmp(buf + 5, acs->url, strlen(acs->url))) 
+        /* without any URL specified we accept all connections */
+        if (acs->url != NULL &&
+            strncmp(buf + 5, acs->url, strlen(acs->url))) 
             return TE_ECONNREFUSED; /* It is not our URL */
     }
 

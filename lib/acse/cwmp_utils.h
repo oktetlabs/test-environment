@@ -396,4 +396,6 @@ extern size_t snprint_ParamValueStruct(char *buf, size_t len,
  */
 extern void tapi_acse_log_fault(_cwmp__Fault *fault); 
 
+extern size_t snprint_cwmpFault(char *buf, size_t len, _cwmp__Fault *fault);
+
 #endif /* __TE_CWMP_UTILS__H__*/

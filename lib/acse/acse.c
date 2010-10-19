@@ -136,7 +136,7 @@ acse_loop(void)
 
         if (r_poll == -1)
         {
-            perror("poll failed");
+            perror("ACSE loop: poll failed");
             /* TODO something? */
             break;
         }

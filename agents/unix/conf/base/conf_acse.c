@@ -763,7 +763,7 @@ cwmp_conn_req(tarpc_cwmp_conn_req_in *in,
     INFO("Issue CWMP Connection Request to %s/%s ", 
          in->acs_name, in->cpe_name);
 
-    rc = acse_cwmp_connreq(in->acs_name, in->cpe_name);
+    rc = acse_cwmp_connreq(in->acs_name, in->cpe_name, NULL);
     if (rc)
         RING("issue CWMP ConnReq failed %r", rc);
 
