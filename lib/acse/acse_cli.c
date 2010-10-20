@@ -85,6 +85,7 @@ cwmp_val_type_s2i(const char *type_name)
     switch (type_name[0])
     {
         case 'i': return SOAP_TYPE_int;
+        case 'u': return SOAP_TYPE_unsignedInt;
         case 'b': return SOAP_TYPE_boolean;
         case 's': return SOAP_TYPE_string;
         case 't': return SOAP_TYPE_time;
@@ -177,6 +178,7 @@ parse_cwmp_rpc_args(acse_epc_cwmp_data_t *cwmp_data, const char *line)
     switch(cwmp_data->rpc_cpe)
     {
         case CWMP_RPC_get_rpc_methods:
+        case CWMP_RPC_NONE:
             cwmp_data->to_cpe.p = NULL;
             break;
         case CWMP_RPC_set_parameter_values: 
@@ -436,6 +438,8 @@ static cli_cmd_descr_t cmd_param_lev[] = {
 };
 
 static cli_cmd_descr_t cmd_rpc_cpe_kinds[] = {
+    {"fin",          CWMP_RPC_NONE, "HTTP 204, finish CWMP session",
+                                NULL, NULL},
     {"get_rpc_m",    CWMP_RPC_get_rpc_methods, "GetRPCMethods", NULL, NULL},
     {"get_par_vals", CWMP_RPC_get_parameter_values, 
                     "GetParameterValues", NULL, NULL},
@@ -905,12 +909,14 @@ print_cwmp_response(te_errno status, acse_epc_cwmp_data_t *cwmp_resp)
                 te_rc_err2str(status));
         if (0 == status)
             print_rpc_response(cwmp_resp);
-        else if (TE_CWMP_FAULT == TE_RC_GET_ERROR(status))
+        if (TE_CWMP_FAULT == TE_RC_GET_ERROR(status))
         {
 #define FAULT_BUF_SIZE 0x8000
             char *fault_buf = malloc(FAULT_BUF_SIZE);
             snprint_cwmpFault(fault_buf, FAULT_BUF_SIZE,
                               cwmp_resp->from_cpe.fault);
+            printf("%s\n", fault_buf);
+            free(fault_buf);
         }
         break;
     case EPC_GET_INFORM:
