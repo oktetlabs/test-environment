@@ -14,3 +14,10 @@ waitpid
 te_shell_cmd
 getsockname
 poll
+aio_read
+aio_error
+aio_return
+aio_write
+aio_suspend
+aio_cancel
+lio_listio
