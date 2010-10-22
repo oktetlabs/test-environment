@@ -182,6 +182,7 @@ conn_register_acs(acs_t *acs)
     new_conn = malloc(sizeof(*new_conn));
     do 
     {
+        int opt;
         channel_t *new_ch; 
 
         new_conn->socket =
@@ -191,6 +192,15 @@ conn_register_acs(acs_t *acs)
             ERROR("%s(): fail new socket", __FUNCTION__);
             break;
         }
+
+        opt = 1;
+        if (setsockopt(new_conn->socket, SOL_SOCKET, SO_REUSEADDR, 
+                       (void *)&opt, sizeof(opt)) != 0)
+        {
+            ERROR("%s(): fail sockopt SO_REUSEADDR", __FUNCTION__);
+            break;
+        }
+
 
         if (bind(new_conn->socket, acs->addr_listen, acs->addr_len) < 0)
         {
