@@ -258,6 +258,22 @@ extern void cwmp_val_array_free(cwmp_values_array_t *a);
 extern te_errno cwmp_val_array_log(unsigned log_level, const char *intro,
                                    cwmp_values_array_t *a);
 
+
+static inline int
+cwmp_val_type_s2i(const char *type_name)
+{
+    switch (type_name[0])
+    {
+        case 'i': return SOAP_TYPE_int;
+        case 'u': return SOAP_TYPE_unsignedInt;
+        case 'b': return SOAP_TYPE_boolean;
+        case 's': return SOAP_TYPE_string;
+        case 't': return SOAP_TYPE_time;
+    }
+    return SOAP_TYPE_int;
+}
+
+
 static inline cwmp_parameter_value_struct_t *
 cwmp_copy_par_value(cwmp_parameter_value_struct_t *src)
 {
@@ -290,6 +306,52 @@ cwmp_copy_par_value(cwmp_parameter_value_struct_t *src)
     return ret;
 }
 
+
+
+/**
+ * Detect whether name is partial node name or Parameter (leaf) 
+ * full name. 
+ * Particulary, it is detected by ending doc '.'in the name
+ * according with TR069 standard. 
+ *
+ * @param name  parameter name
+ *
+ * @return FALSE if @p name is full Parameter name, 
+ *         TRUE  if @p name is partial node name.
+ */      
+static inline te_bool cwmp_is_node_name(const char *name) 
+{
+    size_t len;
+    assert(NULL != name);
+    len = strlen(name);
+    return name[len-1] == '.';
+}
+
+
+
+/**
+ * Print ParameterValueStruct to the string buffer, for human read.
+ *
+ * @return used buffer length.
+ */
+extern size_t snprint_ParamValueStruct(char *buf, size_t len, 
+                                       cwmp__ParameterValueStruct *p_v);
+
+
+/**
+ * Put description of CWMP Fault to TE log. 
+ */
+extern void tapi_acse_log_fault(_cwmp__Fault *fault); 
+
+extern size_t snprint_cwmpFault(char *buf, size_t len, _cwmp__Fault *fault);
+
+/**
+ * Check that CWMP Fault contains certain Set Fault item.
+ * @return TRUE if fault is good.
+ */
+extern te_bool cwmp_check_set_fault(cwmp_fault_t *fault, unsigned idx,
+                                    const char *param_name, 
+                                    const char *fault_code);
 
 /* ====================== OLD style API. ================== */
 
@@ -339,26 +401,6 @@ extern void cwmp_get_values_free(_cwmp__GetParameterValues *req);
 extern void cwmp_get_values_resp_free(_cwmp__GetParameterValues *resp);
 
 
-
-/**
- * Detect whether name is partial node name or Parameter (leaf) 
- * full name. 
- * Particulary, it is detected by ending doc '.'in the name
- * according with TR069 standard. 
- *
- * @param name  parameter name
- *
- * @return FALSE if @p name is full Parameter name, 
- *         TRUE  if @p name is partial node name.
- */      
-static inline te_bool cwmp_is_node_name(const char *name) 
-{
-    size_t len;
-    assert(NULL != name);
-    len = strlen(name);
-    return name[len-1] == '.';
-}
-
 /**
  * Construct SetParameterValues argument.
  * All agruments, besides last one, should be separated 
@@ -381,21 +423,5 @@ extern _cwmp__SetParameterValues *cwmp_set_values_alloc(
                             const char *b_name,
                             const char *f_name,
                             ...);
-
-/**
- * Print ParameterValueStruct to the string buffer, for human read.
- *
- * @return used buffer length.
- */
-extern size_t snprint_ParamValueStruct(char *buf, size_t len, 
-                                       cwmp__ParameterValueStruct *p_v);
-
-
-/**
- * Put description of CWMP Fault to TE log. 
- */
-extern void tapi_acse_log_fault(_cwmp__Fault *fault); 
-
-extern size_t snprint_cwmpFault(char *buf, size_t len, _cwmp__Fault *fault);
 
 #endif /* __TE_CWMP_UTILS__H__*/

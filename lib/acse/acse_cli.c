@@ -79,20 +79,6 @@ enum cli_codes {
 };
 
 
-static inline int
-cwmp_val_type_s2i(const char *type_name)
-{
-    switch (type_name[0])
-    {
-        case 'i': return SOAP_TYPE_int;
-        case 'u': return SOAP_TYPE_unsignedInt;
-        case 'b': return SOAP_TYPE_boolean;
-        case 's': return SOAP_TYPE_string;
-        case 't': return SOAP_TYPE_time;
-    }
-    return SOAP_TYPE_int;
-}
-
 
 
 static int

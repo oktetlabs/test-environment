@@ -747,3 +747,19 @@ tapi_acse_log_fault(_cwmp__Fault *f)
 }
 
 
+te_bool
+cwmp_check_set_fault(cwmp_fault_t *f, unsigned idx,
+                     const char *param_name, const char *fault_code)
+{
+    assert(f != NULL);
+    assert(f->SetParameterValuesFault != NULL);
+    assert(param_name != NULL);
+    assert(fault_code != NULL);
+
+    return 
+        (strcmp(f->SetParameterValuesFault[idx].ParameterName,
+                param_name) == 0) &&
+        (strcmp(f->SetParameterValuesFault[idx].FaultCode,
+                fault_code) == 0);
+}
+
