@@ -281,13 +281,27 @@ extern te_errno tapi_acse_wait_cr_state(tapi_acse_context_t *ctx,
 
 
 /**
- * Issue CWMP ConnectionRequest to particular CPE.
+ * Initiate CWMP session with CPE, that includes:
+ * turn on sync_mode on ACSE for this CPE,
+ * issue CWMP ConnectionRequest to particular CPE;
+ * check its status, wait while CWMP session will be established.
+ *
+ * @se This method changes ACSE parameter 'sync_mode'.
  *
  * @param ctx           ACSE TAPI context.
  *
  * @return status code
  */
 extern te_errno tapi_acse_cpe_connect(tapi_acse_context_t *ctx);
+
+/**
+ * Issue CWMP ConnectionRequest to particular CPE.
+ *
+ * @param ctx           ACSE TAPI context.
+ *
+ * @return status code
+ */
+extern te_errno tapi_acse_cpe_conn_request(tapi_acse_context_t *ctx);
 
 /**
  * Finish CWMP session with particular CPE.

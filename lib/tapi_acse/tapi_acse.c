@@ -88,8 +88,6 @@ tapi_acse_ta_cs_init(tapi_acse_context_t *ctx)
     char          buf[CFG_OID_MAX];
     int           i_val;
     cfg_val_type  type;
-    unsigned      num = 0;
-    cfg_handle   *handles = NULL;
     cfg_handle    acs_handle = CFG_HANDLE_INVALID,
                   cpe_handle = CFG_HANDLE_INVALID;
     te_errno      rc;
@@ -935,11 +933,48 @@ tapi_acse_set_parameter_values_resp(tapi_acse_context_t *ctx, int *status)
     return rc;
 }
 
-
+#define CHECK_RC(expr_) \
+    do { \
+        if ((rc = (expr_)) != 0)                                       \
+        {                                                              \
+            WARN("%s():%d, util fails %r", __FUNCTION__, __LINE__, rc);\
+            return TE_RC(TE_TAPI, rc);                                 \
+        }                                                              \
+    } while (0)
 
 /* see description in tapi_acse.h */
 te_errno
 tapi_acse_cpe_connect(tapi_acse_context_t *ctx)
+{
+    te_errno rc;
+
+    CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_MODIFY,
+                                  "sync_mode", TRUE, VA_END_LIST));
+
+    CHECK_RC(tapi_acse_cpe_conn_request(ctx));
+
+    rc = tapi_acse_wait_cr_state(ctx, CR_DONE);
+    if (0 != rc)
+    {
+        cwmp_sess_state_t   cur_sess_state = 0;
+        acse_cr_state_t     cur_cr_state = 0;
+        sleep(3);
+        CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_OBTAIN,
+                  "cwmp_state", &cur_sess_state,
+                  "cr_state", &cur_cr_state, VA_END_LIST));
+        if (CWMP_NOP == cur_sess_state && CR_NONE == cur_cr_state)
+        {
+            CHECK_RC(tapi_acse_cpe_connect(ctx));
+            CHECK_RC(tapi_acse_wait_cr_state(ctx, CR_DONE));
+        }
+    }
+    CHECK_RC(tapi_acse_wait_cwmp_state(ctx, CWMP_PENDING));
+    return 0;
+}
+
+/* see description in tapi_acse.h */
+te_errno
+tapi_acse_cpe_conn_request(tapi_acse_context_t *ctx)
 {
     return rpc_cwmp_conn_req(ctx->rpc_srv, ctx->acs_name, ctx->cpe_name);
 }
@@ -949,8 +984,8 @@ tapi_acse_cpe_connect(tapi_acse_context_t *ctx)
 te_errno
 tapi_acse_cpe_disconnect(tapi_acse_context_t *ctx)
 {
-    /* TODO : this simple activate sending empty response, this is 
-     * do not automatically leads to terminate CWMP session.
+    /* TODO : this util simple activates sending empty response, 
+     * this is do not automatically leads to terminate CWMP session.
      * Investigate standard and real behaviour of clients,
      * maybe add here some more actions and/or checks state... 
      * 
