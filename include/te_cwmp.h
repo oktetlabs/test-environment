@@ -317,6 +317,8 @@ typedef union {
         cwmp_get_options_t               *get_options;
         cwmp_fault_t                     *fault;
     } cwmp_data_to_cpe_t; 
+#define NULL_TO_CPE ((cwmp_data_to_cpe_t)NULL)
+#define PTR_TO_CPE(ptr_) ((cwmp_data_to_cpe_t) ptr_)
 
 /**< Typed pointer to call-specific CWMP data from CPE to ACS. */
 typedef union {
@@ -344,6 +346,8 @@ typedef union {
                                              *get_all_queued_transfers_r;
         cwmp_get_options_response_t          *get_options_r;
     } cwmp_data_from_cpe_t; 
+
+#define NULL_FROM_CPE ((cwmp_data_from_cpe_t)NULL)
 
 /**
  * Type for ACSE CWMP request identifier in queue.
