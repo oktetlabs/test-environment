@@ -763,3 +763,64 @@ cwmp_check_set_fault(cwmp_fault_t *f, unsigned idx,
                 fault_code) == 0);
 }
 
+
+te_bool
+cwmp_check_event(cwmp_event_list_t *ev_list, 
+                 const char *event_code, const char *command_key)
+{
+    cwmp_event_struct_t *ev;
+    int i;
+
+    /* TODO: make match with regex */
+    for (i = 0; i < ev_list->__size; i++)
+    {
+        ev = ev_list->__ptrEventStruct[i];
+        if (strcmp(event_code,  ev->EventCode) == 0 && 
+            strcmp(command_key, ev->CommandKey) == 0)
+            return TRUE;
+    }
+    return FALSE;
+}
+
+
+size_t
+snprint_cwmpEvents(char *buf, size_t len, cwmp_event_list_t *ev_list)
+{
+    cwmp_event_struct_t *ev;
+    char *p = buf;
+    int i;
+
+    for (i = 0; i < ev_list->__size; i++)
+    {
+        ev = ev_list->__ptrEventStruct[i];
+        p += snprintf(p, len - (p-buf),
+                      "Event[%u]: code '%s', ComKey '%s'\n",
+                      i, ev->EventCode, ev->CommandKey);
+    }
+    return p - buf;
+}
+
+
+te_errno
+tapi_acse_log_cwmpEvents(unsigned log_level, cwmp_event_list_t *ev_list)
+{
+    char *log_buf;
+    size_t buflen;
+    if (NULL == ev_list)
+        return TE_EINVAL;
+
+    if (0 == ev_list->__size)
+    {
+        LGR_MESSAGE(log_level, TE_LGR_USER, "Empty EventList.");
+        return 0;
+    }
+    log_buf = malloc(buflen = ev_list->__size * 128);
+
+    snprint_cwmpEvents(log_buf, buflen, ev_list);
+
+    LGR_MESSAGE(log_level, TE_LGR_USER, log_buf);
+
+    free(log_buf);
+    return 0;
+}
+

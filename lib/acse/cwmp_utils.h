@@ -353,6 +353,25 @@ extern te_bool cwmp_check_set_fault(cwmp_fault_t *fault, unsigned idx,
                                     const char *param_name, 
                                     const char *fault_code);
 
+
+/**
+ * Log Inform Events.
+ */
+extern te_errno tapi_acse_log_cwmpEvents(unsigned log_level,
+                                         cwmp_event_list_t *ev_list);
+/**
+ * Print Inform Events to string buffer.
+ */
+extern size_t snprint_cwmpEvents(char *buf, size_t len,
+                                 cwmp_event_list_t *ev_list);
+
+/**
+ * Find specified event in event_list. 
+ */
+extern te_bool cwmp_check_event(cwmp_event_list_t *ev_list, 
+                                const char *event_code,
+                                const char *command_key); 
+
 /* ====================== OLD style API. ================== */
 
 
