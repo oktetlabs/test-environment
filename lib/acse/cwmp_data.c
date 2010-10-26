@@ -1036,6 +1036,7 @@ te_cwmp_unpack__Inform(void *msg, size_t max_len)
 
     CWMP_UNPACK_LEAF(DeviceIdStruct, DeviceId);
     CWMP_UNPACK_LEAF(EventList, Event);
+    CWMP_UNPACK_LEAF(ParameterValueList, ParameterList);
 
     return unpack_size;
 }

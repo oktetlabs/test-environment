@@ -992,12 +992,14 @@ acse_soap_put_cwmp(struct soap *soap, acse_epc_cwmp_data_t *request)
             return soap_put__cwmp__DeleteObject(soap, 
                             request->to_cpe.delete_object,
                             "cwmp:DeleteObject", "");
-
+        case CWMP_RPC_reboot:
+            return soap_put__cwmp__Reboot(soap, 
+                            request->to_cpe.reboot,
+                            "cwmp:Reboot", "");
+        case CWMP_RPC_factory_reset:
         case CWMP_RPC_set_parameter_attributes:
         case CWMP_RPC_get_parameter_attributes:
-        case CWMP_RPC_reboot:
         case CWMP_RPC_upload:
-        case CWMP_RPC_factory_reset:
         case CWMP_RPC_get_queued_transfers:
         case CWMP_RPC_get_all_queued_transfers:
         case CWMP_RPC_schedule_inform:
@@ -1051,10 +1053,12 @@ acse_soap_serialize_cwmp(struct soap *soap, acse_epc_cwmp_data_t *request)
             soap_serialize__cwmp__DeleteObject(soap,
                     request->to_cpe.delete_object);
             break;
-
+        case CWMP_RPC_reboot:
+            soap_serialize__cwmp__Reboot(soap,
+                    request->to_cpe.reboot);
+            break;
         case CWMP_RPC_set_parameter_attributes:
         case CWMP_RPC_get_parameter_attributes:
-        case CWMP_RPC_reboot:
         case CWMP_RPC_upload:
         case CWMP_RPC_factory_reset:
         case CWMP_RPC_get_queued_transfers:
@@ -1258,10 +1262,12 @@ acse_soap_get_response(struct soap *soap, acse_epc_cwmp_data_t *request)
         case CWMP_RPC_delete_object:
             SOAP_GET_RESPONSE(DeleteObjectResponse, delete_object_r);
             break;
-
+        case CWMP_RPC_reboot:
+            /* RebootResponse is empty, so do not store it */
+            SOAP_GET_RESPONSE(RebootResponse, p);
+            break;
         case CWMP_RPC_set_parameter_attributes:
         case CWMP_RPC_get_parameter_attributes:
-        case CWMP_RPC_reboot:
         case CWMP_RPC_upload:
         case CWMP_RPC_factory_reset:
         case CWMP_RPC_get_queued_transfers:
