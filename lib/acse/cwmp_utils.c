@@ -776,7 +776,8 @@ cwmp_check_event(cwmp_event_list_t *ev_list,
     {
         ev = ev_list->__ptrEventStruct[i];
         if (strcmp(event_code,  ev->EventCode) == 0 && 
-            strcmp(command_key, ev->CommandKey) == 0)
+            (NULL == command_key || 
+                strcmp(command_key, ev->CommandKey) == 0))
             return TRUE;
     }
     return FALSE;
