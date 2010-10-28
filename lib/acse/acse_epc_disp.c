@@ -445,6 +445,51 @@ acs_ssl(acs_t *acs, acse_epc_config_data_t *params)
 }
 
 /**
+ * Access to 'http_response' field
+ *
+ * @param acs           ACS record
+ * @param params        EPC parameters struct
+ *
+ * @return      Status code.
+ */
+static te_errno
+acs_http_resp(acs_t *acs, acse_epc_config_data_t *params)
+{
+    if (params->op.fun == EPC_CFG_MODIFY)
+    {
+        int r;
+        if (strlen(params->value) == 0)
+        {
+            free(acs->http_response);
+            acs->http_response = NULL;
+            return 0;
+        }
+        if (NULL == acs->http_response)
+            acs->http_response = malloc(sizeof(acse_http_response_t));
+
+        r = sscanf(params->value, "%d %s",
+                   &(acs->http_response->http_code),
+                    acs->http_response->location);
+        if (1 == r)
+            acs->http_response->location[0] = '\0';
+        if (r <= 0)
+        {
+            WARN("HTTP response spec wrong, http code expected.");
+            return TE_EINVAL;
+        }
+    }
+    else
+    {
+        if (NULL == acs->http_response)
+            params->value[0] = '\0';
+        else
+            sprintf(params->value, "%u %s",
+                    acs->http_response->http_code,
+                    acs->http_response->location);
+    }
+    return 0;
+}
+/**
  * Access to the ACS enabled flag.
  *
  * @param acs           ACS record
@@ -702,6 +747,7 @@ struct config_acs_item_t {
     {"ssl",  acs_ssl},
     {"port", acs_port},
     {"enabled", acs_enabled},
+    {"http_response", acs_http_resp},
 };
 
 /** Callback for access to CPE record conf.field */
@@ -971,6 +1017,43 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
             cwmp_pars->from_cpe.cr_state = cpe->cr_state;
             if (cpe->cr_state == CR_ERROR || cpe->cr_state == CR_DONE)
                 cpe->cr_state = CR_NONE;
+        break;
+
+        case EPC_HTTP_RESP:
+        {
+            const char *location = (const char *)cwmp_pars->enc_start;
+            size_t loc_len = strlen(location);
+            int r;
+
+            if ((cpe->session != NULL) &&
+                (CWMP_PENDING == cpe->session->state))
+            {
+                r = acse_cwmp_send_http(&(cpe->session->m_soap),
+                                        cpe->session,
+                                        cwmp_pars->to_cpe.http_code,
+                                        location);
+                if (0 != r)
+                {
+                    ERROR("send HTTP resp, gSOAP internal error %d", r);
+                    return TE_GSOAP_ERROR;
+                }
+            }
+            else /* Save http code */
+            {
+                if (loc_len > sizeof(cpe->http_response->location))
+                {
+                    ERROR("HTTP location too long, %u bytes", loc_len);
+                    return TE_EINVAL;
+                }
+                if (NULL == cpe->http_response)
+                    cpe->http_response =
+                        malloc(sizeof(*cpe->http_response));
+                cpe->http_response->http_code = cwmp_pars->to_cpe.http_code;
+                strncpy(cpe->http_response->location, 
+                        (const char *)cwmp_pars->enc_start,
+                        sizeof(cpe->http_response->location));
+            }
+        }
         break;
     }
     return rc;

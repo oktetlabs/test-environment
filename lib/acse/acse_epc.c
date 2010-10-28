@@ -530,6 +530,14 @@ ssize_t
 epc_pack_call_data(void *buf, size_t len,
                    acse_epc_cwmp_data_t *cwmp_data)
 {
+    if (EPC_HTTP_RESP == cwmp_data->op)
+    {
+        size_t sz = strlen((char *)cwmp_data->enc_start) + 1;
+        if (sz > len)
+            return -1;
+        memcpy(buf, cwmp_data->enc_start, sz);
+        return sz;
+    }
     if (cwmp_data->to_cpe.p == NULL || cwmp_data->op != EPC_RPC_CALL)
         return 0;
     return cwmp_pack_call_data(cwmp_data->to_cpe, cwmp_data->rpc_cpe, 

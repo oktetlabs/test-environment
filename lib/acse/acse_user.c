@@ -339,3 +339,59 @@ acse_cwmp_rpc_call(const char *acs, const char *cpe,
         *request_id = cwmp_data->request_id;
     return 0;
 }
+
+
+te_errno
+acse_http_code(const char *acs, const char *cpe,
+               int http_code, const char *location)
+{
+    acse_epc_cwmp_data_t *cwmp_data;
+    size_t loc_len = 1; /* last zero even for empty 'location' */
+    te_errno rc = 0;
+
+    if (NULL == acs || NULL == cpe)
+        return TE_EINVAL;
+    if (NULL != location)
+        loc_len = strlen(location) + 1;
+
+    msg.opcode = EPC_CWMP_CALL;
+    msg.length = sizeof(*cwmp_data) + loc_len;
+    msg.data.cwmp = cwmp_data = malloc(msg.length);
+    msg.status = 0;
+
+    memset(cwmp_data, 0, msg.length);
+
+    cwmp_data->op = EPC_HTTP_RESP;
+        
+    strcpy(cwmp_data->acs, acs);
+    strcpy(cwmp_data->cpe, cpe);
+
+    cwmp_data->to_cpe.http_code = http_code;
+    if (NULL != location)
+        strcpy((char *)cwmp_data->enc_start, location);
+
+    RING("%s() send msg, http code %d, loc '%s', msg len %u", __FUNCTION__, 
+         cwmp_data->to_cpe.http_code, (char *)cwmp_data->enc_start,
+         msg.length);
+
+
+    rc = acse_epc_send(&msg);
+
+    free(cwmp_data);
+
+    if (rc != 0)
+    {
+        ERROR("%s(): EPC send failed %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    rc = acse_epc_recv(&msg_resp);
+    if (rc != 0)
+    {
+        ERROR("%s(): EPC recv failed %r", __FUNCTION__, rc);
+        return TE_RC(TE_TA_ACSE, rc);
+    }
+
+    return TE_RC(TE_ACSE, msg_resp.status);
+}
+

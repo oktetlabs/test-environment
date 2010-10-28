@@ -371,12 +371,8 @@ acse_cwmp_auth(struct soap *soap, cwmp_session_t *session, cpe_t **cpe)
 
     soap->error = SOAP_OK;
     soap_serializeheader(soap);
-    soap_begin_count(soap);
-    soap_end_count(soap);
-    soap_response(soap, 401);
-    soap_end_send(soap);
+    acse_cwmp_send_http(soap, NULL, 401, NULL);
     soap->keep_alive = 1; 
-
     soap->error = SOAP_OK;
 
     return FALSE;
@@ -467,6 +463,19 @@ __cwmp__Inform(struct soap *soap,
         soap->keep_alive = 0; 
         return 500;
     }
+    if (NULL != session->acs_owner->http_response)
+    {
+        int http_code = session->acs_owner->http_response->http_code;
+        char *loc = session->acs_owner->http_response->location;
+        RING("Process Inform, found HTTP response setting, %d, %s",
+            http_code, loc);
+
+        strcpy(soap->endpoint, loc);
+        free(session->acs_owner->http_response);
+        session->acs_owner->http_response = NULL;
+
+        return http_code;
+    }
 
 
     switch (session->acs_owner->auth_mode)
@@ -495,6 +504,19 @@ __cwmp__Inform(struct soap *soap,
         cpe_item->session = session;
         /* State of ConnectionRequest to this CPE is not actual now. */
         cpe_item->cr_state = CR_NONE; 
+        if (NULL != cpe_item->http_response)
+        {
+            int http_code = cpe_item->http_response->http_code;
+            char *loc = cpe_item->http_response->location;
+            RING("Process Inform, for CPE is HTTP response setting, %d, %s",
+                http_code, loc);
+
+            strcpy(soap->endpoint, loc);
+            free(cpe_item->http_response);
+            cpe_item->http_response = NULL;
+
+            return http_code;
+        }
     }
     else
     {
@@ -1116,11 +1138,7 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
 
         INFO("CPE '%s', empty list of RPC calls, response 204", cpe->name);
         // soap->keep_alive = 0;
-        soap_begin_count(soap);
-        soap_end_count(soap);
-        soap_response(soap, 204);
-        soap_end_send(soap);
-        session->state = CWMP_SERVE;
+        acse_cwmp_send_http(soap, session, 204, NULL);
         if (rpc_item != NULL)
             TAILQ_REMOVE(&cpe->rpc_queue, rpc_item, links);
         return 0;
@@ -1179,6 +1197,39 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
 
     TAILQ_INSERT_TAIL(&cpe->rpc_results, rpc_item, links);
 
+    return 0;
+}
+
+
+/* see description in acse_internal.h */
+int 
+acse_cwmp_send_http(struct soap *soap, cwmp_session_t *session,
+                    int http_code, const char *str)
+{
+    INFO("CPE '%s', special HTTP response %d, '%s'",
+         session ? session->cpe_owner->name : "unknown",
+         http_code, str);
+    // soap->keep_alive = 0;
+    if (NULL != str)
+    {
+        size_t sz = strlen(str);
+        if (sz >= sizeof(soap->endpoint))
+        {
+            WARN("gSOAP cannot process location with length %u", sz);
+            return SOAP_LENGTH;
+        }
+        strcpy(soap->endpoint, str);
+    }
+    if (soap_begin_count(soap) ||
+        soap_end_count(soap) ||
+        soap_response(soap, http_code) ||
+        soap_end_send(soap))
+    {
+        ERROR("%s(): gSOAP internal error %d", __FUNCTION__, soap->error);
+        return soap->error;
+    }
+    if (NULL != session)
+        session->state = CWMP_SERVE;
     return 0;
 }
 

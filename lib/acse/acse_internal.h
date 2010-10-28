@@ -129,6 +129,13 @@ typedef struct cpe_rpc_item_t {
 } cpe_rpc_item_t;
 
 
+#define HTTP_REDIRECT_MAX 250
+/** Unusual HTTP response */
+typedef struct acse_http_response_t {
+    int http_code;
+    char location[HTTP_REDIRECT_MAX];
+} acse_http_response_t;
+
 /* TODO: think, maybe not all Inform should be stored, only some Events? */
 /** CPE Inform list, in order they were received. */
 typedef struct cpe_inform_t {
@@ -187,6 +194,7 @@ typedef struct cpe_t{
     socklen_t              addr_len; /**< address length              */ 
 
     acse_cr_state_t        cr_state; /**< State of ConnectionRequest  */
+    acse_http_response_t  *http_response;
 } cpe_t;
 
 
@@ -205,6 +213,8 @@ typedef struct acs_t {
     te_bool      ssl;           /**< SSL usage boolean flag         */
     uint16_t     port;          /**< TCP port value in host byte order */
     auth_mode_t  auth_mode;     /**< Authentication mode            */
+
+    acse_http_response_t  *http_response;
 
     /** Fields for internal procedure data. */
     struct sockaddr *addr_listen;/**< TCP/IP address to listen      */
@@ -564,6 +574,21 @@ extern te_errno acse_rpc_item_free(cpe_rpc_item_t *rpc_item);
  */
 extern int acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session);
 
+
+/**
+ * Send inusual HTTP response to CPE.
+ * Turns cwmp session to state SERVE.
+ *
+ * @param soap        gSOAP struct.
+ * @param session     current CWMP session.
+ * @param http_code   standard HTTP code of response
+ * @param str         additional string for 'Location: ' in response, 
+ *                    if it needed, or NULL.
+ * 
+ * @return gSOAP status.
+ */
+extern int acse_cwmp_send_http(struct soap *soap, cwmp_session_t *session,
+                               int http_code, const char *str);
 #ifdef __cplusplus
 }
 #endif

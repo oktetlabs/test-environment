@@ -60,6 +60,7 @@ enum cli_codes {
     CMD_RPC, 
     CMD_CR, 
     CMD_ENV, 
+    CMD_HTTP, 
 
     PARAM_OBTAIN = 0x1010, 
     PARAM_MODIFY, 
@@ -403,6 +404,26 @@ env_set(int argc, const int *arg_tags,
 }
 
 
+static int
+http_resp(int argc, const int *arg_tags,
+          const char *rest_line, void *opaque)
+{
+    char code_buf[100];
+    char direction_buf[200];
+    int http_code;
+
+    UNUSED(argc);
+    UNUSED(arg_tags);
+    UNUSED(opaque);
+
+    rest_line += cli_token_copy(rest_line, code_buf);
+    rest_line += cli_token_copy(rest_line, direction_buf);
+    http_code = atoi(code_buf);
+    RING("http response %d to '%s'", http_code, direction_buf);
+    acse_http_code(acs_def_name, cpe_def_name, http_code, direction_buf);
+    return 0;
+}
+
 static cli_cmd_descr_t cmd_param_actions[] = {
     {"obtain", EPC_CFG_OBTAIN, "ACS config commands",
             param_cmd_access, NULL},
@@ -461,6 +482,7 @@ static cli_cmd_descr_t acse_cmd_list[] = {
     {"rpc",  CMD_RPC,  "CWMP RPC commands", NULL, cmd_rpc_actions},
     {"cr",   CMD_CR,   "Connection Req. commands", cr_cmd, cmd_cr_actions},
     {"env",  CMD_ENV,  "Current environment", env_set, cmd_env},
+    {"http", CMD_HTTP, "Unusual HTTP response", http_resp, NULL},
     END_CMD_ARRAY
 };
 
@@ -928,6 +950,9 @@ print_cwmp_response(te_errno status, acse_epc_cwmp_data_t *cwmp_resp)
                 }
             }
         }
+        break;
+    case EPC_HTTP_RESP:
+        /* Nothing to do */
         break;
     }
     return 0;

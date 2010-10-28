@@ -109,6 +109,10 @@ typedef enum {
     EPC_CONN_REQ,         /**< Send ConnectionRequest to CPE */
     EPC_CONN_REQ_CHECK,   /**< Check status of ConnectionRequest */
     EPC_GET_INFORM,       /**< Get Inform already received from CPE */
+    EPC_HTTP_RESP,        /**< Send particular HTTP response to CPE.
+                                HTTP code passed in to_cpe union, 
+                                string (if needed) passed in enc_start,
+                                as usual zero-terminated character string.*/
 } acse_epc_cwmp_op_t;
 
 

@@ -178,6 +178,24 @@ extern te_errno acse_cwmp_rpc_check(const char *acs, const char *cpe,
                                     cwmp_data_from_cpe_t from_cpe); 
 
 /**
+ * Order send particular HTTP message, and wait EPC answer 
+ * from ACSE. 
+ * While active CWMP session, issue specified HTTP response 
+ * immediately. If there is no active CWMP session, 
+ * specified HTTP response will be answer to the next Inform,
+ * received from that CPE.
+ *
+ * @param acs           Name of the acs instance
+ * @param cpe           Name of the acs cpe instance
+ * @param http_code     HTTP code.
+ * @param location      Direction for redirect codes, or NULL.
+ *
+ * @return              Local execution status code
+ */
+extern te_errno acse_http_code(const char *acs, const char *cpe,
+                               int http_code, const char *location);
+
+/**
  */
 extern te_errno acse_send_set_parameter_values(int *request_id,
                                                ...);
