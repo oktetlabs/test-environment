@@ -32,6 +32,25 @@ typedef struct te_dhcp_option {
     char               *value;
 } te_dhcp_option;
 
+/** Definitions for option spaces for DHCP configuring */
+typedef struct te_dhcp_space_opt {
+    struct te_dhcp_space_opt *next;
+
+    char   *name;
+    int     code;
+    char   *type;
+} te_dhcp_space_opt;
+
+
+typedef struct space {
+    struct space      *next;
+
+    char              *name;
+    te_dhcp_space_opt *options;
+
+} space;
+
+
 typedef struct host {
     struct host  *next;
     char         *name;
@@ -60,6 +79,7 @@ typedef struct te_dhcp_server_subnet {
     int                 prefix_len;
     char               *range;
     te_dhcp_option     *options;
+    char               *vos;
 } te_dhcp_server_subnet;
 
 typedef struct te_dhcp_server_shared_net {

@@ -220,6 +220,8 @@ static host *hosts = NULL;
 
 static group *groups = NULL;
 
+static space *spaces = NULL;
+
 #ifdef TA_UNIX_ISC_DHCPS_LEASES_SUPPORTED
 static FILE *f = NULL;  /* Pointer to opened /etc/dhcpd.conf */
 #endif
@@ -263,6 +265,17 @@ find_group(const char *name)
     return g;
 }
 
+/* Find the space in the list */
+static space *
+find_space(const char *name)
+{
+    space *s;
+
+    for (s = spaces; s != NULL && strcmp(s->name, name) != 0; s = s->next);
+
+    return s;
+}
+
 /* Find the option in specified options list */
 static te_dhcp_option *
 find_option(te_dhcp_option *opt, const char *name)
@@ -271,6 +284,16 @@ find_option(te_dhcp_option *opt, const char *name)
 
     return opt;
 }
+
+/* Find the space option in specified options list */
+static te_dhcp_space_opt *
+find_space_option(te_dhcp_space_opt *opt, const char *name)
+{
+    for (; opt != NULL && strcmp(opt->name, name) != 0; opt = opt->next);
+
+    return opt;
+}
+
 
 /* Release all memory allocated for host structure */
 static void
@@ -307,6 +330,21 @@ free_group(group * g)
     }
 }
 
+
+static void
+free_space(space *sp)
+{
+    te_dhcp_space_opt *opt, *next;
+    free(sp->name);
+    for (opt = sp->options; opt != NULL; opt = next)
+    {
+        next = opt->next;
+        free(opt->name);
+        free(opt->type);
+        free(opt);
+    }
+}
+
 /** Save configuration to the file */
 static int
 ds_dhcpserver_save_conf(void)
@@ -319,6 +357,7 @@ ds_dhcpserver_save_conf(void)
     host                   *h;
 #if defined __linux__
     te_dhcp_option         *opt;
+    space                  *sp;
 #endif
     FILE                   *f = fopen(dhcp_server_conf, "w");
 
@@ -368,6 +407,18 @@ ds_dhcpserver_save_conf(void)
     fprintf(f, "deny unknown-clients;\n\n");
     fprintf(f, "\n");
 #endif
+
+#if defined __linux__
+    for (sp = spaces; sp != NULL; sp = sp->next)
+    {
+        te_dhcp_space_opt *sp_opt;
+        fprintf(f, "option space %s;\n",sp->name);
+        for (sp_opt = sp->options; sp_opt != NULL; sp_opt = sp_opt->next)
+            fprintf(f, "option %s code %d = %s;\n", 
+                    sp_opt->name, sp_opt->code, sp_opt->type);
+    }
+#endif
+
     TAILQ_FOREACH(s, &subnets, links)
     {
         struct in_addr  mask;
@@ -395,6 +446,10 @@ ds_dhcpserver_save_conf(void)
 
             fprintf(f, "\toption %s %s%s%s;\n", opt->name,
                     quoted ? "\"" : "", opt->value, quoted ? "\"" : "");
+        }
+        if (s->vos != NULL)
+        {
+            fprintf(f, "\tvendor-option-space %s;\n", s->vos);
         }
         fprintf(f, "}\n");
 #endif
@@ -963,6 +1018,7 @@ ds_##_gh##_list(unsigned int gid, const char *oid, char **list) \
 
 LIST_METHOD(host)
 LIST_METHOD(group)
+LIST_METHOD(space)
 
 /** Definition of add method for host and groups */
 #define ADD_METHOD(_gh) \
@@ -1001,6 +1057,7 @@ ds_##_gh##_add(unsigned int gid, const char *oid, const char *value,    \
 
 ADD_METHOD(host)
 ADD_METHOD(group)
+ADD_METHOD(space)
 
 /** Definition of delete method for host and groups */
 #define DEL_METHOD(_gh) \
@@ -1037,6 +1094,7 @@ ds_##_gh##_del(unsigned int gid, const char *oid,       \
 
 DEL_METHOD(host)
 DEL_METHOD(group)
+DEL_METHOD(space)
 
 /** Obtain the group of the host */
 static te_errno
@@ -1180,12 +1238,14 @@ ATTR_GET(filename, group, group)
 ATTR_SET(filename, group, group)
 ATTR_GET(range, subnet, te_dhcp_server_subnet)
 ATTR_SET(range, subnet, te_dhcp_server_subnet)
+ATTR_GET(vos, subnet, te_dhcp_server_subnet)
+ATTR_SET(vos, subnet, te_dhcp_server_subnet)
 
 /**
  * Definition of the method for obtaining of options list
  * for the host/group/subnet.
  */
-#define GET_OPT_LIST(_ghs, _ghs_type) \
+#define GET_OPT_LIST(_ghs, _ghs_type, _opt_type) \
 static te_errno \
 ds_##_ghs##_option_list(unsigned int gid, const char *oid,      \
                        char **list, const char *dhcpserver,     \
@@ -1193,7 +1253,7 @@ ds_##_ghs##_option_list(unsigned int gid, const char *oid,      \
 {                                                               \
    _ghs_type *ghs;                                              \
                                                                 \
-    te_dhcp_option *opt;                                        \
+   _opt_type *opt;                                              \
                                                                 \
     UNUSED(gid);                                                \
     UNUSED(oid);                                                \
@@ -1214,9 +1274,12 @@ ds_##_ghs##_option_list(unsigned int gid, const char *oid,      \
               TE_RC(TE_TA_UNIX, TE_ENOMEM) : 0;                 \
 }
 
-GET_OPT_LIST(host, host)
-GET_OPT_LIST(group, group)
-GET_OPT_LIST(subnet, te_dhcp_server_subnet)
+GET_OPT_LIST(host, host, te_dhcp_option)
+GET_OPT_LIST(group, group, te_dhcp_option)
+GET_OPT_LIST(subnet, te_dhcp_server_subnet, te_dhcp_option)
+GET_OPT_LIST(space, space, te_dhcp_space_opt)
+
+
 
 /* Method for adding of the option for group/host/subnet */
 #define ADD_OPT(_ghs, _ghs_type) \
@@ -1264,6 +1327,44 @@ ADD_OPT(host, host)
 ADD_OPT(group, group)
 ADD_OPT(subnet, te_dhcp_server_subnet)
 
+
+static te_errno
+ds_sp_opt_add(unsigned int gid, const char *oid,
+              const char *value, const char *dhcpserver,
+              const char *name, const char *optname)
+{
+    space *sp;
+    te_dhcp_space_opt *opt;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+    UNUSED(dhcpserver);
+
+    DHCP_SERVER_INIT_CHECK;
+
+    if ((sp = find_space(name)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (find_space_option(sp->options, optname) != NULL)
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
+
+    if ((opt = (te_dhcp_space_opt *)calloc(sizeof(*opt), 1))
+        == NULL || (opt->name = strdup(optname)) == NULL)
+    {
+        free(opt);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    opt->next = sp->options;
+    sp->options = opt;
+    opt->type = NULL;
+
+    dhcp_server_changed = TRUE;
+
+    return 0;
+}
+
 /* Method for obtaining of the option for group/host/subnet */
 #define GET_OPT(_ghs, _ghs_type) \
 static te_errno \
@@ -1295,6 +1396,38 @@ ds_##_ghs##_option_get(unsigned int gid, const char *oid,       \
 GET_OPT(host, host)
 GET_OPT(group, group)
 GET_OPT(subnet, te_dhcp_server_subnet)
+
+static te_errno
+ds_sp_opt_get(unsigned int gid, const char *oid,
+              char *value, const char *dhcpserver,
+              const char *name, const char *optname)
+{
+    space *sp;
+
+    te_dhcp_space_opt *opt;
+
+    UNUSED(gid);
+    UNUSED(dhcpserver);
+
+    DHCP_SERVER_INIT_CHECK;
+
+    if ((sp = find_space(name)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if ((opt = find_space_option(sp->options, optname)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (strcmp(oid, "type") == 0)
+        strcpy(value, opt->type);
+    else if (strcmp(oid, "code") == 0)
+        sprintf(value, "%d", opt->code);
+    else
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    return 0;
+}
+
+
 
 /* Method for changing of the option value for group/host/subnet */
 #define SET_OPT(_ghs, _ghs_type) \
@@ -1345,6 +1478,36 @@ SET_OPT(group, group)
 SET_OPT(subnet, te_dhcp_server_subnet)
 
 
+static te_errno
+ds_sp_opt_set(unsigned int gid, const char *oid,
+              char *value, const char *dhcpserver,
+              const char *name, const char *optname)
+{
+    space *sp;
+
+    te_dhcp_space_opt *opt;
+
+    UNUSED(gid);
+    UNUSED(dhcpserver);
+
+    DHCP_SERVER_INIT_CHECK;
+
+    if ((sp = find_space(name)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if ((opt = find_space_option(sp->options, optname)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (strcmp(oid, "type") == 0)
+        strcpy(opt->type, value);
+    else if (strcmp(oid, "code") == 0)
+        sscanf(value, "%d", &(opt->code));
+    else
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    return 0;
+}
+
 /* Method for deletion of the option value for group/host/subnet */
 #define DEL_OPT(_ghs, _ghs_type) \
 static te_errno      \
@@ -1387,6 +1550,45 @@ ds_##_ghs##_option_del(unsigned int gid, const char *oid,       \
 DEL_OPT(host, host)
 DEL_OPT(group, group)
 DEL_OPT(subnet, te_dhcp_server_subnet)
+
+static te_errno
+ds_sp_opt_del(unsigned int gid, const char *oid,
+              const char *dhcpserver, const char *name, const char *optname)
+{
+    space *sp;
+
+    te_dhcp_space_opt *opt, *prev;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(dhcpserver);
+
+    DHCP_SERVER_INIT_CHECK;
+
+    if ((sp = find_space(name)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    for (opt = sp->options, prev = NULL;
+         opt != NULL && strcmp(opt->name, optname) != 0;
+         prev = opt, opt = opt->next);
+
+    if (opt == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (prev)
+        prev->next = opt->next;
+    else
+        sp->options = opt->next;
+
+    free(opt->name);
+    free(opt->type);
+    free(opt);
+
+    dhcp_server_changed = TRUE;
+
+    return 0;
+}
+
 
 #ifdef TA_UNIX_ISC_DHCPS_LEASES_SUPPORTED
 
@@ -1790,6 +1992,27 @@ RCF_PCH_CFG_NODE_COLLECTION(node_ds_host, "host",
                             ds_host_add, ds_host_del,
                             ds_host_list, NULL);
 
+
+RCF_PCH_CFG_NODE_RW(node_ds_sp_opt_type, "type",
+                    NULL, NULL,
+                    ds_sp_opt_get, ds_sp_opt_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_sp_opt_code, "code",
+                    NULL, &node_ds_sp_opt_type,
+                    ds_sp_opt_get, ds_sp_opt_set);
+
+
+RCF_PCH_CFG_NODE_COLLECTION(node_ds_space_options, "option",
+                            &node_ds_sp_opt_code, NULL,
+                            ds_sp_opt_add, ds_sp_opt_del,
+                            ds_space_option_list, NULL);
+
+RCF_PCH_CFG_NODE_COLLECTION(node_ds_space, "space",
+                            &node_ds_space_options, &node_ds_host,
+                            ds_space_add, ds_space_del,
+                            ds_space_list, NULL);
+
+
 static rcf_pch_cfg_object node_ds_subnet_option =
     { "option", 0, NULL, NULL,
       (rcf_ch_cfg_get)ds_subnet_option_get,
@@ -1798,12 +2021,16 @@ static rcf_pch_cfg_object node_ds_subnet_option =
       (rcf_ch_cfg_del)ds_subnet_option_del,
       (rcf_ch_cfg_list)ds_subnet_option_list, NULL, NULL };
 
-RCF_PCH_CFG_NODE_RW(node_ds_subnet_range, "range",
+RCF_PCH_CFG_NODE_RW(node_ds_subnet_vendor_sp, "vendor_option_space",
                     NULL, &node_ds_subnet_option,
+                    ds_subnet_vos_get, ds_subnet_vos_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_subnet_range, "range",
+                    NULL, &node_ds_subnet_vendor_sp,
                     ds_subnet_range_get, ds_subnet_range_set);
 
 static rcf_pch_cfg_object node_ds_subnet =
-    { "subnet", 0, &node_ds_subnet_range, &node_ds_host,
+    { "subnet", 0, &node_ds_subnet_range, &node_ds_space,
       (rcf_ch_cfg_get)ds_subnet_get,
       (rcf_ch_cfg_set)ds_subnet_set,
       (rcf_ch_cfg_add)ds_subnet_add,
