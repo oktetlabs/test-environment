@@ -1397,6 +1397,19 @@ GET_OPT(host, host)
 GET_OPT(group, group)
 GET_OPT(subnet, te_dhcp_server_subnet)
 
+static inline const char *
+get_last_label(const char *oid)
+{
+    const char *last_label;
+    if (NULL == oid)
+        return NULL;
+    last_label = rindex(oid, '/');
+    if (NULL == last_label)
+        return oid;
+    last_label++; /* shift to the label begin */
+    return last_label;
+}
+
 static te_errno
 ds_sp_opt_get(unsigned int gid, const char *oid,
               char *value, const char *dhcpserver,
@@ -1405,6 +1418,7 @@ ds_sp_opt_get(unsigned int gid, const char *oid,
     space *sp;
 
     te_dhcp_space_opt *opt;
+    const char *var_name = get_last_label(oid);
 
     UNUSED(gid);
     UNUSED(dhcpserver);
@@ -1417,12 +1431,22 @@ ds_sp_opt_get(unsigned int gid, const char *oid,
     if ((opt = find_space_option(sp->options, optname)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    if (strcmp(oid, "type") == 0)
-        strcpy(value, opt->type);
-    else if (strcmp(oid, "code") == 0)
+
+    if (strcmp(var_name, "type:") == 0)
+    {
+        if (NULL == opt->type)
+            value[0] = '\0';
+        else
+            strcpy(value, opt->type);
+    }
+    else if (strcmp(var_name, "code:") == 0)
         sprintf(value, "%d", opt->code);
     else
+    {
+        WARN("dhcp_server, get space option var, wrong var_name '%s'",
+             var_name);
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
 
     return 0;
 }
@@ -1487,6 +1511,8 @@ ds_sp_opt_set(unsigned int gid, const char *oid,
 
     te_dhcp_space_opt *opt;
 
+    const char *var_name = get_last_label(oid);
+
     UNUSED(gid);
     UNUSED(dhcpserver);
 
@@ -1498,9 +1524,13 @@ ds_sp_opt_set(unsigned int gid, const char *oid,
     if ((opt = find_space_option(sp->options, optname)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    if (strcmp(oid, "type") == 0)
-        strcpy(opt->type, value);
-    else if (strcmp(oid, "code") == 0)
+    if (strcmp(var_name, "type:") == 0)
+    {
+        if (NULL != opt->type)
+            free(opt->type);
+        opt->type = strdup(value);
+    }
+    else if (strcmp(var_name, "code:") == 0)
         sscanf(value, "%d", &(opt->code));
     else
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
