@@ -1019,6 +1019,13 @@ acse_soap_put_cwmp(struct soap *soap, acse_epc_cwmp_data_t *request)
                             request->to_cpe.reboot,
                             "cwmp:Reboot", "");
         case CWMP_RPC_factory_reset:
+            {
+                _cwmp__FactoryReset arg;
+                soap_default__cwmp__FactoryReset(soap, &arg);
+                return soap_put__cwmp__FactoryReset(soap, &arg,
+                                            "cwmp:FactoryReset", "");
+            }
+            break;
         case CWMP_RPC_set_parameter_attributes:
         case CWMP_RPC_get_parameter_attributes:
         case CWMP_RPC_upload:
@@ -1079,10 +1086,16 @@ acse_soap_serialize_cwmp(struct soap *soap, acse_epc_cwmp_data_t *request)
             soap_serialize__cwmp__Reboot(soap,
                     request->to_cpe.reboot);
             break;
+        case CWMP_RPC_factory_reset:
+            {
+                _cwmp__FactoryReset arg;
+                soap_default__cwmp__FactoryReset(soap, &arg);
+                soap_serialize__cwmp__FactoryReset(soap, &arg);
+            }
+            break;
         case CWMP_RPC_set_parameter_attributes:
         case CWMP_RPC_get_parameter_attributes:
         case CWMP_RPC_upload:
-        case CWMP_RPC_factory_reset:
         case CWMP_RPC_get_queued_transfers:
         case CWMP_RPC_get_all_queued_transfers:
         case CWMP_RPC_schedule_inform:
@@ -1317,10 +1330,13 @@ acse_soap_get_response(struct soap *soap, acse_epc_cwmp_data_t *request)
             /* RebootResponse is empty, so do not store it */
             SOAP_GET_RESPONSE(RebootResponse, p);
             break;
+        case CWMP_RPC_factory_reset:
+            /* FactoryResetResponse is empty, so do not store it */
+            SOAP_GET_RESPONSE(FactoryResetResponse, p);
+            break;
         case CWMP_RPC_set_parameter_attributes:
         case CWMP_RPC_get_parameter_attributes:
         case CWMP_RPC_upload:
-        case CWMP_RPC_factory_reset:
         case CWMP_RPC_get_queued_transfers:
         case CWMP_RPC_get_all_queued_transfers:
         case CWMP_RPC_schedule_inform:
