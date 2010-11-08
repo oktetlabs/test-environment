@@ -1706,7 +1706,6 @@ ta_waitpid(pid_t pid, int *p_status, int options)
                  * signal handler will call sem_post(), so let's sleep until
                  * ta_sigchld_handler will wake up us explicitly.
                  */
-                errno = saved_errno;
 
                 /*
                  * Force call of handler to avoid dead lock if the system
@@ -1719,6 +1718,13 @@ ta_waitpid(pid_t pid, int *p_status, int options)
                          "with pid %d have crossed %d secs threshold.",
                          pid, WAIT_SIGCHLD_TIMEOUT_WARN);
                 sleep(1);
+
+                /* There may be:
+                 * - EAGAIN from sem_trywait();
+                 * - EINTR from sleep()
+                 * We should ignore them.
+                 */
+                errno = saved_errno;
             }
             LOCK;
 #undef WAIT_SIGCHLD_TIMEOUT_WARN
