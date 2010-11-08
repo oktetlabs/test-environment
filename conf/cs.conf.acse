@@ -5,6 +5,26 @@
        environment, but Linux kernel stack testing. -->
 
   <register> 
+    <object oid="/local/acse" access="read_create" type="none"/>
+    <!-- ACS object.
+         Name: unique name -->
+    <object oid="/local/acse/acs" access="read_create" type="none"/>
+
+    <object oid="/local/acse/acs/url" access="read_write" type="string"/>
+
+    <object oid="/local/acse/acs/port" access="read_write" type="integer"/>
+
+    <object oid="/local/acse/acs/auth_mode" access="read_write"
+            type="string"/>
+    <object oid="/local/acse/acs/http_root" access="read_write"
+            type="string"/>
+
+    <object oid="/local/acse/cpe" access="read_create" type="none"/>
+
+    <object oid="/local/acse/cpe/login" access="read_write" type="string"/>
+
+    <object oid="/local/acse/cpe/passwd" access="read_write" type="string"/>
+
     <!-- ACSE object.
          Name: none
          Value: 0/1
@@ -183,27 +203,29 @@
   </register>
 
 
+<!--
   <set>
     <instance oid="/agent:Agt_A/acse:" value="1"/>
   </set>
+-->
 
   <add>
     <instance oid="/agent:Agt_A/rpcserver:acse_ctl" value="thread_local"/> 
-    <instance oid="/agent:Agt_A/acse:/acs:A"/>
-    <instance oid="/agent:Agt_A/acse:/acs:A/cpe:box"/>
+    <instance oid="/local:"/>
+    <instance oid="/local:/acse:"/>
+    <instance oid="/local:/acse:/acs:A"/>
+    <instance oid="/local:/acse:/cpe:box"/>
   </add>
 
   <set>
-    <instance oid="/agent:Agt_A/acse:/acs:A/auth_mode:" value="digest"/>
-    <instance oid="/agent:Agt_A/acse:/acs:A/port:" value="8080"/>
-    <instance oid="/agent:Agt_A/acse:/acs:A/url:" value="/a"/>
-    <instance oid="/agent:Agt_A/acse:/acs:A/cpe:box/login:"
+    <instance oid="/local:/acse:/acs:A/auth_mode:" value="digest"/>
+    <instance oid="/local:/acse:/acs:A/port:" value="8080"/>
+    <instance oid="/local:/acse:/acs:A/url:" value="/a"/>
+    <instance oid="/local:/acse:/cpe:box/login:"
                 value="000261-Home Gateway-V601L622R1A0-1001742119"/>
-    <instance oid="/agent:Agt_A/acse:/acs:A/cpe:box/passwd:"
+    <instance oid="/local:/acse:/cpe:box/passwd:"
                 value="z7cD7CTDA1DrQKUb"/>
-    <instance oid="/agent:Agt_A/acse:/acs:A/cpe:box/cr_login:"
-                value="000261-Home Gateway-V601L622R1A0-1001742119"/>
-    <instance oid="/agent:Agt_A/acse:/acs:A/cpe:box/cr_passwd:"
-                value="z7cD7CTDA1DrQKUb"/>
+    <!-- <instance oid="/agent:Agt_A/acse:/acs:A/cpe:box/cr_url:"
+                value="http://10.20.1.4:8082/84cfef69c470bfcf"/> -->
   </set>
 </history>
