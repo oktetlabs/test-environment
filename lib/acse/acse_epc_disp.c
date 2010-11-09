@@ -1114,6 +1114,8 @@ epc_after_poll(void *data, struct pollfd *pfd)
         else /* Normal close of EPC connection leads to ACSE stop */
             exit(0);
 #endif
+        fprintf(stderr, "ACSE dispatcher: EPC recv returned error %s\n",
+                te_rc_err2str(rc));
 
         return TE_RC(TE_ACSE, rc);
     }
@@ -1121,6 +1123,7 @@ epc_after_poll(void *data, struct pollfd *pfd)
     {
         ERROR("%s(): NULL in 'msg' after success 'epc_recv'", 
               __FUNCTION__);
+        fprintf(stderr, "ACSE dispatcher: NULL in 'msg'\n");
         return TE_RC(TE_ACSE, TE_EFAIL);
     }
 
@@ -1171,6 +1174,7 @@ epc_destroy(void *data)
 {
     UNUSED(data);
     RING("EPC dispatcher destroy, pid %d\n", getpid()); 
+    fprintf(stderr, "EPC dispatcher destroy, pid %d\n", getpid()); 
     return acse_epc_close();
 }
 
