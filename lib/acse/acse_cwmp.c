@@ -970,6 +970,48 @@ acse_disable_cpe(cpe_t *cpe)
     return 0;
 }
 
+void
+acse_soap_default_req(struct soap *soap, acse_epc_cwmp_data_t *request)
+{
+    if (request->to_cpe.p != NULL)
+        return;
+
+    switch(request->rpc_cpe)
+    {
+#define SOAP_DEF_INIT_GEN(_r, _f, _t) \
+        case CWMP_RPC_##_r : \
+            request->to_cpe. _f = calloc(1, sizeof(_cwmp__## _t ) ); \
+            soap_default__cwmp__## _t (soap, request->to_cpe. _f); \
+            break;
+
+#define SOAP_DEF_INIT(_r, _t) SOAP_DEF_INIT_GEN(_r, _r, _t)
+#define SOAP_DEF_INIT_EMPTY(_r, _t) SOAP_DEF_INIT_GEN(_r, p, _t)
+            
+        SOAP_DEF_INIT_EMPTY(get_rpc_methods, GetRPCMethods)
+        SOAP_DEF_INIT(set_parameter_values, SetParameterValues)
+        SOAP_DEF_INIT(get_parameter_values, GetParameterValues)
+        SOAP_DEF_INIT(get_parameter_names, GetParameterNames)
+        SOAP_DEF_INIT(download, Download)
+        SOAP_DEF_INIT(add_object, AddObject)
+        SOAP_DEF_INIT(delete_object, DeleteObject)
+        SOAP_DEF_INIT(reboot, Reboot)
+        SOAP_DEF_INIT_EMPTY(factory_reset, FactoryReset)
+        SOAP_DEF_INIT(set_parameter_attributes, SetParameterAttributes)
+        SOAP_DEF_INIT(get_parameter_attributes, GetParameterAttributes)
+        SOAP_DEF_INIT(upload, Upload)
+        SOAP_DEF_INIT_EMPTY(get_queued_transfers, GetQueuedTransfers)
+        SOAP_DEF_INIT_EMPTY(get_all_queued_transfers, GetAllQueuedTransfers)
+        SOAP_DEF_INIT(schedule_inform, ScheduleInform)
+        SOAP_DEF_INIT(set_vouchers, SetVouchers)
+        SOAP_DEF_INIT(get_options, GetOptions)
+#undef SOAP_DEF_INIT_GEN
+#undef SOAP_DEF_INIT_EMPTY
+#undef SOAP_DEF_INIT
+
+        default:
+            break; /* do nothing */
+    }
+}
 /**
  * Put CWMP data into gSOAP buffer.
  * @return gSOAP status code.
@@ -979,6 +1021,37 @@ acse_soap_put_cwmp(struct soap *soap, acse_epc_cwmp_data_t *request)
 {
     switch(request->rpc_cpe)
     {
+#define SOAP_PUT_CWMP_GEN(_r, _f, _t) \
+        case CWMP_RPC_##_r : \
+            return soap_put__cwmp__##_t (soap, request->to_cpe. _f, \
+                                         "cwmp:" #_t, "");
+
+#define SOAP_PUT_CWMP(_r, _t) SOAP_PUT_CWMP_GEN(_r, _r, _t)
+#define SOAP_PUT_CWMP_EMPTY(_r, _t) SOAP_PUT_CWMP_GEN(_r, p, _t)
+
+        SOAP_PUT_CWMP_EMPTY(get_rpc_methods, GetRPCMethods)
+        SOAP_PUT_CWMP(set_parameter_values, SetParameterValues)
+        SOAP_PUT_CWMP(get_parameter_values, GetParameterValues)
+        SOAP_PUT_CWMP(get_parameter_names, GetParameterNames)
+        SOAP_PUT_CWMP(download, Download)
+        SOAP_PUT_CWMP(add_object, AddObject)
+        SOAP_PUT_CWMP(delete_object, DeleteObject)
+        SOAP_PUT_CWMP(reboot, Reboot)
+        SOAP_PUT_CWMP_EMPTY(factory_reset, FactoryReset)
+        SOAP_PUT_CWMP(set_parameter_attributes, SetParameterAttributes)
+        SOAP_PUT_CWMP(get_parameter_attributes, GetParameterAttributes)
+        SOAP_PUT_CWMP(upload, Upload)
+        SOAP_PUT_CWMP_EMPTY(get_queued_transfers, GetQueuedTransfers)
+        SOAP_PUT_CWMP_EMPTY(get_all_queued_transfers, GetAllQueuedTransfers)
+        SOAP_PUT_CWMP(schedule_inform, ScheduleInform)
+        SOAP_PUT_CWMP(set_vouchers, SetVouchers)
+        SOAP_PUT_CWMP(get_options, GetOptions)
+
+#undef SOAP_PUT_CWMP_GEN
+#undef SOAP_PUT_CWMP_EMPTY
+#undef SOAP_PUT_CWMP
+
+#if 0
         case CWMP_RPC_get_rpc_methods:
             {
                 _cwmp__GetRPCMethods arg;
@@ -1035,6 +1108,7 @@ acse_soap_put_cwmp(struct soap *soap, acse_epc_cwmp_data_t *request)
         case CWMP_RPC_set_vouchers:
         case CWMP_RPC_get_options:
             RING("TODO send RPC with code %d", request->rpc_cpe);
+#endif
         default:
             break; /* do nothing */
     }
@@ -1051,6 +1125,37 @@ acse_soap_serialize_cwmp(struct soap *soap, acse_epc_cwmp_data_t *request)
 {
     switch(request->rpc_cpe)
     {
+#define SOAP_SER_CWMP_GEN(_r, _f, _t) \
+        case CWMP_RPC_##_r : \
+            soap_serialize__cwmp__##_t (soap, request->to_cpe. _f); \
+            break;
+
+#define SOAP_SER_CWMP(_r, _t) SOAP_SER_CWMP_GEN(_r, _r, _t)
+#define SOAP_SER_CWMP_EMPTY(_r, _t) SOAP_SER_CWMP_GEN(_r, p, _t)
+
+        SOAP_SER_CWMP_EMPTY(get_rpc_methods, GetRPCMethods)
+        SOAP_SER_CWMP(set_parameter_values, SetParameterValues)
+        SOAP_SER_CWMP(get_parameter_values, GetParameterValues)
+        SOAP_SER_CWMP(get_parameter_names, GetParameterNames)
+        SOAP_SER_CWMP(download, Download)
+        SOAP_SER_CWMP(add_object, AddObject)
+        SOAP_SER_CWMP(delete_object, DeleteObject)
+        SOAP_SER_CWMP(reboot, Reboot)
+        SOAP_SER_CWMP_EMPTY(factory_reset, FactoryReset)
+        SOAP_SER_CWMP(set_parameter_attributes, SetParameterAttributes)
+        SOAP_SER_CWMP(get_parameter_attributes, GetParameterAttributes)
+        SOAP_SER_CWMP(upload, Upload)
+        SOAP_SER_CWMP_EMPTY(get_queued_transfers, GetQueuedTransfers)
+        SOAP_SER_CWMP_EMPTY(get_all_queued_transfers, GetAllQueuedTransfers)
+        SOAP_SER_CWMP(schedule_inform, ScheduleInform)
+        SOAP_SER_CWMP(set_vouchers, SetVouchers)
+        SOAP_SER_CWMP(get_options, GetOptions)
+
+#undef SOAP_SER_CWMP_GEN
+#undef SOAP_SER_CWMP_EMPTY
+#undef SOAP_SER_CWMP
+
+#if 0
         case CWMP_RPC_get_rpc_methods: 
         {
             _cwmp__GetRPCMethods arg;
@@ -1102,6 +1207,7 @@ acse_soap_serialize_cwmp(struct soap *soap, acse_epc_cwmp_data_t *request)
         case CWMP_RPC_set_vouchers:
         case CWMP_RPC_get_options:
             RING("TODO send RPC with code %d", request->rpc_cpe);
+#endif
         default: /* do nothing */
             break;
     }
