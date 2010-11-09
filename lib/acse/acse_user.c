@@ -276,12 +276,32 @@ acse_cwmp_call(te_errno *status, size_t *data_len,
                acse_epc_cwmp_data_t **cwmp_data)
 {
     te_errno rc;
+    struct timespec epc_ts = {1, 0}; /* 1 sec */
+    struct pollfd   pfd = {0, POLLIN, 0};
+    int             pollrc;
 
     rc = acse_epc_send(&msg);
     if (rc != 0)
     {
         ERROR("%s(): EPC send failed %r", __FUNCTION__, rc);
         return rc;
+    }
+
+    pfd.fd = acse_epc_socket();
+    pollrc = ppoll(&pfd, 1, &epc_ts, NULL);
+
+    if (pollrc < 0)
+    {
+        int saved_errno = errno;
+        ERROR("call ACSE CWMP, recv answer;"
+              " poll on EPC socket failed, sys errno: %s",
+                strerror(saved_errno));
+        return TE_OS_RC(TE_TA_UNIX, saved_errno);
+    }
+    if (pollrc == 0)
+    {
+        ERROR("call ACSE CWMP, recv answer EPC timed out");
+        return TE_RC(TE_TA_UNIX, TE_ETIMEDOUT);
     }
 
     rc = acse_epc_recv(&msg_resp);
