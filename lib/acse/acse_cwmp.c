@@ -1273,6 +1273,7 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
          __FUNCTION__, cpe->name, request->rpc_cpe, request->request_id);
 
     cwmp_prepare_soap_header(soap, cpe);
+    acse_soap_default_req(soap, request);
 
     soap->keep_alive = 1; 
     soap->error = SOAP_OK;
