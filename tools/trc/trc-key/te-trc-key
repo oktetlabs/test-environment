@@ -60,7 +60,6 @@ for my $bug_line (<STDIN>)
         my $bug_tests = $';
         chomp $bug_tests;
         $bug_unspec{'tests'} = $bug_tests;
-        printf("Push unspecified bug<br/>\n");
         push(@bugs, \%bug_unspec);
     }
     elsif ($bug_line =~ m/(.*) ([\w\s\-\_\.]*):/i)
