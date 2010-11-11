@@ -1320,7 +1320,6 @@ trc_report_keys_to_html(FILE           *f,
              if (!keys_only)
              {
                  fprintf(f_in, "#%s", key_test->path);
-                 printf("#%s", key_test->path);
                  TAILQ_FOREACH(key_iter, &key_test->iters, links)
                  {
                      fprintf(f_in, "|%d", key_iter->iter->tin);
