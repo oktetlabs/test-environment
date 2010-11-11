@@ -47,6 +47,11 @@
 extern "C" {
 #endif
 
+#define TRC_RE_KEY_URL        "URL"
+#define TRC_RE_KEY_TABLE_HREF "TABLE"
+#define TRC_RE_KEY_SCRIPT     "SCRIPT"
+#define TRC_RE_KEY_TAGS       "TAGS"
+
 /** Regular expression match substitution */
 typedef struct trc_re_match_subst {
     TAILQ_ENTRY(trc_re_match_subst) links;  /**< List links */
@@ -78,9 +83,24 @@ typedef struct trc_re_subst {
 /** Regular expression substitutions list */
 typedef TAILQ_HEAD(trc_re_substs, trc_re_subst) trc_re_substs;
 
+/** Regular expression substitution */
+typedef struct trc_re_namespace {
+    TAILQ_ENTRY(trc_re_namespace) links;  /**< List links */
+
+    char          *name;   /**< Namespace name */
+    trc_re_substs  substs; /**< Regexp substitutions * list */
+} trc_re_namespace;
+
+/** List of substitutions namespaces */
+typedef TAILQ_HEAD(trc_re_namespaces, trc_re_namespace)
+        trc_re_namespaces;
+
 
 /** Key substitutions */
 extern trc_re_substs key_substs;
+
+/** Key namespaces */
+extern trc_re_namespaces key_namespaces;
 
 
 /**
@@ -100,6 +120,17 @@ extern void trc_re_substs_free(trc_re_substs *substs);
 extern te_errno trc_re_substs_read(const char *file, trc_re_substs *substs);
 
 /**
+ * Read substitutions from file.
+ *
+ * @param file          File name
+ * @param substs        List to add substitutions to
+ *
+ * @return              Status code.
+ */
+extern te_errno trc_re_namespaces_read(const char *file,
+                                       trc_re_namespaces *namespaces);
+
+/**
  * Execute substitutions.
  *
  * @param substs        List of substitutions to do
@@ -117,7 +148,7 @@ extern void trc_re_substs_exec_start(const trc_re_substs *substs,
  * @param key           Keys string
  * @param f             File to output to
  */
-extern void trc_re_key_substs(const char *key, FILE *f);
+extern void trc_re_key_substs(const char *name, const char *key, FILE *f);
 
 /**
  * Execute substitutions.
@@ -137,11 +168,16 @@ extern ssize_t trc_re_substs_exec_buf_start(const trc_re_substs *substs,
 /**
  * Do regular expression key substitutions.
  *
+ * @param name          Regular expression namespace name
  * @param key           Keys string
  *
  * @return              Substituted string or NULL.
  */
-extern char *trc_re_key_substs_buf(const char *key);
+extern char *trc_re_key_substs_buf(const char *name, const char *key);
+
+extern te_errno trc_key_substs_read(const char *file);
+
+extern void trc_key_substs_free();
 
 #ifdef __cplusplus
 } /* extern "C" */

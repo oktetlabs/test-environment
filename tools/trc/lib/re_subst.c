@@ -60,10 +60,8 @@
 
 #include "re_subst.h"
 
-
 /** Key substitutions */
-trc_re_substs key_substs = TAILQ_HEAD_INITIALIZER(key_substs);
-
+trc_re_namespaces key_namespaces = TAILQ_HEAD_INITIALIZER(key_namespaces);
 
 /**
  * Free resourses allocated for regular expression substitution.
@@ -98,6 +96,67 @@ trc_re_substs_free(trc_re_substs *substs)
     }
 }
 
+/* See the description in re_subst.h */
+void
+trc_re_namespaces_free(trc_re_namespaces *namespaces)
+{
+    trc_re_namespace *p;
+
+    while ((p = TAILQ_FIRST(namespaces)) != NULL)
+    {
+        TAILQ_REMOVE(namespaces, p, links);
+        trc_re_substs_free(&p->substs);
+        free(p->name);
+        free(p);
+    }
+}
+
+trc_re_namespace *
+trc_re_key_namespace_find(trc_re_namespaces *namespaces, const char *name)
+{
+    trc_re_namespace *namespace = NULL;
+    assert(namespaces != NULL);
+
+    TAILQ_FOREACH(namespace, namespaces, links)
+    {
+        if ((name == NULL) && (namespace->name == NULL))
+            return namespace;
+
+        if ((name == NULL) || (namespace->name == NULL))
+            continue;
+
+        if (strcmp(name, namespace->name) == 0)
+            return namespace;
+    }
+
+    return NULL;
+}
+
+trc_re_namespace *
+trc_re_key_namespace_create(trc_re_namespaces *namespaces, const char *name)
+{
+    trc_re_namespace *namespace = NULL;
+    assert(namespaces != NULL);
+
+    VERB("%s('%s')", __FUNCTION__, name);
+
+    if ((namespace = trc_re_key_namespace_find(namespaces, name)) != NULL)
+    {
+        WARN("Namespace '%s' already exist", name);
+        return namespace;
+    }
+
+    if ((namespace = calloc(1, sizeof(trc_re_namespace))) == NULL)
+        return NULL;
+
+    if (name != NULL)
+        namespace->name = strdup(name);
+    TAILQ_INIT(&namespace->substs);
+
+    TAILQ_INSERT_HEAD(namespaces, namespace, links);
+
+    return namespace;
+}
 
 /**
  * Parse substitution string.
@@ -145,13 +204,20 @@ trc_re_subst_parse(trc_re_subst *p)
 
 /* See the description in re_subst.h */
 te_errno
-trc_re_substs_read(const char *file, trc_re_substs *substs)
+trc_re_namespaces_read(const char *file, trc_re_namespaces *namespaces)
 {
-    te_errno        rc = 0;
-    FILE           *f;
     char            buf[256];
-    char           *s;
-    trc_re_subst   *p;
+    FILE             *f = NULL;
+    char             *s = NULL;
+    trc_re_subst     *p = NULL;
+    trc_re_namespace *namespace = NULL;
+    te_errno          rc = 0;
+
+    RING("%s('%s', %p)", __FUNCTION__, file, namespaces);
+
+    TAILQ_INIT(namespaces);
+
+    namespace = trc_re_key_namespace_create(namespaces, NULL);
 
     f = fopen(file, "r");
     if (f == NULL)
@@ -174,6 +240,19 @@ trc_re_substs_read(const char *file, trc_re_substs *substs)
         /* Skip empty line */
         if (buf[0] == '\0')
             continue;
+
+        /* Find namespace name */
+        if (buf[0] == '#')
+        {
+            /* Skip spaces */
+            for (s = &buf[1]; *s == ' '; s++);
+            if (*s == '\0')
+                continue;
+
+            namespace = trc_re_key_namespace_create(namespaces, s);
+
+            continue;
+        }
 
         /* Find parrent/substitution separator */
         s = strchr(buf, '\t');
@@ -205,7 +284,7 @@ trc_re_substs_read(const char *file, trc_re_substs *substs)
         p->str = strdup(s);
         TAILQ_INIT(&p->with);
         p->matches = NULL;
-        TAILQ_INSERT_TAIL(substs, p, links);
+        TAILQ_INSERT_TAIL(&namespace->substs, p, links);
 
         if (p->str == NULL)
         {
@@ -375,28 +454,43 @@ trc_re_substs_exec_start(const trc_re_substs *substs, const char *str,
 }
 
 /* See the description in re_subst.h */
-void
-trc_re_key_substs(const char *key, FILE *f)
-{
-    trc_re_substs_exec_start(&key_substs, key, f);
-}
-
-/* See the description in re_subst.h */
 ssize_t
 trc_re_substs_exec_buf_start(const trc_re_substs *substs, const char *str,
                          char *buf, ssize_t buf_size)
 {
-    trc_re_substs_exec_buf(TAILQ_FIRST(substs), str, strlen(str),
-                           buf, buf_size);
+    return trc_re_substs_exec_buf(TAILQ_FIRST(substs), str, strlen(str),
+                                  buf, buf_size);
+}
+
+/* See the description in re_subst.h */
+void
+trc_re_key_substs(const char *name, const char *key, FILE *f)
+{
+    trc_re_namespace *keyn =
+        trc_re_key_namespace_find(&key_namespaces, name);
+
+    if (keyn != NULL)
+        trc_re_substs_exec_start(&keyn->substs, key, f);
 }
 
 /* See the description in re_subst.h */
 char *
-trc_re_key_substs_buf(const char *key)
+trc_re_key_substs_buf(const char *name, const char *key)
 {
-    char    *buf = NULL;
-    ssize_t  buf_size =
-        trc_re_substs_exec_buf_start(&key_substs, key, NULL, 0);
+    char                *buf = NULL;
+    trc_re_namespace    *keyn =
+        trc_re_key_namespace_find(&key_namespaces, name);
+    const trc_re_substs *substs;
+    ssize_t              buf_size;
+
+    if (keyn == NULL)
+    {
+        ERROR("%s(): Namespace '%s' not found", __FUNCTION__, name);
+        return NULL;
+    }
+
+    substs = &keyn->substs;
+    buf_size = trc_re_substs_exec_buf_start(substs, key, NULL, 0);
 
     if (buf_size++ <= 0)
         return NULL;
@@ -404,7 +498,20 @@ trc_re_key_substs_buf(const char *key)
     if ((buf = calloc(1, buf_size)) == NULL)
         return NULL;
 
-    trc_re_substs_exec_buf_start(&key_substs, key, buf, buf_size);
+    trc_re_substs_exec_buf_start(substs, key, buf, buf_size);
 
     return buf;
 }
+
+te_errno
+trc_key_substs_read(const char *file)
+{
+    return trc_re_namespaces_read(file, &key_namespaces);
+}
+
+void
+trc_key_substs_free()
+{
+    return trc_re_namespaces_free(&key_namespaces);
+}
+
