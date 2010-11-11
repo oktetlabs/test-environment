@@ -79,6 +79,16 @@ enum {
     TRC_DIFF_OPT_NAME7,
     TRC_DIFF_OPT_NAME8,
     TRC_DIFF_OPT_NAME9,
+    TRC_DIFF_OPT_LOG0,
+    TRC_DIFF_OPT_LOG1,
+    TRC_DIFF_OPT_LOG2,
+    TRC_DIFF_OPT_LOG3,
+    TRC_DIFF_OPT_LOG4,
+    TRC_DIFF_OPT_LOG5,
+    TRC_DIFF_OPT_LOG6,
+    TRC_DIFF_OPT_LOG7,
+    TRC_DIFF_OPT_LOG8,
+    TRC_DIFF_OPT_LOG9,
     TRC_DIFF_OPT_SHOW_KEYS0,
     TRC_DIFF_OPT_SHOW_KEYS1,
     TRC_DIFF_OPT_SHOW_KEYS2,
@@ -152,6 +162,9 @@ process_cmd_line_opts(int argc, char **argv, trc_diff_ctx *ctx)
         { #id_ "-name", '\0', POPT_ARG_STRING, NULL,                \
           TRC_DIFF_OPT_NAME##id_,                                   \
           "Name of the corresponding set of tags.", "NAME" },       \
+        { #id_ "-log", '\0', POPT_ARG_STRING, NULL,                 \
+          TRC_DIFF_OPT_LOG##id_,                                    \
+          "Name of the corresponding set of tags.", "LOG" },        \
         { #id_ "-show-keys", '\0', POPT_ARG_NONE, NULL,             \
           TRC_DIFF_OPT_SHOW_KEYS##id_,                              \
           "Show table with keys which cause differences.",  NULL }, \
@@ -224,6 +237,24 @@ process_cmd_line_opts(int argc, char **argv, trc_diff_ctx *ctx)
                 }
                 break;
 
+            case TRC_DIFF_OPT_LOG0:
+            case TRC_DIFF_OPT_LOG1:
+            case TRC_DIFF_OPT_LOG2:
+            case TRC_DIFF_OPT_LOG3:
+            case TRC_DIFF_OPT_LOG4:
+            case TRC_DIFF_OPT_LOG5:
+            case TRC_DIFF_OPT_LOG6:
+            case TRC_DIFF_OPT_LOG7:
+            case TRC_DIFF_OPT_LOG8:
+            case TRC_DIFF_OPT_LOG9:
+                if (trc_diff_set_log(&ctx->sets, rc - TRC_DIFF_OPT_LOG0,
+                                     poptGetOptArg(optCon)) != 0)
+                {
+                    poptFreeContext(optCon);
+                    return EXIT_FAILURE;
+                }
+                break;
+
             case TRC_DIFF_OPT_SHOW_KEYS0:
             case TRC_DIFF_OPT_SHOW_KEYS1:
             case TRC_DIFF_OPT_SHOW_KEYS2:
@@ -265,7 +296,7 @@ process_cmd_line_opts(int argc, char **argv, trc_diff_ctx *ctx)
             {
                 const char *key2html_fn = poptGetOptArg(optCon);
 
-                if (trc_re_substs_read(key2html_fn, &key_substs) != 0)
+                if (trc_key_substs_read(key2html_fn) != 0)
                 {
                     ERROR("Failed to get key substitutions from "
                           "file '%s'", key2html_fn);
@@ -329,6 +360,12 @@ main(int argc, char *argv[])
     if (process_cmd_line_opts(argc, argv, ctx) != EXIT_SUCCESS)
         goto exit;
 
+    if (trc_diff_db_fn == NULL)
+    {
+        ERROR("Missing name of the file with expected testing results");
+        goto exit;
+    }
+
     /* Make sure that all sets have name */
     TAILQ_FOREACH(diff_set, &ctx->sets, links)
     {
@@ -340,16 +377,27 @@ main(int argc, char *argv[])
         }
     }
 
-    if (trc_diff_db_fn == NULL)
-    {
-        ERROR("Missing name of the file with expected testing results");
-        goto exit;
-    }
-
     /* Parse expected testing results database */
     if (trc_db_open(trc_diff_db_fn, &ctx->db) != 0)
     {
         ERROR("Failed to load expected testing results database");
+        goto exit;
+    }
+
+    /* Make sure that all sets with logs have db_uid allocated */
+    TAILQ_FOREACH(diff_set, &ctx->sets, links)
+    {
+        if ((diff_set->db_uid = trc_db_new_user(ctx->db)) < 0)
+        {
+            ERROR("trc_db_new_user() failed");
+            goto exit;
+        }
+    }
+
+    /* Parse logs for each diff set */
+    if (trc_diff_process_logs(ctx) != 0)
+    {
+        ERROR("Failed to read logs");
         goto exit;
     }
 
@@ -374,7 +422,7 @@ exit:
 
     trc_db_close(ctx->db);
     trc_diff_ctx_free(ctx);
-    trc_re_substs_free(&key_substs);
+    trc_key_substs_free();
 
     return result;
 }

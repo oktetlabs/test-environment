@@ -49,6 +49,7 @@
 #include "trc_diff.h"
 #include "trc_html.h"
 #include "re_subst.h"
+#include "trc_report.h"
 
 
 /** Generate brief version of the diff report */
@@ -71,112 +72,222 @@
 static const char * const trc_diff_html_title_def =
     "Testing Results Expectations Differences Report";
 
-static const char * const trc_diff_html_doc_start =
-"<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\">\n"
+static const char * const trc_diff_html_doc_start = 
+"<!DOCTYPE HTML PUBLIC \"-      //W3C//DTD HTML 4.0 Transitional//EN\">\n"
 "<html>\n"
 "<head>\n"
 "  <meta http-equiv=\"content-type\" content=\"text/html; "
 "charset=utf-8\">\n"
 "  <title>%s</title>\n"
 "  <style type=\"text/css\">\n"
-"    .S {font-weight: bold; color: green; "
+"    .expected {font-weight: normal; color: blue; "
         "padding-left: 0.08in; padding-right: 0.08in}\n"
-"    .U {font-weight: bold; color: red; "
+"    .expected {font-weight: normal; color: blue; "
         "padding-left: 0.08in; padding-right: 0.08in}\n"
-"    .E {font-weight: italic; color: blue; "
+"    .unexpected {font-weight: normal; color: red; "
         "padding-left: 0.08in; padding-right: 0.08in}\n"
+"    .passed {font-weight: bold; color: black; "
+        "padding-left: 0.08in; padding-right: 0.08in}\n"
+"    .passed_new {font-weight: bold; color: blue; "
+        "padding-left: 0.08in; padding-right: 0.08in}\n"
+"    .passed_old {font-weight: bold; color: red; "
+        "padding-left: 0.08in; padding-right: 0.08in}\n"
+"    .passed_une {font-weight: bold; color: black; "
+        "padding-left: 0.08in; padding-right: 0.08in}\n"
+"    .passed_une_new {font-weight: bold; color: blue; "
+        "padding-left: 0.08in; padding-right: 0.08in}\n"
+"    .passed_une_old {font-weight: bold; color: red; "
+        "padding-left: 0.08in; padding-right: 0.08in}\n"
+"    .failed {font-weight: bold; color: black; "
+        "padding-left: 0.08in; padding-right: 0.08in}\n"
+"    .failed_new {font-weight: bold; color: red; "
+        "padding-left: 0.08in; padding-right: 0.08in}\n"
+"    .failed_old {font-weight: bold; color: blue; "
+        "padding-left: 0.08in; padding-right: 0.08in}\n"
+"    .failed_une {font-weight: bold; color: black; "
+        "padding-left: 0.08in; padding-right: 0.08in}\n"
+"    .failed_une_new {font-weight: bold; color: red; "
+        "padding-left: 0.08in; padding-right: 0.08in}\n"
+"    .failed_une_old {font-weight: bold; color: blue; "
+        "padding-left: 0.08in; padding-right: 0.08in}\n"
+"    .skipped {font-weight: normal; color: grey; "
+        "padding-left: 0.08in; padding-right: 0.08in}\n"
+"    .total {font-weight: bold; color: black; "
+        "padding-left: 0.08in; padding-right: 0.08in}\n"
+"    .total_new {font-weight: bold; color: black; "
+        "padding-left: 0.08in; padding-right: 0.08in}\n"
+"    .total_old {font-weight: bold; color: black; "
+        "padding-left: 0.08in; padding-right: 0.08in}\n"
+"    .matched {font-weight: bold; color: green; "
+        "padding-left: 0.08in; padding-right: 0.08in}\n"
+"    .unmatched {font-weight: bold; color: red; "
+        "padding-left: 0.08in; padding-right: 0.08in}\n"
+"    .ignored {font-weight: italic; color: blue; "
+        "padding-left: 0.08in; padding-right: 0.08in}\n"
+#if TRC_USE_STATS_POPUP
+"    #StatsTip {\n"
+"        position: absolute;\n"
+"        visibility: hidden;\n"
+"        font-size: small;\n"
+"        overflow: auto;\n"
+"        width: 600px;\n"
+"        height: 400px;\n"
+"        left: 200px;\n"
+"        top: 100px;\n"
+"        background-color: #c0c0c0;\n"
+"        border: 1px solid #000000;\n"
+"        padding: 10px;\n"
+"    }\n"
+"    #close {\n"
+"        float: right;\n"
+"    }\n"
+#endif
 "  </style>\n"
+#if TRC_USE_STATS_POPUP
+"  <script type=\"text/javascript\">\n"
+"    function fillTip(test_list)\n"
+"    {\n"
+"        if (test_list === null)\n"
+"        {\n"
+"            alert('Failed to get subtests of ' + name);\n"
+"            return;\n"
+"        }\n"
+"\n"
+"        var innerHTML = '';\n"
+"        innerHTML += '<span id=\"close\"> ' +\n"
+"                     '<a href=\"javascript:hidePopups()\"' +\n"
+"                     'style=\"text-decoration: none\">' +\n"
+"                     '<strong>[x]</strong></a></span>';\n"
+"        innerHTML += '<div align=\"center\"><b>Package: ' + \n"
+"                     package['name'] + '</b></div>';\n"
+"        innerHTML += '<div style=\"height:380px;overflow:auto;\">';"
+"\n"
+"        var test;\n"
+"        var test_prev;\n"
+"        for (var test_no in test_list)\n"
+"        {\n"
+"            var test = test_list[test_no];\n"
+"            if ((!test_prev) or (test['path'] != test_prev['path']))\n"
+"            {\n"
+"                innerHTML += test['path'] + '<br/>';\n"
+"            }\n"
+"            innerHTML += '&nbsp;&nbsp;&nbsp;&nbsp;' + test['name'] +\n"
+"                         '&nbsp;' + test['count'] + '<br/>';\n"
+"        }\n"
+"        innerHTML += '</div>';"
+"\n"
+"        return innerHTML;\n"
+"    }\n"
+"  </script>\n"
+#endif
 "</head>\n"
-"<body lang=\"en-US\" dir=\"LTR\">\n"
-"<h1 align=center>%s</h1>\n"
-"<h2 align=center>%s</h2>\n";
+"<body lang=\"en-US\" dir=\"LTR\">\n";
 
 static const char * const trc_diff_html_doc_end =
 "</body>\n"
 "</html>\n";
 
-
-static const char * const trc_diff_stats_table =
-"<table border=1 cellpadding=4 cellspacing=3>\n"
+static const char * const trc_diff_stats_table_start =
+"<table border=1 cellpadding=4 cellspacing=3 "
+"style=\"font-size:small;\">\n"
 "  <thead>\n"
 "    <tr>\n"
-"      <td rowspan=2>\n"
+"      <td rowspan=3>\n"
 "        <b>%s</b>\n"
 "      </td>\n"
-"      <td colspan=5 align=center>\n"
+"      <td colspan=7 align=center>\n"
 "        <b>%s</b>\n"
 "      </td>\n"
 "    </tr>\n"
 "    <tr>\n"
-"      <td align=center><b>%s</b></td>\n"
-"      <td align=center><b>%s</b></td>\n"
-"      <td align=center><b>%s</b></td>\n"
-"      <td align=center><b>%s</b></td>\n"
-"      <td align=center><b>%s</b></td>\n"
+"      <td align=center colspan=2><b>PASSED</b></td>\n"
+"      <td align=center colspan=2><b>FAILED</b></td>\n"
+"      <td rowspan=2><b>UNSTABLE</b></td>\n"
+"      <td rowspan=2><b>skipped</b></td>\n"
+"      <td rowspan=2><b>unspecified</b></td>\n"
+"    </tr>\n"
+"    <tr>\n"
+"      <td><b>Expected</b></td>\n"
+"      <td><b>Unexpected</b></td>\n"
+"      <td><b>Expected</b></td>\n"
+"      <td><b>Unexpected</b></td>\n"
 "    </tr>\n"
 "  </thead>\n"
-"  <tbody align=right>\n"
+    "  <tbody align=center>\n";
+
+static const char * const trc_diff_stats_table_row_start =
 "    <tr>\n"
 "      <td align=left><b>%s</b></td>\n"
-"      <td><font class=\"S\">%u</font>+<font class=\"U\">%u</font>+"
-          "<font class=\"E\">%u</font></td>\n"
-"      <td><font class=\"U\">%u</font>+<font class=\"E\">%u</font></td>\n"
-"      <td><font class=\"U\">%u</font>+<font class=\"E\">%u</font></td>\n"
-"      <td><font class=\"U\">%u</font>+<font class=\"E\">%u</font></td>\n"
-"      <td><font class=\"U\">%u</font></td>\n"
+"      <td>";
+
+static const char * const trc_diff_stats_table_entry_matched =
+"<font class=\"matched\">%u</font>";
+
+static const char * const trc_diff_stats_table_entry_unmatched =
+"<font class=\"unmatched\">%u</font>";
+
+static const char * const trc_diff_stats_table_entry_ignored =
+"<font class=\"ignored\">%u</font>";
+
+static const char * const trc_diff_stats_table_row_mid =
+"      </td>\n"
+"      <td>\n";
+
+static const char * const trc_diff_stats_table_row_end =
+"      </td>\n"
+"    </tr>\n";
+
+static const char * const trc_diff_stats_table_end = 
+"    <tr>\n"
+"      <td align=left colspan=8><h3>Total run: "
+"<font class=\"matched\">%u</font>+"
+"<font class=\"unmatched\">%u</font>+"
+"<font class=\"ignored\">%u</font>=%u</h3></td>"
 "    </tr>\n"
 "    <tr>\n"
-"      <td align=left><b>%s</b></td>\n"
-"      <td><font class=\"U\">%u</font>+<font class=\"E\">%u</font></td>\n"
-"      <td><font class=\"S\">%u</font>+<font class=\"U\">%u</font>+"
-          "<font class=\"E\">%u</font></td>\n"
-"      <td><font class=\"U\">%u</font>+<font class=\"E\">%u</font></td>\n"
-"      <td><font class=\"U\">%u</font>+<font class=\"E\">%u</font></td>\n"
-"      <td><font class=\"U\">%u</font></td>\n"
-"    </tr>\n"
-"    <tr>\n"
-"      <td align=left><b>%s</b></td>\n"
-"      <td><font class=\"U\">%u</font>+<font class=\"E\">%u</font></td>\n"
-"      <td><font class=\"U\">%u</font>+<font class=\"E\">%u</font></td>\n"
-"      <td><font class=\"S\">%u</font>+<font class=\"U\">%u</font>+"
-          "<font class=\"E\">%u</font></td>\n"
-"      <td><font class=\"U\">%u</font>+<font class=\"E\">%u</font></td>\n"
-"      <td><font class=\"U\">%u</font></td>\n"
-"    </tr>\n"
-"    <tr>\n"
-"      <td align=left><b>%s</b></td>\n"
-"      <td><font class=\"U\">%u</font>+<font class=\"E\">%u</font></td>\n"
-"      <td><font class=\"U\">%u</font>+<font class=\"E\">%u</font></td>\n"
-"      <td><font class=\"U\">%u</font>+<font class=\"E\">%u</font></td>\n"
-"      <td><font class=\"S\">%u</font></td>\n"
-"      <td><font class=\"U\">%u</font></td>\n"
-"    </tr>\n"
-"    <tr>\n"
-"      <td align=left><b>%s</b></td>\n"
-"      <td><font class=\"U\">%u</font></td>\n"
-"      <td><font class=\"U\">%u</font></td>\n"
-"      <td><font class=\"U\">%u</font></td>\n"
-"      <td><font class=\"U\">%u</font></td>\n"
-"      <td><font class=\"U\">%u</font></td>\n"
-"    </tr>\n"
-"    <tr>\n"
-"      <td align=left colspan=6><h3>Total run: <font class=\"S\">%u</font>+"
-          "<font class=\"U\">%u</font>+<font class=\"E\">%u</font>=%u"
-          "</h3></td>"
-"    </tr>\n"
-"    <tr>\n"
-"      <td align=left colspan=6>[<font class=\"S\">X</font>+]"
-                                "<font class=\"U\">Y</font>+"
-                                "<font class=\"E\">Z</font><br/>"
+"      <td align=left colspan=8>[<font class=\"matched\">X</font>+]"
+                                "<font class=\"unmatched\">Y</font>+"
+                                "<font class=\"ignored\">Z</font><br/>"
 "X - result match, Y - result does not match (to be fixed), "
 "Z - result does not match (ignored)</td>"
 "    </tr>\n"
 "  </tbody>\n"
 "</table>\n";
 
+static const char * const trc_diff_stats_brief_counter =
+"<font class=\"%s\">%u</font>";
+
+static const char * const trc_diff_stats_brief_table_start = 
+"<table border=1 cellpadding=4 cellspacing=3 "
+"style=\"font-size:small;\">\n"
+"  <thead>\n"
+"    <tr><td colspan=6 align=center><b>Brief Diff Stats: %s</b></td></tr>\n"
+"    <tr><td rowspan=2><b>Diff with:</b></td>\n"
+"        <td align=center colspan=2><b>PASSED</b></td>\n"
+"        <td align=center colspan=2><b>FAILED</b></td>\n"
+"        <td align=center rowspan=2><b>TOTAL</b></td>\n"
+"    </tr>\n"
+"    <tr>\n"
+"        <td align=center><b>Expected</b></td>\n"
+"        <td align=center><b>Unexpected</b></td>\n"
+"        <td align=center><b>Expected</b></td>\n"
+"        <td align=center><b>Unexpected</b></td>\n"
+"    </tr>\n"
+"  </thead>\n"
+"  <tbody align=center>\n";
+
+static const char * const trc_diff_stats_brief_table_row_start =
+"    <tr><td><b>%s</b></td>\n";
+
+static const char * const trc_diff_stats_brief_table_row_end =
+"    </tr>\n";
+
+static const char * const trc_diff_stats_brief_table_end =
+"  </tbody>\n"
+"</table>\n";
 
 static const char * const trc_diff_key_table_heading =
-"<table border=1 cellpadding=4 cellspacing=3>\n"
+"<table border=1 cellpadding=4 cellspacing=3 style=\"font-size:small;\">\n"
 "  <thead>\n"
 "    <tr>\n"
 "      <td>\n"
@@ -189,7 +300,6 @@ static const char * const trc_diff_key_table_heading =
 "  </thead>\n"
 "  <tbody>\n";
 
-
 static const char * const trc_diff_key_table_row_start =
 "    <tr>\n"
 "      <td>";
@@ -201,7 +311,7 @@ static const char * const trc_diff_key_table_row_end =
 
 
 static const char * const trc_diff_full_table_heading_start =
-"<table border=1 cellpadding=4 cellspacing=3>\n"
+"<table border=1 cellpadding=4 cellspacing=3 style=\"font-size:small;\">\n"
 "  <thead>\n"
 "    <tr>\n"
 "      <td>\n"
@@ -212,7 +322,7 @@ static const char * const trc_diff_full_table_heading_start =
 "      </td>\n";
 
 static const char * const trc_diff_brief_table_heading_start =
-"<table border=1 cellpadding=4 cellspacing=3>\n"
+"<table border=1 cellpadding=4 cellspacing=3 style=\"font-size:small;\">\n"
 "  <thead>\n"
 "    <tr>\n"
 "      <td>\n"
@@ -262,6 +372,11 @@ static const char * const trc_diff_table_row_col_start =
 static const char * const trc_diff_table_row_col_end =
 "</td>\n";
 
+static const char * const trc_diff_test_result_start =
+"<font class=\"%s\">";
+
+static const char * const trc_diff_test_result_end =
+"</font>";
 
 /**
  * Output set of tags used for comparison to HTML report.
@@ -286,8 +401,68 @@ trc_diff_tags_to_html(FILE *f, const trc_diff_sets *sets)
                 fprintf(f, " %s", tag->v);
             }
         }
-        fprintf(f, "<br/><br/>");
+        fprintf(f, "<br/>");
     }
+    fprintf(f, "<br/>");
+}
+
+static void
+trc_diff_stats_entry_to_html(FILE *f, trc_diff_stats_counter *counters)
+{
+    if ((counters[TRC_DIFF_MATCH] == 0)    &&
+        (counters[TRC_DIFF_NO_MATCH] == 0) &&
+        (counters[TRC_DIFF_NO_MATCH_IGNORE] == 0))
+    {
+        fprintf(f, "0");
+        return;
+    }
+
+    if (counters[TRC_DIFF_MATCH] > 0)
+    {
+        fprintf(f, trc_diff_stats_table_entry_matched,
+                counters[TRC_DIFF_MATCH]);
+        if (counters[TRC_DIFF_NO_MATCH] +
+            counters[TRC_DIFF_NO_MATCH_IGNORE] > 0)
+            fprintf(f, " + ");
+    }
+    if (counters[TRC_DIFF_NO_MATCH] > 0)
+    {
+        fprintf(f, trc_diff_stats_table_entry_unmatched,
+                counters[TRC_DIFF_NO_MATCH]);
+        if (counters[TRC_DIFF_NO_MATCH_IGNORE] > 0)
+            fprintf(f, " + ");
+    }
+    if (counters[TRC_DIFF_NO_MATCH_IGNORE] > 0)
+    {
+        fprintf(f, trc_diff_stats_table_entry_ignored,
+                counters[TRC_DIFF_NO_MATCH_IGNORE]);
+    }
+}
+
+static const char *
+trc_diff_test_status_to_str(trc_test_status status)
+{
+    switch (status)
+    {
+        case TRC_TEST_PASSED:
+            return "passed";
+        case TRC_TEST_PASSED_UNE:
+            return "PASSED unexpectedly";
+        case TRC_TEST_FAILED:
+            return "failed";
+        case TRC_TEST_FAILED_UNE:
+            return "FAILED unexpectedly";
+        case TRC_TEST_UNSTABLE:
+            return "UNSTABLE";
+        case TRC_TEST_SKIPPED:
+            return "skipped";
+        case TRC_TEST_UNSPECIFIED:
+            return "unspecified";
+        default:
+            break;
+    }
+
+    return "unknown";
 }
 
 
@@ -305,149 +480,223 @@ trc_diff_one_stats_to_html(FILE               *f,
                            const trc_diff_set *tags_x,
                            const trc_diff_set *tags_y)
 {
-    trc_diff_stats_counters    *counters;
-    trc_diff_stats_counter      total_match;
-    trc_diff_stats_counter      total_no_match;
-    trc_diff_stats_counter      total_no_match_ignored;
-    trc_diff_stats_counter      total;
+    trc_diff_stats_counters *counters;
+    trc_diff_stats_counter   total_match            = 0;
+    trc_diff_stats_counter   total_no_match         = 0;
+    trc_diff_stats_counter   total_no_match_ignored = 0;
+    trc_diff_stats_counter   total                  = 0;
+    trc_test_status          status1;
+    trc_test_status          status2;
 
     counters = &((*stats)[tags_x->id][tags_y->id - 1]);
 
-    total_match =
-        (*counters)[TRC_TEST_PASSED][TRC_TEST_PASSED][TRC_DIFF_MATCH] +
-        (*counters)[TRC_TEST_FAILED][TRC_TEST_FAILED][TRC_DIFF_MATCH] +
-        (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_UNSTABLE][TRC_DIFF_MATCH];
-    total_no_match =
-        (*counters)[TRC_TEST_PASSED][TRC_TEST_PASSED][TRC_DIFF_NO_MATCH] +
-        (*counters)[TRC_TEST_PASSED][TRC_TEST_FAILED][TRC_DIFF_NO_MATCH] +
-        (*counters)[TRC_TEST_PASSED][TRC_TEST_UNSTABLE][TRC_DIFF_NO_MATCH] +
-        (*counters)[TRC_TEST_FAILED][TRC_TEST_PASSED][TRC_DIFF_NO_MATCH] +
-        (*counters)[TRC_TEST_FAILED][TRC_TEST_FAILED][TRC_DIFF_NO_MATCH] +
-        (*counters)[TRC_TEST_FAILED][TRC_TEST_UNSTABLE][TRC_DIFF_NO_MATCH] +
-        (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_PASSED][TRC_DIFF_NO_MATCH] +
-        (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_FAILED][TRC_DIFF_NO_MATCH] +
-        (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_UNSTABLE]
-                   [TRC_DIFF_NO_MATCH];
-    total_no_match_ignored =
-        (*counters)[TRC_TEST_PASSED][TRC_TEST_PASSED]
-                   [TRC_DIFF_NO_MATCH_IGNORE] +
-        (*counters)[TRC_TEST_PASSED][TRC_TEST_FAILED]
-                   [TRC_DIFF_NO_MATCH_IGNORE] +
-        (*counters)[TRC_TEST_PASSED][TRC_TEST_UNSTABLE]
-                   [TRC_DIFF_NO_MATCH_IGNORE] +
-        (*counters)[TRC_TEST_FAILED][TRC_TEST_PASSED]
-                   [TRC_DIFF_NO_MATCH_IGNORE] +
-        (*counters)[TRC_TEST_FAILED][TRC_TEST_FAILED]
-                   [TRC_DIFF_NO_MATCH_IGNORE] +
-        (*counters)[TRC_TEST_FAILED][TRC_TEST_UNSTABLE]
-                   [TRC_DIFF_NO_MATCH_IGNORE] +
-        (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_PASSED]
-                   [TRC_DIFF_NO_MATCH_IGNORE] +
-        (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_FAILED]
-                   [TRC_DIFF_NO_MATCH_IGNORE] +
-        (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_UNSTABLE]
-                   [TRC_DIFF_NO_MATCH_IGNORE];
+    for (status1 = TRC_TEST_PASSED;
+         status1 < TRC_TEST_SKIPPED; status1++)
+    {
+        for (status2 = TRC_TEST_PASSED;
+             status2 < TRC_TEST_SKIPPED; status2++)
+        {
+            total_match += (*counters)[status1][status2][TRC_DIFF_MATCH];
+            total_no_match +=
+                (*counters)[status1][status2][TRC_DIFF_NO_MATCH];
+            total_no_match_ignored +=
+                (*counters)[status1][status2][TRC_DIFF_NO_MATCH_IGNORE];
+        }
+    }
+
     total = total_match + total_no_match + total_no_match_ignored;
 
-    fprintf(f, trc_diff_stats_table,
-            tags_x->name, tags_y->name,
-            "PASSED", "FAILED", "unstable", "SKIPPED", "unspecified",
-            "PASSED",
-            (*counters)[TRC_TEST_PASSED][TRC_TEST_PASSED]
-                       [TRC_DIFF_MATCH],
-            (*counters)[TRC_TEST_PASSED][TRC_TEST_PASSED]
-                       [TRC_DIFF_NO_MATCH],
-            (*counters)[TRC_TEST_PASSED][TRC_TEST_PASSED]
-                       [TRC_DIFF_NO_MATCH_IGNORE],
-            (*counters)[TRC_TEST_PASSED][TRC_TEST_FAILED]
-                       [TRC_DIFF_NO_MATCH],
-            (*counters)[TRC_TEST_PASSED][TRC_TEST_FAILED]
-                       [TRC_DIFF_NO_MATCH_IGNORE],
-            (*counters)[TRC_TEST_PASSED][TRC_TEST_UNSTABLE]
-                       [TRC_DIFF_NO_MATCH],
-            (*counters)[TRC_TEST_PASSED][TRC_TEST_UNSTABLE]
-                       [TRC_DIFF_NO_MATCH_IGNORE],
-            (*counters)[TRC_TEST_PASSED][TRC_TEST_SKIPPED]
-                       [TRC_DIFF_NO_MATCH],
-            (*counters)[TRC_TEST_PASSED][TRC_TEST_SKIPPED]
-                       [TRC_DIFF_NO_MATCH_IGNORE],
-            (*counters)[TRC_TEST_PASSED][TRC_TEST_UNSPECIFIED]
-                       [TRC_DIFF_NO_MATCH],
-            "FAILED",
-            (*counters)[TRC_TEST_FAILED][TRC_TEST_PASSED]
-                       [TRC_DIFF_NO_MATCH],
-            (*counters)[TRC_TEST_FAILED][TRC_TEST_PASSED]
-                       [TRC_DIFF_NO_MATCH_IGNORE],
-            (*counters)[TRC_TEST_FAILED][TRC_TEST_FAILED]
-                       [TRC_DIFF_MATCH],
-            (*counters)[TRC_TEST_FAILED][TRC_TEST_FAILED]
-                       [TRC_DIFF_NO_MATCH],
-            (*counters)[TRC_TEST_FAILED][TRC_TEST_FAILED]
-                       [TRC_DIFF_NO_MATCH_IGNORE],
-            (*counters)[TRC_TEST_FAILED][TRC_TEST_UNSTABLE]
-                       [TRC_DIFF_NO_MATCH],
-            (*counters)[TRC_TEST_FAILED][TRC_TEST_UNSTABLE]
-                       [TRC_DIFF_NO_MATCH_IGNORE],
-            (*counters)[TRC_TEST_FAILED][TRC_TEST_SKIPPED]
-                       [TRC_DIFF_NO_MATCH],
-            (*counters)[TRC_TEST_FAILED][TRC_TEST_SKIPPED]
-                       [TRC_DIFF_NO_MATCH_IGNORE],
-            (*counters)[TRC_TEST_FAILED][TRC_TEST_UNSPECIFIED]
-                       [TRC_DIFF_NO_MATCH],
-            "unstable",
-            (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_PASSED]
-                       [TRC_DIFF_NO_MATCH],
-            (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_PASSED]
-                       [TRC_DIFF_NO_MATCH_IGNORE],
-            (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_FAILED]
-                       [TRC_DIFF_NO_MATCH],
-            (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_FAILED]
-                       [TRC_DIFF_NO_MATCH_IGNORE],
-            (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_UNSTABLE]
-                       [TRC_DIFF_MATCH],
-            (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_UNSTABLE]
-                       [TRC_DIFF_NO_MATCH],
-            (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_UNSTABLE]
-                       [TRC_DIFF_NO_MATCH_IGNORE],
-            (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_SKIPPED]
-                       [TRC_DIFF_NO_MATCH],
-            (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_SKIPPED]
-                       [TRC_DIFF_NO_MATCH_IGNORE],
-            (*counters)[TRC_TEST_UNSTABLE][TRC_TEST_UNSPECIFIED]
-                       [TRC_DIFF_NO_MATCH],
-            "SKIPPED",
-            (*counters)[TRC_TEST_SKIPPED][TRC_TEST_PASSED]
-                       [TRC_DIFF_NO_MATCH],
-            (*counters)[TRC_TEST_SKIPPED][TRC_TEST_PASSED]
-                       [TRC_DIFF_NO_MATCH_IGNORE],
-            (*counters)[TRC_TEST_SKIPPED][TRC_TEST_FAILED]
-                       [TRC_DIFF_NO_MATCH],
-            (*counters)[TRC_TEST_SKIPPED][TRC_TEST_FAILED]
-                       [TRC_DIFF_NO_MATCH_IGNORE],
-            (*counters)[TRC_TEST_SKIPPED][TRC_TEST_UNSTABLE]
-                       [TRC_DIFF_NO_MATCH],
-            (*counters)[TRC_TEST_SKIPPED][TRC_TEST_UNSTABLE]
-                       [TRC_DIFF_NO_MATCH_IGNORE],
-            (*counters)[TRC_TEST_SKIPPED][TRC_TEST_SKIPPED]
-                       [TRC_DIFF_MATCH],
-            (*counters)[TRC_TEST_SKIPPED][TRC_TEST_UNSPECIFIED]
-                       [TRC_DIFF_NO_MATCH],
-            "unspecified",
-            (*counters)[TRC_TEST_UNSPECIFIED][TRC_TEST_PASSED]
-                       [TRC_DIFF_NO_MATCH],
-            (*counters)[TRC_TEST_UNSPECIFIED][TRC_TEST_FAILED]
-                       [TRC_DIFF_NO_MATCH],
-            (*counters)[TRC_TEST_UNSPECIFIED][TRC_TEST_UNSTABLE]
-                       [TRC_DIFF_NO_MATCH],
-            (*counters)[TRC_TEST_UNSPECIFIED][TRC_TEST_SKIPPED]
-                       [TRC_DIFF_NO_MATCH],
-            (*counters)[TRC_TEST_UNSPECIFIED][TRC_TEST_UNSPECIFIED]
-                       [TRC_DIFF_MATCH],
+    fprintf(f, trc_diff_stats_table_start, tags_x->name, tags_y->name);
+    for (status1 = TRC_TEST_PASSED;
+         status1 < TRC_TEST_STATUS_MAX; status1++)
+    {
+        fprintf(f, trc_diff_stats_table_row_start,
+                trc_diff_test_status_to_str(status1));
+        for (status2 = TRC_TEST_PASSED;
+             status2 < TRC_TEST_STATUS_MAX;
+             status2++)
+        {
+            trc_diff_stats_entry_to_html(f, (*counters)[status1][status2]);
+            if (status2 < TRC_TEST_UNSPECIFIED)
+                fprintf(f, trc_diff_stats_table_row_mid);
+        }
+        fprintf(f, trc_diff_stats_table_row_end);
+    }
+
+    fprintf(f, trc_diff_stats_table_end,
             total_match, total_no_match, total_no_match_ignored, total);
 }
 
 /**
+ * Output statistics for one comparison to HTML report.
+ *
+ * @param f             File stream to write
+ * @param stats         Calculated statistics
+ * @param tags_x        The first set of tags
+ * @param tags_y        The second set of tags
+ */
+static void
+trc_diff_one_stats_brief_to_html(FILE               *f,
+                                 trc_diff_stats     *stats,
+                                 const trc_diff_set *tags_x,
+                                 const trc_diff_set *tags_y)
+{
+    trc_diff_stats_counters *counters;
+
+    trc_diff_stats_counter  total[TRC_TEST_STATUS_MAX];
+    trc_diff_stats_counter  total_x[TRC_TEST_STATUS_MAX];
+    trc_diff_stats_counter  total_y[TRC_TEST_STATUS_MAX];
+    trc_test_status         status_x;
+    trc_test_status         status_y;
+    trc_diff_status         diff;
+
+    counters = &((*stats)[tags_x->id][tags_y->id - 1]);
+
+    memset(total, 0, sizeof(total_x));
+    memset(total_x, 0, sizeof(total_x));
+    memset(total_y, 0, sizeof(total_y));
+
+    for (status_x = TRC_TEST_PASSED;
+         status_x < TRC_TEST_SKIPPED; status_x++)
+    {
+        for (status_y = TRC_TEST_PASSED;
+             status_y < TRC_TEST_SKIPPED; status_y++)
+        {
+            if (status_x != status_y)
+            {
+                for (diff = TRC_DIFF_MATCH;
+                     diff < TRC_DIFF_STATUS_MAX; diff++)
+                {
+                    total_x[status_x] +=
+                        (*counters)[status_x][status_y][diff];
+                    total_y[status_y] +=
+                        (*counters)[status_x][status_y][diff];
+                }
+            }
+            else
+            {
+                total[status_x] +=
+                    (*counters)[status_y][status_x][TRC_DIFF_MATCH];
+            }
+        }
+    }
+    total[TRC_TEST_PASSED_UNE] +=
+        (*counters)[TRC_TEST_PASSED][TRC_TEST_PASSED]
+            [TRC_DIFF_NO_MATCH] +
+        (*counters)[TRC_TEST_PASSED_UNE][TRC_TEST_PASSED_UNE]
+            [TRC_DIFF_NO_MATCH];
+    total[TRC_TEST_FAILED_UNE] +=
+        (*counters)[TRC_TEST_FAILED][TRC_TEST_FAILED]
+            [TRC_DIFF_NO_MATCH] +
+        (*counters)[TRC_TEST_FAILED_UNE][TRC_TEST_FAILED_UNE]
+            [TRC_DIFF_NO_MATCH];
+
+    for (status_x = TRC_TEST_PASSED;
+         status_x < TRC_TEST_SKIPPED; status_x++)
+    {
+        total_x[status_x] +=
+            (*counters)[TRC_TEST_SKIPPED][status_x]
+                [TRC_DIFF_NO_MATCH_IGNORE];
+        total_y[status_x] +=
+            (*counters)[status_x][TRC_TEST_SKIPPED]
+                [TRC_DIFF_NO_MATCH_IGNORE];
+    }
+
+#define WRITE_COUNTER(color_, counter_, prefix_)        \
+    do                                                  \
+    {                                                   \
+        char *prefix = (prefix_);                       \
+        if (prefix != NULL)                             \
+        {                                               \
+            if ((counter_) > 0)                         \
+            {                                           \
+                fprintf(f, " %s ", prefix);             \
+            }                                           \
+            else                                        \
+                break;                                  \
+        }                                               \
+                                                        \
+        fprintf(f, trc_diff_stats_brief_counter,        \
+                (color_), (counter_));                  \
+    } while (0)
+
+    fprintf(f, "<td>");
+    WRITE_COUNTER("passed", total[TRC_TEST_PASSED], NULL);
+    WRITE_COUNTER("passed_new", total_y[TRC_TEST_PASSED], "+");
+    WRITE_COUNTER("passed_old", total_x[TRC_TEST_PASSED], "-");
+    fprintf(f, "</td>");
+
+    fprintf(f, "<td>");
+    WRITE_COUNTER("passed_une", total[TRC_TEST_PASSED_UNE], NULL);
+    WRITE_COUNTER("passed_une_new", total_y[TRC_TEST_PASSED_UNE], "+");
+    WRITE_COUNTER("passed_une_old", total_x[TRC_TEST_PASSED_UNE], "-");
+    fprintf(f, "</td>");
+
+    fprintf(f, "<td>");
+    WRITE_COUNTER("failed", total[TRC_TEST_FAILED], NULL);
+    WRITE_COUNTER("failed_new", total_y[TRC_TEST_FAILED], "+");
+    WRITE_COUNTER("failed_old", total_x[TRC_TEST_FAILED], "-");
+    fprintf(f, "</td>");
+
+    fprintf(f, "<td>");
+    WRITE_COUNTER("failed_une", total[TRC_TEST_FAILED_UNE], NULL);
+    WRITE_COUNTER("failed_une_new", total_y[TRC_TEST_FAILED_UNE], "+");
+    WRITE_COUNTER("failed_une_old", total_x[TRC_TEST_FAILED_UNE], "-");
+    fprintf(f, "</td>");
+
+    fprintf(f, "<td>");
+    WRITE_COUNTER("total",
+                  total[TRC_TEST_PASSED] + total[TRC_TEST_PASSED_UNE] +
+                  total[TRC_TEST_FAILED] + total[TRC_TEST_FAILED_UNE],
+                  NULL);
+    WRITE_COUNTER("total_new",
+                  total_y[TRC_TEST_PASSED] + total_y[TRC_TEST_PASSED_UNE] +
+                  total_y[TRC_TEST_FAILED] + total_y[TRC_TEST_FAILED_UNE] +
+                  total_y[TRC_TEST_SKIPPED], "+");
+    WRITE_COUNTER("total_old",
+                  total_y[TRC_TEST_PASSED] + total_y[TRC_TEST_PASSED_UNE] +
+                  total_y[TRC_TEST_FAILED] + total_y[TRC_TEST_FAILED_UNE] +
+                  total_y[TRC_TEST_SKIPPED], "-");
+    fprintf(f, "</td>");
+#undef WRITE_COUNTER
+}
+
+/**
  * Output all statistics to HTML report
+ *
+ * @param f             File stream to write
+ * @param sets          Compared sets
+ * @param stats         Calculated statistics
+ * @param flags         Processing flags
+ */
+static void
+trc_diff_stats_brief_to_html(FILE *f, const trc_diff_sets *sets,
+                             trc_diff_stats *stats)
+{
+    const trc_diff_set *tags_i;
+    const trc_diff_set *tags_j;
+
+    TAILQ_FOREACH(tags_i, sets, links)
+    {
+        if (TAILQ_NEXT(tags_i, links) == NULL)
+            break;
+
+        fprintf(f, trc_diff_stats_brief_table_start, tags_i->name);
+        for (tags_j = TAILQ_NEXT(tags_i, links);
+             tags_j != NULL;
+             tags_j = TAILQ_NEXT(tags_j, links))
+        {
+                fprintf(f, trc_diff_stats_brief_table_row_start,
+                        tags_j->name);
+                trc_diff_one_stats_brief_to_html(f, stats, tags_i, tags_j);
+                fprintf(f, trc_diff_stats_brief_table_row_end);
+        }
+        fprintf(f, trc_diff_stats_brief_table_end);
+    }
+}
+
+/**
+ * Output brief statistics to HTML report
  *
  * @param f             File stream to write
  * @param sets          Compared sets
@@ -470,7 +719,6 @@ trc_diff_stats_to_html(FILE *f, const trc_diff_sets *sets,
         }
     }
 }
-
 
 /**
  * Sort list of keys by 'count' in decreasing order.
@@ -529,7 +777,7 @@ trc_diff_keys_stats_to_html(FILE *f, trc_diff_sets *sets)
                  q = q->links.cqe_next)
             {
                 WRITE_STR(trc_diff_key_table_row_start);
-                trc_re_key_substs(q->key, f);
+                trc_re_key_substs(TRC_RE_KEY_URL, q->key, f);
                 fprintf(f, trc_diff_key_table_row_end, q->count);
             }
             WRITE_STR(trc_diff_table_end);
@@ -557,8 +805,10 @@ trc_diff_exp_results_to_html(FILE                 *f,
                              const trc_diff_entry *entry,
                              unsigned int          flags)
 {
-    te_errno            rc = 0;
-    const trc_diff_set *set;
+    const trc_diff_set         *set;
+    trc_report_test_iter_data  *iter_data;
+    trc_report_test_iter_entry *iter_entry;
+    te_errno                    rc = 0;
 
     for (set = TAILQ_FIRST(sets);
          set != NULL && rc == 0;
@@ -566,6 +816,38 @@ trc_diff_exp_results_to_html(FILE                 *f,
     {
         WRITE_STR(trc_diff_table_row_col_start);
         rc = trc_exp_result_to_html(f, entry->results[set->id], flags);
+        if (set->log)
+        {
+            if (entry->is_iter)
+            {
+                iter_data = trc_db_iter_get_user_data(entry->ptr.iter,
+                                                      set->db_uid);
+                if (iter_data != NULL)
+                {
+                    TAILQ_FOREACH(iter_entry, &iter_data->runs, links)
+                    {
+                        WRITE_STR("<HR/>");
+                        fprintf(f, trc_diff_test_result_start,
+                                (iter_entry->is_exp) ?
+                                "matched" : "unmatched");
+                        rc = te_test_result_to_html(f, &iter_entry->result);
+                        fprintf(f, trc_diff_test_result_end);
+                    }
+
+                    if (TAILQ_EMPTY(&iter_data->runs))
+                    {
+                        WRITE_STR(te_test_status_to_str(TE_TEST_SKIPPED));
+                    }
+                }
+                else
+                {
+                    WRITE_STR("<HR/>");
+                    fprintf(f, trc_diff_test_result_start, "skipped");
+                    WRITE_STR(te_test_status_to_str(TE_TEST_SKIPPED));
+                    fprintf(f, trc_diff_test_result_end);
+                }
+            }
+        }
         WRITE_STR(trc_diff_table_row_col_end);
     }
 
@@ -594,7 +876,8 @@ trc_diff_test_iter_keys_to_html(FILE                 *f,
         if (entry->results[set->id]->key != NULL)
         {
             fprintf(f, "<em>%s</em> - ", set->name);
-            trc_re_key_substs(entry->results[set->id]->key, f);
+            trc_re_key_substs(TRC_RE_KEY_URL,
+                              entry->results[set->id]->key, f);
             fputs("<br/>", f);
         }
     }
@@ -652,7 +935,7 @@ trc_diff_test_keys_to_html(FILE *f, const trc_diff_sets *sets,
         {
             if (str != TAILQ_FIRST(entry->keys + set->id))
                 fputs(", ", f);
-            trc_re_key_substs(str->v, f);
+            trc_re_key_substs(TRC_RE_KEY_TAGS, str->v, f);
         }
     }
     return 0;
@@ -708,8 +991,7 @@ trc_diff_result_to_html(const trc_diff_result *result,
     const trc_diff_entry   *curr;
     const trc_diff_entry   *next;
     unsigned int            i, j;
-    te_string               test_name = { NULL, 0, 0 };
-
+    te_string               test_name = TE_STRING_INIT;
 
     /*
      * Do nothing if no differences
@@ -792,10 +1074,12 @@ trc_diff_result_to_html(const trc_diff_result *result,
         }
         else
         {
-            rc = te_string_append(&test_name,
-                                  (curr->level > 0) ? "*-" : "");
-            if (rc != 0)
-                goto cleanup;
+            if (curr->level > 0)
+            {
+                rc = te_string_append(&test_name, "*-");
+                if (rc != 0)
+                    goto cleanup;
+            }
 
             fprintf(f, trc_diff_full_table_test_row_start,
                     i, test_name.ptr, curr->ptr.test->name,
@@ -846,15 +1130,13 @@ cut:
                     slash = strrchr(test_name.ptr, '/');
                     if (slash == NULL)
                         slash = test_name.ptr;
-                    test_name.ptr[slash - test_name.ptr] = '\0'; 
+                    te_string_cut(&test_name, strlen(slash));
                 } while (j-- > 0);
-                test_name.len = slash - test_name.ptr;
             }
             else
             {
-                test_name.len -=
-                    ((curr->level - next->level) >> 1 << 1) + 2;
-                test_name.ptr[test_name.len] = '\0';
+                te_string_cut(&test_name,
+                              ((curr->level - next->level) >> 1 << 1) + 2);
             }
         }
     }
@@ -893,19 +1175,24 @@ trc_diff_report_to_html(trc_diff_ctx *ctx, const char *filename,
 
     /* HTML header */
     fprintf(f, trc_diff_html_doc_start,
-            (title != NULL) ? title : trc_diff_html_title_def,
-            (title != NULL) ? title : trc_diff_html_title_def,
-            ctx->db->version);
+            (title != NULL) ? title : trc_diff_html_title_def);
+    fprintf(f, "<h1 align=center>%s</h1>\n",
+            (title != NULL) ? title : trc_diff_html_title_def);
+    if (ctx->db->version != NULL)
+        fprintf(f, "<h2 align=center>%s</h2>\n", ctx->db->version);
 
     /* Compared sets */
     trc_diff_tags_to_html(f, &ctx->sets);
+
+    /* Output brief total statistics */
+    trc_diff_stats_brief_to_html(f, &ctx->sets, &ctx->stats);
 
     /* Output grand total statistics */
     trc_diff_stats_to_html(f, &ctx->sets, &ctx->stats);
 
     /* Output per-key summary */
     trc_diff_keys_stats_to_html(f, &ctx->sets);
-    
+
     /* Report */
     if ((rc = trc_diff_result_to_html(&ctx->result, &ctx->sets,
                                       ctx->flags | TRC_DIFF_BRIEF,

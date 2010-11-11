@@ -213,8 +213,6 @@ trc_re_namespaces_read(const char *file, trc_re_namespaces *namespaces)
     trc_re_namespace *namespace = NULL;
     te_errno          rc = 0;
 
-    RING("%s('%s', %p)", __FUNCTION__, file, namespaces);
-
     TAILQ_INIT(namespaces);
 
     namespace = trc_re_key_namespace_create(namespaces, NULL);

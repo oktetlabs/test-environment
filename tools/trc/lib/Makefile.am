@@ -28,5 +28,7 @@ libtrc_diff_a_SOURCES = \
 	diff_tags.c \
 	diff.c \
 	diff_html.c \
+	log_parse.c \
+	report.c \
 	re_subst.c \
 	html.c

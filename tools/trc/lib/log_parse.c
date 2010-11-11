@@ -54,6 +54,7 @@
 #include "te_trc.h"
 #include "trc_tags.h"
 #include "trc_report.h"
+#include "trc_diff.h"
 
 
 #define CONST_CHAR2XML  (const xmlChar *)
@@ -89,6 +90,8 @@ typedef struct trc_report_log_parse_ctx {
     const char         *log;        /**< Name of the file with log */
     tqh_strings        *tags;       /**< List of tags */
     te_trc_db_walker   *db_walker;  /**< TRC database walker */
+    char               *run_name;   /**< Name of the tests run the
+                                         current log belongs to */
 
     trc_report_log_parse_state  state;  /**< Log parse state */
     trc_test_type               type;   /**< Type of the test */
@@ -106,7 +109,7 @@ typedef struct trc_report_log_parse_ctx {
     unsigned int    args_max;   /**< Maximum number of arguments
                                      the space is allocated for */
     unsigned int    args_n;     /**< Current number of arguments */
-    trc_report_argument *args;   /**< Actual arguments */
+    trc_report_argument *args;  /**< Actual arguments */
 
     unsigned int    stack_size; /**< Size of the stack in elements */
     te_bool        *stack_info; /**< Stack */
@@ -229,7 +232,69 @@ te_test_str2status(const char *str, te_test_status *status)
     }
     return 0;
 }
+#if 0
+static trc_report_test_iter_data *
+trc_report_get_iter_data(const te_trc_db_walker *walker,
+                         unsigned int uid,
+                         const char *run_name)
+{
+    trc_report_test_iter_data *iter_data;
 
+    for (iter_data = trc_db_walker_get_user_data(walker, uid);
+         iter_data != NULL;
+         iter_data = SLIST_NEXT(iter_data, links))
+    {
+        if ((run_name == NULL) && (iter_data->run_name == NULL))
+            break;
+
+        if ((run_name != NULL) && (iter_data->run_name != NULL) &&
+            (strcmp(iter_data->run_name, run_name) == 0))
+            break;
+    }
+    return iter_data;
+}
+
+static te_errno
+trc_report_add_iter_data(const te_trc_db_walker *walker,
+                         unsigned int uid,
+                         trc_report_test_iter_data *iter_data)
+{
+    te_errno rc;
+    trc_report_test_iter_data *prev = NULL;
+    trc_report_test_iter_data *curr = NULL;
+
+    curr = trc_db_walker_get_user_data(walker, uid);
+    while (curr != NULL)
+    {
+        if ((curr->run_name == NULL) && (iter_data->run_name == NULL))
+            break;
+
+        if ((curr->run_name != NULL) && (iter_data->run_name != NULL) &&
+            (strcmp(curr->run_name, iter_data->run_name) == 0))
+            break;
+
+        prev = curr;
+        curr = SLIST_NEXT(curr, links);
+    }
+
+    if (curr != NULL)
+    {
+        SLIST_NEXT(iter_data, links) = SLIST_NEXT(iter_data, links);
+        free(curr);
+    }
+    else
+        SLIST_NEXT(iter_data, links) = NULL;
+
+    if (prev != NULL)
+        SLIST_NEXT(prev, links) = iter_data;
+    else
+    {
+        rc = trc_db_walker_set_user_data(walker, uid, iter_data);
+    }
+
+    return 0;
+}
+#endif
 /**
  * Process test script, package or session entry point.
  *
@@ -680,7 +745,7 @@ trc_report_log_start_element(void *user_data,
                 ctx->rc = TE_EFMT;
             }
             break;
-        
+
         case TRC_REPORT_LOG_PARSE_META:
             if (strcmp(tag, "objective") == 0)
             {
@@ -702,7 +767,7 @@ trc_report_log_start_element(void *user_data,
                 ctx->state = TRC_REPORT_LOG_PARSE_SKIP;
             }
             break;
-            
+
         case TRC_REPORT_LOG_PARSE_VERDICTS:
             if (strcmp(tag, "verdict") == 0)
             {
@@ -1008,63 +1073,63 @@ trc_report_log_problem(void *user_data, const char *msg, ...)
     va_end(ap);
 }
 
+/**
+ * The structure specifies all types callback routines that
+ * should be called.
+ */
+static xmlSAXHandler sax_handler = {
+    .internalSubset         = NULL,
+    .isStandalone           = NULL,
+    .hasInternalSubset      = NULL,
+    .hasExternalSubset      = NULL,
+    .resolveEntity          = NULL,
+    .getEntity              = NULL,
+    .entityDecl             = NULL,
+    .notationDecl           = NULL,
+    .attributeDecl          = NULL,
+    .elementDecl            = NULL,
+    .unparsedEntityDecl     = NULL,
+    .setDocumentLocator     = NULL,
+    .startDocument          = trc_report_log_start_document,
+    .endDocument            = trc_report_log_end_document,
+    .startElement           = trc_report_log_start_element,
+    .endElement             = trc_report_log_end_element,
+    .reference              = NULL,
+    .characters             = trc_report_log_characters,
+    .ignorableWhitespace    = NULL,
+    .processingInstruction  = NULL,
+    .comment                = NULL,
+    .warning                = trc_report_log_problem,
+    .error                  = trc_report_log_problem,
+    .fatalError             = trc_report_log_problem,
+    .getParameterEntity     = NULL,
+    .cdataBlock             = NULL,
+    .externalSubset         = NULL,
+    .initialized            = 1,
+    /*
+     * The following fields are extensions available only
+     * on version 2
+     */
+#if HAVE___STRUCT__XMLSAXHANDLER__PRIVATE
+    ._private               = NULL,
+#endif
+#if HAVE___STRUCT__XMLSAXHANDLER_STARTELEMENTNS
+    .startElementNs         = NULL,
+#endif
+#if HAVE___STRUCT__XMLSAXHANDLER_ENDELEMENTNS
+    .endElementNs           = NULL,
+#endif
+#if HAVE___STRUCT__XMLSAXHANDLER_SERROR___
+    .serror                 = NULL
+#endif
+};
+
 /* See the description in trc_report.h */
 te_errno
 trc_report_process_log(trc_report_ctx *gctx, const char *log)
 {
     te_errno                    rc = 0;
     trc_report_log_parse_ctx    ctx;
-
-    /**
-     * The structure specifies all types callback routines that
-     * should be called.
-     */
-    xmlSAXHandler sax_handler = {
-        .internalSubset         = NULL,
-        .isStandalone           = NULL,
-        .hasInternalSubset      = NULL,
-        .hasExternalSubset      = NULL,
-        .resolveEntity          = NULL,
-        .getEntity              = NULL,
-        .entityDecl             = NULL,
-        .notationDecl           = NULL,
-        .attributeDecl          = NULL,
-        .elementDecl            = NULL,
-        .unparsedEntityDecl     = NULL,
-        .setDocumentLocator     = NULL,
-        .startDocument          = trc_report_log_start_document,
-        .endDocument            = trc_report_log_end_document,
-        .startElement           = trc_report_log_start_element,
-        .endElement             = trc_report_log_end_element,
-        .reference              = NULL,
-        .characters             = trc_report_log_characters,
-        .ignorableWhitespace    = NULL,
-        .processingInstruction  = NULL,
-        .comment                = NULL,
-        .warning                = trc_report_log_problem,
-        .error                  = trc_report_log_problem,
-        .fatalError             = trc_report_log_problem,
-        .getParameterEntity     = NULL,
-        .cdataBlock             = NULL,
-        .externalSubset         = NULL,
-        .initialized            = 1,
-        /* 
-         * The following fields are extensions available only 
-         * on version 2
-         */
-#if HAVE___STRUCT__XMLSAXHANDLER__PRIVATE
-        ._private               = NULL,
-#endif
-#if HAVE___STRUCT__XMLSAXHANDLER_STARTELEMENTNS
-        .startElementNs         = NULL,
-#endif
-#if HAVE___STRUCT__XMLSAXHANDLER_ENDELEMENTNS
-        .endElementNs           = NULL,
-#endif
-#if HAVE___STRUCT__XMLSAXHANDLER_SERROR___
-        .serror                 = NULL
-#endif
-    };
 
     memset(&ctx, 0, sizeof(ctx));
     ctx.flags = gctx->flags;
@@ -1095,6 +1160,57 @@ trc_report_process_log(trc_report_ctx *gctx, const char *log)
         free(ctx.args[ctx.args_n].value);
     }
     free(ctx.args);
+
+    return rc;
+}
+
+/* See the description in trc_report.h */
+te_errno
+trc_diff_process_logs(trc_diff_ctx *gctx)
+{
+    te_errno                  rc = 0;
+    trc_report_log_parse_ctx  ctx;
+    trc_diff_set             *diff_set;
+
+    memset(&ctx, 0, sizeof(ctx));
+    ctx.flags = gctx->flags;
+    ctx.db = gctx->db;
+
+    TAILQ_FOREACH(diff_set, &gctx->sets, links)
+    {
+        if (diff_set->log == NULL)
+            continue;
+
+        ctx.run_name = diff_set->name;
+        ctx.log      = diff_set->log;
+        ctx.db_uid   = diff_set->db_uid;
+        ctx.tags     = &diff_set->tags;
+
+        if (xmlSAXUserParseFile(&sax_handler, &ctx, ctx.log) != 0)
+        {
+            ERROR("Cannot parse XML document with TE log '%s'", ctx.log);
+            rc = TE_EFMT;
+        }
+        else if ((rc = ctx.rc) != 0)
+        {
+            ERROR("Processing of the XML document with TE log '%s' "
+                  "failed: %r", ctx.log, rc);
+        }
+#if 0
+        else if ((rc = trc_report_collect_stats(gctx)) != 0)
+        {
+            ERROR("Collect of TRC report statistics failed: %r", rc);
+        }
+
+        free(ctx.stack_info);
+        for (ctx.args_n = 0; ctx.args_n < ctx.args_max; ctx.args_n++)
+        {
+            free(ctx.args[ctx.args_n].name);
+            free(ctx.args[ctx.args_n].value);
+        }
+        free(ctx.args);
+#endif
+    }
 
     return rc;
 }

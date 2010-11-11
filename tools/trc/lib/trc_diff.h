@@ -65,8 +65,10 @@ typedef struct trc_diff_set {
     TAILQ_ENTRY(trc_diff_set)   links; /**< List links */
 
     unsigned int    id;         /**< ID of the list */
+    unsigned int    db_uid;     /**< TRC DB User ID */
     tqh_strings     tags;       /**< List of tags */
     char           *name;       /**< Name of the set */
+    char           *log;        /**< Raw log filename */
     te_bool         show_keys;  /**< Show table with keys which explain
                                      differences */
     tqh_strings     ignore;     /**< List of exclusions */
@@ -82,7 +84,9 @@ typedef TAILQ_HEAD(trc_diff_sets, trc_diff_set) trc_diff_sets;
 /** Status of expected testing result from TRC point of view. */
 typedef enum trc_test_status {
     TRC_TEST_PASSED = 0,    /**< PASSED results are expected */
+    TRC_TEST_PASSED_UNE,    /**< PASSED results are unexpected */
     TRC_TEST_FAILED,        /**< FAILED results are expected */
+    TRC_TEST_FAILED_UNE,    /**< FAILED results are unexpected */
     TRC_TEST_UNSTABLE,      /**< PASSED and FAILED results are expected */
     TRC_TEST_SKIPPED,       /**< SKIPPD result is expected */
     TRC_TEST_UNSPECIFIED,   /**< Expected result is unspecified */
@@ -137,6 +141,7 @@ typedef struct trc_diff_entry {
 
     /** Expected result for each diff ID */
     const trc_exp_result   *results[TRC_DIFF_IDS];
+
     /** Expected result inheritance flags */
     unsigned int            inherit[TRC_DIFF_IDS];
 #define TRC_DIFF_INHERIT    0x1 /**< Result should be inherited */
@@ -144,7 +149,6 @@ typedef struct trc_diff_entry {
 
     /** Lists of keys per set which explain the differences */
     tqh_strings             keys[TRC_DIFF_IDS];
-    
 } trc_diff_entry;
 
 /** Result of the TRC diff processing */
@@ -168,6 +172,17 @@ typedef struct trc_diff_ctx {
 
 } trc_diff_ctx;
 
+/**
+ * Find set in sets list by specified ID.
+ *
+ * @param sets          List of compared sets
+ * @param id            Identifier of the set
+ * @param create        create the set, if it is not found
+ *
+ * @return Status code.
+ */
+extern trc_diff_set *
+trc_diff_find_set(trc_diff_sets *sets, unsigned int id, te_bool create);
 
 /**
  * Set name of the compared set with specified ID.
@@ -181,6 +196,20 @@ typedef struct trc_diff_ctx {
 extern te_errno trc_diff_set_name(trc_diff_sets *sets,
                                   unsigned int   id,
                                   const char    *name);
+
+/**
+ * Set name of the compared set with specified ID.
+ *
+ * @param sets  List of compared sets
+ * @param id    Identifier of the set
+ * @param log   Log filename
+ for the set
+ *
+ * @return Status code.
+ */
+extern te_errno trc_diff_set_log(trc_diff_sets *sets,
+                                 unsigned int   id,
+                                 const char    *log);
 
 /**
  * Enable showing keys of the compared set with specified ID.
@@ -271,6 +300,15 @@ extern te_errno trc_diff_report_to_html(trc_diff_ctx *ctx,
                                         const char   *filename,
                                         const char   *title);
 
+
+/**
+ * Process TE log files specified for each diff set.
+ *
+ * @param ctx           TRC diff context
+ *
+ * @return Status code.
+ */
+extern te_errno trc_diff_process_logs(trc_diff_ctx *ctx);
 
 #ifdef __cplusplus
 } /* extern "C" */

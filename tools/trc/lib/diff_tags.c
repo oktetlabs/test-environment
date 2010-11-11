@@ -51,7 +51,8 @@
 #include "trc_diff.h"
 
 
-static trc_diff_set *
+/* See the description in trc_diff.h */
+trc_diff_set *
 trc_diff_find_set(trc_diff_sets *sets, unsigned int id, te_bool create)
 {
     trc_diff_set *p;
@@ -76,7 +77,7 @@ trc_diff_find_set(trc_diff_sets *sets, unsigned int id, te_bool create)
 
         TAILQ_INSERT_TAIL(sets, p, links);
     }
- 
+
     return p;
 }
 
@@ -100,7 +101,31 @@ trc_diff_set_name(trc_diff_sets *sets, unsigned int id,
         ERROR("%s(): strdup(%s) failed", __FUNCTION__, name);
         return TE_ENOMEM;
     }
- 
+
+    return 0;
+}
+
+/* See the description in trc_diff.h */
+te_errno
+trc_diff_set_log(trc_diff_sets *sets, unsigned int id,
+                 const char *log)
+{
+    trc_diff_set *p;
+
+    if (sets == NULL || id >= TRC_DIFF_IDS || log == NULL)
+        return TE_EINVAL;
+
+    p = trc_diff_find_set(sets, id, TRUE);
+    if (p == NULL)
+        return TE_ENOMEM;
+
+    p->log = strdup(log);
+    if (p->log == NULL)
+    {
+        ERROR("%s(): strdup(%s) failed", __FUNCTION__, log);
+        return TE_ENOMEM;
+    }
+
     return 0;
 }
 
@@ -118,7 +143,7 @@ trc_diff_show_keys(trc_diff_sets *sets, unsigned int id)
         return TE_ENOMEM;
 
     p->show_keys = TRUE;
- 
+
     return 0;
 }
 

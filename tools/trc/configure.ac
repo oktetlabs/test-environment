@@ -29,8 +29,8 @@ AC_ARG_WITH([ext_scripts],,
             [TE_TRC_EXT_SCRIPTS=])
 AC_MSG_WARN(["TRC is compiled with external scripts: $TE_TRC_EXT_SCRIPTS"])
 AC_SUBST([TE_TRC_EXT_SCRIPTS])
-#AC_ARG_VAR([TE_TRC_EXT_SCRIPTS])
-#export TE_TRC_EXT_SCRIPTS
+AC_ARG_VAR([TE_TRC_EXT_SCRIPTS])
+export TE_TRC_EXT_SCRIPTS
 
 # Check 'with' options
 AC_ARG_WITH([spoilers],, 

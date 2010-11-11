@@ -45,6 +45,7 @@
 #include "te_alloc.h"
 
 #include "trc_diff.h"
+#include "trc_report.h"
 
 
 /**
@@ -89,12 +90,12 @@ trc_diff_entry_init(trc_diff_entry *entry, te_bool is_iter)
 /**
  * Clean up TRC diff result entry.
  *
- * @param entry         Pointer to an entry to clean up 
+ * @param entry Pointer to an entry to clean up 
  */
 static void
 trc_diff_entry_cleanup(trc_diff_entry *entry)
 {
-    unsigned int    i;
+    unsigned int i;
 
     assert(entry != NULL);
 
@@ -108,7 +109,7 @@ trc_diff_entry_cleanup(trc_diff_entry *entry)
         /* If result is not inherited, clean up */
         if (~entry->inherit[i] & TRC_DIFF_INHERITED)
         {
-            entry->results[i] = NULL;
+            entry->results[i]  = NULL;
             entry->inherit[i] &= ~TRC_DIFF_INHERIT;
         }
         assert(TAILQ_EMPTY(entry->keys + i));
@@ -125,7 +126,7 @@ static void
 trc_diff_entry_inherit(const trc_diff_entry *parent,
                        trc_diff_entry       *entry)
 {
-    unsigned int    i;
+    unsigned int i;
 
     assert(parent != NULL);
     assert(entry != NULL);
@@ -147,7 +148,7 @@ trc_diff_entry_inherit(const trc_diff_entry *parent,
  *
  * @param parent        Parent entry 
  *
- * @return Pointer to an allocated entry.
+ * @return              Pointer to an allocated entry.
  */
 static trc_diff_entry *
 trc_diff_entry_new(const trc_diff_entry *parent)
@@ -208,7 +209,7 @@ trc_diff_entry_exp_results(const trc_diff_sets    *sets,
 
 /**
  * Analogue of strcmp() with posibility to compare NULL strings.
- * If both strings are NULL, 0 is returned.
+ * If both strings are   NULL, 0 is returned.
  * If only one stirng is NULL, -1 or 1 is returned correspondingly.
  */
 static int
@@ -227,8 +228,8 @@ str_or_null_cmp(const char *s1, const char *s2)
 /**
  * Are two expected results equal (including keys and notes)?
  *
- * @param lhv           Left hand value
- * @param rhv           Right hand value
+ * @param lhv   Left hand value
+ * @param rhv   Right hand value
  */
 te_bool
 trc_diff_is_exp_result_equal(const trc_exp_result *lhv,
@@ -291,12 +292,12 @@ trc_diff_is_exp_result_equal(const trc_exp_result *lhv,
 /**
  * Derive group result from its items.
  *
- * @param sets          Compared sets
- * @param group         Group entry
- * @param item          Item of the group entry
- * @param init          Initialize unset or not
+ * @param sets  Compared sets
+ * @param group Group entry
+ * @param item  Item of the group entry
+ * @param init  Initialize unset or not
  *
- * @return Is group homogeneous?
+ * @return      Is group homogeneous?
  */
 static te_bool
 trc_diff_group_exp_result(const trc_diff_sets  *sets,
@@ -364,7 +365,7 @@ tad_diff_key_stat_inc(trc_diff_keys_stats *keys_stats, const char *key)
         if (p == NULL)
             return TE_ENOMEM;
 
-        p->key = key;
+        p->key   = key;
         p->count = 0;
 
         CIRCLEQ_INSERT_TAIL(keys_stats, p, links);
@@ -378,23 +379,23 @@ tad_diff_key_stat_inc(trc_diff_keys_stats *keys_stats, const char *key)
 /**
  * Check key of the found difference against patterns to ignore.
  *
- * @param set           Set which participate in comparison
- * @param key           Key which explains the difference
+ * @param set   Set which participate in comparison
+ * @param key   Key which explains the difference
  *
- * @return Should the difference be ignored?
+ * @return      Should the difference be ignored?
  */
 static te_bool
 trc_diff_check_key(trc_diff_set *set, const char *key)
 {
-    tqe_string     *p;
-    te_bool         ignore = FALSE;
+    tqe_string *p;
+    te_bool     ignore = FALSE;
 
     if (key == NULL)
         key = "";
  
     for (p = TAILQ_FIRST(&set->ignore);
          p != NULL && !ignore;
-         p = TAILQ_NEXT(p, links))
+         p  = TAILQ_NEXT(p, links))
     {
         assert(p->v != NULL);
         ignore = (strncmp(key, p->v, strlen(p->v)) == 0);
@@ -410,7 +411,7 @@ trc_diff_check_key(trc_diff_set *set, const char *key)
  *
  * @param status        TE test status
  *
- * @return TRC test status.
+ * @return              TRC test status.
  */
 static trc_test_status
 test_status_te2trc(const te_test_status status)
@@ -512,11 +513,13 @@ trc_test_status_merge(trc_test_status result, trc_test_status add)
  * @param status_j      Status for the second set
  * @param diff          Comparison result
  */
-static void
-trc_diff_stats_inc(trc_diff_stats *stats,
-                   unsigned int set_i, trc_test_status status_i,
-                   unsigned int set_j, trc_test_status status_j,
-                   trc_diff_status diff)
+void
+trc_diff_stats_inc(trc_diff_stats  *stats,
+                   unsigned int     set_i,
+                   trc_test_status  status_i,
+                   unsigned int     set_j,
+                   trc_test_status  status_j,
+                   trc_diff_status  diff)
 {
     assert(stats != NULL);
     assert(set_i < TRC_DIFF_IDS);
@@ -525,7 +528,15 @@ trc_diff_stats_inc(trc_diff_stats *stats,
     assert(status_i < TRC_TEST_STATUS_MAX);
     assert(status_j < TRC_TEST_STATUS_MAX);
     assert(diff < TRC_DIFF_STATUS_MAX);
-    assert((diff != TRC_DIFF_MATCH) || (status_i == status_j));
+    assert((diff != TRC_DIFF_MATCH) || (status_i == status_j) ||
+           (((status_i == TRC_TEST_PASSED) ||
+             (status_i == TRC_TEST_PASSED_UNE)) &&
+            ((status_j == TRC_TEST_PASSED) ||
+             (status_j == TRC_TEST_PASSED_UNE))) ||
+           (((status_i == TRC_TEST_FAILED) ||
+             (status_i == TRC_TEST_FAILED_UNE)) &&
+            ((status_j == TRC_TEST_FAILED) ||
+             (status_j == TRC_TEST_FAILED_UNE))));
 
     ((*stats)[set_i][set_j - 1][status_i][status_j][diff])++;
 }
@@ -541,19 +552,19 @@ trc_diff_stats_inc(trc_diff_stats *stats,
  * @param keys1         List of keys for the second set
  * @param stats         Statistics to update or NULL
  *
- * @return 
+ * @return
  */
-static te_bool
-trc_diff_compare(trc_diff_set *set1, const trc_exp_result *result1,
-                 tqh_strings *keys1,
-                 trc_diff_set *set2, const trc_exp_result *result2,
-                 tqh_strings *keys2,
+static trc_diff_status
+trc_diff_compare(trc_diff_set   *set1, const trc_exp_result *result1,
+                 tqh_strings    *keys1,
+                 trc_diff_set   *set2, const trc_exp_result *result2,
+                 tqh_strings    *keys2,
                  trc_diff_stats *stats)
 {
     const trc_exp_result_entry *p;
     trc_test_status             status1 = TRC_TEST_STATUS_MAX;
     trc_test_status             status2 = TRC_TEST_STATUS_MAX;
-    trc_diff_status             diff = TRC_DIFF_MATCH;
+    trc_diff_status             diff    = TRC_DIFF_MATCH;
     te_bool                     ignore;
     te_bool                     main_key_used;
 
@@ -685,8 +696,172 @@ trc_diff_compare(trc_diff_set *set1, const trc_exp_result *result1,
         status2 = TRC_TEST_UNSPECIFIED;
 
     if (stats != NULL)
-        trc_diff_stats_inc(stats, set1->id, status1, set2->id, status2,
-                           diff);
+        trc_diff_stats_inc(stats, set1->id, status1,
+                           set2->id, status2, diff);
+
+    return diff;
+}
+
+/**
+ * Are two expected results equal?
+ *
+ * @param set1          The first set to compare
+ * @param result1       Expected result for the first set
+ * @param keys1         List of keys for the first set
+ * @param set2          The second set to compare
+ * @param result2       Expected result for the second set
+ * @param keys1         List of keys for the second set
+ * @param stats         Statistics to update or NULL
+ *
+ * @return
+ */
+static trc_diff_status
+trc_diff_compare_iter(trc_diff_sets  *sets,
+                      trc_diff_entry *entry,
+                      unsigned int    id1,
+                      unsigned int    id2,
+                      trc_diff_stats *stats)
+{
+    const trc_test_iter *test_iter;
+
+    const trc_diff_set *set1;
+    const trc_diff_set *set2;
+
+    tqh_strings *keys1;
+    tqh_strings *keys2;
+
+    te_bool is_exp1 = TRUE;
+    te_bool is_exp2 = TRUE;
+
+    const trc_exp_result *result1;
+    const trc_exp_result *result2;
+
+    trc_report_test_iter_data *iter_data1;
+    trc_report_test_iter_data *iter_data2;
+
+    trc_report_test_iter_entry *iter_entry1;
+    trc_report_test_iter_entry *iter_entry2;
+
+    trc_test_status status1 = TRC_TEST_STATUS_MAX;
+    trc_test_status status2 = TRC_TEST_STATUS_MAX;
+    trc_diff_status diff    = TRC_DIFF_MATCH;
+    te_bool         is_equal;
+
+    assert(entry != NULL);
+    test_iter = entry->ptr.iter;
+    if (test_iter == NULL)
+    {
+        return -1;
+    }
+
+    assert(sets != NULL);
+    set1 = trc_diff_find_set(sets, id1, TRUE);
+    if (set1 == NULL)
+    {
+        printf("set1 == NULL\n");
+        return -1;
+    }
+    set2 = trc_diff_find_set(sets, id2, TRUE);
+    if (set2 == NULL)
+    {
+        printf("set2 == NULL\n");
+        return -1;
+    }
+
+    keys1 = &entry->keys[id1];
+    keys2 = &entry->keys[id2];
+
+    result1 = entry->results[id1];
+    result2 = entry->results[id2];
+
+    iter_data1 = trc_db_iter_get_user_data(test_iter, set1->db_uid);
+    iter_data2 = trc_db_iter_get_user_data(test_iter, set2->db_uid);
+
+    if ((iter_data1 == NULL) || TAILQ_EMPTY(&iter_data1->runs))
+        status1 = TRC_TEST_SKIPPED;
+    else
+    {
+        TAILQ_FOREACH(iter_entry1, &iter_data1->runs, links)
+        {
+            trc_test_status add1 =
+                test_status_te2trc(iter_entry1->result.status);
+            status1 = trc_test_status_merge(status1, add1);
+            is_exp1 = is_exp1 && iter_entry1->is_exp;
+        }
+    }
+
+    if ((iter_data2 == NULL) || TAILQ_EMPTY(&iter_data2->runs))
+        status2 = TRC_TEST_SKIPPED;
+    else
+    {
+        TAILQ_FOREACH(iter_entry2, &iter_data2->runs, links)
+        {
+            trc_test_status add2 =
+                test_status_te2trc(iter_entry2->result.status);
+            status2 = trc_test_status_merge(status2, add2);
+            is_exp2 = is_exp2 && iter_entry2->is_exp;
+        }
+    }
+
+    if ((status1 == TRC_TEST_SKIPPED) &&
+        (status2 == TRC_TEST_SKIPPED))
+    {
+        diff = TRC_DIFF_MATCH;
+        goto cleanup;
+    }
+    else if ((status1 == TRC_TEST_SKIPPED) ||
+             (status2 == TRC_TEST_SKIPPED))
+    {
+        diff = TRC_DIFF_NO_MATCH_IGNORE;
+        goto cleanup;
+    }
+
+    is_equal = TRUE;
+    TAILQ_FOREACH(iter_entry1, &iter_data1->runs, links)
+    {
+        TAILQ_FOREACH(iter_entry2, &iter_data2->runs, links)
+        {
+            if (!te_test_results_equal(&iter_entry1->result,
+                                       &iter_entry2->result))
+            {
+                is_equal = FALSE;
+                break;
+            }
+        }
+        if (!is_equal)
+            break;
+    }
+
+    if (!is_equal)
+    {
+        diff = TRC_DIFF_NO_MATCH;
+    }
+
+cleanup:
+    if (status1 == TRC_TEST_STATUS_MAX)
+        status1 = TRC_TEST_UNSPECIFIED;
+    if (status2 == TRC_TEST_STATUS_MAX)
+        status2 = TRC_TEST_UNSPECIFIED;
+
+    if (is_exp1 != TRUE)
+    {
+        if (status1 == TRC_TEST_PASSED)
+            status1 = TRC_TEST_PASSED_UNE;
+        else if (status1 == TRC_TEST_FAILED)
+            status1 = TRC_TEST_FAILED_UNE;
+    }
+
+    if (is_exp2 != TRUE)
+    {
+        if (status2 == TRC_TEST_PASSED)
+            status2 = TRC_TEST_PASSED_UNE;
+        else if (status2 == TRC_TEST_FAILED)
+            status2 = TRC_TEST_FAILED_UNE;
+    }
+
+    if (stats != NULL)
+        trc_diff_stats_inc(stats, id1, status1,
+                           id2, status2, diff);
 
     return diff;
 }
@@ -723,13 +898,24 @@ trc_diff_entry_has_diff(const trc_diff_sets *sets,
     {
         for (q = TAILQ_NEXT(p, links); q != NULL; q = TAILQ_NEXT(q, links))
         {
-            diff = diff ||
-                   (trc_diff_compare(p, entry->results[p->id],
-                                     parent->keys + p->id,
-                                     q, entry->results[q->id],
-                                     parent->keys + q->id,
-                                     stats) == TRC_DIFF_NO_MATCH);
-            /* 
+            if ((p->log == NULL) || (q->log == NULL))
+            {
+                diff = diff ||
+                    (trc_diff_compare(p, entry->results[p->id],
+                                      parent->keys + p->id,
+                                      q, entry->results[q->id],
+                                      parent->keys + q->id,
+                                      stats) == TRC_DIFF_NO_MATCH);
+            }
+            else
+            {
+                diff = diff ||
+                    (trc_diff_compare_iter(sets, entry,
+                                           p->id, q->id, stats) ==
+                     TRC_DIFF_NO_MATCH);
+            }
+
+            /*
              * Do not terminate comparison if the difference is found.
              * We need to update statistics for all pairs.
              */
@@ -875,9 +1061,10 @@ trc_diff_do(trc_diff_ctx *ctx)
 
                 if (entry->is_iter)
                 {
+                    entry->ptr.iter = trc_db_walker_get_iter(walker);
                     /* 
                      * We have to get expected results for packages,
-                     * since it may be skipped and should be inhireted
+                     * since it may be skipped and should be inherited
                      * by its tests.
                      */
                     trc_diff_entry_exp_results(&ctx->sets, walker, entry);
