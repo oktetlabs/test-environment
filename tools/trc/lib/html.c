@@ -104,7 +104,7 @@ trc_test_result_to_html(FILE *f, const trc_exp_result_entry *result)
     if (result->key != NULL)
     {
         fputs("<br/>Key: ", f);
-        trc_re_key_substs(result->key, f);
+        trc_re_key_substs(TRC_RE_KEY_URL, result->key, f);
     }
     if (result->notes != NULL)
     {
