@@ -248,6 +248,18 @@ extern const trc_exp_result *trc_db_walker_get_exp_result(
  */
 
 /**
+ * Is obtained result equal to another?
+ *
+ * @param lhv   Left hand result value
+ * @param rhv   Right hand result value
+ *
+ * @return      TRUE if results are equal, FALSE otherwise.
+ */
+extern te_bool
+te_test_results_equal(const te_test_result *lhv,
+                      const te_test_result *rhv);
+
+/**
  * Is obtained result equal to one of expected?
  *
  * @param expected      Expected results

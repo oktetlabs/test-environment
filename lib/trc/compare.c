@@ -50,7 +50,7 @@
 /**
  * Compare two results.
  */
-static te_bool
+te_bool
 te_test_results_equal(const te_test_result *lhv,
                       const te_test_result *rhv)
 {
