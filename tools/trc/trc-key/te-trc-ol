@@ -50,7 +50,7 @@ for my $bug_id (@ARGV)
         }
 
         # Parse BUG Summary
-        if ($line =~ m/short_desc_nonedit_display\"\>([\w\s.,<>:\;\?\=\-\\_\/\"\(\)\'\{\}\[\]\#\@\!\~\$\%\^\&\*\|]*)/i)
+        if ($line =~ m/short_desc_nonedit_display\"\>([\w\s.,<>:\;\?\=\-\\_\/\"\(\)\'\{\}\[\]\#\@\!\~\$\%\^\&\*\|]*)\<\/span\>/i)
         {
             #printf("Summary: %s\n", $1);
             $bug{'summary'} = $1;
@@ -146,12 +146,15 @@ for my $bug_id (@ARGV)
         $bug{'bug_status'} .= ' ' . $bug{'resolution'}
     }
 
-    printf("<bug id=\"OL %d\"", $bug{'id'});
-    printf(" url=\"%s\"", $bug{'url'});
-    printf(" priority=\"%s %s\"", $bug{'priority'}, $bug{'severity'});
+    #$bug{'summary'} =~ s/([^A-Za-z0-9])/sprintf("%%%02X", ord($1))/seg;
+
+    printf("<bug bug-id=\"OL %d\"", $bug{'id'});
+    printf(" url=\"%s\"", $bug_url);
+    printf(" priority=\"%s %s\"", $bug{'priority'}, $bug{'bug_severity'});
     printf(" status=\"%s\"", $bug{'bug_status'});
     printf(" assigned-to=\"%s\"", $bug{'assigned-to'});
     printf(" assigned-mail=\"%s\"", $bug{'assigned-mail'});
+    printf(" summary=\"%s\"", $bug{'summary'});
     printf(" project=\"%s\"", $bug{'product'});
     printf(" components=\"%s\"", $bug{'component'});
     printf(" tags=\"%s\"", $bug{'keywords'});

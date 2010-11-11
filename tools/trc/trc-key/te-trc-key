@@ -1,33 +1,32 @@
 #!/usr/bin/perl
-#
-# Test Environment: Testing Results Comparator
-#
-# Oktetlabs bugzilla page parser script
-#
-# Copyright (C) 2006 Test Environment authors (see file AUTHORS
-# in the root directory of the distribution).
-#
-# Test Environment is free software; you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as
-# published by the Free Software Foundation; either version 2 of
-# the License, or (at your option) any later version.
-#
-# Test Environment is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-# MA  02111-1307  USA
-#
-# Author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
-#
-# $Id: $
-#
 
+package BugParser::bug;
+    use Data::Dumper;
+    sub doReport {
+        my $self = shift;
+        push(@main::bugs, $self);
+    }
+
+package BugParser::Characters;
+    sub doReport { }
+
+package BugParser::bugs;
+    sub doReport {
+        my $self = shift;
+        for $BugParser (@ { $self->{Kids} }) {
+            $BugParser->doReport();
+        }
+    }
+
+package main;
+
+use strict;
+use HTML::Entities;
 use Getopt::Long;
+use XML::Parser;
+use Data::Dumper;
+
+our @bugs = ();
 
 my $title;
 my @keywords_list = ();
@@ -40,160 +39,62 @@ for my $keyw (@keywords_list)
     $keywords{$keyw} = 'TRUE';
 }
 
-my @bugs = ();
+# initialize parser and read the file
+my $parser = new XML::Parser( Style => 'Objects', Pkg => 'BugParser' );
+
+my %scripts = ();
+my %tests_mapping = ();
 
 # Iterate through the list of Bug IDs
 for my $bug_line (<STDIN>)
 {
-    my %bug = ();
-    my $bug_id = ();
-    my $bug_tests = ();
 
     if ($bug_line =~ m/unspecified:/i)
     {
-        $bug{'id'} = 'unspecified';
-        $bug{'summary'} = 'Test failures are expected but no keys are specified';
-        $bug{'bug_severity'} = 'unknown';
-        $bug{'priority'} = 'unknown';
-        $bug{'bug_status'} = 'unknown';
-        $bug_tests = $';
+        my %bug_unspec = ();
+        $bug_unspec{'id'} = 'unspecified';
+        $bug_unspec{'summary'} = 'Test failures are expected but no keys are specified';
+        $bug_unspec{'priority'} = 'unknown';
+        $bug_unspec{'status'} = 'unknown';
+        $bug_unspec{'project'} = 'unknown';
+        my $bug_tests = $';
         chomp $bug_tests;
+        $bug_unspec{'tests'} = $bug_tests;
+        printf("Push unspecified bug<br/>\n");
+        push(@bugs, \%bug_unspec);
     }
-    elsif ($bug_line =~ m/OL (\d*):/i)
+    elsif ($bug_line =~ m/(.*) ([\w\s\-\_\.]*):/i)
     {
-        $bug_id = $1;
-        $bug_tests = $';
-        chomp $bug_tests;
-
-        my $bug_url = "https://www.oktetlabs.ru/bugzilla3/show_bug.cgi?id=$bug_id";
-        my $field = ();
-        my $label = ();
-        my $assume = ();
-
-        #curl -s -u : --negotiate "${BUZILLA_URL}/show_bug.cgi?id=${bug_id}"
-        for my $line (`curl -s -u : --negotiate \"$bug_url\"`)
-        {
-            # Parse BUG ID field
-            if ($line =~ m/name=\"id\" value=\"(\d*)\"/i)
-            {
-                #printf("Id: %s\n", $1);
-                $bug{'id'} = $1;
-            }
-
-            # Parse BUG Summary
-            if ($line =~ m/short_desc_nonedit_display\"\>([\w\s.,<>:\;\?\=\-\\_\/\"\(\)\'\{\}\[\]\#\@\!\~\$\%\^\&\*\|]*)/i)
-            {
-                #printf("Summary: %s\n", $1);
-                $bug{'summary'} = $1;
-            }
-
-            # Parse assumptions if any
-            if ($assume)
-            {
-                if ($line =~ m/\s*(\w*)\s*/i)
-                {
-                    #printf("Assume %s=%s\n", $assume, $1);
-                    $bug{$assume} = $1;
-                    $assume=();
-                }
-            }
-
-            # Parse BUG Status
-            if ($line =~ m/static_bug_status\"\>([\w ]*)/i)
-            {
-                #printf("Status: %s\n", $1);
-                $bug{'status'} = $1;
-                # Assume the next line contains bug resolution
-                $assume='resolution';
-            }
-
-            # Parse Selected options
-            if ($line =~ m/(select|input) (id|name)=\"([\w\s]*)\"/i)
-            {
-                #printf("Found %s select id\n", $1);
-                $field = $3;
-            }
-
-            if ($line =~ m/label for=\"([\w\s]*)\"/i)
-            {
-                #printf("Found %s label\n", $1);
-                $label = $1;
-            }
-
-            # Parse label for construction, in case there are no selections
-            # due to read-only access to bugzilla
-            if (($line =~ m/<td>([\w\s]*)/i) or
-                ($line =~ m/span title=\"([\w\s\,]*)\"/i) or
-                ($line =~ m/<td colspan=\"2\">([\w\s\,]*)  $/i))
-            {
-                if ($label)
-                {
-                    #printf("%s: %s\n", $label, $1);
-                    $bug{$label} = $1;
-                    chomp $bug{$label};
-                    $label = ();
-                }
-            }
-
-            # Parse selections
-            if (($line =~ m/option value=\"([\w\s]*)\"\s*selected/i) or
-                ($line =~ m/option selected value=\"([\w\s]*)\"/i) or
-                ($line =~ m/^\s*value=\"([\w\s\,]*)\"/i))
-            {
-                if ($field)
-                {
-                    #printf("%s: %s\n", $field, $1);
-                    $bug{$field} = $1;
-                    $field = ();
-                }
-            }
-
-            if ($line =~ m/href=\"mailto\:([\w\&\#\;\.]*)\" title=\"([\w\&\#\;\.]*)\" ><span class=\"fn\">([\w\s]*)/i)
-            {
-                if (!$bug{'assigned_to'})
-                {
-                    $bug{'assigned_to'} = "<br/><a href=\"mailto:$1\">$3</a>";
-                }
-            }
-        }
-
-        # Check priority field is simple.
-        # Split it to priority and severity if not.
-        if ($bug{'priority'} =~ m/(P[\d]*) ([\w\s]*)/i)
-        {
-            $bug{'bug_severity'} = $2;
-            $bug{'priority'} = $1;
-        }
-
-        # Update bug status, if not parsed yet
-        if ((not $bug{'bug_status'}) and ($bug{'status'}))
-        {
-            $bug{'bug_status'} = $bug{'status'};
-        }
+        $scripts{$1} .= " $2";
+        $tests_mapping{$2} = $';
     }
-    else
+}
+
+for my $script ( keys %scripts )
+{
+    my $cmd = $script . $scripts{$script};
+
+    my $xml_doc = `$cmd`;
+
+    my $tree = $parser->parse($xml_doc);
+    for (@$tree) { $_->doReport(); }
+}
+
+# Process list of tests related to each bug
+for my $b (@bugs)
+{
+    if ($tests_mapping{$b->{'bug-id'}})
     {
-        last;
+        $b->{'tests'} = $tests_mapping{$b->{'bug-id'}};
     }
 
-    if ($bug{'keywords'})
-    {
-        my $new_keywords = ();
-        for my $bug_keyword (split(', ', $bug{'keywords'}))
-        {
-            $bug_keyword = '<b>' . $bug_keyword . '</b>' if ($keywords{$bug_keyword});
-            $new_keywords .= '<br/>' if ($new_keywords);
-            $new_keywords .= $bug_keyword;
-        }
-        $bug{'keywords'} = $new_keywords;
-    }
-
-    # Process bug test list
     my $test_links;
-    for my $test_line (split(',', $bug_tests))
+    for my $test_line (split(',', $b->{'tests'}))
     {
         if ($test_line)
         {
+            chomp $test_line;
+
             my @tins;
             my ($test_name, $test_ref) = split('#', $test_line);
             if ($test_ref)
@@ -227,43 +128,44 @@ for my $bug_line (<STDIN>)
             }
         }
     }
-    #printf("%s\n", $test_links);
+    $b->{'tests'} = $test_links;
 
-    $bug{'tests'} = $test_links;
-
-    push(@bugs, {%bug});
+    # Process keywords
+    if ($b->{'tags'})
+    {
+        my $new_keywords = ();
+        for my $bug_keyword (split(', ', $b->{'tags'}))
+        {
+            $bug_keyword = '<b>' . $bug_keyword . '</b>' if ($keywords{$bug_keyword});
+            $new_keywords .= '<br/>' if ($new_keywords);
+            $new_keywords .= $bug_keyword;
+        }
+        $b->{'tags'} = $new_keywords;
+    }
 }
 
 # Sort bugs by ID, severity and priority
 @bugs = sort {$a->{'id'} <=> $b->{'id'}} @bugs;
-@bugs = sort {$a->{'bug_severity'} cmp $b->{'bug_severity'}} @bugs;
+#@bugs = sort {$a->{'bug_severity'} cmp $b->{'bug_severity'}} @bugs;
 @bugs = sort {$a->{'priority'} cmp $b->{'priority'}} @bugs;
 
 # Function returns text color due to bug priority
 sub colorify
 {
-    my ($priority, $severity, $status) = @_;
-    my $color = "000000";
+    my ($priority, $status) = @_;
+    my $color = "#000000";
 
-    if (($status eq 'CLOSED') or
-        ($status eq 'RESOLVED'))
+    if ($status =~ m/(closed|resolved)/i)
     {
-        $color = "7F7F7F";
+        $color = "#7F7F7F";
     }
-    elsif (($priority eq 'P1') or
-        (($severity eq 'blocker')) or
-        (($severity eq 'critical')) or
-        (($severity eq 'major')))
+    elsif ($priority =~ m/(P1|block|critic|major)/i)
     {
-        $color = "FF0000";
+        $color = "#FF0000";
     }
-    elsif (($priority eq 'P3') or
-             ($priority eq 'P4') or
-             ($priority eq 'P5') or
-             (($severity eq 'minor')) or
-             (($severity eq 'enhancement')))
+    elsif ($priority =~ m/(P3|P4|P5|minor|enhance)/i)
     {
-        $color = "0000FF";
+        $color = "#0000FF";
     }
 
     return $color;
@@ -276,7 +178,6 @@ printf("  <tr>\n");
 printf("    <td><b>Key</b></td>\n");
 printf("    <td><b>Tests</b></td>\n");
 printf("    <td><b>Priority</b></td>\n");
-printf("    <td><b>Severity</b></td>\n");
 printf("    <td><b>Status</b></td>\n");
 printf("    <td><b>Summary</b></td>\n");
 printf("    <td><b>Product: Component</b></td>\n");
@@ -289,11 +190,10 @@ for my $b (@bugs)
 {
     my $bug_url;
 
-    printf("<tr style=\"color:#%s\">\n", colorify($b->{'priority'}, $b->{'bug_severity'}, $b->{'bug_status'}));
+    printf("<tr style=\"color:%s\">\n", colorify($b->{'priority'}, $b->{'status'}));
     if ($b->{'id'} ne 'unspecified')
     {
-        $bug_url = "https://www.oktetlabs.ru/bugzilla3/show_bug.cgi?id=".$b->{'id'};
-        printf("  <td><a name=\"bug_ol_%s\" href=%s>OL %s</a></td>\n", $b->{'id'}, $bug_url, $b->{'id'});
+        printf("  <td><a name=\"bug_ol_%s\" href=%s>%s</a></td>\n", $b->{'id'}, $b->{'url'}, $b->{'bug-id'});
     }
     else
     {
@@ -301,13 +201,14 @@ for my $b (@bugs)
     }
     printf("  <td>%s</td>\n", $b->{'tests'});
     printf("  <td>%s</td>\n", $b->{'priority'});
-    printf("  <td>%s</td>\n", $b->{'bug_severity'});
-    printf("  <td>%s %s %s</td>\n", $b->{'bug_status'},
-           $b->{'resolution'}, $b->{'assigned_to'});
+
+    printf("  <td>%s%s</td>\n", $b->{'status'},
+           ($b->{'assigned-to'}) ? "<br/><a href=\"mailto:" .
+            $b->{'assigned-mail'} . "\">" . $b->{'assigned-to'} . "</a>" : "");
     printf("  <td>%s</td>\n", $b->{'summary'});
-    printf("  <td>%s%s%s</td>\n", $b->{'product'},
-          ($b->{'component'}) ? ": " : "", $b->{'component'});
-    printf("  <td>%s</td>\n", $b->{'keywords'});
+    printf("  <td>%s%s%s</td>\n", $b->{'project'},
+          ($b->{'components'}) ? ": " : "", $b->{'components'});
+    printf("  <td>%s</td>\n", $b->{'tags'});
     printf("</tr>\n");
 }
 

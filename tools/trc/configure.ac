@@ -24,6 +24,14 @@ TE_PATH_LIBXML2
 
 CPPFLAGS=${XML2_CFLAGS}
 
+AC_ARG_WITH([ext_scripts],,
+            [TE_TRC_EXT_SCRIPTS="${withval}"],
+            [TE_TRC_EXT_SCRIPTS=])
+AC_MSG_WARN(["TRC is compiled with external scripts: $TE_TRC_EXT_SCRIPTS"])
+AC_SUBST([TE_TRC_EXT_SCRIPTS])
+#AC_ARG_VAR([TE_TRC_EXT_SCRIPTS])
+#export TE_TRC_EXT_SCRIPTS
+
 # Check 'with' options
 AC_ARG_WITH([spoilers],, 
 [if test "${withval}" = yes; then
@@ -42,6 +50,7 @@ AC_ARG_WITH([log_urls],,
     with_log_urls=yes;
  fi
 ], [with_log_urls=no])
+
 
 AM_CONDITIONAL(WITH_SPOILERS,     test "$with_spoilers" = "yes")
 AM_CONDITIONAL(WITH_POPUPS,       test "$with_popups" = "yes")
