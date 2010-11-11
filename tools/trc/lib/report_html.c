@@ -1274,8 +1274,8 @@ trc_report_keys_to_html(FILE           *f,
 
     TAILQ_FOREACH(tag, &ctx->tags, links)
     {
-        char *keyw = 
-            trc_re_key_substs_buf(tag->v);
+        char *keyw =
+            trc_re_key_substs_buf(TRC_RE_KEY_TAGS, tag->v);
 
         if (keyw == NULL)
             return ENOMEM;
@@ -1286,6 +1286,7 @@ trc_report_keys_to_html(FILE           *f,
         free(keyw);
     }
 
+    VERB("Run: %s", cmd_buf);
     if ((pid = te_shell_cmd_inline(cmd_buf, -1,
                                    &fd_in, &fd_out, NULL)) < 0)
     {
@@ -1301,7 +1302,10 @@ trc_report_keys_to_html(FILE           *f,
     {
          trc_report_key_test_entry *key_test = NULL;
 
-         fprintf(f_in, "%s:", key->name);
+         char *script =
+            trc_re_key_substs_buf(TRC_RE_KEY_SCRIPT, key->name);
+         fprintf(f_in, "%s:", script);
+         free(script);
 
          TAILQ_FOREACH(key_test, &key->tests, links)
          {
@@ -1316,6 +1320,7 @@ trc_report_keys_to_html(FILE           *f,
              if (!keys_only)
              {
                  fprintf(f_in, "#%s", key_test->path);
+                 printf("#%s", key_test->path);
                  TAILQ_FOREACH(key_iter, &key_test->iters, links)
                  {
                      fprintf(f_in, "|%d", key_iter->iter->tin);
@@ -1622,7 +1627,8 @@ trc_report_exp_got_to_html(FILE             *f,
                 if (iter_data->exp_result->key != NULL)
                 {
                     char *iter_key =
-                        trc_re_key_substs_buf(iter_data->exp_result->key);
+                        trc_re_key_substs_buf(TRC_RE_KEY_URL,
+                                              iter_data->exp_result->key);
                     if (iter_key != NULL)
                         fprintf(f, "%s", iter_key);
                     free(iter_key);
@@ -1634,7 +1640,6 @@ trc_report_exp_got_to_html(FILE             *f,
                       (TAILQ_FIRST(&iter_entry->result.verdicts) !=
                       NULL))))
                 {
-                    char *key_name = NULL;
                     char *key_link = NULL;
                     char *key_test_path =
                         trc_report_key_test_path(test_path,
@@ -1648,13 +1653,15 @@ trc_report_exp_got_to_html(FILE             *f,
                     free(key_test_path);
 
                     /* Add also link to keys table */
-                    key_name = trc_link_keys(iter_data->exp_result->key);
-                    if (key_name != NULL)
-                        key_link = trc_re_key_substs_buf(key_name);
+                    key_link =
+                        trc_re_key_substs_buf(TRC_RE_KEY_TABLE_HREF,
+                                              (iter_data->exp_result->key !=
+                                               NULL) ?
+                                              iter_data->exp_result->key :
+                                              TRC_REPORT_KEY_UNSPEC);
                     if (key_link != NULL)
                         fprintf(f, "%s", key_link);
                     free(key_link);
-                    free(key_name);
                 }
             }
 
@@ -2123,6 +2130,7 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
     FILE       *f;
     te_errno    rc;
     tqe_string *tag;
+    te_string   title_string = TE_STRING_INIT;
 
     f = fopen(filename, "w");
     if (f == NULL)
@@ -2133,8 +2141,19 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
     }
 
     /* HTML header */
+    if (title == NULL)
+    {
+        rc = te_string_append(&title_string, "%s",
+                              trc_html_title_def);
+        TAILQ_FOREACH(tag, &gctx->tags, links)
+        {
+            te_string_append(&title_string, "%s %s",
+                             (tag == TAILQ_FIRST(&gctx->tags)) ?
+                             ":" : ",", tag->v);
+        }
+    }
     fprintf(f, trc_html_doc_start,
-            (title != NULL) ? title : trc_html_title_def);
+            (title != NULL) ? title : title_string.ptr);
     if (title != NULL)
         fprintf(f, "<h1 align=center>%s</h1>\n", title);
     if (gctx->db->version != NULL)

@@ -361,7 +361,7 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
             {
                 const char *key2html_fn = poptGetOptArg(optCon);
 
-                if (trc_re_substs_read(key2html_fn, &key_substs) != 0)
+                if (trc_key_substs_read(key2html_fn) != 0)
                 {
                     ERROR("Failed to get key substitutions from "
                           "file '%s'", key2html_fn);
@@ -597,11 +597,11 @@ exit:
 
     free(db_fn);
     free(txt_fn);
-    
+
     xmlCleanupParser();
     logic_expr_int_lex_destroy();
 
-    trc_re_substs_free(&key_substs);
+    trc_key_substs_free();
 
     return result;
 }
