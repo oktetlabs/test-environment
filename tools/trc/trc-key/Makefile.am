@@ -15,14 +15,4 @@ install_extra_scripts: $(external_scripts)
 	  else :; fi; \
 	done
 
-#	@list='$(dist_bin_SCRIPTS)'; for p in $$list; do \
-#	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-#	  if test -f $$d$$p; then \
-#	    f=`echo "$$p" | sed 's|^.*/||;$(transform)'`; \
-#	    echo " $(dist_binSCRIPT_INSTALL) '$$d$$p' '$(DESTDIR)$(bindir)/$$f'"; \
-#	    $(dist_binSCRIPT_INSTALL) "$$d$$p" "$(DESTDIR)$(bindir)/$$f"; \
-#	  else :; fi; \
-#	done
-
-
 install-data-hook: install_extra_scripts
