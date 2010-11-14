@@ -150,10 +150,37 @@ param_cmd_ad(int argc, const int *arg_tags,
 
 
 
+/**
+ * Parse 
+ */
+static ParameterNames *
+parse_cwmp_ParameterNames(const char *line)
+{
+    static char buf[300];
+    static ParameterNames par_names;
+
+    size_t tok_len;
+
+    string_array_t *names = cwmp_str_array_alloc(NULL, NULL);
+
+    while ((tok_len = cli_token_copy(line, buf)) > 0 )
+    {
+        cwmp_str_array_add(names, buf, "", VA_END_LIST);
+        line += tok_len;
+    }
+
+    par_names.__ptrstring = names->items;
+    par_names.__size      = names->size;
+
+    free(names);
+
+    return &par_names;
+}
 
 /**
  * Fill to_cpe field in cwmp_data, get text human inserted info from line.
- * Expects that rpc_cpe is set correctly
+ *
+ * Expects that rpc_cpe is set correctly.
  */
 static te_errno
 parse_cwmp_rpc_args(acse_epc_cwmp_data_t *cwmp_data, const char *line)
@@ -205,21 +232,9 @@ parse_cwmp_rpc_args(acse_epc_cwmp_data_t *cwmp_data, const char *line)
         break;
         case CWMP_RPC_get_parameter_values: 
         {
-            static ParameterNames             par_list;
             static _cwmp__GetParameterValues  req;
-            size_t tok_len;
 
-            string_array_t *names = cwmp_str_array_alloc(NULL, NULL);
-            req.ParameterNames_ = &par_list;
-
-            while ((tok_len = cli_token_copy(line, buf)) > 0 )
-            {
-                cwmp_str_array_add(names, buf, "", VA_END_LIST);
-                line += tok_len;
-            }
-
-            par_list.__ptrstring = names->items;
-            par_list.__size      = names->size;
+            req.ParameterNames_ = parse_cwmp_ParameterNames(line); 
             cwmp_data->to_cpe.get_parameter_values = &req;
         }
         break;
@@ -236,6 +251,57 @@ parse_cwmp_rpc_args(acse_epc_cwmp_data_t *cwmp_data, const char *line)
             req.NextLevel = atoi(buf);
 
             cli_token_copy(line, name);
+        }
+        break;
+        case CWMP_RPC_get_parameter_attributes: 
+        {
+            static _cwmp__GetParameterAttributes  req;
+
+            req.ParameterNames_ = parse_cwmp_ParameterNames(line); 
+            cwmp_data->to_cpe.get_parameter_attributes = &req;
+        }
+        break;
+        case CWMP_RPC_set_parameter_attributes: 
+        {
+            static _cwmp__SetParameterAttributes  req;
+            struct SetParameterAttributesList     pa_list;
+            struct cwmp__SetParameterAttributesStruct par_attr_s;
+
+            static char name[256];
+            static char buf[256];
+            static char *name_ptr = name;
+
+            size_t ofs = 0;
+
+            req.ParameterList = &pa_list;
+            /* Parse only one parameter */
+            pa_list.__size = 1;
+            pa_list.__ptrSetParameterAttributesStruct =
+                                                malloc(sizeof(void *));
+            pa_list.__ptrSetParameterAttributesStruct[0] = &par_attr_s;
+
+            par_attr_s.Name = &name_ptr;
+            line += cli_token_copy(line, name);
+            while( (ofs = cli_token_copy(line, buf)) != 0)
+            {
+                if (isdigit(buf[0]))
+                {
+                    par_attr_s.NotificationChange = 1;
+                    par_attr_s.Notification = atoi(buf);
+                }
+                else if (buf[0] == '"')
+                {
+                    par_attr_s.AccessListChange = 1;
+                    par_attr_s.AccessList_ = calloc(1, sizeof(AccessList));
+                }
+                else
+                {
+                    par_attr_s.AccessList_ = (struct AccessList *)
+                                        parse_cwmp_ParameterNames(line);
+                    break;
+                }
+                line += ofs;
+            }
         }
         break;
         default:
@@ -454,6 +520,10 @@ static cli_cmd_descr_t cmd_rpc_cpe_kinds[] = {
                     "SetParameterValues", NULL, NULL},
     {"get_names",    CWMP_RPC_get_parameter_names,
                     "GetParameterNames", NULL, NULL},
+    {"get_attrs",    CWMP_RPC_get_parameter_attributes,
+                    "GetParameterAttributes", NULL, NULL},
+    {"set_attrs",    CWMP_RPC_set_parameter_attributes,
+                    "SetParameterAttributes", NULL, NULL},
     END_CMD_ARRAY
 };
 
@@ -825,6 +895,7 @@ epc_parse_cli(const char *buf, size_t len)
 static void
 print_rpc_response(acse_epc_cwmp_data_t *cwmp_resp)
 {
+    int i;
     switch (cwmp_resp->rpc_cpe)
     {
     case CWMP_RPC_get_rpc_methods: 
@@ -833,7 +904,6 @@ print_rpc_response(acse_epc_cwmp_data_t *cwmp_resp)
         if ((mlist = cwmp_resp->from_cpe.get_rpc_methods_r->MethodList_)
                 != NULL)
         {
-            int i;
             printf("RPC methods: ");
             for (i = 0; i < mlist->__size; i++)
                 printf("'%s', ", mlist->__ptrstring[i]);
@@ -848,7 +918,6 @@ print_rpc_response(acse_epc_cwmp_data_t *cwmp_resp)
     case CWMP_RPC_get_parameter_values: 
     {
         char buf[300];
-        int i;
         ParameterValueList *pv_list =
             cwmp_resp->from_cpe.get_parameter_values_r->ParameterList;
 
@@ -862,7 +931,6 @@ print_rpc_response(acse_epc_cwmp_data_t *cwmp_resp)
     break;
     case CWMP_RPC_get_parameter_names: 
     {
-        int i;
         struct cwmp__ParameterInfoStruct *item;
         ParameterInfoList *pi_list =
             cwmp_resp->from_cpe.get_parameter_names_r->ParameterList;
@@ -874,9 +942,36 @@ print_rpc_response(acse_epc_cwmp_data_t *cwmp_resp)
         }
     }
     break;
-    case CWMP_RPC_NONE:
     case CWMP_RPC_set_parameter_attributes: 
+        /* empty response, do nothing */
+        break;
     case CWMP_RPC_get_parameter_attributes: 
+    {
+        struct cwmp__ParameterAttributeStruct *pa_item;
+        ParameterAttributeList *pa_list = 
+            cwmp_resp->from_cpe.get_parameter_attributes_r->ParameterList;
+
+        for (i = 0; i < pa_list->__size; i++)
+        {
+            pa_item = pa_list->__ptrParameterAttributeStruct[i];
+            printf(" Attrubutes of %s: \n\tNotification %d\n\tAccessList ",
+                    pa_item->Name, (int)pa_item->Notification);
+            if (NULL != pa_item->AccessList_ && 
+                0    != pa_item->AccessList_->__size)
+            {
+                int j;
+                for (j = 0; j < pa_item->AccessList_->__size; j++)
+                    printf("%s; ", pa_item->AccessList_->__ptrstring[j]);
+                printf("\n");
+            }
+            else
+                printf("(empty)");
+        }
+
+    }
+    break;
+
+    case CWMP_RPC_NONE:
     case CWMP_RPC_add_object: 
     case CWMP_RPC_delete_object: 
     case CWMP_RPC_reboot: 
