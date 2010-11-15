@@ -8,7 +8,7 @@ noinst_HEADERS = \
 	trc_tags.h \
 	trc_html.h \
 	trc_report.h \
-	re_subst.h
+	re_subst.h \
 	trc_diff.h
 
 noinst_LIBRARIES = \
