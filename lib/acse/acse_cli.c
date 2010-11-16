@@ -47,6 +47,7 @@ DEFINE_LGR_ENTITY("ACSE");
 static char acs_def_name[30] = "";
 static char cpe_def_name[50] = "";
 static int timeout_def = 0;
+static int request_id = 0;
 
 static te_errno print_config_response(te_errno status,
                                       acse_epc_config_data_t *cfg_resp);
@@ -80,22 +81,26 @@ enum cli_codes {
 };
 
 
+#define PARSE_ERROR(_format) \
+    do { \
+        strcpy(err_buf, _format); \
+        return CLI_E_SPECIFIC; \
+    } while (0)
 
 
 static int
 param_cmd_access(int argc, const int *arg_tags,
-                 const char *rest_line, void *opaque)
+                 const char *rest_line, char *err_buf)
 {
     acse_epc_config_data_t *cfg_data;
     te_errno    rc;
-
-    UNUSED(opaque);
+    size_t      ofs;
 
     /* Command here:
        'param acs|cpe modify|obtain <param_name> <value>'
     */
     if (argc < 3)
-        return -1;
+        return CLI_E_MISS_TAGS;
 
     acse_conf_prepare(arg_tags[2] /* function */, &cfg_data);
 
@@ -105,12 +110,25 @@ param_cmd_access(int argc, const int *arg_tags,
     else 
         strncpy(cfg_data->cpe, cpe_def_name, sizeof(cfg_data->cpe));
 
-    rest_line += cli_token_copy(rest_line, cfg_data->oid);
+    
+    ofs = cli_token_copy(rest_line, cfg_data->oid);
+    if (0 == ofs)
+    {
+        if (EPC_CFG_MODIFY == cfg_data->op.fun)
+            PARSE_ERROR(" <parameter_name> <value>");
+        else
+            PARSE_ERROR(" <parameter_name>");
+    }
+    rest_line += ofs;
 
     cfg_data->op.level = arg_tags[1];
 
     if (EPC_CFG_MODIFY == cfg_data->op.fun)
-        cli_token_copy(rest_line, cfg_data->value);
+    {
+        ofs = cli_token_copy(rest_line, cfg_data->value);
+        if (0 == ofs)
+            PARSE_ERROR(" <parameter_name> <value>");
+    }
     else
         cfg_data->value[0] = '\0';
 
@@ -128,23 +146,23 @@ param_cmd_access(int argc, const int *arg_tags,
 
 static int
 param_cmd_list(int argc, const int *arg_tags,
-               const char *rest_line, void *opaque)
+               const char *rest_line, char *err_buf)
 { 
     UNUSED(argc);
     UNUSED(arg_tags);
     UNUSED(rest_line);
-    UNUSED(opaque);
+    printf("cfg param list unsupported\n");
     return 0;
 }
 
 static int
 param_cmd_ad(int argc, const int *arg_tags,
-              const char *rest_line, void *opaque)
+              const char *rest_line, char *err_buf)
 {
     UNUSED(argc);
     UNUSED(arg_tags);
     UNUSED(rest_line);
-    UNUSED(opaque);
+    printf("cfg param add/delete unsupported\n");
     return 0;
 }
 
@@ -183,7 +201,8 @@ parse_cwmp_ParameterNames(const char *line)
  * Expects that rpc_cpe is set correctly.
  */
 static te_errno
-parse_cwmp_rpc_args(acse_epc_cwmp_data_t *cwmp_data, const char *line)
+parse_cwmp_rpc_args(acse_epc_cwmp_data_t *cwmp_data,
+                    const char *line, char *err_buf)
 {
     static char buf[300];
 
@@ -210,11 +229,18 @@ parse_cwmp_rpc_args(acse_epc_cwmp_data_t *cwmp_data, const char *line)
             val_arr = cwmp_val_array_alloc(NULL, NULL);
             /* TODO: good parse here with error check */
 
+            strcpy(err_buf, "(<param_name> <type> <value> )+");
+
             while ((tok_len = cli_token_copy(line, buf)) > 0 )
             {
                 line += tok_len;
-                line += cli_token_copy(line, type_buf);
-                line += cli_token_copy(line, val_buf);
+                if (0 == (tok_len = cli_token_copy(line, type_buf)))
+                    return TE_EFAIL;
+                line += tok_len;
+                tok_len = cli_token_copy(line, val_buf);
+                if (0 == (tok_len = cli_token_copy(line, type_buf)))
+                    return TE_EFAIL;
+                line += tok_len;
                 type = cwmp_val_type_s2i(type_buf);
 
                 if (type == SOAP_TYPE_string)
@@ -234,7 +260,11 @@ parse_cwmp_rpc_args(acse_epc_cwmp_data_t *cwmp_data, const char *line)
         {
             static _cwmp__GetParameterValues  req;
 
+            strcpy(err_buf, "(<param_name> )+");
+
             req.ParameterNames_ = parse_cwmp_ParameterNames(line); 
+            if (0 == req.ParameterNames_->__size)
+                return TE_EFAIL;
             cwmp_data->to_cpe.get_parameter_values = &req;
         }
         break;
@@ -243,29 +273,39 @@ parse_cwmp_rpc_args(acse_epc_cwmp_data_t *cwmp_data, const char *line)
             static char name[256];
             static char *name_ptr = name;
             static cwmp_get_parameter_names_t req;
+            size_t ofs;
 
             cwmp_data->to_cpe.get_parameter_names = &req;
 
+            strcpy(err_buf, "{0|1} <param_name>");
+
             req.ParameterPath = &name_ptr;
-            line += cli_token_copy(line, buf);
+            ofs= cli_token_copy(line, buf);
+            if (0 == ofs) return TE_EFAIL;
+            line += ofs;
             req.NextLevel = atoi(buf);
 
-            cli_token_copy(line, name);
+            ofs = cli_token_copy(line, name);
+            if (0 == ofs) return TE_EFAIL;
         }
         break;
         case CWMP_RPC_get_parameter_attributes: 
         {
             static _cwmp__GetParameterAttributes  req;
 
+            strcpy(err_buf, "(<param_name> )+");
+
             req.ParameterNames_ = parse_cwmp_ParameterNames(line); 
+            if (0 == req.ParameterNames_->__size)
+                return TE_EFAIL;
             cwmp_data->to_cpe.get_parameter_attributes = &req;
         }
         break;
         case CWMP_RPC_set_parameter_attributes: 
         {
             static _cwmp__SetParameterAttributes  req;
-            struct SetParameterAttributesList     pa_list;
-            struct cwmp__SetParameterAttributesStruct par_attr_s;
+            static struct SetParameterAttributesList     pa_list;
+            static struct cwmp__SetParameterAttributesStruct par_attr_s;
 
             static char name[256];
             static char buf[256];
@@ -275,13 +315,20 @@ parse_cwmp_rpc_args(acse_epc_cwmp_data_t *cwmp_data, const char *line)
 
             req.ParameterList = &pa_list;
             /* Parse only one parameter */
+
+            strcpy(err_buf,
+                   "<param_name> [<notification>] [<access_entity>]");
+
             pa_list.__size = 1;
             pa_list.__ptrSetParameterAttributesStruct =
                                                 malloc(sizeof(void *));
             pa_list.__ptrSetParameterAttributesStruct[0] = &par_attr_s;
 
+            memset(&par_attr_s, 0, sizeof(par_attr_s));
             par_attr_s.Name = &name_ptr;
-            line += cli_token_copy(line, name);
+            ofs = cli_token_copy(line, name);
+            if (0 == ofs) return TE_EFAIL;
+            line += ofs;
             while( (ofs = cli_token_copy(line, buf)) != 0)
             {
                 if (isdigit(buf[0]))
@@ -296,6 +343,7 @@ parse_cwmp_rpc_args(acse_epc_cwmp_data_t *cwmp_data, const char *line)
                 }
                 else
                 {
+                    par_attr_s.AccessListChange = 1;
                     par_attr_s.AccessList_ = (struct AccessList *)
                                         parse_cwmp_ParameterNames(line);
                     break;
@@ -313,15 +361,13 @@ parse_cwmp_rpc_args(acse_epc_cwmp_data_t *cwmp_data, const char *line)
 
 static int
 rpc_send(int argc, const int *arg_tags,
-         const char *rest_line, void *opaque)
+         const char *rest_line, char *err_buf)
 {
     te_errno rc, status;
     acse_epc_cwmp_data_t *cwmp_data = NULL;
 
-    UNUSED(opaque);
-
     if (argc < 3)
-        return -1;
+        return CLI_E_MISS_TAGS;
 
     rc = acse_cwmp_prepare(acs_def_name, cpe_def_name,
                            EPC_RPC_CALL, &cwmp_data);
@@ -330,23 +376,26 @@ rpc_send(int argc, const int *arg_tags,
 
     cwmp_data->rpc_cpe = arg_tags[2]; 
 
-    rc = parse_cwmp_rpc_args(cwmp_data, rest_line);
+    rc = parse_cwmp_rpc_args(cwmp_data, rest_line, err_buf);
     if (rc != 0)
     {
+#if 0
         printf("parse cwmp data failed: %s\n", te_rc_err2str(rc));
-        return -1;
+#endif
+        return CLI_E_SPECIFIC;
     }
 
     rc = acse_cwmp_call(&status, NULL, &cwmp_data);
     if (0 != rc)
     {
         printf("ACSE call failed: %s\n", te_rc_err2str(rc));
-        return -1;
+        return CLI_E_EXEC;
     }
     else
     { 
         printf("status%s, request_id %d\n",
                te_rc_err2str(status), cwmp_data->request_id);
+        request_id = cwmp_data->request_id;
     }
 
     return 0;
@@ -354,23 +403,31 @@ rpc_send(int argc, const int *arg_tags,
 
 static int
 rpc_check(int argc, const int *arg_tags,
-          const char *rest_line, void *opaque)
+          const char *rest_line, char *err_buf)
 {
     te_errno rc, status;
     acse_epc_cwmp_data_t *cwmp_data = NULL;
 
-    UNUSED(opaque);
     UNUSED(arg_tags);
+    UNUSED(err_buf);
 
     if (argc < 2)
-        return -1;
+        return CLI_E_MISS_TAGS;
 
     rc = acse_cwmp_prepare(acs_def_name, cpe_def_name,
                            EPC_RPC_CHECK, &cwmp_data);
 
     /* command here: rpc check <request_id> */
 
-    cwmp_data->request_id = atoi(rest_line); 
+    while (isspace(*(rest_line++)));
+
+    if (isdigit(rest_line[0]))
+        cwmp_data->request_id = atoi(rest_line);
+    else if (rest_line[0] == 0)
+        cwmp_data->request_id = request_id;
+    else 
+        PARSE_ERROR("[<request_id>]");
+
 
     rc = acse_cwmp_call(&status, NULL, &cwmp_data);
     if (0 != rc)
@@ -387,24 +444,23 @@ rpc_check(int argc, const int *arg_tags,
 
 static int
 rpc_get_acs(int argc, const int *arg_tags,
-            const char *rest_line, void *opaque)
+            const char *rest_line, char *err_buf)
 {
     UNUSED(argc);
     UNUSED(arg_tags);
     UNUSED(rest_line);
-    UNUSED(opaque);
+    UNUSED(err_buf);
     printf("get ACS RPC unsupported\n");
     return 0;
 }
 
 static int
 cr_cmd(int argc, const int *arg_tags,
-       const char *rest_line, void *opaque)
+       const char *rest_line, char *err_buf)
 {
     te_errno rc, status = 0;
     acse_epc_cwmp_data_t  *cwmp_data;
 
-    UNUSED(opaque);
     UNUSED(rest_line);
 
     if (argc != 2)
@@ -426,11 +482,10 @@ cr_cmd(int argc, const int *arg_tags,
 
 static int
 env_set(int argc, const int *arg_tags,
-        const char *rest_line, void *opaque)
+        const char *rest_line, char *err_buf)
 {
     size_t len;
     char new_value[100];
-    UNUSED(opaque);
     len = cli_token_copy(rest_line, new_value);
 
     if (argc < 2)
@@ -472,7 +527,7 @@ env_set(int argc, const int *arg_tags,
 
 static int
 http_resp(int argc, const int *arg_tags,
-          const char *rest_line, void *opaque)
+          const char *rest_line, char *err_buf)
 {
     char code_buf[100];
     char direction_buf[200];
@@ -480,7 +535,6 @@ http_resp(int argc, const int *arg_tags,
 
     UNUSED(argc);
     UNUSED(arg_tags);
-    UNUSED(opaque);
 
     rest_line += cli_token_copy(rest_line, code_buf);
     rest_line += cli_token_copy(rest_line, direction_buf);

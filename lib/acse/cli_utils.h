@@ -28,19 +28,36 @@ cli_token_copy(const char *line, char *token)
     for (s = 0; isspace(line[s]); s++);
     line += s;
 
-    for (t = 0; line[t] && (!isspace(line[t])); t++)
+    for (t = 0; line[t] && isprint(line[t]) && (!isspace(line[t])); t++)
         token[t] = line[t];
     if (0 == t)
         return 0;
     token[t] = '\0';
+
+    for (; isspace(line[t]); t++);
 
     return s + t;
 }
 
 struct cli_cmd_descr_t;
 
+/** Constants useful for CLI lib */
+enum {
+
+    /** Status codes */
+    CLI_OK = 0, 
+    CLI_E_WRONG_TAG,
+    CLI_E_MISS_TAGS,
+    CLI_E_SPECIFIC,
+    CLI_E_EXEC,
+
+    /** Size of error buffer */
+    CLI_ERR_BUF = 256,
+};
+
+
 typedef int (*cli_cmd_method_fn)(int argc, const int *arg_tags,
-                                 const char *rest_line, void *opaque);
+                                 const char *rest_line, char *err_buf);
 
 typedef struct cli_cmd_descr_t {
     const char *label;
@@ -55,6 +72,19 @@ typedef struct cli_cmd_descr_t {
 
 #define END_CMD_ARRAY {NULL, -1, NULL, NULL, NULL}
 
+/**
+ * Perform entered command line according with command descriptors
+ * tree, call lowest user callback.
+ *
+ * @param root_list     Root of command descriptor tree.
+ * @param line          Command line from user.
+ *
+ * @return zero on success, -1 otherwise.
+ */
 extern int cli_perform_cmd(cli_cmd_descr_t *root_list, const char *line);
 
+/**
+ * Print help for this command and its subcommands. 
+ */
+extern void cli_print_cmd_help(cli_cmd_descr_t *cd);
 
