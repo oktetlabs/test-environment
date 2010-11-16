@@ -1442,7 +1442,13 @@ acse_soap_get_response(struct soap *soap, acse_epc_cwmp_data_t *request)
             SOAP_GET_RESPONSE(FactoryResetResponse, p);
             break;
         case CWMP_RPC_set_parameter_attributes:
+            /* FactoryResetResponse is empty, so do not store it */
+            SOAP_GET_RESPONSE(SetParameterAttributesResponse, p);
+            break;
         case CWMP_RPC_get_parameter_attributes:
+            SOAP_GET_RESPONSE(GetParameterAttributesResponse, 
+                              get_parameter_attributes_r);
+            break;
         case CWMP_RPC_upload:
         case CWMP_RPC_get_queued_transfers:
         case CWMP_RPC_get_all_queued_transfers:

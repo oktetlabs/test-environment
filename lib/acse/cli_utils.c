@@ -89,12 +89,13 @@ cli_perform_cmd(cli_cmd_descr_t *root_list, const char *line)
                     break;
                 }
 
-                printf("expected:\n\t");
+                printf("expected:\n");
                 while (cd->label != NULL)
                 {
+                    printf("    ");
                     for (i = 0; i < level; i++)
                         printf("%s ", cd_stack[i]->label);
-                    printf("%s;  descr: %s\n\t", cd->label, cd->descr);
+                    printf("%s ... \n\tdescr: %s\n", cd->label, cd->descr);
                     cd++;
                 }
 

@@ -414,12 +414,10 @@ rpc_check(int argc, const int *arg_tags,
     if (argc < 2)
         return CLI_E_MISS_TAGS;
 
-    rc = acse_cwmp_prepare(acs_def_name, cpe_def_name,
-                           EPC_RPC_CHECK, &cwmp_data);
+    acse_cwmp_prepare(acs_def_name, cpe_def_name,
+                      EPC_RPC_CHECK, &cwmp_data);
 
-    /* command here: rpc check <request_id> */
-
-    while (isspace(*(rest_line++)));
+    while (isspace(*rest_line)) rest_line++;
 
     if (isdigit(rest_line[0]))
         cwmp_data->request_id = atoi(rest_line);
@@ -464,7 +462,7 @@ cr_cmd(int argc, const int *arg_tags,
     UNUSED(rest_line);
 
     if (argc != 2)
-        return -1;
+        return CLI_E_MISS_TAGS;
 
     acse_cwmp_prepare(acs_def_name, cpe_def_name,
                       arg_tags[1], &cwmp_data);
@@ -473,7 +471,7 @@ cr_cmd(int argc, const int *arg_tags,
     if (0 != rc)
     {
         printf("CWMP call failed: %s\n", te_rc_err2str(rc));
-        return -1;
+        return CLI_E_EXEC;
     }
     print_cwmp_response(status, cwmp_data);
     return 0;
@@ -489,7 +487,7 @@ env_set(int argc, const int *arg_tags,
     len = cli_token_copy(rest_line, new_value);
 
     if (argc < 2)
-        return -1;
+        return CLI_E_MISS_TAGS;
 
     if (len > 0) /* Is there new value? */
         switch (arg_tags[1])
@@ -530,13 +528,17 @@ http_resp(int argc, const int *arg_tags,
           const char *rest_line, char *err_buf)
 {
     char code_buf[100];
-    char direction_buf[200];
+    char direction_buf[200] = {0,};
     int http_code;
+    size_t ofs;
 
     UNUSED(argc);
     UNUSED(arg_tags);
 
-    rest_line += cli_token_copy(rest_line, code_buf);
+    ofs = cli_token_copy(rest_line, code_buf);
+    if (0 == ofs || !isdigit(code_buf[0]))
+        PARSE_ERROR("<http_code> [<direction URL>]");
+    rest_line += ofs;
     rest_line += cli_token_copy(rest_line, direction_buf);
     http_code = atoi(code_buf);
     RING("http response %d to '%s'", http_code, direction_buf);
