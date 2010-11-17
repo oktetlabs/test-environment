@@ -69,6 +69,7 @@ eval `echo ${PLATFORM}_LIBS=\"$6\"`
 
 dnl Specifies list of external static libraries that should be 
 dnl loaded via http from the server specified in TE_EXT_LIBS
+dnl environment variable.
 dnl
 dnl Parameters:
 dnl       platform name in TE_INSTALL
