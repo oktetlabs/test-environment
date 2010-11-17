@@ -56,6 +56,22 @@ Windows Test Agent (engine on windows is not supported):
 Of course, gcc, make, sed and other standard development tools
 are required to build sources.
 
+External libraries
+~~~~~~~~~~~~~~~~~~
+
+External libraries may be specified by TE_EXT_LIBS macro in builder.conf
+(see comments to macro in engine/builder/builder.m4).
+
+TE_EXT_LIB enviroment variable should be set to 
+http://oktetlabs.ru/~tester/te.
+
+External libraries should be placed to 
+http://oktetlabs.ru/~tester/te/<platform>,
+e.g. http://oktetlabs.ru/~tester/te/i686-pc-linux-gnu.
+
+Labraries should be *.tgz archieves that may contain lib/ and include/ 
+directories. They are simply unpacked to installation directory of the 
+corresponding platform.
 
 Tools required for development:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
