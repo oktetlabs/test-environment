@@ -30,8 +30,14 @@
 printf("<bugs>\n");
 
 # Iterate through the list of Bug IDs
-for my $bug_id (@ARGV)
+for my $bug_name (@ARGV)
 {
+    my $bug_id = ();
+    if ($bug_name =~ m/OL-(\d*)/i)
+    {
+        $bug_id = $1;
+    }
+
     my %bug = ();
 
     my $bug_url = "https://www.oktetlabs.ru/bugzilla3/show_bug.cgi?id=$bug_id";
@@ -148,7 +154,7 @@ for my $bug_id (@ARGV)
 
     #$bug{'summary'} =~ s/([^A-Za-z0-9])/sprintf("%%%02X", ord($1))/seg;
 
-    printf("<bug bug-id=\"OL %d\"", $bug{'id'});
+    printf("<bug bug-id=\"OL-%d\"", $bug{'id'});
     printf(" url=\"%s\"", $bug_url);
     printf(" priority=\"%s %s\"", $bug{'priority'}, $bug{'bug_severity'});
     printf(" status=\"%s\"", $bug{'bug_status'});
