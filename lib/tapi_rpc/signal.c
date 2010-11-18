@@ -156,6 +156,33 @@ rpc_bsd_signal(rcf_rpc_server *rpcs,
     RETVAL_PTR(bsd_signal, res);
 }
 
+int
+rpc_siginterrupt(rcf_rpc_server *rpcs, rpc_signum signum, int flag)
+{
+    tarpc_siginterrupt_in  in;
+    tarpc_siginterrupt_out out;
+    
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_PTR(bsd_signal, NULL);
+    }
+
+    in.signum = signum;
+    in.flag = flag;
+    rcf_rpc_call(rpcs, "siginterrupt", &in, &out);
+
+    TAPI_RPC_LOG("RPC (%s,%s): siginterrupt(%s, %d) -> %d (%s)",
+                 rpcs->ta, rpcs->name,
+                 signum_rpc2str(signum), flag, out.retval,
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
+        
+    RETVAL_INT(siginterrupt, out.retval);
+}
+
 char *
 rpc_sysv_signal(rcf_rpc_server *rpcs,
            rpc_signum signum, const char *handler)

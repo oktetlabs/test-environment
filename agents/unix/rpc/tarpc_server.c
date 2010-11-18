@@ -1734,6 +1734,14 @@ TARPC_FUNC(sysv_signal,
 }
 )
 
+/*-------------- siginterrupt() --------------------------------*/
+
+TARPC_FUNC(siginterrupt, {},
+{
+    MAKE_CALL(out->retval = func(signum_rpc2h(in->signum), in->flag));
+}
+)
+
 
 /*-------------- sigaction() --------------------------------*/
 
