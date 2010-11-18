@@ -465,6 +465,87 @@ cwmp_val_array_log(unsigned log_level, const char *intro,
     return 0;
 }
 
+
+
+cwmp_set_parameter_attributes_t *
+cwmp_set_attrs_alloc(const char *par_name, int notification, 
+                     string_array_t *access_list)
+{
+    cwmp_set_parameter_attributes_t *req = malloc(sizeof(*req));
+    te_errno rc;
+
+    req->ParameterList = calloc(1, sizeof(*(req->ParameterList)));
+
+    rc = cwmp_set_attrs_add(req, par_name, notification, access_list);
+    if (rc != 0)
+    {
+        ERROR("alloc SetParamAttr failed %r", rc);
+        free(req->ParameterList);
+        free(req);
+        return NULL;
+    }
+
+    return req;
+}
+
+te_errno
+cwmp_set_attrs_add(cwmp_set_parameter_attributes_t *request,
+                   const char *par_name, int notification, 
+                   string_array_t *user_access_list)
+{
+    cwmp_set_parameter_attributes_list_t     *pa_list;
+    cwmp_set_parameter_attributes_struct_t  **array;
+
+    string_array_t  *access_list = NULL;
+    size_t           last;
+
+    if (NULL == request || NULL == request->ParameterList || 
+        NULL == par_name)
+        return TE_EINVAL;
+
+    pa_list = request->ParameterList;
+    array = pa_list->__ptrSetParameterAttributesStruct;
+
+    last = pa_list->__size;
+    pa_list->__size++;
+    pa_list->__ptrSetParameterAttributesStruct = array =
+                    realloc(array, pa_list->__size * sizeof(array[0]));
+    array[last] = calloc(1, sizeof(*(array[0])));
+    array[last]->Name = calloc(1, sizeof(char *));
+    *(array[last]->Name) = strdup(par_name);
+    if (notification >= 0)
+    {
+        array[last]->NotificationChange = 1;
+        array[last]->Notification = notification;
+    }
+    else
+        array[last]->NotificationChange = 0;
+
+    access_list = cwmp_str_array_copy(user_access_list);
+
+    array[last]->AccessList_ = malloc(sizeof(AccessList));
+    if (access_list != NULL)
+    {
+        array[last]->AccessListChange = 1;
+        array[last]->AccessList_->__size = access_list->size;
+        if (access_list->size > 0)
+            array[last]->AccessList_->__ptrstring = access_list->items;
+        else /* Init by any legal pointer, necessary hack for gSOAP */
+            array[last]->AccessList_->__ptrstring = malloc(sizeof(char*));
+    }
+    else
+    {   
+        /* AccessList should present in message mandatory */
+        array[last]->AccessListChange = 0;
+        array[last]->AccessList_->__size = 0;
+        /* Init by any legal pointer, necessary hack for gSOAP */
+        array[last]->AccessList_->__ptrstring = malloc(sizeof(char*));
+    }
+
+    return 0;
+}
+
+
 /* ================= OLD style API =========================== */
 
 #if 0

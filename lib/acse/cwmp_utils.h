@@ -443,4 +443,14 @@ extern _cwmp__SetParameterValues *cwmp_set_values_alloc(
                             const char *f_name,
                             ...);
 
+
+extern cwmp_set_parameter_attributes_t *cwmp_set_attrs_alloc(
+                            const char *par_name, int notification, 
+                            string_array_t *access_list);
+
+extern te_errno cwmp_set_attrs_add(cwmp_set_parameter_attributes_t *request,
+                            const char *par_name, int notification, 
+                            string_array_t *access_list);
+
+
 #endif /* __TE_CWMP_UTILS__H__*/

@@ -167,18 +167,14 @@ param_cmd_ad(int argc, const int *arg_tags,
 }
 
 
-
 /**
- * Parse 
+ * Put words in line into string array.
  */
-static ParameterNames *
-parse_cwmp_ParameterNames(const char *line)
+static string_array_t *
+parse_string_array(const char *line)
 {
     static char buf[300];
-    static ParameterNames par_names;
-
     size_t tok_len;
-
     string_array_t *names = cwmp_str_array_alloc(NULL, NULL);
 
     while ((tok_len = cli_token_copy(line, buf)) > 0 )
@@ -186,6 +182,18 @@ parse_cwmp_ParameterNames(const char *line)
         cwmp_str_array_add(names, buf, "", VA_END_LIST);
         line += tok_len;
     }
+    return names;
+}
+
+/**
+ * Parse 
+ */
+static ParameterNames *
+parse_cwmp_ParameterNames(const char *line)
+{
+    static ParameterNames par_names;
+
+    string_array_t *names = parse_string_array(line);
 
     par_names.__ptrstring = names->items;
     par_names.__size      = names->size;
@@ -303,63 +311,36 @@ parse_cwmp_rpc_args(acse_epc_cwmp_data_t *cwmp_data,
         break;
         case CWMP_RPC_set_parameter_attributes: 
         {
-            static _cwmp__SetParameterAttributes  req;
-            static struct SetParameterAttributesList     pa_list;
-            static struct cwmp__SetParameterAttributesStruct par_attr_s;
-
             static char name[256];
             static char buf[256];
-            static char *name_ptr = name;
+            string_array_t *ac_list = NULL;
+            int notif = -1;
 
             size_t ofs = 0;
 
-            req.ParameterList = &pa_list;
             /* Parse only one parameter */
 
             strcpy(err_buf,
                    "<param_name> [<notification>] [<access_entity>]");
 
-            pa_list.__size = 1;
-            pa_list.__ptrSetParameterAttributesStruct =
-                                                malloc(sizeof(void *));
-            pa_list.__ptrSetParameterAttributesStruct[0] = &par_attr_s;
-
-            memset(&par_attr_s, 0, sizeof(par_attr_s));
-            par_attr_s.Name = &name_ptr;
             ofs = cli_token_copy(line, name);
             if (0 == ofs) return TE_EFAIL;
             line += ofs;
-            while( (ofs = cli_token_copy(line, buf)) != 0)
+
+            while ((ofs = cli_token_copy(line, buf)) != 0 &&
+                    NULL == ac_list)
             {
                 if (isdigit(buf[0]))
-                {
-                    par_attr_s.NotificationChange = 1;
-                    par_attr_s.Notification = atoi(buf);
-                }
+                    notif = atoi(buf);
                 else if (buf[0] == '"')
-                {
-                    par_attr_s.AccessListChange = 1;
-                    par_attr_s.AccessList_ = calloc(1, sizeof(AccessList));
-                    par_attr_s.AccessList_->__ptrstring = 
-                                    calloc(1, sizeof(char *));
-                }
+                    ac_list = cwmp_str_array_alloc(NULL, NULL);
                 else
-                {
-                    par_attr_s.AccessListChange = 1;
-                    par_attr_s.AccessList_ = (struct AccessList *)
-                                        parse_cwmp_ParameterNames(line);
-                    break;
-                }
+                    ac_list = parse_string_array(line);
                 line += ofs;
             }
-            /* init with empty list, even if AccessListChange is false */
-            if (NULL == par_attr_s.AccessList_)
-            {
-                par_attr_s.AccessList_ = calloc(1, sizeof(AccessList));
-                par_attr_s.AccessList_->__ptrstring = 
-                                        calloc(1, sizeof(char *));
-            }
-            cwmp_data->to_cpe.set_parameter_attributes = &req;
+
+            cwmp_data->to_cpe.set_parameter_attributes =
+                        cwmp_set_attrs_alloc(name, notif, ac_list);
         }
         break;
         default:
