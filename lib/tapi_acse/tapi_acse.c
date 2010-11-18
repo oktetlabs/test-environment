@@ -914,7 +914,6 @@ tapi_acse_set_parameter_values(tapi_acse_context_t *ctx,
     req.ParameterKey = strdup(par_key);
     to_cpe_loc.set_parameter_values = &req;
 
-
     return tapi_acse_cpe_rpc_call(ctx, CWMP_RPC_set_parameter_values,
                              to_cpe_loc);
 }
@@ -932,6 +931,30 @@ tapi_acse_set_parameter_values_resp(tapi_acse_context_t *ctx, int *status)
          rc, from_cpe_loc.set_parameter_values_r->Status);
     return rc;
 }
+
+te_errno
+tapi_acse_get_parameter_attributes(tapi_acse_context_t *ctx,
+                                   string_array_t *names)
+{
+    cwmp_get_parameter_attributes_t req;
+    cwmp_parameter_names_t          par_names;
+
+    req.ParameterNames_ = &par_names;
+    if (NULL == names)
+    {
+        par_names.__ptrstring = NULL;
+        par_names.__size = 0;
+    }
+    else
+    {
+        par_names.__ptrstring = names->items;
+        par_names.__size      = names->size;
+    }
+
+    return tapi_acse_cpe_rpc_call(ctx, CWMP_RPC_get_parameter_attributes,
+                                  PTR_TO_CPE(&req));
+}
+
 
 #define CHECK_RC(expr_) \
     do { \

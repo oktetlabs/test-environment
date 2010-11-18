@@ -477,39 +477,16 @@ extern te_errno tapi_acse_get_parameter_names_resp(tapi_acse_context_t *ctx,
 
 
 /**
- * Call CPE SetParameterAttributes method.
- *
- * @param ctx      current TAPI ACSE context;
- * @param req      ACS request for the SetParameterAttributes method
- *
- * @return status code
- */
-extern te_errno tapi_acse_set_parameter_attributes(
-                tapi_acse_context_t *ctx,
-                cwmp_set_parameter_attributes_t *req);
-
-/**
- * Get CPE SetParameterAttributes response.
- *
- * @param ctx      current TAPI ACSE context;
- *
- * @return status code
- */
-extern te_errno tapi_acse_set_parameter_attributes_resp(
-                                            tapi_acse_context_t *ctx);
-
-
-/**
  * Call CPE GetParameterAttributes method.
  *
  * @param ctx      current TAPI ACSE context;
- * @param req      ACS request for the GetParameterAttributes method
+ * @param names    List of parameter names whose attributes are wanted.
  *
  * @return status code
  */
 extern te_errno tapi_acse_get_parameter_attributes(
-                tapi_acse_context_t *ctx,
-                cwmp_get_parameter_attributes_t *req);
+                                tapi_acse_context_t *ctx,
+                                string_array_t *names);
 
 /**
  * Get CPE GetParameterAttributes response.
