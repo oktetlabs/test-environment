@@ -675,6 +675,7 @@ te_cwmp_pack__SetParameterAttributes(
     CWMP_PACK_COMMON_VARS(_cwmp__SetParameterAttributes); 
     CWMP_PACK_ROW(sizeof(*src)); 
     CWMP_PACK_LEAF(SetParameterAttributesList, ParameterList); 
+
     return packed_length;
 }
 
@@ -959,6 +960,9 @@ te_cwmp_unpack__EventStruct(void *msg, size_t max_len)
     return unpack_size;
 }
 
+#if 0
+    if (res->__size == 0 || ofs == 0) 
+#endif
 
 #define CWMP_UNPACK_LIST_FUNC(_list_type, _elem_type) \
 ssize_t \
@@ -970,7 +974,7 @@ te_cwmp_unpack__ ## _list_type (void *msg, size_t max_len) \
     ssize_t rc = 0; \
  \
     ofs = (unsigned int)(res->__ptr ## _elem_type); \
-    if (res->__size == 0 || ofs == 0) \
+    if (ofs == 0) \
     { \
         res->__ptr ## _elem_type = NULL; \
         return sizeof(_list_type); \
