@@ -1748,7 +1748,7 @@ ds_ftpserver_server_set(unsigned int gid, const char *oid,
     if (!standalone && ftp_xinetd_index < 0)
     {
 #ifdef WITH_XINETD
-        ERROR("/etc/xinet.d/ftp not found");
+        ERROR("/etc/xinetd.d/ftp not found");
 #else
         ERROR("TA compiled without xinetd support")
 #endif
