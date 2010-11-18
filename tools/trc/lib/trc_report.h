@@ -105,9 +105,14 @@ enum trc_report_flags {
     TRC_REPORT_KEYS_ONLY        = 0x400, /**< Show only keys table */
     TRC_REPORT_KEYS_SANITY      = 0x800, /**< Perform keys sanity check */
 
+    /** Do not report unspecified key, if test passed with verdict */
+    TRC_REPORT_KEYS_SKIP_PASSED_UNSPEC = 0x1000,
+    /** Do not report unspecified key, if test failed w/wo verdict */
+    TRC_REPORT_KEYS_SKIP_FAILED_UNSPEC = 0x2000,
+
     /* DB processing options */
-    TRC_REPORT_UPDATE_DB        = 0x2000, /**< Update TRC database */
-    TRC_REPORT_IGNORE_LOG_TAGS  = 0x4000, /**< Ignore TRC tags extracted
+    TRC_REPORT_UPDATE_DB        = 0x4000, /**< Update TRC database */
+    TRC_REPORT_IGNORE_LOG_TAGS  = 0x8000, /**< Ignore TRC tags extracted
                                                from the log */
 };
 

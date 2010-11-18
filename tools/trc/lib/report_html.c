@@ -1652,14 +1652,29 @@ trc_report_exp_got_to_html(FILE             *f,
                     free(key_test_path);
 
                     /* Add also link to keys table */
-                    key_link =
-                        trc_re_key_substs_buf(TRC_RE_KEY_TABLE_HREF,
-                                              (iter_data->exp_result->key !=
-                                               NULL) ?
-                                              iter_data->exp_result->key :
-                                              TRC_REPORT_KEY_UNSPEC);
+                    if (iter_data->exp_result->key != NULL)
+                    {
+                        key_link =
+                            trc_re_key_substs_buf(TRC_RE_KEY_TABLE_HREF,
+                                iter_data->exp_result->key);
+                    }
+                    else if (((iter_entry->result.status ==
+                               TE_TEST_PASSED) &&
+                              (~flags &
+                               TRC_REPORT_KEYS_SKIP_PASSED_UNSPEC)) ||
+                             ((iter_entry->result.status ==
+                               TE_TEST_FAILED) &&
+                              (~flags &
+                               TRC_REPORT_KEYS_SKIP_FAILED_UNSPEC)))
+                    {
+                        key_link =
+                            trc_re_key_substs_buf(TRC_RE_KEY_TABLE_HREF,
+                                                  TRC_REPORT_KEY_UNSPEC);
+
+                    }
                     if (key_link != NULL)
                         fprintf(f, "%s", key_link);
+
                     free(key_link);
                 }
             }

@@ -2,7 +2,7 @@
  * @brief Testing Results Comparator
  *
  * Main module
- *
+ *  
  *
  * Copyright (C) 2004-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -83,6 +83,9 @@ enum {
     TRC_OPT_KEYS_ONLY,
     TRC_OPT_KEYS_SANITY,
     TRC_OPT_IGNORE_LOG_TAGS,
+    TRC_OPT_KEYS_SKIP_PASSED_UNSPEC,
+    TRC_OPT_KEYS_SKIP_FAILED_UNSPEC,
+    TRC_OPT_KEYS_SKIP_UNSPEC,
     TRC_OPT_COMPARISON,
 };
 
@@ -119,7 +122,7 @@ static trc_report_ctx ctx;
 /**
  * Process command line options and parameters specified in argv.
  * The procedure contains "Option table" that should be updated 
- * if some new options are going to be added.
+ * if so me new options are going to be added.
  *
  * @param argc  Number of elements in array "argv".
  * @param argv  Array of strings that represents all command line arguments.
@@ -167,6 +170,7 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
           "Title of the HTML report.",
           "FILENAME" },
         { "html-header", '\0', POPT_ARG_STRING, NULL, TRC_OPT_HTML_HEADER,
+
           "Name of the file with header for the HTML report.",
           "FILENAME" },
         { "key2html", '\0', POPT_ARG_STRING, NULL, TRC_OPT_KEY2HTML,
@@ -209,6 +213,18 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
           NULL },
         { "keys-sanity", '\0', POPT_ARG_NONE, NULL, TRC_OPT_KEYS_SANITY,
           "Perform sanity check for keys table.",
+          NULL },
+        { "keys-skip-passed-unspec", '\0', POPT_ARG_NONE, NULL,
+          TRC_OPT_KEYS_SKIP_PASSED_UNSPEC,
+          "Skip reporting of unspecified keys for passed tests.",
+          NULL },
+        { "keys-skip-failed-unspec", '\0', POPT_ARG_NONE, NULL,
+          TRC_OPT_KEYS_SKIP_FAILED_UNSPEC,
+          "Skip reporting of unspecified keys for failed tests.",
+          NULL },
+        { "keys-skip-unspec", '\0', POPT_ARG_NONE, NULL,
+          TRC_OPT_KEYS_SKIP_UNSPEC,
+          "Skip reporting of unspecified keys for passed and failed tests.",
           NULL },
         { "comparison", '\0', POPT_ARG_STRING, NULL, TRC_OPT_COMPARISON,
           "Parameter comparison method (default is 'exact').",
@@ -390,13 +406,26 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
             TRC_OPT_FLAG(NO_UNSPEC);
             TRC_OPT_FLAG(NO_SKIPPED);
             TRC_OPT_FLAG(NO_EXP_PASSED);
-            TRC_OPT_FLAG(NO_EXPECTED);
+             TRC_OPT_FLAG(NO_EXPECTED);
             TRC_OPT_FLAG(NO_STATS_NOT_RUN);
             TRC_OPT_FLAG(NO_KEYS);
             TRC_OPT_FLAG(KEYS_ONLY);
             TRC_OPT_FLAG(KEYS_SANITY);
+            TRC_OPT_FLAG(KEYS_SKIP_PASSED_UNSPEC);
+            TRC_OPT_FLAG(KEYS_SKIP_FAILED_UNSPEC);
 
 #undef TRC_OPT_FLAG
+
+            case TRC_OPT_KEYS_SKIP_UNSPEC:
+                if (report == NULL)
+                {
+                    ERROR("HTML report modifiers should be specified "
+                          "after the file name for report");
+                    goto exit;
+                }
+                report->flags |= TRC_REPORT_KEYS_SKIP_PASSED_UNSPEC |
+                                 TRC_REPORT_KEYS_SKIP_FAILED_UNSPEC;
+                break;
 
             case TRC_OPT_VERSION:
                 printf("Test Environment: %s\n\n%s\n", PACKAGE_STRING,
