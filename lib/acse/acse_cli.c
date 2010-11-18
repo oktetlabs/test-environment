@@ -340,6 +340,8 @@ parse_cwmp_rpc_args(acse_epc_cwmp_data_t *cwmp_data,
                 {
                     par_attr_s.AccessListChange = 1;
                     par_attr_s.AccessList_ = calloc(1, sizeof(AccessList));
+                    par_attr_s.AccessList_->__ptrstring = 
+                                    calloc(1, sizeof(char *));
                 }
                 else
                 {
@@ -350,6 +352,14 @@ parse_cwmp_rpc_args(acse_epc_cwmp_data_t *cwmp_data,
                 }
                 line += ofs;
             }
+            /* init with empty list, even if AccessListChange is false */
+            if (NULL == par_attr_s.AccessList_)
+            {
+                par_attr_s.AccessList_ = calloc(1, sizeof(AccessList));
+                par_attr_s.AccessList_->__ptrstring = 
+                                        calloc(1, sizeof(char *));
+            }
+            cwmp_data->to_cpe.set_parameter_attributes = &req;
         }
         break;
         default:
@@ -369,18 +379,23 @@ rpc_send(int argc, const int *arg_tags,
     if (argc < 3)
         return CLI_E_MISS_TAGS;
 
+    /* command here: rpc send <rpcname> [<rpc args>...] */
+
     rc = acse_cwmp_prepare(acs_def_name, cpe_def_name,
                            EPC_RPC_CALL, &cwmp_data);
-
-    /* command here: rpc send <rpcname> [<rpc args>...] */
+    if (0 != rc)
+    {
+        printf("cwmp prepare failed: %s\n", te_rc_err2str(rc));
+        return CLI_E_EXEC;
+    }
 
     cwmp_data->rpc_cpe = arg_tags[2]; 
 
     rc = parse_cwmp_rpc_args(cwmp_data, rest_line, err_buf);
     if (rc != 0)
     {
-#if 0
-        printf("parse cwmp data failed: %s\n", te_rc_err2str(rc));
+#if 1
+        fprintf(stderr, "parse cwmp data failed: %s\n", te_rc_err2str(rc));
 #endif
         return CLI_E_SPECIFIC;
     }
@@ -388,7 +403,7 @@ rpc_send(int argc, const int *arg_tags,
     rc = acse_cwmp_call(&status, NULL, &cwmp_data);
     if (0 != rc)
     {
-        printf("ACSE call failed: %s\n", te_rc_err2str(rc));
+        printf("cwmp call failed: %s\n", te_rc_err2str(rc));
         return CLI_E_EXEC;
     }
     else
