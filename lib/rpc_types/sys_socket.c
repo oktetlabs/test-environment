@@ -615,6 +615,8 @@ rpc_sockopt2level(rpc_sockopt opt)
         case RPC_IP_MULTICAST_IF:
         case RPC_IP_MULTICAST_LOOP:
         case RPC_IP_MULTICAST_TTL:
+        case RPC_MCAST_JOIN_GROUP:
+        case RPC_MCAST_LEAVE_GROUP:
         case RPC_IP_OPTIONS:
         case RPC_IP_PKTINFO:
         case RPC_IP_RECVERR:
@@ -726,6 +728,8 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(IP_MULTICAST_IF);
         RPC2STR(IP_MULTICAST_LOOP);
         RPC2STR(IP_MULTICAST_TTL);
+        RPC2STR(MCAST_JOIN_GROUP);
+        RPC2STR(MCAST_LEAVE_GROUP);
         RPC2STR(IP_OPTIONS);
         RPC2STR(IP_PKTINFO);
         RPC2STR(IP_RECVERR);
@@ -837,6 +841,8 @@ sockopt_rpc2h(rpc_sockopt opt)
         RPC2H_CHECK(IP_MULTICAST_IF);
         RPC2H_CHECK(IP_MULTICAST_LOOP);
         RPC2H_CHECK(IP_MULTICAST_TTL);
+        RPC2H_CHECK(MCAST_JOIN_GROUP);
+        RPC2H_CHECK(MCAST_LEAVE_GROUP);
         RPC2H_CHECK(IP_OPTIONS);
         RPC2H_CHECK(IP_PKTINFO);
         RPC2H_CHECK(IP_RECVERR);
@@ -980,6 +986,8 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC_CHECK(IP_MULTICAST_IF);
                 H2RPC_CHECK(IP_MULTICAST_LOOP);
                 H2RPC_CHECK(IP_MULTICAST_TTL);
+                H2RPC_CHECK(MCAST_JOIN_GROUP);
+                H2RPC_CHECK(MCAST_LEAVE_GROUP);
                 H2RPC_CHECK(IP_OPTIONS);
                 H2RPC_CHECK(IP_PKTINFO);
                 H2RPC_CHECK(IP_RECVERR);

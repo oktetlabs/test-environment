@@ -1745,7 +1745,7 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
                 rpcs->_errno = TE_RC(TE_TAPI, TE_ENOMEM);
                 RETVAL_INT(setsockopt, -1);
                 break;
-    
+
             case RPC_IPV6_ADD_MEMBERSHIP:
             case RPC_IPV6_DROP_MEMBERSHIP:
             case RPC_IPV6_JOIN_ANYCAST:
@@ -1756,12 +1756,12 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
                 inet_ntop(AF_INET6,
                           &((struct ipv6_mreq *)optval)->ipv6mr_multiaddr,
                           buf, sizeof(buf));
-                
+
                 val.opttype = OPT_MREQ6;
                 val.option_value_u.opt_mreq6.ipv6mr_multiaddr.
                 ipv6mr_multiaddr_val = (uint32_t *)
                     &((struct ipv6_mreq *)optval)->ipv6mr_multiaddr;
-                
+
                 val.option_value_u.opt_mreq6.ipv6mr_multiaddr.
                 ipv6mr_multiaddr_len = sizeof(struct in6_addr);
 
@@ -1784,7 +1784,7 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
                 char addr_buf2[INET_ADDRSTRLEN];
 
                 val.opttype = opt->type;
-                        
+
                 switch (opt->type)
                 {
                     case OPT_IPADDR:
@@ -1797,7 +1797,7 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
                             rpcs->_errno = TE_RC(TE_TAPI, TE_EINVAL);
                             RETVAL_INT(setsockopt, -1);
                         }
-                        
+
                         memcpy(&val.option_value_u.opt_ipaddr,
                                (char *)&(opt->address),
                                sizeof(opt->address));
@@ -1838,7 +1838,7 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
                         val.option_value_u.opt_mreqn.imr_ifindex =
                         opt->ifindex;
 
-                        te_log_buf_append(opt_val_str, 
+                        te_log_buf_append(opt_val_str,
                             "{ imr_multiaddr: %s, imr_address: %s, "
                             "imr_ifindex: %d }",
                             inet_ntop(AF_INET,
@@ -1849,8 +1849,8 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
                                        addr_buf2, sizeof(addr_buf2)),
                             opt->ifindex);
                         break;
-                    } 
-                    
+                    }
+
                     default:
                     {
                         ERROR("Invalid argument type %d for socket option",
@@ -1858,12 +1858,39 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
                         rpcs->_errno = TE_RC(TE_TAPI, TE_EINVAL);
                         RETVAL_INT(setsockopt, -1);
                     }
-                   
+
                 }
 
                 break;
             }
-            
+
+            case RPC_MCAST_JOIN_GROUP:
+            case RPC_MCAST_LEAVE_GROUP:
+            {
+                char gr_addr_buf[INET_ADDRSTRLEN];
+                struct group_req *opt = (struct group_req *)optval;
+                struct sockaddr *group = (struct sockaddr *)&opt->gr_group;
+                struct sockaddr_in *group_in = (struct sockaddr_in *)group;
+
+                val.opttype = OPT_GROUP_REQ;
+                val.option_value_u.opt_group_req.gr_interface =
+                    opt->gr_interface;
+                sockaddr_input_h2rpc(group,
+                            &val.option_value_u.opt_group_req.gr_group);
+
+                if (group->sa_family == AF_INET)
+                {
+                    te_log_buf_append(opt_val_str,
+                                      "{ gr_group: %s, gr_interface: %d }",
+                                      inet_ntop(AF_INET,
+                                                &group_in->sin_addr,
+                                                gr_addr_buf,
+                                                sizeof(gr_addr_buf)),
+                                      opt->gr_interface);
+                }
+                break;
+            }
+
             case RPC_SO_UPDATE_ACCEPT_CONTEXT:
                 val.opttype = OPT_HANDLE;
                 val.option_value_u.opt_handle = *(int *)optval;

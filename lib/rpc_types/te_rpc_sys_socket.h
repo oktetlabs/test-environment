@@ -325,6 +325,10 @@ typedef enum rpc_sockopt {
     RPC_IP_MULTICAST_LOOP,  /**< Whether sent multicast packets
                                  should be looped back to the local
                                  sockets */
+
+    RPC_MCAST_JOIN_GROUP,   /**< Join a multicast group */
+    RPC_MCAST_LEAVE_GROUP,  /**< Leave a multicast group */
+
     RPC_IP_MULTICAST_TTL,   /**< Set/get TTL value used in outgoing
                                  multicast packets */
     RPC_IP_OPTIONS,         /**< Set/get the IP options to be sent 

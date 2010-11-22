@@ -1911,6 +1911,7 @@ typedef union sockopt_param {
 #if HAVE_STRUCT_TCP_INFO
     struct tcp_info     tcpi;
 #endif
+    struct group_req    gr_req;
 } sockopt_param;
 
 static void
@@ -2006,6 +2007,18 @@ tarpc_setsockopt(tarpc_setsockopt_in *in, tarpc_setsockopt_out *out,
             memcpy(&param->addr6, in_optval->option_value_u.opt_ipaddr6,
                    sizeof(struct in6_addr));
             *optlen = sizeof(param->addr6);
+            break;
+        }
+
+        case OPT_GROUP_REQ:
+        {
+            sockaddr_rpc2h(&in_optval->option_value_u.
+                           opt_group_req.gr_group,
+                           (struct sockaddr *)&(param->gr_req.gr_group),
+                           sizeof(param->gr_req.gr_group), NULL, NULL);
+            param->gr_req.gr_interface =
+                in_optval->option_value_u.opt_group_req.gr_interface;
+            *optlen = sizeof(param->gr_req);
             break;
         }
 

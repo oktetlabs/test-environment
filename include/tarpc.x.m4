@@ -2160,7 +2160,8 @@ enum option_type {
     OPT_IPADDR      = 7,
     OPT_IPADDR6     = 8,
     OPT_TCP_INFO    = 9,
-    OPT_HANDLE      = 10
+    OPT_HANDLE      = 10,
+    OPT_GROUP_REQ   = 11
 };
 
 struct tarpc_linger {
@@ -2229,6 +2230,11 @@ struct option_value_tcp_info {
     uint32_t    tcpi_reordering;
 };
 
+struct tarpc_group_req {
+     tarpc_uint      gr_interface;
+     struct tarpc_sa gr_group;
+};
+
 union option_value switch (option_type opttype) {
     case OPT_INT:       tarpc_int opt_int;
     case OPT_LINGER:    struct tarpc_linger opt_linger;
@@ -2240,6 +2246,7 @@ union option_value switch (option_type opttype) {
     case OPT_IPADDR6:   uint32_t opt_ipaddr6[4];
     case OPT_TCP_INFO:  struct option_value_tcp_info opt_tcp_info;
     case OPT_HANDLE:    tarpc_int opt_handle;
+    case OPT_GROUP_REQ: struct tarpc_group_req opt_group_req;
 };
 
 /* setsockopt() */
