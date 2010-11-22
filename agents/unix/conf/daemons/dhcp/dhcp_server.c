@@ -61,6 +61,7 @@ static const char *dhcp_server_pid_file = "/var/run/dhcpd.pid";
 
 /** List of known possible locations of DHCP server scripts */
 static const char *dhcp_server_scripts[] = {
+    "/etc/init.d/isc-dhcp-server",
     "/etc/init.d/dhcpd",
     "/etc/init.d/dhcp3-server",
     "/etc/init.d/dhcp"
