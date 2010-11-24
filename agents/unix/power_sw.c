@@ -41,6 +41,7 @@
 #include <stdlib.h>
 #include <sys/fcntl.h>
 #include <sys/ioctl.h>
+#include <sys/file.h>
 #include <math.h>
 #include <unistd.h>
 #include <string.h>
@@ -223,6 +224,17 @@ power_sw(int type, const char *dev, int mask, int cmd)
         if ((fd = open(dev, O_RDWR)) < 0)
         {
             ERROR("Failed to open parport device %s.", dev);
+            return -1;
+        }
+
+        /*
+         * FIXME To prevent race condition when different
+         * processes do IOCTLs on parport device.
+         */
+        if (flock(fd, LOCK_EX) < 0)
+        {
+            ERROR("Failed to lock parport device file %s.", dev);
+            close(fd);
             return -1;
         }
 
