@@ -105,7 +105,7 @@ typedef enum {
 #define TAPI_IGMP_IP4_TTL_DEFAULT 1
 
 /** Default ToS for IGMPv2 messages is not stricted to any value */
-#define TAPI_IGMP_IP4_TOS_DEFAULT    (-1)
+#define TAPI_IGMP_IP4_TOS_DEFAULT    0xc0
 
 /** Default ToS for IGMPv3 messages is 0xc0 */
 #define TAPI_IGMP3_IP4_TOS_DEFAULT   0xc0
