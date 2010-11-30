@@ -3115,10 +3115,12 @@ main(int argc, const char *argv[])
                               __FILE__, __LINE__);
                         time_buf[0] = '\0';
                     }
-                    ERROR("Request %u:%d:'%s' sent to TA '%s' at '%s' is "
-                          "timed out (%u sec)",
+
+                    ERROR("Request %u:%d: opcode '%s' id '%s' "
+                          "sent to TA '%s' at '%s' is timed out (%u sec)",
                           (unsigned)req->message->seqno, req->message->sid,
                           rcf_op_to_string(req->message->opcode),
+                          req->message->id,
                           agent->name, time_buf, (unsigned)req->timeout);
                 }
                 req->message->error = TE_RC(TE_RCF, TE_ETIMEDOUT);
