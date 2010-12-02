@@ -1148,11 +1148,12 @@ trc_report_process_log(trc_report_ctx *gctx, const char *log)
         ERROR("Processing of the XML document with TE log '%s' "
               "failed: %r", ctx.log, rc);
     }
+#if 0
     else if ((rc = trc_report_collect_stats(gctx)) != 0)
     {
         ERROR("Collect of TRC report statistics failed: %r", rc);
     }
-
+#endif
     free(ctx.stack_info);
     for (ctx.args_n = 0; ctx.args_n < ctx.args_max; ctx.args_n++)
     {

@@ -53,6 +53,7 @@ trc_report_init_ctx(trc_report_ctx *ctx)
 {
     memset(ctx, 0, sizeof(ctx));
     TAILQ_INIT(&ctx->tags);
+    TAILQ_INIT(&ctx->merge_fns);
 }
 
 

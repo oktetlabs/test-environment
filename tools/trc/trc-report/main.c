@@ -87,6 +87,7 @@ enum {
     TRC_OPT_KEYS_SKIP_FAILED_UNSPEC,
     TRC_OPT_KEYS_SKIP_UNSPEC,
     TRC_OPT_COMPARISON,
+    TRC_OPT_MERGE,
 };
 
 /** HTML report configuration */
@@ -163,6 +164,10 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
           "Specify name of the file to report in text format.",
           "FILENAME" },
 
+        { "merge", 'm', POPT_ARG_STRING, NULL, TRC_OPT_MERGE,
+          "Name of the XML log file for merge.",
+          "FILENAME" },
+
         { "html", 'h', POPT_ARG_STRING, NULL, TRC_OPT_HTML,
           "Name of the file for report in HTML format.",
           "FILENAME" },
@@ -235,11 +240,11 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
         POPT_AUTOHELP
         POPT_TABLEEND
     };
-    
+
     /* Process command line options */
     optCon = poptGetContext(NULL, argc, (const char **)argv,
                             options_table, 0);
-  
+
     poptSetOtherOptionHelp(optCon, "<xml-log>");
 
     while ((opt = poptGetNextOpt(optCon)) >= 0)
@@ -265,7 +270,7 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
             case TRC_OPT_COMPARISON:
             {
                 const char *method = poptGetOptArg(optCon);
-                
+
                 if (strcmp(method, "exact") == 0)
                 {
                     trc_db_compare_values = strcmp;
@@ -289,7 +294,28 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
                 }
                 break;
             }
-            
+
+            case TRC_OPT_MERGE:
+            {
+                tqe_string *p = TE_ALLOC(sizeof(*p));
+
+                if (p == NULL)
+                {
+                    goto exit;
+                }
+                TAILQ_INSERT_TAIL(&ctx.merge_fns, p, links);
+                p->v = (char *)poptGetOptArg(optCon);
+                if (p->v == NULL)
+                {
+                    ERROR("Empty option value of --merge option");
+                    goto exit;
+                }
+                else
+                    RING("Parsed merge option: --merge=%s", p->v);
+
+                break;
+            }
+
             case TRC_OPT_TAG:
             {
                 tqe_string *p = TE_ALLOC(sizeof(*p));
@@ -516,6 +542,7 @@ main(int argc, char *argv[])
 {
     int                 result = EXIT_FAILURE;
     trc_report_html    *report;
+    tqe_string         *merge_fn;
 
     TAILQ_INIT(&reports);
 
@@ -552,6 +579,22 @@ main(int argc, char *argv[])
     if (trc_report_process_log(&ctx, xml_log_fn) != 0)
     {
         ERROR("Failed to process XML log");
+        goto exit;
+    }
+
+    TAILQ_FOREACH(merge_fn, &ctx.merge_fns, links)
+    {
+        RING("Merging with %s", merge_fn->v);
+        if (trc_report_merge(&ctx, merge_fn->v) != 0)
+        {
+            ERROR("Failed to merge with %s", merge_fn->v);
+            goto exit;
+        }
+    }
+
+    if (trc_report_collect_stats(&ctx) != 0)
+    {
+        ERROR("Collect of TRC report statistics failed");
         goto exit;
     }
 
