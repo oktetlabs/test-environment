@@ -41,11 +41,27 @@ extern "C" {
 
 /** Numbering plans */
 enum te_numbering_plan {
-    TE_TELEPHONY_NANP        = (1 << 3) | (1 << 9),     /**< North America numbering plan */
-    TE_TELEPHONY_FRANCE      = (1 << 9),                /**< France numbering plan */
-    TE_TELEPHONY_EUROPE_425  = (1 << 7),                /**< Most Europe numbering plan */
-    TE_TELEPHONY_JP          = (1 << 4),                /**< Japan numbering plan */
-    TE_TELEPHONY_CHINA       = (1 << 10)                /**< China numbering plan */
+    TE_TELEPHONY_200        = 1,
+    TE_TELEPHONY_300        = (1 << 1),
+    TE_TELEPHONY_330        = (1 << 2),
+    TE_TELEPHONY_350        = (1 << 3),
+    TE_TELEPHONY_400        = (1 << 4),
+    TE_TELEPHONY_JP         = (1 << 4),     /**< Japan numbering plan */
+    TE_TELEPHONY_413        = (1 << 5),
+    TE_TELEPHONY_420        = (1 << 6),
+    TE_TELEPHONY_425        = (1 << 7),
+    TE_TELEPHONY_EUROPE_425 = (1 << 7),     /**< Most Europe numbering plan */
+    TE_TELEPHONY_438        = (1 << 8),
+    TE_TELEPHONY_440        = (1 << 9),
+    TE_TELEPHONY_FRANCE     = (1 << 9),     /**< France numbering plan */
+    TE_TELEPHONY_450        = (1 << 10),
+    TE_TELEPHONY_CHINA      = (1 << 10),    /**< China numbering plan */
+    TE_TELEPHONY_660        = (1 << 11),
+    TE_TELEPHONY_700        = (1 << 12),
+    TE_TELEPHONY_800        = (1 << 13),
+    TE_TELEPHONY_1000       = (1 << 14),
+    TE_TELEPHONY_NANP       = (1 << 3) | (1 << 9), /**< North America
+                                                        numbering plan */
 };
 
 
