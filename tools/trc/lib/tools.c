@@ -48,14 +48,12 @@
 /* See the description in trc_report.h */
 int
 trc_tools_cut_db(te_trc_db *db, unsigned int db_uid,
-                 const char *path, te_bool inverse)
+                 const char *path_pattern, te_bool inverse)
 {
     te_errno                rc = 0;
     te_trc_db_walker       *walker;
     trc_db_walker_motion    mv;
     te_bool                 is_iter = TRUE;
-    te_string               test_path = TE_STRING_INIT;
-    char                   *test_name = NULL;
 
     walker = trc_db_new_walker(db);
     if (walker == NULL)
@@ -71,17 +69,14 @@ trc_tools_cut_db(te_trc_db *db, unsigned int db_uid,
                 /*@fallthrou@*/
 
             case TRC_DB_WALKER_BROTHER:
-                test_name = trc_db_walker_get_test(walker)->name;
-
-                te_string_append(&test_path, "/%s", test_name);
                 if (is_iter)
                 {
-                    if ((strstr(test_path.ptr, path) != NULL) != inverse)
+                    if ((strstr(trc_db_walker_get_test(walker)->path,
+                                path_pattern) != NULL) != inverse)
                     {
                         trc_db_walker_set_user_data(walker, db_uid, NULL);
                     }
                 }
-                te_string_cut(&test_path, strlen(test_name) + 1);
 
                 break;
 
@@ -109,6 +104,9 @@ trc_tools_merge_db(te_trc_db *db, int dst_uid, int src_uid1, int src_uid2)
     te_trc_db_walker       *walker;
     trc_db_walker_motion    mv;
     te_bool                 is_iter = TRUE;
+    te_bool                 overwritten = FALSE;
+    int                     new_iters = 0;
+    int                     replaced_iters = 0;
 
     walker = trc_db_new_walker(db);
     if (walker == NULL)
@@ -124,7 +122,6 @@ trc_tools_merge_db(te_trc_db *db, int dst_uid, int src_uid1, int src_uid2)
                 /*@fallthrou@*/
 
             case TRC_DB_WALKER_BROTHER:
-
                 /*
                  * Same actions are performed for iters and tests,
                  * but we may need more complex update for iterations.
@@ -146,6 +143,15 @@ trc_tools_merge_db(te_trc_db *db, int dst_uid, int src_uid1, int src_uid2)
                     if (iter_data != NULL)
                         trc_db_walker_set_user_data(walker, dst_uid,
                                                     iter_data);
+                    if (iter_data != iter_data1)
+                    {
+                        overwritten = TRUE;
+                        if (iter_data1 == NULL)
+                            new_iters++;
+                        else
+                            replaced_iters++;
+                    }
+
                 }
                 else
                 {
@@ -165,11 +171,26 @@ trc_tools_merge_db(te_trc_db *db, int dst_uid, int src_uid1, int src_uid2)
                     if (test_data != NULL)
                         trc_db_walker_set_user_data(walker, dst_uid,
                                                     test_data);
+                    if (test_data != test_data1)
+                    {
+                        //overwritten = TRUE;
+                    }
                 }
                 break;
 
             case TRC_DB_WALKER_FATHER:
                 is_iter = !is_iter;
+                if (!is_iter)
+                {
+                    if (overwritten)
+                    {
+                        printf("  Merge %s: %d replaced + %d new\n",
+                               trc_db_walker_get_test(walker)->path, replaced_iters, new_iters);
+                        overwritten = FALSE;
+                        new_iters = 0;
+                        replaced_iters = 0;
+                    }
+                }
                 break;
 
             default:
