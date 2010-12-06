@@ -139,6 +139,10 @@ trc_tools_merge_db(te_trc_db *db, int dst_uid, int src_uid1, int src_uid2)
     te_bool                 overwritten = FALSE;
     int                     new_iters = 0;
     int                     replaced_iters = 0;
+    int                     new_total = 0;
+    int                     replaced_total = 0;
+
+    printf("Merge results:\n");
 
     walker = trc_db_new_walker(db);
     if (walker == NULL)
@@ -217,9 +221,12 @@ trc_tools_merge_db(te_trc_db *db, int dst_uid, int src_uid1, int src_uid2)
                     if (overwritten)
                     {
                         printf("  Merge %s: %d replaced + %d new\n",
-                               trc_db_walker_get_test(walker)->path, replaced_iters, new_iters);
+                               trc_db_walker_get_test(walker)->path,
+                               replaced_iters, new_iters);
                         overwritten = FALSE;
+                        new_total += new_iters;
                         new_iters = 0;
+                        replaced_total += replaced_iters;
                         replaced_iters = 0;
                     }
                 }
@@ -230,6 +237,9 @@ trc_tools_merge_db(te_trc_db *db, int dst_uid, int src_uid1, int src_uid2)
                 break;
         }
     }
+
+    printf("Total %d iterations replaced + %d new\n",
+           replaced_total, new_total);
 
     trc_db_free_walker(walker);
 
