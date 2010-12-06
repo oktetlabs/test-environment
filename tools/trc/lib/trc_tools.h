@@ -34,7 +34,6 @@
 #include "te_defs.h"
 #include "te_queue.h"
 #include "te_errno.h"
-#include "tq_string.h"
 #include "te_trc.h"
 #include "trc_db.h"
 
@@ -42,7 +41,13 @@
 extern "C" {
 #endif
 
-export te_errno trc_report_merge(trc_report_ctx *ctx, const char *filename);
+extern te_errno trc_tools_cut_db(te_trc_db *db, unsigned int db_uid,
+                                 const char *path_pattern, te_bool inverse);
+
+extern te_errno trc_tools_merge_db(te_trc_db *db, int dst_uid,
+                                   int src_uid1, int src_uid2);
+
+extern te_errno trc_report_merge(trc_report_ctx *ctx, const char *filename);
 
 #ifdef __cplusplus
 } /* extern "C" */

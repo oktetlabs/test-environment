@@ -40,13 +40,14 @@
 
 #include "te_alloc.h"
 #include "te_queue.h"
+#include "tq_string.h"
 #include "trc_tags.h"
 #include "logger_api.h"
 
 #include "trc_report.h"
 
 /* See the description in trc_report.h */
-int
+te_errno
 trc_tools_cut_db(te_trc_db *db, unsigned int db_uid,
                  const char *path_pattern, te_bool inverse)
 {
@@ -54,6 +55,10 @@ trc_tools_cut_db(te_trc_db *db, unsigned int db_uid,
     te_trc_db_walker       *walker;
     trc_db_walker_motion    mv;
     te_bool                 is_iter = TRUE;
+    int                     removed = 0;
+    int                     removed_total = 0;
+
+    printf("\nRemove tests by %s path\n", path_pattern);
 
     walker = trc_db_new_walker(db);
     if (walker == NULL)
@@ -74,7 +79,20 @@ trc_tools_cut_db(te_trc_db *db, unsigned int db_uid,
                     if ((strstr(trc_db_walker_get_test(walker)->path,
                                 path_pattern) != NULL) != inverse)
                     {
-                        trc_db_walker_set_user_data(walker, db_uid, NULL);
+                        trc_report_test_iter_data *iter_data =
+                            trc_db_walker_get_user_data(walker, db_uid);
+                        if (iter_data != NULL)
+                        {
+                            trc_report_test_iter_entry *p;
+                            TAILQ_FOREACH(p, &iter_data->runs, links)
+                            {
+                                removed++;
+                            }
+
+                            trc_report_free_test_iter_data(iter_data);
+                            trc_db_walker_set_user_data(walker, db_uid,
+                                                        NULL);
+                        }
                     }
                 }
 
@@ -82,6 +100,17 @@ trc_tools_cut_db(te_trc_db *db, unsigned int db_uid,
 
             case TRC_DB_WALKER_FATHER:
                 is_iter = !is_iter;
+                if (!is_iter)
+                {
+                    if (removed > 0)
+                    {
+                        printf("  Remove %s: %d iters\n",
+                               trc_db_walker_get_test(walker)->path,
+                               removed);
+                        removed_total += removed;
+                        removed = 0;
+                    }
+                }
                 break;
 
             default:
@@ -91,6 +120,9 @@ trc_tools_cut_db(te_trc_db *db, unsigned int db_uid,
     }
 
     trc_db_free_walker(walker);
+
+    printf("Total removed %d iterations for %s path\n",
+           removed_total, path_pattern);
 
     return rc;
 }
@@ -204,6 +236,7 @@ trc_tools_merge_db(te_trc_db *db, int dst_uid, int src_uid1, int src_uid2)
     return rc;
 }
 
+/* See the description in trc_report.h */
 te_errno
 trc_report_merge(trc_report_ctx *ctx, const char *filename)
 {
@@ -242,3 +275,4 @@ trc_report_merge(trc_report_ctx *ctx, const char *filename)
 
     return 0;
 }
+

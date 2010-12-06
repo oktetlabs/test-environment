@@ -47,10 +47,10 @@
 #include "te_defs.h"
 #include "te_queue.h"
 #include "te_alloc.h"
-#include "tq_string.h"
 #include "logger_api.h"
 #include "te_trc.h"
 #include "trc_report.h"
+#include "trc_tools.h"
 #include "re_subst.h"
 
 
@@ -88,6 +88,7 @@ enum {
     TRC_OPT_KEYS_SKIP_UNSPEC,
     TRC_OPT_COMPARISON,
     TRC_OPT_MERGE,
+    TRC_OPT_CUT,
 };
 
 /** HTML report configuration */
@@ -167,6 +168,10 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
         { "merge", 'm', POPT_ARG_STRING, NULL, TRC_OPT_MERGE,
           "Name of the XML log file for merge.",
           "FILENAME" },
+
+        { "cut", 'c', POPT_ARG_STRING, NULL, TRC_OPT_CUT,
+          "Cut off results of package/test specified by path.",
+          "TESTPATH" },
 
         { "html", 'h', POPT_ARG_STRING, NULL, TRC_OPT_HTML,
           "Name of the file for report in HTML format.",
@@ -307,11 +312,32 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
                 p->v = (char *)poptGetOptArg(optCon);
                 if (p->v == NULL)
                 {
-                    ERROR("Empty option value of --merge option");
+                    ERROR("Empty value of --merge option");
                     goto exit;
                 }
                 else
-                    RING("Parsed merge option: --merge=%s", p->v);
+                    VERB("Parsed merge option: --merge=%s", p->v);
+
+                break;
+            }
+
+            case TRC_OPT_CUT:
+            {
+                tqe_string *p = TE_ALLOC(sizeof(*p));
+
+                if (p == NULL)
+                {
+                    goto exit;
+                }
+                TAILQ_INSERT_TAIL(&ctx.cut_paths, p, links);
+                p->v = (char *)poptGetOptArg(optCon);
+                if (p->v == NULL)
+                {
+                    ERROR("Empty value of --cut option");
+                    goto exit;
+                }
+                else
+                    VERB("Parsed cut option: --cut=%s", p->v);
 
                 break;
             }
@@ -543,6 +569,7 @@ main(int argc, char *argv[])
     int                 result = EXIT_FAILURE;
     trc_report_html    *report;
     tqe_string         *merge_fn;
+    tqe_string         *cut_path;
 
     TAILQ_INIT(&reports);
 
@@ -588,6 +615,15 @@ main(int argc, char *argv[])
         if (trc_report_merge(&ctx, merge_fn->v) != 0)
         {
             ERROR("Failed to merge with %s", merge_fn->v);
+            goto exit;
+        }
+    }
+
+    TAILQ_FOREACH(cut_path, &ctx.cut_paths, links)
+    {
+        if (trc_tools_cut_db(ctx.db, ctx.db_uid, cut_path->v, FALSE) != 0)
+        {
+            ERROR("Failed to remove tests by path %s", cut_path->v);
             goto exit;
         }
     }

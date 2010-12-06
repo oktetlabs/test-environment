@@ -147,6 +147,7 @@ typedef struct trc_report_ctx {
     te_trc_db          *db;     /**< TRC database handle */
     tqh_strings         tags;   /**< TRC tags specified by user */
     tqh_strings         merge_fns;   /**< Logs to merge with main log */
+    tqh_strings         cut_paths;   /**< Testpaths to cut from main log */
     trc_report_stats    stats;  /**< Grand total statistics */
     unsigned int        db_uid; /**< TRC database user ID */
 } trc_report_ctx;

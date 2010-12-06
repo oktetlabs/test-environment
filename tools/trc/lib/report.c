@@ -54,6 +54,7 @@ trc_report_init_ctx(trc_report_ctx *ctx)
     memset(ctx, 0, sizeof(ctx));
     TAILQ_INIT(&ctx->tags);
     TAILQ_INIT(&ctx->merge_fns);
+    TAILQ_INIT(&ctx->cut_paths);
 }
 
 
@@ -87,6 +88,9 @@ void
 trc_report_free_test_iter_data(trc_report_test_iter_data *data)
 {
     trc_report_test_iter_entry *p;
+
+    if (data == NULL)
+        return;
 
     while ((p = TAILQ_FIRST(&data->runs)) != NULL)
     {
