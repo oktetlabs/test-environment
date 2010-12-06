@@ -24,12 +24,30 @@
 #
 # Author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
 #
-# $Id:$
+# $Id$
 #
+
+tmp_files=
 
 opts=""
 while test "${1#-}" != "$1" ; do
-    opts="$opts $1"
+    case $1 in
+        --merge=*)
+            merge_log=${1#--merge=}
+            merge_raw=${merge_log%\.xml}
+            if [ "x$merge_raw" == "x$merge_log" ]; then
+                tmp_merge_log_xml=$(mktemp)
+                te-trc-log "$merge_log" > $tmp_merge_log_xml
+                opts="$opts --merge=$tmp_merge_log_xml"
+                tmp_files="$tmp_files $tmp_merge_log_xml"
+            else
+                opts="$opts $1"
+            fi
+            ;;
+        *)
+            opts="$opts $1"
+            ;;
+    esac
     shift 1
 done
 
@@ -42,5 +60,9 @@ fi
 raw_log_file="$1"
 
 te-trc-log "$raw_log_file" | te-trc-report ${opts}
+
+if [ $? -eq 0 ]; then
+    rm -f $tmp_files
+fi
 
 exit $?
