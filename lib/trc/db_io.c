@@ -681,6 +681,7 @@ alloc_and_get_test(xmlNodePtr node, trc_tests *tests,
         ERROR("Name of the test is missing");
         return TE_RC(TE_TRC, TE_EFMT);
     }
+    trc_db_test_update_path(p);
 
     tmp = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("type")));
     if (tmp == NULL)

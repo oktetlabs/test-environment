@@ -148,6 +148,7 @@ typedef struct trc_test {
     trc_test_type   type;           /**< Type of the test */
     te_bool         aux;            /**< Is test auxiliary? */
     char           *name;           /**< Test name */
+    char           *path;           /**< Test path */
     char           *notes;          /**< Some notes */
 
     char           *objective;      /**< Test objective */

@@ -180,6 +180,16 @@ trc_db_init(te_trc_db **db)
     return 0;
 }
 
+void
+trc_db_test_update_path(trc_test *test)
+{
+    free(test->path);
+
+    test->path = te_sprintf("%s/%s",
+                            ((test->parent != NULL) &&
+                             (test->parent->parent->name != NULL)) ?
+                            test->parent->parent->path : "", test->name);
+}
 
 /* See the description in trc_db.h */
 trc_test *
@@ -193,10 +203,13 @@ trc_db_new_test(trc_tests *tests, trc_test_iter *parent, const char *name)
         TAILQ_INIT(&p->iters.head);
         LIST_INIT(&p->users);
         p->parent = parent;
+        p->path = NULL;
         if (name != NULL)
         {
             p->name = strdup(name);
-            if (name == NULL)
+            trc_db_test_update_path(p);
+
+            if (p->name == NULL)
             {
                 ERROR("%s(): strdup(%s) failed", __FUNCTION__, name);
                 free(p);
