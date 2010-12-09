@@ -570,7 +570,7 @@ tapi_tad_forward_all(const char *ta_name, int session,
         rc = asn_write_int32(pattern, csap_fwd, "0.actions.0.#forw-pld");
         if (rc != 0)
         {
-            ERROR("%s():wrіte forward action failed %r", __FUNCTION__, rc);
+            ERROR("%s():write forward action failed %r", __FUNCTION__, rc);
             return TE_RC(TE_TAPI, rc);
         }
     }
