@@ -1087,7 +1087,6 @@ tad_eth_confirm_ptrn_cb(csap_p csap, unsigned int layer,
     if (rc != 0)
         return rc;
 
-#if 0
     if (ptrn_data->tagged != TE_BOOL3_FALSE)
     {
         rc = tad_bps_nds_to_data_units(&proto_data->tci, NULL,
@@ -1113,7 +1112,6 @@ tad_eth_confirm_ptrn_cb(csap_p csap, unsigned int layer,
         if (rc != 0)
             return rc;
     }
-#endif
 
     return rc;
 }
