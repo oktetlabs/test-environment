@@ -520,6 +520,9 @@ neigh_dynamic_list(unsigned int gid, const char *oid, char **list,
     return neigh_list(gid, "dynamic", list, ifname);
 }
 
+static te_errno agent_platform_get(unsigned int, const char *, char *,
+                                   const char *, ...);
+
 static te_errno nameserver_get(unsigned int, const char *, char *,
                                const char *, ...);
 
@@ -664,8 +667,13 @@ static te_errno dom_u_migrate_kind_set(unsigned int, char const *,
  * Unix Test Agent basic configuration tree.
  */
 
-RCF_PCH_CFG_NODE_RO(node_dns, "dns",
+RCF_PCH_CFG_NODE_RO(node_platform, "platform",
                     NULL, NULL,
+                    (rcf_ch_cfg_list)agent_platform_get);
+
+
+RCF_PCH_CFG_NODE_RO(node_dns, "dns",
+                    NULL, &node_platform,
                     (rcf_ch_cfg_list)nameserver_get);
 
 RCF_PCH_CFG_NODE_RO(node_neigh_state, "state",
@@ -5677,6 +5685,20 @@ neigh_list(unsigned int gid, const char *oid, char **list,
                                    list);
 }
 
+static te_errno
+agent_platform_get(unsigned int gid, const char *oid, char *result,
+                   const char *instance, ...)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(instance);
+#ifdef TE_AGT_PLATFORM_OTHER
+    memcpy(result, "linux_other", sizeof("linux_other"));
+#else
+    memcpy(result, "default", sizeof("default"));
+#endif
+    return 0;
+}
 
 static te_errno
 nameserver_get(unsigned int gid, const char *oid, char *result,

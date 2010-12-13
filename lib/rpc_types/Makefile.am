@@ -23,7 +23,8 @@ include_HEADERS = \
 	te_rpc_sys_socket.h \
 	te_rpc_sys_stat.h \
 	te_rpc_sys_wait.h \
-	te_rpc_wsa.h
+	te_rpc_wsa.h \
+    te_rpc_dlfcn.h
 
 if WINDOWS
 
@@ -54,8 +55,8 @@ EXTRA_DIST=\
 	sys_epoll.c \
 	sys_resource.c \
 	sys_stat.c \
-	sys_wait.c 
-        
+	sys_wait.c
+
 else
 
 lib_LTLIBRARIES=librpc_types.la
@@ -76,7 +77,8 @@ nodist_librpc_types_la_SOURCES = \
 	sys_systeminfo_conv.c \
 	sys_stat_conv.c \
 	sys_wait_conv.c \
-	wsa_conv.c
+	wsa_conv.c \
+    dlfcn_conv.c
 
 CLEANFILES=$(nodist_librpc_types_la_SOURCES)
 
@@ -94,7 +96,8 @@ EXTRA_DIST=\
 	sys_systeminfo.c \
 	sys_stat.c \
 	sys_wait.c \
-	wsa.c
+	wsa.c \
+    dlfcn.c
 
 %_conv.c: %.c
 	$(srcdir)/../../engine/builder/te_rpc_conv $^ $@

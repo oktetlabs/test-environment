@@ -6292,6 +6292,181 @@ TARPC_FUNC(mcast_join_leave, {},
     MAKE_CALL(func_ptr(in, out));
 })
 
+/*-------------- dlopen() --------------------------*/
+TARPC_FUNC(ta_dlopen, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in));
+}
+)
+
+/**
+ * Loads the dynamic labrary file.
+ *
+ * @param filename  the name of the file to load
+ * @param flag      dlopen flags.
+ *
+ * @return dynamic library handle on success or NULL in the case of failure
+ */
+void *
+ta_dlopen(tarpc_ta_dlopen_in *in)
+{
+    api_func_ptr_ret_ptr    dlopen_func;
+    api_func_void           dlerror_func;
+    void                   *res;
+
+    if ((tarpc_find_func(in->common.lib, "dlopen", &dlopen_func) != 0) ||
+        (tarpc_find_func(in->common.lib, "dlerror", &dlerror_func) != 0))
+    {
+        ERROR("Failed to resolve functions, %s", __FUNCTION__);
+        return NULL;
+    }
+
+    res = dlopen_func(in->filename, dlopen_flags_rpc2h(in->flag));
+    if (res == NULL)
+        ERROR("%s: dlopen failed, %s", __FUNCTION__, dlerror_func());
+
+    return res;
+}
+
+/*-------------- dlsym() --------------------------*/
+TARPC_FUNC(ta_dlsym, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in));
+}
+)
+
+/**
+ * Returns the address where a certain symbol from dynamic labrary
+ * is loaded into memory.
+ *
+ * @param handle    handle of a dynamic library returned by dlopen()
+ * @param symbol    null-terminated symbol name
+ *
+ * @return address of the symbol or NULL if symbol is not found.
+ */
+void *
+ta_dlsym(tarpc_ta_dlsym_in *in)
+{
+    api_func_ptr_ret_ptr    dlsym_func;
+    api_func_void           dlerror_func;
+    char                   *error;
+    void                   *res;
+
+    if ((tarpc_find_func(in->common.lib, "dlsym", &dlsym_func) != 0) ||
+        (tarpc_find_func(in->common.lib, "dlerror", &dlerror_func) != 0))
+    {
+        ERROR("Failed to resolve functions, %s", __FUNCTION__);
+        return NULL;
+    }
+
+    dlerror_func();
+
+    res = dlsym_func(in->handle, in->symbol);
+    if ((error = dlerror_func()) != NULL)
+        ERROR("%s: dlopen failed, %s", __FUNCTION__, error);
+
+    return res;
+}
+
+/*-------------- dlsym_call() --------------------------*/
+TARPC_FUNC(ta_dlsym_call, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in));
+}
+)
+
+/**
+ * Returns the address where a certain symbol from dynamic labrary
+ * is loaded into memory.
+ *
+ * @param handle    handle of a dynamic library returned by dlopen()
+ * @param symbol    null-terminated symbol name
+ *
+ * @return address of the symbol or NULL if symbol is not found.
+ */
+void *
+ta_dlsym_call(tarpc_ta_dlsym_call_in *in)
+{
+    api_func_ptr_ret_ptr    dlsym_func;
+    api_func_void           dlerror_func;
+    char                   *error;
+
+    int (*func)(void);
+
+    if ((tarpc_find_func(in->common.lib, "dlsym", &dlsym_func) != 0) ||
+        (tarpc_find_func(in->common.lib, "dlerror", &dlerror_func) != 0))
+    {
+        ERROR("Failed to resolve functions, %s", __FUNCTION__);
+        return NULL;
+    }
+
+    dlerror_func();
+
+    *(void **) (&func) = dlsym_func(in->handle, in->symbol);
+    if ((error = dlerror_func()) != NULL)
+        ERROR("%s: dlopen failed, %s", __FUNCTION__, error);
+
+    return (*func)();
+}
+
+/*-------------- dlerror() --------------------------*/
+TARPC_FUNC(ta_dlerror, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in));
+}
+)
+
+/**
+ * Returns a human readable string describing the most recent error
+ * that occured from dlopen(), dlsym() or dlclose().
+ *
+ * @return a pointer to string or NULL if no errors occured.
+ */
+char *
+ta_dlerror(tarpc_ta_dlerror_in *in)
+{
+    api_func_void           dlerror_func;
+
+    if (tarpc_find_func(in->common.lib, "dlerror", &dlerror_func) != 0)
+    {
+        ERROR("Failed to resolve functions, %s", __FUNCTION__);
+        return NULL;
+    }
+
+    return dlerror_func();
+}
+
+/*-------------- dlclose() --------------------------*/
+TARPC_FUNC(ta_dlclose, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in));
+}
+)
+
+/**
+ * Decrements the reference count on the dynamic library handle.
+ * If the reference count drops to zero and no other loaded libraries
+ * use symbols in it, then the dynamic library is unloaded.
+ *
+ * @param handle    handle of a dynamic library returned by dlopen()
+ *
+ * @return 0 on success, and non-zero on error.
+ */
+int
+ta_dlclose(tarpc_ta_dlclose_in *in)
+{
+    api_func_ptr    dlclose_func;
+
+    if (tarpc_find_func(in->common.lib, "dlclose", &dlclose_func) != 0)
+    {
+        ERROR("Failed to resolve functions, %s", __FUNCTION__);
+        return -1;
+    }
+
+    return dlclose_func(in->handle);
+}
+
+
 #ifdef NO_DL
 void *
 dlopen(const char *filename, int flag)

@@ -59,6 +59,7 @@
 #include "tapi_rpc_netdb.h"
 #include "tapi_rpc_aio.h"
 #include "tapi_rpc_winsock2.h"
+#include "tapi_rpc_dlfcn.h"
 #include "tapi_rpc_misc.h"
 
 
