@@ -452,5 +452,31 @@ extern te_errno cwmp_set_attrs_add(cwmp_set_parameter_attributes_t *request,
                             const char *par_name, int notification, 
                             string_array_t *access_list);
 
+typedef enum {
+    CWMP_FIRMWARE = 1,
+    CWMP_WEB_CONTENT,
+    CWMP_VENDOR_CFG,
+} cwmp_file_type_t;
+
+static inline const char * 
+cwmp_file_type_to_str(cwmp_file_type_t ft)
+{
+    switch(ft)
+    {
+        case CWMP_FIRMWARE:     return "1 Firmware Upgrade Image";
+        case CWMP_WEB_CONTENT:  return "2 Web Content";
+        case CWMP_VENDOR_CFG:   return "3 Vendor Configuration File";
+    }
+    return "(unknown)";
+}
+
+/**
+ * 
+ */
+extern cwmp_download_t *cwmp_download_alloc(const char *command_key,
+                                            cwmp_file_type_t ftype,
+                                            size_t fsize,
+                                            const char *url_fmt, ...);
+
 
 #endif /* __TE_CWMP_UTILS__H__*/

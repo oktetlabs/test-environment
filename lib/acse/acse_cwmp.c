@@ -117,12 +117,16 @@ acse_http_get(struct soap *soap)
          __FUNCTION__ , soap->path);
 
 
-    if (NULL != session && NULL != (acs = session->acs_owner))
+    if (NULL != session && NULL != (acs = session->acs_owner) &&
+        NULL != acs->http_root)
     {
         char *relative_path = soap->path;
-        size_t i;
-        for (i = 0; acs->url[i] != '\0' && acs->url[i] == soap->path[i]; 
-             i++);
+        size_t i = 0;
+        if (acs->url != NULL)
+        {
+            for (i = 0; acs->url[i] != '\0' && acs->url[i] == soap->path[i];
+                 i++);
+        }
         relative_path = soap->path + i;
 
         snprintf(path_buf, sizeof(path_buf), "/%s/%s",
@@ -748,13 +752,19 @@ cwmp_accept_cpe_connection(acs_t *acs, int socket)
     if (!acs->ssl)
     {
         char buf[1024]; /* seems enough for HTTP header */
-        ssize_t len = sizeof(buf);
+        ssize_t len = sizeof(buf)-1;
+        char *req_url_p;
+
         len = recv(socket, buf, len, MSG_PEEK);
-        if (strncmp(buf, "POST ", 5)) 
+        buf[len+1]=0;
+        VERB("cwmp_accept_cpe_conn(): peeked msg buf: '%s'", buf);
+        if (strncmp(buf, "POST ", 5) && strncmp(buf, "GET ", 4)) 
             return TE_ECONNREFUSED; /* It is not POST request */
+        req_url_p = buf + 4; while(isspace(*req_url_p)) req_url_p++;
+
         /* without any URL specified we accept all connections */
         if (acs->url != NULL &&
-            strncmp(buf + 5, acs->url, strlen(acs->url))) 
+            strncmp(req_url_p, acs->url, strlen(acs->url))) 
             return TE_ECONNREFUSED; /* It is not our URL */
     }
 

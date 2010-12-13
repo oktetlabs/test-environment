@@ -314,8 +314,7 @@ parse_cwmp_rpc_args(acse_epc_cwmp_data_t *cwmp_data,
             static char name[256];
             static char buf[256];
             string_array_t *ac_list = NULL;
-            int notif = -1;
-
+            int notif = -1; 
             size_t ofs = 0;
 
             /* Parse only one parameter */
@@ -341,6 +340,29 @@ parse_cwmp_rpc_args(acse_epc_cwmp_data_t *cwmp_data,
 
             cwmp_data->to_cpe.set_parameter_attributes =
                         cwmp_set_attrs_alloc(name, notif, ac_list);
+        }
+        break;
+        case CWMP_RPC_download: 
+        {
+            cwmp_download_t *download;
+            static char num[256];
+            static char url[256];
+            size_t ofs;
+
+            strcpy(err_buf,
+                   "<num_of_file_type:1|2|3> <url>");
+
+            ofs = cli_token_copy(line, num);
+            if (0 == ofs) return TE_EFAIL;
+            line += ofs;
+
+            ofs = cli_token_copy(line, url);
+            if (0 == ofs) return TE_EFAIL;
+            line += ofs;
+            download = cwmp_download_alloc("Test From ACSE_CLI", 
+                                           atoi(num), 0, url);
+
+            cwmp_data->to_cpe.download = download;
         }
         break;
         default:
@@ -576,6 +598,8 @@ static cli_cmd_descr_t cmd_rpc_cpe_kinds[] = {
                     "GetParameterAttributes", NULL, NULL},
     {"set_attrs",    CWMP_RPC_set_parameter_attributes,
                     "SetParameterAttributes", NULL, NULL},
+    {"download",     CWMP_RPC_download,
+                    "Download", NULL, NULL},
     END_CMD_ARRAY
 };
 
@@ -608,341 +632,6 @@ static cli_cmd_descr_t acse_cmd_list[] = {
     END_CMD_ARRAY
 };
 
-/* TODO some normal way to parse command line?.. */
-
-
-#if 0
-
-static te_errno
-cli_args_acs_cpe(const char *args, size_t *offset, char *acs, char *cpe)
-{
-    int i;
-    const char *start_args = args;
-
-    if (!(args && acs && cpe))
-        return TE_EINVAL;
-
-    while (isspace(*args)) args++;
-
-    for (i = 0; args[i] && (!isspace(args[i])) && (args[i] != '/'); i++)
-        acs[i] = args[i];
-    acs[i] = '\0';
-    args += i;
-
-    while((*args) && (isspace(*args) || (*args == '/')))
-        args++;
-    
-    if ((i = cli_token_copy(args, cpe)) == 0)
-    {
-        fprintf(stderr, "Call CR fails, args '%s', CPE name not detected\n",
-              start_args);
-        return TE_EFAIL;
-    }
-    args += i;
-
-    if (offset)
-        *offset = args - start_args;
-
-    return 0;
-}
-
-
-
-
-static te_errno
-cli_cfg_list(const char *args, acse_cfg_level_t level)
-{
-    acse_epc_msg_t msg;
-    acse_epc_config_data_t cfg_data;
-
-    msg.opcode = EPC_CONFIG_CALL;
-    msg.data.cfg = &cfg_data;
-    msg.length = sizeof(cfg_data);
-    msg.status = 0;
-
-    if (level == EPC_CFG_CPE)
-        cli_token_copy(args, cfg_data.acs);
-    
-    cfg_data.op.magic = EPC_CONFIG_MAGIC;
-    cfg_data.op.level = level;
-    cfg_data.op.fun = EPC_CFG_LIST;
-
-    acse_epc_send(&msg);
-    return 0;
-}
-
-
-static te_errno
-cli_cfg_add(const char *args, acse_cfg_level_t level)
-{
-    acse_epc_msg_t         msg;
-    acse_epc_config_data_t cfg_data;
-
-    msg.opcode = EPC_CONFIG_CALL;
-    msg.data.cfg = &cfg_data;
-    msg.length = sizeof(cfg_data);
-    msg.status = 0;
-
-    args += cli_token_copy(args, cfg_data.acs);
-    
-    if (level == EPC_CFG_CPE)
-        cli_token_copy(args, cfg_data.cpe);
-    else
-        cfg_data.cpe[0] = '\0';
-
-    cfg_data.op.magic = EPC_CONFIG_MAGIC;
-    cfg_data.op.level = level;
-    cfg_data.op.fun = EPC_CFG_ADD;
-
-    acse_epc_send(&msg);
-
-    return 0;
-}
-
-static te_errno
-cli_acs_config(const char *args, acse_cfg_op_t fun)
-{
-    acse_epc_msg_t         msg;
-    acse_epc_config_data_t cfg_data;
-
-    msg.opcode = EPC_CONFIG_CALL;
-    msg.data.cfg = &cfg_data;
-    msg.length = sizeof(cfg_data);
-    msg.status = 0;
-
-    args += cli_token_copy(args, cfg_data.acs);
-
-    args += cli_token_copy(args, cfg_data.oid);
-
-    cli_token_copy(args, cfg_data.value);
-
-    cfg_data.op.magic = EPC_CONFIG_MAGIC;
-    cfg_data.op.level = EPC_CFG_ACS;
-    cfg_data.op.fun = fun;
-    cfg_data.cpe[0] = '\0';
-
-    acse_epc_send(&msg);
-
-    return 0;
-}
-
-static te_errno
-cli_cpe_config(const char *args, acse_cfg_op_t fun)
-{
-    te_errno    rc;
-    size_t      offset = 0;
-
-    acse_epc_msg_t         msg;
-    acse_epc_config_data_t cfg_data;
-
-    msg.opcode = EPC_CONFIG_CALL;
-    msg.data.cfg = &cfg_data;
-    msg.length = sizeof(cfg_data);
-    msg.status = 0;
-
-    rc = cli_args_acs_cpe(args, &offset, cfg_data.acs, cfg_data.cpe);
-    if (rc != 0)
-    {
-        fprintf(stderr, "Parse error 0x%x\n", rc);
-        return rc;
-    }
-    args += offset;
-
-    args += cli_token_copy(args, cfg_data.oid);
-
-    if (fun == EPC_CFG_MODIFY)
-        cli_token_copy(args, cfg_data.value);
-    else
-        cfg_data.value[0] = '\0';
-
-    cfg_data.op.magic = EPC_CONFIG_MAGIC;
-    cfg_data.op.level = EPC_CFG_CPE;
-    cfg_data.op.fun = fun;
-
-    acse_epc_send(&msg);
-    return 0;
-}
-
-static te_errno
-cli_cpe_cr(const char *args)
-{
-    te_errno rc;
-    size_t offset = 0;
-
-    acse_epc_msg_t msg;
-    acse_epc_cwmp_data_t c_data;
-
-    msg.opcode = EPC_CWMP_CALL;
-    msg.data.cwmp = &c_data;
-    msg.length = sizeof(c_data);
-
-    memset(&c_data, 0, sizeof(c_data));
-
-    if (strncmp(args, "call ", 5) == 0)
-        c_data.op = EPC_CONN_REQ;
-    else if (strncmp(args, "show ", 5) == 0)
-        c_data.op = EPC_CONN_REQ_CHECK;
-    else
-    {
-        printf("unsupported command for 'cpe cr'\n");
-        return TE_EFAIL;
-    }
-    args += 5;
-
-    rc = cli_args_acs_cpe(args, &offset, c_data.acs, c_data.cpe);
-    if (rc != 0)
-    {
-        fprintf(stderr, "Parse error 0x%x\n", rc);
-        return rc;
-    }
-    args += offset;
-
-    rc = acse_epc_send(&msg);
-    if (rc != 0)
-        ERROR("%s(): EPC send failed %r", __FUNCTION__, rc);
-
-    return 0;
-}
-
-
-static te_errno
-cli_cpe_rpc(const char *args)
-{
-    te_errno rc;
-    size_t offset = 0;
-
-    acse_epc_msg_t msg;
-    acse_epc_cwmp_data_t c_data;
-
-    msg.opcode = EPC_CWMP_CALL;
-    msg.data.cwmp = &c_data;
-    msg.length = sizeof(c_data);
-
-    memset(&c_data, 0, sizeof(c_data));
-
-    if (strncmp(args, "call ", 5) == 0)
-    {
-        args += 5;
-        c_data.op = EPC_RPC_CALL ;
-        
-        /* todo full parsing */
-        c_data.rpc_cpe = CWMP_RPC_get_rpc_methods; 
-        c_data.to_cpe.p = NULL; 
-    }
-    else if (strncmp(args, "show ", 5) == 0)
-    {
-        args += 5;
-        c_data.op = EPC_RPC_CHECK;
-        c_data.request_id = atoi(args);
-
-        while (isdigit(*args)) args++;
-        while (isspace(*args)) args++;
-    }
-    else
-    {
-        printf("unsupported command for 'cpe cr'\n");
-        return TE_EFAIL;
-    }
-
-    rc = cli_args_acs_cpe(args, &offset, c_data.acs, c_data.cpe);
-    if (rc != 0)
-    {
-        fprintf(stderr, "Parse error 0x%x\n", rc);
-        return rc;
-    }
-    args += offset;
-
-    rc = acse_epc_send(&msg);
-    if (rc != 0)
-        ERROR("%s(): EPC send failed %r", __FUNCTION__, rc);
-
-    return 0;
-}
-
-
-static te_errno
-cli_cpe_inform(const char *args)
-{
-    te_errno rc;
-    size_t offset = 0;
-
-    acse_epc_msg_t msg;
-    acse_epc_cwmp_data_t c_data;
-
-    msg.opcode = EPC_CWMP_CALL;
-    msg.data.cwmp = &c_data;
-    msg.length = sizeof(c_data);
-
-    memset(&c_data, 0, sizeof(c_data));
-
-    c_data.op = EPC_GET_INFORM;
-    c_data.request_id = atoi(args);
-
-    while (isdigit(*args)) args++;
-    while (isspace(*args)) args++;
-
-    rc = cli_args_acs_cpe(args, &offset, c_data.acs, c_data.cpe);
-    if (rc != 0)
-    {
-        fprintf(stderr, "Parse error 0x%x\n", rc);
-        return rc;
-    }
-    args += offset;
-
-    rc = acse_epc_send(&msg);
-    if (rc != 0)
-        ERROR("%s(): EPC send failed %r", __FUNCTION__, rc);
-
-    return 0;
-}
-
-static te_errno
-cli_parse_exec_cpe(const char *args)
-{
-    if (strncmp(args, "add ", 4) == 0)
-        return cli_cfg_add(args + 4, EPC_CFG_CPE);
-    if (strncmp(args, "list ", 5) == 0)
-        return cli_cfg_list(args + 5, EPC_CFG_CPE);
-    if (strncmp(args, "cr ", 3) == 0)
-        return cli_cpe_cr(args + 3);
-    if (strncmp(args, "inform ", 7) == 0)
-        return cli_cpe_inform(args + 7);
-    if (strncmp(args, "rpc ", 4) == 0)
-        return cli_cpe_rpc(args + 4);
-    if (strncmp(args, "modify ", 7) == 0)
-        return cli_cpe_config(args + 7, EPC_CFG_MODIFY);
-    if (strncmp(args, "obtain ", 7) == 0)
-        return cli_cpe_config(args + 7, EPC_CFG_OBTAIN);
-    return 0;
-}
-
-static te_errno
-cli_parse_exec_acs(const char *args)
-{
-    if (strncmp(args, "add ", 4) == 0)
-        return cli_cfg_add(args + 4, EPC_CFG_ACS);
-    if (strncmp(args, "list", 4) == 0)
-        return cli_cfg_list(args + 4, EPC_CFG_ACS);
-    if (strncmp(args, "modify ", 7) == 0)
-        return cli_acs_config(args + 7, EPC_CFG_MODIFY);
-    if (strncmp(args, "obtain ", 7) == 0)
-        return cli_acs_config(args + 7, EPC_CFG_OBTAIN);
-    return 0;
-}
-
-static te_errno
-epc_parse_cli(const char *buf, size_t len)
-{
-    if (strncmp(buf, "cpe ", 4) == 0)
-        return cli_parse_exec_cpe(buf + 4);
-
-    if (strncmp(buf, "acs ", 4) == 0)
-        return cli_parse_exec_acs(buf + 4);
-
-    return 0;
-}
-
-#endif
 
 static void
 print_rpc_response(acse_epc_cwmp_data_t *cwmp_resp)
@@ -1022,12 +711,16 @@ print_rpc_response(acse_epc_cwmp_data_t *cwmp_resp)
 
     }
     break;
+    case CWMP_RPC_download: 
+    {
+        struct cwmp__ParameterAttributeStruct *pa_item;
+    }
+    break;
 
     case CWMP_RPC_NONE:
     case CWMP_RPC_add_object: 
     case CWMP_RPC_delete_object: 
     case CWMP_RPC_reboot: 
-    case CWMP_RPC_download: 
     case CWMP_RPC_upload: 
     case CWMP_RPC_factory_reset: 
     case CWMP_RPC_get_queued_transfers: 

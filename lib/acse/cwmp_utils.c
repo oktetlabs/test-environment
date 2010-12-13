@@ -906,3 +906,40 @@ tapi_acse_log_cwmpEvents(unsigned log_level, cwmp_event_list_t *ev_list)
     return 0;
 }
 
+
+#define URL_BUF_SIZE 1024
+
+static char url_buf[URL_BUF_SIZE];
+
+cwmp_download_t *
+cwmp_download_alloc(const char *command_key, cwmp_file_type_t ftype,
+                    size_t fsize, const char *url_fmt, ...)
+{
+    va_list ap;
+    int     url_len;
+
+    cwmp_download_t *dl = NULL;
+
+    va_start(ap, url_fmt);
+    url_len = vsnprintf(url_buf, URL_BUF_SIZE, url_fmt, ap);
+    va_end(ap);
+
+    if (url_len < 0)
+    {
+        printf("error on vsnprintf()");
+        return NULL;
+    }
+    dl = calloc(1, sizeof(cwmp_download_t));
+
+    dl->CommandKey = strdup(command_key);
+    dl->FileType = strdup(cwmp_file_type_to_str(ftype)); 
+    dl->URL = strdup(url_buf);
+    dl->Username = "";
+    dl->Password = "";
+    dl->FileSize = fsize;
+    dl->TargetFileName = basename(dl->URL);
+    dl->SuccessURL = "";
+    dl->FailureURL = "";
+
+    return dl;
+}

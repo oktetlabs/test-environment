@@ -127,7 +127,7 @@ conn_after_poll(void *data, struct pollfd *pfd)
         te_errno rc;
 
         rc = cwmp_accept_cpe_connection(conn->acs_objects[i], sock_acc); 
-        RING("%s: cwmp_accept_cpe rc %r", __FUNCTION__, rc);
+        RING("conn_after_poll(): cwmp_accept_cpe rc %r", rc);
 
         switch (rc)
         {
