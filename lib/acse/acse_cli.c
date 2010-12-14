@@ -347,10 +347,11 @@ parse_cwmp_rpc_args(acse_epc_cwmp_data_t *cwmp_data,
             cwmp_download_t *download;
             static char num[256];
             static char url[256];
-            size_t ofs;
+            static char len[256] = "0";
+            size_t ofs, flen = 0;
 
             strcpy(err_buf,
-                   "<num_of_file_type:1|2|3> <url>");
+                   "<num_of_file_type:1|2|3> <url> [length]");
 
             ofs = cli_token_copy(line, num);
             if (0 == ofs) return TE_EFAIL;
@@ -359,8 +360,13 @@ parse_cwmp_rpc_args(acse_epc_cwmp_data_t *cwmp_data,
             ofs = cli_token_copy(line, url);
             if (0 == ofs) return TE_EFAIL;
             line += ofs;
+
+            ofs = cli_token_copy(line, len);
+            if (ofs > 0)
+                flen = atoi(len);
+
             download = cwmp_download_alloc("Test From ACSE_CLI", 
-                                           atoi(num), 0, url);
+                                           atoi(num), flen, url);
 
             cwmp_data->to_cpe.download = download;
         }

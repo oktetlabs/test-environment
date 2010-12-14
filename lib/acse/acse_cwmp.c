@@ -41,6 +41,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <assert.h>
+#include <poll.h>
 
 #include "acse_internal.h"
 #include "httpda.h"
@@ -104,7 +105,7 @@ acse_http_get(struct soap *soap)
 {
     cwmp_session_t *session = (cwmp_session_t *)soap->user;
 
-    acs_t   *acs;
+    acs_t   *acs = NULL;
     char     path_buf[1024] = "";
 
     FILE        *fd;
@@ -133,6 +134,11 @@ acse_http_get(struct soap *soap)
                  acs->http_root, relative_path);
         RING("%s() construct real local filesystem path '%s'", 
              __FUNCTION__, path_buf);
+    }
+    else
+    {
+        RING("GET error: session %p, acs %p, http_root %p",
+            session, acs, acs ? acs->http_root : NULL);
     }
 
     if (strlen(path_buf) == 0 || 
@@ -171,10 +177,39 @@ acse_http_get(struct soap *soap)
     while (1)
     {
         size_t r = fread(soap->tmpbuf, 1, sizeof(soap->tmpbuf), fd);
+        struct pollfd pfd;
+        int pollrc;
+
         if (!r)
+        {
+            fprintf(stderr, "fread return zero, errno %s\n",
+                    strerror(errno));
             break;
+        }
+
+        pfd.fd = soap->socket;
+        pfd.events = POLLOUT;
+        pfd.revents = 0;
+
+        if ((pollrc = poll(&pfd, 1, 10)) <= 0)
+        {
+            ERROR("acse_http_get(): poll rc %d, can't send file", pollrc);
+            if (pollrc < 0)
+                perror("acse poll failed");
+            fprintf(stderr, 
+                  "acse_http_get(): poll rc %d, can't send file; break\n",
+                  pollrc);
+            break;
+        }
+#if 0
+        fprintf(stderr, "UUUUUUUUUUUU pollrc %d\n", pollrc);
+#endif
+
         if (soap_send_raw(soap, soap->tmpbuf, r))
+        {
+            fprintf(stderr, "acse_http_get(): soap_send_raw fail\n");
             break; // can't send, but little we can do about that
+        }
     }
     fclose(fd);
     soap_end_send(soap);
