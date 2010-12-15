@@ -41,7 +41,8 @@ usage()
 
 [ $# -lt 3 ] && usage
 
-FILES=$1
+FILES=`basename $1`
+PREFIX="`dirname $1`"
 TEST=$2
 PARAM_NUM=0
 LINE_NUM=0
@@ -186,7 +187,7 @@ process_file()
 
     FILES="$FILES `cat tmp.te_trc_search | awk '/^file/ { print $2 ; }'`"
     cat tmp.te_trc_search | grep -v "^file" | \
-        while read l ; do eval check_iter $f $l ; done;
+        while read l ; do eval check_iter $1 $l ; done;
     PROCESSED="$PROCESSED $f"
     rm -f tmp.te_trc_search
 }
@@ -198,7 +199,7 @@ while true ; do
         for p in $PROCESSED ; do
             [ "$f" = "$p" ] && { found=true ; break ; }
         done
-        [ "$found" = true ] || process_file $f
+        [ "$found" = true ] || process_file $PREFIX/$f
     done
     [ "$FILES" = "$OLD_FILES" ] && break
 done
