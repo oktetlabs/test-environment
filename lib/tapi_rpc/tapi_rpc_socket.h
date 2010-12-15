@@ -318,6 +318,11 @@ typedef struct rpc_msghdr {
                                              the array */ 
 } rpc_msghdr;
 
+struct rpc_mmsghdr {
+    struct rpc_msghdr msg_hdr;  /* Message header */
+    unsigned int      msg_len;  /* Number of received bytes for header */
+};
+
 /**
  * Send message to a connected or non-connected socket.
  * This operation takes place on RPC server side.
@@ -812,6 +817,26 @@ rpc_getpeername(rcf_rpc_server *rpcs,
                                (name == NULL ||
                                 namelen == NULL) ? 0 : *namelen);
 }
+
+/**
+ * Receive data from connected or non-connected socket
+ * This operation takes place on RPC server side.
+ *
+ * @param rpcs      RPC server handle
+ * @param fd        file descriptor
+ * @param mmsg      array of @b rpc_mmsghdr structures that holds the
+ *                  received messages
+ * @param vlen      length of mmsg array
+ * @param flags     bitwise OR of zero or more of the flags; 
+ *                  see @b rpc_recv for more information
+ * @param timeout   Timeout for receiving
+ *
+ * @return Number of received packets, otherwise -1 when an error occured.
+ */
+extern int rpc_recvmmsg_alt(rcf_rpc_server *rpcs, int fd,
+                            struct rpc_mmsghdr *mmsg, unsigned int vlen,
+                            rpc_send_recv_flags flags,
+                            struct tarpc_timespec *timeout);
 
 #ifdef __cplusplus
 } /* extern "C" */

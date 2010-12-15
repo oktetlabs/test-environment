@@ -854,14 +854,38 @@ struct tarpc_recvmsg_in {
     tarpc_int           s;
     struct tarpc_msghdr msg<>;
     tarpc_int           flags;
-};                
+};
 
 struct tarpc_recvmsg_out {
     struct tarpc_out_arg    common;
 
     tarpc_ssize_t           retval;
-    
+
     struct tarpc_msghdr     msg<>;
+};
+
+struct tarpc_mmsghdr {
+    struct tarpc_msghdr msg_hdr;  /**< Message header */
+    tarpc_uint          msg_len;  /**< Number of received bytes for
+                                       header */
+};
+
+struct tarpc_recvmmsg_alt_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int               fd;
+    struct tarpc_mmsghdr    mmsg<>;
+    tarpc_uint              vlen;
+    tarpc_uint              flags;
+    struct tarpc_timespec   timeout<>;
+};
+
+struct tarpc_recvmmsg_alt_out {
+    struct tarpc_out_arg    common;
+
+    tarpc_int               retval;
+
+    struct tarpc_mmsghdr    mmsg<>;
 };
 
 struct tarpc_cmsg_data_parse_ip_pktinfo_in {
@@ -4194,6 +4218,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
 
         RPC_DEF(sendmsg)
         RPC_DEF(recvmsg)
+
+        RPC_DEF(recvmmsg_alt)
 
         RPC_DEF(bind)
         RPC_DEF(connect)

@@ -47,6 +47,8 @@ typedef enum {
 #define RCF_RPC_MAX_IOVEC   32
 #define RCF_RPC_MAX_CMSGHDR 8
 
+#define RCF_RPC_MAX_MSGHDR  32
+
 /** Check, if errno is RPC errno, not other TE errno */
 #define RPC_IS_ERRNO_RPC(_errno) \
     (((_errno) == 0) || (TE_RC_GET_MODULE(_errno) == TE_RPC))
