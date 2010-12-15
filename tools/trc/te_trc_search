@@ -107,7 +107,7 @@ check_iter ()
         # Find and match iteration parameters
         while [ $# -ne 0 ] ; do
             name=$1
-            value="$2"
+            value="`echo $2`"
             found=false
 
             shift 2
