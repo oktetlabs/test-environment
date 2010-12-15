@@ -182,12 +182,13 @@ process_file()
        INSIDE_TEST == 1 {
            ARG_VAL=ARG_VAL$0
        }
-    ' >tmp
+    ' >tmp.te_trc_search
 
-    FILES="$FILES `cat tmp | awk '/^file/ { print $2 ; }'`"
-    cat tmp | grep -v "^file" | while read l ; do eval check_iter $f $l ; done;
+    FILES="$FILES `cat tmp.te_trc_search | awk '/^file/ { print $2 ; }'`"
+    cat tmp.te_trc_search | grep -v "^file" | \
+        while read l ; do eval check_iter $f $l ; done;
     PROCESSED="$PROCESSED $f"
-    rm -f tmp
+    rm -f tmp.te_trc_search
 }
 
 while true ; do
