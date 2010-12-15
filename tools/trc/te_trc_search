@@ -1,0 +1,160 @@
+#! /bin/bash
+#
+# Test Environment: TRC database search tool
+#
+# Script to find test iteration(s) by MD5 sum of iteration parameters
+# or iteration parameters set.
+#
+# Copyright (C) 2004-2010 Test Environment authors (see file AUTHORS
+# in the root directory of the distribution).
+#
+# Test Environment is free software; you can redistribute it and/or 
+# modify it under the terms of the GNU General Public License as 
+# published by the Free Software Foundation; either version 2 of 
+# the License, or (at your option) any later version.
+# 
+# Test Environment is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
+# MA  02111-1307  USA
+#
+# Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
+#
+# $Id:  $
+#
+
+usage()
+{
+    echo "TRC search tool"
+    echo "Usage:"
+    echo "  te_trc_search <TRC file> <test name> MD5|-p <parameters list>"
+    echo
+    echo "  Parameters list may contain any number of test parameters in"
+    echo "  format name value. All matching iterations will be listed."
+    exit 1
+}
+
+[ $# -lt 3 ] && usage
+
+FILES=$1
+TEST=$2
+PARAM_NUM=0
+LINE_NUM=0
+
+PROCESSED=
+
+add_param ()
+{
+    PARAM_NUM=$((PARAM_NUM + 1))
+    eval PAR_${PARAM_NUM}_NAME="$1"
+    eval PAR_${PARAM_NUM}_VAL="$2"
+}
+
+if [ $3 == "-p" ] ; then
+    MD5=
+    shift 3
+    while [ $# -ne 0 ] ; do
+        [ $# -eq 1 ] && usage
+        add_param $1 $2
+        shift 2
+    done
+else
+    MD5=$3
+    [ $# -ne 3 ] && usage
+fi
+
+check_iter ()
+{
+    FILE=$1
+    LINE=$2
+
+    shift 2
+    rm -f tmp*iter
+    if [ -n "$MD5" ] ; then
+        while [ $# -ne 0 ] ; do
+            echo $1 $2 >> tmp.iter
+            shift 2
+        done
+        cat tmp.iter | sort | sed s/\\n//g >tmp1.iter
+        echo -n `cat tmp1.iter` > tmp2.iter
+        md5=`md5sum tmp2.iter | awk '{ print $1 }'`
+        rm -f tmp*iter
+        [ "$MD5" = "$md5" ] && echo $FILE $LINE
+    fi
+}
+
+process_file()
+{
+    cat $1 | awk --assign TEST=$TEST '
+        BEGIN { INSIDE_TEST=0 ; }
+
+        /xi:include/ { 
+            f=substr($2, 7); f=substr(f, 0, length(f) - 1); 
+            printf("file %s\n", f) ; 
+            next ; 
+        }
+
+        /<test name=/ && $2 == "name=\""TEST"\"" { INSIDE_TEST=1 ; next ;} 
+
+        /<\/test/ { INSIDE_TEST=0; next ; }
+
+        /<iter result=/ { if (INSIDE_TEST == 0) next; printf("%d", NR); }
+
+        /<\/iter>/ { if (INSIDE_TEST == 0) next; printf("\n"); }
+
+       /<arg name/ { 
+           if (INSIDE_TEST != 1) next;
+
+           s=$0; s=substr($0, index($0, "<arg"));
+           s=substr(s, 12); i=index(s, "\">");
+           printf(" %s ", substr(s, 0, i - 1));
+
+           s=substr(s, i + 2); i=index(s, "</arg>");
+           if (i != 0) 
+           {
+               ARG_VAL=substr(s, 0, i - 1);
+               gsub("\"", "\\\\\\\"", ARG_VAL);
+               printf("\"%s\"", ARG_VAL);
+           }
+           else 
+               ARG_VAL=s;
+           next;
+       }
+
+       /<\/arg>/ && INSIDE_TEST == 1 { 
+           s=substr($0, i + 2); i=index(s, "</arg>");
+           ARG_VAL=ARG_VAL""substr(s, 0, i - 1);
+           gsub("\"", "\\\\\\\"", ARG_VAL);
+           printf("\"%s\"", ARG_VAL);
+           ARG_VAL="";
+           next;
+       }
+
+       INSIDE_TEST == 1 {
+           ARG_VAL=ARG_VAL$0
+       }
+    ' >tmp
+
+    FILES="$FILES `cat tmp | awk '/^file/ { print $2 ; }'`"
+    cat tmp | grep -v "^file" | while read l ; do eval check_iter $f $l ; done;
+    PROCESSED="$PROCESSED $f"
+    rm -f tmp
+}
+
+while true ; do
+    OLD_FILES=$FILES
+    for f in ${FILES} ; do
+        found=false
+        for p in $PROCESSED ; do
+            [ "$f" = "$p" ] && { found=true ; break ; }
+        done
+        [ "$found" = true ] || process_file $f
+    done
+    [ "$FILES" = "$OLD_FILES" ] && break
+done
+
