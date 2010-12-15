@@ -50,9 +50,11 @@ PROCESSED=
 
 add_param ()
 {
+    local val="`echo $2 | sed 's/\"/\\\\\"/g'`";
+
     PARAM_NUM=$((PARAM_NUM + 1))
     eval PAR_${PARAM_NUM}_NAME="$1"
-    eval PAR_${PARAM_NUM}_VAL="$2"
+    eval PAR_${PARAM_NUM}_VAL=\"$val\"
 }
 
 if [ $3 == "-p" ] ; then
@@ -60,7 +62,7 @@ if [ $3 == "-p" ] ; then
     shift 3
     while [ $# -ne 0 ] ; do
         [ $# -eq 1 ] && usage
-        add_param $1 $2
+        add_param $1 "$2"
         shift 2
     done
 else
@@ -74,17 +76,59 @@ check_iter ()
     LINE=$2
 
     shift 2
-    rm -f tmp*iter
+
     if [ -n "$MD5" ] ; then
+        rm -f tmp*iter
+
+        # Print parameters as is
         while [ $# -ne 0 ] ; do
             echo $1 $2 >> tmp.iter
             shift 2
         done
+
+        # Sort them
         cat tmp.iter | sort | sed s/\\n//g >tmp1.iter
+
+        # Remove line breaks
         echo -n `cat tmp1.iter` > tmp2.iter
+
+        # Check MD5
         md5=`md5sum tmp2.iter | awk '{ print $1 }'`
         rm -f tmp*iter
         [ "$MD5" = "$md5" ] && echo $FILE $LINE
+
+    else
+
+        # Mark all specified parameters as unchecked
+        for i in `seq 1 $PARAM_NUM` ; do
+            eval PAR_${i}_OK=""
+        done
+
+        # Find and match iteration parameters
+        while [ $# -ne 0 ] ; do
+            name=$1
+            value="$2"
+            found=false
+
+            shift 2
+            for i in `seq 1 $PARAM_NUM` ; do
+                pname=PAR_${i}_NAME
+                pval=PAR_${i}_VAL
+                [ "${!pname}" = "$name" ] && { found=true ; break ; }
+            done
+
+            [ "$found" = true ] || continue
+            [ "${!pval}" = "${value}" ] || return
+            eval PAR_${i}_OK="yes"
+        done
+
+        # Check that all specified parameters have matched
+        for i in `seq 1 $PARAM_NUM` ; do
+            name=PAR_${i}_OK
+            [ -z "${!name}" ] && return
+        done
+
+        echo $FILE $LINE
     fi
 }
 
