@@ -135,7 +135,7 @@ check_iter ()
 
 process_file()
 {
-    cat $1 | awk --assign TEST=$TEST '
+    cat $1 | awk --assign TEST="$TEST" '
         BEGIN { INSIDE_TEST=0 ; }
 
         /xi:include/ { 
@@ -144,7 +144,9 @@ process_file()
             next ; 
         }
 
-        /<test name=/ && $2 == "name=\""TEST"\"" { INSIDE_TEST=1 ; next ;} 
+        /<test name=/ && ($2 == "name=\""TEST"\"" || TEST == "all") { 
+            INSIDE_TEST=1 ; next ;
+        } 
 
         /<\/test/ { INSIDE_TEST=0; next ; }
 
