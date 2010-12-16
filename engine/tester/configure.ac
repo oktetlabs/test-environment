@@ -44,11 +44,11 @@ AC_SEARCH_LIBS([readline], [readline],
                [AC_MSG_WARN([Readline library is not present.\
  Interactive testing will not be availiable.])]) 
 
-#AC_SEARCH_LIB([ssl], [ssl],
-#             [LIBS="-lssl ${LIBS}"
-#              AC_DEFINE(HAVE_OPENSSL, 1,
-#                        [ Define whether openssl library is availiable.])],
-#             [AC_MSG_WARN([OpenSSL library is not present])])
+AC_CHECK_LIB([crypto], [MD5],
+             [LIBS="-lcrypto ${LIBS}"
+              AC_DEFINE(HAVE_OPENSSL, 1,
+                        [ Define whether openssl library is availiable.])],
+             [AC_MSG_WARN([OpenSSL library is not present])])
 
 AC_CONFIG_FILES([Makefile tests/Makefile])
 
