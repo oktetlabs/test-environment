@@ -357,6 +357,8 @@ postponed_process_start_event(node_info_t *node, const char *node_name,
         fprintf(rgt_ctx.out_fd, " tin=\"%u\"", node->descr.tin);
     if (node->descr.name)
         fprintf(rgt_ctx.out_fd, " name=\"%s\"", node->descr.name);
+    if (node->descr.hash != NULL)
+        fprintf(rgt_ctx.out_fd, " hash=\"%s\"", node->descr.hash);
 
     switch (node->result.status)
     {

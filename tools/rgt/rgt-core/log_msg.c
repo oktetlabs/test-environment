@@ -522,6 +522,41 @@ create_node_by_msg(log_msg *msg, node_type_t type,
         SKIP_SPACES(fmt_str);
     }
 
+    if (strncmp(fmt_str, "HASH", strlen("HASH")) == 0)
+    {
+        /* Process "hash" clause */
+        fmt_str += strlen("HASH");
+
+        SKIP_SPACES(fmt_str);
+
+        if (strncmp(fmt_str, "%s", strlen("%s")) != 0)
+        {
+            FMT_TRACE("Missing \"%%s\" after HASH clause in "
+                      "control message %s (%d %d)",
+                      msg->fmt_str, node_id, parent_id);
+            return NULL;
+        }
+
+        if ((arg = get_next_arg(msg)) == NULL)
+        {
+            FMT_TRACE("Missing \"hash\" argument in control message "
+                      "%s (%d %d)", msg->fmt_str, node_id, parent_id);
+            return NULL;
+        }
+        node->descr.hash =
+            (char *)node_info_obstack_copy0(arg->val, arg->len);
+
+        SKIP_SPACES(fmt_str);
+
+        fmt_str += strlen("%s");
+
+        SKIP_SPACES(fmt_str);
+    }
+    else
+    {
+        node->descr.hash = NULL;
+    }
+
     p_prm = &(node->params);
     if (strncmp(fmt_str, "ARGs", strlen("ARGs")) == 0)
     {

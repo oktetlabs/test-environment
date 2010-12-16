@@ -144,6 +144,7 @@ typedef struct node_descr {
     unsigned int    tin;        /**< Test identification number */
     char           *page;       /**< Name of the page with documentation */
     char           *authors;    /**< Entry authors */
+    char           *hash;       /**< Parameters hash */
     int             n_branches; /**< Number of branches in the entry */
 } node_descr_t;
 
