@@ -52,6 +52,8 @@
 #include <pthread.h>
 #endif
 
+#include <openssl/md5.h>
+
 #include "te_alloc.h"
 #include "conf_api.h"
 #include "log_bufs.h"
@@ -579,6 +581,7 @@ test_param_space(const test_iter_arg *arg)
            1 /* " */ + strlen(arg->value) + extra + 1 /* " */ + 1 /* \0 */;
 }
 
+
 /**
  * Convert test parameters to string representation.
  * The first symbol is a space, if the result is not NULL.
@@ -674,6 +677,120 @@ test_params_to_string(char *str, const unsigned int n_args,
 }
 
 /**
+ * Normalise parameter value. Remove trailing spaces and newlines.
+ *
+ * @param param   Parameter value to normalise
+ *
+ * @return Allocated string or NULL.
+ */
+char *
+test_params_normalise(char *param)
+{
+    char *p;
+    char *q;
+    char *str = NULL;
+    te_bool skip_spaces = TRUE;
+
+    if (param == NULL)
+        return NULL;
+
+    str = (char *)calloc(1, strlen(param) + 1);
+    if (str == NULL)
+        return NULL;
+
+    for (p = param, q = str; *p != '\0'; p++)
+    {
+        if (isspace(*p))
+        {
+            if (!skip_spaces)
+            {
+                *q++ = ' ';
+                skip_spaces = TRUE;
+            }
+        }
+        else
+        {
+            *q++ = *p;
+            skip_spaces = FALSE;
+        }
+    }
+    *q = '\0';
+
+    return str;
+}
+
+/**
+ * Calculate hash (MD5 checksum) for set of test arguments.
+ *
+ * @param args   Array of test parameters
+ * @param n_args Number of of test parameters
+ *
+ * @return Allocated string or NULL.
+ */
+char *
+test_params_hash(test_iter_arg *args, unsigned int n_args)
+{
+    MD5_CTX md5;
+
+    int   i;
+    int   j;
+    int   k;
+    unsigned char digest[MD5_DIGEST_LENGTH];
+    char *hash_str = calloc(1, MD5_DIGEST_LENGTH * 2 + 1);
+    int  *sorted = calloc(n_args, sizeof(int));
+
+    if (sorted == NULL)
+        return NULL;
+    for (k = 0; k < n_args; k++)
+        sorted[k] = k;
+
+    MD5_Init(&md5);
+
+    /* Sort arguments first */
+    for (i = 0; i < n_args - 1; i++)
+    {
+        for (j = i + 1; j < n_args; j++)
+        {
+            if (strcmp(args[sorted[i]].name, args[sorted[j]].name) > 0)
+            {
+                k = sorted[i];
+                sorted[i] = sorted[j];
+                sorted[j] = k;
+            }
+        }
+    }
+
+    for (i = 0; i < n_args; i++)
+    {
+        char *name = args[sorted[i]].name;
+        char *value = test_params_normalise(args[sorted[i]].value);
+
+        if (value == NULL)
+            return NULL;
+
+        VERB("%s %s", name, value);
+
+        if (i != 0)
+            MD5_Update(&md5, " ", (unsigned long) 1);
+        MD5_Update(&md5, name, (unsigned long) strlen(name));
+        MD5_Update(&md5, " ", (unsigned long) 1);
+        MD5_Update(&md5, value, (unsigned long) strlen(value));
+
+        free(value);
+    }
+
+    MD5_Final(digest, &md5);
+
+    for (i = 0; i < MD5_DIGEST_LENGTH; i++)
+    {
+        sprintf(hash_str + strlen(hash_str), "%02hhx", digest[i]);
+    }
+
+    VERB("\nHash: %s\n", hash_str);
+    return hash_str;
+}
+
+/**
  * Log test (script, package, session) start.
  *  
  * @param ctx           Tester context
@@ -686,15 +803,19 @@ log_test_start(const tester_ctx *ctx, const run_item *ri,
 {
     test_id                 parent = ctx->group_result.id;
     test_id                 test = ctx->current_result.id;
-    const test_iter_arg    *args = ctx->args;
     const char             *name =
         (ctx->flags & TESTER_LOG_IGNORE_RUN_NAME) ? test_get_name(ri)
                                                   : run_item_name(ri);
 
-    char   *params_str;
-    char   *authors;
+    char   *params_str = NULL;
+    char   *authors = NULL;
+    char   *hash_str = NULL;
 
-    params_str = test_params_to_string(NULL, ri->n_args, args);
+    params_str = test_params_to_string(NULL, ri->n_args, ctx->args);
+
+    if (tin != TE_TIN_INVALID)
+        hash_str = test_params_hash(ctx->args, ri->n_args);
+
     switch (ri->type)
     {
         case RUN_ITEM_SCRIPT:
@@ -703,18 +824,21 @@ log_test_start(const tester_ctx *ctx, const run_item *ri,
                 if (ri->u.script.page == NULL)
                 {
                     TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
-                                "TEST %s \"%s\" TIN %u ARGs%s",
+                                "TEST %s \"%s\" TIN %u HASH %s ARGs%s",
                                 parent, test, name,
                                 PRINT_STRING(ri->u.script.objective),
-                                tin, PRINT_STRING(params_str));
+                                tin, PRINT_STRING(hash_str),
+                                PRINT_STRING(params_str));
                 }
                 else
                 {
                     TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
-                                "TEST %s \"%s\" TIN %u PAGE %s ARGs%s",
+                                "TEST %s \"%s\" TIN %u PAGE %s HASH %s "
+                                "ARGs%s",
                                 parent, test, name,
                                 PRINT_STRING(ri->u.script.objective),
                                 tin, ri->u.script.page,
+                                PRINT_STRING(hash_str),
                                 PRINT_STRING(params_str));
                 }
             }
@@ -723,18 +847,20 @@ log_test_start(const tester_ctx *ctx, const run_item *ri,
                 if (ri->u.script.page == NULL)
                 {
                     TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
-                                "TEST %s \"%s\" ARGs%s",
+                                "TEST %s \"%s\" HASH %s ARGs%s",
                                 parent, test, name,
                                 PRINT_STRING(ri->u.script.objective),
+                                PRINT_STRING(hash_str),
                                 PRINT_STRING(params_str));
                 }
                 else
                 {
                     TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
-                                "TEST %s \"%s\" PAGE %s ARGs%s",
+                                "TEST %s \"%s\" PAGE %s HASH %s ARGs%s",
                                 parent, test, name,
                                 PRINT_STRING(ri->u.script.objective),
                                 ri->u.script.page,
+                                PRINT_STRING(hash_str),
                                 PRINT_STRING(params_str));
                 }
             }
@@ -743,8 +869,10 @@ log_test_start(const tester_ctx *ctx, const run_item *ri,
         case RUN_ITEM_SESSION:
             assert(tin == TE_TIN_INVALID);
             TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
-                        "SESSION ARGs%s",
-                        parent, test, PRINT_STRING(params_str));
+                        "SESSION HASH %s ARGs%s",
+                        parent, test,
+                        PRINT_STRING(hash_str),
+                        PRINT_STRING(params_str));
             break;
 
         case RUN_ITEM_PACKAGE:
@@ -753,18 +881,20 @@ log_test_start(const tester_ctx *ctx, const run_item *ri,
             if (authors == NULL)
             {
                 TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
-                            "PACKAGE %s \"%s\" ARGs%s",
+                            "PACKAGE %s \"%s\" HASH %s ARGs%s",
                             parent, test, name,
                             PRINT_STRING(ri->u.package->objective),
+                            PRINT_STRING(hash_str),
                             PRINT_STRING(params_str));
             }
             else
             {
                 TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
-                            "PACKAGE %s \"%s\" AUTHORS%s ARGs%s",
+                            "PACKAGE %s \"%s\" AUTHORS%s HASH %s ARGs%s",
                             parent, test, ri->u.package->name,
                             PRINT_STRING(ri->u.package->objective),
                             PRINT_STRING(authors),
+                            PRINT_STRING(hash_str),
                             PRINT_STRING(params_str));
             }
             free(authors);
@@ -774,6 +904,7 @@ log_test_start(const tester_ctx *ctx, const run_item *ri,
             ERROR("Invalid run item type %d", ri->type);
     }
     free(params_str);
+    free(hash_str);
 }
 
 /**

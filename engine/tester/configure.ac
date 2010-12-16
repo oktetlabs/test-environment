@@ -32,7 +32,7 @@ CPPFLAGS=${CPPFLAGS}" "${XML2_CFLAGS}
 AC_CHECK_TYPES([xmlError], [], [], [#include <libxml/xmlerror.h>])
 
 AC_CHECK_LIB([curses], [start_color],
-             [LIBS="-lcurses ${LIBS}" 
+             [LIBS="-lcurses ${LIBS}"
               AC_DEFINE(HAVE_COLOR, 1,
                         [ Define if your curses library supports color. ])],
              [AC_MSG_WARN([Color terminal is not supported])])
@@ -43,6 +43,12 @@ AC_SEARCH_LIBS([readline], [readline],
                          [Define whether readline library is availiable.])],
                [AC_MSG_WARN([Readline library is not present.\
  Interactive testing will not be availiable.])]) 
+
+#AC_SEARCH_LIB([ssl], [ssl],
+#             [LIBS="-lssl ${LIBS}"
+#              AC_DEFINE(HAVE_OPENSSL, 1,
+#                        [ Define whether openssl library is availiable.])],
+#             [AC_MSG_WARN([OpenSSL library is not present])])
 
 AC_CONFIG_FILES([Makefile tests/Makefile])
 

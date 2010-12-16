@@ -18,6 +18,7 @@ TRC_LDADD=
 TRC_DEPS=
 endif
 
+OPENSSL_LDADD = -lssl
 
 noinst_HEADERS = \
 	type_lib.h \
@@ -75,7 +76,7 @@ test_path_lex.h: test_path_lex.c
 
 te_tester_LDADD = @TE_LDADD@ -lbsapi -lconfapi -lconf_oid $(TRC_LDADD) \
                   -llogger_ten -lipc -lipcserver -llogic_expr \
-                  -llog_bufs -ltools \
+                  -llog_bufs -ltools $(OPENSSL_LDADD) \
                   @XML2_LIBS@ -lpopt -lpthread 
 
 te_tester_DEPENDENCIES = @TE_DEPENDENCIES@ $(TRC_DEPS) \
