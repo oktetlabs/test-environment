@@ -121,6 +121,7 @@ typedef struct trc_report_test_iter_entry {
     TAILQ_ENTRY(trc_report_test_iter_entry) links;  /**< List links */
 
     int             tin;        /**< Test Identification Number */
+    char           *hash;       /**< Test arguments hash */
     te_test_result  result;     /**< Obtained result */
     te_bool         is_exp;     /**< Does obtained result match one of
                                      expected? */

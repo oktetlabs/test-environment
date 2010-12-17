@@ -305,6 +305,7 @@ static void
 trc_report_test_entry(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
 {
     int             tin = -1;
+    char           *hash = NULL;
     te_bool         name_found = FALSE;
     te_bool         status_found = FALSE;
     te_test_status  status = TE_TEST_UNSPEC;
@@ -356,6 +357,13 @@ trc_report_test_entry(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
                 ctx->rc = TE_EFMT;
             }
         }
+        else if (xmlStrcmp(attrs[0], CONST_CHAR2XML("hash")) == 0)
+        {
+            if ((hash = strdup(XML2CHAR(attrs[1]))) == NULL)
+            {
+                ctx->rc = TE_ENOMEM;
+            }
+        }
         attrs += 2;
     }
 
@@ -388,6 +396,7 @@ trc_report_test_entry(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
         te_test_result_init(&entry->result);
         entry->result.status = status;
         entry->tin = tin;
+        entry->hash = hash;
 
         assert(ctx->iter_data == NULL);
         ctx->iter_data = TE_ALLOC(sizeof(*ctx->iter_data));

@@ -803,6 +803,8 @@ static const char * const trc_test_exp_got_row_end =
 "      <td valign=top>%s %s</td>\n"
 "    </tr>\n";
 
+static const char * const trc_test_params_hash = "<br/>Hash: %s<br/>";
+
 #if TRC_USE_STATS_POPUP
 static const char * const trc_report_javascript_table_start =
 "  <script type=\"text/javascript\">\n"
@@ -1598,6 +1600,9 @@ trc_report_exp_got_to_html(FILE             *f,
             if (!TAILQ_EMPTY(&iter->args.head))
                 WRITE_STR(trc_test_exp_got_row_params_end);
 #endif
+
+            if ((iter_entry != NULL) && (iter_entry->hash != NULL))
+                fprintf(f, trc_test_params_hash, iter_entry->hash);
 
             WRITE_STR(trc_test_exp_got_row_mid);
 
