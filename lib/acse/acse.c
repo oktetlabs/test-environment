@@ -91,9 +91,17 @@ acse_remove_channel(channel_t *ch_item)
     assert(ch_item != NULL);
     LIST_REMOVE(ch_item, links);
     channel_number--;
-    ch_item->destroy(ch_item->data);
-    free(ch_item);
+    if (ch_item->state != ACSE_CH_EVENT)
+    {
+        ch_item->destroy(ch_item->data);
+        free(ch_item);
+    }
+    else
+    {
+        ch_item->state = ACSE_CH_DESTROY;
+    }
 }
+
 /**
  * normal exit handler, clear all resourcess, close connections, etc.
  */
@@ -115,11 +123,12 @@ acse_loop(void)
     while(acse_epc_socket() > 0)
     {
         int         r_poll;
-        int         i;
+        int         i, ch_i;
         channel_t  *item;
         te_errno    rc;
         struct pollfd *pfd =
                 calloc(channel_number, sizeof(struct pollfd));
+        channel_t **ch_queue = NULL;
 
         i = 0;
         LIST_FOREACH(item, &channel_list, links)
@@ -140,6 +149,7 @@ acse_loop(void)
             /* TODO something? */
             break;
         }
+        ch_queue = calloc(r_poll, sizeof(channel_t *));
         VERB("acse_loop, poll return %d", r_poll);
 
 #if 0
@@ -150,34 +160,45 @@ acse_loop(void)
         channel_t *tmp;
 #endif
 
-        i = 0;
+        i = 0; ch_i = 0;
+        /* Now array pfd and channel list are yet synchronous. */
         LIST_FOREACH(item, &channel_list, links)
         {
             VERB("acse_loop, process channel N %d", i);
             if (pfd[i].revents != 0)
             {
-                rc = (*item->after_poll)(item->data, pfd + i);
-
-                if (rc != 0)
-                {
-                    if (TE_RC_GET_ERROR(rc) != TE_ENOTCONN)
-                        WARN("acse_loop, error on channel, rc %r", rc);
-                    acse_remove_channel(item);
-                }
-                /* Leave loop LIST_FOREACH: occured event can change 
-                   channel_list itself, and array pfd and list could 
-                   become inconsistant. */
-                break; 
+                ch_queue[ch_i] = item;
+                item->state = ACSE_CH_EVENT;
+                item->pfd = pfd[i];
+                ch_i++;
             }
-
-#if 0
-            if (item == last_item)
-                break;
-#endif
             i++;
         }
 
+        for (ch_i = 0; ch_i < r_poll; ch_i++)
+        {
+            channel_t *ch_item = ch_queue[ch_i];
+
+            if (ch_item->state == ACSE_CH_DESTROY)
+            {
+                ch_item->destroy(ch_item->data);
+                free(ch_item);
+                continue;
+            }
+
+            rc = (*ch_item->after_poll)(ch_item->data, &(ch_item->pfd));
+
+            if (rc != 0)
+            {
+                if (TE_RC_GET_ERROR(rc) != TE_ENOTCONN)
+                    WARN("acse_loop, error on channel, rc %r", rc);
+                acse_remove_channel(ch_item);
+            }
+            ch_item->state = ACSE_CH_ACTIVE;
+        }
+
         free(pfd);
+        free(ch_queue);
     }
     acse_clear_channels();
 }

@@ -97,6 +97,42 @@ cwmp_force_stop_session(cwmp_session_t *sess)
     return 0;
 }
 
+#define SEND_FILE_BUF 0x4000
+
+te_errno
+acse_send_file_portion(cwmp_session_t *session)
+{
+    struct soap *soap;
+    size_t read;
+    static int8_t tmpbuf[SEND_FILE_BUF];
+    FILE *fd;
+
+    assert(session->state == CWMP_SEND_FILE);
+    soap = &(session->m_soap);
+
+    fd = session->sending_fd;
+
+    read = fread(tmpbuf, 1, sizeof(tmpbuf), fd);
+
+    if (!read || soap_send_raw(soap, tmpbuf, read))
+    {
+        if (!read)
+            RING("fread return zero, finish send file");
+        else
+        {
+            /* can't send, but little we can do about that */
+            fprintf(stderr, "acse_send_file: soap_send_raw fail\n");
+            WARN("acse_send_file_portion(): soap_send_raw fail,"
+                 " soap err %d", soap->error);
+        }
+        fclose(fd);
+        soap_end_send(soap);
+        session->state = CWMP_SERVE;
+        session->sending_fd = NULL;
+    }
+    return 0;
+}
+
 /**
  * HTTP GET callback.
  */
@@ -109,16 +145,15 @@ acse_http_get(struct soap *soap)
     char     path_buf[1024] = "";
 
     FILE        *fd;
-    struct stat  fs;
-
+    struct stat  fs; 
     
     soap_end_recv(soap);
 
-    RING("%s(): Yaahooo, GET to '%s' received! ",
-         __FUNCTION__ , soap->path);
+    RING("acse_http_get(): Yaahooo, GET to '%s' received", soap->path);
 
-
-    if (NULL != session && NULL != (acs = session->acs_owner) &&
+    if (NULL != session && 
+        (NULL != (acs = session->acs_owner) || 
+         NULL != (acs = session->cpe_owner->acs)) &&
         NULL != acs->http_root)
     {
         char *relative_path = soap->path;
@@ -155,8 +190,18 @@ acse_http_get(struct soap *soap)
             case EFAULT: http_status = 400; break;
             case EACCES: http_status = 403; break;
             case ENOENT: http_status = 404; break;
-            default: http_status = 500;
-                err_descr = "Internal ACSE error";
+            default:
+                if (acs != NULL && NULL == acs->http_root)
+                {
+                    WARN("HTTP GET received, but not http_root, reply 503");
+                    http_status = 503;
+                    err_descr = "HTTP dir not configured";
+                }
+                else
+                {
+                    http_status = 500;
+                    err_descr = "Internal ACSE error";
+                }
         }
         soap->http_content = "text/html";
         soap_response(soap, http_status); 
@@ -170,10 +215,16 @@ acse_http_get(struct soap *soap)
     RING("%s(): reply with %d bytes...",
          __FUNCTION__ , (int)fs.st_size);
 
+    session->sending_fd = fd;
+
     soap->http_content = "application/octet-stream";
     soap->length = fs.st_size;
 
     soap_response(soap, SOAP_FILE); 
+#if 1
+    session->state = CWMP_SEND_FILE;
+    acse_send_file_portion(session);
+#else
     while (1)
     {
         size_t r = fread(soap->tmpbuf, 1, sizeof(soap->tmpbuf), fd);
@@ -213,7 +264,7 @@ acse_http_get(struct soap *soap)
     }
     fclose(fd);
     soap_end_send(soap);
-
+#endif
     return SOAP_OK;
 }
 
@@ -697,7 +748,11 @@ cwmp_before_poll(void *data, struct pollfd *pfd)
     }
 
     pfd->fd = cwmp_sess->m_soap.socket;
-    pfd->events = POLLIN;
+
+    if (cwmp_sess->state == CWMP_SEND_FILE)
+        pfd->events = POLLOUT;
+    else
+        pfd->events = POLLIN;
     pfd->revents = 0;
 
     return 0;
@@ -719,7 +774,7 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
 {
     cwmp_session_t *cwmp_sess = data;
 
-    if (!(pfd->revents & POLLIN))
+    if (!(pfd->revents))
         return 0;
 
     switch(cwmp_sess->state)
@@ -746,6 +801,10 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
                 RING(" CWMP processing, EOF");
                 return TE_ENOTCONN;
             }
+            break;
+        case CWMP_SEND_FILE:
+            if (pfd->revents & POLLOUT)
+                return acse_send_file_portion(cwmp_sess);
             break;
         default: /* do nothing here */
             WARN("CWMP after poll, unexpected state %d\n",
@@ -777,6 +836,7 @@ cwmp_destroy(void *data)
 te_errno
 cwmp_accept_cpe_connection(acs_t *acs, int socket)
 {
+    int is_not_get = 1;
 
     if (LIST_EMPTY(&acs->cpe_list))
     {
@@ -784,6 +844,8 @@ cwmp_accept_cpe_connection(acs_t *acs, int socket)
         return TE_ECONNREFUSED;
     }
 
+    /* If ACS enables SSL, any incoming connection desired as SSL 
+       and accepted */
     if (!acs->ssl)
     {
         char buf[1024]; /* seems enough for HTTP header */
@@ -793,7 +855,8 @@ cwmp_accept_cpe_connection(acs_t *acs, int socket)
         len = recv(socket, buf, len, MSG_PEEK);
         buf[len+1]=0;
         VERB("cwmp_accept_cpe_conn(): peeked msg buf: '%s'", buf);
-        if (strncmp(buf, "POST ", 5) && strncmp(buf, "GET ", 4)) 
+        if (strncmp(buf, "POST ", 5) && 
+            (is_not_get = strncmp(buf, "GET ", 4))) 
             return TE_ECONNREFUSED; /* It is not POST request */
         req_url_p = buf + 4; while(isspace(*req_url_p)) req_url_p++;
 
@@ -880,6 +943,7 @@ cwmp_new_session(int socket, acs_t *acs)
     new_sess->cpe_owner = NULL;
     new_sess->channel = channel;
     new_sess->rpc_item = NULL;
+    new_sess->sending_fd = NULL;
     new_sess->def_heap = mheap_create(new_sess);
     new_sess->m_soap.user = new_sess;
     new_sess->m_soap.socket = socket;

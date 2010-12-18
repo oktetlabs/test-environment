@@ -279,7 +279,7 @@ typedef enum acse_cr_state_t {
                             with EventCode  = @c CONNECTION REQUEST*/
     CR_ERROR,            /**< Connection Request was sent and gets 
                             HTTP error. 
-                            Swith back to CR_NONE after read 
+                            Switch back to CR_NONE after read 
                             Conn.Req. status by EPC */
 } acse_cr_state_t;
     
@@ -297,6 +297,8 @@ typedef enum {
                             to the CPE, waiting for response.           */
     CWMP_PENDING,       /**< CWMP session established, waiting for
                              RPC to be sent on CPE, from EPC.           */
+    CWMP_SEND_FILE,     /**< HTTP connection, sending reponse to GET,
+                             received for particular ACS. */
 } cwmp_sess_state_t;
 
 /**< Typed pointer to call-specific CWMP data from ACS to CPE. */
@@ -349,6 +351,7 @@ typedef union {
     } cwmp_data_from_cpe_t; 
 
 #define NULL_FROM_CPE ((cwmp_data_from_cpe_t)NULL)
+#define PTR_FROM_CPE(ptr_) ((cwmp_data_from_cpe_t *) &ptr_)
 
 /**
  * Type for ACSE CWMP request identifier in queue.

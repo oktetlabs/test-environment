@@ -246,6 +246,12 @@ extern acs_list_t acs_list;
  * 
  */
 
+typedef enum {
+    ACSE_CH_ACTIVE = 0,
+    ACSE_CH_EVENT,
+    ACSE_CH_DESTROY,
+} ch_state_t;
+
 /** 
  * Abstraction structure for the 'channel' object 
  * @ingroup acse-main_loop
@@ -253,6 +259,9 @@ extern acs_list_t acs_list;
 typedef struct channel_t {
     LIST_ENTRY(channel_t) links;/**< List links */
     void       *data;           /**< Channel-specific private data      */
+    ch_state_t  state;
+
+    struct pollfd pfd;
 
     te_errno  (*before_poll)(   
         void   *data,           /**< Channel-specific private data      */
@@ -300,18 +309,20 @@ extern void acse_remove_channel(channel_t *ch_item);
  *  should be non-NULL for correct session. 
  */
 typedef struct cwmp_session_t {
-    cwmp_sess_state_t    state;     /**< CWMP session state.        */
-    acs_t               *acs_owner; /**< NULL or master ACS.        */
-    cpe_t               *cpe_owner; /**< NULL or master CPE record. */
+    cwmp_sess_state_t    state;     /**< CWMP session state.            */
+    acs_t               *acs_owner; /**< NULL or master ACS.            */
+    cpe_t               *cpe_owner; /**< NULL or master CPE record.     */
     cpe_rpc_item_t      *rpc_item;  /**< NULL or last sent RPC in 
-                                          @c WAIT_RESPONSE state.   */
-    channel_t           *channel;   /**< I/O ACSE channel.          */
-    struct soap          m_soap;     /**< SOAP struct               */
-    mheap_t              def_heap;   /**< default memory heap,
-                                           when @p rpc_item is NULL */
+                                          @c WAIT_RESPONSE state.       */
+    channel_t           *channel;   /**< I/O ACSE channel.              */
+    struct soap          m_soap;    /**< SOAP struct                    */
+    FILE                *sending_fd;/**< fd for state Wp CWMP_SEND_FILE */
+    mheap_t              def_heap;  /**< default memory heap,
+                                           when @p rpc_item is NULL     */
 
     int (*orig_fparse)(struct soap*);/**< Original fparse in gSOAP  */
 } cwmp_session_t;
+
 
 
 /**
@@ -326,6 +337,7 @@ typedef struct cwmp_session_t {
  * @return status code
  */
 extern te_errno cwmp_new_session(int socket, acs_t *acs);
+
 
 
 /**
