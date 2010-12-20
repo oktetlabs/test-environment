@@ -89,8 +89,13 @@ void
 acse_remove_channel(channel_t *ch_item)
 {
     assert(ch_item != NULL);
-    LIST_REMOVE(ch_item, links);
-    channel_number--;
+    /* single place where DESTROY could be set, is here. ,
+       if it is set, item already removed from the list. */
+    if (ch_item->state != ACSE_CH_DESTROY)
+    {
+        LIST_REMOVE(ch_item, links);
+        channel_number--;
+    }
     if (ch_item->state != ACSE_CH_EVENT)
     {
         ch_item->destroy(ch_item->data);
