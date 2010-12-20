@@ -165,6 +165,13 @@ acse_loop(void)
         LIST_FOREACH(item, &channel_list, links)
         {
             VERB("acse_loop, process channel N %d", i);
+            if (i >= channel_number || ch_i >= r_poll)
+            {
+                ERROR("acse_loop, after poll, boundary check fails."
+                      "i=%d, ch number = %d; ch_i=%d, r_poll = %d", 
+                      i, channel_number, ch_i, r_poll);
+                break;
+            }
             if (pfd[i].revents != 0)
             {
                 ch_queue[ch_i] = item;
