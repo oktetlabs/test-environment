@@ -82,6 +82,9 @@ acse_add_channel(channel_t *ch_item)
         LIST_INSERT_AFTER(ch_first, ch_item, links);
 
     channel_number++;
+
+    INFO("insert channel %p, increase channel_number to %d",
+         ch_item, channel_number);
 }
 
 /* see description in acse_internal.h */
@@ -95,6 +98,8 @@ acse_remove_channel(channel_t *ch_item)
     {
         LIST_REMOVE(ch_item, links);
         channel_number--;
+        INFO("remove channel %p, decrease channel_number to %d",
+             ch_item, channel_number);
     }
     if (ch_item->state != ACSE_CH_EVENT)
     {
