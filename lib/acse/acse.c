@@ -206,6 +206,8 @@ acse_loop(void)
                 continue;
             }
 
+            ch_item->state = ACSE_CH_ACTIVE;
+
             rc = (*ch_item->after_poll)(ch_item->data, &(ch_item->pfd));
 
             if (rc != 0)
@@ -214,7 +216,6 @@ acse_loop(void)
                     WARN("acse_loop, error on channel, rc %r", rc);
                 acse_remove_channel(ch_item);
             }
-            ch_item->state = ACSE_CH_ACTIVE;
         }
 
         free(pfd);
