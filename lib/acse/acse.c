@@ -138,8 +138,15 @@ acse_loop(void)
                 /* TODO something? */
                 break;
             }
+            if (i >= channel_number)
+            {
+                ERROR("acse_loop, i=%d >= channel number %d",
+                      i, channel_number);
+                break;
+            }
             i++;
         }
+        VERB("acse_loop, channel number %d", channel_number);
 
         r_poll = poll(pfd, channel_number, -1);
 
@@ -165,7 +172,7 @@ acse_loop(void)
         LIST_FOREACH(item, &channel_list, links)
         {
             VERB("acse_loop, process channel N %d", i);
-            if (i >= channel_number || ch_i >= r_poll)
+            if (i >= channel_number || ch_i > r_poll)
             {
                 ERROR("acse_loop, after poll, boundary check fails."
                       "i=%d, ch number = %d; ch_i=%d, r_poll = %d", 
@@ -174,6 +181,7 @@ acse_loop(void)
             }
             if (pfd[i].revents != 0)
             {
+                assert(ch_i < r_poll);
                 ch_queue[ch_i] = item;
                 item->state = ACSE_CH_EVENT;
                 item->pfd = pfd[i];
