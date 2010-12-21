@@ -176,69 +176,88 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
         { "html", 'h', POPT_ARG_STRING, NULL, TRC_OPT_HTML,
           "Name of the file for report in HTML format.",
           "FILENAME" },
+
         { "html-title", '\0', POPT_ARG_STRING, NULL, TRC_OPT_HTML_TITLE,
           "Title of the HTML report.",
           "FILENAME" },
-        { "html-header", '\0', POPT_ARG_STRING, NULL, TRC_OPT_HTML_HEADER,
 
+        { "html-header", '\0', POPT_ARG_STRING, NULL, TRC_OPT_HTML_HEADER,
           "Name of the file with header for the HTML report.",
           "FILENAME" },
+
         { "key2html", '\0', POPT_ARG_STRING, NULL, TRC_OPT_KEY2HTML,
           "File with regular expressions to apply when output keys to "
           "HTML report.", "FILENAME" },
+
         { "no-total", '\0', POPT_ARG_NONE, NULL, TRC_OPT_NO_TOTAL_STATS,
           "Do not include grand total statistics.",
           NULL },
+
         { "no-packages-only", '\0', POPT_ARG_NONE, NULL,
           TRC_OPT_NO_PACKAGES_ONLY,
           "Do not include packages only statistics.",
           NULL },
+
         { "stats-only", '\0', POPT_ARG_NONE, NULL, TRC_OPT_STATS_ONLY,
           "Do not include details about iterations, statistics only.",
           NULL },
+
         { "no-scripts", '\0', POPT_ARG_NONE, NULL, TRC_OPT_NO_SCRIPTS,
           "Do not include information about scripts in the report.",
           NULL },
+
         { "no-unspec", '\0', POPT_ARG_NONE, NULL, TRC_OPT_NO_UNSPEC,
           "Do not include scripts with got unspecified result (not run).",
           NULL },
+
         { "no-skipped", '\0', POPT_ARG_NONE, NULL, TRC_OPT_NO_SKIPPED,
           "Do not include skipped scripts.",
           NULL },
+
         { "no-expected", '\0', POPT_ARG_NONE, NULL, TRC_OPT_NO_EXPECTED,
           "Do not include scripts with expected results.",
           NULL },
+
         { "no-exp-passed", '\0', POPT_ARG_NONE, NULL, TRC_OPT_NO_EXP_PASSED,
           "Do not include scripts with passed as expected results.",
           NULL },
+
         { "no-stats-not-run", '\0', POPT_ARG_NONE, NULL,
           TRC_OPT_NO_STATS_NOT_RUN,
           "Do not entries with unexpected 'not run' statistics.",
           NULL },
+
         { "no-keys", '\0', POPT_ARG_NONE, NULL, TRC_OPT_NO_KEYS,
           "Do not generate keys table.",
           NULL },
+
         { "keys-only", '\0', POPT_ARG_NONE, NULL, TRC_OPT_KEYS_ONLY,
           "Do not include details about iterations, keys table only.",
           NULL },
+
         { "keys-sanity", '\0', POPT_ARG_NONE, NULL, TRC_OPT_KEYS_SANITY,
           "Perform sanity check for keys table.",
           NULL },
+
         { "keys-skip-passed-unspec", '\0', POPT_ARG_NONE, NULL,
           TRC_OPT_KEYS_SKIP_PASSED_UNSPEC,
           "Skip reporting of unspecified keys for passed tests.",
           NULL },
+
         { "keys-skip-failed-unspec", '\0', POPT_ARG_NONE, NULL,
           TRC_OPT_KEYS_SKIP_FAILED_UNSPEC,
           "Skip reporting of unspecified keys for failed tests.",
           NULL },
+
         { "keys-skip-unspec", '\0', POPT_ARG_NONE, NULL,
           TRC_OPT_KEYS_SKIP_UNSPEC,
           "Skip reporting of unspecified keys for passed and failed tests.",
           NULL },
+
         { "comparison", '\0', POPT_ARG_STRING, NULL, TRC_OPT_COMPARISON,
           "Parameter comparison method (default is 'exact').",
           "exact|casefold|normalised|tokens" },
+
         { "version", '\0', POPT_ARG_NONE, NULL, TRC_OPT_VERSION, 
           "Display version information.", NULL },
 
@@ -609,16 +628,7 @@ main(int argc, char *argv[])
         goto exit;
     }
 
-    TAILQ_FOREACH(merge_fn, &ctx.merge_fns, links)
-    {
-        RING("Merging with %s", merge_fn->v);
-        if (trc_report_merge(&ctx, merge_fn->v) != 0)
-        {
-            ERROR("Failed to merge with %s", merge_fn->v);
-            goto exit;
-        }
-    }
-
+    /* Process cut operations */
     TAILQ_FOREACH(cut_path, &ctx.cut_paths, links)
     {
         if (trc_tools_cut_db(ctx.db, ctx.db_uid, cut_path->v, FALSE) != 0)
@@ -627,6 +637,18 @@ main(int argc, char *argv[])
             goto exit;
         }
     }
+
+    /* Process merge operations */
+    TAILQ_FOREACH(merge_fn, &ctx.merge_fns, links)
+    {
+        VERB("Merging with %s", merge_fn->v);
+        if (trc_report_merge(&ctx, merge_fn->v) != 0)
+        {
+            ERROR("Failed to merge with %s", merge_fn->v);
+            goto exit;
+        }
+    }
+
 
     if (trc_report_collect_stats(&ctx) != 0)
     {
