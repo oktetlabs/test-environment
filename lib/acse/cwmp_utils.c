@@ -434,6 +434,44 @@ cwmp_val_array_check_int(cwmp_values_array_t *a,
 }
 
 
+
+te_errno
+cwmp_val_array_get_str(cwmp_values_array_t *a,
+                       const char *name, char **value)
+{
+    unsigned i;
+
+    if (NULL == a || NULL == value)
+        return TE_EINVAL;
+
+    for (i = 0; i < a->size; i++)
+    {
+        char *suffix = rindex(a->items[i]->Name, '.');
+        if (NULL == suffix)
+            continue;
+        if (NULL == name || strcmp(suffix + 1, name) == 0)
+        {
+            switch (a->items[i]->__type)
+            {
+                case SOAP_TYPE_string:
+                    *value = strdup((char *)a->items[i]->Value);
+                    break;
+
+                case SOAP_TYPE_xsd__boolean:         
+                case SOAP_TYPE_int:         
+                case SOAP_TYPE_unsignedInt:
+                case SOAP_TYPE_byte:
+                case SOAP_TYPE_unsignedByte:
+                case SOAP_TYPE_time:
+                case SOAP_TYPE_SOAP_ENC__base64:
+                    return TE_EBADTYPE;
+            }
+            return 0;
+        }
+    }
+    return TE_ENOENT;
+}
+
 #define VAL_LOG_MAX 512
 
 te_errno
