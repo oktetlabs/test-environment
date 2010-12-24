@@ -827,17 +827,26 @@ rpc_getpeername(rcf_rpc_server *rpcs,
  * @param mmsg      array of @b rpc_mmsghdr structures that holds the
  *                  received messages
  * @param vlen      length of mmsg array
+ * @param rvlen     real length of mmsg array
  * @param flags     bitwise OR of zero or more of the flags; 
  *                  see @b rpc_recv for more information
  * @param timeout   Timeout for receiving
  *
  * @return Number of received packets, otherwise -1 when an error occured.
  */
-extern int rpc_recvmmsg_alt(rcf_rpc_server *rpcs, int fd,
-                            struct rpc_mmsghdr *mmsg, unsigned int vlen,
-                            rpc_send_recv_flags flags,
-                            struct tarpc_timespec *timeout);
+extern int rpc_recvmmsg_alt_gen(rcf_rpc_server *rpcs, int fd,
+                                struct rpc_mmsghdr *mmsg, unsigned int vlen,
+                                unsigned int rvlen,
+                                rpc_send_recv_flags flags,
+                                struct tarpc_timespec *timeout);
 
+static inline int
+rpc_recvmmsg_alt(rcf_rpc_server *rpcs, int fd,
+                 struct rpc_mmsghdr *mmsg, unsigned int vlen,
+                 rpc_send_recv_flags flags, struct tarpc_timespec *timeout)
+{
+    return rpc_recvmmsg_alt_gen(rpcs, fd, mmsg, vlen, vlen, flags, timeout);
+}
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
