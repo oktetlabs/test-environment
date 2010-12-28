@@ -114,9 +114,8 @@ typedef struct rcf_rpc_server {
 
     char   *nv_lib;             /**< Library name set for the server */
 
-    char    lib[RCF_MAX_PATH];  /**< Library name to be used for the call
-                                     (is set to empty line after each
-                                     call) */
+    te_bool     use_libc;       /**< Use libc library instead of set one */
+    te_bool     use_libc_once;  /**< Same as use_libc, but one call only */
 
     /* Read-only fields filled by API internals when server is created */
     char        ta[RCF_MAX_NAME];   /**< Test Agent name */

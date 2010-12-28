@@ -226,13 +226,13 @@ shut_how_rpc2h(rpc_shut_how how)
 /**
  * Find the function by its name.
  *
- * @param lib   library name or empty string
- * @param name  function name
- * @param func  location for function address
+ * @param use_libc  use the preset library or libc?
+ * @param name      function name
+ * @param func      location for function address
  *
  * @return status code
  */
-extern int tarpc_find_func(const char *lib, const char *name, 
+extern int tarpc_find_func(te_bool use_libc, const char *name, 
                            api_func *func);
 
 /** Structure for checking of variable-length arguments safity */
@@ -464,7 +464,7 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,  \
     VERB("PID=%d TID=%d: Entry %s",                                 \
          (int)getpid(), (int)pthread_self(), #_func);               \
                                                                     \
-    FIND_FUNC(in->common.lib, #_func, func);                        \
+    FIND_FUNC(in->common.use_libc, #_func, func);                        \
                                                                     \
     { _copy_args }                                                  \
                                                                     \

@@ -215,13 +215,12 @@ rcf_rpc_server_get(const char *ta, const char *name,
         /* Check that it is not dead */
         tarpc_getpid_in  in;
         tarpc_getpid_out out;
-        char             lib = 0;
         
         memset(&in, 0, sizeof(in));
         memset(&out, 0, sizeof(out));
 
         in.common.op = RCF_RPC_CALL_WAIT;
-        in.common.lib = &lib;
+        in.common.use_libc = FASLE;
  
         if ((rc = rcf_ta_call_rpc(ta, sid, name, 1000, "getpid", 
                                   &in, &out)) != 0)
@@ -350,7 +349,6 @@ rcf_rpc_server_exec(rcf_rpc_server *rpcs)
     tarpc_execve_out out;
     
     int  rc;
-    char lib = 0;
 
     if (rpcs == NULL)
         return TE_RC(TE_RCF, TE_EINVAL);
@@ -363,7 +361,7 @@ rcf_rpc_server_exec(rcf_rpc_server *rpcs)
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
     in.name = rpcs->name;
-    in.common.lib = &lib;
+    in.common.use_libc = FALSE;
 
     rpcs->op = RCF_RPC_CALL_WAIT;
     rc = rcf_ta_call_rpc(rpcs->ta, rpcs->sid, rpcs->name, 0xFFFFFFFF, 
@@ -516,7 +514,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
     in->op = rpcs->op;
     in->tid = rpcs->tid0;
     in->done = rpcs->is_done_ptr;
-    in->lib = rpcs->lib;
+    in->use_libc = rpcs->use_libc || rpcs->use_libc_once;
 
     if (!op_is_done)
         strcpy(rpcs->proc, proc); 
@@ -527,7 +525,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
     if (rpcs->op != RCF_RPC_CALL)
         rpcs->timeout = RCF_RPC_UNSPEC_TIMEOUT;
     rpcs->start = 0;
-    *(rpcs->lib) = '\0';
+    rpcs->use_libc_once = FALSE;
     if (TE_RC_GET_ERROR(rpcs->_errno) == TE_ERPCTIMEOUT ||
         TE_RC_GET_ERROR(rpcs->_errno) == TE_ETIMEDOUT ||
         TE_RC_GET_ERROR(rpcs->_errno) == TE_ERPCDEAD)
@@ -810,7 +808,6 @@ rcf_rpc_server_create_process(rcf_rpc_server *rpcs,
 {
     tarpc_create_process_in  in;
     tarpc_create_process_out out;
-    char                     lib = 0;
     te_errno                 rc;
 
     if (rpcs == NULL)
@@ -820,7 +817,7 @@ rcf_rpc_server_create_process(rcf_rpc_server *rpcs,
     memset(&out, 0, sizeof(out));
     
     in.common.op = RCF_RPC_CALL_WAIT;
-    in.common.lib = &lib;
+    in.common.use_libc = FALSE;
     in.name.name_len = strlen(name) + 1;
     in.name.name_val = strdup(name);
     in.inherit = params->inherit;

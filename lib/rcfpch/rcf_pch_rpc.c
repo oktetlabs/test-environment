@@ -147,9 +147,8 @@ call(rpcserver *rpcs, char *name, void *in, void *out)
     uint8_t buf[1024];
     size_t  len = sizeof(buf);
     int     rc;
-    char    c = '\0';
 
-    ((tarpc_in_arg *)in)->lib = &c;
+    ((tarpc_in_arg *)in)->use_libc = 0;
     
     if (rpcs->sent > 0)
     {

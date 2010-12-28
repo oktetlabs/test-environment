@@ -100,7 +100,7 @@ struct tarpc_in_arg {
                                      TA context to be set when function
                                      which is called using non-blocking
                                      RPC call finishes */
-    string          lib<>;      /**< If non-empty, library name */ 
+    tarpc_bool      use_libc;   /**< Use libc instead of preset lib */
 };
 
 /**
