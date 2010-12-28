@@ -518,12 +518,12 @@ rpc_cwmp_op_check(rcf_rpc_server *rpcs,
     if (NULL == rpcs)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return -1;
+        return TE_EINVAL;
     }
     if (NULL == acs_name || NULL == cpe_name)
     {
         ERROR("%s(): Invalid ACS/CPE handle", __FUNCTION__);
-        return -1;
+        return TE_EINVAL;
     }
 
     memset(&in, 0, sizeof(in));
@@ -548,9 +548,12 @@ rpc_cwmp_op_check(rcf_rpc_server *rpcs,
     if (NULL != cwmp_rpc)
         *cwmp_rpc = out.cwmp_rpc;
 
-    RING("RPC (%s,%s): cwmp_op_check(%s, %s, req No %d) -> %r",
+    RING("RPC (%s,%s): cwmp_op_check(%s/%s, for %s) -> %r",
                  rpcs->ta, rpcs->name,
-                 acs_name, cpe_name, (int)request_id,
+                 acs_name, cpe_name, 
+                 request_id == 0 ? 
+                     cwmp_rpc_acs_string(cwmp_rpc_acs) : 
+                     cwmp_rpc_cpe_string(*cwmp_rpc),
                  (te_errno)out.status);
 
     return out.status;
@@ -753,13 +756,13 @@ te_errno
 tapi_acse_get_rpc_methods_resp(tapi_acse_context_t *ctx,
                                string_array_t **resp)
 {
-    cwmp_data_from_cpe_t from_cpe_loc;
+    cwmp_get_rpc_methods_response_t *from_cpe_r;
 
-    te_errno rc = tapi_acse_cpe_rpc_response(ctx, NULL, &from_cpe_loc);
+    te_errno rc = tapi_acse_cpe_rpc_response(ctx, NULL,
+                PTR_FROM_CPE(from_cpe_r));
 
-    if (0 == rc && NULL != resp && NULL != from_cpe_loc.p)
-        COPY_STRING_ARRAY(from_cpe_loc.get_rpc_methods_r->MethodList_,
-                          *resp);
+    if (0 == rc && NULL != resp && NULL != from_cpe_r)
+        COPY_STRING_ARRAY(from_cpe_r->MethodList_, *resp);
     return rc;
 }
 
