@@ -853,7 +853,7 @@ cwmp_accept_cpe_connection(acs_t *acs, int socket)
         char *req_url_p;
 
         len = recv(socket, buf, len, MSG_PEEK);
-        buf[len+1]=0;
+        buf[len]=0;
         VERB("cwmp_accept_cpe_conn(): peeked msg buf: '%s'", buf);
         if (strncmp(buf, "POST ", 5) && 
             (is_not_get = strncmp(buf, "GET ", 4))) 
