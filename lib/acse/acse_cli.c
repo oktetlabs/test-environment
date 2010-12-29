@@ -879,6 +879,7 @@ int
 main(int argc, const char **argv)
 {
     te_errno rc;
+    FILE *script_fd = NULL;
     int rpoll, rpopt;
     poptContext cont;
     pid_t acse_main_pid = 0;
@@ -947,6 +948,12 @@ main(int argc, const char **argv)
     }
     atexit(&cli_exit_handler);
 
+    if (NULL != script_name)
+    {
+        if ((script_fd = fopen(script_name, "r")) == NULL)
+            perror("open script failed: ");
+    }
+
     printf("\n> "); fflush(stdout);
 
     /* TODO process command line script */
@@ -962,14 +969,33 @@ main(int argc, const char **argv)
         pfd[1].events = POLLIN;
         pfd[1].revents = 0;
 
-        rpoll = poll(pfd, 2, -1);
-        if (rpoll > 0)
+        if (NULL == script_fd &&
+            (rpoll = poll(pfd, 2, -1)) < 0)
         {
-            if (pfd[0].revents)
-            {
-                char buf[BUF_SIZE];
-                ssize_t r = read(pfd[0].fd, buf, BUF_SIZE);
+            perror("poll failed");
+            break;
+        }
 
+        if (pfd[0].revents || script_fd != NULL)
+        {
+            char buf[BUF_SIZE];
+
+            ssize_t r;
+            if (script_fd != 0)
+            {
+                if (fgets(buf, BUF_SIZE, script_fd) == NULL)
+                {
+                    fclose(script_fd);
+                    script_fd = NULL;
+                    continue;
+                }
+                if (buf[0] == '#')
+                    continue;
+                printf("$ %s", buf);
+            }
+            else
+            {
+                r = read(pfd[0].fd, buf, BUF_SIZE);
                 if (r < 0)
                 {
                     perror("read fail");
@@ -977,41 +1003,37 @@ main(int argc, const char **argv)
                 }
                 if (r == 0) /* The end of input */
                     break;
-
                 buf[r] = '\0';
-#if 0
-                rc = epc_parse_cli(buf, r);
-                if (rc != 0)
-                    RING("parse error %r", rc);
-#else
-                cli_perform_cmd(acse_cmd_list, buf);
-                printf("> "); fflush(stdout);
-#endif
             }
-            if (pfd[1].revents)
+
+            cli_perform_cmd(acse_cmd_list, buf);
+            printf("> "); fflush(stdout);
+        }
+        /* Really, this should not happen, EPC messages are received and 
+           processed while perform command above. */
+        if (pfd[1].revents) 
+        {
+            acse_epc_msg_t msg_resp;
+            rc = acse_epc_recv(&msg_resp);
+            if (TE_RC_GET_ERROR(rc) == TE_ENOTCONN)
+                break;
+            else if (rc != 0)
+                RING("EPC recv error %r", rc);
+            switch (msg_resp.opcode)
             {
-                acse_epc_msg_t msg_resp;
-                rc = acse_epc_recv(&msg_resp);
-                if (TE_RC_GET_ERROR(rc) == TE_ENOTCONN)
+                case EPC_CONFIG_RESPONSE:
+                    print_config_response(msg_resp.status,
+                                          msg_resp.data.cfg);
                     break;
-                else if (rc != 0)
-                    RING("EPC recv error %r", rc);
-                switch (msg_resp.opcode)
-                {
-                    case EPC_CONFIG_RESPONSE:
-                        print_config_response(msg_resp.status,
-                                              msg_resp.data.cfg);
-                        break;
-                    case EPC_CWMP_RESPONSE:
-                        print_cwmp_response(msg_resp.status,
-                                            msg_resp.data.cwmp);
-                        break;
-                    default:
-                        ERROR("Unexpected opcode 0x%x from EPC",
-                             msg_resp.opcode);
-                }
-                printf("> "); fflush(stdout);
+                case EPC_CWMP_RESPONSE:
+                    print_cwmp_response(msg_resp.status,
+                                        msg_resp.data.cwmp);
+                    break;
+                default:
+                    ERROR("Unexpected opcode 0x%x from EPC",
+                         msg_resp.opcode);
             }
+            printf("> "); fflush(stdout);
         }
     }
     if ((rc = acse_epc_close()) != 0)

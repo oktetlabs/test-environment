@@ -23,20 +23,38 @@
 static inline size_t 
 cli_token_copy(const char *line, char *token)
 {
-    size_t t, s;
+    size_t  t /* ofs in target */, 
+            s /* ofs in source */,
+            b /* leading blanks*/;
+    int quoted = 0;
 
-    for (s = 0; isspace(line[s]); s++);
-    line += s;
+    for (b = 0; isspace(line[b]); b++);
+    line += b;
 
-    for (t = 0; line[t] && isprint(line[t]) && (!isspace(line[t])); t++)
-        token[t] = line[t];
+    for (t = 0, s = 0; line[s] && isprint(line[s]); s++)
+    {
+        if (line[s] == '"')
+        {
+            quoted = !quoted;
+            continue;
+        }
+        if (line[s] == '\\')
+        {
+            s++;
+        }
+        else if (!quoted && isspace(line[s]))
+            break;
+
+        token[t] = line[s];
+        t++;
+    }
     if (0 == t)
         return 0;
     token[t] = '\0';
 
-    for (; isspace(line[t]); t++);
+    for (; isspace(line[s]); s++);
 
-    return s + t;
+    return s + b;
 }
 
 struct cli_cmd_descr_t;
