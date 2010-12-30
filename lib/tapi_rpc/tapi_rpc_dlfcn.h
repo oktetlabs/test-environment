@@ -45,7 +45,7 @@ extern "C" {
  *
  * @param rpcs      RPC server handle
  * @param filename  the name of the file to load
- * @param flag      dlopen flags.
+ * @param flags     dlopen flags.
  *
  * @return dynamic library handle on success or NULL in the case of failure
  */
@@ -63,7 +63,7 @@ extern void *rpc_dlopen(rcf_rpc_server *rpcs, const char *filename,
 extern char *rpc_dlerror(rcf_rpc_server *rpcs);
 
 /**
- * Returns the address where a certain symbol from dynamic labrary
+ * Returns the address where a certain symbol from dynamic library
  * is loaded into memory.
  *
  * @param rpcs      RPC server handle
@@ -85,7 +85,7 @@ extern void *rpc_dlsym(rcf_rpc_server *rpcs, void *handle,
  * @return return code of function.
  */
 extern int rpc_dlsym_call(rcf_rpc_server *rpcs, void *handle,
-                            const char *symbol);
+                          const char *symbol);
 
 /**
  * Decrements the reference count on the dynamic library handle.

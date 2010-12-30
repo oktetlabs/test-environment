@@ -26,7 +26,7 @@
  *
  * @author Nikita Rastegaev <Nikita.Rastegaev@oktetlabs.ru>
  *
- * $Id: $
+ * $Id$
  */
 
 #include "te_config.h"
