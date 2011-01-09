@@ -91,8 +91,8 @@ te_cwmp_unpack__string(void *msg, size_t max_len)
 
     if (str_size > max_len)
     {
-        ERROR("unpack_string failed, ofs %u >= max_len %u",
-              ofs, max_len);
+        ERROR("unpack_string failed, str_size %u >= max_len %u",
+              str_size, max_len);
         return -1;
     }
 
