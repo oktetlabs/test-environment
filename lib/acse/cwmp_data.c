@@ -90,7 +90,11 @@ te_cwmp_unpack__string(void *msg, size_t max_len)
         str_size += 4 - alig_padding; 
 
     if (str_size > max_len)
+    {
+        ERROR("unpack_string failed, ofs %u >= max_len %u",
+              ofs, max_len);
         return -1;
+    }
 
     return str_size;
 }
@@ -922,7 +926,12 @@ te_cwmp_pack__Kicked(const _cwmp__Kicked *src, void *msg, size_t max_len)
         ssize_t rc; \
         size_t ofs = (size_t)(res-> _leaf);  \
                                         \
-        if (ofs >= max_len) return -1;  \
+        if (ofs >= max_len) \
+        { \
+            ERROR("UNPACK_LEAF at line %d failed, ofs %u >= max_len %u", \
+                  __LINE__, ofs, max_len); \
+            return -1;  \
+        } \
         if (0 == ofs) \
         { \
             res-> _leaf = NULL; \
