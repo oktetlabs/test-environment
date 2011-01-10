@@ -465,6 +465,7 @@ start_acse(void)
     if (acse_pid == 0) /* we are in child */
     {
         rcf_pch_detach();
+        freopen("/tmp/acse_stderr", "a", stderr);
         setpgid(0, 0);
         logfork_register_user("ACSE");
         if ((rc = acse_epc_disp_init(NULL, NULL)) != 0)
@@ -473,6 +474,7 @@ start_acse(void)
             exit(1);
         }
         acse_loop();
+        RING("Exit from ACSE process.");
         exit(0); 
     }
     if (acse_pid == -1)
@@ -501,8 +503,8 @@ start_acse(void)
     if (need_atexit)
     {
         atexit(stop_acse);
-    }
-    
+        need_atexit = FALSE; /* To register stop_acse only once */
+    } 
 
     return rc;
 }
@@ -517,10 +519,11 @@ stop_acse(void)
 {
     te_errno rc = 0;
     int acse_status = 0;
+    int r;
 
     fprintf(stderr, "Stop ACSE process, pid %d\n", acse_pid);
 
-    if (-1 == acse_pid)
+    if (-1 == acse_pid || 0 == acse_pid)
         return 0; /* nothing to do */
 
     RING("Stop ACSE process, pid %d", acse_pid);
@@ -536,7 +539,25 @@ stop_acse(void)
             return TE_OS_RC(TE_TA_UNIX, saved_errno);
         }
     }
-    waitpid(acse_pid, &acse_status, 0);
+    sleep(3);
+
+    fprintf(stderr, "wait for stop ACSE process, pid %d\n", acse_pid);
+    r = waitpid(acse_pid, &acse_status, WNOHANG);
+    fprintf(stderr, "waitpid rc %d\n", r);
+    if (r != acse_pid)
+    {
+        sleep(2);
+        if (kill(acse_pid, SIGTERM))
+        {
+            int saved_errno = errno;
+            ERROR("ACSE kill failed %s", strerror(saved_errno));
+            /* failed to stop ACSE, just return ... */
+            return TE_OS_RC(TE_TA_UNIX, saved_errno);
+        }
+        sleep(2);
+        r = waitpid(acse_pid, &acse_status, WNOHANG);
+        fprintf(stderr, "second waitpid rc %d\n", r);
+    }
 
     acse_pid = -1;
 
