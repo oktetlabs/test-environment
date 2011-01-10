@@ -31,6 +31,7 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "CWMP data utils"
 
 #include "te_config.h"
 #include "te_defs.h"
@@ -939,7 +940,11 @@ te_cwmp_pack__Kicked(const _cwmp__Kicked *src, void *msg, size_t max_len)
         } \
         rc = te_cwmp_unpack__ ## _leaf_type(msg + ofs, max_len - ofs); \
         if (rc < 0) \
+        { \
+            ERROR("UNPACK_LEAF at line %d failed, leaf subtype %s ", \
+                  __LINE__, #_leaf_type); \
             return -1; \
+        } \
         res-> _leaf = msg + ofs; \
         unpack_size += rc; \
     } while (0)
@@ -1736,7 +1741,7 @@ cwmp_unpack_call_data(void *buf, size_t len,
             return 0;
     }
     if (rc != 0)
-        ERROR("CWMP unpack failed");
+        ERROR("CWMP unpack of %s failed", cwmp_rpc_cpe_string(rpc_cpe));
     return rc;
 }
 
