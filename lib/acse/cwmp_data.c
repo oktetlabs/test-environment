@@ -994,7 +994,7 @@ te_cwmp_unpack__ ## _list_type (void *msg, size_t max_len) \
         return sizeof(_list_type); \
     } \
  \
-    if (ofs >= max_len) \
+    if (ofs >= max_len && res->__size > 0) \
     { \
         ERROR("UNPACK_LEAF at line %d failed, ofs %u >= max_len %u", \
               __LINE__, ofs, max_len); \
