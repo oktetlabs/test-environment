@@ -995,7 +995,11 @@ te_cwmp_unpack__ ## _list_type (void *msg, size_t max_len) \
     } \
  \
     if (ofs >= max_len) \
+    { \
+        ERROR("UNPACK_LEAF at line %d failed, ofs %u >= max_len %u", \
+              __LINE__, ofs, max_len); \
         return -1; \
+    } \
  \
     res->__ptr ## _elem_type = (void *)((char *)msg + ofs); \
     for (i = 0; i < res->__size; i++) \
@@ -1003,7 +1007,11 @@ te_cwmp_unpack__ ## _list_type (void *msg, size_t max_len) \
         ofs = (unsigned int)(res->__ptr ## _elem_type[i]); \
         rc = te_cwmp_unpack__ ## _elem_type (msg + ofs, max_len - ofs); \
         if (rc < 0) \
+        { \
+            ERROR("UNPACK_LEAF at line %d failed, leaf subtype %s ", \
+                  __LINE__, #_elem_type); \
             return -1; \
+        } \
         res->__ptr ## _elem_type [i] = msg + ofs; \
     } \
     /* now 'ofs' is offset of last element in array */ \
