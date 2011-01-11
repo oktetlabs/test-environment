@@ -447,7 +447,7 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
     char            *rt_name = NULL;
     unsigned int     num;
     unsigned int     i;
-    
+
     UNUSED(addr_family);
 
     if (ta == NULL || rt_tbl == NULL || n == NULL)
@@ -456,7 +456,7 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
     rc = cfg_find_pattern_fmt(&num, &handles, "/agent:%s/route:*", ta);
     if (rc != 0)
         return rc;
-    
+
     if (num == 0)
     {
         *rt_tbl = NULL;
@@ -473,7 +473,7 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
     for (i = 0; i < num; i++)
     {
         struct sockaddr  *addr;
-        
+
         if ((rc = cfg_get_inst_name(handles[i], &rt_name)) != 0)
         {
             ERROR("%s: Route handle cannot be processed", __FUNCTION__);
@@ -483,14 +483,14 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
         rc = route_parse_inst_name(rt_name, &tbl[i]);
 
         free(rt_name);
-        
+
         assert(rc == 0);
 
         if ((rc = cfg_get_instance(handles[i], NULL, &addr)) != 0)
         {
             ERROR("%s: Cannot obtain route instance value", __FUNCTION__);
             break;
-        }        
+        }
 
         if ((addr->sa_family == AF_INET &&
              SIN(addr)->sin_addr.s_addr != htonl(INADDR_ANY)) ||
@@ -500,7 +500,9 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
             tbl[i].flags |= TAPI_RT_GW;
             memcpy(&tbl[i].gw, addr, sizeof(struct sockaddr_storage));
         }
-        
+
+        free(addr);
+
         /* Get route attributes */
         if ((rc = cfg_get_son(handles[i], &handle2)) != 0 ||
             handle2 == CFG_HANDLE_INVALID)
@@ -509,15 +511,16 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
                   __FUNCTION__, rc);
             break;
         }
-        
+
         do {
-            cfg_val_type  type;
-            char         *name;
-            cfg_oid      *oid;
-            void         *val_p;
+            cfg_val_type    type;
+            char           *name;
+            char           *dev_name;
+            cfg_oid        *oid;
+            void           *val_p;
 
             handle1 = handle2;
-            
+
             if ((rc = cfg_get_oid(handle1, &oid)) != 0)
             {
                 ERROR("%s: Cannot get route attribute name %r",
@@ -530,7 +533,7 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
             type = CVT_INTEGER;
             if (strcmp(name, "dev") == 0)
             {
-                val_p = &tbl[i].dev;
+                val_p = &dev_name;
                 type = CVT_STRING;
             }
             else if (strcmp(name, "mtu") == 0)
@@ -543,7 +546,7 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
             {
                 type = CVT_ADDRESS;
                 tbl[i].flags |= TAPI_RT_SRC;
-                val_p = &tbl[i].src;
+                val_p = &addr;
             }
             else
             {
@@ -561,6 +564,18 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
                 free(oid);
                 break;
             }
+
+            if (strcmp(name, "src") == 0)
+            {
+                memcpy(&tbl[i].src, addr, sizeof(struct sockaddr_storage));
+                free(addr);
+            }
+            else if (strcmp(name, "dev") == 0)
+            {
+                strncpy(tbl[i].dev, dev_name, sizeof(tbl[i].dev) - 1);
+                free(dev_name);
+            }
+
             free(oid);
 
             rc = cfg_get_brother(handle1, &handle2);
@@ -574,13 +589,13 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
 
         if (rc != 0)
             break;
-            
+
         assert(handle2 == CFG_HANDLE_INVALID);
 
         tbl[i].hndl = handles[i];
     }
     free(handles);
-    
+
     if (rc != 0)
     {
         free(tbl);
