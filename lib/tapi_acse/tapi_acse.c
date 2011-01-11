@@ -181,7 +181,14 @@ tapi_acse_ctx_init(const char *ta)
     te_errno rc = 0;
 
     if (NULL == box_name)
+    {
+#if 0
         WARN("init TAPI ACSE context, no CPE_NAME, find first CPE");
+#else
+        ERROR("no CPE_NAME specified.");
+        return NULL;
+#endif
+    }
     else
         RING("init ACSE context, CPE_NAME='%s', let's find this CPE...", 
              box_name);
