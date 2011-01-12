@@ -714,6 +714,11 @@ test_params_normalise(char *param)
             skip_spaces = FALSE;
         }
     }
+
+    /* remove trainling space at the end, if any */
+    if ((q > str) && (skip_spaces))
+        q--;
+
     *q = '\0';
 
     return str;
@@ -738,6 +743,8 @@ test_params_hash(test_iter_arg *args, unsigned int n_args)
     unsigned char digest[MD5_DIGEST_LENGTH];
     char *hash_str = calloc(1, MD5_DIGEST_LENGTH * 2 + 1);
     int  *sorted = calloc(n_args, sizeof(int));
+    char  buf[8192] = {0, };
+    int   len = 0;
 
     if (sorted == NULL)
         return NULL;
@@ -769,6 +776,8 @@ test_params_hash(test_iter_arg *args, unsigned int n_args)
             return NULL;
 
         VERB("%s %s", name, value);
+        len += snprintf(buf + len, sizeof(buf) - len - 1,
+                        "%s%s %s", (i != 0) ? " " : "", name, value);
 
         if (i != 0)
             MD5_Update(&md5, " ", (unsigned long) 1);
@@ -787,6 +796,8 @@ test_params_hash(test_iter_arg *args, unsigned int n_args)
     }
 
     VERB("\nHash: %s\n", hash_str);
+    VERB("%s->%s", buf, hash_str);
+
     return hash_str;
 }
 
