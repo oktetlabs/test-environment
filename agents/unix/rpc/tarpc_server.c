@@ -6551,7 +6551,6 @@ TARPC_FUNC(recvmmsg_alt,
         ptv = &tv;
     }
 
-
     memset(iovec_arr, 0, sizeof(iovec_arr));
 
     if (out->mmsg.mmsg_val == NULL)
@@ -6566,7 +6565,7 @@ TARPC_FUNC(recvmmsg_alt,
         struct sockaddr_storage name_st[RCF_RPC_MAX_MSGHDR];
         socklen_t               name_len[RCF_RPC_MAX_MSGHDR];
         struct sockaddr        *name[RCF_RPC_MAX_MSGHDR];
-        struct tarpc_msghdr     rpc_msg;
+        struct tarpc_msghdr    *rpc_msg;
         struct msghdr          *msg;
 
         mmsg = (struct mmsghdr_alt *)calloc(out->mmsg.mmsg_len,
@@ -6582,13 +6581,13 @@ TARPC_FUNC(recvmmsg_alt,
         {
             mmsg[j].msg_len = out->mmsg.mmsg_val[j].msg_len;
             msg = &mmsg[j].msg_hdr;
-            rpc_msg = out->mmsg.mmsg_val[j].msg_hdr;
+            rpc_msg = &(out->mmsg.mmsg_val[j].msg_hdr);
 
-            if (!(rpc_msg.msg_name.flags & TARPC_SA_RAW &&
-                  rpc_msg.msg_name.raw.raw_len >
+            if (!(rpc_msg->msg_name.flags & TARPC_SA_RAW &&
+                  rpc_msg->msg_name.raw.raw_len >
                   sizeof(struct sockaddr_storage)))
             {
-                name_rc = sockaddr_rpc2h(&(rpc_msg.msg_name),
+                name_rc = sockaddr_rpc2h(&(rpc_msg->msg_name),
                                          SA(&name_st[j]),
                                          sizeof(struct sockaddr_storage),
                                          &name[j], &name_len[j]);
@@ -6597,45 +6596,45 @@ TARPC_FUNC(recvmmsg_alt,
                     out->common._errno = name_rc;
                 else
                     INIT_CHECKED_ARG((char *)name[j], name_len[j],
-                                     rpc_msg.msg_namelen);
+                                     rpc_msg->msg_namelen);
             }
 
-            if (rpc_msg.msg_namelen < sizeof(struct sockaddr))
+            if (rpc_msg->msg_namelen < sizeof(struct sockaddr))
                 msg->msg_name = name[j];
             else
-                msg->msg_name = rpc_msg.msg_name.raw.raw_val;
-            msg->msg_namelen = rpc_msg.msg_namelen;
+                msg->msg_name = rpc_msg->msg_name.raw.raw_val;
+            msg->msg_namelen = rpc_msg->msg_namelen;
 
-            msg->msg_iovlen = rpc_msg.msg_iovlen;
-            if (rpc_msg.msg_iov.msg_iov_val != NULL)
+            msg->msg_iovlen = rpc_msg->msg_iovlen;
+            if (rpc_msg->msg_iov.msg_iov_val != NULL)
             {
-                for (i = 0; i < rpc_msg.msg_iov.msg_iov_len; i++)
+                for (i = 0; i < rpc_msg->msg_iov.msg_iov_len; i++)
                 {
                     INIT_CHECKED_ARG(
-                     rpc_msg.msg_iov.msg_iov_val[i].iov_base.iov_base_val,
-                     rpc_msg.msg_iov.msg_iov_val[i].iov_base.iov_base_len,
-                     rpc_msg.msg_iov.msg_iov_val[i].iov_len);
+                     rpc_msg->msg_iov.msg_iov_val[i].iov_base.iov_base_val,
+                     rpc_msg->msg_iov.msg_iov_val[i].iov_base.iov_base_len,
+                     rpc_msg->msg_iov.msg_iov_val[i].iov_len);
                     iovec_arr[j][i].iov_base =
-                        rpc_msg.msg_iov.msg_iov_val[i].iov_base.
+                        rpc_msg->msg_iov.msg_iov_val[i].iov_base.
                             iov_base_val;
                     iovec_arr[j][i].iov_len =
-                        rpc_msg.msg_iov.msg_iov_val[i].iov_len;
+                        rpc_msg->msg_iov.msg_iov_val[i].iov_len;
                 }
                 msg->msg_iov = iovec_arr[j];
                 INIT_CHECKED_ARG((char *)iovec_arr[j], sizeof(iovec_arr[j]),
                                  0);
             }
-            if (rpc_msg.msg_control.msg_control_val != NULL)
+            if (rpc_msg->msg_control.msg_control_val != NULL)
             {
-                int len = calculate_msg_controllen(&rpc_msg);
+                int len = calculate_msg_controllen(rpc_msg);
                 int rlen = len * 2;
-                int data_len = rpc_msg.msg_control.msg_control_val[0].
+                int data_len = rpc_msg->msg_control.msg_control_val[0].
                                 data.data_len;
 
-                free(rpc_msg.msg_control.msg_control_val[0].data.data_val);
-                free(rpc_msg.msg_control.msg_control_val);
-                rpc_msg.msg_control.msg_control_val = NULL;
-                rpc_msg.msg_control.msg_control_len = 0;
+                free(rpc_msg->msg_control.msg_control_val[0].data.data_val);
+                free(rpc_msg->msg_control.msg_control_val);
+                rpc_msg->msg_control.msg_control_val = NULL;
+                rpc_msg->msg_control.msg_control_len = 0;
 
                 msg->msg_controllen = len;
                 if ((msg->msg_control = calloc(1, rlen)) == NULL)
@@ -6646,7 +6645,7 @@ TARPC_FUNC(recvmmsg_alt,
                 CMSG_FIRSTHDR(msg)->cmsg_len = CMSG_LEN(data_len);
                 INIT_CHECKED_ARG((char *)(msg->msg_control), rlen, len);
             }
-            msg->msg_flags = send_recv_flags_rpc2h(rpc_msg.msg_flags);
+            msg->msg_flags = send_recv_flags_rpc2h(rpc_msg->msg_flags);
 
             /*
              * msg_name, msg_iov, msg_iovlen and msg_control MUST NOT be
@@ -6676,20 +6675,20 @@ TARPC_FUNC(recvmmsg_alt,
         {
             out->mmsg.mmsg_val[j].msg_len = mmsg[j].msg_len;
             msg = &mmsg[j].msg_hdr;
-            rpc_msg = out->mmsg.mmsg_val[j].msg_hdr;
+            rpc_msg = &(out->mmsg.mmsg_val[j].msg_hdr);
 
-            rpc_msg.msg_flags = send_recv_flags_h2rpc(msg->msg_flags);
-            if (rpc_msg.msg_namelen < sizeof(struct sockaddr))
+            rpc_msg->msg_flags = send_recv_flags_h2rpc(msg->msg_flags);
+            if (rpc_msg->msg_namelen < sizeof(struct sockaddr))
                 sockaddr_output_h2rpc(msg->msg_name, name_len[j],
-                                      rpc_msg.msg_name.raw.raw_len,
-                                      &(rpc_msg.msg_name));
-            rpc_msg.msg_namelen = msg->msg_namelen;
+                                      rpc_msg->msg_name.raw.raw_len,
+                                      &(rpc_msg->msg_name));
+            rpc_msg->msg_namelen = msg->msg_namelen;
 
-            if (rpc_msg.msg_iov.msg_iov_val != NULL)
+            if (rpc_msg->msg_iov.msg_iov_val != NULL)
             {
-                for (i = 0; i < rpc_msg.msg_iov.msg_iov_len; i++)
+                for (i = 0; i < rpc_msg->msg_iov.msg_iov_len; i++)
                 {
-                    rpc_msg.msg_iov.msg_iov_val[i].iov_len =
+                    rpc_msg->msg_iov.msg_iov_val[i].iov_len =
                         iovec_arr[j][i].iov_len;
                 }
             }
@@ -6707,10 +6706,10 @@ TARPC_FUNC(recvmmsg_alt,
                      c != NULL;
                      i++, c = CMSG_NXTHDR(msg, c));
 
-                rpc_c = rpc_msg.msg_control.msg_control_val =
+                rpc_c = rpc_msg->msg_control.msg_control_val =
                     calloc(1, sizeof(*rpc_c) * i);
 
-                if (rpc_msg.msg_control.msg_control_val == NULL)
+                if (rpc_msg->msg_control.msg_control_val == NULL)
                 {
                     out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
                     goto finish;
@@ -6733,8 +6732,8 @@ TARPC_FUNC(recvmmsg_alt,
                         {
                             for (i--, rpc_c--; i >= 0; i--, rpc_c--)
                                 free(rpc_c->data.data_val);
-                            free(rpc_msg.msg_control.msg_control_val);
-                            rpc_msg.msg_control.msg_control_val = NULL;
+                            free(rpc_msg->msg_control.msg_control_val);
+                            rpc_msg->msg_control.msg_control_val = NULL;
 
                             out->common._errno = TE_RC(TE_TA_UNIX,
                                                        TE_ENOMEM);
@@ -6744,7 +6743,7 @@ TARPC_FUNC(recvmmsg_alt,
                                rpc_c->data.data_len);
                     }
                 }
-                rpc_msg.msg_control.msg_control_len = i;
+                rpc_msg->msg_control.msg_control_len = i;
             }
         }
     }
