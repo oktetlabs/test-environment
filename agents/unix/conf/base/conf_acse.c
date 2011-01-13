@@ -550,7 +550,7 @@ stop_acse(void)
         if (kill(acse_pid, SIGTERM))
         {
             int saved_errno = errno;
-            ERROR("ACSE kill failed %s", strerror(saved_errno));
+            ERROR("second ACSE kill failed %s", strerror(saved_errno));
             /* failed to stop ACSE, just return ... */
             return TE_OS_RC(TE_TA_UNIX, saved_errno);
         }
