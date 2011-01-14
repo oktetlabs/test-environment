@@ -519,10 +519,11 @@ stop_acse(void)
 {
     te_errno rc = 0;
     int acse_status = 0;
-    int r;
+    int r = 0;
 
+#if 0
     fprintf(stderr, "Stop ACSE process, pid %d\n", acse_pid);
-
+#endif
     if (-1 == acse_pid || 0 == acse_pid)
         return 0; /* nothing to do */
 
@@ -539,24 +540,36 @@ stop_acse(void)
             return TE_OS_RC(TE_TA_UNIX, saved_errno);
         }
     }
-    sleep(3);
+    sleep(1); /* Time to stop ACSE itself */
 
-    fprintf(stderr, "wait for stop ACSE process, pid %d\n", acse_pid);
     r = waitpid(acse_pid, &acse_status, WNOHANG);
-    fprintf(stderr, "waitpid rc %d\n", r);
+    RING("waitpid rc %d, errno %s", r, strerror(errno));
     if (r != acse_pid)
     {
-        sleep(2);
-        if (kill(acse_pid, SIGTERM))
+        int saved_errno = errno;
+        if (r < 0)
         {
-            int saved_errno = errno;
-            ERROR("second ACSE kill failed %s", strerror(saved_errno));
-            /* failed to stop ACSE, just return ... */
-            return TE_OS_RC(TE_TA_UNIX, saved_errno);
+            if (saved_errno != ESRCH)
+            {
+                ERROR("waitpid ACSE failed %s", strerror(saved_errno));
+                /* failed to stop ACSE, just return ... */
+                acse_pid = -1;
+                return TE_OS_RC(TE_TA_UNIX, saved_errno);
+            }
         }
-        sleep(2);
-        r = waitpid(acse_pid, &acse_status, WNOHANG);
-        fprintf(stderr, "second waitpid rc %d\n", r);
+        if (r == 0)
+        {
+            /* ACSE was not stopped after EPC closed, terminate it.*/
+            if (kill(acse_pid, SIGTERM))
+            {
+                int saved_errno = errno;
+                ERROR("ACSE kill after waitpid failed %s",
+                      strerror(saved_errno));
+                /* failed to stop ACSE, just return ... */
+                acse_pid = -1;
+                return TE_OS_RC(TE_TA_UNIX, saved_errno);
+            }
+        }
     }
 
     acse_pid = -1;
