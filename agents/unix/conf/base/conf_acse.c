@@ -549,7 +549,7 @@ stop_acse(void)
         int saved_errno = errno;
         if (r < 0)
         {
-            if (saved_errno != ESRCH)
+            if (saved_errno != ESRCH && saved_errno != ECHILD)
             {
                 ERROR("waitpid ACSE failed %s", strerror(saved_errno));
                 /* failed to stop ACSE, just return ... */
