@@ -118,7 +118,7 @@ acse_remove_channel(channel_t *ch_item)
 static void
 acse_exit_handler(void)
 {
-    RING("Normal exit from CLI");
+    RING("Normal exit, clear all channels");
     acse_clear_channels();
     /* TODO close logger */
 }
@@ -181,7 +181,7 @@ acse_loop(void)
         /* Now array pfd and channel list are yet synchronous. */
         LIST_FOREACH(item, &channel_list, links)
         {
-            VERB("acse_loop, process channel N %d", i);
+            VERB("acse_loop, prepare channel N %d, sock %d", i, pfd[i].fd);
             if (i >= channel_number || ch_i > r_poll)
             {
                 ERROR("acse_loop, after poll, boundary check fails."
@@ -204,6 +204,8 @@ acse_loop(void)
         {
             channel_t *ch_item = ch_queue[ch_i];
 
+            VERB("acse_loop, process channel, sock %d", ch_item->pfd.fd);
+
             if (ch_item->state == ACSE_CH_DESTROY)
             {
                 ch_item->destroy(ch_item->data);
@@ -215,6 +217,8 @@ acse_loop(void)
 
             rc = (*ch_item->after_poll)(ch_item->data, &(ch_item->pfd));
 
+            VERB("acse_loop, ch sock %d, after loop rc %r",
+                 ch_item->pfd.fd, rc);
             if (rc != 0)
             {
                 if (TE_RC_GET_ERROR(rc) != TE_ENOTCONN)

@@ -1074,6 +1074,7 @@ epc_before_poll(void *data, struct pollfd *pfd)
 {
     UNUSED(data);
     pfd->fd = acse_epc_socket();
+    VERB("EPC before poll, fd %d", pfd->fd);
     pfd->revents = 0;
     if (pfd->fd > 0)
         pfd->events = POLLIN;
