@@ -31,10 +31,14 @@
 #include "te_errno.h"
 #include "cwmp_soapStub.h"
 
-/** End of var-args list. */
-extern void const * const va_end_list_ptr;
-#define VA_END_LIST (va_end_list_ptr)
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/** End of var-args list. */
+#define VA_END_LIST (va_end_list_ptr)
 
 
 /*
@@ -56,6 +60,20 @@ typedef struct {
     cwmp_parameter_value_struct_t **items;/* array of pointers to values */
     size_t   size; /* size of array, i.e. number of elements */
 } cwmp_values_array_t;
+
+/**
+ * File type for CWMP Download RPC. 
+ */
+typedef enum {
+    CWMP_FIRMWARE = 1,
+    CWMP_WEB_CONTENT,
+    CWMP_VENDOR_CFG,
+} cwmp_file_type_t;
+
+
+/** Global variable which contain marker for end of var-args list. */
+extern void const * const va_end_list_ptr;
+
 
 /**
  * Construct string array for argument of UI for CWMP RPC.
@@ -112,6 +130,8 @@ extern void cwmp_str_array_free(string_array_t *a);
  * Print string array to the long string buffer. 
  * 
  * @param a     array with strings 
+ *
+ * @return Status code
  */
 extern te_errno cwmp_str_array_snprint(string_array_t *a);
 
@@ -121,6 +141,8 @@ extern te_errno cwmp_str_array_snprint(string_array_t *a);
  * @param log_level     level of loggind, macro TE_LL_*, see logger_defs.h
  * @param intro         preface to log message.
  * @param a             array with strings to be logged.
+ *
+ * @return Status code
  */
 extern te_errno cwmp_str_array_log(unsigned log_level, const char *intro,
                                    string_array_t *a);
@@ -259,6 +281,70 @@ extern te_errno cwmp_val_array_log(unsigned log_level, const char *intro,
                                    cwmp_values_array_t *a);
 
 
+
+/**
+ * Print ParameterValueStruct to the string buffer, for human read.
+ *
+ * @return used buffer length.
+ */
+extern size_t snprint_ParamValueStruct(char *buf, size_t len, 
+                                       cwmp__ParameterValueStruct *p_v);
+
+
+/**
+ * Put description of CWMP Fault to TE log. 
+ */
+extern void tapi_acse_log_fault(_cwmp__Fault *fault); 
+
+/**
+ * Put human text description of CWMP Fault to the buffer. 
+ */
+extern size_t snprint_cwmpFault(char *buf, size_t len, _cwmp__Fault *fault);
+
+/**
+ * Check that CWMP Fault contains certain Set Fault item.
+ * @return TRUE if fault is good.
+ */
+extern te_bool cwmp_check_set_fault(cwmp_fault_t *fault, unsigned idx,
+                                    const char *param_name, 
+                                    const char *fault_code);
+
+
+/**
+ * Log Inform Events.
+ */
+extern te_errno tapi_acse_log_cwmpEvents(unsigned log_level,
+                                         cwmp_event_list_t *ev_list);
+/**
+ * Print Inform Events to string buffer.
+ */
+extern size_t snprint_cwmpEvents(char *buf, size_t len,
+                                 cwmp_event_list_t *ev_list);
+
+/**
+ * Find specified event in event_list. 
+ */
+extern te_bool cwmp_check_event(cwmp_event_list_t *ev_list, 
+                                const char *event_code,
+                                const char *command_key); 
+
+
+extern cwmp_set_parameter_attributes_t *cwmp_set_attrs_alloc(
+                            const char *par_name, int notification, 
+                            string_array_t *access_list);
+
+extern te_errno cwmp_set_attrs_add(cwmp_set_parameter_attributes_t *request,
+                            const char *par_name, int notification, 
+                            string_array_t *access_list);
+
+/**
+ * 
+ */
+extern cwmp_download_t *cwmp_download_alloc(const char *command_key,
+                                            cwmp_file_type_t ftype,
+                                            size_t fsize,
+                                            const char *url_fmt, ...);
+
 static inline int
 cwmp_val_type_s2i(const char *type_name)
 {
@@ -329,48 +415,19 @@ static inline te_bool cwmp_is_node_name(const char *name)
 
 
 
-/**
- * Print ParameterValueStruct to the string buffer, for human read.
- *
- * @return used buffer length.
- */
-extern size_t snprint_ParamValueStruct(char *buf, size_t len, 
-                                       cwmp__ParameterValueStruct *p_v);
+static inline const char * 
+cwmp_file_type_to_str(cwmp_file_type_t ft)
+{
+    switch(ft)
+    {
+        case CWMP_FIRMWARE:     return "1 Firmware Upgrade Image";
+        case CWMP_WEB_CONTENT:  return "2 Web Content";
+        case CWMP_VENDOR_CFG:   return "3 Vendor Configuration File";
+    }
+    return "(unknown)";
+}
 
 
-/**
- * Put description of CWMP Fault to TE log. 
- */
-extern void tapi_acse_log_fault(_cwmp__Fault *fault); 
-
-extern size_t snprint_cwmpFault(char *buf, size_t len, _cwmp__Fault *fault);
-
-/**
- * Check that CWMP Fault contains certain Set Fault item.
- * @return TRUE if fault is good.
- */
-extern te_bool cwmp_check_set_fault(cwmp_fault_t *fault, unsigned idx,
-                                    const char *param_name, 
-                                    const char *fault_code);
-
-
-/**
- * Log Inform Events.
- */
-extern te_errno tapi_acse_log_cwmpEvents(unsigned log_level,
-                                         cwmp_event_list_t *ev_list);
-/**
- * Print Inform Events to string buffer.
- */
-extern size_t snprint_cwmpEvents(char *buf, size_t len,
-                                 cwmp_event_list_t *ev_list);
-
-/**
- * Find specified event in event_list. 
- */
-extern te_bool cwmp_check_event(cwmp_event_list_t *ev_list, 
-                                const char *event_code,
-                                const char *command_key); 
 
 /* ====================== OLD style API. ================== */
 
@@ -444,39 +501,8 @@ extern _cwmp__SetParameterValues *cwmp_set_values_alloc(
                             ...);
 
 
-extern cwmp_set_parameter_attributes_t *cwmp_set_attrs_alloc(
-                            const char *par_name, int notification, 
-                            string_array_t *access_list);
-
-extern te_errno cwmp_set_attrs_add(cwmp_set_parameter_attributes_t *request,
-                            const char *par_name, int notification, 
-                            string_array_t *access_list);
-
-typedef enum {
-    CWMP_FIRMWARE = 1,
-    CWMP_WEB_CONTENT,
-    CWMP_VENDOR_CFG,
-} cwmp_file_type_t;
-
-static inline const char * 
-cwmp_file_type_to_str(cwmp_file_type_t ft)
-{
-    switch(ft)
-    {
-        case CWMP_FIRMWARE:     return "1 Firmware Upgrade Image";
-        case CWMP_WEB_CONTENT:  return "2 Web Content";
-        case CWMP_VENDOR_CFG:   return "3 Vendor Configuration File";
-    }
-    return "(unknown)";
-}
-
-/**
- * 
- */
-extern cwmp_download_t *cwmp_download_alloc(const char *command_key,
-                                            cwmp_file_type_t ftype,
-                                            size_t fsize,
-                                            const char *url_fmt, ...);
-
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 
 #endif /* __TE_CWMP_UTILS__H__*/
