@@ -857,7 +857,7 @@ cwmp_accept_cpe_connection(acs_t *acs, int socket)
         VERB("cwmp_accept_cpe_conn(): peeked msg buf: '%s'", buf);
         if (strncmp(buf, "POST ", 5) && 
             (is_not_get = strncmp(buf, "GET ", 4))) 
-            return TE_ECONNREFUSED; /* It is not POST request */
+            return TE_ECONNREFUSED; /* It is not POST or GET request */
         req_url_p = buf + 4; while(isspace(*req_url_p)) req_url_p++;
 
         /* without any URL specified we accept all connections */
