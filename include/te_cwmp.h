@@ -36,6 +36,54 @@
 /* gSOAP generated structs */
 #include "cwmp_soapStub.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/*
+ * Primitive SOAP type constants, copied here from acse_coapH.h
+ * for convenient compile. 
+ */ 
+#ifndef SOAP_TYPE_int
+#define SOAP_TYPE_int (1)
+#endif
+
+#ifndef SOAP_TYPE_byte
+#define SOAP_TYPE_byte (2)
+#endif
+
+#ifndef SOAP_TYPE_string
+#define SOAP_TYPE_string (3)
+#endif
+
+#ifndef SOAP_TYPE_unsignedInt
+#define SOAP_TYPE_unsignedInt (7)
+#endif
+
+#ifndef SOAP_TYPE_unsignedByte
+#define SOAP_TYPE_unsignedByte (8)
+#endif
+
+#ifndef SOAP_TYPE_xsd__boolean
+#define SOAP_TYPE_xsd__boolean (11)
+#endif
+
+#ifndef SOAP_TYPE_boolean
+#define SOAP_TYPE_boolean (11)
+#endif
+
+#ifndef SOAP_TYPE_time
+#define SOAP_TYPE_time (98)
+#endif
+
+
+#define NULL_FROM_CPE ((cwmp_data_from_cpe_t)NULL)
+#define PTR_FROM_CPE(ptr_) ((cwmp_data_from_cpe_t *) &ptr_)
+
+#define NULL_TO_CPE ((cwmp_data_to_cpe_t)NULL)
+#define PTR_TO_CPE(ptr_) ((cwmp_data_to_cpe_t) ptr_)
+
+
 /*
  * Typedef synonyms independent from gSOAP tool.
  */
@@ -172,41 +220,6 @@ typedef enum {
 } te_cwmp_rpc_cpe_t;
 
 /**
- * Convert internal value of CWMP CPE RPC type to string, for printing.
- */
-static inline const char *
-cwmp_rpc_cpe_string(te_cwmp_rpc_cpe_t r)
-{
-    switch (r)
-    {
-        case CWMP_RPC_NONE:             return "NONE";
-        case CWMP_RPC_get_rpc_methods:  return "GetRPCMethods";
-        case CWMP_RPC_set_parameter_values: return "SetParameterValues";
-        case CWMP_RPC_get_parameter_values: return "GetParameterValues";
-        case CWMP_RPC_get_parameter_names:  return "GetParameterNames";
-        case CWMP_RPC_set_parameter_attributes:
-                                        return "SetParameterAttributes";
-        case CWMP_RPC_get_parameter_attributes:
-                                        return "GetParameterAttributes";
-        case CWMP_RPC_add_object:       return "AddObject";
-        case CWMP_RPC_delete_object:    return "DeleteObject";
-        case CWMP_RPC_reboot:           return "Reboot";
-        case CWMP_RPC_download:         return "Download";
-        case CWMP_RPC_upload:           return "Upload";
-        case CWMP_RPC_factory_reset:    return "FactoryReset";
-        case CWMP_RPC_get_queued_transfers:
-                                        return "GetQueuedTransfers";
-        case CWMP_RPC_get_all_queued_transfers:
-                                        return "GetAllQueuedTransfers";
-        case CWMP_RPC_schedule_inform:  return "ScheduleInform";
-        case CWMP_RPC_set_vouchers:     return "SetVouchers";
-        case CWMP_RPC_get_options:      return "GetOptions";
-        case CWMP_RPC_FAULT:            return "Fault";
-    }
-    return "unknown";
-}
-
-/**
  * This enumeration contains types of RPC calls, which 
  * could be called on ACS via CWMP, according with 
  * Table 5 in [TR-069].
@@ -222,26 +235,6 @@ typedef enum {
     CWMP_RPC_ACS_FAULT,
 } te_cwmp_rpc_acs_t;
 
-/**
- * Convert internal value of CWMP ACS RPC type to string, for printing.
- */
-static inline const char *
-cwmp_rpc_acs_string(te_cwmp_rpc_acs_t r)
-{
-    switch (r)
-    {
-        case CWMP_RPC_ACS_NONE:         return "NONE";
-        case CWMP_RPC_ACS_get_rpc_methods: return "GetRPCMethods";
-        case CWMP_RPC_inform:           return "Inform";
-        case CWMP_RPC_transfer_complete:return "TransferComplete";
-        case CWMP_RPC_autonomous_transfer_complete: 
-                                        return "AutonomousTransferComplete";
-        case CWMP_RPC_request_download: return "RequestDownload";
-        case CWMP_RPC_kicked:           return "Kicked";
-        case CWMP_RPC_ACS_FAULT:        return "Fault";
-    }
-    return "unknown";
-}
 /**
  * This enumeration contains types of Events, which 
  * may occur in Inform from CPE to ACS, according with
@@ -320,8 +313,6 @@ typedef union {
         cwmp_get_options_t               *get_options;
         cwmp_fault_t                     *fault;
     } cwmp_data_to_cpe_t; 
-#define NULL_TO_CPE ((cwmp_data_to_cpe_t)NULL)
-#define PTR_TO_CPE(ptr_) ((cwmp_data_to_cpe_t) ptr_)
 
 /**< Typed pointer to call-specific CWMP data from CPE to ACS. */
 typedef union {
@@ -350,49 +341,101 @@ typedef union {
         cwmp_get_options_response_t          *get_options_r;
     } cwmp_data_from_cpe_t; 
 
-#define NULL_FROM_CPE ((cwmp_data_from_cpe_t)NULL)
-#define PTR_FROM_CPE(ptr_) ((cwmp_data_from_cpe_t *) &ptr_)
-
 /**
  * Type for ACSE CWMP request identifier in queue.
  */
 typedef uint32_t acse_request_id_t;
 
-/*
- * Primitive SOAP type constants, copied here from acse_coapH.h
- * for convenient compile. 
- */ 
-#ifndef SOAP_TYPE_int
-#define SOAP_TYPE_int (1)
-#endif
+/**
+ * Notification Attrubute values
+ */
+typedef enum {
+    CWMP_NOTIF_OFF = 0,
+    CWMP_NOTIF_PASSIVE = 1,
+    CWMP_NOTIF_ACTIVE = 2
+} cwmp_notification_t;
 
-#ifndef SOAP_TYPE_byte
-#define SOAP_TYPE_byte (2)
-#endif
+/**
+ * Convert internal value of CWMP CPE RPC type to string, for printing.
+ */
+static inline const char *
+cwmp_rpc_cpe_string(te_cwmp_rpc_cpe_t r)
+{
+    switch (r)
+    {
+        case CWMP_RPC_NONE:             return "NONE";
+        case CWMP_RPC_get_rpc_methods:  return "GetRPCMethods";
+        case CWMP_RPC_set_parameter_values: return "SetParameterValues";
+        case CWMP_RPC_get_parameter_values: return "GetParameterValues";
+        case CWMP_RPC_get_parameter_names:  return "GetParameterNames";
+        case CWMP_RPC_set_parameter_attributes:
+                                        return "SetParameterAttributes";
+        case CWMP_RPC_get_parameter_attributes:
+                                        return "GetParameterAttributes";
+        case CWMP_RPC_add_object:       return "AddObject";
+        case CWMP_RPC_delete_object:    return "DeleteObject";
+        case CWMP_RPC_reboot:           return "Reboot";
+        case CWMP_RPC_download:         return "Download";
+        case CWMP_RPC_upload:           return "Upload";
+        case CWMP_RPC_factory_reset:    return "FactoryReset";
+        case CWMP_RPC_get_queued_transfers:
+                                        return "GetQueuedTransfers";
+        case CWMP_RPC_get_all_queued_transfers:
+                                        return "GetAllQueuedTransfers";
+        case CWMP_RPC_schedule_inform:  return "ScheduleInform";
+        case CWMP_RPC_set_vouchers:     return "SetVouchers";
+        case CWMP_RPC_get_options:      return "GetOptions";
+        case CWMP_RPC_FAULT:            return "Fault";
+    }
+    return "unknown";
+}
 
-#ifndef SOAP_TYPE_string
-#define SOAP_TYPE_string (3)
-#endif
+/**
+ * Convert internal value of CWMP ACS RPC type to string, for printing.
+ */
+static inline const char *
+cwmp_rpc_acs_string(te_cwmp_rpc_acs_t r)
+{
+    switch (r)
+    {
+        case CWMP_RPC_ACS_NONE:         return "NONE";
+        case CWMP_RPC_ACS_get_rpc_methods: return "GetRPCMethods";
+        case CWMP_RPC_inform:           return "Inform";
+        case CWMP_RPC_transfer_complete:return "TransferComplete";
+        case CWMP_RPC_autonomous_transfer_complete: 
+                                        return "AutonomousTransferComplete";
+        case CWMP_RPC_request_download: return "RequestDownload";
+        case CWMP_RPC_kicked:           return "Kicked";
+        case CWMP_RPC_ACS_FAULT:        return "Fault";
+    }
+    return "unknown";
+}
 
-#ifndef SOAP_TYPE_unsignedInt
-#define SOAP_TYPE_unsignedInt (7)
-#endif
+static inline cwmp_notification_t
+cwmp_notification_parse(const char *label)
+{
+    if (label == NULL)
+        return CWMP_NOTIF_OFF;
+    if (strcasecmp(label, "passive") == 0)
+        return CWMP_NOTIF_PASSIVE;
+    if (strcasecmp(label, "active") == 0)
+        return CWMP_NOTIF_ACTIVE;
+    return CWMP_NOTIF_OFF;
+}
 
-#ifndef SOAP_TYPE_unsignedByte
-#define SOAP_TYPE_unsignedByte (8)
+static inline const char *
+cwmp_notification_string(cwmp_notification_t n)
+{
+    switch (n)
+    {
+        case CWMP_NOTIF_OFF:     return "off";
+        case CWMP_NOTIF_PASSIVE: return "passive";
+        case CWMP_NOTIF_ACTIVE:  return "active";
+    }
+    return "unknown";
+}
+#ifdef __cplusplus
+} /* extern "C" */
 #endif
-
-#ifndef SOAP_TYPE_xsd__boolean
-#define SOAP_TYPE_xsd__boolean (11)
-#endif
-
-#ifndef SOAP_TYPE_boolean
-#define SOAP_TYPE_boolean (11)
-#endif
-
-#ifndef SOAP_TYPE_time
-#define SOAP_TYPE_time (98)
-#endif
-
 
 #endif /*__TE_CWMP_H__ */
