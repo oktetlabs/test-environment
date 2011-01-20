@@ -49,25 +49,26 @@ extern "C" {
  * Array of strings for user interface of some CWMP methods.
  */
 typedef struct {
-    char   **items; /* array of pointers to strings */
-    size_t   size;  /* size of array, i.e. number of elements */
+    char   **items; /**< array of pointers to strings */
+    size_t   size;  /**< size of array, i.e. number of elements */
 } string_array_t;
 
 /**
  * Array of CWMP ParameterValue's for user interface of some CWMP methods.
  */
 typedef struct {
-    cwmp_parameter_value_struct_t **items;/* array of pointers to values */
-    size_t   size; /* size of array, i.e. number of elements */
+    cwmp_parameter_value_struct_t 
+             **items;   /**< array of pointers to values */
+    size_t     size;    /**< size of array, i.e. number of elements */
 } cwmp_values_array_t;
 
 /**
- * File type for CWMP Download RPC. 
+ * File type for CWMP Download RPC, according with [TR069], Table 30 . 
  */
 typedef enum {
-    CWMP_FIRMWARE = 1,
-    CWMP_WEB_CONTENT,
-    CWMP_VENDOR_CFG,
+    CWMP_FIRMWARE = 1, /**< type "1 Firmware Upgrade Image" */
+    CWMP_WEB_CONTENT,  /**< type "2 Web Content" */
+    CWMP_VENDOR_CFG,   /**< type "3 Vendor Configuration File" */
 } cwmp_file_type_t;
 
 
@@ -82,7 +83,7 @@ extern void const * const va_end_list_ptr;
  * last argument in list should be VA_END_LIST.
  * All strings in array are allocated by system malloc().
  *
- * @return new allocated value, ready to send.
+ * @return New string array, constructed from passed lines.
  */
 extern string_array_t *cwmp_str_array_alloc(const char *b_name,
                                             const char *f_name,
@@ -93,7 +94,7 @@ extern string_array_t *cwmp_str_array_alloc(const char *b_name,
  * Add strings to string array. 
  * Parameters similar to funcion cwmp_str_array_alloc()
  *
- * @return status code.
+ * @return Status code.
  */
 extern te_errno cwmp_str_array_add(string_array_t *a,
                                    const char *b_name,
@@ -106,7 +107,7 @@ extern te_errno cwmp_str_array_add(string_array_t *a,
  * @param a             array with strings
  * @param suffix        string which should be concatenated with all items.
  *
- * @return status code.
+ * @return Status code.
  */
 extern te_errno cwmp_str_array_cat_tail(string_array_t *a,
                                         const char *suffix);
@@ -116,6 +117,8 @@ extern te_errno cwmp_str_array_cat_tail(string_array_t *a,
  * Copy string array. 
  * 
  * @param a             array with strings to be copied
+ *
+ * @return New string array, copied from source. 
  */
 extern string_array_t * cwmp_str_array_copy(string_array_t *a);
 
@@ -149,6 +152,7 @@ extern te_errno cwmp_str_array_log(unsigned log_level, const char *intro,
 
 /**
  * Construct value array for argument of UI for CWMP RPC.
+ *
  * All agruments, besides first 'base name' and last one,
  * should be separated to the triples <name>, <type>, <value>.
  * Last argument (instead of next <name>) in list should be VA_END_LIST.
@@ -165,7 +169,7 @@ extern te_errno cwmp_str_array_log(unsigned log_level, const char *intro,
  * All memory blocks in array (for names and values) are allocated
  * by system malloc().
  *
- * @return new allocated value, ready to send.
+ * @return New allocated value, ready to send.
  */
 extern cwmp_values_array_t *cwmp_val_array_alloc(const char *b_name,
                                                  const char *f_name,
@@ -179,7 +183,7 @@ extern cwmp_values_array_t *cwmp_val_array_alloc(const char *b_name,
  *
  * Rest parameters similar to funcion cwmp_val_array_alloc()
  *
- * @return status code.
+ * @return Status code.
  */
 extern te_errno cwmp_val_array_add(cwmp_values_array_t *a,
                                    const char *b_name,
@@ -191,13 +195,13 @@ extern te_errno cwmp_val_array_add(cwmp_values_array_t *a,
  * it has integer-like type, and obtain for user its exact type
  * and value. 
  *
- * @param a             array with CWMP values
- * @param name          last part of name (from last dot to the end)
- *                      or NULLfor first value in array
- * @param type          location for value type or NULL
- * @param value         location for value
+ * @param a             Array with CWMP values.
+ * @param name          Last part of name (from last dot to the end)
+ *                      or NULL for first value in array.
+ * @param type          Location for value type or NULL.
+ * @param value         Location for value.
  *
- * @return status code: 0 on success,
+ * @return Status code: 0 on success,
  *                      TE_ENOENT if value with asked name is not found,
  *                      TE_EBADTYPE if value has wrong type.
  */
@@ -210,12 +214,12 @@ extern te_errno cwmp_val_array_get_int(cwmp_values_array_t *a,
  * Find value with specified name in the array, check that
  * it has string type, and obtain string for user. 
  *
- * @param a             array with CWMP values
- * @param name          name for search value
- * @param value         location for value; memory block for string 
- *                      itself will be allocated by malloc()
+ * @param a             Array with CWMP values.
+ * @param name          Name for search value.
+ * @param value         Location for value; memory block for string 
+ *                      itself will be allocated by malloc().
  *
- * @return status code: 0 on success,
+ * @return Status code: 0 on success,
  *                      TE_ENOENT if value with asked name is not found,
  *                      TE_EBADTYPE if value has wrong type.
  */
@@ -266,6 +270,8 @@ extern te_errno cwmp_val_array_check_str(cwmp_values_array_t *a,
 
 /**
  * Free CWMP values array. 
+ *
+ * @param a        Array.
  */
 extern void cwmp_val_array_free(cwmp_values_array_t *a);
 
@@ -273,9 +279,11 @@ extern void cwmp_val_array_free(cwmp_values_array_t *a);
 /**
  * Write cwmp_values array to the log.
  * 
- * @param log_level     level of loggind, macro TE_LL_*, see logger_defs.h
- * @param intro         preface to log message.
- * @param a             array with strings to be logged.
+ * @param log_level     Level of loggind, macro TE_LL_*, see logger_defs.h
+ * @param intro         Preface to log message.
+ * @param a             Array with strings to be logged.
+ *
+ * @return Status code
  */
 extern te_errno cwmp_val_array_log(unsigned log_level, const char *intro,
                                    cwmp_values_array_t *a);
@@ -285,7 +293,11 @@ extern te_errno cwmp_val_array_log(unsigned log_level, const char *intro,
 /**
  * Print ParameterValueStruct to the string buffer, for human read.
  *
- * @return used buffer length.
+ * @param buf           Buffer where ParameterValue should be printed.
+ * @param len           Length of buffer.
+ * @param p_v           Value for printing.
+ *
+ * @return Used buffer length.
  */
 extern size_t snprint_ParamValueStruct(char *buf, size_t len, 
                                        cwmp__ParameterValueStruct *p_v);
@@ -293,16 +305,30 @@ extern size_t snprint_ParamValueStruct(char *buf, size_t len,
 
 /**
  * Put description of CWMP Fault to TE log. 
+ *
+ * @param fault           Fault struct for printing.
  */
-extern void tapi_acse_log_fault(_cwmp__Fault *fault); 
+extern void tapi_acse_log_fault(cwmp_fault_t *fault); 
 
 /**
  * Put human text description of CWMP Fault to the buffer. 
+ *
+ * @param buf           Buffer where ParameterValue should be printed.
+ * @param len           Length of buffer.
+ * @param fault           Fault struct for printing.
+ *
+ * @return Used buffer length.
  */
-extern size_t snprint_cwmpFault(char *buf, size_t len, _cwmp__Fault *fault);
+extern size_t snprint_cwmpFault(char *buf, size_t len, cwmp_fault_t *fault);
 
 /**
  * Check that CWMP Fault contains certain Set Fault item.
+ *
+ * @param fault         Fault struct to be checked.
+ * @param idx           Index of set fault item to be checked.
+ * @param param_name    Desired name.
+ * @param fault_code    Desired fault code.
+ *
  * @return TRUE if fault is good.
  */
 extern te_bool cwmp_check_set_fault(cwmp_fault_t *fault, unsigned idx,
@@ -312,6 +338,10 @@ extern te_bool cwmp_check_set_fault(cwmp_fault_t *fault, unsigned idx,
 
 /**
  * Log Inform Events.
+ *
+ * @param fault         Fault struct to be checked.
+ *
+ * @return Status code
  */
 extern te_errno tapi_acse_log_cwmpEvents(unsigned log_level,
                                          cwmp_event_list_t *ev_list);
@@ -405,7 +435,8 @@ cwmp_copy_par_value(cwmp_parameter_value_struct_t *src)
  * @return FALSE if @p name is full Parameter name, 
  *         TRUE  if @p name is partial node name.
  */      
-static inline te_bool cwmp_is_node_name(const char *name) 
+static inline te_bool
+cwmp_is_node_name(const char *name) 
 {
     size_t len;
     assert(NULL != name);
@@ -426,79 +457,6 @@ cwmp_file_type_to_str(cwmp_file_type_t ft)
     }
     return "(unknown)";
 }
-
-
-
-/* ====================== OLD style API. ================== */
-
-
-
-/**
- * Construct GetParameterValues argument.
- * First argument is base name, subsequent strings will 
- * be concatenated with the base name; 
- * last argument in list should be VA_END_LIST.
- *
- * @return new allocated value, ready to send.
- */
-extern _cwmp__GetParameterValues *cwmp_get_values_alloc(const char *b_name,
-                                                        const char *f_name,
-                                                        ...);
-
-/**
- * Construct GetParameterValues argument.
- * First argument is base name, subsequent strings will 
- * be concatenated with the base name; 
- * last argument in list should be VA_END_LIST.
- *
- * @return new allocated value, ready to send.
- */
-extern _cwmp__GetParameterValues *cwmp_get_values_alloc(const char *b_name,
-                                                        const char *f_name,
-                                                        ...);
-
-/**
- * Free GetParameterValues argument.
- */
-extern void cwmp_get_values_free(_cwmp__GetParameterValues *req);
-
-/**
- * Iterate over GetParameterValues response.
- */
-
-
-/**
- * Find param in GetParameterValues response.
- */
-
-/**
- * Free GetParameterValues response.
- */
-extern void cwmp_get_values_resp_free(_cwmp__GetParameterValues *resp);
-
-
-/**
- * Construct SetParameterValues argument.
- * All agruments, besides last one, should be separated 
- * to the triples <name>, <type>, <value>.
- * Last argument (instead of next <name>) in list should be VA_END_LIST.
- * Parameter <type> should be int value, <value> should be respective:
- *   <type>                          expected C type of <value>
- * SOAP_TYPE_boolean                    int       
- * SOAP_TYPE_int                        int       
- * SOAP_TYPE_byte                       int
- * SOAP_TYPE_string                     const char *
- * SOAP_TYPE_unsignedInt                uint32_t
- * SOAP_TYPE_unsignedByte               uint32_t
- * SOAP_TYPE_time                       time_t
- * SOAP_TYPE_SOAP_ENC__base64           const char * (??)
- * 
- */
-extern _cwmp__SetParameterValues *cwmp_set_values_alloc(
-                            const char *par_key,
-                            const char *b_name,
-                            const char *f_name,
-                            ...);
 
 
 #ifdef __cplusplus
