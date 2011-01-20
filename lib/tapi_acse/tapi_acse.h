@@ -70,8 +70,8 @@ extern "C" {
                         f->FaultCode, f->FaultString);                  \
         }                                                               \
         else                                                            \
-            TEST_FAIL("line %d: %s returns 0x%X (%r), but expected 0",  \
-                      __LINE__, # expr_, rc_, rc_);                     \
+            TEST_FAIL("%s returns 0x%X (%r), but expected 0",  \
+                       # expr_, rc_, rc_);                     \
     } while (0)
 
 
@@ -130,7 +130,7 @@ typedef struct tapi_acse_context_s {
  *
  * @param ta            name of TA where ACSE is started.
  *
- * @return new allocated and correctly initialized context, or NULL
+ * @return New allocated and correctly initialized context, or NULL
  *         if there is some test configuration errors. 
  */
 extern tapi_acse_context_t *tapi_acse_ctx_init(const char *ta);
@@ -154,18 +154,21 @@ extern tapi_acse_context_t *tapi_acse_ctx_init(const char *ta);
  *
  * @param ctx           ACSE TAPI context.
  *
- * @return status code.
+ * @return Status code.
  */
 extern te_errno tapi_acse_ta_cs_init(tapi_acse_context_t *ctx);
 /*
  * ================= Configuring of ACSE ===================
  */
 
+/**
+ * Operation types for configuring ACSE.
+ */
 typedef enum {
-    ACSE_OP_ADD,
-    ACSE_OP_DEL,
-    ACSE_OP_MODIFY,
-    ACSE_OP_OBTAIN,
+    ACSE_OP_ADD,        /**< Add new ACS/CPE record. */
+    ACSE_OP_DEL,        /**< Remove ACS/CPE record. */
+    ACSE_OP_MODIFY,     /**< Modify some parameter for ACS/CPE record. */
+    ACSE_OP_OBTAIN,     /**< Obtain some parameter for ACS/CPE record. */
 } acse_op_t;
 
 /**
@@ -173,7 +176,7 @@ typedef enum {
  *
  * @param ta            Test Agent name;
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_start(const char *ta);
 
@@ -182,7 +185,7 @@ extern te_errno tapi_acse_start(const char *ta);
  *
  * @param ta            Test Agent name;
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_stop(const char *ta);
 
@@ -208,7 +211,7 @@ extern te_errno tapi_acse_stop(const char *ta);
  *                      @c ACSE_OP_ADD, in this case values are set 
  *                      after add.
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_manage_acs(tapi_acse_context_t *ctx,
                                      acse_op_t opcode,
@@ -224,7 +227,7 @@ extern te_errno tapi_acse_manage_acs(tapi_acse_context_t *ctx,
  * @param ...           list of parameters, with same semantic 
  *                      as for function tapi_acse_manage_acs().
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_manage_cpe(tapi_acse_context_t *ctx,
                                      acse_op_t opcode,
@@ -235,11 +238,13 @@ extern te_errno tapi_acse_manage_cpe(tapi_acse_context_t *ctx,
  */
     
 /**
- * Clear CWMP activity and its cache on ACS object on the ACSE.
+ * Clear CWMP activity and its cache on ACS object on the ACSE:
+ * stop CWMP session, if any, and remove all requests in queue and
+ * received responses
  *
  * @param ctx           ACSE TAPI context.
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_clear_acs(tapi_acse_context_t *ctx);
 
@@ -248,7 +253,7 @@ extern te_errno tapi_acse_clear_acs(tapi_acse_context_t *ctx);
  *
  * @param ctx           ACSE TAPI context.
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_clear_cpe(tapi_acse_context_t *ctx);
 
@@ -258,7 +263,7 @@ extern te_errno tapi_acse_clear_cpe(tapi_acse_context_t *ctx);
  * @param ctx           ACSE TAPI context.
  * @param want_state    State to wait.
  *
- * @return status code; TE_ETIMEDOUT if timeout was expired and state
+ * @return Status code; TE_ETIMEDOUT if timeout was expired and state
  *              was not occured.
  */
 extern te_errno tapi_acse_wait_cwmp_state(tapi_acse_context_t *ctx,
@@ -270,7 +275,7 @@ extern te_errno tapi_acse_wait_cwmp_state(tapi_acse_context_t *ctx,
  * @param ctx           ACSE TAPI context.
  * @param want_state    State to wait.
  *
- * @return status code; TE_ETIMEDOUT if timeout was expired and state
+ * @return Status code; TE_ETIMEDOUT if timeout was expired and state
  *              was not occured.
  */
 extern te_errno tapi_acse_wait_cr_state(tapi_acse_context_t *ctx,
@@ -290,7 +295,7 @@ extern te_errno tapi_acse_wait_cr_state(tapi_acse_context_t *ctx,
  *
  * @param ctx           ACSE TAPI context.
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_cpe_connect(tapi_acse_context_t *ctx);
 
@@ -299,7 +304,7 @@ extern te_errno tapi_acse_cpe_connect(tapi_acse_context_t *ctx);
  *
  * @param ctx           ACSE TAPI context.
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_cpe_conn_request(tapi_acse_context_t *ctx);
 
@@ -308,7 +313,7 @@ extern te_errno tapi_acse_cpe_conn_request(tapi_acse_context_t *ctx);
  *
  * @param ctx           ACSE TAPI context.
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_cpe_disconnect(tapi_acse_context_t *ctx);
 
@@ -330,7 +335,7 @@ typedef enum {
  * @param cpe_rpc_code  Code of RPC method;
  * @param to_cpe        CWMP RPC parameters.
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_cpe_rpc_call(tapi_acse_context_t *ctx,
                                        te_cwmp_rpc_cpe_t cpe_rpc_code,
@@ -343,7 +348,7 @@ extern te_errno tapi_acse_cpe_rpc_call(tapi_acse_context_t *ctx,
  * @param cpe_rpc_code  location for type of RPC response, may be NULL;
  * @param from_cpe      location for RPC response parameters.
  *
- * @return status
+ * @return Status code.
  */
 extern te_errno tapi_acse_cpe_rpc_response(tapi_acse_context_t *ctx,
                                            te_cwmp_rpc_cpe_t *cpe_rpc_code,
@@ -358,7 +363,7 @@ extern te_errno tapi_acse_cpe_rpc_response(tapi_acse_context_t *ctx,
  * @param rpc_acs       expected type of ACS RPC.
  * @param from_cpe      location for RPC response parameters.
  *
- * @return status
+ * @return Status code.
  */
 extern te_errno tapi_acse_get_rpc_acs(tapi_acse_context_t *ctx,
                                       te_cwmp_rpc_acs_t rpc_acs,
@@ -378,7 +383,7 @@ extern te_errno tapi_acse_get_rpc_acs(tapi_acse_context_t *ctx,
  *
  * @param ctx         current TAPI ACSE context
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_get_rpc_methods(tapi_acse_context_t *ctx);
 
@@ -390,7 +395,7 @@ extern te_errno tapi_acse_get_rpc_methods(tapi_acse_context_t *ctx);
  * @param ctx      current TAPI ACSE context;
  * @param resp     location for received list of supported RPC methods.
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_get_rpc_methods_resp(tapi_acse_context_t *ctx,
                                                string_array_t **resp);
@@ -401,7 +406,7 @@ extern te_errno tapi_acse_get_rpc_methods_resp(tapi_acse_context_t *ctx,
  * @param par_key  Parameter key for Set CWMP request;
  * @param req      Array of values for the SetParameterValues method
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_set_parameter_values(tapi_acse_context_t *ctx,
                                                const char *par_key,
@@ -416,7 +421,7 @@ extern te_errno tapi_acse_set_parameter_values(tapi_acse_context_t *ctx,
  * @param status   location for status of SetParameterValues, unchanged
  *                  if CWMP Fault was received.
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_set_parameter_values_resp(
                                         tapi_acse_context_t *ctx,
@@ -429,7 +434,7 @@ extern te_errno tapi_acse_set_parameter_values_resp(
  * @param ctx      current TAPI ACSE context;
  * @param names    Array of names which values are needed. 
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_get_parameter_values(tapi_acse_context_t *ctx,
                                                string_array_t *names);
@@ -440,7 +445,7 @@ extern te_errno tapi_acse_get_parameter_values(tapi_acse_context_t *ctx,
  * @param ctx      current TAPI ACSE context;
  * @param resp     location for array of received values.
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_get_parameter_values_resp(
                                     tapi_acse_context_t *ctx,
@@ -455,7 +460,7 @@ extern te_errno tapi_acse_get_parameter_values_resp(
  *                      see detailed description in TR-069 standard.
  * @param fmt        sprintf-like format string for parameter name.
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_get_parameter_names(tapi_acse_context_t *ctx,
                                               te_bool next_level,
@@ -470,7 +475,7 @@ extern te_errno tapi_acse_get_parameter_names(tapi_acse_context_t *ctx,
  * @param ctx      current TAPI ACSE context;
  * @param resp     array with received parameter names.
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_get_parameter_names_resp(tapi_acse_context_t *ctx,
                                                    string_array_t **resp);
@@ -482,7 +487,7 @@ extern te_errno tapi_acse_get_parameter_names_resp(tapi_acse_context_t *ctx,
  * @param ctx      current TAPI ACSE context;
  * @param names    List of parameter names whose attributes are wanted.
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_get_parameter_attributes(
                                 tapi_acse_context_t *ctx,
@@ -494,7 +499,7 @@ extern te_errno tapi_acse_get_parameter_attributes(
  * @param ctx      current TAPI ACSE context;
  * @param resp     CPE response to the GetParameterAttributes method
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_get_parameter_attributes_resp(
                 tapi_acse_context_t *ctx,
@@ -507,7 +512,7 @@ extern te_errno tapi_acse_get_parameter_attributes_resp(
  * @param obj_name   name of object for AddObject method.
  * @param param_key  ParameterKey for AddObject method.
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_add_object(tapi_acse_context_t *ctx,
                                      const char *obj_name,
@@ -521,7 +526,7 @@ extern te_errno tapi_acse_add_object(tapi_acse_context_t *ctx,
  *                              unchanged on error.
  * @param add_status location for Status from AddObjectResponse.
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_add_object_resp(tapi_acse_context_t *ctx,
                                           int *obj_index,
@@ -534,7 +539,7 @@ extern te_errno tapi_acse_add_object_resp(tapi_acse_context_t *ctx,
  * @param obj_name   name of object for DeleteObject method.
  * @param param_key  ParameterKey for DeleteObject method.
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_delete_object(tapi_acse_context_t *ctx,
                                         const char *obj_name,
@@ -545,7 +550,7 @@ extern te_errno tapi_acse_delete_object(tapi_acse_context_t *ctx,
  * @param ctx        current TAPI ACSE context;
  * @param del_status location for Status from DeleteObjectResponse.
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_delete_object_resp(tapi_acse_context_t *ctx,
                                              int *del_status);
@@ -556,7 +561,7 @@ extern te_errno tapi_acse_delete_object_resp(tapi_acse_context_t *ctx,
  * @param ctx          current TAPI ACSE context;
  * @param command_key  string for CommandKey parameter of Reboot method.
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_reboot(tapi_acse_context_t *ctx,
                                  const char *command_key);
@@ -566,7 +571,7 @@ extern te_errno tapi_acse_reboot(tapi_acse_context_t *ctx,
  *
  * @param ctx          current TAPI ACSE context;
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_reboot_resp(tapi_acse_context_t *ctx);
 
@@ -576,7 +581,7 @@ extern te_errno tapi_acse_reboot_resp(tapi_acse_context_t *ctx);
  * @param ctx      current TAPI ACSE context;
  * @param req      ACS request for the Download method
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_download(tapi_acse_context_t *ctx,
                                    cwmp_download_t *req);
@@ -587,7 +592,7 @@ extern te_errno tapi_acse_download(tapi_acse_context_t *ctx,
  * @param ctx      current TAPI ACSE context;
  * @param resp     CPE response to the Download method
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_download_resp(tapi_acse_context_t *ctx,
                                         cwmp_download_response_t **resp);
@@ -598,7 +603,7 @@ extern te_errno tapi_acse_download_resp(tapi_acse_context_t *ctx,
  * @param ctx      current TAPI ACSE context;
  * @param req      ACS request for the Upload method
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_upload(tapi_acse_context_t *ctx,
                                  cwmp_upload_t *req);
@@ -608,7 +613,7 @@ extern te_errno tapi_acse_upload(tapi_acse_context_t *ctx,
  * @param ctx      current TAPI ACSE context;
  * @param resp     CPE response to the Upload method
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_upload_resp(tapi_acse_context_t *ctx,
                                       cwmp_upload_response_t **resp);
@@ -618,7 +623,7 @@ extern te_errno tapi_acse_upload_resp(tapi_acse_context_t *ctx,
  *
  * @param ctx      current TAPI ACSE context;
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_factory_reset(tapi_acse_context_t *ctx);
 
@@ -627,7 +632,7 @@ extern te_errno tapi_acse_factory_reset(tapi_acse_context_t *ctx);
  *
  * @param ctx      current TAPI ACSE context;
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_factory_reset_resp(tapi_acse_context_t *ctx);
 
@@ -636,7 +641,7 @@ extern te_errno tapi_acse_factory_reset_resp(tapi_acse_context_t *ctx);
  *
  * @param ctx      current TAPI ACSE context;
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_get_queued_transfers(tapi_acse_context_t *ctx);
 /**
@@ -645,7 +650,7 @@ extern te_errno tapi_acse_get_queued_transfers(tapi_acse_context_t *ctx);
  * @param ctx      current TAPI ACSE context;
  * @param resp     CPE response to the GetQueuedTransfers method
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_get_queued_transfers_resp(
                             tapi_acse_context_t *ctx,
@@ -656,7 +661,7 @@ extern te_errno tapi_acse_get_queued_transfers_resp(
  *
  * @param ctx      current TAPI ACSE context;
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_get_all_queued_transfers(
                 tapi_acse_context_t *ctx);
@@ -667,7 +672,7 @@ extern te_errno tapi_acse_get_all_queued_transfers(
  * @param ctx      current TAPI ACSE context;
  * @param resp     CPE response to the GetAllQueuedTransfers method
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_get_all_queued_transfers_resp(
                 tapi_acse_context_t *ctx,
@@ -679,7 +684,7 @@ extern te_errno tapi_acse_get_all_queued_transfers_resp(
  * @param ctx      current TAPI ACSE context;
  * @param req      ACS request for the ScheduleInform method
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_schedule_inform(tapi_acse_context_t *ctx,
                                           cwmp_schedule_inform_t *req);
@@ -689,7 +694,7 @@ extern te_errno tapi_acse_schedule_inform(tapi_acse_context_t *ctx,
  *
  * @param ctx      current TAPI ACSE context;
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_schedule_inform_resp(tapi_acse_context_t *ctx);
 
@@ -699,7 +704,7 @@ extern te_errno tapi_acse_schedule_inform_resp(tapi_acse_context_t *ctx);
  * @param ctx      current TAPI ACSE context;
  * @param req      ACS request for the SetVouchers method
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_set_vouchers(tapi_acse_context_t *ctx,
                                        cwmp_set_vouchers_t *req);
@@ -708,7 +713,7 @@ extern te_errno tapi_acse_set_vouchers(tapi_acse_context_t *ctx,
  *
  * @param ctx      current TAPI ACSE context;
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_set_vouchers_resp(tapi_acse_context_t *ctx);
 
@@ -718,7 +723,7 @@ extern te_errno tapi_acse_set_vouchers_resp(tapi_acse_context_t *ctx);
  * @param ctx      current TAPI ACSE context;
  * @param req      ACS request for the GetOptions method
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_get_options(tapi_acse_context_t *ctx,
                                       cwmp_get_options_t *req);
@@ -728,7 +733,7 @@ extern te_errno tapi_acse_get_options(tapi_acse_context_t *ctx,
  * @param ctx      current TAPI ACSE context;
  * @param resp     CPE response to the GetOptions method
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_get_options_resp(tapi_acse_context_t *ctx,
                cwmp_get_options_response_t **resp);
@@ -744,7 +749,7 @@ extern te_errno tapi_acse_get_options_resp(tapi_acse_context_t *ctx,
  * @param str     location for URL
  * @param buflen  size of buffer for URL
  *
- * @return status code
+ * @return Status code.
  */
 extern te_errno tapi_acse_get_full_url(tapi_acse_context_t *ctx,
                                        struct sockaddr *addr,
