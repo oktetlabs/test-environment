@@ -5701,6 +5701,101 @@ overfill_buffers_exit:
     return ret;
 }
 
+/*-------------- overfill_buffers() -----------------------------*/
+TARPC_FUNC(overfill_pipe,{},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+int
+overfill_pipe(tarpc_overfill_pipe_in *in,
+              tarpc_overfill_pipe_out *out)
+{
+    int             ret = 0;
+    ssize_t         sent = 0;
+    int             errno_save = errno;
+    api_func        fcntl_func;
+    api_func        write_func;
+    size_t          max_len = 4096;
+    uint8_t        *buf = NULL;
+    int             fdflags = -1;
+
+    buf = calloc(1, max_len);
+    if (buf == NULL)
+    {
+        ERROR("%s(): Out of memory", __FUNCTION__);
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        ret = -1;
+        goto overfill_pipe_exit;
+    }
+
+    memset(buf, 0xAD, sizeof(max_len));
+
+    if (tarpc_find_func(in->common.use_libc, "fcntl", &fcntl_func) != 0)
+    {
+        ERROR("%s(): Failed to resolve fcntl() function", __FUNCTION__);
+        ret = -1;
+        goto overfill_pipe_exit;
+    }
+
+    if (tarpc_find_func(in->common.use_libc, "write", &write_func) != 0)
+    {
+        ERROR("%s(): Failed to resolve write() function", __FUNCTION__);
+        ret = -1;
+        goto overfill_pipe_exit;
+    }
+
+    if ((fdflags = fcntl_func(in->write_end, F_GETFL, O_NONBLOCK)) == -1)
+    {
+        out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);
+        ERROR("%s(): fcntl(F_GETFL) failed: %r", __FUNCTION__,
+              out->common._errno);
+        ret = -1;
+        goto overfill_pipe_exit;
+    }
+
+    if (fcntl_func(in->write_end, F_SETFL, O_NONBLOCK) == -1)
+    {
+        out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);
+        ERROR("%s(): fcntl(F_SETFL) failed: %r", __FUNCTION__,
+              out->common._errno);
+        ret = -1;
+        goto overfill_pipe_exit;
+    }
+
+    sent = 0;
+    do {
+        out->bytes += sent;
+        sent = write_func(in->write_end, buf, max_len);
+    } while (sent > 0);
+
+    if (errno != EAGAIN)
+    {
+        out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);
+        ERROR("%s(): write() failed", __FUNCTION__);
+        goto overfill_pipe_exit;
+    }
+
+overfill_pipe_exit:
+
+    if (fdflags != -1)
+    {
+        if (fcntl_func(in->write_end, F_SETFL, fdflags) == -1)
+        {
+            out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);
+            ERROR("%s(): cleanup fcntl(F_SETFL) failed: %r", __FUNCTION__,
+                  out->common._errno);
+            ret = -1;
+        }
+    }
+
+    free(buf);
+    if (ret == 0)
+        errno = errno_save;
+    return ret;
+}
+
 #ifdef LIO_READ
 
 #ifdef HAVE_UNION_SIGVAL_SIVAL_PTR

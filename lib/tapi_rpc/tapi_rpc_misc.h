@@ -363,6 +363,18 @@ rpc_overfill_buffers(rcf_rpc_server *rpcs, int sock, uint64_t *sent)
 }
 
 /**
+ * Overfill the buffers of the pipe.
+ *
+ * @param rpcs          RPC server
+ * @param write_end     Write end of the pipe
+ * @param sent          total bytes written to the pipe
+ *
+ * @return -1 in the case of failure or 0 on success
+ */
+extern int rpc_overfill_pipe(rcf_rpc_server *rpcs, int write_end,
+                             uint64_t *sent);
+
+/**
  * VM trasher to keep memory pressure on the
  * host where the specified RPC server runs.
  *
