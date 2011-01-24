@@ -62,6 +62,15 @@
 
 
 
+#define CHECK_RC(expr_) \
+    do { \
+        if ((rc = (expr_)) != 0)                                       \
+        {                                                              \
+            WARN("%s():%d, util fails %r", __FUNCTION__, __LINE__, rc);\
+            return TE_RC(TE_TAPI, rc);                                 \
+        }                                                              \
+    } while (0)
+
 /* see description in tapi_acse.h */
 te_errno
 tapi_acse_start(const char *ta)
@@ -849,6 +858,27 @@ tapi_acse_get_parameter_values_resp(tapi_acse_context_t *ctx,
     return rc;
 }
 
+te_errno
+tapi_acse_get_pvalues_sync(tapi_acse_context_t *ctx,
+                                    string_array_t *names,
+                                    cwmp_values_array_t **resp)
+{
+    te_errno rc;
+    int sync_mode;
+    cwmp_sess_state_t cwmp_state;
+    CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_OBTAIN,
+                                  "sync_mode", &sync_mode, VA_END_LIST));
+    CHECK_RC(tapi_acse_get_cwmp_state(ctx, &cwmp_state));
+    if (sync_mode != 1 || cwmp_state != CWMP_PENDING)
+    {
+        ERROR("Call %s in wrong state, sync_mode is %d, cwmp state is %d",
+             __FUNCTION__, sync_mode, cwmp_state);
+        return TE_RC(TE_TAPI, TE_EDEADLK);
+    }
+    CHECK_RC(tapi_acse_get_parameter_values(ctx, names));
+    CHECK_RC(tapi_acse_get_parameter_values_resp(ctx, resp));
+    return 0;
+}
 
 
 /* see description in tapi_acse.h */
@@ -963,15 +993,6 @@ tapi_acse_get_parameter_attributes(tapi_acse_context_t *ctx,
 }
 
 
-#define CHECK_RC(expr_) \
-    do { \
-        if ((rc = (expr_)) != 0)                                       \
-        {                                                              \
-            WARN("%s():%d, util fails %r", __FUNCTION__, __LINE__, rc);\
-            return TE_RC(TE_TAPI, rc);                                 \
-        }                                                              \
-    } while (0)
-
 /* see description in tapi_acse.h */
 te_errno
 tapi_acse_cpe_connect(tapi_acse_context_t *ctx)
@@ -1014,6 +1035,7 @@ tapi_acse_cpe_conn_request(tapi_acse_context_t *ctx)
 te_errno
 tapi_acse_cpe_disconnect(tapi_acse_context_t *ctx)
 {
+    te_errno rc;
     /* TODO : this util simple activates sending empty response, 
      * this is do not automatically leads to terminate CWMP session.
      * Investigate standard and real behaviour of clients,
@@ -1022,8 +1044,12 @@ tapi_acse_cpe_disconnect(tapi_acse_context_t *ctx)
      * Usually this will terminate session. Single exclusion,
      * it seems, is true HoldRequests status.
      */
-    return rpc_cwmp_op_call(ctx->rpc_srv, ctx->acs_name, ctx->cpe_name,
-                            CWMP_RPC_NONE, NULL, 0, NULL);
+
+    CHECK_RC(rpc_cwmp_op_call(ctx->rpc_srv, ctx->acs_name, ctx->cpe_name,
+                            CWMP_RPC_NONE, NULL, 0, NULL));
+    CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_MODIFY,
+                                  "sync_mode", FALSE, VA_END_LIST));
+    return 0;
 }
 
 

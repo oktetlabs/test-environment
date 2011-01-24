@@ -74,6 +74,17 @@ extern "C" {
                        # expr_, rc_, rc_);                     \
     } while (0)
 
+/**
+ * Macro for usage at start of CWMP tests to init context.
+ * Assume test paremeter 'ta_acse' with name of TA with ACSE.
+ */
+#define TAPI_ACSE_CTX_INIT(ctx_var_) \
+    do {                                                        \
+        const char *ta_acse;                                    \
+        TEST_GET_STRING_PARAM(ta_acse);                         \
+        if (NULL == (ctx_var_ = tapi_acse_ctx_init(ta_acse)))   \
+            TEST_FAIL("Init ACSE TAPI context failed");         \
+    } while (0)
 
 
 /**
@@ -136,17 +147,6 @@ typedef struct tapi_acse_context_s {
 extern tapi_acse_context_t *tapi_acse_ctx_init(const char *ta);
 
 
-/**
- * Macro for usage at start of CWMP tests to init context.
- * Assume test paremeter 'ta_acse' with name of TA with ACSE.
- */
-#define TAPI_ACSE_CTX_INIT(ctx_var_) \
-    do {                                                        \
-        const char *ta_acse;                                    \
-        TEST_GET_STRING_PARAM(ta_acse);                         \
-        if (NULL == (ctx_var_ = tapi_acse_ctx_init(ta_acse)))   \
-            TEST_FAIL("Init ACSE TAPI context failed");         \
-    } while (0)
 
 /**
  * Copy parameters for ACS and CPE from local static CS subtree
@@ -157,6 +157,7 @@ extern tapi_acse_context_t *tapi_acse_ctx_init(const char *ta);
  * @return Status code.
  */
 extern te_errno tapi_acse_ta_cs_init(tapi_acse_context_t *ctx);
+
 /*
  * ================= Configuring of ACSE ===================
  */
@@ -257,6 +258,15 @@ extern te_errno tapi_acse_clear_acs(tapi_acse_context_t *ctx);
  */
 extern te_errno tapi_acse_clear_cpe(tapi_acse_context_t *ctx);
 
+
+static inline te_errno
+tapi_acse_get_cwmp_state(tapi_acse_context_t *ctx,
+                         cwmp_sess_state_t *state)
+{
+    return tapi_acse_manage_cpe(ctx, ACSE_OP_OBTAIN,
+                                "cwmp_state", state, VA_END_LIST);
+}
+
 /**
  * Wait for particular state of CWMP session with specified CPE on ACSE.
  *
@@ -291,7 +301,7 @@ extern te_errno tapi_acse_wait_cr_state(tapi_acse_context_t *ctx,
  * issue CWMP ConnectionRequest to particular CPE;
  * check its status, wait while CWMP session will be established.
  *
- * @se This method changes ACSE parameter 'sync_mode'.
+ * @se This method changes ACSE parameter 'sync_mode' to the TRUE.
  *
  * @param ctx           ACSE TAPI context.
  *
@@ -310,6 +320,9 @@ extern te_errno tapi_acse_cpe_conn_request(tapi_acse_context_t *ctx);
 
 /**
  * Finish CWMP session with particular CPE.
+ * Really this util just initiates send of empty HTTP response 
+ * and turn off sync mode on the CPE, since thisis designed as 
+ * dual for tapi_acse_cpe_connect().
  *
  * @param ctx           ACSE TAPI context.
  *
@@ -451,6 +464,19 @@ extern te_errno tapi_acse_get_parameter_values_resp(
                                     tapi_acse_context_t *ctx,
                                     cwmp_values_array_t **resp);
 
+/**
+ * Call CPE GetParameterValues method and wait for response,
+ * works good only in the sync mode during active CWMP session.
+ *
+ * @param ctx      current TAPI ACSE context;
+ * @param names    Array of names which values are needed. 
+ * @param resp     location for array of received values.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_acse_get_pvalues_sync(tapi_acse_context_t *ctx,
+                                           string_array_t *names,
+                                           cwmp_values_array_t **resp);
 
 /**
  * Call CPE GetParameterNames method.
