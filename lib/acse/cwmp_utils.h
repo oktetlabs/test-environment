@@ -347,12 +347,25 @@ extern te_errno tapi_acse_log_cwmpEvents(unsigned log_level,
                                          cwmp_event_list_t *ev_list);
 /**
  * Print Inform Events to string buffer.
+ * 
+ * @param buf           Buffer where ParameterValue should be printed.
+ * @param len           Length of buffer.
+ * @param ev_list       EventList for printing.
+ *
+ * @return Used buffer length.
  */
 extern size_t snprint_cwmpEvents(char *buf, size_t len,
                                  cwmp_event_list_t *ev_list);
 
 /**
  * Find specified event in event_list. 
+ *
+ * @param ev_list       EventList.
+ * @param event_code    Code of expected event.
+ * @param command_key   CommandKey of expected event or NULL.
+ *
+ * @retval FALSE    event was NOT found in the list. 
+ * @retval TRUE     event was found in the list.
  */
 extern te_bool cwmp_check_event(cwmp_event_list_t *ev_list, 
                                 const char *event_code,
@@ -375,9 +388,19 @@ extern cwmp_download_t *cwmp_download_alloc(const char *command_key,
                                             size_t fsize,
                                             const char *url_fmt, ...);
 
+/**
+ * Convert text label to the SOAP type constant. 
+ * To be used in constructing CWMP Set RPC by human-written input.
+ *
+ * @param type_name     human text type label, used only first character.
+ *
+ * @return Integer SOAP type constant.
+ */
 static inline int
 cwmp_val_type_s2i(const char *type_name)
 {
+    assert(NULL != type_name);
+
     switch (type_name[0])
     {
         case 'i': return SOAP_TYPE_int;
@@ -385,44 +408,33 @@ cwmp_val_type_s2i(const char *type_name)
         case 'b': return SOAP_TYPE_boolean;
         case 's': return SOAP_TYPE_string;
         case 't': return SOAP_TYPE_time;
+        default:  return SOAP_TYPE_int;
     }
     return SOAP_TYPE_int;
 }
 
 
-static inline cwmp_parameter_value_struct_t *
-cwmp_copy_par_value(cwmp_parameter_value_struct_t *src)
-{
-    size_t val_size = 0;
-    cwmp_parameter_value_struct_t *ret = malloc(sizeof(*ret));
-    ret->Name = strdup(src->Name);
-    ret->__type = src->__type;
-    switch(ret->__type)
-    {
-        case SOAP_TYPE_boolean:
-            val_size = sizeof(enum xsd__boolean); break;
-        case SOAP_TYPE_int:
-            val_size = sizeof(int); break;
-        case SOAP_TYPE_byte:
-            val_size = sizeof(char); break;
-        case SOAP_TYPE_unsignedInt:
-            val_size = sizeof(unsigned int); break;
-        case SOAP_TYPE_unsignedByte:
-            val_size = sizeof(unsigned char); break;
-        case SOAP_TYPE_time:
-            val_size = sizeof(time_t); break;
-        case SOAP_TYPE_string:
-            val_size = strlen(src->Value) + 1; break;
-        default:
-            RING("Copy CWMP ParValue, unsupported type %d", ret->__type);
-            val_size = 0;
-    }
-    ret->Value = malloc(val_size);
-    memcpy(ret->Value, src->Value, val_size);
-    return ret;
-}
+/**
+ * Copy ParameterValueStruct C presentation.
+ * @param src           Source ParameterValueStruct.
+ * @return New ParameterValueStruct.
+ */
+extern cwmp_parameter_value_struct_t *cwmp_copy_par_value(
+                            cwmp_parameter_value_struct_t *src);
 
 
+/**
+ * Convert internal gSOAP ParameterValueList into 
+ * @p cwmp_values_array_t structure. 
+ * New constructed value should be freed by 
+ * cwmp_val_array_free().
+ *
+ * @param src           Initial ParameterValueList.
+ *
+ * @return New constructed value.
+ */
+extern cwmp_values_array_t *cwmp_copy_par_value_list(
+                            cwmp_parameter_value_list_t *src);
 
 /**
  * Detect whether name is partial node name or Parameter (leaf) 
@@ -432,8 +444,8 @@ cwmp_copy_par_value(cwmp_parameter_value_struct_t *src)
  *
  * @param name  parameter name
  *
- * @return FALSE if @p name is full Parameter name, 
- *         TRUE  if @p name is partial node name.
+ * @retval FALSE    @p name is full Parameter name, 
+ * @retval TRUE     @p name is partial node name.
  */      
 static inline te_bool
 cwmp_is_node_name(const char *name) 
@@ -446,6 +458,12 @@ cwmp_is_node_name(const char *name)
 
 
 
+/**
+ * Convert numeric CWMP Download FileType to the text string.
+ * Strings are got according with [TR069], Table 30. 
+ *
+ * @return Static string. 
+ */
 static inline const char * 
 cwmp_file_type_to_str(cwmp_file_type_t ft)
 {

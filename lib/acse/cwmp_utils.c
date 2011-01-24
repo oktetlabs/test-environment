@@ -302,6 +302,7 @@ cwmp_val_array_add_va(cwmp_values_array_t *a,
 }
 
 
+/* see description in cwmp_utils.h */
 cwmp_values_array_t *
 cwmp_val_array_alloc(const char *b_name, const char *first_name, ...)
 {
@@ -332,6 +333,7 @@ cwmp_val_array_alloc(const char *b_name, const char *first_name, ...)
 }
 
 
+/* see description in cwmp_utils.h */
 te_errno
 cwmp_val_array_add(cwmp_values_array_t *a,
                    const char *b_name, const char *first_name, ...)
@@ -349,6 +351,57 @@ cwmp_val_array_add(cwmp_values_array_t *a,
     return rc;
 }
 
+/* see description in cwmp_utils.h */
+cwmp_values_array_t *
+cwmp_copy_par_value_list(cwmp_parameter_value_list_t *src)
+{
+    cwmp_values_array_t           *ret = NULL;
+    cwmp_parameter_value_struct_t *pval_src, 
+                                  *pval_dst;
+
+    size_t      val_size = 0;
+    unsigned    i;
+
+    if (NULL == src)
+        return NULL;
+
+    ret = malloc(sizeof(cwmp_values_array_t));
+    ret->size = src->__size;
+    ret->items = calloc(ret->size, sizeof(void*));
+    for (i = 0; i < ret->size; i++)
+    {
+        pval_src = src->__ptrParameterValueStruct[i];
+        ret->items[i] = pval_dst = 
+            malloc(sizeof(cwmp_parameter_value_struct_t));
+
+        pval_dst->Name = strdup(pval_src->Name);
+        pval_dst->__type = pval_src->__type;
+        switch(pval_dst->__type)
+        {
+            case SOAP_TYPE_boolean:
+                val_size = sizeof(enum xsd__boolean); break;
+            case SOAP_TYPE_int:
+                val_size = sizeof(int); break;
+            case SOAP_TYPE_byte:
+                val_size = sizeof(char); break;
+            case SOAP_TYPE_unsignedInt:
+                val_size = sizeof(unsigned int); break;
+            case SOAP_TYPE_unsignedByte:
+                val_size = sizeof(unsigned char); break;
+            case SOAP_TYPE_time:
+                val_size = sizeof(time_t); break;
+            case SOAP_TYPE_string:
+                val_size = strlen(pval_src->Value) + 1; break;
+            default:
+                RING("Copy CWMP ParValue, unsupported type %d",
+                    pval_dst->__type);
+                val_size = 0;
+        }
+        pval_dst->Value = malloc(val_size);
+        memcpy(pval_dst->Value, pval_src->Value, val_size);
+    }
+    return ret;
+}
 
 
 /* see description in cwmp_utils.h */
