@@ -44,6 +44,24 @@
 #include "te_sockaddr.h"
 
 
+/**
+ * Copy internal gSOAP CWMP array of strings to string_array_t. 
+ * Parameter src_ is assumed to have fields 'char ** __ptrstring' and
+ * 'int __size'.
+ * Parameter 'arr_' is local variable for pointer to new string_array_t.
+ */
+#define COPY_STRING_ARRAY(src_, arr_) \
+    do { \
+        int i; \
+        (arr_) = (string_array_t *)malloc(sizeof(string_array_t)); \
+        (arr_)->size = (src_)->__size; \
+        (arr_)->items = calloc((arr_)->size, sizeof(char*)); \
+        for (i = 0; i < (src_)->__size; i++) \
+            (arr_)->items[i] = strdup((src_)->__ptrstring[i]); \
+    } while (0)
+
+
+
 /* see description in tapi_acse.h */
 te_errno
 tapi_acse_start(const char *ta)
@@ -68,7 +86,7 @@ tapi_acse_stop(const char *ta)
     return rc;
 }
 
-/* see description in tapi_acse.h */
+/* */
 static inline int
 acse_is_int_var(const char *name)
 {
@@ -731,22 +749,6 @@ tapi_acse_get_rpc_acs(tapi_acse_context_t *ctx,
  */
 
 
-/**
- * Copy internal gSOAP CWMP array of strings to string_array_t. 
- * Parameter src_ is assumed to have fields 'char ** __ptrstring' and
- * 'int __size'.
- * Parameter 'arr_' is local variable for pointer to new string_array_t.
- */
-#define COPY_STRING_ARRAY(src_, arr_) \
-    do { \
-        int i; \
-        (arr_) = (string_array_t *)malloc(sizeof(string_array_t)); \
-        (arr_)->size = (src_)->__size; \
-        (arr_)->items = calloc((arr_)->size, sizeof(char*)); \
-        for (i = 0; i < (src_)->__size; i++) \
-            (arr_)->items[i] = strdup((src_)->__ptrstring[i]); \
-    } while (0)
-
 
 /* see description in tapi_acse.h */
 te_errno
@@ -834,21 +836,16 @@ tapi_acse_get_parameter_values_resp(tapi_acse_context_t *ctx,
     /* Copy good response if it is necessary for user */
     if (0 == rc && NULL != resp && NULL != from_cpe_loc.p)
     {
-        unsigned i;
-        ParameterValueList *par_list =
-            from_cpe_loc.get_parameter_values_r->ParameterList;
-        *resp = malloc(sizeof(cwmp_values_array_t));
-        (*resp)->size = par_list->__size;
-        (*resp)->items = calloc((*resp)->size, sizeof(char*));
-        for (i = 0; i < (*resp)->size; i++)
-            (*resp)->items[i] = cwmp_copy_par_value(
-                                par_list->__ptrParameterValueStruct[i]);
+        *resp = cwmp_copy_par_value_list(
+            from_cpe_loc.get_parameter_values_r->ParameterList);
         cwmp_val_array_log(TE_LL_RING,
                            "Got GetParameterValuesResponse", *resp);
     }
     else
         RING("Got GetParameterValuesResponse, rc %r, from_cpe %p",
              rc, from_cpe_loc.p);
+    if (NULL != from_cpe_loc.p)
+        free(from_cpe_loc.p);
     return rc;
 }
 
