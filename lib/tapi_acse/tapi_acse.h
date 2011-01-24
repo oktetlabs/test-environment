@@ -467,6 +467,8 @@ extern te_errno tapi_acse_get_parameter_values_resp(
 /**
  * Call CPE GetParameterValues method and wait for response,
  * works good only in the sync mode during active CWMP session.
+ * Response may contain more values then request, if some of names
+ * is not leaf.
  *
  * @param ctx      current TAPI ACSE context;
  * @param names    Array of names which values are needed. 
@@ -477,6 +479,23 @@ extern te_errno tapi_acse_get_parameter_values_resp(
 extern te_errno tapi_acse_get_pvalues_sync(tapi_acse_context_t *ctx,
                                            string_array_t *names,
                                            cwmp_values_array_t **resp);
+
+
+/**
+ * Call CPE GetParameterValues method and wait for response,
+ * works good only in the sync mode during active CWMP session.
+ * Userful routine for single parameter name.
+ * Response may contain more then one value, if @p name is not leaf.
+ *
+ * @param ctx      current TAPI ACSE context;
+ * @param name     names of wanted value. 
+ * @param resp     location for array of received values.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_acse_get_pvalue_sync(tapi_acse_context_t *ctx,
+                                          const char *name,
+                                          cwmp_values_array_t **resp);
 
 /**
  * Call CPE GetParameterNames method.

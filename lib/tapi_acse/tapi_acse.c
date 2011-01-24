@@ -860,8 +860,8 @@ tapi_acse_get_parameter_values_resp(tapi_acse_context_t *ctx,
 
 te_errno
 tapi_acse_get_pvalues_sync(tapi_acse_context_t *ctx,
-                                    string_array_t *names,
-                                    cwmp_values_array_t **resp)
+                           string_array_t *names,
+                           cwmp_values_array_t **resp)
 {
     te_errno rc;
     int sync_mode;
@@ -880,6 +880,31 @@ tapi_acse_get_pvalues_sync(tapi_acse_context_t *ctx,
     return 0;
 }
 
+
+te_errno
+tapi_acse_get_pvalue_sync(tapi_acse_context_t *ctx,
+                          const char *name,
+                          cwmp_values_array_t **resp)
+{
+    te_errno rc;
+    int sync_mode;
+    cwmp_sess_state_t cwmp_state;
+    string_array_t *names = cwmp_str_array_alloc(name, "", VA_END_LIST);
+
+    CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_OBTAIN,
+                                  "sync_mode", &sync_mode, VA_END_LIST));
+    CHECK_RC(tapi_acse_get_cwmp_state(ctx, &cwmp_state));
+    if (sync_mode != 1 || cwmp_state != CWMP_PENDING)
+    {
+        ERROR("Call %s in wrong state, sync_mode is %d, cwmp state is %d",
+             __FUNCTION__, sync_mode, cwmp_state);
+        return TE_RC(TE_TAPI, TE_EDEADLK);
+    }
+    CHECK_RC(tapi_acse_get_parameter_values(ctx, names));
+    CHECK_RC(tapi_acse_get_parameter_values_resp(ctx, resp));
+    cwmp_str_array_free(names);
+    return 0;
+}
 
 /* see description in tapi_acse.h */
 te_errno
