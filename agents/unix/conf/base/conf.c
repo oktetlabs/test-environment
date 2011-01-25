@@ -138,10 +138,12 @@
 #define XEN_SUPPORT 0
 #endif /* HAVE_SYS_STAT_H */
 
-/* PAM (Pluggable Authentication Modules) support */
-#if defined(HAVE_SECURITY_PAM_APPL_H) && defined(HAVE_LIBPAM) && \
-    defined(HAVE_PWD_H)
+#if defined(HAVE_PWD_H)
 #include <pwd.h>
+#endif
+
+/* PAM (Pluggable Authentication Modules) support */
+#if defined(HAVE_SECURITY_PAM_APPL_H) && defined(HAVE_LIBPAM)
 #include <security/pam_appl.h>
 
 #define TA_USE_PAM  1
@@ -4598,7 +4600,7 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
     (defined(SIOCGLIFMTU) && defined(HAVE_STRUCT_LIFREQ_LIFR_MTU))
     req.my_ifr_mtu = mtu;
     strcpy(req.my_ifr_name, ifname);
-    if (ioctl(cfg_socket, MY_SIOCSIFMTU, (int)&req) != 0)
+    if (ioctl(cfg_socket, MY_SIOCSIFMTU, (intptr_t)&req) != 0)
     {
         rc = TE_OS_RC(TE_TA_UNIX, errno);
 
@@ -4615,7 +4617,7 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
                 WARN("Interface '%s' is pushed down/up to set a new MTU",
                      ifname);
 
-                if (ioctl(cfg_socket, MY_SIOCSIFMTU, (int)&req) == 0)
+                if (ioctl(cfg_socket, MY_SIOCSIFMTU, (intptr_t)&req) == 0)
                 {
                     rc = 0;
                 }
@@ -5920,7 +5922,7 @@ env_del(unsigned int gid, const char *oid, const char *name)
 static te_errno
 env_list(unsigned int gid, const char *oid, char **list)
 {
-    char const * const *env;
+    char * const *env;
 
     char   *ptr = buf;
     char   *buf_end = buf + sizeof(buf);
@@ -6177,7 +6179,7 @@ set_change_passwd(char const *user, char const *passwd)
         {
             uid_t euid = geteuid(); /**< Save current effective user id */
 
-            if (setuid(0) == 0)     /**< Get 'root' */
+            if (euid == 0 || setuid(0) == 0)     /**< Get 'root' */
             {
                 /** Try to set/change password */
                 if ((pam_rc = pam_chauthtok(handle, PAM_FLAGS))
@@ -6195,7 +6197,8 @@ set_change_passwd(char const *user, char const *passwd)
                         ERROR("%s", appdata.err_msg);
                 }
 
-                setuid(euid);       /* Restore saved previously user id */
+                if (euid != 0)
+                    setuid(euid);   /* Restore saved previously user id */
             }
             else
                 ERROR("setuid: %s", strerror(errno));
