@@ -216,6 +216,8 @@ dnl Pluggable Authentication Modules are provided by:
 dnl - -lpam on Linux, NetBSD, Solaris2 (SunOS 5.11);
 dnl - ? on FreeBSD.
 dnl
+AC_ARG_WITH([pam],,
+[
 AC_SEARCH_LIBS([pam_start], [pam],
                AC_DEFINE([HAVE_LIBPAM], [1],
                          [PAM (Pluggable Authentication Modules) support]),
@@ -223,6 +225,10 @@ AC_SEARCH_LIBS([pam_start], [pam],
                [No PAM (Pluggable Authentication Modules) support]))
 
 AC_CHECK_HEADERS([security/pam_appl.h])
+],
+[AC_DEFINE([HAVE_LIBPAM], [0],
+           [No PAM (Pluggable Authentication Modules) support])])
+
 AC_CHECK_HEADERS([sys/utsname.h])
 AC_CHECK_HEADERS([sys/systeminfo.h])
 AC_CHECK_HEADERS([linux/if_vlan.h])
