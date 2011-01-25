@@ -171,6 +171,36 @@ int rpc_bind_raw(rcf_rpc_server *rpcs, int s,
 }
 
 int
+rpc_check_port_is_free(rcf_rpc_server *rpcs, uint16_t port)
+{
+    tarpc_check_port_is_free_in  in;
+    tarpc_check_port_is_free_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(bind, -1);
+    }
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+
+    in.port = port;
+
+    rcf_rpc_call(rpcs, "check_port_is_free", &in, &out);
+    CHECK_RETVAL_VAR(check_port_is_free, out.retval,
+                     (out.retval != TRUE), FALSE);
+
+    TAPI_RPC_LOG("RPC (%s,%s): check_port_is_free(%d) -> %d (%s)",
+                 rpcs->ta, rpcs->name, (int)port, out.retval,
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_BOOL(check_port_is_free, out.retval);
+}
+
+int
 rpc_connect(rcf_rpc_server *rpcs,
             int s, const struct sockaddr *addr)
 {

@@ -914,6 +914,19 @@ struct tarpc_bind_in {
 
 typedef struct tarpc_int_retval_out tarpc_bind_out;
 
+/* rpc_check_port_is_free() */
+
+struct tarpc_check_port_is_free_in {
+    struct tarpc_in_arg common;
+
+    uint16_t    port;
+};
+
+struct tarpc_check_port_is_free_out {
+    struct tarpc_out_arg common;
+    
+    tarpc_bool retval;
+};
 
 /* connect() */
 
@@ -4237,6 +4250,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(recvmmsg_alt)
 
         RPC_DEF(bind)
+        RPC_DEF(check_port_is_free)
         RPC_DEF(connect)
         RPC_DEF(listen)
         RPC_DEF(accept)

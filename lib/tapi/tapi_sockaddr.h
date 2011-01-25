@@ -34,6 +34,7 @@
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_sockaddr.h"
+#include "rcf_rpc.h"
 
 
 #ifdef __cplusplus
@@ -43,36 +44,42 @@ extern "C" {
 /**
  * Retrieve unused in system port in host order.
  *
+ * @param pco       RPC server to check that port is free
  * @param p_port    Location for allocated port
  *
  * @return Status code.
  */
-extern te_errno tapi_allocate_port(uint16_t *p_port);
+extern te_errno tapi_allocate_port(struct rcf_rpc_server *pco,
+                                   uint16_t *p_port);
 
 /**
  * Retrieve unused in system port in network order.
  *
+ * @param pco       RPC server to check that port is free
  * @param p_port    Location for allocated port
  *
  * @return Status code.
  */
-extern te_errno tapi_allocate_port_htons(uint16_t *p_port);
+extern te_errno tapi_allocate_port_htons(rcf_rpc_server *pco,
+                                         uint16_t *p_port);
 
 /**
  * Generate new sockaddr basing on existing one (copy data and 
  * allocate new port).
  *
+ * @param pco   RPC server to check that port is free
  * @param src   existing sockaddr
  * @param dst   location for new sockaddr
  *
  * @return Status code.
  */
 static inline te_errno
-tapi_sockaddr_clone(const struct sockaddr *src, 
+tapi_sockaddr_clone(rcf_rpc_server *pco,
+                    const struct sockaddr *src, 
                     struct sockaddr_storage *dst)
 {
     memcpy(dst, src, te_sockaddr_get_size(src));
-    return tapi_allocate_port_htons(te_sockaddr_get_port_ptr(SA(dst)));
+    return tapi_allocate_port_htons(pco, te_sockaddr_get_port_ptr(SA(dst)));
 }
 
 #ifdef __cplusplus

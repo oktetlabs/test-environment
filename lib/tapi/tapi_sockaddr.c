@@ -60,9 +60,9 @@
 #include "tapi_sockaddr.h"
 
 
-/* See description in tapi_env.h */
+/* See description in tapi_sockaddr.h */
 te_errno
-tapi_allocate_port(uint16_t *p_port)
+tapi_allocate_port(struct rcf_rpc_server *pco, uint16_t *p_port)
 {
     static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -96,6 +96,19 @@ tapi_allocate_port(uint16_t *p_port)
     {
         port++;
     }
+
+    /* Check that port is free */
+    if (pco != NULL)
+    {
+        while (!rpc_check_port_is_free(pco, port))
+        {
+            port++;
+            if (port >= 30000)
+                port = 20000 + rand_range(0, 10000);
+        }
+    }
+
+    /* Set /volatile:/sockaddr_port */
     rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, port),
                               "/volatile:/sockaddr_port:");
     if (rc != 0)
@@ -112,14 +125,14 @@ tapi_allocate_port(uint16_t *p_port)
     return 0;
 }
 
-/* See description in tapi_env.h */
+/* See description in tapi_sockaddr.h */
 te_errno
-tapi_allocate_port_htons(uint16_t *p_port)
+tapi_allocate_port_htons(rcf_rpc_server *pco, uint16_t *p_port)
 {
     uint16_t port;
     int      rc;
     
-    if ((rc = tapi_allocate_port(&port)) != 0)
+    if ((rc = tapi_allocate_port(pco, &port)) != 0)
         return rc;
         
     *p_port = htons(port);

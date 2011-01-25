@@ -41,13 +41,13 @@
  *
  * @param addr_      Pointer to the address structure.
  */
-#define SET_FREE_PORT(addr_)                                       \
-    do {                                                           \
-        int rc_;                                                   \
-                                                                   \
-        rc_ = tapi_allocate_port_htons(&(SIN(addr_)->sin_port));   \
-        if (rc_ != 0)                                              \
-            TEST_FAIL("tapi_allocate_port() returned %d", rc_);    \
+#define SET_FREE_PORT(pco_, addr_)                                      \
+    do {                                                                \
+        int rc_;                                                        \
+                                                                        \
+        rc_ = tapi_allocate_port_htons(pco_, &(SIN(addr_)->sin_port));  \
+        if (rc_ != 0)                                                   \
+            TEST_FAIL("tapi_allocate_port() returned %d", rc_);         \
     } while (0)
 
 /**
@@ -240,7 +240,7 @@ main(int argc, char *argv[])
             (struct sockaddr *)malloc(sizeof(struct sockaddr_storage));
         memcpy(tst_addrs[i], tst_addr, sizeof(struct sockaddr));
         if (i > 0)
-            SET_FREE_PORT(tst_addrs[i]);
+            SET_FREE_PORT(pco_tst, tst_addrs[i]);
 
         /* Create the client sockets */
         tst_s[i] = rpc_socket(pco_tst, RPC_PF_INET, RPC_SOCK_STREAM, 

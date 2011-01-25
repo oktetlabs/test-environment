@@ -498,6 +498,11 @@ extern int rpc_bind_raw(rcf_rpc_server *rpcs, int s,
                         const struct sockaddr *my_addr, socklen_t addrlen);
 
 /**
+ * Check that given @p port is free on the given @p pco.
+ */
+extern int rpc_check_port_is_free(rcf_rpc_server *rpcs, uint16_t port);
+
+/**
  * Attempt to associate a socket descriptor @b s with a peer process at 
  * address @b addr. This operation takes place on RPC server side.
  * 

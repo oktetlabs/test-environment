@@ -792,6 +792,51 @@ TARPC_FUNC(bind, {},
 }
 )
 
+/*------------- rpc_check_port_is_free() ----------------*/
+
+TARPC_FUNC(check_port_is_free, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in->port));
+}
+)
+
+te_bool
+check_port_is_free(uint16_t port)
+{
+    int fd = socket(PF_INET, SOCK_STREAM, 0);
+    int rc;
+
+    struct sockaddr_in addr;
+
+    if (fd < 0)
+    {
+        ERROR("Failed to create TCP socket");
+        return FALSE;
+    }
+
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+    rc = bind(fd, SA(&addr), sizeof(addr));
+    if (rc != 0)
+        return FALSE;
+
+    close(fd);
+    fd = socket(PF_INET, SOCK_DGRAM, 0);
+    if (fd < 0)
+    {
+        ERROR("Failed to create UDP socket");
+        return FALSE;
+    }
+
+    rc = bind(fd, SA(&addr), sizeof(addr));
+    if (rc != 0)
+        return FALSE;
+    close(fd);
+
+    return TRUE;
+}
+
 /*-------------- connect() ------------------------------*/
 
 TARPC_FUNC(connect, {},

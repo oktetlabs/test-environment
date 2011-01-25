@@ -1238,7 +1238,8 @@ prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
             }
 
             /* Set allocated port */
-            rc = tapi_allocate_port_htons(
+            rc = tapi_allocate_port_htons(NULL,
+                                          /*cfg_nets->nets[env_addr->iface->net->i_net].nodes[env_addr->iface->i_node].handle*/ /*XXX handle->pco*/
                      &(SIN(env_addr->addr)->sin_port));
             if (rc != 0)
             {
@@ -1319,7 +1320,7 @@ prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
             }
 
             /* Set allocated port */
-            rc = tapi_allocate_port_htons(
+            rc = tapi_allocate_port_htons(NULL,
                      &(SIN6(env_addr->addr)->sin6_port));
             if (rc != 0)
             {
