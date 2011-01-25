@@ -41,7 +41,8 @@ libtapi_rpc_la_SOURCES= \
     unistd.c \
     wsa.c \
     power_sw.c \
-    dlfcn.c
+    dlfcn.c \
+    pipe.c
 
 
 install-exec-hook:

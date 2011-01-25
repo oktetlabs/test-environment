@@ -82,6 +82,16 @@ extern "C" {
 extern int tapi_rpc_get_rw_ability(te_bool *answer, rcf_rpc_server *rpcs,
                                    int s, int timeout, char *type);
 
+/**
+ * Check data exchange on the pipe.
+ *
+ * @param rpcs     RPC server handle
+ * @param pipefds  Pipe file descriptors
+ *
+ * @return @c 0 on success or @c -1 on failure
+ */
+extern int tapi_check_pipe(rcf_rpc_server *rpcs, int *pipefds);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
