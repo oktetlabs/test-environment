@@ -1983,10 +1983,9 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
 
 
 int
-rpc_recvmmsg_alt_gen(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
-                     unsigned int vlen, unsigned int rvlen,
-                     rpc_send_recv_flags flags,
-                     struct tarpc_timespec *timeout)
+rpc_recvmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
+                 unsigned int vlen, rpc_send_recv_flags flags,
+                 struct tarpc_timespec *timeout)
 {
     char                  str_buf[1024];
     rcf_rpc_op            op;
@@ -2029,9 +2028,9 @@ rpc_recvmmsg_alt_gen(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
     if (mmsg != NULL && rpcs->op != RCF_RPC_WAIT)
     {
         in.mmsg.mmsg_val = rpc_mmsg;
-        in.mmsg.mmsg_len = rvlen;
+        in.mmsg.mmsg_len = vlen;
 
-        for (j = 0; j < rvlen; j++)
+        for (j = 0; j < vlen; j++)
         {
             msg = &mmsg[j].msg_hdr;
             rpc_msg = &rpc_mmsg[j].msg_hdr;

@@ -6676,8 +6676,8 @@ TARPC_FUNC(recvmmsg_alt,
     COPY_ARG(mmsg);
 },
 {
-    struct iovec iovec_arr[RCF_RPC_MAX_MSGHDR][RCF_RPC_MAX_IOVEC];
-    struct mmsghdr_alt     *mmsg = NULL;
+    struct iovec        iovec_arr[RCF_RPC_MAX_MSGHDR][RCF_RPC_MAX_IOVEC];
+    struct mmsghdr_alt  mmsg[RCF_RPC_MAX_MSGHDR];
 
     unsigned int  i;
     unsigned int  j;
@@ -6692,6 +6692,7 @@ TARPC_FUNC(recvmmsg_alt,
     }
 
     memset(iovec_arr, 0, sizeof(iovec_arr));
+    memset(mmsg, 0, sizeof(mmsg));
 
     if (out->mmsg.mmsg_val == NULL)
     {
@@ -6707,15 +6708,6 @@ TARPC_FUNC(recvmmsg_alt,
         struct sockaddr        *name[RCF_RPC_MAX_MSGHDR];
         struct tarpc_msghdr    *rpc_msg;
         struct msghdr          *msg;
-
-        mmsg = (struct mmsghdr_alt *)calloc(out->mmsg.mmsg_len,
-                                            sizeof(struct mmsghdr_alt));
-        if (mmsg == NULL)
-        {
-            out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-            goto finish;
-        }
-        memset(mmsg, 0, sizeof(mmsg));
 
         for (j = 0; j < out->mmsg.mmsg_len; j++)
         {
@@ -6888,11 +6880,7 @@ TARPC_FUNC(recvmmsg_alt,
         }
     }
     finish:
-    if (mmsg != NULL)
-    {
-        for (j = 0; j < out->mmsg.mmsg_len; j++)
-            free(mmsg[j].msg_hdr.msg_control);
-        free(mmsg);
-    }
+    for (j = 0; j < out->mmsg.mmsg_len; j++)
+        free(mmsg[j].msg_hdr.msg_control);
 }
 )
