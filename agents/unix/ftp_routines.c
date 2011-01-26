@@ -314,7 +314,12 @@ ftp_open(const char *uri, int flags, int passive, int offset, int *sock)
             RET_ERR("read_all() failed");                   \
         VERB("Response: %s", buf);                          \
         if (*buf == '4' || *buf == '5')                     \
-            RET_ERR("Invalid answer: %s", buf);             \
+        {                                                   \
+            ERROR("Answer: %s", buf);                       \
+            while (read_all(control_socket, buf, sizeof(buf)) > 0)  \
+                ERROR("%s", buf);                           \
+            RET_ERR("Invalid answer, see above");           \
+        }                                                   \
     } while (0)
     
 #define CMD(_cmd...) \
