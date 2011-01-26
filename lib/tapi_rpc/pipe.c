@@ -1,12 +1,11 @@
 /** @file
  * @brief Test API for RPC
  *
- * TAPI for remote calls of ioctl() function
+ * TAPI for pipes function
  *
  *
- * Copyright (C) 2005 Test Environment authors (see file AUTHORS in the
+ * Copyright (C) 2010 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
- * Copyright (c) 2005 Level5 Networks Corp.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -24,10 +23,9 @@
  * MA  02111-1307  USA
  *
  *
- * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+ * @author Yurij Plotnikov <Yurij.Plotnikov@oktetlabs.ru>
  *
- * $Id: ioctl.c 65691 2010-08-24 12:59:21Z rast $
+ * $Id$
  */
 
 #include "tapi_rpc.h"
