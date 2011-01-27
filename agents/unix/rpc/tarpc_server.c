@@ -800,6 +800,10 @@ TARPC_FUNC(check_port_is_free, {},
 }
 )
 
+/* Simple socket() and bind() are used instead of tarpc_find_func() to
+ * resolve them from the current library.  It is done by purpose: all that
+ * things happen at early stage of test, and we do not want to affect the
+ * library under test. */
 te_bool
 check_port_is_free(uint16_t port)
 {
