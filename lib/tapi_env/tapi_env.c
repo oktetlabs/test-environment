@@ -1670,10 +1670,8 @@ prepare_ports(tapi_env_hosts *hosts, tapi_env_addrs *addrs,
         tapi_env_host      *host;
         rcf_rpc_server     *pco;
 
-        if ((env_addr->type != RPC_AF_INET &&
-             env_addr->type != RPC_AF_INET6) ||
-            (env_addr->addr->sa_family != AF_INET &&
-             env_addr->addr->sa_family != AF_INET6))
+        if ((env_addr->family != RPC_AF_INET &&
+             env_addr->family != RPC_AF_INET6))
             continue;
 
         /* Get TA name */
