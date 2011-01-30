@@ -55,6 +55,10 @@
 #define XML2CHAR(p)     ((char *)p)
 #define XML2CHAR_DUP(p) XML2CHAR(xmlStrdup(p))
 
+/* global database */
+/* fixme kostik: may be the code is written in assumption
+ * that there can be several databases. Then I'm very very sorry. */
+te_trc_db *current_db;
 
 /** Widely used expected results */
 static trc_exp_results  exp_defaults;
@@ -610,6 +614,62 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test *test)
     return 0;
 }
 
+/*
+ * Update globals list with globals from specific test (mostly
+ * test package).
+ */
+static te_errno
+get_globals(xmlNodePtr node, trc_test *parent)
+{
+    te_errno rc = 0;
+
+    assert(parent != NULL);
+
+    /* check if we have globals */
+
+    /* assume that we're w */
+    node = xmlNodeChildren(node);
+
+    for (; node != NULL; node = xmlNodeNext(node))
+    {
+        if (xmlStrcmp(node->name, CONST_CHAR2XML("global")) == 0)
+        {
+            /* alloc global */
+            trc_global *g = TE_ALLOC(sizeof(*g));
+
+            assert(g);
+
+            g->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
+            if (g->name == NULL)
+            {
+                ERROR("Name of the global is missing");
+                return TE_RC(TE_TRC, TE_EFMT);
+            }
+            g->value = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("value")));
+            if (g->value == NULL)
+            {
+                xmlNodePtr val_node = xmlNodeChildren(node);
+
+                if (xmlStrcmp(val_node->name, CONST_CHAR2XML("value")) == 0)
+                    get_text_content(val_node, "value", &g->value);
+            }
+            if (rc || g->value == NULL)
+            {
+                ERROR("%s: no value for global %s", __FUNCTION__, g->name);
+                return TE_RC(TE_TRC, TE_EFMT);
+            }
+
+
+            TAILQ_INSERT_HEAD(&current_db->globals.head, g, links);
+        }
+        else
+            /* unexpected entry */
+            break;
+    }
+
+    return rc;
+}
+
 /**
  * Get test iterations.
  *
@@ -749,6 +809,22 @@ alloc_and_get_test(xmlNodePtr node, trc_tests *tests,
         }
     }
 
+    /* possible include with globals */
+    if (xmlStrcmp(node->name, CONST_CHAR2XML("include")) == 0)
+        node = xmlNodeNext(node);
+    /* get test globals - they're added to globals set */
+    if (xmlStrcmp(node->name, CONST_CHAR2XML("globals")) == 0)
+    {
+        rc = get_globals(node, p);
+        if (rc != 0)
+        {
+            ERROR("%s: failed to update globals with test '%s': %r",
+                  p->name, rc);
+            return rc;
+        }
+        node = xmlNodeNext(node);
+    }
+
     rc = get_test_iters(&node, p);
     if (rc != 0)
     {
@@ -824,6 +900,7 @@ trc_db_open(const char *location, te_trc_db **db)
     if (*db == NULL)
         return TE_ENOMEM;
     TAILQ_INIT(&(*db)->tests.head);
+    TAILQ_INIT(&(*db)->globals.head);
 
     (*db)->filename = strdup(location);
     if ((*db)->filename == NULL)
@@ -866,6 +943,9 @@ trc_db_open(const char *location, te_trc_db **db)
         xmlCleanupParser();
         return TE_EINVAL;
     }
+
+    /* store current db pointer */
+    current_db = (*db);
 
     node = xmlDocGetRootElement((*db)->xml_doc);
 

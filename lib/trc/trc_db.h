@@ -44,6 +44,9 @@
 extern "C" {
 #endif
 
+/** Pointer to DB we're currently working with - last DB
+ * opened by trc_db_open */
+extern te_trc_db *current_db;
 
 /** User data associated with TRC database element */
 typedef struct trc_user_data {
@@ -95,6 +98,14 @@ typedef struct trc_tests {
 
 } trc_tests;
 
+/* Forward */
+struct trc_global;
+
+typedef struct trc_globals {
+    xmlNodePtr  node;
+
+    TAILQ_HEAD(, trc_global)  head;   /**< Head of the list */
+} trc_globals;
 
 /** Test iteration */
 typedef struct trc_test_iter {
@@ -162,6 +173,14 @@ typedef struct trc_test {
 
 } trc_test;
 
+typedef struct trc_global {
+    xmlNodePtr node;
+
+    TAILQ_ENTRY(trc_global)    links;
+
+    char *name;
+    char *value;
+} trc_global;
 
 /** Testing results comparison database */
 struct te_trc_db {
@@ -170,6 +189,7 @@ struct te_trc_db {
     char           *version;    /**< Database version */
     trc_tests       tests;      /**< Tree of tests */
     unsigned int    user_id;    /**< ID of the next user */
+    trc_globals     globals;
 };
 
 

@@ -351,6 +351,15 @@ te_make_tmp_file(char *tmp_name)
                   __FUNCTION__);                                \
     } while (0)
 
+/* Tests related part */
+/* fixme kostik: should be moved */
+
+#define TEST_ARG_VAR_PREFIX "VAR."
+#define TEST_ARG_ENV_PREFIX "TE_TEST_VAR_"
+
+
+
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

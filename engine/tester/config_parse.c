@@ -59,6 +59,7 @@
 #include <libxml/xinclude.h>
 
 #include "te_alloc.h"
+#include "te_param.h"
 #include "tester_conf.h"
 #include "type_lib.h"
 
@@ -1312,6 +1313,7 @@ alloc_and_get_var_arg(xmlNodePtr node, te_bool is_var,
     test_var_arg       *p;
     char               *ref;
     char               *value;
+    char               *global = NULL;
     char               *s;
 
     ENTRY("session=%p", session);
@@ -1320,6 +1322,7 @@ alloc_and_get_var_arg(xmlNodePtr node, te_bool is_var,
         return TE_RC(TE_TESTER, TE_ENOMEM);
     p->handdown = TRUE;
     p->variable = is_var;
+    p->global = FALSE;
     TAILQ_INIT(&p->values.head);
     TAILQ_INSERT_TAIL(list, p, links);
 
@@ -1391,6 +1394,10 @@ alloc_and_get_var_arg(xmlNodePtr node, te_bool is_var,
         xmlFree(s);
     }
 
+    /* 'global' is optional, possible only for variables */
+    if (is_var)
+        global = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("global")));
+
     /* 'ref' is optional */
     ref = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("ref")));
     /* 'value' is optional */
@@ -1432,7 +1439,37 @@ alloc_and_get_var_arg(xmlNodePtr node, te_bool is_var,
                 return TE_RC(TE_TESTER, TE_ENOMEM);
             }
         }
+        v->name = strdup(p->name);
+        /* ignore error */
     }
+
+    if (is_var && global && strcmp(global, "true") == 0)
+    {
+        char env_name[128];
+        int rc;
+        char *val = value;
+
+        if (val == NULL)
+        {
+            test_entity_value *v = TAILQ_FIRST(&p->values.head);
+
+            val = v->plain;
+            v->global = TRUE;
+            asprintf(&v->name, "VAR.%s", p->name);
+            te_var_name2env(v->name, env_name, sizeof(env_name));
+        }
+        p->global = TRUE;
+
+        VERB("%s: setenv %s=%s", __FUNCTION__, env_name, val);
+        rc = setenv(env_name, val, 1);
+        if (rc < 0)
+        {
+            ERROR("Failed to set environment variable %s", env_name);
+            return TE_RC(TE_TESTER, TE_ENOSPC);
+        }
+        VERB("%s: getenv->%s", __FUNCTION__, getenv(env_name));
+    }
+    
     return 0;
 }
 

@@ -306,7 +306,8 @@ test_iter_args_match(const trc_test_iter_args  *db_args,
             VERB("Mismatch: %s vs %s", args[i].name, arg->name);
             return FALSE;
         }
-        else
+        else if (strncmp(args[i].value, TEST_ARG_VAR_PREFIX,
+                         strlen(TEST_ARG_VAR_PREFIX)) != 0)
         {
             if (trc_db_compare_values(args[i].value, arg->value) != 0)
             {
@@ -314,6 +315,23 @@ test_iter_args_match(const trc_test_iter_args  *db_args,
                       args[i].value, arg->value);
                 return FALSE;
             }
+        }
+        else
+        {
+            trc_global *g;
+
+            TAILQ_FOREACH(g, &current_db->globals.head, links)
+            {
+                if (strcmp(g->name, args[i].value +
+                           strlen(TEST_ARG_VAR_PREFIX)) == 0)
+                {
+                    VERB("Value is a var, var=(%s, %s)",
+                         g->name, g->value);
+                    break;
+                }
+            }
+            if (g == NULL)
+                return FALSE;
         }
         /* next arg */
         arg = TAILQ_NEXT(arg, links);

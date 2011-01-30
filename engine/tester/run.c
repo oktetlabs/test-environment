@@ -64,7 +64,6 @@
 #include "tester_result.h"
 #include "tester_interactive.h"
 
-
 /** Define it to enable support of timeouts in Tester */
 #undef TESTER_TIMEOUT_SUPPORT
 
@@ -2207,10 +2206,15 @@ run_get_value(const test_entity_value *value,
               const test_iter_arg *args, const unsigned int n_args,
               test_requirements *reqs)
 {
+    VERB("%s(): name=%s plain=%p ref=%p ext=%p global=%s",
+         __FUNCTION__, value->name, value->plain, value->ref,
+         value->ext, value->global ? "true" : "false");
+
     if (value->plain != NULL)
     {
         VERB("%s(): plain", __FUNCTION__);
-        return value->plain;
+        return (value->global && value->name) ?
+            value->name : value->plain;
     }
     else if (value->ref != NULL)
     {
@@ -2363,6 +2367,9 @@ run_prepare_arg_cb(const test_var_arg *va, void *opaque)
                                 &value);
     if (rc != 0)
         return rc;
+
+    VERB("%s: value name=%s ref=%p ext=%p plain=%s", __FUNCTION__,
+         value->name, value->ref, value->ext, value->plain);
 
     data->arg->variable = va->variable;
     data->arg->value = run_get_value(value, data->ctx_args,

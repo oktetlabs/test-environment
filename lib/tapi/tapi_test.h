@@ -85,7 +85,6 @@ extern "C" {
 #ifndef TEST_END_SPECIFIC
 #define TEST_END_SPECIFIC do { } while (0)
 #endif
-
     
 /**
  * Template action to be done on jump in the test.

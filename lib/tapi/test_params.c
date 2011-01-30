@@ -41,6 +41,7 @@
 #endif
 
 #include "te_defs.h"
+#include "te_param.h"
 #include "te_ethernet.h"
 #include "logger_api.h"
 
@@ -77,7 +78,8 @@ const char *
 test_get_param(int argc, char *argv[], const char *name)
 {
     int         i;
-    const char *ptr;
+    const char *ptr = NULL;
+    const char *value;
 
     for (i = 0; i < argc; i++)
     {
@@ -96,11 +98,37 @@ test_get_param(int argc, char *argv[], const char *name)
         while (isspace(*ptr))
             ptr++;
 
-        return ptr;
+        break;
     }
-    WARN("There is no '%s' parameter specified", name);
+    if (ptr == NULL)
+    {
+        WARN("There is no '%s' parameter specified", name);
+        return NULL;
+    }
 
-    return NULL;
+    /* we've found required parameter */
+    RING("Parameter %s has value '%s'", name, ptr);
+
+    if (strncmp(ptr, TEST_ARG_VAR_PREFIX,
+                strlen(TEST_ARG_VAR_PREFIX)) == 0)
+    {
+        /*
+         * it's in fact a reference to a variable, we should
+         * form a name of corresponding shell environment
+         * variable and call getenv() to get it
+         */
+        char env_name[128];
+        int  env_size = sizeof(env_name);
+
+        te_var_name2env(ptr, env_name, env_size);
+
+        value = getenv(env_name);
+    }
+    else
+        /* normal value */
+        value = ptr;
+
+    return value;
 }
 
 /** See the description in tapi_test.h */

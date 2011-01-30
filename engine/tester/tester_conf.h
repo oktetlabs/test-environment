@@ -118,6 +118,7 @@ struct test_entity_value {
     const test_entity_value    *ref;    /**< Reference to another value */
     char                       *ext;    /**< Reference to external value */
     test_requirements           reqs;   /**< Attached requirements */
+    te_bool                     global; /**< Is this variable global? */
 };
 
 
@@ -182,6 +183,8 @@ typedef struct test_var_arg {
     te_bool                  handdown;  /**< Handdown session variable
                                              to all children */
     te_bool                  variable;  /**< Is variable */
+    te_bool                  global;    /**< In case it's a variable - is it
+                                           global? */
 } test_var_arg;
 
 /** List of test session variables */

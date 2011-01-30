@@ -637,6 +637,60 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
     return 0;
 }
 
+#define TESTER_ENV_SIZE 1024 * 256
+#define TESTER_ENV_VAL_SIZE  1024
+
+static void
+tester_log_global(void)
+{
+    int i;
+    /* fixme: this is shit! */
+    char *glob = calloc(1, TESTER_ENV_SIZE);
+    int rc = 0;
+    char *p;
+
+    rc += sprintf(glob, "Tester global variables list:\n");
+
+    for (i = 0; environ[i] != NULL; i++)
+    {
+        if (strncmp(environ[i], TEST_ARG_ENV_PREFIX,
+                    strlen(TEST_ARG_ENV_PREFIX)) == 0)
+        {
+            char *c;
+            char *eq;
+            char e[TESTER_ENV_VAL_SIZE];
+
+            /* need to convert __ back to . */
+            strncpy(e, environ[i], sizeof(e));
+            eq = strchr(e, '='); /* separator */
+
+            p = e + strlen(TEST_ARG_ENV_PREFIX);
+
+            rc += sprintf(glob + rc, "  ");
+
+            do {
+                c = strstr(p, "__");
+                RING("%s rc=%d c=%p eq=%p", p, rc, c, eq);
+                if (c != NULL && c < eq) {
+                    *c = '\0';
+                    rc += snprintf(glob + rc, TESTER_ENV_SIZE - rc,
+                                   "%s.", p);
+                    RING("%s rc=%d", p, rc);
+                    p = c + 2;
+                }
+                else
+                {
+                    c = NULL;
+                    rc += snprintf(glob + rc, TESTER_ENV_SIZE - rc,
+                                   "%s\n", p);
+                    RING("%s rc=%d", p, rc);
+                }
+            } while (c != NULL);
+        }
+    }
+    TE_LOG_RING("Globals", "%s", glob);
+    free(glob);
+}
 
 /**
  * Application entry point.
@@ -745,6 +799,8 @@ main(int argc, char *argv[])
         !TAILQ_EMPTY(&global.cfgs.head))
     {
         RING("Starting...");
+        /* Log global variables so TRC can get them and */
+        (void)tester_log_global();
         rc = tester_run(&global.scenario, global.targets,
                         &global.cfgs, &global.paths,
                         global.trc_db, &global.trc_tags, global.flags);

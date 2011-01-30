@@ -104,6 +104,9 @@ cat <<EOF >"$rgt_filter"
     <include entity="Tester">
         <user name="Target Requirements"/>
     </include>
+    <include entity="Tester">
+        <user name="Globals"/>
+    </include>
   </entity-filter>
 </filters>
 EOF
