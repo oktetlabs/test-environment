@@ -18,11 +18,11 @@ typedef struct cpe_id_s cpe_id_t;
 /* TODO: invent actual and portable ID for box, which will 
    help background implementation to connect with it.
    This is temporary. */
-typedef struct cpe_id_s {
+struct cpe_id_s {
     const char              *ta;
     rcf_rpc_server          *pco;
     struct sockaddr_storage  addr;
-} cpe_id_t;
+};
 
 /**
  * Initiate network configuration around CPE and its internal mirror. 
