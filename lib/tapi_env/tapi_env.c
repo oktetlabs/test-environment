@@ -1668,7 +1668,7 @@ prepare_ports(tapi_env_hosts *hosts, tapi_env_addrs *addrs,
         char     *ta;
 
         tapi_env_host      *host;
-        rcf_rpc_server     *pco;
+        rcf_rpc_server     *pco = NULL;
 
         if ((env_addr->family != RPC_AF_INET &&
              env_addr->family != RPC_AF_INET6))
