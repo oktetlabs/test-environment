@@ -95,7 +95,10 @@ tapi_acse_stop(const char *ta)
     return rc;
 }
 
-/* */
+/**
+ * Local method to detect whether ACSE Config parameter is integer-type. 
+ * Should be modified when ACSE CS subtree updated.
+ */
 static inline int
 acse_is_int_var(const char *name)
 {
@@ -1080,6 +1083,7 @@ tapi_acse_cpe_disconnect(tapi_acse_context_t *ctx)
 
 
 
+/* see description in tapi_acse.h */
 te_errno
 tapi_acse_add_object(tapi_acse_context_t *ctx,
                      const char *obj_name, const char *param_key)
@@ -1100,6 +1104,7 @@ tapi_acse_add_object(tapi_acse_context_t *ctx,
 
 
 
+/* see description in tapi_acse.h */
 te_errno
 tapi_acse_add_object_resp(tapi_acse_context_t *ctx,
                           int *obj_index, int *add_status)
@@ -1123,6 +1128,7 @@ tapi_acse_add_object_resp(tapi_acse_context_t *ctx,
     return rc;
 }
 
+/* see description in tapi_acse.h */
 te_errno
 tapi_acse_delete_object(tapi_acse_context_t *ctx,
                         const char *obj_name, const char *param_key)
@@ -1142,6 +1148,7 @@ tapi_acse_delete_object(tapi_acse_context_t *ctx,
                                   to_cpe_loc);
 }
 
+/* see description in tapi_acse.h */
 te_errno
 tapi_acse_delete_object_resp(tapi_acse_context_t *ctx, int *del_status)
 {
