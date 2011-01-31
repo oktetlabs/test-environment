@@ -76,12 +76,11 @@ extern "C" {
 
 /**
  * Macro for usage at start of CWMP tests to init context.
- * Assume test paremeter 'ta_acse' with name of TA with ACSE.
+ * Assume existing TA with name 'agt_acse' for ACSE.
  */
 #define TAPI_ACSE_CTX_INIT(ctx_var_) \
     do {                                                        \
-        const char *ta_acse;                                    \
-        TEST_GET_STRING_PARAM(ta_acse);                         \
+        const char *ta_acse = "agt_acse";                       \
         if (NULL == (ctx_var_ = tapi_acse_ctx_init(ta_acse)))   \
             TEST_FAIL("Init ACSE TAPI context failed");         \
     } while (0)
