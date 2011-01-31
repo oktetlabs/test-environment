@@ -49,6 +49,7 @@
 #endif
 
 #include "te_alloc.h"
+#include "te_param.h"
 #include "logger_api.h"
 #include "tq_string.h"
 
@@ -56,6 +57,11 @@
 #include "tester_conf.h"
 #include "test_path.h"
 
+#if 0
+#undef TE_LOG_LEVEL
+#define TE_LOG_LEVEL (TE_LL_WARN | TE_LL_ERROR | \
+                      TE_LL_VERB | TE_LL_ENTRY_EXIT | TE_LL_RING)
+#endif
 
 /** Test path processing context */
 typedef struct test_path_proc_ctx {
@@ -384,8 +390,9 @@ test_path_arg_value_cb(const test_entity_value *value, void *opaque)
     tqe_string                  *path_arg_value;
     te_bool                      match;
 
-    ENTRY("value=%s|%s index=%u found=%u",
-          value->plain, value->ext, data->index, data->found);
+    ENTRY("value=%s|%s ref=%p index=%u found=%u",
+          value->plain, value->ext, value->ref,
+          data->index, data->found);
 
     if (data->pref_value == value)
         data->pref_i = data->index;
@@ -414,8 +421,31 @@ test_path_arg_value_cb(const test_entity_value *value, void *opaque)
         switch (data->path_arg->match)
         {
             case TEST_PATH_EXACT:
-                match = (strcmp(path_arg_value->v, plain) == 0);
+            {
+                char *m = path_arg_value->v;
+
+                if (strncmp(path_arg_value->v,
+                            TEST_ARG_VAR_PREFIX,
+                            strlen(TEST_ARG_VAR_PREFIX)) == 0)
+                {
+                    char env_name[128];
+                    
+                    /* match glob value with plain */
+                    /* fixme kostik: to read the environment is
+                     * very very bad*/
+                    te_var_name2env(path_arg_value->v,
+                                    env_name, sizeof(env_name));
+                    m = getenv(env_name);
+                    if (m == NULL)
+                    {
+                        match = FALSE;
+                        break;
+                    }
+                }
+
+                match = (strcmp(m, plain) == 0);
                 break;
+            }
 
             case TEST_PATH_GLOB:
 #if HAVE_FNMATCH_H
@@ -503,6 +533,7 @@ test_path_proc_test_start(run_item *run, unsigned int cfg_id_off,
     if (bm == NULL)
     {
         gctx->rc = TE_ENOMEM;
+        EXIT("FAULT");
         return TESTER_CFG_WALK_FAULT;
     }
 
@@ -521,6 +552,7 @@ test_path_proc_test_start(run_item *run, unsigned int cfg_id_off,
             uint8_t                        *arg_bm;
             test_path_arg_value_cb_data     value_data;
 
+            VERB("%s: path_arg name=%s", __FUNCTION__, path_arg->name);
             va = test_run_item_find_arg(run, path_arg->name,
                                         &n_values, &outer_iters);
             if (va == NULL)
