@@ -60,7 +60,7 @@ extern te_errno cpe_get_cfg_acs_addr(cpe_id_t *cpe, struct sockaddr *addr);
  *
  * @return Status code.
  */
-extern te_errno cpe_get_cr_url(cpe_id_t cpe,
+extern te_errno cpe_get_cr_url(cpe_id_t *cpe,
                                char *cr_url, size_t bufsize);
 
 /**
@@ -72,7 +72,7 @@ extern te_errno cpe_get_cr_url(cpe_id_t cpe,
  *
  * @return Status code.
  */
-extern te_errno cpe_get_acs_url(cpe_id_t cpe, char *acs_url,
+extern te_errno cpe_get_acs_url(cpe_id_t *cpe, char *acs_url,
                                 size_t bufsize);
 
 /**
@@ -84,7 +84,7 @@ extern te_errno cpe_get_acs_url(cpe_id_t cpe, char *acs_url,
  *
  * @return status
  */
-extern te_errno cpe_get_acs_url(cpe_id_t cpe,
+extern te_errno cpe_get_acs_url(cpe_id_t *cpe,
                                 char *acs_url, size_t bufsize);
 
 /**
@@ -95,7 +95,7 @@ extern te_errno cpe_get_acs_url(cpe_id_t cpe,
  *
  * @return status
  */
-extern te_errno cpe_set_acs_url(cpe_id_t cpe, char *acs_url);
+extern te_errno cpe_set_acs_url(cpe_id_t *cpe, char *acs_url);
 
 /**
  * Activate TR069 management protocol on CPE. 
@@ -106,7 +106,7 @@ extern te_errno cpe_set_acs_url(cpe_id_t cpe, char *acs_url);
  *
  * @return status
  */
-extern te_errno cpe_activate_tr069_mgmt(cpe_id_t cpe, char *acs_url);
+extern te_errno cpe_activate_tr069_mgmt(cpe_id_t *cpe, char *acs_url);
 
 /**
  * Set ConnectionRequest login username on CPE, that is, login for
@@ -117,7 +117,7 @@ extern te_errno cpe_activate_tr069_mgmt(cpe_id_t cpe, char *acs_url);
  *
  * @return status
  */
-extern te_errno cpe_set_cr_login(cpe_id_t cpe,  const char *cr_login);
+extern te_errno cpe_set_cr_login(cpe_id_t *cpe,  const char *cr_login);
 
 /**
  * Set ConnectionRequest login password on CPE.
@@ -127,7 +127,7 @@ extern te_errno cpe_set_cr_login(cpe_id_t cpe,  const char *cr_login);
  *
  * @return status
  */
-extern te_errno cpe_set_cr_passwd(cpe_id_t cpe, const char *cr_passwd);
+extern te_errno cpe_set_cr_passwd(cpe_id_t *cpe, const char *cr_passwd);
 
 /**
  * Get ConnectionRequest login username on CPE.
@@ -138,7 +138,7 @@ extern te_errno cpe_set_cr_passwd(cpe_id_t cpe, const char *cr_passwd);
  *
  * @return status
  */
-extern te_errno cpe_get_cr_login(cpe_id_t cpe,
+extern te_errno cpe_get_cr_login(cpe_id_t *cpe,
                                  char *cr_login, size_t bufsize);
 
 /**
@@ -150,7 +150,7 @@ extern te_errno cpe_get_cr_login(cpe_id_t cpe,
  *
  * @return status
  */
-extern te_errno cpe_get_cr_passwd(cpe_id_t cpe,
+extern te_errno cpe_get_cr_passwd(cpe_id_t *cpe,
                                   char *cr_passwd, size_t bufsize);
 
 /**
@@ -162,7 +162,7 @@ extern te_errno cpe_get_cr_passwd(cpe_id_t cpe,
  *
  * @return status
  */
-extern te_errno cpe_set_acs_login(cpe_id_t cpe,  const char *acs_login);
+extern te_errno cpe_set_acs_login(cpe_id_t *cpe,  const char *acs_login);
 
 /**
  * Set ACS password on CPE for CWMP sessions.
@@ -172,7 +172,7 @@ extern te_errno cpe_set_acs_login(cpe_id_t cpe,  const char *acs_login);
  *
  * @return status
  */
-extern te_errno cpe_set_acs_passwd(cpe_id_t cpe, const char *acs_passwd);
+extern te_errno cpe_set_acs_passwd(cpe_id_t *cpe, const char *acs_passwd);
 
 /**
  * Get ACS login username on CPE.
@@ -183,7 +183,7 @@ extern te_errno cpe_set_acs_passwd(cpe_id_t cpe, const char *acs_passwd);
  *
  * @return status
  */
-extern te_errno cpe_get_acs_login(cpe_id_t cpe,
+extern te_errno cpe_get_acs_login(cpe_id_t *cpe,
                                   char *acs_login, size_t bufsize);
 
 /**
@@ -195,7 +195,7 @@ extern te_errno cpe_get_acs_login(cpe_id_t cpe,
  *
  * @return status
  */
-extern te_errno cpe_get_acs_passwd(cpe_id_t cpe,
+extern te_errno cpe_get_acs_passwd(cpe_id_t *cpe,
                                    char *acs_passwd, size_t bufsize);
 
 
