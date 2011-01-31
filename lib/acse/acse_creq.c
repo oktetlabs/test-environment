@@ -134,7 +134,7 @@ conn_req_after_poll(void *data, struct pollfd *pfd)
             return 0; /* Continue operation on this I/O channel */
         }
 
-        if (soap->error == SOAP_NO_DATA)
+        if (soap->error == SOAP_NO_DATA || soap->status == 204)
             conn_req->cpe_item->cr_state = CR_DONE;
         else
         {
