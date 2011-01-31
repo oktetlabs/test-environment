@@ -1680,18 +1680,24 @@ prepare_ports(tapi_env_hosts *hosts, tapi_env_addrs *addrs,
                         nodes[env_addr->iface->i_node].handle,
                     1, &ta);
         if (rc != 0)
-        {
-            free(ta);
-            return rc;
-        }
+            continue;
 
         /* Find the "host" */
         SLIST_FOREACH(host, hosts, links)
         {
+            tapi_env_process *proc;
+            tapi_env_pco     *rpc;
+
             if (strcmp(host->ta, ta) != 0)
                 continue;
 
-            pco = STAILQ_FIRST(&SLIST_FIRST(&host->processes)->pcos)->rpcs;
+            proc = SLIST_FIRST(&host->processes);
+            if (proc == NULL)
+                continue;
+            rpc = STAILQ_FIRST(&proc->pcos);
+            if (rpc == NULL)
+                continue;
+            pco = rpc->rpcs;
             break;
         }
 
