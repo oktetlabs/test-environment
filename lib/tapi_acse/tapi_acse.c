@@ -928,6 +928,9 @@ tapi_acse_get_parameter_names(tapi_acse_context_t *ctx,
     req.ParameterPath = &name_ptr;
     req.NextLevel = next_level;
 
+    RING("Issue GetParameterNames for <%s>, next_level %d.", 
+         name, (int)next_level);
+
     return tapi_acse_cpe_rpc_call(ctx, CWMP_RPC_get_parameter_names,
                                   to_cpe_loc);
 }
