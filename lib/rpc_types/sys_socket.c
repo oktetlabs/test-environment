@@ -441,6 +441,7 @@ shut_how_rpc2str(rpc_shut_how how)
 #define MSG_ERRQUEUE    0
 #define MSG_CONFIRM     0
 #define MSG_EOR         0
+#define MSG_WAITFORONE  0
 
 #else
 
@@ -489,6 +490,9 @@ shut_how_rpc2str(rpc_shut_how how)
 #ifndef MSG_EOR
 #define MSG_EOR         0
 #endif
+#ifndef MSG_WAITFORONE
+#define MSG_WAITFORONE  0x10000
+#endif
 
 #endif
 
@@ -500,7 +504,8 @@ shut_how_rpc2str(rpc_shut_how how)
                          MSG_NOSIGNAL | MSG_TRUNC |             \
                          MSG_CTRUNC | MSG_ERRQUEUE |            \
                          MSG_MORE | MSG_CONFIRM | MSG_EOR |     \
-                         MSG_MCAST | MSG_BCAST | MSG_PARTIAL)
+                         MSG_MCAST | MSG_BCAST | MSG_PARTIAL |  \
+                         MSG_WAITFORONE)
 
 /**
  * Generate warning in the log, if requested RPC mask contains flag
@@ -542,6 +547,7 @@ send_recv_flags_rpc2h(unsigned int flags)
            (!!(flags & RPC_MSG_CONFIRM) * MSG_CONFIRM) |
            (!!(flags & RPC_MSG_EOR) * MSG_EOR) |
            (!!(flags & RPC_MSG_PARTIAL) * MSG_PARTIAL) |
+           (!!(flags & RPC_MSG_WAITFORONE) * MSG_WAITFORONE) |
            (!!(flags & RPC_MSG_UNKNOWN) * MSG_MAX) |
            (!!(flags & ~RPC_MSG_ALL) * MSG_MAX);
 }
@@ -564,6 +570,7 @@ send_recv_flags_h2rpc(unsigned int flags)
            (!!(flags & MSG_CONFIRM) * RPC_MSG_CONFIRM) |
            (!!(flags & MSG_EOR) * RPC_MSG_EOR) |
            (!!(flags & MSG_PARTIAL) * RPC_MSG_PARTIAL) |
+           (!!(flags & MSG_WAITFORONE) * RPC_MSG_WAITFORONE) |
            (!!(flags & MSG_ERRQUEUE) * RPC_MSG_ERRQUEUE) |
            (!!(flags & ~MSG_ALL) * RPC_MSG_UNKNOWN);
 }

@@ -168,56 +168,61 @@ extern const char * shut_how_rpc2str(rpc_shut_how how);
  * TA-independent send/receive flags. 
  */
 typedef enum rpc_send_recv_flags {
-    RPC_MSG_OOB       = 1,      /**< Receive out-of-band data */
-    RPC_MSG_PEEK      = 2,      /**< Do not remove data from the queue */
-    RPC_MSG_DONTROUTE = 4,      /**< Send to directly connected network */
-    RPC_MSG_DONTWAIT  = 8,      /**< Do not block */
-    RPC_MSG_WAITALL   = 0x10,   /**< Block until full request is
-                                     specified */
-    RPC_MSG_NOSIGNAL  = 0x20,   /**< Turn off raising of SIGPIPE */
-    RPC_MSG_TRUNC     = 0x40,   /**< Return the real length of the packet,
-                                     even when it was longer than the passed
-                                     buffer */
-    RPC_MSG_CTRUNC    = 0x80,   /**< Control data lost before delivery */
-    RPC_MSG_ERRQUEUE  = 0x100,  /**< Queued errors should be received from
-                                     the socket error queue */
-    RPC_MSG_MCAST     = 0x200,  /**< Datagram was received as a link-layer 
-                                     multicast */
-    RPC_MSG_BCAST     = 0x400,  /**< Datagram was received as a link-layer 
-                                     broadcast */
-    RPC_MSG_MORE      = 0x800,  /**< The caller has more data to send */
-    RPC_MSG_CONFIRM   = 0x1000, /**< Tell the link layer that forward
-                                     progress happened */
-    RPC_MSG_EOR       = 0x2000, /**< Terminates a record */
-    RPC_MSG_PARTIAL   = 0x8000, /**< Don't fail if the message is trancated;
-                                     indicates trancated message on output*/
-    RPC_MSG_UNKNOWN   = 0x10000  /**< Incorrect flag */
+    RPC_MSG_OOB        = 1,      /**< Receive out-of-band data */
+    RPC_MSG_PEEK       = 2,      /**< Do not remove data from the queue */
+    RPC_MSG_DONTROUTE  = 4,      /**< Send to directly connected network */
+    RPC_MSG_DONTWAIT   = 8,      /**< Do not block */
+    RPC_MSG_WAITALL    = 0x10,   /**< Block until full request is
+                                      specified */
+    RPC_MSG_NOSIGNAL   = 0x20,   /**< Turn off raising of SIGPIPE */
+    RPC_MSG_TRUNC      = 0x40,   /**< Return the real length of the packet,
+                                      even when it was longer than the
+                                      passed buffer */
+    RPC_MSG_CTRUNC     = 0x80,   /**< Control data lost before delivery */
+    RPC_MSG_ERRQUEUE   = 0x100,  /**< Queued errors should be received from
+                                      the socket error queue */
+    RPC_MSG_MCAST      = 0x200,  /**< Datagram was received as a link-layer 
+                                      multicast */
+    RPC_MSG_BCAST      = 0x400,  /**< Datagram was received as a link-layer 
+                                      broadcast */
+    RPC_MSG_MORE       = 0x800,  /**< The caller has more data to send */
+    RPC_MSG_CONFIRM    = 0x1000, /**< Tell the link layer that forward
+                                      progress happened */
+    RPC_MSG_EOR        = 0x2000, /**< Terminates a record */
+    RPC_MSG_PARTIAL    = 0x8000, /**< Don't fail if the message is
+                                      trancated; indicates trancated message
+                                      on output*/
+    RPC_MSG_WAITFORONE = 0x10000, /**< recvmmsg(): block until 1+ packets
+                                       avail */
+    RPC_MSG_UNKNOWN    = 0x20000  /**< Incorrect flag */
 } rpc_send_recv_flags;
 
 /** Bitmask of all possible receive flags  */
-#define RPC_MSG_ALL     (RPC_MSG_OOB | RPC_MSG_PEEK | RPC_MSG_DONTROUTE | \
-                         RPC_MSG_DONTWAIT | RPC_MSG_WAITALL |             \
-                         RPC_MSG_NOSIGNAL | RPC_MSG_TRUNC |               \
-                         RPC_MSG_CTRUNC | RPC_MSG_ERRQUEUE |              \
-                         RPC_MSG_MORE | RPC_MSG_CONFIRM | RPC_MSG_EOR |   \
-                         RPC_MSG_PARTIAL | RPC_MSG_MCAST | RPC_MSG_BCAST)
+#define RPC_MSG_ALL     (RPC_MSG_OOB | RPC_MSG_PEEK | RPC_MSG_DONTROUTE |  \
+                         RPC_MSG_DONTWAIT | RPC_MSG_WAITALL |              \
+                         RPC_MSG_NOSIGNAL | RPC_MSG_TRUNC |                \
+                         RPC_MSG_CTRUNC | RPC_MSG_ERRQUEUE |               \
+                         RPC_MSG_MORE | RPC_MSG_CONFIRM | RPC_MSG_EOR |    \
+                         RPC_MSG_PARTIAL | RPC_MSG_MCAST | RPC_MSG_BCAST | \
+                         RPC_MSG_WAITFORONE )
 
 #define SEND_RECV_FLAGS_MAPPING_LIST \
-            RPC_BIT_MAP_ENTRY(MSG_OOB),         \
-            RPC_BIT_MAP_ENTRY(MSG_PEEK),        \
-            RPC_BIT_MAP_ENTRY(MSG_DONTROUTE),   \
-            RPC_BIT_MAP_ENTRY(MSG_DONTWAIT),    \
-            RPC_BIT_MAP_ENTRY(MSG_WAITALL),     \
-            RPC_BIT_MAP_ENTRY(MSG_NOSIGNAL),    \
-            RPC_BIT_MAP_ENTRY(MSG_TRUNC),       \
-            RPC_BIT_MAP_ENTRY(MSG_CTRUNC),      \
-            RPC_BIT_MAP_ENTRY(MSG_ERRQUEUE),    \
-            RPC_BIT_MAP_ENTRY(MSG_MCAST),       \
-            RPC_BIT_MAP_ENTRY(MSG_BCAST),       \
-            RPC_BIT_MAP_ENTRY(MSG_MORE),        \
-            RPC_BIT_MAP_ENTRY(MSG_CONFIRM),     \
-            RPC_BIT_MAP_ENTRY(MSG_EOR),         \
-            RPC_BIT_MAP_ENTRY(MSG_PARTIAL),     \
+            RPC_BIT_MAP_ENTRY(MSG_OOB),        \
+            RPC_BIT_MAP_ENTRY(MSG_PEEK),       \
+            RPC_BIT_MAP_ENTRY(MSG_DONTROUTE),  \
+            RPC_BIT_MAP_ENTRY(MSG_DONTWAIT),   \
+            RPC_BIT_MAP_ENTRY(MSG_WAITALL),    \
+            RPC_BIT_MAP_ENTRY(MSG_NOSIGNAL),   \
+            RPC_BIT_MAP_ENTRY(MSG_TRUNC),      \
+            RPC_BIT_MAP_ENTRY(MSG_CTRUNC),     \
+            RPC_BIT_MAP_ENTRY(MSG_ERRQUEUE),   \
+            RPC_BIT_MAP_ENTRY(MSG_MCAST),      \
+            RPC_BIT_MAP_ENTRY(MSG_BCAST),      \
+            RPC_BIT_MAP_ENTRY(MSG_MORE),       \
+            RPC_BIT_MAP_ENTRY(MSG_CONFIRM),    \
+            RPC_BIT_MAP_ENTRY(MSG_EOR),        \
+            RPC_BIT_MAP_ENTRY(MSG_PARTIAL),    \
+            RPC_BIT_MAP_ENTRY(MSG_WAITFORONE), \
             RPC_BIT_MAP_ENTRY(MSG_UNKNOWN)
 
 /**
