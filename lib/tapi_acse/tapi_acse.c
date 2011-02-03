@@ -777,7 +777,7 @@ te_errno
 tapi_acse_get_rpc_methods_resp(tapi_acse_context_t *ctx,
                                string_array_t **resp)
 {
-    cwmp_get_rpc_methods_response_t *from_cpe_r;
+    cwmp_get_rpc_methods_response_t *from_cpe_r = NULL;
 
     te_errno rc = tapi_acse_cpe_rpc_response(ctx, NULL,
                 PTR_FROM_CPE(from_cpe_r));
@@ -804,7 +804,7 @@ te_errno
 tapi_acse_download_resp(tapi_acse_context_t *ctx,
                         cwmp_download_response_t **resp)
 {
-    cwmp_data_from_cpe_t from_cpe_loc;
+    cwmp_data_from_cpe_t from_cpe_loc = {.p = NULL};
     te_errno rc = tapi_acse_cpe_rpc_response(ctx, NULL, &from_cpe_loc);
     if (NULL != resp && NULL != from_cpe_loc.p)
         *resp = from_cpe_loc.download_r;
@@ -841,7 +841,7 @@ te_errno
 tapi_acse_get_parameter_values_resp(tapi_acse_context_t *ctx,
                                     cwmp_values_array_t **resp)
 {
-    cwmp_data_from_cpe_t from_cpe_loc;
+    cwmp_data_from_cpe_t from_cpe_loc = {.p = NULL};
 
     te_errno rc = tapi_acse_cpe_rpc_response(ctx, NULL, &from_cpe_loc);
 
@@ -941,7 +941,7 @@ te_errno
 tapi_acse_get_parameter_names_resp(tapi_acse_context_t *ctx,
                                    string_array_t **resp)
 {
-    cwmp_data_from_cpe_t from_cpe_loc;
+    cwmp_data_from_cpe_t from_cpe_loc = {.p = NULL};
     te_errno rc = tapi_acse_cpe_rpc_response(ctx, NULL, &from_cpe_loc);
     if (0 == rc && NULL != resp && NULL != from_cpe_loc.p)
     { 
@@ -991,7 +991,7 @@ tapi_acse_set_parameter_values(tapi_acse_context_t *ctx,
 te_errno
 tapi_acse_set_parameter_values_resp(tapi_acse_context_t *ctx, int *status)
 {
-    cwmp_data_from_cpe_t from_cpe_loc;
+    cwmp_data_from_cpe_t from_cpe_loc = {.p = NULL};
     te_errno rc = tapi_acse_cpe_rpc_response(ctx, NULL, &from_cpe_loc);
     if (0 == rc && NULL != status && NULL != from_cpe_loc.p)
         *status = from_cpe_loc.set_parameter_values_r->Status;
@@ -1112,7 +1112,7 @@ te_errno
 tapi_acse_add_object_resp(tapi_acse_context_t *ctx,
                           int *obj_index, int *add_status)
 {
-    cwmp_data_from_cpe_t from_cpe_loc;
+    cwmp_data_from_cpe_t from_cpe_loc = {.p = NULL};
     te_errno             rc;
 
     from_cpe_loc.p = NULL;
@@ -1155,7 +1155,7 @@ tapi_acse_delete_object(tapi_acse_context_t *ctx,
 te_errno
 tapi_acse_delete_object_resp(tapi_acse_context_t *ctx, int *del_status)
 {
-    cwmp_data_from_cpe_t from_cpe_loc;
+    cwmp_data_from_cpe_t from_cpe_loc = {.p = NULL};
     te_cwmp_rpc_cpe_t    resp_code;
     te_errno             rc;
 
