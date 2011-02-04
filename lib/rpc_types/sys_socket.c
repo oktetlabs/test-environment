@@ -1079,6 +1079,7 @@ sockopt_is_boolean(rpc_sockopt opt)
         case RPC_SO_USELOOPBACK:
         case RPC_SO_EXCLUSIVEADDRUSE:
         case RPC_SO_DGRAM_ERRIND:
+        case RPC_SO_TIMESTAMP:
 
         case RPC_IP_MULTICAST_LOOP:
         case RPC_IP_PKTINFO:
