@@ -471,6 +471,8 @@ typedef enum rpc_sockopt {
                                  have a mechanism to disable UDP checksum
                                  calculation, it may simply store this
                                  option without taking any action. */
+    RPC_SO_TIMESTAMP,       /**< Enabling/disabling the receiving of the 
+                                 SO_TIMESTAMP control message. */
 
     RPC_SOCKOPT_UNKNOWN     /**< Invalid socket option */
 

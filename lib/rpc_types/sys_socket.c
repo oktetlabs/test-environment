@@ -615,6 +615,7 @@ rpc_sockopt2level(rpc_sockopt opt)
         case RPC_SO_PROTOCOL_INFOA:
         case RPC_SO_PROTOCOL_INFOW:
         case RPC_SO_DGRAM_ERRIND:
+        case RPC_SO_TIMESTAMP:
             return RPC_SOL_SOCKET;
 
         case RPC_IP_ADD_MEMBERSHIP:
@@ -730,6 +731,7 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(SO_PROTOCOL_INFOA);
         RPC2STR(SO_PROTOCOL_INFOW);
         RPC2STR(SO_DGRAM_ERRIND);
+        RPC2STR(SO_TIMESTAMP);
         RPC2STR(IP_ADD_MEMBERSHIP);
         RPC2STR(IP_DROP_MEMBERSHIP);
         RPC2STR(IP_MULTICAST_IF);
@@ -843,6 +845,7 @@ sockopt_rpc2h(rpc_sockopt opt)
         RPC2H_CHECK(SO_PROTOCOL_INFOA);
         RPC2H_CHECK(SO_PROTOCOL_INFOW);
         RPC2H_CHECK(SO_DGRAM_ERRIND);
+        RPC2H_CHECK(SO_TIMESTAMP);
         RPC2H_CHECK(IP_ADD_MEMBERSHIP);
         RPC2H_CHECK(IP_DROP_MEMBERSHIP);
         RPC2H_CHECK(IP_MULTICAST_IF);
@@ -966,6 +969,7 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC_CHECK(SO_PROTOCOL_INFOA);
                 H2RPC_CHECK(SO_PROTOCOL_INFOW);
                 H2RPC_CHECK(SO_DGRAM_ERRIND);
+                H2RPC_CHECK(SO_TIMESTAMP);
                 default: return RPC_SOCKOPT_MAX;
             }
             break;
