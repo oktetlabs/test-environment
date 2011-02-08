@@ -1996,8 +1996,6 @@ rpc_fstat(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "te_fstat", &in, &out);
 
-    ERROR("%s: out st_mode = %x", __FUNCTION__, out.buf.st_mode);
-
     if (RPC_IS_CALL_OK(rpcs))
         memcpy(buf, &out.buf, sizeof(out.buf));
 
