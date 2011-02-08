@@ -35,6 +35,10 @@
 #ifndef __TE_TAPI_RPC_UNISTD_H__
 #define __TE_TAPI_RPC_UNISTD_H__
 
+#if HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+
 #include "rcf_rpc.h"
 #include "te_rpc_fcntl.h"
 
@@ -891,6 +895,22 @@ extern int rpc_setrlimit(rcf_rpc_server *rpcs,
  */
 extern int rpc_getrlimit(rcf_rpc_server *rpcs,
                          int resource, tarpc_rlimit *rlim);
+
+/**
+ * Get file status.
+ *
+ * @param rpcs          RPC server
+ * @param fd            FD to stat
+ * @param buf           Buffer for file status.
+ *
+ * @return     -1 in the case of failure or 0 on success
+ */
+extern int rpc_fstat(rcf_rpc_server *rpcs,
+                     int fd,
+                     rpc_stat *buf);
+extern int rpc_fstat64(rcf_rpc_server *rpcs,
+                       int fd,
+                       rpc_stat *buf);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -158,7 +158,7 @@ rpc_close(rcf_rpc_server *rpcs, int fd)
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -190,7 +190,7 @@ rpc_write_at_offset(rcf_rpc_server *rpcs, int fd, char* buf,
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -209,7 +209,7 @@ rpc_write_at_offset(rcf_rpc_server *rpcs, int fd, char* buf,
     TAPI_RPC_LOG("RPC (%s,%s)%s: write_at_offset(%d, %p, %d, %lld)"
                  " -> %lld, %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 fd, buf, buflen, offset, 
+                 fd, buf, buflen, offset,
                  out.offset, out.written,
                  errno_rpc2str(RPC_ERRNO(rpcs)));
 
@@ -477,7 +477,7 @@ rpc_lseek(rcf_rpc_server *rpcs,
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: lseek(%d, %lld, %s) -> %lld (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 fd, pos, lseek_mode_rpc2str(mode), 
+                 fd, pos, lseek_mode_rpc2str(mode),
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(lseek, out.retval);
@@ -492,7 +492,7 @@ rpc_fsync(rcf_rpc_server *rpcs, int fd)
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -568,7 +568,7 @@ rpc_readv_gen(rcf_rpc_server *rpcs,
             iovec_arr[i].iov_base.iov_base_len = iov[i].iov_rlen;
             iovec_arr[i].iov_len = iov[i].iov_len;
             snprintf(str_buf + strlen(str_buf),
-                     sizeof(str_buf) - strlen(str_buf), 
+                     sizeof(str_buf) - strlen(str_buf),
                      "%s{%"TE_PRINTF_SIZE_T"u, %p[%"TE_PRINTF_SIZE_T"u]}",
                      (i == 0) ? "" : ", ", iov[i].iov_len,
                      iov[i].iov_base, iov[i].iov_rlen);
@@ -649,7 +649,7 @@ rpc_writev(rcf_rpc_server *rpcs,
             iovec_arr[i].iov_base.iov_base_len = iov[i].iov_rlen;
             iovec_arr[i].iov_len = iov[i].iov_len;
             snprintf(str_buf + strlen(str_buf),
-                     sizeof(str_buf) - strlen(str_buf), 
+                     sizeof(str_buf) - strlen(str_buf),
                      "%s{%"TE_PRINTF_SIZE_T"u, %p[%"TE_PRINTF_SIZE_T"u]}",
                      (i == 0) ? "" : ", ", iov[i].iov_len,
                      iov[i].iov_base, iov[i].iov_rlen);
@@ -983,7 +983,7 @@ pollreq2str(struct rpc_pollfd *ufds, unsigned int nfds,
 {
     unsigned int    i;
     int             rc;
-    
+
     if (buflen == 0)
     {
         ERROR("Too small buffer for poll request conversion");
@@ -1565,7 +1565,7 @@ rpc_access(rcf_rpc_server *rpcs,
 {
     tarpc_access_in  in;
     tarpc_access_out out;
-    
+
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
 
@@ -1580,10 +1580,10 @@ rpc_access(rcf_rpc_server *rpcs,
     {
         in.path.path_len = strlen(path) + 1;
         in.path.path_val = (char *)strdup(path); /* FIXME */
-    }    
+    }
 
     rcf_rpc_call(rpcs, "access", &in, &out);
-    
+
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(access, out.retval);
 
     TAPI_RPC_LOG("RPC (%s,%s): access(%s,%s) -> %d (%s)",
@@ -1600,11 +1600,11 @@ rpc_getpwnam(rcf_rpc_server *rpcs, const char *name)
 {
     tarpc_getpwnam_in  in;
     tarpc_getpwnam_out out;
-    
+
     static struct passwd passwd = { NULL, NULL, 0, 0, NULL, NULL, NULL};
-    
+
     struct passwd *res;
-    
+
     free(passwd.pw_name);
     free(passwd.pw_passwd);
     free(passwd.pw_gecos);
@@ -1630,7 +1630,7 @@ rpc_getpwnam(rcf_rpc_server *rpcs, const char *name)
     in.name.name_len = strlen(name) + 1;
 
     rcf_rpc_call(rpcs, "getpwnam", &in, &out);
-                 
+
     CHECK_RETVAL_VAR(getpwnam, out.passwd.name.name_val,
                      FALSE, NULL);
 
@@ -1649,7 +1649,7 @@ rpc_getpwnam(rcf_rpc_server *rpcs, const char *name)
         passwd.pw_shell = out.passwd.shell.shell_val;
         memset(&out, 0, sizeof(out));
     }
-    
+
     TAPI_RPC_LOG("RPC (%s,%s): getpwnam(%s) -> %p (%s)",
                  rpcs->ta, rpcs->name, name, res,
                  errno_rpc2str(RPC_ERRNO(rpcs)));
@@ -1662,7 +1662,7 @@ rpc_uname(rcf_rpc_server *rpcs, struct utsname *buf)
 {
     tarpc_uname_in  in;
     tarpc_uname_out out;
-    
+
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
 
@@ -1675,7 +1675,7 @@ rpc_uname(rcf_rpc_server *rpcs, struct utsname *buf)
     rpcs->op = RCF_RPC_CALL_WAIT;
 
     rcf_rpc_call(rpcs, "uname", &in, &out);
-                 
+
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(uname, out.retval);
 
     if (RPC_IS_CALL_OK(rpcs))
@@ -1687,7 +1687,7 @@ rpc_uname(rcf_rpc_server *rpcs, struct utsname *buf)
                     sizeof(buf->_dst));                     \
             free(out.buf._field._field##_val);              \
         } while(0)
-        
+
         GET_STR(sysname, sysname);
         GET_STR(nodename, nodename);
         GET_STR(release, release);
@@ -1696,11 +1696,11 @@ rpc_uname(rcf_rpc_server *rpcs, struct utsname *buf)
 #undef GET_STR
         memset(&out, 0, sizeof(out));
     }
-    
+
     TAPI_RPC_LOG("RPC (%s,%s): uname() -> %d "
                  "(\"%s\",\"%s\",\"%s\",\"%s\",\"%s\") (%s)",
                  rpcs->ta, rpcs->name, out.retval,
-                 buf->sysname, buf->nodename, 
+                 buf->sysname, buf->nodename,
                  buf->release, buf->version, buf->machine,
                  errno_rpc2str(RPC_ERRNO(rpcs)));
 
@@ -1761,7 +1761,7 @@ rpc_gettimeofday(rcf_rpc_server *rpcs,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
                  tarpc_timeval2str(tv),
                  (out.retval != 0 || tz == NULL) ? 0 :
-                     (int)tz->tz_minuteswest, 
+                     (int)tz->tz_minuteswest,
                  (out.retval != 0 || tz == NULL) ? 0 :
                      (int)tz->tz_dsttime);
 
@@ -1938,7 +1938,7 @@ rpc_getrlimit(rcf_rpc_server *rpcs,
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     rpcs->op = RCF_RPC_CALL_WAIT;
 
     in.resource = resource;
@@ -1966,3 +1966,88 @@ rpc_getrlimit(rcf_rpc_server *rpcs,
 
     RETVAL_INT(getrlimit, out.retval);
 }
+
+int
+rpc_fstat(rcf_rpc_server *rpcs,
+          int fd,
+          rpc_stat *buf)
+{
+    tarpc_te_fstat_in  in;
+    tarpc_te_fstat_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(te_fstat, -1);
+    }
+
+    if (buf == NULL)
+    {
+        ERROR("%s(): stat buffer pointer", __FUNCTION__);
+        RETVAL_INT(te_fstat, -1);
+    }
+
+    in.fd = fd;
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+
+    rcf_rpc_call(rpcs, "te_fstat", &in, &out);
+
+    ERROR("%s: out st_mode = %x", __FUNCTION__, out.buf.st_mode);
+
+    if (RPC_IS_CALL_OK(rpcs))
+        memcpy(buf, &out.buf, sizeof(out.buf));
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(fstat, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s): fstat(%d) -> %d (%s)",
+                 rpcs->ta, rpcs->name, fd, 
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(te_fstat, out.retval);
+}
+
+int
+rpc_fstat64(rcf_rpc_server *rpcs,
+            int fd,
+            rpc_stat *buf)
+{
+    tarpc_te_fstat64_in  in;
+    tarpc_te_fstat64_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(te_fstat64, -1);
+    }
+
+    if (buf == NULL)
+    {
+        ERROR("%s(): stat buffer pointer", __FUNCTION__);
+        RETVAL_INT(te_fstat64, -1);
+    }
+    
+    in.fd = fd;
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+
+    rcf_rpc_call(rpcs, "te_fstat64", &in, &out);
+
+    if (RPC_IS_CALL_OK(rpcs))
+        memcpy(buf, &out.buf, sizeof(out.buf));
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(fstat, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s): fstat64(%d) -> %d (%s)",
+                 rpcs->ta, rpcs->name, fd, 
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(te_fstat64, out.retval);
+}
+

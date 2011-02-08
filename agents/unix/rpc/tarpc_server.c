@@ -235,7 +235,7 @@ tarpc_find_func(te_bool use_libc, const char *name, api_func *func)
 
     *func = dlsym(handle, name);
 
-    try_ta_symtbl:
+try_ta_symtbl:
     if (*func == NULL)
     {
         if ((*func = rcf_ch_symbol_addr(name, 1)) == NULL)
@@ -954,6 +954,100 @@ TARPC_FUNC(shutdown, {},
     MAKE_CALL(out->retval = func(in->fd, shut_how_rpc2h(in->how)));
 }
 )
+
+/*--------------- fstat() -------------------------------*/
+
+
+
+#define FSTAT_COPY(tobuf, outbuf) \
+    tobuf->st_dev = outbuf.st_dev;             \
+    tobuf->st_ino = outbuf.st_ino;             \
+    tobuf->st_mode = outbuf.st_mode;           \
+    tobuf->st_nlink = outbuf.st_nlink;         \
+    tobuf->st_uid = outbuf.st_uid;             \
+    tobuf->st_gid = outbuf.st_gid;             \
+    tobuf->st_rdev = outbuf.st_rdev;           \
+    tobuf->st_size = outbuf.st_size;           \
+    tobuf->st_blksize = outbuf.st_blksize;     \
+    tobuf->st_blocks = outbuf.st_blocks;       \
+    tobuf->ifsock = S_ISSOCK(outbuf.st_mode);  \
+    tobuf->iflnk = S_ISLNK(outbuf.st_mode);    \
+    tobuf->ifreg = S_ISREG(outbuf.st_mode);    \
+    tobuf->ifblk = S_ISBLK(outbuf.st_mode);    \
+    tobuf->ifdir = S_ISDIR(outbuf.st_mode);    \
+    tobuf->ifchr = S_ISCHR(outbuf.st_mode);    \
+    tobuf->ififo = S_ISFIFO(outbuf.st_mode);
+
+int
+te_fstat(te_bool use_libc, int fd, rpc_stat *rpcbuf)
+{
+    api_func stat_func;
+    int rc;
+
+#ifdef __linux__
+    struct stat buf;
+
+    memset(&buf, 0, sizeof(buf));
+    if (tarpc_find_func(use_libc, "__fxstat", &stat_func) != 0)
+    {
+        ERROR("Failed to find __fxstat function");
+        return -1;
+    }
+
+    rc = stat_func(_STAT_VER, fd, &buf);
+    if (rc < 0)
+        return rc;
+
+    FSTAT_COPY(rpcbuf, buf);
+
+#else
+#error "fstat family is not currently supported for non-linux unixes.
+#endif
+    return 0;
+}
+
+int
+te_fstat64(te_bool use_libc, int fd, rpc_stat *rpcbuf)
+{
+    api_func stat_func;
+    int rc;
+
+#ifdef __linux__
+    struct stat64 buf;
+
+    memset(&buf, 0, sizeof(buf));
+    if (tarpc_find_func(use_libc, "__fxstat64", &stat_func) != 0)
+    {
+        ERROR("Failed to find __fxstat64 function");
+        return -1;
+    }
+
+    rc = stat_func(_STAT_VER, fd, &buf);
+    if (rc < 0)
+        return rc;
+
+    FSTAT_COPY(rpcbuf, buf);
+#else
+#error "fstat family is not currently supported for non-linux unixes.
+#endif
+    return 0;
+}
+
+TARPC_FUNC(te_fstat, {},
+{
+    struct stat buf;
+
+    MAKE_CALL(out->retval = func(in->common.use_libc, in->fd, &out->buf));
+}
+)
+
+TARPC_FUNC(te_fstat64, {},
+{
+    MAKE_CALL(out->retval = func(in->common.use_libc, in->fd, &out->buf));
+}
+)
+
+#undef FSTAT_COPY;
 
 /*-------------- sendto() ------------------------------*/
 
@@ -6459,9 +6553,9 @@ ta_dlopen(tarpc_ta_dlopen_in *in)
     api_func_void           dlerror_func;
 
     if ((tarpc_find_func(in->common.use_libc, "dlopen",
-                         &dlopen_func) != 0) ||
+                         (api_func *)&dlopen_func) != 0) ||
         (tarpc_find_func(in->common.use_libc, "dlerror",
-                         &dlerror_func) != 0))
+                         (api_func *)&dlerror_func) != 0))
     {
         ERROR("Failed to resolve functions, %s", __FUNCTION__);
         return NULL;
@@ -6493,15 +6587,15 @@ ta_dlsym(tarpc_ta_dlsym_in *in)
     api_func_void           dlerror_func;
 
     if ((tarpc_find_func(in->common.use_libc, "dlsym",
-                         &dlsym_func) != 0) ||
+                         (api_func *)&dlsym_func) != 0) ||
         (tarpc_find_func(in->common.use_libc, "dlerror",
-                         &dlerror_func) != 0))
+                         (api_func *)&dlerror_func) != 0))
     {
         ERROR("Failed to resolve functions, %s", __FUNCTION__);
         return NULL;
     }
 
-    return dlsym_func(in->handle, in->symbol);
+    return dlsym_func((void *)in->handle, in->symbol);
 }
 
 /*-------------- dlsym_call() --------------------------*/
@@ -6530,9 +6624,9 @@ ta_dlsym_call(tarpc_ta_dlsym_call_in *in)
     int (*func)(void);
 
     if ((tarpc_find_func(in->common.use_libc, "dlsym",
-                         &dlsym_func) != 0) ||
+                         (api_func *)&dlsym_func) != 0) ||
         (tarpc_find_func(in->common.use_libc, "dlerror",
-                         &dlerror_func) != 0))
+                         (api_func *)&dlerror_func) != 0))
     {
         ERROR("Failed to resolve functions, %s", __FUNCTION__);
         return -1;
@@ -6568,7 +6662,8 @@ ta_dlerror(tarpc_ta_dlerror_in *in)
 {
     api_func_void           dlerror_func;
 
-    if (tarpc_find_func(in->common.use_libc, "dlerror", &dlerror_func) != 0)
+    if (tarpc_find_func(in->common.use_libc, "dlerror",
+                        (api_func *)&dlerror_func) != 0)
     {
         ERROR("Failed to resolve functions, %s", __FUNCTION__);
         return NULL;

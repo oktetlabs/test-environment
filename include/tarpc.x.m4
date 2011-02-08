@@ -505,8 +505,65 @@ struct tarpc_shutdown_in {
 
 typedef struct tarpc_int_retval_out tarpc_shutdown_out;
 
+/* fstat */
 
+/* to be honest this looks like complete shit to me - I'm
+ * not sure about types length etc. and it's not clear how
+ * to convert 'long' value to 'short' one in the test.
+ * macros for st_dev work and that's all we need right now.
+ */
+struct tarpc_stat {
+    uint64_t st_dev;
+    uint64_t st_ino;
+    uint64_t st_mode;
+    uint64_t st_nlink;
+    uint64_t st_uid;
+    uint64_t st_gid;
+    uint64_t st_rdev;
+    uint64_t st_size;
+    uint64_t st_blksize;
+    uint64_t st_blocks;
+    /* uint64_t st_atime; */
+    /* uint64_t st_mtime; */
+    /* uint64_t st_ctime; */
+    tarpc_bool ifsock;
+    tarpc_bool iflnk;
+    tarpc_bool ifreg;
+    tarpc_bool ifblk;
+    tarpc_bool ifdir;
+    tarpc_bool ifchr;
+    tarpc_bool ififo;
+};
 
+typedef struct tarpc_stat rpc_stat;
+
+struct tarpc_te_fstat_in {
+    struct tarpc_in_arg common;
+    tarpc_int               fd;
+
+    struct tarpc_stat buf;
+};
+
+struct tarpc_te_fstat_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int retval;
+    struct tarpc_stat buf;
+};
+
+struct tarpc_te_fstat64_in {
+    struct tarpc_in_arg common;
+    tarpc_int               fd;
+
+    struct tarpc_stat buf;
+};
+
+struct tarpc_te_fstat64_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int retval;
+    struct tarpc_stat buf;
+};
 
 /* read() / write() */
 
@@ -4221,6 +4278,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(dup2)
         RPC_DEF(close)
         RPC_DEF(shutdown)
+        RPC_DEF(te_fstat)
+        RPC_DEF(te_fstat64)
 
         RPC_DEF(read)
         RPC_DEF(write)
