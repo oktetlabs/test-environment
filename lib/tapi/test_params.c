@@ -107,7 +107,7 @@ test_get_param(int argc, char *argv[], const char *name)
     }
 
     /* we've found required parameter */
-    RING("Parameter %s has value '%s'", name, ptr);
+    INFO("Parameter %s has value '%s'", name, ptr);
 
     if (strncmp(ptr, TEST_ARG_VAR_PREFIX,
                 strlen(TEST_ARG_VAR_PREFIX)) == 0)
