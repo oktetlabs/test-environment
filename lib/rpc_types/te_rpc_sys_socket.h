@@ -473,6 +473,8 @@ typedef enum rpc_sockopt {
                                  option without taking any action. */
     RPC_SO_TIMESTAMP,       /**< Enabling/disabling the receiving of the 
                                  SO_TIMESTAMP control message. */
+    RPC_SO_TIMESTAMPNS,     /**< Enabling/disabling the receiving of the 
+                                 SO_TIMESTAMPNS control message. */
 
     RPC_SOCKOPT_UNKNOWN     /**< Invalid socket option */
 
@@ -521,6 +523,8 @@ extern rpc_socklevel rpc_sockopt2level(rpc_sockopt opt);
 typedef enum rpc_ioctl_code {
     RPC_SIOCGSTAMP,         /**< Return timestamp of the last packet
                                  passed to the user */
+    RPC_SIOCGSTAMPNS,       /**< Return timestamp of the last packet
+                                 passed to the user in timespec structure */
     RPC_FIOASYNC,           /**< Enable/disable asynchronous I/O mode
                                  of the socket */
     RPC_FIONBIO,            /**< Enable/disable non-blocking 

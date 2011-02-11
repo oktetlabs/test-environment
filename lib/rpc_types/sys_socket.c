@@ -616,6 +616,7 @@ rpc_sockopt2level(rpc_sockopt opt)
         case RPC_SO_PROTOCOL_INFOW:
         case RPC_SO_DGRAM_ERRIND:
         case RPC_SO_TIMESTAMP:
+        case RPC_SO_TIMESTAMPNS:
             return RPC_SOL_SOCKET;
 
         case RPC_IP_ADD_MEMBERSHIP:
@@ -732,6 +733,7 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(SO_PROTOCOL_INFOW);
         RPC2STR(SO_DGRAM_ERRIND);
         RPC2STR(SO_TIMESTAMP);
+        RPC2STR(SO_TIMESTAMPNS);
         RPC2STR(IP_ADD_MEMBERSHIP);
         RPC2STR(IP_DROP_MEMBERSHIP);
         RPC2STR(IP_MULTICAST_IF);
@@ -846,6 +848,7 @@ sockopt_rpc2h(rpc_sockopt opt)
         RPC2H_CHECK(SO_PROTOCOL_INFOW);
         RPC2H_CHECK(SO_DGRAM_ERRIND);
         RPC2H_CHECK(SO_TIMESTAMP);
+        RPC2H_CHECK(SO_TIMESTAMPNS);
         RPC2H_CHECK(IP_ADD_MEMBERSHIP);
         RPC2H_CHECK(IP_DROP_MEMBERSHIP);
         RPC2H_CHECK(IP_MULTICAST_IF);
@@ -970,6 +973,7 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC_CHECK(SO_PROTOCOL_INFOW);
                 H2RPC_CHECK(SO_DGRAM_ERRIND);
                 H2RPC_CHECK(SO_TIMESTAMP);
+                H2RPC_CHECK(SO_TIMESTAMPNS);
                 default: return RPC_SOCKOPT_MAX;
             }
             break;
@@ -1080,6 +1084,7 @@ sockopt_is_boolean(rpc_sockopt opt)
         case RPC_SO_EXCLUSIVEADDRUSE:
         case RPC_SO_DGRAM_ERRIND:
         case RPC_SO_TIMESTAMP:
+        case RPC_SO_TIMESTAMPNS:
 
         case RPC_IP_MULTICAST_LOOP:
         case RPC_IP_PKTINFO:
@@ -1177,6 +1182,7 @@ ioctl_rpc2str(rpc_ioctl_code code)
     switch (code)
     {
         RPC2STR(SIOCGSTAMP);
+        RPC2STR(SIOCGSTAMPNS);
         RPC2STR(FIOASYNC);
         RPC2STR(FIONBIO);
         RPC2STR(FIONREAD);
@@ -1251,6 +1257,7 @@ ioctl_rpc2h(rpc_ioctl_code code)
     switch (code)
     {
         RPC2H_CHECK(SIOCGSTAMP);
+        RPC2H_CHECK(SIOCGSTAMPNS);
         RPC2H_CHECK(FIOASYNC);
         RPC2H_CHECK(FIONBIO);
         RPC2H_CHECK(FIONREAD);

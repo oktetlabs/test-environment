@@ -136,6 +136,18 @@ rpc_ioctl(rcf_rpc_server *rpcs,
             }
             break;
 
+        case RPC_SIOCGSTAMPNS:
+            in.access = IOCTL_RD;
+            if (arg != NULL)
+            {
+                in.req.req_val[0].type = IOCTL_TIMESPEC;
+                in.req.req_val[0].ioctl_request_u.req_timespec.tv_sec =
+                    ((struct tarpc_timespec *)arg)->tv_sec;
+                in.req.req_val[0].ioctl_request_u.req_timespec.tv_nsec =
+                    ((struct tarpc_timespec *)arg)->tv_nsec;
+            }
+            break;
+
         case RPC_FIONBIO:
         case RPC_SIOCSPGRP:
         case RPC_FIOASYNC:
@@ -510,6 +522,13 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                     out.req.req_val[0].ioctl_request_u.req_timeval.tv_usec;
                 break;
 
+            case IOCTL_TIMESPEC:
+                ((struct tarpc_timespec *)arg)->tv_sec =
+                    out.req.req_val[0].ioctl_request_u.req_timespec.tv_sec;
+                ((struct tarpc_timespec *)arg)->tv_nsec =
+                    out.req.req_val[0].ioctl_request_u.req_timespec.tv_nsec;
+                break;
+
             case IOCTL_IFREQ:
             {
                 struct ifreq        *ifreq = (struct ifreq *)arg;
@@ -678,6 +697,9 @@ rpc_ioctl(rcf_rpc_server *rpcs,
             break;
         case IOCTL_TIMEVAL:
             req_val = tarpc_timeval2str((struct tarpc_timeval *)arg);
+            break;
+        case IOCTL_TIMESPEC:
+            req_val = tarpc_timespec2str((struct tarpc_timespec *)arg);
             break;
 
         case IOCTL_INT:

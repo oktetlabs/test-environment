@@ -2522,6 +2522,7 @@ TARPC_FUNC(fcntl, {},
 typedef union ioctl_param {
     int              integer;
     struct timeval   tv;
+    struct timespec  ts;
     struct ifreq     ifreq;
     struct ifconf    ifconf;
     struct arpreq    arpreq;
@@ -2553,6 +2554,14 @@ tarpc_ioctl_pre(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                 out->req.req_val[0].ioctl_request_u.req_timeval.tv_sec;
             req->tv.tv_usec =
                 out->req.req_val[0].ioctl_request_u.req_timeval.tv_usec;
+            break;
+
+        case IOCTL_TIMESPEC:
+            reqlen = sizeof(struct timespec);
+            req->ts.tv_sec =
+                out->req.req_val[0].ioctl_request_u.req_timespec.tv_sec;
+            req->ts.tv_nsec =
+                out->req.req_val[0].ioctl_request_u.req_timespec.tv_nsec;
             break;
 
         case IOCTL_IFREQ:
@@ -2752,6 +2761,13 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                 req->tv.tv_sec;
             out->req.req_val[0].ioctl_request_u.req_timeval.tv_usec =
                 req->tv.tv_usec;
+            break;
+
+        case IOCTL_TIMESPEC:
+            out->req.req_val[0].ioctl_request_u.req_timespec.tv_sec =
+                req->ts.tv_sec;
+            out->req.req_val[0].ioctl_request_u.req_timespec.tv_nsec =
+                req->ts.tv_nsec;
             break;
 
         case IOCTL_IFREQ:

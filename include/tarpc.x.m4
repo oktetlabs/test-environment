@@ -2388,6 +2388,7 @@ enum ioctl_type {
     IOCTL_UNKNOWN,
     IOCTL_INT,
     IOCTL_TIMEVAL,
+    IOCTL_TIMESPEC,
     IOCTL_IFREQ,
     IOCTL_IFCONF,
     IOCTL_ARPREQ,
@@ -2402,12 +2403,13 @@ enum ioctl_access {
 };    
 
 union ioctl_request switch (ioctl_type type) {
-    case IOCTL_INT:     tarpc_int     req_int;
-    case IOCTL_TIMEVAL: tarpc_timeval req_timeval;
-    case IOCTL_IFREQ:   tarpc_ifreq   req_ifreq; 
-    case IOCTL_IFCONF:  tarpc_ifconf  req_ifconf; 
-    case IOCTL_ARPREQ:  tarpc_arpreq  req_arpreq;
-    case IOCTL_SGIO:    tarpc_sgio    req_sgio;
+    case IOCTL_INT:      tarpc_int      req_int;
+    case IOCTL_TIMEVAL:  tarpc_timeval  req_timeval;
+    case IOCTL_TIMESPEC: tarpc_timespec req_timespec;
+    case IOCTL_IFREQ:    tarpc_ifreq    req_ifreq;
+    case IOCTL_IFCONF:   tarpc_ifconf   req_ifconf;
+    case IOCTL_ARPREQ:   tarpc_arpreq   req_arpreq;
+    case IOCTL_SGIO:     tarpc_sgio     req_sgio;
 };
 
 struct tarpc_ioctl_in {
