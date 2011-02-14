@@ -210,7 +210,7 @@ cwmp_str_array_log(unsigned log_level, const char *intro, string_array_t *a)
 
     for (i = 0; (i < a->size) && (total_p < log_buf_size); i++)
     {
-        p = snprintf(s, log_buf_size - total_p, "   %s:\n", a->items[i]);
+        p = snprintf(s, log_buf_size - total_p, "   %s\n", a->items[i]);
         s += p; total_p += p;
     }
 

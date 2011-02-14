@@ -321,6 +321,10 @@ typedef struct cwmp_session_t {
                                            when @p rpc_item is NULL     */
 
     int (*orig_fparse)(struct soap*);/**< Original fparse in gSOAP  */
+    int (*orig_fsend)(struct soap*, const char*, size_t);
+                                     /**< Original fsend in gSOAP  */
+    size_t (*orig_frecv)(struct soap*, char*, size_t);
+                                      /**< Original frecv in gSOAP  */
 } cwmp_session_t;
 
 

@@ -56,9 +56,11 @@
 
 #include "acse_mem.h"
 
+/* local buffer for I/O XML logging, seems enough, increase if need */
+#define LOG_XML_BUF 0x4000
 
+#define SEND_FILE_BUF 0x4000
 
- 
 /** XML namespaces for gSOAP */
 SOAP_NMAC struct Namespace namespaces[] =
 {
@@ -77,6 +79,9 @@ SOAP_NMAC struct Namespace namespaces[] =
 
 /** Single REALM for Basic/Digest Auth. which we support. */
 const char *authrealm = "tr-069";
+
+static char send_log_buf[LOG_XML_BUF];
+static char recv_log_buf[LOG_XML_BUF];
 
 /**
  * Force stop CWMP session ignoring its current state and 
@@ -97,7 +102,6 @@ cwmp_force_stop_session(cwmp_session_t *sess)
     return 0;
 }
 
-#define SEND_FILE_BUF 0x4000
 
 te_errno
 acse_send_file_portion(cwmp_session_t *session)
@@ -892,6 +896,58 @@ cwmp_fparse(struct soap *soap)
     return rc;
 }
 
+
+/** Callback fsend for gSOAP, to log XML output */
+int
+acse_send(struct soap *soap, const char *s, size_t n) 
+{
+    cwmp_session_t *session = (cwmp_session_t *)soap->user;
+    size_t          log_len = n;
+    if (n >= LOG_XML_BUF)
+    {
+        RING("Out XML length %d, more then log buf, cut", n);
+        log_len = LOG_XML_BUF - 1;
+    }
+    memcpy(send_log_buf, s, log_len);
+    send_log_buf[log_len] = '\0';
+
+    /* TODO: should we make loglevel customizable here? */
+    RING("Send to %s %s: \n%s", 
+        session->cpe_owner ? "CPE" : "ACS", 
+        session->cpe_owner ? session->cpe_owner->name : 
+                             session->acs_owner->name, 
+        send_log_buf);
+    /* call standard gSOAP fsend */
+    return session->orig_fsend(soap, s, n);
+}
+
+/** Callback frecv for gSOAP, to log XML output */
+size_t
+acse_recv(struct soap *soap, char *s, size_t n) 
+{
+    cwmp_session_t *session = (cwmp_session_t *)soap->user;
+    size_t          rc;
+    size_t          log_len;
+
+    /* call standard gSOAP frecv */
+    log_len = rc = session->orig_frecv(soap, s, n);
+
+    if (rc >= LOG_XML_BUF)
+    {
+        RING("Income XML length %u, more then log buf, cut", rc);
+        log_len = LOG_XML_BUF - 1;
+    }
+    memcpy(recv_log_buf, s, log_len);
+    recv_log_buf[log_len] = '\0';
+
+    /* TODO: should we make loglevel customizable here? */
+    RING("Recv from %s %s: \n%s", 
+        session->cpe_owner ? "CPE" : "ACS", 
+        session->cpe_owner ? session->cpe_owner->name : 
+                             session->acs_owner->name, 
+        recv_log_buf);
+    return rc;
+}
 /* see description in acse_internal.h */
 te_errno
 cwmp_new_session(int socket, acs_t *acs)
@@ -984,6 +1040,10 @@ cwmp_new_session(int socket, acs_t *acs)
 
     new_sess->orig_fparse = new_sess->m_soap.fparse;
     new_sess->m_soap.fparse = cwmp_fparse;
+    new_sess->orig_fsend = new_sess->m_soap.fsend;
+    new_sess->m_soap.fsend = acse_send;
+    new_sess->orig_frecv = new_sess->m_soap.frecv;
+    new_sess->m_soap.frecv = acse_recv;
 
     new_sess->state = CWMP_LISTEN; 
     acse_add_channel(channel);
