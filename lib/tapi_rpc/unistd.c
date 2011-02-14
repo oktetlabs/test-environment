@@ -1165,7 +1165,7 @@ rpc_epoll_create(rcf_rpc_server *rpcs, int size)
 
     rcf_rpc_call(rpcs, "epoll_create", &in, &out);
 
-    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(poll, out.retval);
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(epoll_create, out.retval);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: epoll_create(%d) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
