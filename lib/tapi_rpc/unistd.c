@@ -1304,6 +1304,81 @@ rpc_epoll_wait_gen(rcf_rpc_server *rpcs, int epfd,
     RETVAL_INT(epoll_wait, out.retval);
 }
 
+
+int
+rpc_epoll_pwait_gen(rcf_rpc_server *rpcs, int epfd,
+                    struct rpc_epoll_event *events, int rmaxev,
+                    int maxevents, int timeout, const rpc_sigset_p sigmask)
+{
+    rcf_rpc_op           op;
+    tarpc_epoll_pwait_in  in;
+    tarpc_epoll_pwait_out out;
+    int i;
+    tarpc_epoll_event *evts;
+
+    evts = calloc(rmaxev, sizeof(tarpc_epoll_event));
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(epoll_pwait, -1);
+    }
+
+    op = rpcs->op;
+
+    in.epfd = epfd;
+    in.timeout = timeout;
+    in.maxevents = maxevents;
+    in.sigmask = (tarpc_sigset_t)sigmask;
+    for (i = 0; i < rmaxev; i++)
+    {
+        evts[i].events = events[i].events;
+        evts[i].data.type = TARPC_ED_INT;
+        evts[i].data.tarpc_epoll_data_u.fd = events[i].data.fd;
+    }
+    in.events.events_len = rmaxev;
+    in.events.events_val = (struct tarpc_epoll_event *)evts;
+
+    if ((timeout > 0) && (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT))
+    {
+        rpcs->timeout = TE_SEC2MS(TAPI_RPC_TIMEOUT_EXTRA_SEC) + timeout;
+    }
+
+    rcf_rpc_call(rpcs, "epoll_pwait", &in, &out);
+
+    if (RPC_IS_CALL_OK(rpcs))
+    {
+        if (events != NULL && out.events.events_val != NULL)
+        {
+            for (i = 0; i < out.retval; i++)
+            {
+                events[i].events = out.events.events_val[i].events;
+                events[i].data.fd =
+                    out.events.events_val[i].data.tarpc_epoll_data_u.fd;
+            }
+        }
+        epollevt2str(events, MAX(out.retval, 0),
+                     str_buf_1, sizeof(str_buf_1));
+    }
+    else
+    {
+        *str_buf_1 = '\0';
+    }
+    free(evts);
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(epoll_pwait, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: epoll_pwait(%d, %p, %d, %d, 0x%x) "
+                 "-> %d (%s) %s",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 epfd, events, maxevents, timeout, (unsigned)sigmask,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)), str_buf_1);
+
+    RETVAL_INT(epoll_pwait, out.retval);
+}
+
 int
 rpc_open(rcf_rpc_server *rpcs,
          const char *path, rpc_fcntl_flags flags, rpc_file_mode_flags mode)
