@@ -197,7 +197,8 @@ rpc_check_port_is_free(rcf_rpc_server *rpcs, uint16_t port)
                  rpcs->ta, rpcs->name, (int)port, out.retval,
                  errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_BOOL(check_port_is_free, out.retval);
+    TAPI_RPC_OUT(check_port_is_free, FALSE);
+    return out.retval; /* no jumps! */
 }
 
 int
