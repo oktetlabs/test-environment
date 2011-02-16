@@ -3497,7 +3497,8 @@ TARPC_FUNC(epoll_pwait,
                      sizeof(sigset_t), 0);
 
     MAKE_CALL(out->retval = func(in->epfd, events, in->maxevents,
-                                 in->timeout, in->sigmask));
+                                 in->timeout,
+                                 rcf_pch_mem_get(in->sigmask)));
     VERB("epoll_pwait(): retval=%d", out->retval);
 
     for (i = 0; i < out->events.events_len; i++)
