@@ -210,7 +210,7 @@
 -->
 
   <add>
-    <instance oid="/agent:Agt_A/rpcserver:acse_ctl" value="thread_local"/> 
+    <instance oid="/agent:agt_acse/rpcserver:acse_ctl" value="thread_local"/> 
     <instance oid="/local:"/>
     <instance oid="/local:/acse:"/>
     <instance oid="/local:/acse:/acs:A"/>

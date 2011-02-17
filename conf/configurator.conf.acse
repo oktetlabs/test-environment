@@ -188,12 +188,12 @@
   </add>
 
   <add>
-    <instance oid="/agent:Agt_A/rsrc:eth0" 
-              value="/agent:Agt_A/interface:eth0"/>
+    <instance oid="/agent:agt_acse/rsrc:eth0" 
+              value="/agent:agt_acse/interface:eth0"/>
   </add>
   <add>
     <instance oid="/net:net1"/>
-    <instance oid="/net:net1/node:A" value="/agent:Agt_A/interface:eth0"/>
+    <instance oid="/net:net1/node:A" value="/agent:agt_acse/interface:eth0"/>
     <instance oid="/net:net1/node:A/type:" value="1"/>
   </add>
 
