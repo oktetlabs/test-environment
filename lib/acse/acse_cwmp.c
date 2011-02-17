@@ -903,20 +903,22 @@ acse_send(struct soap *soap, const char *s, size_t n)
 {
     cwmp_session_t *session = (cwmp_session_t *)soap->user;
     size_t          log_len = n;
-    if (n >= LOG_XML_BUF)
-    {
-        RING("Out XML length %d, more then log buf, cut", n);
-        log_len = LOG_XML_BUF - 1;
-    }
-    memcpy(send_log_buf, s, log_len);
-    send_log_buf[log_len] = '\0';
+    char           *log_buf;
 
-    /* TODO: should we make loglevel customizable here? */
-    RING("Send to %s %s: \n%s", 
-        session->cpe_owner ? "CPE" : "ACS", 
-        session->cpe_owner ? session->cpe_owner->name : 
-                             session->acs_owner->name, 
-        send_log_buf);
+    log_buf = mheap_alloc(session->def_heap, log_len + 1);
+
+    if (NULL != log_buf)
+    {
+        memcpy(log_buf, s, log_len);
+        log_buf[log_len] = '\0';
+
+        /* TODO: should we make loglevel customizable here? */
+        RING("Send to %s %s: \n%s", 
+            session->cpe_owner ? "CPE" : "ACS", 
+            session->cpe_owner ? session->cpe_owner->name : 
+                                 session->acs_owner->name, 
+            log_buf);
+    }
     /* call standard gSOAP fsend */
     return session->orig_fsend(soap, s, n);
 }
@@ -928,24 +930,25 @@ acse_recv(struct soap *soap, char *s, size_t n)
     cwmp_session_t *session = (cwmp_session_t *)soap->user;
     size_t          rc;
     size_t          log_len;
+    char           *log_buf;
 
     /* call standard gSOAP frecv */
     log_len = rc = session->orig_frecv(soap, s, n);
 
-    if (rc >= LOG_XML_BUF)
-    {
-        RING("Income XML length %u, more then log buf, cut", rc);
-        log_len = LOG_XML_BUF - 1;
-    }
-    memcpy(recv_log_buf, s, log_len);
-    recv_log_buf[log_len] = '\0';
+    log_buf = mheap_alloc(session->def_heap, log_len + 1);
 
-    /* TODO: should we make loglevel customizable here? */
-    RING("Recv from %s %s: \n%s", 
-        session->cpe_owner ? "CPE" : "ACS", 
-        session->cpe_owner ? session->cpe_owner->name : 
-                             session->acs_owner->name, 
-        recv_log_buf);
+    if (NULL != log_buf)
+    {
+        memcpy(log_buf, s, log_len);
+        log_buf[log_len] = '\0';
+
+        /* TODO: should we make loglevel customizable here? */
+        RING("Recv from %s %s: \n%s", 
+            session->cpe_owner ? "CPE" : "ACS", 
+            session->cpe_owner ? session->cpe_owner->name : 
+                                 session->acs_owner->name, 
+            log_buf);
+    }
     return rc;
 }
 /* see description in acse_internal.h */
