@@ -594,6 +594,18 @@ rpc_poll(rcf_rpc_server *rpcs,
     return rpc_poll_gen(rpcs, ufds, nfds, timeout, nfds);
 }
 
+extern int rpc_ppoll_gen(rcf_rpc_server *rpcs,
+                         struct rpc_pollfd *ufds, unsigned int nfds,
+                         struct tarpc_timespec *timeout,
+                         const rpc_sigset_p sigmask, unsigned int rnfds);
+static inline int
+rpc_ppoll(rcf_rpc_server *rpcs,
+          struct rpc_pollfd *ufds, unsigned int nfds,
+          struct tarpc_timespec *timeout, const rpc_sigset_p sigmask)
+{
+    return rpc_ppoll_gen(rpcs, ufds, nfds, timeout, sigmask, nfds);
+}
+
 /**
  * Routine which copies data from file descriptor opened for reading
  * to the file descriptor opened for writing (processing in kernel land).

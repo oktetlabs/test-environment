@@ -3383,6 +3383,65 @@ TARPC_FUNC(poll,
 }
 )
 
+/*-------------- ppoll() --------------------------------*/
+
+TARPC_FUNC(ppoll,
+{
+    if (in->ufds.ufds_len > RPC_POLL_NFDS_MAX)
+    {
+        ERROR("Too big nfds is passed to the ppoll()");
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        return TRUE;
+    }
+    COPY_ARG(ufds);
+},
+{
+    struct pollfd ufds[RPC_POLL_NFDS_MAX];
+    struct timespec tv;
+    unsigned int i;
+
+    if (in->timeout.timeout_len > 0)
+    {
+        tv.tv_sec = in->timeout.timeout_val[0].tv_sec;
+        tv.tv_nsec = in->timeout.timeout_val[0].tv_nsec;
+    }
+    INIT_CHECKED_ARG((char *)&tv, sizeof(tv), 0);
+    INIT_CHECKED_ARG((char *)rcf_pch_mem_get(in->sigmask),
+                     sizeof(sigset_t), 0);
+
+    VERB("ppoll(): IN ufds=0x%lx[%u] nfds=%u",
+         (unsigned long int)out->ufds.ufds_val, out->ufds.ufds_len,
+         in->nfds);
+    for (i = 0; i < out->ufds.ufds_len; i++)
+    {
+        ufds[i].fd = out->ufds.ufds_val[i].fd;
+        INIT_CHECKED_ARG((char *)&(ufds[i].fd), sizeof(ufds[i].fd), 0);
+        ufds[i].events = poll_event_rpc2h(out->ufds.ufds_val[i].events);
+        INIT_CHECKED_ARG((char *)&(ufds[i].events),
+                         sizeof(ufds[i].events), 0);
+        ufds[i].revents = poll_event_rpc2h(out->ufds.ufds_val[i].revents);
+        VERB("ppoll(): IN fd=%d events=%hx(rpc %hx) revents=%hx",
+             ufds[i].fd, ufds[i].events, out->ufds.ufds_val[i].events,
+             ufds[i].revents);
+    }
+
+    VERB("ppoll(): call with ufds=0x%lx, nfds=%u, timeout=%d",
+         (unsigned long int)ufds, in->nfds, in->timeout);
+    MAKE_CALL(out->retval = func_ptr(ufds, in->nfds,
+                                     in->timeout.timeout_len == 0 ? NULL :
+                                                                    &tv,
+                                     rcf_pch_mem_get(in->sigmask)));
+    VERB("ppoll(): retval=%d", out->retval);
+
+    for (i = 0; i < out->ufds.ufds_len; i++)
+    {
+        out->ufds.ufds_val[i].revents = poll_event_h2rpc(ufds[i].revents);
+        VERB("ppoll(): OUT host-revents=%hx rpc-revents=%hx",
+             ufds[i].revents, out->ufds.ufds_val[i].revents);
+    }
+}
+)
+
 #if HAVE_STRUCT_EPOLL_EVENT
 /*-------------- epoll_create() ------------------------*/
 
@@ -4615,6 +4674,10 @@ iomux_find_func(te_bool use_libc, iomux_func iomux, iomux_funcs *funcs)
             rc = tarpc_find_func(use_libc, "poll",
                                  (api_func *)&funcs->poll);
             break;
+        case FUNC_PPOLL:
+            rc = tarpc_find_func(use_libc, "ppoll",
+                                 (api_func *)&funcs->poll);
+            break;
 #if HAVE_STRUCT_EPOLL_EVENT
         case FUNC_EPOLL:
         case FUNC_EPOLL_PWAIT:
@@ -4668,6 +4731,7 @@ iomux_create_state(iomux_func iomux, iomux_funcs *funcs,
             state->select.nfds = 0;
             break;
         case FUNC_POLL:
+        case FUNC_PPOLL:
             state->poll.nfds = 0;
             break;
 #if HAVE_STRUCT_EPOLL_EVENT
@@ -4730,6 +4794,7 @@ iomux_add_fd(iomux_func iomux, iomux_funcs *funcs, iomux_state *state,
             break;
 
         case FUNC_POLL:
+        case FUNC_PPOLL:
             if (state->poll.nfds == IOMUX_MAX_POLLED_FDS)
             {
                 errno = ENOSPC;
@@ -4767,6 +4832,7 @@ iomux_mod_fd(iomux_func iomux, iomux_funcs *funcs, iomux_state *state,
             return 0;
 
         case FUNC_POLL:
+        case FUNC_PPOLL:
         {
             int i;
 
@@ -4857,6 +4923,15 @@ iomux_wait(iomux_func iomux, iomux_funcs *funcs, iomux_state *state,
                              timeout);
             break;
 
+        case FUNC_PPOLL:
+        {
+            struct timespec ts;
+            ts.tv_sec = timeout / 1000UL;
+            ts.tv_nsec = (timeout % 1000UL) * 1000UL;
+            rc = funcs->poll(&state->poll.fds[0], state->poll.nfds,
+                             &ts, NULL);
+            break;
+        }
 #if HAVE_STRUCT_EPOLL_EVENT
         case FUNC_EPOLL:
         case FUNC_EPOLL_PWAIT:
@@ -4933,6 +5008,7 @@ iomux_return_iterate(iomux_func iomux, iomux_state *st, iomux_return *ret,
         }
 
         case FUNC_POLL:
+        case FUNC_PPOLL:
         {
             int i;
 

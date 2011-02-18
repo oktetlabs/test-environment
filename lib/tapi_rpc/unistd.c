@@ -1144,6 +1144,82 @@ rpc_poll_gen(rcf_rpc_server *rpcs,
 }
 
 int
+rpc_ppoll_gen(rcf_rpc_server *rpcs,
+              struct rpc_pollfd *ufds, unsigned int nfds,
+              struct tarpc_timespec *timeout, const rpc_sigset_p sigmask,
+              unsigned int rnfds)
+{
+    rcf_rpc_op      op;
+    tarpc_ppoll_in  in;
+    tarpc_ppoll_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(ppoll, -1);
+    }
+
+    op = rpcs->op;
+
+    /**
+     * @attention It's assumed that rpc_pollfd is the same as tarpc_ppollfd.
+     * It's OK, because both structures are independent from particular
+     * Socket API and used on the same host.
+     */
+    in.ufds.ufds_len = rnfds;
+    in.ufds.ufds_val = (struct tarpc_ppollfd *)ufds;
+    in.nfds = nfds;
+    in.sigmask = (tarpc_sigset_t)sigmask;
+
+    if (timeout != NULL && rpcs->op != RCF_RPC_WAIT)
+    {
+        in.timeout.timeout_len = 1;
+        in.timeout.timeout_val = timeout;
+    }
+
+    if ((timeout != NULL) && (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT))
+    {
+        rpcs->timeout = TE_SEC2MS(timeout->tv_sec +
+                                  TAPI_RPC_TIMEOUT_EXTRA_SEC) +
+                        TE_NS2MS(timeout->tv_nsec);
+    }
+
+    pollreq2str(ufds, rnfds, str_buf_1, sizeof(str_buf_1));
+
+    if ((timeout > 0) && (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT))
+    {
+        rpcs->timeout = TE_SEC2MS(TAPI_RPC_TIMEOUT_EXTRA_SEC) + timeout;
+    }
+
+    rcf_rpc_call(rpcs, "ppoll", &in, &out);
+
+    if (RPC_IS_CALL_OK(rpcs))
+    {
+        if (ufds != NULL && out.ufds.ufds_val != NULL)
+            memcpy(ufds, out.ufds.ufds_val, rnfds * sizeof(ufds[0]));
+        pollreq2str(ufds, rnfds, str_buf_2, sizeof(str_buf_2));
+    }
+    else
+    {
+        *str_buf_2 = '\0';
+    }
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(ppoll, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: ppoll(%p%s, %u, %s, 0x%x) "
+                 "-> %d (%s) %s",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 ufds, str_buf_1, nfds, tarpc_timespec2str(timeout),
+                 (unsigned)sigmask,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)), str_buf_2);
+
+    RETVAL_INT(ppoll, out.retval);
+}
+
+int
 rpc_epoll_create(rcf_rpc_server *rpcs, int size)
 {
     rcf_rpc_op             op;

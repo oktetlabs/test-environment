@@ -2176,6 +2176,25 @@ struct tarpc_poll_out {
 };
 
 
+/* ppoll() */
+
+struct tarpc_ppoll_in {
+    struct tarpc_in_arg common;
+
+    struct tarpc_pollfd   ufds<>;
+    tarpc_uint            nfds;
+    struct tarpc_timespec timeout<>;
+    tarpc_sigset_t        sigmask;
+};
+
+struct tarpc_ppoll_out {
+    struct tarpc_out_arg    common;
+
+    tarpc_int               retval;
+
+    struct tarpc_pollfd     ufds<>;
+};
+
 /* epoll_create() */
 
 struct tarpc_epoll_create_in {
@@ -3357,8 +3376,9 @@ enum iomux_func {
     FUNC_SELECT = 1,
     FUNC_PSELECT = 2,
     FUNC_POLL = 3,
-    FUNC_EPOLL = 4,
-    FUNC_EPOLL_PWAIT = 5
+    FUNC_PPOLL = 4,
+    FUNC_EPOLL = 5,
+    FUNC_EPOLL_PWAIT = 6
 };
 
 
@@ -4347,6 +4367,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(select)
         RPC_DEF(pselect)
         RPC_DEF(poll)
+        RPC_DEF(ppoll)
 
         RPC_DEF(epoll_create)
         RPC_DEF(epoll_ctl)

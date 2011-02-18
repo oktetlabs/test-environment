@@ -103,6 +103,8 @@ iomux2str(iomux_func iomux)
             return "pselect";
         case FUNC_POLL:
             return "poll";
+        case FUNC_PPOLL:
+            return "ppoll";
         case FUNC_EPOLL:
             return "epoll";
         case FUNC_EPOLL_PWAIT:
