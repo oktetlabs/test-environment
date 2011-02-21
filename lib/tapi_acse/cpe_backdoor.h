@@ -109,6 +109,15 @@ extern te_errno cpe_set_acs_url(cpe_id_t *cpe, char *acs_url);
 extern te_errno cpe_activate_tr069_mgmt(cpe_id_t *cpe, char *acs_url);
 
 /**
+ * Dectivate TR069 management protocol on CPE. 
+ *
+ * @param cpe           ID of CPE.
+ *
+ * @return status
+ */
+extern te_errno cpe_deactivate_tr069_mgmt(cpe_id_t *cpe);
+
+/**
  * Set ConnectionRequest login username on CPE, that is, login for
  * authenticate ConnectionRequest from ACS to CPE.
  *
