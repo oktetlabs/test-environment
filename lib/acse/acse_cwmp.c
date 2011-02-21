@@ -905,6 +905,8 @@ acse_send(struct soap *soap, const char *s, size_t n)
     size_t          log_len = n;
     char           *log_buf;
 
+    if (0)
+    {
     log_buf = mheap_alloc(session->def_heap, log_len + 1);
 
     if (NULL != log_buf)
@@ -918,6 +920,7 @@ acse_send(struct soap *soap, const char *s, size_t n)
             session->cpe_owner ? session->cpe_owner->name : 
                                  session->acs_owner->name, 
             log_buf);
+    }
     }
     /* call standard gSOAP fsend */
     return session->orig_fsend(soap, s, n);
@@ -934,6 +937,8 @@ acse_recv(struct soap *soap, char *s, size_t n)
 
     /* call standard gSOAP frecv */
     log_len = rc = session->orig_frecv(soap, s, n);
+
+    return rc;
 
     log_buf = mheap_alloc(session->def_heap, log_len + 1);
 
