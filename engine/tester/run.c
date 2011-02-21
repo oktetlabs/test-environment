@@ -87,6 +87,11 @@
 /** Print string which may be NULL. */
 #define PRINT_STRING(_str)  ((_str) ? : "")
 
+#if 0
+#undef TE_LOG_LEVEL
+#define TE_LOG_LEVEL (TE_LL_WARN | TE_LL_ERROR | \
+                      TE_LL_VERB | TE_LL_ENTRY_EXIT | TE_LL_RING)
+#endif
 
 /** Tester context */
 typedef struct tester_ctx {

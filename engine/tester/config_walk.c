@@ -37,6 +37,11 @@
 
 #include "tester_conf.h"
 
+#if 0
+#undef TE_LOG_LEVEL
+#define TE_LOG_LEVEL (TE_LL_WARN | TE_LL_ERROR | \
+                      TE_LL_VERB | TE_LL_ENTRY_EXIT | TE_LL_RING)
+#endif
 
 typedef  tester_cfg_walk_ctl (* tester_cfg_walk_run_item_cb)
                                  (run_item *, unsigned int, void *);

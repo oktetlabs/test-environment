@@ -51,6 +51,11 @@
 #include "tester_reqs.h"
 #include "tester_run.h"
 
+#if 0
+#undef TE_LOG_LEVEL
+#define TE_LOG_LEVEL (TE_LL_WARN | TE_LL_ERROR | \
+                      TE_LL_VERB | TE_LL_ENTRY_EXIT | TE_LL_RING)
+#endif
 
 /* See description in tester_reqs.h */
 te_errno
@@ -248,6 +253,9 @@ is_req_in_args(const char *req, const unsigned int n_args,
 
     for (p = args, i = 0; i < n_args; ++i, ++p)
     {
+        if (p->variable)
+            continue;
+
         if (is_req_in_set(req, &p->reqs, n_args, args))
             return TRUE;
     }
