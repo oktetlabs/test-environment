@@ -371,6 +371,23 @@ parse_cwmp_rpc_args(acse_epc_cwmp_data_t *cwmp_data,
             cwmp_data->to_cpe.download = download;
         }
         break;
+        case CWMP_RPC_add_object: 
+        {
+            static char name[256];
+            static char *name_ptr = name;
+            static cwmp_add_object_t req;
+            size_t ofs;
+
+            cwmp_data->to_cpe.add_object = &req;
+
+            strcpy(err_buf, "<parentname>");
+
+            req.ObjectName = name; 
+            req.ParameterKey = "ACSE CLI"; 
+            ofs = cli_token_copy(line, name);
+            if (0 == ofs) return TE_EFAIL;
+        }
+        break;
         default:
             printf("parse input, RPC %s is not supported yet :(\n", 
                 cwmp_rpc_cpe_string(cwmp_data->rpc_cpe));
@@ -604,6 +621,8 @@ static cli_cmd_descr_t cmd_rpc_cpe_kinds[] = {
                     "GetParameterAttributes", NULL, NULL},
     {"set_attrs",    CWMP_RPC_set_parameter_attributes,
                     "SetParameterAttributes", NULL, NULL},
+    {"add",          CWMP_RPC_add_object,
+                    "AddObject", NULL, NULL},
     {"download",     CWMP_RPC_download,
                     "Download", NULL, NULL},
     END_CMD_ARRAY
@@ -722,9 +741,13 @@ print_rpc_response(acse_epc_cwmp_data_t *cwmp_resp)
         struct cwmp__ParameterAttributeStruct *pa_item;
     }
     break;
+    case CWMP_RPC_add_object: 
+        printf("Add status: %d, instance %d\n", 
+               cwmp_resp->from_cpe.add_object_r->Status,
+               cwmp_resp->from_cpe.add_object_r->InstanceNumber);
+    break;
 
     case CWMP_RPC_NONE:
-    case CWMP_RPC_add_object: 
     case CWMP_RPC_delete_object: 
     case CWMP_RPC_reboot: 
     case CWMP_RPC_upload: 
