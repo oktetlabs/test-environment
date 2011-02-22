@@ -3026,6 +3026,7 @@ struct tarpc_getenv_out {
     struct tarpc_out_arg common;
     
     string val<>;
+    tarpc_bool val_null;
 };
 
 /* setenv() */
@@ -3054,7 +3055,7 @@ struct tarpc_unsetenv_in {
 
 struct tarpc_unsetenv_out {
     struct tarpc_out_arg common;
-    
+
     tarpc_int retval;
 };
 
@@ -4432,6 +4433,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(seteuid)
         RPC_DEF(getenv)
         RPC_DEF(setenv)
+        RPC_DEF(unsetenv)
         RPC_DEF(uname)
         
         RPC_DEF(create_aiocb)
