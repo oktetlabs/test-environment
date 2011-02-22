@@ -1037,13 +1037,15 @@ TARPC_FUNC(te_fstat, {},
 {
     struct stat buf;
 
-    MAKE_CALL(out->retval = func(in->common.use_libc, in->fd, &out->buf));
+    MAKE_CALL(out->retval = func_ptr(in->common.use_libc, in->fd,
+                                     &out->buf));
 }
 )
 
 TARPC_FUNC(te_fstat64, {},
 {
-    MAKE_CALL(out->retval = func(in->common.use_libc, in->fd, &out->buf));
+    MAKE_CALL(out->retval = func_ptr(in->common.use_libc, in->fd,
+                                     &out->buf));
 }
 )
 
@@ -3970,7 +3972,14 @@ TARPC_FUNC(getenv, {},
     char *val;
 
     MAKE_CALL(val = func_ptr_ret_ptr(in->name));
-    out->val = strdup(val == NULL ? "" : val);
+    /*
+     * fixme kostik: dirty hack as we can't encode
+     * NULL string pointer - STRING differs from pointer
+     * in RPC representation
+     */
+    out->val_null = (val == NULL);
+    out->val = strdup(val ? val : "");
+    RING("%s: out->val = %s", __FUNCTION__, out->val);
 }
 )
 

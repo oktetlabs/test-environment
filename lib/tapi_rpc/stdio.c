@@ -81,9 +81,9 @@ rpc_fopen(rcf_rpc_server *rpcs,
                  rpcs->ta, rpcs->name,
                  path, mode,
                  (unsigned)out.mem_ptr, errno_rpc2str(RPC_ERRNO(rpcs)));
-                 
+
     free(in.path);
-    free(in.mode);                 
+    free(in.mode);
 
     RETVAL_RPC_PTR(fopen, out.mem_ptr);
 }
@@ -114,8 +114,8 @@ rpc_fdopen(rcf_rpc_server *rpcs, int fd,
                  rpcs->ta, rpcs->name,
                  fd, mode,
                  (unsigned)out.mem_ptr, errno_rpc2str(RPC_ERRNO(rpcs)));
-                 
-    free(in.mode);                 
+
+    free(in.mode);
 
     RETVAL_RPC_PTR(fdopen, out.mem_ptr);
 }
@@ -203,9 +203,9 @@ rpc_popen(rcf_rpc_server *rpcs,
                  rpcs->ta, rpcs->name,
                  cmd, mode,
                  (unsigned)out.mem_ptr, errno_rpc2str(RPC_ERRNO(rpcs)));
-                 
+
     free(in.cmd);
-    free(in.mode);                 
+    free(in.mode);
 
     RETVAL_RPC_PTR(popen, out.mem_ptr);
 }
@@ -237,17 +237,17 @@ rpc_pclose(rcf_rpc_server *rpcs, rpc_file_p file)
     RETVAL_INT(pclose, out.retval);
 }
 
-/** 
+/**
  * See te_shell_cmd function.
  * cmd parameter should not be changed after call.
  */
 static tarpc_pid_t
-rpc_te_shell_cmd_gen(rcf_rpc_server *rpcs, const char *cmd, 
+rpc_te_shell_cmd_gen(rcf_rpc_server *rpcs, const char *cmd,
                  tarpc_uid_t uid, int *in_fd, int *out_fd, int *err_fd)
 {
     tarpc_te_shell_cmd_in  in;
     tarpc_te_shell_cmd_out out;
-    
+
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
 
@@ -266,7 +266,7 @@ rpc_te_shell_cmd_gen(rcf_rpc_server *rpcs, const char *cmd,
     in.err_fd = (err_fd != NULL);
 
     rcf_rpc_call(rpcs, "te_shell_cmd", &in, &out);
-                 
+
     if (in_fd != NULL)
         *in_fd = out.in_fd;
     if (out_fd != NULL)
@@ -276,7 +276,7 @@ rpc_te_shell_cmd_gen(rcf_rpc_server *rpcs, const char *cmd,
 
     TAPI_RPC_LOG("RPC (%s,%s): te_shell_cmd(\"%s\", %d, "
                  "%p(%d), %p(%d), %p(%d)) -> %d (%s)",
-                 rpcs->ta, rpcs->name, cmd, uid, 
+                 rpcs->ta, rpcs->name, cmd, uid,
                  in_fd, (in_fd == NULL) ? 0 : *in_fd,
                  out_fd, (out_fd == NULL) ? 0 : *out_fd,
                  err_fd, (err_fd == NULL) ? 0 : *err_fd,
@@ -287,7 +287,7 @@ rpc_te_shell_cmd_gen(rcf_rpc_server *rpcs, const char *cmd,
 
 /* See description in tapi_rpc_stdio.h */
 tarpc_pid_t
-rpc_te_shell_cmd(rcf_rpc_server *rpcs, const char *cmd, tarpc_uid_t uid, 
+rpc_te_shell_cmd(rcf_rpc_server *rpcs, const char *cmd, tarpc_uid_t uid,
                  int *in_fd, int *out_fd, int *err_fd, ...)
 {
     char    cmdline[RPC_SHELL_CMDLINE_MAX];
@@ -301,7 +301,7 @@ rpc_te_shell_cmd(rcf_rpc_server *rpcs, const char *cmd, tarpc_uid_t uid,
 }
 
 /** Chunk for memory allocation in rpc_read_all */
-#define RPC_READ_ALL_BUF_CHUNK     1024          
+#define RPC_READ_ALL_BUF_CHUNK     1024
 
 /**
  * Read all data from file descriptor in the RPC.
@@ -338,7 +338,7 @@ rpc_read_all(rcf_rpc_server *rpcs, int fd, char **pbuf, size_t *bytes)
     {
         int used;
 
-        if ((used = rpc_read(rpcs, fd, 
+        if ((used = rpc_read(rpcs, fd,
                               buf + offset, buflen - offset)) < 0)
         {
             ERROR("Cannot read from file descriptor: rpc_read failed");
@@ -361,7 +361,7 @@ rpc_read_all(rcf_rpc_server *rpcs, int fd, char **pbuf, size_t *bytes)
             memset(buf + offset, 0, buflen - offset);
         }
     }
-    
+
     if (pbuf != NULL)
         *pbuf = buf;
     else
@@ -386,7 +386,7 @@ rpc_read_all(rcf_rpc_server *rpcs, int fd, char **pbuf, size_t *bytes)
  * @return 0 on success or -1 on failure
  */
 static int
-rpc_read_all2(rcf_rpc_server *rpcs, int fd[2], char *buf[2], 
+rpc_read_all2(rcf_rpc_server *rpcs, int fd[2], char *buf[2],
               size_t bytes[2])
 {
     size_t  buflen[2] = {RPC_READ_ALL_BUF_CHUNK, RPC_READ_ALL_BUF_CHUNK};
@@ -420,13 +420,13 @@ rpc_read_all2(rcf_rpc_server *rpcs, int fd[2], char *buf[2],
         rpc_do_fd_zero(rpcs, fdset);
         rpc_do_fd_set(rpcs, fd[0], fdset);
         rpc_do_fd_set(rpcs, fd[1], fdset);
-        rpc_select(rpcs, MAX(fd[0], fd[1]) + 1, fdset, RPC_NULL, RPC_NULL, 
+        rpc_select(rpcs, MAX(fd[0], fd[1]) + 1, fdset, RPC_NULL, RPC_NULL,
                    RPC_NULL);
         for (i = 0; i < 2; i++)
         {
             if (all_read[i] || !rpc_do_fd_isset(rpcs, fd[i], fdset))
                 continue;
-            used = rpc_read(rpcs, fd[i], buf[i] + bytes[i], 
+            used = rpc_read(rpcs, fd[i], buf[i] + bytes[i],
                             buflen[i] - bytes[i]);
             if (used < 0)
             {
@@ -449,12 +449,12 @@ rpc_read_all2(rcf_rpc_server *rpcs, int fd[2], char *buf[2],
             }
         }
     } while (!all_read[0] || !all_read[1]);
-    
+
     return rc;
 }
 
 rpc_wait_status
-rpc_shell_get_all(rcf_rpc_server *rpcs, char **pbuf, const char *cmd, 
+rpc_shell_get_all(rcf_rpc_server *rpcs, char **pbuf, const char *cmd,
                   tarpc_uid_t uid, ...)
 {
     size_t  bytes;
@@ -478,7 +478,7 @@ rpc_shell_get_all(rcf_rpc_server *rpcs, char **pbuf, const char *cmd,
         ERROR("%s(): Invalid parameters", __FUNCTION__);
         return rc;
     }
-    
+
     iut_err_jump = rpcs->iut_err_jump;
     pid = rpc_te_shell_cmd_gen(rpcs, cmdline, uid, NULL, &fd, NULL);
     if (pid < 0)
@@ -495,7 +495,7 @@ rpc_shell_get_all(rcf_rpc_server *rpcs, char **pbuf, const char *cmd,
 
     /* Restore jump setting to avoid jump after command crash. */
     rpcs->iut_err_jump = iut_err_jump;
-    /* 
+    /*
      * @todo if we will jump, we'd better free(buf).
      * As test is failed in any way, this memory leak is not important.
      * Let's think that its test responsibility to free the buf in any
@@ -535,7 +535,7 @@ rpc_shell_get_all2(rcf_rpc_server *rpcs, char **pbuf,
         ERROR("%s(): Invalid parameters", __FUNCTION__);
         return rc;
     }
-    
+
     iut_err_jump = rpcs->iut_err_jump;
     if (pbuf != NULL)
         pid = rpc_te_shell_cmd_gen(rpcs, cmdline, -1, NULL, &fd[0], &fd[1]);
@@ -565,7 +565,7 @@ rpc_shell_get_all2(rcf_rpc_server *rpcs, char **pbuf,
 
     /* Restore jump setting to avoid jump after command crash. */
     rpcs->iut_err_jump = iut_err_jump;
-    /* 
+    /*
      * @todo if we will jump, we'd better free(buf).
      * As test is failed in any way, this memory leak is not important.
      * Let's think that its test responsibility to free the buf in any
@@ -573,7 +573,7 @@ rpc_shell_get_all2(rcf_rpc_server *rpcs, char **pbuf,
      */
     rpc_waitpid(rpcs, pid, &rc, 0);
 
-    if (rc.flag == RPC_WAIT_STATUS_EXITED && rc.value == 0 && 
+    if (rc.flag == RPC_WAIT_STATUS_EXITED && rc.value == 0 &&
         buf[1][0] != '\0')
     {
         free(buf[1]);
@@ -617,7 +617,7 @@ rpc_shell_get_all3(rcf_rpc_server *rpcs, char **pbuf,
         ERROR("%s(): Invalid parameters", __FUNCTION__);
         return rc;
     }
-    
+
     iut_err_jump = rpcs->iut_err_jump;
     if (pbuf != NULL)
         pid = rpc_te_shell_cmd_gen(rpcs, cmdline, -1, NULL, &fd[0], &fd[1]);
@@ -648,7 +648,7 @@ rpc_shell_get_all3(rcf_rpc_server *rpcs, char **pbuf,
 
     /* Restore jump setting to avoid jump after command crash. */
     rpcs->iut_err_jump = iut_err_jump;
-    /* 
+    /*
      * @todo if we will jump, we'd better free(buf).
      * As test is failed in any way, this memory leak is not important.
      * Let's think that its test responsibility to free the buf in any
@@ -673,7 +673,7 @@ rpc_system(rcf_rpc_server *rpcs, const char *cmd)
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server", __FUNCTION__);
@@ -687,16 +687,16 @@ rpc_system(rcf_rpc_server *rpcs, const char *cmd)
     rcf_rpc_call(rpcs, "system", &in, &out);
     rc.flag = out.status_flag;
     rc.value = out.status_value;
-    if (rc.flag == RPC_WAIT_STATUS_CORED || 
+    if (rc.flag == RPC_WAIT_STATUS_CORED ||
         rc.flag == RPC_WAIT_STATUS_UNKNOWN)
         rc.value = -1;
 
     if (rc.value > 0)
         rpcs->err_log = TE_LL_ERROR;
-    
+
     TAPI_RPC_LOG("RPC (%s,%s): system(%s) -> %s %u (%s)",
                  rpcs->ta, rpcs->name,
-                 cmd, wait_status_flag_rpc2str(rc.flag), rc.value, 
+                 cmd, wait_status_flag_rpc2str(rc.flag), rc.value,
                  errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_WAIT_STATUS(system, rc);
@@ -728,12 +728,12 @@ rpc_getenv(rcf_rpc_server *rpcs, const char *name)
 {
     tarpc_getenv_in  in;
     tarpc_getenv_out out;
-    
+
     char *val;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     if (rpcs == NULL || name == NULL)
     {
         ERROR("%s(): Invalid RPC parameter", __FUNCTION__);
@@ -746,13 +746,20 @@ rpc_getenv(rcf_rpc_server *rpcs, const char *name)
     rcf_rpc_call(rpcs, "getenv", &in, &out);
 
     TAPI_RPC_LOG("RPC (%s,%s): getenv(%s) -> %s (%s)",
-                 rpcs->ta, rpcs->name,
-                 name, out.val, errno_rpc2str(RPC_ERRNO(rpcs)));
-                 
-    val = out.val;
-    out.val = NULL;                 
+                 rpcs->ta, rpcs->name, name,
+                 out.val_null ?  "<<NULL>>" : out.val,
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_PTR(getenv, val);
+    if (out.val_null)
+        val = NULL;
+    else
+        val = out.val;
+
+    out.val = NULL;
+
+    TAPI_RPC_OUT(getenv, FALSE);
+
+    return val;
 }
 
 /**
@@ -766,24 +773,24 @@ rpc_getenv(rcf_rpc_server *rpcs, const char *name)
  *
  * @return return code
  */
-int 
-rpc_setenv(rcf_rpc_server *rpcs, const char *name, 
+int
+rpc_setenv(rcf_rpc_server *rpcs, const char *name,
            const char *value, int overwrite)
 {
     tarpc_setenv_in  in;
     tarpc_setenv_out out;
-    
+
     char *val = (value == NULL) ? "" : (char *)value;
-    
+
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     if (rpcs == NULL || name == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_RPC_PTR(setenv, RPC_NULL);
     }
-    
+
     rpcs->op = RCF_RPC_CALL_WAIT;
     in.name = (char *)name;
     in.val = val;
@@ -795,7 +802,7 @@ rpc_setenv(rcf_rpc_server *rpcs, const char *name,
                  rpcs->ta, rpcs->name,
                  name, val, overwrite,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-                 
+
     RETVAL_INT(setenv, out.retval);
 }
 
@@ -807,21 +814,21 @@ rpc_setenv(rcf_rpc_server *rpcs, const char *name,
  *
  * @return return code
  */
-int 
+int
 rpc_unsetenv(rcf_rpc_server *rpcs, const char *name)
 {
     tarpc_unsetenv_in  in;
     tarpc_unsetenv_out out;
-    
+
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     if (rpcs == NULL || name == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_RPC_PTR(setenv, RPC_NULL);
     }
-    
+
     rpcs->op = RCF_RPC_CALL_WAIT;
     in.name = (char *)name;
 
@@ -831,6 +838,6 @@ rpc_unsetenv(rcf_rpc_server *rpcs, const char *name)
                  rpcs->ta, rpcs->name,
                  name,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-                 
+
     RETVAL_INT(setenv, out.retval);
 }
