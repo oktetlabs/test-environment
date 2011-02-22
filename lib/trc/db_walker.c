@@ -42,7 +42,6 @@
 #include "te_trc.h"
 #include "trc_db.h"
 
-
 /** Internal data of the TRC database walker */
 struct te_trc_db_walker {
     te_trc_db           *db;        /**< TRC database pointer */
@@ -282,6 +281,12 @@ trc_db_strcmp_normspace(const char *s1, const char *s2)
  *
  * @return Is arguments match?
  */
+#define VERB_CMP 0
+#if VERB_CMP
+#undef VERB
+#define VERB RING
+#endif
+
 static te_bool
 test_iter_args_match(const trc_test_iter_args  *db_args,
                      unsigned int               n_args,
@@ -290,6 +295,10 @@ test_iter_args_match(const trc_test_iter_args  *db_args,
     trc_test_iter_arg  *arg;
     unsigned int        i;
 
+#if VERB_CMP
+    fprintf(stderr, "Args compare: \n");
+#endif
+\
     for (arg = TAILQ_FIRST(&db_args->head), i = 0;
          arg != NULL && i < n_args;
          i++)
@@ -298,14 +307,19 @@ test_iter_args_match(const trc_test_iter_args  *db_args,
         if (args[i].variable)
             continue;
 
-        VERB("Argument from TRC DB: %s=%s", arg->name, arg->value);
-        VERB("Compare with: %s=%s", args[i].name, args[i].value);
+#if VERB_CMP
+        fprintf(stderr, "   %s=%s VS %s=%s\n",
+                arg->name, arg->value,
+                args[i].name, args[i].value);
+#endif
 
         if (strcmp(args[i].name, arg->name) != 0)
         {
             VERB("Mismatch: %s vs %s", args[i].name, arg->name);
             return FALSE;
         }
+        /* argument w/o a value */
+        else if (strlen(arg->value) == 0);
         else if (strncmp(args[i].value, TEST_ARG_VAR_PREFIX,
                          strlen(TEST_ARG_VAR_PREFIX)) != 0)
         {
@@ -332,6 +346,19 @@ test_iter_args_match(const trc_test_iter_args  *db_args,
             }
             if (g == NULL)
                 return FALSE;
+
+            /*
+             * we found a variable, but in TRC it can be either var name or
+             * it's value
+             */
+            if (strcmp(args[i].value, arg->value) != 0 &&
+                trc_db_compare_values(g->value, arg->value) != 0)
+            {
+                VERB("Value mismatch for %s: %s vs %s AND %s vs %s",
+                     arg->name, g->value, arg->value, arg->value,
+                     args[i].value);
+                return FALSE;
+            }
         }
         /* next arg */
         arg = TAILQ_NEXT(arg, links);
@@ -353,6 +380,7 @@ test_iter_args_match(const trc_test_iter_args  *db_args,
 
     return TRUE;
 }
+#undef VERB_CMP
 
 static int
 trc_report_argument_compare (const void *arg1, const void *arg2)
@@ -378,13 +406,24 @@ trc_db_walker_step_iter(te_trc_db_walker  *walker,
     }
     else
     {
+        int found = 0;
+        trc_test_iter *iter = NULL;
+
         qsort(args, n_args, sizeof(*args), trc_report_argument_compare);
         for (walker->iter = TAILQ_FIRST(&walker->test->iters.head);
-             walker->iter != NULL &&
-             !test_iter_args_match(&walker->iter->args,
-                                   n_args, args);
-             walker->iter = TAILQ_NEXT(walker->iter, links));
+             walker->iter != NULL;
+             walker->iter = TAILQ_NEXT(walker->iter, links))
+        {
+            if (test_iter_args_match(&walker->iter->args,
+                                     n_args, args))
+            {
+                iter = walker->iter;
+                found++;
+            }
+        }
+        walker->iter = iter;
 
+        /* nothing found */
         if (walker->iter == NULL)
         {
             if (force)
@@ -405,6 +444,14 @@ trc_db_walker_step_iter(te_trc_db_walker  *walker,
                 VERB("Step iteration - unknown");
                 walker->unknown++;
             }
+        }
+        else if (found > 1)
+        {
+            ERROR("TEST='%s || %s'\nDuplicated iteration in the database! "
+                  "May be caused by wrong wildcards. "
+                  "Will match the last entry for compatibility, but FIX "
+                  "THE DATABASE!!!",
+                  walker->test->name, walker->test->path);
         }
         else
         {
