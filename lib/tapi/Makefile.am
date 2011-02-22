@@ -25,7 +25,8 @@ include_HEADERS = \
 	tapi_file.h \
 	tapi_reqs.h \
 	tapi_gw.h \
-        tapi_cfg_acse.h
+	tapi_sh_env.h \
+    tapi_cfg_acse.h
 
 lib_LTLIBRARIES = libtapi.la
 
