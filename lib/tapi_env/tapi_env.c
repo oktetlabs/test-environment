@@ -92,8 +92,6 @@ static te_errno prepare_addresses(tapi_env_addrs *addrs,
 static te_errno prepare_interfaces(tapi_env_ifs *ifs,
                                    cfg_nets_t   *cfg_nets);
 static te_errno prepare_pcos(tapi_env_hosts *hosts);
-static te_errno prepare_ports(tapi_env_hosts *hosts, tapi_env_addrs *addrs,
-                              cfg_nets_t *cfg_nets);
 
 static te_errno add_address(tapi_env_addr         *env_addr,
                             cfg_nets_t            *cfg_nets,
@@ -283,13 +281,6 @@ tapi_env_get(const char *cfg, tapi_env *env)
     if (rc != 0)
     {
         ERROR("Failed to prepare PCOs");
-        return rc;
-    }
-
-    rc = prepare_ports(&env->hosts, &env->addrs, &env->cfg_nets);
-    if (rc != 0)
-    {
-        ERROR("Failed to prepare ports in the addresses");
         return rc;
     }
 
@@ -1649,71 +1640,6 @@ prepare_pcos(tapi_env_hosts *hosts)
         }
     }
     return rc;
-}
-
-/* Owful.  It is next to impossible to find RPC server by the address from
- * environment... */
-static te_errno
-prepare_ports(tapi_env_hosts *hosts, tapi_env_addrs *addrs,
-              cfg_nets_t *cfg_nets)
-{
-
-    tapi_env_addr  *env_addr;
-
-    for (env_addr = addrs->cqh_first;
-         env_addr != (void *)addrs;
-         env_addr = env_addr->links.cqe_next)
-    {
-        te_errno  rc;
-        char     *ta;
-
-        tapi_env_host      *host;
-        rcf_rpc_server     *pco = NULL;
-
-        if ((env_addr->family != RPC_AF_INET &&
-             env_addr->family != RPC_AF_INET6))
-            continue;
-
-        /* Get TA name */
-        rc = node_value_get_ith_inst_name(
-                    cfg_nets->nets[env_addr->iface->net->i_net].
-                        nodes[env_addr->iface->i_node].handle,
-                    1, &ta);
-        if (rc != 0)
-            continue;
-
-        /* Find the "host" */
-        SLIST_FOREACH(host, hosts, links)
-        {
-            tapi_env_process *proc;
-            tapi_env_pco     *rpc;
-
-            if (strcmp(host->ta, ta) != 0)
-                continue;
-
-            proc = SLIST_FIRST(&host->processes);
-            if (proc == NULL)
-                continue;
-            rpc = STAILQ_FIRST(&proc->pcos);
-            if (rpc == NULL)
-                continue;
-            pco = rpc->rpcs;
-            break;
-        }
-
-        /* Set allocated port */
-        rc = tapi_allocate_port_htons(pco,
-                                te_sockaddr_get_port_ptr(env_addr->addr));
-        if (rc != 0)
-        {
-            ERROR("Failed to allocate a port for address: %r", rc);
-            free(ta);
-            return rc;
-        }
-        free(ta);
-    }
-
-    return 0;
 }
 
 

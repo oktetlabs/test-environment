@@ -155,13 +155,29 @@
  *
  * @param addr_     address (const struct sockaddr *) (OUT)
  */
-#define TEST_GET_ADDR(addr_) \
-    do {                                                    \
-        (addr_) = tapi_env_get_addr(&env, #addr_, NULL);    \
-        if ((addr_) == NULL)                                \
-        {                                                   \
-            TEST_STOP;                                      \
-        }                                                   \
+#define TEST_GET_ADDR_NO_PORT(addr_) \
+    do {                                                            \
+        (addr_) = tapi_env_get_addr(&env, #addr_, NULL);            \
+        if ((addr_) == NULL)                                        \
+            TEST_STOP;                                              \
+    } while (0)
+/**
+ * Get address and assign a free port. Name of the variable must
+ * match name of the address in environment configuration string.
+ *
+ * @param pco_      RPC server to use when checking the port (IN)
+ * @param addr_     address (const struct sockaddr *) (OUT)
+ */
+#define TEST_GET_ADDR(pco_, addr_) \
+    do {                                                            \
+        uint16_t *port_ptr;                                         \
+        TEST_GET_ADDR_NO_PORT(addr_);                               \
+        port_ptr = te_sockaddr_get_port_ptr(addr_);                 \
+        if (port_ptr != NULL &&                                     \
+            tapi_allocate_port_htons(pco_, port_ptr) != 0) {        \
+            ERROR("Failed to allocate a port for address: %r", rc); \
+            TEST_STOP;                                              \
+        }                                                           \
     } while (0)
 
 /**
