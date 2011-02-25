@@ -466,6 +466,7 @@ static const char * const trc_html_doc_start =
 "centerStats(document.getElementById('TestLog'), 'right');"
 #endif
 "return false;\">\n"
+"    <font face=\"Verdana\">\n"
 "    <div id=\"StatsTip\" onClick=\"doNothing(event)\">\n"
 "      <span id=\"close\"><a href=\"javascript:hidePopups()\" "
 "style=\"text-decoration: none\"><strong>[x]</strong></a></span>\n"
@@ -485,6 +486,7 @@ static const char * const trc_html_doc_start =
 "\n";
 
 static const char * const trc_html_doc_end =
+"</font>\n"
 "</body>\n"
 "</html>\n";
 
@@ -1606,7 +1608,8 @@ trc_report_exp_got_to_html(FILE             *f,
 
             WRITE_STR(trc_test_exp_got_row_mid);
 
-            rc = trc_exp_result_to_html(f, iter_data->exp_result, 0);
+            rc = trc_exp_result_to_html(f, iter_data->exp_result,
+                                        0, &ctx->tags);
             if (rc != 0)
                 break;
 

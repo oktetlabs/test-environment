@@ -104,8 +104,43 @@ typedef enum trc_diff_status {
     TRC_DIFF_STATUS_MAX         /**< Total number of statuses */
 } trc_diff_status;
 
+typedef enum trc_diff_summary_status {
+    TRC_DIFF_SUMMARY_PASSED = 0,
+    TRC_DIFF_SUMMARY_PASSED_UNE,
+    TRC_DIFF_SUMMARY_FAILED,
+    TRC_DIFF_SUMMARY_FAILED_UNE,
+    TRC_DIFF_SUMMARY_TOTAL,
+    TRC_DIFF_SUMMARY_STATUS_MAX,
+} trc_diff_summary_status;
+
+typedef enum trc_diff_summary_component {
+    TRC_DIFF_SUMMARY_MATCH = 0,
+    TRC_DIFF_SUMMARY_NEW,
+    TRC_DIFF_SUMMARY_OLD,
+    TRC_DIFF_SUMMARY_SKIPPED_MATCH,
+    TRC_DIFF_SUMMARY_SKIPPED_NEW,
+    TRC_DIFF_SUMMARY_SKIPPED_OLD,
+    TRC_DIFF_SUMMARY_COMPONENT_MAX,
+} trc_diff_summary_component;
+
+struct trc_diff_entry;
+
+typedef struct trc_diff_stats_counter_list_entry {
+    TAILQ_ENTRY(trc_diff_stats_counter_list_entry) links;
+    struct trc_test       *test;
+    char                  *hash;
+    unsigned int           count;
+} trc_diff_stats_counter_list_entry;
+
+typedef TAILQ_HEAD(trc_diff_stats_counter_list_head,
+                   trc_diff_stats_counter_list_entry)
+                   trc_diff_stats_counter_list_head;
+
 /** Type of simple counter. */
-typedef unsigned int trc_diff_stats_counter;
+typedef struct trc_diff_stats_counter_s {
+    unsigned int                        counter;
+    trc_diff_stats_counter_list_head    entries;
+} trc_diff_stats_counter;
 
 /**
  * Set X vs set Y statistics are three dimension array of simple
@@ -171,6 +206,9 @@ typedef struct trc_diff_ctx {
     trc_diff_result     result;     /**< Result details */
 
 } trc_diff_ctx;
+
+extern char *
+trc_diff_iter_hash_get(const trc_test_iter *test_iter, int db_uid);
 
 /**
  * Find set in sets list by specified ID.

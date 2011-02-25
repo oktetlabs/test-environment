@@ -197,8 +197,11 @@ trc_diff_entry_exp_results(const trc_diff_sets    *sets,
         {
             entry->results[set->id] =
                 trc_db_walker_get_exp_result(walker, &set->tags);
-            assert(entry->results[set->id] != NULL);
-            if (trc_is_exp_result_skipped(entry->results[set->id]))
+            //assert(entry->results[set->id] != NULL);
+            if (entry->results[set->id] == NULL)
+                VERB("No expected result found");
+            if ((entry->results[set->id] == NULL) || 
+                trc_is_exp_result_skipped(entry->results[set->id]))
             {
                 /* Skipped results should be inherited */
                 entry->inherit[set->id] = TRC_DIFF_INHERIT;
@@ -503,6 +506,73 @@ trc_test_status_merge(trc_test_status result, trc_test_status add)
     }
 }
 
+trc_diff_stats_counter_list_entry *
+trc_diff_stats_find_test(trc_diff_stats_counter_list_head *head,
+                         trc_diff_entry *entry)
+{
+    trc_test *test1 = NULL;
+    trc_test *test2 = NULL;
+    trc_diff_stats_counter_list_entry *p;
+
+    if (entry == NULL)
+    {
+        printf("NULL entry for search\n");
+        return NULL;
+    }
+
+    if (entry->is_iter)
+    {
+        if (entry->ptr.iter != NULL)
+            test1 = entry->ptr.iter->parent;
+    }
+    else
+        test1 = (trc_test *)entry->ptr.test;
+
+    if ((test1 == NULL) || (test1->name == NULL) || (test1->path == NULL))
+    {
+        printf("Invalid entry for search\n");
+        return NULL;
+    }
+
+    TAILQ_FOREACH(p, head, links)
+    {
+        if ((test2 = p->test) == NULL)
+            continue;
+
+        if ((test2->name != NULL) && (test2->path != NULL) &&
+            (strcmp(test1->name, test2->name) == 0) &&
+            (strcmp(test1->path, test2->path) == 0))
+        {
+            VERB("Found %s:%s==%s:%s",
+                 test1->name, test1->path,
+                 test2->name, test2->path);
+            return p;
+        }
+    }
+    VERB("New %s:%s: ", test1->name, test1->path);
+
+    return NULL;
+}
+
+
+char *
+trc_diff_iter_hash_get(const trc_test_iter *test_iter, int db_uid)
+{
+    trc_report_test_iter_data *iter_data =
+        trc_db_iter_get_user_data(test_iter, db_uid);
+    trc_report_test_iter_entry *iter_entry = NULL;
+
+    if ((iter_data != NULL) && !TAILQ_EMPTY(&iter_data->runs))
+    {
+        TAILQ_FOREACH(iter_entry, &iter_data->runs, links)
+        {
+            if (iter_entry->hash != NULL)
+                return iter_entry->hash;
+        }
+    }
+    return NULL;
+}
+
 /**
  * Increment statistic for two compared sets.
  * 
@@ -519,12 +589,17 @@ trc_diff_stats_inc(trc_diff_stats  *stats,
                    trc_test_status  status_i,
                    unsigned int     set_j,
                    trc_test_status  status_j,
-                   trc_diff_status  diff)
+                   trc_diff_status  diff,
+                   trc_diff_sets   *sets,
+                   trc_diff_entry  *entry)
 {
+    trc_diff_stats_counter *counter;
+    trc_diff_stats_counter_list_entry *iter_el = NULL;
+
     assert(stats != NULL);
     assert(set_i < TRC_DIFF_IDS);
     assert(set_j < TRC_DIFF_IDS);
-    assert(set_i != set_j);
+//    assert(set_i != set_j);
     assert(status_i < TRC_TEST_STATUS_MAX);
     assert(status_j < TRC_TEST_STATUS_MAX);
     assert(diff < TRC_DIFF_STATUS_MAX);
@@ -538,7 +613,57 @@ trc_diff_stats_inc(trc_diff_stats  *stats,
             ((status_j == TRC_TEST_FAILED) ||
              (status_j == TRC_TEST_FAILED_UNE))));
 
-    ((*stats)[set_i][set_j - 1][status_i][status_j][diff])++;
+    counter = &(*stats)[set_i][set_j][status_i][status_j][diff];
+    if (counter->counter++ == 0)
+    {
+        TAILQ_INIT(&counter->entries);
+    }
+
+    iter_el = trc_diff_stats_find_test(&counter->entries, entry);
+    if (iter_el == NULL)
+    {
+        iter_el = calloc(1, sizeof(trc_diff_stats_counter_list_entry));
+
+        if (entry->is_iter)
+        {
+            if (entry->ptr.iter != NULL)
+            {
+                iter_el->test = entry->ptr.iter->parent;
+            }
+        }
+        else
+            iter_el->test = (trc_test *)entry->ptr.test;
+
+        iter_el->count = 1;
+        TAILQ_INSERT_HEAD(&counter->entries, iter_el, links);
+    }
+    else
+    {
+        iter_el->count++;
+    }
+
+    if (entry->is_iter)
+    {
+        if (iter_el->hash == NULL)
+        {
+            iter_el->hash =
+                trc_diff_iter_hash_get(entry->ptr.iter,
+                                       trc_diff_find_set(sets, set_i,
+                                                         TRUE)->db_uid);
+        }
+        if (iter_el->hash == NULL)
+        {
+            iter_el->hash =
+                trc_diff_iter_hash_get(entry->ptr.iter,
+                                       trc_diff_find_set(sets, set_j,
+                                                         TRUE)->db_uid);
+        }
+    }
+
+
+    VERB("[%d][%d][%d][%d][%d]=%d (%d x %s)", set_i, set_j,
+         status_i, status_j, diff, counter->counter,
+         iter_el->count, iter_el->test->path);
 }
 
 /**
@@ -555,12 +680,19 @@ trc_diff_stats_inc(trc_diff_stats  *stats,
  * @return
  */
 static trc_diff_status
-trc_diff_compare(trc_diff_set   *set1, const trc_exp_result *result1,
-                 tqh_strings    *keys1,
-                 trc_diff_set   *set2, const trc_exp_result *result2,
-                 tqh_strings    *keys2,
+trc_diff_compare(trc_diff_sets  *sets,
+                 trc_diff_entry *parent,
+                 trc_diff_entry *entry,
+                 int             id1,
+                 int             id2,
                  trc_diff_stats *stats)
 {
+    trc_diff_set               *set1;
+    trc_diff_set               *set2;
+    const trc_exp_result       *result1;
+    const trc_exp_result       *result2;
+    tqh_strings                *keys1;
+    tqh_strings                *keys2;
     const trc_exp_result_entry *p;
     trc_test_status             status1 = TRC_TEST_STATUS_MAX;
     trc_test_status             status2 = TRC_TEST_STATUS_MAX;
@@ -568,10 +700,24 @@ trc_diff_compare(trc_diff_set   *set1, const trc_exp_result *result1,
     te_bool                     ignore;
     te_bool                     main_key_used;
 
-    assert(set1 != NULL);
-    assert(result1 != NULL);
-    assert(set2 != NULL);
-    assert(result2 != NULL);
+    assert(sets != NULL);
+
+    set1 = trc_diff_find_set(sets, id1, TRUE);
+    if (set1 == NULL)
+    {
+        return -1;
+    }
+    set2 = trc_diff_find_set(sets, id2, TRUE);
+    if (set2 == NULL)
+    {
+        return -1;
+    }
+
+    keys1 = &parent->keys[id1];
+    keys2 = &parent->keys[id2];
+
+    result1 = entry->results[id1];
+    result2 = entry->results[id2];
 
     /* 
      * Check that each entry in the expecred result for the first set
@@ -639,7 +785,8 @@ trc_diff_compare(trc_diff_set   *set1, const trc_exp_result *result1,
     {
         if (stats != NULL)
             trc_diff_stats_inc(stats, set1->id, status1,
-                               set2->id, status1, TRC_DIFF_MATCH);
+                               set2->id, status1, TRC_DIFF_MATCH,
+                               sets, entry);
         return TRC_DIFF_MATCH;
     }
 
@@ -697,7 +844,7 @@ trc_diff_compare(trc_diff_set   *set1, const trc_exp_result *result1,
 
     if (stats != NULL)
         trc_diff_stats_inc(stats, set1->id, status1,
-                           set2->id, status2, diff);
+                           set2->id, status2, diff, sets, parent);
 
     return diff;
 }
@@ -758,13 +905,11 @@ trc_diff_compare_iter(trc_diff_sets  *sets,
     set1 = trc_diff_find_set(sets, id1, TRUE);
     if (set1 == NULL)
     {
-        printf("set1 == NULL\n");
         return -1;
     }
     set2 = trc_diff_find_set(sets, id2, TRUE);
     if (set2 == NULL)
     {
-        printf("set2 == NULL\n");
         return -1;
     }
 
@@ -860,8 +1005,10 @@ cleanup:
     }
 
     if (stats != NULL)
+    {
         trc_diff_stats_inc(stats, id1, status1,
-                           id2, status2, diff);
+                           id2, status2, diff, sets, entry);
+    }
 
     return diff;
 }
@@ -880,7 +1027,7 @@ cleanup:
  *                      all differences are ignored)
  * @retval 1            There are some differences to be shown
  */
-static int
+int
 trc_diff_entry_has_diff(const trc_diff_sets *sets,
                         trc_diff_entry      *parent,
                         trc_diff_entry      *entry,
@@ -896,23 +1043,22 @@ trc_diff_entry_has_diff(const trc_diff_sets *sets,
 
     TAILQ_FOREACH(p, sets, links)
     {
-        for (q = TAILQ_NEXT(p, links); q != NULL; q = TAILQ_NEXT(q, links))
+        TAILQ_FOREACH(q, sets, links)
         {
             if ((p->log == NULL) || (q->log == NULL))
             {
-                diff = diff ||
-                    (trc_diff_compare(p, entry->results[p->id],
-                                      parent->keys + p->id,
-                                      q, entry->results[q->id],
-                                      parent->keys + q->id,
-                                      stats) == TRC_DIFF_NO_MATCH);
+                if (trc_diff_compare((trc_diff_sets *)sets,
+                                      parent, entry,
+                                      p->id, q->id,
+                                      stats) != TRC_DIFF_MATCH)
+                    diff = TRUE;
             }
             else
             {
-                diff = diff ||
-                    (trc_diff_compare_iter(sets, entry,
-                                           p->id, q->id, stats) ==
-                     TRC_DIFF_NO_MATCH);
+                if (trc_diff_compare_iter((trc_diff_sets *)sets, entry,
+                                           p->id, q->id, stats) !=
+                     TRC_DIFF_MATCH)
+                    diff = TRUE;
             }
 
             /*

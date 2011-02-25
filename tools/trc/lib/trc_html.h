@@ -36,6 +36,7 @@
 #include "te_errno.h"
 #include "te_trc.h"
 #include "trc_db.h"
+#include "tq_string.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -74,7 +75,8 @@ extern te_errno trc_test_result_to_html(FILE                       *f,
  */
 extern te_errno trc_exp_result_to_html(FILE                 *f,
                                        const trc_exp_result *result,
-                                       unsigned int          flags);
+                                       unsigned int          flags,
+                                       tqh_strings          *tags);
 
 /**
  * Output test iteration arguments to HTML file.

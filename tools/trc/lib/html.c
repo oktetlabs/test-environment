@@ -118,7 +118,7 @@ trc_test_result_to_html(FILE *f, const trc_exp_result_entry *result)
 /* See the description in trc_html.h */
 te_errno
 trc_exp_result_to_html(FILE *f, const trc_exp_result *result,
-                       unsigned int flags)
+                       unsigned int flags, tqh_strings *tags)
 {
     te_errno                    rc = 0;
     const trc_exp_result_entry *p;
@@ -136,9 +136,44 @@ trc_exp_result_to_html(FILE *f, const trc_exp_result *result,
     }
     if (result->tags_str != NULL)
     {
-        WRITE_STR("<b>");
-        WRITE_STR(result->tags_str);
-        WRITE_STR("</b><br/><br/>");
+        char *str = result->tags_str;
+        char *tag_p;
+        char *tag_q;
+        char *tag_str;
+        tqe_string *tag;
+
+        while (*str != '\0')
+        {
+            tag_p = NULL;
+            TAILQ_FOREACH(tag, tags, links)
+            {
+                tag_q = strstr(str, tag->v);
+                if (tag_q == NULL)
+                    continue;
+
+                if ((tag_p == NULL) || (tag_p > tag_q))
+                {
+                    tag_p = tag_q;
+                    tag_str = tag->v;
+                }
+            }
+            if (tag_p == NULL)
+            {
+                WRITE_STR(str);
+                break;
+            }
+
+            if (tag_p > str)
+            {
+                char tag_fmt[16];
+                snprintf(tag_fmt, 16, "%%.%ds", tag_p - str);
+                fprintf(f, tag_fmt, str);
+            }
+
+            fprintf(f, "<b>%s</b>", tag_str);
+            str = tag_p + strlen(tag_str);
+        }
+        WRITE_STR("<br/><br/>");
     }
     for (p = TAILQ_FIRST(&result->results);
          p != NULL && rc == 0;
