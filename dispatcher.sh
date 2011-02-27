@@ -330,6 +330,7 @@ process_opts()
                 ;;
 
             -q) QUIET=yes ;;
+            -n) BUILDER= ; TESTER_OPTS="${TESTER_OPTS} --nobuild" ;;
             --live-log)  LIVE_LOG=yes ; TESTER_OPTS="-q ${TESTER_OPTS}" ;;
 
             --log-txt=*)        RGT_LOG_TXT="${1#--log-txt=}" ;;
