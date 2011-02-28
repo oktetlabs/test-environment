@@ -69,6 +69,26 @@ enum {
     TRC_DIFF_OPT_TAG7,
     TRC_DIFF_OPT_TAG8,
     TRC_DIFF_OPT_TAG9,
+    TRC_DIFF_OPT_TAG10,
+    TRC_DIFF_OPT_TAG11,
+    TRC_DIFF_OPT_TAG12,
+    TRC_DIFF_OPT_TAG13,
+    TRC_DIFF_OPT_TAG14,
+    TRC_DIFF_OPT_TAG15,
+    TRC_DIFF_OPT_TAG16,
+    TRC_DIFF_OPT_TAG17,
+    TRC_DIFF_OPT_TAG18,
+    TRC_DIFF_OPT_TAG19,
+    TRC_DIFF_OPT_TAG20,
+    TRC_DIFF_OPT_TAG21,
+    TRC_DIFF_OPT_TAG22,
+    TRC_DIFF_OPT_TAG23,
+    TRC_DIFF_OPT_TAG24,
+    TRC_DIFF_OPT_TAG25,
+    TRC_DIFF_OPT_TAG26,
+    TRC_DIFF_OPT_TAG27,
+    TRC_DIFF_OPT_TAG28,
+    TRC_DIFF_OPT_TAG29,
     TRC_DIFF_OPT_NAME0,
     TRC_DIFF_OPT_NAME1,
     TRC_DIFF_OPT_NAME2,
@@ -79,6 +99,26 @@ enum {
     TRC_DIFF_OPT_NAME7,
     TRC_DIFF_OPT_NAME8,
     TRC_DIFF_OPT_NAME9,
+    TRC_DIFF_OPT_NAME10,
+    TRC_DIFF_OPT_NAME11,
+    TRC_DIFF_OPT_NAME12,
+    TRC_DIFF_OPT_NAME13,
+    TRC_DIFF_OPT_NAME14,
+    TRC_DIFF_OPT_NAME15,
+    TRC_DIFF_OPT_NAME16,
+    TRC_DIFF_OPT_NAME17,
+    TRC_DIFF_OPT_NAME18,
+    TRC_DIFF_OPT_NAME19,
+    TRC_DIFF_OPT_NAME20,
+    TRC_DIFF_OPT_NAME21,
+    TRC_DIFF_OPT_NAME22,
+    TRC_DIFF_OPT_NAME23,
+    TRC_DIFF_OPT_NAME24,
+    TRC_DIFF_OPT_NAME25,
+    TRC_DIFF_OPT_NAME26,
+    TRC_DIFF_OPT_NAME27,
+    TRC_DIFF_OPT_NAME28,
+    TRC_DIFF_OPT_NAME29,
     TRC_DIFF_OPT_LOG0,
     TRC_DIFF_OPT_LOG1,
     TRC_DIFF_OPT_LOG2,
@@ -89,6 +129,26 @@ enum {
     TRC_DIFF_OPT_LOG7,
     TRC_DIFF_OPT_LOG8,
     TRC_DIFF_OPT_LOG9,
+    TRC_DIFF_OPT_LOG10,
+    TRC_DIFF_OPT_LOG11,
+    TRC_DIFF_OPT_LOG12,
+    TRC_DIFF_OPT_LOG13,
+    TRC_DIFF_OPT_LOG14,
+    TRC_DIFF_OPT_LOG15,
+    TRC_DIFF_OPT_LOG16,
+    TRC_DIFF_OPT_LOG17,
+    TRC_DIFF_OPT_LOG18,
+    TRC_DIFF_OPT_LOG19,
+    TRC_DIFF_OPT_LOG20,
+    TRC_DIFF_OPT_LOG21,
+    TRC_DIFF_OPT_LOG22,
+    TRC_DIFF_OPT_LOG23,
+    TRC_DIFF_OPT_LOG24,
+    TRC_DIFF_OPT_LOG25,
+    TRC_DIFF_OPT_LOG26,
+    TRC_DIFF_OPT_LOG27,
+    TRC_DIFF_OPT_LOG28,
+    TRC_DIFF_OPT_LOG29,
     TRC_DIFF_OPT_SHOW_KEYS0,
     TRC_DIFF_OPT_SHOW_KEYS1,
     TRC_DIFF_OPT_SHOW_KEYS2,
@@ -99,6 +159,26 @@ enum {
     TRC_DIFF_OPT_SHOW_KEYS7,
     TRC_DIFF_OPT_SHOW_KEYS8,
     TRC_DIFF_OPT_SHOW_KEYS9,
+    TRC_DIFF_OPT_SHOW_KEYS10,
+    TRC_DIFF_OPT_SHOW_KEYS11,
+    TRC_DIFF_OPT_SHOW_KEYS12,
+    TRC_DIFF_OPT_SHOW_KEYS13,
+    TRC_DIFF_OPT_SHOW_KEYS14,
+    TRC_DIFF_OPT_SHOW_KEYS15,
+    TRC_DIFF_OPT_SHOW_KEYS16,
+    TRC_DIFF_OPT_SHOW_KEYS17,
+    TRC_DIFF_OPT_SHOW_KEYS18,
+    TRC_DIFF_OPT_SHOW_KEYS19,
+    TRC_DIFF_OPT_SHOW_KEYS20,
+    TRC_DIFF_OPT_SHOW_KEYS21,
+    TRC_DIFF_OPT_SHOW_KEYS22,
+    TRC_DIFF_OPT_SHOW_KEYS23,
+    TRC_DIFF_OPT_SHOW_KEYS24,
+    TRC_DIFF_OPT_SHOW_KEYS25,
+    TRC_DIFF_OPT_SHOW_KEYS26,
+    TRC_DIFF_OPT_SHOW_KEYS27,
+    TRC_DIFF_OPT_SHOW_KEYS28,
+    TRC_DIFF_OPT_SHOW_KEYS29,
     TRC_DIFF_OPT_EXCLUDE0,
     TRC_DIFF_OPT_EXCLUDE1,
     TRC_DIFF_OPT_EXCLUDE2,
@@ -109,6 +189,26 @@ enum {
     TRC_DIFF_OPT_EXCLUDE7,
     TRC_DIFF_OPT_EXCLUDE8,
     TRC_DIFF_OPT_EXCLUDE9,
+    TRC_DIFF_OPT_EXCLUDE10,
+    TRC_DIFF_OPT_EXCLUDE11,
+    TRC_DIFF_OPT_EXCLUDE12,
+    TRC_DIFF_OPT_EXCLUDE13,
+    TRC_DIFF_OPT_EXCLUDE14,
+    TRC_DIFF_OPT_EXCLUDE15,
+    TRC_DIFF_OPT_EXCLUDE16,
+    TRC_DIFF_OPT_EXCLUDE17,
+    TRC_DIFF_OPT_EXCLUDE18,
+    TRC_DIFF_OPT_EXCLUDE19,
+    TRC_DIFF_OPT_EXCLUDE20,
+    TRC_DIFF_OPT_EXCLUDE21,
+    TRC_DIFF_OPT_EXCLUDE22,
+    TRC_DIFF_OPT_EXCLUDE23,
+    TRC_DIFF_OPT_EXCLUDE24,
+    TRC_DIFF_OPT_EXCLUDE25,
+    TRC_DIFF_OPT_EXCLUDE26,
+    TRC_DIFF_OPT_EXCLUDE27,
+    TRC_DIFF_OPT_EXCLUDE28,
+    TRC_DIFF_OPT_EXCLUDE29,
     TRC_DIFF_OPT_KEY2HTML,
 };
 
@@ -183,6 +283,26 @@ process_cmd_line_opts(int argc, char **argv, trc_diff_ctx *ctx)
         TRC_DIFF_SET_OPTS(7),
         TRC_DIFF_SET_OPTS(8),
         TRC_DIFF_SET_OPTS(9),
+        TRC_DIFF_SET_OPTS(10),
+        TRC_DIFF_SET_OPTS(11),
+        TRC_DIFF_SET_OPTS(12),
+        TRC_DIFF_SET_OPTS(13),
+        TRC_DIFF_SET_OPTS(14),
+        TRC_DIFF_SET_OPTS(15),
+        TRC_DIFF_SET_OPTS(16),
+        TRC_DIFF_SET_OPTS(17),
+        TRC_DIFF_SET_OPTS(18),
+        TRC_DIFF_SET_OPTS(19),
+        TRC_DIFF_SET_OPTS(20),
+        TRC_DIFF_SET_OPTS(21),
+        TRC_DIFF_SET_OPTS(22),
+        TRC_DIFF_SET_OPTS(23),
+        TRC_DIFF_SET_OPTS(24),
+        TRC_DIFF_SET_OPTS(25),
+        TRC_DIFF_SET_OPTS(26),
+        TRC_DIFF_SET_OPTS(27),
+        TRC_DIFF_SET_OPTS(28),
+        TRC_DIFF_SET_OPTS(29),
 
 #undef TRC_DIFF_SET_OPTS
 
@@ -211,6 +331,26 @@ process_cmd_line_opts(int argc, char **argv, trc_diff_ctx *ctx)
             case TRC_DIFF_OPT_TAG7:
             case TRC_DIFF_OPT_TAG8:
             case TRC_DIFF_OPT_TAG9:
+            case TRC_DIFF_OPT_TAG10:
+            case TRC_DIFF_OPT_TAG11:
+            case TRC_DIFF_OPT_TAG12:
+            case TRC_DIFF_OPT_TAG13:
+            case TRC_DIFF_OPT_TAG14:
+            case TRC_DIFF_OPT_TAG15:
+            case TRC_DIFF_OPT_TAG16:
+            case TRC_DIFF_OPT_TAG17:
+            case TRC_DIFF_OPT_TAG18:
+            case TRC_DIFF_OPT_TAG19:
+            case TRC_DIFF_OPT_TAG20:
+            case TRC_DIFF_OPT_TAG21:
+            case TRC_DIFF_OPT_TAG22:
+            case TRC_DIFF_OPT_TAG23:
+            case TRC_DIFF_OPT_TAG24:
+            case TRC_DIFF_OPT_TAG25:
+            case TRC_DIFF_OPT_TAG26:
+            case TRC_DIFF_OPT_TAG27:
+            case TRC_DIFF_OPT_TAG28:
+            case TRC_DIFF_OPT_TAG29:
                 if (trc_diff_add_tag(&ctx->sets, rc - TRC_DIFF_OPT_TAG0,
                                      poptGetOptArg(optCon)) != 0)
                 {
@@ -229,6 +369,26 @@ process_cmd_line_opts(int argc, char **argv, trc_diff_ctx *ctx)
             case TRC_DIFF_OPT_NAME7:
             case TRC_DIFF_OPT_NAME8:
             case TRC_DIFF_OPT_NAME9:
+            case TRC_DIFF_OPT_NAME10:
+            case TRC_DIFF_OPT_NAME11:
+            case TRC_DIFF_OPT_NAME12:
+            case TRC_DIFF_OPT_NAME13:
+            case TRC_DIFF_OPT_NAME14:
+            case TRC_DIFF_OPT_NAME15:
+            case TRC_DIFF_OPT_NAME16:
+            case TRC_DIFF_OPT_NAME17:
+            case TRC_DIFF_OPT_NAME18:
+            case TRC_DIFF_OPT_NAME19:
+            case TRC_DIFF_OPT_NAME20:
+            case TRC_DIFF_OPT_NAME21:
+            case TRC_DIFF_OPT_NAME22:
+            case TRC_DIFF_OPT_NAME23:
+            case TRC_DIFF_OPT_NAME24:
+            case TRC_DIFF_OPT_NAME25:
+            case TRC_DIFF_OPT_NAME26:
+            case TRC_DIFF_OPT_NAME27:
+            case TRC_DIFF_OPT_NAME28:
+            case TRC_DIFF_OPT_NAME29:
                 if (trc_diff_set_name(&ctx->sets, rc - TRC_DIFF_OPT_NAME0,
                                       poptGetOptArg(optCon)) != 0)
                 {
@@ -247,6 +407,26 @@ process_cmd_line_opts(int argc, char **argv, trc_diff_ctx *ctx)
             case TRC_DIFF_OPT_LOG7:
             case TRC_DIFF_OPT_LOG8:
             case TRC_DIFF_OPT_LOG9:
+            case TRC_DIFF_OPT_LOG10:
+            case TRC_DIFF_OPT_LOG11:
+            case TRC_DIFF_OPT_LOG12:
+            case TRC_DIFF_OPT_LOG13:
+            case TRC_DIFF_OPT_LOG14:
+            case TRC_DIFF_OPT_LOG15:
+            case TRC_DIFF_OPT_LOG16:
+            case TRC_DIFF_OPT_LOG17:
+            case TRC_DIFF_OPT_LOG18:
+            case TRC_DIFF_OPT_LOG19:
+            case TRC_DIFF_OPT_LOG20:
+            case TRC_DIFF_OPT_LOG21:
+            case TRC_DIFF_OPT_LOG22:
+            case TRC_DIFF_OPT_LOG23:
+            case TRC_DIFF_OPT_LOG24:
+            case TRC_DIFF_OPT_LOG25:
+            case TRC_DIFF_OPT_LOG26:
+            case TRC_DIFF_OPT_LOG27:
+            case TRC_DIFF_OPT_LOG28:
+            case TRC_DIFF_OPT_LOG29:
                 if (trc_diff_set_log(&ctx->sets, rc - TRC_DIFF_OPT_LOG0,
                                      poptGetOptArg(optCon)) != 0)
                 {
@@ -265,6 +445,26 @@ process_cmd_line_opts(int argc, char **argv, trc_diff_ctx *ctx)
             case TRC_DIFF_OPT_SHOW_KEYS7:
             case TRC_DIFF_OPT_SHOW_KEYS8:
             case TRC_DIFF_OPT_SHOW_KEYS9:
+            case TRC_DIFF_OPT_SHOW_KEYS10:
+            case TRC_DIFF_OPT_SHOW_KEYS11:
+            case TRC_DIFF_OPT_SHOW_KEYS12:
+            case TRC_DIFF_OPT_SHOW_KEYS13:
+            case TRC_DIFF_OPT_SHOW_KEYS14:
+            case TRC_DIFF_OPT_SHOW_KEYS15:
+            case TRC_DIFF_OPT_SHOW_KEYS16:
+            case TRC_DIFF_OPT_SHOW_KEYS17:
+            case TRC_DIFF_OPT_SHOW_KEYS18:
+            case TRC_DIFF_OPT_SHOW_KEYS19:
+            case TRC_DIFF_OPT_SHOW_KEYS20:
+            case TRC_DIFF_OPT_SHOW_KEYS21:
+            case TRC_DIFF_OPT_SHOW_KEYS22:
+            case TRC_DIFF_OPT_SHOW_KEYS23:
+            case TRC_DIFF_OPT_SHOW_KEYS24:
+            case TRC_DIFF_OPT_SHOW_KEYS25:
+            case TRC_DIFF_OPT_SHOW_KEYS26:
+            case TRC_DIFF_OPT_SHOW_KEYS27:
+            case TRC_DIFF_OPT_SHOW_KEYS28:
+            case TRC_DIFF_OPT_SHOW_KEYS29:
                 if (trc_diff_show_keys(&ctx->sets,
                                        rc - TRC_DIFF_OPT_SHOW_KEYS0) != 0)
                 {
@@ -283,6 +483,26 @@ process_cmd_line_opts(int argc, char **argv, trc_diff_ctx *ctx)
             case TRC_DIFF_OPT_EXCLUDE7:
             case TRC_DIFF_OPT_EXCLUDE8:
             case TRC_DIFF_OPT_EXCLUDE9:
+            case TRC_DIFF_OPT_EXCLUDE10:
+            case TRC_DIFF_OPT_EXCLUDE11:
+            case TRC_DIFF_OPT_EXCLUDE12:
+            case TRC_DIFF_OPT_EXCLUDE13:
+            case TRC_DIFF_OPT_EXCLUDE14:
+            case TRC_DIFF_OPT_EXCLUDE15:
+            case TRC_DIFF_OPT_EXCLUDE16:
+            case TRC_DIFF_OPT_EXCLUDE17:
+            case TRC_DIFF_OPT_EXCLUDE18:
+            case TRC_DIFF_OPT_EXCLUDE19:
+            case TRC_DIFF_OPT_EXCLUDE20:
+            case TRC_DIFF_OPT_EXCLUDE21:
+            case TRC_DIFF_OPT_EXCLUDE22:
+            case TRC_DIFF_OPT_EXCLUDE23:
+            case TRC_DIFF_OPT_EXCLUDE24:
+            case TRC_DIFF_OPT_EXCLUDE25:
+            case TRC_DIFF_OPT_EXCLUDE26:
+            case TRC_DIFF_OPT_EXCLUDE27:
+            case TRC_DIFF_OPT_EXCLUDE28:
+            case TRC_DIFF_OPT_EXCLUDE29:
                 if (trc_diff_add_ignore(&ctx->sets,
                                         rc - TRC_DIFF_OPT_EXCLUDE0,
                                         poptGetOptArg(optCon)) != 0)

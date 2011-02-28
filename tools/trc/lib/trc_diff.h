@@ -43,7 +43,7 @@ extern "C" {
 #endif
 
 /** Number of IDs supported by TRC diff */
-#define TRC_DIFF_IDS    10
+#define TRC_DIFF_IDS    31
 
 
 /** Statistics for each key which makes differences */

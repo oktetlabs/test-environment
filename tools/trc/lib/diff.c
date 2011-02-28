@@ -625,6 +625,12 @@ trc_diff_stats_inc(trc_diff_stats  *stats,
     if (iter_el == NULL)
     {
         iter_el = calloc(1, sizeof(trc_diff_stats_counter_list_entry));
+        if (iter_el == NULL)
+        {
+            fprintf(stderr, "Failed to allocate memory "
+                    "for test list entry\n");
+            exit(1);
+        }
 
         if (entry->is_iter)
         {
