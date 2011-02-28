@@ -119,7 +119,7 @@ static const char * const trc_diff_html_doc_start =
 "        height: 400px;\n"
 "        left: 200px;\n"
 "        top: 100px;\n"
-"        background-color: #c0c0c0;\n"
+"        background-color: #ffffe0;\n"
 "        border: 1px solid #000000;\n"
 "        padding: 10px;\n"
 "    }\n"
