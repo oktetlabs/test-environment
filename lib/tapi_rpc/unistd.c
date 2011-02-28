@@ -1170,7 +1170,7 @@ rpc_ppoll_gen(rcf_rpc_server *rpcs,
      * Socket API and used on the same host.
      */
     in.ufds.ufds_len = rnfds;
-    in.ufds.ufds_val = (struct tarpc_ppollfd *)ufds;
+    in.ufds.ufds_val = (struct tarpc_pollfd *)ufds;
     in.nfds = nfds;
     in.sigmask = (tarpc_sigset_t)sigmask;
 
@@ -1188,11 +1188,6 @@ rpc_ppoll_gen(rcf_rpc_server *rpcs,
     }
 
     pollreq2str(ufds, rnfds, str_buf_1, sizeof(str_buf_1));
-
-    if ((timeout > 0) && (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT))
-    {
-        rpcs->timeout = TE_SEC2MS(TAPI_RPC_TIMEOUT_EXTRA_SEC) + timeout;
-    }
 
     rcf_rpc_call(rpcs, "ppoll", &in, &out);
 
