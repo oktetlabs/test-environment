@@ -144,7 +144,7 @@ static const char * const trc_diff_html_doc_start =
 "        innerHTML += '<div style=\"height:380px;overflow:auto;\">';\n"
 "\n"
 "        innerHTML += '<table border=1 cellpadding=4 cellspacing=3 ' + "
-"'width=100% style=\"font-size:small;text-align:right;\">';\n"
+"'width=100%% style=\"font-size:small;text-align:right;\">';\n"
 "        innerHTML += '<tr><td><b>Count</b></td>' +\n"
 "                     '<td><b>Test</b></td></tr>';\n"
 "\n"
@@ -500,7 +500,7 @@ static const char * const trc_diff_stats_brief_table_start =
 "  </thead>\n"
 "  <tbody align=center>\n";
 
-static const char * const trc_diff_stats_brief_increment_table_start =
+static const char * const trc_diff_stats_brief_incremental_table_start =
 "<table border=1 cellpadding=4 cellspacing=3 "
 "style=\"font-size:small;\">\n"
 "  <thead>\n"
@@ -1369,14 +1369,16 @@ trc_diff_stats_brief_report(FILE *f, const trc_diff_sets *sets,
 }
 
 void
-trc_diff_stats_brief_report_incremental(FILE *f, const trc_diff_sets *sets,
+trc_diff_stats_brief_incremental_report(FILE *f, const trc_diff_sets *sets,
                                         trc_diff_stats *stats)
 {
-    trc_diff_set *ref_set = NULL;
+    trc_diff_set *ref_set = TAILQ_FIRST(sets);
     trc_diff_set *compare_set = NULL;
 
-    fprintf(f, trc_diff_stats_brief_table_start, ref_set->name);
+    if (ref_set == NULL)
+        return;
 
+    fprintf(f, trc_diff_stats_brief_incremental_table_start, ref_set->name);
 
     TAILQ_FOREACH(ref_set, sets, links)
     {
@@ -1388,7 +1390,8 @@ trc_diff_stats_brief_report_incremental(FILE *f, const trc_diff_sets *sets,
         if ((compare_set = TAILQ_NEXT(ref_set, links)) == NULL)
             break;
 
-        fprintf(f, trc_diff_stats_brief_table_row_start, "");
+        fprintf(f, trc_diff_stats_brief_table_row_href_start,
+                ref_set->name, compare_set->name, "[details]");
         trc_diff_one_stats_brief_to_html(f, stats, ref_set, compare_set);
         fprintf(f, trc_diff_stats_brief_table_row_end);
     }
@@ -1664,9 +1667,10 @@ trc_diff_html_brief_find_dup_iter(const trc_diff_sets  *sets,
            (p->level == entry->level))
     {
         for (set = TAILQ_FIRST(sets);
-             set != NULL &&
-             trc_diff_is_exp_result_equal(entry->results[set->id],
-                                          p->results[set->id]);
+             (set != NULL) &&
+             ((entry->results[set->id] == NULL) ||
+              trc_diff_is_exp_result_equal(entry->results[set->id],
+                                           p->results[set->id]));
              set = TAILQ_NEXT(set, links));
 
         if (set == NULL)
@@ -1906,8 +1910,8 @@ trc_diff_report_to_html(trc_diff_ctx *ctx, const char *filename,
     /* Output brief total statistics */
     trc_diff_stats_brief_report(f, &ctx->sets, &ctx->stats);
 
-    /* Output brief total statistics */
-    //trc_diff_stats_brief_to_html(f, &ctx->sets, &ctx->stats);
+    /* Output brief incremental statistics */
+    trc_diff_stats_brief_incremental_report(f, &ctx->sets, &ctx->stats);
 
     /* Output grand total statistics */
     trc_diff_stats_to_html(f, &ctx->sets, &ctx->stats);
