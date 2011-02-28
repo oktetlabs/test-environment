@@ -425,6 +425,8 @@ test_status_te2trc(const te_test_status status)
         case TE_TEST_FAILED:    return TRC_TEST_FAILED;
         case TE_TEST_SKIPPED:   return TRC_TEST_SKIPPED;
         case TE_TEST_UNSPEC:    return TRC_TEST_UNSPECIFIED;
+        case TE_TEST_INCOMPLETE:
+            return TRC_TEST_UNSPECIFIED;
 
         default:
             assert(FALSE);

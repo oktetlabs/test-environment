@@ -1575,7 +1575,8 @@ trc_diff_test_iter_keys_to_html(FILE                 *f,
 
     TAILQ_FOREACH(set, sets, links)
     {
-        if (entry->results[set->id]->key != NULL)
+        if ((entry->results[set->id] != NULL) &&
+            (entry->results[set->id]->key != NULL))
         {
             fprintf(f, "<em>%s</em> - ", set->name);
             trc_re_key_substs(TRC_RE_KEY_URL,
@@ -1605,7 +1606,8 @@ trc_diff_test_iter_notes_to_html(FILE                 *f,
 
     TAILQ_FOREACH(set, sets, links)
     {
-        if (entry->results[set->id]->notes != NULL)
+        if ((entry->results[set->id] != NULL) &&
+            (entry->results[set->id]->notes != NULL))
             fprintf(f, "<em>%s</em> - %s<br/>",
                     set->name, entry->results[set->id]->notes);
     }
