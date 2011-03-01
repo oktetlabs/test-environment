@@ -48,6 +48,97 @@
 
 /* See the description in trc_report.h */
 te_errno
+trc_tools_filter_db(te_trc_db *db,
+                    unsigned int *db_uids,
+                    int db_uids_size,
+                    tqh_strings *tests_include,
+                    tqh_strings *tests_exclude)
+{
+    te_errno                rc = 0;
+    te_trc_db_walker       *walker;
+    trc_db_walker_motion    mv;
+    te_bool                 is_iter = TRUE;
+
+    walker = trc_db_new_walker(db);
+    if (walker == NULL)
+        return TE_ENOMEM;
+
+    while ((rc == 0) &&
+           ((mv = trc_db_walker_move(walker)) != TRC_DB_WALKER_ROOT))
+    {
+        switch (mv)
+        {
+            case TRC_DB_WALKER_SON:
+                is_iter = !is_iter;
+                /*@fallthrou@*/
+
+            case TRC_DB_WALKER_BROTHER:
+                if (is_iter)
+                {
+                    tqe_string     *test_path;
+                    trc_test       *test = trc_db_walker_get_test(walker);
+                    te_bool         do_include = FALSE;
+                    te_bool         do_exclude = FALSE;
+
+                    TAILQ_FOREACH(test_path, tests_include, links)
+                    {
+                        if (strstr(test->path, test_path->v) != NULL)
+                        {
+                            do_include = TRUE;
+                            break;
+                        }
+                    }
+
+                    TAILQ_FOREACH(test_path, tests_exclude, links)
+                    {
+                        if (strstr(test->path, test_path->v) != NULL)
+                        {
+                            do_exclude = TRUE;
+                            break;
+                        }
+                    }
+
+                    if (((do_include == FALSE) &&
+                         (!TAILQ_EMPTY(tests_include))) ||
+                        (do_exclude == TRUE))
+                    {
+                        int i;
+                        for (i = 0; i < db_uids_size; i++)
+                        {
+                            unsigned int                db_uid = db_uids[i];
+                            trc_report_test_iter_data  *iter_data =
+                                trc_db_walker_get_user_data(walker, db_uid);
+
+                            if (iter_data != NULL)
+                            {
+                                trc_report_free_test_iter_data(iter_data);
+                                trc_db_walker_set_user_data(walker, db_uid,
+                                                            NULL);
+                            }
+                        }
+                    }
+                }
+
+                break;
+
+            case TRC_DB_WALKER_FATHER:
+                is_iter = !is_iter;
+                break;
+
+            default:
+                assert(FALSE);
+                break;
+        }
+    }
+
+    trc_db_free_walker(walker);
+
+    return rc;
+}
+
+
+/* See the description in trc_report.h */
+te_errno
 trc_tools_cut_db(te_trc_db *db, unsigned int db_uid,
                  const char *path_pattern, te_bool inverse)
 {

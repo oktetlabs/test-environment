@@ -33,6 +33,7 @@
 
 #include "te_defs.h"
 #include "te_queue.h"
+#include "tq_string.h"
 #include "te_errno.h"
 #include "te_trc.h"
 #include "trc_db.h"
@@ -40,6 +41,12 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+extern te_errno trc_tools_filter_db(te_trc_db *db,
+                                    unsigned int *db_uids,
+                                    int db_uids_size,
+                                    tqh_strings *tests_include,
+                                    tqh_strings *tests_exclude);
 
 extern te_errno trc_tools_cut_db(te_trc_db *db, unsigned int db_uid,
                                  const char *path_pattern, te_bool inverse);

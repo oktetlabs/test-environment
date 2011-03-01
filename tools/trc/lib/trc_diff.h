@@ -205,6 +205,8 @@ typedef struct trc_diff_ctx {
     trc_diff_stats      stats;      /**< Grand total statistics */
     trc_diff_result     result;     /**< Result details */
 
+    tqh_strings         tests_include; /* List of test paths to include */
+    tqh_strings         tests_exclude; /* List of test paths to exclude */
 } trc_diff_ctx;
 
 extern char *
@@ -330,12 +332,14 @@ extern te_errno trc_diff_do(trc_diff_ctx *ctx);
  * @param ctx           TRC diff tool context
  * @param filename      Name of the file to put report or NULL if
  *                      report should be generated to stdout
+ * @param header        HTML header file name to include into the report
  * @param title         Title of the report
  *
  * @return Status code.
  */
 extern te_errno trc_diff_report_to_html(trc_diff_ctx *ctx,
                                         const char   *filename,
+                                        const char   *header,
                                         const char   *title);
 
 
@@ -347,6 +351,16 @@ extern te_errno trc_diff_report_to_html(trc_diff_ctx *ctx,
  * @return Status code.
  */
 extern te_errno trc_diff_process_logs(trc_diff_ctx *ctx);
+
+/**
+ * Filter test results by specified include/exclude rules.
+ *
+ * @param ctx           TRC diff context
+ *
+ * @return Status code.
+ */
+extern te_errno trc_diff_filter_logs(trc_diff_ctx *ctx);
+
 
 #ifdef __cplusplus
 } /* extern "C" */

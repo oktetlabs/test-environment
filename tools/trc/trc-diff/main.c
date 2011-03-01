@@ -46,6 +46,8 @@
 
 #include "te_defs.h"
 #include "te_queue.h"
+#include "tq_string.h"
+#include "te_alloc.h"
 #include "logger_api.h"
 #include "te_trc.h"
 
@@ -210,6 +212,9 @@ enum {
     TRC_DIFF_OPT_EXCLUDE28,
     TRC_DIFF_OPT_EXCLUDE29,
     TRC_DIFF_OPT_KEY2HTML,
+    TRC_DIFF_OPT_TESTS_INCLUDE,
+    TRC_DIFF_OPT_TESTS_EXCLUDE,
+    TRC_DIFF_OPT_MAX,
 };
 
 
@@ -217,6 +222,8 @@ enum {
 static const char *trc_diff_db_fn = NULL;
 /** Name of the file with report in HTML format */
 static const char *trc_diff_html_fn = NULL;
+/** Name of the file with report in HTML format */
+static const char *trc_diff_html_header_fn = NULL;
 /** Title of the report in HTML format */
 static const char *trc_diff_title = NULL;
 
@@ -244,12 +251,26 @@ process_cmd_line_opts(int argc, char **argv, trc_diff_ctx *ctx)
           "database.",
           "FILENAME" },
 
+        { "tests-include", 'i', POPT_ARG_STRING,
+          NULL, TRC_DIFF_OPT_TESTS_INCLUDE,
+          "Include tests specified by path.",
+          "TESTPATH" },
+
+        { "tests-exclude", 'e', POPT_ARG_STRING,
+          NULL, TRC_DIFF_OPT_TESTS_INCLUDE,
+          "Exclude tests specified by path.",
+          "TESTPATH" },
+
         { "html", 'h', POPT_ARG_STRING, &trc_diff_html_fn, 0,
           "Name of the file for report in HTML format.",
           "FILENAME" },
 
         { "title", 't', POPT_ARG_STRING, &trc_diff_title, 0,
           "Title of the HTML report to be generate.", "TITLE" },
+
+        { "header", '\0', POPT_ARG_STRING, &trc_diff_html_header_fn, 0,
+          "Name of the file with header for the HTML report.",
+          "FILENAME" },
 
         { "key2html", '\0', POPT_ARG_STRING, NULL, TRC_DIFF_OPT_KEY2HTML,
           "File with regular expressions to apply when output keys to "
@@ -512,6 +533,30 @@ process_cmd_line_opts(int argc, char **argv, trc_diff_ctx *ctx)
                 }
                 break;
 
+            case TRC_DIFF_OPT_TESTS_INCLUDE:
+            case TRC_DIFF_OPT_TESTS_EXCLUDE:
+            {
+                tqe_string *p = TE_ALLOC(sizeof(*p));
+
+                if (p == NULL)
+                {
+                    return EXIT_FAILURE;
+                }
+                if (rc == TRC_DIFF_OPT_TESTS_INCLUDE)
+                    TAILQ_INSERT_TAIL(&ctx->tests_include, p, links);
+                else
+                    TAILQ_INSERT_TAIL(&ctx->tests_exclude, p, links);
+
+                p->v = (char *)poptGetOptArg(optCon);
+                if (p->v == NULL)
+                {
+                    ERROR("Empty test path is specified");
+                    return EXIT_FAILURE;
+                }
+
+                break;
+            }
+
             case TRC_DIFF_OPT_KEY2HTML:
             {
                 const char *key2html_fn = poptGetOptArg(optCon);
@@ -621,6 +666,12 @@ main(int argc, char *argv[])
         goto exit;
     }
 
+    if (trc_diff_filter_logs(ctx) != 0)
+    {
+        ERROR("Failed to cut logs");
+        goto exit;
+    }
+
     /* Generate reports in HTML format */
     if (trc_diff_do(ctx) != 0)
     {
@@ -630,6 +681,7 @@ main(int argc, char *argv[])
 
     /* Generate reports in HTML format */
     if (trc_diff_report_to_html(ctx, trc_diff_html_fn,
+                                trc_diff_html_header_fn,
                                 trc_diff_title) != 0)
     {
         ERROR("Failed to generate report in HTML format");

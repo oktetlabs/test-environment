@@ -46,6 +46,7 @@
 
 #include "trc_diff.h"
 #include "trc_report.h"
+#include "trc_tools.h"
 
 
 /**
@@ -1379,6 +1380,9 @@ trc_diff_ctx_new(void)
 
         memset(&ctx->stats, 0, sizeof(ctx->stats));
         TAILQ_INIT(&ctx->result);
+
+        TAILQ_INIT(&ctx->tests_include);
+        TAILQ_INIT(&ctx->tests_exclude);
     }
     return ctx;
 }
@@ -1397,4 +1401,23 @@ trc_diff_ctx_free(trc_diff_ctx *ctx)
         free(p);
     }
     free(ctx);
+}
+
+te_errno
+trc_diff_filter_logs(trc_diff_ctx *ctx)
+{
+    unsigned int    db_uids[TRC_DIFF_IDS];
+    int             db_uids_size = 0;
+    trc_diff_set   *set = NULL;
+
+    memset(db_uids, 0, sizeof(db_uids));
+
+    /* Prepare list if db_uids to work with */
+    TAILQ_FOREACH(set, &ctx->sets, links)
+    {
+        db_uids[db_uids_size++] = set->db_uid;
+    }
+
+    return trc_tools_filter_db(ctx->db, db_uids, db_uids_size,
+                               &ctx->tests_include, &ctx->tests_exclude);
 }

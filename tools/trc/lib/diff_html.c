@@ -1939,7 +1939,7 @@ cleanup:
 /** See descriptino in trc_db.h */
 te_errno
 trc_diff_report_to_html(trc_diff_ctx *ctx, const char *filename,
-                        const char *title)
+                        const char *header, const char *title)
 {
     FILE       *f;
     te_errno    rc;

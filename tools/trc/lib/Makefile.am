@@ -27,6 +27,7 @@ libtrc_report_a_SOURCES = \
 
 libtrc_diff_a_SOURCES = \
 	tags.c \
+	tools.c \
 	diff_tags.c \
 	diff.c \
 	diff_html.c \
