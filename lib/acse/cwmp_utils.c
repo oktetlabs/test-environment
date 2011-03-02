@@ -557,6 +557,28 @@ cwmp_val_array_log(unsigned log_level, const char *intro,
 }
 
 
+
+/* see description in cwmp_utils.h */
+string_array_t *
+cwmp_extract_names(cwmp_values_array_t *src)
+{
+    unsigned i;
+    string_array_t *res;
+    if (NULL == src)
+        return NULL;
+
+    res = calloc(1, sizeof(*res));
+    res->size = src->size;
+    if (NULL == (res->items = calloc(src->size, sizeof(char *))))
+        return NULL;
+    for (i = 0; i < src->size; i++)
+        if (src->items[i] && src->items[i]->Name)
+            if (NULL == (res->items[i] = strdup(src->items[i]->Name)))
+                return NULL;
+    return res;
+}
+
+
 /*
  * =========== Utils for CWMP OID =================
  */

@@ -329,6 +329,10 @@ extern te_errno cwmp_val_array_log(unsigned log_level, const char *intro,
                                    cwmp_values_array_t *a);
 
 
+/** 
+ * Extract names from CWMP values array.
+ */ 
+extern string_array_t *cwmp_extract_names(cwmp_values_array_t *a);
 
 /**
  * Print ParameterValueStruct to the string buffer, for human read.
@@ -479,7 +483,7 @@ extern cwmp_values_array_t *cwmp_copy_par_value_list(
 /**
  * Detect whether name is partial node name or Parameter (leaf) 
  * full name. 
- * Particulary, it is detected by ending doc '.'in the name
+ * Particulary, it is detected by ending doc '.' in the name
  * according with TR069 standard. 
  *
  * @param name  parameter name
