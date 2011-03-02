@@ -557,6 +557,85 @@ cwmp_val_array_log(unsigned log_level, const char *intro,
 }
 
 
+/*
+ * =========== Utils for CWMP OID =================
+ */
+
+/* see description in cwmp_utils.h */
+cwmp_oid_t *
+cwmp_name_to_oid(const char *name)
+{
+#define MAX_OID_LEN 256
+    char   *loc_label[MAX_OID_LEN] = {NULL, }; 
+    size_t  idx = 0, i;
+    cwmp_oid_t *new_oid = malloc(sizeof(cwmp_oid_t));
+
+    char *next_label = strdup(name);
+
+    assert(name != NULL);
+
+    do {
+        loc_label[idx] = strsep(&next_label, ".");
+        idx++;
+    } while(next_label != NULL);
+
+    if (loc_label[idx-1][0] == '\0')
+        new_oid->size = idx - 1; /* After last '.' no token, object name */
+    else
+        new_oid->size = idx; /* After last '.' is token, leaf name */
+
+    new_oid->label = calloc(new_oid->size + 1, sizeof(char *));
+
+    for (i = 0; i < new_oid->size; i++)
+        new_oid->label[i] = loc_label[i];
+
+    if (loc_label[idx-1][0] == '\0')
+        new_oid->label[new_oid->size] = loc_label[new_oid->size];
+    else
+        new_oid->label[new_oid->size] = NULL;
+
+    return new_oid;
+#undef MAX_OID_LEN
+}
+
+/* see description in cwmp_utils.h */
+te_errno
+cwmp_oid_add_str(cwmp_oid_t *oid, ...)
+{
+    /* TODO */
+    UNUSED(oid);
+    return TE_EFAIL;
+}
+
+/* see description in cwmp_utils.h */
+size_t
+cwmp_oid_to_string(cwmp_oid_t *oid, char *buf, size_t buf_size)
+{
+    size_t i, total = 0;
+
+    for (i = 0; (i < oid->size) && (total < buf_size); i++)
+    {
+        total += snprintf(buf + total, buf_size - total, "%s",
+                          oid->label[i]);
+        if (oid->label[i+1] != NULL)
+            total += snprintf(buf + total, buf_size - total, ".");
+    }
+    return total;
+}
+
+/* see description in cwmp_utils.h */
+void
+cwmp_oid_free(cwmp_oid_t *oid)
+{
+    if (oid == NULL) return;
+
+    free(oid->label[0]);
+    free(oid->label);
+    free(oid);
+}
+
+
+
 
 cwmp_set_parameter_attributes_t *
 cwmp_set_attrs_alloc(const char *par_name, int notification, 
@@ -851,3 +930,7 @@ cwmp_download_alloc(const char *command_key, cwmp_file_type_t ftype,
 
     return dl;
 }
+
+
+
+

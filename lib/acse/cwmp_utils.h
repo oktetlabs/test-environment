@@ -72,6 +72,19 @@ typedef enum {
 } cwmp_file_type_t;
 
 
+/**
+ * CWMP Parameter Name convinient presentation.
+ * If name is object name, that is, in single string presentation, 
+ * will have tailing dot, label[size] is not-NULL and contains 
+ * empty string.
+ */
+typedef struct {
+    char    **label;   /**< array of sub-ids.  */
+    size_t    size;    /**< number of sub-ids */
+} cwmp_oid_t;
+
+
+
 /** Global variable which contain marker for end of var-args list. */
 extern void const * const va_end_list_ptr;
 
@@ -209,6 +222,33 @@ extern te_errno cwmp_val_array_get_int(cwmp_values_array_t *a,
                                        const char *name, 
                                        int *type,
                                        int *value);
+
+/**
+ * Get integer-like value from parameter-value array.
+ */
+static inline int
+cwmp_val_array_get_int_idx(cwmp_values_array_t *a, int i)
+{
+    int retval;
+    switch (a->items[i]->__type)
+    {
+        case SOAP_TYPE_xsd__boolean:         
+        case SOAP_TYPE_int:         
+        case SOAP_TYPE_unsignedInt:
+            retval = *((int *)a->items[i]->Value);
+            break;
+        case SOAP_TYPE_byte:
+        case SOAP_TYPE_unsignedByte:
+            retval = *((int8_t *)a->items[i]->Value);
+            break;
+        case SOAP_TYPE_string:
+            retval = atoi((char *)a->items[i]->Value);
+            break;
+        default:
+            retval = 0;
+    }
+    return retval;
+}
 
 /**
  * Find value with specified name in the array, check that
@@ -456,6 +496,8 @@ cwmp_is_node_name(const char *name)
     return name[len-1] == '.';
 }
 
+/**
+ */
 
 
 /**
@@ -475,6 +517,28 @@ cwmp_file_type_to_str(cwmp_file_type_t ft)
     }
     return "(unknown)";
 }
+
+
+static inline te_bool
+cwmp_oid_is_node(cwmp_oid_t *oid)
+{
+    return oid->label[oid->size] != NULL;
+}
+
+/**
+ * Construct OID from string CWMP name
+ */
+extern cwmp_oid_t *cwmp_name_to_oid(const char *name);
+
+extern te_errno cwmp_oid_add_str(cwmp_oid_t *oid, ...);
+
+extern size_t cwmp_oid_to_string(cwmp_oid_t *oid, char *buf, size_t size);
+
+/**
+ * Free CWMP OID, assume that struct is alloced by cwmp_name_to_oid().
+ * Otherwise SegFault may occur!
+ */
+extern void cwmp_oid_free(cwmp_oid_t *oid);
 
 
 #ifdef __cplusplus
