@@ -519,6 +519,15 @@ cwmp_file_type_to_str(cwmp_file_type_t ft)
 }
 
 
+/**
+ * Detect whether OID is partial node name or Parameter (leaf) 
+ * full name. 
+ *
+ * @param oid           Parameter OID
+ *
+ * @retval FALSE    @p oid is full Parameter name, 
+ * @retval TRUE     @p oid is partial node name.
+ */      
 static inline te_bool
 cwmp_oid_is_node(cwmp_oid_t *oid)
 {

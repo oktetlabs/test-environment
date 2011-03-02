@@ -635,6 +635,9 @@ cwmp_oid_free(cwmp_oid_t *oid)
 }
 
 
+/*
+ * =========== Utils for particular CWMP RPCs =================
+ */
 
 
 cwmp_set_parameter_attributes_t *
