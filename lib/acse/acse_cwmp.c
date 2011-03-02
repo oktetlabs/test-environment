@@ -810,6 +810,34 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
             if (pfd->revents & POLLOUT)
                 return acse_send_file_portion(cwmp_sess);
             break;
+        case CWMP_PENDING:
+            if (pfd->revents & POLLIN)
+            {
+                char buf[1024];
+                size_t r;
+                r = cwmp_sess->orig_frecv(&(cwmp_sess->m_soap), buf, 
+                                          sizeof(buf));
+                if (r == 0) 
+                {
+                    WARN("Unexpected EOF in state PENDING, CPE %s",
+                         cwmp_sess->cpe_owner->name);
+                    return TE_ENOTCONN;
+                }
+                else
+                {
+                    WARN("Unexpected data (%d b) in state PENDING, CPE %s",
+                         r, cwmp_sess->cpe_owner->name);
+                }
+            }
+            else
+            {
+                int saved_errno = errno;
+                ERROR("Unexpected PENDING, CPE %s, revents 0x%x, errno %d",
+                     cwmp_sess->cpe_owner->name, (int)pfd->revents,
+                     saved_errno);
+                return TE_EFAIL;
+            }
+            break;
         default: /* do nothing here */
             WARN("CWMP after poll, unexpected state %d\n",
                     (int)cwmp_sess->state);
