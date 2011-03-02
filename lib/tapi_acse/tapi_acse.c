@@ -993,10 +993,20 @@ tapi_acse_set_parameter_values_resp(tapi_acse_context_t *ctx, int *status)
 {
     cwmp_data_from_cpe_t from_cpe_loc = {.p = NULL};
     te_errno rc = tapi_acse_cpe_rpc_response(ctx, NULL, &from_cpe_loc);
-    if (0 == rc && NULL != status && NULL != from_cpe_loc.p)
+
+    RING("SetParameterValuesResponse, rc %r, ptr %p",
+         rc, from_cpe_loc.p);
+
+    RING("TUTUT status ptr %p", status);
+
+    if (0 == rc &&
+        NULL != status &&
+        NULL != from_cpe_loc.p)
         *status = from_cpe_loc.set_parameter_values_r->Status;
-    RING("Got SetParameterValuesResponse, rc %r, status %d",
-         rc, from_cpe_loc.set_parameter_values_r->Status);
+
+    if (NULL != from_cpe_loc.p)
+        RING("Got SetParameterValuesResponse, rc %r, status %d",
+             rc, from_cpe_loc.set_parameter_values_r->Status);
     return rc;
 }
 
@@ -1101,6 +1111,9 @@ tapi_acse_add_object(tapi_acse_context_t *ctx,
     strncpy(obj_name_buf, obj_name, sizeof(obj_name_buf));
     strncpy(param_key_buf, param_key, sizeof(param_key_buf));
 
+    RING("Issue to CPE %s AddObject on %s", 
+         ctx->cpe_name, obj_name);
+
     return tapi_acse_cpe_rpc_call(ctx, CWMP_RPC_add_object,
                                   to_cpe_loc);
 }
@@ -1122,6 +1135,11 @@ tapi_acse_add_object_resp(tapi_acse_context_t *ctx,
         tapi_acse_log_fault(from_cpe_loc.fault);
     else if (rc == 0)
     {
+        assert(from_cpe_loc.p != NULL);
+
+        RING("AddObject has status %d, instance created idx %d.", 
+             from_cpe_loc.add_object_r->Status,
+             from_cpe_loc.add_object_r->InstanceNumber);
         if (NULL != obj_index)
             *obj_index = from_cpe_loc.add_object_r->InstanceNumber;
         if (NULL != add_status)
@@ -1146,6 +1164,9 @@ tapi_acse_delete_object(tapi_acse_context_t *ctx,
 
     strncpy(obj_name_buf, obj_name, sizeof(obj_name_buf));
     strncpy(param_key_buf, param_key, sizeof(param_key_buf));
+
+    RING("Issue to CPE %s DeleteObject on %s", 
+         ctx->cpe_name, obj_name); 
 
     return tapi_acse_cpe_rpc_call(ctx, CWMP_RPC_delete_object,
                                   to_cpe_loc);
