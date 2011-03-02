@@ -191,7 +191,7 @@ rpc_check_port_is_free(rcf_rpc_server *rpcs, uint16_t port)
 
     rcf_rpc_call(rpcs, "check_port_is_free", &in, &out);
     CHECK_RETVAL_VAR(check_port_is_free, out.retval,
-                     (out.retval != TRUE), FALSE);
+                     (out.retval != TRUE && out.retval != FALSE), FALSE);
 
     TAPI_RPC_LOG("RPC (%s,%s): check_port_is_free(%d) -> %d (%s)",
                  rpcs->ta, rpcs->name, (int)port, out.retval,
