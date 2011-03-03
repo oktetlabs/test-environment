@@ -250,6 +250,19 @@ cwmp_val_array_get_int_idx(cwmp_values_array_t *a, int i)
     return retval;
 }
 
+static inline const char*
+cwmp_val_array_get_str_idx(cwmp_values_array_t *a, int i)
+{
+    switch (a->items[i]->__type)
+    {
+        case SOAP_TYPE_string:         
+            return (const char *)a->items[i]->Value;
+        default:
+            break;
+    }
+    return NULL;
+}
+
 /**
  * Find value with specified name in the array, check that
  * it has string type, and obtain string for user. 
