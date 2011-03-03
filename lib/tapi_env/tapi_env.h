@@ -204,7 +204,7 @@
                       addr_family_rpc2str(addr_family_h2rpc(        \
                           (sa_addr_)->sa_family)));                 \
         }                                                           \
-        addr_ = (sa_addr_)->sa_data;                                \
+        addr_ = sa_addr_;                                           \
     } while (0)
 
 /**
