@@ -308,6 +308,21 @@ extern te_errno cwmp_val_array_check_str(cwmp_values_array_t *a,
                                          const char *value);
 
 
+typedef enum {
+    CWMP_COMPARE_SUBSET,
+    CWMP_COMPARE_EXACT,
+} cwmp_vals_compare_t;
+
+/**
+ * Compare ParVal arrays. 
+ * 
+ * @retval 0    array @p first matches with array @p second.
+ * @retval 1    otherwise.
+ */
+extern int cwmp_val_array_cmp(cwmp_values_array_t *first,
+                              cwmp_values_array_t *second, 
+                              cwmp_vals_compare_t mode);
+
 /**
  * Free CWMP values array. 
  *
@@ -467,6 +482,14 @@ extern cwmp_parameter_value_struct_t *cwmp_copy_par_value(
                             cwmp_parameter_value_struct_t *src);
 
 
+/**
+ * Compare two ParameterValue.
+ * 
+ * @retval 0    @p first matches with @p second.
+ * @retval 1    otherwise.
+ */
+extern int cwmp_par_value_cmp(cwmp_parameter_value_struct_t *first,
+                              cwmp_parameter_value_struct_t *second);
 /**
  * Convert internal gSOAP ParameterValueList into 
  * @p cwmp_values_array_t structure. 

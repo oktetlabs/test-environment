@@ -403,6 +403,68 @@ cwmp_copy_par_value_list(cwmp_parameter_value_list_t *src)
     return ret;
 }
 
+/**
+ * Compare two ParameterValue.
+ * 
+ * @retval 0    @p first matches with @p second.
+ * @retval -1   Names or types are not matches.
+ * @retval 1    Values are not matches.
+ */
+int
+cwmp_par_value_cmp(cwmp_parameter_value_struct_t *first,
+                   cwmp_parameter_value_struct_t *second)
+{
+    if (first->__type != second->__type || 
+        strcmp(first->Name, second->Name) != 0)
+        return 1;
+    switch (first->__type)
+    {
+        case SOAP_TYPE_xsd__boolean:         
+        case SOAP_TYPE_int:         
+        case SOAP_TYPE_unsignedInt:
+            return *((int *)first->Value) != 
+                   *((int *)second->Value);
+        case SOAP_TYPE_byte:
+        case SOAP_TYPE_unsignedByte:
+            return *((int8_t *)first->Value) != 
+                   *((int8_t *)second->Value);
+        case SOAP_TYPE_string:
+            return !!strcmp(first->Value, second->Value);
+    }
+
+    return 0;
+}
+
+/**
+ * Compare ParVal arrays. 
+ * 
+ * @retval 0    array @p first matches with array @p second.
+ * @retval 1    NOT matches.
+ */
+int
+cwmp_val_array_cmp(cwmp_values_array_t *first, cwmp_values_array_t *second,
+                   cwmp_vals_compare_t mode)
+{
+    unsigned i, j;
+
+    /* TODO sort arrays for speed of search */
+
+    for (i = 0; i < first->size; i++)
+    {
+        for (j = 0; j < second->size; j++)
+        {
+            if (0 == cwmp_par_value_cmp(first->items[i], second->items[j]))
+                break;
+        }
+        if (j == second->size) /* first->items[i] was NOT found in second */
+            return 1;
+    }
+    /* if we here, then all items in first was found in second */
+    if (mode == CWMP_COMPARE_EXACT && first->size != second->size)
+        return 1;
+
+    return 0;
+}
 
 /* see description in cwmp_utils.h */
 void
