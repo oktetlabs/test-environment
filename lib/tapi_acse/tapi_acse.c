@@ -861,6 +861,30 @@ tapi_acse_get_parameter_values_resp(tapi_acse_context_t *ctx,
     return rc;
 }
 
+
+te_errno
+tapi_acse_set_pvalues_sync(tapi_acse_context_t *ctx,
+                           const char *par_key,
+                           cwmp_values_array_t *set_values, 
+                           int *status)
+{
+    te_errno rc;
+    int sync_mode;
+    cwmp_sess_state_t cwmp_state;
+    CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_OBTAIN,
+                                  "sync_mode", &sync_mode, VA_END_LIST));
+    CHECK_RC(tapi_acse_get_cwmp_state(ctx, &cwmp_state));
+    if (sync_mode != 1 || cwmp_state != CWMP_PENDING)
+    {
+        ERROR("Call %s in wrong state, sync_mode is %d, cwmp state is %d",
+             __FUNCTION__, sync_mode, cwmp_state);
+        return TE_RC(TE_TAPI, TE_EDEADLK);
+    }
+    CHECK_RC(tapi_acse_set_parameter_values(ctx, par_key, set_values));
+    CHECK_RC(tapi_acse_set_parameter_values_resp(ctx, status));
+    return 0;
+}
+
 te_errno
 tapi_acse_get_pvalues_sync(tapi_acse_context_t *ctx,
                            string_array_t *names,

@@ -439,6 +439,24 @@ extern te_errno tapi_acse_set_parameter_values_resp(
                                         tapi_acse_context_t *ctx,
                                         int *status);
 
+/**
+ * Call CPE SetParameterValues method and wait for response,
+ * works good only in the sync mode during active CWMP session.
+ * Response may contain more values then request, if some of names
+ * is not leaf.
+ *
+ * @param ctx      current TAPI ACSE context;
+ * @param par_key  Parameter key for Set CWMP request;
+ * @param req      Array of values for the SetParameterValues method
+ * @param status   location for status of SetParameterValues, unchanged
+ *                  if CWMP Fault was received.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_acse_set_pvalues_sync(tapi_acse_context_t *ctx,
+                                           const char *par_key,
+                                           cwmp_values_array_t *req,
+                                           int *status);
 
 /**
  * Call CPE GetParameterValues method.
