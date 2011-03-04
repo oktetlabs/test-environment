@@ -4,6 +4,10 @@ ACLOCAL_AMFLAGS = -I @TE_M4@
 AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir)
 AM_CFLAGS = @TE_CFLAGS@ @XML2_CFLAGS@
 
+#pkgdatadir = $(datadir)/$(subdir)
+#dist_pkgdata_DATA = jquery_flot.js
+dist_bin_SCRIPTS = jquery_include.sh jquery_flot.js
+
 noinst_HEADERS = \
 	trc_tags.h \
 	trc_html.h \

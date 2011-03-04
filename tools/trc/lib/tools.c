@@ -377,3 +377,27 @@ trc_report_merge(trc_report_ctx *ctx, const char *filename)
     return 0;
 }
 
+/**
+ * Copy all content of one file to another.
+ *
+ * @param dst   Destination file
+ * @param src   Source file
+ *
+ * @return      Status code.
+ */
+int
+trc_tools_file_to_file(FILE *dst, FILE *src)
+{
+    char    buf[4096];
+    size_t  r;
+
+    rewind(src);
+    do {
+        r = fread(buf, 1, sizeof(buf), src);
+        if (r > 0)
+           if (fwrite(buf, r, 1, dst) != 1)
+               return errno;
+    } while (r == sizeof(buf));
+
+    return 0;
+}

@@ -334,13 +334,15 @@ extern te_errno trc_diff_do(trc_diff_ctx *ctx);
  *                      report should be generated to stdout
  * @param header        HTML header file name to include into the report
  * @param title         Title of the report
+ * @param summary_only  Generate only summary report
  *
  * @return Status code.
  */
 extern te_errno trc_diff_report_to_html(trc_diff_ctx *ctx,
                                         const char   *filename,
                                         const char   *header,
-                                        const char   *title);
+                                        const char   *title,
+                                        te_bool summary_only);
 
 
 /**

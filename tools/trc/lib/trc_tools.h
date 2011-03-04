@@ -56,6 +56,16 @@ extern te_errno trc_tools_merge_db(te_trc_db *db, int dst_uid,
 
 extern te_errno trc_report_merge(trc_report_ctx *ctx, const char *filename);
 
+/**
+ * Copy all content of one file to another.
+ *
+ * @param dst   Destination file
+ * @param src   Source file
+ *
+ * @return      Status code.
+ */
+extern int trc_tools_file_to_file(FILE *dst, FILE *src);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
