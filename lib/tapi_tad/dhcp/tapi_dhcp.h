@@ -77,6 +77,9 @@ typedef enum dhcp_option_type {
                                                      Information (RFC 3925)
                                                      */
     DHCP_OPT_PVID                       = 150,  /**< Port VLAN */
+    DHCP_OPT_6RD                        = 212,  /**< IPv6 Rapid Deployment
+                                                     on IPv4 Infrastructures
+                                                     (6rd) */
     DHCP_OPT_CLASSLESS_STATIC_ROUTES    = 249,  /**< Classless static
                                                      routes */
     DHCP_OPT_END                        = 255,  /**< End option */
