@@ -4374,6 +4374,1610 @@ jQuery.each([ "Height", "Width" ], function(i, name){
 
 });
 })();
+
+// Copyright 2006 Google Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+
+// Known Issues:
+//
+// * Patterns only support repeat.
+// * Radial gradient are not implemented. The VML version of these look very
+//   different from the canvas one.
+// * Clipping paths are not implemented.
+// * Coordsize. The width and height attribute have higher priority than the
+//   width and height style values which isn't correct.
+// * Painting mode isn't implemented.
+// * Canvas width/height should is using content-box by default. IE in
+//   Quirks mode will draw the canvas using border-box. Either change your
+//   doctype to HTML5
+//   (http://www.whatwg.org/specs/web-apps/current-work/#the-doctype)
+//   or use Box Sizing Behavior from WebFX
+//   (http://webfx.eae.net/dhtml/boxsizing/boxsizing.html)
+// * Non uniform scaling does not correctly scale strokes.
+// * Filling very large shapes (above 5000 points) is buggy.
+// * Optimize. There is always room for speed improvements.
+
+// Only add this code if we do not already have a canvas implementation
+if (!document.createElement('canvas').getContext) {
+
+(function() {
+
+  // alias some functions to make (compiled) code shorter
+  var m = Math;
+  var mr = m.round;
+  var ms = m.sin;
+  var mc = m.cos;
+  var abs = m.abs;
+  var sqrt = m.sqrt;
+
+  // this is used for sub pixel precision
+  var Z = 10;
+  var Z2 = Z / 2;
+
+  /**
+   * This funtion is assigned to the <canvas> elements as element.getContext().
+   * @this {HTMLElement}
+   * @return {CanvasRenderingContext2D_}
+   */
+  function getContext() {
+    return this.context_ ||
+        (this.context_ = new CanvasRenderingContext2D_(this));
+  }
+
+  var slice = Array.prototype.slice;
+
+  /**
+   * Binds a function to an object. The returned function will always use the
+   * passed in {@code obj} as {@code this}.
+   *
+   * Example:
+   *
+   *   g = bind(f, obj, a, b)
+   *   g(c, d) // will do f.call(obj, a, b, c, d)
+   *
+   * @param {Function} f The function to bind the object to
+   * @param {Object} obj The object that should act as this when the function
+   *     is called
+   * @param {*} var_args Rest arguments that will be used as the initial
+   *     arguments when the function is called
+   * @return {Function} A new function that has bound this
+   */
+  function bind(f, obj, var_args) {
+    var a = slice.call(arguments, 2);
+    return function() {
+      return f.apply(obj, a.concat(slice.call(arguments)));
+    };
+  }
+
+  function encodeHtmlAttribute(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+  }
+
+  function addNamespacesAndStylesheet(doc) {
+    // create xmlns
+    if (!doc.namespaces['g_vml_']) {
+      doc.namespaces.add('g_vml_', 'urn:schemas-microsoft-com:vml',
+                         '#default#VML');
+
+    }
+    if (!doc.namespaces['g_o_']) {
+      doc.namespaces.add('g_o_', 'urn:schemas-microsoft-com:office:office',
+                         '#default#VML');
+    }
+
+    // Setup default CSS.  Only add one style sheet per document
+    if (!doc.styleSheets['ex_canvas_']) {
+      var ss = doc.createStyleSheet();
+      ss.owningElement.id = 'ex_canvas_';
+      ss.cssText = 'canvas{display:inline-block;overflow:hidden;' +
+          // default size is 300x150 in Gecko and Opera
+          'text-align:left;width:300px;height:150px}';
+    }
+  }
+
+  // Add namespaces and stylesheet at startup.
+  addNamespacesAndStylesheet(document);
+
+  var G_vmlCanvasManager_ = {
+    init: function(opt_doc) {
+      if (/MSIE/.test(navigator.userAgent) && !window.opera) {
+        var doc = opt_doc || document;
+        // Create a dummy element so that IE will allow canvas elements to be
+        // recognized.
+        doc.createElement('canvas');
+        doc.attachEvent('onreadystatechange', bind(this.init_, this, doc));
+      }
+    },
+
+    init_: function(doc) {
+      // find all canvas elements
+      var els = doc.getElementsByTagName('canvas');
+      for (var i = 0; i < els.length; i++) {
+        this.initElement(els[i]);
+      }
+    },
+
+    /**
+     * Public initializes a canvas element so that it can be used as canvas
+     * element from now on. This is called automatically before the page is
+     * loaded but if you are creating elements using createElement you need to
+     * make sure this is called on the element.
+     * @param {HTMLElement} el The canvas element to initialize.
+     * @return {HTMLElement} the element that was created.
+     */
+    initElement: function(el) {
+      if (!el.getContext) {
+        el.getContext = getContext;
+
+        // Add namespaces and stylesheet to document of the element.
+        addNamespacesAndStylesheet(el.ownerDocument);
+
+        // Remove fallback content. There is no way to hide text nodes so we
+        // just remove all childNodes. We could hide all elements and remove
+        // text nodes but who really cares about the fallback content.
+        el.innerHTML = '';
+
+        // do not use inline function because that will leak memory
+        el.attachEvent('onpropertychange', onPropertyChange);
+        el.attachEvent('onresize', onResize);
+
+        var attrs = el.attributes;
+        if (attrs.width && attrs.width.specified) {
+          // TODO: use runtimeStyle and coordsize
+          // el.getContext().setWidth_(attrs.width.nodeValue);
+          el.style.width = attrs.width.nodeValue + 'px';
+        } else {
+          el.width = el.clientWidth;
+        }
+        if (attrs.height && attrs.height.specified) {
+          // TODO: use runtimeStyle and coordsize
+          // el.getContext().setHeight_(attrs.height.nodeValue);
+          el.style.height = attrs.height.nodeValue + 'px';
+        } else {
+          el.height = el.clientHeight;
+        }
+        //el.getContext().setCoordsize_()
+      }
+      return el;
+    }
+  };
+
+  function onPropertyChange(e) {
+    var el = e.srcElement;
+
+    switch (e.propertyName) {
+      case 'width':
+        el.getContext().clearRect();
+        el.style.width = el.attributes.width.nodeValue + 'px';
+        // In IE8 this does not trigger onresize.
+        el.firstChild.style.width =  el.clientWidth + 'px';
+        break;
+      case 'height':
+        el.getContext().clearRect();
+        el.style.height = el.attributes.height.nodeValue + 'px';
+        el.firstChild.style.height = el.clientHeight + 'px';
+        break;
+    }
+  }
+
+  function onResize(e) {
+    var el = e.srcElement;
+    if (el.firstChild) {
+      el.firstChild.style.width =  el.clientWidth + 'px';
+      el.firstChild.style.height = el.clientHeight + 'px';
+    }
+  }
+
+  G_vmlCanvasManager_.init();
+
+  // precompute "00" to "FF"
+  var decToHex = [];
+  for (var i = 0; i < 16; i++) {
+    for (var j = 0; j < 16; j++) {
+      decToHex[i * 16 + j] = i.toString(16) + j.toString(16);
+    }
+  }
+
+  function createMatrixIdentity() {
+    return [
+      [1, 0, 0],
+      [0, 1, 0],
+      [0, 0, 1]
+    ];
+  }
+
+  function matrixMultiply(m1, m2) {
+    var result = createMatrixIdentity();
+
+    for (var x = 0; x < 3; x++) {
+      for (var y = 0; y < 3; y++) {
+        var sum = 0;
+
+        for (var z = 0; z < 3; z++) {
+          sum += m1[x][z] * m2[z][y];
+        }
+
+        result[x][y] = sum;
+      }
+    }
+    return result;
+  }
+
+  function copyState(o1, o2) {
+    o2.fillStyle     = o1.fillStyle;
+    o2.lineCap       = o1.lineCap;
+    o2.lineJoin      = o1.lineJoin;
+    o2.lineWidth     = o1.lineWidth;
+    o2.miterLimit    = o1.miterLimit;
+    o2.shadowBlur    = o1.shadowBlur;
+    o2.shadowColor   = o1.shadowColor;
+    o2.shadowOffsetX = o1.shadowOffsetX;
+    o2.shadowOffsetY = o1.shadowOffsetY;
+    o2.strokeStyle   = o1.strokeStyle;
+    o2.globalAlpha   = o1.globalAlpha;
+    o2.font          = o1.font;
+    o2.textAlign     = o1.textAlign;
+    o2.textBaseline  = o1.textBaseline;
+    o2.arcScaleX_    = o1.arcScaleX_;
+    o2.arcScaleY_    = o1.arcScaleY_;
+    o2.lineScale_    = o1.lineScale_;
+  }
+
+  var colorData = {
+    aliceblue: '#F0F8FF',
+    antiquewhite: '#FAEBD7',
+    aquamarine: '#7FFFD4',
+    azure: '#F0FFFF',
+    beige: '#F5F5DC',
+    bisque: '#FFE4C4',
+    black: '#000000',
+    blanchedalmond: '#FFEBCD',
+    blueviolet: '#8A2BE2',
+    brown: '#A52A2A',
+    burlywood: '#DEB887',
+    cadetblue: '#5F9EA0',
+    chartreuse: '#7FFF00',
+    chocolate: '#D2691E',
+    coral: '#FF7F50',
+    cornflowerblue: '#6495ED',
+    cornsilk: '#FFF8DC',
+    crimson: '#DC143C',
+    cyan: '#00FFFF',
+    darkblue: '#00008B',
+    darkcyan: '#008B8B',
+    darkgoldenrod: '#B8860B',
+    darkgray: '#A9A9A9',
+    darkgreen: '#006400',
+    darkgrey: '#A9A9A9',
+    darkkhaki: '#BDB76B',
+    darkmagenta: '#8B008B',
+    darkolivegreen: '#556B2F',
+    darkorange: '#FF8C00',
+    darkorchid: '#9932CC',
+    darkred: '#8B0000',
+    darksalmon: '#E9967A',
+    darkseagreen: '#8FBC8F',
+    darkslateblue: '#483D8B',
+    darkslategray: '#2F4F4F',
+    darkslategrey: '#2F4F4F',
+    darkturquoise: '#00CED1',
+    darkviolet: '#9400D3',
+    deeppink: '#FF1493',
+    deepskyblue: '#00BFFF',
+    dimgray: '#696969',
+    dimgrey: '#696969',
+    dodgerblue: '#1E90FF',
+    firebrick: '#B22222',
+    floralwhite: '#FFFAF0',
+    forestgreen: '#228B22',
+    gainsboro: '#DCDCDC',
+    ghostwhite: '#F8F8FF',
+    gold: '#FFD700',
+    goldenrod: '#DAA520',
+    grey: '#808080',
+    greenyellow: '#ADFF2F',
+    honeydew: '#F0FFF0',
+    hotpink: '#FF69B4',
+    indianred: '#CD5C5C',
+    indigo: '#4B0082',
+    ivory: '#FFFFF0',
+    khaki: '#F0E68C',
+    lavender: '#E6E6FA',
+    lavenderblush: '#FFF0F5',
+    lawngreen: '#7CFC00',
+    lemonchiffon: '#FFFACD',
+    lightblue: '#ADD8E6',
+    lightcoral: '#F08080',
+    lightcyan: '#E0FFFF',
+    lightgoldenrodyellow: '#FAFAD2',
+    lightgreen: '#90EE90',
+    lightgrey: '#D3D3D3',
+    lightpink: '#FFB6C1',
+    lightsalmon: '#FFA07A',
+    lightseagreen: '#20B2AA',
+    lightskyblue: '#87CEFA',
+    lightslategray: '#778899',
+    lightslategrey: '#778899',
+    lightsteelblue: '#B0C4DE',
+    lightyellow: '#FFFFE0',
+    limegreen: '#32CD32',
+    linen: '#FAF0E6',
+    magenta: '#FF00FF',
+    mediumaquamarine: '#66CDAA',
+    mediumblue: '#0000CD',
+    mediumorchid: '#BA55D3',
+    mediumpurple: '#9370DB',
+    mediumseagreen: '#3CB371',
+    mediumslateblue: '#7B68EE',
+    mediumspringgreen: '#00FA9A',
+    mediumturquoise: '#48D1CC',
+    mediumvioletred: '#C71585',
+    midnightblue: '#191970',
+    mintcream: '#F5FFFA',
+    mistyrose: '#FFE4E1',
+    moccasin: '#FFE4B5',
+    navajowhite: '#FFDEAD',
+    oldlace: '#FDF5E6',
+    olivedrab: '#6B8E23',
+    orange: '#FFA500',
+    orangered: '#FF4500',
+    orchid: '#DA70D6',
+    palegoldenrod: '#EEE8AA',
+    palegreen: '#98FB98',
+    paleturquoise: '#AFEEEE',
+    palevioletred: '#DB7093',
+    papayawhip: '#FFEFD5',
+    peachpuff: '#FFDAB9',
+    peru: '#CD853F',
+    pink: '#FFC0CB',
+    plum: '#DDA0DD',
+    powderblue: '#B0E0E6',
+    rosybrown: '#BC8F8F',
+    royalblue: '#4169E1',
+    saddlebrown: '#8B4513',
+    salmon: '#FA8072',
+    sandybrown: '#F4A460',
+    seagreen: '#2E8B57',
+    seashell: '#FFF5EE',
+    sienna: '#A0522D',
+    skyblue: '#87CEEB',
+    slateblue: '#6A5ACD',
+    slategray: '#708090',
+    slategrey: '#708090',
+    snow: '#FFFAFA',
+    springgreen: '#00FF7F',
+    steelblue: '#4682B4',
+    tan: '#D2B48C',
+    thistle: '#D8BFD8',
+    tomato: '#FF6347',
+    turquoise: '#40E0D0',
+    violet: '#EE82EE',
+    wheat: '#F5DEB3',
+    whitesmoke: '#F5F5F5',
+    yellowgreen: '#9ACD32'
+  };
+
+
+  function getRgbHslContent(styleString) {
+    var start = styleString.indexOf('(', 3);
+    var end = styleString.indexOf(')', start + 1);
+    var parts = styleString.substring(start + 1, end).split(',');
+    // add alpha if needed
+    if (parts.length == 4 && styleString.substr(3, 1) == 'a') {
+      alpha = Number(parts[3]);
+    } else {
+      parts[3] = 1;
+    }
+    return parts;
+  }
+
+  function percent(s) {
+    return parseFloat(s) / 100;
+  }
+
+  function clamp(v, min, max) {
+    return Math.min(max, Math.max(min, v));
+  }
+
+  function hslToRgb(parts){
+    var r, g, b;
+    h = parseFloat(parts[0]) / 360 % 360;
+    if (h < 0)
+      h++;
+    s = clamp(percent(parts[1]), 0, 1);
+    l = clamp(percent(parts[2]), 0, 1);
+    if (s == 0) {
+      r = g = b = l; // achromatic
+    } else {
+      var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      var p = 2 * l - q;
+      r = hueToRgb(p, q, h + 1 / 3);
+      g = hueToRgb(p, q, h);
+      b = hueToRgb(p, q, h - 1 / 3);
+    }
+
+    return '#' + decToHex[Math.floor(r * 255)] +
+        decToHex[Math.floor(g * 255)] +
+        decToHex[Math.floor(b * 255)];
+  }
+
+  function hueToRgb(m1, m2, h) {
+    if (h < 0)
+      h++;
+    if (h > 1)
+      h--;
+
+    if (6 * h < 1)
+      return m1 + (m2 - m1) * 6 * h;
+    else if (2 * h < 1)
+      return m2;
+    else if (3 * h < 2)
+      return m1 + (m2 - m1) * (2 / 3 - h) * 6;
+    else
+      return m1;
+  }
+
+  function processStyle(styleString) {
+    var str, alpha = 1;
+
+    styleString = String(styleString);
+    if (styleString.charAt(0) == '#') {
+      str = styleString;
+    } else if (/^rgb/.test(styleString)) {
+      var parts = getRgbHslContent(styleString);
+      var str = '#', n;
+      for (var i = 0; i < 3; i++) {
+        if (parts[i].indexOf('%') != -1) {
+          n = Math.floor(percent(parts[i]) * 255);
+        } else {
+          n = Number(parts[i]);
+        }
+        str += decToHex[clamp(n, 0, 255)];
+      }
+      alpha = parts[3];
+    } else if (/^hsl/.test(styleString)) {
+      var parts = getRgbHslContent(styleString);
+      str = hslToRgb(parts);
+      alpha = parts[3];
+    } else {
+      str = colorData[styleString] || styleString;
+    }
+    return {color: str, alpha: alpha};
+  }
+
+  var DEFAULT_STYLE = {
+    style: 'normal',
+    variant: 'normal',
+    weight: 'normal',
+    size: 10,
+    family: 'sans-serif'
+  };
+
+  // Internal text style cache
+  var fontStyleCache = {};
+
+  function processFontStyle(styleString) {
+    if (fontStyleCache[styleString]) {
+      return fontStyleCache[styleString];
+    }
+
+    var el = document.createElement('div');
+    var style = el.style;
+    try {
+      style.font = styleString;
+    } catch (ex) {
+      // Ignore failures to set to invalid font.
+    }
+
+    return fontStyleCache[styleString] = {
+      style: style.fontStyle || DEFAULT_STYLE.style,
+      variant: style.fontVariant || DEFAULT_STYLE.variant,
+      weight: style.fontWeight || DEFAULT_STYLE.weight,
+      size: style.fontSize || DEFAULT_STYLE.size,
+      family: style.fontFamily || DEFAULT_STYLE.family
+    };
+  }
+
+  function getComputedStyle(style, element) {
+    var computedStyle = {};
+
+    for (var p in style) {
+      computedStyle[p] = style[p];
+    }
+
+    // Compute the size
+    var canvasFontSize = parseFloat(element.currentStyle.fontSize),
+        fontSize = parseFloat(style.size);
+
+    if (typeof style.size == 'number') {
+      computedStyle.size = style.size;
+    } else if (style.size.indexOf('px') != -1) {
+      computedStyle.size = fontSize;
+    } else if (style.size.indexOf('em') != -1) {
+      computedStyle.size = canvasFontSize * fontSize;
+    } else if(style.size.indexOf('%') != -1) {
+      computedStyle.size = (canvasFontSize / 100) * fontSize;
+    } else if (style.size.indexOf('pt') != -1) {
+      computedStyle.size = fontSize / .75;
+    } else {
+      computedStyle.size = canvasFontSize;
+    }
+
+    // Different scaling between normal text and VML text. This was found using
+    // trial and error to get the same size as non VML text.
+    computedStyle.size *= 0.981;
+
+    return computedStyle;
+  }
+
+  function buildStyle(style) {
+    return style.style + ' ' + style.variant + ' ' + style.weight + ' ' +
+        style.size + 'px ' + style.family;
+  }
+
+  function processLineCap(lineCap) {
+    switch (lineCap) {
+      case 'butt':
+        return 'flat';
+      case 'round':
+        return 'round';
+      case 'square':
+      default:
+        return 'square';
+    }
+  }
+
+  /**
+   * This class implements CanvasRenderingContext2D interface as described by
+   * the WHATWG.
+   * @param {HTMLElement} surfaceElement The element that the 2D context should
+   * be associated with
+   */
+  function CanvasRenderingContext2D_(surfaceElement) {
+    this.m_ = createMatrixIdentity();
+
+    this.mStack_ = [];
+    this.aStack_ = [];
+    this.currentPath_ = [];
+
+    // Canvas context properties
+    this.strokeStyle = '#000';
+    this.fillStyle = '#000';
+
+    this.lineWidth = 1;
+    this.lineJoin = 'miter';
+    this.lineCap = 'butt';
+    this.miterLimit = Z * 1;
+    this.globalAlpha = 1;
+    this.font = '10px sans-serif';
+    this.textAlign = 'left';
+    this.textBaseline = 'alphabetic';
+    this.canvas = surfaceElement;
+
+    var el = surfaceElement.ownerDocument.createElement('div');
+    el.style.width =  surfaceElement.clientWidth + 'px';
+    el.style.height = surfaceElement.clientHeight + 'px';
+    el.style.overflow = 'hidden';
+    el.style.position = 'absolute';
+    surfaceElement.appendChild(el);
+
+    this.element_ = el;
+    this.arcScaleX_ = 1;
+    this.arcScaleY_ = 1;
+    this.lineScale_ = 1;
+  }
+
+  var contextPrototype = CanvasRenderingContext2D_.prototype;
+  contextPrototype.clearRect = function() {
+    if (this.textMeasureEl_) {
+      this.textMeasureEl_.removeNode(true);
+      this.textMeasureEl_ = null;
+    }
+    this.element_.innerHTML = '';
+  };
+
+  contextPrototype.beginPath = function() {
+    // TODO: Branch current matrix so that save/restore has no effect
+    //       as per safari docs.
+    this.currentPath_ = [];
+  };
+
+  contextPrototype.moveTo = function(aX, aY) {
+    var p = this.getCoords_(aX, aY);
+    this.currentPath_.push({type: 'moveTo', x: p.x, y: p.y});
+    this.currentX_ = p.x;
+    this.currentY_ = p.y;
+  };
+
+  contextPrototype.lineTo = function(aX, aY) {
+    var p = this.getCoords_(aX, aY);
+    this.currentPath_.push({type: 'lineTo', x: p.x, y: p.y});
+
+    this.currentX_ = p.x;
+    this.currentY_ = p.y;
+  };
+
+  contextPrototype.bezierCurveTo = function(aCP1x, aCP1y,
+                                            aCP2x, aCP2y,
+                                            aX, aY) {
+    var p = this.getCoords_(aX, aY);
+    var cp1 = this.getCoords_(aCP1x, aCP1y);
+    var cp2 = this.getCoords_(aCP2x, aCP2y);
+    bezierCurveTo(this, cp1, cp2, p);
+  };
+
+  // Helper function that takes the already fixed cordinates.
+  function bezierCurveTo(self, cp1, cp2, p) {
+    self.currentPath_.push({
+      type: 'bezierCurveTo',
+      cp1x: cp1.x,
+      cp1y: cp1.y,
+      cp2x: cp2.x,
+      cp2y: cp2.y,
+      x: p.x,
+      y: p.y
+    });
+    self.currentX_ = p.x;
+    self.currentY_ = p.y;
+  }
+
+  contextPrototype.quadraticCurveTo = function(aCPx, aCPy, aX, aY) {
+    // the following is lifted almost directly from
+    // http://developer.mozilla.org/en/docs/Canvas_tutorial:Drawing_shapes
+
+    var cp = this.getCoords_(aCPx, aCPy);
+    var p = this.getCoords_(aX, aY);
+
+    var cp1 = {
+      x: this.currentX_ + 2.0 / 3.0 * (cp.x - this.currentX_),
+      y: this.currentY_ + 2.0 / 3.0 * (cp.y - this.currentY_)
+    };
+    var cp2 = {
+      x: cp1.x + (p.x - this.currentX_) / 3.0,
+      y: cp1.y + (p.y - this.currentY_) / 3.0
+    };
+
+    bezierCurveTo(this, cp1, cp2, p);
+  };
+
+  contextPrototype.arc = function(aX, aY, aRadius,
+                                  aStartAngle, aEndAngle, aClockwise) {
+    aRadius *= Z;
+    var arcType = aClockwise ? 'at' : 'wa';
+
+    var xStart = aX + mc(aStartAngle) * aRadius - Z2;
+    var yStart = aY + ms(aStartAngle) * aRadius - Z2;
+
+    var xEnd = aX + mc(aEndAngle) * aRadius - Z2;
+    var yEnd = aY + ms(aEndAngle) * aRadius - Z2;
+
+    // IE won't render arches drawn counter clockwise if xStart == xEnd.
+    if (xStart == xEnd && !aClockwise) {
+      xStart += 0.125; // Offset xStart by 1/80 of a pixel. Use something
+                       // that can be represented in binary
+    }
+
+    var p = this.getCoords_(aX, aY);
+    var pStart = this.getCoords_(xStart, yStart);
+    var pEnd = this.getCoords_(xEnd, yEnd);
+
+    this.currentPath_.push({type: arcType,
+                           x: p.x,
+                           y: p.y,
+                           radius: aRadius,
+                           xStart: pStart.x,
+                           yStart: pStart.y,
+                           xEnd: pEnd.x,
+                           yEnd: pEnd.y});
+
+  };
+
+  contextPrototype.rect = function(aX, aY, aWidth, aHeight) {
+    this.moveTo(aX, aY);
+    this.lineTo(aX + aWidth, aY);
+    this.lineTo(aX + aWidth, aY + aHeight);
+    this.lineTo(aX, aY + aHeight);
+    this.closePath();
+  };
+
+  contextPrototype.strokeRect = function(aX, aY, aWidth, aHeight) {
+    var oldPath = this.currentPath_;
+    this.beginPath();
+
+    this.moveTo(aX, aY);
+    this.lineTo(aX + aWidth, aY);
+    this.lineTo(aX + aWidth, aY + aHeight);
+    this.lineTo(aX, aY + aHeight);
+    this.closePath();
+    this.stroke();
+
+    this.currentPath_ = oldPath;
+  };
+
+  contextPrototype.fillRect = function(aX, aY, aWidth, aHeight) {
+    var oldPath = this.currentPath_;
+    this.beginPath();
+
+    this.moveTo(aX, aY);
+    this.lineTo(aX + aWidth, aY);
+    this.lineTo(aX + aWidth, aY + aHeight);
+    this.lineTo(aX, aY + aHeight);
+    this.closePath();
+    this.fill();
+
+    this.currentPath_ = oldPath;
+  };
+
+  contextPrototype.createLinearGradient = function(aX0, aY0, aX1, aY1) {
+    var gradient = new CanvasGradient_('gradient');
+    gradient.x0_ = aX0;
+    gradient.y0_ = aY0;
+    gradient.x1_ = aX1;
+    gradient.y1_ = aY1;
+    return gradient;
+  };
+
+  contextPrototype.createRadialGradient = function(aX0, aY0, aR0,
+                                                   aX1, aY1, aR1) {
+    var gradient = new CanvasGradient_('gradientradial');
+    gradient.x0_ = aX0;
+    gradient.y0_ = aY0;
+    gradient.r0_ = aR0;
+    gradient.x1_ = aX1;
+    gradient.y1_ = aY1;
+    gradient.r1_ = aR1;
+    return gradient;
+  };
+
+  contextPrototype.drawImage = function(image, var_args) {
+    var dx, dy, dw, dh, sx, sy, sw, sh;
+
+    // to find the original width we overide the width and height
+    var oldRuntimeWidth = image.runtimeStyle.width;
+    var oldRuntimeHeight = image.runtimeStyle.height;
+    image.runtimeStyle.width = 'auto';
+    image.runtimeStyle.height = 'auto';
+
+    // get the original size
+    var w = image.width;
+    var h = image.height;
+
+    // and remove overides
+    image.runtimeStyle.width = oldRuntimeWidth;
+    image.runtimeStyle.height = oldRuntimeHeight;
+
+    if (arguments.length == 3) {
+      dx = arguments[1];
+      dy = arguments[2];
+      sx = sy = 0;
+      sw = dw = w;
+      sh = dh = h;
+    } else if (arguments.length == 5) {
+      dx = arguments[1];
+      dy = arguments[2];
+      dw = arguments[3];
+      dh = arguments[4];
+      sx = sy = 0;
+      sw = w;
+      sh = h;
+    } else if (arguments.length == 9) {
+      sx = arguments[1];
+      sy = arguments[2];
+      sw = arguments[3];
+      sh = arguments[4];
+      dx = arguments[5];
+      dy = arguments[6];
+      dw = arguments[7];
+      dh = arguments[8];
+    } else {
+      throw Error('Invalid number of arguments');
+    }
+
+    var d = this.getCoords_(dx, dy);
+
+    var w2 = sw / 2;
+    var h2 = sh / 2;
+
+    var vmlStr = [];
+
+    var W = 10;
+    var H = 10;
+
+    // For some reason that I've now forgotten, using divs didn't work
+    vmlStr.push(' <g_vml_:group',
+                ' coordsize="', Z * W, ',', Z * H, '"',
+                ' coordorigin="0,0"' ,
+                ' style="width:', W, 'px;height:', H, 'px;position:absolute;');
+
+    // If filters are necessary (rotation exists), create them
+    // filters are bog-slow, so only create them if abbsolutely necessary
+    // The following check doesn't account for skews (which don't exist
+    // in the canvas spec (yet) anyway.
+
+    if (this.m_[0][0] != 1 || this.m_[0][1] ||
+        this.m_[1][1] != 1 || this.m_[1][0]) {
+      var filter = [];
+
+      // Note the 12/21 reversal
+      filter.push('M11=', this.m_[0][0], ',',
+                  'M12=', this.m_[1][0], ',',
+                  'M21=', this.m_[0][1], ',',
+                  'M22=', this.m_[1][1], ',',
+                  'Dx=', mr(d.x / Z), ',',
+                  'Dy=', mr(d.y / Z), '');
+
+      // Bounding box calculation (need to minimize displayed area so that
+      // filters don't waste time on unused pixels.
+      var max = d;
+      var c2 = this.getCoords_(dx + dw, dy);
+      var c3 = this.getCoords_(dx, dy + dh);
+      var c4 = this.getCoords_(dx + dw, dy + dh);
+
+      max.x = m.max(max.x, c2.x, c3.x, c4.x);
+      max.y = m.max(max.y, c2.y, c3.y, c4.y);
+
+      vmlStr.push('padding:0 ', mr(max.x / Z), 'px ', mr(max.y / Z),
+                  'px 0;filter:progid:DXImageTransform.Microsoft.Matrix(',
+                  filter.join(''), ", sizingmethod='clip');");
+
+    } else {
+      vmlStr.push('top:', mr(d.y / Z), 'px;left:', mr(d.x / Z), 'px;');
+    }
+
+    vmlStr.push(' ">' ,
+                '<g_vml_:image src="', image.src, '"',
+                ' style="width:', Z * dw, 'px;',
+                ' height:', Z * dh, 'px"',
+                ' cropleft="', sx / w, '"',
+                ' croptop="', sy / h, '"',
+                ' cropright="', (w - sx - sw) / w, '"',
+                ' cropbottom="', (h - sy - sh) / h, '"',
+                ' />',
+                '</g_vml_:group>');
+
+    this.element_.insertAdjacentHTML('BeforeEnd', vmlStr.join(''));
+  };
+
+  contextPrototype.stroke = function(aFill) {
+    var W = 10;
+    var H = 10;
+    // Divide the shape into chunks if it's too long because IE has a limit
+    // somewhere for how long a VML shape can be. This simple division does
+    // not work with fills, only strokes, unfortunately.
+    var chunkSize = 5000;
+
+    var min = {x: null, y: null};
+    var max = {x: null, y: null};
+
+    for (var j = 0; j < this.currentPath_.length; j += chunkSize) {
+      var lineStr = [];
+      var lineOpen = false;
+
+      lineStr.push('<g_vml_:shape',
+                   ' filled="', !!aFill, '"',
+                   ' style="position:absolute;width:', W, 'px;height:', H, 'px;"',
+                   ' coordorigin="0,0"',
+                   ' coordsize="', Z * W, ',', Z * H, '"',
+                   ' stroked="', !aFill, '"',
+                   ' path="');
+
+      var newSeq = false;
+
+      for (var i = j; i < Math.min(j + chunkSize, this.currentPath_.length); i++) {
+        if (i % chunkSize == 0 && i > 0) { // move into position for next chunk
+          lineStr.push(' m ', mr(this.currentPath_[i-1].x), ',', mr(this.currentPath_[i-1].y));
+        }
+
+        var p = this.currentPath_[i];
+        var c;
+
+        switch (p.type) {
+          case 'moveTo':
+            c = p;
+            lineStr.push(' m ', mr(p.x), ',', mr(p.y));
+            break;
+          case 'lineTo':
+            lineStr.push(' l ', mr(p.x), ',', mr(p.y));
+            break;
+          case 'close':
+            lineStr.push(' x ');
+            p = null;
+            break;
+          case 'bezierCurveTo':
+            lineStr.push(' c ',
+                         mr(p.cp1x), ',', mr(p.cp1y), ',',
+                         mr(p.cp2x), ',', mr(p.cp2y), ',',
+                         mr(p.x), ',', mr(p.y));
+            break;
+          case 'at':
+          case 'wa':
+            lineStr.push(' ', p.type, ' ',
+                         mr(p.x - this.arcScaleX_ * p.radius), ',',
+                         mr(p.y - this.arcScaleY_ * p.radius), ' ',
+                         mr(p.x + this.arcScaleX_ * p.radius), ',',
+                         mr(p.y + this.arcScaleY_ * p.radius), ' ',
+                         mr(p.xStart), ',', mr(p.yStart), ' ',
+                         mr(p.xEnd), ',', mr(p.yEnd));
+            break;
+        }
+  
+  
+        // TODO: Following is broken for curves due to
+        //       move to proper paths.
+  
+        // Figure out dimensions so we can do gradient fills
+        // properly
+        if (p) {
+          if (min.x == null || p.x < min.x) {
+            min.x = p.x;
+          }
+          if (max.x == null || p.x > max.x) {
+            max.x = p.x;
+          }
+          if (min.y == null || p.y < min.y) {
+            min.y = p.y;
+          }
+          if (max.y == null || p.y > max.y) {
+            max.y = p.y;
+          }
+        }
+      }
+      lineStr.push(' ">');
+  
+      if (!aFill) {
+        appendStroke(this, lineStr);
+      } else {
+        appendFill(this, lineStr, min, max);
+      }
+  
+      lineStr.push('</g_vml_:shape>');
+  
+      this.element_.insertAdjacentHTML('beforeEnd', lineStr.join(''));
+    }
+  };
+
+  function appendStroke(ctx, lineStr) {
+    var a = processStyle(ctx.strokeStyle);
+    var color = a.color;
+    var opacity = a.alpha * ctx.globalAlpha;
+    var lineWidth = ctx.lineScale_ * ctx.lineWidth;
+
+    // VML cannot correctly render a line if the width is less than 1px.
+    // In that case, we dilute the color to make the line look thinner.
+    if (lineWidth < 1) {
+      opacity *= lineWidth;
+    }
+
+    lineStr.push(
+      '<g_vml_:stroke',
+      ' opacity="', opacity, '"',
+      ' joinstyle="', ctx.lineJoin, '"',
+      ' miterlimit="', ctx.miterLimit, '"',
+      ' endcap="', processLineCap(ctx.lineCap), '"',
+      ' weight="', lineWidth, 'px"',
+      ' color="', color, '" />'
+    );
+  }
+
+  function appendFill(ctx, lineStr, min, max) {
+    var fillStyle = ctx.fillStyle;
+    var arcScaleX = ctx.arcScaleX_;
+    var arcScaleY = ctx.arcScaleY_;
+    var width = max.x - min.x;
+    var height = max.y - min.y;
+    if (fillStyle instanceof CanvasGradient_) {
+      // TODO: Gradients transformed with the transformation matrix.
+      var angle = 0;
+      var focus = {x: 0, y: 0};
+
+      // additional offset
+      var shift = 0;
+      // scale factor for offset
+      var expansion = 1;
+
+      if (fillStyle.type_ == 'gradient') {
+        var x0 = fillStyle.x0_ / arcScaleX;
+        var y0 = fillStyle.y0_ / arcScaleY;
+        var x1 = fillStyle.x1_ / arcScaleX;
+        var y1 = fillStyle.y1_ / arcScaleY;
+        var p0 = ctx.getCoords_(x0, y0);
+        var p1 = ctx.getCoords_(x1, y1);
+        var dx = p1.x - p0.x;
+        var dy = p1.y - p0.y;
+        angle = Math.atan2(dx, dy) * 180 / Math.PI;
+
+        // The angle should be a non-negative number.
+        if (angle < 0) {
+          angle += 360;
+        }
+
+        // Very small angles produce an unexpected result because they are
+        // converted to a scientific notation string.
+        if (angle < 1e-6) {
+          angle = 0;
+        }
+      } else {
+        var p0 = ctx.getCoords_(fillStyle.x0_, fillStyle.y0_);
+        focus = {
+          x: (p0.x - min.x) / width,
+          y: (p0.y - min.y) / height
+        };
+
+        width  /= arcScaleX * Z;
+        height /= arcScaleY * Z;
+        var dimension = m.max(width, height);
+        shift = 2 * fillStyle.r0_ / dimension;
+        expansion = 2 * fillStyle.r1_ / dimension - shift;
+      }
+
+      // We need to sort the color stops in ascending order by offset,
+      // otherwise IE won't interpret it correctly.
+      var stops = fillStyle.colors_;
+      stops.sort(function(cs1, cs2) {
+        return cs1.offset - cs2.offset;
+      });
+
+      var length = stops.length;
+      var color1 = stops[0].color;
+      var color2 = stops[length - 1].color;
+      var opacity1 = stops[0].alpha * ctx.globalAlpha;
+      var opacity2 = stops[length - 1].alpha * ctx.globalAlpha;
+
+      var colors = [];
+      for (var i = 0; i < length; i++) {
+        var stop = stops[i];
+        colors.push(stop.offset * expansion + shift + ' ' + stop.color);
+      }
+
+      // When colors attribute is used, the meanings of opacity and o:opacity2
+      // are reversed.
+      lineStr.push('<g_vml_:fill type="', fillStyle.type_, '"',
+                   ' method="none" focus="100%"',
+                   ' color="', color1, '"',
+                   ' color2="', color2, '"',
+                   ' colors="', colors.join(','), '"',
+                   ' opacity="', opacity2, '"',
+                   ' g_o_:opacity2="', opacity1, '"',
+                   ' angle="', angle, '"',
+                   ' focusposition="', focus.x, ',', focus.y, '" />');
+    } else if (fillStyle instanceof CanvasPattern_) {
+      if (width && height) {
+        var deltaLeft = -min.x;
+        var deltaTop = -min.y;
+        lineStr.push('<g_vml_:fill',
+                     ' position="',
+                     deltaLeft / width * arcScaleX * arcScaleX, ',',
+                     deltaTop / height * arcScaleY * arcScaleY, '"',
+                     ' type="tile"',
+                     // TODO: Figure out the correct size to fit the scale.
+                     //' size="', w, 'px ', h, 'px"',
+                     ' src="', fillStyle.src_, '" />');
+       }
+    } else {
+      var a = processStyle(ctx.fillStyle);
+      var color = a.color;
+      var opacity = a.alpha * ctx.globalAlpha;
+      lineStr.push('<g_vml_:fill color="', color, '" opacity="', opacity,
+                   '" />');
+    }
+  }
+
+  contextPrototype.fill = function() {
+    this.stroke(true);
+  };
+
+  contextPrototype.closePath = function() {
+    this.currentPath_.push({type: 'close'});
+  };
+
+  /**
+   * @private
+   */
+  contextPrototype.getCoords_ = function(aX, aY) {
+    var m = this.m_;
+    return {
+      x: Z * (aX * m[0][0] + aY * m[1][0] + m[2][0]) - Z2,
+      y: Z * (aX * m[0][1] + aY * m[1][1] + m[2][1]) - Z2
+    };
+  };
+
+  contextPrototype.save = function() {
+    var o = {};
+    copyState(this, o);
+    this.aStack_.push(o);
+    this.mStack_.push(this.m_);
+    this.m_ = matrixMultiply(createMatrixIdentity(), this.m_);
+  };
+
+  contextPrototype.restore = function() {
+    if (this.aStack_.length) {
+      copyState(this.aStack_.pop(), this);
+      this.m_ = this.mStack_.pop();
+    }
+  };
+
+  function matrixIsFinite(m) {
+    return isFinite(m[0][0]) && isFinite(m[0][1]) &&
+        isFinite(m[1][0]) && isFinite(m[1][1]) &&
+        isFinite(m[2][0]) && isFinite(m[2][1]);
+  }
+
+  function setM(ctx, m, updateLineScale) {
+    if (!matrixIsFinite(m)) {
+      return;
+    }
+    ctx.m_ = m;
+
+    if (updateLineScale) {
+      // Get the line scale.
+      // Determinant of this.m_ means how much the area is enlarged by the
+      // transformation. So its square root can be used as a scale factor
+      // for width.
+      var det = m[0][0] * m[1][1] - m[0][1] * m[1][0];
+      ctx.lineScale_ = sqrt(abs(det));
+    }
+  }
+
+  contextPrototype.translate = function(aX, aY) {
+    var m1 = [
+      [1,  0,  0],
+      [0,  1,  0],
+      [aX, aY, 1]
+    ];
+
+    setM(this, matrixMultiply(m1, this.m_), false);
+  };
+
+  contextPrototype.rotate = function(aRot) {
+    var c = mc(aRot);
+    var s = ms(aRot);
+
+    var m1 = [
+      [c,  s, 0],
+      [-s, c, 0],
+      [0,  0, 1]
+    ];
+
+    setM(this, matrixMultiply(m1, this.m_), false);
+  };
+
+  contextPrototype.scale = function(aX, aY) {
+    this.arcScaleX_ *= aX;
+    this.arcScaleY_ *= aY;
+    var m1 = [
+      [aX, 0,  0],
+      [0,  aY, 0],
+      [0,  0,  1]
+    ];
+
+    setM(this, matrixMultiply(m1, this.m_), true);
+  };
+
+  contextPrototype.transform = function(m11, m12, m21, m22, dx, dy) {
+    var m1 = [
+      [m11, m12, 0],
+      [m21, m22, 0],
+      [dx,  dy,  1]
+    ];
+
+    setM(this, matrixMultiply(m1, this.m_), true);
+  };
+
+  contextPrototype.setTransform = function(m11, m12, m21, m22, dx, dy) {
+    var m = [
+      [m11, m12, 0],
+      [m21, m22, 0],
+      [dx,  dy,  1]
+    ];
+
+    setM(this, m, true);
+  };
+
+  /**
+   * The text drawing function.
+   * The maxWidth argument isn't taken in account, since no browser supports
+   * it yet.
+   */
+  contextPrototype.drawText_ = function(text, x, y, maxWidth, stroke) {
+    var m = this.m_,
+        delta = 1000,
+        left = 0,
+        right = delta,
+        offset = {x: 0, y: 0},
+        lineStr = [];
+
+    var fontStyle = getComputedStyle(processFontStyle(this.font),
+                                     this.element_);
+
+    var fontStyleString = buildStyle(fontStyle);
+
+    var elementStyle = this.element_.currentStyle;
+    var textAlign = this.textAlign.toLowerCase();
+    switch (textAlign) {
+      case 'left':
+      case 'center':
+      case 'right':
+        break;
+      case 'end':
+        textAlign = elementStyle.direction == 'ltr' ? 'right' : 'left';
+        break;
+      case 'start':
+        textAlign = elementStyle.direction == 'rtl' ? 'right' : 'left';
+        break;
+      default:
+        textAlign = 'left';
+    }
+
+    // 1.75 is an arbitrary number, as there is no info about the text baseline
+    switch (this.textBaseline) {
+      case 'hanging':
+      case 'top':
+        offset.y = fontStyle.size / 1.75;
+        break;
+      case 'middle':
+        break;
+      default:
+      case null:
+      case 'alphabetic':
+      case 'ideographic':
+      case 'bottom':
+        offset.y = -fontStyle.size / 2.25;
+        break;
+    }
+
+    switch(textAlign) {
+      case 'right':
+        left = delta;
+        right = 0.05;
+        break;
+      case 'center':
+        left = right = delta / 2;
+        break;
+    }
+
+    var d = this.getCoords_(x + offset.x, y + offset.y);
+
+    lineStr.push('<g_vml_:line from="', -left ,' 0" to="', right ,' 0.05" ',
+                 ' coordsize="100 100" coordorigin="0 0"',
+                 ' filled="', !stroke, '" stroked="', !!stroke,
+                 '" style="position:absolute;width:1px;height:1px;">');
+
+    if (stroke) {
+      appendStroke(this, lineStr);
+    } else {
+      // TODO: Fix the min and max params.
+      appendFill(this, lineStr, {x: -left, y: 0},
+                 {x: right, y: fontStyle.size});
+    }
+
+    var skewM = m[0][0].toFixed(3) + ',' + m[1][0].toFixed(3) + ',' +
+                m[0][1].toFixed(3) + ',' + m[1][1].toFixed(3) + ',0,0';
+
+    var skewOffset = mr(d.x / Z) + ',' + mr(d.y / Z);
+
+    lineStr.push('<g_vml_:skew on="t" matrix="', skewM ,'" ',
+                 ' offset="', skewOffset, '" origin="', left ,' 0" />',
+                 '<g_vml_:path textpathok="true" />',
+                 '<g_vml_:textpath on="true" string="',
+                 encodeHtmlAttribute(text),
+                 '" style="v-text-align:', textAlign,
+                 ';font:', encodeHtmlAttribute(fontStyleString),
+                 '" /></g_vml_:line>');
+
+    this.element_.insertAdjacentHTML('beforeEnd', lineStr.join(''));
+  };
+
+  contextPrototype.fillText = function(text, x, y, maxWidth) {
+    this.drawText_(text, x, y, maxWidth, false);
+  };
+
+  contextPrototype.strokeText = function(text, x, y, maxWidth) {
+    this.drawText_(text, x, y, maxWidth, true);
+  };
+
+  contextPrototype.measureText = function(text) {
+    if (!this.textMeasureEl_) {
+      var s = '<span style="position:absolute;' +
+          'top:-20000px;left:0;padding:0;margin:0;border:none;' +
+          'white-space:pre;"></span>';
+      this.element_.insertAdjacentHTML('beforeEnd', s);
+      this.textMeasureEl_ = this.element_.lastChild;
+    }
+    var doc = this.element_.ownerDocument;
+    this.textMeasureEl_.innerHTML = '';
+    this.textMeasureEl_.style.font = this.font;
+    // Don't use innerHTML or innerText because they allow markup/whitespace.
+    this.textMeasureEl_.appendChild(doc.createTextNode(text));
+    return {width: this.textMeasureEl_.offsetWidth};
+  };
+
+  /******** STUBS ********/
+  contextPrototype.clip = function() {
+    // TODO: Implement
+  };
+
+  contextPrototype.arcTo = function() {
+    // TODO: Implement
+  };
+
+  contextPrototype.createPattern = function(image, repetition) {
+    return new CanvasPattern_(image, repetition);
+  };
+
+  // Gradient / Pattern Stubs
+  function CanvasGradient_(aType) {
+    this.type_ = aType;
+    this.x0_ = 0;
+    this.y0_ = 0;
+    this.r0_ = 0;
+    this.x1_ = 0;
+    this.y1_ = 0;
+    this.r1_ = 0;
+    this.colors_ = [];
+  }
+
+  CanvasGradient_.prototype.addColorStop = function(aOffset, aColor) {
+    aColor = processStyle(aColor);
+    this.colors_.push({offset: aOffset,
+                       color: aColor.color,
+                       alpha: aColor.alpha});
+  };
+
+  function CanvasPattern_(image, repetition) {
+    assertImageIsValid(image);
+    switch (repetition) {
+      case 'repeat':
+      case null:
+      case '':
+        this.repetition_ = 'repeat';
+        break
+      case 'repeat-x':
+      case 'repeat-y':
+      case 'no-repeat':
+        this.repetition_ = repetition;
+        break;
+      default:
+        throwException('SYNTAX_ERR');
+    }
+
+    this.src_ = image.src;
+    this.width_ = image.width;
+    this.height_ = image.height;
+  }
+
+  function throwException(s) {
+    throw new DOMException_(s);
+  }
+
+  function assertImageIsValid(img) {
+    if (!img || img.nodeType != 1 || img.tagName != 'IMG') {
+      throwException('TYPE_MISMATCH_ERR');
+    }
+    if (img.readyState != 'complete') {
+      throwException('INVALID_STATE_ERR');
+    }
+  }
+
+  function DOMException_(s) {
+    this.code = this[s];
+    this.message = s +': DOM Exception ' + this.code;
+  }
+  var p = DOMException_.prototype = new Error;
+  p.INDEX_SIZE_ERR = 1;
+  p.DOMSTRING_SIZE_ERR = 2;
+  p.HIERARCHY_REQUEST_ERR = 3;
+  p.WRONG_DOCUMENT_ERR = 4;
+  p.INVALID_CHARACTER_ERR = 5;
+  p.NO_DATA_ALLOWED_ERR = 6;
+  p.NO_MODIFICATION_ALLOWED_ERR = 7;
+  p.NOT_FOUND_ERR = 8;
+  p.NOT_SUPPORTED_ERR = 9;
+  p.INUSE_ATTRIBUTE_ERR = 10;
+  p.INVALID_STATE_ERR = 11;
+  p.SYNTAX_ERR = 12;
+  p.INVALID_MODIFICATION_ERR = 13;
+  p.NAMESPACE_ERR = 14;
+  p.INVALID_ACCESS_ERR = 15;
+  p.VALIDATION_ERR = 16;
+  p.TYPE_MISMATCH_ERR = 17;
+
+  // set up externs
+  G_vmlCanvasManager = G_vmlCanvasManager_;
+  CanvasRenderingContext2D = CanvasRenderingContext2D_;
+  CanvasGradient = CanvasGradient_;
+  CanvasPattern = CanvasPattern_;
+  DOMException = DOMException_;
+})();
+
+} // if
+
+/* Plugin for jQuery for working with colors.
+ * 
+ * Version 1.0.
+ * 
+ * Inspiration from jQuery color animation plugin by John Resig.
+ *
+ * Released under the MIT license by Ole Laursen, October 2009.
+ *
+ * Examples:
+ *
+ *   $.color.parse("#fff").scale('rgb', 0.25).add('a', -0.5).toString()
+ *   var c = $.color.extract($("#mydiv"), 'background-color');
+ *   console.log(c.r, c.g, c.b, c.a);
+ *   $.color.make(100, 50, 25, 0.4).toString() // returns "rgba(100,50,25,0.4)"
+ *
+ * Note that .scale() and .add() work in-place instead of returning
+ * new objects.
+ */ 
+
+(function() {
+    jQuery.color = {};
+
+    // construct color object with some convenient chainable helpers
+    jQuery.color.make = function (r, g, b, a) {
+        var o = {};
+        o.r = r || 0;
+        o.g = g || 0;
+        o.b = b || 0;
+        o.a = a != null ? a : 1;
+
+        o.add = function (c, d) {
+            for (var i = 0; i < c.length; ++i)
+                o[c.charAt(i)] += d;
+            return o.normalize();
+        };
+        
+        o.scale = function (c, f) {
+            for (var i = 0; i < c.length; ++i)
+                o[c.charAt(i)] *= f;
+            return o.normalize();
+        };
+        
+        o.toString = function () {
+            if (o.a >= 1.0) {
+                return "rgb("+[o.r, o.g, o.b].join(",")+")";
+            } else {
+                return "rgba("+[o.r, o.g, o.b, o.a].join(",")+")";
+            }
+        };
+
+        o.normalize = function () {
+            function clamp(min, value, max) {
+                return value < min ? min: (value > max ? max: value);
+            }
+            
+            o.r = clamp(0, parseInt(o.r), 255);
+            o.g = clamp(0, parseInt(o.g), 255);
+            o.b = clamp(0, parseInt(o.b), 255);
+            o.a = clamp(0, o.a, 1);
+            return o;
+        };
+
+        o.clone = function () {
+            return jQuery.color.make(o.r, o.b, o.g, o.a);
+        };
+
+        return o.normalize();
+    }
+
+    // extract CSS color property from element, going up in the DOM
+    // if it's "transparent"
+    jQuery.color.extract = function (elem, css) {
+        var c;
+        do {
+            c = elem.css(css).toLowerCase();
+            // keep going until we find an element that has color, or
+            // we hit the body
+            if (c != '' && c != 'transparent')
+                break;
+            elem = elem.parent();
+        } while (!jQuery.nodeName(elem.get(0), "body"));
+
+        // catch Safari's way of signalling transparent
+        if (c == "rgba(0, 0, 0, 0)")
+            c = "transparent";
+        
+        return jQuery.color.parse(c);
+    }
+    
+    // parse CSS color string (like "rgb(10, 32, 43)" or "#fff"),
+    // returns color object
+    jQuery.color.parse = function (str) {
+        var res, m = jQuery.color.make;
+
+        // Look for rgb(num,num,num)
+        if (res = /rgb\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*\)/.exec(str))
+            return m(parseInt(res[1], 10), parseInt(res[2], 10), parseInt(res[3], 10));
+        
+        // Look for rgba(num,num,num,num)
+        if (res = /rgba\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]+(?:\.[0-9]+)?)\s*\)/.exec(str))
+            return m(parseInt(res[1], 10), parseInt(res[2], 10), parseInt(res[3], 10), parseFloat(res[4]));
+            
+        // Look for rgb(num%,num%,num%)
+        if (res = /rgb\(\s*([0-9]+(?:\.[0-9]+)?)\%\s*,\s*([0-9]+(?:\.[0-9]+)?)\%\s*,\s*([0-9]+(?:\.[0-9]+)?)\%\s*\)/.exec(str))
+            return m(parseFloat(res[1])*2.55, parseFloat(res[2])*2.55, parseFloat(res[3])*2.55);
+
+        // Look for rgba(num%,num%,num%,num)
+        if (res = /rgba\(\s*([0-9]+(?:\.[0-9]+)?)\%\s*,\s*([0-9]+(?:\.[0-9]+)?)\%\s*,\s*([0-9]+(?:\.[0-9]+)?)\%\s*,\s*([0-9]+(?:\.[0-9]+)?)\s*\)/.exec(str))
+            return m(parseFloat(res[1])*2.55, parseFloat(res[2])*2.55, parseFloat(res[3])*2.55, parseFloat(res[4]));
+        
+        // Look for #a0b1c2
+        if (res = /#([a-fA-F0-9]{2})([a-fA-F0-9]{2})([a-fA-F0-9]{2})/.exec(str))
+            return m(parseInt(res[1], 16), parseInt(res[2], 16), parseInt(res[3], 16));
+
+        // Look for #fff
+        if (res = /#([a-fA-F0-9])([a-fA-F0-9])([a-fA-F0-9])/.exec(str))
+            return m(parseInt(res[1]+res[1], 16), parseInt(res[2]+res[2], 16), parseInt(res[3]+res[3], 16));
+
+        // Otherwise, we're most likely dealing with a named color
+        var name = jQuery.trim(str).toLowerCase();
+        if (name == "transparent")
+            return m(255, 255, 255, 0);
+        else {
+            res = lookupColors[name];
+            return m(res[0], res[1], res[2]);
+        }
+    }
+    
+    var lookupColors = {
+        aqua:[0,255,255],
+        azure:[240,255,255],
+        beige:[245,245,220],
+        black:[0,0,0],
+        blue:[0,0,255],
+        brown:[165,42,42],
+        cyan:[0,255,255],
+        darkblue:[0,0,139],
+        darkcyan:[0,139,139],
+        darkgrey:[169,169,169],
+        darkgreen:[0,100,0],
+        darkkhaki:[189,183,107],
+        darkmagenta:[139,0,139],
+        darkolivegreen:[85,107,47],
+        darkorange:[255,140,0],
+        darkorchid:[153,50,204],
+        darkred:[139,0,0],
+        darksalmon:[233,150,122],
+        darkviolet:[148,0,211],
+        fuchsia:[255,0,255],
+        gold:[255,215,0],
+        green:[0,128,0],
+        indigo:[75,0,130],
+        khaki:[240,230,140],
+        lightblue:[173,216,230],
+        lightcyan:[224,255,255],
+        lightgreen:[144,238,144],
+        lightgrey:[211,211,211],
+        lightpink:[255,182,193],
+        lightyellow:[255,255,224],
+        lime:[0,255,0],
+        magenta:[255,0,255],
+        maroon:[128,0,0],
+        navy:[0,0,128],
+        olive:[128,128,0],
+        orange:[255,165,0],
+        pink:[255,192,203],
+        purple:[128,0,128],
+        violet:[128,0,128],
+        red:[255,0,0],
+        silver:[192,192,192],
+        white:[255,255,255],
+        yellow:[255,255,0]
+    };    
+})();
+
 /* Javascript plotting library for jQuery, v. 0.6.
  *
  * Released under the MIT license by IOLA, December 2007.
@@ -6493,6 +8097,975 @@ jQuery.each([ "Height", "Width" ], function(i, name){
     }
     
 })(jQuery);
+
+/*
+Flot plugin for showing a crosshair, thin lines, when the mouse hovers
+over the plot.
+
+  crosshair: {
+    mode: null or "x" or "y" or "xy"
+    color: color
+    lineWidth: number
+  }
+
+Set the mode to one of "x", "y" or "xy". The "x" mode enables a
+vertical crosshair that lets you trace the values on the x axis, "y"
+enables a horizontal crosshair and "xy" enables them both. "color" is
+the color of the crosshair (default is "rgba(170, 0, 0, 0.80)"),
+"lineWidth" is the width of the drawn lines (default is 1).
+
+The plugin also adds four public methods:
+
+  - setCrosshair(pos)
+
+    Set the position of the crosshair. Note that this is cleared if
+    the user moves the mouse. "pos" should be on the form { x: xpos,
+    y: ypos } (or x2 and y2 if you're using the secondary axes), which
+    is coincidentally the same format as what you get from a "plothover"
+    event. If "pos" is null, the crosshair is cleared.
+
+  - clearCrosshair()
+
+    Clear the crosshair.
+
+  - lockCrosshair(pos)
+
+    Cause the crosshair to lock to the current location, no longer
+    updating if the user moves the mouse. Optionally supply a position
+    (passed on to setCrosshair()) to move it to.
+
+    Example usage:
+      var myFlot = $.plot( $("#graph"), ..., { crosshair: { mode: "x" } } };
+      $("#graph").bind("plothover", function (evt, position, item) {
+        if (item) {
+          // Lock the crosshair to the data point being hovered
+          myFlot.lockCrosshair({ x: item.datapoint[0], y: item.datapoint[1] });
+        }
+        else {
+          // Return normal crosshair operation
+          myFlot.unlockCrosshair();
+        }
+      });
+
+  - unlockCrosshair()
+
+    Free the crosshair to move again after locking it.
+*/
+
+(function ($) {
+    var options = {
+        crosshair: {
+            mode: null, // one of null, "x", "y" or "xy",
+            color: "rgba(170, 0, 0, 0.80)",
+            lineWidth: 1
+        }
+    };
+    
+    function init(plot) {
+        // position of crosshair in pixels
+        var crosshair = { x: -1, y: -1, locked: false };
+
+        plot.setCrosshair = function setCrosshair(pos) {
+            if (!pos)
+                crosshair.x = -1;
+            else {
+                var axes = plot.getAxes();
+                
+                crosshair.x = Math.max(0, Math.min(pos.x != null ? axes.xaxis.p2c(pos.x) : axes.x2axis.p2c(pos.x2), plot.width()));
+                crosshair.y = Math.max(0, Math.min(pos.y != null ? axes.yaxis.p2c(pos.y) : axes.y2axis.p2c(pos.y2), plot.height()));
+            }
+            
+            plot.triggerRedrawOverlay();
+        };
+        
+        plot.clearCrosshair = plot.setCrosshair; // passes null for pos
+        
+        plot.lockCrosshair = function lockCrosshair(pos) {
+            if (pos)
+                plot.setCrosshair(pos);
+            crosshair.locked = true;
+        }
+
+        plot.unlockCrosshair = function unlockCrosshair() {
+            crosshair.locked = false;
+        }
+
+        plot.hooks.bindEvents.push(function (plot, eventHolder) {
+            if (!plot.getOptions().crosshair.mode)
+                return;
+
+            eventHolder.mouseout(function () {
+                if (crosshair.x != -1) {
+                    crosshair.x = -1;
+                    plot.triggerRedrawOverlay();
+                }
+            });
+            
+            eventHolder.mousemove(function (e) {
+                if (plot.getSelection && plot.getSelection()) {
+                    crosshair.x = -1; // hide the crosshair while selecting
+                    return;
+                }
+                
+                if (crosshair.locked)
+                    return;
+                
+                var offset = plot.offset();
+                crosshair.x = Math.max(0, Math.min(e.pageX - offset.left, plot.width()));
+                crosshair.y = Math.max(0, Math.min(e.pageY - offset.top, plot.height()));
+                plot.triggerRedrawOverlay();
+            });
+        });
+
+        plot.hooks.drawOverlay.push(function (plot, ctx) {
+            var c = plot.getOptions().crosshair;
+            if (!c.mode)
+                return;
+
+            var plotOffset = plot.getPlotOffset();
+            
+            ctx.save();
+            ctx.translate(plotOffset.left, plotOffset.top);
+
+            if (crosshair.x != -1) {
+                ctx.strokeStyle = c.color;
+                ctx.lineWidth = c.lineWidth;
+                ctx.lineJoin = "round";
+
+                ctx.beginPath();
+                if (c.mode.indexOf("x") != -1) {
+                    ctx.moveTo(crosshair.x, 0);
+                    ctx.lineTo(crosshair.x, plot.height());
+                }
+                if (c.mode.indexOf("y") != -1) {
+                    ctx.moveTo(0, crosshair.y);
+                    ctx.lineTo(plot.width(), crosshair.y);
+                }
+                ctx.stroke();
+            }
+            ctx.restore();
+        });
+    }
+    
+    $.plot.plugins.push({
+        init: init,
+        options: options,
+        name: 'crosshair',
+        version: '1.0'
+    });
+})(jQuery);
+
+/*
+Flot plugin for plotting images, e.g. useful for putting ticks on a
+prerendered complex visualization.
+
+The data syntax is [[image, x1, y1, x2, y2], ...] where (x1, y1) and
+(x2, y2) are where you intend the two opposite corners of the image to
+end up in the plot. Image must be a fully loaded Javascript image (you
+can make one with new Image()). If the image is not complete, it's
+skipped when plotting.
+
+There are two helpers included for retrieving images. The easiest work
+the way that you put in URLs instead of images in the data (like
+["myimage.png", 0, 0, 10, 10]), then call $.plot.image.loadData(data,
+options, callback) where data and options are the same as you pass in
+to $.plot. This loads the images, replaces the URLs in the data with
+the corresponding images and calls "callback" when all images are
+loaded (or failed loading). In the callback, you can then call $.plot
+with the data set. See the included example.
+
+A more low-level helper, $.plot.image.load(urls, callback) is also
+included. Given a list of URLs, it calls callback with an object
+mapping from URL to Image object when all images are loaded or have
+failed loading.
+
+Options for the plugin are
+
+  series: {
+      images: {
+          show: boolean
+          anchor: "corner" or "center"
+          alpha: [0,1]
+      }
+  }
+
+which can be specified for a specific series
+
+  $.plot($("#placeholder"), [{ data: [ ... ], images: { ... } ])
+
+Note that because the data format is different from usual data points,
+you can't use images with anything else in a specific data series.
+
+Setting "anchor" to "center" causes the pixels in the image to be
+anchored at the corner pixel centers inside of at the pixel corners,
+effectively letting half a pixel stick out to each side in the plot.
+
+
+A possible future direction could be support for tiling for large
+images (like Google Maps).
+
+*/
+
+(function ($) {
+    var options = {
+        series: {
+            images: {
+                show: false,
+                alpha: 1,
+                anchor: "corner" // or "center"
+            }
+        }
+    };
+
+    $.plot.image = {};
+
+    $.plot.image.loadDataImages = function (series, options, callback) {
+        var urls = [], points = [];
+
+        var defaultShow = options.series.images.show;
+        
+        $.each(series, function (i, s) {
+            if (!(defaultShow || s.images.show))
+                return;
+            
+            if (s.data)
+                s = s.data;
+
+            $.each(s, function (i, p) {
+                if (typeof p[0] == "string") {
+                    urls.push(p[0]);
+                    points.push(p);
+                }
+            });
+        });
+
+        $.plot.image.load(urls, function (loadedImages) {
+            $.each(points, function (i, p) {
+                var url = p[0];
+                if (loadedImages[url])
+                    p[0] = loadedImages[url];
+            });
+
+            callback();
+        });
+    }
+    
+    $.plot.image.load = function (urls, callback) {
+        var missing = urls.length, loaded = {};
+        if (missing == 0)
+            callback({});
+
+        $.each(urls, function (i, url) {
+            var handler = function () {
+                --missing;
+                
+                loaded[url] = this;
+                
+                if (missing == 0)
+                    callback(loaded);
+            };
+
+            $('<img />').load(handler).error(handler).attr('src', url);
+        });
+    }
+    
+    function draw(plot, ctx) {
+        var plotOffset = plot.getPlotOffset();
+        
+        $.each(plot.getData(), function (i, series) {
+            var points = series.datapoints.points,
+                ps = series.datapoints.pointsize;
+            
+            for (var i = 0; i < points.length; i += ps) {
+                var img = points[i],
+                    x1 = points[i + 1], y1 = points[i + 2],
+                    x2 = points[i + 3], y2 = points[i + 4],
+                    xaxis = series.xaxis, yaxis = series.yaxis,
+                    tmp;
+
+                // actually we should check img.complete, but it
+                // appears to be a somewhat unreliable indicator in
+                // IE6 (false even after load event)
+                if (!img || img.width <= 0 || img.height <= 0)
+                    continue;
+
+                if (x1 > x2) {
+                    tmp = x2;
+                    x2 = x1;
+                    x1 = tmp;
+                }
+                if (y1 > y2) {
+                    tmp = y2;
+                    y2 = y1;
+                    y1 = tmp;
+                }
+                
+                // if the anchor is at the center of the pixel, expand the 
+                // image by 1/2 pixel in each direction
+                if (series.images.anchor == "center") {
+                    tmp = 0.5 * (x2-x1) / (img.width - 1);
+                    x1 -= tmp;
+                    x2 += tmp;
+                    tmp = 0.5 * (y2-y1) / (img.height - 1);
+                    y1 -= tmp;
+                    y2 += tmp;
+                }
+                
+                // clip
+                if (x1 == x2 || y1 == y2 ||
+                    x1 >= xaxis.max || x2 <= xaxis.min ||
+                    y1 >= yaxis.max || y2 <= yaxis.min)
+                    continue;
+
+                var sx1 = 0, sy1 = 0, sx2 = img.width, sy2 = img.height;
+                if (x1 < xaxis.min) {
+                    sx1 += (sx2 - sx1) * (xaxis.min - x1) / (x2 - x1);
+                    x1 = xaxis.min;
+                }
+
+                if (x2 > xaxis.max) {
+                    sx2 += (sx2 - sx1) * (xaxis.max - x2) / (x2 - x1);
+                    x2 = xaxis.max;
+                }
+
+                if (y1 < yaxis.min) {
+                    sy2 += (sy1 - sy2) * (yaxis.min - y1) / (y2 - y1);
+                    y1 = yaxis.min;
+                }
+
+                if (y2 > yaxis.max) {
+                    sy1 += (sy1 - sy2) * (yaxis.max - y2) / (y2 - y1);
+                    y2 = yaxis.max;
+                }
+                
+                x1 = xaxis.p2c(x1);
+                x2 = xaxis.p2c(x2);
+                y1 = yaxis.p2c(y1);
+                y2 = yaxis.p2c(y2);
+                
+                // the transformation may have swapped us
+                if (x1 > x2) {
+                    tmp = x2;
+                    x2 = x1;
+                    x1 = tmp;
+                }
+                if (y1 > y2) {
+                    tmp = y2;
+                    y2 = y1;
+                    y1 = tmp;
+                }
+
+                tmp = ctx.globalAlpha;
+                ctx.globalAlpha *= series.images.alpha;
+                ctx.drawImage(img,
+                              sx1, sy1, sx2 - sx1, sy2 - sy1,
+                              x1 + plotOffset.left, y1 + plotOffset.top,
+                              x2 - x1, y2 - y1);
+                ctx.globalAlpha = tmp;
+            }
+        });
+    }
+
+    function processRawData(plot, series, data, datapoints) {
+        if (!series.images.show)
+            return;
+
+        // format is Image, x1, y1, x2, y2 (opposite corners)
+        datapoints.format = [
+            { required: true },
+            { x: true, number: true, required: true },
+            { y: true, number: true, required: true },
+            { x: true, number: true, required: true },
+            { y: true, number: true, required: true }
+        ];
+    }
+    
+    function init(plot) {
+        plot.hooks.processRawData.push(processRawData);
+        plot.hooks.draw.push(draw);
+    }
+    
+    $.plot.plugins.push({
+        init: init,
+        options: options,
+        name: 'image',
+        version: '1.1'
+    });
+})(jQuery);
+
+/*
+Flot plugin for adding panning and zooming capabilities to a plot.
+
+The default behaviour is double click and scrollwheel up/down to zoom
+in, drag to pan. The plugin defines plot.zoom({ center }),
+plot.zoomOut() and plot.pan(offset) so you easily can add custom
+controls. It also fires a "plotpan" and "plotzoom" event when
+something happens, useful for synchronizing plots.
+
+Example usage:
+
+  plot = $.plot(...);
+  
+  // zoom default amount in on the pixel (100, 200) 
+  plot.zoom({ center: { left: 10, top: 20 } });
+
+  // zoom out again
+  plot.zoomOut({ center: { left: 10, top: 20 } });
+
+  // pan 100 pixels to the left and 20 down
+  plot.pan({ left: -100, top: 20 })
+
+
+Options:
+
+  zoom: {
+    interactive: false
+    trigger: "dblclick" // or "click" for single click
+    amount: 1.5         // 2 = 200% (zoom in), 0.5 = 50% (zoom out)
+  }
+  
+  pan: {
+    interactive: false
+  }
+
+  xaxis, yaxis, x2axis, y2axis: {
+    zoomRange: null  // or [number, number] (min range, max range)
+    panRange: null   // or [number, number] (min, max)
+  }
+  
+"interactive" enables the built-in drag/click behaviour. "amount" is
+the amount to zoom the viewport relative to the current range, so 1 is
+100% (i.e. no change), 1.5 is 150% (zoom in), 0.7 is 70% (zoom out).
+
+"zoomRange" is the interval in which zooming can happen, e.g. with
+zoomRange: [1, 100] the zoom will never scale the axis so that the
+difference between min and max is smaller than 1 or larger than 100.
+You can set either of them to null to ignore.
+
+"panRange" confines the panning to stay within a range, e.g. with
+panRange: [-10, 20] panning stops at -10 in one end and at 20 in the
+other. Either can be null.
+*/
+
+
+// First two dependencies, jquery.event.drag.js and
+// jquery.mousewheel.js, we put them inline here to save people the
+// effort of downloading them.
+
+/*
+jquery.event.drag.js ~ v1.5 ~ Copyright (c) 2008, Three Dub Media (http://threedubmedia.com)  
+Licensed under the MIT License ~ http://threedubmedia.googlecode.com/files/MIT-LICENSE.txt
+*/
+(function(E){E.fn.drag=function(L,K,J){if(K){this.bind("dragstart",L)}if(J){this.bind("dragend",J)}return !L?this.trigger("drag"):this.bind("drag",K?K:L)};var A=E.event,B=A.special,F=B.drag={not:":input",distance:0,which:1,dragging:false,setup:function(J){J=E.extend({distance:F.distance,which:F.which,not:F.not},J||{});J.distance=I(J.distance);A.add(this,"mousedown",H,J);if(this.attachEvent){this.attachEvent("ondragstart",D)}},teardown:function(){A.remove(this,"mousedown",H);if(this===F.dragging){F.dragging=F.proxy=false}G(this,true);if(this.detachEvent){this.detachEvent("ondragstart",D)}}};B.dragstart=B.dragend={setup:function(){},teardown:function(){}};function H(L){var K=this,J,M=L.data||{};if(M.elem){K=L.dragTarget=M.elem;L.dragProxy=F.proxy||K;L.cursorOffsetX=M.pageX-M.left;L.cursorOffsetY=M.pageY-M.top;L.offsetX=L.pageX-L.cursorOffsetX;L.offsetY=L.pageY-L.cursorOffsetY}else{if(F.dragging||(M.which>0&&L.which!=M.which)||E(L.target).is(M.not)){return }}switch(L.type){case"mousedown":E.extend(M,E(K).offset(),{elem:K,target:L.target,pageX:L.pageX,pageY:L.pageY});A.add(document,"mousemove mouseup",H,M);G(K,false);F.dragging=null;return false;case !F.dragging&&"mousemove":if(I(L.pageX-M.pageX)+I(L.pageY-M.pageY)<M.distance){break}L.target=M.target;J=C(L,"dragstart",K);if(J!==false){F.dragging=K;F.proxy=L.dragProxy=E(J||K)[0]}case"mousemove":if(F.dragging){J=C(L,"drag",K);if(B.drop){B.drop.allowed=(J!==false);B.drop.handler(L)}if(J!==false){break}L.type="mouseup"}case"mouseup":A.remove(document,"mousemove mouseup",H);if(F.dragging){if(B.drop){B.drop.handler(L)}C(L,"dragend",K)}G(K,true);F.dragging=F.proxy=M.elem=false;break}return true}function C(M,K,L){M.type=K;var J=E.event.handle.call(L,M);return J===false?false:J||M.result}function I(J){return Math.pow(J,2)}function D(){return(F.dragging===false)}function G(K,J){if(!K){return }K.unselectable=J?"off":"on";K.onselectstart=function(){return J};if(K.style){K.style.MozUserSelect=J?"":"none"}}})(jQuery);
+
+
+/* jquery.mousewheel.min.js
+ * Copyright (c) 2009 Brandon Aaron (http://brandonaaron.net)
+ * Dual licensed under the MIT (http://www.opensource.org/licenses/mit-license.php)
+ * and GPL (http://www.opensource.org/licenses/gpl-license.php) licenses.
+ * Thanks to: http://adomas.org/javascript-mouse-wheel/ for some pointers.
+ * Thanks to: Mathias Bank(http://www.mathias-bank.de) for a scope bug fix.
+ *
+ * Version: 3.0.2
+ * 
+ * Requires: 1.2.2+
+ */
+(function(c){var a=["DOMMouseScroll","mousewheel"];c.event.special.mousewheel={setup:function(){if(this.addEventListener){for(var d=a.length;d;){this.addEventListener(a[--d],b,false)}}else{this.onmousewheel=b}},teardown:function(){if(this.removeEventListener){for(var d=a.length;d;){this.removeEventListener(a[--d],b,false)}}else{this.onmousewheel=null}}};c.fn.extend({mousewheel:function(d){return d?this.bind("mousewheel",d):this.trigger("mousewheel")},unmousewheel:function(d){return this.unbind("mousewheel",d)}});function b(f){var d=[].slice.call(arguments,1),g=0,e=true;f=c.event.fix(f||window.event);f.type="mousewheel";if(f.wheelDelta){g=f.wheelDelta/120}if(f.detail){g=-f.detail/3}d.unshift(f,g);return c.event.handle.apply(this,d)}})(jQuery);
+
+
+
+
+(function ($) {
+    var options = {
+        xaxis: {
+            zoomRange: null, // or [number, number] (min range, max range)
+            panRange: null // or [number, number] (min, max)
+        },
+        zoom: {
+            interactive: false,
+            trigger: "dblclick", // or "click" for single click
+            amount: 1.5 // how much to zoom relative to current position, 2 = 200% (zoom in), 0.5 = 50% (zoom out)
+        },
+        pan: {
+            interactive: false
+        }
+    };
+
+    function init(plot) {
+        function bindEvents(plot, eventHolder) {
+            var o = plot.getOptions();
+            if (o.zoom.interactive) {
+                function clickHandler(e, zoomOut) {
+                    var c = plot.offset();
+                    c.left = e.pageX - c.left;
+                    c.top = e.pageY - c.top;
+                    if (zoomOut)
+                        plot.zoomOut({ center: c });
+                    else
+                        plot.zoom({ center: c });
+                }
+                
+                eventHolder[o.zoom.trigger](clickHandler);
+
+                eventHolder.mousewheel(function (e, delta) {
+                    clickHandler(e, delta < 0);
+                    return false;
+                });
+            }
+            if (o.pan.interactive) {
+                var prevCursor = 'default', pageX = 0, pageY = 0;
+                
+                eventHolder.bind("dragstart", { distance: 10 }, function (e) {
+                    if (e.which != 1)  // only accept left-click
+                        return false;
+                    eventHolderCursor = eventHolder.css('cursor');
+                    eventHolder.css('cursor', 'move');
+                    pageX = e.pageX;
+                    pageY = e.pageY;
+                });
+                eventHolder.bind("drag", function (e) {
+                    // unused at the moment, but we need it here to
+                    // trigger the dragstart/dragend events
+                });
+                eventHolder.bind("dragend", function (e) {
+                    eventHolder.css('cursor', prevCursor);
+                    plot.pan({ left: pageX - e.pageX,
+                               top: pageY - e.pageY });
+                });
+            }
+        }
+
+        plot.zoomOut = function (args) {
+            if (!args)
+                args = {};
+            
+            if (!args.amount)
+                args.amount = plot.getOptions().zoom.amount
+
+            args.amount = 1 / args.amount;
+            plot.zoom(args);
+        }
+        
+        plot.zoom = function (args) {
+            if (!args)
+                args = {};
+            
+            var axes = plot.getAxes(),
+                options = plot.getOptions(),
+                c = args.center,
+                amount = args.amount ? args.amount : options.zoom.amount,
+                w = plot.width(), h = plot.height();
+
+            if (!c)
+                c = { left: w / 2, top: h / 2 };
+                
+            var xf = c.left / w,
+                x1 = c.left - xf * w / amount,
+                x2 = c.left + (1 - xf) * w / amount,
+                yf = c.top / h,
+                y1 = c.top - yf * h / amount,
+                y2 = c.top + (1 - yf) * h / amount;
+
+            function scaleAxis(min, max, name) {
+                var axis = axes[name],
+                    axisOptions = options[name];
+                
+                if (!axis.used)
+                    return;
+                    
+                min = axis.c2p(min);
+                max = axis.c2p(max);
+                if (max < min) { // make sure min < max
+                    var tmp = min
+                    min = max;
+                    max = tmp;
+                }
+
+                var range = max - min, zr = axisOptions.zoomRange;
+                if (zr &&
+                    ((zr[0] != null && range < zr[0]) ||
+                     (zr[1] != null && range > zr[1])))
+                    return;
+            
+                axisOptions.min = min;
+                axisOptions.max = max;
+            }
+
+            scaleAxis(x1, x2, 'xaxis');
+            scaleAxis(x1, x2, 'x2axis');
+            scaleAxis(y1, y2, 'yaxis');
+            scaleAxis(y1, y2, 'y2axis');
+            
+            plot.setupGrid();
+            plot.draw();
+            
+            if (!args.preventEvent)
+                plot.getPlaceholder().trigger("plotzoom", [ plot ]);
+        }
+
+        plot.pan = function (args) {
+            var l = +args.left, t = +args.top,
+                axes = plot.getAxes(), options = plot.getOptions();
+
+            if (isNaN(l))
+                l = 0;
+            if (isNaN(t))
+                t = 0;
+
+            function panAxis(delta, name) {
+                var axis = axes[name],
+                    axisOptions = options[name],
+                    min, max;
+                
+                if (!axis.used)
+                    return;
+
+                min = axis.c2p(axis.p2c(axis.min) + delta),
+                max = axis.c2p(axis.p2c(axis.max) + delta);
+
+                var pr = axisOptions.panRange;
+                if (pr) {
+                    // check whether we hit the wall
+                    if (pr[0] != null && pr[0] > min) {
+                        delta = pr[0] - min;
+                        min += delta;
+                        max += delta;
+                    }
+                    
+                    if (pr[1] != null && pr[1] < max) {
+                        delta = pr[1] - max;
+                        min += delta;
+                        max += delta;
+                    }
+                }
+                
+                axisOptions.min = min;
+                axisOptions.max = max;
+            }
+
+            panAxis(l, 'xaxis');
+            panAxis(l, 'x2axis');
+            panAxis(t, 'yaxis');
+            panAxis(t, 'y2axis');
+            
+            plot.setupGrid();
+            plot.draw();
+            
+            if (!args.preventEvent)
+                plot.getPlaceholder().trigger("plotpan", [ plot ]);
+        }
+        
+        plot.hooks.bindEvents.push(bindEvents);
+    }
+    
+    $.plot.plugins.push({
+        init: init,
+        options: options,
+        name: 'navigate',
+        version: '1.1'
+    });
+})(jQuery);
+
+/*
+Flot plugin for selecting regions.
+
+The plugin defines the following options:
+
+  selection: {
+    mode: null or "x" or "y" or "xy",
+    color: color
+  }
+
+You enable selection support by setting the mode to one of "x", "y" or
+"xy". In "x" mode, the user will only be able to specify the x range,
+similarly for "y" mode. For "xy", the selection becomes a rectangle
+where both ranges can be specified. "color" is color of the selection.
+
+When selection support is enabled, a "plotselected" event will be emitted
+on the DOM element you passed into the plot function. The event
+handler gets one extra parameter with the ranges selected on the axes,
+like this:
+
+  placeholder.bind("plotselected", function(event, ranges) {
+    alert("You selected " + ranges.xaxis.from + " to " + ranges.xaxis.to)
+    // similar for yaxis, secondary axes are in x2axis
+    // and y2axis if present
+  });
+
+The "plotselected" event is only fired when the user has finished
+making the selection. A "plotselecting" event is fired during the
+process with the same parameters as the "plotselected" event, in case
+you want to know what's happening while it's happening,
+
+A "plotunselected" event with no arguments is emitted when the user
+clicks the mouse to remove the selection.
+
+The plugin allso adds the following methods to the plot object:
+
+- setSelection(ranges, preventEvent)
+
+  Set the selection rectangle. The passed in ranges is on the same
+  form as returned in the "plotselected" event. If the selection
+  mode is "x", you should put in either an xaxis (or x2axis) object,
+  if the mode is "y" you need to put in an yaxis (or y2axis) object
+  and both xaxis/x2axis and yaxis/y2axis if the selection mode is
+  "xy", like this:
+
+    setSelection({ xaxis: { from: 0, to: 10 }, yaxis: { from: 40, to: 60 } });
+
+  setSelection will trigger the "plotselected" event when called. If
+  you don't want that to happen, e.g. if you're inside a
+  "plotselected" handler, pass true as the second parameter.
+  
+- clearSelection(preventEvent)
+
+  Clear the selection rectangle. Pass in true to avoid getting a
+  "plotunselected" event.
+
+- getSelection()
+
+  Returns the current selection in the same format as the
+  "plotselected" event. If there's currently no selection, the
+  function returns null.
+
+*/
+
+(function ($) {
+    function init(plot) {
+        var selection = {
+                first: { x: -1, y: -1}, second: { x: -1, y: -1},
+                show: false,
+                active: false
+            };
+
+        // FIXME: The drag handling implemented here should be
+        // abstracted out, there's some similar code from a library in
+        // the navigation plugin, this should be massaged a bit to fit
+        // the Flot cases here better and reused. Doing this would
+        // make this plugin much slimmer.
+        var savedhandlers = {};
+
+        function onMouseMove(e) {
+            if (selection.active) {
+                plot.getPlaceholder().trigger("plotselecting", [ getSelection() ]);
+
+                updateSelection(e);
+            }
+        }
+
+        function onMouseDown(e) {
+            if (e.which != 1)  // only accept left-click
+                return;
+            
+            // cancel out any text selections
+            document.body.focus();
+
+            // prevent text selection and drag in old-school browsers
+            if (document.onselectstart !== undefined && savedhandlers.onselectstart == null) {
+                savedhandlers.onselectstart = document.onselectstart;
+                document.onselectstart = function () { return false; };
+            }
+            if (document.ondrag !== undefined && savedhandlers.ondrag == null) {
+                savedhandlers.ondrag = document.ondrag;
+                document.ondrag = function () { return false; };
+            }
+
+            setSelectionPos(selection.first, e);
+
+            selection.active = true;
+            
+            $(document).one("mouseup", onMouseUp);
+        }
+
+        function onMouseUp(e) {
+            // revert drag stuff for old-school browsers
+            if (document.onselectstart !== undefined)
+                document.onselectstart = savedhandlers.onselectstart;
+            if (document.ondrag !== undefined)
+                document.ondrag = savedhandlers.ondrag;
+
+            // no more draggy-dee-drag
+            selection.active = false;
+            updateSelection(e);
+
+            if (selectionIsSane())
+                triggerSelectedEvent();
+            else {
+                // this counts as a clear
+                plot.getPlaceholder().trigger("plotunselected", [ ]);
+                plot.getPlaceholder().trigger("plotselecting", [ null ]);
+            }
+
+            return false;
+        }
+
+        function getSelection() {
+            if (!selectionIsSane())
+                return null;
+
+            var x1 = Math.min(selection.first.x, selection.second.x),
+                x2 = Math.max(selection.first.x, selection.second.x),
+                y1 = Math.max(selection.first.y, selection.second.y),
+                y2 = Math.min(selection.first.y, selection.second.y);
+
+            var r = {};
+            var axes = plot.getAxes();
+            if (axes.xaxis.used)
+                r.xaxis = { from: axes.xaxis.c2p(x1), to: axes.xaxis.c2p(x2) };
+            if (axes.x2axis.used)
+                r.x2axis = { from: axes.x2axis.c2p(x1), to: axes.x2axis.c2p(x2) };
+            if (axes.yaxis.used)
+                r.yaxis = { from: axes.yaxis.c2p(y1), to: axes.yaxis.c2p(y2) };
+            if (axes.y2axis.used)
+                r.y2axis = { from: axes.y2axis.c2p(y1), to: axes.y2axis.c2p(y2) };
+            return r;
+        }
+
+        function triggerSelectedEvent() {
+            var r = getSelection();
+
+            plot.getPlaceholder().trigger("plotselected", [ r ]);
+
+            // backwards-compat stuff, to be removed in future
+            var axes = plot.getAxes();
+            if (axes.xaxis.used && axes.yaxis.used)
+                plot.getPlaceholder().trigger("selected", [ { x1: r.xaxis.from, y1: r.yaxis.from, x2: r.xaxis.to, y2: r.yaxis.to } ]);
+        }
+
+        function clamp(min, value, max) {
+            return value < min? min: (value > max? max: value);
+        }
+
+        function setSelectionPos(pos, e) {
+            var o = plot.getOptions();
+            var offset = plot.getPlaceholder().offset();
+            var plotOffset = plot.getPlotOffset();
+            pos.x = clamp(0, e.pageX - offset.left - plotOffset.left, plot.width());
+            pos.y = clamp(0, e.pageY - offset.top - plotOffset.top, plot.height());
+
+            if (o.selection.mode == "y")
+                pos.x = pos == selection.first? 0: plot.width();
+
+            if (o.selection.mode == "x")
+                pos.y = pos == selection.first? 0: plot.height();
+        }
+
+        function updateSelection(pos) {
+            if (pos.pageX == null)
+                return;
+
+            setSelectionPos(selection.second, pos);
+            if (selectionIsSane()) {
+                selection.show = true;
+                plot.triggerRedrawOverlay();
+            }
+            else
+                clearSelection(true);
+        }
+
+        function clearSelection(preventEvent) {
+            if (selection.show) {
+                selection.show = false;
+                plot.triggerRedrawOverlay();
+                if (!preventEvent)
+                    plot.getPlaceholder().trigger("plotunselected", [ ]);
+            }
+        }
+
+        function setSelection(ranges, preventEvent) {
+            var axis, range, axes = plot.getAxes();
+            var o = plot.getOptions();
+
+            if (o.selection.mode == "y") {
+                selection.first.x = 0;
+                selection.second.x = plot.width();
+            }
+            else {
+                axis = ranges["xaxis"]? axes["xaxis"]: (ranges["x2axis"]? axes["x2axis"]: axes["xaxis"]);
+                range = ranges["xaxis"] || ranges["x2axis"] || { from:ranges["x1"], to:ranges["x2"] }
+                selection.first.x = axis.p2c(Math.min(range.from, range.to));
+                selection.second.x = axis.p2c(Math.max(range.from, range.to));
+            }
+
+            if (o.selection.mode == "x") {
+                selection.first.y = 0;
+                selection.second.y = plot.height();
+            }
+            else {
+                axis = ranges["yaxis"]? axes["yaxis"]: (ranges["y2axis"]? axes["y2axis"]: axes["yaxis"]);
+                range = ranges["yaxis"] || ranges["y2axis"] || { from:ranges["y1"], to:ranges["y2"] }
+                selection.first.y = axis.p2c(Math.min(range.from, range.to));
+                selection.second.y = axis.p2c(Math.max(range.from, range.to));
+            }
+
+            selection.show = true;
+            plot.triggerRedrawOverlay();
+            if (!preventEvent)
+                triggerSelectedEvent();
+        }
+
+        function selectionIsSane() {
+            var minSize = 5;
+            return Math.abs(selection.second.x - selection.first.x) >= minSize &&
+                Math.abs(selection.second.y - selection.first.y) >= minSize;
+        }
+
+        plot.clearSelection = clearSelection;
+        plot.setSelection = setSelection;
+        plot.getSelection = getSelection;
+
+        plot.hooks.bindEvents.push(function(plot, eventHolder) {
+            var o = plot.getOptions();
+            if (o.selection.mode != null)
+                eventHolder.mousemove(onMouseMove);
+
+            if (o.selection.mode != null)
+                eventHolder.mousedown(onMouseDown);
+        });
+
+
+        plot.hooks.drawOverlay.push(function (plot, ctx) {
+            // draw selection
+            if (selection.show && selectionIsSane()) {
+                var plotOffset = plot.getPlotOffset();
+                var o = plot.getOptions();
+
+                ctx.save();
+                ctx.translate(plotOffset.left, plotOffset.top);
+
+                var c = $.color.parse(o.selection.color);
+
+                ctx.strokeStyle = c.scale('a', 0.8).toString();
+                ctx.lineWidth = 1;
+                ctx.lineJoin = "round";
+                ctx.fillStyle = c.scale('a', 0.4).toString();
+
+                var x = Math.min(selection.first.x, selection.second.x),
+                    y = Math.min(selection.first.y, selection.second.y),
+                    w = Math.abs(selection.second.x - selection.first.x),
+                    h = Math.abs(selection.second.y - selection.first.y);
+
+                ctx.fillRect(x, y, w, h);
+                ctx.strokeRect(x, y, w, h);
+
+                ctx.restore();
+            }
+        });
+    }
+
+    $.plot.plugins.push({
+        init: init,
+        options: {
+            selection: {
+                mode: null, // one of null, "x", "y" or "xy"
+                color: "#e8cfac"
+            }
+        },
+        name: 'selection',
+        version: '1.0'
+    });
+})(jQuery);
+
 /*
 Flot plugin for stacking data sets, i.e. putting them on top of each
 other, for accumulative graphs. Note that the plugin assumes the data
@@ -6645,3 +9218,108 @@ also adjusted.
         version: '1.0'
     });
 })(jQuery);
+
+/*
+Flot plugin for thresholding data. Controlled through the option
+"threshold" in either the global series options
+
+  series: {
+    threshold: {
+      below: number
+      color: colorspec
+    }
+  }
+
+or in a specific series
+
+  $.plot($("#placeholder"), [{ data: [ ... ], threshold: { ... }}])
+
+The data points below "below" are drawn with the specified color. This
+makes it easy to mark points below 0, e.g. for budget data.
+
+Internally, the plugin works by splitting the data into two series,
+above and below the threshold. The extra series below the threshold
+will have its label cleared and the special "originSeries" attribute
+set to the original series. You may need to check for this in hover
+events.
+*/
+
+(function ($) {
+    var options = {
+        series: { threshold: null } // or { below: number, color: color spec}
+    };
+    
+    function init(plot) {
+        function thresholdData(plot, s, datapoints) {
+            if (!s.threshold)
+                return;
+            
+            var ps = datapoints.pointsize, i, x, y, p, prevp,
+                thresholded = $.extend({}, s); // note: shallow copy
+
+            thresholded.datapoints = { points: [], pointsize: ps };
+            thresholded.label = null;
+            thresholded.color = s.threshold.color;
+            thresholded.threshold = null;
+            thresholded.originSeries = s;
+            thresholded.data = [];
+
+            var below = s.threshold.below,
+                origpoints = datapoints.points,
+                addCrossingPoints = s.lines.show;
+
+            threspoints = [];
+            newpoints = [];
+
+            for (i = 0; i < origpoints.length; i += ps) {
+                x = origpoints[i]
+                y = origpoints[i + 1];
+
+                prevp = p;
+                if (y < below)
+                    p = threspoints;
+                else
+                    p = newpoints;
+
+                if (addCrossingPoints && prevp != p && x != null
+                    && i > 0 && origpoints[i - ps] != null) {
+                    var interx = (x - origpoints[i - ps]) / (y - origpoints[i - ps + 1]) * (below - y) + x;
+                    prevp.push(interx);
+                    prevp.push(below);
+                    for (m = 2; m < ps; ++m)
+                        prevp.push(origpoints[i + m]);
+                    
+                    p.push(null); // start new segment
+                    p.push(null);
+                    for (m = 2; m < ps; ++m)
+                        p.push(origpoints[i + m]);
+                    p.push(interx);
+                    p.push(below);
+                    for (m = 2; m < ps; ++m)
+                        p.push(origpoints[i + m]);
+                }
+
+                p.push(x);
+                p.push(y);
+            }
+
+            datapoints.points = newpoints;
+            thresholded.datapoints.points = threspoints;
+            
+            if (thresholded.datapoints.points.length > 0)
+                plot.getData().push(thresholded);
+                
+            // FIXME: there are probably some edge cases left in bars
+        }
+        
+        plot.hooks.processDatapoints.push(thresholdData);
+    }
+    
+    $.plot.plugins.push({
+        init: init,
+        options: options,
+        name: 'threshold',
+        version: '1.0'
+    });
+})(jQuery);
+
