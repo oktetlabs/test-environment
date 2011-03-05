@@ -214,7 +214,8 @@ enum {
     TRC_DIFF_OPT_KEY2HTML,
     TRC_DIFF_OPT_TESTS_INCLUDE,
     TRC_DIFF_OPT_TESTS_EXCLUDE,
-    TRC_DIFF_OPT_SUMMARY,
+    TRC_DIFF_OPT_NO_DETAILS,
+    TRC_DIFF_OPT_NO_POPUPS,
     TRC_DIFF_OPT_MAX,
 };
 
@@ -227,8 +228,6 @@ static const char *trc_diff_html_fn = NULL;
 static const char *trc_diff_html_header_fn = NULL;
 /** Title of the report in HTML format */
 static const char *trc_diff_title = NULL;
-/** Generate only summary report */
-static te_bool     trc_diff_summary_only = FALSE;
 
 /**
  * Process command line options and parameters specified in argv.
@@ -274,8 +273,11 @@ process_cmd_line_opts(int argc, char **argv, trc_diff_ctx *ctx)
           "Name of the file with header for the HTML report.",
           "FILENAME" },
 
-        { "summary", 'i', POPT_ARG_NONE, NULL, TRC_DIFF_OPT_SUMMARY,
+        { "no-details", 'i', POPT_ARG_NONE, NULL, TRC_DIFF_OPT_NO_DETAILS,
           "Generate only summary report.", NULL },
+
+        { "no-popups", 'i', POPT_ARG_NONE, NULL, TRC_DIFF_OPT_NO_POPUPS,
+          "Generate only graph report.", NULL },
 
         { "key2html", '\0', POPT_ARG_STRING, NULL, TRC_DIFF_OPT_KEY2HTML,
           "File with regular expressions to apply when output keys to "
@@ -577,8 +579,12 @@ process_cmd_line_opts(int argc, char **argv, trc_diff_ctx *ctx)
                 break;
             }
 
-            case TRC_DIFF_OPT_SUMMARY:
-                trc_diff_summary_only = TRUE;
+            case TRC_DIFF_OPT_NO_DETAILS:
+                ctx->flags |= TRC_DIFF_FLAGS_NO_DETAILS;
+                break;
+
+            case TRC_DIFF_OPT_NO_POPUPS:
+                ctx->flags |= TRC_DIFF_FLAGS_NO_POPUPS;
                 break;
 
             case TRC_DIFF_OPT_VERSION:
@@ -692,8 +698,7 @@ main(int argc, char *argv[])
     /* Generate reports in HTML format */
     if (trc_diff_report_to_html(ctx, trc_diff_html_fn,
                                 trc_diff_html_header_fn,
-                                trc_diff_title,
-                                trc_diff_summary_only) != 0)
+                                trc_diff_title) != 0)
     {
         ERROR("Failed to generate report in HTML format");
         goto exit;

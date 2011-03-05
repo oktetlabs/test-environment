@@ -684,27 +684,37 @@ static const char * trc_diff_graph_js_start =
 "        lines: { show: true },\n"
 "        grid: { show: true },\n"
 "        points: { show: true },\n"
-"        yaxis: { },\n"
+"        yaxis: { base : 10 },\n"
 "        xaxis: { mode:\"time\", minTickSize: [1, \"day\"], "
 "timeformat:\"%%b,%%d\", min: %d000, max: %d000,},\n"
+"        crosshair: { mode: \"x\", color: \"#7f7f7f\" },"
+"        selection: { mode: \"x\" },"
 "        clickable: true,\n"
 "        hoverable: true};\n"
 "\n"
 "    var graph_basic_datasets = {\n"
-"        \"graph_passed_total\": { label: \"Passed\", data: [] },\n"
-"        \"graph_failed_total\": { label: \"Failed\", data: [] },\n"
-"        \"graph_expected\": { label: \"Expected\", data: [] },\n"
-"        \"graph_unexpected\": { label: \"Unexpected\", data: [] },\n"
-"        \"graph_total\": { label: \"Total Run\", data: [] }};\n"
+"        \"graph_passed_total\": { color:'#00ff00', "
+"label: \"Passed\", data: [] },\n"
+"        \"graph_failed_total\": { color:'#ff0000', "
+"label: \"Failed\", data: [] },\n"
+"        \"graph_expected\": { color:'#0000ff', "
+"label: \"Expected\", data: [] },\n"
+"        \"graph_unexpected\": { color:'#ffff00', "
+"label: \"Unexpected\", data: [] },\n"
+"        \"graph_total\": { color:'#000000', "
+"label: \"Total Run\", data: [] }};\n"
 "\n"
 "    var graph_advanced_datasets = {\n"
-"        \"graph_passed\": { label: \"Passed Expectedly\", data: [] },\n"
-"        \"graph_passed_une\": "
-"{ label: \"Passed Unexpectedly\", data: [] },\n"
-"        \"graph_failed\": { label: \"Failed Expectedly\", data: [] },\n"
-"        \"graph_failed_une\": "
-"{ label: \"Failed Unexpectedly\", data: [] },\n"
-"        \"graph_skipped\": { label: \"Skipped\", data: [] }};\n"
+"        \"graph_passed\": { color:'#00c000', "
+"label: \"Passed Expectedly\", data: [] },\n"
+"        \"graph_passed_une\": { color:'#70c000', "
+"label: \"Passed Unexpectedly\", data: [] },\n"
+"        \"graph_failed\": { color:'#c00000', "
+"label: \"Failed Expectedly\", data: [] },\n"
+"        \"graph_failed_une\": { color:'#c07000', "
+"label: \"Failed Unexpectedly\", data: [] },\n"
+"        \"graph_skipped\": { color:'#0000c0', "
+"label: \"Skipped\", data: [] }};\n"
 "\n"
 "    var graph_datasets = new Array();\n"
 "    for (var key in graph_basic_datasets)\n"
@@ -723,10 +733,10 @@ static const char * trc_diff_graph_js_end =
 "\n"
 "    var graph_plot;\n"
 "    var i = 0;\n"
-"    $.each(graph_datasets, function(key, val) {\n"
-"        val.color = i;\n"
-"        ++i;\n"
-"    });\n"
+"    //$.each(graph_datasets, function(key, val) {\n"
+"    //    val.color = i;\n"
+"    //    ++i;\n"
+"    //});\n"
 "\n"
 "    var basicChoiceContainer = $(\"#graph_basic_selection\");\n"
 "    $.each(graph_basic_datasets, function(key, val) {\n"
@@ -1169,8 +1179,10 @@ trc_diff_graph_stats_to_html(FILE                  *f,
 static void
 trc_diff_stats_entry_to_html(FILE *f, trc_diff_stats_counter *counters,
                              char *set1_name, char *set2_name,
-                             int status1, int status2)
+                             int status1, int status2, int flags)
 {
+    te_bool use_popups = (~flags & TRC_DIFF_FLAGS_NO_POPUPS);
+
     if ((counters[TRC_DIFF_MATCH].counter == 0)    &&
         (counters[TRC_DIFF_NO_MATCH].counter == 0) &&
         (counters[TRC_DIFF_NO_MATCH_IGNORE].counter == 0))
@@ -1181,17 +1193,23 @@ trc_diff_stats_entry_to_html(FILE *f, trc_diff_stats_counter *counters,
 
     if (counters[TRC_DIFF_MATCH].counter > 0)
     {
-        fprintf(f, trc_diff_stats_stats_href_start);
-        fprintf(f, trc_diff_stats_stats_list, set1_name, set2_name,
-                trc_diff_js_test_status2str(status1),
-                trc_diff_js_test_status2str(status2),
-                trc_diff_js_diff_status2str(TRC_DIFF_MATCH));
-        fprintf(f, trc_diff_stats_stats_href_end);
+        if (use_popups)
+        {
+            fprintf(f, trc_diff_stats_stats_href_start);
+            fprintf(f, trc_diff_stats_stats_list, set1_name, set2_name,
+                    trc_diff_js_test_status2str(status1),
+                    trc_diff_js_test_status2str(status2),
+                    trc_diff_js_diff_status2str(TRC_DIFF_MATCH));
+            fprintf(f, trc_diff_stats_stats_href_end);
+        }
 
         fprintf(f, trc_diff_stats_table_entry_matched,
                 counters[TRC_DIFF_MATCH].counter);
 
-        fprintf(f, trc_diff_stats_stats_href_close);
+        if (use_popups)
+        {
+            fprintf(f, trc_diff_stats_stats_href_close);
+        }
 
         if (counters[TRC_DIFF_NO_MATCH].counter +
             counters[TRC_DIFF_NO_MATCH_IGNORE].counter > 0)
@@ -1199,34 +1217,46 @@ trc_diff_stats_entry_to_html(FILE *f, trc_diff_stats_counter *counters,
     }
     if (counters[TRC_DIFF_NO_MATCH].counter > 0)
     {
-        fprintf(f, trc_diff_stats_stats_href_start);
-        fprintf(f, trc_diff_stats_stats_list, set1_name, set2_name,
-                trc_diff_js_test_status2str(status1),
-                trc_diff_js_test_status2str(status2),
-                trc_diff_js_diff_status2str(TRC_DIFF_NO_MATCH));
-        fprintf(f, trc_diff_stats_stats_href_end);
+        if (use_popups)
+        {
+            fprintf(f, trc_diff_stats_stats_href_start);
+            fprintf(f, trc_diff_stats_stats_list, set1_name, set2_name,
+                    trc_diff_js_test_status2str(status1),
+                    trc_diff_js_test_status2str(status2),
+                    trc_diff_js_diff_status2str(TRC_DIFF_NO_MATCH));
+            fprintf(f, trc_diff_stats_stats_href_end);
+        }
 
         fprintf(f, trc_diff_stats_table_entry_unmatched,
                 counters[TRC_DIFF_NO_MATCH].counter);
 
-        fprintf(f, trc_diff_stats_stats_href_close);
+        if (use_popups)
+        {
+            fprintf(f, trc_diff_stats_stats_href_close);
+        }
 
         if (counters[TRC_DIFF_NO_MATCH_IGNORE].counter > 0)
             fprintf(f, "+");
     }
     if (counters[TRC_DIFF_NO_MATCH_IGNORE].counter > 0)
     {
-        fprintf(f, trc_diff_stats_stats_href_start);
-        fprintf(f, trc_diff_stats_stats_list, set1_name, set2_name,
-                trc_diff_js_test_status2str(status1),
-                trc_diff_js_test_status2str(status2),
-                trc_diff_js_diff_status2str(TRC_DIFF_NO_MATCH_IGNORE));
-        fprintf(f, trc_diff_stats_stats_href_end);
+        if (use_popups)
+        {
+            fprintf(f, trc_diff_stats_stats_href_start);
+            fprintf(f, trc_diff_stats_stats_list, set1_name, set2_name,
+                    trc_diff_js_test_status2str(status1),
+                    trc_diff_js_test_status2str(status2),
+                    trc_diff_js_diff_status2str(TRC_DIFF_NO_MATCH_IGNORE));
+            fprintf(f, trc_diff_stats_stats_href_end);
+        }
 
         fprintf(f, trc_diff_stats_table_entry_ignored,
                 counters[TRC_DIFF_NO_MATCH_IGNORE].counter);
 
-        fprintf(f, trc_diff_stats_stats_href_close);
+        if (use_popups)
+        {
+            fprintf(f, trc_diff_stats_stats_href_close);
+        }
     }
 }
 
@@ -1242,7 +1272,8 @@ static void
 trc_diff_one_stats_to_html(FILE               *f,
                            trc_diff_stats     *stats,
                            const trc_diff_set *tags_x,
-                           const trc_diff_set *tags_y)
+                           const trc_diff_set *tags_y,
+                           int flags)
 {
     trc_diff_stats_counters *counters;
     unsigned int             total_match            = 0;
@@ -1318,7 +1349,7 @@ trc_diff_one_stats_to_html(FILE               *f,
         {
             trc_diff_stats_entry_to_html(f, (*counters)[status1][status2],
                                          tags_x->name, tags_y->name,
-                                         status1, status2);
+                                         status1, status2, flags);
             if (status2 < TRC_TEST_UNSPECIFIED)
                 fprintf(f, trc_diff_stats_table_row_mid);
         }
@@ -1342,7 +1373,8 @@ trc_diff_one_stats_brief_to_html(FILE               *f,
                                  trc_diff_stats     *stats,
                                  const trc_diff_set *tags_x,
                                  const trc_diff_set *tags_y,
-                                 te_bool diff_only)
+                                 te_bool             diff_only,
+                                 te_bool             use_popups)
 {
     trc_diff_stats_counters *counters;
     trc_diff_stats_counters *ref_counters;
@@ -1448,18 +1480,24 @@ trc_diff_one_stats_brief_to_html(FILE               *f,
                                                                         \
         empty = FALSE;                                                  \
                                                                         \
-        fprintf(f, trc_diff_stats_stats_href_start);                    \
-        fprintf(f, trc_diff_stats_stats_list,                           \
-                (ref_) ? tags_y->name : tags_x->name,                   \
-                tags_y->name, "summary",                                \
-                trc_diff_js_summary_status2str(status_),                \
-                trc_diff_js_summary_component2str(component_));         \
-        fprintf(f, trc_diff_stats_stats_href_end);                      \
+        if (use_popups)                                                 \
+        {                                                               \
+            fprintf(f, trc_diff_stats_stats_href_start);                \
+            fprintf(f, trc_diff_stats_stats_list,                       \
+                    (ref_) ? tags_y->name : tags_x->name,               \
+                    tags_y->name, "summary",                            \
+                    trc_diff_js_summary_status2str(status_),            \
+                    trc_diff_js_summary_component2str(component_));     \
+            fprintf(f, trc_diff_stats_stats_href_end);                  \
+        }                                                               \
                                                                         \
         fprintf(f, trc_diff_stats_brief_counter,                        \
                 (color_), (counter_));                                  \
                                                                         \
-        fprintf(f, trc_diff_stats_stats_href_close);                    \
+        if (use_popups)                                                 \
+        {                                                               \
+            fprintf(f, trc_diff_stats_stats_href_close);                \
+        }                                                               \
     } while (0)
 
     fprintf(f, "<td style=\"text-align:right;\">");
@@ -1672,8 +1710,7 @@ trc_diff_one_stats_brief_to_html(FILE               *f,
 
 void
 trc_diff_stats_brief_report(FILE *f, const trc_diff_sets *sets,
-                            trc_diff_stats *stats,
-                            te_bool summary_only)
+                            trc_diff_stats *stats, int flags)
 {
     trc_diff_set *ref_set = TAILQ_FIRST(sets);
     trc_diff_set *compare_set = NULL;
@@ -1683,7 +1720,8 @@ trc_diff_stats_brief_report(FILE *f, const trc_diff_sets *sets,
 
     fprintf(f, trc_diff_stats_brief_table_row_start,
                ref_set->name);
-    trc_diff_one_stats_brief_to_html(f, stats, ref_set, ref_set, TRUE);
+    trc_diff_one_stats_brief_to_html(f, stats, ref_set, ref_set, TRUE,
+                                     ~flags & TRC_DIFF_FLAGS_NO_POPUPS);
     fprintf(f, trc_diff_stats_brief_table_row_end);
 
     TAILQ_FOREACH(compare_set, sets, links)
@@ -1691,7 +1729,7 @@ trc_diff_stats_brief_report(FILE *f, const trc_diff_sets *sets,
         if (compare_set == ref_set)
             continue;
 
-        if (summary_only)
+        if (flags & TRC_DIFF_FLAGS_NO_DETAILS)
         {
             fprintf(f, trc_diff_stats_brief_table_row_start,
                     compare_set->name);
@@ -1703,7 +1741,8 @@ trc_diff_stats_brief_report(FILE *f, const trc_diff_sets *sets,
         }
 
         trc_diff_one_stats_brief_to_html(f, stats, ref_set,
-                                         compare_set, TRUE);
+                                         compare_set, TRUE,
+                                         ~flags & TRC_DIFF_FLAGS_NO_POPUPS);
         fprintf(f, trc_diff_stats_brief_table_row_end);
 
         prev_set = compare_set;
@@ -1714,8 +1753,7 @@ trc_diff_stats_brief_report(FILE *f, const trc_diff_sets *sets,
 
 void
 trc_diff_stats_brief_incremental_report(FILE *f, const trc_diff_sets *sets,
-                                        trc_diff_stats *stats,
-                                        te_bool summary_only)
+                                        trc_diff_stats *stats, int flags)
 {
     trc_diff_set *ref_set = TAILQ_FIRST(sets);
     trc_diff_set *compare_set = NULL;
@@ -1727,14 +1765,15 @@ trc_diff_stats_brief_incremental_report(FILE *f, const trc_diff_sets *sets,
 
     fprintf(f, trc_diff_stats_brief_table_row_start,
             ref_set->name);
-    trc_diff_one_stats_brief_to_html(f, stats, NULL, ref_set, FALSE);
+    trc_diff_one_stats_brief_to_html(f, stats, NULL, ref_set, FALSE,
+                                     ~flags & TRC_DIFF_FLAGS_NO_POPUPS);
     fprintf(f, trc_diff_stats_brief_table_row_end);
 
     for (compare_set = TAILQ_NEXT(ref_set, links);
          compare_set != NULL;
          compare_set = TAILQ_NEXT(ref_set, links))
     {
-        if (summary_only)
+        if (flags & TRC_DIFF_FLAGS_NO_DETAILS)
         {
             fprintf(f, trc_diff_stats_brief_table_row_start,
                     compare_set->name);
@@ -1745,7 +1784,8 @@ trc_diff_stats_brief_incremental_report(FILE *f, const trc_diff_sets *sets,
                     ref_set->name, compare_set->name, compare_set->name);
         }
         trc_diff_one_stats_brief_to_html(f, stats, ref_set,
-                                         compare_set, FALSE);
+                                         compare_set, FALSE,
+                                         ~flags & TRC_DIFF_FLAGS_NO_POPUPS);
         fprintf(f, trc_diff_stats_brief_table_row_end);
 
         ref_set = compare_set;
@@ -1765,7 +1805,7 @@ trc_diff_stats_brief_incremental_report(FILE *f, const trc_diff_sets *sets,
  */
 static void
 trc_diff_stats_to_html(FILE *f, const trc_diff_sets *sets,
-                       trc_diff_stats *stats)
+                       trc_diff_stats *stats, int flags)
 {
     const trc_diff_set *tags_i;
     const trc_diff_set *tags_j;
@@ -1776,7 +1816,7 @@ trc_diff_stats_to_html(FILE *f, const trc_diff_sets *sets,
         {
             if ((tags_i == TAILQ_FIRST(sets)) ||
                 (tags_j == TAILQ_NEXT(tags_i, links)))
-                trc_diff_one_stats_to_html(f, stats, tags_i, tags_j);
+                trc_diff_one_stats_to_html(f, stats, tags_i, tags_j, flags);
         }
     }
 }
@@ -2248,8 +2288,7 @@ trc_diff_include_external_libs(FILE *f)
 /** See descriptino in trc_db.h */
 te_errno
 trc_diff_report_to_html(trc_diff_ctx *ctx, const char *filename,
-                        const char *header, const char *title,
-                        te_bool summary_only)
+                        const char *header, const char *title)
 {
     FILE       *f;
     te_errno    rc;
@@ -2283,23 +2322,26 @@ trc_diff_report_to_html(trc_diff_ctx *ctx, const char *filename,
     /* Prepare and draw grap data */
     trc_diff_graph_stats_to_html(f, &ctx->sets, &ctx->stats);
 
-    /* Fill tests lists in stats table */
-    trc_diff_stats_js_table_report(f, &ctx->sets, &ctx->stats);
+    if (~ctx->flags & TRC_DIFF_FLAGS_NO_POPUPS)
+    {
+        /* Fill tests lists in stats table */
+        trc_diff_stats_js_table_report(f, &ctx->sets, &ctx->stats);
 
-    /* Compared sets */
-    //trc_diff_tags_to_html(f, &ctx->sets);
+        /* Compared sets */
+        //trc_diff_tags_to_html(f, &ctx->sets);
+    }
 
     /* Output brief total statistics */
-    trc_diff_stats_brief_report(f, &ctx->sets, &ctx->stats, summary_only);
+    trc_diff_stats_brief_report(f, &ctx->sets, &ctx->stats, ctx->flags);
 
     /* Output brief incremental statistics */
     trc_diff_stats_brief_incremental_report(f, &ctx->sets,
-                                            &ctx->stats, summary_only);
+                                            &ctx->stats, ctx->flags);
 
-    if (!summary_only)
+    if (~ctx->flags & TRC_DIFF_FLAGS_NO_DETAILS)
     {
         /* Output grand total statistics */
-        trc_diff_stats_to_html(f, &ctx->sets, &ctx->stats);
+        trc_diff_stats_to_html(f, &ctx->sets, &ctx->stats, ctx->flags);
 
         /* Output per-key summary */
         trc_diff_keys_stats_to_html(f, &ctx->sets);

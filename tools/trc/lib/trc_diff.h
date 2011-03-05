@@ -45,6 +45,9 @@ extern "C" {
 /** Number of IDs supported by TRC diff */
 #define TRC_DIFF_IDS    31
 
+#define TRC_DIFF_FLAGS_BRIEF        1
+#define TRC_DIFF_FLAGS_NO_DETAILS   2
+#define TRC_DIFF_FLAGS_NO_POPUPS    4
 
 /** Statistics for each key which makes differences */
 typedef struct trc_diff_key_stats {
@@ -341,8 +344,7 @@ extern te_errno trc_diff_do(trc_diff_ctx *ctx);
 extern te_errno trc_diff_report_to_html(trc_diff_ctx *ctx,
                                         const char   *filename,
                                         const char   *header,
-                                        const char   *title,
-                                        te_bool summary_only);
+                                        const char   *title);
 
 
 /**
