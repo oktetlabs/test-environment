@@ -65,7 +65,7 @@ AH_TEMPLATE([x_putint32], [Put 32-bit integer to the stream])
 AH_TEMPLATE([x_getint32], [Get 32-bit integer from the stream])
 AH_TEMPLATE([x_int32_arg_t],
     [Type of the second arguments to get/put 32-bit integer from/to the stream])
-AC_CHECK_MEMBER(struct XDR.x_ops->x_putint32,
+AC_CHECK_MEMBER([struct xdr_ops.x_putint32],
     [AC_DEFINE([x_int32_arg_t], [int32_t])],
     [AC_DEFINE([x_putint32], [x_putlong])
      AC_DEFINE([x_getint32], [x_getlong])
