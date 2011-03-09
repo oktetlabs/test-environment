@@ -659,6 +659,12 @@ static const char * trc_diff_graph_js_include =
 "src=\"jquery_flot.js\"></script>\n";
 
 static const char * trc_diff_graph_js_start =
+"<table width=600><tbody><tr><td width=\"32px\"></td>\n"
+"<td><input id=\"graph_reset_zoom\" type=\"button\" "
+"value=\"Reset zoom\"/></td>\n"
+"<td align=right><input id=\"graph_enable_zoom\" "
+"type=\"checkbox\">Enable zoom on selection</td>\n"
+"</tr></tbody></table>\n"
 "<table><tbody><tr>\n"
 "  <td><div id=\"graph_placeholder\" style=\"width: 600px; "
 "height: 300px; position: relative; float:left;\">\n"
@@ -679,18 +685,21 @@ static const char * trc_diff_graph_js_start =
 "</p>\n"
 "\n"
 "<script id=\"source\" language=\"javascript\" type=\"text/javascript\">\n"
-"$(function () {    var graph_options = {\n"
+"$(function () {\n"
+"    var graph_time_range_min = %d000;\n"
+"    var graph_time_range_max = %d000;\n"
+"    var graph_options = {\n"
 "        legend: {show: true, container: $(\"#graph_legend\") },\n"
 "        lines: { show: true },\n"
-"        grid: { show: true },\n"
+"        grid: { show: true, hoverable: true, clickable: true },\n"
 "        points: { show: true },\n"
-"        yaxis: { base : 10 },\n"
+"        yaxis: { tickDecimals: 0 },\n"
 "        xaxis: { mode:\"time\", minTickSize: [1, \"day\"], "
-"timeformat:\"%%b,%%d\", min: %d000, max: %d000,},\n"
-"        crosshair: { mode: \"x\", color: \"#7f7f7f\" },"
-"        selection: { mode: \"x\" },"
-"        clickable: true,\n"
-"        hoverable: true};\n"
+"timeformat:\"%%b,%%d\", "
+"min: graph_time_range_min, "
+"max: graph_time_range_max,},\n"
+"        crosshair: { mode: \"x\", color: \"#7f7f7f\" },\n"
+"        selection: { mode: \"x\" } };\n"
 "\n"
 "    var graph_basic_datasets = {\n"
 "        \"graph_passed_total\": { color:'#00ff00', "
@@ -731,12 +740,8 @@ static const char * trc_diff_graph_js_time =
 
 static const char * trc_diff_graph_js_end =
 "\n"
+"    var graph_placeholder = $(\"#graph_placeholder\");\n"
 "    var graph_plot;\n"
-"    var i = 0;\n"
-"    //$.each(graph_datasets, function(key, val) {\n"
-"    //    val.color = i;\n"
-"    //    ++i;\n"
-"    //});\n"
 "\n"
 "    var basicChoiceContainer = $(\"#graph_basic_selection\");\n"
 "    $.each(graph_basic_datasets, function(key, val) {\n"
@@ -774,6 +779,67 @@ static const char * trc_diff_graph_js_end =
 "    }\n"
 "\n"
 "    plotAccordingToChoices();\n"
+"\n"
+"    function showTooltip(x, y, contents) {\n"
+"        $('<div id=\"graph_tooltip\">' + contents + '</div>').css( {\n"
+"            position: 'absolute',\n"
+"            display: 'none',\n"
+"            top: y + 8,\n"
+"            left: x + 8,\n"
+"            border: '1px solid #fdd',\n"
+"            padding: '2px',\n"
+"            'background-color': '#ccf',\n"
+"            opacity: 0.80\n"
+"        }).appendTo(\"body\").fadeIn(200);\n"
+"    }\n"
+"\n"
+"    graph_placeholder.bind(\"plothover\", function (event, pos, item)\n"
+"    {\n"
+"        if (item)\n"
+"        {\n"
+"            $(\"#graph_tooltip\").remove();\n"
+"            var item_date =\n"
+"                new Date(parseInt(item.datapoint[0].toFixed(0)));\n"
+"            var item_value = parseInt(item.datapoint[1].toFixed(0));\n"
+"\n"
+"            var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',\n"
+"                          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];\n"
+"\n"
+"            showTooltip(item.pageX, item.pageY,\n"
+"                        item.series.label + \"(\" +\n"
+"                        months[item_date.getMonth()] + \", \" +\n"
+"                        item_date.getDate() + \") = \" + item_value);\n"
+"        }\n"
+"        else\n"
+"        {\n"
+"            $(\"#graph_tooltip\").remove();\n"
+"        }\n"
+"    });\n"
+"\n"
+"    graph_placeholder.bind(\"plotclick\", function (event, pos, item)\n"
+"    {\n"
+"        if (item)\n"
+"        {\n"
+"            graph_plot.highlight(item.series, item.datapoint);\n"
+"        }\n"
+"    });\n"
+"\n"
+"    graph_placeholder.bind(\"plotselected\", function (event, ranges)\n"
+"    {\n"
+"        if ($(\"#graph_enable_zoom:checked\").length > 0)\n"
+"        {\n"
+"            graph_options[\"xaxis\"][\"min\"] = ranges.xaxis.from;\n"
+"            graph_options[\"xaxis\"][\"max\"] = ranges.xaxis.to;\n"
+"            plotAccordingToChoices();\n"
+"        }\n"
+"    });\n"
+"\n"
+"    $(\"#graph_reset_zoom\").click(function ()\n"
+"    {\n"
+"        graph_options[\"xaxis\"][\"min\"] = graph_time_range_min;\n"
+"        graph_options[\"xaxis\"][\"max\"] = graph_time_range_max;\n"
+"        plotAccordingToChoices();\n"
+"    });\n"
 "});\n"
 "</script>\n";
 
@@ -2269,9 +2335,25 @@ cleanup:
 }
 
 void
+trc_diff_include_header(FILE *f, const char *header)
+{
+    FILE *hf = fopen(header, "r");
+
+    if (hf == 0)
+    {
+        fprintf(stderr, "Failed to open \"%s\" file\n", header);
+    }
+
+    trc_tools_file_to_file(f, hf);
+
+    fclose(hf);
+}
+
+void
 trc_diff_include_external_libs(FILE *f)
 {
     FILE *finclude = popen("jquery_include.sh", "r");
+
     if (finclude == NULL)
     {
         fprintf(stderr, "Failed to run \"jquery_include.sh\", "
@@ -2314,6 +2396,8 @@ trc_diff_report_to_html(trc_diff_ctx *ctx, const char *filename,
             (title != NULL) ? title : trc_diff_html_title_def);
     if (ctx->db->version != NULL)
         fprintf(f, "<h2 align=center>%s</h2>\n", ctx->db->version);
+
+    trc_diff_include_header(f, header);
 
     fprintf(f, trc_diff_js_include_start);
     trc_diff_include_external_libs(f);
