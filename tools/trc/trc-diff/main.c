@@ -269,7 +269,7 @@ process_cmd_line_opts(int argc, char **argv, trc_diff_ctx *ctx)
         { "title", 't', POPT_ARG_STRING, &trc_diff_title, 0,
           "Title of the HTML report to be generate.", "TITLE" },
 
-        { "header", '\0', POPT_ARG_STRING, &trc_diff_html_header_fn, 0,
+        { "html-header", '\0', POPT_ARG_STRING, &trc_diff_html_header_fn, 0,
           "Name of the file with header for the HTML report.",
           "FILENAME" },
 
