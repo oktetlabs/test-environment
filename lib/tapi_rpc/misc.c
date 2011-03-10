@@ -1102,16 +1102,16 @@ rpc_overfill_buffers_gen(rcf_rpc_server *rpcs, int sock, uint64_t *sent,
 }
 
 int
-rpc_overfill_pipe(rcf_rpc_server *rpcs, int write_end, uint64_t *sent)
+rpc_overfill_fd(rcf_rpc_server *rpcs, int write_end, uint64_t *sent)
 {
     rcf_rpc_op                 op;
-    tarpc_overfill_pipe_in  in;
-    tarpc_overfill_pipe_out out;
+    tarpc_overfill_fd_in  in;
+    tarpc_overfill_fd_out out;
 
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_INT(overfill_pipe, -1);
+        RETVAL_INT(overfill_fd, -1);
     }
     op = rpcs->op;
 
@@ -1120,21 +1120,21 @@ rpc_overfill_pipe(rcf_rpc_server *rpcs, int write_end, uint64_t *sent)
 
     in.write_end = write_end;
 
-    rcf_rpc_call(rpcs, "overfill_pipe", &in, &out);
+    rcf_rpc_call(rpcs, "overfill_fd", &in, &out);
 
     if ((out.retval == 0) && (sent != NULL))
         *sent = out.bytes;
 
-    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(overfill_pipe, out.retval);
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(overfill_fd, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: overfill_pipe(%d) -> "
+    TAPI_RPC_LOG("RPC (%s,%s)%s: overfill_fd(%d) -> "
                  "%d (%s) sent=%d",
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  write_end, out.retval,
                  errno_rpc2str(RPC_ERRNO(rpcs)),
                  (sent != NULL) ? (int)(*sent) : -1);
 
-    RETVAL_INT(overfill_pipe, out.retval);
+    RETVAL_INT(overfill_fd, out.retval);
 }
 
 /**

@@ -371,8 +371,8 @@ rpc_overfill_buffers(rcf_rpc_server *rpcs, int sock, uint64_t *sent)
  *
  * @return -1 in the case of failure or 0 on success
  */
-extern int rpc_overfill_pipe(rcf_rpc_server *rpcs, int write_end,
-                             uint64_t *sent);
+extern int rpc_overfill_fd(rcf_rpc_server *rpcs, int write_end,
+                           uint64_t *sent);
 
 /**
  * VM trasher to keep memory pressure on the

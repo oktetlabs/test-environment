@@ -3739,14 +3739,14 @@ struct tarpc_overfill_buffers_out {
     uint64_t    bytes;      /**< Number of sent bytes */
 };
 
-/* overfill_pipe() */
-struct tarpc_overfill_pipe_in {
+/* overfill_fd() */
+struct tarpc_overfill_fd_in {
     struct tarpc_in_arg common;
 
     tarpc_int       write_end;
 };
 
-struct tarpc_overfill_pipe_out {
+struct tarpc_overfill_fd_out {
     struct tarpc_out_arg common;
 
     tarpc_int   retval;     /**< 0 (success) or -1 (failure) */
@@ -4462,7 +4462,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(ftp_close)
 
         RPC_DEF(overfill_buffers)
-        RPC_DEF(overfill_pipe)
+        RPC_DEF(overfill_fd)
 
         RPC_DEF(create_event)
         RPC_DEF(create_event_with_bit)
