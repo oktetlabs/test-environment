@@ -1,3 +1,40 @@
+/** @file
+ * @brief Test API to use setjmp/longjmp.
+ *
+ * Definition of API to deal with thread-safe stack of jumps.
+ *
+ *
+ * Copyright (C) 2004 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA  02111-1307  USA
+ *
+ *
+ * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+ *
+ * $Id: tapi_jmp.h 33201 2006-11-03 14:36:37Z arybchik $
+ */
+
+#ifndef __TE_TAPI_SH_ENV_H__
+#define __TE_TAPI_SH_ENV_H__
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Set shell environment for the given agent and may be restart
  * a PCO so it's aware.
@@ -10,11 +47,12 @@
  *
  * @result errno
  */
-inline te_errno tapi_sh_env_setenv(rcf_rpc_server *pco,
-                                   const char *env_name,
-                                   const char *env_value,
-                                   te_bool force,
-                                   te_bool restart)
+static inline te_errno
+tapi_sh_env_setenv(rcf_rpc_server *pco,
+                   const char *env_name,
+                   const char *env_value,
+                   te_bool force,
+                   te_bool restart)
 {
     cfg_handle handle;
     te_errno rc = 0;
@@ -52,8 +90,9 @@ inline te_errno tapi_sh_env_setenv(rcf_rpc_server *pco,
  * @param restart     Should the PCO be restarted?
  * @param empty       Ignore if the variable was not set
  */
-extern te_errno tapi_sh_env_unset(rcf_rpc_server *pco, const char *env_name,
-                                  te_bool restart, te_bool empty)
+static inline te_errno
+tapi_sh_env_unset(rcf_rpc_server *pco, const char *env_name,
+                  te_bool restart, te_bool empty)
 {
     cfg_handle handle;
     te_errno rc = 0;
@@ -71,3 +110,8 @@ extern te_errno tapi_sh_env_unset(rcf_rpc_server *pco, const char *env_name,
     return (empty && rc == TE_ENOENT) ? 0 : rc;
 }
 
+#ifdef __cplusplus
+}
+#endif
+
+#endif
