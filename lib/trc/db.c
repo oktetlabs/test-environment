@@ -176,6 +176,10 @@ trc_db_init(te_trc_db **db)
     if (*db == NULL)
         return TE_RC(TE_TRC, TE_ENOMEM);
     TAILQ_INIT(&(*db)->tests.head);
+    TAILQ_INIT(&(*db)->globals.head);
+
+    /* store current db pointer */
+    current_db = (*db);
 
     return 0;
 }
