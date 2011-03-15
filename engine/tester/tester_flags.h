@@ -49,6 +49,12 @@ enum tester_flags {
     TESTER_FAKE         = (1 << 4),   /**< Fake run */
 
     TESTER_QUIET_SKIP   = (1 << 5),   /**< Quiet skip of tests */
+    TESTER_OUT_TEST_PARAMS  = (1 << 6),  /**< Output test params to
+                                              the console */
+    TESTER_VERB_SKIP   = (1 << 7),   /**< Print 'skipped' in case of
+                                          silent mode
+                                          is on by default */
+
 
     TESTER_NO_BUILD     = (1 << 8),   /**< Don't build any Test Suites */
     TESTER_NO_RUN       = (1 << 9),   /**< Don't run any Test Suites */

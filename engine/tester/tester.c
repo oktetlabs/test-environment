@@ -59,6 +59,7 @@
 #include "tester_term.h"
 #include "tester_run.h"
 #include "type_lib.h"
+#include "tester_flags.h"
 
 /** Logging entity name of the Tester subsystem */
 DEFINE_LGR_ENTITY("Tester");
@@ -101,7 +102,7 @@ tester_global_init(tester_global *global)
     global->rand_seed = (unsigned int)time(NULL);
 
     /* By default verbosity level is set to 1 */
-    global->flags |= TESTER_VERBOSE | TESTER_NO_TRC;
+    global->flags |= TESTER_VERBOSE | TESTER_NO_TRC | TESTER_QUIET_SKIP;
 
     global->cfgs.total_iters = 0;
     TAILQ_INIT(&global->cfgs.head);
@@ -183,6 +184,7 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
         TESTER_OPT_QUIET,
         TESTER_OPT_VERBOSE,
         TESTER_OPT_OUT_TIN,
+        TESTER_OPT_OUT_TEST_PARAMS,
         TESTER_OPT_OUT_EXPECTED,
         TESTER_OPT_IGNORE_RUN_NAME,
         TESTER_OPT_INTERACTIVE,
@@ -197,6 +199,7 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
 
         TESTER_OPT_REQ,
         TESTER_OPT_QUIET_SKIP,
+        TESTER_OPT_VERB_SKIP,
 
         TESTER_OPT_RUN,
         TESTER_OPT_RUN_FORCE,
@@ -265,6 +268,11 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
           "REQS" },
         { "quietskip", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_QUIET_SKIP,
           "Quietly skip tests which do not meet specified requirements.",
+          NULL },
+
+        { "verbskip", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_VERB_SKIP,
+          "Shout when skiping tests which do not meet "
+          "specified requirements.",
           NULL },
 
         { "fake", '\0', POPT_ARG_STRING, NULL, TESTER_OPT_FAKE,
@@ -342,6 +350,10 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
         { "out-tin", 't', POPT_ARG_NONE, NULL, TESTER_OPT_OUT_TIN,
           "Output Test Identification Numbers (TINs) to terminal.", NULL },
 
+        { "out-test-params", NULL, POPT_ARG_NONE, NULL,
+          TESTER_OPT_OUT_TEST_PARAMS,
+          "Output Test Iteration parameters to the terminal.", NULL },
+
         { "out-expected", 'e', POPT_ARG_NONE, NULL, TESTER_OPT_OUT_EXPECTED,
           "If result is expected, output the result just after OK.", NULL },
 
@@ -418,6 +430,10 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
                 global->flags |= TESTER_QUIET_SKIP;
                 break;
 
+            case TESTER_OPT_VERB_SKIP:
+                global->flags |= TESTER_VERB_SKIP;
+                break;
+
             case TESTER_OPT_VERBOSE:
                 if (!(global->flags & TESTER_VERBOSE))
                     global->flags |= TESTER_VERBOSE;
@@ -438,6 +454,10 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
 
             case TESTER_OPT_OUT_TIN:
                 global->flags |= TESTER_OUT_TIN;
+                break;
+
+            case TESTER_OPT_OUT_TEST_PARAMS:
+                global->flags |= TESTER_OUT_TEST_PARAMS;
                 break;
 
             case TESTER_OPT_OUT_EXPECTED:

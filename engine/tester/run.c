@@ -63,6 +63,7 @@
 #include "tester_run.h"
 #include "tester_result.h"
 #include "tester_interactive.h"
+#include "tester_flags.h"
 
 /** Define it to enable support of timeouts in Tester */
 #undef TESTER_TIMEOUT_SUPPORT
@@ -813,7 +814,8 @@ test_params_hash(test_iter_arg *args, unsigned int n_args)
  * @param tin           Test identification number
  */
 static void
-log_test_start(const tester_ctx *ctx, const run_item *ri,
+log_test_start(unsigned int flags,
+               const tester_ctx *ctx, const run_item *ri,
                unsigned int tin)
 {
     test_id                 parent = ctx->group_result.id;
@@ -855,6 +857,14 @@ log_test_start(const tester_ctx *ctx, const run_item *ri,
                                 tin, ri->u.script.page,
                                 PRINT_STRING(hash_str),
                                 PRINT_STRING(params_str));
+                    if (flags & TESTER_CFG_WALK_OUTPUT_PARAMS)
+                    {
+                        fprintf(stderr, "\n"
+                                "                       "
+                                "ARGs%s\n"
+                                "                              \n",
+                                PRINT_STRING(params_str));
+                    }
                 }
             }
             else
@@ -2606,7 +2616,9 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
           gctx->act_id);
 
     /* FIXME: Optimize */
-    if ((ctx->flags & TESTER_QUIET_SKIP) &&
+    /* verb overwrites quiet */
+    if ((~ctx->flags & TESTER_VERB_SKIP) &&
+        (ctx->flags & TESTER_QUIET_SKIP) &&
         !tester_is_run_required(ctx->targets, &ctx->reqs,
                                 ri, ctx->args, ctx->flags, TRUE))
     {
@@ -2624,12 +2636,13 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     /* Test is considered here as run, if such event is logged */
     tester_term_out_start(ctx->flags, ri->type, run_item_name(ri), tin,
                           ctx->group_result.id, ctx->current_result.id);
-    log_test_start(ctx, ri, tin);
+    log_test_start(flags, ctx, ri, tin);
 
     tester_test_result_add(&gctx->results, &ctx->current_result);
 
     /* FIXME: Optimize */
-    if ((~ctx->flags & TESTER_QUIET_SKIP) &&
+    if (((ctx->flags & TESTER_VERB_SKIP) ||
+        (~ctx->flags & TESTER_QUIET_SKIP)) &&
         !tester_is_run_required(ctx->targets, &ctx->reqs,
                                 ri, ctx->args, ctx->flags, FALSE))
     {
@@ -3016,7 +3029,10 @@ tester_run(testing_scenario   *scenario,
         return TE_RC(TE_TESTER, TE_ENOENT);
     }
 
-    ctl = tester_configs_walk(cfgs, &cbs, 0, &data);
+    ctl = tester_configs_walk(cfgs, &cbs,
+                              (flags & TESTER_OUT_TEST_PARAMS) ?
+                              TESTER_CFG_WALK_OUTPUT_PARAMS : 0,
+                              &data);
     switch (ctl)
     {
         case TESTER_CFG_WALK_CONT:

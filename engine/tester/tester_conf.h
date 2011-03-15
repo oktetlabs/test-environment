@@ -621,6 +621,8 @@ typedef enum tester_cfg_walk_ctl {
 /** Force walk to enter exception handler of every session */
 #define TESTER_CFG_WALK_FORCE_EXCEPTION     2
 
+#define TESTER_CFG_WALK_OUTPUT_PARAMS     4
+
 /**
  * Functions to be called when traversing Tester configuration.
  */
