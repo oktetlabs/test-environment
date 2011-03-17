@@ -491,7 +491,7 @@ static const char * const trc_diff_stats_brief_table_head_start =
 "        <td align=center colspan=2><b>PASSED</b></td>\n"
 "        <td align=center colspan=2><b>FAILED</b></td>\n"
 "        <td align=center rowspan=2><b>TOTAL</b></td>\n"
-"        <td align=center rowspan=2><b>Tags</b>";
+"        <td align=center rowspan=2 width=200px><b>Tags</b>";
 
 static const char * const trc_diff_stats_brief_table_head_end =
 "</td>\n"
@@ -516,7 +516,7 @@ const trc_diff_stats_brief_incremental_table_head_start =
 "        <td align=center colspan=2><b>PASSED</b></td>\n"
 "        <td align=center colspan=2><b>FAILED</b></td>\n"
 "        <td align=center rowspan=2><b>TOTAL</b></td>\n"
-"        <td align=center rowspan=2><b>Tags</b>";
+"        <td align=center rowspan=2 width=200px><b>Tags</b>";
 
 static const char *
 const trc_diff_stats_brief_incremental_table_head_end =
@@ -542,16 +542,26 @@ static const char * const trc_diff_stats_brief_table_row_end =
 
 static const char * const trc_diff_stats_brief_table_end =
 "    <tr>\n"
-"      <td align=left colspan=7>[<font class=\"total\">X</font>+]"
-                                "<font class=\"matched\">Y_new</font>-"
-                                "<font class=\"unmatched\">Y_old</font>+"
-                                "<font class=\"ignored\">Z</font>+"
-                                "<font class=\"ignored\">Z_new</font>-"
-                                "<font class=\"ignored\">Z_old</font><br/>"
-"X - result match<br/>"
-"Y_new - new result does not match<br/>"
-"Y_old - old result does not match<br/> "
-"Z - result does not match (ignored)</td>"
+"      <td align=left colspan=7><b>Legend:</b>"
+"<br/><b>Expected: </b>"
+" + <font class=\"matched\">X_new_exp</font>"
+" - <font class=\"unmatched\">Y_old_exp</font>"
+" + <font class=\"ignored\">Z_new</font>"
+" - <font class=\"ignored\">Z_old</font>"
+" [ = <font class=\"total\">Total</font> ]"
+"<br/><b>Unexpected: </b>"
+" + <font class=\"unmatched\">X_new_unexp</font>"
+" - <font class=\"matched\">Y_old_unexp</font>"
+" + <font class=\"ignored\">Z_new</font>"
+" - <font class=\"ignored\">Z_old</font>"
+" [ = <font class=\"total\">Total</font> ]<br/>"
+"<font class=\"matched\">X_new_exp</font> - new expected results<br/>"
+"<font class=\"unmatched\">X_new_unexp</font> - new unexpected results<br/>"
+"<font class=\"unmatched\">Y_old_exp</font> - old expected results<br/>"
+"<font class=\"matched\">Y_old_unexp</font> - old unexpected results<br/>"
+"<font class=\"ignored\">Z_new</font> - new skipped results<br/>"
+"<font class=\"ignored\">Z_old</font> - old skipped results<br/>"
+"<font class=\"total\">Total</font> - total amount of tests run"
 "    </tr>\n"
 "  </tbody>\n"
 "</table><br/>\n";
@@ -743,9 +753,6 @@ static const char * trc_diff_graph_js_start =
 
 static const char * trc_diff_graph_js_data_push =
 "    graph_datasets[\"graph_%s\"][\"data\"].push([%d000, %d]);\n";
-
-static const char * trc_diff_graph_js_time =
-"(new Date(\"%s\")).getTime()";
 
 static const char * trc_diff_graph_js_end =
 "\n"
@@ -1002,26 +1009,6 @@ trc_diff_tags_output(FILE *f, const tqh_strings *tags)
             fprintf(f, " %s", tag->v);
         }
     }
-}
-
-/**
- * Output set of tags used for comparison to HTML report.
- *
- * @param f             File stream to write
- * @param sets          List of tags
- */
-static void
-trc_diff_tags_to_html(FILE *f, const trc_diff_sets *sets)
-{
-    const trc_diff_set *p;
-
-    TAILQ_FOREACH(p, sets, links)
-    {
-        fprintf(f, "<b>%s: </b>", p->name);
-        trc_diff_tags_output(f, &p->tags);
-        fprintf(f, "<br/>");
-    }
-    fprintf(f, "<br/>");
 }
 
 char *
@@ -1313,7 +1300,8 @@ trc_diff_graph_stats_to_html(FILE                  *f,
         if (sscanf(set->name, "%d.%d.%d", &tm.tm_year,
                    &tm.tm_mon, &tm.tm_mday) != 3)
         {
-            fprintf(stderr, "Wrong date format!\n");
+            fprintf(stderr, "Wrong date format in set names, "
+                    "graph plot will be skipped!\n");
             return;
         }
         tm.tm_year += 100;
@@ -2641,7 +2629,10 @@ trc_diff_report_to_html(trc_diff_ctx *ctx, const char *filename,
     WRITE_STR(trc_diff_html_doc_end);
 
     if (filename != NULL)
+    {
         fclose(f);
+        printf("\nDiff report is saved to %s\n", filename);
+    }
 
     return 0;
 
