@@ -43,7 +43,7 @@ extern "C" {
 #endif
 
 /** Maximum length of the logging message */
-#define LOGFORK_MAXLEN   256
+#define LOGFORK_MAXLEN   4096
 
 /** Maximum length of the Logger user name or logfork user name */
 #define LOGFORK_MAXUSER  32

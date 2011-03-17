@@ -924,6 +924,9 @@ cwmp_fparse(struct soap *soap)
     return rc;
 }
 
+/* This is really (LOGFORK_MAXLEN - prefix), but that constant is internal,
+and maynot not be used here. */
+#define LOG_MAX 4000
 
 /** Callback fsend for gSOAP, to log XML output */
 int
@@ -933,8 +936,10 @@ acse_send(struct soap *soap, const char *s, size_t n)
     size_t          log_len = n;
     char           *log_buf;
 
-    if (0)
+    if (1)
     {
+    if (log_len >= LOG_MAX) 
+        log_len = LOG_MAX-1;
     log_buf = mheap_alloc(session->def_heap, log_len + 1);
 
     if (NULL != log_buf)
@@ -943,11 +948,11 @@ acse_send(struct soap *soap, const char *s, size_t n)
         log_buf[log_len] = '\0';
 
         /* TODO: should we make loglevel customizable here? */
-        RING("Send to %s %s: \n%s", 
+        RING("Send %d bytes to %s %s: (printed %d b)\n%s", n,
             session->cpe_owner ? "CPE" : "ACS", 
             session->cpe_owner ? session->cpe_owner->name : 
                                  session->acs_owner->name, 
-            log_buf);
+            log_len, log_buf);
     }
     }
     /* call standard gSOAP fsend */
@@ -966,7 +971,8 @@ acse_recv(struct soap *soap, char *s, size_t n)
     /* call standard gSOAP frecv */
     log_len = rc = session->orig_frecv(soap, s, n);
 
-    return rc;
+    if (log_len >= LOG_MAX) 
+        log_len = LOG_MAX-1;
 
     log_buf = mheap_alloc(session->def_heap, log_len + 1);
 
@@ -976,7 +982,7 @@ acse_recv(struct soap *soap, char *s, size_t n)
         log_buf[log_len] = '\0';
 
         /* TODO: should we make loglevel customizable here? */
-        RING("Recv from %s %s: \n%s", 
+        RING("Recv %d bytes from %s %s: (printed %d bytes)\n%s", rc, 
             session->cpe_owner ? "CPE" : "ACS", 
             session->cpe_owner ? session->cpe_owner->name : 
                                  session->acs_owner->name, 
