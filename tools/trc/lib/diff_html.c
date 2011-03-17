@@ -2592,7 +2592,8 @@ trc_diff_report_to_html(trc_diff_ctx *ctx, const char *filename,
     if (ctx->db->version != NULL)
         fprintf(f, "<h2 align=center>%s</h2>\n", ctx->db->version);
 
-    trc_diff_include_header(f, header);
+    if (header != NULL)
+        trc_diff_include_header(f, header);
 
     fprintf(f, trc_diff_js_include_start);
     trc_diff_include_external_libs(f);
