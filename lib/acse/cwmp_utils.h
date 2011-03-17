@@ -397,15 +397,18 @@ extern size_t snprint_cwmpFault(char *buf, size_t len, cwmp_fault_t *fault);
  * Check that CWMP Fault contains certain Set Fault item.
  *
  * @param fault         Fault struct to be checked.
- * @param idx           Index of set fault item to be checked.
- * @param param_name    Desired name.
+ * @param idx           Index of set fault item to be checked, 
+ *                      -1 for search item by name.
+ * @param param_name    Desired name, may be NULL, if @p idx >= 0.
  * @param fault_code    Desired fault code.
+ * @param fault_string  Desired fault string, may be NULL.
  *
- * @return TRUE if fault is good.
+ * @return TRUE if fault contains specified item.
  */
-extern te_bool cwmp_check_set_fault(cwmp_fault_t *fault, unsigned idx,
+extern te_bool cwmp_check_set_fault(cwmp_fault_t *fault, int idx,
                                     const char *param_name, 
-                                    const char *fault_code);
+                                    unsigned int fault_code,
+                                    const char *fault_string);
 
 
 /**
@@ -477,7 +480,13 @@ cwmp_val_type_s2i(const char *type_name)
     {
         case 'i': return SOAP_TYPE_int;
         case 'u': return SOAP_TYPE_unsignedInt;
-        case 'b': return SOAP_TYPE_boolean;
+        case 'b': 
+            if (strncmp(type_name, "byte", 4) == 0)
+                return SOAP_TYPE_byte;
+            else if (strncmp(type_name, "base64", 6) == 0)
+                return SOAP_TYPE_SOAP_ENC__base64;
+            return SOAP_TYPE_boolean;
+
         case 's': return SOAP_TYPE_string;
         case 't': return SOAP_TYPE_time;
         default:  return SOAP_TYPE_int;

@@ -1701,7 +1701,7 @@ acse_soap_serve_response(cwmp_session_t *cwmp_sess)
             if (SOAP_TYPE__cwmp__Fault == soap->fault->detail->__type)
             {
                 _cwmp__Fault *c_fault = soap->fault->detail->fault;
-                WARN("CWMP fault %s (%s), size %d",
+                WARN("CWMP fault received %s (%s), size %d",
                     c_fault->FaultCode, c_fault->FaultString,
                     c_fault->__sizeSetParameterValuesFault);
                 request->from_cpe.fault = c_fault;

@@ -593,10 +593,15 @@ te_errno
 cwmp_val_array_log(unsigned log_level, const char *intro,
                    cwmp_values_array_t *a)
 {
-    size_t log_buf_size = VAL_LOG_MAX * (a->size + 1);
-    char *log_buf = malloc(log_buf_size);
-    char *s = log_buf;
+    size_t log_buf_size;
+    char *log_buf;
+    char *s;
     size_t p, total_p = 0, i;
+
+    assert(a != NULL);
+    log_buf_size = VAL_LOG_MAX * (a->size + 1);
+    s = log_buf = malloc(log_buf_size);
+
     if (NULL == log_buf) return TE_ENOMEM;
 
     if (NULL == intro) intro = "CWMP_UTILS, array of values";
@@ -903,19 +908,39 @@ tapi_acse_log_fault(_cwmp__Fault *f)
 
 
 te_bool
-cwmp_check_set_fault(cwmp_fault_t *f, unsigned idx,
-                     const char *param_name, const char *fault_code)
+cwmp_check_set_fault(cwmp_fault_t *f, int idx,
+                     const char *param_name,
+                     unsigned int fault_code, const char *fault_string)
 {
     assert(f != NULL);
     assert(f->SetParameterValuesFault != NULL);
     assert(param_name != NULL);
-    assert(fault_code != NULL);
+
+    if (idx < 0)
+    {
+        if (param_name == NULL)
+            return FALSE;
+        for (idx = 0; idx < f->__sizeSetParameterValuesFault; idx++)
+        {
+            if (strcmp(param_name,
+                   f->SetParameterValuesFault[idx].ParameterName) == 0)
+                break;
+        }
+    }
+    else if (idx >=  f->__sizeSetParameterValuesFault)
+        return FALSE;
+    else 
+        if (param_name != NULL && 
+            strcmp(param_name,
+                   f->SetParameterValuesFault[idx].ParameterName) != 0)
+            return FALSE;
 
     return 
-        (strcmp(f->SetParameterValuesFault[idx].ParameterName,
-                param_name) == 0) &&
-        (strcmp(f->SetParameterValuesFault[idx].FaultCode,
-                fault_code) == 0);
+        (fault_code == atoi(f->SetParameterValuesFault[idx].FaultCode)) 
+        &&
+        (fault_string == NULL ||
+         strcmp(f->SetParameterValuesFault[idx].FaultString,
+                fault_string) == 0);
 }
 
 
