@@ -764,9 +764,9 @@ static const char * const trc_test_exp_got_end =
 
 #if TRC_USE_LOG_URLS
 static const char * const trc_test_log_url =
-"<a href=\"node_%d.html\" "
+"<a href=\"%s/node_%d.html\" "
 #if TRC_USE_STATS_POPUP
-"onClick=\"showLog('%s', 'node_%d.html', event); return false;\""
+"onClick=\"showLog('%s', '%s/node_%d.html', event); return false;\""
 #endif
 ">[log]</a>";
 #endif
@@ -1532,9 +1532,13 @@ trc_report_exp_got_to_html(FILE             *f,
             {
                 test_url = te_sprintf(trc_test_log_url,
 #if TRC_USE_STATS_POPUP
+                                      ctx->html_logs_path,
                                       iter_entry->tin,
-                                      test->name, iter_entry->tin);
+                                      test->name,
+                                      ctx->html_logs_path,
+                                      iter_entry->tin);
 #else
+                                      ctx->html_logs_path,
                                       iter_entry->tin);
 #endif
             }

@@ -69,6 +69,7 @@ enum {
     TRC_OPT_HTML,
     TRC_OPT_HTML_HEADER,
     TRC_OPT_HTML_TITLE,
+    TRC_OPT_HTML_LOGS,
     TRC_OPT_KEY2HTML,
     TRC_OPT_NO_TOTAL_STATS,
     TRC_OPT_NO_PACKAGES_ONLY,
@@ -176,6 +177,10 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
         { "html", 'h', POPT_ARG_STRING, NULL, TRC_OPT_HTML,
           "Name of the file for report in HTML format.",
           "FILENAME" },
+
+        { "html-logs", '\0', POPT_ARG_STRING, NULL, TRC_OPT_HTML_LOGS,
+          "Path to test logs in HTML format.",
+          "DIRNAME" },
 
         { "html-title", '\0', POPT_ARG_STRING, NULL, TRC_OPT_HTML_TITLE,
           "Title of the HTML report.",
@@ -441,6 +446,21 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
                     goto exit;
                 }
                 free((void *)trc_html_header_fn);
+                break;
+            }
+
+            case TRC_OPT_HTML_LOGS:
+            {
+                const char *trc_html_logs_path = poptGetOptArg(optCon);
+
+                if (ctx.html_logs_path != NULL)
+                {
+                    ERROR("Directory with File with HTML header has "
+                          "already been specified");
+                    free((void *)trc_html_logs_path);
+                    goto exit;
+                }
+                ctx.html_logs_path = trc_html_logs_path;
                 break;
             }
 

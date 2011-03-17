@@ -151,6 +151,7 @@ typedef struct trc_report_ctx {
     tqh_strings         cut_paths;   /**< Testpaths to cut from main log */
     trc_report_stats    stats;  /**< Grand total statistics */
     unsigned int        db_uid; /**< TRC database user ID */
+    const char         *html_logs_path; /**< Path to HTML logs */
 } trc_report_ctx;
 
 typedef struct trc_report_key_iter_entry {
