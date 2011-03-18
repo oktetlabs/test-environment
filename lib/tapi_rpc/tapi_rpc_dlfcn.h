@@ -40,6 +40,10 @@
 extern "C" {
 #endif
 
+typedef int64_t     rpc_dlhandle;
+typedef int64_t     rpc_dlsymaddr;
+
+
 /**
  * Loads the dynamic labrary file.
  *
@@ -49,7 +53,7 @@ extern "C" {
  *
  * @return dynamic library handle on success or NULL in the case of failure
  */
-extern void *rpc_dlopen(rcf_rpc_server *rpcs, const char *filename,
+extern rpc_dlhandle rpc_dlopen(rcf_rpc_server *rpcs, const char *filename,
                         int flags);
 
 /**
@@ -72,7 +76,7 @@ extern char *rpc_dlerror(rcf_rpc_server *rpcs);
  *
  * @return address of the symbol or NULL if symbol is not found.
  */
-extern void *rpc_dlsym(rcf_rpc_server *rpcs, void *handle,
+extern rpc_dlsymaddr rpc_dlsym(rcf_rpc_server *rpcs, rpc_dlhandle handle,
                        const char *symbol);
 
 /**
@@ -84,7 +88,7 @@ extern void *rpc_dlsym(rcf_rpc_server *rpcs, void *handle,
  *
  * @return return code of function.
  */
-extern int rpc_dlsym_call(rcf_rpc_server *rpcs, void *handle,
+extern int rpc_dlsym_call(rcf_rpc_server *rpcs, rpc_dlhandle handle,
                           const char *symbol);
 
 /**
@@ -97,7 +101,7 @@ extern int rpc_dlsym_call(rcf_rpc_server *rpcs, void *handle,
  *
  * @return 0 on success, and non-zero on error.
  */
-extern int rpc_dlclose(rcf_rpc_server *rpcs, void *handle);
+extern int rpc_dlclose(rcf_rpc_server *rpcs, rpc_dlhandle handle);
 
 #ifdef __cplusplus
 } /* extern "C" */

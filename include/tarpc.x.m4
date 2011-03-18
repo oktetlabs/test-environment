@@ -81,6 +81,10 @@ typedef tarpc_ptr   tarpc_handle;
 
 typedef uint32_t    tarpc_op;
 
+/** RPC dynamic linking loader handlers */
+typedef int64_t     tarpc_dlhandle;
+typedef int64_t     tarpc_dlsymaddr;
+
 /** Ethtool command, should be u32 on any Linux */
 typedef uint32_t tarpc_ethtool_command;
 
@@ -4243,7 +4247,7 @@ struct tarpc_ta_dlopen_in {
 
 struct tarpc_ta_dlopen_out {
     struct tarpc_out_arg    common;
-    tarpc_ptr               retval; /**< Dynamic library "handle" */
+    tarpc_dlhandle          retval; /**< Dynamic library "handle" */
 };
 
 /* dlerror() */
@@ -4259,13 +4263,13 @@ struct tarpc_ta_dlerror_out {
 /* dlsym() */
 struct tarpc_ta_dlsym_in {
     struct tarpc_in_arg common;
-    tarpc_ptr           handle;     /**< Dynamic library handle */
+    tarpc_dlhandle      handle;     /**< Dynamic library handle */
     string              symbol<>;   /**< Symbol name */
 };
 
 struct tarpc_ta_dlsym_out {
     struct tarpc_out_arg    common;
-    tarpc_ptr               retval; /**< Symbol address */
+    tarpc_dlsymaddr         retval; /**< Symbol address */
 };
 
 typedef struct tarpc_ta_dlsym_in tarpc_ta_dlsym_call_in;
@@ -4274,7 +4278,7 @@ typedef struct tarpc_int_retval_out tarpc_ta_dlsym_call_out;
 /* dlclose() */
 struct tarpc_ta_dlclose_in {
     struct tarpc_in_arg common;
-    tarpc_ptr           handle;     /**< Dynamic library handle */
+    tarpc_dlhandle      handle;     /**< Dynamic library handle */
 };
 
 typedef struct tarpc_int_retval_out tarpc_ta_dlclose_out;

@@ -40,7 +40,8 @@
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_dlfcn.h"
 
-void *
+
+rpc_dlhandle
 rpc_dlopen(rcf_rpc_server *rpcs, const char *filename, int flag)
 {
     rcf_rpc_op  op;
@@ -54,11 +55,11 @@ rpc_dlopen(rcf_rpc_server *rpcs, const char *filename, int flag)
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_PTR(ta_dlopen, NULL);
+        RETVAL_INT(ta_dlopen, (rpc_dlhandle)NULL);
     }
     op = rpcs->op;
 
-    in.filename = filename;
+    in.filename = (char *)filename;
     in.flag     = flag;
 
     rcf_rpc_call(rpcs, "ta_dlopen", &in, &out);
@@ -67,7 +68,9 @@ rpc_dlopen(rcf_rpc_server *rpcs, const char *filename, int flag)
                  rpcs->ta, rpcs->name, rpcop2str(op), in.filename,
                  dlopen_flags_rpc2str(in.flag), out.retval,
                  errno_rpc2str(RPC_ERRNO(rpcs)));
-    RETVAL_RPC_PTR(ta_dlopen, out.retval);
+
+    TAPI_RPC_OUT(ta_dlopen, out.retval == (int64_t)NULL);
+    return out.retval;
 }
 
 char *
@@ -93,11 +96,11 @@ rpc_dlerror(rcf_rpc_server *rpcs)
     TAPI_RPC_LOG("RPC (%s,%s)%s: dlerror() -> %s (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-    RETVAL_RPC_PTR(ta_dlerror, out.retval);
+    RETVAL_PTR(ta_dlerror, out.retval);
 }
 
-void *
-rpc_dlsym(rcf_rpc_server *rpcs, void *handle, const char *symbol)
+rpc_dlsymaddr
+rpc_dlsym(rcf_rpc_server *rpcs, rpc_dlhandle handle, const char *symbol)
 {
     rcf_rpc_op  op;
 
@@ -110,23 +113,25 @@ rpc_dlsym(rcf_rpc_server *rpcs, void *handle, const char *symbol)
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_PTR(ta_dlsym, NULL);
+        RETVAL_INT(ta_dlsym, (rpc_dlsymaddr)NULL);
     }
     op = rpcs->op;
 
-    in.handle = handle;
-    in.symbol = symbol;
+    in.handle = (tarpc_dlhandle)handle;
+    in.symbol = (char *)symbol;
 
     rcf_rpc_call(rpcs, "ta_dlsym", &in, &out);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: dlsym(%p, %s) -> %p (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op), in.handle,
                  in.symbol, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-    RETVAL_RPC_PTR(ta_dlsym, out.retval);
+
+    TAPI_RPC_OUT(ta_dlsym, FALSE);
+    return out.retval;
 }
 
 int
-rpc_dlsym_call(rcf_rpc_server *rpcs, void *handle, const char *symbol)
+rpc_dlsym_call(rcf_rpc_server *rpcs, rpc_dlhandle handle, const char *symbol)
 {
     rcf_rpc_op  op;
 
@@ -143,19 +148,19 @@ rpc_dlsym_call(rcf_rpc_server *rpcs, void *handle, const char *symbol)
     }
     op = rpcs->op;
 
-    in.handle = handle;
-    in.symbol = symbol;
+    in.handle = (tarpc_dlhandle)handle;
+    in.symbol = (char *)symbol;
 
     rcf_rpc_call(rpcs, "ta_dlsym_call", &in, &out);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: dlsym_call(%p, %s) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op), in.handle,
                  in.symbol, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-    return out.retval;
+    RETVAL_INT(ta_dlsym_call, out.retval);
 }
 
 int
-rpc_dlclose(rcf_rpc_server *rpcs, void *handle)
+rpc_dlclose(rcf_rpc_server *rpcs, rpc_dlhandle handle)
 {
     rcf_rpc_op  op;
 
@@ -172,7 +177,7 @@ rpc_dlclose(rcf_rpc_server *rpcs, void *handle)
     }
     op = rpcs->op;
 
-    in.handle = handle;
+    in.handle = (tarpc_dlhandle)handle;
 
     rcf_rpc_call(rpcs, "ta_dlclose", &in, &out);
 

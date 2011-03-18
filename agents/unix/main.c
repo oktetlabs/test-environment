@@ -2061,11 +2061,14 @@ main(int argc, char **argv)
     sigemptyset(&sigact.sa_mask);
 
     /* FIXME: Is it used by RPC */
-    sigact.sa_handler = (void *)ta_sigint_handler;
-    if (sigaction(SIGINT, &sigact, &sigaction_int) != 0)
-    {
-        rc = te_rc_os2te(errno);
-        ERROR("Cannot set SIGINT action: %r");
+    if (getenv("TE_LEAVE_SIGINT_HANDLER") == NULL)
+    { /* some libinit tests need SIGINT handler untouched */
+        sigact.sa_handler = (void *)ta_sigint_handler;
+        if (sigaction(SIGINT, &sigact, &sigaction_int) != 0)
+        {
+            rc = te_rc_os2te(errno);
+            ERROR("Cannot set SIGINT action: %r");
+        }
     }
 
     /* FIXME: Is it used by RPC */

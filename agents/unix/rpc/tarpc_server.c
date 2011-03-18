@@ -6717,11 +6717,11 @@ TARPC_FUNC(ta_dlopen, {},
  *
  * @return dynamic library handle on success or NULL in the case of failure
  */
-void *
+tarpc_dlhandle
 ta_dlopen(tarpc_ta_dlopen_in *in)
 {
     api_func_ptr_ret_ptr    dlopen_func;
-    api_func_void           dlerror_func;
+    api_func_void_ret_ptr   dlerror_func;
 
     if ((tarpc_find_func(in->common.use_libc, "dlopen",
                          (api_func *)&dlopen_func) != 0) ||
@@ -6729,10 +6729,11 @@ ta_dlopen(tarpc_ta_dlopen_in *in)
                          (api_func *)&dlerror_func) != 0))
     {
         ERROR("Failed to resolve functions, %s", __FUNCTION__);
-        return NULL;
+        return (tarpc_dlhandle)((long)NULL);
     }
 
-    return dlopen_func(in->filename, dlopen_flags_rpc2h(in->flag));
+    return (tarpc_dlhandle)((long)dlopen_func(in->filename,
+                                        dlopen_flags_rpc2h(in->flag)));
 }
 
 /*-------------- dlsym() --------------------------*/
@@ -6751,11 +6752,11 @@ TARPC_FUNC(ta_dlsym, {},
  *
  * @return address of the symbol or NULL if symbol is not found.
  */
-void *
+tarpc_dlsymaddr
 ta_dlsym(tarpc_ta_dlsym_in *in)
 {
     api_func_ptr_ret_ptr    dlsym_func;
-    api_func_void           dlerror_func;
+    api_func_void_ret_ptr   dlerror_func;
 
     if ((tarpc_find_func(in->common.use_libc, "dlsym",
                          (api_func *)&dlsym_func) != 0) ||
@@ -6763,10 +6764,11 @@ ta_dlsym(tarpc_ta_dlsym_in *in)
                          (api_func *)&dlerror_func) != 0))
     {
         ERROR("Failed to resolve functions, %s", __FUNCTION__);
-        return NULL;
+        return (tarpc_dlsymaddr)((long)NULL);
     }
 
-    return dlsym_func((void *)in->handle, in->symbol);
+    return (tarpc_dlsymaddr)((long)dlsym_func((void *)((long)in->handle),
+                                              in->symbol));
 }
 
 /*-------------- dlsym_call() --------------------------*/
@@ -6789,7 +6791,7 @@ int
 ta_dlsym_call(tarpc_ta_dlsym_call_in *in)
 {
     api_func_ptr_ret_ptr    dlsym_func;
-    api_func_void           dlerror_func;
+    api_func_void_ret_ptr   dlerror_func;
     char                   *error;
 
     int (*func)(void);
@@ -6805,8 +6807,8 @@ ta_dlsym_call(tarpc_ta_dlsym_call_in *in)
 
     dlerror_func();
 
-    *(void **) (&func) = dlsym_func(in->handle, in->symbol);
-    if ((error = dlerror_func()) != NULL)
+    *(void **) (&func) = dlsym_func((void *)((long)in->handle), in->symbol);
+    if ((error = (char *)dlerror_func()) != NULL)
     {
         ERROR("%s: dlopen failed, %s", __FUNCTION__, error);
         return -1;
@@ -6818,7 +6820,7 @@ ta_dlsym_call(tarpc_ta_dlsym_call_in *in)
 /*-------------- dlerror() --------------------------*/
 TARPC_FUNC(ta_dlerror, {},
 {
-    MAKE_CALL(out->retval = func_ptr(in));
+    MAKE_CALL(out->retval = func_ptr_ret_ptr(in));
 }
 )
 
@@ -6831,7 +6833,7 @@ TARPC_FUNC(ta_dlerror, {},
 char *
 ta_dlerror(tarpc_ta_dlerror_in *in)
 {
-    api_func_void           dlerror_func;
+    api_func_void_ret_ptr   dlerror_func;
 
     if (tarpc_find_func(in->common.use_libc, "dlerror",
                         (api_func *)&dlerror_func) != 0)
@@ -6840,7 +6842,7 @@ ta_dlerror(tarpc_ta_dlerror_in *in)
         return NULL;
     }
 
-    return dlerror_func();
+    return (char *)dlerror_func();
 }
 
 /*-------------- dlclose() --------------------------*/
@@ -6864,23 +6866,24 @@ ta_dlclose(tarpc_ta_dlclose_in *in)
 {
     api_func_ptr    dlclose_func;
 
-    if (tarpc_find_func(in->common.use_libc, "dlclose", &dlclose_func) != 0)
+    if (tarpc_find_func(in->common.use_libc, "dlclose",
+                        (api_func *)&dlclose_func) != 0)
     {
         ERROR("Failed to resolve functions, %s", __FUNCTION__);
         return -1;
     }
 
-    return dlclose_func(in->handle);
+    return dlclose_func((void *)in->handle);
 }
 
 
 #ifdef NO_DL
-void *
+taprc_dlhandle
 dlopen(const char *filename, int flag)
 {
     UNUSED(filename);
     UNUSED(flag);
-    return NULL;
+    return (tarpc_dlhandle)NULL;
 }
 
 const char *
@@ -6889,13 +6892,13 @@ dlerror(void)
     return "Unsupported";
 }
 
-void *
+tarpc_dlsymaddr
 dlsym(void *handle, const char *symbol)
 {
     UNUSED(handle);
     UNUSED(symbol);
 
-    return NULL;
+    return (tarpc_dlsymaddr)NULL;
 }
 
 int
