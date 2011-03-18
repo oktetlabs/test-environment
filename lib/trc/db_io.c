@@ -41,6 +41,8 @@
 
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
+#include <libxml/tree.h>
+#include <libxml/xinclude.h>
 
 #include "logger_api.h"
 #include "te_alloc.h"
@@ -69,6 +71,46 @@ static te_bool          exp_defaults_inited = FALSE;
 static te_errno get_tests(xmlNodePtr *node, trc_tests *tests,
                           trc_test_iter *parent);
 
+
+/* insert markers to show where files were included */
+static te_errno
+trc_include_markers_add(xmlNodePtr parent)
+{
+    te_errno    rc = 0;
+    xmlNodePtr  node;
+    xmlNodePtr  marker;
+
+    if (parent == NULL)
+        return 0;
+
+    for (node = parent->children; node != NULL; node = node->next)
+    {
+        if (node->type == XML_XINCLUDE_START)
+        {
+            marker = xmlNewNode(NULL, "xinclude_start");
+
+            if (xmlAddNextSibling(node, marker) == NULL)
+            {
+                ERROR("Failed to add marker after include");
+                return TE_RC(TE_TRC, TE_EFAULT);
+            }
+        }
+        else if (node->type == XML_XINCLUDE_END)
+        {
+            marker = xmlNewNode(NULL, "xinclude_end");
+
+            if (xmlAddPrevSibling(node, marker) == NULL)
+            {
+                ERROR("Failed to add marker after include");
+                return TE_RC(TE_TRC, TE_EFAULT);
+            }
+        }
+        if ((rc = trc_include_markers_add(node)) != 0)
+            return rc;
+    }
+
+    return 0;
+}
 
 /**
  * Free resourses allocated for widely used expected results.
@@ -930,6 +972,7 @@ trc_db_open(const char *location, te_trc_db **db)
         return TE_RC(TE_TRC, TE_EFMT);
     }
 
+    //xmlDocFormatDump(stdout, (*db)->xml_doc, 1);
     subst = xmlXIncludeProcess((*db)->xml_doc);
     if (subst < 0)
     {
@@ -1130,11 +1173,20 @@ trc_db_save(te_trc_db *db, const char *filename)
         xmlDocSetRootElement(db->xml_doc, node);
         db->tests.node = node;
     }
+
     if ((rc = trc_update_tests(&db->tests)) != 0)
     {
         ERROR("Failed to update DB XML document");
         return rc;
     }
+
+    rc = trc_include_markers_add(xmlDocGetRootElement(db->xml_doc));
+    if (rc != 0)
+    {
+        ERROR("Failed to add XInclude markers to XML document");
+        return rc;
+    }
+
     if (xmlSaveFormatFileEnc(fn, db->xml_doc, "UTF-8", 1) == -1)
     {
         ERROR("xmlSaveFormatFileEnc(%s) failed", fn);
