@@ -34,6 +34,7 @@
 
 #include <ctype.h>
 #include <search.h>
+#include <openssl/md5.h>
 
 #include "te_errno.h"
 #include "te_alloc.h"
@@ -107,6 +108,131 @@ trc_db_new_walker(te_trc_db *trc_db)
     INFO("A new TRC DB walker allocated - 0x%p", walker);
 
     return walker;
+}
+
+/**
+ * Normalise parameter value. Remove trailing spaces and newlines.
+ *
+ * @param param   Parameter value to normalise
+ *
+ * @return Allocated string or NULL.
+ */
+static char *
+trc_db_test_params_normalise(char *param)
+{
+    char *p;
+    char *q;
+    char *str = NULL;
+    te_bool skip_spaces = TRUE;
+
+    if (param == NULL)
+        return NULL;
+
+    str = (char *)calloc(1, strlen(param) + 1);
+    if (str == NULL)
+        return NULL;
+
+    for (p = param, q = str; *p != '\0'; p++)
+    {
+        if (isspace(*p))
+        {
+            if (!skip_spaces)
+            {
+                *q++ = ' ';
+                skip_spaces = TRUE;
+            }
+        }
+        else
+        {
+            *q++ = *p;
+            skip_spaces = FALSE;
+        }
+    }
+
+    /* remove trainling space at the end, if any */
+    if ((q > str) && (skip_spaces))
+        q--;
+
+    *q = '\0';
+
+    return str;
+}
+
+/**
+ * Calculate hash (MD5 checksum) for set of test arguments.
+ *
+ * @param args   Array of test parameters
+ * @param n_args Number of of test parameters
+ *
+ * @return Allocated string or NULL.
+ */
+static char *
+trc_db_test_params_hash(unsigned int n_args, trc_report_argument *args)
+{
+    MD5_CTX md5;
+
+    int   i;
+    int   j;
+    int   k;
+    unsigned char digest[MD5_DIGEST_LENGTH];
+    char *hash_str = calloc(1, MD5_DIGEST_LENGTH * 2 + 1);
+    int  *sorted = calloc(n_args, sizeof(int));
+    char  buf[8192] = {0, };
+    int   len = 0;
+
+    if (sorted == NULL)
+        return NULL;
+    for (k = 0; k < n_args; k++)
+        sorted[k] = k;
+
+    MD5_Init(&md5);
+
+    /* Sort arguments first */
+    for (i = 0; i < n_args - 1; i++)
+    {
+        for (j = i + 1; j < n_args; j++)
+        {
+            if (strcmp(args[sorted[i]].name, args[sorted[j]].name) > 0)
+            {
+                k = sorted[i];
+                sorted[i] = sorted[j];
+                sorted[j] = k;
+            }
+        }
+    }
+
+    for (i = 0; i < n_args; i++)
+    {
+        char *name = args[sorted[i]].name;
+        char *value = trc_db_test_params_normalise(args[sorted[i]].value);
+
+        if (value == NULL)
+            return NULL;
+
+        VERB("%s %s", name, value);
+        len += snprintf(buf + len, sizeof(buf) - len - 1,
+                        "%s%s %s", (i != 0) ? " " : "", name, value);
+
+        if (i != 0)
+            MD5_Update(&md5, " ", (unsigned long) 1);
+        MD5_Update(&md5, name, (unsigned long) strlen(name));
+        MD5_Update(&md5, " ", (unsigned long) 1);
+        MD5_Update(&md5, value, (unsigned long) strlen(value));
+
+        free(value);
+    }
+
+    MD5_Final(digest, &md5);
+
+    for (i = 0; i < MD5_DIGEST_LENGTH; i++)
+    {
+        sprintf(hash_str + strlen(hash_str), "%02hhx", digest[i]);
+    }
+
+    VERB("\nHash: %s\n", hash_str);
+    VERB("%s->%s", buf, hash_str);
+
+    return hash_str;
 }
 
 /* See the description in te_trc.h */
@@ -392,10 +518,10 @@ trc_report_argument_compare (const void *arg1, const void *arg2)
 
 /* See the description in te_trc.h */
 te_bool
-trc_db_walker_step_iter(te_trc_db_walker  *walker,
-                        unsigned int       n_args,
+trc_db_walker_step_iter(te_trc_db_walker    *walker,
+                        unsigned int         n_args,
                         trc_report_argument *args,
-                        te_bool            force)
+                        te_bool              force)
 {
     assert(!walker->is_iter);
 
@@ -447,11 +573,15 @@ trc_db_walker_step_iter(te_trc_db_walker  *walker,
         }
         else if (found > 1)
         {
-            ERROR("TEST='%s || %s'\nDuplicated iteration in the database! "
+            char *hash = trc_db_test_params_hash(n_args, args);
+            ERROR("TEST='%s || %s'\n"
+                  "Hash: %s\n"
+                  "Duplicated iteration in the database! "
                   "May be caused by wrong wildcards. "
                   "Will match the last entry for compatibility, but FIX "
                   "THE DATABASE!!!",
-                  walker->test->name, walker->test->path);
+                  walker->test->name, walker->test->path, hash);
+            free(hash);
         }
         else
         {
@@ -641,3 +771,4 @@ trc_db_walker_get_exp_result(const te_trc_db_walker *walker,
 
     return result;
 }
+
