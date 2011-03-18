@@ -1001,7 +1001,7 @@ te_fstat(te_bool use_libc, int fd, rpc_stat *rpcbuf)
     FSTAT_COPY(rpcbuf, buf);
 
 #else
-#error "fstat family is not currently supported for non-linux unixes.
+#error "fstat family is not currently supported for non-linux unixes."
 #endif
     return 0;
 }
@@ -1028,7 +1028,7 @@ te_fstat64(te_bool use_libc, int fd, rpc_stat *rpcbuf)
 
     FSTAT_COPY(rpcbuf, buf);
 #else
-#error "fstat family is not currently supported for non-linux unixes.
+#error "fstat family is not currently supported for non-linux unixes."
 #endif
     return 0;
 }
