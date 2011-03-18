@@ -948,7 +948,7 @@ acse_send(struct soap *soap, const char *s, size_t n)
         log_buf[log_len] = '\0';
 
         /* TODO: should we make loglevel customizable here? */
-        RING("Send %d bytes to %s %s: (printed %d b)\n%s", n,
+        RING("Send %u bytes to %s %s: (printed %u bytes)\n%s", n,
             session->cpe_owner ? "CPE" : "ACS", 
             session->cpe_owner ? session->cpe_owner->name : 
                                  session->acs_owner->name, 
@@ -982,11 +982,11 @@ acse_recv(struct soap *soap, char *s, size_t n)
         log_buf[log_len] = '\0';
 
         /* TODO: should we make loglevel customizable here? */
-        RING("Recv %d bytes from %s %s: (printed %d bytes)\n%s", rc, 
+        RING("Recv %u bytes from %s %s: (printed %u bytes)\n%s", rc, 
             session->cpe_owner ? "CPE" : "ACS", 
             session->cpe_owner ? session->cpe_owner->name : 
                                  session->acs_owner->name, 
-            log_buf);
+            log_len, log_buf);
     }
     return rc;
 }
