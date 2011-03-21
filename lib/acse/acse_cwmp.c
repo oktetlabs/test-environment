@@ -1483,6 +1483,11 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
     INFO("%s(): Try send RPC for '%s', rpc type %d, id %u ",
          __FUNCTION__, cpe->name, request->rpc_cpe, request->request_id);
 
+    if (cpe->chunk_mode)
+        soap_set_omode(soap, SOAP_IO_CHUNK);
+    else
+        soap_clr_omode(soap, SOAP_IO_CHUNK);
+
     cwmp_prepare_soap_header(soap, cpe);
     acse_soap_default_req(soap, request);
 

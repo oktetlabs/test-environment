@@ -165,9 +165,11 @@ typedef struct cpe_t{
                                      Set to FALSE during active 
                                      CWMP session leads to stop it.*/
     te_bool          sync_mode; /**< Sync mode: if TRUE, 
-                                    while processing CWMP session, 
-                                    wait for EPC messages with next
-                                    CPE RPC if queue is empty. */
+                                     while processing CWMP session, 
+                                     wait for EPC messages with next
+                                     CPE RPC if queue is empty. */
+    te_bool          chunk_mode;/**< HTTP chunk mode, transparently 
+                                     passed to the gSOAP option.*/
     te_bool          hold_requests; /**< Whether to put "hold requests"
                                          in SOAP msg                   */
 

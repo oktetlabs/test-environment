@@ -220,6 +220,23 @@ cpe_sync_mode(cpe_t *cpe, acse_epc_config_data_t *params)
     return 0;
 }
 
+/**
+ * Access to 'chunk_mode' flag for CPE CWMP session.
+ *
+ * @param cpe           CPE record
+ * @param params        EPC parameters struct
+ *
+ * @return              Status code
+ */
+static te_errno
+cpe_chunk_mode(cpe_t *cpe, acse_epc_config_data_t *params)
+{
+    if (params->op.fun == EPC_CFG_OBTAIN)
+        sprintf(params->value, "%i", cpe->chunk_mode);
+    else 
+        cpe->chunk_mode = atoi(params->value);
+    return 0;
+}
 
 /**
  * Access to the 'enabled' flag.
@@ -771,6 +788,7 @@ struct config_cpe_item_t {
     {"serial_number", device_id_serial_number},
     {"cwmp_state", cpe_cwmp_state},
     {"sync_mode", cpe_sync_mode},
+    {"chunk_mode", cpe_chunk_mode},
     {"enabled", cpe_enabled},
     {"hold_requests", cpe_hold_requests},
     {"cr_state", cpe_cr_state},
