@@ -3453,6 +3453,14 @@ TARPC_FUNC(epoll_create, {},
 }
 )
 
+/*-------------- epoll_create1() ------------------------*/
+
+TARPC_FUNC(epoll_create1, {},
+{
+    MAKE_CALL(out->retval = func(epoll_flags_rpc2h(in->flags)));
+}
+)
+
 /*-------------- epoll_ctl() --------------------------------*/
 
 TARPC_FUNC(epoll_ctl, {},

@@ -1246,6 +1246,37 @@ rpc_epoll_create(rcf_rpc_server *rpcs, int size)
 }
 
 int
+rpc_epoll_create1(rcf_rpc_server *rpcs, int flags)
+{
+    rcf_rpc_op             op;
+    tarpc_epoll_create1_in  in;
+    tarpc_epoll_create1_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(epoll_create1, -1);
+    }
+
+    op = rpcs->op;
+
+    in.flags = flags;
+
+    rcf_rpc_call(rpcs, "epoll_create1", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(epoll_create1, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: epoll_create1(%d) -> %d (%s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 flags, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(epoll_create1, out.retval);
+}
+
+int
 rpc_epoll_ctl(rcf_rpc_server *rpcs, int epfd, int oper, int fd,
               struct rpc_epoll_event *event)
 {

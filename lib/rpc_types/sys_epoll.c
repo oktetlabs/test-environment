@@ -47,8 +47,18 @@
 /** Invalid epoll evend */
 #define EPOLL_UNKNOWN 0xFFFFFFFF
 
+#define EPOLL_FLAG_UNKNOWN 0xFFFFFFFF
+
 #ifndef EPOLLONESHOT
 #define EPOLLONESHOT  0
+#endif
+
+#ifndef EPOLL_CLOEXEC
+#define EPOLL_CLOEXEC  0
+#endif
+
+#ifndef EPOLL_NONBLOCK
+#define EPOLL_NONBLOCK  0
 #endif
 
 /** All known poll events */
@@ -58,12 +68,15 @@
                           EPOLLMSG | EPOLLERR | EPOLLHUP | \
                           EPOLLONESHOT | EPOLLET)
 
+/** All known epoll flags */
+#define EPOLL_FLAGS_ALL     ( EPOLL_CLOEXEC | EPOLL_NONBLOCK )
+
 uint32_t
 epoll_event_rpc2h(uint32_t events)
 {
     if ((events & ~RPC_EPOLL_ALL) != 0)
         return EPOLL_UNKNOWN;
-        
+
     return (!!(events & RPC_EPOLLIN) * EPOLLIN) |
            (!!(events & RPC_EPOLLPRI) * EPOLLPRI) |
            (!!(events & RPC_EPOLLOUT) * EPOLLOUT) |
@@ -76,6 +89,16 @@ epoll_event_rpc2h(uint32_t events)
            (!!(events & RPC_EPOLLHUP) * EPOLLHUP) |
            (!!(events & RPC_EPOLLONESHOT) * EPOLLONESHOT) |
            (!!(events & RPC_EPOLLET) * EPOLLET);
+}
+
+uint32_t
+epoll_flags_rpc2h(uint32_t flags)
+{
+    if ((flags & ~RPC_EPOLL_FLAGS_ALL) != 0)
+        return EPOLL_FLAG_UNKNOWN;
+
+    return (!!(flags & RPC_EPOLL_CLOEXEC) * EPOLL_CLOEXEC) |
+           (!!(flags & RPC_EPOLL_NONBLOCK) * EPOLL_NONBLOCK);
 }
 
 uint32_t
@@ -94,5 +117,14 @@ epoll_event_h2rpc(uint32_t events)
            | (!!(events & EPOLLHUP) * RPC_EPOLLHUP)
            | (!!(events & EPOLLONESHOT) * RPC_EPOLLONESHOT)
            | (!!(events & EPOLLET) * RPC_EPOLLET)
+           ;
+}
+
+uint32_t
+epoll_flags_h2rpc(uint32_t flags)
+{
+    return (!!(flags & ~EPOLL_FLAGS_ALL) * RPC_EPOLL_FLAG_UNKNOWN)
+           | (!!(flags & EPOLL_CLOEXEC) * RPC_EPOLL_CLOEXEC)
+           | (!!(flags & EPOLL_NONBLOCK) * RPC_EPOLL_NONBLOCK)
            ;
 }

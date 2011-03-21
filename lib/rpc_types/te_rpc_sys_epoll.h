@@ -44,6 +44,12 @@ extern "C" {
 #define RPC_EPOLL_CTL_DEL 2
 #define RPC_EPOLL_CTL_MOD 3
 
+typedef enum rpc_epoll_flags {
+    RPC_EPOLL_CLOEXEC      = 0x1,
+    RPC_EPOLL_NONBLOCK     = 0x2,
+    RPC_EPOLL_FLAG_UNKNOWN = 0x4
+} rpc_epoll_flags;
+
 typedef enum rpc_epoll_evt {
     RPC_EPOLLIN      = 0x001,
     RPC_EPOLLPRI     = 0x002,
@@ -73,6 +79,9 @@ typedef enum rpc_epoll_evt {
                               RPC_EPOLLERR | RPC_EPOLLHUP | \
                               EPOLLONESHOT | RPC_EPOLLET)
 
+/** All known epoll flags */
+#define RPC_EPOLL_FLAGS_ALL (RPC_EPOLL_CLOEXEC | RPC_EPOLL_NONBLOCK)
+
 /** List of mapping numerical value to string for 'rpc_poll_event' */
 #define EPOLL_EVENT_MAPPING_LIST \
             RPC_BIT_MAP_ENTRY(EPOLLIN), \
@@ -89,11 +98,17 @@ typedef enum rpc_epoll_evt {
             RPC_BIT_MAP_ENTRY(EPOLLET), \
             RPC_BIT_MAP_ENTRY(EPOLL_UNKNOWN)
 
+#define EPOLL_FLAG_MAPPING_LIST \
+            RPC_BIT_MAP_ENTRY(EPOLL_CLOEXEC), \
+            RPC_BIT_MAP_ENTRY(EPOLL_NONBLOCK), \
+            RPC_BIT_MAP_ENTRY(EPOLL_FLAG_UNKNOWN)
+
 /**
  * epoll_event_rpc2str()
  */
 RPCBITMAP2STR(epoll_event, EPOLL_EVENT_MAPPING_LIST)
 
+RPCBITMAP2STR(epoll_flags, EPOLL_FLAG_MAPPING_LIST)
 
 static inline char *
 rpc_epoll_ctl_op2str(int op)
@@ -109,6 +124,10 @@ rpc_epoll_ctl_op2str(int op)
 extern unsigned int epoll_event_rpc2h(unsigned int events);
 
 extern unsigned int epoll_event_h2rpc(unsigned int events);
+
+extern unsigned int epoll_flags_rpc2h(unsigned int flags);
+
+extern unsigned int epoll_flags_h2rpc(unsigned int flags);
 
 #ifdef __cplusplus
 } /* extern "C" */

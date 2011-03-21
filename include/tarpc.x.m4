@@ -2209,6 +2209,17 @@ struct tarpc_epoll_create_in {
 
 typedef struct tarpc_int_retval_out tarpc_epoll_create_out;
 
+
+/* epoll_create1() */
+
+struct tarpc_epoll_create1_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int           flags;
+};
+
+typedef struct tarpc_int_retval_out tarpc_epoll_create1_out;
+
 /* epoll_ctl() */
 
 /* For epoll_data union */
@@ -4375,6 +4386,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(ppoll)
 
         RPC_DEF(epoll_create)
+        RPC_DEF(epoll_create1)
         RPC_DEF(epoll_ctl)
         RPC_DEF(epoll_wait)
         RPC_DEF(epoll_pwait)
