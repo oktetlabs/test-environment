@@ -192,7 +192,14 @@ for my $b (@bugs)
     printf("<tr style=\"color:%s\">\n", colorify($b->{'priority'}, $b->{'status'}));
     if ($b->{'id'} ne 'unspecified')
     {
-        printf("  <td><a name=\"bug_ol_%s\" href=%s>%s</a></td>\n", $b->{'id'}, $b->{'url'}, $b->{'bug-id'});
+        if ($b->{'url'})
+        {
+            printf("  <td><a name=\"bug_ol_%s\" href=%s>%s</a></td>\n", $b->{'id'}, $b->{'url'}, $b->{'bug-id'});
+        }
+        else
+        {
+            printf("  <td><a name=\"bug_ol_%s\">%s</a></td>\n", $b->{'id'}, $b->{'bug-id'});
+        }
     }
     else
     {
@@ -206,7 +213,7 @@ for my $b (@bugs)
             $b->{'assigned-mail'} . "\">" . $b->{'assigned-to'} . "</a>" : "");
     printf("  <td>%s</td>\n", $b->{'summary'});
     printf("  <td>%s%s%s</td>\n", $b->{'project'},
-          ($b->{'components'}) ? ": " : "", $b->{'components'});
+           ($b->{'components'}) ? ": " : "", $b->{'components'});
     printf("  <td>%s</td>\n", $b->{'tags'});
     printf("</tr>\n");
 }
