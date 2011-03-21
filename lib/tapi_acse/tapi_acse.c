@@ -108,6 +108,7 @@ acse_is_int_var(const char *name)
          (0 == strcmp(name, "enabled"))  ||
          (0 == strcmp(name, "cr_state")) ||
          (0 == strcmp(name, "sync_mode")) ||
+         (0 == strcmp(name, "chunk_mode")) ||
          (0 == strcmp(name, "hold_requests")) ||
          (0 == strcmp(name, "cwmp_state"))  );
 }
@@ -850,6 +851,11 @@ tapi_acse_get_parameter_values_resp(tapi_acse_context_t *ctx,
     {
         *resp = cwmp_copy_par_value_list(
             from_cpe_loc.get_parameter_values_r->ParameterList);
+        if (NULL == *resp)
+        {
+            ERROR("process GetParameterValuesResponse, NULL param list!");
+            return TE_RC(TE_TAPI, TE_EFAIL);
+        }
         cwmp_val_array_log(TE_LL_RING,
                            "Got GetParameterValuesResponse", *resp);
     }
