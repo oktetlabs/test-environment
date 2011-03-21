@@ -627,8 +627,12 @@ RCF_PCH_CFG_NODE_RO(node_session_state, "cwmp_state",
                     NULL, &node_session_enabled,
                     &cfg_call_get);
 
-RCF_PCH_CFG_NODE_RW(node_sync_mode, "sync_mode",
+RCF_PCH_CFG_NODE_RW(node_chunk_mode, "chunk_mode",
                     NULL, &node_session_state,
+                    &cfg_call_get, &cfg_call_set);
+
+RCF_PCH_CFG_NODE_RW(node_sync_mode, "sync_mode",
+                    NULL, &node_chunk_mode,
                     &cfg_call_get, &cfg_call_set);
 
 RCF_PCH_CFG_NODE_RO(node_device_id_serial_number, "serial_number",
