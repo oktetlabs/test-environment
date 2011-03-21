@@ -25,11 +25,11 @@ struct cpe_id_s {
 };
 
 /**
- * Initiate network configuration around CPE and its internal mirror. 
- * Should be called at the start of TestSuite, before all other utils 
- * from this library. 
+ * Initiate network configuration around CPE and its internal mirror.
+ * Should be called at the start of TestSuite, before all other utils
+ * from this library.
  */
-extern te_errno cpe_network_cfg_init(int argc, const char *argv[]);
+extern te_errno cpe_network_cfg_init(int argc, char **argv);
 
 /**
  * Init CPE ID.
