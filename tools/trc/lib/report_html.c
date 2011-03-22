@@ -1821,6 +1821,9 @@ trc_report_test_stats_to_html(FILE             *f,
         te_bool     name_link;
         const char *keys = NULL;
 
+        if (TRC_STATS_RUN(stats) == 0)
+            return 0;
+
         /* test_iters_check_output_and_get_keys(test, flags); */
 
         name_link = ((flags & TRC_REPORT_NO_SCRIPTS) ||
