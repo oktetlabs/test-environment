@@ -34,6 +34,7 @@
 #define __TE_TAPI_RPC_INTERNAL_H__
 
 /** Logger user */
+#undef  TE_LGR_USER
 #define TE_LGR_USER     "TAPI RPC"
 
 #include "te_defs.h"
