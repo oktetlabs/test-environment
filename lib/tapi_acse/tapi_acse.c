@@ -421,12 +421,53 @@ tapi_acse_clear_cpe(tapi_acse_context_t *ctx)
 }
 
 
+/**
+ * Internal wrapper for waiting perfect state.
+ */
+te_errno
+tapi_acse_wait_acse_state(tapi_acse_context_t *ctx,
+                          const char *state_var,
+                          int want_state)
+{
+    te_errno rc;
+    int      cur_state = 0;
+    int      timeout = ctx->timeout;
+
+    int prev_usleep = 0;
+    int now_usleep = 10000; /* microseconds; = 0.01 sec */
+
+    do {
+        rc = tapi_acse_manage_cpe(ctx, ACSE_OP_OBTAIN,
+                  state_var, &cur_state, VA_END_LIST);
+        RING("get %s on %s/%s: rc %r, res %d, now_usl %d", state_var, 
+             ctx->acs_name, ctx->cpe_name, rc, cur_state, now_usleep);
+        if (rc != 0)
+            return rc;
+        if (now_usleep < 1000000)
+        {
+            usleep(now_usleep);
+            now_usleep += prev_usleep;
+            prev_usleep = now_usleep - prev_usleep;
+            continue;
+        }
+    } while ((timeout < 0 || (timeout--) > 0) &&
+             (want_state != cur_state) &&
+             (sleep(1) == 0));
+
+    if (0 == timeout && want_state != cur_state)
+        return TE_ETIMEDOUT;
+
+    return 0;
+}
 
 /* see description in tapi_acse.h */
 te_errno
 tapi_acse_wait_cwmp_state(tapi_acse_context_t *ctx,
                           cwmp_sess_state_t want_state)
 {
+#if 1
+    return tapi_acse_wait_acse_state(ctx, "cwmp_state", want_state);
+#else
     cwmp_sess_state_t   cur_state = 0;
     te_errno            rc;
     int                 timeout = ctx->timeout;
@@ -445,6 +486,7 @@ tapi_acse_wait_cwmp_state(tapi_acse_context_t *ctx,
         return TE_ETIMEDOUT;
 
     return 0;
+#endif
 }
 
 
@@ -454,6 +496,9 @@ te_errno
 tapi_acse_wait_cr_state(tapi_acse_context_t *ctx,
                         acse_cr_state_t want_state)
 {
+#if 1
+    return tapi_acse_wait_acse_state(ctx, "cr_state", want_state);
+#else
     acse_cr_state_t     cur_state = 0;
     te_errno            rc;
     int                 timeout = ctx->timeout;
@@ -477,6 +522,7 @@ tapi_acse_wait_cr_state(tapi_acse_context_t *ctx,
         return TE_ETIMEDOUT;
 
     return 0;
+#endif
 }
 
 
