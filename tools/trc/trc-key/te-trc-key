@@ -48,7 +48,6 @@ my %tests_mapping = ();
 # Iterate through the list of Bug IDs
 for my $bug_line (<STDIN>)
 {
-
     if ($bug_line =~ m/unspecified:/i)
     {
         my %bug_unspec = ();
@@ -74,6 +73,11 @@ for my $script ( keys %scripts )
     my $cmd = $script . $scripts{$script};
 
     my $xml_doc = `$cmd`;
+    if ($? == -1)
+    {
+        printf("Failed to execute CMD: $cmd\n");
+        exit -1;
+    }
 
     my $tree = $parser->parse($xml_doc);
     for (@$tree) { $_->doReport(); }
