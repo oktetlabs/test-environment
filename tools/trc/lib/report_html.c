@@ -848,6 +848,22 @@ static const char * const trc_report_javascript_table_subtests =
 
 typedef TAILQ_HEAD(, trc_report_key_entry) trc_keys;
 
+typedef enum {
+    TRC_REPORT_KEYS_TYPE_FAILURES,
+    TRC_REPORT_KEYS_TYPE_SANITY,
+    TRC_REPORT_KEYS_TYPE_EXPECTED,
+    TRC_REPORT_KEYS_TYPE_UNEXPECTED,
+    TRC_REPORT_KEYS_TYPE_MAX,
+    TRC_REPORT_KEYS_TYPE_NONE,
+};
+
+static char *trc_report_keys_table_heading[] = {
+    "Bugs that lead to known test failures.",
+    "Bugs (prehaps fixed) that do not lead to expected test failures.",
+    "Bugs specified for expected test behaviour.",
+    "Bugs that do not lead to expected test behaviour.",
+};
+
 static int file_to_file(FILE *dst, FILE *src);
 
 static te_bool
@@ -999,10 +1015,15 @@ trc_report_key_test_path(const char *test_path,
     return path;
 }
 
-void
-trc_keys_init(trc_keys *keys)
+trc_keys *
+trc_keys_alloc()
 {
-    TAILQ_INIT(keys);
+    trc_keys *keys = calloc(1, sizeof(trc_keys));
+
+    if (keys != NULL)
+        TAILQ_INIT(keys);
+
+    return keys;
 }
 
 void
@@ -1101,39 +1122,44 @@ trc_keys_iter_add(trc_keys *keys,
             if ((test->type == TRC_TEST_SCRIPT) &&
                 (iter_data->exp_result != NULL))
             {
+                te_bool key_add = FALSE;
+                te_bool is_exp = (iter_entry->is_exp);
+                te_bool has_key =
+                    (iter_data->exp_result->key != NULL);
+                te_bool has_verdict =
+                    (TAILQ_FIRST(&iter_entry->result.verdicts) != NULL);
+
                 char *key_test_path =
                     trc_report_key_test_path(test_path,
                         iter_data->exp_result->key);
 
-                if (~flags & TRC_REPORT_KEYS_SANITY)
+                if ((flags & TRC_REPORT_KEYS_SANITY) != 0)
                 {
-                    if ((iter_entry->result.status == TE_TEST_FAILED) ||
-                         ((iter_entry->result.status == TE_TEST_PASSED) &&
-                          (TAILQ_FIRST(&iter_entry->result.verdicts) !=
-                          NULL)))
-                    {
-                        /*
-                         * Iterations does not have unique names and
-                         * paths yet, use test name and path instead of
-                         */
-                        trc_report_keys_add(keys,
-                                            iter_data->exp_result->key,
-                                            iter_entry, test->name,
-                                            key_test_path);
-                    }
+                    key_add = has_key && ((!is_exp) || has_verdict);
+                }
+                else if ((flags & TRC_REPORT_KEYS_EXPECTED) != 0)
+                {
+                    key_add = is_exp && (has_key || has_verdict);
+                }
+                else if ((flags & TRC_REPORT_KEYS_UNEXPECTED) != 0)
+                {
+                    key_add = (!is_exp) && (has_key || has_verdict);
                 }
                 else
                 {
-                    if ((iter_data->exp_result->key != NULL) &&
-                        ((!iter_entry->is_exp) ||
-                         (TAILQ_FIRST(&iter_entry->result.verdicts) ==
-                          NULL)))
-                    {
-                        trc_report_keys_add(keys,
-                                            iter_data->exp_result->key,
-                                            iter_entry, test->name,
-                                            key_test_path);
-                    }
+                    key_add =
+                        (iter_entry->result.status == TE_TEST_FAILED) ||
+                        ((iter_entry->result.status == TE_TEST_PASSED) &&
+                         (TAILQ_FIRST(&iter_entry->result.verdicts) !=
+                          NULL));
+                }
+
+                if (key_add)
+                {
+                    trc_report_keys_add(keys,
+                                        iter_data->exp_result->key,
+                                        iter_entry, test->name,
+                                        key_test_path);
                 }
 
                 free(key_test_path);
@@ -1290,7 +1316,7 @@ trc_report_keys_to_html(FILE           *f,
         free(keyw);
     }
 
-    VERB("Run: %s", cmd_buf);
+    RING("Run: %s", cmd_buf);
     if ((pid = te_shell_cmd_inline(cmd_buf, -1,
                                    &fd_in, &fd_out, NULL)) < 0)
     {
@@ -1299,6 +1325,19 @@ trc_report_keys_to_html(FILE           *f,
 
     f_in = fdopen(fd_in, "w");
     f_out = fdopen(fd_out, "r");
+    if ((f_in == NULL) || (f_out == NULL))
+    {
+        ERROR("Failed to fdopen in/out pipes for te-trc-key tool");
+        close(fd_in);
+        close(fd_out);
+        return te_rc_os2te(errno);
+    }
+
+#define FWRITE_FMT(args...) \
+    do {                        \
+        fprintf(f_in, args);    \
+        VERB(args);             \
+    } while (0)
 
     for (key = TAILQ_FIRST(keys);
          key != NULL;
@@ -1308,7 +1347,7 @@ trc_report_keys_to_html(FILE           *f,
 
          char *script =
             trc_re_key_substs_buf(TRC_RE_KEY_SCRIPT, key->name);
-         fprintf(f_in, "%s:", script);
+         FWRITE_FMT("%s:", script);
          free(script);
 
          TAILQ_FOREACH(key_test, &key->tests, links)
@@ -1317,25 +1356,27 @@ trc_report_keys_to_html(FILE           *f,
 
              if (key_test != TAILQ_FIRST(&key->tests))
              {
-                 fprintf(f_in, ",");
+                 FWRITE_FMT(",");
              }
 
-             fprintf(f_in, "%s", key_test->name);
+             FWRITE_FMT("%s", key_test->name);
              if (!keys_only)
              {
-                 fprintf(f_in, "#%s", key_test->path);
+                 FWRITE_FMT("#%s", key_test->path);
                  TAILQ_FOREACH(key_iter, &key_test->iters, links)
                  {
-                     fprintf(f_in, "|%d", key_iter->iter->tin);
+                     FWRITE_FMT("|%d", key_iter->iter->tin);
                  }
              }
              else
              {
-                 fprintf(f_in, "&nbsp;[%d]", key_test->count);
+                 FWRITE_FMT("&nbsp;[%d]", key_test->count);
              }
          }
-         fprintf(f_in, "\n");
+         FWRITE_FMT("\n");
     }
+
+#undef FWRITE_FMT
 
     fclose(f_in);
     close(fd_in);
@@ -1344,6 +1385,8 @@ trc_report_keys_to_html(FILE           *f,
 
     fclose(f_out);
     close(fd_out);
+
+    fprintf(f, "<br/>");
 
     return 0;
 }
@@ -2146,6 +2189,25 @@ file_to_file(FILE *dst, FILE *src)
     return 0;
 }
 
+static unsigned int
+trc_report_key_type_to_flags(int keys_type)
+{
+    switch (keys_type)
+    {
+        case TRC_REPORT_KEYS_TYPE_FAILURES:
+            return TRC_REPORT_KEYS_FAILURES;
+        case TRC_REPORT_KEYS_TYPE_SANITY:
+            return TRC_REPORT_KEYS_SANITY;
+        case TRC_REPORT_KEYS_TYPE_EXPECTED:
+            return TRC_REPORT_KEYS_EXPECTED;
+        case TRC_REPORT_KEYS_TYPE_UNEXPECTED:
+            return TRC_REPORT_KEYS_UNEXPECTED;
+        case TRC_REPORT_KEYS_TYPE_NONE:
+            return TRC_REPORT_NO_KEYS;
+        default:
+            return 0;
+    }
+}
 
 /** See the description in trc_report.h */
 te_errno
@@ -2261,48 +2323,36 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
         }
     }
 
+    /* XXX */
     if (~flags & TRC_REPORT_NO_KEYS)
     {
-        trc_keys *keys = calloc(1, sizeof(trc_keys));
-        if (keys == NULL)
-        {
-            rc = te_rc_os2te(errno);
-            goto cleanup;
-        }
-        trc_keys_init(keys);
-
-        rc = trc_report_keys_collect(keys, gctx,
-                                     flags & ~TRC_REPORT_KEYS_SANITY);
-        if (rc != 0)
-            goto cleanup;
+        int keys_type;
 
         WRITE_STR("<a name=\"keys_table\"> </a>\n");
-        trc_report_keys_to_html(f, gctx, "te-trc-key", keys,
-                                !(~flags & TRC_REPORT_KEYS_ONLY),
-                                "Table of bugs that "
-                                "lead to known test failures.");
-        trc_keys_free(keys);
 
-        if (flags & TRC_REPORT_KEYS_SANITY)
+        for (keys_type = TRC_REPORT_KEYS_TYPE_FAILURES;
+             keys_type < TRC_REPORT_KEYS_TYPE_MAX; keys_type++)
         {
-            trc_keys *sanity_keys = calloc(1, sizeof(trc_keys));
-            if (sanity_keys == NULL)
+            trc_keys *keys = NULL;
+
+            if ((~flags & trc_report_key_type_to_flags(keys_type)) != 0)
+                continue;
+
+            if ((keys = trc_keys_alloc()) == NULL)
             {
                 rc = te_rc_os2te(errno);
                 goto cleanup;
             }
-            trc_keys_init(sanity_keys);
 
-            rc = trc_report_keys_collect(sanity_keys, gctx, flags);
+            rc = trc_report_keys_collect(keys, gctx,
+                     (flags & (~TRC_REPORT_KEYS_MASK)) |
+                     trc_report_key_type_to_flags(keys_type));
             if (rc != 0)
                 goto cleanup;
 
-            WRITE_STR("<a name=\"sanity_table\"> </a>\n");
-            trc_report_keys_to_html(f, gctx, "te-trc-key", sanity_keys,
-                                    !(~flags & TRC_REPORT_KEYS_ONLY),
-                                    "Table of bugs (prehaps fixed) that "
-                                    "do not lead to test failures.");
-            trc_keys_free(sanity_keys);
+            trc_report_keys_to_html(f, gctx, "te-trc-key", keys,
+                !(~flags & TRC_REPORT_KEYS_ONLY),
+                trc_report_keys_table_heading[keys_type]);
         }
     }
 

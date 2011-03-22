@@ -82,11 +82,11 @@ enum {
     TRC_OPT_NO_STATS_NOT_RUN,
     TRC_OPT_NO_KEYS,
     TRC_OPT_KEYS_ONLY,
+    TRC_OPT_KEYS_FAILURES,
     TRC_OPT_KEYS_SANITY,
+    TRC_OPT_KEYS_EXPECTED,
+    TRC_OPT_KEYS_UNEXPECTED,
     TRC_OPT_IGNORE_LOG_TAGS,
-    TRC_OPT_KEYS_SKIP_PASSED_UNSPEC,
-    TRC_OPT_KEYS_SKIP_FAILED_UNSPEC,
-    TRC_OPT_KEYS_SKIP_UNSPEC,
     TRC_OPT_COMPARISON,
     TRC_OPT_MERGE,
     TRC_OPT_CUT,
@@ -233,31 +233,23 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
           NULL },
 
         { "no-keys", '\0', POPT_ARG_NONE, NULL, TRC_OPT_NO_KEYS,
-          "Do not generate keys table.",
-          NULL },
+          "Do not add any key tables to the report.", NULL },
 
         { "keys-only", '\0', POPT_ARG_NONE, NULL, TRC_OPT_KEYS_ONLY,
-          "Do not include details about iterations, keys table only.",
-          NULL },
+          "Generate keys table only.", NULL },
+
+        { "keys", '\0', POPT_ARG_NONE, NULL, TRC_OPT_KEYS_FAILURES,
+          "Add regular keys table to the report.", NULL },
 
         { "keys-sanity", '\0', POPT_ARG_NONE, NULL, TRC_OPT_KEYS_SANITY,
-          "Perform sanity check for keys table.",
-          NULL },
+          "Perform sanity check for keys table.", NULL },
 
-        { "keys-skip-passed-unspec", '\0', POPT_ARG_NONE, NULL,
-          TRC_OPT_KEYS_SKIP_PASSED_UNSPEC,
-          "Skip reporting of unspecified keys for passed tests.",
-          NULL },
+        { "keys-expected", '\0', POPT_ARG_NONE, NULL, TRC_OPT_KEYS_EXPECTED,
+          "Show keys for expected test results.", NULL },
 
-        { "keys-skip-failed-unspec", '\0', POPT_ARG_NONE, NULL,
-          TRC_OPT_KEYS_SKIP_FAILED_UNSPEC,
-          "Skip reporting of unspecified keys for failed tests.",
-          NULL },
-
-        { "keys-skip-unspec", '\0', POPT_ARG_NONE, NULL,
-          TRC_OPT_KEYS_SKIP_UNSPEC,
-          "Skip reporting of unspecified keys for passed and failed tests.",
-          NULL },
+        { "keys-unexpected", '\0', POPT_ARG_NONE, NULL,
+          TRC_OPT_KEYS_UNEXPECTED,
+          "Show keys for unexpected test results.", NULL },
 
         { "comparison", '\0', POPT_ARG_STRING, NULL, TRC_OPT_COMPARISON,
           "Parameter comparison method (default is 'exact').",
@@ -497,26 +489,16 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
             TRC_OPT_FLAG(NO_UNSPEC);
             TRC_OPT_FLAG(NO_SKIPPED);
             TRC_OPT_FLAG(NO_EXP_PASSED);
-             TRC_OPT_FLAG(NO_EXPECTED);
+            TRC_OPT_FLAG(NO_EXPECTED);
             TRC_OPT_FLAG(NO_STATS_NOT_RUN);
             TRC_OPT_FLAG(NO_KEYS);
             TRC_OPT_FLAG(KEYS_ONLY);
+            TRC_OPT_FLAG(KEYS_FAILURES);
             TRC_OPT_FLAG(KEYS_SANITY);
-            TRC_OPT_FLAG(KEYS_SKIP_PASSED_UNSPEC);
-            TRC_OPT_FLAG(KEYS_SKIP_FAILED_UNSPEC);
+            TRC_OPT_FLAG(KEYS_EXPECTED);
+            TRC_OPT_FLAG(KEYS_UNEXPECTED);
 
 #undef TRC_OPT_FLAG
-
-            case TRC_OPT_KEYS_SKIP_UNSPEC:
-                if (report == NULL)
-                {
-                    ERROR("HTML report modifiers should be specified "
-                          "after the file name for report");
-                    goto exit;
-                }
-                report->flags |= TRC_REPORT_KEYS_SKIP_PASSED_UNSPEC |
-                                 TRC_REPORT_KEYS_SKIP_FAILED_UNSPEC;
-                break;
 
             case TRC_OPT_VERSION:
                 printf("Test Environment: %s\n\n%s\n", PACKAGE_STRING,

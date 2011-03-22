@@ -103,18 +103,29 @@ enum trc_report_flags {
                                               statistic */
     TRC_REPORT_NO_KEYS          = 0x200, /**< Hide actual key entries */
     TRC_REPORT_KEYS_ONLY        = 0x400, /**< Show only keys table */
-    TRC_REPORT_KEYS_SANITY      = 0x800, /**< Perform keys sanity check */
+    TRC_REPORT_KEYS_FAILURES    = 0x800, /**< Keys table for failures */
+    TRC_REPORT_KEYS_SANITY      = 0x1000, /**< Perform keys sanity check */
+    TRC_REPORT_KEYS_EXPECTED    = 0x2000, /**< Keys for expected
+                                               behaviour */
+    TRC_REPORT_KEYS_UNEXPECTED  = 0x4000, /**< Keys for unexpected
+                                               behaviour */
 
     /** Do not report unspecified key, if test passed with verdict */
-    TRC_REPORT_KEYS_SKIP_PASSED_UNSPEC = 0x1000,
+    TRC_REPORT_KEYS_SKIP_PASSED_UNSPEC = 0x8000,
     /** Do not report unspecified key, if test failed w/wo verdict */
-    TRC_REPORT_KEYS_SKIP_FAILED_UNSPEC = 0x2000,
+    TRC_REPORT_KEYS_SKIP_FAILED_UNSPEC = 0x10000,
 
     /* DB processing options */
-    TRC_REPORT_UPDATE_DB        = 0x4000, /**< Update TRC database */
-    TRC_REPORT_IGNORE_LOG_TAGS  = 0x8000, /**< Ignore TRC tags extracted
-                                               from the log */
+    TRC_REPORT_UPDATE_DB        = 0x20000, /**< Update TRC database */
+    TRC_REPORT_IGNORE_LOG_TAGS  = 0x40000, /**< Ignore TRC tags extracted
+                                                from the log */
 };
+
+/* Mask for keys-related flags */
+#define TRC_REPORT_KEYS_MASK \
+    (TRC_REPORT_NO_KEYS | TRC_REPORT_KEYS_FAILURES |        \
+     TRC_REPORT_KEYS_SANITY | TRC_REPORT_KEYS_EXPECTED |    \
+     TRC_REPORT_KEYS_UNEXPECTED)
 
 /** Result of test iteration run */
 typedef struct trc_report_test_iter_entry {
