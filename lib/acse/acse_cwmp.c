@@ -596,8 +596,7 @@ __cwmp__Inform(struct soap *soap,
         session->cpe_owner = cpe_item;
         session->acs_owner = NULL;
         cpe_item->session = session;
-        /* State of ConnectionRequest to this CPE is not actual now. */
-        cpe_item->cr_state = CR_NONE; 
+
         if (NULL != cpe_item->http_response)
         {
             int http_code = cpe_item->http_response->http_code;
