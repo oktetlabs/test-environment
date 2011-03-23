@@ -832,6 +832,8 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
             }
             else if (TE_RC_GET_ERROR(msg->rc) == TE_ENOENT)
             {
+                ERROR("%s: [kostik] ignoring %x TE_ENOENT",
+                      __FUNCTION__, msg->rc);
                 msg->rc = 0;
                 cfg_db_del(handle); /* During restoring backup the entry
                                        disappears */
