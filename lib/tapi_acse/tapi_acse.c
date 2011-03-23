@@ -372,7 +372,7 @@ tapi_acse_wait_step(tapi_acse_context_t *ctx)
     assert(ctx);
     if (ctx->timeout == 0)
     {
-        RING("tapi_acse_wait_step: FINISH");
+        VERB("tapi_acse_wait_step: FINISH");
         return FALSE;
     }
     if (ctx->next_usleep == 0)
@@ -392,7 +392,7 @@ tapi_acse_wait_step(tapi_acse_context_t *ctx)
             sleep(1);
     }
 
-    RING("tapi_acse_wait_step: continue, timeout rest %d", ctx->timeout);
+    VERB("tapi_acse_wait_step: continue, timeout rest %d", ctx->timeout);
     return TRUE;
 }
 
@@ -476,15 +476,11 @@ tapi_acse_wait_acse_state(tapi_acse_context_t *ctx,
 {
     te_errno rc;
     int      cur_state = 0;
-    int      timeout = ctx->timeout;
-
-    int prev_usleep = 0;
-    int now_usleep = 10000; /* microseconds; = 0.01 sec */
 
     do {
         rc = tapi_acse_manage_cpe(ctx, ACSE_OP_OBTAIN,
                   state_var, &cur_state, VA_END_LIST);
-        RING("get %s on %s/%s: rc %r, cur state %d, usleep %d", state_var, 
+        VERB("get %s on %s/%s: rc %r, cur state %d, usleep %d", state_var, 
              ctx->acs_name, ctx->cpe_name, rc, cur_state, ctx->next_usleep);
         if (rc != 0)
         {
@@ -496,19 +492,7 @@ tapi_acse_wait_acse_state(tapi_acse_context_t *ctx,
         if (cur_state & want_state) 
             break;
 
-#if 1
     } while (tapi_acse_wait_step(ctx));
-#else
-        if (now_usleep < 1000000)
-        {
-            usleep(now_usleep);
-            now_usleep += prev_usleep;
-            prev_usleep = now_usleep - prev_usleep;
-            continue;
-        }
-    } while ((timeout < 0 || (timeout--) > 0) &&
-             (sleep(1) == 0));
-#endif
 
     if (0 == ctx->timeout && !(want_state & cur_state))
         rc = TE_ETIMEDOUT;
@@ -525,28 +509,7 @@ te_errno
 tapi_acse_wait_cwmp_state(tapi_acse_context_t *ctx,
                           cwmp_sess_state_t want_state)
 {
-#if 1
     return tapi_acse_wait_acse_state(ctx, "cwmp_state", want_state, NULL);
-#else
-    cwmp_sess_state_t   cur_state = 0;
-    te_errno            rc;
-    int                 timeout = ctx->timeout;
-
-    do {
-        rc = tapi_acse_manage_cpe(ctx, ACSE_OP_OBTAIN,
-                  "cwmp_state", &cur_state, VA_END_LIST);
-        if (rc != 0)
-            return rc;
-
-    } while ((timeout < 0 || (timeout--) > 0) &&
-             (want_state != cur_state) &&
-             (sleep(1) == 0));
-
-    if (0 == timeout && want_state != cur_state)
-        return TE_ETIMEDOUT;
-
-    return 0;
-#endif
 }
 
 
@@ -556,7 +519,6 @@ te_errno
 tapi_acse_wait_cr_state(tapi_acse_context_t *ctx,
                         acse_cr_state_t want_state)
 {
-#if 1
     int res_state;
     te_errno rc = tapi_acse_wait_acse_state(ctx, "cr_state",
                                             want_state | CR_ERROR, 
@@ -567,31 +529,6 @@ tapi_acse_wait_cr_state(tapi_acse_context_t *ctx,
         return TE_RC(TE_TAPI, TE_EFAIL);
     }
     return rc;
-#else
-    acse_cr_state_t     cur_state = 0;
-    te_errno            rc;
-    int                 timeout = ctx->timeout;
-
-    do {
-        rc = tapi_acse_manage_cpe(ctx, ACSE_OP_OBTAIN,
-                  "cr_state", &cur_state, VA_END_LIST);
-        if (rc != 0)
-            return rc;
-
-        if (CR_ERROR == cur_state)
-        {
-            ERROR("ConnectionRequest status is ERROR");
-            return TE_EFAIL;
-        }
-    } while ((timeout < 0 || (timeout--) > 0) &&
-             (want_state != cur_state) &&
-             (sleep(1) == 0));
-
-    if (0 == timeout && want_state != cur_state)
-        return TE_ETIMEDOUT;
-
-    return 0;
-#endif
 }
 
 
@@ -788,7 +725,6 @@ tapi_acse_cpe_rpc_response(tapi_acse_context_t *ctx,
     te_errno    rc;
     uint8_t    *cwmp_buf = NULL;
     size_t      buflen = 0;
-    int         timeout = ctx->timeout;
 
     te_cwmp_rpc_cpe_t cwmp_rpc_loc = CWMP_RPC_NONE;
 
@@ -796,11 +732,14 @@ tapi_acse_cpe_rpc_response(tapi_acse_context_t *ctx,
         rc = rpc_cwmp_op_check(ctx->rpc_srv, ctx->acs_name, ctx->cpe_name,
                                ctx->req_id, 0,
                                &cwmp_rpc_loc, &cwmp_buf, &buflen);
-    } while ((timeout < 0 || (timeout--) > 0) &&
-             (TE_EPENDING == TE_RC_GET_ERROR(rc)) &&
-             (sleep(1) == 0));
+        if (TE_EPENDING != TE_RC_GET_ERROR(rc))
+            break;
+    } while (tapi_acse_wait_step(ctx));
+
     VERB("%s(): rc %r, cwmp rpc %s", __FUNCTION__, rc,
          cwmp_rpc_cpe_string(cwmp_rpc_loc));
+
+    tapi_acse_ctx_clear_timers(ctx);
 
     if ((0 == rc || TE_CWMP_FAULT == TE_RC_GET_ERROR(rc)) &&
         NULL != from_cpe)
@@ -838,17 +777,18 @@ tapi_acse_get_rpc_acs(tapi_acse_context_t *ctx,
                       cwmp_data_from_cpe_t *from_cpe)
 {
     te_errno    rc;
-    int         timeout = ctx->timeout;
     uint8_t    *cwmp_buf = NULL;
     size_t      buflen = 0;
 
     do {
         rc = rpc_cwmp_op_check(ctx->rpc_srv, ctx->acs_name, ctx->cpe_name,
                                0, rpc_acs, NULL, &cwmp_buf, &buflen);
-    } while ((timeout < 0 || (timeout--) > 0) &&
-             (TE_ENOENT == TE_RC_GET_ERROR(rc)) &&
-             (sleep(1) == 0));
-    VERB("%s(): rc %r", __FUNCTION__, rc);
+        if (TE_ENOENT != TE_RC_GET_ERROR(rc))
+            break;
+    } while (tapi_acse_wait_step(ctx));
+
+    VERB("%s(): rc %r", __FUNCTION__, rc); 
+    tapi_acse_ctx_clear_timers(ctx);
 
     if (0 == rc && NULL != from_cpe)
     {
