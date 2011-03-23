@@ -282,7 +282,7 @@ cpe_cwmp_state(cpe_t *cpe, acse_epc_config_data_t *params)
     if (params->op.fun == EPC_CFG_MODIFY)
         return TE_EACCES;
     if (cpe->session == NULL)
-        sprintf(params->value, "0");
+        sprintf(params->value, "%i", CWMP_NOP);
     else
         sprintf(params->value, "%i", cpe->session->state);
     return 0;

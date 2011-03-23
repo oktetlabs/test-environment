@@ -118,7 +118,14 @@ typedef struct tapi_acse_context_s {
                                   Because poll is absent in communication
                                   with ACSE, such methods ask periodically
                                   whether response was got on ACSE. 
-                                  User is free to change it. */
+                                  User is free to change it.
+                                  After each operation is automatically
+                                  set to value of def_timeout. */
+
+    int             def_timeout; /*< Default timeout in seconds */
+
+    int             prev_usleep;
+    int             next_usleep;
 
     acse_request_id_t req_id;/*< CWMP request ID.  This field is filled
                                   by 'call' methods, and is used by

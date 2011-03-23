@@ -239,6 +239,7 @@ tapi_acse_ctx_init(const char *ta)
         }
 
         ctx->timeout = 20; /* Experimentally discovered optimal value. */
+        ctx->def_timeout = 20;
         ctx->req_id = 0;
 
         if ((rc = cfg_find_pattern_fmt(&num, &handles,
@@ -359,7 +360,51 @@ tapi_acse_manage_vlist(const char *ta, const char *acs_name,
 }
 
 
+/**
+ * @retval TRUE if wait should be continued;
+ * @retval FALSE if wait should be stopped.
+ */
+static inline te_bool 
+tapi_acse_wait_step(tapi_acse_context_t *ctx)
+{
+    /* Increase intervals for sleep by Fibonacci sequence up to ~ 1 sec, 
+       then sleep by 1 sec. */
+    assert(ctx);
+    if (ctx->timeout == 0)
+    {
+        RING("tapi_acse_wait_step: FINISH");
+        return FALSE;
+    }
+    if (ctx->next_usleep == 0)
+        ctx->next_usleep = 10000;
 
+    if (ctx->next_usleep < 1000000)
+    {
+        usleep(ctx->next_usleep);
+        ctx->next_usleep += ctx->prev_usleep;
+        ctx->prev_usleep = ctx->next_usleep - ctx->prev_usleep;
+    }
+    else
+    {
+        if (ctx->timeout > 0)
+            ctx->timeout--;
+        if (ctx->timeout != 0)
+            sleep(1);
+    }
+
+    RING("tapi_acse_wait_step: continue, timeout rest %d", ctx->timeout);
+    return TRUE;
+}
+
+static inline void 
+tapi_acse_ctx_clear_timers(tapi_acse_context_t *ctx)
+{
+    assert(ctx);
+    ctx->timeout = ctx->def_timeout;
+    ctx->next_usleep = ctx->prev_usleep = 0;
+}
+
+/* See description in tapi_acse.h */
 te_errno
 tapi_acse_manage_cpe(tapi_acse_context_t *ctx,
                      acse_op_t opcode, ...)
@@ -427,7 +472,7 @@ tapi_acse_clear_cpe(tapi_acse_context_t *ctx)
 te_errno
 tapi_acse_wait_acse_state(tapi_acse_context_t *ctx,
                           const char *state_var,
-                          int want_state)
+                          int want_state, int *res_state)
 {
     te_errno rc;
     int      cur_state = 0;
@@ -439,10 +484,21 @@ tapi_acse_wait_acse_state(tapi_acse_context_t *ctx,
     do {
         rc = tapi_acse_manage_cpe(ctx, ACSE_OP_OBTAIN,
                   state_var, &cur_state, VA_END_LIST);
-        RING("get %s on %s/%s: rc %r, res %d, now_usl %d", state_var, 
-             ctx->acs_name, ctx->cpe_name, rc, cur_state, now_usleep);
+        RING("get %s on %s/%s: rc %r, cur state %d, usleep %d", state_var, 
+             ctx->acs_name, ctx->cpe_name, rc, cur_state, ctx->next_usleep);
         if (rc != 0)
+        {
+            tapi_acse_ctx_clear_timers(ctx);
+            if (res_state != NULL)
+                *res_state = cur_state;
             return rc;
+        }
+        if (cur_state & want_state) 
+            break;
+
+#if 1
+    } while (tapi_acse_wait_step(ctx));
+#else
         if (now_usleep < 1000000)
         {
             usleep(now_usleep);
@@ -451,13 +507,17 @@ tapi_acse_wait_acse_state(tapi_acse_context_t *ctx,
             continue;
         }
     } while ((timeout < 0 || (timeout--) > 0) &&
-             (want_state != cur_state) &&
              (sleep(1) == 0));
+#endif
 
-    if (0 == timeout && want_state != cur_state)
-        return TE_ETIMEDOUT;
+    if (0 == ctx->timeout && !(want_state & cur_state))
+        rc = TE_ETIMEDOUT;
 
-    return 0;
+    tapi_acse_ctx_clear_timers(ctx);
+    if (res_state != NULL)
+        *res_state = cur_state;
+
+    return rc;
 }
 
 /* see description in tapi_acse.h */
@@ -466,7 +526,7 @@ tapi_acse_wait_cwmp_state(tapi_acse_context_t *ctx,
                           cwmp_sess_state_t want_state)
 {
 #if 1
-    return tapi_acse_wait_acse_state(ctx, "cwmp_state", want_state);
+    return tapi_acse_wait_acse_state(ctx, "cwmp_state", want_state, NULL);
 #else
     cwmp_sess_state_t   cur_state = 0;
     te_errno            rc;
@@ -497,7 +557,16 @@ tapi_acse_wait_cr_state(tapi_acse_context_t *ctx,
                         acse_cr_state_t want_state)
 {
 #if 1
-    return tapi_acse_wait_acse_state(ctx, "cr_state", want_state);
+    int res_state;
+    te_errno rc = tapi_acse_wait_acse_state(ctx, "cr_state",
+                                            want_state | CR_ERROR, 
+                                            &res_state);
+    if (rc == 0 && res_state == CR_ERROR)
+    {
+        ERROR("ConnectionRequest status is ERROR");
+        return TE_RC(TE_TAPI, TE_EFAIL);
+    }
+    return rc;
 #else
     acse_cr_state_t     cur_state = 0;
     te_errno            rc;

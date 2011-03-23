@@ -263,14 +263,14 @@ typedef enum {
 
 /** State of Connection Request to CPE. */
 typedef enum acse_cr_state_t {
-    CR_NONE = 0,        /**< No Conn.Req operation was inited */
-    CR_WAIT_AUTH,       /**< Connection Request started, but waiting 
+    CR_NONE = 1,       /**< No Conn.Req operation was inited */
+    CR_WAIT_AUTH = 2,  /**< Connection Request started, but waiting 
                             for successful authenticate. */
-    CR_DONE,            /**< Connection Request was sent and gets 
+    CR_DONE = 4,       /**< Connection Request was sent and gets 
                             successful HTTP response. 
                             Swith back to CR_NONE after receive Inform
                             with EventCode  = @c CONNECTION REQUEST*/
-    CR_ERROR,            /**< Connection Request was sent and gets 
+    CR_ERROR = 8,      /**< Connection Request was sent and gets 
                             HTTP error. 
                             Switch back to CR_NONE after read 
                             Conn.Req. status by EPC */
@@ -278,19 +278,19 @@ typedef enum acse_cr_state_t {
     
 /** CWMP Session states */
 typedef enum { 
-    CWMP_NOP = 0,       /**< No any TCP activity: neither active
-                          connection, nor listening for incoming ones.  */
-    CWMP_LISTEN,        /**< Listening for incoming HTTP connection.    */
-    CWMP_WAIT_AUTH,     /**< TCP connection established, first HTTP
+    CWMP_NOP = 1,      /**< No any TCP activity: neither active
+                            connection, nor listening for incoming ones.*/
+    CWMP_LISTEN = 2,   /**< Listening for incoming HTTP connection.  */
+    CWMP_WAIT_AUTH = 4,/**< TCP connection established, first HTTP
                             request received, but not authenicated,
-                            response with our WWW-Authenticate is sent. */
-    CWMP_SERVE,         /**< CWMP session established, waiting for
-                            incoming SOAP RPC requests from CPE.        */
-    CWMP_WAIT_RESPONSE, /**< CWMP session established, SOAP RPC is sent
-                            to the CPE, waiting for response.           */
-    CWMP_PENDING,       /**< CWMP session established, waiting for
-                             RPC to be sent on CPE, from EPC.           */
-    CWMP_SEND_FILE,     /**< HTTP connection, sending reponse to GET,
+                            response with our WWW-Authenticate is sent.*/
+    CWMP_SERVE = 8,    /**< CWMP session established, waiting for
+                            incoming SOAP RPC requests from CPE.      */
+    CWMP_WAIT_RESPONSE = 16,/**< CWMP session established, SOAP RPC 
+                            is sent to the CPE, waiting for response. */
+    CWMP_PENDING = 32, /**< CWMP session established, waiting for
+                            RPC to be sent on CPE, from EPC.          */
+    CWMP_SEND_FILE = 64,/**< HTTP connection, sending reponse to GET,
                              received for particular ACS. */
 } cwmp_sess_state_t;
 
