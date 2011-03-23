@@ -59,6 +59,14 @@ fi
 
 raw_log_file="$1"
 
+packed=${raw_log_file##*.}
+if [ "x$packed" == "xbz2" ]; then
+    unzipped=$(mktemp)
+    bzcat ${raw_log_file} > ${unzipped}
+    tmp_files="$tmp_files $unzipped"
+    raw_log_file=${unzipped}
+fi
+
 te-trc-log "$raw_log_file" | te-trc-report ${opts}
 
 if [ $? -eq 0 ]; then
