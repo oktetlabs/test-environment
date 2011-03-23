@@ -403,7 +403,22 @@ delete_with_children(cfg_instance *inst, te_bool *has_deps)
 
     cfg_process_msg(&p_msg, TRUE);
 
+    /*
+     * modifications below are related to OL Bug 6111.
+     * In generic ignoring TE_ENOENT is not a good
+     * thig - this may hide a bug or pospone it's discovery
+     * to upcomming tests.
+     */
+#if 0                           /* was */
     return TE_RC_GET_ERROR(msg.rc) == TE_ENOENT ? 0 : msg.rc;
+#endif
+    if (TE_RC_GET_ERROR(msg.rc) == TE_ENOENT)
+        ERROR("TE_ENOENT is returned by cfg_process_msg, previously "
+              "it was silently ignored. If you think your situation "
+              "is valid and not ignoring it causes a bug in your "
+              "test package/suite - contact kostik@oktetlabs.ru");
+    return msg.rc;
+
 }
 
 static int
