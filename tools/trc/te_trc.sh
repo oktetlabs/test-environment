@@ -44,6 +44,10 @@ while test "${1#-}" != "$1" ; do
                 opts="$opts $1"
             fi
             ;;
+        --show-args=*)
+            echo "$1"
+            opts="$opts $1"
+            ;;
         *)
             opts="$opts $1"
             ;;

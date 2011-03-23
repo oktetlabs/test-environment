@@ -90,6 +90,7 @@ enum {
     TRC_OPT_COMPARISON,
     TRC_OPT_MERGE,
     TRC_OPT_CUT,
+    TRC_OPT_SHOW_CMD_FILE,
 };
 
 /** HTML report configuration */
@@ -254,6 +255,11 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
         { "comparison", '\0', POPT_ARG_STRING, NULL, TRC_OPT_COMPARISON,
           "Parameter comparison method (default is 'exact').",
           "exact|casefold|normalised|tokens" },
+
+        { "show-cmd-file", '\0', POPT_ARG_STRING, NULL,
+          TRC_OPT_SHOW_CMD_FILE,
+          "Verbose command line for report generation into report.",
+          "STRING" },
 
         { "version", '\0', POPT_ARG_NONE, NULL, TRC_OPT_VERSION, 
           "Display version information.", NULL },
@@ -470,6 +476,13 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
                 free((void *)key2html_fn);
                 break;
             }
+
+            case TRC_OPT_SHOW_CMD_FILE:
+            {
+                ctx.show_cmd_file = poptGetOptArg(optCon);
+                break;
+            }
+
 
 #define TRC_OPT_FLAG(flag_) \
             case TRC_OPT_##flag_:                                       \

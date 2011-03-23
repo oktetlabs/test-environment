@@ -155,14 +155,17 @@ typedef struct trc_report_test_data {
 
 /** TRC report context */
 typedef struct trc_report_ctx {
-    unsigned int        flags;  /**< Report options */
-    te_trc_db          *db;     /**< TRC database handle */
-    tqh_strings         tags;   /**< TRC tags specified by user */
-    tqh_strings         merge_fns;   /**< Logs to merge with main log */
-    tqh_strings         cut_paths;   /**< Testpaths to cut from main log */
-    trc_report_stats    stats;  /**< Grand total statistics */
-    unsigned int        db_uid; /**< TRC database user ID */
+    unsigned int        flags;          /**< Report options */
+    te_trc_db          *db;             /**< TRC database handle */
+    tqh_strings         tags;           /**< TRC tags specified by user */
+    tqh_strings         merge_fns;      /**< Logs to merge with main log */
+    tqh_strings         cut_paths;      /**< Testpaths to cut from
+                                             main log */
+    trc_report_stats    stats;          /**< Grand total statistics */
+    unsigned int        db_uid;         /**< TRC database user ID */
     const char         *html_logs_path; /**< Path to HTML logs */
+    const char         *show_cmd_file;  /**< Show cmd used to generate
+                                             the report */
 } trc_report_ctx;
 
 typedef struct trc_report_key_iter_entry {
