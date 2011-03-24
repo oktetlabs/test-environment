@@ -665,7 +665,7 @@ static const char * const trc_diff_test_result_end =
 "</font>";
 
 static const char * const trc_diff_test_result_url =
-"<a href=\"%s/node_%d.html\">[log]</a>";
+"<br/><a href=\"%s/node_%d.html\">[log]</a>";
 
 static const char * const trc_diff_test_iter_hlink =
 "<a name=\"%s\"> </a>";
