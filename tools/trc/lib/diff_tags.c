@@ -131,6 +131,30 @@ trc_diff_set_log(trc_diff_sets *sets, unsigned int id,
 
 /* See the description in trc_diff.h */
 te_errno
+trc_diff_set_url(trc_diff_sets *sets, unsigned int id,
+                 const char *url)
+{
+    trc_diff_set *p;
+
+    if (sets == NULL || id >= TRC_DIFF_IDS || url == NULL)
+        return TE_EINVAL;
+
+    p = trc_diff_find_set(sets, id, TRUE);
+    if (p == NULL)
+        return TE_ENOMEM;
+
+    p->url = strdup(url);
+    if (p->url == NULL)
+    {
+        ERROR("%s(): strdup(%s) failed", __FUNCTION__, url);
+        return TE_ENOMEM;
+    }
+
+    return 0;
+}
+
+/* See the description in trc_diff.h */
+te_errno
 trc_diff_show_keys(trc_diff_sets *sets, unsigned int id)
 {
     trc_diff_set *p;

@@ -664,6 +664,9 @@ static const char * const trc_diff_test_result_start =
 static const char * const trc_diff_test_result_end =
 "</font>";
 
+static const char * const trc_diff_test_result_url =
+"<a href=\"%s/node_%d.html\">[log]</a>";
+
 static const char * const trc_diff_test_iter_hlink =
 "<a name=\"%s\"> </a>";
 
@@ -2183,6 +2186,11 @@ trc_diff_exp_results_to_html(FILE                 *f,
                                 (iter_entry->is_exp) ?
                                 "matched" : "unmatched");
                         rc = te_test_result_to_html(f, &iter_entry->result);
+                        if ((set->url != NULL) && (iter_entry->tin != NULL))
+                        {
+                            fprintf(f, trc_diff_test_result_url,
+                                    set->url, iter_entry->tin);
+                        }
                         fprintf(f, trc_diff_test_result_end);
                     }
 

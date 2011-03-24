@@ -151,6 +151,36 @@ enum {
     TRC_DIFF_OPT_LOG27,
     TRC_DIFF_OPT_LOG28,
     TRC_DIFF_OPT_LOG29,
+    TRC_DIFF_OPT_URL0,
+    TRC_DIFF_OPT_URL1,
+    TRC_DIFF_OPT_URL2,
+    TRC_DIFF_OPT_URL3,
+    TRC_DIFF_OPT_URL4,
+    TRC_DIFF_OPT_URL5,
+    TRC_DIFF_OPT_URL6,
+    TRC_DIFF_OPT_URL7,
+    TRC_DIFF_OPT_URL8,
+    TRC_DIFF_OPT_URL9,
+    TRC_DIFF_OPT_URL10,
+    TRC_DIFF_OPT_URL11,
+    TRC_DIFF_OPT_URL12,
+    TRC_DIFF_OPT_URL13,
+    TRC_DIFF_OPT_URL14,
+    TRC_DIFF_OPT_URL15,
+    TRC_DIFF_OPT_URL16,
+    TRC_DIFF_OPT_URL17,
+    TRC_DIFF_OPT_URL18,
+    TRC_DIFF_OPT_URL19,
+    TRC_DIFF_OPT_URL20,
+    TRC_DIFF_OPT_URL21,
+    TRC_DIFF_OPT_URL22,
+    TRC_DIFF_OPT_URL23,
+    TRC_DIFF_OPT_URL24,
+    TRC_DIFF_OPT_URL25,
+    TRC_DIFF_OPT_URL26,
+    TRC_DIFF_OPT_URL27,
+    TRC_DIFF_OPT_URL28,
+    TRC_DIFF_OPT_URL29,
     TRC_DIFF_OPT_SHOW_KEYS0,
     TRC_DIFF_OPT_SHOW_KEYS1,
     TRC_DIFF_OPT_SHOW_KEYS2,
@@ -292,7 +322,10 @@ process_cmd_line_opts(int argc, char **argv, trc_diff_ctx *ctx)
           "Name of the corresponding set of tags.", "NAME" },       \
         { #id_ "-log", '\0', POPT_ARG_STRING, NULL,                 \
           TRC_DIFF_OPT_LOG##id_,                                    \
-          "Name of the corresponding set of tags.", "LOG" },        \
+          "Path to XML log corresponding to the set.", "LOG" },     \
+        { #id_ "-url", '\0', POPT_ARG_STRING, NULL,                 \
+          TRC_DIFF_OPT_URL##id_,                                    \
+          "URL to directory with html logs.", "URL" },              \
         { #id_ "-show-keys", '\0', POPT_ARG_NONE, NULL,             \
           TRC_DIFF_OPT_SHOW_KEYS##id_,                              \
           "Show table with keys which cause differences.",  NULL }, \
@@ -456,6 +489,44 @@ process_cmd_line_opts(int argc, char **argv, trc_diff_ctx *ctx)
             case TRC_DIFF_OPT_LOG28:
             case TRC_DIFF_OPT_LOG29:
                 if (trc_diff_set_log(&ctx->sets, rc - TRC_DIFF_OPT_LOG0,
+                                     poptGetOptArg(optCon)) != 0)
+                {
+                    poptFreeContext(optCon);
+                    return EXIT_FAILURE;
+                }
+                break;
+
+            case TRC_DIFF_OPT_URL0:
+            case TRC_DIFF_OPT_URL1:
+            case TRC_DIFF_OPT_URL2:
+            case TRC_DIFF_OPT_URL3:
+            case TRC_DIFF_OPT_URL4:
+            case TRC_DIFF_OPT_URL5:
+            case TRC_DIFF_OPT_URL6:
+            case TRC_DIFF_OPT_URL7:
+            case TRC_DIFF_OPT_URL8:
+            case TRC_DIFF_OPT_URL9:
+            case TRC_DIFF_OPT_URL10:
+            case TRC_DIFF_OPT_URL11:
+            case TRC_DIFF_OPT_URL12:
+            case TRC_DIFF_OPT_URL13:
+            case TRC_DIFF_OPT_URL14:
+            case TRC_DIFF_OPT_URL15:
+            case TRC_DIFF_OPT_URL16:
+            case TRC_DIFF_OPT_URL17:
+            case TRC_DIFF_OPT_URL18:
+            case TRC_DIFF_OPT_URL19:
+            case TRC_DIFF_OPT_URL20:
+            case TRC_DIFF_OPT_URL21:
+            case TRC_DIFF_OPT_URL22:
+            case TRC_DIFF_OPT_URL23:
+            case TRC_DIFF_OPT_URL24:
+            case TRC_DIFF_OPT_URL25:
+            case TRC_DIFF_OPT_URL26:
+            case TRC_DIFF_OPT_URL27:
+            case TRC_DIFF_OPT_URL28:
+            case TRC_DIFF_OPT_URL29:
+                if (trc_diff_set_url(&ctx->sets, rc - TRC_DIFF_OPT_URL0,
                                      poptGetOptArg(optCon)) != 0)
                 {
                     poptFreeContext(optCon);

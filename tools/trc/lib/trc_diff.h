@@ -72,6 +72,7 @@ typedef struct trc_diff_set {
     tqh_strings     tags;       /**< List of tags */
     char           *name;       /**< Name of the set */
     char           *log;        /**< Raw log filename */
+    char           *url;        /**< URL to HTML logs */
     te_bool         show_keys;  /**< Show table with keys which explain
                                      differences */
     tqh_strings     ignore;     /**< List of exclusions */
@@ -241,7 +242,7 @@ extern te_errno trc_diff_set_name(trc_diff_sets *sets,
                                   const char    *name);
 
 /**
- * Set name of the compared set with specified ID.
+ * Set log filename of the compared set with specified ID.
  *
  * @param sets  List of compared sets
  * @param id    Identifier of the set
@@ -253,6 +254,21 @@ extern te_errno trc_diff_set_name(trc_diff_sets *sets,
 extern te_errno trc_diff_set_log(trc_diff_sets *sets,
                                  unsigned int   id,
                                  const char    *log);
+
+
+/**
+ * Set URL to html logs of the compared set with specified ID.
+ *
+ * @param sets  List of compared sets
+ * @param id    Identifier of the set
+ * @param log   Log filename
+ for the set
+ *
+ * @return Status code.
+ */
+extern te_errno trc_diff_set_url(trc_diff_sets *sets,
+                                 unsigned int   id,
+                                 const char    *url);
 
 /**
  * Enable showing keys of the compared set with specified ID.
