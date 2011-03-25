@@ -796,7 +796,7 @@ TARPC_FUNC(bind, {},
 
 TARPC_FUNC(check_port_is_free, {},
 {
-    MAKE_CALL(out->retval = func_ptr(in->port));
+    MAKE_CALL(out->retval = func(in->port));
 }
 )
 
@@ -1035,21 +1035,17 @@ te_fstat64(te_bool use_libc, int fd, rpc_stat *rpcbuf)
 
 TARPC_FUNC(te_fstat, {},
 {
-    struct stat buf;
-
-    MAKE_CALL(out->retval = func_ptr(in->common.use_libc, in->fd,
-                                     &out->buf));
+    MAKE_CALL(out->retval = func(in->common.use_libc, in->fd, &out->buf));
 }
 )
 
 TARPC_FUNC(te_fstat64, {},
 {
-    MAKE_CALL(out->retval = func_ptr(in->common.use_libc, in->fd,
-                                     &out->buf));
+    MAKE_CALL(out->retval = func(in->common.use_libc, in->fd, &out->buf));
 }
 )
 
-#undef FSTAT_COPY;
+#undef FSTAT_COPY
 
 /*-------------- sendto() ------------------------------*/
 
@@ -6881,7 +6877,7 @@ ta_dlclose(tarpc_ta_dlclose_in *in)
         return -1;
     }
 
-    return dlclose_func((void *)in->handle);
+    return dlclose_func((void *)(uintptr_t)in->handle);
 }
 
 
