@@ -60,6 +60,10 @@ extern int logic_expr_int_str_pos;
 ")"                             { return CLOSE; }
 "&"                             { return AND; }
 "|"                             { return OR; }
+">"                             { return GT; }
+">="                            { return GE; }
+"<"                             { return LT; }
+"<="                            { return LE; }
 "!"                             { return NOT; }
 [-_[:alnum:].]+                 {
                                     yylval->str = strdup(yytext);

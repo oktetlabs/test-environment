@@ -46,6 +46,11 @@
 
 #include "logic_expr.h"
 
+#if 0
+#undef TE_LOG_LEVEL
+#define TE_LOG_LEVEL (TE_LL_WARN | TE_LL_ERROR | \
+                      TE_LL_VERB | TE_LL_ENTRY_EXIT | TE_LL_RING)
+#endif
 
 /* See the description in logic_expr.h */
 void
@@ -73,6 +78,10 @@ logic_expr_free(logic_expr *expr)
 
         case LOGIC_EXPR_AND:
         case LOGIC_EXPR_OR:
+        case LOGIC_EXPR_GT:
+        case LOGIC_EXPR_GE:
+        case LOGIC_EXPR_LE:
+        case LOGIC_EXPR_LT:
             logic_expr_free(expr->u.binary.lhv);
             logic_expr_free(expr->u.binary.rhv);
             break;
@@ -92,7 +101,11 @@ logic_expr_binary(logic_expr_type type, logic_expr *lhv, logic_expr *rhv)
     logic_expr *p;
 
     assert(type == LOGIC_EXPR_AND ||
-           type == LOGIC_EXPR_OR);
+           type == LOGIC_EXPR_OR ||
+           type == LOGIC_EXPR_GT ||
+           type == LOGIC_EXPR_GE ||
+           type == LOGIC_EXPR_LT ||
+           type == LOGIC_EXPR_LE);
     assert(lhv != NULL);
     assert(rhv != NULL);
 
@@ -131,9 +144,19 @@ is_str_in_set(const char *str, const tqh_strings *set)
          s != NULL;
          s = TAILQ_NEXT(s, links), i++)
     {
-        if (strcmp(str, s->v) == 0)
+        char *c;
+
+        if ((c = strchr(s->v, ':')) == NULL)
         {
-            return i;
+            if (strcmp(str, s->v) == 0)
+            {
+                return i;
+            }
+        }
+        else
+        {
+            if (strncmp(str, s->v, c - s->v) == 0)
+                return atoi(c + 1);
         }
     }
     return 0;
@@ -149,10 +172,16 @@ logic_expr_match(const logic_expr *re, const tqh_strings *set)
     switch (re->type)
     {
         case LOGIC_EXPR_VALUE:
-            result = is_str_in_set(re->u.value, set);
+        {
+            char *endptr;
+
+            result = strtol(re->u.value, &endptr, 10);
+
+            if (re->u.value == endptr)
+                result = is_str_in_set(re->u.value, set);
             VERB("%s(): %s -> %d", __FUNCTION__, re->u.value, result);
             break;
-
+        }
         case LOGIC_EXPR_NOT:
             result = !logic_expr_match(re->u.unary, set);
             VERB("%s(): ! -> %d", __FUNCTION__, result);
@@ -186,6 +215,66 @@ logic_expr_match(const logic_expr *re, const tqh_strings *set)
             VERB("%s(): || -> %d", __FUNCTION__, result);
             break;
         }
+
+        case LOGIC_EXPR_GT:
+        {
+            int lhr = logic_expr_match(re->u.binary.lhv, set);
+            int rhr = logic_expr_match(re->u.binary.rhv, set);
+
+            if (lhr > rhr)
+                result = 1;
+            else
+                result = 0;
+            VERB("%s(): %d > %d -> %d", __FUNCTION__,
+                 lhr, rhr,
+                 result);
+            break;
+        }
+
+        case LOGIC_EXPR_GE:
+        {
+            int lhr = logic_expr_match(re->u.binary.lhv, set);
+            int rhr = logic_expr_match(re->u.binary.rhv, set);
+
+            if (lhr >= rhr)
+                result = 1;
+            else
+                result = 0;
+            VERB("%s(): %d >= %d -> %d", __FUNCTION__,
+                 lhr, rhr,
+                 result);
+            break;
+        }
+
+        case LOGIC_EXPR_LT:
+        {
+            int lhr = logic_expr_match(re->u.binary.lhv, set);
+            int rhr = logic_expr_match(re->u.binary.rhv, set);
+
+            if (lhr < rhr)
+                result = 1;
+            else
+                result = 0;
+            VERB("%s(): %d < %d -> %d", __FUNCTION__,
+                 lhr, rhr,
+                 result);
+            break;
+        }
+        case LOGIC_EXPR_LE:
+        {
+            int lhr = logic_expr_match(re->u.binary.lhv, set);
+            int rhr = logic_expr_match(re->u.binary.rhv, set);
+
+            if (lhr <= rhr)
+                result = 1;
+            else
+                result = 0;
+            VERB("%s(): %d > %d -> %d", __FUNCTION__,
+                 lhr, rhr,
+                 result);
+            break;
+        }
+
 
         default:
             ERROR("Invalid type of requirements expression");

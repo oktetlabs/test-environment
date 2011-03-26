@@ -38,12 +38,16 @@ extern "C" {
 #endif
 
 
-/** Types of expression elements */
+/** Types of expression elements, */
 typedef enum logic_expr_type {
     LOGIC_EXPR_VALUE,   /**< Simple value */
     LOGIC_EXPR_NOT,     /**< Logical 'not' */
     LOGIC_EXPR_AND,     /**< Logical 'and' */
     LOGIC_EXPR_OR,      /**< Logical 'or' */
+    LOGIC_EXPR_GT,      /**< Greater */
+    LOGIC_EXPR_GE,      /**< Greater or equal */
+    LOGIC_EXPR_LT,      /**< Less */
+    LOGIC_EXPR_LE,      /**< Less or equeal */
 } logic_expr_type;
 
 /** Element of the requirements expression */

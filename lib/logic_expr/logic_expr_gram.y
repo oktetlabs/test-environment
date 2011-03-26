@@ -73,11 +73,16 @@ logic_expr_int_error(const char *str)
 
 %right OR
 %right AND
+%right GT
+%right GE
+%right LT
+%right LE
 %nonassoc NOT
 
 %token OPEN CLOSE
 %token <str> TOKEN
-%token NOMATCH 
+%token NOMATCH
+
 
 %type <expr> expr
 
@@ -127,6 +132,38 @@ expr:
     | expr OR expr
     {
         logic_expr_int_root = $$ = logic_expr_binary(LOGIC_EXPR_OR, $1, $3);
+        if (logic_expr_int_root == NULL)
+        {
+            return -1;
+        }
+    }
+    | expr GT expr
+    {
+        logic_expr_int_root = $$ = logic_expr_binary(LOGIC_EXPR_GT, $1, $3);
+        if (logic_expr_int_root == NULL)
+        {
+            return -1;
+        }
+    }
+    | expr GE expr
+    {
+        logic_expr_int_root = $$ = logic_expr_binary(LOGIC_EXPR_GT, $1, $3);
+        if (logic_expr_int_root == NULL)
+        {
+            return -1;
+        }
+    }
+    | expr LT expr
+    {
+        logic_expr_int_root = $$ = logic_expr_binary(LOGIC_EXPR_GT, $1, $3);
+        if (logic_expr_int_root == NULL)
+        {
+            return -1;
+        }
+    }
+    | expr LE expr
+    {
+        logic_expr_int_root = $$ = logic_expr_binary(LOGIC_EXPR_GT, $1, $3);
         if (logic_expr_int_root == NULL)
         {
             return -1;

@@ -43,6 +43,12 @@
 #include "te_trc.h"
 #include "trc_db.h"
 
+#if 0
+#undef TE_LOG_LEVEL
+#define TE_LOG_LEVEL (TE_LL_WARN | TE_LL_ERROR | \
+                      TE_LL_VERB | TE_LL_ENTRY_EXIT | TE_LL_RING)
+#endif
+
 /** Internal data of the TRC database walker */
 struct te_trc_db_walker {
     te_trc_db           *db;        /**< TRC database pointer */
@@ -424,7 +430,7 @@ test_iter_args_match(const trc_test_iter_args  *db_args,
 #if VERB_CMP
     fprintf(stderr, "Args compare: \n");
 #endif
-\
+
     for (arg = TAILQ_FIRST(&db_args->head), i = 0;
          arg != NULL && i < n_args;
          i++)
@@ -732,6 +738,7 @@ trc_db_walker_get_exp_result(const te_trc_db_walker *walker,
     result = NULL; prio = 0;
     SLIST_FOREACH(p, &walker->iter->exp_results, links)
     {
+        VERB("%s: matching start", __FUNCTION__);
         res = logic_expr_match(p->tags_expr, tags);
         if (res != 0)
         {
