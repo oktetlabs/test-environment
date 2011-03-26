@@ -147,7 +147,7 @@ expr:
     }
     | expr GE expr
     {
-        logic_expr_int_root = $$ = logic_expr_binary(LOGIC_EXPR_GT, $1, $3);
+        logic_expr_int_root = $$ = logic_expr_binary(LOGIC_EXPR_GE, $1, $3);
         if (logic_expr_int_root == NULL)
         {
             return -1;
@@ -155,7 +155,7 @@ expr:
     }
     | expr LT expr
     {
-        logic_expr_int_root = $$ = logic_expr_binary(LOGIC_EXPR_GT, $1, $3);
+        logic_expr_int_root = $$ = logic_expr_binary(LOGIC_EXPR_LT, $1, $3);
         if (logic_expr_int_root == NULL)
         {
             return -1;
@@ -163,7 +163,7 @@ expr:
     }
     | expr LE expr
     {
-        logic_expr_int_root = $$ = logic_expr_binary(LOGIC_EXPR_GT, $1, $3);
+        logic_expr_int_root = $$ = logic_expr_binary(LOGIC_EXPR_LE, $1, $3);
         if (logic_expr_int_root == NULL)
         {
             return -1;
