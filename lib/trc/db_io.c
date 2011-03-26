@@ -52,6 +52,11 @@
 #include "te_trc.h"
 #include "trc_db.h"
 
+#if 0
+#undef TE_LOG_LEVEL
+#define TE_LOG_LEVEL (TE_LL_WARN | TE_LL_ERROR | \
+                      TE_LL_VERB | TE_LL_ENTRY_EXIT | TE_LL_RING)
+#endif
 
 #define CONST_CHAR2XML  (const xmlChar *)
 #define XML2CHAR(p)     ((char *)p)
