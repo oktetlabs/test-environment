@@ -63,15 +63,82 @@ fi
 
 raw_log_file="$1"
 
-packed=${raw_log_file##*.}
-if [ "x$packed" == "xbz2" ]; then
-    unzipped=$(mktemp)
-    bzcat ${raw_log_file} > ${unzipped}
-    tmp_files="$tmp_files $unzipped"
-    raw_log_file=${unzipped}
+proto=${raw_log_file%%:*}
+if [ "x$proto" != "x$raw_log_file" ]; then
+    rname=${raw_log_file##*/}
+    if [ "x$rname" != "x" ]; then
+        if [ "x$proto" == "xhttps" ]; then
+            curl -s -u : --negotiate "${raw_log_file}" -f -o $rname
+        else
+            scp -q "${raw_log_file}" ${rname}
+        fi
+
+        if [ ! -f "$rname" ]; then
+            echo "Failed to fetch $raw_log_file"
+            exit 1
+        fi
+
+        raw_log_file="$rname"
+    else
+        logname=$(mktemp "log-XXXX")
+        tmp_files="$tmp_files $logname"
+        logname="${logname}.xml.bz2"
+
+        if [ "x$proto" == "xhttps" ]; then
+            curl -s -u : --negotiate "${raw_log_file}log.xml.bz2" \
+                 -f -o $logname
+        else
+            scp -q "${raw_log_file}log.xml.bz2" $logname
+        fi
+
+        if [ ! -f $logname ]; then
+            echo "Failed to fetch XML log. Downloading RAW log."
+            logname=$(mktemp "log-XXXX")
+            tmp_files="$tmp_files $logname"
+            logname="${logname}.raw.bz2"
+
+            if [ "x$proto" == "xhttps" ]; then
+                curl -s -u : --negotiate "${raw_log_file}log.raw.bz2" \
+                     -f -o $logname
+            else
+                scp -q "${raw_log_file}log.raw.bz2" $logname
+            fi
+
+            if [ ! -f $logname ]; then
+                echo "Failed to fetch RAW log, please specify correct URL."
+                exit 1
+            fi
+        fi
+        raw_log_file="$logname"
+    fi
+
+    tmp_files="$tmp_files $raw_log_file"
 fi
 
-te-trc-log "$raw_log_file" | te-trc-report ${opts}
+packed=${raw_log_file##*.}
+if [ "x$packed" == "xbz2" ]; then
+    unpacked_tmp=${raw_log_file%.*}
+    unpacked_format=${unpacked_tmp##*.}
+
+    unpacked=$(mktemp "log-XXXX")
+    tmp_files="$tmp_files $unpacked"
+    if [ "x$unpacked_format" != "x$unpacked_tmp" ]; then
+        unpacked=${unpacked}.${unpacked_format}
+    else
+        unpacked="${unpacked}.raw"
+    fi
+
+    bzcat ${raw_log_file} > ${unpacked}
+    tmp_files="$tmp_files $unpacked"
+    raw_log_file="${unpacked}"
+fi
+
+log_format=${raw_log_file##*.}
+if [ "x$log_format" == "xxml" ]; then
+    cat $raw_log_file | te-trc-report ${opts}
+else
+    te-trc-log "$raw_log_file" | te-trc-report ${opts}
+fi
 
 if [ $? -eq 0 ]; then
     rm -f $tmp_files
