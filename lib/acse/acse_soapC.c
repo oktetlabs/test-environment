@@ -9137,6 +9137,8 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_ParameterNames(struct soap *soap, const char 
 		soap->position = 1;
 		soap->positions[0] = i;
 		soap_out_string(soap, "string", -1, &a->__ptrstring[i], "");
+                if ((soap->mode & SOAP_IO) == SOAP_IO_CHUNK)
+                    soap_flush(soap);
 	}
 	soap->position = 0;
 	return soap_element_end_out(soap, tag);
