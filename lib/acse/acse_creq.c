@@ -202,8 +202,10 @@ acse_init_connection_request(cpe_t *cpe_item)
 
     if (soap_connect_command(soap, SOAP_GET, cpe_item->url, ""))
     {
-        soap_print_fault(soap, stderr); 
-        ERROR("%s failed, soap error %d", __FUNCTION__, soap->error);
+        char fault_buf[1000];
+        soap_sprint_fault(soap, fault_buf, sizeof(fault_buf)); 
+        ERROR("%s() failed, soap error %d, descr: %s",
+              __FUNCTION__, soap->error, fault_buf);
         soap_end(soap);
         free(conn_req_data);
         free(channel);
@@ -215,6 +217,7 @@ acse_init_connection_request(cpe_t *cpe_item)
     channel->before_poll = conn_req_before_poll;
     channel->after_poll = conn_req_after_poll;
     channel->destroy = conn_req_destroy;
+    RING("%s() Conn.Req started, wait.. ", __FUNCTION__);
 
     acse_add_channel(channel);
 
