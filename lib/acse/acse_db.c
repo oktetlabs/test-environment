@@ -117,6 +117,7 @@ db_add_cpe(const char *acs_name, const char *cpe_name)
     cpe_item->name = strdup(cpe_name);
     cpe_item->acs = acs_item;
     cpe_item->enabled = TRUE;
+    cpe_item->cr_state = CR_NONE;
 
     TAILQ_INIT(&(cpe_item->rpc_queue));
     TAILQ_INIT(&(cpe_item->rpc_results));

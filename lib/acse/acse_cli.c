@@ -46,7 +46,7 @@ DEFINE_LGR_ENTITY("ACSE");
 
 static char acs_def_name[30] = "";
 static char cpe_def_name[50] = "";
-static int timeout_def = 0;
+static int timeout_def = 20;
 static int request_id = 0;
 
 static te_errno print_config_response(te_errno status,
@@ -144,6 +144,69 @@ param_cmd_access(int argc, const int *arg_tags,
     return 0;
 }
 
+static int
+param_cmd_wait(int argc, const int *arg_tags,
+               const char *rest_line, char *err_buf)
+{
+    acse_epc_config_data_t *cfg_data;
+    te_errno    rc;
+    size_t      ofs;
+    char        exp_value[RCF_MAX_VAL];
+    char        var_name[RCF_MAX_ID];
+    int         timeout = timeout_def;
+
+    /* Command here:
+       'param acs|cpe wait <param_name> <value>'
+    */
+    if (argc < 3)
+        return CLI_E_MISS_TAGS;
+
+    printf("%s(): rest_line <%s>\n", __FUNCTION__, rest_line);
+    
+    ofs = cli_token_copy(rest_line, var_name);
+    if (0 == ofs)
+        PARSE_ERROR(" <parameter_name> <expected_value>");
+    rest_line += ofs;
+
+    printf("%s(): rest_line <%s>, var_name <%s>\n",
+            __FUNCTION__, rest_line, var_name);
+
+    ofs = cli_token_copy(rest_line, exp_value);
+    if (0 == ofs)
+        PARSE_ERROR(" <parameter_name> <exp_value>");
+
+    do {
+        acse_conf_prepare(arg_tags[2] /* function */, &cfg_data);
+
+        strncpy(cfg_data->acs, acs_def_name, sizeof(cfg_data->acs));
+        if (EPC_CFG_ACS == arg_tags[1])
+            cfg_data->cpe[0] = '\0';
+        else 
+            strncpy(cfg_data->cpe, cpe_def_name, sizeof(cfg_data->cpe));
+
+        strcpy(cfg_data->oid, var_name);
+
+        cfg_data->op.level = arg_tags[1];
+
+
+        cfg_data->value[0] = '\0';
+
+        rc = acse_conf_call(&cfg_data);
+
+        if (TE_RC_GET_ERROR(rc) == TE_ENOTCONN)
+        {
+            printf("Connection broken\n");
+            return -1;
+        }
+
+        print_config_response(rc, cfg_data);
+
+    } while ((timeout--) > 0 &&
+             strcmp(exp_value, cfg_data->value) != 0 &&
+             sleep(1) == 0);
+
+    return 0;
+}
 static int
 param_cmd_list(int argc, const int *arg_tags,
                const char *rest_line, char *err_buf)
@@ -373,8 +436,8 @@ parse_cwmp_rpc_args(acse_epc_cwmp_data_t *cwmp_data,
         break;
         case CWMP_RPC_add_object: 
         {
-            static char name[256];
-            static char *name_ptr = name;
+            static char add_name[256];
+            static char *add_name_ptr = add_name;
             static cwmp_add_object_t req;
             size_t ofs;
 
@@ -382,9 +445,26 @@ parse_cwmp_rpc_args(acse_epc_cwmp_data_t *cwmp_data,
 
             strcpy(err_buf, "<parentname>");
 
-            req.ObjectName = name; 
+            req.ObjectName = add_name; 
             req.ParameterKey = "ACSE CLI"; 
-            ofs = cli_token_copy(line, name);
+            ofs = cli_token_copy(line, add_name);
+            if (0 == ofs) return TE_EFAIL;
+        }
+        break;
+        case CWMP_RPC_delete_object: 
+        {
+            static char del_name[256];
+            static char *del_name_ptr = del_name;
+            static cwmp_delete_object_t req;
+            size_t ofs;
+
+            cwmp_data->to_cpe.delete_object = &req;
+
+            strcpy(err_buf, "<instancename>");
+
+            req.ObjectName = del_name; 
+            req.ParameterKey = "ACSE CLI"; 
+            ofs = cli_token_copy(line, del_name);
             if (0 == ofs) return TE_EFAIL;
         }
         break;
@@ -450,7 +530,6 @@ rpc_check(int argc, const int *arg_tags,
     acse_epc_cwmp_data_t *cwmp_data = NULL;
 
     UNUSED(arg_tags);
-    UNUSED(err_buf);
 
     if (argc < 2)
         return CLI_E_MISS_TAGS;
@@ -476,6 +555,54 @@ rpc_check(int argc, const int *arg_tags,
     }
     else
         print_cwmp_response(status, cwmp_data);
+
+    return 0;
+}
+
+
+
+static int
+rpc_wait(int argc, const int *arg_tags,
+         const char *rest_line, char *err_buf)
+{
+    te_errno rc, status;
+    acse_epc_cwmp_data_t *cwmp_data = NULL;
+    int exp_request_id = 0;
+    int timeout = timeout_def;
+
+    UNUSED(arg_tags);
+
+    if (argc < 2)
+        return CLI_E_MISS_TAGS;
+
+    while (isspace(*rest_line)) rest_line++;
+
+    if (isdigit(rest_line[0]))
+        exp_request_id = atoi(rest_line);
+    else if (rest_line[0] == 0)
+        exp_request_id = request_id;
+    else 
+        PARSE_ERROR("[<request_id>]");
+
+    do {
+        acse_cwmp_prepare(acs_def_name, cpe_def_name,
+                          EPC_RPC_CHECK, &cwmp_data);
+
+        cwmp_data->request_id = exp_request_id;
+
+
+        rc = acse_cwmp_call(&status, NULL, &cwmp_data);
+        if (0 != rc)
+        {
+            printf("ACSE check failed: %s\n", te_rc_err2str(rc));
+            return -1;
+        }
+        else
+            print_cwmp_response(status, cwmp_data);
+
+    } while (((timeout--) > 0) &&
+             (TE_EPENDING == TE_RC_GET_ERROR(status)) &&
+             (sleep(1) == 0) );
 
     return 0;
 }
@@ -588,15 +715,17 @@ http_resp(int argc, const int *arg_tags,
 }
 
 static cli_cmd_descr_t cmd_param_actions[] = {
-    {"obtain", EPC_CFG_OBTAIN, "ACS config commands",
+    {"obtain", EPC_CFG_OBTAIN, "Obtain ACS/CPE config param",
             param_cmd_access, NULL},
-    {"modify", EPC_CFG_MODIFY, "CPE config commands",
+    {"modify", EPC_CFG_MODIFY, "Modify ACS/CPE config param",
             param_cmd_access, NULL},
-    {"list", EPC_CFG_LIST, "ACS config commands",
+    {"wait", EPC_CFG_OBTAIN, "wait particular value of ACS config param",
+            param_cmd_wait, NULL},
+    {"list", EPC_CFG_LIST, "List config params",
             param_cmd_list, NULL},
-    {"add", EPC_CFG_ADD, "ACS config commands",
+    {"add", EPC_CFG_ADD, "add config param",
             param_cmd_ad, NULL},
-    {"del", EPC_CFG_DEL, "CPE config commands",
+    {"del", EPC_CFG_DEL, "del config param",
             param_cmd_ad, NULL},
     END_CMD_ARRAY
 };
@@ -623,6 +752,8 @@ static cli_cmd_descr_t cmd_rpc_cpe_kinds[] = {
                     "SetParameterAttributes", NULL, NULL},
     {"add",          CWMP_RPC_add_object,
                     "AddObject", NULL, NULL},
+    {"delete",       CWMP_RPC_delete_object,
+                    "DeleteObject", NULL, NULL},
     {"download",     CWMP_RPC_download,
                     "Download", NULL, NULL},
     END_CMD_ARRAY
@@ -631,7 +762,8 @@ static cli_cmd_descr_t cmd_rpc_cpe_kinds[] = {
 static cli_cmd_descr_t cmd_rpc_actions[] = {
     {"send",  EPC_RPC_CALL,  "Send CWMP RPC", rpc_send, cmd_rpc_cpe_kinds},
     {"check", EPC_RPC_CHECK, "Check RPC status", rpc_check, NULL},
-    {"get",   EPC_RPC_CHECK,  "Get CWMP ACS RPC", rpc_get_acs, NULL},
+    {"get",   EPC_RPC_CHECK, "Get CWMP ACS RPC", rpc_get_acs, NULL},
+    {"wait",  EPC_RPC_CHECK, "Wait RPC OK or Fault", rpc_wait, NULL},
     END_CMD_ARRAY
 };
 
@@ -747,8 +879,10 @@ print_rpc_response(acse_epc_cwmp_data_t *cwmp_resp)
                cwmp_resp->from_cpe.add_object_r->InstanceNumber);
     break;
 
-    case CWMP_RPC_NONE:
     case CWMP_RPC_delete_object: 
+        printf("Delete status: %d\n", 
+               cwmp_resp->from_cpe.delete_object_r->Status);
+    case CWMP_RPC_NONE:
     case CWMP_RPC_reboot: 
     case CWMP_RPC_upload: 
     case CWMP_RPC_factory_reset: 
