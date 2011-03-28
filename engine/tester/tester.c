@@ -611,7 +611,8 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
                             {
                                 /* tag is w/o value and we have
                                  * already added it*/
-                                if (strcmp(entry->v, tag->v) == 0)
+                                if (strncmp(entry->v, tag->v,
+                                            strlen(tag->v)) == 0)
                                 {
                                     free(entry);
                                     entry = NULL;
