@@ -155,7 +155,8 @@ is_str_in_set(const char *str, const tqh_strings *set)
                 return i;
             }
         }
-        else
+        /* we should have exact lenght match!!! */
+        else if (c - s->v == strlen(str))
         {
             if (strncmp(str, s->v, c - s->v) == 0)
                 return atoi(c + 1);
