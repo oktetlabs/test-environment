@@ -537,6 +537,7 @@ stop_acse(void)
             int saved_errno = errno;
             ERROR("ACSE kill failed %s", strerror(saved_errno));
             /* failed to stop ACSE, just return ... */
+            acse_pid = -1;
             return TE_OS_RC(TE_TA_UNIX, saved_errno);
         }
     }
@@ -560,7 +561,7 @@ stop_acse(void)
         if (r == 0)
         {
             /* ACSE was not stopped after EPC closed, terminate it.*/
-            if (kill(acse_pid, SIGTERM))
+            if (kill(acse_pid, SIGKILL))
             {
                 int saved_errno = errno;
                 ERROR("ACSE kill after waitpid failed %s",
@@ -807,7 +808,15 @@ cwmp_conn_req(tarpc_cwmp_conn_req_in *in,
 
     rc = acse_cwmp_connreq(in->acs_name, in->cpe_name, NULL);
     if (rc)
-        RING("issue CWMP ConnReq failed %r", rc);
+    {
+        WARN("issue CWMP ConnReq failed %r", rc);
+        if (TE_ETIMEDOUT == TE_RC_GET_ERROR(rc) &&
+            TE_TA_UNIX == TE_RC_GET_MODULE(rc))
+        {
+            WARN("There was EPC timeout, kill ACSE");
+            stop_acse();
+        }
+    }
 
     out->status = rc;
 
@@ -847,6 +856,12 @@ cwmp_op_call(tarpc_cwmp_op_call_in *in,
     if (0 != rc)
     {
         ERROR("%s(): ACSE call failed %r", __FUNCTION__, rc);
+        if (TE_ETIMEDOUT == TE_RC_GET_ERROR(rc) &&
+            TE_TA_UNIX == TE_RC_GET_MODULE(rc))
+        {
+            WARN("There was EPC timeout, kill ACSE");
+            stop_acse();
+        }
         out->status = TE_RC(TE_TA_ACSE, rc);
     }
     else
@@ -885,6 +900,12 @@ cwmp_op_check(tarpc_cwmp_op_check_in *in,
     if (rc != 0)
     {
         ERROR("%s(): EPC recv failed %r", __FUNCTION__, rc);
+        if (TE_ETIMEDOUT == TE_RC_GET_ERROR(rc) &&
+            TE_TA_UNIX == TE_RC_GET_MODULE(rc))
+        {
+            WARN("There was EPC timeout, kill ACSE");
+            stop_acse();
+        }
         out->status = TE_RC(TE_TA_ACSE, rc);
     }
     else
