@@ -1,0 +1,30 @@
+# assume there exists ACS/CPE records which names are set to defaults.
+param cpe modify login 000261-Home\ Gateway-V601L622R1A0-1001742119
+param cpe modify cr_login "000261-Home Gateway-V601L622R1A0-1001742119"
+param cpe modify passwd z7cD7CTDA1DrQKUb
+param cpe modify cr_passwd z7cD7CTDA1DrQKUb
+param acs modify enabled 1
+env timeout 100
+param cpe modify sync_mode 1
+param cpe wait cwmp_state 8
+rpc send add InternetGatewayDevice.LANDevice.
+rpc wait
+rpc send get_par_vals InternetGatewayDevice.Layer2Bridging.Filter.
+rpc wait
+rpc send set_par_vals InternetGatewayDevice.Layer2Bridging.Filter.3.FilterBridgeReference i 2
+rpc wait
+rpc send set_par_vals InternetGatewayDevice.Layer2Bridging.Filter.3.FilterInterface s 2
+rpc wait
+rpc send set_par_vals InternetGatewayDevice.Layer2Bridging.Filter.3.FilterEnable b 1
+rpc wait
+rpc send get_par_vals InternetGatewayDevice.Layer2Bridging.Filter.8.
+rpc wait
+rpc send delete InternetGatewayDevice.Layer2Bridging.Filter.8.
+rpc wait
+rpc send delete InternetGatewayDevice.LANDevice.3.LANHostConfigManagement.IPInterface.1.
+rpc wait
+rpc send delete InternetGatewayDevice.LANDevice.3
+rpc wait
+rpc send fin
+
+
