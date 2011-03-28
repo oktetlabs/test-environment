@@ -82,6 +82,7 @@ logic_expr_free(logic_expr *expr)
         case LOGIC_EXPR_GE:
         case LOGIC_EXPR_LE:
         case LOGIC_EXPR_LT:
+        case LOGIC_EXPR_EQ:
             logic_expr_free(expr->u.binary.lhv);
             logic_expr_free(expr->u.binary.rhv);
             break;
@@ -105,6 +106,7 @@ logic_expr_binary(logic_expr_type type, logic_expr *lhv, logic_expr *rhv)
            type == LOGIC_EXPR_GT ||
            type == LOGIC_EXPR_GE ||
            type == LOGIC_EXPR_LT ||
+           type == LOGIC_EXPR_EQ ||
            type == LOGIC_EXPR_LE);
     assert(lhv != NULL);
     assert(rhv != NULL);
@@ -271,6 +273,20 @@ logic_expr_match(const logic_expr *re, const tqh_strings *set)
             else
                 result = 0;
             VERB("%s(): %d > %d -> %d", __FUNCTION__,
+                 lhr, rhr,
+                 result);
+            break;
+        }
+        case LOGIC_EXPR_EQ:
+        {
+            int lhr = logic_expr_match(re->u.binary.lhv, set);
+            int rhr = logic_expr_match(re->u.binary.rhv, set);
+
+            if (lhr == rhr)
+                result = 1;
+            else
+                result = 0;
+            VERB("%s(): %d == %d -> %d", __FUNCTION__,
                  lhr, rhr,
                  result);
             break;

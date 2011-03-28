@@ -65,6 +65,7 @@ extern int logic_expr_int_str_pos;
 "<"                             { return LT; }
 "<="                            { return LE; }
 "!"                             { return NOT; }
+"="                             { return EQ; }
 [-_[:alnum:].]+                 {
                                     yylval->str = strdup(yytext);
                                     return TOKEN;
