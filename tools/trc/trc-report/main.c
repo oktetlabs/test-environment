@@ -367,18 +367,48 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
             case TRC_OPT_TAG:
             {
                 tqe_string *p = TE_ALLOC(sizeof(*p));
+                tqe_string *tag;
 
                 if (p == NULL)
                 {
                     goto exit;
                 }
-                TAILQ_INSERT_TAIL(&ctx.tags, p, links);
                 p->v = (char *)poptGetOptArg(optCon);
                 if (p->v == NULL)
                 {
                     ERROR("Empty option value of --tag option");
                     goto exit;
                 }
+
+                /* do we have this tag? */
+                /* memory loss here, nobody cares */
+                TAILQ_FOREACH(tag, &ctx.tags, links)
+                {
+                    char *c = strchr(tag->v, ':');
+
+                    if (c == NULL)
+                    {
+                        /* tag is w/o value and we have
+                         * already added it*/
+                        if (strcmp(p->v, tag->v) == 0)
+                        {
+                            p = NULL;
+                            break;
+                        }
+                    }
+                    /* if prefixes before ':' match */
+                    else if (strncmp(tag->v, p->v,
+                                    c - tag->v) == 0)
+                    {
+                        /* substitute string value */
+                        tag->v = p->v;
+                        p = NULL;
+                        break;
+                    }
+                }
+                if (p != NULL)
+                    TAILQ_INSERT_TAIL(&ctx.tags, p, links);
+
                 break;
             }
 
