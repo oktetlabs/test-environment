@@ -113,7 +113,8 @@ Generic options:
   --tester-no-logues            Disable prologues and epilogues globally.
   --tester-req=<reqs-expr>      Requirements to be tested (logical expression).
   --tester-quietskip            Quietly skip tests which do not meet specified
-                                requirements.
+                                requirements (default).
+  --tester-verbskip             Force Tester to log skipped iterations.
 
     The following Tester options get test path as a value:
         <testpath>      :=  / | <path-item> | <testpath>/<path-item>
