@@ -3873,8 +3873,9 @@ struct tarpc_set_var_out {
 
 /* mcast_join_leave() */
 enum tarpc_joining_method {
-    TARPC_MCAST_OPTIONS = 1,
-    TARPC_MCAST_WSA = 2
+    TARPC_MCAST_ADD_DROP = 1,   /* sockopt IP_ADD/DROP_MULTICAST */
+    TARPC_MCAST_JOIN_LEAVE = 2, /* sockopt MCAST_JOIN/LEAVE_GROUP */
+    TARPC_MCAST_WSA = 3         /* WSAJoinLeaf, no leave */
 };
 
 struct tarpc_mcast_join_leave_in {

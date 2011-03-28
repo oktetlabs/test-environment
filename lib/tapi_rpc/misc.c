@@ -1543,10 +1543,13 @@ rpc_mcast_join_leave(rcf_rpc_server *rpcs, int s,
 
     rcf_rpc_call(rpcs, "mcast_join_leave", &in, &out);
     
-    TAPI_RPC_LOG("RPC (%s,%s): mcast_join_leave(%d, %s, %d, %s) -> "
+    TAPI_RPC_LOG("RPC (%s,%s): mcast_join_leave(%d, %s, %d, %s, %s) -> "
                  " %d (%s)", rpcs->ta, rpcs->name, s,
                  te_sockaddr2str(mcast_addr), if_index,
                  leave_group? "LEAVE" : "JOIN",
+                 how == TARPC_MCAST_ADD_DROP ? "IP_(ADD|DROP)_MEMBERSHIP" :
+                 how == TARPC_MCAST_JOIN_LEAVE ?
+                 "MCAST_(JOIN|LEAVE)_GROUP" : "WSAJoinLeaf",
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(mcast_join_leave, out.retval);
@@ -1564,10 +1567,10 @@ rpc_mcast_join(rcf_rpc_server *rpcs, int s,
 
 int 
 rpc_mcast_leave(rcf_rpc_server *rpcs, int s,
-                const struct sockaddr *mcast_addr, int if_index)
+                const struct sockaddr *mcast_addr, int if_index,
+                tarpc_joining_method how)
 {
-    return rpc_mcast_join_leave(rpcs, s, mcast_addr, if_index, TRUE,
-                                TARPC_MCAST_OPTIONS);
+    return rpc_mcast_join_leave(rpcs, s, mcast_addr, if_index, TRUE, how);
 }
 
 

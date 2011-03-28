@@ -5096,7 +5096,7 @@ TARPC_FUNC(mcast_join_leave,
             }
             break;
             
-        case TARPC_MCAST_OPTIONS:
+        case TARPC_MCAST_ADD_DROP:
 
             memcpy(&mreq.imr_multiaddr, in->multiaddr.multiaddr_val,
                    sizeof(struct in_addr));

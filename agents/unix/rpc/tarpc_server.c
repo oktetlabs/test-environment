@@ -6590,14 +6590,6 @@ mcast_join_leave(tarpc_mcast_join_leave_in  *in,
     api_func_ret_ptr    if_indextoname_func;
     api_func            ioctl_func;
 
-    if (in->how != TARPC_MCAST_OPTIONS)
-    {
-        ERROR("Unsupported joining method requested");
-        out->retval = -1;
-        out->common._errno = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
-        return;
-    }
-
     if (tarpc_find_func(in->common.use_libc, "setsockopt",
                         &setsockopt_func) != 0 ||
         tarpc_find_func(in->common.use_libc, "if_indextoname",
@@ -6614,83 +6606,168 @@ mcast_join_leave(tarpc_mcast_join_leave_in  *in,
     memset(out, 0, sizeof(tarpc_mcast_join_leave_out));
     if (in->family == RPC_AF_INET6)
     {
-#ifdef IPV6_ADD_MEMBERSHIP
-        struct ipv6_mreq mreq;
-
         assert(in->multiaddr.multiaddr_len == sizeof(struct in6_addr));
-        memcpy(&mreq.ipv6mr_multiaddr, in->multiaddr.multiaddr_val,
-               sizeof(struct in6_addr));
-        mreq.ipv6mr_interface = in->ifindex;
-        out->retval = setsockopt_func(in->fd, IPPROTO_IPV6,
-                                      in->leave_group ?
-                                          IPV6_DROP_MEMBERSHIP :
-                                          IPV6_ADD_MEMBERSHIP,
-                                      &mreq, sizeof(mreq));
-        if (out->retval != 0)
+        switch (in->how)
         {
-            ERROR("Attempt to join IPv6 multicast group failed");
-            out->common._errno = TE_RC(TE_TA_UNIX, errno);
-        }
+            case TARPC_MCAST_ADD_DROP:
+            {
+#ifdef IPV6_ADD_MEMBERSHIP
+                struct ipv6_mreq mreq;
+
+                memcpy(&mreq.ipv6mr_multiaddr, in->multiaddr.multiaddr_val,
+                       sizeof(struct in6_addr));
+                mreq.ipv6mr_interface = in->ifindex;
+                out->retval = setsockopt_func(in->fd, IPPROTO_IPV6,
+                                              in->leave_group ?
+                                                  IPV6_DROP_MEMBERSHIP :
+                                                  IPV6_ADD_MEMBERSHIP,
+                                              &mreq, sizeof(mreq));
+                if (out->retval != 0)
+                {
+                    ERROR("Attempt to join IPv6 multicast group failed");
+                    out->common._errno = TE_RC(TE_TA_UNIX, errno);
+                }
 #else
-        ERROR("IPv6 multicasting is not supported for current Agent type");
-        out->retval = -1;
-        out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
+                ERROR("IPV6_ADD_MEMBERSHIP is not supported "
+                      "for current Agent type");
+                out->retval = -1;
+                out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
 #endif
+                break;
+            }
+
+            case TARPC_MCAST_JOIN_LEAVE:
+            {
+#ifdef MCAST_LEAVE_GROUP
+                struct group_req     gr_req;
+                struct sockaddr_in6 *sin6;
+
+                sin6 = SIN6(&gr_req.gr_group);
+                sin6->sin6_family = AF_INET6;
+                memcpy(&sin6->sin6_addr, in->multiaddr.multiaddr_val,
+                       sizeof(struct in6_addr));
+                gr_req.gr_interface = in->ifindex;
+                out->retval = setsockopt_func(in->fd, IPPROTO_IPV6,
+                                              in->leave_group ?
+                                                  MCAST_LEAVE_GROUP :
+                                                  MCAST_JOIN_GROUP,
+                                              &gr_req, sizeof(gr_req));
+                if (out->retval != 0)
+                {
+                    ERROR("Attempt to join IPv6 multicast group failed");
+                    out->common._errno = TE_RC(TE_TA_UNIX, errno);
+                }
+#else
+                ERROR("MCAST_LEAVE_GROUP is not supported "
+                      "for current Agent type");
+                out->retval = -1;
+                out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
+#endif
+                break;
+            }
+            default:
+                ERROR("Unknown multicast join method");
+                out->retval = -1;
+                out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
         return;
     }
     else if (in->family == RPC_AF_INET)
     {
-#if HAVE_STRUCT_IP_MREQN
-        struct ip_mreqn mreq;
-
-        memset(&mreq, 0, sizeof(mreq));
-        mreq.imr_ifindex = in->ifindex;
-#else
-        char              if_name[IFNAMSIZ];
-        struct ifreq      ifrequest;
-        struct ip_mreq    mreq;
-
-        memset(&mreq, 0, sizeof(mreq));
-
-        if (in->ifindex != 0)
-        {
-            if (if_indextoname_func(in->ifindex, if_name) == NULL)
-            {
-                ERROR("Invalid interface index specified");
-                out->retval = -1;
-                out->common._errno = TE_RC(TE_TA_UNIX, TE_ENXIO);
-                return;
-            }
-            else
-            {
-                memset(&ifrequest, 0, sizeof(struct ifreq));
-                memcpy(&(ifrequest.ifr_name), if_name, IFNAMSIZ);
-                if (ioctl_func(in->fd, SIOCGIFADDR, &ifrequest) < 0)
-                {
-                    ERROR("No IPv4 address on interface %s", if_name);
-                    out->retval = -1;
-                    out->common._errno = TE_RC(TE_TA_UNIX, TE_ENXIO);
-                    return;
-                }
-
-                memcpy(&mreq.imr_interface,
-                       &SIN(&ifrequest.ifr_addr)->sin_addr,
-                       sizeof(struct in_addr));
-            }
-        }
-#endif
         assert(in->multiaddr.multiaddr_len == sizeof(struct in_addr));
-        memcpy(&mreq.imr_multiaddr, in->multiaddr.multiaddr_val,
-               sizeof(struct in_addr));
-        out->retval = setsockopt_func(in->fd, IPPROTO_IP,
-                                      in->leave_group ?
-                                          IP_DROP_MEMBERSHIP :
-                                          IP_ADD_MEMBERSHIP,
-                                      &mreq, sizeof(mreq));
-        if (out->retval != 0)
+        switch (in->how)
         {
-            ERROR("Attempt to join IPv4 multicast group failed");
-            out->common._errno = TE_RC(TE_TA_UNIX, errno);
+            case TARPC_MCAST_ADD_DROP:
+            {
+#if HAVE_STRUCT_IP_MREQN
+                struct ip_mreqn mreq;
+
+                memset(&mreq, 0, sizeof(mreq));
+                mreq.imr_ifindex = in->ifindex;
+#else
+                char              if_name[IFNAMSIZ];
+                struct ifreq      ifrequest;
+                struct ip_mreq    mreq;
+
+                memset(&mreq, 0, sizeof(mreq));
+
+                if (in->ifindex != 0)
+                {
+                    if (if_indextoname_func(in->ifindex, if_name) == NULL)
+                    {
+                        ERROR("Invalid interface index specified");
+                        out->retval = -1;
+                        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENXIO);
+                        return;
+                    }
+                    else
+                    {
+                        memset(&ifrequest, 0, sizeof(struct ifreq));
+                        memcpy(&(ifrequest.ifr_name), if_name, IFNAMSIZ);
+                        if (ioctl_func(in->fd, SIOCGIFADDR, &ifrequest) < 0)
+                        {
+                            ERROR("No IPv4 address on interface %s",
+                                  if_name);
+                            out->retval = -1;
+                            out->common._errno = TE_RC(TE_TA_UNIX,
+                                                       TE_ENXIO);
+                            return;
+                        }
+
+                        memcpy(&mreq.imr_interface,
+                               &SIN(&ifrequest.ifr_addr)->sin_addr,
+                               sizeof(struct in_addr));
+                    }
+                }
+#endif
+                memcpy(&mreq.imr_multiaddr, in->multiaddr.multiaddr_val,
+                       sizeof(struct in_addr));
+                out->retval = setsockopt_func(in->fd, IPPROTO_IP,
+                                              in->leave_group ?
+                                                  IP_DROP_MEMBERSHIP :
+                                                  IP_ADD_MEMBERSHIP,
+                                              &mreq, sizeof(mreq));
+                if (out->retval != 0)
+                {
+                    ERROR("Attempt to join IPv4 multicast group failed");
+                    out->common._errno = TE_RC(TE_TA_UNIX, errno);
+                }
+                break;
+            }
+
+            case TARPC_MCAST_JOIN_LEAVE:
+            {
+#ifdef MCAST_LEAVE_GROUP
+                struct group_req     gr_req;
+                struct sockaddr_in  *sin;
+
+                sin = SIN(&gr_req.gr_group);
+                sin->sin_family = AF_INET;
+                memcpy(&sin->sin_addr, in->multiaddr.multiaddr_val,
+                       sizeof(struct in_addr));
+                gr_req.gr_interface = in->ifindex;
+                out->retval = setsockopt_func(in->fd, IPPROTO_IP,
+                                              in->leave_group ?
+                                                  MCAST_LEAVE_GROUP :
+                                                  MCAST_JOIN_GROUP,
+                                              &gr_req, sizeof(gr_req));
+                if (out->retval != 0)
+                {
+                    ERROR("Attempt to join IP multicast group failed");
+                    out->common._errno = TE_RC(TE_TA_UNIX, errno);
+                }
+#else
+                ERROR("MCAST_LEAVE_GROUP is not supported "
+                      "for current Agent type");
+                out->retval = -1;
+                out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
+#endif
+                break;
+            }
+            default:
+                ERROR("Unknown multicast join method");
+                out->retval = -1;
+                out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
     }
     else
