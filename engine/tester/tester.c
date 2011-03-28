@@ -350,7 +350,7 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
         { "out-tin", 't', POPT_ARG_NONE, NULL, TESTER_OPT_OUT_TIN,
           "Output Test Identification Numbers (TINs) to terminal.", NULL },
 
-        { "out-test-params", NULL, POPT_ARG_NONE, NULL,
+        { "out-test-params", '\0', POPT_ARG_NONE, NULL,
           TESTER_OPT_OUT_TEST_PARAMS,
           "Output Test Iteration parameters to the terminal.", NULL },
 
@@ -607,25 +607,11 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
                         {
                             char *c = strchr(tag->v, ':');
 
-                            if (c == NULL)
+                            if (strncmp(entry->v, tag->v,
+                                        c ? (unsigned)(c - tag->v) :
+                                strlen(tag->v)) == 0)
                             {
-                                /* tag is w/o value and we have
-                                 * already added it*/
-                                if (strncmp(entry->v, tag->v,
-                                            strlen(tag->v)) == 0)
-                                {
-                                    free(entry);
-                                    entry = NULL;
-                                    break;
-                                }
-                            }
-                            /* if prefixes before ':' match */
-                            else if (strncmp(tag->v, entry->v,
-                                             c - tag->v) == 0)
-                            {
-                                /* substitute string value */
                                 tag->v = entry->v;
-                                free(entry);
                                 entry = NULL;
                                 break;
                             }

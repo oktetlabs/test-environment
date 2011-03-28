@@ -386,25 +386,13 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
                 {
                     char *c = strchr(tag->v, ':');
 
-                    if (c == NULL)
+                    if (strncmp(p->v, tag->v,
+                                c ? (unsigned)(c - tag->v) :
+                                strlen(tag->v)) == 0)
                     {
-                        /* tag is w/o value and we have
-                         * already added it*/
-                        if (strncmp(p->v, tag->v,
-                                    strlen(tag->v)) == 0)
-                        {
+                        tag->v = p->v;
                             p = NULL;
                             break;
-                        }
-                    }
-                    /* if prefixes before ':' match */
-                    else if (strncmp(tag->v, p->v,
-                                    c - tag->v) == 0)
-                    {
-                        /* substitute string value */
-                        tag->v = p->v;
-                        p = NULL;
-                        break;
                     }
                 }
                 if (p != NULL)
