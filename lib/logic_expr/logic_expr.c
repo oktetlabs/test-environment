@@ -177,7 +177,8 @@ logic_expr_match(const logic_expr *re, const tqh_strings *set)
 
             result = strtol(re->u.value, &endptr, 10);
 
-            if (re->u.value == endptr)
+            if (re->u.value == endptr ||
+                (endptr - re->u.value) != strlen(re->u.value))
                 result = is_str_in_set(re->u.value, set);
             VERB("%s(): %s -> %d", __FUNCTION__, re->u.value, result);
             break;
