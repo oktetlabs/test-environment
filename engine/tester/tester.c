@@ -593,15 +593,46 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
                     else
                     {
                         tqe_string *entry = malloc(sizeof(*entry));
-                        
+                        tqe_string *tag;
+
                         if (entry == NULL)
                             return TE_RC(TE_TESTER, TE_ENOMEM);
-                        TAILQ_INSERT_TAIL(&global->trc_tags, entry,
-                                          links);
 
                         entry->v = strdup(poptGetOptArg(optCon));
                         if (entry->v == NULL)
                             return TE_RC(TE_TESTER, TE_ENOMEM);
+                        /* do we have this tag? */
+                        /* memory loss here, nobody cares */
+                        TAILQ_FOREACH(tag, &global->trc_tags, links)
+                        {
+                            char *c = strchr(tag->v, ':');
+
+                            if (c == NULL)
+                            {
+                                /* tag is w/o value and we have
+                                 * already added it*/
+                                if (strcmp(entry->v, tag->v) == 0)
+                                {
+                                    free(entry);
+                                    entry = NULL;
+                                    break;
+                                }
+                            }
+                            /* if prefixes before ':' match */
+                            else if (strncmp(tag->v, entry->v,
+                                             c - tag->v) == 0)
+                            {
+                                /* substitute string value */
+                                tag->v = entry->v;
+                                free(entry);
+                                entry = NULL;
+                                break;
+                            }
+                        }
+                        if (entry)
+                            TAILQ_INSERT_TAIL(&global->trc_tags, entry,
+                                              links);
+
                     }
 #else
                     /* Unreachable */
