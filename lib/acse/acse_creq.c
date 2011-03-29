@@ -98,8 +98,9 @@ conn_req_after_poll(void *data, struct pollfd *pfd)
     if (!(pfd->revents & POLLIN))
         return 0;
 
-    INFO("Processing ConnectionRequest to '%s'\n",
-         conn_req->cpe_item->name);
+    RING("Processing ConnectionRequest to '%s/%s', data ptr %p\n",
+         conn_req->cpe_item->acs->name,
+         conn_req->cpe_item->name, data);
 
     soap = &(conn_req->m_soap);
     /* should not block after poll() */
@@ -118,7 +119,7 @@ conn_req_after_poll(void *data, struct pollfd *pfd)
             if (NULL == passwd)
                 passwd = conn_req->cpe_item->acs_auth.passwd;
 
-            INFO("ConnectionRequest, attempt failed, "
+            RING("ConnectionRequest, attempt failed, again... "
                  "realm: '%s'; try login '%s'",
                   soap->authrealm, userid);
             /* save userid and passwd for basic or digest authentication */
@@ -147,7 +148,8 @@ conn_req_after_poll(void *data, struct pollfd *pfd)
 
     soap_end_recv(soap);
 
-    INFO("Recv after Conn req to '%s', status %d", 
+    RING("Recv after Conn req to '%s/%s', status %d", 
+         conn_req->cpe_item->acs->name,
          conn_req->cpe_item->name, soap->error);
 
     soap_closesock(soap);
@@ -217,7 +219,9 @@ acse_init_connection_request(cpe_t *cpe_item)
     channel->before_poll = conn_req_before_poll;
     channel->after_poll = conn_req_after_poll;
     channel->destroy = conn_req_destroy;
-    RING("%s() Conn.Req started, wait.. ", __FUNCTION__);
+    RING("%s() to %s/%s \n CR URL <%s>, wait.. data ptr %p",
+        __FUNCTION__, cpe_item->acs->name, cpe_item->name,
+        cpe_item->url, channel->data);
 
     acse_add_channel(channel);
 
