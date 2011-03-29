@@ -285,16 +285,20 @@ cpe_find_conn_req_url(struct _cwmp__Inform *cwmp__Inform, cpe_t *cpe_item)
 {
     cwmp__ParameterValueStruct *param_v;
     int i;
+    char *subname_place;
 
     for (i = 0; i < cwmp__Inform->ParameterList->__size; i++)
     {
         param_v =
             cwmp__Inform->ParameterList->__ptrParameterValueStruct[i];
-        VERB("%s, param name '%s', \n    val '%s'",
-             __FUNCTION__, param_v->Name, param_v->Value);
-        if (strcmp(param_v->Name, 
-            "InternetGatewayDevice.ManagementServer.ConnectionRequestURL")
-            == 0)
+        subname_place = index(param_v->Name, '.');
+
+        VERB("%s, param name '%s', \n    val '%s', subname '%s'",
+             __FUNCTION__, param_v->Name, param_v->Value, subname_place);
+        if (subname_place == NULL)
+            continue;
+        if (strcmp(subname_place, 
+                   ".ManagementServer.ConnectionRequestURL") == 0)
         {
             if (cpe_item->url)
                 free((char *)cpe_item->url);
@@ -818,14 +822,16 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
                                           sizeof(buf));
                 if (r == 0) 
                 {
-                    WARN("Unexpected EOF in state PENDING, CPE %s",
+                    WARN("Unexpected EOF in state PENDING, ACS/CPE %s/%s",
+                         cwmp_sess->cpe_owner->acs->name,
                          cwmp_sess->cpe_owner->name);
                     return TE_ENOTCONN;
                 }
                 else
                 {
-                    WARN("Unexpected data (%d b) in state PENDING, CPE %s",
-                         r, cwmp_sess->cpe_owner->name);
+                    WARN("Unexpected data (%d b) in state PENDING; %s/%s",
+                         r, cwmp_sess->cpe_owner->acs->name,
+                         cwmp_sess->cpe_owner->name);
                 }
             }
             else
@@ -947,10 +953,11 @@ acse_send(struct soap *soap, const char *s, size_t n)
         log_buf[log_len] = '\0';
 
         /* TODO: should we make loglevel customizable here? */
-        RING("Send %u bytes to %s %s: (printed %u bytes)\n%s", n,
-            session->cpe_owner ? "CPE" : "ACS", 
-            session->cpe_owner ? session->cpe_owner->name : 
-                                 session->acs_owner->name, 
+        RING("Send %u bytes to %s %s/%s: (printed %u bytes)\n%s", n,
+            session->acs_owner ? "ACS" : "CPE", 
+            session->acs_owner ? session->acs_owner->name :
+                                 session->cpe_owner->acs->name,
+            session->acs_owner ? "(none)" : session->cpe_owner->name,
             log_len, log_buf);
     }
     }
@@ -981,10 +988,11 @@ acse_recv(struct soap *soap, char *s, size_t n)
         log_buf[log_len] = '\0';
 
         /* TODO: should we make loglevel customizable here? */
-        RING("Recv %u bytes from %s %s: (printed %u bytes)\n%s", rc, 
-            session->cpe_owner ? "CPE" : "ACS", 
-            session->cpe_owner ? session->cpe_owner->name : 
-                                 session->acs_owner->name, 
+        RING("Recv %u bytes from %s %s/%s: (printed %u bytes)\n%s", rc, 
+            session->acs_owner ? "ACS" : "CPE", 
+            session->acs_owner ? session->acs_owner->name :
+                                 session->cpe_owner->acs->name,
+            session->acs_owner ? "(none)" : session->cpe_owner->name,
             log_len, log_buf);
     }
     return rc;
@@ -1096,10 +1104,12 @@ te_errno
 cwmp_close_session(cwmp_session_t *sess)
 {
     assert(NULL != sess);
+    assert((NULL != sess->acs_owner) || (NULL != sess->cpe_owner));
 
-    RING("close cwmp session on %s '%s'", 
-        sess->acs_owner ? "ACS" : "CPE", 
-        sess->acs_owner ? sess->acs_owner->name : sess->cpe_owner->name);
+    RING("close cwmp session on %s '%s/%s'", 
+      sess->acs_owner ? "ACS" : "CPE", 
+      sess->acs_owner ? sess->acs_owner->name : sess->cpe_owner->acs->name,
+      sess->acs_owner ? "(none)" : sess->cpe_owner->name);
 
     /* TODO: investigate, what else should be closed. */
 
