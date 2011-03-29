@@ -495,7 +495,11 @@ tapi_acse_wait_acse_state(tapi_acse_context_t *ctx,
     } while (tapi_acse_wait_step(ctx));
 
     if (0 == ctx->timeout && !(want_state & cur_state))
+    {
+        WARN("wait param %s for %d timed out, last val %d",
+              state_var, want_state, cur_state);
         rc = TE_ETIMEDOUT;
+    }
 
     tapi_acse_ctx_clear_timers(ctx);
     if (res_state != NULL)
