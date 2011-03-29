@@ -1135,6 +1135,8 @@ tapi_acse_cpe_connect(tapi_acse_context_t *ctx)
     CHECK_RC(tapi_acse_cpe_conn_request(ctx));
 
     rc = tapi_acse_wait_cr_state(ctx, CR_DONE);
+    if (TE_ETIMEDOUT == TE_RC_GET_ERROR(rc))
+        return rc; /* do not try again */
     if (0 != rc)
     {
         cwmp_sess_state_t   cur_sess_state = 0;
