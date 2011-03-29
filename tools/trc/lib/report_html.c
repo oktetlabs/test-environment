@@ -1316,7 +1316,7 @@ trc_report_keys_to_html(FILE           *f,
         free(keyw);
     }
 
-    RING("Run: %s", cmd_buf);
+    VERB("Run: %s", cmd_buf);
     if ((pid = te_shell_cmd_inline(cmd_buf, -1,
                                    &fd_in, &fd_out, NULL)) < 0)
     {
