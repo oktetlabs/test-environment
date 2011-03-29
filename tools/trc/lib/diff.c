@@ -446,11 +446,9 @@ trc_test_status_merge(trc_test_status result, trc_test_status add)
      * TRC_TEST_STATUS_MAX.
      */
     assert(result <= TRC_TEST_STATUS_MAX);
-    /* 
-     * It is stange to have unspecified result together
-     * with any other entry.
-     */
-    assert(result != TRC_TEST_UNSPECIFIED);
+
+    if (result == TRC_TEST_UNSPECIFIED)
+        return add;
     /*
      * Added result has to be valid and can't be unstable.
      */
@@ -469,12 +467,7 @@ trc_test_status_merge(trc_test_status result, trc_test_status add)
     }
     else if (add == TRC_TEST_UNSPECIFIED)
     {
-        /* 
-         * It is stange to have unspecified result together
-         * with any other entry.
-         */
-        assert(FALSE);
-        return TRC_TEST_STATUS_MAX;
+        return result;
     }
     else if (result == TRC_TEST_UNSTABLE)
     {
