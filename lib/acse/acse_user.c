@@ -328,8 +328,13 @@ acse_cwmp_connreq(const char *acs, const char *cpe,
     rc = acse_cwmp_prepare(acs, cpe, EPC_CONN_REQ, NULL);
     if (0 == rc)
         rc = acse_cwmp_call(&status, NULL, cwmp_data);
+    else 
+        WARN("acse_cwmp_connreq(): rc of acse_cwmp_prepare() -> %r", rc);
     if (0 != rc)
+    {
+        WARN("acse_cwmp_connreq(): rc of acse_cwmp_call() -> %r", rc);
         return TE_RC(TE_TA_ACSE, rc);
+    }
     if (0 != status)
         return TE_RC(TE_ACSE, rc);
     return 0;
