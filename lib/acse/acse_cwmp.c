@@ -982,7 +982,7 @@ acse_send(struct soap *soap, const char *s, size_t n)
             session->acs_owner ? session->acs_owner->name :
                                  session->cpe_owner->acs->name,
             session->acs_owner ? "(none)" : session->cpe_owner->name,
-            session, log_len, log_buf);
+            log_len, log_buf);
     }
     }
     /* call standard gSOAP fsend */
@@ -1017,7 +1017,7 @@ acse_recv(struct soap *soap, char *s, size_t n)
             session->acs_owner ? session->acs_owner->name :
                                  session->cpe_owner->acs->name,
             session->acs_owner ? "(none)" : session->cpe_owner->name,
-            session, log_len, log_buf);
+            log_len, log_buf);
     }
     return rc;
 }
