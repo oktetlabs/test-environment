@@ -184,6 +184,23 @@ db_remove_acs(acs_t *acs)
         WARN("attempt to remove active ACS object '%s'", acs->name);
         return TE_EBUSY;
     }
+    RING("db_remove_acs '%s', ptr %p, sess ptr %p",
+         acs->name, acs, acs->session);
+    if (acs->session != NULL)
+    {
+        te_errno rc = 0;
+        if (acs->session->channel != NULL)
+            acse_remove_channel(acs->session->channel);
+        if (acs->session != NULL)
+            rc = cwmp_close_session(acs->session);
+        if (rc != 0)
+        {
+            ERROR("Close CWMP session for ACS '%s' failed %r",
+                  acs->name, rc);
+            return rc;
+        }
+        acs->session = NULL;
+    }
     while (! (LIST_EMPTY(&acs->cpe_list)))
     {
         cpe_t    *cpe_item = LIST_FIRST(&acs->cpe_list);

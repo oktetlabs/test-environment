@@ -475,6 +475,7 @@ acs_http_resp(acs_t *acs, acse_epc_config_data_t *params)
     if (params->op.fun == EPC_CFG_MODIFY)
     {
         int r;
+        VERB("set http_response to <%s>", params->value);
         if (strlen(params->value) == 0)
         {
             free(acs->http_response);
@@ -494,6 +495,9 @@ acs_http_resp(acs_t *acs, acse_epc_config_data_t *params)
             WARN("HTTP response spec wrong, http code expected.");
             return TE_EINVAL;
         }
+        VERB("set http_response to code %d, loc <%s>",
+             acs->http_response->http_code, 
+             acs->http_response->location);
     }
     else
     {

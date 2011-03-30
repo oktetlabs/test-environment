@@ -225,11 +225,12 @@ conn_register_acs(acs_t *acs)
         LIST_INSERT_HEAD(&conn_list, new_conn, links);
 #endif /* CONN_IS_LIST */ 
 
-        new_ch = malloc(sizeof(*new_ch)); 
+        new_ch = calloc(1, sizeof(*new_ch)); 
         new_ch->data = new_conn;
         new_ch->before_poll = conn_before_poll;
         new_ch->after_poll = conn_after_poll;
         new_ch->destroy = conn_destroy;
+        new_ch->state = ACSE_CH_ACTIVE;
 
         new_conn->own_channel = new_ch;
 

@@ -565,14 +565,17 @@ __cwmp__Inform(struct soap *soap,
     {
         int http_code = session->acs_owner->http_response->http_code;
         char *loc = session->acs_owner->http_response->location;
-        RING("Process Inform, found HTTP response setting, %d, %s",
-            http_code, loc);
+        RING("ACS '%s': process Inform, HTTP response set, %d, %s",
+            session->acs_owner->name, http_code, loc);
 
-        strcpy(soap->endpoint, loc);
+        acse_cwmp_send_http(soap, NULL,
+                            session->acs_owner->http_response->http_code,
+                            session->acs_owner->http_response->location);
+
         free(session->acs_owner->http_response);
         session->acs_owner->http_response = NULL;
 
-        return http_code;
+        return SOAP_STOP; /* HTTP response already sent. */
     }
 
 
@@ -608,11 +611,14 @@ __cwmp__Inform(struct soap *soap,
             RING("Process Inform, for CPE is HTTP response setting, %d, %s",
                 http_code, loc);
 
-            strcpy(soap->endpoint, loc);
+            acse_cwmp_send_http(soap, session,
+                                cpe_item->http_response->http_code,
+                                cpe_item->http_response->location);
+
             free(cpe_item->http_response);
             cpe_item->http_response = NULL;
 
-            return http_code;
+            return SOAP_STOP; /* HTTP response already sent. */
         }
     }
     else
@@ -748,6 +754,9 @@ cwmp_before_poll(void *data, struct pollfd *pfd)
 {
     cwmp_session_t *cwmp_sess = data;
 
+    VERB("before poll, sess ptr %p, state %d, soap status %d", 
+         cwmp_sess, cwmp_sess->state, cwmp_sess->m_soap.error);
+
     if (cwmp_sess == NULL ||
         cwmp_sess->state == CWMP_NOP)
     {
@@ -781,6 +790,9 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
 {
     cwmp_session_t *cwmp_sess = data;
 
+    VERB("Start after serve, sess ptr %p, state %d, SOAP error %d",
+          cwmp_sess, cwmp_sess->state, cwmp_sess->m_soap.error);
+
     if (!(pfd->revents))
         return 0;
 
@@ -791,10 +803,17 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
         case CWMP_SERVE:
             /* Now, after poll() on soap socket, it should not block */
             soap_serve(&cwmp_sess->m_soap);
-            VERB("status after serve: %d", cwmp_sess->m_soap.error);
+            VERB("after serve, sess ptr %p, state %d, SOAP error %d",
+                  cwmp_sess, cwmp_sess->state, cwmp_sess->m_soap.error);
             if (cwmp_sess->m_soap.error == SOAP_EOF)
             {
-                RING(" CWMP processing, EOF");
+                RING("after serve %s %s/%s(sess ptr %p, state %d): EOF",
+                    cwmp_sess->acs_owner ? "ACS" : "CPE", 
+                    cwmp_sess->acs_owner ? cwmp_sess->acs_owner->name :
+                                         cwmp_sess->cpe_owner->acs->name,
+                    cwmp_sess->acs_owner ? "(none)":
+                                         cwmp_sess->cpe_owner->name,
+                    cwmp_sess, cwmp_sess->state);
                 return TE_ENOTCONN;
             }
             break;
@@ -802,10 +821,15 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
         case CWMP_WAIT_RESPONSE:
             /* Now, after poll() on soap socket, it should not block */
             acse_soap_serve_response(cwmp_sess);
-            RING("status after serve: %d", cwmp_sess->m_soap.error);
             if (cwmp_sess->m_soap.error == SOAP_EOF)
             {
-                RING(" CWMP processing, EOF");
+                RING("after serve %s %s/%s(sess ptr %p, state %d): EOF",
+                    cwmp_sess->acs_owner ? "ACS" : "CPE", 
+                    cwmp_sess->acs_owner ? cwmp_sess->acs_owner->name :
+                                         cwmp_sess->cpe_owner->acs->name,
+                    cwmp_sess->acs_owner ? "(none)":
+                                         cwmp_sess->cpe_owner->name,
+                    cwmp_sess, cwmp_sess->state);
                 return TE_ENOTCONN;
             }
             break;
@@ -958,7 +982,7 @@ acse_send(struct soap *soap, const char *s, size_t n)
             session->acs_owner ? session->acs_owner->name :
                                  session->cpe_owner->acs->name,
             session->acs_owner ? "(none)" : session->cpe_owner->name,
-            log_len, log_buf);
+            session, log_len, log_buf);
     }
     }
     /* call standard gSOAP fsend */
@@ -988,12 +1012,12 @@ acse_recv(struct soap *soap, char *s, size_t n)
         log_buf[log_len] = '\0';
 
         /* TODO: should we make loglevel customizable here? */
-        RING("Recv %u bytes from %s %s/%s: (printed %u bytes)\n%s", rc, 
+        RING("Recv %u bytes from %s %s/%s: (pr %u bytes)\n%s", rc, 
             session->acs_owner ? "ACS" : "CPE", 
             session->acs_owner ? session->acs_owner->name :
                                  session->cpe_owner->acs->name,
             session->acs_owner ? "(none)" : session->cpe_owner->name,
-            log_len, log_buf);
+            session, log_len, log_buf);
     }
     return rc;
 }
@@ -1043,6 +1067,8 @@ cwmp_new_session(int socket, acs_t *acs)
         }
     }
 
+    RING("Init session for ACS '%s', sess ptr %p, acs ptr %p", 
+         acs->name, new_sess, acs);
     new_sess->state = CWMP_NOP;
     new_sess->acs_owner = acs;
     new_sess->cpe_owner = NULL;
@@ -1106,10 +1132,11 @@ cwmp_close_session(cwmp_session_t *sess)
     assert(NULL != sess);
     assert((NULL != sess->acs_owner) || (NULL != sess->cpe_owner));
 
-    RING("close cwmp session on %s '%s/%s'", 
-      sess->acs_owner ? "ACS" : "CPE", 
-      sess->acs_owner ? sess->acs_owner->name : sess->cpe_owner->acs->name,
-      sess->acs_owner ? "(none)" : sess->cpe_owner->name);
+    RING("close cwmp session (sess ptr %p) on %s '%s/%s'", sess,
+          sess->acs_owner ? "ACS" : "CPE", 
+          sess->acs_owner ? sess->acs_owner->name :
+                            sess->cpe_owner->acs->name,
+          sess->acs_owner ? "(none)" : sess->cpe_owner->name);
 
     /* TODO: investigate, what else should be closed. */
 
