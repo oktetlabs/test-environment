@@ -417,6 +417,11 @@ cwmp_par_value_cmp(cwmp_parameter_value_struct_t *first,
     if (first->__type != second->__type || 
         strcmp(first->Name, second->Name) != 0)
         return 1;
+
+    /* Success match if one of values wildcard */
+    if (first->Value == NULL || second->Value == NULL)
+        return 0;
+
     switch (first->__type)
     {
         case SOAP_TYPE_xsd__boolean:         
