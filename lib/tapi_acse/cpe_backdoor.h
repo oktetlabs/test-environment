@@ -208,4 +208,46 @@ extern te_errno cpe_get_acs_passwd(cpe_id_t *cpe,
                                    char *acs_passwd, size_t bufsize);
 
 
+/**
+ * For standalone TR client tests respawn client, if necessary.
+ * Do nothing for TR client on the real CPE. 
+ *
+ * @param cpe           ID of CPE.
+ * @param acs_url       string with URL, may be NULL.
+ *
+ * @return status
+ */
+extern te_errno cpe_respawn_client(cpe_id_t *cpe, const char *acs_url);
+
+/**
+ * Check CPE is really just reboot. 
+ * TODO: insert some timespec, that it is reboot during particular 
+ * time interval?
+ *
+ * This routine do nothing for local TR client, because there is no
+ * any real CPE under it. 
+ *
+ * @param cpe           ID of CPE.
+ *
+ * @return zero on success (i.e. check processed without problems and 
+ *             box has just reboot) or error code.
+ */ 
+extern te_errno cpe_check_reboot(cpe_id_t *cpe);
+
+/**
+ * Check CPE is really just reboot (?) and ѕettings was dropped to 
+ * the factory default. 
+ * TODO: insert some timespec, that it is reboot during particular 
+ * time interval?
+ *
+ * This routine do nothing for local TR client, because there is no
+ * any real CPE under it. 
+ *
+ * @param cpe           ID of CPE.
+ *
+ * @return zero on success (i.e. check processed without problems and 
+ *             box has factory default settings) or error code.
+ */ 
+extern te_errno cpe_check_factory_reset(cpe_id_t *cpe);
+
 #endif /* __CPE_BACKDOOR__H__ */ 
