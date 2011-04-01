@@ -6280,9 +6280,11 @@ user_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
 
+#if 0
     /* Fedora has very aggressive nscd cache */
     /* https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=134323 */
     ta_system("/usr/sbin/nscd -i group && /usr/sbin/nscd -i passwd");
+#endif
 
 #if TA_USE_PAM
     /** Set (change) password for just added user */
@@ -6297,9 +6299,11 @@ user_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
 
+#if 0
     /* Fedora has very aggressive nscd cache */
     /* https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=134323 */
     ta_system("/usr/sbin/nscd -i group && /usr/sbin/nscd -i passwd");
+#endif
 
     sprintf(buf, "su - %s -c 'ssh-keygen -t dsa -N \"\" "
                  "-f /tmp/%s/.ssh/id_dsa' >/dev/null 2>&1", user, user);

@@ -1796,7 +1796,7 @@ ta_kill_death(pid_t pid)
 
     if (ta_waitpid(pid, NULL, WNOHANG) == pid)
         return 0;
-    rc = kill(pid, SIGTERM);
+    rc = kill(-pid, SIGTERM);
     if (rc != 0 && errno != ESRCH)
         return -1;
     errno = saved_errno;
@@ -1812,7 +1812,7 @@ ta_kill_death(pid_t pid)
 
     /* Wait for termination. */
     te_msleep(500);
-    kill(pid, SIGKILL);
+    kill(-pid, SIGKILL);
     ta_waitpid(pid, NULL, 0);
     return 0;
 }
