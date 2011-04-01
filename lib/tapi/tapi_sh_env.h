@@ -48,11 +48,9 @@ extern "C" {
  * @result errno
  */
 static inline te_errno
-tapi_sh_env_setenv(rcf_rpc_server *pco,
-                   const char *env_name,
-                   const char *env_value,
-                   te_bool force,
-                   te_bool restart)
+tapi_sh_env_set(rcf_rpc_server *pco,
+                const char *env_name, const char *env_value,
+                te_bool force, te_bool restart)
 {
     cfg_handle handle;
     te_errno rc = 0;
@@ -87,12 +85,12 @@ tapi_sh_env_setenv(rcf_rpc_server *pco,
  *
  * @param pco         PCO handle
  * @param env_name    Name of the environment variable
+ * @param force       Ignore if the variable was not set
  * @param restart     Should the PCO be restarted?
- * @param empty       Ignore if the variable was not set
  */
 static inline te_errno
 tapi_sh_env_unset(rcf_rpc_server *pco, const char *env_name,
-                  te_bool restart, te_bool empty)
+                   te_bool force, te_bool restart)
 {
     cfg_handle handle;
     te_errno rc = 0;
@@ -107,7 +105,7 @@ tapi_sh_env_unset(rcf_rpc_server *pco, const char *env_name,
     if (rc == 0 && restart)
         rcf_rpc_server_restart(pco);
 
-    return (empty && rc == TE_ENOENT) ? 0 : rc;
+    return (force && rc == TE_ENOENT) ? 0 : rc;
 }
 
 #ifdef __cplusplus
