@@ -1571,7 +1571,8 @@ trc_report_exp_got_to_html(FILE             *f,
         {
 #if TRC_USE_LOG_URLS
             char *test_url = NULL;
-            if ((iter_entry != NULL) && (iter_entry->tin >= 0))
+            if ((iter_entry != NULL) && (iter_entry->tin >= 0) &&
+                (ctx->html_logs_path != NULL))
             {
                 test_url = te_sprintf(trc_test_log_url,
 #if TRC_USE_STATS_POPUP
