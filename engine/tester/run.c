@@ -36,6 +36,7 @@
 #endif
 
 #include <stdio.h>
+#include <ctype.h>
 #ifdef STDC_HEADERS
 #include <stdlib.h>
 #include <string.h>
@@ -689,9 +690,9 @@ test_params_to_string(char *str, const unsigned int n_args,
  * @return Allocated string or NULL.
  */
 char *
-test_params_normalise(char *param)
+test_params_normalise(const char *param)
 {
-    char *p;
+    const char *p;
     char *q;
     char *str = NULL;
     te_bool skip_spaces = TRUE;
@@ -742,9 +743,9 @@ test_params_hash(test_iter_arg *args, unsigned int n_args)
 {
     MD5_CTX md5;
 
-    int   i;
-    int   j;
-    int   k;
+    unsigned int  i;
+    unsigned int  j;
+    unsigned int  k;
     unsigned char digest[MD5_DIGEST_LENGTH];
     char *hash_str = calloc(1, MD5_DIGEST_LENGTH * 2 + 1);
     int  *sorted = calloc(n_args, sizeof(int));
@@ -774,7 +775,7 @@ test_params_hash(test_iter_arg *args, unsigned int n_args)
 
     for (i = 0; i < n_args; i++)
     {
-        char *name = args[sorted[i]].name;
+        const char *name = args[sorted[i]].name;
         char *value = test_params_normalise(args[sorted[i]].value);
 
         if (value == NULL)
@@ -2757,6 +2758,13 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                  /* Noname session with only unknown tests inside */
                  ctx->current_result.exp_status == TRC_VERDICT_UNKNOWN))
             {
+                te_log_buf *lb = te_log_buf_alloc();
+
+                te_log_buf_append(lb, "\nObtained result is:\n");
+                te_test_result_to_log_buf(lb, &ctx->current_result.result);
+                RING("%s", te_log_buf_get(lb));
+                te_log_buf_free(lb);
+
                 assert(ctx->current_result.exp_status ==
                            TRC_VERDICT_UNKNOWN);
                 ctx->current_result.error = "Unknown test/iteration";
@@ -2795,20 +2803,12 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                     ctx->current_result.error = "Unexpected test result(s)";
             }
             /* assert(ctx->current_result.exp_result != NULL) */
-            else if (trc_is_result_expected(
-                         ctx->current_result.exp_result,
-                         &ctx->current_result.result) != NULL)
-            {
-                ctx->current_result.exp_status = TRC_VERDICT_EXPECTED;
-                ctx->current_result.error = NULL;
-            }
             else
             {
+                /* Even for expected test result, we want to see what we've
+                 * got and what we expect */
                 te_log_buf *lb = te_log_buf_alloc();
 
-                ctx->current_result.exp_status = TRC_VERDICT_UNEXPECTED;
-                te_log_buf_append(lb, "Obtained test result is "
-                                      "unexpected.\n");
                 te_log_buf_append(lb, "\nObtained result is:\n");
                 te_test_result_to_log_buf(lb, &ctx->current_result.result);
                 te_log_buf_append(lb, "\nExpected results are: ");
@@ -2817,7 +2817,18 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                 RING("%s", te_log_buf_get(lb));
                 te_log_buf_free(lb);
 
-                ctx->current_result.error = "Unexpected test result";
+                if (trc_is_result_expected(
+                         ctx->current_result.exp_result,
+                         &ctx->current_result.result) != NULL)
+                {
+                    ctx->current_result.exp_status = TRC_VERDICT_EXPECTED;
+                    ctx->current_result.error = NULL;
+                }
+                else
+                {
+                    ctx->current_result.exp_status = TRC_VERDICT_UNEXPECTED;
+                    ctx->current_result.error = "Unexpected test result";
+                }
             }
         }
 #endif
