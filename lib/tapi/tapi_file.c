@@ -231,6 +231,13 @@ tapi_file_copy_ta(const char *ta_src, const char *src,
         unlink(pathname);
         return -1;
     }
+    {
+        struct stat st;
+        rc = stat(pathname, &st);
+        RING("Copy file %s:%s to %s:%s using local %s size %lld",
+             ta_src, src, ta_dst, dst, pathname,
+             rc == 0 ? (long long)st.st_size : (long long)-errno);
+    }
     unlink(pathname);
     return 0;
 }
