@@ -37,7 +37,7 @@ extern te_errno cpe_network_cfg_init(int argc, char **argv);
 extern cpe_id_t *cpe_id_init(void);
 
 /**
- * Get network address of theACS address.
+ * Get network address of the ACS address.
  * Operation depends only from TestSuite network configuration, 
  * and specific CPE options, and should not have any matter
  * to the TR client on the CPE.

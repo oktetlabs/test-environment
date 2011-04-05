@@ -411,6 +411,7 @@ tapi_acse_manage_cpe(tapi_acse_context_t *ctx,
 {
     va_list  ap;
     te_errno rc;
+    assert(ctx != NULL);
     va_start(ap, opcode);
     rc = tapi_acse_manage_vlist(ctx->ta, ctx->acs_name, ctx->cpe_name,
                                 opcode, ap);
@@ -427,6 +428,7 @@ tapi_acse_manage_acs(tapi_acse_context_t *ctx,
 {
     va_list  ap;
     te_errno rc;
+    assert(ctx != NULL);
     va_start(ap, opcode);
     rc = tapi_acse_manage_vlist(ctx->ta, ctx->acs_name, NULL, opcode, ap);
     va_end(ap);
