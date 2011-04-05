@@ -166,7 +166,8 @@ trc_exp_result_to_html(FILE *f, const trc_exp_result *result,
             if (tag_p > str)
             {
                 char tag_fmt[16];
-                snprintf(tag_fmt, 16, "%%.%ds", tag_p - str);
+                snprintf(tag_fmt, 16, "%%.%"TE_PRINTF_SIZE_T"ds",
+                         tag_p - str);
                 fprintf(f, tag_fmt, str);
             }
 
@@ -188,6 +189,7 @@ cleanup:
     return rc;
 }
 
+#include "trc_tags.h" /* for te_string */
 
 /* See the description in trc_html.h */
 te_errno
@@ -200,7 +202,47 @@ trc_test_iter_args_to_html(FILE *f, const trc_test_iter_args *args,
 
     TAILQ_FOREACH(p, &args->head, links)
     {
-        fprintf(f, "%s=%s<BR/>", p->name, p->value);
+        if (strlen(p->value) > 80 && strpbrk(p->value, " \n\r\t") == 0 &&
+            strchr(p->value, ',') != NULL)
+        {
+            te_string value = TE_STRING_INIT;
+            size_t len = 0;
+            const char *p0 = p->value;
+            const char *p1 = strchr(p0, ',');
+            const char *p2 = strchr(p1 + 1, ',');
+
+            do {
+                while (p2 != NULL && p2 - p0 < 80)
+                {
+                    p1 = p2;
+                    p2 = strchr(p1 + 1, ',');
+                }
+                if (p2 == NULL && p2 - p0 < 80)
+                {
+                    te_string_append(&value, p0);
+                    break;
+                }
+
+                len += p1 - p0 + 1;
+                te_string_append(&value, p0);
+                te_string_cut(&value, value.len - len);
+                te_string_append(&value, "<wbr/>");
+                len += 6;
+                assert(len == value.len);
+                p0 = p1 + 1;
+                p1 = strchr(p0, ',');
+                if (p1 == NULL)
+                {
+                    te_string_append(&value, p0);
+                    break;
+                }
+            } while (TRUE);
+
+            fprintf(f, "%s=%s<BR/>", p->name, value.ptr);
+            te_string_free(&value);
+        }
+        else
+            fprintf(f, "%s=%s<BR/>", p->name, p->value);
     }
 
     return 0;
