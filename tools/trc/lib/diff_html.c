@@ -111,6 +111,7 @@ static const char * const trc_diff_html_doc_start =
 "    .matched {font-weight: bold; color: green}\n"
 "    .unmatched {font-weight: bold; color: red}\n"
 "    .ignored {font-weight: normal; color: blue}\n"
+"    wbr { display: inline-block; }\n"
 "    #StatsTip {\n"
 "        position: absolute;\n"
 "        visibility: hidden;\n"

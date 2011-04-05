@@ -164,6 +164,7 @@ static const char * const trc_html_doc_start =
 "padding-right: 0.14in}\n"
 "    .test_stats_keys { }\n"
 "    .test_stats_names { }\n"
+"    wbr { display: inline-block; }\n"
 #if TRC_USE_STATS_POPUP
 "    #StatsTip {\n"
 "        position: absolute;\n"
