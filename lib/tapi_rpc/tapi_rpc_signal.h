@@ -294,6 +294,9 @@ extern int rpc_sigsuspend(rcf_rpc_server *rpcs, const rpc_sigset_p set);
  */
 extern int rpc_ta_kill_death(rcf_rpc_server *rpcs, tarpc_pid_t pid);
 
+extern int rpc_siginterrupt(rcf_rpc_server *rpcs, rpc_signum signum,
+                            int flag);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
