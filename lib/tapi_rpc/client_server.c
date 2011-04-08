@@ -74,7 +74,7 @@ rpc_create_and_bind_socket(rcf_rpc_server    *rpc,
                            rpc_socket_proto   proto,
                            te_bool            wild,
                            te_bool            set_reuse_addr,
-                           struct sockaddr   *addr)
+                           const struct sockaddr   *addr)
 {
     struct sockaddr_storage bind_addr;
     int                     sockd;
@@ -182,7 +182,7 @@ rpc_create_and_bind_socket(rcf_rpc_server    *rpc,
 int 
 rpc_stream_server(rcf_rpc_server *srvr,
                   rpc_socket_proto proto, te_bool srvr_wild, 
-                  struct sockaddr *srvr_addr)
+                  const struct sockaddr *srvr_addr)
 {
     int sockd = -1;
     
@@ -235,7 +235,7 @@ rpc_stream_connection(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
     
     if ((srvr_sock = rpc_stream_server(srvr, 
                                        proto, FALSE,
-                                       SA(srvr_addr) /* FIXME */)) < 0)
+                                       srvr_addr)) < 0)
     {
         ERROR("%s(): Cannot create server socket of type SOCK_STREAM",
               __FUNCTION__);

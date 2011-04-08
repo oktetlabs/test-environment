@@ -83,7 +83,7 @@ extern int rpc_create_and_bind_socket(rcf_rpc_server    *rpc,
                                       rpc_socket_proto  proto,
                                       te_bool           wild,
                                       te_bool           set_reuse_addr,
-                                      struct sockaddr  *addr);
+                                      const struct sockaddr  *addr);
 
 
 /** @page lib-stream_server-alg Algorithm of creating a server socket of type @c SOCK_STREAM
@@ -118,7 +118,7 @@ extern int rpc_create_and_bind_socket(rcf_rpc_server    *rpc,
  */
 extern int rpc_stream_server(rcf_rpc_server *srvr,
                              rpc_socket_proto proto, te_bool srvr_wild,
-                             struct sockaddr *srvr_addr);
+                             const struct sockaddr *srvr_addr);
 
 /** @page lib-stream_client-alg Algorithm of creating a client socket of type
  * @c SOCK_STREAM
