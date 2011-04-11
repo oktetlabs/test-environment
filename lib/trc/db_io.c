@@ -518,6 +518,13 @@ get_expected_results(xmlNodePtr *node, trc_exp_results *results)
 
         result->tags_str = XML2CHAR(xmlGetProp(*node,
                                                CONST_CHAR2XML("tags")));
+        if (result->tags_str == NULL)
+        {
+            ERROR("%s: tags attribute should be specified for "
+                  "<results> element");
+            return TE_RC(TE_TRC, TE_EFMT);
+        }
+
         if (logic_expr_parse(result->tags_str, &result->tags_expr) != 0)
             return TE_RC(TE_TRC, TE_EINVAL);
 
