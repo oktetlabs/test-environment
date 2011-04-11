@@ -2751,8 +2751,20 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 #if WITH_TRC
         if (~ctx->flags & TESTER_NO_TRC)
         {
-            /* Error string is overriden in any case */
-            if (ctx->current_result.exp_result == NULL &&
+            if (ctx->current_result.result.status == TE_TEST_EMPTY)
+            {
+                assert(ri->type == RUN_ITEM_SESSION ||
+                       ri->type == RUN_ITEM_PACKAGE);
+                assert(ctx->current_result.exp_status ==
+                       TRC_VERDICT_UNKNOWN);
+                /* 
+                 * No tests have been run in this package/session,
+                 * we don't want to scream that result is unexpected.
+                 */
+                ctx->current_result.exp_status = TRC_VERDICT_EXPECTED;
+                ctx->current_result.error = "";
+            }
+            else if (ctx->current_result.exp_result == NULL &&
                 (/* Any test with specified name w/o record in TRC DB */
                  test_get_name(ri) != NULL ||
                  /* Noname session with only unknown tests inside */
@@ -2768,19 +2780,6 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                 assert(ctx->current_result.exp_status ==
                            TRC_VERDICT_UNKNOWN);
                 ctx->current_result.error = "Unknown test/iteration";
-            }
-            else if (ctx->current_result.result.status == TE_TEST_EMPTY)
-            {
-                assert(ri->type == RUN_ITEM_SESSION ||
-                       ri->type == RUN_ITEM_PACKAGE);
-                assert(ctx->current_result.exp_status ==
-                       TRC_VERDICT_UNKNOWN);
-                /* 
-                 * No tests have been run in this package/session,
-                 * we don't want to scream that result is unexpected.
-                 */
-                ctx->current_result.exp_status = TRC_VERDICT_EXPECTED;
-                ctx->current_result.error = "";
             }
             else if (ri->type != RUN_ITEM_SCRIPT &&
                      ((test_get_name(ri) == NULL) ||
