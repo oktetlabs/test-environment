@@ -502,6 +502,10 @@ tapi_acse_wait_acse_state(tapi_acse_context_t *ctx,
               state_var, want_state, cur_state);
         rc = TE_ETIMEDOUT;
     }
+    else
+        RING("wait param %s for %d, %r, last val %d",
+              state_var, want_state, rc, cur_state);
+
 
     tapi_acse_ctx_clear_timers(ctx);
     if (res_state != NULL)
@@ -1131,8 +1135,20 @@ tapi_acse_cpe_connect(tapi_acse_context_t *ctx)
 {
     te_errno rc;
 
-    CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_MODIFY,
-                                  "sync_mode", TRUE, VA_END_LIST));
+    do 
+    {
+        int sync_mode;
+        CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_OBTAIN,
+                              "sync_mode", &sync_mode, VA_END_LIST));
+        if (!sync_mode)
+        {
+            CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_MODIFY,
+                              "sync_mode", TRUE, VA_END_LIST));
+            ctx->change_sync = TRUE;
+        }
+        else
+            ctx->change_sync = FALSE;
+    } while (0);
 
     CHECK_RC(tapi_acse_cpe_conn_request(ctx));
 
@@ -1181,8 +1197,10 @@ tapi_acse_cpe_disconnect(tapi_acse_context_t *ctx)
 
     CHECK_RC(rpc_cwmp_op_call(ctx->rpc_srv, ctx->acs_name, ctx->cpe_name,
                             CWMP_RPC_NONE, NULL, 0, NULL));
-    CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_MODIFY,
-                                  "sync_mode", FALSE, VA_END_LIST));
+    if (ctx->change_sync)
+        CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_MODIFY,
+                                      "sync_mode", FALSE, VA_END_LIST));
+    ctx->change_sync = FALSE;
     return 0;
 }
 

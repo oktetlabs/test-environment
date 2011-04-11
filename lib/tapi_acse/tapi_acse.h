@@ -124,15 +124,19 @@ typedef struct tapi_acse_context_s {
 
     int             def_timeout; /*< Default timeout in seconds */
 
-    int             prev_usleep;
-    int             next_usleep;
-
     acse_request_id_t req_id;/*< CWMP request ID.  This field is filled
                                   by 'call' methods, and is used by
                                   'get_response' methods. 
                                   Thus, if user change it before get
                                   response, he will get response for some
                                   other operation then the last one. */
+
+    int             prev_usleep; /*< Internal: previous sleep period */
+    int             next_usleep; /*< Internal: next sleep period */
+    te_bool         change_sync; /*< Internal: do we changed 'sync_mode'
+                                  during connect, before establish 
+                                  CWMP session. */
+
 } tapi_acse_context_t;
 
 
