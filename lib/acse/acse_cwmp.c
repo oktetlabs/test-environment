@@ -207,12 +207,15 @@ acse_http_get(struct soap *soap)
                     err_descr = "Internal ACSE error";
                 }
         }
+        session->state = CWMP_CLOSE;
         soap->http_content = "text/html";
+        soap->keep_alive = 0;
         soap_response(soap, http_status); 
         soap_send(soap, "<HTML><body>");
         soap_send(soap, err_descr);
         soap_send(soap, "</body></HTML>");
         soap_end_send(soap);
+        soap->error = SOAP_OK;
         return SOAP_OK;
     }
 
@@ -225,50 +228,8 @@ acse_http_get(struct soap *soap)
     soap->length = fs.st_size;
 
     soap_response(soap, SOAP_FILE); 
-#if 1
     session->state = CWMP_SEND_FILE;
     acse_send_file_portion(session);
-#else
-    while (1)
-    {
-        size_t r = fread(soap->tmpbuf, 1, sizeof(soap->tmpbuf), fd);
-        struct pollfd pfd;
-        int pollrc;
-
-        if (!r)
-        {
-            fprintf(stderr, "fread return zero, errno %s\n",
-                    strerror(errno));
-            break;
-        }
-
-        pfd.fd = soap->socket;
-        pfd.events = POLLOUT;
-        pfd.revents = 0;
-
-        if ((pollrc = poll(&pfd, 1, 10)) <= 0)
-        {
-            ERROR("acse_http_get(): poll rc %d, can't send file", pollrc);
-            if (pollrc < 0)
-                perror("acse poll failed");
-            fprintf(stderr, 
-                  "acse_http_get(): poll rc %d, can't send file; break\n",
-                  pollrc);
-            break;
-        }
-#if 0
-        fprintf(stderr, "UUUUUUUUUUUU pollrc %d\n", pollrc);
-#endif
-
-        if (soap_send_raw(soap, soap->tmpbuf, r))
-        {
-            fprintf(stderr, "acse_http_get(): soap_send_raw fail\n");
-            break; // can't send, but little we can do about that
-        }
-    }
-    fclose(fd);
-    soap_end_send(soap);
-#endif
     return SOAP_OK;
 }
 
@@ -790,7 +751,7 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
 {
     cwmp_session_t *cwmp_sess = data;
 
-    VERB("Start after serve, sess ptr %p, state %d, SOAP error %d",
+    RING("Start after serve, sess ptr %p, state %d, SOAP error %d",
           cwmp_sess, cwmp_sess->state, cwmp_sess->m_soap.error);
 
     if (!(pfd->revents))
@@ -867,6 +828,8 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
                 return TE_EFAIL;
             }
             break;
+        case CWMP_CLOSE:
+            return TE_ENOTCONN;
         default: /* do nothing here */
             WARN("CWMP after poll, unexpected state %d\n",
                     (int)cwmp_sess->state);
@@ -944,11 +907,11 @@ cwmp_fparse(struct soap *soap)
 {
     cwmp_session_t *session = (cwmp_session_t *)soap->user;
     int rc = session->orig_fparse(soap);
+    VERB("cwmp_fparse, rc %d, soap err %d, soap len %d", 
+         rc, soap->error, soap->length);
 
     if (rc == SOAP_OK && soap->length == 0)
-    {
         rc = SOAP_STOP;
-    }
 
     return rc;
 }
@@ -1486,7 +1449,10 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
 
     cpe_t *cpe = session->cpe_owner;
 
-    INFO("%s() called, cwmp sess state %d", __FUNCTION__, session->state);
+    rpc_item = TAILQ_FIRST(&cpe->rpc_queue);
+
+    VERB("%s() called, cwmp sess state %d, sync_mode %d, rpc_item %p",
+         __FUNCTION__, session->state, cpe->sync_mode, rpc_item);
 
     if (TAILQ_EMPTY(&cpe->rpc_queue) && cpe->sync_mode)
     { 
@@ -1494,7 +1460,6 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
         session->state = CWMP_PENDING;
         return 0; 
     }
-    rpc_item = TAILQ_FIRST(&cpe->rpc_queue);
 
     /* TODO add check, whether HoldRequests was set on - think, for what? */
 
@@ -1569,7 +1534,7 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
 
     TAILQ_INSERT_TAIL(&cpe->rpc_results, rpc_item, links);
 
-    return 0;
+    return SOAP_OK;
 }
 
 
@@ -1620,10 +1585,15 @@ acse_cwmp_empty_post(struct soap* soap)
 
     VERB("%s(): soap error %d", __FUNCTION__, soap->error);
 
+    if (session != NULL && session->state == CWMP_CLOSE)
+        return SOAP_OK;
+
     if (NULL == session || NULL == (cpe = session->cpe_owner))
     {
-        ERROR("Internal ACSE error at empty POST, soap %p, ss %p",
-                soap, session);
+
+        ERROR("Internal ACSE error at empty POST, "
+               "soap %p, ss %p, soap_err %d",
+                soap, session, soap->error);
         soap->keep_alive = 0;
         soap_closesock(soap);
         return 500;
@@ -1640,7 +1610,7 @@ acse_cwmp_empty_post(struct soap* soap)
         return 500;
     } 
 
-    return  acse_cwmp_send_rpc(soap, session);
+    return acse_cwmp_send_rpc(soap, session);
 }
 
 

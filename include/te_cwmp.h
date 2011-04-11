@@ -292,6 +292,7 @@ typedef enum {
                             RPC to be sent on CPE, from EPC.          */
     CWMP_SEND_FILE = 64,/**< HTTP connection, sending reponse to GET,
                              received for particular ACS. */
+    CWMP_CLOSE = 128,  /**< Session should be closed. */
 } cwmp_sess_state_t;
 
 /**< Typed pointer to call-specific CWMP data from ACS to CPE. */
