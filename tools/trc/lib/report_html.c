@@ -71,7 +71,7 @@
 #define TRC_USE_HIDDEN_STATS 0
 #endif
 
-/** Define to 1 to enable hidden columns in statistics tables */
+/** Define to 1 to enable links to test logs in detailed tables */
 #ifdef WITH_LOG_URLS
 #define TRC_USE_LOG_URLS 1
 #else
@@ -150,13 +150,15 @@ static const char * const trc_html_doc_start =
 "padding-right: 0.14in}\n"
 "    .test_stats_failed_exp { text-align: right; padding-left: 0.14in; "
 "padding-right: 0.14in}\n"
+"    .test_stats_zero { text-align: right; padding-left: 0.14in; "
+"padding-right: 0.14in}\n"
 "    .test_stats_passed_unexp { text-align: right; padding-left: 0.14in; "
-"padding-right: 0.14in}\n"
+"padding-right: 0.14in; background-color:#ffdfdf;}\n"
 "    .test_stats_failed_unexp { text-align: right; padding-left: 0.14in; "
-"padding-right: 0.14in}\n"
+"padding-right: 0.14in; background-color:#ffdfdf;}\n"
 "    .test_stats_aborted_new { text-align: right; padding-left: 0.14in; "
-"padding-right: 0.14in}\n"
-"    .test_stats_not_run_total { font-weight: bold; text-align: right; "
+"padding-right: 0.14in; background-color:#ffdfdf;}\n"
+"    .test_stats_not_run { font-weight: bold; text-align: right; "
 "padding-left: 0.14in; padding-right: 0.14in}\n"
 "    .test_stats_skipped_exp { text-align: right; padding-left: 0.14in; "
 "padding-right: 0.14in}\n"
@@ -605,63 +607,55 @@ static const char * const trc_report_html_tests_stats_start =
 "      </td>\n"
 "    </tr>\n"
 "    <tr>\n"
-"      <td class=\"test_stats_total\" name=\"test_stats_total\">\n"
+"      <td name=\"test_stats_total\">\n"
 "        <b>Total</b>\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('total')\">x</a>\n"
 #endif
 "      </td>\n"
-"      <td class=\"test_stats_passed_exp\" "
-"name=\"test_stats_passed_exp\">\n"
+"      <td name=\"test_stats_passed_exp\">\n"
 "        Passed expect\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('passed_exp')\">x</a>\n"
 #endif
 "      </td>\n"
-"      <td class=\"test_stats_failed_exp\" "
-"name=\"test_stats_failed_exp\">\n"
+"      <td name=\"test_stats_failed_exp\">\n"
 "        Failed expect\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('failed_exp')\">x</a>\n"
 #endif
 "      </td>\n"
-"      <td class=\"test_stats_passed_unexp\" "
-"name=\"test_stats_passed_unexp\">\n"
+"      <td name=\"test_stats_passed_unexp\">\n"
 "        Passed unexp\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('passed_unexp')\">x</a>\n"
 #endif
 "      </td>\n"
-"      <td class=\"test_stats_failed_unexp\" "
-"name=\"test_stats_failed_unexp\">\n"
+"      <td name=\"test_stats_failed_unexp\">\n"
 "        Failed unexp\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('failed_unexp')\">x</a>\n"
 #endif
 "      </td>\n"
-"      <td class=\"test_stats_aborted_new\" "
-"name=\"test_stats_aborted_new\">\n"
+"      <td name=\"test_stats_aborted_new\">\n"
 "        Aborted, New\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('aborted_new')\">x</a>\n"
 #endif
 "      </td>\n"
-"      <td class=\"test_stats_not_run\" "
-"name=\"test_stats_not_run\">\n"
+"      <td name=\"test_stats_not_run\">\n"
 "        <b>Total</b>\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('not_run')\">x</a>\n"
 #endif
 "      </td>\n"
-"      <td class=\"test_stats_skipped_exp\" "
-"name=\"test_stats_skipped_exp\">\n"
+"      <td name=\"test_stats_skipped_exp\">\n"
 "        Skipped expect\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('skipped_exp')\">x</a>\n"
 #endif
 "      </td>\n"
-"      <td class=\"test_stats_skipped_unexp\" "
-"name=\"test_stats_skipped_unexp\">\n"
+"      <td name=\"test_stats_skipped_unexp\">\n"
 "        Skipped unexp\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('skipped_unexp')\">x</a>\n"
@@ -693,39 +687,39 @@ static const char * const trc_tests_stats_row =
 "name=\"test_stats_objective\">\n"
 "        %s%s%s%s%s\n"
 "      </td>\n"
-"      <td class=\"test_stats_total\" "
+"      <td class=\"test_stats_%s\" "
 "name=\"test_stats_total\">\n"
        TRC_TESTS_STATS_FIELD_FMT
 "      </td>\n"
-"      <td class=\"test_stats_passed_exp\" "
+"      <td class=\"test_stats_%s\" "
 "name=\"test_stats_passed_exp\">\n"
        TRC_TESTS_STATS_FIELD_FMT
 "      </td>\n"
-"      <td class=\"test_stats_failed_exp\" "
+"      <td class=\"test_stats_%s\" "
 "name=\"test_stats_failed_exp\">\n"
        TRC_TESTS_STATS_FIELD_FMT
 "      </td>\n"
-"      <td class=\"test_stats_passed_unexp\" "
+"      <td class=\"test_stats_%s\" "
 "name=\"test_stats_passed_unexp\">\n"
        TRC_TESTS_STATS_FIELD_FMT
 "      </td>\n"
-"      <td class=\"test_stats_failed_unexp\" "
+"      <td class=\"test_stats_%s\" "
 "name=\"test_stats_failed_unexp\">\n"
        TRC_TESTS_STATS_FIELD_FMT
 "      </td>\n"
-"      <td class=\"test_stats_aborted_new\" "
+"      <td class=\"test_stats_%s\" "
 "name=\"test_stats_aborted_new\">\n"
        TRC_TESTS_STATS_FIELD_FMT
 "      </td>\n"
-"      <td class=\"test_stats_not_run\" "
+"      <td class=\"test_stats_%s\" "
 "name=\"test_stats_not_run\">\n"
        TRC_TESTS_STATS_FIELD_FMT
 "      </td>\n"
-"      <td class=\"test_stats_skip_exp\" "
+"      <td class=\"test_stats_skipped_exp\" "
 "name=\"test_stats_skip_exp\">\n"
 "        %u\n"
 "      </td>\n"
-"      <td class=\"test_stats_skip_unexp\" "
+"      <td class=\"test_stats_skipped_unexp\" "
 "name=\"test_stats_skip_unexp\">\n"
 "        %u\n"
 "      </td >\n"
@@ -1834,16 +1828,17 @@ trc_report_test_stats_to_html(FILE             *f,
 
 #if TRC_USE_STATS_POPUP
 #define TRC_STATS_FIELD_POPUP(field_,value_,expr_) \
-    PRINT_STR5((test->type == TRC_TEST_PACKAGE) && \
-               ((value_) > 0) && (expr_), \
-               TRC_STATS_SHOW_HREF_START, \
-               test_path, \
-               TRC_STATS_SHOW_HREF_CLOSE_PARAM_PREFIX, \
-               (field_), \
-               TRC_STATS_SHOW_HREF_CLOSE), \
-    (value_), \
-    PRINT_STR1((test->type == TRC_TEST_PACKAGE) && \
-               ((value_) > 0) && (expr_), \
+    ((value_) > 0) ? field_ : "zero",                   \
+    PRINT_STR5((test->type == TRC_TEST_PACKAGE) &&      \
+               ((value_) > 0) && (expr_),               \
+               TRC_STATS_SHOW_HREF_START,               \
+               test_path,                               \
+               TRC_STATS_SHOW_HREF_CLOSE_PARAM_PREFIX,  \
+               (field_),                                \
+               TRC_STATS_SHOW_HREF_CLOSE),              \
+    (value_),                                           \
+    PRINT_STR1((test->type == TRC_TEST_PACKAGE) &&      \
+               ((value_) > 0) && (expr_),               \
                TRC_STATS_SHOW_HREF_END)
 #else
 #define TRC_STATS_FIELD_POPUP(field_,value_,expr_) (value_)
