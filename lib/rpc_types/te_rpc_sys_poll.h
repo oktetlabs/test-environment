@@ -45,7 +45,7 @@ extern "C" {
 #endif
 
 /** Maximum number of file descriptors passed to the poll */
-#define RPC_POLL_NFDS_MAX       64
+#define RPC_POLL_NFDS_MAX       256
 
 
 typedef enum rpc_poll_event {
