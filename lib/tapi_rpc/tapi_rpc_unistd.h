@@ -514,6 +514,16 @@ extern int rpc_epoll_create(rcf_rpc_server *rpcs, int size);
 extern int rpc_epoll_create1(rcf_rpc_server *rpcs, int flags);
 extern int rpc_epoll_ctl(rcf_rpc_server *rpcs, int epfd, int oper, int fd,
                          struct rpc_epoll_event *event);
+static inline int
+rpc_epoll_ctl_simple(rcf_rpc_server *rpcs, int epfd, int oper, int fd,
+                     uint32_t events)
+{
+    struct rpc_epoll_event event;
+    event.events = events;
+    event.data.fd = fd;
+    return rpc_epoll_ctl(rpcs, epfd, oper, fd, &event);
+}
+
 extern int rpc_epoll_wait_gen(rcf_rpc_server *rpcs, int epfd,
                               struct rpc_epoll_event *events, int rmaxev,
                               int maxevents, int timeout);
