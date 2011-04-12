@@ -170,8 +170,8 @@ typedef struct cpe_t{
                                      CPE RPC if queue is empty. */
     te_bool          chunk_mode;/**< HTTP chunk mode, transparently 
                                      passed to the gSOAP option.*/
-    te_bool          hold_requests; /**< Whether to put "hold requests"
-                                         in SOAP msg                   */
+    int              hold_requests; /**< Value of HoldRequests, 0 or 1,
+                                     negative means absent XML field. */
 
     cwmp__DeviceIdStruct device_id; /**< Device Identifier       */
 

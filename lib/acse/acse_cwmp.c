@@ -475,19 +475,26 @@ cwmp_prepare_soap_header(struct soap *soap, cpe_t *cpe)
         memset(soap->header, 0, sizeof(*(soap->header)));
     }
 
-    if (NULL == soap->header->cwmp__HoldRequests)
-    {
-        soap->header->cwmp__HoldRequests = 
-                soap_malloc(soap, sizeof(_cwmp__HoldRequests));
-    }
 
     if (soap->encodingStyle)
     {
         soap->encodingStyle = NULL;
     }
 
-    soap->header->cwmp__HoldRequests->__item = cpe->hold_requests;
-    soap->header->cwmp__HoldRequests->SOAP_ENV__mustUnderstand = "1";
+    if (cpe->hold_requests >= 0)
+    {
+        if (NULL == soap->header->cwmp__HoldRequests)
+        {
+            soap->header->cwmp__HoldRequests = 
+                    soap_malloc(soap, sizeof(_cwmp__HoldRequests));
+        }
+        soap->header->cwmp__HoldRequests->__item = cpe->hold_requests;
+        soap->header->cwmp__HoldRequests->SOAP_ENV__mustUnderstand = "1";
+    }
+    else /* Negative value note that field should absent. */
+    {
+        soap->header->cwmp__HoldRequests = NULL;
+    }
     soap->header->cwmp__ID = NULL;
     soap->keep_alive = 1; 
 }
