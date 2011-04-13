@@ -1127,8 +1127,17 @@ tapi_acse_cpe_connect(tapi_acse_context_t *ctx)
     do 
     {
         int sync_mode;
+        cwmp_sess_state_t   cur_sess_state = 0;
         CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_OBTAIN,
-                              "sync_mode", &sync_mode, VA_END_LIST));
+                              "sync_mode", &sync_mode,
+                              "cwmp_state", &cur_sess_state, 
+                              VA_END_LIST));
+        if (cur_sess_state != CWMP_NOP)
+        {
+            ERROR("cwmp state is %d, cannot establish new CWMP sesison",
+                  (int)cur_sess_state);
+            return TE_RC(TE_TAPI, TE_EFAIL);
+        }
         if (!sync_mode)
         {
             CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_MODIFY,
@@ -1175,6 +1184,7 @@ te_errno
 tapi_acse_cpe_disconnect(tapi_acse_context_t *ctx)
 {
     te_errno rc;
+    int timeout = ctx->timeout;
     /* This util simple activates sending empty response, 
      * this  automatically leads to terminate CWMP session.
      * Investigate standard and real behaviour of clients,
@@ -1184,12 +1194,7 @@ tapi_acse_cpe_disconnect(tapi_acse_context_t *ctx)
      * it seems, is true HoldRequests status.
      */
 
-    if (ctx->change_sync)
-    {
-        CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_MODIFY,
-                                      "sync_mode", FALSE, VA_END_LIST));
-    }
-    else
+    if (!ctx->change_sync)
     {
         int hold_requests, sync_mode;
         CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_OBTAIN,
@@ -1199,13 +1204,20 @@ tapi_acse_cpe_disconnect(tapi_acse_context_t *ctx)
         if (hold_requests && sync_mode)
         {
             WARN("Sending empty HTTP Post in CWMP sesison when HoldRequests"
-                 "was set on may leads to CPE requests to ACS,"
+                 " was set on may leads to CPE requests to ACS,\n"
                  "whereas sync_mode is ON and session will not terminated");
         }
     }
     CHECK_RC(rpc_cwmp_op_call(ctx->rpc_srv, ctx->acs_name, ctx->cpe_name,
                             CWMP_RPC_NONE, NULL, 0, NULL));
+    if (ctx->change_sync)
+    {
+        CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_MODIFY,
+                                      "sync_mode", FALSE, VA_END_LIST));
+    }
     ctx->change_sync = FALSE;
+    ctx->timeout = timeout;
+    CHECK_RC(tapi_acse_wait_cwmp_state(ctx, CWMP_NOP));
     return 0;
 }
 
