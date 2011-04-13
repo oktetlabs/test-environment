@@ -57,7 +57,6 @@ typedef enum run_item_type {
 /** Test ID */
 typedef int test_id;
 
-
 /** Is SIGINT signal received by Tester? */
 extern te_bool tester_sigint_received;
 

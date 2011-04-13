@@ -86,6 +86,9 @@ enum tester_flags {
     TESTER_LOG_IGNORE_RUN_NAME = (1 << 26), /**< Force testing flow logging
                                                  to ignore run item name */
 
+    TESTER_LOG_REQS_LIST = (1 << 27), /**< Log list of known requirements to
+                                       * the log file */
+
     TESTER_INLOGUE      = (1 << 28),  /**< Is in prologue/epilogue */
 
     TESTER_INTERACTIVE  = (1 << 29),  /**< Interactive mode */

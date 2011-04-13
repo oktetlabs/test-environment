@@ -63,6 +63,7 @@
 #include "tester_conf.h"
 #include "type_lib.h"
 
+#include "tester.h"
 
 /** 
  * Cast 'const char *' to 'const xmlChar *' required by libxml2
@@ -793,6 +794,32 @@ alloc_and_get_requirement(xmlNodePtr node, test_requirements *reqs,
               "configurations and scripts");
         return TE_RC(TE_TESTER, TE_EINVAL);
     }
+
+    /* is req listed? */
+    if (p->id != NULL)
+    {
+        test_requirement *r;
+        test_requirement *new;
+        test_requirement *before = NULL;
+
+        TAILQ_FOREACH(r, &tester_global_context.reqs, links)
+        {
+            if (strcmp(p->id, r->id) == 0)
+                goto req_exists;
+            else if (strcmp(p->id, r->id) < 0 && before == NULL)
+                before = r;
+        }
+        /* new requirement */
+        new = TE_ALLOC(sizeof(*r));
+        new->id = strdup(p->id);
+        new->ref = NULL;
+        new->sticky = FALSE;
+        if (before != NULL)
+            TAILQ_INSERT_BEFORE(before, new, links);
+        else
+            TAILQ_INSERT_TAIL(&tester_global_context.reqs, new, links);
+    }
+req_exists:
 
     return 0;
 }

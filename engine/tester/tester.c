@@ -53,13 +53,7 @@
 #include "te_defs.h"
 #include "tq_string.h"
 
-#include "tester_build.h"
-#include "tester_conf.h"
-#include "test_path.h"
-#include "tester_term.h"
-#include "tester_run.h"
-#include "type_lib.h"
-#include "tester_flags.h"
+#include "tester.h"
 
 /** Logging entity name of the Tester subsystem */
 DEFINE_LGR_ENTITY("Tester");
@@ -72,19 +66,7 @@ extern int test_path_lex_destroy(void);
 te_bool tester_sigint_received = FALSE;
 
 
-/** Tester global context */
-typedef struct tester_global {
-    unsigned int        rand_seed;  /**< Random seed */
-    unsigned int        flags;      /**< Flags (enum tester_flags) */
-    tester_cfgs         cfgs;       /**< Configuration files */
-    test_suites_info    suites;     /**< Information about test suites */
-    test_paths          paths;      /**< Paths specified by caller */
-    logic_expr         *targets;    /**< Target requirements expression */
-    te_trc_db          *trc_db;     /**< TRC database handle */
-    tqh_strings         trc_tags;   /**< TRC tags */
-    testing_scenario    scenario;   /**< Testing scenario */
-} tester_global;
-
+tester_global tester_global_context;
 
 /**
  * Initialize Tester global context.
@@ -108,6 +90,7 @@ tester_global_init(tester_global *global)
     TAILQ_INIT(&global->cfgs.head);
     TAILQ_INIT(&global->suites);
     TAILQ_INIT(&global->paths);
+    TAILQ_INIT(&global->reqs);
 
     global->targets = NULL;
 
@@ -198,6 +181,7 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
         TESTER_OPT_NO_SIMULT,
 
         TESTER_OPT_REQ,
+        TESTER_OPT_REQ_LIST,
         TESTER_OPT_QUIET_SKIP,
         TESTER_OPT_VERB_SKIP,
 
@@ -266,6 +250,9 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
         { "req", 'R', POPT_ARG_STRING, NULL, TESTER_OPT_REQ,
           "Requirements to be tested (logical expression).",
           "REQS" },
+        { "reqs-list", 'R', POPT_ARG_NONE, NULL, TESTER_OPT_REQ_LIST,
+          "Print all requirements mentioned in the packages into the log",
+          NULL },
         { "quietskip", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_QUIET_SKIP,
           "Quietly skip tests which do not meet specified requirements.",
           NULL },
@@ -545,6 +532,9 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
                     return rc;
                 }
                 break;
+            case TESTER_OPT_REQ_LIST:
+                global->flags |= TESTER_LOG_REQS_LIST;
+                break;
 
             case TESTER_OPT_TRC_DB:
             case TESTER_OPT_TRC_TAG:
@@ -730,6 +720,28 @@ tester_log_global(void)
     free(glob);
 }
 
+/* Seems to be enough :-) */
+#define TESTER_REQS_LEN 1024 * 1024
+
+/* Log list of requirements known to tester */
+static void
+tester_log_reqs(void)
+{
+    char *reqs_string = calloc(1, TESTER_REQS_LEN);
+    int rc = 0;
+    test_requirement *p;
+
+    rc += sprintf(reqs_string, "Requirements known to tester:\n");
+    TAILQ_FOREACH(p, &tester_global_context.reqs, links)
+    {
+        rc += sprintf(reqs_string + rc, "  %s %s\n",
+                      p->id,
+                      (p->ref != NULL) ? p->ref : "");
+    }
+    TE_LOG_RING("Known reqs", "%s", reqs_string);
+    free(reqs_string);
+}
+
 /**
  * Application entry point.
  *
@@ -744,13 +756,12 @@ main(int argc, char *argv[])
 {
     int             result = EXIT_FAILURE;
     te_errno        rc;
-    tester_global   global;
 
 #if HAVE_SIGNAL_H
     (void)signal(SIGINT, tester_sigint_handler);
 #endif
 
-    if (tester_global_init(&global) != 0)
+    if (tester_global_init(&tester_global_context) != 0)
     {
         ERROR("Initialization of Tester context failed");
         goto exit;
@@ -762,16 +773,16 @@ main(int argc, char *argv[])
         goto exit;
     }
 
-    if (process_cmd_line_opts(&global, argc, argv) != 0)
+    if (process_cmd_line_opts(&tester_global_context, argc, argv) != 0)
     {
         ERROR("Command line options processing failure");
         goto exit;
     }
 
-    if (global.targets != NULL)
+    if (tester_global_context.targets != NULL)
     {
         TE_LOG_RING("Target Requirements", "%s",
-                    tester_reqs_expr_to_string(global.targets));
+                tester_reqs_expr_to_string(tester_global_context.targets));
     }
 
     /*
@@ -779,18 +790,18 @@ main(int argc, char *argv[])
      * options processing, since random seed may be passed as
      * command-line option.
      */
-    srand(global.rand_seed);
-    RING("Random seed is %u", global.rand_seed);
+    srand(tester_global_context.rand_seed);
+    RING("Random seed is %u", tester_global_context.rand_seed);
 
     /*
      * Build Test Suites specified in command line.
      */
-    if ((~global.flags & TESTER_NO_BUILD) &&
-        !TAILQ_EMPTY(&global.suites))
+    if ((~tester_global_context.flags & TESTER_NO_BUILD) &&
+        !TAILQ_EMPTY(&tester_global_context.suites))
     {
         RING("Building Test Suites specified in command line...");
-        rc = tester_build_suites(&global.suites,
-                                 !!(global.flags & TESTER_VERBOSE));
+        rc = tester_build_suites(&tester_global_context.suites,
+                !!(tester_global_context.flags & TESTER_VERBOSE));
         if (rc != 0)
         {
             goto exit;
@@ -800,9 +811,9 @@ main(int argc, char *argv[])
     /*
      * Parse configuration files, build and parse test suites data.
      */
-    rc = tester_parse_configs(&global.cfgs,
-                              !(global.flags & TESTER_NO_BUILD),
-                              !!(global.flags & TESTER_VERBOSE));
+    rc = tester_parse_configs(&tester_global_context.cfgs,
+                !(tester_global_context.flags & TESTER_NO_BUILD),
+                !!(tester_global_context.flags & TESTER_VERBOSE));
     if (rc != 0)
     {
         goto exit;
@@ -812,19 +823,21 @@ main(int argc, char *argv[])
      * Prepare configurations to be processed by testing scenario
      * generator.
      */
-    rc = tester_prepare_configs(&global.cfgs);
+    rc = tester_prepare_configs(&tester_global_context.cfgs);
     if (rc != 0)
     {
         goto exit;
     }
-    INFO("Total number of iteration is %u", global.cfgs.total_iters);
+    INFO("Total number of iteration is %u",
+         tester_global_context.cfgs.total_iters);
 
     /*
      * Create testing scenario.
      */
-    rc = tester_process_test_paths(&global.cfgs, &global.paths,
-                                   &global.scenario,
-                                   !(global.flags & TESTER_INTERACTIVE));
+    rc = tester_process_test_paths(&tester_global_context.cfgs,
+              &tester_global_context.paths,
+              &tester_global_context.scenario,
+              !(tester_global_context.flags & TESTER_INTERACTIVE));
     if (rc != 0)
     {
         goto exit;
@@ -833,15 +846,21 @@ main(int argc, char *argv[])
     /*
      * Execure testing scenario.
      */
-    if ((~global.flags & TESTER_NO_RUN) &&
-        !TAILQ_EMPTY(&global.cfgs.head))
+    if ((~tester_global_context.flags & TESTER_NO_RUN) &&
+        !TAILQ_EMPTY(&tester_global_context.cfgs.head))
     {
         RING("Starting...");
         /* Log global variables so TRC can get them and */
         (void)tester_log_global();
-        rc = tester_run(&global.scenario, global.targets,
-                        &global.cfgs, &global.paths,
-                        global.trc_db, &global.trc_tags, global.flags);
+        if (!!(tester_global_context.flags & TESTER_LOG_REQS_LIST))
+            (void)tester_log_reqs();
+        rc = tester_run(&tester_global_context.scenario,
+                        tester_global_context.targets,
+                        &tester_global_context.cfgs,
+                        &tester_global_context.paths,
+                        tester_global_context.trc_db,
+                        &tester_global_context.trc_tags,
+                        tester_global_context.flags);
         if (rc != 0)
         {
 #if 1
@@ -859,7 +878,7 @@ main(int argc, char *argv[])
     RING("Done");
 
 exit:
-    tester_global_free(&global);
+    tester_global_free(&tester_global_context);
     tester_term_cleanup();
 
     (void)logic_expr_int_lex_destroy();

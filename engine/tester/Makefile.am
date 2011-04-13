@@ -31,7 +31,8 @@ noinst_HEADERS = \
 	tester_result.h \
 	tester_run.h \
 	tester_term.h \
-	tester_interactive.h
+	tester_interactive.h \
+    tester.h
 
 
 bin_PROGRAMS = te_tester 
