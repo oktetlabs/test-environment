@@ -169,7 +169,9 @@
 #include "tarpc.h"
 
 /** System call number of recvmmsg function */
+#ifndef SYS_recvmmsg
 #define SYS_recvmmsg 299
+#endif
 
 /** Extract sigset from in argument */
 #define IN_SIGSET       ((sigset_t *)(rcf_pch_mem_get(in->set)))
