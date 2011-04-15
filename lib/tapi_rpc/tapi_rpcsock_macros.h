@@ -208,6 +208,7 @@
             _old_act.mm_mask = RPC_NULL;                                \
             rpc_sigaction((rpcs_), (signum_), (action_), &_old_act);    \
             rpc_sigset_delete((rpcs_), (action_)->mm_mask);             \
+            (action_)->mm_mask = RPC_NULL;                              \
             if ((old_handler_) != NULL)                                 \
             {                                                           \
                 if (strcmp(_old_act.mm_handler, (old_handler_)) != 0)   \
