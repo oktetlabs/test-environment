@@ -417,6 +417,9 @@ static inline te_errno trc_add_tag(tqh_strings *tags, const char *name)
     if (p != NULL)
         TAILQ_INSERT_TAIL(tags, p, links);
 
+    if (col != NULL)
+        *col = ':';
+
     return 0;
 }
 

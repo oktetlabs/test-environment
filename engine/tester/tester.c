@@ -590,6 +590,11 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
 
                         rc = trc_add_tag(&global->trc_tags,
                                          (char *)poptGetOptArg(optCon));
+                        if (rc != 0) 
+                        {
+                            poptFreeContext(optCon);
+                            return TE_RC(TE_TESTER, TE_EINVAL);
+                        }
                     }
 #else
                     /* Unreachable */
