@@ -362,6 +362,65 @@ extern int trc_db_strcmp_tokens(const char *s1, const char *s2);
 extern int trc_db_strcmp_normspace(const char *s1, const char *s2);
 
 
+
+/**
+ * Add TRC tag into the list.
+ *
+ * @param tags          List with TRC tags
+ * @param name          Name of the tag to add
+ *
+ * @return Status code.
+ */
+static inline te_errno trc_add_tag(tqh_strings *tags, const char *name)
+{
+    tqe_string *p = calloc(1, sizeof(*p));
+    tqe_string *tag;
+    char       *col;
+
+    if (p == NULL)
+    {
+        ERROR("calloc(1, %u) failed", (unsigned)sizeof(*p));
+        return TE_ENOMEM;
+    }
+    if (name == NULL)
+    {
+        ERROR("Wrong tag name given: NULL");
+        return TE_EINVAL;
+    }
+
+    p->v = strdup(name);
+    if (p->v == NULL)
+    {
+        ERROR("strdup(%s) failed", name);
+        return TE_ENOMEM;
+    }
+
+    if ((col = strchr(p->v, ':')) != NULL)
+        *col = '\0';
+
+    /* do we have this tag? */
+    /* memory loss here, nobody cares */
+    TAILQ_FOREACH(tag, tags, links)
+    {
+        char *c = strchr(tag->v, ':');
+
+        if (strncmp(p->v, tag->v,
+                    c ? MAX((unsigned)(c - tag->v), strlen(p->v)) :
+                    MAX(strlen(tag->v), strlen(p->v))) == 0)
+        {
+            tag->v = p->v;
+            free(p);
+            p = NULL;
+            break;
+        }
+    }
+    if (p != NULL)
+        TAILQ_INSERT_TAIL(tags, p, links);
+
+    return 0;
+}
+
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

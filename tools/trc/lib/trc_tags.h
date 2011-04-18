@@ -39,16 +39,6 @@ extern "C" {
 #endif
 
 /**
- * Add TRC tag into the list.
- *
- * @param tags          List with TRC tags
- * @param name          Name of the tag to add
- *
- * @return Status code.
- */
-extern te_errno trc_add_tag(tqh_strings *tags, const char *name);
-
-/**
  * Parse string with TRC tags and add them into the list.
  *
  * @param tags          List to add tags

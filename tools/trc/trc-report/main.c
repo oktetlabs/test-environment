@@ -366,37 +366,11 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
 
             case TRC_OPT_TAG:
             {
-                tqe_string *p = TE_ALLOC(sizeof(*p));
-                tqe_string *tag;
+                te_errno rc;
 
-                if (p == NULL)
-                {
+                rc = trc_add_tag(&ctx.tags, (char *)poptGetOptArg(optCon));
+                if (rc != 0)
                     goto exit;
-                }
-                p->v = (char *)poptGetOptArg(optCon);
-                if (p->v == NULL)
-                {
-                    ERROR("Empty option value of --tag option");
-                    goto exit;
-                }
-
-                /* do we have this tag? */
-                /* memory loss here, nobody cares */
-                TAILQ_FOREACH(tag, &ctx.tags, links)
-                {
-                    char *c = strchr(tag->v, ':');
-
-                    if (strncmp(p->v, tag->v,
-                                c ? (unsigned)(c - tag->v) :
-                                strlen(tag->v)) == 0)
-                    {
-                        tag->v = p->v;
-                            p = NULL;
-                            break;
-                    }
-                }
-                if (p != NULL)
-                    TAILQ_INSERT_TAIL(&ctx.tags, p, links);
 
                 break;
             }

@@ -55,6 +55,10 @@
 
 #include "tester.h"
 
+#if WITH_TRC
+#include "te_trc.h"
+#endif
+
 /** Logging entity name of the Tester subsystem */
 DEFINE_LGR_ENTITY("Tester");
 
@@ -582,34 +586,10 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
                     }
                     else
                     {
-                        tqe_string *entry = malloc(sizeof(*entry));
-                        tqe_string *tag;
+                        te_errno rc;
 
-                        if (entry == NULL)
-                            return TE_RC(TE_TESTER, TE_ENOMEM);
-
-                        entry->v = strdup(poptGetOptArg(optCon));
-                        if (entry->v == NULL)
-                            return TE_RC(TE_TESTER, TE_ENOMEM);
-                        /* do we have this tag? */
-                        /* memory loss here, nobody cares */
-                        TAILQ_FOREACH(tag, &global->trc_tags, links)
-                        {
-                            char *c = strchr(tag->v, ':');
-
-                            if (strncmp(entry->v, tag->v,
-                                        c ? (unsigned)(c - tag->v) :
-                                strlen(tag->v)) == 0)
-                            {
-                                tag->v = entry->v;
-                                entry = NULL;
-                                break;
-                            }
-                        }
-                        if (entry)
-                            TAILQ_INSERT_TAIL(&global->trc_tags, entry,
-                                              links);
-
+                        rc = trc_add_tag(&global->trc_tags,
+                                         (char *)poptGetOptArg(optCon));
                     }
 #else
                     /* Unreachable */

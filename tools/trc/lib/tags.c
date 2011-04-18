@@ -42,48 +42,8 @@
 #include "logger_api.h"
 
 #include "trc_tags.h"
+#include "te_trc.h"
 
-
-/* See description in trc_tag.h */
-te_errno
-trc_add_tag(tqh_strings *tags, const char *name)
-{
-    tqe_string *p = calloc(1, sizeof(*p));
-    tqe_string *tag;
-
-    if (p == NULL)
-    {
-        ERROR("calloc(1, %u) failed", (unsigned)sizeof(*p));
-        return TE_ENOMEM;
-    }
-    p->v = strdup(name);
-    if (p->v == NULL)
-    {
-        ERROR("strdup(%s) failed", name);
-        return TE_ENOMEM;
-    }
-
-    /* do we have this tag? */
-    /* memory loss here, nobody cares */
-    TAILQ_FOREACH(tag, tags, links)
-    {
-        char *c = strchr(tag->v, ':');
-
-        if (strncmp(p->v, tag->v,
-                    c ? (unsigned)(c - tag->v) :
-                    strlen(tag->v)) == 0)
-        {
-            tag->v = p->v;
-            free(p);
-            p = NULL;
-            break;
-        }
-    }
-    if (p != NULL)
-        TAILQ_INSERT_TAIL(tags, p, links);
-
-    return 0;
-}
 
 /**
  * Parse string with TRC tags and add them into the list.
