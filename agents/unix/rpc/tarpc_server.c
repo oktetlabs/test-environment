@@ -3983,7 +3983,6 @@ TARPC_FUNC(getenv, {},
      */
     out->val_null = (val == NULL);
     out->val = strdup(val ? val : "");
-    RING("%s: out->val = %s", __FUNCTION__, out->val);
 }
 )
 
