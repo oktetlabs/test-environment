@@ -250,4 +250,19 @@ extern te_errno cpe_check_reboot(cpe_id_t *cpe);
  */ 
 extern te_errno cpe_check_factory_reset(cpe_id_t *cpe);
 
+
+/**
+ * Get directory path on the client TA controlling host where client
+ * will put downloaded files. 
+ * Return error if not applicable for current CPE.
+ *
+ * @param cpe           ID of CPE.
+ * @param fs_path       Path to download directory (OUT).
+ * @param bufsize       Size of location buffer.
+ * 
+ * @return status code.
+ */
+extern te_errno cpe_get_fs_path(cpe_id_t *cpe,
+                                char *fs_path, size_t bufsize);
+
 #endif /* __CPE_BACKDOOR__H__ */ 
