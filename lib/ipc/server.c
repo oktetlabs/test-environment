@@ -50,6 +50,9 @@
 #if HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
+#if HAVE_SYS_IOCTL_H
+#include <sys/ioctl.h>
+#endif
 #if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -439,19 +442,21 @@ ipc_is_server_ready(struct ipc_server *ipcs, const fd_set *set, int max_fd)
                     FD_ISSET(client->stream.socket, set);
                 if (client->stream.is_ready)
                 {
+                    int available = 0;
+
                     /*
                      * select() returns read event when data are
                      * available and when client closes its socket.
-                     * If non-blocking recv() returns 0, connection
-                     * is closed, otherwise (-1 with EINVAL) data are
-                     * available.
-                     * TODO: Better check is required.
                      */
-                    if (recv(client->stream.socket, NULL, 0,
-                             MSG_DONTWAIT) == 0)
-                        ipc_server_close_client(client, ipcs->conn);
-                    else
+
+                    if (ioctl(client->stream.socket, FIONREAD,
+                              &available) < 0)
+                        perror("FIONREAD ioctl() failed");
+
+                    if (available > 0)
                         is_ready = TRUE;
+                    else
+                        ipc_server_close_client(client, ipcs->conn);
                 }
             }
         }
