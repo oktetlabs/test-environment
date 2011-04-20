@@ -136,6 +136,16 @@ extern te_errno cwmp_str_array_cat_tail(string_array_t *a,
 extern string_array_t * cwmp_str_array_copy(string_array_t *a);
 
 /**
+ * Join string arrays. 
+ * 
+ * @param dest          array to be joined with @p src.
+ * @param src           array to be added to @p dest.
+ *
+ * @return nothing.
+ */
+extern void cwmp_str_array_join(string_array_t *dest, string_array_t *src);
+
+/**
  * Free string array. 
  * 
  * @param a             array with strings to be freed
@@ -558,13 +568,16 @@ cwmp_is_node_name(const char *name)
 static inline const char * 
 cwmp_file_type_to_str(cwmp_file_type_t ft)
 {
+    static char buf[32];
+
     switch(ft)
     {
         case CWMP_FIRMWARE:     return "1 Firmware Upgrade Image";
         case CWMP_WEB_CONTENT:  return "2 Web Content";
         case CWMP_VENDOR_CFG:   return "3 Vendor Configuration File";
     }
-    return "(unknown)";
+    snprintf(buf, sizeof(buf), "%d unknown", (int)ft);
+    return buf;
 }
 
 

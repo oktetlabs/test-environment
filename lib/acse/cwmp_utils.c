@@ -175,6 +175,19 @@ cwmp_str_array_cat_tail(string_array_t *a, const char *suffix)
     return 0;
 }
 
+void
+cwmp_str_array_join(string_array_t *dest, string_array_t *src)
+{
+    size_t    real_arr_len = dest->size + src->size;
+    char    **array = dest->items;
+    size_t    i;
+
+    dest->items = array = realloc(array, real_arr_len * sizeof(char*));
+    for (i = 0; i < src->size; i++)
+        dest->items[dest->size + i] = strdup(src->items[i]);
+
+    dest->size = real_arr_len;
+}
 
 /* see description in cwmp_utils.h */
 void
