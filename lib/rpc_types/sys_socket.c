@@ -1833,6 +1833,12 @@ ethtool_cmd2type(tarpc_ethtool_command cmd)
 #ifdef ETHTOOL_STSO
         case ETHTOOL_STSO:
 #endif
+#ifdef ETHTOOL_GGSO
+        case ETHTOOL_GGSO:
+#endif
+#ifdef ETHTOOL_SGSO
+        case ETHTOOL_SGSO:
+#endif
 #ifdef ETHTOOL_PHYS_ID
         case ETHTOOL_PHYS_ID:
 #endif
@@ -1889,6 +1895,12 @@ ethtool_cmd2str(tarpc_ethtool_command cmd)
 #endif
 #ifdef ETHTOOL_STSO
         MACRO2STR(STSO);
+#endif
+#ifdef ETHTOOL_GGSO
+        MACRO2STR(GGSO);
+#endif
+#ifdef ETHTOOL_SGSO
+        MACRO2STR(SGSO);
 #endif
 #ifdef ETHTOOL_PHYS_ID
         MACRO2STR(PHYS_ID);
