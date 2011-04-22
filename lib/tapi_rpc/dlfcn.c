@@ -64,7 +64,7 @@ rpc_dlopen(rcf_rpc_server *rpcs, const char *filename, int flag)
 
     rcf_rpc_call(rpcs, "ta_dlopen", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: dlopen(%s, %s) -> %p (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: dlopen(%s, %s) -> %llx (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op), in.filename,
                  dlopen_flags_rpc2str(in.flag), out.retval,
                  errno_rpc2str(RPC_ERRNO(rpcs)));
@@ -122,7 +122,7 @@ rpc_dlsym(rcf_rpc_server *rpcs, rpc_dlhandle handle, const char *symbol)
 
     rcf_rpc_call(rpcs, "ta_dlsym", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: dlsym(%p, %s) -> %p (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: dlsym(%llx, %s) -> %llx (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op), in.handle,
                  in.symbol, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
@@ -153,7 +153,7 @@ rpc_dlsym_call(rcf_rpc_server *rpcs, rpc_dlhandle handle, const char *symbol)
 
     rcf_rpc_call(rpcs, "ta_dlsym_call", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: dlsym_call(%p, %s) -> %d (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: dlsym_call(%llx, %s) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op), in.handle,
                  in.symbol, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
     RETVAL_INT(ta_dlsym_call, out.retval);
@@ -181,7 +181,7 @@ rpc_dlclose(rcf_rpc_server *rpcs, rpc_dlhandle handle)
 
     rcf_rpc_call(rpcs, "ta_dlclose", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: dlclose(%p) -> %d (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: dlclose(%llx) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op), in.handle,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
     RETVAL_ZERO_INT(ta_dlclose, out.retval);
