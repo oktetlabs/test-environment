@@ -125,7 +125,7 @@ write_str_in_quotes(char *dst, const char *src, size_t len)
         {
             *p++ ='\\';
             *p++ = 'n';
-            *src++;
+            src++;
             continue;
         }
 

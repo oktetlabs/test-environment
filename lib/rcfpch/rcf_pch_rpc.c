@@ -460,6 +460,7 @@ dispatch(void *arg)
         }
         pthread_mutex_unlock(&lock);
     }
+    return NULL;
 }
  
 
@@ -817,7 +818,17 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     if (thread)
         rc = create_thread_child(rpcs);
     else
+    {
+        if (rpcs->father && rpcs->father->ref != 0)
+        /* TODO  Also check if any CALL is running on father,
+         * possibly by RCF_RPC_IS_DONE */
+        {
+            ERROR("Forking RPC server %s from %s which already has threads.  "
+                  "Call only async-safe functions before exec!",
+                  rpcs->name, rpcs->father->name);
+        }
         rc = fork_child(rpcs);
+    }
             
     if (rc != 0)
     {
@@ -847,6 +858,8 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     
     if (rpcs->tid > 0)
         rpcs->father->ref++;
+    else
+        rpcs->father = NULL;
     
     rpcs->next = list;
     list = rpcs;
