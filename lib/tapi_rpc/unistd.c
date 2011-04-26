@@ -1108,7 +1108,8 @@ rpc_epoll_create1(rcf_rpc_server *rpcs, int flags)
     rcf_rpc_call(rpcs, "epoll_create1", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(epoll_create1, out.retval);
-    TAPI_RPC_LOG(rpcs, epoll_create1, "0x%x", "%d", flags, out.retval);
+    TAPI_RPC_LOG(rpcs, epoll_create1, "%s", "%d",
+                 epoll_flags_rpc2str(flags), out.retval);
     RETVAL_INT(epoll_create1, out.retval);
 }
 
