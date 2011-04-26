@@ -512,6 +512,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
     
     in->start = rpcs->start;
     in->op = rpcs->op;
+    rpcs->last_op = rpcs->op;
     in->tid = rpcs->tid0;
     in->done = rpcs->is_done_ptr;
     in->use_libc = rpcs->use_libc || rpcs->use_libc_once;

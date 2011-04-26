@@ -935,11 +935,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
     }
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(ioctl, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s): ioctl(%d, %s, %p(%s)) -> %d (%s)",
-                 rpcs->ta, rpcs->name, fd, ioctl_rpc2str(request),
-                 arg, req_val,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, ioctl, "%d, %s, %p(%s)", "%d",
+                 fd, ioctl_rpc2str(request), arg, req_val, out.retval);
     RETVAL_INT(ioctl, out.retval);
 }

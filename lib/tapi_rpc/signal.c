@@ -79,8 +79,6 @@ rpc_signal(rcf_rpc_server *rpcs,
         RETVAL_PTR(signal, NULL);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     in.signum = signum;
     in.handler = copy;
 
@@ -93,14 +91,10 @@ rpc_signal(rcf_rpc_server *rpcs,
         out.handler = NULL;
     }
     free(copy);
-    
-    TAPI_RPC_LOG("RPC (%s,%s): signal(%s, %s) -> %s (%s)",
-                 rpcs->ta, rpcs->name,
-                 signum_rpc2str(signum),
+
+    TAPI_RPC_LOG(rpcs, signal, "%s, %s", "%s", signum_rpc2str(signum),
                  (handler != NULL) ? handler : "(null)",
-                 res != NULL ? res : "(null)",
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
-        
+                 res != NULL ? res : "(null)");
     RETVAL_PTR(signal, res);
 }
 
@@ -131,8 +125,6 @@ rpc_bsd_signal(rcf_rpc_server *rpcs,
         RETVAL_PTR(bsd_signal, NULL);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     in.signum = signum;
     in.handler = copy;
 
@@ -145,14 +137,10 @@ rpc_bsd_signal(rcf_rpc_server *rpcs,
         out.handler = NULL;
     }
     free(copy);
-    
-    TAPI_RPC_LOG("RPC (%s,%s): bsd_signal(%s, %s) -> %s (%s)",
-                 rpcs->ta, rpcs->name,
-                 signum_rpc2str(signum),
+
+    TAPI_RPC_LOG(rpcs, bsd_signal, "%s, %s", "%s", signum_rpc2str(signum),
                  (handler != NULL) ? handler : "(null)",
-                 res != NULL ? res : "(null)",
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
-        
+                 res != NULL ? res : "(null)");
     RETVAL_PTR(bsd_signal, res);
 }
 
@@ -168,18 +156,15 @@ rpc_siginterrupt(rcf_rpc_server *rpcs, rpc_signum signum, int flag)
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_PTR(bsd_signal, NULL);
+        RETVAL_INT(siginterrupt, -1);
     }
 
     in.signum = signum;
     in.flag = flag;
     rcf_rpc_call(rpcs, "siginterrupt", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): siginterrupt(%s, %d) -> %d (%s)",
-                 rpcs->ta, rpcs->name,
-                 signum_rpc2str(signum), flag, out.retval,
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
-        
+    TAPI_RPC_LOG(rpcs, siginterrupt, "%s, %d", "%d",
+                 signum_rpc2str(signum), flag, out.retval);
     RETVAL_INT(siginterrupt, out.retval);
 }
 
@@ -210,8 +195,6 @@ rpc_sysv_signal(rcf_rpc_server *rpcs,
         RETVAL_PTR(sysv_signal, NULL);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     in.signum = signum;
     in.handler = copy;
 
@@ -224,21 +207,16 @@ rpc_sysv_signal(rcf_rpc_server *rpcs,
         out.handler = NULL;
     }
     free(copy);
-    
-    TAPI_RPC_LOG("RPC (%s,%s): sysv_signal(%s, %s) -> %s (%s)",
-                 rpcs->ta, rpcs->name,
-                 signum_rpc2str(signum),
+
+    TAPI_RPC_LOG(rpcs, sysv_signal, "%s, %s", "%s", signum_rpc2str(signum),
                  (handler != NULL) ? handler : "(null)",
-                 res != NULL ? res : "(null)",
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
-        
+                 res != NULL ? res : "(null)");
     RETVAL_PTR(sysv_signal, res);
 }
 
 int
 rpc_kill(rcf_rpc_server *rpcs, tarpc_pid_t pid, rpc_signum signum)
 {
-    rcf_rpc_op     op;
     tarpc_kill_in  in;
     tarpc_kill_out out;
 
@@ -251,20 +229,14 @@ rpc_kill(rcf_rpc_server *rpcs, tarpc_pid_t pid, rpc_signum signum)
         RETVAL_INT(kill, -1);
     }
 
-    op = rpcs->op;
-
     in.signum = signum;
     in.pid = pid;
 
     rcf_rpc_call(rpcs, "kill", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(kill, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s)%s: kill(%d, %s) -> %d (%s)",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
-                 pid, signum_rpc2str(signum),
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, kill, "%d, %s", "%d",
+                 pid, signum_rpc2str(signum), out.retval);
     RETVAL_INT(kill, out.retval);
 }
 
@@ -272,7 +244,6 @@ tarpc_pid_t
 rpc_waitpid(rcf_rpc_server *rpcs, tarpc_pid_t pid, rpc_wait_status *status, 
             rpc_waitpid_opts options)
 {
-    rcf_rpc_op          op;
     tarpc_waitpid_in    in;
     tarpc_waitpid_out   out;
     rpc_wait_status     stat;
@@ -285,8 +256,6 @@ rpc_waitpid(rcf_rpc_server *rpcs, tarpc_pid_t pid, rpc_wait_status *status,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(waitpid, -1);
     }
-
-    op = rpcs->op;
 
     in.pid = pid;
     in.options = (rpc_waitpid_opts)options;
@@ -302,11 +271,8 @@ rpc_waitpid(rcf_rpc_server *rpcs, tarpc_pid_t pid, rpc_wait_status *status,
         stat.flag = RPC_WAIT_STATUS_UNKNOWN;
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(waitpid, out.pid);
-    TAPI_RPC_LOG("RPC (%s,%s)%s: waitpid(%d, %p, 0x%x) -> %d (%s) "
-                 "status %s 0x%x",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
-                 pid, status, options,
-                 out.pid, errno_rpc2str(RPC_ERRNO(rpcs)), 
+    TAPI_RPC_LOG(rpcs, waitpid, "%d, %p, 0x%x", "%d status %s 0x%x",
+                 pid, status, options, out.pid,
                  wait_status_flag_rpc2str(stat.flag), stat.value);
     if (out.pid > 0 && (stat.flag != RPC_WAIT_STATUS_EXITED || 
                         stat.value != 0))
@@ -320,7 +286,6 @@ rpc_waitpid(rcf_rpc_server *rpcs, tarpc_pid_t pid, rpc_wait_status *status,
 int
 rpc_ta_kill_death(rcf_rpc_server *rpcs, tarpc_pid_t pid)
 {
-    rcf_rpc_op     op;
     tarpc_kill_in  in;
     tarpc_kill_out out;
 
@@ -333,8 +298,6 @@ rpc_ta_kill_death(rcf_rpc_server *rpcs, tarpc_pid_t pid)
         RETVAL_INT(ta_kill_death, -1);
     }
 
-    op = rpcs->op;
-
     in.pid = pid;
 
     rcf_rpc_call(rpcs, "ta_kill_death", &in, &out);
@@ -342,11 +305,7 @@ rpc_ta_kill_death(rcf_rpc_server *rpcs, tarpc_pid_t pid)
     /* This function should not check errno */
     out.common.errno_changed = FALSE;
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(ta_kill_death, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s)%s: ta_kill_death(%d) -> %d (%s)",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
-                 pid, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, ta_kill_death, "%d", "%d", pid, out.retval);
     RETVAL_INT(ta_kill_death, out.retval);
 }
 
@@ -365,14 +324,9 @@ rpc_sigset_new(rcf_rpc_server *rpcs)
         RETVAL_RPC_PTR(sigset_new, RPC_NULL);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     rcf_rpc_call(rpcs, "sigset_new", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): sigset_new() -> 0x%x (%s)",
-                 rpcs->ta, rpcs->name,
-                 (unsigned)out.set, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, sigset_new, "", "0x%x", (unsigned)out.set);
     RETVAL_RPC_PTR(sigset_new, out.set);
 }
 
@@ -391,16 +345,11 @@ rpc_sigset_delete(rcf_rpc_server *rpcs, rpc_sigset_p set)
         RETVAL_VOID(sigset_delete);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     in.set = (tarpc_sigset_t)set;
 
     rcf_rpc_call(rpcs, "sigset_delete", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): sigset_delete(0x%x) -> (%s)",
-                 rpcs->ta, rpcs->name, (unsigned)set,
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, sigset_delete, "0x%x", "", (unsigned)set);
     RETVAL_VOID(sigset_delete);
 }
 
@@ -422,8 +371,6 @@ rpc_sigprocmask(rcf_rpc_server *rpcs,
         RETVAL_INT(sigprocmask, -1);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     in.set = (tarpc_sigset_t)set;
     in.oldset = (tarpc_sigset_t)oldset;
     in.how = how;
@@ -431,12 +378,8 @@ rpc_sigprocmask(rcf_rpc_server *rpcs,
     rcf_rpc_call(rpcs, "sigprocmask", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(sigprocmask, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s): sigprocmask(%d, 0x%x, 0x%x) -> %d (%s)",
-                 rpcs->ta, rpcs->name, how,
-                 (unsigned)set, (unsigned)oldset,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, sigprocmask, "%d, 0x%x, 0x%x", "%d",
+                 how, (unsigned)set, (unsigned)oldset, out.retval);
     RETVAL_INT(sigprocmask, out.retval);
 }
 
@@ -456,18 +399,13 @@ rpc_sigemptyset(rcf_rpc_server *rpcs, rpc_sigset_p set)
         RETVAL_INT(sigemptyset, -1);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     in.set = (tarpc_sigset_t)set;
 
     rcf_rpc_call(rpcs, "sigemptyset", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(sigemptyset, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s): sigemptyset(0x%x) -> %d (%s)",
-                 rpcs->ta, rpcs->name, (unsigned)set,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, sigemptyset, "0x%x", "%d",
+                 (unsigned)set, out.retval);
     RETVAL_INT(sigemptyset, out.retval);
 }
 
@@ -486,18 +424,13 @@ rpc_sigpending(rcf_rpc_server *rpcs, rpc_sigset_p set)
         RETVAL_INT(sigpending, -1);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     in.set = (tarpc_sigset_t)set;
 
     rcf_rpc_call(rpcs, "sigpending", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(sigpending, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s): sigpending(0x%x) -> %d (%s)",
-                 rpcs->ta, rpcs->name, (unsigned)set,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, sigpending, "0x%x", "%d",
+                 (unsigned)set, out.retval);
     RETVAL_INT(sigpending, out.retval);
 }
 
@@ -521,11 +454,8 @@ rpc_sigsuspend(rcf_rpc_server *rpcs, const rpc_sigset_p set)
     rcf_rpc_call(rpcs, "sigsuspend", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(sigsuspend, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s): sigsuspend(0x%x) -> %d (%s)",
-                 rpcs->ta, rpcs->name, (unsigned)set,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, sigsuspend, "0x%x", "%d",
+                 (unsigned)set, out.retval);
     RETVAL_INT(sigsuspend, out.retval);
 }
 
@@ -544,14 +474,9 @@ rpc_sigreceived(rcf_rpc_server *rpcs)
         RETVAL_RPC_PTR(sigreceived, RPC_NULL);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     rcf_rpc_call(rpcs, "sigreceived", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): sigreceived() -> 0x%x (%s)",
-                 rpcs->ta, rpcs->name,
-                 (unsigned)out.set, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, sigreceived, "", "0x%x", (unsigned)out.set);
     RETVAL_RPC_PTR(sigreceived, out.set);
 }
 
@@ -570,19 +495,13 @@ rpc_sigfillset(rcf_rpc_server *rpcs, rpc_sigset_p set)
         RETVAL_INT(sigfillset, -1);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     in.set = (tarpc_sigset_t)set;
 
     rcf_rpc_call(rpcs, "sigfillset", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(sigfillset, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s): sigfillset(0x%x) -> %d (%s)",
-                 rpcs->ta, rpcs->name,
-                 (unsigned)set,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, sigfillset, "0x%x", "%d",
+                 (unsigned)set, out.retval);
     RETVAL_INT(sigfillset, out.retval);
 }
 
@@ -601,20 +520,14 @@ rpc_sigaddset(rcf_rpc_server *rpcs, rpc_sigset_p set, rpc_signum signum)
         RETVAL_INT(sigaddset, -1);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     in.set = (tarpc_sigset_t)set;
     in.signum = signum;
 
     rcf_rpc_call(rpcs, "sigaddset", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(sigaddset, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s): sigaddset(%s, 0x%x) -> %d (%s)",
-                 rpcs->ta, rpcs->name,
-                 signum_rpc2str(signum), (unsigned)set,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, sigaddset, "%s, 0x%x", "%d",
+                 signum_rpc2str(signum), (unsigned)set, out.retval);
     RETVAL_INT(sigaddset, out.retval);
 }
 
@@ -633,20 +546,14 @@ rpc_sigdelset(rcf_rpc_server *rpcs, rpc_sigset_p set, rpc_signum signum)
         RETVAL_INT(sigdelset, -1);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     in.set = (tarpc_sigset_t)set;
     in.signum = signum;
 
     rcf_rpc_call(rpcs, "sigdelset", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(sigdelset, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s): sigdelset(%s, 0x%x) -> %d (%s)",
-                 rpcs->ta, rpcs->name,
-                 signum_rpc2str(signum), (unsigned)set,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, sigdelset, "%s, 0x%x", "%d",
+                 signum_rpc2str(signum), (unsigned)set, out.retval);
     RETVAL_INT(sigdelset, out.retval);
 }
 
@@ -666,8 +573,6 @@ rpc_sigismember(rcf_rpc_server *rpcs,
         RETVAL_INT(sigismember, -1);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     in.set = (tarpc_sigset_t)set;
     in.signum = signum;
 
@@ -675,12 +580,8 @@ rpc_sigismember(rcf_rpc_server *rpcs,
 
     CHECK_RETVAL_VAR(sigismember, out.retval,
         (out.retval != 0 && out.retval != 1 && out.retval != -1), -1);
-
-    TAPI_RPC_LOG("RPC (%s,%s): sigismember(%s, 0x%x) -> %d (%s)",
-                 rpcs->ta, rpcs->name,
-                 signum_rpc2str(signum), (unsigned)set,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, sigmask, "%s, 0x%x", "%d",
+                 signum_rpc2str(signum), (unsigned)set, out.retval);
     RETVAL_INT(sigismember, out.retval);
 }
 
@@ -728,7 +629,6 @@ rpc_sigaction(rcf_rpc_server *rpcs, rpc_signum signum,
               struct rpc_struct_sigaction *oldact)
 {
     te_errno            rc;
-    rcf_rpc_op          op;
     tarpc_sigaction_in  in;
     tarpc_sigaction_out out;
 
@@ -754,8 +654,6 @@ rpc_sigaction(rcf_rpc_server *rpcs, rpc_signum signum,
         RETVAL_INT(sigaction, -1);
     }
     
-    op = rpcs->op;
-
     in.signum = signum;
     if (act != NULL)
     {
@@ -800,11 +698,9 @@ rpc_sigaction(rcf_rpc_server *rpcs, rpc_signum signum,
     }
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(sigaction, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s)%s: sigaction(%s, "
+    TAPI_RPC_LOG(rpcs, sigaction, "%s, " 
                  "%p{'%s', '%s', 0x%x, %s}, "
-                 "%p{'%s', '%s', 0x%x, %s}) -> %d (%s)",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 "%p{'%s', '%s', 0x%x, %s}", "%d",
                  signum_rpc2str(signum),
                  act,
                  (act == NULL) ? "" : act->mm_handler,
@@ -818,7 +714,6 @@ rpc_sigaction(rcf_rpc_server *rpcs, rpc_signum signum,
                  (oldact == NULL) ? 0 : (unsigned)oldact->mm_mask,
                  (oldact == NULL) ? "0" :
                      sigaction_flags_rpc2str(oldact->mm_flags),
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+                 out.retval);
     RETVAL_INT(sigaction, out.retval);
 }

@@ -35,7 +35,6 @@ int
 rpc_power_sw(rcf_rpc_server *rpcs, const char *type,
              const char *dev,  int mask, const char *cmd)
 {
-    rcf_rpc_op          op;
     tarpc_power_sw_in   in;
     tarpc_power_sw_out  out;
 
@@ -48,7 +47,6 @@ rpc_power_sw(rcf_rpc_server *rpcs, const char *type,
         RETVAL_INT(power_sw, -1);
     }
 
-    op = rpcs->op;
     in.type = POWER_SW_STR2_DEV_TYPE(type);
     in.mask = mask;
     in.cmd = POWER_SW_STR2_CMD(cmd);
@@ -78,12 +76,10 @@ rpc_power_sw(rcf_rpc_server *rpcs, const char *type,
 
     rcf_rpc_call(rpcs, "power_sw", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: power_sw(%s, %s, %X, %s) "
-                 "-> %d (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
+    TAPI_RPC_LOG(rpcs, power_sw, "%s, %s, %X, %s", "%d",
                  (type != NULL) ? type : "unspec",
                  (dev != NULL) ? dev : "unspec",
-                 mask, cmd, out.retval,
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
+                 mask, cmd, out.retval);
 
     if (in.dev != NULL)
         free(in.dev);

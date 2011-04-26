@@ -92,6 +92,7 @@
 typedef struct rcf_rpc_server {
     /* Configuration parameters */
     rcf_rpc_op  op;             /**< Instruction for RPC call */
+    rcf_rpc_op  last_op;        /**< op value in the last call */
     uint64_t    start;          /**< Time when RPC should be called on 
                                      the server (in milliseconds since
                                      Epoch; 0 if it should be called

@@ -77,10 +77,8 @@ rpc_fopen(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "fopen", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): fopen(%s, %s) -> 0x%x (%s)",
-                 rpcs->ta, rpcs->name,
-                 path, mode,
-                 (unsigned)out.mem_ptr, errno_rpc2str(RPC_ERRNO(rpcs)));
+    TAPI_RPC_LOG(rpcs, fopen, "%s, %s", "0x%x",
+                 path, mode, (unsigned)out.mem_ptr);
 
     free(in.path);
     free(in.mode);
@@ -110,10 +108,8 @@ rpc_fdopen(rcf_rpc_server *rpcs, int fd,
 
     rcf_rpc_call(rpcs, "fdopen", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): fdopen(%d, %s) -> 0x%x (%s)",
-                 rpcs->ta, rpcs->name,
-                 fd, mode,
-                 (unsigned)out.mem_ptr, errno_rpc2str(RPC_ERRNO(rpcs)));
+    TAPI_RPC_LOG(rpcs, fdopen, "%d, %s", "0x%x",
+                 fd, mode, (unsigned)out.mem_ptr);
 
     free(in.mode);
 
@@ -140,10 +136,7 @@ rpc_fclose(rcf_rpc_server *rpcs, rpc_file_p file)
 
     rcf_rpc_call(rpcs, "fclose", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): fclose(%x) -> %d (%s)",
-                 rpcs->ta, rpcs->name, file,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, fclose, "0x%x", "%d", file, out.retval);
     RETVAL_INT(fclose, out.retval);
 }
 
@@ -169,11 +162,7 @@ rpc_fileno(rcf_rpc_server *rpcs,
     rcf_rpc_call(rpcs, "fileno", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(fileno, out.fd);
-
-    TAPI_RPC_LOG("RPC (%s,%s): fileno(0x%x) -> %d (%s)",
-                 rpcs->ta, rpcs->name,
-                 (unsigned)f, out.fd, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, fileno, "0x%x", "%d", (unsigned)f, out.fd);
     RETVAL_INT(fileno, out.fd);
 }
 
@@ -199,10 +188,8 @@ rpc_popen(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "popen", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): popen(%s, %s) -> 0x%x (%s)",
-                 rpcs->ta, rpcs->name,
-                 cmd, mode,
-                 (unsigned)out.mem_ptr, errno_rpc2str(RPC_ERRNO(rpcs)));
+    TAPI_RPC_LOG(rpcs, popen, "%s %s", "0x%x",
+                 cmd, mode, (unsigned)out.mem_ptr);
 
     free(in.cmd);
     free(in.mode);
@@ -230,10 +217,7 @@ rpc_pclose(rcf_rpc_server *rpcs, rpc_file_p file)
 
     rcf_rpc_call(rpcs, "pclose", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): pclose(%x) -> %d (%s)",
-                 rpcs->ta, rpcs->name, file,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, pclose, "0x%x", "%d", file, out.retval);
     RETVAL_INT(pclose, out.retval);
 }
 
@@ -274,14 +258,13 @@ rpc_te_shell_cmd_gen(rcf_rpc_server *rpcs, const char *cmd,
     if (err_fd != NULL)
         *err_fd = out.err_fd;
 
-    TAPI_RPC_LOG("RPC (%s,%s): te_shell_cmd(\"%s\", %d, "
-                 "%p(%d), %p(%d), %p(%d)) -> %d (%s)",
-                 rpcs->ta, rpcs->name, cmd, uid,
+    TAPI_RPC_LOG(rpcs, te_shell_cmd,
+                 "\"%s\", %d, %p(%d), %p(%d), %p(%d)", "%d",
+                 cmd, uid,
                  in_fd, (in_fd == NULL) ? 0 : *in_fd,
                  out_fd, (out_fd == NULL) ? 0 : *out_fd,
                  err_fd, (err_fd == NULL) ? 0 : *err_fd,
-                 out.pid, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+                 out.pid);
     RETVAL_INT(te_shell_cmd, out.pid);
 }
 
@@ -694,11 +677,8 @@ rpc_system(rcf_rpc_server *rpcs, const char *cmd)
     if (rc.value > 0)
         rpcs->err_log = TE_LL_ERROR;
 
-    TAPI_RPC_LOG("RPC (%s,%s): system(%s) -> %s %u (%s)",
-                 rpcs->ta, rpcs->name,
-                 cmd, wait_status_flag_rpc2str(rc.flag), rc.value,
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, system, "%s", "%s %u",
+                 cmd, wait_status_flag_rpc2str(rc.flag), rc.value);
     RETVAL_WAIT_STATUS(system, rc);
 }
 
@@ -745,10 +725,8 @@ rpc_getenv(rcf_rpc_server *rpcs, const char *name)
 
     rcf_rpc_call(rpcs, "getenv", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): getenv(%s) -> %s (%s)",
-                 rpcs->ta, rpcs->name, name,
-                 out.val_null ?  "<<NULL>>" : out.val,
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
+    TAPI_RPC_LOG(rpcs, getenv, "%s", "%s",
+                 name, out.val_null ?  "<<NULL>>" : out.val);
 
     if (out.val_null)
         val = NULL;
@@ -798,11 +776,8 @@ rpc_setenv(rcf_rpc_server *rpcs, const char *name,
 
     rcf_rpc_call(rpcs, "setenv", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): setenv(%s, %s, %d) -> %d (%s)",
-                 rpcs->ta, rpcs->name,
-                 name, val, overwrite,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, setenv, "%s, %s, %d", "%d",
+                 name, val, overwrite, out.retval);
     RETVAL_INT(setenv, out.retval);
 }
 
@@ -834,10 +809,7 @@ rpc_unsetenv(rcf_rpc_server *rpcs, const char *name)
 
     rcf_rpc_call(rpcs, "unsetenv", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): unsetenv(%s) -> %d (%s)",
-                 rpcs->ta, rpcs->name,
-                 name,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+    TAPI_RPC_LOG(rpcs, unsetenv, "%s", "%d", name, out.retval);
 
     RETVAL_INT(setenv, out.retval);
 }

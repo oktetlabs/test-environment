@@ -165,10 +165,8 @@ rpc_gethostbyname(rcf_rpc_server *rpcs, const char *name)
             rpcs->_errno = TE_RC(TE_RCF, TE_ENOMEM);
     }
 
-    TAPI_RPC_LOG("RPC (%s,%s): gethostbyname(%s) -> %p (%s)",
-                 rpcs->ta, rpcs->name, name == NULL ? "" : name,
-                 res, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, gethostbyname, "%s", "%p",
+                 name == NULL ? "" : name, res);
     RETVAL_PTR(gethostbyname, res);
 }
 
@@ -206,10 +204,8 @@ rpc_gethostbyaddr(rcf_rpc_server *rpcs,
             rpcs->_errno = TE_RC(TE_RCF, TE_ENOMEM);
     }
 
-    TAPI_RPC_LOG("RPC (%s,%s): gethostbyaddr(%p, %d, %d) -> %p (%s)",
-                 rpcs->ta, rpcs->name, addr, len, type,
-                 res, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, gethostbyaddr, "%p, %d, %d", "%p",
+                 addr, len, type, res);
     RETVAL_PTR(gethostbyaddr, res);
 }
 
@@ -333,12 +329,8 @@ rpc_getaddrinfo(rcf_rpc_server *rpcs,
     }
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(getaddrinfo, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s): getaddrinfo(%s, %s, %p, %p) -> %d (%s)",
-                 rpcs->ta, rpcs->name,
-                 node, service, hints, res,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, getaddrinfo, "%s, %s, %p, %p", "%d",
+                 node, service, hints, res, out.retval);
     RETVAL_INT(getaddrinfo, out.retval);
 }
 
@@ -365,9 +357,7 @@ rpc_freeaddrinfo(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "freeaddrinfo",  &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): freeaddrinfo(%p) -> (%s)",
-                 rpcs->ta, rpcs->name, res,
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
+    TAPI_RPC_LOG(rpcs, freeaddrinfo, "%p", "", res);
 
     free((int *)res - 1);
 

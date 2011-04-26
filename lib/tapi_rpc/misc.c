@@ -85,8 +85,6 @@ rpc_get_sizeof(rcf_rpc_server *rpcs, const char *type_name)
         RETVAL_INT(get_sizeof, -1);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     in.typename = strdup(type_name);
 
     rcf_rpc_call(rpcs, "get_sizeof", &in, &out);
@@ -95,10 +93,7 @@ rpc_get_sizeof(rcf_rpc_server *rpcs, const char *type_name)
     rc = out.size;
 
     CHECK_RETVAL_VAR(get_sizeof, rc, (rc < -1), -1);
-
-    TAPI_RPC_LOG("RPC (%s,%s): get_sizeof(%s) -> %d",
-                 rpcs->ta, rpcs->name, type_name, rc);
-
+    TAPI_RPC_LOG(rpcs, get_sizeof, "%s", "%d", type_name, rc);
     RETVAL_INT(get_sizeof, rc);
 }
 
@@ -129,8 +124,6 @@ rpc_protocol_info_cmp(rcf_rpc_server *rpcs,
         RETVAL_INT(protocol_info_cmp, -1);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     in.buf1.buf1_val = (uint8_t *)buf1;
     in.buf2.buf2_val = (uint8_t *)buf2;
     if (is_wide1)
@@ -149,9 +142,7 @@ rpc_protocol_info_cmp(rcf_rpc_server *rpcs,
 
     rc = out.retval;
 
-    TAPI_RPC_LOG("RPC (%s,%s): protocol_info_cmp() -> %d",
-                 rpcs->ta, rpcs->name, rc);
-
+    TAPI_RPC_LOG(rpcs, protocol_info_cmp, "", "%d", rc);
     RETVAL_INT(protocol_info_cmp, rc);
 }
 
@@ -177,17 +168,13 @@ rpc_get_addrof(rcf_rpc_server *rpcs, const char *name)
         RETVAL_RPC_PTR(get_addrof, RPC_NULL);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     in.name = strdup(name);
 
     rcf_rpc_call(rpcs, "get_addrof", &in, &out);
 
     free(in.name);
 
-    TAPI_RPC_LOG("RPC (%s,%s): get_addrof(%s) -> %u",
-                 rpcs->ta, rpcs->name, name, out.addr);
-
+    TAPI_RPC_LOG(rpcs, get_addrof, "%s", "%u", name, out.addr);
     RETVAL_RPC_PTR(get_addrof, out.addr);
 }
 
@@ -208,8 +195,6 @@ rpc_get_var(rcf_rpc_server *rpcs, const char *name, tarpc_size_t size)
         TAPI_JMP_DO(TE_EFAIL);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     in.name = strdup(name);
     in.size = size;
 
@@ -218,13 +203,10 @@ rpc_get_var(rcf_rpc_server *rpcs, const char *name, tarpc_size_t size)
     free(in.name);
 
     CHECK_RETVAL_VAR_IS_BOOL(get_var, out.found);
-
-    TAPI_RPC_LOG("RPC (%s,%s): get_var(%s, %u) -> %llu%s",
-                 rpcs->ta, rpcs->name, name, size, out.found ? out.val : 0,
+    TAPI_RPC_LOG(rpcs, get_var, "%s, %u", "%llu%s",
+                 name, size, out.found ? out.val : 0,
                  out.found ? "" : " (not found)");
-
     TAPI_RPC_OUT(get_var, !out.found);
-
     return out.val;
 }
 
@@ -246,8 +228,6 @@ rpc_set_var(rcf_rpc_server *rpcs, const char *name,
         TAPI_JMP_DO(TE_EFAIL);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     in.name = strdup(name);
     in.size = size;
     in.val = val;
@@ -257,11 +237,8 @@ rpc_set_var(rcf_rpc_server *rpcs, const char *name,
     free(in.name);
 
     CHECK_RETVAL_VAR_IS_BOOL(get_var, out.found);
-
-    TAPI_RPC_LOG("RPC (%s,%s): set_var(%s, %u, %llu) -> %s",
-                 rpcs->ta, rpcs->name, name, size, in.val,
-                 out.found ? "OK" : "not found");
-
+    TAPI_RPC_LOG(rpcs, set_var, "%s, %u, %llu", "%s",
+                 name, size, in.val, out.found ? "OK" : "not found");
     TAPI_RPC_OUT(set_var, !out.found);
 }
 
@@ -404,7 +381,8 @@ timespec2str(const struct timespec *tv)
     }
     else
     {
-        sprintf(buf, "{%lld,%lld}", tv->tv_sec, tv->tv_nsec);
+        sprintf(buf, "{%lld,%lld}", (long long)tv->tv_sec,
+                (long long)tv->tv_nsec);
     }
     return buf;
 }
@@ -429,7 +407,8 @@ tarpc_timespec2str(const struct tarpc_timespec *tv)
     }
     else
     {
-        sprintf(buf, "{%lld,%lld}", tv->tv_sec, tv->tv_nsec);
+        sprintf(buf, "{%lld,%lld}", (long long)tv->tv_sec,
+                (long long)tv->tv_nsec);
     }
     return buf;
 }
@@ -466,7 +445,6 @@ rpc_simple_sender(rcf_rpc_server *rpcs,
                   int delay_rnd_once, int time2run, uint64_t *sent,
                   int ignore_err)
 {
-    rcf_rpc_op              op;
     tarpc_simple_sender_in  in;
     tarpc_simple_sender_out out;
 
@@ -478,8 +456,6 @@ rpc_simple_sender(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(simple_sender, -1);
     }
-
-    op = rpcs->op;
 
     in.s = s;
     in.size_min = size_min;
@@ -502,16 +478,12 @@ rpc_simple_sender(rcf_rpc_server *rpcs,
         *sent = out.bytes;
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(simple_sender, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s)%s: "
-                 "simple_sender(%d, %d, %d, %d, %d, %d, %d, %d, %d) -> "
-                 "%d (%s) %u", rpcs->ta, rpcs->name, rpcop2str(op),
+    TAPI_RPC_LOG(rpcs, simple_sender, "%d, %d, %d, %d, %d, %d, %d, %d, %d",
+                 "%d %u",
                  s, size_min, size_max, size_rnd_once,
                  delay_min, delay_max, delay_rnd_once,
                  time2run, ignore_err,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
-                 (unsigned int)*sent);
-
+                 out.retval, (unsigned int)*sent);
     RETVAL_INT(simple_sender, out.retval);
 }
 
@@ -528,7 +500,6 @@ int
 rpc_simple_receiver(rcf_rpc_server *rpcs,
                     int s, uint32_t time2run, uint64_t *received)
 {
-    rcf_rpc_op                op;
     tarpc_simple_receiver_in  in;
     tarpc_simple_receiver_out out;
 
@@ -540,8 +511,6 @@ rpc_simple_receiver(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(simple_receiver, -1);
     }
-
-    op = rpcs->op;
 
     in.s = s;
     in.time2run = time2run;
@@ -556,12 +525,8 @@ rpc_simple_receiver(rcf_rpc_server *rpcs,
         *received = out.bytes;
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(simple_receiver, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s)%s: simple_receiver(%d, %d) -> %d (%s) "
-                 "received=%u", rpcs->ta, rpcs->name, rpcop2str(op), s,
-                 time2run, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
-                 (unsigned long)*received);
-
+    TAPI_RPC_LOG(rpcs, simple_receiver, "%d, %d", "%d received=%u",
+                 s, time2run, out.retval, (unsigned long)*received);
     RETVAL_INT(simple_receiver, out.retval);
 }
 
@@ -578,7 +543,6 @@ int
 rpc_wait_readable(rcf_rpc_server *rpcs,
                   int s, uint32_t timeout)
 {
-    rcf_rpc_op                op;
     tarpc_wait_readable_in    in;
     tarpc_wait_readable_out   out;
 
@@ -590,8 +554,6 @@ rpc_wait_readable(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(simple_receiver, -1);
     }
-
-    op = rpcs->op;
 
     in.s = s;
     in.timeout = timeout;
@@ -606,10 +568,8 @@ rpc_wait_readable(rcf_rpc_server *rpcs,
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(simple_receiver, out.retval);
 #endif
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: wait_readable(%d, %d) -> %d (%s) ",
-                 rpcs->ta, rpcs->name, rpcop2str(op), s,
-                 timeout, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, wait_readable, "%d, %d", "%d",
+                 s, timeout, out.retval);
     RETVAL_INT(wait_readable, out.retval);
 }
 
@@ -619,7 +579,6 @@ int
 rpc_recv_verify(rcf_rpc_server *rpcs, int s,
                 const char *gen_data_fname, uint64_t start)
 {
-    rcf_rpc_op            op;
     tarpc_recv_verify_in  in;
     tarpc_recv_verify_out out;
 
@@ -639,13 +598,11 @@ rpc_recv_verify(rcf_rpc_server *rpcs, int s,
 
     RING("%s(): fname %s", __FUNCTION__, gen_data_fname);
 
-    op = rpcs->op;
-
     in.s = s;
     in.start = start;
 
 #if 1
-    if (op != RCF_RPC_WAIT)
+    if (rpcs->op != RCF_RPC_WAIT)
     {
         in.fname.fname_len = strlen(gen_data_fname) + 1;
         in.fname.fname_val = strdup(gen_data_fname);
@@ -654,11 +611,8 @@ rpc_recv_verify(rcf_rpc_server *rpcs, int s,
 
     rcf_rpc_call(rpcs, "recv_verify", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: recv_verify(%d, %d) -> %d (%s) ",
-                 rpcs->ta, rpcs->name, rpcop2str(op), s,
-                 (uint32_t)start, out.retval,
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, recv_verify, "%d, %d", "%d",
+                 s, (uint32_t)start, out.retval);
     RETVAL_INT(recv_verify, out.retval);
 }
 
@@ -736,7 +690,6 @@ rpc_iomux_flooder(rcf_rpc_server *rpcs,
                   int bulkszs, int time2run, int time2wait, int iomux,
                   uint64_t *tx_stat, uint64_t *rx_stat)
 {
-    rcf_rpc_op        op;
     tarpc_flooder_in  in;
     tarpc_flooder_out out;
     memset(&in, 0, sizeof(in));
@@ -747,8 +700,6 @@ rpc_iomux_flooder(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(flooder, -1);
     }
-
-    op = rpcs->op;
 
     if (sndrs != NULL)
     {
@@ -797,16 +748,12 @@ rpc_iomux_flooder(rcf_rpc_server *rpcs,
     }
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(flooder, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: "
-                 "flooder([%s], [%s], %d, %d, %d, %s, %p, %p) "
-                 "-> %d (%s) tx=[%s] rx=[%s]",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
+    TAPI_RPC_LOG(rpcs, flooder, "[%s], [%s], %d, %d, %d, %s, %p, %p",
+                 "%d tx=[%s] rx=[%s]",
                  tarpc_array2string(sndnum, sndrs, sizeof(sndrs[0])),
                  tarpc_array2string(rcvnum, rcvrs, sizeof(rcvrs[0])),
                  bulkszs, time2run, time2wait,
-                 iomux2str(iomux),
-                 tx_stat, rx_stat, out.retval,
-                 errno_rpc2str(RPC_ERRNO(rpcs)),
+                 iomux2str(iomux), tx_stat, rx_stat, out.retval,
                  tarpc_array2string(sndnum, tx_stat, sizeof(tx_stat[0])),
                  tarpc_array2string(rcvnum, rx_stat, sizeof(rx_stat[0])));
     RETVAL_INT(flooder, out.retval);
@@ -818,7 +765,6 @@ rpc_iomux_echoer(rcf_rpc_server *rpcs,
                  int *sockets, int socknum, int time2run, int iomux,
                  uint64_t *tx_stat, uint64_t *rx_stat)
 {
-    rcf_rpc_op       op;
     tarpc_echoer_in  in;
     tarpc_echoer_out out;
 
@@ -835,8 +781,6 @@ rpc_iomux_echoer(rcf_rpc_server *rpcs,
         rpcs->_errno = RPC_EINVAL;
         RETVAL_INT(echoer, -1);
     }
-
-    op = rpcs->op;
 
 
     in.sockets.sockets_val = sockets;
@@ -877,17 +821,11 @@ rpc_iomux_echoer(rcf_rpc_server *rpcs,
     }
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(echoer, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s)%s: echoer([%s], %d, %s) -> %d (%s) "
-                 "tx=[%s] rx=[%s]",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
+    TAPI_RPC_LOG(rpcs, echoer, "[%s], %d, %s", "%d tx=[%s] rx=[%s]",
                  tarpc_array2string(socknum, sockets, sizeof(sockets[0])),
-                 time2run, iomux2str(iomux),
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
+                 time2run, iomux2str(iomux), out.retval,
                  tarpc_array2string(socknum, tx_stat, sizeof(tx_stat[0])),
                  tarpc_array2string(socknum, rx_stat, sizeof(rx_stat[0])));
-
-
     RETVAL_INT(echoer, out.retval);
 }
 
@@ -895,7 +833,6 @@ ssize_t
 rpc_sendfile(rcf_rpc_server *rpcs, int out_fd, int in_fd,
              tarpc_off_t *offset, size_t count, tarpc_bool force64)
 {
-    rcf_rpc_op         op;
     tarpc_off_t        start = (offset != NULL) ? *offset : 0;
     tarpc_sendfile_in  in;
     tarpc_sendfile_out out;
@@ -908,8 +845,6 @@ rpc_sendfile(rcf_rpc_server *rpcs, int out_fd, int in_fd,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(sendfile, -1);
     }
-    op = rpcs->op;
-
     in.out_fd = out_fd;
     in.in_fd = in_fd;
     in.count = count;
@@ -930,14 +865,9 @@ rpc_sendfile(rcf_rpc_server *rpcs, int out_fd, int in_fd,
     }
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(sendfile, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s)%s: "
-                 "sendfile(%d, %d, %p(%lld), %u) -> %d (%s) offset=%lld",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
+    TAPI_RPC_LOG(rpcs, sendfile, "%d, %d, %p(%lld), %u", "%d offset=%lld",
                  out_fd, in_fd, offset, start, (unsigned)count,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
-                 (offset != NULL) ? (long long)*offset : 0LL);
-
+                 out.retval, (offset != NULL) ? (long long)*offset : 0LL);
     RETVAL_INT(sendfile, out.retval);
 }
 
@@ -947,7 +877,6 @@ ssize_t
 rpc_socket_to_file(rcf_rpc_server *rpcs, int sock,
                    const char *path, long timeout)
 {
-    rcf_rpc_op               op;
     tarpc_socket_to_file_in  in;
     tarpc_socket_to_file_out out;
 
@@ -959,8 +888,6 @@ rpc_socket_to_file(rcf_rpc_server *rpcs, int sock,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(socket_to_file, -1);
     }
-
-    op = rpcs->op;
 
     in.sock = sock;
     in.timeout = timeout;
@@ -977,12 +904,8 @@ rpc_socket_to_file(rcf_rpc_server *rpcs, int sock,
     rcf_rpc_call(rpcs, "socket_to_file", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(socket_to_file, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s)%s: socket_to_file(%d, %s, %ld) -> %d (%s)",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
-                 sock, path, timeout,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, socket_to_file, "%d, %s, %ld", "%d",
+                 sock, path, timeout, out.retval);
     RETVAL_INT(socket_to_file, out.retval);
 }
 
@@ -1022,12 +945,9 @@ rpc_ftp_open(rcf_rpc_server *rpcs,
         *sock = out.sock;
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(ftp_open, out.fd);
-
-    TAPI_RPC_LOG("RPC (%s,%s): ftp_open(%s, %s, %s, %d, %p) -> %d (%s)",
-                 rpcs->ta, rpcs->name, uri, rdonly ? "get" : "put",
-                 passive ? "passive": "active", offset, sock,
-                 out.fd, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, ftp_open, "%s, %s, %s, %d, %p", "%d",
+                 uri, rdonly ? "get" : "put",
+                 passive ? "passive": "active", offset, sock, out.fd);
     RETVAL_INT(ftp_open, out.fd);
 }
 
@@ -1051,11 +971,7 @@ rpc_ftp_close(rcf_rpc_server *rpcs, int sock)
     rcf_rpc_call(rpcs, "ftp_close", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(ftp_close, out.ret);
-
-    TAPI_RPC_LOG("RPC (%s,%s): ftp_close(%d) -> %d (%s)",
-                 rpcs->ta, rpcs->name, sock,
-                 out.ret, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, ftp_close, "%d", "%d", sock, out.ret);
     RETVAL_INT(ftp_open, out.ret);
 }
 
@@ -1063,7 +979,6 @@ int
 rpc_overfill_buffers_gen(rcf_rpc_server *rpcs, int sock, uint64_t *sent,
                          iomux_func iomux)
 {
-    rcf_rpc_op                 op;
     tarpc_overfill_buffers_in  in;
     tarpc_overfill_buffers_out out;
 
@@ -1072,7 +987,6 @@ rpc_overfill_buffers_gen(rcf_rpc_server *rpcs, int sock, uint64_t *sent,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(overfill_buffers, -1);
     }
-    op = rpcs->op;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -1090,21 +1004,15 @@ rpc_overfill_buffers_gen(rcf_rpc_server *rpcs, int sock, uint64_t *sent,
         *sent = out.bytes;
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(overfill_buffers, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s)%s: overfill_buffers(%d, %s) -> "
-                 "%d (%s) sent=%d",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
+    TAPI_RPC_LOG(rpcs, overfill_buffers, "%d, %s", "%d sent=%d",
                  sock, iomux2str(iomux),
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
-                 (sent != NULL) ? (int)(*sent) : -1);
-
+                 out.retval, (sent != NULL) ? (int)(*sent) : -1);
     RETVAL_INT(overfill_buffers, out.retval);
 }
 
 int
 rpc_overfill_fd(rcf_rpc_server *rpcs, int write_end, uint64_t *sent)
 {
-    rcf_rpc_op                 op;
     tarpc_overfill_fd_in  in;
     tarpc_overfill_fd_out out;
 
@@ -1113,7 +1021,6 @@ rpc_overfill_fd(rcf_rpc_server *rpcs, int write_end, uint64_t *sent)
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(overfill_fd, -1);
     }
-    op = rpcs->op;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -1126,14 +1033,9 @@ rpc_overfill_fd(rcf_rpc_server *rpcs, int write_end, uint64_t *sent)
         *sent = out.bytes;
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(overfill_fd, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s)%s: overfill_fd(%d) -> "
-                 "%d (%s) sent=%d",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
+    TAPI_RPC_LOG(rpcs, overfill_fd, "%d", "%d sent=%d",
                  write_end, out.retval,
-                 errno_rpc2str(RPC_ERRNO(rpcs)),
                  (sent != NULL) ? (int)(*sent) : -1);
-
     RETVAL_INT(overfill_fd, out.retval);
 }
 
@@ -1156,8 +1058,6 @@ rpc_set_buf_gen(rcf_rpc_server *rpcs, const uint8_t *src_buf,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_VOID(set_buf);
     }
-
-    rpcs->op = RCF_RPC_CALL_WAIT;
 
     in.dst_buf = dst_buf;
     in.dst_off = dst_off;
@@ -1191,11 +1091,8 @@ rpc_set_buf_gen(rcf_rpc_server *rpcs, const uint8_t *src_buf,
 
     free(src_buf_cpy);
 
-    TAPI_RPC_LOG("RPC (%s,%s): set_buf(%p, %u, %u (off %u)) -> (%s)",
-                 rpcs->ta, rpcs->name,
-                 src_buf, len, dst_buf, dst_off,
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, set_buf, "%p, %u, %u (off %u)", "",
+                 src_buf, len, dst_buf, dst_off);
     RETVAL_VOID(set_buf);
 }
 
@@ -1218,18 +1115,14 @@ rpc_get_buf_gen(rcf_rpc_server *rpcs, rpc_ptr src_buf, size_t src_off,
         RETVAL_VOID(get_buf);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     in.src_buf = src_buf;
     in.src_off = src_off;
     in.len = len;
 
     rcf_rpc_call(rpcs, "get_buf", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): get_buf(%p, %u, %u (off %u)) -> (%s)",
-                 rpcs->ta, rpcs->name,
-                 src_buf, len, src_buf, src_off,
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
+    TAPI_RPC_LOG(rpcs, get_buf, "%p, %u, %u (off %u)", "",
+                 src_buf, len, src_buf, src_off);
 
     if ((out.dst_buf.dst_buf_len != 0) && (out.dst_buf.dst_buf_val != NULL))
         memcpy(dst_buf, out.dst_buf.dst_buf_val, out.dst_buf.dst_buf_len);
@@ -1256,8 +1149,6 @@ rpc_set_buf_pattern_gen(rcf_rpc_server *rpcs, int pattern,
         RETVAL_VOID(set_buf_pattern);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     in.dst_buf = dst_buf;
     in.dst_off = dst_off;
     in.pattern = pattern;
@@ -1265,12 +1156,8 @@ rpc_set_buf_pattern_gen(rcf_rpc_server *rpcs, int pattern,
 
     rcf_rpc_call(rpcs, "set_buf_pattern", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): set_buf_pattern(0x%x, %u, %u (off %u)) "
-                 "-> (%s)",
-                 rpcs->ta, rpcs->name,
-                 pattern, len, dst_buf, dst_off,
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, set_buf_pattern, "0x%x, %u, %u (off %u)", "",
+                 pattern, len, dst_buf, dst_off);
     RETVAL_VOID(set_buf_pattern);
 }
 
@@ -1289,7 +1176,6 @@ rpc_memcmp(rcf_rpc_server *rpcs, rpc_ptr_off *s1, rpc_ptr_off *s2, size_t n)
         RETVAL_INT(memcmp, -2);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
     in.s1_base = s1->base;
     in.s1_off = s1->offset;
     in.s2_base = s2->base;
@@ -1298,12 +1184,10 @@ rpc_memcmp(rcf_rpc_server *rpcs, rpc_ptr_off *s1, rpc_ptr_off *s2, size_t n)
 
     rcf_rpc_call(rpcs, "memcmp", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: memcmp(%u (off %u), %u (off %u), %u) i"
-                 "-> %d (%s)",
-                 rpcs->ta, rpcs->name, rpcop2str(rpcs->op),
-                 s1->base, s1->offset, s2->base, s2->offset, n, out.retval,
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, memcmp, "%u (off %u), %u (off %u), %u", "%d",
+                 s1->base, s1->offset, s2->base, s2->offset,
+                 n, out.retval);
+    TAPI_RPC_OUT(memcmp, FALSE);
     return (int)out.retval;
 }
 
@@ -1322,16 +1206,11 @@ rpc_vm_trasher(rcf_rpc_server *rpcs, te_bool start)
         RETVAL_VOID(vm_trasher);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
     in.start = start;
 
     rcf_rpc_call(rpcs, "vm_trasher", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: vm_trasher(%s) -> (%s)",
-                 rpcs->ta, rpcs->name, rpcop2str(rpcs->op),
-                 start == FALSE ? "stop" : "start",
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, vm_trasher, "%s", "", start ? "start" : "stop");
     RETVAL_VOID(vm_trasher);
 }
 
@@ -1542,18 +1421,15 @@ rpc_mcast_join_leave(rcf_rpc_server *rpcs, int s,
     in.how = how;    
 
     rcf_rpc_call(rpcs, "mcast_join_leave", &in, &out);
-    
-    TAPI_RPC_LOG("RPC (%s,%s): mcast_join_leave(%d, %s, %d, %s, %s) -> "
-                 " %d (%s)", rpcs->ta, rpcs->name, s,
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(mcast_join_leave, out.retval);
+    TAPI_RPC_LOG(rpcs, mcast_join_leave, "%d, %s, %d, %s, %s", "%d",
                  te_sockaddr2str(mcast_addr), if_index,
                  leave_group? "LEAVE" : "JOIN",
                  how == TARPC_MCAST_ADD_DROP ? "IP_(ADD|DROP)_MEMBERSHIP" :
-                 how == TARPC_MCAST_JOIN_LEAVE ?
-                 "MCAST_(JOIN|LEAVE)_GROUP" : "WSAJoinLeaf",
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
-    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(mcast_join_leave, out.retval);
-    
+                     how == TARPC_MCAST_JOIN_LEAVE ?
+                     "MCAST_(JOIN|LEAVE)_GROUP" : "WSAJoinLeaf",
+                 out.retval);
     RETVAL_INT(mcast_join_leave, out.retval);
 }
 

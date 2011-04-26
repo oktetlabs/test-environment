@@ -81,7 +81,6 @@ rpc_pipe(rcf_rpc_server *rpcs,
         RETVAL_INT(pipe, -1);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
     if (filedes != NULL)
     {
         in.filedes.filedes_len = 2;
@@ -94,13 +93,10 @@ rpc_pipe(rcf_rpc_server *rpcs,
         memcpy(filedes, out.filedes.filedes_val, sizeof(int) * 2);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(pipe, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s): pipe(%p) -> %d (%s) (%d,%d)",
-                 rpcs->ta, rpcs->name, filedes,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
+    TAPI_RPC_LOG(rpcs, pipe, "%p", "%d (%d,%d)",
+                 filedes, out.retval,
                  filedes != NULL ? filedes[0] : -1,
                  filedes != NULL ? filedes[1] : -1);
-
     RETVAL_INT(pipe, out.retval);
 }
 
@@ -121,7 +117,6 @@ rpc_socketpair(rcf_rpc_server *rpcs,
         RETVAL_INT(socketpair, -1);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
     in.domain = domain;
     in.type = type;
     in.proto = protocol;
@@ -137,22 +132,16 @@ rpc_socketpair(rcf_rpc_server *rpcs,
         memcpy(sv, out.sv.sv_val, sizeof(int) * 2);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(socketpair, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s): socketpair(%s, %s, %s, %p) -> "
-                 "%d (%s) (%d,%d)",
-                 rpcs->ta, rpcs->name,
+    TAPI_RPC_LOG(rpcs, socketpair, "%s, %s, %s, %p", "%d (%d,%d)",
                  domain_rpc2str(domain), socktype_rpc2str(type),
-                 proto_rpc2str(protocol), sv,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
+                 proto_rpc2str(protocol), sv, out.retval,
                  sv != NULL ? sv[0] : -1, sv != NULL ? sv[1] : -1);
-
     RETVAL_INT(socketpair, out.retval);
 }
 
 int
 rpc_close(rcf_rpc_server *rpcs, int fd)
 {
-    rcf_rpc_op      op;
     tarpc_close_in  in;
     tarpc_close_out out;
 
@@ -165,18 +154,12 @@ rpc_close(rcf_rpc_server *rpcs, int fd)
         RETVAL_INT(close, -1);
     }
 
-    op = rpcs->op;
-
     in.fd = fd;
 
     rcf_rpc_call(rpcs, "close", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(close, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s)%s: close(%d) -> %d (%s)",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
-                 fd, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, close, "%d", "%d", fd, out.retval);
     RETVAL_INT(close, out.retval);
 }
 
@@ -184,7 +167,6 @@ ssize_t
 rpc_write_at_offset(rcf_rpc_server *rpcs, int fd, char* buf,
                     size_t buflen, off_t offset)
 {
-    rcf_rpc_op                op;
     tarpc_write_at_offset_in  in;
     tarpc_write_at_offset_out out;
 
@@ -197,8 +179,6 @@ rpc_write_at_offset(rcf_rpc_server *rpcs, int fd, char* buf,
         RETVAL_INT(write_at_offset, -3);
     }
 
-    op = rpcs->op;
-
     in.fd = fd;
     in.buf.buf_len = buflen;
     in.buf.buf_val = (uint8_t *)buf;
@@ -206,12 +186,9 @@ rpc_write_at_offset(rcf_rpc_server *rpcs, int fd, char* buf,
 
     rcf_rpc_call(rpcs, "write_at_offset", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: write_at_offset(%d, %p, %d, %lld)"
-                 " -> %lld, %d (%s)",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
-                 fd, buf, buflen, offset,
-                 out.offset, out.written,
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
+    TAPI_RPC_LOG(rpcs, write_at_offset,
+                 "%d, %p, %d, %lld", "%lld, %d",
+                 fd, buf, buflen, offset, out.offset, out.written);
 
     if (out.offset == (off_t)-1)  /* failed to repsition the file offset */
         RETVAL_INT(write_at_offset, -2);
@@ -223,7 +200,6 @@ int
 rpc_dup(rcf_rpc_server *rpcs,
         int oldfd)
 {
-    rcf_rpc_op      op;
     tarpc_dup_in    in;
     tarpc_dup_out   out;
 
@@ -236,20 +212,12 @@ rpc_dup(rcf_rpc_server *rpcs,
         RETVAL_INT(dup, -1);
     }
 
-    op = rpcs->op;
-
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     in.oldfd = oldfd;
 
     rcf_rpc_call(rpcs, "dup", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(dup, out.fd);
-
-    TAPI_RPC_LOG("RPC (%s,%s)%s: dup(%d) -> %d (%s)",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
-                 oldfd, out.fd, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, dup, "%d", "%d", oldfd, out.fd);
     RETVAL_INT(dup, out.fd);
 }
 
@@ -257,7 +225,6 @@ int
 rpc_dup2(rcf_rpc_server *rpcs,
          int oldfd, int newfd)
 {
-    rcf_rpc_op      op;
     tarpc_dup2_in   in;
     tarpc_dup2_out  out;
 
@@ -270,20 +237,13 @@ rpc_dup2(rcf_rpc_server *rpcs,
         RETVAL_INT(dup2, -1);
     }
 
-    op = rpcs->op;
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     in.oldfd = oldfd;
     in.newfd = newfd;
 
     rcf_rpc_call(rpcs, "dup", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(dup2, out.fd);
-
-    TAPI_RPC_LOG("RPC (%s,%s)%s: dup2(%d, %d) -> %d (%s)",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
-                 oldfd, newfd, out.fd, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, dup2, "%d, %d", "%d", oldfd, newfd, out.fd);
     RETVAL_INT(dup2, out.fd);
 }
 
@@ -292,7 +252,6 @@ int
 rpc_read_gen(rcf_rpc_server *rpcs,
              int fd, void *buf, size_t count, size_t rbuflen)
 {
-    rcf_rpc_op     op;
     tarpc_read_in  in;
     tarpc_read_out out;
 
@@ -304,8 +263,6 @@ rpc_read_gen(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
-
-    op = rpcs->op;
 
     if (buf != NULL && count > rbuflen)
     {
@@ -329,12 +286,8 @@ rpc_read_gen(rcf_rpc_server *rpcs,
     }
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(read, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s)%s: read(%d, %p[%u], %u) -> %d (%s)",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
-                 fd, buf, rbuflen, count, out.retval,
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, read, "%d, %p[%u], %u", "%d",
+                 fd, buf, rbuflen, count, out.retval);
     RETVAL_INT(read, out.retval);
 }
 
@@ -342,7 +295,6 @@ int
 rpc_write(rcf_rpc_server *rpcs,
           int fd, const void *buf, size_t count)
 {
-    rcf_rpc_op      op;
     tarpc_write_in  in;
     tarpc_write_out out;
 
@@ -355,8 +307,6 @@ rpc_write(rcf_rpc_server *rpcs,
         RETVAL_INT(write, -1);
     }
 
-    op = rpcs->op;
-
     in.fd = fd;
     in.len = count;
     if (buf != NULL && rpcs->op != RCF_RPC_WAIT)
@@ -368,12 +318,8 @@ rpc_write(rcf_rpc_server *rpcs,
     rcf_rpc_call(rpcs, "write", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(write, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s)%s: write(%d, %p, %u) -> %d (%s)",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
-                 fd, buf, count,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, write, "%d, %p, %u", "%d",
+                 fd, buf, count, out.retval);
     RETVAL_INT(write, out.retval);
 }
 
@@ -381,7 +327,6 @@ tarpc_ssize_t
 rpc_readbuf_gen(rcf_rpc_server *rpcs,
                 int fd, rpc_ptr buf, size_t buf_off, size_t count)
 {
-    rcf_rpc_op      op;
     tarpc_readbuf_in  in;
     tarpc_readbuf_out out;
 
@@ -394,8 +339,6 @@ rpc_readbuf_gen(rcf_rpc_server *rpcs,
         RETVAL_INT(write, -1);
     }
 
-    op = rpcs->op;
-
     in.fd  = fd;
     in.len = count;
     in.buf = buf;
@@ -404,12 +347,8 @@ rpc_readbuf_gen(rcf_rpc_server *rpcs,
     rcf_rpc_call(rpcs, "readbuf", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(readbuf, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s)%s: readbuf(%d, %u (off %u), %u) -> %d (%s)",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
-                 fd, buf, buf_off, count,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, readbuf, "%d, %u (off %u), %u", "%d",
+                 fd, buf, buf_off, count, out.retval);
     RETVAL_INT(readbuf, out.retval);
 }
 
@@ -418,7 +357,6 @@ tarpc_ssize_t
 rpc_writebuf_gen(rcf_rpc_server *rpcs,
                  int fd, rpc_ptr buf, size_t buf_off, size_t count)
 {
-    rcf_rpc_op      op;
     tarpc_writebuf_in  in;
     tarpc_writebuf_out out;
 
@@ -431,8 +369,6 @@ rpc_writebuf_gen(rcf_rpc_server *rpcs,
         RETVAL_INT(write, -1);
     }
 
-    op = rpcs->op;
-
     in.fd  = fd;
     in.len = count;
     in.buf = buf;
@@ -441,12 +377,8 @@ rpc_writebuf_gen(rcf_rpc_server *rpcs,
     rcf_rpc_call(rpcs, "writebuf", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(writebuf, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s)%s: writebuf(%d, %u (off %u), %u) -> %d (%s)",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
-                 fd, buf, buf_off, count,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, writebuf, "%d, %u (off %u), %u", "%d",
+                 fd, buf, buf_off, count, out.retval);
     RETVAL_INT(writebuf, out.retval);
 }
 
@@ -455,7 +387,6 @@ tarpc_off_t
 rpc_lseek(rcf_rpc_server *rpcs,
           int fd, tarpc_off_t pos, rpc_lseek_mode mode)
 {
-    rcf_rpc_op      op;
     tarpc_lseek_in  in;
     tarpc_lseek_out out;
 
@@ -464,7 +395,6 @@ rpc_lseek(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(lseek, (tarpc_off_t)-1);
     }
-    op = rpcs->op;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -475,18 +405,14 @@ rpc_lseek(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "lseek", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: lseek(%d, %lld, %s) -> %lld (%s)",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
-                 fd, pos, lseek_mode_rpc2str(mode),
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, lseek, "%d, %lld, %s", "%lld",
+                 fd, pos, lseek_mode_rpc2str(mode), out.retval);
     RETVAL_INT(lseek, out.retval);
 }
 
 int
 rpc_fsync(rcf_rpc_server *rpcs, int fd)
 {
-    rcf_rpc_op      op;
     tarpc_fsync_in  in;
     tarpc_fsync_out out;
 
@@ -499,18 +425,12 @@ rpc_fsync(rcf_rpc_server *rpcs, int fd)
         RETVAL_INT(fsync, -1);
     }
 
-    op = rpcs->op;
-
     in.fd = fd;
 
     rcf_rpc_call(rpcs, "fsync", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(fsync, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s)%s: fsync(%d) -> %d (%s)",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
-                 fd, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, fsync, "%d", "%d", fd, out.retval);
     RETVAL_INT(fsync, out.retval);
 }
 
@@ -520,7 +440,6 @@ rpc_readv_gen(rcf_rpc_server *rpcs,
               size_t iovcnt, size_t riovcnt)
 {
     char            str_buf[1024] = { '\0', };
-    rcf_rpc_op      op;
     tarpc_readv_in  in;
     tarpc_readv_out out;
 
@@ -537,8 +456,6 @@ rpc_readv_gen(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(readv, -1);
     }
-
-    op = rpcs->op;
 
     if (riovcnt > RCF_RPC_MAX_IOVEC)
     {
@@ -597,12 +514,9 @@ rpc_readv_gen(rcf_rpc_server *rpcs,
     }
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(readv, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s)%s: readv(%d, %s, %u) -> %d (%s)",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
+    TAPI_RPC_LOG(rpcs, readv, "%d, %s, %u", "%d",
                  fd, (*str_buf == '\0') ? "(nil)" : str_buf, iovcnt,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+                 out.retval);
     RETVAL_INT(readv, out.retval);
 }
 
@@ -611,7 +525,6 @@ rpc_writev(rcf_rpc_server *rpcs,
            int fd, const struct rpc_iovec *iov, size_t iovcnt)
 {
     char             str_buf[1024] = { '\0', };
-    rcf_rpc_op       op;
     tarpc_writev_in  in;
     tarpc_writev_out out;
 
@@ -628,8 +541,6 @@ rpc_writev(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(writev, -1);
     }
-
-    op = rpcs->op;
 
     if (iovcnt > RCF_RPC_MAX_IOVEC)
     {
@@ -664,12 +575,9 @@ rpc_writev(rcf_rpc_server *rpcs,
     rcf_rpc_call(rpcs, "writev", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(writev, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s)%s: writev(%d, %s, %u) -> %d (%s)",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
+    TAPI_RPC_LOG(rpcs, writev, "%d, %s, %u", "%d",
                  fd, (*str_buf == '\0') ? "(nil)" : str_buf, iovcnt,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+                 out.retval);
     RETVAL_INT(writev, out.retval);
 }
 
@@ -689,14 +597,9 @@ rpc_fd_set_new(rcf_rpc_server *rpcs)
         RETVAL_RPC_PTR(fd_set_new, RPC_NULL);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     rcf_rpc_call(rpcs, "fd_set_new", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): fd_set_new() -> 0x%x (%s)",
-                 rpcs->ta, rpcs->name,
-                 (unsigned)out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, fd_set_new, "", "0x%x", (unsigned)out.retval);
     RETVAL_RPC_PTR(fd_set_new, out.retval);
 }
 
@@ -716,16 +619,11 @@ rpc_fd_set_delete(rcf_rpc_server *rpcs, rpc_fd_set_p set)
         RETVAL_VOID(fd_set_delete);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     in.set = (tarpc_fd_set)set;
 
     rcf_rpc_call(rpcs, "fd_set_delete", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): fd_set_delete(0x%x) -> (%s)",
-                 rpcs->ta, rpcs->name,
-                 (unsigned)set, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, fd_set_delete, "0x%x", "", (unsigned)set);
     RETVAL_VOID(fd_set_delete);
 }
 
@@ -744,16 +642,11 @@ rpc_do_fd_zero(rcf_rpc_server *rpcs, rpc_fd_set_p set)
         RETVAL_VOID(do_fd_zero);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     in.set = (tarpc_fd_set)set;
 
     rcf_rpc_call(rpcs, "do_fd_zero", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): do_fd_zero(0x%x) -> (%s)",
-                 rpcs->ta, rpcs->name,
-                 (unsigned)set, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, do_fd_zero, "0x%x", "", (unsigned)set);
     RETVAL_VOID(do_fd_zero);
 }
 
@@ -772,17 +665,12 @@ rpc_do_fd_set(rcf_rpc_server *rpcs, int fd, rpc_fd_set_p set)
         RETVAL_VOID(do_fd_set);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     in.set = (tarpc_fd_set)set;
     in.fd = fd;
 
     rcf_rpc_call(rpcs, "do_fd_set", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): do_fd_set(%d, 0x%x) -> (%s)",
-                 rpcs->ta, rpcs->name,
-                 fd, (unsigned)set, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, do_fd_set, "%d, 0x%x", "", fd, (unsigned)set);
     RETVAL_VOID(do_fd_set);
 }
 
@@ -801,17 +689,12 @@ rpc_do_fd_clr(rcf_rpc_server *rpcs, int fd, rpc_fd_set_p set)
         RETVAL_VOID(do_fd_clr);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     in.set = (tarpc_fd_set)set;
     in.fd = fd;
 
     rcf_rpc_call(rpcs, "do_fd_clr", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): do_fd_clr(%d, 0x%x) -> (%s)",
-                 rpcs->ta, rpcs->name,
-                 fd, (unsigned)set, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, do_fd_clr, "%d, 0x%x", "", fd, (unsigned)set);
     RETVAL_VOID(do_fd_clr);
 }
 
@@ -830,8 +713,6 @@ rpc_do_fd_isset(rcf_rpc_server *rpcs, int fd, rpc_fd_set_p set)
         RETVAL_INT(do_fd_isset, -1);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     in.set = (tarpc_fd_set)set;
     in.fd = fd;
 
@@ -839,11 +720,8 @@ rpc_do_fd_isset(rcf_rpc_server *rpcs, int fd, rpc_fd_set_p set)
 
     CHECK_RETVAL_VAR(do_fd_isset, out.retval,
                      (out.retval != 0 && out.retval != 1), -1);
-
-    TAPI_RPC_LOG("RPC (%s,%s): do_fd_isset(%d, 0x%x) -> %d (%s)",
-                 rpcs->ta, rpcs->name, fd, (unsigned)set,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, do_fd_isset, "%d, 0x%x", "%d",
+                 fd, (unsigned)set, out.retval);
     RETVAL_INT(do_fd_isset, out.retval);
 }
 
@@ -852,7 +730,6 @@ rpc_select(rcf_rpc_server *rpcs,
            int n, rpc_fd_set_p readfds, rpc_fd_set_p writefds,
            rpc_fd_set_p exceptfds, struct tarpc_timeval *timeout)
 {
-    rcf_rpc_op              op;
     tarpc_select_in         in;
     tarpc_select_out        out;
     struct tarpc_timeval    timeout_in;
@@ -868,8 +745,6 @@ rpc_select(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(select, -1);
     }
-
-    op = rpcs->op;
 
     in.n = n;
     in.readfds = (tarpc_fd_set)readfds;
@@ -896,7 +771,7 @@ rpc_select(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "select", &in, &out);
 
-    if (op != RCF_RPC_CALL && timeout != NULL &&
+    if (rpcs->last_op != RCF_RPC_CALL && timeout != NULL &&
         out.timeout.timeout_val != NULL && RPC_IS_CALL_OK(rpcs))
     {
         timeout->tv_sec = out.timeout.timeout_val[0].tv_sec;
@@ -904,14 +779,10 @@ rpc_select(rcf_rpc_server *rpcs,
     }
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(select, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s)%s: select(%d, 0x%x, 0x%x, 0x%x, %s (%s)) "
-                 "-> %d (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
+    TAPI_RPC_LOG(rpcs, select, "%d, 0x%x, 0x%x, 0x%x, %s (%s)", "%d",
                  n, (unsigned)readfds, (unsigned)writefds,
                  (unsigned)exceptfds, tarpc_timeval2str(timeout_in_ptr),
-                 tarpc_timeval2str(timeout),
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+                 tarpc_timeval2str(timeout), out.retval);
     RETVAL_INT(select, out.retval);
 }
 
@@ -921,7 +792,6 @@ rpc_pselect(rcf_rpc_server *rpcs,
             rpc_fd_set_p exceptfds, struct tarpc_timespec *timeout,
             const rpc_sigset_p sigmask)
 {
-    rcf_rpc_op        op;
     tarpc_pselect_in  in;
     tarpc_pselect_out out;
 
@@ -933,8 +803,6 @@ rpc_pselect(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(pselect, -1);
     }
-
-    op = rpcs->op;
 
     in.n = n;
     in.readfds = (tarpc_fd_set)readfds;
@@ -958,14 +826,10 @@ rpc_pselect(rcf_rpc_server *rpcs,
     rcf_rpc_call(rpcs, "pselect", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(pselect, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s)%s: pselect(%d, 0x%x, 0x%x, 0x%x, %s, 0x%x) "
-                 "-> %d (%s)", rpcs->ta, rpcs->name,
-                 rpcop2str(op), n, (unsigned)readfds, (unsigned)writefds,
+    TAPI_RPC_LOG(rpcs, pselect, "%d, 0x%x, 0x%x, 0x%x, %s, 0x%x", "%d",
+                 n, (unsigned)readfds, (unsigned)writefds,
                  (unsigned)exceptfds, tarpc_timespec2str(timeout),
-                 (unsigned)sigmask,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+                 (unsigned)sigmask, out.retval);
     RETVAL_INT(pselect, out.retval);
 }
 
@@ -1088,7 +952,6 @@ rpc_poll_gen(rcf_rpc_server *rpcs,
              struct rpc_pollfd *ufds, unsigned int nfds,
              int timeout, unsigned int rnfds)
 {
-    rcf_rpc_op       op;
     tarpc_poll_in  in;
     tarpc_poll_out out;
 
@@ -1100,8 +963,6 @@ rpc_poll_gen(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(poll, -1);
     }
-
-    op = rpcs->op;
 
     /**
      * @attention It's assumed that rpc_pollfd is the same as tarpc_pollfd.
@@ -1134,12 +995,9 @@ rpc_poll_gen(rcf_rpc_server *rpcs,
     }
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(poll, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s)%s: poll(%p%s, %u, %d) -> %d (%s) %s",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
+    TAPI_RPC_LOG(rpcs, poll, "%p%s, %u, %d", "%d %s",
                  ufds, str_buf_1, nfds, timeout,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)), str_buf_2);
-
+                 out.retval, str_buf_2);
     RETVAL_INT(poll, out.retval);
 }
 
@@ -1149,7 +1007,6 @@ rpc_ppoll_gen(rcf_rpc_server *rpcs,
               struct tarpc_timespec *timeout, const rpc_sigset_p sigmask,
               unsigned int rnfds)
 {
-    rcf_rpc_op      op;
     tarpc_ppoll_in  in;
     tarpc_ppoll_out out;
 
@@ -1161,8 +1018,6 @@ rpc_ppoll_gen(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(ppoll, -1);
     }
-
-    op = rpcs->op;
 
     /**
      * @attention It's assumed that rpc_pollfd is the same as tarpc_ppollfd.
@@ -1203,21 +1058,15 @@ rpc_ppoll_gen(rcf_rpc_server *rpcs,
     }
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(ppoll, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s)%s: ppoll(%p%s, %u, %s, 0x%x) "
-                 "-> %d (%s) %s",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
+    TAPI_RPC_LOG(rpcs, ppoll, "%p%s, %u, %s, 0x%x", "%d %s",
                  ufds, str_buf_1, nfds, tarpc_timespec2str(timeout),
-                 (unsigned)sigmask,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)), str_buf_2);
-
+                 (unsigned)sigmask, out.retval, str_buf_2);
     RETVAL_INT(ppoll, out.retval);
 }
 
 int
 rpc_epoll_create(rcf_rpc_server *rpcs, int size)
 {
-    rcf_rpc_op             op;
     tarpc_epoll_create_in  in;
     tarpc_epoll_create_out out;
 
@@ -1230,25 +1079,18 @@ rpc_epoll_create(rcf_rpc_server *rpcs, int size)
         RETVAL_INT(epoll_create, -1);
     }
 
-    op = rpcs->op;
-
     in.size = size;
 
     rcf_rpc_call(rpcs, "epoll_create", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(epoll_create, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s)%s: epoll_create(%d) -> %d (%s)",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
-                 size, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, epoll_create, "%d", "%d", size, out.retval);
     RETVAL_INT(epoll_create, out.retval);
 }
 
 int
 rpc_epoll_create1(rcf_rpc_server *rpcs, int flags)
 {
-    rcf_rpc_op             op;
     tarpc_epoll_create1_in  in;
     tarpc_epoll_create1_out out;
 
@@ -1261,18 +1103,12 @@ rpc_epoll_create1(rcf_rpc_server *rpcs, int flags)
         RETVAL_INT(epoll_create1, -1);
     }
 
-    op = rpcs->op;
-
     in.flags = flags;
 
     rcf_rpc_call(rpcs, "epoll_create1", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(epoll_create1, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s)%s: epoll_create1(%d) -> %d (%s)",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
-                 flags, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, epoll_create1, "0x%x", "%d", flags, out.retval);
     RETVAL_INT(epoll_create1, out.retval);
 }
 
@@ -1280,7 +1116,6 @@ int
 rpc_epoll_ctl(rcf_rpc_server *rpcs, int epfd, int oper, int fd,
               struct rpc_epoll_event *event)
 {
-    rcf_rpc_op          op;
     tarpc_epoll_ctl_in  in;
     tarpc_epoll_ctl_out out;
     tarpc_epoll_event *evt;
@@ -1294,8 +1129,6 @@ rpc_epoll_ctl(rcf_rpc_server *rpcs, int epfd, int oper, int fd,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(epoll_ctl, -1);
     }
-
-    op = rpcs->op;
 
     in.epfd = epfd;
     in.op = oper;
@@ -1325,12 +1158,9 @@ rpc_epoll_ctl(rcf_rpc_server *rpcs, int epfd, int oper, int fd,
     else
         *str_buf_1 = '\0';
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: epoll_ctl(%d, %s, %d, %p%s) -> %d (%s)",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
+    TAPI_RPC_LOG(rpcs, epoll_ctl, "%d, %s, %d, %p%s", "%d",
                  epfd, rpc_epoll_ctl_op2str(oper), fd, event,
-                 str_buf_1, out.retval,
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
-
+                 str_buf_1, out.retval);
     RETVAL_INT(epoll_ctl, out.retval);
 }
 
@@ -1339,7 +1169,6 @@ rpc_epoll_wait_gen(rcf_rpc_server *rpcs, int epfd,
                    struct rpc_epoll_event *events, int rmaxev,
                    int maxevents, int timeout)
 {
-    rcf_rpc_op           op;
     tarpc_epoll_wait_in  in;
     tarpc_epoll_wait_out out;
     int i;
@@ -1355,8 +1184,6 @@ rpc_epoll_wait_gen(rcf_rpc_server *rpcs, int epfd,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(epoll_wait, -1);
     }
-
-    op = rpcs->op;
 
     in.epfd = epfd;
     in.timeout = timeout;
@@ -1397,12 +1224,8 @@ rpc_epoll_wait_gen(rcf_rpc_server *rpcs, int epfd,
     }
     free(evts);
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(epoll_wait, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s)%s: epoll_wait(%d, %p, %d, %d) -> %d (%s) %s",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
-                 epfd, events, maxevents, timeout, out.retval,
-                 errno_rpc2str(RPC_ERRNO(rpcs)), str_buf_1);
-
+    TAPI_RPC_LOG(rpcs, epoll_wait, "%d, %p, %d, %d", "%d %s",
+                 epfd, events, maxevents, timeout, out.retval, str_buf_1);
     RETVAL_INT(epoll_wait, out.retval);
 }
 
@@ -1412,7 +1235,6 @@ rpc_epoll_pwait_gen(rcf_rpc_server *rpcs, int epfd,
                     struct rpc_epoll_event *events, int rmaxev,
                     int maxevents, int timeout, const rpc_sigset_p sigmask)
 {
-    rcf_rpc_op           op;
     tarpc_epoll_pwait_in  in;
     tarpc_epoll_pwait_out out;
     int i;
@@ -1428,8 +1250,6 @@ rpc_epoll_pwait_gen(rcf_rpc_server *rpcs, int epfd,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(epoll_pwait, -1);
     }
-
-    op = rpcs->op;
 
     in.epfd = epfd;
     in.timeout = timeout;
@@ -1471,13 +1291,9 @@ rpc_epoll_pwait_gen(rcf_rpc_server *rpcs, int epfd,
     }
     free(evts);
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(epoll_pwait, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s)%s: epoll_pwait(%d, %p, %d, %d, 0x%x) "
-                 "-> %d (%s) %s",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
+    TAPI_RPC_LOG(rpcs, epoll_pwait, "%d, %p, %d, %d 0x%x", "%d %s",
                  epfd, events, maxevents, timeout, (unsigned)sigmask,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)), str_buf_1);
-
     RETVAL_INT(epoll_pwait, out.retval);
 }
 
@@ -1508,13 +1324,9 @@ rpc_open(rcf_rpc_server *rpcs,
     rcf_rpc_call(rpcs, "open", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(open, out.fd);
-
-    TAPI_RPC_LOG("RPC (%s,%s): open(%s, %s, %s) -> %d (%s)",
-                 rpcs->ta, rpcs->name,
+    TAPI_RPC_LOG(rpcs, open, "%s, %s, %s", "%d",
                  path, fcntl_flags_rpc2str(flags),
-                 file_mode_flags_rpc2str(mode),
-                 out.fd, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+                 file_mode_flags_rpc2str(mode), out.fd);
     RETVAL_INT(open, out.fd);
 }
 
@@ -1546,13 +1358,9 @@ rpc_open64(rcf_rpc_server *rpcs,
     rcf_rpc_call(rpcs, "open64", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(open64, out.fd);
-
-    TAPI_RPC_LOG("RPC (%s,%s): open64(%s, %s, %s) -> %d (%s)",
-                 rpcs->ta, rpcs->name,
+    TAPI_RPC_LOG(rpcs, open64, "%s, %s, %s", "%d",
                  path, fcntl_flags_rpc2str(flags),
-                 file_mode_flags_rpc2str(mode),
-                 out.fd, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+                 file_mode_flags_rpc2str(mode), out.fd);
     RETVAL_INT(open64, out.fd);
 }
 
@@ -1563,7 +1371,6 @@ rpc_fcntl(rcf_rpc_server *rpcs, int fd,
 {
     tarpc_fcntl_in  in;
     tarpc_fcntl_out out;
-    rcf_rpc_op      op;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -1574,8 +1381,6 @@ rpc_fcntl(rcf_rpc_server *rpcs, int fd,
         RETVAL_INT(fcntl, -1);
     }
 
-    op = rpcs->op;
-
     in.fd = fd;
     in.cmd = cmd;
     in.arg = arg;
@@ -1583,12 +1388,8 @@ rpc_fcntl(rcf_rpc_server *rpcs, int fd,
     rcf_rpc_call(rpcs, "fcntl", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(fcntl, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s)%s: fcntl(%d, %s, %d) -> %d (%s)",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
-                 fd, fcntl_rpc2str(cmd),
-                 arg, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, fcntl, "%d, %s, %d", "%d",
+                 fd, fcntl_rpc2str(cmd), arg, out.retval);
     RETVAL_INT(fcntl, out.retval);
 }
 
@@ -1607,15 +1408,10 @@ rpc_getpid(rcf_rpc_server *rpcs)
         RETVAL_INT(getuid, -1);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
     rcf_rpc_call(rpcs, "getpid", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(getpid, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s): getpid() -> %d (%s)",
-                 rpcs->ta, rpcs->name,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, getpid, "", "%d", out.retval);
     RETVAL_INT(getpid, out.retval);
 }
 
@@ -1635,15 +1431,10 @@ rpc_getuid(rcf_rpc_server *rpcs)
         RETVAL_INT(getuid, -1);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
     rcf_rpc_call(rpcs, "getuid", &in, &out);
 
     CHECK_RETVAL_VAR(getuid, out.uid, FALSE, (tarpc_uid_t)-1);
-
-    TAPI_RPC_LOG("RPC (%s,%s): getuid() -> %d (%s)",
-                 rpcs->ta, rpcs->name,
-                 out.uid, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, getuid, "", "%d", out.uid);
     RETVAL_INT(getuid, out.uid);
 }
 
@@ -1663,17 +1454,12 @@ rpc_setuid(rcf_rpc_server *rpcs,
         RETVAL_INT(setuid, -1);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
     in.uid = uid;
 
     rcf_rpc_call(rpcs, "setuid", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(setuid, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s): setuid(%d) -> %d (%s)",
-                 rpcs->ta, rpcs->name,
-                 uid, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, setuid, "%d", "%d", uid, out.retval);
     RETVAL_INT(setuid, out.retval);
 }
 
@@ -1692,16 +1478,10 @@ rpc_geteuid(rcf_rpc_server *rpcs)
         RETVAL_INT(geteuid, -1);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     rcf_rpc_call(rpcs, "geteuid", &in, &out);
 
     CHECK_RETVAL_VAR(geteuid, out.uid, FALSE, (tarpc_uid_t)-1);
-
-    TAPI_RPC_LOG("RPC (%s,%s): geteuid() -> %d (%s)",
-                 rpcs->ta, rpcs->name,
-                 out.uid, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, geteuid, "", "%d", out.uid);
     RETVAL_INT(geteuid, out.uid);
 }
 
@@ -1721,17 +1501,12 @@ rpc_seteuid(rcf_rpc_server *rpcs,
         RETVAL_INT(seteuid, -1);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
     in.uid = uid;
 
     rcf_rpc_call(rpcs, "seteuid", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(seteuid, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s): seteuid(%d) -> %d (%s)",
-                 rpcs->ta, rpcs->name,
-                 uid, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, seteuid, "%d", "%d", uid, out.retval);
     RETVAL_INT(seteuid, out.retval);
 }
 
@@ -1751,7 +1526,6 @@ rpc_access(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(seteuid, -1);
     }
-    rpcs->op = RCF_RPC_CALL_WAIT;
     in.mode  = mode;
     if (path != NULL)
     {
@@ -1762,12 +1536,8 @@ rpc_access(rcf_rpc_server *rpcs,
     rcf_rpc_call(rpcs, "access", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(access, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s): access(%s,%s) -> %d (%s)",
-                 rpcs->ta, rpcs->name,
-                 path, access_mode_flags_rpc2str(mode),
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, access, "%s, %s", "%d",
+                 path, access_mode_flags_rpc2str(mode), out.retval);
     RETVAL_INT(access, out.retval);
 }
 
@@ -1798,7 +1568,6 @@ rpc_getpwnam(rcf_rpc_server *rpcs, const char *name)
         RETVAL_PTR(getpwnam, NULL);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
     if ((in.name.name_val = strdup(name)) == NULL)
     {
         ERROR("Out of memory");
@@ -1827,10 +1596,7 @@ rpc_getpwnam(rcf_rpc_server *rpcs, const char *name)
         memset(&out, 0, sizeof(out));
     }
 
-    TAPI_RPC_LOG("RPC (%s,%s): getpwnam(%s) -> %p (%s)",
-                 rpcs->ta, rpcs->name, name, res,
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, getpwnam, "%s", "%p", name, res);
     RETVAL_PTR(getpwnam, res);
 }
 
@@ -1848,8 +1614,6 @@ rpc_uname(rcf_rpc_server *rpcs, struct utsname *buf)
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(uname, -1);
     }
-
-    rpcs->op = RCF_RPC_CALL_WAIT;
 
     rcf_rpc_call(rpcs, "uname", &in, &out);
 
@@ -1874,13 +1638,7 @@ rpc_uname(rcf_rpc_server *rpcs, struct utsname *buf)
         memset(&out, 0, sizeof(out));
     }
 
-    TAPI_RPC_LOG("RPC (%s,%s): uname() -> %d "
-                 "(\"%s\",\"%s\",\"%s\",\"%s\",\"%s\") (%s)",
-                 rpcs->ta, rpcs->name, out.retval,
-                 buf->sysname, buf->nodename,
-                 buf->release, buf->version, buf->machine,
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, uname, "", "%d", out.retval);
     RETVAL_INT(uname, out.retval);
 }
 
@@ -1900,8 +1658,6 @@ rpc_gettimeofday(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(gettimeofday, -1);
     }
-
-    rpcs->op = RCF_RPC_CALL_WAIT;
 
     if (tv != NULL)
     {
@@ -1931,17 +1687,13 @@ rpc_gettimeofday(rcf_rpc_server *rpcs,
     }
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(gettimeofday, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s): gettimeofday(%p, %p) -> "
-                 "%d (%s) tv=%s tz={%d,%d}",
-                 rpcs->ta, rpcs->name, tv, tz,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
+    TAPI_RPC_LOG(rpcs, gettimeofday, "%p %p", "%d tv=%s tz={%d,%d}",
+                 tv, tz, out.retval,
                  tarpc_timeval2str(tv),
                  (out.retval != 0 || tz == NULL) ? 0 :
                      (int)tz->tz_minuteswest,
                  (out.retval != 0 || tz == NULL) ? 0 :
                      (int)tz->tz_dsttime);
-
     RETVAL_INT(gettimeofday, out.retval);
 }
 
@@ -1956,7 +1708,6 @@ rpc_gettimeofday(rcf_rpc_server *rpcs,
 rpc_ptr
 rpc_malloc(rcf_rpc_server *rpcs, size_t size)
 {
-    rcf_rpc_op          op;
     tarpc_malloc_in     in;
     tarpc_malloc_out    out;
 
@@ -1969,17 +1720,12 @@ rpc_malloc(rcf_rpc_server *rpcs, size_t size)
         RETVAL_RPC_PTR(malloc, 0);
     }
 
-    op = rpcs->op;
-
     in.size = size;
 
     rcf_rpc_call(rpcs, "malloc", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: malloc(%" TE_PRINTF_SIZE_T "u) -> "
-                 "%u (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
-                 size,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, malloc, "%" TE_PRINTF_SIZE_T "u", "%u",
+                 size, out.retval);
     RETVAL_RPC_PTR(malloc, (rpc_ptr)out.retval);
 }
 
@@ -1992,7 +1738,6 @@ rpc_malloc(rcf_rpc_server *rpcs, size_t size)
 void
 rpc_free(rcf_rpc_server *rpcs, rpc_ptr buf)
 {
-    rcf_rpc_op      op;
     tarpc_free_in   in;
     tarpc_free_out  out;
 
@@ -2005,16 +1750,11 @@ rpc_free(rcf_rpc_server *rpcs, rpc_ptr buf)
         RETVAL_VOID(free);
     }
 
-    op = rpcs->op;
-
     in.buf = (tarpc_ptr)buf;
 
     rcf_rpc_call(rpcs, "free", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: free(%u) -> (%s)",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
-                 buf, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, free, "%u", "", buf);
     RETVAL_VOID(free);
 }
 
@@ -2031,7 +1771,6 @@ rpc_free(rcf_rpc_server *rpcs, rpc_ptr buf)
 rpc_ptr
 rpc_memalign(rcf_rpc_server *rpcs, size_t alignment, size_t size)
 {
-    rcf_rpc_op          op;
     tarpc_memalign_in     in;
     tarpc_memalign_out    out;
 
@@ -2044,20 +1783,14 @@ rpc_memalign(rcf_rpc_server *rpcs, size_t alignment, size_t size)
         RETVAL_RPC_PTR(malloc, 0);
     }
 
-    op = rpcs->op;
-
     in.alignment = alignment;
     in.size      = size;
 
     rcf_rpc_call(rpcs, "memalign", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: memalign(%" TE_PRINTF_SIZE_T "u "
-                 "%" TE_PRINTF_SIZE_T "u) -> "
-                 "%u (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
-                 alignment,
-                 size,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, memalign, "%" TE_PRINTF_SIZE_T "u "
+                 "%" TE_PRINTF_SIZE_T "u", "%u",
+                 alignment, size, out.retval);
     RETVAL_RPC_PTR(memalign, (rpc_ptr)out.retval);
 }
 
@@ -2077,8 +1810,6 @@ rpc_setrlimit(rcf_rpc_server *rpcs,
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     in.resource = resource;
     if (rlim != NULL)
     {
@@ -2089,14 +1820,11 @@ rpc_setrlimit(rcf_rpc_server *rpcs,
     rcf_rpc_call(rpcs, "setrlimit", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(setrlimit, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s): setrlimit(%s, %p{%u, %u}) -> %d (%s)",
-                 rpcs->ta, rpcs->name,
+    TAPI_RPC_LOG(rpcs, setrlimit, "%s, %p{%u, %u}", "%d",
                  rlimit_resource_rpc2str(resource), rlim,
                  rlim == NULL ? 0 : rlim->rlim_cur,
                  rlim == NULL ? 0 : rlim->rlim_max,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+                 out.retval);
     RETVAL_INT(setrlimit, out.retval);
 }
 
@@ -2116,8 +1844,6 @@ rpc_getrlimit(rcf_rpc_server *rpcs,
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     in.resource = resource;
     if (rlim != NULL)
     {
@@ -2133,14 +1859,10 @@ rpc_getrlimit(rcf_rpc_server *rpcs,
     }
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(getrlimit, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s): getrlimit(%s, %p) -> %d (%s) {%u, %u}",
-                 rpcs->ta, rpcs->name,
-                 rlimit_resource_rpc2str(resource), rlim,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
+    TAPI_RPC_LOG(rpcs, getrlimit, "%s, %p", "%d {%u, %u}",
+                 rlimit_resource_rpc2str(resource), rlim, out.retval,
                  rlim == NULL ? 0 : rlim->rlim_cur,
                  rlim == NULL ? 0 : rlim->rlim_max);
-
     RETVAL_INT(getrlimit, out.retval);
 }
 
@@ -2169,19 +1891,13 @@ rpc_fstat(rcf_rpc_server *rpcs,
 
     in.fd = fd;
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     rcf_rpc_call(rpcs, "te_fstat", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs))
         memcpy(buf, &out.buf, sizeof(out.buf));
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(fstat, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s): fstat(%d) -> %d (%s)",
-                 rpcs->ta, rpcs->name, fd, 
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, fstat, "%d", "%d", fd, out.retval);
     RETVAL_INT(te_fstat, out.retval);
 }
 
@@ -2210,19 +1926,13 @@ rpc_fstat64(rcf_rpc_server *rpcs,
     
     in.fd = fd;
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     rcf_rpc_call(rpcs, "te_fstat64", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs))
         memcpy(buf, &out.buf, sizeof(out.buf));
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(fstat, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s): fstat64(%d) -> %d (%s)",
-                 rpcs->ta, rpcs->name, fd, 
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, fstat64, "%d", "%d", fd, out.retval);
     RETVAL_INT(te_fstat64, out.retval);
 }
 

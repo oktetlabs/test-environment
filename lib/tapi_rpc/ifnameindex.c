@@ -69,11 +69,8 @@ rpc_if_nametoindex(rcf_rpc_server *rpcs,
     rcf_rpc_call(rpcs, "if_nametoindex", &in, &out);
 
     CHECK_RETVAL_VAR(if_nametoindex, out.ifindex, FALSE, 0);
-
-    TAPI_RPC_LOG("RPC (%s,%s): if_nametoindex(%s) -> %u (%s)",
-                 rpcs->ta, rpcs->name, ifname == NULL ? "" : ifname,
-                 out.ifindex, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, if_nametoindex, "%s", "%u", 
+                 ifname == NULL ? "" : ifname, out.ifindex);
     RETVAL_INT(if_nametoindex, out.ifindex);
 }
 
@@ -107,11 +104,8 @@ rpc_if_indextoname(rcf_rpc_server *rpcs,
             memcpy(ifname, out.ifname.ifname_val, out.ifname.ifname_len);
     }
 
-    TAPI_RPC_LOG("RPC (%s,%s): if_indextoname(%u) -> %s (%s)",
-                 rpcs->ta, rpcs->name,
-                 ifindex, out.ifname.ifname_val != NULL ? ifname : "",
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, if_indextoname, "%u", "%s",
+                 ifindex, out.ifname.ifname_val != NULL ? ifname : "");
     RETVAL_PTR(if_indextoname,
                out.ifname.ifname_val != NULL ? ifname : NULL);
 }
@@ -167,10 +161,7 @@ rpc_if_nameindex(rcf_rpc_server *rpcs)
         }
     }
 
-    TAPI_RPC_LOG("RPC (%s,%s): if_nameindex() -> %p (%s)",
-                 rpcs->ta, rpcs->name,
-                 res, errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, if_nameindex, "", "%p", res);
     RETVAL_PTR(if_nameindex, res);
 }
 
@@ -203,9 +194,6 @@ rpc_if_freenameindex(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "if_freenameindex", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): if_freenameindex(%p) -> (%s)",
-                 rpcs->ta, rpcs->name, ptr,
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, if_nameindex, "%p", "", ptr);
     RETVAL_VOID(if_freenameindex);
 }

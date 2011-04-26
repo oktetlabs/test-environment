@@ -47,7 +47,6 @@
 int
 rpc_telephony_open_channel(rcf_rpc_server *rpcs, int port)
 {
-    rcf_rpc_op                          op;
     tarpc_telephony_open_channel_in     in;
     tarpc_telephony_open_channel_out    out;
     
@@ -60,23 +59,18 @@ rpc_telephony_open_channel(rcf_rpc_server *rpcs, int port)
         RETVAL_INT(telephony_open_channel, -1);
     }
 
-    op = rpcs->op;
     in.port = port;
 
     rcf_rpc_call(rpcs, "telephony_open_channel", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: telephony_open_channel(%d) "
-                 "-> %d (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
-                 port, out.retval,
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, telephony_open_channel, "%d", "%d",
+                 port, out.retval);
     RETVAL_INT(telephony_open_channel, out.retval);
 }
 
 int
 rpc_telephony_close_channel(rcf_rpc_server *rpcs, int chan)
 {
-    rcf_rpc_op                          op;
     tarpc_telephony_close_channel_in    in;
     tarpc_telephony_close_channel_out   out;
     
@@ -89,23 +83,18 @@ rpc_telephony_close_channel(rcf_rpc_server *rpcs, int chan)
         RETVAL_INT(telephony_close_channel, -1);
     }
 
-    op = rpcs->op;
     in.chan = chan;
 
     rcf_rpc_call(rpcs, "telephony_close_channel", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: telephony_close_channel(%d) "
-                 "-> %d (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
-                 chan, out.retval,
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, telephony_close_channel, "%d", "%d",
+                 chan, out.retval);
     RETVAL_INT(telephony_close_channel, out.retval);
 }
 
 int
 rpc_telephony_pickup(rcf_rpc_server *rpcs, int chan)
 {
-    rcf_rpc_op                  op;
     tarpc_telephony_pickup_in   in;
     tarpc_telephony_pickup_out  out;
     
@@ -118,23 +107,18 @@ rpc_telephony_pickup(rcf_rpc_server *rpcs, int chan)
         RETVAL_INT(telephony_pickup, -1);
     }
 
-    op = rpcs->op;
     in.chan = chan;
 
     rcf_rpc_call(rpcs, "telephony_pickup", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: telephony_pickup(%d) "
-                 "-> %d (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
-                 chan, out.retval,
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, telephony_pickup, "%d", "%d",
+                 chan, out.retval);
     RETVAL_INT(telephony_pickup, out.retval);
 }
 
 int
 rpc_telephony_hangup(rcf_rpc_server *rpcs, int chan)
 {
-    rcf_rpc_op                  op;
     tarpc_telephony_hangup_in   in;
     tarpc_telephony_hangup_out  out;
     
@@ -147,16 +131,12 @@ rpc_telephony_hangup(rcf_rpc_server *rpcs, int chan)
         RETVAL_INT(telephony_hangup, -1);
     }
 
-    op = rpcs->op;
     in.chan = chan;
 
     rcf_rpc_call(rpcs, "telephony_hangup", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: telephony_hangup(%d) "
-                 "-> %d (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
-                 chan, out.retval,
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, telephony_hangup, "%d", "%d",
+                 chan, out.retval);
     RETVAL_INT(telephony_hangup, out.retval);
 }
 
@@ -164,7 +144,6 @@ int
 rpc_telephony_check_dial_tone(rcf_rpc_server *rpcs, int chan,
                               enum te_numbering_plan plan, te_bool *state)
 {
-    rcf_rpc_op                          op;
     tarpc_telephony_check_dial_tone_in  in;
     tarpc_telephony_check_dial_tone_out out;
     
@@ -177,17 +156,14 @@ rpc_telephony_check_dial_tone(rcf_rpc_server *rpcs, int chan,
         RETVAL_INT(telephony_check_dial_tone, -1);
     }
 
-    op = rpcs->op;
     in.chan = chan;
     in.plan = plan;
 
     rcf_rpc_call(rpcs, "telephony_check_dial_tone", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: telephony_check_dial_tone(%d, %d) "
-                 "-> %s (%s)", rpcs->ta, rpcs->name,
-                 rpcop2str(op), chan, plan,
-                 out.retval ? (out.retval == -1 ? "true" : "-1") : "false",
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
+    TAPI_RPC_LOG(rpcs, telephony_check_dial_tone, "%d, %d", "%s",
+                 chan, plan,
+                 out.retval ? (out.retval == -1 ? "true" : "-1") : "false");
 
     if (out.retval < 0)
         RETVAL_INT(telephony_check_dial_tone, -1);
@@ -202,7 +178,6 @@ int
 rpc_telephony_dial_number(rcf_rpc_server *rpcs,
                           int chan, const char *number)
 {
-    rcf_rpc_op                      op;
     tarpc_telephony_dial_number_in  in;
     tarpc_telephony_dial_number_out out;
     
@@ -215,17 +190,13 @@ rpc_telephony_dial_number(rcf_rpc_server *rpcs,
         RETVAL_INT(telephony_dial_number, -1);
     }
 
-    op = rpcs->op;
     in.chan = chan;
     in.number = strdup(number);
 
     rcf_rpc_call(rpcs, "telephony_dial_number", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: telephony_dial_number(%d, %s) "
-                 "-> %d (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
-                 chan, number, out.retval,
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, telephony_dial_number, "%d, %s", "%d",
+                 chan, number, out.retval);
     RETVAL_INT(telephony_dial_number, out.retval);
 }
 
@@ -233,7 +204,6 @@ int
 rpc_telephony_call_wait(rcf_rpc_server *rpcs, int chan, int timeout)
 {
 
-    rcf_rpc_op                      op;
     tarpc_telephony_call_wait_in    in;
     tarpc_telephony_call_wait_out   out;
 
@@ -247,17 +217,13 @@ rpc_telephony_call_wait(rcf_rpc_server *rpcs, int chan, int timeout)
         RETVAL_INT(telephony_call_wait, -1);
     }
 
-    op = rpcs->op;
     in.chan = chan;
     in.timeout = timeout;
 
     rcf_rpc_call(rpcs, "telephony_call_wait", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: telephony_call_wait(%d, %d) "
-                 "-> %d (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
-                 chan, timeout, out.retval,
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
-
+    TAPI_RPC_LOG(rpcs, telephony_call_wait, "%d, %d", "%d",
+                 chan, timeout, out.retval);
     RETVAL_INT(telephony_call_wait, out.retval);
 }
 
