@@ -1780,9 +1780,11 @@ static te_errno
 wifi_essid_get(unsigned int gid, const char *oid, char *value,
                const char *ifname)
 {
-    struct iwreq wrq;
-    char         essid[IW_ESSID_MAX_SIZE + 1] = {};
-    te_errno     rc;
+    struct iwreq    wrq;
+    char            essid[IW_ESSID_MAX_SIZE + 1] = {};
+    te_errno        rc;
+    int             retry = 0;
+    int             skfd = wifi_get_skfd();
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1791,6 +1793,7 @@ wifi_essid_get(unsigned int gid, const char *oid, char *value,
     wrq.u.essid.length = sizeof(essid);
     wrq.u.essid.flags = 0;
 
+#if 0
     if ((rc = wifi_get_item(ifname, SIOCGIWESSID, &wrq)) != 0)
     {
         ERROR("%s(): Cannot read ESSID value for %s interface",
@@ -1798,6 +1801,64 @@ wifi_essid_get(unsigned int gid, const char *oid, char *value,
 
         return rc;
     }
+#endif
+    WIFI_CHECK_SKFD(skfd);
+
+#define EBUSY_RETRY_LIMIT 500
+    while ((rc = iw_get_ext(skfd, ifname, SIOCGIWESSID, &wrq)) != 0)
+    {
+        if (errno == EBUSY)
+        {
+            /* Try again */
+            if (++retry < EBUSY_RETRY_LIMIT)
+            {
+                usleep(50);
+
+                continue;
+            }
+        }
+
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+
+        break;
+    }
+#undef EBUSY_RETRY_LIMIT
+
+    if (rc != 0)
+    {
+        if (errno != E2BIG)
+        {
+            ERROR("%s(): Cannot read ESSID name for interface %s",
+                  __FUNCTION__, ifname);
+
+            return rc;
+        }
+
+        /*
+         * errno == E2BIG may mean that ESSID is not configured at all.
+         * We'll try to bypass this problem by configuring ESSID with
+         * empty name
+         */
+        ERROR("%s(): Error E2BIG on attempt to read ESSID name "
+              "for interface %s. "
+              "Try to assign empty ESSID name to bypass problem",
+              __FUNCTION__, ifname);
+
+        essid[0] = '\0';
+        wrq.u.essid.pointer = (caddr_t)essid;
+        wrq.u.essid.length = strlen(essid) + 1;
+        wrq.u.essid.flags = 0;
+        if ((rc = wifi_set_item(ifname, SIOCSIWESSID, &wrq)) != 0)
+        {
+            ERROR("%s(): Cannot assign empty ESSID name for interface %s",
+                  __FUNCTION__, ifname);
+
+            return rc;
+        }
+    }
+
+    if (retry != 0)
+        ERROR("%s(): %d retries to get ESSID name", __FUNCTION__, retry);
 
     strcpy(value, essid);
 
