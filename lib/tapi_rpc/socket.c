@@ -1836,7 +1836,7 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
     rcf_rpc_call(rpcs, "setsockopt", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(setsockopt, out.retval);
-    TAPI_RPC_LOG(rpcs, getsockopt, "%d, %s, %s, %s, %s", "%d",
+    TAPI_RPC_LOG(rpcs, setsockopt, "%d, %s, %s, %s, %s", "%d",
                  s, socklevel_rpc2str(level), sockopt_rpc2str(optname),
                  opt_val_str == NULL ? "(nil)" :
                                        te_log_buf_get(opt_val_str),
