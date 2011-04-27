@@ -869,9 +869,8 @@ print_rpc_response(acse_epc_cwmp_data_t *cwmp_resp)
     }
     break;
     case CWMP_RPC_download: 
-    {
-        struct cwmp__ParameterAttributeStruct *pa_item;
-    }
+        printf("Download status: %d\n", 
+               cwmp_resp->from_cpe.download_r->Status);
     break;
     case CWMP_RPC_add_object: 
         printf("Add status: %d, instance %d\n", 
