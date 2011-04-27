@@ -181,11 +181,19 @@ conn_req_destroy(void *data)
 te_errno
 acse_init_connection_request(cpe_t *cpe_item)
 {
-    conn_req_t *conn_req_data = malloc(sizeof(*conn_req_data));
+    conn_req_t *conn_req_data;
     struct soap *soap;
-    channel_t   *channel = malloc(sizeof(*channel)); 
+    channel_t   *channel; 
 
-    if (conn_req_data == NULL || channel == NULL)
+    if (cpe_item->url == NULL)
+    {
+        ERROR("%s() for %s/%s: NULL Conn.Req. URL",
+            __FUNCTION__, cpe_item->acs->name, cpe_item->name);
+        return TE_EFAIL;
+    }
+
+    if ((conn_req_data = malloc(sizeof(*conn_req_data))) == NULL ||
+         (channel = malloc(sizeof(*channel))) == NULL)
         return TE_ENOMEM;
 
     soap_init(&(conn_req_data->m_soap));
