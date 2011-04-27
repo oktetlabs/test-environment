@@ -1424,7 +1424,7 @@ rpc_mcast_join_leave(rcf_rpc_server *rpcs, int s,
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(mcast_join_leave, out.retval);
     TAPI_RPC_LOG(rpcs, mcast_join_leave, "%d, %s, %d, %s, %s", "%d",
-                 te_sockaddr2str(mcast_addr), if_index,
+                 s, te_sockaddr2str(mcast_addr), if_index,
                  leave_group? "LEAVE" : "JOIN",
                  how == TARPC_MCAST_ADD_DROP ? "IP_(ADD|DROP)_MEMBERSHIP" :
                      how == TARPC_MCAST_JOIN_LEAVE ?
