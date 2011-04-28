@@ -894,7 +894,11 @@ cwmp_accept_cpe_connection(acs_t *acs, int socket)
         /* without any URL specified we accept all connections */
         if (acs->url != NULL &&
             strncmp(req_url_p, acs->url, strlen(acs->url))) 
+        {
+            RING("CWMP NOT accepted, ACS '%s', our URL '%s', come URL '%s'",
+                 acs->name, acs->url, req_url_p);
             return TE_ECONNREFUSED; /* It is not our URL */
+        }
     }
 
     return cwmp_new_session(socket, acs);
