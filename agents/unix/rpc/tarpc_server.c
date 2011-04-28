@@ -5967,9 +5967,13 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
             sent = send_func(in->sock, buf, max_len, MSG_DONTWAIT);
             if ((ret > 0) && (sent <= 0))
             {
-                ERROR("%s(): I/O multiplexing has returned write event, "
-                      "but send() function with MSG_DONTWAIT hasn't "
-                      "sent any data", __FUNCTION__);
+                if (errno_h2rpc(errno) == RPC_EAGAIN)
+                    ERROR("%s(): I/O multiplexing has returned write "
+                          "event, but send() function with MSG_DONTWAIT "
+                          "hasn't sent any data", __FUNCTION__);
+                else
+                    ERROR("Send operation failed with %r",
+                          errno_h2rpc(errno));
                 ret = -1;
                 goto overfill_buffers_exit;
             }
