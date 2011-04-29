@@ -237,6 +237,16 @@
     } while (0)
 
 /** Return with check (for functions returning pointers) */
+#define RETVAL_PTR64(_func, _retval) \
+    do {                                                            \
+        int64_t __retval = (int64_t)(_retval);                      \
+                                                                    \
+        TAPI_RPC_OUT(_func, __retval == (int64_t)NULL);             \
+                                                                    \
+        return __retval;                                            \
+    } while (0)
+
+/** Return with check (for functions returning pointers) */
 #define RETVAL_RPC_PTR(_func, _retval) \
     do {                                                            \
         rpc_ptr __retval = (_retval);                               \

@@ -53,7 +53,7 @@ rpc_dlopen(rcf_rpc_server *rpcs, const char *filename, int flag)
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_INT(ta_dlopen, (rpc_dlhandle)NULL);
+        RETVAL_PTR64(ta_dlopen, (rpc_dlhandle)NULL);
     }
 
     in.filename = (char *)filename;
@@ -61,9 +61,9 @@ rpc_dlopen(rcf_rpc_server *rpcs, const char *filename, int flag)
 
     rcf_rpc_call(rpcs, "ta_dlopen", &in, &out);
 
-    TAPI_RPC_LOG(rpcs, dlopen, "%s, %s", "%p",
+    TAPI_RPC_LOG(rpcs, dlopen, "%s, %s", "%llx",
                  in.filename, dlopen_flags_rpc2str(in.flag), out.retval);
-    RETVAL_RPC_PTR(ta_dlopen, out.retval);
+    RETVAL_PTR64(ta_dlopen, out.retval);
 }
 
 char *
@@ -99,7 +99,7 @@ rpc_dlsym(rcf_rpc_server *rpcs, rpc_dlhandle handle, const char *symbol)
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_INT(ta_dlsym, (rpc_dlsymaddr)NULL);
+        RETVAL_PTR64(ta_dlsym, (rpc_dlsymaddr)NULL);
     }
 
     in.handle = (tarpc_dlhandle)handle;
@@ -107,9 +107,9 @@ rpc_dlsym(rcf_rpc_server *rpcs, rpc_dlhandle handle, const char *symbol)
 
     rcf_rpc_call(rpcs, "ta_dlsym", &in, &out);
 
-    TAPI_RPC_LOG(rpcs, dlsym, "%p %s", "%p",
+    TAPI_RPC_LOG(rpcs, dlsym, "%llx %s", "%llx",
                  in.handle, in.symbol, out.retval);
-    RETVAL_RPC_PTR(ta_dlsym, out.retval);
+    RETVAL_PTR64(ta_dlsym, out.retval);
 }
 
 int
@@ -132,7 +132,7 @@ rpc_dlsym_call(rcf_rpc_server *rpcs, rpc_dlhandle handle, const char *symbol)
 
     rcf_rpc_call(rpcs, "ta_dlsym_call", &in, &out);
 
-    TAPI_RPC_LOG(rpcs, dlsym_call, "%p %s", "%d",
+    TAPI_RPC_LOG(rpcs, dlsym_call, "%llx %s", "%d",
                  in.handle, in.symbol, out.retval);
     RETVAL_INT(ta_dlsym_call, out.retval);
 }
@@ -156,7 +156,7 @@ rpc_dlclose(rcf_rpc_server *rpcs, rpc_dlhandle handle)
 
     rcf_rpc_call(rpcs, "ta_dlclose", &in, &out);
 
-    TAPI_RPC_LOG(rpcs, dlclose, "%p", "%d", in.handle, out.retval);
+    TAPI_RPC_LOG(rpcs, dlclose, "%llx", "%d", in.handle, out.retval);
     RETVAL_ZERO_INT(ta_dlclose, out.retval);
 }
 
