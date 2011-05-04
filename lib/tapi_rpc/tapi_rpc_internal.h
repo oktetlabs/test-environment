@@ -68,7 +68,7 @@
             "RPC (%s,%s)%s%s: " #func "(" in_format ") -> "         \
             out_format " (%s)",                                     \
             rpcs->ta, rpcs->name, rpcop2str(rpcs->last_op),         \
-            (rpcs->use_libc_once || rpcs->use_libc) ? " libc" : "", \
+            (rpcs->last_use_libc || rpcs->use_libc) ? " libc" : "", \
             _x, errno_rpc2str(RPC_ERRNO(rpcs)))
 
 /** 
