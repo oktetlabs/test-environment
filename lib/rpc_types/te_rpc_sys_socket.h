@@ -493,6 +493,33 @@ extern rpc_sockopt sockopt_h2rpc(int opt_type, int opt);
 extern te_bool sockopt_is_boolean(rpc_sockopt opt);
 
 /**
+ * TA-independent names of TCP socket states.
+ */
+typedef enum rpc_tcp_state {
+    RPC_TCP_ESTABLISHED,
+    RPC_TCP_SYN_SENT,
+    RPC_TCP_SYN_RECV,
+    RPC_TCP_FIN_WAIT1,
+    RPC_TCP_FIN_WAIT2,
+    RPC_TCP_TIME_WAIT,
+    RPC_TCP_CLOSE,
+    RPC_TCP_CLOSE_WAIT,
+    RPC_TCP_LAST_ACK,
+    RPC_TCP_LISTEN,
+    RPC_TCP_CLOSING,
+    RPC_TCP_UNKNOWN
+} rpc_tcp_state;
+
+/** Convert RPC TCP socket state to string */
+extern const char * tcp_state_rpc2str(rpc_tcp_state st);
+
+/** Convert RPC TCP socket state constants to native ones */
+extern int tcp_state_rpc2h(rpc_tcp_state st);
+
+/** Convert native TCP socket states to RPC one */
+extern rpc_tcp_state tcp_state_h2rpc(int st);
+
+/**
  * TA-independent socket options levels
  */
 typedef enum rpc_socklevel {

@@ -1173,7 +1173,77 @@ socklevel_h2rpc(int level)
     }
 }
 
+/* Define some value for unknown TCP socket state */
+#ifndef TCP_MAX_STATES
+#define TCP_MAX_STATES 0xFFFFFFFF
+#endif
 
+/** Convert RPC TCP socket state to string */
+const char *
+tcp_state_rpc2str(rpc_tcp_state st)
+{
+    switch (st)
+    {
+        RPC2STR(TCP_ESTABLISHED);
+        RPC2STR(TCP_SYN_SENT);
+        RPC2STR(TCP_SYN_RECV);
+        RPC2STR(TCP_FIN_WAIT1);
+        RPC2STR(TCP_FIN_WAIT2);
+        RPC2STR(TCP_TIME_WAIT);
+        RPC2STR(TCP_CLOSE);
+        RPC2STR(TCP_CLOSE_WAIT);
+        RPC2STR(TCP_LAST_ACK);
+        RPC2STR(TCP_LISTEN);
+        RPC2STR(TCP_CLOSING);
+        RPC2STR(TCP_UNKNOWN);
+        default:
+            return "<TCP_FATAL_ERROR>";
+    }
+}
+
+/** Convert RPC TCP socket state constants to native ones */
+int tcp_state_rpc2h(rpc_tcp_state st)
+{
+    switch (st)
+    {
+        RPC2H_CHECK(TCP_ESTABLISHED);
+        RPC2H_CHECK(TCP_SYN_SENT);
+        RPC2H_CHECK(TCP_SYN_RECV);
+        RPC2H_CHECK(TCP_FIN_WAIT1);
+        RPC2H_CHECK(TCP_FIN_WAIT2);
+        RPC2H_CHECK(TCP_TIME_WAIT);
+        RPC2H_CHECK(TCP_CLOSE);
+        RPC2H_CHECK(TCP_CLOSE_WAIT);
+        RPC2H_CHECK(TCP_LAST_ACK);
+        RPC2H_CHECK(TCP_LISTEN);
+        RPC2H_CHECK(TCP_CLOSING);
+        default:
+            WARN("%s is converted to TCP_MAX_STATES(%u)",
+                 tcp_state_rpc2str(st), TCP_MAX_STATES);
+            return TCP_MAX_STATES;
+    }
+}
+
+/** Convert native TCP socket states to RPC one */
+rpc_tcp_state tcp_state_h2rpc(int st)
+{
+    switch (st)
+    {
+        H2RPC_CHECK(TCP_ESTABLISHED);
+        H2RPC_CHECK(TCP_SYN_SENT);
+        H2RPC_CHECK(TCP_SYN_RECV);
+        H2RPC_CHECK(TCP_FIN_WAIT1);
+        H2RPC_CHECK(TCP_FIN_WAIT2);
+        H2RPC_CHECK(TCP_TIME_WAIT);
+        H2RPC_CHECK(TCP_CLOSE);
+        H2RPC_CHECK(TCP_CLOSE_WAIT);
+        H2RPC_CHECK(TCP_LAST_ACK);
+        H2RPC_CHECK(TCP_LISTEN);
+        H2RPC_CHECK(TCP_CLOSING);
+        default: 
+            return RPC_TCP_UNKNOWN;
+    }
+}
 
 /** Convert RPC ioctl requests to string */
 const char *

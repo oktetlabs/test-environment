@@ -2196,9 +2196,15 @@ TARPC_FUNC(setsockopt,
 /*-------------- getsockopt() ------------------------------*/
 
 #define COPY_TCP_INFO_FIELD(_name) \
-    do {                                                               \
-        out->optval.optval_val[0].option_value_u.                      \
-            opt_tcp_info._name = info->_name;                          \
+    do {                                          \
+        out->optval.optval_val[0].option_value_u. \
+            opt_tcp_info._name = info->_name;     \
+    } while (0)
+
+#define CONVERT_TCP_INFO_FIELD(_name, _func) \
+    do {                                             \
+        out->optval.optval_val[0].option_value_u.    \
+            opt_tcp_info._name = _func(info->_name); \
     } while (0)
 
 static socklen_t
@@ -2370,7 +2376,7 @@ tarpc_getsockopt(tarpc_getsockopt_in *in, tarpc_getsockopt_out *out,
 #if HAVE_STRUCT_TCP_INFO
             struct tcp_info *info = (struct tcp_info *)opt;
 
-            COPY_TCP_INFO_FIELD(tcpi_state);
+            CONVERT_TCP_INFO_FIELD(tcpi_state, tcp_state_h2rpc);
             COPY_TCP_INFO_FIELD(tcpi_ca_state);
             COPY_TCP_INFO_FIELD(tcpi_retransmits);
             COPY_TCP_INFO_FIELD(tcpi_probes);
@@ -2455,6 +2461,7 @@ TARPC_FUNC(getsockopt,
 )
 
 #undef COPY_TCP_INFO_FIELD
+#undef CONVERT_TCP_INFO_FIELD
 
 /*-------------- pselect() --------------------------------*/
 

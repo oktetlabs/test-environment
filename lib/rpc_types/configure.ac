@@ -80,6 +80,127 @@ AC_CHECK_MEMBERS([struct sockaddr_in6.__sin6_src_id], [], [], [
 #include <netinet/in.h>
 ])
 
+dnl
+dnl Check for 'TCP_ESTABLISHED' socket state
+dnl
+AH_TEMPLATE([TCP_ESTABLISHED], [TCP_ESTABLISHED socket state])
+AC_CHECK_DECL([TCP_ESTABLISHED], [AC_DEFINE([TCP_ESTABLISHED],
+              [TCP_ESTABLISHED], [])], [],[
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/tcp.h>
+])
+
+dnl
+dnl Check for 'TCP_SYN_SENT' socket state
+dnl
+AH_TEMPLATE([TCP_SYN_SENT], [TCP_SYN_SENT socket state])
+AC_CHECK_DECL([TCP_SYN_SENT], [AC_DEFINE([TCP_SYN_SENT],
+              [TCP_SYN_SENT], [])], [],[
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/tcp.h>
+])
+
+dnl
+dnl Check for 'TCP_SYN_RECV' socket state
+dnl
+AH_TEMPLATE([TCP_SYN_RECV], [TCP_SYN_RECV socket state])
+AC_CHECK_DECL([TCP_SYN_RECV], [AC_DEFINE([TCP_SYN_RECV],
+              [TCP_SYN_RECV], [])], [],[
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/tcp.h>
+])
+
+dnl
+dnl Check for 'TCP_FIN_WAIT1' socket state
+dnl
+AH_TEMPLATE([TCP_FIN_WAIT1], [TCP_FIN_WAIT1 socket state])
+AC_CHECK_DECL([TCP_FIN_WAIT1], [AC_DEFINE([TCP_FIN_WAIT1],
+              [TCP_FIN_WAIT1], [])], [],[
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/tcp.h>
+])
+
+dnl
+dnl Check for 'TCP_FIN_WAIT2' socket state
+dnl
+AH_TEMPLATE([TCP_FIN_WAIT2], [TCP_FIN_WAIT2 socket state])
+AC_CHECK_DECL([TCP_FIN_WAIT2], [AC_DEFINE([TCP_FIN_WAIT2],
+              [TCP_FIN_WAIT2], [])], [],[
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/tcp.h>
+])
+
+dnl
+dnl Check for 'TCP_TIME_WAIT' socket state
+dnl
+AH_TEMPLATE([TCP_TIME_WAIT], [TCP_TIME_WAIT socket state])
+AC_CHECK_DECL([TCP_TIME_WAIT], [AC_DEFINE([TCP_TIME_WAIT],
+              [TCP_TIME_WAIT], [])], [],[
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/tcp.h>
+])
+
+dnl
+dnl Check for 'TCP_CLOSE' socket state
+dnl
+AH_TEMPLATE([TCP_CLOSE], [TCP_CLOSE socket state])
+AC_CHECK_DECL([TCP_CLOSE], [AC_DEFINE([TCP_CLOSE],
+              [TCP_CLOSE], [])], [],[
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/tcp.h>
+])
+
+dnl
+dnl Check for 'TCP_CLOSE_WAIT' socket state
+dnl
+AH_TEMPLATE([TCP_CLOSE_WAIT], [TCP_CLOSE_WAIT socket state])
+AC_CHECK_DECL([TCP_CLOSE_WAIT], [AC_DEFINE([TCP_CLOSE_WAIT],
+              [TCP_CLOSE_WAIT], [])], [],[
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/tcp.h>
+])
+
+dnl
+dnl Check for 'TCP_LAST_ACK' socket state
+dnl
+AH_TEMPLATE([TCP_LAST_ACK], [TCP_LAST_ACK socket state])
+AC_CHECK_DECL([TCP_LAST_ACK], [AC_DEFINE([TCP_LAST_ACK],
+              [TCP_LAST_ACK], [])], [],[
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/tcp.h>
+])
+
+dnl
+dnl Check for 'TCP_LISTEN' socket state
+dnl
+AH_TEMPLATE([TCP_LISTEN], [TCP_LISTEN socket state])
+AC_CHECK_DECL([TCP_LISTEN], [AC_DEFINE([TCP_LISTEN],
+              [TCP_LISTEN], [])], [],[
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/tcp.h>
+])
+
+dnl
+dnl Check for 'TCP_CLOSING' socket state
+dnl
+AH_TEMPLATE([TCP_CLOSING], [TCP_CLOSING socket state])
+AC_CHECK_DECL([TCP_CLOSING], [AC_DEFINE([TCP_CLOSING],
+              [TCP_CLOSING], [])], [],[
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/tcp.h>
+])
+
 AC_CONFIG_FILES([Makefile])
 
 TE_LIB_RESTORE
