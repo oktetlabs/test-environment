@@ -797,7 +797,7 @@ static const char * const trc_test_exp_got_row_mid =
 
 static const char * const trc_test_exp_got_row_end =
 "</td>\n"
-"      <td valign=top>%s %s</td>\n"
+"      <td valign=top>%s %s %s</td>\n"
 "    </tr>\n";
 
 static const char * const trc_test_params_hash = "<br/>Hash: %s<br/>";
@@ -850,7 +850,7 @@ typedef enum {
     TRC_REPORT_KEYS_TYPE_UNEXPECTED,
     TRC_REPORT_KEYS_TYPE_MAX,
     TRC_REPORT_KEYS_TYPE_NONE,
-};
+} trc_report_keys_type;
 
 static char *trc_report_keys_table_heading[] = {
     "Bugs that lead to known test failures.",
@@ -1731,8 +1731,9 @@ trc_report_exp_got_to_html(FILE             *f,
             }
 
             fprintf(f, trc_test_exp_got_row_end,
-                    (iter_data->exp_result == NULL) ? "" :
-                        PRINT_STR(iter_data->exp_result->notes),
+                    PRINT_STR(test->notes),
+                    PRINT_STR1((iter_data->exp_result != NULL),
+                               iter_data->exp_result->notes),
                     PRINT_STR(iter->notes));
         }
     } while (iter_entry != NULL &&
@@ -2216,7 +2217,7 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
                    unsigned int flags)
 {
     FILE       *f;
-    te_errno    rc;
+    te_errno    rc = 0;
     tqe_string *tag;
     te_string   title_string = TE_STRING_INIT;
 
