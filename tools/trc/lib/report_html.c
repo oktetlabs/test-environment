@@ -797,7 +797,7 @@ static const char * const trc_test_exp_got_row_mid =
 
 static const char * const trc_test_exp_got_row_end =
 "</td>\n"
-"      <td valign=top>%s %s %s</td>\n"
+"      <td valign=top>%s%s%s%s%s</td>\n"
 "    </tr>\n";
 
 static const char * const trc_test_params_hash = "<br/>Hash: %s<br/>";
@@ -1732,8 +1732,9 @@ trc_report_exp_got_to_html(FILE             *f,
 
             fprintf(f, trc_test_exp_got_row_end,
                     PRINT_STR(test->notes),
-                    PRINT_STR1((iter_data->exp_result != NULL),
-                               iter_data->exp_result->notes),
+                    PRINT_STR1((test->notes != NULL), "<br/>"),
+                    PRINT_STR2((iter_data->exp_result != NULL),
+                               iter_data->exp_result->notes, "<br/>"),
                     PRINT_STR(iter->notes));
         }
     } while (iter_entry != NULL &&
