@@ -207,6 +207,36 @@ typedef enum {
     ACSE_EPC_CLIENT  /**< endpoint is user, i.d. TA or CLI tool */
 } acse_epc_role_t;
 
+
+
+static inline const char *
+cwmp_epc_cfg_op_string(acse_cfg_op_t op)
+{
+    switch (op)
+    {
+        case EPC_CFG_ADD:       return "Add";
+        case EPC_CFG_DEL:       return "Delete";
+        case EPC_CFG_MODIFY:    return "Modify";
+        case EPC_CFG_OBTAIN:    return "Obtain";
+        case EPC_CFG_LIST:      return "List";
+    }
+    return "unknown";
+}
+
+static inline const char *
+cwmp_epc_cwmp_op_string(acse_epc_cwmp_op_t op)
+{
+    switch (op)
+    {
+        case EPC_RPC_CALL:      return "RPC call";
+        case EPC_RPC_CHECK:     return "RPC check";
+        case EPC_CONN_REQ:      return "Conn.Req.";
+        case EPC_CONN_REQ_CHECK:return "Conn.Req. check";
+        case EPC_GET_INFORM:    return "Get Inform";
+        case EPC_HTTP_RESP:     return "HTTP Response";
+    }
+    return "unknown";
+}
 /**
  * Open EPC connection. This function may be called only once
  * in process life. 

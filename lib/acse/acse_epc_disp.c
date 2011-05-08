@@ -814,6 +814,8 @@ config_cpe(acse_epc_config_data_t *cfg_pars)
     if (cpe == NULL)
         return TE_ENOENT;
 
+    RING("epc_config_cpe, CR URL %s", cpe->url);
+
     for (i = 0; 
          i < sizeof(cfg_cpe_array)/sizeof(cfg_cpe_array[0]); i++)
         if (strcmp(cfg_cpe_array[i].label, cfg_pars->oid) == 0)
@@ -863,6 +865,11 @@ acse_epc_config(acse_epc_config_data_t *cfg_pars)
         ERROR("%s(): wrong op.level %d", __FUNCTION__, cfg_pars->op.level);
         return TE_RC(TE_ACSE, TE_EINVAL);
     }
+
+    RING("epc_cb config, %s/%s, EPC op %s, oid '%s'", 
+         cfg_pars->acs,
+         cfg_pars->op.level == EPC_CFG_CPE ? cfg_pars->cpe : "-",
+         cwmp_epc_cfg_op_string(cfg_pars->op.fun), cfg_pars->oid);
 
     if (EPC_CFG_MODIFY != cfg_pars->op.fun)
         memset(cfg_pars->value, 0, sizeof(cfg_pars->value));
@@ -924,6 +931,11 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
                cwmp_pars->op, cwmp_pars->acs, cwmp_pars->cpe);
         return TE_ENOENT;
     }
+    RING("epc_cb CWMP, %s/%s, EPC op %s, RPC %s, CR URL %s", 
+         cwmp_pars->acs, cwmp_pars->cpe,
+         cwmp_epc_cwmp_op_string(cwmp_pars->op),
+         cwmp_rpc_cpe_string(cwmp_pars->rpc_cpe),
+         cpe->url);
 
     switch(cwmp_pars->op)
     {
