@@ -12,6 +12,9 @@
 #ifndef __CPE_BACKDOOR__H__
 #define __CPE_BACKDOOR__H__
 
+#include "rcf_rpc.h"
+#include "tapi_gw.h"
+
 struct cpe_id_s;
 typedef struct cpe_id_s cpe_id_t;
 
@@ -29,7 +32,8 @@ struct cpe_id_s {
  * Should be called at the start of TestSuite, before all other utils
  * from this library.
  */
-extern te_errno cpe_network_cfg_init(int argc, char **argv);
+extern te_errno cpe_network_cfg_init(int argc, char **argv,
+                                     const char *acs);
 
 /**
  * Init CPE ID.
@@ -42,13 +46,12 @@ extern cpe_id_t *cpe_id_init(void);
  * and specific CPE options, and should not have any matter
  * to the TR client on the CPE.
  *
- * @param cpe           Internal ID of CPE
- * @param addr          Location for the address,
- *                      should have enough size.
+ * @param cpe           Internal ID of CPE.
+ * @param addr          Location for the ptr to new sockaddr.
  *
  * @return Status code.
  */
-extern te_errno cpe_get_cfg_acs_addr(cpe_id_t *cpe, struct sockaddr *addr);
+extern te_errno cpe_get_cfg_acs_addr(cpe_id_t *cpe, struct sockaddr **addr);
 
 
 /**
