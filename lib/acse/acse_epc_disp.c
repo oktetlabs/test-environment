@@ -866,7 +866,7 @@ acse_epc_config(acse_epc_config_data_t *cfg_pars)
         return TE_RC(TE_ACSE, TE_EINVAL);
     }
 
-    RING("epc_cb config, %s/%s, EPC op %s, oid '%s'", 
+    VERB("epc_cb config, %s/%s, EPC op %s, oid '%s'", 
          cfg_pars->acs,
          cfg_pars->op.level == EPC_CFG_CPE ? cfg_pars->cpe : "-",
          cwmp_epc_cfg_op_string(cfg_pars->op.fun), cfg_pars->oid);
@@ -931,7 +931,7 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
                cwmp_pars->op, cwmp_pars->acs, cwmp_pars->cpe);
         return TE_ENOENT;
     }
-    RING("epc_cb CWMP, %s/%s, EPC op %s, RPC %s, CR URL %s", 
+    VERB("epc_cb CWMP, %s/%s, EPC op %s, RPC %s, CR URL %s", 
          cwmp_pars->acs, cwmp_pars->cpe,
          cwmp_epc_cwmp_op_string(cwmp_pars->op),
          cwmp_rpc_cpe_string(cwmp_pars->rpc_cpe),
