@@ -108,15 +108,6 @@ typedef struct ta_children_dead {
     te_bool                     valid;      /**< is this entry valid? */
 } ta_children_dead;
 
-/** Reclaim to get status of child. */
-typedef struct ta_children_wait {
-    pid_t                    pid;       /**< PID to wait for */
-    sem_t                    sem;       /**< semaphore to wake reclaimer */
-    te_bool                  sem_alloc; /**< was semaphore created? */
-    struct ta_children_wait *prev;      /**< pointer to the prev entry */
-    struct ta_children_wait *next;      /**< pointer to the next entry */
-} ta_children_wait;
-
 
 extern void *rcf_ch_symbol_addr_auto(const char *name, te_bool is_func);
 extern char *rcf_ch_symbol_name_auto(const void *addr);
@@ -169,12 +160,6 @@ SLIST_HEAD(, ta_children_dead) ta_children_dead_pool;
 
 /** Head of dead children list */
 SLIST_HEAD(, ta_children_dead) ta_children_dead_list;
-
-/** Head of ta_children_wait list */
-static ta_children_wait *volatile ta_children_wait_list;
-
-/** Read-write lock for both children lists. */
-static pthread_mutex_t children_lock = PTHREAD_MUTEX_INITIALIZER;
 
 
 /** Initialize ta_children_dead heap. */
@@ -1291,7 +1276,6 @@ ta_sigchld_handler(void)
     {
         ta_children_dead *dead = NULL;
         ta_children_dead *oldest = NULL;
-        ta_children_wait *wake;
 
         errno = saved_errno;
         get++;
@@ -1350,15 +1334,6 @@ ta_sigchld_handler(void)
         dead->valid = TRUE;
         gettimeofday(&dead->timestamp, NULL);
         SLIST_INSERT_HEAD(&ta_children_dead_list, dead, links);
-
-        for (wake = ta_children_wait_list; wake != NULL; wake = wake->next)
-        {
-            if (wake->pid == pid)
-            {
-                sem_post(&wake->sem);
-                break;
-            }
-        }
 
         /* Now try to log status of the child */
         if (logger)
@@ -1423,24 +1398,6 @@ init_tce_subsystem(void)
 }
 
 /**
- * Cleans up dead children list.  May be called at startup/after fork only,
- * because it does not lock the list.
- */
-static void
-ta_children_cleanup()
-{
-    ta_children_dead_heap_init();
-    while (ta_children_wait_list != NULL)
-    {
-        ta_children_wait *wake;
-        wake = ta_children_wait_list;
-        ta_children_wait_list = wake->next;
-        free(wake);
-    }
-    pthread_mutex_init(&children_lock, NULL);
-}
-
-/**
  * Find an entry about dead child and remove it from the list.
  * This function is to be called from waitpid.
  * It should be called with lock held.
@@ -1455,6 +1412,10 @@ find_dead_child(pid_t pid, int *status)
 {
     ta_children_dead *dead = NULL;
 
+    if (!ta_children_dead_heap_inited)
+        ta_children_dead_heap_init();
+
+    sem_wait(&sigchld_sem);
     for (dead = SLIST_FIRST(&ta_children_dead_list);
          dead != NULL; dead = SLIST_NEXT(dead, links))
     {
@@ -1478,6 +1439,11 @@ find_dead_child(pid_t pid, int *status)
         }
     }
 
+    sem_post(&sigchld_sem);
+    /* call handler to find out if we have any unhandled signals
+     * when sem is locked */
+    ta_sigchld_handler();
+
     return dead != NULL;
 }
 
@@ -1486,48 +1452,9 @@ find_dead_child(pid_t pid, int *status)
 pid_t
 ta_waitpid(pid_t pid, int *p_status, int options)
 {
-    te_bool found = FALSE;
     int     rc;
-    int     wp_rc;
     int     status;
-    int     saved_errno;
-
-/**
- * Log that a function returned impossible value.
- * @todo there thould be ERROR, not PRINT, but I'd like to see this log
- * from RPC.
- */
-#define LOG_IMPOSSIBLE(_func) \
-    PRINT("%s: Impossible! " #_func " retured %d: %s",  \
-          __FUNCTION__, rc, strerror(errno))
-
-#define IMPOSSIBLE_LOG_AND_RET(_func) \
-    do {                                \
-        LOG_IMPOSSIBLE(_func);          \
-        if (wake->sem_alloc)            \
-            sem_destroy(&wake->sem);    \
-        free(wake);                     \
-        return -1;                      \
-    } while(0)
-
-#define LOCK \
-    do {                                                \
-        rc = pthread_mutex_lock(&children_lock);        \
-        if (rc != 0)                                    \
-            IMPOSSIBLE_LOG_AND_RET(pthread_mutex_lock); \
-    } while(0)
-
-#define UNLOCK \
-    do {                                                    \
-        rc = pthread_mutex_unlock(&children_lock);          \
-        if (rc != 0)                                        \
-            IMPOSSIBLE_LOG_AND_RET(pthread_mutex_unlock);   \
-    } while(0)
-
-    if (!ta_children_dead_heap_inited)
-    {
-        ta_children_dead_heap_init();
-    }
+    int     saved_errno = errno;
 
     if (pid < -1 || pid == 0)
     {
@@ -1543,233 +1470,46 @@ ta_waitpid(pid_t pid, int *p_status, int options)
         return -1;
     }
 
-    /*
-     * For WNOHANG, check if the process is running. There is possible race
-     * condition, because any call of waitpid() may perform a race with
-     * waitpid() from SIGCHLD handler. So, we should return to user any
-     * non-error value.
-     */
-    if ((options & WNOHANG))
+    /* Start race: who'll get the status, our waitpid() or SIGCHILD?
+     * We are ready to handle both cases! */
+    rc = waitpid(pid, &status, options);
+    if (rc > 0)
     {
-        rc = waitpid(pid, &status, options);
-        if (rc == 0)
-        {
-            /* The process is running */
-            return rc;
-        }
-        else if (rc != -1)
-        {
-            /* We've got the real status */
-            log_child_death(pid, status);
-            if (p_status != NULL)
-                *p_status = status;
-            return rc;
-        }
-        else /* -1 */
-        {
-            /* The child is probably dead */
-            rc = pthread_mutex_lock(&children_lock);
-            if (rc != 0)
-            {
-                LOG_IMPOSSIBLE(pthread_mutex_lock);
-                return -1;
-            }
-            sem_wait(&sigchld_sem);
-            found = find_dead_child(pid, &status);
-            sem_post(&sigchld_sem);
-            /* call handler to find out if we have any unhandled signals */
-            ta_sigchld_handler();
+        /* We've got the real status */
+        int old_status;
+        log_child_death(pid, status);
 
-            rc = pthread_mutex_unlock(&children_lock);
-            if (rc != 0)
-            {
-                LOG_IMPOSSIBLE(pthread_mutex_unlock);
-                return -1;
-            }
-        }
-    }
-    else
-    {
-        ta_children_wait  *wake;
+        /* If we already have a status from the same pid, remove it. */
+        find_dead_child(pid, &old_status);
 
-        /* Create wait structure */
-        if ((wake = malloc(sizeof(ta_children_wait))) == NULL)
-        {
-            ERROR("%s: Out of memory", __FUNCTION__);
-            return -1;
-        }
-
-        wake->pid = pid;
-        wake->sem_alloc = FALSE;
-        rc = sem_init(&wake->sem, 0, 0);
-        if (rc != 0)
-            IMPOSSIBLE_LOG_AND_RET(sem_init);
-        wake->sem_alloc = TRUE;
-
-        /*
-         * Add an entry to ta_children_wait, so signal handler can wake us
-         */
-        wake->prev = NULL;
-        LOCK;
-        wake->next = ta_children_wait_list;
-        ta_children_wait_list = wake;
-        if (wake->next != NULL)
-            wake->next->prev = wake;
-
-        /* Check if we really have a child with such PID */
-        saved_errno = errno;
-
-        UNLOCK;
-        /* take a semaphore not to have a race with sig hangler */
-        while ((rc = sem_wait(&sigchld_sem)) != 0)
-        {
-            if (errno != EINTR)
-                IMPOSSIBLE_LOG_AND_RET(sem_wait);
-            errno = saved_errno;
-        }
-        LOCK;
-#if 0
-        /*
-         * Status returned by function 'ta_waitpid'
-         * can sometimes be garbage from non-initialized local
-         * variable 'status'. This happens when 'waitpid'
-         * returns here positive value 'vp_rc' and errno
-         * is not equal to ECHILD.
-         */
-        wp_rc = waitpid(pid, NULL, WNOHANG);
-#else
-        /*
-         * FIXME: Status returned by function 'ta_waitpid'
-         * to be the same as one returned by function 'waitpid'.
-         */
-        wp_rc = waitpid(pid, &status, WNOHANG);
-#endif
-        if (wp_rc == -1 && errno != ECHILD)
-        {
-            /** Some unpredictable error happened */
-            UNLOCK;
-            rc = wp_rc;
-            IMPOSSIBLE_LOG_AND_RET(waitpid);
-        }
-        else if (wp_rc > 0)
-        {
-            /*
-             * We've got a real status, althought we have sighandler
-             * registered - this might happen sometimes.
-             */
-            UNLOCK;
-            log_child_death(pid, status);
-            if (p_status != NULL)
-                *p_status = status;
-            sem_post(&sigchld_sem);
-            return wp_rc;
-        }
-        else
-            errno = saved_errno; /* Remove ECHILD errno */
-
-        found = find_dead_child(pid, &status);
-        /*
-         * it's 100% not our dead child, cause the process was alive
-         * when we called waitpid and because we hold sigchld_sem the
-         * signal handler has no chance of adding our process structure
-         * to the list.
-         */
-        if (wp_rc == 0)
-            found = FALSE;
-
-        sem_post(&sigchld_sem);
-        /* call handler to find out if we have any unhandled signals */
-        ta_sigchld_handler();
-
-        /*
-         * A child is still alive:
-         * Wait on semaphore only if there is a child with specified PID
-         * otherwise it will be dead lock.
-         */
-        if (!found && wp_rc == 0)
-        {
-            int wait_iter = 0;
-
-#define WAIT_SIGCHLD_TIMEOUT_WARN       (90)
-
-            saved_errno = errno;
-
-            /* Sleep in unlocked state */
-            UNLOCK;
-            while (sem_trywait(&wake->sem) != 0)
-            {
-                if (errno != EAGAIN && errno != EINTR)
-                    IMPOSSIBLE_LOG_AND_RET(sem_trywait);
-                /*
-                 * Really, if it is "our" signal (SIGCHLD), we can try to
-                 * call find_dead_child, but we should not free(wake) before
-                 * signal handler will call sem_post(), so let's sleep until
-                 * ta_sigchld_handler will wake up us explicitly.
-                 */
-
-                /*
-                 * Force call of handler to avoid dead lock if the system
-                 * loses SIGCHLD.
-                 */
-                ta_sigchld_handler();
-                wait_iter++;
-                if (wait_iter == WAIT_SIGCHLD_TIMEOUT_WARN)
-                    WARN("Waiting of SIGCHLD signal from the process "
-                         "with pid %d have crossed %d secs threshold.",
-                         pid, WAIT_SIGCHLD_TIMEOUT_WARN);
-                sleep(1);
-
-                /* There may be:
-                 * - EAGAIN from sem_trywait();
-                 * - EINTR from sleep()
-                 * We should ignore them.
-                 */
-                errno = saved_errno;
-            }
-            LOCK;
-#undef WAIT_SIGCHLD_TIMEOUT_WARN
-        }
-
-        /* Clean up wait queue */
-        if (wake->prev != NULL)
-            wake->prev->next = wake->next;
-        else
-            ta_children_wait_list = wake->next;
-        if (wake->next != NULL)
-            /*
-             * in case wake->next->prev is a valid node, if we set it to
-             * NULL we'll break backward direction of the list
-             */
-#if 0
-            wake->next->prev = NULL;
-#else
-            wake->next->prev = wake->prev;
-#endif
-        if (!found)
-            found = find_dead_child(pid, &status);
-        UNLOCK;
-
-        if (sem_destroy(&wake->sem) != 0)
-            LOG_IMPOSSIBLE(sem_destroy);
-        free(wake);
-    }
-
-    /* Get the results. */
-    if (found)
-    {
         if (p_status != NULL)
             *p_status = status;
-        return pid;
+        return rc;
     }
-    else
+    else if (rc < 0)
     {
+        if (errno == EINTR)
+            return rc;
+
+        assert(errno == ECHILD);
+        errno = saved_errno;
+        /* The child is probably dead, get the status from the list */
+
+        if (find_dead_child(pid, &status))
+        {
+            if (p_status != NULL)
+                *p_status = status;
+            return pid;
+        }
+        /* No such child */
         errno = ECHILD;
         return -1;
     }
-#undef LOCK
-#undef UNLOCK
-#undef IMPOSSIBLE_LOG_AND_RET
-#undef LOG_IMPOSSIBLE
+
+    /* rc == 0 */
+    assert(options & WNOHANG);
+    return 0;
+
 }
 
 /* See description in unix_internal.h */
@@ -2091,7 +1831,7 @@ main(int argc, char **argv)
         rc = te_rc_os2te(errno);
         ERROR("Cannot set SIGCHLD action: %r");
     }
-    pthread_atfork(NULL, NULL, ta_children_cleanup);
+    pthread_atfork(NULL, NULL, ta_children_dead_heap_init);
 
     /* FIXME */
     sigemptyset(&rpcs_received_signals);
