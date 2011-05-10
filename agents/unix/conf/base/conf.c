@@ -6339,6 +6339,8 @@ user_del(unsigned int gid, const char *oid, const char *user)
     if (!user_exists(user))
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
+    sprintf(buf, "/usr/bin/killall -u %s", user);
+    ta_system(buf); /* Ignore rc */
     sprintf(buf, "/usr/sbin/userdel -r %s", user);
     if ((rc = ta_system(buf)) != 0)
     {
