@@ -814,7 +814,7 @@ config_cpe(acse_epc_config_data_t *cfg_pars)
     if (cpe == NULL)
         return TE_ENOENT;
 
-    RING("epc_config_cpe, CR URL %s", cpe->url);
+    VERB("epc_config_cpe, CR URL %s", cpe->url);
 
     for (i = 0; 
          i < sizeof(cfg_cpe_array)/sizeof(cfg_cpe_array[0]); i++)
