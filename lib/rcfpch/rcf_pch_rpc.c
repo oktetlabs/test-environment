@@ -402,6 +402,10 @@ dispatch(void *arg)
                  (rpcs->timeout == 0xFFFFFFFF && now - rpcs->sent > 5)))
             {
                 ERROR("Timeout on server %s", rpcs->name);
+                ERROR("[yuran] TIMEOUT timeout = %d sent = %d "
+                      "now = %d (uint32_t)(now - rpcs->sent) = %d",
+                      rpcs->timeout, rpcs->sent, now,
+                      (uint32_t)(now - rpcs->sent));
                 rpcs->dead = TRUE;
                 rpc_error(rpcs, TE_ERPCTIMEOUT);
                 continue;
