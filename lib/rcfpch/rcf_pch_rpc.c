@@ -372,6 +372,7 @@ dispatch(void *arg)
         time_t     now;
         size_t     len;
         te_errno   rc;
+        uint32_t   pass_time;
         
         rpc_transport_read_set_init();
         
@@ -397,15 +398,21 @@ dispatch(void *arg)
             if (rpcs->dead || rpcs->sent == 0)
                 continue;
                
+            /* Report when time goes back */
+            if (now - rpcs->sent < 0)
+            {
+                pass_time = 0;
+                WARN("Time goes back! Send request time = %d, "
+                     "'Now' time = %d", rpcs->sent, now);
+            }
+            else
+                pass_time = (uint32_t)(now - rpcs->sent);
+
             if (rpcs->sent > 0 && 
-                ((uint32_t)(now - rpcs->sent) > rpcs->timeout ||
+                (pass_time > rpcs->timeout ||
                  (rpcs->timeout == 0xFFFFFFFF && now - rpcs->sent > 5)))
             {
                 ERROR("Timeout on server %s", rpcs->name);
-                ERROR("[yuran] TIMEOUT timeout = %d sent = %d "
-                      "now = %d (uint32_t)(now - rpcs->sent) = %d",
-                      rpcs->timeout, rpcs->sent, now,
-                      (uint32_t)(now - rpcs->sent));
                 rpcs->dead = TRUE;
                 rpc_error(rpcs, TE_ERPCTIMEOUT);
                 continue;
