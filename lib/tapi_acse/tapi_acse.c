@@ -761,8 +761,10 @@ tapi_acse_cpe_rpc_response(tapi_acse_context_t *ctx,
         ssize_t unp_rc;
         if (NULL == cwmp_buf || 0 == buflen)
         {
-            WARN("op_check return success, but buffer is NULL.");
-            return 0;
+            ERROR("%s(): op_check return success, but buffer is NULL.", 
+                  __FUNCTION__);
+            from_cpe->p = NULL;
+            return TE_RC(TE_TAPI, TE_EFAIL);
         }
         unp_rc = cwmp_unpack_response_data(cwmp_buf, buflen, cwmp_rpc_loc);
 
@@ -809,8 +811,10 @@ tapi_acse_get_rpc_acs(tapi_acse_context_t *ctx,
         ssize_t unp_rc;
         if (NULL == cwmp_buf || 0 == buflen)
         {
-            WARN("op_check return success, but buffer is NULL.");
-            return 0;
+            ERROR("%s(): op_check return success, but buffer is NULL.", 
+                  __FUNCTION__);
+            from_cpe->p = NULL;
+            return TE_RC(TE_TAPI, TE_EFAIL);
         }
         unp_rc = cwmp_unpack_acs_rpc_data(cwmp_buf, buflen, rpc_acs);
 
