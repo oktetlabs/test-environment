@@ -298,12 +298,12 @@ addr_family_h2rpc(int addr_family)
     }
 }
 
-
-
 /** Convert RPC socket type to string */
-const char *
-socktype_rpc2str(rpc_socket_type type)
+static inline const char *
+socktype_rpc2str_aux(rpc_socket_type type)
 {
+    type &= ~(RPC_SOCK_NONBLOCK | RPC_SOCK_CLOEXEC | RPC_SOCK_FUNKNOWN);
+
     switch (type)
     {
         RPC2STR(SOCK_DGRAM);
@@ -322,14 +322,73 @@ socktype_rpc2str(rpc_socket_type type)
     }
 }
 
+/**
+ * Convert RPC socket type to string 
+ * (including flags SOCK_CLOEXEC and SOCK_NONBLOCK)
+ */
+const char *
+socktype_rpc2str(rpc_socket_type type)
+{
+#define N_BUFS 10
+#define BUF_SIZE 1024
+
+    /*
+     * We cannot use predefined constants because it is unreasonable to
+     * define all possible socket type and flags combinations.
+     * We should not use dynamically allocated string where predefined 
+     * constant is usually used to avoid memory leaks.
+     * So we should use static strings defined inside the function and
+     * return pointers to them. We create a string array of reasonable
+     * size so that this function can be used several times for different
+     * input values within one test. See bitmask2str() function where this
+     * was used initially. 
+     */
+
+    static char buf[N_BUFS][BUF_SIZE];
+    static char (*cur_buf)[BUF_SIZE] = (char (*)[BUF_SIZE])buf[0];
+
+    char *ptr;
+    int   i;
+
+    /*
+     * First time the function is called we start from the second buffer,
+     * but then after a turn we'll use all N_BUFS buffer.
+     */
+    if (cur_buf == (char (*)[BUF_SIZE])buf[N_BUFS - 1])
+        cur_buf = (char (*)[BUF_SIZE])buf[0];
+    else
+        cur_buf++;
+
+    ptr = *cur_buf;
+    *ptr = '\0';
+
+    /*
+     * We assume that flags are in higher bytes and
+     * socket type is in the lowest byte so we use
+     * & 0xFFFFFF00 to clear information about socket
+     * type.
+     */
+
+    snprintf(ptr, BUF_SIZE, "%s %s",
+             socktype_rpc2str_aux(type),
+             socket_flags_rpc2str(type & 0xFFFFFF00));
+
+    if (ptr[strlen(ptr) - 1] == '0')
+        ptr[strlen(ptr) - 2] = '\0';
+
+    return ptr;
+
+#undef N_BUFS
+#undef BUF_SIZE
+}
 
 /** Value corresponding to RPC_SOCK_UNKNOWN */ 
 #define SOCK_MAX    0xFFFFFFFF  
 #define SOCK_UNSPEC 0
 
 /** Convert RPC socket type to native socket type */
-int
-socktype_rpc2h(rpc_socket_type type)
+static inline int
+socktype_rpc2h_aux(rpc_socket_type type)
 {
     switch (type)
     {
@@ -344,6 +403,45 @@ socktype_rpc2h(rpc_socket_type type)
                  socktype_rpc2str(type), SOCK_MAX);
             return SOCK_MAX;
     }
+}
+
+/** 
+ * FIXME: include headers of proper linux kernel version when building TE
+ */
+#ifndef SOCK_NONBLOCK
+#define SOCK_NONBLOCK 04000
+#endif
+
+#ifndef SOCK_CLOEXEC
+#define SOCK_CLOEXEC 02000000
+#endif
+
+#ifndef SOCK_MAX_FLAG
+#define SOCK_MAX_FLAG 0xFFFFFF00
+#endif
+
+/** 
+ * Convert RPC socket type to native socket type 
+ * (including RPC_SOCK_NONBLOCK and RPC_SOCK_CLOEXEC flags)
+ */
+int
+socktype_rpc2h(rpc_socket_type type)
+{
+    int flags = 0;
+
+#ifdef SOCK_NONBLOCK
+    if (type & RPC_SOCK_NONBLOCK)
+        flags |= SOCK_NONBLOCK;
+#endif
+    type &= ~RPC_SOCK_NONBLOCK;
+
+#ifdef SOCK_CLOEXEC
+    if (type & RPC_SOCK_CLOEXEC)
+        flags |= SOCK_CLOEXEC;
+#endif
+    type &= ~RPC_SOCK_CLOEXEC;
+
+    return socktype_rpc2h_aux(type) | flags;
 }
 
 /** Convert native socket type to RPC socket type */
@@ -362,7 +460,51 @@ socktype_h2rpc(int type)
     }
 }
 
+/** Convert RPC socket type to native socket type */
+int
+socket_flags_rpc2h(rpc_socket_flags flags)
+{
+    int r = 0;
 
+    if (flags & RPC_SOCK_FUNKNOWN)
+        return SOCK_MAX_FLAG;
+
+#ifdef SOCK_NONBLOCK
+    if (flags & RPC_SOCK_NONBLOCK)
+        r |= SOCK_NONBLOCK;
+#endif
+
+#ifdef SOCK_CLOEXEC
+    if (flags & RPC_SOCK_CLOEXEC)
+        r |= SOCK_CLOEXEC;
+#endif
+
+    return r;
+}
+
+/** Convert native socket type to RPC socket type */
+rpc_socket_flags
+socket_flags_h2rpc(int flags)
+{   
+    int r = 0;
+
+#ifdef SOCK_NONBLOCK
+    if (flags & SOCK_NONBLOCK)
+        r |= RPC_SOCK_NONBLOCK;
+    flags &= ~SOCK_NONBLOCK;
+#endif
+
+#ifdef SOCK_CLOEXEC
+    if (flags & SOCK_CLOEXEC)
+        r |= RPC_SOCK_CLOEXEC;
+    flags &= ~SOCK_CLOEXEC;
+#endif
+
+    if (flags != 0)
+        r |= RPC_SOCK_FUNKNOWN;
+
+    return r;
+}
 
 /** Convert RPC protocol to string */
 const char *
@@ -495,6 +637,7 @@ shut_how_rpc2str(rpc_shut_how how)
 #endif
 
 #endif
+
 
 #define MSG_MAX         0xFFFFFFFF
 

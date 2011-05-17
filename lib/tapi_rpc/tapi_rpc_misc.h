@@ -63,6 +63,18 @@ extern "C" {
 #endif
 
 /**
+ * Get value returned by tarpc_find_func()
+ * on the host
+ *
+ * @param rpcs        RPC server
+ * @param func_name   Name of the function
+ *
+ * @return            Value returned by tarpc_find_func()
+ */
+extern te_bool rpc_find_func(rcf_rpc_server *rpcs,
+                             const char *func_name);
+
+/**
  * Get host value of sizeof(type_name).
  *
  * @param handle      RPC server

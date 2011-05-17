@@ -63,6 +63,42 @@
 #include "tapi_rpc_signal.h"
 
 /* See description in tapi_rpc_misc.h */
+
+te_bool
+rpc_find_func(rcf_rpc_server *rpcs, const char * func_name)
+{    
+    struct tarpc_rpc_find_func_in  in;
+    struct tarpc_rpc_find_func_out out;
+
+    int rc;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(rpc_find_func, -1);
+    }
+
+    if (func_name == NULL)
+    {
+        ERROR("%s(): NULL type name", __FUNCTION__);
+        RETVAL_INT(rpc_find_func, -1);
+    }
+
+    in.func_name = strdup(func_name);
+
+    rcf_rpc_call(rpcs, "rpc_find_func", &in, &out);
+
+    free(in.func_name);
+    rc = out.find_result;
+
+    TAPI_RPC_LOG(rpcs, rpc_find_func, "%s", "%d", func_name, rc);
+    return rc;
+}
+
+/* See description in tapi_rpc_misc.h */
 tarpc_ssize_t
 rpc_get_sizeof(rcf_rpc_server *rpcs, const char *type_name)
 {

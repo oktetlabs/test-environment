@@ -340,6 +340,23 @@ _setlibname_1_svc(tarpc_setlibname_in *in, tarpc_setlibname_out *out,
     return TRUE;
 }
 
+/*-------------- rpc_find_func() ----------------------*/
+
+bool_t
+_rpc_find_func_1_svc(tarpc_rpc_find_func_in  *in,
+                     tarpc_rpc_find_func_out *out,
+                     struct svc_req          *rqstp)
+{
+    api_func func;
+
+    UNUSED(rqstp);
+
+    memset(out, 0, sizeof(*out));
+
+    out->find_result = tarpc_find_func(in->common.use_libc,
+                                       in->func_name, &func);
+    return TRUE;
+}
 
 /*-------------- rpc_is_op_done() -----------------------------*/
 
@@ -890,6 +907,29 @@ TARPC_FUNC(accept,
                           &(out->addr));
 }
 )
+
+/*-------------- accept4() ------------------------------*/
+
+TARPC_FUNC(accept4,
+{
+    COPY_ARG(len);
+    COPY_ARG_ADDR(addr);
+},
+{
+    PREPARE_ADDR(addr, out->addr,
+                 out->len.len_len == 0 ? 0 : *out->len.len_val);
+
+    MAKE_CALL(out->retval = func(in->fd, addr,
+                                 out->len.len_len == 0 ? NULL :
+                                 out->len.len_val, in->flags));
+
+    sockaddr_output_h2rpc(addr, addrlen,
+                          out->len.len_len == 0 ? 0 :
+                              *(out->len.len_val),
+                          &(out->addr));
+}
+)
+
 
 /*-------------- recvfrom() ------------------------------*/
 

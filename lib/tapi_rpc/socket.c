@@ -259,54 +259,59 @@ rpc_listen(rcf_rpc_server *rpcs, int fd, int backlog)
     RETVAL_INT(listen, out.retval);
 }
 
+#define MAKE_ACCEPT_CALL(_accept_func) \
+    if (rpcs == NULL)                                           \
+    {                                                           \
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__); \
+        RETVAL_INT(_accept_func, -1);                           \
+    }                                                           \
+                                                                \
+    if (addr != NULL && addrlen != NULL && *addrlen > raddrlen) \
+    {                                                           \
+        rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);                \
+        RETVAL_INT(_accept_func, -1);                           \
+    }                                                           \
+                                                                \
+    in.fd = s;                                                  \
+    if (addrlen != NULL && rpcs->op != RCF_RPC_WAIT)            \
+    {                                                           \
+        in.len.len_len = 1;                                     \
+        in.len.len_val = addrlen;                               \
+    }                                                           \
+    if (rpcs->op != RCF_RPC_WAIT)                               \
+    {                                                           \
+        sockaddr_raw2rpc(addr, raddrlen, &in.addr);             \
+    }                                                           \
+                                                                \
+    rcf_rpc_call(rpcs, #_accept_func, &in, &out);               \
+                                                                \
+    if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT)       \
+    {                                                           \
+        sockaddr_rpc2h(&out.addr, addr, raddrlen,               \
+                       NULL, addrlen);                          \
+                                                                \
+        if (addrlen != NULL && out.len.len_val != NULL)         \
+            *addrlen = out.len.len_val[0];                      \
+    }                                                           \
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(_accept_func,             \
+                                      out.retval)
+
 int
 rpc_accept_gen(rcf_rpc_server *rpcs,
                int s, struct sockaddr *addr, socklen_t *addrlen,
                socklen_t raddrlen)
 {
-    socklen_t        save_addrlen =
-                         (addrlen == NULL) ? (socklen_t)-1 : *addrlen;
+    socklen_t save_addrlen =
+                (addrlen == NULL) ? (socklen_t)-1 : *addrlen;
+
     tarpc_accept_in  in;
     tarpc_accept_out out;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
 
-    if (rpcs == NULL)
-    {
-        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_INT(accept, -1);
-    }
+    MAKE_ACCEPT_CALL(accept);
 
-    if (addr != NULL && addrlen != NULL && *addrlen > raddrlen)
-    {
-        rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
-        RETVAL_INT(accept, -1);
-    }
-
-    in.fd = s;
-    if (addrlen != NULL && rpcs->op != RCF_RPC_WAIT)
-    {
-        in.len.len_len = 1;
-        in.len.len_val = addrlen;
-    }
-    if (rpcs->op != RCF_RPC_WAIT)
-    {
-        sockaddr_raw2rpc(addr, raddrlen, &in.addr);
-    }
-
-    rcf_rpc_call(rpcs, "accept", &in, &out);
-
-    if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT)
-    {
-        sockaddr_rpc2h(&out.addr, addr, raddrlen,
-                       NULL, addrlen);
-
-        if (addrlen != NULL && out.len.len_val != NULL)
-            *addrlen = out.len.len_val[0];
-    }
-
-    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(accept, out.retval);
     TAPI_RPC_LOG(rpcs, accept, "%d, %p[%u], %p(%u)",
                  "%d peer=%s addrlen=%u",
                  s, addr, raddrlen, addrlen, save_addrlen,
@@ -314,6 +319,35 @@ rpc_accept_gen(rcf_rpc_server *rpcs,
                  (addrlen == NULL) ? (socklen_t)-1 : *addrlen);
     RETVAL_INT(accept, out.retval);
 }
+
+int
+rpc_accept4_gen(rcf_rpc_server *rpcs,
+               int s, struct sockaddr *addr, socklen_t *addrlen,
+               socklen_t raddrlen, int flags)
+{
+    socklen_t save_addrlen =
+                (addrlen == NULL) ? (socklen_t)-1 : *addrlen;
+
+    tarpc_accept4_in  in;
+    tarpc_accept4_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.flags = socket_flags_rpc2h(flags);
+
+    MAKE_ACCEPT_CALL(accept4);
+
+    TAPI_RPC_LOG(rpcs, accept4, "%d, %p[%u], %p(%u), %s",
+                 "%d peer=%s addrlen=%u",
+                 s, addr, raddrlen, addrlen, save_addrlen,
+                 socket_flags_rpc2str(flags),
+                 out.retval, sockaddr_h2str(addr),
+                 (addrlen == NULL) ? (socklen_t)-1 : *addrlen);
+    RETVAL_INT(accept4, out.retval);
+}
+
+#undef MAKE_ACCEPT_CALL
 
 ssize_t
 rpc_recvfrom_gen(rcf_rpc_server *rpcs,

@@ -535,7 +535,7 @@ extern int rpc_listen(rcf_rpc_server *rpcs,
 /**
  * This generic routine extract the first connection request of the queue
  * of pending connections, allocate a new descriptor for the connected 
- * socket.This operation takes place on RPC server side.
+ * socket. This operation takes place on RPC server side.
  * The behavior of this routine depends on  specified RPC operation:
  * @c RCF_RPC_CALL - return immediately without waiting for remote 
  * procedure to complete (non-blocking call).
@@ -557,6 +557,37 @@ extern int rpc_accept_gen(rcf_rpc_server *rpcs,
                           int s, struct sockaddr *addr,
                           socklen_t *addrlen,
                           socklen_t raddrlen);
+
+
+/**
+ * This function does the same thing as rpc_gen_accept() but also take
+ * flags parameter (where SOCK_CLOEXEC and/or SOCK_NONBLOCK flags can be
+ * set). This operation takes place on RPC server side.
+ *
+ * The behavior of this routine depends on  specified RPC operation:
+ * @c RCF_RPC_CALL - return immediately without waiting for remote 
+ * procedure to complete (non-blocking call).
+ * @c RCF_RPC_WAIT - wait for non-blocking call to complete
+ * @c RCF_RPC_CALL_WAIT - wait for remote procedure to complete before 
+ *    returning (blocking call)
+ *
+ * @param rpcs     RPC server handle
+ * @param s        listening socket descriptor
+ * @param addr     pointer to a sockaddr structure
+ * @param addrlen  pointer to size of structure pointed by @b addr. 
+ *                 On return contain the actual size of the returned
+ *                 in @b addr address 
+ * @param raddrlen real size of @b addr
+ * @param flags    RPC_SOCK_NONBCLOCK, RPC_SOCK_CLOEXEC flags can be set
+ *
+ * @return Socket for new connection or -1
+ */
+extern int rpc_accept4_gen(rcf_rpc_server *rpcs,
+                          int s, struct sockaddr *addr,
+                          socklen_t *addrlen,
+                          socklen_t raddrlen,
+                          int flags);
+
 /**
  * Extract the first connection request of the queue of pending 
  * connections, allocate a new descriptor for the connected socket
@@ -586,6 +617,38 @@ rpc_accept(rcf_rpc_server *rpcs,
                            addrlen == NULL) ? 0 : *addrlen);
 }
 
+/**
+ * This function does the same thing as rpc_gen_accept() but also take
+ * flags parameter (where SOCK_CLOEXEC and/or SOCK_NONBLOCK flags can be
+ * set).
+ *
+ * This operation takes place on RPC server side.
+ * The behavior of this routine depends on  specified RPC operation:
+ * @c RCF_RPC_CALL - return immediately without waiting for remote 
+ * procedure to complete (non-blocking call).
+ * @c RCF_RPC_WAIT - wait for non-blocking call to complete
+ * @c RCF_RPC_CALL_WAIT - wait for remote procedure to complete before 
+ *    returning (blocking call)
+ *
+ * @param rpcs     RPC server handle
+ * @param s        listening socket descriptor
+ * @param addr     pointer to a sockaddr structure
+ * @param addrlen  contain size of structure pointed by @b addr. On return 
+ *                 contain the actual size of the returned in @b addr 
+ *                 address 
+ * @param flags    RPC_SOCK_NONBLOCK and/or RPC_SOCK_CLOEXEC
+ *
+ * @return Socket for new connection or -1
+ */
+static inline int
+rpc_accept4(rcf_rpc_server *rpcs,
+           int s, struct sockaddr *addr, socklen_t *addrlen, int flags)
+{
+    return rpc_accept4_gen(rpcs, s, addr, addrlen,
+                          (addr == NULL ||
+                           addrlen == NULL) ? 0 : *addrlen,
+                           flags);
+}
 
 /** Storage sufficient for any fixed-size socket option value */
 typedef union rpc_sockopt_value {

@@ -356,6 +356,21 @@ struct tarpc_rlimit {
  * RPC arguments
  */
 
+/* rpc_find_func */
+
+struct tarpc_rpc_find_func_in {
+    struct tarpc_in_arg common;
+    
+    string func_name<>; /**< Name of function */
+};
+
+struct tarpc_rpc_find_func_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int find_result;     /**< Result returned by tarpc_find_func */
+};
+
+
 /* rpc_is_op_done() */
 
 typedef struct tarpc_void_in  tarpc_rpc_is_op_done_in;
@@ -1130,6 +1145,29 @@ struct tarpc_accept_out {
 
     struct tarpc_sa         addr;   /**< Location for peer name */
     tarpc_socklen_t         len<>;  /**< Length of the location 
+                                         for peer name */
+};
+
+/* accept4() */
+
+struct tarpc_accept4_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int           fd;     /**< TA-local socket */
+    struct tarpc_sa     addr;   /**< Location for peer name */
+    tarpc_socklen_t     len<>;  /**< Length of the location
+                                     for peer name */
+    tarpc_int           flags; /**< RPC_SOCK_NONBLOCK and/or
+                                     RPC_SOCK_CLOEXEC */
+};
+
+struct tarpc_accept4_out {
+    struct tarpc_out_arg    common;
+
+    tarpc_int               retval;
+
+    struct tarpc_sa         addr;   /**< Location for peer name */
+    tarpc_socklen_t         len<>;  /**< Length of the location
                                          for peer name */
 };
 
@@ -4304,6 +4342,7 @@ define([cnt], 1)
 define([counter], [cnt[]define([cnt],incr(cnt))])
 define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
 
+        RPC_DEF(rpc_find_func)
         RPC_DEF(rpc_is_op_done)
         RPC_DEF(setlibname)
 
@@ -4373,6 +4412,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(connect)
         RPC_DEF(listen)
         RPC_DEF(accept)
+        RPC_DEF(accept4)
 
         RPC_DEF(fd_set_new)
         RPC_DEF(fd_set_delete)

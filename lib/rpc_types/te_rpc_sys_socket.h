@@ -40,7 +40,6 @@
 #include "tarpc.h"
 #endif
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -125,6 +124,31 @@ extern int socktype_rpc2h(rpc_socket_type type);
 /** Convert native socket type to RPC socket type */
 extern rpc_socket_type socktype_h2rpc(int type);
 
+/**
+ * TA-independent flags SOCK_NONBLOCK and SOCK_CLOEXEC for
+ * socket() and accept4()
+ */
+
+typedef enum rpc_socket_flags {
+    RPC_SOCK_NONBLOCK = 0x01000000,
+    RPC_SOCK_CLOEXEC = 0x02000000,
+    RPC_SOCK_FUNKNOWN = 0x08000000
+} rpc_socket_flags;
+
+#define SOCKET_FLAGS_MAPPING_LIST \
+            RPC_BIT_MAP_ENTRY(SOCK_NONBLOCK), \
+            RPC_BIT_MAP_ENTRY(SOCK_CLOEXEC),  \
+            RPC_BIT_MAP_ENTRY(SOCK_FUNKNOWN)   
+/**
+ * socket_flags_rpc2str()
+ */
+RPCBITMAP2STR(socket_flags, SOCKET_FLAGS_MAPPING_LIST)
+
+/** Convert RPC socket flags to native socket flags */
+extern int socket_flags_rpc2h(rpc_socket_flags flags);
+
+/** Convert native socket flags to RPC socket flags */
+extern rpc_socket_flags socket_flags_h2rpc(int flags);
 
 /**
  * TA-independent constants for IP protocols.
