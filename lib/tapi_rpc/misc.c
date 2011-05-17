@@ -94,7 +94,8 @@ rpc_find_func(rcf_rpc_server *rpcs, const char * func_name)
     free(in.func_name);
     rc = out.find_result;
 
-    TAPI_RPC_LOG(rpcs, rpc_find_func, "%s", "%d", func_name, rc);
+    TAPI_RPC_LOG(rpcs, rpc_find_func, "%s", "%s", func_name,
+                 errno_rpc2str(rc));
     return rc;
 }
 
