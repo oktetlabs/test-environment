@@ -362,7 +362,7 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
         { "break-session", '\0', POPT_ARG_NONE, NULL,
           TESTER_OPT_BREAK_SESSION,
           "Skip session epilogue when session is broken "
-          "with user's Ctrl-C.", NULL },
+          "with user's Ctrl-C. Use with caution!!!", NULL },
 
         { "version", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_VERSION,
           "Display version information.", NULL },
