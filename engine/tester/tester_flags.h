@@ -93,6 +93,7 @@ enum tester_flags {
 
     TESTER_INTERACTIVE  = (1 << 29),  /**< Interactive mode */
     TESTER_SHUTDOWN     = (1 << 30),  /**< Shutdown test scenario */
+    TESTER_BREAK_SESSION = (1 << 31), /**< Break test session on Ctrl-C */
 };
 
 #ifdef __cplusplus

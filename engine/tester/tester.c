@@ -65,7 +65,6 @@ DEFINE_LGR_ENTITY("Tester");
 
 extern int test_path_lex_destroy(void);
 
-
 /** Is SIGINT signal received? */
 te_bool tester_sigint_received = FALSE;
 
@@ -213,6 +212,7 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
         TESTER_OPT_TRC_DB,
         TESTER_OPT_TRC_TAG,
         TESTER_OPT_TRC_COMPARISON,
+        TESTER_OPT_BREAK_SESSION,
     };
 
     /* Option Table */
@@ -358,6 +358,11 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
 
         { "quiet", 'q', POPT_ARG_NONE, NULL, TESTER_OPT_QUIET,
           "Decrease verbosity of the Tester.", NULL },
+
+        { "break-session", '\0', POPT_ARG_NONE, NULL,
+          TESTER_OPT_BREAK_SESSION,
+          "Skip session epilogue when session is broken "
+          "with user's Ctrl-C.", NULL },
 
         { "version", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_VERSION,
           "Display version information.", NULL },
@@ -607,7 +612,11 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
                     WARN("No TRC, related command-line options are "
                          "ignored");
                 }
-                break; 
+                break;
+
+            case TESTER_OPT_BREAK_SESSION:
+                global->flags |= TESTER_BREAK_SESSION;
+                break;
 
             case TESTER_OPT_VERSION:
                 printf("Test Environment: %s\n\n%s\n", PACKAGE_STRING,

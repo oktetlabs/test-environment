@@ -36,6 +36,7 @@
 #endif
 
 #include "tester_conf.h"
+#include "tester.h"
 
 #if 0
 #undef TE_LOG_LEVEL
@@ -246,7 +247,22 @@ walk_test_session(const tester_cfg_walk *walk, const void *opaque,
                                  session->exception);
         }
 
-        if (session->epilogue != NULL)
+        /*
+         * Global context flag TESTER_BREAK_SESION is 0 on default.
+         * This makes tester behave in usual maner: session's
+         * epilogue is always executed if exists.
+         *
+         * If TESTER_BREAK_SESSION is 1 tester executes session's
+         * epilogue if epilogue exists and session was not killed
+         * with Ctrl-C command. When session is killed with Ctrl-C
+         * epilogue is skipped too. This feature is introduced for
+         * debug purpose. Specify option --tester-break-session if
+         * you need it.
+         */
+        if (session->epilogue != NULL &&
+            (!(tester_global_context.flags & TESTER_BREAK_SESSION) ||
+              (tester_global_context.flags & TESTER_BREAK_SESSION) &&
+                                    ctl != TESTER_CFG_WALK_STOP))
         {
             ctl_tmp = walk_service(walk, opaque, id_off,
                                    session->epilogue,
