@@ -186,6 +186,7 @@ acse_http_get(struct soap *soap)
     {
         int http_status;
         char *err_descr = strerror(errno);
+        char msgbuf[512];
 
         WARN("%s(): stat|fopen (%s) failed %d (%s)",
                 __FUNCTION__, path_buf, errno, err_descr);
@@ -207,13 +208,14 @@ acse_http_get(struct soap *soap)
                     err_descr = "Internal ACSE error";
                 }
         }
+        soap->count =
+        soap->length = snprintf(msgbuf, sizeof(msgbuf),
+                                "<HTML><body>%s</body></HTML>\r\n",
+                                err_descr);
         session->state = CWMP_CLOSE;
-        soap->http_content = "text/html";
         soap->keep_alive = 0;
         soap_response(soap, http_status); 
-        soap_send(soap, "<HTML><body>");
-        soap_send(soap, err_descr);
-        soap_send(soap, "</body></HTML>");
+        soap_send(soap, msgbuf);
         soap_end_send(soap);
         soap->error = SOAP_OK;
         return SOAP_OK;
