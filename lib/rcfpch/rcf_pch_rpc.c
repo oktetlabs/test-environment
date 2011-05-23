@@ -372,7 +372,7 @@ dispatch(void *arg)
         time_t     now;
         size_t     len;
         te_errno   rc;
-        uint32_t   pass_time;
+        uint32_t   pass_time = 0;
         
         rpc_transport_read_set_init();
         
@@ -401,9 +401,9 @@ dispatch(void *arg)
             /* Report when time goes back */
             if (now - rpcs->sent < 0)
             {
-                pass_time = 0;
                 WARN("Time goes back! Send request time = %d, "
                      "'Now' time = %d", rpcs->sent, now);
+                continue;
             }
             else
                 pass_time = (uint32_t)(now - rpcs->sent);
