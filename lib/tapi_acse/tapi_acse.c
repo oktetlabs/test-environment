@@ -236,7 +236,7 @@ tapi_acse_ctx_init(const char *ta)
         char *name;
 
         if ((rc = rcf_rpc_server_get(ta, "acse_ctl", NULL,
-                                     RCF_RPC_SERVER_GET_EXISTING,
+                                     RCF_RPC_SERVER_GET_REUSE,
                                      &(ctx->rpc_srv)) ) != 0)
         {
             ERROR("Init RPC server on TA '%s' failed %r", ta, rc);
@@ -653,13 +653,14 @@ rpc_cwmp_op_check(rcf_rpc_server *rpcs,
     if (NULL != cwmp_rpc)
         *cwmp_rpc = out.cwmp_rpc;
 
-    RING("RPC (%s,%s): cwmp_op_check(%s/%s, for %s) -> %r",
+    RING("RPC (%s,%s): cwmp_op_check(%s/%s, for %s) -> %r (buf %p, %db)",
                  rpcs->ta, rpcs->name,
                  acs_name, cpe_name, 
                  request_id == 0 ? 
                      cwmp_rpc_acs_string(cwmp_rpc_acs) : 
                      cwmp_rpc_cpe_string(*cwmp_rpc),
-                 (te_errno)out.status);
+                 (te_errno)out.status,
+                 out.buf.buf_val, out.buf.buf_len);
 
     return out.status;
 }
