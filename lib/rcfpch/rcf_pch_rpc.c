@@ -262,7 +262,7 @@ delete_thread_child(rpcserver *rpcs)
  * @return Status code
  */
 static te_errno
-fork_child(rpcserver *rpcs)
+fork_child(rpcserver *rpcs, te_bool exec)
 {
     int rc;
 
@@ -276,8 +276,9 @@ fork_child(rpcserver *rpcs)
     in.common.op = RCF_RPC_CALL_WAIT;
     in.name.name_len = strlen(rpcs->name) + 1;
     in.name.name_val = rpcs->name;
-    in.inherit = TRUE;
-    in.net_init = TRUE;
+    in.flags = RCF_RPC_SERVER_GET_INHERIT | RCF_RPC_SERVER_GET_NET_INIT;
+    if (exec)
+        in.flags |= RCF_RPC_SERVER_GET_EXEC;
     
     if ((rc = call(rpcs->father, "create_process", &in, &out)) != 0)
         return rc;
@@ -712,7 +713,8 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     rpcserver  *father = NULL;
     const char *father_name = NULL;
     int         rc;
-    te_bool     existing = FALSE, local = FALSE, thread = FALSE;
+    te_bool     existing = FALSE, local = FALSE;
+    te_bool     thread = FALSE, exec = FALSE;
     
     UNUSED(gid);
     UNUSED(oid);
@@ -739,12 +741,13 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
         thread = TRUE;
     }
     else if (strcmp("fork_existing", value) == 0)
-    {
         existing = TRUE;
-    }
     else if (strcmp_start("fork_", value) == 0)
-    {
         father_name = value + strlen("fork_");
+    else if (strcmp_start("forkexec_", value) == 0)
+    {
+        father_name = value + strlen("forkexec_");
+        exec = TRUE;
     }
     else if (value[0] != '\0')
     {
@@ -830,7 +833,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
         rc = create_thread_child(rpcs);
     else
     {
-        if (rpcs->father && rpcs->father->ref != 0)
+        if (!exec && rpcs->father && rpcs->father->ref != 0)
         /* TODO  Also check if any CALL is running on father,
          * possibly by RCF_RPC_IS_DONE */
         {
@@ -838,7 +841,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
                   "Call only async-safe functions before exec!",
                   rpcs->name, rpcs->father->name);
         }
-        rc = fork_child(rpcs);
+        rc = fork_child(rpcs, exec);
     }
             
     if (rc != 0)

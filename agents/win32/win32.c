@@ -76,8 +76,7 @@ static pthread_mutex_t ta_lock = PTHREAD_MUTEX_INITIALIZER;
 
 #ifdef RCF_RPC
 extern te_errno create_process_rpc_server(const char *name, int32_t *pid, 
-                                          te_bool inherit, 
-                                          te_bool net_init);
+                                          int flags);
 extern te_errno rcf_ch_rpc_server_thread(void *ready, 
                                          int argc, char *argv[]);
 #endif
@@ -256,7 +255,7 @@ rcf_ch_start_process(int *pid,
 #ifdef RCF_RPC
     if (strcmp(rtn, "rcf_pch_rpc_server_argv") == 0)
         return create_process_rpc_server((char *)params[0], (int32_t *)pid, 
-                                         FALSE, TRUE);
+                                         RCF_RPC_SERVER_GET_NET_INIT);
 #endif        
 
     while (addr != NULL)

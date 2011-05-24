@@ -174,7 +174,6 @@ rcp_rpc_default_timeout(void)
     return timeo;
 }
 
-
 /**
  * Obtain server handle. RPC server is created/restarted, if necessary.
  *
@@ -192,8 +191,7 @@ rcp_rpc_default_timeout(void)
  * @return Status code
  */
 extern te_errno rcf_rpc_server_get(const char *ta, const char *name,
-                                   const char *father, te_bool thread, 
-                                   te_bool existing, te_bool clear, 
+                                   const char *father, int flags,
                                    rcf_rpc_server **p_new);
 
 /**
@@ -209,7 +207,7 @@ static inline te_errno
 rcf_rpc_server_create(const char *ta, const char *name, 
                       rcf_rpc_server **p_handle)
 {
-    return rcf_rpc_server_get(ta, name, NULL, FALSE, FALSE, TRUE, p_handle);
+    return rcf_rpc_server_get(ta, name, NULL, 0, p_handle);
 }                      
 
 /**
@@ -225,8 +223,10 @@ static inline te_errno
 rcf_rpc_server_create_ta_thread(const char *ta, const char *name, 
                                 rcf_rpc_server **p_handle)
 {
-    return rcf_rpc_server_get(ta, name, "local", 
-                              TRUE, FALSE, TRUE, p_handle);
+    ERROR("TA threads are very dangerous! Do not do it!  "
+          "Now, you should never fork TA.");
+    return rcf_rpc_server_get(ta, name, "local", RCF_RPC_SERVER_GET_THREAD,
+                              p_handle);
 }                      
 
 /**
@@ -246,7 +246,7 @@ rcf_rpc_server_thread_create(rcf_rpc_server *rpcs, const char *name,
         return TE_RC(TE_RCF_API, TE_EINVAL);
 
     return rcf_rpc_server_get(rpcs->ta, name, rpcs->name, 
-                              TRUE, FALSE, TRUE, p_new);
+                              RCF_RPC_SERVER_GET_THREAD, p_new);
 }                             
 
 /**
@@ -265,15 +265,28 @@ rcf_rpc_server_fork(rcf_rpc_server *rpcs, const char *name,
     if (rpcs == NULL)
         return TE_RC(TE_RCF_API, TE_EINVAL);
 
-    return rcf_rpc_server_get(rpcs->ta, name, rpcs->name, 
-                              FALSE, FALSE, TRUE, p_new);
+    return rcf_rpc_server_get(rpcs->ta, name, rpcs->name, 0, p_new);
 }          
 
-/** Parameters for process creation */
-typedef struct rcf_rpc_cp_params {
-    te_bool inherit;   /**< Inherit file handles */
-    te_bool net_init;  /**< Initialize network */
-} rcf_rpc_cp_params;    
+/**
+ * Fork-and-exec RPC server.
+ *
+ * @param rpcs          existing RPC server handle
+ * @param name          name of the new server
+ * @param p_new         location for new RPC server handle
+ *
+ * @return Status code
+ */
+static inline te_errno 
+rcf_rpc_server_fork_exec(rcf_rpc_server *rpcs, const char *name,
+                         rcf_rpc_server **p_new)
+{
+    if (rpcs == NULL)
+        return TE_RC(TE_RCF_API, TE_EINVAL);
+
+    return rcf_rpc_server_get(rpcs->ta, name, rpcs->name,
+                              RCF_RPC_SERVER_GET_EXEC, p_new);
+}          
 
 /**
  * Fork RPC server with non-default conditions.
@@ -287,7 +300,7 @@ typedef struct rcf_rpc_cp_params {
  */
 extern te_errno rcf_rpc_server_create_process(rcf_rpc_server *rpcs, 
                                               const char *name,
-                                              rcf_rpc_cp_params *params,
+                                              int flags,
                                               rcf_rpc_server **p_new);
 
 /**
@@ -327,8 +340,7 @@ rcf_rpc_server_restart(rcf_rpc_server *rpcs)
     if (rpcs == NULL)
         return TE_RC(TE_RCF_API, TE_EINVAL);
     
-    rc = rcf_rpc_server_get(rpcs->ta, rpcs->name, NULL, FALSE, FALSE,
-                            TRUE, &new_rpcs);
+    rc = rcf_rpc_server_get(rpcs->ta, rpcs->name, NULL, 0, &new_rpcs);
     if (rc == 0)
     {
         char *lib = rpcs->nv_lib;

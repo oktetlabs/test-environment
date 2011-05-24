@@ -342,8 +342,7 @@ _set_var_1_svc(tarpc_set_var_in *in, tarpc_set_var_out *out,
  * @return Status code
  */
 te_errno
-create_process_rpc_server(const char *name, int32_t *pid, te_bool inherit,
-                          te_bool net_init)
+create_process_rpc_server(const char *name, int32_t *pid, int flags)
 {
     char  cmdline[256];
     char *tmp;
@@ -390,12 +389,14 @@ create_process_rpc_server(const char *name, int32_t *pid, te_bool inherit,
     
     for (; i < (int)TE_ARRAY_LEN(postfix); i++)
     {
-        sprintf(tmp, postfix[i], name, net_init ? "net_init" : "");
+        sprintf(tmp, postfix[i], name,
+                (flags & RCF_RPC_SERVER_GET_NET_INIT) ? "net_init" : "");
         memset(&si, 0, sizeof(si));
         si.cb = sizeof(si);
         
         if (CreateProcess(NULL, cmdline, NULL, NULL, 
-                          inherit, 0, NULL, NULL,
+                          !!(flags & RCF_RPC_SERVER_GET_INHERIT),
+                          0, NULL, NULL,
                           &si, &info))
         {
             *pid = info.dwProcessId;
@@ -412,8 +413,7 @@ TARPC_FUNC(create_process, {},
 {
     MAKE_CALL(out->common._errno = 
                   create_process_rpc_server(in->name.name_val, 
-                                            &out->pid, in->inherit, 
-                                            in->net_init));
+                                            &out->pid, flags));
 }
 )
 

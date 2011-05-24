@@ -529,6 +529,39 @@ _set_var_1_svc(tarpc_set_var_in *in, tarpc_set_var_out *out,
 }
 
 /*-------------- create_process() ---------------------------------*/
+void
+ta_rpc_execve(const char *name)
+{
+    const char   *argv[5];
+    api_func_ptr  func;
+
+    int rc;
+
+    memset(argv, 0, sizeof(argv));
+    argv[0] = ta_execname;
+    argv[1] = "exec";
+    argv[2] = "rcf_pch_rpc_server_argv";
+    argv[3] = name;
+
+    VERB("execve() args: %s, %s, %s, %s",
+         argv[0], argv[1], argv[2], argv[3]);
+    /* Call execve() */
+    rc = tarpc_find_func(FALSE, "execve", (api_func *)&func);
+    if (rc != 0)
+    {
+        rc = errno;
+        PRINT("No execve function: errno=%d", rc);
+        exit(1);
+    }
+    rc = func((void *)ta_execname, argv, environ);
+    if (rc != 0)
+    {
+        rc = errno;
+        PRINT("execve() failed: errno=%d", rc);
+    }
+
+}
+
 bool_t
 _create_process_1_svc(tarpc_create_process_in *in,
                       tarpc_create_process_out *out,
@@ -546,6 +579,8 @@ _create_process_1_svc(tarpc_create_process_in *in,
     }
     if (out->pid == 0)
     {
+        if (in->flags & RCF_RPC_SERVER_GET_EXEC)
+            ta_rpc_execve(in->name.name_val);
         rcf_pch_detach();
         rcf_pch_rpc_server(in->name.name_val);
         exit(EXIT_FAILURE);
@@ -623,28 +658,10 @@ _sigreceived_1_svc(tarpc_sigreceived_in *in, tarpc_sigreceived_out *out,
 /*-------------- execve() ---------------------------------*/
 TARPC_FUNC(execve, {},
 {
-    const char *argv[5];
-
-    int rc;
-
-    memset(argv, 0, sizeof(argv));
-    argv[0] = ta_execname;
-    argv[1] = "exec";
-    argv[2] = "rcf_pch_rpc_server_argv";
-    argv[3] = in->name;
-
     /* Wait until main thread sends answer to non-blocking RPC call */
     sleep(1);
 
-    VERB("execve() args: %s, %s, %s, %s",
-         argv[0], argv[1], argv[2], argv[3]);
-    /* Call execve() */
-    MAKE_CALL(rc = func_ptr((void *)ta_execname, argv, environ));
-    if (rc != 0)
-    {
-        rc = errno;
-        PRINT("execve() failed: errno=%d", rc);
-    }
+    MAKE_CALL(ta_rpc_execve(in->name));
 }
 )
 

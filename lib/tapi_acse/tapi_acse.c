@@ -235,8 +235,9 @@ tapi_acse_ctx_init(const char *ta)
         cfg_handle *handles = NULL;
         char *name;
 
-        if ((rc = rcf_rpc_server_get(ta, "acse_ctl", NULL, FALSE, TRUE,
-                                     FALSE, &(ctx->rpc_srv)) ) != 0)
+        if ((rc = rcf_rpc_server_get(ta, "acse_ctl", NULL,
+                                     RCF_RPC_SERVER_GET_EXISTING,
+                                     &(ctx->rpc_srv)) ) != 0)
         {
             ERROR("Init RPC server on TA '%s' failed %r", ta, rc);
             break;

@@ -1574,8 +1574,8 @@ prepare_pcos(tapi_env_hosts *hosts)
             {
                 if (main_thread)
                 {
-                    if (rcf_rpc_server_get(host->ta, pco->name,
-                                           NULL, FALSE, TRUE, FALSE, 
+                    if (rcf_rpc_server_get(host->ta, pco->name, NULL,
+                                           RCF_RPC_SERVER_GET_EXISTING,
                                            &(pco->rpcs)) != 0)
                     {
                         rc = rcf_rpc_server_create(host->ta, pco->name,

@@ -53,4 +53,23 @@ typedef enum {
 #define RPC_IS_ERRNO_RPC(_errno) \
     (((_errno) == 0) || (TE_RC_GET_MODULE(_errno) == TE_RPC))
 
+
+
+/** Flags for get/create RPC server */
+
+/** Create a subthread of the existing RPC server */
+#define RCF_RPC_SERVER_GET_THREAD   0x01
+/** get only existing RPC server */
+#define RCF_RPC_SERVER_GET_EXISTING 0x02
+/** reuse existing RPC server if possible without restart */
+#define RCF_RPC_SERVER_GET_REUSE    0x04
+
+/** Next flags may be passed to RPC create_process */
+/** exec after fork */
+#define RCF_RPC_SERVER_GET_EXEC     0x08
+/** Windows-specific: inherit file handles */
+#define RCF_RPC_SERVER_GET_INHERIT  0x10
+/** Windows-specific: initialize network */
+#define RCF_RPC_SERVER_GET_NET_INIT 0x20
+
 #endif /* !__TE_RCF_RPC_DEFS_H__ */

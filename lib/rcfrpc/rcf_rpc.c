@@ -110,20 +110,17 @@ rpc_server_sem_init(rcf_rpc_server *rpcs)
  * @param ta            a test agent
  * @param name          name of the new server (should not start from
  *                      fork_ or thread_)
- * @param father        father name or NULL (should be NULL if clear is 
- *                      FALSE or existing is TRUE)
- * @param thread        if TRUE, the thread should be created instead 
- *                      process
- * @param existing      get only existing RPC server
- * @param clear         get newly created or restarted RPC server
+ * @param father        father name or NULL (should be NULL if
+ *                      RCF_RPC_SERVER_GET_REUSE or
+ *                      RCF_RPC_SERVER_GET_EXISTING is set)
+ * @param flags         RCF_RPC_SERVER_GET_* flags
  * @param p_handle      location for new RPC server handle
  *
  * @return Status code
  */
 te_errno 
 rcf_rpc_server_get(const char *ta, const char *name,
-                   const char *father, te_bool thread, 
-                   te_bool existing, te_bool clear, 
+                   const char *father, int flags,
                    rcf_rpc_server **p_handle)
 {
     int   sid;
@@ -139,8 +136,9 @@ rcf_rpc_server_get(const char *ta, const char *name,
         strlen(name) >= RCF_RPC_NAME_LEN - strlen("thread_") ||
         strcmp_start("thread_", name) == 0 ||
         strcmp_start("fork_", name) == 0 ||
-        ((existing || !clear) && father != NULL) || 
-        (thread && father == NULL))
+        (((flags & RCF_RPC_SERVER_GET_EXISTING) ||
+          (flags & RCF_RPC_SERVER_GET_REUSE)) && father != NULL) || 
+        ((flags & RCF_RPC_SERVER_GET_THREAD) && father == NULL))
     {
         return TE_RC(TE_RCF_API, TE_EINVAL);
     }
@@ -149,7 +147,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
     rc = cfg_get_instance_fmt(NULL, NULL, "/agent:%s/rpcserver:%s",
                               ta, name);
  
-    if (rc != 0 && existing)
+    if (rc != 0 && (flags & RCF_RPC_SERVER_GET_EXISTING))
         return TE_RC(TE_RCF_API, TE_ENOENT);
     
     if (cfg_get_instance_fmt(NULL, &sid, 
@@ -184,8 +182,10 @@ rcf_rpc_server_get(const char *ta, const char *name,
     
     if (father == NULL)
         *val = 0;
-    else if (thread)
+    else if ((flags & RCF_RPC_SERVER_GET_THREAD))
         sprintf(val, "thread_%s", father);
+    else if ((flags & RCF_RPC_SERVER_GET_EXEC))
+        sprintf(val, "forkexec_%s", father);
     else
         sprintf(val, "fork_%s", father);
 
@@ -209,7 +209,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
         return TE_RC(TE_RCF_API, rc);   \
     } while (0)
         
-    if (rc == 0 && !clear)
+    if (rc == 0 && (flags & RCF_RPC_SERVER_GET_REUSE))
     {
 #ifdef RCF_RPC_CHECK_USABILITY    
         /* Check that it is not dead */
@@ -225,7 +225,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
         if ((rc = rcf_ta_call_rpc(ta, sid, name, 1000, "getpid", 
                                   &in, &out)) != 0)
         {
-            if (existing)
+            if ((flags & RCF_RPC_SERVER_GET_EXISTING))
             {
                 if (TE_RC_GET_ERROR(rc) != TE_EBUSY)
                     RETERR(rc, "RPC server %s is dead and cannot be used",
@@ -233,14 +233,14 @@ rcf_rpc_server_get(const char *ta, const char *name,
             }
             else
             {
-                clear = TRUE;
+                flags &= ~RCF_RPC_SERVER_GET_REUSE;
                 WARN("RPC server %s is not usable and "
                      "will be restarted", name);
             }
         }
 #endif        
     }
-    else if (rc == 0 && clear)
+    else if (rc == 0 && !(flags & RCF_RPC_SERVER_GET_REUSE))
     {
         /* Restart it */
         if ((rc = cfg_del_instance_fmt(FALSE, "/agent:%s/rpcserver:%s", 
@@ -317,7 +317,7 @@ rcf_rpc_servers_restart_all(void)
 
         rc = rcf_rpc_server_get(CFG_OID_GET_INST_NAME(oid, 1),
                                 CFG_OID_GET_INST_NAME(oid, 2),
-                                NULL, FALSE, TRUE, TRUE, NULL);
+                                NULL, RCF_RPC_SERVER_GET_EXISTING, NULL);
         if (rc != 0)
         {
             ERROR("%s(): rcf_rpc_server_get() failed for #%u: %r",
@@ -805,8 +805,7 @@ rcf_rpc_server_has_children(rcf_rpc_server *rpcs)
  */
 te_errno 
 rcf_rpc_server_create_process(rcf_rpc_server *rpcs, 
-                              const char *name,
-                              rcf_rpc_cp_params *params,
+                              const char *name, int flags,
                               rcf_rpc_server **p_new)
 {
     tarpc_create_process_in  in;
@@ -823,8 +822,7 @@ rcf_rpc_server_create_process(rcf_rpc_server *rpcs,
     in.common.use_libc = FALSE;
     in.name.name_len = strlen(name) + 1;
     in.name.name_val = strdup(name);
-    in.inherit = params->inherit;
-    in.net_init = params->net_init;
+    in.flags = flags;
     
     if ((rc = rcf_ta_call_rpc(rpcs->ta, rpcs->sid, rpcs->name,
                               1000, "create_process", &in, &out)) != 0)
@@ -842,8 +840,7 @@ rcf_rpc_server_create_process(rcf_rpc_server *rpcs,
                    out.common._errno : TE_RC(TE_RCF_API, TE_ECORRUPTED);
     }
     
-    rc = rcf_rpc_server_get(rpcs->ta, name, "existing", 
-                            FALSE, FALSE, TRUE, p_new);
+    rc = rcf_rpc_server_get(rpcs->ta, name, "existing", 0, p_new);
     
     if (rc != 0)
     {
