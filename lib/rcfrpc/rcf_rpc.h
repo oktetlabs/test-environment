@@ -473,8 +473,9 @@ extern te_bool rcf_rpc_server_has_children(rcf_rpc_server *rpcs);
         te_errno    rc = 0;                                            \
         int         is_dead = 0;                                       \
                                                                        \
-        if ((rc = rcf_rpc_server_get(_ta, _name, NULL, FALSE,          \
-                                     TRUE, FALSE, &(_rpcs))) != 0)     \
+        if ((rc = rcf_rpc_server_get(_ta, _name, NULL,                 \
+                                     RCF_RPC_SERVER_GET_EXISTING,      \
+                                     &(_rpcs))) != 0)                  \
             TEST_FAIL("Failed to get RPC server handle: %r", rc);      \
                                                                        \
         /* Restart RPC server if it is dead */                         \
