@@ -348,7 +348,6 @@ socktype_rpc2str(rpc_socket_type type)
     static char (*cur_buf)[BUF_SIZE] = (char (*)[BUF_SIZE])buf[0];
 
     char *ptr;
-    int   i;
 
     /*
      * First time the function is called we start from the second buffer,
