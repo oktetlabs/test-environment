@@ -53,6 +53,19 @@ extern te_errno tapi_allocate_port(struct rcf_rpc_server *pco,
                                    uint16_t *p_port);
 
 /**
+ * Retrieve range of ports unused in system, in host order.
+ *
+ * @param pco       RPC server to check that port is free
+ * @param p_port    Location for allocated ports, pointer to array,
+ *                  should have enough place for @p items. 
+ * @param num       Number of ports requests, i.e. length of range.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_allocate_port_range(struct rcf_rpc_server *pco,
+                                         uint16_t *p_port, int num);
+
+/**
  * Retrieve unused in system port in network order.
  *
  * @param pco       RPC server to check that port is free
