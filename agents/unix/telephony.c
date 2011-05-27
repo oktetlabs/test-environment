@@ -220,7 +220,6 @@ telephony_check_dial_tone(int chan, int plan)
     short   buf[BLOCKSIZE];
     int     len;
     int     i;
-    int     result = 1;
     float   pows[sizeof(freqs) / sizeof(double)];
 
     for (i = 0; i < GET_PHONE / (BLOCKSIZE * 2); i++)

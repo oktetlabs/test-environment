@@ -111,7 +111,6 @@ int
 log_remote(void *ready, int argc, char *argv[])
 {
     char               user[64];
-    char               tmp[RCF_MAX_PATH + 16];
     int                s;
     in_addr_t          addr = 0; /* any address */
     struct sockaddr_in saddr;
@@ -243,7 +242,7 @@ log_remote(void *ready, int argc, char *argv[])
     sem_post(ready);
     
     pthread_cleanup_push((void (*) (void *))close,
-                         (void *)s);
+                         (void *)(uintptr_t)s);
     pthread_cleanup_push(free, buffer);
     
     for (;;)
