@@ -228,6 +228,163 @@ tapi_tcp_ip4_csap_create(const char *ta_name, int sid,
     return TE_RC(TE_TAPI, rc);
 }
 
+/**
+ * data for tcp callback 
+ */
+typedef struct {
+    tcp4_message   *msg;
+    void           *user_data;
+    tcp4_callback   callback;
+} tcp4_cb_data_t;
+
+
+/**
+ * Read field from packet.
+ *
+ * @param _dir    direction of field: src or dst
+ * @param _field  label of desired field: port or addr
+ */
+#define READ_PACKET_FIELD(_dir, _field) \
+    do {                                                        \
+        len = sizeof((*tcp_msg)-> _dir ## _ ##_field ); \
+        if (rc == 0)                                            \
+            rc = asn_read_value_field(pdu,                      \
+                        &((*tcp_msg)-> _dir ##_## _field ), \
+                        &len, # _dir "-" # _field);   \
+    } while (0)
+
+
+/**
+ * Convert TCP packet ASN value to plain C structure
+ *
+ * @param pkt           ASN value of type DHCPv4 message or Generic-PDU with
+ *                      choice "dhcp"
+ * @param udp_dgram     converted structure (OUT)
+ *
+ * @return zero on success or error code
+ *
+ * @note Function allocates memory under dhcp_message data structure, which
+ * should be freed with dhcpv4_message_destroy
+ */
+int
+ndn_tcp4_message_to_plain(asn_value *pkt, tcp4_message **tcp_msg)
+{
+    int         rc = 0;
+    int32_t     hdr_field;
+    size_t      len;
+    asn_value  *pdu;
+
+    *tcp_msg = (struct tcp4_message *)malloc(sizeof(**tcp_msg));
+    if (*tcp_msg == NULL)
+        return TE_ENOMEM;
+
+    memset(*tcp_msg, 0, sizeof(**tcp_msg));
+
+    asn_save_to_file(pkt, "/tmp/asn_file.asn");
+
+//    if ((rc = ndn_get_timestamp(pkt, &((*tcp_msg)->ts))) != 0)
+//    {
+//        free(*udp_dgram);
+//        return TE_RC(TE_TAPI, rc);
+//    }
+
+    pdu = asn_read_indexed(pkt, 0, "pdus"); /* this should be UDP PDU */
+
+    if (pdu == NULL)
+        rc = TE_EASNINCOMPLVAL;
+
+    READ_PACKET_FIELD(src, port);
+    READ_PACKET_FIELD(dst, port);
+
+#define CHECK_FAIL(msg_...) \
+    do {                        \
+        if (rc != 0)            \
+        {                       \
+            ERROR(msg_);        \
+            return -1;          \
+        }                       \
+    } while (0)
+
+    rc = ndn_du_read_plain_int(pdu, NDN_TAG_TCP_FLAGS, &hdr_field);
+    CHECK_FAIL("%s(): get UDP checksum fails, rc = %r",
+               __FUNCTION__, rc);
+    (*tcp_msg)->flags = hdr_field;
+
+    pdu = asn_read_indexed(pkt, 1, "pdus"); /* this should be Ip4 PDU */
+    if (pdu == NULL)
+        rc = TE_EASNINCOMPLVAL;
+
+    READ_PACKET_FIELD(src, addr);
+    READ_PACKET_FIELD(dst, addr);
+
+    if (rc)
+    {
+        free(*tcp_msg);
+        return TE_RC(TE_TAPI, rc);
+    }
+
+    len = asn_get_length(pkt, "payload");
+    if (len <= 0)
+        return 0;
+
+    (*tcp_msg)->payload_len = len;
+    (*tcp_msg)->payload = malloc(len);
+
+    rc = asn_read_value_field(pkt, (*tcp_msg)->payload, &len, "payload");
+
+    return TE_RC(TE_TAPI, rc);
+}
+
+#undef READ_PACKET_FIELD
+
+static void
+tcp4_asn_pkt_handler(asn_value *pkt, void *user_param)
+{
+    tcp4_cb_data_t *cb_data = (tcp4_cb_data_t *)user_param;
+    te_errno        rc;
+
+    rc = ndn_tcp4_message_to_plain(pkt, &cb_data->msg);
+    if (rc != 0)
+    {
+        fprintf(stderr, "ndn_tcp4_message_to_plain fails, rc = %x\n", rc);
+        return;
+    }
+    if (cb_data->callback != NULL)
+    {
+        cb_data->callback(cb_data->msg, cb_data->user_data);
+        if (cb_data->msg->payload)
+            free(cb_data->msg->payload);
+        free(cb_data->msg);
+        cb_data->msg = NULL;
+    }
+    asn_free_value(pkt);
+}
+
+/* See description in tapi_udp.h */
+tapi_tad_trrecv_cb_data *
+tapi_tcp_ip4_eth_trrecv_cb_data(tcp4_callback callback, void *user_data)
+{
+    tcp4_cb_data_t             *cb_data;
+    tapi_tad_trrecv_cb_data    *res;
+
+    cb_data = (tcp4_cb_data_t *)calloc(1, sizeof(*cb_data));
+    if (cb_data == NULL)
+    {
+        ERROR("%s(): failed to allocate memory", __FUNCTION__);
+        return NULL;
+    }
+    cb_data->callback = callback;
+    cb_data->user_data = user_data;
+
+    res = tapi_tad_trrecv_make_cb_data(tcp4_asn_pkt_handler, cb_data);
+    if (res == NULL)
+        free(cb_data);
+
+    return res;
+}
+
+
+
 /* See description in tapi_tcp.h */
 te_errno
 tapi_tcp_ip4_pattern_unit(in_addr_t src_addr, in_addr_t dst_addr,

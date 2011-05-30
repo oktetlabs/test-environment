@@ -133,7 +133,7 @@ extern te_errno tapi_tcp_ip4_csap_create(const char    *ta_name,
 
 /**
  * Start receiving of IPv4 packets 'tcp.ip4.eth' CSAP, non-block
- * method. It cannot report received packets, only count them.
+ * method.
  *
  * Started receiving process may be controlled by rcf_ta_trrecv_get, 
  * rcf_ta_trrecv_wait, and rcf_ta_trrecv_stop methods.
@@ -188,23 +188,60 @@ extern te_errno tapi_tcp_ip4_pattern_unit(in_addr_t   src_addr,
 
 
 typedef struct tcp_message_t {
-    struct sockaddr_storage source_sa;
-    struct sockaddr_storage dest_sa;
+    struct      sockaddr_storage source_sa;
+    struct      sockaddr_storage dest_sa;
 
-    uint8_t *payload;
-    size_t pld_len;
+    uint8_t    *payload;
+    size_t      pld_len;
 } tcp_message_t;
 
-/** 
- * Callback type for receiving data in TCP connection.
+typedef struct tcp4_message {
+    struct in_addr  src_addr;    /**< source address */
+    struct in_addr  dst_addr;    /**< destination address */
+    uint16_t        src_port;    /**< source port in host byte order */
+    uint16_t        dst_port;    /**< destination port in host byte order */
+    uint8_t         flags;       /**< TCP checksum */
+    uint16_t        payload_len; /**< payload length */
+    uint8_t        *payload;     /**< TCP payload */
+} tcp4_message;
+
+/**
+ * Callback types for receiving data in TCP connection.
  *
  * @param pkt           Received TCP datagram. After return from this
  *                      callback memory block under this datagram will
- *                      be freed. 
+ *                      be freed.
  * @param userdata      Parameter, provided by the caller.
  */
 typedef void (*tcp_callback)(const tcp_message_t *pkt, void *userdata);
+typedef void (*tcp4_callback)(const tcp4_message *pkt, void *userdata);
 
+/**
+ * Convert TCP.IPv4 datagram ASN.1 value to plain C structure.
+ *
+ * @param pkt           ASN.1 value of type Raw-Packet.
+ * @param tcp_message   converted structure (OUT).
+ *
+ * @return zero on success or error code.
+ *
+ * @note Function allocates memory under dhcp_message data structure, which
+ * should be freed with dhcpv4_message_destroy
+ */
+extern int ndn_tcp4_message_to_plain(asn_value *pkt,
+                                     struct tcp4_message **tcp_msg);
+
+/**
+ * Prepare callback data to be passed in tapi_tad_trrecv_{wait,stop,get}
+ * to process received TCP packet.
+ *
+ * @param callback        Callback for TCP packets handling
+ * @param user_data       User-supplied data to be passed to @a callback
+ *
+ * @return Pointer to allocated callback data or NULL.
+ */
+extern tapi_tad_trrecv_cb_data *tapi_tcp_ip4_eth_trrecv_cb_data(
+                                    tcp4_callback  callback,
+                                    void          *user_data);
 
 
 /**

@@ -272,6 +272,7 @@ int
 ndn_udp4_dgram_to_plain(asn_value *pkt, udp4_datagram **udp_dgram)
 {
     int         rc = 0;
+    int32_t     hdr_field;
     size_t      len;
     asn_value  *pdu;
 
@@ -296,6 +297,20 @@ ndn_udp4_dgram_to_plain(asn_value *pkt, udp4_datagram **udp_dgram)
 
     READ_PACKET_FIELD(src, port);
     READ_PACKET_FIELD(dst, port);
+
+#define CHECK_FAIL(msg_...) \
+    do {                        \
+        if (rc != 0)            \
+        {                       \
+            ERROR(msg_);        \
+            return -1;          \
+        }                       \
+    } while (0)
+
+    rc = ndn_du_read_plain_int(pdu, NDN_TAG_UDP_CHECKSUM, &hdr_field);
+    CHECK_FAIL("%s(): get UDP checksum fails, rc = %r",
+               __FUNCTION__, rc);
+    (*udp_dgram)->checksum = hdr_field;
 
     pdu = asn_read_indexed(pkt, 1, "pdus"); /* this should be Ip4 PDU */
     if (pdu == NULL)

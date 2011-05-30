@@ -143,6 +143,7 @@ typedef struct udp4_datagram {
     struct in_addr  dst_addr;    /**< destination address */
     uint16_t        src_port;    /**< source port in host byte order */
     uint16_t        dst_port;    /**< destination port in host byte order */
+    uint16_t        checksum;    /**< UDP checksum */
     uint16_t        payload_len; /**< payload length */
     uint8_t        *payload;     /**< UDP payload */
 } udp4_datagram;
