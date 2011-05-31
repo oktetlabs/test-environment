@@ -58,9 +58,9 @@ extern "C" {
  *
  * @return Status code
  */
-extern te_errno
-tapi_cfg_phy_autoneg_oper_get(const char *ta, const char *if_name,
-                              int *state);
+extern te_errno tapi_cfg_phy_autoneg_oper_get(const char *ta,
+                                              const char *if_name,
+                                              int *state);
 /**
  * Get PHY autonegotiation admin state.
  *
@@ -75,9 +75,9 @@ tapi_cfg_phy_autoneg_oper_get(const char *ta, const char *if_name,
  *
  * @return Status code
  */
-extern te_errno
-tapi_cfg_phy_autoneg_admin_get(const char *ta, const char *if_name,
-                               int *state);
+extern te_errno tapi_cfg_phy_autoneg_admin_get(const char *ta,
+                                               const char *if_name,
+                                               int *state);
 
 /**
  * Set PHY autonegotiation state.
@@ -90,9 +90,9 @@ tapi_cfg_phy_autoneg_admin_get(const char *ta, const char *if_name,
  *
  * @return Status code
  */
-extern te_errno
-tapi_cfg_phy_autoneg_admin_set(const char *ta, const char *if_name,
-                               int state);
+extern te_errno tapi_cfg_phy_autoneg_admin_set(const char *ta,
+                                               const char *if_name,
+                                               int state);
 
 /**
  * Get PHY duplex oper state.
@@ -108,9 +108,9 @@ tapi_cfg_phy_autoneg_admin_set(const char *ta, const char *if_name,
  *
  * @return Status code
  */
-extern te_errno
-tapi_cfg_phy_duplex_oper_get(const char *ta, const char *if_name,
-                             int *state);
+extern te_errno tapi_cfg_phy_duplex_oper_get(const char *ta,
+                                             const char *if_name,
+                                             int *state);
 
 /**
  * Get PHY duplex admin state.
@@ -126,9 +126,9 @@ tapi_cfg_phy_duplex_oper_get(const char *ta, const char *if_name,
  *
  * @return Status code
  */
-extern te_errno
-tapi_cfg_phy_duplex_admin_get(const char *ta, const char *if_name,
-                              int *state);
+extern te_errno tapi_cfg_phy_duplex_admin_get(const char *ta,
+                                              const char *if_name,
+                                              int *state);
 
 /**
  * Set PHY duplex state.
@@ -141,9 +141,9 @@ tapi_cfg_phy_duplex_admin_get(const char *ta, const char *if_name,
  *
  * @return Status code
  */
-extern te_errno
-tapi_cfg_phy_duplex_admin_set(const char *ta, const char *if_name,
-                              int state);
+extern te_errno tapi_cfg_phy_duplex_admin_set(const char *ta,
+                                              const char *if_name,
+                                              int state);
 
 /**
  * Get PHY speed oper value.
@@ -158,9 +158,9 @@ tapi_cfg_phy_duplex_admin_set(const char *ta, const char *if_name,
  *
  * @return Status code
  */
-extern te_errno
-tapi_cfg_phy_speed_oper_get(const char *ta, const char *if_name,
-                            int *speed);
+extern te_errno tapi_cfg_phy_speed_oper_get(const char *ta,
+                                            const char *if_name,
+                                            int *speed);
 /**
  * Get PHY speed admin value.
  *
@@ -174,9 +174,9 @@ tapi_cfg_phy_speed_oper_get(const char *ta, const char *if_name,
  *
  * @return Status code
  */
-extern te_errno
-tapi_cfg_phy_speed_admin_get(const char *ta, const char *if_name,
-                            int *speed);
+extern te_errno tapi_cfg_phy_speed_admin_get(const char *ta,
+                                             const char *if_name,
+                                             int *speed);
 
 /**
  * Set PHY speed.
@@ -191,9 +191,9 @@ tapi_cfg_phy_speed_admin_get(const char *ta, const char *if_name,
  *
  * @return Status code
  */
-extern te_errno
-tapi_cfg_phy_speed_admin_set(const char *ta, const char *if_name,
-                             int speed);
+extern te_errno tapi_cfg_phy_speed_admin_set(const char *ta,
+                                             const char *if_name,
+                                             int speed);
 
 /**
  * Get PHY interface mode: speed and duplex oper state.
@@ -211,9 +211,9 @@ tapi_cfg_phy_speed_admin_set(const char *ta, const char *if_name,
  *
  * @return Status code
  */
-extern te_errno
-tapi_cfg_phy_mode_oper_get(const char *ta, const char *if_name,
-                            int *speed, int *duplex);
+extern te_errno tapi_cfg_phy_mode_oper_get(const char *ta,
+                                           const char *if_name,
+                                           int *speed, int *duplex);
 /**
  * Get PHY interface mode: speed and duplex admin state.
  *
@@ -230,9 +230,9 @@ tapi_cfg_phy_mode_oper_get(const char *ta, const char *if_name,
  *
  * @return Status code
  */
-extern te_errno
-tapi_cfg_phy_mode_admin_get(const char *ta, const char *if_name,
-                            int *speed, int *duplex);
+extern te_errno tapi_cfg_phy_mode_admin_get(const char *ta,
+                                            const char *if_name,
+                                            int *speed, int *duplex);
 
 /**
  * Set PHY interface mode: speed and duplex state.
@@ -250,9 +250,9 @@ tapi_cfg_phy_mode_admin_get(const char *ta, const char *if_name,
  *
  * @return Status code
  */
-extern te_errno
-tapi_cfg_phy_mode_admin_set(const char *ta, const char *if_name,
-                            int speed, int duplex);
+extern te_errno tapi_cfg_phy_mode_admin_set(const char *ta,
+                                            const char *if_name,
+                                            int speed, int duplex);
 
 /**
  * Get PHY link state.
@@ -268,9 +268,8 @@ tapi_cfg_phy_mode_admin_set(const char *ta, const char *if_name,
  *
  * @return Status code
  */
-extern te_errno
-tapi_cfg_phy_state_get(const char *ta, const char *if_name,
-                       int *state);
+extern te_errno tapi_cfg_phy_state_get(const char *ta, const char *if_name,
+                                       int *state);
 
 /**
  * Check that PHY mode is advertised.
@@ -287,9 +286,10 @@ tapi_cfg_phy_state_get(const char *ta, const char *if_name,
  *
  * @return Status code
  */
-extern te_errno
-tapi_cfg_phy_is_mode_advertised(const char *ta, const char *if_name,
-                                int speed, int duplex, te_bool *state);
+extern te_errno tapi_cfg_phy_is_mode_advertised(const char *ta,
+                                                const char *if_name,
+                                                int speed, int duplex,
+                                                te_bool *state);
 
 /**
  * Set PHY mode to advertising state.
@@ -306,9 +306,10 @@ tapi_cfg_phy_is_mode_advertised(const char *ta, const char *if_name,
  *
  * @return Status code
  */
-extern te_errno
-tapi_cfg_phy_advertise_mode(const char *ta, const char *if_name,
-                            int speed, int duplex, te_bool state);
+extern te_errno tapi_cfg_phy_advertise_mode(const char *ta,
+                                            const char *if_name,
+                                            int speed, int duplex,
+                                            te_bool state);
 
 /**
  * Commit PHY interface changes to TAs.
@@ -318,8 +319,7 @@ tapi_cfg_phy_advertise_mode(const char *ta, const char *if_name,
  *
  * @return Status code
  */
-extern te_errno
-tapi_cfg_phy_commit(const char *ta, const char *if_name);
+extern te_errno tapi_cfg_phy_commit(const char *ta, const char *if_name);
 
 /**
  * Get PHY duplex state by name string.
@@ -330,8 +330,7 @@ tapi_cfg_phy_commit(const char *ta, const char *if_name);
  *         TE_PHY_DUPLEX_FULL - full duplex;
  *         or -1 if name string does not recognized
  */
-extern int
-tapi_cfg_phy_duplex_str2id(char *name);
+extern int tapi_cfg_phy_duplex_str2id(char *name);
 
 /**
  * Get PHY duplex state by id.
@@ -342,8 +341,7 @@ tapi_cfg_phy_duplex_str2id(char *name);
  *         full - full duplex;
  *         or NULL if id does not recognized
  */
-extern char *
-tapi_cfg_phy_duplex_id2str(int duplex);
+extern char *tapi_cfg_phy_duplex_id2str(int duplex);
 
 /**
  * Turn off all advertised modes and advertise only one.
@@ -355,9 +353,10 @@ tapi_cfg_phy_duplex_id2str(int duplex);
  *
  * @return Operation status code.
  */
-extern te_errno
-tapi_cfg_phy_advertise_one(const char *ta, const char *if_name,
-                           int advert_speed, int advert_duplex);
+extern te_errno tapi_cfg_phy_advertise_one(const char *ta,
+                                           const char *if_name,
+                                           int advert_speed,
+                                           int advert_duplex);
 
 #ifdef __cplusplus
 } /* extern "C" */
