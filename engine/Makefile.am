@@ -25,7 +25,7 @@
 #
 # Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 
-AM_MAKEFLAGS="prefix=$(prefix)/$(TE_HOST)"
+AM_MAKEFLAGS=-j8 prefix=$(prefix)/$(TE_HOST)
 
 SUBDIRS=@APP_SUBDIRS@
 
