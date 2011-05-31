@@ -57,8 +57,7 @@ rgt-filter-xml2tcl.h: tmpls/Makefile
 	    for i in `ls $(srcdir)/tmpls/*.tmpl`; do \
 	        basename $${i} | sed 's,\.tmpl,,' | \
 	            tr [:lower:] [:upper:] | \
-	            awk '{ printf "%s", $$1 }' >> $${util}.h; \
-	        echo "," >> $${util}.h; \
+	            awk '{ printf "%s,\n", $$1 }' >> $${util}.h; \
 	    done; \
 	    echo -E "};" >> $${util}.h; \
 	    echo -E "const char *xml2fmt_files[] = {" >> $${util}.h; \
