@@ -1629,19 +1629,19 @@ static te_errno
 phy_commit(unsigned int gid, const cfg_oid *p_oid)
 {
     UNUSED(gid);
-    
+
 #if defined (__linux__) && HAVE_LINUX_ETHTOOL_H
     char                   *ifname;
     struct phy_iflist_head *list_item;
     struct ethtool_cmd      ecmd;
     int                     rc = -1;
     te_bool                 advertise = FALSE;
-    
+
     VERB("commit changes");
-    
+
     /* Extract interface name */
     ifname = CFG_OID_GET_INST_NAME(p_oid, 2);
-    
+
     /* Try to get a pointer to list item associated with
      * current interface name */
     list_item = phy_iflist_find(&phy_iflist, ifname);
@@ -1651,16 +1651,16 @@ phy_commit(unsigned int gid, const cfg_oid *p_oid)
               ifname);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
-    
+
     memset(&ecmd, 0, sizeof(ecmd));
-    
+
     if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
     {
         ERROR("failed to get PHY properties while setting "
               "interface parameters");
         return TE_OS_RC(TE_TA_UNIX, rc);
     }
-    
+
     /* Merge current and new link parameters */
     list_item->ecmd.supported = ecmd.supported;
     list_item->ecmd.port = ecmd.port;
@@ -1668,11 +1668,11 @@ phy_commit(unsigned int gid, const cfg_oid *p_oid)
     list_item->ecmd.transceiver = ecmd.transceiver;
     list_item->ecmd.maxtxpkt = ecmd.maxtxpkt;
     list_item->ecmd.maxrxpkt = ecmd.maxrxpkt;
-    
+
     /* Check the cache */
     if (!list_item->adver_cached)
         list_item->ecmd.advertising = ecmd.advertising;
-    
+
     /* Speed and duplex must be unchanged if we are going to enable
      * autonegotiation. Also in case L5 NIC if speed and duplex values
      * are zeroed, then driver will try to change speed and duplex to 0,
@@ -1682,8 +1682,29 @@ phy_commit(unsigned int gid, const cfg_oid *p_oid)
     {
         list_item->ecmd.speed = ecmd.speed;
         list_item->ecmd.duplex = ecmd.duplex;
+
+        if ((list_item->ecmd.advertising &
+            (ADVERTISED_10baseT_Half |
+             ADVERTISED_10baseT_Full |
+             ADVERTISED_100baseT_Half |
+             ADVERTISED_100baseT_Full |
+             ADVERTISED_1000baseT_Half |
+             ADVERTISED_1000baseT_Full |
+             ADVERTISED_2500baseX_Full |
+             ADVERTISED_10000baseT_Full)) == 0)
+        {
+            list_item->ecmd.advertising = ecmd.supported &
+                (ADVERTISED_10baseT_Half |
+                 ADVERTISED_10baseT_Full |
+                 ADVERTISED_100baseT_Half |
+                 ADVERTISED_100baseT_Full |
+                 ADVERTISED_1000baseT_Half |
+                 ADVERTISED_1000baseT_Full |
+                 ADVERTISED_2500baseX_Full |
+                 ADVERTISED_10000baseT_Full);
+        }
     }
-    
+
     VERB("Properties to set:  %d %d %d %d %d %d %d %d %d %d %s",
          list_item->ecmd.supported,
          list_item->ecmd.advertising,
@@ -1696,7 +1717,7 @@ phy_commit(unsigned int gid, const cfg_oid *p_oid)
          list_item->ecmd.maxtxpkt,
          list_item->ecmd.maxrxpkt,
          ifname);
-    
+
     VERB("Current properties: %d %d %d %d %d %d %d %d %d %d %s",
          ecmd.supported,
          ecmd.advertising,
@@ -1709,22 +1730,21 @@ phy_commit(unsigned int gid, const cfg_oid *p_oid)
          ecmd.maxtxpkt,
          ecmd.maxrxpkt,
          ifname);
-    
+
     /* Remember this to check advertising completion later */
     advertise = !(list_item->ecmd.advertising == ecmd.advertising);
-    
+
     /* Flush cache */
     list_item->adver_cached = FALSE;
-    
-    
+
     if ((rc = PHY_SET_PROPERTY(ifname, &(list_item->ecmd))) != 0)
     {
         ERROR("failed to apply PHY properties while setting "
               "interface %s properties", ifname);
-        
+
         return TE_OS_RC(TE_TA_UNIX, rc);
     }
-    
+
     /* Check that advertised modes were advertised */
     if (advertise &&
         list_item->ecmd.autoneg == TE_PHY_AUTONEG_ON)
@@ -1734,17 +1754,25 @@ phy_commit(unsigned int gid, const cfg_oid *p_oid)
         {
             ERROR("failed to get PHY properties while checking "
                   "advertised modes at interface %s", ifname);
-            
+
             return TE_OS_RC(TE_TA_UNIX, rc);
         }
-        
-        if (ecmd.advertising != list_item->ecmd.advertising)
+
+        if ((ecmd.advertising &
+             (ADVERTISED_10baseT_Half |
+              ADVERTISED_10baseT_Full |
+              ADVERTISED_100baseT_Half |
+              ADVERTISED_100baseT_Full |
+              ADVERTISED_1000baseT_Half |
+              ADVERTISED_1000baseT_Full |
+              ADVERTISED_2500baseX_Full |
+              ADVERTISED_10000baseT_Full)) != list_item->ecmd.advertising)
         {
             ERROR("failed to advertise needfull modes at %s", ifname);
             return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
         }
     }
-    
+
     /* Restart autonegatiation if needed */
     if (list_item->ecmd.autoneg == TE_PHY_AUTONEG_ON)
     {
@@ -1752,7 +1780,7 @@ phy_commit(unsigned int gid, const cfg_oid *p_oid)
             VERB("failed to restart autonegatiation while setting "
                  "interface %s properties", ifname);
     }
-    
+
     return 0;
 #else
     UNUSED(p_oid);
