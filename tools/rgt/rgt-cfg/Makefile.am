@@ -63,10 +63,8 @@ rgt-filter-xml2tcl.h: tmpls/Makefile
 	    echo -E "};" >> $${util}.h; \
 	    echo -E "const char *xml2fmt_files[] = {" >> $${util}.h; \
 	    for i in `ls $(srcdir)/tmpls/*.tmpl`; do \
-	        basename $${i} | \
-	            sed "s,\(.*\),\"$(DESTDIR)/$(pkgdatadir)/tmpls/\1\"," | \
-	                awk '{ printf "%s", $$1 }'>> $${util}.h; \
-	        echo "," >> $${util}.h; \
+	    echo "\""$(DESTDIR)/$(pkgdatadir)/tmpls/`basename $${i}`"\"," \
+	        >> $${util}.h; \
 	    done; \
 	    echo -E "};" >> $${util}.h; \
 	    echo -E -n "rgt_tmpl_t xml2fmt_tmpls[" >> $${util}.h; \
