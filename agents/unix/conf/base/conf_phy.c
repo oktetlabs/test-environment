@@ -222,11 +222,11 @@ RCF_PCH_CFG_NODE_NA_COMMIT(node_phy, "phy", &node_phy_autoneg_oper, NULL,
 
 
 /* Admin values of interface parameters */
-static struct admin_params {
+struct admin_params {
     uint16_t speed;     /**< Speed value */
     uint8_t  duplex;    /**< Duplex value */
     uint8_t  autoneg;   /**< Autonegotiation ON/OFF */
-} admin_params;
+};
 
 #if defined (__linux__) && HAVE_LINUX_ETHTOOL_H
 /* A list of the interfaces parameters */
