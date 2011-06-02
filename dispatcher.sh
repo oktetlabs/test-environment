@@ -103,6 +103,7 @@ Generic options:
   --build-ta-xxx                Build Test Agent xxx.
   --build-log-xxx               Build package with log level 0xFFFF.
   --build-nolog-xxx             Build package with undefined log level.
+  --build-parallel[=num]        Enable parallel build using num threads.
 
   --tester-suite=<name>:<path>  Specify path to the Test Suite.
   --tester-no-run               Don't run any tests.
@@ -222,6 +223,7 @@ RGT_X2HM_OPTS=
 CS_OPTS=
 # Building options
 BUILDER_OPTS=
+BUILD_MAKEFLAGS=
 
 LIVE_LOG=
 
@@ -411,6 +413,12 @@ process_opts()
             --build-only) RCF= ; CS=
                           TESTER_OPTS="${TESTER_OPTS} --no-run --no-cs" ;; 
 
+            --build-parallel*)
+                num=${1##--build-parallel=}
+                [ "${num}" = "$1" ] && num=8
+                BUILD_MAKEFLAGS="-j${num}"
+                ;;
+
             --build-log=*) 
                 BUILDER_OPTS="${BUILDER_OPTS} --pathlog=${1#--build-log=}"
                 BUILDER=
@@ -438,6 +446,7 @@ process_opts()
         test -n "$opt" && cmd_line_opts_all="${cmd_line_opts_all} $opt"
         shift 1
     done
+    export BUILD_MAKEFLAGS
 }
 
 

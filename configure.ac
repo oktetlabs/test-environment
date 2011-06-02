@@ -91,6 +91,8 @@ AC_SUBST([TE_CONF_DIR], [$(dirname "$with_config")])
 TE_BUILDER_CONF="$with_config"
 AC_SUBST([TE_BUILDER_CONF])
 
+AC_SUBST([BUILD_MAKEFLAGS])
+
 if test -n "$with_config" ; then
     if test ! -e "${with_config}" ; then
         AC_MSG_ERROR([Cannot find $with_config])

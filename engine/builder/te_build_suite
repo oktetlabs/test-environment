@@ -110,7 +110,7 @@ if test ! -e Makefile ; then
     eval "${SOURCES}/configure" -q --prefix="${TE_INSTALL_SUITE}" \
           $PARMS || exit 1
 fi
-make -j 8 install || exit 1
+make ${BUILD_MAKEFLAGS} install || exit 1
 
 if test "${FROM_MAKEFILE}" = "yes" ; then
     exit 0
