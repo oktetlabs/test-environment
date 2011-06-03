@@ -309,7 +309,7 @@ wpa_supp_get(const char *ifname)
              ifname);
 #else
     snprintf(buf, sizeof(buf),
-             "wpa_cli -i %s status 1>/dev/null 2>&1", ifname);
+             "/sbin/wpa_cli -i %s status 1>/dev/null 2>&1", ifname);
 #endif
     INFO("WPA supplicant status on interface %s", ifname);
 
@@ -345,7 +345,7 @@ wpa_supp_start(const char *ifname, const char *conf_fname)
              "wext -B >/dev/null 2>&1", ifname, conf_fname);
 #else
     snprintf(buf, sizeof(buf),
-             "wpa_supplicant -i %s -c %s -D "
+             "/sbin/wpa_supplicant -i %s -c %s -D "
              "wext -B", ifname, conf_fname);
 #endif
 
@@ -376,11 +376,11 @@ wpa_supp_stop(const char *ifname)
 
     WARN("Stopping wpa_supplicant on %s", ifname);
 
-    snprintf(buf, sizeof(buf), "wpa_cli -i %s disconnect", ifname);
+    snprintf(buf, sizeof(buf), "/sbin/wpa_cli -i %s disconnect", ifname);
     if (ta_system(buf) != 0)
         WARN("Command '%s' failed", buf);
 
-    snprintf(buf, sizeof(buf), "wpa_cli -i %s terminate", ifname);
+    snprintf(buf, sizeof(buf), "/sbin/wpa_cli -i %s terminate", ifname);
     if (ta_system(buf) != 0)
         WARN("Command '%s' failed", buf);
 
@@ -404,15 +404,15 @@ wpa_supp_reload(const char *ifname)
     {
         RING("Reloading wpa_supplicant configuration on %s", ifname);
 
-        snprintf(buf, sizeof(buf), "wpa_cli -i %s disconnect", ifname);
+        snprintf(buf, sizeof(buf), "/sbin/wpa_cli -i %s disconnect", ifname);
         if (ta_system(buf) != 0)
             WARN("Command '%s' failed", buf);
 
-        snprintf(buf, sizeof(buf), "wpa_cli -i %s reconfigure", ifname);
+        snprintf(buf, sizeof(buf), "/sbin/wpa_cli -i %s reconfigure", ifname);
         if (ta_system(buf) != 0)
             WARN("Command '%s' failed", buf);
 
-        snprintf(buf, sizeof(buf), "wpa_cli -i %s reassociate", ifname);
+        snprintf(buf, sizeof(buf), "/sbin/wpa_cli -i %s reassociate", ifname);
         if (ta_system(buf) != 0)
             WARN("Command '%s' failed", buf);
     }
