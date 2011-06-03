@@ -26,7 +26,7 @@
  *
  * @author Nikita Rastegaev <Nikita.Rastegaev@oktetlabs.ru>
  *
- * $Id: $
+ * $Id$
  */
 
 #ifndef __TE_TAPI_RPC_DLFCN_H__
@@ -43,18 +43,20 @@ extern "C" {
 typedef int64_t     rpc_dlhandle;
 typedef int64_t     rpc_dlsymaddr;
 
+#define RPC_DLHANDLE_NULL   ((rpc_dlhandle)(RPC_NULL))
+#define RPC_DLSYM_NULL      ((rpc_dlsymaddr)(RPC_NULL))
 
 /**
  * Loads the dynamic labrary file.
  *
  * @param rpcs      RPC server handle
  * @param filename  the name of the file to load
- * @param flags     dlopen flags.
+ * @param flags     dlopen flags
  *
  * @return dynamic library handle on success or NULL in the case of failure
  */
 extern rpc_dlhandle rpc_dlopen(rcf_rpc_server *rpcs, const char *filename,
-                        int flags);
+                               int flags);
 
 /**
  * Returns a human readable string describing the most recent error
@@ -77,7 +79,7 @@ extern char *rpc_dlerror(rcf_rpc_server *rpcs);
  * @return address of the symbol or NULL if symbol is not found.
  */
 extern rpc_dlsymaddr rpc_dlsym(rcf_rpc_server *rpcs, rpc_dlhandle handle,
-                       const char *symbol);
+                               const char *symbol);
 
 /**
  * Calls a certain function without arguments from dynamic labrary.

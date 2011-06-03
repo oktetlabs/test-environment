@@ -53,7 +53,7 @@ rpc_dlopen(rcf_rpc_server *rpcs, const char *filename, int flag)
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_PTR64(ta_dlopen, (rpc_dlhandle)NULL);
+        RETVAL_PTR64(ta_dlopen, RPC_DLHANDLE_NULL);
     }
 
     in.filename = (char *)filename;
@@ -99,9 +99,10 @@ rpc_dlsym(rcf_rpc_server *rpcs, rpc_dlhandle handle, const char *symbol)
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_PTR64(ta_dlsym, (rpc_dlsymaddr)NULL);
+        RETVAL_PTR64(ta_dlsym, RPC_DLSYM_NULL);
     }
 
+    /* tarpc_dlhandle and rpc_dlhandle are expected to be the same type */
     in.handle = (tarpc_dlhandle)handle;
     in.symbol = (char *)symbol;
 
@@ -127,6 +128,7 @@ rpc_dlsym_call(rcf_rpc_server *rpcs, rpc_dlhandle handle, const char *symbol)
         RETVAL_INT(ta_dlsym_call, -1);
     }
 
+    /* tarpc_dlhandle and rpc_dlhandle are expected to be the same type */
     in.handle = (tarpc_dlhandle)handle;
     in.symbol = (char *)symbol;
 
@@ -152,6 +154,7 @@ rpc_dlclose(rcf_rpc_server *rpcs, rpc_dlhandle handle)
         RETVAL_ZERO_INT(ta_dlclose, -1);
     }
 
+    /* tarpc_dlhandle and rpc_dlhandle are expected to be the same type */
     in.handle = (tarpc_dlhandle)handle;
 
     rcf_rpc_call(rpcs, "ta_dlclose", &in, &out);

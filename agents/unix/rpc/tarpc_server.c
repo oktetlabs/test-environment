@@ -6853,7 +6853,8 @@ TARPC_FUNC(mcast_join_leave, {},
 /*-------------- dlopen() --------------------------*/
 TARPC_FUNC(ta_dlopen, {},
 {
-    MAKE_CALL(out->retval = (tarpc_dlhandle)((long)func_ptr_ret_ptr(in)));
+    MAKE_CALL(out->retval =
+                        (tarpc_dlhandle)((uintptr_t)func_ptr_ret_ptr(in)));
 }
 )
 
@@ -6886,7 +6887,8 @@ ta_dlopen(tarpc_ta_dlopen_in *in)
 /*-------------- dlsym() --------------------------*/
 TARPC_FUNC(ta_dlsym, {},
 {
-    MAKE_CALL(out->retval = (tarpc_dlsymaddr)((long)func_ptr_ret_ptr(in)));
+    MAKE_CALL(out->retval =
+                    (tarpc_dlsymaddr)((uintptr_t)func_ptr_ret_ptr(in)));
 }
 )
 
@@ -6914,7 +6916,7 @@ ta_dlsym(tarpc_ta_dlsym_in *in)
         return NULL;
     }
 
-    return dlsym_func((void *)((long)in->handle), in->symbol);
+    return dlsym_func((void *)((uintptr_t)in->handle), in->symbol);
 }
 
 /*-------------- dlsym_call() --------------------------*/
@@ -6953,7 +6955,8 @@ ta_dlsym_call(tarpc_ta_dlsym_call_in *in)
 
     dlerror_func();
 
-    *(void **) (&func) = dlsym_func((void *)((long)in->handle), in->symbol);
+    *(void **) (&func) = dlsym_func((void *)((uintptr_t)in->handle),
+                                    in->symbol);
     if ((error = (char *)dlerror_func()) != NULL)
     {
         ERROR("%s: dlsym call failed, %s", __FUNCTION__, error);
@@ -7019,7 +7022,7 @@ ta_dlclose(tarpc_ta_dlclose_in *in)
         return -1;
     }
 
-    return dlclose_func((void *)((long)in->handle));
+    return dlclose_func((void *)((uintptr_t)in->handle));
 }
 
 
