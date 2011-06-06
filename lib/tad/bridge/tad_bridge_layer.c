@@ -144,6 +144,16 @@ tad_bridge_confirm_ptrn_cb(csap_p csap, unsigned int layer,
     return 0;
 } 
 
+
+/* Return integer, respective to first two bytes in passed array, 
+   bytes are read in network byte order, returned result in the host byte order
+*/
+static inline uint16_t 
+array2_to_int(uint8_t *a)
+{
+    uint16_t retval = (((uint16_t)(a[0])) << 8) + ((uint16_t)(a[1]));
+    return retval;
+}
 /* See description in tad_bridge_impl.h */
 te_errno
 tad_bridge_gen_bin_cb(csap_p csap, unsigned int layer,
@@ -229,8 +239,8 @@ tad_bridge_gen_bin_cb(csap_p csap, unsigned int layer,
                 " root_id/prio 0x%x; bridge_id/prio: 0x%x", 
                 bridge_pdu.cfg.root_path_cost,
                 bridge_pdu.cfg.port_id,
-                (int)ntohs(*((uint16_t *)bridge_pdu.cfg.root_id)),
-                (int)ntohs(*((uint16_t *)bridge_pdu.cfg.bridge_id))
+                (int)array2_to_int(bridge_pdu.cfg.root_id),
+                (int)array2_to_int(bridge_pdu.cfg.bridge_id)
                );
 
     } 

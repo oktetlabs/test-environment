@@ -56,7 +56,7 @@ unsigned short   mi_src_port;
 unsigned short   mi_dst_port;
 int              mi_payload_length;
 
-unsigned int userdata_to_udp(unsigned char *raw_pkt);
+static unsigned int userdata_to_udp(unsigned char *raw_pkt);
 
 /**
  * Type for reference to user function for generating MAC Control frame data 
@@ -279,8 +279,8 @@ add_ip_header(unsigned char *p_pdu, unsigned int udata_len,
     p_ip_hdr->time_to_live = DEFAULT_TTL;
     p_ip_hdr->protocol = protocol;
     
-    *((unsigned long *)p_ip_hdr->src_addr) = src_addr;
-    *((unsigned long *)p_ip_hdr->dst_addr) = dst_addr;
+    memcpy(p_ip_hdr->src_addr, &src_addr, sizeof(p_ip_hdr->src_addr));
+    memcpy(p_ip_hdr->dst_addr, &dst_addr, sizeof(p_ip_hdr->dst_addr));
 
     checksum = ip_checksum((unsigned char *)p_ip_hdr, hdr_len);
     
@@ -306,52 +306,53 @@ add_udp_header(unsigned char *p_pdu, unsigned int udata_len,
                unsigned short src_port, unsigned short dst_port, 
                unsigned long src_addr, unsigned long dst_addr)
 {
-        t_udp_header   *udp_hdr;
-        t_udp_pseudo    udp_pseudo;
-        unsigned char  *udata;
-        unsigned short  length;
-        unsigned long   sum_pseudo = 0, sum_data = 0, sum_hdr = 0;
-        unsigned short  checksum = 0;
+    t_udp_header   *udp_hdr;
+    t_udp_pseudo    udp_pseudo;
+    unsigned char  *udata;
+    unsigned short  length;
+    unsigned long   sum_pseudo = 0, sum_data = 0, sum_hdr = 0;
+    unsigned short  checksum = 0;
 
+    
+    memset(&udp_pseudo, 0, sizeof(t_udp_pseudo));
         
-        memset(&udp_pseudo, 0, sizeof(t_udp_pseudo));
-            
-        length = udata_len + UDPHEADER_LEN;
+    length = udata_len + UDPHEADER_LEN;
 
-        /* Pseudo header sum calculation */
-        udp_pseudo.length[0] = (unsigned char)(length >> 8);
-        udp_pseudo.length[1] = (unsigned char)(length &0xff);
-        *((unsigned long *)udp_pseudo.dst_ip) = dst_addr;
-        *((unsigned long *)udp_pseudo.src_ip) = src_addr;
-        udp_pseudo.protocol = 17;
-        SUM_16(&udp_pseudo, sizeof(t_udp_pseudo), sum_pseudo);
-        
-        /* User data sum calculation */
-        udata = p_pdu + IPHEADER_LEN + UDPHEADER_LEN;
-        SUM_16(udata, udata_len, sum_data);
-        
-        udp_hdr = (t_udp_header *)(p_pdu + IPHEADER_LEN);
-        udp_hdr->src_port[0] = (unsigned char)(src_port >> 8);
-        udp_hdr->src_port[1] = (unsigned char)(src_port &  0xff);
-        udp_hdr->dst_port[0] = (unsigned char)(dst_port >> 8);
-        udp_hdr->dst_port[1] = (unsigned char)(dst_port &  0xff);
-        udp_hdr->length[0] =   (unsigned char)(length   >> 8);
-        udp_hdr->length[1] =   (unsigned char)(length   &  0xff);
-        
-        /* UDP header sum calculation */
-        SUM_16(udp_hdr, UDPHEADER_LEN, sum_hdr);
+    /* Pseudo header sum calculation */
+    udp_pseudo.length[0] = (unsigned char)(length >> 8);
+    udp_pseudo.length[1] = (unsigned char)(length &0xff);
 
-        /* Calculate udp packet checksum */
-        sum_data += sum_pseudo + sum_hdr;
-        sum_data = (sum_data >> 16) + (sum_data & 0xffff);
-        sum_data = (sum_data >> 16) + (sum_data & 0xffff);
-        checksum = (unsigned short)~sum_data;
-        udp_hdr->checksum[0] = (unsigned char)(checksum >> 8);
-        udp_hdr->checksum[1] = (unsigned char)checksum;
+    memcpy(udp_pseudo.dst_ip, &dst_addr, sizeof(udp_pseudo.dst_ip));
+    memcpy(udp_pseudo.src_ip, &src_addr, sizeof(udp_pseudo.src_ip));
+    udp_pseudo.protocol = 17;
+    SUM_16(&udp_pseudo, sizeof(t_udp_pseudo), sum_pseudo);
+    
+    /* User data sum calculation */
+    udata = p_pdu + IPHEADER_LEN + UDPHEADER_LEN;
+    SUM_16(udata, udata_len, sum_data);
+    
+    udp_hdr = (t_udp_header *)(p_pdu + IPHEADER_LEN);
+    udp_hdr->src_port[0] = (unsigned char)(src_port >> 8);
+    udp_hdr->src_port[1] = (unsigned char)(src_port &  0xff);
+    udp_hdr->dst_port[0] = (unsigned char)(dst_port >> 8);
+    udp_hdr->dst_port[1] = (unsigned char)(dst_port &  0xff);
+    udp_hdr->length[0] =   (unsigned char)(length   >> 8);
+    udp_hdr->length[1] =   (unsigned char)(length   &  0xff);
+    
+    /* UDP header sum calculation */
+    SUM_16(udp_hdr, UDPHEADER_LEN, sum_hdr);
+
+    /* Calculate udp packet checksum */
+    sum_data += sum_pseudo + sum_hdr;
+    sum_data = (sum_data >> 16) + (sum_data & 0xffff);
+    sum_data = (sum_data >> 16) + (sum_data & 0xffff);
+    checksum = (unsigned short)~sum_data;
+    udp_hdr->checksum[0] = (unsigned char)(checksum >> 8);
+    udp_hdr->checksum[1] = (unsigned char)checksum;
 }
 
 
-unsigned int
+static unsigned int
 userdata_to_udp( unsigned char *raw_pkt)
 {
     unsigned char *udata;
