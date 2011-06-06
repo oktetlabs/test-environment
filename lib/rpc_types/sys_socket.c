@@ -513,6 +513,7 @@ proto_rpc2str(rpc_socket_proto proto)
     {
         RPC2STR(IPPROTO_IP);
         RPC2STR(IPPROTO_ICMP);
+        RPC2STR(IPPROTO_ICMPV6);
         RPC2STR(IPPROTO_UDP);
         RPC2STR(IPPROTO_TCP);
         RPC2STR(PROTO_UNKNOWN);
@@ -529,6 +530,7 @@ proto_rpc2h(rpc_socket_proto proto)
     {
         RPC2H_CHECK(IPPROTO_IP);
         RPC2H_CHECK(IPPROTO_ICMP);
+        RPC2H_CHECK(IPPROTO_ICMPV6);
         RPC2H_CHECK(IPPROTO_UDP);
         RPC2H_CHECK(IPPROTO_TCP);
         case RPC_PROTO_DEF: return 0;
@@ -547,6 +549,7 @@ proto_h2rpc(int proto)
     {
         H2RPC_CHECK(IPPROTO_IP);
         H2RPC_CHECK(IPPROTO_ICMP);
+        H2RPC_CHECK(IPPROTO_ICMPV6);
         H2RPC_CHECK(IPPROTO_UDP);
         H2RPC_CHECK(IPPROTO_TCP);
         default: return RPC_PROTO_UNKNOWN;

@@ -160,6 +160,7 @@ typedef enum rpc_socket_proto {
     RPC_IPPROTO_ICMP,   /**< Internet Control Message Protocol */
     RPC_IPPROTO_TCP,    /**< Transmission Control Protocol */
     RPC_IPPROTO_UDP,    /**< User Datagram Protocol */
+    RPC_IPPROTO_ICMPV6  /**< ICMPv6 protocol */
 } rpc_socket_proto;
 
 /** Convert RPC protocol to string */
