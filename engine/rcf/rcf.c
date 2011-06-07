@@ -1829,7 +1829,7 @@ write_str(char *s, size_t len)
         {
             *ptr++ = '\\';
             *ptr++ = 'n';
-            *s++;
+            s++;
             i++;
             continue;
         }

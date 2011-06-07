@@ -141,7 +141,6 @@ xmlNodeNext(xmlNodePtr node)
         ERROR(_str);            \
         xmlFree(oid);           \
         xmlFree(val_s);         \
-        xmlFree(attr);          \
         free(msg);              \
         return _err;            \
     } while (0)
@@ -163,19 +162,18 @@ cfg_dh_process_add(xmlNodePtr node)
     cfg_object  *obj;
     xmlChar     *oid = NULL;
     xmlChar     *val_s = NULL;
-    xmlChar     *attr = NULL;
 
     while (node != NULL &&
            xmlStrcmp(node->name , (const xmlChar *)"instance") == 0)
     {
-        xmlChar   *attr = NULL;
+        char   *attr = xmlGetProp_exp(node, (xmlChar *)"cond");
 
-        if ((attr = (xmlChar *)xmlGetProp_exp(node, (xmlChar *)"cond"))
-            != NULL)
+        if (attr != NULL)
         {
             /* in case add condition is specified */
             if (strcmp(attr, "false") == 0 || strcmp(attr, "") == 0)
                 goto next;
+            xmlFree((xmlChar *)attr);
         }
 
         if ((oid = (xmlChar *)xmlGetProp_exp(node,
@@ -264,7 +262,7 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
         xmlNodePtr tmp = xmlNodeChildren(cmd);
         xmlChar   *oid   = NULL;
         xmlChar   *val_s = NULL;
-        xmlChar   *attr = NULL;
+        char      *attr = NULL;
 
         if (xmlStrcmp(cmd->name , (const xmlChar *)"include") == 0)
             continue;
@@ -287,25 +285,26 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
             if (!postsync)
                 continue;
 
-            if ((attr = xmlGetProp(cmd, (const xmlChar *)"ta")) == NULL)
+            if ((attr = (char *)xmlGetProp(cmd,
+                                           (const xmlChar *)"ta")) == NULL)
                 RETERR(TE_EINVAL, "Incorrect reboot command format");
 
             if ((msg = (cfg_reboot_msg *)calloc(1, sizeof(*msg) +
-                                                strlen((char *)attr) + 1))
+                                                strlen(attr) + 1))
                     == NULL)
                 RETERR(TE_ENOMEM, "Cannot allocate memory");
 
             msg->type = CFG_REBOOT;
-            msg->len = sizeof(*msg) + strlen((char *)attr) + 1;
+            msg->len = sizeof(*msg) + strlen(attr) + 1;
             msg->rc = 0;
             msg->restore = FALSE;
-            strcpy(msg->ta_name, (char *)attr);
+            strcpy(msg->ta_name, attr);
 
             cfg_process_msg((cfg_msg **)&msg, TRUE);
             if (msg->rc != 0)
                 RETERR(msg->rc, "Failed to execute the reboot command");
 
-            xmlFree(attr);
+            xmlFree((xmlChar *)attr);
             free(msg);
             continue;
         }
@@ -363,31 +362,31 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                     strcpy(msg->oid + msg->def_val, (char *)val_s);
                 }
 
-                attr = xmlGetProp(tmp, (const xmlChar *)"type");
+                attr = (char *)xmlGetProp(tmp, (const xmlChar *)"type");
                 if (attr != NULL)
                 {
-                    if (strcmp((char *)attr, "integer") == 0)
+                    if (strcmp(attr, "integer") == 0)
                         msg->val_type = CVT_INTEGER;
-                    else if (strcmp((char *)attr, "address") == 0)
+                    else if (strcmp(attr, "address") == 0)
                         msg->val_type = CVT_ADDRESS;
-                    else if (strcmp((char *)attr, "string") == 0)
+                    else if (strcmp(attr, "string") == 0)
                         msg->val_type = CVT_STRING;
-                    else if (strcmp((char *)attr, "none") != 0)
+                    else if (strcmp(attr, "none") != 0)
                         RETERR(TE_EINVAL, "Unsupported object type %s",
                                attr);
-                    xmlFree(attr);
+                    xmlFree((xmlChar *)attr);
                     attr = NULL;
                 }
 
-                attr = xmlGetProp(tmp, (const xmlChar *)"volatile");
+                attr = (char *)xmlGetProp(tmp, (const xmlChar *)"volatile");
                 if (attr != NULL)
                 {
-                    if (strcmp((char *)attr, "true") == 0)
+                    if (strcmp(attr, "true") == 0)
                         msg->vol = TRUE;
-                    else if (strcmp((char *)attr, "false") != 0)
+                    else if (strcmp(attr, "false") != 0)
                         RETERR(TE_EINVAL, "Volatile should be specified "
                                           "using \"true\" or \"false\"");
-                    xmlFree(attr);
+                    xmlFree((xmlChar *)attr);
                     attr = NULL;
                 }
 
@@ -403,18 +402,18 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                     cfg_types[msg->val_type].free(val);
                 }
 
-                attr = xmlGetProp(tmp, (const xmlChar *)"access");
+                attr = (char *)xmlGetProp(tmp, (const xmlChar *)"access");
                 if (attr != NULL)
                 {
-                    if (strcmp((char *)attr, "read_write") == 0)
+                    if (strcmp(attr, "read_write") == 0)
                         msg->access = CFG_READ_WRITE;
-                    else if (strcmp((char *)attr, "read_only") == 0)
+                    else if (strcmp(attr, "read_only") == 0)
                         msg->access = CFG_READ_ONLY;
-                    else if (strcmp((char *)attr, "read_create") != 0)
+                    else if (strcmp(attr, "read_create") != 0)
                         RETERR(TE_EINVAL,
                                "Wrong value %s of 'access' attribute",
                                attr);
-                    xmlFree(attr);
+                    xmlFree((xmlChar *)attr);
                     attr = NULL;
                 }
 
