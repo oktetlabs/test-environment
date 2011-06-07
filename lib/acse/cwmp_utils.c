@@ -605,7 +605,7 @@ cwmp_val_array_get_str(cwmp_values_array_t *a,
     return TE_ENOENT;
 }
 
-#define VAL_LOG_MAX 512
+#define VAL_LOG_MAX 1024
 
 te_errno
 cwmp_val_array_log(unsigned log_level, const char *intro,
