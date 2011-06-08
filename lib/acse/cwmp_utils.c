@@ -856,35 +856,46 @@ snprint_ParamValueStruct(char *buf, size_t len,
     void *v  = p_v->Value;
     int  type = p_v->__type;
 
-    used = sprintf(p, "%s (type %s) = ", p_v->Name, 
+    used = snprintf(p, rest_len, "%s (type %s) = ", p_v->Name, 
             soap_simple_type_string(p_v->__type));
+    if (used > rest_len)
+    {
+        WARN("%s(): string was cut to %d bytes", __FUNCTION__, rest_len);
+        return rest_len;
+    }
     p+= used; rest_len -= used;
     switch(type)
     {
         case SOAP_TYPE_string:
         case SOAP_TYPE_SOAP_ENC__base64:
-            p+= snprintf(p, rest_len, "'%s'", (char *)v);
+            used = snprintf(p, rest_len, "'%s'", (char *)v);
             break;
         case SOAP_TYPE_time:
-            p+= snprintf(p, rest_len, "time %dsec", (int)(*((time_t *)v)));
+            used = snprintf(p, rest_len, "time %dsec",
+                            (int)(*((time_t *)v)));
             break;
         case SOAP_TYPE_byte:
-            p+= snprintf(p, rest_len, "%d", (int)(*((char *)v)));
+            used = snprintf(p, rest_len, "%d", (int)(*((char *)v)));
             break;
         case SOAP_TYPE_int:    
-            p+= snprintf(p, rest_len, "%d", *((int *)v));
+            used = snprintf(p, rest_len, "%d", *((int *)v));
             break;
         case SOAP_TYPE_unsignedInt:
-            p+= snprintf(p, rest_len, "%u", *((uint32_t *)v));
+            used = snprintf(p, rest_len, "%u", *((uint32_t *)v));
             break;
         case SOAP_TYPE_unsignedByte:
-            p+= snprintf(p, rest_len, "%u", (uint32_t)(*((uint8_t *)v)));
+            used = snprintf(p, rest_len, "%u", (uint32_t)(*((uint8_t *)v)));
             break;
         case SOAP_TYPE_xsd__boolean:
-            p+= snprintf(p, rest_len, *((int *)v) ? "True" : "False");
+            used = snprintf(p, rest_len, *((int *)v) ? "True" : "False");
             break;
     }
-    return p - buf;
+    if (used > rest_len)
+    {
+        WARN("%s(): string was cut to %d bytes", __FUNCTION__, rest_len);
+        return (size_t)(p - buf) + rest_len;
+    }
+    return (size_t)(p - buf) + used;
 }
 
 size_t
