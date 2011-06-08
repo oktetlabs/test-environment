@@ -879,15 +879,20 @@ cwmp_op_check(tarpc_cwmp_op_check_in *in,
               tarpc_cwmp_op_check_out *out)
 {
     te_errno rc, status;
+    int acse_value_var;
     acse_epc_cwmp_data_t *cwmp_data = NULL;
     size_t d_len;
 
-    if (!acse_value())
-        return -1;
+    acse_value_var = acse_value();
 
-    INFO("cwmp check operation No %d (rpc %s) to %s/%s called ", 
+    INFO("cwmp_op_check No %d (for rpc %s) to %s/%s called; "
+         "acse val %d, pid %d",
          (int)in->request_id, 
-         cwmp_rpc_cpe_string(in->cwmp_rpc), in->acs_name, in->cpe_name);
+         cwmp_rpc_cpe_string(in->cwmp_rpc), in->acs_name, in->cpe_name,
+         acse_value_var, (int)acse_pid);
+
+    if (!acse_value_var)
+        return -1;
 
     rc = acse_cwmp_prepare(in->acs_name, in->cpe_name,
                            EPC_RPC_CHECK, &cwmp_data);
@@ -913,7 +918,8 @@ cwmp_op_check(tarpc_cwmp_op_check_in *in,
         ssize_t packed_len;
 
         out->status = TE_RC(TE_ACSE, status);
-        INFO("%s(): status is %r", __FUNCTION__, status);
+
+        INFO("%s(): status is %r, buflen %d", __FUNCTION__, status, d_len);
 
         if (0 == status || TE_CWMP_FAULT == status)
         { 
