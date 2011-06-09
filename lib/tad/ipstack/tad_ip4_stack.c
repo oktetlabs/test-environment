@@ -121,6 +121,7 @@ tad_ip4_rw_init_cb(csap_p csap)
     if (rc != 0 && rc != TE_EASNINCOMPLVAL)
         return TE_RC(TE_TAD_CSAP, rc);
 
+    spec_data->sa_op.sll_family = PF_PACKET;
     spec_data->sa_op.sll_ifindex = if_nametoindex(ifname);
     spec_data->sa_op.sll_protocol = htons(ETH_P_IP);
 
