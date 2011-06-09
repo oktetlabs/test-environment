@@ -556,13 +556,13 @@ tadf_sendq_send_thread_main(void *queue)
     sendq_t *sendq = (sendq_t *)queue;
     struct   timeval curr_time;
     struct   timeval sleep_tv;
-    
+
     uint8_t  msg_type = TADF_SYNC_MSG_TYPE_WAKE;
 
     int      rc;
 
     sendq_entry_t *tail;
-    
+
     long long  time_stamp;
 
     fd_set read_fd;
@@ -579,16 +579,17 @@ tadf_sendq_send_thread_main(void *queue)
         {
             VERB("SendQ %d (csap %d), Limited bw case",
                  sendq->id, sendq->csap->id);
-            /* 
-             * We should check, if we can send packets now due to 
+            /*
+             * We should check, if we can send packets now due to
              * the bandwidth parameter 
              */
             if (timeval_compare(sendq->bandwidth_ts, curr_time) > 0)
             {
                 /* The time we still should sleep */
                 SUB_TV(sleep_tv, sendq->bandwidth_ts, curr_time);
-                VERB("SendQ %d (csap %d), We still have to sleep to some time, "
-                     "sendq->bandwidth_ts: (%d.%d)", 
+                VERB("SendQ %d (csap %d), "
+                     "We still have to sleep to some time, "
+                     "sendq->bandwidth_ts: (%d.%d)",
                      sendq->id, sendq->csap->id,
                      sendq->bandwidth_ts.tv_sec,
                      sendq->bandwidth_ts.tv_usec);
@@ -596,7 +597,7 @@ tadf_sendq_send_thread_main(void *queue)
             }
 
             memset(&(sendq->bandwidth_ts), 0, sizeof(struct timeval));
-            
+
             if (tail == NULL)
             {
                 memset(&sleep_tv, 0, sizeof(struct timeval));
@@ -608,7 +609,7 @@ tadf_sendq_send_thread_main(void *queue)
             if (timeval_compare(curr_time, tail->send_time) >= 0)
             {
                 struct timeval ts_diff;
-                
+
                 VERB("SendQ %d (csap %d), send_time=(%d, %d), bandwidth=%d",
                      sendq->id, sendq->csap->id,
                      tail->send_time.tv_sec, tail->send_time.tv_usec,
@@ -618,8 +619,8 @@ tadf_sendq_send_thread_main(void *queue)
                  * due to the bandwidth and to the time till next packet
                  * should be sent
                  */
-                time_stamp = (tail->pkt_len * 1000000) / 
-                             sendq->queue_bandwidth;
+                time_stamp =
+                    (tail->pkt_len * 1000000) / sendq->queue_bandwidth;
                 sleep_tv.tv_sec = time_stamp / 1000000;
                 sleep_tv.tv_usec = time_stamp % 1000000;
 
@@ -630,9 +631,9 @@ tadf_sendq_send_thread_main(void *queue)
                  */
                 ADD_TV(sendq->bandwidth_ts, curr_time, sleep_tv);
 
-                /* 
+                /*
                  * If there are no packets to send for some time we can
-                 * simply sleep until there are some or until we are awaken 
+                 * simply sleep until there are some or until we are awaken
                  */
                 if (tail->prev != NULL)
                 {
@@ -647,6 +648,8 @@ tadf_sendq_send_thread_main(void *queue)
                     ERROR("SendQ %d (csap %d), Failed to send data via "
                           "Ethernet CSAP: %r",
                           sendq->id, sendq->csap->id, rc);
+
+                    pthread_mutex_unlock(&sendq->sendq_lock);
                     return NULL;
                 }
                 F_VERB("SendQ %d (csap %d), csap write cb return %d "
@@ -656,60 +659,62 @@ tadf_sendq_send_thread_main(void *queue)
                 F_VERB("SendQ %d (csap %d), Packet sent: %d, %d , "
                        "sendq size = %d\n", 
                        sendq->id, sendq->csap->id,
-                       tail->send_time.tv_sec, tail->send_time.tv_usec, 
+                       tail->send_time.tv_sec, tail->send_time.tv_usec,
                        sendq->queue_size);
- 
+
                 tadf_sendq_entry_remove(sendq, tail);
             }
-        } 
-        else 
+        }
+        else
         {
-            /* 
+            /*
              * We should send all packets with send_time less or equal
-             * current time 
+             * current time
              */
             memset(&sleep_tv, 0, sizeof(sleep_tv));
-            while ((tail != NULL) && 
+            while ((tail != NULL) &&
                    (timeval_compare(curr_time, tail->send_time) >= 0))
             {
                 /* Sending packet using Ethernet CSAP write_cb */
                 rc = tadf_send_pkt(sendq);
                 if (rc != 0)
-                { 
+                {
                     ERROR("SendQ %d (csap %d), Failed to send data via "
                           "Ethernet CSAP: %r",
                           sendq->id, sendq->csap->id, rc);
+
+                    pthread_mutex_unlock(&sendq->sendq_lock);
                     return NULL;
                 }
 
                 tadf_sendq_entry_remove(sendq, tail);
                 VERB("SendQ %d (csap %d), Packet sent: %d, %d , "
-                     "sendq size = %d\n", 
+                     "sendq size = %d\n",
                      sendq->id, sendq->csap->id,
-                     tail->send_time.tv_sec, tail->send_time.tv_usec, 
+                     tail->send_time.tv_sec, tail->send_time.tv_usec,
                      sendq->queue_size);
 
                 tail = sendq->tail;
             }
-            
-            /* 
+
+            /*
              * If during our sleep somebody will change the sendq_bandwidth
-             * this thing will help us not to became crazy 
+             * this thing will help us not to became crazy
              */
             memset(&sendq->bandwidth_ts, 0, sizeof(struct timeval));
             if (tail != NULL)
                 SUB_TV(sleep_tv, tail->send_time, curr_time);
         }
-    
+
 sleep:
         FD_ZERO(&read_fd);
         FD_SET(sendq->sendq_sync_sockets[1], &read_fd);
 
         pthread_mutex_unlock(&sendq->sendq_lock);
-    
-        /* 
+
+        /*
          * Now we sleep until any message is received via communication
-         * channel of the send queue 
+         * channel of the send queue
          */
         if (IS_ZERO(sleep_tv))
         {
@@ -729,15 +734,15 @@ sleep:
         if (rc < 0)
         {
             ERROR("SendQ %d (csap %d), Select() in main send thread "
-                  "returned %d, errno = %d", 
+                  "returned %d, errno = %d",
                   sendq->id, sendq->csap->id,
                   errno);
             return NULL;
         }
-        
-        /* 
+
+        /*
          * If we received TADF_SYNC_MSG_TYPE_EXIT type message via
-         * sync pipe we exit the thread 
+         * sync pipe we exit the thread
          */
         if (rc > 0)
         {
@@ -754,7 +759,6 @@ sleep:
             if (msg_type == TADF_SYNC_MSG_TYPE_EXIT)
                 return sendq;
         }
-        
     }
 
     return sendq;
