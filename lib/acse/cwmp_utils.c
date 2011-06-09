@@ -404,6 +404,7 @@ cwmp_copy_par_value_list(cwmp_parameter_value_list_t *src)
             case SOAP_TYPE_time:
                 val_size = sizeof(time_t); break;
             case SOAP_TYPE_string:
+            case SOAP_TYPE_SOAP_ENC__base64: /* TODO: investigate? */
                 val_size = strlen(pval_src->Value) + 1; break;
             default:
                 RING("Copy CWMP ParValue, unsupported type %d",
@@ -447,6 +448,7 @@ cwmp_par_value_cmp(cwmp_parameter_value_struct_t *first,
             return *((int8_t *)first->Value) != 
                    *((int8_t *)second->Value);
         case SOAP_TYPE_string:
+        case SOAP_TYPE_SOAP_ENC__base64: /* TODO: investigate? */
             return !!strcmp(first->Value, second->Value);
     }
 
