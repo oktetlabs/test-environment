@@ -56,6 +56,10 @@ extern "C" {
 #define SOAP_TYPE_string (3)
 #endif
 
+#ifndef SOAP_TYPE_SOAP_ENC__base64
+#define SOAP_TYPE_SOAP_ENC__base64 (6)
+#endif
+
 #ifndef SOAP_TYPE_unsignedInt
 #define SOAP_TYPE_unsignedInt (7)
 #endif
