@@ -92,7 +92,7 @@
 #define PRINT_STR(str_) (((str_) != NULL) ? (str_) : "")
 
 #define PRINT_STR1(expr_, str1_) \
-    ((expr_) ? (str1_) : "")
+    ((expr_) ? PRINT_STR(str1_) : "")
 
 #define PRINT_STR2(expr_, str1_, str2_) \
     PRINT_STR1(expr_, str1_), \
