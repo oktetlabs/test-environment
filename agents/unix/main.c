@@ -560,7 +560,7 @@ rcf_ch_start_process(pid_t *pid,
             /* Set the process group to allow killing all children */
             setpgid(getpid(), getpid());
             logfork_register_user(rtn);
-            if (is_argv)
+            if (do_exec)
             {
                 const char *argv[16];
 
@@ -610,7 +610,7 @@ rcf_ch_start_process(pid_t *pid,
     }
 
     /* Try shell process */
-    if (is_argv || argc == 0)
+    if (do_exec || argc == 0)
     {
         char check_cmd[RCF_MAX_PATH];
 
