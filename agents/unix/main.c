@@ -543,7 +543,7 @@ rcf_ch_call(struct rcf_comm_connection *handle,
 /* See description in rcf_ch_api.h */
 int
 rcf_ch_start_process(pid_t *pid, 
-                    int priority, const char *rtn, te_bool is_argv,
+                    int priority, const char *rtn, te_bool do_exec,
                     int argc, void **params)
 {
     void *addr = rcf_ch_symbol_addr(rtn, TRUE);

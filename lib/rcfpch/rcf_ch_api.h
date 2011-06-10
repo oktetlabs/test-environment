@@ -715,7 +715,7 @@ extern int rcf_ch_call(struct rcf_comm_connection *handle,
  * @return Status code
  */
 extern int rcf_ch_start_process(pid_t *pid, int priority,
-                                const char *rtn, te_bool is_argv,
+                                const char *rtn, te_bool do_exec,
                                 int argc, void **params);
 
 /**
