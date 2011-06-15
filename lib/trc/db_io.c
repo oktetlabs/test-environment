@@ -556,7 +556,7 @@ get_expected_results(xmlNodePtr *node, trc_exp_results *results)
             q = xmlNodeChildren(p);
             while (q != NULL)
             {
-                char *s;
+                char *s = NULL;
 
                 rc = get_node_with_text_content(&q, "verdict", &s);
                 if (rc == TE_ENOENT)
