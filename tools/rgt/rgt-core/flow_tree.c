@@ -44,6 +44,9 @@
 #include "log_format.h"
 #include "memory.h"
 
+/* Define to 1 to enable rgt duration filter */
+#define TE_RGT_USE_DURATION_FILTER 0
+
 #ifdef RGT_PROF_STAT
 /** Counter for the number of messages added into the queue tail. */
 static unsigned long msg_put_to_tail;
@@ -1034,19 +1037,21 @@ wrapper_process_regular_msg(gpointer data, gpointer user_data)
 static void
 flow_tree_wander(node_t *cur_node)
 {
-    enum node_fltr_mode duration_filter_res = NFMODE_EXCLUDE;
+    enum node_fltr_mode duration_filter_res = NFMODE_INCLUDE;
 
     if (cur_node == NULL)
         return;
 
     if (cur_node->fmode == NFMODE_INCLUDE && cur_node->user_data != NULL)
     {
+#if TE_RGT_USE_DURATION_FILTER
         duration_filter_res = rgt_filter_check_duration(
                                   node_type2str(cur_node->type),
                                   cur_node->start_ts,
                                   cur_node->end_ts);
 
         if (duration_filter_res == NFMODE_INCLUDE)
+#endif
         {
             ctrl_msg_proc[CTRL_EVT_START][cur_node->type](
                 cur_node->user_data, cur_node->verdicts);
