@@ -47,7 +47,7 @@
 
 #define WRITE_STR(str) \
     do {                                                    \
-        if (fputs(str, f) == EOF)                           \
+        if (str != NULL && fputs(str, f) == EOF)            \
         {                                                   \
             rc = te_rc_os2te(errno);                        \
             assert(rc != 0);                                \
