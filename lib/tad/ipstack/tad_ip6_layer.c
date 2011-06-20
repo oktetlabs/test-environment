@@ -321,7 +321,8 @@ tad_ip6_init_cb(csap_p csap, unsigned int layer)
 
 
     if (layer > 0)
-        proto_data->upper_protocol = tad_te_proto2ip_proto(csap->layers[layer - 1].proto_tag);
+        proto_data->upper_protocol =
+                tad_te_proto2ip_proto(csap->layers[layer - 1].proto_tag);
     else
         proto_data->upper_protocol = IPPROTO_NONE;
 
@@ -420,8 +421,9 @@ opts_hdr_process_opts(tad_ip6_proto_data *proto_data,
             {
                 case NDN_TAG_IP6_EXT_HEADER_OPT_PAD1:
                     /* PAD1 option is 1 byte length option. */
-                    rc = tad_ip6_nds_to_data_and_confirm(&proto_data->opt_pad1, opt,
-                                                         &hdr_data->opts[i].opt);
+                    rc = tad_ip6_nds_to_data_and_confirm(
+                                                &proto_data->opt_pad1, opt,
+                                                &hdr_data->opts[i].opt);
                     if (rc != 0)
                         return rc;
 
@@ -431,21 +433,27 @@ opts_hdr_process_opts(tad_ip6_proto_data *proto_data,
                     break;
 
                 case NDN_TAG_IP6_EXT_HEADER_OPT_TLV:
-                    /* Check if we need to detect the value for Length field */
+                    /*
+                     * Check if we need to detect the value
+                     * for Length field
+                     */
                     if ((rc = asn_read_int32(opt, &val, "length")) != 0)
                     {
                         if ((opt_len = asn_get_length(opt, "data")) >= 0)
                         {
-                            rc = asn_write_int32(opt, opt_len, "length.#plain");
+                            rc = asn_write_int32(opt, opt_len,
+                                                 "length.#plain");
                             if (rc != 0)
                             {
-                                ERROR("Failed to write 'length' field for TLV option, %r", rc);
+                                ERROR("Failed to write 'length' "
+                                      "field for TLV option, %r", rc);
                                 return rc;
                             }
                         }
                     }
-                    rc = tad_ip6_nds_to_data_and_confirm(&proto_data->opt_tlv, opt,
-                                                         &hdr_data->opts[i].opt);
+                    rc = tad_ip6_nds_to_data_and_confirm(
+                                                &proto_data->opt_tlv, opt,
+                                                &hdr_data->opts[i].opt);
                     if (rc != 0)
                         return rc;
                     INFO("Option TLV");
@@ -455,8 +463,9 @@ opts_hdr_process_opts(tad_ip6_proto_data *proto_data,
                     break;
 
                 case NDN_TAG_IP6_EXT_HEADER_OPT_ROUTER_ALERT:
-                    rc = tad_ip6_nds_to_data_and_confirm(&proto_data->opt_ra, opt,
-                                                         &hdr_data->opts[i].opt);
+                    rc = tad_ip6_nds_to_data_and_confirm(
+                                                &proto_data->opt_ra, opt,
+                                                &hdr_data->opts[i].opt);
                     if (rc != 0)
                         return rc;
                     INFO("Option Router-Alert");
@@ -568,7 +577,9 @@ tad_ip6_confirm_tmpl_cb(csap_p csap, unsigned int layer,
         if (hdr_num <= 0)
             goto ext_hdr_end;
 
-        tmpl_data->ext_hdrs = TE_ALLOC(hdr_num * sizeof(*tmpl_data->ext_hdrs));
+        tmpl_data->ext_hdrs =
+                    TE_ALLOC(hdr_num * sizeof(*tmpl_data->ext_hdrs));
+
         if (tmpl_data->ext_hdrs == NULL)
             return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
@@ -590,9 +601,12 @@ tad_ip6_confirm_tmpl_cb(csap_p csap, unsigned int layer,
                  * Update "Next-Header" field of IPv6 header or Extension
                  * Headers in case it is not specified in layer PDU.
                  */
-                if ((rc = asn_read_int32(prev_hdr, &val, "next-header")) != 0)
+                if ((rc = asn_read_int32(prev_hdr, &val,
+                                         "next-header")) != 0)
                 {
-                    rc = asn_write_int32(prev_hdr, next_hdr_tag2bin(t_val), "next-header.#plain");
+                    rc = asn_write_int32(prev_hdr,
+                                         next_hdr_tag2bin(t_val),
+                                         "next-header.#plain");
                     if (rc != 0)
                         return rc;
 
@@ -603,8 +617,9 @@ tad_ip6_confirm_tmpl_cb(csap_p csap, unsigned int layer,
                      */
                     if (ext_hdr_def != NULL)
                     {
-                        rc = tad_ip6_nds_to_data_and_confirm(ext_hdr_def, prev_hdr,
-                                                             &tmpl_data->ext_hdrs[ext_hdr_id].hdr);
+                        rc = tad_ip6_nds_to_data_and_confirm(
+                                    ext_hdr_def, prev_hdr,
+                                    &tmpl_data->ext_hdrs[ext_hdr_id].hdr);
                         if (rc != 0)
                             return rc;
                     }
@@ -620,27 +635,35 @@ tad_ip6_confirm_tmpl_cb(csap_p csap, unsigned int layer,
                         rc = asn_get_descendent(hdr, &opts, "options");
                         if (rc != 0)
                             return rc;
-                        rc = opts_hdr_process_opts(proto_data, &tmpl_data->ext_hdrs[i], opts);
+                        rc = opts_hdr_process_opts(
+                                            proto_data,
+                                            &tmpl_data->ext_hdrs[i], opts);
                         if (rc != 0)
                             return rc;
 
                         if ((rc = asn_read_int32(hdr, &val, "length")) != 0)
                         {
                             if (tmpl_data->ext_hdrs[i].opts_len == 0 ||
-                                (tmpl_data->ext_hdrs[i].opts_len + 2) % 8 != 0)
+                                (tmpl_data->ext_hdrs[i].opts_len
+                                                            + 2) % 8 != 0)
                             {
-                                ERROR("Total length of options is not correct %d",
+                                ERROR("Total length of options is "
+                                      "not correct %d",
                                       tmpl_data->ext_hdrs[i].opts_len);
                                 return TE_RC(TE_TAD_CSAP, TE_ETADCSAPSTATE);
                             }
-                            rc = asn_write_int32(hdr,
-                                                 (tmpl_data->ext_hdrs[i].opts_len + 2) / 8  - 1,
-                                                 "length.#plain");
+                            rc = asn_write_int32(
+                                    hdr,
+                                    (tmpl_data->ext_hdrs[i].opts_len
+                                                            + 2) / 8  - 1,
+                                    "length.#plain");
                             if (rc != 0)
                                 return rc;
                         }
-                        tmpl_data->ext_hdrs_len += (2 + tmpl_data->ext_hdrs[i].opts_len);
-                        tmpl_data->ext_hdrs[i].hdr_def = &proto_data->opts_hdr;
+                        tmpl_data->ext_hdrs_len +=
+                                    (2 + tmpl_data->ext_hdrs[i].opts_len);
+                        tmpl_data->ext_hdrs[i].hdr_def =
+                                    &proto_data->opts_hdr;
                         ext_hdr_def = &proto_data->opts_hdr;
                         ext_hdr_id = i;
                         break;
@@ -669,8 +692,9 @@ ext_hdr_end:
     /* Convert the last Extension Header */
     if (ext_hdr_def != NULL)
     {
-        rc = tad_ip6_nds_to_data_and_confirm(ext_hdr_def, prev_hdr,
-                                             &tmpl_data->ext_hdrs[ext_hdr_id].hdr);
+        rc = tad_ip6_nds_to_data_and_confirm(
+                                    ext_hdr_def, prev_hdr,
+                                    &tmpl_data->ext_hdrs[ext_hdr_id].hdr);
         if (rc != 0)
             return rc;
     }
@@ -775,7 +799,7 @@ tad_ip6_gen_bin_cb_per_pdu(tad_pkt *pdu, void *hdr)
 te_errno
 tad_ip6_gen_bin_cb(csap_p csap, unsigned int layer,
                    const asn_value *tmpl_pdu, void *opaque,
-                   const tad_tmpl_arg_t *args, size_t arg_num, 
+                   const tad_tmpl_arg_t *args, size_t arg_num,
                    tad_pkts *sdus, tad_pkts *pdus)
 {
     tad_ip6_proto_data     *proto_data;
@@ -831,10 +855,11 @@ tad_ip6_gen_bin_cb(csap_p csap, unsigned int layer,
 
         for (j = 0; j < tmpl_data->ext_hdrs[i].opts_num; j++)
         {
-            rc = tad_bps_pkt_frag_gen_bin(tmpl_data->ext_hdrs[i].opts[j].opt_def,
-                                          &tmpl_data->ext_hdrs[i].opts[j].opt,
-                                          args, arg_num, hdr,
-                                          &bitoff, bitlen);
+            rc = tad_bps_pkt_frag_gen_bin(
+                            tmpl_data->ext_hdrs[i].opts[j].opt_def,
+                            &tmpl_data->ext_hdrs[i].opts[j].opt,
+                            args, arg_num, hdr,
+                            &bitoff, bitlen);
             if (rc != 0)
                 goto cleanup;
         }
@@ -853,7 +878,10 @@ tad_ip6_gen_bin_cb(csap_p csap, unsigned int layer,
     if (rc != 0)
         goto cleanup;
 
-    /* Per-PDU processing - set correct Payload Length value of IPv6 Header */
+    /*
+     * Per-PDU processing - set correct Payload
+     * Length value of IPv6 Header
+     */
     rc = tad_pkt_enumerate(pdus, tad_ip6_gen_bin_cb_per_pdu, hdr);
 
 cleanup:
