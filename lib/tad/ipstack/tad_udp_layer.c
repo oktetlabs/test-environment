@@ -80,9 +80,9 @@ static const tad_bps_pkt_frag tad_udp_bps_hdr[] =
     { "dst-port", 16, NDN_TAG_UDP_DST_PORT,
       NDN_TAG_UDP_REMOTE_PORT, NDN_TAG_UDP_LOCAL_PORT, 0,
       TAD_DU_I32, FALSE },
-    { "checksum", 16, BPS_FLD_CONST_DEF(NDN_TAG_UDP_CHECKSUM, 0),
-      TAD_DU_I32, TRUE },
     { "length",   16, BPS_FLD_CONST_DEF(NDN_TAG_UDP_LENGTH, 0),
+      TAD_DU_I32, TRUE },
+    { "checksum", 16, BPS_FLD_CONST_DEF(NDN_TAG_UDP_CHECKSUM, 0),
       TAD_DU_I32, TRUE },
 };
 
