@@ -66,7 +66,7 @@
 
 te_bool
 rpc_find_func(rcf_rpc_server *rpcs, const char * func_name)
-{    
+{
     struct tarpc_rpc_find_func_in  in;
     struct tarpc_rpc_find_func_out out;
 
@@ -94,9 +94,10 @@ rpc_find_func(rcf_rpc_server *rpcs, const char * func_name)
     free(in.func_name);
     rc = out.find_result;
 
+    CHECK_RETVAL_VAR(rpc_find_func, rc, (rc < 0), -1);
     TAPI_RPC_LOG(rpcs, rpc_find_func, "%s", "%s", func_name,
                  errno_rpc2str(rc));
-    return rc;
+    RETVAL_INT(rpc_find_func, rc);
 }
 
 /* See description in tapi_rpc_misc.h */
@@ -1091,7 +1092,7 @@ rpc_overfill_buffers_gen(rcf_rpc_server *rpcs, int sock, uint64_t *sent,
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(overfill_buffers, out.retval);
     TAPI_RPC_LOG(rpcs, overfill_buffers, "%d, %s", "%d sent=%d",
                  sock, iomux2str(iomux),
-                 out.retval, (sent != NULL) ? (int)(*sent) : -1);
+                 out.retval, (int)(out.bytes));
     RETVAL_INT(overfill_buffers, out.retval);
 }
 

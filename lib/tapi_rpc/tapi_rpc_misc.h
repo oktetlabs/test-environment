@@ -63,13 +63,13 @@ extern "C" {
 #endif
 
 /**
- * Get value returned by tarpc_find_func()
- * on the host
+ * Try to search a given symbol in the current library used by
+ * a given PCO with help of @b tarpc_find_func().
  *
  * @param rpcs        RPC server
- * @param func_name   Name of the function
+ * @param func_name   Symbol to be searched
  *
- * @return            Value returned by tarpc_find_func()
+ * @return            Value returned by @b tarpc_find_func()
  */
 extern te_bool rpc_find_func(rcf_rpc_server *rpcs,
                              const char *func_name);
