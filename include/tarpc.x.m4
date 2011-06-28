@@ -3068,6 +3068,22 @@ struct tarpc_system_out {
     tarpc_wait_status_value  status_value;
 };
 
+/* rpc_vlan_get_parent() */
+
+struct tarpc_rpc_vlan_get_parent_in {
+    struct tarpc_in_arg common;
+
+    char ifname<>;
+};
+
+struct tarpc_rpc_vlan_get_parent_out {
+    struct tarpc_out_arg    common;
+
+    tarpc_int retval;
+
+    char ifname<>;
+};
+
 /* getenv() */
 struct tarpc_getenv_in {
     struct tarpc_in_arg common;
@@ -4480,6 +4496,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(fclose)
         RPC_DEF(te_shell_cmd)
         RPC_DEF(system)
+        RPC_DEF(rpc_vlan_get_parent)
         RPC_DEF(waitpid)
         RPC_DEF(fileno)
         RPC_DEF(getpwnam)

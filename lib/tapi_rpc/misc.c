@@ -100,6 +100,54 @@ rpc_find_func(rcf_rpc_server *rpcs, const char * func_name)
 }
 
 /* See description in tapi_rpc_misc.h */
+
+int
+rpc_vlan_get_parent(rcf_rpc_server *rpcs, const char *vlan_ifname,
+                    char *parent_ifname)
+{   
+    int rc;
+
+    struct tarpc_rpc_vlan_get_parent_in  in;
+    struct tarpc_rpc_vlan_get_parent_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(rpc_vlan_get_parent, -1);
+    }
+
+    if (vlan_ifname == NULL)
+    {
+        ERROR("%s(): NULL interface name", __FUNCTION__);
+        RETVAL_INT(rpc_vlan_get_parent, -1);
+    }
+
+    if (parent_ifname == NULL)
+    {
+        ERROR("%s(): Pointer parent_ifname is NULL", __FUNCTION__);
+        RETVAL_INT(rpc_vlan_get_parent, -1);
+    }
+
+    in.ifname.ifname_val = strdup(vlan_ifname);
+    in.ifname.ifname_len = strlen(vlan_ifname) + 1;
+
+    rcf_rpc_call(rpcs, "rpc_vlan_get_parent", &in, &out);
+
+    memcpy(parent_ifname, out.ifname.ifname_val,
+           out.ifname.ifname_len);
+
+    rc = out.retval;
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(rpc_vlan_get_parent, rc);
+    TAPI_RPC_LOG(rpcs, rpc_vlan_get_parent, "%s, %p", "%d",
+                 vlan_ifname, parent_ifname, rc);
+    RETVAL_INT(rpc_vlan_get_parent, rc);
+}
+
+/* See description in tapi_rpc_misc.h */
 tarpc_ssize_t
 rpc_get_sizeof(rcf_rpc_server *rpcs, const char *type_name)
 {

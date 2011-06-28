@@ -75,6 +75,21 @@ extern te_bool rpc_find_func(rcf_rpc_server *rpcs,
                              const char *func_name);
 
 /**
+ * Return parent network interface name of vlan interface.
+ *
+ * @param handle        RPC server handle
+ * @param vlan_ifname   VLAN interface name
+ * @param parent_ifname Pointer to the parent network interface name
+ *                      with at least @c IF_NAMESIZE bytes size.
+ *
+ * @return 0 on success or -1 in the case of failure
+ *
+ */
+extern int rpc_vlan_get_parent(rcf_rpc_server *rpcs,
+                               const char *vlan_ifname,
+                               char *parent_ifname);
+
+/**
  * Get host value of sizeof(type_name).
  *
  * @param handle      RPC server

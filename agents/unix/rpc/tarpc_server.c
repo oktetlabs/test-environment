@@ -4034,6 +4034,37 @@ TARPC_FUNC(system, {},
 }
 )
 
+/*-------------- rpc_vlan_get_parent----------------------*/
+bool_t
+_rpc_vlan_get_parent_1_svc(tarpc_rpc_vlan_get_parent_in *in,
+                           tarpc_rpc_vlan_get_parent_out *out,
+                           struct svc_req *rqstp)
+{
+    char *str;
+
+    UNUSED(rqstp);
+    memset(out, 0, sizeof(*out));
+    VERB("PID=%d TID=%d: Entry %s",
+         (int)getpid(), (int)pthread_self(), "rpc_vlan_get_parent");
+
+    if ((str = (char *)calloc(IF_NAMESIZE, 1)) == NULL)
+    {
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+    else
+    {
+        out->ifname.ifname_val = str;
+        out->ifname.ifname_len = IF_NAMESIZE;
+    }
+
+    out->common._errno = ta_vlan_get_parent(in->ifname.ifname_val,
+                                            out->ifname.ifname_val);
+
+    out->retval = (out->common._errno == 0) ? 0 : -1;
+
+    return TRUE;
+}
+
 /*-------------- getenv() --------------------------------*/
 TARPC_FUNC(getenv, {},
 {

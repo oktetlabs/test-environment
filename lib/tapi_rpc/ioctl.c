@@ -464,6 +464,9 @@ rpc_ioctl(rcf_rpc_server *rpcs,
 #ifdef ETHTOOL_GGSO
                 case ETHTOOL_GGSO:
 #endif
+#ifdef ETHTOOL_GFLAGS
+                case ETHTOOL_GFLAGS:
+#endif
 #ifdef ETHTOOL_PHYS_ID
                 case ETHTOOL_PHYS_ID:
 #endif
@@ -489,6 +492,9 @@ rpc_ioctl(rcf_rpc_server *rpcs,
 #endif
 #ifdef ETHTOOL_SGSO
                 case ETHTOOL_SGSO:
+#endif
+#ifdef ETHTOOL_SFLAGS
+                case ETHTOOL_SFLAGS:
 #endif
 #ifdef ETHTOOL_SUFO
                 case ETHTOOL_SUFO:

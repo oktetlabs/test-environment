@@ -168,8 +168,18 @@ ifname_without_vlan(const char *ifname)
 }
 #endif  /* __linux__ or __sun__ */
 
-
-
+/**
+ * Get parent device name of VLAN interface.
+ * If passed interface is not VLAN, method sets 'parent' to empty string
+ * and return success.
+ *
+ * @param ifname        interface name
+ * @param parent        location of parent interface name,
+ *                      IF_NAMESIZE buffer length(OUT)
+ *
+ * @return status
+ */
+extern te_errno ta_vlan_get_parent(const char *ifname, char *parent);
 
 #define PRINT(msg...) \
     do {                                                \

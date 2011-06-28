@@ -1564,7 +1564,111 @@ env(void)
     return ta_system("env");
 }
 
+/* See description in unix_internal.h */
+te_errno
+ta_vlan_get_parent(const char *ifname, char *parent)
+{
+    char f_buf[200];
 
+    *parent = 0;
+#if defined __linux__
+    {
+        FILE *proc_vlans = fopen("/proc/net/vlan/config", "r");
+
+        if (proc_vlans == NULL)
+        {
+            if (errno == ENOENT)
+            {
+                VERB("%s: no proc vlan file ", __FUNCTION__);
+                return 0; /* no vlan support module loaded, no parent */
+            }
+
+            ERROR("%s(): Failed to open /proc/net/vlan/config %s",
+                  __FUNCTION__, strerror(errno));
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+        while (fgets(f_buf, sizeof(f_buf), proc_vlans) != NULL)
+        {
+            size_t space_ofs;
+            char *s = f_buf;
+            char *p = parent;
+
+            space_ofs = strcspn(s, " \t\n\r");
+            s[space_ofs] = 0;
+
+            if (strcmp(s, ifname) != 0)
+                continue;
+
+            s += space_ofs + 1;
+
+            s = strchr(s, '|');
+            s++;
+            s = strchr(s, '|');
+            s++;
+
+            while (isspace(*s)) s++;
+
+            while (!isspace(*s))
+                *p++ = *s++;
+            *p = 0;
+            break;
+        }
+        fclose(proc_vlans);
+    }
+#elif defined __sun__
+    {
+        int   out_fd = -1;
+        FILE *out;
+        int   status;
+        pid_t dladm_cmd_pid = te_shell_cmd("LANG=POSIX dladm show-link -p",
+                                           -1, NULL, &out_fd, NULL);
+        VERB("%s(<%s>): cmd pid %d, out fd %d",
+             __FUNCTION__, ifname, (int)dladm_cmd_pid, out_fd);
+        if (dladm_cmd_pid < 0)
+        {
+            ERROR("%s(): start of dladm failed", __FUNCTION__);
+            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        }
+
+        out = fdopen(out_fd, "r");
+        while (fgets(f_buf, sizeof(f_buf), out) != NULL)
+        {
+            char *s = strchr(f_buf, ' ');
+            char *p;
+            *s = 0;
+            s++;
+            if (strcmp(ifname, f_buf) != 0)
+                continue;
+            if (strncmp(s, "type=vlan ", sizeof("type=vlan ") - 1) != 0)
+                continue;
+
+            VERB("%s(): found parent <%s> for if <%s>",
+                 __FUNCTION__, s, ifname);
+
+            s = strstr(s, "device");
+            if (s == NULL)
+                continue;
+            s = strchr(s, '=');
+            if (*s) s++; /* skip '=' */
+            p = parent;
+            while(*s != 0 && !isspace(*s))
+                *(p++) = *(s++);
+            *p = 0;
+            break;
+        }
+
+        ta_waitpid(dladm_cmd_pid, &status, 0);
+        if (status != 0)
+        {
+            ERROR("%s(): Non-zero status of dladm: %d",
+                  __FUNCTION__, status);
+            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        }
+        fclose(out);
+    }
+#endif
+    return 0;
+}
 
 /**
  * Method for generating stream of data.
