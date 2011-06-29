@@ -59,17 +59,10 @@ typedef enum {
 
 /** Create a subthread of the existing RPC server */
 #define RCF_RPC_SERVER_GET_THREAD   0x01
-/** Get only existing RPC server */
+/** get only existing RPC server */
 #define RCF_RPC_SERVER_GET_EXISTING 0x02
-/** Reuse existing RPC server if possible without restart */
+/** reuse existing RPC server if possible without restart */
 #define RCF_RPC_SERVER_GET_REUSE    0x04
-/**
- * Register in configuration tree existing RPC server process
- * (created without help of configurator previously, for example,
- * to avoid setting flags like RCF_RPC_SERVER_GET_INHERIT
- * automatically by configurator for the process creation).
- */
-#define RCF_RPC_SERVER_GET_REGISTER 0x40
 
 /** Next flags may be passed to RPC create_process */
 /** exec after fork */

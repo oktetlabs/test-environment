@@ -197,14 +197,12 @@
 typedef int (*api_func)(int param,...);
 typedef int (*api_func_ptr)(void *param,...);
 typedef int (*api_func_void)();
-typedef long int (*api_func_long_void)();
 typedef void *(*api_func_ret_ptr)(int param,...);
 typedef void *(*api_func_ptr_ret_ptr)(void *param,...);
 typedef void *(*api_func_void_ret_ptr)();
 
 #define func_ptr                ((api_func_ptr)func)
 #define func_void               ((api_func_void)func)
-#define func_long_void          ((api_func_long_void)func)
 #define func_ret_ptr            ((api_func_ret_ptr)func)
 #define func_ptr_ret_ptr        ((api_func_ptr_ret_ptr)func)
 #define func_void_ret_ptr       ((api_func_void_ret_ptr)func)

@@ -98,18 +98,6 @@ extern int rpc_kill(rcf_rpc_server *rpcs,
                     tarpc_pid_t pid, rpc_signum signum);
 
 /**
- * Send signal with number @b signum to thread whose tid's @b tid.
- *
- * @param rpcs      RPC server handle
- * @param tid       Thread ID
- * @param signum    Number of signal to be sent
- *
- * @return 0 on success or -1 on failure
- */
-extern int rpc_pthread_kill(rcf_rpc_server *rpcs,
-                            tarpc_pthread_t tid, rpc_signum signum);
-
-/**
  * Wait for termination of process @b pid or process group whose pid's @b
  * pid.
  *

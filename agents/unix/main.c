@@ -827,12 +827,7 @@ rcf_ch_kill_thread(unsigned int tid)
     if (pthread_cancel((pthread_t)tid) != 0)
         return TE_OS_RC(TE_TA_UNIX, errno);
     else
-    {
-        if (pthread_join((pthread_t)tid, NULL) != 0)
-            return TE_OS_RC(TE_TA_UNIX, errno);
-
         return 0;
-    }
 }
 
 /**

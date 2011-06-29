@@ -357,9 +357,8 @@ te_make_tmp_file(char *tmp_name)
 #define TEST_ARG_VAR_PREFIX "VAR."
 #define TEST_ARG_ENV_PREFIX "TE_TEST_VAR_"
 
-/* assert() function analog for compilation */
-#define TE_COMPILE_TIME_ASSERT(x) \
-    switch(0) {case 0: case x:;}
+
+
 
 #ifdef __cplusplus
 } /* extern "C" */
