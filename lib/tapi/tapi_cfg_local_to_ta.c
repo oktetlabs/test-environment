@@ -100,20 +100,26 @@ tapi_cfg_env_local_to_agent(void)
                                   CFG_OID_GET_INST_NAME(oid, 2));
         if (rc == 0)
         {
-            if (strcmp(new_value, old_value) != 0)
-            {
+            if (strcmp(new_value, "") == 0)
+                rc = cfg_del_instance_fmt(FALSE, "/agent:%s/env:%s",
+                                          CFG_OID_GET_INST_NAME(oid, 1),
+                                          CFG_OID_GET_INST_NAME(oid, 2));
+
+            else if (strcmp(new_value, old_value) != 0)
                 rc = cfg_set_instance_fmt(type, new_value,
                                           "/agent:%s/env:%s",
                                           CFG_OID_GET_INST_NAME(oid, 1),
                                           CFG_OID_GET_INST_NAME(oid, 2));
-            }
         }
         else if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
         {
-            rc = cfg_add_instance_fmt(NULL, type, new_value,
-                                      "/agent:%s/env:%s",
-                                      CFG_OID_GET_INST_NAME(oid, 1),
-                                      CFG_OID_GET_INST_NAME(oid, 2));
+            if (strcmp(new_value, "") != 0)
+                rc = cfg_add_instance_fmt(NULL, type, new_value,
+                                          "/agent:%s/env:%s",
+                                          CFG_OID_GET_INST_NAME(oid, 1),
+                                          CFG_OID_GET_INST_NAME(oid, 2));
+            else
+                rc = 0;
         }
         if (rc != 0)
         {
