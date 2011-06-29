@@ -93,7 +93,6 @@ typedef struct rpcserver {
     uint32_t  timeout;     /**< Timeout for the last sent request */
     int       last_sid;    /**< SID received with the last command */
     te_bool   dead;        /**< RPC server does not respond */
-    te_bool   local;       /**< RPC server is TA thread */
     time_t    sent;        /**< Time of the last request sending */
 } rpcserver;
 
@@ -103,6 +102,8 @@ static uint8_t   *rpc_buf;     /**< Buffer for receiving of RPC answers;
                                     context only */
 
 static te_errno rpcserver_get(unsigned int, const char *, char *,
+                              const char *);
+static te_errno rpcserver_set(unsigned int, const char *, const char *,
                               const char *);
 static te_errno rpcserver_add(unsigned int, const char *, const char *,
                               const char *);
@@ -123,7 +124,7 @@ static rcf_pch_cfg_object node_rpcserver_dead =
 
 static rcf_pch_cfg_object node_rpcserver =
     { "rpcserver", 0, &node_rpcserver_dead, NULL,
-      (rcf_ch_cfg_get)rpcserver_get, NULL,
+      (rcf_ch_cfg_get)rpcserver_get, (rcf_ch_cfg_set)rpcserver_set,
       (rcf_ch_cfg_add)rpcserver_add, (rcf_ch_cfg_del)rpcserver_del,
       (rcf_ch_cfg_list)rpcserver_list, NULL, NULL};
 
@@ -255,6 +256,31 @@ delete_thread_child(rpcserver *rpcs)
     }
 }
 
+/**
+ * Join thread child RPC server.
+ *
+ * @param rpcs    RPC server handle
+ */
+static void
+join_thread_child(rpcserver *rpcs)
+{
+    tarpc_thread_join_in  in;
+    tarpc_thread_join_out out;
+    
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    in.common.op = RCF_RPC_CALL_WAIT;
+    in.tid = rpcs->tid;
+    
+    if (call(rpcs->father, "thread_join", &in, &out) != 0)
+        return;
+        
+    if (out.retval != 0)
+    {
+        WARN("RPC thread_join() failed on the server %s with errno %r",
+              rpcs->father->name, out.common._errno);
+    }
+}
 /**
  * Create child RPC server.
  *
@@ -696,6 +722,43 @@ rpcserver_get(unsigned int gid, const char *oid, char *value,
 
               
 /**
+ * Set RPC server value (father name).
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         value location
+ * @param name          RPC server name
+ *
+ * @return Status code
+ */
+static te_errno
+rpcserver_set(unsigned int gid, const char *oid, const char *value,
+              const char *name)
+{
+    rpcserver *rpcs;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    pthread_mutex_lock(&lock);
+    for (rpcs = list;
+         rpcs != NULL && strcmp(rpcs->name, name) != 0;
+         rpcs = rpcs->next);
+
+    if (rpcs == NULL)
+    {
+        pthread_mutex_unlock(&lock);
+        return TE_RC(TE_RCF_PCH, TE_ENOENT);
+    }
+
+    strcpy(rpcs->value, value);
+
+    pthread_mutex_unlock(&lock);
+
+    return 0;
+}
+
+/**
  * Create RPC server.
  *
  * @param gid           group identifier (unused)
@@ -714,8 +777,9 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     rpcserver  *father = NULL;
     const char *father_name = NULL;
     int         rc;
-    te_bool     existing = FALSE, local = FALSE;
+    te_bool     registration = FALSE;
     te_bool     thread = FALSE, exec = FALSE;
+    char        new_val[RCF_RPC_NAME_LEN];
     
     UNUSED(gid);
     UNUSED(oid);
@@ -725,26 +789,31 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
         extern uint32_t ta_processes_num;
         ta_processes_num++;
     }
-#endif    
+#endif
     
-    if (strcmp("thread_local", value) == 0)
-    {
-        local = TRUE;
-    }
-    else if (strcmp_start("thread_existing_", value) == 0)
-    {
-        existing = TRUE;
-        father_name = value + strlen("thread_existing_");
-    }
-    else if (strcmp_start("thread_", value) == 0)
+    if (strcmp_start("thread_", value) == 0)
     {
         father_name = value + strlen("thread_");
         thread = TRUE;
     }
-    else if (strcmp("fork_existing", value) == 0)
-        existing = TRUE;
+    else if (strcmp_start("fork_register_", value) == 0)
+    {
+        father_name = value + strlen("fork_register_");
+        snprintf(new_val, RCF_RPC_NAME_LEN, "fork_%s",
+                 father_name);
+        value = (const char *)new_val;
+        registration = TRUE;
+    }
     else if (strcmp_start("fork_", value) == 0)
         father_name = value + strlen("fork_");
+    else if (strcmp_start("forkexec_register_", value) == 0)
+    {
+        father_name = value + strlen("forkexec_register_");
+        snprintf(new_val, RCF_RPC_NAME_LEN, "forkexec_%s",
+                 father_name);
+        value = (const char *)new_val;
+        registration = TRUE;
+    }
     else if (strcmp_start("forkexec_", value) == 0)
     {
         father_name = value + strlen("forkexec_");
@@ -757,6 +826,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     }
     
     pthread_mutex_lock(&lock);
+
     for (rpcs = list; rpcs != NULL; rpcs = rpcs->next)
     {
         if (strcmp(rpcs->name, new_name) == 0)
@@ -764,11 +834,11 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
             pthread_mutex_unlock(&lock);
             return TE_RC(TE_RCF_PCH, TE_EEXIST);
         }
-            
+        
         if (father_name != NULL && strcmp(rpcs->name, father_name) == 0)
             father = rpcs;
     }
-    
+
     if (father_name != NULL && father == NULL)
     {
         pthread_mutex_unlock(&lock);
@@ -777,6 +847,19 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_RCF_PCH, TE_EEXIST);
     }
     
+    if (thread == TRUE)
+    {
+        if (father->tid != 0)
+        {
+            /* All the threads should be linked to the initial one" */
+            father = father->father;
+            snprintf(new_val, RCF_RPC_NAME_LEN, "thread_%s",
+                     father->name);
+            value = (const char *)new_val;
+            father_name = value + strlen("thread_");
+        }
+    }
+
     if ((rpcs = (rpcserver *)calloc(1, sizeof(*rpcs))) == NULL)
     {
         pthread_mutex_unlock(&lock);
@@ -788,18 +871,17 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     strcpy(rpcs->name, new_name);
     strcpy(rpcs->value, value);
     rpcs->father = father;
-    rpcs->local = local;
     
-    if (existing)
+    if (registration)
         goto connect;
          
-    if (father == NULL && !local)
+    if (father == NULL)
     {
         void *argv[1];
         
         argv[0] = rpcs->name;
         
-        if ((rc = rcf_ch_start_process((pid_t *)&rpcs->pid, 0, 
+        if ((rc = rcf_ch_start_process((pid_t *)&rpcs->pid, 0,
                                        "rcf_pch_rpc_server_argv",
                                        TRUE, 1, argv)) != 0)
         {
@@ -808,25 +890,6 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
             ERROR("Failed to spawn RPC server process: error=%r", rc);
             return rc;
         }
-        goto connect;
-    }
-    
-    if (local)
-    {
-        void *argv[1];
-        
-        argv[0] = rpcs->name;
-        
-        if ((rc = rcf_ch_start_thread((int *)&rpcs->tid, 0, 
-                                      "rcf_ch_rpc_server_thread",
-                                      TRUE, 1, argv)) != 0)
-        {
-            pthread_mutex_unlock(&lock);
-            free(rpcs);
-            ERROR("Failed to spawn RPC server thread: error=%r", rc);
-            return rc;
-        }
-
         goto connect;
     }
     
@@ -844,7 +907,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
         }
         rc = fork_child(rpcs, exec);
     }
-            
+     
     if (rc != 0)
     {
         pthread_mutex_unlock(&lock);
@@ -857,12 +920,10 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     {
         if (rpcs->tid > 0)
         {
-            if (rpcs->local)
-                rcf_ch_kill_thread(rpcs->tid);
-            else
-                delete_thread_child(rpcs);
+            delete_thread_child(rpcs);
+            join_thread_child(rpcs);
         }
-        else if (!existing)
+        else if (!registration)
         {
             rcf_ch_kill_process(rpcs->pid);
         }
@@ -934,25 +995,32 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
     if (rpcs->father != NULL)
         rpcs->father->ref--;
 
-    /* Try soft shutdown first */
-    if (rpcs->sent > 0 || rpcs->dead || 
-        rpc_transport_send(rpcs->handle, (uint8_t *)"FIN", 
-                           sizeof("FIN")) != 0 ||
-        rpc_transport_recv(rpcs->handle, buf, &len, 5) != 0 ||
-        strcmp((char *)buf, "OK") != 0)
+    if (strcmp_start("deleted_thread_", rpcs->value) != 0)
     {
-        RING("Kill RPC server '%s'", rpcs->name);
-        if (rpcs->tid > 0)
+        /* Try soft shutdown first */
+        if (rpcs->sent > 0 || rpcs->dead || 
+            rpc_transport_send(rpcs->handle, (uint8_t *)"FIN",
+                               sizeof("FIN")) != 0 ||
+            rpc_transport_recv(rpcs->handle, buf, &len, 5) != 0 ||
+            strcmp((char *)buf, "OK") != 0)
         {
-            if (rpcs->local)
-                rcf_ch_kill_thread(rpcs->tid);
-            else
+            RING("Kill RPC server '%s'", rpcs->name);
+            if (rpcs->tid > 0)
+            {
                 delete_thread_child(rpcs);
+                join_thread_child(rpcs);
+            }
+            else
+                rcf_ch_kill_process(rpcs->pid);
         }
         else
-            rcf_ch_kill_process(rpcs->pid);
+        {
+            if (rpcs->tid > 0)
+                join_thread_child(rpcs);
+        }
+
+        rpc_transport_close(rpcs->handle);
     }
-    rpc_transport_close(rpcs->handle);
 
     pthread_mutex_unlock(&lock);
     
@@ -1123,5 +1191,6 @@ void
 rcf_pch_rpc_server_argv(int argc, char **argv)
 {
     UNUSED(argc);
+
     rcf_pch_rpc_server(argv[0]);
 }
