@@ -127,7 +127,7 @@ rpc_wsa_socket(rcf_rpc_server *rpcs,
     in.domain = domain;
     in.type = type;
     in.proto = protocol;
-    in.info.info_val = info;
+    in.info.info_val = (char *)info;
     in.info.info_len = info_len;
     in.flags = flags;
 
@@ -1717,7 +1717,7 @@ rpc_wsa_recv_from(rcf_rpc_server *rpcs, int s,
     if (fromlen != NULL && rpcs->op != RCF_RPC_WAIT)
     {
         in.fromlen.fromlen_len = 1;
-        in.fromlen.fromlen_val = fromlen;
+        in.fromlen.fromlen_val = (int *)fromlen;
     }
     if (rpcs->op != RCF_RPC_WAIT)
     {
@@ -2095,7 +2095,7 @@ rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
 te_bool
 rpc_wsa_get_overlapped_result(rcf_rpc_server *rpcs,
                               int s, rpc_overlapped overlapped,
-                              ssize_t *bytes, te_bool wait,
+                              size_t *bytes, te_bool wait,
                               rpc_send_recv_flags *flags,
                               char *buf, int buflen)
 {
@@ -2207,7 +2207,7 @@ rpc_wsa_duplicate_socket(rcf_rpc_server *rpcs,
     if (info_len != NULL)
     {
         in.info.info_len = *info_len;
-        in.info.info_val = info;
+        in.info.info_val = (char *)info;
     }
 
     rcf_rpc_call(rpcs, "duplicate_socket", &in, &out);
@@ -2653,7 +2653,7 @@ rpc_wsa_connect(rcf_rpc_server *rpcs, int s, const struct sockaddr *addr,
         in.sqos.sending = sqos->sending;
         in.sqos.receiving = sqos->receiving;
         in.sqos.provider_specific_buf.provider_specific_buf_val =
-            sqos->provider_specific_buf;
+            (uint8_t *)sqos->provider_specific_buf;
         in.sqos.provider_specific_buf.provider_specific_buf_len =
             sqos->provider_specific_buf_len;
     }
@@ -2882,7 +2882,7 @@ rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s, rpc_ioctl_code control_code,
                 rqos->sending = *(tarpc_flowspec *)&qos->sending;
                 rqos->receiving = *(tarpc_flowspec *)&qos->receiving;
                 rqos->provider_specific_buf.provider_specific_buf_val =
-                    qos->provider_specific_buf;
+                    (uint8_t *)qos->provider_specific_buf;
                 rqos->provider_specific_buf.provider_specific_buf_len =
                     qos->provider_specific_buf_len;
             }
@@ -3310,7 +3310,7 @@ rpc_wsa_join_leaf(rcf_rpc_server *rpcs, int s, const struct sockaddr *addr,
         in.sqos.sending = *(tarpc_flowspec*)&sqos->sending;
         in.sqos.receiving = *(tarpc_flowspec*)&sqos->receiving;
         in.sqos.provider_specific_buf.provider_specific_buf_val =
-            sqos->provider_specific_buf;
+            (uint8_t *)sqos->provider_specific_buf;
         in.sqos.provider_specific_buf.provider_specific_buf_len =
             sqos->provider_specific_buf_len;
     }

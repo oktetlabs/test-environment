@@ -553,9 +553,19 @@ extern ssize_t rpc_wsa_recv_ex(rcf_rpc_server *rpcs,
  * @param rpcs    RPC server handle
  *
  * @return Upon successful completion this function returns an
- *         @b rpc_wsaevent structure, otherwise -1 is returned
+ *         @b rpc_wsaevent structure handle, otherwise NULL is returned
  */
 extern rpc_wsaevent rpc_create_event(rcf_rpc_server *rpcs);
+
+/**
+ * Create a new event object and set lower bit.
+ *
+ * @param rpcs    RPC server handle
+ *
+ * @return Upon successful completion this function returns an
+ *         @b rpc_wsaevent structure handle, otherwise NULL is returned
+ */
+extern rpc_wsaevent rpc_create_event_with_bit(rcf_rpc_server *rpcs);
 
 /**
  * Close an open event object handle.
@@ -1091,7 +1101,7 @@ extern int rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
 extern te_bool rpc_wsa_get_overlapped_result(rcf_rpc_server *rpcs,
                                              int s, 
                                              rpc_overlapped overlapped,
-                                             ssize_t *bytes, te_bool wait,
+                                             size_t *bytes, te_bool wait,
                                              rpc_send_recv_flags *flags,
                                              char *buf, int buflen);
 /**
