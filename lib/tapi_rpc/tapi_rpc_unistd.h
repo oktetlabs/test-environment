@@ -712,9 +712,18 @@ extern int rpc_socketpair(rcf_rpc_server *rpcs,
  *
  * @param rpcs  RPC server handle
  *
- * @return The effective user ID of the RPC server process
+ * @return The ID of the RPC server process
  */
 extern pid_t rpc_getpid(rcf_rpc_server *rpcs);
+
+/**
+ * Get RPC server thread identification.
+ *
+ * @param rpcs  RPC server handle
+ *
+ * @return The thread ID of the RPC server thread
+ */
+extern tarpc_pthread_t rpc_pthread_self(rcf_rpc_server *rpcs);
 
 /**
  * Query the real user ID on the RPC server.

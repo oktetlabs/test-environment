@@ -68,7 +68,7 @@ typedef int64_t     tarpc_suseconds_t;
 /** Pointer to 'struct aiocb' */
 typedef tarpc_ptr   tarpc_aiocb_t;
 /** RPC pthread_t analogue */
-typedef tarpc_ptr   tarpc_pthread_t;
+typedef uint64_t    tarpc_pthread_t;
 
 /** Handle of the 'WSAEvent' or 0 */
 typedef tarpc_ptr   tarpc_wsaevent;
@@ -2696,6 +2696,16 @@ struct tarpc_kill_in {
 
 typedef struct tarpc_int_retval_out tarpc_kill_out;
 
+/* pthread_kill() */
+
+struct tarpc_pthread_kill_in {
+    struct tarpc_in_arg common;
+
+    tarpc_pthread_t tid;
+    tarpc_signum    signum;
+};
+
+typedef struct tarpc_int_retval_out tarpc_pthread_kill_out;
 
 /* waitpid() */
 
@@ -3223,6 +3233,20 @@ struct tarpc_getpid_in {
 
 typedef struct tarpc_int_retval_out tarpc_getpid_out;
 
+/* pthread_self() */
+struct tarpc_pthread_self_in {
+    struct tarpc_in_arg common;
+};
+
+struct tarpc_pthread_self_out { 
+    struct tarpc_out_arg    common;
+
+    tarpc_pthread_t         retval;
+};
+
+typedef struct tarpc_pthread_self_in tarpc_pthread_self_in;
+typedef struct tarpc_pthread_self_out tarpc_pthread_self_out;
+
 /* access */
 struct tarpc_access_in {
     struct tarpc_in_arg common;
@@ -3519,21 +3543,25 @@ struct tarpc_thread_create_in {
 struct tarpc_thread_create_out {
     struct tarpc_out_arg common;
     
-    tarpc_ptr   tid;
-    tarpc_int   retval;
+    tarpc_pthread_t   tid;
+    tarpc_int         retval;
 };
 
 struct tarpc_thread_cancel_in {
     struct tarpc_in_arg common;
     
-    tarpc_ptr           tid;
+    tarpc_pthread_t    tid;
 };
 
-struct tarpc_thread_cancel_out {
-    struct tarpc_out_arg common;
+typedef struct tarpc_int_retval_out tarpc_thread_cancel_out;
+
+struct tarpc_thread_join_in {
+    struct tarpc_in_arg common;
     
-    tarpc_int   retval;
+    tarpc_pthread_t    tid;
 };
+
+typedef struct tarpc_int_retval_out tarpc_thread_join_out;
 
 struct tarpc_execve_in {
     struct tarpc_in_arg common;
@@ -4371,8 +4399,10 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(create_process)
         RPC_DEF(thread_create)
         RPC_DEF(thread_cancel)
+        RPC_DEF(thread_join)
         RPC_DEF(execve)
         RPC_DEF(getpid)
+        RPC_DEF(pthread_self)
         RPC_DEF(gettimeofday)
         
         RPC_DEF(access)
@@ -4467,6 +4497,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(sysv_signal)
         RPC_DEF(sigaction)
         RPC_DEF(kill)
+        RPC_DEF(pthread_kill)
         RPC_DEF(ta_kill_death)
 
         RPC_DEF(sigset_new)
