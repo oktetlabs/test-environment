@@ -1406,7 +1406,7 @@ rpc_getpid(rcf_rpc_server *rpcs)
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_INT(getuid, -1);
+        RETVAL_INT(getpid, -1);
     }
 
     rcf_rpc_call(rpcs, "getpid", &in, &out);
@@ -1416,6 +1416,27 @@ rpc_getpid(rcf_rpc_server *rpcs)
     RETVAL_INT(getpid, out.retval);
 }
 
+tarpc_pthread_t
+rpc_pthread_self(rcf_rpc_server *rpcs)
+{
+    tarpc_pthread_self_in  in;
+    tarpc_pthread_self_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(pthread_self, -1);
+    }
+
+    rcf_rpc_call(rpcs, "pthread_self", &in, &out);
+
+    TAPI_RPC_LOG(rpcs, pthread_self, "", "%llu",
+                 (unsigned long long int) out.retval);
+    return out.retval;
+}
 
 tarpc_uid_t
 rpc_getuid(rcf_rpc_server *rpcs)

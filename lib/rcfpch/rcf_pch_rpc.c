@@ -87,7 +87,8 @@ typedef struct rpcserver {
     
     int       ref;         /**< Number of thread children */
     pid_t     pid;         /**< Process identifier */
-    uint32_t  tid;         /**< Thread identifier or 0 */
+
+    tarpc_pthread_t  tid;  /**< Thread identifier or 0 */
     
     uint32_t  timeout;     /**< Timeout for the last sent request */
     int       last_sid;    /**< SID received with the last command */

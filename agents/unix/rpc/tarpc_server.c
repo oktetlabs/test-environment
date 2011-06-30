@@ -72,17 +72,14 @@
 #define MSG_MORE 0
 #endif
 
-
 #ifdef LIO_READ
 void *dummy = aio_read;
 #endif
 
 extern sigset_t rpcs_received_signals;
 
-
 static te_bool dynamic_library_set = FALSE;
 static void *dynamic_library_handle = NULL;
-
 
 /**
  * Set name of the dynamic library to be used to resolve function
@@ -329,8 +326,9 @@ _setlibname_1_svc(tarpc_setlibname_in *in, tarpc_setlibname_out *out,
 {
     UNUSED(rqstp);
     memset(out, 0, sizeof(*out));
-    VERB("PID=%d TID=%d: Entry %s",
-         (int)getpid(), (int)pthread_self(), "setlibname");
+    VERB("PID=%d TID=%llu: Entry %s",
+         (int)getpid(), (unsigned long long int)pthread_self(),
+         "setlibname");
 
     out->common._errno = tarpc_setlibname((in->libname.libname_len == 0) ?
                                           NULL : in->libname.libname_val);
@@ -598,18 +596,16 @@ _thread_create_1_svc(tarpc_thread_create_in *in,
     pthread_t tid;
 
     UNUSED(rqstp);
+
+    TE_COMPILE_TIME_ASSERT(sizeof(pthread_t) <= sizeof(tarpc_pthread_t));
+
     memset(out, 0, sizeof(*out));
 
     out->retval = pthread_create(&tid, NULL, (void *)rcf_pch_rpc_server,
                                  strdup(in->name.name_val));
+
     if (out->retval == 0)
-    {
-        /*
-         * FIXME: Do not assumed that pthread_t is an integer,
-         * allocate memory for it.
-         */
-        out->tid = rcf_pch_mem_alloc((void *)(long)tid);
-    }
+        out->tid = (tarpc_pthread_t)tid;
 
     return TRUE;
 }
@@ -623,13 +619,22 @@ _thread_cancel_1_svc(tarpc_thread_cancel_in *in,
     UNUSED(rqstp);
     memset(out, 0, sizeof(*out));
 
-    /*
-     * FIXME: Do not assumed that pthread_t is an integer,
-     * allocate memory for it.
-     */
-    out->retval = pthread_cancel((pthread_t)(long)rcf_pch_mem_get(in->tid));
-    rcf_pch_mem_free(in->tid);
+    out->retval = pthread_cancel((pthread_t)in->tid);
 
+    return TRUE;
+}
+
+/*-------------- thread_join() -----------------------------*/
+bool_t
+_thread_join_1_svc(tarpc_thread_join_in *in,
+                   tarpc_thread_join_out *out,
+                   struct svc_req *rqstp)
+{
+    UNUSED(rqstp);
+    memset(out, 0, sizeof(*out));
+
+    out->retval = pthread_join((pthread_t)in->tid,
+                               NULL);
     return TRUE;
 }
 
@@ -667,6 +672,13 @@ TARPC_FUNC(execve, {},
 
 /*-------------- getpid() --------------------------------*/
 TARPC_FUNC(getpid, {}, { MAKE_CALL(out->retval = func_void()); })
+
+/*-------------- pthread_self() --------------------------*/
+TARPC_FUNC(pthread_self, {},
+{
+    MAKE_CALL(out->retval = (tarpc_pthread_t)((pthread_t (*)())func)());
+}
+)
 
 /*-------------- access() --------------------------------*/
 TARPC_FUNC(access, {},
@@ -1756,6 +1768,15 @@ TARPC_FUNC(sigprocmask, {},
 TARPC_FUNC(kill, {},
 {
     MAKE_CALL(out->retval = func(in->pid, signum_rpc2h(in->signum)));
+}
+)
+
+/*-------------- pthread_kill() ------------------------*/
+
+TARPC_FUNC(pthread_kill, {},
+{
+    MAKE_CALL(out->retval = func((pthread_t)in->tid,
+                                 signum_rpc2h(in->signum)));
 }
 )
 
@@ -4044,8 +4065,9 @@ _rpc_vlan_get_parent_1_svc(tarpc_rpc_vlan_get_parent_in *in,
 
     UNUSED(rqstp);
     memset(out, 0, sizeof(*out));
-    VERB("PID=%d TID=%d: Entry %s",
-         (int)getpid(), (int)pthread_self(), "rpc_vlan_get_parent");
+    VERB("PID=%d TID=%llu: Entry %s",
+         (int)getpid(), (unsigned long long int)pthread_self(),
+         "rpc_vlan_get_parent");
 
     if ((str = (char *)calloc(IF_NAMESIZE, 1)) == NULL)
     {

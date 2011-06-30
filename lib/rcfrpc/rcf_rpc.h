@@ -131,7 +131,7 @@ typedef struct rcf_rpc_server {
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_t lock;       /**< lock mutex */
 #endif    
-    int             tid0;       /**< Identifier of thread performing
+    tarpc_pthread_t tid0;       /**< Identifier of thread performing
                                      non-blocking operations */
     char            proc[RCF_MAX_NAME];
                                 /**< Last called function */

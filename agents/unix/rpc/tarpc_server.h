@@ -520,11 +520,7 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,  \
             memset(in,  0, sizeof(*in));                            \
             memset(out, 0, sizeof(*out));                           \
                                                                     \
-            /*                                                      \
-             * FIXME: Do not assumed that pthread_t is an integer,  \
-             * allocate memory for it.                              \
-             */                                                     \
-            out->common.tid = rcf_pch_mem_alloc((void *)(long)_tid);\
+            out->common.tid = (tarpc_pthread_t)_tid;                \
             out->common.done = rcf_pch_mem_alloc(&arg->done);       \
                                                                     \
             break;                                                  \
@@ -532,12 +528,8 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,  \
                                                                     \
         case RCF_RPC_WAIT:                                          \
         {                                                           \
-            /*                                                      \
-             * FIXME: Do not assumed that pthread_t is an integer,  \
-             * allocate memory for it.                              \
-             */                                                     \
             pthread_t   _tid =                                      \
-                (pthread_t)(long)rcf_pch_mem_get(in->common.tid);   \
+                (pthread_t) in->common.tid;                         \
             enum xdr_op op;                                         \
                                                                     \
             VERB("%s(): WAIT", #_func);                             \
@@ -547,16 +539,11 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,  \
              * in any case.                                         \
              */                                                     \
             rcf_pch_mem_free(in->common.done);                      \
-            rcf_pch_mem_free(in->common.tid);                       \
                                                                     \
-            /*                                                      \
-             * FIXME: Do not assumed that pthread_t is an integer,  \
-             * allocate memory for it.                              \
-             */                                                     \
             if (_tid == (pthread_t)(long)NULL)                      \
             {                                                       \
-                ERROR("No thread with ID %u to wait",               \
-                      (unsigned)in->common.tid);                    \
+                ERROR("No thread with ID %llu to wait",             \
+                      (unsigned long long int)in->common.tid);      \
                 out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOENT);  \
                 break;                                              \
             }                                                       \
