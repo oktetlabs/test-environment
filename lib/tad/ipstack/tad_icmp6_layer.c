@@ -335,6 +335,20 @@ csum_seg_cb(const tad_pkt *pkt, tad_pkt_seg *seg,
     return 0;
 }
 
+static void
+tad_ip6_fill_pseudo_hdr(uint8_t *pseudo_hdr,
+                        uint8_t *src, uint8_t *dst,
+                        uint32_t pkt_len, uint8_t next_header)
+{
+    memcpy(pseudo_hdr, src, IP6_ADDR_LEN);
+    memcpy(pseudo_hdr + IP6_ADDR_LEN, dst, IP6_ADDR_LEN);
+    pkt_len = htonl(pkt_len);
+    memcpy(pseudo_hdr + IP6_ADDR_LEN * 2, &pkt_len, sizeof(pkt_len));
+    memset(pseudo_hdr + IP6_ADDR_LEN * 2 + sizeof(pkt_len), 0, 4);
+    memcpy(pseudo_hdr + IP6_ADDR_LEN * 2 + sizeof(pkt_len) + 3,
+           &next_header, sizeof(next_header));
+}
+
 /**
  * Callback to generate binary data per PDU.
  *
