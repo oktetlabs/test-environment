@@ -109,10 +109,10 @@ rpc_server_sem_init(rcf_rpc_server *rpcs)
  *
  * @param ta            a test agent
  * @param name          name of the new server (should not start from
- *                      fork_ or thread_)
+ *                      fork_, forkexec_, thread_ or deleted_thread_)
  * @param father        father name or NULL (should be NULL if
  *                      RCF_RPC_SERVER_GET_REUSE or
- *                      RCF_RPC_SERVER_GET_EXISTING is set)
+ *                      RCF_RPC_SERVER_GET_EXISTING is set).
  * @param flags         RCF_RPC_SERVER_GET_* flags
  * @param p_handle      location for new RPC server handle
  *
@@ -130,21 +130,29 @@ rcf_rpc_server_get(const char *ta, const char *name,
     rcf_rpc_server *rpcs = NULL;
     cfg_handle      handle = CFG_HANDLE_INVALID;
     char            val[RCF_RPC_NAME_LEN];
+    char            str_register[RCF_RPC_NAME_LEN] = "register_";
     
     /* Validate parameters */
     if (ta == NULL || name == NULL ||
-        strlen(name) >= RCF_RPC_NAME_LEN - strlen("thread_") ||
-        strcmp_start("thread_", name) == 0 ||
+        strlen(name) >= RCF_RPC_NAME_LEN - strlen("forkexec_register_") ||
+        strcmp_start("deleted_thread_", name) == 0 ||
         strcmp_start("fork_", name) == 0 ||
-        (((flags & RCF_RPC_SERVER_GET_EXISTING) ||
-          (flags & RCF_RPC_SERVER_GET_REUSE)) && father != NULL) || 
-        ((flags & RCF_RPC_SERVER_GET_THREAD) && father == NULL))
+        strcmp_start("forkexec_", name) == 0 ||
+        strcmp_start("register_", name) == 0 ||
+        ((flags & (RCF_RPC_SERVER_GET_EXISTING |
+           RCF_RPC_SERVER_GET_REUSE)) && father != NULL) || 
+        ((flags & (RCF_RPC_SERVER_GET_THREAD |
+                   RCF_RPC_SERVER_GET_REGISTER)) && father == NULL) ||
+        ((flags & RCF_RPC_SERVER_GET_REGISTER) &&
+         (flags & RCF_RPC_SERVER_GET_THREAD)))
     {
         return TE_RC(TE_RCF_API, TE_EINVAL);
     }
-    
+
+    if (!(flags & RCF_RPC_SERVER_GET_REGISTER))
+        str_register[0] = '\0';
     /* Try to find existing RPC server */
-    rc = cfg_get_instance_fmt(NULL, NULL, "/agent:%s/rpcserver:%s",
+    rc = cfg_get_instance_fmt(NULL, &val0, "/agent:%s/rpcserver:%s",
                               ta, name);
  
     if (rc != 0 && (flags & RCF_RPC_SERVER_GET_EXISTING))
@@ -171,23 +179,23 @@ rcf_rpc_server_get(const char *ta, const char *name,
     }        
         
     /* FIXME: thread support to be done */
-    if (father != NULL && strcmp(father, "local") != 0 &&
-        strcmp(father, "existing") != 0 &&
-        cfg_get_instance_fmt(NULL, &val0, "/agent:%s/rpcserver:%s", 
+    if (father != NULL && 
+        cfg_get_instance_fmt(NULL, NULL, "/agent:%s/rpcserver:%s", 
                              ta, father) != 0)
     {
-        ERROR("Cannot find father %s to create server %s", father, name);
+        ERROR("Cannot find father %s to create server %s",
+              father, name);
         return TE_RC(TE_RCF_API, TE_ENOENT);
     }
-    
+
     if (father == NULL)
-        *val = 0;
+        *val = '\0';
     else if ((flags & RCF_RPC_SERVER_GET_THREAD))
         sprintf(val, "thread_%s", father);
     else if ((flags & RCF_RPC_SERVER_GET_EXEC))
-        sprintf(val, "forkexec_%s", father);
+        sprintf(val, "forkexec_%s%s", str_register, father);
     else
-        sprintf(val, "fork_%s", father);
+        sprintf(val, "fork_%s%s", str_register, father);
 
     if ((rpcs = (rcf_rpc_server *)
                     calloc(1, sizeof(rcf_rpc_server))) == NULL)
@@ -240,7 +248,8 @@ rcf_rpc_server_get(const char *ta, const char *name,
         }
 #endif        
     }
-    else if (rc == 0 && !(flags & RCF_RPC_SERVER_GET_REUSE))
+
+    if (rc == 0 && !(flags & RCF_RPC_SERVER_GET_REUSE))
     {
         /* Restart it */
         if ((rc = cfg_del_instance_fmt(FALSE, "/agent:%s/rpcserver:%s", 
@@ -252,7 +261,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
             RETERR(rc, "Failed to restart RPC server %s", name);
         }
     }
-    else 
+    else if (rc != 0)
     {
         if ((rc = cfg_add_instance_fmt(&handle, CVT_STRING, val, 
                                        "/agent:%s/rpcserver:%s", 
@@ -333,6 +342,109 @@ rcf_rpc_servers_restart_all(void)
     return rc;
 }
 
+/**
+ * Mark threads as deleted in result of execve() call.
+ * Clear value of node of RPC server where execve() was called
+ * in configuration tree.
+ *
+ * @param rpcs          RPC server
+ *
+ * @return 0 if success
+ */
+int
+rcf_rpc_server_mark_deleted_threads(rcf_rpc_server *rpcs)
+{
+    unsigned int num, i;
+
+    int   rc = 0;
+    char  new_val[RCF_RPC_NAME_LEN];
+    char *value;
+    char *name;
+    char *my_val;
+
+    cfg_handle  *servers;
+    cfg_handle   my_handle;
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return -1;
+    }
+
+    if ((rc = cfg_find_fmt(&my_handle, "/agent:%s/rpcserver:%s",
+                           rpcs->ta, rpcs->name)) != 0)
+    {
+        ERROR("%s(): Cannot find RPC server %s", __FUNCTION__,
+              rpcs->name);
+        return rc;
+    }
+
+    if ((rc = cfg_find_pattern_fmt(&num, &servers, "/agent:%s/rpcserver:*",
+                                   rpcs->ta)) != 0)
+    {
+        ERROR("%s(): Cannot get the list of all RPC servers on "
+              "the test agent %s", __FUNCTION__, rpcs->ta);
+        return rc;
+    }
+
+    if ((rc = cfg_get_instance(my_handle, NULL, &my_val)) != 0)
+    {
+        ERROR("%s(): Cannot get the value of the RPC server %s node "
+              "in configuration tree", __FUNCTION__, rpcs->name);
+        return rc;
+    }
+
+    for (i = 0; i < num; i++)
+    {
+        if ((rc = cfg_get_instance(servers[i], NULL, &value)) != 0)
+        {
+            ERROR("%s(): Cannot get value of RPC server node by its"
+                  " handle %d", __FUNCTION__, servers[i]);
+            return rc;
+        }
+
+        if (cfg_get_inst_name(servers[i], &name) != 0)
+        {
+            ERROR("%s(): Cannot get name of RPC server node by its"
+                  " handle %d", __FUNCTION__, servers[i]);
+            return rc;
+        }
+
+        if ((strcmp_start("thread_", value) == 0 &&
+            strncmp(value + strlen("thread_"), rpcs->name,
+                    RCF_RPC_NAME_LEN) == 0) ||
+            (strcmp_start("thread_", rpcs->name) == 0 &&
+             strncmp(rpcs->name + strlen("thread_"), name,
+                     RCF_RPC_NAME_LEN) == 0) ||
+            (strncmp(value, my_val, RCF_RPC_NAME_LEN) == 0
+             && value[0] != '\0') ||
+            strncmp(name, rpcs->name, RCF_RPC_NAME_LEN) == 0)
+        {
+            if (servers[i] != my_handle)
+                snprintf(new_val, RCF_RPC_NAME_LEN, "deleted_%s", value);
+            else
+                new_val[0] = '\0';
+
+            rc = cfg_set_instance(servers[i], CVT_STRING, new_val);
+
+            if (rc != 0)
+            {
+                free(value);
+                free(my_val);
+                ERROR("%s(): Cannot set new value for "
+                      "RPC server %s", __FUNCTION__, name);
+                free(name);
+                return rc;
+            }
+        }
+        free(value);
+    }
+
+    free(servers);
+    free(my_val);
+    free(name);
+    return FALSE;
+}
 
 /**
  * Perform execve() on the RPC server. Filename of the running process
@@ -342,6 +454,7 @@ rcf_rpc_servers_restart_all(void)
  *
  * @return status code
  */
+
 te_errno 
 rcf_rpc_server_exec(rcf_rpc_server *rpcs)
 {
@@ -355,9 +468,10 @@ rcf_rpc_server_exec(rcf_rpc_server *rpcs)
 
 #ifdef HAVE_PTHREAD_H
     if (pthread_mutex_lock(&rpcs->lock) != 0)
-        ERROR("pthread_mutex_lock() failed");
+        ERROR("%s(): pthread_mutex_lock() failed", __FUNCTION__);
 #endif
-        
+
+
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
     in.name = rpcs->name;
@@ -373,13 +487,17 @@ rcf_rpc_server_exec(rcf_rpc_server *rpcs)
 #endif
 
     if (rc == 0)
+    {
         RING("RPC (%s,%s): execve() -> (%s)",
              rpcs->ta, rpcs->name, errno_rpc2str(RPC_ERRNO(rpcs)));
+        rc = rcf_rpc_server_mark_deleted_threads(rpcs);
+    }
     else
         ERROR("RPC (%s,%s): execve() -> (%s), rc=%r",
               rpcs->ta, rpcs->name, errno_rpc2str(RPC_ERRNO(rpcs)), rc);
 
     return rc;
+    
 }
 
 /**
@@ -402,7 +520,7 @@ rcf_rpc_server_destroy(rcf_rpc_server *rpcs)
     
 #ifdef HAVE_PTHREAD_H
     if (pthread_mutex_lock(&rpcs->lock) != 0)
-        ERROR("pthread_mutex_lock() failed");
+        ERROR("%s(): pthread_mutex_lock() failed", __FUNCTION__);
 #endif
 
     if ((rc = cfg_del_instance_fmt(FALSE, "/agent:%s/rpcserver:%s",
@@ -793,6 +911,7 @@ rcf_rpc_server_has_children(rcf_rpc_server *rpcs)
     return FALSE;    
 }
 
+
 /**
  * Fork RPC server with non-default conditions.
  *
@@ -840,7 +959,13 @@ rcf_rpc_server_create_process(rcf_rpc_server *rpcs,
                    out.common._errno : TE_RC(TE_RCF_API, TE_ECORRUPTED);
     }
     
-    rc = rcf_rpc_server_get(rpcs->ta, name, "existing", 0, p_new);
+    /* 
+     * Flag RCF_RPC_SERVER_EXEC is passed just for proper value setting 
+     * of RPC server node in configuration tree.
+     */
+    rc = rcf_rpc_server_get(rpcs->ta, name, rpcs->name,
+                            RCF_RPC_SERVER_GET_REGISTER |
+                            (flags & RCF_RPC_SERVER_GET_EXEC), p_new);
     
     if (rc != 0)
     {

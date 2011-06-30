@@ -211,25 +211,6 @@ rcf_rpc_server_create(const char *ta, const char *name,
 }                      
 
 /**
- * Create RPC server as TA thread.
- *
- * @param ta            a test agent
- * @param name          name of the new server
- * @param p_handle      location for new RPC server handle
- *
- * @return Status code
- */
-static inline te_errno 
-rcf_rpc_server_create_ta_thread(const char *ta, const char *name, 
-                                rcf_rpc_server **p_handle)
-{
-    ERROR("TA threads are very dangerous! Do not do it!  "
-          "Now, you should never fork TA.");
-    return rcf_rpc_server_get(ta, name, "local", RCF_RPC_SERVER_GET_THREAD,
-                              p_handle);
-}                      
-
-/**
  * Create thread in the process with RPC server.
  *
  * @param rpcs          existing RPC server handle
