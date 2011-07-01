@@ -179,7 +179,8 @@ rcf_rpc_server_get(const char *ta, const char *name,
     }        
         
     /* FIXME: thread support to be done */
-    if (father != NULL && 
+    if (father != NULL && strcmp(father, "local") != 0 &&
+        strcmp(father, "existing") != 0 &&
         cfg_get_instance_fmt(NULL, NULL, "/agent:%s/rpcserver:%s", 
                              ta, father) != 0)
     {

@@ -93,6 +93,7 @@ typedef struct rpcserver {
     uint32_t  timeout;     /**< Timeout for the last sent request */
     int       last_sid;    /**< SID received with the last command */
     te_bool   dead;        /**< RPC server does not respond */
+    te_bool   local;       /**< RPC server is TA thread */
     time_t    sent;        /**< Time of the last request sending */
 } rpcserver;
 
@@ -777,7 +778,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     rpcserver  *father = NULL;
     const char *father_name = NULL;
     int         rc;
-    te_bool     registration = FALSE;
+    te_bool     registration = FALSE, local = FALSE;
     te_bool     thread = FALSE, exec = FALSE;
     char        new_val[RCF_RPC_NAME_LEN];
     
@@ -791,7 +792,11 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     }
 #endif
     
-    if (strcmp_start("thread_", value) == 0)
+    if (strcmp("thread_local", value) == 0)
+    {
+        local = TRUE;
+    }
+    else if (strcmp_start("thread_", value) == 0)
     {
         father_name = value + strlen("thread_");
         thread = TRUE;
@@ -871,11 +876,12 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     strcpy(rpcs->name, new_name);
     strcpy(rpcs->value, value);
     rpcs->father = father;
+    rpcs->local = local;
     
     if (registration)
         goto connect;
          
-    if (father == NULL)
+    if (father == NULL && !local)
     {
         void *argv[1];
         
@@ -890,6 +896,25 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
             ERROR("Failed to spawn RPC server process: error=%r", rc);
             return rc;
         }
+        goto connect;
+    }
+
+    if (local) 
+    { 
+        void *argv[1]; 
+                        
+        argv[0] = rpcs->name; 
+                        
+        if ((rc = rcf_ch_start_thread((int *)&rpcs->tid, 0, 
+        "rcf_ch_rpc_server_thread", 
+        TRUE, 1, argv)) != 0) 
+        { 
+            pthread_mutex_unlock(&lock);
+            free(rpcs);
+            ERROR("Failed to spawn RPC server thread: error=%r", rc);
+            return rc;
+        }
+                        
         goto connect;
     }
     
@@ -920,8 +945,13 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     {
         if (rpcs->tid > 0)
         {
-            delete_thread_child(rpcs);
-            join_thread_child(rpcs);
+            if (rpcs->local)
+                rcf_ch_kill_thread(rpcs->tid); 
+            else
+            {
+                delete_thread_child(rpcs);
+                join_thread_child(rpcs);
+            }
         }
         else if (!registration)
         {
@@ -1007,8 +1037,13 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
             RING("Kill RPC server '%s'", rpcs->name);
             if (rpcs->tid > 0)
             {
-                delete_thread_child(rpcs);
-                join_thread_child(rpcs);
+                if (rpcs->local) 
+                    rcf_ch_kill_thread(rpcs->tid); 
+                else
+                {
+                    delete_thread_child(rpcs);
+                    join_thread_child(rpcs);
+                }
             }
             else
                 rcf_ch_kill_process(rpcs->pid);
