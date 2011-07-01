@@ -41,7 +41,7 @@ typedef enum {
     RCF_RPC_CALL_WAIT   /**< Call blocking RPC */
 } rcf_rpc_op;
 
-#define RCF_RPC_NAME_LEN    32
+#define RCF_RPC_NAME_LEN    64
 
 #define RCF_RPC_MAX_BUF     1048576
 #define RCF_RPC_MAX_IOVEC   32
