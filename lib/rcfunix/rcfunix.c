@@ -294,7 +294,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         VERB("FATAL ERROR: TE_INSTALL is not exported");
         return TE_ENOENT;
     }
-    sprintf(path, "%s/agents/%s", installdir, ta_type);
+    sprintf(path, "%s/agents/%s/", installdir, ta_type);
 
     if ((ta = *(unix_ta **)(handle)) == NULL &&
         (ta = (unix_ta *)calloc(1, sizeof(unix_ta))) == NULL)
