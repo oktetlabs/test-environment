@@ -448,6 +448,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     {
         ERROR("Failed to copy TA images/data %s to the %s:/tmp: %r",
               ta_type, ta->host, rc);
+        ERROR("Failed cmd: %s", cmd);
         free(dup);
         return rc;
     }
@@ -495,6 +496,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     {
         rc = TE_OS_RC(TE_RCF_UNIX, errno);
         ERROR("Failed to start TA %s: %r", ta_name, rc);
+        ERROR("Failed cmd: %s", cmd);
         return rc;
     }
 
@@ -504,7 +506,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 
 bad_confstr:
     free(conf_str_dup);
-    VERB("Bad configuration string for TA '%s'", ta_name);
+    RING("Bad configuration string for TA '%s'", ta_name);
     return TE_RC(TE_RCF_UNIX, TE_EINVAL);
 }
 
