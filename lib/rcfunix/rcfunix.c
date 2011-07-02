@@ -62,6 +62,8 @@
 #include <sys/wait.h>
 #endif
 
+#include <dirent.h>
+
 #include "te_defs.h"
 #include "te_stdint.h"
 #include "te_errno.h"
@@ -442,7 +444,34 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         }
     }
 
-    VERB("%s", cmd);
+    if (!(*flags & TA_FAKE))
+    {
+        DIR *d;
+        RING("Dummy experiment to avoid problems with scp");
+        d = opendir(path);
+        if (d == NULL)
+        {
+            ERROR("Open dir for %s failed, errno %d", path, errno);
+            perror("rcfunix, test opendir failed:");
+        }
+        else
+        {
+            struct dirent *de;
+            de = readdir(d);
+            if (de == NULL)
+            {
+                ERROR("read dir for %s failed, errno %d", path, errno);
+                perror("rcfunix, test readdir failed:");
+            }
+            else
+            {
+                RING("Test readdir gets fname %s", de->d_name);
+            }
+            closedir(d);
+        }
+    }
+
+    RING("CMD to copy: %s", cmd);
     if (!(*flags & TA_FAKE) &&
         ((rc = system_with_timeout(cmd, ta->copy_timeout)) != 0))
     {
@@ -489,7 +518,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 
     free(conf_str_dup);
 
-    VERB("Command to start TA: %s", cmd);
+    RING("Command to start TA: %s", cmd);
     if (!(*flags & TA_FAKE) &&
         ((ta->start_pid = 
           te_shell_cmd_inline(cmd, -1, NULL, NULL, NULL)) <= 0))
