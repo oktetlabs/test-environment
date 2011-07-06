@@ -447,6 +447,10 @@ iptables_chain_get(unsigned int  gid, const char *oid,
     sprintf(value, iptables_perif_chain_is_enabled(ifname, table,
                                                    chain) ? "1" : "0");
 
+
+    INFO("%s(): dummy %p, table %p chain %p", __FUNCTION__,
+         dummy, table, chain);
+
     return 0;
 }
 
@@ -562,6 +566,7 @@ cleanup:
     return rc;
 }
 
+extern void **konst_susp_ptr;
 
 /**
  * Get the list of rules in the per-interface chain as a single value.
@@ -589,11 +594,20 @@ iptables_rules_get(unsigned int  gid, const char *oid,
     pid_t pid;
     int   status;
 
+    size_t rest_value_space = RCF_MAX_VAL;
+    size_t sz;
+
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(dummy);
 
-    INFO("%s(ifname=%s, table=%s, chain=%s) started",
+#if 0
+    fprintf(stderr,"%p:%s(ifname=%s, table=%s, chain=%s) started, "
+        " konst_susp_ptr %p\n",
+         &iptables_rules_get, __FUNCTION__, ifname, table, chain,
+         konst_susp_ptr);
+#endif
+    RING("%s(ifname=%s, table=%s, chain=%s) started",
          __FUNCTION__, ifname, table, chain);
 
     *value = '\0';
@@ -625,7 +639,15 @@ iptables_rules_get(unsigned int  gid, const char *oid,
         INFO("Rule(ifname:%s, table:%s, chain:%s): %s",
              ifname, table, chain, buf);
 
-        value += sprintf(value, "%s\n", buf);
+        sz = snprintf(value, rest_value_space, "%s\n", buf);
+        if (sz >= rest_value_space)
+        {
+            WARN("%s(): got value is cut, need print %d bytes, buf '%s'",
+                 __FUNCTION__, sz, buf);
+            break;
+        }
+        value += sz;
+        rest_value_space -= sz;
     }
 
 cleanup:
@@ -817,8 +839,6 @@ iptables_cmd_get(unsigned int  gid, const char *oid,
     UNUSED(oid);
     UNUSED(dummy);
     UNUSED(chain);
-
-    INFO("%s started, ifname=%s, table=%s", __FUNCTION__, ifname, table);
 
     *value = '\0';
 
