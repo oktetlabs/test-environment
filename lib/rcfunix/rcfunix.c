@@ -444,33 +444,6 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         }
     }
 
-    if (!(*flags & TA_FAKE))
-    {
-        DIR *d;
-        RING("Dummy experiment to avoid problems with scp");
-        d = opendir(path);
-        if (d == NULL)
-        {
-            ERROR("Open dir for %s failed, errno %d", path, errno);
-            perror("rcfunix, test opendir failed:");
-        }
-        else
-        {
-            struct dirent *de;
-            de = readdir(d);
-            if (de == NULL)
-            {
-                ERROR("read dir for %s failed, errno %d", path, errno);
-                perror("rcfunix, test readdir failed:");
-            }
-            else
-            {
-                RING("Test readdir gets fname %s", de->d_name);
-            }
-            closedir(d);
-        }
-    }
-
     RING("CMD to copy: %s", cmd);
     if (!(*flags & TA_FAKE) &&
         ((rc = system_with_timeout(cmd, ta->copy_timeout)) != 0))
