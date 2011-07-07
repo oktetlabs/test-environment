@@ -462,6 +462,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     {
         sprintf(cmd, RCFUNIX_SSH "%s %s \"", ta->key, ta->host);
     }
+    strcat(cmd, "sudo sysctl -w kernel.core_pattern=\"core.%h-%p-%t\"; ");
     if (ta->sudo)
     {
         strcat(cmd, "sudo ");
@@ -482,6 +483,8 @@ rcfunix_start(const char *ta_name, const char *ta_type,
             (conf_str == NULL) ? "" : conf_str);
 
     /* Enquote command in double quotes for non-local agent */
+    strcat(cmd, "; sudo sysctl -w kernel.core_pattern=\"core\" ");
+    strcat(cmd, "; sudo mv /tmp/core* /var/tmp ");
     if (!ta->is_local)
     {
         sprintf(cmd + strlen(cmd), "\"");
