@@ -29,8 +29,8 @@
  * $Id:
  */
 
-#ifndef __TE_TAPI_SOCKET_H__
-#define __TE_TAPI_SOCKET_H__
+#ifndef __TE_TAPI_SOCKETS_H__
+#define __TE_TAPI_SOCKETS_H__
 
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -63,4 +63,4 @@ extern rpc_tcp_state tapi_get_tcp_sock_state(struct rcf_rpc_server *pco,
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-#endif /* !__TE_TAPI_SOCKET_H__ */
+#endif /* !__TE_TAPI_SOCKETS_H__ */

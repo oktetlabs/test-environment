@@ -57,10 +57,11 @@
 #include "te_stdint.h"
 #include "logger_api.h"
 #include "conf_api.h"
+#include "tapi_rpc_socket.h"
 
-#include "tapi_socket.h"
+#include "tapi_sockets.h"
 
-/* See description in tapi_socket.h */
+/* See description in tapi_sockets.h */
 
 rpc_tcp_state
 tapi_get_tcp_sock_state(struct rcf_rpc_server *pco,
