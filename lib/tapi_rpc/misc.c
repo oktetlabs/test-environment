@@ -143,8 +143,8 @@ rpc_vlan_get_parent(rcf_rpc_server *rpcs, const char *vlan_ifname,
     rc = out.retval;
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(rpc_vlan_get_parent, rc);
-    TAPI_RPC_LOG(rpcs, rpc_vlan_get_parent, "%s, %p", "%d",
-                 vlan_ifname, parent_ifname, rc);
+    TAPI_RPC_LOG(rpcs, rpc_vlan_get_parent, "%s, %p( %s )", "%d",
+                 vlan_ifname, parent_ifname, parent_ifname, rc);
     RETVAL_INT(rpc_vlan_get_parent, rc);
 }
 
