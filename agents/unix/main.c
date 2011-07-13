@@ -1854,7 +1854,7 @@ main(int argc, char **argv)
     const void **av = (const void **)&argv[argc + 1];
 
     /* Set size for core dump */
-    const struct rlimit rlim= { 10000, 10000 };
+    const struct rlimit rlim= { 500000000, 500000000 };
     if (setrlimit(RLIMIT_CORE, &rlim) != 0)
     {
         fprintf(stderr, "Failed to set RLIMIT_CORE\n");
