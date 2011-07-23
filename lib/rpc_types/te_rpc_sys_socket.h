@@ -521,7 +521,7 @@ extern te_bool sockopt_is_boolean(rpc_sockopt opt);
  * TA-independent names of TCP socket states.
  */
 typedef enum rpc_tcp_state {
-    RPC_TCP_ESTABLISHED,
+    RPC_TCP_ESTABLISHED = 1, /* 0 can be set as a result of error */
     RPC_TCP_SYN_SENT,
     RPC_TCP_SYN_RECV,
     RPC_TCP_FIN_WAIT1,
