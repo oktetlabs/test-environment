@@ -83,7 +83,7 @@ static int
 unix_socket(char const *unix_path, char const *connect_to)
 {
     struct sockaddr_un addr = { .sun_family = AF_UNIX };
-    int s = socket(AF_UNIX, SOCK_SEQPACKET, 0);
+    int s = socket(AF_UNIX, SOCK_STREAM, 0);
     int saved_errno;
     int ret;
 
@@ -318,19 +318,19 @@ acse_epc_close(void)
 te_errno
 acse_epc_send(const acse_epc_msg_t *user_message)
 {
-    ssize_t sendrc;
-    acse_epc_msg_t message;
+    ssize_t msg_len = 0, sendrc;
+    acse_epc_msg_t *int_message;
+    te_errno rc = 0;
 
-    if (user_message == NULL || user_message->data.p == NULL)
+    if (user_message == NULL)
         return TE_EINVAL;
 
-    message = *user_message;
     if (epc_socket == -1)
     {
         ERROR("Try send, but EPC is not initialized");
         return TE_EBADFD;
     }
-    
+
     /* check consistance of opcode and role */
     switch (user_message->opcode)
     {
@@ -355,23 +355,29 @@ acse_epc_send(const acse_epc_msg_t *user_message)
             return TE_EINVAL; 
     }
 
-    /* Now prepare data */
-    message.data.p = epc_shmem;
+    int_message = calloc(1, sizeof(acse_epc_msg_t) +
+                            sizeof(acse_epc_config_data_t));
+    if (NULL == int_message)
+        return TE_ENOMEM;
+
+    memcpy(int_message, user_message, sizeof(acse_epc_msg_t));
+    msg_len = sizeof(acse_epc_msg_t);
 
     switch (user_message->opcode)
     {
         case EPC_CONFIG_CALL:
         case EPC_CONFIG_RESPONSE:
         {
-            acse_epc_config_data_t *cfg_data = user_message->data.cfg;
-            message.length = sizeof(*cfg_data);
-            memcpy(epc_shmem, cfg_data, message.length);
-            VERB("%s(): send config message, op.fun '%d', msglen %d", 
-                 __FUNCTION__, cfg_data->op.fun, message.length);
-            if (cfg_data->op.fun == EPC_CFG_LIST)
-            {
+            const acse_epc_config_data_t *cfg_data = user_message->data.cfg;
+            int_message->length = 0;
+
+            VERB("%s(): send config message, op.fun '%d'", 
+                 __FUNCTION__, cfg_data->op.fun);
+            if (EPC_CFG_LIST == cfg_data->op.fun)
                 VERB("EPC send list '%s'", cfg_data->list);
-            }
+
+            memcpy(int_message->cfg_begin, cfg_data, sizeof(*cfg_data));
+            msg_len += sizeof(*cfg_data);
         }
             break;
 
@@ -386,7 +392,7 @@ acse_epc_send(const acse_epc_msg_t *user_message)
             buf = ((acse_epc_cwmp_data_t *)epc_shmem)->enc_start;
             len = epc_shmem_size - sizeof(*cwmp_data);
 
-            if (message.opcode == EPC_CWMP_CALL)
+            if (user_message->opcode == EPC_CWMP_CALL)
                 packed_len = epc_pack_call_data(buf, len, cwmp_data);
             else
                 packed_len = epc_pack_response_data(buf, len, cwmp_data);
@@ -399,7 +405,7 @@ acse_epc_send(const acse_epc_msg_t *user_message)
                 ERROR("%s(): pack data failed, not send", __FUNCTION__);
                 return TE_RC(TE_ACSE, TE_EFAIL);
             }
-            message.length = packed_len + sizeof(*cwmp_data);
+            int_message->length = packed_len + sizeof(*cwmp_data);
             if (ACSE_EPC_SERVER == epc_role &&
                 NULL != cwmp_data->from_cpe.p)
                 mheap_free_user(MHEAP_NONE, cwmp_data); 
@@ -407,16 +413,20 @@ acse_epc_send(const acse_epc_msg_t *user_message)
         }
     }
 
-    sendrc = send(epc_socket, &message, sizeof(message), 0);
+    VERB("%s():%d send %d bytes, opcode 0x%x",
+         __FUNCTION__, __LINE__, msg_len, int_message->opcode, 
+         sizeof(*int_message), sizeof(*(int_message->data.cfg)));
+    sendrc = send(epc_socket, int_message, msg_len, 0);
+
     if (sendrc < 0)
     {
         ERROR("%s(): send failed %r", __FUNCTION__, errno);
-        return TE_RC(TE_ACSE, errno);
+        rc = te_rc_os2te(errno);
     }
+    free(int_message);
 
-    return 0;
+    return TE_RC(TE_ACSE, rc);
 }
-
 
 
 /* see description in acse_epc.h */
@@ -434,8 +444,9 @@ acse_epc_recv(acse_epc_msg_t *message)
     recvrc = recv(epc_socket, message, sizeof(*message), 0);
     if (recvrc < 0)
     {
-        ERROR("%s(): recv failed , errno %d", __FUNCTION__, errno);
-        return TE_OS_RC(TE_ACSE, errno);
+        int saved_errno = errno;
+        ERROR("%s(): recv failed, errno %d", __FUNCTION__, saved_errno);
+        return TE_OS_RC(TE_ACSE, te_rc_os2te(saved_errno));
     }
     if (recvrc == 0) /* Connection normally closed */
     {
@@ -445,8 +456,14 @@ acse_epc_recv(acse_epc_msg_t *message)
         return TE_ENOTCONN;
     }
     if (recvrc != sizeof(*message))
+    {
         ERROR("EPC recv: wrong recv rc %d", (int)recvrc);
-    /* TODO with this error should be done something more serious */
+        /* TODO investigate what to do in connection error. */
+        return TE_EFAIL;
+    }
+
+    RING("%s():%d header; opcode %d",
+         __FUNCTION__, __LINE__, message->opcode);
 
     switch (message->opcode) 
     {/* check role */
@@ -471,10 +488,11 @@ acse_epc_recv(acse_epc_msg_t *message)
             return TE_EINVAL;
     }
 
-    /* TODO check magic here */
-
-    message->data.p = malloc(message->length);
-    memcpy(message->data.p, epc_shmem, message->length);
+    if (message->length > 0)
+    {
+        message->data.cwmp = malloc(message->length);
+        memcpy(message->data.cwmp, epc_shmem, message->length);
+    }
 
     cwmp_data = message->data.cwmp;
     switch (message->opcode)
@@ -491,8 +509,32 @@ acse_epc_recv(acse_epc_msg_t *message)
 
         case EPC_CONFIG_CALL:
         case EPC_CONFIG_RESPONSE:
-            cfg_data = message->data.cfg;
+            cfg_data = calloc(1, sizeof(*cfg_data));
+            recvrc = recv(epc_socket, cfg_data, sizeof(*cfg_data),
+                          MSG_DONTWAIT);
 
+            if (recvrc < 0 && errno == EAGAIN)
+            {
+                usleep(100*1000);
+                recvrc = recv(epc_socket, cfg_data, sizeof(*cfg_data),
+                              MSG_DONTWAIT);
+
+            }
+            if (recvrc < 0)
+            {
+                int saved_errno = errno;
+                ERROR("%s(): recv cfg failed , errno %d",
+                      __FUNCTION__, saved_errno);
+                return TE_OS_RC(TE_ACSE, te_rc_os2te(saved_errno));
+            }
+            if (recvrc != sizeof(*cfg_data))
+            {
+                ERROR("EPC recv conf. body: wrong recv rc %d", (int)recvrc);
+                /* TODO investigate what to do in connection error. */
+                return TE_EFAIL;
+            }
+
+            message->data.cfg = cfg_data;
 #if 0 /* Debug printf.. */
             if (cfg_data->value[0])
             {
@@ -513,7 +555,7 @@ acse_epc_recv(acse_epc_msg_t *message)
             {
                 ERROR("EPC: wrong magic for config message: 0x%x",
                      (int)cfg_data->op.magic);
-                free(message->data.p);
+                free(message->data.cfg);
                 return TE_RC(TE_ACSE, TE_EFAIL);
             }
             VERB("%s(): recv cfg msg, cfg_data %p, value '%s', msglen %u", 
