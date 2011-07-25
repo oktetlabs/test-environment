@@ -462,11 +462,11 @@ acse_epc_recv(acse_epc_msg_t *message)
         return TE_EFAIL;
     }
 
-    RING("%s():%d header; opcode %d",
+    VERB("%s():%d header; opcode %d",
          __FUNCTION__, __LINE__, message->opcode);
 
-    switch (message->opcode) 
-    {/* check role */
+    switch (message->opcode) /* check role */
+    {
         case EPC_CONFIG_CALL:
         case EPC_CWMP_CALL:
             if (epc_role != ACSE_EPC_SERVER)
