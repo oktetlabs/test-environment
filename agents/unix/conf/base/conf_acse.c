@@ -449,7 +449,7 @@ static te_errno
 acse_set(unsigned int gid, char const *oid,
          char const *value, char const *acse)
 {
-    te_errno rc;
+    te_errno rc = 0;
     char * new_acse_value = value;
     char * old_acse_value = acse_epc_cfg_pipe;
 
@@ -616,12 +616,10 @@ ta_unix_conf_acse_init(void)
     return rcf_pch_add_node("/agent", &node_acse);
 }
 
-#if 0
-
 
 /* Methods forward declarations */
 static te_errno stop_acse(void);
-static te_errno start_acse(void);
+static te_errno start_acse(char *cfg_pipe_name);
 
 pthread_t acse_thread;
 
@@ -644,7 +642,7 @@ start_acse(char *cfg_pipe_name)
         return rc;
     }
 
-    pth_ret = pthread_create(&acse_thread, acse_loop, NULL, NULL);
+    pth_ret = pthread_create(&acse_thread, NULL, acse_loop, NULL);
     if (pth_ret != 0)
         return TE_OS_RC(TE_ACSE, pth_ret);
 
@@ -759,12 +757,6 @@ cwmp_conn_req(tarpc_cwmp_conn_req_in *in,
 {
     te_errno rc;
 
-    if (!acse_value())
-    {
-        RING("%s(): no ACSE started, pid %d", __FUNCTION__, (int)acse_pid);
-        return -1;
-    }
-
 
     INFO("Issue CWMP Connection Request to %s/%s ", 
          in->acs_name, in->cpe_name);
@@ -793,8 +785,6 @@ cwmp_op_call(tarpc_cwmp_op_call_in *in,
     te_errno rc, status;
     acse_epc_cwmp_data_t *cwmp_data = NULL;
 
-    if (!acse_value())
-        return -1;
 
     INFO("cwmp RPC %s to %s/%s called", 
          cwmp_rpc_cpe_string(in->cwmp_rpc), in->acs_name, in->cpe_name);
@@ -815,7 +805,7 @@ cwmp_op_call(tarpc_cwmp_op_call_in *in,
         }
     }
 
-    rc = acse_cwmp_call(&status, NULL, &cwmp_data);
+    rc = acse_cwmp_call(NULL, &cwmp_data);
     if (0 != rc)
     {
         ERROR("%s(): ACSE call failed %r", __FUNCTION__, rc);
@@ -842,20 +832,12 @@ cwmp_op_check(tarpc_cwmp_op_check_in *in,
               tarpc_cwmp_op_check_out *out)
 {
     te_errno rc, status;
-    int acse_value_var;
     acse_epc_cwmp_data_t *cwmp_data = NULL;
     size_t d_len;
 
-    acse_value_var = acse_value();
-
-    INFO("cwmp_op_check No %d (for rpc %s) to %s/%s called; "
-         "acse val %d, pid %d",
+    INFO("cwmp_op_check No %d (for rpc %s) to %s/%s called;",
          (int)in->request_id, 
-         cwmp_rpc_cpe_string(in->cwmp_rpc), in->acs_name, in->cpe_name,
-         acse_value_var, (int)acse_pid);
-
-    if (!acse_value_var)
-        return -1;
+         cwmp_rpc_cpe_string(in->cwmp_rpc), in->acs_name, in->cpe_name);
 
     rc = acse_cwmp_prepare(in->acs_name, in->cpe_name,
                            EPC_RPC_CHECK, &cwmp_data);
@@ -864,7 +846,7 @@ cwmp_op_check(tarpc_cwmp_op_check_in *in,
     if (in->cwmp_rpc != CWMP_RPC_ACS_NONE)
         cwmp_data->rpc_acs = in->cwmp_rpc;
 
-    rc = acse_cwmp_call(&status, &d_len, &cwmp_data);
+    rc = acse_cwmp_call(&d_len, &cwmp_data);
     if (rc != 0)
     {
         ERROR("%s(): EPC recv failed %r", __FUNCTION__, rc);
@@ -911,7 +893,4 @@ cwmp_op_check(tarpc_cwmp_op_check_in *in,
 
     return 0;
 }
-
-
-#endif
 
