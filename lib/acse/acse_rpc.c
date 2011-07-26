@@ -1,0 +1,402 @@
+/** @file
+ * @brief ACSE RPC server
+ *
+ * ACS Emulator support
+ *
+ * Copyright (C) 2011 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
+ *
+ * Test Environment is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * Test Environment is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public 
+ * License along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA  02111-1307  USA
+ *
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
+ *
+ * $Id: acse_epc_disp.c 70607 2011-05-10 17:23:30Z konst $
+ */
+
+#define TE_LGR_USER     "ACSE RPC server"
+
+#include "te_config.h"
+
+#if HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
+#if HAVE_SYS_TYPE_H
+#include <sys/type.h>
+#endif
+
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#if HAVE_STDARG_H
+#include <stdarg.h>
+#endif
+
+#if HAVE_SIGNAL_H
+#include <signal.h>
+#endif
+
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#else
+#error <sys/socket.h> is definitely needed for acse_epc.c
+#endif
+
+#if HAVE_SYS_UN_H
+#include <sys/un.h>
+#else
+#error <sys/un.h> is definitely needed for acse_epc.c
+#endif
+
+#include <string.h>
+#include <ctype.h>
+#include <pthread.h>
+
+#include "acse_internal.h"
+#include "acse_user.h"
+
+#include "te_stdint.h"
+#include "te_errno.h"
+#include "te_queue.h"
+#include "te_defs.h"
+#include "logger_api.h"
+
+/* Methods forward declarations */
+static te_errno stop_acse(void);
+static te_errno start_acse(char *cfg_pipe_name);
+
+pthread_t acse_thread;
+
+/**
+ * Initialize necessary entities and start ACSE.
+ *
+ * @return              Status
+ */
+static te_errno
+start_acse(char *cfg_pipe_name)
+{
+    te_errno rc = 0;
+    int pth_ret;
+
+    RING("Start ACSE process");
+
+    if ((rc = acse_epc_disp_init(cfg_pipe_name)) != 0)
+    {
+        ERROR("Fail create EPC dispatcher %r", rc);
+        return rc;
+    }
+
+    pth_ret = pthread_create(&acse_thread, NULL, acse_loop, NULL);
+    if (pth_ret != 0)
+        return TE_OS_RC(TE_ACSE, pth_ret);
+
+    return 0;
+}
+
+/**
+ * Stop ACSE and clean up previously initialized entities.
+ *
+ * @return              Status
+ */
+static te_errno
+stop_acse(void)
+{
+    /* do nothing now */
+    return 0;
+#if 0
+    te_errno rc = 0;
+    int acse_status = 0;
+    int r = 0;
+
+#if 0
+    fprintf(stderr, "Stop ACSE process, pid %d\n", acse_pid);
+#endif
+    if (-1 == acse_pid || 0 == acse_pid)
+        return 0; /* nothing to do */
+
+    RING("Stop ACSE process, pid %d", acse_pid);
+
+    if ((rc = acse_epc_close()) != 0)
+    {
+        ERROR("Stop ACSE, EPC close failed %r, now try to kill", rc);
+        if (kill(acse_pid, SIGTERM))
+        {
+            int saved_errno = errno;
+            ERROR("ACSE kill failed %s", strerror(saved_errno));
+            /* failed to stop ACSE, just return ... */
+            acse_pid = -1;
+            return TE_OS_RC(TE_TA_UNIX, saved_errno);
+        }
+    }
+    sleep(1); /* Time to stop ACSE itself */
+
+    r = waitpid(acse_pid, &acse_status, WNOHANG);
+    RING("waitpid rc %d, errno %s", r, strerror(errno));
+    if (r != acse_pid)
+    {
+        int saved_errno = errno;
+        if (r < 0)
+        {
+            if (saved_errno != ESRCH && saved_errno != ECHILD)
+            {
+                ERROR("waitpid ACSE failed %s", strerror(saved_errno));
+                /* failed to stop ACSE, just return ... */
+                acse_pid = -1;
+                return TE_OS_RC(TE_TA_UNIX, saved_errno);
+            }
+        }
+        if (r == 0)
+        {
+            /* ACSE was not stopped after EPC closed, terminate it.*/
+            if (kill(acse_pid, SIGKILL))
+            {
+                int saved_errno = errno;
+                ERROR("ACSE kill after waitpid failed %s",
+                      strerror(saved_errno));
+                /* failed to stop ACSE, just return ... */
+                acse_pid = -1;
+                return TE_OS_RC(TE_TA_UNIX, saved_errno);
+            }
+        }
+    }
+
+    acse_pid = -1;
+
+    if (acse_status)
+        WARN("ACSE exit status %d", acse_status);
+
+    return rc;
+#endif
+}
+
+
+
+int
+cwmp_acse_start(tarpc_cwmp_acse_start_in *in,
+                tarpc_cwmp_acse_start_out *out)
+{
+    te_errno rc;
+    static char buf[256] = {0,};
+    
+    RING("%s() called", __FUNCTION__);
+
+    if (in->oper == 1)
+    {
+        out->status = start_acse(buf);
+        out->pipe_name = strdup(buf);
+        RING("%s(): status %d, pipe name '%s'", out->status, buf);
+    }
+    else 
+    {
+        out->status = stop_acse();
+        out->pipe_name = NULL;
+    }
+
+    return 0;
+}
+
+int
+cwmp_conn_req(tarpc_cwmp_conn_req_in *in,
+              tarpc_cwmp_conn_req_out *out)
+{
+    te_errno rc;
+
+
+    INFO("Issue CWMP Connection Request to %s/%s ", 
+         in->acs_name, in->cpe_name);
+
+    rc = acse_cwmp_connreq(in->acs_name, in->cpe_name, NULL);
+    if (rc)
+    {
+        WARN("issue CWMP ConnReq failed %r", rc);
+        if (TE_ETIMEDOUT == TE_RC_GET_ERROR(rc) &&
+            TE_TA_UNIX == TE_RC_GET_MODULE(rc))
+        {
+            WARN("There was EPC timeout, kill ACSE");
+            stop_acse();
+        }
+    }
+
+    out->status = rc;
+
+    return 0;
+}
+
+int
+cwmp_op_call(tarpc_cwmp_op_call_in *in,
+             tarpc_cwmp_op_call_out *out)
+{
+    te_errno rc, status;
+    acse_epc_cwmp_data_t *cwmp_data = NULL;
+
+
+    INFO("cwmp RPC %s to %s/%s called", 
+         cwmp_rpc_cpe_string(in->cwmp_rpc), in->acs_name, in->cpe_name);
+
+    rc = acse_cwmp_prepare(in->acs_name, in->cpe_name,
+                           EPC_RPC_CALL, &cwmp_data);
+    cwmp_data->rpc_cpe = in->cwmp_rpc; 
+
+    if (in->buf.buf_len > 0)
+    {
+        rc = epc_unpack_call_data(in->buf.buf_val, in->buf.buf_len,
+                                    cwmp_data);
+        if (rc != 0)
+        {
+            ERROR("%s(): unpack cwmp data failed %r", __FUNCTION__, rc);
+            out->status = rc;
+            return 0;
+        }
+    }
+
+    rc = acse_cwmp_call(NULL, &cwmp_data);
+    if (0 != rc)
+    {
+        ERROR("%s(): ACSE call failed %r", __FUNCTION__, rc);
+        if (TE_ETIMEDOUT == TE_RC_GET_ERROR(rc) &&
+            TE_TA_UNIX == TE_RC_GET_MODULE(rc))
+        {
+            WARN("There was EPC timeout, kill ACSE");
+            stop_acse();
+        }
+        out->status = TE_RC(TE_TA_ACSE, rc);
+    }
+    else
+    { 
+        out->request_id = cwmp_data->request_id;
+        out->status = TE_RC(TE_ACSE, status);
+    }
+
+    return 0;
+}
+
+
+int
+cwmp_op_check(tarpc_cwmp_op_check_in *in,
+              tarpc_cwmp_op_check_out *out)
+{
+    te_errno rc, status;
+    acse_epc_cwmp_data_t *cwmp_data = NULL;
+    size_t d_len;
+
+    INFO("cwmp_op_check No %d (for rpc %s) to %s/%s called;",
+         (int)in->request_id, 
+         cwmp_rpc_cpe_string(in->cwmp_rpc), in->acs_name, in->cpe_name);
+
+    rc = acse_cwmp_prepare(in->acs_name, in->cpe_name,
+                           EPC_RPC_CHECK, &cwmp_data);
+    cwmp_data->request_id = in->request_id;
+
+    if (in->cwmp_rpc != CWMP_RPC_ACS_NONE)
+        cwmp_data->rpc_acs = in->cwmp_rpc;
+
+    rc = acse_cwmp_call(&d_len, &cwmp_data);
+    if (rc != 0)
+    {
+        ERROR("%s(): EPC recv failed %r", __FUNCTION__, rc);
+        if (TE_ETIMEDOUT == TE_RC_GET_ERROR(rc) &&
+            TE_TA_UNIX == TE_RC_GET_MODULE(rc))
+        {
+            WARN("There was EPC timeout, kill ACSE");
+            stop_acse();
+        }
+        out->status = TE_RC(TE_TA_ACSE, rc);
+    }
+    else
+    {
+        ssize_t packed_len;
+
+        out->status = TE_RC(TE_ACSE, status);
+
+        INFO("%s(): status is %r, buflen %d", __FUNCTION__, status, d_len);
+
+        if (0 == status || TE_CWMP_FAULT == status)
+        { 
+            out->buf.buf_val = malloc(d_len);
+            out->buf.buf_len = d_len;
+            packed_len = epc_pack_response_data(out->buf.buf_val, 
+                                                d_len, cwmp_data);
+#if 0 /* Debug print */
+            if (TE_CWMP_FAULT == msg_resp.status)
+            {
+                _cwmp__Fault *f = cwmp_data->from_cpe.fault;
+                RING("pass Fault %s (%s)", f->FaultCode, f->FaultString);
+            }
+#endif
+        }
+        else
+        {
+            out->buf.buf_val = NULL;
+            out->buf.buf_len = 0;
+        }
+        if (cwmp_data->rpc_cpe != CWMP_RPC_NONE)
+            out->cwmp_rpc = cwmp_data->rpc_cpe;
+        else if (cwmp_data->rpc_acs != CWMP_RPC_ACS_NONE)
+            out->cwmp_rpc = cwmp_data->rpc_acs;
+    }
+
+    return 0;
+}
+
+#if 0
+static te_errno
+cwmp_conn_req_util(const char *acs, const char *cpe, 
+                   acse_epc_cwmp_op_t op, int *request_id)
+{
+    acse_epc_msg_t msg;
+    acse_epc_msg_t msg_resp;
+    acse_epc_cwmp_data_t c_data;
+
+    te_errno rc;
+
+    if (NULL == acs || NULL == cpe || NULL == request_id)
+        return TE_EINVAL;
+
+    if (!acse_value())
+    { 
+        return TE_EFAIL;
+    }
+
+    RING("Issue CWMP Connection Request to %s/%s, op %d ", 
+         acs, cpe, op);
+
+    msg.opcode = EPC_CWMP_CALL;
+    msg.data.cwmp = &c_data;
+    msg.length = sizeof(c_data);
+
+    memset(&c_data, 0, sizeof(c_data));
+
+    c_data.op = op;
+        
+    strcpy(c_data.acs, acs);
+    strcpy(c_data.cpe, cpe);
+        
+    rc = acse_epc_send(&msg);
+    if (rc != 0)
+        ERROR("%s(): EPC send failed %r", __FUNCTION__, rc);
+
+    rc = acse_epc_recv(&msg_resp);
+    if (rc != 0)
+        ERROR("%s(): EPC recv failed %r", __FUNCTION__, rc);
+
+    out->status = msg_resp.status;
+
+    return 0;
+}
+#endif
+
+

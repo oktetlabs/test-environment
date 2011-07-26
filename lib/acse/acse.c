@@ -124,9 +124,10 @@ acse_exit_handler(void)
 }
 
 /* See description in acse.h */
-void
-acse_loop(void)
+void*
+acse_loop(void* p)
 {
+    UNUSED(p);
     atexit(acse_exit_handler);
     /* EPC pipe should be already established */
 
@@ -231,6 +232,7 @@ acse_loop(void)
         free(ch_queue);
     }
     acse_clear_channels();
+    return NULL;
 }
 
 

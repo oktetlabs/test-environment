@@ -24,7 +24,6 @@
  *
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
- * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
  *
  * $Id$
  */
@@ -74,36 +73,17 @@
 #include "cwmp_data.h"
 
 
-/** Process ID of ACSE */
-static pid_t acse_pid = -1;
-
-/** Flag setting "at exit" callback */
-static te_bool need_atexit = TRUE;
-
-/** Shared memory name */
-const char *epc_mmap_area = NULL;
-
-/** Unix socket names for ACSE, TA and RPC */
-const char *epc_acse_sock = NULL;
-
-/* Methods forward declarations */
-static te_errno stop_acse(void);
-static te_errno start_acse(void);
-
+static char acse_epc_cfg_pipe[EPC_MAX_PATH] = {0,};
 /**
  * Determines whether ACSE is started and link to it is initialized.
  *
  * @return              TRUE is ACSE is started and link to it
                         is initialized, otherwise - FALSE
  */
-static inline te_bool
+static inline char *
 acse_value(void)
 {
-#if 0
-    return (acse_pid != -1) && (acse_epc_socket() > 0);
-#else
-    return (acse_pid != -1);
-#endif
+    return acse_epc_cfg_pipe;
 }
 
 
@@ -443,143 +423,17 @@ acse_get(unsigned int gid, char const *oid,
     UNUSED(gid);
     UNUSED(acse);
 
-    strcpy(value, acse_value() ? "1" : "0");
+    strcpy(value, acse_epc_cfg_pipe);
+RING("acse_get: oid '%s', value '%s', acse '%s'", 
+    oid, value, acse);
+fprintf(stderr, "acse_get: oid '%s', value '%s', acse '%s'\n", 
+    oid, value, acse);
     return 0;
 }
 
 
 
-/**
- * Initialize necessary entities and start ACSE.
- *
- * @return              Status
- */
-static te_errno
-start_acse(void)
-{
-    te_errno rc = 0;
 
-    RING("Start ACSE process");
-
-    acse_pid = fork();
-    if (acse_pid == 0) /* we are in child */
-    {
-        rcf_pch_detach();
-        freopen("/tmp/acse_stderr", "a", stderr);
-        setpgid(0, 0);
-        logfork_register_user("ACSE");
-        if ((rc = acse_epc_disp_init(NULL, NULL)) != 0)
-        {
-            ERROR("Fail create EPC dispatcher %r", rc);
-            exit(1);
-        }
-        acse_loop();
-        RING("Exit from ACSE process.");
-        exit(0); 
-    }
-    if (acse_pid == -1)
-    {
-        rc = TE_OS_RC(TE_TA_UNIX, errno);
-        ERROR("%s: fork() failed: %r", __FUNCTION__, rc);
-        return rc;
-    }
-    sleep(1);
-
-    RING("ACSE process was started with PID %d", (int)acse_pid);
-    if ((rc = acse_epc_open(NULL, NULL, ACSE_EPC_CLIENT))
-        != 0)
-    {
-        int res;
-        ERROR("open EPC failed %r", rc);
-
-#if 1
-        kill(acse_pid, SIGTERM);
-        waitpid(acse_pid, &res, 0);
-#endif
-        acse_pid = -1;
-        return rc;
-    }
-
-    if (need_atexit)
-    {
-        atexit(stop_acse);
-        need_atexit = FALSE; /* To register stop_acse only once */
-    } 
-
-    return rc;
-}
-
-/**
- * Stop ACSE and clean up previously initialized entities.
- *
- * @return              Status
- */
-static te_errno
-stop_acse(void)
-{
-    te_errno rc = 0;
-    int acse_status = 0;
-    int r = 0;
-
-#if 0
-    fprintf(stderr, "Stop ACSE process, pid %d\n", acse_pid);
-#endif
-    if (-1 == acse_pid || 0 == acse_pid)
-        return 0; /* nothing to do */
-
-    RING("Stop ACSE process, pid %d", acse_pid);
-
-    if ((rc = acse_epc_close()) != 0)
-    {
-        ERROR("Stop ACSE, EPC close failed %r, now try to kill", rc);
-        if (kill(acse_pid, SIGTERM))
-        {
-            int saved_errno = errno;
-            ERROR("ACSE kill failed %s", strerror(saved_errno));
-            /* failed to stop ACSE, just return ... */
-            acse_pid = -1;
-            return TE_OS_RC(TE_TA_UNIX, saved_errno);
-        }
-    }
-    sleep(1); /* Time to stop ACSE itself */
-
-    r = waitpid(acse_pid, &acse_status, WNOHANG);
-    RING("waitpid rc %d, errno %s", r, strerror(errno));
-    if (r != acse_pid)
-    {
-        int saved_errno = errno;
-        if (r < 0)
-        {
-            if (saved_errno != ESRCH && saved_errno != ECHILD)
-            {
-                ERROR("waitpid ACSE failed %s", strerror(saved_errno));
-                /* failed to stop ACSE, just return ... */
-                acse_pid = -1;
-                return TE_OS_RC(TE_TA_UNIX, saved_errno);
-            }
-        }
-        if (r == 0)
-        {
-            /* ACSE was not stopped after EPC closed, terminate it.*/
-            if (kill(acse_pid, SIGKILL))
-            {
-                int saved_errno = errno;
-                ERROR("ACSE kill after waitpid failed %s",
-                      strerror(saved_errno));
-                /* failed to stop ACSE, just return ... */
-                acse_pid = -1;
-                return TE_OS_RC(TE_TA_UNIX, saved_errno);
-            }
-        }
-    }
-
-    acse_pid = -1;
-
-    if (acse_status)
-        WARN("ACSE exit status %d", acse_status);
-
-    return rc;
-}
 
 /**
  * Set the acse instance value (startup/shutdown ACSE).
@@ -595,19 +449,38 @@ static te_errno
 acse_set(unsigned int gid, char const *oid,
          char const *value, char const *acse)
 {
-    te_bool new_acse_value = !!atoi(value);
-    te_bool old_acse_value = acse_value();
+    te_errno rc;
+    char * new_acse_value = value;
+    char * old_acse_value = acse_epc_cfg_pipe;
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(acse);
 
-    RING("Set to 'acse' node. old val %d, new val %d",
-            old_acse_value, new_acse_value);
-    if (new_acse_value && !old_acse_value) 
-        return start_acse();
-    if (!new_acse_value && old_acse_value)
-        return stop_acse();
+    RING("Set to 'acse' node. old val %s, new val %s",
+            acse_epc_cfg_pipe, value);
+
+    if (strcmp(acse_epc_cfg_pipe, value) == 0)
+        return 0;
+
+    if (strlen(acse_epc_cfg_pipe) > 0)
+        rc = acse_epc_close();
+
+    if (rc != 0)
+    {
+        ERROR("acse set failed %r", rc);
+        return rc;
+    }
+
+    if (strlen(value) > 0)
+        rc = acse_epc_connect(value);
+
+    if (rc != 0)
+    {
+        ERROR("acse set failed %r", rc);
+        return rc;
+    } 
+    strcpy(acse_epc_cfg_pipe, value);
 
     return 0;
 }
@@ -744,51 +617,141 @@ ta_unix_conf_acse_init(void)
 }
 
 #if 0
+
+
+/* Methods forward declarations */
+static te_errno stop_acse(void);
+static te_errno start_acse(void);
+
+pthread_t acse_thread;
+
+/**
+ * Initialize necessary entities and start ACSE.
+ *
+ * @return              Status
+ */
 static te_errno
-cwmp_conn_req_util(const char *acs, const char *cpe, 
-                   acse_epc_cwmp_op_t op, int *request_id)
+start_acse(char *cfg_pipe_name)
 {
-    acse_epc_msg_t msg;
-    acse_epc_msg_t msg_resp;
-    acse_epc_cwmp_data_t c_data;
+    te_errno rc = 0;
+    int pth_ret;
 
-    te_errno rc;
+    RING("Start ACSE process");
 
-    if (NULL == acs || NULL == cpe || NULL == request_id)
-        return TE_EINVAL;
-
-    if (!acse_value())
-    { 
-        return TE_EFAIL;
+    if ((rc = acse_epc_disp_init(cfg_pipe_name)) != 0)
+    {
+        ERROR("Fail create EPC dispatcher %r", rc);
+        return rc;
     }
 
-    RING("Issue CWMP Connection Request to %s/%s, op %d ", 
-         acs, cpe, op);
-
-    msg.opcode = EPC_CWMP_CALL;
-    msg.data.cwmp = &c_data;
-    msg.length = sizeof(c_data);
-
-    memset(&c_data, 0, sizeof(c_data));
-
-    c_data.op = op;
-        
-    strcpy(c_data.acs, acs);
-    strcpy(c_data.cpe, cpe);
-        
-    rc = acse_epc_send(&msg);
-    if (rc != 0)
-        ERROR("%s(): EPC send failed %r", __FUNCTION__, rc);
-
-    rc = acse_epc_recv(&msg_resp);
-    if (rc != 0)
-        ERROR("%s(): EPC recv failed %r", __FUNCTION__, rc);
-
-    out->status = msg_resp.status;
+    pth_ret = pthread_create(&acse_thread, acse_loop, NULL, NULL);
+    if (pth_ret != 0)
+        return TE_OS_RC(TE_ACSE, pth_ret);
 
     return 0;
 }
+
+/**
+ * Stop ACSE and clean up previously initialized entities.
+ *
+ * @return              Status
+ */
+static te_errno
+stop_acse(void)
+{
+    /* do nothing now */
+    return 0;
+#if 0
+    te_errno rc = 0;
+    int acse_status = 0;
+    int r = 0;
+
+#if 0
+    fprintf(stderr, "Stop ACSE process, pid %d\n", acse_pid);
 #endif
+    if (-1 == acse_pid || 0 == acse_pid)
+        return 0; /* nothing to do */
+
+    RING("Stop ACSE process, pid %d", acse_pid);
+
+    if ((rc = acse_epc_close()) != 0)
+    {
+        ERROR("Stop ACSE, EPC close failed %r, now try to kill", rc);
+        if (kill(acse_pid, SIGTERM))
+        {
+            int saved_errno = errno;
+            ERROR("ACSE kill failed %s", strerror(saved_errno));
+            /* failed to stop ACSE, just return ... */
+            acse_pid = -1;
+            return TE_OS_RC(TE_TA_UNIX, saved_errno);
+        }
+    }
+    sleep(1); /* Time to stop ACSE itself */
+
+    r = waitpid(acse_pid, &acse_status, WNOHANG);
+    RING("waitpid rc %d, errno %s", r, strerror(errno));
+    if (r != acse_pid)
+    {
+        int saved_errno = errno;
+        if (r < 0)
+        {
+            if (saved_errno != ESRCH && saved_errno != ECHILD)
+            {
+                ERROR("waitpid ACSE failed %s", strerror(saved_errno));
+                /* failed to stop ACSE, just return ... */
+                acse_pid = -1;
+                return TE_OS_RC(TE_TA_UNIX, saved_errno);
+            }
+        }
+        if (r == 0)
+        {
+            /* ACSE was not stopped after EPC closed, terminate it.*/
+            if (kill(acse_pid, SIGKILL))
+            {
+                int saved_errno = errno;
+                ERROR("ACSE kill after waitpid failed %s",
+                      strerror(saved_errno));
+                /* failed to stop ACSE, just return ... */
+                acse_pid = -1;
+                return TE_OS_RC(TE_TA_UNIX, saved_errno);
+            }
+        }
+    }
+
+    acse_pid = -1;
+
+    if (acse_status)
+        WARN("ACSE exit status %d", acse_status);
+
+    return rc;
+#endif
+}
+
+
+
+int
+cwmp_acse_start(tarpc_cwmp_acse_start_in *in,
+                tarpc_cwmp_acse_start_out *out)
+{
+    te_errno rc;
+    static char buf[256] = {0,};
+    
+    RING("%s() called", __FUNCTION__);
+
+    if (in->oper == 1)
+    {
+        out->status = start_acse(buf);
+        out->pipe_name = strdup(buf);
+        RING("%s(): status %d, pipe name '%s'", out->status, buf);
+    }
+    else 
+    {
+        out->status = stop_acse();
+        out->pipe_name = NULL;
+    }
+
+    return 0;
+}
 
 int
 cwmp_conn_req(tarpc_cwmp_conn_req_in *in,
@@ -950,11 +913,5 @@ cwmp_op_check(tarpc_cwmp_op_check_in *in,
 }
 
 
-#if 0
-int
-cwmp_get_inform(tarpc_cwmp_get_inform_in *in,
-                tarpc_cwmp_get_inform_out *out)
-{
-    return 0;
-}
 #endif
+

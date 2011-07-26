@@ -52,9 +52,7 @@
 #include "acse_user.h"
 
 
-static acse_epc_msg_t msg;
-static acse_epc_msg_t msg_resp;
-static acse_epc_cwmp_data_t c_data;
+static acse_epc_cwmp_data_t cwmp_msg;
 static acse_epc_config_data_t cfg_data;
 
 
@@ -124,11 +122,6 @@ acse_conf_prepare(acse_cfg_op_t fun, acse_epc_config_data_t **user_c_data)
     if (NULL != user_c_data)
         *user_c_data = &cfg_data;
 
-    msg.opcode = EPC_CONFIG_CALL;
-    msg.data.cfg = &cfg_data;
-    msg.length = sizeof(cfg_data);
-    msg.status = 0;
-
     cfg_data.op.magic = EPC_CONFIG_MAGIC;
     cfg_data.op.fun = fun;
 
@@ -138,10 +131,11 @@ acse_conf_prepare(acse_cfg_op_t fun, acse_epc_config_data_t **user_c_data)
 
 /* See description in acse_user.h */
 te_errno
-acse_conf_call(acse_epc_config_data_t **cfg_result)
+acse_conf_call(acse_epc_config_data_t **user_cfg_result)
 {
     te_errno rc;
     int             epc_socket = acse_epc_socket();
+    acse_epc_config_data_t *cfg_res = malloc(sizeof(*cfg_res));
 #if 0
     struct timespec epc_ts = {0, 300000000}; /* 300 ms */
 #else
@@ -150,7 +144,7 @@ acse_conf_call(acse_epc_config_data_t **cfg_result)
     struct pollfd   pfd = {0, POLLIN, 0};
     int             pollrc;
 
-    rc = acse_epc_send(&msg);
+    rc = acse_epc_conf_send(&cfg_data);
 
     if (rc != 0)
     {
@@ -173,17 +167,17 @@ acse_conf_call(acse_epc_config_data_t **cfg_result)
         return TE_RC(TE_TA_UNIX, TE_ETIMEDOUT);
     }
 
-    rc = acse_epc_recv(&msg_resp);
+    rc = acse_epc_conf_recv(cfg_res);
     if (rc != 0)
     {
         ERROR("ACSE config: EPC recv failed %r", rc);
         return TE_RC(TE_TA_ACSE, rc);
     }
 
-    if (NULL != cfg_result)
-        *cfg_result = msg_resp.data.cfg;
+    if (NULL != user_cfg_result)
+        *user_cfg_result = cfg_res;
 
-    if ((rc = msg_resp.status) != 0)
+    if ((rc = cfg_res->status) != 0)
         WARN("%s(): status of EPC operation %r", __FUNCTION__, rc);
 
     return TE_RC(TE_ACSE, rc);
@@ -250,44 +244,38 @@ acse_cwmp_prepare(const char *acs, const char *cpe,
                   acse_epc_cwmp_op_t fun,
                   acse_epc_cwmp_data_t **cwmp_data)
 {
-    msg.opcode = EPC_CWMP_CALL;
-    msg.data.cwmp = &c_data;
-    msg.length = sizeof(c_data);
-    msg.status = 0;
+    memset(&cwmp_msg, 0, sizeof(cwmp_msg));
 
-    memset(&c_data, 0, sizeof(c_data));
-
-    c_data.op = fun;
+    cwmp_msg.op = fun;
         
     if (acs)
-        strcpy(c_data.acs, acs);
+        strcpy(cwmp_msg.acs, acs);
     if (cpe) 
-        strcpy(c_data.cpe, cpe);
+        strcpy(cwmp_msg.cpe, cpe);
 
     if (NULL != cwmp_data)
-        *cwmp_data = &c_data;
+        *cwmp_data = &cwmp_msg;
 
     return 0;
 }
 
 /* See description in acse_user.h */
 te_errno
-acse_cwmp_call(te_errno *status, size_t *data_len,
-               acse_epc_cwmp_data_t **cwmp_data)
+acse_cwmp_call(size_t *data_len, acse_epc_cwmp_data_t **cwmp_data)
 {
     te_errno rc;
     struct timespec epc_ts = {1, 0}; /* 1 sec */
     struct pollfd   pfd = {0, POLLIN, 0};
     int             pollrc;
 
-    rc = acse_epc_send(&msg);
+    rc = acse_epc_cwmp_send(&cwmp_msg);
     if (rc != 0)
     {
         ERROR("%s(): EPC send failed %r", __FUNCTION__, rc);
         return rc;
     }
 
-    pfd.fd = acse_epc_socket();
+    pfd.fd = epc_from_acse_pipe[0];
     pollrc = ppoll(&pfd, 1, &epc_ts, NULL);
 
     if (pollrc < 0)
@@ -304,16 +292,9 @@ acse_cwmp_call(te_errno *status, size_t *data_len,
         return TE_RC(TE_TA_UNIX, TE_ETIMEDOUT);
     }
 
-    rc = acse_epc_recv(&msg_resp);
+    rc = acse_epc_cwmp_recv(cwmp_data, data_len);
     if (rc != 0)
         ERROR("%s(): EPC recv failed %r", __FUNCTION__, rc);
-
-    if (NULL != status) 
-        *status = msg_resp.status;
-    if (NULL != data_len)
-        *data_len = msg_resp.length;
-    if (NULL != cwmp_data)
-        *cwmp_data = msg_resp.data.cwmp;
 
     return TE_RC(TE_TA_ACSE, rc);
 }
@@ -324,10 +305,11 @@ te_errno
 acse_cwmp_connreq(const char *acs, const char *cpe,
                   acse_epc_cwmp_data_t **cwmp_data)
 {
-    te_errno rc, status;
+    te_errno rc;
+
     rc = acse_cwmp_prepare(acs, cpe, EPC_CONN_REQ, NULL);
     if (0 == rc)
-        rc = acse_cwmp_call(&status, NULL, cwmp_data);
+        rc = acse_cwmp_call(NULL, cwmp_data);
     else 
         WARN("acse_cwmp_connreq(): rc of acse_cwmp_prepare() -> %r", rc);
     if (0 != rc)
@@ -335,8 +317,6 @@ acse_cwmp_connreq(const char *acs, const char *cpe,
         WARN("acse_cwmp_connreq(): rc of acse_cwmp_call() -> %r", rc);
         return TE_RC(TE_TA_ACSE, rc);
     }
-    if (0 != status)
-        return TE_RC(TE_ACSE, rc);
     return 0;
 }
 
@@ -348,18 +328,18 @@ acse_cwmp_rpc_call(const char *acs, const char *cpe,
                    cwmp_data_to_cpe_t to_cpe)
 {
     acse_epc_cwmp_data_t *cwmp_data = NULL;
-    te_errno rc, status;
+    te_errno rc;
 
     rc = acse_cwmp_prepare(acs, cpe, EPC_RPC_CALL, &cwmp_data);
     if (rc != 0)
         return TE_RC(TE_TA_ACSE, rc);
     cwmp_data->to_cpe.p = to_cpe.p;
     cwmp_data->rpc_cpe = rpc_cpe;
-    rc = acse_cwmp_call(&status, NULL, &cwmp_data);
+    rc = acse_cwmp_call(NULL, &cwmp_data);
     if (0 != rc)
         return TE_RC(TE_TA_ACSE, rc);
-    if (0 != status)
-        return TE_RC(TE_ACSE, rc);
+    if (0 != cwmp_data->status)
+        return TE_RC(TE_ACSE, cwmp_data->status);
     if (request_id != NULL)
         *request_id = cwmp_data->request_id;
     return 0;
@@ -370,7 +350,7 @@ te_errno
 acse_http_code(const char *acs, const char *cpe,
                int http_code, const char *location)
 {
-    acse_epc_cwmp_data_t *cwmp_data;
+    acse_epc_cwmp_data_t *cwmp_data = calloc(1, sizeof(*cwmp_data));
     size_t loc_len = 1; /* last zero even for empty 'location' */
     te_errno rc = 0;
 
@@ -378,13 +358,6 @@ acse_http_code(const char *acs, const char *cpe,
         return TE_EINVAL;
     if (NULL != location)
         loc_len = strlen(location) + 1;
-
-    msg.opcode = EPC_CWMP_CALL;
-    msg.length = sizeof(*cwmp_data) + loc_len;
-    msg.data.cwmp = cwmp_data = malloc(msg.length);
-    msg.status = 0;
-
-    memset(cwmp_data, 0, msg.length);
 
     cwmp_data->op = EPC_HTTP_RESP;
         
@@ -395,12 +368,11 @@ acse_http_code(const char *acs, const char *cpe,
     if (NULL != location)
         strcpy((char *)cwmp_data->enc_start, location);
 
-    RING("%s() send msg, http code %d, loc '%s', msg len %u", __FUNCTION__, 
-         cwmp_data->to_cpe.http_code, (char *)cwmp_data->enc_start,
-         msg.length);
+    VERB("%s() send msg, http code %d, loc '%s'", __FUNCTION__, 
+         cwmp_data->to_cpe.http_code, (char *)cwmp_data->enc_start);
 
 
-    rc = acse_epc_send(&msg);
+    rc = acse_epc_cwmp_send(cwmp_data);
 
     free(cwmp_data);
 
@@ -410,13 +382,13 @@ acse_http_code(const char *acs, const char *cpe,
         return rc;
     }
 
-    rc = acse_epc_recv(&msg_resp);
+    rc = acse_epc_cwmp_recv(&cwmp_data, NULL);
     if (rc != 0)
     {
         ERROR("%s(): EPC recv failed %r", __FUNCTION__, rc);
         return TE_RC(TE_TA_ACSE, rc);
     }
 
-    return TE_RC(TE_ACSE, msg_resp.status);
+    return TE_RC(TE_ACSE, cwmp_data->status);
 }
 

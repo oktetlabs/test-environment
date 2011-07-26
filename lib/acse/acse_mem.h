@@ -71,7 +71,7 @@ extern int mheap_add_user(mheap_t heap, void *user);
  * @param heap          heap ID.
  * @param user          user address, which is used only as ID.
  */
-extern void mheap_free_user(mheap_t heap, void *user);
+extern void mheap_free_user(mheap_t heap, const void *user);
 
 /**
  * Allocate memory block in the specified heap.

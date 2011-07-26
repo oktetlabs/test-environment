@@ -170,7 +170,7 @@ mheap_alloc(mheap_t heap, size_t n)
 
 
 void
-mheap_free_user(mheap_t heap, void *user)
+mheap_free_user(mheap_t heap, const void *user)
 {
     unsigned i;
     if (MHEAP_NONE == heap)

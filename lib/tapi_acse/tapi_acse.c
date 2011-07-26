@@ -75,12 +75,47 @@
         }                                                              \
     } while (0)
 
+static rcf_rpc_server *acse_ctl = NULL;
+
+static inline te_errno rpc_cwmp_acse_start(rcf_rpc_server *rpcs,
+                                           char *pipe_name, te_bool oper);
+
+static rcf_rpc_server *
+tapi_acse_get_rpcs(const char *ta)
+{
+    te_errno rc = 0;
+
+    if ((acse_ctl == NULL) &&
+        (rc = rcf_rpc_server_get(ta, "acse_ctl", NULL,
+                                 RCF_RPC_SERVER_GET_REUSE,
+                                 &(acse_ctl)) ) != 0)
+    {
+        ERROR("Init RPC server on TA '%s' failed %r", ta, rc);
+        return NULL;
+    }
+    return acse_ctl;
+}
+
 /* see description in tapi_acse.h */
 te_errno
 tapi_acse_start(const char *ta)
 {
-    return cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
-                                "/agent:%s/acse:", ta);
+    te_errno rc = 0;
+    rcf_rpc_server *rpcs = tapi_acse_get_rpcs(ta);
+    static char pipe_name[128];
+    char     buf[256];
+
+    TE_SPRINTF(buf, "/agent:%s/acse:", ta);
+
+
+    if ((rc = rpc_cwmp_acse_start(rpcs, pipe_name, TRUE))!= 0)
+        return rc;
+
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(STRING, pipe_name), "%s", buf))
+        == 0)
+        return cfg_synchronize(buf, TRUE);
+
+    return rc;
 }
 
 
@@ -90,10 +125,14 @@ tapi_acse_stop(const char *ta)
 {
     te_errno rc;
     char     buf[256];
+    rcf_rpc_server *rpcs = tapi_acse_get_rpcs(ta);
 
     TE_SPRINTF(buf, "/agent:%s/acse:", ta);
 
-    if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 0), "%s", buf)) == 0)
+    if ((rc = rpc_cwmp_acse_start(rpcs, NULL, FALSE))!= 0)
+        return rc;
+
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(STRING, ""), "%s", buf)) == 0)
         return cfg_synchronize(buf, TRUE);
 
     return rc;
@@ -235,13 +274,7 @@ tapi_acse_ctx_init(const char *ta)
         cfg_handle *handles = NULL;
         char *name;
 
-        if ((rc = rcf_rpc_server_get(ta, "acse_ctl", NULL,
-                                     RCF_RPC_SERVER_GET_REUSE,
-                                     &(ctx->rpc_srv)) ) != 0)
-        {
-            ERROR("Init RPC server on TA '%s' failed %r", ta, rc);
-            break;
-        }
+        ctx->rpc_srv = tapi_acse_get_rpcs(ta);
 
         ctx->timeout = 20; /* Experimentally discovered optimal value. */
         ctx->def_timeout = 20;
@@ -551,6 +584,44 @@ tapi_acse_wait_cr_state(tapi_acse_context_t *ctx,
 /*
  * ================== local wrappers for RCF RPC =================
  */
+static inline te_errno
+rpc_cwmp_acse_start(rcf_rpc_server *rpcs,
+                    char *pipe_name, te_bool oper) 
+{
+    tarpc_cwmp_acse_start_in  in;
+    tarpc_cwmp_acse_start_out out;
+
+    if (NULL == rpcs)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return -1;
+    }
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+
+    in.oper = oper;
+
+    rcf_rpc_call(rpcs, "cwmp_acse_start", &in, &out);
+
+    RING("TE RPC(%s,%s): cwmp_acse_start(%d) -> %r, '%s'",
+                 rpcs->ta, rpcs->name, (int)oper,
+                 (te_errno)out.status, out.pipe_name);
+
+    if (oper && out.status == 0 && out.pipe_name == NULL)
+    {
+        ERROR("NULL pipe_name got!");
+        return TE_EFAIL;
+    }
+    
+    if (out.status == 0 && pipe_name != NULL)
+        strcpy(pipe_name, out.pipe_name);
+
+    return out.status;
+}
+
 
 
 static inline te_errno

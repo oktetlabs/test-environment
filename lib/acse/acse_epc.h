@@ -53,6 +53,11 @@ extern "C" {
 /** Magic number, for EPC CWMP commands, for validity check */
 #define EPC_CWMP_MAGIC 0x1950
 
+/** Maximum length of config pipe name */
+#define EPC_MAX_PATH 128
+
+extern int epc_to_acse_pipe[2];
+extern int epc_from_acse_pipe[2];
 
 /**
  * Level of EPC configuration command: either ACS or CPE.
@@ -86,14 +91,16 @@ typedef struct {
         acse_cfg_op_t    fun:4;    /**< Function to do */
     } op;               /**< Config operation code */
 
+    te_errno     status;/**< Status of operation (in response).*/
+
     char         acs[RCF_MAX_NAME]; /**< Name of ACS object */
     char         cpe[RCF_MAX_NAME]; /**< Name of CPE record */
 
-    char         oid[RCF_MAX_ID]; /**< TE Configurator OID of leaf,
-                                        which is subject of operation */ 
+    char         oid[RCF_MAX_ID];   /**< TE Configurator OID of leaf,
+                                         which is subject of operation */ 
     union {
-        char     value[RCF_MAX_VAL]; /**< operation result: single value */
-        char     list[RCF_MAX_VAL];  /**< operation result: name list */
+        char     value[RCF_MAX_VAL];/**< operation result: single value */
+        char     list[RCF_MAX_VAL]; /**< operation result: name list */
     };
 } acse_epc_config_data_t;
 
@@ -121,6 +128,8 @@ typedef enum {
  */
 typedef struct {
     acse_epc_cwmp_op_t  op;     /**< Code of operation */
+
+    te_errno    status;/**< Status of operation (in response).*/
 
     char        acs[RCF_MAX_NAME]; /**< Name of ACS object */
     char        cpe[RCF_MAX_NAME]; /**< Name of CPE record */
@@ -165,6 +174,7 @@ typedef enum {
     EPC_CWMP_RESPONSE,   /**< CWMP operation response */
 } acse_msg_code_t;
 
+#if 0
 
 /**
  * Struct for message exchange between ACSE and its client via AF_UNIX
@@ -200,6 +210,7 @@ typedef struct {
                           via pipe it is not used. */
     uint8_t cfg_begin[0];
 } acse_epc_msg_t;
+#endif
 
 /**
  * Role of EPC endpoint: Server (that is ACSE itself) or 
@@ -207,8 +218,9 @@ typedef struct {
  * that is TA of separate simple CLI tool).
  */
 typedef enum {
-    ACSE_EPC_SERVER, /**< endpoint is ACSE */
-    ACSE_EPC_CLIENT  /**< endpoint is user, i.d. TA or CLI tool */
+    ACSE_EPC_SERVER,     /**< endpoint is ACSE */
+    ACSE_EPC_CFG_CLIENT, /**< endpoint is user, i.d. TA or CLI tool */
+    ACSE_EPC_OP_CLIENT,  /**< endpoint is user, i.d. TA or CLI tool */
 } acse_epc_role_t;
 
 
@@ -242,27 +254,35 @@ cwmp_epc_cwmp_op_string(acse_epc_cwmp_op_t op)
     return "unknown";
 }
 /**
- * Open EPC connection. This function may be called only once
- * in process life. 
- * For SERVER, this function blocks until EPC pipe will be 
- * established, waiting for Client connection.
+ * Init EPC server. This function may be called only once
+ * in process life; it creates the unix socket with unique name, 
+ * based on the PID. This name should be passed to the client. 
  *
- * @param msg_sock_name         Name of pipe socket for messages 
- *                                  or NULL for internal default.
- * @param shmem_name            Name of shared memory block, must
- *                              be same in related Server and Client.
- *                              May be NULL for internal default.
- * @param role                  EPC role, which current application plays.
+ * Besides, it openes two internal pipes to inform about TR RPCs, 
+ * which would be placed into the "shared" memory, and allocates
+ * this shared memory, placing pointer to global var @p epc_shmem.
+ *
+ * @param cfg_sock_name         Place for the name of unix
+ *                              socket created, should have at least
+ *                              EPC_MAX_PATH bytes. (OUT)
+ * @param listen_sock           socket for listening EPC connection (OUT)
  *
  * @return status code
  */
-extern te_errno acse_epc_open(const char *msg_sock_name,
-                              const char *shmem_name,
-                              acse_epc_role_t role);
+extern te_errno acse_epc_init(char *cfg_sock_name, int *listen_sock);
+
+/**
+ * Open EPC Config connection from TA to ACSE.
+ * This function may be called only once in process life. 
+ *
+ * @param cfg_sock_name         Name of unix socket for messages 
+ *
+ * @return status code
+ */
+extern te_errno acse_epc_connect(const char *cfg_sock_name);
 
 /**
  * Close EPC connection.
- *
  */
 extern te_errno acse_epc_close(void);
 
@@ -272,6 +292,7 @@ extern te_errno acse_epc_close(void);
  */
 extern int acse_epc_socket(void);
 
+#if 0
 /**
  * Send message to other site in EPC connection. 
  * Field data must point to structure of proper type.
@@ -294,7 +315,48 @@ extern te_errno acse_epc_send(const acse_epc_msg_t *user_message);
  * @return status code 
  */
 extern te_errno acse_epc_recv(acse_epc_msg_t *message);
+#endif
 
+/**
+ * Send CFG message to other site in EPC connection. 
+ *
+ * @param msg          Message to be sent
+ *
+ * @return status code
+ */
+extern te_errno acse_epc_conf_send(const acse_epc_config_data_t *msg);
+
+/**
+ * Receive CFG message from other site in EPC connection. 
+ *
+ * @param msg         Location for received message
+ *
+ * @return status code 
+ */
+extern te_errno acse_epc_conf_recv(acse_epc_config_data_t *msg);
+
+/**
+ * Send CWMP message to other site in EPC connection. 
+ * Field data must point to structure of proper type.
+ *
+ * @param user_message          Message to be sent
+ *
+ * @return status code
+ */
+extern te_errno acse_epc_cwmp_send(const acse_epc_cwmp_data_t *msg);
+
+/**
+ * Receive CWMP message from other site in EPC connection. 
+ * Memory for data is allocated by malloc(), and should be free'd by 
+ * user. Allocated block have size, stored in field @p length 
+ * in the message, it may be used for boundary checks.
+ *
+ * @param message          Location for received message
+ *
+ * @return status code 
+ */
+extern te_errno acse_epc_cwmp_recv(acse_epc_cwmp_data_t **cwmp_data,
+                                   size_t *d_len);
 
 /**
  * Pack data for message client->ACSE.
@@ -308,7 +370,7 @@ extern te_errno acse_epc_recv(acse_epc_msg_t *message);
  *              or length of used memory block in @p buf.
  */
 extern ssize_t epc_pack_call_data(void *buf, size_t len,
-                                   acse_epc_cwmp_data_t *cwmp_data);
+                                  const acse_epc_cwmp_data_t *cwmp_data);
 
 /**
  * Pack data for message ACSE->client.
@@ -322,7 +384,7 @@ extern ssize_t epc_pack_call_data(void *buf, size_t len,
  *              or length of used memory block in @p buf.
  */
 extern ssize_t epc_pack_response_data(void *buf, size_t len,
-                                       acse_epc_cwmp_data_t *cwmp_data);
+                                  const acse_epc_cwmp_data_t *cwmp_data);
 
 
 /*
@@ -336,7 +398,7 @@ extern ssize_t epc_pack_response_data(void *buf, size_t len,
  * @return status code
  */
 extern te_errno epc_unpack_call_data(void *buf, size_t len,
-                                      acse_epc_cwmp_data_t *cwmp_data);
+                                     acse_epc_cwmp_data_t *cwmp_data);
 
 
 /**
@@ -350,7 +412,7 @@ extern te_errno epc_unpack_call_data(void *buf, size_t len,
  * @return status code
  */
 extern te_errno epc_unpack_response_data(void *buf, size_t len,
-                                          acse_epc_cwmp_data_t *cwmp_data);
+                                         acse_epc_cwmp_data_t *cwmp_data);
 
 
 

@@ -34,20 +34,17 @@
 /**
  * Main ACSE loop: waiting events from all channels, processing them.
  */
-extern void acse_loop(void);
+extern void* acse_loop(void*);
 
 /**
  * Init EPC dispatcher.
  * 
  * @param msg_sock_name    name of PF_UNIX socket for EPC messages, 
  *                              or NULL for internal EPC default;
- * @param shmem_name       name of shared memory space for EPC data
- *                            exchange or NULL for internal default.
  * 
  * @return              status code
  */
-extern te_errno acse_epc_disp_init(const char *msg_sock_name,
-                                   const char *shmem_name);
+extern te_errno acse_epc_disp_init(char *cfg_sock_name);
 
 
 
@@ -133,7 +130,7 @@ extern te_errno acse_cwmp_prepare(const char *acs, const char *cpe,
  *
  * @return              Local execution status code
  */
-extern te_errno acse_cwmp_call(te_errno *status, size_t *data_len, 
+extern te_errno acse_cwmp_call(size_t *data_len, 
                                acse_epc_cwmp_data_t **cwmp_data);
 
 /**

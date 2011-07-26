@@ -74,6 +74,12 @@
 #include "te_defs.h"
 #include "logger_api.h"
 
+
+extern int epc_socket;
+
+static int epc_listen_socket = -1;
+
+
 /** struct to item of strint-integer convertor in enumerated sets */
 typedef struct str_to_int_t {
     const char *s_val; /**< string value */
@@ -1104,11 +1110,15 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
  * @return status code.
  */
 static te_errno
-epc_before_poll(void *data, struct pollfd *pfd)
+epc_cfg_before_poll(void *data, struct pollfd *pfd)
 {
     UNUSED(data);
-    pfd->fd = acse_epc_socket();
+    if (epc_listen_socket > 0)
+        pfd->fd = epc_listen_socket;
+    else
+        pfd->fd = acse_epc_socket();
     VERB("EPC before poll, fd %d", pfd->fd);
+
     pfd->revents = 0;
     if (pfd->fd > 0)
         pfd->events = POLLIN;
@@ -1129,66 +1139,42 @@ epc_before_poll(void *data, struct pollfd *pfd)
  * @return status code.
  */
 te_errno
-epc_after_poll(void *data, struct pollfd *pfd)
+epc_cfg_after_poll(void *data, struct pollfd *pfd)
 {
-    acse_epc_msg_t msg;
-    te_errno       rc; 
+    static acse_epc_config_data_t msg;
+    te_errno       rc, status; 
 
     UNUSED(data);
 
     if (!(pfd->revents & POLLIN))
         return 0;
 
-    rc = acse_epc_recv(&msg);
+    if (epc_listen_socket > 0)
+    {
+        epc_socket = accept(epc_listen_socket, NULL, NULL);
+        epc_listen_socket = -1;
+        return 0;
+    }
+
+    rc = acse_epc_conf_recv(&msg);
+
     if (rc != 0)
     {
         if (TE_RC_GET_ERROR(rc) != TE_ENOTCONN)
             ERROR("%s(): failed to get EPC message %r",
                   __FUNCTION__, rc);
-#if 0 /* Will normal break from main loop.*/
-        else /* Normal close of EPC connection leads to ACSE stop */
-            exit(0);
-#endif
         fprintf(stderr, "ACSE dispatcher: EPC recv returned error %s\n",
                 te_rc_err2str(rc));
 
         return TE_RC(TE_ACSE, rc);
     }
-    else if (msg.data.p == NULL)
-    {
-        ERROR("%s(): NULL in 'msg' after success 'epc_recv'", 
-              __FUNCTION__);
-        fprintf(stderr, "ACSE dispatcher: NULL in 'msg'\n");
-        return TE_RC(TE_ACSE, TE_EFAIL);
-    }
 
-    switch(msg.opcode)
-    {
-        case EPC_CONFIG_CALL:
-            msg.status = acse_epc_config(msg.data.cfg);
-            msg.opcode = EPC_CONFIG_RESPONSE;
-            break;
-
-        case EPC_CWMP_CALL:
-            msg.status = acse_epc_cwmp(msg.data.cwmp);
-            msg.opcode = EPC_CWMP_RESPONSE;
-            break;
-
-        default:
-            ERROR("%s(): unexpected msg opcode 0x%x",
-                    __FUNCTION__, msg.opcode);
-            return TE_RC(TE_ACSE, TE_EFAIL);
-    }
+    status = acse_epc_config(&msg);
 
     /* Now send response, all data prepared in specific calls above. */
-    rc = acse_epc_send(&msg);
-    VERB("%s(): send EPC response rc %r", __FUNCTION__, rc);
+    rc = acse_epc_conf_send(&msg);
 
-    /* Do NOT free cwmp params for RPC call operation - they are stored
-       in queue, and will be free'd after recieve RPC response and 
-       report about it. */
-    if (msg.opcode != EPC_CWMP_RESPONSE)
-        free(msg.data.p); 
+    VERB("%s(): send EPC response rc %r", __FUNCTION__, rc);
 
     if (rc != 0)
         ERROR("%s(): send EPC failed %r", __FUNCTION__, rc);
@@ -1205,7 +1191,7 @@ epc_after_poll(void *data, struct pollfd *pfd)
  * @return status code.
  */
 te_errno
-epc_destroy(void *data)
+epc_cfg_destroy(void *data)
 {
     UNUSED(data);
     RING("EPC dispatcher destroy, pid %d\n", getpid()); 
@@ -1213,27 +1199,125 @@ epc_destroy(void *data)
     return acse_epc_close();
 }
 
+/** 
+ * Callback for I/O ACSE channel, called before poll().
+ * It fills @p pfd according with specific channel situation.
+ * Its prototype matches with field #channel_t::before_poll.
+ *
+ * @param data      Channel-specific private data.
+ * @param pfd       Poll file descriptor struct (OUT)
+ *
+ * @return status code.
+ */
+static te_errno
+epc_cwmp_before_poll(void *data, struct pollfd *pfd)
+{
+    UNUSED(data);
+    pfd->fd = epc_to_acse_pipe[0];
+    VERB("EPC before poll, fd %d", pfd->fd);
+
+    pfd->revents = 0;
+    if (pfd->fd > 0)
+        pfd->events = POLLIN;
+
+    return 0;
+}
+
+
+/** 
+ * Callback for I/O ACSE channel, called after poll() 
+ * Its prototype matches with field #channel_t::after_poll.
+ * This function should process detected event (usually, incoming data).
+ *
+ * @param data      Channel-specific private data.
+ * @param pfd       Poll file descriptor struct with marks, which 
+ *                  event happen.
+ *
+ * @return status code.
+ */
+te_errno
+epc_cwmp_after_poll(void *data, struct pollfd *pfd)
+{
+    acse_epc_cwmp_data_t *msg;
+    te_errno       rc, status; 
+
+    UNUSED(data);
+
+    if (!(pfd->revents & POLLIN))
+        return 0;
+
+    rc = acse_epc_cwmp_recv(&msg, NULL);
+    if (rc != 0)
+    {
+        if (TE_RC_GET_ERROR(rc) != TE_ENOTCONN)
+            ERROR("%s(): failed to get EPC message %r",
+                  __FUNCTION__, rc);
+        fprintf(stderr, "ACSE dispatcher: EPC recv returned error %s\n",
+                te_rc_err2str(rc));
+
+        return TE_RC(TE_ACSE, rc);
+    }
+
+    status = acse_epc_cwmp(msg);
+
+    rc = acse_epc_cwmp_send(msg);
+
+    VERB("%s(): send EPC cwmp response rc %r", __FUNCTION__, rc);
+
+    /* Do NOT free cwmp message for RPC call operation - they are stored
+       in queue, and will be free'd after recieve RPC response and 
+       report about it. */
+
+    if (rc != 0)
+        ERROR("%s(): send EPC failed %r", __FUNCTION__, rc);
+
+    return rc;
+}
+
+/** 
+ * Callback for I/O ACSE channel, called at channel destroy. 
+ * Its prototype matches with field #channel_t::destroy.
+ *
+ * @param data      Channel-specific private data.
+ *
+ * @return status code.
+ */
+te_errno
+epc_cwmp_destroy(void *data)
+{
+    UNUSED(data);
+    return 0;
+}
+
 /* see description in acse_internal.h */
 te_errno
-acse_epc_disp_init(const char *msg_sock_name, const char *shmem_name)
+acse_epc_disp_init(char *cfg_sock_name)
 {
-    channel_t  *channel = malloc(sizeof(channel_t));
+    channel_t  *channel_cfg = malloc(sizeof(channel_t));
+    channel_t  *channel_cwmp = malloc(sizeof(channel_t));
+
     te_errno rc;
 
-    channel->data = NULL; 
-
-    if (channel == NULL)
+    if (channel_cfg == NULL || channel_cwmp == NULL)
         return TE_RC(TE_ACSE, TE_ENOMEM);
 
-    if ((rc = acse_epc_open(msg_sock_name, shmem_name, ACSE_EPC_SERVER))
-        != 0)
+    channel_cfg->data = NULL; 
+    channel_cwmp->data = NULL; 
+
+    if ((rc = acse_epc_init(cfg_sock_name, &epc_listen_socket)) != 0)
         return TE_RC(TE_ACSE, rc);
 
-    channel->before_poll  = &epc_before_poll;
-    channel->after_poll   = &epc_after_poll;
-    channel->destroy      = &epc_destroy;
+    channel_cfg->before_poll  = &epc_cfg_before_poll;
+    channel_cfg->after_poll   = &epc_cfg_after_poll;
+    channel_cfg->destroy      = &epc_cfg_destroy;
 
-    acse_add_channel(channel);
+    acse_add_channel(channel_cfg);
+
+    channel_cwmp->before_poll  = &epc_cwmp_before_poll;
+    channel_cwmp->after_poll   = &epc_cwmp_after_poll;
+    channel_cwmp->destroy      = &epc_cwmp_destroy;
+
+    acse_add_channel(channel_cwmp); 
 
     return 0;
 }

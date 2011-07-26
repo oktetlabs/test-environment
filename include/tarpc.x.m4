@@ -4248,6 +4248,19 @@ struct tarpc_cpe_get_options_out {
 };
 
 
+struct tarpc_cwmp_acse_start_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int           oper;        /**< 1 to start, 0 to stop */
+};
+
+
+struct tarpc_cwmp_acse_start_out {
+    struct tarpc_out_arg  common;
+
+    tarpc_uint          status;      /**< status of operation - te_errno */
+    string              pipe_name<>; /**< Name the unix pipe to connect ACSE */ 
+};
 
 struct tarpc_cwmp_op_call_in {
     struct tarpc_in_arg common;
@@ -4303,21 +4316,6 @@ struct tarpc_cwmp_conn_req_out {
     tarpc_int           status;     /**< status of operation */
 };
 
-
-struct tarpc_cwmp_get_inform_in {
-    struct tarpc_in_arg common;
-
-    string              acs_name<>; /**< Name of ACS object */ 
-    string              cpe_name<>; /**< Name of CPE record */ 
-    tarpc_uint          index; /**< Index of CWMP Inform */
-};
-
-struct tarpc_cwmp_get_inform_out {
-    struct tarpc_out_arg  common;
-
-    tarpc_int           status;     /**< status of operation */
-    uint8_t             buf<>;      /**< Buffer with CWMP Inform data */
-};
 
 struct tarpc_power_sw_in {
     struct tarpc_in_arg common;
@@ -4653,7 +4651,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(cwmp_op_call)
         RPC_DEF(cwmp_op_check)
         RPC_DEF(cwmp_conn_req)
-        RPC_DEF(cwmp_get_inform)
+        RPC_DEF(cwmp_acse_start)
         RPC_DEF(power_sw)
 
         RPC_DEF(ta_dlopen)

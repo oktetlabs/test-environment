@@ -444,15 +444,13 @@ extern te_errno db_clear_cpe(cpe_t *cpe_item);
 /**
  * Init EPC dispatcher.
  * 
- * @param msg_sock_name    name of PF_UNIX socket for EPC messages, 
- *                              or NULL for internal EPC default;
- * @param shmem_name       name of shared memory space for EPC data
- *                            exchange or NULL for internal default.
+ * @param cfg_sock_name         Place for the name of unix
+ *                              socket created, should have at least
+ *                              EPC_MAX_PATH bytes. (OUT)
  * 
  * @return              status code
  */
-extern te_errno acse_epc_disp_init(const char *msg_sock_name,
-                                   const char *shmem_name);
+extern te_errno acse_epc_disp_init(char *cfg_sock_name);
 
 
 /**
@@ -523,12 +521,6 @@ extern te_errno acse_disable_cpe(cpe_t *cpe);
  * @return status code.
  */
 extern te_errno acse_init_connection_request(cpe_t *cpe_item);
-
-
-/**
- * Main ACSE loop: waiting events from all channels, processing them.
- */
-extern void acse_loop(void);
 
 
 /**
