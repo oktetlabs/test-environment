@@ -160,19 +160,19 @@ te_errno
 tapi_acse_ta_cs_init(tapi_acse_context_t *ctx)
 {
     char          buf[CFG_OID_MAX];
-    int           i_val;
+    char         *acse_val;
     cfg_val_type  type;
     cfg_handle    acs_handle = CFG_HANDLE_INVALID,
                   cpe_handle = CFG_HANDLE_INVALID;
     te_errno      rc;
 
     /* Check, if there running ACSE itself */
-    type = CVT_INTEGER;
-    rc = cfg_get_instance_fmt(&type, &i_val, "/agent:%s/acse:", ctx->ta);
+    type = CVT_STRING;
+    rc = cfg_get_instance_fmt(&type, &acse_val, "/agent:%s/acse:", ctx->ta);
     if (rc != 0) return TE_RC(TE_TAPI, rc);
-    if (i_val != 1)
+    if (acse_val == NULL || strlen(acse_val) == 0)
     {
-        WARN("ACSE is not running, val %d", i_val);
+        WARN("ACSE is not running, val %s", acse_val);
         return TE_RC(TE_TAPI, TE_ESRCH);
     }
 
