@@ -77,7 +77,7 @@
 
 extern int epc_socket;
 
-static int epc_listen_socket = -1;
+extern int epc_listen_socket;
 
 
 /** struct to item of strint-integer convertor in enumerated sets */
@@ -963,7 +963,7 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
             TAILQ_INSERT_TAIL(&cpe->rpc_queue, rpc_item, links);
             cwmp_pars->from_cpe.p = NULL; /* nothing yet.. */
 
-            RING("EPC CWMP, RPC call to '%s', type %d, ind %d, need %d",
+            VERB("EPC CWMP, RPC call to '%s', type %d, ind %d, need %d",
                  cwmp_pars->cpe, cwmp_pars->rpc_cpe, rpc_item->request_id,
                  need_call);
 
@@ -1051,7 +1051,7 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
                 return rc;
             }
             cwmp_pars->from_cpe.cr_state = cpe->cr_state;
-            RING("EPC CWMP Issue ConnReq to '%s'", cwmp_pars->cpe); 
+            VERB("EPC CWMP Issue ConnReq to '%s'", cwmp_pars->cpe); 
         break;
         case EPC_CONN_REQ_CHECK:
             cwmp_pars->from_cpe.cr_state = cpe->cr_state;
@@ -1194,8 +1194,7 @@ te_errno
 epc_cfg_destroy(void *data)
 {
     UNUSED(data);
-    RING("EPC dispatcher destroy, pid %d\n", getpid()); 
-    fprintf(stderr, "EPC dispatcher destroy, pid %d\n", getpid()); 
+    VERB("EPC dispatcher destroy, pid %d\n", getpid()); 
     return acse_epc_close();
 }
 

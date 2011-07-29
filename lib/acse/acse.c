@@ -60,6 +60,8 @@ acse_clear_channels(void)
     channel_t *item;
     channel_t *tmp;
 
+    RING("Clear ACSE main loop channels, shutdown");
+
     LIST_FOREACH_SAFE(item, &channel_list, links, tmp)
     {
         (*item->destroy)(item->data);
@@ -83,7 +85,7 @@ acse_add_channel(channel_t *ch_item)
 
     channel_number++;
 
-    INFO("insert channel %p, increase channel_number to %d",
+    VERB("insert channel %p, increase channel_number to %d",
          ch_item, channel_number);
 }
 
@@ -98,11 +100,12 @@ acse_remove_channel(channel_t *ch_item)
     {
         LIST_REMOVE(ch_item, links);
         channel_number--;
-        INFO("remove channel %p, decrease channel_number to %d",
+        VERB("remove channel %p, decrease channel_number to %d",
              ch_item, channel_number);
     }
     if (ch_item->state != ACSE_CH_EVENT)
     {
+        VERB("destroy channel %p", ch_item);
         ch_item->destroy(ch_item->data);
         free(ch_item);
     }

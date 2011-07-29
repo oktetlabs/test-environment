@@ -58,6 +58,8 @@
 
 
 int epc_socket = -1;
+int epc_listen_socket = -1;
+
 static acse_epc_role_t epc_role = ACSE_EPC_SERVER;
 
 void *epc_shmem = NULL;
@@ -291,7 +293,10 @@ acse_epc_connect(const char *cfg_sock_name)
 int
 acse_epc_socket(void)
 {
-    return epc_socket;
+    if (epc_socket > 0)
+        return epc_socket;
+    else 
+        return epc_listen_socket;
 }
 
 void*
@@ -303,7 +308,14 @@ acse_epc_shmem(void)
 te_errno
 acse_epc_close(void)
 {
-    close(epc_socket); epc_socket = -1;
+    if (epc_socket > 0)
+        close(epc_socket);
+    if (epc_listen_socket > 0)
+        close(epc_listen_socket);
+
+    epc_socket = -1;
+    epc_listen_socket = -1;
+
     if (epc_shmem_name)
     {
         shm_unlink(epc_shmem_name);
