@@ -194,7 +194,10 @@ tapi_acse_ta_cs_init(tapi_acse_context_t *ctx)
                 ERROR("%s(): find '%s', %r", __FUNCTION__, buf, rc);    \
         }                                                               \
         if (0 != rc)                                                    \
+        {                                                               \
+            ERROR("%s(): create failed %r", __FUNCTION__, rc);          \
             return TE_RC(TE_TAPI, rc);                                  \
+        }                                                               \
     } while (0)
 
 #define COPY_ACS_CPE_PARAM(_lv, _type, _par_name) \
@@ -317,6 +320,8 @@ tapi_acse_ctx_init(const char *ta)
         return ctx;
     } while (0);
     free(ctx);
+
+    WARN("%s(): end of func, failed :( status %r", __FUNCTION__, rc);
     return NULL;
 }
 

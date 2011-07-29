@@ -412,10 +412,6 @@ acse_get(unsigned int gid, char const *oid,
     UNUSED(acse);
 
     strcpy(value, acse_epc_cfg_pipe);
-RING("acse_get: oid '%s', value '%s', acse '%s'", 
-    oid, value, acse);
-fprintf(stderr, "acse_get: oid '%s', value '%s', acse '%s'\n", 
-    oid, value, acse);
     return 0;
 }
 
