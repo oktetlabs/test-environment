@@ -74,18 +74,6 @@
 
 
 static char acse_epc_cfg_pipe[EPC_MAX_PATH] = {0,};
-/**
- * Determines whether ACSE is started and link to it is initialized.
- *
- * @return              TRUE is ACSE is started and link to it
-                        is initialized, otherwise - FALSE
- */
-static inline char *
-acse_value(void)
-{
-    return acse_epc_cfg_pipe;
-}
-
 
 
 /**
@@ -215,7 +203,7 @@ call_list(char **list, char const *acs)
     te_errno rc;
     acse_epc_config_data_t  *cfg_result = NULL;
 
-    if (!acse_value())
+    if (strlen(acse_epc_cfg_pipe) == 0)
         return empty_list(list);
 
     rc = acse_conf_op(NULL, acs, NULL, NULL, EPC_CFG_LIST, &cfg_result);
@@ -450,8 +438,6 @@ acse_set(unsigned int gid, char const *oid,
          char const *value, char const *acse)
 {
     te_errno rc = 0;
-    char * new_acse_value = value;
-    char * old_acse_value = acse_epc_cfg_pipe;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -644,7 +630,11 @@ start_acse(char *cfg_pipe_name)
 
     pth_ret = pthread_create(&acse_thread, NULL, acse_loop, NULL);
     if (pth_ret != 0)
+    {
+        perror("ACSE thread:");
+        ERROR("Start ACSE thread failed, OS error %d", pth_ret);
         return TE_OS_RC(TE_ACSE, pth_ret);
+    }
 
     return 0;
 }
@@ -740,7 +730,8 @@ cwmp_acse_start(tarpc_cwmp_acse_start_in *in,
     {
         out->status = start_acse(buf);
         out->pipe_name = strdup(buf);
-        RING("%s(): status %d, pipe name '%s'", out->status, buf);
+        RING("%s(): status %r, pipe name '%s'",
+            __FUNCTION__, out->status, buf);
     }
     else 
     {
