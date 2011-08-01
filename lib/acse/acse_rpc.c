@@ -66,7 +66,6 @@
 #include <ctype.h>
 #include <pthread.h>
 
-#include "acse_internal.h"
 #include "acse_user.h"
 
 #include "te_stdint.h"
@@ -79,7 +78,88 @@
 static te_errno stop_acse(void);
 static te_errno start_acse(char *cfg_pipe_name);
 
+int epc_to_acse_pipe[2] = {-1, -1};
+int epc_from_acse_pipe[2] = {-1, -1};
+
+
 pthread_t acse_thread;
+
+
+#if 0
+static pthread_key_t epc_role_key; 
+static pthread_once_t key_once = PTHREAD_ONCE_INIT;
+
+static void 
+make_key(void)
+{
+    pthread_key_create(&epc_role_key, NULL)
+}
+
+void
+epc_role_set(acse_epc_role_t r)
+{
+    int l_errno;
+    int *val = malloc(sizeof(*val));
+    *val = (int)r;
+    RING("epc_role_set to %d", (int)r);
+    if ((errno = pthread_setspecific(epc_role_key, val)) != 0)
+    {
+        ERROR("EPC role set failed with errno %d(%s)", 
+              l_errno, strerror(l_errno));
+    }
+}
+
+acse_epc_role_t
+epc_role_get(void)
+{
+    int *val = pthread_getspecific(epc_role_key);
+
+    if (val == NULL)
+    {
+        ERROR("No EPC role pthread key! return default role, SERVER");
+        return ACSE_EPC_SERVER;
+    }
+    RING("epc_role_get:  %d", (int)(*val));
+
+    return (acse_epc_role_t)(*val);
+}
+#endif
+
+typedef struct {
+    int listen_socket;
+} acse_thread_arg_t;
+/**
+ * Start routine for the ACSE thread within TA-associated
+ * RPC server process. 
+ *
+ * @param arg           Start argument
+ *
+ * @return NULL
+ */
+static void *
+acse_pthread_main(void *p_a)
+{
+    te_errno rc;
+    acse_thread_arg_t *arg = (acse_thread_arg_t *)p_a;
+    epc_site_t *s = calloc(1, sizeof(*s));
+    
+    logfork_register_user("ACSE");
+
+    s->role = ACSE_EPC_SERVER;
+    s->fd_in = epc_to_acse_pipe[0];
+    s->fd_out = epc_from_acse_pipe[1];
+
+    if ((rc = acse_epc_disp_init(arg->listen_socket, s)) != 0)
+    {
+        ERROR("Fail create EPC dispatcher %r", rc);
+        return NULL;
+    }
+
+    acse_loop();
+
+    free(arg);
+    return NULL;
+}
 
 /**
  * Initialize necessary entities and start ACSE.
@@ -91,16 +171,36 @@ start_acse(char *cfg_pipe_name)
 {
     te_errno rc = 0;
     int pth_ret;
+    acse_thread_arg_t *arg = malloc(sizeof(*arg));
+
+    epc_site_t *s = calloc(1, sizeof(*s));
 
     RING("Start ACSE process");
 
-    if ((rc = acse_epc_disp_init(cfg_pipe_name)) != 0)
+    if (pipe(epc_to_acse_pipe) || pipe(epc_from_acse_pipe))
+    { 
+        int saved_errno = errno;
+        ERROR("create of EPC ops pipes, errno %d", saved_errno);
+        return TE_OS_RC(TE_ACSE, saved_errno);
+    }
+    else
     {
-        ERROR("Fail create EPC dispatcher %r", rc);
-        return rc;
+        RING("start ACSE: RPCS->ACSE pipe %d,%d; ACSE->RPCS pipe %d,%d",
+             epc_to_acse_pipe[0],
+             epc_to_acse_pipe[1],
+             epc_from_acse_pipe[0],
+             epc_from_acse_pipe[1]);
     }
 
-    pth_ret = pthread_create(&acse_thread, NULL, acse_loop, NULL);
+    if ((rc = acse_epc_init(cfg_pipe_name, &(arg->listen_socket))) != 0)
+        return TE_RC(TE_ACSE, rc);
+
+    s->role = ACSE_EPC_OP_CLIENT; 
+    s->fd_in = epc_from_acse_pipe[0];
+    s->fd_out = epc_to_acse_pipe[1]; 
+    acse_epc_user_init(s);
+
+    pth_ret = pthread_create(&acse_thread, NULL, acse_pthread_main, arg);
     if (pth_ret != 0)
         return TE_OS_RC(TE_ACSE, pth_ret);
 
@@ -115,7 +215,7 @@ start_acse(char *cfg_pipe_name)
 static te_errno
 stop_acse(void)
 {
-    /* do nothing now */
+    /* TODO */
     return 0;
 #if 0
     te_errno rc = 0;
@@ -184,12 +284,10 @@ stop_acse(void)
 }
 
 
-
 int
 cwmp_acse_start(tarpc_cwmp_acse_start_in *in,
                 tarpc_cwmp_acse_start_out *out)
 {
-    te_errno rc;
     static char buf[256] = {0,};
     
     RING("%s() called", __FUNCTION__);
@@ -198,7 +296,8 @@ cwmp_acse_start(tarpc_cwmp_acse_start_in *in,
     {
         out->status = start_acse(buf);
         out->pipe_name = strdup(buf);
-        RING("%s(): status %d, pipe name '%s'", out->status, buf);
+        RING("%s(): status %r, pipe name '%s'",
+            __FUNCTION__, out->status, buf);
     }
     else 
     {
@@ -240,7 +339,7 @@ int
 cwmp_op_call(tarpc_cwmp_op_call_in *in,
              tarpc_cwmp_op_call_out *out)
 {
-    te_errno rc, status;
+    te_errno rc = 0;
     acse_epc_cwmp_data_t *cwmp_data = NULL;
 
 
@@ -278,7 +377,7 @@ cwmp_op_call(tarpc_cwmp_op_call_in *in,
     else
     { 
         out->request_id = cwmp_data->request_id;
-        out->status = TE_RC(TE_ACSE, status);
+        out->status = TE_RC(TE_ACSE, cwmp_data->status);
     }
 
     return 0;
@@ -289,7 +388,7 @@ int
 cwmp_op_check(tarpc_cwmp_op_check_in *in,
               tarpc_cwmp_op_check_out *out)
 {
-    te_errno rc, status;
+    te_errno rc = 0;
     acse_epc_cwmp_data_t *cwmp_data = NULL;
     size_t d_len;
 
@@ -320,11 +419,12 @@ cwmp_op_check(tarpc_cwmp_op_check_in *in,
     {
         ssize_t packed_len;
 
-        out->status = TE_RC(TE_ACSE, status);
+        out->status = TE_RC(TE_ACSE, cwmp_data->status);
 
-        INFO("%s(): status is %r, buflen %d", __FUNCTION__, status, d_len);
+        INFO("%s(): status is %r, buflen %d", __FUNCTION__,
+             cwmp_data->status, d_len);
 
-        if (0 == status || TE_CWMP_FAULT == status)
+        if (0 == cwmp_data->status || TE_CWMP_FAULT == cwmp_data->status)
         { 
             out->buf.buf_val = malloc(d_len);
             out->buf.buf_len = d_len;

@@ -56,9 +56,6 @@ extern "C" {
 /** Maximum length of config pipe name */
 #define EPC_MAX_PATH 128
 
-extern int epc_to_acse_pipe[2];
-extern int epc_from_acse_pipe[2];
-
 /**
  * Level of EPC configuration command: either ACS or CPE.
  */
@@ -223,6 +220,19 @@ typedef enum {
     ACSE_EPC_OP_CLIENT,  /**< endpoint is user, i.d. TA or CLI tool */
 } acse_epc_role_t;
 
+typedef struct {
+    acse_epc_role_t     role;
+    int                 fd_in;
+    int                 fd_out;
+} epc_site_t;
+
+/**
+ * Methods to access EPC role flag, which should be implemented
+ * by user of EPC, that is, it depends on the application design 
+ * which ACSE built in.
+ */
+extern void epc_role_set(acse_epc_role_t);
+extern acse_epc_role_t epc_role_get(void);
 
 
 static inline const char *
@@ -343,7 +353,8 @@ extern te_errno acse_epc_conf_recv(acse_epc_config_data_t *msg);
  *
  * @return status code
  */
-extern te_errno acse_epc_cwmp_send(const acse_epc_cwmp_data_t *msg);
+extern te_errno acse_epc_cwmp_send(epc_site_t *s,
+                                   const acse_epc_cwmp_data_t *msg);
 
 /**
  * Receive CWMP message from other site in EPC connection. 
@@ -355,7 +366,8 @@ extern te_errno acse_epc_cwmp_send(const acse_epc_cwmp_data_t *msg);
  *
  * @return status code 
  */
-extern te_errno acse_epc_cwmp_recv(acse_epc_cwmp_data_t **cwmp_data,
+extern te_errno acse_epc_cwmp_recv(epc_site_t *s,
+                                   acse_epc_cwmp_data_t **cwmp_data,
                                    size_t *d_len);
 
 /**

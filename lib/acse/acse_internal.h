@@ -442,18 +442,6 @@ extern te_errno db_remove_cpe(cpe_t *cpe_item);
 extern te_errno db_clear_cpe(cpe_t *cpe_item);
 
 /**
- * Init EPC dispatcher.
- * 
- * @param cfg_sock_name         Place for the name of unix
- *                              socket created, should have at least
- *                              EPC_MAX_PATH bytes. (OUT)
- * 
- * @return              status code
- */
-extern te_errno acse_epc_disp_init(char *cfg_sock_name);
-
-
-/**
  * Init TCP Listener dispatcher (named 'conn' - by old style. to be fixed).
  * 
  * @return              status code

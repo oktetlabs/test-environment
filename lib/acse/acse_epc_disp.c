@@ -79,6 +79,7 @@ extern int epc_socket;
 
 extern int epc_listen_socket;
 
+static epc_site_t *epc_disp_site = NULL;
 
 /** struct to item of strint-integer convertor in enumerated sets */
 typedef struct str_to_int_t {
@@ -1212,7 +1213,7 @@ static te_errno
 epc_cwmp_before_poll(void *data, struct pollfd *pfd)
 {
     UNUSED(data);
-    pfd->fd = epc_to_acse_pipe[0];
+    pfd->fd = epc_disp_site->fd_in;
     VERB("EPC before poll, fd %d", pfd->fd);
 
     pfd->revents = 0;
@@ -1245,7 +1246,7 @@ epc_cwmp_after_poll(void *data, struct pollfd *pfd)
     if (!(pfd->revents & POLLIN))
         return 0;
 
-    rc = acse_epc_cwmp_recv(&msg, NULL);
+    rc = acse_epc_cwmp_recv(epc_disp_site, &msg, NULL);
     if (rc != 0)
     {
         if (TE_RC_GET_ERROR(rc) != TE_ENOTCONN)
@@ -1259,7 +1260,7 @@ epc_cwmp_after_poll(void *data, struct pollfd *pfd)
 
     status = acse_epc_cwmp(msg);
 
-    rc = acse_epc_cwmp_send(msg);
+    rc = acse_epc_cwmp_send(epc_disp_site, msg);
 
     VERB("%s(): send EPC cwmp response rc %r", __FUNCTION__, rc);
 
@@ -1290,12 +1291,10 @@ epc_cwmp_destroy(void *data)
 
 /* see description in acse_internal.h */
 te_errno
-acse_epc_disp_init(char *cfg_sock_name)
+acse_epc_disp_init(int listen_sock, epc_site_t *s)
 {
     channel_t  *channel_cfg = malloc(sizeof(channel_t));
     channel_t  *channel_cwmp = malloc(sizeof(channel_t));
-
-    te_errno rc;
 
     if (channel_cfg == NULL || channel_cwmp == NULL)
         return TE_RC(TE_ACSE, TE_ENOMEM);
@@ -1303,8 +1302,8 @@ acse_epc_disp_init(char *cfg_sock_name)
     channel_cfg->data = NULL; 
     channel_cwmp->data = NULL; 
 
-    if ((rc = acse_epc_init(cfg_sock_name, &epc_listen_socket)) != 0)
-        return TE_RC(TE_ACSE, rc);
+    epc_listen_socket = listen_sock;
+    epc_disp_site = s;
 
     channel_cfg->before_poll  = &epc_cfg_before_poll;
     channel_cfg->after_poll   = &epc_cfg_after_poll;

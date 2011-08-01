@@ -55,6 +55,14 @@
 static acse_epc_cwmp_data_t cwmp_msg;
 static acse_epc_config_data_t cfg_data;
 
+static epc_site_t *epc_user_site = NULL;
+
+te_errno
+acse_epc_user_init(epc_site_t *s)
+{
+    epc_user_site = s;
+    return 0;
+}
 
 /**
  * Initializes acse params substructure with the supplied parameters.
@@ -268,14 +276,14 @@ acse_cwmp_call(size_t *data_len, acse_epc_cwmp_data_t **cwmp_data)
     struct pollfd   pfd = {0, POLLIN, 0};
     int             pollrc;
 
-    rc = acse_epc_cwmp_send(&cwmp_msg);
+    rc = acse_epc_cwmp_send(epc_user_site, &cwmp_msg);
     if (rc != 0)
     {
         ERROR("%s(): EPC send failed %r", __FUNCTION__, rc);
         return rc;
     }
 
-    pfd.fd = epc_from_acse_pipe[0];
+    pfd.fd = epc_user_site->fd_in;
     pollrc = ppoll(&pfd, 1, &epc_ts, NULL);
 
     if (pollrc < 0)
@@ -292,7 +300,7 @@ acse_cwmp_call(size_t *data_len, acse_epc_cwmp_data_t **cwmp_data)
         return TE_RC(TE_TA_UNIX, TE_ETIMEDOUT);
     }
 
-    rc = acse_epc_cwmp_recv(cwmp_data, data_len);
+    rc = acse_epc_cwmp_recv(epc_user_site, cwmp_data, data_len);
     if (rc != 0)
         ERROR("%s(): EPC recv failed %r", __FUNCTION__, rc);
 
@@ -372,7 +380,7 @@ acse_http_code(const char *acs, const char *cpe,
          cwmp_data->to_cpe.http_code, (char *)cwmp_data->enc_start);
 
 
-    rc = acse_epc_cwmp_send(cwmp_data);
+    rc = acse_epc_cwmp_send(epc_user_site, cwmp_data);
 
     free(cwmp_data);
 
@@ -382,7 +390,7 @@ acse_http_code(const char *acs, const char *cpe,
         return rc;
     }
 
-    rc = acse_epc_cwmp_recv(&cwmp_data, NULL);
+    rc = acse_epc_cwmp_recv(epc_user_site, &cwmp_data, NULL);
     if (rc != 0)
     {
         ERROR("%s(): EPC recv failed %r", __FUNCTION__, rc);

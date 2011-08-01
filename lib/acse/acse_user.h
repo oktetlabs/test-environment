@@ -21,7 +21,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru
  *
  * $Id$
  */
@@ -31,22 +31,26 @@
 
 #include "te_cwmp.h"
 #include "cwmp_data.h"
+#include "acse_epc.h"
 /**
  * Main ACSE loop: waiting events from all channels, processing them.
  */
-extern void* acse_loop(void*);
+extern void acse_loop(void);
 
 /**
  * Init EPC dispatcher.
  * 
- * @param msg_sock_name    name of PF_UNIX socket for EPC messages, 
- *                              or NULL for internal EPC default;
+ * @param listen_sock           socket for listening EPC connection
  * 
  * @return              status code
  */
-extern te_errno acse_epc_disp_init(char *cfg_sock_name);
+extern te_errno acse_epc_disp_init(int listen_sock, epc_site_t *s);
 
 
+/**
+ * Init EPC CWMP-operations user.  
+ */
+extern te_errno acse_epc_user_init(epc_site_t *s);
 
 /**
  * Perform EPC configuration method and wait for result, 

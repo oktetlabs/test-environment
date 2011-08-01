@@ -25,6 +25,7 @@ libacse_cwmp_la_SOURCES = acse.c \
                     acse_cwmp.c \
                     acse_epc.c \
                     acse_user.c \
+                    acse_rpc.c \
                     acse_epc_disp.c \
                     acse_db.c \
                     acse_mem.c \

@@ -50,6 +50,7 @@
 
 #include "cwmp_data.h"
 #include "acse_mem.h"
+#include "acse_user.h"
 
 
 #define EPC_MMAP_AREA "/epc_mmap_area"
@@ -60,14 +61,9 @@
 int epc_socket = -1;
 int epc_listen_socket = -1;
 
-static acse_epc_role_t epc_role = ACSE_EPC_SERVER;
-
 void *epc_shmem = NULL;
 size_t epc_shmem_size = 0;
 const char *epc_shmem_name = NULL;
-
-int epc_to_acse_pipe[2] = {-1, -1};
-int epc_from_acse_pipe[2] = {-1, -1};
 
 char *local_sock_name = NULL;
 char *remote_sock_name = NULL;
@@ -223,9 +219,6 @@ acse_epc_init(char *cfg_sock_name, int *listen_sock)
     if (NULL == cfg_sock_name || NULL == listen_sock)
         return EINVAL;
 
-
-    epc_role = ACSE_EPC_SERVER;
-
     epc_shmem_size = EPC_MMAP_SIZE;
     if ((epc_shmem = malloc(epc_shmem_size)) == NULL)
         return TE_RC(TE_ACSE, TE_ENOMEM);
@@ -246,13 +239,6 @@ acse_epc_init(char *cfg_sock_name, int *listen_sock)
         goto cleanup;
     }
 
-    if (pipe(epc_to_acse_pipe) || pipe(epc_from_acse_pipe))
-    { 
-        int saved_errno = errno;
-        ERROR("create of EPC ops pipes, errno %d", saved_errno);
-        rc = te_rc_os2te(saved_errno);
-        goto cleanup;
-    }
 
     listen(s, 1);
     *listen_sock = s;
@@ -273,7 +259,8 @@ cleanup:
 te_errno
 acse_epc_connect(const char *cfg_sock_name)
 {
-    epc_role = ACSE_EPC_CFG_CLIENT;
+    epc_site_t *s = malloc(sizeof(*s)); 
+    fprintf(stderr, "acse_epc_connect called, set role to CFG client\n");
 
     local_sock_name = malloc(EPC_MAX_PATH);
     remote_sock_name = strdup(cfg_sock_name);
@@ -286,6 +273,9 @@ acse_epc_connect(const char *cfg_sock_name)
         ERROR("Connect to EPC fails, errno %d", saved_errno);
         return TE_RC(TE_ACSE, te_rc_os2te(saved_errno));
     }
+    s->role = ACSE_EPC_CFG_CLIENT;
+    s->fd_in = s->fd_out = epc_socket;
+    acse_epc_user_init(s);
 
     return 0;
 }
@@ -323,8 +313,6 @@ acse_epc_close(void)
     }
     if (local_sock_name)
         unlink(local_sock_name);
-    if (remote_sock_name && epc_role == ACSE_EPC_SERVER)
-        unlink(remote_sock_name);
     return 0;
 }
 
@@ -340,7 +328,7 @@ acse_epc_conf_send(const acse_epc_config_data_t *msg)
     if (msg == NULL)
         return TE_EINVAL;
 
-    if (epc_socket == -1)
+    if (epc_socket < 0)
     {
         ERROR("Try send, but EPC is not initialized");
         return TE_EBADFD;
@@ -348,7 +336,7 @@ acse_epc_conf_send(const acse_epc_config_data_t *msg)
 
     msg_len = sizeof(acse_epc_config_data_t);
 
-    sendrc = send(epc_socket, msg, sizeof(*msg), 0);
+    sendrc = write(epc_socket, msg, sizeof(*msg));
 
     if (sendrc < 0)
     {
@@ -364,7 +352,7 @@ acse_epc_conf_recv(acse_epc_config_data_t *msg)
 {
     ssize_t recvrc;
 
-    recvrc = recv(epc_socket, msg, sizeof(*msg), 0);
+    recvrc = read(epc_socket, msg, sizeof(*msg));
     if (recvrc < 0)
     {
         int saved_errno = errno;
@@ -374,8 +362,7 @@ acse_epc_conf_recv(acse_epc_config_data_t *msg)
     if (recvrc == 0) /* Connection normally closed */
     {
         RING("EPC recv: connection closed by peer");
-        close(epc_socket);
-        epc_socket = -1;
+        acse_epc_close();
         return TE_ENOTCONN;
     }
     if (recvrc != sizeof(*msg))
@@ -400,7 +387,7 @@ acse_epc_conf_recv(acse_epc_config_data_t *msg)
 
 /* see description in acse_epc.h */
 te_errno
-acse_epc_cwmp_send(const acse_epc_cwmp_data_t *cwmp_data)
+acse_epc_cwmp_send(epc_site_t *s, const acse_epc_cwmp_data_t *cwmp_data)
 {
     static ssize_t msg_len = 0;
 
@@ -409,43 +396,15 @@ acse_epc_cwmp_send(const acse_epc_cwmp_data_t *cwmp_data)
     ssize_t sendrc;
     size_t len;
     te_errno rc = 0;
-    int sock = -1;
 
-    if (cwmp_data == NULL)
+    if (cwmp_data == NULL || s == NULL)
         return TE_EINVAL;
 
-    if (epc_socket == -1)
-    {
-        ERROR("Try send, but EPC is not initialized");
-        return TE_EBADFD;
-    }
-
-    /* check consistance of opcode and role */
-    switch (epc_role)
-    {
-        case ACSE_EPC_OP_CLIENT:
-            sock = epc_to_acse_pipe[1];
-            break;
-
-        case ACSE_EPC_SERVER:
-            sock = epc_from_acse_pipe[1];
-            break;
-        case ACSE_EPC_CFG_CLIENT:
-            ERROR("%s(): unexpected role", __FUNCTION__);
-            return TE_EFAIL;
-    }
-
-    if (sock < 0)
-    {
-        ERROR("%s(): internal error, have no write socket!", __FUNCTION__);
-        return TE_EFAIL;
-    }
-            
     memcpy(epc_shmem, cwmp_data, sizeof(*cwmp_data));
     buf = ((acse_epc_cwmp_data_t *)epc_shmem)->enc_start;
     len = epc_shmem_size - sizeof(*cwmp_data);
 
-    if (epc_role == ACSE_EPC_OP_CLIENT)
+    if (s->role == ACSE_EPC_OP_CLIENT)
         packed_len = epc_pack_call_data(buf, len, cwmp_data);
     else
         packed_len = epc_pack_response_data(buf, len, cwmp_data);
@@ -462,12 +421,14 @@ acse_epc_cwmp_send(const acse_epc_cwmp_data_t *cwmp_data)
     }
     msg_len = packed_len + sizeof(*cwmp_data);
 
-    if (ACSE_EPC_SERVER == epc_role &&
+    if (ACSE_EPC_SERVER == s->role &&
         NULL != cwmp_data->from_cpe.p)
         mheap_free_user(MHEAP_NONE, cwmp_data); 
 
 
-    sendrc = send(sock, &msg_len, sizeof(msg_len), 0);
+    RING("%s(r %d): send to sock %d; put to shmem %d bytes; packed len %d",
+         __FUNCTION__, (int) s->role, s->fd_out, msg_len, packed_len);
+    sendrc = write(s->fd_out, &msg_len, sizeof(msg_len));
 
     if (sendrc < 0)
     {
@@ -482,33 +443,18 @@ acse_epc_cwmp_send(const acse_epc_cwmp_data_t *cwmp_data)
 
 /* see description in acse_epc.h */
 te_errno
-acse_epc_cwmp_recv(acse_epc_cwmp_data_t **cwmp_data_ptr, size_t *d_len)
+acse_epc_cwmp_recv(epc_site_t *s, acse_epc_cwmp_data_t **cwmp_data_ptr,
+                   size_t *d_len)
 {
     acse_epc_cwmp_data_t *cwmp_data = NULL;
     ssize_t recvrc;
     ssize_t msg_len;
     te_errno rc = 0;
-    int sock = -1;
 
-    if (cwmp_data_ptr == NULL)
+    if (cwmp_data_ptr == NULL || s == NULL)
         return TE_EINVAL;
 
-    /* check role */
-    switch (epc_role)
-    {
-        case ACSE_EPC_OP_CLIENT:
-            sock = epc_from_acse_pipe[0];
-            break;
-
-        case ACSE_EPC_SERVER:
-            sock = epc_to_acse_pipe[0];
-            break;
-        case ACSE_EPC_CFG_CLIENT:
-            ERROR("%s(): unexpected role", __FUNCTION__);
-            return TE_EFAIL;
-    }
-
-    recvrc = recv(sock, &msg_len, sizeof(msg_len), 0);
+    recvrc = read(s->fd_in, &msg_len, sizeof(msg_len));
 
     if (recvrc < 0)
     {
@@ -518,9 +464,7 @@ acse_epc_cwmp_recv(acse_epc_cwmp_data_t **cwmp_data_ptr, size_t *d_len)
     }
     if (recvrc == 0) /* Connection normally closed */
     {
-        RING("EPC recv: connection closed by peer");
-        close(epc_socket);
-        epc_socket = -1;
+        RING("EPC CWMP recv: connection closed by peer");
         return TE_ENOTCONN;
     }
     if (recvrc != sizeof(msg_len))
@@ -530,7 +474,8 @@ acse_epc_cwmp_recv(acse_epc_cwmp_data_t **cwmp_data_ptr, size_t *d_len)
         return TE_EFAIL;
     }
 
-    VERB("%s():%d received len %d", __FUNCTION__, __LINE__, msg_len);
+    RING("%s(r %d): recv from sock %d shmem len %d",
+         __FUNCTION__, s->role, s->fd_in, msg_len);
 
     if (msg_len <= 0)
     {
@@ -544,7 +489,7 @@ acse_epc_cwmp_recv(acse_epc_cwmp_data_t **cwmp_data_ptr, size_t *d_len)
     if (NULL != d_len)
         *d_len = msg_len;
 
-    switch (epc_role)
+    switch (s->role)
     {
         case ACSE_EPC_OP_CLIENT:
             rc = epc_unpack_call_data(cwmp_data->enc_start,
