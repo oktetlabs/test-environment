@@ -389,12 +389,12 @@ rpc_get_accept_addr_gen(rcf_rpc_server *rpcs,
     if (l_sa_len != NULL)
     {
         in.l_sa_len.l_sa_len_len = 1;
-        in.l_sa_len.l_sa_len_val = l_sa_len;
+        in.l_sa_len.l_sa_len_val = (tarpc_size_t *)l_sa_len;
     }
     if (r_sa_len != NULL)
     {
         in.r_sa_len.r_sa_len_len = 1;
-        in.r_sa_len.r_sa_len_val = r_sa_len;
+        in.r_sa_len.r_sa_len_val = (tarpc_size_t *)r_sa_len;
     }
 
     rcf_rpc_call(rpcs, "get_accept_addr", &in, &out);
@@ -403,10 +403,10 @@ rpc_get_accept_addr_gen(rcf_rpc_server *rpcs,
     {
         sockaddr_rpc2h(&out.laddr, laddr,
                        (laddr_len >= 16) ? laddr_len - 16 : 0,
-                       NULL, l_sa_len);
+                       NULL, (socklen_t *)l_sa_len);
         sockaddr_rpc2h(&out.raddr, raddr,
                        (raddr_len >= 16) ? raddr_len - 16 : 0,
-                       NULL, r_sa_len);
+                       NULL, (socklen_t *)r_sa_len);
     }
 
     TAPI_RPC_LOG(rpcs, GetAcceptExSockaddrs,
@@ -1391,7 +1391,7 @@ rpc_wsa_send(rcf_rpc_server *rpcs,
     if (bytes_sent != NULL)
     {
         in.bytes_sent.bytes_sent_len = 1;
-        in.bytes_sent.bytes_sent_val = bytes_sent;
+        in.bytes_sent.bytes_sent_val = (tarpc_ssize_t *)bytes_sent;
     }
     in.flags = flags;
 
@@ -1462,7 +1462,8 @@ rpc_wsa_recv(rcf_rpc_server *rpcs,
     if (bytes_received != NULL)
     {
         in.bytes_received.bytes_received_len = 1;
-        in.bytes_received.bytes_received_val = bytes_received;
+        in.bytes_received.bytes_received_val =
+            (tarpc_ssize_t *)bytes_received;
     }
     if (flags != NULL)
     {
@@ -1595,7 +1596,7 @@ rpc_wsa_send_to(rcf_rpc_server *rpcs, int s, const struct rpc_iovec *iov,
     if (bytes_sent != NULL)
     {
         in.bytes_sent.bytes_sent_len = 1;
-        in.bytes_sent.bytes_sent_val = bytes_sent;
+        in.bytes_sent.bytes_sent_val = (tarpc_ssize_t *)bytes_sent;
     }
     in.flags = flags;
 
@@ -1673,7 +1674,8 @@ rpc_wsa_recv_from(rcf_rpc_server *rpcs, int s,
     if (bytes_received != NULL)
     {
         in.bytes_received.bytes_received_len = 1;
-        in.bytes_received.bytes_received_val = bytes_received;
+        in.bytes_received.bytes_received_val =
+            (tarpc_ssize_t *)bytes_received;
     }
     if (flags != NULL)
     {
@@ -2000,7 +2002,8 @@ rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
     if (bytes_received != NULL)
     {
         in.bytes_received.bytes_received_len = 1;
-        in.bytes_received.bytes_received_val = bytes_received;
+        in.bytes_received.bytes_received_val =
+            (tarpc_ssize_t *)bytes_received;
     }
     in.overlapped = (tarpc_overlapped)overlapped;
     FILL_CALLBACK(wsa_recv_msg);
@@ -2120,7 +2123,7 @@ rpc_wsa_get_overlapped_result(rcf_rpc_server *rpcs,
     if (bytes != NULL)
     {
         in.bytes.bytes_len = 1;
-        in.bytes.bytes_val = bytes;
+        in.bytes.bytes_val = (tarpc_size_t *)bytes;
     }
     if (flags != NULL)
     {
@@ -2791,7 +2794,8 @@ rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s, rpc_ioctl_code control_code,
     FILL_CALLBACK(wsa_ioctl);
     if (bytes_returned != NULL)
     {
-        in.bytes_returned.bytes_returned_val = bytes_returned;
+        in.bytes_returned.bytes_returned_val =
+            (tarpc_size_t *)bytes_returned;
         in.bytes_returned.bytes_returned_len = 1;
     }
     if (outbuf != NULL)

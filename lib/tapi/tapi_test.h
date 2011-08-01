@@ -339,7 +339,8 @@ cleanup_specific:                                                   \
         {                                                       \
             TEST_STOP;                                          \
         }                                                       \
-        if (sscanf(str_val_, "%lld", &(var_name_)) != 1)        \
+        if (sscanf(str_val_, "%lld",                            \
+                   (long long int *)&(var_name_)) != 1)         \
         {                                                       \
             TEST_FAIL("The value of '%s' parameter should be "  \
                       "an integer, but it is %s", #var_name_,   \
