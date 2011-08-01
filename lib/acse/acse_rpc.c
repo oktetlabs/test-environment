@@ -23,7 +23,7 @@
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * $Id: acse_epc_disp.c 70607 2011-05-10 17:23:30Z konst $
+ * $Id$
  */
 
 #define TE_LGR_USER     "ACSE RPC server"
@@ -185,11 +185,11 @@ start_acse(char *cfg_pipe_name)
     }
     else
     {
-        RING("start ACSE: RPCS->ACSE pipe %d,%d; ACSE->RPCS pipe %d,%d",
-             epc_to_acse_pipe[0],
+        RING("Init cwmp pipes: RPCS %d -> ACSE %d;   ACSE %d -> RPCS %d",
              epc_to_acse_pipe[1],
-             epc_from_acse_pipe[0],
-             epc_from_acse_pipe[1]);
+             epc_to_acse_pipe[0],
+             epc_from_acse_pipe[1],
+             epc_from_acse_pipe[0]);
     }
 
     if ((rc = acse_epc_init(cfg_pipe_name, &(arg->listen_socket))) != 0)
@@ -313,12 +313,12 @@ cwmp_conn_req(tarpc_cwmp_conn_req_in *in,
               tarpc_cwmp_conn_req_out *out)
 {
     te_errno rc;
-
+    acse_epc_cwmp_data_t *cwmp_data = NULL;
 
     INFO("Issue CWMP Connection Request to %s/%s ", 
          in->acs_name, in->cpe_name);
 
-    rc = acse_cwmp_connreq(in->acs_name, in->cpe_name, NULL);
+    rc = acse_cwmp_connreq(in->acs_name, in->cpe_name, &cwmp_data);
     if (rc)
     {
         WARN("issue CWMP ConnReq failed %r", rc);
@@ -330,7 +330,8 @@ cwmp_conn_req(tarpc_cwmp_conn_req_in *in,
         }
     }
 
-    out->status = rc;
+    out->status = cwmp_data->status;
+    free(cwmp_data);
 
     return 0;
 }
@@ -343,7 +344,7 @@ cwmp_op_call(tarpc_cwmp_op_call_in *in,
     acse_epc_cwmp_data_t *cwmp_data = NULL;
 
 
-    INFO("cwmp RPC %s to %s/%s called", 
+    RING("cwmp RPC %s to %s/%s called", 
          cwmp_rpc_cpe_string(in->cwmp_rpc), in->acs_name, in->cpe_name);
 
     rc = acse_cwmp_prepare(in->acs_name, in->cpe_name,

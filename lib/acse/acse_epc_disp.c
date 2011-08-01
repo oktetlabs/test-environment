@@ -931,6 +931,7 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
     cpe_t    *cpe;
     te_errno  rc = 0;
 
+
     cpe = db_find_cpe(NULL, cwmp_pars->acs, cwmp_pars->cpe);
     if (cpe == NULL)
     {
@@ -1239,7 +1240,7 @@ te_errno
 epc_cwmp_after_poll(void *data, struct pollfd *pfd)
 {
     acse_epc_cwmp_data_t *msg;
-    te_errno       rc, status; 
+    te_errno       rc; 
 
     UNUSED(data);
 
@@ -1258,7 +1259,9 @@ epc_cwmp_after_poll(void *data, struct pollfd *pfd)
         return TE_RC(TE_ACSE, rc);
     }
 
-    status = acse_epc_cwmp(msg);
+    msg->status = acse_epc_cwmp(msg);
+
+    VERB("%s(): status of operation: %r", __FUNCTION__, msg->status);
 
     rc = acse_epc_cwmp_send(epc_disp_site, msg);
 

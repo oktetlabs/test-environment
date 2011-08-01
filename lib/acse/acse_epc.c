@@ -260,7 +260,6 @@ te_errno
 acse_epc_connect(const char *cfg_sock_name)
 {
     epc_site_t *s = malloc(sizeof(*s)); 
-    fprintf(stderr, "acse_epc_connect called, set role to CFG client\n");
 
     local_sock_name = malloc(EPC_MAX_PATH);
     remote_sock_name = strdup(cfg_sock_name);
@@ -426,8 +425,10 @@ acse_epc_cwmp_send(epc_site_t *s, const acse_epc_cwmp_data_t *cwmp_data)
         mheap_free_user(MHEAP_NONE, cwmp_data); 
 
 
-    RING("%s(r %d): send to sock %d; put to shmem %d bytes; packed len %d",
-         __FUNCTION__, (int) s->role, s->fd_out, msg_len, packed_len);
+    VERB("%s(r %d): fd_out %d; put to shmem %d bytes; packed len %d; "
+         "op %s",
+         __FUNCTION__, (int) s->role, s->fd_out, msg_len, packed_len,
+         cwmp_rpc_cpe_string(cwmp_data->rpc_cpe));
     sendrc = write(s->fd_out, &msg_len, sizeof(msg_len));
 
     if (sendrc < 0)
@@ -474,9 +475,6 @@ acse_epc_cwmp_recv(epc_site_t *s, acse_epc_cwmp_data_t **cwmp_data_ptr,
         return TE_EFAIL;
     }
 
-    RING("%s(r %d): recv from sock %d shmem len %d",
-         __FUNCTION__, s->role, s->fd_in, msg_len);
-
     if (msg_len <= 0)
     {
         ERROR("non-positive msg_len in CWMP EPC pipe: %d", msg_len);
@@ -485,18 +483,23 @@ acse_epc_cwmp_recv(epc_site_t *s, acse_epc_cwmp_data_t **cwmp_data_ptr,
 
     cwmp_data = malloc(msg_len);
     memcpy(cwmp_data, epc_shmem, msg_len);
+    *cwmp_data_ptr = cwmp_data;
 
     if (NULL != d_len)
         *d_len = msg_len;
 
+    VERB("%s(r %d): recv from sock %d shmem len %d, op %s",
+         __FUNCTION__, s->role, s->fd_in, msg_len, 
+         cwmp_rpc_cpe_string(cwmp_data->rpc_cpe));
+
     switch (s->role)
     {
-        case ACSE_EPC_OP_CLIENT:
+        case ACSE_EPC_SERVER:
             rc = epc_unpack_call_data(cwmp_data->enc_start,
                                       msg_len, cwmp_data);
             break;
 
-        case ACSE_EPC_SERVER:
+        case ACSE_EPC_OP_CLIENT:
             if (0 == cwmp_data->status ||
                 TE_CWMP_FAULT == cwmp_data->status)
                 rc = epc_unpack_response_data(cwmp_data->enc_start,
