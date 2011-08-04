@@ -399,7 +399,7 @@ lgr_rb_allocate_and_copy(struct lgr_rb *ring_buffer,
 
     *arg_addr = LGR_GET_MESSAGE_ARRAY(ring_buffer, start_pos);
 
-    if ((start_pos + need_elements) < LGR_TOTAL_RB_EL)
+    if ((start_pos + need_elements) <= LGR_TOTAL_RB_EL)
     {
         memcpy(*arg_addr, start, length);
     }
