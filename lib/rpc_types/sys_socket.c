@@ -825,6 +825,7 @@ rpc_sockopt2level(rpc_sockopt opt)
         case RPC_TCP_KEEPALIVE_ABORT_THRESHOLD:
         case RPC_TCP_INFO:
         case RPC_TCP_DEFER_ACCEPT:
+        case RPC_TCP_QUICKACK:
             return RPC_SOL_TCP;
 
         case RPC_UDP_NOCHECKSUM:
@@ -938,6 +939,7 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(TCP_KEEPALIVE_ABORT_THRESHOLD);
         RPC2STR(TCP_INFO);
         RPC2STR(TCP_DEFER_ACCEPT);
+        RPC2STR(TCP_QUICKACK);
 
         RPC2STR(UDP_NOCHECKSUM);
         RPC2STR(UDP_CORK);
@@ -1049,6 +1051,7 @@ sockopt_rpc2h(rpc_sockopt opt)
         RPC2H_CHECK(TCP_KEEPALIVE_ABORT_THRESHOLD);
         RPC2H_CHECK(TCP_INFO);
         RPC2H_CHECK(TCP_DEFER_ACCEPT);
+        RPC2H_CHECK(TCP_QUICKACK);
         RPC2H_CHECK(UDP_NOCHECKSUM);
         RPC2H_CHECK(UDP_CORK);
         default:
@@ -1253,6 +1256,7 @@ sockopt_is_boolean(rpc_sockopt opt)
 
         case RPC_TCP_NODELAY:
         case RPC_TCP_CORK:
+        case RPC_TCP_QUICKACK:
 
         case RPC_UDP_NOCHECKSUM:
         case RPC_UDP_CORK:

@@ -488,6 +488,7 @@ typedef enum rpc_sockopt {
     RPC_TCP_INFO,
     RPC_TCP_DEFER_ACCEPT,   /**< Allows a listener to be awakened only when
                                  data arrives on the socket.*/
+    RPC_TCP_QUICKACK,       /**< Enable/disable quickack mode*/
     RPC_UDP_CORK,           /**< Enable/disable UDP packets coalescing */
     RPC_UDP_NOCHECKSUM,     /**< MS Windows specific. 
                                  When TRUE, UDP datagrams are sent with
