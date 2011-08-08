@@ -1327,7 +1327,7 @@ ta_sigchld_handler(void)
              * Pool is already empty. Free the oldest entry in the list.
              */
             dead = oldest;
-            WARN("Removing oldest entry with pid = %d, status = 0x%x "
+            INFO("Removing oldest entry with pid = %d, status = 0x%x "
                  "from the list of dead children.", 
                  dead->pid, dead->status);
             SLIST_REMOVE(&ta_children_dead_list, dead,
