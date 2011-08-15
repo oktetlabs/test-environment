@@ -201,8 +201,8 @@ acse_conf_op(char const *oid, char const *acs, char const *cpe,
     acse_cfg_level_t        level;
     acse_epc_config_data_t *cfg_request;
 
-    if (acse_epc_socket() < 0)
-        return TE_ENOTCONN;
+    if ((rc = acse_epc_check()) != 0)
+        return rc;
 
     if (NULL == cfg_result)
         return TE_EINVAL;

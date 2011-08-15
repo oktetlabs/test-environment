@@ -1020,10 +1020,17 @@ dummy_init()
 
     acs->port = 8080;
 
+#if 0
+    /* login for konst home box */
     cpe->acs_auth.login =
         strdup("000261-Home Gateway-V601L622R1A0-1001742119");
     cpe->acs_auth.passwd = strdup("z7cD7CTDA1DrQKUb");
-
+#else
+    /* login for bolger box */
+    cpe->acs_auth.login =
+        strdup("000261-Home Gateway-V60200000000-0010501606");
+    cpe->acs_auth.passwd = strdup("ry7TSp8ry7RAdyxRp9BkBXzSrh8DBSdH");
+#endif
     cpe->cr_auth.login  = strdup(cpe->acs_auth.login);
     cpe->cr_auth.passwd = strdup(cpe->acs_auth.passwd);
             

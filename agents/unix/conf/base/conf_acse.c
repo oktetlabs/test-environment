@@ -407,9 +407,25 @@ static te_errno
 acse_get(unsigned int gid, char const *oid,
          char *value, char const *acse)
 {
+    te_errno rc;
+
     UNUSED(oid);
     UNUSED(gid);
     UNUSED(acse);
+
+    rc = acse_epc_check();
+    RING("acse get called, pipe name %s, check rc %r",
+         acse_epc_cfg_pipe, rc);
+    if (rc != 0)
+    {
+        acse_epc_close(); 
+        acse_epc_cfg_pipe[0] = '\0';
+        if (TE_RC_GET_ERROR(rc) != TE_ENOTCONN)
+        {
+            ERROR("check for EPC state fails %r", rc);
+            return rc;
+        }
+    }
 
     strcpy(value, acse_epc_cfg_pipe);
     return 0;

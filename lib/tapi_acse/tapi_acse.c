@@ -132,8 +132,10 @@ tapi_acse_stop(const char *ta)
     if ((rc = rpc_cwmp_acse_start(rpcs, NULL, FALSE))!= 0)
         return rc;
 
+#if 0 /* This should fall to empty string automatically */
     if ((rc = cfg_set_instance_fmt(CFG_VAL(STRING, ""), "%s", buf)) == 0)
         return cfg_synchronize(buf, TRUE);
+#endif
 
     return rc;
 }

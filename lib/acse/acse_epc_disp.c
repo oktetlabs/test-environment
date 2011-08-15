@@ -1251,10 +1251,12 @@ epc_cwmp_after_poll(void *data, struct pollfd *pfd)
     if (rc != 0)
     {
         if (TE_RC_GET_ERROR(rc) != TE_ENOTCONN)
+        {
             ERROR("%s(): failed to get EPC message %r",
                   __FUNCTION__, rc);
-        fprintf(stderr, "ACSE dispatcher: EPC recv returned error %s\n",
-                te_rc_err2str(rc));
+            fprintf(stderr, "ACSE dispatcher: EPC recv returned error %s\n",
+                    te_rc_err2str(rc));
+        }
 
         return TE_RC(TE_ACSE, rc);
     }
@@ -1289,6 +1291,9 @@ te_errno
 epc_cwmp_destroy(void *data)
 {
     UNUSED(data);
+    /* if we destroy channel for CWMP operations, ACSE should be stopped */
+    if (acse_epc_socket() > 0)
+        return acse_epc_close();
     return 0;
 }
 

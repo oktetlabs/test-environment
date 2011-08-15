@@ -283,7 +283,6 @@ extern te_errno acse_epc_init(char *cfg_sock_name, int *listen_sock);
 
 /**
  * Open EPC Config connection from TA to ACSE.
- * This function may be called only once in process life. 
  *
  * @param cfg_sock_name         Name of unix socket for messages 
  *
@@ -292,7 +291,7 @@ extern te_errno acse_epc_init(char *cfg_sock_name, int *listen_sock);
 extern te_errno acse_epc_connect(const char *cfg_sock_name);
 
 /**
- * Close EPC connection.
+ * Close EPC Config connection from TA to ACSE.
  */
 extern te_errno acse_epc_close(void);
 
@@ -301,6 +300,13 @@ extern te_errno acse_epc_close(void);
  * Do not read/write in it, use acse_epc_{send|recv}() instead.
  */
 extern int acse_epc_socket(void);
+
+/**
+ * Check current EPC config pipe. 
+ * 
+ * @return TE_ENOTCONN if pipe is closed.
+ */
+extern te_errno acse_epc_check(void);
 
 #if 0
 /**

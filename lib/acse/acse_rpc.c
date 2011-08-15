@@ -73,6 +73,7 @@
 #include "te_queue.h"
 #include "te_defs.h"
 #include "logger_api.h"
+#include "logfork.h"
 
 /* Methods forward declarations */
 static te_errno stop_acse(void);
@@ -82,7 +83,7 @@ int epc_to_acse_pipe[2] = {-1, -1};
 int epc_from_acse_pipe[2] = {-1, -1};
 
 
-pthread_t acse_thread;
+static pthread_t acse_thread;
 
 
 #if 0
@@ -156,8 +157,10 @@ acse_pthread_main(void *p_a)
     }
 
     acse_loop();
+    /* TODO: maybe, pass some exit status? */
 
     free(arg);
+    RING("ACSE stopped");
     return NULL;
 }
 
@@ -174,6 +177,12 @@ start_acse(char *cfg_pipe_name)
     acse_thread_arg_t *arg = malloc(sizeof(*arg));
 
     epc_site_t *s = calloc(1, sizeof(*s));
+
+    if (epc_to_acse_pipe[1] >= 0)
+    {
+        ERROR("Try start ACSE while it is already running");
+        return TE_EFAIL;
+    }
 
     RING("Start ACSE process");
 
@@ -215,72 +224,37 @@ start_acse(char *cfg_pipe_name)
 static te_errno
 stop_acse(void)
 {
-    /* TODO */
+    void *retval;
+    int r;
+    static ssize_t msg_len = 0;
+
+    RING("STOP ACSE called");
+
+    if (epc_to_acse_pipe[1] < 0)
+    {
+        ERROR("Try stop ACSE while it is not running");
+        return TE_EFAIL;
+    }
+
+    RING("STOP ACSE: issue zero msg_len ");
+    msg_len = 0;
+    write(epc_to_acse_pipe[1], &msg_len, sizeof(msg_len));
+
+    RING("STOP ACSE: join thread ... ");
+
+    if ((r = pthread_join(acse_thread, &retval)) != 0)
+    {
+        ERROR("Join to ACSE thread fails: %s", strerror(r));
+        return TE_OS_RC(TE_ACSE, te_rc_os2te(r));
+    }
+    RING("STOP ACSE: thread finished, clear EPC user, close pipes.");
+    acse_epc_user_init(NULL);
+    close(epc_to_acse_pipe[1]);  epc_to_acse_pipe[1] = -1;
+    close(epc_to_acse_pipe[0]);  epc_to_acse_pipe[0]   = -1;
+    close(epc_from_acse_pipe[0]);epc_from_acse_pipe[0] = -1;
+    close(epc_from_acse_pipe[1]);epc_from_acse_pipe[1] = -1;
+
     return 0;
-#if 0
-    te_errno rc = 0;
-    int acse_status = 0;
-    int r = 0;
-
-#if 0
-    fprintf(stderr, "Stop ACSE process, pid %d\n", acse_pid);
-#endif
-    if (-1 == acse_pid || 0 == acse_pid)
-        return 0; /* nothing to do */
-
-    RING("Stop ACSE process, pid %d", acse_pid);
-
-    if ((rc = acse_epc_close()) != 0)
-    {
-        ERROR("Stop ACSE, EPC close failed %r, now try to kill", rc);
-        if (kill(acse_pid, SIGTERM))
-        {
-            int saved_errno = errno;
-            ERROR("ACSE kill failed %s", strerror(saved_errno));
-            /* failed to stop ACSE, just return ... */
-            acse_pid = -1;
-            return TE_OS_RC(TE_TA_UNIX, saved_errno);
-        }
-    }
-    sleep(1); /* Time to stop ACSE itself */
-
-    r = waitpid(acse_pid, &acse_status, WNOHANG);
-    RING("waitpid rc %d, errno %s", r, strerror(errno));
-    if (r != acse_pid)
-    {
-        int saved_errno = errno;
-        if (r < 0)
-        {
-            if (saved_errno != ESRCH && saved_errno != ECHILD)
-            {
-                ERROR("waitpid ACSE failed %s", strerror(saved_errno));
-                /* failed to stop ACSE, just return ... */
-                acse_pid = -1;
-                return TE_OS_RC(TE_TA_UNIX, saved_errno);
-            }
-        }
-        if (r == 0)
-        {
-            /* ACSE was not stopped after EPC closed, terminate it.*/
-            if (kill(acse_pid, SIGKILL))
-            {
-                int saved_errno = errno;
-                ERROR("ACSE kill after waitpid failed %s",
-                      strerror(saved_errno));
-                /* failed to stop ACSE, just return ... */
-                acse_pid = -1;
-                return TE_OS_RC(TE_TA_UNIX, saved_errno);
-            }
-        }
-    }
-
-    acse_pid = -1;
-
-    if (acse_status)
-        WARN("ACSE exit status %d", acse_status);
-
-    return rc;
-#endif
 }
 
 
@@ -302,7 +276,7 @@ cwmp_acse_start(tarpc_cwmp_acse_start_in *in,
     else 
     {
         out->status = stop_acse();
-        out->pipe_name = NULL;
+        out->pipe_name = strdup("");
     }
 
     return 0;

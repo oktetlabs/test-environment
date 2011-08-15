@@ -40,6 +40,7 @@
 #include <sys/un.h>
 #include <sys/stat.h> 
 #include <fcntl.h>
+#include <poll.h>
 
 #include "acse_epc.h"
 
@@ -65,8 +66,8 @@ void *epc_shmem = NULL;
 size_t epc_shmem_size = 0;
 const char *epc_shmem_name = NULL;
 
-char *local_sock_name = NULL;
-char *remote_sock_name = NULL;
+static char *local_sock_name = NULL;
+static char *remote_sock_name = NULL;
 
 /**
  * Create unix socket, bind it and connect it to another one if specified.
@@ -229,7 +230,7 @@ acse_epc_init(char *cfg_sock_name, int *listen_sock)
     local_sock_name = strdup(cfg_sock_name);
     remote_sock_name = NULL;
 
-    VERB("%s(): sock_name = %s", __FUNCTION__, cfg_sock_name);
+    RING("%s(): EPC pipe name '%s'", __FUNCTION__, cfg_sock_name);
 
     if ((s = unix_socket(cfg_sock_name, NULL)) == -1)
     {
@@ -259,13 +260,24 @@ cleanup:
 te_errno
 acse_epc_connect(const char *cfg_sock_name)
 {
-    epc_site_t *s = malloc(sizeof(*s)); 
+    epc_site_t *s;
+
+    if (local_sock_name != NULL || epc_socket > 0)
+    {
+        WARN("%s(): seems already connected, local pipe name '%s', sock %d",
+             __FUNCTION__, local_sock_name, epc_socket);
+        return TE_RC(TE_ACSE, TE_EISCONN);
+    }
+
+    s = malloc(sizeof(*s)); 
 
     local_sock_name = malloc(EPC_MAX_PATH);
     remote_sock_name = strdup(cfg_sock_name);
 
     snprintf(local_sock_name, EPC_MAX_PATH, 
              "/tmp/epc_srv.%d", (int)getpid());
+    RING("%s(): EPC pipe name '%s'", __FUNCTION__, local_sock_name);
+
     if ((epc_socket = unix_socket(local_sock_name, remote_sock_name)) < 0)
     {
         int saved_errno = errno;
@@ -276,6 +288,94 @@ acse_epc_connect(const char *cfg_sock_name)
     s->fd_in = s->fd_out = epc_socket;
     acse_epc_user_init(s);
 
+    return 0;
+}
+
+te_errno
+acse_epc_close(void)
+{
+    if (epc_socket > 0)
+        close(epc_socket);
+    if (epc_listen_socket > 0)
+        close(epc_listen_socket);
+
+    epc_socket = -1;
+    epc_listen_socket = -1;
+
+#if 0
+    if (epc_shmem_name)
+    {
+        shm_unlink(epc_shmem_name);
+        free((char *)epc_shmem_name); epc_shmem_name = NULL;
+    }
+#endif
+    if (local_sock_name)
+    {
+        RING("%s(): EPC pipe name '%s', unlink it", 
+            __FUNCTION__, local_sock_name);
+        
+        unlink(local_sock_name);
+        free(local_sock_name);
+        local_sock_name = NULL;
+    }
+
+    if (remote_sock_name)
+    {
+        /* unlink of the file-system name should be done by the peer */
+        free(remote_sock_name);
+        remote_sock_name = NULL;
+    }
+    return 0;
+}
+
+
+te_errno
+acse_epc_check(void)
+{
+    struct pollfd   pfd = {0, POLLIN | POLLOUT, 0};
+    int             pollrc;
+
+    if (acse_epc_socket() < 0)
+        return TE_ENOTCONN;
+
+    pfd.fd = acse_epc_socket();
+    pollrc = poll(&pfd, 1, 0);
+
+    RING("%s(): poll to IN/OUT for fd %d return %d, revents 0x%x", 
+         __FUNCTION__, pfd.fd, pollrc, pfd.revents);
+
+    if (pollrc < 0)
+    {
+        int saved_errno = errno;
+        ERROR("%s(): poll to EPC conf socket rc %d, errno is %s", 
+              __FUNCTION__, pollrc, strerror(saved_errno));
+        return te_rc_os2te(saved_errno);
+    }
+    if (pollrc == 0)
+    {
+        /* This should not happen in any case! */
+        ERROR("%s(): poll for OUT to EPC conf socket return zero!?"
+              " Will close EPC.",
+              __FUNCTION__);
+        acse_epc_close();
+
+        return TE_EFAIL;
+    }
+    if (pollrc > 0)
+    {
+        /* POLLIN set here could mean only close of connection; 
+           there should not be data in EPC Config pipe without 
+           direct request.
+           TODO: check that there are no data in the pipe?
+        */
+        if ((pfd.revents & POLLHUP) || (pfd.revents & POLLOUT) == 0)
+        {
+            RING("%s(): no write to EPC socket. Will close EPC.", 
+                 __FUNCTION__);
+            acse_epc_close();
+            return TE_ENOTCONN;
+        }
+    }
     return 0;
 }
 
@@ -293,28 +393,6 @@ acse_epc_shmem(void)
 {
     return epc_shmem;
 }
-
-te_errno
-acse_epc_close(void)
-{
-    if (epc_socket > 0)
-        close(epc_socket);
-    if (epc_listen_socket > 0)
-        close(epc_listen_socket);
-
-    epc_socket = -1;
-    epc_listen_socket = -1;
-
-    if (epc_shmem_name)
-    {
-        shm_unlink(epc_shmem_name);
-        free((char *)epc_shmem_name); epc_shmem_name = NULL;
-    }
-    if (local_sock_name)
-        unlink(local_sock_name);
-    return 0;
-}
-
 
 
 
@@ -339,7 +417,8 @@ acse_epc_conf_send(const acse_epc_config_data_t *msg)
 
     if (sendrc < 0)
     {
-        ERROR("%s(): send failed %r", __FUNCTION__, errno);
+        ERROR("%s(): write to fd %d failed, OS error %s",
+              __FUNCTION__, epc_socket, strerror(errno));
         rc = te_rc_os2te(errno);
     }
 
@@ -461,7 +540,7 @@ acse_epc_cwmp_recv(epc_site_t *s, acse_epc_cwmp_data_t **cwmp_data_ptr,
     {
         int saved_errno = errno;
         ERROR("%s(): recv failed, errno %d", __FUNCTION__, saved_errno);
-        return TE_OS_RC(TE_ACSE, te_rc_os2te(saved_errno));
+        return TE_RC(TE_ACSE, te_rc_os2te(saved_errno));
     }
     if (recvrc == 0) /* Connection normally closed */
     {
@@ -475,7 +554,13 @@ acse_epc_cwmp_recv(epc_site_t *s, acse_epc_cwmp_data_t **cwmp_data_ptr,
         return TE_EFAIL;
     }
 
-    if (msg_len <= 0)
+    if (msg_len == 0)
+    {
+        RING("EPC CWMP recv: msg len is zero, close connection");
+        return TE_ENOTCONN;
+    }
+
+    if (msg_len < 0)
     {
         ERROR("non-positive msg_len in CWMP EPC pipe: %d", msg_len);
         return TE_EFAIL;
