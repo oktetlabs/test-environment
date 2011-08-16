@@ -158,6 +158,7 @@ acse_pthread_main(void *p_a)
 
     acse_loop();
     /* TODO: maybe, pass some exit status? */
+    db_clear();
 
     free(arg);
     RING("ACSE stopped");

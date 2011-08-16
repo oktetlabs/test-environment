@@ -292,3 +292,22 @@ acse_rpc_item_free(cpe_rpc_item_t *rpc_item)
     free(rpc_item);
     return 0;
 }
+
+
+te_errno
+db_clear()
+{
+    while(!LIST_EMPTY(&acs_list))
+    {
+        acs_t *acs = LIST_FIRST(&acs_list);
+        acse_disable_acs(acs);
+        LIST_REMOVE(acs, links);
+
+        while(!LIST_EMPTY(&(acs->cpe_list)))
+        {
+            cpe_t *cpe = LIST_FIRST(&(acs->cpe_list));
+            db_remove_cpe(cpe);
+        }
+    }
+}
+

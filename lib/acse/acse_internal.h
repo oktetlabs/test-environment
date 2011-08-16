@@ -442,6 +442,13 @@ extern te_errno db_remove_cpe(cpe_t *cpe_item);
 extern te_errno db_clear_cpe(cpe_t *cpe_item);
 
 /**
+ * Clear whole database
+ *
+ * @return              status code
+ */
+extern te_errno db_clear();
+
+/**
  * Init TCP Listener dispatcher (named 'conn' - by old style. to be fixed).
  * 
  * @return              status code
