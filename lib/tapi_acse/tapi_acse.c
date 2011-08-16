@@ -1166,10 +1166,8 @@ tapi_acse_set_parameter_values_resp(tapi_acse_context_t *ctx, int *status)
     cwmp_data_from_cpe_t from_cpe_loc = {.p = NULL};
     te_errno rc = tapi_acse_cpe_rpc_response(ctx, NULL, &from_cpe_loc);
 
-    RING("SetParameterValuesResponse, rc %r, ptr %p",
+    VERB("SetParameterValuesResponse, rc %r, ptr %p",
          rc, from_cpe_loc.p);
-
-    RING("TUTUT status ptr %p", status);
 
     if (0 == rc &&
         NULL != status &&
@@ -1177,7 +1175,7 @@ tapi_acse_set_parameter_values_resp(tapi_acse_context_t *ctx, int *status)
         *status = from_cpe_loc.set_parameter_values_r->Status;
 
     if (NULL != from_cpe_loc.p)
-        RING("Got SetParameterValuesResponse, rc %r, status %d",
+        VERB("Got SetParameterValuesResponse, rc %r, status %d",
              rc, from_cpe_loc.set_parameter_values_r->Status);
     return rc;
 }
