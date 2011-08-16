@@ -332,16 +332,17 @@ acse_epc_close(void)
 te_errno
 acse_epc_check(void)
 {
-    struct pollfd   pfd = {0, POLLIN | POLLOUT, 0};
+    struct pollfd   pfd;
     int             pollrc;
 
-    if (acse_epc_socket() < 0)
+    if (epc_socket < 0)
         return TE_ENOTCONN;
 
-    pfd.fd = acse_epc_socket();
+    pfd.events = POLLIN | POLLOUT;
+    pfd.fd = epc_socket;
     pollrc = poll(&pfd, 1, 0);
 
-    RING("%s(): poll to IN/OUT for fd %d return %d, revents 0x%x", 
+    VERB("%s(): poll to IN/OUT for fd %d return %d, revents 0x%x", 
          __FUNCTION__, pfd.fd, pollrc, pfd.revents);
 
     if (pollrc < 0)

@@ -142,7 +142,6 @@ te_errno
 acse_conf_call(acse_epc_config_data_t **user_cfg_result)
 {
     te_errno rc;
-    int             epc_socket = acse_epc_socket();
     acse_epc_config_data_t *cfg_res = malloc(sizeof(*cfg_res));
 #if 0
     struct timespec epc_ts = {0, 300000000}; /* 300 ms */
@@ -160,7 +159,7 @@ acse_conf_call(acse_epc_config_data_t **user_cfg_result)
         return rc;
     }
 
-    pfd.fd = epc_socket;
+    pfd.fd = acse_epc_socket();
     pollrc = ppoll(&pfd, 1, &epc_ts, NULL);
     if (pollrc < 0)
     {
