@@ -414,7 +414,7 @@ acse_get(unsigned int gid, char const *oid,
     UNUSED(acse);
 
     rc = acse_epc_check();
-    RING("acse get called, pipe name %s, check rc %r",
+    VERB("acse get called, pipe name '%s', check rc %r",
          acse_epc_cfg_pipe, rc);
     if (rc != 0)
     {
