@@ -251,24 +251,24 @@ AC_CHECK_TYPES([struct epoll_event], [], [],
                [#include <sys/epoll.h>])
 
 
+dnl
+dnl Asynchronous I/O:
+dnl - FreeBSD has in -lc;
+dnl - Linux has in -lnsl -lrt;
+dnl - Solaris2 (SunOS 5.11) in -lrt;
+dnl - NetBSD does not have.
+dnl
+AC_CHECK_FUNC([aio_read], [],
+    AC_SEARCH_LIBS([aio_read], [rt], [],
+        AC_CHECK_LIB([nsl], [aio_read], [LIBS="-lnsl -lrt ${LIBS}"],
+             AC_MSG_WARN([Asynchronous I/O not supported]), [-lrt])))
+
 if test -n "$with_rcf_rpc" ; then
     dnl
     dnl FreeBSD 4.x has no svc_exit().
     dnl NetBSD has no svcunix_create().
     dnl
     AC_CHECK_FUNCS([svcunix_create svc_exit])
-
-    dnl
-    dnl Asynchronous I/O:
-    dnl - FreeBSD has in -lc;
-    dnl - Linux has in -lnsl -lrt;
-    dnl - Solaris2 (SunOS 5.11) in -lrt;
-    dnl - NetBSD does not have.
-    dnl
-    AC_CHECK_FUNC([aio_read], [],
-        AC_SEARCH_LIBS([aio_read], [rt], [],
-            AC_CHECK_LIB([nsl], [aio_read], [LIBS="-lnsl -lrt ${LIBS}"],
-                 AC_MSG_WARN([Asynchronous I/O not supported]), [-lrt])))
 
     dnl
     dnl Find library with SunRPC XDR functions.
