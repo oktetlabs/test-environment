@@ -233,7 +233,6 @@ acse_loop(void)
         free(pfd);
         free(ch_queue);
     }
-    acse_clear_channels();
 }
 
 

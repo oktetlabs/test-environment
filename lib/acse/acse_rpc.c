@@ -67,6 +67,7 @@
 #include <pthread.h>
 
 #include "acse_user.h"
+#include "acse_internal.h"
 
 #include "te_stdint.h"
 #include "te_errno.h"
@@ -159,6 +160,8 @@ acse_pthread_main(void *p_a)
     acse_loop();
     /* TODO: maybe, pass some exit status? */
     db_clear();
+
+    acse_clear_channels();
 
     free(arg);
     RING("ACSE stopped");

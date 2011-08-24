@@ -157,6 +157,11 @@ te_errno
 conn_destroy(void *data)
 {
     conn_data_t *conn = data;
+    if (conn->acs_number >0)
+    {
+        WARN("Try to destroy used connection listener");
+        return 0;
+    }
     close(conn->socket);
     free(conn->addr);
     free(conn->acs_objects);
@@ -236,8 +241,9 @@ conn_register_acs(acs_t *acs)
 
         acse_add_channel(new_ch);
 
-        RING("ACS '%s' registered to listen incoming connections, sock %d",
-              acs->name, new_conn->socket);
+        RING("ACS '%s' registered to listen incoming connections, sock %d;"
+              "conn %p, acs ptr %p",
+              acs->name, new_conn->socket, new_conn, acs);
 
 
         return 0;
@@ -262,6 +268,10 @@ conn_deregister_acs(acs_t *acs)
     if (NULL == acs || NULL == acs->conn_listen)
         return TE_EINVAL;
     conn = acs->conn_listen;
+
+    RING("%s(): conn %p, acs %p, num %d, first acs in conn %p",
+         __FUNCTION__, conn, acs, conn->acs_number, conn->acs_objects[0]);
+
     for (i = 0; i < conn->acs_number; i++)
         if (acs == conn->acs_objects[i])
             break;
