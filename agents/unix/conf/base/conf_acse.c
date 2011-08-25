@@ -513,8 +513,12 @@ RCF_PCH_CFG_NODE_RO(node_session_state, "cwmp_state",
                     NULL, &node_session_enabled,
                     &cfg_call_get);
 
-RCF_PCH_CFG_NODE_RW(node_chunk_mode, "chunk_mode",
+RCF_PCH_CFG_NODE_RW(node_traffic_log, "traffic_log",
                     NULL, &node_session_state,
+                    &cfg_call_get, &cfg_call_set);
+
+RCF_PCH_CFG_NODE_RW(node_chunk_mode, "chunk_mode",
+                    NULL, &node_traffic_log,
                     &cfg_call_get, &cfg_call_set);
 
 RCF_PCH_CFG_NODE_RW(node_sync_mode, "sync_mode",
@@ -584,8 +588,12 @@ RCF_PCH_CFG_NODE_RW(node_acs_port, "port",
                     NULL, &node_acs_ssl,
                     &cfg_acs_call_get, &cfg_acs_call_set);
 
-RCF_PCH_CFG_NODE_RW(node_acs_auth_mode, "auth_mode", 
+RCF_PCH_CFG_NODE_RW(node_acs_traffic_log, "traffic_log", 
                     NULL, &node_acs_port,
+                    &cfg_acs_call_get, &cfg_acs_call_set);
+
+RCF_PCH_CFG_NODE_RW(node_acs_auth_mode, "auth_mode", 
+                    NULL, &node_acs_traffic_log,
                     &cfg_acs_call_get, &cfg_acs_call_set);
 
 RCF_PCH_CFG_NODE_RW(node_acs_http_root, "http_root", 
