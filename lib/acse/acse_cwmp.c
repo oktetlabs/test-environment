@@ -153,7 +153,7 @@ acse_http_get(struct soap *soap)
     
     soap_end_recv(soap);
 
-    RING("acse_http_get(): Yaahooo, GET to '%s' received", soap->path);
+    RING("acse_http_get(): GET to '%s' received", soap->path);
 
     if (NULL != session && 
         (NULL != (acs = session->acs_owner) || 
@@ -941,25 +941,27 @@ acse_send(struct soap *soap, const char *s, size_t n)
     size_t          log_len = n;
     char           *log_buf;
 
-    if (1)
+    if (((session->acs_owner) &&
+         (session->acs_owner->traffic_log)) ||
+        ((session->cpe_owner) &&
+         (session->cpe_owner->acs->traffic_log)))
     {
-    if (log_len >= LOG_MAX) 
-        log_len = LOG_MAX-1;
-    log_buf = mheap_alloc(session->def_heap, log_len + 1);
+        if (log_len >= LOG_MAX) 
+            log_len = LOG_MAX-1;
+        log_buf = mheap_alloc(session->def_heap, log_len + 1);
 
-    if (NULL != log_buf)
-    {
-        memcpy(log_buf, s, log_len);
-        log_buf[log_len] = '\0';
+        if (NULL != log_buf)
+        {
+            memcpy(log_buf, s, log_len);
+            log_buf[log_len] = '\0';
 
-        /* TODO: should we make loglevel customizable here? */
-        RING("Send %u bytes to %s %s/%s: (printed %u bytes)\n%s", n,
-            session->acs_owner ? "ACS" : "CPE", 
-            session->acs_owner ? session->acs_owner->name :
-                                 session->cpe_owner->acs->name,
-            session->acs_owner ? "(none)" : session->cpe_owner->name,
-            log_len, log_buf);
-    }
+            RING("Send %u bytes to %s %s/%s: (printed %u bytes)\n%s", n,
+                session->acs_owner ? "ACS" : "CPE", 
+                session->acs_owner ? session->acs_owner->name :
+                                     session->cpe_owner->acs->name,
+                session->acs_owner ? "(none)" : session->cpe_owner->name,
+                log_len, log_buf);
+        }
     }
     /* call standard gSOAP fsend */
     return session->orig_fsend(soap, s, n);
@@ -980,20 +982,25 @@ acse_recv(struct soap *soap, char *s, size_t n)
     if (log_len >= LOG_MAX) 
         log_len = LOG_MAX-1;
 
-    log_buf = mheap_alloc(session->def_heap, log_len + 1);
-
-    if (NULL != log_buf)
+    if (((session->acs_owner) &&
+         (session->acs_owner->traffic_log)) ||
+        ((session->cpe_owner) &&
+         (session->cpe_owner->acs->traffic_log)))
     {
-        memcpy(log_buf, s, log_len);
-        log_buf[log_len] = '\0';
+        log_buf = mheap_alloc(session->def_heap, log_len + 1);
 
-        /* TODO: should we make loglevel customizable here? */
-        RING("Recv %u bytes from %s %s/%s: (pr %u bytes)\n%s", rc, 
-            session->acs_owner ? "ACS" : "CPE", 
-            session->acs_owner ? session->acs_owner->name :
-                                 session->cpe_owner->acs->name,
-            session->acs_owner ? "(none)" : session->cpe_owner->name,
-            log_len, log_buf);
+        if (NULL != log_buf)
+        {
+            memcpy(log_buf, s, log_len);
+            log_buf[log_len] = '\0';
+
+            RING("Recv %u bytes from %s %s/%s: (pr %u bytes)\n%s", rc, 
+                session->acs_owner ? "ACS" : "CPE", 
+                session->acs_owner ? session->acs_owner->name :
+                                     session->cpe_owner->acs->name,
+                session->acs_owner ? "(none)" : session->cpe_owner->name,
+                log_len, log_buf);
+        }
     }
     return rc;
 }

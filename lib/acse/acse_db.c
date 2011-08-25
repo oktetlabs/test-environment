@@ -309,5 +309,6 @@ db_clear()
             db_remove_cpe(cpe);
         }
     }
+    return 0;
 }
 

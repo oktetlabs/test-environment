@@ -153,25 +153,29 @@ typedef struct cpe_t{
 
     /** Fields corresponding to CM leafs in @p cpe node; some may change. */
 
-    const char      *name;      /**< CPE record name.           */
-    const char      *url;       /**< CPE URL for Conn.Req.      */
-    const char      *cert;      /**< CPE SSL certificate.       */
-    auth_t           cr_auth;   /**< Authenticate fields for 
-                                     Connection Request.        */
-    auth_t           acs_auth;  /**< Authenticate fields for 
-                                     CPE->ACS Sessions.         */
-    te_bool          enabled;   /**< Flag denotes whether CWMP sessions
-                                     are enabled from this CPE.
-                                     Set to FALSE during active 
-                                     CWMP session leads to stop it.*/
-    te_bool          sync_mode; /**< Sync mode: if TRUE, 
-                                     while processing CWMP session, 
-                                     wait for EPC messages with next
-                                     CPE RPC if queue is empty. */
-    te_bool          chunk_mode;/**< HTTP chunk mode, transparently 
-                                     passed to the gSOAP option.*/
-    int              hold_requests; /**< Value of HoldRequests, 0 or 1,
-                                     negative means absent XML field. */
+    const char  *name;      /**< CPE record name.           */
+    const char  *url;       /**< CPE URL for Conn.Req.      */
+    const char  *cert;      /**< CPE SSL certificate.       */
+    auth_t       cr_auth;   /**< Authenticate fields for 
+                                 Connection Request.        */
+    auth_t       acs_auth;  /**< Authenticate fields for 
+                                 CPE->ACS Sessions.         */
+    te_bool      enabled;   /**< Flag denotes whether CWMP sessions
+                                 are enabled from this CPE.
+                                 Set to FALSE during active 
+                                 CWMP session leads to stop it.*/
+    te_bool      sync_mode; /**< Sync mode: if TRUE, 
+                                 while processing CWMP session, 
+                                 wait for EPC messages with next
+                                 CPE RPC if queue is empty. */
+    te_bool      chunk_mode;/**< HTTP chunk mode, transparently 
+                                 passed to the gSOAP option.*/
+
+    int          hold_requests; /**< Value of HoldRequests, 0 or 1,
+                                 negative means absent XML field. */
+
+    te_bool      traffic_log; /**< Flag, whether to log CWMP traffic */
+
 
     cwmp__DeviceIdStruct device_id; /**< Device Identifier       */
 
@@ -215,6 +219,8 @@ typedef struct acs_t {
     te_bool      ssl;           /**< SSL usage boolean flag         */
     uint16_t     port;          /**< TCP port value in host byte order */
     auth_mode_t  auth_mode;     /**< Authentication mode            */
+    te_bool      traffic_log;   /**< Flag, whether to log CWMP traffic */
+
 
     acse_http_response_t  *http_response;
 

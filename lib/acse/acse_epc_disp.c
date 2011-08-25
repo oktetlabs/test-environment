@@ -245,6 +245,27 @@ cpe_chunk_mode(cpe_t *cpe, acse_epc_config_data_t *params)
     return 0;
 }
 
+
+/**
+ * Access to CPE 'traffic_log' flag 
+ *
+ * @param cpe           CPE record
+ * @param params        EPC parameters struct
+ *
+ * @return              Status code
+ */
+static te_errno
+cpe_traffic_log(cpe_t *cpe, acse_epc_config_data_t *params)
+{
+    if (params->op.fun == EPC_CFG_OBTAIN)
+        sprintf(params->value, "%i", cpe->traffic_log);
+    else 
+        cpe->traffic_log = atoi(params->value);
+    return 0;
+}
+
+
+
 /**
  * Access to the 'enabled' flag.
  *
@@ -467,6 +488,26 @@ acs_ssl(acs_t *acs, acse_epc_config_data_t *params)
         sprintf(params->value, "%i", acs->ssl);
     return 0;
 }
+
+
+/**
+ * Access to ACS 'traffic_log' flag 
+ *
+ * @param acs           ACS record
+ * @param params        EPC parameters struct
+ *
+ * @return              Status code
+ */
+static te_errno
+acs_traffic_log(acs_t *acs, acse_epc_config_data_t *params)
+{
+    if (params->op.fun == EPC_CFG_OBTAIN)
+        sprintf(params->value, "%i", acs->traffic_log);
+    else 
+        acs->traffic_log = atoi(params->value);
+    return 0;
+}
+
 
 /**
  * Access to 'http_response' field
@@ -773,6 +814,7 @@ struct config_acs_item_t {
     {"auth_mode", acs_auth_mode},
     {"cert", acs_cert},
     {"ssl",  acs_ssl},
+    {"traffic_log",  acs_traffic_log},
     {"port", acs_port},
     {"enabled", acs_enabled},
     {"http_response", acs_http_resp},
@@ -800,6 +842,7 @@ struct config_cpe_item_t {
     {"cwmp_state", cpe_cwmp_state},
     {"sync_mode", cpe_sync_mode},
     {"chunk_mode", cpe_chunk_mode},
+    {"traffic_log",  cpe_traffic_log},
     {"enabled", cpe_enabled},
     {"hold_requests", cpe_hold_requests},
     {"cr_state", cpe_cr_state},
