@@ -268,4 +268,11 @@ extern te_errno cpe_check_factory_reset(cpe_id_t *cpe);
 extern te_errno cpe_get_fs_path(cpe_id_t *cpe,
                                 char *fs_path, size_t bufsize);
 
+
+extern te_errno cpe_internal_get_param(cpe_id_t *cpe,
+                const char *name, char **result);
+
+extern te_errno cpe_internal_set_param(cpe_id_t *cpe,
+                const char *name, char *value);
+
 #endif /* __CPE_BACKDOOR__H__ */ 
