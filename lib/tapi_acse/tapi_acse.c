@@ -155,6 +155,7 @@ acse_is_int_var(const char *name)
          (0 == strcmp(name, "sync_mode")) ||
          (0 == strcmp(name, "chunk_mode")) ||
          (0 == strcmp(name, "hold_requests")) ||
+         (0 == strcmp(name, "traffic_log")) ||
          (0 == strcmp(name, "cwmp_state"))  );
 }
 
@@ -543,12 +544,12 @@ tapi_acse_wait_acse_state(tapi_acse_context_t *ctx,
 
     if (0 == ctx->timeout && !(want_state & cur_state))
     {
-        WARN("wait param %s for %d timed out, last val %d",
+        WARN("wait param %s with mask 0x%x timed out, last val %d",
               state_var, want_state, cur_state);
         rc = TE_ETIMEDOUT;
     }
     else
-        RING("wait param %s for %d, %r, last val %d",
+        RING("wait param %s with mask 0x%x, %r, last val %d",
               state_var, want_state, rc, cur_state);
 
 
@@ -1084,8 +1085,8 @@ tapi_acse_get_pvalue_sync(tapi_acse_context_t *ctx,
 /* see description in tapi_acse.h */
 te_errno
 tapi_acse_get_parameter_names(tapi_acse_context_t *ctx,
-                                  te_bool next_level,
-                                  const char *fmt, ...)
+                              te_bool next_level,
+                              const char *fmt, ...)
 {
     char name[256];
     char *name_ptr = name;
@@ -1131,6 +1132,27 @@ tapi_acse_get_parameter_names_resp(tapi_acse_context_t *ctx,
     }
     return rc;
 }
+
+
+te_errno
+tapi_acse_get_pnames_sync(tapi_acse_context_t *ctx,
+                          te_bool next_level,
+                          const char *name,
+                          string_array_t **resp)
+{
+    te_errno rc;
+
+    rc = tapi_acse_get_parameter_names(ctx, next_level, name);
+    if (rc != 0)
+    {
+        ERROR("sync GetParNames, call failed %r", rc);
+        return rc;
+    }
+    rc = tapi_acse_get_parameter_names_resp(ctx, resp);
+
+    return rc;
+}
+
 
 /* see description in tapi_acse.h */
 te_errno
@@ -1253,6 +1275,7 @@ tapi_acse_cpe_connect(tapi_acse_context_t *ctx)
             T_CHECK_RC(tapi_acse_wait_cr_state(ctx, CR_DONE));
         }
     }
+    ctx->timeout = 120;
     T_CHECK_RC(tapi_acse_wait_cwmp_state(ctx, CWMP_PENDING));
     return 0;
 }

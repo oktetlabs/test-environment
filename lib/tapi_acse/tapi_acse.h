@@ -553,6 +553,23 @@ extern te_errno tapi_acse_get_parameter_names(tapi_acse_context_t *ctx,
 extern te_errno tapi_acse_get_parameter_names_resp(tapi_acse_context_t *ctx,
                                                    string_array_t **resp);
 
+/**
+ * Call CPE GetParameterNames method and wait for response,
+ * works good only in the sync mode during active CWMP session.
+ *
+ * @param ctx        current TAPI ACSE context;
+ * @param next_level Boolean flag whether got only next level names,
+ *                      see detailed description in TR-069 standard.
+ * @param name       parameter name, should NOT contain any printf-like 
+ *                      format marks.
+ * @param resp       array with received parameter names (OUT)
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_acse_get_pnames_sync(tapi_acse_context_t *ctx,
+                                          te_bool next_level,
+                                          const char *name,
+                                          string_array_t **resp);
 
 /**
  * Call CPE GetParameterAttributes method.
