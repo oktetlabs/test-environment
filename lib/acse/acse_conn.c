@@ -127,7 +127,7 @@ conn_after_poll(void *data, struct pollfd *pfd)
         te_errno rc;
 
         rc = cwmp_accept_cpe_connection(conn->acs_objects[i], sock_acc); 
-        RING("conn_after_poll(): cwmp_accept_cpe rc %r", rc);
+        VERB("conn_after_poll(): cwmp_accept_cpe rc %r", rc);
 
         switch (rc)
         {
@@ -269,7 +269,7 @@ conn_deregister_acs(acs_t *acs)
         return TE_EINVAL;
     conn = acs->conn_listen;
 
-    RING("%s(): conn %p, acs %p, num %d, first acs in conn %p",
+    VERB("%s(): conn %p, acs %p, num %d, first acs in conn %p",
          __FUNCTION__, conn, acs, conn->acs_number, conn->acs_objects[0]);
 
     for (i = 0; i < conn->acs_number; i++)

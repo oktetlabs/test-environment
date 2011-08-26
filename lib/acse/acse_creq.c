@@ -98,7 +98,7 @@ conn_req_after_poll(void *data, struct pollfd *pfd)
     if (!(pfd->revents & POLLIN))
         return 0;
 
-    RING("Processing ConnectionRequest to '%s/%s', data ptr %p\n",
+    VERB("Processing ConnectionRequest to '%s/%s', data ptr %p\n",
          conn_req->cpe_item->acs->name,
          conn_req->cpe_item->name, data);
 
@@ -119,7 +119,7 @@ conn_req_after_poll(void *data, struct pollfd *pfd)
             if (NULL == passwd)
                 passwd = conn_req->cpe_item->acs_auth.passwd;
 
-            RING("ConnectionRequest, attempt failed, again... "
+            VERB("ConnectionRequest, attempt failed, again... "
                  "realm: '%s'; try login '%s'",
                   soap->authrealm, userid);
             /* save userid and passwd for basic or digest authentication */
@@ -148,7 +148,7 @@ conn_req_after_poll(void *data, struct pollfd *pfd)
 
     soap_end_recv(soap);
 
-    RING("Recv after Conn req to '%s/%s', status %d", 
+    VERB("Recv after Conn req to '%s/%s', status %d", 
          conn_req->cpe_item->acs->name,
          conn_req->cpe_item->name, soap->error);
 

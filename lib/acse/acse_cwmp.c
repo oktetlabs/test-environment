@@ -760,7 +760,7 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
 {
     cwmp_session_t *cwmp_sess = data;
 
-    RING("Start after serve, sess ptr %p, state %d, SOAP error %d",
+    VERB("Start after serve, sess ptr %p, state %d, SOAP error %d",
           cwmp_sess, cwmp_sess->state, cwmp_sess->m_soap.error);
 
     if (!(pfd->revents))
@@ -1050,7 +1050,7 @@ cwmp_new_session(int socket, acs_t *acs)
         }
     }
 
-    RING("Init session for ACS '%s', sess ptr %p, acs ptr %p", 
+    VERB("Init session for ACS '%s', sess ptr %p, acs ptr %p", 
          acs->name, new_sess, acs);
     new_sess->state = CWMP_NOP;
     new_sess->acs_owner = acs;
