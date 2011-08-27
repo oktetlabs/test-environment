@@ -65,6 +65,11 @@ dnl
 AC_CHECK_HEADERS([sys/systeminfo.h])
 
 dnl
+dnl Check for epoll.h
+dnl
+AC_CHECK_HEADERS([sys/epoll.h])
+
+dnl
 dnl Check for 'sa_restorer' member in 'struct sigaction'.
 dnl
 AC_CHECK_MEMBERS([struct sigaction.sa_restorer], [], [],

@@ -98,6 +98,9 @@
 
 static sem_t sigchld_sem;
 
+/** User environment */
+extern char **environ;
+
 /** Status of exited child. */
 typedef struct ta_children_dead {
     SLIST_ENTRY(ta_children_dead) links;    /**< dead children linek list */
