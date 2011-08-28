@@ -76,12 +76,6 @@
 void *dummy = aio_read;
 #endif
 
-/** User environment */
-extern char **environ;
-
-#define SOLARIS (defined(__sun) || defined(sun)) && \
-    (defined(__SVR4) || defined(__svr4__))
-
 extern sigset_t rpcs_received_signals;
 
 static te_bool dynamic_library_set = FALSE;
@@ -1076,9 +1070,7 @@ te_fstat(te_bool use_libc, int fd, rpc_stat *rpcbuf)
     FSTAT_COPY(rpcbuf, buf);
 
 #else
-/*
- * #error "fstat family is not currently supported for non-linux unixes."
-*/
+#error "fstat family is not currently supported for non-linux unixes."
 #endif
     return 0;
 }
@@ -1105,9 +1097,7 @@ te_fstat64(te_bool use_libc, int fd, rpc_stat *rpcbuf)
 
     FSTAT_COPY(rpcbuf, buf);
 #else
-/*
- * #error "fstat family is not currently supported for non-linux unixes."
- */
+#error "fstat family is not currently supported for non-linux unixes."
 #endif
     return 0;
 }
@@ -2681,15 +2671,9 @@ tarpc_ioctl_pre(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                     break;
 
                 case RPC_SIOCGIFNAME:
-#if SOLARIS
-                    req->ifreq.ifr_index =
-                        out->req.req_val[0].ioctl_request_u.
-                        req_ifreq.rpc_ifr_ifindex;
-#else
                     req->ifreq.ifr_ifindex =
                         out->req.req_val[0].ioctl_request_u.
                         req_ifreq.rpc_ifr_ifindex;
-#endif
                     break;
 
                 case RPC_SIOCSIFMTU:
@@ -2901,13 +2885,8 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                     break;
 
                 case RPC_SIOCGIFINDEX:
-#if SOLARIS
-                    out->req.req_val[0].ioctl_request_u.req_ifreq.
-                            rpc_ifr_ifindex = req->ifreq.ifr_index;
-#else
                     out->req.req_val[0].ioctl_request_u.req_ifreq.
                             rpc_ifr_ifindex = req->ifreq.ifr_ifindex;
-#endif
                     break;
 
                 case RPC_SIOCGIFADDR:

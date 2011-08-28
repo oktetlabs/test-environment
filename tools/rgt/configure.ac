@@ -31,8 +31,7 @@ AC_ARG_WITH([log_filter],
 
 if test "x$ac_cv_with_log_filter" = "xyes"
 then
-    AC_CHECK_LIB([tcl], [Tcl_CreateInterp],
-                 ac_cv_lib_tcl=yes, ac_cv_lib_tcl=no, -lm -ldl)
+    AC_CHECK_LIB([tcl], [Tcl_CreateInterp],,,-lm -ldl)
     AC_CHECK_HEADER([tcl.h], ac_cv_header_tcl_h=yes, ac_cv_header_tcl_h=no)
 
     if test x$ac_cv_lib_tcl = xno || test x$ac_cv_header_tcl_h = xno

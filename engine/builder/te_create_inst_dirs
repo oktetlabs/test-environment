@@ -29,7 +29,6 @@
 # $Id$
 #
 
-[ -d $1 ] || mkdir -p $1
 pushd $1 >/dev/null
 PREFIX=`pwd`
 popd >/dev/null
@@ -56,7 +55,7 @@ for p in ${TE_BS_PLATFORMS} ; do
         for i in ${!libs} ; do
             wget ${TE_EXT_LIBS}/${!dir}/$i.tgz && tar xzf $i.tgz
         done
-        popd >/dev/null
+        popd >/dev/nul
     fi
 done
 

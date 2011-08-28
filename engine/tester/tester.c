@@ -62,8 +62,6 @@
 /** Logging entity name of the Tester subsystem */
 DEFINE_LGR_ENTITY("Tester");
 
-/** User environment */
-extern char **environ;
 
 extern int test_path_lex_destroy(void);
 

@@ -142,13 +142,7 @@ fi
 if test "$KIND" != "TA" ; then
     ADD_CPPFLAGS="$ADD_CPPFLAGS -I${PREFIX}/include "
     ADD_LDFLAGS="$ADD_LDFLAGS -L${PREFIX}/lib "
-    export TE_EXT_LIBS_PATH="${PREFIX}/lib"
-else
-    ADD_CPPFLAGS="$ADD_CPPFLAGS -I${PREFIX}/../$PLATFORM/include "
-    ADD_LDFLAGS="$ADD_LDFLAGS -L${PREFIX}/../$PLATFORM/lib "
-    export TE_EXT_LIBS_PATH="${PREFIX}/../$PLATFORM/lib"
 fi
-
 PARMS="$PARMS --build=`gcc -dumpmachine` \
        TE_BASE=\"$TE_BASE\" \
        TE_M4=\"$TE_BASE/auxdir\" \
@@ -159,10 +153,6 @@ PARMS="$PARMS --build=`gcc -dumpmachine` \
        TE_PATH=\"$TE_PATH\" \
        TE_INSTALL=\"$TE_INSTALL\" \
        TE_PLATFORM=$PLATFORM"
-
-if test "$KIND" = "INCLUDE" ; then
-    ${SCRIPT_DIR}/te_create_inst_dirs ${DESTDIR}/${PREFIX}/.. 
-fi
 
 configure_package
 

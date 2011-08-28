@@ -77,6 +77,8 @@ endif
 all: install
 
 install-data-hook:
+	TE_BUILD=.. ; $(srcdir)/../engine/builder/te_create_inst_dirs \
+                          $(DESTDIR)/$(prefix)/..
 	for i in $(te_headers) ; do \
 	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
 	done

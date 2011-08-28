@@ -28,7 +28,7 @@ LIB_PATHNAME=
 START=`pwd`
 DIRS="`${CC} ${TE_CPPFLAGS} ${TE_CFLAGS} --print-search-dirs | \
       grep libraries | sed s/libraries// | sed s/=//g | sed s/:/\ /g`"
-DIRS="${TE_EXT_LIBS_PATH} ${DIRS} `echo $LD_LIBRARY_PATH | sed s/:/\ /g`"
+DIRS="$DIRS `echo $LD_LIBRARY_PATH | sed s/:/\ /g`"
 for i in $DIRS ; do
     if cd $i 2>/dev/null ; then
         DIR=`pwd`

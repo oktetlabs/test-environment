@@ -221,9 +221,6 @@ typedef struct pam_message const pam_message_t;
 #error netlink can be used on Linux only
 #endif
 
-/** User environment */
-extern char **environ;
-
 #ifdef ENABLE_8021X
 extern te_errno ta_unix_conf_supplicant_init();
 extern te_errno supplicant_grab(const char *name);

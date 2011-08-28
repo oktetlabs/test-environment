@@ -77,7 +77,7 @@ typedef enum rpc_epoll_evt {
                               RPC_EPOLLRDBAND | RPC_EPOLLWRBAND | \
                               RPC_EPOLLMSG | \
                               RPC_EPOLLERR | RPC_EPOLLHUP | \
-                              RPC_EPOLLONESHOT | RPC_EPOLLET)
+                              EPOLLONESHOT | RPC_EPOLLET)
 
 /** All known epoll flags */
 #define RPC_EPOLL_FLAGS_ALL (RPC_EPOLL_CLOEXEC | RPC_EPOLL_NONBLOCK)
