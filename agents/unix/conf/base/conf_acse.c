@@ -203,12 +203,25 @@ call_list(char **list, char const *acs)
     te_errno rc;
     acse_epc_config_data_t  *cfg_result = NULL;
 
-    if (strlen(acse_epc_cfg_pipe) == 0)
-        return empty_list(list);
+    rc = acse_epc_check();
 
-    rc = acse_conf_op(NULL, acs, NULL, NULL, EPC_CFG_LIST, &cfg_result);
+    if (0 == rc)
+        rc = acse_conf_op(NULL, acs, NULL, NULL, EPC_CFG_LIST, &cfg_result);
+
     if (0 == rc && list != NULL)
         *list = strdup(cfg_result->list);
+
+    if (0 != rc)
+    {
+        acse_epc_close(); 
+        acse_epc_cfg_pipe[0] = '\0';
+        if (TE_RC_GET_ERROR(rc) != TE_ENOTCONN)
+        {
+           ERROR("call_list, for ACS '%s', rc %r", acs, rc);
+        }
+        else
+            return empty_list(list);
+    }
 
     return rc;
 }
