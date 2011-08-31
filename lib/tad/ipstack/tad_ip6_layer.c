@@ -265,7 +265,11 @@ tad_te_proto2ip_proto(te_tad_protocols_t te_proto)
 #define TE_PROTO2IP_PROTO(te_val_, ip_val_) \
         case TE_PROTO_ ## te_val_: return IPPROTO_ ## ip_val_
 
+#ifdef IPPROTO_IPIP
         TE_PROTO2IP_PROTO(IP4, IPIP);
+#elif defined(IPPROTO_ENCAP)
+        TE_PROTO2IP_PROTO(IP4, ENCAP);
+#endif
         TE_PROTO2IP_PROTO(UDP, UDP);
         TE_PROTO2IP_PROTO(TCP, TCP);
         TE_PROTO2IP_PROTO(ICMP4, ICMP);
@@ -714,7 +718,7 @@ ext_hdr_end:
         if (rc != 0)
             return rc;
 
-        if (IN6_IS_ADDR_MULTICAST(ip6_dst))
+        if (IN6_IS_ADDR_MULTICAST((struct in6_addr *)ip6_dst))
         {
             uint8_t mcast_mac[6] = { 0x33, 0x33, };
 

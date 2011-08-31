@@ -84,7 +84,7 @@ if test -z "$PLATFORM" ; then
 fi
 DIR=$2
 if test -z "$DIR" ; then
-    DIR=i686-pc-linux-gnu
+    DIR=i386-pc-linux
 fi    
 eval `echo ${PLATFORM}_EXT_LIBS_DIR=\"$DIR\"`
 eval `echo ${PLATFORM}_EXT_LIBS=\"$3\"`

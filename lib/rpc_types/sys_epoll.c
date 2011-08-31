@@ -37,8 +37,51 @@
 #if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-#if HAVE_SYS_POLL_H
+#if HAVE_SYS_EPOLL_H
 #include <sys/epoll.h>
+#endif
+
+#ifndef EPOLLIN
+#define EPOLLIN 0
+#endif
+#ifndef EPOLLPRI
+#define EPOLLPRI 0
+#endif
+#ifndef EPOLLOUT
+#define EPOLLOUT 0
+#endif
+#ifndef EPOLLRDNORM
+#define EPOLLRDNORM 0
+#endif
+#ifndef EPOLLWRNORM
+#define EPOLLWRNORM 0
+#endif
+#ifndef EPOLLRDBAND
+#define EPOLLRDBAND 0
+#endif
+#ifndef EPOLLWRBAND
+#define EPOLLWRBAND 0
+#endif
+#ifndef EPOLLMSG
+#define EPOLLMSG 0
+#endif
+#ifndef EPOLLERR
+#define EPOLLERR 0
+#endif
+#ifndef EPOLLHUP
+#define EPOLLHUP 0
+#endif
+#ifndef EPOLLONESHOT
+#define EPOLLONESHOT 0
+#endif
+#ifndef EPOLLET
+#define EPOLLET 0
+#endif
+#ifndef EPOLL_CLOEXEC
+#define EPOLL_CLOEXEC 0
+#endif
+#ifndef EPOLL_NONBLOCK
+#define EPOLL_NONBLOCK 0
 #endif
 
 #include "te_rpc_defs.h"
@@ -71,8 +114,8 @@
 /** All known epoll flags */
 #define EPOLL_FLAGS_ALL     ( EPOLL_CLOEXEC | EPOLL_NONBLOCK )
 
-uint32_t
-epoll_event_rpc2h(uint32_t events)
+unsigned int
+epoll_event_rpc2h(unsigned int events)
 {
     if ((events & ~RPC_EPOLL_ALL) != 0)
         return EPOLL_UNKNOWN;
@@ -91,8 +134,8 @@ epoll_event_rpc2h(uint32_t events)
            (!!(events & RPC_EPOLLET) * EPOLLET);
 }
 
-uint32_t
-epoll_flags_rpc2h(uint32_t flags)
+unsigned int
+epoll_flags_rpc2h(unsigned int flags)
 {
     if ((flags & ~RPC_EPOLL_FLAGS_ALL) != 0)
         return EPOLL_FLAG_UNKNOWN;
@@ -101,8 +144,8 @@ epoll_flags_rpc2h(uint32_t flags)
            (!!(flags & RPC_EPOLL_NONBLOCK) * EPOLL_NONBLOCK);
 }
 
-uint32_t
-epoll_event_h2rpc(uint32_t events)
+unsigned int
+epoll_event_h2rpc(unsigned int events)
 {
     return (!!(events & ~EPOLL_ALL) * RPC_EPOLL_UNKNOWN)
            | (!!(events & EPOLLIN) * RPC_EPOLLIN)
@@ -120,8 +163,8 @@ epoll_event_h2rpc(uint32_t events)
            ;
 }
 
-uint32_t
-epoll_flags_h2rpc(uint32_t flags)
+unsigned int
+epoll_flags_h2rpc(unsigned int flags)
 {
     return (!!(flags & ~EPOLL_FLAGS_ALL) * RPC_EPOLL_FLAG_UNKNOWN)
            | (!!(flags & EPOLL_CLOEXEC) * RPC_EPOLL_CLOEXEC)

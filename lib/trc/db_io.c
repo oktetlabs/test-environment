@@ -521,7 +521,7 @@ get_expected_results(xmlNodePtr *node, trc_exp_results *results)
         if (result->tags_str == NULL)
         {
             ERROR("%s: tags attribute should be specified for "
-                  "<results> element");
+                  "<results> element", __FUNCTION__);
             return TE_RC(TE_TRC, TE_EFMT);
         }
 
@@ -783,7 +783,7 @@ alloc_and_get_test(xmlNodePtr node, trc_tests *tests,
     p = trc_db_new_test(tests, parent, NULL);
     if (p == NULL)
     {
-        ERROR("%s: failed to alloc\n");
+        ERROR("%s: failed to alloc\n", __FUNCTION__);
         return TE_RC(TE_TRC, TE_ENOMEM);
     }
     
@@ -873,7 +873,7 @@ alloc_and_get_test(xmlNodePtr node, trc_tests *tests,
         if (rc != 0)
         {
             ERROR("%s: failed to update globals with test '%s': %r",
-                  p->name, rc);
+                  __FUNCTION__, p->name, rc);
             return rc;
         }
         node = xmlNodeNext(node);

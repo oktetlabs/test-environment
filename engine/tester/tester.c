@@ -38,6 +38,9 @@
 #include <stdlib.h>
 #include <string.h>
 #endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 #if HAVE_SIGNAL_H
 #include <signal.h>
 #endif
@@ -62,6 +65,8 @@
 /** Logging entity name of the Tester subsystem */
 DEFINE_LGR_ENTITY("Tester");
 
+/** User environment */
+extern char **environ;
 
 extern int test_path_lex_destroy(void);
 

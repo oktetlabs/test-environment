@@ -41,8 +41,8 @@ AC_PATH_PROG(NET_SNMP_CONFIG, net-snmp-config, no)
 if test "$NET_SNMP_CONFIG" = "no" ; then
     AC_MSG_ERROR([net-snmp-config is required but not found])
 else
-    LIBS="`$NET_SNMP_CONFIG --libs` $LIBS"
-    CFLAGS="`$NET_SNMP_CONFIG --cflags` $LIBS"
+    LIBS="`$NET_SNMP_CONFIG --libs` -lcrypto $LIBS"
+    CFLAGS="`$NET_SNMP_CONFIG --cflags` $CFLAGS"
 fi
 
 AC_CHECK_FUNCS([snmp_pdu_type], [], [])

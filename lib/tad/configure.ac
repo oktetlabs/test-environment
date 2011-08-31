@@ -21,14 +21,25 @@ AC_PROG_INSTALL
 
 TE_LIB_SET
 
+tad_libs_rem()
+{
+# It is used to delete possible duplicate to avoid possible craziness of
+# pkg-config used in agent/unix/configure
+    STR_ESCAPED=`echo $1 | sed s/"\/"/@/g`
+    LIBS_ESCAPED=`echo $TA_TAD_LIBS | sed s/"\/"/@/g`
+    TA_TAD_LIBS=`echo $LIBS_ESCAPED | sed s/$STR_ESCAPED//g`
+    TA_TAD_LIBS=`echo $TA_TAD_LIBS | sed s/@/'\/'/g`
+}
+
 # FIXME: make it AC macro
 find_lib()
 {
 LIB_PATHNAME=
+FILES=
 START=`pwd`
 DIRS="`${CC} ${TE_CPPFLAGS} ${TE_CFLAGS} --print-search-dirs | \
       grep libraries | sed s/libraries// | sed s/=//g | sed s/:/\ /g`"
-DIRS="$DIRS `echo $LD_LIBRARY_PATH | sed s/:/\ /g`"
+DIRS="${TE_EXT_LIBS_PATH} ${DIRS} `echo $LD_LIBRARY_PATH | sed s/:/\ /g`"
 for i in $DIRS ; do
     if cd $i 2>/dev/null ; then
         DIR=`pwd`
@@ -131,6 +142,7 @@ AC_ARG_WITH([eth],,
 [if test "${withval}" = yes; then
    w_eth=true;
    proto_specific eth;
+   tad_libs_rem "$PCAP_LIBS"
    TA_TAD_LIBS="$TA_TAD_LIBS ${PCAP_LIBS}"
    AC_CONFIG_FILES([eth/Makefile])
  fi
@@ -202,6 +214,7 @@ AC_ARG_WITH([snmp],,
             if test -z "${LIB_PATHNAME}" ; then
                 AC_MSG_WARN([Cannot find ${i:2} library])
             fi
+            tad_libs_rem "$LIB_PATHNAME"
             TA_TAD_LIBS="$TA_TAD_LIBS ${LIB_PATHNAME}"
         fi
     done
@@ -218,6 +231,7 @@ AC_ARG_WITH([snmp],,
          find_lib crypto
 
     if test -n "${LIB_PATHNAME}" ; then
+        tad_libs_rem "$LIB_PATHNAME"
         TA_TAD_LIBS="$TA_TAD_LIBS ${LIB_PATHNAME}"
     fi
 
@@ -233,6 +247,7 @@ AC_ARG_WITH([cli],,
     if test -z "${LIB_PATHNAME}" ; then
         AC_MSG_ERROR([Cannot find static expect library])
     fi
+    tad_libs_rem "$LIB_PATHNAME"
     TA_TAD_LIBS="$TA_TAD_LIBS ${LIB_PATHNAME}";
     find_lib util
     if test -z "${LIB_PATHNAME}" ; then
@@ -240,16 +255,19 @@ AC_ARG_WITH([cli],,
     fi
 # tcl and m libraries are needed for expect library
 # and they don't link automatically by some linkers
+    tad_libs_rem "$LIB_PATHNAME"
     TA_TAD_LIBS="$TA_TAD_LIBS ${LIB_PATHNAME}";
     find_lib tcl
     if test -z "${LIB_PATHNAME}" ; then
         AC_MSG_ERROR([Cannot find static tcl library])
     fi
+    tad_libs_rem "$LIB_PATHNAME"
     TA_TAD_LIBS="$TA_TAD_LIBS ${LIB_PATHNAME}";
     find_lib m
     if test -z "${LIB_PATHNAME}" ; then
         AC_MSG_ERROR([Cannot find static m library])
     fi
+    tad_libs_rem "$LIB_PATHNAME"
     TA_TAD_LIBS="$TA_TAD_LIBS ${LIB_PATHNAME}";
     AC_CONFIG_FILES([cli/Makefile])
  fi
@@ -259,6 +277,7 @@ AC_ARG_WITH([pcap],,
 [if test "${withval}" = yes; then
     w_pcap=true;
     proto_specific pcap;
+    tad_libs_rem "$PCAP_LIBS"
     TA_TAD_LIBS="$TA_TAD_LIBS ${PCAP_LIBS}";
     AC_CONFIG_FILES([pcap/Makefile])
  fi
