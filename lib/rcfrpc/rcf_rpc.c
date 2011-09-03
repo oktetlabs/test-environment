@@ -149,6 +149,12 @@ rcf_rpc_server_get(const char *ta, const char *name,
         return TE_RC(TE_RCF_API, TE_EINVAL);
     }
 
+    if (strcmp_start("local_", name) == 0)
+    {
+        RING("RPC servers as local threads of Test Agent "
+             "are not supported any more: they are dangerous");
+    }
+
     if (!(flags & RCF_RPC_SERVER_GET_REGISTER))
         str_register[0] = '\0';
     /* Try to find existing RPC server */
@@ -179,8 +185,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
     }        
         
     /* FIXME: thread support to be done */
-    if (father != NULL && strcmp(father, "local") != 0 &&
-        strcmp(father, "existing") != 0 &&
+    if (father != NULL && 
         cfg_get_instance_fmt(NULL, NULL, "/agent:%s/rpcserver:%s", 
                              ta, father) != 0)
     {
