@@ -263,6 +263,70 @@ extern te_errno tapi_cfg_del_if_ip4_addresses(const char *ta,
                                               const struct sockaddr
                                                   *addr_to_save);
 
+/**
+ * Save and delete all IPv4 addresses on a given interface, except of
+ * addr_to_save or the first address in acquired list (if save_first
+ * is TRUE).
+ *
+ * @param ta                Test Agent name
+ * @param if_name           interface name
+ * @param addr_to_save      address to save on interface.
+ *                          If this parameter is NULL, then save
+ *                          the first address in address list returned by
+ *                          'ip addr list' output.
+ *                          If one need to delete all addresses on
+ *                          interface, he has to pass sockaddr with family
+ *                          'AF_INET'
+ *                          and address 'INADDR_ANY'.
+ * @param save_first        If addr_to_save is NULL but save_first is
+ *                          TRUE, do not delete first address from acquired
+ *                          list.
+ * @param saved_addrs       Where address of array of deleted addresses
+ *                          should be placed
+ * @param saved_prefixes    Where address of array of deleted addresses'
+ *                          prefixes should be placed
+ * @param saved_broadcasts  Where address of array of deleted addresses'
+ *                          broadcasts should be placed
+ * @param saved_count       Where count of saved and deleted addresses
+ *                          should be placed
+ *
+ * @return Status code
+ */ 
+extern te_errno tapi_cfg_save_del_if_ip4_addresses(const char *ta,
+                                                  const char *if_name,
+                                                  const struct sockaddr
+                                                    *addr_to_save,
+                                                  te_bool save_first,
+                                                  struct sockaddr
+                                                    **saved_addrs,
+                                                  int **saved_prefixes,
+                                                  te_bool
+                                                    **saved_broadcasts,
+                                                  int *saved_count);
+
+/**
+ * Restore previously removed IPv4 addresses on a given interface
+ *
+ * @param ta                Test Agent name
+ * @param if_name           interface name
+ * @param saved_addrs       Where address of array of deleted addresses
+ *                          should be placed
+ * @param saved_prefixes    Where address of array of deleted addresses'
+ *                          prefixes should be placed
+ * @param saved_broadcasts  Where address of array of deleted addresses'
+ *                          broadcasts should be placed
+ * @param saved_count       Where count of saved and deleted addresses
+ *                          should be placed
+ *
+ * @return Status code
+ */ 
+extern te_errno tapi_cfg_restore_if_ip4_addresses(const char *ta,
+                                                  const char *if_name,
+                                                  struct sockaddr
+                                                    *saved_addrs,
+                                                  int *saved_prefixes,
+                                                  te_bool *saved_broadcasts,
+                                                  int saved_count);
 
 static inline te_errno
 tapi_cfg_base_if_up(const char *ta, const char *iface)

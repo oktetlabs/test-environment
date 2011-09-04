@@ -887,7 +887,8 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
     
     if (prefix < 0 || prefix > (netaddr_size << 3))
     {
-        ERROR("%s() fails: Incorrect prefix value specified %d", prefix);
+        ERROR("%s() fails: Incorrect prefix value specified %d",
+              __FUNCTION__, prefix);
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 

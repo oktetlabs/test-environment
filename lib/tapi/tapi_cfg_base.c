@@ -499,13 +499,22 @@ tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *addr,
 
 /* See description in tapi_cfg_base.h */
 te_errno
-tapi_cfg_del_if_ip4_addresses(const char *ta,
-                              const char *if_name,
-                              const struct sockaddr *addr_to_save)
+tapi_cfg_save_del_if_ip4_addresses(const char *ta,
+                                   const char *if_name,
+                                   const struct sockaddr *addr_to_save,
+                                   te_bool save_first,
+                                   struct sockaddr **saved_addrs,
+                                   int **saved_prefixes,
+                                   te_bool **saved_broadcasts,
+                                   int *saved_count)
 {
     cfg_handle                 *addrs = NULL;
     unsigned int                addr_num = 0;
+    cfg_handle                 *broadcasts;
+    unsigned int                brd_num = 0;
     unsigned int                i;
+    unsigned int                j;
+    unsigned int                prefix;
     char                       *addr_str;
     struct sockaddr_storage     addr;
     te_errno                    rc;
@@ -526,7 +535,28 @@ tapi_cfg_del_if_ip4_addresses(const char *ta,
         return rc;
     }
     
-    for (i = 0; i < addr_num; i++)
+    if (saved_addrs != NULL)
+    {
+        *saved_addrs = calloc(addr_num, sizeof(struct sockaddr));
+        if (saved_addrs == NULL)
+            return TE_RC(TE_TAPI, TE_ENOMEM); 
+
+        if (saved_prefixes != NULL)
+        {
+            *saved_prefixes = calloc(addr_num, sizeof(int));
+            if (saved_prefixes == NULL)
+                return TE_RC(TE_TAPI, TE_ENOMEM); 
+        }
+
+        if (saved_broadcasts != NULL)
+        {
+            *saved_broadcasts = calloc(addr_num, sizeof(te_bool));
+            if (saved_broadcasts == NULL)
+                return TE_RC(TE_TAPI, TE_ENOMEM);
+        }
+    }
+
+    for (i = 0, j = 0; i < addr_num; i++)
     {
         if ((rc = cfg_get_inst_name(addrs[i], &addr_str)) != 0)
         {
@@ -546,18 +576,36 @@ tapi_cfg_del_if_ip4_addresses(const char *ta,
         {
             continue;
         }
-        if (addr_to_save == NULL)
+        if (addr_to_save == NULL && save_first)
         {
             /* Just to mark that one address is saved */
             addr_to_save = SA(&addr);
             continue;
         }
-        if (addr_to_save != SA(&addr) &&
+        if (addr_to_save != NULL && addr_to_save != SA(&addr) &&
             memcmp(&SIN(addr_to_save)->sin_addr,
                    &SIN(&addr)->sin_addr,
                    sizeof(SIN(&addr)->sin_addr)) == 0)
         {
             continue;
+        }
+
+        if ((rc = cfg_get_instance(addrs[i], CVT_INTEGER, &prefix)) != 0)
+        {
+            ERROR("Failed to get prefix of address with handle %#x: %r",
+                  addrs[i], rc);
+            break;
+        }
+
+        if ((rc = cfg_find_pattern_fmt(&brd_num, &broadcasts,
+                                       "/agent:%s/interface:%s/net_addr:"
+                                       "%s/broadcast:*",
+                                       ta, if_name, addr_str)) != 0)
+        {
+            ERROR("Failed to get broadcast address for /agent:%s/"
+                  "interface:%s/broadcast:*",
+                  ta, if_name, addr_str);
+            break;
         }
 
         if ((rc = cfg_del_instance(addrs[i], FALSE)) != 0)
@@ -566,9 +614,65 @@ tapi_cfg_del_if_ip4_addresses(const char *ta,
                   addrs[i], rc);
             break;
         }
+        else if (saved_addrs != NULL)
+        {
+            if (saved_prefixes != NULL)
+                (*saved_prefixes)[j] = prefix;
+            if (saved_broadcasts != NULL)
+                (*saved_broadcasts)[j] = brd_num > 0 ? TRUE : FALSE;
+
+            memcpy(&((*saved_addrs)[j++]), SA(&addr),
+                   sizeof(struct sockaddr));
+
+            free(broadcasts);
+        }
     }
 
     free(addrs);
+
+    if (saved_count != NULL)
+        *saved_count = j;
+
+    return rc;
+}
+
+/* See description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_del_if_ip4_addresses(const char *ta,
+                              const char *if_name,
+                              const struct sockaddr *addr_to_save)
+{
+    return tapi_cfg_save_del_if_ip4_addresses(ta, if_name,
+                                              addr_to_save, TRUE,
+                                              NULL, NULL, NULL, NULL);
+}
+
+/* See description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_restore_if_ip4_addresses(const char *ta,
+                                  const char *if_name,
+                                  struct sockaddr *saved_addrs,
+                                  int *saved_prefixes,
+                                  te_bool *saved_broadcasts,
+                                  int saved_count)
+{
+    int        i;
+    te_errno   rc = 0;
+    cfg_handle addr;
+
+    for (i = 0; i < saved_count; i++)
+    {
+        if ((rc = tapi_cfg_base_if_add_net_addr(ta, if_name,
+                                                (const struct sockaddr *)
+                                                    &saved_addrs[i],
+                                                saved_prefixes[i],
+                                                saved_broadcasts[i],
+                                                &addr)) != 0)
+        {
+            ERROR("Failed to restore address: %r", rc);
+            break;
+        }
+    } 
 
     return rc;
 }
