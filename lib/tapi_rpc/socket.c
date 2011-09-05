@@ -787,7 +787,7 @@ rpc_sendmsg(rcf_rpc_server *rpcs,
             {
                 uint8_t *data = CMSG_DATA(c);
                 
-                if ((int)(c->cmsg_len) < (uint8_t *)c - data)
+                if ((int)(c->cmsg_len) < data - (uint8_t *)c)
                 {
                     ERROR("Incorrect content of cmsg is not supported");
                     rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
@@ -797,7 +797,7 @@ rpc_sendmsg(rcf_rpc_server *rpcs,
                 rpc_c->level = socklevel_h2rpc(c->cmsg_level);
                 rpc_c->type = sockopt_h2rpc(c->cmsg_level, c->cmsg_type);
                 if ((rpc_c->data.data_len = 
-                         c->cmsg_len - ((uint8_t *)c - data)) > 0)
+                         c->cmsg_len - (data - (uint8_t *)c)) > 0)
                 {
                     rpc_c->data.data_val = data;
                 }
