@@ -778,8 +778,7 @@ rpc_sendmsg(rcf_rpc_server *rpcs,
             struct cmsghdr *c;
             unsigned int    i;
 
-            struct tarpc_cmsghdr *rpc_c = 
-                rpc_msg.msg_control.msg_control_val;
+            struct tarpc_cmsghdr *rpc_c = cmsg_hdrs;
 
             rpc_msg.msg_control.msg_control_val = cmsg_hdrs;
             for (i = 0, c = CMSG_FIRSTHDR((struct msghdr *)msg); 
