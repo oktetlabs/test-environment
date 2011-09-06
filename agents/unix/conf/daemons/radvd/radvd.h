@@ -3,6 +3,13 @@
  *
  * Definitions used in code to control IPv6 router
  * advertisement daemon radvd.
+ *
+ * Copyright (C) 2011 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
+ *
+ * @author Konstantin G. Petrov <Konstantin.Petrov@oktetlabs.ru>
+ *
+ * $Id$
  */
 
 #ifndef __TE_TA_UNIX_RADVD_H__
