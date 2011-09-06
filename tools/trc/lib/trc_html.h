@@ -91,6 +91,21 @@ extern te_errno trc_test_iter_args_to_html(FILE                     *f,
                                            const trc_test_iter_args *args,
                                            unsigned int              flags);
 
+/**
+ * Output test iteration arguments obtained from log to HTML file.
+ *
+ * @param f             File stream to write
+ * @param args          Arguments
+ * @param n_args        Number of arguments
+ * @param flags         Processing flags
+ *
+ * @return Status code.
+ */
+extern te_errno trc_report_iter_args_to_html(FILE                   *f,
+                                             const
+                                                trc_report_argument *args,
+                                             unsigned int            args_n,
+                                             unsigned int            flags);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

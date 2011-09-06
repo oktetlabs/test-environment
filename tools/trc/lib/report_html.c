@@ -1637,9 +1637,13 @@ trc_report_exp_got_to_html(FILE             *f,
                 WRITE_STR(trc_test_exp_got_row_params_start);
 #endif
 
-            rc = trc_test_iter_args_to_html(f, &iter->args, 0);
-            if (rc != 0)
-                break;
+            if (iter_entry != NULL)
+            {
+                rc = trc_report_iter_args_to_html(f, iter_entry->args,
+                                                  iter_entry->args_n, 0);
+                if (rc != 0)
+                    break;
+            }
 
 #if TRC_USE_PARAMS_SPOILERS
             if (!TAILQ_EMPTY(&iter->args.head))

@@ -136,6 +136,11 @@ typedef struct trc_report_test_iter_entry {
     te_test_result  result;     /**< Obtained result */
     te_bool         is_exp;     /**< Does obtained result match one of
                                      expected? */
+    unsigned int    args_max;   /**< Maximum number of arguments
+                                     the space is allocated for */
+    trc_report_argument *args;  /**< Actual arguments */
+
+    unsigned int       args_n;  /**< Number of arguments */
 } trc_report_test_iter_entry;
 
 /** Data attached to test iterations */

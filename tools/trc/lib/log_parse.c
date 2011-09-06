@@ -105,12 +105,6 @@ typedef struct trc_report_log_parse_ctx {
 
     trc_report_test_iter_data  *iter_data;  /**< Current test iteration
                                                  data */
-
-    unsigned int    args_max;   /**< Maximum number of arguments
-                                     the space is allocated for */
-    unsigned int    args_n;     /**< Current number of arguments */
-    trc_report_argument *args;  /**< Actual arguments */
-
     unsigned int    stack_size; /**< Size of the stack in elements */
     te_bool        *stack_info; /**< Stack */
     unsigned int    stack_pos;  /**< Current position in the stack */
@@ -397,6 +391,9 @@ trc_report_test_entry(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
         entry->result.status = status;
         entry->tin = tin;
         entry->hash = hash;
+        entry->args = NULL;
+        entry->args_max = 0;
+        entry->args_n = 0;
 
         assert(ctx->iter_data == NULL);
         ctx->iter_data = TE_ALLOC(sizeof(*ctx->iter_data));
@@ -420,29 +417,53 @@ trc_report_test_entry(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
 static void
 trc_report_test_param(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
 {
-    assert(ctx->args_n <= ctx->args_max);
-    if (ctx->args_n == ctx->args_max)
+    trc_report_test_iter_entry *entry;
+    unsigned int i = 0;
+
+    entry = TAILQ_FIRST(&ctx->iter_data->runs);
+    assert(entry != NULL);
+    assert(TAILQ_NEXT(entry, links) == NULL);
+
+    assert(entry->args_n <= entry->args_max);
+
+    if (entry->args_max == 0)
     {
-        ctx->args_max++;
-        ctx->args = realloc(ctx->args,
-                            sizeof(*(ctx->args)) * ctx->args_max);
-        if (ctx->args == NULL)
+        entry->args_max = 20;
+        entry->args = calloc(entry->args_max,
+                             sizeof(*(entry->args)));
+        if (entry->args == NULL)
         {
             ctx->rc = TE_ENOMEM;
             return;
         }
-        ctx->args[ctx->args_n].name = NULL;
-        ctx->args[ctx->args_n].value = NULL;
-        ctx->args[ctx->args_n].variable = FALSE;
+    }
+
+    if (entry->args_n == entry->args_max)
+    {
+        entry->args_max += 5;
+        entry->args = realloc(entry->args,
+                              sizeof(*(entry->args)) * entry->args_max);
+        if (entry->args == NULL)
+        {
+            ctx->rc = TE_ENOMEM;
+            return;
+        }
+
+        for (i = entry->args_n; i < entry->args_max; i++)
+        {
+            entry->args[i].name = NULL;
+            entry->args[i].value = NULL;
+            entry->args[i].variable = FALSE;
+        }
     }
 
     while (attrs[0] != NULL && attrs[1] != NULL)
     {
         if (xmlStrcmp(attrs[0], CONST_CHAR2XML("name")) == 0)
         {
-            free(ctx->args[ctx->args_n].name);
-            ctx->args[ctx->args_n].name = strdup(XML2CHAR(attrs[1]));
-            if (ctx->args[ctx->args_n].name == NULL)
+            free(entry->args[entry->args_n].name);
+            entry->args[entry->args_n].name = strdup(XML2CHAR(attrs[1]));
+            if (entry->args[entry->args_n].name == NULL)
             {
                 ERROR("strdup(%s) failed", attrs[1]);
                 ctx->rc = TE_ENOMEM;
@@ -451,9 +472,9 @@ trc_report_test_param(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
         }
         else if (xmlStrcmp(attrs[0], CONST_CHAR2XML("value")) == 0)
         {
-            free(ctx->args[ctx->args_n].value);
-            ctx->args[ctx->args_n].value = strdup(XML2CHAR(attrs[1]));
-            if (ctx->args[ctx->args_n].value == NULL)
+            free(entry->args[entry->args_n].value);
+            entry->args[entry->args_n].value = strdup(XML2CHAR(attrs[1]));
+            if (entry->args[entry->args_n].value == NULL)
             {
                 ERROR("strdup(%s) failed", XML2CHAR(attrs[1]));
                 ctx->rc = TE_ENOMEM;
@@ -463,15 +484,15 @@ trc_report_test_param(trc_report_log_parse_ctx *ctx, const xmlChar **attrs)
         attrs += 2;
     }
 
-    if (ctx->args[ctx->args_n].name == NULL ||
-        ctx->args[ctx->args_n].value == NULL)
+    if (entry->args[entry->args_n].name == NULL ||
+        entry->args[entry->args_n].value == NULL)
     {
         ERROR("Invalid format of the test parameter specification");
         ctx->rc = TE_EFMT;
     }
     else
     {
-        ctx->args_n++;
+        entry->args_n++;
     }
 }
 
@@ -939,12 +960,17 @@ trc_report_log_end_element(void *user_data, const xmlChar *name)
         case TRC_REPORT_LOG_PARSE_META:
         {
             trc_report_test_iter_data  *iter_data;
+            trc_report_test_iter_entry *entry;
+
+            entry = TAILQ_FIRST(&ctx->iter_data->runs);
+            assert(entry != NULL);
+            assert(TAILQ_NEXT(entry, links) == NULL);
 
             assert(strcmp(tag, "meta") == 0);
             ctx->state = TRC_REPORT_LOG_PARSE_TEST;
 
-            if (!trc_db_walker_step_iter(ctx->db_walker, ctx->args_n,
-                                         ctx->args,
+            if (!trc_db_walker_step_iter(ctx->db_walker, entry->args_n,
+                                         entry->args,
                                          TRUE))
             {
                 ERROR("Unable to create a new iteration");
@@ -952,7 +978,6 @@ trc_report_log_end_element(void *user_data, const xmlChar *name)
                 break;
             }
 
-            ctx->args_n = 0;
             iter_data = trc_db_walker_get_user_data(ctx->db_walker,
                                                     ctx->db_uid);
             if (iter_data == NULL)
@@ -1164,12 +1189,6 @@ trc_report_process_log(trc_report_ctx *gctx, const char *log)
     }
 #endif
     free(ctx.stack_info);
-    for (ctx.args_n = 0; ctx.args_n < ctx.args_max; ctx.args_n++)
-    {
-        free(ctx.args[ctx.args_n].name);
-        free(ctx.args[ctx.args_n].value);
-    }
-    free(ctx.args);
 
     return rc;
 }

@@ -96,6 +96,12 @@ trc_report_free_test_iter_data(trc_report_test_iter_data *data)
     {
         TAILQ_REMOVE(&data->runs, p, links);
         te_test_result_free_verdicts(&p->result);
+        for (p->args_n = 0; p->args_n < p->args_max; p->args_n++)
+        {
+            free(p->args[p->args_n].name);
+            free(p->args[p->args_n].value);
+        }
+        free(p->args);
         free(p);
     }
     free(data);

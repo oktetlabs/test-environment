@@ -190,6 +190,60 @@ cleanup:
 }
 
 #include "trc_tags.h" /* for te_string */
+#include "te_alloc.h"
+
+/**
+ * Split long string containing values separated by commas
+ *
+ * @param s     String
+ *
+ * @return Splitted string or NULL
+ */
+static te_string *
+split_long_string(char *s)
+{
+    size_t      len = 0;
+    const char *p0 = s;
+    const char *p1 = strchr(p0, ',');
+    const char *p2 = strchr(p1 + 1, ',');
+    te_string  *value = TE_ALLOC(sizeof(*value));
+
+    if (value == NULL)
+    {
+        ERROR("%s(): memory allocation failed", __FUNCTION__);
+        return NULL;
+    }
+
+    do {
+        while (p2 != NULL && p2 - p0 < 80)
+        {
+            p1 = p2;
+            p2 = strchr(p1 + 1, ',');
+        }
+        if (p2 == NULL && p2 - p0 < 80)
+        {
+            te_string_append(value, p0);
+            break;
+        }
+
+        len += p1 - p0 + 1;
+        te_string_append(value, p0);
+        te_string_cut(value, value->len - len);
+        te_string_append(value, "<wbr/>");
+        len += 6;
+        assert(len == value->len);
+        p0 = p1 + 1;
+        p1 = strchr(p0, ',');
+        if (p1 == NULL)
+        {
+            te_string_append(value, p0);
+            break;
+        }
+    } while (TRUE);
+
+    return value;
+}
+
 
 /* See the description in trc_html.h */
 te_errno
@@ -205,44 +259,50 @@ trc_test_iter_args_to_html(FILE *f, const trc_test_iter_args *args,
         if (strlen(p->value) > 80 && strpbrk(p->value, " \n\r\t") == 0 &&
             strchr(p->value, ',') != NULL)
         {
-            te_string value = TE_STRING_INIT;
-            size_t len = 0;
-            const char *p0 = p->value;
-            const char *p1 = strchr(p0, ',');
-            const char *p2 = strchr(p1 + 1, ',');
+            te_string *value = split_long_string(p->value);
 
-            do {
-                while (p2 != NULL && p2 - p0 < 80)
-                {
-                    p1 = p2;
-                    p2 = strchr(p1 + 1, ',');
-                }
-                if (p2 == NULL && p2 - p0 < 80)
-                {
-                    te_string_append(&value, p0);
-                    break;
-                }
+            if (value == NULL)
+                return TE_ENOMEM;
 
-                len += p1 - p0 + 1;
-                te_string_append(&value, p0);
-                te_string_cut(&value, value.len - len);
-                te_string_append(&value, "<wbr/>");
-                len += 6;
-                assert(len == value.len);
-                p0 = p1 + 1;
-                p1 = strchr(p0, ',');
-                if (p1 == NULL)
-                {
-                    te_string_append(&value, p0);
-                    break;
-                }
-            } while (TRUE);
-
-            fprintf(f, "%s=%s<BR/>", p->name, value.ptr);
-            te_string_free(&value);
+            fprintf(f, "%s=%s<BR/>", p->name, value->ptr);
+            te_string_free(value);
         }
         else
             fprintf(f, "%s=%s<BR/>", p->name, p->value);
+    }
+
+    return 0;
+}
+
+/* See the description in trc_html.h */
+te_errno
+trc_report_iter_args_to_html(FILE *f, const trc_report_argument *args,
+                             unsigned int args_n, unsigned int flags)
+{
+    unsigned int i;
+
+    UNUSED(flags);
+
+    for (i = 0; i < args_n; i++)
+    {
+        if (args[i].variable)
+            continue;
+
+        if (strlen(args[i].value) > 80 &&
+            strpbrk(args[i].value, " \n\r\t") == 0 &&
+            strchr(args[i].value, ',') != NULL)
+        {
+            te_string *value = split_long_string(args[i].value);
+
+            if (value == NULL)
+                return TE_ENOMEM;
+
+            fprintf(f, "%s=%s<BR/>", args[i].name, value->ptr);
+
+            te_string_free(value);
+        }
+        else
+            fprintf(f, "%s=%s<BR/>", args[i].name, args[i].value);
     }
 
     return 0;

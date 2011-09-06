@@ -260,8 +260,19 @@ trc_db_test_iter_args(trc_test_iter_args *args, unsigned int n_args,
             return TE_RC(TE_TRC, TE_ENOMEM);
         }
 
-        arg->name = add_args[i].name;
-        arg->value = add_args[i].value;
+        arg->name = strdup(add_args[i].name);
+        arg->value = strdup(add_args[i].value);
+
+        if (arg->name == NULL || arg->value == NULL)
+        {
+            while ((arg = TAILQ_FIRST(&args->head)) != NULL)
+            {
+                TAILQ_REMOVE(&args->head, arg, links);
+                /* Do not free name and value */
+                free(arg);
+            }
+            return TE_RC(TE_TRC, TE_ENOMEM);
+        }
 
         TAILQ_FOREACH_REVERSE(insert_after, &args->head, 
                               trc_test_iter_args_head, 
@@ -276,10 +287,6 @@ trc_db_test_iter_args(trc_test_iter_args *args, unsigned int n_args,
         else
             TAILQ_INSERT_AFTER(&args->head, insert_after, arg, links);
     }
-
-    /* Success, names and values are own */
-    for (i = 0; i < n_args; ++i)
-        add_args[i].name = add_args[i].value = NULL;
 
     return 0;
 }
