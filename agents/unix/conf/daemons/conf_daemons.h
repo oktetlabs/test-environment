@@ -110,6 +110,7 @@ get_ds_name(const char *oid)
 {
     return
 #if defined __linux__
+         (strstr(oid, "radvd") != NULL) ? "radvd" :       
          (strstr(oid, "dhcpserver") != NULL) ? "dhcpd" :       
          (strstr(oid, "pppoeserver") != NULL) ? "pppoe-server" :       
          (strstr(oid, "dnsserver") != NULL) ? "named" :        
@@ -302,6 +303,8 @@ extern int find_file(unsigned int n, const char * const *files,
  * Grab/release functions for daemons/services - see rcfpch/rcf_pch.h 
  * for details and prototypes.
  */
+extern te_errno radvd_grab(const char *name);
+extern te_errno radvd_release(const char *radvd);
 
 extern te_errno dhcpserver_grab(const char *name);
 extern te_errno dhcpserver_release(const char *name);

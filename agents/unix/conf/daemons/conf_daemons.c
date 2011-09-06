@@ -3442,6 +3442,10 @@ static struct {
     rcf_pch_rsrc_release_callback release;
 } ds_info[] = {
 
+#ifdef WITH_RADVD
+    { "/agent/radvd", radvd_grab, radvd_release },
+#endif
+
 #ifdef WITH_DHCP_SERVER
     { "/agent/dhcpserver", dhcpserver_grab, dhcpserver_release }, 
 #endif

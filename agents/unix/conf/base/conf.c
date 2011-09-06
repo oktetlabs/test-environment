@@ -1376,9 +1376,6 @@ ip6_fw_get(unsigned int gid, const char *oid, char *value)
     UNUSED(gid);
     UNUSED(oid);
 
-    if (!rcf_pch_rsrc_accessible("/agent/ip6_fw"))
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
 #if __linux__
     if ((fd = open("/proc/sys/net/ipv6/conf/all/forwarding",
                    O_RDONLY)) < 0)
@@ -1438,9 +1435,6 @@ ip6_fw_set(unsigned int gid, const char *oid, const char *value)
     UNUSED(gid);
     UNUSED(oid);
 
-
-    if (!rcf_pch_rsrc_accessible("/agent/ip6_fw"))
-        return TE_RC(TE_TA_UNIX, TE_EPERM);
 
     if ((*value != '0' && *value != '1') || *(value + 1) != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);

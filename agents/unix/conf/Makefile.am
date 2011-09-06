@@ -71,6 +71,13 @@ AM_CPPFLAGS += @DAEMONS_CFLAGS@
 libconf_a_SOURCES += daemons/conf_daemons.c daemons/ldap/ldap.c
 noinst_HEADERS += daemons/conf_daemons.h 
 
+if CFG_UNIX_DAEMONS_RADVD
+
+libconf_a_SOURCES += daemons/radvd/radvd.c
+noinst_HEADERS += daemons/radvd/radvd.h
+
+endif
+
 if CFG_UNIX_DAEMONS_ISC_DHCP_SERVER
 
 libconf_a_SOURCES += daemons/dhcp/dhcp_server.c 

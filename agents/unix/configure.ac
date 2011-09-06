@@ -395,6 +395,9 @@ if test -n "$with_cfg_unix_daemons" ; then
             DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_XINETD" 
             ;;
             
+        radvd)
+            DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_RADVD" ;
+            ;;
         dhcp)
             DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_DHCP_SERVER" ;
             ;;
@@ -429,6 +432,8 @@ AC_SUBST([DAEMONS_CFLAGS])
 AM_CONDITIONAL(CFG_UNIX_DAEMONS, test -n "$with_cfg_unix_daemons")
 AM_CONDITIONAL(CFG_UNIX_DAEMONS_NAMED, 
     [expr "$with_cfg_unix_daemons" : ".*dns" >/dev/null])
+AM_CONDITIONAL(CFG_UNIX_DAEMONS_RADVD,
+    [expr "$with_cfg_unix_daemons" : ".*radvd" >/dev/null])
 AM_CONDITIONAL(CFG_UNIX_DAEMONS_ISC_DHCP_SERVER,
     [expr "$with_cfg_unix_daemons" : ".*dhcp" >/dev/null])
 AM_CONDITIONAL(CFG_UNIX_DAEMONS_PPPOE_SERVER,
