@@ -70,6 +70,7 @@ tapi_pppoe_add_csap_layer(asn_value **csap_spec,
     CHECK_RC(asn_write_value_field(layer, &session_id,
                                    sizeof(session_id),
                                    "session-id.#plain"));
+    if (length != 0)
     CHECK_RC(asn_write_value_field(layer, &length,
                                    sizeof(length),
                                    "length.#plain"));
