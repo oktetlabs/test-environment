@@ -82,10 +82,12 @@ static const tad_bps_pkt_frag tad_pppoe_bps_hdr[] =
       TAD_DU_I32, FALSE },
     { "session-id", 16, BPS_FLD_SIMPLE(NDN_TAG_PPPOE_SESSION_ID),
       TAD_DU_I32, FALSE },
-    { "length", 16, NDN_TAG_PPPOE_LENGTH, NDN_TAG_PPPOE_LENGTH,
-                    ASN_TAG_INVALID, 0,
-      TAD_DU_I32, FALSE },
+    { "length",    16, BPS_FLD_CONST_DEF(NDN_TAG_PPPOE_LENGTH, 0),
+      TAD_DU_I32, TRUE },
 };
+
+/* item "length" index in array above */
+const int bps_def_pppoe_length_idx = 4; 
 
 /* See description tad_ppp_impl.h */
 te_errno
@@ -212,19 +214,46 @@ tad_pppoe_confirm_tmpl_cb(csap_p csap, unsigned int layer,
     return rc;
 }
 
+/** Data to be passed as opaque to tad_pppoe_gen_bin_cb_per_pdu() callback. */
+typedef struct {
+    uint8_t *hdr;
+    const tad_bps_pkt_frag_def *def;
+    const tad_bps_pkt_frag_data *pkt;
+} tad_pppoe_gen_bin_cb_per_pdu_data;
+
 /**
  * Callback to generate binary data per PDU.
  *
  * This function complies with tad_pkt_enum_cb prototype.
  */
 static te_errno
-tad_pppoe_gen_bin_cb_per_pdu(tad_pkt *pdu, void *hdr)
+tad_pppoe_gen_bin_cb_per_pdu(tad_pkt *pdu, void *opaque)
 {
+    tad_pppoe_gen_bin_cb_per_pdu_data    *data = opaque;
+    
     tad_pkt_seg    *seg = tad_pkt_first_seg(pdu);
+    size_t          pdu_len = tad_pkt_len(pdu);
+
+    VERB("%s(): pdu len %d, first seg len %d", __FUNCTION__, 
+         (int)pdu_len, (int)seg->data_len);
+
+    assert(data->def->descr[bps_def_pppoe_length_idx].tag == NDN_TAG_PPPOE_LENGTH);
+    assert(seg->data_ptr != NULL);
 
     /* Copy header template to packet */
-    assert(seg->data_ptr != NULL);
-    memcpy(seg->data_ptr, hdr, seg->data_len);
+    
+    memcpy(seg->data_ptr, data->hdr, seg->data_len);
+
+    if (data->pkt->dus[bps_def_pppoe_length_idx].du_type == TAD_DU_UNDEF)
+    {
+        uint16_t plen = htons(pdu_len - seg->data_len);
+
+        VERB("%s(): length was undef in template, fill with %d",
+             __FUNCTION__, (int)(pdu_len - seg->data_len));
+
+        memcpy(seg->data_ptr + 4, &plen, 2);
+    }
+
 
     return 0;
 }
@@ -238,10 +267,13 @@ tad_pppoe_gen_bin_cb(csap_p csap, unsigned int layer,
 {
     tad_pppoe_proto_data     *proto_data;
     tad_pppoe_proto_pdu_data *tmpl_data = opaque;
+    tad_pppoe_gen_bin_cb_per_pdu_data aux_data;
 
     te_errno     rc;
     unsigned int bitoff;
     uint8_t      hdr[TE_TAD_PPPOE_HDR_LEN];
+
+    aux_data.hdr = hdr;
 
     assert(csap != NULL);
     F_ENTRY("(%d:%u) tmpl_pdu=%p args=%p arg_num=%u sdus=%p pdus=%p",
@@ -249,6 +281,10 @@ tad_pppoe_gen_bin_cb(csap_p csap, unsigned int layer,
             (unsigned)arg_num, sdus, pdus);
 
     proto_data = csap_get_proto_spec_data(csap, layer);
+
+    aux_data.hdr = hdr;
+    aux_data.def = &proto_data->hdr;
+    aux_data.pkt = &tmpl_data->hdr;
 
     /* Generate binary template of the header */
     bitoff = 0;
@@ -273,7 +309,7 @@ tad_pppoe_gen_bin_cb(csap_p csap, unsigned int layer,
         return rc;
 
     /* Per-PDU processing */
-    rc = tad_pkt_enumerate(pdus, tad_pppoe_gen_bin_cb_per_pdu, hdr);
+    rc = tad_pkt_enumerate(pdus, tad_pppoe_gen_bin_cb_per_pdu, &aux_data);
     if (rc != 0)
     {
         ERROR("Failed to process PPPoE PDUs: %r", rc);
