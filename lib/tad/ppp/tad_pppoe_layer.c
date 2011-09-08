@@ -24,7 +24,7 @@
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
- * $Id: $
+ * $Id$
  */
 
 #define TE_LGR_USER     "TAD PPPoE"
@@ -105,7 +105,8 @@ tad_pppoe_init_cb(csap_p csap, unsigned int layer)
 
     layer_nds = csap->layers[layer].nds;
 #if 0
-    rc = asn_read_int32(layer_nds, &proto_data->hdr.session_id, "session-id");
+    rc = asn_read_int32(layer_nds, &proto_data->hdr.session_id,
+                        "session-id");
     if (rc != 0)
     {
         ERROR(CSAP_LOG_FMT "%s() failed to get PPPoE Session ID",
@@ -214,7 +215,8 @@ tad_pppoe_confirm_tmpl_cb(csap_p csap, unsigned int layer,
     return rc;
 }
 
-/** Data to be passed as opaque to tad_pppoe_gen_bin_cb_per_pdu() callback. */
+/** Data to be passed as opaque to
+ * tad_pppoe_gen_bin_cb_per_pdu() callback. */
 typedef struct {
     uint8_t *hdr;
     const tad_bps_pkt_frag_def *def;
@@ -237,7 +239,8 @@ tad_pppoe_gen_bin_cb_per_pdu(tad_pkt *pdu, void *opaque)
     VERB("%s(): pdu len %d, first seg len %d", __FUNCTION__, 
          (int)pdu_len, (int)seg->data_len);
 
-    assert(data->def->descr[bps_def_pppoe_length_idx].tag == NDN_TAG_PPPOE_LENGTH);
+    assert(data->def->descr[bps_def_pppoe_length_idx].tag ==
+           NDN_TAG_PPPOE_LENGTH);
     assert(seg->data_ptr != NULL);
 
     /* Copy header template to packet */
