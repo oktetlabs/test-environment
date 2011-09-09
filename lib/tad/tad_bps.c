@@ -666,7 +666,7 @@ tad_data_unit_to_nds(asn_value *nds, const char *name,
                      tad_data_unit_t *du)
 {
     te_errno    rc;
-    char        tmp[32];
+    char        tmp[64];
 
     snprintf(tmp, sizeof(tmp), "%s.#plain", name);
 
@@ -686,6 +686,10 @@ tad_data_unit_to_nds(asn_value *nds, const char *name,
             rc = TE_EFAULT;
     }
 
+    if (rc != 0)
+    {
+        WARN("data_unit_to_nds() rc %r, name '%s'", rc, tmp);
+    }
     return rc;
 }
 
@@ -729,6 +733,11 @@ tad_bps_pkt_frag_match_post(const tad_bps_pkt_frag_def *def,
             tad_bin_to_data_unit(pkt, *bitoff, len, pkt_data->dus + i);
 
         rc = tad_data_unit_to_nds(nds, def->descr[i].name, pkt_data->dus + i);
+        if (rc != 0)
+        {
+            WARN("bps_frag_match: rc %r, field idx %d, name '%s'",
+                  rc, i, def->descr[i].name);
+        }
     }
 
     return rc;

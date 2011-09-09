@@ -1457,7 +1457,8 @@ tad_recv_get_packets(csap_p csap, tad_task_context *task, te_bool wait,
                 rc = csap_get_proto_support(csap, layer)->match_post_cb(
                          csap, layer, pkt->layers + layer);
                 if (rc != 0)
-                    ERROR("post_cb: %r", rc);
+                    ERROR("match_post_cb: CSAP %d, layer %d, %r", 
+                            csap->id, layer, rc);
             }
 
             pdu = asn_init_value(ndn_generic_pdu);
