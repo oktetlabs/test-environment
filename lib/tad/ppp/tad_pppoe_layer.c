@@ -74,7 +74,7 @@ typedef struct tad_pppoe_proto_pdu_data {
  */
 static const tad_bps_pkt_frag tad_pppoe_bps_hdr[] =
 {
-    { "ver", 4, BPS_FLD_SIMPLE(NDN_TAG_PPPOE_VERSION),
+    { "version", 4, BPS_FLD_SIMPLE(NDN_TAG_PPPOE_VERSION),
       TAD_DU_I32, FALSE },
     { "type", 4, BPS_FLD_SIMPLE(NDN_TAG_PPPOE_TYPE),
       TAD_DU_I32, FALSE },
@@ -439,7 +439,7 @@ tad_pppoe_match_do_cb(csap_p           csap,
         return rc;
     }
 
-    RING("Bit offset is %u", bitoff);
+    VERB("Bit offset is %u", bitoff);
 #if 1
     rc = tad_pkt_get_frag(sdu, pdu, bitoff >> 3,
                           tad_pkt_len(pdu) - (bitoff >> 3),
