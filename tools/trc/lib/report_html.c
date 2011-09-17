@@ -2943,7 +2943,7 @@ trc_report_javascript_table(FILE         *f, trc_report_ctx *ctx,
                         break;
 
                     rc = te_string_append(&subtests[level - 1], "'%s',",
-                                          test_path);
+                                          test_path.ptr);
                     if (rc != 0)
                         break;
 
