@@ -67,11 +67,15 @@ te_test_result_to_html(FILE *f, const te_test_result *result)
     assert(f != NULL);
     if (result == NULL)
     {
+        WRITE_STR("<span>");
         WRITE_STR(te_test_status_to_str(TE_TEST_UNSPEC));
+        WRITE_STR("</span>");
         return 0;
     }
 
+    WRITE_STR("<span>");
     WRITE_STR(te_test_status_to_str(result->status));
+    WRITE_STR("</span>");
 
     if (TAILQ_EMPTY(&result->verdicts))
         return 0;
@@ -79,9 +83,11 @@ te_test_result_to_html(FILE *f, const te_test_result *result)
     WRITE_STR("<br/><br/>");
     TAILQ_FOREACH(v, &result->verdicts, links)
     {
+        WRITE_STR("<span>");
         WRITE_STR(v->str);
         if (TAILQ_NEXT(v, links) != NULL)
             WRITE_STR("; ");
+        WRITE_STR("</span><br/>");
     }
 
 cleanup:
@@ -200,7 +206,7 @@ cleanup:
  * @return Splitted string or NULL
  */
 static te_string *
-split_long_string(char *s)
+split_long_string(char *s, unsigned int max_len)
 {
     size_t      len = 0;
     const char *p0 = s;
@@ -215,12 +221,12 @@ split_long_string(char *s)
     }
 
     do {
-        while (p2 != NULL && p2 - p0 < 80)
+        while (p2 != NULL && p2 - p0 < (int)max_len)
         {
             p1 = p2;
             p2 = strchr(p1 + 1, ',');
         }
-        if (p2 == NULL && p2 - p0 < 80)
+        if (p2 == NULL && p2 - p0 < (int)max_len)
         {
             te_string_append(value, p0);
             break;
@@ -259,16 +265,20 @@ trc_test_iter_args_to_html(FILE *f, const trc_test_iter_args *args,
         if (strlen(p->value) > 80 && strpbrk(p->value, " \n\r\t") == 0 &&
             strchr(p->value, ',') != NULL)
         {
-            te_string *value = split_long_string(p->value);
+            te_string *value = split_long_string(p->value, 80);
 
             if (value == NULL)
                 return TE_ENOMEM;
 
-            fprintf(f, "%s=%s<BR/>", p->name, value->ptr);
+            fprintf(f, "<a name=\"param\">%s</a>=<a name=\"%s_val\">"
+                    "%s</a><br/>",p->name, p->name,
+                    value->ptr);
             te_string_free(value);
         }
         else
-            fprintf(f, "%s=%s<BR/>", p->name, p->value);
+            fprintf(f, "<a name=\"param\">%s</a>=<a name=\"%s_val\">"
+                    "%s</a><br/>", p->name, p->name,
+                    p->value);
     }
 
     return 0;
@@ -277,7 +287,8 @@ trc_test_iter_args_to_html(FILE *f, const trc_test_iter_args *args,
 /* See the description in trc_html.h */
 te_errno
 trc_report_iter_args_to_html(FILE *f, const trc_report_argument *args,
-                             unsigned int args_n, unsigned int flags)
+                             unsigned int args_n, unsigned int max_len,
+                             unsigned int flags)
 {
     unsigned int i;
 
@@ -292,17 +303,21 @@ trc_report_iter_args_to_html(FILE *f, const trc_report_argument *args,
             strpbrk(args[i].value, " \n\r\t") == 0 &&
             strchr(args[i].value, ',') != NULL)
         {
-            te_string *value = split_long_string(args[i].value);
+            te_string *value = split_long_string(args[i].value, max_len);
 
             if (value == NULL)
                 return TE_ENOMEM;
 
-            fprintf(f, "%s=%s<BR/>", args[i].name, value->ptr);
+            fprintf(f, "<a name=\"param\">%s</a>=<a name=\"%s_val\">"
+                    "%s</a><br/>", args[i].name, args[i].name,
+                    value->ptr);
 
             te_string_free(value);
         }
         else
-            fprintf(f, "%s=%s<BR/>", args[i].name, args[i].value);
+            fprintf(f, "<a name=\"param\">%s</a>=<a name=\"%s_val\">"
+                    "%s</a><br/>", args[i].name, args[i].name,
+                    args[i].value);
     }
 
     return 0;

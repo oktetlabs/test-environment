@@ -86,6 +86,7 @@ enum {
     TRC_OPT_KEYS_SANITY,
     TRC_OPT_KEYS_EXPECTED,
     TRC_OPT_KEYS_UNEXPECTED,
+    TRC_OPT_WILD_VERBOSE,
     TRC_OPT_IGNORE_LOG_TAGS,
     TRC_OPT_COMPARISON,
     TRC_OPT_MERGE,
@@ -251,6 +252,10 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
         { "keys-unexpected", '\0', POPT_ARG_NONE, NULL,
           TRC_OPT_KEYS_UNEXPECTED,
           "Show keys for unexpected test results.", NULL },
+
+        { "wild-verbose", '\0', POPT_ARG_NONE, NULL, TRC_OPT_WILD_VERBOSE,
+          "Enable displaying wildcards for distinct verdicts and "
+          "result statuses.", NULL },
 
         { "comparison", '\0', POPT_ARG_STRING, NULL, TRC_OPT_COMPARISON,
           "Parameter comparison method (default is 'exact').",
@@ -503,6 +508,7 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
             TRC_OPT_FLAG(KEYS_SANITY);
             TRC_OPT_FLAG(KEYS_EXPECTED);
             TRC_OPT_FLAG(KEYS_UNEXPECTED);
+            TRC_OPT_FLAG(WILD_VERBOSE);
 
 #undef TRC_OPT_FLAG
 

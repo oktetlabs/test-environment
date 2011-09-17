@@ -59,6 +59,28 @@ typedef struct trc_report_stats {
                                          expected result */
 } trc_report_stats;
 
+/**
+ * Get number of run test iterations with a given result status
+ * 
+ * @param   s       TRC statistics
+ * @param   status  Test iteration result status
+ *
+ * @return  Number of corresponding iterations or 0
+ */
+extern inline unsigned int
+get_stats_by_status(const trc_report_stats *s, te_test_status status)
+{
+    switch (status)
+    {
+        case TE_TEST_PASSED:
+            return s->pass_exp + s->pass_une;
+        case TE_TEST_FAILED:
+            return s->fail_exp + s->fail_une;
+        default:
+            return 0;
+    }
+}
+
 /** Number of run test iterations */
 #define TRC_STATS_RUN(s) \
     ((s)->pass_exp + (s)->pass_une + (s)->fail_exp + (s)->fail_une + \
@@ -109,6 +131,9 @@ enum trc_report_flags {
                                                behaviour */
     TRC_REPORT_KEYS_UNEXPECTED  = 0x4000, /**< Keys for unexpected
                                                behaviour */
+    TRC_REPORT_WILD_VERBOSE     = 0x80000, /**< Show wildcards for
+                                                distinct verdicts,
+                                                result statuses */
 
     /** Do not report unspecified key, if test passed with verdict */
     TRC_REPORT_KEYS_SKIP_PASSED_UNSPEC = 0x8000,
