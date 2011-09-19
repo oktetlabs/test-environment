@@ -517,7 +517,16 @@ tapi_cfg_save_del_if_ip4_addresses(const char *ta,
     unsigned int                prefix;
     char                       *addr_str;
     struct sockaddr_storage     addr;
-    te_errno                    rc;
+    te_errno                    rc = 0;
+
+    if (saved_count != NULL)
+        *saved_count = 0; 
+    if (saved_addrs != NULL)
+        *saved_addrs = NULL;
+    if (saved_prefixes != NULL)
+        *saved_prefixes = NULL;
+    if (saved_broadcasts != NULL)
+        *saved_broadcasts = NULL;
 
     if (addr_to_save != NULL && addr_to_save->sa_family != AF_INET)
     {
@@ -603,7 +612,7 @@ tapi_cfg_save_del_if_ip4_addresses(const char *ta,
                                        ta, if_name, addr_str)) != 0)
         {
             ERROR("Failed to get broadcast address for /agent:%s/"
-                  "interface:%s/broadcast:*",
+                  "interface:%s/net_addr:%s/broadcast:*",
                   ta, if_name, addr_str);
             break;
         }
