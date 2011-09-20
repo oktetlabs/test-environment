@@ -4,13 +4,11 @@
  * Definition of DHCP server configuration notions.
  *
  */
-
 #ifndef __TE_TA_UNIX_DHCP_SERVER_H__
 #define __TE_TA_UNIX_DHCP_SERVER_H__
 
 #include "te_defs.h"
 #include "te_queue.h"
-
 
 enum {
     TE_DHCPS_ALLOW,
@@ -41,7 +39,6 @@ typedef struct te_dhcp_space_opt {
     char   *type;
 } te_dhcp_space_opt;
 
-
 typedef struct space {
     struct space      *next;
 
@@ -49,7 +46,6 @@ typedef struct space {
     te_dhcp_space_opt *options;
 
 } space;
-
 
 typedef struct host {
     struct host  *next;
@@ -84,13 +80,12 @@ typedef struct te_dhcp_server_subnet {
 
 typedef struct te_dhcp_server_shared_net {
     char   *name;
-    
 } te_dhcp_server_shared_net;
 
 /** DHCP server configuration */
 typedef struct te_dhcp_server_cfg {
     TAILQ_HEAD(te_dhcp_server_shared_nets, te_dhcp_server_shared_net)
-        shared_nets;
+    shared_nets;
 } te_dhcp_server_cfg;
 
 extern int isc_dhcp_server_cfg_parse(const char *filename);
