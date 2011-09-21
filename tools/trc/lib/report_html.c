@@ -170,6 +170,8 @@ static const char * const trc_html_doc_start =
 "padding-right: 0.14in; background-color:#ffdfdf;}\n"
 "    .test_stats_failed_unexp { text-align: right; padding-left: 0.14in; "
 "padding-right: 0.14in; background-color:#ffdfdf;}\n"
+"    .unexp_no_highlight { text-align: right; padding-left: 0.14in; "
+"padding-right: 0.14in}\n"
 "    .test_stats_aborted_new { text-align: right; padding-left: 0.14in; "
 "padding-right: 0.14in; background-color:#ffdfdf;}\n"
 "    .test_stats_not_run { font-weight: bold; text-align: right; "
@@ -258,7 +260,11 @@ static const char * const trc_html_doc_start =
 "                        'specific kind of result of a ' +\n"
 "                        'given test, it means that ' +\n"
 "                        'all iterations of the test have ' +\n"
-"                        'this kind of result.</div>';\n"
+"                        'this kind of result. Wildcards ' +\n"
+"                        'can be used for updating TRC XML only if ' +\n"
+"                        'this is a full TRC report with information ' +\n"
+"                        'about all possible iterations of a given ' +\n"
+"                        'test.</div>';\n"
 "\n"
 "    function getChildrenByName(elem, name)\n"
 "    {\n"
@@ -366,6 +372,22 @@ static const char * const trc_html_doc_start =
 "        return res;\n"
 "    }\n"
 "\n"
+"    function getMatchItersNumber(name, comp_func)\n"
+"    {\n"
+"        var tst_results = getTestIters(name);\n"
+"        var tst_its = tst_results.iters;\n"
+"        var match_itr_count = 0;\n"
+"        var k;\n"
+"\n"
+"        for (k = 0; k < tst_its.length; k++)\n"
+"        {\n"
+"            if (comp_func(tst_its[k]))\n"
+"                match_itr_count++;\n"
+"        }\n"
+"\n"
+"        return match_itr_count;\n"
+"    }\n"
+"\n"
 "    /**\n"
 "     * Function determines wildcards describing those and only those\n"
 "     * iterations of test on which comp_func function returns true\n"
@@ -393,6 +415,9 @@ static const char * const trc_html_doc_start =
 "        var l;\n"
 "        var m;\n"
 "        var res = new Array();\n"
+"\n"
+"        if (tst_its.length == 0)\n"
+"            return res;\n"
 "\n"
 "        for (k = 0; k < tst_its.length; k++)\n"
 "        {\n"
@@ -665,7 +690,8 @@ static const char * const trc_html_doc_start =
 "             field == 'failed_exp' || field == 'failed_unexp') &&\n"
 "             test[field] != 0 && test[field] != test['passed_exp'] +\n"
 "             test['passed_unexp'] + test['failed_exp'] +\n"
-"             test['failed_unexp'])\n"
+"             test['failed_unexp'] &&\n"
+"             resultWildsNumber(test['path'], field) > 0)\n"
 "            innerHTML += '<td><a href=\"javascript:showResultWilds' +\n"
 "                         '(\\'StatsTip\\',\\'' +\n"
 "                         test['path'] + '\\',\\'' + field + '\\')\">' +\n"
@@ -712,16 +738,27 @@ static const char * const trc_html_doc_start =
 "                     '<td><b>Not run</b></td></tr>';\n"
 "        var test_no;\n"
 "        var has_scripts = false;\n"
+"\n"
 "        for (test_no in test_list)\n"
 "        {\n"
 "            var test = test_stats[test_list[test_no]];\n"
+"            var links_num = document.getElementsByName(test['path']).\n"
+"                               length\n"
 "\n"
 "            if (test['type'] == 'script')\n"
 "                has_scripts = true;\n"
 "            innerHTML += '<tr>';\n"
-"            innerHTML += '<td><a href=\"#' +\n"
-"                         test['path'].replace('\\/', '%%2F') + '\">' + \n"
-"                         test['name'] + '</a></td>' +\n"
+"            innerHTML += '<td>';\n"
+"\n"
+"            if (links_num > 0)\n"
+"                innerHTML += '<a href=\"#' +\n"
+"                             test['path'].replace('\\/', '%%2F') +\n"
+"                             '\">';\n"
+"            innerHTML += test['name'];\n"
+"            if (links_num > 0)\n"
+"                innerHTML += '</a>';\n"
+"\n"
+"            innerHTML += '</td>' +\n"
 "                         '<td>' + test['total'] + '</td>' +\n"
 "                         testFieldHTML(test, 'passed_exp') +\n"
 "                         testFieldHTML(test, 'failed_exp') +\n"
@@ -741,14 +778,14 @@ static const char * const trc_html_doc_start =
 "    function filterStats(name,field)\n"
 "    {\n"
 "        var package = test_stats[name];\n"
-"        if (package === null)\n"
+"        if (package == null)\n"
 "        {\n"
 "            alert('Failed to get element ' + name);\n"
 "            return;\n"
 "        }\n"
 "\n"
 "        var test_list = package['subtests'];\n"
-"        if (test_list === null)\n"
+"        if (test_list == null)\n"
 "        {\n"
 "            alert('Failed to get subtests of ' + name);\n"
 "            return;\n"
@@ -770,6 +807,9 @@ static const char * const trc_html_doc_start =
 "                     '</b></td></tr>';\n"
 "        var test_no;\n"
 "        var has_scripts = false;\n"
+"        var link_text;\n"
+"        var field_links_num;\n"
+"        var links_num;\n"
 "\n"
 "        for (test_no in test_list)\n"
 "        {\n"
@@ -779,23 +819,42 @@ static const char * const trc_html_doc_start =
 "            if (test[field] <= 0)\n"
 "                continue;\n"
 "\n"
-"            innerHTML += '<tr>';\n"
-"            innerHTML += '<td><a href=\"#' +\n"
-"                         test['path'].replace('\\/', '%%2F');\n"
+"            link_text = test['path'];\n"
+"            links_num = document.getElementsByName(link_text).\n"
+"                            length\n"
 "            if (field != 'total' && test['type'] == 'script')\n"
-"                innerHTML += '_' + field;\n"
-"            innerHTML += '\">' + test['name'] + '</a></td>';\n"
+"                link_text += '_' + field;\n"
+"            field_links_num = document.getElementsByName(link_text).\n"
+"                                  length\n"
+"            innerHTML += '<tr>';\n"
+"            innerHTML += '<td>';\n"
+"            if (field_links_num > 0)\n"
+"                innerHTML += '<a href=\"#' +\n"
+"                             link_text.replace('\\/', '%%2F')+ '\">'\n"
+"            /*\n"
+"            else if (links_num > 0)\n"
+"                innerHTML += '<a href=\"#' +\n"
+"                             test['path'].replace('\\/', '%%2F')+ '\">'\n"
+"            */\n"
+"            innerHTML += test['name'];\n"
+"            /*\n"
+"            if (links_num > 0)\n"
+"            */\n"
+"            if (field_links_num > 0)\n"
+"                innerHTML += '</a>';\n"
+"            innerHTML += '</td>';\n"
 "            innerHTML += testFieldHTML(test, field);\n"
 "            innerHTML += '</tr>';\n"
 "        }\n"
+"\n"
 "        innerHTML += '</table>';\n"
 "        if ((field == 'passed_exp' || field == 'passed_unexp' || \n"
 "             field == 'failed_exp' || field == 'failed_unexp') &&\n"
 "            has_scripts)\n"
 "           innerHTML += voidResWarn;\n"
 "        innerHTML += '</div>';\n"
-"        return innerHTML;\n"
 "\n"
+"        return innerHTML;\n"
 "    }\n"
 "\n"
 "    function retPrevTip(obj_name)\n"
@@ -870,6 +929,35 @@ static const char * const trc_html_doc_start =
 "                     '<strong>' + count.toString() + '</strong>' +\n"
 "                     '</td></tr>';\n"
 "        return innerHTML;\n"
+"    }\n"
+"\n"
+"    function resultWildsNumber(name, field)\n"
+"    {\n"
+"        var results;\n"
+"        var res;\n"
+"\n"
+"        results = getTestIters(name);\n"
+"\n"
+"        switch(field)\n"
+"        {\n"
+"            case 'passed_exp':\n"
+"                res = getResultWilds(results, isExpPassed);\n"
+"                break;\n"
+"            case 'failed_exp':\n"
+"                res = getResultWilds(results, isExpFailed);\n"
+"                break;\n"
+"            case 'passed_unexp':\n"
+"                res = getResultWilds(results, isUnExpPassed);\n"
+"                break;\n"
+"            case 'failed_unexp':\n"
+"                res = getResultWilds(results, isUnExpFailed);\n"
+"                break;\n"
+"            default:\n"
+"                return 0;\n"
+"        }\n"
+"\n"
+"        return res.length == 1 ? (res[0].par_idx.length > 0 ? 1 : 0) :\n"
+"                                  res.length;\n"
 "    }\n"
 "\n"
 "    function resultWildsHTML(obj_name, name, field)\n"
@@ -1038,6 +1126,7 @@ static const char * const trc_html_doc_start =
 "    function showStats(obj_name,name,field)\n"
 "    {\n"
 "        var obj = document.getElementById(obj_name);\n"
+"        var innerHTML;\n"
 "        document.prev_tip = '';\n"
 "\n"
 "        if (typeof obj == 'undefined')\n"
@@ -1045,13 +1134,13 @@ static const char * const trc_html_doc_start =
 "\n"
 "        if (field)\n"
 "        {\n"
-"            obj.innerHTML = filterStats(name,field);\n"
+"            innerHTML = filterStats(name,field);\n"
 "        }\n"
 "        else\n"
 "        {\n"
-"            obj.innerHTML = fillStats(name);\n"
+"            innerHTML = fillStats(name);\n"
 "        }\n"
-"        //alert(obj.innerHTML);\n"
+"        obj.innerHTML = innerHTML;\n"
 "        centerStats(obj);\n"
 "        obj.style.visibility = \"visible\";\n"
 "    }\n"
@@ -1483,10 +1572,10 @@ static const char * const trc_test_exp_got_row_mid =
 " </td>\n<td valign=top %s>\n";
 
 static const char * const trc_test_exp_got_row_mid_pass_unexp =
-" </td>\n<td class=\"test_stats_passed_unexp\" valign=top %s>\n";
+" </td>\n<td %s valign=top %s>\n";
 
 static const char * const trc_test_exp_got_row_mid_fail_unexp =
-" </td>\n<td class=\"test_stats_failed_unexp\" valign=top %s>\n";
+" </td>\n<td %s valign=top %s>\n";
 
 static const char * const trc_test_exp_got_row_end =
 "</td>\n"
@@ -2535,9 +2624,17 @@ trc_report_exp_got_to_html(FILE             *f,
             if (iter_entry == NULL || iter_entry->is_exp)
                 WRITE_FILE(trc_test_exp_got_row_mid, id_tin_id);
             else if (iter_entry->result.status == TE_TEST_PASSED)
-                WRITE_FILE(trc_test_exp_got_row_mid_pass_unexp, id_tin_id);
+                WRITE_FILE(trc_test_exp_got_row_mid_pass_unexp,
+                           !(flags & TRC_REPORT_NO_EXPECTED) ?
+                           "class=\"test_stats_passed_unexp\"" :
+                           "class=\"unexp_no_highligth\"",
+                           id_tin_id);
             else
-                WRITE_FILE(trc_test_exp_got_row_mid_fail_unexp, id_tin_id);
+                WRITE_FILE(trc_test_exp_got_row_mid_fail_unexp,
+                           !(flags & TRC_REPORT_NO_EXPECTED) ?
+                           "class=\"test_stats_failed_unexp\"" :
+                           "class=\"unexp_no_highlight\"",
+                           id_tin_id);
 
 #if TRC_USE_STATS_POPUP
             rc = trc_report_result_anchor(f, test_path, iter_entry,
@@ -2697,6 +2794,7 @@ trc_report_test_stats_to_html(FILE             *f,
     const trc_report_test_data *test_data;
     const trc_report_stats     *stats;
     char                       *escaped_path;
+    te_bool                     package_output;
 
     escaped_path = escape_test_path(test_path);
     if (escaped_path == NULL && test_path != NULL)
@@ -2710,6 +2808,8 @@ trc_report_test_stats_to_html(FILE             *f,
     test_data = trc_db_walker_get_user_data(walker, ctx->db_uid);
     assert(test_data != NULL);
     stats = &test_data->stats;
+    package_output = trc_report_test_output(stats,
+                        (flags & ~TRC_REPORT_NO_SCRIPTS));
 
     if (((test->type == TRC_TEST_PACKAGE) &&
          (flags & TRC_REPORT_NO_SCRIPTS)) ||
@@ -2723,17 +2823,17 @@ trc_report_test_stats_to_html(FILE             *f,
 
         /* test_iters_check_output_and_get_keys(test, flags); */
 
-        name_link = ((flags & TRC_REPORT_NO_SCRIPTS) ||
+        name_link = (((flags & TRC_REPORT_NO_SCRIPTS) && package_output) ||
                      ((~flags & TRC_REPORT_NO_SCRIPTS) &&
                      (test->type == TRC_TEST_SCRIPT)));
 
 #if TRC_USE_STATS_POPUP
 #define TRC_TEST_COND(field_) \
-    (test->type == TRC_TEST_PACKAGE ||          \
-    (test->type == TRC_TEST_SCRIPT &&           \
-     (strcmp(field_, "passed_exp") == 0 ||      \
-      strcmp(field_, "failed_exp") == 0 ||      \
-      strcmp(field_, "passed_unexp") == 0 ||    \
+    ((test->type == TRC_TEST_PACKAGE && package_output) ||  \
+    (test->type == TRC_TEST_SCRIPT &&                       \
+     (strcmp(field_, "passed_exp") == 0 ||                  \
+      strcmp(field_, "failed_exp") == 0 ||                  \
+      strcmp(field_, "passed_unexp") == 0 ||                \
       strcmp(field_, "failed_unexp") == 0))) 
 
 #define TRC_STATS_FIELD_POPUP(field_, value_, expr_) \
@@ -2755,6 +2855,21 @@ trc_report_test_stats_to_html(FILE             *f,
 #define TRC_STATS_FIELD_POPUP(field_,value_,expr_) (field_), (value_)
 #endif
 
+#define ZERO_PASS_EXP \
+    (stats->pass_exp == 0 || \
+     (flags & TRC_REPORT_NO_EXP_PASSED) || \
+     (flags & TRC_REPORT_NO_EXPECTED))
+
+#define ZERO_FAIL_EXP \
+    (stats->fail_exp == 0 || \
+     (flags & TRC_REPORT_NO_EXPECTED))
+
+#define FAIL_PASS_COUNT \
+     (ZERO_PASS_EXP ? 0 : stats->pass_exp) + \
+     (ZERO_FAIL_EXP ? 0 : stats->fail_exp) + \
+     stats->pass_une + stats->fail_une
+    
+
         fprintf(f, trc_tests_stats_row,
                 PRINT_STR(level_str),
                 name_link ? "href" : "name",
@@ -2765,7 +2880,7 @@ trc_report_test_stats_to_html(FILE             *f,
 #if TRC_USE_STATS_POPUP
                 PRINT_STR3((test->type == TRC_TEST_PACKAGE) &&
                            (flags & TRC_REPORT_NO_SCRIPTS) &&
-                           (TRC_STATS_RUN(stats) > 0),
+                           (TRC_STATS_RUN(stats) > 0) && package_output,
                            TRC_STATS_SHOW_HREF_START,
                            escaped_path,
                            TRC_STATS_SHOW_HREF_CLOSE
@@ -2777,29 +2892,28 @@ trc_report_test_stats_to_html(FILE             *f,
                 test_path != NULL ? "\">": "",
                 PRINT_STR(test->objective),
                 test_path != NULL ? "</a>": "",
-                TRC_STATS_FIELD_POPUP("total", TRC_STATS_RUN(stats), TRUE),
+                TRC_STATS_FIELD_POPUP("total", TRC_STATS_RUN(stats),
+                                      package_output),
                 TRC_STATS_FIELD_POPUP("passed_exp", stats->pass_exp,
                                       !(test->type == TRC_TEST_SCRIPT &&
-                                        stats->fail_exp == 0 &&
-                                        stats->pass_une == 0 &&
-                                        stats->fail_une == 0)),
+                                        stats->pass_exp ==
+                                            FAIL_PASS_COUNT) &&
+                                      !ZERO_PASS_EXP),
                 TRC_STATS_FIELD_POPUP("failed_exp", stats->fail_exp, 
                                       !(test->type == TRC_TEST_SCRIPT &&
-                                        stats->pass_exp == 0 &&
-                                        stats->pass_une == 0 &&
-                                        stats->fail_une == 0)),
+                                        stats->fail_exp ==
+                                            FAIL_PASS_COUNT) &&
+                                      !ZERO_FAIL_EXP),
                 TRC_STATS_FIELD_POPUP("passed_unexp",
                                       stats->pass_une,
                                       !(test->type == TRC_TEST_SCRIPT &&
-                                        stats->fail_exp == 0 &&
-                                        stats->pass_exp == 0 &&
-                                        stats->fail_une == 0)),
+                                        stats->pass_une ==
+                                            FAIL_PASS_COUNT)),
                 TRC_STATS_FIELD_POPUP("failed_unexp",
                                       stats->fail_une,
                                       !(test->type == TRC_TEST_SCRIPT &&
-                                        stats->fail_exp == 0 &&
-                                        stats->pass_une == 0 &&
-                                        stats->pass_exp == 0)),
+                                        stats->fail_une ==
+                                            FAIL_PASS_COUNT)),
                 TRC_STATS_FIELD_POPUP("aborted_new",
                                       stats->aborted +
                                       stats->new_run, TRUE),
@@ -2809,6 +2923,9 @@ trc_report_test_stats_to_html(FILE             *f,
                 PRINT_STR(keys), PRINT_STR(test->notes));
 #undef TRC_STATS_FIELD_POPUP
 #undef TRC_TEST_COND
+#undef ZERO_PASS_EXP
+#undef ZERO_FAIL_EXP
+#undef FAIL_PASS_COUNT
     }
 
     return 0;
