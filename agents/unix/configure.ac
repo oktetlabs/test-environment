@@ -334,7 +334,7 @@ dnl
     AC_CHECK_HEADERS([iwlib.h], [],
                      AC_MSG_ERROR([Cannot find iwlib.h header]))
     AC_CHECK_LIB([iw], [iw_sockets_open], [EXTRA_LDADD="$EXTRA_LDADD -liw"],
-                 AC_MSG_ERROR([Cannot find iw library]))
+                 AC_MSG_ERROR([Cannot find iw library]), [-lm])
 
     AC_DEFINE([ENABLE_WIFI_SUPPORT], [], [Whether to enable WiFi support])
     LIBS="$LIBS -lm"
