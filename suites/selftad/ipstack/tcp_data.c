@@ -75,6 +75,7 @@ main(int argc, char *argv[])
     csap_handle_t acc_csap = CSAP_INVALID_HANDLE;
 
     rcf_rpc_server *sock_pco = NULL;
+    rcf_rpc_server *pco_a = NULL;
 
     int    socket = -1;
     int    acc_sock;
@@ -88,8 +89,9 @@ main(int argc, char *argv[])
 
     TEST_GET_HOST(host_csap);
     TEST_GET_PCO(sock_pco);
-    TEST_GET_ADDR(sock_addr);
-    TEST_GET_ADDR(csap_addr);
+    TEST_GET_PCO(pco_a);
+    TEST_GET_ADDR(sock_pco, sock_addr);
+    TEST_GET_ADDR(pco_a, csap_addr);
 
 
     if ((socket = rpc_socket(sock_pco, RPC_AF_INET, RPC_SOCK_STREAM, 

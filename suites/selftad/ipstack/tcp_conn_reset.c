@@ -77,6 +77,7 @@ main(int argc, char *argv[])
     asn_value *tcp_template;
 
     rcf_rpc_server *sock_pco = NULL;
+    rcf_rpc_server *pco_a = NULL;
 
     char  ta[32];
     char *agt_a = ta;
@@ -101,8 +102,8 @@ main(int argc, char *argv[])
     TEST_GET_PCO(sock_pco);
     TEST_GET_IF(sock_if);
     TEST_GET_IF(csap_if);
-    TEST_GET_ADDR(sock_addr);
-    TEST_GET_ADDR(csap_addr);
+    TEST_GET_ADDR(sock_pco, sock_addr);
+    TEST_GET_ADDR(pco_a, csap_addr);
 
     CHECK_RC(tapi_cfg_get_hwaddr(sock_pco->ta, sock_if->if_name, 
                                  sock_mac, &sock_mac_len));

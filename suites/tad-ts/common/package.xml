@@ -29,7 +29,7 @@
 
         <run>
             <script name="poll_one"/>
-            <arg name="env" value="{'iut_host'{if:'iut_if'}}"/>
+            <arg name="env" value="{'iut_host'{{'pco_iut':IUT},if:'iut_if'}}"/>
             <arg name="zero_timeout" type="boolean"/>
         </run>
 

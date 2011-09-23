@@ -230,8 +230,8 @@ main(int argc, char *argv[])
 
     TEST_GET_PCO(pco_iut);
     TEST_GET_PCO(pco_tst);
-    TEST_GET_ADDR(iut_addr);
-    TEST_GET_ADDR(tst_addr);
+    TEST_GET_ADDR(pco_iut, iut_addr);
+    TEST_GET_ADDR(pco_tst, tst_addr);
 
     for (i = 0; i < CLIENTS_NUM; i++)
     {

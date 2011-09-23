@@ -81,8 +81,8 @@ main(int argc, char *argv[])
 
     TEST_GET_PCO(pco_iut);
     TEST_GET_PCO(pco_tst);
-    TEST_GET_ADDR(iut_addr4);
-    TEST_GET_ADDR(iut_addr6);
+    TEST_GET_ADDR(pco_iut, iut_addr4);
+    TEST_GET_ADDR(pco_iut, iut_addr6);
 
     port1 = SIN(iut_addr4)->sin_port;
     port2 = SIN6(iut_addr6)->sin6_port;

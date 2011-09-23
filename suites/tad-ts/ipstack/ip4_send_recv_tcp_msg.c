@@ -110,8 +110,8 @@ main(int argc, char *argv[])
     TEST_START;
     TEST_GET_PCO(iut_pco);
     TEST_GET_PCO(tst_pco);
-    TEST_GET_ADDR(iut_addr);
-    TEST_GET_ADDR(tst_addr);
+    TEST_GET_ADDR(iut_pco, iut_addr);
+    TEST_GET_ADDR(tst_pco, tst_addr);
     TEST_GET_LINK_ADDR(iut_mac);
     TEST_GET_LINK_ADDR(tst_mac);
     TEST_GET_IF(iut_if);

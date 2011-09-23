@@ -100,6 +100,7 @@ main(int argc, char *argv[])
     const uint16_t              ip_eth = ETHERTYPE_IP;
     tapi_env_host              *host_csap = NULL;
     rcf_rpc_server             *pco = NULL;
+    rcf_rpc_server             *pco_a = NULL;
     const struct sockaddr      *csap_addr;
     const struct sockaddr      *sock_addr;
     const struct sockaddr      *csap_hwaddr;
@@ -127,10 +128,11 @@ main(int argc, char *argv[])
 
     TEST_GET_HOST(host_csap);
     TEST_GET_PCO(pco);
-    TEST_GET_ADDR(csap_addr);
-    TEST_GET_ADDR(sock_addr);
-    TEST_GET_ADDR(csap_hwaddr);
-    TEST_GET_ADDR(sock_hwaddr);
+    TEST_GET_PCO(pco_a);
+    TEST_GET_ADDR(pco_a, csap_addr);
+    TEST_GET_ADDR(pco, sock_addr);
+    TEST_GET_LINK_ADDR(csap_hwaddr);
+    TEST_GET_LINK_ADDR(sock_hwaddr);
     TEST_GET_IF(csap_if);
     TEST_GET_INT_PARAM(type);
     TEST_GET_INT_PARAM(code);

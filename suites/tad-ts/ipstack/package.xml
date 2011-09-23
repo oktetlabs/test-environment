@@ -14,7 +14,7 @@
         <req id="TAD_IP4"/>
       </script>
       <arg name="env">
-        <value>{'host_csap'{addr:'csap_addr':inet:unicast,addr:'csap_hwaddr':ether:unicast,if:'csap_if'},{{'pco':tester},addr:'sock_addr':inet:unicast,addr:'sock_hwaddr':ether:unicast,if:'sock_if'}}</value>
+        <value>{'host_csap'{{'pco_a':tester},addr:'csap_addr':inet:unicast,addr:'csap_hwaddr':ether:unicast,if:'csap_if'},{{'pco':tester},addr:'sock_addr':inet:unicast,addr:'sock_hwaddr':ether:unicast,if:'sock_if'}}</value>
       </arg>
       <arg name="pld_len">
         <value>50</value>
@@ -37,7 +37,7 @@
             <req id="TAD_IP4"/>
           </script>
           <arg name="env">
-            <value>{'host_csap'{addr:'csap_addr':inet:unicast,addr:'csap_hwaddr':ether:unicast,if:'csap_if'},{{'pco':tester},addr:'sock_addr':inet:unicast,addr:'sock_hwaddr':ether:unicast,if:'sock_if'}}</value>
+            <value>{'host_csap'{{'pco_a':tester},addr:'csap_addr':inet:unicast,addr:'csap_hwaddr':ether:unicast,if:'csap_if'},{{'pco':tester},addr:'sock_addr':inet:unicast,addr:'sock_hwaddr':ether:unicast,if:'sock_if'}}</value>
           </arg>  
           <arg name="type">
             <value>3</value>
@@ -157,7 +157,7 @@
         <req id="TAD_IP4"/>
       </script>
       <arg name="env">
-        <value>{'host_csap'{addr:'csap_addr':inet:unicast,addr:'csap_hwaddr':ether:unicast,if:'csap_if'},{{'pco':tester},addr:'sock_addr':inet:unicast,addr:'sock_hwaddr':ether:unicast,if:'sock_if'}}</value>
+        <value>{'host_csap'{{'pco_a':tester},addr:'csap_addr':inet:unicast,addr:'csap_hwaddr':ether:unicast,if:'csap_if'},{{'pco':tester},addr:'sock_addr':inet:unicast,addr:'sock_hwaddr':ether:unicast,if:'sock_if'}}</value>
       </arg>  
       <arg name="pld_len">
         <value>50</value>
@@ -175,7 +175,7 @@
             <req id="TAD_IP4"/>
           </script>
           <arg name="env">
-            <value>{'host_csap'{addr:'csap_addr':inet:unicast,addr:'csap_hwaddr':ether:unicast,if:'csap_if'},{{'pco':tester},addr:'sock_addr':inet:unicast,addr:'sock_hwaddr':ether:unicast,if:'sock_if'}}</value>
+              <value>{'host_csap'{{'pco_a':tester}, addr:'csap_addr':inet:unicast,addr:'csap_hwaddr':ether:unicast,if:'csap_if'},{{'pco':tester},addr:'sock_addr':inet:unicast,addr:'sock_hwaddr':ether:unicast,if:'sock_if'}}</value>
           </arg>  
           <arg name="type" list="">
             <value>3</value>

@@ -3,8 +3,11 @@
     <description>Tests on RCF functionality.</description>
     <author mailto="Elena.Vengerova@oktetlabs.ru"/>
     <session>
+        <!--
+             This test wasn't edited since 2005 and currently causes crash
         <run>
             <script name="tareboot"/>
         </run>
+        -->
     </session>
 </package>

@@ -89,6 +89,7 @@ main(int argc, char *argv[])
     csap_handle_t ip4_send_csap = CSAP_INVALID_HANDLE;
 
     rcf_rpc_server *pco = NULL;
+    rcf_rpc_server *pco_a = NULL;
 
     asn_value *template = NULL; /* template for traffic generation */ 
     asn_value *ip4_pdu = NULL;
@@ -116,10 +117,11 @@ main(int argc, char *argv[])
     TEST_START; 
     TEST_GET_HOST(host_csap);
     TEST_GET_PCO(pco);
+    TEST_GET_PCO(pco_a);
     TEST_GET_IF(pco_if);
     TEST_GET_IF(csap_if);
-    TEST_GET_ADDR(pco_addr);
-    TEST_GET_ADDR(csap_addr);
+    TEST_GET_ADDR(pco, pco_addr);
+    TEST_GET_ADDR(pco_a, csap_addr);
 
     agt_a = host_csap->ta;
 

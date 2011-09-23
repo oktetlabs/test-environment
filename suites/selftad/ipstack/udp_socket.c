@@ -70,6 +70,7 @@ main(int argc, char *argv[])
     csap_handle_t csap = CSAP_INVALID_HANDLE;
 
     rcf_rpc_server *sock_pco = NULL;
+    rcf_rpc_server *pco_a = NULL;
 
     int    socket = -1;
     size_t len;
@@ -82,20 +83,18 @@ main(int argc, char *argv[])
 
     TEST_GET_HOST(host_csap);
     TEST_GET_PCO(sock_pco);
-    TEST_GET_ADDR(sock_addr);
-    TEST_GET_ADDR(csap_addr);
-
+    TEST_GET_PCO(pco_a);
+    TEST_GET_ADDR(sock_pco, sock_addr);
+    TEST_GET_ADDR(pco_a, csap_addr);
 
     if ((socket = rpc_socket(sock_pco, RPC_AF_INET, RPC_SOCK_DGRAM, 
                                   RPC_IPPROTO_UDP)) < 0 ||
         sock_pco->_errno != 0)
         TEST_FAIL("Calling of RPC socket() failed %r", sock_pco->_errno);
 
-
     rc = rpc_bind(sock_pco, socket, sock_addr);
     if (rc != 0)
         TEST_FAIL("bind failed");
-
 
     rc = tapi_udp_csap_create(host_csap->ta, 0, csap_addr, sock_addr,
                               &csap);

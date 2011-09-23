@@ -9,7 +9,7 @@
 
     <session>
         <arg name="env">
-            <value>{'iut_host'{addr:'iut_addr':inet:unicast},{{'pco_tst':tester},addr:'tst_addr':inet:unicast}}</value>
+            <value>{'iut_host'{{'pco_iut':IUT},addr:'iut_addr':inet:unicast},{{'pco_tst':tester},addr:'tst_addr':inet:unicast}}</value>
         </arg>
 
         <run>

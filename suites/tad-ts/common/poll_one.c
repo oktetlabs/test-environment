@@ -62,6 +62,7 @@ int
 main(int argc, char *argv[])
 {
     tapi_env_host      *iut_host = NULL;
+    rcf_rpc_server     *pco_iut = NULL;
     te_bool             zero_timeout;
     uint16_t            port;
     csap_handle_t       tcp_srv_csap = CSAP_INVALID_HANDLE;
@@ -70,11 +71,12 @@ main(int argc, char *argv[])
 
     TEST_START;
     TEST_GET_HOST(iut_host);
+    TEST_GET_PCO(pco_iut);
     TEST_GET_BOOL_PARAM(zero_timeout);
 
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
-    CHECK_RC(tapi_allocate_port_htons(&addr.sin_port));
+    CHECK_RC(tapi_allocate_port_htons(pco_iut, &addr.sin_port));
     CHECK_RC(tapi_tcp_server_csap_create(iut_host->ta, 0, &addr,
                                          &tcp_srv_csap));
 

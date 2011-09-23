@@ -93,6 +93,7 @@ main(int argc, char *argv[])
 {
     tapi_env_host          *iut_host = NULL;
     rcf_rpc_server         *pco_tst = NULL;
+    rcf_rpc_server         *pco_iut = NULL;
 
     const struct sockaddr  *iut_addr = NULL;
 
@@ -119,7 +120,8 @@ main(int argc, char *argv[])
 
     TEST_GET_HOST(iut_host);
     TEST_GET_PCO(pco_tst);
-    TEST_GET_ADDR(iut_addr);
+    TEST_GET_PCO(pco_iut);
+    TEST_GET_ADDR(pco_iut, iut_addr);
     TEST_GET_INT_PARAM(vpi);
     TEST_GET_INT_PARAM(vci);
     TEST_GET_BOOL_PARAM(congestion);

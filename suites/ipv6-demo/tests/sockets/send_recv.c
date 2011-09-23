@@ -52,8 +52,8 @@ int main(int argc, char *argv[])
 
     TEST_GET_PCO(pco_iut);
     TEST_GET_PCO(pco_tst);
-    TEST_GET_ADDR(iut_addr);
-    TEST_GET_ADDR(tst_addr);
+    TEST_GET_ADDR(pco_iut, iut_addr);
+    TEST_GET_ADDR(pco_tst, tst_addr);
 
     /* Prepare read/write buffer for data exchange */
     wr_buf = te_make_buf(20, 100, &buf_len);
