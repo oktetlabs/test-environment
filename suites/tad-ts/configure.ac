@@ -22,7 +22,7 @@ if test "$NET_SNMP_CONFIG" = "no" ; then
     AC_MSG_ERROR([net-snmp-config is required but not found])
 else
     NET_SNMP_CFLAGS=`$NET_SNMP_CONFIG --cflags`
-    NET_SNMP_LIBS=`$NET_SNMP_CONFIG --libs`
+    NET_SNMP_LIBS="`$NET_SNMP_CONFIG --libs` -lcrypto"
 fi
 
 TS_CPPFLAGS="${TE_CPPFLAGS}"
