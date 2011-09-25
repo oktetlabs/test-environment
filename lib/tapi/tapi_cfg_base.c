@@ -515,7 +515,7 @@ tapi_cfg_save_del_if_ip4_addresses(const char *ta,
     unsigned int                i;
     unsigned int                j;
     unsigned int                prefix;
-    char                       *addr_str;
+    char                       *addr_str = NULL;
     struct sockaddr_storage     addr;
     te_errno                    rc = 0;
 
@@ -567,6 +567,9 @@ tapi_cfg_save_del_if_ip4_addresses(const char *ta,
 
     for (i = 0, j = 0; i < addr_num; i++)
     {
+        free(addr_str);
+        addr_str = NULL;
+
         if ((rc = cfg_get_inst_name(addrs[i], &addr_str)) != 0)
         {
             ERROR("Failed to get instance name: %r", rc);
@@ -577,10 +580,9 @@ tapi_cfg_save_del_if_ip4_addresses(const char *ta,
         {
             ERROR("Failed to convert address from string '%s': %r",
                   addr_str, rc);
-            free(addr_str);
             break;
         }
-        free(addr_str);
+
         if (addr.ss_family != AF_INET)
         {
             continue;
@@ -638,6 +640,7 @@ tapi_cfg_save_del_if_ip4_addresses(const char *ta,
     }
 
     free(addrs);
+    free(addr_str);
 
     if (saved_count != NULL)
         *saved_count = j;
