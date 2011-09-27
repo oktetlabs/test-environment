@@ -296,7 +296,9 @@ typedef enum {
                             RPC to be sent on CPE, from EPC.          */
     CWMP_SEND_FILE = 64,/**< HTTP connection, sending reponse to GET,
                              received for particular ACS. */
-    CWMP_CLOSE = 128,  /**< Session should be closed. */
+    CWMP_CLOSE = 128,   /**< Session should be closed. */
+    CWMP_SUSPENDED = 256,/**<CWMP session established, but TCP connection 
+                             was terminated, waiting for new one. */
 } cwmp_sess_state_t;
 
 /**< Typed pointer to call-specific CWMP data from ACS to CPE. */
@@ -359,6 +361,11 @@ typedef enum {
     CWMP_NOTIF_PASSIVE = 1,
     CWMP_NOTIF_ACTIVE = 2
 } cwmp_notification_t;
+
+/** Default timeout for CWMP in seconds */
+enum {
+    CWMP_TIMEOUT = 30,
+};
 
 /**
  * Convert internal value of CWMP CPE RPC type to string, for printing.
