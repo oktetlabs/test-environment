@@ -62,11 +62,13 @@ typedef struct conn_req_t {
  *
  * @param data      Channel-specific private data.
  * @param pfd       Poll file descriptor struct (OUT)
+ * @param deadline  Timestamp until wait, keep untouched if not need (OUT)
  *
  * @return status code.
  */
 te_errno
-conn_req_before_poll(void *data, struct pollfd *pfd)
+conn_req_before_poll(void *data, struct pollfd *pfd,
+                     struct timeval *deadline)
 {
     conn_req_t *conn_req = data;
 
@@ -94,6 +96,12 @@ conn_req_after_poll(void *data, struct pollfd *pfd)
     conn_req_t *conn_req = data;
     struct soap *soap;
     struct http_da_info info;
+
+    if (pfd == NULL)
+    {
+        WARN("%s(): pfd is NULL, timeout should not occure!", __FUNCTION__);
+        return 0;
+    }
 
     if (!(pfd->revents & POLLIN))
         return 0;

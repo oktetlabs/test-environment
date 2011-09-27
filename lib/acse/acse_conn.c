@@ -74,13 +74,15 @@ static LIST_HEAD(conn_list_t, conn_data_t)
  *
  * @param data      Channel-specific private data.
  * @param pfd       Poll file descriptor struct (OUT)
+ * @param deadline  Timestamp until wait, keep untouched if not need (OUT)
  *
  * @return status code.
  */
 te_errno
-conn_before_poll(void *data, struct pollfd *pfd)
+conn_before_poll(void *data, struct pollfd *pfd, struct timeval *deadline)
 {
     conn_data_t *conn = data;
+    UNUSED(deadline);
 
     pfd->fd = conn->socket;
     pfd->events = POLLIN;
@@ -109,6 +111,11 @@ conn_after_poll(void *data, struct pollfd *pfd)
     int sock_acc;
     int i;
 
+    if (pfd == NULL)
+    {
+        WARN("%s(): pfd is NULL, timeout should not occure!", __FUNCTION__);
+        return 0;
+    }
     if (!(pfd->revents & POLLIN))
         return 0;
 

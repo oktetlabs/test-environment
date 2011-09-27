@@ -130,6 +130,10 @@ acse_exit_handler(void)
 void
 acse_loop(void)
 {
+    struct timeval gen_deadline = {0, 0};
+    struct timeval ch_deadline;
+    int timeout; /* timeout for poll(), in milliseconds */
+
     atexit(acse_exit_handler);
     /* EPC pipe should be already established */
 
@@ -141,27 +145,57 @@ acse_loop(void)
         te_errno    rc;
         struct pollfd *pfd =
                 calloc(channel_number, sizeof(struct pollfd));
-        channel_t **ch_queue = NULL;
+        channel_t **ch_queue = NULL; 
+        channel_t  *ch_nearest_dl = NULL;
 
         i = 0;
         LIST_FOREACH(item, &channel_list, links)
         {
-            if ((*item->before_poll)(item->data, pfd + i) != 0)
-            {
-                /* TODO something? */
-                break;
-            }
             if (i >= channel_number)
             {
                 ERROR("acse_loop, i=%d >= channel number %d",
                       i, channel_number);
+                fprintf(stderr, "acse_loop, i=%d >= channel number %d\n",
+                      i, channel_number);
                 break;
             }
+
+            ch_deadline.tv_sec = -1;
+            rc = (*item->before_poll)(item->data, pfd + i, &ch_deadline);
+
+            if (rc != 0)
+            {
+                WARN("before_poll cb return %r", rc);
+                break;
+            }
+            if (ch_deadline.tv_sec > 0 && 
+                (ch_deadline.tv_sec > gen_deadline.tv_sec ||
+                 (ch_deadline.tv_sec == gen_deadline.tv_sec &&
+                  ch_deadline.tv_usec > gen_deadline.tv_usec  ) ))
+            {
+                gen_deadline = ch_deadline;
+                ch_nearest_dl = item;
+            }
+
             i++;
         }
         VERB("acse_loop, channel number %d", channel_number);
 
-        r_poll = poll(pfd, channel_number, -1);
+        if (ch_nearest_dl != NULL)
+        {
+            struct timeval now; 
+            gettimeofday(&now, NULL);
+            timeout = (gen_deadline.tv_sec - now.tv_sec) * 1000 + 
+                      (gen_deadline.tv_usec - now.tv_usec) / 1000;
+            RING("before poll, calculated timeout %d", timeout);
+            if (timeout < 0)
+                timeout = 0; /* not wait ! */
+        }
+        else
+            timeout = -1;
+
+
+        r_poll = poll(pfd, channel_number, timeout);
 
         if (r_poll == -1)
         {
@@ -169,7 +203,6 @@ acse_loop(void)
             /* TODO something? */
             break;
         }
-        ch_queue = calloc(r_poll, sizeof(channel_t *));
         VERB("acse_loop, poll return %d", r_poll);
 
 #if 0
@@ -179,9 +212,27 @@ acse_loop(void)
                                         links);
         channel_t *tmp;
 #endif
+        if (r_poll == 0 && ch_nearest_dl != NULL) /* timeout occured */
+        {
+            rc = (*ch_nearest_dl->after_poll)(ch_nearest_dl->data, NULL);
+
+            if (rc != 0)
+            {
+                if (TE_RC_GET_ERROR(rc) != TE_ENOTCONN)
+                    WARN("acse_loop, error on channel, rc %r", rc);
+                acse_remove_channel(ch_nearest_dl);
+                ch_nearest_dl = NULL;
+            }
+            free(pfd);
+
+            continue; /* for main loop, to next poll() */
+        }
 
         i = 0; ch_i = 0;
-        /* Now array pfd and channel list are yet synchronous. */
+        ch_queue = calloc(r_poll, sizeof(channel_t *));
+
+        /* Now array pfd and channel list are yet synchronous, so remember
+            channels with events and copy pfd to channel runtime info. */
         LIST_FOREACH(item, &channel_list, links)
         {
             VERB("acse_loop, prepare channel N %d, sock %d", i, pfd[i].fd);

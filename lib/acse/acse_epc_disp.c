@@ -1151,13 +1151,16 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
  *
  * @param data      Channel-specific private data.
  * @param pfd       Poll file descriptor struct (OUT)
+ * @param deadline  Timestamp until wait, keep untouched if not need (OUT)
  *
  * @return status code.
  */
 static te_errno
-epc_cfg_before_poll(void *data, struct pollfd *pfd)
+epc_cfg_before_poll(void *data, struct pollfd *pfd,
+                    struct timeval *deadline)
 {
     UNUSED(data);
+    UNUSED(deadline);
     if (epc_listen_socket > 0)
         pfd->fd = epc_listen_socket;
     else
@@ -1190,6 +1193,12 @@ epc_cfg_after_poll(void *data, struct pollfd *pfd)
     te_errno       rc, status; 
 
     UNUSED(data);
+
+    if (pfd == NULL)
+    {
+        WARN("%s(): pfd is NULL, timeout should not occure!", __FUNCTION__);
+        return 0;
+    }
 
     if (!(pfd->revents & POLLIN))
         return 0;
@@ -1250,13 +1259,16 @@ epc_cfg_destroy(void *data)
  *
  * @param data      Channel-specific private data.
  * @param pfd       Poll file descriptor struct (OUT)
+ * @param deadline  Timestamp until wait, keep untouched if not need (OUT)
  *
  * @return status code.
  */
 static te_errno
-epc_cwmp_before_poll(void *data, struct pollfd *pfd)
+epc_cwmp_before_poll(void *data, struct pollfd *pfd,
+                     struct timeval *deadline)
 {
     UNUSED(data);
+    UNUSED(deadline);
     pfd->fd = epc_disp_site->fd_in;
     VERB("EPC before poll, fd %d", pfd->fd);
 
@@ -1287,6 +1299,11 @@ epc_cwmp_after_poll(void *data, struct pollfd *pfd)
 
     UNUSED(data);
 
+    if (pfd == NULL)
+    {
+        WARN("%s(): pfd is NULL, timeout should not occure!", __FUNCTION__);
+        return 0;
+    }
     if (!(pfd->revents & POLLIN))
         return 0;
 

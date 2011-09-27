@@ -36,6 +36,7 @@
 #endif
 
 #include <sys/stat.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 #include <stddef.h>
@@ -43,13 +44,20 @@
 #include <assert.h>
 #include <poll.h>
 
+/* For timer_create(), etc. */
+#include <signal.h>
+#include <time.h>
+
+/* ACSE headers */ 
 #include "acse_internal.h"
 #include "httpda.h"
 
+/* TE headers */ 
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_queue.h"
 #include "te_defs.h"
+#include "te_sockaddr.h"
 #include "logger_api.h"
 
 #include "acse_soapH.h"
@@ -83,6 +91,8 @@ const char *authrealm = "tr-069";
 static char send_log_buf[LOG_XML_BUF];
 static char recv_log_buf[LOG_XML_BUF];
 
+static int susp_dummy_pipe[2] = {-1, -1};
+
 /**
  * Force stop CWMP session ignoring its current state and 
  * protocol semantic, really just close TPC connection and 
@@ -108,7 +118,7 @@ acse_send_file_portion(cwmp_session_t *session)
 {
     struct soap *soap;
     size_t read;
-    static int8_t tmpbuf[SEND_FILE_BUF];
+    static char tmpbuf[SEND_FILE_BUF];
     FILE *fd;
 
     assert(session->state == CWMP_SEND_FILE);
@@ -440,6 +450,50 @@ acse_cwmp_auth(struct soap *soap, cwmp_session_t *session, cpe_t **cpe)
 }
 
 
+int
+acse_check_auth(struct soap *soap, cpe_t *cpe)
+{ 
+    if (cpe->acs->auth_mode == ACSE_AUTH_DIGEST && 
+        (soap->userid == NULL || strlen(soap->userid) == 0) )
+    {
+
+        if (soap->authrealm)
+            soap_dealloc(soap, soap->authrealm);
+
+        soap->authrealm = soap_strdup(soap, authrealm);
+        soap->keep_alive = 1; 
+        soap->error = SOAP_OK;
+        soap_serializeheader(soap);
+        acse_cwmp_send_http(soap, NULL, 401, NULL);
+        soap->keep_alive = 1; 
+        soap->error = SOAP_OK;
+        return FALSE;
+    }
+
+    if (strcmp(cpe->acs_auth.login, soap->userid) != 0)
+    {
+        RING("Auth failed for CPE %s, incoming login '%s'", 
+             cpe->name, soap->userid);
+        return FALSE;
+    }
+    if (cpe->acs->auth_mode == ACSE_AUTH_DIGEST)
+    {
+        if (http_da_verify_post(soap, cpe->acs_auth.passwd))
+        {
+            RING("Digest Auth failed: verify not pass");
+            return FALSE;
+        }
+    }
+    else
+    {
+        if (strcmp (soap->passwd, cpe->acs_auth.passwd) != 0)
+        {
+            RING("Basic Auth failed: passwd not match");
+            return FALSE;
+        }
+    }
+    return TRUE;
+}
 
 
 /** gSOAP callback for GetRPCMethods ACS Method */
@@ -479,9 +533,7 @@ cwmp_prepare_soap_header(struct soap *soap, cpe_t *cpe)
 
 
     if (soap->encodingStyle)
-    {
         soap->encodingStyle = NULL;
-    }
 
     if (cpe->hold_requests >= 0)
     {
@@ -499,6 +551,16 @@ cwmp_prepare_soap_header(struct soap *soap, cpe_t *cpe)
     }
     soap->header->cwmp__ID = NULL;
     soap->keep_alive = 1; 
+
+
+    if ((soap->header == NULL ||
+         soap->header->cwmp__HoldRequests == NULL || 
+         soap->header->cwmp__HoldRequests->__item == 0) &&
+        CWMP_EP_CLEAR == cpe->session->ep_status)
+    {
+        RING("CPE '%s', set empPost status to Wait", cpe->name);
+        cpe->session->ep_status = CWMP_EP_WAIT;
+    }
 }
 
 /** gSOAP callback for Inform ACS Method */
@@ -607,7 +669,10 @@ __cwmp__Inform(struct soap *soap,
 
     cwmp__InformResponse->MaxEnvelopes = 1;
 
-    cwmp_prepare_soap_header(soap, cpe_item);
+    cwmp_prepare_soap_header(soap, cpe_item); 
+
+    RING("CPE %s, now send InformResponse, empPost is %d", 
+         cpe_item->name, session->ep_status);
 
     return SOAP_OK;
 }
@@ -637,8 +702,18 @@ __cwmp__TransferComplete(struct soap *soap,
          cpe_item->acs->name, cpe_item->name, 
          cwmp__TransferComplete->CommandKey);
 
+    if (!acse_check_auth(soap, cpe_item))
+    {
+        WARN("%s(): Auth failed.", __FUNCTION__);
+        session->state = CWMP_WAIT_AUTH;
+        return SOAP_STOP; /* HTTP response already sent. */
+    }
+
     cpe_store_acs_rpc(CWMP_RPC_transfer_complete, cwmp__TransferComplete,
                       cpe_item, session->def_heap);
+
+    cwmp_prepare_soap_header(soap, cpe_item);
+
     UNUSED(cwmp__TransferCompleteResponse);
 
     return 0;
@@ -716,21 +791,37 @@ __cwmp__Kicked(struct soap *soap,
  *
  * @param data      Channel-specific private data.
  * @param pfd       Poll file descriptor struct (OUT)
+ * @param deadline  Timestamp until wait, keep untouched if not need (OUT)
  *
  * @return status code.
  */
 te_errno
-cwmp_before_poll(void *data, struct pollfd *pfd)
+cwmp_before_poll(void *data, struct pollfd *pfd, struct timeval *deadline)
 {
     cwmp_session_t *cwmp_sess = data;
 
     VERB("before poll, sess ptr %p, state %d, soap status %d", 
          cwmp_sess, cwmp_sess->state, cwmp_sess->m_soap.error);
+    if (deadline != NULL && cwmp_sess->last_sent.tv_sec > 0)
+    {
+        deadline->tv_sec  = cwmp_sess->last_sent.tv_sec + CWMP_TIMEOUT;
+        deadline->tv_usec = cwmp_sess->last_sent.tv_usec;
+    }
 
     if (cwmp_sess == NULL ||
         cwmp_sess->state == CWMP_NOP)
     {
         return TE_EINVAL;
+    }
+
+    if (cwmp_sess != NULL && cwmp_sess->state == CWMP_SUSPENDED)
+    {
+        fprintf(stderr, "ACSE before poll, session is suspended\n");
+        pfd->fd = susp_dummy_pipe[0];
+        pfd->events = POLLIN;
+        pfd->revents = 0;
+
+        return 0;
     }
 
     pfd->fd = cwmp_sess->m_soap.socket;
@@ -759,9 +850,39 @@ te_errno
 cwmp_after_poll(void *data, struct pollfd *pfd)
 {
     cwmp_session_t *cwmp_sess = data;
+    assert(cwmp_sess != NULL);
 
     VERB("Start after serve, sess ptr %p, state %d, SOAP error %d",
           cwmp_sess, cwmp_sess->state, cwmp_sess->m_soap.error);
+
+    if (pfd == NULL)
+    {
+        WARN("after serve %s %s/%s timeout occured (pfd is NULL)",
+            cwmp_sess->acs_owner ? "ACS" : "CPE", 
+            cwmp_sess->acs_owner ? cwmp_sess->acs_owner->name :
+                                 cwmp_sess->cpe_owner->acs->name,
+            cwmp_sess->acs_owner ? "(none)":
+                                 cwmp_sess->cpe_owner->name);
+
+        switch(cwmp_sess->state)
+        {
+            case CWMP_WAIT_AUTH:
+            case CWMP_WAIT_RESPONSE:
+            case CWMP_SERVE:
+                if (cwmp_sess->m_soap.socket > 0)
+                {
+                    close(cwmp_sess->m_soap.socket);
+                    cwmp_sess->m_soap.socket = 0;
+                }
+                /* fall through... */
+            case CWMP_SUSPENDED:
+                return TE_ENOTCONN;
+            default:
+                WARN("CWMP session state %d, unexpected timeout", 
+                     cwmp_sess->state);
+        }
+        return 0;
+    }
 
     if (!(pfd->revents))
         return 0;
@@ -784,7 +905,14 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
                     cwmp_sess->acs_owner ? "(none)":
                                          cwmp_sess->cpe_owner->name,
                     cwmp_sess, cwmp_sess->state);
-                return TE_ENOTCONN;
+
+                if (CWMP_EP_GOT == cwmp_sess->ep_status)
+                    return TE_ENOTCONN;
+                else 
+                {
+                    cwmp_suspend_session(cwmp_sess);
+                    return 0;
+                }
             }
             break;
 
@@ -839,6 +967,8 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
             break;
         case CWMP_CLOSE:
             return TE_ENOTCONN;
+        case CWMP_SUSPENDED:
+            break;
         default: /* do nothing here */
             WARN("CWMP after poll, unexpected state %d\n",
                     (int)cwmp_sess->state);
@@ -847,6 +977,7 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
 
     return 0;
 }
+
 
 /** 
  * Callback for I/O ACSE channel, called at channel destroy. 
@@ -870,6 +1001,8 @@ te_errno
 cwmp_accept_cpe_connection(acs_t *acs, int socket)
 {
     int is_not_get = 1;
+    cpe_t *cpe;
+    static char addr_name[100] = {0,};
 
     if (LIST_EMPTY(&acs->cpe_list))
     {
@@ -900,6 +1033,62 @@ cwmp_accept_cpe_connection(acs_t *acs, int socket)
             RING("CWMP NOT accepted, ACS '%s', our URL '%s', come URL '%s'",
                  acs->name, acs->url, req_url_p);
             return TE_ECONNREFUSED; /* It is not our URL */
+        }
+    }
+    /*
+      Now we try find suspended CWMP session, if it is our URL.
+     */
+    LIST_FOREACH(cpe, &(acs->cpe_list), links)
+    {
+        if (cpe->session != NULL && CWMP_SUSPENDED == cpe->session->state)
+        {
+            /* match IP address */
+            static struct sockaddr_storage peer_addr;
+            size_t a_len = sizeof(peer_addr);
+            void *in_a = NULL;
+            void *susp_a = NULL;
+            size_t mlen = 4;
+
+            if (getpeername(socket, SA(&peer_addr), &a_len) < 0)
+            {
+                perror("getpeername(): ");
+                break;
+            }
+
+            switch (peer_addr.ss_family)
+            {
+                case AF_INET:
+                    in_a = &(SIN(&peer_addr)->sin_addr);
+                    susp_a = &(SIN(&(cpe->session->cpe_addr))->sin_addr);
+                    mlen = 4;
+                    break;
+                case AF_INET6:
+                    in_a = &(SIN6(&peer_addr)->sin6_addr);
+                    susp_a = &(SIN6(&(cpe->session->cpe_addr))->sin6_addr);
+                    mlen = 16;
+                    break;
+            }
+
+            memset(addr_name, 0, sizeof(addr_name)); 
+            if (inet_ntop(peer_addr.ss_family, in_a,
+                          addr_name, sizeof(addr_name))
+                != NULL)
+            { 
+                RING("%s: found suspended session, al %d, "
+                      "match it with incoming addr '%s', l %d",
+                     __FUNCTION__, cpe->session->cpe_addr_len,
+                     addr_name, (int)a_len);
+            }
+            else
+                perror("CWMP accept, inet_ntop failed: ");
+
+            if (peer_addr.ss_family == cpe->session->cpe_addr.ss_family &&
+                memcmp(in_a, susp_a, mlen) == 0)
+            {
+                RING("%s: address matches, resume session", __FUNCTION__);
+                return cwmp_resume_session(cpe->session, socket);
+            }
+            RING("%s: address do not matches.... :(", __FUNCTION__);
         }
     }
 
@@ -1004,6 +1193,40 @@ acse_recv(struct soap *soap, char *s, size_t n)
     }
     return rc;
 }
+
+te_errno
+cwmp_init_soap(cwmp_session_t *sess, int socket)
+{
+    assert(sess != NULL);
+
+    memset(&(sess->m_soap), 0, sizeof(struct soap));
+
+    soap_init(&(sess->m_soap));
+    /* TODO: investigate more correct way to set version,
+       maybe specify correct SOAPENV in namespaces .. */
+    sess->m_soap.version = 1;
+
+    sess->m_soap.user = sess;
+    sess->m_soap.socket = socket;
+    sess->m_soap.fserveloop = cwmp_serveloop;
+    sess->m_soap.fmalloc = acse_cwmp_malloc;
+    sess->m_soap.fget = acse_http_get;
+
+    soap_imode(&sess->m_soap, SOAP_IO_KEEPALIVE);
+    soap_omode(&sess->m_soap, SOAP_IO_KEEPALIVE);
+
+    sess->m_soap.max_keep_alive = 10;
+
+    sess->orig_fparse = sess->m_soap.fparse;
+    sess->m_soap.fparse = cwmp_fparse;
+    sess->orig_fsend = sess->m_soap.fsend;
+    sess->m_soap.fsend = acse_send;
+    sess->orig_frecv = sess->m_soap.frecv;
+    sess->m_soap.frecv = acse_recv;
+
+    return 0;
+}
+
 /* see description in acse_internal.h */
 te_errno
 cwmp_new_session(int socket, acs_t *acs)
@@ -1014,10 +1237,13 @@ cwmp_new_session(int socket, acs_t *acs)
     if (new_sess == NULL || channel == NULL)
         return TE_ENOMEM;
 
-    soap_init(&(new_sess->m_soap));
-    /* TODO: investigate more correct way to set version,
-       maybe specify correct SOAPENV in namespaces .. */
-    new_sess->m_soap.version = 1;
+    new_sess->ep_status = CWMP_EP_CLEAR;
+    new_sess->last_sent.tv_sec = 0;
+    new_sess->cpe_addr_len = sizeof(new_sess->cpe_addr);
+    getpeername(socket, SA(&(new_sess->cpe_addr)),
+               &(new_sess->cpe_addr_len));
+
+    cwmp_init_soap(new_sess, socket);
 
     if (acs->ssl)
     {
@@ -1059,14 +1285,6 @@ cwmp_new_session(int socket, acs_t *acs)
     new_sess->rpc_item = NULL;
     new_sess->sending_fd = NULL;
     new_sess->def_heap = mheap_create(new_sess);
-    new_sess->m_soap.user = new_sess;
-    new_sess->m_soap.socket = socket;
-    new_sess->m_soap.fserveloop = cwmp_serveloop;
-    new_sess->m_soap.fmalloc = acse_cwmp_malloc;
-    new_sess->m_soap.fget = acse_http_get;
-
-    soap_imode(&new_sess->m_soap, SOAP_IO_KEEPALIVE);
-    soap_omode(&new_sess->m_soap, SOAP_IO_KEEPALIVE);
 
     if (acs->ssl)
     {
@@ -1089,19 +1307,10 @@ cwmp_new_session(int socket, acs_t *acs)
     RING("init CWMP session for ACS '%s', auth mode %d",
             acs->name, (int)acs->auth_mode);
 
-    new_sess->m_soap.max_keep_alive = 10;
-
     channel->data = new_sess;
     channel->before_poll = cwmp_before_poll;
     channel->after_poll = cwmp_after_poll;
-    channel->destroy = cwmp_destroy;
-
-    new_sess->orig_fparse = new_sess->m_soap.fparse;
-    new_sess->m_soap.fparse = cwmp_fparse;
-    new_sess->orig_fsend = new_sess->m_soap.fsend;
-    new_sess->m_soap.fsend = acse_send;
-    new_sess->orig_frecv = new_sess->m_soap.frecv;
-    new_sess->m_soap.frecv = acse_recv;
+    channel->destroy = cwmp_destroy; 
 
     new_sess->state = CWMP_LISTEN; 
     acse_add_channel(channel);
@@ -1126,9 +1335,18 @@ cwmp_close_session(cwmp_session_t *sess)
     /* free all heaps, where this session was user of memory */
     mheap_free_user(MHEAP_NONE, sess); 
 
-    soap_dealloc(&(sess->m_soap), NULL);
-    soap_end(&(sess->m_soap));
-    soap_done(&(sess->m_soap));
+    if (sess->m_soap.socket > 0)
+    {
+        close(sess->m_soap.socket);
+        sess->m_soap.socket = 0;
+    } 
+
+    if (CWMP_SUSPENDED != sess->state)
+    {
+        soap_dealloc(&(sess->m_soap), NULL);
+        soap_end(&(sess->m_soap));
+        soap_done(&(sess->m_soap));
+    }
 
     if (sess->acs_owner)
         sess->acs_owner->session = NULL;
@@ -1138,6 +1356,81 @@ cwmp_close_session(cwmp_session_t *sess)
     free(sess);
 
     return 0;
+}
+
+/**
+ * Suspend CWMP session due to terminating of TCP connection.
+ */
+te_errno
+cwmp_suspend_session(cwmp_session_t *sess)
+{
+    static char addr_name[100] = {0,};
+    assert(NULL != sess);
+    assert((NULL != sess->acs_owner) || (NULL != sess->cpe_owner));
+
+    if (susp_dummy_pipe[0] < 0)
+        pipe(susp_dummy_pipe);
+    
+    if (inet_ntop(sess->cpe_addr.ss_family, 
+              &(SIN(&(sess->cpe_addr))->sin_addr),
+              addr_name, sizeof(addr_name)) != NULL)
+    {
+
+    RING("suspend cwmp session (sess ptr %p) on %s '%s/%s' from addr '%s'",
+          sess,
+          sess->acs_owner ? "ACS" : "CPE", 
+          sess->acs_owner ? sess->acs_owner->name :
+                            sess->cpe_owner->acs->name,
+          sess->acs_owner ? "(none)" : sess->cpe_owner->name, 
+          addr_name);
+    }
+    else
+        perror("suspend cwmp session, inet_ntop failed:");
+
+    if (sess->m_soap.socket > 0)
+    {
+        close(sess->m_soap.socket);
+        sess->m_soap.socket = 0;
+    }
+
+    soap_dealloc(&(sess->m_soap), NULL);
+    soap_end(&(sess->m_soap));
+    soap_done(&(sess->m_soap));
+
+    sess->state = CWMP_SUSPENDED;
+
+    return 0;
+}
+
+
+
+te_errno
+cwmp_resume_session(cwmp_session_t *sess, int socket)
+{
+    struct soap *soap;
+    cwmp_init_soap(sess, socket);
+
+    soap = &(sess->m_soap);
+
+    sess->state = CWMP_SERVE;
+
+    if (sess->cpe_owner->acs->auth_mode == ACSE_AUTH_DIGEST)
+    {
+        soap_register_plugin(soap, http_da); 
+    }
+    return 0;
+}
+
+
+
+void
+acse_timer_handler(int sig, siginfo_t *info, void *p)
+{
+    cwmp_session_t *sess;
+    UNUSED(sig);
+    UNUSED(p);
+
+    sess = info->si_value.sival_ptr;
 }
 
 
@@ -1478,6 +1771,7 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
     { 
         /* do nothing, wait for EPC with RPC to be sent */
         session->state = CWMP_PENDING;
+        session->last_sent.tv_sec = 0;
         return 0; 
     }
 
@@ -1493,7 +1787,6 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
     {
 
         INFO("CPE '%s', empty list of RPC calls, response 204", cpe->name);
-        // soap->keep_alive = 0;
         acse_cwmp_send_http(soap, session, 204, NULL);
         if (rpc_item != NULL)
             TAILQ_REMOVE(&cpe->rpc_queue, rpc_item, links);
@@ -1549,6 +1842,7 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
         return soap->error;
     }
     session->state = CWMP_WAIT_RESPONSE;
+    gettimeofday(&(session->last_sent), NULL);
 
     TAILQ_REMOVE(&cpe->rpc_queue, rpc_item, links);
 
@@ -1566,7 +1860,6 @@ acse_cwmp_send_http(struct soap *soap, cwmp_session_t *session,
     INFO("CPE '%s', special HTTP response %d, '%s'",
          session ? session->cpe_owner->name : "unknown",
          http_code, str);
-    // soap->keep_alive = 0;
     if (NULL != str)
     {
         size_t sz = strlen(str);
@@ -1585,8 +1878,12 @@ acse_cwmp_send_http(struct soap *soap, cwmp_session_t *session,
         ERROR("%s(): gSOAP internal error %d", __FUNCTION__, soap->error);
         return soap->error;
     }
+
     if (NULL != session)
+    {
+        gettimeofday(&(session->last_sent), NULL);
         session->state = CWMP_SERVE;
+    }
     return 0;
 }
 
@@ -1607,6 +1904,12 @@ acse_cwmp_empty_post(struct soap* soap)
 
     if (session != NULL && session->state == CWMP_CLOSE)
         return SOAP_OK;
+
+    if (NULL != session && CWMP_EP_WAIT == session->ep_status)
+    {
+        RING("CPE '%s', set empPost to GOT", session->cpe_owner->name);
+        session->ep_status = CWMP_EP_GOT;
+    }
 
     if (NULL == session || NULL == (cpe = session->cpe_owner))
     {
@@ -1710,11 +2013,12 @@ acse_soap_get_response(struct soap *soap, acse_epc_cwmp_data_t *request)
 void
 acse_soap_serve_response(cwmp_session_t *cwmp_sess)
 {
-    struct soap *soap = &(cwmp_sess->m_soap);
-
+    struct soap *soap = &(cwmp_sess->m_soap); 
     acse_epc_cwmp_data_t *request = cwmp_sess->rpc_item->params;
     VERB("Start of serve reponse: processed rpc_item: %p",
            cwmp_sess->rpc_item);
+
+    cwmp_sess->last_sent.tv_sec = 0;
 
     /* This function works in state WAIT_RESPONSE, when CWMP session
        is already associated with particular CPE. */ 

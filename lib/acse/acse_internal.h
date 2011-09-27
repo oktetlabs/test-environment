@@ -47,6 +47,10 @@ extern "C" {
 #include <sys/types.h>
 #endif
 
+#include <sys/socket.h>
+
+#include <signal.h>
+#include <time.h>
 
 #include <stdsoap2.h>
 
@@ -272,12 +276,15 @@ typedef struct channel_t {
     struct pollfd pfd;
 
     te_errno  (*before_poll)(   
-        void   *data,           /**< Channel-specific private data      */
-        struct pollfd *pfd      /**< Poll descriptor for events         */
+        void   *data,           /**< Channel-specific private data (IN) */
+        struct pollfd *pfd,     /**< Poll descriptor for events    (OUT)*/
+        struct timeval *deadline/**< Time until wait to,  
+                                     tv_sec = -1 for infinite wait.(OUT)*/
         );    /**< Called before poll(), should prepare @p pfd.  */
     te_errno  (*after_poll)(    
         void   *data,           /**< Channel-specific private data      */
-        struct pollfd *pfd      /**< Poll descriptor for events         */
+        struct pollfd *pfd      /**< Poll descriptor with events,
+                                     if NULL, timeout occured.  */
         );    /**< Called after poll(), should process detected event. 
                   Return code TE_ENOTCONN denote that underlying
                   connection is closed and channel should be finished. */
@@ -310,6 +317,21 @@ extern void acse_remove_channel(channel_t *ch_item);
  * @}
  */
 
+/**
+ * Status of CWMP session: was EmptyPOST as "write-shutdown" from CPE,
+ * or not. 
+ */
+typedef enum {
+    CWMP_EP_CLEAR, /* Status on session init, before sending first 
+                       HTTP response, with InformResponse */
+    CWMP_EP_WAIT,  /* Status while there was send message to CPE with 
+            HoldRequests = false, and was not received empty POST
+            after it.*/
+    CWMP_EP_GOT,   /* Status since we have received empty POST from CPE
+                     after HoldReq = false, which denotes that CPE 
+                     has no more requests to ACS. */
+} cwmp_ep_status_t;
+
 /** Descriptor of active CWMP session.
  *  Used as user-info in gSOAP internal struct. 
  *  Fields cwmp_session_t::acs_owner and cpe_owner should
@@ -333,6 +355,12 @@ typedef struct cwmp_session_t {
                                      /**< Original fsend in gSOAP  */
     size_t (*orig_frecv)(struct soap*, char*, size_t);
                                       /**< Original frecv in gSOAP  */
+
+    cwmp_ep_status_t    ep_status;  /**< Status for CPE->ACS empty POST */
+    struct timeval      last_sent;  /**< Time when last message was sent.*/
+
+    struct sockaddr_storage cpe_addr;
+    size_t                  cpe_addr_len;
 } cwmp_session_t;
 
 
@@ -363,6 +391,17 @@ extern te_errno cwmp_new_session(int socket, acs_t *acs);
  */
 extern te_errno cwmp_close_session(cwmp_session_t *sess);
 
+
+
+/**
+ * Suspend CWMP session due to terminating of TCP connection.
+ */
+extern te_errno cwmp_suspend_session(cwmp_session_t *cwmp_sess);
+
+/**
+ * Resume old CWMP session with new HTTP/TCP connection.
+ */
+extern te_errno cwmp_resume_session(cwmp_session_t *sess, int socket);
 
 /**
  * Check wheather accepted TCP connection is related to 
@@ -600,6 +639,14 @@ extern int acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session);
  */
 extern int acse_cwmp_send_http(struct soap *soap, cwmp_session_t *session,
                                int http_code, const char *str);
+
+
+
+/**
+ * Timer handler, prototype match with @p sa_sigaction in the
+ * POSIX struct sigaction.
+ */
+extern void acse_timer_handler(int, siginfo_t *, void *);
 #ifdef __cplusplus
 }
 #endif

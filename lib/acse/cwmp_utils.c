@@ -218,7 +218,8 @@ cwmp_str_array_log(unsigned log_level, const char *intro, string_array_t *a)
     if (NULL == log_buf) return TE_ENOMEM;
 
     if (NULL == intro) intro = "CWMP_UTILS, array of string";
-    p = snprintf(s, log_buf_size - total_p, "%s:\n", intro);
+    p = snprintf(s, log_buf_size - total_p, "%s [%d items]:\n",
+                 intro, a->size);
     s += p; total_p += p;
 
     for (i = 0; (i < a->size) && (total_p < log_buf_size); i++)
