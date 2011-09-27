@@ -23,7 +23,12 @@ AC_CHECK_TOOL(NM, nm)
 
 TE_APP_SET
 
+AC_ARG_WITH([name], , , [with_name=linux])
+
 AC_SUBST([with_name])
+
+AC_ARG_WITH([tad], , , [with_tad=tad])
+
 
 if test -z "$with_tad" ; then
     with_tad=tad
@@ -33,6 +38,8 @@ AC_SUBST([TAD], [$with_tad])
 AC_SUBST([TAD_LIBS])
 
 AC_CONFIG_HEADERS([config.h])
+
+AC_ARG_WITH([rcf_rpc], , , )
 
 AM_CONDITIONAL(CFG_RCF_RPC, test -n "$with_rcf_rpc")
 
@@ -496,7 +503,13 @@ if test -n "$with_iscsi"; then
     EXTRA_LDADD="$EXTRA_LDADD -liscsi_unh_target -liscsi_initiator_conf"
 fi    
 
-test "$with_symtbl_curl" && {
+AC_ARG_WITH([symtbl-curl],
+            AS_HELP_STRING([--with-symtbl-curl],
+                           [enable curl symtbl (default is NO)]),
+            [with_symtbl_curl=yes],
+            [with_symtbl_curl=""])
+
+test -n "$with_symtbl_curl" && {
     if test -f ${TE_INSTALL}/${TE_PLATFORM}/lib/libcurl.a ; then
         CURL_LIB=${TE_INSTALL}/${TE_PLATFORM}/lib/libcurl.a
     else
@@ -504,6 +517,12 @@ test "$with_symtbl_curl" && {
     fi
     AC_SUBST(CURL_LIB)
 }
+
+AC_ARG_WITH([iptables],
+            AS_HELP_STRING([--with-iptables],
+                           [enable iptables (default is NO)]),
+            [with_iptables=yes],
+            [with_iptables=""])
 
 AM_CONDITIONAL(CFG_IPTABLES_SUPPORT, test -n "$with_iptables")
 if test -n "$with_iptables"; then
