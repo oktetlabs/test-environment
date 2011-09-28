@@ -235,6 +235,8 @@ acse_init_connection_request(cpe_t *cpe_item)
     channel->before_poll = conn_req_before_poll;
     channel->after_poll = conn_req_after_poll;
     channel->destroy = conn_req_destroy;
+    channel->name = strdup("ConnRequestor");
+
     RING("%s() to %s/%s \n CR URL <%s>, wait.. data ptr %p",
         __FUNCTION__, cpe_item->acs->name, cpe_item->name,
         cpe_item->url, channel->data);

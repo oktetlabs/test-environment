@@ -558,7 +558,7 @@ cwmp_prepare_soap_header(struct soap *soap, cpe_t *cpe)
          soap->header->cwmp__HoldRequests->__item == 0) &&
         CWMP_EP_CLEAR == cpe->session->ep_status)
     {
-        RING("CPE '%s', set empPost status to Wait", cpe->name);
+        VERB("CPE '%s', set empPost status to Wait", cpe->name);
         cpe->session->ep_status = CWMP_EP_WAIT;
     }
 }
@@ -597,7 +597,7 @@ __cwmp__Inform(struct soap *soap,
     {
         int http_code = session->acs_owner->http_response->http_code;
         char *loc = session->acs_owner->http_response->location;
-        RING("ACS '%s': process Inform, HTTP response set, %d, %s",
+        VERB("ACS '%s': process Inform, HTTP response set, %d, %s",
             session->acs_owner->name, http_code, loc);
 
         acse_cwmp_send_http(soap, NULL,
@@ -640,7 +640,7 @@ __cwmp__Inform(struct soap *soap,
         {
             int http_code = cpe_item->http_response->http_code;
             char *loc = cpe_item->http_response->location;
-            RING("Process Inform, for CPE is HTTP response setting, %d, %s",
+            VERB("Process Inform, for CPE is HTTP response setting, %d, %s",
                 http_code, loc);
 
             acse_cwmp_send_http(soap, session,
@@ -671,7 +671,7 @@ __cwmp__Inform(struct soap *soap,
 
     cwmp_prepare_soap_header(soap, cpe_item); 
 
-    RING("CPE %s, now send InformResponse, empPost is %d", 
+    VERB("CPE %s, now send InformResponse, empPost is %d", 
          cpe_item->name, session->ep_status);
 
     return SOAP_OK;
@@ -802,10 +802,13 @@ cwmp_before_poll(void *data, struct pollfd *pfd, struct timeval *deadline)
 
     VERB("before poll, sess ptr %p, state %d, soap status %d", 
          cwmp_sess, cwmp_sess->state, cwmp_sess->m_soap.error);
+
     if (deadline != NULL && cwmp_sess->last_sent.tv_sec > 0)
     {
         deadline->tv_sec  = cwmp_sess->last_sent.tv_sec + CWMP_TIMEOUT;
         deadline->tv_usec = cwmp_sess->last_sent.tv_usec;
+        VERB("before poll, set deadline %d.%d",
+            (int)deadline->tv_sec, (int)deadline->tv_usec);
     }
 
     if (cwmp_sess == NULL ||
@@ -898,7 +901,7 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
                   cwmp_sess, cwmp_sess->state, cwmp_sess->m_soap.error);
             if (cwmp_sess->m_soap.error == SOAP_EOF)
             {
-                RING("after serve %s %s/%s(sess ptr %p, state %d): EOF",
+                VERB("after serve %s %s/%s(sess ptr %p, state %d): EOF",
                     cwmp_sess->acs_owner ? "ACS" : "CPE", 
                     cwmp_sess->acs_owner ? cwmp_sess->acs_owner->name :
                                          cwmp_sess->cpe_owner->acs->name,
@@ -921,7 +924,7 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
             acse_soap_serve_response(cwmp_sess);
             if (cwmp_sess->m_soap.error == SOAP_EOF)
             {
-                RING("after serve %s %s/%s(sess ptr %p, state %d): EOF",
+                VERB("after serve %s %s/%s(sess ptr %p, state %d): EOF",
                     cwmp_sess->acs_owner ? "ACS" : "CPE", 
                     cwmp_sess->acs_owner ? cwmp_sess->acs_owner->name :
                                          cwmp_sess->cpe_owner->acs->name,
@@ -1311,6 +1314,7 @@ cwmp_new_session(int socket, acs_t *acs)
     channel->before_poll = cwmp_before_poll;
     channel->after_poll = cwmp_after_poll;
     channel->destroy = cwmp_destroy; 
+    channel->name = strdup("CWMP-session");
 
     new_sess->state = CWMP_LISTEN; 
     acse_add_channel(channel);
@@ -1843,6 +1847,10 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
     }
     session->state = CWMP_WAIT_RESPONSE;
     gettimeofday(&(session->last_sent), NULL);
+    VERB("%s():%d set last_sent %d.%d",
+         __FUNCTION__, __LINE__, 
+         (int)session->last_sent.tv_sec,
+         (int)session->last_sent.tv_usec);
 
     TAILQ_REMOVE(&cpe->rpc_queue, rpc_item, links);
 
@@ -1882,6 +1890,10 @@ acse_cwmp_send_http(struct soap *soap, cwmp_session_t *session,
     if (NULL != session)
     {
         gettimeofday(&(session->last_sent), NULL);
+        VERB("%s():%d set last_sent %d.%d",
+             __FUNCTION__, __LINE__, 
+             (int)session->last_sent.tv_sec,
+             (int)session->last_sent.tv_usec);
         session->state = CWMP_SERVE;
     }
     return 0;

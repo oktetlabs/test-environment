@@ -245,6 +245,7 @@ conn_register_acs(acs_t *acs)
         new_ch->state = ACSE_CH_ACTIVE;
 
         new_conn->own_channel = new_ch;
+        new_ch->name = strdup("HTTP/TCP-listener");
 
         acse_add_channel(new_ch);
 

@@ -148,6 +148,8 @@ acse_loop(void)
         channel_t **ch_queue = NULL; 
         channel_t  *ch_nearest_dl = NULL;
 
+        gen_deadline.tv_sec = 0;
+
         i = 0;
         LIST_FOREACH(item, &channel_list, links)
         {
@@ -187,7 +189,9 @@ acse_loop(void)
             gettimeofday(&now, NULL);
             timeout = (gen_deadline.tv_sec - now.tv_sec) * 1000 + 
                       (gen_deadline.tv_usec - now.tv_usec) / 1000;
-            RING("before poll, calculated timeout %d", timeout);
+            VERB("before poll, gen deadline %d.%d, calculated timeout %d",
+                 (int)gen_deadline.tv_sec, (int)gen_deadline.tv_usec,
+                 timeout);
             if (timeout < 0)
                 timeout = 0; /* not wait ! */
         }
@@ -197,7 +201,7 @@ acse_loop(void)
 
         r_poll = poll(pfd, channel_number, timeout);
 
-        if (r_poll == -1)
+        if (r_poll < 0)
         {
             perror("ACSE loop: poll failed");
             /* TODO something? */
@@ -205,15 +209,11 @@ acse_loop(void)
         }
         VERB("acse_loop, poll return %d", r_poll);
 
-#if 0
-        channel_t *last_item = LINK_LAST(
-                                        &channel_list,
-                                        channel_item_t,
-                                        links);
-        channel_t *tmp;
-#endif
         if (r_poll == 0 && ch_nearest_dl != NULL) /* timeout occured */
         {
+            RING("ACSE main loop: timeout occured, on channel '%s'", 
+                 ch_nearest_dl->name);
+
             rc = (*ch_nearest_dl->after_poll)(ch_nearest_dl->data, NULL);
 
             if (rc != 0)
@@ -246,6 +246,9 @@ acse_loop(void)
             if (pfd[i].revents != 0)
             {
                 assert(ch_i < r_poll);
+            VERB("acse_loop, after poll, revent 0x%x on ch '%s', sock %d",
+                 pfd[i].revents, item->name, pfd[i].fd);
+
                 ch_queue[ch_i] = item;
                 item->state = ACSE_CH_EVENT;
                 item->pfd = pfd[i];
@@ -271,8 +274,8 @@ acse_loop(void)
 
             rc = (*ch_item->after_poll)(ch_item->data, &(ch_item->pfd));
 
-            VERB("acse_loop, ch sock %d, after loop rc %r",
-                 ch_item->pfd.fd, rc);
+            VERB("acse_loop, channel '%s', sock %d, after loop rc %r",
+                 ch_item->name, ch_item->pfd.fd, rc);
             if (rc != 0)
             {
                 if (TE_RC_GET_ERROR(rc) != TE_ENOTCONN)

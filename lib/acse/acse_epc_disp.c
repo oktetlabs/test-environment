@@ -916,7 +916,7 @@ acse_epc_config(acse_epc_config_data_t *cfg_pars)
         return TE_RC(TE_ACSE, TE_EINVAL);
     }
 
-    VERB("epc_cb config, %s/%s, EPC op %s, oid '%s'", 
+    RING("epc_cb config, %s/%s, EPC op %s, oid '%s'", 
          cfg_pars->acs,
          cfg_pars->op.level == EPC_CFG_CPE ? cfg_pars->cpe : "-",
          cwmp_epc_cfg_op_string(cfg_pars->op.fun), cfg_pars->oid);
@@ -1008,9 +1008,10 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
             TAILQ_INSERT_TAIL(&cpe->rpc_queue, rpc_item, links);
             cwmp_pars->from_cpe.p = NULL; /* nothing yet.. */
 
-            VERB("EPC CWMP, RPC call to '%s', type %d, ind %d, need %d",
-                 cwmp_pars->cpe, cwmp_pars->rpc_cpe, rpc_item->request_id,
-                 need_call);
+            RING("EPC CWMP, RPC call %s to '%s', ind %d, need %d",
+                 cwmp_rpc_cpe_string(cwmp_pars->rpc_cpe),
+                 cwmp_pars->cpe,
+                 rpc_item->request_id, need_call);
 
             if (need_call)
                 acse_cwmp_send_rpc(&(cpe->session->m_soap), cpe->session);
@@ -1376,12 +1377,14 @@ acse_epc_disp_init(int listen_sock, epc_site_t *s)
     channel_cfg->before_poll  = &epc_cfg_before_poll;
     channel_cfg->after_poll   = &epc_cfg_after_poll;
     channel_cfg->destroy      = &epc_cfg_destroy;
+    channel_cfg->name         = strdup("EPC-config");
 
     acse_add_channel(channel_cfg);
 
     channel_cwmp->before_poll  = &epc_cwmp_before_poll;
     channel_cwmp->after_poll   = &epc_cwmp_after_poll;
     channel_cwmp->destroy      = &epc_cwmp_destroy;
+    channel_cwmp->name         = strdup("EPC-cwmp");
 
     acse_add_channel(channel_cwmp); 
 

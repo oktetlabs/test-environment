@@ -272,6 +272,7 @@ typedef struct channel_t {
     LIST_ENTRY(channel_t) links;/**< List links */
     void       *data;           /**< Channel-specific private data      */
     ch_state_t  state;
+    const char *name;
 
     struct pollfd pfd;
 
