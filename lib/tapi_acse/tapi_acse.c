@@ -282,8 +282,8 @@ tapi_acse_ctx_init(const char *ta)
 
         ctx->rpc_srv = tapi_acse_get_rpcs(ta);
 
-        ctx->timeout = 20; /* Experimentally discovered optimal value. */
-        ctx->def_timeout = 20;
+        ctx->timeout = CWMP_TIMEOUT + 5; 
+        ctx->def_timeout = CWMP_TIMEOUT + 5;
         ctx->req_id = 0;
 
         if ((rc = cfg_find_pattern_fmt(&num, &handles,
@@ -557,7 +557,7 @@ tapi_acse_wait_acse_state(tapi_acse_context_t *ctx,
     if (res_state != NULL)
         *res_state = cur_state;
 
-    return rc;
+    return TE_RC(TE_TAPI, rc);
 }
 
 /* see description in tapi_acse.h */
@@ -1101,7 +1101,7 @@ tapi_acse_get_parameter_names(tapi_acse_context_t *ctx,
     req.ParameterPath = &name_ptr;
     req.NextLevel = next_level;
 
-    RING("Issue GetParameterNames for <%s>, next_level %d.", 
+    RING("Issue GetParameterNames for '%s', next_level %d.", 
          name, (int)next_level);
 
     return tapi_acse_cpe_rpc_call(ctx, CWMP_RPC_get_parameter_names,
