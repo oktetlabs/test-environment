@@ -907,13 +907,13 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
                                          cwmp_sess->cpe_owner->name,
                     cwmp_sess, cwmp_sess->state);
 
-                if (CWMP_EP_GOT == cwmp_sess->ep_status)
-                    return TE_ENOTCONN;
-                else 
+                if (CWMP_EP_WAIT == cwmp_sess->ep_status)
                 {
                     cwmp_suspend_session(cwmp_sess);
                     return 0;
                 }
+                else 
+                    return TE_ENOTCONN;
             }
             break;
 
