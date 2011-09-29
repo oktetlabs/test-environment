@@ -135,7 +135,6 @@ acse_send_file_portion(cwmp_session_t *session)
         else
         {
             /* can't send, but little we can do about that */
-            fprintf(stderr, "acse_send_file: soap_send_raw fail\n");
             WARN("acse_send_file_portion(): soap_send_raw fail,"
                  " soap err %d", soap->error);
         }
@@ -819,7 +818,6 @@ cwmp_before_poll(void *data, struct pollfd *pfd, struct timeval *deadline)
 
     if (cwmp_sess != NULL && cwmp_sess->state == CWMP_SUSPENDED)
     {
-        fprintf(stderr, "ACSE before poll, session is suspended\n");
         pfd->fd = susp_dummy_pipe[0];
         pfd->events = POLLIN;
         pfd->revents = 0;

@@ -916,7 +916,7 @@ acse_epc_config(acse_epc_config_data_t *cfg_pars)
         return TE_RC(TE_ACSE, TE_EINVAL);
     }
 
-    RING("epc_cb config, %s/%s, EPC op %s, oid '%s'", 
+    VERB("epc_cb config, %s/%s, EPC op %s, oid '%s'", 
          cfg_pars->acs,
          cfg_pars->op.level == EPC_CFG_CPE ? cfg_pars->cpe : "-",
          cwmp_epc_cfg_op_string(cfg_pars->op.fun), cfg_pars->oid);
