@@ -1331,6 +1331,8 @@ run_script(run_item *ri, test_script *script,
     tester_run_data        *gctx = opaque;
     tester_ctx             *ctx;
     tester_cfg_walk_ctl     ctl;
+    unsigned int            def_flags = (gctx->flags & TESTER_FAKE) ?
+                                            TESTER_FAKE : 0;
 
     assert(gctx != NULL);
     ctx = SLIST_FIRST(&gctx->ctxs);
@@ -1338,15 +1340,15 @@ run_script(run_item *ri, test_script *script,
     ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u script=%s", cfg_id_off,
           gctx->act != NULL ? (int)gctx->act->first : -1,
           gctx->act != NULL ? (int)gctx->act->last : -1,
-          gctx->act != NULL ? gctx->act->flags : 0,
+          gctx->act != NULL ? (gctx->act->flags | def_flags) : def_flags,
           gctx->act_id, script->name);
 
     assert(ri != NULL);
     assert(ri->n_args == ctx->n_args);
     if (run_test_script(script, ri->name, ctx->current_result.id,
                         ctx->n_args, ctx->args,
-                        gctx->act == NULL ? 0 : /* FIXME */
-                           gctx->act->flags,
+                        gctx->act == NULL ? def_flags : /* FIXME */
+                           (gctx->act->flags | def_flags),
                         &ctx->current_result.status) != 0)
     {
         ctx->current_result.status = TESTER_TEST_ERROR;
@@ -2985,8 +2987,23 @@ tester_run(testing_scenario   *scenario,
         run_script,
     };
 
+    testing_act *act;
+    te_bool      all_faked = TRUE;
+
+    TAILQ_FOREACH(act, scenario, links)
+    {
+        if (!(act->flags & TESTER_FAKE))
+        {
+            all_faked = FALSE;
+            break;
+        }
+    }
+
     memset(&data, 0, sizeof(data));
     data.flags = flags;
+    if (all_faked == TRUE)
+        data.flags |= TESTER_FAKE;
+
     data.cfgs = cfgs;
     data.paths = paths;
     data.scenario = scenario;
