@@ -312,6 +312,8 @@ AC_ARG_WITH([forw],,
  fi
 ], [w_forw=false])
 
+TA_TAD_LIBS=`static_libs_check.pl "${TA_TAD_LIBS}"`
+
 AC_SUBST([TAD_LIBLIST])
 AC_SUBST([TAD_SUBDIRS])
 AC_SUBST([TAD_CH_DEFS])

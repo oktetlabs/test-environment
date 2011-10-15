@@ -314,6 +314,7 @@ fi
 
 export PKG_CONFIG_PATH="$DESTDIR/$prefix/../$TE_PLATFORM/lib/pkgconfig/"
 PKG_CHECK_MODULES(TAD, te-$with_tad)
+TAD_LIBS=`static_libs_check.pl "${TAD_LIBS}"`
 
 dnl util library is necessary for static linking of expect
 AC_SEARCH_LIBS([openpty], [util])
@@ -510,11 +511,14 @@ AC_ARG_WITH([symtbl-curl],
             [with_symtbl_curl=""])
 
 test -n "$with_symtbl_curl" && {
-    if test -f ${TE_INSTALL}/${TE_PLATFORM}/lib/libcurl.a ; then
-        CURL_LIB=${TE_INSTALL}/${TE_PLATFORM}/lib/libcurl.a
+    echo "It searches in ${TE_EXT_LIBS_PATH}"
+    if test -f ${TE_EXT_LIBS_PATH}/libcurl.a ; then
+        CURL_LIB=${TE_EXT_LIBS_PATH}/libcurl.a
     else
         CURL_LIB=`$CC $CFLAGS -print-file-name=libcurl.a`
     fi
+#   Do not do this: it is used just for generating symbol table
+#   CURL_LIB=`static_libs_check.pl "${CURL_LIB}"`
     AC_SUBST(CURL_LIB)
 }
 
