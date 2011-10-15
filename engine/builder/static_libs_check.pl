@@ -50,7 +50,14 @@ my $result = "";
 @libs = (@libs, parse_line('[\s]+', 1, $_)) while (<STDIN>);
 @libs = (@libs, parse_line('[\s]+', 1, $_)) foreach (@ARGV);
 
-$te_ext_libs_path = realpath($te_ext_libs_path);
+if (defined($te_ext_libs_path))
+{
+    $te_ext_libs_path = realpath($te_ext_libs_path);
+}
+else
+{
+    $te_ext_libs_path = "";
+}
 
 sub bin_search_aux
 {
@@ -96,108 +103,111 @@ sub bin_search
     return bin_search_aux($arr, $val, 0, scalar @$arr);
 }
 
-$cmd_pid = open2($cmd_out, 0, "/usr/bin/find", 
-                 ($te_ext_libs_path,
-                  "-maxdepth", 1, "-name", "lib*.a"));
-while (<$cmd_out>)
+if ($te_ext_libs_path ne "")
 {
-    $ext_lib_names[@ext_lib_names] = $2
-        if ($_ =~ /\/?([^\s\/]*\/)*lib([^\s\/]*)\.a/);
-}
-
-@ext_lib_names = sort(@ext_lib_names);
-
-$cmd_pid = open2($cmd_out, 0, "/usr/bin/find",
-                 ($te_ext_libs_path, "-name", "lib*.so",
-                  "-maxdepth", 1)) or die("/usr/bin/find failed");
-while (<$cmd_out>)
-{
-    my $pos;
-    $lib_name = "";
-    $lib_name = $2
-        if ($_ =~ /\/?([^\s\/]*\/)*lib([^\s\/]*)\.so/);
-
-    $pos = bin_search(\@ext_lib_names, $lib_name);
-    if ($pos != -1)
+    $cmd_pid = open2($cmd_out, 0, "/usr/bin/find", 
+                     ($te_ext_libs_path,
+                      "-maxdepth", 1, "-name", "lib*.a"));
+    while (<$cmd_out>)
     {
-         splice(@ext_lib_names, $pos, 1);
+        $ext_lib_names[@ext_lib_names] = $2
+            if ($_ =~ /\/?([^\s\/]*\/)*lib([^\s\/]*)\.a/);
     }
-}
 
-$i = 0;
-foreach my $lib (@libs)
-{
-    $lib_is_ext[$i] = 0;
-    $lib_names[$i] = "";
+    @ext_lib_names = sort(@ext_lib_names);
 
-    unless (!defined($lib) || $lib eq "")
+    $cmd_pid = open2($cmd_out, 0, "/usr/bin/find",
+                     ($te_ext_libs_path, "-name", "lib*.so",
+                      "-maxdepth", 1)) or die("/usr/bin/find failed");
+    while (<$cmd_out>)
     {
-        if ($lib =~ /-l(\S*)/)
-        {
-            $lib_names[$i] = $1;
+        my $pos;
+        $lib_name = "";
+        $lib_name = $2
+            if ($_ =~ /\/?([^\s\/]*\/)*lib([^\s\/]*)\.so/);
 
-            foreach my $ext_lib (@ext_lib_names)
+        $pos = bin_search(\@ext_lib_names, $lib_name);
+        if ($pos != -1)
+        {
+             splice(@ext_lib_names, $pos, 1);
+        }
+    }
+
+    $i = 0;
+    foreach my $lib (@libs)
+    {
+        $lib_is_ext[$i] = 0;
+        $lib_names[$i] = "";
+
+        unless (!defined($lib) || $lib eq "")
+        {
+            if ($lib =~ /-l(\S*)/)
             {
-                if ($lib_names[$i] eq $ext_lib)
+                $lib_names[$i] = $1;
+
+                foreach my $ext_lib (@ext_lib_names)
                 {
-                    $lib_is_ext[$i] = 1;
-                    last;
+                    if ($lib_names[$i] eq $ext_lib)
+                    {
+                        $lib_is_ext[$i] = 1;
+                        last;
+                    }
                 }
             }
-        }
 
-        if ($lib =~ /(\/?([^\s\/]*\/)*)lib(\S*)\.a/)
-        {
-            $lib_names[$i] = $3;
-            $lib_is_ext[$i] = 1 if (realpath($1) eq $te_ext_libs_path);
-        }
-    }
-    $i++;
-}
-
-for ($i = 0; $i < @libs; $i++)
-{
-    if ($lib_is_ext[$i] == 1)
-    {
-        my $deps_file = $te_ext_libs_path."/".$lib_names[$i]."_deps";
-        if (-e $deps_file)
-        {
-            my $in;
-
-            open($in, "<", $deps_file) or die "Cannot open $deps_file";
-
-            while (<$in>)
+            if ($lib =~ /(\/?([^\s\/]*\/)*)lib(\S*)\.a/)
             {
-                my @dep_libs = parse_line('[\s]+', 1, $_);
-                my $n = $i;
+                $lib_names[$i] = $3;
+                $lib_is_ext[$i] = 1 if (realpath($1) eq $te_ext_libs_path);
+            }
+        }
+        $i++;
+    }
 
-                foreach my $dep_lib (@dep_libs)
+    for ($i = 0; $i < @libs; $i++)
+    {
+        if ($lib_is_ext[$i] == 1)
+        {
+            my $deps_file = $te_ext_libs_path."/".$lib_names[$i]."_deps";
+            if (-e $deps_file)
+            {
+                my $in;
+
+                open($in, "<", $deps_file) or die "Cannot open $deps_file";
+
+                while (<$in>)
                 {
-                    unless (!defined($dep_lib) || $dep_lib eq "")
+                    my @dep_libs = parse_line('[\s]+', 1, $_);
+                    my $n = $i;
+
+                    foreach my $dep_lib (@dep_libs)
                     {
-                        my $k;
-
-                        for ($k = $n + 1; $k < @libs; $k++)
+                        unless (!defined($dep_lib) || $dep_lib eq "")
                         {
-                            last if ($lib_names[$k] eq $dep_lib);
-                        }
+                            my $k;
 
-                        if ($k == @libs)
-                        {
-                            splice(@libs, $n + 1, 0, ("-l".$dep_lib));
-                            splice(@lib_names, $n + 1, 0, ($dep_lib));
-                            splice(@lib_is_ext, $n + 1, 0, 0);
-
-                            foreach my $ext_lib (@ext_lib_names)
+                            for ($k = $n + 1; $k < @libs; $k++)
                             {
-                                if ($lib_names[$n + 1] eq $ext_lib)
-                                {
-                                    $lib_is_ext[$n + 1] = 1;
-                                    last;
-                                }
+                                last if ($lib_names[$k] eq $dep_lib);
                             }
 
-                            $n++;
+                            if ($k == @libs)
+                            {
+                                splice(@libs, $n + 1, 0, ("-l".$dep_lib));
+                                splice(@lib_names, $n + 1, 0, ($dep_lib));
+                                splice(@lib_is_ext, $n + 1, 0, 0);
+
+                                foreach my $ext_lib (@ext_lib_names)
+                                {
+                                    if ($lib_names[$n + 1] eq $ext_lib)
+                                    {
+                                        $lib_is_ext[$n + 1] = 1;
+                                        last;
+                                    }
+                                }
+
+                                $n++;
+                            }
                         }
                     }
                 }
