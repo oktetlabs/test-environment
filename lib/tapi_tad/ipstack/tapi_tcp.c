@@ -1096,6 +1096,8 @@ tapi_tcp_reset_hack_init(const char *ta_name, int session,
         return TE_RC(TE_TAPI, rc);
     }
 
+    context->catched = FALSE;
+
     return 0;
 }
 
@@ -1176,6 +1178,8 @@ tcp_reset_hack_pkt_handler(const char *pkt_file, void *user_param)
         asn_read_value_field(pkt, &(context->loc_ip_addr), &v_len,
                              "pdus.1.#ip4.src-addr.#plain");
 
+    context->catched = TRUE;
+
 cleanup:
     asn_free_value(pkt);
 }
@@ -1185,6 +1189,7 @@ tapi_tcp_reset_hack_catch(const char *ta_name, int session,
                           tapi_tcp_reset_hack_t *context)
 {
     unsigned int syn_ack_num = 0;
+    int rc;
 
     if (context == NULL)
     {
@@ -1192,9 +1197,11 @@ tapi_tcp_reset_hack_catch(const char *ta_name, int session,
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
-    return rcf_ta_trrecv_stop(ta_name, session, context->tcp_hack_csap,
-                              tcp_reset_hack_pkt_handler,
-                              context, &syn_ack_num);
+    rc = rcf_ta_trrecv_stop(ta_name, session, context->tcp_hack_csap,
+                            tcp_reset_hack_pkt_handler,
+                            context, &syn_ack_num);
+
+    return rc != 0 ? rc : (context->catched ? 0 : -1);
 }
 
 
@@ -1245,3 +1252,22 @@ tapi_tcp_reset_hack_send(const char *ta_name, int session,
     return rc;
 }
 
+int
+tapi_tcp_reset_hack_clear(const char *ta_name, int session, 
+                          tapi_tcp_reset_hack_t *context)
+{
+    int rc = 0;
+
+    if (context == NULL)
+    {
+        ERROR("%s(): null context passed", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if (context->tcp_hack_csap != CSAP_INVALID_HANDLE &&
+        (rc = tapi_tad_csap_destroy(ta_name, session,
+                                    context->tcp_hack_csap)) != 0)
+        ERROR("%s(): Failed to destroy CSAP", __FUNCTION__);
+
+    return rc;
+}

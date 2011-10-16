@@ -797,6 +797,7 @@ typedef struct {
     tapi_tcp_pos_t loc_start_seq;
     uint16_t       rem_port;
     uint16_t       loc_port;
+    te_bool        catched;
 } tapi_tcp_reset_hack_t;
 
 /**
@@ -848,4 +849,15 @@ extern int tapi_tcp_reset_hack_send(const char *ta_name, int session,
                                     tapi_tcp_reset_hack_t *context,
                                     size_t received, size_t sent);
 
+/**
+ * Clear TCP reset hack context
+ *
+ * @param ta_name       TA name
+ * @param sid           RCF session id
+ * @param context       pointer to structure with context data, IN/OUT
+ *
+ * @return status code
+ */
+extern int tapi_tcp_reset_hack_clear(const char *ta_name, int session, 
+                                     tapi_tcp_reset_hack_t *context);
 #endif /* !__TE_TAPI_TCP_H__ */
