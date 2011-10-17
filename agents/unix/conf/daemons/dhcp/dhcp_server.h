@@ -48,16 +48,17 @@ typedef struct space {
 } space;
 
 typedef struct host {
-    struct host  *next;
-    char         *name;
-    struct group *group;
-    char         *chaddr;
-    char         *client_id;
-    char         *ip_addr;
-    char         *next_server;
-    char         *filename;
-    char         *flags;
-    te_dhcp_option  *options;
+    struct host    *next;
+    char           *name;
+    struct group   *group;
+    char           *chaddr;
+    char           *client_id;
+    char           *ip_addr;
+    char           *next_server;
+    char           *filename;
+    char           *flags;
+    char           *prefix6;
+    te_dhcp_option *options;
 } host;
 
 typedef struct group {
@@ -71,11 +72,11 @@ typedef struct group {
 typedef struct te_dhcp_server_subnet {
     TAILQ_ENTRY(te_dhcp_server_subnet)  links;
 
-    char               *subnet;
-    int                 prefix_len;
-    char               *range;
-    te_dhcp_option     *options;
-    char               *vos;
+    char           *subnet;
+    int             prefix_len;
+    char           *range;
+    te_dhcp_option *options;
+    char           *vos;
 } te_dhcp_server_subnet;
 
 typedef struct te_dhcp_server_shared_net {

@@ -991,17 +991,17 @@ ds_dhcpserver_save_conf(void)
 #endif
 
 #if defined __linux__
+    /* Hardcoded 'deny unknown-clients' */
     fprintf(f, "deny unknown-clients;\n\n");
     fprintf(f, "\n");
-#endif
 
-#if defined __linux__
+    /* Vendor option space specifications */
     for (sp = spaces; sp != NULL; sp = sp->next)
     {
         te_dhcp_space_opt *sp_opt;
         fprintf(f, "option space %s;\n",sp->name);
         for (sp_opt = sp->options; sp_opt != NULL; sp_opt = sp_opt->next)
-            fprintf(f, "option %s code %d = %s;\n", 
+            fprintf(f, "option %s code %d = %s;\n",
                     sp_opt->name, sp_opt->code, sp_opt->type);
     }
 #endif
@@ -1009,28 +1009,69 @@ ds_dhcpserver_save_conf(void)
     TAILQ_FOREACH(s, &subnets, links)
     {
         struct in_addr  mask;
-
-        mask.s_addr = htonl(PREFIX2MASK(s->prefix_len));
-
 #if defined __linux__
-        fprintf(f, "subnet %s netmask %s {\n",
-                s->subnet, inet_ntop(AF_INET, &mask, buf, sizeof(buf)));
-#elif defined __sun__
-        TE_SPRINTF(buf, "/usr/sbin/pntadm -C %s", s->subnet);
-        if ((rc = ta_system(buf)) != 0)
-            return rc;
+        struct in6_addr addr;
+        int             pton_retval;
+        te_bool         match;
+        te_bool         ipv4_subnet;
 
-#if 0
-        /* FIXME ('/etc/inet/netmasks' must be maintained) */
-        add_xxx(s->subnet, inet_ntop(AF_INET, &mask, buf, sizeof(buf)));
-#endif
-#endif
+#define FAMILY_MATCH(_family, _addr_str, _af_match) \
+        if ((pton_retval = inet_pton(_family, _addr_str, &addr)) == -1) \
+        {                                                               \
+            return TE_OS_RC(TE_TA_UNIX, errno);                         \
+        }                                                               \
+        else if (pton_retval == 1)                                      \
+        {                                                               \
+            _af_match = TRUE;                                           \
+        }                                                               \
+        else                                                            \
+        {                                                               \
+            _af_match = FALSE;                                          \
+        }
+        do {
+            FAMILY_MATCH(AF_INET, s->subnet, match)
+            if (match)
+            {
+                ipv4_subnet = TRUE;
+                break;
+            }
 
-#if defined __linux__
+            FAMILY_MATCH(AF_INET6, s->subnet, match)
+            if (match)
+            {
+                ipv4_subnet = FALSE;
+                break;
+            }
+
+            ERROR("%s(): failed to detect address family "
+                  "in given subnet specification '%s'",
+                  __FUNCTION__, s->subnet);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        } while (0);
+#undef FAMILY_MATCH
+
+        /* Open 'subnet' specification block */
+        if (ipv4_subnet)
+        {
+            mask.s_addr = htonl(PREFIX2MASK(s->prefix_len));
+            fprintf(f, "subnet %s netmask %s {\n",
+                    s->subnet, inet_ntop(AF_INET, &mask, buf, sizeof(buf)));
+        }
+        else
+        {
+            fprintf(f, "subnet6 %s/%d {\n",
+                    s->subnet, s->prefix_len);
+        }
+
+        /* Address range in IPv4/IPv6 subnet */
         if (s->range != NULL)
         {
-            fprintf(f, "\trange %s;\n", s->range);
+            fprintf(f, (ipv4_subnet) ?
+                            "\trange %s;\n" :
+                                "\trange6 %s;\n", s->range);
         }
+
+        /* Options in subnet specification block */
         for (opt = s->options; opt != NULL; opt = opt->next)
         {
             te_bool quoted = is_quoted(opt->name);
@@ -1038,13 +1079,26 @@ ds_dhcpserver_save_conf(void)
             fprintf(f, "\toption %s %s%s%s;\n", opt->name,
                     quoted ? "\"" : "", opt->value, quoted ? "\"" : "");
         }
+
+        /* Vendor specific options in subnet specification block */
         if (s->vos != NULL)
         {
             fprintf(f, "\tvendor-option-space %s;\n", s->vos);
         }
-        fprintf(f, "}\n");
-#endif
 
+        /* Close subnet specification block */
+        fprintf(f, "}\n");
+#elif defined __sun__
+        TE_SPRINTF(buf, "/usr/sbin/pntadm -C %s", s->subnet);
+        if ((rc = ta_system(buf)) != 0)
+            return rc;
+
+#if 0
+        mask.s_addr = htonl(PREFIX2MASK(s->prefix_len));
+        /* FIXME ('/etc/inet/netmasks' must be maintained) */
+        add_xxx(s->subnet, inet_ntop(AF_INET, &mask, buf, sizeof(buf)));
+#endif
+#endif
     }
 
 #if defined __linux__
@@ -1053,20 +1107,40 @@ ds_dhcpserver_save_conf(void)
 
     for (h = hosts; h != NULL; h = h->next)
     {
-
 #if defined __linux__
+        /* Open 'host' specification block */
         fprintf(f, "host %s {\n", h->name);
+
         if (h->chaddr)
             fprintf(f, "\thardware ethernet %s;\n", h->chaddr);
+
         if (h->client_id)
             fprintf(f, "\tclient-id %s;\n", h->client_id);
-#endif
 
         if (h->ip_addr)
-
-#if defined __linux__
             fprintf(f, "\tfixed-address %s;\n", h->ip_addr);
+
+        if (h->next_server)
+            fprintf(f, "\tnext-server %s;\n", h->next_server);
+
+        if (h->filename)
+            fprintf(f, "\tfilename \"%s\";\n", h->filename);
+
+        if (h->prefix6)
+            fprintf(f, "\tprefix6 %s;", h->prefix6);
+
+        for (opt = h->options; opt != NULL; opt = opt->next)
+        {
+            te_bool quoted = is_quoted(opt->name);
+
+            fprintf(f, "\toption %s %s%s%s;\n", opt->name,
+                    quoted ? "\"" : "", opt->value, quoted ? "\"" : "");
+        }
+
+        /* Close 'host' specification block */
+        fprintf(f, "}\n");
 #elif defined __sun__
+        if (h->ip_addr)
         {
             char *p;
 
@@ -1081,29 +1155,11 @@ ds_dhcpserver_save_conf(void)
                 return rc;
         }
 #endif
-
-#if defined __linux__
-        if (h->next_server)
-            fprintf(f, "\tnext-server %s;\n", h->next_server);
-        if (h->filename)
-            fprintf(f, "\tfilename \"%s\";\n", h->filename);
-        for (opt = h->options; opt != NULL; opt = opt->next)
-        {
-            te_bool quoted = is_quoted(opt->name);
-
-            fprintf(f, "\toption %s %s%s%s;\n", opt->name,
-                    quoted ? "\"" : "", opt->value, quoted ? "\"" : "");
-        }
-        fprintf(f, "}\n");
-#endif
-
     }
 
 #if defined __linux__
     fprintf(f, "\n");
-#endif
 
-#if defined __linux__
     if (fsync(fileno(f)) != 0)
     {
         int err = errno;
@@ -1822,6 +1878,9 @@ ATTR_SET(filename, host, host)
 /*** Node /agent/dhcpserver/host/flags methods ***/
 ATTR_GET(flags, host, host)
 ATTR_SET(flags, host, host)
+/*** Node /agent/dhcpserver/host/prefix6 methods ***/
+ATTR_GET(prefix6, host, host)
+ATTR_SET(prefix6, host, host)
 /*** Node /agent/dhcpserver/host/option methods ***/
 GET_OPT(host, host)
 SET_OPT(host, host)
@@ -2122,6 +2181,8 @@ ds_sp_opt_set(unsigned int gid, const char *oid,
  *                          |       |
  *                          |    flags
  *                          |       |
+ *                          |    prefix6
+ *                          |       |
  *                          |    option
  *                          |
  *                      group  - next
@@ -2230,8 +2291,12 @@ static rcf_pch_cfg_object node_ds_host_option =
       (rcf_ch_cfg_del)ds_host_option_del,
       (rcf_ch_cfg_list)ds_host_option_list, NULL, NULL };
 
-RCF_PCH_CFG_NODE_RW(node_ds_host_flags, "flags",
+RCF_PCH_CFG_NODE_RW(node_ds_host_prefix6, "prefix6",
                     NULL, &node_ds_host_option,
+                    ds_host_prefix6_get, ds_host_prefix6_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_host_flags, "flags",
+                    NULL, &node_ds_host_prefix6,
                     ds_host_flags_get, ds_host_flags_set);
 
 RCF_PCH_CFG_NODE_RW(node_ds_host_file, "file",
