@@ -1126,8 +1126,11 @@ ds_dhcpserver_save_conf(void)
         if (h->filename)
             fprintf(f, "\tfilename \"%s\";\n", h->filename);
 
+        if (h->host_id)
+            fprintf(f, "\thost-identifier %s;\n", h->host_id);
+
         if (h->prefix6)
-            fprintf(f, "\tprefix6 %s;", h->prefix6);
+            fprintf(f, "\tfixed-prefix6 %s;", h->prefix6);
 
         for (opt = h->options; opt != NULL; opt = opt->next)
         {
@@ -1878,6 +1881,9 @@ ATTR_SET(filename, host, host)
 /*** Node /agent/dhcpserver/host/flags methods ***/
 ATTR_GET(flags, host, host)
 ATTR_SET(flags, host, host)
+/*** Node /agent/dhcpserver/host/host_id methods ***/
+ATTR_GET(host_id, host, host)
+ATTR_SET(host_id, host, host)
 /*** Node /agent/dhcpserver/host/prefix6 methods ***/
 ATTR_GET(prefix6, host, host)
 ATTR_SET(prefix6, host, host)
@@ -2181,6 +2187,8 @@ ds_sp_opt_set(unsigned int gid, const char *oid,
  *                          |       |
  *                          |    flags
  *                          |       |
+ *                          |    host_id
+ *                          |       |
  *                          |    prefix6
  *                          |       |
  *                          |    option
@@ -2295,8 +2303,12 @@ RCF_PCH_CFG_NODE_RW(node_ds_host_prefix6, "prefix6",
                     NULL, &node_ds_host_option,
                     ds_host_prefix6_get, ds_host_prefix6_set);
 
-RCF_PCH_CFG_NODE_RW(node_ds_host_flags, "flags",
+RCF_PCH_CFG_NODE_RW(node_ds_host_host_id, "host_id",
                     NULL, &node_ds_host_prefix6,
+                    ds_host_host_id_get, ds_host_host_id_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_host_flags, "flags",
+                    NULL, &node_ds_host_host_id,
                     ds_host_flags_get, ds_host_flags_set);
 
 RCF_PCH_CFG_NODE_RW(node_ds_host_file, "file",

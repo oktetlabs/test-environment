@@ -57,6 +57,7 @@ typedef struct host {
     char           *next_server;
     char           *filename;
     char           *flags;
+    char           *host_id;
     char           *prefix6;
     te_dhcp_option *options;
 } host;
