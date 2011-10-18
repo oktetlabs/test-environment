@@ -1489,7 +1489,6 @@ ds_route_add(unsigned int gid, const char *oid,
     te_radvd_interface     *radvd_if;
     te_radvd_subnet        *route;
     te_radvd_ip6_addr      *addr;
-    te_errno                retval;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1511,7 +1510,7 @@ ds_route_add(unsigned int gid, const char *oid,
         inet_pton(AF_INET6, addr->name, &addr->addr) != 1)
     {
         free_subnet(route);
-        return TE_RC(TE_TA_UNIX, retval);
+        return TE_RC(TE_TA_UNIX, TE_EFAULT);
     }
 
     TAILQ_INSERT_TAIL(&radvd_if->routes, route, links);
