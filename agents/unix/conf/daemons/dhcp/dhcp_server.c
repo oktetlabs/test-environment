@@ -56,6 +56,7 @@
 
 #define TE_DHCPD_CONF_FILENAME          "/tmp/te.dhcpd.conf"
 #define TE_DHCPD_LEASES_FILENAME        "/tmp/te.dhcpd.leases"
+#define TE_DHCPD6_LEASES_FILENAME       "/tmp/te.dhcpd6.leases"
 #define TE_DHCPD_PID_FILENAME           "/var/run/dhcpd.pid"
 
 #define TE_DHCP_SERVER_SCRIPT_NAME_1    "/etc/init.d/isc-dhcp-server"
@@ -472,6 +473,12 @@ static te_bool ds_dhcpserver_is_run(void);
 static te_errno ds_dhcpserver_script_stop(void);
 
 /*** Globals ***/
+/**
+ * IPv6 subnets are specified.
+ * We must start dhcpd in dhcpv6 mode (with '-6' key )
+ */
+static te_bool ipv6_subnets = FALSE;
+
 /** List of known possible locations of DHCP server scripts */
 static const char *dhcp_server_scripts[] = {
     TE_DHCP_SERVER_SCRIPT_NAME_1,
@@ -542,6 +549,9 @@ static const char *dhcp_server_conf = NULL;
 #if defined __linux__
 /** DHCP server leases database file name */
 static const char *dhcp_server_leases = NULL;
+
+/** DHCPv6 server leases database file name */
+static const char *dhcp6_server_leases = NULL;
 #endif
 
 #if defined TA_UNIX_ISC_DHCPS_NATIVE_CFG || defined __sun__
@@ -709,21 +719,33 @@ dhcpserver_init(void)
 #else
     dhcp_server_conf = TE_DHCPD_CONF_FILENAME;
     dhcp_server_leases = TE_DHCPD_LEASES_FILENAME;
-    {
-        struct passwd  *p;
-        int             f;
-
-        if ((f = creat(dhcp_server_leases, 00666)) < 0)
-        {
-            ERROR("Failed to open '%s' for writing: %s",
-                  dhcp_server_leases, strerror(errno));
-            rcf_pch_del_node(&node_ds_dhcpserver);
-            return TE_OS_RC(TE_TA_UNIX, errno);
-        }
-        close(f);
-        if ((p = getpwnam("dhcpd")) != NULL)
-            (void)chown(dhcp_server_leases, p->pw_uid, p->pw_gid);
-    }
+    dhcp6_server_leases = TE_DHCPD6_LEASES_FILENAME;
+#define OPEN_LEASES_FILE(_leases_filename) \
+    do {                                                                    \
+        struct passwd  *p;                                                  \
+        int             f;                                                  \
+                                                                            \
+        if ((f = creat(_leases_filename, 00666)) < 0)                       \
+        {                                                                   \
+            ERROR("Failed to open '"                                        \
+                  #_leases_filename                                         \
+                  "' for writing: %s", strerror(errno));                    \
+                                                                            \
+            rcf_pch_del_node(&node_ds_dhcpserver);                          \
+                                                                            \
+            return TE_OS_RC(TE_TA_UNIX, errno);                             \
+        }                                                                   \
+                                                                            \
+        close(f);                                                           \
+                                                                            \
+        if ((p = getpwnam("dhcpd")) != NULL)                                \
+        {                                                                   \
+            (void)chown(_leases_filename, p->pw_uid, p->pw_gid);            \
+        }                                                                   \
+    } while (0)
+    OPEN_LEASES_FILE(dhcp_server_leases);
+    OPEN_LEASES_FILE(dhcp6_server_leases);
+#undef OPEN_LEASES_FILE
 
     if (ds_dhcpserver_is_run())
     {
@@ -943,6 +965,11 @@ ds_dhcpserver_save_conf(void)
 #if defined __linux__
     te_dhcp_option         *opt;
     space                  *sp;
+    te_bool                 ipv4_subnets;
+    /*
+     * No need 'ipv4_subnets' to be global like 'ipv6_subnets'.
+     * Used only here to check consistency of dhcpd configuration.
+     */
 #endif
     FILE                   *f;
 
@@ -991,6 +1018,10 @@ ds_dhcpserver_save_conf(void)
 #endif
 
 #if defined __linux__
+    /* Suppose DHCPv4 be used */
+    ipv6_subnets = FALSE;
+    ipv4_subnets = FALSE;
+
     /* Hardcoded 'deny unknown-clients' */
     fprintf(f, "deny unknown-clients;\n\n");
     fprintf(f, "\n");
@@ -1051,16 +1082,31 @@ ds_dhcpserver_save_conf(void)
 #undef FAMILY_MATCH
 
         /* Open 'subnet' specification block */
-        if (ipv4_subnet)
+        if (ipv4_subnet && !ipv6_subnets)
         {
+            /* 'subnet' is specified: 'subnet6' specifications
+             * are not allowed, we must start in DHCPv4 mode
+             */
+            ipv4_subnets = TRUE;
             mask.s_addr = htonl(PREFIX2MASK(s->prefix_len));
             fprintf(f, "subnet %s netmask %s {\n",
                     s->subnet, inet_ntop(AF_INET, &mask, buf, sizeof(buf)));
         }
-        else
+        else if (!ipv4_subnet && !ipv4_subnets)
         {
+            /*
+             * 'subnet6' is specified: 'subnet' specifications
+             * are not allowed, we must start in DHCPv6 mode.
+             */
+            ipv6_subnets = TRUE;
             fprintf(f, "subnet6 %s/%d {\n",
                     s->subnet, s->prefix_len);
+        }
+        else
+        {
+            ERROR("%s(): configuration inconsistency: mixed "
+                  "'subnet' and 'subnet6' specifications", __FUNCTION__);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
 
         /* Address range in IPv4/IPv6 subnet */
@@ -1102,6 +1148,12 @@ ds_dhcpserver_save_conf(void)
     }
 
 #if defined __linux__
+    if (!ipv4_subnets && !ipv6_subnets)
+    {
+        ERROR("%s(): configuration inconsistency: neither "
+              "'subnet' nor 'subnet6' specifications", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
     fprintf(f, "\n");
 #endif
 
@@ -1111,26 +1163,110 @@ ds_dhcpserver_save_conf(void)
         /* Open 'host' specification block */
         fprintf(f, "host %s {\n", h->name);
 
+        /*
+         * Due to consistency check ipv4_subnets == !ipv6_subnets.
+         * In all cases when ipv4_subnets == ipv6_subnets function
+         * returns.
+         */
+        /* DHCPv4 specific */
         if (h->chaddr)
-            fprintf(f, "\thardware ethernet %s;\n", h->chaddr);
+        {
+            if (!ipv6_subnets)
+            {
+                fprintf(f, "\thardware ethernet %s;\n", h->chaddr);
+            }
+            else
+            {
+                ERROR("%s(): configuration inconsistency: "
+                      "'hardware ethernet' is forbidden "
+                      "in DHCPv6 mode", __FUNCTION__);
+                return TE_RC(TE_TA_UNIX, TE_EINVAL);
+            }
+        }
 
         if (h->client_id)
-            fprintf(f, "\tclient-id %s;\n", h->client_id);
+        {
+            if (!ipv6_subnets)
+            {
+                fprintf(f, "\tclient-id %s;\n", h->client_id);
+            }
+            else
+            {
+                ERROR("%s(): configuration inconsistency: "
+                      "'client-id' is forbidden "
+                      "in DHCPv6 mode", __FUNCTION__);
+                return TE_RC(TE_TA_UNIX, TE_EINVAL);
+            }
+        }
 
         if (h->ip_addr)
-            fprintf(f, "\tfixed-address %s;\n", h->ip_addr);
+        {
+            if (!ipv6_subnets)
+            {
+                fprintf(f, "\tfixed-address %s;\n", h->ip_addr);
+            }
+            else
+            {
+                ERROR("%s(): configuration inconsistency: "
+                      "'fixed-address' is forbidden "
+                      "in DHCPv6 mode", __FUNCTION__);
+                return TE_RC(TE_TA_UNIX, TE_EINVAL);
+            }
+        }
 
         if (h->next_server)
-            fprintf(f, "\tnext-server %s;\n", h->next_server);
+        {
+            if (!ipv6_subnets)
+            {
+                fprintf(f, "\tnext-server %s;\n", h->next_server);
+            }
+            else
+            {
+                ERROR("%s(): configuration inconsistency: "
+                      "'next-server' is forbidden "
+                      "in DHCPv6 mode", __FUNCTION__);
+                return TE_RC(TE_TA_UNIX, TE_EINVAL);
+            }
+        }
 
-        if (h->filename)
-            fprintf(f, "\tfilename \"%s\";\n", h->filename);
-
+        /* DHCPv6 specific */
         if (h->host_id)
-            fprintf(f, "\thost-identifier %s;\n", h->host_id);
+        {
+            if (ipv6_subnets)
+            {
+                fprintf(f,
+                        "\thost-identifier option dhcp6.client-id %s;\n",
+                        h->host_id);
+            }
+            else
+            {
+                ERROR("%s(): configuration inconsistency: "
+                      "'host-identifier' is forbidden "
+                      "in DHCPv4 mode", __FUNCTION__);
+                return TE_RC(TE_TA_UNIX, TE_EINVAL);
+            }
+        }
 
         if (h->prefix6)
-            fprintf(f, "\tfixed-prefix6 %s;", h->prefix6);
+        {
+            if (ipv6_subnets)
+            {
+                fprintf(f, "\tfixed-prefix6 %s;", h->prefix6);
+            }
+            else
+            {
+                ERROR("%s(): configuration inconsistency: "
+                      "'fixed-prefix6' is forbidden "
+                      "in DHCPv4 mode", __FUNCTION__);
+                return TE_RC(TE_TA_UNIX, TE_EINVAL);
+            }
+        }
+
+        /* Common */
+        if (h->filename)
+        {
+            fprintf(f, "\tfilename \"%s\";\n", h->filename);
+        }
 
         for (opt = h->options; opt != NULL; opt = opt->next)
         {
@@ -1298,7 +1434,10 @@ ds_dhcpserver_start(void)
     }
 
 #if defined __linux__
-    TE_SPRINTF(buf, "%s -t -cf %s",
+    TE_SPRINTF(buf,
+               (ipv6_subnets) ?
+                    "%s -6 -t -cf %s" :
+                            "%s -t -cf %s",
                dhcp_server_exec, dhcp_server_conf);
     if (ta_system(buf) != 0)
     {
@@ -1306,17 +1445,25 @@ ds_dhcpserver_start(void)
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
 
-    TE_SPRINTF(buf, "%s -T -lf %s",
-               dhcp_server_exec, dhcp_server_leases);
+    TE_SPRINTF(buf,
+               (ipv6_subnets) ?
+                    "%s -6 -T -cf %s -lf %s" :
+                            "%s -T -cf %s -lf %s",
+               dhcp_server_exec, dhcp_server_conf,
+               (ipv6_subnets) ? dhcp6_server_leases : dhcp_server_leases);
     if (ta_system(buf) != 0)
     {
         ERROR("Leases database verification failed, command '%s'", buf);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
 
-    TE_SPRINTF(buf, "%s -cf %s -lf %s %s",
+    TE_SPRINTF(buf,
+               (ipv6_subnets) ?
+                    "%s -6 -cf %s -lf %s %s" :
+                            "%s -cf %s -lf %s %s",
                dhcp_server_exec, dhcp_server_conf,
-               dhcp_server_leases, dhcp_server_ifs ? : "");
+               (ipv6_subnets) ? dhcp6_server_leases : dhcp_server_leases,
+               dhcp_server_ifs ? : "");
 #elif defined __sun__
     TE_SPRINTF(buf, "/usr/sbin/svcadm disable -st %s",
                get_ds_name("dhcpserver"));
