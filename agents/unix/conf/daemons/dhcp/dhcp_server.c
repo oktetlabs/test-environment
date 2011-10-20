@@ -2187,7 +2187,7 @@ ds_sp_opt_set(unsigned int gid, const char *oid,
  *                          |       |
  *                          |    flags
  *                          |       |
- *                          |    host_id
+ *                          |    host-id
  *                          |       |
  *                          |    prefix6
  *                          |       |
@@ -2303,7 +2303,7 @@ RCF_PCH_CFG_NODE_RW(node_ds_host_prefix6, "prefix6",
                     NULL, &node_ds_host_option,
                     ds_host_prefix6_get, ds_host_prefix6_set);
 
-RCF_PCH_CFG_NODE_RW(node_ds_host_host_id, "host_id",
+RCF_PCH_CFG_NODE_RW(node_ds_host_host_id, "host-id",
                     NULL, &node_ds_host_prefix6,
                     ds_host_host_id_get, ds_host_host_id_set);
 
