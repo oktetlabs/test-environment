@@ -58,6 +58,7 @@
 #define TE_DHCPD_LEASES_FILENAME        "/tmp/te.dhcpd.leases"
 #define TE_DHCPD6_LEASES_FILENAME       "/tmp/te.dhcpd6.leases"
 #define TE_DHCPD_PID_FILENAME           "/var/run/dhcpd.pid"
+#define TE_DHCPD6_PID_FILENAME          "/var/run/dhcpd6.pid"
 
 #define TE_DHCP_SERVER_SCRIPT_NAME_1    "/etc/init.d/isc-dhcp-server"
 #define TE_DHCP_SERVER_SCRIPT_NAME_2    "/etc/init.d/dhcpd"
@@ -1199,21 +1200,6 @@ ds_dhcpserver_save_conf(void)
             }
         }
 
-        if (h->ip_addr)
-        {
-            if (!ipv6_subnets)
-            {
-                fprintf(f, "\tfixed-address %s;\n", h->ip_addr);
-            }
-            else
-            {
-                ERROR("%s(): configuration inconsistency: "
-                      "'fixed-address' is forbidden "
-                      "in DHCPv6 mode", __FUNCTION__);
-                return TE_RC(TE_TA_UNIX, TE_EINVAL);
-            }
-        }
-
         if (h->next_server)
         {
             if (!ipv6_subnets)
@@ -1251,7 +1237,7 @@ ds_dhcpserver_save_conf(void)
         {
             if (ipv6_subnets)
             {
-                fprintf(f, "\tfixed-prefix6 %s;", h->prefix6);
+                fprintf(f, "\tfixed-prefix6 %s;\n", h->prefix6);
             }
             else
             {
@@ -1263,6 +1249,15 @@ ds_dhcpserver_save_conf(void)
         }
 
         /* Common */
+        if (h->ip_addr)
+        {
+            fprintf(f,
+                    (ipv6_subnets) ?
+                        "\tfixed-address6 %s;\n" :
+                            "\tfixed-address %s;\n",
+                    h->ip_addr);
+        }
+
         if (h->filename)
         {
             fprintf(f, "\tfilename \"%s\";\n", h->filename);
@@ -1318,37 +1313,72 @@ ds_dhcpserver_save_conf(void)
     return 0;
 }
 
+#if defined __linux__
+static te_bool  is_run;
+static char    *name;
+
+#define CHECK_DHCPD_PID(__dhcpd_pid_file) \
+    do {                                                                \
+        is_run = FALSE;                                                 \
+                                                                        \
+        sprintf(buf,                                                    \
+                "cat " __dhcpd_pid_file " 2>/dev/null 1>/dev/null");    \
+                                                                        \
+        if ((rc = ta_system(buf)) < 0 ||                                \
+            !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)                     \
+        {                                                               \
+            break;                                                      \
+        }                                                               \
+                                                                        \
+        if ((name = strrchr(dhcp_server_exec, '/')) == NULL)            \
+            name = (char *)dhcp_server_exec;                            \
+        else                                                            \
+            name++;                                                     \
+                                                                        \
+        sprintf(buf,                                                    \
+                PS_ALL_PID_ARGS " | grep $(cat "                        \
+                __dhcpd_pid_file ") | "                                 \
+                "grep -q %s >/dev/null 2>&1", name);                    \
+                                                                        \
+        is_run = !((rc = ta_system(buf)) < 0 ||                         \
+                   !WIFEXITED(rc) || WEXITSTATUS(rc) != 0);             \
+    } while (0)
+
+#define KILL_DHCPD(__dhcpd_pid_file) \
+    do {                                                                \
+        TE_SPRINTF(buf, "kill $(cat " __dhcpd_pid_file ")");            \
+                                                                        \
+        if ((rc = ta_system(buf)) < 0 ||                                \
+            !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)                     \
+        {                                                               \
+            ERROR("Command '%s' failed, rc=%r", buf, rc);               \
+            return TE_RC(TE_TA_UNIX, TE_ESHCMD);                        \
+        }                                                               \
+    } while (0)
+#endif
+
 /** Is DHCP server daemon running */
 static te_bool
 ds_dhcpserver_is_run(void)
 {
     int     rc = 0;
-    char   *name = NULL;
-
 #if defined __linux__
-    sprintf(buf, "cat " TE_DHCPD_PID_FILENAME " 2>/dev/null 1>/dev/null");
-    rc = ta_system(buf);
-    if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
-        return FALSE;
+    CHECK_DHCPD_PID(TE_DHCPD_PID_FILENAME);
+    if (is_run)
+        return is_run;
 
-    if ((name = strrchr(dhcp_server_exec, '/')) == NULL)
-        name = (char *)dhcp_server_exec;
-    else
-        name++;
-    sprintf(buf,
-            PS_ALL_PID_ARGS " | grep $(cat " TE_DHCPD_PID_FILENAME ") | "
-            "grep -q %s >/dev/null 2>&1", name);
+    CHECK_DHCPD_PID(TE_DHCPD6_PID_FILENAME);
+    return is_run;
 #elif defined __sun__
     TE_SPRINTF(buf,
                "[ \"`/usr/bin/svcs -H -o STATE dhcp-server`\" "
                "= \"online\" ]");
-#else
-    return FALSE;
-#endif
 
     rc = ta_system(buf);
 
     return !(rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0);
+#endif
+    return FALSE;
 }
 
 /** Stop DHCP server using script from /etc/init.d */
@@ -1371,26 +1401,23 @@ static te_errno
 ds_dhcpserver_stop(void)
 {
     int     rc = 0;
-    char   *name = NULL;
 
     ENTRY("%s()", __FUNCTION__);
 
 #if defined __linux__
-    sprintf(buf, "cat " TE_DHCPD_PID_FILENAME " 2>/dev/null 1>/dev/null");
-    rc = ta_system(buf);
-    if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
-        return 0;
-
-    if ((name = strrchr(dhcp_server_exec, '/')) == NULL)
-        name = (char *)dhcp_server_exec;
-    else
-        name++;
-
-    TE_SPRINTF(buf, "kill $(cat " TE_DHCPD_PID_FILENAME ")");
+    CHECK_DHCPD_PID(TE_DHCPD_PID_FILENAME);
+    if (is_run)
+    {
+        KILL_DHCPD(TE_DHCPD_PID_FILENAME);
+    }
+    CHECK_DHCPD_PID(TE_DHCPD6_PID_FILENAME);
+    if (is_run)
+    {
+        KILL_DHCPD(TE_DHCPD6_PID_FILENAME);
+    }
 #elif defined __sun__
     TE_SPRINTF(buf, "/usr/sbin/svcadm disable -st %s",
                get_ds_name("dhcpserver"));
-#endif
 
     rc = ta_system(buf);
     if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
@@ -1398,6 +1425,7 @@ ds_dhcpserver_stop(void)
         ERROR("Command '%s' failed, rc=%r", buf, rc);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
+#endif
 
     return 0;
 }
