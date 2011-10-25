@@ -405,6 +405,11 @@ static te_errno iface_ip6_fw_get(unsigned int, const char *, char *,
 static te_errno iface_ip6_fw_set(unsigned int, const char *, const char *,
                                  const char *);
 
+static te_errno iface_ip6_accept_ra_get(unsigned int, const char *, char *,
+                                const char *);
+static te_errno iface_ip6_accept_ra_set(unsigned int, const char *,
+                                const char *, const char *);
+
 static te_errno interface_list(unsigned int, const char *, char **);
 
 static te_errno vlans_list(unsigned int, const char *, char **,
@@ -747,7 +752,11 @@ RCF_PCH_CFG_NODE_RW(node_iface_ip4_fw, "iface_ip4_fw", NULL,
 RCF_PCH_CFG_NODE_RW(node_iface_ip6_fw, "iface_ip6_fw", NULL,
                     &node_iface_ip4_fw, iface_ip6_fw_get, iface_ip6_fw_set);
 
-RCF_PCH_CFG_NODE_RO(node_ifindex, "index", NULL, &node_iface_ip6_fw,
+RCF_PCH_CFG_NODE_RW(node_iface_ip6_accept_ra, "iface_ip6_accept_ra", NULL,
+                    &node_iface_ip6_fw,
+                    iface_ip6_accept_ra_get, iface_ip6_accept_ra_set);
+
+RCF_PCH_CFG_NODE_RO(node_ifindex, "index", NULL, &node_iface_ip6_accept_ra,
                     ifindex_get);
 
 RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
@@ -4886,6 +4895,111 @@ iface_ip6_fw_set(unsigned int gid, const char *oid, const char *value,
 
     close(fd);
 #else
+    /* FIXME Add implementation in SOLARIS and(or) BSD if necessary */
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+
+    return 0;
+}
+
+/**
+ * Get IP6 'accept_ra' state of the interface.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         value location
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+iface_ip6_accept_ra_get(unsigned int gid, const char *oid, char *value,
+                 const char *ifname)
+{
+#if __linux__
+    char    c[2];
+    int     fd;
+    char    filename[128];
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    sprintf(filename, "/proc/sys/net/ipv6/conf/%s/accept_ra", ifname);
+    if ((fd = open(filename, O_RDONLY)) < 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    if (read(fd, c, 1) < 0)
+    {
+        close(fd);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+    close(fd);
+
+    c[1] = '\0';
+    sprintf(value, "%s", c);
+#else
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(ifname);
+
+    /* FIXME Add implementation in SOLARIS and(or) BSD if necessary */
+    sprintf(value, "%d", 0);
+#endif
+
+    return 0;
+}
+
+/**
+ * Change IP6 'accept_ra' state of the interface.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         new value pointer
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+iface_ip6_accept_ra_set(unsigned int gid, const char *oid,
+                const char *value, const char *ifname)
+{
+#if __linux__
+    int     fd;
+    char    filename[128];
+    int     accept_ra_val = -1; /* Invalid value */
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (sscanf(value, "%d", &accept_ra_val) != 1 ||
+        accept_ra_val < 0 ||
+        accept_ra_val > 2 /* Allowed values are 0, 1, 2 */)
+    {
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    sprintf(filename, "/proc/sys/net/ipv6/conf/%s/accept_ra", ifname);
+    if ((fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0666)) < 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    if (write(fd,
+              accept_ra_val == 0 ?
+                "0\n" :
+                    accept_ra_val == 1 ?
+                        "1\n" :
+                            "2\n", 2) < 0)
+    {
+        close(fd);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    close(fd);
+#else
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+    UNUSED(ifname);
+
     /* FIXME Add implementation in SOLARIS and(or) BSD if necessary */
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
