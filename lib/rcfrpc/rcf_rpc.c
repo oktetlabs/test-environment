@@ -160,7 +160,9 @@ rcf_rpc_server_get(const char *ta, const char *name,
     /* Try to find existing RPC server */
     rc = cfg_get_instance_fmt(NULL, &val0, "/agent:%s/rpcserver:%s",
                               ta, name);
- 
+
+    if (rc != 0)
+        ERROR("/agent:%s/rpcserver:%s doen't exist", ta, name);
     if (rc != 0 && (flags & RCF_RPC_SERVER_GET_EXISTING))
         return TE_RC(TE_RCF_API, TE_ENOENT);
     
@@ -260,10 +262,13 @@ rcf_rpc_server_get(const char *ta, const char *name,
         /* Restart it */
         if ((rc = cfg_del_instance_fmt(FALSE, "/agent:%s/rpcserver:%s", 
                                        ta, name)) != 0 ||
-            (rc = cfg_add_instance_fmt(&handle, CVT_STRING, val0, 
-                                       "/agent:%s/rpcserver:%s", 
-                                       ta, name)) != 0)
+            (rc1 = cfg_add_instance_fmt(&handle, CVT_STRING, val0, 
+                                        "/agent:%s/rpcserver:%s", 
+                                        ta, name)) != 0)
         {
+            ERROR("Failed to %s rpcserver %s on agent %s",
+                  (rc == 0) ? "add" : "delete", name, ta);
+            rc = (rc == 0) ? rc1 : rc;
             RETERR(rc, "Failed to restart RPC server %s", name);
         }
     }
