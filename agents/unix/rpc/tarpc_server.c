@@ -6019,7 +6019,7 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
             unchanged++;
             ret = 0;
         }
-    } while (unchanged != 3);
+    } while (unchanged != 4);
 
 overfill_buffers_exit:
     iomux_close(in->iomux, &iomux_f, &iomux_st);
