@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Clean up TE sources to build from scratch:
 # 1. Delete all 'configure' scripts marked as ignored in Subversion.
