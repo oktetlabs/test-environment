@@ -957,12 +957,9 @@ get_last_label(const char *oid)
 static int
 ds_dhcpserver_save_conf(void)
 {
-#if defined __sun__
-    int                    rc;
-    char                   *p = dhcp_server_ifs;
-#endif
     te_dhcp_server_subnet  *s;
     host                   *h;
+    FILE                   *f;
 #if defined __linux__
     te_dhcp_option         *opt;
     space                  *sp;
@@ -971,8 +968,10 @@ ds_dhcpserver_save_conf(void)
      * No need 'ipv4_subnets' to be global like 'ipv6_subnets'.
      * Used only here to check consistency of dhcpd configuration.
      */
+#elif defined __sun__
+    int                    rc;
+    char                   *p = dhcp_server_ifs;
 #endif
-    FILE                   *f;
 
     INFO("%s()", __FUNCTION__);
 
@@ -983,47 +982,14 @@ ds_dhcpserver_save_conf(void)
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
-#if defined __sun__
-    ds_config_touch(dhcp_server_conf_backup);
-
-    if (p != NULL)
-        for (p = strchr(p, ' '); p != NULL; p = strchr(p, ' '))
-          *p = ',';
-
-    fprintf(f,
-            "BOOTP_COMPAT=automatic\n"
-            "DAEMON_ENABLED=TRUE\n"
-            "RESOURCE=SUNWbinfiles\n"
-            "RUN_MODE=server\n"
-            "PATH=/var/mydhcp\n" /** FIXME */
-            "CONVER=1\n"
-            "INTERFACES=%s\n",
-            dhcp_server_ifs != NULL ? dhcp_server_ifs : "");
-
-    if (fsync(fileno(f)) != 0)
-    {
-        int err = errno;
-
-        ERROR("%s(): fsync() failed: %s", __FUNCTION__, strerror(err));
-        (void)fclose(f);
-        return TE_OS_RC(TE_TA_UNIX, err);
-    }
-
-    if (fclose(f) != 0)
-    {
-        ERROR("%s(): fclose() failed: %s", __FUNCTION__, strerror(errno));
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    }
-
-    ta_system("rm -f /var/mydhcp/*"); /** FIXME */
-#endif
-
 #if defined __linux__
-    /* Suppose DHCPv4 be used */
     ipv6_subnets = FALSE;
     ipv4_subnets = FALSE;
 
-    /* Hardcoded 'deny unknown-clients' */
+    /*
+     * Hardcoded 'deny unknown-clients' to start server
+     * with empty configuration
+     */
     fprintf(f, "deny unknown-clients;\n\n");
     fprintf(f, "\n");
 
@@ -1036,12 +1002,10 @@ ds_dhcpserver_save_conf(void)
             fprintf(f, "option %s code %d = %s;\n",
                     sp_opt->name, sp_opt->code, sp_opt->type);
     }
-#endif
 
     TAILQ_FOREACH(s, &subnets, links)
     {
         struct in_addr  mask;
-#if defined __linux__
         struct in6_addr addr;
         int             pton_retval;
         te_bool         match;
@@ -1082,31 +1046,50 @@ ds_dhcpserver_save_conf(void)
         } while (0);
 #undef FAMILY_MATCH
 
-        /* Open 'subnet' specification block */
+        /* Open 'subnet' or 'subnet6' specification block */
         if (ipv4_subnet && !ipv6_subnets)
         {
-            /* 'subnet' is specified: 'subnet6' specifications
-             * are not allowed, we must start in DHCPv4 mode
+            /*
+             * 'subnet' (DHCPv4) specification is allowed:
+             * because no 'subnet6' (DHCPv6) specifications done.
+             * Assign 'ipv4_subnets = TRUE' to forbid further
+             * 'subnet6' specifications.
              */
             ipv4_subnets = TRUE;
             mask.s_addr = htonl(PREFIX2MASK(s->prefix_len));
+            /* Add 'subnet' specification */
             fprintf(f, "subnet %s netmask %s {\n",
                     s->subnet, inet_ntop(AF_INET, &mask, buf, sizeof(buf)));
         }
         else if (!ipv4_subnet && !ipv4_subnets)
         {
             /*
-             * 'subnet6' is specified: 'subnet' specifications
-             * are not allowed, we must start in DHCPv6 mode.
+             * 'subnet6' (DHCPv6) specification is allowed:
+             * because no 'subnet' (DHCPv4) specifications done.
+             * Assign 'ipv6_subnets = TRUE' to forbid further
+             * 'subnet' specifications.
              */
             ipv6_subnets = TRUE;
+            /* Add 'subnet6' specification */
             fprintf(f, "subnet6 %s/%d {\n",
                     s->subnet, s->prefix_len);
         }
         else
         {
+            /*
+             * Error cases:
+             * 1) ipv4_subnet && ipv6_subnets - try to add 'subnet'
+             *    when one or more 'subnet6' specifications exist
+             * 2) !ipv4_subnet && ipv4_subnets - try to add 'subnet6'
+             *    when one or more 'subnet' specifications exist
+             */
             ERROR("%s(): configuration inconsistency: mixed "
                   "'subnet' and 'subnet6' specifications", __FUNCTION__);
+            /*
+             * This is fatal. Daemon dhcpd will not start with
+             * like inconsistent configurations. We must return with
+             * error.
+             */
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
 
@@ -1133,165 +1116,146 @@ ds_dhcpserver_save_conf(void)
             fprintf(f, "\tvendor-option-space %s;\n", s->vos);
         }
 
-        /* Close subnet specification block */
+        /* Close 'subnet' or 'subnet6' specification block */
         fprintf(f, "}\n");
-#elif defined __sun__
-        TE_SPRINTF(buf, "/usr/sbin/pntadm -C %s", s->subnet);
-        if ((rc = ta_system(buf)) != 0)
-            return rc;
-
-#if 0
-        mask.s_addr = htonl(PREFIX2MASK(s->prefix_len));
-        /* FIXME ('/etc/inet/netmasks' must be maintained) */
-        add_xxx(s->subnet, inet_ntop(AF_INET, &mask, buf, sizeof(buf)));
-#endif
-#endif
     }
 
-#if defined __linux__
     if (!ipv4_subnets && !ipv6_subnets)
     {
-        ERROR("%s(): configuration inconsistency: neither "
-              "'subnet' nor 'subnet6' specifications", __FUNCTION__);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-    fprintf(f, "\n");
-#endif
-
-    for (h = hosts; h != NULL; h = h->next)
-    {
-#if defined __linux__
-        /* Open 'host' specification block */
-        fprintf(f, "host %s {\n", h->name);
-
         /*
-         * Due to consistency check ipv4_subnets == !ipv6_subnets.
-         * In all cases when ipv4_subnets == ipv6_subnets function
-         * returns.
+         * Not fatal. We may report error and start
+         * with empty configuration.
          */
-        /* DHCPv4 specific */
-        if (h->chaddr)
-        {
-            if (!ipv6_subnets)
-            {
-                fprintf(f, "\thardware ethernet %s;\n", h->chaddr);
-            }
-            else
-            {
-                ERROR("%s(): configuration inconsistency: "
-                      "'hardware ethernet' is forbidden "
-                      "in DHCPv6 mode", __FUNCTION__);
-                return TE_RC(TE_TA_UNIX, TE_EINVAL);
-            }
-        }
+        ERROR("%s(): configuration inconsistency: neither "
+              "'subnet' nor 'subnet6' specifications, "
+              "all 'host' specifications will be skipped", __FUNCTION__);
+    }
+    else
+    {
+        /*
+         * Continue with 'host' specifications when one or more
+         * 'subnet' or 'subnet6' specifications done.
+         */
+        fprintf(f, "\n");
 
-        if (h->client_id)
+        for (h = hosts; h != NULL; h = h->next)
         {
-            if (!ipv6_subnets)
-            {
-                fprintf(f, "\tclient-id %s;\n", h->client_id);
-            }
-            else
-            {
-                ERROR("%s(): configuration inconsistency: "
-                      "'client-id' is forbidden "
-                      "in DHCPv6 mode", __FUNCTION__);
-                return TE_RC(TE_TA_UNIX, TE_EINVAL);
-            }
-        }
+            /* Open 'host' specification block */
+            fprintf(f, "host %s {\n", h->name);
 
-        if (h->next_server)
-        {
-            if (!ipv6_subnets)
+            /*
+             * Due to consistency check we have
+             * ipv4_subnets == !ipv6_subnets.
+             * In all cases when ipv4_subnets == ipv6_subnets function
+             * returns or skips 'host' specifications.
+             */
+            /* DHCPv4 specific */
+            if (h->chaddr)
             {
-                fprintf(f, "\tnext-server %s;\n", h->next_server);
+                if (!ipv6_subnets)
+                {
+                    fprintf(f, "\thardware ethernet %s;\n", h->chaddr);
+                }
+                else
+                {
+                    ERROR("%s(): configuration inconsistency: "
+                          "'hardware ethernet' is forbidden "
+                          "in DHCPv6 mode", __FUNCTION__);
+                    return TE_RC(TE_TA_UNIX, TE_EINVAL);
+                }
             }
-            else
-            {
-                ERROR("%s(): configuration inconsistency: "
-                      "'next-server' is forbidden "
-                      "in DHCPv6 mode", __FUNCTION__);
-                return TE_RC(TE_TA_UNIX, TE_EINVAL);
-            }
-        }
 
-        /* DHCPv6 specific */
-        if (h->host_id)
-        {
-            if (ipv6_subnets)
+            if (h->client_id)
+            {
+                if (!ipv6_subnets)
+                {
+                    fprintf(f, "\tclient-id %s;\n", h->client_id);
+                }
+                else
+                {
+                    ERROR("%s(): configuration inconsistency: "
+                          "'client-id' is forbidden "
+                          "in DHCPv6 mode", __FUNCTION__);
+                    return TE_RC(TE_TA_UNIX, TE_EINVAL);
+                }
+            }
+
+            if (h->next_server)
+            {
+                if (!ipv6_subnets)
+                {
+                    fprintf(f, "\tnext-server %s;\n", h->next_server);
+                }
+                else
+                {
+                    ERROR("%s(): configuration inconsistency: "
+                          "'next-server' is forbidden "
+                          "in DHCPv6 mode", __FUNCTION__);
+                    return TE_RC(TE_TA_UNIX, TE_EINVAL);
+                }
+            }
+
+            /* DHCPv6 specific */
+            if (h->host_id)
+            {
+                if (ipv6_subnets)
+                {
+                    fprintf(f,
+                            "\thost-identifier option dhcp6.client-id %s;\n",
+                            h->host_id);
+                }
+                else
+                {
+                    ERROR("%s(): configuration inconsistency: "
+                          "'host-identifier' is forbidden "
+                          "in DHCPv4 mode", __FUNCTION__);
+                    return TE_RC(TE_TA_UNIX, TE_EINVAL);
+                }
+            }
+
+            if (h->prefix6)
+            {
+                if (ipv6_subnets)
+                {
+                    fprintf(f, "\tfixed-prefix6 %s;\n", h->prefix6);
+                }
+                else
+                {
+                    ERROR("%s(): configuration inconsistency: "
+                          "'fixed-prefix6' is forbidden "
+                          "in DHCPv4 mode", __FUNCTION__);
+                    return TE_RC(TE_TA_UNIX, TE_EINVAL);
+                }
+            }
+
+            /* Common */
+            if (h->ip_addr)
             {
                 fprintf(f,
-                        "\thost-identifier option dhcp6.client-id %s;\n",
-                        h->host_id);
+                        (ipv6_subnets) ?
+                            "\tfixed-address6 %s;\n" :
+                                "\tfixed-address %s;\n",
+                        h->ip_addr);
             }
-            else
+
+            if (h->filename)
             {
-                ERROR("%s(): configuration inconsistency: "
-                      "'host-identifier' is forbidden "
-                      "in DHCPv4 mode", __FUNCTION__);
-                return TE_RC(TE_TA_UNIX, TE_EINVAL);
+                fprintf(f, "\tfilename \"%s\";\n", h->filename);
             }
-        }
 
-        if (h->prefix6)
-        {
-            if (ipv6_subnets)
+            for (opt = h->options; opt != NULL; opt = opt->next)
             {
-                fprintf(f, "\tfixed-prefix6 %s;\n", h->prefix6);
+                te_bool quoted = is_quoted(opt->name);
+
+                fprintf(f, "\toption %s %s%s%s;\n", opt->name,
+                        quoted ? "\"" : "", opt->value, quoted ? "\"" : "");
             }
-            else
-            {
-                ERROR("%s(): configuration inconsistency: "
-                      "'fixed-prefix6' is forbidden "
-                      "in DHCPv4 mode", __FUNCTION__);
-                return TE_RC(TE_TA_UNIX, TE_EINVAL);
-            }
+
+            /* Close 'host' specification block */
+            fprintf(f, "}\n");
         }
-
-        /* Common */
-        if (h->ip_addr)
-        {
-            fprintf(f,
-                    (ipv6_subnets) ?
-                        "\tfixed-address6 %s;\n" :
-                            "\tfixed-address %s;\n",
-                    h->ip_addr);
-        }
-
-        if (h->filename)
-        {
-            fprintf(f, "\tfilename \"%s\";\n", h->filename);
-        }
-
-        for (opt = h->options; opt != NULL; opt = opt->next)
-        {
-            te_bool quoted = is_quoted(opt->name);
-
-            fprintf(f, "\toption %s %s%s%s;\n", opt->name,
-                    quoted ? "\"" : "", opt->value, quoted ? "\"" : "");
-        }
-
-        /* Close 'host' specification block */
-        fprintf(f, "}\n");
-#elif defined __sun__
-        if (h->ip_addr)
-        {
-            char *p;
-
-            TE_SPRINTF(buf, "pntadm -f %s -A %s %s",
-                       h->flags, h->ip_addr, h->ip_addr);
-            if ((p = strrchr(buf, '.')) != NULL)
-            {
-                p[1] = '0';
-                p[2] = '\0';
-            }
-            if ((rc = ta_system(buf)) != 0)
-                return rc;
-        }
-#endif
     }
 
-#if defined __linux__
     fprintf(f, "\n");
 
     if (fsync(fileno(f)) != 0)
@@ -1307,6 +1271,72 @@ ds_dhcpserver_save_conf(void)
     {
         ERROR("%s(): fclose() failed: %s", __FUNCTION__, strerror(errno));
         return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+#elif defined __sun__
+    ds_config_touch(dhcp_server_conf_backup);
+
+    if (p != NULL)
+        for (p = strchr(p, ' '); p != NULL; p = strchr(p, ' '))
+          *p = ',';
+
+    fprintf(f,
+            "BOOTP_COMPAT=automatic\n"
+            "DAEMON_ENABLED=TRUE\n"
+            "RESOURCE=SUNWbinfiles\n"
+            "RUN_MODE=server\n"
+            "PATH=/var/mydhcp\n" /** FIXME */
+            "CONVER=1\n"
+            "INTERFACES=%s\n",
+            dhcp_server_ifs != NULL ? dhcp_server_ifs : "");
+
+    if (fsync(fileno(f)) != 0)
+    {
+        int err = errno;
+
+        ERROR("%s(): fsync() failed: %s", __FUNCTION__, strerror(err));
+        (void)fclose(f);
+        return TE_OS_RC(TE_TA_UNIX, err);
+    }
+
+    if (fclose(f) != 0)
+    {
+        ERROR("%s(): fclose() failed: %s", __FUNCTION__, strerror(errno));
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    ta_system("rm -f /var/mydhcp/*"); /** FIXME */
+
+    TAILQ_FOREACH(s, &subnets, links)
+    {
+        struct in_addr  mask;
+
+        TE_SPRINTF(buf, "/usr/sbin/pntadm -C %s", s->subnet);
+        if ((rc = ta_system(buf)) != 0)
+            return rc;
+
+#if 0
+        mask.s_addr = htonl(PREFIX2MASK(s->prefix_len));
+        /* FIXME ('/etc/inet/netmasks' must be maintained) */
+        add_xxx(s->subnet, inet_ntop(AF_INET, &mask, buf, sizeof(buf)));
+#endif
+    }
+
+    for (h = hosts; h != NULL; h = h->next)
+    {
+        if (h->ip_addr)
+        {
+            char *p;
+
+            TE_SPRINTF(buf, "pntadm -f %s -A %s %s",
+                       h->flags, h->ip_addr, h->ip_addr);
+            if ((p = strrchr(buf, '.')) != NULL)
+            {
+                p[1] = '0';
+                p[2] = '\0';
+            }
+            if ((rc = ta_system(buf)) != 0)
+                return rc;
+        }
     }
 #endif
 
