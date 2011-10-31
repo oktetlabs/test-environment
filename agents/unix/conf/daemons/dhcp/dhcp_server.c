@@ -1344,35 +1344,32 @@ ds_dhcpserver_save_conf(void)
 }
 
 #if defined __linux__
-static te_bool  is_run;
-static char    *name;
+static te_bool
+check_dhcpd_pid(const char *pid_filename)
+{
+    int     rc = 0;
+    char   *name;
 
-#define CHECK_DHCPD_PID(__dhcpd_pid_file) \
-    do {                                                                \
-        is_run = FALSE;                                                 \
-                                                                        \
-        sprintf(buf,                                                    \
-                "cat " __dhcpd_pid_file " 2>/dev/null 1>/dev/null");    \
-                                                                        \
-        if ((rc = ta_system(buf)) < 0 ||                                \
-            !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)                     \
-        {                                                               \
-            break;                                                      \
-        }                                                               \
-                                                                        \
-        if ((name = strrchr(dhcp_server_exec, '/')) == NULL)            \
-            name = (char *)dhcp_server_exec;                            \
-        else                                                            \
-            name++;                                                     \
-                                                                        \
-        sprintf(buf,                                                    \
-                PS_ALL_PID_ARGS " | grep $(cat "                        \
-                __dhcpd_pid_file ") | "                                 \
-                "grep -q %s >/dev/null 2>&1", name);                    \
-                                                                        \
-        is_run = !((rc = ta_system(buf)) < 0 ||                         \
-                   !WIFEXITED(rc) || WEXITSTATUS(rc) != 0);             \
-    } while (0)
+    sprintf(buf, "cat %s 2>/dev/null 1>/dev/null", pid_filename);
+
+    if ((rc = ta_system(buf)) < 0 ||
+        !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
+    {
+        return FALSE;
+    }
+
+    if ((name = strrchr(dhcp_server_exec, '/')) == NULL)
+        name = (char *)dhcp_server_exec;
+    else
+        name++;
+
+    sprintf(buf,
+            PS_ALL_PID_ARGS " | grep $(cat %s) | "
+            "grep -q %s >/dev/null 2>&1", pid_filename, name);
+
+    return !((rc = ta_system(buf)) < 0 ||
+             !WIFEXITED(rc) || WEXITSTATUS(rc) != 0);
+}
 
 #define KILL_DHCPD(__dhcpd_pid_file) \
     do {                                                                \
@@ -1391,14 +1388,12 @@ static char    *name;
 static te_bool
 ds_dhcpserver_is_run(void)
 {
-    int     rc = 0;
+    int         rc = 0;
 #if defined __linux__
-    CHECK_DHCPD_PID(TE_DHCPD_PID_FILENAME);
-    if (is_run)
-        return is_run;
+    if (check_dhcpd_pid(TE_DHCPD_PID_FILENAME))
+        return TRUE;
 
-    CHECK_DHCPD_PID(TE_DHCPD6_PID_FILENAME);
-    return is_run;
+    return check_dhcpd_pid(TE_DHCPD6_PID_FILENAME);
 #elif defined __sun__
     TE_SPRINTF(buf,
                "[ \"`/usr/bin/svcs -H -o STATE dhcp-server`\" "
@@ -1430,18 +1425,17 @@ ds_dhcpserver_script_stop(void)
 static te_errno
 ds_dhcpserver_stop(void)
 {
-    int     rc = 0;
+    int         rc = 0;
 
     ENTRY("%s()", __FUNCTION__);
 
 #if defined __linux__
-    CHECK_DHCPD_PID(TE_DHCPD_PID_FILENAME);
-    if (is_run)
+    if (check_dhcpd_pid(TE_DHCPD_PID_FILENAME))
     {
         KILL_DHCPD(TE_DHCPD_PID_FILENAME);
     }
-    CHECK_DHCPD_PID(TE_DHCPD6_PID_FILENAME);
-    if (is_run)
+
+    if (check_dhcpd_pid(TE_DHCPD6_PID_FILENAME))
     {
         KILL_DHCPD(TE_DHCPD6_PID_FILENAME);
     }
