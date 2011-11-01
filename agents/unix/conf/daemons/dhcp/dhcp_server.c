@@ -1388,13 +1388,14 @@ check_dhcpd_pid(const char *pid_filename)
 static te_bool
 ds_dhcpserver_is_run(void)
 {
-    int         rc = 0;
 #if defined __linux__
     if (check_dhcpd_pid(TE_DHCPD_PID_FILENAME))
         return TRUE;
 
     return check_dhcpd_pid(TE_DHCPD6_PID_FILENAME);
 #elif defined __sun__
+    int         rc = 0;
+
     TE_SPRINTF(buf,
                "[ \"`/usr/bin/svcs -H -o STATE dhcp-server`\" "
                "= \"online\" ]");
