@@ -118,6 +118,7 @@ te_radvd_str2optcode(const char *optstr)
     return retval;
 }
 
+#if 0
 static const char *
 te_radvd_optcode2str(te_radvd_optcode optcode)
 {
@@ -167,6 +168,7 @@ te_radvd_optcode2str(te_radvd_optcode optcode)
         default: return NULL;
     }
 }
+#endif
 
 static te_radvd_opttype
 te_radvd_optcode2opttype(te_radvd_optcode optcode)
@@ -217,11 +219,13 @@ te_radvd_optcode2opttype(te_radvd_optcode optcode)
     }
 }
 
+#if 0
 static te_radvd_opttype
 te_radvd_str2opttype(char *optstr)
 {
     return te_radvd_optcode2opttype(te_radvd_str2optcode(optstr));
 }
+#endif
 
 static te_radvd_optgroup
 te_radvd_optcode2optgroup(te_radvd_optcode optcode)

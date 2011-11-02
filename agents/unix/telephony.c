@@ -213,14 +213,14 @@ telephony_hangup(int chan)
 int
 telephony_check_dial_tone(int chan, int plan)
 {
-    int     max1 = -1;
-    int     max2 = -1;
-    int     max3 = -1;
-    int     max4 = -1;
-    short   buf[BLOCKSIZE];
-    int     len;
-    int     i;
-    float   pows[sizeof(freqs) / sizeof(double)];
+    int             max1 = -1;
+    int             max2 = -1;
+    int             max3 = -1;
+    int             max4 = -1;
+    short           buf[BLOCKSIZE];
+    int             len;
+    unsigned int    i;
+    float           pows[sizeof(freqs) / sizeof(double)];
 
     for (i = 0; i < GET_PHONE / (BLOCKSIZE * 2); i++)
     {
@@ -251,7 +251,7 @@ telephony_check_dial_tone(int chan, int plan)
 
     for (i = 0; i < sizeof(freqs) / sizeof(double); i++)
         pows[i] = telephony_goertzel(buf, BLOCKSIZE, freqs[i]);
- 
+
     for (i = 0; i < sizeof(freqs) / sizeof(double); i++)
     {
         if (pows[i] < SILENCE_TONE)

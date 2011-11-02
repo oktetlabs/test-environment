@@ -256,13 +256,13 @@ wifi_get_skfd()
  * Execute a private command on the interface
  */
 static int
-set_private_cmd(int             skfd,           /* Socket */
-                const char     *ifname,         /* Dev name */
-                const char     *cmdname,        /* Command name */
-                iwprivargs     *priv,           /* Private ioctl description */
-                int             priv_num,       /* Number of descriptions */
-                int             count,          /* Args count */
-                va_list ap)                     /* Command arguments */
+set_private_cmd(int             skfd,       /* Socket */
+                const char     *ifname,     /* Dev name */
+                const char     *cmdname,    /* Command name */
+                iwprivargs     *priv,       /* Private ioctl description */
+                int             priv_num,   /* Number of descriptions */
+                int             count,      /* Args count */
+                va_list ap)                 /* Command arguments */
 {
     struct iwreq    wrq;
     u_char          buffer[4096];       /* Only that big in v25 and later */
@@ -659,6 +659,7 @@ set_private_cmd(int             skfd,           /* Socket */
 /*
  * Execute a private command on the interface
  */
+#if 0
 static int
 set_private(const char *ifname, /* Dev name */
             const char *cmd,
@@ -694,6 +695,7 @@ set_private(const char *ifname, /* Dev name */
 
     return rc;
 }
+#endif
 
 /**
  * Update a configuration item in WiFi card.
@@ -815,7 +817,6 @@ init_sta_info(const char *ifname, wifi_sta_info_t *info)
 {
     struct iwreq    wrq;
     uint8_t         key[IW_ENCODING_TOKEN_MAX];
-    int             i;
     te_errno        rc;
 
     memset(info, 0, sizeof(*info));
@@ -1096,6 +1097,7 @@ wifi_wep_def_key_id_get(unsigned int gid, const char *oid, char *value,
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(ifname);
 
     GET_WIFI_STA_INFO(ifname, info);
     CHECK_CONSISTENCY(ifname, info);
@@ -1184,6 +1186,7 @@ wifi_wep_key_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
     UNUSED(p1);
     UNUSED(p2);
+    UNUSED(ifname);
 
     GET_WIFI_STA_INFO(ifname, info);
     CHECK_CONSISTENCY(ifname, info);
@@ -1303,6 +1306,7 @@ wifi_wep_get(unsigned int gid, const char *oid, char *value,
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(ifname);
 
     GET_WIFI_STA_INFO(ifname, info);
     CHECK_CONSISTENCY(ifname, info);
@@ -1486,6 +1490,7 @@ wifi_auth_get(unsigned int gid, const char *oid, char *value,
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(ifname);
 
     GET_WIFI_STA_INFO(ifname, info);
     CHECK_CONSISTENCY(ifname, info);

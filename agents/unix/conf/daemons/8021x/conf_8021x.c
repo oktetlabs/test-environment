@@ -787,7 +787,6 @@ ds_supplicant_set(unsigned int gid, const char *oid,
                   const char *value, const char *instance, ...)
 {
     supplicant *supp = supp_find(instance);
-    te_errno    rc;
 
     UNUSED(gid);
     UNUSED(oid);

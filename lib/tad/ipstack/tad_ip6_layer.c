@@ -1314,7 +1314,7 @@ tad_ip6_match_pre_cb(csap_p              csap,
     tad_ip6_proto_pdu_data *pkt_data;
     te_errno                rc = 0;
 
-    int                     i,j;
+    unsigned int            i,j;
     unsigned int            n_pkts;
     unsigned int            n_segs;
     struct tad_pkt         *pkt;
@@ -1331,9 +1331,11 @@ tad_ip6_match_pre_cb(csap_p              csap,
 
     i = 0;
     pkt = meta_pkt_layer->pkts.pkts.cqh_first;
+    n_pkts = meta_pkt_layer->pkts.n_pkts;
     while (i < n_pkts) {
         j = 0;
         seg = pkt->segs.cqh_first;
+        n_segs = pkt->n_segs;
         while (j < n_segs) {
             seg = seg->links.cqe_next;
             j++;
@@ -1389,6 +1391,8 @@ tad_ip6_match_do_cb(csap_p           csap,
     tad_ip6_proto_pdu_data *pkt_data = meta_pkt->layers[layer].opaque;
     te_errno                rc = 0;
     unsigned int            bitoff = 0;
+
+    UNUSED(ptrn_pdu);
 
     proto_data = csap_get_proto_spec_data(csap, layer);
 
