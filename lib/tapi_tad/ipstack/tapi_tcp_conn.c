@@ -132,6 +132,7 @@ typedef struct tapi_tcp_connection_t {
     tapi_tcp_pos_t seq_sent;
 
     tapi_tcp_pos_t ack_got;
+    tapi_tcp_pos_t last_syn_seqn_got;
     tapi_tcp_pos_t ack_sent;
 
     tapi_tcp_pos_t our_isn;
@@ -590,6 +591,7 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
     {
         conn_descr->peer_isn = seq_got;
         conn_descr->last_len_got = pkt->len = 1;
+        conn_descr->last_syn_seqn_got = seq_got;
     }
 
     conn_descr->seq_got = seq_got;
@@ -954,12 +956,9 @@ cleanup:
     return TE_RC(TE_TAPI, rc);
 }
 
-
-/* automatci sending ACK with FIN as very strange operation.. disabled. */
-#define FIN_ACK 0
-
-int
-tapi_tcp_send_fin(tapi_tcp_handler_t handler, int timeout)
+static int
+tapi_tcp_send_fin_gen(tapi_tcp_handler_t handler, int timeout,
+                      te_bool fin_ack)
 {
     tapi_tcp_connection_t *conn_descr;
     asn_value             *fin_template = NULL;
@@ -979,11 +978,11 @@ tapi_tcp_send_fin(tapi_tcp_handler_t handler, int timeout)
                       conn_descr->rcv_csap,
                       tcp_conn_pkt_handler, conn_descr, &num);
 
-#if FIN_ACK
-    new_ackn = conn_next_ack(conn_descr);
-#else
-    new_ackn = conn_descr->ack_sent;
-#endif
+    if (fin_ack)
+        new_ackn = conn_next_ack(conn_descr);
+    else
+        new_ackn = conn_descr->ack_sent;
+
     INFO("%s(conn %d) new ack %u", __FUNCTION__, handler, new_ackn);
     tapi_tcp_template(conn_next_seq(conn_descr), new_ackn, FALSE, TRUE, 
                       NULL, 0, &fin_template);
@@ -1033,6 +1032,18 @@ tapi_tcp_send_fin(tapi_tcp_handler_t handler, int timeout)
     }
 
     return 0;
+}
+
+int
+tapi_tcp_send_fin(tapi_tcp_handler_t handler, int timeout)
+{
+    return tapi_tcp_send_fin_gen(handler, timeout, FALSE);
+}
+
+int
+tapi_tcp_send_fin_ack(tapi_tcp_handler_t handler, int timeout)
+{
+    return tapi_tcp_send_fin_gen(handler, timeout, TRUE);
 }
 
 int
@@ -1418,7 +1429,16 @@ conn_next_ack(tapi_tcp_connection_t *conn_descr)
          conn_descr->seq_got, conn_descr->last_len_got);
 
     /* TODO this seems to be not quiet correct */
-    return conn_descr->seq_got + conn_descr->last_len_got;
+    if (conn_descr->last_len_got > 0 ||
+        conn_descr->last_syn_seqn_got != conn_descr->seq_got - 1)
+        return conn_descr->seq_got + conn_descr->last_len_got;
+    else
+        /*
+         * To prevent ack of simple ack without data
+         * sent in answer to syn-ack - in this case it
+         * has incremented seqn
+         */
+        return conn_descr->seq_got - 1;
 }
 
 static inline int

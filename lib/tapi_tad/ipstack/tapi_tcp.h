@@ -594,6 +594,20 @@ extern int tapi_tcp_wait_msg(tapi_tcp_handler_t handler, int timeout);
 extern int tapi_tcp_send_fin(tapi_tcp_handler_t handler, int timeout);
 
 /**
+ * Send FIN in TCP connection with ACK (possibly to FIN sent by peer),
+ * and wait ACK for it.
+ * This is either part of close process, or shutdown for writing.
+ * This method blocks until ACK will be received. 
+ *
+ * @param handler       TAPI handler of TCP connection;
+ * @param timeout       time in milliseconds, while TA should wait 
+ *                      for answer for FIN;
+ *
+ * @return Status code
+ */
+extern int tapi_tcp_send_fin_ack(tapi_tcp_handler_t handler, int timeout);
+
+/**
  * Send RST in TCP connection.
  *
  * @param handler       TAPI handler of TCP connection;
