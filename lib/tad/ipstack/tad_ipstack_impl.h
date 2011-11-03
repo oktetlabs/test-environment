@@ -551,35 +551,6 @@ extern te_errno tad_ip6_match_post_cb(csap_p              csap,
                                       tad_recv_pkt_layer *meta_pkt_layer);
 
 /**
- * Callback to init IPv6 layer as read/write layer of the CSAP.
- *
- * The function complies with csap_rw_init_cb_t prototype.
- */
-extern te_errno tad_ip6_rw_init_cb(csap_p csap);
-
-/**
- * Callback to destroy IPv6 layer as read/write layer of the CSAP.
- *
- * The function complies with csap_rw_destroy_cb_t prototype.
- */
-extern te_errno tad_ip6_rw_destroy_cb(csap_p csap);
-
-/**
- * Callback for write data to media of IPv6 CSAP. 
- *
- * The function complies with csap_write_cb_t prototype.
- */
-extern te_errno tad_ip6_write_cb(csap_p csap, const tad_pkt *pkt);
-
-/**
- * Callback for read data from media of IPv6 CSAP. 
- *
- * The function complies with csap_read_cb_t prototype.
- */
-extern te_errno tad_ip6_read_cb(csap_p csap, unsigned int timeout,
-                                tad_pkt *pkt, size_t *pkt_len);
-
-/**
  * Callback for init 'icmp6' CSAP layer.
  *
  * The function complies with csap_layer_init_cb_t prototype.

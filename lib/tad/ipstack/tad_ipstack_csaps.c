@@ -107,18 +107,7 @@ static csap_spt_type_t ip6_csap_spt =
 
     .generate_pattern_cb = NULL,
 
-    .rw_init_cb          = tad_ip6_rw_init_cb,
-    .rw_destroy_cb       = tad_ip6_rw_destroy_cb,
-
-    .prepare_send_cb     = NULL,
-    .write_cb            = tad_ip6_write_cb,
-    .shutdown_send_cb    = NULL,
-
-    .prepare_recv_cb     = NULL,
-    .read_cb             = tad_ip6_read_cb,
-    .shutdown_recv_cb    = NULL,
-
-    .write_read_cb       = tad_common_write_read_cb,
+    CSAP_SUPPORT_NO_RW,
 };
 
 /**
