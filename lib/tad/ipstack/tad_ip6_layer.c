@@ -1314,12 +1314,6 @@ tad_ip6_match_pre_cb(csap_p              csap,
     tad_ip6_proto_pdu_data *pkt_data;
     te_errno                rc = 0;
 
-    unsigned int            i,j;
-    unsigned int            n_pkts;
-    unsigned int            n_segs;
-    struct tad_pkt         *pkt;
-    struct tad_pkt_seg     *seg;
-
     proto_data = csap_get_proto_spec_data(csap, layer);
 
     IF_NULL_RETURN(pkt_data = TE_ALLOC(sizeof(*pkt_data)));
@@ -1328,21 +1322,6 @@ tad_ip6_match_pre_cb(csap_p              csap,
 
     IF_RC_RETURN(tad_bps_pkt_frag_match_pre(&proto_data->hdr,
                                             &pkt_data->hdr));
-
-    i = 0;
-    pkt = meta_pkt_layer->pkts.pkts.cqh_first;
-    n_pkts = meta_pkt_layer->pkts.n_pkts;
-    while (i < n_pkts) {
-        j = 0;
-        seg = pkt->segs.cqh_first;
-        n_segs = pkt->n_segs;
-        while (j < n_segs) {
-            seg = seg->links.cqe_next;
-            j++;
-        }
-        pkt = pkt->links.cqe_next;
-        i++;
-    }
 
     return rc;
 }
