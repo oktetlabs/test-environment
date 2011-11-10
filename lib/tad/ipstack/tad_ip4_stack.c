@@ -97,7 +97,7 @@ typedef struct tad_ip4_rw_data {
 /* See description tad_ipstack_impl.h */
 te_errno
 tad_ip4_rw_init_cb(csap_p csap)
-{ 
+{
     tad_ip4_rw_data    *spec_data;
 
     int    opt = 1;
@@ -138,11 +138,11 @@ tad_ip4_rw_init_cb(csap_p csap)
         spec_data->sa_op.sll_halen = 0;
     }
 
-    spec_data->socket = socket(PF_PACKET, SOCK_DGRAM, htons(ETH_P_IP)); 
+    spec_data->socket = socket(PF_PACKET, SOCK_DGRAM, htons(ETH_P_IP));
 #else
     len = sizeof(struct in_addr);
-    rc = asn_read_value_field(csap->layers[csap_get_rw_layer(csap)].nds, 
-                              &spec_data->sa_op.sin_addr.s_addr, &len, 
+    rc = asn_read_value_field(csap->layers[csap_get_rw_layer(csap)].nds,
+                              &spec_data->sa_op.sin_addr.s_addr, &len,
                               "local-addr");
     if (rc != 0 && rc != TE_EASNINCOMPLVAL)
         return TE_RC(TE_TAD_CSAP, rc);
@@ -157,7 +157,7 @@ tad_ip4_rw_init_cb(csap_p csap)
     {
         return TE_OS_RC(TE_TAD_CSAP, errno);
     }
-    if (setsockopt(spec_data->socket, SOL_SOCKET, SO_REUSEADDR, 
+    if (setsockopt(spec_data->socket, SOL_SOCKET, SO_REUSEADDR,
                    &opt, sizeof(opt)) < 0)
     {
         return TE_OS_RC(TE_TAD_CSAP, errno);
@@ -171,10 +171,10 @@ te_errno
 tad_ip4_rw_destroy_cb(csap_p csap)
 {
     tad_ip4_rw_data    *spec_data = csap_get_rw_data(csap);
-     
+
     if (spec_data->socket >= 0)
     {
-        close(spec_data->socket);    
+        close(spec_data->socket);
         spec_data->socket = -1;
     }
 
@@ -187,7 +187,7 @@ te_errno
 tad_ip4_read_cb(csap_p csap, unsigned int timeout,
                 tad_pkt *pkt, size_t *pkt_len)
 {
-    tad_ip4_rw_data    *spec_data = csap_get_rw_data(csap); 
+    tad_ip4_rw_data    *spec_data = csap_get_rw_data(csap);
     te_errno            rc;
 
     rc = tad_common_read_cb_sock(csap, spec_data->socket, 0, timeout,
@@ -228,7 +228,7 @@ tad_ip4_write_cb(csap_p csap, const tad_pkt *pkt)
     msg.msg_iovlen = iovlen;
 
     ret = sendmsg(spec_data->socket, &msg, 0);
-    if (ret < 0) 
+    if (ret < 0)
     {
         rc = TE_OS_RC(TE_TAD_CSAP, errno);
         return rc;

@@ -44,7 +44,7 @@
 /**
  * IPv4
  */
-static csap_spt_type_t ip4_csap_spt = 
+static csap_spt_type_t ip4_csap_spt =
 {
     .proto               = "ip4",
     .unregister_cb       = NULL,
@@ -73,7 +73,7 @@ static csap_spt_type_t ip4_csap_spt =
     .prepare_send_cb     = NULL,
     .write_cb            = tad_ip4_write_cb,
     .shutdown_send_cb    = NULL,
-    
+
     .prepare_recv_cb     = NULL,
     .read_cb             = tad_ip4_read_cb,
     .shutdown_recv_cb    = NULL,
@@ -113,7 +113,7 @@ static csap_spt_type_t ip6_csap_spt =
 /**
  * ICMPv4
  */
-static csap_spt_type_t icmp4_csap_spt = 
+static csap_spt_type_t icmp4_csap_spt =
 {
     .proto               = "icmp4",
     .unregister_cb       = NULL,
@@ -142,7 +142,7 @@ static csap_spt_type_t icmp4_csap_spt =
 /**
  * ICMPv6
  */
-static csap_spt_type_t icmp6_csap_spt = 
+static csap_spt_type_t icmp6_csap_spt =
 {
     .proto               = "icmp6",
     .unregister_cb       = NULL,
@@ -171,7 +171,7 @@ static csap_spt_type_t icmp6_csap_spt =
 /**
  * UDP
  */
-static csap_spt_type_t udp_csap_spt = 
+static csap_spt_type_t udp_csap_spt =
 {
     .proto               = "udp",
     .unregister_cb       = NULL,
@@ -200,7 +200,7 @@ static csap_spt_type_t udp_csap_spt =
 /**
  * TCP
  */
-static csap_spt_type_t tcp_csap_spt = 
+static csap_spt_type_t tcp_csap_spt =
 {
     .proto               = "tcp",
     .unregister_cb       = NULL,

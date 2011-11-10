@@ -170,7 +170,7 @@ static const tad_bps_pkt_frag tad_icmp4_ts_bps_hdr[] =
 /* See description tad_ipstack_impl.h */
 te_errno
 tad_icmp4_init_cb(csap_p csap, unsigned int layer)
-{ 
+{
     te_errno                rc;
     tad_icmp4_proto_data   *proto_data;
     const asn_value        *layer_nds;
@@ -219,7 +219,7 @@ tad_icmp4_init_cb(csap_p csap, unsigned int layer)
     if (rc != 0)
         return rc;
 
-    return 0; 
+    return 0;
 }
 
 /* See description tad_ipstack_impl.h */
@@ -386,7 +386,7 @@ tad_icmp4_frag_structs_by_type(const unsigned int         type,
 #else
 #error Dont know type for ICMP information request
 #endif
-#ifdef ICMP_INFO_REPLY 
+#ifdef ICMP_INFO_REPLY
         case ICMP_INFO_REPLY:
 #elif defined(ICMP_IREQREPLY)
         case ICMP_IREQREPLY:
@@ -413,14 +413,14 @@ tad_icmp4_frag_structs_by_type(const unsigned int         type,
 #elif defined(ICMP_TSTAMP)
         case ICMP_TSTAMP:
 #else
-#error Dont know type for ICMP timestamp request 
+#error Dont know type for ICMP timestamp request
 #endif
 #ifdef ICMP_TIMESTAMPREPLY
         case ICMP_TIMESTAMPREPLY:
 #elif defined(ICMP_TSTAMPREPLY)
         case ICMP_TSTAMPREPLY:
 #else
-#error Dont know type for ICMP timestamp reply 
+#error Dont know type for ICMP timestamp reply
 #endif
             *def = &proto_data->ts;
             *data = &tmpl_data->ts;
@@ -487,7 +487,7 @@ tad_icmp4_gen_bin_cb_per_pdu(tad_pkt *pdu, void *hdr)
 te_errno
 tad_icmp4_gen_bin_cb(csap_p csap, unsigned int layer,
                      const asn_value *tmpl_pdu, void *opaque,
-                     const tad_tmpl_arg_t *args, size_t arg_num, 
+                     const tad_tmpl_arg_t *args, size_t arg_num,
                      tad_pkts *sdus, tad_pkts *pdus)
 {
     tad_icmp4_proto_data     *proto_data;
@@ -506,7 +506,7 @@ tad_icmp4_gen_bin_cb(csap_p csap, unsigned int layer,
             (unsigned)arg_num, sdus, pdus);
 
     proto_data = csap_get_proto_spec_data(csap, layer);
- 
+
     /* Generate binary template of the header */
     bitoff = 0;
     rc = tad_bps_pkt_frag_gen_bin(&proto_data->hdr, &tmpl_data->hdr,
@@ -673,7 +673,7 @@ tad_icmp4_match_do_cb(csap_p           csap,
                CSAP_LOG_ARGS(csap));
         return TE_RC(TE_TAD_CSAP, TE_ETADNOTMATCH);
     }
-  
+
     proto_data = csap_get_proto_spec_data(csap, layer);
 
     assert(proto_data != NULL);

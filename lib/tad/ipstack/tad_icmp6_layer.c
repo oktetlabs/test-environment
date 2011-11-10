@@ -391,7 +391,7 @@ tad_icmp6_gen_bin_cb_per_pdu(tad_pkt *pdu, void *opaque)
 te_errno
 tad_icmp6_gen_bin_cb(csap_p csap, unsigned int layer,
                      const asn_value *tmpl_pdu, void *opaque,
-                     const tad_tmpl_arg_t *args, size_t arg_num, 
+                     const tad_tmpl_arg_t *args, size_t arg_num,
                      tad_pkts *sdus, tad_pkts *pdus)
 {
     tad_icmp6_proto_data     *proto_data;

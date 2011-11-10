@@ -27,7 +27,7 @@
  * $Id$
  */
 
-#define TE_LGR_USER     "TAD ICMP" 
+#define TE_LGR_USER     "TAD ICMP"
 
 #include "te_config.h"
 #if HAVE_CONFIG_H
@@ -47,11 +47,11 @@
  * raw CSAP.
  * Prototype made according with 'tad_processing_pkt_method' function type.
  * This method uses write_cb callback of passed 'eth' CSAP for send reply.
- * User parameter should contain integer numbers, separated by colon: 
- * "<type>:<code>[:<unused>[:<rate>]]". 
+ * User parameter should contain integer numbers, separated by colon:
+ * "<type>:<code>[:<unused>[:<rate>]]".
  * <unused> contains number to be placed in the 'unused' 32-bit field of
  * ICMP error (in host order). Default value is zero.
- * <rate> contains number of original packets per one ICMP error. 
+ * <rate> contains number of original packets per one ICMP error.
  * Default value is 1.
  *
  * @param csap  CSAP descriptor structure.
@@ -61,18 +61,18 @@
  *
  * @return zero on success or error code.
  */
-int 
-tad_icmp_error(csap_p csap, const char *usr_param, 
+int
+tad_icmp_error(csap_p csap, const char *usr_param,
                const uint8_t *orig_pkt, size_t pkt_len)
 {
     csap_spt_type_p rw_layer_cbs;
 
     tad_pkt    *pkt;
 
-    uint8_t type, 
+    uint8_t type,
             code;
     int     rc = 0;
-    char   *endptr; 
+    char   *endptr;
     size_t  msg_len;
 
     uint8_t *msg, *p;
@@ -125,14 +125,14 @@ tad_icmp_error(csap_p csap, const char *usr_param,
         return 0;
 
     rw_layer_cbs = csap_get_proto_support(csap, csap_get_rw_layer(csap));
-    if (rw_layer_cbs->prepare_send_cb != NULL && 
+    if (rw_layer_cbs->prepare_send_cb != NULL &&
         (rc = rw_layer_cbs->prepare_send_cb(csap)) != 0)
     {
         ERROR("%s(): prepare for recv failed %r", __FUNCTION__, rc);
         return rc;
     }
 
-/* 
+/*
  * RFC792 requires to send IP header + 64 bits of payload, however,
  * 64 bits (8 bytes) are not sufficient even for TCP header without
  * any options (Solaris requires to have full TCP header in ICMP error).
@@ -150,9 +150,9 @@ tad_icmp_error(csap_p csap, const char *usr_param,
     p = msg = tad_pkt_first_seg(pkt)->data_ptr;
 
     /* Ethernet header */
-    memcpy(p, orig_pkt + ETHER_ADDR_LEN, ETHER_ADDR_LEN); 
-    memcpy(p + ETHER_ADDR_LEN, orig_pkt, ETHER_ADDR_LEN); 
-    memcpy(p + 2 * ETHER_ADDR_LEN, orig_pkt + 2 * ETHER_ADDR_LEN, 2); 
+    memcpy(p, orig_pkt + ETHER_ADDR_LEN, ETHER_ADDR_LEN);
+    memcpy(p + ETHER_ADDR_LEN, orig_pkt, ETHER_ADDR_LEN);
+    memcpy(p + 2 * ETHER_ADDR_LEN, orig_pkt + 2 * ETHER_ADDR_LEN, 2);
     p += 14; orig_pkt += 14; pkt_len -= 14;
 
     /* IP header, now leave orig_pkt unchanged */
@@ -183,12 +183,12 @@ tad_icmp_error(csap_p csap, const char *usr_param,
     *(uint16_t *)p = 0; /* initialize checksum as 0 */
     p += 2; /* leave place for ICMP checksum */
     *(uint32_t *)p = htonl(unused);
-    p += 4; 
+    p += 4;
 
     memcpy(p, orig_pkt, MIN(ICMP_PLD_SIZE, pkt_len));
 
     /* set ICMP checksum */
-    *(uint16_t *)(msg + 14 + 20 + 2) = 
+    *(uint16_t *)(msg + 14 + 20 + 2) =
         ~calculate_checksum(msg + 14 + 20, ICMP_PLD_SIZE + 8);
 
     rc = rw_layer_cbs->write_cb(csap, pkt);

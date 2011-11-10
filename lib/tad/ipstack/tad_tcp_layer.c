@@ -27,7 +27,7 @@
  * $Id$
  */
 
-#define TE_LGR_USER "TAD TCP" 
+#define TE_LGR_USER "TAD TCP"
 
 #include "te_config.h"
 #if HAVE_CONFIG_H
@@ -60,7 +60,7 @@
 te_errno
 tad_tcp_init_cb(csap_p csap, unsigned int layer)
 {
-    tcp_csap_specific_data_t *spec_data; 
+    tcp_csap_specific_data_t *spec_data;
     const asn_value          *tcp_pdu;
 
     int32_t value_in_pdu;
@@ -81,13 +81,13 @@ tad_tcp_init_cb(csap_p csap, unsigned int layer)
                                &value_in_pdu);
     if (rc == 0)
     {
-        VERB("%s(): set TCP CSAP %d default local port to %d", 
+        VERB("%s(): set TCP CSAP %d default local port to %d",
              __FUNCTION__, csap->id, value_in_pdu);
         spec_data->local_port = value_in_pdu;
     }
     else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
-        VERB("%s(): set TCP CSAP %d default local port to zero", 
+        VERB("%s(): set TCP CSAP %d default local port to zero",
              __FUNCTION__, csap->id);
         spec_data->local_port = 0;
     }
@@ -107,13 +107,13 @@ tad_tcp_init_cb(csap_p csap, unsigned int layer)
                                &value_in_pdu);
     if (rc == 0)
     {
-        VERB("%s(): set TCP CSAP %d default remote port to %d", 
+        VERB("%s(): set TCP CSAP %d default remote port to %d",
              __FUNCTION__, csap->id, value_in_pdu);
         spec_data->remote_port = value_in_pdu;
     }
     else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
-        VERB("%s(): set TCP CSAP %d default remote port to zero", 
+        VERB("%s(): set TCP CSAP %d default remote port to zero",
              __FUNCTION__, csap->id);
         spec_data->remote_port = 0;
     }
@@ -130,7 +130,7 @@ tad_tcp_init_cb(csap_p csap, unsigned int layer)
 }
 
 /* See description tad_ipstack_impl.h */
-te_errno 
+te_errno
 tad_tcp_destroy_cb(csap_p csap, unsigned int layer)
 {
     UNUSED(csap);
@@ -143,18 +143,18 @@ tad_tcp_destroy_cb(csap_p csap, unsigned int layer)
 char *
 tad_tcp_get_param_cb(csap_p csap, unsigned int layer, const char *param)
 {
-    tcp_csap_specific_data_t *spec_data = 
+    tcp_csap_specific_data_t *spec_data =
         csap_get_proto_spec_data(csap, layer);
 
     static char buf[20];
 
     if (strcmp (param, "local_port") == 0)
-    { 
+    {
         sprintf(buf, "%d", (int)spec_data->local_port);
         return buf;
-    } 
+    }
     if (strcmp (param, "remote_port") == 0)
-    { 
+    {
         sprintf(buf, "%d", (int)spec_data->remote_port);
         return buf;
     }
@@ -174,7 +174,7 @@ tad_tcp_option_len(const asn_value *opt_tmpl)
     rc = asn_get_choice_value(opt_tmpl, &opt, &t_cl, &t_val);
     if (rc != 0)
     {
-        WARN("%s() get particular TCP option failed %r", 
+        WARN("%s() get particular TCP option failed %r",
              __FUNCTION__, rc);
         return 0;
     }
@@ -191,7 +191,7 @@ tad_tcp_option_len(const asn_value *opt_tmpl)
             break;
         case NDN_TAG_TCP_OPT_SACK_PERM:
         case NDN_TAG_TCP_OPT_SACK_DATA:
-            WARN("%s() SACK TCP option not supported.", 
+            WARN("%s() SACK TCP option not supported.",
                  __FUNCTION__, rc);
             return 0;
     }
@@ -214,20 +214,20 @@ tad_tcp_option_len(const asn_value *opt_tmpl)
 te_errno
 tad_tcp_confirm_tmpl_cb(csap_p csap, unsigned int layer,
                        asn_value *layer_pdu, void **p_opaque)
-{ 
-    te_errno    rc = 0; 
+{
+    te_errno    rc = 0;
     const asn_value *tcp_csap_pdu;
     asn_value *options;
     asn_value *option;
 
-    tcp_csap_specific_data_t *spec_data = 
+    tcp_csap_specific_data_t *spec_data =
         csap_get_proto_spec_data(csap, layer);
 
     UNUSED(p_opaque);
 
     if (!(csap->state & CSAP_STATE_SEND))
     {
-        ERROR(CSAP_LOG_FMT " should be called in SEND mode", 
+        ERROR(CSAP_LOG_FMT " should be called in SEND mode",
               CSAP_LOG_ARGS(csap));
         return TE_RC(TE_TAD_CSAP, TE_ETADCSAPSTATE);
     }
@@ -245,16 +245,16 @@ tad_tcp_confirm_tmpl_cb(csap_p csap, unsigned int layer,
                   __FUNCTION__, csap->id, __LINE__, #du_field_, rc);    \
             return rc;                                                  \
         }                                                               \
-    } while (0) 
+    } while (0)
 
-    CONVERT_FIELD(NDN_TAG_TCP_SRC_PORT, du_src_port); 
+    CONVERT_FIELD(NDN_TAG_TCP_SRC_PORT, du_src_port);
     if (spec_data->du_src_port.du_type == TAD_DU_UNDEF)
     {
         rc = tad_data_unit_convert(tcp_csap_pdu,
                                    NDN_TAG_TCP_LOCAL_PORT,
                                    &(spec_data->du_src_port));
         if (rc != 0)
-        {          
+        {
             ERROR("%s(csap %d), local_port to src failed, rc %r",
                   __FUNCTION__, csap->id, rc);
             return rc;
@@ -268,7 +268,7 @@ tad_tcp_confirm_tmpl_cb(csap_p csap, unsigned int layer,
                                    NDN_TAG_TCP_REMOTE_PORT,
                                    &(spec_data->du_dst_port));
         if (rc != 0)
-        {          
+        {
             ERROR("%s(csap %d), remote port to dst failed, rc %r",
                   __FUNCTION__, csap->id, rc);
             return rc;
@@ -282,7 +282,7 @@ tad_tcp_confirm_tmpl_cb(csap_p csap, unsigned int layer,
     CONVERT_FIELD(NDN_TAG_TCP_WINDOW, du_win_size);
     CONVERT_FIELD(NDN_TAG_TCP_CHECKSUM, du_checksum);
     CONVERT_FIELD(NDN_TAG_TCP_URG, du_urg_p);
-#undef CONVERT_FIELD 
+#undef CONVERT_FIELD
 
     spec_data->opt_bin_len = 0;
     rc = asn_get_descendent(layer_pdu, &options, "options");
@@ -312,20 +312,20 @@ tad_tcp_confirm_tmpl_cb(csap_p csap, unsigned int layer,
 te_errno
 tad_tcp_confirm_ptrn_cb(csap_p csap, unsigned int layer,
                         asn_value *layer_pdu, void **p_opaque)
-{ 
+{
     te_errno    rc = 0;
 
     const asn_value *tcp_csap_pdu;
     const asn_value *du_field;
 
-    tcp_csap_specific_data_t *spec_data = 
+    tcp_csap_specific_data_t *spec_data =
         csap_get_proto_spec_data(csap, layer);
 
     UNUSED(p_opaque);
 
     if (!(csap->state & CSAP_STATE_RECV))
     {
-        ERROR(CSAP_LOG_FMT " should be called in RECV mode", 
+        ERROR(CSAP_LOG_FMT " should be called in RECV mode",
               CSAP_LOG_ARGS(csap));
         return TE_RC(TE_TAD_CSAP, TE_ETADCSAPSTATE);
     }
@@ -432,27 +432,27 @@ tad_tcp_fill_in_hdr(const tad_pkt *pkt, tad_pkt_seg *seg,
             }                                                           \
         }                                                               \
         p += (length_);                                                 \
-    } while (0) 
+    } while (0)
 
 
-    CHECK_ERROR(data->spec_data->du_src_port.du_type == TAD_DU_UNDEF && 
+    CHECK_ERROR(data->spec_data->du_src_port.du_type == TAD_DU_UNDEF &&
                 data->spec_data->local_port == 0,
-                TE_ETADLESSDATA, 
+                TE_ETADLESSDATA,
                 "%s(): no source port specified",
                 __FUNCTION__);
     PUT_BIN_DATA(du_src_port, data->spec_data->local_port, 2);
 
-    CHECK_ERROR(data->spec_data->du_dst_port.du_type == TAD_DU_UNDEF && 
+    CHECK_ERROR(data->spec_data->du_dst_port.du_type == TAD_DU_UNDEF &&
                 data->spec_data->remote_port == 0,
-                TE_ETADLESSDATA, 
+                TE_ETADLESSDATA,
                 "%s():  no destination port specified",
                 __FUNCTION__);
     PUT_BIN_DATA(du_dst_port, data->spec_data->remote_port, 2);
 
     CHECK_ERROR(data->spec_data->du_seqn.du_type == TAD_DU_UNDEF,
-                TE_ETADLESSDATA, 
+                TE_ETADLESSDATA,
                 "%s():  no sequence number specified",
-                __FUNCTION__); 
+                __FUNCTION__);
     rc = tad_data_unit_to_bin(&(data->spec_data->du_seqn),
                               data->args, data->arg_num, p, 4);
     CHECK_ERROR(rc != 0, rc, "%s():%d: seqn error: %r",
@@ -470,13 +470,13 @@ tad_tcp_fill_in_hdr(const tad_pkt *pkt, tad_pkt_seg *seg,
     PUT_BIN_DATA(du_flags, 0, 1);
 
     VERB("du flags type %d, value %d, put value %d",
-         data->spec_data->du_flags.du_type, 
+         data->spec_data->du_flags.du_type,
          data->spec_data->du_flags.val_i32,
          (int)(*(p-1)));
 
     PUT_BIN_DATA(du_win_size, 0xFFFF, 2); /* TODO: good default window */
     PUT_BIN_DATA(du_checksum, 0, 2);
-    PUT_BIN_DATA(du_urg_p, 0, 2); 
+    PUT_BIN_DATA(du_urg_p, 0, 2);
 
 #undef PUT_BIN_DATA
 
@@ -495,14 +495,14 @@ tad_tcp_fill_in_hdr(const tad_pkt *pkt, tad_pkt_seg *seg,
 
         for (i = 0; i < opt_num; i++)
         {
-            rc = asn_get_indexed(options, &option, i, ""); 
+            rc = asn_get_indexed(options, &option, i, "");
             if (rc != 0) continue;
 
             opt_b_len = tad_tcp_option_len(option);
 
             rc = asn_get_choice_value(option, &p_opt, &t_cl, &t_val);
             if (rc != 0) continue;
-            
+
             opt_val = 0;
             switch (t_val)
             {
@@ -535,13 +535,13 @@ tad_tcp_fill_in_hdr(const tad_pkt *pkt, tad_pkt_seg *seg,
                     break;
                 case NDN_TAG_TCP_OPT_SACK_PERM:
                 case NDN_TAG_TCP_OPT_SACK_DATA:
-                    WARN("%s() SACK TCP option not supported.", 
+                    WARN("%s() SACK TCP option not supported.",
                          __FUNCTION__, rc);
                     continue;
             }
             p += opt_b_len;
         }
-        RING("%s: options bytes: %Tm", __FUNCTION__, opt_start, 
+        RING("%s: options bytes: %Tm", __FUNCTION__, opt_start,
              data->spec_data->opt_bin_len);
     }
 
@@ -555,15 +555,15 @@ cleanup:
 te_errno
 tad_tcp_gen_bin_cb(csap_p csap, unsigned int layer,
                    const asn_value *tmpl_pdu, void *opaque,
-                   const tad_tmpl_arg_t *args, size_t arg_num, 
+                   const tad_tmpl_arg_t *args, size_t arg_num,
                    tad_pkts *sdus, tad_pkts *pdus)
 {
     te_errno                    rc;
     tad_tcp_fill_in_hdr_data    opaque_data;
- 
-    UNUSED(tmpl_pdu); 
+
+    UNUSED(tmpl_pdu);
     UNUSED(opaque);
- 
+
 
     opaque_data.spec_data = csap_get_proto_spec_data(csap, layer);
     opaque_data.args      = args;
@@ -592,18 +592,18 @@ tad_tcp_gen_bin_cb(csap_p csap, unsigned int layer,
 
 /* See description in tad_ipstack_impl.h */
 te_errno
-tad_tcp_match_bin_cb(csap_p           csap, 
+tad_tcp_match_bin_cb(csap_p           csap,
                      unsigned int     layer,
                      const asn_value *ptrn_pdu,
                      void            *ptrn_opaque,
                      tad_recv_pkt    *meta_pkt,
                      tad_pkt         *pdu,
                      tad_pkt         *sdu)
-{ 
+{
     asn_value  *options = NULL;
-    uint8_t    *data_ptr; 
-    uint8_t    *pld_start; 
-    uint8_t    *data; 
+    uint8_t    *data_ptr;
+    uint8_t    *pld_start;
+    uint8_t    *data;
     size_t      data_len;
     asn_value  *tcp_header_pdu = NULL;
     te_errno    rc;
@@ -645,23 +645,23 @@ tad_tcp_match_bin_cb(csap_p           csap,
     CHECK_FIELD("ackn", 4);
 
     h_len = tmp8 = (*data) >> 4;
-    rc = ndn_match_data_units(ptrn_pdu, tcp_header_pdu, 
+    rc = ndn_match_data_units(ptrn_pdu, tcp_header_pdu,
                               &tmp8, 1, "hlen");
     if (rc)
         goto cleanup;
     data ++;
 
     tmp8 = (*data) & 0x3f;
-    rc = ndn_match_data_units(ptrn_pdu, tcp_header_pdu, 
+    rc = ndn_match_data_units(ptrn_pdu, tcp_header_pdu,
                               &tmp8, 1, "flags");
     if (rc)
         goto cleanup;
     data++;
 
-    CHECK_FIELD("win-size", 2); 
-    CHECK_FIELD("checksum", 2); 
+    CHECK_FIELD("win-size", 2);
+    CHECK_FIELD("checksum", 2);
     CHECK_FIELD("urg-p", 2);
- 
+
 #undef CHECK_FIELD
 
     if (data_len < h_len * 4)
@@ -704,7 +704,7 @@ tad_tcp_match_bin_cb(csap_p           csap,
                     rc = asn_write_value_field(opt, NULL, 0, "#nop");
                     break;
                 case TE_TCP_OPT_MSS:
-                    rc = asn_write_value_field(opt, data+1, 1, 
+                    rc = asn_write_value_field(opt, data+1, 1,
                                                "#mss.length.#plain");
                     if (rc) break;
                     opt_val = ntohs(*((uint16_t *)(data + 2)));
@@ -713,7 +713,7 @@ tad_tcp_match_bin_cb(csap_p           csap,
                     data += *(data + 1) - 1;
                     break;
                 case TE_TCP_OPT_WIN_SCALE:
-                    rc = asn_write_value_field(opt, data + 1, 1, 
+                    rc = asn_write_value_field(opt, data + 1, 1,
                                                "#win-scale.length.#plain");
                     if (rc) break;
                     rc = asn_write_value_field(opt, data + 2, 1,
@@ -730,7 +730,7 @@ tad_tcp_match_bin_cb(csap_p           csap,
                     opt = NULL;
                     break;
                 case TE_TCP_OPT_TIMESTAMP:
-                    rc = asn_write_value_field(opt, data+1, 1, 
+                    rc = asn_write_value_field(opt, data+1, 1,
                                                "#timestamp.length.#plain");
                     if (rc) break;
                     opt_val = ntohl(*((uint32_t *)(data + 2)));

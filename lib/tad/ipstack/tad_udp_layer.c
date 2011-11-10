@@ -90,7 +90,7 @@ static const tad_bps_pkt_frag tad_udp_bps_hdr[] =
 /* See description tad_ipstack_impl.h */
 te_errno
 tad_udp_init_cb(csap_p csap, unsigned int layer)
-{ 
+{
     te_errno            rc;
     tad_udp_proto_data *proto_data;
     const asn_value    *layer_nds;
@@ -110,7 +110,7 @@ tad_udp_init_cb(csap_p csap, unsigned int layer)
     assert(tad_bps_pkt_frag_data_bitlen(&proto_data->hdr, NULL) ==
                (TAD_UDP_HDR_LEN << 3));
 
-    return rc; 
+    return rc;
 }
 
 /* See description tad_ipstack_impl.h */
@@ -241,7 +241,7 @@ tad_udp_gen_bin_cb_per_pdu(tad_pkt *pdu, void *hdr)
 te_errno
 tad_udp_gen_bin_cb(csap_p csap, unsigned int layer,
                    const asn_value *tmpl_pdu, void *opaque,
-                   const tad_tmpl_arg_t *args, size_t arg_num, 
+                   const tad_tmpl_arg_t *args, size_t arg_num,
                    tad_pkts *sdus, tad_pkts *pdus)
 {
     tad_udp_proto_data     *proto_data;
@@ -258,7 +258,7 @@ tad_udp_gen_bin_cb(csap_p csap, unsigned int layer,
             (unsigned)arg_num, sdus, pdus);
 
     proto_data = csap_get_proto_spec_data(csap, layer);
- 
+
     /* Generate binary template of the header */
     bitoff = 0;
     rc = tad_bps_pkt_frag_gen_bin(&proto_data->hdr, &tmpl_data->hdr,
@@ -390,7 +390,7 @@ tad_udp_match_do_cb(csap_p           csap,
                CSAP_LOG_ARGS(csap));
         return TE_RC(TE_TAD_CSAP, TE_ETADNOTMATCH);
     }
-  
+
     proto_data = csap_get_proto_spec_data(csap, layer);
 
     assert(proto_data != NULL);

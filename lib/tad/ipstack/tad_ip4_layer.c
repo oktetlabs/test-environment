@@ -131,7 +131,7 @@ static const tad_bps_pkt_frag tad_ip4_bps_opts[] =
 /* See description tad_ipstack_impl.h */
 te_errno
 tad_ip4_init_cb(csap_p csap, unsigned int layer)
-{ 
+{
     te_errno            rc;
     tad_ip4_proto_data *proto_data;
     const asn_value    *layer_nds;
@@ -202,7 +202,7 @@ tad_ip4_init_cb(csap_p csap, unsigned int layer)
         }
     }
 
-    return 0; 
+    return 0;
 }
 
 /* See description tad_ipstack_impl.h */
@@ -426,7 +426,7 @@ tad_ip4_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
     }
 
     /* Get fragments sequence specification from ASN.1 template */
-    if ((rc = asn_get_child_value(data->tmpl_pdu, &frags_seq, 
+    if ((rc = asn_get_child_value(data->tmpl_pdu, &frags_seq,
                                   PRIVATE, NDN_TAG_IP4_FRAGMENTS)) != 0)
     {
         frags_seq = NULL;
@@ -437,7 +437,7 @@ tad_ip4_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
         frags_num = asn_get_length(frags_seq, "");
     }
 
-    /* 
+    /*
      * Allocate PDU packets with one pre-allocated segment for IPv4
      * header
      */
@@ -475,7 +475,7 @@ tad_ip4_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
         /* Real length of the IPv4 packet payload */
         if (frags_seq != NULL)
         {
-            rc = asn_get_indexed(frags_seq, &frag_spec, frags_i, NULL); 
+            rc = asn_get_indexed(frags_seq, &frag_spec, frags_i, NULL);
             if (rc != 0)
             {
                 ERROR("%s(): Failed to get %u fragment specification "
@@ -539,7 +539,7 @@ tad_ip4_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
 
             i16_tmp = htons(i16_tmp);
             memcpy(hdr + 6, &i16_tmp, 2);
-        } 
+        }
 
         /* TTL and protocol are kept unchanged */
 
@@ -588,7 +588,7 @@ tad_ip4_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
 te_errno
 tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
                    const asn_value *tmpl_pdu, void *opaque,
-                   const tad_tmpl_arg_t *args, size_t arg_num, 
+                   const tad_tmpl_arg_t *args, size_t arg_num,
                    tad_pkts *sdus, tad_pkts *pdus)
 {
     tad_ip4_proto_data                 *proto_data;
@@ -708,7 +708,7 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
             cb_data.upper_chksm_offset = -1; /* Do nothing */
             break;
     }
-    /* 
+    /*
      * Location of the upper protocol checksum which uses IP
      * pseudo-header.
      */
@@ -912,7 +912,7 @@ tad_ip4_match_do_cb(csap_p           csap,
                CSAP_LOG_ARGS(csap));
         return TE_RC(TE_TAD_CSAP, TE_ETADNOTMATCH);
     }
-  
+
     proto_data = csap_get_proto_spec_data(csap, layer);
 
     assert(proto_data != NULL);
