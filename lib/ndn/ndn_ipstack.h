@@ -122,7 +122,7 @@ typedef enum {
     NDN_TAG_ICMP6_SEQ,
     NDN_TAG_ICMP6_MLD_MAX_RESPONSE_DELAY,
     NDN_TAG_ICMP6_MLD_RESERVED,
-    NDN_TAG_IP6_GROUP_ADDR,
+    NDN_TAG_ICMP6_MLD_GROUP_ADDR,
 } ndn_icmp6_tags_t;
 
 typedef enum {

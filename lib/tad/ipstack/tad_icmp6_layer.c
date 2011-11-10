@@ -129,8 +129,10 @@ static const tad_bps_pkt_frag tad_icmp6_mld_pbs_hdr[] =
     { "max-response-delay", 16,
       BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_MLD_MAX_RESPONSE_DELAY, 0),
       TAD_DU_I32, FALSE },
-    { "reserved",           16, BPS_FLD_CONST(0), TAD_DU_I32, FALSE },
-    { "group-addr",         128, BPS_FLD_CONST_DEF(NDN_TAG_IP6_GROUP_ADDR, 0),
+    { "reserved",           16,
+      BPS_FLD_CONST(0), TAD_DU_I32, FALSE },
+    { "group-addr",         128,
+      BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_MLD_GROUP_ADDR, 0),
       TAD_DU_OCTS, FALSE },
 };
 

@@ -438,8 +438,7 @@ static asn_named_entry_t _ndn_icmp6_message_ne_array [] = {
     { "reserved",           &ndn_data_unit_int16_s,
       { PRIVATE, NDN_TAG_ICMP6_MLD_RESERVED } },
     { "group-addr",        &ndn_data_unit_ip6_address_s,
-      { PRIVATE, NDN_TAG_IP6_GROUP_ADDR } },
-
+      { PRIVATE, NDN_TAG_ICMP6_MLD_GROUP_ADDR } },
 };
 
 asn_type ndn_icmp6_message_s = {
