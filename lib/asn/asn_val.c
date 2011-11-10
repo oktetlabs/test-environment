@@ -1,7 +1,7 @@
 /** @file
  * @brief ASN.1 library
  *
- * Implementation of method to dynamic ASN value processing. 
+ * Implementation of method to dynamic ASN value processing.
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -24,13 +24,13 @@
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
  * $Id$
- */ 
+ */
 
 #include "te_config.h"
 
-#include <stdio.h> 
-#include <stdlib.h> 
-#include <string.h> 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <ctype.h>
 
 #include <stdarg.h>
@@ -38,7 +38,7 @@
 #include "te_defs.h"
 #include "te_errno.h"
 #include "logger_api.h"
-#include "asn_impl.h" 
+#include "asn_impl.h"
 
 
 #define ASN_STOP_AT_CHOICE (TE_EASNGENERAL + 50)
@@ -50,7 +50,7 @@ extern int number_of_digits(int value);
 
 /*
  * Declarations of local methods, for descriptions see their definition.
- */ 
+ */
 
 
 
@@ -68,7 +68,7 @@ te_errno asn_impl_write_component_value(asn_value *, const asn_value *,
 
 
 /*
- * Implementation of static inline functions 
+ * Implementation of static inline functions
  */
 
 static inline char *
@@ -83,17 +83,17 @@ asn_strdup(const char* src)
 
         if (res == NULL) return NULL;
 
-        strcpy(res, src); 
+        strcpy(res, src);
         return res;
     }
 }
 
 /**
  * Wrapper over asn_impl_find_subvalue, for find in writable container
- * and get writable subvalue. All parameters are same. 
- */ 
+ * and get writable subvalue. All parameters are same.
+ */
 static inline te_errno
-asn_impl_find_subvalue_writable(asn_value *container, const char *label, 
+asn_impl_find_subvalue_writable(asn_value *container, const char *label,
                                 asn_value **found_val)
 {
     const asn_value *f_val;
@@ -106,18 +106,18 @@ asn_impl_find_subvalue_writable(asn_value *container, const char *label,
 
 /**
  * Wrapper over asn_impl_fall_down_to_tree_nc, for find in writable container
- * and get writable subvalue. All parameters are same. 
- */ 
-static inline te_errno 
-asn_impl_fall_down_to_tree_writable(asn_value *container, 
+ * and get writable subvalue. All parameters are same.
+ */
+static inline te_errno
+asn_impl_fall_down_to_tree_writable(asn_value *container,
                                     const char *field_labels,
                                     asn_value **found_value)
 {
     te_errno rc;
-    char *rest_labels = asn_strdup(field_labels); 
+    char *rest_labels = asn_strdup(field_labels);
     const asn_value *f_val;
 
-    rc = asn_impl_fall_down_to_tree_nc (container, rest_labels, &f_val); 
+    rc = asn_impl_fall_down_to_tree_nc (container, rest_labels, &f_val);
     free (rest_labels);
 
     /* Initial container was*/
@@ -131,25 +131,25 @@ asn_impl_fall_down_to_tree_writable(asn_value *container,
  * Compare two ASN tags.
  *
  * @param l  first argument;
- * @param r  second argument; 
+ * @param r  second argument;
  *
- * @return truth value of tag equality 
+ * @return truth value of tag equality
  * @retval 1 tags are equal;
- * @retval 0 tags are differ; 
+ * @retval 0 tags are differ;
  */
-inline int 
+inline int
 asn_tag_equal(asn_tag_t l, asn_tag_t r)
 {
-    return ( (l.cl  == r.cl ) && (l.val == r.val) ); 
+    return ( (l.cl  == r.cl ) && (l.val == r.val) );
 }
 
 
 /**
  * Init empty ASN value of specified type.
  *
- * @param type       ASN type to which value should belong. 
+ * @param type       ASN type to which value should belong.
  *
- * @return pointer to new ASN_value instance or NULL if error occurred. 
+ * @return pointer to new ASN_value instance or NULL if error occurred.
  */
 asn_value *
 asn_init_value(const asn_type * type)
@@ -171,7 +171,7 @@ asn_init_value(const asn_type * type)
 
     new_value->txt_len  = -1;
 
-    arr_len = type->len; 
+    arr_len = type->len;
 
     switch (type->syntax)
     {
@@ -186,7 +186,7 @@ asn_init_value(const asn_type * type)
                 void   *ptr = malloc(sz);
 
                 new_value->len = arr_len;
-                new_value->data.array = ptr; 
+                new_value->data.array = ptr;
 
                 memset(ptr, 0, sz);
             }
@@ -205,11 +205,11 @@ asn_init_value(const asn_type * type)
 /**
  * Init empty ASN value of specified type with certain ASN tag.
  *
- * @param type       ASN type to which value should belong. 
+ * @param type       ASN type to which value should belong.
  * @param tc         ASN tag class, see enum definition and ASN.1 standard.
- * @param tag        ASN tag value, may be arbitrary non-negative integer.  
+ * @param tag        ASN tag value, may be arbitrary non-negative integer.
  *
- * @return pointer to new ASN_value instance or NULL if error occurred. 
+ * @return pointer to new ASN_value instance or NULL if error occurred.
  */
 asn_value *
 asn_init_value_tagged(const asn_type *type,
@@ -233,7 +233,7 @@ asn_assign_value(asn_value *dst, const asn_value *src)
 {
     int len;
 
-    if (!src || !dst) 
+    if (!src || !dst)
         return TE_EWRONGPTR;
 
     if (dst->asn_type != src->asn_type)
@@ -272,7 +272,7 @@ asn_assign_value(asn_value *dst, const asn_value *src)
         {
             if ((src_elem = src->data.array[i])!= NULL)
             {
-                if ((*arr = asn_copy_value(src_elem))==NULL) 
+                if ((*arr = asn_copy_value(src_elem))==NULL)
                 { /* ERROR! */
                     free(dst->data.array);
                     dst->data.array = NULL;
@@ -285,10 +285,10 @@ asn_assign_value(asn_value *dst, const asn_value *src)
     }
     else if (src->syntax & PRIMITIVE_VAR_LEN)
     {
-        if(src->syntax == OID) 
+        if(src->syntax == OID)
             len *= sizeof(int);
 
-        if(src->syntax == BIT_STRING) 
+        if(src->syntax == BIT_STRING)
             len = (len + 7) >> 3;
 
         free(dst->data.other);
@@ -301,29 +301,29 @@ asn_assign_value(asn_value *dst, const asn_value *src)
 
         if ((dst->data.other = malloc (len))==NULL)
             return ENOMEM;
-        
-        memcpy (dst->data.other, src->data.other, len); 
+
+        memcpy (dst->data.other, src->data.other, len);
     }
     else /* value is stored in data.integer */
     {
         dst->data.integer = src->data.integer;
     }
 
-    dst->len     = src->len; 
+    dst->len     = src->len;
     dst->txt_len = src->txt_len;
 
-    return 0; 
+    return 0;
 }
 
 
 /**
  * Make a copy of ASN value instance.
  *
- * @param value       ASN value to be copied.  
+ * @param value       ASN value to be copied.
  *
- * @return pointer to new ASN_value instance or NULL if error occurred. 
+ * @return pointer to new ASN_value instance or NULL if error occurred.
  */
-asn_value * 
+asn_value *
 asn_copy_value(const asn_value *value)
 {
     asn_value *new_value;
@@ -340,23 +340,23 @@ asn_copy_value(const asn_value *value)
         new_value->name = asn_strdup(value->name);
     else
         new_value->name = NULL;
-    
+
     new_value->tag = value->tag;
 
     return new_value;
 #else
     int len;
 
-    if (!value) { /* ERROR! */ return NULL; } 
+    if (!value) { /* ERROR! */ return NULL; }
 
     new_value = malloc (sizeof (asn_value));
-    if (!new_value) { /* ERROR! */ return NULL; } 
+    if (!new_value) { /* ERROR! */ return NULL; }
 
     new_value->asn_type = value->asn_type;
     new_value->syntax   = value->syntax;
     new_value->tag      = value->tag;
-    new_value->len      = value->len; 
-    new_value->txt_len  = value->txt_len; 
+    new_value->len      = value->len;
+    new_value->txt_len  = value->txt_len;
 
     if (value->name)
         new_value->name = asn_strdup(value->name);
@@ -369,7 +369,7 @@ asn_copy_value(const asn_value *value)
     {
         int i;
         asn_value *src_elem;
-        asn_value **arr = new_value->data.array = 
+        asn_value **arr = new_value->data.array =
             malloc(len * sizeof(asn_value *));
 
         if (arr==NULL)
@@ -383,7 +383,7 @@ asn_copy_value(const asn_value *value)
         {
             if ((src_elem = value->data.array[i])!= NULL)
             {
-                if ((*arr = asn_copy_value(src_elem))==NULL) 
+                if ((*arr = asn_copy_value(src_elem))==NULL)
                 { /* ERROR! */
                     if (new_value->name) free(new_value->name);
                     free(new_value->data.array);
@@ -397,10 +397,10 @@ asn_copy_value(const asn_value *value)
     }
     else if (value->syntax & PRIMITIVE_VAR_LEN)
     {
-        if(value->syntax == OID) 
+        if(value->syntax == OID)
             len *= sizeof(int);
 
-        if(value->syntax == BIT_STRING) 
+        if(value->syntax == BIT_STRING)
             len = (len + 7) >> 3;
 
         if ((value->data.other == NULL) || (len == 0))
@@ -415,7 +415,7 @@ asn_copy_value(const asn_value *value)
             free(new_value);
             return NULL;
         }
-        memcpy (new_value->data.other, value->data.other, len); 
+        memcpy (new_value->data.other, value->data.other, len);
     }
     else /* value is stored in data.integer */
     {
@@ -431,19 +431,19 @@ asn_copy_value(const asn_value *value)
 /**
  * Free memory allocalted by ASN value instance.
  *
- * @param value       ASN value to be destroyed. 
+ * @param value       ASN value to be destroyed.
  *
  * @return nothing
  */
-void 
+void
 asn_free_value(asn_value *value)
 {
     if (!value) return;
-    
-    if (value->syntax & COMPOUND) 
+
+    if (value->syntax & COMPOUND)
     {
         unsigned int i;
-        asn_value **arr = value->data.array; 
+        asn_value **arr = value->data.array;
         for (i = 0; i < value->len; i++, arr++)
         {
             asn_free_value(*arr);
@@ -454,7 +454,7 @@ asn_free_value(asn_value *value)
     else if (value->syntax & PRIMITIVE_VAR_LEN)
     {
         free(value->data.other);
-    } 
+    }
 
     free(value->name);
     free(value);
@@ -486,7 +486,7 @@ asn_free_child(asn_value *value,
             break;
 
         default:
-            return TE_EASNWRONGTYPE; 
+            return TE_EASNWRONGTYPE;
     }
 
     value->txt_len = -1;
@@ -509,27 +509,27 @@ asn_free_descendant(asn_value *value, const char *labels)
     if (!value || !labels)
     {
         free(up_labels);
-        return TE_EWRONGPTR; 
+        return TE_EWRONGPTR;
     }
 
     len = strlen(labels);
     low_label = up_labels + len - 1;
-    while ((low_label > up_labels) && (*low_label != '.')) 
+    while ((low_label > up_labels) && (*low_label != '.'))
         low_label --;
 
     rc = 0;
 
-    if (*low_label == '.') 
+    if (*low_label == '.')
     {
         *low_label = '\0';
         low_label ++;
 #if 0
         rc = asn_impl_fall_down_to_tree_writable(value, up_labels, &subvalue);
-        value = subvalue; 
+        value = subvalue;
 #else
         value = asn_find_descendant(value, &rc, up_labels);
-#endif 
-    } 
+#endif
+    }
 #if 0
     if (rc == 0)
         rc = asn_impl_find_subvalue_writable(value, low_label, &subvalue);
@@ -547,7 +547,7 @@ asn_free_descendant(asn_value *value, const char *labels)
 
 
 /* see description in asn_usr.h */
-te_errno 
+te_errno
 asn_free_subvalue(asn_value *value, const char* labels)
 {
     return asn_free_descendant(value, labels);
@@ -555,7 +555,7 @@ asn_free_subvalue(asn_value *value, const char* labels)
 
 /* see description in asn_usr.h */
 te_errno
-asn_free_child_value(asn_value *value, 
+asn_free_child_value(asn_value *value,
                      asn_tag_class tag_class, asn_tag_value tag_val)
 {
     return asn_free_child(value, tag_class, tag_val);
@@ -563,13 +563,13 @@ asn_free_child_value(asn_value *value,
 
 
 /**
- * Obtain ASN type to which specified value belongs. 
+ * Obtain ASN type to which specified value belongs.
  *
- * @param value       ASN value which type is interested. 
+ * @param value       ASN value which type is interested.
  *
- * @return pointer to asn_type instance or NULL if error occurred. 
+ * @return pointer to asn_type instance or NULL if error occurred.
  */
-const asn_type * 
+const asn_type *
 asn_get_type(const asn_value *value)
 {
     if (!value) return NULL;
@@ -590,7 +590,7 @@ asn_get_type_name(const asn_type *type)
  * @param container     value which name is intereseted
  *
  * @return value's name or NULL.
- */ 
+ */
 const char *
 asn_get_name(const asn_value *value)
 {
@@ -598,31 +598,31 @@ asn_get_name(const asn_value *value)
     return value->name;
 }
 
-te_errno 
+te_errno
 asn_child_tag_index(const asn_type *type, asn_tag_class tag_class,
                     asn_tag_value tag_val, int *index)
 {
     const asn_named_entry_t *n_en;
-    unsigned i; 
+    unsigned i;
 
     if(!type || !index)
-        return TE_EWRONGPTR; 
+        return TE_EWRONGPTR;
 
     if( (type->syntax & COMPOUND) == 0 ||
         (type->syntax & ASN_SYN_NAMED) == 0)
     {
-        return TE_EASNWRONGTYPE; 
+        return TE_EASNWRONGTYPE;
     }
 
-    n_en = type->sp.named_entries; 
-        
-    /* 
-     * TODO: make something more efficient, then linear search, 
+    n_en = type->sp.named_entries;
+
+    /*
+     * TODO: make something more efficient, then linear search,
      * leafs in ASN type specification should be sorted by tag value.
      */
     for (i = 0; i < type->len; i++, n_en++)
         if(n_en->tag.cl == tag_class && n_en->tag.val == tag_val)
-        {            
+        {
             *index = i;
             return 0;
         }
@@ -631,30 +631,30 @@ asn_child_tag_index(const asn_type *type, asn_tag_class tag_class,
 }
 
 /* see description in asn_impl.h */
-te_errno 
-asn_child_named_index(const asn_type *type, const char *labels, 
+te_errno
+asn_child_named_index(const asn_type *type, const char *labels,
                       int *index, const char **rest_labels)
 {
     const asn_named_entry_t *n_en;
-    unsigned i; 
+    unsigned i;
     const char *p = labels, *q;
 
     if(!type || !labels || !index || !rest_labels)
-        return TE_EWRONGPTR; 
+        return TE_EWRONGPTR;
 
     switch (type->syntax)
     {
         case CHOICE:
-            if (*labels == '#') 
+            if (*labels == '#')
                 labels++;
-            /* pass through ... */ 
+            /* pass through ... */
         case SEQUENCE:
         case SET:
-            n_en = type->sp.named_entries; 
+            n_en = type->sp.named_entries;
             for (i = 0; i < type->len; i++, n_en++)
             {
-                for (p = labels, q = n_en->name; 
-                     *p != 0 && *p != '.' && *p == *q; 
+                for (p = labels, q = n_en->name;
+                     *p != 0 && *p != '.' && *p == *q;
                      p++, q++);
 
                 if ((*p == 0 || *p == '.') && *q == 0)
@@ -669,16 +669,16 @@ asn_child_named_index(const asn_type *type, const char *labels,
         case SET_OF:
             *index = strtol(labels, (char **)&p, 10);
             break;
-            
+
         default:
-            return TE_EASNWRONGTYPE; 
-    } 
+            return TE_EASNWRONGTYPE;
+    }
 
     if (*p == 0)
         *rest_labels = NULL;
     else if (*p == '.')
         *rest_labels = p + 1;
-    else 
+    else
         return TE_EASNWRONGLABEL;
 
     return 0;
@@ -686,13 +686,13 @@ asn_child_named_index(const asn_type *type, const char *labels,
 
 /* see description in asn_impl.h */
 te_errno
-asn_impl_find_subtype(const asn_type *type, const char *label, 
+asn_impl_find_subtype(const asn_type *type, const char *label,
                       const asn_type **found_type)
-{ 
+{
     const char *rest = NULL;
 
     if(!label || !type || !found_type)
-        return TE_EWRONGPTR; 
+        return TE_EWRONGPTR;
 
     if ((type->syntax & COMPOUND) == 0)
         return TE_EASNWRONGTYPE;
@@ -700,20 +700,20 @@ asn_impl_find_subtype(const asn_type *type, const char *label,
     if (type->syntax & ASN_SYN_NAMED)
     {
         te_errno rc;
-        int index; 
+        int index;
 
         if ((rc = asn_child_named_index(type, label, &index, &rest)) != 0)
             return rc;
 
         if (rest != NULL)
             return TE_EASNWRONGLABEL;
-        
-        *found_type =type->sp.named_entries[index].type; 
-    }
-    else 
-        *found_type = type->sp.subtype; 
 
-    return 0; 
+        *found_type =type->sp.named_entries[index].type;
+    }
+    else
+        *found_type = type->sp.subtype;
+
+    return 0;
 }
 
 
@@ -732,7 +732,7 @@ asn_impl_find_subtype(const asn_type *type, const char *label,
         if (status != NULL)             \
             *status = (_error);         \
         return NULL;                    \
-    } while(0) 
+    } while(0)
 
 
 /* see description in asn_usr.h */
@@ -742,13 +742,13 @@ asn_find_descendant(const asn_value *value, te_errno *status,
 {
     va_list     list;
     te_errno    rc = 0;
-    char        labels_buf[200]; 
+    char        labels_buf[200];
     const char *rest_labels = labels_buf;
     asn_value  *tmp_value = (asn_value *)value;
     int         subval_index;
 
     va_start(list, labels_fmt);
-    if (labels_fmt != NULL && labels_fmt[0] != 0) 
+    if (labels_fmt != NULL && labels_fmt[0] != 0)
     {
         if (vsnprintf(labels_buf, sizeof(labels_buf), labels_fmt, list) >=
             (int)sizeof(labels_buf))
@@ -770,15 +770,15 @@ asn_find_descendant(const asn_value *value, te_errno *status,
         return (asn_value *)value;
 
     while (rest_labels != NULL && (*rest_labels != '\0'))
-    { 
-        rc = asn_child_named_index(tmp_value->asn_type, rest_labels, 
+    {
+        rc = asn_child_named_index(tmp_value->asn_type, rest_labels,
                                    &subval_index, &rest_labels);
         if (rc != 0)
         {
             if ((rc == TE_EASNWRONGLABEL) &&
                 (asn_get_syntax(tmp_value, NULL) == CHOICE))
             {
-                if (rest_labels[0] == '#' && rest_labels[1] == '\001') 
+                if (rest_labels[0] == '#' && rest_labels[1] == '\001')
                     rc = 0;
                 else if ((rc = asn_get_choice_value(tmp_value, &tmp_value,
                                                     NULL, NULL)) == 0)
@@ -794,7 +794,7 @@ asn_find_descendant(const asn_value *value, te_errno *status,
     }
 
     if (rc != 0 && status != NULL)
-        *status = rc; 
+        *status = rc;
 
     return (rc == 0) ? tmp_value : NULL;
 }
@@ -808,12 +808,12 @@ asn_retrieve_descendant(asn_value *value, te_errno *status,
     va_list     list;
     te_errno    rc = 0;
     asn_value  *tmp_value;
-    char        labels_buf[200]; 
+    char        labels_buf[200];
     const char *rest_labels;
     int         subval_index;
 
     va_start(list, labels_fmt);
-    if (labels_fmt != NULL && labels_fmt[0] != '\0') 
+    if (labels_fmt != NULL && labels_fmt[0] != '\0')
     {
         if (vsnprintf(labels_buf, sizeof(labels_buf), labels_fmt, list) >=
             (int)sizeof(labels_buf))
@@ -830,7 +830,7 @@ asn_retrieve_descendant(asn_value *value, te_errno *status,
         RETURN_NULL_WITH_ERROR(TE_EWRONGPTR);
 
     tmp_value = value;
-    asn_clean_count(tmp_value); 
+    asn_clean_count(tmp_value);
 
     if (status != NULL)
         *status = 0;
@@ -840,9 +840,9 @@ asn_retrieve_descendant(asn_value *value, te_errno *status,
 
     rest_labels = labels_buf;
     while ((rest_labels != NULL) && (*rest_labels != '\0') && (rc == 0))
-    { 
+    {
         asn_value *new_value;
-        rc = asn_child_named_index(tmp_value->asn_type, rest_labels, 
+        rc = asn_child_named_index(tmp_value->asn_type, rest_labels,
                                    &subval_index, &rest_labels);
         if (rc != 0)
         {
@@ -863,7 +863,7 @@ asn_retrieve_descendant(asn_value *value, te_errno *status,
                 case SET:
                 case CHOICE:
                     {
-                    const asn_named_entry_t *ne = 
+                    const asn_named_entry_t *ne =
                             (tmp_value->asn_type->sp.named_entries) +
                             subval_index;
                     new_type = ne->type;
@@ -882,14 +882,14 @@ asn_retrieve_descendant(asn_value *value, te_errno *status,
             if (rc != 0)
                 break;
 
-            new_value = asn_init_value(new_type); 
-            rc = asn_put_child_by_index(tmp_value, new_value, subval_index); 
+            new_value = asn_init_value(new_type);
+            rc = asn_put_child_by_index(tmp_value, new_value, subval_index);
         }
         tmp_value = new_value;
     }
 
     if (rc != 0 && status != NULL)
-        *status = rc; 
+        *status = rc;
 
 end:
 
@@ -904,22 +904,22 @@ end:
 
 /* see description in asn_usr.h */
 te_errno
-asn_put_child_value(asn_value *container, asn_value *subvalue, 
+asn_put_child_value(asn_value *container, asn_value *subvalue,
                     asn_tag_class tag_class, asn_tag_value tag_val)
 {
     te_errno rc;
     int index;
 
-    if (container == NULL) 
-        return TE_EWRONGPTR; 
+    if (container == NULL)
+        return TE_EWRONGPTR;
 
     container->txt_len = -1;
-    asn_clean_count(subvalue); 
+    asn_clean_count(subvalue);
 
     rc = asn_child_tag_index(container->asn_type, tag_class, tag_val,
                              &index);
     if (rc != 0)
-        return rc; 
+        return rc;
 
     return asn_put_child_by_index(container, subvalue, index);
 }
@@ -938,11 +938,11 @@ asn_put_child_value_by_label(asn_value *container, asn_value *subvalue,
 
 
     if(label == NULL || container == NULL)
-        return TE_EWRONGPTR; 
+        return TE_EWRONGPTR;
 
-    rc = asn_child_named_index(container->asn_type, 
-                               label, &index, &rest_labels); 
-    if (rc != 0) 
+    rc = asn_child_named_index(container->asn_type,
+                               label, &index, &rest_labels);
+    if (rc != 0)
         return rc;
 
     if (rest_labels != NULL)
@@ -988,21 +988,21 @@ asn_get_child_by_index(const asn_value *container, asn_value **child,
                     "    child: tag %d.%d, '%s'\n"
                     "  in type: tag %d.%d, '%s'\n",
                     __FUNCTION__, index,
-                    (int)((container)->tag.cl), 
+                    (int)((container)->tag.cl),
                     (int)((container)->tag.val),
                     (container)->name, container->asn_type->name,
-                    (int)((*child)->tag.cl), 
+                    (int)((*child)->tag.cl),
                     (int)((*child)->tag.val), (*child)->name,
                     (int)(ne->tag.cl), (int)(ne->tag.val), ne->name);
             fflush(stderr);
 #endif
 
-            if (!asn_tag_equal((*child)->tag,  ne->tag) || 
-                 (strcmp((*child)->name, ne->name) != 0)  ) 
-            { 
+            if (!asn_tag_equal((*child)->tag,  ne->tag) ||
+                 (strcmp((*child)->name, ne->name) != 0)  )
+            {
                 if (container->syntax == CHOICE)
-                    return TE_EASNOTHERCHOICE; 
-                else 
+                    return TE_EASNOTHERCHOICE;
+                else
                     return TE_EASNGENERAL;
             }
             break;
@@ -1018,7 +1018,7 @@ asn_get_child_by_index(const asn_value *container, asn_value **child,
             if ((unsigned)index >= container->len)
                 return TE_EASNINCOMPLVAL;
 
-            *child = container->data.array[index]; 
+            *child = container->data.array[index];
             break;
 
         default:
@@ -1032,7 +1032,7 @@ asn_get_child_by_index(const asn_value *container, asn_value **child,
 
 /* see description in asn_impl.h */
 te_errno
-asn_put_child_by_index(asn_value *container, asn_value *new_value, 
+asn_put_child_by_index(asn_value *container, asn_value *new_value,
                        int leaf_type_index)
 {
     int     index = 0;
@@ -1044,8 +1044,8 @@ asn_put_child_by_index(asn_value *container, asn_value *new_value,
     switch (container->syntax)
     {
         case SEQUENCE_OF:
-        case SET_OF: 
-            named_value = FALSE; 
+        case SET_OF:
+            named_value = FALSE;
             new_len = container->len;
 
             while (leaf_type_index < 0)
@@ -1057,11 +1057,11 @@ asn_put_child_by_index(asn_value *container, asn_value *new_value,
                     return TE_EASNWRONGLABEL;
 
                 new_len = leaf_type_index + 1;
-                if ((container->data.array = 
-                      realloc(container->data.array, 
-                              new_len * sizeof(asn_value *))) 
-                     == NULL) 
-                    return TE_ENOMEM; 
+                if ((container->data.array =
+                      realloc(container->data.array,
+                              new_len * sizeof(asn_value *)))
+                     == NULL)
+                    return TE_ENOMEM;
 
                 memset((void *)(container->data.array + container->len),
                        0, sizeof(asn_value *) * (new_len - container->len));
@@ -1078,8 +1078,8 @@ asn_put_child_by_index(asn_value *container, asn_value *new_value,
                 for (; i < container->len; i++)
                     container->data.array[i] = container->data.array[i+1];
 
-                container->data.array = 
-                    realloc(container->data.array, 
+                container->data.array =
+                    realloc(container->data.array,
                             container->len * sizeof(asn_value *));
 
                 return 0;
@@ -1097,11 +1097,11 @@ asn_put_child_by_index(asn_value *container, asn_value *new_value,
             if (container->data.array[index] != NULL)
                 asn_free_value(container->data.array[index]);
 
-            container->data.array[index] = new_value; 
+            container->data.array[index] = new_value;
             break;
 
         default:
-            return TE_EASNWRONGTYPE; 
+            return TE_EASNWRONGTYPE;
     }
 
     /* now set name of new subvalue, if it is. */
@@ -1113,7 +1113,7 @@ asn_put_child_by_index(asn_value *container, asn_value *new_value,
         if (new_value->syntax & COMPOUND)
             new_value->txt_len = -1;
 
-        free(new_value->name); 
+        free(new_value->name);
         new_value->name = asn_strdup(ne->name);
         new_value->tag  = ne->tag;
     }
@@ -1127,7 +1127,7 @@ te_errno
 asn_put_choice(asn_value *container, asn_value *value)
 {
     int i, n_subtypes = container->asn_type->len;
-    const asn_named_entry_t * ne = 
+    const asn_named_entry_t * ne =
                     container->asn_type->sp.named_entries;
 
     if (container->syntax != CHOICE)
@@ -1135,14 +1135,14 @@ asn_put_choice(asn_value *container, asn_value *value)
 
     for (i = 0; i < n_subtypes; i++)
     {
-        /* It is rather dangerous to compare pointers of 
+        /* It is rather dangerous to compare pointers of
          * asn_type structures, but in current implementation
-         * it is equivalent to identity of ASN.1 types. 
+         * it is equivalent to identity of ASN.1 types.
          */
         if (ne[i].type == value->asn_type)
             break;
     }
-    if (i == n_subtypes) 
+    if (i == n_subtypes)
         return TE_EASNWRONGTYPE;
 
     return asn_put_child_by_index(container, value, i);
@@ -1157,14 +1157,14 @@ asn_put_choice(asn_value *container, asn_value *value)
 /* see description in asn_usr.h */
 te_errno
 asn_get_descendent(const asn_value *container,
-                   asn_value **found_value, 
+                   asn_value **found_value,
                    const char *labels)
 {
     te_errno rc = 0;
 #if 1
 
     if (!container || !found_value)
-        return TE_EWRONGPTR; 
+        return TE_EWRONGPTR;
 
     *found_value = asn_find_descendant(container, &rc, labels);
 
@@ -1175,16 +1175,16 @@ asn_get_descendent(const asn_value *container,
     int index;
 
     if (!container || !found_value)
-        return TE_EWRONGPTR; 
+        return TE_EWRONGPTR;
 
     while (rest_labels != NULL && (*rest_labels != '\0'))
-    { 
-        rc = asn_child_named_index(tmp_value->asn_type, rest_labels, 
+    {
+        rc = asn_child_named_index(tmp_value->asn_type, rest_labels,
                                    &index, &rest_labels);
         if (rc != 0)
         {
-            if ((asn_get_syntax(tmp_value, NULL) == CHOICE) && 
-                ((rc = asn_get_choice_value(tmp_value, &tmp_value, 
+            if ((asn_get_syntax(tmp_value, NULL) == CHOICE) &&
+                ((rc = asn_get_choice_value(tmp_value, &tmp_value,
                                                NULL, NULL)) == 0))
                 continue;
 
@@ -1193,7 +1193,7 @@ asn_get_descendent(const asn_value *container,
 
         rc = asn_get_child_by_index(tmp_value, &tmp_value, index);
         if (rc != 0)
-            return rc; 
+            return rc;
     }
 
     if (rc == 0)
@@ -1205,7 +1205,7 @@ asn_get_descendent(const asn_value *container,
 
 /* See description in asn_usr.h */
 te_errno
-asn_put_descendent(asn_value *container, asn_value *subval, 
+asn_put_descendent(asn_value *container, asn_value *subval,
                    const char *labels)
 {
     const char  *rest_labels = labels;
@@ -1216,11 +1216,11 @@ asn_put_descendent(asn_value *container, asn_value *subval,
     int index;
 
     if (!container || !labels)
-        return TE_EWRONGPTR; 
+        return TE_EWRONGPTR;
 
     while (rest_labels != NULL && (*rest_labels != '\0'))
-    { 
-        rc = asn_child_named_index(par_value->asn_type, rest_labels, 
+    {
+        rc = asn_child_named_index(par_value->asn_type, rest_labels,
                                    &index, &rest_labels);
         if (rc != 0)
             break;
@@ -1245,9 +1245,9 @@ asn_put_descendent(asn_value *container, asn_value *subval,
                     else
                         new_type = par_value->asn_type->sp.subtype;
 
-                    tmp = asn_init_value(new_type); 
+                    tmp = asn_init_value(new_type);
 
-                    rc = asn_put_child_by_index(par_value, tmp, index); 
+                    rc = asn_put_child_by_index(par_value, tmp, index);
                     par_value = tmp;
                 }
             }
@@ -1264,28 +1264,28 @@ asn_put_descendent(asn_value *container, asn_value *subval,
 
 /* See description in asn_usr.h */
 te_errno
-asn_get_indexed(const asn_value *container, asn_value **subval, 
+asn_get_indexed(const asn_value *container, asn_value **subval,
                 int index, const char *labels)
 {
     te_errno         rc;
     const asn_value *indexed_value = NULL;
 
     if (!container || !subval)
-        return TE_EWRONGPTR; 
+        return TE_EWRONGPTR;
 
     if ((rc = asn_get_descendent(container, (asn_value **)&indexed_value,
                                  labels)) != 0)
         return rc;
 
-    if (indexed_value->syntax != SEQUENCE_OF && 
+    if (indexed_value->syntax != SEQUENCE_OF &&
         indexed_value->syntax != SET_OF)
         return TE_EASNWRONGTYPE;
 
-    if (index < 0) 
+    if (index < 0)
         index += (int)indexed_value->len;
 
     if ((unsigned int)index >= indexed_value->len)
-        return TE_EASNINCOMPLVAL; 
+        return TE_EASNINCOMPLVAL;
 
     *subval = indexed_value->data.array[index];
 
@@ -1301,7 +1301,7 @@ asn_write_primitive(asn_value *value, const void *data, size_t d_len)
     unsigned int m_len = d_len; /* length of memory used */
 
     if (value  == NULL)
-        return TE_EWRONGPTR; 
+        return TE_EWRONGPTR;
 
     value->txt_len = -1;
 
@@ -1314,7 +1314,7 @@ asn_write_primitive(asn_value *value, const void *data, size_t d_len)
         {
             value->data.integer = 0xff;
             value->txt_len = 4;
-        } 
+        }
         else  /* FALSE */
         {
             value->data.integer = 0;
@@ -1322,24 +1322,24 @@ asn_write_primitive(asn_value *value, const void *data, size_t d_len)
         }
         break;
 
-    case INTEGER: 
-    case ENUMERATED: 
+    case INTEGER:
+    case ENUMERATED:
         {
             long int val;
             switch (d_len)
             {
-                case 0: 
-                        return TE_EINVAL; 
-                case sizeof(char) : 
-                        val = *((const unsigned char *) data); 
+                case 0:
+                        return TE_EINVAL;
+                case sizeof(char) :
+                        val = *((const unsigned char *) data);
                         break;
-                case sizeof(short): 
-                        val = *((const short *)data); 
+                case sizeof(short):
+                        val = *((const short *)data);
                         break;
-                case sizeof(long) : 
-                        val = *((const long *) data); 
+                case sizeof(long) :
+                        val = *((const long *) data);
                         break;
-                default: 
+                default:
                         val = *((const int *) data);
             }
             if (value->syntax == INTEGER)
@@ -1348,7 +1348,7 @@ asn_write_primitive(asn_value *value, const void *data, size_t d_len)
         }
         break;
 
-    case CHAR_STRING: 
+    case CHAR_STRING:
         free(value->data.other);
         if (d_len == 0 || data == NULL)
         {
@@ -1357,7 +1357,7 @@ asn_write_primitive(asn_value *value, const void *data, size_t d_len)
             value->txt_len = 2;
         }
         else
-        { 
+        {
             char *str = value->data.other = malloc(d_len + 1);
             strncpy(str, data, d_len);
             str[d_len] = '\0';
@@ -1371,8 +1371,8 @@ asn_write_primitive(asn_value *value, const void *data, size_t d_len)
     case PR_ASN_NULL:
         break;
 
-    case BIT_STRING: 
-    case OID: 
+    case BIT_STRING:
+    case OID:
         if (value->syntax == OID)
             m_len *= sizeof(int);
         else
@@ -1381,7 +1381,7 @@ asn_write_primitive(asn_value *value, const void *data, size_t d_len)
     case LONG_INT:
     case REAL:
     case OCT_STRING:
-        if (d_len == 0 || data == NULL) 
+        if (d_len == 0 || data == NULL)
         {
             value->data.other = NULL;
             value->len = 0;
@@ -1400,10 +1400,10 @@ asn_write_primitive(asn_value *value, const void *data, size_t d_len)
                 free (value->data.other);
             value->data.other = val;
             memcpy(val,  data, m_len);
-            value->len = d_len; 
+            value->len = d_len;
         }
         if (value->syntax == OCT_STRING)
-            value->txt_len = d_len * 3 + 3; 
+            value->txt_len = d_len * 3 + 3;
 
         break;
 
@@ -1424,21 +1424,21 @@ asn_write_primitive(asn_value *value, const void *data, size_t d_len)
 
 /* see description in asn_usr.h */
 te_errno
-asn_write_value_field(asn_value *container, const void *data, size_t d_len, 
+asn_write_value_field(asn_value *container, const void *data, size_t d_len,
                       const char *field_labels)
 {
 #if AVOID_STRSEP
     te_errno   rc;
-    asn_value *subvalue = asn_retrieve_descendant(container, &rc, 
+    asn_value *subvalue = asn_retrieve_descendant(container, &rc,
                                                   field_labels);
     if (subvalue == NULL)
         return rc;
 
     container->txt_len = -1;
-    asn_clean_count(container); 
+    asn_clean_count(container);
     rc = asn_write_primitive(subvalue, data, d_len);
 #else
-    char     *field_labels_int_copy = asn_strdup(field_labels); 
+    char     *field_labels_int_copy = asn_strdup(field_labels);
     te_errno  rc = asn_impl_write_value_field(container, data, d_len,
                                               field_labels_int_copy);
     free(field_labels_int_copy);
@@ -1450,38 +1450,38 @@ asn_write_value_field(asn_value *container, const void *data, size_t d_len,
 
 #if !AVOID_STRSEP
 /**
- * Write data into primitive syntax leaf in specified ASN value, internal 
+ * Write data into primitive syntax leaf in specified ASN value, internal
  * implemetation of this functionality.
  *
  * @param container     pointer to ASN value which leaf field is interested;
  * @param data          data to be written, should be in nature C format for
  *                      data type respective to leaf syntax;
- * @param d_len         length of data; 
+ * @param d_len         length of data;
  *                      Measured in octets for all types except OID and
  *                      BIT_STRING; for OID measured in sizeof(int),
- *                      for BIT_STRING measured in bits 
+ *                      for BIT_STRING measured in bits
  * @param field_labels  string with dot-separated sequence of textual field
- *                      labels, specifying primitive-syntax leaf in ASN value 
- *                      tree with 'container' as a root. Label for 
+ *                      labels, specifying primitive-syntax leaf in ASN value
+ *                      tree with 'container' as a root. Label for
  *                      'SEQUENCE OF' and 'SET OF' subvalues is decimal
  *                      notation of its integer index in array.
  *
  * @return zero on success, otherwise error code.
- */ 
+ */
 te_errno
-asn_impl_write_value_field(asn_value *container, 
-                           const void *data, size_t d_len, 
+asn_impl_write_value_field(asn_value *container,
+                           const void *data, size_t d_len,
                            char *field_labels)
 {
     unsigned int m_len = d_len; /* length of memory used */
     asn_value      *subvalue;
     const asn_type *subtype;
 
-    if (container  == NULL|| 
+    if (container  == NULL||
         ((container->syntax & COMPOUND) == 0 &&
-        container->syntax != PR_ASN_NULL && 
+        container->syntax != PR_ASN_NULL &&
         data == NULL && d_len != 0))
-        return TE_EWRONGPTR; 
+        return TE_EWRONGPTR;
 
     container->txt_len = -1;
 
@@ -1494,7 +1494,7 @@ asn_impl_write_value_field(asn_value *container,
         {
             container->data.integer = 0xff;
             container->txt_len = 4;
-        } 
+        }
         else  /* FALSE */
         {
             container->data.integer = 0;
@@ -1502,13 +1502,13 @@ asn_impl_write_value_field(asn_value *container,
         }
         break;
 
-    case INTEGER: 
-    case ENUMERATED: 
+    case INTEGER:
+    case ENUMERATED:
         {
             long int val;
             switch (d_len)
             {
-                case 0: return TE_EINVAL; 
+                case 0: return TE_EINVAL;
                 case sizeof(char) : val = *((const unsigned char *) data); break;
                 case sizeof(short): val = *((const short *)data); break;
                 case sizeof(long) : val = *((const long *) data); break;
@@ -1530,7 +1530,7 @@ asn_impl_write_value_field(asn_value *container,
             container->txt_len = 2;
         }
         else
-        { 
+        {
             char *str = container->data.other = malloc(d_len + 1);
             strncpy(str, data, d_len);
             str[d_len] = '\0';
@@ -1544,8 +1544,8 @@ asn_impl_write_value_field(asn_value *container,
     case PR_ASN_NULL:
         break;
 
-    case BIT_STRING: 
-    case OID: 
+    case BIT_STRING:
+    case OID:
         if (container->syntax == OID)
             m_len *= sizeof(int);
         else
@@ -1554,7 +1554,7 @@ asn_impl_write_value_field(asn_value *container,
     case LONG_INT:
     case REAL:
     case OCT_STRING:
-        if (d_len == 0) 
+        if (d_len == 0)
         {
             container->data.other = NULL;
             container->len = 0;
@@ -1573,16 +1573,16 @@ asn_impl_write_value_field(asn_value *container,
                 free (container->data.other);
             container->data.other = val;
             memcpy(val,  data, m_len);
-            container->len = d_len; 
+            container->len = d_len;
         }
         if (container->syntax == OCT_STRING)
-            container->txt_len = d_len * 3 + 3; 
+            container->txt_len = d_len * 3 + 3;
         break;
 
     case SEQUENCE:
     case SET:
     case SEQUENCE_OF:
-    case SET_OF: 
+    case SET_OF:
     case CHOICE:
     case TAGGED:
         {
@@ -1594,15 +1594,15 @@ asn_impl_write_value_field(asn_value *container,
             switch (container->syntax)
             {
                 case TAGGED: break;
-                case CHOICE: 
+                case CHOICE:
                     if (rest_field_labels && (*rest_field_labels == '#'))
                         rest_field_labels ++;
-                    else 
+                    else
                         break;
                 default:
                     cur_label = strsep(&rest_field_labels, ".");
             }
-            rc = asn_impl_find_subvalue_writable(container, cur_label, 
+            rc = asn_impl_find_subvalue_writable(container, cur_label,
                                                  &subvalue);
 
             switch (rc)
@@ -1613,26 +1613,26 @@ asn_impl_write_value_field(asn_value *container,
                 break;
 
                 case TE_EASNINCOMPLVAL:
-                { 
+                {
 
-                    rc = asn_impl_find_subtype(container->asn_type, 
+                    rc = asn_impl_find_subtype(container->asn_type,
                                                cur_label, &subtype);
                     if (rc) break;
 
-                    subvalue = asn_init_value(subtype); 
+                    subvalue = asn_init_value(subtype);
 
                     rc = asn_impl_write_value_field(subvalue, data, d_len,
                                                     rest_field_labels);
-                    if (rc) break; 
+                    if (rc) break;
 
                     rc = asn_put_child_value_by_label(container, subvalue,
                                                       cur_label);
-                } 
-            } 
+                }
+            }
 
             return rc;
         }
-    default: 
+    default:
         return 0; /* nothing to do. */
     }
 
@@ -1645,64 +1645,64 @@ asn_impl_write_value_field(asn_value *container,
  *
  * @param container     pointer to ASN value which leaf field is interested.
  * @param data          pointer to buffer for read data.
- * @param d_len         length of available buffer / read data (IN/OUT). 
+ * @param d_len         length of available buffer / read data (IN/OUT).
  * @param field_labels  string with dot-separated sequence of textual field
- *                      labels, specifying primitive-syntax leaf in 
- *                      ASN value tree with 'container' as a root. 
- *                      Label for 'SEQUENCE OF' and 'SET OF' subvalues 
+ *                      labels, specifying primitive-syntax leaf in
+ *                      ASN value tree with 'container' as a root.
+ *                      Label for 'SEQUENCE OF' and 'SET OF' subvalues
  *                      is decimalnotation of its integer index in array.
  *
  * @return zero on success, otherwise error code.
- */ 
+ */
 te_errno
 asn_read_value_field(const asn_value *container, void *data, size_t *d_len,
                      const char *field_labels)
 {
-    char *field_labels_int_copy = asn_strdup(field_labels); 
-    int   rc = asn_impl_read_value_field(container, data, d_len, 
+    char *field_labels_int_copy = asn_strdup(field_labels);
+    int   rc = asn_impl_read_value_field(container, data, d_len,
                                          field_labels_int_copy);
 
     free (field_labels_int_copy);
 
     return rc;
-} 
+}
 
 /**
- * Read data into primitive syntax leaf in specified ASN value, internal 
+ * Read data into primitive syntax leaf in specified ASN value, internal
  * implemetation of this functionality.
  *
  * @param container     pointer to ASN value which leaf field is interested
  * @param data          pointer to buffer for read data (OUT)
- * @param d_len         length of available buffer / read data (IN/OUT); 
+ * @param d_len         length of available buffer / read data (IN/OUT);
  *                      measured in octets for all types except OID and
  *                      BIT_STRING; for OID measured in sizeof(int),
- *                      for BIT_STRING measured in bits 
+ *                      for BIT_STRING measured in bits
  * @param field_labels  string with dot-separated sequence of textual field
- *                      labels, specifying primitive-syntax leaf in 
- *                      ASN value tree with 'container' as a root. 
- *                      Label for 'SEQUENCE OF' and 'SET OF' subvalues 
+ *                      labels, specifying primitive-syntax leaf in
+ *                      ASN value tree with 'container' as a root.
+ *                      Label for 'SEQUENCE OF' and 'SET OF' subvalues
  *                      is decimalnotation of its integer index in array.
  *
  * @return zero on success, otherwise error code.
- */ 
+ */
 te_errno
-asn_impl_read_value_field(const asn_value *container,  void *data, 
+asn_impl_read_value_field(const asn_value *container,  void *data,
                           size_t *d_len, char *field_labels)
 {
     asn_value *value;
     size_t     m_len;
     te_errno   rc;
 
-    if (!container) return TE_EWRONGPTR; 
+    if (!container) return TE_EWRONGPTR;
 
-    rc = asn_get_descendent(container, &value, field_labels); 
+    rc = asn_get_descendent(container, &value, field_labels);
     if (rc) return rc;
 
     if (value->syntax != PR_ASN_NULL &&
         ((data == NULL) || (d_len == NULL)))
-        return TE_EWRONGPTR; 
+        return TE_EWRONGPTR;
 
-    m_len = value->len; 
+    m_len = value->len;
 
     switch(value->syntax)
     {
@@ -1713,12 +1713,12 @@ asn_impl_read_value_field(const asn_value *container,  void *data,
             *((char*)data) = (char) value->data.integer;
             *d_len = 1;
         }
-        else 
+        else
             return TE_ESMALLBUF;
         break;
 #endif
-    case INTEGER: 
-    case ENUMERATED: 
+    case INTEGER:
+    case ENUMERATED:
         {
             long int val = value->data.integer;
 
@@ -1731,7 +1731,7 @@ asn_impl_read_value_field(const asn_value *container,  void *data,
                 case sizeof(int16_t): *((int16_t *)data) = val; break;
                 case sizeof(int32_t): *((int32_t *)data) = val; break;
                 case sizeof(int64_t): *((int64_t *)data) = val; break;
-                default: 
+                default:
                     return TE_EASNGENERAL;
             }
         }
@@ -1748,7 +1748,7 @@ asn_impl_read_value_field(const asn_value *container,  void *data,
     case LONG_INT:
     case OCT_STRING:
     case REAL:
-        { 
+        {
             if (*d_len < value->len)
                 return TE_ESMALLBUF;
 
@@ -1763,7 +1763,7 @@ asn_impl_read_value_field(const asn_value *container,  void *data,
     case SEQUENCE:
     case SET:
     case SEQUENCE_OF:
-    case SET_OF: 
+    case SET_OF:
         return TE_EASNNOTLEAF;
 
     case CHOICE:
@@ -1778,7 +1778,7 @@ asn_impl_read_value_field(const asn_value *container,  void *data,
         }
         break; /* unreachable */
 
-    default: 
+    default:
         return 0; /* nothing to do. */
     }
 
@@ -1852,7 +1852,7 @@ asn_read_string(const asn_value *container, char **value,
         return TE_EWRONGPTR;
 
     if ((rc = asn_get_subvalue(container, (asn_value **)&leaf_val,
-                               labels)) != 0) 
+                               labels)) != 0)
         return rc;
 
     if (leaf_val->syntax != CHAR_STRING)
@@ -1861,8 +1861,8 @@ asn_read_string(const asn_value *container, char **value,
     if (leaf_val->data.other == NULL)
         *value = asn_strdup("");
     else
-        *value = asn_strdup(leaf_val->data.other); 
- 
+        *value = asn_strdup(leaf_val->data.other);
+
     return (*value != NULL) ? 0 : TE_ENOMEM;
 }
 
@@ -1874,29 +1874,29 @@ asn_read_string(const asn_value *container, char **value,
  * @param elem_value    ASN value to be placed into the tree at place,
  *                      specified by subval_labels.
  * @param subval_labels string with dot-separated sequence of textual field
- *                      labels, specifying subvalue in ASN value 
- *                      tree with 'container' as a root. Label for 
+ *                      labels, specifying subvalue in ASN value
+ *                      tree with 'container' as a root. Label for
  *                      'SEQUENCE OF' and 'SET OF' subvalues is decimal
- *                      notation of its integer index in array.  
+ *                      notation of its integer index in array.
  *
  * @return zero on success, otherwise error code.
- */ 
+ */
 te_errno
-asn_write_component_value(asn_value *container, 
+asn_write_component_value(asn_value *container,
                           const asn_value *elem_value,
                           const char *subval_labels)
 {
 #if AVOID_STRSEP
     te_errno rc;
     asn_value *subvalue = asn_retrieve_descendant(container,
-                                                  &rc, subval_labels); 
+                                                  &rc, subval_labels);
 
     if (rc != 0)
         return rc;
 
     rc = asn_assign_value(subvalue, elem_value);
 #else
-    char *field_labels_int_copy = asn_strdup(subval_labels); 
+    char *field_labels_int_copy = asn_strdup(subval_labels);
 
     te_errno   rc = asn_impl_write_component_value(container, elem_value,
                                               field_labels_int_copy);
@@ -1910,21 +1910,21 @@ asn_write_component_value(asn_value *container,
 /**
  * Write component of COMPOUND subvalue in ASN value tree,
  * internal implementation.
- * 
+ *
  *
  * @param container     Root of ASN value tree which subvalue to be changed.
  * @param elem_value    ASN value to be placed into the tree at place,
  *                      specified by subval_labels.
  * @param subval_labels string with dot-separated sequence of textual field
- *                      labels, specifying subvalue in ASN value 
- *                      tree with 'container' as a root. Label for 
+ *                      labels, specifying subvalue in ASN value
+ *                      tree with 'container' as a root. Label for
  *                      'SEQUENCE OF' and 'SET OF' subvalues is decimal
- *                      notation of its integer index in array.  
+ *                      notation of its integer index in array.
  *
  * @return zero on success, otherwise error code.
- */ 
+ */
 te_errno
-asn_impl_write_component_value(asn_value *container, 
+asn_impl_write_component_value(asn_value *container,
                                const asn_value *elem_value,
                                char *subval_labels)
 {
@@ -1935,7 +1935,7 @@ asn_impl_write_component_value(asn_value *container,
 
                 asn_value *new_value = NULL;
 
-    if (!container || !elem_value || !subval_labels) return TE_EWRONGPTR; 
+    if (!container || !elem_value || !subval_labels) return TE_EWRONGPTR;
 
     if (!(container->syntax & COMPOUND))
         return TE_EASNWRONGLABEL;
@@ -1946,18 +1946,18 @@ asn_impl_write_component_value(asn_value *container,
     switch (container->syntax)
     {
         case TAGGED: break;
-        case CHOICE: 
+        case CHOICE:
             if (*rest_field_labels == '#')
                 rest_field_labels ++;
-            else 
+            else
                 break;
         default:
             cur_label = strsep (&rest_field_labels, ".");
-    } 
+    }
 
     rc = asn_impl_find_subvalue_writable(container, cur_label, &subvalue);
     if (rest_field_labels && (*rest_field_labels))
-    { 
+    {
         /* There are more levels.. */
         if (rc) return rc;
 
@@ -1965,11 +1965,11 @@ asn_impl_write_component_value(asn_value *container,
                                         rest_field_labels);
     }
     else
-    { 
+    {
         /* no more labels, subvalue should be changed at this level */
         switch(rc)
         {
-            case 0: 
+            case 0:
                 /* there is subvalue on that place, should be freed first.*/
                 asn_put_child_value_by_label(container, NULL, cur_label);
                 /* pass through ... */
@@ -1979,14 +1979,14 @@ asn_impl_write_component_value(asn_value *container,
                 if ((container->syntax == CHOICE) && (*cur_label == '\0'))
                 {
                     int i, n_subtypes = container->asn_type->len;
-                    const asn_named_entry_t * ne = 
+                    const asn_named_entry_t * ne =
                                     container->asn_type->sp.named_entries;
 
                     for (i = 0; i < n_subtypes; i++)
                     {
-                        /* It is rather dangerous to compare pointers of 
+                        /* It is rather dangerous to compare pointers of
                          * asn_type structures, but in current implementation
-                         * it is equivalent to identity of ASN.1 types. 
+                         * it is equivalent to identity of ASN.1 types.
                          */
                         if (ne[i].type == elem_value->asn_type)
                         {
@@ -1994,23 +1994,23 @@ asn_impl_write_component_value(asn_value *container,
                             break;
                         }
                     }
-                    if (i == n_subtypes) 
+                    if (i == n_subtypes)
                     {
                         return TE_EASNWRONGTYPE;
                     }
                 }
                 else
-                { 
+                {
                     const asn_type *subtype = NULL;
-                    rc = asn_impl_find_subtype(container->asn_type, 
+                    rc = asn_impl_find_subtype(container->asn_type,
                                                cur_label, &subtype);
                     if (rc) return rc;
-                    
+
                     if (strcmp(subtype->name, elem_value->asn_type->name))
                     {
                         return TE_EASNWRONGTYPE;
                     }
-                    if ((subtype->syntax == CHOICE) && 
+                    if ((subtype->syntax == CHOICE) &&
                         (elem_value->syntax != CHOICE))
                     {
                         new_value = asn_init_value(subtype);
@@ -2027,7 +2027,7 @@ asn_impl_write_component_value(asn_value *container,
                 if (new_value == NULL)
                     new_value = asn_copy_value(elem_value);
 
-                if (new_value == NULL) 
+                if (new_value == NULL)
                 {
                     return TE_EASNGENERAL;
                 }
@@ -2040,7 +2040,7 @@ asn_impl_write_component_value(asn_value *container,
                 break;
         }
     }
-    return rc; 
+    return rc;
 }
 #endif
 
@@ -2049,7 +2049,7 @@ asn_impl_write_component_value(asn_value *container,
 /**
  * See description in asn_usr.h
  */
-te_errno 
+te_errno
 asn_get_subvalue(const asn_value *container, asn_value **subval,
                  const char *subval_labels)
 {
@@ -2065,16 +2065,16 @@ te_errno
 asn_get_child_type(const asn_type *type, const asn_type **subtype,
                    asn_tag_class tag_class, asn_tag_value tag_val)
 {
-    int index; 
+    int index;
     te_errno rc;
 
     if (type == NULL || subtype == NULL)
-        return TE_EWRONGPTR; 
+        return TE_EWRONGPTR;
 
     rc = asn_child_tag_index(type, tag_class, tag_val, &index);
     if (rc != 0)
         return rc;
-    
+
     *subtype = type->sp.named_entries[index].type;
 
     return 0;
@@ -2091,9 +2091,9 @@ asn_get_child_value(const asn_value *container, const asn_value **subval,
     te_errno rc;
 
     if (!container || !subval)
-        return TE_EWRONGPTR; 
+        return TE_EWRONGPTR;
 
-    if (container->syntax != SEQUENCE && 
+    if (container->syntax != SEQUENCE &&
         container->syntax != SET)
         return TE_EASNWRONGTYPE;
 
@@ -2118,10 +2118,10 @@ asn_get_choice_value(const asn_value *container, asn_value **subval,
 {
     asn_value *sv;
     if (!container)
-        return TE_EWRONGPTR; 
+        return TE_EWRONGPTR;
 
     if (container->syntax != CHOICE)
-        return TE_EINVAL; 
+        return TE_EINVAL;
 
     if (container->len == 0 || container->data.array[0] == NULL)
         return TE_EASNINCOMPLVAL;
@@ -2142,12 +2142,12 @@ asn_get_choice_value(const asn_value *container, asn_value **subval,
 /**
  * See description in asn_usr.h
  */
-te_errno 
-asn_get_field_data(const asn_value *container, 
+te_errno
+asn_get_field_data(const asn_value *container,
                    void *location, const char *subval_labels)
 {
     const asn_value  *subval = container;
-    const void      **data_ptr = (const void **)location;    
+    const void      **data_ptr = (const void **)location;
 
     te_errno rc;
 
@@ -2169,12 +2169,12 @@ asn_get_field_data(const asn_value *container,
         return TE_EASNWRONGLABEL;
     }
 
-    switch (subval->syntax) 
+    switch (subval->syntax)
     {
-        case BOOL: 
-        case INTEGER: 
-        case ENUMERATED: 
-            *data_ptr = &subval->data.integer; 
+        case BOOL:
+        case INTEGER:
+        case ENUMERATED:
+            *data_ptr = &subval->data.integer;
             break;
 
         case OID:
@@ -2193,12 +2193,12 @@ asn_get_field_data(const asn_value *container,
         case SEQUENCE:
         case SET:
         case SEQUENCE_OF:
-        case SET_OF: 
+        case SET_OF:
         case CHOICE:
         case TAGGED:
             return TE_EASNNOTLEAF;
 
-        default: 
+        default:
             return 0; /* nothing to do. */
     }
     return 0;
@@ -2207,20 +2207,20 @@ asn_get_field_data(const asn_value *container,
 
 /**
  * See description in asn_usr.h
- */ 
+ */
 te_errno
-asn_read_component_value (const asn_value *container, 
+asn_read_component_value (const asn_value *container,
                 asn_value ** elem_value, const char *subval_labels)
 {
     const asn_value  *subvalue;
-    te_errno     rc; 
+    te_errno     rc;
 
-    rc = asn_get_subvalue(container, (asn_value **)&subvalue, 
-                          subval_labels); 
+    rc = asn_get_subvalue(container, (asn_value **)&subvalue,
+                          subval_labels);
     if (rc) return rc;
 
     *elem_value = asn_copy_value(subvalue);
-    if (*elem_value == NULL) 
+    if (*elem_value == NULL)
         return TE_ENOMEM;
 
     /* fall into CHOICE and TAGGED */
@@ -2232,26 +2232,26 @@ asn_read_component_value (const asn_value *container,
         asn_free_value(transparent_val);
     }
 
-    return 0; 
+    return 0;
 }
 
 
 /**
- * Replace array element in indexed ('SEQUENCE OF' or 'SET OF') subvalue 
- * of root ASN value container. 
+ * Replace array element in indexed ('SEQUENCE OF' or 'SET OF') subvalue
+ * of root ASN value container.
  *
  * @param container     Root of ASN value tree which subvalue is interested.
- * @param elem_value    ASN value to be placed into the array, specified 
+ * @param elem_value    ASN value to be placed into the array, specified
  *                      by subval_labels at place, specified by index.
- * @param index         Array index of element to be replaced. 
+ * @param index         Array index of element to be replaced.
  * @param subval_labels string with dot-separated sequence of textual field
- *                      labels, specifying indexed syntax subvalue in ASN value 
- *                      tree with 'container' as a root. 
+ *                      labels, specifying indexed syntax subvalue in ASN
+ *                      value tree with 'container' as a root.
  *
  * @return zero on success, otherwise error code.
- */ 
+ */
 te_errno
-asn_write_indexed(asn_value *container, const asn_value *elem_value, 
+asn_write_indexed(asn_value *container, const asn_value *elem_value,
                   int index, const char *subval_labels)
 {
     asn_value *value = container;
@@ -2267,17 +2267,17 @@ asn_write_indexed(asn_value *container, const asn_value *elem_value,
 
     if (strcmp(elem_value->asn_type->name, value->asn_type->sp.subtype->name))
     {
-        return TE_EASNWRONGTYPE; 
+        return TE_EASNWRONGTYPE;
     }
 
     switch (value->syntax)
     {
         case SEQUENCE_OF:
-        case SET_OF: 
-            asn_free_value(value->data.array[index]); 
+        case SET_OF:
+            asn_free_value(value->data.array[index]);
             value->data.array[index] = asn_copy_value(elem_value);
             break;
-        
+
         default:
             return TE_EASNGENERAL;
     }
@@ -2286,24 +2286,24 @@ asn_write_indexed(asn_value *container, const asn_value *elem_value,
 }
 
 /**
- * Read array element in indexed ('SEQUENCE OF' or 'SET OF') subvalue 
- * of root ASN value 'container'. 
+ * Read array element in indexed ('SEQUENCE OF' or 'SET OF') subvalue
+ * of root ASN value 'container'.
  *
  * @param container     Root of ASN value tree which subvalue is interested.
- * @param index         Array index of element to be read 
+ * @param index         Array index of element to be read
  * @param subval_labels string with dot-separated sequence of textual field
- *                      labels, specifying indexed syntax subvalue in ASN value 
- *                      tree with 'container' as a root. 
+ *                      labels, specifying indexed syntax subvalue in ASN
+ *                      value tree with 'container' as a root.
  *
- * @return pointer to new ASN_value instance or NULL if error occurred. 
- */ 
+ * @return pointer to new ASN_value instance or NULL if error occurred.
+ */
 asn_value *
 asn_read_indexed(const asn_value *container, int index,
                  const char *subval_labels)
 {
     const asn_value *value = container;
 
-    if (asn_get_subvalue(container, (asn_value **)&value, subval_labels)) 
+    if (asn_get_subvalue(container, (asn_value **)&value, subval_labels))
         return NULL;
 
 
@@ -2317,27 +2317,27 @@ asn_read_indexed(const asn_value *container, int index,
 
     asn_value * subval = value->data.array[index];
     while ((subval->syntax == CHOICE ) || (subval->syntax == TAGGED ))
-        if ((subval = subval->data.array[0]) == NULL) 
+        if ((subval = subval->data.array[0]) == NULL)
             return NULL;
 
-    return asn_copy_value(subval); 
+    return asn_copy_value(subval);
 }
 
 /* see description in asn_usr.h */
 te_errno
-asn_insert_indexed(asn_value *container, asn_value *elem_value, 
+asn_insert_indexed(asn_value *container, asn_value *elem_value,
                    int index, const char *subval_labels)
 {
     asn_value  *value;
-    te_errno    r_c = 0; 
+    te_errno    r_c = 0;
     int         new_len;
 
 #if 1
     value = asn_retrieve_descendant(container, &r_c, subval_labels);
-    
+
 #else
     r_c = asn_impl_fall_down_to_tree_writable(container, subval_labels,
-                                              &value); 
+                                              &value);
 #endif
 
     if (r_c != 0)
@@ -2345,7 +2345,7 @@ asn_insert_indexed(asn_value *container, asn_value *elem_value,
 
     container->txt_len = -1;
     asn_clean_count(elem_value); /* event it was calculated already,
-                                 it not actual, because indent is 
+                                 it not actual, because indent is
                                  changed by this insert */
 
     if (strcmp(elem_value->asn_type->name,
@@ -2377,7 +2377,7 @@ asn_insert_indexed(asn_value *container, asn_value *elem_value,
         for (i = 0; i < (unsigned)index; i++)
             arr[i] = value->data.array[i];
 
-        arr[index] = elem_value; 
+        arr[index] = elem_value;
 
         for (; i < value->len; i++)
             arr[i+1] = value->data.array[i];
@@ -2392,24 +2392,24 @@ asn_insert_indexed(asn_value *container, asn_value *elem_value,
 }
 
 /**
- * Remove array element from indexed syntax (i.e. 'SEQUENCE OF' or 'SET OF') 
- * subvalue of root ASN value container. 
+ * Remove array element from indexed syntax (i.e. 'SEQUENCE OF' or 'SET OF')
+ * subvalue of root ASN value container.
  *
  * @param container     Root of ASN value tree which subvalue is interested.
  * @param index         Array index of element to be removed.
  * @param subval_labels string with dot-separated sequence of textual field
- *                      labels, specifying indexed syntax subvalue in ASN value 
- *                      tree with 'container' as a root. 
+ *                      labels, specifying indexed syntax subvalue in ASN
+ *                      value tree with 'container' as a root.
  *
  * @return zero on success, otherwise error code.
- */ 
+ */
 te_errno
 asn_remove_indexed(asn_value * container, int index, const char *subval_labels)
 {
     asn_value *value = container;
-    te_errno   r_c = 0; 
+    te_errno   r_c = 0;
 
-    r_c = asn_impl_fall_down_to_tree_writable(container, subval_labels, &value); 
+    r_c = asn_impl_fall_down_to_tree_writable(container, subval_labels, &value);
 
     if (r_c) return r_c;
 
@@ -2428,10 +2428,10 @@ asn_remove_indexed(asn_value * container, int index, const char *subval_labels)
     {
         asn_value * *arr = NULL;
         unsigned int i;
-        
+
         if (value->len > 1)
         {
-            arr = malloc((value->len - 1) * sizeof(asn_value *)); 
+            arr = malloc((value->len - 1) * sizeof(asn_value *));
             if (arr == NULL) return TE_ENOMEM;
         }
 
@@ -2440,7 +2440,7 @@ asn_remove_indexed(asn_value * container, int index, const char *subval_labels)
         for (i = 0; i < (unsigned)index; i++)
             arr[i] = value->data.array[i];
 
-        asn_free_value(value->data.array[index]); 
+        asn_free_value(value->data.array[index]);
 
         for (; i < value->len; i++)
             arr[i] = value->data.array[i+1];
@@ -2453,21 +2453,21 @@ asn_remove_indexed(asn_value * container, int index, const char *subval_labels)
 }
 
 /**
- * Get length of subvalue of root ASN value container. 
+ * Get length of subvalue of root ASN value container.
  *
  * @param container     Root of ASN value tree which subvalue is interested.
  * @param subval_labels string with dot-separated sequence of textual field
- *                      labels, specifying indexed syntax subvalue in ASN value 
- *                      tree with 'container' as a root. 
+ *                      labels, specifying indexed syntax subvalue in ASN
+ *                      value tree with 'container' as a root.
  *
- * @return number of elements in constractive subvalue, -1 if error occurred. 
- */ 
+ * @return number of elements in constractive subvalue, -1 if error occurred.
+ */
 int
 asn_get_length(const asn_value *container, const char *subval_labels)
 {
     const asn_value *val;
 
-    if (asn_get_subvalue(container, (asn_value **)&val, subval_labels)) 
+    if (asn_get_subvalue(container, (asn_value **)&val, subval_labels))
         return -1;
 
     if (val->syntax == CHOICE)
@@ -2477,7 +2477,7 @@ asn_get_length(const asn_value *container, const char *subval_labels)
             return -1;
     }
 
-    return val->len; 
+    return val->len;
 }
 
 
@@ -2486,18 +2486,19 @@ asn_get_length(const asn_value *container, const char *subval_labels)
  * Fall down in tree according passed field labels.
  *
  * @param container     pointer to ASN value which leaf field is interested;
- * @param field_labels  textual field label, specifying subvalue of 'container'. 
- *                      Label for 'SEQUENCE OF' and 'SET OF' subvalues 
- *                      is decimal notation of its integer index in array.
- * @param found_value   found subvalue respecive to field_labels (OUT). 
+ * @param field_labels  textual field label, specifying subvalue of
+ *                      'container'. Label for 'SEQUENCE OF' and 'SET OF'
+ *                      subvalues is decimal notation of its integer
+ *                      index in array.
+ * @param found_value   found subvalue respecive to field_labels (OUT).
  *
  * @return zero on success, otherwise error code.
  */
-te_errno 
+te_errno
 asn_impl_fall_down_to_tree_nc(const asn_value *container, char *field_labels,
                               const asn_value **found_value)
 {
-    te_errno   rc = 0; 
+    te_errno   rc = 0;
     const asn_value *value;
 
 #if AVOID_STRSEP
@@ -2505,31 +2506,31 @@ asn_impl_fall_down_to_tree_nc(const asn_value *container, char *field_labels,
     value = asn_find_descendant(container, &rc, field_labels);
 #else
 
-    char *rest_labels = field_labels; 
+    char *rest_labels = field_labels;
     char *cur_label;
 
 
     value = container;
 
     while ((rest_labels && (*rest_labels)) || (value->syntax == CHOICE))
-    { 
+    {
         const asn_value *subvalue;
         cur_label = "";
 
         switch (value->syntax)
         {
             case TAGGED: break;
-            case CHOICE: 
+            case CHOICE:
                 if (rest_labels && (*rest_labels == '#'))
-                    rest_labels ++;  
+                    rest_labels ++;
                     /* fall through to the 'default' label. */
-                else 
+                else
                     break;
             default:
                 cur_label = strsep (&rest_labels, ".");
-        } 
+        }
         rc = asn_impl_find_subvalue(value, cur_label, &subvalue);
-        value = subvalue; 
+        value = subvalue;
 
         if (rc) break;
     }
@@ -2547,28 +2548,28 @@ asn_impl_fall_down_to_tree_nc(const asn_value *container, char *field_labels,
 
 /**
  * Find one-depth subvalue in ASN value tree by its label.
- * This method is applicable only to values with COMPOUND syntax. 
+ * This method is applicable only to values with COMPOUND syntax.
  *
  * @param container  pointer to ASN value which leaf field is interested;
- * @param label      textual field label, specifying subvalue of 'container'. 
- *                   Label for 'SEQUENCE OF' and 'SET OF' subvalues 
+ * @param label      textual field label, specifying subvalue of 'container'.
+ *                   Label for 'SEQUENCE OF' and 'SET OF' subvalue
  *                   is decimal notation of its integer index in array.
  * @param found_val  pointer to found subvalue (OUT).
  *
- * @return zero on success, otherwise error code. 
- */ 
+ * @return zero on success, otherwise error code.
+ */
 te_errno
-asn_impl_find_subvalue(const asn_value *container, const char *label, 
+asn_impl_find_subvalue(const asn_value *container, const char *label,
                        asn_value const **found_val)
-{ 
+{
     const char *rest = NULL;
 
     if (!container || !found_val)
-        return TE_EWRONGPTR; 
+        return TE_EWRONGPTR;
 
     if (!(container->syntax & COMPOUND))
     {
-        return TE_EASNGENERAL; 
+        return TE_EASNGENERAL;
     }
 
     if (container->syntax & ASN_SYN_NAMED)
@@ -2583,24 +2584,28 @@ asn_impl_find_subvalue(const asn_value *container, const char *label,
         case CHOICE:
             index = 0;
 
-            if (arr[0] == NULL) 
+            if (arr[0] == NULL)
                 return TE_EASNINCOMPLVAL;
 
-            if ((label == NULL) || 
+            if ((label == NULL) ||
                 (*label == 0)   ||
                 (strcmp(label, arr[0]->name) == 0))
                 break;
-            
-            /* special label denote that no fall to choice should be performed*/
-            if (*label == '\001') 
+
+            /*
+             * special label denote that no fall to choice
+             * should be performed
+             */
+            if (*label == '\001')
             {
                 *found_val = container;
                 return ASN_STOP_AT_CHOICE;
-            } 
+            }
 
             return TE_EASNOTHERCHOICE;
 
-        case SET: /*order of subvalues in SET syntax value may be arbitrary. */
+        case SET:
+            /* order of subvalues in SET syntax value may be arbitrary. */
             for (index = 0; index < (int)container->len; index++)
                 if (strcmp(label, arr[index]->name) == 0)
                     break;
@@ -2610,8 +2615,8 @@ asn_impl_find_subvalue(const asn_value *container, const char *label,
             return TE_EASNINCOMPLVAL;
 
         default:
-            rc = asn_child_named_index(container->asn_type, 
-                                       label, &index, &rest); 
+            rc = asn_child_named_index(container->asn_type,
+                                       label, &index, &rest);
             if (rc) return rc;
 
             if (arr[index] == NULL)
@@ -2623,20 +2628,20 @@ asn_impl_find_subvalue(const asn_value *container, const char *label,
         return 0;
     }
     else if (container->syntax == TAGGED)
-    { 
+    {
         if ((*found_val = container->data.array[0]) == NULL)
             return TE_EASNINCOMPLVAL;
 
         return 0;
-    } /* We have *_OF value */ 
-    else 
+    } /* We have *_OF value */
+    else
     {
         int index;
         char *rest;
         index = strtol (label, &rest, 10);
-        if (*rest) 
+        if (*rest)
             return TE_EASNWRONGLABEL;
-        
+
         if (index < 0)
             index += container->len;
         if ((index < 0 ) || (index >= (int)container->len))
@@ -2644,18 +2649,18 @@ asn_impl_find_subvalue(const asn_value *container, const char *label,
 
         *found_val = container->data.array[index];
         return 0;
-    } 
+    }
     return TE_EASNGENERAL;
 }
 
 const char *
 asn_get_choice_ptr(const asn_value *container)
-{ 
+{
     const asn_value *sval;
 
-    if ((container->data.array == NULL) || 
+    if ((container->data.array == NULL) ||
         ((sval = container->data.array[0]) == NULL))
-        return NULL; 
+        return NULL;
 
 
     return sval->name;
@@ -2664,19 +2669,19 @@ asn_get_choice_ptr(const asn_value *container)
 
 
 /**
- * Get choice in subvalue of root ASN value container. 
+ * Get choice in subvalue of root ASN value container.
  *
  * @param container     Root of ASN value tree which subvalue is interested.
  * @param subval_labels string with dot-separated sequence of textual field
- *                      labels, specifying interested subvalue in ASN value 
- *                      tree with 'container' as a root. 
+ *                      labels, specifying interested subvalue in ASN value
+ *                      tree with 'container' as a root.
  *                      Subvalue should have ASN syntax CHOICE.
  * @param choice_label  string with label of choice in ASN value (OUT).
  * @param ch_lb_len     length of available buffer in choice_label.
  *
  * @return zero or error code.
- */ 
-te_errno 
+ */
+te_errno
 asn_get_choice(const asn_value *container, const char *subval_labels,
                char *choice_label, size_t ch_lb_len)
 {
@@ -2690,18 +2695,19 @@ asn_get_choice(const asn_value *container, const char *subval_labels,
         len = strlen (subval_labels);
 
     if (len)
-    { 
+    {
         char *corrected_labels = malloc(len + sizeof(suffix));
-        memcpy(corrected_labels, subval_labels, len); 
-        memcpy(corrected_labels + len, suffix, sizeof(suffix)); 
+        memcpy(corrected_labels, subval_labels, len);
+        memcpy(corrected_labels + len, suffix, sizeof(suffix));
 
-        rc = asn_impl_fall_down_to_tree_nc(container, corrected_labels, &val); 
+        rc = asn_impl_fall_down_to_tree_nc(container,
+                                           corrected_labels, &val);
         free(corrected_labels);
 
         if (rc != 0 && rc != ASN_STOP_AT_CHOICE)
-            return rc; 
+            return rc;
     }
-    else 
+    else
         val = container;
 
     if (val->syntax != CHOICE)
@@ -2711,11 +2717,11 @@ asn_get_choice(const asn_value *container, const char *subval_labels,
 
     if (val->data.array == NULL)
     {
-        return TE_EASNGENERAL; 
+        return TE_EASNGENERAL;
     }
 
-    if ((sval = val->data.array[0]) == NULL) 
-        return TE_EASNINCOMPLVAL; 
+    if ((sval = val->data.array[0]) == NULL)
+        return TE_EASNINCOMPLVAL;
 
     if (strlen(sval->name) >= ch_lb_len)
         return TE_ESMALLBUF;
@@ -2732,7 +2738,7 @@ asn_get_choice(const asn_value *container, const char *subval_labels,
  * @param container     value which tag is intereseted
  *
  * @return tag value or -1 on error.
- */ 
+ */
 asn_tag_value
 asn_get_tag(const asn_value *container)
 {
@@ -2744,11 +2750,11 @@ asn_get_tag(const asn_value *container)
 /**
  * Obtain ASN syntax type;
  *
- * @param type          ASN value which leaf syntax is interested. 
+ * @param type          ASN value which leaf syntax is interested.
  *
  * @return syntax of specified leaf in value.
  */
-asn_syntax   
+asn_syntax
 asn_get_syntax_of_type(const asn_type *type)
 {
     if (type == NULL)
@@ -2758,16 +2764,16 @@ asn_get_syntax_of_type(const asn_type *type)
 }
 
 /**
- * Obtain ASN syntax of specified field in value. 
+ * Obtain ASN syntax of specified field in value.
  *
- * @param value          ASN value which leaf syntax is interested. 
+ * @param value          ASN value which leaf syntax is interested.
  * @param subval_labels string with dot-separated sequence of textual field
- *                      labels, specifying interested subvalue in ASN value 
- *                      tree with 'value' as a root. 
+ *                      labels, specifying interested subvalue in ASN value
+ *                      tree with 'value' as a root.
  *
  * @return syntax of specified leaf in value.
  */
-asn_syntax   
+asn_syntax
 asn_get_syntax(const asn_value *value, const char *subval_labels)
 {
     const asn_value *val;
@@ -2783,17 +2789,17 @@ asn_get_syntax(const asn_value *value, const char *subval_labels)
 
     len = strlen (subval_labels);
     if (len)
-    { 
+    {
         char *corrected_labels = malloc (len + sizeof(suffix));
 
-        memcpy (corrected_labels, subval_labels, len); 
-        memcpy (corrected_labels + len, suffix, sizeof(suffix)); 
+        memcpy (corrected_labels, subval_labels, len);
+        memcpy (corrected_labels + len, suffix, sizeof(suffix));
 
-        rc = asn_impl_fall_down_to_tree_nc(value, corrected_labels, &val); 
+        rc = asn_impl_fall_down_to_tree_nc(value, corrected_labels, &val);
         free (corrected_labels);
 
         if (rc && rc != ASN_STOP_AT_CHOICE)
-            return SYNTAX_UNDEFINED; 
+            return SYNTAX_UNDEFINED;
     }
     else
         val = value;
@@ -2805,26 +2811,26 @@ asn_get_syntax(const asn_value *value, const char *subval_labels)
 
 /**
  * Get constant pointer to subtype of some ASN type.
- * 
- * @param container     ASN type. 
- * @param found_subtype Location for pointer to ASN sub-type (OUT). 
+ *
+ * @param container     ASN type.
+ * @param found_subtype Location for pointer to ASN sub-type (OUT).
  * @param labels        String with dot-separated sequence of textual field
  *                      labels, specifying interested sub-type.
  *
  * @return zero or error code.
- */ 
-te_errno 
-asn_get_subtype(const asn_type *container, 
+ */
+te_errno
+asn_get_subtype(const asn_type *container,
                 const asn_type **found_subtype, const char *labels)
 {
     const asn_type *type = container;
     const char *rest_labels = labels;
-    int rc = 0; 
+    int rc = 0;
 
     type = container;
 
     while (rest_labels && (*rest_labels))
-    { 
+    {
         int index;
 
         rc = asn_child_named_index(type, rest_labels, &index, &rest_labels);
@@ -2869,7 +2875,7 @@ asn_label_to_tag(const asn_type *type, const char *label, asn_tag_t *tag)
 
     rc = asn_child_named_index(type, label, &index, &rest_labels);
     if (rc != 0)
-        return rc; 
+        return rc;
 
     if (rest_labels != NULL)
         return TE_EASNWRONGLABEL;
@@ -2898,7 +2904,7 @@ asn_get_mark(const asn_value *value, int *mark)
     if (value == NULL || mark == NULL )
         return TE_EINVAL;
 
-    *mark = value->mark; 
+    *mark = value->mark;
 
     return 0;
 }
@@ -2938,12 +2944,12 @@ asn_impl_get_label_by_index(asn_value *value, unsigned int index,
     char            *name = NULL;
     asn_value       *child_value = NULL;
 #define BUF_SIZE 20
-    
+
     if (value == NULL || label == NULL || label_len == 0)
         return -1;
 
     type = asn_get_type(value);
-    
+
     if (type->syntax & ASN_SYN_NAMED)
     {
         name = type->sp.named_entries[index].name;
@@ -3027,7 +3033,8 @@ asn_impl_walk_depth(asn_value *container, te_bool only_leafs, char *path,
                 }
                 else
                 {
-                    snprintf(subpath, PATH_SIZE - 1, "%s.%s", path, valuename);
+                    snprintf(subpath, PATH_SIZE - 1,
+                             "%s.%s", path, valuename);
                 }
                 rc = asn_impl_walk_depth(sv, only_leafs, subpath,
                                          status, func, user_ptr);
@@ -3089,7 +3096,7 @@ asn_walk_breadth(asn_value *container, te_bool only_leafs,
  * @param search_str    Search expression ([<label>:<value>{,<lbl>:<val>}])
  * @param search_type   ASN type of value to be parsed
  * @param search_value  Pointer to parsed ASN value
- * 
+ *
  * @return Status code
  */
 static te_errno
@@ -3182,7 +3189,7 @@ asn_search_to_asn_value(const char *search_str,
                 }
                 memset(label, '\0', search_len);
                 label_p = label;
-                if (search_type->sp.named_entries[i].type->syntax == 
+                if (search_type->sp.named_entries[i].type->syntax ==
                     CHAR_STRING)
                 {
                     state = SRCHASN_STRINGVALUE;
@@ -3228,7 +3235,7 @@ asn_search_to_asn_value(const char *search_str,
     }
 
 #if 0
-    RING("%s(): ASN search value text: '%s'", 
+    RING("%s(): ASN search value text: '%s'",
          __FUNCTION__, asn_text_val);
 #endif
     rc = asn_parse_value_text(asn_text_val, search_type, search_value,
@@ -3431,10 +3438,10 @@ asn_path_from_extended(const asn_value *node, const char *ext_path,
      */
     path = malloc(20 * sizeof(char));
     snprintf(path, 20, "%d", i);
-    if ((prefix_len + 
-         strlen(path) + 
-         *(search_end + 1) == '\0' ? 
-             0 : 
+    if ((prefix_len +
+         strlen(path) +
+         *(search_end + 1) == '\0' ?
+             0 :
              strlen(search_end + 1)) >= asn_path_len)
     {
         free(path);
@@ -3466,7 +3473,7 @@ asn_path_from_extended(const asn_value *node, const char *ext_path,
     }
     free(path);
 
-    /* 
+    /*
      * Call asn_path_from_extended once more to process
      * other searches
      */
@@ -3553,7 +3560,7 @@ asn_insert_value_extended_path(const asn_value *root_node,
         return rc;
     }
 
-    /* 
+    /*
      * Copy new value to dst preserving dst contents in temporary variable
      */
     temp_dst = asn_copy_value(dst);
@@ -3588,8 +3595,8 @@ asn_insert_value_extended_path(const asn_value *root_node,
             dst->data.array[i] = asn_copy_value(src_elem);
             if (dst->data.array[i] == NULL)
             {
-                ERROR("%s(): Failed to copy item #%d of ASN value to target, "
-                      "no memory?", __FUNCTION__, i);
+                ERROR("%s(): Failed to copy item #%d of ASN value "
+                      "to target, no memory?", __FUNCTION__, i);
                 rc = TE_ENOMEM;
                 goto cleanup;
             }
@@ -3633,7 +3640,7 @@ asn_impl_compare_values(asn_value *a, asn_value *b)
     te_errno rc = TE_EASNDIFF;
 
 #if 0
-    /* 
+    /*
      * TODO: Understand why UniverstalString leafs has COMPOUND syntax, but
      * not CHAR_STRING. After that uncomment this type check.
      */
@@ -3641,7 +3648,9 @@ asn_impl_compare_values(asn_value *a, asn_value *b)
         (a->syntax | COMPOUND) ||
         (b->syntax | COMPOUND))
     {
-        RING("ASNCOMPARE: types are different: a(typename=%s)=%d, b(typename=%s)=%d", a->asn_type->name, a->asn_type->syntax, b->asn_type->name, b->asn_type->syntax);
+        RING("ASNCOMPARE: types are different: a(typename=%s)=%d, "
+             "b(typename=%s)=%d", a->asn_type->name, a->asn_type->syntax,
+             b->asn_type->name, b->asn_type->syntax);
         return TE_EASNWRONGTYPE;
     }
 #endif
@@ -3651,7 +3660,8 @@ asn_impl_compare_values(asn_value *a, asn_value *b)
     text_b = malloc(len_b * sizeof(char));
     if (text_a == NULL || text_b == NULL)
     {
-        RING("ASNCOMPARE: Failed to allocate %d and %d bytes of memory", len_a, len_b);
+        RING("ASNCOMPARE: Failed to allocate %d "
+             "and %d bytes of memory", len_a, len_b);
         return TE_ENOMEM;
     }
 
@@ -3672,7 +3682,8 @@ asn_impl_compare_values(asn_value *a, asn_value *b)
     req_b = asn_sprint_value(b, text_b, len_b, 0);
 
 #if 0
-    RING("ASNCOMPARE: req_a=%d, req_b=%d, text_a='%s', text_b='%s'", req_a, req_b, text_a, text_b);
+    RING("ASNCOMPARE: req_a=%d, req_b=%d, text_a='%s', text_b='%s'",
+         req_a, req_b, text_a, text_b);
 #endif
     rc = TE_EASNDIFF;
     if (req_a == req_b)
@@ -3715,7 +3726,8 @@ asn_impl_check_contains_callback(asn_value *leaf, void *user_ptr)
         return rc;
     }
 #if 0
-    RING("CHKCONTCALLBACK: checking leaf(type=%s,%d) and cont_value(type=%s,%d)",
+    RING("CHKCONTCALLBACK: checking leaf(type=%s,%d) and "
+         "cont_value(type=%s,%d)",
          leaf->asn_type->name, leaf->syntax,
          cont_value->asn_type->name, cont_value->syntax);
 #endif
@@ -3750,53 +3762,53 @@ asn_check_value_contains(asn_value *container, asn_value *value)
 
 /**
  * Definitions of ASN.1 base types.
- */ 
+ */
 
-const asn_type asn_base_boolean_s = 
+const asn_type asn_base_boolean_s =
 { "BOOLEAN",           {UNIVERSAL, 1}, BOOL,        0, {NULL} };
-const asn_type asn_base_integer_s = 
-{ "INTEGER",           {UNIVERSAL, 2}, INTEGER,     0, {NULL} }; 
-const asn_type asn_base_bitstring_s = 
+const asn_type asn_base_integer_s =
+{ "INTEGER",           {UNIVERSAL, 2}, INTEGER,     0, {NULL} };
+const asn_type asn_base_bitstring_s =
 { "BIT STRING",        {UNIVERSAL, 3}, BIT_STRING,  0, {NULL} };
-const asn_type asn_base_octstring_s = 
+const asn_type asn_base_octstring_s =
 { "OCTET STRING",      {UNIVERSAL, 4}, OCT_STRING,  0, {NULL} };
-const asn_type asn_base_null_s = 
+const asn_type asn_base_null_s =
 { "NULL",              {UNIVERSAL, 5}, PR_ASN_NULL, 0, {NULL} };
-const asn_type asn_base_objid_s = 
+const asn_type asn_base_objid_s =
 { "OBJECT IDENTIFIER", {UNIVERSAL, 6}, OID,         0, {NULL} };
-const asn_type asn_base_real_s = 
+const asn_type asn_base_real_s =
 { "REAL",              {UNIVERSAL, 9}, REAL,        0, {NULL} };
-const asn_type asn_base_enum_s = 
+const asn_type asn_base_enum_s =
 { "ENUMERATED",        {UNIVERSAL,10}, ENUMERATED,  0, {NULL} };
-const asn_type asn_base_charstring_s = 
-{ "UniversalString",   {UNIVERSAL,28}, CHAR_STRING, 0, {NULL} }; 
+const asn_type asn_base_charstring_s =
+{ "UniversalString",   {UNIVERSAL,28}, CHAR_STRING, 0, {NULL} };
 
 
-const asn_type  asn_base_int1_s = 
+const asn_type  asn_base_int1_s =
 { "INTEGER (0..1)",   {UNIVERSAL, 2}, INTEGER, 1, {0}};
-const asn_type  asn_base_int2_s = 
+const asn_type  asn_base_int2_s =
 { "INTEGER (0..3)",   {UNIVERSAL, 2}, INTEGER, 2, {0}};
-const asn_type  asn_base_int3_s = 
+const asn_type  asn_base_int3_s =
 { "INTEGER (0..7)",   {UNIVERSAL, 2}, INTEGER, 3, {0}};
-const asn_type  asn_base_int4_s = 
+const asn_type  asn_base_int4_s =
 { "INTEGER (0..15)",   {UNIVERSAL, 2}, INTEGER, 4, {0}};
-const asn_type  asn_base_int5_s = 
+const asn_type  asn_base_int5_s =
 { "INTEGER (0..31)",   {UNIVERSAL, 2}, INTEGER, 5, {0}};
-const asn_type  asn_base_int6_s = 
+const asn_type  asn_base_int6_s =
 { "INTEGER (0..63)",   {UNIVERSAL, 2}, INTEGER, 6, {0}};
-const asn_type  asn_base_int7_s = 
+const asn_type  asn_base_int7_s =
 { "INTEGER (0..127)",   {UNIVERSAL, 2}, INTEGER, 7, {0}};
-const asn_type  asn_base_int8_s = 
+const asn_type  asn_base_int8_s =
 { "INTEGER (0..255)",   {UNIVERSAL, 2}, INTEGER, 8, {0}};
-const asn_type  asn_base_int9_s = 
+const asn_type  asn_base_int9_s =
 { "INTEGER (0..511)",   {UNIVERSAL, 2}, INTEGER, 9, {0}};
-const asn_type  asn_base_int12_s = 
+const asn_type  asn_base_int12_s =
 { "INTEGER (0..4095)",   {UNIVERSAL, 2}, INTEGER, 12, {0}};
-const asn_type  asn_base_int16_s = 
+const asn_type  asn_base_int16_s =
 { "INTEGER (0..65535)",   {UNIVERSAL, 2}, INTEGER, 16, {0}};
-const asn_type  asn_base_int24_s = 
+const asn_type  asn_base_int24_s =
 { "INTEGER (0..16777215)",   {UNIVERSAL, 2}, INTEGER, 24, {0}};
-const asn_type  asn_base_int32_s = 
+const asn_type  asn_base_int32_s =
 { "INTEGER (0..4294967295)",   {UNIVERSAL, 2}, INTEGER, 32, {0}};
 
 
