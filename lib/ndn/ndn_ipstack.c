@@ -1,7 +1,7 @@
 /** @file
  * @brief Proteos, TAD IP stack protocols, NDN.
  *
- * Definitions of ASN.1 types for NDN for file protocol. 
+ * Definitions of ASN.1 types for NDN for file protocol.
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -26,7 +26,7 @@
  * $Id$
  */
 
-#include "te_config.h" 
+#include "te_config.h"
 
 #include "asn_impl.h"
 #include "ndn_internal.h"
@@ -35,25 +35,25 @@
 
 /*
  * IPv4
- */ 
+ */
 
 static asn_named_entry_t _ndn_ip4_frag_spec_ne_array [] = {
     { "hdr-offset",         &asn_base_integer_s,
-        {PRIVATE, NDN_TAG_IP4_FR_HO} }, 
+        {PRIVATE, NDN_TAG_IP4_FR_HO} },
     { "real-offset",         &asn_base_integer_s,
-        {PRIVATE, NDN_TAG_IP4_FR_RO} }, 
+        {PRIVATE, NDN_TAG_IP4_FR_RO} },
     { "hdr-length",         &asn_base_integer_s,
-        {PRIVATE, NDN_TAG_IP4_FR_HL} }, 
+        {PRIVATE, NDN_TAG_IP4_FR_HL} },
     { "real-length",         &asn_base_integer_s,
-        {PRIVATE, NDN_TAG_IP4_FR_RL} }, 
+        {PRIVATE, NDN_TAG_IP4_FR_RL} },
     { "more-frags",         &asn_base_boolean_s,
-        {PRIVATE, NDN_TAG_IP4_FR_MF} }, 
+        {PRIVATE, NDN_TAG_IP4_FR_MF} },
     { "dont-frag",         &asn_base_boolean_s,
-        {PRIVATE, NDN_TAG_IP4_FR_DF} }, 
+        {PRIVATE, NDN_TAG_IP4_FR_DF} },
 };
 
 asn_type ndn_ip4_frag_spec_s = {
-    "IPv4-Fragment", {PRIVATE, NDN_TAG_IP4_FRAGMENTS}, SEQUENCE, 
+    "IPv4-Fragment", {PRIVATE, NDN_TAG_IP4_FRAGMENTS}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_ip4_frag_spec_ne_array),
     {_ndn_ip4_frag_spec_ne_array}
 };
@@ -69,21 +69,21 @@ const asn_type * const ndn_ip4_frag_seq = &ndn_ip4_frag_seq_s;
 
 /*
 IP-Payload-Checksum ::= CHOICE {
-    offset  INTEGER, 
+    offset  INTEGER,
     disable NULL
 }
 */
 static asn_named_entry_t _ndn_ip4_pld_chksm_ne_array [] = {
-    { "offset", &asn_base_integer_s, 
+    { "offset", &asn_base_integer_s,
       { PRIVATE, NDN_TAG_IP4_PLD_CH_OFFSET } },
-    { "disable", &asn_base_null_s, 
+    { "disable", &asn_base_null_s,
       { PRIVATE, NDN_TAG_IP4_PLD_CH_DISABLE } },
-    { "diff", &asn_base_integer_s, 
+    { "diff", &asn_base_integer_s,
       { PRIVATE, NDN_TAG_IP4_PLD_CH_DIFF } },
 };
 
 asn_type ndn_ip4_pld_chksm_s = {
-    "IP-Payload-Checksum", {PRIVATE, NDN_TAG_IP4_PLD_CHECKSUM}, CHOICE, 
+    "IP-Payload-Checksum", {PRIVATE, NDN_TAG_IP4_PLD_CHECKSUM}, CHOICE,
     TE_ARRAY_LEN(_ndn_ip4_pld_chksm_ne_array),
     {_ndn_ip4_pld_chksm_ne_array}
 };
@@ -97,43 +97,43 @@ static asn_named_entry_t _ndn_ip4_header_ne_array [] = {
       { PRIVATE, NDN_TAG_IP4_VERSION } },
     { "h-length",        &ndn_data_unit_int4_s,
       { PRIVATE, NDN_TAG_IP4_HLEN } },
-    { "type-of-service", &ndn_data_unit_int8_s, 
+    { "type-of-service", &ndn_data_unit_int8_s,
       { PRIVATE, NDN_TAG_IP4_TOS } },
-    { "total-length",    &ndn_data_unit_int16_s, 
+    { "total-length",    &ndn_data_unit_int16_s,
       { PRIVATE, NDN_TAG_IP4_LEN } },
-    { "ip-ident",        &ndn_data_unit_int16_s, 
+    { "ip-ident",        &ndn_data_unit_int16_s,
       { PRIVATE, NDN_TAG_IP4_IDENT } },
-    { "flag-reserved",   &ndn_data_unit_int1_s, 
+    { "flag-reserved",   &ndn_data_unit_int1_s,
       { PRIVATE, NDN_TAG_IP4_FLAG_RESERVED } },
-    { "dont-frag",       &ndn_data_unit_int1_s, 
+    { "dont-frag",       &ndn_data_unit_int1_s,
       { PRIVATE, NDN_TAG_IP4_DONT_FRAG } },
-    { "more-frags",      &ndn_data_unit_int1_s, 
+    { "more-frags",      &ndn_data_unit_int1_s,
       { PRIVATE, NDN_TAG_IP4_MORE_FRAGS } },
-    { "frag-offset",     &ndn_data_unit_int16_s, 
+    { "frag-offset",     &ndn_data_unit_int16_s,
       { PRIVATE, NDN_TAG_IP4_FRAG_OFFSET } },
-    { "time-to-live",    &ndn_data_unit_int8_s, 
+    { "time-to-live",    &ndn_data_unit_int8_s,
       { PRIVATE, NDN_TAG_IP4_TTL } },
-    { "protocol",        &ndn_data_unit_int8_s, 
+    { "protocol",        &ndn_data_unit_int8_s,
       { PRIVATE, NDN_TAG_IP4_PROTOCOL } },
-    { "h-checksum",      &ndn_data_unit_int16_s, 
+    { "h-checksum",      &ndn_data_unit_int16_s,
       { PRIVATE, NDN_TAG_IP4_H_CHECKSUM } },
-    { "src-addr",        &ndn_data_unit_ip_address_s, 
+    { "src-addr",        &ndn_data_unit_ip_address_s,
       { PRIVATE, NDN_TAG_IP4_SRC_ADDR } },
-    { "dst-addr",        &ndn_data_unit_ip_address_s, 
-      { PRIVATE, NDN_TAG_IP4_DST_ADDR } }, 
+    { "dst-addr",        &ndn_data_unit_ip_address_s,
+      { PRIVATE, NDN_TAG_IP4_DST_ADDR } },
 
     { "options",         &ndn_data_unit_octet_string_s,
       { PRIVATE, NDN_TAG_IP4_OPTIONS } } ,
 
-    { "fragment-spec",   &ndn_ip4_frag_seq_s, 
-      { PRIVATE, NDN_TAG_IP4_FRAGMENTS } }, 
+    { "fragment-spec",   &ndn_ip4_frag_seq_s,
+      { PRIVATE, NDN_TAG_IP4_FRAGMENTS } },
 
-    { "pld-checksum",    &ndn_ip4_pld_chksm_s, 
+    { "pld-checksum",    &ndn_ip4_pld_chksm_s,
       { PRIVATE, NDN_TAG_IP4_PLD_CHECKSUM } },
 };
 
 asn_type ndn_ip4_header_s = {
-    "IPv4-Header", {PRIVATE, 100}, SEQUENCE, 
+    "IPv4-Header", {PRIVATE, 100}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_ip4_header_ne_array),
     {_ndn_ip4_header_ne_array}
 };
@@ -162,7 +162,7 @@ static asn_named_entry_t _ndn_ip4_csap_ne_array [] = {
 };
 
 asn_type ndn_ip4_csap_s = {
-    "IPv4-CSAP", {PRIVATE, 101}, SEQUENCE, 
+    "IPv4-CSAP", {PRIVATE, 101}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_ip4_csap_ne_array),
     {_ndn_ip4_csap_ne_array}
 };
@@ -364,7 +364,7 @@ static asn_named_entry_t _ndn_ip6_csap_ne_array [] = {
 };
 
 asn_type ndn_ip6_csap_s = {
-    "IPv6-CSAP", {PRIVATE, 101}, SEQUENCE, 
+    "IPv6-CSAP", {PRIVATE, 101}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_ip6_csap_ne_array),
     {_ndn_ip6_csap_ne_array}
 };
@@ -375,7 +375,7 @@ const asn_type * const ndn_ip6_csap = &ndn_ip6_csap_s;
 
 /*
  * ICMPv4
- */ 
+ */
 
 static asn_named_entry_t _ndn_icmp4_message_ne_array [] = {
     { "type",           &ndn_data_unit_int8_s,
@@ -405,7 +405,7 @@ static asn_named_entry_t _ndn_icmp4_message_ne_array [] = {
 };
 
 asn_type ndn_icmp4_message_s = {
-    "ICMPv4-Message", {PRIVATE, 100}, SEQUENCE, 
+    "ICMPv4-Message", {PRIVATE, 100}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_icmp4_message_ne_array),
     {_ndn_icmp4_message_ne_array}
 };
@@ -443,7 +443,7 @@ static asn_named_entry_t _ndn_icmp6_message_ne_array [] = {
 };
 
 asn_type ndn_icmp6_message_s = {
-    "ICMPv6-Message", {PRIVATE, 100}, SEQUENCE, 
+    "ICMPv6-Message", {PRIVATE, 100}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_icmp6_message_ne_array),
     {_ndn_icmp6_message_ne_array}
 };
@@ -456,7 +456,7 @@ const asn_type * const ndn_icmp6_csap = &asn_base_null_s;
 
 /*
  * UDP
- */ 
+ */
 
 static asn_named_entry_t _ndn_udp_header_ne_array [] = {
     { "src-port", &ndn_data_unit_int16_s, {PRIVATE, NDN_TAG_UDP_SRC_PORT} },
@@ -466,7 +466,7 @@ static asn_named_entry_t _ndn_udp_header_ne_array [] = {
 };
 
 asn_type ndn_udp_header_s = {
-    "UDP-Header", {PRIVATE, 100}, SEQUENCE, 
+    "UDP-Header", {PRIVATE, 100}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_udp_header_ne_array),
     {_ndn_udp_header_ne_array}
 };
@@ -482,7 +482,7 @@ static asn_named_entry_t _ndn_udp_csap_ne_array [] = {
 };
 
 asn_type ndn_udp_csap_s = {
-    "UDP-CSAP", {PRIVATE, 101}, SEQUENCE, 
+    "UDP-CSAP", {PRIVATE, 101}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_udp_csap_ne_array),
     {_ndn_udp_csap_ne_array}
 };
@@ -494,7 +494,7 @@ const asn_type * const ndn_udp_csap = &ndn_udp_csap_s;
 
 /*
  * TCP
- */ 
+ */
 
 /*
 TCP-Option-MSS ::= SEQUENCE {
@@ -620,11 +620,11 @@ asn_type ndn_tcp_opt_timestamp_s = {
 };
 
 /*
-TCP-Option ::= CHOICE { 
+TCP-Option ::= CHOICE {
     eol         [0] NULL,
     nop         [1] NULL,
     mss         [2] TCP-Option-MSS,
-    win₋scale   [3] TCP-Option-WindScale,
+    win-scale   [3] TCP-Option-WindScale,
     sack-perm   [4] TCP-Option-SackPerm,
     sack-data   [5] TCP-Option-SackData,
     timestamp   [8] TCP-Option-Timestamp,
@@ -645,7 +645,7 @@ static asn_named_entry_t _ndn_tcp_option_ne_array [] = {
 };
 
 asn_type ndn_tcp_option_s = {
-    "TCP-Option", {PRIVATE, NDN_TAG_TCP_OPTIONS}, CHOICE, 
+    "TCP-Option", {PRIVATE, NDN_TAG_TCP_OPTIONS}, CHOICE,
     TE_ARRAY_LEN(_ndn_tcp_option_ne_array),
     {_ndn_tcp_option_ne_array}
 };
@@ -673,8 +673,8 @@ TCP-Header ::= SEQUENCE {
     checksum  [7] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
     urg-p     [8] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
     options   [9] SEQUENCE OF TCP-Option OPTIONAL,
-    socket   [10]   INTEGER OPTIONAL, 
-    length   [11]   INTEGER OPTIONAL, 
+    socket   [10]   INTEGER OPTIONAL,
+    length   [11]   INTEGER OPTIONAL,
     ...
 }
 */
@@ -695,7 +695,7 @@ static asn_named_entry_t _ndn_tcp_header_ne_array [] = {
 };
 
 asn_type ndn_tcp_header_s = {
-    "TCP-Header", {PRIVATE, 101}, SEQUENCE, 
+    "TCP-Header", {PRIVATE, 101}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_tcp_header_ne_array),
     {_ndn_tcp_header_ne_array}
 };
@@ -715,7 +715,7 @@ static asn_named_entry_t _ndn_tcp_data_ne_array [] = {
 };
 
 asn_type ndn_tcp_data_s = {
-    "TCP-CSAP", {PRIVATE, NDN_TAG_TCP_DATA}, CHOICE, 
+    "TCP-CSAP", {PRIVATE, NDN_TAG_TCP_DATA}, CHOICE,
     TE_ARRAY_LEN(_ndn_tcp_data_ne_array),
     {_ndn_tcp_data_ne_array}
 };
@@ -731,7 +731,7 @@ static asn_named_entry_t _ndn_tcp_csap_ne_array [] = {
 };
 
 asn_type ndn_tcp_csap_s = {
-    "TCP-CSAP", {PRIVATE, 102}, SEQUENCE, 
+    "TCP-CSAP", {PRIVATE, 102}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_tcp_csap_ne_array),
     {_ndn_tcp_csap_ne_array}
 };

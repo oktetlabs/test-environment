@@ -1,7 +1,7 @@
 /** @file
  * @brief Proteos, TAD file protocol, NDN.
  *
- * Declarations of ASN.1 types for NDN for DHCP (over IPv4) protocol. 
+ * Declarations of ASN.1 types for NDN for DHCP (over IPv4) protocol.
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -24,7 +24,7 @@
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
  * $Id$
- */ 
+ */
 #ifndef __TE_NDN_DHCP_H__
 #define __TE_NDN_DHCP_H__
 

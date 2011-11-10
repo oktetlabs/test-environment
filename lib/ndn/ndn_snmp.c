@@ -1,7 +1,7 @@
 /** @file
  * @brief Proteos, TAD file protocol, NDN.
  *
- * Definitions of ASN.1 types for NDN for file protocol. 
+ * Definitions of ASN.1 types for NDN for file protocol.
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -26,7 +26,7 @@
  * $Id$
  */
 
-#include "te_config.h" 
+#include "te_config.h"
 
 #include "asn_impl.h"
 #include "ndn_internal.h"
@@ -34,78 +34,78 @@
 
 #if HAVE_NET_SNMP_DEFINITIONS_H
 #include <net-snmp/net-snmp-config.h>
-#include <net-snmp/definitions.h> 
+#include <net-snmp/definitions.h>
 #elif HAVE_UCD_SNMP_SNMP_IMPL_H
 #include <sys/types.h>
 #include <ucd-snmp/asn1.h>
 #include<ucd-snmp/snmp_impl.h>
 #else
-#error This module cannot be compiled without UCD- or NET-SNMP library 
+#error This module cannot be compiled without UCD- or NET-SNMP library
 #endif
 
 
 
 
 asn_type ndn_snmp_obj_syntax_integer_s = {
-    "INTEGER",           
-    {APPLICATION, NDN_SNMP_OBJSYN_INT},        
+    "INTEGER",
+    {APPLICATION, NDN_SNMP_OBJSYN_INT},
     INTEGER, 1,{NULL}
 };
 
-asn_type ndn_snmp_obj_syntax_string_s = { 
-    "OCTET STRING",      
-    {APPLICATION, NDN_SNMP_OBJSYN_STR},        
+asn_type ndn_snmp_obj_syntax_string_s = {
+    "OCTET STRING",
+    {APPLICATION, NDN_SNMP_OBJSYN_STR},
     OCT_STRING, 0,{NULL}
 };
 
-asn_type ndn_snmp_obj_syntax_objid_s = { 
-    "OBJECT IDENTIFIER", 
-    {APPLICATION, NDN_SNMP_OBJSYN_OID},        
+asn_type ndn_snmp_obj_syntax_objid_s = {
+    "OBJECT IDENTIFIER",
+    {APPLICATION, NDN_SNMP_OBJSYN_OID},
     OID, 0,{NULL}
 };
 
-asn_type ndn_snmp_obj_syntax_ipaddr_s = { 
-    "IpAddress",         
+asn_type ndn_snmp_obj_syntax_ipaddr_s = {
+    "IpAddress",
     {APPLICATION, NDN_SNMP_OBJSYN_IPADDR},
     OCT_STRING, 4,{NULL}
 };
 
-asn_type ndn_snmp_obj_syntax_counter_s = { 
-    "Counter32",         
+asn_type ndn_snmp_obj_syntax_counter_s = {
+    "Counter32",
     {APPLICATION, NDN_SNMP_OBJSYN_COUNTER},
     INTEGER, 0,{NULL}
 };
 
-asn_type ndn_snmp_obj_syntax_timeticks_s = { 
-    "TimeTicks",         
-    {APPLICATION, NDN_SNMP_OBJSYN_TIMETICKS}, 
+asn_type ndn_snmp_obj_syntax_timeticks_s = {
+    "TimeTicks",
+    {APPLICATION, NDN_SNMP_OBJSYN_TIMETICKS},
     INTEGER, 0,{NULL}
 };
 
-asn_type ndn_snmp_obj_syntax_arbitrary_s = { 
-    "Opaque",            
+asn_type ndn_snmp_obj_syntax_arbitrary_s = {
+    "Opaque",
     {APPLICATION, NDN_SNMP_OBJSYN_ARB},
     OCT_STRING, 0,{NULL}
 };
 
-asn_type ndn_snmp_obj_syntax_big_counter_s = { 
-    "Counter64",         
+asn_type ndn_snmp_obj_syntax_big_counter_s = {
+    "Counter64",
     {APPLICATION, NDN_SNMP_OBJSYN_BIGCOUNTER},
     LONG_INT, 64,{NULL}
 };
 
-asn_type ndn_snmp_obj_syntax_unsigned_s = { 
-    "Unsigned32",       
+asn_type ndn_snmp_obj_syntax_unsigned_s = {
+    "Unsigned32",
     {APPLICATION, NDN_SNMP_OBJSYN_UINT},
     INTEGER , 0,{NULL}
 };
 
 
-const asn_type * const ndn_snmp_obj_syntax_integer    = 
+const asn_type * const ndn_snmp_obj_syntax_integer    =
                       &ndn_snmp_obj_syntax_integer_s;
-const asn_type * const ndn_snmp_obj_syntax_string     = 
+const asn_type * const ndn_snmp_obj_syntax_string     =
                       &ndn_snmp_obj_syntax_string_s;
-const asn_type * const ndn_snmp_obj_syntax_objid      = 
+const asn_type * const ndn_snmp_obj_syntax_objid      =
                       &ndn_snmp_obj_syntax_objid_s;
 const asn_type * const ndn_snmp_obj_syntax_ipaddr     =
                       &ndn_snmp_obj_syntax_ipaddr_s;
@@ -124,9 +124,9 @@ const asn_type * const ndn_snmp_obj_syntax_unsigned   =
 asn_enum_entry_t _ndn_snmp_error_status_enum_entries[] = {
     {"noError", 0},
     {"tooBig", 1},
-    {"noSuchName", 2}, 
-    {"badValue", 3},  
-    {"readOnly", 4}, 
+    {"noSuchName", 2},
+    {"badValue", 3},
+    {"readOnly", 4},
     {"noAccess", 6},
     {"wrongType", 7},
     {"wrongLength", 8},
@@ -139,7 +139,7 @@ asn_enum_entry_t _ndn_snmp_error_status_enum_entries[] = {
     {"undoFailed", 15},
     {"authorizationError", 16},
     {"notWritable", 17},
-    {"inconsistentName", 18} 
+    {"inconsistentName", 18}
 };
 
 asn_type ndn_snmp_error_status_s = {
@@ -183,30 +183,30 @@ NDN_DATA_UNIT_TYPE(snmp_msgtype, ndn_snmp_message_type_s, SnmpMessageType);
 static asn_named_entry_t _ndn_snmp_simple_ne_array[] = {
     { "integer-value",   &ndn_snmp_obj_syntax_integer_s,
         {APPLICATION, NDN_SNMP_OBJSYN_INT} },
-    { "string-value",    &ndn_snmp_obj_syntax_string_s, 
+    { "string-value",    &ndn_snmp_obj_syntax_string_s,
         {APPLICATION, NDN_SNMP_OBJSYN_STR} },
     { "objectID-value",  &ndn_snmp_obj_syntax_objid_s,
         {APPLICATION, NDN_SNMP_OBJSYN_OID} },
 };
 
 asn_type ndn_snmp_simple_s = {
-    "SimpleSyntax", {APPLICATION, 1}, CHOICE, 
+    "SimpleSyntax", {APPLICATION, 1}, CHOICE,
     TE_ARRAY_LEN(_ndn_snmp_simple_ne_array),
     {_ndn_snmp_simple_ne_array}
-}; 
+};
 
 const asn_type * const ndn_snmp_simple = &ndn_snmp_simple_s;
 
 
 
 static asn_named_entry_t _ndn_snmp_appl_ne_array [] = {
-    {"ipAddress-value",  &ndn_snmp_obj_syntax_ipaddr_s, 
+    {"ipAddress-value",  &ndn_snmp_obj_syntax_ipaddr_s,
         {APPLICATION, NDN_SNMP_OBJSYN_IPADDR} },
-    {"counter-value",    &ndn_snmp_obj_syntax_counter_s, 
+    {"counter-value",    &ndn_snmp_obj_syntax_counter_s,
         {APPLICATION, NDN_SNMP_OBJSYN_COUNTER} },
     {"timeticks-value",  &ndn_snmp_obj_syntax_timeticks_s,
-        {APPLICATION, NDN_SNMP_OBJSYN_TIMETICKS} }, 
-    {"arbitrary-value",  &ndn_snmp_obj_syntax_arbitrary_s, 
+        {APPLICATION, NDN_SNMP_OBJSYN_TIMETICKS} },
+    {"arbitrary-value",  &ndn_snmp_obj_syntax_arbitrary_s,
         {APPLICATION, NDN_SNMP_OBJSYN_ARB} },
     {"big-counter-value",&ndn_snmp_obj_syntax_big_counter_s,
         {APPLICATION, NDN_SNMP_OBJSYN_BIGCOUNTER} },
@@ -215,10 +215,10 @@ static asn_named_entry_t _ndn_snmp_appl_ne_array [] = {
 };
 
 asn_type ndn_snmp_appl_s = {
-    "ApplicationSyntax", {APPLICATION, 1}, CHOICE, 
+    "ApplicationSyntax", {APPLICATION, 1}, CHOICE,
     TE_ARRAY_LEN(_ndn_snmp_appl_ne_array),
     {_ndn_snmp_appl_ne_array}
-}; 
+};
 
 const asn_type * const ndn_snmp_appl = &ndn_snmp_appl_s;
 
@@ -231,10 +231,10 @@ static asn_named_entry_t _ndn_snmp_object_syntax_ne_array [] = {
 };
 
 asn_type ndn_snmp_object_syntax_s = {
-    "ObjectSyntax", {APPLICATION, 1}, CHOICE, 
+    "ObjectSyntax", {APPLICATION, 1}, CHOICE,
     TE_ARRAY_LEN(_ndn_snmp_object_syntax_ne_array),
     {_ndn_snmp_object_syntax_ne_array}
-}; 
+};
 
 const asn_type * const ndn_snmp_object_syntax = &ndn_snmp_object_syntax_s;
 
@@ -248,7 +248,7 @@ asn_type snmp_no_such_object_s = {
 
 asn_type snmp_no_such_instance_s = {
     "noSuchInstance", {CONTEXT_SPECIFIC, 1}, PR_ASN_NULL, 0, {NULL}
-}; 
+};
 
 asn_type snmp_end_of_mib_view_s = {
     "endOfMibView", {CONTEXT_SPECIFIC, 2}, PR_ASN_NULL, 0, {NULL}
@@ -265,7 +265,7 @@ static asn_named_entry_t _ndn_snmp_var_bind_ne_array[] = {
 };
 
 asn_type ndn_snmp_var_bind_s = {
-    "VarBind", {PRIVATE, 100}, SEQUENCE, 
+    "VarBind", {PRIVATE, 100}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_snmp_var_bind_ne_array),
     {_ndn_snmp_var_bind_ne_array}
 };
@@ -275,7 +275,7 @@ asn_type * ndn_snmp_var_bind = &ndn_snmp_var_bind_s;
 
 asn_type ndn_snmp_var_bind_seq_s = {
     "SEQUENCE OF VarBind", {APPLICATION, 200},
-    SEQUENCE_OF, 0, {subtype: &ndn_snmp_var_bind_s} 
+    SEQUENCE_OF, 0, {subtype: &ndn_snmp_var_bind_s}
 };
 
 asn_type * ndn_snmp_var_bind_seq = &ndn_snmp_var_bind_seq_s;
@@ -293,11 +293,11 @@ static asn_named_entry_t _ndn_snmp_message_ne_array[] = {
     { "gen-trap",   &ndn_data_unit_int32_s, {PRIVATE, 1} },
     { "spec-trap",  &ndn_data_unit_int32_s, {PRIVATE, 1} },
     { "agent-addr", &ndn_data_unit_ip_address_s, {PRIVATE, 1} },
-    { "variable-bindings", &ndn_snmp_var_bind_seq_s, {PRIVATE, 1} } 
+    { "variable-bindings", &ndn_snmp_var_bind_seq_s, {PRIVATE, 1} }
 };
 
 asn_type ndn_snmp_message_s = {
-    "SNMP-Message", {PRIVATE, 100}, SEQUENCE, 
+    "SNMP-Message", {PRIVATE, 100}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_snmp_message_ne_array),
     {_ndn_snmp_message_ne_array}
 };
@@ -390,10 +390,10 @@ static asn_named_entry_t _ndn_snmp_security_ne_array[] = {
     {"usm" , &ndn_snmp_security_usm_s, {PRIVATE, 1}}
 };
 asn_type ndn_snmp_security_s = {
-    "SNMP-Security", {APPLICATION, 1}, CHOICE, 
+    "SNMP-Security", {APPLICATION, 1}, CHOICE,
     TE_ARRAY_LEN(_ndn_snmp_security_ne_array),
     {_ndn_snmp_security_ne_array}
-}; 
+};
 const asn_type * const ndn_snmp_security = &ndn_snmp_security_s;
 
 
@@ -408,14 +408,14 @@ static asn_named_entry_t _ndn_snmp_csap_ne_array[] = {
 };
 
 asn_type ndn_snmp_csap_s = {
-    "SNMP-CSAP", {PRIVATE, 101}, SEQUENCE, 
+    "SNMP-CSAP", {PRIVATE, 101}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_snmp_csap_ne_array),
     {_ndn_snmp_csap_ne_array}
 };
 
 asn_type * ndn_snmp_csap = &ndn_snmp_csap_s;
 
-int snmp_asn_syntaxes[] = { 
+int snmp_asn_syntaxes[] = {
     ASN_INTEGER,
     ASN_OCTET_STR,
     ASN_OBJECT_ID,
@@ -436,7 +436,7 @@ const char *
 ndn_snmp_msg_type_h2str(ndn_snmp_msg_t msg_type)
 {
     static char buf[255];
-    
+
 #define NDN_SNMP_MSG_H2STR(msg_) \
         case NDN_SNMP_MSG_ ## msg_: return #msg_
 
@@ -452,7 +452,7 @@ ndn_snmp_msg_type_h2str(ndn_snmp_msg_t msg_type)
         NDN_SNMP_MSG_H2STR(INFORM);
     }
 #undef NDN_SNMP_MSG_H2STR
-    
+
     snprintf(buf, sizeof(buf), "UNKNOWN (%d)", msg_type);
     return buf;
 }

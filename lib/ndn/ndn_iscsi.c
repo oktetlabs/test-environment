@@ -1,7 +1,7 @@
 /** @file
  * @brief Proteos, TAD ISCSI protocol, NDN.
  *
- * Definitions of ASN.1 types for NDN for ISCSI protocol. 
+ * Definitions of ASN.1 types for NDN for ISCSI protocol.
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -83,7 +83,7 @@ static asn_named_entry_t _ndn_iscsi_csap_ne_array[] = {
 };
 
 asn_type ndn_iscsi_csap_s = {
-    "iSCSI-CSAP", { PRIVATE, TE_PROTO_ISCSI }, SEQUENCE, 
+    "iSCSI-CSAP", { PRIVATE, TE_PROTO_ISCSI }, SEQUENCE,
     TE_ARRAY_LEN(_ndn_iscsi_csap_ne_array),
     { _ndn_iscsi_csap_ne_array }
 };
@@ -105,14 +105,14 @@ const asn_type * const ndn_iscsi_key_values = &ndn_iscsi_key_values_s;
 
 /*
 Key-Pair ::= SEQUENCE {
-    key UniversalString, 
+    key UniversalString,
     values Key-Values,
 }
 */
 static asn_named_entry_t _ndn_iscsi_segment_data_ne_array [] = {
     { "key", &asn_base_charstring_s,     {PRIVATE, NDN_TAG_ISCSI_SD_KEY} },
-    { "values", &ndn_iscsi_key_values_s, 
-        {PRIVATE, NDN_TAG_ISCSI_SD_VALUES} },    
+    { "values", &ndn_iscsi_key_values_s,
+        {PRIVATE, NDN_TAG_ISCSI_SD_VALUES} },
 };
 
 asn_type ndn_iscsi_key_pair_s = {
@@ -128,7 +128,7 @@ ISCSI-Segment-Data ::= SEQUENCE OF Key-Pair;
 */
 
 asn_type ndn_iscsi_segment_data_s = {
-    "ISCSI-Segment-Data", 
+    "ISCSI-Segment-Data",
     {PRIVATE, NDN_TAG_ISCSI_SD_SEGMENT_DATA}, SEQUENCE_OF,
     0,
     {subtype: &ndn_iscsi_key_pair_s}
@@ -150,7 +150,7 @@ static asn_named_entry_t _ndn_iscsi_message_ne_array [] = {
     { "have-hdig",&asn_base_null_s,     {PRIVATE, NDN_TAG_ISCSI_HAVE_HDIG}},
     { "have-ddig",&asn_base_null_s,     {PRIVATE, NDN_TAG_ISCSI_HAVE_DDIG}},
 #endif
-    { "segment-data", &ndn_iscsi_segment_data_s, 
+    { "segment-data", &ndn_iscsi_segment_data_s,
         {PRIVATE, NDN_TAG_ISCSI_SD} },
     { "last-data",  &asn_base_null_s, {PRIVATE, NDN_TAG_ISCSI_LAST} },
 };
@@ -172,7 +172,7 @@ int
 asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
 {
     int rc;
-    
+
     char *current = (char *)data;
 
     int segment_data_index;
@@ -185,43 +185,43 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
     char      *str_value;
 
     uint32_t   write_data_len = 0;
-   
+
     asn_value *key_pair;
     asn_value *key_values;
     asn_value *key_value;
 
     memset(asn_val_buf, 0, ASN_VAL_BUF_LEN);
-    if (asn_sprint_value(segment_data, asn_val_buf, 
+    if (asn_sprint_value(segment_data, asn_val_buf,
                                ASN_VAL_BUF_LEN, 0) < 0)
     {
         ERROR("%s, %d: Cannot printf asn value",
               __FUNCTION__, __LINE__);
     }
-                                   
+
     INFO("asn2bin_data result %s", asn_val_buf);
-    
-    memset(data, 0, *data_len);    
+
+    memset(data, 0, *data_len);
 
     segment_data_len = asn_get_length(segment_data, "");
     segment_data_index = 0;
-#define tail_len (*data_len - write_data_len)    
-#define MAX_INT_VALUE_LEN           10    
+#define tail_len (*data_len - write_data_len)
+#define MAX_INT_VALUE_LEN           10
     while (segment_data_index < segment_data_len)
     {
-        if ((rc = asn_get_indexed(segment_data, &key_pair, 
+        if ((rc = asn_get_indexed(segment_data, &key_pair,
                                   segment_data_index++, NULL)) != 0)
         {
-            ERROR("%s, %d: cannot get segment data length, %r", 
+            ERROR("%s, %d: cannot get segment data length, %r",
                   __FUNCTION__, __LINE__, rc);
             return rc;
         }
         if ((rc =asn_read_string(key_pair, &key, "key")) != 0)
         {
-            ERROR("%s, %d: cannot read string, %r", 
+            ERROR("%s, %d: cannot read string, %r",
                   __FUNCTION__, __LINE__, rc);
             return rc;
         }
-        
+
         if (tail_len < strlen(key))
         {
             ERROR("%s, %d: unsufficient buffer length",
@@ -231,7 +231,7 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
         strncpy(current, key, strlen(key));
         current += strlen(key);
         write_data_len += strlen(key);
-        
+
         if (tail_len < 1)
         {
             ERROR("%s, %d: unsufficient buffer length",
@@ -241,10 +241,10 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
         *current = '=';
         current += 1;
         write_data_len += 1;
-        
-        if ((rc = asn_get_child_value(key_pair, 
-                                      (const asn_value **)&key_values, 
-                                      PRIVATE, 
+
+        if ((rc = asn_get_child_value(key_pair,
+                                      (const asn_value **)&key_values,
+                                      PRIVATE,
                                       NDN_TAG_ISCSI_SD_VALUES)) != 0)
         {
             ERROR("%s, %d: cannot get child value, %r",
@@ -257,12 +257,12 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
                   __FUNCTION__, __LINE__);
             return TE_EASNTXTPARSE;
         }
-        
+
         key_values_index = 0;
-        
+
         while (key_values_index < key_values_len)
         {
-            if ((rc = asn_get_indexed(key_values, &key_value, 
+            if ((rc = asn_get_indexed(key_values, &key_value,
                                       key_values_index++, NULL)) != 0)
             {
                 ERROR("%s, %d: cannot get key_value, %r",
@@ -270,8 +270,8 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
                 return rc;
             }
 
-            if ((rc = asn_read_string(key_value, 
-                                      &str_value, 
+            if ((rc = asn_read_string(key_value,
+                                      &str_value,
                                       "")) != 0)
             {
                 ERROR("%s, %d: cannot read string value, %r",
@@ -289,13 +289,13 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
             sprintf(current, "%s", str_value);
             write_data_len += strlen(str_value);
             current += strlen(str_value);
-            
+
             if (tail_len < 1)
             {
                 ERROR("%s, %d: unsufficient buffer length",
                       __FUNCTION__, __LINE__);
                 return TE_ENOBUFS;
-            }    
+            }
             *current = ',';
             current += 1;
             write_data_len += 1;
@@ -315,10 +315,10 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
         memset(current, 0, pad_size);
     }
 
-    *data_len = write_data_len; 
-#undef MAX_INT_VALUE_LEN    
-#undef tail_len    
-    
+    *data_len = write_data_len;
+#undef MAX_INT_VALUE_LEN
+#undef tail_len
+
     return 0;
 }
 
@@ -336,7 +336,7 @@ bin_data2asn(uint8_t *data, uint32_t data_len, asn_value **value)
     asn_value *segment_data;
     asn_value *key_values;
     asn_value *key_value;
-   
+
     int segment_data_index;
     int key_values_index;
 
@@ -354,8 +354,8 @@ bin_data2asn(uint8_t *data, uint32_t data_len, asn_value **value)
         return TE_ENOMEM;
     }
     memcpy(packet, (char *)data, data_len);
-    
-    if ((segment_data = 
+
+    if ((segment_data =
          asn_init_value(ndn_iscsi_segment_data)) == NULL)
     {
         ERROR("%s, %d: cannot init asn_value",
@@ -377,8 +377,8 @@ bin_data2asn(uint8_t *data, uint32_t data_len, asn_value **value)
         }
 
         parsed_len += zero_delimiter - current + 1;
-        
-        eq_delimiter = strchr(current, '=');        
+
+        eq_delimiter = strchr(current, '=');
         if (eq_delimiter == NULL)
         {
             goto padding;
@@ -391,14 +391,14 @@ bin_data2asn(uint8_t *data, uint32_t data_len, asn_value **value)
                   __FUNCTION__, __LINE__);
             return TE_ENOMEM;
         }
-        
+
         if ((rc = asn_write_string(key_pair, current, "key")) != 0)
         {
             ERROR("%s, %d: cannot write string, %r",
                   __FUNCTION__, __LINE__, rc);
             return rc;
         }
-        
+
         if ((key_values = asn_init_value(ndn_iscsi_key_values)) == NULL)
         {
             ERROR("%s, %d: cannot init asn_value",
@@ -414,7 +414,7 @@ bin_data2asn(uint8_t *data, uint32_t data_len, asn_value **value)
                   __FUNCTION__, __LINE__);
             return TE_ENOMEM;
         }
-        
+
         while (comma_delimiter != zero_delimiter)
         {
             comma_delimiter = strchr(current, ',');
@@ -423,8 +423,8 @@ bin_data2asn(uint8_t *data, uint32_t data_len, asn_value **value)
             else
                 *comma_delimiter = '\0';
 
-            if ((rc = asn_write_string(key_value, 
-                                       current, 
+            if ((rc = asn_write_string(key_value,
+                                       current,
                                        "")) != 0)
             {
                 ERROR("%s, %d: cannot write string, %r",
@@ -432,8 +432,8 @@ bin_data2asn(uint8_t *data, uint32_t data_len, asn_value **value)
                 return rc;
             }
 
-            if ((rc = asn_insert_indexed(key_values, 
-                                         asn_copy_value(key_value), 
+            if ((rc = asn_insert_indexed(key_values,
+                                         asn_copy_value(key_value),
                                          key_values_index++, "")) != 0)
             {
                 ERROR("%s, %d: cannot insert indexed, %r",
@@ -444,15 +444,15 @@ bin_data2asn(uint8_t *data, uint32_t data_len, asn_value **value)
         }
         asn_free_value(key_value);
 
-        if ((rc = asn_put_child_value_by_label(key_pair, 
-                                               key_values, 
+        if ((rc = asn_put_child_value_by_label(key_pair,
+                                               key_values,
                                                "values")) != 0)
         {
             ERROR("%s, %d: cannot put child value, %r",
                   __FUNCTION__, __LINE__, rc);
             return rc;
         }
-        if ((rc = asn_insert_indexed(segment_data, key_pair, 
+        if ((rc = asn_insert_indexed(segment_data, key_pair,
                                      segment_data_index++, "")) != 0)
         {
             ERROR("%s, %d: cannot insert indexed, %r",
@@ -460,7 +460,7 @@ bin_data2asn(uint8_t *data, uint32_t data_len, asn_value **value)
             return rc;
         }
     }
-    
+
 padding:
     while (parsed_len < data_len)
     {
@@ -485,16 +485,16 @@ padding:
               __FUNCTION__, __LINE__);
         return TE_EFMT;
     }
-    *value = segment_data;    
+    *value = segment_data;
     free(packet);
     memset(asn_val_buf, 0, ASN_VAL_BUF_LEN);
-    if (asn_sprint_value(segment_data, asn_val_buf, 
+    if (asn_sprint_value(segment_data, asn_val_buf,
                                ASN_VAL_BUF_LEN, 0) < 0)
     {
         ERROR("%s, %d: Cannot printf asn value",
               __FUNCTION__, __LINE__);
     }
-                                   
+
     INFO("bin_data2asn result %s", asn_val_buf);
     return 0;
 }
@@ -513,7 +513,7 @@ iscsi_rest_data_len(uint8_t           *bhs,
     size_t      total_ahs_len;
     uint32_t    data_segment_len;
 
-    union { 
+    union {
         uint32_t    i;
         uint8_t     b[4];
     } dsl_convert;
@@ -537,7 +537,7 @@ iscsi_rest_data_len(uint8_t           *bhs,
     /* Zero is the same in host and network byte orders */
     if (data_segment_len == 0)
     {
-        /* 
+        /*
          * RFC 3720 10.2.3.
          * A zero-length Data Segment also implies a zero-length
          * data-digest.

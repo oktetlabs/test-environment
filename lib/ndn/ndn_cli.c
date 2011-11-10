@@ -1,7 +1,7 @@
 /** @file
  * @brief Proteos, TAD CLI protocol, NDN.
  *
- * Definitions of ASN.1 types for NDN for CLI protocol. 
+ * Definitions of ASN.1 types for NDN for CLI protocol.
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -26,7 +26,7 @@
  * $Id$
  */
 
-#include "te_config.h" 
+#include "te_config.h"
 
 #include "asn_impl.h"
 #include "tad_common.h"
@@ -108,24 +108,24 @@ asn_type * ndn_cli_params = &ndn_cli_params_s;
 
 /* CLI-CSAP definitions */
 static asn_named_entry_t _ndn_cli_csap_ne_array [] = {
-    { "conn-type",      &asn_base_integer_s,          
+    { "conn-type",      &asn_base_integer_s,
         {PRIVATE, NDN_CLI_CONN_TYPE} },
-    { "conn-params",    &ndn_cli_params_s,            
-        {PRIVATE, NDN_CLI_CONN_PARAMS} }, 
-    { "command-prompt", &ndn_data_unit_char_string_s, 
+    { "conn-params",    &ndn_cli_params_s,
+        {PRIVATE, NDN_CLI_CONN_PARAMS} },
+    { "command-prompt", &ndn_data_unit_char_string_s,
         {PRIVATE, NDN_CLI_COMMAND_PROMPT} },
-    { "login-prompt",   &ndn_data_unit_char_string_s, 
+    { "login-prompt",   &ndn_data_unit_char_string_s,
         {PRIVATE, NDN_CLI_LOGIN_PROMPT} },
-    { "password-prompt",&ndn_data_unit_char_string_s, 
+    { "password-prompt",&ndn_data_unit_char_string_s,
         {PRIVATE, NDN_CLI_PASSWORD_PROMPT} },
-    { "user",           &ndn_data_unit_char_string_s, 
+    { "user",           &ndn_data_unit_char_string_s,
         {PRIVATE, NDN_CLI_USER} },
-    { "password",       &ndn_data_unit_char_string_s, 
+    { "password",       &ndn_data_unit_char_string_s,
         {PRIVATE, NDN_CLI_PASSWORD} },
 };
 
 asn_type ndn_cli_csap_s = {
-    "CLI-CSAP", {PRIVATE, TE_PROTO_CLI}, SEQUENCE, 
+    "CLI-CSAP", {PRIVATE, TE_PROTO_CLI}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_cli_csap_ne_array),
     {_ndn_cli_csap_ne_array}
 };

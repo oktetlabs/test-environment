@@ -1,7 +1,7 @@
 /** @file
  * @brief Proteos, TAD file protocol, NDN.
  *
- * Definitions of ASN.1 types for NDN for file protocol. 
+ * Definitions of ASN.1 types for NDN for file protocol.
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -25,7 +25,7 @@
  *
  * $Id$
  */
-#include "te_config.h" 
+#include "te_config.h"
 
 
 #include <stdlib.h>

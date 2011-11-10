@@ -1,7 +1,7 @@
 /** @file
  * @brief Traffic flow processing, NDN.
  *
- * Definitions of ASN.1 types for NDN for traffic flow processing. 
+ * Definitions of ASN.1 types for NDN for traffic flow processing.
  *
  * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -24,7 +24,7 @@
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
  * $Id: $
- */ 
+ */
 
 #ifndef __TE_NDN_FLOW_H__
 #define __TE_NDN_FLOW_H__

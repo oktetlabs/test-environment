@@ -1,7 +1,7 @@
 /** @file
  * @brief NDN Socket
  *
- * Definitions of ASN.1 types for NDN for sockets. 
+ * Definitions of ASN.1 types for NDN for sockets.
  *
  * Copyright (C) 2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -24,9 +24,9 @@
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
  * $Id$
- */ 
+ */
 
-#include "te_config.h" 
+#include "te_config.h"
 
 #include "te_defs.h"
 #include "asn_impl.h"
@@ -39,10 +39,10 @@ static asn_named_entry_t _ndn_socket_message_ne_array[] = {
       { PRIVATE, NDN_TAG_SOCKET_TOS } },
     { "time-to-live",    &ndn_data_unit_int8_s,
       { PRIVATE, NDN_TAG_SOCKET_TTL } },
-    { "src-addr",        &ndn_data_unit_ip_address_s, 
+    { "src-addr",        &ndn_data_unit_ip_address_s,
       { PRIVATE, NDN_TAG_SOCKET_SRC_ADDR } },
-    { "dst-addr",        &ndn_data_unit_ip_address_s, 
-      { PRIVATE, NDN_TAG_SOCKET_DST_ADDR } }, 
+    { "dst-addr",        &ndn_data_unit_ip_address_s,
+      { PRIVATE, NDN_TAG_SOCKET_DST_ADDR } },
     { "src-port",        &ndn_data_unit_int16_s,
       { PRIVATE, NDN_TAG_SOCKET_SRC_PORT } },
     { "dst-port",        &ndn_data_unit_int16_s,
@@ -52,7 +52,7 @@ static asn_named_entry_t _ndn_socket_message_ne_array[] = {
 };
 
 asn_type ndn_socket_message_s = {
-    "Socket-Message", { PRIVATE, 100 }, SEQUENCE, 
+    "Socket-Message", { PRIVATE, 100 }, SEQUENCE,
     TE_ARRAY_LEN(_ndn_socket_message_ne_array),
     { _ndn_socket_message_ne_array }
 };
@@ -97,7 +97,7 @@ static asn_named_entry_t _ndn_socket_csap_ne_array[] = {
 };
 
 asn_type ndn_socket_csap_s = {
-    "Socket-CSAP", { PRIVATE, 101 }, SEQUENCE, 
+    "Socket-CSAP", { PRIVATE, 101 }, SEQUENCE,
     TE_ARRAY_LEN(_ndn_socket_csap_ne_array),
     { _ndn_socket_csap_ne_array }
 };

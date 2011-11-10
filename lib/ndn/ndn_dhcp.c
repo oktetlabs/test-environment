@@ -1,7 +1,7 @@
 /** @file
  * @brief Proteos, TAD file protocol, NDN.
  *
- * Definitions of ASN.1 types for NDN for file protocol. 
+ * Definitions of ASN.1 types for NDN for file protocol.
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -25,7 +25,7 @@
  *
  * $Id$
  */
-#include "te_config.h" 
+#include "te_config.h"
 
 
 #include <stdlib.h>
@@ -51,20 +51,20 @@ static asn_named_entry_t _ndn_dhcpv4_end_pad_option_ne_array [] = {
 };
 
 static asn_type ndn_dhcpv4_option_s = {
-    "DHCPv4-Option", {PRIVATE, NDN_DHCP_OPTIONS}, SEQUENCE, 
+    "DHCPv4-Option", {PRIVATE, NDN_DHCP_OPTIONS}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_dhcpv4_option_ne_array),
     {_ndn_dhcpv4_option_ne_array}
 };
 
 static asn_type ndn_dhcpv4_end_pad_option_s = {
-    "DHCPv4-Option", {PRIVATE, NDN_DHCP_OPTIONS}, SEQUENCE, 
+    "DHCPv4-Option", {PRIVATE, NDN_DHCP_OPTIONS}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_dhcpv4_end_pad_option_ne_array),
     {_ndn_dhcpv4_end_pad_option_ne_array}
 };
 
-static asn_type ndn_dhcpv4_options_s = { 
-    "DHCPv4-Options", {PRIVATE, NDN_DHCP_OPTIONS}, SEQUENCE_OF, 
-    0, {subtype: &ndn_dhcpv4_option_s} 
+static asn_type ndn_dhcpv4_options_s = {
+    "DHCPv4-Options", {PRIVATE, NDN_DHCP_OPTIONS}, SEQUENCE_OF,
+    0, {subtype: &ndn_dhcpv4_option_s}
 };
 
 
@@ -92,7 +92,7 @@ static asn_named_entry_t _ndn_dhcpv4_message_ne_array [] = {
 };
 
 asn_type ndn_dhcpv4_message_s = {
-    "DHCPv4-Message", {PRIVATE, TE_PROTO_DHCP}, SEQUENCE, 
+    "DHCPv4-Message", {PRIVATE, TE_PROTO_DHCP}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_dhcpv4_message_ne_array),
     {_ndn_dhcpv4_message_ne_array}
 };
@@ -124,7 +124,7 @@ static asn_named_entry_t _ndn_dhcpv4_csap_ne_array[] = {
 };
 
 asn_type ndn_dhcpv4_csap_s = {
-    "DHCPv4-CSAP", {PRIVATE, TE_PROTO_DHCP}, SEQUENCE, 
+    "DHCPv4-CSAP", {PRIVATE, TE_PROTO_DHCP}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_dhcpv4_csap_ne_array),
     {_ndn_dhcpv4_csap_ne_array}
 };

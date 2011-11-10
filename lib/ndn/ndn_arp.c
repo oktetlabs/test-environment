@@ -2,7 +2,7 @@
  * @brief ARP NDN
  *
  * Definitions of ASN.1 types for NDN for Ethernet Address Resolution
- * protocol (RFC 826). 
+ * protocol (RFC 826).
  *
  * Copyright (C) 2005 Test Environment authors (see file AUTHORS in
  * the root directory of the distribution).
@@ -60,7 +60,7 @@ static asn_named_entry_t _ndn_arp_header_ne_array[] = {
 };
 
 asn_type ndn_arp_header_s = {
-    "ARP-Header", { PRIVATE, 100 /* FIXME */}, SEQUENCE, 
+    "ARP-Header", { PRIVATE, 100 /* FIXME */}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_arp_header_ne_array),
     {_ndn_arp_header_ne_array}
 };
@@ -80,7 +80,7 @@ static asn_named_entry_t _ndn_arp_csap_ne_array[] = {
 };
 
 asn_type ndn_arp_csap_s = {
-    "ARP-CSAP", { PRIVATE, 101 /* FIXME */ }, SEQUENCE, 
+    "ARP-CSAP", { PRIVATE, 101 /* FIXME */ }, SEQUENCE,
     TE_ARRAY_LEN(_ndn_arp_csap_ne_array),
     { _ndn_arp_csap_ne_array }
 };
@@ -90,7 +90,7 @@ const asn_type * const ndn_arp_csap = &ndn_arp_csap_s;
 
 /* See description in ndn_arp.h */
 te_errno
-ndn_arp_packet_to_plain(const asn_value *asn_arp_hdr, 
+ndn_arp_packet_to_plain(const asn_value *asn_arp_hdr,
                         ndn_arp_header_plain *arp_header)
 {
     te_errno    rc;
@@ -156,7 +156,7 @@ ndn_arp_packet_to_plain(const asn_value *asn_arp_hdr,
 /* See description in ndn_arp.h */
 asn_value *
 ndn_arp_plain_to_packet(const ndn_arp_header_plain *arp_header)
-{ 
+{
     asn_value  *asn_arp_hdr;
     te_errno    rc;
 
@@ -205,7 +205,7 @@ ndn_arp_plain_to_packet(const ndn_arp_header_plain *arp_header)
     if (rc != 0)
     {
         asn_free_value(asn_arp_hdr);
-        return NULL; 
+        return NULL;
     }
 
     return asn_arp_hdr;

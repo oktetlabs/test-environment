@@ -1,7 +1,7 @@
 /** @file
  * @brief Proteos, TAD CLI protocol, NDN.
  *
- * Declarations of ASN.1 types for NDN for ISCSI protocol. 
+ * Declarations of ASN.1 types for NDN for ISCSI protocol.
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -24,7 +24,7 @@
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
  * $Id$
- */ 
+ */
 #ifndef __TE_NDN_ISCSI_H__
 #define __TE_NDN_ISCSI_H__
 
@@ -104,15 +104,15 @@ extern const asn_type * const ndn_iscsi_key_value;
  *
  * @param segment_data   asn representation of iSCSI Segment Data
  * @param data           buffer to contain result of convertion
- * @param data_len       IN - length of buffer 
+ * @param data_len       IN - length of buffer
  *                       OUT - length of binary data - result of converion
  *
- * @return Status code                      
- */ 
+ * @return Status code
+ */
 extern int
-asn2bin_data(asn_value *segment_data, 
+asn2bin_data(asn_value *segment_data,
              uint8_t *data, uint32_t *data_len);
-             
+
 /**
  * Convert iSCSI Segment Data represented as binary data
  * to asn representation
@@ -122,12 +122,12 @@ asn2bin_data(asn_value *segment_data,
  * @param segment_data   location for result of convertion
  *
  * @return Status code
- */ 
+ */
 extern int bin_data2asn(uint8_t *data, uint32_t data_len,
                         asn_value **value);
 
 /**
- * Calculate extra (non-BHS) length of iSCSI PDU. 
+ * Calculate extra (non-BHS) length of iSCSI PDU.
  *
  * @param bhs           Pointer to iSCSI PDU begin
  * @param header_digest HeaderDigest type
@@ -138,7 +138,7 @@ extern int bin_data2asn(uint8_t *data, uint32_t data_len,
 extern size_t iscsi_rest_data_len(uint8_t           *bhs,
                                   iscsi_digest_type  header_digest,
                                   iscsi_digest_type  data_digest);
- 
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

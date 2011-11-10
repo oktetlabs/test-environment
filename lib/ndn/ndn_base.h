@@ -86,7 +86,7 @@ extern const asn_type ndn_base_uint32_ro_s;
 extern const asn_type ndn_base_octstring_ro_s;
 extern const asn_type ndn_base_charstring_ro_s;
 
-/* 
+/*
  * Types that correspond to CRM types
  * These types should be used in asn_platform.c
  */

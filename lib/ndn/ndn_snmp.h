@@ -1,7 +1,7 @@
 /** @file
  * @brief Proteos, TAD file protocol, NDN.
  *
- * Declarations of ASN.1 types for NDN for file protocol. 
+ * Declarations of ASN.1 types for NDN for file protocol.
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -24,7 +24,7 @@
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
  * $Id$
- */ 
+ */
 #ifndef __TE_NDN_SNMP_H__
 #define __TE_NDN_SNMP_H__
 
@@ -96,10 +96,10 @@ extern asn_type *ndn_snmp_var_bind_seq;
 
 #if 0
 /**
- * Convert NDN SNMP Object syntax tag value 
- * (from enum 'ndn_snmp_objsyn_t') int generic SNMP ASN syntax 
+ * Convert NDN SNMP Object syntax tag value
+ * (from enum 'ndn_snmp_objsyn_t') int generic SNMP ASN syntax
  */
-extern int snmp_asn_syntaxes(unsigned short ndn_snmp_objsyn_tag); 
+extern int snmp_asn_syntaxes(unsigned short ndn_snmp_objsyn_tag);
 #endif
 extern int snmp_asn_syntaxes[];
 

@@ -1,9 +1,9 @@
 /** @file
  * @brief Proteos, TAD file protocol, NDN.
  *
- * Definitions of ASN.1 types for NDN for IEEE Std 802.2 LLC protocol. 
+ * Definitions of ASN.1 types for NDN for IEEE Std 802.2 LLC protocol.
  *
- * Copyright (C) 2006 Test Environment authors (see file AUTHORS 
+ * Copyright (C) 2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * This library is free software; you can redistribute it and/or
@@ -39,7 +39,7 @@ static asn_named_entry_t _ndn_snap_header_ne_array[] = {
 };
 
 asn_type ndn_snap_header_s = {
-    "IEEE-Std-802-SNAP-Header", { PRIVATE, 0 }, SEQUENCE, 
+    "IEEE-Std-802-SNAP-Header", { PRIVATE, 0 }, SEQUENCE,
     TE_ARRAY_LEN(_ndn_snap_header_ne_array),
     { _ndn_snap_header_ne_array }
 };
@@ -48,7 +48,7 @@ const asn_type * const ndn_snap_header = &ndn_snap_header_s;
 
 
 static asn_named_entry_t _ndn_llc_header_ne_array[] = {
-    { "i-g", &ndn_data_unit_int1_s,         
+    { "i-g", &ndn_data_unit_int1_s,
       { PRIVATE, NDN_TAG_LLC_DSAP_IG } },   /**< Individual/group DSAP */
     { "dsap", &ndn_data_unit_int7_s,
       { PRIVATE, NDN_TAG_LLC_DSAP } },      /**< DSAP address */

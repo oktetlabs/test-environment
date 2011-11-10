@@ -25,7 +25,7 @@
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
  * $Id$
- */ 
+ */
 
 #ifndef __TE_NDN_ATM_H__
 #define __TE_NDN_ATM_H__

@@ -66,10 +66,10 @@ typedef struct ndn_kprobes_info_s {
                                                     call of function_name
                                                     function */
     int intercept_count;
-    int retval;                               /**< Value to which will be 
-                                                    replaced returned value 
+    int retval;                               /**< Value to which will be
+                                                    replaced returned value
                                                     of funcion_name function;
-                                                    unused if action is not 
+                                                    unused if action is not
                                                     equals to "fail" */
     int block_timeout;
     int scenario_index;
@@ -79,7 +79,7 @@ typedef struct ndn_kprobes_info_s {
 /**
  * see ndn_kprobes.c
  */
-extern int ndn_kprobes_parse_info(const char *kprobes_info_str, 
+extern int ndn_kprobes_parse_info(const char *kprobes_info_str,
                                   ndn_kprobes_info_t **kprobes_info,
                                   int *number_of_structures);
 #ifdef __cplusplus

@@ -1,7 +1,7 @@
 /** @file
  * @brief Proteos, TAD file protocol, NDN.
  *
- * Definitions of ASN.1 types for NDN for Ethernet-PCAP protocol. 
+ * Definitions of ASN.1 types for NDN for Ethernet-PCAP protocol.
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -50,7 +50,7 @@ static asn_named_entry_t _ndn_pcap_filter_ne_array[] = {
 };
 
 asn_type ndn_pcap_filter_s = {
-    "PCAP-Filter", {PRIVATE, 100}, SEQUENCE, 
+    "PCAP-Filter", {PRIVATE, 100}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_pcap_filter_ne_array),
     {_ndn_pcap_filter_ne_array}
 };
@@ -68,7 +68,7 @@ static asn_named_entry_t _ndn_pcap_csap_ne_array[] = {
 };
 
 asn_type ndn_pcap_csap_s = {
-    "PCAP-CSAP", {PRIVATE, 101}, SEQUENCE, 
+    "PCAP-CSAP", {PRIVATE, 101}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_pcap_csap_ne_array),
     {_ndn_pcap_csap_ne_array}
 };

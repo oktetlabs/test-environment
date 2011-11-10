@@ -57,7 +57,7 @@ static asn_named_entry_t _ndn_atm_header_ne_array[] = {
 };
 
 asn_type ndn_atm_header_s = {
-    "ATM-Header", { PRIVATE, 100 /* FIXME */ }, SEQUENCE, 
+    "ATM-Header", { PRIVATE, 100 /* FIXME */ }, SEQUENCE,
     TE_ARRAY_LEN(_ndn_atm_header_ne_array),
     { _ndn_atm_header_ne_array }
 };
@@ -94,7 +94,7 @@ static asn_named_entry_t _ndn_atm_csap_ne_array[] = {
 };
 
 asn_type ndn_atm_csap_s = {
-    "ATM-CSAP", { PRIVATE, 101 /* FIXME */ }, SEQUENCE, 
+    "ATM-CSAP", { PRIVATE, 101 /* FIXME */ }, SEQUENCE,
     TE_ARRAY_LEN(_ndn_atm_csap_ne_array),
     { _ndn_atm_csap_ne_array }
 };
@@ -118,7 +118,7 @@ static asn_named_entry_t _ndn_aal5_cpcs_trailer_ne_array[] = {
 };
 
 asn_type ndn_aal5_cpcs_trailer_s = {
-    "AAL5-CPCS-Trailer", { PRIVATE, 100 /* FIXME */ }, SEQUENCE, 
+    "AAL5-CPCS-Trailer", { PRIVATE, 100 /* FIXME */ }, SEQUENCE,
     TE_ARRAY_LEN(_ndn_aal5_cpcs_trailer_ne_array),
     { _ndn_aal5_cpcs_trailer_ne_array }
 };
@@ -134,7 +134,7 @@ static asn_named_entry_t _ndn_aal5_encap_ne_array[] = {
 };
 
 static asn_type ndn_aal5_encap_s = {
-    "AAL5-Encapsulation", { PRIVATE, 100 }, CHOICE, 
+    "AAL5-Encapsulation", { PRIVATE, 100 }, CHOICE,
     TE_ARRAY_LEN(_ndn_aal5_encap_ne_array),
     { _ndn_aal5_encap_ne_array }
 };
@@ -151,7 +151,7 @@ static asn_named_entry_t _ndn_aal5_csap_ne_array[] = {
 };
 
 asn_type ndn_aal5_csap_s = {
-    "AAL5-CSAP", { PRIVATE, 101 /* FIXME */ }, SEQUENCE, 
+    "AAL5-CSAP", { PRIVATE, 101 /* FIXME */ }, SEQUENCE,
     TE_ARRAY_LEN(_ndn_aal5_csap_ne_array),
     { _ndn_aal5_csap_ne_array }
 };

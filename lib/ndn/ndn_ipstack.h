@@ -1,7 +1,7 @@
 /** @file
  * @brief Proteos, TAD file protocol, NDN.
  *
- * Declarations of ASN.1 types for NDN for file protocol. 
+ * Declarations of ASN.1 types for NDN for file protocol.
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -24,7 +24,7 @@
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
  * $Id$
- */ 
+ */
 #ifndef __TE_NDN_IPSTACK_H__
 #define __TE_NDN_IPSTACK_H__
 
@@ -155,7 +155,7 @@ typedef enum {
     TE_TCP_OPT_TIMESTAMP = 8,
 } te_tcp_options_kind_t;
 
-typedef enum { 
+typedef enum {
     NDN_TAG_TCP_OPT_EOL,
     NDN_TAG_TCP_OPT_NOP,
     NDN_TAG_TCP_OPT_MSS,

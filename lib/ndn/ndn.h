@@ -24,7 +24,7 @@
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
  * $Id$
- */ 
+ */
 #ifndef __TE_NDN_GENEREIC_H__
 #define __TE_NDN_GENEREIC_H__
 
@@ -55,20 +55,20 @@ typedef enum {
 } ndn_message_tags_t;
 
 
-/** 
+/**
  * ASN.1 tag values for DATA-UNIT choice, see definition of DATA-UNIT
- * macro in ASN module TE-Network-Data-Notation-General 
+ * macro in ASN module TE-Network-Data-Notation-General
  * ($TE_BASE/doc/ndn/ndn-gen.asn).
  */
-typedef enum { 
-    NDN_DU_UNDEF, 
-    NDN_DU_PLAIN, 
-    NDN_DU_SCRIPT, 
-    NDN_DU_ENUM, 
-    NDN_DU_MASK, 
-    NDN_DU_INTERVALS, 
-    NDN_DU_ENV, 
-    NDN_DU_FUNC, 
+typedef enum {
+    NDN_DU_UNDEF,
+    NDN_DU_PLAIN,
+    NDN_DU_SCRIPT,
+    NDN_DU_ENUM,
+    NDN_DU_MASK,
+    NDN_DU_INTERVALS,
+    NDN_DU_ENV,
+    NDN_DU_FUNC,
 } ndn_data_unit_tags_t;
 
 /**
@@ -100,7 +100,7 @@ typedef enum {
 
 /**
  * ASN.1 tag values for entries in 'Payload' type.
- */ 
+ */
 typedef enum {
     NDN_PLD_BYTES,
     NDN_PLD_MASK,
@@ -128,7 +128,7 @@ typedef enum {
 
 /**
  * ASN.1 tag values for entries in 'Traffic-Template' type.
- */ 
+ */
 typedef enum {
     NDN_TMPL_ARGS,
     NDN_TMPL_DELAYS,
@@ -139,7 +139,7 @@ typedef enum {
 
 /**
  * ASN.1 tag values for entries in 'Packet-Action' type.
- */ 
+ */
 typedef enum {
     NDN_ACT_FORWARD_PLD,
     NDN_ACT_FORWARD_RAW,
@@ -152,7 +152,7 @@ typedef enum {
 
 /**
  * ASN.1 tag values for entries in 'Pattern-Unit'' type.
- */ 
+ */
 typedef enum {
     NDN_PU_PDUS,
     NDN_PU_PAYLOAD,
@@ -162,7 +162,7 @@ typedef enum {
 
 /**
  * ASN.1 tag values for entries in 'NDN-TimeStamp' type.
- */ 
+ */
 typedef enum {
     NDN_TIME_SEC,
     NDN_TIME_MCS,
@@ -170,7 +170,7 @@ typedef enum {
 
 /**
  * ASN.1 tag values for entries in 'Raw-Packet' type.
- */ 
+ */
 typedef enum {
     NDN_PKT_TIMESTAMP,
     NDN_PKT_PDUS,
@@ -181,7 +181,7 @@ typedef enum {
 
 /* NDN ASN types. */
     /* DATA-UNIT wrappers over respecive bit integer fields */
-extern const asn_type *const ndn_data_unit_int4; 
+extern const asn_type *const ndn_data_unit_int4;
 extern const asn_type *const ndn_data_unit_int5;
 extern const asn_type *const ndn_data_unit_int8;
 extern const asn_type *const ndn_data_unit_int16;
@@ -197,7 +197,7 @@ extern const asn_type *const ndn_data_unit_octet_string6;
 extern const asn_type *const ndn_data_unit_char_string;
 extern const asn_type *const ndn_data_unit_objid;
 extern const asn_type *const ndn_ip_address;
-extern const asn_type *const ndn_octet_string6; 
+extern const asn_type *const ndn_octet_string6;
 extern const asn_type *const ndn_generic_pdu_sequence;
 extern const asn_type *const ndn_payload;
 extern const asn_type *const ndn_interval;
@@ -213,7 +213,7 @@ extern const asn_type *const ndn_traffic_pattern_unit;
 extern const asn_type *const ndn_raw_packet;
 
 extern const asn_type *const ndn_generic_csap_layer;
-extern const asn_type *const ndn_generic_pdu; 
+extern const asn_type *const ndn_generic_pdu;
 
 
 /**
@@ -296,20 +296,20 @@ extern int ndn_du_read_plain_oct(const asn_value *pdu, uint16_t tag,
                                  uint8_t *value, size_t *len);
 
 /**
- * Match data with DATA-UNIT pattern.  
+ * Match data with DATA-UNIT pattern.
  *
  * @param pat           ASN value with pattern PDU
- * @param pkt_pdu       ASN value with parsed packet PDU, may be NULL 
+ * @param pkt_pdu       ASN value with parsed packet PDU, may be NULL
  *                      if parsed packet is not need (OUT)
  * @param data          binary data to be matched
  * @param d_len         length of data packet to be matched, in bytes
- * @param label         textual label of desired field, which should be 
+ * @param label         textual label of desired field, which should be
  *                      DATA-UNIT{} type
  *
  * @return zero if matches, errno otherwise.
- */ 
+ */
 extern int ndn_match_data_units(const asn_value *pat, asn_value *pkt_pdu,
-                                const uint8_t *data, size_t d_len, 
+                                const uint8_t *data, size_t d_len,
                                 const char *label);
 
 /**
@@ -320,7 +320,7 @@ extern int ndn_match_data_units(const asn_value *pat, asn_value *pkt_pdu,
  * @param d_len         length of data packet to be matched, in bytes
  *
  * @return zero if matches, errno otherwise.
- */ 
+ */
 extern int ndn_match_mask(const asn_value *mask_pat,
                           const uint8_t *data, size_t d_len);
 
@@ -335,7 +335,7 @@ extern int ndn_match_mask(const asn_value *mask_pat,
 extern int ndn_get_timestamp(const asn_value *packet, struct timeval *ts);
 
 /**
- * Convert received packet to the template to be sent. 
+ * Convert received packet to the template to be sent.
  *
  * @param pkt   ASN value with received packet.
  * @param tmpl  Location for ASN value with template.

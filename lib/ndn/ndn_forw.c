@@ -1,7 +1,7 @@
 /** @file
  * @brief Test Environment TAD, Forwarder, NDN.
  *
- * Definitions of ASN.1 types for NDN for Forwarder module. 
+ * Definitions of ASN.1 types for NDN for Forwarder module.
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -25,7 +25,7 @@
  *
  * $Id$
  */
-#include "te_config.h" 
+#include "te_config.h"
 
 
 #include <stdlib.h>
@@ -47,7 +47,7 @@
 Forwarder-Delay-Cont ::= SEQUENCE {
     delay-min [1] INTEGER,
     delay-max [2] INTEGER
-} 
+}
 */
 
 static asn_named_entry_t _ndn_forw_delay_cont_ne_array [] = {
@@ -56,18 +56,18 @@ static asn_named_entry_t _ndn_forw_delay_cont_ne_array [] = {
 };
 
 asn_type ndn_forw_delay_cont_s = {
-    "Forwarder-Delay-Cont", {PRIVATE, 100}, SEQUENCE, 
+    "Forwarder-Delay-Cont", {PRIVATE, 100}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_forw_delay_cont_ne_array),
     {_ndn_forw_delay_cont_ne_array}
 };
 
 const asn_type * const ndn_forw_delay_cont = &ndn_forw_delay_cont_s;
 
-/* 
+/*
 Discret-Pair ::= SEQUENCE {
-    prob        [1] INTEGER(1..100), 
+    prob        [1] INTEGER(1..100),
     delay       [2] INTEGER -- in microseconds
-} 
+}
 */
 
 static asn_named_entry_t _ndn_forw_discr_pair_array [] = {
@@ -76,7 +76,7 @@ static asn_named_entry_t _ndn_forw_discr_pair_array [] = {
 };
 
 asn_type ndn_forw_discr_pair_s = {
-    "Discret-Pair", {PRIVATE, 101}, SEQUENCE, 
+    "Discret-Pair", {PRIVATE, 101}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_forw_discr_pair_array),
     {_ndn_forw_discr_pair_array}
 };
@@ -88,7 +88,7 @@ Forwarder-Delay-Discrete ::= SEQUENCE OF Discret-Pair;
 */
 
 asn_type ndn_forw_delay_discr_s = {
-    "Forwarder-Delay-Discrete", {PRIVATE, 102}, SEQUENCE_OF, 
+    "Forwarder-Delay-Discrete", {PRIVATE, 102}, SEQUENCE_OF,
     0, {subtype: &ndn_forw_discr_pair_s}
 };
 
@@ -96,7 +96,7 @@ asn_type ndn_forw_delay_discr_s = {
 Forwarder-Action-Delay-Params ::= CHOICE {
     cont  [1] Forwarder-Delay-Cont,
     discr [2] Forwarder-Delay-Discrete
-} 
+}
 */
 
 enum {
@@ -110,7 +110,7 @@ static asn_named_entry_t _ndn_forw_delay_array [] = {
 };
 
 asn_type ndn_forw_delay_s = {
-    "Discret-Pair", {PRIVATE, 101}, CHOICE, 
+    "Discret-Pair", {PRIVATE, 101}, CHOICE,
     TE_ARRAY_LEN(_ndn_forw_delay_array),
     {_ndn_forw_delay_array}
 };
@@ -124,10 +124,10 @@ Forwarder-Action-Reorder-Params ::= SEQUENCE {
     reorder-size    [2] DATA-UNIT {INTEGER}
 }
 */
-static asn_enum_entry_t _ndn_reorder_type_enum_entries[] = { 
-    {"disabled", FORW_REORDER_DISABLED}, 
-    {"random",   FORW_REORDER_RANDOM}, 
-    {"reversed", FORW_REORDER_REVERSED}, 
+static asn_enum_entry_t _ndn_reorder_type_enum_entries[] = {
+    {"disabled", FORW_REORDER_DISABLED},
+    {"random",   FORW_REORDER_RANDOM},
+    {"reversed", FORW_REORDER_REVERSED},
 };
 
 static asn_type ndn_forw_reorder_type_s = {
@@ -144,7 +144,7 @@ static asn_named_entry_t _ndn_forw_reorder_ne_array [] = {
 };
 
 asn_type ndn_forw_reorder_s = {
-    "Forwarder-Action-Reorder-Params", {PRIVATE, 100}, SEQUENCE, 
+    "Forwarder-Action-Reorder-Params", {PRIVATE, 100}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_forw_reorder_ne_array),
     {_ndn_forw_reorder_ne_array}
 };
@@ -156,8 +156,8 @@ const asn_type * const ndn_forw_reorder = &ndn_forw_reorder_s;
 Forwarder-Action-Drop-Params ::= CHOICE {
     random-rate      [0] INTEGER(0..100),
     pattern-mask     [1] BIT STRING
-} 
-*/ 
+}
+*/
 
 static asn_named_entry_t _ndn_forw_drop_ne_array [] = {
     { "random-rate",  &asn_base_int8_s, {PRIVATE, 0}},
@@ -166,7 +166,7 @@ static asn_named_entry_t _ndn_forw_drop_ne_array [] = {
 
 asn_type ndn_forw_drop_s =
 {
-    "Forwarder-Action-Drop-Params", {PRIVATE, 100}, CHOICE, 
+    "Forwarder-Action-Drop-Params", {PRIVATE, 100}, CHOICE,
     TE_ARRAY_LEN(_ndn_forw_drop_ne_array),
     {_ndn_forw_drop_ne_array}
 };
@@ -193,7 +193,7 @@ static asn_named_entry_t _ndn_forw_action_ne_array [] = {
 };
 
 asn_type ndn_forw_action_s = {
-    "Forwarder-Action", {PRIVATE, 101}, SEQUENCE, 
+    "Forwarder-Action", {PRIVATE, 101}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_forw_action_ne_array),
     {_ndn_forw_action_ne_array}
 };
@@ -204,27 +204,27 @@ const asn_type * const ndn_forw_action = &ndn_forw_action_s;
 
 
 /*******************************************************
- *                    Utilities 
+ *                    Utilities
  *******************************************************/
 
-/** 
- * Convert Forwarder-Action ASN value to plain C structrue. 
- * 
+/**
+ * Convert Forwarder-Action ASN value to plain C structrue.
+ *
  * @param val           ASN value of type Forwarder-Action-Delay-Params
  * @param forw_dealy    converted structure (OUT).
  *
  * @return zero on success or error code.
- */ 
+ */
 
-int 
+int
 ndn_forw_delay_to_plain(const asn_value *val, ndn_forw_delay_t *forw_delay)
 {
     int rc = 0;
-    size_t d_len; 
+    size_t d_len;
 
     const char *choice_ptr;
 
-    if (val == NULL || forw_delay == NULL) 
+    if (val == NULL || forw_delay == NULL)
         return TE_EINVAL;
 
     choice_ptr = asn_get_choice_ptr(val);
@@ -232,20 +232,20 @@ ndn_forw_delay_to_plain(const asn_value *val, ndn_forw_delay_t *forw_delay)
     if (strcmp(choice_ptr, "cont") == 0)
     {
         d_len = sizeof(forw_delay->min);
-        rc = asn_read_value_field(val, &(forw_delay->min), &d_len, 
-                                  "#cont.delay-min"); 
+        rc = asn_read_value_field(val, &(forw_delay->min), &d_len,
+                                  "#cont.delay-min");
         if (rc)
             return rc;
 
         d_len = sizeof(forw_delay->max);
-        rc = asn_read_value_field(val, &(forw_delay->max), &d_len, 
-                                  "#cont.delay-max"); 
+        rc = asn_read_value_field(val, &(forw_delay->max), &d_len,
+                                  "#cont.delay-max");
         if (rc)
             return rc;
 
         if (forw_delay->max == forw_delay->min)
             forw_delay->type = FORW_DELAY_CONSTANT;
-        else 
+        else
             forw_delay->type = FORW_DELAY_RAND_CONT;
     }
     else if (strcmp(choice_ptr, "discr") == 0)
@@ -255,7 +255,7 @@ ndn_forw_delay_to_plain(const asn_value *val, ndn_forw_delay_t *forw_delay)
         int i;
         int ar_len;
 
-        ar_len = asn_get_length(val, "#discr"); 
+        ar_len = asn_get_length(val, "#discr");
 
         forw_delay->type = FORW_DELAY_RAND_DISCR;
 
@@ -265,7 +265,7 @@ ndn_forw_delay_to_plain(const asn_value *val, ndn_forw_delay_t *forw_delay)
         forw_delay->n_pairs = ar_len;
 
         for (i = 0; i < ar_len; i++)
-        { 
+        {
             pl = label;
             pl += snprintf(pl, sizeof(label), "#discr.%d", i);
             strcpy(pl, ".prob");
@@ -288,23 +288,23 @@ ndn_forw_delay_to_plain(const asn_value *val, ndn_forw_delay_t *forw_delay)
 }
 
 
-/** 
- * Convert Forwarder-Action ASN value to plain C structrue. 
- * 
+/**
+ * Convert Forwarder-Action ASN value to plain C structrue.
+ *
  * @param val           ASN value of type Forwarder-Action-Reorder-Params
  * @param forw_reorder    converted structure (OUT).
  *
  * @return zero on success or error code.
- */ 
+ */
 
-int 
+int
 ndn_forw_reorder_to_plain(const asn_value *val,
                           ndn_forw_reorder_t *forw_reorder)
 {
     int rc = 0;
-    size_t d_len; 
+    size_t d_len;
 
-    if (val == NULL || forw_reorder == NULL) 
+    if (val == NULL || forw_reorder == NULL)
         return TE_EINVAL;
 
     d_len = sizeof (forw_reorder->type);
@@ -313,32 +313,32 @@ ndn_forw_reorder_to_plain(const asn_value *val,
         return rc;
 
     d_len = sizeof (forw_reorder->timeout);
-    rc = asn_read_value_field(val, &forw_reorder->timeout, &d_len, 
+    rc = asn_read_value_field(val, &forw_reorder->timeout, &d_len,
                               "timeout");
     if (rc)
         return rc;
 
     d_len = sizeof (forw_reorder->r_size);
-    rc = asn_read_value_field(val, &forw_reorder->r_size, &d_len, 
-                              "reorder-size"); 
+    rc = asn_read_value_field(val, &forw_reorder->r_size, &d_len,
+                              "reorder-size");
     VERB("%s: reorder: type %d, timeout %d, size %d", __FUNCTION__,
          forw_reorder->type, forw_reorder->timeout, forw_reorder->r_size);
     return rc;
 }
 
-/** 
- * Convert Forwarder-Action ASN value to plain C structrue. 
- * 
+/**
+ * Convert Forwarder-Action ASN value to plain C structrue.
+ *
  * @param val          ASN value of type Forwarder-Action-Params
  * @param forw_drop    converted structure (OUT).
  *
  * @return zero on success or error code.
- */ 
+ */
 
-int 
+int
 ndn_forw_drop_to_plain(const asn_value *val, ndn_forw_drop_t *forw_drop)
 {
-    char drop_label[40]; 
+    char drop_label[40];
     size_t d_len;
     int rc;
 
@@ -350,44 +350,44 @@ ndn_forw_drop_to_plain(const asn_value *val, ndn_forw_drop_t *forw_drop)
     {
         forw_drop->type = FORW_DROP_RANDOM;
         d_len = sizeof(forw_drop->rate);
-        rc = asn_read_value_field(val, &forw_drop->rate, &d_len, 
-                                  "drop.#random-rate"); 
+        rc = asn_read_value_field(val, &forw_drop->rate, &d_len,
+                                  "drop.#random-rate");
     }
     else
     {
         forw_drop->type = FORW_DROP_PATTERN;
-        forw_drop->mask_len = d_len = 
-                        asn_get_length(val, "drop.#pattern-mask"); 
+        forw_drop->mask_len = d_len =
+                        asn_get_length(val, "drop.#pattern-mask");
 
         forw_drop->pattern_mask = calloc ((d_len >> 3) + 1, 1);
 
-        rc = asn_read_value_field(val, forw_drop->pattern_mask, &d_len, 
+        rc = asn_read_value_field(val, forw_drop->pattern_mask, &d_len,
                                  "drop");
-    } 
+    }
 
-    return rc; 
+    return rc;
 }
 
-/** 
- * Convert Forwarder-Action ASN value to plain C structrue. 
- * 
- * @param val           ASN value of type  
+/**
+ * Convert Forwarder-Action ASN value to plain C structrue.
+ *
+ * @param val           ASN value of type
  * @param forw_action   converted structure (OUT).
  *
  * @return zero on success or error code.
- */ 
-int 
-ndn_forw_action_asn_to_plain(const asn_value *val, 
+ */
+int
+ndn_forw_action_asn_to_plain(const asn_value *val,
                                ndn_forw_action_plain *forw_action)
 {
-    int rc = 0; 
+    int rc = 0;
     int id_len;
 
     size_t d_len;
 
     const asn_value *subval;
 
-    if (val == NULL || forw_action == NULL) 
+    if (val == NULL || forw_action == NULL)
         return TE_EINVAL;
 
     id_len = asn_get_length(val, "id");
@@ -406,9 +406,9 @@ ndn_forw_action_asn_to_plain(const asn_value *val,
     forw_action->id[id_len] = '\0';
     VERB("%s: got id: %s", __FUNCTION__, forw_action->id);
 
-    rc = asn_impl_find_subvalue(val, "delay", &subval); 
-    VERB("%s: get delay: %r", __FUNCTION__, rc); 
-    if (rc == 0) 
+    rc = asn_impl_find_subvalue(val, "delay", &subval);
+    VERB("%s: get delay: %r", __FUNCTION__, rc);
+    if (rc == 0)
     {
         rc = ndn_forw_delay_to_plain(subval, &(forw_action->delay));
         if (rc) return rc;
@@ -418,17 +418,17 @@ ndn_forw_action_asn_to_plain(const asn_value *val,
         forw_action->delay.type = 0; /* uninitalized, default */
         rc = 0;
     }
-    else 
+    else
         return rc;
 
 
 
     rc = asn_get_descendent(val, (asn_value **)&subval, "reorder");
-    VERB("%s: get reorder: %r", __FUNCTION__, rc); 
-    if (rc == 0) 
+    VERB("%s: get reorder: %r", __FUNCTION__, rc);
+    if (rc == 0)
     {
         rc = ndn_forw_reorder_to_plain(subval, &(forw_action->reorder));
-        VERB("%s: reorder to plain: %r", __FUNCTION__, rc); 
+        VERB("%s: reorder to plain: %r", __FUNCTION__, rc);
         if (rc) return rc;
     }
     else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
@@ -436,7 +436,7 @@ ndn_forw_action_asn_to_plain(const asn_value *val,
         forw_action->reorder.type = 0; /* uninitalized, default */
         rc = 0;
     }
-    else 
+    else
         return rc;
 
 
@@ -446,23 +446,23 @@ ndn_forw_action_asn_to_plain(const asn_value *val,
         forw_action->drop.type = 0; /* uninitalized, default */
         rc = 0;
     }
-    else 
-        return rc; 
+    else
+        return rc;
 
     return 0;
 }
 
 
 
-/** 
- * Convert plain C structrue to Forwarder-Action ASN value. 
- * 
+/**
+ * Convert plain C structrue to Forwarder-Action ASN value.
+ *
  * @param forw_action   converted structure.
  * @param result        location for pointer to ASN value of type (OUT)
  *
  * @return zero on success or error code.
- */ 
-int 
+ */
+int
 ndn_forw_action_plain_to_asn(const ndn_forw_action_plain *forw_action,
                              asn_value **result)
 {
@@ -472,14 +472,14 @@ ndn_forw_action_plain_to_asn(const ndn_forw_action_plain *forw_action,
     if (result == NULL || forw_action == NULL || forw_action->id == NULL)
         return TE_EWRONGPTR;
 
-    do { 
+    do {
         val = asn_init_value(ndn_forw_action);
 
-        rc = asn_write_value_field(val, 
-                        forw_action->id, strlen(forw_action->id), "id"); 
+        rc = asn_write_value_field(val,
+                        forw_action->id, strlen(forw_action->id), "id");
         if (rc != 0)
             break;
-                            
+
         switch (forw_action->drop.type)
         {
             case FORW_DROP_DISABLED:
@@ -489,12 +489,12 @@ ndn_forw_action_plain_to_asn(const ndn_forw_action_plain *forw_action,
                                      "drop.#random-rate");
                 break;
             case FORW_DROP_PATTERN:
-                rc = asn_write_value_field(val, 
+                rc = asn_write_value_field(val,
                                            forw_action->drop.pattern_mask,
                                            forw_action->drop.mask_len,
                                            "drop.#pattern-mask");
                 break;
-        } 
+        }
         if (rc)
             break;
 
@@ -527,7 +527,7 @@ ndn_forw_action_plain_to_asn(const ndn_forw_action_plain *forw_action,
             case FORW_DELAY_RAND_CONT:
                 rc = asn_write_int32(val, forw_action->delay.min,
                                            "delay.#cont.delay-min");
-                if (rc != 0) 
+                if (rc != 0)
                     break;
                 rc = asn_write_int32(val, forw_action->delay.max,
                                            "delay.#cont.delay-max");
@@ -535,7 +535,7 @@ ndn_forw_action_plain_to_asn(const ndn_forw_action_plain *forw_action,
             case FORW_DELAY_RAND_DISCR:
                 {
                     int i;
-                    int ar_len; 
+                    int ar_len;
                     asn_value *delay_discr;
 
                     rc = asn_parse_value_text("discr:{}", ndn_forw_delay,
@@ -548,11 +548,11 @@ ndn_forw_action_plain_to_asn(const ndn_forw_action_plain *forw_action,
                     ar_len = forw_action->delay.n_pairs;
 
                     for (i = 0; i < ar_len && rc == 0; i++)
-                    { 
-                        asn_value *pair_val = 
+                    {
+                        asn_value *pair_val =
                             asn_init_value(ndn_forw_discr_pair);
 
-                        rc = asn_write_int32(pair_val,  
+                        rc = asn_write_int32(pair_val,
                                  forw_action->delay.discr[i].prob,
                                  "prob");
                         if (rc != 0)
@@ -564,7 +564,7 @@ ndn_forw_action_plain_to_asn(const ndn_forw_action_plain *forw_action,
                         if (rc != 0)
                             break;
 
-                        rc = asn_insert_indexed(delay_discr, 
+                        rc = asn_insert_indexed(delay_discr,
                                                 pair_val, i, "#discr");
                         VERB("%s: insert discr.pair N %d to delay, rc: %r",
                              __FUNCTION__, i, rc);
@@ -572,7 +572,7 @@ ndn_forw_action_plain_to_asn(const ndn_forw_action_plain *forw_action,
                     if (rc != 0)
                         break;
                     rc = asn_write_component_value(val, delay_discr,
-                                                   "delay"); 
+                                                   "delay");
                     VERB("%s: write delay_discr to ftask action, rc: %r",
                          __FUNCTION__, rc);
                     asn_free_value(delay_discr);
@@ -580,13 +580,13 @@ ndn_forw_action_plain_to_asn(const ndn_forw_action_plain *forw_action,
                 break;
             default:
                 rc = TE_EINVAL;
-                ERROR("unsupported type of delay: %d", 
+                ERROR("unsupported type of delay: %d",
                       forw_action->delay.type);
                 break;
         }
-        if (rc != 0) 
+        if (rc != 0)
             break;
-        
+
     } while (0);
 
     if (rc!= 0)

@@ -1,7 +1,7 @@
 /** @file
  * @brief Proteos, TAD file protocol, NDN.
  *
- * Declarations of ASN.1 types for NDN for IEEE Std 802.2 LLC protocol. 
+ * Declarations of ASN.1 types for NDN for IEEE Std 802.2 LLC protocol.
  *
  * Copyright (C) 2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -24,7 +24,7 @@
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
  * $Id$
- */ 
+ */
 
 #ifndef __TE_NDN_LLC_H__
 #define __TE_NDN_LLC_H__

@@ -1,7 +1,7 @@
 /** @file
  * @brief NDN Socket
  *
- * Declarations of ASN.1 types for NDN for sockets. 
+ * Declarations of ASN.1 types for NDN for sockets.
  *
  * Copyright (C) 2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -24,7 +24,7 @@
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
  * $Id$
- */ 
+ */
 
 #ifndef __TE_NDN_SOCKET_H__
 #define __TE_NDN_SOCKET_H__
@@ -54,7 +54,7 @@ typedef enum {
 } ndn_socket_tags_t;
 
 extern asn_type * ndn_socket_message;
-extern asn_type * ndn_socket_csap; 
+extern asn_type * ndn_socket_csap;
 
 #ifdef __cplusplus
 } /* extern "C" */

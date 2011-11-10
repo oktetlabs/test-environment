@@ -1,7 +1,7 @@
 /** @file
  * @brief Proteos, TAD file protocol, NDN.
  *
- * Declarations of ASN.1 types for NDN for Ethernet protocol. 
+ * Declarations of ASN.1 types for NDN for Ethernet protocol.
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -24,7 +24,7 @@
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
  * $Id$
- */ 
+ */
 #ifndef __TE_NDN_BRIDGE_H__
 #define __TE_NDN_BRIDGE_H__
 
@@ -91,8 +91,8 @@ typedef struct ndn_stp_bpdu_t {
 
     union {
         struct ndn_stp_cfg_bpdu_t cfg; /**< Content of Configuration BPDU */
-        struct ndn_stp_tcn_bpdu_t {} tcn[0]; 
-                                       /**< Topology Change Notification 
+        struct ndn_stp_tcn_bpdu_t {} tcn[0];
+                                       /**< Topology Change Notification
                                             BPDU has no content */
     }; /**< BPDU content */
 } ndn_stp_bpdu_t;
@@ -108,27 +108,27 @@ typedef struct ndn_stp_bpdu_t {
  */
 #define STP_BPDU_TCN_TYPE 0x80
 
-/** 
- * Convert Bridge STP PDU ASN value to plain C structure. 
- * 
- * @param pkt           ASN value of type Bridge-PDU or Generic-PDU with 
- *                      choice "bridge". 
+/**
+ * Convert Bridge STP PDU ASN value to plain C structure.
+ *
+ * @param pkt           ASN value of type Bridge-PDU or Generic-PDU with
+ *                      choice "bridge".
  * @param bpdu          converted structure (OUT).
  *
  * @return zero on success or error code.
- */ 
-extern int ndn_bpdu_asn_to_plain(const asn_value *pkt, 
+ */
+extern int ndn_bpdu_asn_to_plain(const asn_value *pkt,
                                  ndn_stp_bpdu_t *bpdu);
 
 
-/** 
- * Convert plain C structure with Bridge STP PDU to respective ASN value. 
- * 
+/**
+ * Convert plain C structure with Bridge STP PDU to respective ASN value.
+ *
  * @param bpdu          - structure to be converted.
  *
  * @retval      pointer to created ASN value on success.
  * @retval      NULL on memory allocation error.
- */ 
+ */
 extern asn_value * ndn_bpdu_plain_to_asn(const ndn_stp_bpdu_t *bpdu);
 
 extern const asn_type * const ndn_bridge_pdu;

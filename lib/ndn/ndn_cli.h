@@ -1,7 +1,7 @@
 /** @file
  * @brief Proteos, TAD CLI protocol, NDN.
  *
- * Declarations of ASN.1 types for NDN for CLI protocol. 
+ * Declarations of ASN.1 types for NDN for CLI protocol.
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -24,7 +24,7 @@
  * @author Alexander Kukuta <kam@oktetlabs.ru>
  *
  * $Id$
- */ 
+ */
 #ifndef __TE_NDN_CLI_H__
 #define __TE_NDN_CLI_H__
 

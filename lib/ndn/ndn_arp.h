@@ -1,7 +1,7 @@
 /** @file
  * @brief ARP NDN
  *
- * Declarations of ASN.1 types for NDN for an Ethernet Address 
+ * Declarations of ASN.1 types for NDN for an Ethernet Address
  * Resolution protocol (RFC 826).
  *
  * Copyright (C) 2005 Test Environment authors (see file AUTHORS in
@@ -25,7 +25,7 @@
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
  * $Id$
- */ 
+ */
 
 #ifndef __TE_NDN_ARP_H__
 #define __TE_NDN_ARP_H__
@@ -67,7 +67,7 @@ typedef struct ndn_arp_header_plain {
     uint16_t opcode;        /**< Operation type */
 
     /** Sender hardware address */
-    uint8_t  snd_hw_addr[NDN_ARP_HW_SIZE_MAX]; 
+    uint8_t  snd_hw_addr[NDN_ARP_HW_SIZE_MAX];
     /** Sender protocol address */
     uint8_t  snd_proto_addr[NDN_ARP_PROTO_SIZE_MAX];
     /** Target hardware address */
@@ -95,26 +95,26 @@ extern const asn_type * const ndn_arp_header;
 extern const asn_type * const ndn_arp_csap;
 
 
-/** 
- * Convert ARP-Header ASN value to plain C structure. 
- * 
- * @param pkt           ASN value of type ARP-Header or 
+/**
+ * Convert ARP-Header ASN value to plain C structure.
+ *
+ * @param pkt           ASN value of type ARP-Header or
  *                      Generic-PDU with choice "arp"
  * @param arp_header    Location for converted structure (OUT)
  *
  * @return Zero on success or error code.
- */ 
-extern te_errno ndn_arp_packet_to_plain(const asn_value *pkt, 
+ */
+extern te_errno ndn_arp_packet_to_plain(const asn_value *pkt,
                                         ndn_arp_header_plain *arp_header);
 
 
-/** 
- * Convert plain C structure to ARP-Header ASN value. 
- * 
+/**
+ * Convert plain C structure to ARP-Header ASN value.
+ *
  * @param arp_header    Structure to be converted
  *
  * @return Pointer to new ASN value object or NULL.
- */ 
+ */
 extern asn_value *ndn_arp_plain_to_packet(
                       const ndn_arp_header_plain *arp_header);
 

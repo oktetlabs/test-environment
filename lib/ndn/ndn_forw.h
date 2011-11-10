@@ -1,7 +1,7 @@
 /** @file
  * @brief Proteos, TAD file protocol, NDN.
  *
- * Declarations of ASN.1 types for NDN for Ethernet protocol. 
+ * Declarations of ASN.1 types for NDN for Ethernet protocol.
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -24,7 +24,7 @@
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
  * $Id$
- */ 
+ */
 #ifndef __TE_NDN_FORW_H__
 #define __TE_NDN_FORW_H__
 
@@ -62,9 +62,9 @@ typedef struct {
     ndn_forw_delay_type_t type;
 
     int min;
-    int max; 
+    int max;
 
-    size_t n_pairs; 
+    size_t n_pairs;
     ndn_delay_discr_pair_t discr[DELAY_DISCR_MAX];
 } ndn_forw_delay_t;
 
@@ -81,7 +81,7 @@ typedef enum {
 
 typedef struct {
     ndn_forw_reorder_type_t type;
-    
+
     int timeout;
     int r_size;
 } ndn_forw_reorder_t;
@@ -105,7 +105,7 @@ typedef struct {
 
 } ndn_forw_drop_t;
 
-typedef struct { 
+typedef struct {
     char               *id;
     ndn_forw_delay_t    delay;
     ndn_forw_reorder_t  reorder;
@@ -114,25 +114,25 @@ typedef struct {
 
 extern const asn_type * const ndn_forw_action;
 
-/** 
- * Convert Forwarder-Action ASN value to plain C structrue. 
- * 
- * @param val           ASN value of type  
+/**
+ * Convert Forwarder-Action ASN value to plain C structrue.
+ *
+ * @param val           ASN value of type
  * @param forw_action   converted structure (OUT).
  *
  * @return zero on success or error code.
- */ 
-extern int ndn_forw_action_asn_to_plain(const asn_value *val, 
+ */
+extern int ndn_forw_action_asn_to_plain(const asn_value *val,
                                 ndn_forw_action_plain *forw_action);
 
-/** 
- * Convert plain C structrue to Forwarder-Action ASN value. 
- * 
+/**
+ * Convert plain C structrue to Forwarder-Action ASN value.
+ *
  * @param forw_action   converted structure.
  * @param val           location for pointer to ASN value of type (OUT)
  *
  * @return zero on success or error code.
- */ 
+ */
 extern int ndn_forw_action_plain_to_asn(
                                 const ndn_forw_action_plain *forw_action,
                                 asn_value **val);
