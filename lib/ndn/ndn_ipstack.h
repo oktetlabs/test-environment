@@ -115,14 +115,71 @@ typedef enum {
 } ndn_icmp4_tags_t;
 
 typedef enum {
+    /*
+     * ICMPv6 message
+     */
     NDN_TAG_ICMP6_TYPE,
     NDN_TAG_ICMP6_CODE,
     NDN_TAG_ICMP6_CHECKSUM,
-    NDN_TAG_ICMP6_ID,
-    NDN_TAG_ICMP6_SEQ,
+    NDN_TAG_ICMP6_BODY, /* choice */
+    NDN_TAG_ICMP6_OPTS, /* list */
+    /*
+     * ICMPv6 option
+     */
+    NDN_TAG_ICMP6_OPT,
+    /*
+     * Message variants
+     */
+    NDN_TAG_ICMP6_ROUTER_SOL,
+    NDN_TAG_ICMP6_ROUTER_ADV,
+    NDN_TAG_ICMP6_NEIGHBOR_SOL,
+    NDN_TAG_ICMP6_NEIGHBOR_ADV,
+    NDN_TAG_ICMP6_ECHO,
+    NDN_TAG_ICMP6_MLD,
+    /*
+     * Message body layout
+     *
+     * Router solicitation
+     */
+    NDN_TAG_ICMP6_ROUTER_SOL_RESERVED,
+    /* Router advertisement */
+    NDN_TAG_ICMP6_ROUTER_ADV_CUR_HOP_LIMIT,
+    NDN_TAG_ICMP6_ROUTER_ADV_FLAGS,
+    NDN_TAG_ICMP6_ROUTER_ADV_LIFETIME,
+    NDN_TAG_ICMP6_ROUTER_ADV_REACHABLE_TIME,
+    NDN_TAG_ICMP6_ROUTER_ADV_RETRANS_TIMER,
+    /* Neighbor solicitation */
+    NDN_TAG_ICMP6_NEIGHBOR_SOL_RESERVED,
+    NDN_TAG_ICMP6_NEIGHBOR_SOL_TARGET_ADDR,
+    /* Neighbor advertisement */
+    NDN_TAG_ICMP6_NEIGHBOR_ADV_FLAGS,
+    NDN_TAG_ICMP6_NEIGHBOR_ADV_TARGET_ADDR,
+    /* Echo */
+    NDN_TAG_ICMP6_ECHO_ID,
+    NDN_TAG_ICMP6_ECHO_SEQ,
+    /* MLD */
     NDN_TAG_ICMP6_MLD_MAX_RESPONSE_DELAY,
     NDN_TAG_ICMP6_MLD_RESERVED,
     NDN_TAG_ICMP6_MLD_GROUP_ADDR,
+    /*
+     * ICMPv6 option layout
+     */
+    NDN_TAG_ICMP6_OPT_TYPE,
+    NDN_TAG_ICMP6_OPT_LEN,
+    NDN_TAG_ICMP6_OPT_BODY,
+    /*
+     * ICMPv6 option variants
+     */
+    NDN_TAG_ICMP6_OPT_LL_ADDR,
+    NDN_TAG_ICMP6_OPT_PREFIX,
+    /*
+     * ICMPv6 option 'Prefix information' layout
+     */
+    NDN_TAG_ICMP6_OPT_PREFIX_PREFIX_LENGTH,
+    NDN_TAG_ICMP6_OPT_PREFIX_FLAGS,
+    NDN_TAG_ICMP6_OPT_PREFIX_VALID_LIFETIME,
+    NDN_TAG_ICMP6_OPT_PREFIX_PREFERRED_LIFETIME,
+    NDN_TAG_ICMP6_OPT_PREFIX_PREFIX,
 } ndn_icmp6_tags_t;
 
 typedef enum {

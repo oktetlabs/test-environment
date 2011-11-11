@@ -25,7 +25,6 @@
  *
  * $Id$
  */
-
 #include "te_config.h"
 
 #include "asn_impl.h"
@@ -36,7 +35,6 @@
 /*
  * IPv4
  */
-
 static asn_named_entry_t _ndn_ip4_frag_spec_ne_array [] = {
     { "hdr-offset",         &asn_base_integer_s,
         {PRIVATE, NDN_TAG_IP4_FR_HO} },
@@ -91,7 +89,6 @@ asn_type ndn_ip4_pld_chksm_s = {
 asn_type *ndn_ip4_pld_chksm = &ndn_ip4_pld_chksm_s;
 
 /* IPv4 PDU */
-
 static asn_named_entry_t _ndn_ip4_header_ne_array [] = {
     { "version",         &ndn_data_unit_int4_s,
       { PRIVATE, NDN_TAG_IP4_VERSION } },
@@ -140,8 +137,6 @@ asn_type ndn_ip4_header_s = {
 
 const asn_type * const ndn_ip4_header = &ndn_ip4_header_s;
 
-
-
 static asn_named_entry_t _ndn_ip4_csap_ne_array [] = {
     { "type-of-service", &ndn_data_unit_int8_s,
         {PRIVATE, NDN_TAG_IP4_TOS} },
@@ -169,9 +164,6 @@ asn_type ndn_ip4_csap_s = {
 
 const asn_type * const ndn_ip4_csap = &ndn_ip4_csap_s;
 
-
-
-
 /*
  * IPv6
  */
@@ -189,7 +181,6 @@ asn_type ndn_ip6_pld_chksm_s = {
     TE_ARRAY_LEN(_ndn_ip6_pld_chksm_ne_array),
     {_ndn_ip6_pld_chksm_ne_array}
 };
-
 
 /**
  * Type-Length-Value (TLV) encoded "options" (see RFC 2460, section 4.2).
@@ -286,6 +277,7 @@ asn_type ndn_ip6_ext_header_hop_by_hop_s = {
     TE_ARRAY_LEN(_ndn_ip6_ext_header_options_hdr_ne_array),
     {_ndn_ip6_ext_header_options_hdr_ne_array}
 };
+
 const asn_type * const ndn_ip6_ext_header_hop_by_hop =
                                 &ndn_ip6_ext_header_hop_by_hop_s;
 
@@ -295,6 +287,7 @@ asn_type ndn_ip6_ext_header_destination_s = {
     TE_ARRAY_LEN(_ndn_ip6_ext_header_options_hdr_ne_array),
     {_ndn_ip6_ext_header_options_hdr_ne_array}
 };
+
 const asn_type * const ndn_ip6_ext_header_destination =
                                 &ndn_ip6_ext_header_destination_s;
 
@@ -371,12 +364,9 @@ asn_type ndn_ip6_csap_s = {
 
 const asn_type * const ndn_ip6_csap = &ndn_ip6_csap_s;
 
-
-
 /*
  * ICMPv4
  */
-
 static asn_named_entry_t _ndn_icmp4_message_ne_array [] = {
     { "type",           &ndn_data_unit_int8_s,
       { PRIVATE, NDN_TAG_ICMP4_TYPE } },
@@ -414,31 +404,314 @@ const asn_type * const ndn_icmp4_message = &ndn_icmp4_message_s;
 
 const asn_type * const ndn_icmp4_csap = &asn_base_null_s;
 
+/*
+ * ICMP6
+ *
+ * ICMPv6 messages.
+ * Message layout: SEQUENCE:
+ *
+ * type                     - ndn_data_unit_int8_s,
+ * code                     - ndn_data_unit_int8_s,
+ * checksum                 - ndn_data_unit_int16_s,
+ * body                     - CHOICE, see below,
+ * options                  - SEQUENCE OF, see below
+ *
+ *
+ * Field 'body'.
+ *
+ * Layout depends on the type of ICMPv6 message.
+ *
+ * Supported variants are:
+ *
+ * 1) 'Router solicitation' message
+ */
+static asn_named_entry_t _ndn_icmp6_router_sol_ne_array [] = {
+    {"reserved",
+        &ndn_data_unit_int32_s,
+            {PRIVATE, NDN_TAG_ICMP6_ROUTER_SOL_RESERVED}},
+};
 
+asn_type ndn_icmp6_router_sol_s = {
+    "ICMPv6-Router-Solicitation-Message",
+    {PRIVATE, NDN_TAG_ICMP6_ROUTER_SOL}, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_icmp6_router_sol_ne_array),
+    {_ndn_icmp6_router_sol_ne_array}
+};
+
+const asn_type * const ndn_icmp6_router_sol = &ndn_icmp6_router_sol_s;
 
 /*
- * ICMPv6
+ * 2) 'Router advertisement' message
+ */
+static asn_named_entry_t _ndn_icmp6_router_adv_ne_array [] = {
+    {"cur-hop-limit",
+        &ndn_data_unit_int8_s,
+            {PRIVATE, NDN_TAG_ICMP6_ROUTER_ADV_CUR_HOP_LIMIT}},
+    {"flags",
+        &ndn_data_unit_int8_s,
+            {PRIVATE, NDN_TAG_ICMP6_ROUTER_ADV_FLAGS}},
+    {"lifetime",
+        &ndn_data_unit_int16_s,
+            {PRIVATE, NDN_TAG_ICMP6_ROUTER_ADV_LIFETIME} },
+    {"reachable-time",
+        &ndn_data_unit_int32_s,
+            {PRIVATE, NDN_TAG_ICMP6_ROUTER_ADV_REACHABLE_TIME} },
+    {"retrans-timer",
+        &ndn_data_unit_int32_s,
+            {PRIVATE, NDN_TAG_ICMP6_ROUTER_ADV_RETRANS_TIMER} },
+};
+
+asn_type ndn_icmp6_router_adv_s = {
+    "ICMPv6-Router-Advertisement-Message",
+    {PRIVATE, NDN_TAG_ICMP6_ROUTER_ADV}, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_icmp6_router_adv_ne_array),
+    {_ndn_icmp6_router_adv_ne_array}
+};
+
+const asn_type * const ndn_icmp6_router_adv = &ndn_icmp6_router_adv_s;
+
+/*
+ * 3) 'Neighbor solicitation' message
+ */
+static asn_named_entry_t _ndn_icmp6_neighbor_sol_ne_array [] = {
+    {"reserved",
+        &ndn_data_unit_int32_s,
+            {PRIVATE, NDN_TAG_ICMP6_NEIGHBOR_SOL_RESERVED}},
+    {"target-addr",
+        &ndn_data_unit_ip6_address_s,
+            {PRIVATE, NDN_TAG_ICMP6_NEIGHBOR_SOL_TARGET_ADDR}}
+};
+
+asn_type ndn_icmp6_neighbor_sol_s = {
+    "ICMPv6-Neighbor-Solicitation-Message",
+    {PRIVATE, NDN_TAG_ICMP6_NEIGHBOR_SOL}, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_icmp6_neighbor_sol_ne_array),
+    {_ndn_icmp6_neighbor_sol_ne_array}
+};
+
+const asn_type * const ndn_icmp6_neighbor_sol = &ndn_icmp6_neighbor_sol_s;
+
+/*
+ * 4) 'Neighbor advertisement' message
+ */
+static asn_named_entry_t _ndn_icmp6_neighbor_adv_ne_array [] = {
+    {"flags",
+        &ndn_data_unit_int32_s,
+            {PRIVATE, NDN_TAG_ICMP6_NEIGHBOR_ADV_FLAGS}},
+    {"target-addr",
+        &ndn_data_unit_ip6_address_s,
+            {PRIVATE, NDN_TAG_ICMP6_NEIGHBOR_ADV_TARGET_ADDR}}
+};
+
+asn_type ndn_icmp6_neighbor_adv_s = {
+    "ICMPv6-Neighbor-Advertisement-Message",
+    {PRIVATE, NDN_TAG_ICMP6_NEIGHBOR_ADV}, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_icmp6_neighbor_adv_ne_array),
+    {_ndn_icmp6_neighbor_adv_ne_array}
+};
+
+const asn_type * const ndn_icmp6_neighbor_adv = &ndn_icmp6_neighbor_adv_s;
+
+/*
+ * 5) 'Echo request' and 'Echo reply' messages
+ */
+static asn_named_entry_t _ndn_icmp6_echo_ne_array [] = {
+    {"id",
+        &ndn_data_unit_int16_s,
+            {PRIVATE, NDN_TAG_ICMP6_ECHO_ID}},
+    {"seq",
+        &ndn_data_unit_int16_s,
+            {PRIVATE, NDN_TAG_ICMP6_ECHO_SEQ}},
+};
+
+asn_type ndn_icmp6_echo_s = {
+    "ICMPv6-Echo-Message",
+    {PRIVATE, NDN_TAG_ICMP6_ECHO}, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_icmp6_echo_ne_array),
+    {_ndn_icmp6_echo_ne_array}
+};
+
+const asn_type * const ndn_icmp6_echo = &ndn_icmp6_echo_s;
+
+/*
+ * 6) 'MLD query' 'MLD report' and 'MLD done' messages
+ */
+static asn_named_entry_t _ndn_icmp6_mld_ne_array[] = {
+    {"max-response-delay",
+        &ndn_data_unit_int16_s,
+            {PRIVATE, NDN_TAG_ICMP6_MLD_MAX_RESPONSE_DELAY}},
+    {"reserved",
+        &ndn_data_unit_int16_s,
+            {PRIVATE, NDN_TAG_ICMP6_MLD_RESERVED}},
+    {"group-addr",
+        &ndn_data_unit_ip6_address_s,
+            {PRIVATE, NDN_TAG_ICMP6_MLD_GROUP_ADDR}},
+};
+
+asn_type ndn_icmp6_mld_s = {
+    "ICMPv6-MLD-Message",
+    {PRIVATE, NDN_TAG_ICMP6_MLD}, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_icmp6_mld_ne_array),
+    {_ndn_icmp6_mld_ne_array}
+};
+
+const asn_type * const ndn_icmp6_mld = &ndn_icmp6_mld_s;
+
+/*
+ * Message body
+ * CHOICE: supported variants
+ */
+static asn_named_entry_t _ndn_icmp6_body_ne_array [] = {
+    {"router-sol",
+        &ndn_icmp6_router_sol_s,
+            {PRIVATE, NDN_TAG_ICMP6_ROUTER_SOL}},
+    {"router-adv",
+        &ndn_icmp6_router_adv_s,
+            {PRIVATE, NDN_TAG_ICMP6_ROUTER_ADV}},
+    {"neighbor-sol",
+        &ndn_icmp6_neighbor_sol_s,
+            {PRIVATE, NDN_TAG_ICMP6_NEIGHBOR_SOL}},
+    {"neighbor-adv",
+        &ndn_icmp6_neighbor_adv_s,
+            {PRIVATE, NDN_TAG_ICMP6_NEIGHBOR_ADV}},
+    {"echo",
+        &ndn_icmp6_echo_s,
+            {PRIVATE, NDN_TAG_ICMP6_ECHO}},
+    {"mld",
+        &ndn_icmp6_mld_s,
+            {PRIVATE, NDN_TAG_ICMP6_MLD}}
+};
+
+asn_type ndn_icmp6_body_s = {
+    "ICMPv6-Message-Body",
+    {PRIVATE, NDN_TAG_ICMP6_BODY}, CHOICE,
+    TE_ARRAY_LEN(_ndn_icmp6_body_ne_array),
+    {_ndn_icmp6_body_ne_array}
+};
+
+const asn_type * const ndn_icmp6_body = &ndn_icmp6_body_s;
+
+/*
+ * Field 'options'.
+ *
+ * List of options in ICMPv6 message.
+ *
+ * Option layout depends on the type of option.
+ *
+ * Supported variants are:
+ *
+ * 1) Option 'Prefix information'
+ */
+static asn_named_entry_t _ndn_icmp6_opt_prefix_ne_array [] = {
+    {"prefix-length",
+        &ndn_data_unit_int8_s,
+            {PRIVATE, NDN_TAG_ICMP6_OPT_PREFIX_PREFIX_LENGTH}},
+    {"flags",
+        &ndn_data_unit_int8_s,
+            {PRIVATE, NDN_TAG_ICMP6_OPT_PREFIX_FLAGS}},
+    {"valid-lifetime",
+        &ndn_data_unit_int32_s,
+            {PRIVATE, NDN_TAG_ICMP6_OPT_PREFIX_VALID_LIFETIME}},
+    {"preferred-lifetime",
+        &ndn_data_unit_int32_s,
+            {PRIVATE, NDN_TAG_ICMP6_OPT_PREFIX_PREFERRED_LIFETIME}},
+    {"prefix",
+        &ndn_data_unit_ip6_address_s,
+            {PRIVATE, NDN_TAG_ICMP6_OPT_PREFIX_PREFIX}}
+};
+
+asn_type ndn_icmp6_opt_prefix_s = {
+    "ICMPv6-Option-Prefix-Information",
+    {PRIVATE, NDN_TAG_ICMP6_OPT_PREFIX}, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_icmp6_opt_prefix_ne_array),
+    {_ndn_icmp6_opt_prefix_ne_array}
+};
+
+const asn_type * const ndn_icmp6_opt_prefix = &ndn_icmp6_opt_prefix_s;
+
+/*
+ * 2) Option 'Source link-layer address'
+ * No need to specify. Use ndn_data_unit_eth_address_s
  */
 
+/*
+ * Option body
+ * CHOICE: supported variants:
+ */
+static asn_named_entry_t _ndn_icmp6_opt_body_ne_array [] = {
+    {"ll-addr",
+        &ndn_data_unit_eth_address_s,
+            {PRIVATE, NDN_TAG_ICMP6_OPT_LL_ADDR}},
+    {"prefix",
+        &ndn_icmp6_opt_prefix_s,
+            {PRIVATE, NDN_TAG_ICMP6_OPT_PREFIX}}
+};
+
+asn_type ndn_icmp6_opt_body_s = {
+    "ICMPv6-Option-Body",
+    {PRIVATE, NDN_TAG_ICMP6_OPT_BODY}, CHOICE,
+    TE_ARRAY_LEN(_ndn_icmp6_opt_body_ne_array),
+    {_ndn_icmp6_opt_body_ne_array}
+};
+
+const asn_type * const ndn_icmp6_opt_body = &ndn_icmp6_opt_body_s;
+
+/*
+ * Option layout:
+ * type, length(in 8-byte units) and body
+ */
+static asn_named_entry_t _ndn_icmp6_opt_ne_array [] = {
+    {"type",
+        &ndn_data_unit_int8_s,
+            {PRIVATE, NDN_TAG_ICMP6_OPT_TYPE}},
+    {"length",
+        &ndn_data_unit_int8_s,
+            {PRIVATE, NDN_TAG_ICMP6_OPT_LEN}},
+    {"body",
+        &ndn_icmp6_opt_body_s,
+            {PRIVATE, NDN_TAG_ICMP6_OPT_BODY}}
+};
+
+asn_type ndn_icmp6_opt_s = {
+    "ICMPv6-Option",
+    {PRIVATE, NDN_TAG_ICMP6_OPT}, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_icmp6_opt_ne_array),
+    {_ndn_icmp6_opt_ne_array}
+};
+
+const asn_type * const ndn_icmp6_opt = &ndn_icmp6_opt_s;
+
+/*
+ * List of options in ICMPv6 message
+ */
+asn_type ndn_icmp6_opts_s = {
+    "SEQUENCE OF ICMPv6-Options",
+    {PRIVATE, NDN_TAG_ICMP6_OPTS}, SEQUENCE_OF, 0,
+    {subtype: &ndn_icmp6_opt_s}
+};
+
+const asn_type * const ndn_icmp6_opts = &ndn_icmp6_opts_s;
+
+/*
+ * ICMPv6 message fields: type, code, checksum, body
+ * and list of options
+ */
 static asn_named_entry_t _ndn_icmp6_message_ne_array [] = {
-    { "type",           &ndn_data_unit_int8_s,
-      { PRIVATE, NDN_TAG_ICMP6_TYPE } },
-    { "code",           &ndn_data_unit_int8_s,
-      { PRIVATE, NDN_TAG_ICMP6_CODE } },
-    { "checksum",       &ndn_data_unit_int16_s,
-      { PRIVATE, NDN_TAG_ICMP6_CHECKSUM } },
-
-    { "id",             &ndn_data_unit_int16_s,
-      { PRIVATE, NDN_TAG_ICMP6_ID } },
-    { "seq",            &ndn_data_unit_int16_s,
-      { PRIVATE, NDN_TAG_ICMP6_SEQ } },
-
-    { "max-response-delay", &ndn_data_unit_int16_s,
-      { PRIVATE, NDN_TAG_ICMP6_MLD_MAX_RESPONSE_DELAY } },
-    { "reserved",           &ndn_data_unit_int16_s,
-      { PRIVATE, NDN_TAG_ICMP6_MLD_RESERVED } },
-    { "group-addr",        &ndn_data_unit_ip6_address_s,
-      { PRIVATE, NDN_TAG_ICMP6_MLD_GROUP_ADDR } },
+    {"type",
+        &ndn_data_unit_int8_s,
+            {PRIVATE, NDN_TAG_ICMP6_TYPE}},
+    {"code",
+        &ndn_data_unit_int8_s,
+            {PRIVATE, NDN_TAG_ICMP6_CODE}},
+    {"checksum",
+        &ndn_data_unit_int16_s,
+            {PRIVATE, NDN_TAG_ICMP6_CHECKSUM}},
+    {"body",
+        &ndn_icmp6_body_s,
+            {PRIVATE, NDN_TAG_ICMP6_BODY}},
+    {"options",
+        &ndn_icmp6_opts_s,
+            {PRIVATE, NDN_TAG_ICMP6_OPTS}},
 };
 
 asn_type ndn_icmp6_message_s = {
@@ -451,12 +724,9 @@ const asn_type * const ndn_icmp6_message = &ndn_icmp6_message_s;
 
 const asn_type * const ndn_icmp6_csap = &asn_base_null_s;
 
-
-
 /*
  * UDP
  */
-
 static asn_named_entry_t _ndn_udp_header_ne_array [] = {
     { "src-port", &ndn_data_unit_int16_s, {PRIVATE, NDN_TAG_UDP_SRC_PORT} },
     { "dst-port", &ndn_data_unit_int16_s, {PRIVATE, NDN_TAG_UDP_DST_PORT} },
@@ -471,7 +741,6 @@ asn_type ndn_udp_header_s = {
 };
 
 const asn_type * const ndn_udp_header = &ndn_udp_header_s;
-
 
 static asn_named_entry_t _ndn_udp_csap_ne_array [] = {
     { "local-port",  &ndn_data_unit_int16_s,
@@ -488,13 +757,9 @@ asn_type ndn_udp_csap_s = {
 
 const asn_type * const ndn_udp_csap = &ndn_udp_csap_s;
 
-
-
-
 /*
  * TCP
  */
-
 /*
 TCP-Option-MSS ::= SEQUENCE {
     length      [0] DATA-UNIT{INTEGER (0..255) } OPTIONAL,
@@ -507,12 +772,12 @@ static asn_named_entry_t _ndn_tcp_opt_mss_ne_array [] = {
     { "mss", &ndn_data_unit_int16_s,
             {PRIVATE, NDN_TAG_TCP_OPT_MSS} },
 };
+
 asn_type ndn_tcp_opt_mss_s = {
     "TCP-Option-MSS", {PRIVATE, NDN_TAG_TCP_OPT_MSS}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_tcp_opt_mss_ne_array),
     {_ndn_tcp_opt_mss_ne_array}
 };
-
 
 /*
 TCP-Option-WindScale ::= SEQUENCE {
@@ -532,7 +797,6 @@ asn_type ndn_tcp_opt_win_scale_s = {
     TE_ARRAY_LEN(_ndn_tcp_opt_win_scale_ne_array),
     {_ndn_tcp_opt_win_scale_ne_array}
 };
-
 
 /*
 TCP-Option-SackPerm ::= SEQUENCE {
@@ -563,6 +827,7 @@ static asn_named_entry_t _ndn_tcp_opt_sackblock_ne_array [] = {
     { "right", &ndn_data_unit_int32_s,
             {PRIVATE, NDN_TAG_TCP_OPT_SACK_RIGHT} },
 };
+
 asn_type ndn_tcp_opt_sackblock_s = {
     "TCP-Option-SackBlock", {PRIVATE, NDN_TAG_TCP_OPT_SACK_BLOCK},
     SEQUENCE,
@@ -677,7 +942,6 @@ TCP-Header ::= SEQUENCE {
     ...
 }
 */
-
 static asn_named_entry_t _ndn_tcp_header_ne_array [] = {
     { "src-port", &ndn_data_unit_int16_s, {PRIVATE, NDN_TAG_TCP_SRC_PORT} },
     { "dst-port", &ndn_data_unit_int16_s, {PRIVATE, NDN_TAG_TCP_DST_PORT} },
@@ -701,9 +965,6 @@ asn_type ndn_tcp_header_s = {
 
 const asn_type * const ndn_tcp_header = &ndn_tcp_header_s;
 
-
-
-
 static asn_named_entry_t _ndn_tcp_data_ne_array [] = {
     { "server", &asn_base_null_s,
         {PRIVATE, NDN_TAG_TCP_DATA_SERVER} },
@@ -718,7 +979,6 @@ asn_type ndn_tcp_data_s = {
     TE_ARRAY_LEN(_ndn_tcp_data_ne_array),
     {_ndn_tcp_data_ne_array}
 };
-
 
 static asn_named_entry_t _ndn_tcp_csap_ne_array [] = {
     { "local-port", &ndn_data_unit_int16_s,

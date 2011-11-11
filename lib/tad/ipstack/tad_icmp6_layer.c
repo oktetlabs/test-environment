@@ -100,40 +100,78 @@ typedef struct tad_icmp6_proto_pdu_data {
  * Definition of Internet Control Message Protocol for Internet
  * Protocol version 6 (ICMPv6) header.
  */
-static const tad_bps_pkt_frag tad_icmp6_bps_hdr[] =
+static const tad_bps_pkt_frag tad_icmp6_bps_hdr [] =
 {
-    { "type",      8, BPS_FLD_NO_DEF(NDN_TAG_ICMP6_TYPE),
-      TAD_DU_I32, TRUE },
-    { "code",      8, BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_CODE, 0),
-      TAD_DU_I32, FALSE },
-    { "checksum", 16, BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_CHECKSUM, 0),
-      TAD_DU_I32, TRUE },
+    {
+        "type",
+        8,
+        BPS_FLD_NO_DEF(NDN_TAG_ICMP6_TYPE),
+        TAD_DU_I32,
+        TRUE
+    },
+    {
+        "code",
+        8,
+        BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_CODE, 0),
+        TAD_DU_I32,
+        FALSE
+    },
+    {
+        "checksum",
+        16,
+        BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_CHECKSUM, 0),
+        TAD_DU_I32,
+        TRUE
+    },
 };
 
 /**
  * Definition of ICMPv6 Echo or Echo Reply Message subheader.
  */
-static const tad_bps_pkt_frag tad_icmp6_echo_bps_hdr[] =
+static const tad_bps_pkt_frag tad_icmp6_echo_bps_hdr [] =
 {
-    { "id",       16, BPS_FLD_NO_DEF(NDN_TAG_ICMP6_ID),
-      TAD_DU_I32, FALSE },
-    { "seq",      16, BPS_FLD_NO_DEF(NDN_TAG_ICMP6_SEQ),
-      TAD_DU_I32, FALSE },
+    {
+        "id",
+        16,
+        BPS_FLD_NO_DEF(NDN_TAG_ICMP6_ECHO_ID),
+        TAD_DU_I32,
+        FALSE
+    },
+    {
+        "seq",
+        16,
+        BPS_FLD_NO_DEF(NDN_TAG_ICMP6_ECHO_SEQ),
+        TAD_DU_I32,
+        FALSE
+    },
 };
 
 /**
  * Definition of MLDv1 Message subheader.
  */
-static const tad_bps_pkt_frag tad_icmp6_mld_pbs_hdr[] =
+static const tad_bps_pkt_frag tad_icmp6_mld_pbs_hdr [] =
 {
-    { "max-response-delay", 16,
-      BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_MLD_MAX_RESPONSE_DELAY, 0),
-      TAD_DU_I32, FALSE },
-    { "reserved",           16,
-      BPS_FLD_CONST(0), TAD_DU_I32, FALSE },
-    { "group-addr",         128,
-      BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_MLD_GROUP_ADDR, 0),
-      TAD_DU_OCTS, FALSE },
+    {
+        "max-response-delay",
+        16,
+        BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_MLD_MAX_RESPONSE_DELAY, 0),
+        TAD_DU_I32,
+        FALSE
+    },
+    {
+        "reserved",
+        16,
+        BPS_FLD_CONST(0),
+        TAD_DU_I32,
+        FALSE
+    },
+    {
+        "group-addr",
+        128,
+        BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_MLD_GROUP_ADDR, 0),
+        TAD_DU_OCTS,
+        FALSE
+    },
 };
 
 /* See description tad_ipstack_impl.h */
