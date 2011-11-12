@@ -132,7 +132,9 @@ logic_expr_binary(logic_expr_type type, logic_expr *lhv, logic_expr *rhv)
  * @param str       A string
  * @param set       Set of string
  *
- * @return Index in the set (starting from 1) or 0.
+ * @return Index in the set (starting from 1) or value associated
+ *         with string if presented (in form "string:value") or -1
+ *         if not found.
  */
 static int
 is_str_in_set(const char *str, const tqh_strings *set)
@@ -162,7 +164,7 @@ is_str_in_set(const char *str, const tqh_strings *set)
                 return atoi(c + 1);
         }
     }
-    return 0;
+    return -1;
 }
 
 /* See the description in logic_expr.h */
@@ -187,18 +189,18 @@ logic_expr_match(const logic_expr *re, const tqh_strings *set)
             break;
         }
         case LOGIC_EXPR_NOT:
-            result = !logic_expr_match(re->u.unary, set);
+            result = -logic_expr_match(re->u.unary, set);
             VERB("%s(): ! -> %d", __FUNCTION__, result);
             break;
 
         case LOGIC_EXPR_AND:
         {
             int lhr = logic_expr_match(re->u.binary.lhv, set);
-            int rhr = (lhr == 0) ? 0 :
+            int rhr = (lhr == -1) ? -1 :
                           logic_expr_match(re->u.binary.rhv, set);
 
-            if (lhr == 0 || rhr == 0)
-                result = 0;
+            if (lhr == -1 || rhr == -1)
+                result = -1;
             else
                 result = MIN(lhr, rhr);
             VERB("%s(): && -> %d", __FUNCTION__, result);
@@ -210,9 +212,9 @@ logic_expr_match(const logic_expr *re, const tqh_strings *set)
             int lhr = logic_expr_match(re->u.binary.lhv, set);
             int rhr = logic_expr_match(re->u.binary.rhv, set);
 
-            if (lhr == 0)
+            if (lhr == -1)
                 result = rhr;
-            else if (rhr == 0)
+            else if (rhr == -1)
                 result = lhr;
             else
                 result = MIN(lhr, rhr);
@@ -228,7 +230,7 @@ logic_expr_match(const logic_expr *re, const tqh_strings *set)
             if (lhr > rhr)
                 result = 1;
             else
-                result = 0;
+                result = -1;
             VERB("%s(): %d > %d -> %d", __FUNCTION__,
                  lhr, rhr,
                  result);
@@ -240,10 +242,10 @@ logic_expr_match(const logic_expr *re, const tqh_strings *set)
             int lhr = logic_expr_match(re->u.binary.lhv, set);
             int rhr = logic_expr_match(re->u.binary.rhv, set);
 
-            if (lhr >= rhr)
+            if (lhr >= rhr && lhr != -1)
                 result = 1;
             else
-                result = 0;
+                result = -1;
             VERB("%s(): %d >= %d -> %d", __FUNCTION__,
                  lhr, rhr,
                  result);
@@ -255,10 +257,10 @@ logic_expr_match(const logic_expr *re, const tqh_strings *set)
             int lhr = logic_expr_match(re->u.binary.lhv, set);
             int rhr = logic_expr_match(re->u.binary.rhv, set);
 
-            if (lhr < rhr)
+            if (lhr < rhr && lhr != -1)
                 result = 1;
             else
-                result = 0;
+                result = -1;
             VERB("%s(): %d < %d -> %d", __FUNCTION__,
                  lhr, rhr,
                  result);
@@ -269,10 +271,10 @@ logic_expr_match(const logic_expr *re, const tqh_strings *set)
             int lhr = logic_expr_match(re->u.binary.lhv, set);
             int rhr = logic_expr_match(re->u.binary.rhv, set);
 
-            if (lhr <= rhr)
+            if (lhr <= rhr && lhr != -1)
                 result = 1;
             else
-                result = 0;
+                result = -1;
             VERB("%s(): %d > %d -> %d", __FUNCTION__,
                  lhr, rhr,
                  result);
@@ -283,10 +285,10 @@ logic_expr_match(const logic_expr *re, const tqh_strings *set)
             int lhr = logic_expr_match(re->u.binary.lhv, set);
             int rhr = logic_expr_match(re->u.binary.rhv, set);
 
-            if (lhr == rhr)
+            if (lhr == rhr && lhr != -1)
                 result = 1;
             else
-                result = 0;
+                result = -1;
             VERB("%s(): %d == %d -> %d", __FUNCTION__,
                  lhr, rhr,
                  result);
@@ -297,7 +299,7 @@ logic_expr_match(const logic_expr *re, const tqh_strings *set)
         default:
             ERROR("Invalid type of requirements expression");
             assert(FALSE);
-            result = 0;
+            result = -1;
             break;
     }
     return result;

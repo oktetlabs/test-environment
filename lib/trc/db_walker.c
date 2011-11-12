@@ -740,7 +740,7 @@ trc_db_walker_get_exp_result(const te_trc_db_walker *walker,
     {
         VERB("%s: matching start", __FUNCTION__);
         res = logic_expr_match(p->tags_expr, tags);
-        if (res != 0)
+        if (res != -1)
         {
             INFO("Matching tag found");
             TAILQ_FOREACH(q, &p->results, links)

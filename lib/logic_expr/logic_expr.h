@@ -107,7 +107,8 @@ extern void logic_expr_free(logic_expr *expr);
  * @param re        Logical expression
  * @param set       Set of strings
  *
- * @return Index in the set (starting from 1) or 0.
+ * @return Value characterizing degree of matching or -1 if
+ *         there is no matching
  */
 extern int logic_expr_match(const logic_expr *re, const tqh_strings *set);
 
