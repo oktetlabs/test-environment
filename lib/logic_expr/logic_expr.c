@@ -189,7 +189,7 @@ logic_expr_match(const logic_expr *re, const tqh_strings *set)
             break;
         }
         case LOGIC_EXPR_NOT:
-            result = -logic_expr_match(re->u.unary, set);
+            result = -logic_expr_match(re->u.unary, set) < 0 ? -1 : 1;
             VERB("%s(): ! -> %d", __FUNCTION__, result);
             break;
 
