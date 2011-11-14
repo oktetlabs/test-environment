@@ -72,6 +72,8 @@ conn_req_before_poll(void *data, struct pollfd *pfd,
 {
     conn_req_t *conn_req = data;
 
+    UNUSED(deadline);
+
     pfd->fd = conn_req->m_soap.socket;
     pfd->events = POLLIN;
     pfd->revents = 0;

@@ -593,7 +593,7 @@ acs_enabled(acs_t *acs, acse_epc_config_data_t *params)
     if (prev_value != 0 && new_value == 0)
         return acse_disable_acs(acs);
 
-    /* Here new and previous values are the same:) */
+    /* Here new and previous values are the same */
 
     return 0;
 }
@@ -1305,6 +1305,7 @@ epc_cwmp_after_poll(void *data, struct pollfd *pfd)
         WARN("%s(): pfd is NULL, timeout should not occure!", __FUNCTION__);
         return 0;
     }
+
     if (!(pfd->revents & POLLIN))
         return 0;
 

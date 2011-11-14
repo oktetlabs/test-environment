@@ -275,7 +275,7 @@ cwmp_acse_start(tarpc_cwmp_acse_start_in *in,
         out->status = start_acse(buf);
         out->pipe_name = strdup(buf);
         RING("%s(): status %r, pipe name '%s'",
-            __FUNCTION__, out->status, buf);
+             __FUNCTION__, out->status, buf);
     }
     else 
     {

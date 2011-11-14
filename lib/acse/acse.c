@@ -200,7 +200,6 @@ acse_loop(void)
 
 
         r_poll = poll(pfd, channel_number, timeout);
-
         if (r_poll < 0)
         {
             perror("ACSE loop: poll failed");

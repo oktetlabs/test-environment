@@ -36,7 +36,6 @@
 #include "tapi_cfg_base.h"
 
 #include "rcf_rpc.h"
-// #include "tapi_rpc_tr069.h"
 
 #include "acse_epc.h"
 #include "cwmp_data.h"
@@ -100,20 +99,21 @@ tapi_acse_get_rpcs(const char *ta)
 te_errno
 tapi_acse_start(const char *ta)
 {
-    te_errno rc = 0;
+    te_errno        rc = 0;
     rcf_rpc_server *rpcs = tapi_acse_get_rpcs(ta);
-    static char pipe_name[128];
-    char     buf[256];
+    static char     pipe_name[128];
+    char            buf[256];
 
     TE_SPRINTF(buf, "/agent:%s/acse:", ta);
-
 
     if ((rc = rpc_cwmp_acse_start(rpcs, pipe_name, TRUE))!= 0)
         return rc;
 
-    if ((rc = cfg_set_instance_fmt(CFG_VAL(STRING, pipe_name), "%s", buf))
-        == 0)
-        return cfg_synchronize(buf, TRUE);
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(STRING,
+                                   pipe_name), "%s", buf)) == 0)
+    {
+        rc = cfg_synchronize(buf, TRUE);
+    }
 
     return rc;
 }
@@ -256,29 +256,24 @@ tapi_acse_ta_cs_init(tapi_acse_context_t *ctx)
 tapi_acse_context_t *
 tapi_acse_ctx_init(const char *ta)
 {
-    const char  *box_name = getenv("CPE_NAME");
+    const char          *box_name = getenv("CPE_NAME");
     tapi_acse_context_t *ctx = calloc(1, sizeof(*ctx));
-    te_errno rc = 0;
+    te_errno             rc;
 
     if (NULL == box_name)
     {
-#if 0
-        WARN("init TAPI ACSE context, no CPE_NAME, find first CPE");
-#else
-        ERROR("no CPE_NAME specified.");
+        ERROR("No CPE_NAME specified");
         return NULL;
-#endif
     }
-    else
-        RING("init ACSE context, CPE_NAME='%s', let's find this CPE...", 
-             box_name);
+
+    RING("%s: CPE_NAME='%s'", __FUNCTION__, box_name);
 
     ctx->ta = strdup(ta);
 
     do {
-        unsigned num = 0;
+        unsigned    num = 0;
         cfg_handle *handles = NULL;
-        char *name;
+        char       *name;
 
         ctx->rpc_srv = tapi_acse_get_rpcs(ta);
 
@@ -324,7 +319,7 @@ tapi_acse_ctx_init(const char *ta)
     } while (0);
     free(ctx);
 
-    WARN("%s(): end of func, failed :( status %r", __FUNCTION__, rc);
+    WARN("%s(): end of func, failed: %r", __FUNCTION__, rc);
     return NULL;
 }
 
@@ -517,7 +512,7 @@ tapi_acse_clear_cpe(tapi_acse_context_t *ctx)
 /**
  * Internal wrapper for waiting perfect state.
  */
-te_errno
+static te_errno
 tapi_acse_wait_acse_state(tapi_acse_context_t *ctx,
                           const char *state_var,
                           int want_state, int *res_state)
@@ -615,15 +610,15 @@ rpc_cwmp_acse_start(rcf_rpc_server *rpcs,
     rcf_rpc_call(rpcs, "cwmp_acse_start", &in, &out);
 
     RING("TE RPC(%s,%s): cwmp_acse_start(%d) -> %r, '%s'",
-                 rpcs->ta, rpcs->name, (int)oper,
-                 (te_errno)out.status, out.pipe_name);
+         rpcs->ta, rpcs->name, (int)oper,
+         (te_errno)out.status, out.pipe_name);
 
     if (oper && out.status == 0 && out.pipe_name == NULL)
     {
         ERROR("NULL pipe_name got!");
         return TE_EFAIL;
     }
-    
+
     if (out.status == 0 && pipe_name != NULL)
         strcpy(pipe_name, out.pipe_name);
 
@@ -948,8 +943,7 @@ te_errno
 tapi_acse_download(tapi_acse_context_t *ctx,
                    cwmp_download_t *req)
 {
-    cwmp_data_to_cpe_t to_cpe_loc;
-    to_cpe_loc.download = req;
+    cwmp_data_to_cpe_t to_cpe_loc = { .download = req };
 
     return tapi_acse_cpe_rpc_call(ctx, CWMP_RPC_download, to_cpe_loc);
 }
@@ -959,14 +953,14 @@ te_errno
 tapi_acse_download_resp(tapi_acse_context_t *ctx,
                         cwmp_download_response_t **resp)
 {
-    cwmp_data_from_cpe_t from_cpe_loc = {.p = NULL};
-    te_errno rc = tapi_acse_cpe_rpc_response(ctx, NULL, &from_cpe_loc);
+    cwmp_data_from_cpe_t from_cpe_loc = { .p = NULL };
+    te_errno             rc;
+
+    rc = tapi_acse_cpe_rpc_response(ctx, NULL, &from_cpe_loc);
     if (NULL != resp && NULL != from_cpe_loc.p)
         *resp = from_cpe_loc.download_r;
     return rc;
 }
-
-
 
 /* see description in tapi_acse.h */
 te_errno

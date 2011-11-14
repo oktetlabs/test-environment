@@ -61,11 +61,7 @@
 #include "logger_api.h"
 
 #include "acse_soapH.h"
-
 #include "acse_mem.h"
-
-/* local buffer for I/O XML logging, seems enough, increase if need */
-#define LOG_XML_BUF 0x4000
 
 #define SEND_FILE_BUF 0x4000
 
@@ -87,9 +83,6 @@ SOAP_NMAC struct Namespace namespaces[] =
 
 /** Single REALM for Basic/Digest Auth. which we support. */
 const char *authrealm = "tr-069";
-
-static char send_log_buf[LOG_XML_BUF];
-static char recv_log_buf[LOG_XML_BUF];
 
 static int susp_dummy_pipe[2] = {-1, -1};
 
