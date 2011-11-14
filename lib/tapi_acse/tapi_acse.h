@@ -331,7 +331,7 @@ extern te_errno tapi_acse_cpe_conn_request(tapi_acse_context_t *ctx);
 /**
  * Finish CWMP session with particular CPE.
  * Really this util just initiates send of empty HTTP response
- * and turn off sync mode on the CPE, since thisis designed as
+ * and turn off sync mode on the CPE, since this is designed as
  * dual for tapi_acse_cpe_connect().
  *
  * @param ctx           ACSE TAPI context.

@@ -1228,10 +1228,10 @@ tapi_acse_cpe_connect(tapi_acse_context_t *ctx)
 {
     te_errno rc;
 
-    do
-    {
-        int sync_mode;
+    do {
+        int                 sync_mode;
         cwmp_sess_state_t   cur_sess_state = 0;
+
         T_CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_OBTAIN,
                               "sync_mode", &sync_mode,
                               "cwmp_state", &cur_sess_state,
@@ -1242,6 +1242,7 @@ tapi_acse_cpe_connect(tapi_acse_context_t *ctx)
                   (int)cur_sess_state);
             return TE_RC(TE_TAPI, TE_EFAIL);
         }
+
         if (!sync_mode)
         {
             T_CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_MODIFY,
@@ -1249,7 +1250,9 @@ tapi_acse_cpe_connect(tapi_acse_context_t *ctx)
             ctx->change_sync = TRUE;
         }
         else
+        {
             ctx->change_sync = FALSE;
+        }
     } while (0);
 
     T_CHECK_RC(tapi_acse_cpe_conn_request(ctx));
@@ -1261,7 +1264,9 @@ tapi_acse_cpe_connect(tapi_acse_context_t *ctx)
     {
         cwmp_sess_state_t   cur_sess_state = 0;
         acse_cr_state_t     cur_cr_state = 0;
+
         sleep(3);
+
         T_CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_OBTAIN,
                   "cwmp_state", &cur_sess_state,
                   "cr_state", &cur_cr_state, VA_END_LIST));
@@ -1271,8 +1276,10 @@ tapi_acse_cpe_connect(tapi_acse_context_t *ctx)
             T_CHECK_RC(tapi_acse_wait_cr_state(ctx, CR_DONE));
         }
     }
+
     ctx->timeout = 120;
     T_CHECK_RC(tapi_acse_wait_cwmp_state(ctx, CWMP_PENDING));
+
     return 0;
 }
 
