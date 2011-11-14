@@ -26,7 +26,6 @@
  *
  * $Id$
  */
-
 #define TE_LGR_USER     "TAD BPS"
 
 #include "te_config.h"
@@ -54,7 +53,6 @@
 #include "logger_ta_fast.h"
 
 #include "tad_bps.h"
-
 
 /* See description in tad_bps.h */
 te_errno
@@ -95,7 +93,7 @@ tad_bps_pkt_frag_init(const tad_bps_pkt_frag *descr,
         {
             if (bps->descr[i].plain_du == TAD_DU_I32)
             {
-                bps->tx_def[i].du_type = TAD_DU_I32; 
+                bps->tx_def[i].du_type = TAD_DU_I32;
                 bps->tx_def[i].val_i32 = bps->descr[i].value;
             }
             else if (bps->descr[i].plain_du == TAD_DU_OCTS)
@@ -140,7 +138,7 @@ tad_bps_pkt_frag_init(const tad_bps_pkt_frag *descr,
         /* FIXME: Is it necessary to check it */
         if (bps->descr[i].tag_rx_def == ASN_TAG_CONST)
         {
-            bps->rx_def[i].du_type = TAD_DU_I32; 
+            bps->rx_def[i].du_type = TAD_DU_I32;
             bps->rx_def[i].val_i32 = bps->descr[i].value;
         }
         else if (bps->descr[i].tag_rx_def != ASN_TAG_INVALID &&
@@ -179,7 +177,6 @@ tad_bps_pkt_frag_free(tad_bps_pkt_frag_def *bps)
     free(bps->tx_def);
     free(bps->rx_def);
 }
-
 
 /* See description in tad_bps.h */
 te_errno
@@ -272,7 +269,6 @@ tad_bps_confirm_send(const tad_bps_pkt_frag_def  *def,
     return 0;
 }
 
-
 /* See description in tad_bps.h */
 size_t
 tad_bps_pkt_frag_bitlen(const tad_bps_pkt_frag *descr, unsigned int fields)
@@ -295,11 +291,11 @@ tad_bps_pkt_frag_data_bitlen(const tad_bps_pkt_frag_def *def,
     size_t  len;
 
     assert(def != NULL);
-    
+
     len = tad_bps_pkt_frag_bitlen(def->descr, def->fields);
     if (len == 0 && pkt != NULL)
     {
-        /* 
+        /*
          * Length of the fragment is not fixed. It is assumed that it
          * must consist of set of character or octet strings.
          */
@@ -321,7 +317,7 @@ tad_bps_pkt_frag_data_bitlen(const tad_bps_pkt_frag_def *def,
                 }
                 else
                 {
-                    /* 
+                    /*
                      * We don't know the length for the rest types of
                      * data units.
                      */
@@ -339,7 +335,6 @@ tad_bps_pkt_frag_data_bitlen(const tad_bps_pkt_frag_def *def,
     }
     return len;
 }
-
 
 typedef uint32_t myint_t;
 
@@ -444,12 +439,12 @@ tad_bps_pkt_frag_gen_bin(const tad_bps_pkt_frag_def *def,
             write_bits(bin, *bitoff, du->val_i32, len);
         }
         else if (du->du_type == TAD_DU_EXPR)
-        {               
+        {
             int64_t iterated;
 
             rc = tad_int_expr_calculate(du->val_int_expr, args, arg_num,
                                         &iterated);
-            if (rc != 0)                                    
+            if (rc != 0)
             {
                 ERROR("%s(): int expr calc error %x", __FUNCTION__, rc);
                 return TE_RC(TE_TAD_BPS, rc);
@@ -468,8 +463,6 @@ tad_bps_pkt_frag_gen_bin(const tad_bps_pkt_frag_def *def,
     }
     return 0;
 }
-
-
 
 /* See description in tad_bps.h */
 te_errno

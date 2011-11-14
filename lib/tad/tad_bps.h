@@ -27,7 +27,6 @@
  *
  * $Id$
  */
-
 #ifndef __TE_TAD_BPS_H__
 #define __TE_TAD_BPS_H__
 
@@ -36,15 +35,19 @@
 #include "tad_types.h"
 #include "tad_utils.h"
 
-
 #define ASN_TAG_INVALID     ((asn_tag_value)-1)
+
 #define ASN_TAG_USER        ((asn_tag_value)-2)
+
 #define ASN_TAG_CONST       ((asn_tag_value)-3)
 
 #define BPS_FLD_SIMPLE(_x)  _x, _x, _x, 0
+
 #define BPS_FLD_NO_DEF(_x)  _x, ASN_TAG_INVALID, ASN_TAG_INVALID, 0
+
 #define BPS_FLD_CONST(_val) ASN_TAG_INVALID, ASN_TAG_CONST, \
                             ASN_TAG_CONST, (_val)
+
 #define BPS_FLD_CONST_DEF(_tag, _val) \
     (_tag), ASN_TAG_CONST, ASN_TAG_INVALID, (_val)
 
@@ -62,7 +65,7 @@ typedef struct tad_bps_pkt_frag {
                                      parameters default for receiving */
     uint32_t        value;      /**< Constant value */
     tad_du_type_t   plain_du;   /**< Type of plain data unit */
-    te_bool         force_read; /**< Force to read from binary packet 
+    te_bool         force_read; /**< Force to read from binary packet
                                      in any case */
 } tad_bps_pkt_frag;
 
@@ -72,12 +75,11 @@ typedef struct tad_bps_pkt_frag {
 typedef struct tad_bps_pkt_frag_def {
     unsigned int            fields; /**< Number of fields */
     const tad_bps_pkt_frag *descr;  /**< Array of fields */
-    
+
     tad_data_unit_t        *tx_def; /**< Array of TAD data units for
                                          fragment fields Tx defaults */
     tad_data_unit_t        *rx_def; /**< Array of TAD data units for
                                          fragment fields Rx defaults */
-                                         
 } tad_bps_pkt_frag_def;
 
 /**
@@ -87,7 +89,6 @@ typedef struct tad_bps_pkt_frag_data {
     tad_data_unit_t    *dus;    /**< Array of TAD data units for
                                      fragment fields */
 } tad_bps_pkt_frag_data;
-
 
 /**
  * Initialize TAD binary PDU support for the binary PDU type.
@@ -99,7 +100,7 @@ typedef struct tad_bps_pkt_frag_data {
  * @param descr         Binary PDU description
  * @param fields        Number of fields in description
  * @param layer_spec    NDS with default values
- * @param bsp           BPS internal data to be initialized
+ * @param bps           BPS internal data to be initialized
  *
  * @return Status code.
  */
@@ -111,7 +112,7 @@ extern te_errno tad_bps_pkt_frag_init(const tad_bps_pkt_frag *descr,
 /**
  * Free resources allocated by tad_bps_pkt_frag_init().
  *
- * @param bsp           BPS internal data to be freed
+ * @param bps           BPS internal data to be freed
  */
 extern void tad_bps_pkt_frag_free(tad_bps_pkt_frag_def *bps);
 
@@ -131,7 +132,6 @@ extern te_errno tad_bps_nds_to_data_units(
  */
 extern void tad_bps_free_pkt_frag_data(const tad_bps_pkt_frag_def *def,
                                        tad_bps_pkt_frag_data      *data);
-
 
 /**
  * Confirm that template plus defaults are enough to generate binary
