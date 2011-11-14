@@ -57,27 +57,27 @@ static te_errno print_cwmp_response(te_errno status,
                                     acse_epc_cwmp_data_t *cwmp_resp);
 
 enum cli_codes {
-    CMD_PARAM = 0x1000, 
-    CMD_RPC, 
-    CMD_CR, 
-    CMD_ENV, 
-    CMD_HTTP, 
+    CMD_PARAM = 0x1000,
+    CMD_RPC,
+    CMD_CR,
+    CMD_ENV,
+    CMD_HTTP,
 
-    PARAM_OBTAIN = 0x1010, 
-    PARAM_MODIFY, 
-    PARAM_LIST, 
-    PARAM_ADD, 
-    PARAM_DEL, 
+    PARAM_OBTAIN = 0x1010,
+    PARAM_MODIFY,
+    PARAM_LIST,
+    PARAM_ADD,
+    PARAM_DEL,
 
-    RPC_SEND = 0x1020, 
-    RPC_CHECK, 
+    RPC_SEND = 0x1020,
+    RPC_CHECK,
 
-    CR_SEND = 0x1030, 
-    CR_CHECK, 
+    CR_SEND = 0x1030,
+    CR_CHECK,
 
-    ENV_ACS = 0x1040, 
-    ENV_CPE, 
-    ENV_TIMEOUT, 
+    ENV_ACS = 0x1040,
+    ENV_CPE,
+    ENV_TIMEOUT,
 };
 
 
@@ -107,10 +107,10 @@ param_cmd_access(int argc, const int *arg_tags,
     strncpy(cfg_data->acs, acs_def_name, sizeof(cfg_data->acs));
     if (EPC_CFG_ACS == arg_tags[1])
         cfg_data->cpe[0] = '\0';
-    else 
+    else
         strncpy(cfg_data->cpe, cpe_def_name, sizeof(cfg_data->cpe));
 
-    
+
     ofs = cli_token_copy(rest_line, cfg_data->oid);
     if (0 == ofs)
     {
@@ -162,7 +162,7 @@ param_cmd_wait(int argc, const int *arg_tags,
         return CLI_E_MISS_TAGS;
 
     printf("%s(): rest_line <%s>\n", __FUNCTION__, rest_line);
-    
+
     ofs = cli_token_copy(rest_line, var_name);
     if (0 == ofs)
         PARSE_ERROR(" <parameter_name> <expected_value>");
@@ -181,7 +181,7 @@ param_cmd_wait(int argc, const int *arg_tags,
         strncpy(cfg_data->acs, acs_def_name, sizeof(cfg_data->acs));
         if (EPC_CFG_ACS == arg_tags[1])
             cfg_data->cpe[0] = '\0';
-        else 
+        else
             strncpy(cfg_data->cpe, cpe_def_name, sizeof(cfg_data->cpe));
 
         strcpy(cfg_data->oid, var_name);
@@ -210,7 +210,7 @@ param_cmd_wait(int argc, const int *arg_tags,
 static int
 param_cmd_list(int argc, const int *arg_tags,
                const char *rest_line, char *err_buf)
-{ 
+{
     UNUSED(argc);
     UNUSED(arg_tags);
     UNUSED(rest_line);
@@ -249,7 +249,7 @@ parse_string_array(const char *line)
 }
 
 /**
- * Parse 
+ * Parse
  */
 static ParameterNames *
 parse_cwmp_ParameterNames(const char *line)
@@ -285,18 +285,18 @@ parse_cwmp_rpc_args(acse_epc_cwmp_data_t *cwmp_data,
         case CWMP_RPC_NONE:
             cwmp_data->to_cpe.p = NULL;
             break;
-        case CWMP_RPC_set_parameter_values: 
+        case CWMP_RPC_set_parameter_values:
         {
             static cwmp_set_parameter_values_t req;
             static ParameterValueList pv_list;
-            size_t tok_len; 
+            size_t tok_len;
             char val_buf[200];
             char type_buf[20];
             int type;
 
             cwmp_values_array_t *val_arr;
 
-            req.ParameterList = &pv_list; 
+            req.ParameterList = &pv_list;
             val_arr = cwmp_val_array_alloc(NULL, NULL);
             /* TODO: good parse here with error check */
 
@@ -327,19 +327,19 @@ parse_cwmp_rpc_args(acse_epc_cwmp_data_t *cwmp_data,
             cwmp_data->to_cpe.set_parameter_values = &req;
         }
         break;
-        case CWMP_RPC_get_parameter_values: 
+        case CWMP_RPC_get_parameter_values:
         {
             static _cwmp__GetParameterValues  req;
 
             strcpy(err_buf, "(<param_name> )+");
 
-            req.ParameterNames_ = parse_cwmp_ParameterNames(line); 
+            req.ParameterNames_ = parse_cwmp_ParameterNames(line);
             if (0 == req.ParameterNames_->__size)
                 return TE_EFAIL;
             cwmp_data->to_cpe.get_parameter_values = &req;
         }
         break;
-        case CWMP_RPC_get_parameter_names: 
+        case CWMP_RPC_get_parameter_names:
         {
             static char name[256];
             static char *name_ptr = name;
@@ -360,24 +360,24 @@ parse_cwmp_rpc_args(acse_epc_cwmp_data_t *cwmp_data,
             if (0 == ofs) return TE_EFAIL;
         }
         break;
-        case CWMP_RPC_get_parameter_attributes: 
+        case CWMP_RPC_get_parameter_attributes:
         {
             static _cwmp__GetParameterAttributes  req;
 
             strcpy(err_buf, "(<param_name> )+");
 
-            req.ParameterNames_ = parse_cwmp_ParameterNames(line); 
+            req.ParameterNames_ = parse_cwmp_ParameterNames(line);
             if (0 == req.ParameterNames_->__size)
                 return TE_EFAIL;
             cwmp_data->to_cpe.get_parameter_attributes = &req;
         }
         break;
-        case CWMP_RPC_set_parameter_attributes: 
+        case CWMP_RPC_set_parameter_attributes:
         {
             static char name[256];
             static char buf[256];
             string_array_t *ac_list = NULL;
-            int notif = -1; 
+            int notif = -1;
             size_t ofs = 0;
 
             /* Parse only one parameter */
@@ -405,7 +405,7 @@ parse_cwmp_rpc_args(acse_epc_cwmp_data_t *cwmp_data,
                         cwmp_set_attrs_alloc(name, notif, ac_list);
         }
         break;
-        case CWMP_RPC_download: 
+        case CWMP_RPC_download:
         {
             cwmp_download_t *download;
             static char num[256];
@@ -428,13 +428,13 @@ parse_cwmp_rpc_args(acse_epc_cwmp_data_t *cwmp_data,
             if (ofs > 0)
                 flen = atoi(len);
 
-            download = cwmp_download_alloc("Test From ACSE_CLI", 
+            download = cwmp_download_alloc("Test From ACSE_CLI",
                                            atoi(num), flen, url);
 
             cwmp_data->to_cpe.download = download;
         }
         break;
-        case CWMP_RPC_add_object: 
+        case CWMP_RPC_add_object:
         {
             static char add_name[256];
             static char *add_name_ptr = add_name;
@@ -445,13 +445,13 @@ parse_cwmp_rpc_args(acse_epc_cwmp_data_t *cwmp_data,
 
             strcpy(err_buf, "<parentname>");
 
-            req.ObjectName = add_name; 
-            req.ParameterKey = "ACSE CLI"; 
+            req.ObjectName = add_name;
+            req.ParameterKey = "ACSE CLI";
             ofs = cli_token_copy(line, add_name);
             if (0 == ofs) return TE_EFAIL;
         }
         break;
-        case CWMP_RPC_delete_object: 
+        case CWMP_RPC_delete_object:
         {
             static char del_name[256];
             static char *del_name_ptr = del_name;
@@ -462,14 +462,14 @@ parse_cwmp_rpc_args(acse_epc_cwmp_data_t *cwmp_data,
 
             strcpy(err_buf, "<instancename>");
 
-            req.ObjectName = del_name; 
-            req.ParameterKey = "ACSE CLI"; 
+            req.ObjectName = del_name;
+            req.ParameterKey = "ACSE CLI";
             ofs = cli_token_copy(line, del_name);
             if (0 == ofs) return TE_EFAIL;
         }
         break;
         default:
-            printf("parse input, RPC %s is not supported yet :(\n", 
+            printf("parse input, RPC %s is not supported yet :(\n",
                 cwmp_rpc_cpe_string(cwmp_data->rpc_cpe));
     }
     return 0;
@@ -495,7 +495,7 @@ rpc_send(int argc, const int *arg_tags,
         return CLI_E_EXEC;
     }
 
-    cwmp_data->rpc_cpe = arg_tags[2]; 
+    cwmp_data->rpc_cpe = arg_tags[2];
 
     rc = parse_cwmp_rpc_args(cwmp_data, rest_line, err_buf);
     if (rc != 0)
@@ -513,7 +513,7 @@ rpc_send(int argc, const int *arg_tags,
         return CLI_E_EXEC;
     }
     else
-    { 
+    {
         printf("status%s, request_id %d\n",
                te_rc_err2str(status), cwmp_data->request_id);
         request_id = cwmp_data->request_id;
@@ -543,7 +543,7 @@ rpc_check(int argc, const int *arg_tags,
         cwmp_data->request_id = atoi(rest_line);
     else if (rest_line[0] == 0)
         cwmp_data->request_id = request_id;
-    else 
+    else
         PARSE_ERROR("[<request_id>]");
 
 
@@ -581,7 +581,7 @@ rpc_wait(int argc, const int *arg_tags,
         exp_request_id = atoi(rest_line);
     else if (rest_line[0] == 0)
         exp_request_id = request_id;
-    else 
+    else
         PARSE_ERROR("[<request_id>]");
 
     do {
@@ -740,7 +740,7 @@ static cli_cmd_descr_t cmd_rpc_cpe_kinds[] = {
     {"fin",          CWMP_RPC_NONE, "HTTP 204, finish CWMP session",
                                 NULL, NULL},
     {"get_rpc_m",    CWMP_RPC_get_rpc_methods, "GetRPCMethods", NULL, NULL},
-    {"get_par_vals", CWMP_RPC_get_parameter_values, 
+    {"get_par_vals", CWMP_RPC_get_parameter_values,
                     "GetParameterValues", NULL, NULL},
     {"set_par_vals", CWMP_RPC_set_parameter_values,
                     "SetParameterValues", NULL, NULL},
@@ -796,7 +796,7 @@ print_rpc_response(acse_epc_cwmp_data_t *cwmp_resp)
     int i;
     switch (cwmp_resp->rpc_cpe)
     {
-    case CWMP_RPC_get_rpc_methods: 
+    case CWMP_RPC_get_rpc_methods:
     {
         MethodList *mlist;
         if ((mlist = cwmp_resp->from_cpe.get_rpc_methods_r->MethodList_)
@@ -809,11 +809,11 @@ print_rpc_response(acse_epc_cwmp_data_t *cwmp_resp)
         }
     }
         break;
-    case CWMP_RPC_set_parameter_values: 
-        printf("Set status: %d\n", 
+    case CWMP_RPC_set_parameter_values:
+        printf("Set status: %d\n",
                cwmp_resp->from_cpe.set_parameter_values_r->Status);
         break;
-    case CWMP_RPC_get_parameter_values: 
+    case CWMP_RPC_get_parameter_values:
     {
         char buf[300];
         ParameterValueList *pv_list =
@@ -827,7 +827,7 @@ print_rpc_response(acse_epc_cwmp_data_t *cwmp_resp)
         }
     }
     break;
-    case CWMP_RPC_get_parameter_names: 
+    case CWMP_RPC_get_parameter_names:
     {
         struct cwmp__ParameterInfoStruct *item;
         ParameterInfoList *pi_list =
@@ -840,13 +840,13 @@ print_rpc_response(acse_epc_cwmp_data_t *cwmp_resp)
         }
     }
     break;
-    case CWMP_RPC_set_parameter_attributes: 
+    case CWMP_RPC_set_parameter_attributes:
         /* empty response, do nothing */
         break;
-    case CWMP_RPC_get_parameter_attributes: 
+    case CWMP_RPC_get_parameter_attributes:
     {
         struct cwmp__ParameterAttributeStruct *pa_item;
-        ParameterAttributeList *pa_list = 
+        ParameterAttributeList *pa_list =
             cwmp_resp->from_cpe.get_parameter_attributes_r->ParameterList;
 
         for (i = 0; i < pa_list->__size; i++)
@@ -854,7 +854,7 @@ print_rpc_response(acse_epc_cwmp_data_t *cwmp_resp)
             pa_item = pa_list->__ptrParameterAttributeStruct[i];
             printf(" Attrubutes of %s: \n\tNotification %d\n\tAccessList ",
                     pa_item->Name, (int)pa_item->Notification);
-            if (NULL != pa_item->AccessList_ && 
+            if (NULL != pa_item->AccessList_ &&
                 0    != pa_item->AccessList_->__size)
             {
                 int j;
@@ -868,29 +868,29 @@ print_rpc_response(acse_epc_cwmp_data_t *cwmp_resp)
 
     }
     break;
-    case CWMP_RPC_download: 
-        printf("Download status: %d\n", 
+    case CWMP_RPC_download:
+        printf("Download status: %d\n",
                cwmp_resp->from_cpe.download_r->Status);
     break;
-    case CWMP_RPC_add_object: 
-        printf("Add status: %d, instance %d\n", 
+    case CWMP_RPC_add_object:
+        printf("Add status: %d, instance %d\n",
                cwmp_resp->from_cpe.add_object_r->Status,
                cwmp_resp->from_cpe.add_object_r->InstanceNumber);
     break;
 
-    case CWMP_RPC_delete_object: 
-        printf("Delete status: %d\n", 
+    case CWMP_RPC_delete_object:
+        printf("Delete status: %d\n",
                cwmp_resp->from_cpe.delete_object_r->Status);
     case CWMP_RPC_NONE:
-    case CWMP_RPC_reboot: 
-    case CWMP_RPC_upload: 
-    case CWMP_RPC_factory_reset: 
-    case CWMP_RPC_get_queued_transfers: 
-    case CWMP_RPC_get_all_queued_transfers: 
-    case CWMP_RPC_schedule_inform: 
-    case CWMP_RPC_set_vouchers: 
-    case CWMP_RPC_get_options: 
-    case CWMP_RPC_FAULT: 
+    case CWMP_RPC_reboot:
+    case CWMP_RPC_upload:
+    case CWMP_RPC_factory_reset:
+    case CWMP_RPC_get_queued_transfers:
+    case CWMP_RPC_get_all_queued_transfers:
+    case CWMP_RPC_schedule_inform:
+    case CWMP_RPC_set_vouchers:
+    case CWMP_RPC_get_options:
+    case CWMP_RPC_FAULT:
         printf("TODO... \n");
         break;
     }
@@ -962,12 +962,12 @@ print_cwmp_response(te_errno status, acse_epc_cwmp_data_t *cwmp_resp)
 
 static te_errno
 print_config_response(te_errno status, acse_epc_config_data_t *cfg_resp)
-{ 
+{
 
     if (status != 0)
         printf("ERROR in response: %s\n",
             te_rc_err2str(status));
-    else 
+    else
         printf("Result: %s\n", cfg_resp->value);
     return 0;
 }
@@ -988,13 +988,13 @@ int   acse_fork = 0;
 char *cli_logfile = NULL;
 char *acse_logfile = NULL;
 
-struct poptOption acse_cli_opts[] = 
+struct poptOption acse_cli_opts[] =
 {
     {"epc-socket", 'e', POPT_ARG_STRING, &epc_sock_name, 0,
             "filename for EPC socket", "EPC socket"},
     {"fork",       'f', POPT_ARG_NONE,   &acse_fork, 0,
             "whether to fork", "flag to fork"},
-    {"script",     's', POPT_ARG_STRING, &script_name, 0, 
+    {"script",     's', POPT_ARG_STRING, &script_name, 0,
             "filename with list of commands to perform before operation",
             "script"},
 #ifndef CLI_SINGLE
@@ -1011,7 +1011,7 @@ dummy_init()
 {
     acs_t *acs;
     cpe_t *cpe;
-    
+
     db_add_acs(acs_def_name);
     db_add_cpe(acs_def_name, cpe_def_name);
 
@@ -1033,12 +1033,12 @@ dummy_init()
 #endif
     cpe->cr_auth.login  = strdup(cpe->acs_auth.login);
     cpe->cr_auth.passwd = strdup(cpe->acs_auth.passwd);
-            
+
     /* acse_enable_acs(acs); */
     return 0;
 }
 
-int 
+int
 main(int argc, const char **argv)
 {
     te_errno rc;
@@ -1052,7 +1052,7 @@ main(int argc, const char **argv)
     strcpy(cpe_def_name, "box");
 
     cont = poptGetContext(NULL, argc, argv, acse_cli_opts, 0);
-    
+
     rpopt = poptGetNextOpt(cont); /* this really parse all command line */
 
 #ifndef CLI_SINGLE
@@ -1172,9 +1172,9 @@ main(int argc, const char **argv)
             cli_perform_cmd(acse_cmd_list, buf);
             printf("> "); fflush(stdout);
         }
-        /* Really, this should not happen, EPC messages are received and 
+        /* Really, this should not happen, EPC messages are received and
            processed while perform command above. */
-        if (pfd[1].revents) 
+        if (pfd[1].revents)
         {
             acse_epc_msg_t msg_resp;
             rc = acse_epc_recv(&msg_resp);

@@ -323,10 +323,10 @@ struct cwmp__FaultStruct
 /// union of values from "xs:unsignedInt"
 /// union of values from "xs:unsignedInt"
 /// union of values from "xs:unsignedInt"
-    char*                                                              
+    char*
                                          FaultCode                      1;	///< Required element.
 /// Length of this string is within 0..256 characters
-    char*                                                              
+    char*
                                          FaultString                    1;	///< Required element.
 };
 
@@ -334,17 +334,17 @@ struct cwmp__FaultStruct
 struct cwmp__DeviceIdStruct
 {
 /// Length of this string is within 0..64 characters
-    char*                                                              
+    char*
                                          Manufacturer                   1;	///< Required element.
 /// Length of this string is exactly 6 characters
 /// Content pattern is "[0-9A-F]{6}"
-    char*                                                              
+    char*
                                          OUI                            1;	///< Required element.
 /// Length of this string is within 0..64 characters
-    char*                                                              
+    char*
                                          ProductClass                   1;	///< Required element.
 /// Length of this string is within 0..64 characters
-    char*                                                              
+    char*
                                          SerialNumber                   1;	///< Required element.
 };
 
@@ -371,7 +371,7 @@ struct cwmp__EventStruct
 /// Content pattern is "M \\S+"
 /// Content pattern is "M X_\\S+"
 /// Content pattern is "X [0-9A-F]{6} .*"
-    char*                                                              
+    char*
                                          EventCode                      1;	///< Required element.
 /// Element CommandKey of type "urn:dslforum-org:cwmp-1-1":CommandKeyType.
     cwmp__CommandKeyType                 CommandKey                     1;	///< Required element.
@@ -381,7 +381,7 @@ struct cwmp__EventStruct
 struct cwmp__ParameterValueStruct
 {
 /// Length of this string is within 0..256 characters
-    char*                                                              
+    char*
                                          Name                           1;	///< Required element.
 /// Element Value of type xs:anySimpleType.
 ///  xsd__anySimpleType                   Value                          1;	///< Required element.
@@ -393,7 +393,7 @@ struct cwmp__ParameterValueStruct
 struct cwmp__ParameterInfoStruct
 {
 /// Length of this string is within 0..256 characters
-    char*                                                              
+    char*
                                          Name                           1;	///< Required element.
 /// Element Writable of type xs:boolean.
     enum xsd__boolean                    Writable                       1;	///< Required element.
@@ -403,7 +403,7 @@ struct cwmp__ParameterInfoStruct
 struct cwmp__SetParameterAttributesStruct
 {
 /// Length of this string is within 0..256 characters
-    char*                                                              
+    char*
                                         *Name                          ;	///< Nullable pointer.
 /// Element NotificationChange of type xs:boolean.
     enum xsd__boolean                    NotificationChange             1;	///< Required element.
@@ -427,7 +427,7 @@ struct cwmp__SetParameterAttributesStruct
 struct cwmp__ParameterAttributeStruct
 {
 /// Length of this string is within 0..256 characters
-    char*                                                              
+    char*
                                          Name                           1;	///< Required element.
     enum _cwmp__ParameterAttributeStruct_Notification
     {
@@ -480,12 +480,12 @@ struct cwmp__AllQueuedTransferStruct
 /// Content pattern is "3 Vendor Configuration File"
 /// Content pattern is "4 Vendor Log File"
 /// Content pattern is "X [0-9A-F]{6} .*"
-    char*                                                              
+    char*
                                          FileType                       1;	///< Required element.
 /// Element FileSize of type xs:unsignedInt.
     unsigned int                         FileSize                       1;	///< Required element.
 /// Length of this string is within 0..256 characters
-    char*                                                              
+    char*
                                          TargetFileName                 1;	///< Required element.
 };
 
@@ -493,7 +493,7 @@ struct cwmp__AllQueuedTransferStruct
 struct cwmp__OptionStruct
 {
 /// Length of this string is within 0..64 characters
-    char*                                                              
+    char*
                                          OptionName                     1;	///< Required element.
 /// Element VoucherSN of type xs:unsignedInt.
     unsigned int                         VoucherSN                      1;	///< Required element.
@@ -537,10 +537,10 @@ struct cwmp__OptionStruct
 struct cwmp__ArgStruct
 {
 /// Length of this string is within 0..64 characters
-    char*                                                              
+    char*
                                          Name                           1;	///< Required element.
 /// Length of this string is within 0..256 characters
-    char*                                                              
+    char*
                                          Value                          1;	///< Required element.
 };
 
@@ -647,7 +647,7 @@ struct _cwmp__GetParameterValuesResponse
 struct _cwmp__GetParameterNames
 {
 /// Length of this string is within 0..256 characters
-    char*                                                              
+    char*
                                         *ParameterPath                 ;	///< Nullable pointer.
 /// Element NextLevel of type xs:boolean.
     enum xsd__boolean                    NextLevel                      1;	///< Required element.
@@ -727,7 +727,7 @@ struct _cwmp__AddObject
 struct _cwmp__AddObjectResponse
 {
 /// Value range is [1..]
-    unsigned int                                                       
+    unsigned int
                                          InstanceNumber                 1;	///< Required element.
     enum _cwmp__AddObjectResponse_Status
     {
@@ -783,29 +783,29 @@ struct _cwmp__Download
 /// Content pattern is "2 Web Content"
 /// Content pattern is "3 Vendor Configuration File"
 /// Content pattern is "X [0-9A-F]{6} .*"
-    char*                                                              
+    char*
                                          FileType                       1;	///< Required element.
 /// Length of this string is within 0..256 characters
-    char*                                                              
+    char*
                                          URL                            1;	///< Required element.
 /// Length of this string is within 0..256 characters
-    char*                                                              
+    char*
                                          Username                       1;	///< Required element.
 /// Length of this string is within 0..256 characters
-    char*                                                              
+    char*
                                          Password                       1;	///< Required element.
 /// Element FileSize of type xs:unsignedInt.
     unsigned int                         FileSize                       1;	///< Required element.
 /// Length of this string is within 0..256 characters
-    char*                                                              
+    char*
                                          TargetFileName                 1;	///< Required element.
 /// Element DelaySeconds of type xs:unsignedInt.
     unsigned int                         DelaySeconds                   1;	///< Required element.
 /// Length of this string is within 0..256 characters
-    char*                                                              
+    char*
                                          SuccessURL                     1;	///< Required element.
 /// Length of this string is within 0..256 characters
-    char*                                                              
+    char*
                                          FailureURL                     1;	///< Required element.
 };
 
@@ -920,7 +920,7 @@ struct _cwmp__SetVouchersResponse
 struct _cwmp__GetOptions
 {
 /// Length of this string is within 0..64 characters
-    char*                                                              
+    char*
                                          OptionName                     1;	///< Required element.
 };
 
@@ -948,16 +948,16 @@ struct _cwmp__Upload
 /// Content pattern is "1 Vendor Configuration File"
 /// Content pattern is "2 Vendor Log File"
 /// Content pattern is "X [0-9A-F]{6} .*"
-    char*                                                              
+    char*
                                          FileType                       1;	///< Required element.
 /// Length of this string is within 0..256 characters
-    char*                                                              
+    char*
                                          URL                            1;	///< Required element.
 /// Length of this string is within 0..256 characters
-    char*                                                              
+    char*
                                          Username                       1;	///< Required element.
 /// Length of this string is within 0..256 characters
-    char*                                                              
+    char*
                                          Password                       1;	///< Required element.
 /// Element DelaySeconds of type xs:unsignedInt.
     unsigned int                         DelaySeconds                   1;	///< Required element.
@@ -1088,10 +1088,10 @@ struct _cwmp__TransferCompleteResponse
 struct _cwmp__AutonomousTransferComplete
 {
 /// Length of this string is within 0..1024 characters
-    char*                                                              
+    char*
                                          AnnounceURL                    1;	///< Required element.
 /// Length of this string is within 0..1024 characters
-    char*                                                              
+    char*
                                          TransferURL                    1;	///< Required element.
 /// Element IsDownload of type xs:boolean.
     enum xsd__boolean                    IsDownload                     1;	///< Required element.
@@ -1101,12 +1101,12 @@ struct _cwmp__AutonomousTransferComplete
 /// Content pattern is "3 Vendor Configuration File"
 /// Content pattern is "4 Vendor Log File"
 /// Content pattern is "X [0-9A-F]{6} .*"
-    char*                                                              
+    char*
                                          FileType                       1;	///< Required element.
 /// Element FileSize of type xs:unsignedInt.
     unsigned int                         FileSize                       1;	///< Required element.
 /// Length of this string is within 0..256 characters
-    char*                                                              
+    char*
                                          TargetFileName                 1;	///< Required element.
 /// Element FaultStruct of type "urn:dslforum-org:cwmp-1-1":FaultStruct.
     struct cwmp__FaultStruct*            FaultStruct                    1;	///< Required element.
@@ -1133,16 +1133,16 @@ struct _cwmp__AutonomousTransferCompleteResponse
 struct _cwmp__Kicked
 {
 /// Length of this string is within 0..32 characters
-    char*                                                              
+    char*
                                          Command                        1;	///< Required element.
 /// Length of this string is within 0..64 characters
-    char*                                                              
+    char*
                                          Referer                        1;	///< Required element.
 /// Length of this string is within 0..256 characters
-    char*                                                              
+    char*
                                          Arg                            1;	///< Required element.
 /// Length of this string is within 0..1024 characters
-    char*                                                              
+    char*
                                          Next                           1;	///< Required element.
 };
 
@@ -1154,7 +1154,7 @@ struct _cwmp__Kicked
 struct _cwmp__KickedResponse
 {
 /// Length of this string is within 0..1024 characters
-    char*                                                              
+    char*
                                          NextURL                        1;	///< Required element.
 };
 
@@ -1170,7 +1170,7 @@ struct _cwmp__RequestDownload
 /// Content pattern is "2 Web Content"
 /// Content pattern is "3 Vendor Configuration File"
 /// Content pattern is "X [0-9A-F]{6} .*"
-    char*                                                              
+    char*
                                          FileType                       1;	///< Required element.
 /// Element FileTypeArg of type "urn:dslforum-org:cwmp-1-1":FileTypeArg.
     struct FileTypeArg*                  FileTypeArg_                   1;	///< Required element.

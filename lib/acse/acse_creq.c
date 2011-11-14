@@ -17,7 +17,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public 
+ * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
@@ -55,7 +55,7 @@ typedef struct conn_req_t {
 
 
 
-/** 
+/**
  * Callback for I/O ACSE channel, called before poll().
  * It fills @p pfd according with specific channel situation.
  * Its prototype matches with field #channel_t::before_poll.
@@ -81,13 +81,13 @@ conn_req_before_poll(void *data, struct pollfd *pfd,
     return 0;
 }
 
-/** 
- * Callback for I/O ACSE channel, called after poll() 
+/**
+ * Callback for I/O ACSE channel, called after poll()
  * Its prototype matches with field #channel_t::after_poll.
  * This function should process detected event (usually, incoming data).
  *
  * @param data      Channel-specific private data.
- * @param pfd       Poll file descriptor struct with marks, which 
+ * @param pfd       Poll file descriptor struct with marks, which
  *                  event happen.
  *
  * @return status code.
@@ -122,7 +122,7 @@ conn_req_after_poll(void *data, struct pollfd *pfd)
             const char *userid = conn_req->cpe_item->cr_auth.login;
             const char *passwd = conn_req->cpe_item->cr_auth.passwd;
 
-            /* If ConnReq auth params not specified, use ones for 
+            /* If ConnReq auth params not specified, use ones for
                 login CPE->ACS */
             if (NULL == userid)
                 userid = conn_req->cpe_item->acs_auth.login;
@@ -158,7 +158,7 @@ conn_req_after_poll(void *data, struct pollfd *pfd)
 
     soap_end_recv(soap);
 
-    VERB("Recv after Conn req to '%s/%s', status %d", 
+    VERB("Recv after Conn req to '%s/%s', status %d",
          conn_req->cpe_item->acs->name,
          conn_req->cpe_item->name, soap->error);
 
@@ -167,8 +167,8 @@ conn_req_after_poll(void *data, struct pollfd *pfd)
 }
 
 
-/** 
- * Callback for I/O ACSE channel, called at channel destroy. 
+/**
+ * Callback for I/O ACSE channel, called at channel destroy.
  * Its prototype matches with field #channel_t::destroy.
  *
  * @param data      Channel-specific private data.
@@ -193,7 +193,7 @@ acse_init_connection_request(cpe_t *cpe_item)
 {
     conn_req_t *conn_req_data;
     struct soap *soap;
-    channel_t   *channel; 
+    channel_t   *channel;
 
     if (cpe_item->url == NULL)
     {
@@ -223,14 +223,14 @@ acse_init_connection_request(cpe_t *cpe_item)
     if (soap_connect_command(soap, SOAP_GET, cpe_item->url, ""))
     {
         char fault_buf[1000];
-        soap_sprint_fault(soap, fault_buf, sizeof(fault_buf)); 
+        soap_sprint_fault(soap, fault_buf, sizeof(fault_buf));
         ERROR("%s() failed, soap error %d, descr: %s",
               __FUNCTION__, soap->error, fault_buf);
         soap_end(soap);
         free(conn_req_data);
         free(channel);
         return TE_EFAIL;
-    } 
+    }
     cpe_item->cr_state = CR_WAIT_AUTH;
 
     channel->data = conn_req_data;

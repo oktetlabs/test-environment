@@ -53,7 +53,7 @@ extern "C" {
  * If the expression is something else than zero, test fails.
  * If there was CWMP Fault detected, it will be print in log, and
  * test fails.
- * 
+ *
  * @param expr_  Expression with TAPI call to get CWMP RPC response.
  * @param var_   Variable where pointer to response should be put.
  */
@@ -94,7 +94,7 @@ typedef struct tapi_acse_context_s {
                                   ACSE. Init from test argument 'ta_acse'.
                                   If user change it, he must ensure,
                                   that new TA has started its ACSE, and
-                                  RPC server is actual. 
+                                  RPC server is actual.
                                   It is highly recommended do NOT change
                                   this field, but init new context for
                                   another TA. */
@@ -104,20 +104,20 @@ typedef struct tapi_acse_context_s {
                                   'acse_ctl' on TA. */
 
     const char     *acs_name;/*< Name of used ACS object on ACSE.
-                                  Init: first presend ACS object in 
-                                  CS subtree on the ACSE. 
+                                  Init: first presend ACS object in
+                                  CS subtree on the ACSE.
                                   If user change it, he must ensure
                                   presense of that ACS object. */
     const char     *cpe_name;/*< Name of used CPE record on ACSE.
                                   Init: first presend ACS object in CS
-                                  subtree on the ACSE. 
+                                  subtree on the ACSE.
                                   If user change it, he must ensure
                                   presense of that CPE record. */
-    int             timeout; /*< Timeout in seconds of operation. 
+    int             timeout; /*< Timeout in seconds of operation.
                                   Has sense only for get response from ACSE.
                                   Because poll is absent in communication
                                   with ACSE, such methods ask periodically
-                                  whether response was got on ACSE. 
+                                  whether response was got on ACSE.
                                   User is free to change it.
                                   After each operation is automatically
                                   set to value of def_timeout. */
@@ -126,7 +126,7 @@ typedef struct tapi_acse_context_s {
 
     acse_request_id_t req_id;/*< CWMP request ID.  This field is filled
                                   by 'call' methods, and is used by
-                                  'get_response' methods. 
+                                  'get_response' methods.
                                   Thus, if user change it before get
                                   response, he will get response for some
                                   other operation then the last one. */
@@ -134,7 +134,7 @@ typedef struct tapi_acse_context_s {
     int             prev_usleep; /*< Internal: previous sleep period */
     int             next_usleep; /*< Internal: next sleep period */
     te_bool         change_sync; /*< Internal: do we changed 'sync_mode'
-                                  during connect, before establish 
+                                  during connect, before establish
                                   CWMP session. */
 
 } tapi_acse_context_t;
@@ -143,7 +143,7 @@ typedef struct tapi_acse_context_s {
 /**
  * Init ACSE TAPI context, according with its description.
  * This method expects defined environment variable CPE_NAME
- * with CS name of CPE which is interesing for running configuration. 
+ * with CS name of CPE which is interesing for running configuration.
  * By the way, while context is just inited and no operations
  * was performed, user is free to modify ACS and CPE names,
  * but in this case he is responsible for presence of wanted CPE cfg
@@ -152,7 +152,7 @@ typedef struct tapi_acse_context_s {
  * @param ta            name of TA where ACSE is started.
  *
  * @return New allocated and correctly initialized context, or NULL
- *         if there is some test configuration errors. 
+ *         if there is some test configuration errors.
  */
 extern tapi_acse_context_t *tapi_acse_ctx_init(const char *ta);
 
@@ -160,7 +160,7 @@ extern tapi_acse_context_t *tapi_acse_ctx_init(const char *ta);
 
 /**
  * Copy parameters for ACS and CPE from local static CS subtree
- * to the run-time subtree on specified TA. 
+ * to the run-time subtree on specified TA.
  *
  * @param ctx           ACSE TAPI context.
  *
@@ -204,22 +204,22 @@ extern te_errno tapi_acse_stop(const char *ta);
  * Manage ACS object on the ACSE.
  *
  * @param ctx           ACSE TAPI context.
- * @param opcode        code of operation to be performed with 
- *                      specified ACS object: 
+ * @param opcode        code of operation to be performed with
+ *                      specified ACS object:
  *                          if @c ACSE_OP_ADD, object should not exist,
  *                          if @c ACSE_OP_MODIFY, object should exist;
  * @param ...           list of pairs (@p name, @p value), where @p name
- *                      should match with name of leaf under 
- *                      $c /agent/acse/acs/ in ConfiguratorModel, and 
+ *                      should match with name of leaf under
+ *                      $c /agent/acse/acs/ in ConfiguratorModel, and
  *                      #value is new value or place for current value;
  *                      list should be finished
  *                      with macro @c VA_END_LIST.
- *                      Type of @p value should correspond to type of 
+ *                      Type of @p value should correspond to type of
  *                      @p name leaf in Conḟ.Model.
- *                      List should be empty if @p opcode is 
+ *                      List should be empty if @p opcode is
  *                      @c ACSE_OP_DEL.
- *                      List may be non-empty if @p opcode is 
- *                      @c ACSE_OP_ADD, in this case values are set 
+ *                      List may be non-empty if @p opcode is
+ *                      @c ACSE_OP_ADD, in this case values are set
  *                      after add.
  *
  * @return Status code.
@@ -233,9 +233,9 @@ extern te_errno tapi_acse_manage_acs(tapi_acse_context_t *ctx,
  * Manage CPE record on the ACSE.
  *
  * @param ctx           ACSE TAPI context.
- * @param opcode        code of operation to be performed with 
+ * @param opcode        code of operation to be performed with
  *                      specified CPE record;
- * @param ...           list of parameters, with same semantic 
+ * @param ...           list of parameters, with same semantic
  *                      as for function tapi_acse_manage_acs().
  *
  * @return Status code.
@@ -247,7 +247,7 @@ extern te_errno tapi_acse_manage_cpe(tapi_acse_context_t *ctx,
 /*
  * ==================== Useful config ACSE methods =====================
  */
-    
+
 /**
  * Clear CWMP activity and its cache on ACS object on the ACSE:
  * stop CWMP session, if any, and remove all requests in queue and
@@ -330,8 +330,8 @@ extern te_errno tapi_acse_cpe_conn_request(tapi_acse_context_t *ctx);
 
 /**
  * Finish CWMP session with particular CPE.
- * Really this util just initiates send of empty HTTP response 
- * and turn off sync mode on the CPE, since thisis designed as 
+ * Really this util just initiates send of empty HTTP response
+ * and turn off sync mode on the CPE, since thisis designed as
  * dual for tapi_acse_cpe_connect().
  *
  * @param ctx           ACSE TAPI context.
@@ -341,7 +341,7 @@ extern te_errno tapi_acse_cpe_conn_request(tapi_acse_context_t *ctx);
 extern te_errno tapi_acse_cpe_disconnect(tapi_acse_context_t *ctx);
 
 
-/* TODO: think, maybe use TE common te_errno instead special 
+/* TODO: think, maybe use TE common te_errno instead special
  * call status? Or encode here some [TR-069] error codes? */
 typedef enum {
     ACSE_RPC_PENDING,
@@ -366,7 +366,7 @@ extern te_errno tapi_acse_cpe_rpc_call(tapi_acse_context_t *ctx,
 
 /**
  * Check status of queued CWMP RPC on ACSE and get response.
- * 
+ *
  * @param ctx           ACSE TAPI context;
  * @param cpe_rpc_code  location for type of RPC response, may be NULL;
  * @param from_cpe      location for RPC response parameters.
@@ -381,7 +381,7 @@ extern te_errno tapi_acse_cpe_rpc_response(tapi_acse_context_t *ctx,
 /**
  * Get particular received ACS RPC.
  * Return ENOENT if there was not such RPC caught from specified CPE.
- * 
+ *
  * @param ctx           ACSE TAPI context.
  * @param rpc_acs       expected type of ACS RPC.
  * @param from_cpe      location for RPC response parameters.
@@ -473,7 +473,7 @@ extern te_errno tapi_acse_set_pvalues_sync(tapi_acse_context_t *ctx,
  * Call CPE GetParameterValues method.
  *
  * @param ctx      current TAPI ACSE context;
- * @param names    Array of names which values are needed. 
+ * @param names    Array of names which values are needed.
  *
  * @return Status code.
  */
@@ -499,7 +499,7 @@ extern te_errno tapi_acse_get_parameter_values_resp(
  * is not leaf.
  *
  * @param ctx      current TAPI ACSE context;
- * @param names    Array of names which values are needed. 
+ * @param names    Array of names which values are needed.
  * @param resp     location for array of received values.
  *
  * @return Status code.
@@ -516,7 +516,7 @@ extern te_errno tapi_acse_get_pvalues_sync(tapi_acse_context_t *ctx,
  * Response may contain more then one value, if @p name is not leaf.
  *
  * @param ctx      current TAPI ACSE context;
- * @param name     names of wanted value. 
+ * @param name     names of wanted value.
  * @param resp     location for array of received values.
  *
  * @return Status code.
@@ -541,7 +541,7 @@ extern te_errno tapi_acse_get_parameter_names(tapi_acse_context_t *ctx,
 
 /**
  * Get CPE GetParameterNames response.
- * NB! This user-friendly method looses 'Writable' flag of variables 
+ * NB! This user-friendly method looses 'Writable' flag of variables
  * in response; to get full  GetParameterNamesResponse use generic
  * method: tapi_acse_cpe_rpc_call()
  *
@@ -560,7 +560,7 @@ extern te_errno tapi_acse_get_parameter_names_resp(tapi_acse_context_t *ctx,
  * @param ctx        current TAPI ACSE context;
  * @param next_level Boolean flag whether got only next level names,
  *                      see detailed description in TR-069 standard.
- * @param name       parameter name, should NOT contain any printf-like 
+ * @param name       parameter name, should NOT contain any printf-like
  *                      format marks.
  * @param resp       array with received parameter names (OUT)
  *
@@ -665,7 +665,7 @@ extern te_errno tapi_acse_reboot(tapi_acse_context_t *ctx,
  */
 extern te_errno tapi_acse_reboot_resp(tapi_acse_context_t *ctx);
 
-/** 
+/**
  * Call CPE Download method.
  *
  * @param ctx      current TAPI ACSE context;
@@ -676,7 +676,7 @@ extern te_errno tapi_acse_reboot_resp(tapi_acse_context_t *ctx);
 extern te_errno tapi_acse_download(tapi_acse_context_t *ctx,
                                    cwmp_download_t *req);
 
-/** 
+/**
  * Get CPE Download response.
  *
  * @param ctx      current TAPI ACSE context;

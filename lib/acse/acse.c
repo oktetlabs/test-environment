@@ -17,7 +17,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public 
+ * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
@@ -49,7 +49,7 @@
 
 /** The list of "channels" */
 static LIST_HEAD(channel_list_t, channel_t)
-        channel_list = LIST_HEAD_INITIALIZER(&channel_list); 
+        channel_list = LIST_HEAD_INITIALIZER(&channel_list);
 /** Number of channels */
 static int channel_number = 0;
 
@@ -145,7 +145,7 @@ acse_loop(void)
         te_errno    rc;
         struct pollfd *pfd =
                 calloc(channel_number, sizeof(struct pollfd));
-        channel_t **ch_queue = NULL; 
+        channel_t **ch_queue = NULL;
         channel_t  *ch_nearest_dl = NULL;
 
         gen_deadline.tv_sec = 0;
@@ -170,7 +170,7 @@ acse_loop(void)
                 WARN("before_poll cb return %r", rc);
                 break;
             }
-            if (ch_deadline.tv_sec > 0 && 
+            if (ch_deadline.tv_sec > 0 &&
                 (ch_deadline.tv_sec > gen_deadline.tv_sec ||
                  (ch_deadline.tv_sec == gen_deadline.tv_sec &&
                   ch_deadline.tv_usec > gen_deadline.tv_usec  ) ))
@@ -185,9 +185,9 @@ acse_loop(void)
 
         if (ch_nearest_dl != NULL)
         {
-            struct timeval now; 
+            struct timeval now;
             gettimeofday(&now, NULL);
-            timeout = (gen_deadline.tv_sec - now.tv_sec) * 1000 + 
+            timeout = (gen_deadline.tv_sec - now.tv_sec) * 1000 +
                       (gen_deadline.tv_usec - now.tv_usec) / 1000;
             VERB("before poll, gen deadline %d.%d, calculated timeout %d",
                  (int)gen_deadline.tv_sec, (int)gen_deadline.tv_usec,
@@ -210,7 +210,7 @@ acse_loop(void)
 
         if (r_poll == 0 && ch_nearest_dl != NULL) /* timeout occured */
         {
-            RING("ACSE main loop: timeout occured, on channel '%s'", 
+            RING("ACSE main loop: timeout occured, on channel '%s'",
                  ch_nearest_dl->name);
 
             rc = (*ch_nearest_dl->after_poll)(ch_nearest_dl->data, NULL);
@@ -238,7 +238,7 @@ acse_loop(void)
             if (i >= channel_number || ch_i > r_poll)
             {
                 ERROR("acse_loop, after poll, boundary check fails."
-                      "i=%d, ch number = %d; ch_i=%d, r_poll = %d", 
+                      "i=%d, ch number = %d; ch_i=%d, r_poll = %d",
                       i, channel_number, ch_i, r_poll);
                 break;
             }

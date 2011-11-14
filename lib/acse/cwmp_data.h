@@ -1,23 +1,23 @@
-/** @file 
+/** @file
  * @brief CWMP data common methods
- * 
+ *
  * CWMP data exchange common methods, useful for transfer CWMP message
- * structures, declared in cwmp_soapStub.h, between processes with 
+ * structures, declared in cwmp_soapStub.h, between processes with
  * different address spaces.
  *
  *
  * Copyright (C) 2010 Test Environment authors (see file AUTHORS
- * in the root directory of the distribution). 
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
  * as published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version. 
+ * the License, or (at your option) any later version.
  *
  * Test Environment is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details. 
+ * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, write to the Free Software
@@ -43,14 +43,14 @@ extern "C" {
 
 /**
  * Pack data for EPC message client->ACSE, with call data to CPE.
- * 
+ *
  * @param src           Pointer to gSOAP struct with data to be
  *                      packed.
  * @param rpc_cpe       CWMP RPC type.
- * @param msg           Place for packed data (usually in 
+ * @param msg           Place for packed data (usually in
  *                      shared memory segment).
  * @param len           Length of memory area for packed data.
- * 
+ *
  * @return      -1 on error, 0 if no data presented,
  *              or length of used memory block in @p buf.
  */
@@ -60,14 +60,14 @@ extern ssize_t cwmp_pack_call_data(cwmp_data_to_cpe_t src,
 
 /**
  * Pack data for EPC message ACSE->client, with response data from CPE.
- * 
+ *
  * @param src           Pointer to gSOAP struct with data to be
  *                      packed.
  * @param rpc_cpe       CWMP RPC type.
- * @param msg           Place for packed data (usually in 
+ * @param msg           Place for packed data (usually in
  *                      shared memory segment).
  * @param len           Length of memory area for packed data.
- * 
+ *
  * @return      -1 on error, 0 if no data presented,
  *              or length of used memory block in @p buf.
  */
@@ -78,12 +78,12 @@ extern ssize_t cwmp_pack_response_data(cwmp_data_from_cpe_t src,
 
 /*
  * Unpack data from message client->ACSE.
- * 
- * @param buf           Place with packed data (usually in 
+ *
+ * @param buf           Place with packed data (usually in
  *                      local copy of transfered struct).
  * @param len           Length of packed data.
  * @param rpc_cpe       CWMP RPC type.
- * 
+ *
  * @return status code
  */
 extern te_errno cwmp_unpack_call_data(void *buf, size_t len,
@@ -92,12 +92,12 @@ extern te_errno cwmp_unpack_call_data(void *buf, size_t len,
 
 /**
  * Unpack data from message ACSE->client.
- * 
- * @param buf           Place with packed data (usually in 
+ *
+ * @param buf           Place with packed data (usually in
  *                      local copy of transfered struct).
  * @param len           Length of memory area with packed data.
  * @param rpc_cpe       CWMP RPC type.
- * 
+ *
  * @return status code
  */
 extern te_errno cwmp_unpack_response_data(void *buf, size_t len,
@@ -106,16 +106,16 @@ extern te_errno cwmp_unpack_response_data(void *buf, size_t len,
 
 
 /**
- * Pack data for EPC message ACSE->client, with call data 
+ * Pack data for EPC message ACSE->client, with call data
  * from CPE to ACS.
- * 
+ *
  * @param src           Pointer to gSOAP struct with data to be
  *                      packed.
  * @param rpc_acs       CWMP RPC type.
- * @param msg           Place for packed data (usually in 
+ * @param msg           Place for packed data (usually in
  *                      shared memory segment).
  * @param len           Length of memory area for packed data.
- * 
+ *
  * @return      -1 on error, 0 if no data presented,
  *              or length of used memory block in @p buf.
  */
@@ -124,13 +124,13 @@ extern te_errno cwmp_pack_acs_rpc_data(cwmp_data_from_cpe_t src,
                                        void *msg, size_t len);
 
 /**
- * Unpack data from message ACSE->client, with CPE->ACS RPC. 
- * 
- * @param buf           Place with packed data (usually in 
+ * Unpack data from message ACSE->client, with CPE->ACS RPC.
+ *
+ * @param buf           Place with packed data (usually in
  *                      local copy of transfered struct).
  * @param len           Length of memory area with packed data.
  * @param rpc_acs       CWMP RPC type.
- * 
+ *
  * @return status code
  */
 extern te_errno cwmp_unpack_acs_rpc_data(void *buf, size_t len,

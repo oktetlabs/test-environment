@@ -16,7 +16,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public 
+ * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
@@ -88,10 +88,10 @@ static pthread_t acse_thread;
 
 
 #if 0
-static pthread_key_t epc_role_key; 
+static pthread_key_t epc_role_key;
 static pthread_once_t key_once = PTHREAD_ONCE_INIT;
 
-static void 
+static void
 make_key(void)
 {
     pthread_key_create(&epc_role_key, NULL)
@@ -106,7 +106,7 @@ epc_role_set(acse_epc_role_t r)
     RING("epc_role_set to %d", (int)r);
     if ((errno = pthread_setspecific(epc_role_key, val)) != 0)
     {
-        ERROR("EPC role set failed with errno %d(%s)", 
+        ERROR("EPC role set failed with errno %d(%s)",
               l_errno, strerror(l_errno));
     }
 }
@@ -132,7 +132,7 @@ typedef struct {
 } acse_thread_arg_t;
 /**
  * Start routine for the ACSE thread within TA-associated
- * RPC server process. 
+ * RPC server process.
  *
  * @param arg           Start argument
  *
@@ -144,7 +144,7 @@ acse_pthread_main(void *p_a)
     te_errno rc;
     acse_thread_arg_t *arg = (acse_thread_arg_t *)p_a;
     epc_site_t *s = calloc(1, sizeof(*s));
-    
+
     logfork_register_user("ACSE");
 
     s->role = ACSE_EPC_SERVER;
@@ -191,7 +191,7 @@ start_acse(char *cfg_pipe_name)
     RING("Start ACSE process");
 
     if (pipe(epc_to_acse_pipe) || pipe(epc_from_acse_pipe))
-    { 
+    {
         int saved_errno = errno;
         ERROR("create of EPC ops pipes, errno %d", saved_errno);
         return TE_OS_RC(TE_ACSE, saved_errno);
@@ -208,9 +208,9 @@ start_acse(char *cfg_pipe_name)
     if ((rc = acse_epc_init(cfg_pipe_name, &(arg->listen_socket))) != 0)
         return TE_RC(TE_ACSE, rc);
 
-    s->role = ACSE_EPC_OP_CLIENT; 
+    s->role = ACSE_EPC_OP_CLIENT;
     s->fd_in = epc_from_acse_pipe[0];
-    s->fd_out = epc_to_acse_pipe[1]; 
+    s->fd_out = epc_to_acse_pipe[1];
     acse_epc_user_init(s);
 
     pth_ret = pthread_create(&acse_thread, NULL, acse_pthread_main, arg);
@@ -267,7 +267,7 @@ cwmp_acse_start(tarpc_cwmp_acse_start_in *in,
                 tarpc_cwmp_acse_start_out *out)
 {
     static char buf[256] = {0,};
-    
+
     RING("%s() called", __FUNCTION__);
 
     if (in->oper == 1)
@@ -277,7 +277,7 @@ cwmp_acse_start(tarpc_cwmp_acse_start_in *in,
         RING("%s(): status %r, pipe name '%s'",
              __FUNCTION__, out->status, buf);
     }
-    else 
+    else
     {
         out->status = stop_acse();
         out->pipe_name = strdup("");
@@ -293,7 +293,7 @@ cwmp_conn_req(tarpc_cwmp_conn_req_in *in,
     te_errno rc;
     acse_epc_cwmp_data_t *cwmp_data = NULL;
 
-    INFO("Issue CWMP Connection Request to %s/%s ", 
+    INFO("Issue CWMP Connection Request to %s/%s ",
          in->acs_name, in->cpe_name);
 
     rc = acse_cwmp_connreq(in->acs_name, in->cpe_name, &cwmp_data);
@@ -322,12 +322,12 @@ cwmp_op_call(tarpc_cwmp_op_call_in *in,
     acse_epc_cwmp_data_t *cwmp_data = NULL;
 
 
-    RING("cwmp RPC %s to %s/%s called", 
+    RING("cwmp RPC %s to %s/%s called",
          cwmp_rpc_cpe_string(in->cwmp_rpc), in->acs_name, in->cpe_name);
 
     rc = acse_cwmp_prepare(in->acs_name, in->cpe_name,
                            EPC_RPC_CALL, &cwmp_data);
-    cwmp_data->rpc_cpe = in->cwmp_rpc; 
+    cwmp_data->rpc_cpe = in->cwmp_rpc;
 
     if (in->buf.buf_len > 0)
     {
@@ -354,7 +354,7 @@ cwmp_op_call(tarpc_cwmp_op_call_in *in,
         out->status = TE_RC(TE_TA_ACSE, rc);
     }
     else
-    { 
+    {
         out->request_id = cwmp_data->request_id;
         out->status = TE_RC(TE_ACSE, cwmp_data->status);
     }
@@ -372,7 +372,7 @@ cwmp_op_check(tarpc_cwmp_op_check_in *in,
     size_t d_len;
 
     INFO("cwmp_op_check No %d (for rpc %s) to %s/%s called;",
-         (int)in->request_id, 
+         (int)in->request_id,
          cwmp_rpc_cpe_string(in->cwmp_rpc), in->acs_name, in->cpe_name);
 
     rc = acse_cwmp_prepare(in->acs_name, in->cpe_name,
@@ -404,10 +404,10 @@ cwmp_op_check(tarpc_cwmp_op_check_in *in,
              cwmp_data->status, d_len);
 
         if (0 == cwmp_data->status || TE_CWMP_FAULT == cwmp_data->status)
-        { 
+        {
             out->buf.buf_val = malloc(d_len);
             out->buf.buf_len = d_len;
-            packed_len = epc_pack_response_data(out->buf.buf_val, 
+            packed_len = epc_pack_response_data(out->buf.buf_val,
                                                 d_len, cwmp_data);
 #if 0 /* Debug print */
             if (TE_CWMP_FAULT == msg_resp.status)
@@ -433,7 +433,7 @@ cwmp_op_check(tarpc_cwmp_op_check_in *in,
 
 #if 0
 static te_errno
-cwmp_conn_req_util(const char *acs, const char *cpe, 
+cwmp_conn_req_util(const char *acs, const char *cpe,
                    acse_epc_cwmp_op_t op, int *request_id)
 {
     acse_epc_msg_t msg;
@@ -446,11 +446,11 @@ cwmp_conn_req_util(const char *acs, const char *cpe,
         return TE_EINVAL;
 
     if (!acse_value())
-    { 
+    {
         return TE_EFAIL;
     }
 
-    RING("Issue CWMP Connection Request to %s/%s, op %d ", 
+    RING("Issue CWMP Connection Request to %s/%s, op %d ",
          acs, cpe, op);
 
     msg.opcode = EPC_CWMP_CALL;
@@ -460,10 +460,10 @@ cwmp_conn_req_util(const char *acs, const char *cpe,
     memset(&c_data, 0, sizeof(c_data));
 
     c_data.op = op;
-        
+
     strcpy(c_data.acs, acs);
     strcpy(c_data.cpe, cpe);
-        
+
     rc = acse_epc_send(&msg);
     if (rc != 0)
         ERROR("%s(): EPC send failed %r", __FUNCTION__, rc);

@@ -31,14 +31,14 @@
 #include "acse_mem.h"
 
 /** Descriptor for memory block in heap.
-  This struct is placed to the end of any allocated block. 
-*/ 
+  This struct is placed to the end of any allocated block.
+*/
 typedef struct {
     void   *ptr;       /**< start of next block in the heap or NULL */
     size_t  user_size; /**< size of user-part of next block or 0. */
 } next_block_descr_t;
 
-/** Descriptor of memory heap. */ 
+/** Descriptor of memory heap. */
 typedef struct {
     mheap_t             id;    /**< Heap ID, really index in array */
 
@@ -67,7 +67,7 @@ mheap_clear(mheap_t heap)
 }
 
 /** Increase heaps table by @c TABLE_SIZE_BLOCK */
-void 
+void
 increase_heaps_table(void)
 {
     size_t i;
@@ -94,7 +94,7 @@ mheap_create(void *user)
     if (i == heaps_table_size)
         increase_heaps_table();
 
-    heaps_table[i].id = i; 
+    heaps_table[i].id = i;
     heaps_table[i].users[0] = user;
     heaps_table[i].n_users = 1;
 

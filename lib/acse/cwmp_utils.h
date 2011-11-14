@@ -1,20 +1,20 @@
-/** @file 
- * @brief ACSE 
- * 
- * CWMP data structures user utilities declarations. 
+/** @file
+ * @brief ACSE
+ *
+ * CWMP data structures user utilities declarations.
  *
  * Copyright (C) 2009-2010 Test Environment authors (see file AUTHORS
- * in the root directory of the distribution). 
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
  * as published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version. 
+ * the License, or (at your option) any later version.
  *
  * Test Environment is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details. 
+ * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, write to the Free Software
@@ -57,13 +57,13 @@ typedef struct {
  * Array of CWMP ParameterValue's for user interface of some CWMP methods.
  */
 typedef struct {
-    cwmp_parameter_value_struct_t 
+    cwmp_parameter_value_struct_t
              **items;   /**< array of pointers to values */
     size_t     size;    /**< size of array, i.e. number of elements */
 } cwmp_values_array_t;
 
 /**
- * File type for CWMP Download RPC, according with [TR069], Table 30 . 
+ * File type for CWMP Download RPC, according with [TR069], Table 30 .
  */
 typedef enum {
     CWMP_FIRMWARE = 1, /**< type "1 Firmware Upgrade Image" */
@@ -74,8 +74,8 @@ typedef enum {
 
 /**
  * CWMP Parameter Name convinient presentation.
- * If name is object name, that is, in single string presentation, 
- * will have tailing dot, label[size] is not-NULL and contains 
+ * If name is object name, that is, in single string presentation,
+ * will have tailing dot, label[size] is not-NULL and contains
  * empty string.
  */
 typedef struct {
@@ -91,8 +91,8 @@ extern void const * const va_end_list_ptr;
 
 /**
  * Construct string array for argument of UI for CWMP RPC.
- * First argument is base name, subsequent strings will 
- * be concatenated with the base name; 
+ * First argument is base name, subsequent strings will
+ * be concatenated with the base name;
  * last argument in list should be VA_END_LIST.
  * All strings in array are allocated by system malloc().
  *
@@ -104,7 +104,7 @@ extern string_array_t *cwmp_str_array_alloc(const char *b_name,
 
 
 /**
- * Add strings to string array. 
+ * Add strings to string array.
  * Parameters similar to funcion cwmp_str_array_alloc()
  *
  * @return Status code.
@@ -115,7 +115,7 @@ extern te_errno cwmp_str_array_add(string_array_t *a,
                                    ...);
 
 /**
- * Add the same suffix to all strings in array. 
+ * Add the same suffix to all strings in array.
  *
  * @param a             array with strings
  * @param suffix        string which should be concatenated with all items.
@@ -127,17 +127,17 @@ extern te_errno cwmp_str_array_cat_tail(string_array_t *a,
 
 
 /**
- * Copy string array. 
- * 
+ * Copy string array.
+ *
  * @param a             array with strings to be copied
  *
- * @return New string array, copied from source. 
+ * @return New string array, copied from source.
  */
 extern string_array_t * cwmp_str_array_copy(string_array_t *a);
 
 /**
- * Join string arrays. 
- * 
+ * Join string arrays.
+ *
  * @param dest          array to be joined with @p src.
  * @param src           array to be added to @p dest.
  *
@@ -146,16 +146,16 @@ extern string_array_t * cwmp_str_array_copy(string_array_t *a);
 extern void cwmp_str_array_join(string_array_t *dest, string_array_t *src);
 
 /**
- * Free string array. 
- * 
+ * Free string array.
+ *
  * @param a             array with strings to be freed
  */
 extern void cwmp_str_array_free(string_array_t *a);
 
 /**
- * Print string array to the long string buffer. 
- * 
- * @param a     array with strings 
+ * Print string array to the long string buffer.
+ *
+ * @param a     array with strings
  *
  * @return Status code
  */
@@ -163,7 +163,7 @@ extern te_errno cwmp_str_array_snprint(string_array_t *a);
 
 /**
  * Write string array to the log.
- * 
+ *
  * @param log_level     level of loggind, macro TE_LL_*, see logger_defs.h
  * @param intro         preface to log message.
  * @param a             array with strings to be logged.
@@ -181,8 +181,8 @@ extern te_errno cwmp_str_array_log(unsigned log_level, const char *intro,
  * Last argument (instead of next <name>) in list should be VA_END_LIST.
  * Parameter <type> should be int value, <value> should be respective:
  *   <type>                          expected C type of <value>
- * SOAP_TYPE_boolean                    int       
- * SOAP_TYPE_int                        int       
+ * SOAP_TYPE_boolean                    int
+ * SOAP_TYPE_int                        int
  * SOAP_TYPE_byte                       int
  * SOAP_TYPE_string                     const char *
  * SOAP_TYPE_unsignedInt                uint32_t
@@ -200,8 +200,8 @@ extern cwmp_values_array_t *cwmp_val_array_alloc(const char *b_name,
 
 
 /**
- * Add values to the array. 
- * 
+ * Add values to the array.
+ *
  * @param a             array with CWMP values
  *
  * Rest parameters similar to funcion cwmp_val_array_alloc()
@@ -216,7 +216,7 @@ extern te_errno cwmp_val_array_add(cwmp_values_array_t *a,
 /**
  * Find value with specified name in the array, check that
  * it has integer-like type, and obtain for user its exact type
- * and value. 
+ * and value.
  *
  * @param a             Array with CWMP values.
  * @param name          Last part of name (from last dot to the end)
@@ -229,7 +229,7 @@ extern te_errno cwmp_val_array_add(cwmp_values_array_t *a,
  *                      TE_EBADTYPE if value has wrong type.
  */
 extern te_errno cwmp_val_array_get_int(cwmp_values_array_t *a,
-                                       const char *name, 
+                                       const char *name,
                                        int *type,
                                        int *value);
 
@@ -242,8 +242,8 @@ cwmp_val_array_get_int_idx(cwmp_values_array_t *a, int i)
     int retval;
     switch (a->items[i]->__type)
     {
-        case SOAP_TYPE_xsd__boolean:         
-        case SOAP_TYPE_int:         
+        case SOAP_TYPE_xsd__boolean:
+        case SOAP_TYPE_int:
         case SOAP_TYPE_unsignedInt:
             retval = *((int *)a->items[i]->Value);
             break;
@@ -265,7 +265,7 @@ cwmp_val_array_get_str_idx(cwmp_values_array_t *a, int i)
 {
     switch (a->items[i]->__type)
     {
-        case SOAP_TYPE_string:         
+        case SOAP_TYPE_string:
             return (const char *)a->items[i]->Value;
         default:
             break;
@@ -275,11 +275,11 @@ cwmp_val_array_get_str_idx(cwmp_values_array_t *a, int i)
 
 /**
  * Find value with specified name in the array, check that
- * it has string type, and obtain string for user. 
+ * it has string type, and obtain string for user.
  *
  * @param a             Array with CWMP values.
  * @param name          Name for search value.
- * @param value         Location for value; memory block for string 
+ * @param value         Location for value; memory block for string
  *                      itself will be allocated by malloc().
  *
  * @return Status code: 0 on success,
@@ -287,19 +287,19 @@ cwmp_val_array_get_str_idx(cwmp_values_array_t *a, int i)
  *                      TE_EBADTYPE if value has wrong type.
  */
 extern te_errno cwmp_val_array_get_str(cwmp_values_array_t *a,
-                                       const char *name, 
+                                       const char *name,
                                        char **value);
 
 /**
- * Check integer-like value in the CWMP values array. 
- * Passed <type> should be one of the following: 
+ * Check integer-like value in the CWMP values array.
+ * Passed <type> should be one of the following:
  *
  * SOAP_TYPE_boolean
- * SOAP_TYPE_int   
- * SOAP_TYPE_byte 
+ * SOAP_TYPE_int
+ * SOAP_TYPE_byte
  * SOAP_TYPE_unsignedInt
  * SOAP_TYPE_unsignedByte
- * 
+ *
  * @return    0 if all passed triples (<name>,<type>,<value>)
  *              are present in the array;
  *            TE_ENOENT if there is NO value with asked <name> in array;
@@ -310,13 +310,13 @@ extern te_errno cwmp_val_array_get_str(cwmp_values_array_t *a,
  *            TE_EINVAL incoming data is not consistant.
  */
 extern te_errno cwmp_val_array_check_int(cwmp_values_array_t *a,
-                                         const char *name, 
+                                         const char *name,
                                          int type,
                                          int value);
 /**
- * Check string value in the CWMP values array. 
+ * Check string value in the CWMP values array.
  * Type of value with specifien name should be SOAP_TYPE_string.
- * 
+ *
  * @return    0 if all passed triples (<name>,<type>,<value>)
  *              are present in the array;
  *            TE_ENOENT if there is NO value with asked <name> in array;
@@ -327,7 +327,7 @@ extern te_errno cwmp_val_array_check_int(cwmp_values_array_t *a,
  *            TE_EINVAL incoming data is not consistant.
  */
 extern te_errno cwmp_val_array_check_str(cwmp_values_array_t *a,
-                                         const char *name, 
+                                         const char *name,
                                          const char *value);
 
 
@@ -337,17 +337,17 @@ typedef enum {
 } cwmp_vals_compare_t;
 
 /**
- * Compare ParVal arrays. 
- * 
+ * Compare ParVal arrays.
+ *
  * @retval 0    array @p first matches with array @p second.
  * @retval 1    otherwise.
  */
 extern int cwmp_val_array_cmp(cwmp_values_array_t *first,
-                              cwmp_values_array_t *second, 
+                              cwmp_values_array_t *second,
                               cwmp_vals_compare_t mode);
 
 /**
- * Free CWMP values array. 
+ * Free CWMP values array.
  *
  * @param a        Array.
  */
@@ -356,7 +356,7 @@ extern void cwmp_val_array_free(cwmp_values_array_t *a);
 
 /**
  * Write cwmp_values array to the log.
- * 
+ *
  * @param log_level     Level of loggind, macro TE_LL_*, see logger_defs.h
  * @param intro         Preface to log message.
  * @param a             Array with strings to be logged.
@@ -367,9 +367,9 @@ extern te_errno cwmp_val_array_log(unsigned log_level, const char *intro,
                                    cwmp_values_array_t *a);
 
 
-/** 
+/**
  * Extract names from CWMP values array.
- */ 
+ */
 extern string_array_t *cwmp_extract_names(cwmp_values_array_t *a);
 
 /**
@@ -381,19 +381,19 @@ extern string_array_t *cwmp_extract_names(cwmp_values_array_t *a);
  *
  * @return Used buffer length.
  */
-extern size_t snprint_ParamValueStruct(char *buf, size_t len, 
+extern size_t snprint_ParamValueStruct(char *buf, size_t len,
                                        cwmp__ParameterValueStruct *p_v);
 
 
 /**
- * Put description of CWMP Fault to TE log. 
+ * Put description of CWMP Fault to TE log.
  *
  * @param fault           Fault struct for printing.
  */
-extern void tapi_acse_log_fault(cwmp_fault_t *fault); 
+extern void tapi_acse_log_fault(cwmp_fault_t *fault);
 
 /**
- * Put human text description of CWMP Fault to the buffer. 
+ * Put human text description of CWMP Fault to the buffer.
  *
  * @param buf           Buffer where ParameterValue should be printed.
  * @param len           Length of buffer.
@@ -407,7 +407,7 @@ extern size_t snprint_cwmpFault(char *buf, size_t len, cwmp_fault_t *fault);
  * Check that CWMP Fault contains certain Set Fault item.
  *
  * @param fault         Fault struct to be checked.
- * @param idx           Index of set fault item to be checked, 
+ * @param idx           Index of set fault item to be checked,
  *                      -1 for search item by name.
  * @param param_name    Desired name, may be NULL, if @p idx >= 0.
  * @param fault_code    Desired fault code.
@@ -416,7 +416,7 @@ extern size_t snprint_cwmpFault(char *buf, size_t len, cwmp_fault_t *fault);
  * @return TRUE if fault contains specified item.
  */
 extern te_bool cwmp_check_set_fault(cwmp_fault_t *fault, int idx,
-                                    const char *param_name, 
+                                    const char *param_name,
                                     unsigned int fault_code,
                                     const char *fault_string);
 
@@ -432,7 +432,7 @@ extern te_errno tapi_acse_log_cwmpEvents(unsigned log_level,
                                          cwmp_event_list_t *ev_list);
 /**
  * Print Inform Events to string buffer.
- * 
+ *
  * @param buf           Buffer where ParameterValue should be printed.
  * @param len           Length of buffer.
  * @param ev_list       EventList for printing.
@@ -443,30 +443,30 @@ extern size_t snprint_cwmpEvents(char *buf, size_t len,
                                  cwmp_event_list_t *ev_list);
 
 /**
- * Find specified event in event_list. 
+ * Find specified event in event_list.
  *
  * @param ev_list       EventList.
  * @param event_code    Code of expected event.
  * @param command_key   CommandKey of expected event or NULL.
  *
- * @retval FALSE    event was NOT found in the list. 
+ * @retval FALSE    event was NOT found in the list.
  * @retval TRUE     event was found in the list.
  */
-extern te_bool cwmp_check_event(cwmp_event_list_t *ev_list, 
+extern te_bool cwmp_check_event(cwmp_event_list_t *ev_list,
                                 const char *event_code,
-                                const char *command_key); 
+                                const char *command_key);
 
 
 extern cwmp_set_parameter_attributes_t *cwmp_set_attrs_alloc(
-                            const char *par_name, int notification, 
+                            const char *par_name, int notification,
                             string_array_t *access_list);
 
 extern te_errno cwmp_set_attrs_add(cwmp_set_parameter_attributes_t *request,
-                            const char *par_name, int notification, 
+                            const char *par_name, int notification,
                             string_array_t *access_list);
 
 /**
- * 
+ *
  */
 extern cwmp_download_t *cwmp_download_alloc(const char *command_key,
                                             cwmp_file_type_t ftype,
@@ -474,7 +474,7 @@ extern cwmp_download_t *cwmp_download_alloc(const char *command_key,
                                             const char *url_fmt, ...);
 
 /**
- * Convert text label to the SOAP type constant. 
+ * Convert text label to the SOAP type constant.
  * To be used in constructing CWMP Set RPC by human-written input.
  *
  * @param type_name     human text type label, used only first character.
@@ -490,7 +490,7 @@ cwmp_val_type_s2i(const char *type_name)
     {
         case 'i': return SOAP_TYPE_int;
         case 'u': return SOAP_TYPE_unsignedInt;
-        case 'b': 
+        case 'b':
             if (strncmp(type_name, "byte", 4) == 0)
                 return SOAP_TYPE_byte;
             else if (strncmp(type_name, "base64", 6) == 0)
@@ -516,16 +516,16 @@ extern cwmp_parameter_value_struct_t *cwmp_copy_par_value(
 
 /**
  * Compare two ParameterValue.
- * 
+ *
  * @retval 0    @p first matches with @p second.
  * @retval 1    otherwise.
  */
 extern int cwmp_par_value_cmp(cwmp_parameter_value_struct_t *first,
                               cwmp_parameter_value_struct_t *second);
 /**
- * Convert internal gSOAP ParameterValueList into 
- * @p cwmp_values_array_t structure. 
- * New constructed value should be freed by 
+ * Convert internal gSOAP ParameterValueList into
+ * @p cwmp_values_array_t structure.
+ * New constructed value should be freed by
  * cwmp_val_array_free().
  *
  * @param src           Initial ParameterValueList.
@@ -536,18 +536,18 @@ extern cwmp_values_array_t *cwmp_copy_par_value_list(
                             cwmp_parameter_value_list_t *src);
 
 /**
- * Detect whether name is partial node name or Parameter (leaf) 
- * full name. 
+ * Detect whether name is partial node name or Parameter (leaf)
+ * full name.
  * Particulary, it is detected by ending doc '.' in the name
- * according with TR069 standard. 
+ * according with TR069 standard.
  *
  * @param name  parameter name
  *
- * @retval FALSE    @p name is full Parameter name, 
+ * @retval FALSE    @p name is full Parameter name,
  * @retval TRUE     @p name is partial node name.
- */      
+ */
 static inline te_bool
-cwmp_is_node_name(const char *name) 
+cwmp_is_node_name(const char *name)
 {
     size_t len;
     assert(NULL != name);
@@ -561,11 +561,11 @@ cwmp_is_node_name(const char *name)
 
 /**
  * Convert numeric CWMP Download FileType to the text string.
- * Strings are got according with [TR069], Table 30. 
+ * Strings are got according with [TR069], Table 30.
  *
- * @return Static string. 
+ * @return Static string.
  */
-static inline const char * 
+static inline const char *
 cwmp_file_type_to_str(cwmp_file_type_t ft)
 {
     static char buf[32];
@@ -582,14 +582,14 @@ cwmp_file_type_to_str(cwmp_file_type_t ft)
 
 
 /**
- * Detect whether OID is partial node name or Parameter (leaf) 
- * full name. 
+ * Detect whether OID is partial node name or Parameter (leaf)
+ * full name.
  *
  * @param oid           Parameter OID
  *
- * @retval FALSE    @p oid is full Parameter name, 
+ * @retval FALSE    @p oid is full Parameter name,
  * @retval TRUE     @p oid is partial node name.
- */      
+ */
 static inline te_bool
 cwmp_oid_is_node(cwmp_oid_t *oid)
 {

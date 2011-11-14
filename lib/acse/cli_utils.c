@@ -35,7 +35,7 @@ cli_perform_cmd(cli_cmd_descr_t *root_list, const char *line)
 
     do {
         ofs = cli_token_copy(line, token);
-        if (0 == ofs) 
+        if (0 == ofs)
             break; /* there is no token */
         while (NULL != cd->label)
         {
@@ -57,7 +57,7 @@ cli_perform_cmd(cli_cmd_descr_t *root_list, const char *line)
         if (NULL == cd->sub_cmds)
             break;
 
-        cd = cd->sub_cmds; 
+        cd = cd->sub_cmds;
     } while (1);
 
     if (0 == ofs && 0 == level) /* Line contain only space symbols. */
@@ -81,7 +81,7 @@ cli_perform_cmd(cli_cmd_descr_t *root_list, const char *line)
             case CLI_E_MISS_TAGS:
                 if (level > 0)
                     cd = cd_stack[level-1]->sub_cmds;
-                else 
+                else
                     cd = root_list;
                 if (NULL == cd)
                 {

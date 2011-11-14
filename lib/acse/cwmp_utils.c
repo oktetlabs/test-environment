@@ -1,23 +1,23 @@
-/** @file 
+/** @file
  * @brief CWMP data common methods implementation
- * 
+ *
  * CWMP data exchange common methods, useful for transfer CWMP message
- * structures, declared in cwmp_soapStub.h, between processes with 
+ * structures, declared in cwmp_soapStub.h, between processes with
  * different address spaces.
  *
  *
  * Copyright (C) 2010 Test Environment authors (see file AUTHORS
- * in the root directory of the distribution). 
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
  * as published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version. 
+ * the License, or (at your option) any later version.
  *
  * Test Environment is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details. 
+ * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, write to the Free Software
@@ -105,7 +105,7 @@ string_array_t *
 cwmp_str_array_alloc(const char *b_name, const char *first_name, ...)
 {
     va_list         ap;
-    te_errno        rc = 0; 
+    te_errno        rc = 0;
     string_array_t *ret;
 
     if (NULL == (ret = malloc(sizeof(*ret))))
@@ -123,7 +123,7 @@ cwmp_str_array_alloc(const char *b_name, const char *first_name, ...)
         WARN("%s(): alloc string array failed %r", __FUNCTION__, rc);
         cwmp_str_array_free(ret);
         return NULL;
-    } 
+    }
 
     return ret;
 }
@@ -167,7 +167,7 @@ cwmp_str_array_cat_tail(string_array_t *a, const char *suffix)
             continue;
         item_len = strlen(a->items[i]);
         a->items[i] = realloc(a->items[i], item_len + s_len + 1);
-        if (NULL == a->items[i]) 
+        if (NULL == a->items[i])
             /* out of memory, it seems unnecessary to leave consistancy */
             return TE_ENOMEM;
         memcpy(a->items[i] + item_len, suffix, s_len + 1);
@@ -249,7 +249,7 @@ cwmp_val_array_add_va(cwmp_values_array_t *a,
 
     b_len = strlen(base_name);
 
-    VERB("add vals to val_array. b_len %d; first_name '%s'", 
+    VERB("add vals to val_array. b_len %d; first_name '%s'",
          b_len, first_name);
 
     do {
@@ -270,7 +270,7 @@ cwmp_val_array_add_va(cwmp_values_array_t *a,
         memcpy(array[i]->Name, base_name, b_len);
         memcpy(array[i]->Name + b_len, v_name, v_len + 1);
 
-        VERB("add val to val_array[%d]: v_len %d; sfx '%s', Name '%s'", 
+        VERB("add val to val_array[%d]: v_len %d; sfx '%s', Name '%s'",
              i, v_len, v_name, array[i]->Name);
 
         array[i]->__type = va_arg(ap, int);
@@ -283,8 +283,8 @@ cwmp_val_array_add_va(cwmp_values_array_t *a,
                 *((type_ *)array[i]->Value) = val; \
             } while (0)
 
-            case SOAP_TYPE_boolean:         
-            case SOAP_TYPE_int:         
+            case SOAP_TYPE_boolean:
+            case SOAP_TYPE_int:
                 SET_SOAP_TYPE(int, int);  break;
             case SOAP_TYPE_byte:
                 SET_SOAP_TYPE(char, int); break;
@@ -321,7 +321,7 @@ cwmp_values_array_t *
 cwmp_val_array_alloc(const char *b_name, const char *first_name, ...)
 {
     va_list   ap;
-    te_errno  rc = 0; 
+    te_errno  rc = 0;
 
     cwmp_values_array_t *ret;
 
@@ -341,7 +341,7 @@ cwmp_val_array_alloc(const char *b_name, const char *first_name, ...)
         WARN("%s(): alloc string array failed %r", __FUNCTION__, rc);
         cwmp_val_array_free(ret);
         return NULL;
-    } 
+    }
 
     return ret;
 }
@@ -370,7 +370,7 @@ cwmp_values_array_t *
 cwmp_copy_par_value_list(cwmp_parameter_value_list_t *src)
 {
     cwmp_values_array_t           *ret = NULL;
-    cwmp_parameter_value_struct_t *pval_src, 
+    cwmp_parameter_value_struct_t *pval_src,
                                   *pval_dst;
 
     size_t      val_size = 0;
@@ -385,7 +385,7 @@ cwmp_copy_par_value_list(cwmp_parameter_value_list_t *src)
     for (i = 0; i < ret->size; i++)
     {
         pval_src = src->__ptrParameterValueStruct[i];
-        ret->items[i] = pval_dst = 
+        ret->items[i] = pval_dst =
             malloc(sizeof(cwmp_parameter_value_struct_t));
 
         pval_dst->Name = strdup(pval_src->Name);
@@ -420,7 +420,7 @@ cwmp_copy_par_value_list(cwmp_parameter_value_list_t *src)
 
 /**
  * Compare two ParameterValue.
- * 
+ *
  * @retval 0    @p first matches with @p second.
  * @retval -1   Names or types are not matches.
  * @retval 1    Values are not matches.
@@ -429,7 +429,7 @@ int
 cwmp_par_value_cmp(cwmp_parameter_value_struct_t *first,
                    cwmp_parameter_value_struct_t *second)
 {
-    if (first->__type != second->__type || 
+    if (first->__type != second->__type ||
         strcmp(first->Name, second->Name) != 0)
         return 1;
 
@@ -439,14 +439,14 @@ cwmp_par_value_cmp(cwmp_parameter_value_struct_t *first,
 
     switch (first->__type)
     {
-        case SOAP_TYPE_xsd__boolean:         
-        case SOAP_TYPE_int:         
+        case SOAP_TYPE_xsd__boolean:
+        case SOAP_TYPE_int:
         case SOAP_TYPE_unsignedInt:
-            return *((int *)first->Value) != 
+            return *((int *)first->Value) !=
                    *((int *)second->Value);
         case SOAP_TYPE_byte:
         case SOAP_TYPE_unsignedByte:
-            return *((int8_t *)first->Value) != 
+            return *((int8_t *)first->Value) !=
                    *((int8_t *)second->Value);
         case SOAP_TYPE_string:
         case SOAP_TYPE_SOAP_ENC__base64: /* TODO: investigate? */
@@ -457,8 +457,8 @@ cwmp_par_value_cmp(cwmp_parameter_value_struct_t *first,
 }
 
 /**
- * Compare ParVal arrays. 
- * 
+ * Compare ParVal arrays.
+ *
  * @retval 0    array @p first matches with array @p second.
  * @retval 1    NOT matches.
  */
@@ -511,7 +511,7 @@ cwmp_val_array_free(cwmp_values_array_t *a)
 
 /* see description in cwmp_utils.h */
 te_errno
-cwmp_val_array_get_int(cwmp_values_array_t *a, const char *name, 
+cwmp_val_array_get_int(cwmp_values_array_t *a, const char *name,
                        int *type, int *value)
 {
     unsigned i;
@@ -528,8 +528,8 @@ cwmp_val_array_get_int(cwmp_values_array_t *a, const char *name,
         {
             switch (a->items[i]->__type)
             {
-                case SOAP_TYPE_xsd__boolean:         
-                case SOAP_TYPE_int:         
+                case SOAP_TYPE_xsd__boolean:
+                case SOAP_TYPE_int:
                 case SOAP_TYPE_unsignedInt:
                     *value = *((int *)a->items[i]->Value);
                     break;
@@ -537,7 +537,7 @@ cwmp_val_array_get_int(cwmp_values_array_t *a, const char *name,
                 case SOAP_TYPE_unsignedByte:
                     *value = *((int8_t *)a->items[i]->Value);
                     break;
-                    
+
                 case SOAP_TYPE_time:
                 case SOAP_TYPE_string:
                 case SOAP_TYPE_SOAP_ENC__base64:
@@ -593,8 +593,8 @@ cwmp_val_array_get_str(cwmp_values_array_t *a,
                     *value = strdup((char *)a->items[i]->Value);
                     break;
 
-                case SOAP_TYPE_xsd__boolean:         
-                case SOAP_TYPE_int:         
+                case SOAP_TYPE_xsd__boolean:
+                case SOAP_TYPE_int:
                 case SOAP_TYPE_unsignedInt:
                 case SOAP_TYPE_byte:
                 case SOAP_TYPE_unsignedByte:
@@ -676,7 +676,7 @@ cwmp_oid_t *
 cwmp_name_to_oid(const char *name)
 {
 #define MAX_OID_LEN 256
-    char   *loc_label[MAX_OID_LEN] = {NULL, }; 
+    char   *loc_label[MAX_OID_LEN] = {NULL, };
     size_t  idx = 0, i;
     cwmp_oid_t *new_oid = malloc(sizeof(cwmp_oid_t));
 
@@ -751,7 +751,7 @@ cwmp_oid_free(cwmp_oid_t *oid)
 
 
 cwmp_set_parameter_attributes_t *
-cwmp_set_attrs_alloc(const char *par_name, int notification, 
+cwmp_set_attrs_alloc(const char *par_name, int notification,
                      string_array_t *access_list)
 {
     cwmp_set_parameter_attributes_t *req = malloc(sizeof(*req));
@@ -773,7 +773,7 @@ cwmp_set_attrs_alloc(const char *par_name, int notification,
 
 te_errno
 cwmp_set_attrs_add(cwmp_set_parameter_attributes_t *request,
-                   const char *par_name, int notification, 
+                   const char *par_name, int notification,
                    string_array_t *user_access_list)
 {
     cwmp_set_parameter_attributes_list_t     *pa_list;
@@ -782,7 +782,7 @@ cwmp_set_attrs_add(cwmp_set_parameter_attributes_t *request,
     string_array_t  *access_list = NULL;
     size_t           last;
 
-    if (NULL == request || NULL == request->ParameterList || 
+    if (NULL == request || NULL == request->ParameterList ||
         NULL == par_name)
         return TE_EINVAL;
 
@@ -817,7 +817,7 @@ cwmp_set_attrs_add(cwmp_set_parameter_attributes_t *request,
             array[last]->AccessList_->__ptrstring = malloc(sizeof(char*));
     }
     else
-    {   
+    {
         /* AccessList should present in message mandatory */
         array[last]->AccessListChange = 0;
         array[last]->AccessList_->__size = 0;
@@ -849,7 +849,7 @@ soap_simple_type_string(int type)
 }
 
 size_t
-snprint_ParamValueStruct(char *buf, size_t len, 
+snprint_ParamValueStruct(char *buf, size_t len,
                          cwmp__ParameterValueStruct *p_v)
 {
     size_t rest_len = len;
@@ -859,7 +859,7 @@ snprint_ParamValueStruct(char *buf, size_t len,
     void *v  = p_v->Value;
     int  type = p_v->__type;
 
-    used = snprintf(p, rest_len, "%s (type %s) = ", p_v->Name, 
+    used = snprintf(p, rest_len, "%s (type %s) = ", p_v->Name,
             soap_simple_type_string(p_v->__type));
     if (used > rest_len)
     {
@@ -880,7 +880,7 @@ snprint_ParamValueStruct(char *buf, size_t len,
         case SOAP_TYPE_byte:
             used = snprintf(p, rest_len, "%d", (int)(*((char *)v)));
             break;
-        case SOAP_TYPE_int:    
+        case SOAP_TYPE_int:
             used = snprintf(p, rest_len, "%d", *((int *)v));
             break;
         case SOAP_TYPE_unsignedInt:
@@ -914,9 +914,9 @@ snprint_cwmpFault(char *buf, size_t len, _cwmp__Fault *f)
         p += snprintf(p, len - (p - buf), "; Set details:");
         for (i = 0; i < f->__sizeSetParameterValuesFault; i++)
         {
-            struct _cwmp__Fault_SetParameterValuesFault *p_v_f = 
+            struct _cwmp__Fault_SetParameterValuesFault *p_v_f =
                                         &(f->SetParameterValuesFault[i]);
-            p += snprintf(p, len - (p - buf), 
+            p += snprintf(p, len - (p - buf),
                           "\n\tparam[%d], name %s, fault %s(%s);",
                           i, p_v_f->ParameterName,
                           p_v_f->FaultCode,
@@ -961,14 +961,14 @@ cwmp_check_set_fault(cwmp_fault_t *f, int idx,
     }
     else if (idx >=  f->__sizeSetParameterValuesFault)
         return FALSE;
-    else 
-        if (param_name != NULL && 
+    else
+        if (param_name != NULL &&
             strcmp(param_name,
                    f->SetParameterValuesFault[idx].ParameterName) != 0)
             return FALSE;
 
-    return 
-        (fault_code == atoi(f->SetParameterValuesFault[idx].FaultCode)) 
+    return
+        (fault_code == atoi(f->SetParameterValuesFault[idx].FaultCode))
         &&
         (fault_string == NULL ||
          strcmp(f->SetParameterValuesFault[idx].FaultString,
@@ -977,7 +977,7 @@ cwmp_check_set_fault(cwmp_fault_t *f, int idx,
 
 
 te_bool
-cwmp_check_event(cwmp_event_list_t *ev_list, 
+cwmp_check_event(cwmp_event_list_t *ev_list,
                  const char *event_code, const char *command_key)
 {
     cwmp_event_struct_t *ev;
@@ -987,8 +987,8 @@ cwmp_check_event(cwmp_event_list_t *ev_list,
     for (i = 0; i < ev_list->__size; i++)
     {
         ev = ev_list->__ptrEventStruct[i];
-        if (strcmp(event_code,  ev->EventCode) == 0 && 
-            (NULL == command_key || 
+        if (strcmp(event_code,  ev->EventCode) == 0 &&
+            (NULL == command_key ||
                 strcmp(command_key, ev->CommandKey) == 0))
             return TRUE;
     }
@@ -1063,7 +1063,7 @@ cwmp_download_alloc(const char *command_key, cwmp_file_type_t ftype,
     dl = calloc(1, sizeof(cwmp_download_t));
 
     dl->CommandKey = strdup(command_key);
-    dl->FileType = strdup(cwmp_file_type_to_str(ftype)); 
+    dl->FileType = strdup(cwmp_file_type_to_str(ftype));
     dl->URL = strdup(url_buf);
     dl->Username = "";
     dl->Password = "";

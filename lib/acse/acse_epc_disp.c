@@ -17,7 +17,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public 
+ * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
@@ -88,7 +88,7 @@ typedef struct str_to_int_t {
 } str_to_int_t;
 
 /**
- * Convert string to integer corresponding with specified 
+ * Convert string to integer corresponding with specified
  * enumerated set.
  *
  * @param tab    enumerate table
@@ -96,7 +96,7 @@ typedef struct str_to_int_t {
  *
  * @return converted value.
  */
-int 
+int
 str_to_int(str_to_int_t *tab, const char *str)
 {
     int i;
@@ -110,15 +110,15 @@ str_to_int(str_to_int_t *tab, const char *str)
 
 
 /**
- * Convert integer to string corresponding with specified 
+ * Convert integer to string corresponding with specified
  * enumerated set.
  *
  * @param tab    enumerate table
- * @param i_val  input integer 
+ * @param i_val  input integer
  *
  * @return converted string value.
  */
-const char * 
+const char *
 int_to_str(str_to_int_t *tab, int i_val)
 {
     int i;
@@ -127,7 +127,7 @@ int_to_str(str_to_int_t *tab, int i_val)
         if (tab[i].i_val == i_val)
             return tab[i].s_val;
     }
-    return ""; 
+    return "";
 }
 
 
@@ -184,7 +184,7 @@ cfg_string_access(const char **pstring, acse_epc_config_data_t *params)
     {
         if (*pstring != NULL)
             strcpy(params->value, *pstring);
-        else 
+        else
             params->value[0] = '\0';
     }
     return 0;
@@ -204,7 +204,7 @@ cpe_hold_requests(cpe_t *cpe, acse_epc_config_data_t *params)
 {
     if (params->op.fun == EPC_CFG_OBTAIN)
         sprintf(params->value, "%i", cpe->hold_requests);
-    else 
+    else
         cpe->hold_requests = atoi(params->value);
     return 0;
 }
@@ -222,7 +222,7 @@ cpe_sync_mode(cpe_t *cpe, acse_epc_config_data_t *params)
 {
     if (params->op.fun == EPC_CFG_OBTAIN)
         sprintf(params->value, "%i", cpe->sync_mode);
-    else 
+    else
         cpe->sync_mode = atoi(params->value);
     return 0;
 }
@@ -240,14 +240,14 @@ cpe_chunk_mode(cpe_t *cpe, acse_epc_config_data_t *params)
 {
     if (params->op.fun == EPC_CFG_OBTAIN)
         sprintf(params->value, "%i", cpe->chunk_mode);
-    else 
+    else
         cpe->chunk_mode = atoi(params->value);
     return 0;
 }
 
 
 /**
- * Access to CPE 'traffic_log' flag 
+ * Access to CPE 'traffic_log' flag
  *
  * @param cpe           CPE record
  * @param params        EPC parameters struct
@@ -259,7 +259,7 @@ cpe_traffic_log(cpe_t *cpe, acse_epc_config_data_t *params)
 {
     if (params->op.fun == EPC_CFG_OBTAIN)
         sprintf(params->value, "%i", cpe->traffic_log);
-    else 
+    else
         cpe->traffic_log = atoi(params->value);
     return 0;
 }
@@ -390,14 +390,14 @@ device_id_oui(cpe_t *cpe, acse_epc_config_data_t *params)
  */
 static te_errno
 device_id_manufacturer(cpe_t *cpe, acse_epc_config_data_t *params)
-{ 
+{
     return cfg_string_readonly(cpe->device_id.Manufacturer, params);
 }
 
 
 
 /**
- * Get the list of CPE instances under ACS. Put result into passed 
+ * Get the list of CPE instances under ACS. Put result into passed
  * config data @p params.
  *
  * @param params        EPC parameters struct
@@ -442,7 +442,7 @@ acs_cpe_list(acse_epc_config_data_t *params)
     }
 
     *ptr = '\0';
-    INFO("%s(): list of %s, result '%s'", 
+    INFO("%s(): list of %s, result '%s'",
          __FUNCTION__, params->acs, params->list);
     return 0;
 }
@@ -491,7 +491,7 @@ acs_ssl(acs_t *acs, acse_epc_config_data_t *params)
 
 
 /**
- * Access to ACS 'traffic_log' flag 
+ * Access to ACS 'traffic_log' flag
  *
  * @param acs           ACS record
  * @param params        EPC parameters struct
@@ -503,7 +503,7 @@ acs_traffic_log(acs_t *acs, acse_epc_config_data_t *params)
 {
     if (params->op.fun == EPC_CFG_OBTAIN)
         sprintf(params->value, "%i", acs->traffic_log);
-    else 
+    else
         acs->traffic_log = atoi(params->value);
     return 0;
 }
@@ -544,7 +544,7 @@ acs_http_resp(acs_t *acs, acse_epc_config_data_t *params)
             return TE_EINVAL;
         }
         VERB("set http_response to code %d, loc <%s>",
-             acs->http_response->http_code, 
+             acs->http_response->http_code,
              acs->http_response->location);
     }
     else
@@ -731,7 +731,7 @@ cpe_cr_passwd(cpe_t *cpe, acse_epc_config_data_t *params)
 
 
 /** Enumeration for authenticate modes */
-str_to_int_t auth_mode_enum[] = 
+str_to_int_t auth_mode_enum[] =
 {
     {"noauth", ACSE_AUTH_NONE},
     {"basic",  ACSE_AUTH_BASIC},
@@ -805,9 +805,9 @@ typedef te_errno (*config_acs_fun_t)(acs_t *, acse_epc_config_data_t *);
 
 /** struct for ACS configuration fields descriptors */
 struct config_acs_item_t {
-    const char       *label; /**< name of conf.field */ 
+    const char       *label; /**< name of conf.field */
     config_acs_fun_t  fun;   /**< function to access conf.field */
-} cfg_acs_array [] = 
+} cfg_acs_array [] =
 {
     {"url", acs_url},
     {"http_root", acs_http_root},
@@ -827,7 +827,7 @@ typedef te_errno (*config_cpe_fun_t)(cpe_t *, acse_epc_config_data_t *);
 struct config_cpe_item_t {
     const char       *label; /**< name of conf.field */
     config_cpe_fun_t  fun;   /**< function to access conf.field */
-} cfg_cpe_array [] = 
+} cfg_cpe_array [] =
 {
     {"cr_url",    cpe_url},
     {"cert",    cpe_cert},
@@ -846,13 +846,13 @@ struct config_cpe_item_t {
     {"enabled", cpe_enabled},
     {"hold_requests", cpe_hold_requests},
     {"cr_state", cpe_cr_state},
-}; 
+};
 
 /**
  * Perform configuration EPC request on CPE level.
- * 
+ *
  * @param cfg_pars      input EPC parameters
- * 
+ *
  * @return status code
  */
 te_errno
@@ -866,17 +866,17 @@ config_cpe(acse_epc_config_data_t *cfg_pars)
 
     VERB("epc_config_cpe, CR URL %s", cpe->url);
 
-    for (i = 0; 
+    for (i = 0;
          i < sizeof(cfg_cpe_array)/sizeof(cfg_cpe_array[0]); i++)
         if (strcmp(cfg_cpe_array[i].label, cfg_pars->oid) == 0)
             return cfg_cpe_array[i].fun(cpe, cfg_pars);
 
-    WARN("config CPE, param '%s' not found", cfg_pars->oid); 
+    WARN("config CPE, param '%s' not found", cfg_pars->oid);
     return TE_EINVAL;
 }
 
 static te_errno
-config_acs(acse_epc_config_data_t *cfg_pars) 
+config_acs(acse_epc_config_data_t *cfg_pars)
 {
     acs_t  *acs = db_find_acs(cfg_pars->acs);
     unsigned int i;
@@ -888,15 +888,15 @@ config_acs(acse_epc_config_data_t *cfg_pars)
         if (strcmp(cfg_acs_array[i].label, cfg_pars->oid) == 0)
             return cfg_acs_array[i].fun(acs, cfg_pars);
 
-    WARN("config ACS, param '%s' not found", cfg_pars->oid); 
+    WARN("config ACS, param '%s' not found", cfg_pars->oid);
     return TE_EINVAL;
 }
 
 /**
- * Process EPC related to local configuration: DB, etc. 
- * This function do not blocks, and fills @p cfg_pars 
+ * Process EPC related to local configuration: DB, etc.
+ * This function do not blocks, and fills @p cfg_pars
  * with immediately result of operation, if any.
- * Usually config operations may be performed without blocking, 
+ * Usually config operations may be performed without blocking,
  * and they are performed during this call.
  *
  * @param cfg_pars     struct with EPC parameters.
@@ -909,14 +909,14 @@ acse_epc_config(acse_epc_config_data_t *cfg_pars)
     acs_t *acs_item = NULL;
     cpe_t *cpe_item = NULL;
 
-    if (cfg_pars->op.level != EPC_CFG_ACS && 
+    if (cfg_pars->op.level != EPC_CFG_ACS &&
         cfg_pars->op.level != EPC_CFG_CPE)
     {
         ERROR("%s(): wrong op.level %d", __FUNCTION__, cfg_pars->op.level);
         return TE_RC(TE_ACSE, TE_EINVAL);
     }
 
-    VERB("epc_cb config, %s/%s, EPC op %s, oid '%s'", 
+    VERB("epc_cb config, %s/%s, EPC op %s, oid '%s'",
          cfg_pars->acs,
          cfg_pars->op.level == EPC_CFG_CPE ? cfg_pars->cpe : "-",
          cwmp_epc_cfg_op_string(cfg_pars->op.fun), cfg_pars->oid);
@@ -924,8 +924,8 @@ acse_epc_config(acse_epc_config_data_t *cfg_pars)
     if (EPC_CFG_MODIFY != cfg_pars->op.fun)
         memset(cfg_pars->value, 0, sizeof(cfg_pars->value));
 
-    switch (cfg_pars->op.fun) 
-    { 
+    switch (cfg_pars->op.fun)
+    {
         case EPC_CFG_ADD:
             if (cfg_pars->op.level == EPC_CFG_ACS)
                 return db_add_acs(cfg_pars->acs);
@@ -937,8 +937,8 @@ acse_epc_config(acse_epc_config_data_t *cfg_pars)
                 return TE_ENOENT;
             if (cfg_pars->op.level == EPC_CFG_ACS)
                 return db_remove_acs(acs_item);
-            if ((cpe_item = 
-                    db_find_cpe(acs_item, cfg_pars->acs, cfg_pars->cpe)) 
+            if ((cpe_item =
+                    db_find_cpe(acs_item, cfg_pars->acs, cfg_pars->cpe))
                 == NULL)
                 return TE_ENOENT;
             return db_remove_cpe(cpe_item);
@@ -961,7 +961,7 @@ acse_epc_config(acse_epc_config_data_t *cfg_pars)
 
 /**
  * Process EPC related to CWMP.
- * This function do not blocks, and fills @p cwmp_pars 
+ * This function do not blocks, and fills @p cwmp_pars
  * with immediately result of operation, if any.
  *
  * @param cwmp_pars     struct with EPC parameters.
@@ -982,7 +982,7 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
                cwmp_pars->op, cwmp_pars->acs, cwmp_pars->cpe);
         return TE_ENOENT;
     }
-    VERB("epc_cb CWMP, %s/%s, EPC op %s, RPC %s, CR URL %s", 
+    VERB("epc_cb CWMP, %s/%s, EPC op %s, RPC %s, CR URL %s",
          cwmp_pars->acs, cwmp_pars->cpe,
          cwmp_epc_cwmp_op_string(cwmp_pars->op),
          cwmp_rpc_cpe_string(cwmp_pars->rpc_cpe),
@@ -1050,13 +1050,13 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
 
             if (rpc_item == NULL)
                 return TE_ENOENT;
-            
+
             cwmp_pars->rpc_cpe = rpc_item->params->rpc_cpe;
             cwmp_pars->request_id = rpc_item->params->request_id;
 
             if ((result = rpc_item->params->from_cpe.p) == NULL)
                 return TE_EPENDING;
-           
+
             cwmp_pars->from_cpe.p = result;
             mheap_add_user(rpc_item->heap, cwmp_pars);
 
@@ -1072,7 +1072,7 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
             cpe_inform_t *inform_rec;
             if (0 == cwmp_pars->request_id)
                 inform_rec = LIST_FIRST(&(cpe->inform_list));
-            else 
+            else
                 LIST_FOREACH(inform_rec, &(cpe->inform_list), links)
                 {
                     if (inform_rec->request_id == cwmp_pars->request_id)
@@ -1097,7 +1097,7 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
                 return rc;
             }
             cwmp_pars->from_cpe.cr_state = cpe->cr_state;
-            VERB("EPC CWMP Issue ConnReq to '%s'", cwmp_pars->cpe); 
+            VERB("EPC CWMP Issue ConnReq to '%s'", cwmp_pars->cpe);
         break;
         case EPC_CONN_REQ_CHECK:
             cwmp_pars->from_cpe.cr_state = cpe->cr_state;
@@ -1135,7 +1135,7 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
                     cpe->http_response =
                         malloc(sizeof(*cpe->http_response));
                 cpe->http_response->http_code = cwmp_pars->to_cpe.http_code;
-                strncpy(cpe->http_response->location, 
+                strncpy(cpe->http_response->location,
                         (const char *)cwmp_pars->enc_start,
                         sizeof(cpe->http_response->location));
             }
@@ -1145,7 +1145,7 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
     return rc;
 }
 
-/** 
+/**
  * Callback for I/O ACSE channel, called before poll().
  * It fills @p pfd according with specific channel situation.
  * Its prototype matches with field #channel_t::before_poll.
@@ -1176,13 +1176,13 @@ epc_cfg_before_poll(void *data, struct pollfd *pfd,
 }
 
 
-/** 
- * Callback for I/O ACSE channel, called after poll() 
+/**
+ * Callback for I/O ACSE channel, called after poll()
  * Its prototype matches with field #channel_t::after_poll.
  * This function should process detected event (usually, incoming data).
  *
  * @param data      Channel-specific private data.
- * @param pfd       Poll file descriptor struct with marks, which 
+ * @param pfd       Poll file descriptor struct with marks, which
  *                  event happen.
  *
  * @return status code.
@@ -1191,7 +1191,7 @@ te_errno
 epc_cfg_after_poll(void *data, struct pollfd *pfd)
 {
     static acse_epc_config_data_t msg;
-    te_errno       rc, status; 
+    te_errno       rc, status;
 
     UNUSED(data);
 
@@ -1237,8 +1237,8 @@ epc_cfg_after_poll(void *data, struct pollfd *pfd)
     return rc;
 }
 
-/** 
- * Callback for I/O ACSE channel, called at channel destroy. 
+/**
+ * Callback for I/O ACSE channel, called at channel destroy.
  * Its prototype matches with field #channel_t::destroy.
  *
  * @param data      Channel-specific private data.
@@ -1249,11 +1249,11 @@ te_errno
 epc_cfg_destroy(void *data)
 {
     UNUSED(data);
-    VERB("EPC dispatcher destroy, pid %d\n", getpid()); 
+    VERB("EPC dispatcher destroy, pid %d\n", getpid());
     return acse_epc_close();
 }
 
-/** 
+/**
  * Callback for I/O ACSE channel, called before poll().
  * It fills @p pfd according with specific channel situation.
  * Its prototype matches with field #channel_t::before_poll.
@@ -1281,13 +1281,13 @@ epc_cwmp_before_poll(void *data, struct pollfd *pfd,
 }
 
 
-/** 
- * Callback for I/O ACSE channel, called after poll() 
+/**
+ * Callback for I/O ACSE channel, called after poll()
  * Its prototype matches with field #channel_t::after_poll.
  * This function should process detected event (usually, incoming data).
  *
  * @param data      Channel-specific private data.
- * @param pfd       Poll file descriptor struct with marks, which 
+ * @param pfd       Poll file descriptor struct with marks, which
  *                  event happen.
  *
  * @return status code.
@@ -1296,7 +1296,7 @@ te_errno
 epc_cwmp_after_poll(void *data, struct pollfd *pfd)
 {
     acse_epc_cwmp_data_t *msg;
-    te_errno       rc; 
+    te_errno       rc;
 
     UNUSED(data);
 
@@ -1332,7 +1332,7 @@ epc_cwmp_after_poll(void *data, struct pollfd *pfd)
     VERB("%s(): send EPC cwmp response rc %r", __FUNCTION__, rc);
 
     /* Do NOT free cwmp message for RPC call operation - they are stored
-       in queue, and will be free'd after recieve RPC response and 
+       in queue, and will be free'd after recieve RPC response and
        report about it. */
 
     if (rc != 0)
@@ -1341,8 +1341,8 @@ epc_cwmp_after_poll(void *data, struct pollfd *pfd)
     return rc;
 }
 
-/** 
- * Callback for I/O ACSE channel, called at channel destroy. 
+/**
+ * Callback for I/O ACSE channel, called at channel destroy.
  * Its prototype matches with field #channel_t::destroy.
  *
  * @param data      Channel-specific private data.
@@ -1369,8 +1369,8 @@ acse_epc_disp_init(int listen_sock, epc_site_t *s)
     if (channel_cfg == NULL || channel_cwmp == NULL)
         return TE_RC(TE_ACSE, TE_ENOMEM);
 
-    channel_cfg->data = NULL; 
-    channel_cwmp->data = NULL; 
+    channel_cfg->data = NULL;
+    channel_cwmp->data = NULL;
 
     epc_listen_socket = listen_sock;
     epc_disp_site = s;
@@ -1387,7 +1387,7 @@ acse_epc_disp_init(int listen_sock, epc_site_t *s)
     channel_cwmp->destroy      = &epc_cwmp_destroy;
     channel_cwmp->name         = strdup("EPC-cwmp");
 
-    acse_add_channel(channel_cwmp); 
+    acse_add_channel(channel_cwmp);
 
     return 0;
 }

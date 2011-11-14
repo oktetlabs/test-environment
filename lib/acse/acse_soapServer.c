@@ -28,16 +28,16 @@ SOAP_FMAC5 int SOAP_FMAC6 soap_serve(struct soap *soap)
 
 		if (soap->max_keep_alive > 0 && !--k)
 			soap->keep_alive = 0;
-                        
-                VERB("%s(): 0 content length %d, error %d", 
+
+                VERB("%s(): 0 content length %d, error %d",
                     __FUNCTION__, soap->length, soap->error);
 
 		if (soap_begin_recv(soap))
 		{
-                    VERB("%s(): 1 content length %d, error %d", 
+                    VERB("%s(): 1 content length %d, error %d",
                         __FUNCTION__, soap->length, soap->error);
 
-                    if ((soap->error != SOAP_EOF) && 
+                    if ((soap->error != SOAP_EOF) &&
                         (soap->error < SOAP_STOP))
                     {
                         return soap_send_fault(soap);
@@ -55,7 +55,7 @@ SOAP_FMAC5 int SOAP_FMAC6 soap_serve(struct soap *soap)
 
                     break;
 		}
-                VERB("%s(): 2 content length %d, error %d", 
+                VERB("%s(): 2 content length %d, error %d",
                     __FUNCTION__, soap->length, soap->error);
 
 
@@ -67,7 +67,7 @@ SOAP_FMAC5 int SOAP_FMAC6 soap_serve(struct soap *soap)
 		{
 			return soap_send_fault(soap);
 		}
-                VERB("%s(): 3 content length %d, error %d, keep_alive %d", 
+                VERB("%s(): 3 content length %d, error %d, keep_alive %d",
                     __FUNCTION__, soap->length, soap->error, soap->keep_alive);
 
 	} while (soap->keep_alive);

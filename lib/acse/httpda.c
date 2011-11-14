@@ -30,7 +30,7 @@ soap_serve(&soap);
 int ns__method(struct soap *soap, ...)
 { if (soap->userid && soap->passwd) // Basic authentication
   { if (!strcmp(soap->userid, userid) && !strcmp(soap->passwd, passwd))
-    { ... // can also check soap->authrealm 
+    { ... // can also check soap->authrealm
       return SOAP_OK;
     }
   }
@@ -741,7 +741,7 @@ static void http_da_calc_response(struct soap *soap, void **context, char HA1hex
   md5_handler(soap, context, MD5_UPDATE, ":", 1);
   md5_handler(soap, context, MD5_UPDATE, (char*)uri, strlen(uri));
   if (!soap_tag_cmp(qop, "auth-int"))
-  { 
+  {
     md5_handler(soap, context, MD5_UPDATE, ":", 1);
     md5_handler(soap, context, MD5_UPDATE, entityHAhex, 32);
   }

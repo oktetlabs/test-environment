@@ -17,7 +17,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public 
+ * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
@@ -47,7 +47,7 @@
 #include "logger_api.h"
 
 /** The list af acs instances */
-acs_list_t acs_list = LIST_HEAD_INITIALIZER(&acs_list); 
+acs_list_t acs_list = LIST_HEAD_INITIALIZER(&acs_list);
 
 
 /**
@@ -90,7 +90,7 @@ db_add_acs(const char *acs_name)
  * Add a CPE record for particular ACS object to internal DB
  *
  * @param acs_name      Name of the ACS
- * @param cpe_name      Name of the CPE 
+ * @param cpe_name      Name of the CPE
  *
  * @return              status code
  */
@@ -226,7 +226,7 @@ db_clear_cpe(cpe_t *cpe)
     {
         cpe_inform_t *inf_rec = LIST_FIRST(&cpe->inform_list);
         LIST_REMOVE(inf_rec, links);
-        mheap_free_user(MHEAP_NONE, inf_rec); 
+        mheap_free_user(MHEAP_NONE, inf_rec);
     }
 
     while (!(TAILQ_EMPTY(&cpe->rpc_queue)))
@@ -286,7 +286,7 @@ acse_rpc_item_free(cpe_rpc_item_t *rpc_item)
             free(rpc_item->params->to_cpe.p);
     }
     else
-        mheap_free_user(rpc_item->heap, rpc_item); 
+        mheap_free_user(rpc_item->heap, rpc_item);
 
     free(rpc_item->params);
     free(rpc_item);

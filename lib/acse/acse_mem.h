@@ -38,7 +38,7 @@ typedef unsigned int mheap_t;
 /* constants for library */
 enum {MHEAP_NONE = (mheap_t)(-1), /**< Undefined heap. */
       MHEAP_MAX_USERS = 8, /**< maximum number of users of one heap */
-}; 
+};
 
 /**
  * Create new heap for user.
@@ -50,7 +50,7 @@ enum {MHEAP_NONE = (mheap_t)(-1), /**< Undefined heap. */
 extern mheap_t mheap_create(void *user);
 
 /**
- * Add new user to user-list of specified heap. 
+ * Add new user to user-list of specified heap.
  * User-list of heap may contain many users (up to @c MHEAP_MAX_USERS),
  * and any user may be registered for many heaps.
  *
@@ -65,7 +65,7 @@ extern int mheap_add_user(mheap_t heap, void *user);
  * Remove user from user-list of specified heap.
  * If heap have no more users after it, all allocated data in the heap
  * is freed.
- * If @p heap is @c MHEAP_NONE, then user is removed from all heaps, 
+ * If @p heap is @c MHEAP_NONE, then user is removed from all heaps,
  * where it is registered.
  *
  * @param heap          heap ID.
@@ -79,8 +79,8 @@ extern void mheap_free_user(mheap_t heap, const void *user);
  * @param heap          heap ID.
  * @param n             size of block.
  *
- * @return pointer to allocated memory block, which first @p n bytes 
- *         are available for user, or NULL on error. 
+ * @return pointer to allocated memory block, which first @p n bytes
+ *         are available for user, or NULL on error.
  */
 extern void * mheap_alloc(mheap_t heap, size_t n);
 

@@ -1,20 +1,20 @@
-/** @file 
- * @brief ACSE 
- * 
- * ACSE user interface declarations. 
+/** @file
+ * @brief ACSE
+ *
+ * ACSE user interface declarations.
  *
  * Copyright (C) 2009-2010 Test Environment authors (see file AUTHORS
- * in the root directory of the distribution). 
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
  * as published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version. 
+ * the License, or (at your option) any later version.
  *
  * Test Environment is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details. 
+ * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, write to the Free Software
@@ -39,23 +39,23 @@ extern void acse_loop(void);
 
 /**
  * Init EPC dispatcher.
- * 
+ *
  * @param listen_sock           socket for listening EPC connection
- * 
+ *
  * @return              status code
  */
 extern te_errno acse_epc_disp_init(int listen_sock, epc_site_t *s);
 
 
 /**
- * Init EPC CWMP-operations user.  
+ * Init EPC CWMP-operations user.
  */
 extern te_errno acse_epc_user_init(epc_site_t *s);
 
 /**
- * Perform EPC configuration method and wait for result, 
- * which should come ASAP. 
- * Note: here is hardcoded timeout to wait response. 
+ * Perform EPC configuration method and wait for result,
+ * which should come ASAP.
+ * Note: here is hardcoded timeout to wait response.
  * TODO: think, maybe, make this timeout configurable?
  *
  * @param acs           Name of the acs instance
@@ -75,7 +75,7 @@ extern te_errno acse_conf_op(const char *acs, const char *cpe,
                              acse_epc_config_data_t **cfg_result);
 /**
  * Prepare internal data for send EPC config operation ACSE.
- * This function MUST be called before acse_conf_call(). 
+ * This function MUST be called before acse_conf_call().
  *
  * @param fun           Code of ACSE config operation
  * @param cfg_data      Location for pointer to operation-specific data,
@@ -91,7 +91,7 @@ extern te_errno acse_conf_prepare(acse_cfg_op_t fun,
 
 /**
  * Prepare internal data for send EPC config operation ACSE.
- * This function MUST be called before acse_conf_call(). 
+ * This function MUST be called before acse_conf_call().
  *
  * @param cfg_result    Location for pointer to result of config operation,
  *                      it will points to the static memory area,
@@ -103,7 +103,7 @@ extern te_errno acse_conf_call(acse_epc_config_data_t **cfg_result);
 
 /**
  * Prepare internal data for send CWMP operation request to ACSE.
- * This function MUST be called before acse_cwmp_call(). 
+ * This function MUST be called before acse_cwmp_call().
  *
  * @param acs           Name of the acs instance
  * @param cpe           Name of the acs cpe instance
@@ -123,7 +123,7 @@ extern te_errno acse_cwmp_prepare(const char *acs, const char *cpe,
 /**
  * Call CWMP operation request to ACSE, and wait for result.
  * This function MUST be called after acse_cwmp_prepare(), and
- * if necessary, subsequent additions into cwmp_data. 
+ * if necessary, subsequent additions into cwmp_data.
  *
  * @param status        Location for result status of operation.
  * @param data_len      Location for length of received response.
@@ -134,7 +134,7 @@ extern te_errno acse_cwmp_prepare(const char *acs, const char *cpe,
  *
  * @return              Local execution status code
  */
-extern te_errno acse_cwmp_call(size_t *data_len, 
+extern te_errno acse_cwmp_call(size_t *data_len,
                                acse_epc_cwmp_data_t **cwmp_data);
 
 /**
@@ -162,7 +162,7 @@ extern te_errno acse_cwmp_connreq(const char *acs, const char *cpe,
 extern te_errno acse_cwmp_rpc_call(const char *acs, const char *cpe,
                                    acse_request_id_t *request_id,
                                    te_cwmp_rpc_cpe_t  rpc_cpe,
-                                   cwmp_data_to_cpe_t to_cpe); 
+                                   cwmp_data_to_cpe_t to_cpe);
 
 /**
  * Check CWMP CPE RPC operation status or get ACS RPC.
@@ -176,13 +176,13 @@ extern te_errno acse_cwmp_rpc_check(const char *acs, const char *cpe,
                                     acse_request_id_t  request_id,
                                     te_cwmp_rpc_cpe_t  rpc_cpe,
                                     te_cwmp_rpc_acs_t  rpc_acs,
-                                    cwmp_data_from_cpe_t from_cpe); 
+                                    cwmp_data_from_cpe_t from_cpe);
 
 /**
- * Order send particular HTTP message, and wait EPC answer 
- * from ACSE. 
- * While active CWMP session, issue specified HTTP response 
- * immediately. If there is no active CWMP session, 
+ * Order send particular HTTP message, and wait EPC answer
+ * from ACSE.
+ * While active CWMP session, issue specified HTTP response
+ * immediately. If there is no active CWMP session,
  * specified HTTP response will be answer to the next Inform,
  * received from that CPE.
  *

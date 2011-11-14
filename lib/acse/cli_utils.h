@@ -20,10 +20,10 @@
  *              of the first symbol after token;
  *              or zero if there is no more token.
  */
-static inline size_t 
+static inline size_t
 cli_token_copy(const char *line, char *token)
 {
-    size_t  t /* ofs in target */, 
+    size_t  t /* ofs in target */,
             s /* ofs in source */,
             b /* leading blanks*/;
     int quoted = 0;
@@ -63,7 +63,7 @@ struct cli_cmd_descr_t;
 enum {
 
     /** Status codes */
-    CLI_OK = 0, 
+    CLI_OK = 0,
     CLI_E_WRONG_TAG,
     CLI_E_MISS_TAGS,
     CLI_E_SPECIFIC,
@@ -102,7 +102,7 @@ typedef struct cli_cmd_descr_t {
 extern int cli_perform_cmd(cli_cmd_descr_t *root_list, const char *line);
 
 /**
- * Print help for this command and its subcommands. 
+ * Print help for this command and its subcommands.
  */
 extern void cli_print_cmd_help(cli_cmd_descr_t *cd);
 

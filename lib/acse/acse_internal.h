@@ -1,24 +1,24 @@
-/** @file 
- * @brief ACSE 
- * 
- * ACSE internal declarations. 
+/** @file
+ * @brief ACSE
+ *
+ * ACSE internal declarations.
  *
  * @ref acse-main_loop
- * 
+ *
  * @ref acse-cwmp_dispatcher
  *
  * Copyright (C) 2009-2010 Test Environment authors (see file AUTHORS
- * in the root directory of the distribution). 
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
  * as published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version. 
+ * the License, or (at your option) any later version.
  *
  * Test Environment is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details. 
+ * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, write to the Free Software
@@ -78,17 +78,17 @@ extern "C" {
       ^                                              |{Y}    {N}
       |{N}                                           V
   < Was HoldRequest? >-------------\   /---[ Process Inform, reply ]
-      ^               {Y}          |   |            
+      ^               {Y}          |   |
       |                            V   V  {POST}
       |          /---------------( SERVE )----->[ Process SOAP RPC ]
       |          |  {Empty POST}       ^           |
-      |{N}       V                     \-----------/ 
- < Have pending Req to CPE? >                 
+      |{N}       V                     \-----------/
+ < Have pending Req to CPE? >
       |{Y}       ^
       |          \------------------------------------\
       V                                               |
-[ Send Request to CPE ]--->( WAIT_RESPONSE )---->[ Process Response ] 
-</pre>   
+[ Send Request to CPE ]--->( WAIT_RESPONSE )---->[ Process Response ]
+</pre>
 @endhtmlonly
  * @}
  */
@@ -120,16 +120,16 @@ typedef struct auth_t {
 /** CPE RPC queue */
 typedef struct cpe_rpc_item_t {
     TAILQ_ENTRY(cpe_rpc_item_t)  links;/**< List links */
-    /* TODO: move hear some fields from #acse_epc_cwmp_data_t 
+    /* TODO: move hear some fields from #acse_epc_cwmp_data_t
        instead of this pointer to EPC request. */
     acse_epc_cwmp_data_t   *params;    /**< CWMP parameters for RPC */
     acse_request_id_t       request_id;/**< index of RPC in queue */
-    mheap_t                 heap;      /**< Memory heap which contains 
+    mheap_t                 heap;      /**< Memory heap which contains
                                         response data, deserialized by
-                                        gSOAP engine. Should be freed 
+                                        gSOAP engine. Should be freed
                                         when response is removed from
                                         queue. */
-                                        
+
 } cpe_rpc_item_t;
 
 
@@ -160,19 +160,19 @@ typedef struct cpe_t{
     const char  *name;      /**< CPE record name.           */
     const char  *url;       /**< CPE URL for Conn.Req.      */
     const char  *cert;      /**< CPE SSL certificate.       */
-    auth_t       cr_auth;   /**< Authenticate fields for 
+    auth_t       cr_auth;   /**< Authenticate fields for
                                  Connection Request.        */
-    auth_t       acs_auth;  /**< Authenticate fields for 
+    auth_t       acs_auth;  /**< Authenticate fields for
                                  CPE->ACS Sessions.         */
     te_bool      enabled;   /**< Flag denotes whether CWMP sessions
                                  are enabled from this CPE.
-                                 Set to FALSE during active 
+                                 Set to FALSE during active
                                  CWMP session leads to stop it.*/
-    te_bool      sync_mode; /**< Sync mode: if TRUE, 
-                                 while processing CWMP session, 
+    te_bool      sync_mode; /**< Sync mode: if TRUE,
+                                 while processing CWMP session,
                                  wait for EPC messages with next
                                  CPE RPC if queue is empty. */
-    te_bool      chunk_mode;/**< HTTP chunk mode, transparently 
+    te_bool      chunk_mode;/**< HTTP chunk mode, transparently
                                  passed to the gSOAP option.*/
 
     int          hold_requests; /**< Value of HoldRequests, 0 or 1,
@@ -201,7 +201,7 @@ typedef struct cpe_t{
 
     struct cwmp_session_t *session;  /**< CWMP session processing     */
     struct sockaddr       *addr;     /**< CPE TCP/IP address for C.R. */
-    socklen_t              addr_len; /**< address length              */ 
+    socklen_t              addr_len; /**< address length              */
 
     acse_cr_state_t        cr_state; /**< State of ConnectionRequest  */
     acse_http_response_t  *http_response;
@@ -231,8 +231,8 @@ typedef struct acs_t {
     /** Fields for internal procedure data. */
     struct sockaddr *addr_listen;/**< TCP/IP address to listen      */
     socklen_t        addr_len;   /**< address length */
-    struct conn_data_t    *conn_listen;  /**< Listen TCP connection 
-                                      descriptor, 
+    struct conn_data_t    *conn_listen;  /**< Listen TCP connection
+                                      descriptor,
                                       or NULL if ACS is disabled. */
 
     struct cwmp_session_t *session; /**< CWMP session, while it is not
@@ -248,14 +248,14 @@ extern acs_list_t acs_list;
 /**
  * @page acse-main_loop Main loop
  * @{
- * ACSE main event loop process set of input abstract channels. 
+ * ACSE main event loop process set of input abstract channels.
  * Each channel described by instance of #channel_t structure.
  * Channels can be registered by acse_add_channel() procedure.
- * 
+ *
  * User, who register new channel, is responsible for initiate
- * all internal context before register, and for release it 
+ * all internal context before register, and for release it
  * when channel is closed and channel_t::destroy callback is called.
- * 
+ *
  */
 
 typedef enum {
@@ -264,8 +264,8 @@ typedef enum {
     ACSE_CH_DESTROY,
 } ch_state_t;
 
-/** 
- * Abstraction structure for the 'channel' object 
+/**
+ * Abstraction structure for the 'channel' object
  * @ingroup acse-main_loop
  */
 typedef struct channel_t {
@@ -276,20 +276,20 @@ typedef struct channel_t {
 
     struct pollfd pfd;
 
-    te_errno  (*before_poll)(   
+    te_errno  (*before_poll)(
         void   *data,           /**< Channel-specific private data (IN) */
         struct pollfd *pfd,     /**< Poll descriptor for events    (OUT)*/
-        struct timeval *deadline/**< Time until wait to,  
+        struct timeval *deadline/**< Time until wait to,
                                      tv_sec = -1 for infinite wait.(OUT)*/
         );    /**< Called before poll(), should prepare @p pfd.  */
-    te_errno  (*after_poll)(    
+    te_errno  (*after_poll)(
         void   *data,           /**< Channel-specific private data      */
         struct pollfd *pfd      /**< Poll descriptor with events,
                                      if NULL, timeout occured.  */
-        );    /**< Called after poll(), should process detected event. 
+        );    /**< Called after poll(), should process detected event.
                   Return code TE_ENOTCONN denote that underlying
                   connection is closed and channel should be finished. */
-    te_errno  (*destroy)(       
+    te_errno  (*destroy)(
         void   *data);          /**< Called on channel destroy    */
 } channel_t;
 
@@ -297,7 +297,7 @@ typedef struct channel_t {
 /**
  * Add I/O channel to ACSE internal main loop.
  *
- * @param ch_item       Channel item, should have all callbacks 
+ * @param ch_item       Channel item, should have all callbacks
  *                      set to function addresses.
  *
  * @return none
@@ -308,7 +308,7 @@ extern void acse_add_channel(channel_t *ch_item);
  * Remove I/O channel from ACSE internal main loop.
  * Call 'destroy' callback for channel.
  *
- * @param ch_item       Channel. 
+ * @param ch_item       Channel.
  *
  * @return none
  */
@@ -320,30 +320,30 @@ extern void acse_remove_channel(channel_t *ch_item);
 
 /**
  * Status of CWMP session: was EmptyPOST as "write-shutdown" from CPE,
- * or not. 
+ * or not.
  */
 typedef enum {
-    CWMP_EP_CLEAR, /* Status on session init, before sending first 
+    CWMP_EP_CLEAR, /* Status on session init, before sending first
                        HTTP response, with InformResponse */
-    CWMP_EP_WAIT,  /* Status while there was send message to CPE with 
+    CWMP_EP_WAIT,  /* Status while there was send message to CPE with
             HoldRequests = false, and was not received empty POST
             after it.*/
     CWMP_EP_GOT,   /* Status since we have received empty POST from CPE
-                     after HoldReq = false, which denotes that CPE 
+                     after HoldReq = false, which denotes that CPE
                      has no more requests to ACS. */
 } cwmp_ep_status_t;
 
 /** Descriptor of active CWMP session.
- *  Used as user-info in gSOAP internal struct. 
+ *  Used as user-info in gSOAP internal struct.
  *  Fields cwmp_session_t::acs_owner and cpe_owner should
  *  not contain pointers simultaneously, exactly one of them
- *  should be non-NULL for correct session. 
+ *  should be non-NULL for correct session.
  */
 typedef struct cwmp_session_t {
     cwmp_sess_state_t    state;     /**< CWMP session state.            */
     acs_t               *acs_owner; /**< NULL or master ACS.            */
     cpe_t               *cpe_owner; /**< NULL or master CPE record.     */
-    cpe_rpc_item_t      *rpc_item;  /**< NULL or last sent RPC in 
+    cpe_rpc_item_t      *rpc_item;  /**< NULL or last sent RPC in
                                           @c WAIT_RESPONSE state.       */
     channel_t           *channel;   /**< I/O ACSE channel.              */
     struct soap          m_soap;    /**< SOAP struct                    */
@@ -368,13 +368,13 @@ typedef struct cwmp_session_t {
 
 /**
  * Allocate struct for new CWMP session, init session,
- * init gSOAP struct, init Digest plugin or SSL if need, 
+ * init gSOAP struct, init Digest plugin or SSL if need,
  * allocate ACSE I/O channel for this session,
  * insert I/O channel into main loop.
- * 
+ *
  * @param socket        TCP connection socket, just accepted.
  * @param acs           ACS object which responsible for this session.
- * 
+ *
  * @return status code
  */
 extern te_errno cwmp_new_session(int socket, acs_t *acs);
@@ -384,10 +384,10 @@ extern te_errno cwmp_new_session(int socket, acs_t *acs);
 /**
  * Close CWMP session, release all data, finish related gSOAP
  * activity and release gSOAP internal data.
- * 
+ *
  * Note: passed pointer to session struct is not valid after
  * return from this function!
- * 
+ *
  * @return   status code
  */
 extern te_errno cwmp_close_session(cwmp_session_t *sess);
@@ -405,10 +405,10 @@ extern te_errno cwmp_suspend_session(cwmp_session_t *cwmp_sess);
 extern te_errno cwmp_resume_session(cwmp_session_t *sess, int socket);
 
 /**
- * Check wheather accepted TCP connection is related to 
+ * Check wheather accepted TCP connection is related to
  * particular ACS; if it is, start processing of CWMP session.
- * This procedure does not wait any data in TCP connection and 
- * does not perform regular read from it. 
+ * This procedure does not wait any data in TCP connection and
+ * does not perform regular read from it.
  *
  * @return      0 if connection accepted by this ACS;
  *              TE_ECONNREFUSED if connection NOT accepted by this ACS;
@@ -430,7 +430,7 @@ extern te_errno db_add_acs(const char *acs_name);
  * Add a CPE record for particular ACS object to internal DB
  *
  * @param acs_name      Name of the ACS
- * @param cpe_name      Name of the CPE 
+ * @param cpe_name      Name of the CPE
  *
  * @return              status code
  *
@@ -496,7 +496,7 @@ extern te_errno db_clear();
 
 /**
  * Init TCP Listener dispatcher (named 'conn' - by old style. to be fixed).
- * 
+ *
  * @return              status code
  */
 extern te_errno acse_conn_create(void);
@@ -506,7 +506,7 @@ extern te_errno acse_conn_create(void);
 /**
  * Register ACS object in TCP Connection Dispatcher.
  * This action require to set on remote_addr internal field in ACS.
- * 
+ *
  * @param acs           ACS object
  *
  * @return status code
@@ -516,7 +516,7 @@ extern te_errno conn_register_acs(acs_t *acs);
 /**
  * Register ACS object in TCP Connection Dispatcher.
  * This action require to set on remote_addr internal field in ACS.
- * 
+ *
  * @param acs           ACS object
  *
  * @return status code
@@ -525,10 +525,10 @@ extern te_errno conn_deregister_acs(acs_t *acs);
 
 /**
  * Enable ACS object to receipt CWMP sessions.
- * This action require to set on @p port field in ACS. 
- * After success of this action ACS object will be registered 
+ * This action require to set on @p port field in ACS.
+ * After success of this action ACS object will be registered
  * in TCP Connection Dispatcher.
- * 
+ *
  * @param acs           ACS object
  *
  * @return status code
@@ -538,7 +538,7 @@ extern te_errno acse_enable_acs(acs_t *acs);
 /**
  * Disable ACS object to receipt CWMP sessions, deregister
  * ACS from TCP Connection Dispatcher.
- * 
+ *
  * @param acs           ACS object
  *
  * @return status code
@@ -555,7 +555,7 @@ extern te_errno acse_disable_acs(acs_t *acs);
 extern te_errno acse_disable_cpe(cpe_t *cpe);
 
 /**
- * Initiate CWMP Connection Request to specified CPE. 
+ * Initiate CWMP Connection Request to specified CPE.
  *
  * @param cpe_item      CPE
  *
@@ -565,7 +565,7 @@ extern te_errno acse_init_connection_request(cpe_t *cpe_item);
 
 
 /**
- * Clear ACSE internal main loop channels; that is call destructor 
+ * Clear ACSE internal main loop channels; that is call destructor
  * for every registered channel.
  * Usually means finish of ACSE operation.
  */
@@ -573,16 +573,16 @@ extern void acse_clear_channels(void);
 
 
 /**
- * Memory allocation wrapper for SOAP engine. 
- * Designed for usage of deserialized SOAP data after free of soap 
- * context, because RPC replies and Informs may wait their report 
+ * Memory allocation wrapper for SOAP engine.
+ * Designed for usage of deserialized SOAP data after free of soap
+ * context, because RPC replies and Informs may wait their report
  * after CWMP session close.
  *
  * @param soap          gSOAP context.
  * @param n             size of block.
  *
- * @return pointer to allocated memory block, which first @p n bytes 
- *         are available for user. 
+ * @return pointer to allocated memory block, which first @p n bytes
+ *         are available for user.
  */
 extern void *acse_cwmp_malloc(struct soap *soap, size_t n);
 
@@ -602,7 +602,7 @@ extern void acse_soap_serve_response(cwmp_session_t *cwmp_sess);
  * @param rpc_item      pointer to item.
  *
  * @return status
- */ 
+ */
 extern te_errno acse_rpc_item_free(cpe_rpc_item_t *rpc_item);
 
 
@@ -615,12 +615,12 @@ extern te_errno acse_rpc_item_free(cpe_rpc_item_t *rpc_item);
  * with no keep-alive to finish CWMP session.
  *
  * After sending RPC to CPE request item is moved to results queue
- * in CPE record, where response from CPE will be stored, when 
+ * in CPE record, where response from CPE will be stored, when
  * it will be received later.
  *
  * @param soap        gSOAP struct.
  * @param session     current CWMP session.
- * 
+ *
  * @return gSOAP status.
  */
 extern int acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session);
@@ -633,9 +633,9 @@ extern int acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session);
  * @param soap        gSOAP struct.
  * @param session     current CWMP session.
  * @param http_code   standard HTTP code of response
- * @param str         additional string for 'Location: ' in response, 
+ * @param str         additional string for 'Location: ' in response,
  *                    if it needed, or NULL.
- * 
+ *
  * @return gSOAP status.
  */
 extern int acse_cwmp_send_http(struct soap *soap, cwmp_session_t *session,

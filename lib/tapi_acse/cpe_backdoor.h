@@ -1,12 +1,12 @@
 
 /** @file
- * @brief Common declarations for utilities, used in CWMP-related tests 
- *  for make some management of CPE behind CWMP. 
+ * @brief Common declarations for utilities, used in CWMP-related tests
+ *  for make some management of CPE behind CWMP.
  *
  * Common definitions for RPC test suite.
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
- * 
+ *
  * $Id$
  */
 #ifndef __CPE_BACKDOOR__H__
@@ -18,7 +18,7 @@
 struct cpe_id_s;
 typedef struct cpe_id_s cpe_id_t;
 
-/* TODO: invent actual and portable ID for box, which will 
+/* TODO: invent actual and portable ID for box, which will
    help background implementation to connect with it.
    This is temporary. */
 struct cpe_id_s {
@@ -42,7 +42,7 @@ extern cpe_id_t *cpe_id_init(void);
 
 /**
  * Get network address of the ACS address.
- * Operation depends only from TestSuite network configuration, 
+ * Operation depends only from TestSuite network configuration,
  * and specific CPE options, and should not have any matter
  * to the TR client on the CPE.
  *
@@ -101,7 +101,7 @@ extern te_errno cpe_get_acs_url(cpe_id_t *cpe,
 extern te_errno cpe_set_acs_url(cpe_id_t *cpe, char *acs_url);
 
 /**
- * Activate TR069 management protocol on CPE. 
+ * Activate TR069 management protocol on CPE.
  * Set URL of ACS on CPE, if specified.
  *
  * @param cpe           ID of CPE.
@@ -112,7 +112,7 @@ extern te_errno cpe_set_acs_url(cpe_id_t *cpe, char *acs_url);
 extern te_errno cpe_activate_tr069_mgmt(cpe_id_t *cpe, char *acs_url);
 
 /**
- * Dectivate TR069 management protocol on CPE. 
+ * Dectivate TR069 management protocol on CPE.
  *
  * @param cpe           ID of CPE.
  *
@@ -213,7 +213,7 @@ extern te_errno cpe_get_acs_passwd(cpe_id_t *cpe,
 
 /**
  * For standalone TR client tests respawn client, if necessary.
- * Do nothing for TR client on the real CPE. 
+ * Do nothing for TR client on the real CPE.
  *
  * @param cpe           ID of CPE.
  * @param acs_url       string with URL, may be NULL.
@@ -223,46 +223,46 @@ extern te_errno cpe_get_acs_passwd(cpe_id_t *cpe,
 extern te_errno cpe_respawn_client(cpe_id_t *cpe, const char *acs_url);
 
 /**
- * Check CPE is really just reboot. 
- * TODO: insert some timespec, that it is reboot during particular 
+ * Check CPE is really just reboot.
+ * TODO: insert some timespec, that it is reboot during particular
  * time interval?
  *
  * This routine do nothing for local TR client, because there is no
- * any real CPE under it. 
+ * any real CPE under it.
  *
  * @param cpe           ID of CPE.
  *
- * @return zero on success (i.e. check processed without problems and 
+ * @return zero on success (i.e. check processed without problems and
  *             box has just reboot) or error code.
- */ 
+ */
 extern te_errno cpe_check_reboot(cpe_id_t *cpe);
 
 /**
- * Check CPE is really just reboot (?) and ѕettings was dropped to 
- * the factory default. 
- * TODO: insert some timespec, that it is reboot during particular 
+ * Check CPE is really just reboot (?) and ѕettings was dropped to
+ * the factory default.
+ * TODO: insert some timespec, that it is reboot during particular
  * time interval?
  *
  * This routine do nothing for local TR client, because there is no
- * any real CPE under it. 
+ * any real CPE under it.
  *
  * @param cpe           ID of CPE.
  *
- * @return zero on success (i.e. check processed without problems and 
+ * @return zero on success (i.e. check processed without problems and
  *             box has factory default settings) or error code.
- */ 
+ */
 extern te_errno cpe_check_factory_reset(cpe_id_t *cpe);
 
 
 /**
  * Get directory path on the client TA controlling host where client
- * will put downloaded files. 
+ * will put downloaded files.
  * Return error if not applicable for current CPE.
  *
  * @param cpe           ID of CPE.
  * @param fs_path       Path to download directory (OUT).
  * @param bufsize       Size of location buffer.
- * 
+ *
  * @return status code.
  */
 extern te_errno cpe_get_fs_path(cpe_id_t *cpe,
@@ -275,4 +275,4 @@ extern te_errno cpe_internal_get_param(cpe_id_t *cpe,
 extern te_errno cpe_internal_set_param(cpe_id_t *cpe,
                 const char *name, char *value);
 
-#endif /* __CPE_BACKDOOR__H__ */ 
+#endif /* __CPE_BACKDOOR__H__ */

@@ -66,7 +66,7 @@ A commercial use license is available from Genivia, Inc., contact@genivia.com
 #include "stdsoap2.h"
 
 #ifdef WITH_OPENSSL
-#include <openssl/ssl.h> 
+#include <openssl/ssl.h>
 #include <openssl/evp.h>
 #endif
 

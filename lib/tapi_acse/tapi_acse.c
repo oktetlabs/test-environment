@@ -44,7 +44,7 @@
 
 
 /**
- * Copy internal gSOAP CWMP array of strings to string_array_t. 
+ * Copy internal gSOAP CWMP array of strings to string_array_t.
  * Parameter src_ is assumed to have fields 'char ** __ptrstring' and
  * 'int __size'.
  * Parameter 'arr_' is local variable for pointer to new string_array_t.
@@ -62,7 +62,7 @@
 
 
 /**
- * Local TAPI macro for check return code. 
+ * Local TAPI macro for check return code.
  * Differ from generic macro CHECK_RC (which is used in tests).
  */
 #define T_CHECK_RC(expr_) \
@@ -141,14 +141,14 @@ tapi_acse_stop(const char *ta)
 }
 
 /**
- * Local method to detect whether ACSE Config parameter is integer-type. 
+ * Local method to detect whether ACSE Config parameter is integer-type.
  * Should be modified when ACSE CS subtree updated.
  */
 static inline int
 acse_is_int_var(const char *name)
 {
     return
-        ((0 == strcmp(name, "port"))     || 
+        ((0 == strcmp(name, "port"))     ||
          (0 == strcmp(name, "ssl"))      ||
          (0 == strcmp(name, "enabled"))  ||
          (0 == strcmp(name, "cr_state")) ||
@@ -233,7 +233,7 @@ tapi_acse_ta_cs_init(tapi_acse_context_t *ctx)
     CHECK_CREATE_ACS_CPE(C_CPE);
 
     if (CFG_HANDLE_INVALID == acs_handle) /* ACS on ACSE was created */
-    { 
+    {
         COPY_ACS_CPE_PARAM(C_ACS, CVT_INTEGER, "port");
         COPY_ACS_CPE_PARAM(C_ACS, CVT_STRING, "http_root");
         COPY_ACS_CPE_PARAM(C_ACS, CVT_STRING, "auth_mode");
@@ -241,7 +241,7 @@ tapi_acse_ta_cs_init(tapi_acse_context_t *ctx)
     }
 
     if (CFG_HANDLE_INVALID == cpe_handle) /* CPE on ACSE was created */
-    { 
+    {
         COPY_ACS_CPE_PARAM(C_CPE, CVT_STRING, "login");
         COPY_ACS_CPE_PARAM(C_CPE, CVT_STRING, "passwd");
     }
@@ -277,7 +277,7 @@ tapi_acse_ctx_init(const char *ta)
 
         ctx->rpc_srv = tapi_acse_get_rpcs(ta);
 
-        ctx->timeout = CWMP_TIMEOUT + 5; 
+        ctx->timeout = CWMP_TIMEOUT + 5;
         ctx->def_timeout = CWMP_TIMEOUT + 5;
         ctx->req_id = 0;
 
@@ -363,7 +363,7 @@ tapi_acse_manage_vlist(const char *ta, const char *acs_name,
             break;
 
         if (ACSE_OP_OBTAIN == opcode)
-        { 
+        {
             cfg_val_type type;
 
             if (acse_is_int_var(name))
@@ -395,7 +395,7 @@ tapi_acse_manage_vlist(const char *ta, const char *acs_name,
         }
         if (0 == gen_rc) /* store in 'gen_rc' first TE errno */
             gen_rc = rc;
-    } 
+    }
 
     return gen_rc;
 }
@@ -405,10 +405,10 @@ tapi_acse_manage_vlist(const char *ta, const char *acs_name,
  * @retval TRUE if wait should be continued;
  * @retval FALSE if wait should be stopped.
  */
-static inline te_bool 
+static inline te_bool
 tapi_acse_wait_step(tapi_acse_context_t *ctx)
 {
-    /* Increase intervals for sleep by Fibonacci sequence up to ~ 1 sec, 
+    /* Increase intervals for sleep by Fibonacci sequence up to ~ 1 sec,
        then sleep by 1 sec. */
     assert(ctx);
     if (ctx->timeout == 0)
@@ -437,7 +437,7 @@ tapi_acse_wait_step(tapi_acse_context_t *ctx)
     return TRUE;
 }
 
-static inline void 
+static inline void
 tapi_acse_ctx_clear_timers(tapi_acse_context_t *ctx)
 {
     assert(ctx);
@@ -523,7 +523,7 @@ tapi_acse_wait_acse_state(tapi_acse_context_t *ctx,
     do {
         rc = tapi_acse_manage_cpe(ctx, ACSE_OP_OBTAIN,
                   state_var, &cur_state, VA_END_LIST);
-        VERB("get %s on %s/%s: rc %r, cur state %d, usleep %d", state_var, 
+        VERB("get %s on %s/%s: rc %r, cur state %d, usleep %d", state_var,
              ctx->acs_name, ctx->cpe_name, rc, cur_state, ctx->next_usleep);
         if (rc != 0)
         {
@@ -532,7 +532,7 @@ tapi_acse_wait_acse_state(tapi_acse_context_t *ctx,
                 *res_state = cur_state;
             return rc;
         }
-        if (cur_state & want_state) 
+        if (cur_state & want_state)
             break;
 
     } while (tapi_acse_wait_step(ctx));
@@ -572,7 +572,7 @@ tapi_acse_wait_cr_state(tapi_acse_context_t *ctx,
 {
     int res_state;
     te_errno rc = tapi_acse_wait_acse_state(ctx, "cr_state",
-                                            want_state | CR_ERROR, 
+                                            want_state | CR_ERROR,
                                             &res_state);
     if (rc == 0 && res_state == CR_ERROR)
     {
@@ -589,7 +589,7 @@ tapi_acse_wait_cr_state(tapi_acse_context_t *ctx,
  */
 static inline te_errno
 rpc_cwmp_acse_start(rcf_rpc_server *rpcs,
-                    char *pipe_name, te_bool oper) 
+                    char *pipe_name, te_bool oper)
 {
     tarpc_cwmp_acse_start_in  in;
     tarpc_cwmp_acse_start_out out;
@@ -631,8 +631,8 @@ static inline te_errno
 rpc_cwmp_op_call(rcf_rpc_server *rpcs,
                  const char *acs_name, const char *cpe_name,
                  te_cwmp_rpc_cpe_t cwmp_rpc,
-                 uint8_t *buf, size_t buflen, 
-                 acse_request_id_t *request_id) 
+                 uint8_t *buf, size_t buflen,
+                 acse_request_id_t *request_id)
 {
     tarpc_cwmp_op_call_in  in;
     tarpc_cwmp_op_call_out out;
@@ -729,9 +729,9 @@ rpc_cwmp_op_check(rcf_rpc_server *rpcs,
 
     RING("RPC (%s,%s): cwmp_op_check(%s/%s, for %s) -> %r (buf %p, %db)",
                  rpcs->ta, rpcs->name,
-                 acs_name, cpe_name, 
-                 request_id == 0 ? 
-                     cwmp_rpc_acs_string(cwmp_rpc_acs) : 
+                 acs_name, cpe_name,
+                 request_id == 0 ?
+                     cwmp_rpc_acs_string(cwmp_rpc_acs) :
                      cwmp_rpc_cpe_string(*cwmp_rpc),
                  (te_errno)out.status,
                  out.buf.buf_val, out.buf.buf_len);
@@ -799,7 +799,7 @@ tapi_acse_cpe_rpc_call(tapi_acse_context_t *ctx,
             return TE_RC(TE_TAPI, TE_EINVAL);
         }
     }
-    else 
+    else
         pack_s = 0;
 
     return rpc_cwmp_op_call(ctx->rpc_srv, ctx->acs_name, ctx->cpe_name,
@@ -837,7 +837,7 @@ tapi_acse_cpe_rpc_response(tapi_acse_context_t *ctx,
         ssize_t unp_rc;
         if (NULL == cwmp_buf || 0 == buflen)
         {
-            ERROR("%s(): op_check return success, but buffer is NULL.", 
+            ERROR("%s(): op_check return success, but buffer is NULL.",
                   __FUNCTION__);
             from_cpe->p = NULL;
             return TE_RC(TE_TAPI, TE_EFAIL);
@@ -879,7 +879,7 @@ tapi_acse_get_rpc_acs(tapi_acse_context_t *ctx,
             break;
     } while (tapi_acse_wait_step(ctx));
 
-    VERB("%s(): rc %r", __FUNCTION__, rc); 
+    VERB("%s(): rc %r", __FUNCTION__, rc);
     tapi_acse_ctx_clear_timers(ctx);
 
     if (0 == rc && NULL != from_cpe)
@@ -887,7 +887,7 @@ tapi_acse_get_rpc_acs(tapi_acse_context_t *ctx,
         ssize_t unp_rc;
         if (NULL == cwmp_buf || 0 == buflen)
         {
-            ERROR("%s(): op_check return success, but buffer is NULL.", 
+            ERROR("%s(): op_check return success, but buffer is NULL.",
                   __FUNCTION__);
             from_cpe->p = NULL;
             return TE_RC(TE_TAPI, TE_EFAIL);
@@ -1019,7 +1019,7 @@ tapi_acse_get_parameter_values_resp(tapi_acse_context_t *ctx,
 te_errno
 tapi_acse_set_pvalues_sync(tapi_acse_context_t *ctx,
                            const char *par_key,
-                           cwmp_values_array_t *set_values, 
+                           cwmp_values_array_t *set_values,
                            int *status)
 {
     te_errno rc;
@@ -1095,7 +1095,7 @@ tapi_acse_get_parameter_names(tapi_acse_context_t *ctx,
     req.ParameterPath = &name_ptr;
     req.NextLevel = next_level;
 
-    RING("Issue GetParameterNames for '%s', next_level %d.", 
+    RING("Issue GetParameterNames for '%s', next_level %d.",
          name, (int)next_level);
 
     return tapi_acse_cpe_rpc_call(ctx, CWMP_RPC_get_parameter_names,
@@ -1111,7 +1111,7 @@ tapi_acse_get_parameter_names_resp(tapi_acse_context_t *ctx,
     cwmp_data_from_cpe_t from_cpe_loc = {.p = NULL};
     te_errno rc = tapi_acse_cpe_rpc_response(ctx, NULL, &from_cpe_loc);
     if (0 == rc && NULL != resp && NULL != from_cpe_loc.p)
-    { 
+    {
         int i;
         ParameterInfoList *name_list =
             from_cpe_loc.get_parameter_names_r->ParameterList;
@@ -1226,13 +1226,13 @@ tapi_acse_cpe_connect(tapi_acse_context_t *ctx)
 {
     te_errno rc;
 
-    do 
+    do
     {
         int sync_mode;
         cwmp_sess_state_t   cur_sess_state = 0;
         T_CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_OBTAIN,
                               "sync_mode", &sync_mode,
-                              "cwmp_state", &cur_sess_state, 
+                              "cwmp_state", &cur_sess_state,
                               VA_END_LIST));
         if (cur_sess_state != CWMP_NOP)
         {
@@ -1288,11 +1288,11 @@ tapi_acse_cpe_disconnect(tapi_acse_context_t *ctx)
 {
     te_errno rc;
     int timeout = ctx->timeout;
-    /* This util simple activates sending empty response, 
+    /* This util simple activates sending empty response,
      * this  automatically leads to terminate CWMP session.
      * Investigate standard and real behaviour of clients,
-     * maybe add here some more actions and/or checks state... 
-     * 
+     * maybe add here some more actions and/or checks state...
+     *
      * Usually this will terminate session. Single exclusion,
      * it seems, is true HoldRequests status.
      */
@@ -1342,7 +1342,7 @@ tapi_acse_add_object(tapi_acse_context_t *ctx,
     strncpy(obj_name_buf, obj_name, sizeof(obj_name_buf));
     strncpy(param_key_buf, param_key, sizeof(param_key_buf));
 
-    RING("Issue to CPE %s AddObject on %s", 
+    RING("Issue to CPE %s AddObject on %s",
          ctx->cpe_name, obj_name);
 
     return tapi_acse_cpe_rpc_call(ctx, CWMP_RPC_add_object,
@@ -1368,7 +1368,7 @@ tapi_acse_add_object_resp(tapi_acse_context_t *ctx,
     {
         assert(from_cpe_loc.p != NULL);
 
-        RING("AddObject has status %d, instance created idx %d.", 
+        RING("AddObject has status %d, instance created idx %d.",
              from_cpe_loc.add_object_r->Status,
              from_cpe_loc.add_object_r->InstanceNumber);
         if (NULL != obj_index)
@@ -1396,8 +1396,8 @@ tapi_acse_delete_object(tapi_acse_context_t *ctx,
     strncpy(obj_name_buf, obj_name, sizeof(obj_name_buf));
     strncpy(param_key_buf, param_key, sizeof(param_key_buf));
 
-    RING("Issue to CPE %s DeleteObject on %s", 
-         ctx->cpe_name, obj_name); 
+    RING("Issue to CPE %s DeleteObject on %s",
+         ctx->cpe_name, obj_name);
 
     return tapi_acse_cpe_rpc_call(ctx, CWMP_RPC_delete_object,
                                   to_cpe_loc);
@@ -1451,7 +1451,7 @@ cwmp_get_names_alloc(const char *name, te_bool next_level)
     ret->ParameterPath = malloc(sizeof(char*));
     if (NULL == name)
         ret->ParameterPath[0] = NULL;
-    else    
+    else
         ret->ParameterPath[0] = strdup(name);
     return ret;
 }
@@ -1489,7 +1489,7 @@ cwmp_get_names_resp_free(cwmp_get_parameter_names_response_t *resp)
 }
 
 
-/* 
+/*
  * =========== misc =============================
  */
 
@@ -1517,7 +1517,7 @@ tapi_acse_get_full_url(tapi_acse_context_t *ctx,
         return rc;
 
     snprintf(str, buflen, "http%s://%s:%u%s",
-             acs_ssl ? "s" : "", 
+             acs_ssl ? "s" : "",
              acs_addr_buf, acs_port, acs_url);
     RING("prepared ACS url: '%s'", str);
 

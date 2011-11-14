@@ -37,7 +37,7 @@ int ns__method(struct soap *soap, ...)
   else if (soap->authrealm && soap->userid) // Digest authentication
   { passwd = ... // database lookup on userid and authrealm to find passwd
     if (!strcmp(soap->authrealm, authrealm) && !strcmp(soap->userid, userid))
-    { if (!http_da_verify_post(soap, passwd))                 
+    { if (!http_da_verify_post(soap, passwd))
       { ...
         return SOAP_OK;
       }

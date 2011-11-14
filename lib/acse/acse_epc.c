@@ -1,5 +1,5 @@
 /** @file
- * @brief ACSE 
+ * @brief ACSE
  *
  * ACSE EPC messaging support library
  *
@@ -17,7 +17,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public 
+ * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
@@ -38,7 +38,7 @@
 #include <sys/mman.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <sys/stat.h> 
+#include <sys/stat.h>
 #include <fcntl.h>
 #include <poll.h>
 
@@ -72,7 +72,7 @@ static char *remote_sock_name = NULL;
 /**
  * Create unix socket, bind it and connect it to another one if specified.
  * If connection is need, but occasionaly is refused, this function tryes
- * to wait a bit and connect once more. 
+ * to wait a bit and connect once more.
  *
  * @param unix_path     Unix path to bind to.
  * @param connect_to    Unix path of the peer to connect or
@@ -129,7 +129,7 @@ unix_socket(char const *unix_path, char const *connect_to)
             {
                 struct timeval tv = {0, 30000}; /* wait 30 ms */
                 select(0, NULL, NULL, NULL, &tv);
-                if (connect(s, (struct sockaddr *)&addr, sizeof addr) 
+                if (connect(s, (struct sockaddr *)&addr, sizeof addr)
                     != -1)
                     return s;
             }
@@ -224,7 +224,7 @@ acse_epc_init(char *cfg_sock_name, int *listen_sock)
     if ((epc_shmem = malloc(epc_shmem_size)) == NULL)
         return TE_RC(TE_ACSE, TE_ENOMEM);
 
-    snprintf(cfg_sock_name, EPC_MAX_PATH, 
+    snprintf(cfg_sock_name, EPC_MAX_PATH,
              "/tmp/epc_srv.%d", (int)getpid());
 
     local_sock_name = strdup(cfg_sock_name);
@@ -269,12 +269,12 @@ acse_epc_connect(const char *cfg_sock_name)
         return TE_RC(TE_ACSE, TE_EISCONN);
     }
 
-    s = malloc(sizeof(*s)); 
+    s = malloc(sizeof(*s));
 
     local_sock_name = malloc(EPC_MAX_PATH);
     remote_sock_name = strdup(cfg_sock_name);
 
-    snprintf(local_sock_name, EPC_MAX_PATH, 
+    snprintf(local_sock_name, EPC_MAX_PATH,
              "/tmp/epc_srv.%d", (int)getpid());
     RING("%s(): EPC pipe name '%s'", __FUNCTION__, local_sock_name);
 
@@ -311,9 +311,9 @@ acse_epc_close(void)
 #endif
     if (local_sock_name)
     {
-        RING("%s(): EPC pipe name '%s', unlink it", 
+        RING("%s(): EPC pipe name '%s', unlink it",
             __FUNCTION__, local_sock_name);
-        
+
         unlink(local_sock_name);
         free(local_sock_name);
         local_sock_name = NULL;
@@ -342,13 +342,13 @@ acse_epc_check(void)
     pfd.fd = epc_socket;
     pollrc = poll(&pfd, 1, 0);
 
-    VERB("%s(): poll to IN/OUT for fd %d return %d, revents 0x%x", 
+    VERB("%s(): poll to IN/OUT for fd %d return %d, revents 0x%x",
          __FUNCTION__, pfd.fd, pollrc, pfd.revents);
 
     if (pollrc < 0)
     {
         int saved_errno = errno;
-        ERROR("%s(): poll to EPC conf socket rc %d, errno is %s", 
+        ERROR("%s(): poll to EPC conf socket rc %d, errno is %s",
               __FUNCTION__, pollrc, strerror(saved_errno));
         return te_rc_os2te(saved_errno);
     }
@@ -364,14 +364,14 @@ acse_epc_check(void)
     }
     if (pollrc > 0)
     {
-        /* POLLIN set here could mean only close of connection; 
-           there should not be data in EPC Config pipe without 
+        /* POLLIN set here could mean only close of connection;
+           there should not be data in EPC Config pipe without
            direct request.
            TODO: check that there are no data in the pipe?
         */
         if ((pfd.revents & POLLHUP) || (pfd.revents & POLLOUT) == 0)
         {
-            RING("%s(): no write to EPC socket. Will close EPC.", 
+            RING("%s(): no write to EPC socket. Will close EPC.",
                  __FUNCTION__);
             acse_epc_close();
             return TE_ENOTCONN;
@@ -385,7 +385,7 @@ acse_epc_socket(void)
 {
     if (epc_socket > 0)
         return epc_socket;
-    else 
+    else
         return epc_listen_socket;
 }
 
@@ -471,7 +471,7 @@ acse_epc_cwmp_send(epc_site_t *s, const acse_epc_cwmp_data_t *cwmp_data)
     static ssize_t msg_len = 0;
 
     uint8_t *buf;
-    ssize_t packed_len; 
+    ssize_t packed_len;
     ssize_t sendrc;
     size_t len;
     te_errno rc = 0;
@@ -490,8 +490,8 @@ acse_epc_cwmp_send(epc_site_t *s, const acse_epc_cwmp_data_t *cwmp_data)
 
     if (packed_len < 0)
     {
-        /* TODO: if there is less mmap area size then necessary, 
-          pass data via pipe. This would happen rarely, and 
+        /* TODO: if there is less mmap area size then necessary,
+          pass data via pipe. This would happen rarely, and
           may be done via slow way. */
         /* TODO 2: Do not fail ACSE totally if send failed? */
 
@@ -502,7 +502,7 @@ acse_epc_cwmp_send(epc_site_t *s, const acse_epc_cwmp_data_t *cwmp_data)
 
     if (ACSE_EPC_SERVER == s->role &&
         NULL != cwmp_data->from_cpe.p)
-        mheap_free_user(MHEAP_NONE, cwmp_data); 
+        mheap_free_user(MHEAP_NONE, cwmp_data);
 
 
     VERB("%s(r %d): fd_out %d; put to shmem %d bytes; packed len %d; "
@@ -575,7 +575,7 @@ acse_epc_cwmp_recv(epc_site_t *s, acse_epc_cwmp_data_t **cwmp_data_ptr,
         *d_len = msg_len;
 
     VERB("%s(r %d): recv from sock %d shmem len %d, op %s",
-         __FUNCTION__, s->role, s->fd_in, msg_len, 
+         __FUNCTION__, s->role, s->fd_in, msg_len,
          cwmp_rpc_cpe_string(cwmp_data->rpc_cpe));
 
     switch (s->role)
@@ -615,7 +615,7 @@ epc_pack_call_data(void *buf, size_t len,
     }
     if (cwmp_data->to_cpe.p == NULL || cwmp_data->op != EPC_RPC_CALL)
         return 0;
-    return cwmp_pack_call_data(cwmp_data->to_cpe, cwmp_data->rpc_cpe, 
+    return cwmp_pack_call_data(cwmp_data->to_cpe, cwmp_data->rpc_cpe,
                                buf, len);
 }
 
@@ -671,7 +671,7 @@ epc_unpack_response_data(void *buf, size_t len,
             ERROR("%s(): unpack inform failed", __FUNCTION__);
             return TE_RC(TE_ACSE, TE_EFAIL);
         }
-        else 
+        else
             return 0;
     }
 

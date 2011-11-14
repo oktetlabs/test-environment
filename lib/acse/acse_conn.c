@@ -17,7 +17,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public 
+ * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
@@ -51,25 +51,25 @@
  */
 typedef struct conn_data_t {
 #if CONN_IS_LIST
-    LIST_ENTRY(conn_data_t) links; 
+    LIST_ENTRY(conn_data_t) links;
 #endif /* CONN_IS_LIST */
     int              socket;  /**< TCP listening socket. */
-    struct sockaddr *addr;    /**< Network TCP address, which @p socket 
+    struct sockaddr *addr;    /**< Network TCP address, which @p socket
                                       is bound. */
 
-    acs_t      **acs_objects;  /**< ACS objects listening on this 
+    acs_t      **acs_objects;  /**< ACS objects listening on this
                                     TCP address. */
-    int          acs_number;   /**< number of ACS objects. */ 
+    int          acs_number;   /**< number of ACS objects. */
     channel_t   *own_channel;  /**< main loop channel ref. */
 } conn_data_t;
 
 #if CONN_IS_LIST
 static LIST_HEAD(conn_list_t, conn_data_t)
-        conn_list = LIST_HEAD_INITIALIZER(&conn_list); 
-#endif /* CONN_IS_LIST */ 
+        conn_list = LIST_HEAD_INITIALIZER(&conn_list);
+#endif /* CONN_IS_LIST */
 
-/** 
- * Callback for I/O ACSE channel, called before poll() 
+/**
+ * Callback for I/O ACSE channel, called before poll()
  * Its prototype matches with field #channel_t::before_poll.
  *
  * @param data      Channel-specific private data.
@@ -91,13 +91,13 @@ conn_before_poll(void *data, struct pollfd *pfd, struct timeval *deadline)
     return 0;
 }
 
-/** 
- * Callback for I/O ACSE channel, called before poll() 
+/**
+ * Callback for I/O ACSE channel, called before poll()
  * Its prototype matches with field #channel_t::after_poll.
  * This function should process detected event (usually, incoming data).
  *
  * @param data      Channel-specific private data.
- * @param pfd       Poll file descriptor struct with marks, which 
+ * @param pfd       Poll file descriptor struct with marks, which
  *                  event happen.
  *
  * @return status code.
@@ -133,7 +133,7 @@ conn_after_poll(void *data, struct pollfd *pfd)
     {
         te_errno rc;
 
-        rc = cwmp_accept_cpe_connection(conn->acs_objects[i], sock_acc); 
+        rc = cwmp_accept_cpe_connection(conn->acs_objects[i], sock_acc);
         VERB("conn_after_poll(): cwmp_accept_cpe rc %r", rc);
 
         switch (rc)
@@ -151,8 +151,8 @@ conn_after_poll(void *data, struct pollfd *pfd)
     return 0;
 }
 
-/** 
- * Callback for I/O ACSE channel, called at channel destroy. 
+/**
+ * Callback for I/O ACSE channel, called at channel destroy.
  * It fills @p pfd according with specific channel situation.
  * Its prototype matches with field #channel_t::destroy.
  *
@@ -192,10 +192,10 @@ conn_register_acs(acs_t *acs)
 
 
     new_conn = malloc(sizeof(*new_conn));
-    do 
+    do
     {
         int opt;
-        channel_t *new_ch; 
+        channel_t *new_ch;
 
         new_conn->socket =
             socket(acs->addr_listen->sa_family, SOCK_STREAM, 0);
@@ -206,7 +206,7 @@ conn_register_acs(acs_t *acs)
         }
 
         opt = 1;
-        if (setsockopt(new_conn->socket, SOL_SOCKET, SO_REUSEADDR, 
+        if (setsockopt(new_conn->socket, SOL_SOCKET, SO_REUSEADDR,
                        (void *)&opt, sizeof(opt)) != 0)
         {
             ERROR("%s(): fail sockopt SO_REUSEADDR", __FUNCTION__);
@@ -235,9 +235,9 @@ conn_register_acs(acs_t *acs)
 
 #if CONN_IS_LIST
         LIST_INSERT_HEAD(&conn_list, new_conn, links);
-#endif /* CONN_IS_LIST */ 
+#endif /* CONN_IS_LIST */
 
-        new_ch = calloc(1, sizeof(*new_ch)); 
+        new_ch = calloc(1, sizeof(*new_ch));
         new_ch->data = new_conn;
         new_ch->before_poll = conn_before_poll;
         new_ch->after_poll = conn_after_poll;

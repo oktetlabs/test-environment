@@ -70,7 +70,7 @@ acse_exit_handler(void)
 }
 
 #if 1
-int 
+int
 main(int argc, char **argv)
 {
     char    *msg_sock_name;
@@ -104,7 +104,7 @@ main(int argc, char **argv)
     else
         msg_sock_name = NULL;
 
-    cpe->acs_auth.login = 
+    cpe->acs_auth.login =
         strdup("000261-Home Gateway-V60200000000-0010501606");
     cpe->acs_auth.passwd = strdup("passwd");
 
@@ -119,7 +119,7 @@ main(int argc, char **argv)
 
     cpe->cr_auth.login  = strdup(cpe->acs_auth.login);
     cpe->cr_auth.passwd = strdup(cpe->acs_auth.passwd);
-            
+
     acse_enable_acs(acs);
 
     if ((rc = acse_epc_disp_init(msg_sock_name, NULL)) != 0)
@@ -133,7 +133,7 @@ main(int argc, char **argv)
     return 0;
 }
 #else
-int 
+int
 main(int argc, char **argv)
 {
     struct soap my_soap;
@@ -151,7 +151,7 @@ main(int argc, char **argv)
     {
         cwmp_SendConnectionRequest(
             "http://10.20.1.2:8082/5c2dfeabaf9650fe",
-            "000261-Home Gateway-V601L622R1A0-1001742119", 
+            "000261-Home Gateway-V601L622R1A0-1001742119",
             "z7cD7CTDA1DrQKUb");
 
         return 1;
@@ -179,7 +179,7 @@ main(int argc, char **argv)
     soap_omode(&my_soap, SOAP_IO_KEEPALIVE);
     soap_set_namespaces(&my_soap, namespaces);
 
-    soap_register_plugin(&my_soap, http_da); 
+    soap_register_plugin(&my_soap, http_da);
 
     my_soap.max_keep_alive = 2;
 

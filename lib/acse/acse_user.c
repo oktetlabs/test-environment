@@ -1,5 +1,5 @@
 /** @file
- * @brief ACSE 
+ * @brief ACSE
  *
  * ACSE user utilities library
  *
@@ -16,7 +16,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public 
+ * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
@@ -37,7 +37,7 @@
 #include <sys/mman.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <sys/stat.h> 
+#include <sys/stat.h>
 #include <fcntl.h>
 #include <poll.h>
 
@@ -86,7 +86,7 @@ prepare_params(acse_epc_config_data_t *config_params,
 
         if (NULL == last_label)
             last_label = oid;
-        else 
+        else
             last_label++; /* shift to the label begin */
         if (strlen(last_label) >= sizeof(config_params->oid))
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
@@ -196,7 +196,7 @@ acse_conf_op(char const *oid, char const *acs, char const *cpe,
              const char *value, acse_cfg_op_t fun,
              acse_epc_config_data_t **cfg_result)
 {
-    te_errno    rc; 
+    te_errno    rc;
     acse_cfg_level_t        level;
     acse_epc_config_data_t *cfg_request;
 
@@ -219,7 +219,7 @@ acse_conf_op(char const *oid, char const *acs, char const *cpe,
     else
     {
         if (cpe != NULL && cpe[0]) /* check is there CPE label */
-            level = EPC_CFG_CPE; 
+            level = EPC_CFG_CPE;
         else
             level = EPC_CFG_ACS;
     }
@@ -254,10 +254,10 @@ acse_cwmp_prepare(const char *acs, const char *cpe,
     memset(&cwmp_msg, 0, sizeof(cwmp_msg));
 
     cwmp_msg.op = fun;
-        
+
     if (acs)
         strcpy(cwmp_msg.acs, acs);
-    if (cpe) 
+    if (cpe)
         strcpy(cwmp_msg.cpe, cpe);
 
     if (NULL != cwmp_data)
@@ -317,7 +317,7 @@ acse_cwmp_connreq(const char *acs, const char *cpe,
     rc = acse_cwmp_prepare(acs, cpe, EPC_CONN_REQ, NULL);
     if (0 == rc)
         rc = acse_cwmp_call(NULL, cwmp_data);
-    else 
+    else
         WARN("acse_cwmp_connreq(): rc of acse_cwmp_prepare() -> %r", rc);
     if (0 != rc)
     {
@@ -367,7 +367,7 @@ acse_http_code(const char *acs, const char *cpe,
         loc_len = strlen(location) + 1;
 
     cwmp_data->op = EPC_HTTP_RESP;
-        
+
     strcpy(cwmp_data->acs, acs);
     strcpy(cwmp_data->cpe, cpe);
 
@@ -375,7 +375,7 @@ acse_http_code(const char *acs, const char *cpe,
     if (NULL != location)
         strcpy((char *)cwmp_data->enc_start, location);
 
-    VERB("%s() send msg, http code %d, loc '%s'", __FUNCTION__, 
+    VERB("%s() send msg, http code %d, loc '%s'", __FUNCTION__,
          cwmp_data->to_cpe.http_code, (char *)cwmp_data->enc_start);
 
 
