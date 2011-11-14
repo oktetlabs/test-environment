@@ -952,6 +952,7 @@ cwmp_check_set_fault(cwmp_fault_t *f, int idx,
     {
         if (param_name == NULL)
             return FALSE;
+
         for (idx = 0; idx < f->__sizeSetParameterValuesFault; idx++)
         {
             if (strcmp(param_name,
@@ -959,16 +960,19 @@ cwmp_check_set_fault(cwmp_fault_t *f, int idx,
                 break;
         }
     }
-    else if (idx >=  f->__sizeSetParameterValuesFault)
+    else if (idx >= f->__sizeSetParameterValuesFault)
+    {
         return FALSE;
-    else
-        if (param_name != NULL &&
-            strcmp(param_name,
-                   f->SetParameterValuesFault[idx].ParameterName) != 0)
-            return FALSE;
+    }
+    else if (param_name != NULL &&
+             strcmp(param_name,
+                 f->SetParameterValuesFault[idx].ParameterName) != 0)
+    {
+        return FALSE;
+    }
 
     return
-        (fault_code == atoi(f->SetParameterValuesFault[idx].FaultCode))
+        (int)fault_code == atoi(f->SetParameterValuesFault[idx].FaultCode)
         &&
         (fault_string == NULL ||
          strcmp(f->SetParameterValuesFault[idx].FaultString,
@@ -1074,7 +1078,3 @@ cwmp_download_alloc(const char *command_key, cwmp_file_type_t ftype,
 
     return dl;
 }
-
-
-
-

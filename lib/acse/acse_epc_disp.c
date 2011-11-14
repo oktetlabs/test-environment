@@ -1162,14 +1162,14 @@ epc_cfg_before_poll(void *data, struct pollfd *pfd,
 {
     UNUSED(data);
     UNUSED(deadline);
-    if (epc_listen_socket > 0)
+    if (epc_listen_socket >= 0)
         pfd->fd = epc_listen_socket;
     else
         pfd->fd = acse_epc_socket();
     VERB("EPC before poll, fd %d", pfd->fd);
 
     pfd->revents = 0;
-    if (pfd->fd > 0)
+    if (pfd->fd >= 0)
         pfd->events = POLLIN;
 
     return 0;
@@ -1204,7 +1204,7 @@ epc_cfg_after_poll(void *data, struct pollfd *pfd)
     if (!(pfd->revents & POLLIN))
         return 0;
 
-    if (epc_listen_socket > 0)
+    if (epc_listen_socket >= 0)
     {
         epc_socket = accept(epc_listen_socket, NULL, NULL);
         epc_listen_socket = -1;
@@ -1274,7 +1274,7 @@ epc_cwmp_before_poll(void *data, struct pollfd *pfd,
     VERB("EPC before poll, fd %d", pfd->fd);
 
     pfd->revents = 0;
-    if (pfd->fd > 0)
+    if (pfd->fd >= 0)
         pfd->events = POLLIN;
 
     return 0;
@@ -1354,7 +1354,7 @@ epc_cwmp_destroy(void *data)
 {
     UNUSED(data);
     /* if we destroy channel for CWMP operations, ACSE should be stopped */
-    if (acse_epc_socket() > 0)
+    if (acse_epc_socket() >= 0)
         return acse_epc_close();
     return 0;
 }

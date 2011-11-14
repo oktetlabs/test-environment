@@ -262,7 +262,7 @@ acse_epc_connect(const char *cfg_sock_name)
 {
     epc_site_t *s;
 
-    if (local_sock_name != NULL || epc_socket > 0)
+    if (local_sock_name != NULL || epc_socket >= 0)
     {
         WARN("%s(): seems already connected, local pipe name '%s', sock %d",
              __FUNCTION__, local_sock_name, epc_socket);
@@ -294,9 +294,9 @@ acse_epc_connect(const char *cfg_sock_name)
 te_errno
 acse_epc_close(void)
 {
-    if (epc_socket > 0)
+    if (epc_socket >= 0)
         close(epc_socket);
-    if (epc_listen_socket > 0)
+    if (epc_listen_socket >= 0)
         close(epc_listen_socket);
 
     epc_socket = -1;
@@ -383,7 +383,7 @@ acse_epc_check(void)
 int
 acse_epc_socket(void)
 {
-    if (epc_socket > 0)
+    if (epc_socket >= 0)
         return epc_socket;
     else
         return epc_listen_socket;

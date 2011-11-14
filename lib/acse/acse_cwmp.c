@@ -863,10 +863,10 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
             case CWMP_WAIT_AUTH:
             case CWMP_WAIT_RESPONSE:
             case CWMP_SERVE:
-                if (cwmp_sess->m_soap.socket > 0)
+                if (cwmp_sess->m_soap.socket >= 0)
                 {
                     close(cwmp_sess->m_soap.socket);
-                    cwmp_sess->m_soap.socket = 0;
+                    cwmp_sess->m_soap.socket = -1;
                 }
                 /* fall through... */
             case CWMP_SUSPENDED:
@@ -1330,10 +1330,10 @@ cwmp_close_session(cwmp_session_t *sess)
     /* free all heaps, where this session was user of memory */
     mheap_free_user(MHEAP_NONE, sess);
 
-    if (sess->m_soap.socket > 0)
+    if (sess->m_soap.socket >= 0)
     {
         close(sess->m_soap.socket);
-        sess->m_soap.socket = 0;
+        sess->m_soap.socket = -1;
     }
 
     if (CWMP_SUSPENDED != sess->state)
@@ -1382,10 +1382,10 @@ cwmp_suspend_session(cwmp_session_t *sess)
     else
         perror("suspend cwmp session, inet_ntop failed:");
 
-    if (sess->m_soap.socket > 0)
+    if (sess->m_soap.socket >= 0)
     {
         close(sess->m_soap.socket);
-        sess->m_soap.socket = 0;
+        sess->m_soap.socket = -1;
     }
 
     soap_dealloc(&(sess->m_soap), NULL);

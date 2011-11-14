@@ -190,7 +190,6 @@ conn_register_acs(acs_t *acs)
     /* TODO: check presense of ACS with same address in the list,
      * if present, do not create new record, but add to the found one. */
 
-
     new_conn = malloc(sizeof(*new_conn));
     do
     {
@@ -250,16 +249,15 @@ conn_register_acs(acs_t *acs)
         acse_add_channel(new_ch);
 
         RING("ACS '%s' registered to listen incoming connections, sock %d;"
-              "conn %p, acs ptr %p",
-              acs->name, new_conn->socket, new_conn, acs);
-
+             "conn %p, acs ptr %p",
+             acs->name, new_conn->socket, new_conn, acs);
 
         return 0;
     } while (0);
     s_errno = errno;
 
     perror("Register ACS");
-    if (new_conn->socket > 0)
+    if (new_conn->socket >= 0)
         close(new_conn->socket);
     free(new_conn);
 

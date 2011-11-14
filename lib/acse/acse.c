@@ -137,7 +137,7 @@ acse_loop(void)
     atexit(acse_exit_handler);
     /* EPC pipe should be already established */
 
-    while(acse_epc_socket() > 0)
+    while(acse_epc_socket() >= 0)
     {
         int         r_poll;
         int         i, ch_i;
