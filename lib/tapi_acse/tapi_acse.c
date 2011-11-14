@@ -532,6 +532,7 @@ tapi_acse_wait_acse_state(tapi_acse_context_t *ctx,
                 *res_state = cur_state;
             return rc;
         }
+
         if (cur_state & want_state)
             break;
 
@@ -540,13 +541,14 @@ tapi_acse_wait_acse_state(tapi_acse_context_t *ctx,
     if (0 == ctx->timeout && !(want_state & cur_state))
     {
         WARN("wait param %s with mask 0x%x timed out, last val %d",
-              state_var, want_state, cur_state);
+             state_var, want_state, cur_state);
         rc = TE_ETIMEDOUT;
     }
     else
+    {
         RING("wait param %s with mask 0x%x, %r, last val %d",
-              state_var, want_state, rc, cur_state);
-
+             state_var, want_state, rc, cur_state);
+    }
 
     tapi_acse_ctx_clear_timers(ctx);
     if (res_state != NULL)
