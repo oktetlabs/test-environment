@@ -372,44 +372,44 @@ acse_cwmp_auth(struct soap *soap, cwmp_session_t *session, cpe_t **cpe)
             if (session->acs_owner->auth_mode == ACSE_AUTH_DIGEST &&
                 (!soap->authrealm || strcmp(soap->authrealm, authrealm)))
             {
-                RING("Digest Auth failed: wrong realm '%s', need '%s'",
-                    soap->authrealm, authrealm);
+                ERROR("Digest Auth failed: wrong realm '%s', need '%s'",
+                      soap->authrealm, authrealm);
                 break;
             }
 
             LIST_FOREACH(cpe_item, &(session->acs_owner->cpe_list), links)
             {
                 if (strcmp(cpe_item->acs_auth.login, soap->userid) == 0)
-                    break; /* from LIST_FOREACH */
+                    break;
             }
 
             if (cpe_item == NULL)
             {
-                RING("%s() userid '%s' not found, auth fail",
-                        __FUNCTION__, soap->userid);
+                ERROR("%s: userid '%s' not found, auth fail",
+                      __FUNCTION__, soap->userid);
                 break;
             }
 
             VERB("check auth for user '%s', pass '%s'",
-                soap->userid, cpe_item->acs_auth.passwd);
+                 soap->userid, cpe_item->acs_auth.passwd);
             if (session->acs_owner->auth_mode == ACSE_AUTH_DIGEST)
             {
                 if (http_da_verify_post(soap, cpe_item->acs_auth.passwd))
                 {
-                    RING("Digest Auth failed: verify not pass ");
+                    ERROR("%s: Digest Auth verify for '%s' failed",
+                          __FUNCTION__, cpe_item->acs_auth.passwd);
                     break;
                 }
             }
-            else
+            else if (strcmp (soap->passwd, cpe_item->acs_auth.passwd) != 0)
             {
-                if (strcmp (soap->passwd, cpe_item->acs_auth.passwd) != 0)
-                {
-                    RING("Basic Auth failed: passwd not match");
-                    break;
-                }
+                ERROR("%s: Basic Auth failed passwds differs '%s' != '%s'",
+                      __FUNCTION__, soap->passwd,
+                      cpe_item->acs_auth.passwd);
+                break;
             }
 
-            RING("%s(): Authentication passed, CPE '%s', username '%s'",
+            RING("%s: Authentication passed, CPE '%s', username '%s'",
                 __FUNCTION__, cpe_item->name, cpe_item->acs_auth.login);
 
             *cpe = cpe_item;
@@ -472,18 +472,18 @@ acse_check_auth(struct soap *soap, cpe_t *cpe)
     {
         if (http_da_verify_post(soap, cpe->acs_auth.passwd))
         {
-            RING("Digest Auth failed: verify not pass");
+            ERROR("%s: Digest Auth verify for '%s' failed",
+                  __FUNCTION__, cpe->acs_auth.passwd);
             return FALSE;
         }
     }
-    else
+    else if (strcmp (soap->passwd, cpe->acs_auth.passwd) != 0)
     {
-        if (strcmp (soap->passwd, cpe->acs_auth.passwd) != 0)
-        {
-            RING("Basic Auth failed: passwd not match");
-            return FALSE;
-        }
+        ERROR("%s: Basic Auth failed passwds differs '%s' = '%s'",
+              __FUNCTION__, soap->passwd, cpe->acs_auth.passwd);
+        return FALSE;
     }
+
     return TRUE;
 }
 
