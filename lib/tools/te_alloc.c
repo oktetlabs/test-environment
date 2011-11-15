@@ -48,7 +48,7 @@
 #define SIZE_T_FMT "%Lu"
 #define SIZE_T_CAST(x) ((unsigned long long)(x))
 #else
-#define SIZE_T_FMT "%lu" 
+#define SIZE_T_FMT "%lu"
 #define SIZE_T_CAST(x) ((unsigned long)(x))
 #endif
 
@@ -57,11 +57,11 @@ void *
 te_alloc_internal(size_t size, const char *filename, int line)
 {
     void *result = calloc(1, size);
-    
+
     if (result == NULL)
     {
         ERROR("Cannot allocate memory of size " SIZE_T_FMT " at %s:%d",
-              SIZE_T_CAST(size), 
+              SIZE_T_CAST(size),
               filename, line);
     }
     return result;
