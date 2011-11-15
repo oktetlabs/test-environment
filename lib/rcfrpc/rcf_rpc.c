@@ -254,7 +254,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
                      "will be restarted", name);
             }
         }
-#endif        
+#endif
     }
 
     if (rc == 0 && !(flags & RCF_RPC_SERVER_GET_REUSE))
@@ -266,7 +266,18 @@ rcf_rpc_server_get(const char *ta, const char *name,
             if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
                 RETERR(rc, "Failed to delete RPC server %s", name);
             else
-                ERROR("Failed to delete rpcserver %s", name);
+            {
+                sleep(5);
+                if ((rc = cfg_del_instance_fmt(FALSE,
+                                               "/agent:%s/rpcserver:%s",
+                                               ta, name)) != 0)
+                {
+                    if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
+                        RETERR(rc, "Failed to delete RPC server %s", name);
+                    else
+                        ERROR("Failed to delete rpcserver %s", name);
+                }
+            }
         }
         if ((rc = cfg_add_instance_fmt(&handle, CVT_STRING, val0,
                                         "/agent:%s/rpcserver:%s",
