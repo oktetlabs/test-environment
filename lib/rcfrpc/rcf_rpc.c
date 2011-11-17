@@ -161,8 +161,6 @@ rcf_rpc_server_get(const char *ta, const char *name,
     rc = cfg_get_instance_fmt(NULL, &val0, "/agent:%s/rpcserver:%s",
                               ta, name);
 
-    if (rc != 0)
-        WARN("/agent:%s/rpcserver:%s doen't exist", ta, name);
     if (rc != 0 && (flags & RCF_RPC_SERVER_GET_EXISTING))
         return TE_RC(TE_RCF_API, TE_ENOENT);
     
