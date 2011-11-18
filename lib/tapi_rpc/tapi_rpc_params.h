@@ -378,23 +378,6 @@
     TEST_GET_ENUM_PARAM(var_name_, SOCKOPT_NAME_MAPPING_LIST)
 
 /**
- * The list of values allowed for parameter of type 'rpc_tcpstate'
- */
-#define TCP_STATE_MAPPING_LIST \
-    MAPPING_LIST_ENTRY(TCP_ESTABLISHED), \
-    MAPPING_LIST_ENTRY(TCP_SYN_SENT), \
-    MAPPING_LIST_ENTRY(TCP_SYN_RECV), \
-    MAPPING_LIST_ENTRY(TCP_FIN_WAIT1), \
-    MAPPING_LIST_ENTRY(TCP_FIN_WAIT2), \
-    MAPPING_LIST_ENTRY(TCP_TIME_WAIT), \
-    MAPPING_LIST_ENTRY(TCP_CLOSE), \
-    MAPPING_LIST_ENTRY(TCP_CLOSE_WAIT), \
-    MAPPING_LIST_ENTRY(TCP_LAST_ACK), \
-    MAPPING_LIST_ENTRY(TCP_LISTEN), \
-    MAPPING_LIST_ENTRY(TCP_CLOSING), \
-    MAPPING_LIST_ENTRY(TCP_UNKNOWN)
-
-/**
  * Get the value of parameter of type 'rpc_tcpstate'
  *
  * @param var_name_  Name of the variable used to get the value of

@@ -95,5 +95,14 @@ static inline void te_var_name2env(const char *name, char *env, int env_size)
     } while ( dot && p && *p != '\0' );
 }
 
+/** Define one entry in the list of maping entries */
+#define MAPPING_LIST_ENTRY(entry_val_) \
+    { #entry_val_, (int)RPC_ ## entry_val_ }
 
-#endif  /* __TE_DEFS_H__ */
+/** Entry for mapping parameter value from string to interger */
+struct param_map_entry {
+    const char *str_val; /**< value in string format */
+    int         num_val; /**< Value in native numberic format */
+};
+
+#endif  /* __TE_PARAM_H__ */

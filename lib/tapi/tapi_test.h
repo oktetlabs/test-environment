@@ -56,6 +56,7 @@
 #include "asn_usr.h"
 
 #include "te_tools.h"
+#include "te_param.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -544,17 +545,6 @@ extern unsigned int te_test_id;
  * @return Pointer to the value of the parameter
  */
 extern const char *test_get_param(int argc, char *argv[], const char *name);
-
-
-/** Define one entry in the list of maping entries */
-#define MAPPING_LIST_ENTRY(entry_val_) \
-    { #entry_val_, (int)RPC_ ## entry_val_ }
-
-/** Entry for mapping parameter value from string to interger */
-struct param_map_entry {
-    const char *str_val; /**< value in string format */
-    int         num_val; /**< Value in native numberic format */
-};
 
 /**
  * Maps all possible values of some variable from string to numberical

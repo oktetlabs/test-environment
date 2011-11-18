@@ -36,6 +36,7 @@
 #define __TE_RPC_SYS_SOCKET_H__
 
 #include "te_rpc_defs.h"
+#include "te_param.h"
 #ifndef WINDOWS
 #include "tarpc.h"
 #endif
@@ -536,8 +537,31 @@ typedef enum rpc_tcp_state {
     RPC_TCP_UNKNOWN
 } rpc_tcp_state;
 
+/**
+ * The list of values allowed for parameter of type 'rpc_tcp_state'
+ */
+#define TCP_STATE_MAPPING_LIST \
+    MAPPING_LIST_ENTRY(TCP_ESTABLISHED), \
+    MAPPING_LIST_ENTRY(TCP_SYN_SENT), \
+    MAPPING_LIST_ENTRY(TCP_SYN_RECV), \
+    MAPPING_LIST_ENTRY(TCP_FIN_WAIT1), \
+    MAPPING_LIST_ENTRY(TCP_FIN_WAIT2), \
+    MAPPING_LIST_ENTRY(TCP_TIME_WAIT), \
+    MAPPING_LIST_ENTRY(TCP_CLOSE), \
+    MAPPING_LIST_ENTRY(TCP_CLOSE_WAIT), \
+    MAPPING_LIST_ENTRY(TCP_LAST_ACK), \
+    MAPPING_LIST_ENTRY(TCP_LISTEN), \
+    MAPPING_LIST_ENTRY(TCP_CLOSING), \
+    MAPPING_LIST_ENTRY(TCP_UNKNOWN)
+
 /** Convert RPC TCP socket state to string */
 extern const char * tcp_state_rpc2str(rpc_tcp_state st);
+
+/**
+ * Convert string representation of TCP socket state
+ * to RPC constant
+ */
+extern rpc_tcp_state tcp_state_str2rpc(const char *s);
 
 /** Convert RPC TCP socket state constants to native ones */
 extern int tcp_state_rpc2h(rpc_tcp_state st);

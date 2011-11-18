@@ -1310,7 +1310,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
 
 #define COPY_TCP_INFO_FIELD(_name) \
     val.option_value_u.opt_tcp_info._name = \
-        ((struct tcp_info *)optval)->_name
+        ((struct rpc_tcp_info *)optval)->_name
 
                 COPY_TCP_INFO_FIELD(tcpi_state);
                 COPY_TCP_INFO_FIELD(tcpi_ca_state);
@@ -1474,7 +1474,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                 case RPC_TCP_INFO:
 #define COPY_TCP_INFO_FIELD(_name) \
     do {                                                     \
-        ((struct tcp_info *)optval)->_name =                 \
+        ((struct rpc_tcp_info *)optval)->_name =             \
             out.optval.optval_val[0].option_value_u.         \
             opt_tcp_info._name;                              \
         if (strcmp(#_name, "tcpi_state") == 0)               \

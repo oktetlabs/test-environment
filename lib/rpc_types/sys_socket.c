@@ -1350,6 +1350,36 @@ tcp_state_rpc2str(rpc_tcp_state st)
     }
 }
 
+/**
+ * Convert string representation of TCP socket state
+ * to RPC constant
+ *
+ * @param s     String representation of rpc_tcp_state value
+ *
+ * @return
+ *      RPC constant corresponding to a given string
+ */
+rpc_tcp_state
+tcp_state_str2rpc(const char *s)
+{
+#define TCP_STATE_STR_LEN 20
+    int i;
+
+    static struct param_map_entry maps[] = {
+        TCP_STATE_MAPPING_LIST,
+        { NULL, 0 },
+    };
+
+    for (i = 0; maps[i].str_val != NULL; i++)
+    {
+        if (strncmp(s, maps[i].str_val, TCP_STATE_STR_LEN) == 0)
+            return maps[i].num_val;
+    }
+
+    return RPC_TCP_UNKNOWN;
+#undef TCP_STATE_STR_LEN
+}
+
 /** Convert RPC TCP socket state constants to native ones */
 int tcp_state_rpc2h(rpc_tcp_state st)
 {

@@ -37,19 +37,19 @@ extern "C" {
 #endif
 
 /**
- * Coverts system native constant to its mirror in RPC namespace
+ * Converts system native constant to its mirror in RPC namespace
  */
 #define H2RPC(name_) \
     case name_: return RPC_ ## name_
 
 /**
- * Coverts a constant from RPC namespace to system native constant
+ * Converts a constant from RPC namespace to system native constant
  */
 #define RPC2H(name_) \
     case RPC_ ## name_: return name_
 
 /**
- * Coverts a constant from RPC namespace to string representation 
+ * Converts a constant from RPC namespace to string representation 
  */
 #define RPC2STR(name_) \
     case RPC_ ## name_: return #name_
