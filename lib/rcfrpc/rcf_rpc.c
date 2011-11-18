@@ -265,7 +265,13 @@ rcf_rpc_server_get(const char *ta, const char *name,
                 RETERR(rc, "Failed to delete RPC server %s", name);
             else
             {
-                sleep(5);
+                if ((rc = cfg_synchronize_fmt(FALSE,
+                                              "/agent:%s/rpcserver:%s",
+                                              ta, name)) != 0)
+                    RETERR(rc,
+                           "Failed to synchronize '/agent:%s/rpcserver:%s'",
+                           ta, name);
+                CFG_WAIT_CHANGES;
                 if ((rc = cfg_del_instance_fmt(FALSE,
                                                "/agent:%s/rpcserver:%s",
                                                ta, name)) != 0)
