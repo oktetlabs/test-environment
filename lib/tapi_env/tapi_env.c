@@ -83,7 +83,6 @@ typedef struct node_index {
 /** List of the network node indexes */
 typedef SLIST_HEAD(node_indexes, node_index) node_indexes;
 
-
 static te_errno prepare_nets(tapi_env_nets *nets,
                              cfg_nets_t    *cfg_nets);
 static te_errno prepare_hosts(tapi_env *env);
@@ -123,6 +122,27 @@ static te_bool check_net_type_cfg_vs_env(cfg_net_t *net,
 static te_bool check_node_type_vs_pcos(cfg_nets_t         *cfg_nets,
                                        cfg_net_node_t     *node,
                                        tapi_env_processes *processes);
+
+/* Resolve object name. If it's an alias name - return the actual object
+ * name. If it's an object name - return it. */
+static inline const char* env_resolve(tapi_env* env,
+                                      const char* name)
+{
+  const char*     out_name = name;
+  tapi_env_alias *a;
+
+  SLIST_FOREACH(a, &env->aliases, links)
+  {
+    if (strcmp(a->alias, name) == 0)
+    {
+      VERB("'%s' is alias of '%s'", name, a->name);
+      out_name = a->name;
+      break;
+    }
+  }
+
+  return out_name;
+}
 
 
 /* See description in tapi_env.h */
@@ -472,7 +492,6 @@ tapi_env_net *
 tapi_env_get_net(tapi_env *env, const char *name)
 {
     tapi_env_net     *p;
-    tapi_env_alias   *a;
 
     if (env == NULL || name == NULL)
     {
@@ -480,15 +499,8 @@ tapi_env_get_net(tapi_env *env, const char *name)
         return NULL;
     }
 
-    SLIST_FOREACH(a, &env->aliases, links)
-    {
-        if (strcmp(a->alias, name) == 0)
-        {
-            VERB("'%s' is alias of '%s'", name, a->name);
-            name = a->name;
-            break;
-        }
-    }
+    name = env_resolve(env, name);
+
     SLIST_FOREACH(p, &env->nets, links)
     {
         if (p->name != NULL && strcmp(p->name, name) == 0)
@@ -505,7 +517,6 @@ tapi_env_host *
 tapi_env_get_host(tapi_env *env, const char *name)
 {
     tapi_env_host    *p;
-    tapi_env_alias   *a;
 
     if (env == NULL || name == NULL)
     {
@@ -513,15 +524,8 @@ tapi_env_get_host(tapi_env *env, const char *name)
         return NULL;
     }
 
-    SLIST_FOREACH(a, &env->aliases, links)
-    {
-        if (strcmp(a->alias, name) == 0)
-        {
-            VERB("'%s' is alias of '%s'", name, a->name);
-            name = a->name;
-            break;
-        }
-    }
+    name = env_resolve(env, name);
+
     SLIST_FOREACH(p, &env->hosts, links)
     {
         if (p->name != NULL && strcmp(p->name, name) == 0)
@@ -537,7 +541,6 @@ tapi_env_get_host(tapi_env *env, const char *name)
 rcf_rpc_server *
 tapi_env_get_pco(tapi_env *env, const char *name)
 {
-    tapi_env_alias   *a;
     tapi_env_host    *host;
     tapi_env_process *proc;
     tapi_env_pco     *pco;
@@ -548,15 +551,8 @@ tapi_env_get_pco(tapi_env *env, const char *name)
         return NULL;
     }
 
-    SLIST_FOREACH(a, &env->aliases, links)
-    {
-        if (strcmp(a->alias, name) == 0)
-        {
-            VERB("'%s' is alias of '%s'", name, a->name);
-            name = a->name;
-            break;
-        }
-    }
+
+    name = env_resolve(env, name);
 
     SLIST_FOREACH(host, &env->hosts, links)
     {
@@ -581,7 +577,6 @@ const struct sockaddr *
 tapi_env_get_addr(tapi_env *env, const char *name, socklen_t *addrlen)
 {
     tapi_env_addr    *p;
-    tapi_env_alias   *a;
 
     if (env == NULL || name == NULL)
     {
@@ -589,15 +584,8 @@ tapi_env_get_addr(tapi_env *env, const char *name, socklen_t *addrlen)
         return NULL;
     }
 
-    SLIST_FOREACH(a, &env->aliases, links)
-    {
-        if (strcmp(a->alias, name) == 0)
-        {
-            VERB("'%s' is alias of '%s'", name, a->name);
-            name = a->name;
-            break;
-        }
-    }
+    name = env_resolve(env, name);
+
     for (p = env->addrs.cqh_first;
          p != (void *)&env->addrs;
          p = p->links.cqe_next)
@@ -621,7 +609,6 @@ const struct if_nameindex *
 tapi_env_get_if(tapi_env *env, const char *name)
 {
     tapi_env_if      *p;
-    tapi_env_alias   *a;
 
     if (env == NULL || name == NULL || *name == '\0')
     {
@@ -629,15 +616,8 @@ tapi_env_get_if(tapi_env *env, const char *name)
         return NULL;
     }
 
-    SLIST_FOREACH(a, &env->aliases, links)
-    {
-        if (strcmp(a->alias, name) == 0)
-        {
-            VERB("'%s' is alias of '%s'", name, a->name);
-            name = a->name;
-            break;
-        }
-    }
+    name = env_resolve(env, name);
+
     for (p = env->ifs.cqh_first;
          p != (void *)&env->ifs;
          p = p->links.cqe_next)
@@ -657,7 +637,6 @@ const struct if_nameindex *
 tapi_env_get_br(tapi_env *env, const char *name)
 {
     tapi_env_if      *p;
-    tapi_env_alias   *a;
 
     if (env == NULL || name == NULL || *name == '\0')
     {
@@ -665,15 +644,8 @@ tapi_env_get_br(tapi_env *env, const char *name)
         return NULL;
     }
 
-    SLIST_FOREACH(a, &env->aliases, links)
-    {
-        if (strcmp(a->alias, name) == 0)
-        {
-            VERB("'%s' is alias of '%s'", name, a->name);
-            name = a->name;
-            break;
-        }
-    }
+    name = env_resolve(env, name);
+
     for (p = env->ifs.cqh_first;
          p != (void *)&env->ifs;
          p = p->links.cqe_next)
@@ -693,7 +665,6 @@ const struct if_nameindex *
 tapi_env_get_ph(tapi_env *env, const char *name)
 {
     tapi_env_if      *p;
-    tapi_env_alias   *a;
 
     if (env == NULL || name == NULL || *name == '\0')
     {
@@ -701,15 +672,8 @@ tapi_env_get_ph(tapi_env *env, const char *name)
         return NULL;
     }
 
-    SLIST_FOREACH(a, &env->aliases, links)
-    {
-        if (strcmp(a->alias, name) == 0)
-        {
-            VERB("'%s' is alias of '%s'", name, a->name);
-            name = a->name;
-            break;
-        }
-    }
+    name = env_resolve(env, name);
+
     for (p = env->ifs.cqh_first;
          p != (void *)&env->ifs;
          p = p->links.cqe_next)
