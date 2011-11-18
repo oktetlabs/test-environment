@@ -431,6 +431,8 @@ dispatch(void *arg)
             {
                 WARN("Time goes back! Send request time = %d, "
                      "'Now' time = %d", rpcs->sent, now);
+                sleep(1);
+                now = time(NULL);
                 continue;
             }
             else
