@@ -577,6 +577,7 @@ const struct sockaddr *
 tapi_env_get_addr(tapi_env *env, const char *name, socklen_t *addrlen)
 {
     tapi_env_addr    *p;
+    const char       *aname;
 
     if (env == NULL || name == NULL)
     {
@@ -598,13 +599,13 @@ tapi_env_get_addr(tapi_env *env, const char *name, socklen_t *addrlen)
     }
 
     /* so this is probably an alias */
-    name = env_resolve(env, name);
+    aname = env_resolve(env, name);
 
     for (p = env->addrs.cqh_first;
          p != (void *)&env->addrs || ((p = NULL), 0);
          p = p->links.cqe_next)
     {
-        if (p->name != NULL && strcmp(p->name, name) == 0)
+        if (p->name != NULL && strcmp(p->name, aname) == 0)
           break;
     }
 
@@ -612,15 +613,21 @@ tapi_env_get_addr(tapi_env *env, const char *name, socklen_t *addrlen)
       tapi_env_addr* addr = calloc(1, sizeof(*addr));
 
       assert(addr != NULL);
-      addr->name = p->name;
+      /* fixme: memory leak, but it's a test application - it will die in
+       * any case */
+      addr->name = strdup(name);
       addr->iface = p->iface;
       addr->family = p->family;
       addr->type = p->type;
       addr->handle = p->handle;
       addr->addrlen = p->addrlen;
       memcpy(&(addr->addr_st), &(p->addr_st), sizeof(p->addr_st));
-      addr->addr = SA(&addr->addr_st);
+      addr->addr = calloc(1, sizeof(*(addr->addr)));
+      memcpy(addr->addr, p->addr, sizeof(*(p->addr)));
       CIRCLEQ_INSERT_TAIL(&env->addrs, addr, links);
+
+      if(addrlen != NULL)
+          *addrlen = addr->addrlen;
 
       /* so we should not get here if we've already added the address */
       return addr->addr;
