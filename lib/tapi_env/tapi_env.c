@@ -584,8 +584,7 @@ tapi_env_get_addr(tapi_env *env, const char *name, socklen_t *addrlen)
         return NULL;
     }
 
-    name = env_resolve(env, name);
-
+    /* do we have an address with such name? if yes - just return it */
     for (p = env->addrs.cqh_first;
          p != (void *)&env->addrs;
          p = p->links.cqe_next)
@@ -596,6 +595,35 @@ tapi_env_get_addr(tapi_env *env, const char *name, socklen_t *addrlen)
                 *addrlen = p->addrlen;
             return p->addr;
         }
+    }
+
+    /* so this is probably an alias */
+    name = env_resolve(env, name);
+
+    for (p = env->addrs.cqh_first;
+         p != (void *)&env->addrs || ((p = NULL), 0);
+         p = p->links.cqe_next)
+    {
+        if (p->name != NULL && strcmp(p->name, name) == 0)
+          break;
+    }
+
+    if (p != NULL) {
+      tapi_env_addr* addr = calloc(1, sizeof(*addr));
+
+      assert(addr != NULL);
+      addr->name = p->name;
+      addr->iface = p->iface;
+      addr->family = p->family;
+      addr->type = p->type;
+      addr->handle = p->handle;
+      addr->addrlen = p->addrlen;
+      memcpy(&(addr->addr_st), &(p->addr_st), sizeof(p->addr_st));
+      addr->addr = SA(&addr->addr_st);
+      CIRCLEQ_INSERT_TAIL(&env->addrs, addr, links);
+
+      /* so we should not get here if we've already added the address */
+      return addr->addr;
     }
 
     WARN("Address '%s' does not exist in environment", name);
