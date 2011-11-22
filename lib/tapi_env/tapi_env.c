@@ -622,8 +622,8 @@ tapi_env_get_addr(tapi_env *env, const char *name, socklen_t *addrlen)
       addr->handle = p->handle;
       addr->addrlen = p->addrlen;
       memcpy(&(addr->addr_st), &(p->addr_st), sizeof(p->addr_st));
-      addr->addr = calloc(1, sizeof(*(addr->addr)));
-      memcpy(addr->addr, p->addr, sizeof(*(p->addr)));
+      addr->addr = calloc(1, addr->addrlen);
+      memcpy(addr->addr, p->addr, addr->addrlen);
       CIRCLEQ_INSERT_TAIL(&env->addrs, addr, links);
 
       if(addrlen != NULL)
