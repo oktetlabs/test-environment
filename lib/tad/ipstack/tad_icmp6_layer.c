@@ -101,8 +101,10 @@ typedef struct tad_icmp6_proto_data {
     tad_bps_pkt_frag_def    router_adv_body; /* Router advertisement */
     tad_bps_pkt_frag_def    neighbor_sol_body; /* Neighbor solicitation */
     tad_bps_pkt_frag_def    neighbor_adv_body; /* Neighbor advertisement */
+    /* Option header */
+    tad_bps_pkt_frag_def    option_hdr;
     /*
-     * Option
+     * Option body
      *
      * Supported are:
      */
@@ -111,8 +113,10 @@ typedef struct tad_icmp6_proto_data {
 } tad_icmp6_proto_data;
 
 typedef struct tad_icmp6_option {
-    tad_bps_pkt_frag_data   option;
-    tad_bps_pkt_frag_def   *option_def;
+    tad_bps_pkt_frag_data   hdr;
+    tad_bps_pkt_frag_data   body;
+    tad_bps_pkt_frag_def   *body_def; /* Option body definition */
+    int                     type; /* Option type */
 } tad_icmp6_option;
 
 /**
@@ -306,34 +310,33 @@ static const tad_bps_pkt_frag tad_icmp6_neighbor_adv_bps_hdr [] =
 };
 
 /**
- * Definition of option with link-layer address specification
+ * Definition of option header
  */
-static const tad_bps_pkt_frag tad_icmp6_option_ll_addr_bps_hdr [] =
+static const tad_bps_pkt_frag tad_icmp6_option_hdr_bps_hdr [] =
 {
     {
         "type",
         8,
-        /*
-         * Type 'source link-layer address' (type == 1) on default
-         */
-        BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_OPT_TYPE,
-                          ICMPV6_OPT_TYPE_SOURCE_LL_ADDR),
+        BPS_FLD_NO_DEF(NDN_TAG_ICMP6_OPT_TYPE),
         TAD_DU_I32,
         FALSE
     },
     {
         "length",
         8,
-        /*
-         * Length 8 octets (1 in optlen units) on default
-         * No need to specify when we need no tricks
-         */
-        BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_OPT_LEN, 1),
+        BPS_FLD_NO_DEF(NDN_TAG_ICMP6_OPT_LEN),
         TAD_DU_I32,
         FALSE
-    },
+    }
+};
+
+/**
+ * Definition of option body with link-layer address specification
+ */
+static const tad_bps_pkt_frag tad_icmp6_option_ll_addr_bps_hdr [] =
+{
     {
-        "addr",
+        "",
         48,
         BPS_FLD_NO_DEF(NDN_TAG_ICMP6_OPT_LL_ADDR),
         TAD_DU_OCTS,
@@ -342,32 +345,10 @@ static const tad_bps_pkt_frag tad_icmp6_option_ll_addr_bps_hdr [] =
 };
 
 /**
- * Definition of prefix information option
+ * Definition of option body with prefix information
  */
 static const tad_bps_pkt_frag tad_icmp6_option_prefix_info_bps_hdr [] =
 {
-    {
-        "type",
-        8,
-        /*
-         * Type 'prefix information' (type == 3) on default
-         */
-        BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_OPT_TYPE,
-                          ICMPV6_OPT_TYPE_PREFIX_INFO),
-        TAD_DU_I32,
-        FALSE
-    },
-    {
-        "length",
-        8,
-        /*
-         * Length 32 octets (4 in optlen units) on default
-         * No need to specify when we need no tricks
-         */
-        BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_OPT_LEN, 4),
-        TAD_DU_I32,
-        FALSE
-    },
     {
         "prefix-length",
         8,
@@ -414,7 +395,10 @@ tad_icmp6_init_cb(csap_p csap, unsigned int layer)
 {
     te_errno                rc = 0;
     tad_icmp6_proto_data   *proto_data;
-    const asn_value        *layer_nds;
+#if 0
+    /* No need now. layer_nds is NULL */
+    const asn_value        *layer_nds = csap->layers[layer].nds;
+#endif
 
     if ((proto_data = TE_ALLOC(sizeof(*proto_data))) == NULL)
     {
@@ -423,12 +407,10 @@ tad_icmp6_init_cb(csap_p csap, unsigned int layer)
 
     csap_set_proto_spec_data(csap, layer, proto_data);
 
-    layer_nds = csap->layers[layer].nds;
-
     if (rc == 0)
         rc = tad_bps_pkt_frag_init(tad_icmp6_bps_hdr,
                                    TE_ARRAY_LEN(tad_icmp6_bps_hdr),
-                                   layer_nds, &proto_data->hdr);
+                                   NULL /*layer_nds*/, &proto_data->hdr);
 
     if (rc == 0)
         rc = tad_bps_pkt_frag_init(tad_icmp6_echo_bps_hdr,
@@ -436,39 +418,44 @@ tad_icmp6_init_cb(csap_p csap, unsigned int layer)
                                    NULL, &proto_data->echo_body);
 
     if (rc == 0)
-        rc = tad_bps_pkt_frag_init(tad_icmp6_echo_bps_hdr,
-                                   TE_ARRAY_LEN(tad_icmp6_echo_bps_hdr),
+        rc = tad_bps_pkt_frag_init(tad_icmp6_mld_bps_hdr,
+                                   TE_ARRAY_LEN(tad_icmp6_mld_bps_hdr),
                                    NULL, &proto_data->mld_body);
 
     if (rc == 0)
-        rc = tad_bps_pkt_frag_init(tad_icmp6_echo_bps_hdr,
-                                   TE_ARRAY_LEN(tad_icmp6_echo_bps_hdr),
-                                   NULL, &proto_data->router_sol_body);
+        rc = tad_bps_pkt_frag_init(tad_icmp6_router_sol_bps_hdr,
+                                TE_ARRAY_LEN(tad_icmp6_router_sol_bps_hdr),
+                                NULL, &proto_data->router_sol_body);
 
     if (rc == 0)
-        rc = tad_bps_pkt_frag_init(tad_icmp6_echo_bps_hdr,
-                                   TE_ARRAY_LEN(tad_icmp6_echo_bps_hdr),
-                                   NULL, &proto_data->router_adv_body);
+        rc = tad_bps_pkt_frag_init(tad_icmp6_router_adv_bps_hdr,
+                                TE_ARRAY_LEN(tad_icmp6_router_adv_bps_hdr),
+                                NULL, &proto_data->router_adv_body);
 
     if (rc == 0)
-        rc = tad_bps_pkt_frag_init(tad_icmp6_echo_bps_hdr,
-                                   TE_ARRAY_LEN(tad_icmp6_echo_bps_hdr),
-                                   NULL, &proto_data->neighbor_sol_body);
+        rc = tad_bps_pkt_frag_init(tad_icmp6_neighbor_sol_bps_hdr,
+                            TE_ARRAY_LEN(tad_icmp6_neighbor_sol_bps_hdr),
+                            NULL, &proto_data->neighbor_sol_body);
 
     if (rc == 0)
-        rc = tad_bps_pkt_frag_init(tad_icmp6_echo_bps_hdr,
-                                   TE_ARRAY_LEN(tad_icmp6_echo_bps_hdr),
-                                   NULL, &proto_data->neighbor_adv_body);
+        rc = tad_bps_pkt_frag_init(tad_icmp6_neighbor_adv_bps_hdr,
+                            TE_ARRAY_LEN(tad_icmp6_neighbor_adv_bps_hdr),
+                            NULL, &proto_data->neighbor_adv_body);
 
     if (rc == 0)
-        rc = tad_bps_pkt_frag_init(tad_icmp6_echo_bps_hdr,
-                                   TE_ARRAY_LEN(tad_icmp6_echo_bps_hdr),
-                                   NULL, &proto_data->option_ll_addr);
+        rc = tad_bps_pkt_frag_init(tad_icmp6_option_hdr_bps_hdr,
+                        TE_ARRAY_LEN(tad_icmp6_option_hdr_bps_hdr),
+                        NULL, &proto_data->option_hdr);
 
     if (rc == 0)
-        rc = tad_bps_pkt_frag_init(tad_icmp6_mld_bps_hdr,
-                                   TE_ARRAY_LEN(tad_icmp6_mld_bps_hdr),
-                                   NULL, &proto_data->option_prefix_info);
+        rc = tad_bps_pkt_frag_init(tad_icmp6_option_ll_addr_bps_hdr,
+                        TE_ARRAY_LEN(tad_icmp6_option_ll_addr_bps_hdr),
+                        NULL, &proto_data->option_ll_addr);
+
+    if (rc == 0)
+        rc = tad_bps_pkt_frag_init(tad_icmp6_option_prefix_info_bps_hdr,
+                        TE_ARRAY_LEN(tad_icmp6_option_prefix_info_bps_hdr),
+                        NULL, &proto_data->option_prefix_info);
 
     return rc;
 }
@@ -490,6 +477,7 @@ tad_icmp6_destroy_cb(csap_p csap, unsigned int layer)
     tad_bps_pkt_frag_free(&proto_data->router_adv_body);
     tad_bps_pkt_frag_free(&proto_data->neighbor_sol_body);
     tad_bps_pkt_frag_free(&proto_data->neighbor_adv_body);
+    tad_bps_pkt_frag_free(&proto_data->option_hdr);
     tad_bps_pkt_frag_free(&proto_data->option_ll_addr);
     tad_bps_pkt_frag_free(&proto_data->option_prefix_info);
 
@@ -523,11 +511,15 @@ tad_icmp6_release_pdu_cb(csap_p csap, unsigned int layer, void *opaque)
         {
             for (i = 0; i < pdu_data->n_opts; i++)
             {
-                if (pdu_data->options[i].option_def != NULL)
+                if (pdu_data->options[i].body_def != NULL)
                 {
                     tad_bps_free_pkt_frag_data(
-                                    pdu_data->options[i].option_def,
-                                    &pdu_data->options[i].option);
+                                    pdu_data->options[i].body_def,
+                                    &pdu_data->options[i].body);
+
+                    tad_bps_free_pkt_frag_data(
+                                    &proto_data->option_hdr,
+                                    &pdu_data->options[i].hdr);
                 }
             }
 
@@ -556,7 +548,6 @@ tad_icmp6_nds_to_data_prepare(tad_icmp6_proto_data *proto_data,
 {
     te_errno                    rc;
     asn_value                  *option;
-    uint8_t                     opt_type;
     size_t                      d_len;
     int                         i;
 
@@ -581,15 +572,19 @@ tad_icmp6_nds_to_data_prepare(tad_icmp6_proto_data *proto_data,
 
         case ICMPV6_TYPE_ROUTER_SOL:
             pdu_data->body_def = &proto_data->router_sol_body;
+            break;
 
         case ICMPV6_TYPE_ROUTER_ADV:
             pdu_data->body_def = &proto_data->router_adv_body;
+            break;
 
         case ICMPV6_TYPE_NEIGHBOR_SOL:
             pdu_data->body_def = &proto_data->neighbor_sol_body;
+            break;
 
         case ICMPV6_TYPE_NEIGHBOR_ADV:
             pdu_data->body_def = &proto_data->neighbor_adv_body;
+            break;
 
         default:
             ERROR("Unsupported ICMPv6 message type %d specified",
@@ -620,27 +615,30 @@ tad_icmp6_nds_to_data_prepare(tad_icmp6_proto_data *proto_data,
                 return rc;
             }
 
-            d_len = sizeof(opt_type);
-            if ((rc = asn_read_value_field(option, &opt_type,
-                                           &d_len, "type")) != 0)
+            d_len = sizeof(pdu_data->options[i].type);
+            if ((rc = asn_read_value_field(option,
+                                            &pdu_data->options[i].type,
+                                            &d_len, "type")) != 0)
             {
                 return rc;
             }
 
-            if (opt_type == ICMPV6_OPT_TYPE_SOURCE_LL_ADDR)
+            if (pdu_data->options[i].type ==
+                                            ICMPV6_OPT_TYPE_SOURCE_LL_ADDR)
             {
-                pdu_data->options[i].option_def =
+                pdu_data->options[i].body_def =
                                         &proto_data->option_ll_addr;
             }
-            else if (opt_type == ICMPV6_OPT_TYPE_PREFIX_INFO)
+            else if (pdu_data->options[i].type ==
+                                            ICMPV6_OPT_TYPE_PREFIX_INFO)
             {
-                pdu_data->options[i].option_def =
+                pdu_data->options[i].body_def =
                                         &proto_data->option_prefix_info;
             }
             else
             {
                 ERROR("Unsupported ICMPv6 option "
-                      "type %d specified", opt_type);
+                      "type %d specified", pdu_data->options[i].type);
                 return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
             }
         }
@@ -649,6 +647,29 @@ tad_icmp6_nds_to_data_prepare(tad_icmp6_proto_data *proto_data,
     return 0;
 }
 
+static const char *
+pdu_data_type2str(int type)
+{
+    switch (type)
+    {
+        case ICMPV6_TYPE_ROUTER_SOL: return "router-sol";
+        case ICMPV6_TYPE_ROUTER_ADV: return "router-adv";
+        case ICMPV6_TYPE_NEIGHBOR_SOL: return "neighbor-sol";
+        case ICMPV6_TYPE_NEIGHBOR_ADV: return "neighbor-adv";
+        default: return "";
+    }
+}
+
+static const char *
+option_type2str(int type)
+{
+    switch (type)
+    {
+        case ICMPV6_OPT_TYPE_SOURCE_LL_ADDR: return "ll-addr";
+        case ICMPV6_OPT_TYPE_PREFIX_INFO: return "prefix";
+        default: return "";
+    }
+}
 /**
  * Convert traffic template NDS to BPS internal data.
  *
@@ -663,8 +684,11 @@ tad_icmp6_nds_to_data(tad_icmp6_proto_data *proto_data, asn_value *nds,
                       tad_icmp6_proto_pdu_data *pdu_data)
 {
     te_errno                    rc;
+    asn_value                  *body;
     asn_value                  *option;
+    asn_value                  *option_body;
     int                         i;
+    char                        name_buf[256];
 
     if ((rc = tad_icmp6_nds_to_data_prepare(proto_data, nds, pdu_data)) != 0)
     {
@@ -677,8 +701,15 @@ tad_icmp6_nds_to_data(tad_icmp6_proto_data *proto_data, asn_value *nds,
         return rc;
     }
 
+    sprintf(name_buf, "body.#%s", pdu_data_type2str(pdu_data->type));
+
+    if ((body = asn_find_descendant(nds, NULL, name_buf)) == NULL)
+    {
+        return TE_EFAULT;
+    }
+
     if ((rc = tad_bps_nds_to_data_units(pdu_data->body_def,
-                                        nds, &pdu_data->body)) != 0)
+                                        body, &pdu_data->body)) != 0)
     {
         return rc;
     }
@@ -693,9 +724,26 @@ tad_icmp6_nds_to_data(tad_icmp6_proto_data *proto_data, asn_value *nds,
             }
 
             if ((rc = tad_bps_nds_to_data_units(
-                            pdu_data->options[i].option_def,
+                            &proto_data->option_hdr,
                                 option,
-                                    &pdu_data->options[i].option)) != 0)
+                                    &pdu_data->options[i].hdr)) != 0)
+            {
+                return rc;
+            }
+
+            sprintf(name_buf,
+                    "body.#%s", option_type2str(pdu_data->options[i].type));
+
+            if ((option_body = asn_find_descendant(option,
+                                                   NULL, name_buf)) == NULL)
+            {
+                return TE_EFAULT;
+            }
+
+            if ((rc = tad_bps_nds_to_data_units(
+                            pdu_data->options[i].body_def,
+                                option_body,
+                                    &pdu_data->options[i].body)) != 0)
             {
                 return rc;
             }
@@ -736,8 +784,15 @@ tad_icmp6_bps_confirm_send(tad_icmp6_proto_data *proto_data,
         for (i = 0; i < pdu_data->n_opts; i++)
         {
             if ((rc = tad_bps_confirm_send(
-                            pdu_data->options[i].option_def,
-                                &pdu_data->options[i].option)) != 0)
+                            &proto_data->option_hdr,
+                                &pdu_data->options[i].hdr)) != 0)
+            {
+                return rc;
+            }
+
+            if ((rc = tad_bps_confirm_send(
+                            pdu_data->options[i].body_def,
+                                &pdu_data->options[i].body)) != 0)
             {
                 return rc;
             }
@@ -909,8 +964,12 @@ tad_icmp6_gen_bin_cb(csap_p csap, unsigned int layer,
         for (i = 0; i < tmpl_data->n_opts; i++)
         {
             bitlen += tad_bps_pkt_frag_data_bitlen(
-                                        tmpl_data->options[i].option_def,
-                                        &tmpl_data->options[i].option);
+                                        &proto_data->option_hdr,
+                                        &tmpl_data->options[i].hdr);
+
+            bitlen += tad_bps_pkt_frag_data_bitlen(
+                                        tmpl_data->options[i].body_def,
+                                        &tmpl_data->options[i].body);
         }
     }
 
@@ -942,9 +1001,13 @@ tad_icmp6_gen_bin_cb(csap_p csap, unsigned int layer,
     {
         for (i = 0; i < tmpl_data->n_opts; i++)
         {
-            GEN_BIN_FRAGMENT(tmpl_data->options[i].option_def,
-                             &tmpl_data->options[i].option,
-                             "ICMPv6 message option")
+            GEN_BIN_FRAGMENT(&proto_data->option_hdr,
+                             &tmpl_data->options[i].hdr,
+                             "ICMPv6 message option header")
+
+            GEN_BIN_FRAGMENT(tmpl_data->options[i].body_def,
+                             &tmpl_data->options[i].body,
+                             "ICMPv6 message option body")
         }
     }
 #undef GEN_BIN_FRAGMENT
@@ -1047,8 +1110,15 @@ tad_icmp6_match_pre_cb(csap_p              csap,
         for (i = 0; i < pkt_data->n_opts; i++)
         {
             if ((rc = tad_bps_pkt_frag_match_pre(
-                                    pkt_data->options[i].option_def,
-                                    &pkt_data->options[i].option)) != 0)
+                                    &proto_data->option_hdr,
+                                    &pkt_data->options[i].hdr)) != 0)
+            {
+                return rc;
+            }
+
+            if ((rc = tad_bps_pkt_frag_match_pre(
+                                    pkt_data->options[i].body_def,
+                                    &pkt_data->options[i].body)) != 0)
             {
                 return rc;
             }
@@ -1102,8 +1172,17 @@ tad_icmp6_match_post_cb(csap_p              csap,
         for (i = 0; i < pkt_data->n_opts; i++)
         {
             if ((rc = tad_bps_pkt_frag_match_post(
-                                    pkt_data->options[i].option_def,
-                                    &pkt_data->options[i].option,
+                                    &proto_data->option_hdr,
+                                    &pkt_data->options[i].hdr,
+                                    pkt, &bitoff,
+                                    meta_pkt_layer->nds)) != 0)
+            {
+                return rc;
+            }
+
+            if ((rc = tad_bps_pkt_frag_match_post(
+                                    pkt_data->options[i].body_def,
+                                    &pkt_data->options[i].body,
                                     pkt, &bitoff,
                                     meta_pkt_layer->nds)) != 0)
             {
@@ -1171,9 +1250,22 @@ tad_icmp6_match_do_cb(csap_p           csap,
         for (i = 0; i < pkt_data->n_opts; i++)
         {
             if ((rc = tad_bps_pkt_frag_match_do(
-                                    pkt_data->options[i].option_def,
-                                    &ptrn_data->options[i].option,
-                                    &pkt_data->options[i].option,
+                                    &proto_data->option_hdr,
+                                    &ptrn_data->options[i].hdr,
+                                    &pkt_data->options[i].hdr,
+                                    pdu, &bitoff)) != 0)
+            {
+                F_VERB(CSAP_LOG_FMT
+                       "Match PDU vs IPv6 option failed on bit "
+                       "offset %u: %r",
+                       CSAP_LOG_ARGS(csap), (unsigned)bitoff, rc);
+                return rc;
+            }
+
+            if ((rc = tad_bps_pkt_frag_match_do(
+                                    pkt_data->options[i].body_def,
+                                    &ptrn_data->options[i].body,
+                                    &pkt_data->options[i].body,
                                     pdu, &bitoff)) != 0)
             {
                 F_VERB(CSAP_LOG_FMT

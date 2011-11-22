@@ -479,7 +479,7 @@ static asn_named_entry_t _ndn_icmp6_neighbor_sol_ne_array [] = {
             {PRIVATE, NDN_TAG_ICMP6_NEIGHBOR_SOL_RESERVED}},
     {"target-addr",
         &ndn_data_unit_ip6_address_s,
-            {PRIVATE, NDN_TAG_ICMP6_NEIGHBOR_SOL_TARGET_ADDR}}
+            {PRIVATE, NDN_TAG_ICMP6_NEIGHBOR_SOL_TARGET_ADDR}},
 };
 
 asn_type ndn_icmp6_neighbor_sol_s = {
@@ -500,7 +500,7 @@ static asn_named_entry_t _ndn_icmp6_neighbor_adv_ne_array [] = {
             {PRIVATE, NDN_TAG_ICMP6_NEIGHBOR_ADV_FLAGS}},
     {"target-addr",
         &ndn_data_unit_ip6_address_s,
-            {PRIVATE, NDN_TAG_ICMP6_NEIGHBOR_ADV_TARGET_ADDR}}
+            {PRIVATE, NDN_TAG_ICMP6_NEIGHBOR_ADV_TARGET_ADDR}},
 };
 
 asn_type ndn_icmp6_neighbor_adv_s = {
@@ -579,7 +579,7 @@ static asn_named_entry_t _ndn_icmp6_body_ne_array [] = {
             {PRIVATE, NDN_TAG_ICMP6_ECHO}},
     {"mld",
         &ndn_icmp6_mld_s,
-            {PRIVATE, NDN_TAG_ICMP6_MLD}}
+            {PRIVATE, NDN_TAG_ICMP6_MLD}},
 };
 
 asn_type ndn_icmp6_body_s = {
@@ -662,10 +662,10 @@ const asn_type * const ndn_icmp6_opt_body = &ndn_icmp6_opt_body_s;
  */
 static asn_named_entry_t _ndn_icmp6_opt_ne_array [] = {
     {"type",
-        &ndn_data_unit_int8_s,
+        &asn_base_int8_s,
             {PRIVATE, NDN_TAG_ICMP6_OPT_TYPE}},
     {"length",
-        &ndn_data_unit_int8_s,
+        &asn_base_int8_s,
             {PRIVATE, NDN_TAG_ICMP6_OPT_LEN}},
     {"body",
         &ndn_icmp6_opt_body_s,

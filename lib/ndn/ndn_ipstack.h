@@ -256,6 +256,7 @@ extern const asn_type * const ndn_ip6_ext_header_destination;
 extern const asn_type * const ndn_ip6_ext_header;
 extern const asn_type * const ndn_ip6_ext_headers_seq;
 
+extern const asn_type * const ndn_icmp6_opt;
 extern const asn_type * const ndn_icmp6_message;
 extern const asn_type * const ndn_icmp6_csap;
 
