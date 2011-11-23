@@ -173,6 +173,10 @@ typedef enum {
     NDN_TAG_ICMP6_OPT_LL_ADDR,
     NDN_TAG_ICMP6_OPT_PREFIX,
     /*
+     * ICMPv6 option 'Source link-layer address layout
+     */
+    NDN_TAG_ICMP6_OPT_LL_ADDR_MAC,
+    /*
      * ICMPv6 option 'Prefix information' layout
      */
     NDN_TAG_ICMP6_OPT_PREFIX_PREFIX_LENGTH,
@@ -256,7 +260,18 @@ extern const asn_type * const ndn_ip6_ext_header_destination;
 extern const asn_type * const ndn_ip6_ext_header;
 extern const asn_type * const ndn_ip6_ext_headers_seq;
 
+extern const asn_type * const ndn_icmp6_router_sol;
+extern const asn_type * const ndn_icmp6_router_adv;
+extern const asn_type * const ndn_icmp6_neighbor_sol;
+extern const asn_type * const ndn_icmp6_neighbor_adv;
+extern const asn_type * const ndn_icmp6_echo;
+extern const asn_type * const ndn_icmp6_mld;
+extern const asn_type * const ndn_icmp6_body;
+extern const asn_type * const ndn_icmp6_opt_ll_addr;
+extern const asn_type * const ndn_icmp6_opt_prefix;
+extern const asn_type * const ndn_icmp6_opt_body;
 extern const asn_type * const ndn_icmp6_opt;
+extern const asn_type * const ndn_icmp6_opts;
 extern const asn_type * const ndn_icmp6_message;
 extern const asn_type * const ndn_icmp6_csap;
 

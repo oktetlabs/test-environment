@@ -600,7 +600,25 @@ const asn_type * const ndn_icmp6_body = &ndn_icmp6_body_s;
  *
  * Supported variants are:
  *
- * 1) Option 'Prefix information'
+ * 1) Option 'Source link-layer address'
+ */
+static asn_named_entry_t _ndn_icmp6_opt_ll_addr_ne_array [] = {
+    {"mac",
+        &ndn_data_unit_eth_address_s,
+            {PRIVATE, NDN_TAG_ICMP6_OPT_LL_ADDR_MAC}},
+};
+
+asn_type ndn_icmp6_opt_ll_addr_s = {
+    "ICMPv6-Option-Source-ll-address",
+    {PRIVATE, NDN_TAG_ICMP6_OPT_LL_ADDR}, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_icmp6_opt_ll_addr_ne_array),
+    {_ndn_icmp6_opt_ll_addr_ne_array}
+};
+
+const asn_type * const ndn_icmp6_opt_ll_addr = &ndn_icmp6_opt_ll_addr_s;
+
+/*
+ * 2) Option 'Prefix information'
  */
 static asn_named_entry_t _ndn_icmp6_opt_prefix_ne_array [] = {
     {"prefix-length",
@@ -630,17 +648,12 @@ asn_type ndn_icmp6_opt_prefix_s = {
 const asn_type * const ndn_icmp6_opt_prefix = &ndn_icmp6_opt_prefix_s;
 
 /*
- * 2) Option 'Source link-layer address'
- * No need to specify. Use ndn_data_unit_eth_address_s
- */
-
-/*
  * Option body
  * CHOICE: supported variants:
  */
 static asn_named_entry_t _ndn_icmp6_opt_body_ne_array [] = {
     {"ll-addr",
-        &ndn_data_unit_eth_address_s,
+        &ndn_icmp6_opt_ll_addr_s,
             {PRIVATE, NDN_TAG_ICMP6_OPT_LL_ADDR}},
     {"prefix",
         &ndn_icmp6_opt_prefix_s,
@@ -662,10 +675,10 @@ const asn_type * const ndn_icmp6_opt_body = &ndn_icmp6_opt_body_s;
  */
 static asn_named_entry_t _ndn_icmp6_opt_ne_array [] = {
     {"type",
-        &asn_base_int8_s,
+        &ndn_data_unit_int8_s,
             {PRIVATE, NDN_TAG_ICMP6_OPT_TYPE}},
     {"length",
-        &asn_base_int8_s,
+        &ndn_data_unit_int8_s,
             {PRIVATE, NDN_TAG_ICMP6_OPT_LEN}},
     {"body",
         &ndn_icmp6_opt_body_s,

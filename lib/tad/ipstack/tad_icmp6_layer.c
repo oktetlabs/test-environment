@@ -336,9 +336,9 @@ static const tad_bps_pkt_frag tad_icmp6_option_hdr_bps_hdr [] =
 static const tad_bps_pkt_frag tad_icmp6_option_ll_addr_bps_hdr [] =
 {
     {
-        "",
+        "mac",
         48,
-        BPS_FLD_NO_DEF(NDN_TAG_ICMP6_OPT_LL_ADDR),
+        BPS_FLD_NO_DEF(NDN_TAG_ICMP6_OPT_LL_ADDR_MAC),
         TAD_DU_OCTS,
         FALSE
     }
@@ -670,6 +670,7 @@ option_type2str(int type)
         default: return "";
     }
 }
+
 /**
  * Convert traffic template NDS to BPS internal data.
  *
@@ -687,8 +688,8 @@ tad_icmp6_nds_to_data(tad_icmp6_proto_data *proto_data, asn_value *nds,
     asn_value                  *body;
     asn_value                  *option;
     asn_value                  *option_body;
-    int                         i;
     char                        name_buf[256];
+    int                         i;
 
     if ((rc = tad_icmp6_nds_to_data_prepare(proto_data, nds, pdu_data)) != 0)
     {
