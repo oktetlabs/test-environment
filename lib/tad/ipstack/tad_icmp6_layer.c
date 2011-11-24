@@ -1125,6 +1125,8 @@ tad_icmp6_match_pre_cb(csap_p              csap,
             }
         }
     }
+
+    return 0;
 }
 
 /* See description in tad_ipstack_impl.h */
@@ -1191,6 +1193,8 @@ tad_icmp6_match_post_cb(csap_p              csap,
             }
         }
     }
+
+    return 0;
 }
 
 /* See description in tad_ipstack_impl.h */
