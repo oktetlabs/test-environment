@@ -288,11 +288,10 @@ tad_te_proto2ip_proto(te_tad_protocols_t te_proto)
 te_errno
 tad_ip6_init_cb(csap_p csap, unsigned int layer)
 {
-    UNUSED(csap);
-    UNUSED(layer);
     te_errno            rc;
     tad_ip6_proto_data *proto_data;
     const asn_value    *layer_nds;
+    int                 val;
 
     IF_NULL_RETURN(proto_data = TE_ALLOC(sizeof(*proto_data)));
 
@@ -320,11 +319,20 @@ tad_ip6_init_cb(csap_p csap, unsigned int layer)
                                TE_ARRAY_LEN(tad_ip6_ra_option),
                                NULL, &proto_data->opt_ra));
 
-    if (layer > 0)
+    if (asn_read_int32(layer_nds, &val, "next-header") == 0 &&
+        (val == IPPROTO_TCP || val == IPPROTO_UDP || val == IPPROTO_ICMPV6))
+    {
+        proto_data->upper_protocol = val;
+    }
+    else if (layer > 0)
+    {
         proto_data->upper_protocol =
                 tad_te_proto2ip_proto(csap->layers[layer - 1].proto_tag);
+    }
     else
+    {
         proto_data->upper_protocol = IPPROTO_NONE;
+    }
 
     return 0;
 }
@@ -1390,7 +1398,7 @@ tad_ip6_match_do_cb(csap_p           csap,
             tad_bps_pkt_frag_match_do(&proto_data->hdr, &ptrn_data->hdr,
                                       &pkt_data->hdr, pdu, &bitoff)) != 0)
     {
-        F_VERB(CSAP_LOG_FMT "Match PDU vs IPv4 header failed on bit "
+        F_VERB(CSAP_LOG_FMT "Match PDU vs IPv6 header failed on bit "
                "offset %u: %r", CSAP_LOG_ARGS(csap), (unsigned)bitoff, rc);
         return rc;
     }
