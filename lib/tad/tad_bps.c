@@ -602,7 +602,7 @@ tad_bps_pkt_frag_match_do(const tad_bps_pkt_frag_def *def,
     te_errno                rc = 0;
     unsigned int            i;
     const tad_data_unit_t  *du;
-    size_t                  len;
+    size_t                  len = 0;
 
     if (def == NULL || ptrn == NULL || pkt_data == NULL ||
         pkt == NULL || bitoff == NULL)
