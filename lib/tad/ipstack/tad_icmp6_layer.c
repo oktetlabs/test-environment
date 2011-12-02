@@ -82,6 +82,7 @@
 #define ICMPV6_TYPE_NEIGHBOR_ADV            136
 
 #define ICMPV6_OPT_TYPE_SOURCE_LL_ADDR      1
+#define ICMPV6_OPT_TYPE_TARGET_LL_ADDR      2
 #define ICMPV6_OPT_TYPE_PREFIX_INFO         3
 
 /**
@@ -624,7 +625,9 @@ tad_icmp6_nds_to_data_prepare(tad_icmp6_proto_data *proto_data,
             }
 
             if (pdu_data->options[i].type ==
-                                            ICMPV6_OPT_TYPE_SOURCE_LL_ADDR)
+                                            ICMPV6_OPT_TYPE_SOURCE_LL_ADDR ||
+                pdu_data->options[i].type ==
+                                            ICMPV6_OPT_TYPE_TARGET_LL_ADDR)
             {
                 pdu_data->options[i].body_def =
                                         &proto_data->option_ll_addr;
@@ -666,6 +669,7 @@ option_type2str(int type)
     switch (type)
     {
         case ICMPV6_OPT_TYPE_SOURCE_LL_ADDR: return "ll-addr";
+        case ICMPV6_OPT_TYPE_TARGET_LL_ADDR: return "ll-addr";
         case ICMPV6_OPT_TYPE_PREFIX_INFO: return "prefix";
         default: return "";
     }
