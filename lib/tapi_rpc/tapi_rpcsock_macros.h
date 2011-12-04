@@ -260,12 +260,15 @@
  *
  * @param rpcs_        RPC server handle
  * @param exp_errno_   Expected value of errno on the server
+ * @param failed_      Variable to store result of checking (@c TRUE
+ *                     or @c FALSE)
  * @param err_msg_     Error message that should be used in case of failure
  * @param args_        Arguments of err_msg_
  *
- * @se In case of failure it jumps to "cleanup" label
+ * @se In case of failure it set failed_ to @c TRUE, otherwise to @c FALSE
  */
-#define CHECK_RPC_ERRNO(rpcs_, exp_errno_, err_msg_, args_...) \
+#define CHECK_RPC_ERRNO_NOEXIT(rpcs_, exp_errno_, failed_, err_msg_, \
+                               args_...) \
     do {                                                                \
         int err_ = RPC_ERRNO(rpcs_);                                    \
                                                                         \
@@ -283,6 +286,31 @@
                               "of %s", errno_rpc2str(err_),             \
                               errno_rpc2str(exp_errno_));               \
             }                                                           \
+            failed_ = TRUE;                                             \
+        }                                                               \
+        else                                                            \
+            failed_ = FALSE;                                            \
+    } while (0)
+
+/**
+ * Check current value of errno on a particular RPC server against
+ * some expected value
+ *
+ * @param rpcs_        RPC server handle
+ * @param exp_errno_   Expected value of errno on the server
+ * @param err_msg_     Error message that should be used in case of failure
+ * @param args_        Arguments of err_msg_
+ *
+ * @se In case of failure it jumps to "cleanup" label
+ */
+#define CHECK_RPC_ERRNO(rpcs_, exp_errno_, err_msg_, args_...) \
+    do {                                                                \
+        te_bool failed_;                                                \
+                                                                        \
+        CHECK_RPC_ERRNO_NOEXIT(rpcs_, exp_errno_, failed_, err_msg_,    \
+                               args_);                                  \
+        if (failed_)                                                    \
+        {                                                               \
             MACRO_TEST_ERROR;                                           \
             MACRO_ERROR_EXIT;                                           \
         }                                                               \
