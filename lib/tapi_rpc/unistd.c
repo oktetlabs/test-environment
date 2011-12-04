@@ -101,6 +101,44 @@ rpc_pipe(rcf_rpc_server *rpcs,
 }
 
 int
+rpc_pipe2(rcf_rpc_server *rpcs,
+         int filedes[2], int flags)
+{
+    tarpc_pipe2_in  in;
+    tarpc_pipe2_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(pipe2, -1);
+    }
+
+    if (filedes != NULL)
+    {
+        in.filedes.filedes_len = 2;
+        in.filedes.filedes_val = filedes;
+    }
+
+    in.flags = fcntl_flags_rpc2h(flags);
+
+    rcf_rpc_call(rpcs, "pipe2", &in, &out);
+
+    if (RPC_IS_CALL_OK(rpcs) && filedes != NULL)
+        memcpy(filedes, out.filedes.filedes_val, sizeof(int) * 2);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(pipe2, out.retval);
+    TAPI_RPC_LOG(rpcs, pipe2, "%p", "%d (%d,%d,%d)",
+                 filedes, out.retval,
+                 filedes != NULL ? filedes[0] : -1,
+                 filedes != NULL ? filedes[1] : -1,
+                 fcntl_flags_rpc2str(flags));
+    RETVAL_INT(pipe2, out.retval);
+}
+
+int
 rpc_socketpair(rcf_rpc_server *rpcs,
                rpc_socket_domain domain, rpc_socket_type type,
                rpc_socket_proto protocol, int sv[2])

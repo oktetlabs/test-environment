@@ -64,13 +64,13 @@ typedef enum rpc_fcntl_flags {
     RPC_O_DSYNC     = 0x00010000,
     RPC_O_RSYNC     = 0x00020000,
     RPC_O_LARGEFILE = 0x00040000,
+    RPC_O_CLOEXEC   = 0x00080000,
 } rpc_fcntl_flags;
 
 /** Access mode */
 #define RPC_O_ACCMODE   (RPC_O_RDONLY | RPC_O_WRONLY | RPC_O_RDWR)
 
-
-#define FCNTL_FLAGS_MAPPING_LIST \
+#define FCNTL_FLAGS_MAPPING_LIST_AUX \
     RPC_BIT_MAP_ENTRY(O_RDONLY), \
     RPC_BIT_MAP_ENTRY(O_WRONLY), \
     RPC_BIT_MAP_ENTRY(O_RDWR), \
@@ -90,6 +90,15 @@ typedef enum rpc_fcntl_flags {
     RPC_BIT_MAP_ENTRY(O_DSYNC), \
     RPC_BIT_MAP_ENTRY(O_RSYNC), \
     RPC_BIT_MAP_ENTRY(O_LARGEFILE)
+
+#ifdef O_CLOEXEC
+#define FCNTL_FLAGS_MAPPING_LIST \
+    FCNTL_FLAGS_MAPPING_LIST_AUX, \
+    RPC_BIT_MAP_ENTRY(O_CLOEXEC)
+#else
+#define FCNTL_FLAGS_MAPPING_LIST \
+    FCNTL_FLAGS_MAPPING_LIST_AUX
+#endif
 
 /**
  * fcntl_flags_rpc2str()

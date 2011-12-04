@@ -3970,6 +3970,19 @@ TARPC_FUNC(pipe,
 }
 )
 
+
+/*-------------- pipe2() --------------------------------*/
+TARPC_FUNC(pipe2,
+{
+    COPY_ARG(filedes);
+},
+{
+    MAKE_CALL(out->retval = func_ptr(out->filedes.filedes_len > 0 ?
+                                     out->filedes.filedes_val : NULL,
+                                     in->flags));
+}
+)
+
 /*-------------- socketpair() ------------------------------*/
 
 TARPC_FUNC(socketpair,

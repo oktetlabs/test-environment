@@ -1157,7 +1157,7 @@ struct tarpc_accept4_in {
     struct tarpc_sa     addr;   /**< Location for peer name */
     tarpc_socklen_t     len<>;  /**< Length of the location
                                      for peer name */
-    tarpc_int           flags; /**< RPC_SOCK_NONBLOCK and/or
+    tarpc_int           flags;  /**< RPC_SOCK_NONBLOCK and/or
                                      RPC_SOCK_CLOEXEC */
 };
 
@@ -2930,6 +2930,23 @@ struct tarpc_pipe_out {
     tarpc_int   filedes<>;
 };
 
+/* pipe2() */
+
+struct tarpc_pipe2_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int   filedes<>;
+
+    tarpc_int   flags;  /**< RPC_O_NONBLOCK and/or
+                             RPC_O_CLOEXEC */
+};
+
+struct tarpc_pipe2_out {
+    struct tarpc_out_arg common;
+    tarpc_int   retval;
+    tarpc_int   filedes<>;
+};
+
 /* socketpair() */
 
 struct tarpc_socketpair_in {
@@ -4517,6 +4534,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(freeaddrinfo) 
         
         RPC_DEF(pipe)
+        RPC_DEF(pipe2)
         RPC_DEF(socketpair)
         RPC_DEF(open)
         RPC_DEF(open64)

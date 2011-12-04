@@ -688,6 +688,23 @@ extern int rpc_pipe(rcf_rpc_server *rpcs,
                     int filedes[2]);
 
 /**
+ * Create a pair file descriptor on RPC server side, pointing to a pipe 
+ * inode and place them in the array @b filedes
+ * The file descriptor of index zero (filedes[0]) is used for reading,
+ * and the other file descriptor for writing.
+ *
+ * @param rpcs     RPC server handle
+ * @param filedes  array of created file descriptors
+ * @param flags    RPC_O_NONBLOCK, RPC_O_CLOEXEC flags
+ *
+ * @return Upon successful completion this function returns 0.
+ *         On error -1 is returned.
+ */
+extern int rpc_pipe2(rcf_rpc_server *rpcs,
+                     int filedes[2],
+                     int flags);
+
+/**
  * Create a unnamed pair of connected socket on RPC server side.
  * the sockets belong to specified domain @b domain, and are of specified
  * type @b type. The descriptor used in referencing the new sockets are

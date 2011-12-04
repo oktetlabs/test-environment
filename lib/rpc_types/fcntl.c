@@ -108,6 +108,9 @@ fcntl_flags_rpc2h(unsigned int flags)
 #ifdef O_LARGEFILE
         | (!!(flags & RPC_O_LARGEFILE) * O_LARGEFILE)
 #endif
+#ifdef O_CLOEXEC
+        | (!!(flags & RPC_O_CLOEXEC) * O_CLOEXEC)
+#endif
         ;
 }
 
@@ -174,6 +177,9 @@ fcntl_flags_h2rpc(unsigned int flags)
 #endif
 #ifdef O_LARGEFILE
         | (!!(flags & O_LARGEFILE) * RPC_O_LARGEFILE)
+#endif
+#ifdef O_CLOEXEC
+        | (!!(flags & O_CLOEXEC) * RPC_O_CLOEXEC)
 #endif
         ;
 }
