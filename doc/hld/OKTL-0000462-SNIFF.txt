@@ -1,4 +1,6 @@
-Sniffer interface.
+Sniffer framework design.
+
+Author: Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
 
 * Status
 
