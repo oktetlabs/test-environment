@@ -1,0 +1,627 @@
+Sniffer interface.
+
+* Status
+
+  - agent id and RCF
+
+* Abbreviations
+
+|------+--------------------|
+| Term | Definition         |
+|------+--------------------|
+| HLD  | Hight Level Design |
+| TE   | Test Environment   |
+
+* Teminology
+
+As the document describes a subsystem in TE it uses teminology and
+abbreviations described in the TE architecture document OKTL-ARCH-0000044.
+
+|-----------------+--------------------------------------------------------|
+| Term            | Definition                                             |
+|-----------------+--------------------------------------------------------|
+| sniffer         | Instance which captures packets on a given interface   |
+| sniffer name    | A human-readable sniffer name which identifies it      |
+|                 | across the sniffers running on particular interface    |
+| sniffer session | Continous session of packets sniffing.                 |
+| sniffer ssn     | Sniffer session sequence number. Is an integer uniq    |
+|                 | across the agent sniffer sessions and is incremented   |
+|                 | upon sniffer creation/reenabling.                      |
+|                 | *NOTE*: this means that *sniffer ssn* counter is not   |
+|                 | reset when agent is restarted.                         |
+| sniffer id      | A sniffer ID which identifies the sniffer across       |
+|                 | all the sniffers of a particular agent. Is uniq across |
+|                 | the agent lifetime. Is formed as:                      |
+|                 | *ifname* ## *sniffer_name* ## *sniffer_ssn*            |
+| full sniffer id | A sniffer ID which identifies the sniffer across all   |
+|                 | the sniffers existing in the system. Formed as:        |
+|                 | *agent_name* ## *sniffer_id*                           |
+| agent id        | An identifier of the agent runnin on the test host.    |
+|                 | It's tolerant to agent restarts. Several agents with   |
+|                 | the same name running on the same host under the same  |
+|                 | user *MUST* have different *agent id*.                 |
+|                 |                                                        |
+
+
+* References
+
+|-----+-------------------------------+---------------------|
+| Ref | Document Title                | Document Identifier |
+|-----+-------------------------------+---------------------|
+|   1 | Test Environment Architecture | OKTL-0000044        |
+
+* Conventions
+
+Terms in *bold* like *sniffer id* mean exactly what is written in the
+definition in the *Terminology* section.
+
+* Introduction
+
+Test Environment is a distributed system which has test agents running on
+different hosts each managing several network interfaces. During the tests
+execution various network packets are transmitted via the interfaces. The
+main purpuse of the developed framework is to provide infrastructure for
+sniffing on the network interfaces and storing information about the packets
+sent/received there.
+
+Although the dumps are keps as binary *.pcap* files the framework is also
+responsible for merging the packets dumps/data into various XML/HTML/Text
+logs produced by the *TE* and handled by the *RGT* subsystem.
+
+Apart from certain modifications in the existing TE subsystems the sniffer
+framework introduces a new object called *sniffer*. It's a separate process
+running on the *test agent* side and responsible for capturing the packets
+and passing the packet data to the *test agent*.
+
+It should be clear that the actual packets capturing may happen on a
+different host/station and the test agent may be just a proxy agent. In this
+case sniffer will be provided with an interface to retrieve the packets data
+from the IUT.
+
+* Standards
+
+The sniffer framework uses the first version of the *pcap* format. Details
+can be found at: http://wiki.wireshark.org/Development/LibpcapFileFormat
+
+* Requirements
+
+
+#+CAPTION: Requirements list
+#+LABEL: tbl:long
+#+ATTR_LaTeX: longtable
+
+|-----------+-------------------------------------------------------------------------|
+| ID        | Description                                                             |
+| REQ-00100 | Sniffer should provide ability to sniff packets on a given network      |
+|           | interface.                                                              |
+| REQ-00120 | Sniffer framework should be fool-safe, so regardless of the             |
+|           | configuration the framework should not utilize all the space            |
+|           | available on a certain partition.                                       |
+| REQ-00130 | Sniffer framework should be capable of surviving a full night run       |
+|           | of the existing test suites.                                            |
+| REQ-00200 | Sniffer configuration should be performed via Configurator              |
+|           | interface.                                                              |
+| REQ-00210 | It should be possible to perform per-interface sniffer                  |
+|           | configuration.                                                          |
+| REQ-00211 | It should be possible to run multiple sniffers on the same              |
+|           | interface.                                                              |
+| REQ-00215 | Re-configuring on the one sniffer instances should not affect           |
+|           | work of other sniffer instances.                                        |
+| REQ-00220 | Sniffer configuration should be rolled back as a result of              |
+|           | overall configuration rollback performed by configurator                |
+|           | upon test completion. I.e. sniffer configuration parameters             |
+|           | should not be volatile.                                                 |
+| REQ-00222 | It should be possible to perform a run-time packets filtering.          |
+| REQ-00223 | Maximum packet capture size should be configurable. See '-s'            |
+|           | tcpdump option for details.                                             |
+| REQ-00224 | tcpdump-like filters syntax should be supported for run-timer           |
+|           | packet filters.                                                         |
+| REQ-00230 | Multi-agent configuration should be supported. Multiple agents can      |
+|           | run on the same host. The logs from different sniffers should not       |
+|           | be merged or corrupted.                                                 |
+| REQ-00240 | Logs should be taken from the agent in a periodic manner to prevent     |
+|           | size quotas dearth.                                                     |
+| REQ-00241 | Logs should be taken from the agent in a raw format (w/o text/xml       |
+|           | preprocessing).                                                         |
+| REQ-00242 | Logger should be responsible for periodic logs intake.                  |
+| REQ-00243 | Frequency of the logs intake should be configurable in the logger       |
+|           | configuration.                                                          |
+| REQ-00244 | The logs intake should keep the individual packets consistency -        |
+|           | partially written packets should not be taken.                          |
+| REQ-00270 | Sniffer should survive agent death and restart. Some packet entries     |
+|           | may be lost but the sniffing should continue.                           |
+| REQ-00271 | (optional) Packets capturing should continue while agent is             |
+|           | restarted.                                                              |
+| REQ-00280 | TEN-side capture files control should be supported.                     |
+| REQ-00281 | TEN-side capture files naming should be configurable. Automatic         |
+|           | names should be selected if no preconfiguration was done.               |
+| REQ-00282 | On the TEN side it should be possible to split packets across           |
+|           | several files.                                                          |
+| REQ-00283 | It should be possible to configure maximum capture size for the         |
+|           | TEN-side capture file.                                                  |
+| REQ-00284 | (optional)In case of logs separation across several files on the        |
+|           | TEN-side it should be possible to configure an overall available        |
+|           | space.                                                                  |
+| REQ-00285 | Unlimited captures should be supported on the TEN-side.                 |
+| REQ-00286 | (optional)In case of limited file sizes on the TEN side different       |
+|           | methods of the overfill hadling should be supported:                    |
+|           | * rotation;                                                             |
+|           | * drop of the tail packets;                                             |
+| REQ-00287 | TEN-side capture file path should be configurable.                      |
+| REQ-00290 | Agent side temporary files handling should be configurable.             |
+| REQ-00291 | Agent side log rotation should be supported and configurable.           |
+| REQ-00292 | Agent side temporary files path should be configurable.                 |
+| REQ-00293 | Agent side maximum file size should be configurable.                    |
+| REQ-00294 | Agent side maximum cummulative files size should be configurable.       |
+| REQ-00295 | Multiple agents restart should not lead to the overall file size        |
+|           | growth.                                                                 |
+| REQ-00296 | In case of limited temporary files on the agent side different          |
+|           | methods of the overfill handling should be supported:                   |
+|           | * rotation (when the packets in the head are lost);                     |
+|           | * tail drop (when the packets in the tail are lost).                    |
+| REQ-00300 | API for sniffer/filters configuraiton should be available from the      |
+|           | test.                                                                   |
+| REQ-00301 | It should be possible to add/del a sniffer on a certain interface.      |
+| REQ-00302 | It should be possible to modify filter settings for a sniffer           |
+|           | which is in disabled state. For enabled sniffer the operation           |
+|           | should be terminated with EBUSY.                                        |
+| REQ-00303 | API should be provided to test to generate a 'separator' mark           |
+|           | (special rare packet) into the sniffer capture. All traffic             |
+|           | that may be generated by the test after this operation should           |
+|           | be after the mark in the capture.                                       |
+| REQ-00304 | It should be possible to disable from test an externally-configured     |
+|           | sniffer which was not forced. See REQ-0031* for details.                |
+| REQ-00310 | It should be possible to configure the sniffer from the                 |
+|           | run.sh/dispatcher.sh command line. This includes:                       |
+|           | * agents;                                                               |
+|           | * interfaces;                                                           |
+|           | * files;                                                                |
+|           | * filters configuration.                                                |
+| REQ-00311 | Command line option to run sniffers on all interfaces owned by the      |
+|           | test configuration should be added.                                     |
+| REQ-00312 | (optional) Command line option to run sniffers on all interfaces        |
+|           | used by a certain test should be supported.                             |
+| REQ-00313 | Command line option to disable all sniffers (even those explicitly      |
+|           | configured by the tests) should be added.                               |
+| REQ-00314 | Even if the test disables the externally-configured sniffers (see       |
+|           | REQ-00304) it should be possible to force the sniffer for a             |
+|           | particular test (something like forced-sniffer should be impelemented). |
+| REQ-00320 | It should be possible to obtain capture logs corresponding to           |
+|           | the particular test.                                                    |
+| REQ-00321 | Test start/end marking with a certain separator packet should be        |
+|           | possible.                                                               |
+| REQ-00323 | Per-test capture files creation should be possible. By default these    |
+|           | per-test files should be stored on the engine machine in the caps/      |
+|           | directory (see also REQ-00287).                                         |
+| REQ-00324 | In case of separation from REQ-00323 Test log name should be logged     |
+|           | at the beginning of the test.                                           |
+| REQ-00330 | It should be possible to obtain capture logs corresponding to           |
+|           | the particular test package. Same requirements as for per-test          |
+|           | logs handling hold (see REQ-0032*).                                     |
+| REQ-00400 | All agent-side temporary files should be cleaned up upon agent          |
+|           | completion.                                                             |
+| REQ-00401 | Cleanup script to clean up a particuar configuration from what's        |
+|           | left from the agent temporary files should be implemented. This is      |
+|           | extremely usefull in case of agent death.                               |
+| REQ-00500 | PCAP format should be used for captures storing. Both on agent          |
+|           | and on TEN side.                                                        |
+| REQ-00510 | Conversion from the pcap format to the RGT XML format should be         |
+|           | implemented.                                                            |
+| REQ-00513 | It should be possible to enable/disable resulution of ports to          |
+|           | service names during pcap to XML conversion.                            |
+| REQ-00515 | Merging of the generated xml-log (see REQ-00510) with the test xml      |
+|           | logs should be supported. In case of several captures it shoulbe        |
+|           | clear where the logged packet was sniffed (agent, interface etc.)       |
+| REQ-00600 | Agent-side of the sniffer framework implementation MUST NOT use any     |
+|           | GPL libraries. The libraries list should be explicit and must be        |
+|           | reviewed by the RESPMGR.                                                |
+| REQ-00700 | Sniffer configuration via the package.xml should be supported.          |
+| REQ-00701 | The sniffer configuration done at certain level in the package.xml      |
+|           | should be inherited by the lower levels.                                |
+| REQ-00702 | The sniffer configuration done via package.xml can be overwritten by:   |
+|           | * the internal test logic;                                              |
+|           | * externaly forced sniffers.                                            |
+
+* Environment and decomposition
+
+#+begin_ditaa blue.png -r -S 
+
+
++----------+
+| Tmp caps |<-+
+|   {d}    |  |
++-----+----+  |
+     ^        |
+     |        |
++----------+  |      +--------------+                       +--------+
+| Sniffers |  |      | Configurator |    cfg get/set        |        |
+|          |  |      |    {s}       |<----------------------|  Test  |
++----------+  |      +--------------+                       +--------+
+     ^        |              |                                  |
+start|        |              |                             mark |
+stop |        |              |                                  |
+     |        |              v                                  v
++----------+  |       +------------+                        +--------+   +----------+
+| Agent    |--+       |            | rcf_get_sniffers       |        |   | Raw logs |
+|          | <--------|     RCF    |<-----------------------| Logger |-->|   {d}    |
+|          |          |            | rcfg_get_sniffer_dump  |        |   |          |
++----------+          +------------+                        +--------+   +----------+
+                                                                 |            ^
+                                                                 v            | 
+                                     +----------+         +------------+      |     
+                                     | CAP2XML  |-------->| Pcap files |      |
+                                     |          |         |    {d}     |      | 
+                                     +----------+         +------------+      |
+                                          |                                   |
+                                          v                                   |
+                                     +----------+         +------------+      |
+                                     | XML caps |<--------|   RGT      |------+ 
+                                     |   {d}    |         |            |
+                                     +----------+         +------------+
+                                                                |      
+                                                                v      
+                                                          +------------+
+                                                          |  XML Log   |
+                                                          |    {d}     |
+                                                          +------------+
+
+#+end_ditaa
+
+The framework has the following 'parts':
+  1. *sniffer* - sniffer itself as an instance for packets capturing and
+     storing them into temporary capture files. As it's clear from the REQs
+     there can be several sniffers running on the same host/interface with
+     different options.
+  2. Part of the agent which provides interface to the sniffer for
+     starting/stopping/configuration and logs retrieving.
+  3. Packet dumpts intake subsystem located on the Logger, it's also
+     responsible for storing the logs into specific capture (*.pcap*) files
+     on the *TEN* side.
+  4. RGT component which converts *pcap* files into XML format which can be
+     handled by the *rgt-conv* tool.
+
+* Product services
+
+Sniffer framework provides:
+  - means for TE to get information about the packets running through the
+    network interfaces across the test configuration and include this info
+    into resulting TE run artifacts (HTML/XML/Text logs, auxiliary dumps etc.);
+  - means for the end user to get capture files for the interfaces under TE
+    jurisdiction.
+
+* Utilised services
+
+1. Sniffer framework uses *Configurator* as it's only configuration
+   interface. Configurator is also responsible for sniffer configuration
+   restoration upon test completion or agent restart. It's important to note
+   that although the agent may die the sniffing process should not stop or
+   interrupt.
+
+2. The resulting *pcap* files on the TEN side are converted to XML which is
+   passed directly to RGT.
+
+3. *RCF* is used as the only transport mechanism. No direct file coping is
+   performed.
+
+* Interfaces
+
+** External interfaces
+
+*** Dispatcher
+
+Additional command line options for dispatcher.sh should be supported.
+
+|-----------------------------+------------------------------------------------|
+| Option                      | Description                                    |
+|-----------------------------+------------------------------------------------|
+| --sniff <TA[/iface]>        | Run sniffer on *iface* of the *TA*. If no      |
+|                             | *iface* is specified - run the sniffer on      |
+|                             | all agent interfaces.                          |
+| --sniff-filter <filter>     | Sniffer filter string for the *last added*     |
+| --sniff-ta-log-dir <path>   | Path to store capture files on the agent side. |
+|                             | Note, that agent-specific directory will       |
+|                             | still be created. By default:                  |
+|                             | *agent dir/sniffers* is used.                  |
+| --sniff-ta-log-size <val>   | Maximum overall size of the log files.         |
+|                             | Human-readable values should be accepted       |
+| --sniff-ta-log-rotation <x> | Rotate agent side temporary logs across        |
+|                             | *x* files.                                     |
+| --sniff-log-dir  <path>     | Path to the *TEN* side capture files           |
+|                             | By default TE_LOG_DIR/caps is used.            |
+| --sniff-log-size <val>      | Maximum *TEN* side logs cummulative size       |
+| --sniff-log-name <pattern>  | *TEN* side log file naming pattern, the        |
+|                             | following format specifies are supported:      |
+|                             | - %a : agent name                              |
+|                             | - %u : user name                               |
+|                             | - %s : sniffer name                            |
+|                             | - %n : sniffer session sequence number         |
+|                             | By default *full sniffer id* is used           |
+
+Some notes:
+
+1) The /--sniff-ta/ options affect all sniffers running on the agent of the
+   latest sniffer in the command line.
+
+2) /--sniff-ta/ options defaults are agent-specific.
+
+*** Sniffer configuration TAPI
+
+*FIXME*: tapi should be designed.
+
+*** Logger TAPI
+
+#+BEGIN_SRC C
+    /**
+     * Insert a mark packet into the capture file for a certain
+     * sniffer.
+     * 
+     * @param id             ID of the sniffer
+     * @param description    Mark description in human-readable
+     *                       form
+     */
+    int log_sniffer_mark_insert(sniffer_id id, const char* description);
+#+END_SRC
+
+*FIXME*: this API should be reworked after the *Sniffer configuration TAPI*
+section is filled in.
+
+** Internal interfaces
+
+*** Agent-sniffer interaction
+
+**** Command line options
+
+*FIXME andrey*: sniffer binary command line options design should be added
+
+**** Capture files access serialization
+
+As both *agent* and *sniffer* work with temporary capture files it's
+important to serialize their access. The system uses files system locks
+implemented using *fcntl* mechanism. Sniffer does not read the capture
+files, so it only uses *write* lock. Note, that the sniffer must take the
+write lock for every packet addition and upon releasing it *MUST* ensure
+that there are no partial packets in the file. The agent takes the *read
+lock* to caclulate the maximum offset in the capture file.
+
+*NOTE*: *MUST* use fcntl, not *flock*!
+
+
+*** Configurator subtrees
+
+Two new configuration subtrees are added to the agent configuration model.    
+
+Generic configuration subtree /agent/sniffer_settings/ which represents
+agent-wide sniffer configuration (configuration paths, overfill handling
+logic etc.), see the requirements doc for the detailed list.
+
+*FIXME andrey*: detailed description should be added.
+
+|-----+-------------|
+| OID | Description |
+
+Plus a per-interface /agent/interface/sniffer/ subtree which is responsible
+for configuration of a specific sniffer instances is added. In future we may
+have a settings overwrite mechanism which will allow sniffer-wide settings
+to overwrite /agent/sniffer_settings/ part.  Each sniffer instance in the
+configurato subtree has a *sniffer name* which is by design (cause it's a
+name of the object instance) uniq across the interface.
+
+*FIXME andrey*: detailed description should be added.
+
+|-----+-------------|
+| OID | Description |
+
+*** RCF protocol and API
+
+The RCF protocol is extended to support two new calls.
+
+1. *rcf_get_sniffers(agent)*
+
+   Returns list of sniffers which have non-empty captures. For each sniffer
+   it returns:
+     - global offset of the first byte of the next unsent (to the
+       *rcf_get_sniffer_dump* caller) packet;
+     - *FIXME andrey*
+   Sniffers are named with *sniffer id*. We can safely assume
+   that there exists the maximum number of sniffers on the agent which is
+   *32* and pass a static array.
+   
+2. *rcf_get_sniffer_dump(agent, sniffer_id)*
+
+   Get integral number of packets catched up by the *sniffer_id* on the
+   *agent* and tells if there are any other packets to be read. Note, that 
+
+The only user of this calls is *Logger*. Both calls are synchronous.
+
+*FIXME andrey*: test protocol.
+
+*** Logger IPC interface
+
+
+*** Sniffer backends interface
+
+* Data model definition
+
+** Agent-specific folder
+
+Each agent has a uniq *agent id*. It creates a separate folder in the */tmp*
+directory - */tmp/agent_id*. It may store any agent-specific data which
+should survive across agent restart.
+
+Reason some of the data is not suitable to be stored in the Configurator is
+cause if the data is modified by the agent it must be volatile. Thus it
+won't be restored by the Configurator after agent restart.
+
+** Sniffer SSN
+
+Sniffer session sequence number is a uniq integer which identifies the
+sniffer across all the sniffers of the agent. The ID is agent-life-time
+valid which means that it survives agent restart.
+
+To establish an SSN for the newly started sniffer the agent uses
+*/tmp/agent_id/next_sniffer_ssn* file which stores the exact SSN value. The
+value in the file is incremented every time it's read. As the file is not
+cleaned up on agent restart it will continue to grow across the entire TE
+run.
+
+If the file is absent a zero SSN should be selected and one should be
+written to the file.
+
+** Sniffer directory
+
+The agent has a *<sniffers_path>* which is a boot-time variable. By default
+it is */tmp/agent_id/*, so sniffer stores all the data in the agent-specific
+directory.
+
+It's possible (via Configurator) to specify a different logs directory. This
+is usefull in case we'd like to store significant amount of data (much more
+then the /tmp directory size).
+
+Sniffer stores all it's data in the *<sniffers_path>/sniffers/sniffer_id*
+directory.
+
+If *<sniffer_path>* is set the user should be carefull as it may intercect
+with other test runs.
+
+*FIXME*: may be it's reasonable to specify agent-specific folder path?
+
+*** Sniffer files naming
+
+Each sniffer has several capture files. Exact number of files depend on the
+rotation settings.
+
+File name has *fixed width*. It starts with the absolute offset of the first
+byte in the first packet of the file followed by an underscore and a file
+rotation number. The File has *.pcap* extension.
+
+Example: 000000239239_5.pcap
+
+** Sniffers list
+
+The agent keeps a list of the sniffers it's handling. On the agent start it
+determines if any sniffers are already running (by looking into the
+*<sniffers_path>/sniffers/* directory. If so - it forms a list of sniffers
+basing on the content of the directory.
+
+The list of sniffers present in the Configurator subtree is not enought as
+the interface may have been gone while the Logger is still reading the logs.
+
+Sniffers in the list are identified by *sniffer_id*. For each sniffer the
+agent keeps:
+  - absolute offset of the next packet to be sent to the Logger;
+  - the current capture filename; 
+  - the offset of the next packet to be read from the capture file.
+
+The filename/offset are stored in *<sniffers_path>/sniffers/sniffer_id/file*
+and *<sniffers_path>/sniffers/sniffer_id/offset* files. Note that the file
+may become invalid as the sniffer may asynchronously rotate the logs
+removing the oldest dump. Such situation should be detected and the offset
+should be reset to zero.
+
+The absolute offset can be calculated as the relative offset plus the
+absolute file offset (stored in the filename).
+
+* Processes
+
+Each sniffer on the agent side is running in a separate process. Reasons
+are:
+  * it should survive agent's death/restart;
+  * experience shows that the agent behaviour is much more stable when such
+    services are separated into a separate process.
+
+In case the sniffer unexpectedly dies it *MUST* be restarted, but a clear
+*ERROR* message should be logged describing what sniffer died and how.
+
+* Events processing
+
+Sniffer process should handle interface disapearance. It should complete and
+should not report an error. Such situations are pretty common. If the
+interface disapearance was unexpected - this should be detected by other
+agent subsystems.
+
+*NOTE*: even if the interface will reappear in a second the sniffer must get
+a new SSN, so there is no point in keeping it running.
+
+* Configuration parameters
+
+*FIXME helen*: it's not clear what should go here. Part of Interfaces
+section should definitely be moved here, but only Helen knows which one.
+
+* Initialization and shutdown
+
+** Agent start
+
+The *RCF* can distinguish two agent startup scenarios:
+  - bootstrap start;
+  - agent restart (regular or caused by agent death).
+
+In the first case RCF should initiate a special 'bootstrap' procedure which
+should cleanup all the files which are left from the previous execution of
+the agent on this test configuration.
+
+Things which should be cleaned up during the agent bootstrap sequence is
+the agent-specific folder which may include:
+  - sniffer SSN selector;
+  - old sniffers capture files;
+  - per-sniffer read offset.
+
+* Algorithms
+
+** Logger polling process
+
+Logger has the list of test agents which it uses for polling them for the
+text logs. Similar logic is used for packet dumps retreiving.
+
+For each agent the Logger first asks it for this list of sniffers with the
+*rcf_get_sniffers* function call. After that for each sniffer it calls
+*rcf_get_sniffer_dump* to get a certain number of logs. The call informs the
+Logger if there are any more logs to download.
+
+Logger perform a round-robin for selection of the sniffer to call
+*rcf_get_sniffer_dump*.
+
+** Agent side rcf_get_sniffer_dump implementation
+
+*rcf_get_sniffer_dump(agent, sniffer_id)* is called by the Logger to get the
+next portion of the captured packets.
+
+Assert that we have a sniffer with such name.
+
+To handle the call the agent directly accesses the sniffer capture
+files. Several things should be taken into account:
+  - it's possible that the sniffer is writing the capture file in the very
+    moment of RCF call; agent must not return partial packets;
+  - sniffer can delete the capture file because of the rotation procedure.
+
+So the agent should:
+  1. Check if the current file stord in the sniffer list is still present.
+  2. If it's not (we've missed a rotation) - take the oldest file in the
+     directory. Update the global offset value stored for the sniffer by the
+     value from the log filename.
+  3. Take the file system lock (with fcntl).
+  4. Get maximum file offset (note, that at this point the offset will
+     include only full packets).
+  5. Release the lock so the sniffer can write into the file. But don't close
+     the file so there is still a reference to it and it can't be removed.
+  6. Read the data (nessesary amount or up to the end of the file);
+  7. Adjust local and global *offset* values.
+  8. If EOF is reached and it's not the only capture file in the sniffer
+     directory (means that sniffer is not writing into it at the moment) -
+     close it and remove.
+
+* Integration issues
+
+*FIXME*: bootstrap start/shutdown (RCF side)
+  <sniffer_path> directory
+*FIXME*: bootstrap/cleanup hooks on the agent
+*FIXME*: agent ID
+
+* Source organization
+* Alternative decisions and design tradeoffs
+  
+ - locks vs. pcap parsing
+
+ - TEN side test-based separation (RGT vs. Logger)
+
+ - dispatcher options processing (at the moment of the configurator startup
+   there may be no interface)
