@@ -1959,12 +1959,27 @@ handle_file(const char *ta_name, int session,
 
     RCF_API_INIT;
 
+#define BAD_RFILE \
+    (rfile == NULL || strlen(rfile) >= RCF_MAX_PATH || strlen(rfile) == 0)
+
+#define BAD_LFILE \
+    ((lfile == NULL || strlen(lfile) >= RCF_MAX_PATH) || \
+     (strlen(lfile) == 0 && opcode != RCFOP_FDEL))
+
+#if 0
     if (rfile == NULL || lfile == NULL || strlen(lfile) >= RCF_MAX_PATH ||
         strlen(rfile) >= RCF_MAX_PATH ||
         (strlen(lfile) == 0 && opcode != RCFOP_FDEL) ||
         strlen(rfile) == 0 || BAD_TA)
+#else
+    if (BAD_RFILE || BAD_LFILE || BAD_TA)
+#endif
     {
-        ERROR("Invalid arguments provided to %s", __FUNCTION__);
+        ERROR("%s: Invalid arguments provided: "
+              "BAD_TA: %s BAD_RFILE: %s BAD_LFILE: %s", __FUNCTION__,
+              BAD_TA ? "T" : "F",
+              BAD_RFILE ? "T" : "F",
+              BAD_LFILE ? "T" : "F");
         return TE_RC(TE_RCF_API, TE_EINVAL);
     }
 
@@ -2001,6 +2016,9 @@ handle_file(const char *ta_name, int session,
         rc = msg->error;
 
     free(msg);
+
+#undef BAD_RFILE
+#undef BAD_LFILE
 
     return rc;
 }
