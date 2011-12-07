@@ -293,7 +293,7 @@ static const char * const trc_diff_js_table_row_start =
 "\"%s\":{\n";
 
 static const char * const trc_diff_js_table_row_end =
-"},\n";
+"}%s\n";
 
 static const char * const trc_diff_js_table_entry_start =
 "total:%d, tests:[\n";
@@ -302,7 +302,7 @@ static const char * const trc_diff_js_table_entry_end =
 "]\n";
 
 static const char * const trc_diff_js_table_entry_test =
-"{name:\"%s\", path:\"%s\", count:%d%s%s%s},\n";
+"{name:\"%s\", path:\"%s\", count:%d%s%s%s}%s\n";
 
 static const char * const trc_diff_js_table_end =
 "  };\n"
@@ -720,7 +720,7 @@ static const char * trc_diff_graph_js_start =
 "        xaxis: { mode:\"time\", minTickSize: [1, \"day\"], "
 "timeformat:\"%%b,%%d\", "
 "min: graph_time_range_min, "
-"max: graph_time_range_max,},\n"
+"max: graph_time_range_max },\n"
 "        crosshair: { mode: \"x\", color: \"#7f7f7f\" },\n"
 "        selection: { mode: \"x\" } };\n"
 "\n"
@@ -1142,7 +1142,9 @@ trc_diff_stats_js_table_report(FILE *f, const trc_diff_sets *sets,
                 (set2 != TAILQ_NEXT(set1, links)))
             {
                 trc_diff_stats_js_table_align(f, 2);
-                fprintf(f, trc_diff_js_table_row_end);
+                fprintf(f, trc_diff_js_table_row_end,
+                        (TAILQ_NEXT(set2, links) != NULL) ?
+                        "," : "");
                 continue;
             }
 
@@ -1193,7 +1195,7 @@ trc_diff_stats_js_table_report(FILE *f, const trc_diff_sets *sets,
                                                     strlen(p->test->name));
 
                                 fprintf(f,
-                                    trc_diff_js_table_entry_test,
+                                        trc_diff_js_table_entry_test,
                                         p->test->name, test_path,
                                         p->count,
                                         with_hashes && (p->hash != NULL) ?
@@ -1201,7 +1203,9 @@ trc_diff_stats_js_table_report(FILE *f, const trc_diff_sets *sets,
                                         with_hashes && (p->hash != NULL) ?
                                         p->hash : "",
                                         with_hashes && (p->hash != NULL) ?
-                                        "\"" : "");
+                                        "\"" : "",
+                                        (TAILQ_NEXT(p, links) != NULL) ?
+                                         "," : "");
 
                                 free(test_path);
                             }
@@ -1209,13 +1213,17 @@ trc_diff_stats_js_table_report(FILE *f, const trc_diff_sets *sets,
                         trc_diff_stats_js_table_align(f, 6);
                         fprintf(f, trc_diff_js_table_entry_end);
                         trc_diff_stats_js_table_align(f, 5);
-                        fprintf(f, trc_diff_js_table_row_end);
+                        fprintf(f, trc_diff_js_table_row_end,
+                                (diff < TRC_DIFF_STATUS_MAX - 1) ?
+                                "," : "");
                     }
                     trc_diff_stats_js_table_align(f, 4);
-                    fprintf(f, trc_diff_js_table_row_end);
+                    fprintf(f, trc_diff_js_table_row_end,
+                            (status2 < TRC_TEST_STATUS_MAX - 1) ?
+                            "," : "");
                 }
                 trc_diff_stats_js_table_align(f, 3);
-                fprintf(f, trc_diff_js_table_row_end);
+                fprintf(f, trc_diff_js_table_row_end, ",");
             }
 
             trc_diff_stats_js_table_align(f, 3);
@@ -1244,21 +1252,28 @@ trc_diff_stats_js_table_report(FILE *f, const trc_diff_sets *sets,
                     fprintf(f, trc_diff_js_table_entry_end);
 
                     trc_diff_stats_js_table_align(f, 5);
-                    fprintf(f, trc_diff_js_table_row_end);
+                    fprintf(f, trc_diff_js_table_row_end,
+                            (summary_component <
+                             TRC_DIFF_SUMMARY_COMPONENT_MAX - 1) ?
+                              "," : "");
                 }
 
                 trc_diff_stats_js_table_align(f, 4);
-                fprintf(f, trc_diff_js_table_row_end);
+                fprintf(f, trc_diff_js_table_row_end,
+                        (summary_status < TRC_DIFF_SUMMARY_STATUS_MAX - 1) ?
+                        "," : "");
             }
 
             trc_diff_stats_js_table_align(f, 3);
-            fprintf(f, trc_diff_js_table_row_end);
+            fprintf(f, trc_diff_js_table_row_end, "");
 
             trc_diff_stats_js_table_align(f, 2);
-            fprintf(f, trc_diff_js_table_row_end);
+            fprintf(f, trc_diff_js_table_row_end,
+                (TAILQ_NEXT(set2, links) != NULL) ? "," : "");
         }
         trc_diff_stats_js_table_align(f, 1);
-        fprintf(f, trc_diff_js_table_row_end);
+        fprintf(f, trc_diff_js_table_row_end,
+                (TAILQ_NEXT(set1, links) != NULL) ? "," : "");
     }
 
     fprintf(f, trc_diff_js_table_end);
