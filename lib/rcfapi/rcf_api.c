@@ -2,7 +2,7 @@
  * @brief Test Environment
  *
  * RCF API library implementation
- * 
+ *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
  *
@@ -22,7 +22,7 @@
  * MA  02111-1307  USA
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
- * 
+ *
  * $Id$
  */
 
@@ -103,9 +103,9 @@ typedef struct thread_ctx {
 
 
 /* Forward declaration */
-static int csap_tr_recv_get(const char *ta_name, int session, 
-                            csap_handle_t csap_id, 
-                            rcf_pkt_handler handler, void *user_param, 
+static int csap_tr_recv_get(const char *ta_name, int session,
+                            csap_handle_t csap_id,
+                            rcf_pkt_handler handler, void *user_param,
                             unsigned int *num, int opcode);
 
 /* If pthread mutexes are supported - OK; otherwise hope for best... */
@@ -157,9 +157,9 @@ static te_bool  rcf_tr_op_ring = TRUE;
  */
 static int
 validate_type(int var_type, int var_len)
-{                                         
+{
     return var_type == RCF_STRING ? 0 :
-           ((var_type < RCF_INT8 || var_type > RCF_UINT64 || 
+           ((var_type < RCF_INT8 || var_type > RCF_UINT64 ||
              rcf_type_len[var_type] != var_len) ? 1 : 0);
 }
 
@@ -169,7 +169,7 @@ validate_type(int var_type, int var_len)
  *
  * @param msg           RCF message
  * @param opaque        Opaque data
- * 
+ *
  * @retval 0    message matches
  * @retval 1    message NOT matches
  */
@@ -184,7 +184,7 @@ typedef struct rcf_message_match_simple {
 } rcf_message_match_simple;
 
 /**
- * Match RCF IPC message with TA name, opcode and session id. 
+ * Match RCF IPC message with TA name, opcode and session id.
  *
  * The function complies with rcf_message_match_cb prototype.
  */
@@ -193,7 +193,7 @@ rcf_message_match(rcf_msg *msg, void *opaque)
 {
     rcf_message_match_simple   *data = opaque;
 
-    if (msg == NULL) 
+    if (msg == NULL)
         return 1;
 
     if (msg->opcode != data->opcode)
@@ -213,7 +213,7 @@ rcf_message_match(rcf_msg *msg, void *opaque)
 
         case RCFOP_TATYPE:
         case RCFOP_SESSION:
-        case RCFOP_REBOOT: 
+        case RCFOP_REBOOT:
             if (strcmp(msg->ta, data->ta_name) != 0)
                 return 1;
             return 0;
@@ -223,7 +223,7 @@ rcf_message_match(rcf_msg *msg, void *opaque)
 /**
  * Clear RCF message buffer
  *
- * @param buf_head      head of buffer list 
+ * @param buf_head      head of buffer list
  *
  * @return zero on success or error code
  */
@@ -247,7 +247,7 @@ msg_buffer_clear(msg_buf_head_t *buf_head)
 /**
  * Add RCF message to the buffer
  *
- * @param buf_head      head of buffer list 
+ * @param buf_head      head of buffer list
  * @param message       message to be stored
  *
  * @return zero on success or error code
@@ -283,7 +283,7 @@ msg_buffer_insert(msg_buf_head_t *buf_head, rcf_msg *message)
 }
 
 /**
- * Find message in RCF message buffer with desired SID, and remove 
+ * Find message in RCF message buffer with desired SID, and remove
  * it from buffer.
  *
  * @param msg_buf       RCF message buffer head
@@ -291,7 +291,7 @@ msg_buffer_insert(msg_buf_head_t *buf_head, rcf_msg *message)
  * @param opaque        Opaque data of the callback function
  *
  * @return pointer to found message or zero if not found
- * After ussage of message pointer should be freed. 
+ * After ussage of message pointer should be freed.
  */
 static rcf_msg *
 msg_buffer_find(msg_buf_head_t *msg_buf, rcf_message_match_cb match_cb,
@@ -300,12 +300,12 @@ msg_buffer_find(msg_buf_head_t *msg_buf, rcf_message_match_cb match_cb,
     msg_buf_entry_t *buf_entry;
 
     if (msg_buf == NULL)
-        return NULL; 
+        return NULL;
 
     for (buf_entry = msg_buf->cqh_first;
          buf_entry != (void *)msg_buf;
          buf_entry = buf_entry->link.cqe_next)
-    { 
+    {
         if (match_cb(buf_entry->message, opaque) == 0)
         {
             rcf_msg *msg = buf_entry->message;
@@ -334,13 +334,13 @@ msg_buffer_find(msg_buf_head_t *msg_buf, rcf_message_match_cb match_cb,
  * @return zero on success or error code
  */
 static int
-rcf_ipc_receive_answer(struct ipc_client *ipcc, rcf_msg *recv_msg, 
+rcf_ipc_receive_answer(struct ipc_client *ipcc, rcf_msg *recv_msg,
                        size_t *recv_size, rcf_msg **p_answer)
 {
     te_errno    rc;
     size_t      buflen = *recv_size;
     size_t      len;
-    
+
     if ((rc = ipc_receive_answer(ipcc, RCF_SERVER,
                                  recv_msg, recv_size)) == 0)
     {
@@ -351,7 +351,7 @@ rcf_ipc_receive_answer(struct ipc_client *ipcc, rcf_msg *recv_msg,
         if (p_answer != NULL)
             *p_answer = NULL;
         return 0;
-    }                                     
+    }
     else if (TE_RC_GET_ERROR(rc) != TE_ESMALLBUF)
     {
         return TE_RC(TE_RCF_API, TE_EIPC);
@@ -366,25 +366,25 @@ rcf_ipc_receive_answer(struct ipc_client *ipcc, rcf_msg *recv_msg,
         ERROR("Unexpected large message is received");
         return TE_RC(TE_RCF_API, TE_EIPC);
     }
-    
+
     *p_answer = malloc(*recv_size);
     if (*p_answer == NULL)
         return TE_RC(TE_RCF_API, TE_ENOMEM);
-    
+
     memcpy(*p_answer, (char *)recv_msg, buflen);
     len = *recv_size - buflen;
-    if ((rc = ipc_receive_rest_answer(ipcc, RCF_SERVER, 
-                                      ((uint8_t *)*p_answer) + buflen, 
+    if ((rc = ipc_receive_rest_answer(ipcc, RCF_SERVER,
+                                      ((uint8_t *)*p_answer) + buflen,
                                       &len)) != 0)
     {
         return TE_RC(TE_RCF_API, TE_EIPC);
     }
-    
+
     return 0;
-}                       
+}
 
 /**
- * Wait for IPC RCF message with desired SID. 
+ * Wait for IPC RCF message with desired SID.
  * If message is too long, the memory is allocated and its address
  * is placed to p_answer.
  *
@@ -397,14 +397,14 @@ rcf_ipc_receive_answer(struct ipc_client *ipcc, rcf_msg *recv_msg,
  * @param recv_size     pointer to the variable to store:
  * @param p_answer      location for address of the memory
  *                      allocated for the answer or NULL
- * 
+ *
  * @return zero on success or error code
  */
 static int
 wait_rcf_ipc_message(struct ipc_client *ipcc,
                      msg_buf_head_t *rcf_msg_queue,
                      rcf_message_match_cb match_cb, void *opaque,
-                     rcf_msg *recv_msg, size_t *recv_size, 
+                     rcf_msg *recv_msg, size_t *recv_size,
                      rcf_msg **p_answer)
 {
     rcf_msg    *message;
@@ -417,9 +417,9 @@ wait_rcf_ipc_message(struct ipc_client *ipcc,
     if (message != NULL)
     {
         size_t len = sizeof(*message) + message->data_len;
-        
+
         VERB("Message found: TA %s, SID %d flags %x;"
-             " waiting for SID %d", 
+             " waiting for SID %d",
              message->ta, message->sid, message->flags, message->sid);
 
         if (len > *recv_size)
@@ -433,34 +433,34 @@ wait_rcf_ipc_message(struct ipc_client *ipcc,
         }
         else
         {
-            memcpy(recv_msg, message, len); 
+            memcpy(recv_msg, message, len);
             free(message);
         }
-        
+
         *recv_size = len;
 
-        return 0; 
+        return 0;
     }
 
     while (TRUE)
     {
-        if ((rc = rcf_ipc_receive_answer(ipcc, recv_msg, 
+        if ((rc = rcf_ipc_receive_answer(ipcc, recv_msg,
                                          recv_size, p_answer)) != 0)
             return TE_RC(TE_RCF_API, rc);
-            
-        message = (p_answer != NULL && *p_answer != NULL) ? *p_answer 
+
+        message = (p_answer != NULL && *p_answer != NULL) ? *p_answer
                                                           : recv_msg;
 
         VERB("Message cought: TA %s, SID %d flags %x;"
-             " waiting for SID %d", 
+             " waiting for SID %d",
              message->ta, message->sid, message->flags, message->sid);
 
         if (match_cb(message, opaque) == 0)
-            break; 
+            break;
 
         if (msg_buffer_insert(rcf_msg_queue, message) != 0)
             ERROR("RCF message is lost");
-            
+
         if (message != recv_msg)
             free(message);
     }
@@ -484,7 +484,7 @@ wait_rcf_ipc_message(struct ipc_client *ipcc,
  *                          on exit - length of the message received
  * @param p_answer        location for address of the memory
  *                        allocated for the answer or NULL
- * 
+ *
  * @return zero on success or error code
  */
 static te_errno
@@ -492,7 +492,7 @@ send_recv_rcf_ipc_message(thread_ctx_t *ctx,
                           rcf_msg *send_buf, size_t send_size,
                           rcf_msg *recv_buf, size_t *recv_size,
                           rcf_msg **p_answer)
-{ 
+{
     te_errno                    rc;
     char                        ta[RCF_MAX_NAME];
     rcf_msg                    *message;
@@ -522,21 +522,21 @@ send_recv_rcf_ipc_message(thread_ctx_t *ctx,
         return TE_RC(TE_RCF_API, TE_EIPC);
     }
 
-    if ((rc = rcf_ipc_receive_answer(ctx->ipc_handle, recv_buf, 
+    if ((rc = rcf_ipc_receive_answer(ctx->ipc_handle, recv_buf,
                                      recv_size, p_answer)) != 0)
         return rc;
 
-    message = (p_answer != NULL && *p_answer != NULL) ? *p_answer 
+    message = (p_answer != NULL && *p_answer != NULL) ? *p_answer
                                                       : recv_buf;
     if (rcf_message_match(recv_buf, &match_data) == 0)
         return 0;
-        
+
     if (msg_buffer_insert(&ctx->msg_buf_head, message) != 0)
         ERROR("RCF message is lost");
-    
+
     if (message != recv_buf)
         free(message);
-            
+
     return wait_rcf_ipc_message(ctx->ipc_handle, &ctx->msg_buf_head,
                                 rcf_message_match, &match_data,
                                 recv_buf, recv_size, p_answer);
@@ -562,7 +562,7 @@ rcf_api_thread_ctx_destroy(void *handle)
     {
         ERROR("%s(): ipc_close_client() failed", __FUNCTION__);
         fprintf(stderr, "ipc_close_client() failed\n");
-    } 
+    }
 
     msg_buffer_clear(&(rcf_ctx_handle->msg_buf_head));
     free(rcf_ctx_handle);
@@ -620,7 +620,7 @@ get_ctx_handle(te_bool create)
             return NULL;
         }
 
-        sprintf(name, "rcf_client_%u_%u", (unsigned int)getpid(), 
+        sprintf(name, "rcf_client_%u_%u", (unsigned int)getpid(),
                 (unsigned int)pthread_self());
 
         rc = ipc_init_client(name, RCF_IPC, &(handle->ipc_handle));
@@ -675,7 +675,7 @@ get_ctx_handle(te_bool create)
     pthread_t   mine = pthread_self();
     int         i;
     te_errno    rc;
-    
+
     pthread_mutex_lock(&rcf_lock);
     for (i = 0; i < RCF_MAX_THREADS; i++)
     {
@@ -685,7 +685,7 @@ get_ctx_handle(te_bool create)
             return handles[i].handle;
         }
     }
-    
+
     if (create)
     {
         for (i = 0; i < RCF_MAX_THREADS; i++)
@@ -693,12 +693,12 @@ get_ctx_handle(te_bool create)
             if (handles[i].tid == 0)
             {
                 char name[RCF_MAX_NAME];
-               
+
                 handles[i].tid = mine;
 
                 snprintf(name, RCF_MAX_NAME, "rcf_client_%u_%u",
                          (unsigned int)getpid(), (unsigned int)mine);
-                   
+
                 rc = ipc_init_client(name, RCF_IPC,
                                      &(handles[i].handle.ipc_handle));
                 if (rc != 0)
@@ -716,7 +716,7 @@ get_ctx_handle(te_bool create)
         fprintf(stderr, "too many threads\n");
     }
     pthread_mutex_unlock(&rcf_lock);
-        
+
     return NULL;
 }
 
@@ -731,9 +731,9 @@ free_ctx_handle(void)
 
     pthread_mutex_lock(&rcf_lock);
     for (i = 0; i < RCF_MAX_THREADS; i++)
-    { 
+    {
         if (handles[i].tid == mine)
-        { 
+        {
             handles[i].tid = 0;
             handles[i].handle.ipc_handle = NULL;
             /* @todo clean message buffer */
@@ -791,20 +791,20 @@ rcf_api_cleanup(void)
 static int
 check_params_len(const char *params, int maxlen, int *necessary)
 {
-    int i, 
+    int i,
         len = 2; /* Two double quotes */
-        
+
     for (i = 0; params[i] != 0 && len < maxlen; i++, len++)
         if (params[i] == '\\' || params[i] == '\"')
             len++;
-            
+
     if (params[i] == 0)
     {
         if (necessary != NULL)
             *necessary = len;
         return 0;
     }
-    
+
     return 1;
 }
 
@@ -1105,7 +1105,7 @@ extern te_errno rcf_del_ta(const char *name)
 /**
  * This function returns list of Test Agents (names) running.
  *
- * @param buf           location for the name list; 
+ * @param buf           location for the name list;
  *                      names are put to the buffer one-by-one and are
  *                      separated by '\0'; the list is finished by '\0' as
  *                      well
@@ -1114,13 +1114,13 @@ extern te_errno rcf_del_ta(const char *name)
  *                      to the length the buffer by caller;
  *                      is filled to amount of space used for the name list
  *                      by the routine)
- *          
+ *
  *
  * @return error code
  *
  * @retval 0            success
  * @retval TE_ESMALLBUF the buffer is too small
- * @retval TE_EIPC      cannot interact with RCF 
+ * @retval TE_EIPC      cannot interact with RCF
  * @retval TE_ENOMEM    out of memory
  */
 te_errno
@@ -1132,38 +1132,38 @@ rcf_get_ta_list(char *buf, size_t *len)
     te_errno    rc;
 
     RCF_API_INIT;
-    
+
     if (buf == NULL || len == NULL)
         return TE_RC(TE_RCF_API, TE_EWRONGPTR);
-        
+
     memset(&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_TALIST;
-        
+
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, &ans);
-                                   
-    if (rc != 0)                                   
+
+    if (rc != 0)
         return rc;
-        
+
     if (ans == NULL)
     {
         ERROR("Unexpected short message");
         return TE_RC(TE_RCF_API, TE_EIPC);
     }
-        
+
     if (ans->error != 0)
     {
         rc = ans->error;
         free(ans);
         return rc;
     }
-    
+
     if (ans->data_len > *len)
     {
         free(ans);
         return TE_RC(TE_RCF_API, TE_ESMALLBUF);
     }
-        
+
     memcpy(buf, ans->data, ans->data_len);
     *len = ans->data_len;
     free(ans);
@@ -1174,7 +1174,7 @@ rcf_get_ta_list(char *buf, size_t *len)
 /**
  * This function maps name of the Test Agent to its type.
  *
- * @param ta_name       Test Agent name                 
+ * @param ta_name       Test Agent name
  * @param ta_type       Test Agent type location (should point to
  *                      the buffer at least of RCF_MAX_NAME length)
  *
@@ -1182,7 +1182,7 @@ rcf_get_ta_list(char *buf, size_t *len)
  *
  * @retval 0            success
  * @retval TE_EINVAL       name of non-running Test Agent is provided
- * @retval TE_EIPC      cannot interact with RCF 
+ * @retval TE_EIPC      cannot interact with RCF
  * @retval TE_ENOMEM       out of memory
  */
 te_errno
@@ -1191,20 +1191,20 @@ rcf_ta_name2type(const char *ta_name, char *ta_type)
     rcf_msg     msg;
     size_t      anslen = sizeof(msg);
     te_errno    rc;
-    
+
     RCF_API_INIT;
-    
+
     if (ta_type == NULL || BAD_TA)
         return TE_RC(TE_RCF_API, TE_EINVAL);
-    
+
     memset((char *)&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_TATYPE;
     strcpy(msg.ta, ta_name);
-    
+
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
-                 
-    if (rc == 0 && (rc = msg.error) == 0)                                   
+
+    if (rc == 0 && (rc = msg.error) == 0)
         strcpy(ta_type, msg.id);
 
     return rc;
@@ -1213,20 +1213,20 @@ rcf_ta_name2type(const char *ta_name, char *ta_type)
 /**
  * This function returns unique session identifier for the Test Agent.
  * This session identifier may be passed to all other TA-related routines.
- * Command with session identifier X will be passed to the Test Agent 
+ * Command with session identifier X will be passed to the Test Agent
  * before obtaining of answer on the command with session identifier Y
- * (X != Y). However if the Test Agent does not support simultaneous 
+ * (X != Y). However if the Test Agent does not support simultaneous
  * processing of several commands, this mechanism does not give any
  * advantage.
  *
- * @param ta_name       Test Agent name                 
+ * @param ta_name       Test Agent name
  * @param session       location for the session identifier
  *
  * @return error code
  *
  * @retval 0            success
  * @retval TE_EINVAL       name of non-running Test Agent is provided
- * @retval TE_EIPC      cannot interact with RCF 
+ * @retval TE_EIPC      cannot interact with RCF
  * @retval TE_ENOMEM       out of memory
  */
 te_errno
@@ -1235,39 +1235,39 @@ rcf_ta_create_session(const char *ta_name, int *session)
     rcf_msg     msg;
     size_t      anslen = sizeof(msg);
     te_errno    rc;
-    
+
     RCF_API_INIT;
-    
+
     if (session == NULL || BAD_TA)
         return TE_RC(TE_RCF_API, TE_EINVAL);
-    
+
     memset((char *)&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_SESSION;
     strcpy(msg.ta, ta_name);
-    
+
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
-        
-    if (rc == 0 && (rc = msg.error) == 0)                                   
+
+    if (rc == 0 && (rc = msg.error) == 0)
         *session = msg.sid;
-        
+
     return rc;
 }
 
 /**
- * This function reboots the Test Agent or NUT served by it. It sends 
- * "reboot" command to the Test Agent, calls reboot function provided by 
+ * This function reboots the Test Agent or NUT served by it. It sends
+ * "reboot" command to the Test Agent, calls reboot function provided by
  * RCF TA-specific library, restarts the TA and re-connects to it.
- * The function may be called by Configurator only. 
+ * The function may be called by Configurator only.
  * It is prohibited to call the function for the TA running on the Testing
  * Node.
  *
- * @param ta_name       Test Agent name              
+ * @param ta_name       Test Agent name
  * @param boot_params   complete parameter string to be passed to the TA
  *                      in the "reboot" command and to the reboot function
  *                      of RCF TA-specific library (without quotes) or NULL
  *
- * @param image         name of the bootable image (without path) to be 
+ * @param image         name of the bootable image (without path) to be
  *                      passed to the Test Agent as binary attachment or
  *                      NULL (it is assumed that NUT images are located in
  *                      ${TE_INSTALL_NUT}/bin or ${TE_INSTALL}/nuts/bin)
@@ -1275,9 +1275,9 @@ rcf_ta_create_session(const char *ta_name, int *session)
  * @return error code
  *
  * @retval 0               success
- * @retval TE_EINVAL       name of non-running or located on TN Test Agent 
+ * @retval TE_EINVAL       name of non-running or located on TN Test Agent
  *                         is provided or parameter string is too long
- * @retval TE_EIPC         cannot interact with RCF 
+ * @retval TE_EIPC         cannot interact with RCF
  * @retval TE_EINPROGRESS  operation is in progress
  * @retval TE_ENOENT       cannot open NUT image file
  * @retval TE_ENOMEM       out of memory
@@ -1287,23 +1287,23 @@ rcf_ta_reboot(const char *ta_name,
               const char *boot_params, const char *image)
 {
     rcf_msg    *msg;
-    
+
     size_t      anslen = sizeof(*msg);
     size_t      len = 0;
     int         fd;
     te_errno    rc;
 
     RCF_API_INIT;
-    
+
     if (BAD_TA)
         return TE_RC(TE_RCF_API, TE_EINVAL);
-        
+
     if (boot_params != NULL)
     {
         len = strlen(boot_params) + 1;
-        
+
         if (len >  RCF_MAX_LEN - sizeof(msg) ||
-            check_params_len(boot_params, 
+            check_params_len(boot_params,
                              RCF_MAX_LEN - TE_PROTO_OVERHEAD, NULL) != 0)
         {
             ERROR("Boot parameters are too long for TA '%s' - "
@@ -1311,23 +1311,23 @@ rcf_ta_reboot(const char *ta_name,
             return TE_RC(TE_RCF_API, TE_EINVAL);
         }
     }
-    
+
     if ((msg = (rcf_msg *)(calloc(sizeof(rcf_msg) + len, 1))) == NULL)
         return TE_RC(TE_RCF_API, TE_ENOMEM);
-        
+
     if (boot_params != NULL)
     {
         strcpy(msg->data, boot_params);
         msg->data_len = len;
     }
     strcpy(msg->ta, ta_name);
-    
+
     if (image != NULL)
     {
         /* Check file presence */
         static char *install_dir = NULL,
                     *tmp;
-        
+
         if (install_dir == NULL &&
             (install_dir = getenv("TE_INSTALL_NUT")) == NULL)
         {
@@ -1338,7 +1338,7 @@ rcf_ta_reboot(const char *ta_name,
                 free(msg);
                 return TE_RC(TE_RCF_API, TE_ENOENT);
             }
-            tmp = (char *)malloc(strlen(install_dir) + 
+            tmp = (char *)malloc(strlen(install_dir) +
                                  strlen("/nuts") + 1);
             if (install_dir == NULL)
             {
@@ -1355,7 +1355,7 @@ rcf_ta_reboot(const char *ta_name,
             free(tmp);
             install_dir = getenv("TE_INSTALL_NUT");
         }
-        
+
         if (strlen(install_dir) + strlen("/bin/") + strlen(image) + 1 >
             RCF_MAX_PATH)
         {
@@ -1364,7 +1364,7 @@ rcf_ta_reboot(const char *ta_name,
             free(msg);
             return TE_RC(TE_RCF_API, TE_ENOENT);
         }
-            
+
         sprintf(msg->file, "%s/bin/%s", install_dir, image);
         if ((fd = open(image, O_RDONLY)) < 0)
         {
@@ -1378,7 +1378,7 @@ rcf_ta_reboot(const char *ta_name,
     }
 
     msg->opcode = RCFOP_REBOOT;
-     
+
     rc = send_recv_rcf_ipc_message(ctx_handle, msg, sizeof(rcf_msg) + len,
                                    msg, &anslen, NULL);
 
@@ -1386,7 +1386,7 @@ rcf_ta_reboot(const char *ta_name,
         rc = msg->error;
 
     free(msg);
-        
+
     return rc;
 }
 
@@ -1395,23 +1395,23 @@ rcf_ta_reboot(const char *ta_name,
  *
  * @param enable        if TRUE, enable loging
  */
-void 
+void
 rcf_log_cfg_changes(te_bool enable)
 {
-    thread_ctx_t *ctx_handle = get_ctx_handle(TRUE); 
-                                                 
+    thread_ctx_t *ctx_handle = get_ctx_handle(TRUE);
+
     if (ctx_handle != NULL)
         ctx_handle->log_cfg_changes = enable;
 }
 
 /**
  * This function is used to obtain value of object instance by its
- * identifier.  The function may be called by Configurator only. 
+ * identifier.  The function may be called by Configurator only.
  *
- * @param ta_name       Test Agent name              
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param oid           object instance identifier
- * @param val_buf       location for the object instance value 
+ * @param val_buf       location for the object instance value
  * @param len           location length
  *
  * @return error code
@@ -1420,20 +1420,20 @@ rcf_log_cfg_changes(te_bool enable)
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided or OID string is
  *                      too long
- * @retval TE_EIPC      cannot interact with RCF 
+ * @retval TE_EIPC      cannot interact with RCF
  * @retval TE_ESMALLBUF the buffer is too small
  * @retval ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
 te_errno
-rcf_ta_cfg_get(const char *ta_name, int session, const char *oid, 
+rcf_ta_cfg_get(const char *ta_name, int session, const char *oid,
                char *val_buf, size_t len)
 {
     rcf_msg     msg;
     size_t      anslen = sizeof(msg);
     te_errno    rc;
-    
+
     RCF_API_INIT;
 
     if (oid == NULL || val_buf == NULL || strlen(oid) >= RCF_MAX_ID ||
@@ -1441,24 +1441,24 @@ rcf_ta_cfg_get(const char *ta_name, int session, const char *oid,
     {
         return TE_RC(TE_RCF_API, TE_EINVAL);
     }
-    
+
     memset((char *)&msg, 0, sizeof(msg));
     strcpy(msg.id, oid);
     strcpy(msg.ta, ta_name);
     msg.opcode = RCFOP_CONFGET;
     msg.sid = session;
-    
+
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
 
     if (rc != 0 || (rc = msg.error) != 0)
         return rc;
-        
+
     if (msg.flags & BINARY_ATTACHMENT)
     {
         ssize_t n;
         int     fd;
-        
+
         if ((fd = open(msg.file, O_RDONLY)) < 0)
         {
             ERROR("Cannot open file %s saved by RCF process", msg.file);
@@ -1489,16 +1489,16 @@ rcf_ta_cfg_get(const char *ta_name, int session, const char *oid,
             return TE_RC(TE_RCF_API, TE_ESMALLBUF);
         strcpy(val_buf, msg.value);
     }
-    
+
     return 0;
 }
 
 /**
- * Implementation of rcf_ta_cfg_set and rcf_ta_cfg_add functionality - 
+ * Implementation of rcf_ta_cfg_set and rcf_ta_cfg_add functionality -
  * see description of these functions for details.
  *
- * @param ta_name       Test Agent name              
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param oid           object instance identifier
  * @param val           object instance value
  * @param opcode        RCFOP_CONFSET or RCFOP_CONFADD
@@ -1512,51 +1512,51 @@ conf_add_set(const char *ta_name, int session, const char *oid,
     rcf_msg     msg;
     size_t      anslen = sizeof(msg);
     te_errno    rc;
-    
+
     RCF_API_INIT;
-    
+
     if (oid == NULL || val == NULL || strlen(oid) >= RCF_MAX_ID ||
         strlen(val) >= RCF_MAX_VAL || BAD_TA)
-    { 
+    {
         return TE_RC(TE_RCF_API, TE_EINVAL);
     }
-    
+
     memset((char *)&msg, 0, sizeof(msg));
     strcpy(msg.id, oid);
     strcpy(msg.value, val);
     strcpy(msg.ta, ta_name);
     msg.opcode = opcode;
     msg.sid = session;
-    
+
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
-    
+
     if (rc == 0)
         rc = msg.error;
-                                      
+
     if (ctx_handle->log_cfg_changes)
     {
         if (opcode == RCFOP_CONFSET)
-            LOG_MSG(rc == 0 ? TE_LL_RING : TE_LL_ERROR, 
+            LOG_MSG(rc == 0 ? TE_LL_RING : TE_LL_ERROR,
                     "Set %s to %s: %r", oid, val, rc);
         else if (strlen(val) == 0)
-            LOG_MSG(rc == 0 ? TE_LL_RING : TE_LL_ERROR, 
+            LOG_MSG(rc == 0 ? TE_LL_RING : TE_LL_ERROR,
                     "Add %s: %r", oid, rc);
         else
-            LOG_MSG(rc == 0 ? TE_LL_RING : TE_LL_ERROR, 
+            LOG_MSG(rc == 0 ? TE_LL_RING : TE_LL_ERROR,
                     "Add %s with value %s: %r", oid, val, rc);
-            
+
     }
-                                   
+
     return rc;
 }
 
 /**
  * This function is used to change value of object instance.
- * The function may be called by Configurator only. 
+ * The function may be called by Configurator only.
  *
- * @param ta_name       Test Agent name              
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param oid           object instance identifier
  * @param val           object instance value
  *
@@ -1566,7 +1566,7 @@ conf_add_set(const char *ta_name, int session, const char *oid,
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided or too OID or value
  *                      strings are too long
- * @retval TE_EIPC      cannot interact with RCF 
+ * @retval TE_EIPC      cannot interact with RCF
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
@@ -1579,12 +1579,12 @@ rcf_ta_cfg_set(const char *ta_name, int session, const char *oid,
 }
 
 /**
- * This function is used to create new object instance and assign the 
+ * This function is used to create new object instance and assign the
  * value to it.
- * The function may be called by Configurator only. 
+ * The function may be called by Configurator only.
  *
- * @param ta_name       Test Agent name              
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param oid           object instance identifier
  * @param val           object instance value
  *
@@ -1594,7 +1594,7 @@ rcf_ta_cfg_set(const char *ta_name, int session, const char *oid,
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided or too OID or value
  *                      strings are too long
- * @retval TE_EIPC      cannot interact with RCF 
+ * @retval TE_EIPC      cannot interact with RCF
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
@@ -1616,10 +1616,10 @@ rcf_ta_cfg_add(const char *ta_name, int session, const char *oid,
 
 /**
  * This function is used to remove the object instance.
- * The function may be called by Configurator only. 
+ * The function may be called by Configurator only.
  *
- * @param ta_name       Test Agent name              
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param oid           object instance identifier
  *
  * @return error code
@@ -1628,7 +1628,7 @@ rcf_ta_cfg_add(const char *ta_name, int session, const char *oid,
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided or OID string is
  *                      too long
- * @retval TE_EIPC      cannot interact with RCF 
+ * @retval TE_EIPC      cannot interact with RCF
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
@@ -1639,26 +1639,26 @@ rcf_ta_cfg_del(const char *ta_name, int session, const char *oid)
     rcf_msg     msg;
     size_t      anslen = sizeof(msg);
     te_errno    rc;
-    
+
     RCF_API_INIT;
-    
+
     if (oid == NULL || strlen(oid) >= RCF_MAX_ID || BAD_TA)
         return TE_RC(TE_RCF_API, TE_EINVAL);
-    
+
     memset((char *)&msg, 0, sizeof(msg));
     strcpy(msg.id, oid);
     strcpy(msg.ta, ta_name);
     msg.opcode = RCFOP_CONFDEL;
     msg.sid = session;
-    
+
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
-                                   
+
     if (rc == 0)
         rc = msg.error;
-                                      
+
     if (ctx_handle->log_cfg_changes)
-        LOG_MSG(rc == 0 ? TE_LL_RING : TE_LL_ERROR, 
+        LOG_MSG(rc == 0 ? TE_LL_RING : TE_LL_ERROR,
                 "Delete %s: %r", oid, rc);
 
     return rc;
@@ -1671,14 +1671,14 @@ rcf_ta_cfg_group(const char *ta_name, int session, te_bool is_start)
     rcf_msg     msg;
     size_t      anslen = sizeof(msg);
     te_errno    rc;
-    
+
     RCF_API_INIT;
-    
+
     memset((char *)&msg, 0, sizeof(msg));
     strcpy(msg.ta, ta_name);
     msg.sid = session;
     msg.opcode = (is_start) ? RCFOP_CONFGRP_START : RCFOP_CONFGRP_END;
-    
+
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
 
@@ -1687,9 +1687,9 @@ rcf_ta_cfg_group(const char *ta_name, int session, te_bool is_start)
 
 /**
  * This function is used to get bulk of log from the Test Agent.
- * The function may be called by Logger only. 
+ * The function may be called by Logger only.
  *
- * @param ta_name       Test Agent name              
+ * @param ta_name       Test Agent name
  * @param log_file      name of the local file where log should be put
  *                      (the file is truncated to zero length before
  *                      updating)
@@ -1698,8 +1698,8 @@ rcf_ta_cfg_group(const char *ta_name, int session, te_bool is_start)
  *
  * @retval 0                success
  * @retval TE_EINVAL        name of non-running TN Test Agent or bad file
- *                          name are provided 
- * @retval TE_EIPC          cannot interact with RCF 
+ *                          name are provided
+ * @retval TE_EIPC          cannot interact with RCF
  * @retval TE_ETAREBOOTED   Test Agent is rebooted
  * @retval TE_ENOMEM        out of memory
  * @retval other            error returned by command handler on the TA
@@ -1710,37 +1710,37 @@ rcf_ta_get_log(const char *ta_name, char *log_file)
     rcf_msg     msg;
     size_t      anslen = sizeof(msg);
     te_errno    rc;
-    
+
     RCF_API_INIT;
-    
+
     if (log_file == NULL || strlen(log_file) >= RCF_MAX_PATH || BAD_TA)
         return TE_RC(TE_RCF_API, TE_EINVAL);
-    
+
     memset((char *)&msg, 0, sizeof(msg));
     strcpy(msg.file, log_file);
     strcpy(msg.ta, ta_name);
     msg.opcode = RCFOP_GET_LOG;
     msg.sid = RCF_TA_GET_LOG_SID;
-    
+
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
 
     if (rc == 0 && (rc = msg.error) == 0)
         strcpy(log_file, msg.file);
-        
-    return rc;    
+
+    return rc;
 }
 
 /**
  * This function is used to obtain value of the variable from the Test Agent
  * or NUT served by it.
  *
- * @param ta_name       Test Agent name              
- * @param session       TA session or 0   
- * @param var_name      name of the variable to be read 
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
+ * @param var_name      name of the variable to be read
  * @param var_type      type according to which string returned from the TA
  *                      should be converted
- * 
+ *
  * @param var_len       length of the location buffer
  * @param val           location for variable value
  *
@@ -1750,14 +1750,14 @@ rcf_ta_get_log(const char *ta_name, char *log_file)
  * @retval TE_EINVAL       one of arguments is invalid (NULL, too long or
  *                      has inappropriate value)
  * @retval TE_ENOENT       no such variable
- * @retval TE_EIPC      cannot interact with RCF 
+ * @retval TE_EIPC      cannot interact with RCF
  * @retval TE_ESMALLBUF the buffer is too small
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
 te_errno
-rcf_ta_get_var(const char *ta_name, int session, const char *var_name, 
+rcf_ta_get_var(const char *ta_name, int session, const char *var_name,
                rcf_var_type_t var_type, size_t var_len, void *val)
 {
     rcf_msg     msg;
@@ -1765,11 +1765,11 @@ rcf_ta_get_var(const char *ta_name, int session, const char *var_name,
     uint64_t    value;
     char       *tmp;
     te_errno    rc;
-    
+
     RCF_API_INIT;
-    
+
     if (var_name == NULL || val == NULL ||
-        strlen(var_name) >= RCF_MAX_NAME || 
+        strlen(var_name) >= RCF_MAX_NAME ||
         BAD_TA || validate_type(var_type, var_len) != 0)
     {
         return TE_RC(TE_RCF_API, TE_EINVAL);
@@ -1784,10 +1784,10 @@ rcf_ta_get_var(const char *ta_name, int session, const char *var_name,
 
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
-    
-    if (rc != 0 || (rc = msg.error) != 0)    
+
+    if (rc != 0 || (rc = msg.error) != 0)
         return rc;
-    
+
     if (var_type == RCF_STRING)
     {
         if (var_len <= strlen(msg.value))
@@ -1795,37 +1795,37 @@ rcf_ta_get_var(const char *ta_name, int session, const char *var_name,
         strcpy(val, msg.value);
         return 0;
     }
-    
+
     value = strtoll(msg.value, &tmp, 10);
     if (tmp == msg.value || *tmp != 0)
         return TE_RC(TE_RCF_API, TE_EFMT);
-        
+
     switch (var_type)
     {
-        case RCF_INT8:  
+        case RCF_INT8:
             *(int8_t *)val = (int8_t)value;
             break;
-            
-        case RCF_UINT8:  
+
+        case RCF_UINT8:
             *(uint8_t *)val = (uint8_t)value;
             break;
-            
-        case RCF_INT16: 
+
+        case RCF_INT16:
             *(int16_t *)val = (int16_t)value;
             break;
-            
+
         case RCF_UINT16:
             *(uint16_t *)val = (uint16_t)value;
             break;
-            
-        case RCF_INT32: 
+
+        case RCF_INT32:
             *(int32_t *)val = (int32_t)value;
             break;
-            
+
         case RCF_UINT32:
             *(uint32_t *)val = (uint32_t)value;
             break;
-            
+
         case RCF_INT64:
             *(int64_t *)val = (int64_t)value;
             break;
@@ -1837,7 +1837,7 @@ rcf_ta_get_var(const char *ta_name, int session, const char *var_name,
         default:
             assert(0);
     }
-    
+
     return 0;
 }
 
@@ -1845,8 +1845,8 @@ rcf_ta_get_var(const char *ta_name, int session, const char *var_name,
  * This function is used to change value of the variable from the Test Agent
  * or NUT served by it.
  *
- * @param ta_name       Test Agent name              
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param var_name      name of the variable to be changed
  * @param var_type      type according to which variable value should
  *                      appear in the protocol command
@@ -1859,21 +1859,21 @@ rcf_ta_get_var(const char *ta_name, int session, const char *var_name,
  * @retval TE_EINVAL       one of arguments is invalid (NULL, too long or
  *                      has inappropriate value)
  * @retval TE_ENOENT       no such variable
- * @retval TE_EIPC      cannot interact with RCF 
+ * @retval TE_EIPC      cannot interact with RCF
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
 te_errno
-rcf_ta_set_var(const char *ta_name, int session, const char *var_name, 
+rcf_ta_set_var(const char *ta_name, int session, const char *var_name,
                rcf_var_type_t var_type, const char *val)
 {
     rcf_msg     msg;
     size_t      anslen = sizeof(msg);
     te_errno    rc;
-    
+
     RCF_API_INIT;
-    
+
     if (var_name == NULL || val == NULL ||
         strlen(var_name) >= RCF_MAX_NAME ||
         BAD_TA || var_type >= RCF_TYPE_TOTAL)
@@ -1889,30 +1889,30 @@ rcf_ta_set_var(const char *ta_name, int session, const char *var_name,
     msg.sid = session;
     switch (var_type)
     {
-        case RCF_INT8:  
+        case RCF_INT8:
             sprintf(msg.value, "%" TE_PRINTF_8 "d", *(int8_t *)val);
             break;
-            
-        case RCF_UINT8:  
+
+        case RCF_UINT8:
             sprintf(msg.value, "%" TE_PRINTF_8 "u", *(uint8_t *)val);
             break;
-            
-        case RCF_INT16: 
+
+        case RCF_INT16:
             sprintf(msg.value, "%" TE_PRINTF_16 "d", *(int16_t *)val);
             break;
-            
+
         case RCF_UINT16:
             sprintf(msg.value, "%" TE_PRINTF_16 "u", *(uint16_t *)val);
             break;
-            
-        case RCF_INT32: 
+
+        case RCF_INT32:
             sprintf(msg.value, "%" TE_PRINTF_32 "d", *(int32_t *)val);
             break;
-            
+
         case RCF_UINT32:
             sprintf(msg.value, "%" TE_PRINTF_32 "u", *(uint32_t *)val);
             break;
-            
+
         case RCF_INT64:
             sprintf(msg.value, "%" TE_PRINTF_64 "d", *(int64_t *)val);
             break;
@@ -1920,7 +1920,7 @@ rcf_ta_set_var(const char *ta_name, int session, const char *var_name,
         case RCF_UINT64:
             sprintf(msg.value, "%" TE_PRINTF_64 "u", *(uint64_t *)val);
             break;
-            
+
         case RCF_STRING:
             if (strlen(val) >= RCF_MAX_VAL)
                 return TE_RC(TE_RCF_API, TE_EINVAL);
@@ -1930,19 +1930,19 @@ rcf_ta_set_var(const char *ta_name, int session, const char *var_name,
         default:
             assert(0);
     }
-    
+
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
-                                   
+
     return rc == 0 ? msg.error : rc;
 }
 
-/** 
+/**
  * Implementation of rcf_ta_(get|put|del)_file functionality -
  * see description of these functions for details.
  *
- * @param ta_name       Test Agent name              
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param rfile         full name of the file in the TA/NUT file system
  * @param lfile         full name of the file in the TN file system
  * @param opcode        RCFOP_FPUT, RCFOP_FGET or RCFOP_DEL
@@ -1956,22 +1956,22 @@ handle_file(const char *ta_name, int session,
     rcf_msg    *msg;
     size_t      anslen = sizeof(*msg);
     te_errno    rc;
-    
+
     RCF_API_INIT;
-    
+
     if (rfile == NULL || lfile == NULL || strlen(lfile) >= RCF_MAX_PATH ||
-        strlen(rfile) >= RCF_MAX_PATH || 
+        strlen(rfile) >= RCF_MAX_PATH ||
         (strlen(lfile) == 0 && opcode != RCFOP_FDEL) ||
         strlen(rfile) == 0 || BAD_TA)
     {
         ERROR("Invalid arguments provided to %s", __FUNCTION__);
         return TE_RC(TE_RCF_API, TE_EINVAL);
     }
-    
+
     if (opcode == RCFOP_FPUT)
     {
         int fd;
-    
+
         if ((fd = open(lfile, O_RDONLY)) < 0)
         {
             ERROR("Cannot open file %s for reading", lfile);
@@ -1983,7 +1983,7 @@ handle_file(const char *ta_name, int session,
     msg = (rcf_msg *)calloc(1, sizeof(rcf_msg) + RCF_MAX_PATH);
     if (msg == NULL)
         return TE_RC(TE_RCF_API, TE_ENOMEM);
-    
+
     msg->opcode = opcode;
     strcpy(msg->ta, ta_name);
     strcpy(msg->file, lfile);
@@ -1992,25 +1992,25 @@ handle_file(const char *ta_name, int session,
     msg->sid = session;
     if (opcode == RCFOP_FPUT)
         msg->flags |= BINARY_ATTACHMENT;
-    
+
     rc = send_recv_rcf_ipc_message(ctx_handle,
                                    msg, sizeof(*msg) + msg->data_len,
                                    msg, &anslen, NULL);
-    
+
     if (rc == 0)
         rc = msg->error;
-        
+
     free(msg);
-    
+
     return rc;
 }
 
 /**
- * This function loads file from Test Agent or NUT served by it to the 
+ * This function loads file from Test Agent or NUT served by it to the
  * testing node.
  *
- * @param ta_name       Test Agent name              
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param rfile         full name of the file in the TA/NUT file system
  * @param lfile         full name of the file in the TN file system
  *
@@ -2019,7 +2019,7 @@ handle_file(const char *ta_name, int session,
  * @retval 0            success
  * @retval TE_EINVAL       name of non-running TN Test Agent, non-existent
  *                      session identifier or bad file name are provided
- * @retval TE_EIPC      cannot interact with RCF 
+ * @retval TE_EIPC      cannot interact with RCF
  * @retval TE_ENOENT       no such file
  * @retval TE_EPERM        operation not permitted
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
@@ -2033,11 +2033,11 @@ rcf_ta_get_file(const char *ta_name, int session,
 }
 
 /**
- * This function loads file from the testing node to Test Agent or NUT 
+ * This function loads file from the testing node to Test Agent or NUT
  * served by it.
  *
- * @param ta_name       Test Agent name              
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param lfile         full name of the file in the TN file system
  * @param rfile         full name of the file in the TA/NUT file system
  *
@@ -2046,7 +2046,7 @@ rcf_ta_get_file(const char *ta_name, int session,
  * @retval 0            success
  * @retval TE_EINVAL       name of non-running TN Test Agent, non-existent
  *                      session identifier or bad file name are provided
- * @retval TE_EIPC      cannot interact with RCF 
+ * @retval TE_EIPC      cannot interact with RCF
  * @retval TE_ENOENT       no such file
  * @retval TE_EPERM        operation not permitted
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
@@ -2062,8 +2062,8 @@ rcf_ta_put_file(const char *ta_name, int session,
 /**
  * This function deletes file from the Test Agent or NUT served by it.
  *
- * @param ta_name       Test Agent name              
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param rfile         full name of the file in the TA/NUT file system
  *
  * @return error code
@@ -2071,7 +2071,7 @@ rcf_ta_put_file(const char *ta_name, int session,
  * @retval 0            success
  * @retval TE_EINVAL       name of non-running TN Test Agent, non-existent
  *                      session identifier or bad file name are provided
- * @retval TE_EIPC      cannot interact with RCF 
+ * @retval TE_EIPC      cannot interact with RCF
  * @retval TE_ENOENT       no such file
  * @retval TE_EPERM        operation not permitted
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
@@ -2095,11 +2095,11 @@ rcf_tr_op_log(te_bool ring)
 }
 
 /**
- * This function creates CSAP (communication service access point) on the 
- * Test Agent. 
+ * This function creates CSAP (communication service access point) on the
+ * Test Agent.
  *
- * @param ta_name       Test Agent name                 
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param stack_id      protocol stack identifier
  * @param params        parameters necessary for CSAP creation (string
  *                      or file name); if file with *params name exists,
@@ -2114,7 +2114,7 @@ rcf_tr_op_log(te_bool ring)
  * @retval 0            success
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided
- * @retval TE_EIPC    cannot interact with RCF 
+ * @retval TE_EIPC    cannot interact with RCF
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
@@ -2131,15 +2131,15 @@ rcf_ta_csap_create(const char *ta_name, int session,
     int         flags = 0;
     size_t      anslen = sizeof(*msg);
     te_errno    rc;
-    
+
     RCF_API_INIT;
-    
+
     if (stack_id == NULL || csap_id == NULL || BAD_TA)
     {
         ERROR("Invalid parameters");
         return TE_RC(TE_RCF_API, TE_EINVAL);
     }
-    
+
     if (params != NULL)
     {
         int fd;
@@ -2168,7 +2168,7 @@ rcf_ta_csap_create(const char *ta_name, int session,
     }
     if ((msg = (rcf_msg *)calloc(1, sizeof(rcf_msg) + len)) == NULL)
         return TE_RC(TE_RCF_API, TE_ENOMEM);
-        
+
     msg->opcode = RCFOP_CSAP_CREATE;
     msg->flags = flags;
     msg->sid = session;
@@ -2181,11 +2181,11 @@ rcf_ta_csap_create(const char *ta_name, int session,
         msg->data_len = len;
         memcpy(msg->data, params, len);
     }
-    
+
     rc = send_recv_rcf_ipc_message(ctx_handle,
                                    msg, sizeof(rcf_msg) + len,
                                    msg, &anslen, NULL);
-    
+
     if (rc == 0 && (rc = msg->error) == 0)
     {
         *csap_id = msg->handle;
@@ -2198,17 +2198,17 @@ rcf_ta_csap_create(const char *ta_name, int session,
         ERROR("Create CSAP '%s' (%s:%d) failed: %r\n%Tf",
               stack_id, ta_name, session, rc, params);
     }
-        
+
     free(msg);
-        
+
     return rc;
 }
 
 /**
  * This function destroys CSAP.
  *
- * @param ta_name       Test Agent name                 
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param csap_id       CSAP csap_id
  *
  * @return error code
@@ -2216,23 +2216,23 @@ rcf_ta_csap_create(const char *ta_name, int session,
  * @retval 0               success
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                         session identifier is provided
- * @retval TE_EIPC         cannot interact with RCF 
+ * @retval TE_EIPC         cannot interact with RCF
  * @retval TE_EBADF        no such CSAP
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       out of memory
  *
  * @sa rcf_ta_csap_create
  */
-te_errno 
+te_errno
 rcf_ta_csap_destroy(const char *ta_name, int session,
                     csap_handle_t csap_id)
 {
     rcf_msg     msg;
     size_t      anslen = sizeof(msg);
     te_errno    rc;
-    
+
     RCF_API_INIT;
-    
+
     if (csap_id == CSAP_INVALID_HANDLE)
     {
         INFO("%s(): Called with CSAP_INVALID_HANDLE CSAP ID, IGNORE",
@@ -2242,13 +2242,13 @@ rcf_ta_csap_destroy(const char *ta_name, int session,
 
     if (BAD_TA)
         return TE_RC(TE_RCF_API, TE_EINVAL);
-    
+
     memset((char *)&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_CSAP_DESTROY;
     strcpy(msg.ta, ta_name);
     msg.sid = session;
     msg.handle = csap_id;
-        
+
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
 
@@ -2264,8 +2264,8 @@ rcf_ta_csap_destroy(const char *ta_name, int session,
 /**
  * This function is used to obtain CSAP parameter value.
  *
- * @param ta_name       Test Agent name                 
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param csap_id       CSAP handle
  * @param var_name      parameter name
  * @param var_len       length of the location buffer
@@ -2276,7 +2276,7 @@ rcf_ta_csap_destroy(const char *ta_name, int session,
  * @retval 0               success
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                         session identifier is provided
- * @retval TE_EIPC         cannot interact with RCF 
+ * @retval TE_EIPC         cannot interact with RCF
  * @retval TE_EBADF        no such CSAP
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ESMALLBUF the buffer is too small
@@ -2288,9 +2288,9 @@ rcf_ta_csap_param(const char *ta_name, int session, csap_handle_t csap_id,
     rcf_msg     msg;
     size_t      anslen = sizeof(msg);
     te_errno    rc;
-    
+
     RCF_API_INIT;
-    
+
     if (var_name == NULL || val == NULL ||
         strlen(var_name) >= RCF_MAX_NAME || BAD_TA)
     {
@@ -2304,18 +2304,18 @@ rcf_ta_csap_param(const char *ta_name, int session, csap_handle_t csap_id,
     msg.opcode = RCFOP_CSAP_PARAM;
     msg.sid = session;
     msg.handle = csap_id;
-    
+
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
-   
+
     if (rc != 0 || (rc = msg.error) != 0)
         return rc;
-  
+
     if (var_len <= strlen(msg.value))
         return TE_RC(TE_RCF_API, TE_ESMALLBUF);
-        
+
     strcpy(val, msg.value);
-    
+
     return 0;
 }
 
@@ -2323,8 +2323,8 @@ rcf_ta_csap_param(const char *ta_name, int session, csap_handle_t csap_id,
  * This function is used to force sending of traffic via already created
  * CSAP.
  *
- * @param ta_name       Test Agent name                 
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param csap_id       CSAP handle
  * @param templ         full name of the file with traffic template
  * @param blk_mode      mode of the operation:
@@ -2336,7 +2336,7 @@ rcf_ta_csap_param(const char *ta_name, int session, csap_handle_t csap_id,
  * @retval 0               success
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                         session identifier is provided
- * @retval TE_E   IPC      cannot interact with RCF 
+ * @retval TE_E   IPC      cannot interact with RCF
  * @retval TE_EBADF        no such CSAP
  * @retval TE_EINPROGRESS  operation is already in progress
  * @retval TE_EBUSY        CSAP is used for receiving now
@@ -2349,7 +2349,7 @@ rcf_ta_csap_param(const char *ta_name, int session, csap_handle_t csap_id,
  * @sa rcf_ta_trsend_stop
  */
 te_errno
-rcf_ta_trsend_start(const char *ta_name, int session, 
+rcf_ta_trsend_start(const char *ta_name, int session,
                     csap_handle_t csap_id, const char *templ,
                     rcf_call_mode_t blk_mode)
 {
@@ -2359,10 +2359,10 @@ rcf_ta_trsend_start(const char *ta_name, int session,
     te_errno      rc;
 
     RCF_API_INIT;
-    
+
     if (templ == NULL || strlen(templ) >= RCF_MAX_PATH || BAD_TA)
         return TE_RC(TE_RCF_API, TE_EINVAL);
-        
+
     LOG_MSG(rcf_tr_op_ring ? TE_LL_RING : TE_LL_INFO,
             "Start %s send operation on the CSAP %d (%s:%d) with "
             "template:\n%Tf", rcf_call_mode2str(blk_mode), csap_id,
@@ -2374,9 +2374,9 @@ rcf_ta_trsend_start(const char *ta_name, int session,
     strcpy(msg.ta, ta_name);
     strcpy(msg.file, templ);
     msg.handle = csap_id;
-    msg.intparm = (blk_mode == RCF_MODE_BLOCKING) ? TR_POSTPONED : 0; 
+    msg.intparm = (blk_mode == RCF_MODE_BLOCKING) ? TR_POSTPONED : 0;
     msg.sid = session;
-    
+
     if ((fd = open(templ, O_RDONLY)) < 0)
     {
         ERROR("Cannot open file %s for reading\n", templ);
@@ -2397,7 +2397,7 @@ rcf_ta_trsend_start(const char *ta_name, int session,
  * This function is used to stop sending of traffic started by
  * rcf_ta_trsend_start called in non-blocking mode.
  *
- * @param ta_name       Test Agent name                 
+ * @param ta_name       Test Agent name
  * @param csap_id       CSAP handle
  * @param num           location where number of sent packets should be
  *                      placed
@@ -2407,7 +2407,7 @@ rcf_ta_trsend_start(const char *ta_name, int session,
  * @retval 0               success
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                         session identifier is provided
- * @retval TE_EIPC         cannot interact with RCF 
+ * @retval TE_EIPC         cannot interact with RCF
  * @retval TE_EBADF        no such CSAP
  * @retval TE_EALREADY     traffic sending is not in progress now
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
@@ -2422,25 +2422,25 @@ rcf_ta_trsend_stop(const char *ta_name, int session,
     rcf_msg       msg;
     size_t        anslen = sizeof(msg);
     te_errno      rc;
-    
+
     RCF_API_INIT;
-    
+
     if (BAD_TA)
         return TE_RC(TE_RCF_API, TE_EINVAL);
-    
+
     memset((char *)&msg, 0, sizeof(msg));
 
     msg.sid = session;
     msg.opcode = RCFOP_TRSEND_STOP;
     strcpy(msg.ta, ta_name);
     msg.handle = csap_id;
-        
+
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
 
     if (rc == 0 && (rc = msg.error) == 0 && (num != NULL))
         *num = msg.num;
-    
+
     return rc;
 }
 
@@ -2467,7 +2467,7 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
         return TE_OS_RC(TE_RCF_API, errno);
     }
     close(fd);
-    
+
     memset((char *)&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_TRRECV_START;
     msg.flags |= BINARY_ATTACHMENT;
@@ -2477,7 +2477,7 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
     msg.intparm = (mode == RCF_TRRECV_COUNT ? 0 :
                    (TR_RESULTS |
                     (mode == RCF_TRRECV_NO_PAYLOAD ?
-                        TR_NO_PAYLOAD : 0))); 
+                        TR_NO_PAYLOAD : 0)));
     msg.sid = session;
     msg.num = num;
     msg.timeout = timeout;
@@ -2490,7 +2490,7 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
 
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
-                                  
+
     if (rc == 0)
         rc = msg.error;
 
@@ -2501,32 +2501,32 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
  * Implementation of rcf_ta_trrecv_stop and rcf_ta_trrecv_get
  * functionality - see description of these functions for details.
  *
- * @param ta_name       Test Agent name                 
+ * @param ta_name       Test Agent name
  * @param session       TA session or -1, denoting session associated with
- *                      specified CSAP and TA. 
+ *                      specified CSAP and TA.
  * @param csap_id       CSAP handle
- * @param num           location where number of received packets 
+ * @param num           location where number of received packets
  *                      should be placed or NULL
- * @param opcode        RCFOP_TRRECV_STOP, RCFOP_TRRECV_WAIT or 
+ * @param opcode        RCFOP_TRRECV_STOP, RCFOP_TRRECV_WAIT or
  *                      RCFOP_TRRECV_GET
  *
  * @return error code
  */
 static te_errno
 csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
-                 rcf_pkt_handler handler, void *user_param, 
+                 rcf_pkt_handler handler, void *user_param,
                  unsigned int *num, int opcode)
 {
     te_errno                    rc;
     rcf_msg                     msg;
     size_t                      anslen = sizeof(msg);
     rcf_message_match_simple    match_data = { opcode, ta_name, session };
-    
+
     RCF_API_INIT;
-    
+
     if (BAD_TA)
         return TE_RC(TE_RCF_API, TE_EINVAL);
-    
+
     memset((char *)&msg, 0, sizeof(msg));
 
     msg.sid = session;
@@ -2538,7 +2538,7 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
     if ((rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                         &msg, &anslen, NULL)) != 0)
     {
-        ERROR("%s: IPC send with answer fails, rc %r", 
+        ERROR("%s: IPC send with answer fails, rc %r",
               __FUNCTION__, rc);
         return rc;
     }
@@ -2554,20 +2554,20 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
             handler(msg.file, user_param);
 
         anslen = sizeof(msg);
-        if ((rc = wait_rcf_ipc_message(ipc_handle, 
+        if ((rc = wait_rcf_ipc_message(ipc_handle,
                                        &(ctx_handle->msg_buf_head),
                                        rcf_message_match, &match_data,
                                        &msg, &anslen, NULL)) != 0)
         {
-            ERROR("%s: IPC receive answer fails, rc %r", 
+            ERROR("%s: IPC receive answer fails, rc %r",
                   __FUNCTION__, rc);
             return TE_RC(TE_RCF_API, TE_EIPC);
         }
     }
-    
+
     if ((num != NULL) && (msg.error == 0 || opcode != RCFOP_TRRECV_GET))
         *num = msg.num;
-    
+
     return msg.error;
 }
 
@@ -2575,7 +2575,7 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
 te_errno
 rcf_ta_trrecv_wait(const char *ta_name, int session,
                    csap_handle_t csap_id,
-                   rcf_pkt_handler handler, void *user_param, 
+                   rcf_pkt_handler handler, void *user_param,
                    unsigned int *num)
 {
     te_errno        rc;
@@ -2597,12 +2597,12 @@ rcf_ta_trrecv_wait(const char *ta_name, int session,
 
     return rc;
 }
-                      
+
 /* See the description in rcf_api.h */
 te_errno
 rcf_ta_trrecv_stop(const char *ta_name, int session,
                    csap_handle_t csap_id,
-                   rcf_pkt_handler handler, void *user_param, 
+                   rcf_pkt_handler handler, void *user_param,
                    unsigned int *num)
 {
     te_errno        rc;
@@ -2613,7 +2613,7 @@ rcf_ta_trrecv_stop(const char *ta_name, int session,
             csap_id, ta_name, session);
 
     rc = csap_tr_recv_get(ta_name, session, csap_id, handler,
-                          user_param, &n, RCFOP_TRRECV_STOP); 
+                          user_param, &n, RCFOP_TRRECV_STOP);
 
     LOG_MSG(rcf_tr_op_ring ? TE_LL_RING : TE_LL_INFO,
             "Stopped receive operation on the CSAP %d (%s:%d) got %u "
@@ -2629,13 +2629,13 @@ rcf_ta_trrecv_stop(const char *ta_name, int session,
 te_errno
 rcf_ta_trrecv_get(const char *ta_name, int session,
                   csap_handle_t csap_id,
-                  rcf_pkt_handler handler, void *user_param, 
+                  rcf_pkt_handler handler, void *user_param,
                   unsigned int *num)
 {
     te_errno        rc;
     unsigned int    n;
 
-    VERB("%s(ta %s, csap %d, *num  %p) called", 
+    VERB("%s(ta %s, csap %d, *num  %p) called",
          ta_name, csap_id, num);
 
     rc = csap_tr_recv_get(ta_name, session, csap_id, handler,
@@ -2655,7 +2655,7 @@ rcf_ta_trrecv_get(const char *ta_name, int session,
 /**
  * This function is used to send exactly one packet via CSAP and receive
  * an answer (it may be used for CLI, SNMP, ARP, ICMP, DNS, etc.)
- * This function blocks the caller until the packet is received by 
+ * This function blocks the caller until the packet is received by
  * traffic application domain or timeout occures.
  *
  * @param ta_name       Test Agent name
@@ -2679,7 +2679,7 @@ rcf_ta_trrecv_get(const char *ta_name, int session,
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                         session identifier is provided or flag blocking
  *                         is used together with num 0
- * @retval TE_EIPC         cannot interact with RCF 
+ * @retval TE_EIPC         cannot interact with RCF
  * @retval TE_EBADF        no such CSAP
  * @retval TE_EBUSY        CSAP is busy
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
@@ -2688,7 +2688,7 @@ rcf_ta_trrecv_get(const char *ta_name, int session,
  */
 te_errno
 rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
-                   const char *templ, rcf_pkt_handler handler, 
+                   const char *templ, rcf_pkt_handler handler,
                    void *user_param, unsigned int timeout, int *error)
 {
     rcf_msg                     msg;
@@ -2697,7 +2697,7 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
     te_errno                    rc;
     rcf_message_match_simple    match_data = { RCFOP_TRSEND_RECV,
                                                ta_name, session };
-    
+
     RCF_API_INIT;
 
     /* First, validate parameters */
@@ -2723,7 +2723,7 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
     strcpy(msg.file, templ);
     msg.handle = csap_id;
     msg.intparm = handler == NULL ? 0 : TR_RESULTS;
-    
+
     LOG_MSG(rcf_tr_op_ring ? TE_LL_RING : TE_LL_INFO,
             "Start send/receive operation on the CSAP %d (%s:%d) "
             "with timeout %u ms, handler=%p (param=%p), pattern:\n%Tf",
@@ -2731,10 +2731,10 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
 
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
-        
+
     if (rc != 0)
         return rc;
-    
+
     while (msg.flags & INTERMEDIATE_ANSWER)
     {
         assert(handler != NULL);
@@ -2746,7 +2746,7 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
 
         handler(msg.file, user_param);
         anslen = sizeof(msg);
-        if ((rc = wait_rcf_ipc_message(ipc_handle, 
+        if ((rc = wait_rcf_ipc_message(ipc_handle,
                                        &(ctx_handle->msg_buf_head),
                                        rcf_message_match, &match_data,
                                        &msg, &anslen, NULL)) != 0)
@@ -2754,13 +2754,13 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
             return rc;
         }
     }
-    
+
     if (msg.error != 0)
         return msg.error;
-    
+
     if (error != NULL)
         *error = msg.intparm;
-    
+
     return 0;
 }
 
@@ -2777,7 +2777,7 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
  *
  * @return Status code.
  */
-static te_errno 
+static te_errno
 rcf_ta_trpoll_start(const char *ta_name, int session,
                     csap_handle_t csap_id, unsigned int timeout,
                     unsigned int *poll_id)
@@ -2804,7 +2804,7 @@ rcf_ta_trpoll_start(const char *ta_name, int session,
     msg.sid = session;
     msg.handle = csap_id;
     msg.timeout = timeout;
-    
+
     LOG_MSG(rcf_tr_op_ring ? TE_LL_RING : TE_LL_INFO,
             "Start poll operation on the CSAP %d (%s:%d) with timeout "
             "%u ms", csap_id, ta_name, session, timeout);
@@ -2813,13 +2813,13 @@ rcf_ta_trpoll_start(const char *ta_name, int session,
                                    &msg, &anslen, NULL);
     if (rc != 0)
         return rc;
-    
+
     if (msg.flags & INTERMEDIATE_ANSWER)
     {
         assert(poll_id != NULL);
         *poll_id = msg.intparm;
     }
-    
+
     return msg.error;
 }
 
@@ -2834,7 +2834,7 @@ rcf_ta_trpoll_start(const char *ta_name, int session,
  *
  * @return Status code.
  */
-static te_errno 
+static te_errno
 rcf_ta_trpoll_cancel(const char *ta_name, int session,
                      csap_handle_t csap_id, unsigned int poll_id)
 {
@@ -2870,7 +2870,7 @@ rcf_ta_trpoll_cancel(const char *ta_name, int session,
     LOG_MSG(rcf_tr_op_ring ? TE_LL_RING : TE_LL_INFO,
             "Canceled poll operation #%u on the CSAP %d (%s:%d): %r",
             poll_id, csap_id, ta_name, session, rc);
- 
+
     return rc;
 }
 
@@ -2920,7 +2920,7 @@ rcf_message_match_poll(rcf_msg *msg, void *opaque)
 }
 
 /* See the description in rcf_api.h */
-te_errno 
+te_errno
 rcf_trpoll(rcf_trpoll_csap *csaps, unsigned int n_csaps,
            unsigned int timeout)
 {
@@ -3013,7 +3013,7 @@ rcf_trpoll(rcf_trpoll_csap *csaps, unsigned int n_csaps,
             }
             else
             {
-                /* 
+                /*
                  * Failed to allocate session, can't cancel poll
                  * request, however, it doesn't matter, since something
                  * critical has happened.
@@ -3046,7 +3046,7 @@ rcf_trpoll(rcf_trpoll_csap *csaps, unsigned int n_csaps,
 
 /**
  * Auxiliary function to check and code routine of task
- * entry point parameters. 
+ * entry point parameters.
  *
  * @param argv          if TRUE, paramaters should be in (argc, argv) form;
  *                      otherwise types are specified for parameters
@@ -3064,56 +3064,56 @@ make_params(int argc,  int argv, char *data, size_t *data_len, va_list ap)
     size_t  len = 0;
     ssize_t maxlen = RCF_MAX_LEN - TE_PROTO_OVERHEAD - RCF_MAX_NAME -
                      RCF_MAX_INT;
-    
+
 #define CHECK_LENS \
     if (len > RCF_MAX_LEN - sizeof(rcf_msg) || maxlen < 0) \
         return TE_RC(TE_RCF_API, TE_EINVAL);
-    
+
     /* Determine data length and check command size restrictions */
     if (argv)
     {
         for (i = 0; i < argc; i++)
         {
             char *s = va_arg(ap, char *);
-            
+
             if (check_params_len(s, maxlen, &n) != 0)
                 return TE_RC(TE_RCF_API, TE_EINVAL);
-                
+
             len += strlen(s) + 1;
             maxlen -= n + 1;
             CHECK_LENS;
-                
+
             strcpy(data, s);
             data += strlen(s) + 1;
         }
         *data_len = len;
         return 0;
     }
-    
+
     for (i = 0; i < argc; i++)
     {
         rcf_var_type_t  type = va_arg(ap, rcf_var_type_t);
-        
+
         if (type >= RCF_TYPE_TOTAL)
             return TE_RC(TE_RCF_API, TE_EINVAL);
-            
+
         maxlen -= RCF_MAX_TYPE_NAME + 1;
         len++;
         CHECK_LENS;
-            
+
         *(data++) = (unsigned char)type;
-            
+
         if (type == RCF_STRING)
         {
             char *s = va_arg(ap, char *);
-            
+
             if (check_params_len(s, maxlen, &n) != 0)
                 return TE_RC(TE_RCF_API, TE_EINVAL);
-                
+
             maxlen -= n + 1;
             len += strlen(s) + 1;
             CHECK_LENS;
-            
+
             strcpy(data, s);
             data += strlen(s) + 1;
         }
@@ -3153,7 +3153,7 @@ make_params(int argc,  int argv, char *data, size_t *data_len, va_list ap)
                     data += rcf_type_len[type];
                     break;
                 }
-                
+
                 case RCF_INT64:
                 case RCF_UINT64:
                 {
@@ -3169,7 +3169,7 @@ make_params(int argc,  int argv, char *data, size_t *data_len, va_list ap)
             }
         }
     }
-    
+
     *data_len = len;
     return 0;
 }
@@ -3178,8 +3178,8 @@ make_params(int argc,  int argv, char *data, size_t *data_len, va_list ap)
  * Implementation of rcf_ta_call and rcf_ta_start_task functionality -
  * see description of these functions for details.
  *
- * @param ta_name       Test Agent name                 
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param priority      process priority
  * @param rtn           routine name
  * @param opcode        RCFOP_START or RCFOP_EXECUTE
@@ -3194,19 +3194,19 @@ make_params(int argc,  int argv, char *data, size_t *data_len, va_list ap)
  * @return error code
  */
 static te_errno
-call_start(const char *ta_name, int session, int priority, const char *rtn, 
-           int *res, int argc, int argv, va_list ap, 
+call_start(const char *ta_name, int session, int priority, const char *rtn,
+           int *res, int argc, int argv, va_list ap,
            rcf_execute_mode mode)
 {
     rcf_msg    *msg;
     size_t      anslen = sizeof(*msg);
     te_errno    rc;
-    
+
     RCF_API_INIT;
-    
+
     if (rtn == NULL || strlen(rtn) >= RCF_MAX_NAME || BAD_TA || res == NULL)
         return TE_RC(TE_RCF_API, TE_EINVAL);
-    
+
     if ((msg = (rcf_msg *)calloc(RCF_MAX_LEN, 1)) == NULL)
         return TE_RC(TE_RCF_API, TE_ENOMEM);
 
@@ -3214,16 +3214,16 @@ call_start(const char *ta_name, int session, int priority, const char *rtn,
     msg->sid = session;
     strcpy(msg->ta, ta_name);
     strcpy(msg->id, rtn);
-    
+
     msg->intparm = mode;
     msg->num = priority;
-        
+
     if (argc != 0)
     {
         if (argv)
             msg->flags |= PARAMETERS_ARGV;
         msg->num = argc;
-        if ((rc = make_params(argc, argv, msg->data, 
+        if ((rc = make_params(argc, argv, msg->data,
                               &(msg->data_len), ap)) != 0)
         {
             ERROR("Possibly too many or too long routine "
@@ -3233,9 +3233,9 @@ call_start(const char *ta_name, int session, int priority, const char *rtn,
             return TE_RC(TE_RCF_API, rc);
         }
     }
-        
+
     rc = send_recv_rcf_ipc_message(ctx_handle,
-                                   msg, sizeof(rcf_msg) + msg->data_len, 
+                                   msg, sizeof(rcf_msg) + msg->data_len,
                                    msg, &anslen, NULL);
 
     if (rc == 0 && (rc = msg->error) == 0)
@@ -3243,9 +3243,9 @@ call_start(const char *ta_name, int session, int priority, const char *rtn,
         *res = (mode == RCF_FUNC ? msg->intparm : msg->handle);
         VERB("Call/start %s on the TA %s", rtn, ta_name);
     }
-        
+
     free(msg);
-    
+
     return rc;
 }
 
@@ -3257,17 +3257,17 @@ rcf_ta_call(const char *ta_name, int session, const char *rtn,
 {
     te_errno    rc;
     va_list     ap;
-    
+
     va_start(ap, argv);
-    
-    rc = call_start(ta_name, session, 0, rtn, error, argc, argv, ap, 
+
+    rc = call_start(ta_name, session, 0, rtn, error, argc, argv, ap,
                     RCF_FUNC);
-    
+
     va_end(ap);
-    
+
     return rc;
 }
-                       
+
 
 /* See description in rcf_api.h */
 te_errno
@@ -3276,14 +3276,14 @@ rcf_ta_start_task(const char *ta_name, int session, int priority,
 {
     te_errno    rc;
     va_list     ap;
-    
+
     va_start(ap, argv);
-    
+
     rc = call_start(ta_name, session, priority, rtn, pid, argc, argv, ap,
                     RCF_PROCESS);
-    
+
     va_end(ap);
-    
+
     return rc;
 }
 
@@ -3294,24 +3294,24 @@ rcf_ta_start_thread(const char *ta_name, int session, int priority,
 {
     te_errno    rc;
     va_list     ap;
-    
+
     va_start(ap, argv);
-    
+
     rc = call_start(ta_name, session, priority, rtn, tid, argc, argv, ap,
                     RCF_THREAD);
-    
+
     va_end(ap);
-    
+
     return rc;
 }
 
-                                
+
 /**
- * This function is used to kill a process on the Test Agent or 
+ * This function is used to kill a process on the Test Agent or
  * NUT served by it.
  *
- * @param ta_name       Test Agent name                 
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param pid           identifier of the process to be killed
  *
  * @return Status code
@@ -3322,31 +3322,31 @@ rcf_ta_kill_task(const char *ta_name, int session, pid_t pid)
     rcf_msg     msg;
     size_t      anslen = sizeof(msg);
     te_errno    rc;
-    
+
     RCF_API_INIT;
-    
+
     if (BAD_TA)
         return TE_RC(TE_RCF_API, TE_EINVAL);
-    
+
     memset((char *)&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_KILL;
     strcpy(msg.ta, ta_name);
     msg.handle = pid;
     msg.intparm = RCF_PROCESS;
     msg.sid = session;
-        
+
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
-    
+
     return rc == 0 ? msg.error : rc;
 }
 
 /**
- * This function is used to kill a thread on the Test Agent or 
+ * This function is used to kill a thread on the Test Agent or
  * NUT served by it.
  *
- * @param ta_name       Test Agent name                 
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param tid           identifier of the thread to be killed
  *
  * @return Status code
@@ -3357,22 +3357,22 @@ rcf_ta_kill_thread(const char *ta_name, int session, int tid)
     rcf_msg     msg;
     size_t      anslen = sizeof(msg);
     te_errno    rc;
-    
+
     RCF_API_INIT;
-    
+
     if (BAD_TA)
         return TE_RC(TE_RCF_API, TE_EINVAL);
-    
+
     memset((char *)&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_KILL;
     strcpy(msg.ta, ta_name);
     msg.handle = tid;
     msg.intparm = RCF_PROCESS;
     msg.sid = session;
-        
+
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
-    
+
     return rc == 0 ? msg.error : rc;
 }
 
@@ -3386,21 +3386,21 @@ rcf_ta_kill_thread(const char *ta_name, int session, int tid)
  * @retval TE_ETAREBOOTED  if at least one test agent has been normally
  *                      rebooted
  * @retval TE_ETADEAD   if at least one agent was dead
- * @retval TE_EIPC      cannot interact with RCF 
- * 
+ * @retval TE_EIPC      cannot interact with RCF
+ *
  */
 te_errno
 rcf_check_agents(void)
-{ 
+{
     rcf_msg     msg;
     size_t      anslen = sizeof(msg);
     te_errno    rc;
-    
+
     RCF_API_INIT;
-    
+
     memset((char *)&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_TACHECK;
-        
+
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
     return rc == 0 ? msg.error : rc;
@@ -3417,12 +3417,12 @@ rcf_shutdown_call(void)
     rcf_msg     msg;
     size_t      anslen = sizeof(msg);
     te_errno    rc;
-    
+
     RCF_API_INIT;
-    
+
     memset((char *)&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_SHUTDOWN;
-    
+
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
 
@@ -3441,10 +3441,10 @@ rcf_shutdown_call(void)
  *                          on exit - length of the message received
  * @param p_answer        location for address of the memory
  *                        allocated for the answer or NULL
- * 
+ *
  * @return zero on success or error code
  */
-int 
+int
 rcf_send_recv_msg(rcf_msg *send_buf, size_t send_size,
                   rcf_msg *recv_buf, size_t *recv_size, rcf_msg **p_answer)
 {

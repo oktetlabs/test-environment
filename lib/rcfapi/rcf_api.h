@@ -24,7 +24,7 @@
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
- * 
+ *
  * $Id$
  */
 
@@ -45,17 +45,17 @@ static inline const char *
 rcf_server_name()
 {
     static const char *rcf_name = NULL;
-    
+
     if ((rcf_name == NULL) && (rcf_name = getenv("TE_RCF")) == NULL)
         rcf_name = "TE_RCF";
-        
+
     return rcf_name;
 }
 
 /** IPC RCF Server name */
 #define RCF_SERVER      rcf_server_name()
 
-/** 
+/**
  * List of modes that can be used while calling RCF functions especially
  * for those that deal with traffic application domain
  */
@@ -64,7 +64,7 @@ typedef enum rcf_call_mode {
     RCF_MODE_BLOCKING, /**< Used for blocking call */
 } rcf_call_mode_t;
 
-/** 
+/**
  * List of modes that can be used while calling RCF traffic receive
  * operation.
  */
@@ -170,22 +170,22 @@ extern te_errno rcf_del_ta(const char *name);
 /**
  * This function returns list of Test Agents (names) running.
  *
- * @param buf           location for the name list; 
+ * @param buf           location for the name list;
  *                      names are put to the buffer one-by-one and are
- *                      separated by "'\0'"; the list is finished by 
+ *                      separated by "'\0'"; the list is finished by
  *                      "'\0'" as well
  *
  * @param len           pointer to length variable (should be set
  *                      to the length the buffer by caller;
  *                      is filled to amount of space used for the name list
  *                      by the routine)
- *          
+ *
  *
  * @return error code
  *
  * @retval 0                success
  * @retval TE_ESMALLBUF     the buffer is too small
- * @retval TE_EIPC          cannot interact with RCF 
+ * @retval TE_EIPC          cannot interact with RCF
  * @retval TE_ENOMEM        out of memory
  */
 extern te_errno rcf_get_ta_list(char *buf, size_t *len);
@@ -193,7 +193,7 @@ extern te_errno rcf_get_ta_list(char *buf, size_t *len);
 /**
  * This function maps name of the Test Agent to its type.
  *
- * @param ta_name       Test Agent name                 
+ * @param ta_name       Test Agent name
  * @param ta_type       Test Agent type location (should point to
  *                      the buffer at least of RCF_MAX_NAME length)
  *
@@ -201,7 +201,7 @@ extern te_errno rcf_get_ta_list(char *buf, size_t *len);
  *
  * @retval 0                success
  * @retval TE_EINVAL        name of non-running Test Agent is provided
- * @retval TE_EIPC          cannot interact with RCF 
+ * @retval TE_EIPC          cannot interact with RCF
  * @retval TE_ENOMEM        out of memory
  */
 extern te_errno rcf_ta_name2type(const char *ta_name, char *ta_type);
@@ -209,38 +209,38 @@ extern te_errno rcf_ta_name2type(const char *ta_name, char *ta_type);
 /**
  * This function returns unique session identifier for the Test Agent.
  * This session identifier may be passed to all other TA-related routines.
- * Command with session identifier X will be passed to the Test Agent 
+ * Command with session identifier X will be passed to the Test Agent
  * before obtaining of answer on the command with session identifier Y
- * (X != Y). However if the Test Agent does not support simultaneous 
+ * (X != Y). However if the Test Agent does not support simultaneous
  * processing of several commands, this mechanism does not give any
  * advantage.
  *
- * @param ta_name       Test Agent name                 
+ * @param ta_name       Test Agent name
  * @param session       location for the session identifier
  *
  * @return error code
  *
  * @retval 0                success
  * @retval TE_EINVAL        name of non-running Test Agent is provided
- * @retval TE_EIPC          cannot interact with RCF 
+ * @retval TE_EIPC          cannot interact with RCF
  * @retval TE_ENOMEM        out of memory
  */
 extern te_errno rcf_ta_create_session(const char *ta_name, int *session);
 
 /**
- * This function reboots the Test Agent or NUT served by it. It sends 
- * "reboot" command to the Test Agent, calls reboot function provided by 
+ * This function reboots the Test Agent or NUT served by it. It sends
+ * "reboot" command to the Test Agent, calls reboot function provided by
  * RCF TA-specific library, restarts the TA and re-connects to it.
- * The function may be called by Configurator only. 
+ * The function may be called by Configurator only.
  * It is prohibited to call the function for the TA running on the Testing
  * Node.
  *
- * @param ta_name       Test Agent name              
+ * @param ta_name       Test Agent name
  * @param boot_params   complete parameter string to be passed to the TA
  *                      in the "reboot" command and to the reboot function
  *                      of RCF TA-specific library (without quotes) or NULL
  *
- * @param image         name of the bootable image (without path) to be 
+ * @param image         name of the bootable image (without path) to be
  *                      passed to the Test Agent as binary attachment or
  *                      NULL (it is assumed that NUT images are located in
  *                      ${TE_INSTALL_NUT}/bin or ${TE_INSTALL}/nuts/bin)
@@ -248,9 +248,9 @@ extern te_errno rcf_ta_create_session(const char *ta_name, int *session);
  * @return error code
  *
  * @retval 0               success
- * @retval TE_EINVAL       name of non-running or located on TN Test Agent 
+ * @retval TE_EINVAL       name of non-running or located on TN Test Agent
  *                         is provided or parameter string is too long
- * @retval TE_EIPC         cannot interact with RCF 
+ * @retval TE_EIPC         cannot interact with RCF
  * @retval TE_EINPROGRESS  operation is in progress
  * @retval TE_ENOENT       cannot open NUT image file
  * @retval TE_ENOMEM       out of memory
@@ -268,12 +268,12 @@ extern void rcf_log_cfg_changes(te_bool enable);
 
 /**
  * This function is used to obtain value of object instance by its
- * identifier.  The function may be called by Configurator only. 
+ * identifier.  The function may be called by Configurator only.
  *
- * @param ta_name       Test Agent name              
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param oid           object instance identifier
- * @param val_buf       location for the object instance value 
+ * @param val_buf       location for the object instance value
  * @param len           location length
  *
  * @return error code
@@ -282,22 +282,22 @@ extern void rcf_log_cfg_changes(te_bool enable);
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided or OID string is
  *                      too long
- * @retval TE_EIPC      cannot interact with RCF 
+ * @retval TE_EIPC      cannot interact with RCF
  * @retval TE_ESMALLBUF the buffer is too small
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
 extern te_errno rcf_ta_cfg_get(const char *ta_name, int session,
-                               const char *oid, 
+                               const char *oid,
                                char *val_buf, size_t len);
 
 /**
  * This function is used to change value of object instance.
- * The function may be called by Configurator only. 
+ * The function may be called by Configurator only.
  *
- * @param ta_name       Test Agent name              
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param oid           object instance identifier
  * @param val           object instance value
  *
@@ -307,7 +307,7 @@ extern te_errno rcf_ta_cfg_get(const char *ta_name, int session,
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided or too OID or value
  *                      strings are too long
- * @retval TE_EIPC      cannot interact with RCF 
+ * @retval TE_EIPC      cannot interact with RCF
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
@@ -316,12 +316,12 @@ extern te_errno rcf_ta_cfg_set(const char *ta_name, int session,
                                const char *oid, const char *val);
 
 /**
- * This function is used to create new object instance and assign the 
+ * This function is used to create new object instance and assign the
  * value to it.
- * The function may be called by Configurator only. 
+ * The function may be called by Configurator only.
  *
- * @param ta_name       Test Agent name              
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param oid           object instance identifier
  * @param val           object instance value
  *
@@ -331,7 +331,7 @@ extern te_errno rcf_ta_cfg_set(const char *ta_name, int session,
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided or too OID or value
  *                      strings are too long
- * @retval TE_EIPC      cannot interact with RCF 
+ * @retval TE_EIPC      cannot interact with RCF
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
@@ -341,10 +341,10 @@ extern te_errno rcf_ta_cfg_add(const char *ta_name, int session,
 
 /**
  * This function is used to remove the object instance.
- * The function may be called by Configurator only. 
+ * The function may be called by Configurator only.
  *
- * @param ta_name       Test Agent name              
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param oid           object instance identifier
  *
  * @return error code
@@ -353,7 +353,7 @@ extern te_errno rcf_ta_cfg_add(const char *ta_name, int session,
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided or OID string is
  *                      too long
- * @retval TE_EIPC      cannot interact with RCF 
+ * @retval TE_EIPC      cannot interact with RCF
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
@@ -372,7 +372,7 @@ extern te_errno rcf_ta_cfg_del(const char *ta_name, int session,
  * @return error code
  *
  * @retval 0            success
- * @retval TE_EIPC      cannot interact with RCF 
+ * @retval TE_EIPC      cannot interact with RCF
  * @retval other        error returned by command handler on the TA
  */
 extern te_errno rcf_ta_cfg_group(const char *ta_name, int session,
@@ -380,9 +380,9 @@ extern te_errno rcf_ta_cfg_group(const char *ta_name, int session,
 
 /**
  * This function is used to get bulk of log from the Test Agent.
- * The function may be called by Logger only. 
+ * The function may be called by Logger only.
  *
- * @param ta_name       Test Agent name              
+ * @param ta_name       Test Agent name
  * @param log_file      name of the local file where log should be put
  *                      (the file is truncated to zero length before
  *                      updating)
@@ -391,8 +391,8 @@ extern te_errno rcf_ta_cfg_group(const char *ta_name, int session,
  *
  * @retval 0                success
  * @retval TE_EINVAL        name of non-running TN Test Agent or bad file
- *                          name are provided 
- * @retval TE_EIPC          cannot interact with RCF 
+ *                          name are provided
+ * @retval TE_EIPC          cannot interact with RCF
  * @retval TE_ETAREBOOTED   Test Agent is rebooted
  * @retval TE_ENOMEM        out of memory
  * @retval other            error returned by command handler on the TA
@@ -403,12 +403,12 @@ extern te_errno rcf_ta_get_log(const char *ta_name, char *log_file);
  * This function is used to obtain value of the variable from the Test Agent
  * or NUT served by it.
  *
- * @param ta_name       Test Agent name              
- * @param session       TA session or 0   
- * @param var_name      name of the variable to be read 
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
+ * @param var_name      name of the variable to be read
  * @param var_type      type according to which string returned from the TA
  *                      should be converted
- * 
+ *
  * @param var_len       length of the location buffer
  * @param val           location for variable value
  *
@@ -418,7 +418,7 @@ extern te_errno rcf_ta_get_log(const char *ta_name, char *log_file);
  * @retval TE_EINVAL        one of arguments is invalid (NULL, too long or
  *                          has inappropriate value)
  * @retval TE_ENOENT        no such variable
- * @retval TE_EIPC          cannot interact with RCF 
+ * @retval TE_EIPC          cannot interact with RCF
  * @retval TE_ESMALLBUF     the buffer is too small
  * @retval TE_ETAREBOOTED   Test Agent is rebooted
  * @retval TE_ENOMEM        out of memory
@@ -433,8 +433,8 @@ extern te_errno rcf_ta_get_var(const char *ta_name, int session,
  * This function is used to change value of the variable from the Test Agent
  * or NUT served by it.
  *
- * @param ta_name       Test Agent name              
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param var_name      name of the variable to be changed
  * @param var_type      type according to which variable value should
  *                      appear in the protocol command
@@ -446,21 +446,21 @@ extern te_errno rcf_ta_get_var(const char *ta_name, int session,
  * @retval TE_EINVAL        one of arguments is invalid (NULL, too long or
  *                          has inappropriate value)
  * @retval TE_ENOENT        no such variable
- * @retval TE_EIPC          cannot interact with RCF 
+ * @retval TE_EIPC          cannot interact with RCF
  * @retval TE_ETAREBOOTED   Test Agent is rebooted
  * @retval TE_ENOMEM        out of memory
  * @retval other            error returned by command handler on the TA
  */
 extern te_errno rcf_ta_set_var(const char *ta_name, int session,
-                               const char *var_name, 
+                               const char *var_name,
                                rcf_var_type_t var_type, const char *val);
 
 /**
- * This function loads file from Test Agent or NUT served by it to the 
+ * This function loads file from Test Agent or NUT served by it to the
  * testing node.
  *
- * @param ta_name       Test Agent name              
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param rfile         full name of the file in the TA/NUT file system
  * @param lfile         full name of the file in the TN file system
  *
@@ -469,21 +469,21 @@ extern te_errno rcf_ta_set_var(const char *ta_name, int session,
  * @retval 0                success
  * @retval TE_EINVAL        name of non-running TN Test Agent, non-existent
  *                          session identifier or bad file name are provided
- * @retval TE_EIPC          cannot interact with RCF 
+ * @retval TE_EIPC          cannot interact with RCF
  * @retval TE_ENOENT        no such file
  * @retval TE_EPERM         operation not permitted
  * @retval TE_ETAREBOOTED   Test Agent is rebooted
  * @retval TE_ENOMEM        out of memory
  */
-extern te_errno rcf_ta_get_file(const char *ta_name, int session, 
+extern te_errno rcf_ta_get_file(const char *ta_name, int session,
                                 const char *rfile, const char *lfile);
 
 /**
- * This function loads file from the testing node to Test Agent or NUT 
+ * This function loads file from the testing node to Test Agent or NUT
  * served by it.
  *
- * @param ta_name       Test Agent name              
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param lfile         full name of the file in the TN file system
  * @param rfile         full name of the file in the TA/NUT file system
  *
@@ -492,20 +492,20 @@ extern te_errno rcf_ta_get_file(const char *ta_name, int session,
  * @retval 0                success
  * @retval TE_EINVAL        name of non-running TN Test Agent, non-existent
  *                          session identifier or bad file name are provided
- * @retval TE_EIPC          cannot interact with RCF 
+ * @retval TE_EIPC          cannot interact with RCF
  * @retval TE_ENOENT        no such file
  * @retval TE_EPERM         operation not permitted
  * @retval TE_ETAREBOOTED   Test Agent is rebooted
  * @retval TE_ENOMEM        out of memory
  */
-extern te_errno rcf_ta_put_file(const char *ta_name, int session, 
+extern te_errno rcf_ta_put_file(const char *ta_name, int session,
                                 const char *lfile, const char *rfile);
 
 /**
  * This function deletes file from the Test Agent or NUT served by it.
  *
- * @param ta_name       Test Agent name              
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param rfile         full name of the file in the TA/NUT file system
  *
  * @return error code
@@ -513,7 +513,7 @@ extern te_errno rcf_ta_put_file(const char *ta_name, int session,
  * @retval 0                success
  * @retval TE_EINVAL        name of non-running TN Test Agent, non-existent
  *                          session identifier or bad file name are provided
- * @retval TE_EIPC          cannot interact with RCF 
+ * @retval TE_EIPC          cannot interact with RCF
  * @retval TE_ENOENT        no such file
  * @retval TE_EPERM         operation not permitted
  * @retval TE_ETAREBOOTED   Test Agent is rebooted
@@ -534,11 +534,11 @@ extern te_errno rcf_ta_del_file(const char *ta_name, int session,
 extern te_errno rcf_tr_op_log(te_bool ring);
 
 /**
- * This function creates CSAP (communication service access point) on the 
- * Test Agent. 
+ * This function creates CSAP (communication service access point) on the
+ * Test Agent.
  *
- * @param ta_name       Test Agent name                 
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param stack_id      protocol stack identifier
  * @param params        parameters necessary for CSAP creation (string
  *                      or file name); if file with *params name exists,
@@ -553,7 +553,7 @@ extern te_errno rcf_tr_op_log(te_bool ring);
  * @retval 0                success
  * @retval TE_EINVAL        name of non-running TN Test Agent or
  *                          non-existent session identifier is provided
- * @retval TE_EIPC          cannot interact with RCF 
+ * @retval TE_EIPC          cannot interact with RCF
  * @retval TE_ETAREBOOTED   Test Agent is rebooted
  * @retval TE_ENOMEM        out of memory
  * @retval other            error returned by command handler on the TA
@@ -568,8 +568,8 @@ extern te_errno rcf_ta_csap_create(const char *ta_name, int session,
 /**
  * This function destroys CSAP.
  *
- * @param ta_name       Test Agent name                 
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param csap_id       CSAP handle
  *
  * @return error code
@@ -577,7 +577,7 @@ extern te_errno rcf_ta_csap_create(const char *ta_name, int session,
  * @retval 0               success
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                         session identifier is provided
- * @retval TE_EIPC         cannot interact with RCF 
+ * @retval TE_EIPC         cannot interact with RCF
  * @retval TE_EBADF        no such CSAP
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       out of memory
@@ -590,8 +590,8 @@ extern te_errno rcf_ta_csap_destroy(const char *ta_name, int session,
 /**
  * This function is used to obtain CSAP parameter value.
  *
- * @param ta_name       Test Agent name                 
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param csap_id       CSAP handle
  * @param var           parameter name
  * @param var_len       length of the location buffer
@@ -602,7 +602,7 @@ extern te_errno rcf_ta_csap_destroy(const char *ta_name, int session,
  * @retval 0               success
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                         session identifier is provided
- * @retval TE_EIPC         cannot interact with RCF 
+ * @retval TE_EIPC         cannot interact with RCF
  * @retval TE_EBADF        no such CSAP
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ESMALLBUF    the buffer is too small
@@ -616,8 +616,8 @@ extern te_errno rcf_ta_csap_param(const char *ta_name, int session,
  * This function is used to force sending of traffic via already created
  * CSAP.
  *
- * @param ta_name       Test Agent name                 
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param csap_id       CSAP handle
  * @param templ         full name of the file with traffic template
  * @param blk_mode      mode of the operation:
@@ -629,7 +629,7 @@ extern te_errno rcf_ta_csap_param(const char *ta_name, int session,
  * @retval 0               success
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                         session identifier is provided
- * @retval TE_EIPC         cannot interact with RCF 
+ * @retval TE_EIPC         cannot interact with RCF
  * @retval TE_EBADF        no such CSAP
  * @retval TE_EINPROGRESS  operation is already in progress
  * @retval TE_EBUSY        CSAP is used for receiving now
@@ -641,7 +641,7 @@ extern te_errno rcf_ta_csap_param(const char *ta_name, int session,
  *
  * @sa rcf_ta_trsend_stop
  */
-extern te_errno rcf_ta_trsend_start(const char *ta_name, int session, 
+extern te_errno rcf_ta_trsend_start(const char *ta_name, int session,
                                     csap_handle_t csap_id,
                                     const char *templ,
                                     rcf_call_mode_t blk_mode);
@@ -650,7 +650,7 @@ extern te_errno rcf_ta_trsend_start(const char *ta_name, int session,
  * This function is used to stop sending of traffic started by
  * rcf_ta_trsend_start called in non-blocking mode.
  *
- * @param ta_name       Test Agent name                 
+ * @param ta_name       Test Agent name
  * @param session       session identifier
  * @param csap_id       CSAP handle
  * @param num           location where number of sent packets should be
@@ -661,7 +661,7 @@ extern te_errno rcf_ta_trsend_start(const char *ta_name, int session,
  * @retval 0               success
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                         session identifier is provided
- * @retval TE_EIPC         cannot interact with RCF 
+ * @retval TE_EIPC         cannot interact with RCF
  * @retval TE_EBADF        no such CSAP
  * @retval TE_EALREADY     traffic sending is not in progress now
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
@@ -676,13 +676,13 @@ extern te_errno rcf_ta_trsend_stop(const char *ta_name, int session,
 typedef void (*rcf_pkt_handler)(
     const char *pkt,        /**< File name where received packet
                                  was saved */
-    void       *user_param  /**< Parameter provided by caller of 
+    void       *user_param  /**< Parameter provided by caller of
                                  rcf_ta_trrecv_start */
 );
 
 /**
  * This function is used to force receiving of traffic via already created
- * CSAP. 
+ * CSAP.
  *
  * @param ta_name       Test Agent name
  * @param session       TA session or 0
@@ -724,7 +724,7 @@ extern te_errno rcf_ta_trrecv_start(const char      *ta_name,
 
 /**
  * Blocks the caller until all the traffic, which is being captured,
- * is received by the CSAP or timeout occurres (timeout specified 
+ * is received by the CSAP or timeout occurres (timeout specified
  * with rcf_ta_trrecv_start()).
  * If @a handler is specified, it is called for all received packets.
  * This function can only be called after rcf_ta_trrecv_start().
@@ -744,7 +744,7 @@ extern te_errno rcf_ta_trrecv_start(const char      *ta_name,
  *                      received - this means that TAD has captured less
  *                      than the number of packets specified with
  *                      rcf_ta_trrecv_start.
- *                      Nevertheless, number of captured packets is set to 
+ *                      Nevertheless, number of captured packets is set to
  *                      "num" parameter.
  *
  * @sa rcf_ta_trrecv_start
@@ -753,7 +753,7 @@ extern te_errno rcf_ta_trrecv_wait(const char      *ta_name,
                                    int              session,
                                    csap_handle_t    csap_id,
                                    rcf_pkt_handler  handler,
-                                   void            *user_param, 
+                                   void            *user_param,
                                    unsigned int    *num);
 
 /**
@@ -761,13 +761,13 @@ extern te_errno rcf_ta_trrecv_wait(const char      *ta_name,
  * rcf_ta_trrecv_start.
  * If @a handler is specified, it is called for all received packets.
  *
- * @param ta_name       Test Agent name                 
+ * @param ta_name       Test Agent name
  * @param session       Session identifier
  * @param csap_id       CSAP handle
  * @param handler       Address of function to be used to process
  *                      received packets or NULL
  * @param user_param    User parameter to be passed to the @a handler
- * @param num           Location where number of received packets 
+ * @param num           Location where number of received packets
  *                      should be placed (OUT)
  *
  * @return error code
@@ -775,7 +775,7 @@ extern te_errno rcf_ta_trrecv_wait(const char      *ta_name,
  * @retval 0               success
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                         session identifier is provided
- * @retval TE_EIPC         cannot interact with RCF 
+ * @retval TE_EIPC         cannot interact with RCF
  * @retval TE_EBADF        no such CSAP
  * @retval TE_EALREADY     traffic receiving is not in progress now
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
@@ -787,21 +787,21 @@ extern te_errno rcf_ta_trrecv_stop(const char      *ta_name,
                                    int              session,
                                    csap_handle_t    csap_id,
                                    rcf_pkt_handler  handler,
-                                   void            *user_param, 
+                                   void            *user_param,
                                    unsigned int    *num);
 
 /**
- * This function is used to force processing of received packets 
+ * This function is used to force processing of received packets
  * without stopping of traffic receiving.
  * If @a handler is specified, it is called for all received packets.
  *
- * @param ta_name       Test Agent name                 
+ * @param ta_name       Test Agent name
  * @param session       Session identifier
  * @param csap_id       CSAP handle
  * @param handler       Address of function to be used to process
  *                      received packets or NULL
  * @param user_param    User parameter to be passed to the @a handler
- * @param num           Location where number of processed packets 
+ * @param num           Location where number of processed packets
  *                      should be placed
  *
  * @return error code
@@ -809,7 +809,7 @@ extern te_errno rcf_ta_trrecv_stop(const char      *ta_name,
  * @retval 0               success
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                         session identifier is provided
- * @retval TE_EIPC         cannot interact with RCF 
+ * @retval TE_EIPC         cannot interact with RCF
  * @retval TE_EBADF        no such CSAP
  * @retval TE_EALREADY     traffic receiving is not in progress now
  * @retval TE_ENODATA      no data available on TA, because handler was not
@@ -823,13 +823,13 @@ extern te_errno rcf_ta_trrecv_get(const char      *ta_name,
                                   int              session,
                                   csap_handle_t    csap_id,
                                   rcf_pkt_handler  handler,
-                                  void            *user_param, 
+                                  void            *user_param,
                                   unsigned int    *num);
 
 /**
  * This function is used to send exactly one packet via CSAP and receive
  * an answer (it may be used for CLI, SNMP, ARP, ICMP, DNS, etc.)
- * This function blocks the caller until the packet is received by 
+ * This function blocks the caller until the packet is received by
  * traffic application domain or timeout occures.
  *
  * @param ta_name       Test Agent name
@@ -853,7 +853,7 @@ extern te_errno rcf_ta_trrecv_get(const char      *ta_name,
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                         session identifier is provided or flag blocking
  *                         is used together with num 0
- * @retval TE_EIPC         cannot interact with RCF 
+ * @retval TE_EIPC         cannot interact with RCF
  * @retval TE_EBADF        no such CSAP
  * @retval TE_EBUSY        CSAP is busy
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
@@ -862,9 +862,9 @@ extern te_errno rcf_ta_trrecv_get(const char      *ta_name,
  */
 extern te_errno rcf_ta_trsend_recv(const char      *ta_name,
                                    int              session,
-                                   csap_handle_t    csap_id, 
+                                   csap_handle_t    csap_id,
                                    const char      *templ,
-                                   rcf_pkt_handler  handler, 
+                                   rcf_pkt_handler  handler,
                                    void            *user_param,
                                    unsigned int     timeout,
                                    int             *error);
@@ -911,8 +911,8 @@ extern te_errno rcf_trpoll(rcf_trpoll_csap *csaps, unsigned int n_csaps,
  * This function is used to call remotely a routine on the Test Agent or
  * NUT served by it.
  *
- * @param ta_name       Test Agent name                 
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param rtn           routine name
  * @param error         location for the code returned by the routine
  * @param argc          number of parameters
@@ -920,9 +920,9 @@ extern te_errno rcf_trpoll(rcf_trpoll_csap *csaps, unsigned int n_csaps,
  *                      otherwise pairs: type, value.
  *
  * Usage example:
- * rcf_ta_call("loki.oktetlabs.ru", 25, "foo_rtn", &rc, 3, TRUE, 
+ * rcf_ta_call("loki.oktetlabs.ru", 25, "foo_rtn", &rc, 3, TRUE,
  *             str, "foo", "bar");
- * rcf_ta_call("thor", 13, "bar_rtn", &rc, 3, FALSE, 
+ * rcf_ta_call("thor", 13, "bar_rtn", &rc, 3, FALSE,
  *             RCF_INT8, 7, RCF_STRING, "foo", RCF_STRING, arg)
  *
  * @return error code
@@ -931,20 +931,20 @@ extern te_errno rcf_trpoll(rcf_trpoll_csap *csaps, unsigned int n_csaps,
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                         session identifier is provided
  * @retval TE_ENOENT       no such routine
- * @retval TE_EIPC         cannot interact with RCF 
+ * @retval TE_EIPC         cannot interact with RCF
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       out of memory
  */
 extern te_errno rcf_ta_call(const char *ta_name, int session,
                             const char *rtn, int *error,
                             int argc, te_bool argv, ...);
-                       
+
 /**
- * This function is used to start a process on the Test Agent or 
+ * This function is used to start a process on the Test Agent or
  * NUT served by it.
  *
- * @param ta_name       Test Agent name                 
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param priority      priority of the new process
  * @param rtn           routine name (task entry point)
  * @param pid           location for process identifier
@@ -966,7 +966,7 @@ extern te_errno rcf_ta_call(const char *ta_name, int session,
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                         session identifier is provided
  * @retval TE_ENOENT       no such routine
- * @retval TE_EIPC         cannot interact with RCF 
+ * @retval TE_EIPC         cannot interact with RCF
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       out of memory
  *
@@ -985,13 +985,13 @@ extern te_errno rcf_ta_start_task(const char *ta_name, int session,
 extern te_errno rcf_ta_start_thread(const char *ta_name, int session,
                                     int priority,  const char *rtn,
                                     int *tid, int argc, te_bool argv, ...);
-                                
+
 /**
- * This function is used to kill a process on the Test Agent or 
+ * This function is used to kill a process on the Test Agent or
  * NUT served by it.
  *
- * @param ta_name       Test Agent name                 
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param pid           identifier of the process to be killed
  *
  * @return Status code
@@ -1000,11 +1000,11 @@ extern te_errno rcf_ta_kill_task(const char *ta_name, int session,
                                  pid_t pid);
 
 /**
- * This function is used to kill a thread on the Test Agent or 
+ * This function is used to kill a thread on the Test Agent or
  * NUT served by it.
  *
- * @param ta_name       Test Agent name                 
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param tid           identifier of the thread to be killed
  *
  * @return Status code
@@ -1015,7 +1015,7 @@ extern te_errno rcf_ta_kill_thread(const char *ta_name, int session,
 /**
  * Call SUN RPC on the TA.
  *
- * @param ta_name       Test Agent name                 
+ * @param ta_name       Test Agent name
  * @param session       TA session or 0
  * @param rpcserver     Name of the RPC server
  * @param timeout       RPC timeout in milliseconds or 0 (unlimited)
@@ -1025,7 +1025,7 @@ extern te_errno rcf_ta_kill_thread(const char *ta_name, int session,
  *
  * @return Status code
  */
-extern te_errno rcf_ta_call_rpc(const char *ta_name, int session, 
+extern te_errno rcf_ta_call_rpc(const char *ta_name, int session,
                                 const char *rpcserver, int timeout,
                                 const char *rpc_name, void *in, void *out);
 
@@ -1039,8 +1039,8 @@ extern te_errno rcf_ta_call_rpc(const char *ta_name, int session,
  * @retval TE_ETAREBOOTED  if at least one test agent has been normally
  *                         rebooted
  * @retval TE_ETADEAD      if at least one agent was dead
- * @retval TE_EIPC         cannot interact with RCF 
- * 
+ * @retval TE_EIPC         cannot interact with RCF
+ *
  */
 extern te_errno rcf_check_agents(void);
 
