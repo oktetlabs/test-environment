@@ -58,6 +58,7 @@
 #include "conf_api.h"
 
 #include "tapi_sockaddr.h"
+#include "tapi_rpc_socket.h"
 
 
 /* See description in tapi_sockaddr.h */
@@ -69,8 +70,8 @@ tapi_allocate_port(struct rcf_rpc_server *pco, uint16_t *p_port)
     int             rc;
     cfg_val_type    val_type;
     int             port;
-    
-    /* NOTE: if scheme of port allocation will be changed, 
+
+    /* NOTE: if scheme of port allocation will be changed,
        implementation of tapi_allocate_port_range() also should be fixed! */
     pthread_mutex_lock(&mutex);
 
@@ -133,21 +134,22 @@ te_errno
 tapi_allocate_port_range(struct rcf_rpc_server *pco,
                          uint16_t *p_port, int num)
 {
-    te_errno rc;
-    int i;
+    te_errno    rc;
+    int         i;
     /* TODO design more robust way, and implement tapi_allocate_port()
        through this method */
     for (i = 0; i < num; i++)
     {
         if ((rc = tapi_allocate_port(pco, &(p_port[i]))) != 0)
             return rc;
+
         /* check that new port is subsequent for previous */
-        if (i > 0 && (p_port[i] - p_port[i-1] != 1))
+        if (i > 0 && (p_port[i] - p_port[i - 1] != 1))
         {
             /* It seems that deallocate port is not designed - konst */
-            WARN("%s() failed, allocated ports with num [%d - %d] "
-                 "are not subsequent: %d, %d",
-                 i-1, i, p_port[i-1], p_port[i]);
+            ERROR("%s: allocated ports are not subsequent: "
+                  "p[%d]: %u, p[%d]: %u", __FUNCTION__,
+                  i - 1, p_port[i - 1], i, p_port[i]);
             return TE_EFAIL;
         }
     }
@@ -161,11 +163,11 @@ tapi_allocate_port_htons(rcf_rpc_server *pco, uint16_t *p_port)
 {
     uint16_t port;
     int      rc;
-    
+
     if ((rc = tapi_allocate_port(pco, &port)) != 0)
         return rc;
-        
+
     *p_port = htons(port);
-    
+
     return 0;
 }
