@@ -136,24 +136,41 @@ tapi_allocate_port_range(struct rcf_rpc_server *pco,
 {
     te_errno    rc;
     int         i;
-    /* TODO design more robust way, and implement tapi_allocate_port()
-       through this method */
-    for (i = 0; i < num; i++)
-    {
-        if ((rc = tapi_allocate_port(pco, &(p_port[i]))) != 0)
-            return rc;
+    int         j;
 
-        /* check that new port is subsequent for previous */
-        if (i > 0 && (p_port[i] - p_port[i - 1] != 1))
+    /** Try 3 times */
+    for (i = 0; i < 3; i++)
+    {
+        uint16_t   *tmp = calloc(num, sizeof(*tmp));
+        te_bool     ok = TRUE;
+
+        for (j = 0; j < num; j++)
         {
-            /* It seems that deallocate port is not designed - konst */
-            ERROR("%s: allocated ports are not subsequent: "
-                  "p[%d]: %u, p[%d]: %u", __FUNCTION__,
-                  i - 1, p_port[i - 1], i, p_port[i]);
-            return TE_EFAIL;
+            if ((rc = tapi_allocate_port(pco, &tmp[j])) != 0)
+                return rc;
+
+            /* check that new port is subsequent for previous */
+            if (j > 0 && (tmp[j] - tmp[j - 1] != 1))
+            {
+                WARN("%s: Attempt: %d - allocated ports are "
+                     "not subsequent: p[%d]: %u, p[%d]: %u",
+                     __FUNCTION__, i + 1, j - 1, tmp[j - 1], j, tmp[j]);
+
+                free(tmp);
+                ok = FALSE;
+                break;
+            }
+        }
+
+        if (ok)
+        {
+            memcpy(p_port, tmp, num * sizeof(*tmp));
+            free(tmp);
+            return 0;
         }
     }
-    return 0;
+
+    return TE_EFAIL;
 }
 
 
