@@ -62,7 +62,7 @@ definition in the *Terminology* section.
 Test Environment is a distributed system which has test agents running on
 different hosts each managing several network interfaces. During the tests
 execution various network packets are transmitted via the interfaces. The
-main purpuse of the developed framework is to provide infrastructure for
+main purpose of the developed framework is to provide infrastructure for
 sniffing on the network interfaces and storing information about the packets
 sent/received there.
 
@@ -276,7 +276,7 @@ The framework has the following 'parts':
      different options.
   2. Part of the agent which provides interface to the sniffer for
      starting/stopping/configuration and logs retrieving.
-  3. Packet dumpts intake subsystem located on the Logger, it's also
+  3. Packet dumps intake subsystem located on the Logger, it's also
      responsible for storing the logs into specific capture (*.pcap*) files
      on the *TEN* side.
   4. RGT component which converts *pcap* files into XML format which can be
@@ -319,18 +319,25 @@ Additional command line options for dispatcher.sh should be supported.
 | --sniff <TA[/iface]>        | Run sniffer on *iface* of the *TA*. If no      |
 |                             | *iface* is specified - run the sniffer on      |
 |                             | all agent interfaces.                          |
-| --sniff-filter <filter>     | Sniffer filter string for the *last added*     |
+| --sniff-filter <filter>     | Sniffer filter string for the *last added*.    |
+| --sniff-name <name>         | A human-readable sniffer name                  |
+|                             | for the *last added* sniffer.                  |
+| --sniff-snaplen <val>       | Maximum number of bytes to capture             |
+|                             | for the *last added* sniffer.                  |
 | --sniff-ta-log-dir <path>   | Path to store capture files on the agent side. |
 |                             | Note, that agent-specific directory will       |
 |                             | still be created. By default:                  |
 |                             | *agent dir/sniffers* is used.                  |
 | --sniff-ta-log-size <val>   | Maximum overall size of the log files.         |
-|                             | Human-readable values should be accepted       |
+|                             | Human-readable values should be accepted.      |
+| --sniff-ta-log-fsize <val>  | Maximum size of the one log file.              |
 | --sniff-ta-log-rotation <x> | Rotate agent side temporary logs across        |
 |                             | *x* files.                                     |
-| --sniff-log-dir  <path>     | Path to the *TEN* side capture files           |
+| --sniff-ta-log-ofill-rot    | Overfill handle method rotation(default)       |
+| --sniff-ta-log-ofill-drop   | Overfill handle method tail drop               |
+| --sniff-log-dir  <path>     | Path to the *TEN* side capture files.          |
 |                             | By default TE_LOG_DIR/caps is used.            |
-| --sniff-log-size <val>      | Maximum *TEN* side logs cummulative size       |
+| --sniff-log-size <val>      | Maximum *TEN* side logs cummulative size.      |
 | --sniff-log-name <pattern>  | *TEN* side log file naming pattern, the        |
 |                             | following format specifies are supported:      |
 |                             | - %a : agent name                              |
@@ -338,6 +345,11 @@ Additional command line options for dispatcher.sh should be supported.
 |                             | - %s : sniffer name                            |
 |                             | - %n : sniffer session sequence number         |
 |                             | By default *full sniffer id* is used           |
+| --sniff-log-fsize <val>     | Maximum *TEN* side logs size for one sniffer.  |
+| --sniff-log-ofill-rot       | Overfill handle method rotation(default).      |
+| --sniff-log-ofill-drop      | Overfill handle method tail drop.              |
+| --sniff-log-period <val>    | Period of taken logs from agents               |
+
 
 Some notes:
 
@@ -348,7 +360,53 @@ Some notes:
 
 *** Sniffer configuration TAPI
 
-*FIXME*: tapi should be designed.
+#+BEGIN_SRC C
+    /**
+     * Create and start new sniffer on the agent.
+     * 
+     * @param ta            *agent id*
+     * @param iface         Interface name
+     * @param filter        Filter expression
+     *
+     * @return ID of the sniffer
+     */
+    sniffer_id *
+    tapi_sniffer_add(const char *ta, const char *iface, const char *filter);
+
+    /**
+     * Stop and destroy the sniffer on the agent.
+     * 
+     * @param ta            *agent id*
+     * @param id            ID of the sniffer
+     *
+     * @return Status code
+     */
+    int
+    tapi_sniffer_del(const char *ta, sniffer_id id);
+
+    /**
+     * Disable the sniffer on the agent.
+     * 
+     * @param ta            *agent id*
+     * @param id            ID of the sniffer
+     *
+     * @return Status code
+     */
+    int
+    tapi_sniffer_disable(const char *ta, sniffer_id id);
+
+    /**
+     * Enable the sniffer on the agent.
+     * 
+     * @param ta            *agent id*
+     * @param id            ID of the sniffer
+     *
+     * @return Status code
+     */
+    int
+    tapi_sniffer_enable(const char *ta, sniffer_id id);
+
+#+END_SRC
 
 *** Logger TAPI
 
@@ -361,7 +419,8 @@ Some notes:
      * @param description    Mark description in human-readable
      *                       form
      */
-    int log_sniffer_mark_insert(sniffer_id id, const char* description);
+    int 
+    log_sniffer_mark_insert(sniffer_id id, const char* description);
 #+END_SRC
 
 *FIXME*: this API should be reworked after the *Sniffer configuration TAPI*
@@ -373,7 +432,23 @@ section is filled in.
 
 **** Command line options
 
-*FIXME andrey*: sniffer binary command line options design should be added
+|--------------------------+-------------------------------------------------|
+| Option                   | Description                                     |
+|--------------------------+-------------------------------------------------|
+|   -a <name>              | Sniffer name, required argument                 |
+|   -C <file_size>         | Max dump file size, defualt 0 (unlimited)       |
+|   -c <total_size>        | Max total files size, defualt 0 (unlimited)     |
+|   -f <expression>        | Filter expression, defualt none                 |
+|   -F <file>              | Filter expression file                          |
+|   -h                     | Help                                            |
+|   -i <interface>         | Interface name, required argument               |
+|   -o                     | Change overfill type to tail drop,              |
+|                          | default type is rotation                        |
+|   -p                     | Enable promiscuous mode, default disabled       |
+|   -P <path>              | Agent folder path, required argument            |
+|   -q <seq_num>           | Sniffer session sequence number, required arg   |
+|   -s <snaplen>           | Maximum packet capture size, defulat 65535      |
+|   -w <name>              | Template for capture file name                  |
 
 **** Capture files access serialization
 
@@ -387,6 +462,11 @@ lock* to caclulate the maximum offset in the capture file.
 
 *NOTE*: *MUST* use fcntl, not *flock*!
 
+**** Agent-sniffer calls API
+*QUESTION*: According to REQ-00302 sniffer can be disabled/enabled by TAPI 
+and filter can be changed. How it will look handling Agent to the sniffer? 
+That mean required API for calls from Agent to sniffers like the Sniffer 
+configuration TAPI.
 
 *** Configurator subtrees
 
@@ -396,10 +476,29 @@ Generic configuration subtree /agent/sniffer_settings/ which represents
 agent-wide sniffer configuration (configuration paths, overfill handling
 logic etc.), see the requirements doc for the detailed list.
 
-*FIXME andrey*: detailed description should be added.
-
-|-----+-------------|
-| OID | Description |
+|-----------------------------------------------+------------------------------|
+| OID                                           | Description                  |
+|-----------------------------------------------+------------------------------|
+|/agent/sniffer_settings                        |Sniffer object.               |
+|/agent/sniffer_settings/filter_conf_str        |Filter expression string,     |
+|                                               |by default: none.             |
+|/agent/sniffer_settings/filter_conf_file       |Filter expression file.       |
+|/agent/sniffer_settings/snaplen                |Maximum packet capture size   |
+|                                               |for all sniffers.             |
+|                                               |By default: 65532 bytes.      |
+|/agent/sniffer_settings/tmp_logs               |Contains dump files settings. |
+|/agent/sniffer_settings/tmp_logs/path          |It is *<sniffers_path>*       |
+|                                               |decribed below.               |
+|/agent/sniffer_settings/tmp_logs/file_size     |Max capture file size, by     |
+|                                               |default is equal to total_size|
+|/agent/sniffer_settings/tmp_logs/total_size    |Max total capture files size  |
+|                                               |for all agent sniffers.       |
+|/agent/sniffer_settings/tmp_logs/rotation      |Rotate agent side temporary   |
+|                                               |logs across *x* files.        |
+|/agent/sniffer_settings/tmp_logs/overfill_meth |Overfill handle method:       |
+|                                               |0 - rotation(default)         |
+|                                               |1 - tail drop.                |
+|-----------------------------------------------+------------------------------|
 
 Plus a per-interface /agent/interface/sniffer/ subtree which is responsible
 for configuration of a specific sniffer instances is added. In future we may
@@ -408,26 +507,50 @@ to overwrite /agent/sniffer_settings/ part.  Each sniffer instance in the
 configurato subtree has a *sniffer name* which is by design (cause it's a
 name of the object instance) uniq across the interface.
 
-*FIXME andrey*: detailed description should be added.
-
-|-----+-------------|
-| OID | Description |
+|-----------------------------------------------+------------------------------|
+| OID                                           | Description                  |
+|-----------------------------------------------+------------------------------|
+|/agent/interface/sniffer                       | Sniffer object.              |
+|/agent/interface/sniffer/name                  | Sniffer name, by default:    |
+|                                               | none.                        |
+|/agent/interface/sniffer/filter_exp_str        | Filter expression string,    |
+|                                               | by default: none.            |
+|/agent/interface/sniffer/filter_exp_file       | Filter expression file.      |
+|/agent/interface/sniffer/snaplen               | Maximum packet capture size, |
+|                                               | by default: 65532 bytes.     |
+|/agent/interface/sniffer/tmp_logs              | Contains dump files settings.|
+|/agent/interface/sniffer/tmp_logs/file_size    | Max capture file size,       |
+|                                               | by default is equal          |
+|                                               | to sniffer_space.            |
+|/agent/interface/sniffer/tmp_logs/sniffer_space| Max total dump files size for|
+|                                               | the sniffer.                 |
+|/agent/interface/sniffer/tmp_logs/rotation     | Rotate agent side temporary  |
+|                                               | logs across *x* files.       |
+|/agent/interface/sniffer/tmp_logs/overfill_meth| Overfill handle method:      |
+|                                               | 0 - rotation(default)        |
+|                                               | 1 - tail drop.               |
+|-----------------------------------------------+------------------------------|
+*NOTE*: If the same settings declarated in both subtrees (file_size, 
+overfill_type, snaplen), use the one that declarated in interface tree.
 
 *** RCF protocol and API
 
 The RCF protocol is extended to support two new calls.
 
-1. *rcf_get_sniffers(agent)*
+1. *rcf_get_sniffers(agent, synch_sniff)*
 
+   *Note*: synch_sniff required to get offset of last capdtured packet, 
+   when you need to put a marker.
+    
    Returns list of sniffers which have non-empty captures. For each sniffer
    it returns:
-     - global offset of the first byte of the next unsent (to the
+     - *sniffer id*;
+     - absolute offset of the first byte of the next unsent (to the
        *rcf_get_sniffer_dump* caller) packet;
-     - *FIXME andrey*
    Sniffers are named with *sniffer id*. We can safely assume
    that there exists the maximum number of sniffers on the agent which is
    *32* and pass a static array.
-   
+
 2. *rcf_get_sniffer_dump(agent, sniffer_id)*
 
    Get integral number of packets catched up by the *sniffer_id* on the
@@ -438,7 +561,6 @@ The only user of this calls is *Logger*. Both calls are synchronous.
 *FIXME andrey*: test protocol.
 
 *** Logger IPC interface
-
 
 *** Sniffer backends interface
 
@@ -523,6 +645,33 @@ should be reset to zero.
 The absolute offset can be calculated as the relative offset plus the
 absolute file offset (stored in the filename).
 
+** Logger configurations
+
+*FIXME*: Logger subsystem should be configured. The minimum list of settings is
+described below. But if needed more flexible configurations, 
+the list of settings may expand.
+|-------------------------------+--------------------------------------|
+| Settings                      | Description                          |
+|-------------------------------+--------------------------------------|
+|/sniffers_logs                 |                                      |
+|/sniffers_logs/name            | Template dump file name.             |
+|/sniffers_logs/path            | Path of dump files folder.           |
+|                               | By default: caps/                    |
+|/sniffers_logs/max_file_size   | Max file size for one sniffer.       |
+|                               | By default: unlimited.               |
+|/sniffers_logs/sniffer_space   | Max total capture files size for     |
+|                               | one sniffer. By default: unlimited.  |
+|/sniffers_logs/rotation        | Rotate agent side temporary logs     |
+|                               | across *x* files.                    |
+|/sniffers_logs/overall_size    | Max total files size for all sniffers|
+|                               | By default: unlimited.               |
+|/sniffers_logs/overfill_meth   | Overfill handel method:              |
+|                               | 0 - rotation(default)                |
+|                               | 1 - tail drop.                       |
+|/sniffers_logs/period          | Period of taken logs from agents.    |
+|                               | By default:                          |
+|----------------------------------------------------------------------|
+
 * Processes
 
 Each sniffer on the agent side is running in a separate process. Reasons
@@ -596,9 +745,9 @@ files. Several things should be taken into account:
   - sniffer can delete the capture file because of the rotation procedure.
 
 So the agent should:
-  1. Check if the current file stord in the sniffer list is still present.
+  1. Check if the current file stored in the sniffer list is still present.
   2. If it's not (we've missed a rotation) - take the oldest file in the
-     directory. Update the global offset value stored for the sniffer by the
+     directory. Update the absolute offset value stored for the sniffer by the
      value from the log filename.
   3. Take the file system lock (with fcntl).
   4. Get maximum file offset (note, that at this point the offset will
@@ -606,7 +755,7 @@ So the agent should:
   5. Release the lock so the sniffer can write into the file. But don't close
      the file so there is still a reference to it and it can't be removed.
   6. Read the data (nessesary amount or up to the end of the file);
-  7. Adjust local and global *offset* values.
+  7. Adjust local and absolute *offset* values.
   8. If EOF is reached and it's not the only capture file in the sniffer
      directory (means that sniffer is not writing into it at the moment) -
      close it and remove.
