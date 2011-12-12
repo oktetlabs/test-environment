@@ -442,8 +442,8 @@ section is filled in.
 |   -F <file>              | Filter expression file                          |
 |   -h                     | Help                                            |
 |   -i <interface>         | Interface name, required argument               |
-|   -o                     | Change overfill type to tail drop,              |
-|                          | default type is rotation                        |
+|   -o                     | Change overfill handle method to tail drop,     |
+|                          | by default method is rotation                   |
 |   -p                     | Enable promiscuous mode, default disabled       |
 |   -P <path>              | Agent folder path, required argument            |
 |   -q <seq_num>           | Sniffer session sequence number, required arg   |
@@ -537,7 +537,7 @@ overfill_type, snaplen), use the one that declarated in interface tree.
 
 The RCF protocol is extended to support two new calls.
 
-1. *rcf_get_sniffers(agent, synch_sniff)*
+1. *rcf_get_sniffers(agent, bool synch_sniff)*
 
    *Note*: synch_sniff required to get offset of last capdtured packet, 
    when you need to put a marker.
@@ -685,9 +685,9 @@ In case the sniffer unexpectedly dies it *MUST* be restarted, but a clear
 
 * Events processing
 
-Sniffer process should handle interface disapearance. It should complete and
+Sniffer process should handle interface disappearance. It should complete and
 should not report an error. Such situations are pretty common. If the
-interface disapearance was unexpected - this should be detected by other
+interface disappearance was unexpected - this should be detected by other
 agent subsystems.
 
 *NOTE*: even if the interface will reappear in a second the sniffer must get
@@ -731,6 +731,39 @@ Logger if there are any more logs to download.
 Logger perform a round-robin for selection of the sniffer to call
 *rcf_get_sniffer_dump*.
 
+** Agent side rcf_get_sniffers handle implementaition
+
+*rcf_get_sniffers(agent, sniffer_synch)* is called by Logger to get sniffers 
+list from the Agent.
+
+*sniffer_synch* use to get absolute offsets of last captured packet by the
+sniffer. It's required for inser mark packet to the capture file.
+
+If sniffer_sync value is true the agent should:
+  1. Check if the current file stored in the sniffer list is still present.
+  2. If it's not - should calculate amount of lost data:
+    1. Find the oldest file in the directory.
+    2. Get the absolute offset value stored for the sniffer by the
+       value from the log filename.
+    3. Set the current capture filename to the name of the oldest file. Reset
+       the local file offset to 0.
+    4. Subtracted from the obtained value of the offset of the last sent 
+       packet to the Logger.
+    5. Increment missing data counter on the calculated value.
+  3. Find newest capture file in the directory. Update the absolute offset 
+     value stored for the sniffer by the value from the log filename.
+  4. Take the file system lock (with fcntl).
+  5. Get maximum file offset (note, that at this point the offset will
+     include only full packets).
+  6. Release the lock so the sniffer can write into the file and close the file.
+  7. Outgrowth the absolute offset value by current file offset value and 
+     subtract the value of lost data.
+
+In case than sniffer_sync value is false, absolute offset value for the 
+corresponding sniffer will be equal to offset of the last sent packets to 
+the Logger.
+In any case the agent should send list of the sniffers with certain offsets.
+
 ** Agent side rcf_get_sniffer_dump implementation
 
 *rcf_get_sniffer_dump(agent, sniffer_id)* is called by the Logger to get the
@@ -743,12 +776,13 @@ files. Several things should be taken into account:
   - it's possible that the sniffer is writing the capture file in the very
     moment of RCF call; agent must not return partial packets;
   - sniffer can delete the capture file because of the rotation procedure.
+  - sniffer should transmit to Logger all existing packets.
 
 So the agent should:
   1. Check if the current file stored in the sniffer list is still present.
-  2. If it's not (we've missed a rotation) - take the oldest file in the
-     directory. Update the absolute offset value stored for the sniffer by the
-     value from the log filename.
+  2. If it's not - should calculate amount of lost data (see *rcf_get_sniffers*
+     agent side implementation).
+  Next steps for each existing file:
   3. Take the file system lock (with fcntl).
   4. Get maximum file offset (note, that at this point the offset will
      include only full packets).
@@ -759,6 +793,19 @@ So the agent should:
   8. If EOF is reached and it's not the only capture file in the sniffer
      directory (means that sniffer is not writing into it at the moment) -
      close it and remove.
+
+** Insert a mark packet process
+
+*log_sniffer_mark_insert(sniffer_id id, const char* description)* is called 
+by the Test to insert mark packet into the sniffer capture file.
+
+The Logger should:
+  1. Call the fuction *rcf_get_sniffers(agent, synch_sniff)*, synch_sniff 
+     should be true. The Logger gets the sniffer list whith absolute offset 
+     values of last captured packets.
+  2. The value offset for certain sniffer saves.
+  3. When it reaches an absolute offset of recived packets equal to the stored
+     value is inserted mark packet.
 
 * Integration issues
 
@@ -776,3 +823,7 @@ So the agent should:
 
  - dispatcher options processing (at the moment of the configurator startup
    there may be no interface)
+
+  - *rcf_get_sniffers(agent, bool synch_sniff)* call can be without synch_sniff
+    argument. Then for each call of the function should refresh absolute 
+    offsets for each sniffer on the agent.
