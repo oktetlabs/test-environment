@@ -332,7 +332,8 @@ Additional command line options for dispatcher.sh should be supported.
 |                             | Human-readable values should be accepted.      |
 | --sniff-ta-log-fsize <val>  | Maximum size of the one log file.              |
 | --sniff-ta-log-rotation <x> | Rotate agent side temporary logs across        |
-|                             | *x* files.                                     |
+|                             | *x* files.  This option excluded by            |
+|                             |  the *--sniff-ta-log-ofill-drop* option.       |
 | --sniff-ta-log-ofill-drop   | Overfill handle method tail drop.              |
 |                             | By defaul overfill handle method rotation.     |
 | --sniff-log-dir  <path>     | Path to the *TEN* side capture files.          |
@@ -445,7 +446,7 @@ Some notes:
 |   -C <file_size>         | Max dump file size, by defualt 16 Mb.           |
 |   -r <x>                 | Rotate agent side temporary logs across         |
 |                          | *x* files. By default *x* = 4.                  |
-|                          | This option exludes the *-o* option.            |
+|                          | This option excluded by the *-o* option.        |
 |   -f <expression>        | Filter expression, defualt empty.               |
 |   -F <file>              | Filter expression file contains tcpdump-like    |
 |                          | filter syntax.                                  |
