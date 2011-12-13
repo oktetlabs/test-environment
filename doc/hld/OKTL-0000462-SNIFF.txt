@@ -757,25 +757,13 @@ list from the *agent*.
 sniffer. It's required for: inser mark packet to the capture file.
 
 If *sync* value is true the agent should:
-  1. Check if the current file stored in the sniffer list still exists.
-  2. If it's not - calculate amount of lost data:
-    1. Find the oldest file in the directory.
-    2. Get the absolute offset value stored for the sniffer by the
-       value from the log filename.
-    3. Subtracted from the obtained value of the offset of the last sent 
-       packet to the Logger.
-    4. Increment missing data counter on the calculated value.
-    5. Set the current capture filename to the name of the oldest file. Reset
-       the local file offset to zero.
-    6. Forward log message.
-  3. Find newest capture file in the directory. Update the absolute offset 
+  1. Find newest capture file in the directory. Update the absolute offset 
      value stored for the sniffer by the value from the log filename.
-  4. Take the file system lock (with fcntl).
-  5. Get maximum file offset (note, that at this point the offset will
+  2. Take the file system lock (with fcntl).
+  3. Get maximum file offset (note, that at this point the offset will
      include only full packets).
-  6. Release the lock so the sniffer can write into the file and close the file.
-  7. Outgrowth the absolute offset value by current file offset value and 
-     subtract the value of lost data.
+  4. Release the lock and close the file.
+  5. Outgrowth the absolute offset value by current file offset value.
 
 In case than sync value is false, absolute offset value for the 
 corresponding sniffer will be equal to offset of the last sent packets to 
@@ -794,12 +782,18 @@ files. Several things should be taken into account:
   - it's possible that the sniffer is writing the capture file in the very
     moment of RCF call; agent must not return partial packets;
   - sniffer can delete the capture file because of the rotation procedure.
-  - sniffer should transmit to Logger all existing packets.
+  - sniffer should transmit to the Logger all existing packets.
 
 So the agent should:
-  1. Check if the current file stored in the sniffer list is still present.
-  2. If it's not - should calculate amount of lost data (see *rcf_get_sniffers*
-     agent side implementation).
+  
+  1. Check if the current file stored in the sniffer list still exists.
+  2. If it's not:
+    1. Find the oldest capture file in the directory.
+    2. Get the absolute offset value stored for the sniffer by the
+       value from the capture filename.
+    3. Set the current capture filename to the name of the oldest file. Reset
+       the local file offset to zero.
+    4. Forward log message.
   Next steps for each existing file:
   3. Take the file system lock (with fcntl).
   4. Get maximum file offset (note, that at this point the offset will
