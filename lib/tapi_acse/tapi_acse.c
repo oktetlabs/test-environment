@@ -673,10 +673,10 @@ rpc_cwmp_op_call(rcf_rpc_server *rpcs,
     rcf_rpc_call(rpcs, "cwmp_op_call", &in, &out);
 
     RING("TE RPC(%s,%s): cwmp_op_call(%s/%s, %s) -> %r",
-                 rpcs->ta, rpcs->name,
-                 acs_name, cpe_name,
-                 cwmp_rpc_cpe_string(cwmp_rpc),
-                 (te_errno)out.status);
+         rpcs->ta, rpcs->name,
+         acs_name, cpe_name,
+         cwmp_rpc_cpe_string(cwmp_rpc),
+         (te_errno)out.status);
 
     if (NULL != request_id)
         *request_id = out.request_id;
@@ -729,14 +729,14 @@ rpc_cwmp_op_check(rcf_rpc_server *rpcs,
     if (NULL != cwmp_rpc)
         *cwmp_rpc = out.cwmp_rpc;
 
-    RING("RPC (%s,%s): cwmp_op_check(%s/%s, for %s) -> %r (buf %p, %db)",
-                 rpcs->ta, rpcs->name,
-                 acs_name, cpe_name,
-                 request_id == 0 ?
-                     cwmp_rpc_acs_string(cwmp_rpc_acs) :
-                     cwmp_rpc_cpe_string(*cwmp_rpc),
-                 (te_errno)out.status,
-                 out.buf.buf_val, out.buf.buf_len);
+    INFO("RPC (%s,%s): cwmp_op_check(%s/%s, for %s) -> %r (buf %p, %db)",
+         rpcs->ta, rpcs->name,
+         acs_name, cpe_name,
+         request_id == 0 ?
+            cwmp_rpc_acs_string(cwmp_rpc_acs) :
+                cwmp_rpc_cpe_string(*cwmp_rpc),
+         (te_errno)out.status,
+         out.buf.buf_val, out.buf.buf_len);
 
     return out.status;
 }
@@ -751,6 +751,7 @@ rpc_cwmp_conn_req(rcf_rpc_server *rpcs,
 
     RING("%s() called, srv %s, to %s/%s",
          __FUNCTION__, rpcs->name, acs_name, cpe_name);
+
     if (NULL == rpcs)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -1010,8 +1011,10 @@ tapi_acse_get_parameter_values_resp(tapi_acse_context_t *ctx,
                            "Got GetParameterValuesResponse", *resp);
     }
     else
+    {
         RING("Got GetParameterValuesResponse, rc %r, from_cpe %p",
              rc, from_cpe_loc.p);
+    }
     if (NULL != from_cpe_loc.p)
         free(from_cpe_loc.p);
     return rc;
