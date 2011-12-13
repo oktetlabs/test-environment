@@ -487,6 +487,7 @@ logic etc.), see the requirements doc for the detailed list.
 | OID                                           | Description                  |
 |-----------------------------------------------+------------------------------|
 |/agent/sniffer_settings                        |Sniffer object.               |
+|/agent/sniffer_settings/enable                 |Enable sniffers.              |
 |/agent/sniffer_settings/filter_exp_str         |Filter expression string,     |
 |                                               |by default: empty.            |
 |/agent/sniffer_settings/filter_exp_file        |Filter expression file        |
@@ -523,6 +524,7 @@ name of the object instance) uniq across the interface.
 |-----------------------------------------------+------------------------------|
 |/agent/interface/sniffer                       | Sniffer name, by default:    |
 |                                               | empty.                       |
+|/agent/interface/sniffer/enable                | Enable the sniffer.          |
 |/agent/interface/sniffer/filter_exp_str        | Filter expression string,    |
 |                                               | by default: empty.           |
 |/agent/interface/sniffer/filter_exp_file       | Filter expression file       |
@@ -543,9 +545,13 @@ name of the object instance) uniq across the interface.
 |                                               | 0 - rotation(default)        |
 |                                               | 1 - tail drop.               |
 |-----------------------------------------------+------------------------------|
-
-*NOTE*: If the same settings declarated in both subtrees (file_size, 
-overfill_type, snaplen), use the one that declarated in the interface tree.
+*NOTE*: 
+  - If the same settings declarated in both subtrees (file_size, 
+    overfill_type, snaplen), use the one that declarated in the interface tree.
+  - *sniffer_space*, *file_size* and *rotation* are restricting the parameters.
+    By default this parameters means that sniffer capture files can take no 
+    more than 64Mb space on the disk, size of the one file can not exceed 
+    16 Mb and can be created not more than 4 files.
 
 *** RCF protocol and API
 
