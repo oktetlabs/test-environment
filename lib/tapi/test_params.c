@@ -332,6 +332,7 @@ tapi_asn_param_value_parse(char              *pwd,
         char *p;
         struct in_addr addr;
 
+
         p = strchr(*s, '.');
         if (p != NULL)
         {
@@ -359,7 +360,7 @@ tapi_asn_param_value_parse(char              *pwd,
     {
         int                 int_val = 0;
         struct sockaddr    *address_val = NULL;
-        uint8_t             mac_val[ETHER_ADDR_LEN];
+        uint8_t            *addr_octets;
         int                 pwd_offset = strlen(pwd);
         char               *c = (*s + strlen(TAPI_CFG_LINK_PREFIX));
         int                 add;
@@ -386,22 +387,53 @@ tapi_asn_param_value_parse(char              *pwd,
             return rc;
         }
 
-        /* Fixme: looks ugly */
-        if (strstr(pwd, "link_addr") != NULL)
+        if (type == ndn_base_octets)
         {
-            memcpy(mac_val, address_val->sa_data, ETHER_ADDR_LEN);
+            /* Fixme: looks ugly */
+            if (strstr(pwd, "link_addr") != NULL ||
+                address_val->sa_family == AF_LOCAL)
+            {
+                addr_octets = address_val->sa_data;
 
-            snprintf(ns, BUFLEN, "'%02x %02x %02x %02x %02x %02x'H",
-                     mac_val[0], mac_val[1], mac_val[2],
-                     mac_val[3], mac_val[4], mac_val[5]);
-        }
-        else if (type == ndn_base_octets)
-        {
-            snprintf(ns, BUFLEN, "'%02x %02x %02x %02x'H",
-                     (SIN(address_val)->sin_addr.s_addr) & 0xff,
-                     (SIN(address_val)->sin_addr.s_addr >> 8) & 0xff,
-                     (SIN(address_val)->sin_addr.s_addr >> 16) & 0xff,
-                     (SIN(address_val)->sin_addr.s_addr >> 24) & 0xff);
+                snprintf(
+                        ns, BUFLEN,
+                        "'%02x %02x %02x %02x %02x %02x'H",
+                        addr_octets[0], addr_octets[1], addr_octets[2],
+                        addr_octets[3], addr_octets[4], addr_octets[5]);
+            }
+            else if (address_val->sa_family == AF_INET6)
+            {
+                addr_octets = SIN6(address_val)->sin6_addr.s6_addr;
+
+                snprintf(
+                        ns, BUFLEN,
+                        "'"
+                        "%02x %02x %02x %02x "
+                        "%02x %02x %02x %02x "
+                        "%02x %02x %02x %02x "
+                        "%02x %02x %02x %02x "
+                        "'H",
+                        addr_octets[0], addr_octets[1],
+                        addr_octets[2], addr_octets[3],
+                        addr_octets[4], addr_octets[5],
+                        addr_octets[6], addr_octets[7],
+                        addr_octets[8], addr_octets[9],
+                        addr_octets[10], addr_octets[11],
+                        addr_octets[12], addr_octets[13],
+                        addr_octets[14], addr_octets[15]);
+            }
+            else
+            {
+                /*
+                 * FIXME: address is not AF_LOCAL, not AF_INET6
+                 * we expect it to be AF_INET.
+                 */
+                snprintf(ns, BUFLEN, "'%02x %02x %02x %02x'H",
+                         (SIN(address_val)->sin_addr.s_addr) & 0xff,
+                         (SIN(address_val)->sin_addr.s_addr >> 8) & 0xff,
+                         (SIN(address_val)->sin_addr.s_addr >> 16) & 0xff,
+                         (SIN(address_val)->sin_addr.s_addr >> 24) & 0xff);
+            }
         }
         else
         {
