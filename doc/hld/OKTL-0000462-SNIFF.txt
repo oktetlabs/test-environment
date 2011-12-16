@@ -324,6 +324,7 @@ Additional command line options for dispatcher.sh should be supported.
 |                             | for the *last added* sniffer.                  |
 | --sniff-snaplen <val>       | Maximum number of bytes to capture             |
 |                             | for the *last added* sniffer.                  |
+|                             | By default: unlimited.                         |
 | --sniff-ta-log-dir <path>   | Path to store capture files on the agent side. |
 |                             | Note, that agent-specific directory will       |
 |                             | still be created. By default:                  |
@@ -331,14 +332,17 @@ Additional command line options for dispatcher.sh should be supported.
 | --sniff-ta-log-size <val>   | Maximum overall size of the log files.         |
 |                             | Human-readable values should be accepted.      |
 | --sniff-ta-log-fsize <val>  | Maximum size of the one log file.              |
+|                             | By default: 16Mb.                              |
 | --sniff-ta-log-rotation <x> | Rotate agent side temporary logs across        |
 |                             | *x* files.  This option excluded by            |
 |                             |  the *--sniff-ta-log-ofill-drop* option.       |
+|                             | By default: *x* = 4.                           |
 | --sniff-ta-log-ofill-drop   | Overfill handle method tail drop.              |
 |                             | By defaul overfill handle method rotation.     |
 | --sniff-log-dir  <path>     | Path to the *TEN* side capture files.          |
 |                             | By default TE_LOG_DIR/caps is used.            |
 | --sniff-log-size <val>      | Maximum *TEN* side logs cummulative size.      |
+|                             | By default: 256 Mb.                            |
 | --sniff-log-name <pattern>  | *TEN* side log file naming pattern, the        |
 |                             | following format specifies are supported:      |
 |                             | - %a : agent name                              |
@@ -347,9 +351,11 @@ Additional command line options for dispatcher.sh should be supported.
 |                             | - %n : sniffer session sequence number         |
 |                             | By default *full sniffer id* is used.          |
 | --sniff-log-fsize <val>     | Maximum *TEN* side logs size for one sniffer.  |
+|                             | By default: 64 Mb.                             |
 | --sniff-log-ofill-drop      | Overfill handle method tail drop.              |
 |                             | By defaul overfill handle method rotation.     |
 | --sniff-log-period <val>    | Period of taken logs from agents.              |
+|                             | By default: 1 sec.                             |
 
 
 Some notes:
@@ -442,7 +448,8 @@ Some notes:
 |   -P <path>              | Agent folder path.                              |
 |   -q <seq_num>           | Sniffer session sequence number.                |
 | Optional arguments:      |                                                 |
-|   -c <total_size>        | Max total files size, by defualt 64 Mb.         |
+|   -c <total_size>        | Max total files size for agent.                 |
+|                          | By defualt 256 Mb.                              |
 |   -C <file_size>         | Max dump file size, by defualt 16 Mb.           |
 |   -r <x>                 | Rotate agent side temporary logs across         |
 |                          | *x* files. By default *x* = 4.                  |
@@ -501,7 +508,7 @@ logic etc.), see the requirements doc for the detailed list.
 |                                               |decribed below.               |
 |/agent/sniffer_settings/tmp_logs/total_size    |Max total capture files size  |
 |                                               |for all agent sniffers.       |
-|                                               |By defualt 64 Mb.             |
+|                                               |By defualt 256 Mb.            |
 |/agent/sniffer_settings/tmp_logs/file_size     |Max capture file size, by     |
 |                                               |default 16 Mb.                |
 |/agent/sniffer_settings/tmp_logs/rotation      |Rotate agent side temporary   |
