@@ -619,7 +619,7 @@ tapi_env_get_addr(tapi_env *env, const char *name, socklen_t *addrlen)
       addr->iface = p->iface;
       addr->family = p->family;
       addr->type = p->type;
-      addr->handle = p->handle;
+      addr->handle = CFG_HANDLE_INVALID;
       addr->addrlen = p->addrlen;
       memcpy(&(addr->addr_st), &(p->addr_st), sizeof(p->addr_st));
       addr->addr = calloc(1, addr->addrlen);
