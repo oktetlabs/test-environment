@@ -170,14 +170,14 @@ static const tad_bps_pkt_frag tad_icmp6_echo_bps_hdr [] =
     {
         "id",
         16,
-        BPS_FLD_NO_DEF(NDN_TAG_ICMP6_ECHO_ID),
+        BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_ECHO_ID, 0),
         TAD_DU_I32,
         FALSE
     },
     {
         "seq",
         16,
-        BPS_FLD_NO_DEF(NDN_TAG_ICMP6_ECHO_SEQ),
+        BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_ECHO_SEQ, 0),
         TAD_DU_I32,
         FALSE
     },
@@ -655,6 +655,11 @@ pdu_data_type2str(int type)
 {
     switch (type)
     {
+        case ICMPV6_TYPE_ECHO_REQUEST:
+        case ICMPV6_TYPE_ECHO_REPLY: return "echo";
+        case ICMPV6_TYPE_MLD_QUERY:
+        case ICMPV6_TYPE_MLD_REPORT:
+        case ICMPV6_TYPE_MLD_DONE: return "mld";
         case ICMPV6_TYPE_ROUTER_SOL: return "router-sol";
         case ICMPV6_TYPE_ROUTER_ADV: return "router-adv";
         case ICMPV6_TYPE_NEIGHBOR_SOL: return "neighbor-sol";
@@ -1086,7 +1091,7 @@ tad_icmp6_match_pre_cb(csap_p              csap,
 
     if ((meta_pkt_layer->opaque =
                         pkt_data =
-                            malloc(sizeof(*pkt_data))) == NULL)
+                            TE_ALLOC(sizeof(*pkt_data))) == NULL)
     {
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
     }
