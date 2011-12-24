@@ -6112,13 +6112,16 @@ overfill_fd(tarpc_overfill_fd_in *in,
         goto overfill_fd_exit;
     }
 
-    if (fcntl_func(in->write_end, F_SETFL, O_NONBLOCK) == -1)
+    if (!(fdflags & O_NONBLOCK))
     {
-        out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);
-        ERROR("%s(): fcntl(F_SETFL) failed: %r", __FUNCTION__,
-              out->common._errno);
-        ret = -1;
-        goto overfill_fd_exit;
+        if (fcntl_func(in->write_end, F_SETFL, O_NONBLOCK) == -1)
+        {
+            out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);
+            ERROR("%s(): fcntl(F_SETFL) failed: %r", __FUNCTION__,
+                  out->common._errno);
+            ret = -1;
+            goto overfill_fd_exit;
+        }
     }
 
     sent = 0;
@@ -6136,7 +6139,7 @@ overfill_fd(tarpc_overfill_fd_in *in,
 
 overfill_fd_exit:
 
-    if (fdflags != -1)
+    if (fdflags != -1 && !(fdflags & O_NONBLOCK))
     {
         if (fcntl_func(in->write_end, F_SETFL, fdflags) == -1)
         {
