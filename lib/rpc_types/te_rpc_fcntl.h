@@ -114,6 +114,7 @@ extern unsigned int fcntl_flags_h2rpc(unsigned int flags);
 
 typedef enum rpc_fcntl_command {
     RPC_F_DUPFD,
+    RPC_F_DUPFD_CLOEXEC,
     RPC_F_GETFD,
     RPC_F_SETFD,
     RPC_F_GETFL,

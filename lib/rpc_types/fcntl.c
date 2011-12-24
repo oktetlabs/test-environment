@@ -220,6 +220,7 @@ fcntl_rpc2h(rpc_fcntl_command cmd)
     switch(cmd)
     {
         RPC2H_CHECK(F_DUPFD);
+        RPC2H_CHECK(F_DUPFD_CLOEXEC);
         RPC2H_CHECK(F_GETFD);
         RPC2H_CHECK(F_SETFD);
         RPC2H_CHECK(F_GETFL);
