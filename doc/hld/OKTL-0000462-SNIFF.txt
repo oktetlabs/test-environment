@@ -565,16 +565,23 @@ name of the object instance) uniq across the interface.
 
 The RCF protocol is extended to support two new calls.
 
-1. *rcf_get_sniffers(agent, bool sync)*
+1. *rcf_get_sniffers(agent, sniffer_id)*
 
-   *FIXME*: *sync* required to get offset of last capdtured packet, 
-   when you need to put a marker.
-    
+   *sniffer id* is optional argument, it may be NULL. It used if required to 
+   get offset of last capdtured packet of the sniffer, when you need to put 
+   a marker.
+
    Returns list of sniffers which have non-empty captures. For each sniffer
    it returns:
-     - *sniffer id*;
-     - absolute offset of the first byte of the next unsent (to the
-       *rcf_get_sniffer_dump* caller) packet if *sync* is true or -1 otherwise;
+     - *sniffer_id*;
+     - if the argument *sniffer_id* not NULL:
+        - absolute offset of last captured packet for the sniffer;
+        - the list of sniffers will be consist of a single unit.
+     - else
+        - value of absolute offset return -1.
+   List of sniffers packed into the buffer. For each sniffer used next format:
+   <Sniffer name> <Interface name> <SSN> <offset>\0
+
    Sniffers are named with *sniffer id*. We can safely assume
    that there exists the maximum number of sniffers on the agent which is
    *32* and pass a static array.
@@ -764,14 +771,10 @@ Logger perform a round-robin for selection of the sniffer to call
 
 ** Agent side rcf_get_sniffers handle implementaition
 
-*rcf_get_sniffers(agent, sync)* is called by Logger to get sniffers 
+*rcf_get_sniffers(agent, sniffer_id)* is called by Logger to get sniffers 
 list from the *agent*.
 
-
-*FIXME*: *sync* use to get absolute offsets of last captured packet by the
-sniffer. It's required for: inser mark packet to the capture file.
-
-If *sync* value is true the agent should:
+If *sniffer_id* is not NULL the agent should:
   1. Find newest capture file in the directory. Update the absolute offset 
      value stored for the sniffer by the value from the log filename.
   2. Take the file system lock (with fcntl).
@@ -779,13 +782,14 @@ If *sync* value is true the agent should:
      include only full packets).
   4. Release the lock and close the file.
   5. Outgrowth the absolute offset value by current file offset value.
+  6. Send answer to the Logger. List of sniffers will be consist of the single 
+     sniffer with current absolute offset.
 
-In case than sync value is false, absolute offset value for the 
-corresponding sniffer will be equal to offset of the last sent packets to 
-the Logger.
-In any case the agent should send list of the sniffers with certain offsets.
+In case than *sniffer_id* is NULL, absolute offset value for the 
+corresponding sniffer will be equal -1. In this case the agent should send 
+full list of the sniffers.
 
-** Agent side rcf_get_sniffer_dump implementation
+** Agent side *rcf_get_sniffer_dump* implementation.
 
 *rcf_get_sniffer_dump(agent, sniffer_id)* is called by the Logger to get the
 next portion of the captured packets.
@@ -800,7 +804,7 @@ files. Several things should be taken into account:
   - sniffer should transmit to the Logger all existing packets.
 
 So the agent should:
-  
+
   1. Check if the current file stored in the sniffer list still exists.
   2. If it's not:
     1. Find the oldest capture file in the directory.
@@ -821,18 +825,65 @@ So the agent should:
      directory (means that sniffer is not writing into it at the moment) -
      close it and remove.
 
-** Insert a mark packet process
+** Insert a mark packet process.
 
 *log_sniffer_mark_insert(sniffer_id id, const char* description)* is called 
 by the Test to insert mark packet into the sniffer capture file.
 
 The Logger should:
-  1. Call the fuction *rcf_get_sniffers(agent, sync_sniff)*, sync_sniff 
-     should be true. The Logger gets the sniffer list whith absolute offset 
-     values of last captured packets.
+  1. Call the fuction *rcf_get_sniffers(agent, sniffer_id)*, sniffer_id should
+     not be NULL. The Logger gets the sniffer list whith absolute offset 
+     values of last captured packet of the sniffer.
   2. The value offset for certain sniffer saves.
   3. When it reaches an absolute offset of recived packets equal to the stored
      value is inserted mark packet.
+
+** Algorithm to get sniffers logs.
+*** Sniffer log thread under the Logger.
+  To provide periodic manner pull outs sniffers logs Logger process create 
+  a new *sniffers handler* thread. This thread should obtain and manage 
+  sniffers logs from all active agents. To get the logs for each agent should
+  performed some calls sequence described below.
+
+*** Calls sequence to get sniffers logs.
+  This calls performed for each agent:
+  1. Call the fuction *rcf_get_sniffers*. The argument *sniffer_id* should
+     be NULL.
+  2. The function *rcf_get_sniffers* performed call of the *RCF API* function 
+     *send_recv_rcf_ipc_message*. It's for transmit the message to the *RCF* 
+     subsystem and get the answer with buffer of the sniffer list.
+  3. *RCF* in it's turn transmit message to the agent. Here the message 
+     handling by the *rcf_pch* functions.
+  4. On the agent side is called the function *rcf_ch_get_sniffers*, which gets 
+     the list of sniffers. And then send answer with a binary attach of buffer
+     with the list of sniffers to the *RCF* subsystem of *TEN*.
+  5. The binary attach with the list of sniffers is transmited from *RCF* 
+     subsystem to the *sniffers handler* thread of the Logger process by
+     message.
+  6. The function *rcf_get_sniffers* helpful *send_recv_rcf_ipc_message* gets
+     the buffer of the sniffer list and returned it to the *sniffers handler*
+     function as output parameters.
+
+  For each sniffer performed next calls:
+  1. Call the fuction *rcf_get_sniffer_dump*. It's again call of the *RCF API* 
+     function *send_recv_rcf_ipc_message*.
+  2. Second and third steps is analogue to corresponding steps in the previous 
+     describing of the calls. But the answer will be contains a file name of 
+     recived log and absolute offset of the first byte of the first packet in 
+     the current partition.
+  3. See the previous step.
+  4. After got the message on the agent side is called the function 
+     *rcf_ch_get_sniffer_logs*, wich performed actions decribed in the
+     *Agent side *rcf_get_sniffer_dump* implementation* section. And then send
+     answer with a binary attach of buffer with the sniffer capture log to 
+     the *RCF* subsystem of *TEN*.
+  5. The *RCF* subsystem saves that attach as a temporary file. Information 
+     about recived capture log file and offset is transmitted to the 
+     *sniffers handler* thread of the Logger process by message.
+  6. The fuction *rcf_get_sniffer_dump* gets the service information about the
+     cpature log and returned it to the *sniffers handler* function as output
+     parameters.
+
 * Integration issues
 
 *FIXME*: bootstrap start/shutdown (RCF side)
