@@ -341,7 +341,7 @@ Additional command line options for dispatcher.sh should be supported.
 |                             | By defaul overfill handle method rotation.     |
 | --sniff-log-dir  <path>     | Path to the *TEN* side capture files.          |
 |                             | By default TE_LOG_DIR/caps is used.            |
-| --sniff-log-size <val>      | Maximum *TEN* side logs cummulative size.      |
+| --sniff-log-size <val>      | Maximum *TEN* side logs cumulative size.       |
 |                             | By default: 256 Mb.                            |
 | --sniff-log-name <pattern>  | *TEN* side log file naming pattern, the        |
 |                             | following format specifies are supported:      |
@@ -369,7 +369,7 @@ Some notes:
 
 #+BEGIN_SRC C
     /**
-     * Create and start new sniffer on the agent.
+     * Create and start a new sniffer on the agent.
      * 
      * @param ta            *agent id*
      * @param iface         Interface name
@@ -561,9 +561,10 @@ name of the object instance) uniq across the interface.
     more than 64Mb space on the disk, size of the one file can not exceed 
     16 Mb and can be created not more than 4 files.
 
-*** RCF protocol and API
+*** RCF protocols and API
 
-The RCF protocol is extended to support two new calls.
+**** RCF API
+The RCF API is extended to support two new calls.
 
 1. *rcf_get_sniffers(agent, sniffer_id)*
 
@@ -578,9 +579,7 @@ The RCF protocol is extended to support two new calls.
         - absolute offset of last captured packet for the sniffer;
         - the list of sniffers will be consist of a single unit.
      - else
-        - value of absolute offset return -1.
-   List of sniffers packed into the buffer. For each sniffer used next format:
-   <Sniffer name> <Interface name> <SSN> <offset>\0
+        - value of absolute offset is zero.
 
    Sniffers are named with *sniffer id*. We can safely assume
    that there exists the maximum number of sniffers on the agent which is
@@ -594,7 +593,19 @@ The RCF protocol is extended to support two new calls.
 
 The only user of this calls is *Logger*. Both calls are synchronous.
 
-*FIXME andrey*: test protocol.
+**** RCF data transmition protocols
+1. For the function *rcf_get_sniffers* to transmit list of sniffers used
+   following protocol. List of sniffers packed into the buffer. For each
+   sniffer used next text format:
+   <Sniffer name> <Interface name> <SSN> <offset>\0
+
+2. For the function *rcf_get_sniffer_dump* to transmit the sniffer id to 
+   *agent* used following protocol. Sniffer ID packed into a string with the
+   following format:
+   <Sniffer name> <Interface name> <SSN>\0
+
+   /* FIXME: For the function *rcf_get_sniffer_dump* should be added 
+      transmission protocol of taken data. */
 
 *** Logger IPC interface
 
@@ -786,7 +797,7 @@ If *sniffer_id* is not NULL the agent should:
      sniffer with current absolute offset.
 
 In case than *sniffer_id* is NULL, absolute offset value for the 
-corresponding sniffer will be equal -1. In this case the agent should send 
+corresponding sniffer will be equal zero. In this case the agent should send 
 full list of the sniffers.
 
 ** Agent side *rcf_get_sniffer_dump* implementation.
