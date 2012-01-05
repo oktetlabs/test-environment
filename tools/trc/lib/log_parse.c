@@ -2433,7 +2433,7 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
         TAILQ_FOREACH(iter1, &test->iters.head, links)
         {
             iter_data1 = trc_db_iter_get_user_data(iter1, db_uid);
-            if (iter_data1 == NULL)
+            if (iter_data1 == NULL || iter_data1->in_wildcard)
                 continue;
 
             if (test_iter_args_match(args_group->args, iter_data1->args_n,
@@ -2447,10 +2447,9 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
                                              TRUE) != ITER_NO_MATCH)
                         break;
 
-                if (p_group != NULL || iter_data1->in_wildcard)
+                if (p_group != NULL)
                     continue;
-                else if (!iter_data1->in_wildcard &&
-                         iter_data1->results_id == results_id)
+                else if (iter_data1->results_id == results_id)
                 {
                     new_group = TE_ALLOC(sizeof(*new_group));
                     new_group->args = TE_ALLOC(sizeof(trc_test_iter_args));
