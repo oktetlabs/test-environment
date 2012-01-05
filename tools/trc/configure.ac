@@ -72,8 +72,14 @@ AC_SUBST([TE_CFLAGS])
 
 AC_ARG_VAR([TE_CFLAGS])
 
+AC_CHECK_LIB(perl, perl_parse, [
+AC_DEFINE([HAVE_LIBPERL], [1], [Embedded perl interpreter support])
 PERL_LDADD=`perl -MExtUtils::Embed -e ldopts`
 PERL_CFLAGS=`perl -MExtUtils::Embed -e ccopts`
+], [
+PERL_LDADD=
+PERL_CFLAGS=
+])
 
 AC_ARG_VAR([PERL_LDADD])
 AC_SUBST([PERL_LDADD])

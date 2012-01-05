@@ -59,9 +59,11 @@
 #include "trc_report.h"
 #include "trc_update.h"
 
+#ifdef HAVE_LIBPERL
 #define PERL_NO_GET_CONTEXT
 #include <EXTERN.h>
 #include <perl.h>
+#endif
 
 #include <unistd.h>
 
@@ -117,8 +119,10 @@ static char *oth_prog = NULL;
 /** TRC update context */
 static trc_update_ctx ctx;
 
+#ifdef HAVE_LIBPERL
 /** Perl interpreter */
 static PerlInterpreter *perl_interp;
+#endif
 
 /**
  * Add new group of logs.
@@ -404,6 +408,7 @@ func_args_match(const trc_test_iter_args *db_args,
                 unsigned int n_args, trc_report_argument *args,
                 void *data)
 {
+#ifdef HAVE_LIBPERL
     trc_update_test_iter_data *iter_data = data;
     trc_test_iter_arg         *arg;
 
@@ -671,6 +676,7 @@ func_args_match(const trc_test_iter_args *db_args,
             execv(oth_prog, argv);
         }
     }
+#endif
 
     return ITER_NO_MATCH;
 }
@@ -681,7 +687,10 @@ main(int argc, char **argv, char **envp)
     int     result = EXIT_FAILURE;
     char   *perl_embed_params[] = { "", "-e", "0" };
 
+#ifdef HAVE_LIBPERL
     PERL_SYS_INIT3(&argc, &argv, &envp);
+#endif
+
     trc_update_init_ctx(&ctx);
 
     if (trc_update_process_cmd_line_opts(argc, argv) != EXIT_SUCCESS)
@@ -729,12 +738,14 @@ main(int argc, char **argv, char **envp)
     if (perl_expr != NULL || perl_script != NULL || oth_prog != NULL)
         ctx.func_args_match = func_args_match;
     
+#ifdef HAVE_LIBPERL
     /* Allocate and initialize perl interpreter */
     perl_interp = perl_alloc();
     perl_construct(perl_interp);
     perl_parse(perl_interp, NULL, 3, perl_embed_params, NULL);
     dTHX;
     PL_exit_flags |= PERL_EXIT_DESTRUCT_END;
+#endif
 
     if (trc_update_process_logs(&ctx) != 0)
     {
@@ -771,9 +782,11 @@ exit:
         trc_db_close(ctx.db);
     }
 
+#ifdef HAVE_LIBPERL
     perl_destruct(perl_interp);
     perl_free(perl_interp);
     PERL_SYS_TERM();
+#endif
 
     trc_update_free_ctx(&ctx);
 
