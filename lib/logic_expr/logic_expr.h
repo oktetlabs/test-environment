@@ -102,6 +102,16 @@ extern void logic_expr_free_nr(logic_expr *expr);
 extern void logic_expr_free(logic_expr *expr);
 
 /**
+ * Duplicate logical expression.
+ *
+ * @param expr      Expression to be duplicated
+ *
+ * @return
+ *      Duplicate logical expression or NULL
+ */
+extern logic_expr *logic_expr_dup(logic_expr *expr);
+
+/**
  * Is set of string match logical expression?
  *
  * @param re        Logical expression
@@ -116,6 +126,47 @@ extern int logic_expr_match(const logic_expr *re, const tqh_strings *set);
  * Destroy logical expressions lexer global context.
  */
 extern int logic_expr_int_lex_destroy(void);
+
+/**
+ * Transform logic expression into disjunctive
+ * normal form:
+ *          ||
+ *        /     \
+ *      &&       ||
+ *     /  \     /  \
+ *    &&   x   &&   ||
+ *   /  \     ...  /  \
+ * ...   y        &&   ...
+ *               ...
+ *
+ * @param expr      Logical expression
+ * @param comp_func Function comparing logical expressions
+ *
+ * @retrurn 0 on success or error code
+ */
+extern te_errno logic_expr_dnf(logic_expr **expr,
+                               int (*comp_func)(logic_expr *,
+                                                logic_expr *));
+
+/**
+ * Split DNF in disjuncts, copy them to array.
+ *
+ * @param dnf       DNF
+ * @param array     Pointer to array of disjuncts to be set
+ * @param size      Pointer to size of array to be set
+ *
+ * @return 0 on success or error code
+ */
+extern te_errno logic_expr_dnf_split(logic_expr *dnf, logic_expr ***array,
+                                     int *size);
+/**
+ * Get string representation of logical expression.
+ *
+ * @param expr  logical expression
+ *
+ * @return String representation
+ */
+extern char *logic_expr_to_str(logic_expr *expr);
 
 #ifdef __cplusplus
 } /* extern "C" */

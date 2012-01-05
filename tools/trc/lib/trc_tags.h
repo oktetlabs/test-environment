@@ -48,52 +48,6 @@ extern "C" {
  */
 extern te_errno trc_tags_str_to_list(tqh_strings *tags, char *tags_str);
 
-
-
-/** Initial length of the dynamically allocated string */
-#define TE_STRING_INIT_LEN  1
-
-/** Additional length when dynamically allocated string is reallocated */
-#define TE_STRING_EXTRA_LEN 0
-
-/**
- * Dynamically allocated string.
- */
-typedef struct te_string {
-    char   *ptr;    /**< Pointer to the buffer */
-    size_t  size;   /**< Size of the buffer */
-    size_t  len;    /**< Length of the string */
-} te_string;
-
-/** On-stack te_string initializer */
-#define TE_STRING_INIT  { NULL, 0, 0 }
-
-/**
- * Append to the string results of the sprintf(fmt, ...);
- *
- * @param str           Dynamic string
- * @param fmt           Format string
- * @param ...           Format string arguments
- *
- * @return Status code.
- */
-extern te_errno te_string_append(te_string *str, const char *fmt, ...);
-
-/**
- * Cut from the string specified number of characters.
- *
- * @param str           Dynamic string
- * @param len           Number of characters to cut
- */
-extern void te_string_cut(te_string *str, size_t len); 
-
-/**
- * Free dynamic string.
- *
- * @param str           Dynamic string
- */
-extern void te_string_free(te_string *str);
-
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

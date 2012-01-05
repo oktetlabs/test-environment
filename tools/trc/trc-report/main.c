@@ -50,6 +50,7 @@
 #include "logger_api.h"
 #include "te_trc.h"
 #include "trc_report.h"
+#include "log_parse.h"
 #include "trc_tools.h"
 #include "re_subst.h"
 
@@ -381,7 +382,7 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
             }
 
             case TRC_OPT_IGNORE_LOG_TAGS:
-                ctx.flags |= TRC_REPORT_IGNORE_LOG_TAGS;
+                ctx.parsing_flags |= TRC_LOG_PARSE_IGNORE_LOG_TAGS;
                 break;
 
             case TRC_OPT_TXT:
@@ -710,7 +711,7 @@ main(int argc, char *argv[])
 
     /* Update expected testing results database, if requested */
     if ((ctx.flags & TRC_REPORT_UPDATE_DB) &&
-        (trc_db_save(ctx.db, db_fn) != 0))
+        (trc_db_save(ctx.db, db_fn, 0, 0, NULL, NULL, NULL) != 0))
     {
         ERROR("Failed to save TRC database to '%s'", db_fn);
         goto exit;

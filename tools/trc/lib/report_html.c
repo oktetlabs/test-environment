@@ -45,6 +45,7 @@
 #include "logger_api.h"
 #include "trc_db.h"
 #include "trc_tags.h"
+#include "te_string.h"
 #include "trc_html.h"
 #include "trc_report.h"
 #include "re_subst.h"

@@ -2538,13 +2538,13 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
         }
         /* 
          * It is guaranteed that trc_db_walker_step_iter() does not
-         * touch names and values with the last parameter equal to
-         * FALSE.
+         * touch names and values with the last parameters equal to
+         * FALSE/0/NULL.
          */
         (void)trc_db_walker_step_iter(ctx->trc_walker,
                                       ctx->n_args,
-                                      args,
-                                      FALSE);
+                                      args, FALSE, FALSE, FALSE,
+                                      0, NULL);
         ctx->do_trc_walker = TRUE;
 
         ctx->current_result.exp_result =

@@ -88,6 +88,14 @@ trc_db_walker_users_data(const te_trc_db_walker *walker)
     return walker->is_iter ? &walker->iter->users : &walker->test->users;
 }
 
+/* See the description in trc_db.h */
+trc_users_data *
+trc_db_walker_parent_users_data(const te_trc_db_walker *walker)
+{
+    return walker->is_iter ? &walker->iter->parent->users :
+                                &walker->test->parent->users;
+}
+
 /* See the description in te_trc.h */
 void
 trc_db_free_walker(te_trc_db_walker *walker)
@@ -188,15 +196,15 @@ trc_db_test_params_hash(unsigned int n_args, trc_report_argument *args)
 
     if (sorted == NULL)
         return NULL;
-    for (k = 0; k < n_args; k++)
+    for (k = 0; k < (int)n_args; k++)
         sorted[k] = k;
 
     MD5_Init(&md5);
 
     /* Sort arguments first */
-    for (i = 0; i < n_args - 1; i++)
+    for (i = 0; i < (int)n_args - 1; i++)
     {
-        for (j = i + 1; j < n_args; j++)
+        for (j = i + 1; j < (int)n_args; j++)
         {
             if (strcmp(args[sorted[i]].name, args[sorted[j]].name) > 0)
             {
@@ -207,7 +215,7 @@ trc_db_test_params_hash(unsigned int n_args, trc_report_argument *args)
         }
     }
 
-    for (i = 0; i < n_args; i++)
+    for (i = 0; i < (int)n_args; i++)
     {
         char *name = args[sorted[i]].name;
         char *value = trc_db_test_params_normalise(args[sorted[i]].value);
@@ -402,30 +410,22 @@ trc_db_strcmp_normspace(const char *s1, const char *s2)
     return (int)*s1 - (int)*s2;
 }
 
-/**
- * Match TRC database arguments vs arguments specified by caller.
- *
- * @param db_args       List with TRC database arguments
- * @parma n_args        Number of elements in @a names and @a values
- *                      arrays
- * @param names         Array with names of arguments
- * @param values        Array with values of arguments
- *
- * @return Is arguments match?
- */
 #define VERB_CMP 0
 #if VERB_CMP
 #undef VERB
 #define VERB RING
 #endif
 
-static te_bool
+/* See the description in te_trc.h */
+int
 test_iter_args_match(const trc_test_iter_args  *db_args,
                      unsigned int               n_args,
-                     trc_report_argument       *args)
+                     trc_report_argument       *args,
+                     te_bool                    is_strict)
 {
     trc_test_iter_arg  *arg;
     unsigned int        i;
+    te_bool             is_wildcard = FALSE;
 
 #if VERB_CMP
     fprintf(stderr, "Args compare: \n");
@@ -447,11 +447,28 @@ test_iter_args_match(const trc_test_iter_args  *db_args,
 
         if (strcmp(args[i].name, arg->name) != 0)
         {
-            VERB("Mismatch: %s vs %s", args[i].name, arg->name);
-            return FALSE;
+            if (!is_strict)
+            {
+                i++;
+
+                while (i < n_args)
+                {
+                    if (strcmp(args[i].name, arg->name) == 0)
+                        break;
+                    i++;
+                }
+            }
+
+            if (is_strict || i == n_args)
+            {
+                VERB("Mismatch: %s vs %s", args[i].name, arg->name);
+                return ITER_NO_MATCH;
+            }
         }
+
         /* argument w/o a value */
-        else if (strlen(arg->value) == 0);
+        if (strlen(arg->value) == 0)
+            is_wildcard = TRUE;
         else if (strncmp(args[i].value, TEST_ARG_VAR_PREFIX,
                          strlen(TEST_ARG_VAR_PREFIX)) != 0)
         {
@@ -459,7 +476,7 @@ test_iter_args_match(const trc_test_iter_args  *db_args,
             {
                 VERB("Value mismatch for %s: %s vs %s", arg->name, 
                       args[i].value, arg->value);
-                return FALSE;
+                return ITER_NO_MATCH;
             }
         }
         else
@@ -477,7 +494,7 @@ test_iter_args_match(const trc_test_iter_args  *db_args,
                 }
             }
             if (g == NULL)
-                return FALSE;
+                return ITER_NO_MATCH;
 
             /*
              * we found a variable, but in TRC it can be either var name or
@@ -489,28 +506,32 @@ test_iter_args_match(const trc_test_iter_args  *db_args,
                 VERB("Value mismatch for %s: %s vs %s AND %s vs %s",
                      arg->name, g->value, arg->value, arg->value,
                      args[i].value);
-                return FALSE;
+                return ITER_NO_MATCH;
             }
         }
         /* next arg */
         arg = TAILQ_NEXT(arg, links);
     }
+
     if (arg == NULL)
     {
-        for (; i < n_args; i++)
+        if (is_strict)
         {
-            if (!args[i].variable)
+            for (; i < n_args; i++)
             {
-                VERB("Argument count mismatch: %d vs %d", i, n_args);
-                return FALSE;
+                if (!args[i].variable)
+                {
+                    VERB("Argument count mismatch: %d vs %d", i, n_args);
+                    return ITER_NO_MATCH;
+                }
             }
+            assert(arg == NULL && i == n_args);
         }
-        assert(arg == NULL && i == n_args);
     }
     else
-        return FALSE;
+        return ITER_NO_MATCH;
 
-    return TRUE;
+    return is_wildcard ? ITER_WILD_MATCH : ITER_EXACT_MATCH;
 }
 #undef VERB_CMP
 
@@ -524,10 +545,11 @@ trc_report_argument_compare (const void *arg1, const void *arg2)
 
 /* See the description in te_trc.h */
 te_bool
-trc_db_walker_step_iter(te_trc_db_walker    *walker,
-                        unsigned int         n_args,
-                        trc_report_argument *args,
-                        te_bool              force)
+trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
+                        trc_report_argument *args, te_bool force,
+                        te_bool no_wildcards, te_bool split_results,
+                        unsigned int db_uid,
+                        func_args_match_ptr func_args_match)
 {
     assert(!walker->is_iter);
 
@@ -539,28 +561,53 @@ trc_db_walker_step_iter(te_trc_db_walker    *walker,
     else
     {
         int found = 0;
+        int match_result = 0;
+
         trc_test_iter *iter = NULL;
+        trc_test_iter *exact_iter = NULL;
+        trc_test_iter *wild_iter = NULL;
 
         qsort(args, n_args, sizeof(*args), trc_report_argument_compare);
         for (walker->iter = TAILQ_FIRST(&walker->test->iters.head);
              walker->iter != NULL;
              walker->iter = TAILQ_NEXT(walker->iter, links))
         {
-            if (test_iter_args_match(&walker->iter->args,
-                                     n_args, args))
+            if (func_args_match == NULL)
             {
+                match_result = test_iter_args_match(&walker->iter->args,
+                                                    n_args, args, TRUE);
+            }
+            else
+            {
+                void *iter_data = trc_db_iter_get_user_data(walker->iter,
+                                                            db_uid);
+                match_result = func_args_match(&walker->iter->args,
+                                               n_args, args, iter_data);
+            }
+
+            if (match_result != ITER_NO_MATCH)
+            {
+                if (match_result == ITER_WILD_MATCH)
+                    wild_iter = walker->iter;
+                else
+                    exact_iter = walker->iter;
+
                 iter = walker->iter;
                 found++;
             }
         }
-        walker->iter = iter;
+
+        if (!no_wildcards)
+            walker->iter = iter;
+        else
+            walker->iter = exact_iter;
 
         /* nothing found */
-        if (walker->iter == NULL)
+        if (walker->iter == NULL ||
+            (no_wildcards && exact_iter == NULL))
         {
             if (force)
             {
-                unsigned i;
                 VERB("Step iteration - force to create");
                 walker->iter = trc_db_new_test_iter(walker->test,
                                                     n_args, args);
@@ -570,6 +617,10 @@ trc_db_walker_step_iter(te_trc_db_walker    *walker,
                           walker->test->name);
                     return FALSE;
                 }
+
+                if (no_wildcards && wild_iter != NULL)
+                   trc_db_test_iter_res_cpy(walker->iter,
+                                            wild_iter);
             }
             else
             {
@@ -577,7 +628,9 @@ trc_db_walker_step_iter(te_trc_db_walker    *walker,
                 walker->unknown++;
             }
         }
-        else if (found > 1)
+        else if ((found > 1 && !no_wildcards)
+                 || found > 2 || (found == 2 && (wild_iter == NULL ||
+                                  exact_iter == NULL)))
         {
             char *hash = trc_db_test_params_hash(n_args, args);
             ERROR("TEST='%s || %s'\n"
@@ -591,11 +644,14 @@ trc_db_walker_step_iter(te_trc_db_walker    *walker,
         }
         else
         {
-            VERB("Step iteration - OK");
+            VERB("Step iteration - OK", walker->unknown);
         }
     }
 
     walker->is_iter = TRUE;
+
+    if (split_results && (walker->unknown == 0))
+        trc_db_test_iter_res_split(walker->iter);
 
     return (walker->unknown == 0);
 }

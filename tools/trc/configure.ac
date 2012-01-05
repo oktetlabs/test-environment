@@ -72,6 +72,14 @@ AC_SUBST([TE_CFLAGS])
 
 AC_ARG_VAR([TE_CFLAGS])
 
+PERL_LDADD=`perl -MExtUtils::Embed -e ldopts`
+PERL_CFLAGS=`perl -MExtUtils::Embed -e ccopts`
+
+AC_ARG_VAR([PERL_LDADD])
+AC_SUBST([PERL_LDADD])
+AC_ARG_VAR([PERL_CFLAGS])
+AC_SUBST([PERL_CFLAGS])
+
 AC_CONFIG_HEADERS([config.h])
 
 AC_CHECK_TYPES([xmlError], [], [], [#include <libxml/xmlerror.h>])
@@ -91,6 +99,7 @@ trc-log/Makefile
 trc-report/Makefile
 trc-diff/Makefile
 trc-key/Makefile
+trc-update/Makefile
 ])
 
 TE_APP_RESTORE

@@ -37,6 +37,7 @@
 #include "te_errno.h"
 #include "te_trc.h"
 #include "trc_db.h"
+#include "trc_report.h"
 
 #ifdef __cplusplus
 extern "C" {

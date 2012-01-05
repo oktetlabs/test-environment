@@ -152,6 +152,79 @@ te_test_result_free_verdicts(te_test_result *result)
     }
 }
 
+/**
+ * Free test result.
+ *
+ * @param result    TE test result
+ */
+static inline void
+te_test_result_free(te_test_result *result)
+{
+    if (result == NULL)
+        return;
+
+    te_test_result_free_verdicts(result);
+    free(result);
+}
+
+/**
+ * Duplicate test result.
+ *
+ * @param result    Test result
+ *
+ * @return
+ *      Copy of result
+ */
+static inline te_test_result *
+te_test_result_dup(te_test_result *result)
+{
+    te_test_result  *dup;
+    te_test_verdict *v;
+    te_test_verdict *dup_verdict;
+
+    if (result == NULL)
+        return NULL;
+
+    dup = calloc(1, sizeof(te_test_result));
+    dup->status = result->status;
+    TAILQ_INIT(&dup->verdicts);
+
+    TAILQ_FOREACH(v, &result->verdicts, links)
+    {
+       dup_verdict = calloc(1, sizeof(te_test_verdict));
+       if (v->str != NULL)
+           dup_verdict->str = strdup(v->str);
+       TAILQ_INSERT_TAIL(&dup->verdicts, dup_verdict, links);
+    }
+
+    return dup;
+}
+
+/**
+ * Copy test result.
+ *
+ * @param dest    Where to copy
+ * @param src     What to copy
+ */
+static inline void
+te_test_result_cpy(te_test_result *dest, te_test_result *src)
+{
+    te_test_verdict *v;
+    te_test_verdict *dup_verdict;
+
+    dest->status = src->status;
+    te_test_result_free_verdicts(dest);
+    TAILQ_INIT(&dest->verdicts);
+
+    TAILQ_FOREACH(v, &src->verdicts, links)
+    {
+       dup_verdict = calloc(1, sizeof(te_test_verdict));
+       if (v->str != NULL)
+           dup_verdict->str = strdup(v->str);
+       TAILQ_INSERT_TAIL(&dest->verdicts, dup_verdict, links);
+    }
+}
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

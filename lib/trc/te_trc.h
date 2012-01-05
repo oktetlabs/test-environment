@@ -36,11 +36,37 @@
 #include "tq_string.h"
 #include "te_test_result.h"
 #include "logic_expr.h"
+#include "logger_api.h"
+#include <libxml/tree.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+/** Test iteration argument */
+typedef struct trc_test_iter_arg {
+    
+    xmlNodePtr  node;   /**< XML node with this element */
+
+    TAILQ_ENTRY(trc_test_iter_arg)   links;  /**< List links */
+
+    char       *name;   /**< Argument name */
+    char       *value;  /**< Argument value */
+
+} trc_test_iter_arg;
+
+/** Head of queue of test iteration arguments */
+typedef TAILQ_HEAD(trc_test_iter_args_head, trc_test_iter_arg)
+                                            trc_test_iter_args_head;
+
+/** Head of the list with test iteration arguments */
+typedef struct trc_test_iter_args {
+
+    xmlNodePtr  node;   /**< XML node with this element */
+
+    trc_test_iter_args_head     head;  /**< Head of the list */
+
+} trc_test_iter_args;
 
 /** TE log test argument */
 typedef struct trc_report_argument {
@@ -48,7 +74,6 @@ typedef struct trc_report_argument {
     char    *value;             /**< Argument value */
     te_bool  variable;          /**< Is this argument in fact a variable */
 } trc_report_argument;
-
 
 /**
  * Single test result with auxiliary information for TRC.
@@ -63,6 +88,9 @@ typedef struct trc_exp_result_entry {
     char       *notes;      /**< Any kind of notes */
 } trc_exp_result_entry;
 
+/** Head of queue of expected test results */
+typedef TAILQ_HEAD(trc_exp_result_entry_head, trc_exp_result_entry)
+                                            trc_exp_result_entry_head;
 /**
  * Expected test result.
  */
@@ -73,8 +101,8 @@ typedef struct trc_exp_result {
                                  expression */
     logic_expr *tags_expr;  /**< Tags logical expression */
 
-    /** Results expected for such tags logical expression */
-    TAILQ_HEAD(, trc_exp_result_entry)  results;
+    trc_exp_result_entry_head  results; /**< Results expected for such
+                                             tags logical expression */
 
     /* Auxiliary information common for expected results */
     char       *key;        /**< BugID-like information */
@@ -91,7 +119,13 @@ struct te_trc_db;
 /** Short alias for TRC database type */
 typedef struct te_trc_db te_trc_db;
 
-
+/**
+ * Typedef for function matching iterations in TRC with
+ * iterations from XML log
+ */
+typedef int (*func_args_match_ptr)(const trc_test_iter_args *,
+                                   unsigned int, trc_report_argument *,
+                                   void *);
 /**
  * Initialize a new TRC database.
  *
@@ -181,24 +215,32 @@ extern te_bool trc_db_walker_step_test(te_trc_db_walker *walker,
  * @attention The function has to be called from the test entry
  *            position only.
  *
- * @param walker        Current walker position
- * @param n_args        Number of arguments
- * @param args          Test arguments
- * @param force         Force to create DB entry, if it does not
- *                      exist (if resources allocation fails, FALSE is
- *                      returned, else TRUE is returned)
- *
- * @note If @a force is @c TRUE and iteration is not found, @a names[]
- *       and @a values[] are owned by the function and corresponding
- *       pointers are substituted by @c NULL. It is assumed that
- *       @a names[] and @a values[] are dynamically allocated from heap.
+ * @param walker            Current walker position
+ * @param n_args            Number of arguments
+ * @param args              Test arguments
+ * @param force             Force to create DB entry, if it does not
+ *                          exist (if resources allocation fails, FALSE is
+ *                          returned, else TRUE is returned)
+ * @param no_wildcards      If @a force, also create new DB entry if only
+ *                          wildcard matches specified arguments in DB.
+ *                          If ! @a force, look at only non-wildcards
+ *                          iterations when matching.
+ * @param db_uid            TRC database user ID
+ * @param func_args_match   Function to be used instead
+ *                          @b test_iter_args_match() if required
  *
  * @return Is walker in a known place in TRC database tree?
  */
-extern te_bool trc_db_walker_step_iter(te_trc_db_walker  *walker,
-                                       unsigned int       n_args,
+extern te_bool trc_db_walker_step_iter(te_trc_db_walker *walker,
+                                       unsigned int n_args,
                                        trc_report_argument *args,
-                                       te_bool            force);
+                                       te_bool force,
+                                       te_bool no_wildcards,
+                                       te_bool split_results,
+                                       unsigned int db_uid,
+                                       func_args_match_ptr
+                                                func_args_match);
+
 
 /**
  * Move walker one step back.
@@ -313,6 +355,19 @@ extern void *trc_db_walker_get_user_data(const te_trc_db_walker *walker,
                                          unsigned int            user_id);
 
 /**
+ * Get data associated by user with parent of current
+ * element in TRC database.
+ *
+ * @param walker        TRC database walker
+ * @param user_id       User ID
+ *
+ * @return Data associated by user or NULL.
+ */
+extern void *trc_db_walker_get_parent_user_data(const
+                                                    te_trc_db_walker
+                                                               *walker,
+                                                unsigned int    user_id);
+/**
  * Set data associated by user with current position in TRC database.
  *
  * @param walker        TRC database walker
@@ -325,6 +380,24 @@ extern te_errno trc_db_walker_set_user_data(
                     const te_trc_db_walker *walker,
                     unsigned int            user_id,
                     void                   *user_data);
+
+/**
+ * Set data associated by user with current element in TRC database
+ * and all its parents.
+ *
+ * @param walker        TRC database walker
+ * @param user_id       User ID
+ * @param user_data     User data to associate
+ * @param data_gen      Function to generate user data for
+ *                      ancestors
+ *
+ * @return Status code.
+ */
+extern te_errno trc_db_walker_set_prop_ud(
+                    const te_trc_db_walker *walker,
+                    unsigned int            user_id,
+                    void                   *user_data,
+                    void                   *(*data_gen)(void *, te_bool));
 
 /**
  * Free user data associated by user with current position in TRC

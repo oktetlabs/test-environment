@@ -79,7 +79,10 @@ extern te_bool tq_strings_equal(const tqh_strings *s1,
  * @param list      Head of the list
  * @param value     A new string to add
  *
- * @return Status code.
+ * @return
+ *          0 if string was added
+ *          1 if string was already presented
+ *          error code if error occured
  */
 extern te_errno tq_strings_add_uniq(tqh_strings *list, const char *value);
 

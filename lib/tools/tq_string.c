@@ -101,7 +101,9 @@ tq_strings_add_uniq(tqh_strings *list, const char *value)
 
         p->v = (char *)value;
         TAILQ_INSERT_TAIL(list, p, links);
+
+        return 0;
     }
 
-    return 0;
+    return 1;
 }

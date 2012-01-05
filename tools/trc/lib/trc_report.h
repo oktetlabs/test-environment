@@ -142,8 +142,6 @@ enum trc_report_flags {
 
     /* DB processing options */
     TRC_REPORT_UPDATE_DB        = 0x20000, /**< Update TRC database */
-    TRC_REPORT_IGNORE_LOG_TAGS  = 0x40000, /**< Ignore TRC tags extracted
-                                                from the log */
 };
 
 /* Mask for keys-related flags */
@@ -186,6 +184,7 @@ typedef struct trc_report_test_data {
 /** TRC report context */
 typedef struct trc_report_ctx {
     unsigned int        flags;          /**< Report options */
+    unsigned int        parsing_flags;  /**< Log parsing options */
     te_trc_db          *db;             /**< TRC database handle */
     tqh_strings         tags;           /**< TRC tags specified by user */
     tqh_strings         merge_fns;      /**< Logs to merge with main log */

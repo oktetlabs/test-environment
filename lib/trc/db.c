@@ -48,34 +48,63 @@
 
 static void trc_free_trc_tests(trc_tests *tests);
 
-/**
- * Free resources allocated for the list of test arguments.
- *
- * @param args      List of test arguments to be freed
- */
-static void
-trc_free_test_args(trc_test_iter_args *args)
+/* See description in trc_db.h */
+void
+trc_free_test_iter_args_head(trc_test_iter_args_head *head)
 {
     trc_test_iter_arg   *p;
 
-    while ((p = TAILQ_FIRST(&args->head)) != NULL)
+    while ((p = TAILQ_FIRST(head)) != NULL)
     {
-        TAILQ_REMOVE(&args->head, p, links);
+        TAILQ_REMOVE(head, p, links);
         free(p->name);
         free(p->value);
         free(p);
     }
 }
 
-/**
- * Free resources allocated for expected result.
- *
- * @param result        Result to be freed
- */
-static void
-trc_free_exp_result(trc_exp_result *result)
+/* See description in trc_db.h */
+void
+trc_free_test_iter_args(trc_test_iter_args *args)
+{
+    if (args == NULL)
+        return;
+
+    trc_free_test_iter_args_head(&args->head);
+}
+
+/* See description in trc_db.h */
+trc_test_iter_args *
+trc_test_iter_args_dup(trc_test_iter_args *args)
+{
+    trc_test_iter_args  *dup;
+    trc_test_iter_arg   *dup_arg;
+    trc_test_iter_arg   *arg;
+
+    dup = TE_ALLOC(sizeof(*dup));
+    TAILQ_INIT(&dup->head);
+
+    TAILQ_FOREACH(arg, &args->head, links)
+    {
+        dup_arg = TE_ALLOC(sizeof(*dup_arg));
+        
+        dup_arg->name = strdup(arg->name);
+        dup_arg->value = strdup(arg->value);
+
+        TAILQ_INSERT_TAIL(&dup->head, dup_arg, links);
+    }
+
+    return dup;
+}
+
+/* See description in trc_db.h */
+void
+trc_exp_result_free(trc_exp_result *result)
 {
     trc_exp_result_entry   *p;
+
+    if (result == NULL)
+        return;
 
     free(result->tags_str);
     logic_expr_free(result->tags_expr);
@@ -93,22 +122,104 @@ trc_free_exp_result(trc_exp_result *result)
     free(result->notes);
 }
 
-/**
- * Free resources allocated for the list of expected results.
- *
- * @param iters     List of expected results to be freed
- */
-static void
-trc_free_exp_results(trc_exp_results *results)
+/* See description in trc_db.h */
+trc_exp_result *
+trc_exp_result_dup(trc_exp_result *result)
+{
+    trc_exp_result         *dup;
+    trc_exp_result_entry   *p;
+    trc_exp_result_entry   *dup_entry;
+
+    if (result == NULL)
+        return NULL;
+
+    dup = TE_ALLOC(sizeof(*dup));
+
+    if (result->key != NULL)
+        dup->key = strdup(result->key);
+    if (result->notes != NULL)
+        dup->notes = strdup(result->notes);
+        
+    if (result->tags_str != NULL)
+        dup->tags_str = strdup(result->tags_str);
+    dup->tags_expr = logic_expr_dup(result->tags_expr);
+
+    TAILQ_INIT(&dup->results);
+
+    TAILQ_FOREACH(p, &result->results, links)
+    {
+        dup_entry = TE_ALLOC(sizeof(*dup_entry));
+        if (dup_entry->notes != NULL)
+            dup_entry->notes = strdup(p->notes);
+        if (dup_entry->key != NULL)
+            dup_entry->key = strdup(p->key);
+
+        te_test_result_cpy(&dup_entry->result, &p->result);
+        TAILQ_INSERT_TAIL(&dup->results, dup_entry, links);
+    }
+
+    return dup;
+}
+
+/* See description in trc_db.h */
+trc_exp_results *
+trc_exp_results_dup(trc_exp_results *results)
+{
+    trc_exp_result  *result = NULL;
+    trc_exp_result  *dup_result = NULL;
+    trc_exp_result  *prev = NULL;
+    trc_exp_results *dup = NULL;
+
+    if (results == NULL)
+        return NULL;
+
+    dup = TE_ALLOC(sizeof(*dup));
+    SLIST_INIT(dup);
+
+    SLIST_FOREACH(result, results, links)
+    {
+        dup_result = trc_exp_result_dup(result);
+
+        if (prev == NULL)
+            SLIST_INSERT_HEAD(dup, dup_result, links);
+        else
+            SLIST_INSERT_AFTER(prev, dup_result, links);
+
+        prev = dup_result;
+    }
+
+    return dup;
+}
+
+/* See description in trc_db.h */
+void
+trc_exp_results_free(trc_exp_results *results)
 {
     trc_exp_result *p;
+
+    if (results == NULL)
+        return;
 
     while ((p = SLIST_FIRST(results)) != NULL)
     {
         SLIST_REMOVE(results, p, trc_exp_result, links);
-        trc_free_exp_result(p);
+        trc_exp_result_free(p);
         free(p);
     }
+}
+
+/* See description in trc_db.h */
+void
+trc_free_test_iter(trc_test_iter *iter)
+{
+    //fprintf(stderr, "Free iter args\n");
+    trc_free_test_iter_args(&iter->args);
+    //fprintf(stderr, "Free notes\n");
+    free(iter->notes);
+    //fprintf(stderr, "Free exp results\n");
+    trc_exp_results_free(&iter->exp_results);
+    //fprintf(stderr, "Free tests\n");
+    trc_free_trc_tests(&iter->tests);
 }
 
 /**
@@ -124,10 +235,7 @@ trc_free_test_iters(trc_test_iters *iters)
     while ((p = TAILQ_FIRST(&iters->head)) != NULL)
     {
         TAILQ_REMOVE(&iters->head, p, links);
-        trc_free_test_args(&p->args);
-        free(p->notes);
-        trc_free_exp_results(&p->exp_results);
-        trc_free_trc_tests(&p->tests);
+        trc_free_test_iter(p);
         free(p);
     }
 }
@@ -268,7 +376,8 @@ trc_db_test_iter_args(trc_test_iter_args *args, unsigned int n_args,
             while ((arg = TAILQ_FIRST(&args->head)) != NULL)
             {
                 TAILQ_REMOVE(&args->head, arg, links);
-                /* Do not free name and value */
+                free(arg->name);
+                free(arg->value);
                 free(arg);
             }
             return TE_RC(TE_TRC, TE_ENOMEM);
@@ -289,6 +398,28 @@ trc_db_test_iter_args(trc_test_iter_args *args, unsigned int n_args,
     }
 
     return 0;
+}
+
+/* See the description in trc_db.h */
+void
+trc_db_test_delete_wilds(trc_test *test)
+{
+    trc_test_iter       *p;
+    trc_test_iter_arg   *arg;
+    trc_test_iter       *tvar;
+
+    TAILQ_FOREACH_SAFE(p, &test->iters.head, links, tvar)
+    {
+        TAILQ_FOREACH(arg, &p->args.head, links)
+            if (strlen(arg->value) == 0)
+                break;
+        
+        if (arg != NULL)
+        {
+            TAILQ_REMOVE(&test->iters.head, p, links);
+            trc_free_test_iter(p);
+        }
+    }
 }
 
 /* See the description in trc_db.h */
@@ -317,6 +448,93 @@ trc_db_new_test_iter(trc_test *test, unsigned int n_args,
     }
 
     return p;
+}
+
+/* See the description in trc_db.h */
+void
+trc_db_test_iter_res_cpy(trc_test_iter *dest, trc_test_iter *src)
+{
+    trc_exp_result  *exp_r;
+    trc_exp_result  *exp_r_dup;
+    trc_exp_result  *exp_r_prev = NULL;
+
+    if (dest->notes != NULL)
+        free(dest->notes);
+
+    trc_exp_results_free(&dest->exp_results);
+
+    if (src->notes != NULL)
+        dest->notes = strdup(src->notes);
+
+    /* No need to copy, do not free! */ 
+    dest->exp_default = src->exp_default;
+
+    SLIST_FOREACH(exp_r, &src->exp_results, links)
+    {
+        exp_r_dup = trc_exp_result_dup(exp_r);
+        if (exp_r_prev == NULL)
+            SLIST_INSERT_HEAD(&dest->exp_results, exp_r_dup, links);
+        else
+            SLIST_INSERT_AFTER(exp_r_prev, exp_r_dup, links);
+
+        exp_r_prev = exp_r_dup;
+    }
+}
+
+/* See the description in trc_db.h */
+void
+trc_db_test_iter_res_split(trc_test_iter *itr)
+{
+    trc_exp_result   *exp_r;
+    trc_exp_result   *tvar;
+    trc_exp_result   *split_r;
+    trc_exp_result   *exp_r_prev = NULL;
+    trc_exp_result   *last_r = NULL;
+    logic_expr      **le_arr;
+    int               le_count = 0;
+    int               i;
+    int               rc;
+
+    SLIST_FOREACH(exp_r, &itr->exp_results, links)
+        last_r = exp_r;
+
+    if (last_r == NULL)
+        return;
+
+    exp_r_prev = last_r;
+
+    SLIST_FOREACH_SAFE(exp_r, &itr->exp_results, links, tvar)
+    {
+        logic_expr_dnf(&exp_r->tags_expr, NULL);
+        rc =  logic_expr_dnf_split(exp_r->tags_expr, &le_arr,
+                                   &le_count);
+
+        if (rc != 0)
+            return;
+
+        free(exp_r->tags_str);
+        free(exp_r->tags_expr);
+        exp_r->tags_str = NULL;
+        exp_r->tags_expr = NULL;
+
+        for (i = 0; i < le_count; i++)
+        {
+            split_r = trc_exp_result_dup(exp_r);
+            split_r->tags_expr = le_arr[i];
+            split_r->tags_str = logic_expr_to_str(split_r->tags_expr);
+
+            SLIST_INSERT_AFTER(exp_r_prev, split_r, links);
+
+            exp_r_prev = split_r;
+        }
+
+        free(le_arr);
+
+        SLIST_REMOVE_HEAD(&itr->exp_results, links);
+        trc_exp_result_free(exp_r);
+        if (exp_r == last_r)
+            break;
+    }
 }
 
 /* See the description in te_trc.h */
@@ -377,12 +595,41 @@ trc_db_walker_find_user_data(const te_trc_db_walker *walker,
                                  user_id);
 }
 
+/**
+ * Find user data attached to the parrent of current element of
+ * the TRC database.
+ *
+ * @param walker        TRC database walker
+ * @param user_id       User ID
+ *
+ * @return Pointer to internal list element or NULL.
+ */
+static trc_user_data *
+trc_db_walker_find_parent_user_data(const te_trc_db_walker *walker,
+                                    unsigned int            user_id)
+{
+    return trc_db_find_user_data(trc_db_walker_parent_users_data(walker),
+                                 user_id);
+}
+
 /* See the description in te_trc.h */
 void *
 trc_db_walker_get_user_data(const te_trc_db_walker *walker,
                             unsigned int            user_id)
 {
-    trc_user_data *ud = trc_db_walker_find_user_data(walker, user_id);
+    trc_user_data *ud =
+        trc_db_walker_find_user_data(walker, user_id);
+
+    return (ud == NULL) ? NULL : ud->data;
+}
+
+/* See the description in te_trc.h */
+void *
+trc_db_walker_get_parent_user_data(const te_trc_db_walker *walker,
+                                   unsigned int            user_id)
+{
+    trc_user_data *ud =
+        trc_db_walker_find_parent_user_data(walker, user_id);
 
     return (ud == NULL) ? NULL : ud->data;
 }
@@ -403,6 +650,87 @@ trc_db_iter_get_user_data(const trc_test_iter *iter, unsigned int user_id)
     trc_user_data *ud = trc_db_find_user_data(&iter->users, user_id);
 
     return (ud == NULL) ? NULL : ud->data;
+}
+
+/* See the description in trc_db.h */
+te_errno
+trc_db_set_user_data(void *db_item, te_bool is_iter, unsigned int user_id,
+                     void *user_data)
+{
+    trc_users_data  *users = is_iter ? &((trc_test_iter *)db_item)->users :
+                                       &((trc_test *)db_item)->users;
+ 
+    trc_user_data *ud = trc_db_find_user_data(users, user_id);
+
+    if (ud == NULL)
+    {
+        ud = TE_ALLOC(sizeof(*ud));
+        if (ud == NULL)
+            return TE_ENOMEM;
+        ud->user_id = user_id;
+        LIST_INSERT_HEAD(users, ud, links);
+    }
+
+    ud->data = user_data;
+
+    return 0;
+}
+
+/* See the description in trc_db.h */
+te_errno
+trc_db_iter_set_user_data(trc_test_iter *iter, unsigned int user_id,
+                          void *user_data)
+{
+    return trc_db_set_user_data(iter, TRUE, user_id, user_data);
+}
+
+/* See the description in trc_db.h */
+te_errno
+trc_db_test_set_user_data(trc_test *test, unsigned int user_id,
+                          void *user_data)
+{
+    return trc_db_set_user_data(test, FALSE, user_id, user_data);
+}
+
+/* See the description in te_trc.h */
+te_errno
+trc_db_walker_set_prop_ud(const te_trc_db_walker *walker,
+                          unsigned int user_id, void *user_data,
+                          void *(*data_gen)(void *, te_bool))
+{
+    te_bool     is_iter = trc_db_walker_is_iter(walker);
+    void       *p = is_iter ? (void *)trc_db_walker_get_iter(walker) :
+                                (void *)trc_db_walker_get_test(walker);
+
+    trc_users_data  *list;
+    trc_user_data   *ud;
+
+    while (p != NULL)
+    {
+        list = is_iter ? &((trc_test_iter *)p)->users :
+                          &((trc_test *)p)->users;
+        ud = trc_db_find_user_data(list, user_id);
+
+        if (ud == NULL)
+        {
+            ud = TE_ALLOC(sizeof(*ud));
+            if (ud == NULL)
+                return TE_ENOMEM;
+            ud->user_id = user_id;
+            LIST_INSERT_HEAD(list, ud, links);
+        }
+
+        if (data_gen == NULL)
+            ud->data = user_data;
+        else
+            ud->data = data_gen(user_data, is_iter);
+
+        p = is_iter ? (void *)((trc_test_iter *)p)->parent :
+                        (void *)((trc_test *)p)->parent;
+        is_iter = !is_iter;
+    }
+
+    return 0;
 }
 
 /* See the description in te_trc.h */
@@ -468,4 +796,74 @@ trc_db_free_user_data(te_trc_db *db, unsigned int user_id,
     trc_db_free_walker(walker);
 
     return 0;
+}
+
+/* See the description in trc_db.h */
+void *
+trc_db_get_test_by_path(te_trc_db *db, char *path)
+{
+#define PATH_ITEM_LEN   20
+    char            path_item[PATH_ITEM_LEN];
+    int             i;
+    int             j = 0;
+    trc_test       *test = NULL;
+    trc_tests      *tests;
+    trc_test_iter  *iter;
+    trc_test_iters *iters = NULL;
+    te_bool         is_iter;
+
+    if (path == NULL)
+        return NULL;
+
+    is_iter = FALSE;
+    tests = &db->tests;
+
+    for (i = 0; i <= (int)strlen(path); i++)
+    {
+        if (path[i] == '/' || path[i] == '\0')
+        {
+            if (j > 0)
+            {
+                path_item[j] = '\0';
+
+                if (is_iter)
+                {
+                    TAILQ_FOREACH(iter, &iters->head, links)
+                        TAILQ_FOREACH(test, &iter->tests.head, links)
+                            if (strcmp(test->name, path_item) == 0)
+                                break;
+
+                    if (test == NULL)
+                        return NULL;
+                    else
+                        iters = &test->iters;
+                }
+                else
+                {
+                    TAILQ_FOREACH(test, &tests->head, links)
+                        if (strcmp(test->name, path_item) == 0)
+                            break;
+
+                    if (test == NULL)
+                        return NULL;
+                    else
+                    {
+                        is_iter = TRUE;
+                        iters = &test->iters;
+                    }
+                }
+
+                j = 0;
+            }
+        }
+        else
+            path_item[j++] = path[i];
+
+        if (j == PATH_ITEM_LEN)
+            return NULL;
+    }
+    
+    return test;
+
+#undef PATH_ITEM_LEN
 }

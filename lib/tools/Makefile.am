@@ -17,6 +17,7 @@ include_HEADERS = \
 	te_format.h \
 	te_iscsi.h \
 	tq_string.h \
+	te_string.h \
 	log_bufs.h
 
 if WINDOWS
@@ -38,7 +39,7 @@ install-exec-hook:
         fi
 
 EXTRA_DIST = te_shell_cmd.c te_log_fmt.c te_log_file.c log_bufs.c \
-             tq_string.c logger_file.c
+             tq_string.c te_string.c logger_file.c
 
 else
 
@@ -52,7 +53,8 @@ libtools_la_SOURCES = \
 	te_log_fmt.c \
 	te_log_file.c \
 	te_format.c \
-	tq_string.c
+	tq_string.c \
+	te_string.c
 
 liblog_bufs_la_SOURCES = log_bufs.c
 

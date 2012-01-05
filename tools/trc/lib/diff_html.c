@@ -46,6 +46,7 @@
 #include "logger_api.h"
 
 #include "trc_tags.h"
+#include "te_string.h"
 #include "trc_diff.h"
 #include "trc_html.h"
 #include "re_subst.h"
@@ -2182,10 +2183,10 @@ trc_diff_exp_results_to_html(FILE                 *f,
                              const trc_diff_entry *entry,
                              unsigned int          flags)
 {
-    const trc_diff_set         *set;
-    trc_report_test_iter_data  *iter_data;
-    trc_report_test_iter_entry *iter_entry;
-    te_errno                    rc = 0;
+    const trc_diff_set              *set;
+    trc_report_test_iter_data       *iter_data;
+    trc_report_test_iter_entry      *iter_entry;
+    te_errno                         rc = 0;
 
     for (set = TAILQ_FIRST(sets);
          set != NULL && rc == 0;
@@ -2194,7 +2195,8 @@ trc_diff_exp_results_to_html(FILE                 *f,
         WRITE_STR(trc_diff_table_row_col_start);
         fprintf(f, trc_diff_table_span_start, set->name);
         rc = trc_exp_result_to_html(f, entry->results[set->id],
-                                    flags, &set->tags);
+                                    flags,
+                                    (struct tqh_strings *)&set->tags);
         if (set->log)
         {
             if (entry->is_iter)
@@ -2210,7 +2212,7 @@ trc_diff_exp_results_to_html(FILE                 *f,
                                 (iter_entry->is_exp) ?
                                 "matched" : "unmatched");
                         rc = te_test_result_to_html(f, &iter_entry->result);
-                        if ((set->url != NULL) && (iter_entry->tin != NULL))
+                        if ((set->url != NULL) && (iter_entry->tin != 0))
                         {
                             fprintf(f, trc_diff_test_result_url,
                                     set->url, iter_entry->tin);

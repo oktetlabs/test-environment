@@ -145,7 +145,7 @@ trc_exp_result_to_html(FILE *f, const trc_exp_result *result,
         char *str = result->tags_str;
         char *tag_p;
         char *tag_q;
-        char *tag_str;
+        char *tag_str = NULL;
         tqe_string *tag;
 
         while (*str != '\0')
@@ -195,7 +195,7 @@ cleanup:
     return rc;
 }
 
-#include "trc_tags.h" /* for te_string */
+#include "te_string.h"
 #include "te_alloc.h"
 
 /**

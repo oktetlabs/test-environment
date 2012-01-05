@@ -92,7 +92,7 @@ trc_include_markers_add(xmlNodePtr parent)
     {
         if (node->type == XML_XINCLUDE_START)
         {
-            marker = xmlNewNode(NULL, "xinclude_start");
+            marker = xmlNewNode(NULL, BAD_CAST "xinclude_start");
 
             if (xmlAddNextSibling(node, marker) == NULL)
             {
@@ -102,7 +102,7 @@ trc_include_markers_add(xmlNodePtr parent)
         }
         else if (node->type == XML_XINCLUDE_END)
         {
-            marker = xmlNewNode(NULL, "xinclude_end");
+            marker = xmlNewNode(NULL, BAD_CAST "xinclude_end");
 
             if (xmlAddPrevSibling(node, marker) == NULL)
             {
@@ -309,6 +309,14 @@ get_text_content(xmlNodePtr node, const char *name, char **content)
     return 0;
 }
 
+/* See description in trc_db.h */
+te_errno
+trc_db_get_text_content(xmlNodePtr node, char **content)
+{
+    return get_text_content(node, XML2CHAR(node->name),
+                            content);
+}
+
 /**
  * Get node with text content.
  *
@@ -421,15 +429,8 @@ alloc_and_get_test_arg(xmlNodePtr node, trc_test_iter_args *args)
     return rc;
 }
 
-/**
- * Get test iteration arguments.
- *
- * @param node      XML node
- * @param args      List of arguments to be filled in
- *
- * @return Status code
- */
-static te_errno
+/* See description in trc_db.h */
+te_errno
 get_test_args(xmlNodePtr *node, trc_test_iter_args *args)
 {
     te_errno rc = 0;
@@ -484,24 +485,95 @@ get_result(xmlNodePtr node, const char *name, te_test_status *result)
     return 0;
 }
 
-/**
- * Get expected result in accordance with list of tags.
- *
- * @param node      Location of the first non-arg node of the test 
- *                  iteration (IN), of the first non-result node of the
- *                  test iteration (OUT)
- * @param results   Location for the expected results data
- *
- * @return Status code.
- */
-static te_errno
-get_expected_results(xmlNodePtr *node, trc_exp_results *results)
+/* See description in trc_db.h */
+te_errno
+get_expected_result(xmlNodePtr node, trc_exp_result *result,
+                    te_bool tags_tolerate)
 {
     te_errno                rc = 0;
-    trc_exp_result         *result;
     trc_exp_result_entry   *entry;
     xmlNodePtr              p, q;
     te_test_verdict        *v;
+
+    result->tags_str = XML2CHAR(xmlGetProp(node,
+                                           CONST_CHAR2XML("tags")));
+    if (result->tags_str == NULL && !tags_tolerate)
+    {
+        ERROR("%s: tags attribute should be specified for "
+              "<results> element", __FUNCTION__);
+        return TE_RC(TE_TRC, TE_EFMT);
+    }
+
+    if (result->tags_str != NULL)
+    {
+        if (strlen(result->tags_str) == 0 && tags_tolerate)
+            result->tags_expr = NULL;
+        else if (logic_expr_parse(result->tags_str,
+                                  &result->tags_expr) != 0)
+            return TE_RC(TE_TRC, TE_EINVAL);
+    }
+    else
+        result->tags_expr = NULL;
+
+    get_node_property(node, "key", &result->key);
+    get_node_property(node, "notes", &result->notes);
+
+    for (p = xmlNodeChildren(node); p != NULL; p = xmlNodeNext(p))
+    {
+        if (xmlStrcmp(p->name, CONST_CHAR2XML("result")) != 0)
+        {
+            ERROR("Unexpected node '%s' in the tagged result",
+                  p->name);
+            return TE_RC(TE_TRC, TE_EFMT);
+        }
+
+        entry = TE_ALLOC(sizeof(*entry));
+        if (entry == NULL)
+            return TE_ENOMEM;
+        te_test_result_init(&entry->result);
+        TAILQ_INSERT_TAIL(&result->results, entry, links);
+
+        rc = get_result(p, "value", &entry->result.status);
+        if (rc != 0)
+            return rc;
+
+        get_node_property(p, "key", &entry->key);
+        get_node_property(p, "notes", &entry->notes);
+
+        q = xmlNodeChildren(p);
+        while (q != NULL)
+        {
+            char *s = NULL;
+
+            rc = get_node_with_text_content(&q, "verdict", &s);
+            if (rc == TE_ENOENT)
+            {
+                ERROR("Unexpected node '%s' in the tagged result "
+                      "entry", q->name);
+                return TE_RC(TE_TRC, TE_EFMT);
+            }
+
+            v = TE_ALLOC(sizeof(*v));
+            if (v == NULL)
+            {
+                free(s);
+                return TE_ENOMEM;
+            }
+
+            v->str = s;
+
+            TAILQ_INSERT_TAIL(&entry->result.verdicts, v, links);
+        }
+    }
+
+    return 0;
+}
+
+/* See description in trc_db.h */
+te_errno
+get_expected_results(xmlNodePtr *node, trc_exp_results *results)
+{
+    trc_exp_result         *result;
 
     assert(node != NULL);
     assert(results != NULL);
@@ -515,67 +587,7 @@ get_expected_results(xmlNodePtr *node, trc_exp_results *results)
             return TE_ENOMEM;
         TAILQ_INIT(&result->results);
         SLIST_INSERT_HEAD(results, result, links);
-
-        result->tags_str = XML2CHAR(xmlGetProp(*node,
-                                               CONST_CHAR2XML("tags")));
-        if (result->tags_str == NULL)
-        {
-            ERROR("%s: tags attribute should be specified for "
-                  "<results> element", __FUNCTION__);
-            return TE_RC(TE_TRC, TE_EFMT);
-        }
-
-        if (logic_expr_parse(result->tags_str, &result->tags_expr) != 0)
-            return TE_RC(TE_TRC, TE_EINVAL);
-
-        get_node_property(*node, "key", &result->key);
-        get_node_property(*node, "notes", &result->notes);
-
-        for (p = xmlNodeChildren(*node); p != NULL; p = xmlNodeNext(p))
-        {
-            if (xmlStrcmp(p->name, CONST_CHAR2XML("result")) != 0)
-            {
-                ERROR("Unexpected node '%s' in the tagged result",
-                      p->name);
-                return TE_RC(TE_TRC, TE_EFMT);
-            }
-
-            entry = TE_ALLOC(sizeof(*entry));
-            if (entry == NULL)
-                return TE_ENOMEM;
-            te_test_result_init(&entry->result);
-            TAILQ_INSERT_TAIL(&result->results, entry, links);
-
-            rc = get_result(p, "value", &entry->result.status);
-            if (rc != 0)
-                return rc;
-
-            get_node_property(p, "key", &entry->key);
-            get_node_property(p, "notes", &entry->notes);
-
-            q = xmlNodeChildren(p);
-            while (q != NULL)
-            {
-                char *s = NULL;
-
-                rc = get_node_with_text_content(&q, "verdict", &s);
-                if (rc == TE_ENOENT)
-                {
-                    ERROR("Unexpected node '%s' in the tagged result "
-                          "entry", q->name);
-                    return TE_RC(TE_TRC, TE_EFMT);
-                }
-                v = TE_ALLOC(sizeof(*v));
-                if (v == NULL)
-                {
-                    free(s);
-                    return TE_ENOMEM;
-                }
-                v->str = s;
-                TAILQ_INSERT_TAIL(&entry->result.verdicts, v, links);
-            }
-        }
-
+        get_expected_result(*node, result, FALSE);
         *node = xmlNodeNext(*node); 
     }
 
@@ -912,6 +924,12 @@ get_tests(xmlNodePtr *node, trc_tests *tests, trc_test_iter *parent)
     assert(node != NULL);
     assert(tests != NULL);
 
+    if (*node != NULL &&
+        xmlStrcmp((*node)->name, CONST_CHAR2XML("command")) == 0)
+    {
+        *node = xmlNodeNext(*node);
+    }
+
     while (*node != NULL &&
            (
                (xmlStrcmp((*node)->name, CONST_CHAR2XML("test")) == 0 &&
@@ -1044,54 +1062,215 @@ trc_db_open(const char *location, te_trc_db **db)
     return rc;
 }
 
-static te_errno trc_update_tests(trc_tests *tests);
+static te_errno trc_update_tests(trc_tests *tests, int flags,
+                                 int uid,
+                                 te_bool (*to_save)(void *, te_bool),
+                                 char *(*set_user_attr)(void *, te_bool));
+
+te_errno
+trc_exp_result_to_xml(trc_exp_result *exp_result, xmlNodePtr results_node,
+                      te_bool is_default)
+{   
+    xmlNodePtr               result_node;
+    xmlNodePtr               verd_node;
+    trc_exp_result_entry    *res_entry;
+    te_test_verdict         *verdict;
+
+    if (exp_result == NULL)
+        return 0;
+
+    if (!is_default)
+        xmlNewProp(results_node, BAD_CAST "tags",
+                   BAD_CAST exp_result->tags_str);
+
+    if (exp_result->key != NULL &&
+            strlen(exp_result->key) != 0)
+        xmlNewProp(results_node, BAD_CAST "key",
+                   BAD_CAST exp_result->key);
+
+    if (exp_result->notes != NULL &&
+            strlen(exp_result->notes) != 0)
+        xmlNewProp(results_node, BAD_CAST "notes",
+                   BAD_CAST exp_result->notes);
+
+    if (is_default &&
+        (res_entry = TAILQ_FIRST(&exp_result->results)) ==
+                                   TAILQ_LAST(&exp_result->results,
+                                              trc_exp_result_entry_head) &&
+        res_entry != NULL &&
+        TAILQ_EMPTY(&res_entry->result.verdicts))
+    {
+         xmlNewProp(results_node, BAD_CAST "value",
+                    BAD_CAST te_test_status_to_str(
+                                    res_entry->result.status));
+    }
+    else
+    {
+        TAILQ_FOREACH(res_entry, &exp_result->results,
+                      links)
+        {
+            result_node = xmlNewChild(results_node,
+                                      NULL,
+                                      BAD_CAST "result",
+                                      NULL);
+
+            xmlNewProp(result_node, BAD_CAST "value",
+                       BAD_CAST te_test_status_to_str(
+                                    res_entry->result.status));
+
+            if (res_entry->key != NULL &&
+                    strlen(res_entry->key) != 0)
+                xmlNewProp(result_node, BAD_CAST "key",
+                           BAD_CAST res_entry->key);
+
+            if (res_entry->notes != NULL &&
+                    strlen(res_entry->notes) != 0)
+                xmlNewProp(result_node, BAD_CAST "notes",
+                           BAD_CAST res_entry->notes);
+
+            TAILQ_FOREACH(verdict,
+                          &res_entry->result.verdicts,
+                          links)
+            {
+                verd_node =
+                    xmlNewChild(result_node, NULL,
+                                BAD_CAST "verdict",
+                                BAD_CAST verdict->str);
+            }
+        }
+    }
+
+    return 0; 
+}
+
+te_errno
+trc_exp_results_to_xml(trc_exp_results *exp_results, xmlNodePtr node)
+{
+    xmlNodePtr               results_node;
+    trc_exp_result          *result;
+    trc_exp_result          *tvar;
+
+    trc_exp_results          results_rev;
+
+    if (exp_results == NULL)
+        return 0;
+   
+    SLIST_INIT(&results_rev);
+    SLIST_FOREACH_SAFE(result, exp_results, links,
+                       tvar)
+    {
+        SLIST_REMOVE_HEAD(exp_results, links);
+        SLIST_INSERT_HEAD(&results_rev, result, links);
+    }
+
+    SLIST_FOREACH_SAFE(result, &results_rev, links, tvar)
+    {
+        results_node = xmlNewChild(node, NULL,
+                                   BAD_CAST "results",
+                                   NULL);
+        trc_exp_result_to_xml(result, results_node, FALSE);
+
+        SLIST_REMOVE_HEAD(&results_rev, links);
+        SLIST_INSERT_HEAD(exp_results, result, links);
+    }
+
+    return 0;
+}
 
 static te_errno
-trc_update_iters(trc_test_iters *iters)
+trc_update_iters(trc_test_iters *iters, int flags, int uid,
+                 te_bool (*to_save)(void *, te_bool),
+                 char *(*set_user_attr)(void *, te_bool))
 {
-    te_errno    rc;
+    te_errno        rc;
     trc_test_iter  *p;
+    void           *user_data;
+    te_bool         is_saved;
+    char           *user_attr;
 
     TAILQ_FOREACH(p, &iters->head, links)
     {
+        /*
+         * If we have initially deleted old XML, this is
+         * just incorrect pointer.
+         */
+        if (flags & TRC_SAVE_REMOVE_OLD)
+            p->node = NULL;
+
+        user_data = trc_db_iter_get_user_data(p, uid);
+        if (to_save != NULL)
+            is_saved = to_save(user_data, TRUE);
+        else
+            is_saved = TRUE;
+
         if (p->node == NULL)
         {
             trc_test_iter_arg  *a;
             xmlNodePtr          node;
 
-            INFO("Add node for iteration %p node=%p", iters, iters->node);
-            p->tests.node = xmlNewChild(iters->node, NULL,
-                                        BAD_CAST "iter", NULL);
-            if (p->tests.node == NULL)
+            if (is_saved)
             {
-                ERROR("xmlNewChild() failed");
-                return TE_ENOMEM;
-            }
-            xmlNewProp(p->tests.node, BAD_CAST "result",
-                       BAD_CAST "PASSED");
-            TAILQ_FOREACH(a, &p->args.head, links)
-            {
-                xmlNodePtr arg = xmlNewChild(p->tests.node, NULL,
-                                            BAD_CAST "arg",
-                                            BAD_CAST a->value);
-                if (arg == NULL)
+                INFO("Add node for iteration %p node=%p", iters,
+                     iters->node);
+                p->node = p->tests.node = xmlNewChild(iters->node, NULL,
+                                              BAD_CAST "iter", NULL);
+                if (p->tests.node == NULL)
                 {
-                    ERROR("xmlNewChild() failed for 'arg'");
+                    ERROR("xmlNewChild() failed");
                     return TE_ENOMEM;
                 }
-                xmlNewProp(arg, BAD_CAST "name", BAD_CAST a->name);
-            }
-            node = xmlNewChild(p->tests.node, NULL,
-                               BAD_CAST "notes", NULL);
-            if (node == NULL)
-            {
-                ERROR("xmlNewChild() failed for 'notes'");
-                return TE_ENOMEM;
+                xmlNewProp(p->tests.node, BAD_CAST "result",
+                           BAD_CAST "PASSED");
+
+                if (set_user_attr != NULL)
+                {
+                    user_attr = set_user_attr(user_data, TRUE);
+                    if (user_attr != NULL)
+                    {
+                        xmlNewProp(p->tests.node, BAD_CAST "user_attr",
+                                   BAD_CAST user_attr);
+                        free(user_attr);
+                    }
+                }
+
+                TAILQ_FOREACH(a, &p->args.head, links)
+                {
+                    xmlNodePtr arg = xmlNewChild(p->tests.node, NULL,
+                                                BAD_CAST "arg",
+                                                a->value == NULL ?
+                                                    BAD_CAST a->value :
+                                                    strlen(a->value) == 0 ?
+                                                        NULL :
+                                                        BAD_CAST a->value);
+                    if (arg == NULL)
+                    {
+                        ERROR("xmlNewChild() failed for 'arg'");
+                        return TE_ENOMEM;
+                    }
+                    xmlNewProp(arg, BAD_CAST "name", BAD_CAST a->name);
+                }
+                node = xmlNewChild(p->tests.node, NULL,
+                                   BAD_CAST "notes", BAD_CAST p->notes);
+                if (node == NULL)
+                {
+                    ERROR("xmlNewChild() failed for 'notes'");
+                    return TE_ENOMEM;
+                }
+
+                if ((flags & TRC_SAVE_RESULTS) &&
+                    !SLIST_EMPTY(&p->exp_results))
+                    trc_exp_results_to_xml(&p->exp_results,
+                                           p->tests.node);
             }
         }
-        rc = trc_update_tests(&p->tests);
-        if (rc != 0)
-            return rc;
+
+        if (is_saved)
+        {
+            rc = trc_update_tests(&p->tests, flags, uid, to_save,
+                                  set_user_attr);
+            if (rc != 0)
+                return rc;
+        }
     }
     return 0;
 }
@@ -1109,51 +1288,123 @@ trc_test_type_to_str(trc_test_type type)
 }
 
 static te_errno
-trc_update_tests(trc_tests *tests)
+trc_update_tests(trc_tests *tests, int flags, int uid,
+                 te_bool (*to_save)(void *, te_bool),
+                 char *(*set_user_attr)(void *, te_bool))
 {
     te_errno    rc;
     trc_test   *p;
     xmlNodePtr  node;
+    void       *user_data;
+    te_bool     is_saved;
 
     TAILQ_FOREACH(p, &tests->head, links)
     {
+        /*
+         * If we have initially deleted old XML, this is
+         * just incorrect pointer.
+         */
+        if (flags & TRC_SAVE_REMOVE_OLD)
+            p->node = NULL;
+
+        user_data = trc_db_test_get_user_data(p, uid);
+        if (to_save != NULL)
+            is_saved = to_save(user_data, FALSE);
+        else
+            is_saved = TRUE;
+
         if (p->node == NULL)
         {
-            INFO("Add node for '%s'", p->name);
-            p->iters.node = xmlNewChild(tests->node, NULL,
-                                        BAD_CAST "test",
-                                        NULL);
-            if (p->iters.node == NULL)
+            if (is_saved)
             {
-                ERROR("xmlNewChild() failed for 'test'");
-                return TE_ENOMEM;
-            }
-            xmlNewProp(p->iters.node, BAD_CAST "name",
-                       BAD_CAST p->name);
-            xmlNewProp(p->iters.node, BAD_CAST "type",
-                       BAD_CAST trc_test_type_to_str(p->type));
-            if (xmlNewChild(p->iters.node, NULL,
-                            BAD_CAST "objective",
-                            BAD_CAST p->objective) == NULL)
-            {
-                ERROR("xmlNewChild() failed for 'objective'");
-                return TE_ENOMEM;
-            }
-            node = xmlNewChild(p->iters.node, NULL,
-                               BAD_CAST "notes", NULL);
-            if (node == NULL)
-            {
-                ERROR("xmlNewChild() failed for 'notes'");
-                return TE_ENOMEM;
+                INFO("Add node for '%s'", p->name);
+                p->node = p->iters.node = xmlNewChild(tests->node, NULL,
+                                                      BAD_CAST "test",
+                                                      NULL);
+                if (p->iters.node == NULL)
+                {
+                    ERROR("xmlNewChild() failed for 'test'");
+                    return TE_ENOMEM;
+                }
+                xmlNewProp(p->iters.node, BAD_CAST "name",
+                           BAD_CAST p->name);
+                xmlNewProp(p->iters.node, BAD_CAST "type",
+                           BAD_CAST trc_test_type_to_str(p->type));
+                if ((p->obj_node = xmlNewChild(p->iters.node, NULL,
+                                        BAD_CAST "objective",
+                                        BAD_CAST p->objective)) == NULL)
+                {
+                    ERROR("xmlNewChild() failed for 'objective'");
+                    return TE_ENOMEM;
+                }
+
+                node = xmlNewChild(p->iters.node, NULL,
+                                   BAD_CAST "notes", NULL);
+                if (node == NULL)
+                {
+                    ERROR("xmlNewChild() failed for 'notes'");
+                    return TE_ENOMEM;
+                }
+
+                if ((flags & TRC_SAVE_GLOBALS) &&
+                    !TAILQ_EMPTY(&current_db->globals.head))
+                {
+                    trc_global      *g;
+                    xmlNodePtr       globals_node;
+                    xmlNodePtr       global_node;
+                    xmlNodePtr       value_node;
+
+                    flags &= ~TRC_SAVE_GLOBALS;
+
+                    globals_node = xmlNewChild(p->iters.node, NULL,
+                                               BAD_CAST "globals",
+                                               NULL);
+                    if (globals_node == NULL)
+                    {
+                        ERROR("xmlNewChild() failed for 'globals'");
+                        return TE_ENOMEM;
+                    }
+                    
+                    TAILQ_FOREACH(g, &current_db->globals.head, links)
+                    {
+                        global_node = xmlNewChild(globals_node, NULL,
+                                                  BAD_CAST "global",
+                                                  NULL);
+                        if (global_node == NULL)
+                        {
+                            ERROR("xmlNewChild() failed for 'global'");
+                            return TE_ENOMEM;
+                        }
+
+                        value_node = xmlNewChild(global_node, NULL,
+                                                 BAD_CAST "value",
+                                                 BAD_CAST g->value);
+                        if (value_node == NULL)
+                        {
+                            ERROR("xmlNewChild() failed for 'value'");
+                            return TE_ENOMEM;
+                        }
+
+                        xmlNewProp(global_node, BAD_CAST "name",
+                                   BAD_CAST g->name);
+                    }
+
+                }
             }
         }
-        if (p->obj_update)
+
+        if (is_saved)
         {
-            xmlNodeSetContent(p->obj_node, BAD_CAST p->objective);
+            if (p->obj_update)
+            {
+                xmlNodeSetContent(p->obj_node, BAD_CAST p->objective);
+            }
+
+            rc = trc_update_iters(&p->iters, flags, uid, to_save,
+                                  set_user_attr);
+            if (rc != 0)
+                return rc;
         }
-        rc = trc_update_iters(&p->iters);
-        if (rc != 0)
-            return rc;
     }
     return 0;
 }
@@ -1161,10 +1412,19 @@ trc_update_tests(trc_tests *tests)
 
 /* See description in trc_db.h */
 te_errno
-trc_db_save(te_trc_db *db, const char *filename)
+trc_db_save(te_trc_db *db, const char *filename, int flags,
+            int uid, te_bool (*to_save)(void *, te_bool),
+            char *(*set_user_attr)(void *, te_bool),
+            char *cmd)
 {
     const char *fn = (filename != NULL) ? filename : db->filename;
     te_errno    rc;
+
+    if (flags & TRC_SAVE_REMOVE_OLD)
+    {
+        xmlFreeDoc(db->xml_doc);
+        db->xml_doc = NULL;
+    }
 
     if (db->xml_doc == NULL)
     {
@@ -1184,9 +1444,60 @@ trc_db_save(te_trc_db *db, const char *filename)
         }
         xmlDocSetRootElement(db->xml_doc, node);
         db->tests.node = node;
+
+        if (cmd != NULL)
+        {
+            xmlNodePtr  child_node = xmlFirstElementChild(node);
+            xmlNodePtr  cmd_node = NULL;
+            xmlChar    *xml_cmd = NULL;
+
+            xml_cmd = xmlEncodeEntitiesReentrant(db->xml_doc,
+                                                 BAD_CAST cmd);
+            if (xml_cmd == NULL)
+            {
+                ERROR("xmlEncodeEntitiesReentrant() failed\n");
+                return TE_ENOMEM;
+            }
+
+            if (child_node == NULL)
+            {
+                cmd_node = xmlNewChild(node, NULL, BAD_CAST "command",
+                                       xml_cmd);
+                if (cmd_node == NULL)
+                {
+                    ERROR("xmlNewChild() failed\n");
+                    free(xml_cmd);
+                    return TE_ENOMEM;
+                }
+
+            }
+            else if (xmlStrcmp(child_node->name, BAD_CAST "command") == 0)
+            {
+                xmlNodeSetContent(child_node, xml_cmd);
+            }
+            else
+            {
+                cmd_node = xmlNewChild(node, NULL, BAD_CAST "command",
+                                       xml_cmd);
+                if (cmd_node == NULL)
+                {
+                    ERROR("xmlNewChild() failed\n");
+                    free(xml_cmd);
+                    return TE_ENOMEM;
+                }
+                
+                if (xmlAddPrevSibling(child_node, cmd_node) == NULL)
+                {
+                    ERROR("xmlPrevSibling() failed\n");
+                    free(xml_cmd);
+                    return TE_ENOMEM;
+                }
+            }
+        }
     }
 
-    if ((rc = trc_update_tests(&db->tests)) != 0)
+    if ((rc = trc_update_tests(&db->tests, flags, uid, to_save,
+                               set_user_attr)) != 0)
     {
         ERROR("Failed to update DB XML document");
         return rc;
