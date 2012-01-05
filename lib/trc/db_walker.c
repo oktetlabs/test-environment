@@ -621,6 +621,9 @@ trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
                 if (no_wildcards && wild_iter != NULL)
                    trc_db_test_iter_res_cpy(walker->iter,
                                             wild_iter);
+                else
+                    walker->iter->exp_default =
+                        exp_defaults_get(TE_TEST_PASSED);
             }
             else
             {

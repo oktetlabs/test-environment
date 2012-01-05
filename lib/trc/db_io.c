@@ -157,16 +157,8 @@ exp_defaults_init(void)
     }
 }
 
-/**
- * Get expected results from set of widely used singleton results
- * without verdicts.
- *
- * @param status        Expected test status
- *
- * @return Pointer to expected result with signle entry with specified
- *         status and no verdicts.
- */
-static const trc_exp_result *
+/* See description in trc_db.h */
+const trc_exp_result *
 exp_defaults_get(te_test_status status)
 {
     trc_exp_result         *p;

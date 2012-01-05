@@ -223,6 +223,17 @@ extern void *trc_db_get_test_by_path(te_trc_db *db,
 extern trc_exp_result *trc_exp_result_dup(trc_exp_result *result);
 
 /**
+ * Get expected results from set of widely used singleton results
+ * without verdicts.
+ *
+ * @param status        Expected test status
+ *
+ * @return Pointer to expected result with signle entry with specified
+ *         status and no verdicts.
+ */
+extern const trc_exp_result *exp_defaults_get(te_test_status status);
+
+/**
  * Duplicate expected results.
  *
  * @param result        Results to be duplicated.
