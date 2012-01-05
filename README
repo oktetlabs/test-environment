@@ -31,6 +31,7 @@ Engine (in [] brackets - debian package names):
 - curl libraries [not from debian, should be taken from storage]
 - libusb, libusb-dev
 - libpam0g-dev
+- libperl-dev
 
 We've tested engine on Linux only.
 
