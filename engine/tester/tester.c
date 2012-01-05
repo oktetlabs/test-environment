@@ -189,6 +189,7 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
         TESTER_OPT_NO_SIMULT,
 
         TESTER_OPT_REQ,
+        TESTER_OPT_NO_REQS,
         TESTER_OPT_REQ_LIST,
         TESTER_OPT_QUIET_SKIP,
         TESTER_OPT_VERB_SKIP,
@@ -261,6 +262,10 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
           "REQS" },
         { "reqs-list", 'R', POPT_ARG_NONE, NULL, TESTER_OPT_REQ_LIST,
           "Print all requirements mentioned in the packages into the log",
+          NULL },
+        { "no-reqs", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_NO_REQS,
+          "Ignore requirements and run all iterations specified in "
+          "package.xml",
           NULL },
         { "quietskip", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_QUIET_SKIP,
           "Quietly skip tests which do not meet specified requirements.",
@@ -385,6 +390,8 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
     te_bool      no_trc = TRUE;
 #endif
     te_bool      warn_no_trc = TRUE;
+
+    te_bool      no_reqs = FALSE;
 
 
     /* Process command line options */
@@ -549,6 +556,9 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
             case TESTER_OPT_REQ_LIST:
                 global->flags |= TESTER_LOG_REQS_LIST;
                 break;
+            case TESTER_OPT_NO_REQS:
+                no_reqs = TRUE;
+                break;
 
             case TESTER_OPT_TRC_DB:
             case TESTER_OPT_TRC_TAG:
@@ -643,6 +653,12 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
               poptStrerror(rc));
         poptFreeContext(optCon);
         return TE_EINVAL;
+    }
+
+    if (no_reqs)
+    {
+        logic_expr_free(global->targets);
+        global->targets = NULL;
     }
 
     /* Get Tester configuration file names */

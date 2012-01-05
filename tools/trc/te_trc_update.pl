@@ -211,7 +211,7 @@ if ($test_specified > 0)
     my $fake_raw_log = getcwd()."/".$tmp_files[$#tmp_files];
     system("TE_LOG_RAW=\"".escape_str($fake_raw_log)."\" ".
            "./run.sh $test_fake_run --no-builder --tester-no-build ".
-           "--no-cs --tester-no-cs --no-rcf 1>/dev/null ".
+           "--no-cs --tester-no-cs --no-rcf --tester-no-reqs 1>/dev/null ".
            "--log-txt=/dev/null");
     download_prepare_log($fake_raw_log);
     $opts = $opts." --fake-log=".$tmp_files[$#tmp_files];

@@ -113,6 +113,8 @@ Generic options:
   --tester-no-cfg-track         Don't track configuration changes.
   --tester-no-logues            Disable prologues and epilogues globally.
   --tester-req=<reqs-expr>      Requirements to be tested (logical expression).
+  --tester-no-reqs              Ignore requirements, run all possible
+                                iterations.
   --tester-quietskip            Quietly skip tests which do not meet specified
                                 requirements (default).
   --tester-verbskip             Force Tester to log skipped iterations.
