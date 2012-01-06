@@ -408,10 +408,10 @@ func_args_match(const trc_test_iter_args *db_args,
                 unsigned int n_args, trc_report_argument *args,
                 void *data)
 {
-#ifdef HAVE_LIBPERL
     trc_update_test_iter_data *iter_data = data;
     trc_test_iter_arg         *arg;
 
+#ifdef HAVE_LIBPERL
     HV  *olds;
     HV  *news;
     HV  *commons;
@@ -419,6 +419,7 @@ func_args_match(const trc_test_iter_args *db_args,
     HV  *uncomm_news;
     SV  *val;
     SV  *res;
+#endif
     
     te_string   te_str;
     int         i = 0;
@@ -435,6 +436,7 @@ func_args_match(const trc_test_iter_args *db_args,
 
     if (perl_expr != NULL || perl_script != NULL)
     {
+#ifdef HAVE_LIBPERL
         dTHX;
 
         olds = get_hv("olds", GV_ADD);
@@ -628,6 +630,7 @@ func_args_match(const trc_test_iter_args *db_args,
             return ITER_WILD_MATCH;
         else
             return ITER_NO_MATCH;
+#endif
     }
     else if (oth_prog != NULL)
     {
@@ -676,7 +679,6 @@ func_args_match(const trc_test_iter_args *db_args,
             execv(oth_prog, argv);
         }
     }
-#endif
 
     return ITER_NO_MATCH;
 }
@@ -689,6 +691,9 @@ main(int argc, char **argv, char **envp)
 
 #ifdef HAVE_LIBPERL
     PERL_SYS_INIT3(&argc, &argv, &envp);
+#else
+    fprintf(stderr, "WARNING: libperl is missed. You cannot use "
+            "--old-match-expr and --old-match-perl.\n");
 #endif
 
     trc_update_init_ctx(&ctx);
