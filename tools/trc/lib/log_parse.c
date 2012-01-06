@@ -2082,7 +2082,11 @@ trc_update_gen_rules(unsigned int db_uid,
                 rule->olds = trc_exp_results_dup(&iter1->exp_results);
                 rule->conflicts = trc_exp_results_dup(
                                             &iter_data1->new_results);
-                rule->news = NULL;
+                if (flags & TRC_LOG_PARSE_COPY_OLDS)
+                    rule->news = trc_exp_results_dup(&iter1->exp_results);
+                else
+                    rule->news = NULL;
+
                 cur_rule_id++;
                 rule->rule_id = cur_rule_id;
 
