@@ -2084,6 +2084,8 @@ trc_update_gen_rules(unsigned int db_uid,
                                             &iter_data1->new_results);
                 if (flags & TRC_LOG_PARSE_COPY_OLDS)
                     rule->news = trc_exp_results_dup(&iter1->exp_results);
+                else if (flags & TRC_LOG_PARSE_COPY_CONFLS)
+                    rule->news = trc_exp_results_dup(rule->conflicts);
                 else
                     rule->news = NULL;
 

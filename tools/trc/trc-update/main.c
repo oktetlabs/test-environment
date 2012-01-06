@@ -91,6 +91,8 @@ enum {
                                          generated TRC XML */
     TRC_UPDATE_OPT_COPY_OLDS,       /**< Duplicate old results in <news>
                                          section of updating rule */
+    TRC_UPDATE_OPT_COPY_CONFLS,     /**< Duplicate conflicting results in
+                                         <news> section of updating rule */
     TRC_UPDATE_OPT_NO_WILDS,        /**< Do not generate wildcards */
     TRC_UPDATE_OPT_LOG_WILDS,       /**< Generate wildcards for results
                                          from logs, not from TRC DB */
@@ -229,6 +231,11 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
           "Copy results from existing TRC DB into <news> section  "
           "of updating rule", NULL },
 
+        { "copy-confls", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_COPY_CONFLS,
+          "Copy conflicting results from logs into <news> section  "
+          "of updating rule", NULL },
+
         { "no-wilds", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_NO_WILDS,
           "Do not generate wildcards in resulting TRC",
@@ -339,6 +346,10 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
 
             case TRC_UPDATE_OPT_COPY_OLDS:
                 ctx.flags |= TRC_LOG_PARSE_COPY_OLDS;
+                break;
+
+            case TRC_UPDATE_OPT_COPY_CONFLS:
+                ctx.flags |= TRC_LOG_PARSE_COPY_CONFLS;
                 break;
 
             case TRC_UPDATE_OPT_RULES_ALL:

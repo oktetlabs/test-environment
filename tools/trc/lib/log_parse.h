@@ -44,35 +44,28 @@ enum trc_log_parse_flags {
     TRC_LOG_PARSE_MERGE_LOG        = 0x4,   /**< Merge iterations from log
                                                  into TRC DB performing
                                                  TRC update */
-    TRC_LOG_PARSE_UNSTABLE_NEW     = 0x8,   /**< If the same iteration
-                                                 produces different results
-                                                 for a given set of tags in
-                                                 logs to be merged,
-                                                 merge these results into
-                                                 "unstable" one */
-    TRC_LOG_PARSE_UNSTABLE_OLD     = 0x10,  /**< Do not replace results
-                                                 previously stored in
-                                                 TRC with new ones,
-                                                 but merge them into
-                                                 "unstable" results" */
-    TRC_LOG_PARSE_RULES_ALL        = 0x20,  /**< Generate updating rules
+    TRC_LOG_PARSE_RULES_ALL        = 0x8,   /**< Generate updating rules
                                                  for all possible results
                                                  (not only those for
                                                   which there are new
                                                   results in logs) */
-    TRC_LOG_PARSE_USE_RULE_IDS     = 0x40,  /**< Insert updating rule ID in
+    TRC_LOG_PARSE_USE_RULE_IDS     = 0x10,  /**< Insert updating rule ID in
                                                  user_attr attribute of test
                                                  iterations in generated TRC
                                                  to simplify applying of
                                                  edited rules */
-    TRC_LOG_PARSE_NO_GEN_WILDS     = 0x80,  /**< Do not replace test
+    TRC_LOG_PARSE_NO_GEN_WILDS     = 0x20,  /**< Do not replace test
                                                  iterations with wildcards
                                                  in generated TRC */
-    TRC_LOG_PARSE_LOG_WILDS        = 0x100, /**< Generate wildcards for
+    TRC_LOG_PARSE_LOG_WILDS        = 0x40,  /**< Generate wildcards for
                                                  results from logs, not
                                                  from TRC DB */
-    TRC_LOG_PARSE_COPY_OLDS        = 0x200, /**< Copy results from current
+    TRC_LOG_PARSE_COPY_OLDS        = 0x80,  /**< Copy results from current
                                                  TRC DB in <news>
+                                                 section of updating
+                                                 rule */
+    TRC_LOG_PARSE_COPY_CONFLS      = 0x100, /**< Copy conflicting results
+                                                 from logs in <news>
                                                  section of updating
                                                  rule */
 };
