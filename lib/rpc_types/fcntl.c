@@ -191,6 +191,7 @@ fcntl_rpc2str(rpc_fcntl_command cmd)
     switch (cmd)
     {
         RPC2STR(F_DUPFD);
+        RPC2STR(F_DUPFD_CLOEXEC);
         RPC2STR(F_GETFD);
         RPC2STR(F_SETFD);
         RPC2STR(F_GETFL);
