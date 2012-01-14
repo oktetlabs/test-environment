@@ -341,7 +341,7 @@ Additional command line options for dispatcher.sh should be supported.
 |                             | By defaul overfill handle method rotation.     |
 | --sniff-log-dir  <path>     | Path to the *TEN* side capture files.          |
 |                             | By default TE_LOG_DIR/caps is used.            |
-| --sniff-log-size <val>      | Maximum *TEN* side logs cumulative size.       |
+| --sniff-log-size <val>      | Maximum *TEN* side logs cumulative size, Mb.   |
 |                             | By default: 256 Mb.                            |
 | --sniff-log-name <pattern>  | *TEN* side log file naming pattern, the        |
 |                             | following format specifies are supported:      |
@@ -350,12 +350,12 @@ Additional command line options for dispatcher.sh should be supported.
 |                             | - %s : sniffer name                            |
 |                             | - %n : sniffer session sequence number         |
 |                             | By default *full sniffer id* is used.          |
-| --sniff-log-fsize <val>     | Maximum *TEN* side logs size for one sniffer.  |
-|                             | By default: 64 Mb.                             |
+| --sniff-log-fsize <val>     | Maximum *TEN* side logs size (in Mb) for one   |
+|                             | sniffer. By default: 64 Mb.                    |
 | --sniff-log-ofill-drop      | Overfill handle method tail drop.              |
 |                             | By defaul overfill handle method rotation.     |
-| --sniff-log-period <val>    | Period of taken logs from agents.              |
-|                             | By default: 1 sec.                             |
+| --sniff-log-period <val>    | Period of taken logs from agents, msec.        |
+|                             | By default: 0.2 sec.                           |
 
 
 Some notes:
@@ -695,29 +695,29 @@ absolute file offset (stored in the filename).
 
 ** Logger configurations
 
-Logger subsystem should be configured. The list of settings is described below.
+Logger subsystem can be configured from XML file. By default used
+*logger.conf* from the *conf/* directory. The list of settings is described
+below.
 |-------------------------------+--------------------------------------|
-| Settings                      | Description                          |
+| Setting name                  | Description                          |
 |-------------------------------+--------------------------------------|
-|/sniffers_logs                 |                                      |
-|/sniffers_logs/name            | Template dump file name.             |
-|/sniffers_logs/path            | Path of dump files folder.           |
-|                               | By default: caps/                    |
-|/sniffers_logs/max_file_size   | Max file size for one sniffer.       |
+|snif_fname                     | Template dump file name.             |
+|snif_path                      | Path of dump files folder.           |
+|                               | By default: TE_LOG_DIR/caps          |
+|snif_max_fsize                 | Max file size for one sniffer.       |
 |                               | By default: unlimited.               |
-|/sniffers_logs/sniffer_space   | Max total capture files size for     |
+|snif_space                     | Max total capture files size for     |
 |                               | one sniffer. By default: unlimited.  |
-|/sniffers_logs/rotation        | Rotate agent side temporary logs     |
-|                               | across *x* files.                    |
-|/sniffers_logs/overall_size    | Max total files size for all sniffers|
+|snif_rotation                  | Rotate logger side temporary logs    |
+|                               | across *x* files for each sniffer.   |
+|snif_overall_size              | Max total files size for all sniffers|
 |                               | By default: unlimited.               |
-|/sniffers_logs/overfill_meth   | Overfill handel method:              |
+|snif_ovefill_meth              | Overfill handel method:              |
 |                               | 0 - rotation(default)                |
 |                               | 1 - tail drop.                       |
-|/sniffers_logs/period          | Period of taken logs from agents.    |
+|snif_period                    | Period of taken logs from agents.    |
 |                               | By default:                          |
 |----------------------------------------------------------------------|
-*FIXME*: Take from XML file.
 
 * Processes
 
