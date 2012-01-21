@@ -1423,6 +1423,58 @@ rpc_tcp_state tcp_state_h2rpc(int st)
             return RPC_TCP_UNKNOWN;
     }
 }
+/* Define some value for unknown TCP socket congestion state */
+#ifndef TCP_CA_MAX_STATES
+#define TCP_CA_MAX_STATES 0xFFFFFFFF
+#endif
+
+/** Convert RPC TCP socket congestion state to string */
+const char *
+tcp_ca_state_rpc2str(rpc_tcp_ca_state st)
+{
+    switch (st)
+    {
+        RPC2STR(TCP_CA_OPEN);
+        RPC2STR(TCP_CA_DISORDER);
+        RPC2STR(TCP_CA_CWR);
+        RPC2STR(TCP_CA_RECOVERY);
+        RPC2STR(TCP_CA_LOSS);
+        default:
+            return "<TCP_CA_FATAL_ERROR>";
+    }
+}
+
+/** Convert RPC TCP socket congestion state constants to native ones */
+int tcp_ca_state_rpc2h(rpc_tcp_ca_state st)
+{
+    switch (st)
+    {
+        RPC2H_CHECK(TCP_CA_OPEN);
+        RPC2H_CHECK(TCP_CA_DISORDER);
+        RPC2H_CHECK(TCP_CA_CWR);
+        RPC2H_CHECK(TCP_CA_RECOVERY);
+        RPC2H_CHECK(TCP_CA_LOSS);
+        default:
+            WARN("%s is converted to TCP_CA_MAX_STATES(%u)",
+                 tcp_ca_state_rpc2str(st), TCP_CA_MAX_STATES);
+            return TCP_CA_MAX_STATES;
+    }
+}
+
+/** Convert native TCP socket congestion states to RPC one */
+rpc_tcp_ca_state tcp_ca_state_h2rpc(int st)
+{
+    switch (st)
+    {
+        H2RPC_CHECK(TCP_CA_OPEN);
+        H2RPC_CHECK(TCP_CA_DISORDER);
+        H2RPC_CHECK(TCP_CA_CWR);
+        H2RPC_CHECK(TCP_CA_RECOVERY);
+        H2RPC_CHECK(TCP_CA_LOSS);
+        default: 
+            return RPC_TCP_CA_UNKNOWN;
+    }
+}
 
 /** Convert RPC ioctl requests to string */
 const char *

@@ -1481,6 +1481,11 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
             te_log_buf_append(opt_val_str, #_name ": %s ",   \
                  tcp_state_rpc2str(out.optval.optval_val[0]. \
                      option_value_u.opt_tcp_info._name));    \
+        else if (strcmp(#_name, "tcpi_ca_state") == 0)       \
+            te_log_buf_append(opt_val_str, #_name ": %s ",   \
+                 tcp_ca_state_rpc2str(out.optval.            \
+                     optval_val[0].option_value_u.           \
+                     opt_tcp_info._name));                   \
         else                                                 \
             te_log_buf_append(opt_val_str, #_name ": %u ",   \
                  out.optval.optval_val[0].                   \

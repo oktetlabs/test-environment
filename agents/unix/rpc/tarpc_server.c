@@ -2469,7 +2469,7 @@ tarpc_getsockopt(tarpc_getsockopt_in *in, tarpc_getsockopt_out *out,
             struct tcp_info *info = (struct tcp_info *)opt;
 
             CONVERT_TCP_INFO_FIELD(tcpi_state, tcp_state_h2rpc);
-            COPY_TCP_INFO_FIELD(tcpi_ca_state);
+            CONVERT_TCP_INFO_FIELD(tcpi_ca_state, tcp_ca_state_h2rpc);
             COPY_TCP_INFO_FIELD(tcpi_retransmits);
             COPY_TCP_INFO_FIELD(tcpi_probes);
             COPY_TCP_INFO_FIELD(tcpi_backoff);

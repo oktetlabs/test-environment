@@ -555,7 +555,7 @@ typedef enum rpc_tcp_state {
     MAPPING_LIST_ENTRY(TCP_UNKNOWN)
 
 /** Convert RPC TCP socket state to string */
-extern const char * tcp_state_rpc2str(rpc_tcp_state st);
+extern const char *tcp_state_rpc2str(rpc_tcp_state st);
 
 /**
  * Convert string representation of TCP socket state
@@ -568,6 +568,37 @@ extern int tcp_state_rpc2h(rpc_tcp_state st);
 
 /** Convert native TCP socket states to RPC one */
 extern rpc_tcp_state tcp_state_h2rpc(int st);
+/**
+ * TA-independent names of TCP congestion states.
+ */
+typedef enum rpc_tcp_ca_state {
+    RPC_TCP_CA_OPEN = 1, /* 0 can be set as a result of error */
+    RPC_TCP_CA_DISORDER,
+    RPC_TCP_CA_CWR,
+    RPC_TCP_CA_RECOVERY,
+    RPC_TCP_CA_LOSS,
+    RPC_TCP_CA_UNKNOWN,
+} rpc_tcp_ca_state;
+
+/**
+ * The list of values allowed for parameter of type 'rpc_tcp_ca_state'
+ */
+#define TCP_CA_STATE_MAPPING_LIST \
+    MAPPING_LIST_ENTRY(TCP_CA_OPEN), \
+    MAPPING_LIST_ENTRY(TCP_CA_DISORDER), \
+    MAPPING_LIST_ENTRY(TCP_CA_CWR), \
+    MAPPING_LIST_ENTRY(TCP_CA_RECOVERY), \
+    MAPPING_LIST_ENTRY(TCP_CA_LOSS), \
+    MAPPING_LIST_ENTRY(TCP_CA_UNKNOWN)
+
+/** Convert RPC TCP congestion state to string */
+extern const char *tcp_ca_state_rpc2str(rpc_tcp_ca_state st);
+
+/** Convert RPC TCP congestion state constants to native ones */
+extern int tcp_ca_state_rpc2h(rpc_tcp_ca_state st);
+
+/** Convert native TCP congestion states to RPC one */
+extern rpc_tcp_ca_state tcp_ca_state_h2rpc(int st);
 
 /**
  * TA-independent socket options levels

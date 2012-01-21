@@ -206,6 +206,61 @@ AC_CHECK_DECL([TCP_CLOSING], [AC_DEFINE([TCP_CLOSING],
 #include <netinet/tcp.h>
 ])
 
+dnl
+dnl Check for 'TCP_CA_Open' TCP socket congestion state
+dnl
+AH_TEMPLATE([TCP_CA_OPEN], [TCP_CA_Open TCP socket congestion state])
+AC_CHECK_DECL([TCP_CA_Open], [AC_DEFINE([TCP_CA_OPEN],
+              [TCP_CA_Open], [])], [],[
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/tcp.h>
+])
+
+dnl
+dnl Check for 'TCP_CA_Disorder' TCP socket congestion state
+dnl
+AH_TEMPLATE([TCP_CA_DISORDER], [TCP_CA_Disorder TCP socket congestion state])
+AC_CHECK_DECL([TCP_CA_Disorder], [AC_DEFINE([TCP_CA_DISORDER],
+              [TCP_CA_Disorder], [])], [],[
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/tcp.h>
+])
+
+dnl
+dnl Check for 'TCP_CA_CWR' TCP socket congestion state
+dnl
+AH_TEMPLATE([TCP_CA_CWR], [TCP_CA_CWR TCP socket congestion state])
+AC_CHECK_DECL([TCP_CA_CWR], [AC_DEFINE([TCP_CA_CWR],
+              [TCP_CA_CWR], [])], [],[
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/tcp.h>
+])
+
+dnl
+dnl Check for 'TCP_CA_Recovery' TCP socket congestion state
+dnl
+AH_TEMPLATE([TCP_CA_RECOVERY], [TCP_CA_Recovery TCP socket congestion state])
+AC_CHECK_DECL([TCP_CA_Recovery], [AC_DEFINE([TCP_CA_RECOVERY],
+              [TCP_CA_Recovery], [])], [],[
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/tcp.h>
+])
+
+dnl
+dnl Check for 'TCP_CA_Loss' TCP socket congestion state
+dnl
+AH_TEMPLATE([TCP_CA_LOSS], [TCP_CA_Loss TCP socket congestion state])
+AC_CHECK_DECL([TCP_CA_Loss], [AC_DEFINE([TCP_CA_LOSS],
+              [TCP_CA_Loss], [])], [],[
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/tcp.h>
+])
+
 AC_CONFIG_FILES([Makefile])
 
 TE_LIB_RESTORE
