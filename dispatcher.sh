@@ -611,7 +611,9 @@ export echo=echo
 TE_BUILD_LOG="${TE_RUN_DIR}/build.log"
 if test -n "$BUILDER" ; then
     pushd "${TE_BASE}" >/dev/null
-    if test ! -e configure ; then
+    if test ! -e configure -o \
+       `stat --format=%Y configure` -lt \
+       `stat --format=%Y configure.ac` ; then
         if test -n "${QUIET}" ; then
             echo "Calling aclocal/autoconf/automake in ${PWD}" \
                 >>"${TE_BUILD_LOG}"
