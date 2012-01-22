@@ -1137,9 +1137,9 @@ trc_update_rule_to_xml(trc_update_rule *rule, xmlNodePtr node)
     char            id_val[ID_LEN];
     xmlNodePtr      rule_node;
     xmlNodePtr      defaults;
-    xmlNodePtr      olds;
-    xmlNodePtr      news;
-    xmlNodePtr      conflicts;
+    xmlNodePtr      old_res;
+    xmlNodePtr      new_res;
+    xmlNodePtr      confl_res;
 
     rule_node = xmlNewChild(node, NULL, BAD_CAST "rule", NULL);
     snprintf(id_val, ID_LEN, "%d", rule->rule_id);
@@ -1153,42 +1153,42 @@ trc_update_rule_to_xml(trc_update_rule *rule, xmlNodePtr node)
         return TE_ENOMEM;
     }
 
-    trc_exp_result_to_xml(rule->defaults, defaults,
+    trc_exp_result_to_xml(rule->def_res, defaults,
                           TRUE);
 
-    olds = xmlNewChild(rule_node, NULL,
-                       BAD_CAST "olds", NULL);
-    if (olds == NULL)
+    old_res = xmlNewChild(rule_node, NULL,
+                       BAD_CAST "old", NULL);
+    if (old_res == NULL)
     {
-        ERROR("%s(): failed to create <olds> node", __FUNCTION__);
+        ERROR("%s(): failed to create <old> node", __FUNCTION__);
         return TE_ENOMEM;
     }
 
-    if (rule->olds != NULL)
-        trc_exp_results_to_xml(rule->olds, olds);
+    if (rule->old_res != NULL)
+        trc_exp_results_to_xml(rule->old_res, old_res);
 
-    conflicts = xmlNewChild(rule_node, NULL,
+    confl_res = xmlNewChild(rule_node, NULL,
                             BAD_CAST "conflicts",
                             NULL);
-    if (olds == NULL)
+    if (old_res == NULL)
     {
         ERROR("%s(): failed to create <conflicts> node", __FUNCTION__);
         return TE_ENOMEM;
     }
 
-    if (rule->conflicts != NULL)
-        trc_exp_results_to_xml(rule->conflicts, conflicts);
+    if (rule->confl_res != NULL)
+        trc_exp_results_to_xml(rule->confl_res, confl_res);
 
-    if (rule->news != NULL && !SLIST_EMPTY(rule->news))
+    if (rule->new_res != NULL && !SLIST_EMPTY(rule->new_res))
     {
-        news = xmlNewChild(rule_node, NULL,
-                           BAD_CAST "news", NULL);
-        if (news == NULL)
+        new_res = xmlNewChild(rule_node, NULL,
+                           BAD_CAST "new", NULL);
+        if (new_res == NULL)
         {
-            ERROR("%s(): failed to create <news> node", __FUNCTION__);
+            ERROR("%s(): failed to create <new> node", __FUNCTION__);
             return TE_ENOMEM;
         }
-        trc_exp_results_to_xml(rule->news, news);
+        trc_exp_results_to_xml(rule->new_res, new_res);
     }
 
     return 0;
@@ -1226,30 +1226,30 @@ save_test_rules_to_file(trc_update_test_entries *tests,
         "\n"
         "Every updating rule (tag <rule>) can contain following sections:\n"
         "1. Default results for iteration (tag <defaults>);\n"
-        "2. Results currently specified in TRC (tag <olds>);\n"
+        "2. Results currently specified in TRC (tag <old>);\n"
         "3. Non-expected results extracted from logs (tag <conflicts>);\n"
         "4. Results to be placed in TRC during its update for all\n"
-        "   iterations this update rule is related to (tag <news>).\n"
+        "   iterations this update rule is related to (tag <new>).\n"
         "5. Wildcards describing to which iterations this rule can\n"
         "   be applied (currently they aren't generated, can be\n"
-        "   used manually - tag <wildcard>, more than one tag can\n"
+        "   used manually - tag <args>, more than one tag can\n"
         "   be used).\n"
         "\n"
         "Any section can be omitted. If after generating rules you\n"
         "see rule with all sections omitted it means just that there\n"
         "were some iterations not presented in current TRC (so no\n"
-        "<defaults> and <olds>) and also having no results from logs (for\n"
+        "<defaults> and <old>) and also having no results from logs (for\n"
         "example due to the fact that these iterations are specified\n"
         "in package.xml but not appeared in logs specified as source\n"
         "for updating TRC) - so no <conflicts> too.\n"
         "\n"
-        "<news> section is always omitted after automatic generation\n"
+        "<new> section is always omitted after automatic generation\n"
         "of rules. Without this section, rule has no effect. If this\n"
         "section is presented but void, applying of rule will delete\n"
         "results from TRC for all iterations the rule is related to.\n"
         "\n"
         "To use these rules, you should write your edition of results\n"
-        "in <news> section of them, and then run trc_update.pl with\n" 
+        "in <new> section of them, and then run trc_update.pl with\n" 
         "\"rules\" parameter set to path of this file. See help of\n"
         "trc_update.pl for more info.\n";
 
@@ -1612,37 +1612,35 @@ trc_update_apply_rules(unsigned int db_uid,
 
             if (iter_data->rule == NULL)
             {
+                rule_id = 0;
+                value = XML2CHAR(xmlGetProp(
+                                    iter->node,
+                                    CONST_CHAR2XML("user_attr")));
+                if (value != NULL &&
+                    strncmp(value, "rule_", 5) == 0)
+                    rule_id = atoi(value + 5);
+
                 TAILQ_FOREACH(rule, test_entry->rules, links)
                 {
-                    rule_id = 0;
-
-                    if (flags & TRC_LOG_PARSE_USE_RULE_IDS)
-                    {
-                        value = XML2CHAR(xmlGetProp(
-                                            iter->node,
-                                            CONST_CHAR2XML("user_attr")));
-                        if (value != NULL &&
-                            strncmp(value, "rule_", 5) == 0)
-                        {
-                            rule_id = atoi(value + 5);
-                            if (rule->rule_id != rule_id &&
-                                rule->rule_id != 0)
-                                continue;
-                        }
-                    }
+                    if ((flags & TRC_LOG_PARSE_USE_RULE_IDS) &&
+                        (rule->rule_id != rule_id && rule->rule_id != 0 &&
+                         rule_id != 0))
+                        continue;
 
                     if (rule->apply &&
-                        (rule->defaults == NULL ||
-                         trc_exp_result_cmp((struct trc_exp_result *)
-                                            iter->exp_default,
-                                            rule->defaults) == 0) &&
-                        (rule->olds == NULL ||
-                         trc_exp_results_cmp((trc_exp_results *)
-                                             &iter->exp_results,
-                                             rule->olds) == 0) &&
-                        (rule_id != 0 || rule->conflicts == NULL ||
-                         trc_exp_results_cmp(&iter_data->new_results,
-                                             rule->conflicts) == 0))
+                        (((flags & TRC_LOG_PARSE_USE_RULE_IDS) &&
+                          rule->rule_id != 0 && rule_id != 0) ||
+                         ((rule->def_res == NULL ||
+                           trc_exp_result_cmp((struct trc_exp_result *)
+                                              iter->exp_default,
+                                              rule->def_res) == 0) &&
+                          (rule->old_res == NULL ||
+                           trc_exp_results_cmp((trc_exp_results *)
+                                               &iter->exp_results,
+                                               rule->old_res) == 0) &&
+                          (rule->confl_res == NULL ||
+                           trc_exp_results_cmp(&iter_data->new_results,
+                                               rule->confl_res) == 0))))
                     {
                         if (rule->wilds != NULL &&
                             !SLIST_EMPTY(rule->wilds))
@@ -1692,7 +1690,7 @@ trc_update_apply_rules(unsigned int db_uid,
 
             trc_exp_results_free(&iter->exp_results);
             results_dup = trc_exp_results_dup(
-                            iter_data->rule->news);
+                            iter_data->rule->new_res);
             if (results_dup != NULL)
             {
                 memcpy(&iter->exp_results, results_dup,
@@ -1753,7 +1751,7 @@ trc_update_load_rule(xmlNodePtr rule_node, trc_update_rule *rule)
         first_child_node = xmlFirstElementChild(rule_section_node);
 
         if (xmlStrcmp(rule_section_node->name,
-                      CONST_CHAR2XML("wildcard")) == 0)
+                      CONST_CHAR2XML("args")) == 0)
         {
             if (rule->wilds == NULL)
             {
@@ -1793,7 +1791,7 @@ trc_update_load_rule(xmlNodePtr rule_node, trc_update_rule *rule)
         else if (xmlStrcmp(rule_section_node->name,
                       CONST_CHAR2XML("defaults")) == 0)
         {
-            if (rule->defaults != NULL)
+            if (rule->def_res != NULL)
             {
                 ERROR("Duplicated defaults node in TRC updating "
                       "rules XML file");
@@ -1803,18 +1801,18 @@ trc_update_load_rule(xmlNodePtr rule_node, trc_update_rule *rule)
             {
                 value = XML2CHAR(xmlGetProp(rule_section_node,
                                             CONST_CHAR2XML("value")));
-                rule->defaults = TE_ALLOC(sizeof(trc_exp_result));
-                TAILQ_INIT(&rule->defaults->results);
+                rule->def_res = TE_ALLOC(sizeof(trc_exp_result));
+                TAILQ_INIT(&rule->def_res->results);
                 if (value == NULL)
                      get_expected_result(rule_section_node,
-                                         rule->defaults, TRUE);
+                                         rule->def_res, TRUE);
                 else
                 {
                     entry = TE_ALLOC(sizeof(*entry));
                     if (entry == NULL)
                         return TE_ENOMEM;
                     te_test_result_init(&entry->result);
-                    TAILQ_INSERT_TAIL(&rule->defaults->results,
+                    TAILQ_INSERT_TAIL(&rule->def_res->results,
                                       entry, links);
                     te_test_str2status(value, &entry->result.status);
                     TAILQ_INIT(&entry->result.verdicts);
@@ -1822,15 +1820,15 @@ trc_update_load_rule(xmlNodePtr rule_node, trc_update_rule *rule)
             }
         }
         else if (xmlStrcmp(rule_section_node->name,
-                           CONST_CHAR2XML("olds")) == 0)
-            GET_RULE_RESULT(olds);
+                           CONST_CHAR2XML("old")) == 0)
+            GET_RULE_RESULT(old_res);
         else if (xmlStrcmp(rule_section_node->name,
                       CONST_CHAR2XML("conflicts")) == 0)
-            GET_RULE_RESULT(conflicts);
+            GET_RULE_RESULT(confl_res);
         else if (xmlStrcmp(rule_section_node->name,
-                      CONST_CHAR2XML("news")) == 0)
+                      CONST_CHAR2XML("new")) == 0)
         {
-            GET_RULE_RESULT(news);
+            GET_RULE_RESULT(new_res);
             rule->apply = TRUE;
         }
         else
@@ -2076,18 +2074,18 @@ trc_update_gen_rules(unsigned int db_uid,
                  flags & TRC_LOG_PARSE_RULES_ALL))
             {
                 rule = TE_ALLOC(sizeof(*rule));
-                rule->defaults = trc_exp_result_dup(
-                                            (struct trc_exp_result *)
-                                                    iter1->exp_default);
-                rule->olds = trc_exp_results_dup(&iter1->exp_results);
-                rule->conflicts = trc_exp_results_dup(
+                rule->def_res = trc_exp_result_dup((struct trc_exp_result *)
+                                                   iter1->exp_default);
+                rule->old_res = trc_exp_results_dup(&iter1->exp_results);
+                rule->confl_res = trc_exp_results_dup(
                                             &iter_data1->new_results);
-                if (flags & TRC_LOG_PARSE_COPY_OLDS)
-                    rule->news = trc_exp_results_dup(&iter1->exp_results);
+                if (flags & TRC_LOG_PARSE_COPY_OLD)
+                    rule->new_res =
+                        trc_exp_results_dup(&iter1->exp_results);
                 else if (flags & TRC_LOG_PARSE_COPY_CONFLS)
-                    rule->news = trc_exp_results_dup(rule->conflicts);
+                    rule->new_res = trc_exp_results_dup(rule->confl_res);
                 else
-                    rule->news = NULL;
+                    rule->new_res = NULL;
 
                 cur_rule_id++;
                 rule->rule_id = cur_rule_id;

@@ -98,11 +98,11 @@ typedef SLIST_HEAD(trc_update_wilds_list, trc_update_wilds_list_entry)
 /** TRC updating rule */
 typedef struct trc_update_rule {
     TAILQ_ENTRY(trc_update_rule)    links;       /**< Queue links */
-    trc_exp_result                 *defaults;    /**< Default results */
-    trc_exp_results                *olds;        /**< Results in TRC */
-    trc_exp_results                *conflicts;   /**< Not-matching TRC
+    trc_exp_result                 *def_res;     /**< Default results */
+    trc_exp_results                *old_res;     /**< Results in TRC */
+    trc_exp_results                *confl_res;   /**< Not-matching TRC
                                                       results from logs */
-    trc_exp_results                *news;        /**< Results to replace
+    trc_exp_results                *new_res;     /**< Results to replace
                                                       results in TRC */
     trc_update_wilds_list          *wilds;       /**< Wildcards */
     tqh_strings                    *match_exprs; /**< Matching

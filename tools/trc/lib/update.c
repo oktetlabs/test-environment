@@ -101,10 +101,10 @@ trc_update_rule_free(trc_update_rule *rule)
     if (rule == NULL)
         return;
 
-    trc_exp_result_free(rule->defaults);
-    trc_exp_results_free(rule->olds);
-    trc_exp_results_free(rule->news);
-    trc_exp_results_free(rule->conflicts);
+    trc_exp_result_free(rule->def_res);
+    trc_exp_results_free(rule->old_res);
+    trc_exp_results_free(rule->new_res);
+    trc_exp_results_free(rule->confl_res);
     trc_update_wilds_list_free(rule->wilds);
     if (rule->match_exprs != NULL)
         tq_strings_free(rule->match_exprs, free);

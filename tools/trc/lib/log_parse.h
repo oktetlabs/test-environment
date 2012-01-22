@@ -60,7 +60,7 @@ enum trc_log_parse_flags {
     TRC_LOG_PARSE_LOG_WILDS        = 0x40,  /**< Generate wildcards for
                                                  results from logs, not
                                                  from TRC DB */
-    TRC_LOG_PARSE_COPY_OLDS        = 0x80,  /**< Copy results from current
+    TRC_LOG_PARSE_COPY_OLD         = 0x80,  /**< Copy results from current
                                                  TRC DB in <news>
                                                  section of updating
                                                  rule */
