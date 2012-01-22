@@ -590,6 +590,8 @@ if test -z "$(which te_log_init 2>/dev/null)" ; then
     export PATH="$PATH:${TE_BASE}/engine/logger:${TE_BASE}/engine/builder"
 fi
 
+. ${TE_BASE}/common_vars.sh
+
 # Intitialize log
 test -z "${DAEMON}" && te_log_init
 te_log_message Dispatcher "Command-line options" "${cmd_line_opts}"
@@ -605,10 +607,6 @@ fi
 
 # Workaround for bug in latest libtool: libtool defines ECHO, but uses $echo
 export echo=echo
-# Path to external libraries
-if test -z "${TE_EXT_LIBS}" ; then
-    export TE_EXT_LIBS="http://oktetlabs.ru/~tester/te/"
-fi
 
 TE_BUILD_LOG="${TE_RUN_DIR}/build.log"
 if test -n "$BUILDER" ; then

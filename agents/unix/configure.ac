@@ -314,7 +314,7 @@ fi
 
 export PKG_CONFIG_PATH="$DESTDIR/$prefix/../$TE_PLATFORM/lib/pkgconfig/"
 PKG_CHECK_MODULES(TAD, te-$with_tad)
-TAD_LIBS=`static_libs_check.pl "${TAD_LIBS}"`
+TAD_LIBS=`${TE_BASE}/engine/builder/static_libs_check.pl "${TAD_LIBS}"`
 
 dnl util library is necessary for static linking of expect
 AC_SEARCH_LIBS([openpty], [util])
@@ -518,7 +518,7 @@ test -n "$with_symtbl_curl" && {
         CURL_LIB=`$CC $CFLAGS -print-file-name=libcurl.a`
     fi
 #   Do not do this: it is used just for generating symbol table
-#   CURL_LIB=`static_libs_check.pl "${CURL_LIB}"`
+#   CURL_LIB=`${TE_BASE}/engine/builder/static_libs_check.pl "${CURL_LIB}"`
     AC_SUBST(CURL_LIB)
 }
 

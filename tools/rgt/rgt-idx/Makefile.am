@@ -54,3 +54,4 @@ check_SCRIPTS = check-sort-mem
 TESTS_ENVIRONMENT = PATH="$$PATH:$(builddir):$(srcdir)"
 
 TESTS = check-sort-mem
+EXTRA_DIST = check-sort-mem

@@ -37,7 +37,8 @@ for p in ${TE_BS_PLATFORMS} ; do
     if test $p = ${TE_HOST} ; then continue ; fi
 
     ${TE_BASE}/engine/builder/te_configure_package INCLUDE include \
-        ${p}_include $p ${TE_BASE}/include $PREFIX || exit 1
+        ${p}_include platforms/${p}/include $p ${TE_BASE}/include \
+        $PREFIX || exit 1
 
     LIBS=`eval echo '$'${p}'_LIBS'`
     for package in $LIBS ; do
@@ -47,12 +48,13 @@ for p in ${TE_BS_PLATFORMS} ; do
             PKGSRC=${TE_BASE}/lib/$package ;
         fi
         ${TE_BASE}/engine/builder/te_configure_package LIB $package \
-            ${p}_$package $p $PKGSRC $PREFIX || exit 1
+            ${p}_$package platforms/${p}/lib/$package $p $PKGSRC \
+            $PREFIX || exit 1
     done
     for package in $LIBS ; do
-        cd lib/${p}_$package
+        pushd ${TE_BUILD}/platforms/${p}/lib/$package >/dev/null
         make ${BUILD_MAKEFLAGS} install || exit 1
-        cd ../..
+        popd >/dev/null
     done
 done
 
@@ -64,7 +66,7 @@ for package in $DUMMY $TE_BS_TA ; do
         PKGSRC=${TE_BASE}/agents/$package ;
     fi
     ${TE_BASE}/engine/builder/te_configure_package TA $package $package \
-        $PLATFORM $PKGSRC $PREFIX || exit 1
+        $package $PLATFORM $PKGSRC $PREFIX || exit 1
     cd agents/$package
     make ${BUILD_MAKEFLAGS} install || exit 1
     cd ../..

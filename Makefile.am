@@ -28,7 +28,7 @@
 SUBDIRS = include doc lib tools engine agents suites
 
 mybindir=$(prefix)/$(TE_HOST)/bin
-dist_mybin_SCRIPTS = dispatcher.sh
+dist_mybin_SCRIPTS = dispatcher.sh common_vars.sh
 
 DISTCLEANFILES = builder.conf builder.conf.processed 
 
@@ -62,8 +62,11 @@ dist-hook:
         fi
 
 install-exec-hook:
-	cd $(DESTDIR)/$(prefix) ; \
-        ln -sf $(TE_HOST)/bin/dispatcher.sh dispatcher.sh
+	export TE_EXT_LIBS_FILE="@TE_EXT_LIBS_FILE@" ; \
+	export TE_BASE="@TE_BASE@" ; \
+	pushd $(DESTDIR)/$(prefix) >/dev/null ; \
+	ln -sf $(TE_HOST)/bin/dispatcher.sh dispatcher.sh ; \
+	popd >/dev/null ; \
 	$(srcdir)/engine/builder/te_cross_build $(prefix)
 
 uninstall-hook:
@@ -74,5 +77,6 @@ clean-local:
 	$(srcdir)/engine/builder/te_cross_make clean
 
 distclean-local:
+	rm -rf `cat @TE_EXT_LIBS_FILE@`
+	rm -rf @TE_EXT_LIBS_FILE@
 	$(srcdir)/engine/builder/te_cross_make distclean
-

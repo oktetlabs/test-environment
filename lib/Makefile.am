@@ -25,16 +25,25 @@
 #
 # Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 
-AM_MAKEFLAGS="prefix=$(prefix)/$(TE_HOST)"
+AM_MAKEFLAGS="prefix=@PREFIX_HOST@"
 
-SUBDIRS=@LIB_SUBDIRS@
+SUBDIRS=. @LIB_SUBDIRS@
 DIST_SUBDIRS=@LIB_DIST_SUBDIRS@
+
+install-exec-local:
+	for i in $(SUBDIRS) ; do \
+	    pushd $$i >/dev/null ; \
+	    if test -e Makefile ; then \
+	        $(MAKE) $(AM_MAKEFLAGS) install-data ; \
+	    fi ; \
+	    popd >/dev/null ; \
+	done
 
 distclean-local:
 	for i in $(SUBDIRS) ; do \
-	    cd $$i ; \
+	    pushd $$i >/dev/null ; \
 	    if test -e Makefile ; then \
 	        $(MAKE) $(AM_MAKEFLAGS) distclean ; \
 	    fi ; \
-	    cd .. ; \
+	    popd >/dev/null ; \
 	done

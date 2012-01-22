@@ -22,9 +22,9 @@ liblogic_expr_la_SOURCES = \
 CLEANFILES = logic_expr_gram.h logic_expr_gram.c \
              logic_expr_lex.h logic_expr_lex.c
 BUILT_SOURCES = logic_expr_gram.h logic_expr_lex.h
+EXTRA_DIST = logic_expr_gram.h logic_expr_lex.h
 
 logic_expr_lex.h: logic_expr_lex.c
-
 
 install-exec-hook:
 	touch -c -r liblogic_expr.la $(DESTDIR)/$(libdir)/liblogic_expr.*

@@ -38,15 +38,27 @@ CONFIGURE="$(which "$0")"
 TE_BASE_DIR="$(dirname "$CONFIGURE")"
 pushd "$TE_BASE_DIR" >/dev/null
 export TE_BASE="$(pwd)"
+AC_SUBST(TE_BASE)
 popd >/dev/null
 
-TE_BUILD="$(pwd)"
+. ${TE_BASE}/common_vars.sh
+export TE_BUILD="$(pwd)"
+
 
 if test "$prefix" = "NONE" ; then
     prefix=/usr/local
 fi    
 
 TE_INSTALL="$prefix"
+export TE_EXT_LIBS_FILE="${TE_BUILD}/te_ext_libs_files"
+AC_SUBST(TE_EXT_LIBS_FILE)
+echo "\\" >${TE_EXT_LIBS_FILE}
+
+if test -z "${TE_PATH}" ; then
+    TE_PATH="${TE_INSTALL}/default"
+    export TE_PATH
+    export PATH="${TE_PATH}/bin:$PATH"
+fi
 
 # Put initial values to control variables
 
@@ -157,17 +169,28 @@ mkdir -p agents
 
 DUMMY=
 
+export PREFIX_HOST="${prefix}/${TE_HOST}"
+AC_SUBST(PREFIX_HOST)
+
 # Process libraries
 LIB_SUBDIRS=
 LIB_DIST_SUBDIRS=
 for p in ${TE_BS_PLATFORMS} ; do
     if test $p = ${TE_HOST} ; then 
+        mkdir -p platforms/${p} && \
+        rm -rf platforms/${p}/include && \
+        rm -rf platforms/${p}/lib && \
+        ln -s ${TE_BUILD}/include platforms/${p}/include || exit 1
+        ln -s ${TE_BUILD}/lib platforms/${p}/lib || exit 1
+
         "${TE_BASE}/engine/builder/te_configure_package" INCLUDE include \
-                include ${TE_HOST} "${TE_BASE}/include" "$prefix" || exit 1
+                include platforms/${p}/include ${TE_HOST} \
+                "${TE_BASE}/include" "$prefix" || exit 1
     fi
     
     LIBS=`eval echo '$'${p}'_LIBS'`
     echo LIBS=$LIBS
+
     for package in $LIBS ; do
         PKGNAME=${p}_$package
         PKGSRC=`eval echo '$TE_BS_LIB_'${PKGNAME}'_SOURCES'`
@@ -175,30 +198,29 @@ for p in ${TE_BS_PLATFORMS} ; do
             PKGSRC="${TE_BASE}/lib/$package"
         fi
         
-        cd lib
-        mkdir -p "$PKGNAME"
+        PKGBUILDDIR=platforms/${p}/lib/$package
+        mkdir -p "${PKGBUILDDIR}"
         NAME="$(basename "$PKGSRC")"
-        if ! test -e "$NAME" ; then
-            ln -s "$PKGNAME" "$NAME"
-        fi
-        cd ..
         
         if test $p != ${TE_HOST} ; then continue ; fi
         
         if test -z "$no_create" ; then
             "${TE_BASE}/engine/builder/te_configure_package" LIB \
-                $package $PKGNAME ${TE_HOST} "$PKGSRC" "$prefix" || \
+                 $package $PKGNAME ${PKGBUILDDIR} ${TE_HOST} \
+                 "$PKGSRC" "$prefix"
+
+            if test $? -ne 0 ; then
                 exit 1
-            cd "lib/$PKGNAME"
+            fi
+            pushd "${PKGBUILDDIR}" >/dev/null
             make install-data || exit 1
-            cd "../.."
+            popd >/dev/null
         fi
-        LIB_SUBDIRS="$LIB_SUBDIRS $PKGNAME"
+        LIB_SUBDIRS="$LIB_SUBDIRS $package"
+        LIB_DIST_SUBDIRS="$LIB_DIST_SUBDIRS $package"
     done
 done
-for i in `find lib -maxdepth 1 -type l` ; do 
-    LIB_DIST_SUBDIRS="$LIB_DIST_SUBDIRS `basename $i`" ;
-done
+
 AC_SUBST([LIB_SUBDIRS])
 AC_SUBST([LIB_DIST_SUBDIRS])
 
@@ -206,8 +228,8 @@ AC_SUBST([LIB_DIST_SUBDIRS])
 if test -z "$no_create" ; then
     for package in $DUMMY $TE_BS_APPS ; do
         "${TE_BASE}/engine/builder/te_configure_package" APP $package \
-            $package ${TE_HOST} "${TE_BASE}/engine/$package" "$prefix" || \
-            exit 1
+            $package $package ${TE_HOST} "${TE_BASE}/engine/$package" \
+            "$prefix" || exit 1
     done
 fi    
 APP_SUBDIRS="$TE_BS_APPS"
@@ -217,8 +239,8 @@ AC_SUBST([APP_SUBDIRS])
 if test -z "$no_create" ; then
     for package in $DUMMY ${TE_BS_TOOLS} ; do
         "${TE_BASE}/engine/builder/te_configure_package" TOOL $package \
-            $package ${TE_HOST} "${TE_BASE}/tools/$package" "$prefix" || \
-            exit 1
+            $package $package ${TE_HOST} "${TE_BASE}/tools/$package" \
+            "$prefix" || exit 1
     done
 fi    
 TOOLS_SUBDIRS="${TE_BS_TOOLS}" 
@@ -249,7 +271,7 @@ for package in $DUMMY $TE_BS_TA ; do
     
     if test -z "$no_create" ; then
         "${TE_BASE}/engine/builder/te_configure_package" TA $package \
-            $package ${TE_HOST} "$PKGSRC" "$prefix" || exit 1
+            $package $package ${TE_HOST} "$PKGSRC" "$prefix" || exit 1
     fi
     TA_SUBDIRS="$TA_SUBDIRS $package"
 done

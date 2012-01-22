@@ -36,9 +36,10 @@ SCRIPT_DIR=`dirname $0`
 KIND=$1
 PACKAGE=$2
 PKGNAME=$3
-PLATFORM=$4
-PKGSRC=$5
-PREFIX=$6
+PKGBUILDDIR=$4
+PLATFORM=$5
+PKGSRC=$6
+PREFIX=$7
 AUTOTOOL_DONE=
 
 # Call aclocal/autoheader/autoconf/automake
@@ -102,10 +103,6 @@ else
     PREFIX=$PREFIX/$PLATFORM
 fi
 
-if test "$KIND" = LIB ; then
-    cd lib
-fi
-
 if test "$KIND" = APP ; then
     cd engine
 fi
@@ -114,8 +111,8 @@ if test "$KIND" = TOOL ; then
     cd tools
 fi
 
-mkdir -p $PKGNAME ;
-cd $PKGNAME ;
+mkdir -p $PKGBUILDDIR ;
+cd $PKGBUILDDIR ;
 
 if test -e Makefile ; then
     make install-data || exit 1
@@ -139,15 +136,11 @@ if test "$PACKAGE_CC" ; then
     PARMS="$PARMS CC=$PACKAGE_CC"
 fi
 
-if test "$KIND" != "TA" ; then
-    ADD_CPPFLAGS="$ADD_CPPFLAGS -I${PREFIX}/include "
-    ADD_LDFLAGS="$ADD_LDFLAGS -L${PREFIX}/lib "
-    export TE_EXT_LIBS_PATH="${PREFIX}/lib"
-else
-    ADD_CPPFLAGS="$ADD_CPPFLAGS -I${PREFIX}/../$PLATFORM/include "
-    ADD_LDFLAGS="$ADD_LDFLAGS -L${PREFIX}/../$PLATFORM/lib "
-    export TE_EXT_LIBS_PATH="${PREFIX}/../$PLATFORM/lib"
-fi
+ADD_CPPFLAGS="$ADD_CPPFLAGS -I${TE_BUILD}/platforms/${PLATFORM}/include \
+-I${TE_INSTALL}/${PLATFORM}/include"
+ADD_LDFLAGS="$ADD_LDFLAGS -L${TE_BUILD}/platforms/${PLATFORM}/lib \
+-L${TE_INSTALL}/${PLATFORM}/lib"
+export TE_EXT_LIBS_PATH="${TE_BUILD}/platforms/${PLATFORM}/lib"
 
 PARMS="$PARMS --build=`gcc -dumpmachine` \
        TE_BASE=\"$TE_BASE\" \
@@ -160,7 +153,7 @@ PARMS="$PARMS --build=`gcc -dumpmachine` \
        TE_INSTALL=\"$TE_INSTALL\" \
        TE_PLATFORM=$PLATFORM"
 
-if test "$KIND" = "INCLUDE" ; then
+if test "x${KIND}" = "xINCLUDE" -a "x${PLATFORM}" = "x${TE_HOST}" ; then
     ${SCRIPT_DIR}/te_create_inst_dirs ${DESTDIR}/${PREFIX}/.. 
 fi
 

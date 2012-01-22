@@ -58,15 +58,15 @@ fi
 for p in ${TE_BS_PLATFORMS} ; do
     if test $p = ${TE_HOST} ; then continue ; fi
 
-    cd ${p}_include; 
+    pushd platforms/${p}/include >/dev/null; 
     if test -e Makefile ; then make $TARGET || exit 1 ; fi
-    cd ..
+    popd >/dev/null
 
     LIBS=`eval echo '$'${p}'_LIBS'`
     for package in $LIBS ; do
-        cd lib/${p}_$package
+        pushd platforms/${p}/lib/$package >/dev/null
         if test -e Makefile ; then make $TARGET || exit 1 ; fi
-        cd ../..
+        popd >/dev/null
     done
 done
 

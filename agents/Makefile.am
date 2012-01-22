@@ -25,6 +25,9 @@
 #
 # Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 
-SUBDIRS=@TA_SUBDIRS@
+SUBDIRS=. @TA_SUBDIRS@
 
 DIST_SUBDIRS=@TA_DIST_SUBDIRS@
+
+install-exec-local:
+	mkdir -p $(DESTDIR)/$(prefix)/agents

@@ -18,7 +18,7 @@ EXTRA_DIST=symtbl_funcs
 
 taexecdir=$(prefix)/@with_name@
 
-noinst_HEADERS = unix_internal.h 
+noinst_HEADERS = unix_internal.h dahdi_user.h
 
 taexec_PROGRAMS = ta
 

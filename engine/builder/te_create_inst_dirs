@@ -37,6 +37,7 @@ popd >/dev/null
 if test -n "${TE_BUILD}" ; then
     cd ${TE_BUILD}
 fi
+
 if test -e builder.conf.processed ; then
     . builder.conf.processed
 fi
@@ -46,15 +47,21 @@ for p in ${TE_BS_PLATFORMS} ; do
     dir=${p}_EXT_LIBS_DIR
 
     mkdir -p $PREFIX/$p
-
     [ -d "$PREFIX/$p/lib" ] && continue
 
     if [ "${TE_EXT_LIBS}" ] ; then
-        mkdir -p "$PREFIX/$p/lib"
-        mkdir -p "$PREFIX/$p/include"
-        pushd "$PREFIX/$p/" >/dev/null
+        mkdir -p "${TE_BUILD}/platforms/$p/lib"
+        mkdir -p "${TE_BUILD}/platforms/$p/include"
+        pushd "${TE_BUILD}/platforms/$p/" >/dev/null
         for i in ${!libs} ; do
-            wget ${TE_EXT_LIBS}/${!dir}/$i.tgz && tar xzf $i.tgz
+            rm -rf $i.tgz
+            wget ${TE_EXT_LIBS}/${!dir}/$i.tgz
+            if [ $? -eq 0 ] ; then
+                echo "`pwd`/$i.tgz \\" >>${TE_EXT_LIBS_FILE}
+                tar -tzf $i.tgz | xargs -n1 -P0 bash -c \
+                    "echo \"`pwd`/\$0 \\\\\" >>${TE_EXT_LIBS_FILE}"
+                tar xzf $i.tgz
+            fi
         done
         popd >/dev/null
     fi

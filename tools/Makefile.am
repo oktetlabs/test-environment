@@ -25,7 +25,7 @@
 #
 # Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 
-AM_MAKEFLAGS=$(BUILD_MAKEFLAGS) prefix=$(prefix)/$(TE_HOST)
+AM_MAKEFLAGS=$(BUILD_MAKEFLAGS) prefix=@PREFIX_HOST@
 
 SUBDIRS=@TOOLS_SUBDIRS@
 
