@@ -445,7 +445,7 @@ Some notes:
 | Mandatory arguments:     |                                                 |
 |   -a <name>              | Sniffer name.                                   |
 |   -i <interface>         | Interface name.                                 |
-|   -P <path>              | Agent folder path.                              |
+|   -P <path>              | Sniffer folder path.                            |
 |   -q <seq_num>           | Sniffer session sequence number.                |
 | Optional arguments:      |                                                 |
 |   -c <total_size>        | Max total files size for agent.                 |
@@ -461,6 +461,9 @@ Some notes:
 |   -o                     | Change overfill handle method to tail drop,     |
 |                          | by default method is rotation.                  |
 |   -p                     | Disable promiscuous mode, default enabled.      |
+|   -r <x>                 | Rotate agent side temporary logs across         |
+|                          | *x* files.  This option excluded by             |
+|                          |  the *-o* option.                               |
 |   -s <snaplen>           | Maximum packet capture size, defulat unlimited. |
 |   -w <name>              | Template for capture file name.                 |
 
@@ -490,7 +493,8 @@ logic etc.), see the requirements doc for the detailed list.
 | OID                                           | Description                  |
 |-----------------------------------------------+------------------------------|
 |/agent/sniffer_settings                        |Sniffer object.               |
-|/agent/sniffer_settings/enable                 |Enable sniffers.              |
+|/agent/sniffer_settings/enable                 |Enable the sniffer for *any*  |
+|                                               |interface.                    |
 |/agent/sniffer_settings/filter_exp_str         |Filter expression string,     |
 |                                               |by default: empty.            |
 |/agent/sniffer_settings/filter_exp_file        |Filter file                   |
@@ -503,10 +507,10 @@ logic etc.), see the requirements doc for the detailed list.
 |/agent/sniffer_settings/tmp_logs/path          |It is *<sniffers_path>*       |
 |                                               |decribed below.               |
 |/agent/sniffer_settings/tmp_logs/total_size    |Max total capture files size  |
-|                                               |for all agent sniffers.       |
+|                                               |for all agent sniffers, Mb.   |
 |                                               |By defualt 256 Mb.            |
-|/agent/sniffer_settings/tmp_logs/file_size     |Max capture file size, by     |
-|                                               |default 16 Mb.                |
+|/agent/sniffer_settings/tmp_logs/file_size     |Max capture file size (Mb),   |
+|                                               |by default 16 Mb.             |
 |/agent/sniffer_settings/tmp_logs/rotation      |Rotate agent side temporary   |
 |                                               |logs across *x* files.        |
 |                                               |By defaul *x* = 4.            |
@@ -538,9 +542,9 @@ name of the object instance) uniq across the interface.
 |                                               | by default unlimited.        |
 |/agent/interface/sniffer/tmp_logs              | Dump files settings.         |
 |/agent/interface/sniffer/tmp_logs/sniffer_space| Max total dump files size for|
-|                                               | the sniffer.                 |
+|                                               | the sniffer, Mb.             |
 |                                               | By defualt 64 Mb.            |
-|/agent/interface/sniffer/tmp_logs/file_size    | Max capture file size,       |
+|/agent/interface/sniffer/tmp_logs/file_size    | Max capture file size (Mb),  |
 |                                               | by default is 16 Mb.         |
 |/agent/interface/sniffer/tmp_logs/rotation     | Rotate agent side temporary  |
 |                                               | logs across *x* files.       |
@@ -593,6 +597,7 @@ The RCF API is extended to support two new calls.
 The only user of this calls is *Logger*. Both calls are synchronous.
 
 **** RCF data transmition protocols
+
 1. For the function *rcf_get_sniffers* to transmit list of sniffers used
    following protocol. List of sniffers packed into the buffer. For each
    sniffer used next text format:
@@ -609,6 +614,20 @@ The only user of this calls is *Logger*. Both calls are synchronous.
    <Current capture file name (ends by *.pcap*)><Absolute offset>
 
 *** Logger IPC interface
+
+**** Logger IPC hadler
+
+The Logger has a thread *te_handler*, wich process IPC messages from other
+subsystems. When a *Test* calls *log_sniffer_mark_insert* function, than IPC
+message transmitted to the Logger. Her it processed by the *te_handler* and 
+performs set of actions to insert the mark. Logic of the insert marker
+implementation on the Logger side described in the *Algorithms* section.
+
+**** IPC data transmition protocols
+
+To transmit IPC message from the *Test* to the Logger for insert a marker, the
+data packed into a string with the following format:
+<Command prefix><TA name> <sniffer name> <iface> <ssn>;<description>
 
 *** Sniffer backends interface
 
@@ -631,10 +650,10 @@ sniffer across all the sniffers of the agent. The ID is agent-life-time
 valid which means that it survives agent restart.
 
 To establish an SSN for the newly started sniffer the agent uses
-*/tmp/agent_id/next_sniffer_ssn* file which stores the exact SSN value. The
-value in the file is incremented every time it's read. As the file is not
-cleaned up on agent restart it will continue to grow across the entire TE
-run.
+*/tmp/agent_id/<agent_name>_next_sniffer_ssn* file which stores the exact SSN
+value. The value in the file is incremented every time it's read. As the file
+is not cleaned up on agent restart it will continue to grow across the entire
+TE run.
 
 If the file is absent a zero SSN should be selected and one should be
 written to the file.
@@ -649,13 +668,11 @@ It's possible (via Configurator) to specify a different logs directory. This
 is usefull in case we'd like to store significant amount of data (much more
 then the /tmp directory size).
 
-Sniffer stores all it's data in the *<sniffers_path>/sniffers/sniffer_id*
+Sniffer stores all it's data in the *<sniffers_path>/sniffers/full_sniffer_id*
 directory.
 
 If *<sniffer_path>* is set the user should be carefull as it may intercect
 with other test runs.
-
-*FIXME*: may be it's reasonable to specify agent-specific folder path?
 
 *** Sniffer files naming
 
@@ -711,13 +728,23 @@ below.
 |snif_rotation                  | Rotate logger side temporary logs    |
 |                               | across *x* files for each sniffer.   |
 |snif_overall_size              | Max total files size for all sniffers|
-|                               | By default: unlimited.               |
+|                               | By default: unlimited. (Currently    |
+|                               |  not supported)                      |
 |snif_ovefill_meth              | Overfill handel method:              |
 |                               | 0 - rotation(default)                |
 |                               | 1 - tail drop.                       |
 |snif_period                    | Period of taken logs from agents.    |
 |                               | By default:                          |
 |----------------------------------------------------------------------|
+
+*** Logger files naming
+
+The Logger performs merging of all received files for each sniffer, as a result
+is one file for each sniffer. The file name is the *full sniffer id* and has
+ *.pcap* extension:
+<agent_name>_<ifname>_<sniffer_name>_<ssn>.pcap
+
+Example: Agt_A_lo_mysniffer_0.pcap
 
 * Processes
 
@@ -765,6 +792,21 @@ the agent-specific folder which may include:
 
 * Algorithms
 
+** *Dispatcher* command line option to launch sniffers handle
+
+The *Dispatcher* supports the cli options to launch a sniffer. To perform this
+it automaticly generates auxiliary configuration script *cs.conf.sniffer*, 
+that includes into configuration file of the *Configurator*. The script located
+in the same folder that configuration file of the *Configurator*.
+
+These cli options can be used to launch a sniffer for specified interface or
+for all interfaces of the agent. When the sniffer launched for the specified 
+interface, in the *cs.conf.sniffer* file generates a new subtree of instances
+for the sniffer. In case when the sniffer launched for all interfaces, in the
+*cs.conf.sniffer* file generates a write to setup in the *TRUE* value of the
+instance of */agent/sniffer_settings/enable* configurator object for the agent.
+This action performed to launch sniffer for all interface on the agent.
+
 ** Logger polling process
 
 Logger has the list of test agents which it uses for polling them for the
@@ -780,6 +822,15 @@ Logger perform a round-robin for selection of the sniffer to call
 
 ** Logger overfill handle process
 
+To control overfill handle used a settings from configuration file (by default
+*conf/logger.conf*). It must contain the default settings and may contain a
+user settings. If the user setting not specified used the defualt settings.
+Also the settings can be obtained from command line of the *Dispatcher* and has
+the highest priority.
+
+The set of setting contins the part for each sniffer. When the Logger recieved 
+the next portion of capture logs, it checks that log files satisfies to
+requirements of the settings and performs the necessary steps.
 
 ** Agent side rcf_get_sniffers handle implementaition
 
@@ -845,12 +896,18 @@ So the agent should:
 by the Test to insert mark packet into the sniffer capture file.
 
 The Logger should:
-  1. Call the fuction *rcf_get_sniffers(agent, sniffer_id)*, sniffer_id should
+  1. Received IPC message from the *Test*.
+  2. Make a new thread to perform RCF calls to the *Agent*, because the Logger
+     processcan received the main logs in this time. This thread may be used to
+     insert alone marker packet for paticular sniffer or to insert multiple
+     markers for all sniffers.
+  3. Call the fuction *rcf_get_sniffers(agent, sniffer_id)*, sniffer_id should
      not be NULL. The Logger gets the sniffer list whith absolute offset 
      values of last captured packet of the sniffer.
-  2. The value offset for certain sniffer saves.
-  3. When it reaches an absolute offset of recived packets equal to the stored
+  4. The value of offset for certain sniffer saves.
+  5. When it reaches an absolute offset of recived packets equal to the stored
      value is inserted mark packet.
+  6. Finish the thread.
 
 ** Algorithm to get sniffers logs.
 *** Sniffer log thread under the Logger.
