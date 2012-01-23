@@ -1631,8 +1631,7 @@ trc_update_apply_rules(unsigned int db_uid,
                         continue;
 
                     if (rule->apply &&
-                        (((flags & TRC_LOG_PARSE_USE_RULE_IDS) &&
-                          rule->rule_id != 0 && rule_id != 0) ||
+                        ((rule->rule_id != 0 && rule_id != 0) ||
                          ((rule->def_res == NULL ||
                            trc_exp_result_cmp((struct trc_exp_result *)
                                               iter->exp_default,
