@@ -291,6 +291,8 @@ AC_C_INLINE
 
 fi
 
+AC_SUBST(TE_EXT_LIBS_FILE)
+
 AM_CONDITIONAL(WINDOWS, test x$host != x${host%windows})
 
 AC_CONFIG_FILES([Makefile])

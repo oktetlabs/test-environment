@@ -76,6 +76,14 @@ endif
 
 all: install
 
+install-data-local:
+	cat @TE_EXT_LIBS_FILE@ | sed "s/[\]$$//" | xargs -n1 -P0 \
+	    bash -c "if [ -n \$$0 ] ; then \
+	    mkdir -p $(DESTDIR)/$(prefix)/../\$${0%/*} ; \
+	    if [ -f ../platforms/\$$0 ] ; then \
+	    cp -u ../platforms/\$$0 \
+	    $(DESTDIR)/$(prefix)/../\$$0 ; fi fi"
+
 install-data-hook:
 	for i in $(te_headers) ; do \
 	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \

@@ -70,6 +70,9 @@ install-exec-hook:
 	$(srcdir)/engine/builder/te_cross_build $(prefix)
 
 uninstall-hook:
+	pushd $(DESTDIR)/$(prefix) >/dev/null ; \
+	rm -rf `cat @TE_EXT_LIBS_FILE@` ; \
+	popd >/dev/null 
 	rm -f $(DESTDIR)/$(prefix)/dispatcher.sh
 	$(srcdir)/engine/builder/te_cross_make uninstall
 
@@ -77,6 +80,8 @@ clean-local:
 	$(srcdir)/engine/builder/te_cross_make clean
 
 distclean-local:
-	rm -rf `cat @TE_EXT_LIBS_FILE@`
+	pushd ./platforms >/dev/null ; \
+	rm -rf `cat @TE_EXT_LIBS_FILE@` ; \
+	popd >/dev/null ; \
 	rm -rf @TE_EXT_LIBS_FILE@
 	$(srcdir)/engine/builder/te_cross_make distclean

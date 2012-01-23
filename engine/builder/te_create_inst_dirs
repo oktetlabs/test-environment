@@ -57,9 +57,9 @@ for p in ${TE_BS_PLATFORMS} ; do
             rm -rf $i.tgz
             wget ${TE_EXT_LIBS}/${!dir}/$i.tgz
             if [ $? -eq 0 ] ; then
-                echo "`pwd`/$i.tgz \\" >>${TE_EXT_LIBS_FILE}
+                echo "./$p/$i.tgz \\" >>${TE_EXT_LIBS_FILE}
                 tar -tzf $i.tgz | xargs -n1 -P0 bash -c \
-                    "echo \"`pwd`/\$0 \\\\\" >>${TE_EXT_LIBS_FILE}"
+                    "echo \"./$p/\$0 \\\\\" >>${TE_EXT_LIBS_FILE}"
                 tar xzf $i.tgz
             fi
         done
