@@ -186,6 +186,7 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
 
     char        *s;
     te_bool      no_use_ids = FALSE;
+    te_bool      log_specified = FALSE;
 
     struct poptOption options_table[] = {
         { "test-name", '\0', POPT_ARG_STRING, NULL,
@@ -318,6 +319,9 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
                 tqe_str->v = poptGetOptArg(optCon);
 
                 TAILQ_INSERT_TAIL(&tag_logs->logs, tqe_str, links);
+
+                log_specified = TRUE;
+
                 break;
 
             case TRC_UPDATE_OPT_FAKE_LOG:
@@ -391,7 +395,7 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
         }
     }
 
-    if (!no_use_ids)
+    if (!no_use_ids && log_specified)
         ctx.flags |= TRC_LOG_PARSE_USE_RULE_IDS;
 
     if (opt != -1)

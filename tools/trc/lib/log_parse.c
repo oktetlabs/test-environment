@@ -1142,8 +1142,11 @@ trc_update_rule_to_xml(trc_update_rule *rule, xmlNodePtr node)
     xmlNodePtr      confl_res;
 
     rule_node = xmlNewChild(node, NULL, BAD_CAST "rule", NULL);
-    snprintf(id_val, ID_LEN, "%d", rule->rule_id);
-    xmlNewProp(rule_node, BAD_CAST "id", BAD_CAST id_val);
+    if (rule->rule_id > 0)
+    {
+        snprintf(id_val, ID_LEN, "%d", rule->rule_id);
+        xmlNewProp(rule_node, BAD_CAST "id", BAD_CAST id_val);
+    }
 
     defaults = xmlNewChild(rule_node, NULL,
                            BAD_CAST "defaults", NULL);
@@ -2087,7 +2090,8 @@ trc_update_gen_rules(unsigned int db_uid,
                 else
                     rule->new_res = NULL;
 
-                cur_rule_id++;
+                if (flags & TRC_LOG_PARSE_USE_RULE_IDS)
+                    cur_rule_id++;
                 rule->rule_id = cur_rule_id;
 
                 TAILQ_INSERT_TAIL(test->rules, rule, links);
@@ -3230,8 +3234,7 @@ trc_update_process_logs(trc_update_ctx *gctx)
     }
 
     if ((!(gctx->rules_load_from == NULL &&
-           gctx->rules_save_to != NULL) ||
-         !(gctx->flags & TRC_LOG_PARSE_USE_RULE_IDS)) &&
+           gctx->rules_save_to != NULL)) &&
         !(gctx->flags & TRC_LOG_PARSE_NO_GEN_WILDS))
         trc_update_generate_wilds(gctx->db_uid,
                                   ctx.updated_tests);
