@@ -25,10 +25,10 @@ tad_libs_rem()
 {
 # It is used to delete possible duplicate to avoid possible craziness of
 # pkg-config used in agent/unix/configure
-    STR_ESCAPED=`echo $1 | sed s/"\/"/@/g`
-    LIBS_ESCAPED=`echo $TA_TAD_LIBS | sed s/"\/"/@/g`
-    TA_TAD_LIBS=`echo $LIBS_ESCAPED | sed s/$STR_ESCAPED//g`
-    TA_TAD_LIBS=`echo $TA_TAD_LIBS | sed s/@/'\/'/g`
+    STR_ESCAPED=`echo $1 | sed "s/\//@/g"`
+    LIBS_ESCAPED=`echo $TA_TAD_LIBS | sed "s/\//@/g"`
+    TA_TAD_LIBS=`echo $LIBS_ESCAPED | sed "s/$STR_ESCAPED//g"`
+    TA_TAD_LIBS=`echo $TA_TAD_LIBS | sed "s/@/\//g"`
 }
 
 # FIXME: make it AC macro

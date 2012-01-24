@@ -47,6 +47,8 @@ my $cmd_out;
 my $cmd_pid;
 my $result = "";
 
+# Read list of libraries both from standard input and from
+# list of arguments passed to script
 @libs = (@libs, parse_line('[\s]+', 1, $_)) while (<STDIN>);
 @libs = (@libs, parse_line('[\s]+', 1, $_)) foreach (@ARGV);
 
@@ -58,6 +60,8 @@ else
 {
     $te_ext_libs_path = "";
 }
+
+# Implementation of binary search in array of strings
 
 sub bin_search_aux
 {
@@ -105,9 +109,14 @@ sub bin_search
 
 if ($te_ext_libs_path ne "")
 {
+    # Get list of all the static libraries in folder where
+    # external libraries should be saved
     $cmd_pid = open2($cmd_out, 0, "/usr/bin/find", 
                      ($te_ext_libs_path,
                       "-maxdepth", 1, "-name", "lib*.a"));
+
+    # Fill array @ext_lib_names with names of all static
+    # libraries found on the previous step
     while (<$cmd_out>)
     {
         $ext_lib_names[@ext_lib_names] = $2
@@ -116,9 +125,15 @@ if ($te_ext_libs_path ne "")
 
     @ext_lib_names = sort(@ext_lib_names);
 
+    # Get list of all the shared objects in folder where
+    # external libraries should be saved
     $cmd_pid = open2($cmd_out, 0, "/usr/bin/find",
                      ($te_ext_libs_path, "-name", "lib*.so",
                       "-maxdepth", 1)) or die("/usr/bin/find failed");
+
+    # Delete from array @ext_lib_names all the names of static libraries
+    # for which shared objects with the same name are found in the
+    # folder
     while (<$cmd_out>)
     {
         my $pos;
@@ -133,28 +148,32 @@ if ($te_ext_libs_path ne "")
         }
     }
 
+    # Process array of libraries @lib passed to the script
+    # determining whether a library is an external one
     $i = 0;
     foreach my $lib (@libs)
     {
         $lib_is_ext[$i] = 0;
         $lib_names[$i] = "";
 
+        # If library is provided as -llibname,
+        # check whether it can be found in array of
+        # static libraries names
         unless (!defined($lib) || $lib eq "")
         {
             if ($lib =~ /-l(\S*)/)
             {
                 $lib_names[$i] = $1;
 
-                foreach my $ext_lib (@ext_lib_names)
+                if (bin_search(\@ext_lib_names, $lib_names[$i]) != -1)
                 {
-                    if ($lib_names[$i] eq $ext_lib)
-                    {
-                        $lib_is_ext[$i] = 1;
-                        last;
-                    }
+                    $lib_is_ext[$i] = 1;
                 }
             }
 
+            # If library is provided as path to static library file -
+            # check whether it is in the same folder as external static
+            # libraries should be
             if ($lib =~ /(\/?([^\s\/]*\/)*)lib(\S*)\.a/)
             {
                 $lib_names[$i] = $3;
@@ -171,6 +190,11 @@ if ($te_ext_libs_path ne "")
             my $deps_file = $te_ext_libs_path."/".$lib_names[$i]."_deps";
             if (-e $deps_file)
             {
+                # If an external library depends on some other libraries,
+                # information about these libraries and the order in which
+                # they should be in linker's command line should be
+                # specified in libname_deps file.
+
                 my $in;
 
                 open($in, "<", $deps_file) or die "Cannot open $deps_file";
@@ -179,6 +203,10 @@ if ($te_ext_libs_path ne "")
                 {
                     my @dep_libs = parse_line('[\s]+', 1, $_);
                     my $n = $i;
+
+                    # dep_libs contains list of dependencies in the right
+                    # order. We ensure that libraries are presented in
+                    # @libs in this order and, if no, insert them.
 
                     foreach my $dep_lib (@dep_libs)
                     {
@@ -197,13 +225,10 @@ if ($te_ext_libs_path ne "")
                                 splice(@lib_names, $n + 1, 0, ($dep_lib));
                                 splice(@lib_is_ext, $n + 1, 0, 0);
 
-                                foreach my $ext_lib (@ext_lib_names)
+                                if (bin_search(\@ext_lib_names,
+                                               $lib_names[$n + 1]) != -1)
                                 {
-                                    if ($lib_names[$n + 1] eq $ext_lib)
-                                    {
-                                        $lib_is_ext[$n + 1] = 1;
-                                        last;
-                                    }
+                                    $lib_is_ext[$n + 1] = 1;
                                 }
 
                                 $n++;
@@ -216,6 +241,7 @@ if ($te_ext_libs_path ne "")
     }
 }
 
+# Form linker command line from list of libraries
 foreach my $lib (@libs)
 {
     unless (!defined($lib) || $lib eq "")
