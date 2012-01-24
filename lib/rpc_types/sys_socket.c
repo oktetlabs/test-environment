@@ -1653,7 +1653,7 @@ sockaddr_raw2rpc(const void *buf, socklen_t len, tarpc_sa *rpc)
 
     if (buf == NULL)
     {
-        assert(len != 0);
+        assert(len == 0);
         /* Flag TARPC_SA_NOT_NULL is clear */
     }
     else
