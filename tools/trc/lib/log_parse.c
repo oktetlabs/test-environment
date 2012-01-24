@@ -1501,11 +1501,11 @@ trc_update_merge_result(trc_log_parse_ctx *ctx)
     trc_exp_results            *new_results = NULL;
     te_test_result             *te_result;
     trc_exp_result_entry       *result_entry;
-    logic_expr                 *tags_expr;
 
     p = (trc_exp_result *) trc_db_walker_get_exp_result(ctx->db_walker,
                                                         ctx->tags);
     if (p != NULL &&
+        !(ctx->flags & TRC_LOG_PARSE_CONFLS_ALL) &&
         trc_is_result_expected(
             p,
             &TAILQ_FIRST(&ctx->iter_data->runs)->result))
@@ -1545,13 +1545,23 @@ trc_update_merge_result(trc_log_parse_ctx *ctx)
     {
         SLIST_FOREACH(p, new_results, links)
         {
-            if ((rc = trc_exp_result_cmp_no_tags(merge_result, p)) <= 0)
+            if ((rc = strcmp(p->tags_str, merge_result->tags_str)) <= 0)
                 break;
 
             prev = p;
         }
- 
-        if (rc != 0)
+
+        if (p != NULL && rc == 0)
+        {
+            if (trc_exp_result_cmp_no_tags(p, merge_result) != 0)
+            {
+                TAILQ_REMOVE(&merge_result->results, result_entry,
+                             links);
+                TAILQ_INSERT_TAIL(&p->results, result_entry, links);
+            }
+            trc_exp_result_free(merge_result);
+        }
+        else
         {
             if (prev != NULL)
                 SLIST_INSERT_AFTER(prev, merge_result, links);
@@ -1559,21 +1569,73 @@ trc_update_merge_result(trc_log_parse_ctx *ctx)
                 SLIST_INSERT_HEAD(new_results,
                                   merge_result, links);
         }
-        else
-        {
-            if (rc == 0 && strcmp(p->tags_str, merge_result->tags_str) != 0)
-            {
-                tags_expr = TE_ALLOC(sizeof(*tags_expr));
-                tags_expr->type = LOGIC_EXPR_OR;
-                tags_expr->u.binary.rhv = p->tags_expr;
-                tags_expr->u.binary.lhv = merge_result->tags_expr;
-                p->tags_expr = tags_expr;
-                merge_result->tags_expr = NULL;
-                free(p->tags_str);
-                p->tags_str = logic_expr_to_str(p->tags_expr);
-            }
+    }
 
-            trc_exp_result_free(merge_result);
+    return 0;
+}
+
+/**
+ * Merge the same results having different tags into
+ * single records.
+ *
+ * @param db_uid    TRC DB User ID
+ * @param tests     Tests to be updated
+ * @param flags     Flags
+ *
+ * @return Status code
+ */
+static te_errno
+trc_update_simplify_results(unsigned int db_uid,
+                            trc_update_test_entries *tests,
+                            int flags)
+
+{
+    trc_update_test_entry       *test_entry;
+    trc_test_iter               *iter;
+    trc_update_test_iter_data   *iter_data;
+    trc_exp_results             *new_results = NULL;
+    trc_exp_result              *p;
+    trc_exp_result              *q;
+    trc_exp_result              *tvar;
+    logic_expr                  *tags_expr;
+
+    UNUSED(flags);
+
+    TAILQ_FOREACH(test_entry, tests, links)
+    {
+        TAILQ_FOREACH(iter, &test_entry->test->iters.head, links)
+        {
+            iter_data = trc_db_iter_get_user_data(iter, db_uid);
+            
+            if (iter_data == NULL || iter_data->to_save == FALSE)
+                continue;
+
+            new_results = &iter_data->new_results;
+
+            SLIST_FOREACH(p, new_results, links)
+            {
+                for (q = SLIST_NEXT(p, links);
+                     q != NULL && (tvar = SLIST_NEXT(q, links), 1);
+                     q = tvar)
+                    
+                {
+                    if (trc_exp_result_cmp_no_tags(p, q) == 0)
+                    {
+                        tags_expr = TE_ALLOC(sizeof(*tags_expr));
+                        tags_expr->type = LOGIC_EXPR_OR;
+                        tags_expr->u.binary.rhv = p->tags_expr;
+                        tags_expr->u.binary.lhv = q->tags_expr;
+                        
+                        p->tags_expr = tags_expr;
+                        q->tags_expr = NULL;
+                        free(p->tags_str);
+                        p->tags_str = logic_expr_to_str(p->tags_expr);
+                        SLIST_REMOVE(new_results, q, trc_exp_result,
+                                     links);
+                        trc_exp_result_free(q);
+                    }
+                }
+            }
         }
     }
 
@@ -1625,9 +1687,8 @@ trc_update_apply_rules(unsigned int db_uid,
 
                 TAILQ_FOREACH(rule, test_entry->rules, links)
                 {
-                    if ((flags & TRC_LOG_PARSE_USE_RULE_IDS) &&
-                        (rule->rule_id != rule_id && rule->rule_id != 0 &&
-                         rule_id != 0))
+                    if (rule->rule_id != rule_id && rule->rule_id != 0 &&
+                        rule_id != 0)
                         continue;
 
                     if (rule->apply &&
@@ -3212,13 +3273,8 @@ trc_update_process_logs(trc_update_ctx *gctx)
         trc_update_fill_db_user_data(gctx->db, ctx.updated_tests,
                                      gctx->db_uid);
 
-    if (gctx->rules_save_to != NULL && gctx->rules_load_from == NULL)
-    {
-        trc_update_gen_rules(ctx.db_uid, ctx.updated_tests, gctx->flags);
-
-        save_test_rules_to_file(ctx.updated_tests, gctx->rules_save_to,
-                                gctx->cmd);
-    }
+    trc_update_simplify_results(gctx->db_uid, ctx.updated_tests,
+                                gctx->flags);
 
     if (gctx->rules_load_from != NULL)
     {
@@ -3230,6 +3286,16 @@ trc_update_process_logs(trc_update_ctx *gctx)
         
         trc_update_apply_rules(gctx->db_uid, ctx.updated_tests,
                                gctx->flags);
+    }
+
+    if (gctx->rules_save_to != NULL)
+    {
+        if (gctx->rules_load_from == NULL)
+            trc_update_gen_rules(ctx.db_uid, ctx.updated_tests,
+                                 gctx->flags);
+
+        save_test_rules_to_file(ctx.updated_tests, gctx->rules_save_to,
+                                gctx->cmd);
     }
 
     if ((!(gctx->rules_load_from == NULL &&

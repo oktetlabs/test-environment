@@ -68,6 +68,8 @@ enum trc_log_parse_flags {
                                                  from logs in <news>
                                                  section of updating
                                                  rule */
+    TRC_LOG_PARSE_CONFLS_ALL       = 0x200, /**< Treat all results from
+                                                 logs as unexpected ones */
 };
 
 #ifdef __cplusplus

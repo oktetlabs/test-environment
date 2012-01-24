@@ -86,6 +86,8 @@ enum {
                                          iterations in TRC (including
                                          those for which there is no
                                          conflicting results in logs) */
+    TRC_UPDATE_OPT_CONFLS_ALL,      /**< Treat all results from logs as
+                                         unexpected ones */
     TRC_UPDATE_OPT_NO_USE_IDS,      /**< Do not set user_attr attribute
                                          to updating rule ID in
                                          generated TRC XML */
@@ -220,6 +222,10 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
           TRC_UPDATE_OPT_RULES_ALL,
           "Create updating rules for all results (not only for those "
           "which are to be merged with new ones)", NULL },
+
+        { "confls-all", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_CONFLS_ALL,
+          "Treat all results from logs as unexpected ones", NULL },
 
         { "no-use-ids", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_NO_USE_IDS,
@@ -358,6 +364,10 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
 
             case TRC_UPDATE_OPT_RULES_ALL:
                 ctx.flags |= TRC_LOG_PARSE_RULES_ALL;
+                break;
+
+            case TRC_UPDATE_OPT_CONFLS_ALL:
+                ctx.flags |= TRC_LOG_PARSE_CONFLS_ALL;
                 break;
 
             case TRC_UPDATE_OPT_NO_USE_IDS:
