@@ -66,6 +66,7 @@ install-exec-hook:
 	export TE_BASE="@TE_BASE@" ; \
 	pushd $(DESTDIR)/$(prefix) >/dev/null ; \
 	ln -sf $(TE_HOST)/bin/dispatcher.sh dispatcher.sh ; \
+	ln -sf $(TE_HOST)/bin/common_vars.sh common_vars.sh ; \
 	popd >/dev/null ; \
 	$(srcdir)/engine/builder/te_cross_build $(prefix)
 
@@ -74,6 +75,7 @@ uninstall-hook:
 	rm -rf `cat @TE_EXT_LIBS_FILE@` ; \
 	popd >/dev/null 
 	rm -f $(DESTDIR)/$(prefix)/dispatcher.sh
+	rm -f $(DESTDIR)/$(prefix)/common_vars.sh
 	$(srcdir)/engine/builder/te_cross_make uninstall
 
 clean-local:
