@@ -590,7 +590,7 @@ if test -z "$(which te_log_init 2>/dev/null)" ; then
     export PATH="$PATH:${TE_BASE}/engine/logger:${TE_BASE}/engine/builder"
 fi
 
-. ${TE_BASE}/common_vars.sh
+. ${TE_INSTALL}/common_vars.sh
 
 # Intitialize log
 test -z "${DAEMON}" && te_log_init
