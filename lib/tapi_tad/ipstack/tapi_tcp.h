@@ -386,6 +386,18 @@ extern int tapi_tcp_segment_pattern(tapi_tcp_pos_t seqn,
                                     asn_value **pattern);
 
 /**
+ * The same function as tapi_tcp_segment_pattern() with force_ip6
+ * boolean parameter to create pattern for tcp.ip6.eth or tcp.ip4.eth CSAP
+ */
+extern int tapi_tcp_ip_segment_pattern(te_bool force_ip6,
+                                       tapi_tcp_pos_t seqn,
+                                       tapi_tcp_pos_t ackn,
+                                       te_bool urg_flag, te_bool ack_flag,
+                                       te_bool psh_flag, te_bool rst_flag,
+                                       te_bool syn_flag, te_bool fin_flag,
+                                       asn_value **pattern);
+
+/**
  * Prepare TCP header PDU by specified parameter values.
  * Modified version of tapi_tcp_pdu.
  *
@@ -455,10 +467,22 @@ extern int tapi_tcp_segment_template(tapi_tcp_pos_t seqn,
                                      uint8_t *data, size_t pld_len,
                                      asn_value **tmpl);
 
+/**
+ * The same function as tapi_tcp_segment_template() with force_ip6
+ * boolean parameter to create template for tcp.ip6.eth or tcp.ip4.eth CSAP
+ */
+extern int tapi_tcp_ip_segment_template(te_bool force_ip6,
+                                        tapi_tcp_pos_t seqn,
+                                        tapi_tcp_pos_t ackn,
+                                        te_bool urg_flag, te_bool ack_flag,
+                                        te_bool psh_flag, te_bool rst_flag,
+                                        te_bool syn_flag, te_bool fin_flag,
+                                        uint8_t *data, size_t pld_len,
+                                        asn_value **tmpl);
+
 /*
  * TCP connection emulate methods
  */
-
 
 /**
  * Modes for connection establishment.
