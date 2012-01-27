@@ -773,6 +773,7 @@ rpc_sockopt2level(rpc_sockopt opt)
         case RPC_MCAST_LEAVE_GROUP:
         case RPC_IP_OPTIONS:
         case RPC_IP_PKTINFO:
+        case RPC_IP_PKTOPTIONS:
         case RPC_IP_RECVERR:
         case RPC_IP_RECVOPTS:
         case RPC_IP_RECVTOS:
@@ -889,6 +890,7 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(MCAST_LEAVE_GROUP);
         RPC2STR(IP_OPTIONS);
         RPC2STR(IP_PKTINFO);
+        RPC2STR(IP_PKTOPTIONS);
         RPC2STR(IP_RECVERR);
         RPC2STR(IP_RECVOPTS);
         RPC2STR(IP_RECVTOS);
@@ -1005,6 +1007,7 @@ sockopt_rpc2h(rpc_sockopt opt)
         RPC2H_CHECK(MCAST_LEAVE_GROUP);
         RPC2H_CHECK(IP_OPTIONS);
         RPC2H_CHECK(IP_PKTINFO);
+        RPC2H_CHECK(IP_PKTOPTIONS);
         RPC2H_CHECK(IP_RECVERR);
         RPC2H_CHECK(IP_RECVOPTS);
         RPC2H_CHECK(IP_RECVTOS);
@@ -1153,6 +1156,7 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC_CHECK(MCAST_LEAVE_GROUP);
                 H2RPC_CHECK(IP_OPTIONS);
                 H2RPC_CHECK(IP_PKTINFO);
+                H2RPC_CHECK(IP_PKTOPTIONS);
                 H2RPC_CHECK(IP_RECVERR);
                 H2RPC_CHECK(IP_RECVOPTS);
                 H2RPC_CHECK(IP_RECVTOS);

@@ -366,6 +366,7 @@ typedef enum rpc_sockopt {
                                  with every packet from the socket */
     RPC_IP_PKTINFO,         /**< Whether the IP_PKTINFO message
                                  should be passed or not */
+    RPC_IP_PKTOPTIONS,      /**< Get IP packet options */
 
     RPC_IP_RECVDSTADDR,     /**< Whether to pass destination address
                                  with UDP datagram to the user in an
