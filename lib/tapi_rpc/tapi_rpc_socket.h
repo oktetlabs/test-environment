@@ -469,13 +469,15 @@ rpc_recvbuf_off(rcf_rpc_server *rpcs, int fd, rpc_ptr_off *buf,
  * @param rpcs          RPC server handle
  * @param data          msg_control data
  * @param data_len      msg_control data length
- * @param ipi_address   ipi_address value of in_pktinfo type data (OUT)
+ * @param ipi_spec_dst  ipi_spec_dst value of in_pktinfo type data (OUT)
+ * @param ipi_addr      ipi_addr value of in_pktinfo type data (OUT)
  * @param ipi_ifindex   ipi_ifindex value of in_pktinfo type data (OUT) 
  *  
  * @return Status code
  */ 
 extern int rpc_cmsg_data_parse_ip_pktinfo(rcf_rpc_server *rpcs,
                                           uint8_t *data, uint32_t data_len,
+                                          struct in_addr *ipi_spec_dst,
                                           struct in_addr *ipi_addr,
                                           int *ipi_ifindex);
 /**

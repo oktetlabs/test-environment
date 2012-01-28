@@ -327,7 +327,7 @@ handler2name(void *handler)
 
     return tmp;
 }
-
+ 
 /*-------------- setlibname() -----------------------------*/
 
 bool_t
@@ -2505,6 +2505,66 @@ tarpc_getsockopt(tarpc_getsockopt_in *in, tarpc_getsockopt_out *out,
             break;
         }
 
+        case OPT_IP_PKTOPTIONS:
+        {
+#define OPTVAL out_optval->option_value_u.opt_ip_pktoptions. \
+                                            opt_ip_pktoptions_val
+#define OPTLEN out_optval->option_value_u.opt_ip_pktoptions. \
+                                            opt_ip_pktoptions_len
+
+            struct cmsghdr      *c;
+            tarpc_cmsghdr       *rpc_c;
+            int                  i;
+            uint8_t             *data;
+        
+            for (i = 0, c = (struct cmsghdr *)opt;
+                 (uint8_t *)c - (uint8_t *)opt < (int)optlen;
+                 i++, c = (struct cmsghdr *)(((uint8_t *)c) +
+                            CMSG_SPACE(c->cmsg_len - 
+                                       (CMSG_DATA(c) -
+                                            (uint8_t *)c))));
+
+            rpc_c = OPTVAL = calloc(1, sizeof(*rpc_c) * i);
+            OPTLEN = i;
+
+            for (i = 0, c = (struct cmsghdr *)opt;
+                 (uint8_t *)c - (uint8_t *)opt < (int)optlen;
+                 i++,
+                 c = (struct cmsghdr *)(((uint8_t *)c) +
+                         CMSG_SPACE(rpc_c->data.data_len)),
+                 rpc_c++)
+            {
+                data = CMSG_DATA(c);
+
+                rpc_c->level = socklevel_h2rpc(c->cmsg_level);
+                rpc_c->type = sockopt_h2rpc(c->cmsg_level, c->cmsg_type);
+
+                if ((rpc_c->data.data_len =
+                         c->cmsg_len - (data - (uint8_t *)c)) > 0)
+                {
+                    rpc_c->data.data_val =
+                            malloc(rpc_c->data.data_len);
+                    if (rpc_c->data.data_val == NULL)
+                    {
+                        for (i--, rpc_c--; i >= 0; i--, rpc_c--)
+                            free(rpc_c->data.data_val);
+                        free(OPTVAL);
+                        OPTVAL = NULL;
+                        OPTLEN = 0;
+
+                        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+                        break;
+                    }
+                    memcpy(rpc_c->data.data_val, data,
+                           rpc_c->data.data_len);
+                }
+            }
+
+            break;
+#undef OPTVAL
+#undef OPTLEN
+        }
+
         default:
             ERROR("incorrect option type %d is received",
                   out_optval->opttype);
@@ -2521,14 +2581,34 @@ TARPC_FUNC(getsockopt,
 {
     if (out->optval.optval_val == NULL)
     {
+
         INIT_CHECKED_ARG(out->raw_optval.raw_optval_val,
                          out->raw_optval.raw_optval_len,
                          out->raw_optlen.raw_optlen_val == NULL ? 0 :
-                             *out->raw_optlen.raw_optlen_val);
+                                        *(out->raw_optlen.raw_optlen_val));
+
         MAKE_CALL(out->retval = func(in->s, socklevel_rpc2h(in->level),
                                      sockopt_rpc2h(in->optname),
                                      out->raw_optval.raw_optval_val,
                                      out->raw_optlen.raw_optlen_val));
+
+        if (in->level == RPC_SOL_IP && in->optname == RPC_IP_PKTOPTIONS)
+        {
+            out->optval.optval_len = 1;
+            out->optval.optval_val = calloc(1,
+                                            sizeof(struct option_value));
+            assert(out->optval.optval_val != NULL);
+
+            out->optval.optval_val[0].opttype = OPT_IP_PKTOPTIONS;
+            out->optval.optval_val[0].option_value_u.opt_ip_pktoptions.
+                        opt_ip_pktoptions_val = NULL;
+            out->optval.optval_val[0].option_value_u.opt_ip_pktoptions.
+                        opt_ip_pktoptions_len = 0;
+            
+            tarpc_getsockopt(in, out, out->raw_optval.raw_optval_val,
+                             out->raw_optlen.raw_optlen_val == NULL ? 0 :
+                                        *(out->raw_optlen.raw_optlen_val));
+        }
     }
     else
     {
@@ -2549,6 +2629,7 @@ TARPC_FUNC(getsockopt,
         tarpc_getsockopt(in, out, buf, len);
         free(buf);
     }
+
 }
 )
 
@@ -3412,16 +3493,18 @@ TARPC_FUNC(recvmsg,
             /* Fill the array */
             for (i = 0, c = CMSG_FIRSTHDR(&msg);
                  c != NULL;
-                 i++, c = CMSG_NXTHDR(&msg, c))
+                 i++, c = CMSG_NXTHDR(&msg, c), rpc_c++)
             {
                 uint8_t *data = CMSG_DATA(c);
 
                 rpc_c->level = socklevel_h2rpc(c->cmsg_level);
-                rpc_c->type = sockopt_h2rpc(c->cmsg_level, c->cmsg_type);
+                rpc_c->type = sockopt_h2rpc(c->cmsg_level,
+                                              c->cmsg_type);
                 if ((rpc_c->data.data_len =
                          c->cmsg_len - (data - (uint8_t *)c)) > 0)
                 {
-                    rpc_c->data.data_val = malloc(rpc_c->data.data_len);
+                    rpc_c->data.data_val =
+                        malloc(rpc_c->data.data_len);
                     if (rpc_c->data.data_val == NULL)
                     {
                         for (i--, rpc_c--; i >= 0; i--, rpc_c--)
@@ -6622,6 +6705,33 @@ TARPC_FUNC(power_sw, {},
     MAKE_CALL(out->retval = func(in->type, in->dev, in->mask, in->cmd));
 }
 )
+
+/*------------ cmsg_data_parse_ip_pktinfo() ------------------*/
+bool_t
+_cmsg_data_parse_ip_pktinfo_1_svc(tarpc_cmsg_data_parse_ip_pktinfo_in *in,
+                                  tarpc_cmsg_data_parse_ip_pktinfo_out *out,
+                                  struct svc_req *rqstp)
+{
+    struct in_pktinfo *pktinfo = (struct in_pktinfo *)(in->data.data_val);
+    UNUSED(rqstp);
+
+    memset(out, 0, sizeof(*out));
+
+    if (in->data.data_len < sizeof(*pktinfo))
+    {
+        ERROR("Too small buffer is provided as pktinfo data");
+        out->retval = -1;
+    }    
+    else
+    {
+        out->ipi_spec_dst = pktinfo->ipi_spec_dst.s_addr;
+        out->ipi_addr = pktinfo->ipi_addr.s_addr;
+        out->ipi_ifindex = pktinfo->ipi_ifindex;
+        out->retval = 0; 
+    }
+
+    return TRUE;
+}
 
 /*------------ mcast_join_leave() ---------------------------*/
 void

@@ -1014,6 +1014,7 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
 int 
 rpc_cmsg_data_parse_ip_pktinfo(rcf_rpc_server *rpcs,
                                uint8_t *data, uint32_t data_len,
+                               struct in_addr *ipi_spec_dst,
                                struct in_addr *ipi_addr,
                                int *ipi_ifindex)
 {
@@ -1043,12 +1044,16 @@ rpc_cmsg_data_parse_ip_pktinfo(rcf_rpc_server *rpcs,
                                           out.retval);
     if (RPC_IS_CALL_OK(rpcs))
     {
+        ipi_spec_dst->s_addr = out.ipi_spec_dst;
         ipi_addr->s_addr = out.ipi_addr;
         *ipi_ifindex = out.ipi_ifindex;
     }
     TAPI_RPC_LOG(rpcs, cmsg_data_parse_ip_pktinfo,
-                 "%p, %u, %p->%s, %p->%d", "%d",
-                 data, data_len, ipi_addr, 
+                 "%p, %u, %p->%s, %p->%s, %p->%d", "%d",
+                 data, data_len, ipi_spec_dst, 
+                 (out.retval == 0) ? inet_ntoa(*ipi_spec_dst) :
+                                     "undetermined",
+                 ipi_addr, 
                  (out.retval == 0) ? inet_ntoa(*ipi_addr) : "undetermined",
                  ipi_ifindex,
                  (out.retval == 0) ? *ipi_ifindex : 0,
@@ -1176,7 +1181,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
     tarpc_getsockopt_in   in;
     tarpc_getsockopt_out  out;    
     struct option_value   val;
-    te_log_buf         *opt_val_str = NULL;
+    te_log_buf           *opt_val_str = NULL;
     char                  opt_len_str[32] = "(nil)";
     
     memset(&in, 0, sizeof(in));
@@ -1566,8 +1571,52 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
             unsigned int i;
             te_bool      show_hidden = FALSE;
 
-            memcpy(raw_optval, out.raw_optval.raw_optval_val,
-                   out.raw_optval.raw_optval_len);
+            if (optname != RPC_IP_PKTOPTIONS)
+                memcpy(raw_optval, out.raw_optval.raw_optval_val,
+                       out.raw_optval.raw_optval_len);
+            else
+            {
+                struct cmsghdr *c;
+                unsigned int    i;
+                unsigned int    len = out.optval.optval_val[0].
+                                        option_value_u.
+                                        opt_ip_pktoptions.
+                                        opt_ip_pktoptions_len;
+
+                struct tarpc_cmsghdr *rpc_c = out.optval.optval_val[0].
+                                                option_value_u.
+                                                opt_ip_pktoptions.
+                                                opt_ip_pktoptions_val;
+
+
+                c = raw_optval;
+                c->cmsg_len = CMSG_LEN(rpc_c->data.data_len);
+
+                for (i = 0;
+                     (uint8_t *)c - (uint8_t *)raw_optval +
+                                                c->cmsg_len <=
+                                                        raw_roptlen &&
+                     i < len;
+                     i++,
+                     c = (struct cmsghdr *) ((uint8_t *)c +
+                                             c->cmsg_len),
+                     rpc_c++)
+                {
+                    c->cmsg_level = socklevel_rpc2h(rpc_c->level);
+                    c->cmsg_type = sockopt_rpc2h(rpc_c->type);
+                    c->cmsg_len = CMSG_LEN(rpc_c->data.data_len);
+                    if (rpc_c->data.data_val != NULL)
+                        memcpy(CMSG_DATA(c), rpc_c->data.data_val, 
+                               rpc_c->data.data_len);
+                }
+
+                if (c == NULL && i < len)
+                {
+                    ERROR("Unexpected lack of space in buffer");
+                    rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
+                    RETVAL_INT(getsockopt, -1);
+                }
+            }
 
             if (opt_val_str == NULL)
                 opt_val_str = te_log_buf_alloc();

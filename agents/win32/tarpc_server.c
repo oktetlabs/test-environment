@@ -5012,6 +5012,7 @@ TARPC_FUNC(cmsg_data_parse_ip_pktinfo,
     }    
     else
     {
+        out->ipi_spec_dst = 0;
         out->ipi_addr = pktinfo->ipi_addr.S_un.S_addr;
         out->ipi_ifindex = pktinfo->ipi_ifindex;
         out->retval = 0; 

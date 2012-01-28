@@ -237,7 +237,7 @@ shut_how_rpc2h(rpc_shut_how how)
 extern int tarpc_find_func(te_bool use_libc, const char *name, 
                            api_func *func);
 
-/** Structure for checking of variable-length arguments safity */
+/** Structure for checking of variable-length arguments safety */
 typedef struct checked_arg {
     struct checked_arg *next; /**< Next checked argument in the list */
 
@@ -466,7 +466,7 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,  \
     VERB("PID=%d TID=%d: Entry %s",                                 \
          (int)getpid(), (int)pthread_self(), #_func);               \
                                                                     \
-    FIND_FUNC(in->common.use_libc, #_func, func);                        \
+    FIND_FUNC(in->common.use_libc, #_func, func);                   \
                                                                     \
     { _copy_args }                                                  \
                                                                     \
