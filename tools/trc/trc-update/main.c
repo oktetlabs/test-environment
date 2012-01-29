@@ -127,7 +127,7 @@ static trc_update_ctx ctx;
 
 #ifdef HAVE_LIBPERL
 /** Perl interpreter */
-static PerlInterpreter *perl_interp;
+static PerlInterpreter *perl_interp = NULL;
 #endif
 
 /**
@@ -823,8 +823,11 @@ exit:
     }
 
 #ifdef HAVE_LIBPERL
-    perl_destruct(perl_interp);
-    perl_free(perl_interp);
+    if (perl_interp != NULL)
+    {
+        perl_destruct(perl_interp);
+        perl_free(perl_interp);
+    }
     PERL_SYS_TERM();
 #endif
 
