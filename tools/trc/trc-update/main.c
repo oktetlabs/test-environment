@@ -759,19 +759,18 @@ main(int argc, char **argv, char **envp)
         goto exit;
     }
 
-    if (ctx.flags & TRC_LOG_PARSE_LOG_WILDS)
-    {
-        if (trc_db_init(&ctx.db) != 0)
-        {
-            ERROR("Failed to initialize a new TRC database");
-            goto exit;
-        }
-    }
-    else if (trc_db_open(db_fn, &ctx.db) != 0)
+    if (trc_db_open(db_fn, &ctx.db) != 0)
     {
         ERROR("Failed to open TRC database '%s'", db_fn);
         goto exit;
     }
+
+    /* 
+     * This is done to remove current expected results
+     * and investigate results from log only
+     */
+    if (ctx.flags & TRC_LOG_PARSE_LOG_WILDS)
+        trc_free_trc_tests(&ctx.db->tests);
 
     /* Allocate TRC database user ID */
     ctx.db_uid = trc_db_new_user(ctx.db);

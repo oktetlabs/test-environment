@@ -1610,7 +1610,10 @@ trc_update_simplify_results(unsigned int db_uid,
             if (iter_data == NULL || iter_data->to_save == FALSE)
                 continue;
 
-            new_results = &iter_data->new_results;
+            if (flags & TRC_LOG_PARSE_LOG_WILDS)
+                new_results = &iter->exp_results;
+            else
+                new_results = &iter_data->new_results;
 
             SLIST_FOREACH(p, new_results, links)
             {
@@ -2635,7 +2638,6 @@ trc_update_generate_test_wilds(unsigned int db_uid,
 
         trc_update_get_iters_args_combs(db_uid, test, res_id,
                                         &args_groups);
-        
         SLIST_FOREACH(args_group, &args_groups, links)
             trc_update_gen_args_group_wilds(db_uid, test, res_id,
                                             args_group, &wildcards);

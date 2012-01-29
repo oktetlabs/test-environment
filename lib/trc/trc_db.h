@@ -372,6 +372,13 @@ extern te_errno trc_db_save(te_trc_db *db, const char *filename,
 extern void trc_db_free(te_trc_db *db);
 
 /**
+ * Free resources allocated for the list of tests.
+ *
+ * @param tests     List of tests to be freed
+ */
+extern void trc_free_trc_tests(trc_tests *tests);
+
+/**
  * Free resources allocated for the test iteration.
  *
  * @param iter     Test iteration to be freed

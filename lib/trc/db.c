@@ -46,8 +46,6 @@
 #include "trc_db.h"
 
 
-static void trc_free_trc_tests(trc_tests *tests);
-
 /* See description in trc_db.h */
 void
 trc_free_test_iter_args_head(trc_test_iter_args_head *head)
@@ -240,12 +238,8 @@ trc_free_test_iters(trc_test_iters *iters)
     }
 }
 
-/**
- * Free resources allocated for the list of tests.
- *
- * @param tests     List of tests to be freed
- */
-static void
+/* See description in trc_db.h */
+void
 trc_free_trc_tests(trc_tests *tests)
 {
     trc_test   *p;
