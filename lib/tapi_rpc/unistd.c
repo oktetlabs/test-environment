@@ -361,6 +361,38 @@ rpc_write(rcf_rpc_server *rpcs,
     RETVAL_INT(write, out.retval);
 }
 
+int
+rpc_write_and_close(rcf_rpc_server *rpcs,
+                    int fd, const void *buf, size_t count)
+{
+    tarpc_write_and_close_in  in;
+    tarpc_write_and_close_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(write_and_close, -1);
+    }
+
+    in.fd = fd;
+    in.len = count;
+    if (buf != NULL && rpcs->op != RCF_RPC_WAIT)
+    {
+        in.buf.buf_len = count;
+        in.buf.buf_val = (uint8_t *)buf;
+    }
+
+    rcf_rpc_call(rpcs, "write_and_close", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(write_and_close, out.retval);
+    TAPI_RPC_LOG(rpcs, write_and_close, "%d, %p, %u", "%d",
+                 fd, buf, count, out.retval);
+    RETVAL_INT(write_and_close, out.retval);
+}
+
 tarpc_ssize_t
 rpc_readbuf_gen(rcf_rpc_server *rpcs,
                 int fd, rpc_ptr buf, size_t buf_off, size_t count)

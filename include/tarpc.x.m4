@@ -584,7 +584,7 @@ struct tarpc_te_fstat64_out {
     struct tarpc_stat buf;
 };
 
-/* read() / write() */
+/* read() / write() / write_and_close() */
 
 struct tarpc_read_in {
     struct tarpc_in_arg common;
@@ -606,6 +606,9 @@ typedef struct tarpc_read_in tarpc_write_in;
 
 typedef struct tarpc_ssize_t_retval_out tarpc_write_out;
 
+typedef struct tarpc_write_in tarpc_write_and_close_in;
+
+typedef struct tarpc_ssize_t_retval_out tarpc_write_and_close_out;
 
 /* ReadFile() / WriteFile() */
 
@@ -4446,6 +4449,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
 
         RPC_DEF(read)
         RPC_DEF(write)
+        RPC_DEF(write_and_close)
 
         RPC_DEF(readbuf)
         RPC_DEF(writebuf)

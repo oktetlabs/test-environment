@@ -154,6 +154,20 @@ extern int rpc_write(rcf_rpc_server *rpcs,
                      int fd, const void *buf, size_t count);
 
 /**
+ * Write up to @b count bytes from buffer @b buf to file with descriptor 
+ * @b fd and close this file descriptor.
+ *
+ * @param rpcs     RPC server handle
+ * @param fd       file descriptor
+ * @param buf      pointer to a buffer containing data to write
+ * @param count    number of bytes to be written
+ *
+ * @return  Number of bytes actually written, otherwise -1 on failure
+ */
+extern int rpc_write_and_close(rcf_rpc_server *rpcs,
+                               int fd, const void *buf, size_t count);
+
+/**
  * Like rpc_write(), but uses a buffer that has been allocated
  * by the user earlier.
  *

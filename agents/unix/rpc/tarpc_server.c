@@ -1190,6 +1190,44 @@ TARPC_FUNC(write, {},
 }
 )
 
+/*------------ write_and_close() ----------------------*/
+bool_t
+_write_and_close_1_svc(tarpc_write_and_close_in *in,
+                       tarpc_write_and_close_out *out,
+                       struct svc_req *rqstp)
+{
+    api_func write_func;
+    api_func close_func;
+    int      rc = 0;
+
+    UNUSED(rqstp);
+    memset(out, 0, sizeof(*out));
+
+    if (tarpc_find_func(in->common.use_libc, "write", &write_func) != 0)
+    {
+        ERROR("Failed to find function \"write\"");
+        out->retval =  -1;
+    }
+    else if (tarpc_find_func(in->common.use_libc, "close",
+                             &close_func) != 0)
+    {
+        ERROR("Failed to find function \"close\"");
+        out->retval =  -1;
+    }
+    else
+    {
+        out->retval = write_func(in->fd, in->buf.buf_val, in->len);
+        
+        if (out->retval >= 0)
+        {
+            rc = close_func(in->fd);
+            if (rc < 0)
+                out->retval = rc;
+        }
+    }
+
+    return TRUE;
+}
 
 /*-------------- readbuf() ------------------------------*/
 
