@@ -38,6 +38,7 @@
 #include "asn_usr.h"
 #include "tapi_tad.h"
 #include "tapi_ip4.h"
+#include "tapi_ip6.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -205,6 +206,37 @@ extern tapi_tad_trrecv_cb_data *tapi_udp_ip4_eth_trrecv_cb_data(
 extern int tapi_udp_ip4_eth_recv_start(const char *ta_name, int sid,
                                        csap_handle_t csap,
                                        rcf_trrecv_mode mode);
+
+/**
+ * Create 'udp.ip6.eth' CSAP on the specified Agent
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF SID
+ * @param eth_dev       Name of Ethernet interface
+ * @param receive_mode  Bitmask with receive mode, see 'enum
+ *                      tad_eth_recv_mode' in tad_common.h.
+ *                      Use TAD_ETH_RECV_DEF by default.
+ * @param loc_mac       Local MAC address (or NULL)
+ * @param rem_mac       Remote MAC address (or NULL)
+ * @param loc_addr      Local IP address in network byte order (or NULL)
+ * @param rem_addr      Remote IP address in network byte order (or NULL)
+ * @param loc_port      Local UDP port in network byte order or -1
+ * @param rem_port      Remote UDP port in network byte order or -1
+ * @param udp_csap      Location for the CSAP handle (OUT)
+ *
+ * @return Zero on success or error code
+ */
+extern te_errno tapi_udp_ip6_eth_csap_create(const char    *ta_name,
+                                             int            sid,
+                                             const char    *eth_dev,
+                                             unsigned int   receive_mode,
+                                             const uint8_t *loc_mac,
+                                             const uint8_t *rem_mac,
+                                             const uint8_t *loc_addr,
+                                             const uint8_t *rem_addr,
+                                             int            loc_port,
+                                             int            rem_port,
+                                             csap_handle_t *udp_csap);
 
 #ifdef __cplusplus
 } /* extern "C" */

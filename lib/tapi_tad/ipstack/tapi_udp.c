@@ -61,6 +61,7 @@
 #include "tapi_tad.h"
 #include "tapi_eth.h"
 #include "tapi_ip4.h"
+#include "tapi_ip6.h"
 #include "tapi_udp.h"
 
 #include "tapi_test.h"
@@ -541,4 +542,59 @@ tapi_udp_ip4_eth_recv_start(const char *ta_name,  int sid,
     asn_free_value(pattern);
 
     return rc;
+}
+
+te_errno
+tapi_udp_ip6_eth_csap_create(const char    *ta_name,
+                             int            sid,
+                             const char    *eth_dev,
+                             unsigned int   receive_mode,
+                             const uint8_t *loc_mac,
+                             const uint8_t *rem_mac,
+                             const uint8_t *loc_addr,
+                             const uint8_t *rem_addr,
+                             int            loc_port,
+                             int            rem_port,
+                             csap_handle_t *udp_csap)
+{
+    te_errno    rc;
+    asn_value  *csap_spec = NULL;
+
+    rc = tapi_udp_add_csap_layer(&csap_spec, loc_port, rem_port);
+    if (rc != 0)
+    {
+        asn_free_value(csap_spec);
+        WARN("%s(): add UDP csap layer failed %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    rc = tapi_ip6_add_csap_layer(&csap_spec,
+                                 loc_addr, rem_addr,
+                                 IPPROTO_UDP);
+    if (rc != 0)
+    {
+        asn_free_value(csap_spec);
+        WARN("%s(): add IP6 csap layer failed %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    rc = tapi_eth_add_csap_layer(&csap_spec, eth_dev, receive_mode,
+                                 rem_mac, loc_mac,
+                                 NULL /* automatic length/type */,
+                                 TE_BOOL3_ANY /* untagged/tagged */,
+                                 TE_BOOL3_ANY /* Ethernet2/LLC+SNAP */);
+    if (rc != 0)
+    {
+        asn_free_value(csap_spec);
+        WARN("%s(): add ETH csap layer failed %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+
+    rc = tapi_tad_csap_create(ta_name, sid, "udp.ip6.eth", csap_spec,
+                              udp_csap);
+
+    asn_free_value(csap_spec);
+
+    return TE_RC(TE_TAPI, rc);
 }

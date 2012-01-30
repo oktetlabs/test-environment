@@ -70,6 +70,7 @@
 #include "tapi_tad.h"
 #include "tapi_eth.h"
 #include "tapi_ip4.h"
+#include "tapi_ip6.h"
 #include "tapi_tcp.h"
 #include "tapi_arp.h"
 
@@ -1337,3 +1338,78 @@ tapi_tcp_reset_hack_clear(const char *ta_name, int session,
 
     return rc;
 }
+
+te_errno
+tapi_tcp_ip6_eth_csap_create(const char *ta_name, int sid,
+                             const char *eth_dev,
+                             unsigned int receive_mode,
+                             const uint8_t *loc_mac,
+                             const uint8_t *rem_mac,
+                             const uint8_t *loc_addr,
+                             const uint8_t *rem_addr,
+                             int loc_port,
+                             int rem_port,
+                             csap_handle_t *tcp_csap)
+{
+    te_errno    rc;
+
+    asn_value *csap_spec = NULL;
+
+    do {
+        int num = 0;
+
+        rc = asn_parse_value_text("{ layers { tcp:{}, ip6:{}, eth:{} } }",
+                                  ndn_csap_spec, &csap_spec, &num);
+        if (rc) break;
+
+        if (receive_mode != 0)
+            rc = asn_write_int32(csap_spec, receive_mode,
+                                 "layers.2.#eth.receive-mode");
+        if (rc) break;
+
+        if (eth_dev)
+            rc = asn_write_value_field(csap_spec, eth_dev, strlen(eth_dev),
+                                       "layers.2.#eth.device-id.#plain");
+        if (rc) break;
+
+        if (loc_mac)
+            rc = asn_write_value_field(csap_spec,
+                    loc_mac, 6, "layers.2.#eth.local-addr.#plain");
+        if (rc) break;
+
+        if (rem_mac)
+            rc = asn_write_value_field(csap_spec,
+                    rem_mac, 6, "layers.2.#eth.remote-addr.#plain");
+        if (rc) break;
+
+        if(loc_addr)
+            rc = asn_write_value_field(csap_spec,
+                                       loc_addr, 16,
+                                       "layers.1.#ip6.local-addr.#plain");
+        if (rc) break;
+
+        if(rem_addr)
+            rc = asn_write_value_field(csap_spec,
+                                       rem_addr, 16,
+                                       "layers.1.#ip6.remote-addr.#plain");
+        if (rc) break;
+
+        if (loc_port >= 0)
+            rc = asn_write_int32(csap_spec, ntohs(loc_port),
+                                 "layers.0.#tcp.local-port.#plain");
+        if (rc) break;
+
+        if (rem_port >= 0)
+            rc = asn_write_int32(csap_spec, ntohs(rem_port),
+                                 "layers.0.#tcp.remote-port.#plain");
+        if (rc) break;
+
+        rc = tapi_tad_csap_create(ta_name, sid, "tcp.ip6.eth",
+                                  csap_spec, tcp_csap);
+    } while (0);
+
+    asn_free_value(csap_spec);
+
+    return TE_RC(TE_TAPI, rc);
+}
+

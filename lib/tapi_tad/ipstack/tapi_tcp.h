@@ -37,6 +37,7 @@
 #include "asn_usr.h"
 #include "tapi_tad.h"
 #include "tapi_ip4.h"
+#include "tapi_ip6.h"
 
 #define TCP_FIN_FLAG    0x01
 #define TCP_SYN_FLAG    0x02
@@ -957,4 +958,35 @@ extern int tapi_tcp_reset_hack_send(const char *ta_name, int session,
  */
 extern int tapi_tcp_reset_hack_clear(const char *ta_name, int session, 
                                      tapi_tcp_reset_hack_t *context);
+
+/**
+ * Creates 'tcp.ip6.eth' CSAP.
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF SID
+ * @param eth_dev       Name of Ethernet interface
+ * @param receive_mode  Bitmask with receive mode, see 'enum
+ *                      tad_eth_recv_mode' in tad_common.h.
+ *                      Use TAD_ETH_RECV_DEF by default.
+ * @param loc_mac       Local MAC address  (or NULL)
+ * @param rem_mac       Remote MAC address  (or NULL)
+ * @param loc_addr      Local IPv6 address
+ * @param rem_addr      Remote IPv6 address
+ * @param loc_port      Local TCP port in network byte order or -1
+ * @param rem_port      Remote TCP port in network byte order or -1
+ * @param tcp_csap      Location for the IPv4 CSAP handle (OUT)
+ *
+ * @return  Status of the operation
+ */
+extern te_errno tapi_tcp_ip6_eth_csap_create(const char *ta_name, int sid,
+                                             const char *eth_dev,
+                                             unsigned int receive_mode,
+                                             const uint8_t *loc_mac,
+                                             const uint8_t *rem_mac,
+                                             const uint8_t *loc_addr,
+                                             const uint8_t *rem_addr,
+                                             int loc_port,
+                                             int rem_port,
+                                             csap_handle_t *tcp_csap);
+
 #endif /* !__TE_TAPI_TCP_H__ */

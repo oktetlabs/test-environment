@@ -78,12 +78,14 @@ endif
 # IPSTACK
 IPSTACK_HDRS = \
 	ipstack/tapi_ip4.h \
+	ipstack/tapi_ip6.h \
 	ipstack/tapi_icmp4.h \
 	ipstack/tapi_udp.h \
 	ipstack/tapi_tcp.h \
 	ipstack/tapi_socket.h
 IPSTACK_SRCS = \
 	ipstack/tapi_ip4.c \
+	ipstack/tapi_ip6.c \
 	ipstack/tapi_icmp4.c \
 	ipstack/tapi_udp.c \
 	ipstack/tapi_tcp.c \
