@@ -346,14 +346,13 @@ extern int tapi_tcp_pattern(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
                             asn_value **pattern);
 
 /**
- * Prepare Traffic-Pattern ASN value for 'tcp.ip4.eth' or 'tcp.ip4' CSAP.
- * Complete set of TCP flags is specified.
- * It is assumed that all connection parameters
- * (src/dst MACs, IP, and ports) are already set in CSAP.
- * If it is not, fill there parameters in obtained traffic template
- * explicitely.
+ * Prepare pattern for TCP segment to receive via
+ * tcp.[ip4|ip6].eth and tcp.[ip4|ip6] CSAPs
  *
- * @param is_eth_pdu    if TRUE include eth header PDU
+ * @param is_eth_layer  TRUE for tcp.[ip4|ip6].eth CSAPs
+ *                      FALSE for tcp.[ip4|ip6] CSAPs
+ * @param force_ip6     TRUE for tcp.ip6.eth and tcp.ip6 CSAPs
+ *                      FALSE for tcp.ip4.eth and tcp.ip4 CSAPs
  * @param seqn          sequence number in host byte order
  * @param ackn          acknowledge number in host byte order
  * @param urg_flag      URG flag
@@ -366,17 +365,46 @@ extern int tapi_tcp_pattern(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
  *
  * @return Status code.
  */
-extern int tapi_tcp_segment_pattern_gen(te_bool is_eth_pdu,
-                                        tapi_tcp_pos_t seqn,
-                                        tapi_tcp_pos_t ackn,
-                                        te_bool urg_flag, te_bool ack_flag,
-                                        te_bool psh_flag, te_bool rst_flag,
-                                        te_bool syn_flag, te_bool fin_flag,
-                                        asn_value **pattern);
+extern int tapi_tcp_ip_segment_pattern_gen(te_bool is_eth_layer,
+                                           te_bool force_ip6,
+                                           tapi_tcp_pos_t seqn,
+                                           tapi_tcp_pos_t ackn,
+                                           te_bool urg_flag,
+                                           te_bool ack_flag,
+                                           te_bool psh_flag,
+                                           te_bool rst_flag,
+                                           te_bool syn_flag,
+                                           te_bool fin_flag,
+                                           asn_value **pattern);
 
 /**
- * The same function as tapi_tcp_segment_pattern_gen() with is_eth_pdu 
- * parameter set to TRUE, so it prepares value for 'tcp.ip4.eth' CSAP.
+ * Prepare pattern for TCP segment to receive via
+ * tcp.[ip4|ip6].eth and tcp.[ip4|ip6] CSAPs
+ *
+ * @param is_eth_layer  TRUE for tcp.[ip4|ip6].eth CSAPs
+ *                      FALSE for tcp.[ip4|ip6] CSAPs
+ * @param force_ip6     TRUE for tcp.ip6.eth and tcp.ip6 CSAPs
+ *                      FALSE for tcp.ip4.eth and tcp.ip4 CSAPs
+ * @param seqn          sequence number in host byte order
+ * @param ackn          acknowledge number in host byte order
+ * @param syn_flag      SYN flag
+ * @param ack_flag      ACK flag
+ * @param pattern       location for pointer to ASN value (OUT)
+ *
+ * @return Status code.
+ */
+extern int tapi_tcp_ip_pattern_gen(te_bool is_eth_layer,
+                                   te_bool force_ip6,
+                                   tapi_tcp_pos_t seqn,
+                                   tapi_tcp_pos_t ackn,
+                                   te_bool syn_flag,
+                                   te_bool ack_flag,
+                                   asn_value **pattern);
+
+/**
+ * The same function as tapi_tcp_segment_pattern_gen() with force_ip6
+ * parameter set to FALSE and is_eth_pdu parameter set to TRUE
+ * to prepare pattern for 'tcp.ip4.eth' CSAP.
  */
 extern int tapi_tcp_segment_pattern(tapi_tcp_pos_t seqn,
                                     tapi_tcp_pos_t ackn,
@@ -424,14 +452,13 @@ extern int tapi_tcp_segment_pdu(int src_port, int dst_port,
                                 asn_value **pdu);
 
 /**
- * Prepare Traffic-Template ASN value for 'tcp.ip4.eth' CSAP.
- * Modified version of tapi_tcp_template.
- * It is assumed that all connection parameters 
- * (src/dst MACs, IP, and ports) are already set in CSAP.
- * If it is not, fill there parameters in obtained traffic template
- * explicitely. 
+ * Prepare template for TCP segment to send via
+ * tcp.[ip4|ip6].eth and tcp.[ip4|ip6] CSAPs
  *
- * @param is_eth_pdu    if TRUE include eth header PDU
+ * @param is_eth_layer  TRUE for tcp.[ip4|ip6].eth CSAPs
+ *                      FALSE for tcp.[ip4|ip6] CSAPs
+ * @param force_ip6     TRUE for tcp.ip6.eth and tcp.ip6 CSAPs
+ *                      FALSE for tcp.ip4.eth and tcp.ip4 CSAPs
  * @param seqn          sequence number in host byte order
  * @param ackn          acknowledge number in host byte order
  * @param urg_flag      URG flag
@@ -440,27 +467,59 @@ extern int tapi_tcp_segment_pdu(int src_port, int dst_port,
  * @param rst_flag      RST flag
  * @param syn_flag      SYN flag
  * @param fin_flag      FIN flag
- * @param data          pointer to data with payload or NULL
- * @param pld_len       length of payload
+ * @param data          pointer to buffer with payload octets
+ * @param pld_len       payload length
  * @param tmpl          location for pointer to ASN value (OUT)
  *
  * @return Status code.
  */
-extern int tapi_tcp_segment_template_gen(te_bool is_eth_pdu,
-                                         tapi_tcp_pos_t seqn,
-                                         tapi_tcp_pos_t ackn,
-                                         te_bool urg_flag, te_bool ack_flag,
-                                         te_bool psh_flag, te_bool rst_flag,
-                                         te_bool syn_flag, te_bool fin_flag,
-                                         uint8_t *data, size_t pld_len,
-                                         asn_value **tmpl);
+extern int tapi_tcp_ip_segment_template_gen(te_bool is_eth_layer,
+                                            te_bool force_ip6,
+                                            tapi_tcp_pos_t seqn,
+                                            tapi_tcp_pos_t ackn,
+                                            te_bool urg_flag,
+                                            te_bool ack_flag,
+                                            te_bool psh_flag,
+                                            te_bool rst_flag,
+                                            te_bool syn_flag,
+                                            te_bool fin_flag,
+                                            uint8_t *data, size_t pld_len,
+                                            asn_value **tmpl);
 
 /**
- * The same function as tapi_tcp_segment_template_gen() with is_eth_pdu 
- * parameter set to TRUE, so it prepares value for 'tcp.ip4.eth' CSAP.
+ * Prepare template for TCP segment to send via
+ * tcp.[ip4|ip6].eth and tcp.[ip4|ip6] CSAPs
+ *
+ * @param is_eth_layer  TRUE for tcp.[ip4|ip6].eth CSAPs
+ *                      FALSE for tcp.[ip4|ip6] CSAPs
+ * @param force_ip6     TRUE for tcp.ip6.eth and tcp.ip6 CSAPs
+ *                      FALSE for tcp.ip4.eth and tcp.ip4 CSAPs
+ * @param seqn          sequence number in host byte order
+ * @param ackn          acknowledge number in host byte order
+ * @param syn_flag      SYN flag
+ * @param ack_flag      ACK flag
+ * @param data          pointer to buffer with payload octets
+ * @param pld_len       payload length
+ * @param tmpl          location for pointer to ASN value (OUT)
+ *
+ * @return Status code.
  */
-extern int tapi_tcp_segment_template(tapi_tcp_pos_t seqn, 
-                                     tapi_tcp_pos_t ackn, 
+extern int tapi_tcp_ip_template_gen(te_bool is_eth_layer,
+                                    te_bool force_ip6,
+                                    tapi_tcp_pos_t seqn,
+                                    tapi_tcp_pos_t ackn,
+                                    te_bool syn_flag,
+                                    te_bool ack_flag,
+                                    uint8_t *data, size_t pld_len,
+                                    asn_value **tmpl);
+
+/**
+ * The same function as tapi_tcp_ip_segment_template_gen() with
+ * force_ip6 parameter set to FALSE and is_eth_pdu parameter set to TRUE
+ * to prepare template for 'tcp.ip4.eth' CSAP.
+ */
+extern int tapi_tcp_segment_template(tapi_tcp_pos_t seqn,
+                                     tapi_tcp_pos_t ackn,
                                      te_bool urg_flag, te_bool ack_flag,
                                      te_bool psh_flag, te_bool rst_flag,
                                      te_bool syn_flag, te_bool fin_flag,
@@ -469,7 +528,7 @@ extern int tapi_tcp_segment_template(tapi_tcp_pos_t seqn,
 
 /**
  * The same function as tapi_tcp_segment_template() with force_ip6
- * boolean parameter to create template for tcp.ip6.eth or tcp.ip4.eth CSAP
+ * parameter to create template for tcp.ip6.eth or tcp.ip4.eth CSAP
  */
 extern int tapi_tcp_ip_segment_template(te_bool force_ip6,
                                         tapi_tcp_pos_t seqn,
