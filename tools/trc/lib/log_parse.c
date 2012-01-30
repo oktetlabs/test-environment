@@ -1676,6 +1676,8 @@ trc_update_apply_rules(unsigned int db_uid,
     trc_update_rule             *rule;
     trc_update_wilds_list_entry *wild;
     tqe_string                  *expr;
+
+    UNUSED(flags);
     
     TAILQ_FOREACH(test_entry, tests, links)
     {
