@@ -91,10 +91,10 @@ enum {
     TRC_UPDATE_OPT_NO_USE_IDS,      /**< Do not set user_attr attribute
                                          to updating rule ID in
                                          generated TRC XML */
-    TRC_UPDATE_OPT_COPY_OLD,        /**< Duplicate old results in <news>
+    TRC_UPDATE_OPT_COPY_OLD,        /**< Duplicate old results in <new>
                                          section of updating rule */
     TRC_UPDATE_OPT_COPY_CONFLS,     /**< Duplicate conflicting results in
-                                         <news> section of updating rule */
+                                         <new> section of updating rule */
     TRC_UPDATE_OPT_NO_WILDS,        /**< Do not generate wildcards */
     TRC_UPDATE_OPT_LOG_WILDS,       /**< Generate wildcards for results
                                          from logs, not from TRC DB */
@@ -235,12 +235,12 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
 
         { "copy-old", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_COPY_OLD,
-          "Copy results from existing TRC DB into <news> section  "
+          "Copy results from existing TRC DB into <new> section  "
           "of updating rule", NULL },
 
         { "copy-confls", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_COPY_CONFLS,
-          "Copy conflicting results from logs into <news> section  "
+          "Copy conflicting results from logs into <new> section  "
           "of updating rule", NULL },
 
         { "no-wilds", '\0', POPT_ARG_NONE, NULL,
@@ -475,7 +475,7 @@ func_args_match(const trc_test_iter_args *db_args,
 #ifdef HAVE_LIBPERL
         dTHX;
 
-        olds = get_hv("olds", GV_ADD);
+        olds = get_hv("old", GV_ADD);
         hv_clear(olds);
 
         TAILQ_FOREACH(arg, &db_args->head, links)
@@ -491,14 +491,14 @@ func_args_match(const trc_test_iter_args *db_args,
             tq_strings_add_uniq(&arg_names, arg->name);
         }
 
-        news = get_hv("news", GV_ADD);
+        news = get_hv("new", GV_ADD);
         hv_clear(news);
         commons = get_hv("commons", GV_ADD);
         hv_clear(commons);
 
-        uncomm_news = get_hv("uncomm_news", GV_ADD);
+        uncomm_news = get_hv("uncomm_new", GV_ADD);
         hv_clear(uncomm_news);
-        uncomm_olds = get_hv("uncomm_olds", GV_ADD);
+        uncomm_olds = get_hv("uncomm_old", GV_ADD);
         hv_clear(uncomm_olds);
 
         for (i = 0; i < (int)n_args; i++)
@@ -525,22 +525,22 @@ func_args_match(const trc_test_iter_args *db_args,
 
         eval_pv("sub uncomm_old"
                 "{"
-                "   $uncomm_olds{$_[0]} = 1;"
+                "   $uncomm_old{$_[0]} = 1;"
                 "   return 1;"
                 "}",
                 TRUE);
 
         eval_pv("sub uncomm_new"
                 "{"
-                "   $uncomm_news{$_[0]} = 1;"
+                "   $uncomm_new{$_[0]} = 1;"
                 "   return 1;"
                 "}",
                 TRUE);
 
         eval_pv("sub uncomm"
                 "{"
-                "   $uncomm_olds{$_[0]} = 1;"
-                "   $uncomm_news{$_[0]} = 1;"
+                "   $uncomm_old{$_[0]} = 1;"
+                "   $uncomm_new{$_[0]} = 1;"
                 "   return 1;"
                 "}",
                 TRUE);
@@ -582,10 +582,10 @@ func_args_match(const trc_test_iter_args *db_args,
                 "   {"
                 "       if ($commons{$arg} == 1)"
                 "       {"
-                "           $rc = $rc && (($olds{$arg} eq "
-                "                          $news{$arg}) || "
-                "                         (exists($olds{$arg}) && "
-                "                          length($olds{$arg}) == 0));"
+                "           $rc = $rc && (($old{$arg} eq "
+                "                          $new{$arg}) || "
+                "                         (exists($old{$arg}) && "
+                "                          length($old{$arg}) == 0));"
                 "       }"
                 "   }"
                 "   return $rc;"
@@ -595,18 +595,18 @@ func_args_match(const trc_test_iter_args *db_args,
         eval_pv("sub uncomm_chk"
                 "{"
                 "   my $arg;"
-                "   foreach $arg (keys %olds)"
+                "   foreach $arg (keys %old)"
                 "   {"
                 "       if (!exists($commons{$arg}) &&"
-                "           $uncomm_olds{$arg} != 1)"
+                "           $uncomm_old{$arg} != 1)"
                 "       {"
                 "           return 0;"
                 "       }"
                 "   }"
-                "   foreach $arg (keys %news)"
+                "   foreach $arg (keys %new)"
                 "   {"
                 "       if (!exists($commons{$arg}) &&"
-                "           $uncomm_news{$arg} != 1)"
+                "           $uncomm_new{$arg} != 1)"
                 "       {"
                 "           return 0;"
                 "       }"
@@ -615,10 +615,10 @@ func_args_match(const trc_test_iter_args *db_args,
                 "}",
                 TRUE);
 
-        eval_pv("sub olds { return $olds{$_[0]}; }", TRUE);
-        eval_pv("sub news { return $news{$_[0]}; }", TRUE);
-        eval_pv("sub olds_e { return exists($olds{$_[0]}); }", TRUE);
-        eval_pv("sub news_e { return exists($news{$_[0]}); }", TRUE);
+        eval_pv("sub old { return $old{$_[0]}; }", TRUE);
+        eval_pv("sub new { return $new{$_[0]}; }", TRUE);
+        eval_pv("sub old_e { return exists($old{$_[0]}); }", TRUE);
+        eval_pv("sub new_e { return exists($new{$_[0]}); }", TRUE);
 
         TAILQ_FOREACH(arg_name, &arg_names, links)
         {
