@@ -1571,10 +1571,10 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
             unsigned int i;
             te_bool      show_hidden = FALSE;
 
-            if (optname != RPC_IP_PKTOPTIONS)
+            if (optname != RPC_IP_PKTOPTIONS || out.retval < 0)
                 memcpy(raw_optval, out.raw_optval.raw_optval_val,
                        out.raw_optval.raw_optval_len);
-            else
+            else if (*out.raw_optlen.raw_optlen_val > 0)
             {
                 struct cmsghdr *c;
                 unsigned int    i;
@@ -1595,7 +1595,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                 for (i = 0;
                      (uint8_t *)c - (uint8_t *)raw_optval +
                                                 c->cmsg_len <=
-                                                        raw_roptlen &&
+                                        *out.raw_optlen.raw_optlen_val &&
                      i < len;
                      i++,
                      c = (struct cmsghdr *) ((uint8_t *)c +
