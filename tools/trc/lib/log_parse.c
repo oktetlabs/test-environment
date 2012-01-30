@@ -1497,6 +1497,7 @@ trc_update_merge_result(trc_log_parse_ctx *ctx)
     trc_update_test_iter_data  *upd_iter_data;
     trc_exp_result             *prev = NULL;
     trc_exp_result             *p;
+    trc_exp_result_entry       *q;
     trc_exp_result             *merge_result;
     trc_exp_results            *new_results = NULL;
     te_test_result             *te_result;
@@ -1553,12 +1554,19 @@ trc_update_merge_result(trc_log_parse_ctx *ctx)
 
         if (p != NULL && rc == 0)
         {
-            if (trc_exp_result_cmp_no_tags(p, merge_result) != 0)
+            TAILQ_FOREACH(q, &p->results, links)
+                if (te_test_result_cmp(
+                        &q->result,
+                        &TAILQ_FIRST(&merge_result->results)->result) == 0)
+                    break;
+                
+            if (q == NULL)
             {
                 TAILQ_REMOVE(&merge_result->results, result_entry,
                              links);
                 TAILQ_INSERT_TAIL(&p->results, result_entry, links);
             }
+
             trc_exp_result_free(merge_result);
         }
         else
