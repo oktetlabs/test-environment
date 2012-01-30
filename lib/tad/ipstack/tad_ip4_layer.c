@@ -525,7 +525,7 @@ tad_ip4_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
                       "be multiple of 8");
                 return TE_RC(TE_TAD_CSAP, TE_EINVAL);
             }
-            else if (i32_tmp > 0xffff)
+            else if (i32_tmp > 0xfff8)
             {
                 ERROR("'hdr-offset' in fragment specification is too "
                       "big");
