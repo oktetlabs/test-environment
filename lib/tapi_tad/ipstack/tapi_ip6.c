@@ -3,7 +3,7 @@
  *
  * Implementation of Test API
  *
- * Copyright (C) 2004-2006 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2012 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * This library is free software; you can redistribute it and/or
@@ -21,13 +21,12 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
- * @author Konstantin Abramenko <konst@oktetlabs.ru>
+ * @author Konstantin Petrov <Konstantin.Petrov@oktetlabs.ru>
  *
  * $Id$
  */
 
-#define TE_LGR_USER "TAPI IPv4"
+#define TE_LGR_USER "TAPI IPv6"
 
 #include "te_config.h"
 
