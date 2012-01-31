@@ -1571,7 +1571,9 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
             unsigned int i;
             te_bool      show_hidden = FALSE;
 
-            if (optname != RPC_IP_PKTOPTIONS || out.retval < 0)
+            if (optname != RPC_IP_PKTOPTIONS || out.retval < 0 ||
+                out.optval.optval_val[0].option_value_u.
+                    opt_ip_pktoptions.opt_ip_pktoptions_len == 0)
                 memcpy(raw_optval, out.raw_optval.raw_optval_val,
                        out.raw_optval.raw_optval_len);
             else if (*out.raw_optlen.raw_optlen_val > 0)
@@ -1587,7 +1589,6 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                                                 option_value_u.
                                                 opt_ip_pktoptions.
                                                 opt_ip_pktoptions_val;
-
 
                 c = raw_optval;
                 c->cmsg_len = CMSG_LEN(rpc_c->data.data_len);

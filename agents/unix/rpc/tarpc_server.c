@@ -2555,19 +2555,40 @@ tarpc_getsockopt(tarpc_getsockopt_in *in, tarpc_getsockopt_out *out,
                 tarpc_cmsghdr       *rpc_c;
                 int                  i;
                 uint8_t             *data;
-            
+
                 for (i = 0, c = (struct cmsghdr *)opt;
-                     (uint8_t *)c - (uint8_t *)opt < (int)optlen;
+                     (uint8_t *)c - (uint8_t *)opt < (int)optlen &&
+                     c->cmsg_len > 0 &&
+                     (unsigned int)(optlen - ((uint8_t *)c -
+                                    (uint8_t *)opt)) >= c->cmsg_len;
                      i++, c = (struct cmsghdr *)(((uint8_t *)c) +
                                 CMSG_SPACE(c->cmsg_len - 
                                            (CMSG_DATA(c) -
                                                 (uint8_t *)c))));
 
+                if ((uint8_t *)c - (uint8_t *)opt < (int)optlen)
+                {
+                    ERROR("Failed to process IP_PKTOPTIONS value");
+                    out->retval = -1;
+                    out->common._errno = TE_RC(TE_TA_UNIX, TE_EILSEQ);
+                    break;
+                }
+
                 rpc_c = OPTVAL = calloc(1, sizeof(*rpc_c) * i);
                 OPTLEN = i;
 
+                if (i > 0 && rpc_c == NULL)
+                {
+                    ERROR("Out of memory when processing "
+                          "IP_PKTOPTIONS value");
+                    out->common._errno = TE_RC(TE_TA_UNIX,
+                                               TE_ENOMEM);
+                    out->retval = -1;
+                    break;
+                }
+
                 for (i = 0, c = (struct cmsghdr *)opt;
-                     (uint8_t *)c - (uint8_t *)opt < (int)optlen;
+                     i < (int)OPTLEN;
                      i++,
                      c = (struct cmsghdr *)(((uint8_t *)c) +
                              CMSG_SPACE(rpc_c->data.data_len)),
@@ -2592,8 +2613,11 @@ tarpc_getsockopt(tarpc_getsockopt_in *in, tarpc_getsockopt_out *out,
                             OPTVAL = NULL;
                             OPTLEN = 0;
 
+                            ERROR("Out of memory when processing "
+                                  "IP_PKTOPTIONS value");
                             out->common._errno = TE_RC(TE_TA_UNIX,
                                                        TE_ENOMEM);
+                            out->retval = -1;
                             break;
                         }
                         memcpy(rpc_c->data.data_val, data,
