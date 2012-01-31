@@ -2570,7 +2570,7 @@ tarpc_getsockopt(tarpc_getsockopt_in *in, tarpc_getsockopt_out *out,
                 {
                     ERROR("Failed to process IP_PKTOPTIONS value");
                     out->retval = -1;
-                    out->common._errno = TE_RC(TE_TA_UNIX, TE_EILSEQ);
+                    out->common._errno = TE_RC(TE_RPC, TE_EILSEQ);
                     break;
                 }
 
