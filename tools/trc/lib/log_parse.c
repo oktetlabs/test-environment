@@ -1546,7 +1546,9 @@ trc_update_merge_result(trc_log_parse_ctx *ctx)
     {
         SLIST_FOREACH(p, new_results, links)
         {
-            if ((rc = strcmp(p->tags_str, merge_result->tags_str)) <= 0)
+            if ((p->tags_str == NULL && merge_result->tags_str == NULL) ||
+                (p->tags_str != NULL && merge_result->tags_str != NULL &&
+                (rc = strcmp(p->tags_str, merge_result->tags_str)) <= 0))
                 break;
 
             prev = p;
@@ -3330,7 +3332,7 @@ trc_diff_process_logs(trc_diff_ctx *gctx)
     trc_diff_set             *diff_set;
 
     memset(&ctx, 0, sizeof(ctx));
-    ctx.flags = gctx->flags;
+    ctx.flags = 0;
     ctx.db = gctx->db;
 
     TAILQ_FOREACH(diff_set, &gctx->sets, links)

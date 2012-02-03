@@ -1096,6 +1096,9 @@ logic_expr_to_str_gen(logic_expr *expr, logic_expr *parent)
     char      *l_str = NULL;
     char      *r_str = NULL;
 
+    if (expr == NULL)
+        return NULL;
+
     memset(&result, 0, sizeof(result));
     result.ptr = NULL;
     
