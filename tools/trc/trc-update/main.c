@@ -427,6 +427,125 @@ exit:
     return result;
 }
 
+#ifdef HAVE_LIBPERL
+int
+perl_prepare()
+{
+    HV  *olds;
+    HV  *news;
+    HV  *commons;
+    HV  *uncomm_olds;
+    HV  *uncomm_news;
+
+    dTHX;
+
+    olds = get_hv("old", GV_ADD);
+    news = get_hv("new", GV_ADD);
+    commons = get_hv("commons", GV_ADD);
+    uncomm_news = get_hv("uncomm_new", GV_ADD);
+    uncomm_olds = get_hv("uncomm_old", GV_ADD);
+
+    eval_pv("sub uncomm_old"
+            "{"
+            "   $uncomm_old{$_[0]} = 1;"
+            "   return 1;"
+            "}",
+            TRUE);
+
+    eval_pv("sub uncomm_new"
+            "{"
+            "   $uncomm_new{$_[0]} = 1;"
+            "   return 1;"
+            "}",
+            TRUE);
+
+    eval_pv("sub uncomm"
+            "{"
+            "   $uncomm_old{$_[0]} = 1;"
+            "   $uncomm_new{$_[0]} = 1;"
+            "   return 1;"
+            "}",
+            TRUE);
+
+    eval_pv("sub comm_inc"
+            "{"
+            "   my $arg;"
+            "   foreach $arg (keys %commons)"
+            "   {"
+            "       $commons{$arg} = 0;"
+            "   }"
+            "   foreach $arg (@_)"
+            "   {"
+            "       $commons{$arg} = 1;"
+            "   }"
+            "   return 1;"
+            "}",
+            TRUE);
+
+    eval_pv("sub comm_exc"
+            "{"
+            "   my $arg;"
+            "   foreach $arg (@_)"
+            "   {"
+            "       if (exists($commons{$arg})) "
+            "       {"
+            "           $commons{$arg} = 0;"
+            "       }"
+            "   }"
+            "   return 1;"
+            "}",
+            TRUE);
+
+    eval_pv("sub comm_eq"
+            "{"
+            "   my $rc = 1;"
+            "   my $arg;"
+            "   foreach $arg (keys %commons)"
+            "   {"
+            "       if ($commons{$arg} == 1)"
+            "       {"
+            "           $rc = $rc && (($old{$arg} eq "
+            "                          $new{$arg}) || "
+            "                         (exists($old{$arg}) && "
+            "                          length($old{$arg}) == 0));"
+            "       }"
+            "   }"
+            "   return $rc;"
+            "}",
+            TRUE);
+
+    eval_pv("sub uncomm_chk"
+            "{"
+            "   my $arg;"
+            "   foreach $arg (keys %old)"
+            "   {"
+            "       if (!exists($commons{$arg}) &&"
+            "           $uncomm_old{$arg} != 1)"
+            "       {"
+            "           return 0;"
+            "       }"
+            "   }"
+            "   foreach $arg (keys %new)"
+            "   {"
+            "       if (!exists($commons{$arg}) &&"
+            "           $uncomm_new{$arg} != 1)"
+            "       {"
+            "           return 0;"
+            "       }"
+            "   }"
+            "   return 1;"
+            "}",
+            TRUE);
+
+    eval_pv("sub old { return $old{$_[0]}; }", TRUE);
+    eval_pv("sub new { return $new{$_[0]}; }", TRUE);
+    eval_pv("sub old_e { return exists($old{$_[0]}); }", TRUE);
+    eval_pv("sub new_e { return exists($new{$_[0]}); }", TRUE);
+
+    return 0;
+}
+#endif
+
 /**
  * Function to match iteration in TRC with iteration from logs
  * using one of perl_expr, perl_script, oth_prog.
@@ -522,103 +641,6 @@ func_args_match(const trc_test_iter_args *db_args,
                 }
             }
         }
-
-        eval_pv("sub uncomm_old"
-                "{"
-                "   $uncomm_old{$_[0]} = 1;"
-                "   return 1;"
-                "}",
-                TRUE);
-
-        eval_pv("sub uncomm_new"
-                "{"
-                "   $uncomm_new{$_[0]} = 1;"
-                "   return 1;"
-                "}",
-                TRUE);
-
-        eval_pv("sub uncomm"
-                "{"
-                "   $uncomm_old{$_[0]} = 1;"
-                "   $uncomm_new{$_[0]} = 1;"
-                "   return 1;"
-                "}",
-                TRUE);
-
-        eval_pv("sub comm_inc"
-                "{"
-                "   my $arg;"
-                "   foreach $arg (keys %commons)"
-                "   {"
-                "       $commons{$arg} = 0;"
-                "   }"
-                "   foreach $arg (@_)"
-                "   {"
-                "       $commons{$arg} = 1;"
-                "   }"
-                "   return 1;"
-                "}",
-                TRUE);
-
-        eval_pv("sub comm_exc"
-                "{"
-                "   my $arg;"
-                "   foreach $arg (@_)"
-                "   {"
-                "       if (exists($commons{$arg})) "
-                "       {"
-                "           $commons{$arg} = 0;"
-                "       }"
-                "   }"
-                "   return 1;"
-                "}",
-                TRUE);
-
-        eval_pv("sub comm_eq"
-                "{"
-                "   my $rc = 1;"
-                "   my $arg;"
-                "   foreach $arg (keys %commons)"
-                "   {"
-                "       if ($commons{$arg} == 1)"
-                "       {"
-                "           $rc = $rc && (($old{$arg} eq "
-                "                          $new{$arg}) || "
-                "                         (exists($old{$arg}) && "
-                "                          length($old{$arg}) == 0));"
-                "       }"
-                "   }"
-                "   return $rc;"
-                "}",
-                TRUE);
-
-        eval_pv("sub uncomm_chk"
-                "{"
-                "   my $arg;"
-                "   foreach $arg (keys %old)"
-                "   {"
-                "       if (!exists($commons{$arg}) &&"
-                "           $uncomm_old{$arg} != 1)"
-                "       {"
-                "           return 0;"
-                "       }"
-                "   }"
-                "   foreach $arg (keys %new)"
-                "   {"
-                "       if (!exists($commons{$arg}) &&"
-                "           $uncomm_new{$arg} != 1)"
-                "       {"
-                "           return 0;"
-                "       }"
-                "   }"
-                "   return 1;"
-                "}",
-                TRUE);
-
-        eval_pv("sub old { return $old{$_[0]}; }", TRUE);
-        eval_pv("sub new { return $new{$_[0]}; }", TRUE);
-        eval_pv("sub old_e { return exists($old{$_[0]}); }", TRUE);
-        eval_pv("sub new_e { return exists($new{$_[0]}); }", TRUE);
 
         TAILQ_FOREACH(arg_name, &arg_names, links)
         {
@@ -785,6 +807,7 @@ main(int argc, char **argv, char **envp)
     perl_parse(perl_interp, NULL, 3, perl_embed_params, NULL);
     dTHX;
     PL_exit_flags |= PERL_EXIT_DESTRUCT_END;
+    perl_prepare();
 #endif
 
     if (trc_update_process_logs(&ctx) != 0)
