@@ -1393,13 +1393,31 @@ trc_exp_result_cmp_gen(trc_exp_result *p, trc_exp_result *q,
                                     &q_r->result);
             if (rc != 0)
                 return rc;
+            else
+            {
+                rc = strcmp_null(p_r->key, q_r->key);
+                if (rc != 0)
+                    return rc;
+                else
+                {
+                    rc = strcmp_null(p_r->notes, q_r->notes);
+                    if (rc != 0)
+                        return rc;
+                }
+            }
 
             p_r = TAILQ_NEXT(p_r, links);
             q_r = TAILQ_NEXT(q_r, links);
         }
 
         if (p_r == NULL && q_r == NULL)
-            return 0;
+        {
+            rc = strcmp_null(p->key, q->key);
+            if (rc != 0)
+                return rc;
+            else
+                return strcmp_null(p->notes, q->notes);
+        }   
         else if (p_r != NULL)
             return 1;
         else

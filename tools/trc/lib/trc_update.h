@@ -311,6 +311,19 @@ extern te_bool trc_update_is_to_save(void *data, te_bool is_iter);
 extern char *trc_update_set_user_attr(void *data, te_bool is_iter);
 
 /**
+ * Compare strings.
+ *
+ * @param s1     The first result
+ * @param s2     The second result
+ *
+ * @result value returned by strcmp() if both s1 and s2
+ *         are not NULL, 0 if they are both NULL,
+ *         1 if only the first one is not NULL,
+ *         -1 if only the second one is not NULL.
+ */
+extern int strcmp_null(char *s1, char *s2);
+
+/**
  * Compare test iteration results.
  *
  * @param p     The first result
