@@ -279,7 +279,7 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
 
         { "no-copy-confls", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_NO_COPY_CONFLS,
-          "Do not Copy conflicting results from logs into <new> section "
+          "Do not copy conflicting results from logs into <new> section "
           "of updating rule (default behaviour)", NULL },
 
         { "no-fill-new", '\0', POPT_ARG_NONE, NULL,
