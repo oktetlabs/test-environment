@@ -177,7 +177,6 @@ extern int rcf_ch_reboot(struct rcf_comm_connection *handle,
                          const uint8_t *ba, size_t cmdlen,
                          const char *params);
 
-
 /** Configure operations */
 typedef enum {
     RCF_CH_CFG_GET,

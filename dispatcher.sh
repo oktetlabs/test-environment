@@ -190,6 +190,46 @@ Generic options:
   --gdb-tester                  Run Tester under GDB
   --tce                         Do TCE processing
 
+ --sniff=<TA/iface>             Run sniffer on *iface* of the *TA*.
+ --sniff-filter=<filter>        Add for the sniffer filter(tcpdump-like
+                                syntax). See 'man 7 pcap-filter'.
+ --sniff-name=<name>            Add for the sniffer a human-readable name.
+ --sniff-snaplen=<val>          Add for the sniffer restriction on maximum
+                                number of bytes to capture for one packet.
+                                By default: ${TE_SNIFF_SNAPLEN:+unlimited}.
+ --sniff-space=<val>            Add for the sniffer restriction on maximum
+                                overall size of temporary files, Mb.
+                                By default: 64Mb.
+ --sniff-fsize=<val>            Add for the sniffer restriction on maximum
+                                size of the one temporary file, Mb.
+                                By default: 16Mb.
+ --sniff-rotation=<x>           Add for the sniffer restriction on number of
+                                temporary files. This option excluded by
+                                the *--sniff-ta-log-ofill-drop* option.
+                                By default: 4.
+ --sniff-ofill-drop             Change overfill handle method of temporary
+                                files for the sniffer to tail drop.
+                                By default overfill handle method is rotation.
+ --sniff-log-dir=<path>         Path to the *TEN* side capture files.
+                                By default used: ${TE_SNIFF_LOG_DIR}.
+ --sniff-log-name=<pattern>     *TEN* side log file naming pattern, the
+                                following format specifies are supported:
+                                - %a : agent name
+                                - %u : user name
+                                - %i : iface name
+                                - %s : sniffer name
+                                - %n : sniffer session sequence number
+                                By default '%a_%i_%s_%n' is used. The pcap
+                                extension will be added automatically.
+ --sniff-log-size=<val>         Maximum *TEN* side logs cumulative size for one
+                                sniffer, Mb. By default: ${TE_SNIFF_LOG_SIZE} Mb.
+ --sniff-log-fsize=<val>        Maximum *TEN* side logs size for one sniffer,
+                                Mb. By default: ${TE_SNIFF_LOG_FSIZE} Mb.
+ --sniff-log-ofill-drop         Change overfill handle method to tail drop.
+                                By default overfill handle method is rotation.
+ --sniff-log-period=<val>       Period of taken logs from agents, milliseconds.
+                                By default: ${TE_SNIFF_LOG_PERIOD} msec.
+
     The script exits with a status of zero if everything does smoothly and
     all tests, if any tests are run, give expected results. A status of two
     is returned, if some tests are run and give unexpected results.
@@ -251,6 +291,22 @@ CONF_DIR=
 
 # Directory for raw log file
 TE_LOG_DIR="${TE_RUN_DIR}"
+
+# Default directory for capture log files
+TE_SNIFF_DEF_LOG_DIR=
+
+# Sniffer polling setting
+TE_SNIFF_LOG_SIZE=256    # Megabytes
+TE_SNIFF_LOG_NAME=""     # Pattern
+TE_SNIFF_LOG_FSIZE=64    # Megabytes
+TE_SNIFF_LOG_OFILL=0     # Rotation
+TE_SNIFF_LOG_PERIOD=200  # Milliseconds
+
+TE_SNIFF_LOC=            # The variable contains an agent name and iface.
+                         # It gets a string from command line.
+TE_SNIFF_NAME=
+TE_SNIFF_FILTER=
+TE_SNIFF_SNAPLEN=
 
 # Configuration files
 CONF_BUILDER=builder.conf
@@ -376,7 +432,37 @@ process_opts()
             
             --log-dir=*) TE_LOG_DIR="${1#--log-dir=}" ;;
             --log-online) LOG_ONLINE=yes ;;
-            
+
+            --sniff-log-dir=*) TE_SNIFF_LOG_DIR="${1#--sniff-log-dir=}"
+                export TE_SNIFF_LOG_DIR ;;
+            --sniff-log-size=*) TE_SNIFF_LOG_SIZE="${1#--sniff-log-size=}"
+                export TE_SNIFF_LOG_SIZE ;;
+            --sniff-log-name=*) TE_SNIFF_LOG_NAME="${1#--sniff-log-name=}"
+                export TE_SNIFF_LOG_NAME ;;
+            --sniff-log-fsize=*) TE_SNIFF_LOG_FSIZE="${1#--sniff-log-fsize=}"
+                export TE_SNIFF_LOG_FSIZE ;;
+            --sniff-log-ofill-drop*) TE_SNIFF_LOG_OFILL=1
+                export TE_SNIFF_LOG_OFILL ;;
+            --sniff-log-period=*) TE_SNIFF_LOG_PERIOD="${1#--sniff-period=}"
+                export TE_SNIFF_LOG_PERIOD ;;
+
+            --sniff=*) TE_SNIFF_IDX=${#TE_SNIFF_LOC[*]}
+                TE_SNIFF_LOC[${TE_SNIFF_IDX}]="${1#--sniff=}";;
+            --sniff-name=*) 
+                TE_SNIFF_NAME[${TE_SNIFF_IDX}]="${1#--sniff-name=}";;
+            --sniff-filter=*)
+                TE_SNIFF_FILTER[${TE_SNIFF_IDX}]="${1#--sniff-filter=}" ;;
+            --sniff-snaplen=*)
+                TE_SNIFF_SNAPLEN[${TE_SNIFF_IDX}]="${1#--sniff-snaplen=}" ;;
+            --sniff-space=*)
+                TE_SNIFF_SPACE[${TE_SNIFF_IDX}]="${1#--sniff-space=}" ;;
+            --sniff-fsize=*)
+                TE_SNIFF_FSIZE[${TE_SNIFF_IDX}]="${1#--sniff-fsize=}" ;;
+            --sniff-rotation=*)
+                TE_SNIFF_ROTATION[${TE_SNIFF_IDX}]="${1#--sniff-rotation=}" ;;
+            --sniff-ofill-drop*)
+                TE_SNIFF_OFILL[${TE_SNIFF_IDX}]="1" ;;
+
             --no-ts-build) BUILD_TS= ; TESTER_OPTS="${TESTER_OPTS} --nobuild" ;;
 
             --tester-*) TESTER_OPTS="${TESTER_OPTS} --${1#--tester-}" ;;
@@ -451,6 +537,131 @@ process_opts()
     export BUILD_MAKEFLAGS
 }
 
+#
+# Check and fix arguments to avoid duplications of sniffers
+#
+sniffer_check_dup()
+{
+    for ((idx=1; idx <= TE_SNIFF_IDX ; idx++))
+    do
+        [ ${TE_SNIFF_LOC[${idx}]} ] ||
+            continue
+        : ${TE_SNIFF_NAME[${idx}]:=default_$(( $RANDOM % 1000 ))}
+        for ((jdx=idx+1; jdx <= TE_SNIFF_IDX ; jdx++))
+        do
+            [ ${TE_SNIFF_LOC[${jdx}]} ] ||
+                continue
+            : ${TE_SNIFF_NAME[${jdx}]:=default_$(( $RANDOM % 1000 ))}
+            [ ${TE_SNIFF_LOC[${idx}]} = ${TE_SNIFF_LOC[${jdx}]} ] &&   \
+            [ ${TE_SNIFF_NAME[${idx}]} = ${TE_SNIFF_NAME[${jdx}]} ] && \
+            {
+                str="${TE_SNIFF_NAME[${jdx}]}_$(( $RANDOM % 1000 ))"
+                TE_SNIFF_NAME[${jdx}]="${str}"
+            }
+        done
+    done
+}
+
+#
+# Make auxiliary configuration file for sniffers.
+#
+sniffer_make_conf()
+{
+    iface=
+    agt=
+    str=
+
+    if test -z ${TE_SNIFF_LOG_DIR} ; then
+        TE_SNIFF_DEF_LOG_DIR="${TE_LOG_DIR}/caps"
+        export TE_SNIFF_DEF_LOG_DIR
+    fi
+    TE_SNIFF_CSCONF="${CONF_DIR}/cs.conf.sniffer"
+
+    echo "<?xml version=\"1.0\"?>" > "${TE_SNIFF_CSCONF}"
+    if test ! -w "${TE_SNIFF_CSCONF}" ; then
+        echo "Couldn't create the sniffer conf file: ${TE_SNIFF_CSCONF}" >&2
+        return 1
+    fi 
+
+    echo "<history>" >> "${TE_SNIFF_CSCONF}"
+
+    sniffer_check_dup
+
+    for ((idx=1; idx <= TE_SNIFF_IDX ; idx++))
+    do
+        if test -z "${TE_SNIFF_LOC[${idx}]}" ; then
+          :
+        elif [[ ${TE_SNIFF_LOC[${idx}]} == */* ]] ; then
+            iface="${TE_SNIFF_LOC[${idx}]#*/}"
+            agt="${TE_SNIFF_LOC[${idx}]%/*}"
+
+            if [ ! ${iface} ] || [ ! ${agt} ] ; then
+                continue
+            fi
+
+            echo "  <add>" >> "${TE_SNIFF_CSCONF}"
+            str="    <instance oid=\"/agent:${agt}/interface:${iface}"
+            str+="/sniffer:${TE_SNIFF_NAME[${idx}]}\" value=\"0\"/>"
+            echo "${str}" >> "${TE_SNIFF_CSCONF}"
+            echo "  </add>" >> "${TE_SNIFF_CSCONF}"
+
+            echo "  <set>" >> "${TE_SNIFF_CSCONF}"
+            test ! "${TE_SNIFF_FILTER[${idx}]}" ||
+            {
+                str="    <instance oid=\"/agent:${agt}/interface:${iface}"
+                str+="/sniffer:${TE_SNIFF_NAME[${idx}]}/filter_exp_str:\""
+                str+=" value=\"${TE_SNIFF_FILTER[${idx}]}\"/>"
+                echo "${str}" >> "${TE_SNIFF_CSCONF}"
+            }
+            test ! "${TE_SNIFF_SNAPLEN[${idx}]}" ||
+            {
+                str="    <instance oid=\"/agent:${agt}/interface:${iface}"
+                str+="/sniffer:${TE_SNIFF_NAME[${idx}]}/snaplen:\""
+                str+=" value=\"${TE_SNIFF_SNAPLEN[${idx}]}\"/>"
+                echo "${str}" >> "${TE_SNIFF_CSCONF}"
+            }
+            test ! "${TE_SNIFF_SPACE[${idx}]}" ||
+            {
+                str="    <instance oid=\"/agent:${agt}/interface:${iface}"
+                str+="/sniffer:${TE_SNIFF_NAME[${idx}]}/tmp_logs:"
+                str+="/sniffer_space:\""
+                str+=" value=\"${TE_SNIFF_SPACE[${idx}]}\"/>"
+                echo "${str}" >> "${TE_SNIFF_CSCONF}"
+            }
+            test ! "${TE_SNIFF_FSIZE[${idx}]}" ||
+            {
+                str="    <instance oid=\"/agent:${agt}/interface:${iface}"
+                str+="/sniffer:${TE_SNIFF_NAME[${idx}]}/tmp_logs:"
+                str+="/file_size:\""
+                str+=" value=\"${TE_SNIFF_FSIZE[${idx}]}\"/>"
+                echo "${str}" >> "${TE_SNIFF_CSCONF}"
+            }
+            test ! "${TE_SNIFF_ROTATION[${idx}]}" ||
+            {
+                str="    <instance oid=\"/agent:${agt}/interface:${iface}"
+                str+="/sniffer:${TE_SNIFF_NAME[${idx}]}/tmp_logs:"
+                str+="/rotation:\""
+                str+=" value=\"${TE_SNIFF_ROTATION[${idx}]}\"/>"
+                echo "${str}" >> "${TE_SNIFF_CSCONF}"
+            }
+            test ! "${TE_SNIFF_OFILL[${idx}]}" ||
+            {
+                str="    <instance oid=\"/agent:${agt}/interface:${iface}"
+                str+="/sniffer:${TE_SNIFF_NAME[${idx}]}/tmp_logs:"
+                str+="/overfill_meth:\""
+                str+=" value=\"${TE_SNIFF_OFILL[${idx}]}\"/>"
+                echo "${str}" >> "${TE_SNIFF_CSCONF}"
+            }
+            str="    <instance oid=\"/agent:${agt}/interface:${iface}"
+            str+="/sniffer:${TE_SNIFF_NAME[${idx}]}/enable:\" value=\"1\"/>"
+            echo "${str}" >> "${TE_SNIFF_CSCONF}"
+            echo "  </set>" >> "${TE_SNIFF_CSCONF}"
+        fi
+    done
+
+    echo "</history>" >> "${TE_SNIFF_CSCONF}"
+    return 0
+}
 
 # Export TE_BASE
 if test -z "${TE_BASE}" ; then
@@ -473,6 +684,13 @@ fi
 cmd_line_opts="$@"
 cmd_line_opts_all=
 process_opts "$@"
+
+sniffer_make_conf
+retval=$?
+if [ $retval -eq 1 ] ; then
+    exit 1
+fi
+
 
 if test -z "$TE_BASE" -a -n "$BUILDER" ; then
     echo "Cannot find TE sources for building - exiting." >&2

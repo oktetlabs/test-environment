@@ -291,8 +291,6 @@ rcf_ch_unlock()
               __FUNCTION__, rc, errno);
 }
 
-
-
 /* See description in rcf_ch_api.h */
 int
 rcf_ch_reboot(struct rcf_comm_connection *handle,
@@ -628,9 +626,20 @@ rcf_ch_start_process(pid_t *pid,
             /* Set the process group to allow killing all children */
             setpgid(getpid(), getpid());
             logfork_register_user(rtn);
-            execlp(rtn, rtn, 
+            /* FIXME */
+            if (argc == 10)
+                execlp(rtn, rtn, 
                    params[0], params[1], params[2], params[3], params[4], 
                    params[5], params[6], params[7], params[8], params[9],
+                   (const char *)NULL);
+            else if (argc == 25)
+                execlp(rtn, rtn, 
+                   params[0], params[1], params[2], params[3], params[4], 
+                   params[5], params[6], params[7], params[8], params[9], 
+                   params[10], params[11], params[12], params[13],
+                   params[14], params[15], params[16], params[17],
+                   params[18], params[19], params[20], params[21],
+                   params[22], params[23], params[24],
                    (const char *)NULL);
             exit(0);
         }

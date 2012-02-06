@@ -57,7 +57,8 @@ te_headers = \
 	te_cwmp.h \
         cwmp_soapStub.h \
 	te_power_sw.h \
-	te_param.h
+	te_param.h \
+	te_sniffers.h
 
 include_HEADERS = te_config_internal.h $(te_headers)
 

@@ -27,7 +27,8 @@ include_HEADERS = \
 	tapi_reqs.h \
 	tapi_gw.h \
 	tapi_sh_env.h \
-    tapi_cfg_acse.h
+	tapi_cfg_acse.h \
+	tapi_sniffer.h
 
 lib_LTLIBRARIES = libtapi.la
 
@@ -52,7 +53,8 @@ libtapi_la_SOURCES = \
 	tapi_file.c \
 	verdict.c \
 	tapi_reqs.c \
-        tapi_cfg_acse.c
+	tapi_cfg_acse.c \
+	tapi_sniffer.c
 
 install-exec-hook:
 	touch -c -r libtapi.la $(DESTDIR)/$(libdir)/libtapi.*

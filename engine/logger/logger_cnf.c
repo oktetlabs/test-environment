@@ -35,6 +35,11 @@
 /* TA single linked list */
 extern ta_inst *ta_list;
 
+/* Cpature logs polling settings */
+extern snif_polling_sets_t snifp_sets;
+
+/* Path to the directory for logs */
+extern const char *te_log_dir;
 
 /**
  * User call back called when an opening tag has been processed.
@@ -51,8 +56,12 @@ startElementLGR(void           *ctx,
     const char  *name = (const char *)xml_name;
     const char **atts = (const char **)xml_atts;
     ta_inst     *tmp_el;
+    int          res;
 
     UNUSED(ctx);
+
+    if ((atts == NULL) || (atts[0] == NULL) || (atts[1] == NULL))
+        return;
 
     if (!strcmp(name, "polling") &&
         (atts != NULL) &&
@@ -144,6 +153,53 @@ startElementLGR(void           *ctx,
                 tmp_el = tmp_el->next;
             }
         }
+    }
+    else if (!strcmp(name, "snif_fname"))
+    {
+        strncpy(snifp_sets.name, atts[1], RCF_MAX_PATH);
+    }
+    else if (!strcmp(name, "snif_path"))
+    {
+        if (!strcmp(name, "default"))
+        {
+            res = snprintf(snifp_sets.dir, RCF_MAX_PATH, "%s/%s",
+                           te_log_dir, atts[1]);
+            if (res > RCF_MAX_PATH)
+            {
+                ERROR("Too long default path length to capture logs dir.");
+                snifp_sets.errors = TRUE;
+            }
+        }
+        else
+            strncpy(snifp_sets.dir, atts[1], RCF_MAX_PATH);
+    }
+    else if (!strcmp(name, "snif_max_fsize"))
+    {
+        snifp_sets.fsize = (unsigned)strtoul(atts[1], NULL, 0) *
+                           1024 * 1024;
+    }
+    else if (!strcmp(name, "snif_space"))
+    {
+        snifp_sets.sn_space = (unsigned)strtoul(atts[1], NULL, 0) *
+                              1024 * 1024;
+    }
+    else if (!strcmp(name, "snif_rotation"))
+    {
+        snifp_sets.rotation = (unsigned)strtoul(atts[1], NULL, 0);
+    }
+    else if (!strcmp(name, "snif_overall_size"))
+    {
+        snifp_sets.asize = (unsigned)strtoul(atts[1], NULL, 0) *
+                           1024 * 1024;
+    }
+    else if (!strcmp(name, "snif_ovefill_meth"))
+    {
+        snifp_sets.ofill = (unsigned)strtoul(atts[1], NULL, 0) == 0 ?
+                           ROTATION : TAIL_DROP;
+    }
+    else if (!strcmp(name, "snif_period"))
+    {
+        snifp_sets.period = (unsigned)strtoul(atts[1], NULL, 0);
     }
 }
 

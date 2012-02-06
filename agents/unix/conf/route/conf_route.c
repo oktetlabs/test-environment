@@ -358,8 +358,8 @@ route_load_attrs(ta_cfg_obj_t *obj)
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
 
-        rc = ta_obj_value_set(TA_OBJ_TYPE_ROUTE, obj->name, val,
-                              obj->gid);
+        //~ rc = ta_obj_value_set(TA_OBJ_TYPE_ROUTE, obj->name, val,
+                              //~ obj->gid);
         if (rc != 0)
         {
             ERROR("Failed to set route object value: %r", rc);
@@ -655,13 +655,11 @@ RCF_PCH_CFG_NODE_RWC(node_route_dev, "dev", NULL, &node_route_mtu,
 RCF_PCH_CFG_NODE_RWC(node_route_src, "src", NULL, &node_route_dev,
                      route_src_get, route_src_set, &node_route);
 
-
 static rcf_pch_cfg_object node_route =
     {"route", 0, &node_route_src, &node_blackhole,
      (rcf_ch_cfg_get)route_get, (rcf_ch_cfg_set)route_set,
      (rcf_ch_cfg_add)route_add, (rcf_ch_cfg_del)route_del,
      (rcf_ch_cfg_list)route_list, (rcf_ch_cfg_commit)route_commit, NULL};
-
 
 /* See the description in conf_route.h */
 te_errno
@@ -669,7 +667,6 @@ ta_unix_conf_route_init(void)
 {
     return rcf_pch_add_node("/agent", &node_route);
 }
-
 
 /* See the description in conf_route.h */
 te_errno

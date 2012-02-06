@@ -8,7 +8,7 @@
       Test Environment
       XML schema for Logger configuration file.
 
-      Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
+      Copyright (C) 2003-2012 Test Environment authors (see file AUTHORS
       in the root directory of the distribution).
 
       Test Environment is free software; you can redistribute it
@@ -90,6 +90,235 @@
 
           </xsd:complexType>
         </xsd:element>
+
+        <xsd:element name="defaultSnifferSets">
+          <xsd:annotation>
+            <xsd:documentation xml:lang="en">
+              Capture logs polling default settings.
+            </xsd:documentation>
+          </xsd:annotation>
+          <xsd:complexType>
+            <xsd:sequence>
+
+              <xsd:element name="snif_fname">
+                <xsd:complexType>
+                  <xsd:annotation>
+                    <xsd:documentation xml:lang="en">
+                      Template capture file name. By default it's
+                      *full sniffer id*.
+                    </xsd:documentation>
+                  </xsd:annotation>
+                  <xsd:attribute name="default" type="xsd:string"
+                                 default=""/>
+                </xsd:complexType>
+              </xsd:element>
+
+              <xsd:element name="snif_path">
+                <xsd:complexType>
+                  <xsd:annotation>
+                    <xsd:documentation xml:lang="en">
+                      Default capture log files directory will be located:
+                      TE_LOG_DIR/caps.
+                    </xsd:documentation>
+                  </xsd:annotation>
+                  <xsd:attribute name="default" type="xsd:string"
+                                 default="caps"/>
+                </xsd:complexType>
+              </xsd:element>
+
+              <xsd:element name="snif_max_fsize">
+                <xsd:complexType>
+                  <xsd:annotation>
+                    <xsd:documentation xml:lang="en">
+                      Max file size for one sniffer. Zero for unlimited.
+                    </xsd:documentation>
+                  </xsd:annotation>
+                  <xsd:attribute name="default" type="xsd:integer"
+                                 default="16"/>
+                </xsd:complexType>
+              </xsd:element>
+
+              <xsd:element name="snif_space">
+                <xsd:complexType>
+                  <xsd:annotation>
+                    <xsd:documentation xml:lang="en">
+                      Max total capture files size for one sniffer. Zero for
+                      unlimited.
+                    </xsd:documentation>
+                  </xsd:annotation>
+                  <xsd:attribute name="default" type="xsd:integer"
+                                 default="64"/>
+                </xsd:complexType>
+              </xsd:element>
+
+              <xsd:element name="snif_rotation">
+                <xsd:complexType>
+                  <xsd:annotation>
+                    <xsd:documentation xml:lang="en">
+                      Rotate agent side temporary logs across *x* files.
+                      Zero for unlimited.
+                    </xsd:documentation>
+                  </xsd:annotation>
+                  <xsd:attribute name="default" type="xsd:integer"
+                                 default="4"/>
+                </xsd:complexType>
+              </xsd:element>
+
+              <xsd:element name="snif_overall_size">
+                <xsd:complexType>
+                  <xsd:annotation>
+                    <xsd:documentation xml:lang="en">
+                      Max total files size for all sniffers. Zero
+                      for unlimited.
+                    </xsd:documentation>
+                  </xsd:annotation>
+                  <xsd:attribute name="default" type="xsd:integer"
+                                 default="256"/>
+                </xsd:complexType>
+              </xsd:element>
+
+              <xsd:element name="snif_ovefill_meth">
+                <xsd:complexType>
+                  <xsd:annotation>
+                    <xsd:documentation xml:lang="en">
+                      Overfill handel method: 0 - rotation; 1 - tail drop.
+                    </xsd:documentation>
+                  </xsd:annotation>
+                  <xsd:attribute name="default" type="xsd:boolean"
+                                 default="0"/>
+                </xsd:complexType>
+              </xsd:element>
+
+              <xsd:element name="snif_period">
+                <xsd:complexType>
+                  <xsd:annotation>
+                    <xsd:documentation xml:lang="en">
+                      Period of taken logs from agents in ms.
+                    </xsd:documentation>
+                  </xsd:annotation>
+                  <xsd:attribute name="default" type="xsd:integer"
+                                 default="200"/>
+                </xsd:complexType>
+              </xsd:element>
+
+            </xsd:sequence>
+          </xsd:complexType>
+        </xsd:element>
+
+        <xsd:element name="userSnifferSets">
+          <xsd:annotation>
+            <xsd:documentation xml:lang="en">
+              Capture logs polling user settings.
+            </xsd:documentation>
+          </xsd:annotation>
+          <xsd:complexType>
+            <xsd:sequence>
+
+              <xsd:element name="snif_fname">
+                <xsd:complexType>
+                  <xsd:annotation>
+                    <xsd:documentation xml:lang="en">
+                      Template capture file name. By default it's
+                      *full sniffer id*.
+                    </xsd:documentation>
+                  </xsd:annotation>
+                  <xsd:attribute name="value" type="xsd:string"
+                                 default="%a_%i_%s_%n"/>
+                </xsd:complexType>
+              </xsd:element>
+
+              <xsd:element name="snif_path">
+                <xsd:complexType>
+                  <xsd:annotation>
+                    <xsd:documentation xml:lang="en">
+                      Default capture log files directory will be located:
+                      TE_LOG_DIR/caps.
+                    </xsd:documentation>
+                  </xsd:annotation>
+                  <xsd:attribute name="value" type="xsd:string"
+                                 default="caps"/>
+                </xsd:complexType>
+              </xsd:element>
+
+              <xsd:element name="snif_max_fsize">
+                <xsd:complexType>
+                  <xsd:annotation>
+                    <xsd:documentation xml:lang="en">
+                      Max file size for one sniffer. Zero for unlimited.
+                    </xsd:documentation>
+                  </xsd:annotation>
+                  <xsd:attribute name="value" type="xsd:integer"
+                                 default="16"/>
+                </xsd:complexType>
+              </xsd:element>
+
+              <xsd:element name="snif_space">
+                <xsd:complexType>
+                  <xsd:annotation>
+                    <xsd:documentation xml:lang="en">
+                      Max total capture files size for one sniffer. Zero for
+                      unlimited.
+                    </xsd:documentation>
+                  </xsd:annotation>
+                  <xsd:attribute name="value" type="xsd:integer"
+                                 default="64"/>
+                </xsd:complexType>
+              </xsd:element>
+
+              <xsd:element name="snif_rotation">
+                <xsd:complexType>
+                  <xsd:annotation>
+                    <xsd:documentation xml:lang="en">
+                      Rotate agent side temporary logs across *x* files.
+                      Zero for unlimited.
+                    </xsd:documentation>
+                  </xsd:annotation>
+                  <xsd:attribute name="value" type="xsd:integer"
+                                 default="4"/>
+                </xsd:complexType>
+              </xsd:element>
+
+              <xsd:element name="snif_overall_size">
+                <xsd:complexType>
+                  <xsd:annotation>
+                    <xsd:documentation xml:lang="en">
+                      Max total files size for all sniffers. Zero for
+                      unlimited.
+                    </xsd:documentation>
+                  </xsd:annotation>
+                  <xsd:attribute name="value" type="xsd:integer"
+                                 default="256"/>
+                </xsd:complexType>
+              </xsd:element>
+
+              <xsd:element name="snif_ovefill_meth">
+                <xsd:complexType>
+                  <xsd:annotation>
+                    <xsd:documentation xml:lang="en">
+                      Overfill handel method: 0 - rotation; 1 - tail drop.
+                    </xsd:documentation>
+                  </xsd:annotation>
+                  <xsd:attribute name="value" type="xsd:boolean"
+                                 default="0"/>
+                </xsd:complexType>
+              </xsd:element>
+
+              <xsd:element name="snif_period">
+                <xsd:complexType>
+                  <xsd:annotation>
+                    <xsd:documentation xml:lang="en">
+                      Period of taken logs from agents in ms.
+                    </xsd:documentation>
+                  </xsd:annotation>
+                  <xsd:attribute name="value" type="xsd:integer"
+                                 default="200"/>
+                </xsd:complexType>
+              </xsd:element>
+
+            </xsd:sequence>
+          </xsd:complexType>
+        </xsd:element>
+
       </xsd:sequence>
     </xsd:complexType>
   </xsd:element>

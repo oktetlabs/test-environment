@@ -68,7 +68,6 @@ tapi_cfg_pppoe_server_if_del(const char *ta, const char *ifname)
                                 "/interface:%s", ta, ifname);
 }
 
-
 /* See description in tapi_cfg_pppoe.h */
 te_errno
 tapi_cfg_pppoe_server_subnet_set(const char *ta, const char *subnet)

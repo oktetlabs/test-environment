@@ -67,6 +67,9 @@
 #define TE_PROTO_THREAD         "thread"
 #define TE_PROTO_PROCESS        "process"
 
+#define TE_PROTO_GET_SNIFFERS   "get_sniffers"
+#define TE_PROTO_GET_SNIF_DUMP  "get_snif_dump"
+
 #ifdef RCF_NEED_TYPES
 /**
  * Types recoding table.

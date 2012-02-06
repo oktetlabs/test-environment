@@ -63,6 +63,8 @@ extern "C" {
 #error LGR_NFL_PUT is not defined
 #endif
 
+#define LGR_SRV_SNIFFER_MARK "LGR-SNIFFER_MARK"
+#define SNIFFER_MIN_MARK_SIZE 512
 
 /* ==== Test Agent Logger lib definitions */
 

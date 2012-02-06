@@ -20,7 +20,7 @@ EXTRA_DIST=daemons/ldap/slapd.conf daemons/ldap/slapd_run.sh
 
 noinst_HEADERS = \
 	route/conf_route.h \
-	util/conf_dlpi.h 
+	util/conf_dlpi.h
         
 noinst_LIBRARIES=libconf.a
 
@@ -33,7 +33,7 @@ libconf_a_SOURCES = \
 	route/conf_route_libnetconf.c \
 	route/conf_route_socket.c \
 	util/conf_getmsg.c \
-	util/conf_dlpi.c 
+	util/conf_dlpi.c
 
 CLEANFILES=
 
@@ -58,6 +58,10 @@ endif
 
 if CFG_IPTABLES_SUPPORT
 libconf_a_SOURCES += base/conf_iptables.c
+endif
+
+if CFG_SNIFFERS_SUPPORT
+libconf_a_SOURCES += util/conf_sniffer.c
 endif
 
 if CFG_UNIX_8021X
@@ -104,7 +108,6 @@ endif
 if CFG_UNIX_DAEMONS_RADIUS
 libconf_a_SOURCES += daemons/radius/radius.c
 endif
-
 
 if CFG_UNIX_DAEMONS_VTUND
 libconf_a_SOURCES += daemons/vtund/conf_vtund.c

@@ -316,33 +316,26 @@ Additional command line options for dispatcher.sh should be supported.
 |-----------------------------+------------------------------------------------|
 | Option                      | Description                                    |
 |-----------------------------+------------------------------------------------|
-| --sniff <TA[/iface]>        | Run sniffer on *iface* of the *TA*. If no      |
-|                             | *iface* is specified - run the sniffer on      |
-|                             | all agent interfaces.                          |
-| --sniff-filter <filter>     | Sniffer filter string, tcpdump-like syntax.    |
-| --sniff-name <name>         | A human-readable sniffer name.                 |
-|                             | for the *last added* sniffer.                  |
-| --sniff-snaplen <val>       | Maximum number of bytes to capture             |
-|                             | for the *last added* sniffer.                  |
+| --sniff=<TA/iface>          | Run sniffer on *iface* of the *TA*.            |
+| --sniff-filter=<filter>     | Add for the sniffer filter(tcpdump-like        |
+|                             | syntax). See 'man 7 pcap-filter'.              |
+| --sniff-name=<name>         | Add for the sniffer a human-readable name.     |
+| --sniff-snaplen=<val>       | Add for the sniffer restriction on maximum     |
+|                             | number of bytes to capture for one packet.     |
 |                             | By default: unlimited.                         |
-| --sniff-ta-log-dir <path>   | Path to store capture files on the agent side. |
-|                             | Note, that agent-specific directory will       |
-|                             | still be created. By default:                  |
-|                             | *agent dir/sniffers* is used.                  |
-| --sniff-ta-log-size <val>   | Maximum overall size of the log files.         |
-|                             | Human-readable values should be accepted.      |
-| --sniff-ta-log-fsize <val>  | Maximum size of the one log file.              |
+| --sniff-space=<val>         | Add for the sniffer restriction on maximum     |
+|                             | overall size of temporary files, Mb.           |
+|                             | By default: 64Mb.                              |
+| --sniff-fsize=<val>         | Add for the sniffer restriction on maximum     |
+|                             | size of the one temporary file, Mb.            |
 |                             | By default: 16Mb.                              |
-| --sniff-ta-log-rotation <x> | Rotate agent side temporary logs across        |
-|                             | *x* files.  This option excluded by            |
-|                             |  the *--sniff-ta-log-ofill-drop* option.       |
-|                             | By default: *x* = 4.                           |
-| --sniff-ta-log-ofill-drop   | Overfill handle method tail drop.              |
-|                             | By defaul overfill handle method rotation.     |
-| --sniff-log-dir  <path>     | Path to the *TEN* side capture files.          |
-|                             | By default TE_LOG_DIR/caps is used.            |
-| --sniff-log-size <val>      | Maximum *TEN* side logs cumulative size, Mb.   |
-|                             | By default: 256 Mb.                            |
+| --sniff-rotation=<x>        | Add for the sniffer restriction on number of   |
+|                             | temporary files. This option excluded by       |
+|                             | the *--sniff-ta-log-ofill-drop* option.        |
+|                             | By default: 4.                                 |
+| --sniff-ofill-drop          | Change overfill handle method of temporary     |
+|                             | files for the sniffer to tail drop.            |
+|                             | By default overfill handle method is rotation. |
 | --sniff-log-name <pattern>  | *TEN* side log file naming pattern, the        |
 |                             | following format specifies are supported:      |
 |                             | - %a : agent name                              |
@@ -352,10 +345,10 @@ Additional command line options for dispatcher.sh should be supported.
 |                             | By default *full sniffer id* is used.          |
 | --sniff-log-fsize <val>     | Maximum *TEN* side logs size (in Mb) for one   |
 |                             | sniffer. By default: 64 Mb.                    |
-| --sniff-log-ofill-drop      | Overfill handle method tail drop.              |
-|                             | By defaul overfill handle method rotation.     |
-| --sniff-log-period <val>    | Period of taken logs from agents, msec.        |
-|                             | By default: 0.2 sec.                           |
+| --sniff-log-ofill-drop      | Change overfill handle method to tail drop.    |
+|                             | By default overfill handle method is rotation. |
+| --sniff-log-period <val>    | Period of taken logs from agents, milliseconds.|
+|                             | By default: 2 msec.                            |
 
 
 Some notes:
@@ -369,68 +362,107 @@ Some notes:
 
 #+BEGIN_SRC C
     /**
-     * Create and start a new sniffer on the agent.
+     * Create and start new sniffer on the agent.
      * 
-     * @param ta            *agent id*
+     * @param ta            Agent name
      * @param iface         Interface name
-     * @param filter        Filter expression
      * @param name          Sniffer name
-     * @param overfill      Overfill handling method
+     * @c     NULL          Name will be generated automatically
+     * @param filter        Filter expression
+     * @c     NULL          If NULL is specified - the filter is not applied
+     * @param ofill         If FALSE is specified, than overfill handling
+     *                      method is rotation. Otherwise - tail drop
      *
-     * @return ID of the sniffer
+     * @return Pointer to identifier structure of the sniffer. In case of
+     *         failure NULL will be returned.
      */
-    sniffer_id *
-    tapi_sniffer_add(const char *ta, const char *iface, const char *filter,
-                     const char *name);
+    tapi_sniffer_id * 
+    tapi_sniffer_add(const char *ta, const char *iface, const char *name,
+                     const char *filter, te_bool ofill);
+
+    /**
+     * Create and start one or more new sniffers on the agent.
+     * 
+     * @param ta            Agent name
+     * @param iface         Interface name
+     * @c     NULL          Start sniffers on all interfaces expect loopback
+     * @param name          Sniffer name
+     * @c     NULL          Name will be generated automatically
+     * @param filter        Filter expression
+     * @c     NULL          If NULL is specified - the filter is not applied
+     * @param ofill         If FALSE is specified, than overfill handling
+     *                      method is rotation. Otherwise - tail drop
+     * @param snif_h        Pointer to head of sniffer list
+     *
+     * @return Status code
+     * @retval 0            success
+     */
+    te_errno
+    tapi_sniffer_add_mult(const char *ta, const char *iface,
+                          const char *name, const char *filter,
+                          te_bool ofill, sniffl_h_t *snif_h);
 
     /**
      * Stop and destroy the sniffer on the agent.
      * 
-     * @param ta            *agent id*
      * @param id            ID of the sniffer
      *
-     * @return Status code
+     * @return Status code 
+     * @retval 0            success
      */
-    int
-    tapi_sniffer_del(const char *ta, sniffer_id id);
+    te_errno
+    tapi_sniffer_del(tapi_sniffer_id *id);
 
     /**
      * Disable the sniffer on the agent.
      * 
-     * @param ta            *agent id*
      * @param id            ID of the sniffer
      *
-     * @return Status code
+     * @return Status code 
+     * @retval 0            success
      */
-    int
-    tapi_sniffer_disable(const char *ta, sniffer_id id);
+    te_errno
+    tapi_sniffer_stop(tapi_sniffer_id *id);
 
     /**
      * Enable the sniffer on the agent.
      * 
-     * @param ta            *agent id*
      * @param id            ID of the sniffer
      *
-     * @return Status code
+     * @return Status code 
+     * @retval 0            success
      */
-    int
-    tapi_sniffer_enable(const char *ta, sniffer_id id);
+    te_errno
+    tapi_sniffer_start(tapi_sniffer_id *id);
 
 #+END_SRC
 
 *** Logger TAPI
 
 #+BEGIN_SRC C
+
     /**
      * Insert a mark packet into the capture file for a certain
      * sniffer.
      * 
-     * @param id             ID of the sniffer
-     * @param description    Mark description in human-readable
-     *                       form
+     * @param ta             Agent name used to request mark for all sniffers.
+     *                       It is not used if the ID not NULL
+     * @c     NULL           The sniffer ID should not be NULL
+     * @param id             ID of the sniffer. If ID not NULL is queried mark
+     *                       for one sniffer.
+     * @c     NULL           If ID is NULL is queried mark for all sniffers on
+     *                       the agent. The ta param should not be NULL
+     * @param description    Mark description in human-readable form
+     * @c     NULL           NULL may be used as description for empty
+     *                       description string
+     * 
+     * @return Status code 
+     * @retval 0            success
      */
-    int 
-    log_sniffer_mark_insert(sniffer_id id, const char* description);
+    te_errno
+    tapi_sniffer_mark(const char *ta, tapi_sniffer_id *id,
+                      const char *description);
+
 #+END_SRC
 
 ** Internal interfaces
@@ -493,8 +525,8 @@ logic etc.), see the requirements doc for the detailed list.
 | OID                                           | Description                  |
 |-----------------------------------------------+------------------------------|
 |/agent/sniffer_settings                        |Sniffer object.               |
-|/agent/sniffer_settings/enable                 |Enable the sniffer for *any*  |
-|                                               |interface.                    |
+|/agent/sniffer_settings/enable                 |Enable the sniffer settings   |
+|                                               |lock.                         |
 |/agent/sniffer_settings/filter_exp_str         |Filter expression string,     |
 |                                               |by default: empty.            |
 |/agent/sniffer_settings/filter_exp_file        |Filter file                   |
@@ -566,20 +598,20 @@ name of the object instance) uniq across the interface.
 **** RCF API
 The RCF API is extended to support two new calls.
 
-1. *rcf_get_sniffers(agent, sniffer_id)*
+1. *rcf_ta_get_sniffers(agent, sniffer_id, sync)*
 
    *sniffer id* is optional argument, it may be NULL. It used if required to 
    get offset of last capdtured packet of the sniffer, when you need to put 
    a marker.
 
-   Returns list of sniffers which have non-empty captures. For each sniffer
+   Returns list of sniffers which have non-empty captures if *sync* is TRUE.
+   Else it returns the list of all sniffers on the *Agent*. For each sniffer
    it returns:
-     - *sniffer_id*;
-     - if the argument *sniffer_id* not NULL:
-        - absolute offset of last captured packet for the sniffer;
+     - *sniffer_id*
+     - Absolute offset of last captured packet for the sniffer; if *sync* is
+       FALSE than offset can be outdated.
+     - If the argument *sniffer_id* not NULL:
         - the list of sniffers will be consist of a single unit.
-     - else
-        - value of absolute offset is zero.
 
    Sniffers are named with *sniffer id*. We can safely assume
    that there exists the maximum number of sniffers on the agent which is
@@ -589,10 +621,9 @@ The RCF API is extended to support two new calls.
 
    Get integral number of packets catched up by the *sniffer_id* on the
    *agent*. It returns service data:
-   - absolute offset of the first byte of the first packet in the
-     current partition;
-   - name of the saved file by RCF;
-   - name of the saved file on the *Agent* side.
+   - Absolute offset of the first byte of the first packet in the
+     current partition.
+   - Name of the saved file by RCF.
 
 The only user of this calls is *Logger*. Both calls are synchronous.
 
@@ -608,18 +639,13 @@ The only user of this calls is *Logger*. Both calls are synchronous.
    following format:
    <Sniffer name> <Interface name> <SSN>\0
 
-3. The function *rcf_get_sniffer_dump* returns a service data. These data
-   packed into a string with the following format, separator is the symbol
-   combination <.pcap>:
-   <Current capture file name (ends by *.pcap*)><Absolute offset>
-
 *** Logger IPC interface
 
 **** Logger IPC hadler
 
 The Logger has a thread *te_handler*, wich process IPC messages from other
 subsystems. When a *Test* calls *log_sniffer_mark_insert* function, than IPC
-message transmitted to the Logger. Her it processed by the *te_handler* and 
+message transmitted to the Logger. Here it processed by the *te_handler* and 
 performs set of actions to insert the mark. Logic of the insert marker
 implementation on the Logger side described in the *Algorithms* section.
 
@@ -719,6 +745,7 @@ below.
 | Setting name                  | Description                          |
 |-------------------------------+--------------------------------------|
 |snif_fname                     | Template dump file name.             |
+|                               | By default it's *full sniffer id*.   |
 |snif_path                      | Path of dump files folder.           |
 |                               | By default: TE_LOG_DIR/caps          |
 |snif_max_fsize                 | Max file size for one sniffer.       |
@@ -957,19 +984,8 @@ The Logger should:
 
 * Integration issues
 
-*FIXME*: bootstrap start/shutdown (RCF side)
-  <sniffer_path> directory
-*FIXME*: bootstrap/cleanup hooks on the agent
-*FIXME*: agent ID
-
 * Source organization
 * Alternative decisions and design tradeoffs
-  
- - locks vs. pcap parsing
-
- - TEN side test-based separation (RGT vs. Logger)
 
  - dispatcher options processing (at the moment of the configurator startup
    there may be no interface)
-
-  - Agent side *rcf_get_sniffers(agent, sync)* (fseek vs fstat).

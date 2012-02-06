@@ -379,6 +379,60 @@ extern te_errno rcf_ta_cfg_group(const char *ta_name, int session,
                                  te_bool is_start);
 
 /**
+ * This function is used to pull out capture logs from the sniffer. The only
+ * user of this calls is Logger.
+ *
+ * @param ta_name       Test agent name
+ * @param snif_id       The sniffer ID
+ * @param fname         File name for the capture logs (IN/OUT)
+ * @param offset        The absolute offset of the received part of capture.
+ * 
+ * @return Status code
+ * 
+ * @retval 0                success
+ * @retval TE_EINVAL        name of non-running TN Test Agent or bad
+ *                          sniffer ID are provided
+ * @retval TE_EIPC          cannot interact with RCF 
+ * @retval TE_ETAREBOOTED   Test Agent is rebooted
+ * @retval TE_ENOMEM        out of memory
+ * @retval other            error returned by command handler on the TA
+ */
+extern te_errno rcf_get_sniffer_dump(const char *ta_name,
+                                     const char *snif_id, char *fname,
+                                     unsigned long long *offset);
+
+/**
+ * This function is used to get list of sniffers from the Test Agent.
+ * The function may be called by Logger only. 
+ *
+ * @param ta_name       Test Agent name
+ * @param snif_id       Used to get offset of last captured packet for
+ *                      the sniffer
+ * @param buf           Pointer to buffer for the list of sniffers (OUT).
+ *                      Memory for this buffer should be allocated by caller
+ *                      from heap, size should be specified in 'len' param.
+ *                      The memory may be reallocated by function. Caller is
+ *                      responsible to free this memory.
+ * @param len           Size of incoming buffer and length of
+ *                      outgoing (IN/OUT)
+ * @param sync          Sync sniffers offsets.
+ *
+ * @return Status code
+ *
+ * @retval 0                success
+ * @retval TE_EINVAL        name of non-running TN Test Agent or bad
+ *                          sniffer ID are provided
+ * @retval TE_EIPC          cannot interact with RCF 
+ * @retval TE_ETAREBOOTED   Test Agent is rebooted
+ * @retval TE_ENOMEM        out of memory
+ * @retval TE_ENOPROTOOPT   Agent side sniffer support is not available
+ * @retval other            error returned by command handler on the TA
+ */
+extern te_errno rcf_ta_get_sniffers(const char *ta_name,
+                                    const char *snif_id, char **buf,
+                                    size_t *len, te_bool sync);
+
+/**
  * This function is used to get bulk of log from the Test Agent.
  * The function may be called by Logger only.
  *

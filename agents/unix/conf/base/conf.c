@@ -265,6 +265,11 @@ extern te_errno ta_unix_conf_phy_init();
 netconf_handle nh = NETCONF_HANDLE_INVALID;
 #endif
 
+#ifdef WITH_SNIFFERS
+extern te_errno ta_unix_conf_sniffer_init();
+extern te_errno ta_unix_conf_sniffer_cleanup();
+#endif
+
 /**
  * Determine family of the address in string representation.
  *
@@ -426,6 +431,7 @@ static te_errno mcast_link_addr_del(unsigned int, const char *,
                                     const char *, const char *);
 static te_errno mcast_link_addr_list(unsigned int, const char *, char **,
                                      const char *);
+
 #ifndef __linux__
 typedef struct mma_list_el {
     char                value[ETHER_ADDR_LEN * 3];
@@ -892,6 +898,7 @@ RCF_PCH_CFG_NODE_RW(node_xen, "xen",
                     &node_subpath, &node_user,
                     &xen_path_get, &xen_path_set);
 
+
 RCF_PCH_CFG_NODE_AGENT(node_agent, &node_xen);
 
 static te_bool init = FALSE;
@@ -1106,6 +1113,11 @@ rcf_ch_conf_root(void)
             goto fail;
 
         rcf_pch_rsrc_init();
+        
+#ifdef WITH_SNIFFERS
+        if (ta_unix_conf_sniffer_init() != 0)
+            ERROR("Failed to add sniffer configuration tree");
+#endif
     }
 
     return &node_agent;
@@ -1141,6 +1153,9 @@ rcf_ch_conf_agent()
 void
 rcf_ch_conf_release()
 {
+#ifdef WITH_SNIFFERS
+    ta_unix_conf_sniffer_cleanup();
+#endif
 #ifdef CFG_UNIX_DAEMONS
     ta_unix_conf_daemons_release();
 #endif

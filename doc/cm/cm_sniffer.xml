@@ -1,0 +1,156 @@
+<?xml version="1.0"?>
+<backup>
+
+    <!-- This configuration model is intended for describing of configuration
+         information related to sniffers on Agents -->
+
+    <!--
+        Copyright (C) 2003-2012 Test Environment authors (see file AUTHORS
+        in the root directory of the distribution).
+
+        Test Environment is free software; you can redistribute it
+        and/or modify it under the terms of the GNU General Public
+        License as published by the Free Software Foundation; either
+        version 2 of the License, or (at your option) any later
+        version.
+        
+        Test Environment is distributed in the hope that it will be
+        useful, but WITHOUT ANY WARRANTY; without even the implied
+        warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+        PURPOSE. See the GNU General Public License for more details.
+        
+        You should have received a copy of the GNU General Public
+        License along with this program; if not, write to the Free
+        Software Foundation, Inc., 59 Temple Place, Suite 330,
+        Boston, MA  02111-1307  USA
+        
+        Author: Andrey Dmitrov E-mail: Andrey.Dmitrov@oktetlabs.ru
+    -->
+
+    <!-- Objects registered by Configurator itself -->
+
+    <!-- Common settings for the sniffers on the Agent
+         Name: empty -->
+    <object oid="/agent/sniffer_settings" access="read_only" type="none"/>
+
+    <!-- Enable lock on the common settings for the sniffers on the Agent
+         Name:  empty 
+         Value: 0 (disabled) or 1 (enabled)-->
+    <object oid="/agent/sniffer_settings/enable" 
+            access="read_write" type="integer"/>
+
+    <!-- Default filter expression for the sniffers on the Agent
+         Name:  empty
+         Value: tcp-like syntax string -->
+    <object oid="/agent/sniffer_settings/filter_exp_str"
+            access="read_write" type="string"/>
+
+    <!-- Default file with filter expression for the sniffers on the Agent
+         Name: empty
+         Value: path to file with filter expression -->
+    <object oid="/agent/sniffer_settings/filter_exp_file"
+            access="read_write" type="string"/>
+
+    <!-- Default length of packet capture for the sniffers on the Agent
+         Name: empty
+         Value: length in bytes -->
+    <object oid="/agent/sniffer_settings/snaplen"
+            access="read_write" type="integer"/>
+
+    <!-- Common settings of temporary files for the sniffers on the Agent
+         Name: empty -->
+    <object oid="/agent/sniffer_settings/tmp_logs"
+            access="read_only" type="none"/>
+
+    <!-- Path to sniffers temporary files on the Agent
+         Name:  empty
+         Value: path
+    <object oid="/agent/sniffer_settings/tmp_logs/path"
+            access="read_write" type="string"/>
+
+    <!-- Default max size of a one temporary file for the sniffers on the Agent
+         Name:  empty
+         Value: size in megabytes -->
+    <object oid="/agent/sniffer_settings/tmp_logs/file_size"
+            access="read_write" type="integer"/>
+
+    <!-- Max total temporary files size for all agent sniffers
+         (it is not active now).
+         Name: empty
+         Value: size in megabytes -->
+    <object oid="/agent/sniffer_settings/tmp_logs/total_size"
+            access="read_write" type="integer"/>
+
+    <!-- Default value to rotate agent side temporary logs for one sniffer
+         Name: empty
+         Value: files number -->
+    <object oid="/agent/sniffer_settings/tmp_logs/rotation"
+            access="read_write" type="integer"/>
+
+    <!-- Default overfill handle methode for the sniffers on the Agent
+         Name: empty
+         Value: 0 - rotation (default);
+                1 - tail drop -->
+    <object oid="/agent/sniffer_settings/tmp_logs/overfill_meth"
+            access="read_write" type="integer"/>
+
+    <!-- A sniffer
+         Name:  A human-readable sniffer name
+         Value: Sniffer session sequence number -->
+    <object oid="/agent/interface/sniffer"
+            access="read_create" type="integer"/>
+
+    <!-- Enable the sniffer
+         Name:  empty
+         Value: 0 (disabled) or 1 (enabled) -->
+    <object oid="/agent/interface/sniffer/enable"
+            access="read_write" type="integer"/>
+
+    <!-- Filter expression for the sniffer
+         Name:  empty
+         Value: tcp-like syntax string -->
+    <object oid="/agent/interface/sniffer/filter_exp_str"
+            access="read_write" type="string"/>
+
+    <!-- File with filter expression for the sniffer
+         Name:  empty
+         Value: path to file -->
+    <object oid="/agent/interface/sniffer/filter_exp_file"
+            access="read_write" type="string"/>
+
+    <!-- Length of packet capture for the sniffer
+         Name:  empty
+         Value: capture lenth in bytes -->
+    <object oid="/agent/interface/sniffer/snaplen"
+            access="read_write" type="integer"/>
+
+    <!-- Location of the temporary files settings for the sniffer
+         Name:  empty -->
+    <object oid="/agent/interface/sniffer/tmp_logs"
+            access="read_only" type="none"/>
+
+    <!-- Space on the disk for the capture logs of the sniffer
+         Name:  empty
+         Value: size in megabytes -->
+    <object oid="/agent/interface/sniffer/tmp_logs/sniffer_space"
+            access="read_write" type="integer"/>
+
+    <!-- Max size of one temporary file for the sniffer
+         Name:  empty
+         Value: size in megabytes -->
+    <object oid="/agent/interface/sniffer/tmp_logs/file_size"
+            access="read_write" type="integer"/>
+
+    <!-- Number of temporary files to rotation on the sniffer
+         Name:  empty
+         Value: number of files -->
+    <object oid="/agent/interface/sniffer/tmp_logs/rotation"
+            access="read_write" type="integer"/>
+
+    <!-- Overfill handle method
+         Name:  empty
+         Value: 0 - rotation (default);
+                1 - tail drop -->
+    <object oid="/agent/interface/sniffer/tmp_logs/overfill_meth"
+            access="read_write" type="integer"/>
+</backup>

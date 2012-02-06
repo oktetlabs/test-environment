@@ -78,6 +78,7 @@ extern "C" {
 #include "ipc_server.h"
 #include "rcf_api.h"
 #include "logger_api.h"
+#include "te_log_sniffers.h"
 
 
 /** Default TA polling timeout */
@@ -100,6 +101,28 @@ extern "C" {
 
 #define LGR_TANAMES_LEN   1024
 
+/** Overfill type constans */
+typedef enum overfill_type {
+    ROTATION   = 0, /**< Overfill type rotation */
+    TAIL_DROP  = 1, /**< Overfill type tail drop */
+} overfill_type;
+
+/** Cpature logs polling variables */
+typedef struct snif_polling_sets_t {
+    char            dir[RCF_MAX_PATH];  /**< Cpature logs directory */
+    char            name[RCF_MAX_PATH]; /**< File name template */
+    unsigned        asize;              /**< Max logs cumulative size */
+    unsigned        sn_space;           /**< Max total capture files size
+                                             for one sniffer */
+    unsigned        fsize;              /**< Max file size for each
+                                             sniffer */
+    unsigned        rotation;           /**< Rotate agent side temporary
+                                             logs across *x* files */
+    unsigned        period;             /**< Period for capture logs
+                                             polling */
+    overfill_type   ofill;              /**< Overfill handle method */
+    te_bool         errors;             /**< Errors flag */
+} snif_polling_sets_t;
 
 /** Node of the TA single linked list */
 typedef struct ta_inst {
@@ -137,6 +160,13 @@ extern int configParser(const char *file_name);
  * @param buf_len   Log message length.
  */
 extern void lgr_register_message(const void *buf_mess, size_t buf_len);
+
+/**
+ * Check the logger shutdown flag.
+ * 
+ * @return TRUE if sthe flag is active else FALSE.
+ */
+extern te_bool te_log_check_shutdown(void);
 
 #ifdef __cplusplus
 } /* extern "C" */

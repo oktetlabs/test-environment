@@ -108,7 +108,9 @@ typedef enum {
     RCFOP_CONFGRP_END,      /**< End of configuration group */
     RCFOP_ADD_TA,           /**< Add "live start/stop" TA */
     RCFOP_DEL_TA,           /**< Delete "live start/stop" TA */
-    RCFOP_TADEAD            /**< Inform RCF that TA is dead */
+    RCFOP_TADEAD,           /**< Inform RCF that TA is dead */
+    RCFOP_GET_SNIFFERS,     /**< Obtain the list of sniffers */
+    RCFOP_GET_SNIF_DUMP,    /**< Pull out capture logs of the sniffer */
 } rcf_op_t;
 
 
@@ -228,6 +230,8 @@ rcf_op_to_string(rcf_op_t op)
         case RCFOP_EXECUTE:         return "execute";
         case RCFOP_RPC:             return "rpc";
         case RCFOP_KILL:            return "kill";
+        case RCFOP_GET_SNIFFERS:    return "get sniffers";
+        case RCFOP_GET_SNIF_DUMP:   return "get snif dump";
         default:                    return "(unknown)";
     }
 }

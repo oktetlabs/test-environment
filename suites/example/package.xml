@@ -4,7 +4,7 @@
     <author mailto="Ivan.Soloducha@oktetlabs.ru"/>
     <session>
         <run>
-            <script name="loggertest"/>
+            <script name="example"/>
         </run>
     </session>
 </package>

@@ -72,12 +72,49 @@
 #include "te_proto.h"
 #undef RCF_NEED_TYPES
 
+
+extern te_errno rcf_ch_get_sniffers(struct rcf_comm_connection *handle,
+                                    char *cbuf, size_t buflen,
+                                    size_t answer_plen,
+                                    const char *sniff_id_str);
+extern te_errno rcf_ch_get_snif_dump(struct rcf_comm_connection *handle,
+                                     char *cbuf, size_t buflen,
+                                     size_t answer_plen,
+                                     const char *sniff_id_str);
+
 /** Connection with the Test Engine */
 static struct rcf_comm_connection *conn;
 
 /* Buffer for raw log to be transmitted to the TEN */
 static uint8_t log_data[RCF_PCH_LOG_BULK];
 
+static char rcf_pch_id[RCF_PCH_MAX_ID_LEN];
+
+/**
+ * Get the rcf session identifier.
+ * 
+ * @param id    Pointer to copy of RCF session indentifier (OUT).
+ */
+void
+rcf_pch_get_id(char *id)
+{
+    if (id != NULL)
+        strncpy(id, rcf_pch_id, RCF_PCH_MAX_ID_LEN);
+}
+
+/**
+ * Initialization of the rcf session identifier.
+ * 
+ * @param port      RCF connection port.
+ */
+static void
+rcf_pch_init_id(const char *port)
+{
+    int res;
+    res = snprintf(rcf_pch_id, RCF_PCH_MAX_ID_LEN, "%u_%s", getuid(), port);
+    if (res > RCF_PCH_MAX_ID_LEN)
+        fprintf(stderr, "RCF session identifier is too long.");
+}
 
 /**
  * Parse the string stripping off quoting and escape symbols.
@@ -317,6 +354,8 @@ get_opcode(char **ptr, rcf_op_t *opcode)
     TRY_CMD(EXECUTE);
     TRY_CMD(RPC);
     TRY_CMD(KILL);
+    TRY_CMD(GET_SNIFFERS);
+    TRY_CMD(GET_SNIF_DUMP);
 
 #undef TRY_CMD
 
@@ -385,7 +424,7 @@ rcf_pch_run(const char *confstr, const char *info)
     size_t   answer_plen = 0;
     rcf_op_t opcode = 0;
     te_errno rc2;
-    
+
 /**
  * Read any integer parameter from the command.
  *
@@ -424,6 +463,8 @@ rcf_pch_run(const char *confstr, const char *info)
         if (rc != 0)                                                \
             goto communication_problem;                             \
     } while (FALSE)
+
+    rcf_pch_init_id(confstr);
 
     VERB("Starting Portable Commands Handler");
 
@@ -608,6 +649,42 @@ rcf_pch_run(const char *confstr, const char *info)
 
                 if (rc != 0)
                     goto communication_problem;
+                break;
+            }
+
+            case RCFOP_GET_SNIF_DUMP:
+             {
+#ifndef WITH_SNIFFERS
+                SEND_ANSWER("%d sniffers off",
+                            TE_RC(TE_RCF_PCH, TE_ENOPROTOOPT));
+                break;
+#endif
+                char       *var;
+
+                if (*ptr == 0 || ba != NULL ||
+                    transform_str(&ptr, &var) != 0)
+                    goto bad_protocol;
+
+                rcf_ch_get_snif_dump(conn, cmd, cmd_buf_len,
+                                     answer_plen, var);
+                break;
+            }
+
+            case RCFOP_GET_SNIFFERS:
+            {
+#ifndef WITH_SNIFFERS
+                SEND_ANSWER("%d sniffers off",
+                            TE_RC(TE_RCF_PCH, TE_ENOPROTOOPT));
+                break;
+#endif
+                char       *var;
+
+                if (*ptr == 0 || ba != NULL ||
+                    transform_str(&ptr, &var) != 0)
+                    goto bad_protocol;
+
+                rcf_ch_get_sniffers(conn, cmd, cmd_buf_len, answer_plen,
+                                    var);
                 break;
             }
 

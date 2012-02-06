@@ -1685,6 +1685,102 @@ rcf_ta_cfg_group(const char *ta_name, int session, te_bool is_start)
     return rc == 0 ? msg.error : rc;
 }
 
+
+/* See description in rcf_api.h */
+te_errno
+rcf_get_sniffer_dump(const char *ta_name, const char *snif_id,
+                     char *fname, unsigned long long *offset)
+{
+    rcf_msg     msg;
+    te_errno    rc;
+    size_t      anslen = sizeof(msg);
+
+    RCF_API_INIT;
+
+    if (BAD_TA || fname == NULL || strlen(fname) == 0 ||
+        snif_id == NULL || strlen(snif_id) >= RCF_MAX_VAL)
+        return TE_RC(TE_RCF_API, TE_EINVAL);
+
+    memset((char *)&msg, 0, sizeof(msg));
+
+    strcpy(msg.ta, ta_name);
+    strcpy(msg.id, snif_id);
+
+    msg.opcode = RCFOP_GET_SNIF_DUMP;
+    msg.sid = RCF_TA_GET_LOG_SID;
+    strcpy(msg.file, fname);
+
+    rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
+                                   &msg, &anslen, NULL);
+
+    if (rc == 0 && (rc = msg.error) == 0)
+    {
+        strcpy(fname, msg.file);
+        if (strlen(msg.value) == 0)
+            return TE_RC(TE_RCF_API, TE_ENODATA);
+        *offset = strtoll(msg.value, NULL, 10);
+    }
+    return rc;
+}
+
+/* See description in rcf_api.h */
+te_errno
+rcf_ta_get_sniffers(const char *ta_name, const char *snif_id, char **buf,
+                    size_t *len, te_bool sync)
+{
+    rcf_msg     msg;
+    te_errno    rc;
+    size_t      anslen   = sizeof(msg) + 4096;
+    rcf_msg    *rep_msg;
+
+    RCF_API_INIT;
+
+    if (BAD_TA || (snif_id != NULL && strlen(snif_id) >= RCF_MAX_VAL))
+        return TE_RC(TE_RCF_API, TE_EINVAL);
+
+    rep_msg = malloc(anslen);
+    memset((char *)&msg, 0, sizeof(msg));
+    rep_msg->data_len = 0;
+    rep_msg->error    = 0;
+
+    strcpy(msg.ta, ta_name);
+
+    msg.opcode = RCFOP_GET_SNIFFERS;
+    msg.sid = RCF_TA_GET_LOG_SID;
+    if (snif_id == NULL)
+        msg.intparm = sync;
+    else
+        strcpy(msg.id, snif_id);
+
+    rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
+                                   rep_msg, &anslen, NULL);
+    if (rc == 0 && rep_msg->data_len > 0 && rep_msg->error == 0)
+    {
+        if (*len < rep_msg->data_len)
+        {
+            *buf = realloc(*buf, rep_msg->data_len);
+            if (*buf == NULL)
+            {
+                *len = 0;
+                free(rep_msg);
+                return TE_RC(TE_RCF_PCH, TE_ENOMEM);
+            }
+        }
+        memcpy(*buf, rep_msg->data, rep_msg->data_len);
+        *len = rep_msg->data_len;
+    }
+    else
+        *len = 0;
+    /* TE_ENOPROTOOPT error forwared to stop Logger side thread sniffer
+       service for the agent. TE_ENODATA error is correct situation, it is
+       handling appropriately. */
+    if (rep_msg->error == TE_RC(TE_RCF_PCH, TE_ENOPROTOOPT) ||
+        rep_msg->error == TE_RC(TE_RCF, TE_ENODATA))
+        rc = rep_msg->error;
+    free(rep_msg);
+    return rc;
+}
+
 /**
  * This function is used to get bulk of log from the Test Agent.
  * The function may be called by Logger only.

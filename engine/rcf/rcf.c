@@ -1173,7 +1173,6 @@ cold_reboot(ta *agent)
     return 0;
 }
 
-
 /**
  * Save binary attachment to the local file.
  *
@@ -1557,6 +1556,54 @@ process_reply(ta *agent)
             case RCFOP_CSAP_PARAM:
                 read_str(&ptr, msg->value);
                 break;
+
+            case RCFOP_GET_SNIF_DUMP:
+            {
+                read_str(&ptr, msg->value);
+                if (ba != NULL)
+                    save_attachment(agent, msg, len, ba);
+                break;
+            }
+
+            case RCFOP_GET_SNIFFERS:
+            {
+                rcf_msg *new_msg;
+                int      balen;
+
+                if (ba == NULL)
+                {
+                    msg->error = TE_RC(TE_RCF, TE_ENODATA);
+                    break;
+                }
+
+                assert((ba - cmd) >= 0);
+                assert(len >= (size_t)(ba - cmd));
+                /* Above asserts guarantee that 'len' is not negative */
+                balen = len - (ba - cmd);
+
+                if (balen < 4096)
+                {
+                    new_msg = (rcf_msg *)calloc(1, sizeof(rcf_msg) + balen);
+                    if (new_msg == NULL)
+                    {
+                        msg->error = TE_RC(TE_RCF, TE_ENOMEM);
+                        answer_user_request(req);
+                        return;
+                    }
+                    memset(new_msg, 0, sizeof(rcf_msg) + balen);
+                    *new_msg = *msg;
+                    free(msg);
+                    msg = req->message = new_msg;
+                    msg->data_len = balen;
+                    memcpy(msg->data, ba, balen);
+                }
+                else
+                {
+                    ERROR("Too long BA for the get_sniffers call");
+                    msg->error = TE_RC(TE_RCF, TE_ENOBUFS);
+                }
+                break;
+            }
 
             case RCFOP_GET_LOG:
             case RCFOP_FGET:
@@ -1996,6 +2043,26 @@ send_cmd(ta *agent, usrreq *req)
 
         case RCFOP_CONFGRP_END:
             PUT(TE_PROTO_CONFGRP_END);
+            req->timeout = RCF_CMD_TIMEOUT;
+            break;
+
+        case RCFOP_GET_SNIF_DUMP:
+            PUT(TE_PROTO_GET_SNIF_DUMP);
+            write_str(msg->id, RCF_MAX_ID);
+            req->timeout = RCF_CMD_TIMEOUT;
+            break;
+
+        case RCFOP_GET_SNIFFERS:
+            if (strlen(msg->id) > 0)
+            {
+                PUT(TE_PROTO_GET_SNIFFERS);
+                write_str(msg->id, RCF_MAX_ID);
+            }
+            else if (msg->intparm)
+                PUT(TE_PROTO_GET_SNIFFERS " %s", "sync");
+            else
+                PUT(TE_PROTO_GET_SNIFFERS " %s", "nosync");
+
             req->timeout = RCF_CMD_TIMEOUT;
             break;
 

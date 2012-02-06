@@ -48,6 +48,8 @@
 extern "C" {
 #endif
 
+#define RCF_PCH_MAX_ID_LEN 128
+
 /**
  * Start Portable Command Handler.
  *
@@ -65,6 +67,13 @@ extern int rcf_pch_run(const char *confstr, const char *info);
 
 /** Detach from the Test Engine after fork() */
 extern void rcf_pch_detach(void);
+
+/**
+ * Get the rcf session identifier.
+ * 
+ * @param id    Location for the id.
+ */
+void rcf_pch_get_id(char *id);
 
 /** @name Default Command Handlers.
  *

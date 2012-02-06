@@ -28,6 +28,19 @@ TE_LIB_SET
 
 AC_CONFIG_HEADER(package.h)
 
+AC_ARG_WITH([sniffers],
+            AS_HELP_STRING([--with-sniffers],
+                           [enable sniffers (default is NO)]),
+            [with_sniffers=yes],
+            [with_sniffers=""])
+
+AM_CONDITIONAL(CFG_SNIFFERS_SUPPORT, test -n "$with_sniffers")
+if test -n "$with_sniffers"; then
+    EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_SNIFFERS"
+fi
+
+AC_SUBST([EXTRA_CPPFLAGS])
+
 AC_CONFIG_FILES([Makefile])
 
 TE_LIB_RESTORE

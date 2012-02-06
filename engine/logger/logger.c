@@ -55,7 +55,6 @@
 #include "logger_internal.h"
 #include "logger_ten.h"
 
-
 #define LGR_TA_MAX_BUF      0x4000 /* FIXME */
 
 /** Initial (minimum) Logger message buffer size */
@@ -71,6 +70,8 @@ DEFINE_LGR_ENTITY("Logger");
 
 /* TA single linked list */
 ta_inst *ta_list = NULL;
+
+snif_polling_sets_t snifp_sets;
 
 /* Path to the directory for logs */
 const char *te_log_dir = NULL;
@@ -93,7 +94,6 @@ static unsigned int         lgr_flags = 0;
 
 static const char          *cfg_file = NULL;
 static struct ipc_server   *logger_ten_srv = NULL;
-
 
 /**
  * Get NFL from buffer in TE raw log format.
@@ -201,7 +201,9 @@ te_handler(void)
     void                       *buf;
     size_t                      len;
     te_errno                    rc;
-
+    pthread_t                   sniffer_mark_thread;
+    char                        err_buf[BUFSIZ];
+    char                       *arg_str;
 
     buf_len = LGR_MSG_BUF_MIN;
     buf = malloc(buf_len);
@@ -270,6 +272,7 @@ te_handler(void)
 
             unsigned int const ml = te_log_raw_get_nfl(buf);
             unsigned int const pl = strlen(LGR_SRV_FOR_TA_PREFIX);
+            unsigned int       data_len;
 
             if (ml + sizeof(te_log_nfl) == len &&
                 strncmp(msg, LGR_SHUTDOWN, ml) == 0)
@@ -323,6 +326,28 @@ te_handler(void)
 
                 if (configParser(cfg_file) != 0)
                     WARN("Logger configuration file failure\n");
+            }
+            /* Check whether insert sniffer mark invocation is needed */
+            else if (ml + sizeof(te_log_nfl) == len &&
+                     ml >= strlen(LGR_SRV_SNIFFER_MARK) &&
+                     strncmp(msg, LGR_SRV_SNIFFER_MARK,
+                             strlen(LGR_SRV_SNIFFER_MARK)) == 0)
+            {
+                data_len = ml - strlen(LGR_SRV_SNIFFER_MARK) + 1;
+                arg_str = malloc(data_len);
+                snprintf(arg_str, data_len, "%s",
+                         msg + strlen(LGR_SRV_SNIFFER_MARK));
+                arg_str[data_len - 1] = '\0';
+                /* Create separate thread for sniffer mark processing */
+                rc = pthread_create(&sniffer_mark_thread, NULL,
+                                    (void *)&sniffer_mark_handler,
+                                    arg_str);
+                if (rc != 0)
+                {
+                    strerror_r(errno, err_buf, sizeof(err_buf));
+                    ERROR("Sniffer: pthread_create() failed: %s\n",
+                          err_buf);
+                }
             }
             else
             {
@@ -389,6 +414,8 @@ ta_handler(void *ta)
     int                 fd_server;
     fd_set              rfds;
     int                 rc;
+    pthread_t           sniffer_thread;
+    char                err_buf[BUFSIZ];
 
     /* Polling variables */
     unsigned long int   polling;
@@ -432,6 +459,15 @@ ta_handler(void *ta)
 
     /* It not so important to poll at start up */
     gettimeofday(&poll_ts, NULL);
+
+    /* Create separate thread for sniffers log message processing */
+    rc = pthread_create(&sniffer_thread, NULL, (void *)&sniffers_handler, 
+                        inst->agent);
+    if (rc != 0)
+    {
+        strerror_r(errno, err_buf, sizeof(err_buf));
+        ERROR("Sniffer: pthread_create() failed: %s\n", err_buf);
+    }
 
     while (1)
     {
@@ -803,6 +839,73 @@ process_cmd_line_opts(int argc, const char **argv)
 }
 
 /**
+ * Start initialization of capture logs polling variables.
+ */
+static void
+sniffer_polling_sets_start_init(void)
+{
+    memset(snifp_sets.dir, 0, RCF_MAX_PATH);
+    memset(snifp_sets.name, 0, RCF_MAX_PATH);
+    snifp_sets.asize    = 0;
+    snifp_sets.sn_space = 0;
+    snifp_sets.fsize    = 0;
+    snifp_sets.rotation = 0;
+    snifp_sets.period   = 0;
+    snifp_sets.ofill    = ROTATION;
+    snifp_sets.errors   = FALSE;
+
+    sniffers_init();
+}
+
+/**
+ * Initialization of capture logs polling variables by dispatcher cli.
+ */
+static void
+sniffer_polling_sets_cli_init(void)
+{
+    char *tmp;
+
+    /* Get environment variable value for capture logs directory. */
+    tmp = getenv("TE_SNIFF_LOG_DIR");
+    if (tmp != NULL)
+        strncpy(snifp_sets.dir, tmp, RCF_MAX_PATH);
+    if (strlen(snifp_sets.dir) == 0)
+    {
+        tmp = getenv("TE_SNIFF_DEF_LOG_DIR");
+        if (tmp != NULL)
+            strncpy(snifp_sets.dir, tmp, RCF_MAX_PATH);
+        else
+        {
+            snifp_sets.errors = TRUE;
+            return;
+        }
+    }
+
+    /* Cleanup old capture logs */
+    sniffers_logs_cleanup(snifp_sets.dir);
+
+    tmp = getenv("TE_SNIFF_LOG_NAME");
+    if (tmp != NULL)
+        strncpy(snifp_sets.name, tmp, RCF_MAX_PATH);
+
+    tmp = getenv("TE_SNIFF_LOG_SIZE");
+    if (tmp != NULL)
+        snifp_sets.asize = (unsigned)atoi(tmp);
+
+    tmp = getenv("TE_SNIFF_LOG_FSIZE");
+    if (tmp != NULL)
+        snifp_sets.fsize = (unsigned)atoi(tmp);
+
+    tmp = getenv("TE_SNIFF_LOG_OFILL");
+    if (tmp != NULL)
+        snifp_sets.ofill = atoi(tmp) == 0 ? ROTATION : TAIL_DROP;
+
+    tmp = getenv("TE_SNIFF_LOG_PER");
+    if (tmp != NULL)
+        snifp_sets.period = (unsigned)atoi(tmp);
+}
+
+/**
  * This is an entry point of Logger process running on TEN side.
  *
  * @param argc  Argument count.
@@ -830,7 +933,6 @@ main(int argc, const char *argv[])
     ta_inst    *ta_el;
     char       *te_log_raw = NULL;
 
-
     if (process_cmd_line_opts(argc, argv) != EXIT_SUCCESS)
     {
         fprintf(stderr, "Command line options processing failure\n");
@@ -851,7 +953,6 @@ main(int argc, const char *argv[])
         fprintf(stderr, "TE_LOG_RAW is not defined\n");
         return EXIT_FAILURE;
     }
-
     /* Open raw log file for addition */
     raw_file = fopen(te_log_raw, "ab");
     if (raw_file == NULL)
@@ -860,7 +961,6 @@ main(int argc, const char *argv[])
         return EXIT_FAILURE;
     }
     /* Futher we must goto 'exit' in the case of failure */
-
 
     /* Initialize IPC before any servers creation */
     if (ipc_init() != 0)
@@ -1002,6 +1102,8 @@ main(int argc, const char *argv[])
         free(ta_names);
     }
 
+    sniffer_polling_sets_start_init();
+
     /* 
      * FIXME:
      * Log file must be processed before start of messages
@@ -1014,6 +1116,8 @@ main(int argc, const char *argv[])
         ERROR("Logger configuration file failure\n");
         goto join_te_srv;
     }
+
+    sniffer_polling_sets_cli_init();
 
     INFO("TA handlers creation\n");
     /* Create threads according to active TA list */

@@ -11,7 +11,7 @@ bin_PROGRAMS = te_logger te_log_shutdown te_log_flush te_tee
 noinst_HEADERS = logger_internal.h
 
 
-te_logger_SOURCES = logger.c logger_cnf.c logger_prc.c
+te_logger_SOURCES = logger.c logger_cnf.c logger_prc.c te_log_sniffers.c
 te_logger_LDADD = @TE_LDADD@ -lipcserver -lrcfapi -lipc -ltools \
                   @XML2_LIBS@ -lpopt -lexpat -lpthread
 te_logger_DEPENDENCIES = @TE_DEPENDENCIES@ \
