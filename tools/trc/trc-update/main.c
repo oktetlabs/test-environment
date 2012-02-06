@@ -542,6 +542,48 @@ perl_prepare()
     eval_pv("sub old_e { return exists($old{$_[0]}); }", TRUE);
     eval_pv("sub new_e { return exists($new{$_[0]}); }", TRUE);
 
+    eval_pv("sub add_val"
+            "{"
+            "   my @arr = @_;"
+            "   my $rc = 1;"
+            "   my $i = 0;"
+            ""
+            "   for ($i = 2; $i < scalar @arr; $i++)"
+            "   {"
+            "       $rc = $rc && (new($arr[0]) eq $arr[$i]);"
+            "       last if (!($rc));"
+            "   }"
+            "   if ($rc)"
+            "   {"
+            "       if (old($arr[0]) eq $arr[1])"
+            "       {"
+            "           comm_exc($arr[0]);"
+            "           return 1;"
+            "       }"
+            "       else"
+            "       {"
+            "           return 0;"
+            "       }"
+            "   }"
+            "   return 1;"
+            "}",
+            TRUE);
+
+    eval_pv("sub add_arg"
+            "{"
+            "   my @arr = @_;"
+            "   my $rc = 1;"
+            "   my $i = 0;"
+            ""
+            "   for ($i = 1; $i < scalar @arr; $i++)"
+            "   {"
+            "       $rc = $rc && (new($arr[0]) eq $arr[$i]);"
+            "       last if (!($rc));"
+            "   }"
+            "   return uncomm($arr[0]) && $rc;"
+            "}",
+            TRUE);
+
     return 0;
 }
 #endif
