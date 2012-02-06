@@ -95,6 +95,23 @@ enum {
                                          section of updating rule */
     TRC_UPDATE_OPT_COPY_CONFLS,     /**< Duplicate conflicting results in
                                          <new> section of updating rule */
+    TRC_UPDATE_OPT_CP_OLD_FIRST,    /**< If both --copy-old and
+                                         --copy-confls were specified,
+                                         the latter one will be applied
+                                         only if the former one have no
+                                         effect for a given iteration */
+    TRC_UPDATE_OPT_CP_CONFLS_FIRST, /**< If both --copy-old and
+                                         --copy-confls were specified,
+                                         the former one will be applied
+                                         only if the latter one have no
+                                         effect for a given iteration */
+    TRC_UPDATE_OPT_NO_COPY_OLD,     /**< Do not duplicate old results in 
+                                         <new> section of updating rule */
+    TRC_UPDATE_OPT_NO_COPY_CONFLS,  /**< Do not duplicate conflicting
+                                         results in <new> section of
+                                         updating rule */
+    TRC_UPDATE_OPT_NO_FILL_NEW,     /**< Do not fill <new> section of
+                                         updating rule */
     TRC_UPDATE_OPT_NO_WILDS,        /**< Do not generate wildcards */
     TRC_UPDATE_OPT_LOG_WILDS,       /**< Generate wildcards for results
                                          from logs, not from TRC DB */
@@ -235,13 +252,40 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
 
         { "copy-old", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_COPY_OLD,
-          "Copy results from existing TRC DB into <new> section  "
-          "of updating rule", NULL },
+          "Copy results from existing TRC DB into <new> section "
+          "of updating rule (default behaviour)", NULL },
+
+        { "old-first", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_CP_OLD_FIRST,
+          "If both --copy-old and --copy-confls were specified, "
+          "apply the latter one only if the former one has no "
+          "effect for a given iteration", NULL },
+
+        { "confls-first", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_CP_CONFLS_FIRST,
+          "If both --copy-old and --copy-confls were specified, "
+          "apply the former one only if the latter one has no "
+          "effect for a given iteration", NULL },
 
         { "copy-confls", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_COPY_CONFLS,
-          "Copy conflicting results from logs into <new> section  "
+          "Copy conflicting results from logs into <new> section "
           "of updating rule", NULL },
+
+        { "no-copy-old", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_NO_COPY_OLD,
+          "Do not copy results from existing TRC DB into <new> section "
+          "of updating rule", NULL },
+
+        { "no-copy-confls", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_NO_COPY_CONFLS,
+          "Do not Copy conflicting results from logs into <new> section "
+          "of updating rule (default behaviour)", NULL },
+
+        { "no-fill-new", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_NO_FILL_NEW,
+          "Do not automatically fill <new> section of updating rule",
+          NULL },
 
         { "no-wilds", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_NO_WILDS,
@@ -355,11 +399,36 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
                 break;
 
             case TRC_UPDATE_OPT_COPY_OLD:
+                if (!(ctx.flags & TRC_LOG_PARSE_COPY_CONFLS))
+                    ctx.flags |= TRC_LOG_PARSE_COPY_OLD_FIRST;
                 ctx.flags |= TRC_LOG_PARSE_COPY_OLD;
                 break;
 
             case TRC_UPDATE_OPT_COPY_CONFLS:
                 ctx.flags |= TRC_LOG_PARSE_COPY_CONFLS;
+                break;
+
+            case TRC_UPDATE_OPT_CP_OLD_FIRST:
+                ctx.flags |= TRC_LOG_PARSE_COPY_OLD_FIRST;
+                break;
+
+            case TRC_UPDATE_OPT_CP_CONFLS_FIRST:
+                ctx.flags &= ~TRC_LOG_PARSE_COPY_OLD_FIRST;
+                break;
+
+            case TRC_UPDATE_OPT_NO_COPY_OLD:
+                ctx.flags &= ~(TRC_LOG_PARSE_COPY_OLD |
+                               TRC_LOG_PARSE_COPY_OLD_FIRST);
+                break;
+
+            case TRC_UPDATE_OPT_NO_COPY_CONFLS:
+                ctx.flags &= ~TRC_LOG_PARSE_COPY_CONFLS;
+                break;
+
+            case TRC_UPDATE_OPT_NO_FILL_NEW:
+                ctx.flags &= ~(TRC_LOG_PARSE_COPY_CONFLS |
+                               TRC_LOG_PARSE_COPY_OLD |
+                               TRC_LOG_PARSE_COPY_OLD_FIRST);
                 break;
 
             case TRC_UPDATE_OPT_RULES_ALL:
@@ -797,6 +866,8 @@ main(int argc, char **argv, char **envp)
 #endif
 
     trc_update_init_ctx(&ctx);
+
+    ctx.flags |= TRC_LOG_PARSE_COPY_OLD | TRC_LOG_PARSE_COPY_OLD_FIRST;
 
     if (trc_update_process_cmd_line_opts(argc, argv) != EXIT_SUCCESS)
         goto exit;

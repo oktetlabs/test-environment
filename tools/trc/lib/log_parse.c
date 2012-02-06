@@ -2175,13 +2175,25 @@ trc_update_gen_rules(unsigned int db_uid,
                 rule->old_res = trc_exp_results_dup(&iter1->exp_results);
                 rule->confl_res = trc_exp_results_dup(
                                             &iter_data1->new_results);
-                if (flags & TRC_LOG_PARSE_COPY_OLD)
+
+                rule->new_res = NULL;
+
+                if ((flags & TRC_LOG_PARSE_COPY_OLD) &&
+                    (flags & TRC_LOG_PARSE_COPY_OLD_FIRST) &&
+                    !SLIST_EMPTY(&iter1->exp_results))
                     rule->new_res =
                         trc_exp_results_dup(&iter1->exp_results);
-                else if (flags & TRC_LOG_PARSE_COPY_CONFLS)
+
+                if ((flags & TRC_LOG_PARSE_COPY_CONFLS) &&
+                    rule->new_res == NULL &&
+                    !SLIST_EMPTY(rule->confl_res))
                     rule->new_res = trc_exp_results_dup(rule->confl_res);
-                else
-                    rule->new_res = NULL;
+
+                if ((flags & TRC_LOG_PARSE_COPY_OLD) &&
+                    rule->new_res == NULL &&
+                    !SLIST_EMPTY(&iter1->exp_results))
+                    rule->new_res =
+                        trc_exp_results_dup(&iter1->exp_results);
 
                 if (flags & TRC_LOG_PARSE_USE_RULE_IDS)
                     cur_rule_id++;

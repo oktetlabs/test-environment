@@ -68,7 +68,16 @@ enum trc_log_parse_flags {
                                                  from logs in <news>
                                                  section of updating
                                                  rule */
-    TRC_LOG_PARSE_CONFLS_ALL       = 0x200, /**< Treat all results from
+    TRC_LOG_PARSE_COPY_OLD_FIRST   = 0x200, /**< If both COPY_CONFLS and
+                                                 COPY_OLD are specified,
+                                                 copy expected results from
+                                                 current TRC DB in <news>
+                                                 section of updating
+                                                 rule; if there is no such
+                                                 results - copy
+                                                 conlficting results from
+                                                 logs to the same place */
+    TRC_LOG_PARSE_CONFLS_ALL       = 0x400, /**< Treat all results from
                                                  logs as unexpected ones */
 };
 
