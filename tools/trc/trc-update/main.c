@@ -255,6 +255,11 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
           "Copy results from existing TRC DB into <new> section "
           "of updating rule (default behaviour)", NULL },
 
+        { "copy-confls", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_COPY_CONFLS,
+          "Copy conflicting results from logs into <new> section "
+          "of updating rule", NULL },
+
         { "old-first", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_CP_OLD_FIRST,
           "If both --copy-old and --copy-confls were specified, "
@@ -266,11 +271,6 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
           "If both --copy-old and --copy-confls were specified, "
           "apply the former one only if the latter one has no "
           "effect for a given iteration", NULL },
-
-        { "copy-confls", '\0', POPT_ARG_NONE, NULL,
-          TRC_UPDATE_OPT_COPY_CONFLS,
-          "Copy conflicting results from logs into <new> section "
-          "of updating rule", NULL },
 
         { "no-copy-old", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_NO_COPY_OLD,
