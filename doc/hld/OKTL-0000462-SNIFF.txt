@@ -309,6 +309,17 @@ Sniffer framework provides:
 
 ** External interfaces
 
+*** Build options
+
+Additional build options are supported. To compile the agents with support of
+sniffer framework should be added option *--with-sniffers* in two places. As
+described *TA* options and library options for the *rcfpch* library. See
+example:
+    TE_LIB_PARMS([rcfpch], [], [],
+                 [--with-sniffers], [], [], [])
+    TE_TA_TYPE([linux], [], [unix], 
+               [--with-sniffers], [], [], [], [])
+
 *** Dispatcher
 
 Additional command line options for dispatcher.sh should be supported.
@@ -324,11 +335,11 @@ Additional command line options for dispatcher.sh should be supported.
 |                             | number of bytes to capture for one packet.     |
 |                             | By default: unlimited.                         |
 | --sniff-space=<val>         | Add for the sniffer restriction on maximum     |
-|                             | overall size of temporary files, Mb.           |
-|                             | By default: 64Mb.                              |
+|                             | overall size of temporary files in Mb.         |
+|                             | By default: 64 Mb.                             |
 | --sniff-fsize=<val>         | Add for the sniffer restriction on maximum     |
-|                             | size of the one temporary file, Mb.            |
-|                             | By default: 16Mb.                              |
+|                             | size of the one temporary file in Mb.          |
+|                             | By default: 16 Mb.                             |
 | --sniff-rotation=<x>        | Add for the sniffer restriction on number of   |
 |                             | temporary files. This option excluded by       |
 |                             | the *--sniff-ta-log-ofill-drop* option.        |
@@ -336,19 +347,26 @@ Additional command line options for dispatcher.sh should be supported.
 | --sniff-ofill-drop          | Change overfill handle method of temporary     |
 |                             | files for the sniffer to tail drop.            |
 |                             | By default overfill handle method is rotation. |
-| --sniff-log-name <pattern>  | *TEN* side log file naming pattern, the        |
+| --sniff-log-dir=<path>      | Path to the *TEN* side capture files.          |
+|                             | By default used: TE_LOG_DIR/caps.              |
+| --sniff-log-name=<pattern>  | *TEN* side log file naming pattern, the        |
 |                             | following format specifies are supported:      |
 |                             | - %a : agent name                              |
 |                             | - %u : user name                               |
+|                             | - %i : iface name                              |
 |                             | - %s : sniffer name                            |
 |                             | - %n : sniffer session sequence number         |
-|                             | By default *full sniffer id* is used.          |
-| --sniff-log-fsize <val>     | Maximum *TEN* side logs size (in Mb) for one   |
-|                             | sniffer. By default: 64 Mb.                    |
+|                             | By default '%a_%i_%s_%n' is used. The pcap     |
+|                             | extension will be added automatically.         |
+| --sniff-log-size=<val>      | Maximum *TEN* side logs cumulative size for one|
+|                             | sniffer in Mb. By default: 256 Mb.             |
+| --sniff-log-fsize=<val>     | Maximum *TEN* side capture file size for each  |
+|                             | sniffer in Mb.                                 |
+|                             | By default: 64 Mb.                             |
 | --sniff-log-ofill-drop      | Change overfill handle method to tail drop.    |
 |                             | By default overfill handle method is rotation. |
-| --sniff-log-period <val>    | Period of taken logs from agents, milliseconds.|
-|                             | By default: 2 msec.                            |
+| --sniff-log-period=<val>    | Period of taken logs from agents, milliseconds.|
+|                             | By default: 200 msec.                          |
 
 
 Some notes:
@@ -480,9 +498,9 @@ Some notes:
 |   -P <path>              | Sniffer folder path.                            |
 |   -q <seq_num>           | Sniffer session sequence number.                |
 | Optional arguments:      |                                                 |
-|   -c <total_size>        | Max total files size for agent.                 |
+|   -c <total_size>        | Max total files size for agent in Mb.           |
 |                          | By defualt 256 Mb.                              |
-|   -C <file_size>         | Max dump file size, by defualt 16 Mb.           |
+|   -C <file_size>         | Max dump file size in Mb. By defualt 16 Mb.     |
 |   -r <x>                 | Rotate agent side temporary logs across         |
 |                          | *x* files. By default *x* = 4.                  |
 |                          | This option excluded by the *-o* option.        |
@@ -495,7 +513,7 @@ Some notes:
 |   -p                     | Disable promiscuous mode, default enabled.      |
 |   -r <x>                 | Rotate agent side temporary logs across         |
 |                          | *x* files.  This option excluded by             |
-|                          |  the *-o* option.                               |
+|                          | the *-o* option.                                |
 |   -s <snaplen>           | Maximum packet capture size, defulat unlimited. |
 |   -w <name>              | Template for capture file name.                 |
 
@@ -539,9 +557,9 @@ logic etc.), see the requirements doc for the detailed list.
 |/agent/sniffer_settings/tmp_logs/path          |It is *<sniffers_path>*       |
 |                                               |decribed below.               |
 |/agent/sniffer_settings/tmp_logs/total_size    |Max total capture files size  |
-|                                               |for all agent sniffers, Mb.   |
+|                                               |for all agent sniffers in Mb. |
 |                                               |By defualt 256 Mb.            |
-|/agent/sniffer_settings/tmp_logs/file_size     |Max capture file size (Mb),   |
+|/agent/sniffer_settings/tmp_logs/file_size     |Max capture file size in Mb,  |
 |                                               |by default 16 Mb.             |
 |/agent/sniffer_settings/tmp_logs/rotation      |Rotate agent side temporary   |
 |                                               |logs across *x* files.        |
@@ -574,9 +592,9 @@ name of the object instance) uniq across the interface.
 |                                               | by default unlimited.        |
 |/agent/interface/sniffer/tmp_logs              | Dump files settings.         |
 |/agent/interface/sniffer/tmp_logs/sniffer_space| Max total dump files size for|
-|                                               | the sniffer, Mb.             |
+|                                               | the sniffer in Mb.           |
 |                                               | By defualt 64 Mb.            |
-|/agent/interface/sniffer/tmp_logs/file_size    | Max capture file size (Mb),  |
+|/agent/interface/sniffer/tmp_logs/file_size    | Max capture file size in Mb, |
 |                                               | by default is 16 Mb.         |
 |/agent/interface/sniffer/tmp_logs/rotation     | Rotate agent side temporary  |
 |                                               | logs across *x* files.       |
@@ -590,7 +608,7 @@ name of the object instance) uniq across the interface.
     overfill_type, snaplen), use the one that declarated in the interface tree.
   - *sniffer_space*, *file_size* and *rotation* are restricting the parameters.
     By default this parameters means that sniffer capture files can take no 
-    more than 64Mb space on the disk, size of the one file can not exceed 
+    more than 64 Mb space on the disk, size of the one file can not exceed 
     16 Mb and can be created not more than 4 files.
 
 *** RCF protocols and API
@@ -741,28 +759,35 @@ absolute file offset (stored in the filename).
 Logger subsystem can be configured from XML file. By default used
 *logger.conf* from the *conf/* directory. The list of settings is described
 below.
-|-------------------------------+--------------------------------------|
-| Setting name                  | Description                          |
-|-------------------------------+--------------------------------------|
-|snif_fname                     | Template dump file name.             |
-|                               | By default it's *full sniffer id*.   |
-|snif_path                      | Path of dump files folder.           |
-|                               | By default: TE_LOG_DIR/caps          |
-|snif_max_fsize                 | Max file size for one sniffer.       |
-|                               | By default: unlimited.               |
-|snif_space                     | Max total capture files size for     |
-|                               | one sniffer. By default: unlimited.  |
-|snif_rotation                  | Rotate logger side temporary logs    |
-|                               | across *x* files for each sniffer.   |
-|snif_overall_size              | Max total files size for all sniffers|
-|                               | By default: unlimited. (Currently    |
-|                               |  not supported)                      |
-|snif_ovefill_meth              | Overfill handel method:              |
-|                               | 0 - rotation(default)                |
-|                               | 1 - tail drop.                       |
-|snif_period                    | Period of taken logs from agents.    |
-|                               | By default:                          |
-|----------------------------------------------------------------------|
+|-------------------------------+-------------------------------------------|
+| Setting name                  | Description                               |
+|-------------------------------+-------------------------------------------|
+|snif_fname                     | *TEN* side log file naming pattern, the   |
+|                               | following format specifies are supported: |
+|                               | - %a : agent name                         |
+|                               | - %u : user name                          |
+|                               | - %i : iface name                         |
+|                               | - %s : sniffer name                       |
+|                               | - %n : sniffer session sequence number    |
+|                               | By default %a_%i_%s_%n is used. The pcap  |
+|                               | extension will be added automatically.    |
+|snif_path                      | Path of dump files folder.                |
+|                               | By default: TE_LOG_DIR/caps               |
+|snif_max_fsize                 | Maximum *TEN* side logs cumulative size   |
+|                               | for one sniffer, Mb. By default: 64 Mb.   |
+|snif_space                     | Maximum *TEN* side capture file size for  |
+|                               | each sniffer in Mb. By default: 256 Mb.   |
+|snif_rotation                  | Rotate logger side temporary logs         |
+|                               | across *x* files for each sniffer.        |
+|snif_overall_size              | Max total files size for all sniffers     |
+|                               | By default: unlimited. (Currently         |
+|                               |  not supported)                           |
+|snif_ovefill_meth              | Overfill handle method:                   |
+|                               | 0 - rotation(default)                     |
+|                               | 1 - tail drop.                            |
+|snif_period                    | Period of taken logs from agents,         |
+|                               | milliseconds. By default: 200 msec.       |
+|---------------------------------------------------------------------------|
 
 *** Logger files naming
 
