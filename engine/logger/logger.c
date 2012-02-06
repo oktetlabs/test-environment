@@ -890,11 +890,11 @@ sniffer_polling_sets_cli_init(void)
 
     tmp = getenv("TE_SNIFF_LOG_SIZE");
     if (tmp != NULL)
-        snifp_sets.asize = (unsigned)atoi(tmp);
+        snifp_sets.sn_space = (unsigned)atoi(tmp) << 20;
 
     tmp = getenv("TE_SNIFF_LOG_FSIZE");
     if (tmp != NULL)
-        snifp_sets.fsize = (unsigned)atoi(tmp);
+        snifp_sets.fsize = (unsigned)atoi(tmp) << 20;
 
     tmp = getenv("TE_SNIFF_LOG_OFILL");
     if (tmp != NULL)

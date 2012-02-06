@@ -175,13 +175,11 @@ startElementLGR(void           *ctx,
     }
     else if (!strcmp(name, "snif_max_fsize"))
     {
-        snifp_sets.fsize = (unsigned)strtoul(atts[1], NULL, 0) *
-                           1024 * 1024;
+        snifp_sets.fsize = (unsigned)strtoul(atts[1], NULL, 0) << 20;
     }
     else if (!strcmp(name, "snif_space"))
     {
-        snifp_sets.sn_space = (unsigned)strtoul(atts[1], NULL, 0) *
-                              1024 * 1024;
+        snifp_sets.sn_space = (unsigned)strtoul(atts[1], NULL, 0) << 20;
     }
     else if (!strcmp(name, "snif_rotation"))
     {
@@ -189,8 +187,7 @@ startElementLGR(void           *ctx,
     }
     else if (!strcmp(name, "snif_overall_size"))
     {
-        snifp_sets.asize = (unsigned)strtoul(atts[1], NULL, 0) *
-                           1024 * 1024;
+        snifp_sets.asize = (unsigned)strtoul(atts[1], NULL, 0) << 20;
     }
     else if (!strcmp(name, "snif_ovefill_meth"))
     {
