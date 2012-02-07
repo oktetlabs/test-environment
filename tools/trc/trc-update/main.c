@@ -126,6 +126,14 @@ enum {
                                          should be saved */
 };
 
+#ifdef HAVE_LIBPERL
+static HV *olds = NULL;
+static HV *news = NULL;
+static HV *commons = NULL;
+static HV *uncomm_olds = NULL;
+static HV *uncomm_news = NULL;
+#endif
+
 /** Name of the file with expected testing result database */
 static char *db_fn = NULL;
 
@@ -146,6 +154,8 @@ static trc_update_ctx ctx;
 /** Perl interpreter */
 static PerlInterpreter *perl_interp = NULL;
 #endif
+
+static tqh_strings     args_registered;
 
 /**
  * Add new group of logs.
@@ -500,158 +510,200 @@ exit:
 int
 perl_prepare()
 {
-    HV  *olds;
-    HV  *news;
-    HV  *commons;
-    HV  *uncomm_olds;
-    HV  *uncomm_news;
+    te_string   te_str;
 
     dTHX;
 
-    olds = get_hv("old", GV_ADD);
-    news = get_hv("new", GV_ADD);
-    commons = get_hv("commons", GV_ADD);
-    uncomm_news = get_hv("uncomm_new", GV_ADD);
-    uncomm_olds = get_hv("uncomm_old", GV_ADD);
+    if (perl_expr != NULL || perl_script != NULL)
+    {
+        olds = get_hv("old", GV_ADD);
+        news = get_hv("new", GV_ADD);
+        commons = get_hv("commons", GV_ADD);
+        uncomm_news = get_hv("uncomm_new", GV_ADD);
+        uncomm_olds = get_hv("uncomm_old", GV_ADD);
 
-    eval_pv("sub uncomm_old"
-            "{"
-            "   $uncomm_old{$_[0]} = 1;"
-            "   return 1;"
-            "}",
-            TRUE);
+        eval_pv("sub uncomm_old"
+                "{"
+                "   $uncomm_old{$_[0]} = 1;"
+                "   return 1;"
+                "}",
+                TRUE);
 
-    eval_pv("sub uncomm_new"
-            "{"
-            "   $uncomm_new{$_[0]} = 1;"
-            "   return 1;"
-            "}",
-            TRUE);
+        eval_pv("sub uncomm_new"
+                "{"
+                "   $uncomm_new{$_[0]} = 1;"
+                "   return 1;"
+                "}",
+                TRUE);
 
-    eval_pv("sub uncomm"
-            "{"
-            "   $uncomm_old{$_[0]} = 1;"
-            "   $uncomm_new{$_[0]} = 1;"
-            "   return 1;"
-            "}",
-            TRUE);
+        eval_pv("sub uncomm"
+                "{"
+                "   $uncomm_old{$_[0]} = 1;"
+                "   $uncomm_new{$_[0]} = 1;"
+                "   return 1;"
+                "}",
+                TRUE);
 
-    eval_pv("sub comm_inc"
-            "{"
-            "   my $arg;"
-            "   foreach $arg (keys %commons)"
-            "   {"
-            "       $commons{$arg} = 0;"
-            "   }"
-            "   foreach $arg (@_)"
-            "   {"
-            "       $commons{$arg} = 1;"
-            "   }"
-            "   return 1;"
-            "}",
-            TRUE);
+        eval_pv("sub comm_inc"
+                "{"
+                "   my $arg;"
+                "   foreach $arg (keys %commons)"
+                "   {"
+                "       $commons{$arg} = 0;"
+                "   }"
+                "   foreach $arg (@_)"
+                "   {"
+                "       $commons{$arg} = 1;"
+                "   }"
+                "   return 1;"
+                "}",
+                TRUE);
 
-    eval_pv("sub comm_exc"
-            "{"
-            "   my $arg;"
-            "   foreach $arg (@_)"
-            "   {"
-            "       if (exists($commons{$arg})) "
-            "       {"
-            "           $commons{$arg} = 0;"
-            "       }"
-            "   }"
-            "   return 1;"
-            "}",
-            TRUE);
+        eval_pv("sub comm_exc"
+                "{"
+                "   my $arg;"
+                "   foreach $arg (@_)"
+                "   {"
+                "       if (exists($commons{$arg})) "
+                "       {"
+                "           $commons{$arg} = 0;"
+                "       }"
+                "   }"
+                "   return 1;"
+                "}",
+                TRUE);
 
-    eval_pv("sub comm_eq"
-            "{"
-            "   my $rc = 1;"
-            "   my $arg;"
-            "   foreach $arg (keys %commons)"
-            "   {"
-            "       if ($commons{$arg} == 1)"
-            "       {"
-            "           $rc = $rc && (($old{$arg} eq "
-            "                          $new{$arg}) || "
-            "                         (exists($old{$arg}) && "
-            "                          length($old{$arg}) == 0));"
-            "       }"
-            "   }"
-            "   return $rc;"
-            "}",
-            TRUE);
+        eval_pv("sub comm_eq"
+                "{"
+                "   my $rc = 1;"
+                "   my $arg;"
+                "   foreach $arg (keys %commons)"
+                "   {"
+                "       if ($commons{$arg} == 1)"
+                "       {"
+                "           $rc = $rc && (($old{$arg} eq "
+                "                          $new{$arg}) || "
+                "                         (exists($old{$arg}) && "
+                "                          length($old{$arg}) == 0));"
+                "       }"
+                "   }"
+                "   return $rc;"
+                "}",
+                TRUE);
 
-    eval_pv("sub uncomm_chk"
-            "{"
-            "   my $arg;"
-            "   foreach $arg (keys %old)"
-            "   {"
-            "       if (!exists($commons{$arg}) &&"
-            "           $uncomm_old{$arg} != 1)"
-            "       {"
-            "           return 0;"
-            "       }"
-            "   }"
-            "   foreach $arg (keys %new)"
-            "   {"
-            "       if (!exists($commons{$arg}) &&"
-            "           $uncomm_new{$arg} != 1)"
-            "       {"
-            "           return 0;"
-            "       }"
-            "   }"
-            "   return 1;"
-            "}",
-            TRUE);
+        eval_pv("sub uncomm_chk"
+                "{"
+                "   my $arg;"
+                "   foreach $arg (keys %old)"
+                "   {"
+                "       if (!exists($commons{$arg}) &&"
+                "           $uncomm_old{$arg} != 1)"
+                "       {"
+                "           return 0;"
+                "       }"
+                "   }"
+                "   foreach $arg (keys %new)"
+                "   {"
+                "       if (!exists($commons{$arg}) &&"
+                "           $uncomm_new{$arg} != 1)"
+                "       {"
+                "           return 0;"
+                "       }"
+                "   }"
+                "   return 1;"
+                "}",
+                TRUE);
 
-    eval_pv("sub old { return $old{$_[0]}; }", TRUE);
-    eval_pv("sub new { return $new{$_[0]}; }", TRUE);
-    eval_pv("sub old_e { return exists($old{$_[0]}); }", TRUE);
-    eval_pv("sub new_e { return exists($new{$_[0]}); }", TRUE);
+        eval_pv("sub old { return $old{$_[0]}; }", TRUE);
+        eval_pv("sub new { return $new{$_[0]}; }", TRUE);
+        eval_pv("sub old_e { return exists($old{$_[0]}); }", TRUE);
+        eval_pv("sub new_e { return exists($new{$_[0]}); }", TRUE);
 
-    eval_pv("sub add_val"
-            "{"
-            "   my @arr = @_;"
-            "   my $rc = 1;"
-            "   my $i = 0;"
-            ""
-            "   for ($i = 2; $i < scalar @arr; $i++)"
-            "   {"
-            "       $rc = $rc && (new($arr[0]) eq $arr[$i]);"
-            "       last if (!($rc));"
-            "   }"
-            "   if ($rc)"
-            "   {"
-            "       if (old($arr[0]) eq $arr[1])"
-            "       {"
-            "           comm_exc($arr[0]);"
-            "           return 1;"
-            "       }"
-            "       else"
-            "       {"
-            "           return 0;"
-            "       }"
-            "   }"
-            "   return 1;"
-            "}",
-            TRUE);
+        eval_pv("sub add_val"
+                "{"
+                "   my @arr = @_;"
+                "   my $rc = 1;"
+                "   my $i = 0;"
+                ""
+                "   for ($i = 2; $i < scalar @arr; $i++)"
+                "   {"
+                "       $rc = $rc && (new($arr[0]) eq $arr[$i]);"
+                "       last if (!($rc));"
+                "   }"
+                "   if ($rc)"
+                "   {"
+                "       if (old($arr[0]) eq $arr[1])"
+                "       {"
+                "           comm_exc($arr[0]);"
+                "           return 1;"
+                "       }"
+                "       else"
+                "       {"
+                "           return 0;"
+                "       }"
+                "   }"
+                "   return 1;"
+                "}",
+                TRUE);
 
-    eval_pv("sub add_arg"
-            "{"
-            "   my @arr = @_;"
-            "   my $rc = 1;"
-            "   my $i = 0;"
-            ""
-            "   for ($i = 1; $i < scalar @arr; $i++)"
-            "   {"
-            "       $rc = $rc && (new($arr[0]) eq $arr[$i]);"
-            "       last if (!($rc));"
-            "   }"
-            "   return uncomm($arr[0]) && $rc;"
-            "}",
-            TRUE);
+        eval_pv("sub add_arg"
+                "{"
+                "   my @arr = @_;"
+                "   my $rc = 1;"
+                "   my $i = 0;"
+                ""
+                "   for ($i = 1; $i < scalar @arr; $i++)"
+                "   {"
+                "       $rc = $rc && (new($arr[0]) eq $arr[$i]);"
+                "       last if (!($rc));"
+                "   }"
+                "   return uncomm($arr[0]) && $rc;"
+                "}",
+                TRUE);
+
+        memset(&te_str, 0, sizeof(te_str));
+        te_str.ptr = NULL;
+
+        if (perl_expr != NULL)
+        {
+            te_string_append(&te_str,
+                             "sub get_rc"
+                             "{"
+                             "    return (%s) && comm_eq() "
+                             "           && uncomm_chk() ? 1 : 0;"
+                             "}",
+                             perl_expr);
+            eval_pv(te_str.ptr, TRUE);
+        }
+        else
+        {
+            FILE               *f = NULL;
+            unsigned long int   flen;
+            char               *script_text = NULL;
+
+            f = fopen(perl_script, "rb");
+            fseek(f, 0, SEEK_END);
+            flen = ftell(f);
+            fseek(f, 0, SEEK_SET);
+
+            script_text = calloc(flen, sizeof(*script_text));
+            fread(script_text, sizeof(*script_text), flen, f);
+
+            te_string_append(&te_str,
+                             "sub get_rc"
+                             "{"
+                             "    %s\n"
+                             "    return $rc && comm_eq() &&"
+                             "           uncomm_chk() ? 1 : 0;\n"
+                             "}",
+                             script_text);
+            eval_pv(te_str.ptr, TRUE);
+
+            free(script_text);
+        }
+
+        te_string_free(&te_str);
+    }
 
     return 0;
 }
@@ -678,17 +730,12 @@ func_args_match(const trc_test_iter_args *db_args,
     trc_test_iter_arg         *arg;
 
 #ifdef HAVE_LIBPERL
-    HV  *olds;
-    HV  *news;
-    HV  *commons;
-    HV  *uncomm_olds;
-    HV  *uncomm_news;
     SV  *val;
-    SV  *res;
 #endif
     
     te_string   te_str;
     int         i = 0;
+    int         rc = 0;
 
     tqh_strings     arg_names;
     tqh_strings     common_args;
@@ -705,7 +752,6 @@ func_args_match(const trc_test_iter_args *db_args,
 #ifdef HAVE_LIBPERL
         dTHX;
 
-        olds = get_hv("old", GV_ADD);
         hv_clear(olds);
 
         TAILQ_FOREACH(arg, &db_args->head, links)
@@ -721,14 +767,10 @@ func_args_match(const trc_test_iter_args *db_args,
             tq_strings_add_uniq(&arg_names, arg->name);
         }
 
-        news = get_hv("new", GV_ADD);
         hv_clear(news);
-        commons = get_hv("commons", GV_ADD);
         hv_clear(commons);
 
-        uncomm_news = get_hv("uncomm_new", GV_ADD);
         hv_clear(uncomm_news);
-        uncomm_olds = get_hv("uncomm_old", GV_ADD);
         hv_clear(uncomm_olds);
 
         for (i = 0; i < (int)n_args; i++)
@@ -755,47 +797,44 @@ func_args_match(const trc_test_iter_args *db_args,
 
         TAILQ_FOREACH(arg_name, &arg_names, links)
         {
-            memset(&te_str, 0, sizeof(te_str));
-            te_str.ptr = NULL;
+            if (tq_strings_add_uniq(&args_registered,
+                                    arg_name->v) == 0)
+            {
+                memset(&te_str, 0, sizeof(te_str));
+                te_str.ptr = NULL;
 
-            te_string_append(&te_str, "sub %s { return \"%s\"; }",
-                             arg_name->v, arg_name->v);
-            eval_pv(te_str.ptr, TRUE);
-            te_string_free(&te_str);
+                te_string_append(&te_str, "sub %s { return \"%s\"; }",
+                                 arg_name->v, arg_name->v);
+                eval_pv(te_str.ptr, TRUE);
+                te_string_free(&te_str);
+            }
         }
 
-        memset(&te_str, 0, sizeof(te_str));
-        te_str.ptr = NULL;
+        dSP;
+        ENTER;
+        SAVETMPS;
+        PUSHMARK(SP);
+        PUTBACK;
 
-        if (perl_expr != NULL)
+        rc = call_pv("get_rc", G_SCALAR | G_NOARGS);
+
+        SPAGAIN;
+        if (rc != 1)
         {
-            te_string_append(&te_str, "$rc = (%s) && comm_eq() "
-                             "&& uncomm_chk();",
-                             perl_expr);
-            eval_pv(te_str.ptr, TRUE);
-        }
-        else
-        {
-            te_string_append(&te_str,
-                             "open my $fh, \"<\", \"%s\" or die $!;\n"
-                             "local $/;\n"
-                             "my $perl_code = <$fh>;\n"
-                             "close $fh;\n"
-                             "eval($perl_code);\n"
-                             "$rc = $rc && comm_eq() && uncomm_chk();\n",
-                             perl_script);
-            eval_pv(te_str.ptr, TRUE);
+            printf("get_rc() perl function returned unexpected "
+                   "result\n");
+            exit(1);
         }
 
-        te_string_free(&te_str);
-
-        eval_pv("$res = $rc ? 1 : 0;", TRUE);
-        res = get_sv("res", 0);
+        rc = POPi;
+        PUTBACK;
+        FREETMPS;
+        LEAVE;
 
         tq_strings_free(&arg_names, NULL);
         tq_strings_free(&common_args, NULL);
 
-        if (SvIV(res) == 1)
+        if (rc == 1)
             return ITER_WILD_MATCH;
         else
             return ITER_NO_MATCH;
@@ -865,6 +904,7 @@ main(int argc, char **argv, char **envp)
             "--old-match-expr and --old-match-perl.\n");
 #endif
 
+    TAILQ_INIT(&args_registered);
     trc_update_init_ctx(&ctx);
 
     ctx.flags |= TRC_LOG_PARSE_COPY_OLD | TRC_LOG_PARSE_COPY_OLD_FIRST;
@@ -973,6 +1013,7 @@ exit:
     free(perl_expr);
     free(perl_script);
     free(oth_prog);
+    tq_strings_free(&args_registered, NULL);
 
     return result;
 }
