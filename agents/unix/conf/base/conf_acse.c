@@ -206,20 +206,22 @@ call_list(char **list, char const *acs)
     rc = acse_epc_check();
 
     if (0 == rc)
+    {
         rc = acse_conf_op(NULL, acs, NULL, NULL, EPC_CFG_LIST, &cfg_result);
+        if (0 == rc && list != NULL)
+            *list = strdup(cfg_result->list);
 
-    if (0 == rc && list != NULL)
-        *list = strdup(cfg_result->list);
-
+        free(cfg_result);
+    }
     if (0 != rc)
     {
-        acse_epc_close(); 
+        acse_epc_close();
         acse_epc_cfg_pipe[0] = '\0';
         if (TE_RC_GET_ERROR(rc) != TE_ENOTCONN)
         {
            ERROR("call_list, for ACS '%s', rc %r", acs, rc);
         }
-        else
+        else if (list != NULL)
             return empty_list(list);
     }
 
