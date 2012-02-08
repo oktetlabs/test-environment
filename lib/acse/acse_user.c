@@ -142,7 +142,7 @@ te_errno
 acse_conf_call(acse_epc_config_data_t **user_cfg_result)
 {
     te_errno rc;
-    acse_epc_config_data_t *cfg_res = malloc(sizeof(*cfg_res));
+    acse_epc_config_data_t *cfg_res;
 #if 0
     struct timespec epc_ts = {0, 300000000}; /* 300 ms */
 #else
@@ -152,7 +152,6 @@ acse_conf_call(acse_epc_config_data_t **user_cfg_result)
     int             pollrc;
 
     rc = acse_epc_conf_send(&cfg_data);
-
     if (rc != 0)
     {
         ERROR("EPC send rc %r", rc);
@@ -174,18 +173,22 @@ acse_conf_call(acse_epc_config_data_t **user_cfg_result)
         return TE_RC(TE_TA_UNIX, TE_ETIMEDOUT);
     }
 
+    cfg_res = malloc(sizeof(*cfg_res));
     rc = acse_epc_conf_recv(cfg_res);
     if (rc != 0)
     {
         ERROR("ACSE config: EPC recv failed %r", rc);
+        free(cfg_res);
         return TE_RC(TE_TA_ACSE, rc);
     }
 
-    if (NULL != user_cfg_result)
-        *user_cfg_result = cfg_res;
-
     if ((rc = cfg_res->status) != 0)
         WARN("%s(): status of EPC operation %r", __FUNCTION__, rc);
+
+    if (NULL != user_cfg_result)
+        *user_cfg_result = cfg_res;
+    else
+        free(cfg_res);
 
     return TE_RC(TE_ACSE, rc);
 }
