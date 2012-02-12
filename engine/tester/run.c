@@ -760,15 +760,18 @@ test_params_hash(test_iter_arg *args, unsigned int n_args)
     MD5_Init(&md5);
 
     /* Sort arguments first */
-    for (i = 0; i < n_args - 1; i++)
+    if (n_args > 0)
     {
-        for (j = i + 1; j < n_args; j++)
+        for (i = 0; i < n_args - 1; i++)
         {
-            if (strcmp(args[sorted[i]].name, args[sorted[j]].name) > 0)
+            for (j = i + 1; j < n_args; j++)
             {
-                k = sorted[i];
-                sorted[i] = sorted[j];
-                sorted[j] = k;
+                if (strcmp(args[sorted[i]].name, args[sorted[j]].name) > 0)
+                {
+                    k = sorted[i];
+                    sorted[i] = sorted[j];
+                    sorted[j] = k;
+                }
             }
         }
     }
