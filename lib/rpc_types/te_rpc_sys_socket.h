@@ -52,6 +52,33 @@ extern "C" {
 /** Maximum length of buffer for sa_data_val in tarpc_sockaddr */
 #define SA_DATA_MAX_LEN  (sizeof(struct sockaddr_storage) - SA_COMMON_LEN)
 
+/**
+ * Total amount of bytes occupied by cmsghdr structure taking into
+ * accound payload and spacing
+ *
+ * @param c     Pointer to cmsghdr structure
+ */
+#define CMSG_TOTAL_LEN(c) \
+    CMSG_SPACE((c)->cmsg_len - (CMSG_DATA(c) - (uint8_t *)(c)))
+
+/**
+ * Pointer to the next cmsghdr structure
+ *
+ * @param c     Pointer to cmsghdr structure
+ */
+#define CMSG_NEXT(c) \
+    (struct cmsghdr *)((uint8_t *)(c) + CMSG_TOTAL_LEN(c))
+
+/**
+ * Pointer to the next cmsghdr structure
+ *
+ * @param c     Pointer to cmsghdr structure
+ * @param p     Pointer to buffer containing
+ *              cmsghdr structures
+ * @param len   Length of buffer
+ */
+#define CMSG_REMAINED_LEN(c, p, len) \
+    (size_t)((len) - ((uint8_t *)(c) - (uint8_t *)(p)))
 
 /**
  * TA-independent protocol families.

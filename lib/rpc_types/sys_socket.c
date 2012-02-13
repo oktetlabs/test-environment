@@ -1125,7 +1125,7 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC_CHECK(SO_DGRAM_ERRIND);
                 H2RPC_CHECK(SO_TIMESTAMP);
                 H2RPC_CHECK(SO_TIMESTAMPNS);
-                default: return RPC_SOCKOPT_MAX;
+                default: return RPC_SOCKOPT_UNKNOWN;
             }
             break;
 
@@ -1140,7 +1140,7 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC_CHECK(TCP_KEEPALIVE_THRESHOLD);
                 H2RPC_CHECK(TCP_KEEPALIVE_ABORT_THRESHOLD);
                 H2RPC_CHECK(TCP_INFO);
-                default: return RPC_SOCKOPT_MAX;
+                default: return RPC_SOCKOPT_UNKNOWN;
             }
             break;
 
@@ -1168,7 +1168,7 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC_CHECK(IP_MTU_DISCOVER);
                 H2RPC_CHECK(IP_RECEIVE_BROADCAST);
                 H2RPC_CHECK(IP_DONTFRAGMENT);
-                default: return RPC_SOCKOPT_MAX;
+                default: return RPC_SOCKOPT_UNKNOWN;
             }
             break;
 
@@ -1201,7 +1201,7 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC_CHECK(IPV6_IPSEC_POLICY);
                 H2RPC_CHECK(IPV6_XFRM_POLICY);
                 H2RPC_CHECK(IPV6_ROUTER_ALERT);
-                default: return RPC_SOCKOPT_MAX;
+                default: return RPC_SOCKOPT_UNKNOWN;
             }
             break;
 
@@ -1209,11 +1209,11 @@ sockopt_h2rpc(int opt_type, int opt)
             switch (opt)
             {
                 H2RPC_CHECK(UDP_NOCHECKSUM);
-                default: return RPC_SOCKOPT_MAX;
+                default: return RPC_SOCKOPT_UNKNOWN;
             }
             break;
 
-        default: return RPC_SOCKOPT_MAX;
+        default: return RPC_SOCKOPT_UNKNOWN;
     }
 }
 

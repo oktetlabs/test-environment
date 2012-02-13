@@ -2557,14 +2557,10 @@ tarpc_getsockopt(tarpc_getsockopt_in *in, tarpc_getsockopt_out *out,
                 uint8_t             *data;
 
                 for (i = 0, c = (struct cmsghdr *)opt;
-                     (uint8_t *)c - (uint8_t *)opt < (int)optlen &&
-                     c->cmsg_len > 0 &&
-                     (unsigned int)(optlen - ((uint8_t *)c -
-                                    (uint8_t *)opt)) >= c->cmsg_len;
-                     i++, c = (struct cmsghdr *)(((uint8_t *)c) +
-                                CMSG_SPACE(c->cmsg_len - 
-                                           (CMSG_DATA(c) -
-                                                (uint8_t *)c))));
+                     CMSG_TOTAL_LEN(c) <=
+                            CMSG_REMAINED_LEN(c, opt, optlen) &&
+                     c->cmsg_len > 0;
+                     i++, c = CMSG_NEXT(c));
 
                 if ((uint8_t *)c - (uint8_t *)opt < (int)optlen)
                 {
@@ -2589,10 +2585,7 @@ tarpc_getsockopt(tarpc_getsockopt_in *in, tarpc_getsockopt_out *out,
 
                 for (i = 0, c = (struct cmsghdr *)opt;
                      i < (int)OPTLEN;
-                     i++,
-                     c = (struct cmsghdr *)(((uint8_t *)c) +
-                             CMSG_SPACE(rpc_c->data.data_len)),
-                     rpc_c++)
+                     i++, c = CMSG_NEXT(c), rpc_c++)
                 {
                     data = CMSG_DATA(c);
 

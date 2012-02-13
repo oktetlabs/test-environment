@@ -1573,7 +1573,8 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
 
             if (optname != RPC_IP_PKTOPTIONS || out.retval < 0 ||
                 out.optval.optval_val[0].option_value_u.
-                    opt_ip_pktoptions.opt_ip_pktoptions_len == 0)
+                    opt_ip_pktoptions.opt_ip_pktoptions_len == 0 ||
+                raw_optlen == NULL)
                 memcpy(raw_optval, out.raw_optval.raw_optval_val,
                        out.raw_optval.raw_optval_len);
             else if (*out.raw_optlen.raw_optlen_val > 0)
@@ -1594,14 +1595,9 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                 c->cmsg_len = CMSG_LEN(rpc_c->data.data_len);
 
                 for (i = 0;
-                     (uint8_t *)c - (uint8_t *)raw_optval +
-                                                c->cmsg_len <=
-                                        *out.raw_optlen.raw_optlen_val &&
-                     i < len;
-                     i++,
-                     c = (struct cmsghdr *) ((uint8_t *)c +
-                                             c->cmsg_len),
-                     rpc_c++)
+                     CMSG_NEXT(c) <= raw_optval + raw_roptlen &&
+                     CMSG_NEXT(c) >= c &&i < len;
+                     i++, rpc_c++, c = CMSG_NEXT(c))
                 {
                     c->cmsg_level = socklevel_rpc2h(rpc_c->level);
                     c->cmsg_type = sockopt_rpc2h(rpc_c->type);
@@ -1611,7 +1607,9 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                                rpc_c->data.data_len);
                 }
 
-                if (c == NULL && i < len)
+                *raw_optlen = (uint8_t *)c - (uint8_t *)raw_optval;
+
+                if (i < len)
                 {
                     ERROR("Unexpected lack of space in buffer");
                     rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
