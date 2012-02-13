@@ -58,7 +58,7 @@ SLIST_HEAD(sniffl_h_t, tapi_sniff_list_s);
 typedef struct sniffl_h_t sniffl_h_t;
 
 /**
- * Create and start new sniffer on the agent.
+ * Create and start new sniffer.
  * 
  * @param ta            Agent name
  * @param iface         Interface name
@@ -99,7 +99,7 @@ extern te_errno tapi_sniffer_add_mult(const char *ta, const char *iface,
                                       te_bool ofill, sniffl_h_t *snif_h);
 
 /**
- * Stop and destroy the sniffer on the agent.
+ * Stop and destroy the sniffer.
  * 
  * @param id            ID of the sniffer
  *
@@ -109,7 +109,7 @@ extern te_errno tapi_sniffer_add_mult(const char *ta, const char *iface,
 extern te_errno tapi_sniffer_del(tapi_sniffer_id *id);
 
 /**
- * Disable the sniffer on the agent.
+ * Disable the sniffer.
  * 
  * @param id            ID of the sniffer
  *
@@ -119,7 +119,7 @@ extern te_errno tapi_sniffer_del(tapi_sniffer_id *id);
 extern te_errno tapi_sniffer_stop(tapi_sniffer_id *id);
 
 /**
- * Enable the sniffer on the agent.
+ * Enable the sniffer.
  * 
  * @param id            ID of the sniffer
  *

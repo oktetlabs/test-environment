@@ -62,6 +62,7 @@ endif
 
 if CFG_SNIFFERS_SUPPORT
 libconf_a_SOURCES += util/conf_sniffer.c
+libconf_a_SOURCES += util/te_sniffer_proc.c
 endif
 
 if CFG_UNIX_8021X

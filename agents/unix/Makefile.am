@@ -28,7 +28,7 @@ telephony.c power_sw.c
 ta_LDADD = symtbl.o conf/libconf.a rpc/libtarpc.a -lrcfpch -lm \
            -l$(TAD) $(TE_LDADD) \
            -lrpcxdr -lrpc_types -lconf_oid -lloggerta -lrcfpch -ltools \
-           $(EXTRA_LDADD)
+           $(EXTRA_LDADD) -lpcap
 
 CLEANFILES = symtbl.c
 

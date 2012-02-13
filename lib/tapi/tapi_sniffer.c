@@ -176,11 +176,11 @@ tapi_sniffer_add(const char *ta, const char *iface, const char *name,
 {
     tapi_sniffer_id      *newsnid = NULL;
     int                   rc;
-    char                 *sniffname;
+    char                 *snifname;
 
-    sniffer_check_name(ta, iface, name, &sniffname);
-    if (sniffname == NULL)
-        sniffname = strdup(name);
+    sniffer_check_name(ta, iface, name, &snifname);
+    if (snifname == NULL)
+        snifname = strdup(name);
 
     if ((iface == NULL) || (ta == NULL))
     {
@@ -196,7 +196,7 @@ tapi_sniffer_add(const char *ta, const char *iface, const char *name,
     memset(newsnid, 0, sizeof(newsnid));
 
     rc = cfg_add_instance_fmt(NULL, CVT_NONE, NULL, TE_CFG_SNIF_FMT,
-                              ta, iface, sniffname);
+                              ta, iface, snifname);
     if (rc != 0)
     {
         ERROR("Failed to add sniffer");
@@ -205,7 +205,7 @@ tapi_sniffer_add(const char *ta, const char *iface, const char *name,
     }
 
     strncpy(newsnid->ta, ta, CFG_SUBID_MAX);
-    strncpy(newsnid->snifname, sniffname, CFG_SUBID_MAX);
+    strncpy(newsnid->snifname, snifname, CFG_SUBID_MAX);
     strncpy(newsnid->ifname, iface, CFG_SUBID_MAX);
     if (strlen(newsnid->snifname) == 0 || strlen(newsnid->ifname) == 0 ||
         strlen(newsnid->ta) == 0)
@@ -218,7 +218,7 @@ tapi_sniffer_add(const char *ta, const char *iface, const char *name,
     {
         rc = cfg_set_instance_fmt(CFG_VAL(STRING, filter),
                                   TE_CFG_SNIF_FMT "/filter_exp_str:",
-                                  ta, iface, sniffname);
+                                  ta, iface, snifname);
         if (rc != 0)
         {
             ERROR("Failed to change the filter expression to %s", filter);
@@ -230,7 +230,7 @@ tapi_sniffer_add(const char *ta, const char *iface, const char *name,
     {
         rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1), TE_CFG_SNIF_FMT
                                   "/tmp_logs:/overfill_meth:",
-                                  ta, iface, sniffname);
+                                  ta, iface, snifname);
         if (rc != 0)
         {
             ERROR("Failed to change overfill handle method to tail drop");
@@ -244,8 +244,8 @@ tapi_sniffer_add(const char *ta, const char *iface, const char *name,
     return newsnid;
 
 clean_sniffer_add:
-    if (sniffname == NULL)
-        free(sniffname);
+    if (snifname == NULL)
+        free(snifname);
     if (newsnid != NULL)
         free(newsnid);
     return NULL;

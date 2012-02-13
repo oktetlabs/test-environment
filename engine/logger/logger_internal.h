@@ -111,7 +111,7 @@ typedef enum overfill_type {
 typedef struct snif_polling_sets_t {
     char            dir[RCF_MAX_PATH];  /**< Cpature logs directory */
     char            name[RCF_MAX_PATH]; /**< File name template */
-    unsigned        asize;              /**< Max logs cumulative size */
+    unsigned        osize;              /**< Max logs cumulative size */
     unsigned        sn_space;           /**< Max total capture files size
                                              for one sniffer */
     unsigned        fsize;              /**< Max file size for each

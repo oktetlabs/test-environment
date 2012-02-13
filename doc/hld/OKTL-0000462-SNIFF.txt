@@ -358,7 +358,10 @@ Additional command line options for dispatcher.sh should be supported.
 |                             | - %n : sniffer session sequence number         |
 |                             | By default '%a_%i_%s_%n' is used. The pcap     |
 |                             | extension will be added automatically.         |
-| --sniff-log-size=<val>      | Maximum *TEN* side logs cumulative size for one|
+| --sniff-log-osize=<val>     | Maximum *TEN* side logs cumulative size for    |
+|                             | all sniffers, Mb.                              |
+|                             | By default: unlimited.                         |
+| --sniff-log-space=<val>     | Maximum *TEN* side logs cumulative size for one|
 |                             | sniffer in Mb. By default: 256 Mb.             |
 | --sniff-log-fsize=<val>     | Maximum *TEN* side capture file size for each  |
 |                             | sniffer in Mb.                                 |
@@ -780,8 +783,7 @@ below.
 |snif_rotation                  | Rotate logger side temporary logs         |
 |                               | across *x* files for each sniffer.        |
 |snif_overall_size              | Max total files size for all sniffers     |
-|                               | By default: unlimited. (Currently         |
-|                               |  not supported)                           |
+|                               | By default: unlimited.                    |
 |snif_ovefill_meth              | Overfill handle method:                   |
 |                               | 0 - rotation(default)                     |
 |                               | 1 - tail drop.                            |

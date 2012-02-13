@@ -49,7 +49,9 @@ static char *filename;
 
 static struct ipc_server *server = NULL; /**< IPC Server handle */
 
-static const char *cs_cfg_file = NULL;  /**< Configuration file name */
+static const char *cs_cfg_file       = NULL;  /**< Configuration file name*/
+static const char *cs_sniff_cfg_file = NULL;  /**< Configuration file name
+                                                   for sniffer framework */
 
 /** @name Configurator global options */
 #define CS_PRINT_TREES  0x1     /**< Print objects and object instances
@@ -1548,6 +1550,9 @@ process_cmd_line_opts(int argc, char **argv)
           CS_FOREGROUND,
           "Run in foreground (usefull for debugging).", NULL },
 
+        { "sniff-conf", '\0', POPT_ARG_STRING, &cs_sniff_cfg_file, 0,
+          "Auxiliary conf file for the sniffer framework.", NULL },
+
         POPT_AUTOHELP
         POPT_TABLEEND
     };
@@ -1666,6 +1671,13 @@ main(int argc, char **argv)
     if ((rc = parse_config(cs_cfg_file, FALSE)) != 0)
     {
         ERROR("Fatal error during configuration file parsing");
+        goto exit;
+    }
+
+    if (cs_sniff_cfg_file != NULL &&
+        (rc = parse_config(cs_sniff_cfg_file, FALSE)) != 0)
+    {
+        ERROR("Fatal error during sniffer configuration file parsing");
         goto exit;
     }
 

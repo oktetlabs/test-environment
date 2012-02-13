@@ -1,7 +1,7 @@
 /** @file
- * @brief Unix Test Agent sniffers support.
+ * @brief Sniffer process defenition
  *
- * Defenition of unix TA sniffers configuring support.
+ * Defenition of sniffer process function.
  *
  * Copyright (C) 2004-2011 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -27,29 +27,13 @@
  * $Id: 
  */
 
-#ifndef __TE_CONF_SNIFFER_H__
-#define __TE_CONF_SNIFFER_H__
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#ifndef __TE_SNIFFER_PROC_H__
+#define __TE_SNIFFER_PROC_H__
 
 /**
- * Initialize sniffers configuration.
- *
- * @return Status code.
+ * Launch the sniffer process.
  */
-extern te_errno ta_unix_conf_sniffer_init(void);
+extern int 
+te_sniffer_process(int argc, char *argv[]);
 
-/**
- * Cleanup sniffers function.
- *
- * @return Status code.
- */
-extern te_errno ta_unix_conf_sniffer_cleanup(void);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
-
-#endif /* ndef __TE_CONF_SNIFFER_H__ */
+#endif /* ndef __TE_SNIFFER_PROC_H__ */

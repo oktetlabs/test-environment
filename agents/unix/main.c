@@ -563,17 +563,17 @@ rcf_ch_start_process(pid_t *pid,
             logfork_register_user(rtn);
             if (do_exec)
             {
-                const char *argv[16];
+                const char *argv[30];
 
                 /* work around for fork/pthread problem: do exec */
-    
-                if (argc > 12)
+                if (argc > 25)
                 {
                     ERROR("Too many arguments for %s, "
                           "increase constant in %s %d", 
                           __FILE__, __LINE__);
                     return TE_RC(TE_TA_UNIX, TE_E2BIG);
                 }
+                
                 memset(argv, 0, sizeof(argv));
                 argv[0] = ta_execname;
                 argv[1] = "exec";
@@ -631,15 +631,6 @@ rcf_ch_start_process(pid_t *pid,
                 execlp(rtn, rtn, 
                    params[0], params[1], params[2], params[3], params[4], 
                    params[5], params[6], params[7], params[8], params[9],
-                   (const char *)NULL);
-            else if (argc == 25)
-                execlp(rtn, rtn, 
-                   params[0], params[1], params[2], params[3], params[4], 
-                   params[5], params[6], params[7], params[8], params[9], 
-                   params[10], params[11], params[12], params[13],
-                   params[14], params[15], params[16], params[17],
-                   params[18], params[19], params[20], params[21],
-                   params[22], params[23], params[24],
                    (const char *)NULL);
             exit(0);
         }

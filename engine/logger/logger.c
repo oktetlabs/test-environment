@@ -846,7 +846,7 @@ sniffer_polling_sets_start_init(void)
 {
     memset(snifp_sets.dir, 0, RCF_MAX_PATH);
     memset(snifp_sets.name, 0, RCF_MAX_PATH);
-    snifp_sets.asize    = 0;
+    snifp_sets.osize    = 0;
     snifp_sets.sn_space = 0;
     snifp_sets.fsize    = 0;
     snifp_sets.rotation = 0;
@@ -888,7 +888,11 @@ sniffer_polling_sets_cli_init(void)
     if (tmp != NULL)
         strncpy(snifp_sets.name, tmp, RCF_MAX_PATH);
 
-    tmp = getenv("TE_SNIFF_LOG_SIZE");
+    tmp = getenv("TE_SNIFF_LOG_OSIZE");
+    if (tmp != NULL)
+        snifp_sets.osize = (unsigned)atoi(tmp) << 20;
+
+    tmp = getenv("TE_SNIFF_LOG_SPACE");
     if (tmp != NULL)
         snifp_sets.sn_space = (unsigned)atoi(tmp) << 20;
 

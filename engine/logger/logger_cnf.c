@@ -187,7 +187,7 @@ startElementLGR(void           *ctx,
     }
     else if (!strcmp(name, "snif_overall_size"))
     {
-        snifp_sets.asize = (unsigned)strtoul(atts[1], NULL, 0) << 20;
+        snifp_sets.osize = (unsigned)strtoul(atts[1], NULL, 0) << 20;
     }
     else if (!strcmp(name, "snif_ovefill_meth"))
     {

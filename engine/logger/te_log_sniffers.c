@@ -75,6 +75,8 @@
 /* The PCAP file header. */
 static const char pcap_hbuf[SNIF_PCAP_HSIZE];
 
+static unsigned long long filled_space = 0;
+
 /**
  * Capture files list.
  */
@@ -268,8 +270,8 @@ static te_errno
 sniffer_make_file_name(const char *agent, snif_id_l *snif)
 {
     int              len;
-    int              offt_templ;
-    int              offt_buf;
+    unsigned         offt_templ;
+    unsigned         offt_buf;
     char            *templ;
     char            *ptr;
 
@@ -648,12 +650,46 @@ sniffer_capture_file_proc(const char *fname, snif_id_l *snif,
         goto cleanup_snif_fproc;
     }
     snif->id.abs_offset += size;
+    filled_space += size;
 
 cleanup_snif_fproc:
     close(fd_o);
     close(fd_n);
     remove(fname);
     return rc;
+}
+
+/**
+ * Check overall capture files size for all sniffers.
+ * 
+ * @return TRUE if space is overflowed.
+ */
+static te_bool
+sniffer_check_overall_space(unsigned fsize)
+{
+    unsigned long long   total = 0;
+    snif_ta_l           *snif_ta;
+    snif_id_l           *snif;
+    file_list_s         *f;
+    struct stat         st;
+
+    filled_space = 0;
+    /* Calculate used space. */
+    SLIST_FOREACH(snif_ta, &snif_ta_h, ent_l_ta)
+    {
+        SLIST_FOREACH(snif, &snif_ta->snif_hl, ent_l)
+        {
+            SLIST_FOREACH(f, &snif->flist_h, ent_l_f)
+            {
+                if (stat(f->name, &st) == 0)
+                    filled_space += st.st_size;
+            }
+        }
+    }
+
+    if (filled_space + fsize > snifp_sets.osize)
+        return TRUE;
+    return FALSE;
 }
 
 /**
@@ -669,7 +705,8 @@ static te_bool
 sniffer_check_capture_space(snif_id_l *snif, const char *fname,
                             const char * agent)
 {
-    size_t              total = 0;
+    size_t              total    = 0;
+    te_bool             overflow = FALSE;
     struct stat         st;
     int                 res;
     file_list_s        *f;
@@ -707,7 +744,11 @@ sniffer_check_capture_space(snif_id_l *snif, const char *fname,
         SLIST_INSERT_HEAD(&snif->flist_h, f, ent_l_f);
     }
 
-    if (snifp_sets.sn_space == 0)
+    if (snifp_sets.osize > 0 &&
+        filled_space + st.st_size > snifp_sets.osize)
+        overflow = sniffer_check_overall_space(st.st_size);
+
+    if (snifp_sets.sn_space == 0 && overflow == FALSE)
         return TRUE;
 
     total = 0;
@@ -723,12 +764,14 @@ sniffer_check_capture_space(snif_id_l *snif, const char *fname,
     if (stat(fname, &st) == 0)
         total += st.st_size;
 
-    if ((total < snifp_sets.sn_space) &&
+    if (total < snifp_sets.sn_space && overflow == FALSE &&
         ((fnum <= snifp_sets.rotation) || (snifp_sets.rotation == 0)))
         return TRUE;
     if ((snifp_sets.ofill == TAIL_DROP) || (fnum < 2))
         return FALSE;
 
+    if (stat(flast->name, &st) == 0)
+        filled_space -= st.st_size;
     /* Remove the oldest capture file to rotation. */
     remove(flast->name);
     SLIST_REMOVE(&snif->flist_h, flast, file_list_s, ent_l_f);
@@ -773,7 +816,6 @@ ten_get_sniffer_dump(const char *ta_name, snif_id_l *snif)
     rc = rcf_get_sniffer_dump(ta_name, idbuf, fname, &offset);
     if (rc != 0 && rc != TE_RC(TE_RCF_API, TE_ENODATA))
     {
-        
         if (rc != TE_RC(TE_RCF_API, TE_EIPC))
             ERROR("Couldn't get capture file, rc %d", rc);
         return rc;
@@ -783,7 +825,6 @@ ten_get_sniffer_dump(const char *ta_name, snif_id_l *snif)
     if (rc == TE_RC(TE_RCF_API, TE_ENODATA))
         return 0;
 
-    /* FIXME: check missed packets before. */
     snif->id.abs_offset = offset;
 
     rc = 0;

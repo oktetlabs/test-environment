@@ -199,10 +199,10 @@ Generic options:
                                 By default: ${TE_SNIFF_SNAPLEN:+unlimited}.
  --sniff-space=<val>            Add for the sniffer restriction on maximum
                                 overall size of temporary files, Mb.
-                                By default: 64Mb.
+                                By default: 64 Mb.
  --sniff-fsize=<val>            Add for the sniffer restriction on maximum
                                 size of the one temporary file, Mb.
-                                By default: 16Mb.
+                                By default: 16 Mb.
  --sniff-rotation=<x>           Add for the sniffer restriction on number of
                                 temporary files. This option excluded by
                                 the *--sniff-ta-log-ofill-drop* option.
@@ -221,10 +221,14 @@ Generic options:
                                 - %n : sniffer session sequence number
                                 By default '%a_%i_%s_%n' is used. The pcap
                                 extension will be added automatically.
- --sniff-log-size=<val>         Maximum *TEN* side logs cumulative size for one
-                                sniffer, Mb. By default: ${TE_SNIFF_LOG_SIZE} Mb.
- --sniff-log-fsize=<val>        Maximum *TEN* side logs size for one sniffer,
-                                Mb. By default: ${TE_SNIFF_LOG_FSIZE} Mb.
+ --sniff-log-osize=<val>        Maximum *TEN* side logs cumulative size for all
+                                sniffers, Mb.
+                                By default: ${TE_SNIFF_LOG_OSIZE:+unlimited}.
+ --sniff-log-space=<val>        Maximum *TEN* side logs cumulative size for one
+                                sniffer, Mb. By default: ${TE_SNIFF_LOG_SPACE} Mb.
+ --sniff-log-fsize=<val>        Maximum *TEN* side capture file size for each
+                                sniffer in Mb.
+                                By default: ${TE_SNIFF_LOG_FSIZE} Mb.
  --sniff-log-ofill-drop         Change overfill handle method to tail drop.
                                 By default overfill handle method is rotation.
  --sniff-log-period=<val>       Period of taken logs from agents, milliseconds.
@@ -296,7 +300,8 @@ TE_LOG_DIR="${TE_RUN_DIR}"
 TE_SNIFF_DEF_LOG_DIR=
 
 # Sniffer polling setting
-TE_SNIFF_LOG_SIZE=256    # Megabytes
+TE_SNIFF_LOG_OSIZE=0     # Megabytes (unlimited)
+TE_SNIFF_LOG_SPACE=256   # Megabytes
 TE_SNIFF_LOG_NAME=""     # Pattern
 TE_SNIFF_LOG_FSIZE=64    # Megabytes
 TE_SNIFF_LOG_OFILL=0     # Rotation
@@ -435,8 +440,10 @@ process_opts()
 
             --sniff-log-dir=*) TE_SNIFF_LOG_DIR="${1#--sniff-log-dir=}"
                 export TE_SNIFF_LOG_DIR ;;
-            --sniff-log-size=*) TE_SNIFF_LOG_SIZE="${1#--sniff-log-size=}"
-                export TE_SNIFF_LOG_SIZE ;;
+            --sniff-log-osize=*) TE_SNIFF_LOG_OSIZE="${1#--sniff-log-osize=}"
+                export TE_SNIFF_LOG_OSIZE ;;
+            --sniff-log-space=*) TE_SNIFF_LOG_SPACE="${1#--sniff-log-space=}"
+                export TE_SNIFF_LOG_SPACE ;;
             --sniff-log-name=*) TE_SNIFF_LOG_NAME="${1#--sniff-log-name=}"
                 export TE_SNIFF_LOG_NAME ;;
             --sniff-log-fsize=*) TE_SNIFF_LOG_FSIZE="${1#--sniff-log-fsize=}"
@@ -660,6 +667,7 @@ sniffer_make_conf()
     done
 
     echo "</history>" >> "${TE_SNIFF_CSCONF}"
+    CS_OPTS="${CS_OPTS} --sniff-conf=${TE_SNIFF_CSCONF}"
     return 0
 }
 

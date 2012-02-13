@@ -80,6 +80,7 @@
 #include "conf_sniffer.h"
 #include "te_sleep.h"
 #include "te_sniffers.h"
+#include "te_sniffer_proc.h"
 
 #ifndef IF_NAMESIZE
 #define IF_NAMESIZE IFNAMSIZ
@@ -103,7 +104,7 @@
 #define SNIF_ST_DEL   0x04 /* Sniffer was put to the removal */
 
 /** Temporary executable name of the sniffer process */
-#define SNIFFER_EXEC "/tmp/te_sniffer"
+#define SNIFFER_EXEC "te_sniffer_process"
 
 /* Size of a PCAP file header. */
 #define SNIF_PCAP_HSIZE 24
@@ -1127,6 +1128,7 @@ make_argv_str(sniffer_t *sniff, int *s_argc)
     SNIFFER_MALLOC(s_argv, SNIFFER_MAX_ARGS_N * sizeof(char*));
 
     *s_argc = 0;
+    PUSH_ARG(SNIFFER_EXEC);
     PUSH_ARG("-i");
     PUSH_ARG(sniff->id.ifname);
     PUSH_ARG("-s");
@@ -1239,7 +1241,6 @@ sniffer_make_dir(sniffer_t *sniff)
 static te_errno
 sniffer_start_process(sniffer_t *sniff)
 {
-    struct stat st;
     int         s_argc;
     char      **s_argv;
     char       *te_snif_path = SNIFFER_EXEC;
@@ -1249,19 +1250,6 @@ sniffer_start_process(sniffer_t *sniff)
     if (rc != 0)
     {
         ERROR("Couldn't make the sniffer directory.");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-
-    if (stat(te_snif_path, &st) != 0)
-    {
-        ERROR("Couldn't find the sniffer executable file.");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-    if (!(((st.st_mode & S_IFMT) == S_IFREG || 
-         (st.st_mode & S_IFMT) == S_IFLNK) &&
-         (st.st_mode & S_IXUSR)))
-    {
-        ERROR("The sniffer process file can't be executed.");
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
