@@ -390,7 +390,7 @@ cwmp_copy_par_value_list(cwmp_parameter_value_list_t *src)
 
         pval_dst->Name = strdup(pval_src->Name);
         pval_dst->__type = pval_src->__type;
-        switch(pval_dst->__type)
+        switch (pval_dst->__type)
         {
             case SOAP_TYPE_boolean:
                 val_size = sizeof(enum xsd__boolean); break;
@@ -687,7 +687,7 @@ cwmp_name_to_oid(const char *name)
     do {
         loc_label[idx] = strsep(&next_label, ".");
         idx++;
-    } while(next_label != NULL);
+    } while (next_label != NULL);
 
     if (loc_label[idx-1][0] == '\0')
         new_oid->size = idx - 1; /* After last '.' no token, object name */
@@ -867,7 +867,7 @@ snprint_ParamValueStruct(char *buf, size_t len,
         return rest_len;
     }
     p+= used; rest_len -= used;
-    switch(type)
+    switch (type)
     {
         case SOAP_TYPE_string:
         case SOAP_TYPE_SOAP_ENC__base64:

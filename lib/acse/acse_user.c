@@ -258,9 +258,9 @@ acse_cwmp_prepare(const char *acs, const char *cpe,
 
     cwmp_msg.op = fun;
 
-    if (acs)
+    if (acs != NULL)
         strcpy(cwmp_msg.acs, acs);
-    if (cpe)
+    if (cpe != NULL)
         strcpy(cwmp_msg.cpe, cpe);
 
     if (NULL != cwmp_data)
@@ -360,15 +360,17 @@ te_errno
 acse_http_code(const char *acs, const char *cpe,
                int http_code, const char *location)
 {
-    acse_epc_cwmp_data_t *cwmp_data = calloc(1, sizeof(*cwmp_data));
+    acse_epc_cwmp_data_t *cwmp_data;
     size_t loc_len = 1; /* last zero even for empty 'location' */
     te_errno rc = 0;
 
     if (NULL == acs || NULL == cpe)
         return TE_EINVAL;
-    if (NULL != location)
-        loc_len = strlen(location) + 1;
 
+    if (NULL != location)
+        loc_len += strlen(location);
+
+    cwmp_data = calloc(1, sizeof(*cwmp_data) + loc_len);
     cwmp_data->op = EPC_HTTP_RESP;
 
     strcpy(cwmp_data->acs, acs);
@@ -385,6 +387,7 @@ acse_http_code(const char *acs, const char *cpe,
     rc = acse_epc_cwmp_send(epc_user_site, cwmp_data);
 
     free(cwmp_data);
+    cwmp_data = NULL;
 
     if (rc != 0)
     {
@@ -398,7 +401,8 @@ acse_http_code(const char *acs, const char *cpe,
         ERROR("%s(): EPC recv failed %r", __FUNCTION__, rc);
         return TE_RC(TE_TA_ACSE, rc);
     }
-
-    return TE_RC(TE_ACSE, cwmp_data->status);
+    rc = cwmp_data->status;
+    free(cwmp_data);
+    return TE_RC(TE_ACSE, rc);
 }
 

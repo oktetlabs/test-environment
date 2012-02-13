@@ -279,7 +279,7 @@ parse_cwmp_rpc_args(acse_epc_cwmp_data_t *cwmp_data,
 
     assert(cwmp_data != NULL);
 
-    switch(cwmp_data->rpc_cpe)
+    switch (cwmp_data->rpc_cpe)
     {
         case CWMP_RPC_get_rpc_methods:
         case CWMP_RPC_NONE:
@@ -899,7 +899,7 @@ print_rpc_response(acse_epc_cwmp_data_t *cwmp_resp)
 static te_errno
 print_cwmp_response(te_errno status, acse_epc_cwmp_data_t *cwmp_resp)
 {
-    switch(cwmp_resp->op)
+    switch (cwmp_resp->op)
     {
     case EPC_CONN_REQ:
     case EPC_CONN_REQ_CHECK:
@@ -943,7 +943,8 @@ print_cwmp_response(te_errno status, acse_epc_cwmp_data_t *cwmp_resp)
             if (inform->Event != NULL)
             {
                 int i;
-                for(i = 0; i < inform->Event->__size; i++)
+
+                for (i = 0; i < inform->Event->__size; i++)
                 {
                     cwmp__EventStruct *ev =
                         inform->Event->__ptrEventStruct[i];
@@ -1016,7 +1017,7 @@ dummy_init()
     db_add_cpe(acs_def_name, cpe_def_name);
 
     acs = db_find_acs(acs_def_name);
-    cpe = db_find_cpe(acs, acs_def_name, cpe_def_name);
+    cpe = db_find_cpe(acs, cpe_def_name);
 
     acs->port = 8080;
 
@@ -1199,10 +1200,7 @@ main(int argc, const char **argv)
             printf("> "); fflush(stdout);
         }
     }
-    if ((rc = acse_epc_close()) != 0)
-    {
-        ERROR("CLI: EPC close failed %r", rc);
-    }
+    acse_epc_close();
 #ifndef CLI_SINGLE
     acse_main_status = 0;
     waitpid(acse_main_pid, &acse_main_status, 0);

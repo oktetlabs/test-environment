@@ -570,7 +570,7 @@ cwmp_file_type_to_str(cwmp_file_type_t ft)
 {
     static char buf[32];
 
-    switch(ft)
+    switch (ft)
     {
         case CWMP_FIRMWARE:     return "1 Firmware Upgrade Image";
         case CWMP_WEB_CONTENT:  return "2 Web Content";

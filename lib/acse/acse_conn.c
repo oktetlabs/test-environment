@@ -36,7 +36,7 @@
 #endif
 
 #include <stddef.h>
-#include<string.h>
+#include <string.h>
 
 #include "acse_internal.h"
 
@@ -157,23 +157,21 @@ conn_after_poll(void *data, struct pollfd *pfd)
  * Its prototype matches with field #channel_t::destroy.
  *
  * @param data      Channel-specific private data.
- *
- * @return status code.
  */
-te_errno
+void
 conn_destroy(void *data)
 {
     conn_data_t *conn = data;
-    if (conn->acs_number >0)
+
+    if (conn->acs_number > 0)
     {
         WARN("Try to destroy used connection listener");
-        return 0;
+        return;
     }
     close(conn->socket);
     free(conn->addr);
     free(conn->acs_objects);
     free(conn);
-    return 0;
 }
 
 

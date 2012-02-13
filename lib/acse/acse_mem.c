@@ -59,11 +59,15 @@ static size_t heaps_table_size = 0;
 static inline void
 mheap_clear(mheap_t heap)
 {
+    size_t i;
+
     heaps_table[heap].id = MHEAP_NONE;
     heaps_table[heap].first.ptr = NULL;
     heaps_table[heap].first.user_size = 0;
     heaps_table[heap].n_users = 0;
-    memset(heaps_table[heap].users, 0, sizeof(heaps_table[heap].users));
+
+    for (i = 0; i < MHEAP_MAX_USERS; i++)
+        heaps_table[heap].users[i] = NULL;
 }
 
 /** Increase heaps table by @c TABLE_SIZE_BLOCK */
@@ -72,6 +76,7 @@ increase_heaps_table(void)
 {
     size_t i;
     size_t new_size = heaps_table_size + TABLE_SIZE_BLOCK;
+
     heaps_table = realloc(heaps_table, new_size * sizeof(mheap_descr_t));
     for (i = heaps_table_size; i < new_size; i++)
         mheap_clear(i);
@@ -84,8 +89,6 @@ mheap_create(void *user)
 {
     size_t i;
 
-    if (0 == heaps_table_size)
-        increase_heaps_table();
     for (i = 0; i < heaps_table_size; i++)
     {
         if (MHEAP_NONE == heaps_table[i].id)
@@ -104,10 +107,14 @@ mheap_create(void *user)
 int
 mheap_add_user(mheap_t heap, void *user)
 {
-    unsigned i;
+    size_t i;
 
     if (heap >= heaps_table_size || heaps_table[heap].id != heap)
         return -1;
+
+    for (i = 0; i < MHEAP_MAX_USERS; i++)
+        if (user == heaps_table[heap].users[i])
+            return 0;
 
     if (heaps_table[heap].n_users >= MHEAP_MAX_USERS)
         return -1;
@@ -117,7 +124,7 @@ mheap_add_user(mheap_t heap, void *user)
         if (NULL == heaps_table[heap].users[i])
         {
             heaps_table[heap].users[i] = user;
-            heaps_table[heap].n_users ++;
+            heaps_table[heap].n_users++;
             return 0;
         }
     }
@@ -131,8 +138,12 @@ mheap_add_user(mheap_t heap, void *user)
 void
 mheap_free_heap(mheap_t heap)
 {
-    next_block_descr_t bd = heaps_table[heap].first;
+    next_block_descr_t bd;
 
+    if (heap >= heaps_table_size)
+        return;
+
+    bd = heaps_table[heap].first;
     while (NULL != bd.ptr)
     {
         void *ptr = bd.ptr;
@@ -172,7 +183,8 @@ mheap_alloc(mheap_t heap, size_t n)
 void
 mheap_free_user(mheap_t heap, const void *user)
 {
-    unsigned i;
+    size_t i;
+
     if (MHEAP_NONE == heap)
     {
         for (heap = 0; heap < heaps_table_size; heap++)
@@ -188,7 +200,7 @@ mheap_free_user(mheap_t heap, const void *user)
         if (heaps_table[heap].users[i] == user)
         {
             heaps_table[heap].users[i] = NULL;
-            heaps_table[heap].n_users --;
+            heaps_table[heap].n_users--;
 
             if (0 == heaps_table[heap].n_users)
                 mheap_free_heap(heap);

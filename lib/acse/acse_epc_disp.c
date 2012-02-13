@@ -858,16 +858,17 @@ struct config_cpe_item_t {
 te_errno
 config_cpe(acse_epc_config_data_t *cfg_pars)
 {
-    cpe_t  *cpe = db_find_cpe(NULL, cfg_pars->acs, cfg_pars->cpe);
-    unsigned int i;
+    acs_t  *acs;
+    cpe_t  *cpe;
+    size_t  i;
 
-    if (cpe == NULL)
+    acs = db_find_acs(cfg_pars->acs);
+    if (acs == NULL || (cpe = db_find_cpe(acs, cfg_pars->cpe)) == NULL)
         return TE_ENOENT;
 
     VERB("epc_config_cpe, CR URL %s", cpe->url);
 
-    for (i = 0;
-         i < sizeof(cfg_cpe_array)/sizeof(cfg_cpe_array[0]); i++)
+    for (i = 0; i < TE_ARRAY_LEN(cfg_cpe_array); i++)
         if (strcmp(cfg_cpe_array[i].label, cfg_pars->oid) == 0)
             return cfg_cpe_array[i].fun(cpe, cfg_pars);
 
@@ -879,12 +880,12 @@ static te_errno
 config_acs(acse_epc_config_data_t *cfg_pars)
 {
     acs_t  *acs = db_find_acs(cfg_pars->acs);
-    unsigned int i;
+    size_t  i;
 
     if (acs == NULL)
         return TE_ENOENT;
 
-    for (i = 0; i < sizeof(cfg_acs_array)/sizeof(cfg_acs_array[0]); i++)
+    for (i = 0; i < TE_ARRAY_LEN(cfg_acs_array); i++)
         if (strcmp(cfg_acs_array[i].label, cfg_pars->oid) == 0)
             return cfg_acs_array[i].fun(acs, cfg_pars);
 
@@ -937,9 +938,7 @@ acse_epc_config(acse_epc_config_data_t *cfg_pars)
                 return TE_ENOENT;
             if (cfg_pars->op.level == EPC_CFG_ACS)
                 return db_remove_acs(acs_item);
-            if ((cpe_item =
-                    db_find_cpe(acs_item, cfg_pars->acs, cfg_pars->cpe))
-                == NULL)
+            if ((cpe_item = db_find_cpe(acs_item, cfg_pars->cpe)) == NULL)
                 return TE_ENOENT;
             return db_remove_cpe(cpe_item);
 
@@ -948,6 +947,7 @@ acse_epc_config(acse_epc_config_data_t *cfg_pars)
             if (cfg_pars->op.level == EPC_CFG_ACS)
                 return config_acs(cfg_pars);
             return config_cpe(cfg_pars);
+
         case EPC_CFG_LIST:
             VERB("acse_epc_config(): list, level is %d ",
                  (int)cfg_pars->op.level);
@@ -971,12 +971,12 @@ acse_epc_config(acse_epc_config_data_t *cfg_pars)
 static te_errno
 acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
 {
+    acs_t    *acs;
     cpe_t    *cpe;
     te_errno  rc = 0;
 
-
-    cpe = db_find_cpe(NULL, cwmp_pars->acs, cwmp_pars->cpe);
-    if (cpe == NULL)
+    acs = db_find_acs(cwmp_pars->acs);
+    if (acs == NULL || (cpe = db_find_cpe(acs, cwmp_pars->cpe)) == NULL)
     {
         ERROR("EPC op %d fails, '%s':'%s' not found\n",
                cwmp_pars->op, cwmp_pars->acs, cwmp_pars->cpe);
@@ -988,7 +988,7 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
          cwmp_rpc_cpe_string(cwmp_pars->rpc_cpe),
          cpe->url);
 
-    switch(cwmp_pars->op)
+    switch (cwmp_pars->op)
     {
         case EPC_RPC_CALL:
         {
@@ -996,6 +996,7 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
             /* Insert RPC to queue, ACSE will deliver it during first
                established CWMP session with CPE. */
             cpe_rpc_item_t *rpc_item = calloc(1, sizeof(*rpc_item));
+
             rpc_item->params = cwmp_pars;
             rpc_item->request_id = cwmp_pars->request_id =
                                         ++cpe->last_queue_index;
@@ -1242,15 +1243,13 @@ epc_cfg_after_poll(void *data, struct pollfd *pfd)
  * Its prototype matches with field #channel_t::destroy.
  *
  * @param data      Channel-specific private data.
- *
- * @return status code.
  */
-te_errno
+void
 epc_cfg_destroy(void *data)
 {
     UNUSED(data);
     VERB("EPC dispatcher destroy, pid %d\n", getpid());
-    return acse_epc_close();
+    acse_epc_close();
 }
 
 /**
@@ -1346,17 +1345,14 @@ epc_cwmp_after_poll(void *data, struct pollfd *pfd)
  * Its prototype matches with field #channel_t::destroy.
  *
  * @param data      Channel-specific private data.
- *
- * @return status code.
  */
-te_errno
+void
 epc_cwmp_destroy(void *data)
 {
     UNUSED(data);
     /* if we destroy channel for CWMP operations, ACSE should be stopped */
     if (acse_epc_socket() >= 0)
-        return acse_epc_close();
-    return 0;
+        acse_epc_close();
 }
 
 /* see description in acse_internal.h */

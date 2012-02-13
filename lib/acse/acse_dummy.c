@@ -85,7 +85,7 @@ main(int argc, char **argv)
     db_add_cpe("ACS", "cpe-dummy");
 
     acs = db_find_acs("ACS");
-    cpe = db_find_cpe(acs, "ACS", "cpe-dummy");
+    cpe = db_find_cpe(acs, "cpe-dummy");
 
     acs->port = (argc > 1 ? atoi(argv[1]) : 8080);
 
@@ -111,7 +111,7 @@ main(int argc, char **argv)
     acs->auth_mode = ACSE_AUTH_NONE;
 
     db_add_cpe("ACS", "CPE-box");
-    cpe = db_find_cpe(acs, "ACS", "CPE-box");
+    cpe = db_find_cpe(acs, "CPE-box");
 
     cpe->acs_auth.login =
         strdup("000261-Home Gateway-V601L622R1A0-1001742119");

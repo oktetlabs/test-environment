@@ -38,8 +38,8 @@
 #endif
 
 #include <stddef.h>
-#include<string.h>
-#include<assert.h>
+#include <string.h>
+#include <assert.h>
 
 #include "acse_internal.h"
 
@@ -50,6 +50,7 @@
 /** The list of "channels" */
 static LIST_HEAD(channel_list_t, channel_t)
         channel_list = LIST_HEAD_INITIALIZER(&channel_list);
+
 /** Number of channels */
 static int channel_number = 0;
 
@@ -64,7 +65,7 @@ acse_clear_channels(void)
 
     LIST_FOREACH_SAFE(item, &channel_list, links, tmp)
     {
-        (*item->destroy)(item->data);
+        item->destroy(item->data);
         free(item);
     }
     LIST_INIT(&channel_list);
@@ -137,7 +138,7 @@ acse_loop(void)
     atexit(acse_exit_handler);
     /* EPC pipe should be already established */
 
-    while(acse_epc_socket() >= 0)
+    while (acse_epc_socket() >= 0)
     {
         int         r_poll;
         int         i, ch_i;

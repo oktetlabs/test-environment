@@ -53,7 +53,6 @@
 #include "acse_mem.h"
 #include "acse_user.h"
 
-
 #define EPC_MMAP_AREA "/epc_mmap_area"
 #define EPC_MMAP_SIZE (128 * 1024)
 #define EPC_ACSE_SOCK "/tmp/epc_acse_sock"
@@ -62,9 +61,11 @@
 int epc_socket = -1;
 int epc_listen_socket = -1;
 
-void *epc_shmem = NULL;
-size_t epc_shmem_size = 0;
-const char *epc_shmem_name = NULL;
+static void *epc_shmem = NULL;
+static size_t epc_shmem_size = 0;
+#if 0
+static const char *epc_shmem_name = NULL;
+#endif
 
 static char *local_sock_name = NULL;
 static char *remote_sock_name = NULL;
@@ -291,7 +292,7 @@ acse_epc_connect(const char *cfg_sock_name)
     return 0;
 }
 
-te_errno
+void
 acse_epc_close(void)
 {
     if (epc_socket >= 0)
@@ -303,13 +304,14 @@ acse_epc_close(void)
     epc_listen_socket = -1;
 
 #if 0
-    if (epc_shmem_name)
+    if (epc_shmem_name != NULL)
     {
         shm_unlink(epc_shmem_name);
-        free((char *)epc_shmem_name); epc_shmem_name = NULL;
+        free((char *)epc_shmem_name);
+        epc_shmem_name = NULL;
     }
 #endif
-    if (local_sock_name)
+    if (local_sock_name != NULL)
     {
         RING("%s(): EPC pipe name '%s', unlink it",
             __FUNCTION__, local_sock_name);
@@ -319,13 +321,9 @@ acse_epc_close(void)
         local_sock_name = NULL;
     }
 
-    if (remote_sock_name)
-    {
-        /* unlink of the file-system name should be done by the peer */
-        free(remote_sock_name);
-        remote_sock_name = NULL;
-    }
-    return 0;
+    /* unlink of the file-system name should be done by the peer */
+    free(remote_sock_name);
+    remote_sock_name = NULL;
 }
 
 
@@ -388,14 +386,6 @@ acse_epc_socket(void)
     else
         return epc_listen_socket;
 }
-
-void*
-acse_epc_shmem(void)
-{
-    return epc_shmem;
-}
-
-
 
 te_errno
 acse_epc_conf_send(const acse_epc_config_data_t *msg)

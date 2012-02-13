@@ -479,18 +479,12 @@ acse_set(unsigned int gid, char const *oid,
     /* If there is already running ACSE, disconnect. */
     if (strlen(acse_epc_cfg_pipe) > 0)
     {
-        rc = acse_epc_close();
+        acse_epc_close();
         if (strlen(value) > 0)
         {
             WARN("reset ACSE pipe name when it is already connected"
                  " is dangerous, set to empty before");
         }
-    }
-
-    if (rc != 0)
-    {
-        ERROR("acse set failed %r", rc);
-        return rc;
     }
 
     if (strlen(value) > 0)
@@ -501,7 +495,7 @@ acse_set(unsigned int gid, char const *oid,
         {
             ERROR("acse set failed %r", rc);
             return rc;
-        } 
+        }
         strcpy(acse_epc_cfg_pipe, value);
     }
     else

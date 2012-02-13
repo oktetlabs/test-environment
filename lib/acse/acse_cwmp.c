@@ -88,7 +88,7 @@ static int susp_dummy_pipe[2] = {-1, -1};
 
 /**
  * Force stop CWMP session ignoring its current state and
- * protocol semantic, really just close TPC connection and
+ * protocol semantic, really just close TCP connection and
  * accurate free all internal resources.
  */
 static te_errno
@@ -212,7 +212,7 @@ acse_http_get(struct soap *soap)
         }
         soap->count =
         soap->length = snprintf(msgbuf, sizeof(msgbuf),
-                                "<HTML><body>%s</body></HTML>\r\n",
+                                "<html><body>%s</body></html>\r\n",
                                 err_descr);
         session->state = CWMP_CLOSE;
         soap->keep_alive = 0;
@@ -265,8 +265,7 @@ cpe_find_conn_req_url(struct _cwmp__Inform *cwmp__Inform, cpe_t *cpe_item)
         if (strcmp(subname_place,
                    ".ManagementServer.ConnectionRequestURL") == 0)
         {
-            if (cpe_item->url)
-                free((char *)cpe_item->url);
+            free((char *)cpe_item->url); /* const_cast */
             cpe_item->url = strdup(param_v->Value);
             RING("Found new ConnReq URL in Inform: '%s', save it.",
                  param_v->Value);
@@ -401,7 +400,7 @@ acse_cwmp_auth(struct soap *soap, cwmp_session_t *session, cpe_t **cpe)
                     break;
                 }
             }
-            else if (strcmp (soap->passwd, cpe_item->acs_auth.passwd) != 0)
+            else if (strcmp(soap->passwd, cpe_item->acs_auth.passwd) != 0)
             {
                 ERROR("%s: Basic Auth failed passwds differs '%s' != '%s'",
                       __FUNCTION__, soap->passwd,
@@ -500,7 +499,7 @@ __cwmp__GetRPCMethods(struct soap *soap,
             "Inform",
             "TransferComplete",
         };
-    struct MethodList m_list;
+    static struct MethodList m_list;
 
     m_list.__size = sizeof(acs_method_list)/sizeof(acs_method_list[0]);
     m_list.__ptrstring = acs_method_list;
@@ -514,7 +513,7 @@ __cwmp__GetRPCMethods(struct soap *soap,
 }
 
 
-static inline void
+static void
 cwmp_prepare_soap_header(struct soap *soap, cpe_t *cpe)
 {
     if (NULL == soap->header)
@@ -523,9 +522,7 @@ cwmp_prepare_soap_header(struct soap *soap, cpe_t *cpe)
         memset(soap->header, 0, sizeof(*(soap->header)));
     }
 
-
-    if (soap->encodingStyle)
-        soap->encodingStyle = NULL;
+    soap->encodingStyle = NULL;
 
     if (cpe->hold_requests >= 0)
     {
@@ -565,7 +562,7 @@ __cwmp__Inform(struct soap *soap,
     int auth_pass = FALSE;
     cpe_t *cpe_item;
 
-    if(NULL == session)
+    if (NULL == session)
     {
         ERROR("%s(): NULL user pointer in soap!", __FUNCTION__);
         /* TODO: correct processing */
@@ -589,6 +586,7 @@ __cwmp__Inform(struct soap *soap,
     {
         int http_code = session->acs_owner->http_response->http_code;
         char *loc = session->acs_owner->http_response->location;
+
         VERB("ACS '%s': process Inform, HTTP response set, %d, %s",
             session->acs_owner->name, http_code, loc);
 
@@ -680,7 +678,7 @@ __cwmp__TransferComplete(struct soap *soap,
     cwmp_session_t *session = (cwmp_session_t *)soap->user;
     cpe_t *cpe_item;
 
-    if(NULL == session)
+    if (NULL == session)
     {
         ERROR("%s(): NULL user pointer in soap!", __FUNCTION__);
         return 500;
@@ -722,7 +720,7 @@ __cwmp__AutonomousTransferComplete(struct soap *soap,
     cwmp_session_t *session = (cwmp_session_t *)soap->user;
     cpe_t *cpe_item;
 
-    if(NULL == session)
+    if (NULL == session)
     {
         ERROR("%s(): NULL user pointer in soap!", __FUNCTION__);
         return 500;
@@ -846,7 +844,7 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
     cwmp_session_t *cwmp_sess = data;
     assert(cwmp_sess != NULL);
 
-    VERB("Start after serve, sess ptr %p, state %d, SOAP error %d",
+    VERB("Start after poll, sess ptr %p, state %d, SOAP error %d",
           cwmp_sess, cwmp_sess->state, cwmp_sess->m_soap.error);
 
     if (pfd == NULL)
@@ -858,7 +856,7 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
             cwmp_sess->acs_owner ? "(none)":
                                  cwmp_sess->cpe_owner->name);
 
-        switch(cwmp_sess->state)
+        switch (cwmp_sess->state)
         {
             case CWMP_WAIT_AUTH:
             case CWMP_WAIT_RESPONSE:
@@ -881,7 +879,7 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
     if (!(pfd->revents))
         return 0;
 
-    switch(cwmp_sess->state)
+    switch (cwmp_sess->state)
     {
         case CWMP_LISTEN:
         case CWMP_WAIT_AUTH:
@@ -934,6 +932,7 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
             {
                 char buf[1024];
                 size_t r;
+
                 r = cwmp_sess->orig_frecv(&(cwmp_sess->m_soap), buf,
                                           sizeof(buf));
                 if (r == 0)
@@ -953,6 +952,7 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
             else
             {
                 int saved_errno = errno;
+
                 ERROR("Unexpected PENDING, CPE %s, revents 0x%x, errno %d",
                      cwmp_sess->cpe_owner->name, (int)pfd->revents,
                      saved_errno);
@@ -978,15 +978,13 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
  * Its prototype matches with field #channel_t::destroy.
  *
  * @param data      Channel-specific private data.
- *
- * @return status code.
  */
-te_errno
+void
 cwmp_destroy(void *data)
 {
     cwmp_session_t *cwmp_sess = data;
 
-    return cwmp_close_session(cwmp_sess);
+    cwmp_close_session(cwmp_sess);
 }
 
 
@@ -1013,12 +1011,13 @@ cwmp_accept_cpe_connection(acs_t *acs, int socket)
         char *req_url_p;
 
         len = recv(socket, buf, len, MSG_PEEK);
-        buf[len]=0;
+        buf[len] = '\0';
         VERB("cwmp_accept_cpe_conn(): peeked msg buf: '%s'", buf);
         if (strncmp(buf, "POST ", 5) &&
             (is_not_get = strncmp(buf, "GET ", 4)))
             return TE_ECONNREFUSED; /* It is not POST or GET request */
-        req_url_p = buf + 4; while(isspace(*req_url_p)) req_url_p++;
+        req_url_p = buf + 4;
+        while (isspace(*req_url_p)) req_url_p++;
 
         /* without any URL specified we accept all connections */
         if (acs->url != NULL &&
@@ -1313,7 +1312,7 @@ cwmp_new_session(int socket, acs_t *acs)
     return 0;
 }
 
-te_errno
+void
 cwmp_close_session(cwmp_session_t *sess)
 {
     assert(NULL != sess);
@@ -1349,8 +1348,6 @@ cwmp_close_session(cwmp_session_t *sess)
         sess->cpe_owner->session = NULL;
 
     free(sess);
-
-    return 0;
 }
 
 /**
@@ -1437,6 +1434,7 @@ acse_enable_acs(acs_t *acs)
 
     if (acs == NULL || acs->port == 0)
         return TE_EINVAL;
+
     sin = malloc(sizeof(struct sockaddr_in));
     sin->sin_family = AF_INET;
 
@@ -1494,7 +1492,7 @@ acse_soap_default_req(struct soap *soap, acse_epc_cwmp_data_t *request)
     if (request->to_cpe.p != NULL)
         return;
 
-    switch(request->rpc_cpe)
+    switch (request->rpc_cpe)
     {
 #define SOAP_DEF_INIT_GEN(_r, _f, _t) \
         case CWMP_RPC_##_r : \
@@ -1537,7 +1535,7 @@ acse_soap_default_req(struct soap *soap, acse_epc_cwmp_data_t *request)
 int
 acse_soap_put_cwmp(struct soap *soap, acse_epc_cwmp_data_t *request)
 {
-    switch(request->rpc_cpe)
+    switch (request->rpc_cpe)
     {
 #define SOAP_PUT_CWMP_GEN(_r, _f, _t) \
         case CWMP_RPC_##_r : \
@@ -1641,7 +1639,7 @@ acse_soap_put_cwmp(struct soap *soap, acse_epc_cwmp_data_t *request)
 int
 acse_soap_serialize_cwmp(struct soap *soap, acse_epc_cwmp_data_t *request)
 {
-    switch(request->rpc_cpe)
+    switch (request->rpc_cpe)
     {
 #define SOAP_SER_CWMP_GEN(_r, _f, _t) \
         case CWMP_RPC_##_r : \
@@ -1794,8 +1792,9 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
 
     request = rpc_item->params;
 
-    INFO("%s(): Try send RPC for '%s', rpc type %d, id %u ",
-         __FUNCTION__, cpe->name, request->rpc_cpe, request->request_id);
+    INFO("%s(): Sending RPC %s to CPE '%s', id %u",
+         __FUNCTION__, cwmp_rpc_cpe_string(request->rpc_cpe),
+         cpe->name, request->request_id);
 
     cwmp_prepare_soap_header(soap, cpe);
     acse_soap_default_req(soap, request);
@@ -1838,8 +1837,8 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
     }
     session->state = CWMP_WAIT_RESPONSE;
     gettimeofday(&(session->last_sent), NULL);
-    VERB("%s():%d set last_sent %d.%d",
-         __FUNCTION__, __LINE__,
+    VERB("%s(): RPC %s sent, set last_sent to %d.%d",
+         __FUNCTION__, cwmp_rpc_cpe_string(request->rpc_cpe),
          (int)session->last_sent.tv_sec,
          (int)session->last_sent.tv_usec);
 
@@ -1862,6 +1861,7 @@ acse_cwmp_send_http(struct soap *soap, cwmp_session_t *session,
     if (NULL != str)
     {
         size_t sz = strlen(str);
+
         if (sz >= sizeof(soap->endpoint))
         {
             WARN("gSOAP cannot process location with length %u", sz);
@@ -1943,7 +1943,7 @@ acse_cwmp_empty_post(struct soap* soap)
 /**
  * Get SOAP response into our internal structs.
  */
-int
+static int
 acse_soap_get_response(struct soap *soap, acse_epc_cwmp_data_t *request)
 {
 #define SOAP_GET_RESPONSE(_rpc_name, _leaf) \
@@ -2017,9 +2017,13 @@ void
 acse_soap_serve_response(cwmp_session_t *cwmp_sess)
 {
     struct soap *soap = &(cwmp_sess->m_soap);
-    acse_epc_cwmp_data_t *request = cwmp_sess->rpc_item->params;
-    VERB("Start of serve reponse: processed rpc_item: %p",
-           cwmp_sess->rpc_item);
+    acse_epc_cwmp_data_t *request;
+
+    assert(cwmp_sess->state == CWMP_WAIT_RESPONSE);
+    assert(cwmp_sess->rpc_item != NULL);
+
+    VERB("%s: processed rpc_item: %p", __FUNCTION__, cwmp_sess->rpc_item);
+    request = cwmp_sess->rpc_item->params;
 
     cwmp_sess->last_sent.tv_sec = 0;
 
@@ -2034,11 +2038,10 @@ acse_soap_serve_response(cwmp_session_t *cwmp_sess)
         ERROR("serve CWMP resp, soap err %d", soap->error);
         return; /* TODO: study, do soap_closesock() here ??? */
     }
-
     if (!soap_getfault(soap))
     {
         soap_print_fault(soap, stderr);
-        if(soap->fault && soap->fault->detail)
+        if (soap->fault && soap->fault->detail)
         {
             RING("%s(): fault SOAP type %d.", __FUNCTION__,
                  soap->fault->detail->__type);
@@ -2074,9 +2077,9 @@ acse_soap_serve_response(cwmp_session_t *cwmp_sess)
         return;
     }
 
-    VERB("End of serve reponse: first rpc_item in queue: %p\n",
-            TAILQ_FIRST(&(cwmp_sess->cpe_owner->rpc_queue)));
-    acse_cwmp_send_rpc(soap, cwmp_sess);
+    VERB("End of serve response: received %s, next rpc_item in queue: %p\n",
+         cwmp_rpc_cpe_string(request->rpc_cpe),
+         TAILQ_FIRST(&(cwmp_sess->cpe_owner->rpc_queue)));
 }
 
 
@@ -2092,10 +2095,10 @@ acse_cwmp_malloc(struct soap *soap, size_t n)
     if (NULL == soap)
         return NULL;
 
-    if (NULL == soap->user)
+    session = (cwmp_session_t *)soap->user;
+    if (NULL == session)
         return SOAP_MALLOC(soap, n);
 
-    session = (cwmp_session_t *)soap->user;
     if (NULL == session->rpc_item)
         heap = session->def_heap;
     else

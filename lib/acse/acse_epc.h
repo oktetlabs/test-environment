@@ -293,7 +293,7 @@ extern te_errno acse_epc_connect(const char *cfg_sock_name);
 /**
  * Close EPC Config connection from TA to ACSE.
  */
-extern te_errno acse_epc_close(void);
+extern void acse_epc_close(void);
 
 /**
  * Return EPC message socket fd for poll().

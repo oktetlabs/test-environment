@@ -172,10 +172,8 @@ conn_req_after_poll(void *data, struct pollfd *pfd)
  * Its prototype matches with field #channel_t::destroy.
  *
  * @param data      Channel-specific private data.
- *
- * @return status code.
  */
-te_errno
+void
 conn_req_destroy(void *data)
 {
     conn_req_t *conn_req = data;
@@ -183,7 +181,6 @@ conn_req_destroy(void *data)
     soap_end(&(conn_req->m_soap));
     soap_done(&(conn_req->m_soap));
     free(conn_req);
-    return 0;
 }
 
 

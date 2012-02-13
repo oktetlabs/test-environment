@@ -36,7 +36,7 @@
 #endif
 
 #include <stddef.h>
-#include<string.h>
+#include <string.h>
 
 #include "acse_internal.h"
 
@@ -57,7 +57,7 @@ acs_list_t acs_list = LIST_HEAD_INITIALIZER(&acs_list);
  *
  * @return              status code
  */
-extern te_errno
+te_errno
 db_add_acs(const char *acs_name)
 {
     acs_t *acs_item;
@@ -94,7 +94,7 @@ db_add_acs(const char *acs_name)
  *
  * @return              status code
  */
-extern te_errno
+te_errno
 db_add_cpe(const char *acs_name, const char *cpe_name)
 {
     acs_t *acs_item;
@@ -107,7 +107,7 @@ db_add_cpe(const char *acs_name, const char *cpe_name)
     if ((acs_item = db_find_acs(acs_name)) == NULL)
         return TE_RC(TE_ACSE, TE_ENOENT);
 
-    if ((cpe_item = db_find_cpe(acs_item, acs_name, cpe_name)) != NULL)
+    if ((cpe_item = db_find_cpe(acs_item, cpe_name)) != NULL)
         return TE_RC(TE_ACSE, TE_EEXIST);
 
     if ((cpe_item = malloc(sizeof(*cpe_item))) == NULL)
@@ -131,7 +131,7 @@ db_add_cpe(const char *acs_name, const char *cpe_name)
 }
 
 /* see description in acse_internal.h */
-extern acs_t *
+acs_t *
 db_find_acs(const char *acs_name)
 {
     acs_t *item;
@@ -146,19 +146,10 @@ db_find_acs(const char *acs_name)
 }
 
 /* see description in acse_internal.h */
-extern cpe_t *
-db_find_cpe(acs_t *acs_item, const char *acs_name, const char *cpe_name)
+cpe_t *
+db_find_cpe(acs_t *acs_item, const char *cpe_name)
 {
     cpe_t *cpe_item;
-
-    if (acs_item == NULL)
-    {
-        LIST_FOREACH(acs_item, &acs_list, links)
-        {
-            if (strcmp(acs_item->name, acs_name) == 0)
-                break;
-        }
-    }
 
     if (acs_item != NULL)
     {
@@ -176,7 +167,7 @@ db_find_cpe(acs_t *acs_item, const char *acs_name, const char *cpe_name)
 te_errno
 db_remove_acs(acs_t *acs)
 {
-    if (!acs)
+    if (acs == NULL)
         return TE_EINVAL;
 
     if (acs->conn_listen != NULL)
@@ -188,17 +179,10 @@ db_remove_acs(acs_t *acs)
          acs->name, acs, acs->session);
     if (acs->session != NULL)
     {
-        te_errno rc = 0;
         if (acs->session->channel != NULL)
             acse_remove_channel(acs->session->channel);
         if (acs->session != NULL)
-            rc = cwmp_close_session(acs->session);
-        if (rc != 0)
-        {
-            ERROR("Close CWMP session for ACS '%s' failed %r",
-                  acs->name, rc);
-            return rc;
-        }
+            cwmp_close_session(acs->session);
         acs->session = NULL;
     }
     while (! (LIST_EMPTY(&acs->cpe_list)))
@@ -222,6 +206,7 @@ db_clear_cpe(cpe_t *cpe)
 {
     if (NULL == cpe)
         return TE_EINVAL;
+
     while (!(LIST_EMPTY(&cpe->inform_list)))
     {
         cpe_inform_t *inf_rec = LIST_FIRST(&cpe->inform_list);
@@ -251,6 +236,7 @@ db_remove_cpe(cpe_t *cpe)
 {
     if (NULL == cpe)
         return TE_EINVAL;
+
     if (NULL == cpe->acs)
     {
         ERROR("No acs ptr in CPE");
@@ -295,19 +281,20 @@ acse_rpc_item_free(cpe_rpc_item_t *rpc_item)
 
 
 te_errno
-db_clear()
+db_clear(void)
 {
-    while(!LIST_EMPTY(&acs_list))
+    while (!LIST_EMPTY(&acs_list))
     {
         acs_t *acs = LIST_FIRST(&acs_list);
         acse_disable_acs(acs);
         LIST_REMOVE(acs, links);
 
-        while(!LIST_EMPTY(&(acs->cpe_list)))
+        while (!LIST_EMPTY(&(acs->cpe_list)))
         {
             cpe_t *cpe = LIST_FIRST(&(acs->cpe_list));
             db_remove_cpe(cpe);
         }
+        free(acs);
     }
     return 0;
 }

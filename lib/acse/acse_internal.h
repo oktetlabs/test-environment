@@ -150,7 +150,7 @@ typedef struct cpe_inform_t {
 } cpe_inform_t;
 
 /** CPE record */
-typedef struct cpe_t{
+typedef struct cpe_t {
     /** Fields for internal data integrity. */
     LIST_ENTRY(cpe_t)  links;   /**< List links */
     struct acs_t      *acs;     /**< ACS, managing this CPE  */
@@ -289,7 +289,7 @@ typedef struct channel_t {
         );    /**< Called after poll(), should process detected event.
                   Return code TE_ENOTCONN denote that underlying
                   connection is closed and channel should be finished. */
-    te_errno  (*destroy)(
+    void      (*destroy)(
         void   *data);          /**< Called on channel destroy    */
 } channel_t;
 
@@ -387,10 +387,8 @@ extern te_errno cwmp_new_session(int socket, acs_t *acs);
  *
  * Note: passed pointer to session struct is not valid after
  * return from this function!
- *
- * @return   status code
  */
-extern te_errno cwmp_close_session(cwmp_session_t *sess);
+extern void cwmp_close_session(cwmp_session_t *sess);
 
 
 
@@ -449,16 +447,12 @@ extern acs_t *db_find_acs(const char *acs_name);
 /**
  * Find a cpe instance from the cpe list of an acs instance
  *
- * @param acs_item      ACS object ptr, if already found, or NULL;
- * @param acs_name      Name of the acs instance;
+ * @param acs_item      ACS object ptr
  * @param cpe_name      Name of the cpe instance.
  *
  * @return              CPE instance address or NULL if not found
  */
-extern cpe_t *db_find_cpe(acs_t *acs_item,
-                          const char *acs_name,
-                          const char *cpe_name);
-
+extern cpe_t *db_find_cpe(acs_t *acs_item, const char *cpe_name);
 
 /**
  * Remove a ACS object
@@ -492,7 +486,7 @@ extern te_errno db_clear_cpe(cpe_t *cpe_item);
  *
  * @return              status code
  */
-extern te_errno db_clear();
+extern te_errno db_clear(void);
 
 /**
  * Init TCP Listener dispatcher (named 'conn' - by old style. to be fixed).
