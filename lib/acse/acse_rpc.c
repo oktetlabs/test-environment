@@ -373,7 +373,9 @@ cwmp_op_check(tarpc_cwmp_op_check_in *in,
 
     INFO("cwmp_op_check No %d (for rpc %s) to %s/%s called;",
          (int)in->request_id,
-         cwmp_rpc_cpe_string(in->cwmp_rpc), in->acs_name, in->cpe_name);
+         (in->request_id == 0 ? cwmp_rpc_acs_string(in->cwmp_rpc) :
+                                cwmp_rpc_cpe_string(in->cwmp_rpc)),
+         in->acs_name, in->cpe_name);
 
     rc = acse_cwmp_prepare(in->acs_name, in->cpe_name,
                            EPC_RPC_CHECK, &cwmp_data);
