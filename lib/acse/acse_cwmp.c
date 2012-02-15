@@ -2080,10 +2080,9 @@ acse_soap_serve_response(cwmp_session_t *cwmp_sess)
     VERB("End of serve response: received %s, next rpc_item in queue: %p\n",
          cwmp_rpc_cpe_string(request->rpc_cpe),
          TAILQ_FIRST(&(cwmp_sess->cpe_owner->rpc_queue)));
+
+    acse_cwmp_send_rpc(soap, cwmp_sess);
 }
-
-
-
 
 /* See description in acse_internal.h */
 void *
