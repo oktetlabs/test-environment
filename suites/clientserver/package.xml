@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package version="1.0">
+    <description>Sniffer framework test</description>
+    <author mailto="Andrey.Dmitrov@oktetlabs.ru"/>
+    <session track_conf="silent">
+        <run>
+            <script name="clientserver"/>
+            <arg name="env">
+                <value>{
+                    {{'pco_srv':IUT},addr:'srv_addr':inet:unicast,if:'srv_if'},
+                    {{'pco_clnt':tester},addr:'clnt_addr':inet:unicast,if:'clnt_if'}
+                }</value>
+            </arg>
+        </run>
+    </session>
+</package>
