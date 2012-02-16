@@ -903,11 +903,56 @@ void
 proc_chars(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
            const rgt_xmlChar *ch, size_t len)
 {
-    FILE *fd = ((depth_ctx_user_t *)depth_ctx->user_data)->fd;
+    FILE       *fd = ((depth_ctx_user_t *)depth_ctx->user_data)->fd;
+#if (defined WITH_LIBXML) && LIBXML_VERSION >= 20700
+    const char        *entity = NULL;
+    const rgt_xmlChar *p, *ch_begin, *ch_end;
+#endif
 
     UNUSED(ctx);
+    TE_COMPILE_TIME_ASSERT(sizeof(rgt_xmlChar) == 1);
 
+#if (defined WITH_LIBXML) && LIBXML_VERSION >= 20700
+    /* libxml2 has a function xmlEncodeSpecialChars() for such a
+       transformation but that function allocates each time new buffer
+       in memory and copies converted string to it.
+     */
+    ch_begin = ch;
+    ch_end = ch + len;
+    for (p = ch; p < ch_end; p++)
+    {
+        switch (*p)
+        {
+            case '&':
+                entity = "&amp;";
+                break;
+
+            case '<':
+                entity = "&lt;";
+                break;
+
+            case '>':
+                entity = "&gt;";
+                break;
+
+            default:
+                break;
+        }
+        if (entity != NULL)
+        {
+            if (p > ch_begin)
+                fwrite(ch_begin, p - ch_begin, 1, fd);
+
+            fwrite(entity, strlen(entity), 1, fd);
+            ch_begin = p + 1;
+            entity = NULL;
+        }
+    }
+    if (p > ch_begin)
+        fwrite(ch_begin, p - ch_begin, 1, fd);
+#else
     fwrite(ch, len, 1, fd);
+#endif
 }
 
 te_bool
