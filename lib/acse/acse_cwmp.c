@@ -842,6 +842,7 @@ te_errno
 cwmp_after_poll(void *data, struct pollfd *pfd)
 {
     cwmp_session_t *cwmp_sess = data;
+    te_errno rc = 0;
     assert(cwmp_sess != NULL);
 
     VERB("Start after poll, sess ptr %p, state %d, SOAP error %d",
@@ -910,7 +911,7 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
 
         case CWMP_WAIT_RESPONSE:
             /* Now, after poll() on soap socket, it should not block */
-            acse_soap_serve_response(cwmp_sess);
+            rc = acse_soap_serve_response(cwmp_sess);
             if (cwmp_sess->m_soap.error == SOAP_EOF)
             {
                 VERB("after serve %s %s/%s(sess ptr %p, state %d): EOF",
@@ -969,7 +970,7 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
             break;
     }
 
-    return 0;
+    return rc;
 }
 
 
@@ -1939,23 +1940,87 @@ acse_cwmp_empty_post(struct soap* soap)
     return acse_cwmp_send_rpc(soap, session);
 }
 
+/**
+ * Check for type of SOAP RPC in incoming buffer.
+ */
+static te_cwmp_rpc_cpe_t
+acse_soap_get_response_rpc_id(struct soap *soap)
+{
+    soap_peek_element(soap);
+
+    if (soap_match_tag(soap, soap->tag, "SOAP-ENV:Fault") == 0)
+        return CWMP_RPC_FAULT;
+
+#define SOAP_MATCH_RESPONSE(_rpc_name, _id) \
+    do {                                                                \
+        if (soap_match_tag(soap, soap->tag,                             \
+                           "cwmp:" #_rpc_name "Response" ) == 0)        \
+            return CWMP_RPC_ ## _id;                                    \
+    } while (0)
+
+    SOAP_MATCH_RESPONSE(GetRPCMethods, get_rpc_methods);
+    SOAP_MATCH_RESPONSE(SetParameterValues, set_parameter_values);
+    SOAP_MATCH_RESPONSE(GetParameterValues, get_parameter_values);
+    SOAP_MATCH_RESPONSE(GetParameterNames, get_parameter_names);
+    SOAP_MATCH_RESPONSE(SetParameterAttributes, set_parameter_attributes);
+    SOAP_MATCH_RESPONSE(GetParameterAttributes, get_parameter_attributes);
+    SOAP_MATCH_RESPONSE(AddObject, add_object);
+    SOAP_MATCH_RESPONSE(DeleteObject, delete_object);
+    SOAP_MATCH_RESPONSE(Reboot, reboot);
+    SOAP_MATCH_RESPONSE(Download, download);
+    SOAP_MATCH_RESPONSE(Upload, upload);
+    SOAP_MATCH_RESPONSE(FactoryReset, factory_reset);
+    SOAP_MATCH_RESPONSE(GetQueuedTransfers, get_queued_transfers);
+    SOAP_MATCH_RESPONSE(GetAllQueuedTransfers, get_all_queued_transfers);
+    SOAP_MATCH_RESPONSE(ScheduleInform, schedule_inform);
+    SOAP_MATCH_RESPONSE(SetVouchers, set_vouchers);
+    SOAP_MATCH_RESPONSE(GetOptions, get_options);
+#undef SOAP_MATCH_RESPONSE
+
+    return CWMP_RPC_NONE;
+}
+
 
 /**
  * Get SOAP response into our internal structs.
  */
-static int
+static te_errno
 acse_soap_get_response(struct soap *soap, acse_epc_cwmp_data_t *request)
 {
+    te_cwmp_rpc_cpe_t received_rpc;
+    te_errno rc = 0;
+
 #define SOAP_GET_RESPONSE(_rpc_name, _leaf) \
-    do { \
-            _cwmp__ ##_rpc_name *resp = soap_malloc(soap, sizeof(*resp)); \
-            soap_default__cwmp__ ## _rpc_name(soap, resp);                \
-            soap_get__cwmp__ ## _rpc_name(soap, resp,                     \
-                                          "cwmp:" #_rpc_name , "");       \
-            request->from_cpe. _leaf = resp;                              \
+    do {                                                                   \
+            _cwmp__ ##_rpc_name *resp = soap_malloc(soap, sizeof(*resp));  \
+                                                                           \
+            soap_default__cwmp__ ## _rpc_name(soap, resp);                 \
+            request->from_cpe. _leaf =                                     \
+                soap_get__cwmp__ ## _rpc_name(soap, resp,                  \
+                                              "cwmp:" #_rpc_name , "");    \
+            if (request->from_cpe. _leaf == NULL)                          \
+                rc = TE_GSOAP_ERROR;                                       \
     } while(0)
 
-    switch (request->rpc_cpe)
+    assert(request != NULL);
+
+    if (soap_envelope_begin_in(soap) != 0 ||
+        soap_recv_header(soap) != 0 ||
+        soap_body_begin_in(soap) != 0)
+    {
+        return TE_GSOAP_ERROR;
+    }
+    received_rpc = acse_soap_get_response_rpc_id(soap);
+
+    if (received_rpc != CWMP_RPC_FAULT && received_rpc != request->rpc_cpe)
+    {
+        ERROR("Received RPC '%s' while expecting %sResponse",
+              soap->tag, cwmp_rpc_cpe_string(request->rpc_cpe));
+        request->rpc_cpe = CWMP_RPC_NONE;
+        request->from_cpe.p = NULL;
+        return TE_EFAIL;
+    }
+    switch (received_rpc)
     {
         case CWMP_RPC_get_rpc_methods:
             SOAP_GET_RESPONSE(GetRPCMethodsResponse, get_rpc_methods_r);
@@ -2005,19 +2070,59 @@ acse_soap_get_response(struct soap *soap, acse_epc_cwmp_data_t *request)
         case CWMP_RPC_get_options:
             /* TODO */
             RING("TODO receive RPC resp with code %d", request->rpc_cpe);
-        default:
+            return TE_EOPNOTSUPP;
             break;
+        case CWMP_RPC_NONE:
+            assert(0);
+            break;
+        case CWMP_RPC_FAULT:
+        {
+            _cwmp__Fault *c_fault;
+
+            if (soap_getfault(soap) != 0)
+                return TE_GSOAP_ERROR;
+
+            /* soap_print_fault(soap, stderr); */
+            if (soap->fault->detail == NULL)
+            {
+                ERROR("%s: SOAP fault does not have 'detail' element",
+                      __FUNCTION__);
+                return TE_EFAIL;
+            }
+            RING("%s(): fault SOAP type %d.", __FUNCTION__,
+                 soap->fault->detail->__type);
+            if (SOAP_TYPE__cwmp__Fault != soap->fault->detail->__type)
+            {
+                ERROR("%s: SOAP fault does not have 'cwmp:Fault' element",
+                      __FUNCTION__);
+                return TE_EFAIL;
+            }
+            c_fault = soap->fault->detail->fault;
+            WARN("CWMP fault received %s (%s), SetParameterValuesFaults %d",
+                 c_fault->FaultCode, c_fault->FaultString,
+                 c_fault->__sizeSetParameterValuesFault);
+
+            request->from_cpe.fault = c_fault;
+            request->rpc_cpe = CWMP_RPC_FAULT;
+            break;
+        }
     }
 #undef SOAP_GET_RESPONSE
-    return 0;
+    if (soap_body_end_in(soap) != 0 ||
+        soap_envelope_end_in(soap) != 0)
+    {
+        return TE_GSOAP_ERROR;
+    }
+    return rc;
 }
 
 /* See description in acse_internal.h */
-void
+te_errno
 acse_soap_serve_response(cwmp_session_t *cwmp_sess)
 {
     struct soap *soap = &(cwmp_sess->m_soap);
     acse_epc_cwmp_data_t *request;
+    te_errno rc = 0;
 
     assert(cwmp_sess->state == CWMP_WAIT_RESPONSE);
     assert(cwmp_sess->rpc_item != NULL);
@@ -2030,58 +2135,54 @@ acse_soap_serve_response(cwmp_session_t *cwmp_sess)
     /* This function works in state WAIT_RESPONSE, when CWMP session
        is already associated with particular CPE. */
 
-    if (soap_begin_recv(soap)
-         || soap_envelope_begin_in(soap)
-         || soap_recv_header(soap)
-         || soap_body_begin_in(soap))
+    if (soap_begin_recv(soap) != 0)
     {
-        ERROR("serve CWMP resp, soap err %d", soap->error);
-        return; /* TODO: study, do soap_closesock() here ??? */
-    }
-    if (!soap_getfault(soap))
-    {
-        soap_print_fault(soap, stderr);
-        if (soap->fault && soap->fault->detail)
-        {
-            RING("%s(): fault SOAP type %d.", __FUNCTION__,
-                 soap->fault->detail->__type);
-            if (SOAP_TYPE__cwmp__Fault == soap->fault->detail->__type)
-            {
-                _cwmp__Fault *c_fault = soap->fault->detail->fault;
-                WARN("CWMP fault received %s (%s), size %d",
-                    c_fault->FaultCode, c_fault->FaultString,
-                    c_fault->__sizeSetParameterValuesFault);
-                request->from_cpe.fault = c_fault;
-                request->rpc_cpe = CWMP_RPC_FAULT;
-            }
-        }
-        WARN("%s(): Fault received '%s'",
-                __FUNCTION__, *(soap_faultdetail(soap)));
-        /* do not return here, we have to continue normal CWMP session.*/
+        /* TODO: If connection is lost, wait for response
+           in the next connection */
+        /* TODO: if connection is broken after part of HTTP received,
+           close the session (?) */
+        WARN("%s: soap_begin_recv returns %d", __FUNCTION__, soap->error);
+        rc = TE_EFAIL;
     }
     else
-        acse_soap_get_response(soap, request);
-
-    cwmp_sess->rpc_item = NULL; /* It is already processed. */
-
-    if (soap->error)
     {
-        ERROR("Fail get SOAP response, error %d", soap->error);
-        return;
-    }
-    if (soap_body_end_in(soap)
-         || soap_envelope_end_in(soap)
-         || soap_end_recv(soap))
-    {
-        ERROR("after get SOAP body, error %d", soap->error);
-        return;
+        if ((rc = acse_soap_get_response(soap, request)) != 0)
+        {
+            if (rc == TE_GSOAP_ERROR)
+            {
+                const char **descr = soap_faultstring(soap);
+
+                soap_set_fault(soap);
+                ERROR("%s: RPC %s: GSOAP error %d: %s",
+                      __FUNCTION__, cwmp_rpc_cpe_string(request->rpc_cpe),
+                      soap->error, (descr != NULL && *descr != NULL) ?
+                      *descr : "[no description]"
+                     );
+            }
+            request->rpc_cpe = CWMP_RPC_NONE;
+            request->from_cpe.p = NULL;
+        }
+        cwmp_sess->rpc_item = NULL; /* It is already processed. */
+        soap_end_recv(soap);
     }
 
+    if (soap->error == SOAP_EOF)
+        return TE_ENOTCONN;
+
+    if (rc != 0)
+    {
+        /* Terminate CWMP session unexpectedly */
+        acse_cwmp_send_http(soap, cwmp_sess, 400, NULL);
+        return TE_ENOTCONN;
+    }
+
+    /* Continue CWMP session */
     VERB("End of serve response: received %s, next rpc_item in queue: %p\n",
          cwmp_rpc_cpe_string(request->rpc_cpe),
          TAILQ_FIRST(&(cwmp_sess->cpe_owner->rpc_queue)));
 
     acse_cwmp_send_rpc(soap, cwmp_sess);
+    return 0;
 }
 
 /* See description in acse_internal.h */

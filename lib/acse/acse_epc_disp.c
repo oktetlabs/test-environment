@@ -1022,8 +1022,9 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
         {
             cpe_rpc_item_t *rpc_item;
             void *result = NULL;
+            te_bool is_cpe_response = (0 != cwmp_pars->request_id);
 
-            if (0 == cwmp_pars->request_id && 0 == cwmp_pars->rpc_acs)
+            if (!is_cpe_response && 0 == cwmp_pars->rpc_acs)
                 return TE_EINVAL;
 
             TAILQ_FOREACH(rpc_item, &cpe->rpc_queue, links)
@@ -1055,7 +1056,13 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
             cwmp_pars->rpc_cpe = rpc_item->params->rpc_cpe;
             cwmp_pars->request_id = rpc_item->params->request_id;
 
-            if ((result = rpc_item->params->from_cpe.p) == NULL)
+            result = rpc_item->params->from_cpe.p;
+            if (is_cpe_response && cwmp_pars->rpc_cpe == CWMP_RPC_NONE)
+            {
+                /* Response is received, but unexpected or invalid one */
+                rc = TE_EBADMSG;
+            }
+            else if (result == NULL)
                 return TE_EPENDING;
 
             cwmp_pars->from_cpe.p = result;

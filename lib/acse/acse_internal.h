@@ -585,7 +585,7 @@ extern void *acse_cwmp_malloc(struct soap *soap, size_t n);
  *
  * @param cwmp_sess     CWMP session descriptor.
  */
-extern void acse_soap_serve_response(cwmp_session_t *cwmp_sess);
+extern te_errno acse_soap_serve_response(cwmp_session_t *cwmp_sess);
 
 
 /**
