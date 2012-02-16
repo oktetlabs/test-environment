@@ -79,6 +79,8 @@ enum trc_log_parse_flags {
                                                  logs to the same place */
     TRC_LOG_PARSE_CONFLS_ALL       = 0x400, /**< Treat all results from
                                                  logs as unexpected ones */
+    TRC_LOG_PARSE_TAGS_STR         = 0x800, /**< Do not change string
+                                                 representation of tags */
 };
 
 #ifdef __cplusplus

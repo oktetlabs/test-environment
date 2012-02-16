@@ -133,8 +133,6 @@ trc_update_test_entry_free(trc_update_test_entry *test_entry)
 {
     if (test_entry == NULL)
         return;
-
-    trc_update_rules_free(test_entry->rules);
 }
 
 /* See the description in trc_update.h */
@@ -150,6 +148,35 @@ trc_update_test_entries_free(trc_update_test_entries *tests)
     {
         TAILQ_REMOVE(tests, p, links);
         trc_update_test_entry_free(p);
+        free(p);
+    }
+}
+
+/* See the description in trc_update.h */
+void
+trc_update_tests_group_free(trc_update_tests_group *group)
+{
+    if (group == NULL)
+        return;
+
+    trc_update_rules_free(group->rules);
+    free(group->path);
+    trc_update_test_entries_free(&group->tests);
+}
+
+/* See the description in trc_update.h */
+void
+trc_update_tests_groups_free(trc_update_tests_groups *groups)
+{
+    trc_update_tests_group *p;
+
+    if (groups == NULL)
+        return;
+
+    while ((p = TAILQ_FIRST(groups)) != NULL)
+    {
+        TAILQ_REMOVE(groups, p, links);
+        trc_update_tests_group_free(p);
         free(p);
     }
 }

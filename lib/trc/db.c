@@ -45,6 +45,7 @@
 #include "te_trc.h"
 #include "trc_db.h"
 
+#define CONST_CHAR2XML  (const xmlChar *)
 
 /* See description in trc_db.h */
 void
@@ -105,7 +106,9 @@ trc_exp_result_free(trc_exp_result *result)
         return;
 
     free(result->tags_str);
-    logic_expr_free(result->tags_expr);
+    free(result->tags_expr);
+    tq_strings_free(result->tags, free);
+    free(result->tags);
 
     while ((p = TAILQ_FIRST(&result->results)) != NULL)
     {
@@ -253,6 +256,69 @@ trc_free_trc_tests(trc_tests *tests)
         trc_free_test_iters(&p->iters);
         free(p);
     }
+}
+
+static void trc_remove_exp_results_test(trc_test *test);
+
+/**
+ * Remove all expected results from a given iteration,
+ * unlink and free related XML nodes.
+ *
+ * @param iter      TRC DB test iteration structure pointer
+ */
+static void
+trc_remove_exp_results_iter(trc_test_iter *iter)
+{
+    trc_test    *p;
+    xmlNodePtr   child_node;
+    xmlNodePtr   aux_node;
+
+    trc_exp_results_free(&iter->exp_results);
+
+    if (iter->node != NULL)
+    {
+        for (child_node = iter->node->children; child_node != NULL;
+             child_node = aux_node)
+        {
+            aux_node = child_node->next;
+            if (xmlStrcmp(child_node->name,
+                          CONST_CHAR2XML("results")) == 0)
+            {
+                xmlUnlinkNode(child_node);
+                xmlFreeNode(child_node);
+            }
+        }
+    }
+
+    for (p = TAILQ_FIRST(&iter->tests.head); p != NULL;
+         p = TAILQ_NEXT(p, links))
+        trc_remove_exp_results_test(p);
+}
+
+/**
+ * Remove all expected results from iterations of
+ * a given test, unlink and free related XML nodes.
+ *
+ * @param test      TRC DB test structure pointer
+ */
+static void
+trc_remove_exp_results_test(trc_test *test)
+{
+    trc_test_iter  *p;
+    for (p = TAILQ_FIRST(&test->iters.head); p != NULL;
+         p = TAILQ_NEXT(p, links))
+        trc_remove_exp_results_iter(p);
+}
+
+/* See description in trc_db.h */
+void
+trc_remove_exp_results(te_trc_db *db)
+{
+    trc_test   *p;
+
+    for (p = TAILQ_FIRST(&db->tests.head); p != NULL;
+         p = TAILQ_NEXT(p, links))
+        trc_remove_exp_results_test(p);
 }
 
 /* See description in trc_db.h */

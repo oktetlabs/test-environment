@@ -97,9 +97,11 @@ typedef TAILQ_HEAD(trc_exp_result_entry_head, trc_exp_result_entry)
 typedef struct trc_exp_result {
     SLIST_ENTRY(trc_exp_result) links;  /**< List links */
 
-    char       *tags_str;   /**< String representation of tags logical
+    char        *tags_str;   /**< String representation of tags logical
                                  expression */
-    logic_expr *tags_expr;  /**< Tags logical expression */
+    logic_expr  *tags_expr;  /**< Tags logical expression */
+    tqh_strings *tags;       /**< Tag strings merged whe updating
+                                  from logs */
 
     trc_exp_result_entry_head  results; /**< Results expected for such
                                              tags logical expression */
@@ -119,13 +121,6 @@ struct te_trc_db;
 /** Short alias for TRC database type */
 typedef struct te_trc_db te_trc_db;
 
-/**
- * Typedef for function matching iterations in TRC with
- * iterations from XML log
- */
-typedef int (*func_args_match_ptr)(const trc_test_iter_args *,
-                                   unsigned int, trc_report_argument *,
-                                   void *);
 /**
  * Initialize a new TRC database.
  *
@@ -209,6 +204,17 @@ extern te_bool trc_db_walker_step_test(te_trc_db_walker *walker,
                                        te_bool           force);
 
 /**
+ * Typedef for function matching iterations in TRC with
+ * iterations from XML log. The first argument is pointer to
+ * TRC iteration, the second one is the number of arguments
+ * in the array pointer to which is passed as the third argument,
+ * the last arguments is user data pointer.
+ */
+typedef int (*func_args_match_ptr)(const void *,
+                                   unsigned int, trc_report_argument *,
+                                   void *);
+
+/**
  * Move walker from the current position to the test iteration with
  * specified arguments.
  *
@@ -227,7 +233,7 @@ extern te_bool trc_db_walker_step_test(te_trc_db_walker *walker,
  *                          iterations when matching.
  * @param db_uid            TRC database user ID
  * @param func_args_match   Function to be used instead
- *                          @b test_iter_args_match() if required
+ *                          @b test_iter_args_match() if required.
  *
  * @return Is walker in a known place in TRC database tree?
  */

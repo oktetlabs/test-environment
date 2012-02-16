@@ -137,12 +137,9 @@ typedef struct trc_test {
     te_bool         aux;            /**< Is test auxiliary? */
     char           *name;           /**< Test name */
     char           *path;           /**< Test path */
-    char           *notes;          /**< Some notes */
 
+    char           *notes;          /**< Some notes */
     char           *objective;      /**< Test objective */
-    xmlNodePtr      obj_node;       /**< XML node with objective */
-    te_bool         obj_update;     /**< Whether objective of the test
-                                         should be updated */
 
     trc_test_iters  iters;          /**< Iterations of the test */
 
@@ -264,11 +261,16 @@ void trc_db_test_iter_res_split(trc_test_iter *itr);
 
 /** TRC DB saving options */
 typedef enum {
-    TRC_SAVE_REMOVE_OLD = 0x1, /**< Remove XML representation and
-                                    generate it from scratch */
-    TRC_SAVE_RESULTS = 0x2,    /**< Save expected results of
-                                    iterations */
-    TRC_SAVE_GLOBALS = 0x4,    /**< Save global variables */
+    TRC_SAVE_REMOVE_OLD = 0x1,      /**< Remove XML representation and
+                                         generate it from scratch */
+    TRC_SAVE_RESULTS = 0x2,         /**< Save expected results of
+                                         iterations */
+    TRC_SAVE_GLOBALS = 0x4,         /**< Save global variables */
+    TRC_SAVE_UPDATE_OLD = 0x8,      /**< Update existing nodes */
+    TRC_SAVE_DEL_XINCL  = 0x10,     /**< Delete XInclude elements */
+    TRC_SAVE_NO_VOID_XINCL = 0x20,  /**< Do not mark XInclude elements
+                                         having no included content
+                                         between them */
 } trc_save_flags;
 
 /**
@@ -289,12 +291,15 @@ extern te_errno trc_exp_result_to_xml(trc_exp_result *exp_result,
  *
  * @param exp_results   TRC expected results
  * @param node          XML node pointer
+ * @param insert_after  Whether to insert <results> nodes
+ *                      after @p node or into it.
  *
  * @return
  *      0 on success
  */
 extern te_errno trc_exp_results_to_xml(trc_exp_results *exp_results,
-                                       xmlNodePtr node);
+                                       xmlNodePtr node,
+                                       te_bool insert_after);
 
 /**
  * Get expected results from XML.
@@ -370,6 +375,14 @@ extern te_errno trc_db_save(te_trc_db *db, const char *filename,
                             char *cmd);
 
 extern void trc_db_free(te_trc_db *db);
+
+/**
+ * Remove all expected results from TRC DB,
+ * unlink and free related XML nodes.
+ *
+ * @param db      TRC database
+ */
+extern void trc_remove_exp_results(te_trc_db *db);
 
 /**
  * Free resources allocated for the list of tests.

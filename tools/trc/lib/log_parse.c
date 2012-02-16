@@ -111,14 +111,21 @@ typedef struct trc_log_parse_ctx {
                                                  which new results
                                                  should be merged into
                                                  existing database */
+    char                       *merge_str;  /**< String representation
+                                                 of tag expression */
 
     func_args_match_ptr    func_args_match; /**< Function to match
                                                  iterations in TRC with
                                                  iterations from logs */
-
-    trc_update_test_entries *updated_tests; /**< List of tests to be
+#if 0
+    trc_update_test_entries *updated_tests; /**< Queue of tests to be
                                                  updated */
-
+#endif
+    trc_update_tests_groups *updated_tests; /**< Groups of tests to be
+                                                 updated */
+    trc_update_rules         global_rules;  /**< Updating rules which
+                                                 can be applied to any
+                                                 iteration of any test */
     tqh_strings        *test_paths; /**< Paths of tests to be updated */
 
     unsigned int        stack_size; /**< Size of the stack in elements */
@@ -999,10 +1006,10 @@ trc_update_gen_user_data(void *data, te_bool is_iter)
  * @param updated_tests Tests to be updated
  * @param user_id       TRC DB user ID
  *
- * @return Status code
+ * @return Number of tests for which updating rules should be generated
  */
 static te_errno trc_update_fill_tests_user_data(trc_tests *tests,
-                                                trc_update_test_entries
+                                                trc_update_tests_groups
                                                         *updated_tests,
                                                 unsigned int user_id);
 
@@ -1013,11 +1020,11 @@ static te_errno trc_update_fill_tests_user_data(trc_tests *tests,
  * @param updated_tests Tests to be updated
  * @param user_id       TRC DB user ID
  *
- * @return Status code
+ * @return Number of tests for which updating rules should be generated
  */
 static int
 trc_update_fill_iters_user_data(trc_test_iters *iters,
-                                trc_update_test_entries *updated_tests,
+                                trc_update_tests_groups *updated_tests,
                                 unsigned int user_id)
 {
     trc_update_test_iter_data   *user_data;
@@ -1070,7 +1077,7 @@ trc_update_fill_iters_user_data(trc_test_iters *iters,
 /** See description above */
 static int
 trc_update_fill_tests_user_data(trc_tests *tests,
-                                trc_update_test_entries *updated_tests,
+                                trc_update_tests_groups *updated_tests,
                                 unsigned int user_id)
 {
     trc_update_test_data    *user_data;
@@ -1078,6 +1085,7 @@ trc_update_fill_tests_user_data(trc_tests *tests,
     te_bool                  to_save = TRUE;
     int                      tests_count = 0;
     trc_update_test_entry   *test_entry;
+    trc_update_tests_group  *tests_group;
 
     TAILQ_FOREACH(test, &tests->head, links)
     {
@@ -1087,11 +1095,23 @@ trc_update_fill_tests_user_data(trc_tests *tests,
                                             updated_tests,
                                             user_id) == 0)
         {
+            TAILQ_FOREACH(tests_group, updated_tests, links)
+                if (strcmp(test->path, tests_group->path) == 0)
+                    break;
+
+            if (tests_group == NULL)
+            {
+                tests_group = TE_ALLOC(sizeof(*tests_group));
+                tests_group->rules = TE_ALLOC(sizeof(trc_update_rules));
+                tests_group->path = strdup(test->path);
+                TAILQ_INIT(&tests_group->tests);
+                TAILQ_INIT(tests_group->rules);
+                TAILQ_INSERT_TAIL(updated_tests, tests_group, links);
+            }
+
             test_entry = TE_ALLOC(sizeof(*test_entry));
             test_entry->test = test;
-            test_entry->rules = TE_ALLOC(sizeof(trc_update_rules));
-            TAILQ_INIT(test_entry->rules);
-            TAILQ_INSERT_HEAD(updated_tests, test_entry, links);
+            TAILQ_INSERT_TAIL(&tests_group->tests, test_entry, links);
         }
         tests_count++;
     }
@@ -1104,17 +1124,17 @@ trc_update_fill_tests_user_data(trc_tests *tests,
  * entries of TRC DB (tests and iterations to be updated).
  *
  * @param db            TRC DB
- * @param updated_tests Tests to be updated (list of all
+ * @param updated_tests Tests to be updated (pointers to all
  *                      tests not including other tests
- *                      will be inserted into this list
+ *                      will be inserted into this structure
  *                      as a result of this function call)
  * @param user_id       TRC DB user ID
  *
- * @return Status code
+ * @return Number of tests for which updating rules should be generated
  */
 static te_errno
 trc_update_fill_db_user_data(te_trc_db *db,
-                             trc_update_test_entries *updated_tests,
+                             trc_update_tests_groups *updated_tests,
                              unsigned int user_id)
 {
     return trc_update_fill_tests_user_data(&db->tests, updated_tests,
@@ -1168,7 +1188,7 @@ trc_update_rule_to_xml(trc_update_rule *rule, xmlNodePtr node)
     }
 
     if (rule->old_res != NULL)
-        trc_exp_results_to_xml(rule->old_res, old_res);
+        trc_exp_results_to_xml(rule->old_res, old_res, FALSE);
 
     confl_res = xmlNewChild(rule_node, NULL,
                             BAD_CAST "conflicts",
@@ -1180,7 +1200,7 @@ trc_update_rule_to_xml(trc_update_rule *rule, xmlNodePtr node)
     }
 
     if (rule->confl_res != NULL)
-        trc_exp_results_to_xml(rule->confl_res, confl_res);
+        trc_exp_results_to_xml(rule->confl_res, confl_res, FALSE);
 
     if (rule->new_res != NULL && !SLIST_EMPTY(rule->new_res))
     {
@@ -1191,7 +1211,7 @@ trc_update_rule_to_xml(trc_update_rule *rule, xmlNodePtr node)
             ERROR("%s(): failed to create <new> node", __FUNCTION__);
             return TE_ENOMEM;
         }
-        trc_exp_results_to_xml(rule->new_res, new_res);
+        trc_exp_results_to_xml(rule->new_res, new_res, FALSE);
     }
 
     return 0;
@@ -1200,17 +1220,17 @@ trc_update_rule_to_xml(trc_update_rule *rule, xmlNodePtr node)
 /**
  * Save updating rules to file.
  *
- * @param tests    List of tests to be updated
- * @param filename Path to file where rules should be saved
- * @param cmd      Command used to run TRC Update tool
+ * @param updated_tests    Tests to be updated
+ * @param filename         Path to file where rules should be saved
+ * @param cmd              Command used to run TRC Update tool
  */
 static te_errno
-save_test_rules_to_file(trc_update_test_entries *tests,
+save_test_rules_to_file(trc_update_tests_groups *updated_tests,
                         const char *filename,
                         char *cmd)
 {
     FILE                    *f = NULL;
-    trc_update_test_entry   *test;
+    trc_update_tests_group  *group;
     trc_update_rule         *rule;
     xmlDocPtr                xml_doc;
     xmlNodePtr               root;
@@ -1301,7 +1321,7 @@ save_test_rules_to_file(trc_update_test_entries *tests,
         return TE_ENOMEM;
     }
 
-    TAILQ_FOREACH(test, tests, links)
+    TAILQ_FOREACH(group, updated_tests, links)
     {
         test_node = xmlNewChild(root, NULL, BAD_CAST "test",
                                 NULL);
@@ -1312,13 +1332,13 @@ save_test_rules_to_file(trc_update_test_entries *tests,
         }
 
         if (xmlNewProp(test_node, BAD_CAST "path",
-                       BAD_CAST test->test->path) == NULL)
+                       BAD_CAST group->path) == NULL)
         {
             ERROR("%s(): xmlNewProp() failed", __FUNCTION__);
             return TE_ENOMEM;
         }
 
-        TAILQ_FOREACH(rule, test->rules, links)
+        TAILQ_FOREACH(rule, group->rules, links)
             trc_update_rule_to_xml(rule, test_node);
     }
 
@@ -1546,7 +1566,17 @@ trc_update_merge_result(trc_log_parse_ctx *ctx)
                       links);
 
     merge_result->tags_expr = logic_expr_dup(ctx->merge_expr);
-    merge_result->tags_str = logic_expr_to_str(ctx->merge_expr);
+    if (ctx->flags & TRC_LOG_PARSE_TAGS_STR)
+    {
+        merge_result->tags_str = strdup(ctx->merge_str);
+        merge_result->tags = TE_ALLOC(sizeof(tqh_strings));
+        TAILQ_INIT(merge_result->tags);
+        tq_strings_add_uniq_dup(merge_result->tags,
+                                ctx->merge_str);
+    }
+    else
+        merge_result->tags_str = logic_expr_to_str(ctx->merge_expr);
+
     merge_result->key = NULL;
     merge_result->notes = NULL;
 
@@ -1606,18 +1636,19 @@ trc_update_merge_result(trc_log_parse_ctx *ctx)
  * Merge the same results having different tags into
  * single records.
  *
- * @param db_uid    TRC DB User ID
- * @param tests     Tests to be updated
- * @param flags     Flags
+ * @param db_uid        TRC DB User ID
+ * @param updated_tests Tests to be updated
+ * @param flags         Flags
  *
  * @return Status code
  */
 static te_errno
 trc_update_simplify_results(unsigned int db_uid,
-                            trc_update_test_entries *tests,
+                            trc_update_tests_groups *updated_tests,
                             int flags)
 
 {
+    trc_update_tests_group      *group;
     trc_update_test_entry       *test_entry;
     trc_test_iter               *iter;
     trc_update_test_iter_data   *iter_data;
@@ -1629,41 +1660,69 @@ trc_update_simplify_results(unsigned int db_uid,
 
     UNUSED(flags);
 
-    TAILQ_FOREACH(test_entry, tests, links)
+    TAILQ_FOREACH(group, updated_tests, links)
     {
-        TAILQ_FOREACH(iter, &test_entry->test->iters.head, links)
+        TAILQ_FOREACH(test_entry, &group->tests, links)
         {
-            iter_data = trc_db_iter_get_user_data(iter, db_uid);
-            
-            if (iter_data == NULL || iter_data->to_save == FALSE)
-                continue;
-
-            if (flags & TRC_LOG_PARSE_LOG_WILDS)
-                new_results = &iter->exp_results;
-            else
-                new_results = &iter_data->new_results;
-
-            SLIST_FOREACH(p, new_results, links)
+            TAILQ_FOREACH(iter, &test_entry->test->iters.head, links)
             {
-                for (q = SLIST_NEXT(p, links);
-                     q != NULL && (tvar = SLIST_NEXT(q, links), 1);
-                     q = tvar)
-                    
+                iter_data = trc_db_iter_get_user_data(iter, db_uid);
+                
+                if (iter_data == NULL || iter_data->to_save == FALSE)
+                    continue;
+
+                if (flags & TRC_LOG_PARSE_LOG_WILDS)
+                    new_results = &iter->exp_results;
+                else
+                    new_results = &iter_data->new_results;
+
+                SLIST_FOREACH(p, new_results, links)
                 {
-                    if (trc_exp_result_cmp_no_tags(p, q) == 0)
-                    {
-                        tags_expr = TE_ALLOC(sizeof(*tags_expr));
-                        tags_expr->type = LOGIC_EXPR_OR;
-                        tags_expr->u.binary.rhv = p->tags_expr;
-                        tags_expr->u.binary.lhv = q->tags_expr;
+                    for (q = SLIST_NEXT(p, links);
+                         q != NULL && (tvar = SLIST_NEXT(q, links), 1);
+                         q = tvar)
                         
-                        p->tags_expr = tags_expr;
-                        q->tags_expr = NULL;
-                        free(p->tags_str);
-                        p->tags_str = logic_expr_to_str(p->tags_expr);
-                        SLIST_REMOVE(new_results, q, trc_exp_result,
-                                     links);
-                        trc_exp_result_free(q);
+                    {
+                        if (trc_exp_result_cmp_no_tags(p, q) == 0)
+                        {
+                            tags_expr = TE_ALLOC(sizeof(*tags_expr));
+                            tags_expr->type = LOGIC_EXPR_OR;
+                            tags_expr->u.binary.rhv = p->tags_expr;
+                            tags_expr->u.binary.lhv = q->tags_expr;
+                            
+                            p->tags_expr = tags_expr;
+                            q->tags_expr = NULL;
+                            free(p->tags_str);
+
+                            if (flags & TRC_LOG_PARSE_TAGS_STR)
+                            {
+                                tqe_string *tqe_str;
+                                te_string   te_str = TE_STRING_INIT;
+                                
+                                TAILQ_FOREACH(tqe_str, q->tags, links)
+                                    tq_strings_add_uniq_dup(
+                                                        p->tags,
+                                                        tqe_str->v);
+
+                                TAILQ_FOREACH(tqe_str, p->tags, links)
+                                {
+                                    if (te_str.ptr == NULL)
+                                        te_string_append(&te_str, "%s",
+                                                         tqe_str->v);
+                                    else
+                                        te_string_append(&te_str, "|%s",
+                                                         tqe_str->v);
+                                }
+                                p->tags_str = strdup(te_str.ptr);
+                                te_string_free(&te_str);
+                            }
+                            else
+                                p->tags_str = logic_expr_to_str(
+                                                        p->tags_expr);
+                            SLIST_REMOVE(new_results, q, trc_exp_result,
+                                         links);
+                            trc_exp_result_free(q);
+                        }
                     }
                 }
             }
@@ -1676,17 +1735,20 @@ trc_update_simplify_results(unsigned int db_uid,
 /**
  * Apply updating rules.
  *
- * @param db_uid    TRC DB User ID
- * @param tests     Tests to be updated
- * @param flags     Flags
+ * @param db_uid        TRC DB User ID
+ * @param updated_tests Tests to be updated
+ * @param global_rules  Global updating rules
+ * @param flags         Flags
  *
  * @return Status code
  */
 static te_errno
 trc_update_apply_rules(unsigned int db_uid,
-                       trc_update_test_entries *tests,
+                       trc_update_tests_groups *updated_tests,
+                       trc_update_rules *global_rules,
                        int flags)
 {
+    trc_update_tests_group      *group;
     trc_update_test_entry       *test_entry;
     trc_test_iter               *iter;
     trc_update_test_iter_data   *iter_data;
@@ -1696,104 +1758,124 @@ trc_update_apply_rules(unsigned int db_uid,
     trc_update_rule             *rule;
     trc_update_wilds_list_entry *wild;
     tqe_string                  *expr;
+    te_bool                      rules_switch = FALSE;
 
     UNUSED(flags);
-    
-    TAILQ_FOREACH(test_entry, tests, links)
+
+    TAILQ_FOREACH(group, updated_tests, links)
     {
-        TAILQ_FOREACH(iter, &test_entry->test->iters.head, links)
+        TAILQ_FOREACH(test_entry, &group->tests, links)
         {
-            iter_data = trc_db_iter_get_user_data(iter, db_uid);
-            
-            if (iter_data == NULL || iter_data->to_save == FALSE)
-                continue;
-
-            if (iter_data->rule == NULL)
+            TAILQ_FOREACH(iter, &test_entry->test->iters.head, links)
             {
-                rule_id = 0;
-                value = XML2CHAR(xmlGetProp(
-                                    iter->node,
-                                    CONST_CHAR2XML("user_attr")));
-                if (value != NULL &&
-                    strncmp(value, "rule_", 5) == 0)
-                    rule_id = atoi(value + 5);
+                iter_data = trc_db_iter_get_user_data(iter, db_uid);
+                
+                if (iter_data == NULL || iter_data->to_save == FALSE)
+                    continue;
 
-                TAILQ_FOREACH(rule, test_entry->rules, links)
+                if (iter_data->rule == NULL)
                 {
-                    if (rule->rule_id != rule_id && rule->rule_id != 0 &&
-                        rule_id != 0)
-                        continue;
+                    rule_id = 0;
+                    value = XML2CHAR(xmlGetProp(
+                                        iter->node,
+                                        CONST_CHAR2XML("user_attr")));
+                    if (value != NULL &&
+                        strncmp(value, "rule_", 5) == 0)
+                        rule_id = atoi(value + 5);
 
-                    if (rule->apply &&
-                        ((rule->rule_id != 0 && rule_id != 0) ||
-                         ((rule->def_res == NULL ||
-                           trc_exp_result_cmp((struct trc_exp_result *)
-                                              iter->exp_default,
-                                              rule->def_res) == 0) &&
-                          (rule->old_res == NULL ||
-                           trc_exp_results_cmp((trc_exp_results *)
-                                               &iter->exp_results,
-                                               rule->old_res) == 0) &&
-                          (rule->confl_res == NULL ||
-                           trc_exp_results_cmp(&iter_data->new_results,
-                                               rule->confl_res) == 0))))
+                    rules_switch = FALSE;
+                    rule = TAILQ_FIRST(global_rules);
+
+                    while (!(rule == NULL && rules_switch == TRUE))
                     {
-                        if (rule->wilds != NULL &&
-                            !SLIST_EMPTY(rule->wilds))
+                        if (rule == NULL)
                         {
-                            SLIST_FOREACH(wild, rule->wilds, links)
+                            rule = TAILQ_FIRST(group->rules);
+                            rules_switch = TRUE;
+
+                            if (rule == NULL)
+                                break;
+                        }
+
+                        if (rule->rule_id != rule_id &&
+                            rule->rule_id != 0 &&
+                            rule_id != 0)
+                            continue;
+
+                        if (rule->apply &&
+                            ((rule->rule_id != 0 && rule_id != 0) ||
+                             ((rule->def_res == NULL ||
+                               trc_exp_result_cmp((struct trc_exp_result *)
+                                                  iter->exp_default,
+                                                  rule->def_res) == 0) &&
+                              (rule->old_res == NULL ||
+                               trc_exp_results_cmp((trc_exp_results *)
+                                                   &iter->exp_results,
+                                                   rule->old_res) == 0) &&
+                              (rule->confl_res == NULL ||
+                               trc_exp_results_cmp(&iter_data->new_results,
+                                                   rule->confl_res) == 0))))
+                        {
+                            if (rule->wilds != NULL &&
+                                !SLIST_EMPTY(rule->wilds))
                             {
-                                assert(wild->args != NULL);
-                                assert(iter_data->args != NULL);
-                                if (test_iter_args_match(
-                                                    wild->args,
-                                                    iter_data->args_n,
-                                                    iter_data->args,
-                                                    wild->is_strict) !=
-                                                        ITER_NO_MATCH)
+                                SLIST_FOREACH(wild, rule->wilds, links)
                                 {
-                                    iter_data->rule = rule;
-                                    iter_data->rule_id = rule->rule_id;
-                                    break;
+                                    assert(wild->args != NULL);
+                                    assert(iter_data->args != NULL);
+                                    if (test_iter_args_match(
+                                                        wild->args,
+                                                        iter_data->args_n,
+                                                        iter_data->args,
+                                                        wild->is_strict) !=
+                                                            ITER_NO_MATCH)
+                                    {
+                                        iter_data->rule = rule;
+                                        iter_data->rule_id = rule->rule_id;
+                                        break;
+                                    }
                                 }
                             }
-                        }
-                        else if (rule->match_exprs != NULL &&
-                                 !TAILQ_EMPTY(rule->match_exprs))
-                        {
-                            TAILQ_FOREACH(expr, rule->match_exprs, links)
+                            else if (rule->match_exprs != NULL &&
+                                     !TAILQ_EMPTY(rule->match_exprs))
                             {
-                                /*
-                                 * Sorry, not implemented yet.
-                                 */
+                                TAILQ_FOREACH(expr, rule->match_exprs,
+                                              links)
+                                {
+                                    /*
+                                     * Sorry, not implemented yet.
+                                     */
+                                }
+                            }
+                            else
+                            {
+                                iter_data->rule = rule;
+                                iter_data->rule_id = rule->rule_id;
+                                break;
                             }
                         }
-                        else
-                        {
-                            iter_data->rule = rule;
-                            iter_data->rule_id = rule->rule_id;
+
+                        if (iter_data->rule != NULL)
                             break;
-                        }
+
+                        rule = TAILQ_NEXT(rule, links);
                     }
-
-                    if (iter_data->rule != NULL)
-                        break;
                 }
+
+                if (iter_data->rule == NULL || !iter_data->rule->apply)
+                    continue;
+
+                trc_exp_results_free(&iter->exp_results);
+                results_dup = trc_exp_results_dup(
+                                iter_data->rule->new_res);
+                if (results_dup != NULL)
+                {
+                    memcpy(&iter->exp_results, results_dup,
+                           sizeof(*results_dup));
+                }
+
+                free(results_dup);
             }
-
-            if (iter_data->rule == NULL || !iter_data->rule->apply)
-                continue;
-
-            trc_exp_results_free(&iter->exp_results);
-            results_dup = trc_exp_results_dup(
-                            iter_data->rule->new_res);
-            if (results_dup != NULL)
-            {
-                memcpy(&iter->exp_results, results_dup,
-                       sizeof(*results_dup));
-            }
-
-            free(results_dup);
         }
     }
 
@@ -1944,14 +2026,17 @@ trc_update_load_rule(xmlNodePtr rule_node, trc_update_rule *rule)
 /**
  * Load updating rules from file.
  *
- * @param filename  Path to file
- * @param tests     List of tests to be updated
- * @param flags     Flags
+ * @param filename          Path to file
+ * @param updated_tests     Tests to be updated
+ * @param global_rules      Global updating rules
+ * @param flags             Flags
  *
  * @return Status code
  */
 static te_errno
-trc_update_load_rules(char *filename, trc_update_test_entries *tests,
+trc_update_load_rules(char *filename,
+                      trc_update_tests_groups *updated_tests,
+                      trc_update_rules *global_rules,
                       int flags)
 {
     xmlParserCtxtPtr        parser;
@@ -1959,9 +2044,9 @@ trc_update_load_rules(char *filename, trc_update_test_entries *tests,
     xmlNodePtr              root;
     xmlNodePtr              test_node;
     xmlNodePtr              rule_node;
-    char                   *test_name;
-    trc_update_test_entry  *test_entry;
-    trc_update_rule        *rule;
+    char                   *test_name = NULL;
+    trc_update_tests_group *group = NULL;
+    trc_update_rule        *rule = NULL;
 
 #if HAVE_XMLERROR
     xmlError           *err;
@@ -2019,22 +2104,18 @@ trc_update_load_rules(char *filename, trc_update_test_entries *tests,
             {
                 /*
                  * Rules not belonging to any test explicitly are
-                 * added to set of rules of the first test in list
+                 * considered as global ones
                  */
-                test_entry = TAILQ_FIRST(tests);
-                if (test_entry != NULL)
+                rule = TE_ALLOC(sizeof(*rule));
+                
+                if ((rc = trc_update_load_rule(test_node, rule)) != 0)
                 {
-                    rule = TE_ALLOC(sizeof(*rule));
-                    
-                    if ((rc = trc_update_load_rule(test_node, rule)) != 0)
-                    {
-                        ERROR("Loading rule from file failed");
-                        rc = TE_RC(TE_TRC, TE_EFMT);
-                        goto exit;
-                    }
-
-                    TAILQ_INSERT_TAIL(test_entry->rules, rule, links);
+                    ERROR("Loading rule from file failed");
+                    rc = TE_RC(TE_TRC, TE_EFMT);
+                    goto exit;
                 }
+
+                TAILQ_INSERT_TAIL(global_rules, rule, links);
             }
             else
             {
@@ -2047,18 +2128,18 @@ trc_update_load_rules(char *filename, trc_update_test_entries *tests,
 
         test_name = XML2CHAR(xmlGetProp(test_node, BAD_CAST "path"));
         
-        TAILQ_FOREACH(test_entry, tests, links)
-            if (strcmp(test_name, test_entry->test->path) == 0)
+        TAILQ_FOREACH(group, updated_tests, links)
+            if (strcmp(test_name, group->path) == 0)
                 break;
         
-        if (test_entry != NULL)
+        if (group != NULL)
         {
             rule_node = xmlFirstElementChild(test_node);    
 
-            if (test_entry->rules == NULL)
+            if (group->rules == NULL)
             {
-                test_entry->rules = TE_ALLOC(sizeof(*(test_entry->rules)));
-                TAILQ_INIT(test_entry->rules);
+                group->rules = TE_ALLOC(sizeof(*(group->rules)));
+                TAILQ_INIT(group->rules);
             }
 
             while (rule_node != NULL)
@@ -2077,12 +2158,12 @@ trc_update_load_rules(char *filename, trc_update_test_entries *tests,
                 if ((rc = trc_update_load_rule(rule_node, rule)) != 0)
                 {
                     ERROR("Loading rule from file for test %s failed",
-                          test_entry->test->path);
+                          group->path);
                     rc = TE_RC(TE_TRC, TE_EFMT);
                     goto exit;
                 }
 
-                TAILQ_INSERT_TAIL(test_entry->rules, rule, links);
+                TAILQ_INSERT_TAIL(group->rules, rule, links);
 
                 rule_node = xmlNextElementSibling(rule_node);
             }
@@ -2101,32 +2182,35 @@ exit:
 /**
  * Delete all updating rules.
  *
- * @param db_uid    TRC DB User ID
- * @param tests     Tests to be updated
+ * @param db_uid            TRC DB User ID
+ * @param updated_tests     Tests to be updated
  */
 static void
 trc_update_clear_rules(unsigned int db_uid,
-                       trc_update_test_entries *tests)
+                       trc_update_tests_groups *updated_tests)
 {
+    trc_update_tests_group      *group = NULL;
     trc_update_test_entry       *test = NULL;
     trc_test_iter               *iter = NULL;
     trc_update_test_iter_data   *iter_data = NULL;
 
-    if (tests == NULL)
+    if (updated_tests == NULL)
         return;
 
-    TAILQ_FOREACH(test, tests, links)
+    TAILQ_FOREACH(group, updated_tests, links)
     {
-        trc_update_rules_free(test->rules);
-
-        TAILQ_FOREACH(iter, &test->test->iters.head, links)
+        trc_update_rules_free(group->rules);
+        TAILQ_FOREACH(test, &group->tests, links)
         {
-            iter_data = trc_db_iter_get_user_data(iter, db_uid);
+            TAILQ_FOREACH(iter, &test->test->iters.head, links)
+            {
+                iter_data = trc_db_iter_get_user_data(iter, db_uid);
 
-            if (iter_data == NULL)
-                continue;
+                if (iter_data == NULL)
+                    continue;
 
-            iter_data->rule = NULL;
+                iter_data->rule = NULL;
+            }
         }
     }
 }
@@ -2134,18 +2218,20 @@ trc_update_clear_rules(unsigned int db_uid,
 /**
  * Generate TRC updating rules.
  *
- * @param db_uid    TRC DB User ID
- * @param tests     Tests to be updated
- * @param flags     Flags
+ * @param db_uid        TRC DB User ID
+ * @param updated_tests Tests to be updated
+ * @param flags         Flags
  *
  * @return Status code
  */
 static te_errno
 trc_update_gen_rules(unsigned int db_uid,
-                     trc_update_test_entries *tests,
+                     trc_update_tests_groups *updated_tests,
                      uint32_t flags)
 {
-    trc_update_test_entry       *test = NULL;
+    trc_update_tests_group      *group = NULL;
+    trc_update_test_entry       *test1 = NULL;
+    trc_update_test_entry       *test2 = NULL;
     trc_test_iter               *iter1 = NULL;
     trc_test_iter               *iter2 = NULL;
     trc_update_test_iter_data   *iter_data1 = NULL;
@@ -2153,80 +2239,97 @@ trc_update_gen_rules(unsigned int db_uid,
     trc_update_rule             *rule;
     int                          cur_rule_id = 0;
 
-    TAILQ_FOREACH(test, tests, links)
+    TAILQ_FOREACH(group, updated_tests, links)
     {
-        test->rules = TE_ALLOC(sizeof(trc_update_rules));
-        TAILQ_INIT(test->rules);
+        group->rules = TE_ALLOC(sizeof(trc_update_rules));
+        TAILQ_INIT(group->rules);
 
-        TAILQ_FOREACH(iter1, &test->test->iters.head, links)
+        TAILQ_FOREACH(test1, &group->tests, links)
         {
-            iter_data1 = trc_db_iter_get_user_data(iter1, db_uid);
-
-            if (iter_data1 == NULL || iter_data1->to_save == FALSE)
-                continue;
-
-            if (iter_data1->rule == NULL &&
-                (!SLIST_EMPTY(&iter_data1->new_results) ||
-                 flags & TRC_LOG_PARSE_RULES_ALL))
+            TAILQ_FOREACH(iter1, &test1->test->iters.head, links)
             {
-                rule = TE_ALLOC(sizeof(*rule));
-                rule->def_res = trc_exp_result_dup((struct trc_exp_result *)
-                                                   iter1->exp_default);
-                rule->old_res = trc_exp_results_dup(&iter1->exp_results);
-                rule->confl_res = trc_exp_results_dup(
-                                            &iter_data1->new_results);
+                iter_data1 = trc_db_iter_get_user_data(iter1, db_uid);
 
-                rule->new_res = NULL;
+                if (iter_data1 == NULL || iter_data1->to_save == FALSE)
+                    continue;
 
-                if ((flags & TRC_LOG_PARSE_COPY_OLD) &&
-                    (flags & TRC_LOG_PARSE_COPY_OLD_FIRST) &&
-                    !SLIST_EMPTY(&iter1->exp_results))
-                    rule->new_res =
-                        trc_exp_results_dup(&iter1->exp_results);
-
-                if ((flags & TRC_LOG_PARSE_COPY_CONFLS) &&
-                    rule->new_res == NULL &&
-                    !SLIST_EMPTY(rule->confl_res))
-                    rule->new_res = trc_exp_results_dup(rule->confl_res);
-
-                if ((flags & TRC_LOG_PARSE_COPY_OLD) &&
-                    rule->new_res == NULL &&
-                    !SLIST_EMPTY(&iter1->exp_results))
-                    rule->new_res =
-                        trc_exp_results_dup(&iter1->exp_results);
-
-                if (flags & TRC_LOG_PARSE_USE_RULE_IDS)
-                    cur_rule_id++;
-                rule->rule_id = cur_rule_id;
-
-                TAILQ_INSERT_TAIL(test->rules, rule, links);
-
-                iter_data1->rule = rule;
-                iter_data1->rule_id = rule->rule_id;
-
-                for (iter2 = TAILQ_NEXT(iter1, links); iter2 != NULL;
-                     iter2 = TAILQ_NEXT(iter2, links))
+                if (iter_data1->rule == NULL &&
+                    (!SLIST_EMPTY(&iter_data1->new_results) ||
+                     flags & TRC_LOG_PARSE_RULES_ALL))
                 {
-                    iter_data2 = trc_db_iter_get_user_data(
-                                    iter2, db_uid);
+                    rule = TE_ALLOC(sizeof(*rule));
+                    rule->def_res =
+                        trc_exp_result_dup((struct trc_exp_result *)
+                                                      iter1->exp_default);
+                    rule->old_res =
+                        trc_exp_results_dup(&iter1->exp_results);
+                    rule->confl_res = trc_exp_results_dup(
+                                                &iter_data1->new_results);
 
-                    if (iter_data2 == NULL || iter_data2->rule != NULL ||
-                        iter_data2->to_save == FALSE)
-                        continue;
+                    rule->new_res = NULL;
 
-                    if (trc_exp_result_cmp(
-                                (struct trc_exp_result *)
-                                            iter1->exp_default,
-                                (struct trc_exp_result *)
-                                            iter2->exp_default) == 0 &&
-                        trc_exp_results_cmp(
-                                &iter_data1->new_results,
-                                &iter_data2->new_results) == 0 &&
-                        trc_exp_results_cmp(&iter1->exp_results,
-                                            &iter2->exp_results) == 0)
+                    if ((flags & TRC_LOG_PARSE_COPY_OLD) &&
+                        (flags & TRC_LOG_PARSE_COPY_OLD_FIRST) &&
+                        !SLIST_EMPTY(&iter1->exp_results))
+                        rule->new_res =
+                            trc_exp_results_dup(&iter1->exp_results);
+
+                    if ((flags & TRC_LOG_PARSE_COPY_CONFLS) &&
+                        rule->new_res == NULL &&
+                        !SLIST_EMPTY(rule->confl_res))
+                        rule->new_res =
+                            trc_exp_results_dup(rule->confl_res);
+
+                    if ((flags & TRC_LOG_PARSE_COPY_OLD) &&
+                        rule->new_res == NULL &&
+                        !SLIST_EMPTY(&iter1->exp_results))
+                        rule->new_res =
+                            trc_exp_results_dup(&iter1->exp_results);
+
+                    if (flags & TRC_LOG_PARSE_USE_RULE_IDS)
+                        cur_rule_id++;
+                    rule->rule_id = cur_rule_id;
+
+                    TAILQ_INSERT_TAIL(group->rules, rule, links);
+
+                    iter_data1->rule = rule;
+                    iter_data1->rule_id = rule->rule_id;
+
+                    for (test2 = test1; test2 != NULL;
+                         test2 = TAILQ_NEXT(test2, links))
                     {
-                        iter_data2->rule = rule;
-                        iter_data2->rule_id = rule->rule_id;
+                        if (test2 == test1)
+                            iter2 = TAILQ_NEXT(iter1, links);
+                        else
+                            iter2 = TAILQ_FIRST(&test2->test->iters.head);
+
+                        for ( ; iter2 != NULL;
+                             iter2 = TAILQ_NEXT(iter2, links))
+                        {
+                            iter_data2 = trc_db_iter_get_user_data(
+                                            iter2, db_uid);
+
+                            if (iter_data2 == NULL ||
+                                iter_data2->rule != NULL ||
+                                iter_data2->to_save == FALSE)
+                                continue;
+
+                            if (trc_exp_result_cmp(
+                                    (struct trc_exp_result *)
+                                        iter1->exp_default,
+                                    (struct trc_exp_result *)
+                                        iter2->exp_default) == 0 &&
+                                trc_exp_results_cmp(
+                                    &iter_data1->new_results,
+                                    &iter_data2->new_results) == 0 &&
+                                trc_exp_results_cmp(
+                                    &iter1->exp_results,
+                                    &iter2->exp_results) == 0)
+                            {
+                                iter_data2->rule = rule;
+                                iter_data2->rule_id = rule->rule_id;
+                            }
+                        }
                     }
                 }
             }
@@ -2668,6 +2771,9 @@ trc_update_generate_test_wilds(unsigned int db_uid,
     trc_test_iter_args          *dup_args;
     trc_test_iter_arg           *arg;
 
+    if (test->type != TRC_TEST_SCRIPT)
+        return 0;
+
     ids_count = trc_update_group_test_iters(db_uid, test);
 
     memset(&wildcards, 0, sizeof(wildcards));
@@ -2696,6 +2802,11 @@ trc_update_generate_test_wilds(unsigned int db_uid,
             TAILQ_REMOVE(&test->iters.head, iter, links);
             iter_data = trc_db_iter_get_user_data(iter, db_uid);
             trc_update_free_test_iter_data(iter_data);
+            if (iter->node != NULL)
+            {
+                xmlUnlinkNode(iter->node);
+                xmlFreeNode(iter->node);
+            }
             trc_free_test_iter(iter);
             free(iter);
         } while ((iter = TAILQ_FIRST(&test->iters.head)) != NULL);
@@ -2737,18 +2848,22 @@ trc_update_generate_test_wilds(unsigned int db_uid,
  * Generate wildcards for all tests to be updated.
  *
  * @param db_uid        TRC DB User ID
- * @param tests         Tests to be updated
+ * @param updated_tests Tests to be updated
  *
  * @return Status code
  */
 te_errno
 trc_update_generate_wilds(unsigned int db_uid,
-                          trc_update_test_entries *tests)
+                          trc_update_tests_groups *updated_tests)
 {
+    trc_update_tests_group  *group;
     trc_update_test_entry   *test_entry;
 
-    TAILQ_FOREACH(test_entry, tests, links)
-        trc_update_generate_test_wilds(db_uid, test_entry->test);
+    TAILQ_FOREACH(group, updated_tests, links)
+    {
+        TAILQ_FOREACH(test_entry, &group->tests, links)
+            trc_update_generate_test_wilds(db_uid, test_entry->test);
+    }
 
     return 0;
 }
@@ -2939,6 +3054,10 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
             }
             else
             {
+                trc_test   *test;
+
+                test = trc_db_walker_get_test(ctx->db_walker);
+
                 upd_iter_data = trc_db_walker_get_user_data(ctx->db_walker,
                                                             ctx->db_uid);
 
@@ -2970,28 +3089,32 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
 
                     assert(upd_iter_data != NULL);
 
-                    /*
-                     * Now we assume that arguments and
-                     * test results are specified
-                     * only in leaves of TRC tree
-                     */
-                    if (entry->args_n > 0 && upd_test_data == NULL)
+                    if (test->type == TRC_TEST_SCRIPT &&
+                        upd_test_data == NULL)
                     {
+                        trc_update_tests_group  *group;
                         trc_update_test_entry   *test_p;
-                        trc_test                *test;
                         
-                        test = trc_db_walker_get_test(ctx->db_walker);
 
-                        TAILQ_FOREACH(test_p, ctx->updated_tests,
+                        TAILQ_FOREACH(group, ctx->updated_tests,
                                       links)
-                            if (test_p->test == test)
+                            if (strcmp(group->path, test->path) == 0)
                                 break;
 
-                        assert(test_p == NULL);
+                        if (group == NULL)
+                        {
+                            group = TE_ALLOC(sizeof(*group));
+                            group->rules = NULL;
+                            group->path = strdup(test->path);
+                            TAILQ_INIT(&group->tests);
+                            TAILQ_INSERT_TAIL(ctx->updated_tests,
+                                              group, links);
+                        }
+
                         test_p = TE_ALLOC(sizeof(*test_p));
                         test_p->test = test;
 
-                        TAILQ_INSERT_TAIL(ctx->updated_tests,
+                        TAILQ_INSERT_TAIL(&group->tests,
                                           test_p, links);
                     }
 
@@ -3006,11 +3129,6 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                     entry->args = NULL;
                     entry->args_n = 0;
                     entry->args_max = 0;
-                }
-                else
-                {
-                    /* Duplicate iterations in package.xml?! */
-                    assert(!(ctx->flags & TRC_LOG_PARSE_FAKE_LOG));
                 }
 
                 if (ctx->flags & (TRC_LOG_PARSE_MERGE_LOG |
@@ -3032,11 +3150,6 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
 
                 test = trc_db_walker_get_test(ctx->db_walker);
                 assert(test != NULL);
-                if (test->objective == NULL ||
-                    strcmp(test->objective, ctx->str) != 0)
-                {
-                    test->obj_update = TRUE;
-                }
                 free(test->objective);
                 test->objective = ctx->str;
                 ctx->str = NULL;
@@ -3214,7 +3327,7 @@ static te_errno
 trc_update_init_parse_ctx(trc_log_parse_ctx *ctx,
                           trc_update_ctx *gctx)
 {
-    trc_update_test_entries     *updated_tests;
+    trc_update_tests_groups     *updated_tests;
 
     updated_tests = ctx->updated_tests;
     memset(ctx, 0, sizeof(*ctx));
@@ -3228,6 +3341,8 @@ trc_update_init_parse_ctx(trc_log_parse_ctx *ctx,
     TAILQ_INIT(ctx->tags);
 
     ctx->func_args_match = gctx->func_args_match;
+
+    TAILQ_INIT(&ctx->global_rules);
 
     return 0;
 }
@@ -3253,15 +3368,17 @@ trc_update_process_logs(trc_update_ctx *gctx)
         if (ctx.log == NULL && tqe_str != NULL)
         {
             ctx.merge_expr = tl->tags_expr;
+            ctx.merge_str = tl->tags_str;
             ctx.log = tqe_str->v;
             tqe_str = TAILQ_NEXT(tqe_str, links);
             ctx.flags = gctx->flags;
         }
     }
 
-    ctx.updated_tests = TE_ALLOC(sizeof(trc_update_test_entries));
+    ctx.updated_tests = TE_ALLOC(sizeof(trc_update_tests_groups));
     TAILQ_INIT(ctx.updated_tests);
 
+    printf("\nParsing logs...\n");
     do {
         if (ctx.log == NULL)
             break;
@@ -3289,6 +3406,7 @@ trc_update_process_logs(trc_update_ctx *gctx)
         if (tqe_str != NULL)
         {
             ctx.merge_expr = tl->tags_expr;
+            ctx.merge_str = tl->tags_str;
             ctx.log = tqe_str->v;
             tqe_str = TAILQ_NEXT(tqe_str, links);
         }
@@ -3303,6 +3421,7 @@ trc_update_process_logs(trc_update_ctx *gctx)
 
             ctx.log = tqe_str->v;
             ctx.merge_expr = tl->tags_expr;
+            ctx.merge_str = tl->tags_str;
             tqe_str = TAILQ_NEXT(tqe_str, links);
         }
 
@@ -3314,30 +3433,43 @@ trc_update_process_logs(trc_update_ctx *gctx)
 
     if (gctx->fake_log == NULL &&
         !(gctx->flags & TRC_LOG_PARSE_LOG_WILDS))
+    {
+        printf("Filling user data in TRC DB...\n");
         trc_update_fill_db_user_data(gctx->db, ctx.updated_tests,
                                      gctx->db_uid);
+    }
 
+    printf("Simplifying expected results...\n");
     trc_update_simplify_results(gctx->db_uid, ctx.updated_tests,
                                 gctx->flags);
 
     if (gctx->rules_load_from != NULL)
     {
+        printf("Initializing updating rules structures...\n");
         trc_update_clear_rules(ctx.db_uid, ctx.updated_tests);
 
+        printf("Loading updating rules...\n");
         trc_update_load_rules(gctx->rules_load_from,
                               ctx.updated_tests,
+                              &ctx.global_rules,
                               gctx->flags);
         
+        printf("Applying updating rules...\n");
         trc_update_apply_rules(gctx->db_uid, ctx.updated_tests,
+                               &ctx.global_rules,
                                gctx->flags);
     }
 
     if (gctx->rules_save_to != NULL)
     {
         if (gctx->rules_load_from == NULL)
+        {
+            printf("Generating updating rules...\n");
             trc_update_gen_rules(ctx.db_uid, ctx.updated_tests,
                                  gctx->flags);
+        }
 
+        printf("Saving updating rules...\n");
         save_test_rules_to_file(ctx.updated_tests, gctx->rules_save_to,
                                 gctx->cmd);
     }
@@ -3345,11 +3477,18 @@ trc_update_process_logs(trc_update_ctx *gctx)
     if ((!(gctx->rules_load_from == NULL &&
            gctx->rules_save_to != NULL)) &&
         !(gctx->flags & TRC_LOG_PARSE_NO_GEN_WILDS))
+    {
+        printf("Generating wildcards...\n");
         trc_update_generate_wilds(gctx->db_uid,
                                   ctx.updated_tests);
+    }
 
+    printf("Done.\n");
     trc_update_clear_rules(ctx.db_uid, ctx.updated_tests);
-    trc_update_test_entries_free(ctx.updated_tests);
+    trc_update_tests_groups_free(ctx.updated_tests);
+    free(ctx.updated_tests);
+    ctx.updated_tests = NULL;
+    trc_update_rules_free(&ctx.global_rules);
     return rc;
 }
 

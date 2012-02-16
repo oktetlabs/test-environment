@@ -52,6 +52,9 @@ tq_strings_free(tqh_strings *head, void (*value_free)(void *))
 {
     tqe_string *p;
 
+    if (head == NULL)
+        return;
+
     while ((p = TAILQ_FIRST(head)) != NULL)
     {
         TAILQ_REMOVE(head, p, links);
@@ -82,7 +85,8 @@ tq_strings_equal(const tqh_strings *s1, const tqh_strings *s2)
 
 /* See the description in tq_string.h */
 te_errno
-tq_strings_add_uniq(tqh_strings *list, const char *value)
+tq_strings_add_uniq_gen(tqh_strings *list, const char *value,
+                        te_bool duplicate)
 {
     tqe_string *p;
 
@@ -99,11 +103,29 @@ tq_strings_add_uniq(tqh_strings *list, const char *value)
         if (p == NULL)
             return TE_ENOMEM;
 
-        p->v = (char *)value;
+        if (duplicate)
+            p->v = strdup((char *)value);
+        else
+            p->v = (char *)value;
+
         TAILQ_INSERT_TAIL(list, p, links);
 
         return 0;
     }
 
     return 1;
+}
+
+/* See the description in tq_string.h */
+te_errno
+tq_strings_add_uniq(tqh_strings *list, const char *value)
+{
+    return tq_strings_add_uniq_gen(list, value, FALSE);
+}
+
+/* See the description in tq_string.h */
+te_errno
+tq_strings_add_uniq_dup(tqh_strings *list, const char *value)
+{
+    return tq_strings_add_uniq_gen(list, value, TRUE);
 }

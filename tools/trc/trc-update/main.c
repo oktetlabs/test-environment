@@ -124,9 +124,12 @@ enum {
                                          program */
     TRC_UPDATE_OPT_TRC_SAVE,        /**< Path to file where resulting TRC
                                          should be saved */
+    TRC_UPDATE_OPT_TAGS_STR,        /**< Do not change string
+                                         representation of tags */
 };
 
 #ifdef HAVE_LIBPERL
+static SV *test_path = NULL;
 static HV *olds = NULL;
 static HV *news = NULL;
 static HV *commons = NULL;
@@ -307,6 +310,11 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
           "Generate wildcards for results from logs, not from TRC DB",
           NULL },
 
+        { "tags-str", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_TAGS_STR,
+          "Do not change string representation of tags",
+          NULL },
+
         { "log", 'l', POPT_ARG_STRING, NULL, TRC_UPDATE_OPT_LOG,
           "Specify log file", NULL },
 
@@ -461,6 +469,10 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
                 ctx.flags |= TRC_LOG_PARSE_LOG_WILDS;
                 break;
 
+            case TRC_UPDATE_OPT_TAGS_STR:
+                ctx.flags |= TRC_LOG_PARSE_TAGS_STR;
+                break;
+
             case TRC_UPDATE_OPT_CMD:
                 ctx.cmd = poptGetOptArg(optCon);
                 break;
@@ -521,6 +533,7 @@ perl_prepare()
         commons = get_hv("commons", GV_ADD);
         uncomm_news = get_hv("uncomm_new", GV_ADD);
         uncomm_olds = get_hv("uncomm_old", GV_ADD);
+        test_path = get_sv("test_path", GV_ADD);
 
         eval_pv("sub uncomm_old"
                 "{"
@@ -614,6 +627,7 @@ perl_prepare()
                 "}",
                 TRUE);
 
+        eval_pv("sub test_path { return $test_path; }", TRUE);
         eval_pv("sub old { return $old{$_[0]}; }", TRUE);
         eval_pv("sub new { return $new{$_[0]}; }", TRUE);
         eval_pv("sub old_e { return exists($old{$_[0]}); }", TRUE);
@@ -682,11 +696,24 @@ perl_prepare()
             char               *script_text = NULL;
 
             f = fopen(perl_script, "rb");
+            if (f == NULL)
+            {
+                perror("Failed to open file with perl script");
+                exit(1);
+            }
+
             fseek(f, 0, SEEK_END);
             flen = ftell(f);
             fseek(f, 0, SEEK_SET);
 
             script_text = calloc(flen, sizeof(*script_text));
+            if (script_text == NULL)
+            {
+                printf("Out of memory allocating space "
+                       "for perl script\n");
+                exit(1);
+            }
+
             fread(script_text, sizeof(*script_text), flen, f);
 
             te_string_append(&te_str,
@@ -700,6 +727,7 @@ perl_prepare()
             eval_pv(te_str.ptr, TRUE);
 
             free(script_text);
+            fclose(f);
         }
 
         te_string_free(&te_str);
@@ -713,7 +741,7 @@ perl_prepare()
  * Function to match iteration in TRC with iteration from logs
  * using one of perl_expr, perl_script, oth_prog.
  *
- * @param db_args   Arguments of iteration in TRC
+ * @param iter      Iteration in TRC
  * @param n_args    Number of arguments of iteration from log
  * @param args      Arguments of iteration from log
  * @param data      TRC Update data attached to iteration
@@ -722,10 +750,11 @@ perl_prepare()
  *         matching.
  */
 int
-func_args_match(const trc_test_iter_args *db_args,
+func_args_match(const void *iter_ptr,
                 unsigned int n_args, trc_report_argument *args,
                 void *data)
 {
+    trc_test_iter             *iter = iter_ptr;
     trc_update_test_iter_data *iter_data = data;
     trc_test_iter_arg         *arg;
 
@@ -753,8 +782,9 @@ func_args_match(const trc_test_iter_args *db_args,
         dTHX;
 
         hv_clear(olds);
+        sv_setpv(test_path, iter->parent->path);
 
-        TAILQ_FOREACH(arg, &db_args->head, links)
+        TAILQ_FOREACH(arg, &iter->args.head, links)
         {
             val = newSVpv(arg->value, strlen(arg->value));
             if (hv_store(olds, arg->name, strlen(arg->name),
@@ -764,7 +794,7 @@ func_args_match(const trc_test_iter_args *db_args,
                 return ITER_NO_MATCH;
             }
 
-            tq_strings_add_uniq(&arg_names, arg->name);
+            tq_strings_add_uniq_dup(&arg_names, arg->name);
         }
 
         hv_clear(news);
@@ -783,7 +813,8 @@ func_args_match(const trc_test_iter_args *db_args,
                 return ITER_NO_MATCH;
             }
 
-            if (tq_strings_add_uniq(&arg_names, args[i].name) == 1)
+            if (tq_strings_add_uniq_dup(&arg_names,
+                                        args[i].name) == 1)
             {
                 val = newSViv(1);
                 if (hv_store(commons, args[i].name,
@@ -797,8 +828,8 @@ func_args_match(const trc_test_iter_args *db_args,
 
         TAILQ_FOREACH(arg_name, &arg_names, links)
         {
-            if (tq_strings_add_uniq(&args_registered,
-                                    arg_name->v) == 0)
+            if (tq_strings_add_uniq_dup(&args_registered,
+                                        arg_name->v) == 0)
             {
                 memset(&te_str, 0, sizeof(te_str));
                 te_str.ptr = NULL;
@@ -831,8 +862,8 @@ func_args_match(const trc_test_iter_args *db_args,
         FREETMPS;
         LEAVE;
 
-        tq_strings_free(&arg_names, NULL);
-        tq_strings_free(&common_args, NULL);
+        tq_strings_free(&arg_names, free);
+        tq_strings_free(&common_args, free);
 
         if (rc == 1)
             return ITER_WILD_MATCH;
@@ -858,7 +889,7 @@ func_args_match(const trc_test_iter_args *db_args,
             char **argv;
             int    j = 0;
 
-            TAILQ_FOREACH(arg, &db_args->head, links)
+            TAILQ_FOREACH(arg, &iter->args.head, links)
                 i++;
 
             argv = TE_ALLOC(sizeof(*args) * (i + n_args + 2));
@@ -866,7 +897,7 @@ func_args_match(const trc_test_iter_args *db_args,
             j = 0;
             argv[j++] = oth_prog;
 
-            TAILQ_FOREACH(arg, &db_args->head, links)
+            TAILQ_FOREACH(arg, &iter->args.head, links)
             {
                 memset(&te_str, 0, sizeof(te_str));
                 te_str.ptr = NULL;
@@ -945,7 +976,7 @@ main(int argc, char **argv, char **envp)
      * and investigate results from log only
      */
     if (ctx.flags & TRC_LOG_PARSE_LOG_WILDS)
-        trc_free_trc_tests(&ctx.db->tests);
+        trc_remove_exp_results(ctx.db);
 
     /* Allocate TRC database user ID */
     ctx.db_uid = trc_db_new_user(ctx.db);
@@ -973,8 +1004,9 @@ main(int argc, char **argv, char **envp)
         trc_save_to = "temp_trc_db.xml";
 
     if (trc_db_save(ctx.db, trc_save_to,
-                    TRC_SAVE_REMOVE_OLD | TRC_SAVE_RESULTS |
-                    TRC_SAVE_GLOBALS,
+                    TRC_SAVE_UPDATE_OLD | TRC_SAVE_RESULTS |
+                    TRC_SAVE_GLOBALS | TRC_SAVE_DEL_XINCL |
+                    TRC_SAVE_NO_VOID_XINCL,
                     ctx.db_uid, &trc_update_is_to_save,
                     (ctx.rules_load_from == NULL &&
                      (ctx.flags & TRC_LOG_PARSE_USE_RULE_IDS)) ?
@@ -1013,7 +1045,7 @@ exit:
     free(perl_expr);
     free(perl_script);
     free(oth_prog);
-    tq_strings_free(&args_registered, NULL);
+    tq_strings_free(&args_registered, free);
 
     return result;
 }

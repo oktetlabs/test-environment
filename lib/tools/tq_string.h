@@ -78,6 +78,24 @@ extern te_bool tq_strings_equal(const tqh_strings *s1,
  *
  * @param list      Head of the list
  * @param value     A new string to add
+ * @param duplicate Whether to duplicate string
+ *                  or not
+ *
+ * @return
+ *          0 if string was added
+ *          1 if string was already presented
+ *          error code if error occured
+ */
+extern te_errno tq_strings_add_uniq_gen(tqh_strings *list,
+                                        const char *value,
+                                        te_bool duplicate);
+
+/**
+ * Add a new string into the list, if no such string is already present
+ * there. String value is not duplicated.
+ *
+ * @param list      Head of the list
+ * @param value     A new string to add
  *
  * @return
  *          0 if string was added
@@ -85,6 +103,21 @@ extern te_bool tq_strings_equal(const tqh_strings *s1,
  *          error code if error occured
  */
 extern te_errno tq_strings_add_uniq(tqh_strings *list, const char *value);
+
+/**
+ * Add a new string into the list, if no such string is already present
+ * there. String value is duplicated.
+ *
+ * @param list      Head of the list
+ * @param value     A new string to add
+ *
+ * @return
+ *          0 if string was added
+ *          1 if string was already presented
+ *          error code if error occured
+ */
+extern te_errno tq_strings_add_uniq_dup(tqh_strings *list,
+                                        const char *value);
 
 #ifdef __cplusplus
 } /* extern "C" */

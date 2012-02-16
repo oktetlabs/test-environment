@@ -140,7 +140,9 @@ sub download_prepare_log
 }
 
 my $opts = "";
+my $conf_tester = "";
 my $test_fake_run = "";
+my $test_fake_run_aux = "";
 my $test_specified = 0;
 my $rc = 0;
 
@@ -152,22 +154,33 @@ foreach (@ARGV)
           "      --conf-tester=STRING    Use this if something other \n".
           "                              than tester.conf should be \n".
           "                              used.\n";
-        
+         print "\n".
+          "      --tester-run=STRING     Test path for Tester fake run\n".
+          "                              (if specified, --test-name \n".
+          "                               has no effect on Tester)\n\n";
+       
         $rc = system("te-trc-update --help");
         exit $rc;
     }
     elsif ($_ =~ m/^--conf-tester=(.*)$/)
     {
-        $test_fake_run = $test_fake_run." --conf-tester=\"".
-                         escape_str($1)."\"";
+        $conf_tester = " --conf-tester=\"".escape_str($1)."\"";
     }
     elsif ($_ =~ m/^--test-name=(.*)$/)
+    {
+        $test_fake_run_aux = $test_fake_run_aux." --tester-fake=\"".
+                             escape_str($1)."\"";
+        $test_fake_run_aux = $test_fake_run_aux." --tester-run=\"".
+                             escape_str($1)."\"";
+        $opts = $opts." --test-name=\"".escape_str($1)."\"";
+        $test_specified = 1;
+    }
+    elsif ($_ =~ m/^--tester-run=(.*)$/)
     {
         $test_fake_run = $test_fake_run." --tester-fake=\"".
                          escape_str($1)."\"";
         $test_fake_run = $test_fake_run." --tester-run=\"".
                          escape_str($1)."\"";
-        $opts = $opts." --test-name=\"".escape_str($1)."\"";
         $test_specified = 1;
     }
     elsif ($_ =~ m/^--log=(.*)$/)
@@ -205,22 +218,28 @@ foreach (@ARGV)
     }
 }
 
+if (!defined($test_fake_run) || length($test_fake_run) == 0)
+{
+    $test_fake_run = $test_fake_run_aux;
+}
+
 if ($test_specified > 0)
 {
     (undef, $tmp_files[$#tmp_files + 1]) = tempfile("log-XXXX");
     my $fake_raw_log = getcwd()."/".$tmp_files[$#tmp_files];
+    print("Fake tester run...\n");
     system("if test x\${TE_BASE} != \"x\" -a ".
            "        x\${CONFDIR} != \"x\" ; then\n".
            "TE_LOG_RAW=\"".escape_str($fake_raw_log)."\" ".
            "\${TE_BASE}/dispatcher.sh --conf-dir=\${CONFDIR} ".
-           "$test_fake_run --no-builder --tester-no-build ".
-           "--no-cs --tester-no-cs --no-rcf --tester-no-reqs 1>/dev/null ".
-           "--log-txt=/dev/null\n".
+           "${conf_tester} ${test_fake_run} --no-builder ".
+           "--tester-no-build --no-cs --tester-no-cs --no-rcf ".
+           "--tester-no-reqs 1>/dev/null --log-txt=/dev/null\n".
            "else\n".
            "TE_LOG_RAW=\"".escape_str($fake_raw_log)."\" ".
-           "./run.sh $test_fake_run --no-builder --tester-no-build ".
-           "--no-cs --tester-no-cs --no-rcf --tester-no-reqs 1>/dev/null ".
-           "--log-txt=/dev/null\n".
+           "./run.sh ${conf_tester} ${test_fake_run} --no-builder ".
+           "--tester-no-build --no-cs --tester-no-cs --no-rcf ".
+           "--tester-no-reqs 1>/dev/null --log-txt=/dev/null\n".
            "fi");
     download_prepare_log($fake_raw_log);
     $opts = $opts." --fake-log=".$tmp_files[$#tmp_files];

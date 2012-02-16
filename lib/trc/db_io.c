@@ -79,11 +79,13 @@ static te_errno get_tests(xmlNodePtr *node, trc_tests *tests,
 
 /* insert markers to show where files were included */
 static te_errno
-trc_include_markers_add(xmlNodePtr parent)
+trc_include_markers_add(xmlNodePtr parent, int flags)
 {
     te_errno    rc = 0;
     xmlNodePtr  node;
+    xmlNodePtr  aux_node;
     xmlNodePtr  marker;
+    int         n = 0;
 
     if (parent == NULL)
         return 0;
@@ -92,7 +94,31 @@ trc_include_markers_add(xmlNodePtr parent)
     {
         if (node->type == XML_XINCLUDE_START)
         {
+            if (flags & TRC_SAVE_NO_VOID_XINCL)
+            {
+                n = 0;
+                for (aux_node = node->next; aux_node != NULL;
+                     aux_node = aux_node->next)
+                {
+                    if (aux_node->type == XML_XINCLUDE_START)
+                        n++;
+                    if (aux_node->type == XML_XINCLUDE_END)
+                        n--;
+                    if (aux_node->type == XML_ELEMENT_NODE ||
+                        n == -1)
+                        break;
+                }
+
+                if (n == -1)
+                {
+                    node = aux_node;
+                    continue;
+                }
+            }
+
             marker = xmlNewNode(NULL, BAD_CAST "xinclude_start");
+            marker->properties = xmlCopyPropList(marker,
+                                                 node->properties);
 
             if (xmlAddNextSibling(node, marker) == NULL)
             {
@@ -110,8 +136,22 @@ trc_include_markers_add(xmlNodePtr parent)
                 return TE_RC(TE_TRC, TE_EFAULT);
             }
         }
-        if ((rc = trc_include_markers_add(node)) != 0)
+        else if ((rc = trc_include_markers_add(node, flags)) != 0)
             return rc;
+    }
+
+    if (flags & TRC_SAVE_DEL_XINCL)
+    {
+        for (node = parent->children; node != NULL; node = aux_node)
+        {
+            aux_node = node->next;
+            if (node->type == XML_XINCLUDE_START ||
+                node->type == XML_XINCLUDE_END)
+            {
+                xmlUnlinkNode(node);
+                xmlFreeNode(node);
+            }
+        }
     }
 
     return 0;
@@ -751,7 +791,12 @@ get_test_iters(xmlNodePtr *node, trc_test *parent)
             if ((rc = alloc_and_get_test_iter(*node, parent)) != 0)
                 break;
         }
-        else if (xmlStrcmp((*node)->name, CONST_CHAR2XML("include")) == 0)
+        else if (xmlStrcmp((*node)->name,
+                           CONST_CHAR2XML("include")) == 0 ||
+                 xmlStrcmp((*node)->name,
+                           CONST_CHAR2XML("xinclude_start")) == 0 ||
+                 xmlStrcmp((*node)->name,
+                           CONST_CHAR2XML("xinclude_end")) == 0)
         {
             INFO("%s(): found 'include' entry", __FUNCTION__);
         }
@@ -849,7 +894,6 @@ alloc_and_get_test(xmlNodePtr node, trc_tests *tests,
 
     node = xmlNodeChildren(node);
 
-    p->obj_node = node;
     rc = get_node_with_text_content(&node, "objective", &p->objective);
     if (rc != 0)
     {
@@ -868,7 +912,11 @@ alloc_and_get_test(xmlNodePtr node, trc_tests *tests,
     }
 
     /* possible include with globals */
-    if (xmlStrcmp(node->name, CONST_CHAR2XML("include")) == 0)
+    if (xmlStrcmp(node->name, CONST_CHAR2XML("include")) == 0 ||
+        xmlStrcmp(node->name,
+                  CONST_CHAR2XML("xinclude_start")) == 0 ||
+        xmlStrcmp(node->name,
+                  CONST_CHAR2XML("xinclude_end")) == 0)
         node = xmlNodeNext(node);
     /* get test globals - they're added to globals set */
     if (xmlStrcmp(node->name, CONST_CHAR2XML("globals")) == 0)
@@ -926,7 +974,11 @@ get_tests(xmlNodePtr *node, trc_tests *tests, trc_test_iter *parent)
            (
                (xmlStrcmp((*node)->name, CONST_CHAR2XML("test")) == 0 &&
                     (rc = alloc_and_get_test(*node, tests, parent)) == 0) ||
-               (xmlStrcmp((*node)->name, CONST_CHAR2XML("include")) == 0)
+               (xmlStrcmp((*node)->name, CONST_CHAR2XML("include")) == 0 ||
+                xmlStrcmp((*node)->name,
+                          CONST_CHAR2XML("xinclude_start")) == 0 ||
+                xmlStrcmp((*node)->name,
+                          CONST_CHAR2XML("xinclude_end")) == 0)
            )
          )
     {
@@ -1035,7 +1087,9 @@ trc_db_open(const char *location, te_trc_db **db)
         }
 
         node = xmlNodeChildren(node);
+        (*db)->tests.node = node;
         rc = get_tests(&node, &(*db)->tests, NULL);
+
         if (rc != 0)
         {
             ERROR("Preprocessing of DB with expected testing results in "
@@ -1136,9 +1190,11 @@ trc_exp_result_to_xml(trc_exp_result *exp_result, xmlNodePtr results_node,
 }
 
 te_errno
-trc_exp_results_to_xml(trc_exp_results *exp_results, xmlNodePtr node)
+trc_exp_results_to_xml(trc_exp_results *exp_results, xmlNodePtr node,
+                       te_bool insert_after)
 {
     xmlNodePtr               results_node;
+    xmlNodePtr               prev_node;
     trc_exp_result          *result;
     trc_exp_result          *tvar;
 
@@ -1155,11 +1211,20 @@ trc_exp_results_to_xml(trc_exp_results *exp_results, xmlNodePtr node)
         SLIST_INSERT_HEAD(&results_rev, result, links);
     }
 
+    prev_node = node;
+
     SLIST_FOREACH_SAFE(result, &results_rev, links, tvar)
     {
-        results_node = xmlNewChild(node, NULL,
-                                   BAD_CAST "results",
-                                   NULL);
+        results_node = xmlNewNode(NULL, BAD_CAST "results");
+
+        if (insert_after)
+        {
+            xmlAddNextSibling(prev_node, results_node);
+            prev_node = results_node;
+        }
+        else
+            xmlAddChild(node, results_node);
+        
         trc_exp_result_to_xml(result, results_node, FALSE);
 
         SLIST_REMOVE_HEAD(&results_rev, links);
@@ -1179,6 +1244,9 @@ trc_update_iters(trc_test_iters *iters, int flags, int uid,
     void           *user_data;
     te_bool         is_saved;
     char           *user_attr;
+    xmlNodePtr      node;
+    xmlNodePtr      prev_node;
+    te_bool         renew_content;
 
     TAILQ_FOREACH(p, &iters->head, links)
     {
@@ -1195,23 +1263,63 @@ trc_update_iters(trc_test_iters *iters, int flags, int uid,
         else
             is_saved = TRUE;
 
-        if (p->node == NULL)
+        if (!is_saved && p->node != NULL)
+        {
+            xmlUnlinkNode(p->node);
+            xmlFreeNode(p->node);
+            p->node = NULL;
+        }
+        
+        if (is_saved)
         {
             trc_test_iter_arg  *a;
-            xmlNodePtr          node;
 
-            if (is_saved)
+            renew_content = TRUE;
+
+            if (p->node == NULL)
             {
                 INFO("Add node for iteration %p node=%p", iters,
                      iters->node);
                 p->node = p->tests.node = xmlNewChild(iters->node, NULL,
-                                              BAD_CAST "iter", NULL);
+                                                      BAD_CAST "iter",
+                                                      NULL);
                 if (p->tests.node == NULL)
                 {
-                    ERROR("xmlNewChild() failed");
+                    ERROR("xmlNewChild() failed for 'iter'");
                     return TE_ENOMEM;
                 }
-                xmlNewProp(p->tests.node, BAD_CAST "result",
+            }
+            else if (flags & TRC_SAVE_UPDATE_OLD)
+            {
+                xmlNodePtr  aux_ptr = NULL;
+
+                for (node = p->node->children;
+                     node != NULL;
+                     node = aux_ptr)
+                {
+                    aux_ptr = node->next;
+
+                    if (xmlStrcmp(node->name,
+                                  CONST_CHAR2XML("notes")) == 0 ||
+                        xmlStrcmp(node->name,
+                                  CONST_CHAR2XML("arg")) == 0 ||
+                        xmlStrcmp(node->name,
+                                  CONST_CHAR2XML("results")) == 0 ||
+                        (node->type != XML_ELEMENT_NODE &&
+                         node->type != XML_XINCLUDE_START &&
+                         node->type != XML_XINCLUDE_END))
+                    {
+                        xmlUnlinkNode(node);
+                        xmlFreeNode(node);
+                    }
+                }
+            }
+            else
+                renew_content = FALSE;
+
+            if (renew_content)
+            {
+                xmlSetProp(p->tests.node, BAD_CAST "result",
                            BAD_CAST "PASSED");
 
                 if (set_user_attr != NULL)
@@ -1225,45 +1333,74 @@ trc_update_iters(trc_test_iters *iters, int flags, int uid,
                     }
                 }
 
+                prev_node = NULL;
+
                 TAILQ_FOREACH(a, &p->args.head, links)
                 {
-                    xmlNodePtr arg = xmlNewChild(p->tests.node, NULL,
-                                                BAD_CAST "arg",
-                                                a->value == NULL ?
-                                                    BAD_CAST a->value :
-                                                    strlen(a->value) == 0 ?
-                                                        NULL :
-                                                        BAD_CAST a->value);
-                    if (arg == NULL)
+                    if ((node = xmlNewNode(NULL, BAD_CAST "arg")) == NULL)
                     {
                         ERROR("xmlNewChild() failed for 'arg'");
                         return TE_ENOMEM;
                     }
-                    xmlNewProp(arg, BAD_CAST "name", BAD_CAST a->name);
+                    
+                    xmlNodeSetContent(node, a->value == NULL ?
+                                                BAD_CAST a->value :
+                                                strlen(a->value) == 0 ?
+                                                        NULL :
+                                                        BAD_CAST a->value);
+                    xmlNewProp(node, BAD_CAST "name", BAD_CAST a->name);
+
+                    if (prev_node == NULL)
+                    {
+                        if (p->tests.node->children != NULL)
+                            xmlAddPrevSibling(p->tests.node->children,
+                                              node);
+                        else
+                            xmlAddChild(p->tests.node, node);
+                    }
+                    else
+                        xmlAddNextSibling(prev_node, node);
+
+                    prev_node = node;
                 }
-                node = xmlNewChild(p->tests.node, NULL,
-                                   BAD_CAST "notes", BAD_CAST p->notes);
-                if (node == NULL)
+                    
+                if ((node = xmlNewNode(NULL, BAD_CAST "notes")) == NULL)
                 {
                     ERROR("xmlNewChild() failed for 'notes'");
                     return TE_ENOMEM;
                 }
 
+                xmlNodeSetContent(node, BAD_CAST p->notes);
+
+                if (prev_node == NULL)
+                {
+                    if (p->tests.node->children != NULL)
+                        xmlAddPrevSibling(p->tests.node->children, node);
+                    else
+                        xmlAddChild(p->tests.node, node);
+                }
+                else
+                    xmlAddNextSibling(prev_node, node);
+
+                prev_node = node;
+
                 if ((flags & TRC_SAVE_RESULTS) &&
                     !SLIST_EMPTY(&p->exp_results))
                     trc_exp_results_to_xml(&p->exp_results,
-                                           p->tests.node);
+                                           prev_node,
+                                           TRUE);
+            }
+
+            if (is_saved)
+            {
+                rc = trc_update_tests(&p->tests, flags, uid, to_save,
+                                      set_user_attr);
+                if (rc != 0)
+                    return rc;
             }
         }
-
-        if (is_saved)
-        {
-            rc = trc_update_tests(&p->tests, flags, uid, to_save,
-                                  set_user_attr);
-            if (rc != 0)
-                return rc;
-        }
     }
+
     return 0;
 }
 
@@ -1287,8 +1424,10 @@ trc_update_tests(trc_tests *tests, int flags, int uid,
     te_errno    rc;
     trc_test   *p;
     xmlNodePtr  node;
+    xmlNodePtr  prev_node;
     void       *user_data;
     te_bool     is_saved;
+    te_bool     renew_content = FALSE;
 
     TAILQ_FOREACH(p, &tests->head, links)
     {
@@ -1305,9 +1444,18 @@ trc_update_tests(trc_tests *tests, int flags, int uid,
         else
             is_saved = TRUE;
 
-        if (p->node == NULL)
+        if (!is_saved && p->node != NULL)
         {
-            if (is_saved)
+            xmlUnlinkNode(p->node);
+            xmlFreeNode(p->node);
+            p->node = NULL;
+        }
+
+        if (is_saved)
+        {
+            renew_content = TRUE;
+
+            if (p->node == NULL)
             {
                 INFO("Add node for '%s'", p->name);
                 p->node = p->iters.node = xmlNewChild(tests->node, NULL,
@@ -1318,25 +1466,67 @@ trc_update_tests(trc_tests *tests, int flags, int uid,
                     ERROR("xmlNewChild() failed for 'test'");
                     return TE_ENOMEM;
                 }
-                xmlNewProp(p->iters.node, BAD_CAST "name",
-                           BAD_CAST p->name);
-                xmlNewProp(p->iters.node, BAD_CAST "type",
-                           BAD_CAST trc_test_type_to_str(p->type));
-                if ((p->obj_node = xmlNewChild(p->iters.node, NULL,
-                                        BAD_CAST "objective",
-                                        BAD_CAST p->objective)) == NULL)
+            }
+            else if (flags & TRC_SAVE_UPDATE_OLD)
+            {
+                xmlNodePtr  aux_ptr = NULL;
+
+                for (node = p->node->children;
+                     node != NULL;
+                     node = aux_ptr)
                 {
-                    ERROR("xmlNewChild() failed for 'objective'");
+                    aux_ptr = node->next;
+
+                    if (xmlStrcmp(node->name,
+                                  CONST_CHAR2XML("notes")) == 0 ||
+                        xmlStrcmp(node->name,
+                                  CONST_CHAR2XML("globals")) == 0 ||
+                        xmlStrcmp(node->name,
+                                  CONST_CHAR2XML("objective")) == 0 ||
+                        (node->type != XML_ELEMENT_NODE &&
+                         node->type != XML_XINCLUDE_START &&
+                         node->type != XML_XINCLUDE_END))
+                    {
+                        xmlUnlinkNode(node);
+                        xmlFreeNode(node);
+                    }
+                }
+            }
+            else
+                renew_content = FALSE;
+
+            if (renew_content)
+            {
+                xmlSetProp(p->iters.node, BAD_CAST "name",
+                           BAD_CAST p->name);
+                xmlSetProp(p->iters.node, BAD_CAST "type",
+                           BAD_CAST trc_test_type_to_str(p->type));
+
+                if ((node = xmlNewNode(NULL,
+                                       BAD_CAST "objective")) == NULL)
+                {
+                    ERROR("xmlNewNode() failed for 'objective'");
                     return TE_ENOMEM;
                 }
 
-                node = xmlNewChild(p->iters.node, NULL,
-                                   BAD_CAST "notes", NULL);
-                if (node == NULL)
+                xmlNodeSetContent(node, BAD_CAST p->objective);
+
+                if (p->iters.node->children != NULL)
+                    xmlAddPrevSibling(p->iters.node->children, node);
+                else
+                    xmlAddChild(p->iters.node, node);
+
+                prev_node = node;
+
+                if ((node = xmlNewNode(NULL, BAD_CAST "notes")) == NULL)
                 {
-                    ERROR("xmlNewChild() failed for 'notes'");
+                    ERROR("xmlNewNode() failed for 'notes'");
                     return TE_ENOMEM;
                 }
+
+                xmlNodeSetContent(node, BAD_CAST p->notes);
+                xmlAddNextSibling(prev_node, node);
+                prev_node = node;
 
                 if ((flags & TRC_SAVE_GLOBALS) &&
                     !TAILQ_EMPTY(&current_db->globals.head))
@@ -1348,17 +1538,18 @@ trc_update_tests(trc_tests *tests, int flags, int uid,
 
                     flags &= ~TRC_SAVE_GLOBALS;
 
-                    globals_node = xmlNewChild(p->iters.node, NULL,
-                                               BAD_CAST "globals",
-                                               NULL);
-                    if (globals_node == NULL)
+                    if ((globals_node = xmlNewNode(NULL,
+                                            BAD_CAST "globals")) == NULL)
                     {
-                        ERROR("xmlNewChild() failed for 'globals'");
+                        ERROR("xmlNewNode() failed for 'globals'");
                         return TE_ENOMEM;
                     }
-                    
+
+                    xmlAddNextSibling(prev_node, globals_node);
+
                     TAILQ_FOREACH(g, &current_db->globals.head, links)
                     {
+
                         global_node = xmlNewChild(globals_node, NULL,
                                                   BAD_CAST "global",
                                                   NULL);
@@ -1380,18 +1571,12 @@ trc_update_tests(trc_tests *tests, int flags, int uid,
                         xmlNewProp(global_node, BAD_CAST "name",
                                    BAD_CAST g->name);
                     }
-
                 }
             }
         }
 
         if (is_saved)
         {
-            if (p->obj_update)
-            {
-                xmlNodeSetContent(p->obj_node, BAD_CAST p->objective);
-            }
-
             rc = trc_update_iters(&p->iters, flags, uid, to_save,
                                   set_user_attr);
             if (rc != 0)
@@ -1495,7 +1680,7 @@ trc_db_save(te_trc_db *db, const char *filename, int flags,
         return rc;
     }
 
-    rc = trc_include_markers_add(xmlDocGetRootElement(db->xml_doc));
+    rc = trc_include_markers_add(xmlDocGetRootElement(db->xml_doc), flags);
     if (rc != 0)
     {
         ERROR("Failed to add XInclude markers to XML document");

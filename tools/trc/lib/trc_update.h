@@ -150,16 +150,30 @@ typedef struct trc_update_test_data {
     te_bool     to_save; /**< Should this test be saved? */
 } trc_update_test_data;
 
-/** Entry of list containing information about tests to be updated */
+/** Entry of queue containing information about tests to be updated */
 typedef struct trc_update_test_entry {
     TAILQ_ENTRY(trc_update_test_entry)   links; /**< List links */
     trc_test                            *test;  /**< Test in TRC DB */
-    trc_update_rules                    *rules; /**< Updating rules */
 } trc_update_test_entry;
 
-/** List containing information about tests to be updated */
+/** Queue containing information about tests to be updated */
 typedef TAILQ_HEAD(trc_update_test_entries,
                    trc_update_test_entry) trc_update_test_entries;
+
+/**
+ * Entry of queue containing information about groups of tests
+ * to be updated
+ */
+typedef struct trc_update_tests_group {
+    TAILQ_ENTRY(trc_update_tests_group)  links; /**< List links */
+    trc_update_test_entries              tests; /**< Related tests */
+    char                                *path;  /**< Path in TRC DB */
+    trc_update_rules                    *rules; /**< Updating rules */
+} trc_update_tests_group;
+
+/** Queue containing information about groups of tests to be updated */
+typedef TAILQ_HEAD(trc_update_tests_groups,
+                   trc_update_tests_group) trc_update_tests_groups;
 
 /** Group of iteration arguments (describes wildcard) */
 typedef struct trc_update_args_group {
@@ -249,18 +263,39 @@ extern void trc_update_rule_free(trc_update_rule *rule);
 extern void trc_update_rules_free(trc_update_rules *rules);
 
 /**
- * Free entry of list of tests to be updated.
+ * Free entry of queue of tests to be updated.
  *
- * @param test_entry    List entry to be freed
+ * @param test_entry   Queue entry to be freed
  */
 extern void trc_update_test_entry_free(trc_update_test_entry *test_entry);
 
 /**
- * Free list of tests to be updated.
+ * Free queue of tests to be updated.
  *
- * @param tests     List to be freed
+ * @param tests     Queue to be freed
  */
 extern void trc_update_test_entries_free(trc_update_test_entries *tests);
+
+/**
+ * Free structure describing group of tests to be updated.
+ *
+ * @param group     Pointer to structure describing group of tests
+ */
+extern void trc_update_tests_group_free(trc_update_tests_group *group);
+
+/**
+ * Free structure describing group of tests to be updated.
+ *
+ * @param group     Pointer to structure describing group of tests
+ */
+extern void trc_update_tests_group_free(trc_update_tests_group *group);
+
+/**
+ * Free queue of groups of tests to be updated.
+ *
+ * @param groups     Pointer to queue of groups of tests
+ */
+extern void trc_update_tests_groups_free(trc_update_tests_groups *groups);
 
 /**
  * Free group of arguments (wildcard).
