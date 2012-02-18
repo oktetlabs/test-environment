@@ -2290,6 +2290,7 @@ trc_update_gen_rules(unsigned int db_uid,
                              (flags & TRC_LOG_PARSE_COPY_BOTH)) 
                         p = SLIST_FIRST(&iter1->exp_results); 
 
+                    q = NULL;
                     prev = NULL;
                     was_changed = FALSE;
 
