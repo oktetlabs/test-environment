@@ -2621,41 +2621,44 @@ trc_diff_report_to_html(trc_diff_ctx *ctx, const char *filename,
     trc_diff_include_external_libs(f);
     fprintf(f, trc_diff_js_include_end);
 
-    /* Prepare and draw grap data */
-    trc_diff_graph_stats_to_html(f, &ctx->sets, &ctx->stats);
-
-    if (~ctx->flags & TRC_DIFF_FLAGS_NO_POPUPS)
+    if (!TAILQ_EMPTY(&ctx->sets))
     {
-        te_bool with_hashes =
-            ((ctx->flags & TRC_DIFF_FLAGS_NO_DETAILS) == 0);
-        /* Fill tests lists in stats table */
-        trc_diff_stats_js_table_report(f, &ctx->sets,
-                                       &ctx->stats, with_hashes);
-    }
+        /* Prepare and draw grap data */
+        trc_diff_graph_stats_to_html(f, &ctx->sets, &ctx->stats);
 
-    /* Output brief total statistics */
-    trc_diff_stats_brief_report(f, &ctx->sets, &ctx->stats, ctx->flags);
-
-    /* Output brief incremental statistics */
-    trc_diff_stats_brief_incremental_report(f, &ctx->sets,
-                                            &ctx->stats, ctx->flags);
-
-    if (~ctx->flags & TRC_DIFF_FLAGS_NO_DETAILS)
-    {
-        /* Output grand total statistics */
-        trc_diff_stats_to_html(f, &ctx->sets, &ctx->stats, ctx->flags);
-
-        /* Output per-key summary */
-        trc_diff_keys_stats_to_html(f, &ctx->sets);
-
-        /* Report */
-        if ((rc = trc_diff_result_to_html(&ctx->result, &ctx->sets,
-                                          ctx->flags | TRC_DIFF_BRIEF,
-                                          f)) != 0 ||
-            (rc = trc_diff_result_to_html(&ctx->result, &ctx->sets,
-                                          ctx->flags, f)) != 0)
+        if (~ctx->flags & TRC_DIFF_FLAGS_NO_POPUPS)
         {
-            goto cleanup;
+            te_bool with_hashes =
+                ((ctx->flags & TRC_DIFF_FLAGS_NO_DETAILS) == 0);
+            /* Fill tests lists in stats table */
+            trc_diff_stats_js_table_report(f, &ctx->sets,
+                                           &ctx->stats, with_hashes);
+        }
+
+        /* Output brief total statistics */
+        trc_diff_stats_brief_report(f, &ctx->sets, &ctx->stats, ctx->flags);
+
+        /* Output brief incremental statistics */
+        trc_diff_stats_brief_incremental_report(f, &ctx->sets,
+                                                &ctx->stats, ctx->flags);
+
+        if (~ctx->flags & TRC_DIFF_FLAGS_NO_DETAILS)
+        {
+            /* Output grand total statistics */
+            trc_diff_stats_to_html(f, &ctx->sets, &ctx->stats, ctx->flags);
+
+            /* Output per-key summary */
+            trc_diff_keys_stats_to_html(f, &ctx->sets);
+
+            /* Report */
+            if ((rc = trc_diff_result_to_html(&ctx->result, &ctx->sets,
+                                              ctx->flags | TRC_DIFF_BRIEF,
+                                              f)) != 0 ||
+                (rc = trc_diff_result_to_html(&ctx->result, &ctx->sets,
+                                              ctx->flags, f)) != 0)
+            {
+                goto cleanup;
+            }
         }
     }
 
