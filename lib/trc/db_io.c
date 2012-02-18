@@ -1084,6 +1084,9 @@ trc_files_free(trc_files *files)
 {
     trc_file    *p;
 
+    if (files == NULL)
+        return;
+
     while ((p = TAILQ_FIRST(files)) != NULL)
     {
         free(p->filename);
@@ -1768,10 +1771,11 @@ trc_iters_pos(trc_test_iter *iter, te_bool is_first)
 
     p = iter;
     filename = iter->filename;
-    assert(filename != NULL);
 
     do {
-        if (strcmp(p->filename, filename) == 0)
+        if ((filename == NULL && p->filename == NULL) ||
+            (filename != NULL && p->filename != NULL &&
+             strcmp(p->filename, filename) == 0))
         {
             p->file_pos = ++pos;
             test = TAILQ_FIRST(&p->tests.head);
@@ -1801,10 +1805,11 @@ trc_tests_pos(trc_test *test, te_bool is_first)
 
     p = test;
     filename = test->filename;
-    assert(filename != NULL);
 
     do {
-        if (strcmp(p->filename, filename) == 0)
+        if ((filename == NULL && p->filename == NULL) ||
+            (filename != NULL && p->filename != NULL &&
+             strcmp(p->filename, filename) == 0))
         {
             p->file_pos = ++pos;
             iter = TAILQ_FIRST(&p->iters.head);
