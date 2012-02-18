@@ -217,6 +217,7 @@ trc_free_test_iter(trc_test_iter *iter)
     trc_free_test_iter_args(&iter->args);
     //fprintf(stderr, "Free notes\n");
     free(iter->notes);
+    free(iter->filename);
     //fprintf(stderr, "Free exp results\n");
     trc_exp_results_free(&iter->exp_results);
     //fprintf(stderr, "Free tests\n");
@@ -253,6 +254,7 @@ trc_free_trc_tests(trc_tests *tests)
         free(p->name);
         free(p->notes);
         free(p->objective);
+        free(p->filename);
         trc_free_test_iters(&p->iters);
         free(p);
     }
@@ -376,6 +378,7 @@ trc_db_new_test(trc_tests *tests, trc_test_iter *parent, const char *name)
         LIST_INIT(&p->users);
         p->parent = parent;
         p->path = NULL;
+        p->filename = NULL;
         if (name != NULL)
         {
             p->name = strdup(name);
@@ -498,6 +501,7 @@ trc_db_new_test_iter(trc_test *test, unsigned int n_args,
         TAILQ_INIT(&p->tests.head);
         LIST_INIT(&p->users);
         p->parent = test;
+        p->filename = NULL;
         rc = trc_db_test_iter_args(&p->args, n_args, args);
         if (rc != 0)
         {

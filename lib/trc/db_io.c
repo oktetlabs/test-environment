@@ -62,6 +62,9 @@
 #define XML2CHAR(p)     ((char *)p)
 #define XML2CHAR_DUP(p) XML2CHAR(xmlStrdup(p))
 
+/** Maximum length of "pos" attribute */
+#define MAX_POS_LEN     10
+
 /* global database */
 /* fixme kostik: may be the code is written in assumption
  * that there can be several databases. Then I'm very very sorry. */
@@ -76,6 +79,8 @@ static te_bool          exp_defaults_inited = FALSE;
 static te_errno get_tests(xmlNodePtr *node, trc_tests *tests,
                           trc_test_iter *parent);
 
+/** Queue of included files */
+static trc_files       *inc_files = NULL;
 
 /* insert markers to show where files were included */
 static te_errno
@@ -155,6 +160,61 @@ trc_include_markers_add(xmlNodePtr parent, int flags)
     }
 
     return 0;
+}
+
+/**
+ * Check whether node is xInclude node or its marker,
+ * update queue of included files if so.
+ *
+ * @param node      XML node pointer
+ */
+static void
+update_files(xmlNodePtr node)
+{
+    trc_file  *file;
+
+    if (node == NULL)
+        return;
+
+    if (node->type == XML_XINCLUDE_START ||
+        xmlStrcmp(node->name,
+                  CONST_CHAR2XML("xinclude_start")) == 0)
+    {
+        xmlAttrPtr prop = node->properties;
+
+        /*
+         * This code is used because xmlGetProp() refuses to
+         * work with non-element nodes with which original
+         * xInclude nodes are replaced during processing.
+         */
+        if (prop != NULL)
+        {
+            do {
+                if (xmlStrEqual(prop->name,
+                                CONST_CHAR2XML("href")))
+                    break;
+                prop = prop->next;
+            } while (prop != NULL);
+
+            if (prop != NULL)
+            {
+                file = TE_ALLOC(sizeof(*file));
+                file->filename = (char *)xmlStrdup(
+                                        prop->children->content);
+                TAILQ_INSERT_TAIL(inc_files, file, links);
+            }
+        }
+    }
+    else if (node->type == XML_XINCLUDE_END ||
+             xmlStrcmp(node->name,
+                       CONST_CHAR2XML("xinclude_end")) == 0)
+    {
+        file = TAILQ_LAST(inc_files, trc_files);
+        assert(file != NULL);
+        TAILQ_REMOVE(inc_files, file, links);
+        free(file->filename);
+        free(file);
+    }
 }
 
 /**
@@ -641,12 +701,21 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test *test)
     trc_test_iter  *p;
     char           *tmp;
     te_test_status  def;
+    trc_file       *file;
 
     INFO("New iteration of the test %s", test->name);
 
     p = trc_db_new_test_iter(test, 0, NULL);
     if (p == NULL)
         return TE_RC(TE_TRC, TE_ENOMEM);
+
+    if (inc_files != NULL)
+    {
+        file = TAILQ_LAST(inc_files, trc_files);
+        if (file != NULL)
+            p->filename = strdup(file->filename);
+    }
+
     p->node = p->tests.node = node;
     
     tmp = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("n")));
@@ -757,7 +826,6 @@ get_globals(xmlNodePtr node, trc_test *parent)
                 return TE_RC(TE_TRC, TE_EFMT);
             }
 
-
             TAILQ_INSERT_HEAD(&current_db->globals.head, g, links);
         }
         else
@@ -799,6 +867,7 @@ get_test_iters(xmlNodePtr *node, trc_test *parent)
                            CONST_CHAR2XML("xinclude_end")) == 0)
         {
             INFO("%s(): found 'include' entry", __FUNCTION__);
+            update_files(*node);
         }
         else
         {
@@ -826,6 +895,7 @@ alloc_and_get_test(xmlNodePtr node, trc_tests *tests,
     te_errno    rc;
     trc_test   *p;
     char       *tmp;
+    trc_file   *file;
 
     assert(tests != NULL);
 
@@ -836,6 +906,13 @@ alloc_and_get_test(xmlNodePtr node, trc_tests *tests,
         return TE_RC(TE_TRC, TE_ENOMEM);
     }
     
+    if (inc_files != NULL)
+    {
+        file = TAILQ_LAST(inc_files, trc_files);
+        if (file != NULL)
+            p->filename = strdup(file->filename);
+    }
+
     p->node = p->iters.node = node;
 
     p->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
@@ -917,7 +994,10 @@ alloc_and_get_test(xmlNodePtr node, trc_tests *tests,
                   CONST_CHAR2XML("xinclude_start")) == 0 ||
         xmlStrcmp(node->name,
                   CONST_CHAR2XML("xinclude_end")) == 0)
+    {
+        update_files(node);
         node = xmlNodeNext(node);
+    }
     /* get test globals - they're added to globals set */
     if (xmlStrcmp(node->name, CONST_CHAR2XML("globals")) == 0)
     {
@@ -982,6 +1062,7 @@ get_tests(xmlNodePtr *node, trc_tests *tests, trc_test_iter *parent)
            )
          )
     {
+        update_files(*node);
         *node = xmlNodeNext(*node);
     }
     if (*node != NULL)
@@ -993,6 +1074,23 @@ get_tests(xmlNodePtr *node, trc_tests *tests, trc_test_iter *parent)
     return rc;
 }
 
+/**
+ * Free queue of included files.
+ *
+ * @param files     Queue of included files
+ */
+static void
+trc_files_free(trc_files *files)
+{
+    trc_file    *p;
+
+    while ((p = TAILQ_FIRST(files)) != NULL)
+    {
+        free(p->filename);
+        TAILQ_REMOVE(files, p, links);
+        free(p);
+    }
+}
 
 /* See description in te_trc.h */
 te_errno
@@ -1004,6 +1102,7 @@ trc_db_open(const char *location, te_trc_db **db)
     xmlError           *err;
 #endif
     te_errno            rc;
+    trc_file           *file;
     int subst;
 
     if (location == NULL)
@@ -1088,7 +1187,32 @@ trc_db_open(const char *location, te_trc_db **db)
 
         node = xmlNodeChildren(node);
         (*db)->tests.node = node;
+
+        inc_files = TE_ALLOC(sizeof(*inc_files));
+        if (inc_files == NULL)
+        {
+            ERROR("Out of memory");
+            return TE_ENOMEM;
+        }
+
+        TAILQ_INIT(inc_files);
+        file = TE_ALLOC(sizeof(*file));
+        if (file == NULL)
+        {
+            ERROR("Out of memory");
+            return TE_ENOMEM;
+        }
+
+        file->filename = strdup((*db)->filename);
+        if (file->filename == NULL)
+        {
+            ERROR("Out of memory");
+            return TE_ENOMEM;
+        }
+
+        TAILQ_INSERT_TAIL(inc_files, file, links);
         rc = get_tests(&node, &(*db)->tests, NULL);
+        trc_files_free(inc_files);
 
         if (rc != 0)
         {
@@ -1333,6 +1457,18 @@ trc_update_iters(trc_test_iters *iters, int flags, int uid,
                     }
                 }
 
+                if (flags & TRC_SAVE_POS_ATTR)
+                {
+                    user_attr = TE_ALLOC(MAX_POS_LEN);
+                    if (user_attr == NULL)
+                        return TE_ENOMEM;
+
+                    snprintf(user_attr, MAX_POS_LEN, "%d", p->file_pos);
+                    xmlSetProp(p->tests.node, BAD_CAST "pos",
+                               BAD_CAST user_attr);
+                    free(user_attr);
+                }
+
                 prev_node = NULL;
 
                 TAILQ_FOREACH(a, &p->args.head, links)
@@ -1428,6 +1564,7 @@ trc_update_tests(trc_tests *tests, int flags, int uid,
     void       *user_data;
     te_bool     is_saved;
     te_bool     renew_content = FALSE;
+    char       *user_attr;
 
     TAILQ_FOREACH(p, &tests->head, links)
     {
@@ -1501,6 +1638,18 @@ trc_update_tests(trc_tests *tests, int flags, int uid,
                            BAD_CAST p->name);
                 xmlSetProp(p->iters.node, BAD_CAST "type",
                            BAD_CAST trc_test_type_to_str(p->type));
+
+                if (flags & TRC_SAVE_POS_ATTR)
+                {
+                    user_attr = TE_ALLOC(MAX_POS_LEN);
+                    if (user_attr == NULL)
+                        return TE_ENOMEM;
+
+                    snprintf(user_attr, MAX_POS_LEN, "%d", p->file_pos);
+                    xmlSetProp(p->iters.node, BAD_CAST "pos",
+                               BAD_CAST user_attr);
+                    free(user_attr);
+                }
 
                 if ((node = xmlNewNode(NULL,
                                        BAD_CAST "objective")) == NULL)
@@ -1586,6 +1735,89 @@ trc_update_tests(trc_tests *tests, int flags, int uid,
     return 0;
 }
 
+/**
+ * Compute "file_pos" properties value for
+ * all tests and they descendants, starting
+ * from a given test.
+ *
+ * @param test      From which test to start
+ * @param is_first  Whether this test is first in
+ *                  list of its siblings or not
+ */
+static te_errno trc_tests_pos(trc_test *test, te_bool is_first);
+
+/**
+ * Compute "file_pos" properties value for
+ * all iterations and they descendants, starting
+ * from a given iteration.
+ *
+ * @param iter      From which iteration to start
+ * @param is_first  Whether this iteration is first in
+ *                  list of its siblings or not
+ */
+static te_errno
+trc_iters_pos(trc_test_iter *iter, te_bool is_first)
+{
+    int               pos = 0;
+    char             *filename;
+    trc_test         *test;
+    trc_test_iter    *p;
+
+    if (iter == NULL)
+        return 0;
+
+    p = iter;
+    filename = iter->filename;
+    assert(filename != NULL);
+
+    do {
+        if (strcmp(p->filename, filename) == 0)
+        {
+            p->file_pos = ++pos;
+            test = TAILQ_FIRST(&p->tests.head);
+            trc_tests_pos(test, TRUE);
+        }
+        else if (is_first)
+            trc_iters_pos(p, FALSE);
+        else
+            break;
+
+    } while ((p = TAILQ_NEXT(p, links)) != NULL);
+
+    return 0;
+}
+
+/** See description above */
+static te_errno
+trc_tests_pos(trc_test *test, te_bool is_first)
+{
+    int              pos = 0;
+    char            *filename;
+    trc_test_iter   *iter;
+    trc_test        *p;
+
+    if (test == NULL)
+        return 0;
+
+    p = test;
+    filename = test->filename;
+    assert(filename != NULL);
+
+    do {
+        if (strcmp(p->filename, filename) == 0)
+        {
+            p->file_pos = ++pos;
+            iter = TAILQ_FIRST(&p->iters.head);
+            trc_iters_pos(iter, TRUE);
+        }
+        else if (is_first)
+            trc_tests_pos(p, FALSE);
+        else
+            break;
+    } while ((p = TAILQ_NEXT(p, links)) != NULL);
+
+    return 0;
+}
 
 /* See description in trc_db.h */
 te_errno
@@ -1594,8 +1826,10 @@ trc_db_save(te_trc_db *db, const char *filename, int flags,
             char *(*set_user_attr)(void *, te_bool),
             char *cmd)
 {
-    const char *fn = (filename != NULL) ? filename : db->filename;
-    te_errno    rc;
+    const char          *fn = (filename != NULL) ?
+                                    filename : db->filename;
+    te_errno             rc;
+    trc_test            *test;
 
     if (flags & TRC_SAVE_REMOVE_OLD)
     {
@@ -1673,6 +1907,9 @@ trc_db_save(te_trc_db *db, const char *filename, int flags,
         }
     }
 
+    test = TAILQ_FIRST(&db->tests.head);
+    trc_tests_pos(test, TRUE);
+
     if ((rc = trc_update_tests(&db->tests, flags, uid, to_save,
                                set_user_attr)) != 0)
     {
@@ -1697,6 +1934,10 @@ trc_db_save(te_trc_db *db, const char *filename, int flags,
         RING("DB with expected testing results has been updated:\n%s\n\n",
              fn);
     }
+
+    trc_files_free(inc_files);
+    free(inc_files);
+    inc_files = NULL;
 
     return 0;
 }

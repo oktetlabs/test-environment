@@ -286,6 +286,14 @@ trc_db_walker_step_test(te_trc_db_walker *walker, const char *test_name,
                     ERROR("Cannot allocate a new test '%s'", test_name);
                     return FALSE;
                 }
+
+                if (walker->iter != NULL &&
+                    walker->iter->filename != NULL)
+                    walker->test->filename =
+                        strdup(walker->iter->filename);
+                else if (walker->db->filename != NULL)
+                    walker->test->filename =
+                        strdup(walker->db->filename);
             }
             else
             {
@@ -617,6 +625,15 @@ trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
                           walker->test->name);
                     return FALSE;
                 }
+
+                if (wild_iter != NULL && wild_iter->filename != NULL)
+                    walker->iter->filename = strdup(wild_iter->filename);
+                else if (walker->test->filename != NULL)
+                    walker->iter->filename =
+                        strdup(walker->test->filename);
+                else if (walker->db->filename != NULL)
+                    walker->iter->filename =
+                        strdup(walker->db->filename);
 
                 if (no_wildcards && wild_iter != NULL)
                    trc_db_test_iter_res_cpy(walker->iter,

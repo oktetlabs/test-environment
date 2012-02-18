@@ -62,6 +62,14 @@ typedef LIST_HEAD(, trc_user_data)  trc_users_data;
 /** List of expected results */
 typedef SLIST_HEAD(trc_exp_results, trc_exp_result) trc_exp_results;
 
+/** Item of queue of included files */
+typedef struct trc_file {
+    TAILQ_ENTRY(trc_file)    links;     /**< Queue links */
+    char                    *filename;  /**< File name */
+} trc_file;
+
+/** Queue of included files */
+typedef TAILQ_HEAD(trc_files, trc_file) trc_files;
 
 /* Forward */
 struct trc_test;
@@ -103,6 +111,11 @@ typedef struct trc_test_iter {
 
     trc_users_data      users;      /**< Users data */
 
+    char               *filename;   /**< File in which this iteration
+                                         is described in TRC */
+    int                 file_pos;   /**< Number of the iteration in
+                                         the list of all its siblings
+                                         belonging to the same file */
 } trc_test_iter;
 
 /** Head of the list with test iterations */
@@ -145,6 +158,11 @@ typedef struct trc_test {
 
     trc_users_data  users;          /**< Users data */
 
+    char               *filename;   /**< File in which this test
+                                         is described in TRC */
+    int                 file_pos;   /**< Number of the test in
+                                         the list of all its siblings
+                                         belonging to the same file */
 } trc_test;
 
 typedef struct trc_global {
@@ -261,16 +279,23 @@ void trc_db_test_iter_res_split(trc_test_iter *itr);
 
 /** TRC DB saving options */
 typedef enum {
-    TRC_SAVE_REMOVE_OLD = 0x1,      /**< Remove XML representation and
+    TRC_SAVE_REMOVE_OLD    = 0x1,   /**< Remove XML representation and
                                          generate it from scratch */
-    TRC_SAVE_RESULTS = 0x2,         /**< Save expected results of
+    TRC_SAVE_RESULTS       = 0x2,   /**< Save expected results of
                                          iterations */
-    TRC_SAVE_GLOBALS = 0x4,         /**< Save global variables */
-    TRC_SAVE_UPDATE_OLD = 0x8,      /**< Update existing nodes */
-    TRC_SAVE_DEL_XINCL  = 0x10,     /**< Delete XInclude elements */
+    TRC_SAVE_GLOBALS       = 0x4,   /**< Save global variables */
+    TRC_SAVE_UPDATE_OLD    = 0x8,   /**< Update existing nodes */
+    TRC_SAVE_DEL_XINCL     = 0x10,  /**< Delete XInclude elements */
     TRC_SAVE_NO_VOID_XINCL = 0x20,  /**< Do not mark XInclude elements
                                          having no included content
                                          between them */
+    TRC_SAVE_POS_ATTR      = 0x40,  /**< Save "pos" attribute for
+                                         tests and iterations
+                                         which value is a number
+                                         of a given element
+                                         in list of its siblings
+                                         included from the same
+                                         file */
 } trc_save_flags;
 
 /**

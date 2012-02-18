@@ -110,6 +110,11 @@ enum {
     TRC_UPDATE_OPT_NO_COPY_CONFLS,  /**< Do not duplicate conflicting
                                          results in <new> section of
                                          updating rule */
+    TRC_UPDATE_OPT_COPY_BOTH,       /**< If both --copy-old and
+                                         --copy-confls are specified,
+                                         copy results related to both
+                                         options in <new> section of
+                                         updating rule */
     TRC_UPDATE_OPT_NO_FILL_NEW,     /**< Do not fill <new> section of
                                          updating rule */
     TRC_UPDATE_OPT_NO_WILDS,        /**< Do not generate wildcards */
@@ -295,6 +300,12 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
           "Do not copy conflicting results from logs into <new> section "
           "of updating rule (default behaviour)", NULL },
 
+        { "copy-both", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_COPY_BOTH,
+          "If both --copy-new and --copy-confls are specified, copy "
+          "results related to both options into <new> section "
+          "of updating rule", NULL },
+
         { "no-fill-new", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_NO_FILL_NEW,
           "Do not automatically fill <new> section of updating rule",
@@ -441,6 +452,10 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
 
             case TRC_UPDATE_OPT_NO_COPY_CONFLS:
                 ctx.flags &= ~TRC_LOG_PARSE_COPY_CONFLS;
+                break;
+
+            case TRC_UPDATE_OPT_COPY_BOTH:
+                ctx.flags |= TRC_LOG_PARSE_COPY_BOTH;
                 break;
 
             case TRC_UPDATE_OPT_NO_FILL_NEW:
@@ -754,7 +769,7 @@ func_args_match(const void *iter_ptr,
                 unsigned int n_args, trc_report_argument *args,
                 void *data)
 {
-    trc_test_iter             *iter = iter_ptr;
+    trc_test_iter             *iter = (trc_test_iter *)iter_ptr;
     trc_update_test_iter_data *iter_data = data;
     trc_test_iter_arg         *arg;
 
@@ -1006,7 +1021,7 @@ main(int argc, char **argv, char **envp)
     if (trc_db_save(ctx.db, trc_save_to,
                     TRC_SAVE_UPDATE_OLD | TRC_SAVE_RESULTS |
                     TRC_SAVE_GLOBALS | TRC_SAVE_DEL_XINCL |
-                    TRC_SAVE_NO_VOID_XINCL,
+                    TRC_SAVE_NO_VOID_XINCL | TRC_SAVE_POS_ATTR,
                     ctx.db_uid, &trc_update_is_to_save,
                     (ctx.rules_load_from == NULL &&
                      (ctx.flags & TRC_LOG_PARSE_USE_RULE_IDS)) ?

@@ -2237,6 +2237,11 @@ trc_update_gen_rules(unsigned int db_uid,
     trc_update_test_iter_data   *iter_data1 = NULL;
     trc_update_test_iter_data   *iter_data2 = NULL;
     trc_update_rule             *rule;
+    trc_exp_result              *p;
+    trc_exp_result              *q;
+    trc_exp_result              *prev;
+    te_bool                      was_changed;
+    te_bool                      set_confls;
     int                          cur_rule_id = 0;
 
     TAILQ_FOREACH(group, updated_tests, links)
@@ -2266,25 +2271,64 @@ trc_update_gen_rules(unsigned int db_uid,
                     rule->confl_res = trc_exp_results_dup(
                                                 &iter_data1->new_results);
 
-                    rule->new_res = NULL;
+                    rule->new_res = TE_ALLOC(sizeof(*(rule->new_res)));
+                    SLIST_INIT(rule->new_res);
 
-                    if ((flags & TRC_LOG_PARSE_COPY_OLD) &&
-                        (flags & TRC_LOG_PARSE_COPY_OLD_FIRST) &&
-                        !SLIST_EMPTY(&iter1->exp_results))
-                        rule->new_res =
-                            trc_exp_results_dup(&iter1->exp_results);
+                    set_confls = FALSE;
 
-                    if ((flags & TRC_LOG_PARSE_COPY_CONFLS) &&
-                        rule->new_res == NULL &&
-                        !SLIST_EMPTY(rule->confl_res))
-                        rule->new_res =
-                            trc_exp_results_dup(rule->confl_res);
+                    if (((flags & TRC_LOG_PARSE_COPY_OLD_FIRST) &&
+                         (flags & TRC_LOG_PARSE_COPY_OLD)) ||
+                        ((flags & TRC_LOG_PARSE_COPY_BOTH) &&
+                         SLIST_EMPTY(rule->confl_res))) 
+                    {
+                        /* Do not forget about reverse order
+                         * of expected results in memory */
+                        set_confls = TRUE;
+                        p = SLIST_FIRST(rule->confl_res);
+                    }
+                    else if ((flags & TRC_LOG_PARSE_COPY_CONFLS) ||
+                             (flags & TRC_LOG_PARSE_COPY_BOTH)) 
+                        p = SLIST_FIRST(&iter1->exp_results); 
 
-                    if ((flags & TRC_LOG_PARSE_COPY_OLD) &&
-                        rule->new_res == NULL &&
-                        !SLIST_EMPTY(&iter1->exp_results))
-                        rule->new_res =
-                            trc_exp_results_dup(&iter1->exp_results);
+                    prev = NULL;
+                    was_changed = FALSE;
+
+                    while (TRUE)
+                    {
+                        if (p == NULL && !was_changed)
+                        {
+                            if (((SLIST_EMPTY(rule->new_res) &&
+                                 (flags & TRC_LOG_PARSE_COPY_CONFLS)) ||
+                                 (flags & TRC_LOG_PARSE_COPY_BOTH)) &&
+                                !set_confls) 
+                                p = SLIST_FIRST(rule->confl_res); 
+                            else if (((SLIST_EMPTY(rule->new_res) &&
+                                      (flags & TRC_LOG_PARSE_COPY_OLD)) ||
+                                      (flags & TRC_LOG_PARSE_COPY_BOTH)) && 
+                                      set_confls)
+                            {
+                                prev = q;
+                                p = SLIST_FIRST(&iter1->exp_results);
+                            }
+
+                            was_changed = TRUE;
+                        }
+
+                        if (p == NULL)
+                            break;
+
+                        q = trc_exp_result_dup(p);
+                        if (prev == NULL)
+                            SLIST_INSERT_HEAD(rule->new_res, q, links);
+                        else
+                            SLIST_INSERT_AFTER(prev, q, links);
+
+                        /* Taking into account the fact that expected
+                         * results are loaded/saved in reverse order */
+                        if (!set_confls)
+                            prev = q;
+                        p = SLIST_NEXT(p, links);
+                    }
 
                     if (flags & TRC_LOG_PARSE_USE_RULE_IDS)
                         cur_rule_id++;
@@ -2833,6 +2877,9 @@ trc_update_generate_test_wilds(unsigned int db_uid,
         free(dup_args);
         iter->parent = test;
 
+        if (test->filename != NULL)
+            iter->filename = strdup(test->filename);
+
         iter_data = TE_ALLOC(sizeof(*iter_data));
         iter_data->to_save = TRUE;
         trc_db_iter_set_user_data(iter, db_uid, iter_data);
@@ -2939,7 +2986,9 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
             trc_update_test_iter_data     *upd_test_data;
             te_bool                        to_save;
             func_args_match_ptr            func_ptr = NULL;
+            trc_test                      *test;
 
+            test = trc_db_walker_get_test(ctx->db_walker);
             entry = TAILQ_FIRST(&ctx->iter_data->runs);
             assert(entry != NULL);
             assert(TAILQ_NEXT(entry, links) == NULL);
@@ -2976,13 +3025,15 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                                                                     TRUE,
                                          /*
                                           * We obtain full TRC without
-                                          * wildcards in TRC update
+                                          * wildcards for every
+                                          * script in TRC update
                                           * process
                                           */
                                          (ctx->flags &
                                             (TRC_LOG_PARSE_FAKE_LOG |
                                              TRC_LOG_PARSE_MERGE_LOG |
-                                             TRC_LOG_PARSE_LOG_WILDS)) ?
+                                             TRC_LOG_PARSE_LOG_WILDS)) &&
+                                          test->type == TRC_TEST_SCRIPT ?
                                                 TRUE : FALSE,
                                          /* 
                                           * Currently not used - 
@@ -3054,9 +3105,6 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
             }
             else
             {
-                trc_test   *test;
-
-                test = trc_db_walker_get_test(ctx->db_walker);
 
                 upd_iter_data = trc_db_walker_get_user_data(ctx->db_walker,
                                                             ctx->db_uid);
