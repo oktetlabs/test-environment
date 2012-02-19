@@ -1595,8 +1595,9 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                 c->cmsg_len = CMSG_LEN(rpc_c->data.data_len);
 
                 for (i = 0;
-                     CMSG_NEXT(c) <= raw_optval + raw_roptlen &&
-                     CMSG_NEXT(c) >= c &&i < len;
+                     CMSG_TOTAL_LEN(c) <=
+                        CMSG_REMAINED_LEN(c, raw_optval, raw_roptlen) &&
+                     i < len;
                      i++, rpc_c++, c = CMSG_NEXT(c))
                 {
                     c->cmsg_level = socklevel_rpc2h(rpc_c->level);
