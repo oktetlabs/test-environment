@@ -1784,9 +1784,10 @@ trc_update_apply_rules(unsigned int db_uid,
                         rule_id = atoi(value + 5);
 
                     rules_switch = FALSE;
-                    rule = TAILQ_FIRST(global_rules);
 
-                    while (!(rule == NULL && rules_switch == TRUE))
+                    for (rule = TAILQ_FIRST(global_rules);
+                         !(rule == NULL && rules_switch == TRUE);
+                         rule = TAILQ_NEXT(rule, links))
                     {
                         if (rule == NULL)
                         {
@@ -1857,8 +1858,6 @@ trc_update_apply_rules(unsigned int db_uid,
 
                         if (iter_data->rule != NULL)
                             break;
-
-                        rule = TAILQ_NEXT(rule, links);
                     }
                 }
 
