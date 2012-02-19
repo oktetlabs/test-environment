@@ -726,6 +726,13 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test *test)
         return TE_RC(TE_TRC, TE_ENOSYS);
     }
 
+    tmp = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("pos")));
+    if (tmp != NULL)
+    {
+        p->file_pos = atoi(tmp);
+        free(tmp);
+    }
+
     rc = get_result(node, "result", &def);
     if (rc != 0)
     {
@@ -966,6 +973,13 @@ alloc_and_get_test(xmlNodePtr node, trc_tests *tests,
         return TE_RC(TE_TRC, TE_EFMT);
     }
     free(tmp);
+
+    tmp = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("pos")));
+    if (tmp != NULL)
+    {
+        p->file_pos = atoi(tmp);
+        free(tmp);
+    }
 
     INFO("Parsing test '%s' type=%d aux=%d", p->name, p->type, p->aux);
 
@@ -1777,12 +1791,21 @@ trc_iters_pos(trc_test_iter *iter, te_bool is_first)
             (filename != NULL && p->filename != NULL &&
              strcmp(p->filename, filename) == 0))
         {
+            /** "pos" attribute is aready set in file */
+            if (p->node != NULL &&
+                xmlGetProp(p->node, CONST_CHAR2XML("pos")) != NULL)
+                return -1;
+
             p->file_pos = ++pos;
             test = TAILQ_FIRST(&p->tests.head);
-            trc_tests_pos(test, TRUE);
+            if (trc_tests_pos(test, TRUE) != 0)
+                return -1;
         }
         else if (is_first)
-            trc_iters_pos(p, FALSE);
+        {
+            if (trc_iters_pos(p, FALSE) != 0)
+                return -1;
+        }
         else
             break;
 
@@ -1799,6 +1822,7 @@ trc_tests_pos(trc_test *test, te_bool is_first)
     char            *filename;
     trc_test_iter   *iter;
     trc_test        *p;
+    xmlChar         *xml_pos;
 
     if (test == NULL)
         return 0;
@@ -1811,12 +1835,21 @@ trc_tests_pos(trc_test *test, te_bool is_first)
             (filename != NULL && p->filename != NULL &&
              strcmp(p->filename, filename) == 0))
         {
+            /** "pos" attribute is aready set in file */
+            if (p->node != NULL &&
+                xmlGetProp(p->node, CONST_CHAR2XML("pos")) != NULL)
+                return -1;
+
             p->file_pos = ++pos;
             iter = TAILQ_FIRST(&p->iters.head);
-            trc_iters_pos(iter, TRUE);
+            if (trc_iters_pos(iter, TRUE) != 0)
+                return -1;
         }
         else if (is_first)
-            trc_tests_pos(p, FALSE);
+        {
+            if (trc_tests_pos(p, FALSE) != 0)
+                return -1;
+        }
         else
             break;
     } while ((p = TAILQ_NEXT(p, links)) != NULL);
