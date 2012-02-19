@@ -1822,7 +1822,6 @@ trc_tests_pos(trc_test *test, te_bool is_first)
     char            *filename;
     trc_test_iter   *iter;
     trc_test        *p;
-    xmlChar         *xml_pos;
 
     if (test == NULL)
         return 0;
