@@ -278,7 +278,7 @@ rpc_dup2(rcf_rpc_server *rpcs,
     in.oldfd = oldfd;
     in.newfd = newfd;
 
-    rcf_rpc_call(rpcs, "dup", &in, &out);
+    rcf_rpc_call(rpcs, "dup2", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(dup2, out.fd);
     TAPI_RPC_LOG(rpcs, dup2, "%d, %d", "%d", oldfd, newfd, out.fd);
