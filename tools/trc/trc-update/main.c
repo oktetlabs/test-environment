@@ -428,8 +428,6 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
                 break;
 
             case TRC_UPDATE_OPT_COPY_OLD:
-                if (!(ctx.flags & TRC_LOG_PARSE_COPY_CONFLS))
-                    ctx.flags |= TRC_LOG_PARSE_COPY_OLD_FIRST;
                 ctx.flags |= TRC_LOG_PARSE_COPY_OLD;
                 break;
 
@@ -439,10 +437,12 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
 
             case TRC_UPDATE_OPT_CP_OLD_FIRST:
                 ctx.flags |= TRC_LOG_PARSE_COPY_OLD_FIRST;
+                ctx.flags |= TRC_LOG_PARSE_COPY_OLD;
                 break;
 
             case TRC_UPDATE_OPT_CP_CONFLS_FIRST:
                 ctx.flags &= ~TRC_LOG_PARSE_COPY_OLD_FIRST;
+                ctx.flags |= TRC_LOG_PARSE_COPY_CONFLS;
                 break;
 
             case TRC_UPDATE_OPT_NO_COPY_OLD:
@@ -455,6 +455,8 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
                 break;
 
             case TRC_UPDATE_OPT_COPY_BOTH:
+                ctx.flags |= TRC_LOG_PARSE_COPY_OLD;
+                ctx.flags |= TRC_LOG_PARSE_COPY_CONFLS;
                 ctx.flags |= TRC_LOG_PARSE_COPY_BOTH;
                 break;
 

@@ -2276,18 +2276,22 @@ trc_update_gen_rules(unsigned int db_uid,
 
                     set_confls = FALSE;
 
-                    if (((flags & TRC_LOG_PARSE_COPY_OLD_FIRST) &&
-                         (flags & TRC_LOG_PARSE_COPY_OLD)) ||
-                        ((flags & TRC_LOG_PARSE_COPY_BOTH) &&
-                         SLIST_EMPTY(rule->confl_res))) 
+                    p = NULL;
+
+                    if ((((flags & TRC_LOG_PARSE_COPY_OLD_FIRST) &&
+                         (flags & TRC_LOG_PARSE_COPY_BOTH)) ||
+                         (!(flags & TRC_LOG_PARSE_COPY_BOTH) &&
+                          !(flags & TRC_LOG_PARSE_COPY_OLD_FIRST)) ||
+                         SLIST_EMPTY(&iter1->exp_results) ||
+                         !(flags & TRC_LOG_PARSE_COPY_OLD)) &&
+                        (flags & TRC_LOG_PARSE_COPY_CONFLS))
                     {
                         /* Do not forget about reverse order
                          * of expected results in memory */
                         set_confls = TRUE;
-                        p = SLIST_FIRST(rule->confl_res);
+                        p = SLIST_FIRST(&iter_data1->new_results);
                     }
-                    else if ((flags & TRC_LOG_PARSE_COPY_CONFLS) ||
-                             (flags & TRC_LOG_PARSE_COPY_BOTH)) 
+                    else if (flags & TRC_LOG_PARSE_COPY_OLD)
                         p = SLIST_FIRST(&iter1->exp_results); 
 
                     q = NULL;
@@ -2298,20 +2302,19 @@ trc_update_gen_rules(unsigned int db_uid,
                     {
                         if (p == NULL && !was_changed)
                         {
-                            if (((SLIST_EMPTY(rule->new_res) &&
-                                 (flags & TRC_LOG_PARSE_COPY_CONFLS)) ||
-                                 (flags & TRC_LOG_PARSE_COPY_BOTH)) &&
-                                !set_confls) 
-                                p = SLIST_FIRST(rule->confl_res); 
-                            else if (((SLIST_EMPTY(rule->new_res) &&
-                                      (flags & TRC_LOG_PARSE_COPY_OLD)) ||
-                                      (flags & TRC_LOG_PARSE_COPY_BOTH)) && 
-                                      set_confls)
+                            if (SLIST_EMPTY(rule->new_res) ||
+                                (flags & TRC_LOG_PARSE_COPY_BOTH))
                             {
-                                prev = q;
-                                p = SLIST_FIRST(&iter1->exp_results);
+                                if (!set_confls &&
+                                    (flags & TRC_LOG_PARSE_COPY_CONFLS)) 
+                                    p = SLIST_FIRST(
+                                                &iter_data1->new_results);
+                                else if (set_confls &&
+                                         (flags & TRC_LOG_PARSE_COPY_OLD))
+                                    p = SLIST_FIRST(&iter1->exp_results);
                             }
 
+                            set_confls = !set_confls;
                             was_changed = TRUE;
                         }
 
@@ -2319,14 +2322,15 @@ trc_update_gen_rules(unsigned int db_uid,
                             break;
 
                         q = trc_exp_result_dup(p);
-                        if (prev == NULL)
+                        if (prev == NULL || (set_confls && !was_changed))
                             SLIST_INSERT_HEAD(rule->new_res, q, links);
                         else
                             SLIST_INSERT_AFTER(prev, q, links);
 
                         /* Taking into account the fact that expected
                          * results are loaded/saved in reverse order */
-                        if (!set_confls)
+                        if (!set_confls || (set_confls && prev == NULL &&
+                                            !was_changed))
                             prev = q;
                         p = SLIST_NEXT(p, links);
                     }
