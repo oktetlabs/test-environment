@@ -102,13 +102,20 @@ typedef struct snif_id_l {
 SLIST_HEAD(snifidl_h_t, snif_id_l);
 typedef struct snifidl_h_t snifidl_h_t;
 
+typedef struct pcap_pkthdr {
+    struct timeval ts;   /**< time stamp */
+    unsigned int caplen; /**< length of portion present */
+    unsigned int len;    /**< length this packet (off wire) */
+} pcap_pkthdr;
+
 /**
  * List of the mark messages to sniffers.
  */
 typedef struct snif_mark_l {
-    char        agent[RCF_MAX_NAME];
-    sniffer_id  id;
-    char       *message;
+    char         agent[RCF_MAX_NAME];
+    sniffer_id   id;
+    pcap_pkthdr  h;
+    char        *message;
     SLIST_ENTRY(snif_mark_l)  ent_l_m;
 } snif_mark_l;
 SLIST_HEAD(snif_mrk_h_t, snif_mark_l);
@@ -281,7 +288,8 @@ sniffer_make_file_name(const char *agent, snif_id_l *snif)
         templ = snifp_sets.name;
     memset(snif->res_fname, 0, RCF_MAX_PATH);
 
-    offt_buf = snprintf(snif->res_fname, RCF_MAX_PATH, "%s/", snifp_sets.dir);
+    offt_buf = snprintf(snif->res_fname, RCF_MAX_PATH, "%s/",
+                        snifp_sets.dir);
     if (offt_buf > RCF_MAX_PATH)
         return TE_RC(TE_LOGGER, TE_EINVAL);
 
@@ -512,25 +520,13 @@ sniffer_check_markers(size_t size, snif_id_l *snif, const char *agent)
 static te_errno
 sniffer_insert_marker(int fd_o, snif_mark_l *mark)
 {
-    struct pcap_pkthdr {
-        struct timeval ts;   /**< time stamp */
-        unsigned int caplen; /**< length of portion present */
-        unsigned int len;    /**< length this packet (off wire) */
-    } *h;
-
     char            proto[SNIF_MARK_PSIZE];    /**< Protocol */
     int             res;
 
     /* FIXME: Can be correct marker packet protocol. */
-    SNIFFER_MALLOC(h, sizeof(struct pcap_pkthdr));
     memset(proto, 0, SNIF_MARK_PSIZE);
-    memset(h, 0, sizeof(struct pcap_pkthdr));
 
-    gettimeofday(&h->ts, 0);
-    h->caplen = strlen(mark->message) + SNIF_MARK_PSIZE;
-    h->len = h->caplen;
-
-    res = write(fd_o, (void *)h, sizeof(struct pcap_pkthdr));
+    res = write(fd_o, (void *)&mark->h, sizeof(struct pcap_pkthdr));
     if (res == -1)
         goto insert_marker_error;
     res = write(fd_o, proto, SNIF_MARK_PSIZE);
@@ -595,7 +591,7 @@ sniffer_capture_file_proc(const char *fname, snif_id_l *snif,
     }
     else if (fd_o == -1)
     {
-        WARN("Couldn't open the old capture log file: %s.", snif->res_fname);
+        WARN("Couldn't open the old capture log file: %s", snif->res_fname);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
@@ -609,7 +605,7 @@ sniffer_capture_file_proc(const char *fname, snif_id_l *snif,
     rc = lseek(fd_o, 0, SEEK_END);
     if (rc == -1)
     {
-        WARN("Couldn't read the old capture log file: %s.", snif->res_fname);
+        WARN("Couldn't read the old capture log file: %s", snif->res_fname);
         rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
         goto cleanup_snif_fproc;
     }
@@ -804,8 +800,9 @@ ten_get_sniffer_dump(const char *ta_name, snif_id_l *snif)
         return TE_RC(TE_TA_UNIX, TE_ENAMETOOLONG);
     }
 
-    rc = snprintf(fname, RCF_MAX_PATH, "%s/%s_%s_%s_%u_t.pcap", snifp_sets.dir,
-                  ta_name, snif->id.snifname, snif->id.ifname, snif->id.ssn);
+    rc = snprintf(fname, RCF_MAX_PATH, "%s/%s_%s_%s_%u_t.pcap",
+                  snifp_sets.dir, ta_name, snif->id.snifname,
+                  snif->id.ifname, snif->id.ssn);
     if (rc > RCF_MAX_PATH)
     {
         ERROR("Too long file name for the cpture logs.");
@@ -817,7 +814,7 @@ ten_get_sniffer_dump(const char *ta_name, snif_id_l *snif)
     if (rc != 0 && rc != TE_RC(TE_RCF_API, TE_ENODATA))
     {
         if (rc != TE_RC(TE_RCF_API, TE_EIPC))
-            ERROR("Couldn't get capture file, rc %d", rc);
+            ERROR("Couldn't get capture file %s", fname);
         return rc;
     }
 
@@ -929,12 +926,14 @@ sniffer_search_same_sniff(snif_id_l *sniff, snifidl_h_t *sniflist_h)
  * @param ta_name   Agent name
  * @param sniff     The sniffer location
  * @param message   The mark message
+ * @param ts        Timestamp of mark packet
  * 
  * @param Status code
  * @retval 0 success
  */
 static te_errno
-sniffer_add_new_mark(char *ta_name, snif_id_l *sniff, char *message)
+sniffer_add_new_mark(char *ta_name, snif_id_l *sniff, char *message,
+                     struct timeval *ts)
 {
     snif_mark_l     *mark;
 
@@ -943,6 +942,10 @@ sniffer_add_new_mark(char *ta_name, snif_id_l *sniff, char *message)
         mark->message = strdup(message);
     else
         mark->message = strdup("");
+
+    memcpy(&mark->h.ts, ts, sizeof(struct timeval));
+    mark->h.caplen = strlen(mark->message) + SNIF_MARK_PSIZE;
+    mark->h.len = mark->h.caplen;
 
     mark->id.snifname = strdup(sniff->id.snifname);
     mark->id.ifname = strdup(sniff->id.ifname);
@@ -993,6 +996,9 @@ sniffer_ins_mark_all(char *mark_data)
     snif_ta_l       *snif_ta;
     snif_id_l       *sniff;
     snif_id_l       *new_sniff;
+    struct timeval   ts;
+
+    gettimeofday(&ts, 0);
 
     ptr = strchr(mark_data, ';');
     if (ptr == NULL)
@@ -1005,7 +1011,8 @@ sniffer_ins_mark_all(char *mark_data)
 
     if ((snif_ta = sniffer_get_ta_by_name(ta_name)) == NULL)
     {
-        ERROR("Wrong agent name to insert mark for all sniffers: %s", ta_name);
+        ERROR("Wrong agent name to insert mark for all sniffers: %s",
+              ta_name);
         return;
     }
 
@@ -1015,14 +1022,15 @@ sniffer_ins_mark_all(char *mark_data)
     rc = rcf_ta_get_sniffers(ta_name, NULL, &snif_buf, &snif_len, TRUE);
     if ((snif_len != 0) && (rc == 0))
     {
-        sniffer_parse_list_buf(snif_buf, snif_len, &new_sniflist_h, ta_name);
+        sniffer_parse_list_buf(snif_buf, snif_len, &new_sniflist_h,
+                               ta_name);
 
         SLIST_FOREACH(sniff, &snif_ta->snif_hl, ent_l)
         {
             new_sniff = sniffer_search_same_sniff(sniff, &new_sniflist_h);
             if (new_sniff == NULL)
                 new_sniff = sniff;
-            sniffer_add_new_mark(ta_name, new_sniff, ptr + 1);
+            sniffer_add_new_mark(ta_name, new_sniff, ptr + 1, &ts);
         }
     }
 
@@ -1087,9 +1095,13 @@ sniffer_mark_handler(char *mark_data_in)
     ptr += rc + 1;
     mark->message = strdup(ptr);
 
+    gettimeofday(&mark->h.ts, 0);
+    mark->h.caplen = strlen(mark->message) + SNIF_MARK_PSIZE;
+    mark->h.len = mark->h.caplen;
+
     SNIFFER_MALLOC(snif_buf, snif_len);
-    rc = rcf_ta_get_sniffers(mark->agent, snif_id_str, &snif_buf, &snif_len,
-                             TRUE);
+    rc = rcf_ta_get_sniffers(mark->agent, snif_id_str, &snif_buf,
+                             &snif_len, TRUE);
     if (snif_len == 0)
     {
         WARN("Couldn't get offset from the sniffer: %s", snif_id_str);
@@ -1130,7 +1142,8 @@ sniffers_init(void)
 /**
  * This is an entry point of sniffers message server.
  * This server should be run as separate thread.
- * All log messages from all sniffers entities on the agent will be processed by this routine.
+ * All log messages from all sniffers entities on the agent
+ * will be processed by this routine.
  * 
  * @param agent     Agent name.
  */
