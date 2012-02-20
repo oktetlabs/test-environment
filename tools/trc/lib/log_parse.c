@@ -1791,7 +1791,8 @@ trc_update_apply_rules(unsigned int db_uid,
                     {
                         if (rule == NULL)
                         {
-                            rule = TAILQ_FIRST(group->rules);
+                            if (group->rules != NULL)
+                                rule = TAILQ_FIRST(group->rules);
                             rules_switch = TRUE;
 
                             if (rule == NULL)
@@ -2124,47 +2125,49 @@ trc_update_load_rules(char *filename,
                 goto exit;
             }
         }
-
-        test_name = XML2CHAR(xmlGetProp(test_node, BAD_CAST "path"));
-        
-        TAILQ_FOREACH(group, updated_tests, links)
-            if (strcmp(test_name, group->path) == 0)
-                break;
-        
-        if (group != NULL)
+        else
         {
-            rule_node = xmlFirstElementChild(test_node);    
-
-            if (group->rules == NULL)
+            test_name = XML2CHAR(xmlGetProp(test_node, BAD_CAST "path"));
+            
+            TAILQ_FOREACH(group, updated_tests, links)
+                if (strcmp(test_name, group->path) == 0)
+                    break;
+            
+            if (group != NULL)
             {
-                group->rules = TE_ALLOC(sizeof(*(group->rules)));
-                TAILQ_INIT(group->rules);
-            }
+                rule_node = xmlFirstElementChild(test_node);    
 
-            while (rule_node != NULL)
-            {
-                if (xmlStrcmp(rule_node->name,
-                              CONST_CHAR2XML("rule")) != 0)
+                if (group->rules == NULL)
                 {
-                     ERROR("Unexpected %s element of the TRC updating "
-                           "rules XML file", rule_node->name);
-                     rc = TE_RC(TE_TRC, TE_EFMT);
-                     goto exit;
+                    group->rules = TE_ALLOC(sizeof(*(group->rules)));
+                    TAILQ_INIT(group->rules);
                 }
 
-                rule = TE_ALLOC(sizeof(*rule));
-                
-                if ((rc = trc_update_load_rule(rule_node, rule)) != 0)
+                while (rule_node != NULL)
                 {
-                    ERROR("Loading rule from file for test %s failed",
-                          group->path);
-                    rc = TE_RC(TE_TRC, TE_EFMT);
-                    goto exit;
+                    if (xmlStrcmp(rule_node->name,
+                                  CONST_CHAR2XML("rule")) != 0)
+                    {
+                         ERROR("Unexpected %s element of the TRC updating "
+                               "rules XML file", rule_node->name);
+                         rc = TE_RC(TE_TRC, TE_EFMT);
+                         goto exit;
+                    }
+
+                    rule = TE_ALLOC(sizeof(*rule));
+                    
+                    if ((rc = trc_update_load_rule(rule_node, rule)) != 0)
+                    {
+                        ERROR("Loading rule from file for test %s failed",
+                              group->path);
+                        rc = TE_RC(TE_TRC, TE_EFMT);
+                        goto exit;
+                    }
+
+                    TAILQ_INSERT_TAIL(group->rules, rule, links);
+
+                    rule_node = xmlNextElementSibling(rule_node);
                 }
-
-                TAILQ_INSERT_TAIL(group->rules, rule, links);
-
-                rule_node = xmlNextElementSibling(rule_node);
             }
         }
 
