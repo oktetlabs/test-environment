@@ -75,6 +75,7 @@ db_add_acs(const char *acs_name)
 
     memset(acs_item, 0, sizeof(*acs_item));
     acs_item->name = strdup(acs_name);
+    acs_item->traffic_log = TRUE;
 
     LIST_INIT(&acs_item->cpe_list);
     LIST_INSERT_HEAD(&acs_list, acs_item, links);
@@ -118,6 +119,7 @@ db_add_cpe(const char *acs_name, const char *cpe_name)
     cpe_item->acs = acs_item;
     cpe_item->enabled = TRUE;
     cpe_item->cr_state = CR_NONE;
+    cpe_item->traffic_log = TRUE;
 
     TAILQ_INIT(&(cpe_item->rpc_queue));
     TAILQ_INIT(&(cpe_item->rpc_results));

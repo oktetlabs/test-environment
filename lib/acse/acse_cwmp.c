@@ -258,8 +258,9 @@ cpe_find_conn_req_url(struct _cwmp__Inform *cwmp__Inform, cpe_t *cpe_item)
             cwmp__Inform->ParameterList->__ptrParameterValueStruct[i];
         subname_place = index(param_v->Name, '.');
 
-        VERB("%s, param name '%s', \n    val '%s', subname '%s'",
-             __FUNCTION__, param_v->Name, param_v->Value, subname_place);
+        RING("%s, param name '%s', \n  type %d val %p'%s', subname '%s'",
+             __FUNCTION__, param_v->Name, param_v->__type,
+             param_v->Value, param_v->Value, subname_place);
         if (subname_place == NULL)
             continue;
         if (strcmp(subname_place,
@@ -869,6 +870,8 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
                 }
                 /* fall through... */
             case CWMP_SUSPENDED:
+                RING("%s: pfd is NULL, closing sess %p in state %d",
+                      __FUNCTION__, cwmp_sess, cwmp_sess->state);
                 return TE_ENOTCONN;
             default:
                 WARN("CWMP session state %d, unexpected timeout",
@@ -905,7 +908,12 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
                     return 0;
                 }
                 else
+                {
+                    RING("%s: EOF in state %d ep_status %d, "
+                         "closing sess %p", __FUNCTION__, cwmp_sess->state,
+                         cwmp_sess->ep_status, cwmp_sess);
                     return TE_ENOTCONN;
+                }
             }
             break;
 
@@ -914,7 +922,7 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
             rc = acse_soap_serve_response(cwmp_sess);
             if (cwmp_sess->m_soap.error == SOAP_EOF)
             {
-                VERB("after serve %s %s/%s(sess ptr %p, state %d): EOF",
+                RING("after serve %s %s/%s(sess ptr %p, state %d): EOF",
                     cwmp_sess->acs_owner ? "ACS" : "CPE",
                     cwmp_sess->acs_owner ? cwmp_sess->acs_owner->name :
                                          cwmp_sess->cpe_owner->acs->name,
@@ -923,6 +931,8 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
                     cwmp_sess, cwmp_sess->state);
                 return TE_ENOTCONN;
             }
+            if (rc != 0)
+                RING("acse_soap_serve_response returned rc %r", rc);
             break;
         case CWMP_SEND_FILE:
             if (pfd->revents & POLLOUT)
@@ -961,6 +971,7 @@ cwmp_after_poll(void *data, struct pollfd *pfd)
             }
             break;
         case CWMP_CLOSE:
+            RING("%s: session %p state is CLOSE", __FUNCTION__, cwmp_sess);
             return TE_ENOTCONN;
         case CWMP_SUSPENDED:
             break;
@@ -1764,6 +1775,8 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
     if (TAILQ_EMPTY(&cpe->rpc_queue) && cpe->sync_mode)
     {
         /* do nothing, wait for EPC with RPC to be sent */
+        RING("sess %p queue is empty, sync mode; state <- PENDING",
+             session);
         session->state = CWMP_PENDING;
         session->last_sent.tv_sec = 0;
         return 0;
@@ -1780,7 +1793,7 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
         CWMP_RPC_NONE == rpc_item->params->rpc_cpe)
     {
 
-        INFO("CPE '%s', empty list of RPC calls, response 204", cpe->name);
+        RING("CPE '%s', empty list of RPC calls, response 204", cpe->name);
         acse_cwmp_send_http(soap, session, 204, NULL);
         if (rpc_item != NULL)
             TAILQ_REMOVE(&cpe->rpc_queue, rpc_item, links);
@@ -1807,8 +1820,10 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
     acse_soap_serialize_cwmp(soap, request);
 
     if (soap_begin_count(soap))
+    {
+        ERROR("%s: 0, soap error %d", __FUNCTION__, soap->error);
         return soap->error;
-
+    }
 
     if (soap->mode & SOAP_IO_LENGTH)
     {
@@ -1911,7 +1926,8 @@ acse_cwmp_empty_post(struct soap* soap)
 
     if (NULL != session && CWMP_EP_WAIT == session->ep_status)
     {
-        RING("CPE '%s', set empPost to GOT", session->cpe_owner->name);
+        RING("CPE '%s', sess %p, set empPost to GOT",
+             session->cpe_owner->name, session);
         session->ep_status = CWMP_EP_GOT;
     }
 

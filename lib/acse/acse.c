@@ -97,6 +97,8 @@ acse_remove_channel(channel_t *ch_item)
     assert(ch_item != NULL);
     /* single place where DESTROY could be set, is here. ,
        if it is set, item already removed from the list. */
+    RING("Deleting channel '%s' (%p) in state %d",
+         ch_item->name, ch_item, ch_item->state);
     if (ch_item->state != ACSE_CH_DESTROY)
     {
         LIST_REMOVE(ch_item, links);
