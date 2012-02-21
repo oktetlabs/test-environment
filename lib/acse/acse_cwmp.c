@@ -258,9 +258,8 @@ cpe_find_conn_req_url(struct _cwmp__Inform *cwmp__Inform, cpe_t *cpe_item)
             cwmp__Inform->ParameterList->__ptrParameterValueStruct[i];
         subname_place = index(param_v->Name, '.');
 
-        RING("%s, param name '%s', \n  type %d val %p'%s', subname '%s'",
-             __FUNCTION__, param_v->Name, param_v->__type,
-             param_v->Value, param_v->Value, subname_place);
+        VERB("%s, param name '%s', \n    val '%s', subname '%s'",
+             __FUNCTION__, param_v->Name, param_v->Value, subname_place);
         if (subname_place == NULL)
             continue;
         if (strcmp(subname_place,
