@@ -3568,9 +3568,8 @@ trc_update_process_logs(trc_update_ctx *gctx)
                                 gctx->cmd);
     }
 
-    if ((!(gctx->rules_load_from == NULL &&
-           gctx->rules_save_to != NULL) ||
-         (gctx->flags & TRC_LOG_PARSE_GEN_APPLY)) &&
+    if ((gctx->rules_save_to == NULL ||
+        (gctx->flags & TRC_LOG_PARSE_GEN_APPLY)) &&
         !(gctx->flags & TRC_LOG_PARSE_NO_GEN_WILDS))
     {
         printf("Generating wildcards...\n");

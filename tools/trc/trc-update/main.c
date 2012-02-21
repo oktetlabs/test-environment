@@ -562,7 +562,9 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
         }
     }
 
-    if (!no_use_ids && log_specified)
+    if (!no_use_ids && (log_specified ||
+        ((ctx.flags & TRC_LOG_PARSE_RULES_CONFL) &&
+         !(ctx.flags & TRC_LOG_PARSE_GEN_APPLY))))
         ctx.flags |= TRC_LOG_PARSE_USE_RULE_IDS;
 
     if (opt != -1)
@@ -1075,8 +1077,7 @@ main(int argc, char **argv, char **envp)
                     TRC_SAVE_NO_VOID_XINCL |
                     (set_pos_attr ? TRC_SAVE_POS_ATTR : 0),
                     ctx.db_uid, &trc_update_is_to_save,
-                    (ctx.rules_load_from == NULL &&
-                     (ctx.flags & TRC_LOG_PARSE_USE_RULE_IDS)) ?
+                    (ctx.flags & TRC_LOG_PARSE_USE_RULE_IDS) ?
                             &trc_update_set_user_attr : NULL,
                     ctx.cmd) != 0)
     {
