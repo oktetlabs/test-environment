@@ -564,7 +564,8 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
 
     if (!no_use_ids && (log_specified ||
         ((ctx.flags & TRC_LOG_PARSE_RULES_CONFL) &&
-         !(ctx.flags & TRC_LOG_PARSE_GEN_APPLY))))
+         !(ctx.flags & TRC_LOG_PARSE_GEN_APPLY) &&
+         ctx.rules_save_to != NULL)))
         ctx.flags |= TRC_LOG_PARSE_USE_RULE_IDS;
 
     if (opt != -1)
