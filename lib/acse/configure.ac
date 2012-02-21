@@ -16,49 +16,29 @@ AC_PROG_CC
 AC_PROG_LIBTOOL
 AC_PROG_INSTALL
 
-AC_PATH_TOOL([WSDL2H], [wsdl2h])
-if test -z $WSDL2H; then
-    AC_MSG_ERROR([failed to find wsdl2h tool, is gsoap toolkit installed?])
-fi
-
-AC_PATH_TOOL([SOAPCPP2], [soapcpp2])
-if test -z $SOAPCPP2; then
-    AC_MSG_ERROR([failed to find soapcpp2 tool, is gsoap toolkit installed?])
-fi
-
 TE_APP_SET
 
-SOAP_PATH=[`echo 'changequote([,])builtin([patsubst],['"$SOAPCPP2"'],[soapcpp2$],[])' | m4`]
-SOAP_PATH=[`echo 'changequote([,])builtin([patsubst],['"$SOAP_PATH"'],[/$],[])' | m4`]
-AC_SUBST([SOAP_PATH])
+AC_CHECK_HEADER([stdsoap2.h], [],
+    [AC_MSG_ERROR([failed to find stdsoap2.h, is gSOAP installed?])
+])
 
-SOAPH="$SOAP_PATH"'/../include/stdsoap2.h'
-AC_SUBST([SOAPH])
-AC_CHECK_HEADER([$SOAPH], [],
-    [AC_MSG_ERROR([failed to find stdsoap2.h on path '$SOAP_PATH/../include', is gsoap toolkit installed properly?])])
-
-WSDL2H_FLAGS='-cy'
-AC_SUBST([WSDL2H_FLAGS])
-
-SOAPCPP2_ACS_FLAGS='-1cLSxwse'
-AC_SUBST([SOAPCPP2_ACS_FLAGS])
-
-SOAPCPP2_CPE_FLAGS='-1cLCxwse'
-AC_SUBST([SOAPCPP2_CPE_FLAGS])
-
-SOAPCPP2_FLAGS='-1cLCSxwse'
-AC_SUBST([SOAPCPP2_FLAGS])
-
-SOAP_CPPFLAGS='-I'"$SOAP_PATH"'/../include -DWITH_COOKIES -DWITH_GZIP -DWITH_OPENSSL -DWITH_NOEMPTYSTRUCT -DWITH_DOM'
+SOAP_CPPFLAGS="-DWITH_COOKIES -DWITH_NOIDREF -DWITH_UDP \
+               -DWITH_GZIP -DWITH_OPENSSL -DWITH_NOEMPTYSTRUCT"
 AC_SUBST([SOAP_CPPFLAGS])
 
 # Save the list of LIBS
 MY_LIBS_SAVED=$LIBS
 
 # Try to find all the libs that are necessary for linking with TA
-AC_CHECK_LIB([z], [deflate], [], [AC_MSG_ERROR([failed to find z library])])
-AC_CHECK_LIB([crypto], [X509_sign], [], [AC_MSG_ERROR([failed to find crypto library])], [-lz -ldl])
-AC_CHECK_LIB([ssl], [SSL_new], [], [AC_MSG_ERROR([failed to find ssl library])], [-lz -lcrypto -ldl]) 
+AC_SEARCH_LIBS([dlopen], [dl])
+AC_CHECK_LIB([z], [deflate], [],
+             [AC_MSG_ERROR([failed to find z library])])
+AC_CHECK_LIB([crypto], [X509_sign], [],
+             [AC_MSG_ERROR([failed to find crypto library])])
+AC_CHECK_LIB([ssl], [SSL_new], [],
+             [AC_MSG_ERROR([failed to find ssl library])])
+ACSE_LIBS="$LIBS"
+AC_SUBST([ACSE_LIBS])
 # Restore the list of LIBS
 LIBS=$MY_LIBS_SAVED
 
