@@ -1338,8 +1338,9 @@ save_test_rules_to_file(trc_update_tests_groups *updated_tests,
             return TE_ENOMEM;
         }
 
-        TAILQ_FOREACH(rule, group->rules, links)
-            trc_update_rule_to_xml(rule, test_node);
+        if (group->rules != NULL)
+            TAILQ_FOREACH(rule, group->rules, links)
+                trc_update_rule_to_xml(rule, test_node);
     }
 
     f = fopen(filename, "w");
@@ -1865,16 +1866,34 @@ trc_update_apply_rules(unsigned int db_uid,
                 if (iter_data->rule == NULL || !iter_data->rule->apply)
                     continue;
 
-                trc_exp_results_free(&iter->exp_results);
-                results_dup = trc_exp_results_dup(
-                                iter_data->rule->new_res);
-                if (results_dup != NULL)
+                if (trc_exp_results_cmp(&iter->exp_results,
+                                        iter_data->rule->new_res) != 0)
                 {
-                    memcpy(&iter->exp_results, results_dup,
-                           sizeof(*results_dup));
-                }
+                    results_dup = trc_exp_results_dup(
+                                    iter_data->rule->new_res);
 
-                free(results_dup);
+                    if ((flags & TRC_LOG_PARSE_RULES_CONFL) &&
+                        !SLIST_EMPTY(&iter->exp_results))
+                    {
+                        trc_exp_results_free(&iter_data->new_results);
+                        if (results_dup != NULL)
+                        {
+                            memcpy(&iter_data->new_results, results_dup,
+                                   sizeof(*results_dup));
+                        }
+                    }
+                    else
+                    {
+                        trc_exp_results_free(&iter->exp_results);
+                        if (results_dup != NULL)
+                        {
+                            memcpy(&iter->exp_results, results_dup,
+                                   sizeof(*results_dup));
+                        }
+                    }
+
+                    free(results_dup);
+                }
             }
         }
     }
@@ -2248,8 +2267,11 @@ trc_update_gen_rules(unsigned int db_uid,
 
     TAILQ_FOREACH(group, updated_tests, links)
     {
-        group->rules = TE_ALLOC(sizeof(trc_update_rules));
-        TAILQ_INIT(group->rules);
+        if (group->rules == NULL)
+        {
+            group->rules = TE_ALLOC(sizeof(trc_update_rules));
+            TAILQ_INIT(group->rules);
+        }
 
         TAILQ_FOREACH(test1, &group->tests, links)
         {
@@ -2272,6 +2294,10 @@ trc_update_gen_rules(unsigned int db_uid,
                         trc_exp_results_dup(&iter1->exp_results);
                     rule->confl_res = trc_exp_results_dup(
                                                 &iter_data1->new_results);
+                    if (!SLIST_EMPTY(rule->confl_res))
+                        rule->apply = TRUE;
+                    else
+                        rule->apply = FALSE;
 
                     rule->new_res = TE_ALLOC(sizeof(*(rule->new_res)));
                     SLIST_INIT(rule->new_res);
@@ -3515,22 +3541,36 @@ trc_update_process_logs(trc_update_ctx *gctx)
                                gctx->flags);
     }
 
+    if (gctx->rules_save_to != NULL ||
+        gctx->flags & TRC_LOG_PARSE_GEN_APPLY)
+    {
+        trc_update_clear_rules(ctx.db_uid, ctx.updated_tests);
+        trc_update_rules_free(&ctx.global_rules);
+
+        printf("Generating updating rules...\n");
+        trc_update_gen_rules(ctx.db_uid, ctx.updated_tests,
+                             gctx->flags);
+
+        if (gctx->flags & TRC_LOG_PARSE_GEN_APPLY)
+        {
+            printf("Applying updating rules...\n");
+            trc_update_apply_rules(gctx->db_uid, ctx.updated_tests,
+                                   &ctx.global_rules,
+                                   gctx->flags &
+                                        ~TRC_LOG_PARSE_RULES_CONFL);
+        }
+    }
+
     if (gctx->rules_save_to != NULL)
     {
-        if (gctx->rules_load_from == NULL)
-        {
-            printf("Generating updating rules...\n");
-            trc_update_gen_rules(ctx.db_uid, ctx.updated_tests,
-                                 gctx->flags);
-        }
-
         printf("Saving updating rules...\n");
         save_test_rules_to_file(ctx.updated_tests, gctx->rules_save_to,
                                 gctx->cmd);
     }
 
     if ((!(gctx->rules_load_from == NULL &&
-           gctx->rules_save_to != NULL)) &&
+           gctx->rules_save_to != NULL) ||
+         (gctx->flags & TRC_LOG_PARSE_GEN_APPLY)) &&
         !(gctx->flags & TRC_LOG_PARSE_NO_GEN_WILDS))
     {
         printf("Generating wildcards...\n");

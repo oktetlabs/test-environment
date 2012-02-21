@@ -133,6 +133,15 @@ enum {
                                          representation of tags */
     TRC_UPDATE_OPT_NO_POS_ATTR,     /**< Do not set "pos"
                                          attribute */
+    TRC_UPDATE_OPT_GEN_APPLY,       /**< Apply updating rules after
+                                         generating them */
+    TRC_UPDATE_OPT_RULES_CONFL,     /**< If applying of updating rule
+                                         leads to replacing some already
+                                         existing results, do not replace
+                                         them but instead treat results
+                                         from '<new>' section of the rule
+                                         as if they were conflicting
+                                         results from logs */
 };
 
 #ifdef HAVE_LIBPERL
@@ -269,9 +278,21 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
           "Create updating rules for all results (not only for those "
           "which are to be merged with new ones)", NULL },
 
+        { "rules-confl", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_RULES_CONFL,
+          "If applying of updating rule leads to replacing some "
+          "already existing results, do not replace them but "
+          "instead treat results from '<new>' section of "
+          "the rule as if they were conflicting results from "
+          "logs", NULL },
+
         { "confls-all", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_CONFLS_ALL,
           "Treat all results from logs as unexpected ones", NULL },
+
+        { "gen-apply", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_GEN_APPLY,
+          "Apply updating rules after generating them", NULL },
 
         { "no-use-ids", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_NO_USE_IDS,
@@ -486,8 +507,16 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
                 ctx.flags |= TRC_LOG_PARSE_RULES_ALL;
                 break;
 
+            case TRC_UPDATE_OPT_RULES_CONFL:
+                ctx.flags |= TRC_LOG_PARSE_RULES_CONFL;
+                break;
+
             case TRC_UPDATE_OPT_CONFLS_ALL:
                 ctx.flags |= TRC_LOG_PARSE_CONFLS_ALL;
+                break;
+
+            case TRC_UPDATE_OPT_GEN_APPLY:
+                ctx.flags |= TRC_LOG_PARSE_GEN_APPLY;
                 break;
 
             case TRC_UPDATE_OPT_NO_USE_IDS:
