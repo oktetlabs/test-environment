@@ -2187,6 +2187,7 @@ acse_soap_serve_response(cwmp_session_t *cwmp_sess)
     if (rc != 0)
     {
         /* Terminate CWMP session unexpectedly */
+        soap->keep_alive = 0;
         acse_cwmp_send_http(soap, cwmp_sess, 400, NULL);
         return TE_ENOTCONN;
     }
