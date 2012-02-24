@@ -396,7 +396,11 @@ tapi_acse_manage_vlist(const char *ta, const char *acs_name,
         if (0 == gen_rc) /* store in 'gen_rc' first TE errno */
             gen_rc = rc;
     }
-
+    if (opcode == ACSE_OP_MODIFY && gen_rc == 0)
+    {
+        gen_rc = cfg_synchronize_fmt(TRUE, "/agent:%s/acse:/acs:%s",
+                                     ta, acs_name);
+    }
     return gen_rc;
 }
 
