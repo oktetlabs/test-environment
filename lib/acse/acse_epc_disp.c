@@ -223,7 +223,11 @@ cpe_sync_mode(cpe_t *cpe, acse_epc_config_data_t *params)
     if (params->op.fun == EPC_CFG_OBTAIN)
         sprintf(params->value, "%i", cpe->sync_mode);
     else
+    {
+        RING("CPE %p'%s' sync_mode set to %d", cpe,
+             cpe->name, atoi(params->value));
         cpe->sync_mode = atoi(params->value);
+    }
     return 0;
 }
 

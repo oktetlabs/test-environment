@@ -1768,7 +1768,7 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
 
     rpc_item = TAILQ_FIRST(&cpe->rpc_queue);
 
-    VERB("%s() called, cwmp sess state %d, sync_mode %d, rpc_item %p",
+    RING("%s() called, cwmp sess state %d, sync_mode %d, rpc_item %p",
          __FUNCTION__, session->state, cpe->sync_mode, rpc_item);
 
     if (TAILQ_EMPTY(&cpe->rpc_queue) && cpe->sync_mode)
