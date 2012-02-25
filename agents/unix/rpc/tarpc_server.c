@@ -68,6 +68,7 @@
 #endif
 
 #include "te_defs.h"
+#include "te_queue.h"
 #include "te_tools.h"
 
 #include "unix_internal.h"
@@ -5541,6 +5542,15 @@ flooder(tarpc_flooder_in *in)
 }
 
 /*-------------- echoer() --------------------------*/
+
+typedef struct buffer {
+    TAILQ_ENTRY(buffer)    links;
+    char                   buf[FLOODER_BUF];
+    int                    size;
+} buffer;
+
+typedef TAILQ_HEAD(buffers, buffer) buffers;
+
 TARPC_FUNC(echoer, {},
 {
     MAKE_CALL(out->retval = func_ptr(in));
@@ -5548,6 +5558,25 @@ TARPC_FUNC(echoer, {},
     COPY_ARG(rx_stat);
 }
 )
+
+/**
+ * Routine to free buffers queue.
+ *
+ * @param p     Buffers queue head pointer
+ */
+void free_buffers(buffers *p)
+{
+    buffer  *q;
+
+    if (p == NULL)
+        return;
+
+    while ((q = TAILQ_FIRST(p)) != NULL)
+    {
+        TAILQ_REMOVE(p, q, links);
+        free(q);
+    }
+}
 
 /**
  * Routine which receives data from specified set of
@@ -5580,7 +5609,9 @@ echoer(tarpc_echoer_in *in)
 
     int      i;
     int      rc;
-    char     buf[FLOODER_BUF];
+
+    buffers                 buffs;
+    buffer                 *buf = NULL;
 
     iomux_state             iomux_st;
     iomux_return            iomux_ret;
@@ -5591,8 +5622,7 @@ echoer(tarpc_echoer_in *in)
     te_bool         time2run_expired = FALSE;
     te_bool         session_rx;
 
-
-    memset(buf, 0x0, FLOODER_BUF);
+    TAILQ_INIT(&buffs);
 
     if ((iomux_find_func(in->common.use_libc, iomux, &iomux_f) != 0)    ||
         (tarpc_find_func(in->common.use_libc, "read", &read_func) != 0) ||
@@ -5647,6 +5677,7 @@ echoer(tarpc_echoer_in *in)
             ERROR("%s(): %spoll() failed: %d", __FUNCTION__,
                   iomux2str(iomux), errno);
             iomux_close(iomux, &iomux_f, &iomux_st);
+            free_buffers(&buffs);
             return -1;
         }
 
@@ -5660,24 +5691,40 @@ echoer(tarpc_echoer_in *in)
 
             if ((events & POLLIN))
             {
-                received = read_func(fd, buf, sizeof(buf));
+                buf = TE_ALLOC(sizeof(*buf));
+                if (buf == NULL)
+                {
+                    ERROR("%s(): out of memory", __FUNCTION__);
+                    iomux_close(iomux, &iomux_f, &iomux_st);
+                    free_buffers(&buffs);
+                    return - 1;
+                }
+
+                TAILQ_INSERT_HEAD(&buffs, buf, links);
+                received = buf->size = read_func(fd, buf->buf,
+                                                 sizeof(buf->buf));
                 if (received < 0)
                 {
                     ERROR("%s(): read() failed: %d", __FUNCTION__, errno);
                     iomux_close(iomux, &iomux_f, &iomux_st);
+                    free_buffers(&buffs);
                     return -1;
                 }
                 session_rx = TRUE;
             }
-            if ((events & POLLOUT))
+            if ((events & POLLOUT) &&
+                (buf = TAILQ_LAST(&buffs, buffers)) != NULL)
             {
-                sent = write_func(fd, buf, received);
+                sent = write_func(fd, buf->buf, buf->size);
                 if (sent < 0)
                 {
                     ERROR("%s(): write() failed: %d", __FUNCTION__, errno);
                     iomux_close(iomux, &iomux_f, &iomux_st);
+                    free_buffers(&buffs);
                     return -1;
                 }
+                TAILQ_REMOVE(&buffs, buf, links);
+                free(buf);
             }
 
             if ((received > 0 && rx_stat != NULL) ||
@@ -5705,6 +5752,7 @@ echoer(tarpc_echoer_in *in)
                 ERROR("%s(): gettimeofday(now) failed: %d",
                       __FUNCTION__, errno);
                 iomux_close(iomux, &iomux_f, &iomux_st);
+                free_buffers(&buffs);
                 return -1;
             }
             iomux_timeout = TE_SEC2MS(timeout.tv_sec  - now.tv_sec) +
@@ -5727,6 +5775,7 @@ echoer(tarpc_echoer_in *in)
     } while (!time2run_expired || session_rx);
 
     iomux_close(iomux, &iomux_f, &iomux_st);
+    free_buffers(&buffs);
     INFO("%s(): OK", __FUNCTION__);
 
     return 0;
