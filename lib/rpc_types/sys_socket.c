@@ -1427,6 +1427,38 @@ rpc_tcp_state tcp_state_h2rpc(int st)
             return RPC_TCP_UNKNOWN;
     }
 }
+
+/** Convert RPC TCP options in tcp_info structure to native ones */
+unsigned int
+tcpi_options_rpc2h(unsigned int flags)
+{
+    return (!!(flags & RPC_TCPI_OPT_TIMESTAMPS) * TCPI_OPT_TIMESTAMPS) |
+           (!!(flags & RPC_TCPI_OPT_SACK) * TCPI_OPT_SACK) |
+           (!!(flags & RPC_TCPI_OPT_WSCALE) * TCPI_OPT_WSCALE) |
+           (!!(flags & RPC_TCPI_OPT_ECN) * TCPI_OPT_ECN) |
+           (!!(flags & RPC_TCPI_OPT_ECN_SEEN) * TCPI_OPT_ECN_SEEN) |
+           (!!(flags & RPC_TCPI_OPT_UNKNOWN) * TCPI_OPT_UNKNOWN) |
+           (!!(flags & ~RPC_TCPI_OPT_ALL) * TCPI_OPT_UNKNOWN);
+}
+
+#define TCPI_OPT_ALL \
+    (TCPI_OPT_TIMESTAMPS | TCPI_OPT_SACK |  \
+     TCPI_OPT_WSCALE | TCPI_OPT_ECN |       \
+     TCPI_OPT_ECN_SEEN)
+
+
+/** Convert native TCP options in tcp_info structure to RPC ones */
+unsigned int
+tcpi_options_h2rpc(unsigned int flags)
+{
+    return (!!(flags & TCPI_OPT_TIMESTAMPS) * RPC_TCPI_OPT_TIMESTAMPS) |
+           (!!(flags & TCPI_OPT_SACK) * RPC_TCPI_OPT_SACK) |
+           (!!(flags & TCPI_OPT_WSCALE) * RPC_TCPI_OPT_WSCALE) |
+           (!!(flags & TCPI_OPT_ECN) * RPC_TCPI_OPT_ECN) |
+           (!!(flags & TCPI_OPT_ECN_SEEN) * RPC_TCPI_OPT_ECN_SEEN) |
+           (!!(flags & ~TCPI_OPT_ALL) * RPC_TCPI_OPT_UNKNOWN);
+}
+
 /* Define some value for unknown TCP socket congestion state */
 #ifndef TCP_CA_MAX_STATES
 #define TCP_CA_MAX_STATES 0xFFFFFFFF

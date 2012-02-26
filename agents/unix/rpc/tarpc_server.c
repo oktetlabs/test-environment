@@ -2512,7 +2512,7 @@ tarpc_getsockopt(tarpc_getsockopt_in *in, tarpc_getsockopt_out *out,
             COPY_TCP_INFO_FIELD(tcpi_retransmits);
             COPY_TCP_INFO_FIELD(tcpi_probes);
             COPY_TCP_INFO_FIELD(tcpi_backoff);
-            COPY_TCP_INFO_FIELD(tcpi_options);
+            CONVERT_TCP_INFO_FIELD(tcpi_options, tcpi_options_h2rpc);
             COPY_TCP_INFO_FIELD(tcpi_snd_wscale);
             COPY_TCP_INFO_FIELD(tcpi_rcv_wscale);
             COPY_TCP_INFO_FIELD(tcpi_rto);

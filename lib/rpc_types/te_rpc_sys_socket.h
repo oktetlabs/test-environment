@@ -596,6 +596,66 @@ extern int tcp_state_rpc2h(rpc_tcp_state st);
 
 /** Convert native TCP socket states to RPC one */
 extern rpc_tcp_state tcp_state_h2rpc(int st);
+
+/**
+ * TA-independent names of TCP options displayed in tcp_info structure.
+ */
+
+#define TCPI_OPT_UNKNOWN 0x20
+
+#ifndef TCPI_OPT_TIMESTAMPS
+#define TCPI_OPT_TIMESTAMPS TCPI_OPT_UNKNOWN
+#endif
+
+#ifndef TCPI_OPT_SACK
+#define TCPI_OPT_SACK TCPI_OPT_UNKNOWN
+#endif
+
+#ifndef TCPI_OPT_WSCALE
+#define TCPI_OPT_WSCALE TCPI_OPT_UNKNOWN
+#endif
+
+#ifndef TCPI_OPT_ECN
+#define TCPI_OPT_ECN TCPI_OPT_UNKNOWN
+#endif
+
+#ifndef TCPI_OPT_ECN_SEEN
+#define TCPI_OPT_ECN_SEEN TCPI_OPT_UNKNOWN
+#endif
+
+#define RPC_TCPI_OPT_ALL \
+    (RPC_TCPI_OPT_TIMESTAMPS | RPC_TCPI_OPT_SACK |  \
+     RPC_TCPI_OPT_WSCALE | RPC_TCPI_OPT_ECN | \
+     RPC_TCPI_OPT_ECN_SEEN)
+
+typedef enum rpc_tcpi_options {
+    RPC_TCPI_OPT_TIMESTAMPS = 0x1,
+    RPC_TCPI_OPT_SACK       = 0x2,
+    RPC_TCPI_OPT_WSCALE     = 0x4,
+    RPC_TCPI_OPT_ECN        = 0x8,
+    RPC_TCPI_OPT_ECN_SEEN   = 0x10,
+    RPC_TCPI_OPT_UNKNOWN    = 0x20,
+} rpc_tcpi_options;
+
+#define TCPI_OPTS_MAPPING_LIST \
+    RPC_BIT_MAP_ENTRY(TCPI_OPT_TIMESTAMPS), \
+    RPC_BIT_MAP_ENTRY(TCPI_OPT_SACK),       \
+    RPC_BIT_MAP_ENTRY(TCPI_OPT_WSCALE),     \
+    RPC_BIT_MAP_ENTRY(TCPI_OPT_ECN),        \
+    RPC_BIT_MAP_ENTRY(TCPI_OPT_ECN_SEEN),   \
+    RPC_BIT_MAP_ENTRY(TCPI_OPT_UNKNOWN)
+
+/**
+ * tcpi_options_rpc2str()
+ */
+RPCBITMAP2STR(tcpi_options, TCPI_OPTS_MAPPING_LIST)
+
+/** Convert RPC TCP options in tcp_info structure to native ones */
+extern unsigned int tcpi_options_rpc2h(unsigned int flags);
+
+/** Convert native TCP options in tcp_info structure to RPC ones */
+extern unsigned int tcpi_options_h2rpc(unsigned int flags);
+
 /**
  * TA-independent names of TCP congestion states.
  */
