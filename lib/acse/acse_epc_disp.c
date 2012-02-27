@@ -1013,10 +1013,12 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
             TAILQ_INSERT_TAIL(&cpe->rpc_queue, rpc_item, links);
             cwmp_pars->from_cpe.p = NULL; /* nothing yet.. */
 
-            RING("EPC CWMP, RPC call %s to '%s', ind %d, need %d",
+            RING("EPC CWMP, session %p RPC call %s to '%s', ind %d, "
+                 "sync %d need %d",
+                 cpe->session,
                  cwmp_rpc_cpe_string(cwmp_pars->rpc_cpe),
                  cwmp_pars->cpe,
-                 rpc_item->request_id, need_call);
+                 rpc_item->request_id, cpe->sync_mode, need_call);
 
             if (need_call)
                 acse_cwmp_send_rpc(&(cpe->session->m_soap), cpe->session);
