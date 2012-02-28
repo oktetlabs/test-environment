@@ -580,7 +580,7 @@ trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
              walker->iter != NULL;
              walker->iter = TAILQ_NEXT(walker->iter, links))
         {
-            if (func_args_match == NULL)
+            if (func_args_match == NULL || walker->iter->newly_created)
             {
                 match_result = test_iter_args_match(&walker->iter->args,
                                                     n_args, args, TRUE);
@@ -625,6 +625,8 @@ trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
                           walker->test->name);
                     return FALSE;
                 }
+
+                walker->iter->newly_created = TRUE;
 
                 if (wild_iter != NULL && wild_iter->filename != NULL)
                     walker->iter->filename = strdup(wild_iter->filename);
