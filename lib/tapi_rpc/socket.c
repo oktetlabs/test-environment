@@ -1193,17 +1193,6 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
         RETVAL_INT(getsockopt, -1);
     }
 
-    /*
-     * Validate roptlen vs *optlen.
-     * roptlen makes sence, iff optval is not NULL.
-     */
-    if (raw_optlen != NULL && raw_optval != NULL &&
-        *raw_optlen > raw_roptlen)
-    {
-        rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
-        RETVAL_INT(getsockopt, -1);
-    }
-
     /* Copy parameters to tarpc_getsockopt_in structure */
     rpcs->op = RCF_RPC_CALL_WAIT;
     in.s = s;
