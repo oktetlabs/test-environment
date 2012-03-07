@@ -950,6 +950,13 @@ extern int rpc_recvmmsg_alt(rcf_rpc_server *rpcs, int fd,
                             rpc_send_recv_flags flags,
                             struct tarpc_timespec *timeout);
 
+extern int rpc_socket_connect_close(rcf_rpc_server *rpcs,
+                                    const struct sockaddr *addr,
+                                    uint32_t time2run);
+
+extern int rpc_socket_listen_close(rcf_rpc_server *rpcs,
+                                   const struct sockaddr *addr,
+                                   uint32_t time2run);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

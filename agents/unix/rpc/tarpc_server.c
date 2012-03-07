@@ -970,6 +970,101 @@ TARPC_FUNC(accept4,
 }
 )
 
+/*-------------- socket_connect_close() -----------------------*/
+TARPC_FUNC(socket_connect_close, {},
+{
+    PREPARE_ADDR(serv_addr, in->addr, 0);
+    MAKE_CALL(out->retval = func_ptr(serv_addr, serv_addrlen,
+                                     in->time2run));
+}
+)
+
+int
+socket_connect_close(const struct sockaddr *addr,
+                     socklen_t addrlen, uint32_t time2run)
+{
+    int     s;
+    int     rc;
+    time_t  start;
+    time_t  now;
+
+    api_func    socket_func;
+    api_func    connect_func;
+    api_func    close_func;
+
+    if (tarpc_find_func(FALSE, "socket", &socket_func) != 0)
+        return -1;
+    if (tarpc_find_func(FALSE, "connect", &connect_func) != 0)
+        return -1;
+    if (tarpc_find_func(FALSE, "close", &close_func) != 0)
+        return -1;
+
+    start = now = time(NULL);
+    while ((unsigned int)(now - start) <= time2run)
+    {
+        now = time(NULL);
+        s = socket_func(AF_INET, SOCK_STREAM, 0);
+        rc = connect_func(s, addr, addrlen);
+        if( rc != 0  && errno != ECONNREFUSED && errno != ECONNABORTED )
+            return -1;
+        close_func(s);
+    }
+    return 0;
+}
+
+/*-------------- socket_listen_close() -----------------------*/
+TARPC_FUNC(socket_listen_close, {},
+{
+    PREPARE_ADDR(serv_addr, in->addr, 0);
+    MAKE_CALL(out->retval = func_ptr(serv_addr, serv_addrlen,
+                                     in->time2run));
+}
+)
+
+int
+socket_listen_close(const struct sockaddr *addr,
+                    socklen_t addrlen, uint32_t time2run)
+{
+    int     s;
+    int     rc;
+    time_t  start;
+    time_t  now;
+
+    api_func    socket_func;
+    api_func    bind_func;
+    api_func    listen_func;
+    api_func    close_func;
+
+    if (tarpc_find_func(FALSE, "socket", &socket_func) != 0)
+        return -1;
+    if (tarpc_find_func(FALSE, "bind", &bind_func) != 0)
+        return -1;
+    if (tarpc_find_func(FALSE, "listen", &listen_func) != 0)
+        return -1;
+    if (tarpc_find_func(FALSE, "close", &close_func) != 0)
+        return -1;
+
+    start = now = time(NULL);
+    while ((unsigned int)(now - start) <= time2run)
+    {
+        now = time(NULL);
+        s = socket_func(AF_INET, SOCK_STREAM, 0);
+        rc = bind_func(s, addr, addrlen);
+        if( rc != 0 )
+        {
+            ERROR("%s(): bind() function failed", __FUNCTION__);
+            return -1;
+        }
+        rc = listen_func(s, 1);
+        if( rc != 0 )
+        {
+            ERROR("%s(): bind() function failed", __FUNCTION__);
+            return -1;
+        }
+        close_func(s);
+    }
+    return 0;
+}
 
 /*-------------- recvfrom() ------------------------------*/
 

@@ -4398,6 +4398,26 @@ struct tarpc_ta_dlclose_in {
 
 typedef struct tarpc_int_retval_out tarpc_ta_dlclose_out;
 
+/* socket_connect_close() */
+struct tarpc_socket_connect_close_in {
+    struct tarpc_in_arg common;
+
+    struct tarpc_sa     addr;
+    tarpc_socklen_t     len;
+    uint32_t            time2run;
+};
+typedef struct tarpc_int_retval_out tarpc_socket_connect_close_out;
+
+/* socket_listen_close() */
+struct tarpc_socket_listen_close_in {
+    struct tarpc_in_arg common;
+
+    struct tarpc_sa     addr;
+    tarpc_socklen_t     len;
+    uint32_t            time2run;
+};
+typedef struct tarpc_int_retval_out tarpc_socket_listen_close_out;
+
 program tarpc
 {
     version ver0
@@ -4685,5 +4705,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(ta_dlsym)
         RPC_DEF(ta_dlsym_call)
         RPC_DEF(ta_dlclose)
+
+        RPC_DEF(socket_connect_close)
+        RPC_DEF(socket_listen_close)
     } = 1;
 } = 1;

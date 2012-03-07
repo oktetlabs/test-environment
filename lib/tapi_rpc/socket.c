@@ -2142,3 +2142,59 @@ rpc_recvmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
                  fd, mmsg, str_buf, out.retval);
     RETVAL_INT(recvmmsg_alt, out.retval);
 }
+
+int
+rpc_socket_connect_close(rcf_rpc_server *rpcs,
+                         const struct sockaddr *addr,
+                         uint32_t time2run)
+{
+    tarpc_socket_connect_close_in  in;
+    tarpc_socket_connect_close_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(socket_connect_close, -1);
+    }
+
+    in.time2run = time2run;
+    sockaddr_input_h2rpc(addr, &in.addr);
+
+    rcf_rpc_call(rpcs, "socket_connect_close", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(socket_connect_close, out.retval);
+    TAPI_RPC_LOG(rpcs, socket_connect_close, "%s, %d", "%d",
+                 sockaddr_h2str(addr), time2run, out.retval);
+    RETVAL_INT(socket_connect_close, out.retval);
+}
+
+int
+rpc_socket_listen_close(rcf_rpc_server *rpcs,
+                        const struct sockaddr *addr,
+                        uint32_t time2run)
+{
+    tarpc_socket_listen_close_in  in;
+    tarpc_socket_listen_close_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(socket_listen_close, -1);
+    }
+
+    in.time2run = time2run;
+    sockaddr_input_h2rpc(addr, &in.addr);
+
+    rcf_rpc_call(rpcs, "socket_listen_close", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(socket_listen_close, out.retval);
+    TAPI_RPC_LOG(rpcs, socket_listen_close, "%s, %d", "%d",
+                 sockaddr_h2str(addr), time2run, out.retval);
+    RETVAL_INT(socket_listen_close, out.retval);
+}
