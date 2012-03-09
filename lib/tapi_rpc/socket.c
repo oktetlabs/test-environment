@@ -1592,11 +1592,11 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                      CMSG_TOTAL_LEN(c) <=
                         CMSG_REMAINED_LEN(c, raw_optval, raw_roptlen) &&
                      i < len;
-                     i++, rpc_c++, c = CMSG_NEXT(c))
+                     i++, rpc_c++, c = CMSG_NEXT(c),
+                     c->cmsg_len = CMSG_LEN(rpc_c->data.data_len))
                 {
                     c->cmsg_level = socklevel_rpc2h(rpc_c->level);
                     c->cmsg_type = sockopt_rpc2h(rpc_c->type);
-                    c->cmsg_len = CMSG_LEN(rpc_c->data.data_len);
                     if (rpc_c->data.data_val != NULL)
                         memcpy(CMSG_DATA(c), rpc_c->data.data_val, 
                                rpc_c->data.data_len);

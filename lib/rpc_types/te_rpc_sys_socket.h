@@ -70,7 +70,8 @@ extern "C" {
     (struct cmsghdr *)((uint8_t *)(c) + CMSG_TOTAL_LEN(c))
 
 /**
- * Pointer to the next cmsghdr structure
+ * Size of remained free space at the end of the buffer
+ * with cmsghdr structures.
  *
  * @param c     Pointer to cmsghdr structure
  * @param p     Pointer to buffer containing
