@@ -81,6 +81,31 @@ static char trash[128];
  *             [tcp_rmem, tcp_wmem]
  * Solaris TCP: ioctl()
  */
+
+static te_errno rcvbuf_def_set(unsigned int, const char *,
+                               const char *);
+
+static te_errno rcvbuf_def_get(unsigned int, const char *,
+                               char *);
+
+static te_errno rcvbuf_max_set(unsigned int, const char *,
+                               const char *);
+
+static te_errno rcvbuf_max_get(unsigned int, const char *,
+                               char *);
+
+static te_errno sndbuf_def_set(unsigned int, const char *,
+                               const char *);
+
+static te_errno sndbuf_def_get(unsigned int, const char *,
+                               char *);
+
+static te_errno sndbuf_max_set(unsigned int, const char *,
+                               const char *);
+
+static te_errno sndbuf_max_get(unsigned int, const char *,
+                               char *);
+
 static te_errno udp_rcvbuf_def_set(unsigned int, const char *,
                                    const char *);
 
@@ -140,7 +165,6 @@ RCF_PCH_CFG_NODE_RW(node_udp_rcvbuf_def,
                     "udp_rcvbuf_def",
                     NULL, NULL,
                     udp_rcvbuf_def_get, udp_rcvbuf_def_set);
-
 SYSTEM_WIDE_PARAM(udp_rcvbuf_max, udp_rcvbuf_def);
 SYSTEM_WIDE_PARAM(udp_sndbuf_def, udp_rcvbuf_max);
 SYSTEM_WIDE_PARAM(udp_sndbuf_max, udp_sndbuf_def);
@@ -148,7 +172,11 @@ SYSTEM_WIDE_PARAM(tcp_rcvbuf_def, udp_sndbuf_max);
 SYSTEM_WIDE_PARAM(tcp_rcvbuf_max, tcp_rcvbuf_def);
 SYSTEM_WIDE_PARAM(tcp_sndbuf_def, tcp_rcvbuf_max);
 SYSTEM_WIDE_PARAM(tcp_sndbuf_max, tcp_sndbuf_def);
-RCF_PCH_CFG_NODE_NA(node_sys, "sys", &node_tcp_sndbuf_max, NULL);
+SYSTEM_WIDE_PARAM(rcvbuf_def, tcp_sndbuf_max);
+SYSTEM_WIDE_PARAM(rcvbuf_max, rcvbuf_def);
+SYSTEM_WIDE_PARAM(sndbuf_def, rcvbuf_max);
+SYSTEM_WIDE_PARAM(sndbuf_max, sndbuf_def);
+RCF_PCH_CFG_NODE_NA(node_sys, "sys", &node_sndbuf_max, NULL);
 
 te_errno
 ta_unix_conf_sys_init(void)
@@ -661,7 +689,7 @@ tcp_rcvbuf_def_get(unsigned int gid, const char *oid,
 }
 
 /**
- * Set UDP send buffer max size.
+ * Set socket send buffer max size.
  *
  * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
@@ -670,8 +698,8 @@ tcp_rcvbuf_def_get(unsigned int gid, const char *oid,
  * @return              Status code
  */
 static te_errno
-udp_sndbuf_max_set(unsigned int gid, const char *oid,
-                   const char *value)
+sndbuf_max_set(unsigned int gid, const char *oid,
+               const char *value)
 {
     te_errno  rc = 0;
 #if __linux__
@@ -699,8 +727,6 @@ udp_sndbuf_max_set(unsigned int gid, const char *oid,
     rc = tcp_mem_set("/proc/sys/net/core/wmem_max", &bmem, 1);
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
-#elif SUN_I_STR
-    rc = sun_ioctl("udp", "udp_max_buf", ND_SET, (char *)value);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
@@ -708,7 +734,7 @@ udp_sndbuf_max_set(unsigned int gid, const char *oid,
 }
 
 /**
- * Get UDP send buffer max size.
+ * Get socket send buffer max size.
  *
  * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
@@ -717,8 +743,8 @@ udp_sndbuf_max_set(unsigned int gid, const char *oid,
  * @return              Status code
  */
 static te_errno
-udp_sndbuf_max_get(unsigned int gid, const char *oid,
-                   char *value)
+sndbuf_max_get(unsigned int gid, const char *oid,
+               char *value)
 {
     te_errno  rc = 0;
 #if __linux__
@@ -738,9 +764,7 @@ udp_sndbuf_max_get(unsigned int gid, const char *oid,
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    sprintf(value,"%d", bmem);
-#elif SUN_I_STR
-    rc = sun_ioctl("udp", "udp_max_buf", ND_GET, value);
+    sprintf(value, "%d", bmem);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif
@@ -748,7 +772,7 @@ udp_sndbuf_max_get(unsigned int gid, const char *oid,
 }
 
 /**
- * Set UDP send buffer default size.
+ * Set socket send buffer default size.
  *
  * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
@@ -757,8 +781,8 @@ udp_sndbuf_max_get(unsigned int gid, const char *oid,
  * @return              Status code
  */
 static te_errno
-udp_sndbuf_def_set(unsigned int gid, const char *oid,
-                   const char *value)
+sndbuf_def_set(unsigned int gid, const char *oid,
+               const char *value)
 {
     te_errno  rc = 0;
 #if __linux__
@@ -786,8 +810,6 @@ udp_sndbuf_def_set(unsigned int gid, const char *oid,
     rc = tcp_mem_set("/proc/sys/net/core/wmem_default", &bmem, 1);
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
-#elif SUN_I_STR
-    rc = sun_ioctl("udp", "udp_xmit_hiwat", ND_SET, (char *)value);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
@@ -795,7 +817,7 @@ udp_sndbuf_def_set(unsigned int gid, const char *oid,
 }
 
 /**
- * Get UDP send buffer default size.
+ * Get socket send buffer default size.
  *
  * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
@@ -804,8 +826,8 @@ udp_sndbuf_def_set(unsigned int gid, const char *oid,
  * @return              Status code
  */
 static te_errno
-udp_sndbuf_def_get(unsigned int gid, const char *oid,
-                   char *value)
+sndbuf_def_get(unsigned int gid, const char *oid,
+               char *value)
 {
     te_errno  rc = 0;
 #if __linux__
@@ -824,9 +846,7 @@ udp_sndbuf_def_get(unsigned int gid, const char *oid,
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    sprintf(value,"%d", bmem);
-#elif SUN_I_STR
-    rc = sun_ioctl("udp", "udp_xmit_hiwat", ND_GET, value);
+    sprintf(value, "%d", bmem);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif
@@ -834,7 +854,7 @@ udp_sndbuf_def_get(unsigned int gid, const char *oid,
 }
 
 /**
- * Set UDP receive buffer max size.
+ * Set socket receive buffer max size.
  *
  * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
@@ -843,8 +863,8 @@ udp_sndbuf_def_get(unsigned int gid, const char *oid,
  * @return              Status code
  */
 static te_errno
-udp_rcvbuf_max_set(unsigned int gid, const char *oid,
-                   const char *value)
+rcvbuf_max_set(unsigned int gid, const char *oid,
+               const char *value)
 {
     te_errno  rc = 0;
 #if __linux__
@@ -871,8 +891,6 @@ udp_rcvbuf_max_set(unsigned int gid, const char *oid,
     rc = tcp_mem_set("/proc/sys/net/core/rmem_max", &bmem, 1);
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
-#elif SUN_I_STR
-    rc = sun_ioctl("udp", "udp_max_buf", ND_SET, (char *)value);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
@@ -880,7 +898,7 @@ udp_rcvbuf_max_set(unsigned int gid, const char *oid,
 }
 
 /**
- * Get UDP receive buffer max size.
+ * Get socket receive buffer max size.
  *
  * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
@@ -889,8 +907,8 @@ udp_rcvbuf_max_set(unsigned int gid, const char *oid,
  * @return              Status code
  */
 static te_errno
-udp_rcvbuf_max_get(unsigned int gid, const char *oid,
-                   char *value)
+rcvbuf_max_get(unsigned int gid, const char *oid,
+               char *value)
 {
     te_errno  rc = 0;
 #if __linux__
@@ -909,9 +927,7 @@ udp_rcvbuf_max_get(unsigned int gid, const char *oid,
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    sprintf(value,"%d", bmem);
-#elif SUN_I_STR
-    rc = sun_ioctl("udp", "udp_max_buf", ND_GET, value);
+    sprintf(value, "%d", bmem);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif
@@ -919,7 +935,7 @@ udp_rcvbuf_max_get(unsigned int gid, const char *oid,
 }
 
 /**
- * Set UDP receive buffer default size.
+ * Set socket receive buffer default size.
  *
  * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
@@ -928,8 +944,8 @@ udp_rcvbuf_max_get(unsigned int gid, const char *oid,
  * @return              Status code
  */
 static te_errno
-udp_rcvbuf_def_set(unsigned int gid, const char *oid,
-                   const char *value)
+rcvbuf_def_set(unsigned int gid, const char *oid,
+               const char *value)
 {
     te_errno  rc = 0;
 #if __linux__
@@ -957,6 +973,274 @@ udp_rcvbuf_def_set(unsigned int gid, const char *oid,
     rc = tcp_mem_set("/proc/sys/net/core/rmem_default", &bmem, 1);
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
+#else
+    rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+    return rc;
+}
+
+/**
+ * Get socket receive buffer default size.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         to be get as rcvbuf default size
+ *
+ * @return              Status code
+ */
+static te_errno
+rcvbuf_def_get(unsigned int gid, const char *oid,
+               char *value)
+{
+    te_errno  rc = 0;
+#if __linux__
+    int       bmem = 0;
+#endif
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (value == NULL)
+    {
+        ERROR("A value to set is not provided");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+#if __linux__
+    rc = tcp_mem_get("/proc/sys/net/core/rmem_default", &bmem, 1);
+    if (rc != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    sprintf(value, "%d", bmem);
+#else
+    rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
+    return rc;
+}
+
+/**
+ * Set UDP send buffer max size.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         to be set as sndbuf max size
+ *
+ * @return              Status code
+ */
+static te_errno
+udp_sndbuf_max_set(unsigned int gid, const char *oid,
+                   const char *value)
+{
+    te_errno  rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (value == NULL)
+    {
+        ERROR("A value to set is not provided");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+#if __linux__
+    rc = sndbuf_max_set(gid, oid, value);
+#elif SUN_I_STR
+    rc = sun_ioctl("udp", "udp_max_buf", ND_SET, (char *)value);
+#else
+    rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+    return rc;
+}
+
+/**
+ * Get UDP send buffer max size.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         to be get as sndbuf max size
+ *
+ * @return              Status code
+ */
+static te_errno
+udp_sndbuf_max_get(unsigned int gid, const char *oid,
+                   char *value)
+{
+    te_errno  rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (value == NULL)
+    {
+        ERROR("A value to set is not provided");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+#if __linux__
+    rc = sndbuf_max_get(gid, oid, value);
+#elif SUN_I_STR
+    rc = sun_ioctl("udp", "udp_max_buf", ND_GET, value);
+#else
+    rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
+    return rc;
+}
+
+/**
+ * Set UDP send buffer default size.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         to be set as sndbuf default size
+ *
+ * @return              Status code
+ */
+static te_errno
+udp_sndbuf_def_set(unsigned int gid, const char *oid,
+                   const char *value)
+{
+    te_errno  rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (value == NULL)
+    {
+        ERROR("A value to set is not provided");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+#if __linux__
+    rc = sndbuf_def_set(gid, oid, value);
+#elif SUN_I_STR
+    rc = sun_ioctl("udp", "udp_xmit_hiwat", ND_SET, (char *)value);
+#else
+    rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+    return rc;
+}
+
+/**
+ * Get UDP send buffer default size.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         to be get as sndbuf default size
+ *
+ * @return              Status code
+ */
+static te_errno
+udp_sndbuf_def_get(unsigned int gid, const char *oid,
+                   char *value)
+{
+    te_errno  rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (value == NULL)
+    {
+        ERROR("A value to set is not provided");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+#if __linux__
+    rc = sndbuf_def_get(gid, oid, value);
+#elif SUN_I_STR
+    rc = sun_ioctl("udp", "udp_xmit_hiwat", ND_GET, value);
+#else
+    rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
+    return rc;
+}
+
+/**
+ * Set UDP receive buffer max size.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         to be set as rcvbuf max size
+ *
+ * @return              Status code
+ */
+static te_errno
+udp_rcvbuf_max_set(unsigned int gid, const char *oid,
+                   const char *value)
+{
+    te_errno  rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (value == NULL)
+    {
+        ERROR("A value to set is not provided");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+#if __linux__
+    rc = rcvbuf_max_set(gid, oid, value);
+#elif SUN_I_STR
+    rc = sun_ioctl("udp", "udp_max_buf", ND_SET, (char *)value);
+#else
+    rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+    return rc;
+}
+
+/**
+ * Get UDP receive buffer max size.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         to be get as rcvbuf max size
+ *
+ * @return              Status code
+ */
+static te_errno
+udp_rcvbuf_max_get(unsigned int gid, const char *oid,
+                   char *value)
+{
+    te_errno  rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (value == NULL)
+    {
+        ERROR("A value to set is not provided");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+#if __linux__
+    rc = rcvbuf_max_get(gid, oid, value);
+#elif SUN_I_STR
+    rc = sun_ioctl("udp", "udp_max_buf", ND_GET, value);
+#else
+    rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
+    return rc;
+}
+
+/**
+ * Set UDP receive buffer default size.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         to be set as rcvbuf default size
+ *
+ * @return              Status code
+ */
+static te_errno
+udp_rcvbuf_def_set(unsigned int gid, const char *oid,
+                   const char *value)
+{
+    te_errno  rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (value == NULL)
+    {
+        ERROR("A value to set is not provided");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+#if __linux__
+    rc = rcvbuf_def_set(gid, oid, value);
 #elif SUN_I_STR
     rc = sun_ioctl("udp", "udp_recv_hiwat", ND_SET, (char *)value);
 #else
@@ -979,9 +1263,7 @@ udp_rcvbuf_def_get(unsigned int gid, const char *oid,
                    char *value)
 {
     te_errno  rc = 0;
-#if __linux__
-    int       bmem = 0;
-#endif
+
     UNUSED(gid);
     UNUSED(oid);
 
@@ -991,11 +1273,7 @@ udp_rcvbuf_def_get(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 #if __linux__
-    rc = tcp_mem_get("/proc/sys/net/core/rmem_default", &bmem, 1);
-    if (rc != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-    sprintf(value,"%d", bmem);
+    rc = rcvbuf_def_get(gid, oid, value);
 #elif SUN_I_STR
     rc = sun_ioctl("udp", "udp_recv_hiwat", ND_GET, value);
 #else
