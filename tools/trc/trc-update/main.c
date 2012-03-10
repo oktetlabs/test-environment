@@ -120,6 +120,8 @@ enum {
     TRC_UPDATE_OPT_NO_WILDS,        /**< Do not generate wildcards */
     TRC_UPDATE_OPT_LOG_WILDS,       /**< Generate wildcards for results
                                          from logs, not from TRC DB */
+    TRC_UPDATE_OPT_LOG_WILDS_NEXP,  /**< Generate wildcards for unexpected
+                                         results from logs only */
     TRC_UPDATE_OPT_FAKE_LOG,        /**< Fake Tester run log */
     TRC_UPDATE_OPT_OLD_MATCH_EXPR,  /**< Expression to match iterations
                                          in TRC with iterations in logs */
@@ -358,6 +360,11 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
           "Generate wildcards for results from logs, not from TRC DB",
           NULL },
 
+        { "log-wilds-nexp", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_LOG_WILDS_NEXP,
+          "Generate wildcards for unexpected results from logs only",
+          NULL },
+
         { "tags-str", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_TAGS_STR,
           "Do not change string representation of tags",
@@ -533,6 +540,11 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
 
             case TRC_UPDATE_OPT_LOG_WILDS:
                 ctx.flags |= TRC_LOG_PARSE_LOG_WILDS;
+                break;
+
+            case TRC_UPDATE_OPT_LOG_WILDS_NEXP:
+                ctx.flags |= TRC_LOG_PARSE_LOG_WILDS |
+                             TRC_LOG_PARSE_LOG_WILDS_NEXP;
                 break;
 
             case TRC_UPDATE_OPT_TAGS_STR:
@@ -1039,13 +1051,6 @@ main(int argc, char **argv, char **envp)
         ERROR("Failed to open TRC database '%s'", db_fn);
         goto exit;
     }
-
-    /* 
-     * This is done to remove current expected results
-     * and investigate results from log only
-     */
-    if (ctx.flags & TRC_LOG_PARSE_LOG_WILDS)
-        trc_remove_exp_results(ctx.db);
 
     /* Allocate TRC database user ID */
     ctx.db_uid = trc_db_new_user(ctx.db);

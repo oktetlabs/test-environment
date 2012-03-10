@@ -516,12 +516,31 @@ trc_db_new_test_iter(trc_test *test, unsigned int n_args,
 
 /* See the description in trc_db.h */
 void
-trc_db_test_iter_res_cpy(trc_test_iter *dest, trc_test_iter *src)
+trc_exp_results_cpy(trc_exp_results *dest, trc_exp_results *src)
 {
     trc_exp_result  *exp_r;
     trc_exp_result  *exp_r_dup;
     trc_exp_result  *exp_r_prev = NULL;
 
+    if (dest == NULL || src == NULL)
+        return;
+
+    SLIST_FOREACH(exp_r, src, links)
+    {
+        exp_r_dup = trc_exp_result_dup(exp_r);
+        if (exp_r_prev == NULL)
+            SLIST_INSERT_HEAD(dest, exp_r_dup, links);
+        else
+            SLIST_INSERT_AFTER(exp_r_prev, exp_r_dup, links);
+
+        exp_r_prev = exp_r_dup;
+    }
+}
+
+/* See the description in trc_db.h */
+void
+trc_db_test_iter_res_cpy(trc_test_iter *dest, trc_test_iter *src)
+{
     if (dest->notes != NULL)
         free(dest->notes);
 
@@ -533,16 +552,7 @@ trc_db_test_iter_res_cpy(trc_test_iter *dest, trc_test_iter *src)
     /* No need to copy, do not free! */ 
     dest->exp_default = src->exp_default;
 
-    SLIST_FOREACH(exp_r, &src->exp_results, links)
-    {
-        exp_r_dup = trc_exp_result_dup(exp_r);
-        if (exp_r_prev == NULL)
-            SLIST_INSERT_HEAD(&dest->exp_results, exp_r_dup, links);
-        else
-            SLIST_INSERT_AFTER(exp_r_prev, exp_r_dup, links);
-
-        exp_r_prev = exp_r_dup;
-    }
+    trc_exp_results_cpy(&dest->exp_results, &src->exp_results);
 }
 
 /* See the description in trc_db.h */

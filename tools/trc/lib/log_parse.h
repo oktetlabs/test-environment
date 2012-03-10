@@ -65,15 +65,18 @@ enum trc_log_parse_flags {
     TRC_LOG_PARSE_LOG_WILDS       = (1 << 6),  /**< Generate wildcards for
                                                     results from logs, not
                                                     from TRC DB */
-    TRC_LOG_PARSE_COPY_OLD        = (1 << 7),  /**< Copy results from
+    TRC_LOG_PARSE_LOG_WILDS_NEXP  = (1 << 7),  /**< Generate wildcards for
+                                                    unexpected results from
+                                                    logs only */
+    TRC_LOG_PARSE_COPY_OLD        = (1 << 8),  /**< Copy results from
                                                     current TRC DB in <new>
                                                     section of updating
                                                     rule */
-    TRC_LOG_PARSE_COPY_CONFLS     = (1 << 8),  /**< Copy conflicting results
+    TRC_LOG_PARSE_COPY_CONFLS     = (1 << 9),  /**< Copy conflicting results
                                                     from logs in <news>
                                                     section of updating
                                                     rule */
-    TRC_LOG_PARSE_COPY_OLD_FIRST  = (1 << 9),  /**< If both COPY_CONFLS and
+    TRC_LOG_PARSE_COPY_OLD_FIRST  = (1 << 10), /**< If both COPY_CONFLS and
                                                     COPY_OLD are specified,
                                                     copy expected results
                                                     from current TRC DB in
@@ -83,10 +86,10 @@ enum trc_log_parse_flags {
                                                     copy conlficting
                                                     results from logs to
                                                     the same place */
-    TRC_LOG_PARSE_CONFLS_ALL      = (1 << 10), /**< Treat all results from
+    TRC_LOG_PARSE_CONFLS_ALL      = (1 << 11), /**< Treat all results from
                                                     logs as unexpected
                                                     ones */
-    TRC_LOG_PARSE_COPY_BOTH       = (1 << 11), /**< If both COPY_CONFLS and
+    TRC_LOG_PARSE_COPY_BOTH       = (1 << 12), /**< If both COPY_CONFLS and
                                                     COPY_BOTH are specified,
                                                     copy both results from
                                                     existing TRC and
@@ -99,13 +102,13 @@ enum trc_log_parse_flags {
                                                     TRC firstly, otherwise
                                                     firstly copy results
                                                     from logs */
-    TRC_LOG_PARSE_TAGS_STR        = (1 << 12), /**< Do not change string
+    TRC_LOG_PARSE_TAGS_STR        = (1 << 13), /**< Do not change string
                                                     representation of
                                                     tags */
-    TRC_LOG_PARSE_GEN_APPLY       = (1 << 13), /**< Apply updating rules
+    TRC_LOG_PARSE_GEN_APPLY       = (1 << 14), /**< Apply updating rules
                                                     after generating
                                                     them */
-    TRC_LOG_PARSE_RULES_CONFL     = (1 << 14), /**< If applying of a rule
+    TRC_LOG_PARSE_RULES_CONFL     = (1 << 15), /**< If applying of a rule
                                                     leads to replacing
                                                     some alredy existing
                                                     expected results with

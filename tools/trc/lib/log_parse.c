@@ -1546,6 +1546,8 @@ trc_update_merge_result(trc_log_parse_ctx *ctx)
                                                         ctx->tags);
     if (p != NULL &&
         !(ctx->flags & TRC_LOG_PARSE_CONFLS_ALL) &&
+        !((ctx->flags & TRC_LOG_PARSE_LOG_WILDS) &&
+          !(ctx->flags & TRC_LOG_PARSE_LOG_WILDS_NEXP)) &&
         trc_is_result_expected(
             p,
             &TAILQ_FIRST(&ctx->iter_data->runs)->result))
@@ -1581,10 +1583,7 @@ trc_update_merge_result(trc_log_parse_ctx *ctx)
     merge_result->key = NULL;
     merge_result->notes = NULL;
 
-    if (ctx->flags & TRC_LOG_PARSE_LOG_WILDS)
-        new_results = &trc_db_walker_get_iter(ctx->db_walker)->exp_results;
-    else
-        new_results = &upd_iter_data->new_results;
+    new_results = &upd_iter_data->new_results;
 
     if (SLIST_EMPTY(new_results))
     {
@@ -1673,7 +1672,12 @@ trc_update_simplify_results(unsigned int db_uid,
                     continue;
 
                 if (flags & TRC_LOG_PARSE_LOG_WILDS)
+                {
                     new_results = &iter->exp_results;
+                    trc_exp_results_free(new_results);
+                    trc_exp_results_cpy(new_results,
+                                        &iter_data->new_results);
+                }
                 else
                     new_results = &iter_data->new_results;
 
@@ -1917,7 +1921,7 @@ trc_update_load_rule(xmlNodePtr rule_node, trc_update_rule *rule)
         if (rule->result_ != NULL)                                  \
         {                                                           \
             ERROR("Duplicated %s node in TRC updating rules "       \
-                  "XML file", #result_);                            \
+                  "XML file", (char *)rule_section_node->name);     \
             return TE_EFMT;                                         \
         }                                                           \
         else                                                        \

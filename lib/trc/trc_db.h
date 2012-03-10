@@ -263,6 +263,16 @@ extern const trc_exp_result *exp_defaults_get(te_test_status status);
 extern trc_exp_results *trc_exp_results_dup(trc_exp_results *results);
 
 /**
+ * Copy expected results from one list at the beginning
+ * of another list.
+ *
+ * @param dest          Destination expected results list
+ * @param src           Source expected results list
+ */
+extern void trc_exp_results_cpy(trc_exp_results *dest,
+                                trc_exp_results *src);
+
+/**
  * Copy notes, default and expected results from
  * one test iteration to another.
  *
