@@ -1061,7 +1061,7 @@ fi
 merge_comm=""
 if test -z ${TE_SNIFF_LOG_CONV_DISABLE} ; then
     idx=0
-    for plog in `ls ${TE_SNIFF_LOG_DIR}/*.pcap`; do
+    for plog in `ls ${TE_SNIFF_LOG_DIR}/ | grep \.pcap$`; do
         xlogs[${idx}]=${plog/%.pcap/.xml}
         # Conversion from pcap to TE XML
         tshark -r ${plog} -T pdml | rgt-pdml2xml - ${xlogs[idx]}
@@ -1069,6 +1069,9 @@ if test -z ${TE_SNIFF_LOG_CONV_DISABLE} ; then
         merge_comm="${merge_comm} ${xlogs[${idx}]}"
         let "idx += 1"
     done
+    if test ${idx} -eq 0 ; then
+        TE_SNIFF_LOG_CONV_DISABLE=true
+    fi
 fi
 
 #

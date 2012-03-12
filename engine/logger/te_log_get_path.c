@@ -119,8 +119,10 @@ main(int argc, char **argv)
     xmlSAXUserParseFile(&sax_handler, NULL, argv[1]);
     xmlCleanupParser();
     xmlMemoryDump();
-    printf("%s", path);
     if (path != NULL)
+    {
+        printf("%s", path);
         free((void *)path);
+    }
     return 0;
 }

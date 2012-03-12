@@ -16,12 +16,9 @@ TE_LIB_PARMS([tad], [], [],
 TE_LIB_PARMS([tapi_tad], [], [],
              [--without-snmp --without-atm --without-bridge])
 
-TE_LIB_PARMS([rcfpch], [], [],
-             [--with-sniffers], [], [], [])
-
 TE_TA_TYPE([linux], [], [unix],
            [--with-rcf-rpc --with-cfg-linux-daemons='ftp echo' \
-            --with-tr069 --with-libnetconf --with-sniffers],
+            --with-tr069 --with-libnetconf],
            [], [], [], [comm_net_agent ndn asn acse_cwmp cwmp_data])
 
 

@@ -3,7 +3,7 @@
  *
  * Defenition of unix TA sniffers configuring support.
  *
- * Copyright (C) 2004-2011 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2004-2012 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or

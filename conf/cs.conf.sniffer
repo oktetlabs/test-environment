@@ -1,9 +1,3 @@
 <?xml version="1.0"?>
 <history>
-  <add>
-    <instance oid="/agent:Agt_B/interface:eth0/sniffer:clisniff"/>
-  </add>
-  <set>
-    <instance oid="/agent:Agt_B/interface:eth0/sniffer:clisniff/enable:" value="1"/>
-  </set>
 </history>

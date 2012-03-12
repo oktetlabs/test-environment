@@ -275,7 +275,6 @@ rgt_log_start_element(void *in_ctx, const xmlChar  *xml_tag,
                 ctx->state = RGT_MERGE_STATE_MSG;
 
                 RGT_CHECK_CURR_STREAM(ctx);
-                //~ rgt_check_curr_stream();
                 if (curr_stream == ctx)
                 {
                     ctx->state = RGT_MERGE_STATE_MSG_PRINT;
@@ -357,10 +356,10 @@ rgt_log_end_element(void *in_ctx, const xmlChar *xml_tag)
             if (strcmp(tag, "msg") == 0)
             {
                 ctx->state = RGT_MERGE_STATE_BASE;
-                //~ if (!ctx->main_st)
+                if (!ctx->main_st)
                     fprintf(res_fd, "</%s>\n", xml_tag);
-                //~ else
-                    //~ fprintf(res_fd, "</%s>", xml_tag);
+                else
+                    fprintf(res_fd, "</%s>", xml_tag);
             }
             else
                 fprintf(res_fd, "</%s>", xml_tag);
@@ -571,7 +570,6 @@ rgt_parse_xml_files(void)
     unsigned    size;
     bool        main_st;
 
-
     while (!SLIST_EMPTY(&rgt_flist_h))
     {
         while ((res = getdelim(&chars, &size, '>', curr_stream->fd)) > 0)
@@ -618,7 +616,7 @@ rgt_stream_copy(const char *out_str, const char *in_str)
     chunk[RGT_CHUNK_SIZE] = '\0';
     if (strcmp(out_str, "-") != 0)
     {
-        out_fd = open(out_str, O_WRONLY);
+        out_fd = open(out_str, O_CREAT | O_WRONLY | O_TRUNC);
         if (out_fd == -1)
         {
             fprintf(stderr, "Couldn't open the file: %s; %s\n",

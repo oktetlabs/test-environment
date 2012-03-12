@@ -97,8 +97,6 @@ static const char *atts_list[RGT_ATTS_LIST_LEN] = {
     "showname",
 };
 
-
-
 /**
  * Get the attribute value.
  * 
@@ -233,7 +231,7 @@ rgt_save_tag(const char *tag, const char **atts)
  * 
  * @param hex_data      Source string
  * 
- * @param Decoded string or NULL in case of failure
+ * @return Decoded string or NULL in case of failure
  */
 static char *
 rgt_data_decoding(const char *hex_data)
@@ -517,7 +515,7 @@ rgt_get_entity(void *in_ctx, const xmlChar *xml_name)
     const char       *name = (const char *)xml_name;
 
 #define FILL_ENT(ent_, name_) \
-    do {                                            \
+    do {                                        \
         ent_.name = (const xmlChar *)(name_);   \
         ent_.orig = (xmlChar *)("&" name_ ";"); \
     } while (0)
