@@ -3,7 +3,7 @@
  *
  * Defenition of sniffer process function.
  *
- * Copyright (C) 2004-2011 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2004-2012 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -24,7 +24,7 @@
  *
  * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
  *
- * $Id: 
+ * $Id: $
  */
 
 #ifndef __TE_SNIFFER_PROC_H__

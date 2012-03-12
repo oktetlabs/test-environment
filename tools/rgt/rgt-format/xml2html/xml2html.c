@@ -130,6 +130,7 @@ RGT_DEF_FUNC(proc_log_msg_end)
         RGT_ROW_COL_DARK : RGT_ROW_COL_LIGHT;
 }
 
+
 RGT_DEF_DUMMY_FUNC(proc_branch_start)
 RGT_DEF_DUMMY_FUNC(proc_branch_end)
 RGT_DEF_DUMMY_FUNC(proc_meta_param_start)
@@ -172,6 +173,9 @@ RGT_DEF_FUNC(name_)                                          \
 DEF_FUNC_WITHOUT_ATTRS(proc_mem_dump_start, MEM_DUMP_START)
 DEF_FUNC_WITHOUT_ATTRS(proc_mem_dump_end, MEM_DUMP_END)
 DEF_FUNC_WITHOUT_ATTRS(proc_mem_row_start, MEM_DUMP_ROW_START)
+
+DEF_FUNC_WITHOUT_ATTRS(proc_log_packet_end, LOG_PACKET_END)
+DEF_FUNC_WITHOUT_ATTRS(proc_log_packet_proto_end, LOG_PACKET_PROTO_END)
 
 RGT_DEF_FUNC(proc_mem_row_end)
 {

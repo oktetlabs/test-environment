@@ -64,12 +64,6 @@
     if ((ptr = malloc(size)) == NULL)   \
         assert(0);
 
-/* Size of a PCAP file header. */
-#define SNIF_PCAP_HSIZE 24
-
-/* Size of the sniffer marker packet protocol. */
-#define SNIF_MARK_PSIZE 48
-
 #define SNIF_MIN_LIST_SIZE 1024
 
 /* The PCAP file header. */
@@ -102,6 +96,7 @@ typedef struct snif_id_l {
 SLIST_HEAD(snifidl_h_t, snif_id_l);
 typedef struct snifidl_h_t snifidl_h_t;
 
+/** PCAP packet header */
 typedef struct pcap_pkthdr {
     struct timeval ts;   /**< time stamp */
     unsigned int caplen; /**< length of portion present */
@@ -297,7 +292,7 @@ sniffer_make_file_name(const char *agent, snif_id_l *snif)
     while ((ptr = strchr(templ + offt_templ, '\%')) != NULL)
     {
         len = (unsigned)(ptr) - (unsigned)(templ + offt_templ);
-        if (len < 0 || len > RCF_MAX_PATH - offt_buf)
+        if (len < 0 || (unsigned)len > RCF_MAX_PATH - offt_buf)
             return TE_RC(TE_LOGGER, TE_EINVAL);
         strncpy(snif->res_fname + offt_buf, templ + offt_templ, len);
         offt_templ += len + 1;
@@ -339,7 +334,7 @@ sniffer_make_file_name(const char *agent, snif_id_l *snif)
                 printf("Wrong name template: %s\n", templ);
         }
 
-        if (len > RCF_MAX_PATH - offt_buf)
+        if ((unsigned)len > RCF_MAX_PATH - offt_buf)
             return TE_RC(TE_LOGGER, TE_EINVAL);
         offt_buf += len;
         
@@ -351,7 +346,7 @@ sniffer_make_file_name(const char *agent, snif_id_l *snif)
     if (offt_templ < strlen(templ))
     {
         len = strlen(templ + offt_templ);
-        if (len > RCF_MAX_PATH - offt_buf)
+        if ((unsigned)len > RCF_MAX_PATH - offt_buf)
             return TE_RC(TE_LOGGER, TE_EINVAL);
         strncpy(snif->res_fname + offt_buf, templ + offt_templ, len);
         offt_buf += len;
@@ -362,7 +357,7 @@ sniffer_make_file_name(const char *agent, snif_id_l *snif)
     else
         len = snprintf(snif->res_fname + offt_buf, RCF_MAX_PATH - offt_buf,
                        ".pcap");
-    if (len > RCF_MAX_PATH - offt_buf)
+    if ((unsigned)len > RCF_MAX_PATH - offt_buf)
         return TE_RC(TE_LOGGER, TE_EINVAL);
     offt_buf += len;
 
@@ -523,8 +518,7 @@ sniffer_insert_marker(int fd_o, snif_mark_l *mark)
     char            proto[SNIF_MARK_PSIZE];    /**< Protocol */
     int             res;
 
-    /* FIXME: Can be correct marker packet protocol. */
-    memset(proto, 0, SNIF_MARK_PSIZE);
+    SNIFFER_MARK_H_INIT(proto, strlen(mark->message));
 
     res = write(fd_o, (void *)&mark->h, sizeof(struct pcap_pkthdr));
     if (res == -1)
@@ -540,6 +534,34 @@ sniffer_insert_marker(int fd_o, snif_mark_l *mark)
 insert_marker_error:
     ERROR("Couldn't write marker packet to file.");
     return TE_RC(TE_TA_UNIX, TE_EINVAL);
+}
+
+/**
+ * Save information about sniffer to the capture file.
+ * 
+ * @param agent     Agent name
+ * @param snif      The sniffer location
+ * @param fd_o      Opened file descriptor
+ */
+static void
+sniffer_save_info(const char *agent, snif_id_l *snif, int fd_o)
+{
+    snif_mark_l mark;
+    int         len;
+    int         res;
+
+    len = strlen(agent) + strlen(snif->id.ifname) +
+          strlen(snif->id.snifname) + 5;
+    SNIFFER_MALLOC(mark.message, len);
+    res = snprintf(mark.message, len, "%s;%s;%s", agent, snif->id.ifname,
+                   snif->id.snifname);
+    
+    gettimeofday(&mark.h.ts, 0);
+    mark.h.caplen = strlen(mark.message) + SNIF_MARK_PSIZE;
+    mark.h.len = mark.h.caplen;
+
+    sniffer_insert_marker(fd_o, &mark);
+    free(mark.message);
 }
 
 /**
@@ -588,6 +610,7 @@ sniffer_capture_file_proc(const char *fname, snif_id_l *snif,
         }
 
         res = write(fd_o, pcap_hbuf, SNIF_PCAP_HSIZE);
+        sniffer_save_info(agent, snif, fd_o);
     }
     else if (fd_o == -1)
     {
@@ -663,7 +686,6 @@ cleanup_snif_fproc:
 static te_bool
 sniffer_check_overall_space(unsigned fsize)
 {
-    unsigned long long   total = 0;
     snif_ta_l           *snif_ta;
     snif_id_l           *snif;
     file_list_s         *f;
@@ -734,6 +756,7 @@ sniffer_check_capture_space(snif_id_l *snif, const char *fname,
             return FALSE;
         }
         write(fd_n, pcap_hbuf, SNIF_PCAP_HSIZE);
+        sniffer_save_info(agent, snif, fd_n);
         close(fd_n);
 
         strcpy(f->name, snif->res_fname);

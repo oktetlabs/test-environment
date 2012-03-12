@@ -76,4 +76,10 @@ dist_pkgdata_DATA = \
     lf_ref_part.tmpl\
     lf_row_folder.tmpl\
     lf_row_test.tmpl\
-    lf_start_table.tmpl
+    lf_start_table.tmpl\
+    log_packet_start.tmpl\
+    log_packet_end.tmpl\
+    log_packet_proto_start.tmpl\
+    log_packet_proto_end.tmpl\
+    log_packet_field_start.tmpl\
+    log_packet_field_data.tmpl

@@ -44,6 +44,11 @@
 
 #define UTILITY_NAME "xml-processor"
 
+/* Max attribute length in one line */
+extern int rgt_max_attribute_length;
+/* A tag to separate lines */
+extern const char *rgt_line_separator;
+
 /**
  * Callback function that is called before parsing the document.
  *
@@ -172,6 +177,22 @@ rgt_log_end_element(void *user_data, const rgt_xmlChar *xml_tag)
             {
                 assert(strcmp(tag, "br") == 0);
                 /* Do nothing */
+            }
+            break;
+
+        case RGT_XML2HTML_STATE_PACKET:
+            if (strcmp(tag, "packet") == 0)
+            {
+                proc_log_packet_end(ctx, depth_ctx, NULL);
+                ctx->state = RGT_XML2HTML_STATE_LOG_MSG;
+            }
+            break;
+
+        case RGT_XML2HTML_STATE_PACKET_PROTO:
+            if (strcmp(tag, "proto") == 0)
+            {
+                proc_log_packet_proto_end(ctx, depth_ctx, NULL);
+                ctx->state = RGT_XML2HTML_STATE_PACKET;
             }
             break;
 
@@ -492,9 +513,31 @@ rgt_log_start_element(void *user_data,
                                         RGT_XML2CHAR(attrs));
                 ctx->state = RGT_XML2HTML_STATE_FILE;
             }
+            else if (strcmp(tag, "packet") == 0)
+            {
+                proc_log_packet_start(ctx, depth_ctx, RGT_XML2CHAR(attrs));
+                ctx->state = RGT_XML2HTML_STATE_PACKET;
+            }
             else
                 assert(0);
 
+            break;
+
+        case RGT_XML2HTML_STATE_PACKET:
+            if (strcmp(tag, "proto") == 0)
+            {
+                proc_log_packet_proto_start(ctx, depth_ctx,
+                                            RGT_XML2CHAR(attrs));
+                ctx->state = RGT_XML2HTML_STATE_PACKET_PROTO;
+            }
+            break;
+
+        case RGT_XML2HTML_STATE_PACKET_PROTO:
+            if (strcmp(tag, "field") == 0)
+            {
+                proc_log_packet_field_start(ctx, depth_ctx,
+                                            RGT_XML2CHAR(attrs));
+            }
             break;
 
         case RGT_XML2HTML_STATE_MEM_DUMP:
@@ -709,15 +752,38 @@ static xmlSAXHandler sax_handler = {
 static int
 rgt_parse_file(rgt_gen_ctx_t *gen_ctx)
 {
-    if (xmlSAXUserParseFile(&sax_handler, gen_ctx,
-                            gen_ctx->xml_fname) != 0)
-    {
-        fprintf(stderr, "Cannot parse XML document\n");
+    xmlParserCtxtPtr ctxt;
+    int              ret    = 0;
+
+    ctxt = xmlCreateFileParserCtxt(gen_ctx->xml_fname);
+    if (ctxt == NULL)
         return 1;
+
+    /* Option to process and escape the <, >, ", ', & symbols. */
+    xmlCtxtUseOptions(ctxt, XML_PARSE_OLDSAX);
+
+    if (ctxt->sax != (xmlSAXHandlerPtr) &xmlDefaultSAXHandler)
+        xmlFree(ctxt->sax);
+    ctxt->sax = &sax_handler;
+    if (gen_ctx != NULL)
+        ctxt->userData = (void *)gen_ctx;
+
+    xmlParseDocument(ctxt);
+    if (ctxt->wellFormed)
+        ret = 0;
+    else
+        ret = ctxt->errNo != 0 ? ctxt->errNo : 1;
+
+    ctxt->sax = NULL;
+    if (ctxt->myDoc != NULL)
+    {
+        xmlFreeDoc(ctxt->myDoc);
+        ctxt->myDoc = NULL;
     }
 
+    xmlFreeParserCtxt(ctxt);
     xmlCleanupParser();
-    return 0;
+    return ret;
 }
 #elif (defined WITH_EXPAT)
 static int
@@ -787,7 +853,7 @@ rgt_parse_file(rgt_gen_ctx_t *gen_ctx)
     free(buf);
     XML_ParserFree(p);
     fclose(fd);
-    
+
     return 0;
 }
 #endif
@@ -938,6 +1004,25 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
     poptFreeContext(optCon);
 }
 
+/* The description see in xml2gen.h */
+int
+rgt_xml2fmt_files_get_idx(const char* short_name)
+{
+    char filename[256];
+    int  i;
+
+    if (snprintf(filename, 256, "/%s.tmpl", short_name) > 256)
+        return -1;
+
+    for (i = 0; (unsigned)i < xml2fmt_tmpls_num; i++)
+    {
+        if(strstr(xml2fmt_files[i], filename) != NULL)
+            return i;
+    }
+
+    return -1;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -963,6 +1048,7 @@ main(int argc, char **argv)
         fprintf(stderr, "Cannot allocate resourses for the programm\n");
         exit(1);
     }
+    rgt_attr_settings_init(rgt_line_separator, rgt_max_attribute_length);
 
     rc = rgt_parse_file(&gen_ctx);
 

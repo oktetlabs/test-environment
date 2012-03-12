@@ -247,4 +247,6 @@ extern void rgt_tmpls_free(rgt_tmpl_t *tmpls, size_t tmpl_num);
 extern int rgt_tmpls_output(FILE *out_fd, rgt_tmpl_t *tmpl,
                             const rgt_attrs_t *attrs);
 
+extern void rgt_attr_settings_init(const char *sep, int length);
+
 #endif /* __TE_RGT_TMPLS_LIB_H__ */

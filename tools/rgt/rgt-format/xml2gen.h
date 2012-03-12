@@ -40,6 +40,7 @@ extern "C" {
 
 #if (defined WITH_LIBXML)
 # include <libxml/parser.h>
+# include <libxml/parserInternals.h>
 typedef xmlChar rgt_xmlChar;
 #elif (defined WITH_EXPAT)
 # include <expat.h>
@@ -81,6 +82,9 @@ typedef enum rgt_state {
     RGT_XML2HTML_STATE_MEM_DUMP_ROW,
     RGT_XML2HTML_STATE_MEM_DUMP_ELEM,
     RGT_XML2HTML_STATE_FILE,
+    RGT_XML2HTML_STATE_PACKET,
+    RGT_XML2HTML_STATE_PACKET_PROTO,
+    RGT_XML2HTML_STATE_PACKET_FIELD,
 } rgt_state_t;
 
 /** Possible node types */
@@ -244,6 +248,12 @@ RGT_EXTERN_FUNC(proc_log_msg_br);
 RGT_EXTERN_FUNC(proc_log_msg_file_start);
 RGT_EXTERN_FUNC(proc_log_msg_file_end);
 
+RGT_EXTERN_FUNC(proc_log_packet_start);
+RGT_EXTERN_FUNC(proc_log_packet_end);
+RGT_EXTERN_FUNC(proc_log_packet_proto_start);
+RGT_EXTERN_FUNC(proc_log_packet_proto_end);
+RGT_EXTERN_FUNC(proc_log_packet_field_start);
+
 /**
  * Callback function for processing a group of characters.
  *
@@ -265,6 +275,16 @@ extern void proc_chars(rgt_gen_ctx_t *ctx,
  * @return TRUE if entities should be expanded, or FALSE otherwise.
  */
 extern te_bool proc_expand_entities(void);
+
+/**
+ * Get index of the element in xml2fmt_files massive. Search by short name.
+ * 
+ * @param short_name    Short name of the template
+ * 
+ * @return Index
+ * @retval -1   In case of failure
+ */
+extern int rgt_xml2fmt_files_get_idx(const char* short_name);
 
 #ifdef __cplusplus
 } /* extern "C" */

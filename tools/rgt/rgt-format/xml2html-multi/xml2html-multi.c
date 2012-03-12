@@ -105,6 +105,8 @@ static void lf_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
 
 static te_log_level te_log_level_str2h(const char *ll);
 
+static int packet_num  = 0;
+
 /* RGT format-specific options table */
 struct poptOption rgt_options_table[] = {
     { "shared-url", 'i', POPT_ARG_STRING, NULL, 'i',
@@ -764,7 +766,6 @@ RGT_DEF_FUNC(proc_log_msg_end)
 
     attrs = rgt_tmpls_attrs_new(xml_attrs);
     rgt_tmpls_attrs_add_fstr(attrs, "level", depth_user->log_level);
-
     rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[LOG_MSG_END], attrs);
 
     rgt_tmpls_attrs_free(attrs);
@@ -823,6 +824,8 @@ DEF_FUNC_WITHOUT_ATTRS(proc_meta_duration_end, META_DURATION_END)
 DEF_FUNC_WITHOUT_ATTRS(proc_meta_objective_start, META_OBJ_START)
 DEF_FUNC_WITHOUT_ATTRS(proc_meta_objective_end, META_OBJ_END)
 DEF_FUNC_WITHOUT_ATTRS(proc_meta_page_end, META_PAGE_END)
+DEF_FUNC_WITHOUT_ATTRS(proc_log_packet_end, LOG_PACKET_END)
+DEF_FUNC_WITHOUT_ATTRS(proc_log_packet_proto_end, LOG_PACKET_PROTO_END)
 
 RGT_DEF_FUNC(proc_meta_page_start)
 {
@@ -1102,6 +1105,7 @@ te_log_level_str2h(const char *ll)
         MAP_ENTRY(INFO),
         MAP_ENTRY(VERB),
         MAP_ENTRY(ENTRY_EXIT),
+        MAP_ENTRY(PACKET),
 
 #undef MAP_ENTRY
     };

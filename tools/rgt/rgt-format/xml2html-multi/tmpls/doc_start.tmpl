@@ -1,5 +1,6 @@
 <html>
 <head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <title>Logs from @@%s:reporter@@</title>
 <link rel='stylesheet' type='text/css' href='@@%s:shared_url@@style.css'>
 
@@ -51,6 +52,27 @@ function refresh_filter_window()
     }
 }
 
+</script>
+<script src="http://ajax.googleapis.com/ajax/libs/dojo/1.4/dojo/dojo.xd.js" type="text/javascript"></script>
+<script type="text/javascript">
+function set_node(node, str)
+{
+  if(dojo.isString(node))
+    node = dojo.byId(node);
+  if(!node) return;
+  node.style.display = str;
+}
+function toggle_node(node)
+{
+  if(dojo.isString(node))
+    node = dojo.byId(node);
+  if(!node) return;
+  set_node(node, (node.style.display != 'none') ? 'none' : 'block');
+}
+function hide_node(node)
+{
+  set_node(node, 'none');
+}
 </script>
 
 </head>

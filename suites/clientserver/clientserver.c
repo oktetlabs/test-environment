@@ -85,7 +85,7 @@ main(int argc, char *argv[])
     if (rcf_get_ta_list(ta, &len) != 0)
         TEST_FAIL("rcf_get_ta_list() failed");
 
-    snif = tapi_sniffer_add(ta, "lo", "newsniffer", "ip", FALSE);
+    snif = tapi_sniffer_add(ta, "lo", "newsniffer", "ip", TRUE);
     sleep(1);
     tapi_sniffer_mark(ta, NULL, "My first marker packet for all snifs. ");
     CHECK_RC(tapi_sniffer_stop(snif));

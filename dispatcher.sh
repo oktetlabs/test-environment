@@ -233,6 +233,8 @@ Generic options:
                                 By default overfill handle method is rotation.
  --sniff-log-period=<val>       Period of taken logs from agents, milliseconds.
                                 By default: ${TE_SNIFF_LOG_PERIOD} msec.
+ --sniff-log-conv-disable       Option to disable capture logs conversion
+                                and merge with the main log.
 
     The script exits with a status of zero if everything does smoothly and
     all tests, if any tests are run, give expected results. A status of two
@@ -248,7 +250,6 @@ exit_with_log()
     cd "${TE_RUN_DIR}"
     exit 1
 }
-
 
 # Parse options
 
@@ -438,6 +439,7 @@ process_opts()
             --log-dir=*) TE_LOG_DIR="${1#--log-dir=}" ;;
             --log-online) LOG_ONLINE=yes ;;
 
+            --sniff-log-conv-disable) TE_SNIFF_LOG_CONV_DISABLE=true ;;
             --sniff-log-dir=*) TE_SNIFF_LOG_DIR="${1#--sniff-log-dir=}"
                 export TE_SNIFF_LOG_DIR ;;
             --sniff-log-osize=*) TE_SNIFF_LOG_OSIZE="${1#--sniff-log-osize=}"
@@ -578,10 +580,6 @@ sniffer_make_conf()
     agt=
     str=
 
-    if test -z ${TE_SNIFF_LOG_DIR} ; then
-        TE_SNIFF_DEF_LOG_DIR="${TE_LOG_DIR}/caps"
-        export TE_SNIFF_DEF_LOG_DIR
-    fi
     TE_SNIFF_CSCONF="${CONF_DIR}/cs.conf.sniffer"
 
     echo "<?xml version=\"1.0\"?>" > "${TE_SNIFF_CSCONF}"
@@ -608,7 +606,7 @@ sniffer_make_conf()
 
             echo "  <add>" >> "${TE_SNIFF_CSCONF}"
             str="    <instance oid=\"/agent:${agt}/interface:${iface}"
-            str+="/sniffer:${TE_SNIFF_NAME[${idx}]}\" value=\"0\"/>"
+            str+="/sniffer:${TE_SNIFF_NAME[${idx}]}\"/>"
             echo "${str}" >> "${TE_SNIFF_CSCONF}"
             echo "  </add>" >> "${TE_SNIFF_CSCONF}"
 
@@ -1048,6 +1046,32 @@ if test -n "${LIVE_LOG}" ; then
 fi
 
 #
+# Processing of sniffers capture logs
+#
+myecho -n "--->>> Logs conversion..."
+
+# If capture logs path is not declared in the Dispatcher, It getting from
+# the Logger configuration file
+if test -z ${TE_SNIFF_LOG_DIR} ; then
+    TE_SNIFF_LOG_DIR=`te_log_get_path ${CONF_LOGGER}`
+fi
+[[ ${TE_SNIFF_LOG_DIR} == /* ]] || [[ ${TE_SNIFF_LOG_DIR} == \~/* ]] ||
+   TE_SNIFF_LOG_DIR="${TE_RUN_DIR}/${TE_SNIFF_LOG_DIR}"
+
+merge_comm=""
+if test -z ${TE_SNIFF_LOG_CONV_DISABLE} ; then
+    idx=0
+    for plog in `ls ${TE_SNIFF_LOG_DIR}/*.pcap`; do
+        xlogs[${idx}]=${plog/%.pcap/.xml}
+        # Conversion from pcap to TE XML
+        tshark -r ${plog} -T pdml | rgt-pdml2xml - ${xlogs[idx]}
+        # Construct command to merge all capture logs 
+        merge_comm="${merge_comm} ${xlogs[${idx}]}"
+        let "idx += 1"
+    done
+fi
+
+#
 # RGT processing of the raw log
 #
 if test -n "${CONF_RGT}" ; then
@@ -1056,27 +1080,52 @@ fi
 if test -n "${RGT_LOG_TXT}" -o -n "${RGT_LOG_HTML_PLAIN}" ; then
     # Generate XML log do not taking into account control messages
     LOG_XML_PLAIN="log_plain.xml"
+    LOG_XML_MERGED="log_plain_ext.xml"
     rgt-conv --no-cntrl-msg  -m postponed ${CONF_RGT} \
         -f "${TE_LOG_RAW}" -o "${LOG_XML_PLAIN}"
     if test $? -eq 0 -a -e "${LOG_XML_PLAIN}" ; then
+        if test -z ${TE_SNIFF_LOG_CONV_DISABLE} ; then
+            # Merge main TE log with capture logs
+            rgt-xml-merge "${LOG_XML_MERGED}" "${LOG_XML_PLAIN}" \
+                          ${merge_comm}
+        else
+            LOG_XML_MERGED="${LOG_XML_PLAIN}"
+        fi
+
         if test -n "${RGT_LOG_TXT}" ; then
-            rgt-xml2text -f "${LOG_XML_PLAIN}" -o "${RGT_LOG_TXT}"
+            rgt-xml2text -f "${LOG_XML_MERGED}" -o "${RGT_LOG_TXT}"
         fi
         if test -n "${RGT_LOG_HTML_PLAIN}" ; then
-            rgt-xml2html -f "${LOG_XML_PLAIN}" -o "${RGT_LOG_HTML_PLAIN}"
+            rgt-xml2html -f "${LOG_XML_MERGED}" -o "${RGT_LOG_HTML_PLAIN}"
         fi
     fi
 fi
 if test -n "${RGT_LOG_HTML}" ; then
     # Generate XML log taking into account control messages
     LOG_XML_STRUCT="log_struct.xml"
+    LOG_XML_MERGED="log_struct_ext.xml"
     rgt-conv -m postponed ${CONF_RGT} \
         -f "${TE_LOG_RAW}" -o "${LOG_XML_STRUCT}"
     if test $? -eq 0 -a -e "${LOG_XML_STRUCT}" ; then
-        rgt-xml2html-multi ${RGT_X2HM_OPTS} "${LOG_XML_STRUCT}" \
-            "${RGT_LOG_HTML}"
+        if test -z ${TE_SNIFF_LOG_CONV_DISABLE} ; then
+            # Merge main TE log with capture logs
+            rgt-xml-merge "${LOG_XML_MERGED}" "${LOG_XML_STRUCT}" \
+                          ${merge_comm}
+        else
+            LOG_XML_MERGED="${LOG_XML_STRUCT}"
+        fi
+
+        rgt-xml2html-multi ${RGT_X2HM_OPTS} "${LOG_XML_MERGED}" \
+                           "${RGT_LOG_HTML}"
     fi
 fi
+
+if test -z ${TE_SNIFF_LOG_CONV_DISABLE} ; then
+    for rmlog in ${xlogs[@]} ; do
+        rm "${rmlog}"
+    done
+fi
+myecho "done"
 
 if test ${START_OK} -ne 1 -a -n "${DO_TCE}" ; then
     myecho "--->>> TCE processing"

@@ -871,14 +871,8 @@ sniffer_polling_sets_cli_init(void)
         strncpy(snifp_sets.dir, tmp, RCF_MAX_PATH);
     if (strlen(snifp_sets.dir) == 0)
     {
-        tmp = getenv("TE_SNIFF_DEF_LOG_DIR");
-        if (tmp != NULL)
-            strncpy(snifp_sets.dir, tmp, RCF_MAX_PATH);
-        else
-        {
-            snifp_sets.errors = TRUE;
-            return;
-        }
+        snifp_sets.errors = TRUE;
+        return;
     }
 
     /* Cleanup old capture logs */

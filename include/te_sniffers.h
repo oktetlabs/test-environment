@@ -41,4 +41,30 @@ typedef struct sniffer_id {
                                             portion. */
 } sniffer_id;
 
+
+/* Size of a PCAP file header. */
+#define SNIF_PCAP_HSIZE 24
+
+
+/* Size of the sniffer marker packet protocol. */
+#define SNIF_MARK_PSIZE 34
+
+/**
+ * Initialization of a header for a marker packet.
+ * 
+ * @param _proto    Pointer to the allocated header location.
+ * @param _msglen   Length of the user message for the packet.
+ */
+#define SNIFFER_MARK_H_INIT(_proto, _msglen) \
+{ \
+    memset(_proto, 0, SNIF_MARK_PSIZE); \
+    _proto[12] = 0x08;       /* Ether Type */ \
+    _proto[14] = 0x45;       /* Version 4, Header length 20 bytes */ \
+    /* Total length 52 */ \
+    _proto[17] = SNIF_MARK_PSIZE + _msglen; \
+    _proto[20] = 0x40;       /* Flags: Don't fragment */ \
+    _proto[23] = 0x3D;       /* Transport layer _protocol: Any host \
+                                internal protocol */ \
+}
+
 #endif /* ndef __TE_SNIFFERS_H__ */

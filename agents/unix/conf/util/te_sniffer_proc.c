@@ -4,7 +4,7 @@
  * Sniffer process implementation.
  *
  *
- * Copyright (C) 2005 Test Environment authors (see file AUTHORS in the
+ * Copyright (C) 2012 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
  *
  * This library is free software; you can redistribute it and/or
@@ -73,28 +73,26 @@
  *
  * @author Andrey A. Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
  *
- * $Id:
+ * $Id: $
  */
- 
-#include <stdio.h>
-#include <pcap/pcap.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <errno.h>
-#include <signal.h>
-#include <stdbool.h>
-#include <sys/queue.h>
-#include <unistd.h>
-#include <fcntl.h>
+#include "te_errno.h"
+#include "te_defs.h"
 #include "te_sniffer_proc.h"
+#include "te_sniffers.h"
+
+#include <pcap/pcap.h>
+#include <signal.h>
+#include <fcntl.h>
+#include <sys/queue.h>
 
 #define MAXIMUM_SNAPLEN 65535
 #define SNIF_MAX_NAME 255
-/* Size of a PCAP file header. */
-#define SNIF_PCAP_HSIZE 24
+
+/* Time to wait while interface is down to next try, microseconds */
+#define SNIF_WAIT_IF_UP 100000
+
+/* Time to wait while memory is not freed, microseconds */
+#define SNIF_WAIT_MEM 500000
 
 /** Overfill type constans */
 typedef enum overfill_type {
@@ -134,9 +132,7 @@ static unsigned long long  absolute_offset;   /**< Absolute offset of the
                                                    packet */
 static size_t              total_filled_mem;   /**< Total filled memory */
 static pcap_t             *handle = NULL;      /**< Session handle. */
-static bool                fstop;              /**< Stop flag */
-static bool                sniffer_state;      /**< Sniffer state 
-                                                    (disable/enable) */
+static te_bool             fstop;              /**< Stop flag */
 static dump_info           dumpinfo;           /**< Dump files info */
 
 SIMPLEQ_HEAD(filelist, file_list_s) head_file_list;  /**< Capture files list */
@@ -232,7 +228,7 @@ static void
 wait_mem_free(size_t total_size, long curr_offset)
 {
     while (((used_space() + curr_offset) >= total_size) && !fstop)
-        usleep(500000);
+        usleep(SNIF_WAIT_MEM);
 }
 
 /**
@@ -342,6 +338,39 @@ cleanup_rf:
 }
 
 /**
+ * Inser the marker packet into the capture file.
+ * 
+ * @param fd_o      A descriptor of the opened file.
+ * @param msg   String for a message of packet.
+ */
+static void
+insert_marker(FILE *f, const char *msg, struct timeval *ts)
+{
+    char                proto[SNIF_MARK_PSIZE];    /**< Protocol */
+    int                 res;
+    struct pcap_pkthdr  h;
+
+    if (ts == NULL)
+        gettimeofday(&h.ts, 0);
+    else 
+        memcpy(&h.ts, ts, sizeof(struct timeval));
+
+    h.caplen = strlen(msg) + SNIF_MARK_PSIZE;
+    h.len = h.caplen;
+
+    memset(proto, 0 , SNIF_MARK_PSIZE);
+    SNIFFER_MARK_H_INIT(proto, strlen(msg));
+
+    res = fwrite((void *)&h, sizeof(struct pcap_pkthdr), 1, f);
+    if (res == -1)
+        return;
+    res = fwrite(proto, SNIF_MARK_PSIZE, 1, f);
+    if (res == -1)
+        return;
+    fwrite(msg, strlen(msg), 1, f);
+}
+
+/**
  * Dumping packet to file.
  * 
  * @param user      User params.
@@ -356,9 +385,7 @@ dump_packet(unsigned char *user, const struct pcap_pkthdr *h,
     long            offset;
     struct flock    lock;
     unsigned        fnum;
-    unsigned char  *unused = user;
-    if (unused != NULL)
-        fprintf(stderr, "error");
+    UNUSED(user);
 
     lock.l_type = F_RDLCK;
     lock.l_whence = SEEK_SET;
@@ -421,9 +448,7 @@ dump_packet(unsigned char *user, const struct pcap_pkthdr *h,
                 total_filled_mem = used_space();
             }
             else
-            {
                 wait_mem_free(dumpinfo.total_size, offset);
-            }
         }
     }
 
@@ -432,15 +457,14 @@ dump_packet(unsigned char *user, const struct pcap_pkthdr *h,
     fcntl(dumpinfo.fd, F_SETLK, &lock);
 }
 
+
 /** 
  * Make a clean exit on interrupts 
  */
 static void
 sign_cleanup(int signo)
 {
-    int unused = signo;
-    unused++;
-
+    UNUSED(signo);
     fstop = 1;
     pcap_breakloop(handle);
 }
@@ -552,7 +576,6 @@ global_init(void)
 
     total_filled_mem            = 0;
     fstop                       = 0;
-    sniffer_state               = 0;
     absolute_offset             = 0;
 }
 
@@ -567,11 +590,12 @@ te_sniffer_process(int argc, char *argv[])
     char *sniffer_name              = NULL;
     int   snaplen                   = 0;
 
+    struct timeval ts;
+
     struct bpf_program   fp;                  /* The compiled filter */
-    bool                 pflag          = 0;  /* Promiscuous mode flag */
+    te_bool              pflag          = 0;  /* Promiscuous mode flag */
     unsigned long        sequence_num   = 0;
     int                  op;
-    int                  res;
 
     global_init();
     SIMPLEQ_INIT(&head_file_list);
@@ -680,12 +704,14 @@ te_sniffer_process(int argc, char *argv[])
             fprintf(stderr, "Couldn't read filter file\n");
     }
 
-    handle = pcap_open_live(interface, snaplen, pflag, 1000, ebuf);
-    if (handle == NULL)
+    while (handle == NULL && !fstop)
     {
-        fprintf(stderr, "Couldn't open interface %s: %s\n", interface, ebuf);
-        goto cleanup;
+        gettimeofday(&ts, 0);
+        handle = pcap_open_live(interface, snaplen, pflag, 1000, ebuf);
+        usleep(SNIF_WAIT_IF_UP);
     }
+    if (handle == NULL)
+        goto cleanup;
 
     if (filter_exp != NULL)
     {
@@ -718,10 +744,18 @@ te_sniffer_process(int argc, char *argv[])
     signal(SIGTERM, sign_cleanup);
     signal(SIGINT, sign_cleanup);
 
-    sniffer_state = 1;
-    res = pcap_loop(handle, 0, dump_packet, NULL);
+    insert_marker((FILE *)dumpinfo.dumper,
+                  "The sniffer process has been started.", &ts);
+
+    while (!fstop)
+        pcap_loop(handle, 0, dump_packet, NULL);
+
+    insert_marker((FILE *)dumpinfo.dumper,
+                  "Shutting down the sniffer process.", NULL);
 
 cleanup:
+    if (dumpinfo.dumper != NULL)
+        pcap_dump_close(dumpinfo.dumper);
     if (handle != NULL)
         pcap_close(handle);
 

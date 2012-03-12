@@ -44,6 +44,10 @@
 static void get_error_point(const char *file, unsigned long offset,
                             int *n_row, int *n_col);
 
+/* Max attribute length in one line */
+static int rgt_max_attribute_length;
+/* A tag to separate lines */
+static const char *rgt_line_separator;
 
 /** Array of Rgt attributes */
 static rgt_attrs_t global_attrs[20];
@@ -224,11 +228,52 @@ rgt_tmpls_attrs_set_uint32(rgt_attrs_t *attrs, const char *name,
     rgt_tmpls_attrs_add_uint32(attrs, name, val);
 }
 
+/**
+ * Check the attribute length. In case It is too long, new line tags will
+ * be iserted.
+ * 
+ * @param str   Attribute string
+ * 
+ * @return A buffer with new string or NULL if the string was not changed
+ */
+static char *
+rgt_check_string_len(char *str)
+{
+    int     max_len = rgt_max_attribute_length;
+    int     clen    = 0;
+    int     len     = strlen(str);
+    int     offt;
+    char   *tag     = rgt_line_separator;
+    int     tagl    = strlen(tag);
+    char   *buf;
+
+    if (len > max_len)
+        buf = malloc(len + len/max_len * tagl + 1);
+    else
+        return NULL;
+    assert(buf != NULL);
+
+    offt = 0;
+    while (len - clen > max_len)
+    {
+        memcpy(buf + offt, str + clen, max_len);
+        offt += max_len;
+        clen += max_len;
+        memcpy(buf + offt, tag, tagl);
+        offt += tagl;
+    }
+    memcpy(buf + offt, str + clen, len - clen);
+    offt += len - clen;
+    buf[offt] = '\0';
+    return buf;
+}
+
 /* The description see in rgt_tmpls_lib.h */
 int
 rgt_tmpls_output(FILE *out_fd, rgt_tmpl_t *tmpl, const rgt_attrs_t *attrs)
 {
-    int i;
+    int   i;
+    char *buf;
 
     for (i = 0; i < tmpl->n_blocks; i++)
     {
@@ -247,8 +292,16 @@ rgt_tmpls_output(FILE *out_fd, rgt_tmpl_t *tmpl, const rgt_attrs_t *attrs)
                     switch (attrs[j].type)
                     {
                         case RGT_ATTR_TYPE_STR:
-                            fprintf(out_fd, tmpl->blocks[i].var.fmt_str,
-                                    attrs[j].str_val);
+                            buf = rgt_check_string_len(attrs[j].str_val);
+                            if (buf == NULL)
+                                fprintf(out_fd, tmpl->blocks[i].var.fmt_str,
+                                        attrs[j].str_val);
+                            else
+                            {
+                                fprintf(out_fd, tmpl->blocks[i].var.fmt_str,
+                                        buf);
+                                free(buf);
+                            }
                             break;
 
                         case RGT_ATTR_TYPE_UINT32:
@@ -486,6 +539,13 @@ rgt_tmpls_xml_attrs_get(const char **xml_attrs, const char *name)
     return NULL;
 }
 
+/* The description see in rgt_tmpls_lib.h */
+void
+rgt_attr_settings_init(const char *sep, int length)
+{
+    rgt_line_separator = sep;
+    rgt_max_attribute_length = length;
+}
 
 /**
  * Determines a line and column in a file by offset from the beginning.

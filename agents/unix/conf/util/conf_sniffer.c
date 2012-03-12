@@ -89,7 +89,7 @@
 /* Default constants */
 #define SNIFFER_LIST_SIZE           1024
 #define SNIFFER_AGENT_TOTAL_SIZE    256
-#define SNIFFER_SPACE               16
+#define SNIFFER_SPACE               64
 #define SNIFFER_ROTATION            4
 #define SNIFFER_FILE_SIZE           16
 #define SNIFFER_PATH                "/tmp/"
@@ -255,7 +255,7 @@ sniffer_get_ssn_ff(const char *fname)
 static te_errno
 sniffer_agent_id_init(void)
 {
-    int res;
+    int      res;
 
     rcf_pch_get_id(snif_sets.agt_id);
     if (strlen(snif_sets.agt_id) == 0)
@@ -1377,12 +1377,40 @@ sniffer_set_enable(unsigned int gid, const char *oid, const char *value,
     return 0;
 }
 
+
+/**
+ * Fake sniffer set function for Configurator.
+ *
+ * @param gid          Group identifier (unused).
+ * @param oid          Full object instance identifier (unused).
+ * @param value        New value (OUT).
+ * @param ifname       Interface name.
+ * @param snifname     The sniffer name.
+ *
+ * @return Status code.
+ */
+static te_errno
+sniffer_set(unsigned int gid, const char *oid, char *value,
+            const char *ifname, const char *snifname)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+    UNUSED(ifname);
+    UNUSED(snifname);
+
+    return 0;
+}
+
+
 /**
  * Sniffer get function write to value (OUT) field the ssn value.
  *
  * @param gid          Group identifier (unused).
  * @param oid          Full object instance identifier (unused).
  * @param value        New value (OUT).
+ * @param ifname       Interface name.
+ * @param snifname     The sniffer name.
  *
  * @return Status code.
  */
@@ -1456,6 +1484,47 @@ sniffers_list(unsigned int gid, const char *oid, char **list, const char *ifname
 }
 
 /**
+ * Check the sniffer folder exists to process the sniffer as after backup.
+ * 
+ * @param sniff     The nsiffer location.
+ * 
+ * @return TRUE if the folder exists.
+ */
+static te_bool
+sniffer_check_exst_backup(sniffer_t *sniff)
+{
+    DIR  *dir;
+    int   res;
+    int   fnum;
+    char *wp_fname;
+
+    /* Make the directory name and create it. */
+    res = snprintf(sniff->path, RCF_MAX_PATH, "%s/sniffers/%s_%s_%s_%u/", 
+                   snif_sets.path, ta_name, sniff->id.ifname,
+                   sniff->id.snifname, sniff->id.ssn);
+    if (res > RCF_MAX_PATH)
+    {
+        WARN("Too long path string for sniffer logs folder.");
+        return FALSE;
+    }
+
+    dir = opendir(sniff->path);
+    if (dir == NULL)
+        return FALSE;
+    closedir(dir);
+
+    sniff->curr_file_name = sniffer_get_capture_fname(sniff, &fnum,
+                                                      &wp_fname, FALSE);
+    if (sniff->curr_file_name == NULL)
+        return FALSE;
+    sniff->id.abs_offset = strtoll(wp_fname, NULL, 10);
+    sniff->curr_offset = SNIF_PCAP_HSIZE;
+    sniff->state |= SNIF_ST_START;
+
+    return TRUE;
+}
+
+/**
  * Add a new Sniffer to the interface.
  *
  * @param gid       Request's group identifier (unused).
@@ -1475,16 +1544,14 @@ sniffer_add(unsigned int gid, const char *oid, char *ssn,
     UNUSED(ssn);
 
     sniffer_t *sniff;
-
-    if (sniffer_get_ssn_ff(snif_sets.ssn_fname) != 0)
-        WARN("Couldn't get ssn from the file");
+    te_bool    backup = FALSE;
 
     SNIFFER_MALLOC(sniff, sizeof(sniffer_t));
     sniff->id.snifname      = strdup(snifname);
     sniff->id.ifname        = strdup(ifname);
-    sniff->id.ssn           = snif_sets.ssn;
-    sniff->id.abs_offset    = 0;
+    sniff->id.ssn           = atoi(ssn);
 
+    sniff->id.abs_offset    = 0;
     sniff->enable           = 0;
     sniff->snaplen          = 0;
     sniff->pid              = 0;
@@ -1497,6 +1564,29 @@ sniffer_add(unsigned int gid, const char *oid, char *ssn,
     sniff->curr_file_name   = NULL;
     sniff->curr_offset      = 0;
     sniff->state            = 0;
+
+    memset(sniff->path, 0, RCF_MAX_PATH);
+
+    backup = sniffer_check_exst_backup(sniff);
+    if (backup)
+    {
+        sniffer_add_clone(sniff);
+        sniff->state = SNIF_ST_START;
+        sniff->id.abs_offset = 0;
+        sniff->curr_offset = 0;
+        if (sniff->curr_file_name != NULL)
+        {
+            free(sniff->curr_file_name);
+            sniff->curr_file_name = NULL;
+        }
+    }
+
+    if (sniffer_get_ssn_ff(snif_sets.ssn_fname) != 0)
+    {
+        ERROR("Couldn't get SSN from the file %s", snif_sets.ssn_fname);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+    sniff->id.ssn = snif_sets.ssn;
     memset(sniff->path, 0, RCF_MAX_PATH);
 
     SLIST_INSERT_HEAD(&snifferl_h, sniff, ent_l);
@@ -1612,7 +1702,7 @@ RCF_PCH_CFG_NODE_RW(node_enable, "enable", NULL, &node_filter_exp_str,
 
 static rcf_pch_cfg_object node_sniffer_inst =
     { "sniffer", 0, &node_enable, NULL,
-      (rcf_ch_cfg_get)sniffer_get, NULL,
+      (rcf_ch_cfg_get)sniffer_get, (rcf_ch_cfg_set)sniffer_set,
       (rcf_ch_cfg_add)sniffer_add, (rcf_ch_cfg_del)sniffer_del,
       (rcf_ch_cfg_list)sniffers_list, NULL, NULL };
 

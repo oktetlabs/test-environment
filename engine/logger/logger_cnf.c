@@ -160,18 +160,7 @@ startElementLGR(void           *ctx,
     }
     else if (!strcmp(name, "snif_path"))
     {
-        if (!strcmp(name, "default"))
-        {
-            res = snprintf(snifp_sets.dir, RCF_MAX_PATH, "%s/%s",
-                           te_log_dir, atts[1]);
-            if (res > RCF_MAX_PATH)
-            {
-                ERROR("Too long default path length to capture logs dir.");
-                snifp_sets.errors = TRUE;
-            }
-        }
-        else
-            strncpy(snifp_sets.dir, atts[1], RCF_MAX_PATH);
+        strncpy(snifp_sets.dir, atts[1], RCF_MAX_PATH);
     }
     else if (!strcmp(name, "snif_max_fsize"))
     {

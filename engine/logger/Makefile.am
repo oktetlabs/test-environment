@@ -6,10 +6,12 @@ AM_CFLAGS = @TE_CFLAGS@ @XML2_CFLAGS@
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir)
 
 
-bin_PROGRAMS = te_logger te_log_shutdown te_log_flush te_tee
+bin_PROGRAMS = te_logger te_log_shutdown te_log_flush te_tee te_log_get_path
 
 noinst_HEADERS = logger_internal.h te_log_sniffers.h
 
+te_log_get_path_SOURCE = te_log_get_path.c
+te_log_get_path_LDADD = @XML2_LIBS@
 
 te_logger_SOURCES = logger.c logger_cnf.c logger_prc.c te_log_sniffers.c
 te_logger_LDADD = @TE_LDADD@ -lipcserver -lrcfapi -lipc -ltools \

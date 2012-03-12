@@ -122,6 +122,10 @@ extern const char *te_lgr_entity;
  */    
 #define TE_LL_ENTRY_EXIT    0x0020
 
+/** Events of network packet received (PACKET macro) */    
+#define TE_LL_PACKET        0x0040
+
+
 /** @name A set of macros used for string representation of log level */
 #define TE_LL_ERROR_STR       "ERROR"
 #define TE_LL_WARN_STR        "WARN"
@@ -129,6 +133,7 @@ extern const char *te_lgr_entity;
 #define TE_LL_INFO_STR        "INFO"
 #define TE_LL_VERB_STR        "VERB"
 #define TE_LL_ENTRY_EXIT_STR  "ENTRY/EXIT"
+#define TE_LL_PACKET_STR      "PACKET"
 /*@}*/
 
 /*
@@ -174,6 +179,7 @@ te_log_level2str(te_log_level level)
         TE_LL_CASE(INFO);
         TE_LL_CASE(VERB);
         TE_LL_CASE(ENTRY_EXIT);
+        TE_LL_CASE(PACKET);
 
 #undef TE_LL_CASE
     }
