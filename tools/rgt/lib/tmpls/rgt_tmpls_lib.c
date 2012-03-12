@@ -237,18 +237,20 @@ rgt_tmpls_attrs_set_uint32(rgt_attrs_t *attrs, const char *name,
  * @return A buffer with new string or NULL if the string was not changed
  */
 static char *
-rgt_check_string_len(char *str)
+rgt_check_string_len(const char *str)
 {
+    int         max_len = rgt_max_attribute_length;
+    int         clen    = 0;
+    int         len     = strlen(str);
+    int         offt;
+    const char *tag     = rgt_line_separator;
+    int         tagl;
+    char       *buf;
+
     if (rgt_max_attribute_length == 0)
         return NULL;
 
-    int     max_len = rgt_max_attribute_length;
-    int     clen    = 0;
-    int     len     = strlen(str);
-    int     offt;
-    char   *tag     = rgt_line_separator;
-    int     tagl    = strlen(tag);
-    char   *buf;
+    tagl = strlen(tag);
 
     if (len > max_len)
         buf = malloc(len + len/max_len * tagl + 1);

@@ -259,7 +259,7 @@ tapi_sniffer_add_mult(const char *ta, const char *iface, const char *name,
     tapi_sniffer_id      *newsnid = NULL;
     tapi_sniff_list_s    *newsn_l = NULL;
     cfg_handle           *handles;
-    unsigned int          n_handles;
+    int                   n_handles;
     int                   rc;
     int                   i;
     char                 *newiface;

@@ -34,6 +34,7 @@
 #include <unistd.h>
 
 #include <libxml/parserInternals.h>
+#include "te_defs.h"
 
 /** Base size of a memory block to contain a packet */
 #define RGT_BASE_PACKET_SIZE 1024
@@ -196,11 +197,13 @@ rgt_save_tag(const char *tag, const char **atts)
     int  ai;
     int  ti;
     bool save_attr;
+    bool attr_name;
 
     RGT_SAVE_STR("<%s", tag);
     if (atts != NULL)
     {
-        bool attr_name = true;
+        attr_name = true;
+        save_attr = false;
         for (ai = 0; atts[ai] != NULL; ai++)
         {
             if (attr_name)
@@ -396,10 +399,10 @@ rgt_log_characters(void *in_ctx, const xmlChar *ch, int len)
 
     if (ctx->state == RGT_LOG_STATE_PACKET)
     {
-        while (len >= SIZE)
+        while ((unsigned)len >= SIZE)
         {
             pbuff.size = pbuff.size << 2;
-            if (len < SIZE)
+            if ((unsigned)len < SIZE)
                 RGT_XML_REALLOC(pbuff.p, pbuff.size);
         }
         memcpy(CURR, ch, len);
@@ -418,7 +421,7 @@ rgt_print_saved_packet(rgt_user_ctx *ctx)
     fprintf(res_fd, "<msg level=\"PACKET\" entity=\"%s\" user=\"%s/%s\""
             " ts_val=\"%s\" ts=\"%s\">", ctx->agent,
             ctx->interface, ctx->sniffer, ctx->ts_val, ctx->ts_str);
-    assert(fprintf(res_fd, "%s</msg>\n", pbuff.p) == pbuff.offset + 7);
+    assert(fprintf(res_fd, "%s</msg>\n", pbuff.p) == (int)(pbuff.offset+7));
 }
 
 /**
@@ -484,6 +487,7 @@ rgt_log_end_element(void *in_ctx, const xmlChar *xml_tag)
 static void
 rgt_log_start_document(void *in_ctx)
 {
+    UNUSED(in_ctx);
     fprintf(res_fd, "<?xml version=\"1.0\"?>\n" \
                     "<proteos:log_report><logs>\n");
 }
@@ -496,6 +500,7 @@ rgt_log_start_document(void *in_ctx)
 static void
 rgt_log_end_document(void *in_ctx)
 {
+    UNUSED(in_ctx);
     fprintf(res_fd, "</logs></proteos:log_report>\n");
 }
 
@@ -511,6 +516,7 @@ rgt_log_end_document(void *in_ctx)
 static xmlEntityPtr
 rgt_get_entity(void *in_ctx, const xmlChar *xml_name)
 {
+    UNUSED(in_ctx);
     static xmlEntity  ent;
     const char       *name = (const char *)xml_name;
 
@@ -598,12 +604,10 @@ usage(void)
 }
 
 /**
- * Parse stream with pdml log and convert it to TE XML log.
- * 
- * @param fname     Input stream.
+ * Parse pdml log from stdin stream and convert it to TE XML log.
  */
 static void
-rgt_parse_input_stream(FILE *f_in)
+rgt_parse_input_stream(void)
 {
     xmlParserCtxtPtr xml_ctxt;
     rgt_user_ctx     user_ctx;
@@ -697,7 +701,7 @@ main(int argc, char **argv)
     }
 
     if (strcmp(argv[1], "-") == 0)
-        rgt_parse_input_stream(stdin);
+        rgt_parse_input_stream();
     else 
         rgt_parse_pdml_file(argv[1]);
 

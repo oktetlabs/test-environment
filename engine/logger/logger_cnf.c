@@ -56,7 +56,6 @@ startElementLGR(void           *ctx,
     const char  *name = (const char *)xml_name;
     const char **atts = (const char **)xml_atts;
     ta_inst     *tmp_el;
-    int          res;
 
     UNUSED(ctx);
 

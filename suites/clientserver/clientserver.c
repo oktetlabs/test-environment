@@ -85,6 +85,7 @@ main(int argc, char *argv[])
     if (rcf_get_ta_list(ta, &len) != 0)
         TEST_FAIL("rcf_get_ta_list() failed");
 
+/*
     snif = tapi_sniffer_add(ta, "lo", "newsniffer", "ip", TRUE);
     sleep(1);
     tapi_sniffer_mark(ta, NULL, "My first marker packet for all snifs. ");
@@ -95,7 +96,7 @@ main(int argc, char *argv[])
     sleep(1);
     tapi_sniffer_mark(NULL, snif, "My third marker packet.");
     CHECK_RC(tapi_sniffer_del(snif));
-
+*/
     /* rpc_dgram_connection (pco_srv, pco_clnt, RPC_IPPROTO_UDP, */
     rpc_stream_connection (pco_srv, pco_clnt, RPC_IPPROTO_TCP,
                           srv_addr, clnt_addr, &srvr_s, &clnt_s);

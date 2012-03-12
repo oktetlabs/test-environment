@@ -1062,6 +1062,7 @@ merge_comm=""
 if test -z ${TE_SNIFF_LOG_CONV_DISABLE} ; then
     idx=0
     for plog in `ls ${TE_SNIFF_LOG_DIR}/ | grep \.pcap$`; do
+        plog="${TE_SNIFF_LOG_DIR}/${plog}"
         xlogs[${idx}]=${plog/%.pcap/.xml}
         # Conversion from pcap to TE XML
         tshark -r ${plog} -T pdml | rgt-pdml2xml - ${xlogs[idx]}

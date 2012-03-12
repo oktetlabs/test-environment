@@ -39,6 +39,7 @@
 #include <errno.h>
 
 #include <libxml/parserInternals.h>
+#include "te_defs.h"
 
 /** Size of a block chars that should be read from a file for each call */
 #define BL_SIZE 4
@@ -396,6 +397,7 @@ rgt_log_start_document(void *in_ctx)
 static xmlEntityPtr
 rgt_get_entity(void *user_data, const xmlChar *xml_name)
 {
+    UNUSED(user_data);
     static xmlEntity  ent;
     const char       *name = (const char *)xml_name;
 

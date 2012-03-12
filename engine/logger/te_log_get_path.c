@@ -33,6 +33,7 @@
 #include <assert.h>
 
 #include <libxml/parserInternals.h>
+#include "te_defs.h"
 
 /* Path to capture files */
 const char *path = NULL;
@@ -51,6 +52,7 @@ te_log_start_element(void *in_ctx, const xmlChar  *xml_tag,
     const char       *tag  = (const char *)xml_tag;
     const char      **atts = (const char **)xml_atts;
     int               i;
+    UNUSED(in_ctx);
 
     if (strcmp(tag, "snif_path") == 0 && atts != NULL)
     {

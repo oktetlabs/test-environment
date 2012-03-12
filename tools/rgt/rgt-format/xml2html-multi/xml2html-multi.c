@@ -105,8 +105,6 @@ static void lf_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
 
 static te_log_level te_log_level_str2h(const char *ll);
 
-static int packet_num  = 0;
-
 /* RGT format-specific options table */
 struct poptOption rgt_options_table[] = {
     { "shared-url", 'i', POPT_ARG_STRING, NULL, 'i',

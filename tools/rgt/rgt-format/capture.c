@@ -101,7 +101,6 @@ RGT_DEF_FUNC(proc_log_packet_field_start)
     const char     *name;
     static int      LOG_PACKET_FIELD_START = -1;
     static int      LOG_PACKET_FIELD_DATA  = -1;
-    char           *buf;
 
     RGT_FUNC_UNUSED_PRMS();
 
