@@ -45,9 +45,9 @@ static void get_error_point(const char *file, unsigned long offset,
                             int *n_row, int *n_col);
 
 /* Max attribute length in one line */
-static int rgt_max_attribute_length;
+static int rgt_max_attribute_length = 0;
 /* A tag to separate lines */
-static const char *rgt_line_separator;
+static const char *rgt_line_separator = NULL;
 
 /** Array of Rgt attributes */
 static rgt_attrs_t global_attrs[20];
@@ -239,6 +239,9 @@ rgt_tmpls_attrs_set_uint32(rgt_attrs_t *attrs, const char *name,
 static char *
 rgt_check_string_len(char *str)
 {
+    if (rgt_max_attribute_length == 0)
+        return NULL;
+
     int     max_len = rgt_max_attribute_length;
     int     clen    = 0;
     int     len     = strlen(str);
