@@ -67,7 +67,7 @@ rpc_tcp_state
 tapi_get_tcp_sock_state(struct rcf_rpc_server *pco,
                         int s)
 {
-    struct tcp_info tcpi;
+    struct rpc_tcp_info tcpi;
 
     memset(&tcpi, 0, sizeof(struct tcp_info));
     
