@@ -913,7 +913,10 @@ proc_chars(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     UNUSED(ctx);
     TE_COMPILE_TIME_ASSERT(sizeof(rgt_xmlChar) == 1);
 
-#if (defined WITH_LIBXML) && LIBXML_VERSION >= 20700
+#if 0 && (defined WITH_LIBXML) && LIBXML_VERSION >= 20700
+    /* Additional conversion currently not needed
+       as XML_PARSE_OLDSAX option passed to parser */
+
     /* libxml2 has a function xmlEncodeSpecialChars() for such a
        transformation but that function allocates each time new buffer
        in memory and copies converted string to it.
