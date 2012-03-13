@@ -202,11 +202,15 @@ te_errno
 tad_ip4_write_cb(csap_p csap, const tad_pkt *pkt)
 {
     tad_ip4_rw_data    *spec_data = csap_get_rw_data(csap);
-    ssize_t             ret;
     struct msghdr       msg;
     size_t              iovlen = tad_pkt_seg_num(pkt);
     struct iovec        iov[iovlen];
     te_errno            rc;
+#ifdef PF_PACKET
+    char ifname[TAD_IP4_IFNAME_SIZE];
+    size_t len;
+#endif
+
 
     if (spec_data->socket < 0)
     {
@@ -214,8 +218,7 @@ tad_ip4_write_cb(csap_p csap, const tad_pkt *pkt)
     }
 
     /* Convert packet segments to IO vector */
-    rc = tad_pkt_segs_to_iov(pkt, iov, iovlen);
-    if (rc != 0)
+    if ((rc = tad_pkt_segs_to_iov(pkt, iov, iovlen)) != 0)
     {
         ERROR("Failed to convert segments to IO vector: %r", rc);
         return rc;
@@ -227,11 +230,43 @@ tad_ip4_write_cb(csap_p csap, const tad_pkt *pkt)
     msg.msg_iov = iov;
     msg.msg_iovlen = iovlen;
 
-    ret = sendmsg(spec_data->socket, &msg, 0);
-    if (ret < 0)
+    if (sendmsg(spec_data->socket, &msg, 0) < 0)
     {
-        rc = TE_OS_RC(TE_TAD_CSAP, errno);
-        return rc;
+#ifdef PF_PACKET
+        if (errno == ENXIO &&
+            spec_data->sa_op.sll_family == PF_PACKET)
+        {
+            ERROR("%s(): sendmsg() failed with ENXIO, try "
+                  " to update interface index", __FUNCTION__);
+            /*
+             * May be obsolete interface index.
+             * Try to update it and send packet again.
+             */
+            len = sizeof(ifname);
+            if ((rc = asn_read_value_field(
+                        csap->layers[csap_get_rw_layer(csap)].nds,
+                        ifname, &len, "ifname")) != 0)
+            {
+                return TE_RC(TE_TAD_CSAP, rc);
+            }
+
+            spec_data->sa_op.sll_ifindex = if_nametoindex(ifname);
+
+            ERROR("%s(): try sendmsg() again after "
+                  "updating index of tester's interface %s",
+                  __FUNCTION__, ifname);
+
+            if (sendmsg(spec_data->socket, &msg, 0) < 0)
+            {
+                ERROR("%s(): sendmsg() failed again", __FUNCTION__);
+                return TE_OS_RC(TE_TAD_CSAP, errno);
+            }
+
+            return 0;
+        }
+#endif
+
+        return TE_OS_RC(TE_TAD_CSAP, errno);
     }
 
     return 0;
