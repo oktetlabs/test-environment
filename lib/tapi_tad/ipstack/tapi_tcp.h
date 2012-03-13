@@ -851,6 +851,25 @@ extern tapi_tcp_pos_t tapi_tcp_last_ackn_sent(tapi_tcp_handler_t handler);
  */
 extern size_t tapi_tcp_last_win_got(tapi_tcp_handler_t handler);
 
+/**
+ * Check that a message with FIN flag set was got.
+ *
+ * @param handler       TAPI handler of TCP connection;     
+ *
+ * @return @c TRUE if a message with FIN flag set was got,
+ *         @c FALSE otherwise.
+ */
+extern te_bool tapi_tcp_fin_got(tapi_tcp_handler_t handler);
+
+/**
+ * Check that a message with RST flag set was got.
+ *
+ * @param handler       TAPI handler of TCP connection;     
+ *
+ * @return @c TRUE if a message with RST flag set was got,
+ *         @c FALSE otherwise.
+ */
+extern te_bool tapi_tcp_rst_got(tapi_tcp_handler_t handler);
 
 /**
  * Return next SEQ number to be sent in established TCP connection.
