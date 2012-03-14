@@ -297,7 +297,7 @@ cwmp_conn_req(tarpc_cwmp_conn_req_in *in,
          in->acs_name, in->cpe_name);
 
     rc = acse_cwmp_connreq(in->acs_name, in->cpe_name, &cwmp_data);
-    if (rc)
+    if (rc != 0)
     {
         WARN("issue CWMP ConnReq failed %r", rc);
         if (TE_ETIMEDOUT == TE_RC_GET_ERROR(rc) &&
@@ -306,11 +306,13 @@ cwmp_conn_req(tarpc_cwmp_conn_req_in *in,
             WARN("There was EPC timeout, kill ACSE");
             stop_acse();
         }
+        out->status = rc;
     }
-
-    out->status = cwmp_data->status;
-    free(cwmp_data);
-
+    else
+    {
+        out->status = cwmp_data->status;
+        free(cwmp_data);
+    }
     return 0;
 }
 

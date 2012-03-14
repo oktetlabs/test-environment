@@ -318,16 +318,16 @@ acse_cwmp_connreq(const char *acs, const char *cpe,
     te_errno rc;
 
     rc = acse_cwmp_prepare(acs, cpe, EPC_CONN_REQ, NULL);
-    if (0 == rc)
-        rc = acse_cwmp_call(NULL, cwmp_data);
-    else
-        WARN("acse_cwmp_connreq(): rc of acse_cwmp_prepare() -> %r", rc);
     if (0 != rc)
     {
-        WARN("acse_cwmp_connreq(): rc of acse_cwmp_call() -> %r", rc);
+        WARN("%s(): rc of acse_cwmp_prepare() -> %r", __FUNCTION__, rc);
         return TE_RC(TE_TA_ACSE, rc);
     }
-    return 0;
+    rc = acse_cwmp_call(NULL, cwmp_data);
+    if (0 != rc)
+        WARN("%s(): rc of acse_cwmp_call() -> %r", __FUNCTION__, rc);
+
+    return TE_RC(TE_TA_ACSE, rc);
 }
 
 
