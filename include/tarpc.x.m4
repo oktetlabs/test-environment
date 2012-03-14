@@ -3220,6 +3220,15 @@ struct tarpc_getpwnam_out {
     struct tarpc_passwd passwd;   /* name is NULL if entry is not found */
 };
 
+/* exit() */
+struct tarpc_exit_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int status;
+};
+
+typedef struct tarpc_void_out tarpc_exit_out;
+
 /* getuid() */
 struct tarpc_getuid_in {
     struct tarpc_in_arg common;
@@ -4575,6 +4584,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(waitpid)
         RPC_DEF(fileno)
         RPC_DEF(getpwnam)
+        RPC_DEF(exit)
         RPC_DEF(getuid)
         RPC_DEF(geteuid)
         RPC_DEF(setuid)

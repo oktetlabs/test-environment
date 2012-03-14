@@ -77,7 +77,7 @@ wait_status_h2rpc(int st)
     } 
     else if (WIFSIGNALED(st))
     {
-        ret.value = WTERMSIG(st);
+        ret.value = signum_h2rpc(WTERMSIG(st));
 #ifdef WCOREDUMP
         if (WCOREDUMP(st))
             ret.flag = RPC_WAIT_STATUS_CORED;
@@ -88,7 +88,7 @@ wait_status_h2rpc(int st)
     else if (WIFSTOPPED(st))
     {
         ret.flag = RPC_WAIT_STATUS_STOPPED;
-        ret.value = WSTOPSIG(st);
+        ret.value = signum_h2rpc(WSTOPSIG(st));
     }
 
     return ret;
