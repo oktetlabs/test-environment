@@ -274,7 +274,7 @@ te_errno
 acse_cwmp_call(size_t *data_len, acse_epc_cwmp_data_t **cwmp_data)
 {
     te_errno rc;
-    struct timespec epc_ts = {1, 0}; /* 1 sec */
+    struct timespec epc_ts = {5, 0}; /* 5 sec */
     struct pollfd   pfd = {0, POLLIN, 0};
     int             pollrc;
 
