@@ -665,7 +665,10 @@ sniffer_make_conf()
     done
 
     echo "</history>" >> "${TE_SNIFF_CSCONF}"
-    CS_OPTS="${CS_OPTS} --sniff-conf=${TE_SNIFF_CSCONF}"
+
+    if test -n "${TE_SNIFF_IDX}" ; then
+        CS_OPTS="${CS_OPTS} --sniff-conf=${TE_SNIFF_CSCONF}"
+    fi
     return 0
 }
 
