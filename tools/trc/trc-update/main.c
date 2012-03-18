@@ -370,11 +370,11 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
           "Do not change string representation of tags",
           NULL },
 
-        { "log", 'l', POPT_ARG_STRING, NULL, TRC_UPDATE_OPT_LOG,
-          "Specify log file", NULL },
-
         { "tags", 't', POPT_ARG_STRING, NULL, TRC_UPDATE_OPT_TAGS,
           "Specify tag expression", NULL },
+
+        { "log", 'l', POPT_ARG_STRING, NULL, TRC_UPDATE_OPT_LOG,
+          "Specify log file", NULL },
 
         { "fake-log", '\0', POPT_ARG_STRING | POPT_ARGFLAG_DOC_HIDDEN,
           NULL, TRC_UPDATE_OPT_FAKE_LOG,
@@ -506,8 +506,7 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
 
             case TRC_UPDATE_OPT_NO_FILL_NEW:
                 ctx.flags &= ~(TRC_LOG_PARSE_COPY_CONFLS |
-                               TRC_LOG_PARSE_COPY_OLD |
-                               TRC_LOG_PARSE_COPY_OLD_FIRST);
+                               TRC_LOG_PARSE_COPY_OLD);
                 break;
 
             case TRC_UPDATE_OPT_RULES_ALL:
