@@ -99,6 +99,11 @@ static void *dynamic_library_handle = NULL;
  * @param libname       Full name of the dynamic library or NULL
  *
  * @return Status code.
+ *
+ * @note The dinamic library is opened with RTLD_NODELETE flag.
+ * This flag is necessary for all libraries using atfork since there is no
+ * way to undo the atfork call.  This flag is also necessary if the library
+ * does not have correct _fini.  See man dlopen of other details.
  */
 te_errno
 tarpc_setlibname(const char *libname)
@@ -131,7 +136,7 @@ tarpc_setlibname(const char *libname)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
     }
     dynamic_library_handle = dlopen(*libname == '\0' ? NULL : libname,
-                                    RTLD_LAZY);
+                                    RTLD_LAZY | RTLD_NODELETE);
     if (dynamic_library_handle == NULL)
     {
         if (*libname == 0)
