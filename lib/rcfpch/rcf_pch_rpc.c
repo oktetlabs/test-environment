@@ -533,7 +533,17 @@ dispatch(void *arg)
             if (rpcs->timeout == 0xFFFFFFFF) /* execve() */
             {
                 rpcs->sent = 0;
-                rpcs->tid = 0;
+                if (rpcs->tid > 0)
+                {
+                    /* execve() was called in a thread */
+                    rpcs->tid = 0;
+                    if (rpcs->father != NULL)
+                    {
+                        rpcs->father->ref--;
+                        rpcs->father = rpcs->father->father;
+                    }
+                }
+
                 if (connect_getpid(rpcs) != 0)
                 {
                     rpcs->dead = TRUE;
@@ -1118,7 +1128,7 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
         return TE_RC(TE_RCF_PCH, TE_ENOENT);
     }
     
-    if (rpcs->ref > 0)
+    if (rpcs->ref > 0 && !rpcs->finished)
     {
         pthread_mutex_unlock(&lock);
         ERROR("Cannot delete RPC server '%s' with threads", name);
