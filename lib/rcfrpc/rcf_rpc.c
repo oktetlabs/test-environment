@@ -109,7 +109,7 @@ rpc_server_sem_init(rcf_rpc_server *rpcs)
  *
  * @param ta            a test agent
  * @param name          name of the new server (should not start from
- *                      fork_, forkexec_, thread_ or deleted_thread_)
+ *                      fork_, forkexec_, thread_)
  * @param father        father name or NULL (should be NULL if
  *                      RCF_RPC_SERVER_GET_REUSE or
  *                      RCF_RPC_SERVER_GET_EXISTING is set).
@@ -135,7 +135,6 @@ rcf_rpc_server_get(const char *ta, const char *name,
     /* Validate parameters */
     if (ta == NULL || name == NULL ||
         strlen(name) >= RCF_RPC_NAME_LEN - strlen("forkexec_register_") ||
-        strcmp_start("deleted_thread_", name) == 0 ||
         strcmp_start("fork_", name) == 0 ||
         strcmp_start("forkexec_", name) == 0 ||
         strcmp_start("register_", name) == 0 ||
@@ -386,7 +385,6 @@ rcf_rpc_server_mark_deleted_threads(rcf_rpc_server *rpcs)
     unsigned int num, i;
 
     int   rc = 0;
-    char  new_val[RCF_RPC_NAME_LEN];
     char *value;
     char *name;
     char *my_val;
@@ -442,26 +440,38 @@ rcf_rpc_server_mark_deleted_threads(rcf_rpc_server *rpcs)
         if ((strcmp_start("thread_", value) == 0 &&
             strncmp(value + strlen("thread_"), rpcs->name,
                     RCF_RPC_NAME_LEN) == 0) ||
-            (strcmp_start("thread_", rpcs->name) == 0 &&
-             strncmp(rpcs->name + strlen("thread_"), name,
+            (strcmp_start("thread_", my_val) == 0 &&
+             strncmp(my_val + strlen("thread_"), name,
                      RCF_RPC_NAME_LEN) == 0) ||
             (strncmp(value, my_val, RCF_RPC_NAME_LEN) == 0
              && value[0] != '\0') ||
             strncmp(name, rpcs->name, RCF_RPC_NAME_LEN) == 0)
         {
             if (servers[i] != my_handle)
-                snprintf(new_val, RCF_RPC_NAME_LEN, "deleted_%s", value);
+            {
+                rc = cfg_set_instance_fmt(
+                                     CFG_VAL(INTEGER, 1), 
+                                     "/agent:%s/rpcserver:%s/finished:", 
+                                     rpcs->ta, name);
+                if (rc != 0)
+                {
+                    ERROR("%s(): Cannot mark as finished "
+                          "RPC server %s", __FUNCTION__, name);
+                }
+            }
             else
-                new_val[0] = '\0';
+            {
+                rc = cfg_set_instance(servers[i], CVT_STRING, "");
 
-            rc = cfg_set_instance(servers[i], CVT_STRING, new_val);
+                if (rc != 0)
+                    ERROR("%s(): Cannot set new value for "
+                          "RPC server %s", __FUNCTION__, name);
+            }
 
             if (rc != 0)
             {
                 free(value);
                 free(my_val);
-                ERROR("%s(): Cannot set new value for "
-                      "RPC server %s", __FUNCTION__, name);
                 free(name);
                 return rc;
             }

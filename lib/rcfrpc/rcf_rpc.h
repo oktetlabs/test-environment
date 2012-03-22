@@ -376,6 +376,23 @@ rcf_rpc_server_dead(rcf_rpc_server *rpcs)
 } 
 
 /**
+ * Mark RPC server as finished (i.e. it was terminated and
+ * waitpid() or pthread_join() was already called - so only
+ * associated data structures remained to be freed on TA).
+ *
+ * @param rpcs          RPC server handle
+ *
+ * @return Status code
+ */
+static inline te_errno
+rcf_rpc_server_finished(rcf_rpc_server *rpcs)
+{
+    return cfg_set_instance_fmt(CFG_VAL(INTEGER, 1), 
+                                "/agent:%s/rpcserver:%s/finished:", 
+                                rpcs->ta, rpcs->name);
+}
+
+/**
  * Call SUN RPC on the TA via RCF. The function is also used for
  * checking of status of non-blocking RPC call and waiting for
  * the finish of the non-blocking RPC call.

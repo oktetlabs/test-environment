@@ -93,6 +93,9 @@ typedef struct rpcserver {
     uint32_t  timeout;     /**< Timeout for the last sent request */
     int       last_sid;    /**< SID received with the last command */
     te_bool   dead;        /**< RPC server does not respond */
+    te_bool   finished;    /**< RPC server process (or thread) was
+                                terminated, waitpid() (pthread_join())
+                                was already  called (if required) */
     time_t    sent;        /**< Time of the last request sending */
 } rpcserver;
 
@@ -115,9 +118,19 @@ static te_errno rpcserver_dead_get(unsigned int, const char *, char *,
                                    const char *);
 static te_errno rpcserver_dead_set(unsigned int, const char *, char *,
                                    const char *);
+static te_errno rpcserver_finished_get(unsigned int, const char *, char *,
+                                       const char *);
+static te_errno rpcserver_finished_set(unsigned int, const char *, char *,
+                                       const char *);
+
+static rcf_pch_cfg_object node_rpcserver_finished =
+    { "finished", 0, NULL, NULL,
+      (rcf_ch_cfg_get)rpcserver_finished_get, 
+      (rcf_ch_cfg_set)rpcserver_finished_set,
+      NULL, NULL, NULL, NULL, NULL};
 
 static rcf_pch_cfg_object node_rpcserver_dead =
-    { "dead", 0, NULL, NULL,
+    { "dead", 0, NULL, &node_rpcserver_finished,
       (rcf_ch_cfg_get)rpcserver_dead_get, 
       (rcf_ch_cfg_set)rpcserver_dead_set,
       NULL, NULL, NULL, NULL, NULL};
@@ -281,6 +294,36 @@ join_thread_child(rpcserver *rpcs)
               rpcs->father->name, out.common._errno);
     }
 }
+
+/**
+ * Call waitpid() on terminated children RPC server.
+ *
+ * @param rpcs    RPC server handle
+ */
+static void
+waitpid_child(rpcserver *rpcs)
+{
+    tarpc_waitpid_in  in;
+    tarpc_waitpid_out out;
+    
+    if (rpcs->father == NULL || rpcs->father->dead)
+        return;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    in.common.op = RCF_RPC_CALL_WAIT;
+    in.pid = rpcs->pid;
+    
+    if (call(rpcs->father, "waitpid", &in, &out) != 0)
+        return;
+        
+    if (out.pid == -1)
+    {
+        WARN("RPC waitpid() failed on the server %s with errno %r",
+             rpcs->father->name, out.common._errno);
+    }
+}
+
 /**
  * Create child RPC server.
  *
@@ -405,7 +448,7 @@ dispatch(void *arg)
         rpc_transport_read_set_init();
         
         pthread_mutex_lock(&lock);
-        for (rpcs = list; rpcs != NULL && !rpcs->dead; rpcs = rpcs->next)
+        for (rpcs = list; rpcs != NULL; rpcs = rpcs->next)
         {
             /* 
              * We do not require sent > 0, because RPC is sent from the 
@@ -490,6 +533,7 @@ dispatch(void *arg)
             if (rpcs->timeout == 0xFFFFFFFF) /* execve() */
             {
                 rpcs->sent = 0;
+                rpcs->tid = 0;
                 if (connect_getpid(rpcs) != 0)
                 {
                     rpcs->dead = TRUE;
@@ -684,6 +728,97 @@ rpcserver_dead_set(unsigned int gid, const char *oid, char *value,
     return 0;        
 }
 
+/**
+ * Get RPC server termination state.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         value location
+ * @param name          RPC server name
+ *
+ * @return Status code
+ */
+static te_errno
+rpcserver_finished_get(unsigned int gid, const char *oid, char *value,
+                   const char *name)
+{
+    rpcserver *rpcs;
+    
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    pthread_mutex_lock(&lock);
+    for (rpcs = list; 
+         rpcs != NULL && strcmp(rpcs->name, name) != 0;
+         rpcs = rpcs->next);
+         
+    if (rpcs == NULL)
+    {
+        pthread_mutex_unlock(&lock);
+        return TE_RC(TE_RCF_PCH, TE_ENOENT);
+    }
+        
+    sprintf(value, "%d", rpcs->finished);
+
+    pthread_mutex_unlock(&lock);
+        
+    return 0;        
+}
+
+/**
+ * Change RPC server termination state.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         value location
+ * @param name          RPC server name
+ *
+ * @return Status code
+ */
+static te_errno
+rpcserver_finished_set(unsigned int gid, const char *oid, char *value,
+                     const char *name)
+{
+    rpcserver *rpcs;
+    te_bool    finished;
+    
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    if (strcmp(value, "1") == 0)
+        finished = 1;
+    else if (strcmp(value, "0") == 0)
+        finished = 0;
+    else
+        return TE_RC(TE_RCF_PCH, TE_EINVAL);
+    
+    pthread_mutex_lock(&lock);
+    for (rpcs = list; 
+         rpcs != NULL && strcmp(rpcs->name, name) != 0;
+         rpcs = rpcs->next);
+         
+    if (rpcs == NULL)
+    {
+        pthread_mutex_unlock(&lock);
+        return TE_RC(TE_RCF_PCH, TE_ENOENT);
+    }
+        
+    if (rpcs->finished != finished)
+    {
+        if (!finished)
+        {
+            pthread_mutex_unlock(&lock);
+            return TE_RC(TE_RCF_PCH, TE_EPERM);
+        }
+        rpcs->finished = TRUE;
+        /** If it is finished, it is dead */
+        rpcs->dead = TRUE;
+    }
+
+    pthread_mutex_unlock(&lock);
+        
+    return 0;        
+}
 
 /**
  * Get RPC server value (father name).
@@ -928,6 +1063,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
         else if (!registration)
         {
             rcf_ch_kill_process(rpcs->pid);
+            waitpid_child(rpcs);
         }
         pthread_mutex_unlock(&lock);
         free(rpcs);
@@ -997,7 +1133,7 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
     if (rpcs->father != NULL)
         rpcs->father->ref--;
 
-    if (strcmp_start("deleted_thread_", rpcs->value) != 0)
+    if (!rpcs->finished)
     {
         /* Try soft shutdown first */
         if (rpcs->sent > 0 || rpcs->dead || 
@@ -1013,17 +1149,21 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
                 join_thread_child(rpcs);
             }
             else
+            {
                 rcf_ch_kill_process(rpcs->pid);
+                waitpid_child(rpcs);
+            }
         }
         else
         {
             if (rpcs->tid > 0)
                 join_thread_child(rpcs);
+            else
+                waitpid_child(rpcs);
         }
-
-        rpc_transport_close(rpcs->handle);
     }
 
+    rpc_transport_close(rpcs->handle);
     pthread_mutex_unlock(&lock);
     
     free(rpcs);
