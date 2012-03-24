@@ -438,14 +438,13 @@ rcf_rpc_server_mark_deleted_threads(rcf_rpc_server *rpcs)
         }
 
         if ((strcmp_start("thread_", value) == 0 &&
-            strncmp(value + strlen("thread_"), rpcs->name,
-                    RCF_RPC_NAME_LEN) == 0) ||
-            (strcmp_start("thread_", my_val) == 0 &&
+             (strncmp(value + strlen("thread_"), rpcs->name,
+                      RCF_RPC_NAME_LEN) == 0 ||
+              strncmp(value, my_val, RCF_RPC_NAME_LEN) == 0)) ||
+            (strcmp_start("thread_", value) != 0 &&
+             strcmp_start("thread_", my_val) == 0 &&
              strncmp(my_val + strlen("thread_"), name,
-                     RCF_RPC_NAME_LEN) == 0) ||
-            (strncmp(value, my_val, RCF_RPC_NAME_LEN) == 0
-             && value[0] != '\0') ||
-            strncmp(name, rpcs->name, RCF_RPC_NAME_LEN) == 0)
+                     RCF_RPC_NAME_LEN) == 0))
         {
             if (servers[i] != my_handle)
             {
