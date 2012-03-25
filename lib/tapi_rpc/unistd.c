@@ -130,11 +130,10 @@ rpc_pipe2(rcf_rpc_server *rpcs,
         memcpy(filedes, out.filedes.filedes_val, sizeof(int) * 2);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(pipe2, out.retval);
-    TAPI_RPC_LOG(rpcs, pipe2, "%p", "%d (%d,%d,%d)",
-                 filedes, out.retval,
+    TAPI_RPC_LOG(rpcs, pipe2, "%p, %s", "%d (%d,%d)",
+                 filedes, fcntl_flags_rpc2str(flags), out.retval,
                  filedes != NULL ? filedes[0] : -1,
-                 filedes != NULL ? filedes[1] : -1,
-                 fcntl_flags_rpc2str(flags));
+                 filedes != NULL ? filedes[1] : -1);
     RETVAL_INT(pipe2, out.retval);
 }
 
