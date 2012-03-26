@@ -1074,7 +1074,7 @@ main(int argc, char **argv, char **envp)
     }
 
     if (trc_save_to == NULL)
-        trc_save_to = "temp_trc_db.xml";
+        trc_save_to = "tmp_trc_db.xml";
 
     if (trc_db_save(ctx.db, trc_save_to,
                     TRC_SAVE_UPDATE_OLD | TRC_SAVE_RESULTS |
