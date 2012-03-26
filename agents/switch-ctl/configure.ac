@@ -20,6 +20,11 @@ AC_CANONICAL_HOST
 
 TE_APP_SET
 
+AC_ARG_WITH([sniffers],
+            AS_HELP_STRING([--with-sniffers=yes],
+                           [enable sniffers (default is NO)]),
+            [with_sniffers=sniffers_dummy], [with_sniffers=""])
+AM_CONDITIONAL(CFG_SNIFFERS_DUMMY, test -n "$with_sniffers")
 
 if test -z "$with_tad" ; then
     with_tad=tad

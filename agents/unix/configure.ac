@@ -534,14 +534,14 @@ if test -n "$with_iptables"; then
 fi
 
 AC_ARG_WITH([sniffers],
-            AS_HELP_STRING([--with-sniffers],
+            AS_HELP_STRING([--with-sniffers=yes],
                            [enable sniffers (default is NO)]),
-            [with_sniffers=yes],
-            [with_sniffers=""])
+            [], [with_sniffers=""])
 
-AM_CONDITIONAL(CFG_SNIFFERS_SUPPORT, test -n "$with_sniffers")
-if test -n "$with_sniffers"; then
-    EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_SNIFFERS"
+AM_CONDITIONAL(CFG_SNIFFERS_SUPPORT, test "$with_sniffers" = "yes")
+AM_CONDITIONAL(CFG_SNIFFERS_DUMMY, test "$with_sniffers" != "yes")
+if test "$with_sniffers" = "yes" ; then
+        EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_SNIFFERS"
 fi
 
 AC_SUBST([EXTRA_CPPFLAGS])

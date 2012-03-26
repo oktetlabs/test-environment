@@ -44,6 +44,10 @@ SYMTBL_LIBS+=\
 $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libiscsi_unh_target.a
 endif      
 
+if CFG_SNIFFERS_DUMMY
+ta_LDADD+= -lrcf_sniffers_dummy
+endif
+
 SYMTBL_LIBS+=@CURL_LIB@
 
 ta_DEPENDENCIES = @TE_DEPENDENCIES@ $(SYMTBL_LIBS) symtbl.o \

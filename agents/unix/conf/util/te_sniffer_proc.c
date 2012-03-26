@@ -348,12 +348,16 @@ insert_marker(FILE *f, const char *msg, struct timeval *ts)
 {
     char                proto[SNIF_MARK_PSIZE];    /**< Protocol */
     int                 res;
-    struct pcap_pkthdr  h;
+    te_pcap_pkthdr      h;
+    struct timeval      n_ts;
 
     if (ts == NULL)
-        gettimeofday(&h.ts, 0);
+    {
+        gettimeofday(&n_ts, 0);
+        SNIFFER_TS_CPY(h.ts, n_ts);
+    }
     else 
-        memcpy(&h.ts, ts, sizeof(struct timeval));
+        SNIFFER_TS_CPY(h.ts, *ts);
 
     h.caplen = strlen(msg) + SNIF_MARK_PSIZE;
     h.len = h.caplen;
@@ -361,7 +365,7 @@ insert_marker(FILE *f, const char *msg, struct timeval *ts)
     memset(proto, 0 , SNIF_MARK_PSIZE);
     SNIFFER_MARK_H_INIT(proto, strlen(msg));
 
-    res = fwrite((void *)&h, sizeof(struct pcap_pkthdr), 1, f);
+    res = fwrite((void *)&h, sizeof(te_pcap_pkthdr), 1, f);
     if (res == -1)
         return;
     res = fwrite(proto, SNIF_MARK_PSIZE, 1, f);

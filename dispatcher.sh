@@ -4,7 +4,7 @@
 #
 # Script to build and start Test Environment.
 #
-# Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
+# Copyright (C) 2003-2012 Test Environment authors (see file AUTHORS
 # in the root directory of the distribution).
 #
 # Test Environment is free software; you can redistribute it and/or 
@@ -190,6 +190,8 @@ Generic options:
   --gdb-tester                  Run Tester under GDB
   --tce                         Do TCE processing
 
+ --sniff-not-feed-conf          Do not feed the sniffer configuration file
+                                to Configurator.
  --sniff=<TA/iface>             Run sniffer on *iface* of the *TA*.
  --sniff-filter=<filter>        Add for the sniffer filter(tcpdump-like
                                 syntax). See 'man 7 pcap-filter'.
@@ -455,6 +457,8 @@ process_opts()
             --sniff-log-period=*) TE_SNIFF_LOG_PERIOD="${1#--sniff-period=}"
                 export TE_SNIFF_LOG_PERIOD ;;
 
+            --sniff-not-feed-conf*)
+                TE_SNIFF_NOT_FEED_CONF=1;;
             --sniff=*) TE_SNIFF_IDX=${#TE_SNIFF_LOC[*]}
                 TE_SNIFF_LOC[${TE_SNIFF_IDX}]="${1#--sniff=}";;
             --sniff-name=*) 
@@ -666,8 +670,10 @@ sniffer_make_conf()
 
     echo "</history>" >> "${TE_SNIFF_CSCONF}"
 
-    if test -n "${TE_SNIFF_IDX}" ; then
+    if test -n "${TE_SNIFF_IDX}" && test -z ${TE_SNIFF_NOT_FEED_CONF}; then
         CS_OPTS="${CS_OPTS} --sniff-conf=${TE_SNIFF_CSCONF}"
+    elif test -n "${TE_SNIFF_IDX}" ; then
+        export TE_SNIFF_CSCONF
     fi
     return 0
 }

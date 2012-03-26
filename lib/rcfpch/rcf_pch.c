@@ -660,13 +660,19 @@ rcf_pch_run(const char *confstr, const char *info)
                 break;
 #endif
                 char       *var;
+                int         rc;
 
                 if (*ptr == 0 || ba != NULL ||
                     transform_str(&ptr, &var) != 0)
                     goto bad_protocol;
 
-                rcf_ch_get_snif_dump(conn, cmd, cmd_buf_len,
-                                     answer_plen, var);
+                rc = rcf_ch_get_snif_dump(conn, cmd, cmd_buf_len,
+                                          answer_plen, var);
+                if (rc == TE_RC(TE_RCF_PCH, TE_ENOPROTOOPT))
+                {
+                    SEND_ANSWER("%d sniffers off",
+                                TE_RC(TE_RCF_PCH, TE_ENOPROTOOPT));
+                }
                 break;
             }
 
@@ -678,13 +684,19 @@ rcf_pch_run(const char *confstr, const char *info)
                 break;
 #endif
                 char       *var;
+                int         rc;
 
                 if (*ptr == 0 || ba != NULL ||
                     transform_str(&ptr, &var) != 0)
                     goto bad_protocol;
 
-                rcf_ch_get_sniffers(conn, cmd, cmd_buf_len, answer_plen,
-                                    var);
+                rc = rcf_ch_get_sniffers(conn, cmd, cmd_buf_len,
+                                         answer_plen, var);
+                if (rc == TE_RC(TE_RCF_PCH, TE_ENOPROTOOPT))
+                {
+                    SEND_ANSWER("%d sniffers off",
+                                TE_RC(TE_RCF_PCH, TE_ENOPROTOOPT));
+                }
                 break;
             }
 

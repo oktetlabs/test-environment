@@ -11,6 +11,8 @@
     {
         DivElem = divList.item(i);
         level = DivElem.getAttribute("level");
+        if (!level)
+            continue;
 
         if ((levels & level) &&
             (all_entities[DivElem.getAttribute("entityname")]

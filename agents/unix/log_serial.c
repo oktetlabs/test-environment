@@ -89,7 +89,8 @@ map_name_to_level(const char *name)
                   {"WARN",  TE_LL_WARN},
                   {"RING",  TE_LL_RING},
                   {"INFO",  TE_LL_INFO},
-                  {"VERB",  TE_LL_VERB}};
+                  {"VERB",  TE_LL_VERB},
+                  {"PACKET", TE_LL_PACKET}};
     unsigned i;
 
     for (i = 0; i < sizeof(levels) / sizeof(*levels); i++)

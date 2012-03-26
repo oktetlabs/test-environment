@@ -67,4 +67,28 @@ typedef struct sniffer_id {
                                 internal protocol */ \
 }
 
+typedef struct te_ts_t{
+        uint32_t tv_sec;
+        uint32_t tv_usec;
+} te_ts_t;
+
+/** PCAP packet header */
+typedef struct te_pcap_pkthdr {
+    te_ts_t  ts;     /**< time stamp */
+    uint32_t caplen; /**< length of portion present */
+    uint32_t len;    /**< length this packet (off wire) */
+} te_pcap_pkthdr;
+
+/**
+ * Safe copy of the time stamp
+ * 
+ * @param dest  32-bits struct of the time stamp
+ * @param src   32/64-bits struct of the timestamp
+ */
+#define SNIFFER_TS_CPY(_dest, _src)\
+{\
+    (_dest).tv_sec = (uint32_t)(_src).tv_sec;\
+    (_dest).tv_usec = (uint32_t)(_src).tv_usec;\
+}
+
 #endif /* ndef __TE_SNIFFERS_H__ */

@@ -8,7 +8,7 @@ include_HEADERS=rcf_ch_api.h rcf_pch.h rcf_pch_ta_cfg.h rcf_pch_mem.h \
                 rpc_transport.h
 noinst_HEADERS=rcf_pch_internal.h 
 
-lib_LIBRARIES=librcfpch.a
+lib_LIBRARIES=librcfpch.a librcf_sniffers_dummy.a
 
 if WINDOWS
 
@@ -34,8 +34,12 @@ librcfpch_a_SOURCES=rcf_pch.c rcf_pch_rpc.c rcf_pch_mem.c \
                     rcf_pch_file.c rcf_pch_conf.c rcf_pch_var.c \
                     rcf_pch_ta_cfg.c rpc_transport.c 
 
+librcf_sniffers_dummy_a_SOURCES=rcf_sniffers_dummy.c
+
 install-exec-hook:
 	touch -c -r librcfpch.* $(DESTDIR)/$(libdir)/librcfpch.*
+	touch -c -r librcf_sniffers_dummy.* $(DESTDIR)/$(libdir)\
+	/librcf_sniffers_dummy.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \

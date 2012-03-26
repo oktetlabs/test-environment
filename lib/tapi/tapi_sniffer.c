@@ -259,7 +259,7 @@ tapi_sniffer_add_mult(const char *ta, const char *iface, const char *name,
     tapi_sniffer_id      *newsnid = NULL;
     tapi_sniff_list_s    *newsn_l = NULL;
     cfg_handle           *handles;
-    int                   n_handles;
+    unsigned              n_handles;
     int                   rc;
     int                   i;
     char                 *newiface;
@@ -270,7 +270,7 @@ tapi_sniffer_add_mult(const char *ta, const char *iface, const char *name,
                                   "/agent:%s/interface:*", ta);
         if (rc != 0)
             return rc;
-        for (i = 0; i < n_handles; i++)
+        for (i = 0; (unsigned)i < n_handles; i++)
         {
             rc = cfg_get_inst_name(handles[i], &newiface);
             if (rc == 0 && strcmp(newiface, "lo") != 0)

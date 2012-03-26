@@ -96,21 +96,14 @@ typedef struct snif_id_l {
 SLIST_HEAD(snifidl_h_t, snif_id_l);
 typedef struct snifidl_h_t snifidl_h_t;
 
-/** PCAP packet header */
-typedef struct pcap_pkthdr {
-    struct timeval ts;   /**< time stamp */
-    unsigned int caplen; /**< length of portion present */
-    unsigned int len;    /**< length this packet (off wire) */
-} pcap_pkthdr;
-
 /**
  * List of the mark messages to sniffers.
  */
 typedef struct snif_mark_l {
-    char         agent[RCF_MAX_NAME];
-    sniffer_id   id;
-    pcap_pkthdr  h;
-    char        *message;
+    char            agent[RCF_MAX_NAME];
+    sniffer_id      id;
+    te_pcap_pkthdr  h;
+    char           *message;
     SLIST_ENTRY(snif_mark_l)  ent_l_m;
 } snif_mark_l;
 SLIST_HEAD(snif_mrk_h_t, snif_mark_l);
@@ -162,7 +155,6 @@ check_snif_exist(snifidl_h_t *sniflist_head, snif_id_l *new_snif)
     return FALSE;
 }
 
-
 /**
  * Skip spaces in the command.
  *
@@ -197,7 +189,7 @@ check_snif_exist(snifidl_h_t *sniflist_head, snif_id_l *new_snif)
         ptr = strchr(buf, '\0');                \
         ERROR("%s", str);                       \
         NULL_BR(ptr);                           \
-        strl = (unsigned)ptr - (unsigned)buf;   \
+        strl = ptr - buf;   \
         clen += strl;                           \
         buf = ptr;                              \
         if (clen >= len)                        \
@@ -229,7 +221,7 @@ sniffer_parse_id_str(char *buf, sniffer_id *id)
         ERROR("Wrong sniffer name in the sniffer id.");
         return -1;
     }
-    strl = (unsigned)ptr - (unsigned)buf;
+    strl = ptr - buf;
     id->snifname = strndup(buf, strl);
     clen += strl;
     buf = ptr;
@@ -241,7 +233,7 @@ sniffer_parse_id_str(char *buf, sniffer_id *id)
         ERROR("Wrong iface name in the sniffer id.");
         return -1;
     }
-    strl = (unsigned)ptr - (unsigned)buf;
+    strl = ptr - buf;
     id->ifname = strndup(buf, strl);
     clen += strl;
     buf = ptr;
@@ -253,7 +245,7 @@ sniffer_parse_id_str(char *buf, sniffer_id *id)
         ERROR("Wrong SSN in the sniffer id.");
         return -1;
     }
-    strl = (unsigned)ptr - (unsigned)buf;
+    strl = ptr - buf;
     clen += strl;
     buf = ptr;
     return clen;
@@ -291,7 +283,7 @@ sniffer_make_file_name(const char *agent, snif_id_l *snif)
     offt_templ = 0;
     while ((ptr = strchr(templ + offt_templ, '\%')) != NULL)
     {
-        len = (unsigned)(ptr) - (unsigned)(templ + offt_templ);
+        len = ptr - (templ + offt_templ);
         if (len < 0 || (unsigned)len > RCF_MAX_PATH - offt_buf)
             return TE_RC(TE_LOGGER, TE_EINVAL);
         strncpy(snif->res_fname + offt_buf, templ + offt_templ, len);
@@ -397,7 +389,7 @@ sniffer_parse_list_buf(char *buf, size_t len, snifidl_h_t *sniflist_head,
         ptr = strchr(buf, ' ');
         if (ptr == NULL)
             WRONG_SNIF_ID("Wrong sniffer name in the sniffer id.");
-        strl = (unsigned)ptr - (unsigned)buf;
+        strl = ptr - buf;
         snif->id.snifname = strndup(buf, strl);
         clen += strl;
         buf = ptr;
@@ -406,7 +398,7 @@ sniffer_parse_list_buf(char *buf, size_t len, snifidl_h_t *sniflist_head,
         ptr = strchr(buf, ' ');
         if (ptr == NULL)
             WRONG_SNIF_ID("Wrong iface name in the sniffer id.");
-        strl = (unsigned)ptr - (unsigned)buf;
+        strl = ptr - buf;
         snif->id.ifname = strndup(buf, strl);
         clen += strl;
         buf = ptr;
@@ -415,7 +407,7 @@ sniffer_parse_list_buf(char *buf, size_t len, snifidl_h_t *sniflist_head,
         snif->id.ssn = strtoll(buf, &ptr, 10);
         if (buf == ptr)
             WRONG_SNIF_ID("Wrong SSN in the sniffer id.");
-        strl = (unsigned)ptr - (unsigned)buf;
+        strl = ptr - buf;
         clen += strl;
         buf = ptr;
 
@@ -423,7 +415,7 @@ sniffer_parse_list_buf(char *buf, size_t len, snifidl_h_t *sniflist_head,
         snif->id.abs_offset = strtoll(buf, &ptr, 10);
         if (buf == ptr)
             WRONG_SNIF_ID("Wrong absolute offset in the sniffer id.");
-        strl = (unsigned)ptr - (unsigned)buf;
+        strl = ptr - buf;
         clen += strl;
         buf = ptr;
 
@@ -520,7 +512,7 @@ sniffer_insert_marker(int fd_o, snif_mark_l *mark)
 
     SNIFFER_MARK_H_INIT(proto, strlen(mark->message));
 
-    res = write(fd_o, (void *)&mark->h, sizeof(struct pcap_pkthdr));
+    res = write(fd_o, (void *)&mark->h, sizeof(te_pcap_pkthdr));
     if (res == -1)
         goto insert_marker_error;
     res = write(fd_o, proto, SNIF_MARK_PSIZE);
@@ -546,9 +538,10 @@ insert_marker_error:
 static void
 sniffer_save_info(const char *agent, snif_id_l *snif, int fd_o)
 {
-    snif_mark_l mark;
-    int         len;
-    int         res;
+    snif_mark_l     mark;
+    int             len;
+    int             res;
+    struct timeval  ts;
 
     len = strlen(agent) + strlen(snif->id.ifname) +
           strlen(snif->id.snifname) + 5;
@@ -556,7 +549,8 @@ sniffer_save_info(const char *agent, snif_id_l *snif, int fd_o)
     res = snprintf(mark.message, len, "%s;%s;%s", agent, snif->id.ifname,
                    snif->id.snifname);
     
-    gettimeofday(&mark.h.ts, 0);
+    gettimeofday(&ts, 0);
+    SNIFFER_TS_CPY(mark.h.ts, ts);
     mark.h.caplen = strlen(mark.message) + SNIF_MARK_PSIZE;
     mark.h.len = mark.h.caplen;
 
@@ -966,7 +960,7 @@ sniffer_add_new_mark(char *ta_name, snif_id_l *sniff, char *message,
     else
         mark->message = strdup("");
 
-    memcpy(&mark->h.ts, ts, sizeof(struct timeval));
+    SNIFFER_TS_CPY(mark->h.ts, *ts);
     mark->h.caplen = strlen(mark->message) + SNIF_MARK_PSIZE;
     mark->h.len = mark->h.caplen;
 
@@ -1026,7 +1020,7 @@ sniffer_ins_mark_all(char *mark_data)
     ptr = strchr(mark_data, ';');
     if (ptr == NULL)
         return;
-    len = (unsigned)ptr - (unsigned)mark_data;
+    len = ptr - mark_data;
     if ((len + 1 > RCF_MAX_NAME) || (len < 0))
         return;
     strncpy(ta_name, mark_data, len);
@@ -1082,6 +1076,7 @@ sniffer_mark_handler(char *mark_data_in)
     size_t           snif_len                   = RCF_MAX_ID;
     char            *snif_buf                   = NULL;
     char            *mark_data;
+    struct timeval   ts;
 
     mark_data = mark_data_in + 1;
     if (mark_data_in[0] == '1')
@@ -1097,7 +1092,7 @@ sniffer_mark_handler(char *mark_data_in)
     ptr = strchr(mark_data, ' ');
     if (ptr == NULL)
         goto snif_mark_cleanup;
-    len = (unsigned)ptr - (unsigned)mark_data;
+    len = ptr - mark_data;
     if ((len + 1 > RCF_MAX_NAME) || (len < 0))
         goto snif_mark_cleanup;
     strncpy(mark->agent, mark_data, len);
@@ -1118,7 +1113,8 @@ sniffer_mark_handler(char *mark_data_in)
     ptr += rc + 1;
     mark->message = strdup(ptr);
 
-    gettimeofday(&mark->h.ts, 0);
+    gettimeofday(&ts, 0);
+    SNIFFER_TS_CPY(mark->h.ts, ts);
     mark->h.caplen = strlen(mark->message) + SNIF_MARK_PSIZE;
     mark->h.len = mark->h.caplen;
 

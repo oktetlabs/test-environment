@@ -7,6 +7,7 @@
 
 var all_bits = 0x3f;
 var n_entries = 0;
+var n_levels  = 7;
 
 /*
  * 
@@ -49,7 +50,7 @@ function applyChanges()
         var excl_levels = 0;
 
         /* Change levels */
-        for (i = 0; i < 6; i++)
+        for (i = 0; i < n_levels; i++)
         {
             if (levels_updated & (1 << i))
             {
@@ -80,7 +81,7 @@ function applyChanges()
     if (levels_changed)
     {
         /* Change levels */
-        for (i = 0; i < 6; i++)
+        for (i = 0; i < n_levels; i++)
         {
             if (levels_changed & (1 << i))
                 g_levels |= (1 << i);
@@ -111,7 +112,7 @@ function gCbChange()
 
     for (m_id = 0; m_id < n_entries; m_id++)
     {
-        for (id = 0; id < 6; id++)
+        for (id = 0; id < n_levels; id++)
         {
             ll_cb = eval("document.cb_form.cb" + m_id + "_" + id);
 
@@ -125,7 +126,7 @@ function gCbChange()
         cb.checked = mcb.checked;
     }
 
-    for (id = 0; id < 6; id++)
+    for (id = 0; id < n_levels; id++)
     {
         cb = eval("document.cb_form.lcb" + id);
         cb.checked = mcb.checked;
@@ -157,7 +158,7 @@ function mainCbChange(m_id)
     var cb = eval("document.cb_form.cb" + m_id);
     var lcb;
 
-    for (id = 0; id < 6; id++)
+    for (id = 0; id < n_levels; id++)
     {
         lcb = eval("document.cb_form.cb" + m_id + "_" + id);
         lcb.checked = cb.checked;
@@ -378,7 +379,7 @@ function process_on_load_event()
 "  <td width='40%' class='entityname'>" + entity + "</td>" +
 "  <td width='60%' class='username'>" + user + "</td>";
 
-            for (j = 0; j < 6; j++)
+            for (j = 0; j < n_levels; j++)
             {
                 enabled = (levels & bits & (1 << j));
                 msg +=
@@ -405,7 +406,7 @@ function process_on_load_event()
 "  <td width='40%' class='entityname'>&nbsp;</td>" +
 "  <td width='60%' class='username'>&nbsp;</td>";
 
-            for (j = 0; j < 6; j++)
+            for (j = 0; j < n_levels; j++)
             {
                 enabled = (levels & (1 << j));
                 head_msg +=

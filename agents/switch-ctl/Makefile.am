@@ -26,6 +26,9 @@ taswitch_ctl_DEPENDENCIES = @TE_DEPENDENCIES@ symtbl.o \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libloggerta.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtools.a
 
+if CFG_SNIFFERS_DUMMY
+taswitch_ctl_LDADD+= -lrcf_sniffers_dummy
+endif
 
 symtbl.o: main.o conf.o @TE_DEPENDENCIES@
 	te_generate_symtbl ${NM} empty empty symtbl.c $^ 

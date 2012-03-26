@@ -3,7 +3,7 @@
  *
  * Implementation of unix TA sniffers configuring support.
  *
- * Copyright (C) 2004-2011 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2004-2012 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -395,9 +395,9 @@ sniffer_get_params(unsigned int gid, const char *oid, char *value)
     else if (strstr(oid, "/snaplen:") != NULL)
         sprintf(value, "%d", snif_sets.snaplen);
     else if (strstr(oid, "/total_size:") != NULL)
-        sprintf(value, "%d", snif_sets.total_size);
+        sprintf(value, "%zd", snif_sets.total_size);
     else if (strstr(oid, "/file_size:") != NULL)
-        sprintf(value, "%d", snif_sets.file_size);
+        sprintf(value, "%zd", snif_sets.file_size);
     else if (strstr(oid, "/rotation:") != NULL)
         sprintf(value, "%d", snif_sets.rotation);
     else if (strstr(oid, "/overfill_meth:") != NULL)
@@ -518,11 +518,11 @@ sniffer_common_get(unsigned int gid, const char *oid, char *value,
     else if (strstr(oid, "/snaplen:") != NULL)
         sprintf(value, "%d", sniff->snaplen);
     else if (strstr(oid, "/sniffer_space:") != NULL)
-        sprintf(value, "%d", sniff->sniffer_space);
+        sprintf(value, "%zd", sniff->sniffer_space);
     else if (strstr(oid, "/file_size:") != NULL)
-        sprintf(value, "%d", sniff->file_size);
+        sprintf(value, "%zd", sniff->file_size);
     else if (strstr(oid, "/rotation:") != NULL)
-        sprintf(value, "%d", sniff->rotation);
+        sprintf(value, "%zd", sniff->rotation);
     else if (strstr(oid, "/overfill_meth:") != NULL)
         sprintf(value, "%d", sniff->overfill_meth);
     else if ((strstr(oid, "/filter_exp_str:") != NULL) && 
@@ -639,7 +639,7 @@ sniffer_parse_sniff_id(const char* buf, sniffer_id *id)
         WARN("Wrong sniffer name in the sniffer id.");
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
-    strl = (unsigned)ptr - (unsigned)buf;
+    strl = ptr - buf;
     id->snifname = strndup(buf, strl);
     buf = ptr;
 
@@ -650,7 +650,7 @@ sniffer_parse_sniff_id(const char* buf, sniffer_id *id)
         WARN("Wrong sniffer interface name in the sniffer id.");
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
-    strl = (unsigned)ptr - (unsigned)buf;
+    strl = ptr - buf;
     id->ifname = strndup(buf, strl);
     buf = ptr;
 
@@ -875,9 +875,9 @@ static size_t
 sniffer_get_list_buf(char **buf, te_bool sync)
 {
     sniffer_t           *sniff;
-    int                  str_len;
+    size_t               str_len;
     size_t               clen;
-    int                  mem_size   = 1024;
+    size_t               mem_size   = 1024;
     unsigned long long   offset     = 0;
 
     SNIFFER_MALLOC(*buf, mem_size);
@@ -1025,7 +1025,7 @@ sniffer_get_dump(struct rcf_comm_connection *handle, char *cbuf,
     }
 
     len += snprintf(cbuf + answer_plen, buflen - answer_plen,
-                    "0 %llu attach %u", snif->id.abs_offset, size) + 1;
+                    "0 %llu attach %zd", snif->id.abs_offset, size) + 1;
     if (len > buflen)
     {
         WARN("Too long rcf message. File is not passed.");
@@ -1138,9 +1138,9 @@ make_argv_str(sniffer_t *sniff, int *s_argc)
     PUSH_ARG("-P");
     PUSH_ARG(sniff->path);
     PUSH_ARG("-c");
-    PUSH_INT_ARG(sniff->sniffer_space);
+    PUSH_INT_ARG((unsigned)sniff->sniffer_space);
     PUSH_ARG("-C");
-    PUSH_INT_ARG(sniff->file_size);
+    PUSH_INT_ARG((unsigned)sniff->file_size);
     PUSH_ARG("-q");
     PUSH_INT_ARG(sniff->id.ssn);
     PUSH_ARG("-a");
@@ -1152,7 +1152,7 @@ make_argv_str(sniffer_t *sniff, int *s_argc)
     else
     {
         PUSH_ARG("-r");
-        PUSH_INT_ARG(sniff->rotation);
+        PUSH_INT_ARG((unsigned)sniff->rotation);
     }
     PUSH_ARG("-p");
     while (*s_argc < SNIFFER_MAX_ARGS_N)
@@ -1590,7 +1590,6 @@ sniffer_add(unsigned int gid, const char *oid, char *ssn,
     memset(sniff->path, 0, RCF_MAX_PATH);
 
     SLIST_INSERT_HEAD(&snifferl_h, sniff, ent_l);
-
     return 0;
 }
 
@@ -1785,7 +1784,7 @@ rcf_ch_get_sniffers(struct rcf_comm_connection *handle, char *cbuf,
         len += snprintf(cbuf + answer_plen, buflen - answer_plen, "0") + 1;
     else
         len += snprintf(cbuf + answer_plen, buflen - answer_plen,
-                        "0 attach %u", alen) + 1;
+                        "0 attach %zd", alen) + 1;
 
     RCF_CH_LOCK;
     rc = rcf_comm_agent_reply(handle, cbuf, len);
@@ -1795,7 +1794,7 @@ rcf_ch_get_sniffers(struct rcf_comm_connection *handle, char *cbuf,
     }
     RCF_CH_UNLOCK;
 
-    if (alen != 0)
+    if (abuf != NULL)
         free(abuf);
 
     return rc;
@@ -1843,6 +1842,8 @@ ta_unix_conf_sniffer_cleanup(void)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
+    free(snif_sets.filter_exp_str);
+    free(snif_sets.filter_exp_file);
     remove(snif_sets.ssn_fname);
     remove(sniffers_dir);
     remove(snif_sets.path);    
