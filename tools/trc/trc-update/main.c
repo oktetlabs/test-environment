@@ -579,6 +579,9 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
          ctx.rules_save_to != NULL)))
         ctx.flags |= TRC_LOG_PARSE_USE_RULE_IDS;
 
+    if (!log_specified && ctx.rules_load_from == NULL)
+        ctx.flags |= TRC_LOG_PARSE_RULES_ALL;
+
     if (opt != -1)
     {
         ERROR("%s:%s", poptBadOption(optCon, 0), poptStrerror(opt));
