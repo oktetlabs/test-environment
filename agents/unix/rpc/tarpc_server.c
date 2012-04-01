@@ -407,6 +407,7 @@ typedef struct {
 
 static type_info_t type_info[] =
 {
+    {"te_bool", sizeof(te_bool)},
     {"char", sizeof(char)},
     {"short", sizeof(short)},
     {"int", sizeof(int)},
