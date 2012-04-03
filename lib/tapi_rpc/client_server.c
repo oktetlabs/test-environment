@@ -279,11 +279,13 @@ cleanup:
 
 /* See the description in tapi_rpc_client_server.h */
 int
-rpc_dgram_connection(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
-                     rpc_socket_proto proto,
-                     const struct sockaddr *srvr_addr,
-                     const struct sockaddr *clnt_addr,
-                     int *srvr_s, int *clnt_s)
+rpc_dgram_connection_gen(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
+                         rpc_socket_proto proto,
+                         const struct sockaddr *srvr_addr,
+                         const struct sockaddr *clnt_addr,
+                         int *srvr_s, int *clnt_s,
+                         te_bool srvr_connect,
+                         te_bool clnt_connect)
 {
     int srvr_sock = -1;
     int clnt_sock = -1;
@@ -320,8 +322,10 @@ rpc_dgram_connection(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
         goto cleanup;
     }
 
-    rpc_connect(clnt, clnt_sock, srvr_addr);
-    rpc_connect(srvr, srvr_sock, clnt_addr);
+    if (clnt_connect)
+        rpc_connect(clnt, clnt_sock, srvr_addr);
+    if (srvr_connect)
+        rpc_connect(srvr, srvr_sock, clnt_addr);
 
 cleanup:
 
@@ -338,6 +342,19 @@ cleanup:
     return 0;
 }
 
+/* See the description in tapi_rpc_client_server.h */
+int
+rpc_dgram_connection(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
+                     rpc_socket_proto proto,
+                     const struct sockaddr *srvr_addr,
+                     const struct sockaddr *clnt_addr,
+                     int *srvr_s, int *clnt_s)
+{
+    return rpc_dgram_connection_gen(srvr, clnt, proto,
+                                    srvr_addr, clnt_addr,
+                                    srvr_s, clnt_s,
+                                    TRUE, TRUE);
+}
 
 /* See the description in tapi_rpc_client_server.h */
 int

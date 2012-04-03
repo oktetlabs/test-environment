@@ -251,6 +251,58 @@ extern int rpc_stream_connection(rcf_rpc_server *srvr,
  * @param clnt_addr     Address to bind client to
  * @param srvr_s        Descriptor of the socket reside on @p srvr (OUT)
  * @param clnt_s        Descriptor of the socket reside on @p clnt (OUT)
+ * @param srvr_connect  Whether we should call @b connect() on @p srvr_s
+ *                      or not
+ * @param clnt_connect  Whether we should call @b connect() on @p clnt_s
+ *                      or not
+ *
+ * @return Status of the operation
+ *
+ * @retval @c  0 Connection successfully created
+ * @retval @c -1 Creating connection failed
+ *
+ * @note When the function returns @c -1 it reports the reason of the
+ * failure with ERROR() macro.
+ */
+extern int rpc_dgram_connection_gen(rcf_rpc_server *srvr,
+                                    rcf_rpc_server *clnt,
+                                    rpc_socket_proto proto,
+                                    const struct sockaddr *srvr_addr,
+                                    const struct sockaddr *clnt_addr,
+                                    int *srvr_s, int *clnt_s,
+                                    te_bool srvr_connect,
+                                    te_bool clnt_connect);
+
+/** 
+ * The macro is a wrapper over rpc_dgram_connection_gen function.
+ * In case of failure it calls TEST_FAIL() macro, so that it should be
+ * called in test context only.
+ */
+#define GEN_DGRAM_CONN(srvr_, clnt_, proto_, srvr_addr_, \
+                       clnt_addr_, srvr_s_, clnt_s_, \
+                       srvr_connect_, clnt_connect_) \
+    do {                                                                \
+        if (rpc_dgram_connection_gen(srvr_, clnt_,                      \
+                                     proto_, srvr_addr_, clnt_addr_,    \
+                                     srvr_s_, clnt_s_,                  \
+                                     srvr_connect_,                     \
+                                     clnt_connect_) != 0)               \
+        {                                                               \
+            TEST_FAIL("Cannot create a connection of type SOCK_DGRAM"); \
+        }                                                               \
+    } while (0)
+
+/**
+ * Create a connection of type @c SOCK_DGRAM between two PCO
+ *
+ * @param srvr          PCO where server socket is created
+ * @param clnt          PCO where client socket is created
+ * @param proto         Protocol for the connection
+ * @param srvr_addr     Server address to be used as a template 
+ *                      for @b bind() on server side
+ * @param clnt_addr     Address to bind client to
+ * @param srvr_s        Descriptor of the socket reside on @p srvr (OUT)
+ * @param clnt_s        Descriptor of the socket reside on @p clnt (OUT)
  *
  * @return Status of the operation
  *
@@ -266,7 +318,6 @@ extern int rpc_dgram_connection(rcf_rpc_server *srvr,
                                 const struct sockaddr *srvr_addr,
                                 const struct sockaddr *clnt_addr,
                                 int *srvr_s, int *clnt_s);
-
 
 /** @page lib-gen_connection Create a connection of an arbitrary type
  *
