@@ -117,22 +117,18 @@ typedef struct trc_log_parse_ctx {
     func_args_match_ptr    func_args_match; /**< Function to match
                                                  iterations in TRC with
                                                  iterations from logs */
-#if 0
-    trc_update_test_entries *updated_tests; /**< Queue of tests to be
-                                                 updated */
-#endif
+
     trc_update_tests_groups *updated_tests; /**< Groups of tests to be
                                                  updated */
     trc_update_rules         global_rules;  /**< Updating rules which
                                                  can be applied to any
                                                  iteration of any test */
+
     tqh_strings        *test_paths; /**< Paths of tests to be updated */
 
     unsigned int        stack_size; /**< Size of the stack in elements */
     te_bool            *stack_info; /**< Stack */
     unsigned int        stack_pos;  /**< Current position in the stack */
-
-
 } trc_log_parse_ctx;
 
 
@@ -323,13 +319,15 @@ trc_report_add_iter_data(const te_trc_db_walker *walker,
 static void
 trc_log_parse_test_entry(trc_log_parse_ctx *ctx, const xmlChar **attrs)
 {
-    int             tin = -1;
-    char           *hash = NULL;
-    te_bool         name_found = FALSE;
-    te_bool         status_found = FALSE;
-    te_test_status  status = TE_TEST_UNSPEC;
-    char           *s = NULL;
-    trc_test       *test = NULL;
+    int                      tin = -1;
+    char                    *hash = NULL;
+    te_bool                  name_found = FALSE;
+    te_bool                  status_found = FALSE;
+    te_test_status           status = TE_TEST_UNSPEC;
+    char                    *s = NULL;
+    trc_test                *test = NULL;
+    trc_update_tests_group  *group;
+    trc_update_test_entry   *test_p;
 
     while (ctx->rc == 0 && attrs[0] != NULL && attrs[1] != NULL)
     {
@@ -427,18 +425,23 @@ trc_log_parse_test_entry(trc_log_parse_ctx *ctx, const xmlChar **attrs)
                     *(s + strlen(test->path) - 1) == '/')
                     break;
             }
+        }
 
-            if (tqe_str == NULL)
-            {
-                /* If test is not in one of paths of
-                 * tests to be updated - skip it */
-                ctx->skip_state = TRC_LOG_PARSE_ROOT;
-                ctx->skip_depth = 1;
-                ctx->state = TRC_LOG_PARSE_SKIP;
-                trc_db_walker_step_back(ctx->db_walker);
-                trc_log_parse_stack_pop(ctx);
-                return;
-            }
+        if ((tqe_str == NULL &&
+             ctx->test_paths != NULL &&
+             !TAILQ_EMPTY(ctx->test_paths)) ||
+            ((strcmp(test->name, "prologue") == 0 ||
+              strcmp(test->name, "epilogue") == 0) &&
+             (ctx->flags & TRC_LOG_PARSE_NO_PE)))
+        {
+            /* If test is not in one of paths of
+             * tests to be updated - skip it */
+            ctx->skip_state = TRC_LOG_PARSE_ROOT;
+            ctx->skip_depth = 1;
+            ctx->state = TRC_LOG_PARSE_SKIP;
+            trc_db_walker_step_back(ctx->db_walker);
+            trc_log_parse_stack_pop(ctx);
+            return;
         }
 
         /* Pre-allocate entry for result */
@@ -466,6 +469,47 @@ trc_log_parse_test_entry(trc_log_parse_ctx *ctx, const xmlChar **attrs)
         }
         TAILQ_INIT(&ctx->iter_data->runs);
         TAILQ_INSERT_TAIL(&ctx->iter_data->runs, entry, links);
+    }
+    
+    if (ctx->rc == 0 &&
+        (ctx->flags & (TRC_LOG_PARSE_FAKE_LOG |
+                       TRC_LOG_PARSE_LOG_WILDS |
+                       TRC_LOG_PARSE_PATHS)))
+    {
+        if (test->type == TRC_TEST_SCRIPT)
+        {
+            TAILQ_FOREACH(group, ctx->updated_tests,
+                          links)
+                if (strcmp(group->path, test->path) == 0)
+                    break;
+
+            if (group == NULL)
+            {
+                group = TE_ALLOC(sizeof(*group));
+                group->rules = NULL;
+                group->path = strdup(test->path);
+                TAILQ_INIT(&group->tests);
+                TAILQ_INSERT_TAIL(ctx->updated_tests,
+                                  group, links);
+            }
+
+            if (!(ctx->flags & TRC_LOG_PARSE_PATHS))
+            {
+                TAILQ_FOREACH(test_p, &group->tests,
+                              links)
+                    if (test_p->test == test)
+                        break;
+
+                if (test_p == NULL)
+                {
+                    test_p = TE_ALLOC(sizeof(*test_p));
+                    test_p->test = test;
+
+                    TAILQ_INSERT_TAIL(&group->tests,
+                                      test_p, links);
+                }
+            }
+        }
     }
 }
 
@@ -1168,16 +1212,22 @@ trc_update_rule_to_xml(trc_update_rule *rule, xmlNodePtr node)
         xmlNewProp(rule_node, BAD_CAST "id", BAD_CAST id_val);
     }
 
-    defaults = xmlNewChild(rule_node, NULL,
-                           BAD_CAST "defaults", NULL);
-    if (defaults == NULL)
-    {
-        ERROR("%s(): failed to create <defaults> node", __FUNCTION__);
-        return TE_ENOMEM;
-    }
+    if (rule->type == TRC_UPDATE_RRESULT)
+        xmlNewProp(rule_node, BAD_CAST "type", BAD_CAST "result");
 
-    trc_exp_result_to_xml(rule->def_res, defaults,
-                          TRUE);
+    if (rule->type == TRC_UPDATE_RRESULTS)
+    {
+        defaults = xmlNewChild(rule_node, NULL,
+                               BAD_CAST "defaults", NULL);
+        if (defaults == NULL)
+        {
+            ERROR("%s(): failed to create <defaults> node", __FUNCTION__);
+            return TE_ENOMEM;
+        }
+
+        trc_exp_result_to_xml(rule->def_res, defaults,
+                              TRUE);
+    }
 
     old_res = xmlNewChild(rule_node, NULL,
                        BAD_CAST "old", NULL);
@@ -1187,22 +1237,34 @@ trc_update_rule_to_xml(trc_update_rule *rule, xmlNodePtr node)
         return TE_ENOMEM;
     }
 
-    if (rule->old_res != NULL)
+    if (rule->type == TRC_UPDATE_RRESULTS ||
+        rule->type == TRC_UPDATE_RRESULT)
         trc_exp_results_to_xml(rule->old_res, old_res, FALSE);
+    else if (rule->type == TRC_UPDATE_RRENTRY)
+        trc_exp_result_entry_to_xml(rule->old_re, old_res);
+    else if (rule->type == TRC_UPDATE_RVERDICT)
+        trc_verdict_to_xml(rule->old_v, old_res);
 
-    confl_res = xmlNewChild(rule_node, NULL,
-                            BAD_CAST "conflicts",
-                            NULL);
-    if (old_res == NULL)
+    if (rule->type == TRC_UPDATE_RRESULTS)
     {
-        ERROR("%s(): failed to create <conflicts> node", __FUNCTION__);
-        return TE_ENOMEM;
+        confl_res = xmlNewChild(rule_node, NULL,
+                                BAD_CAST "conflicts",
+                                NULL);
+        if (confl_res == NULL)
+        {
+            ERROR("%s(): failed to create <conflicts> node", __FUNCTION__);
+            return TE_ENOMEM;
+        }
+
+        if (rule->confl_res != NULL)
+            trc_exp_results_to_xml(rule->confl_res, confl_res, FALSE);
     }
 
-    if (rule->confl_res != NULL)
-        trc_exp_results_to_xml(rule->confl_res, confl_res, FALSE);
-
-    if (rule->new_res != NULL && !SLIST_EMPTY(rule->new_res))
+    if ((rule->new_res != NULL && !SLIST_EMPTY(rule->new_res) &&
+         (rule->type == TRC_UPDATE_RRESULTS ||
+          rule->type == TRC_UPDATE_RRESULT)) ||
+        (rule->new_re != NULL && rule->type == TRC_UPDATE_RRENTRY) ||
+        (rule->new_v != NULL && rule->type == TRC_UPDATE_RVERDICT))
     {
         new_res = xmlNewChild(rule_node, NULL,
                            BAD_CAST "new", NULL);
@@ -1211,7 +1273,14 @@ trc_update_rule_to_xml(trc_update_rule *rule, xmlNodePtr node)
             ERROR("%s(): failed to create <new> node", __FUNCTION__);
             return TE_ENOMEM;
         }
-        trc_exp_results_to_xml(rule->new_res, new_res, FALSE);
+
+        if (rule->type == TRC_UPDATE_RRESULTS ||
+            rule->type == TRC_UPDATE_RRESULT)
+            trc_exp_results_to_xml(rule->new_res, new_res, FALSE);
+        else if (rule->type == TRC_UPDATE_RRENTRY)
+            trc_exp_result_entry_to_xml(rule->new_re, new_res);
+        else if (rule->type == TRC_UPDATE_RVERDICT)
+            trc_verdict_to_xml(rule->new_v, new_res);
     }
 
     return 0;
@@ -1353,171 +1422,6 @@ save_test_rules_to_file(trc_update_tests_groups *updated_tests,
     xmlFreeDoc(xml_doc);
 
     return 0;
-}
-
-/**
- * Compare expected results of iterations (used for ordering).
- *
- * @param p         First expected result
- * @param q         Second expected result
- * @param tags_cmp  Whether to compare string representation of
- *                  tag expressions or not 
- *
- * @return -1, 0 or 1 as a result of comparison
- */
-static int
-trc_exp_result_cmp_gen(trc_exp_result *p, trc_exp_result *q,
-                       te_bool tags_cmp)
-{
-    int                      rc;
-    trc_exp_result_entry    *p_r;
-    trc_exp_result_entry    *q_r;
-    te_bool                  p_tags_str_void;
-    te_bool                  q_tags_str_void;
-
-    if (p == NULL && q == NULL)
-        return 0;
-    else if (p == NULL)
-        return -1;
-    else if (q == NULL)
-        return 1;
-   
-    if (!tags_cmp)
-        rc = 0;
-    else
-    {
-        p_tags_str_void = (p->tags_str == NULL ||
-                           strlen(p->tags_str) == 0);
-        q_tags_str_void = (q->tags_str == NULL ||
-                           strlen(q->tags_str) == 0);
-
-        if (p_tags_str_void && q_tags_str_void)
-            rc = 0;
-        else if (p_tags_str_void)
-            rc = -1;
-        else if (q_tags_str_void)
-            rc = 1;
-        else
-            rc = strcmp(p->tags_str, q->tags_str);
-    }
-
-    if (rc != 0)
-        return rc;
-    else
-    {
-        p_r = TAILQ_FIRST(&p->results);
-        q_r = TAILQ_FIRST(&q->results);
-
-        while (p_r != NULL && q_r != NULL)
-        {
-            rc = te_test_result_cmp(&p_r->result,
-                                    &q_r->result);
-            if (rc != 0)
-                return rc;
-            else
-            {
-                rc = strcmp_null(p_r->key, q_r->key);
-                if (rc != 0)
-                    return rc;
-                else
-                {
-                    rc = strcmp_null(p_r->notes, q_r->notes);
-                    if (rc != 0)
-                        return rc;
-                }
-            }
-
-            p_r = TAILQ_NEXT(p_r, links);
-            q_r = TAILQ_NEXT(q_r, links);
-        }
-
-        if (p_r == NULL && q_r == NULL)
-        {
-            rc = strcmp_null(p->key, q->key);
-            if (rc != 0)
-                return rc;
-            else
-                return strcmp_null(p->notes, q->notes);
-        }   
-        else if (p_r != NULL)
-            return 1;
-        else
-            return -1;
-    }
-}
-
-/**
- * Compare expected results of iterations (used for ordering).
- *
- * @param p         First expected result
- * @param q         Second expected result
- *
- * @return -1, 0 or 1 as a result of comparison
- */
-static int
-trc_exp_result_cmp(trc_exp_result *p, trc_exp_result *q)
-{
-    return trc_exp_result_cmp_gen(p, q, TRUE);
-}
-
-/**
- * Compare expected results of iterations (used for ordering),
- * do not consider tag expressions in comparison.
- *
- * @param p         First expected result
- * @param q         Second expected result
- *
- * @return -1, 0 or 1 as a result of comparison
- */
-static int
-trc_exp_result_cmp_no_tags(trc_exp_result *p, trc_exp_result *q)
-{
-    return trc_exp_result_cmp_gen(p, q, FALSE);
-}
-
-/**
- * Compare lists of expected results (used for ordering).
- *
- * @param p         First expected results list.
- * @param q         Second expected results list.
- *
- * @return -1, 0 or 1 as a result of comparison
- */
-static int
-trc_exp_results_cmp(trc_exp_results *p, trc_exp_results *q)
-{
-    int                  rc;
-    trc_exp_result      *p_r;
-    trc_exp_result      *q_r;
-    te_bool              p_is_void = (p == NULL || SLIST_EMPTY(p));
-    te_bool              q_is_void = (q == NULL || SLIST_EMPTY(q));
-
-    if (p_is_void && q_is_void)
-        return 0;
-    else if (!p_is_void && q_is_void)
-        return 1;
-    else if (p_is_void && !q_is_void)
-        return -1;
-
-    p_r = SLIST_FIRST(p);
-    q_r = SLIST_FIRST(q);
-
-    while (p_r != NULL && q_r != NULL)
-    {
-        rc = trc_exp_result_cmp(p_r, q_r);
-        if (rc != 0)
-            return rc;
-
-        p_r = SLIST_NEXT(p_r, links);
-        q_r = SLIST_NEXT(q_r, links);
-    }
-
-    if (p_r == NULL && q_r == NULL)
-        return 0;
-    else if (p_r != NULL)
-        return 1;
-    else
-        return -1;
 }
 
 /**
@@ -1688,7 +1592,7 @@ trc_update_simplify_results(unsigned int db_uid,
                          q = tvar)
                         
                     {
-                        if (trc_exp_result_cmp_no_tags(p, q) == 0)
+                        if (trc_update_result_cmp_no_tags(p, q) == 0)
                         {
                             tags_expr = TE_ALLOC(sizeof(*tags_expr));
                             tags_expr->type = LOGIC_EXPR_OR;
@@ -1738,6 +1642,245 @@ trc_update_simplify_results(unsigned int db_uid,
 }
 
 /**
+ * Apply updating rule of type @c TRC_UPDATE_RVERDICT to a test
+ * iteration.
+ *
+ * @param iter          Test iteration
+ * @param iter_data     Auxiliary data attached to the iteration
+ * @param rule          TRC updating rule
+ * @param flags         Flags
+ */
+static te_errno
+trc_update_apply_rverdict(trc_test_iter *iter,
+                          trc_update_test_iter_data *iter_data,
+                          trc_update_rule *rule, uint32_t flags)
+{
+    te_test_verdict         *dup_verdict;
+    trc_exp_result          *iter_result;
+    trc_exp_result_entry    *iter_rentry;
+    te_test_verdict         *iter_verdict;
+
+    UNUSED(iter_data);
+    UNUSED(flags);
+
+    if (strcmp_null(rule->old_v, rule->new_v) == 0 ||
+        rule->old_v == NULL || !rule->apply)
+        return 0;
+
+    SLIST_FOREACH(iter_result, &iter->exp_results, links)
+    {
+        TAILQ_FOREACH(iter_rentry, &iter_result->results, links)
+        {
+            TAILQ_FOREACH(iter_verdict, &iter_rentry->result.verdicts,
+                          links)
+            {
+                if (strcmp_null(iter_verdict->str, rule->old_v) == 0)
+                {
+                    if (rule->new_v != NULL)
+                    {
+                        dup_verdict = TE_ALLOC(sizeof(*dup_verdict));
+                        dup_verdict->str = strdup(rule->new_v);
+                        TAILQ_INSERT_AFTER(&iter_rentry->result.verdicts,
+                                           iter_verdict, dup_verdict,
+                                           links);
+                    }
+                    else
+                        dup_verdict = TAILQ_NEXT(iter_verdict, links);
+
+                    TAILQ_REMOVE(&iter_rentry->result.verdicts,
+                                 iter_verdict, links);
+                    free(iter_verdict->str);
+                    free(iter_verdict);
+
+                    iter_verdict = dup_verdict;
+                    if (dup_verdict == NULL)
+                        break;
+                }
+            }
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * Apply updating rule of type @c TRC_UPDATE_RRENTRY to a test
+ * iteration.
+ *
+ * @param iter          Test iteration
+ * @param iter_data     Auxiliary data attached to the iteration
+ * @param rule          TRC updating rule
+ * @param flags         Flags
+ */
+static te_errno
+trc_update_apply_rrentry(trc_test_iter *iter,
+                         trc_update_test_iter_data *iter_data,
+                         trc_update_rule *rule, uint32_t flags)
+{
+    trc_exp_result_entry    *dup_rentry;
+    trc_exp_result          *iter_result;
+    trc_exp_result_entry    *iter_rentry;
+
+    UNUSED(iter_data);
+    UNUSED(flags);
+
+    if (trc_update_rentry_cmp(rule->old_re, rule->new_re) == 0 ||
+        rule->old_re == NULL || !rule->apply)
+        return 0;
+
+    SLIST_FOREACH(iter_result, &iter->exp_results, links)
+    {
+        TAILQ_FOREACH(iter_rentry, &iter_result->results, links)
+        {
+            if (trc_update_rentry_cmp(iter_rentry,
+                                      rule->old_re) == 0)
+            {
+                if (rule->new_re != NULL)
+                {
+                    dup_rentry = trc_exp_result_entry_dup(rule->new_re);
+                    TAILQ_INSERT_AFTER(&iter_result->results, iter_rentry,
+                                       dup_rentry, links);
+                }
+                else
+                    dup_rentry = TAILQ_NEXT(iter_rentry, links);
+
+                TAILQ_REMOVE(&iter_result->results, iter_rentry, links);
+                trc_exp_result_entry_free(iter_rentry);
+                free(iter_rentry);
+
+                iter_rentry = dup_rentry;
+                if (iter_rentry == NULL)
+                    break;
+            }
+        }
+    }
+    return 0;
+}
+
+/**
+ * Apply updating rule of type @c TRC_UPDATE_RRESULT to a test
+ * iteration.
+ *
+ * @param iter          Test iteration
+ * @param iter_data     Auxiliary data attached to the iteration
+ * @param rule          TRC updating rule
+ * @param flags         Flags
+ */
+static te_errno
+trc_update_apply_rresult(trc_test_iter *iter,
+                         trc_update_test_iter_data *iter_data,
+                         trc_update_rule *rule, uint32_t flags)
+{
+    trc_exp_result  *old_result = NULL;
+    trc_exp_result  *new_result = NULL;
+    trc_exp_result  *dup_result;
+    trc_exp_result  *iter_result;
+
+    UNUSED(iter_data);
+    UNUSED(flags);
+
+    if (rule->old_res != NULL)
+        old_result = SLIST_FIRST(rule->old_res);
+    if (rule->new_res != NULL)
+        new_result = SLIST_FIRST(rule->new_res);
+
+    if (trc_update_result_cmp(old_result, new_result) == 0 ||
+        old_result == NULL || !rule->apply)
+        return 0;
+
+    SLIST_FOREACH(iter_result, &iter->exp_results, links)
+    {
+        if (trc_update_result_cmp(iter_result, old_result) == 0)
+        {
+            if (new_result != NULL)
+            {
+                dup_result = trc_exp_result_dup(new_result);
+                SLIST_INSERT_AFTER(iter_result, dup_result,
+                                   links);
+            }
+            else
+                dup_result = SLIST_NEXT(iter_result, links);
+
+            SLIST_REMOVE(&iter->exp_results, iter_result,
+                         trc_exp_result, links);
+            trc_exp_result_free(iter_result);
+            free(iter_result);
+
+            iter_result = dup_result;
+            if (iter_result == NULL)
+                break;
+        }
+    }
+    return 0;
+}
+
+/**
+ * Apply updating rule of type @c TRC_UPDATE_RRESULTS to a
+ * test iteration.
+ *
+ * @param iter          Test iteration
+ * @param iter_data     Auxiliary data attached to the iteration
+ * @param rule          TRC updating rule
+ * @param iter_rule_id  Iteration rule id
+ * @param flags         Flags
+ */
+static te_errno
+trc_update_apply_rresults(trc_test_iter *iter,
+                          trc_update_test_iter_data *iter_data,
+                          trc_update_rule *rule,
+                          int iter_rule_id, uint32_t flags)
+{
+    trc_exp_results             *results_dup;
+
+    if (rule->apply &&
+        ((rule->rule_id != 0 && iter_rule_id != 0 &&
+          rule->rule_id == iter_rule_id) ||
+         ((rule->def_res == NULL ||
+           trc_update_result_cmp(
+                              (struct trc_exp_result *)
+                              iter->exp_default,
+                              rule->def_res) == 0) &&
+          (rule->old_res == NULL ||
+           trc_update_results_cmp(
+                               (trc_exp_results *)
+                               &iter->exp_results,
+                               rule->old_res) == 0) &&
+          (rule->confl_res == NULL ||
+           trc_update_results_cmp(
+                               &iter_data->new_results,
+                               rule->confl_res) == 0))) &&
+        trc_update_results_cmp(&iter->exp_results,
+                               rule->new_res) != 0)
+    {
+        results_dup = trc_exp_results_dup(rule->new_res);
+
+        if ((flags & TRC_LOG_PARSE_RULES_CONFL) &&
+            !SLIST_EMPTY(&iter->exp_results))
+        {
+            trc_exp_results_free(&iter_data->new_results);
+            if (results_dup != NULL)
+            {
+                memcpy(&iter_data->new_results, results_dup,
+                       sizeof(*results_dup));
+            }
+        }
+        else
+        {
+            trc_exp_results_free(&iter->exp_results);
+            if (results_dup != NULL)
+            {
+                memcpy(&iter->exp_results, results_dup,
+                       sizeof(*results_dup));
+            }
+        }
+
+        free(results_dup);
+    }
+
+    return 0;
+}
+
+/**
  * Apply updating rules.
  *
  * @param db_uid        TRC DB User ID
@@ -1757,13 +1900,13 @@ trc_update_apply_rules(unsigned int db_uid,
     trc_update_test_entry       *test_entry;
     trc_test_iter               *iter;
     trc_update_test_iter_data   *iter_data;
-    trc_exp_results             *results_dup;
     char                        *value;
     int                          rule_id;
     trc_update_rule             *rule;
     trc_update_wilds_list_entry *wild;
     tqe_string                  *expr;
     te_bool                      rules_switch = FALSE;
+    te_bool                      is_applicable = FALSE;
 
     UNUSED(flags);
 
@@ -1778,125 +1921,100 @@ trc_update_apply_rules(unsigned int db_uid,
                 if (iter_data == NULL || iter_data->to_save == FALSE)
                     continue;
 
-                if (iter_data->rule == NULL)
+                rule_id = 0;
+                value = XML2CHAR(xmlGetProp(
+                                    iter->node,
+                                    CONST_CHAR2XML("user_attr")));
+                if (value != NULL &&
+                    strncmp(value, "rule_", 5) == 0)
+                    rule_id = atoi(value + 5);
+
+                rules_switch = FALSE;
+
+                for (rule = TAILQ_FIRST(global_rules);
+                     !(rule == NULL && rules_switch == TRUE);
+                     rule = TAILQ_NEXT(rule, links))
                 {
-                    rule_id = 0;
-                    value = XML2CHAR(xmlGetProp(
-                                        iter->node,
-                                        CONST_CHAR2XML("user_attr")));
-                    if (value != NULL &&
-                        strncmp(value, "rule_", 5) == 0)
-                        rule_id = atoi(value + 5);
-
-                    rules_switch = FALSE;
-
-                    for (rule = TAILQ_FIRST(global_rules);
-                         !(rule == NULL && rules_switch == TRUE);
-                         rule = TAILQ_NEXT(rule, links))
+                    if (rule == NULL)
                     {
+                        if (group->rules != NULL)
+                            rule = TAILQ_FIRST(group->rules);
+                        rules_switch = TRUE;
+
                         if (rule == NULL)
-                        {
-                            if (group->rules != NULL)
-                                rule = TAILQ_FIRST(group->rules);
-                            rules_switch = TRUE;
-
-                            if (rule == NULL)
-                                break;
-                        }
-
-                        if (rule->rule_id != rule_id &&
-                            rule->rule_id != 0 &&
-                            rule_id != 0)
-                            continue;
-
-                        if (rule->apply &&
-                            ((rule->rule_id != 0 && rule_id != 0) ||
-                             ((rule->def_res == NULL ||
-                               trc_exp_result_cmp((struct trc_exp_result *)
-                                                  iter->exp_default,
-                                                  rule->def_res) == 0) &&
-                              (rule->old_res == NULL ||
-                               trc_exp_results_cmp((trc_exp_results *)
-                                                   &iter->exp_results,
-                                                   rule->old_res) == 0) &&
-                              (rule->confl_res == NULL ||
-                               trc_exp_results_cmp(&iter_data->new_results,
-                                                   rule->confl_res) == 0))))
-                        {
-                            if (rule->wilds != NULL &&
-                                !SLIST_EMPTY(rule->wilds))
-                            {
-                                SLIST_FOREACH(wild, rule->wilds, links)
-                                {
-                                    assert(wild->args != NULL);
-                                    assert(iter_data->args != NULL);
-                                    if (test_iter_args_match(
-                                                        wild->args,
-                                                        iter_data->args_n,
-                                                        iter_data->args,
-                                                        wild->is_strict) !=
-                                                            ITER_NO_MATCH)
-                                    {
-                                        iter_data->rule = rule;
-                                        iter_data->rule_id = rule->rule_id;
-                                        break;
-                                    }
-                                }
-                            }
-                            else if (rule->match_exprs != NULL &&
-                                     !TAILQ_EMPTY(rule->match_exprs))
-                            {
-                                TAILQ_FOREACH(expr, rule->match_exprs,
-                                              links)
-                                {
-                                    /*
-                                     * Sorry, not implemented yet.
-                                     */
-                                }
-                            }
-                            else
-                            {
-                                iter_data->rule = rule;
-                                iter_data->rule_id = rule->rule_id;
-                                break;
-                            }
-                        }
-
-                        if (iter_data->rule != NULL)
                             break;
                     }
-                }
 
-                if (iter_data->rule == NULL || !iter_data->rule->apply)
-                    continue;
+                    if (rule->rule_id != rule_id &&
+                        rule->rule_id != 0 &&
+                        rule_id != 0)
+                        continue;
 
-                if (trc_exp_results_cmp(&iter->exp_results,
-                                        iter_data->rule->new_res) != 0)
-                {
-                    results_dup = trc_exp_results_dup(
-                                    iter_data->rule->new_res);
+                    is_applicable = FALSE;
 
-                    if ((flags & TRC_LOG_PARSE_RULES_CONFL) &&
-                        !SLIST_EMPTY(&iter->exp_results))
+                    if (rule->wilds != NULL &&
+                        !SLIST_EMPTY(rule->wilds))
                     {
-                        trc_exp_results_free(&iter_data->new_results);
-                        if (results_dup != NULL)
+                        SLIST_FOREACH(wild, rule->wilds, links)
                         {
-                            memcpy(&iter_data->new_results, results_dup,
-                                   sizeof(*results_dup));
+                            assert(wild->args != NULL);
+                            assert(iter_data->args != NULL);
+                            if (test_iter_args_match(
+                                                wild->args,
+                                                iter_data->args_n,
+                                                iter_data->args,
+                                                wild->is_strict) !=
+                                                    ITER_NO_MATCH)
+                                is_applicable = TRUE;
+                        }
+                    }
+                    else if (rule->match_exprs != NULL &&
+                             !TAILQ_EMPTY(rule->match_exprs))
+                    {
+                        TAILQ_FOREACH(expr, rule->match_exprs,
+                                      links)
+                        {
+                            /*
+                             * Sorry, not implemented yet.
+                             */
                         }
                     }
                     else
+                        is_applicable = TRUE;
+
+                    if (is_applicable)
                     {
-                        trc_exp_results_free(&iter->exp_results);
-                        if (results_dup != NULL)
+                        switch(rule->type)
                         {
-                            memcpy(&iter->exp_results, results_dup,
-                                   sizeof(*results_dup));
+                            case TRC_UPDATE_RRESULTS:
+                                trc_update_apply_rresults(iter,
+                                                          iter_data,
+                                                          rule, rule_id,
+                                                          flags);
+                                break;
+
+                            case TRC_UPDATE_RRESULT:
+                                trc_update_apply_rresult(iter,
+                                                         iter_data,
+                                                         rule, flags);
+                                break;
+
+                            case TRC_UPDATE_RRENTRY:
+                                trc_update_apply_rrentry(iter,
+                                                         iter_data,
+                                                         rule, flags);
+                                break;
+
+                            case TRC_UPDATE_RVERDICT:
+                                trc_update_apply_rverdict(iter,
+                                                          iter_data,
+                                                          rule, flags);
+                                break;
+
+                            default:
+                                break;
                         }
                     }
-
-                    free(results_dup);
                 }
             }
         }
@@ -1916,20 +2034,120 @@ trc_update_apply_rules(unsigned int db_uid,
 static te_errno
 trc_update_load_rule(xmlNodePtr rule_node, trc_update_rule *rule)
 {
-#define GET_RULE_RESULT(result_) \
+#define IF_RESULTS(result_) \
+    if (xmlStrcmp(first_child_node->name,                       \
+                  CONST_CHAR2XML("results")) == 0)              \
+    {                                                           \
+        if (rule->result_ ## _res != NULL)                      \
+        {                                                       \
+            ERROR("Duplicated <%s> node in TRC updating rules " \
+                  "XML file", (char *)rule_section_node->name); \
+            err_ = TE_EFMT;                                     \
+        }                                                       \
+        else                                                    \
+        {                                                       \
+            rule->result_ ## _res =                             \
+                        TE_ALLOC(sizeof(trc_exp_results));      \
+            SLIST_INIT(rule->result_ ## _res);                  \
+            get_expected_results(&first_child_node,             \
+                                 rule->result_ ## _res);        \
+            rtype_ = TRC_UPDATE_RRESULTS;                       \
+        }                                                       \
+    }                                                           \
+
+#define GET_RULE_CHECK \
     do {                                                            \
-        if (rule->result_ != NULL)                                  \
+        if (err_ == 0 && !(rtype_ == TRC_UPDATE_RRESULTS &&         \
+              rule->type == TRC_UPDATE_RRESULT))                    \
         {                                                           \
-            ERROR("Duplicated %s node in TRC updating rules "       \
-                  "XML file", (char *)rule_section_node->name);     \
-            return TE_EFMT;                                         \
+            if (rtype_ != rule->type &&                             \
+                rule->type != TRC_UPDATE_UNKNOWN)                   \
+            {                                                       \
+                ERROR("<rule> node contains different type of "     \
+                      "tags as direct children of <old>, "          \
+                      "<conflicts> or <new>");                      \
+                trc_update_rule_free(rule);                         \
+                err_ = TE_EFMT;                                     \
+            }                                                       \
+            else                                                    \
+                rule->type = rtype_;                                \
+        }                                                           \
+        if (err_ != 0)                                              \
+        {                                                           \
+            trc_update_rule_free(rule);                             \
+            return err_;                                            \
+        }                                                           \
+    } while (0)
+
+#define GET_RULE_CONFL \
+    do {                                                            \
+        int               err_ = 0;                                 \
+        trc_update_rtype  rtype_ = TRC_UPDATE_UNKNOWN;              \
+                                                                    \
+        if (first_child_node == NULL)                               \
+            break;                                                  \
+        IF_RESULTS(confl)                                           \
+        else                                                        \
+        {                                                           \
+            ERROR("Incorrect <%s> node in <conflicts> section of "  \
+                  "TRC update rule",                                \
+                  (char *)first_child_node->name);                  \
+            err_ =  TE_EFMT;                                        \
+        }                                                           \
+        GET_RULE_CHECK;                                             \
+    } while (0)
+
+#define GET_RULE_SEC(result_) \
+    do {                                                            \
+        int               err_ = 0;                                 \
+        trc_update_rtype  rtype_ = TRC_UPDATE_UNKNOWN;              \
+                                                                    \
+        if (first_child_node == NULL)                               \
+            break;                                                  \
+        IF_RESULTS(result_)                                         \
+        else if (xmlStrcmp(first_child_node->name,                  \
+                           CONST_CHAR2XML("result")) == 0)          \
+        {                                                           \
+            if (rule->result_ ## _re != NULL)                       \
+            {                                                       \
+                ERROR("Duplicated <%s> node in TRC updating rules " \
+                      "XML file", (char *)rule_section_node->name); \
+                err_ = TE_EFMT;                                     \
+            }                                                       \
+            else                                                    \
+            {                                                       \
+                rule->result_ ## _re =                              \
+                            TE_ALLOC(sizeof(trc_exp_result_entry)); \
+                get_expected_rentry(first_child_node,               \
+                                    rule->result_ ## _re);          \
+                rtype_ = TRC_UPDATE_RRENTRY;                        \
+            }                                                       \
+        }                                                           \
+        else if (xmlStrcmp(first_child_node->name,                  \
+                           CONST_CHAR2XML("verdict")) == 0)         \
+        {                                                           \
+            if (rule->result_ ## _v != NULL)                        \
+            {                                                       \
+                ERROR("Duplicated <%s> node in TRC updating rules " \
+                      "XML file", (char *)rule_section_node->name); \
+                return TE_EFMT;                                     \
+            }                                                       \
+            else                                                    \
+            {                                                       \
+                get_expected_verdict(first_child_node,              \
+                                     &rule->result_ ## _v);         \
+                rtype_ = TRC_UPDATE_RVERDICT;                       \
+            }                                                       \
         }                                                           \
         else                                                        \
         {                                                           \
-            rule->result_ = TE_ALLOC(sizeof(trc_exp_results));      \
-            SLIST_INIT(rule->result_);                              \
+            ERROR("Incorrect <%s> node in <%s> section of "         \
+                  "TRC update rule",                                \
+                  (char *)first_child_node->name,                   \
+                  (char *)rule_section_node->name);                 \
+            err_ =  TE_EFMT;                                        \
         }                                                           \
-        get_expected_results(&first_child_node, rule->result_);   \
+        GET_RULE_CHECK;                                             \
     } while (0)
 
     xmlNodePtr              rule_section_node;
@@ -1946,6 +2164,13 @@ trc_update_load_rule(xmlNodePtr rule_node, trc_update_rule *rule)
                                 CONST_CHAR2XML("id")));
     if (value != NULL)
         rule->rule_id = atoi(value);
+
+    rule->type = TRC_UPDATE_UNKNOWN;
+
+    value = XML2CHAR(xmlGetProp(rule_node,
+                                CONST_CHAR2XML("type")));
+    if (value != NULL && strcmp(value, "result") == 0)
+        rule->type = TRC_UPDATE_RRESULT;
 
     while (rule_section_node != NULL)
     {
@@ -2022,14 +2247,14 @@ trc_update_load_rule(xmlNodePtr rule_node, trc_update_rule *rule)
         }
         else if (xmlStrcmp(rule_section_node->name,
                            CONST_CHAR2XML("old")) == 0)
-            GET_RULE_RESULT(old_res);
+            GET_RULE_SEC(old);
         else if (xmlStrcmp(rule_section_node->name,
                       CONST_CHAR2XML("conflicts")) == 0)
-            GET_RULE_RESULT(confl_res);
+            GET_RULE_CONFL;
         else if (xmlStrcmp(rule_section_node->name,
                       CONST_CHAR2XML("new")) == 0)
         {
-            GET_RULE_RESULT(new_res);
+            GET_RULE_SEC(new);
             rule->apply = TRUE;
         }
         else
@@ -2044,6 +2269,10 @@ trc_update_load_rule(xmlNodePtr rule_node, trc_update_rule *rule)
     }
 
     return 0;
+#undef GET_RULE_SEC
+#undef GET_RULE_CONFL
+#undef GET_RULE_CHECK
+#undef IF_RESULTS
 }
 
 /**
@@ -2241,6 +2470,241 @@ trc_update_clear_rules(unsigned int db_uid,
 }
 
 /**
+ * Generate updating rules of type @c TRC_UPDATE_RVERDICT
+ * for a given iteration.
+ *
+ * @param iter      Test iteration
+ * @param rules     Where to store generated rules
+ * @param flags     Flags
+ */
+static te_errno
+trc_update_gen_rverdict(trc_test_iter *iter,
+                        trc_update_rules *rules,
+                        uint32_t flags)
+{
+    trc_exp_result              *result;
+    trc_exp_result_entry        *rentry;
+    te_test_verdict             *verdict;
+    trc_update_rule             *rule;
+    int                          rc;
+
+    SLIST_FOREACH(result, &iter->exp_results, links)
+    {
+        TAILQ_FOREACH(rentry, &result->results, links)
+        {
+            TAILQ_FOREACH(verdict, &rentry->result.verdicts, links)
+            {
+                rule = TE_ALLOC(sizeof(*rule));
+                rule->type = TRC_UPDATE_RVERDICT;
+                rule->apply = FALSE;
+                rule->old_v = strdup(verdict->str);
+                if (flags & TRC_LOG_PARSE_COPY_OLD)
+                    rule->new_v = strdup(rule->old_v);
+
+                rc = trc_update_ins_rule(rule, rules,
+                                         &trc_update_rules_cmp);
+                if (rc != 0)
+                    trc_update_rule_free(rule);
+            }
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * Generate updating rules of type @c TRC_UPDATE_RRENTRY
+ * for a given iteration.
+ *
+ * @param iter      Test iteration
+ * @param rules     Where to store generated rules
+ * @param flags     Flags
+ */
+static te_errno
+trc_update_gen_rrentry(trc_test_iter *iter,
+                       trc_update_rules *rules,
+                       uint32_t flags)
+{
+    trc_exp_result              *result;
+    trc_exp_result_entry        *rentry;
+    trc_update_rule             *rule;
+    int                          rc;
+
+    SLIST_FOREACH(result, &iter->exp_results, links)
+    {
+        TAILQ_FOREACH(rentry, &result->results, links)
+        {
+            rule = TE_ALLOC(sizeof(*rule));
+            rule->type = TRC_UPDATE_RRENTRY;
+            rule->apply = FALSE;
+            rule->old_re = trc_exp_result_entry_dup(rentry);
+
+            if (flags & TRC_LOG_PARSE_COPY_OLD)
+                rule->new_re =
+                    trc_exp_result_entry_dup(rule->old_re);
+
+            rc = trc_update_ins_rule(rule, rules, &trc_update_rules_cmp);
+            if (rc != 0)
+                trc_update_rule_free(rule);
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * Generate updating rules of type @c TRC_UPDATE_RRESULT
+ * for a given iteration.
+ *
+ * @param iter      Test iteration
+ * @param rules     Where to store generated rules
+ * @param flags     Flags
+ */
+static te_errno
+trc_update_gen_rresult(trc_test_iter *iter,
+                       trc_update_rules *rules,
+                       uint32_t flags)
+{
+    trc_exp_result              *result;
+    trc_exp_result              *res_dup;
+    trc_update_rule             *rule;
+    int                          rc;
+
+    SLIST_FOREACH(result, &iter->exp_results, links)
+    {
+        rule = TE_ALLOC(sizeof(*rule));
+        rule->type = TRC_UPDATE_RRESULT;
+        rule->apply = FALSE;
+        rule->old_res = TE_ALLOC(sizeof(trc_exp_results));
+        SLIST_INIT(rule->old_res);
+        res_dup = trc_exp_result_dup(result);
+        SLIST_INSERT_HEAD(rule->old_res, res_dup, links);
+
+        if (flags & TRC_LOG_PARSE_COPY_OLD)
+            rule->new_res =
+                trc_exp_results_dup(rule->old_res);
+
+        rc = trc_update_ins_rule(rule, rules, &trc_update_rules_cmp);
+        if (rc != 0)
+            trc_update_rule_free(rule);
+    }
+
+    return 0;
+}
+
+/**
+ * Generate updating rule of type @c TRC_UPDATE_RRESULTS
+ * for a given iteration.
+ *
+ * @param iter          Test iteration
+ * @param iter_data     Test iteration data
+ * @param rules         Where to store generated rules
+ * @param flags         Flags
+ */
+static trc_update_rule *
+trc_update_gen_rresults(trc_test_iter *iter,
+                        trc_update_test_iter_data *iter_data,
+                        trc_update_rules *rules,
+                        uint32_t flags)
+{
+    trc_exp_result              *p;
+    trc_exp_result              *q;
+    trc_exp_result              *prev;
+    te_bool                      was_changed;
+    te_bool                      set_confls;
+    trc_update_rule             *rule;
+    int                          rc;
+
+    rule = TE_ALLOC(sizeof(*rule));
+    rule->def_res =
+        trc_exp_result_dup((struct trc_exp_result *)
+                                      iter->exp_default);
+    rule->old_res =
+        trc_exp_results_dup(&iter->exp_results);
+    rule->confl_res = trc_exp_results_dup(
+                                &iter_data->new_results);
+    if (!SLIST_EMPTY(rule->confl_res))
+        rule->apply = TRUE;
+    else
+        rule->apply = FALSE;
+
+    rule->new_res = TE_ALLOC(sizeof(*(rule->new_res)));
+    SLIST_INIT(rule->new_res);
+
+    set_confls = FALSE;
+
+    p = NULL;
+
+    if ((((flags & TRC_LOG_PARSE_COPY_OLD_FIRST) &&
+         (flags & TRC_LOG_PARSE_COPY_BOTH)) ||
+         (!(flags & TRC_LOG_PARSE_COPY_BOTH) &&
+          !(flags & TRC_LOG_PARSE_COPY_OLD_FIRST)) ||
+         SLIST_EMPTY(&iter->exp_results) ||
+         !(flags & TRC_LOG_PARSE_COPY_OLD)) &&
+        (flags & TRC_LOG_PARSE_COPY_CONFLS))
+    {
+        /* Do not forget about reverse order
+         * of expected results in memory */
+        set_confls = TRUE;
+        p = SLIST_FIRST(&iter_data->new_results);
+    }
+    else if (flags & TRC_LOG_PARSE_COPY_OLD)
+        p = SLIST_FIRST(&iter->exp_results); 
+
+    q = NULL;
+    prev = NULL;
+    was_changed = FALSE;
+
+    while (TRUE)
+    {
+        if (p == NULL && !was_changed)
+        {
+            if (SLIST_EMPTY(rule->new_res) ||
+                (flags & TRC_LOG_PARSE_COPY_BOTH))
+            {
+                if (!set_confls &&
+                    (flags & TRC_LOG_PARSE_COPY_CONFLS)) 
+                    p = SLIST_FIRST(
+                                &iter_data->new_results);
+                else if (set_confls &&
+                         (flags & TRC_LOG_PARSE_COPY_OLD))
+                    p = SLIST_FIRST(&iter->exp_results);
+            }
+
+            set_confls = !set_confls;
+            was_changed = TRUE;
+        }
+
+        if (p == NULL)
+            break;
+
+        q = trc_exp_result_dup(p);
+        if (prev == NULL || (set_confls && !was_changed))
+            SLIST_INSERT_HEAD(rule->new_res, q, links);
+        else
+            SLIST_INSERT_AFTER(prev, q, links);
+
+        /* Taking into account the fact that expected
+         * results are loaded/saved in reverse order */
+        if (!set_confls || (set_confls && prev == NULL &&
+                            !was_changed))
+            prev = q;
+        p = SLIST_NEXT(p, links);
+    }
+
+    rule->type = TRC_UPDATE_RRESULTS;
+    rc = trc_update_ins_rule(rule, rules, &trc_update_rules_cmp);
+    
+    if (rc != 0)
+    {
+        trc_update_rule_free(rule);
+        return NULL;
+    }
+
+    return rule;
+}
+
+/**
  * Generate TRC updating rules.
  *
  * @param db_uid        TRC DB User ID
@@ -2262,11 +2726,6 @@ trc_update_gen_rules(unsigned int db_uid,
     trc_update_test_iter_data   *iter_data1 = NULL;
     trc_update_test_iter_data   *iter_data2 = NULL;
     trc_update_rule             *rule;
-    trc_exp_result              *p;
-    trc_exp_result              *q;
-    trc_exp_result              *prev;
-    te_bool                      was_changed;
-    te_bool                      set_confls;
     int                          cur_rule_id = 0;
 
     TAILQ_FOREACH(group, updated_tests, links)
@@ -2286,92 +2745,36 @@ trc_update_gen_rules(unsigned int db_uid,
                 if (iter_data1 == NULL || iter_data1->to_save == FALSE)
                     continue;
 
-                if (iter_data1->rule == NULL &&
-                    (!SLIST_EMPTY(&iter_data1->new_results) ||
+                if ((!SLIST_EMPTY(&iter_data1->new_results) ||
                      flags & TRC_LOG_PARSE_RULES_ALL))
                 {
-                    rule = TE_ALLOC(sizeof(*rule));
-                    rule->def_res =
-                        trc_exp_result_dup((struct trc_exp_result *)
-                                                      iter1->exp_default);
-                    rule->old_res =
-                        trc_exp_results_dup(&iter1->exp_results);
-                    rule->confl_res = trc_exp_results_dup(
-                                                &iter_data1->new_results);
-                    if (!SLIST_EMPTY(rule->confl_res))
-                        rule->apply = TRUE;
+                    if (flags & TRC_LOG_PARSE_RVERDICT)
+                        trc_update_gen_rverdict(iter1, group->rules,
+                                                flags);
+
+                    if (flags & TRC_LOG_PARSE_RRENTRY)
+                        trc_update_gen_rrentry(iter1, group->rules,
+                                               flags);
+
+                    if (flags & TRC_LOG_PARSE_RRESULT)
+                        trc_update_gen_rresult(iter1, group->rules,
+                                               flags);
+
+                    if ((flags & TRC_LOG_PARSE_RRESULTS) &&
+                        iter_data1->rule == NULL)
+                        rule = trc_update_gen_rresults(iter1,
+                                                       iter_data1,
+                                                       group->rules,
+                                                       flags);
                     else
-                        rule->apply = FALSE;
+                        continue;
 
-                    rule->new_res = TE_ALLOC(sizeof(*(rule->new_res)));
-                    SLIST_INIT(rule->new_res);
-
-                    set_confls = FALSE;
-
-                    p = NULL;
-
-                    if ((((flags & TRC_LOG_PARSE_COPY_OLD_FIRST) &&
-                         (flags & TRC_LOG_PARSE_COPY_BOTH)) ||
-                         (!(flags & TRC_LOG_PARSE_COPY_BOTH) &&
-                          !(flags & TRC_LOG_PARSE_COPY_OLD_FIRST)) ||
-                         SLIST_EMPTY(&iter1->exp_results) ||
-                         !(flags & TRC_LOG_PARSE_COPY_OLD)) &&
-                        (flags & TRC_LOG_PARSE_COPY_CONFLS))
-                    {
-                        /* Do not forget about reverse order
-                         * of expected results in memory */
-                        set_confls = TRUE;
-                        p = SLIST_FIRST(&iter_data1->new_results);
-                    }
-                    else if (flags & TRC_LOG_PARSE_COPY_OLD)
-                        p = SLIST_FIRST(&iter1->exp_results); 
-
-                    q = NULL;
-                    prev = NULL;
-                    was_changed = FALSE;
-
-                    while (TRUE)
-                    {
-                        if (p == NULL && !was_changed)
-                        {
-                            if (SLIST_EMPTY(rule->new_res) ||
-                                (flags & TRC_LOG_PARSE_COPY_BOTH))
-                            {
-                                if (!set_confls &&
-                                    (flags & TRC_LOG_PARSE_COPY_CONFLS)) 
-                                    p = SLIST_FIRST(
-                                                &iter_data1->new_results);
-                                else if (set_confls &&
-                                         (flags & TRC_LOG_PARSE_COPY_OLD))
-                                    p = SLIST_FIRST(&iter1->exp_results);
-                            }
-
-                            set_confls = !set_confls;
-                            was_changed = TRUE;
-                        }
-
-                        if (p == NULL)
-                            break;
-
-                        q = trc_exp_result_dup(p);
-                        if (prev == NULL || (set_confls && !was_changed))
-                            SLIST_INSERT_HEAD(rule->new_res, q, links);
-                        else
-                            SLIST_INSERT_AFTER(prev, q, links);
-
-                        /* Taking into account the fact that expected
-                         * results are loaded/saved in reverse order */
-                        if (!set_confls || (set_confls && prev == NULL &&
-                                            !was_changed))
-                            prev = q;
-                        p = SLIST_NEXT(p, links);
-                    }
+                    if (rule == NULL)
+                        continue;
 
                     if (flags & TRC_LOG_PARSE_USE_RULE_IDS)
                         cur_rule_id++;
                     rule->rule_id = cur_rule_id;
-
-                    TAILQ_INSERT_TAIL(group->rules, rule, links);
 
                     iter_data1->rule = rule;
                     iter_data1->rule_id = rule->rule_id;
@@ -2395,15 +2798,15 @@ trc_update_gen_rules(unsigned int db_uid,
                                 iter_data2->to_save == FALSE)
                                 continue;
 
-                            if (trc_exp_result_cmp(
+                            if (trc_update_result_cmp(
                                     (struct trc_exp_result *)
                                         iter1->exp_default,
                                     (struct trc_exp_result *)
                                         iter2->exp_default) == 0 &&
-                                trc_exp_results_cmp(
+                                trc_update_results_cmp(
                                     &iter_data1->new_results,
                                     &iter_data2->new_results) == 0 &&
-                                trc_exp_results_cmp(
+                                trc_update_results_cmp(
                                     &iter1->exp_results,
                                     &iter2->exp_results) == 0)
                             {
@@ -2458,11 +2861,11 @@ trc_update_group_test_iters(unsigned int db_uid,
                 iter_data2->to_save == FALSE)
                 continue;
 
-            if (trc_exp_results_cmp(&iter1->exp_results,
-                                    &iter2->exp_results) == 0 &&
-                trc_exp_result_cmp((struct trc_exp_result *)
+            if (trc_update_results_cmp(&iter1->exp_results,
+                                       &iter2->exp_results) == 0 &&
+                trc_update_result_cmp((struct trc_exp_result *)
                                             iter1->exp_default,
-                                   (struct trc_exp_result *)
+                                      (struct trc_exp_result *)
                                             iter2->exp_default) == 0)
                 iter_data2->results_id = iter_data1->results_id;
         }
@@ -3037,7 +3440,8 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                                 iters.head) &&
                 TAILQ_EMPTY(
                     &TAILQ_FIRST(&trc_db_walker_get_test(ctx->db_walker)->
-                                        iters.head)->tests.head))
+                                        iters.head)->tests.head) &&
+                !(ctx->flags && TRC_LOG_PARSE_PATHS))
             {
                 /*
                  * We use this function only for "non-intermediate"
@@ -3100,7 +3504,8 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
 
             if (!(ctx->flags & (TRC_LOG_PARSE_FAKE_LOG |
                                 TRC_LOG_PARSE_MERGE_LOG |
-                                TRC_LOG_PARSE_LOG_WILDS)))
+                                TRC_LOG_PARSE_LOG_WILDS |
+                                TRC_LOG_PARSE_PATHS)))
             {
                 iter_data = trc_db_walker_get_user_data(ctx->db_walker,
                                                         ctx->db_uid);
@@ -3140,7 +3545,7 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                 }
                 ctx->iter_data = NULL;
             }
-            else
+            else if (!(ctx->flags & TRC_LOG_PARSE_PATHS))
             {
 
                 upd_iter_data = trc_db_walker_get_user_data(ctx->db_walker,
@@ -3158,12 +3563,14 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                         ctx->rc = trc_db_walker_set_user_data(
                                         ctx->db_walker,
                                         ctx->db_uid,
-                                        trc_update_gen_user_data(&to_save,
-                                                                 TRUE));
+                                        trc_update_gen_user_data(
+                                                            &to_save,
+                                                            TRUE));
                     else
-                        ctx->rc = trc_db_walker_set_prop_ud(ctx->db_walker,
-                                            ctx->db_uid, &to_save,
-                                            &trc_update_gen_user_data);
+                        ctx->rc = trc_db_walker_set_prop_ud(
+                                          ctx->db_walker,
+                                          ctx->db_uid, &to_save,
+                                          &trc_update_gen_user_data);
 
                     if (ctx->rc != 0)
                         break;
@@ -3174,12 +3581,13 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
 
                     assert(upd_iter_data != NULL);
 
+
+#if 0
                     if (test->type == TRC_TEST_SCRIPT &&
                         upd_test_data == NULL)
                     {
                         trc_update_tests_group  *group;
                         trc_update_test_entry   *test_p;
-                        
 
                         TAILQ_FOREACH(group, ctx->updated_tests,
                                       links)
@@ -3202,6 +3610,7 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                         TAILQ_INSERT_TAIL(&group->tests,
                                           test_p, links);
                     }
+#endif
 
                     /*
                      * Arguments here are sorted - qsort() was
@@ -3220,6 +3629,33 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                                   TRC_LOG_PARSE_LOG_WILDS))
                     trc_update_merge_result(ctx);
 
+                trc_report_free_test_iter_data(ctx->iter_data);
+                ctx->iter_data = NULL;
+            }
+            else
+            {
+                /** Just collect paths of test scripts */
+#if 0
+                trc_update_tests_group  *group;
+
+                if (test->type == TRC_TEST_SCRIPT)
+                {
+                    TAILQ_FOREACH(group, ctx->updated_tests,
+                                  links)
+                        if (strcmp(group->path, test->path) == 0)
+                            break;
+
+                    if (group == NULL)
+                    {
+                        group = TE_ALLOC(sizeof(*group));
+                        group->rules = NULL;
+                        group->path = strdup(test->path);
+                        TAILQ_INIT(&group->tests);
+                        TAILQ_INSERT_TAIL(ctx->updated_tests,
+                                          group, links);
+                    }
+                }
+#endif
                 trc_report_free_test_iter_data(ctx->iter_data);
                 ctx->iter_data = NULL;
             }
@@ -3440,15 +3876,20 @@ trc_update_process_logs(trc_update_ctx *gctx)
     trc_log_parse_ctx           ctx;
     trc_update_tag_logs        *tl = NULL;
     tqe_string                 *tqe_str = NULL;
+    trc_update_tests_group     *tests_group;
 
     trc_update_init_parse_ctx(&ctx, gctx);
     ctx.log = gctx->fake_log;
     ctx.flags = TRC_LOG_PARSE_FAKE_LOG;
+    if (gctx->flags & TRC_LOG_PARSE_PATHS)
+        ctx.flags |= TRC_LOG_PARSE_PATHS;
+
     tl = TAILQ_FIRST(&gctx->tags_logs);
     if (tl != NULL)
         tqe_str = TAILQ_FIRST(&tl->logs);
 
-    if (gctx->flags & TRC_LOG_PARSE_LOG_WILDS)
+    if ((gctx->flags & TRC_LOG_PARSE_LOG_WILDS) ||
+        (gctx->flags & TRC_LOG_PARSE_PATHS))
     {
         if (ctx.log == NULL && tqe_str != NULL)
         {
@@ -3463,7 +3904,9 @@ trc_update_process_logs(trc_update_ctx *gctx)
     ctx.updated_tests = TE_ALLOC(sizeof(trc_update_tests_groups));
     TAILQ_INIT(ctx.updated_tests);
 
-    printf("\nParsing logs...\n");
+    if (!(gctx->flags & TRC_LOG_PARSE_PATHS))
+        printf("\nParsing logs...\n");
+
     do {
         if (ctx.log == NULL)
             break;
@@ -3511,77 +3954,90 @@ trc_update_process_logs(trc_update_ctx *gctx)
         }
 
         ctx.flags = gctx->flags;
-        if (!(gctx->flags & TRC_LOG_PARSE_LOG_WILDS))
+        if (!((gctx->flags & TRC_LOG_PARSE_LOG_WILDS) ||
+              (gctx->flags & TRC_LOG_PARSE_PATHS)))
             ctx.flags |= TRC_LOG_PARSE_MERGE_LOG;
 
     } while (1);
 
-    if (gctx->fake_log == NULL &&
-        !(gctx->flags & TRC_LOG_PARSE_LOG_WILDS))
+    if (!(gctx->flags & TRC_LOG_PARSE_PATHS))
     {
-        printf("Filling user data in TRC DB...\n");
-        trc_update_fill_db_user_data(gctx->db, ctx.updated_tests,
-                                     gctx->db_uid);
-    }
-
-    printf("Simplifying expected results...\n");
-    trc_update_simplify_results(gctx->db_uid, ctx.updated_tests,
-                                gctx->flags);
-
-    if (gctx->rules_load_from != NULL)
-    {
-        printf("Initializing updating rules structures...\n");
-        trc_update_clear_rules(ctx.db_uid, ctx.updated_tests);
-
-        printf("Loading updating rules...\n");
-        trc_update_load_rules(gctx->rules_load_from,
-                              ctx.updated_tests,
-                              &ctx.global_rules,
-                              gctx->flags);
-        
-        printf("Applying updating rules...\n");
-        trc_update_apply_rules(gctx->db_uid, ctx.updated_tests,
-                               &ctx.global_rules,
-                               gctx->flags);
-    }
-
-    if (gctx->rules_save_to != NULL ||
-        gctx->flags & TRC_LOG_PARSE_GEN_APPLY)
-    {
-        trc_update_clear_rules(ctx.db_uid, ctx.updated_tests);
-        trc_update_rules_free(&ctx.global_rules);
-
-        printf("Generating updating rules...\n");
-        trc_update_gen_rules(ctx.db_uid, ctx.updated_tests,
-                             gctx->flags);
-
-        if (gctx->flags & TRC_LOG_PARSE_GEN_APPLY)
+        if (gctx->fake_log == NULL &&
+            !(gctx->flags & TRC_LOG_PARSE_LOG_WILDS))
         {
+            printf("Filling user data in TRC DB...\n");
+            trc_update_fill_db_user_data(gctx->db, ctx.updated_tests,
+                                         gctx->db_uid);
+        }
+
+        printf("Simplifying expected results...\n");
+        trc_update_simplify_results(gctx->db_uid, ctx.updated_tests,
+                                    gctx->flags);
+
+        if (gctx->rules_load_from != NULL)
+        {
+            printf("Initializing updating rules structures...\n");
+            trc_update_clear_rules(ctx.db_uid, ctx.updated_tests);
+
+            printf("Loading updating rules...\n");
+            trc_update_load_rules(gctx->rules_load_from,
+                                  ctx.updated_tests,
+                                  &ctx.global_rules,
+                                  gctx->flags);
+            
             printf("Applying updating rules...\n");
             trc_update_apply_rules(gctx->db_uid, ctx.updated_tests,
                                    &ctx.global_rules,
-                                   gctx->flags &
-                                        ~TRC_LOG_PARSE_RULES_CONFL);
+                                   gctx->flags);
         }
-    }
 
-    if (gctx->rules_save_to != NULL)
+        if (gctx->rules_save_to != NULL ||
+            gctx->flags & TRC_LOG_PARSE_GEN_APPLY)
+        {
+            trc_update_clear_rules(ctx.db_uid, ctx.updated_tests);
+            trc_update_rules_free(&ctx.global_rules);
+
+            printf("Generating updating rules...\n");
+            trc_update_gen_rules(ctx.db_uid, ctx.updated_tests,
+                                 gctx->flags);
+
+            if (gctx->flags & TRC_LOG_PARSE_GEN_APPLY)
+            {
+                printf("Applying updating rules...\n");
+                trc_update_apply_rules(gctx->db_uid, ctx.updated_tests,
+                                       &ctx.global_rules,
+                                       gctx->flags &
+                                            ~TRC_LOG_PARSE_RULES_CONFL);
+            }
+        }
+
+        if (gctx->rules_save_to != NULL)
+        {
+            printf("Saving updating rules...\n");
+            save_test_rules_to_file(ctx.updated_tests,
+                                    gctx->rules_save_to,
+                                    gctx->cmd);
+        }
+
+        if ((gctx->rules_save_to == NULL ||
+            (gctx->flags & TRC_LOG_PARSE_GEN_APPLY)) &&
+            !(gctx->flags & TRC_LOG_PARSE_NO_GEN_WILDS))
+        {
+            printf("Generating wildcards...\n");
+            trc_update_generate_wilds(gctx->db_uid,
+                                      ctx.updated_tests);
+        }
+
+        printf("Done.\n");
+    }
+    else
     {
-        printf("Saving updating rules...\n");
-        save_test_rules_to_file(ctx.updated_tests, gctx->rules_save_to,
-                                gctx->cmd);
+        TAILQ_FOREACH(tests_group, ctx.updated_tests, links)
+            printf("%s\n", tests_group->path[0] == '/' ?
+                                    tests_group->path + 1 :
+                                    tests_group->path);
     }
 
-    if ((gctx->rules_save_to == NULL ||
-        (gctx->flags & TRC_LOG_PARSE_GEN_APPLY)) &&
-        !(gctx->flags & TRC_LOG_PARSE_NO_GEN_WILDS))
-    {
-        printf("Generating wildcards...\n");
-        trc_update_generate_wilds(gctx->db_uid,
-                                  ctx.updated_tests);
-    }
-
-    printf("Done.\n");
     trc_update_clear_rules(ctx.db_uid, ctx.updated_tests);
     trc_update_tests_groups_free(ctx.updated_tests);
     free(ctx.updated_tests);

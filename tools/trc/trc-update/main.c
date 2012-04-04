@@ -144,14 +144,32 @@ enum {
                                          from '<new>' section of the rule
                                          as if they were conflicting
                                          results from logs */
+    TRC_UPDATE_OPT_RRESULTS,        /**< Generate updating rules of
+                                         type @c TRC_UPDATE_RRESULTS */
+    TRC_UPDATE_OPT_RRESULT,         /**< Generate updating rules of
+                                         type @c TRC_UPDATE_RRESULT */
+    TRC_UPDATE_OPT_RRENTRY,         /**< Generate updating rules of
+                                         type @c TRC_UPDATE_RRENTRY */
+    TRC_UPDATE_OPT_RVERDICT,        /**< Generate updating rules of
+                                         type @c TRC_UPDATE_RVERDICT */
+    TRC_UPDATE_OPT_PATHS,           /**< Print paths of all test scripts
+                                         encountered in logs */
+    TRC_UPDATE_OPT_PE,              /**< Take into consideration prologues
+                                         and epilogues */
 };
 
 #ifdef HAVE_LIBPERL
+/** Test path */
 static SV *test_path = NULL;
+/** Arguments of an iteration stored in TRC DB */
 static HV *olds = NULL;
+/** Arguments of an iteration from a log */
 static HV *news = NULL;
+/** Arguments which should have the same values in matching iterations */
 static HV *commons = NULL;
+/** Arguments which can be omitted in an iteration stored in TRC DB */
 static HV *uncomm_olds = NULL;
+/** Arguments which can be omitted in an iteration from a log */
 static HV *uncomm_news = NULL;
 #endif
 
@@ -246,11 +264,16 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
     char        *s;
     te_bool      no_use_ids = FALSE;
     te_bool      log_specified = FALSE;
+    uint32_t     rtype_flags = 0;
 
     struct poptOption options_table[] = {
         { "test-name", '\0', POPT_ARG_STRING, NULL,
           TRC_UPDATE_OPT_TEST_NAME,
           "Specify full name of the test", NULL },
+
+        { "no-omit-pe", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_PE,
+          "Take into consideration prologues and epilogues", NULL },
 
         { "old-match-expr", '\0', POPT_ARG_STRING, NULL,
           TRC_UPDATE_OPT_OLD_MATCH_EXPR,
@@ -279,6 +302,26 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
           TRC_UPDATE_OPT_RULES_ALL,
           "Create updating rules for all results (not only for those "
           "which are to be merged with new ones)", NULL },
+
+        { "rules-iter-res", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_RRESULTS,
+          "Create updating rules for iteration results",
+          NULL },
+
+        { "rules-results", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_RRESULT,
+          "Create updating rules for <results> tags",
+          NULL },
+
+        { "rules-result", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_RRENTRY,
+          "Create updating rules for <result> tags",
+          NULL },
+
+        { "rules-verdict", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_RVERDICT,
+          "Create updating rules for <verdict> tags",
+          NULL },
 
         { "rules-confl", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_RULES_CONFL,
@@ -380,6 +423,11 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
           NULL, TRC_UPDATE_OPT_FAKE_LOG,
           "Specify log file of fake Tester run in XML format", NULL },
 
+        { "print-paths", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_PATHS,
+          "Print paths of all test scripts encountered in logs "
+          "and terminate", NULL },
+
         { "trc-save", '\0', POPT_ARG_STRING, NULL,
           TRC_UPDATE_OPT_TRC_SAVE,
           "Specify file to save resulting TRC", NULL },
@@ -406,6 +454,11 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
     {
         switch (opt)
         {
+
+            case TRC_UPDATE_OPT_PE:
+                ctx.flags &= ~TRC_LOG_PARSE_NO_PE;
+                break;
+
             case TRC_UPDATE_OPT_TEST_NAME:
                 tqe_str = TE_ALLOC(sizeof(tqe_string));
                 tqe_str->v = (char *)poptGetOptArg(optCon);
@@ -449,6 +502,10 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
 
             case TRC_UPDATE_OPT_FAKE_LOG:
                 ctx.fake_log = poptGetOptArg(optCon);
+                break;
+
+            case TRC_UPDATE_OPT_PATHS:
+                ctx.flags |= TRC_LOG_PARSE_PATHS;
                 break;
 
             case TRC_UPDATE_OPT_OLD_MATCH_EXPR:
@@ -511,6 +568,22 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
 
             case TRC_UPDATE_OPT_RULES_ALL:
                 ctx.flags |= TRC_LOG_PARSE_RULES_ALL;
+                break;
+
+            case TRC_UPDATE_OPT_RRESULTS:
+                rtype_flags |= TRC_LOG_PARSE_RRESULTS;
+                break;
+
+            case TRC_UPDATE_OPT_RRESULT:
+                rtype_flags |= TRC_LOG_PARSE_RRESULT;
+                break;
+
+            case TRC_UPDATE_OPT_RRENTRY:
+                rtype_flags |= TRC_LOG_PARSE_RRENTRY;
+                break;
+
+            case TRC_UPDATE_OPT_RVERDICT:
+                rtype_flags |= TRC_LOG_PARSE_RVERDICT;
                 break;
 
             case TRC_UPDATE_OPT_RULES_CONFL:
@@ -581,6 +654,9 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
 
     if (!log_specified && ctx.rules_load_from == NULL)
         ctx.flags |= TRC_LOG_PARSE_RULES_ALL;
+
+    if (rtype_flags != 0)
+        ctx.flags = (ctx.flags & ~TRC_LOG_PARSE_RTYPES) | rtype_flags;
 
     if (opt != -1)
     {
@@ -1021,7 +1097,8 @@ main(int argc, char **argv, char **envp)
     TAILQ_INIT(&args_registered);
     trc_update_init_ctx(&ctx);
 
-    ctx.flags |= TRC_LOG_PARSE_COPY_OLD | TRC_LOG_PARSE_COPY_OLD_FIRST;
+    ctx.flags |= TRC_LOG_PARSE_COPY_OLD | TRC_LOG_PARSE_COPY_OLD_FIRST |
+                 TRC_LOG_PARSE_RRESULTS | TRC_LOG_PARSE_NO_PE;
 
     if (trc_update_process_cmd_line_opts(argc, argv) != EXIT_SUCCESS)
         goto exit;
@@ -1076,21 +1153,24 @@ main(int argc, char **argv, char **envp)
         goto exit;
     }
 
-    if (trc_save_to == NULL)
-        trc_save_to = "tmp_trc_db.xml";
-
-    if (trc_db_save(ctx.db, trc_save_to,
-                    TRC_SAVE_UPDATE_OLD | TRC_SAVE_RESULTS |
-                    TRC_SAVE_GLOBALS | TRC_SAVE_DEL_XINCL |
-                    TRC_SAVE_NO_VOID_XINCL |
-                    (set_pos_attr ? TRC_SAVE_POS_ATTR : 0),
-                    ctx.db_uid, &trc_update_is_to_save,
-                    (ctx.flags & TRC_LOG_PARSE_USE_RULE_IDS) ?
-                            &trc_update_set_user_attr : NULL,
-                    ctx.cmd) != 0)
+    if (!(ctx.flags & TRC_LOG_PARSE_PATHS))
     {
-        ERROR("Failed to save TRC database '%s'", db_fn);
-        goto exit;
+        if (trc_save_to == NULL)
+            trc_save_to = "tmp_trc_db.xml";
+
+        if (trc_db_save(ctx.db, trc_save_to,
+                        TRC_SAVE_UPDATE_OLD | TRC_SAVE_RESULTS |
+                        TRC_SAVE_GLOBALS | TRC_SAVE_DEL_XINCL |
+                        TRC_SAVE_NO_VOID_XINCL |
+                        (set_pos_attr ? TRC_SAVE_POS_ATTR : 0),
+                        ctx.db_uid, &trc_update_is_to_save,
+                        (ctx.flags & TRC_LOG_PARSE_USE_RULE_IDS) ?
+                                &trc_update_set_user_attr : NULL,
+                        ctx.cmd) != 0)
+        {
+            ERROR("Failed to save TRC database '%s'", db_fn);
+            goto exit;
+        }
     }
 
     result = EXIT_SUCCESS;

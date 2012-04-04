@@ -95,21 +95,50 @@ typedef struct trc_update_wilds_list_entry {
 typedef SLIST_HEAD(trc_update_wilds_list, trc_update_wilds_list_entry)
                                                     trc_update_wilds_list;
 
+/** TRC updating rule types */
+typedef enum trc_update_rtype {
+    TRC_UPDATE_RRESULTS,    /**< Applicable to all iteration
+                                 results as a whole */
+    TRC_UPDATE_RRESULT,     /**< Applicable to content of single
+                                 <results> tags */
+    TRC_UPDATE_RRENTRY,     /**< Applicable to content of single
+                                 <result> tags */
+    TRC_UPDATE_RVERDICT,    /**< Applicable to content of single
+                                 <verdict> tags */
+    TRC_UPDATE_UNKNOWN,     /**< Unknown */
+} trc_update_rtype;
+
 /** TRC updating rule */
 typedef struct trc_update_rule {
     TAILQ_ENTRY(trc_update_rule)    links;       /**< Queue links */
     trc_exp_result                 *def_res;     /**< Default results */
     trc_exp_results                *old_res;     /**< Results in TRC */
+    trc_exp_result_entry           *old_re;      /**< Content of a <result>
+                                                      tag in TRC */
+    char                           *old_v;       /**< Content of a
+                                                      <verdict> tag in
+                                                      TRC */
+    
     trc_exp_results                *confl_res;   /**< Not-matching TRC
                                                       results from logs */
+
     trc_exp_results                *new_res;     /**< Results to replace
                                                       results in TRC */
+    trc_exp_result_entry           *new_re;      /**< Replacement for
+                                                      content of a <result>
+                                                      tag in TRC */
+    char                           *new_v;       /**< Replacement for
+                                                      content of a
+                                                      <verdict> tag in
+                                                      TRC */
+
     trc_update_wilds_list          *wilds;       /**< Wildcards */
     tqh_strings                    *match_exprs; /**< Matching
                                                       expressions */
     te_bool                         apply;       /**< Should this rule be
                                                       applied or not */
     int                             rule_id;     /**< Rule ID */
+    trc_update_rtype                type;        /**< Rule type */
 } trc_update_rule;
 
 /** TRC updating rules queue */
@@ -263,6 +292,107 @@ extern void trc_update_rule_free(trc_update_rule *rule);
 extern void trc_update_rules_free(trc_update_rules *rules);
 
 /**
+ * Compare test iteration results.
+ *
+ * @param p     The first result
+ * @param q     The second result
+ *
+ * @result -1 if the first result is 'less' the second one,
+ *          0 if they are 'equal',
+ *          1 if the first result is 'greater' than the
+ *          second one.
+ */
+extern int te_test_result_cmp(te_test_result *p,
+                              te_test_result *q);
+
+/**
+ * Compare test iteration result entries (content of single
+ * <result> tags).
+ *
+ * @param p     The first result
+ * @param q     The second result
+ *
+ * @result -1 if the first result is 'less' the second one,
+ *          0 if they are 'equal',
+ *          1 if the first result is 'greater' than the
+ *          second one.
+ */
+extern int trc_update_rentry_cmp(trc_exp_result_entry *p,
+                                 trc_exp_result_entry *q);
+
+/**
+ * Compare expected results of iterations (used for ordering).
+ *
+ * @param p         First expected result
+ * @param q         Second expected result
+ * @param tags_cmp  Whether to compare string representation of
+ *                  tag expressions or not 
+ *
+ * @return -1, 0 or 1 as a result of comparison
+ */
+extern int trc_update_result_cmp_gen(trc_exp_result *p,
+                                     trc_exp_result *q,
+                                     te_bool tags_cmp);
+/**
+ * Compare expected results of iterations (used for ordering).
+ *
+ * @param p         First expected result
+ * @param q         Second expected result
+ *
+ * @return -1, 0 or 1 as a result of comparison
+ */
+extern int trc_update_result_cmp(trc_exp_result *p, trc_exp_result *q);
+
+/**
+ * Compare expected results of iterations (used for ordering),
+ * do not consider tag expressions in comparison.
+ *
+ * @param p         First expected result
+ * @param q         Second expected result
+ *
+ * @return -1, 0 or 1 as a result of comparison
+ */
+extern int trc_update_result_cmp_no_tags(trc_exp_result *p,
+                                         trc_exp_result *q);
+
+/**
+ * Compare lists of expected results (used for ordering).
+ *
+ * @param p         First expected results list.
+ * @param q         Second expected results list.
+ *
+ * @return -1, 0 or 1 as a result of comparison
+ */
+extern int trc_update_results_cmp(trc_exp_results *p,
+                                  trc_exp_results *q);
+
+/**
+ * Compare updating rules.
+ *
+ * @param p     The first rule
+ * @param q     The second rule
+ *
+ * @return -1, 0 or 1 as a result of comparison
+ */
+extern int trc_update_rules_cmp(trc_update_rule *p,
+                                trc_update_rule *q);
+
+/**
+ * Insert rule in a queue in proper place
+ * (so that the queue will remain be sorted in increasing order).
+ *
+ * @param rule          Updating rule
+ * @param rules         Rules queue where to insert
+ * @param rules_cmp     Comparing function
+ *
+ * @return -1, 0 or 1 as a result of comparison
+ */
+extern te_errno trc_update_ins_rule(trc_update_rule *rule,
+                                    trc_update_rules *rules,
+                                    int (*rules_cmp)(trc_update_rule *,
+                                                     trc_update_rule *));
+
+/**
  * Free entry of queue of tests to be updated.
  *
  * @param test_entry   Queue entry to be freed
@@ -357,20 +487,6 @@ extern char *trc_update_set_user_attr(void *data, te_bool is_iter);
  *         -1 if only the second one is not NULL.
  */
 extern int strcmp_null(char *s1, char *s2);
-
-/**
- * Compare test iteration results.
- *
- * @param p     The first result
- * @param q     The second result
- *
- * @result -1 if the first result is 'less' the second one,
- *          0 if they are 'equal',
- *          1 if the first result is 'greater' than the
- *          second one.
- */
-extern int te_test_result_cmp(te_test_result *p,
-                              te_test_result *q);
 
 /**
  * Process TE log file with obtained results of fake tester run.

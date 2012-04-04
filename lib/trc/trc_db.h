@@ -232,6 +232,17 @@ extern void *trc_db_get_test_by_path(te_trc_db *db,
                                      char *path);
 
 /**
+ * Duplicate expected result entry.
+ *
+ * @param rentry        Result entry to be duplicated
+ *
+ * @return
+ *      Duplicate of result
+ */
+extern trc_exp_result_entry *trc_exp_result_entry_dup(
+                                    trc_exp_result_entry *rentry);
+
+/**
  * Duplicate expected result.
  *
  * @param result        Result to be duplicated
@@ -313,10 +324,37 @@ typedef enum {
 } trc_save_flags;
 
 /**
+ * Get XML representation of TRC test verdict.
+ *
+ * @param v             Verdict text
+ * @param result_node   XML node where to insert XML representation
+ *                      of verdict
+ *
+ * @return
+ *      0 on success
+ */
+extern te_errno trc_verdict_to_xml(char *v, xmlNodePtr result_node);
+
+/**
+ * Get XML representation of TRC expected result entry.
+ *
+ * @param res_entry     TRC expected result
+ * @param results_node  XML node where to insert XML representation
+ *                      of result entry
+ *
+ * @return
+ *      0 on success
+ */
+extern te_errno trc_exp_result_entry_to_xml(
+                                    trc_exp_result_entry *res_entry,
+                                    xmlNodePtr results_node);
+/**
  * Get XML representation of TRC expected result.
  *
  * @param exp_result    TRC expected result
- * @param result_node   XML node pointer
+ * @param result_node   XML node pointer where to insert XML
+ *                      representation of TRC expected result
+ * @param is_default    Whether expected result is default or not
  *
  * @return
  *      0 on success
@@ -339,6 +377,28 @@ extern te_errno trc_exp_result_to_xml(trc_exp_result *exp_result,
 extern te_errno trc_exp_results_to_xml(trc_exp_results *exp_results,
                                        xmlNodePtr node,
                                        te_bool insert_after);
+
+/**
+ * Get expected verdict from XML.
+ *
+ * @param node          Location of the node of the test result
+ * @param verdict       Location for the expected verdict data
+ *
+ * @return Status code.
+ */
+extern te_errno get_expected_verdict(xmlNodePtr node,
+                                     char **verdict);
+
+/**
+ * Get expected result entry from XML.
+ *
+ * @param node          Location of the node of the test result entry
+ * @param rentry        Location for the expected result entry data
+ *
+ * @return Status code.
+ */
+extern te_errno get_expected_rentry(xmlNodePtr node,
+                                    trc_exp_result_entry *rentry);
 
 /**
  * Get expected results from XML.
@@ -460,6 +520,14 @@ extern void trc_free_test_iter_args(trc_test_iter_args *args);
  */
 extern trc_test_iter_args *trc_test_iter_args_dup(
                                         trc_test_iter_args *args);
+
+/**
+ * Free resources allocated for expected result entry.
+ *
+ * @param rentry        Result entry to be freed
+ */
+extern void trc_exp_result_entry_free(trc_exp_result_entry *rentry);
+
 /**
  * Free resources allocated for expected result.
  *

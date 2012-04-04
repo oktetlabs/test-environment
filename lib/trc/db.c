@@ -98,6 +98,18 @@ trc_test_iter_args_dup(trc_test_iter_args *args)
 
 /* See description in trc_db.h */
 void
+trc_exp_result_entry_free(trc_exp_result_entry *rentry)
+{
+    if (rentry == NULL)
+        return;
+
+    te_test_result_free_verdicts(&rentry->result);
+    free(rentry->key);
+    free(rentry->notes);
+}
+
+/* See description in trc_db.h */
+void
 trc_exp_result_free(trc_exp_result *result)
 {
     trc_exp_result_entry   *p;
@@ -113,14 +125,29 @@ trc_exp_result_free(trc_exp_result *result)
     while ((p = TAILQ_FIRST(&result->results)) != NULL)
     {
         TAILQ_REMOVE(&result->results, p, links);
-        te_test_result_free_verdicts(&p->result);
-        free(p->key);
-        free(p->notes);
+        trc_exp_result_entry_free(p);
         free(p);
     }
 
     free(result->key);
     free(result->notes);
+}
+
+/* See description in trc_db.h */
+trc_exp_result_entry *
+trc_exp_result_entry_dup(trc_exp_result_entry *rentry)
+{
+    trc_exp_result_entry   *dup_entry;
+
+    dup_entry = TE_ALLOC(sizeof(*dup_entry));
+    if (rentry->notes != NULL)
+        dup_entry->notes = strdup(rentry->notes);
+    if (rentry->key != NULL)
+        dup_entry->key = strdup(rentry->key);
+
+    te_test_result_cpy(&dup_entry->result, &rentry->result);
+
+    return dup_entry;
 }
 
 /* See description in trc_db.h */
@@ -149,13 +176,7 @@ trc_exp_result_dup(trc_exp_result *result)
 
     TAILQ_FOREACH(p, &result->results, links)
     {
-        dup_entry = TE_ALLOC(sizeof(*dup_entry));
-        if (dup_entry->notes != NULL)
-            dup_entry->notes = strdup(p->notes);
-        if (dup_entry->key != NULL)
-            dup_entry->key = strdup(p->key);
-
-        te_test_result_cpy(&dup_entry->result, &p->result);
+        dup_entry = trc_exp_result_entry_dup(p);
         TAILQ_INSERT_TAIL(&dup->results, dup_entry, links);
     }
 

@@ -41,6 +41,27 @@
 #include "te_queue.h"
 #include "trc_update.h"
 
+/**
+ * This macro is used in comparing function only.
+ * Check whether one or both of pointers are NULL;
+ * if at least one of them is NULL - return result
+ * of comparison.
+ *
+ * @param p_    The first pointer -  argument of
+ *              a comparing function
+ * @param q_    The second pointer - argument of
+ *              a comparing function
+ */
+#define DUMMY_CMP(p_, q_) \
+do {                                \
+    if (p_ == NULL && q_ == NULL)   \
+        return 0;                   \
+    else if (p_ == NULL)            \
+        return -1;                  \
+    else if (q_ == NULL)            \
+        return 1;                   \
+} while (0)
+ 
 /* See the description in trc_update.h */
 void
 trc_update_free_test_iter_data(trc_update_test_iter_data *data)
@@ -103,7 +124,11 @@ trc_update_rule_free(trc_update_rule *rule)
 
     trc_exp_result_free(rule->def_res);
     trc_exp_results_free(rule->old_res);
+    trc_exp_result_entry_free(rule->old_re);
+    free(rule->old_v);
     trc_exp_results_free(rule->new_res);
+    trc_exp_result_entry_free(rule->new_re);
+    free(rule->new_v);
     trc_exp_results_free(rule->confl_res);
     trc_update_wilds_list_free(rule->wilds);
     if (rule->match_exprs != NULL)
@@ -231,15 +256,9 @@ trc_update_args_wild_dup(trc_test_iter_args *args)
 int
 strcmp_null(char *s1, char *s2)
 {
+    DUMMY_CMP(s1, s2);
 
-    if (s1 == NULL && s2 == NULL)
-        return 0;
-    else if (s1 == NULL)
-        return -1;
-    else if (s2 == NULL)
-        return 1;
-    else
-        return strcmp(s1, s2);
+    return strcmp(s1, s2);
 }
 
 /* See the description in trc_update.h */
@@ -249,6 +268,8 @@ te_test_result_cmp(te_test_result *p, te_test_result *q)
     int              rc;
     te_test_verdict *p_v;
     te_test_verdict *q_v;
+
+    DUMMY_CMP(p, q);
 
     rc = p->status - q->status;
     if (rc != 0)
@@ -387,4 +408,249 @@ trc_update_tags_logs_free(trc_update_tags_logs *tags_logs)
         trc_update_tag_logs_free(tl);
         free(tl);
     }
+}
+
+/* See the description in trc_update.h */
+int
+trc_update_rentry_cmp(trc_exp_result_entry *p,
+                      trc_exp_result_entry *q)
+{
+    int rc = 0;
+
+    DUMMY_CMP(p, q);
+
+    rc = te_test_result_cmp(&p->result,
+                            &q->result);
+    if (rc != 0)
+        return rc;
+    else
+    {
+        rc = strcmp_null(p->key, q->key);
+        if (rc != 0)
+            return rc;
+        else
+        {
+            rc = strcmp_null(p->notes, q->notes);
+            if (rc != 0)
+                return rc;
+        }
+    }
+
+    return 0;
+}
+
+/* See the description in trc_update.h */
+int
+trc_update_result_cmp_gen(trc_exp_result *p, trc_exp_result *q,
+                          te_bool tags_cmp)
+{
+    int                      rc;
+    trc_exp_result_entry    *p_r;
+    trc_exp_result_entry    *q_r;
+    te_bool                  p_tags_str_void;
+    te_bool                  q_tags_str_void;
+
+    DUMMY_CMP(p, q);
+   
+    if (!tags_cmp)
+        rc = 0;
+    else
+    {
+        p_tags_str_void = (p->tags_str == NULL ||
+                           strlen(p->tags_str) == 0);
+        q_tags_str_void = (q->tags_str == NULL ||
+                           strlen(q->tags_str) == 0);
+
+        if (p_tags_str_void && q_tags_str_void)
+            rc = 0;
+        else if (p_tags_str_void)
+            rc = -1;
+        else if (q_tags_str_void)
+            rc = 1;
+        else
+            rc = strcmp(p->tags_str, q->tags_str);
+    }
+
+    if (rc != 0)
+        return rc;
+    else
+    {
+        p_r = TAILQ_FIRST(&p->results);
+        q_r = TAILQ_FIRST(&q->results);
+
+        while (p_r != NULL && q_r != NULL)
+        {
+            rc = trc_update_rentry_cmp(p_r, q_r);
+            if (rc != 0)
+                return rc;
+
+            p_r = TAILQ_NEXT(p_r, links);
+            q_r = TAILQ_NEXT(q_r, links);
+        }
+
+        if (p_r == NULL && q_r == NULL)
+        {
+            rc = strcmp_null(p->key, q->key);
+            if (rc != 0)
+                return rc;
+            else
+                return strcmp_null(p->notes, q->notes);
+        }   
+        else if (p_r != NULL)
+            return 1;
+        else
+            return -1;
+    }
+}
+
+/* See the description in trc_update.h */
+int
+trc_update_result_cmp(trc_exp_result *p, trc_exp_result *q)
+{
+    return trc_update_result_cmp_gen(p, q, TRUE);
+}
+
+/* See the description in trc_update.h */
+int
+trc_update_result_cmp_no_tags(trc_exp_result *p, trc_exp_result *q)
+{
+    return trc_update_result_cmp_gen(p, q, FALSE);
+}
+
+/* See the description in trc_update.h */
+int
+trc_update_results_cmp(trc_exp_results *p, trc_exp_results *q)
+{
+    int                  rc;
+    trc_exp_result      *p_r;
+    trc_exp_result      *q_r;
+    te_bool              p_is_void = (p == NULL || SLIST_EMPTY(p));
+    te_bool              q_is_void = (q == NULL || SLIST_EMPTY(q));
+
+    if (p_is_void && q_is_void)
+        return 0;
+    else if (!p_is_void && q_is_void)
+        return 1;
+    else if (p_is_void && !q_is_void)
+        return -1;
+
+    p_r = SLIST_FIRST(p);
+    q_r = SLIST_FIRST(q);
+
+    while (p_r != NULL && q_r != NULL)
+    {
+        rc = trc_update_result_cmp(p_r, q_r);
+        if (rc != 0)
+            return rc;
+
+        p_r = SLIST_NEXT(p_r, links);
+        q_r = SLIST_NEXT(q_r, links);
+    }
+
+    if (p_r == NULL && q_r == NULL)
+        return 0;
+    else if (p_r != NULL)
+        return 1;
+    else
+        return -1;
+}
+
+/* See the description in trc_update.h */
+int
+trc_update_rules_cmp(trc_update_rule *p, trc_update_rule *q)
+{
+    int rc;
+
+    DUMMY_CMP(p, q);
+
+    if (p->type != q->type)
+        return ((int)q->type - (int)p->type > 0 ? -1 : 1);
+
+    switch (p->type)
+    {
+        case TRC_UPDATE_RRESULTS:
+            rc = trc_update_result_cmp(p->def_res, q->def_res);
+            if (rc != 0)
+                return rc;
+            rc = trc_update_results_cmp(p->confl_res, q->confl_res);
+            if (rc != 0)
+                return rc;
+
+            /*@fallthrough@*/
+
+        case TRC_UPDATE_RRESULT:
+            rc = trc_update_results_cmp(p->new_res, q->new_res);
+            if (rc != 0)
+                return rc;
+            rc = trc_update_results_cmp(p->old_res, q->old_res);
+            return rc;
+
+            break;
+
+        case TRC_UPDATE_RRENTRY:
+            rc = trc_update_rentry_cmp(p->new_re, q->new_re);
+            if (rc != 0)
+                return rc;
+            rc = trc_update_rentry_cmp(p->old_re, q->old_re);
+            return rc;
+            break;
+
+        case TRC_UPDATE_RVERDICT:
+            rc = strcmp_null(p->new_v, q->new_v);
+            if (rc != 0)
+                return rc;
+            rc = strcmp_null(p->old_v, q->old_v);
+            return rc;
+            break;
+
+        default:
+            break;
+    }
+
+    return 0;
+}
+
+/* See the description in trc_update.h */
+te_errno
+trc_update_ins_rule(trc_update_rule *rule,
+                    trc_update_rules *rules,
+                    int (*rules_cmp)(trc_update_rule *,
+                                     trc_update_rule *))
+{
+    int              rc;
+    trc_update_rule *next;
+
+    TAILQ_FOREACH(next, rules, links)
+    {
+        rc = rules_cmp(rule, next);
+        if (rc == 0)
+            return TE_EEXIST;
+        else if (rc < 0)
+            break;
+    }
+
+    if (next != NULL)
+    {
+        TAILQ_INSERT_BEFORE(next, rule, links);
+#if 0
+        printf("The rule is %s\n",
+               rule->type == TRC_UPDATE_RRENTRY ?
+               "entry" : "result");
+        printf("The next is %s\n",
+               next->type == TRC_UPDATE_RRENTRY ?
+               "entry" : "result");
+#endif
+    }
+    else
+    {
+        TAILQ_INSERT_TAIL(rules, rule, links);
+
+#if 0
+        printf("The tail is %s\n",
+               rule->type == TRC_UPDATE_RRENTRY ?
+               "entry" : "result");
+#endif
+    }
+
+    return 0;
 }

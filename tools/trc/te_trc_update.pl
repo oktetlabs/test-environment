@@ -29,6 +29,7 @@
 #
 use strict;
 use warnings;
+use IPC::Open2;
 use File::Temp qw/ tempfile /;
 use Cwd;
 
@@ -144,6 +145,8 @@ my $conf_tester = "";
 my $test_fake_run = "";
 my $test_fake_run_aux = "";
 my $test_specified = 0;
+my $log_specified = 0;
+my $no_extract_paths = 0;
 my $rc = 0;
 
 foreach (@ARGV)
@@ -203,6 +206,8 @@ foreach (@ARGV)
         {
             $opts = $opts." --log=\"".escape_str($log_file)."\"";
         }
+
+        $log_specified = 1;
     }
     elsif ($_ =~ m/^--show-args=(.*)$/)
     {
@@ -214,13 +219,38 @@ foreach (@ARGV)
     }
     else
     {
-        $opts = $opts." \"".escape_str($_)."\"";
+        my $opt_str = $_;
+        if ($opt_str =~ m/^--log-wilds$/ ||
+            $opt_str =~ m/^--print-paths$/)
+        {
+            $no_extract_paths = 1;
+        }
+
+        $opts = $opts." \"".escape_str($opt_str)."\"";
     }
 }
 
 if (!defined($test_fake_run) || length($test_fake_run) == 0)
 {
     $test_fake_run = $test_fake_run_aux;
+}
+
+if ($test_specified == 0 && $no_extract_paths == 0 && $log_specified > 0)
+{
+    my $pid = open2(*RDR, undef, "te-trc-update ".$opts." --print-paths");
+    my $tst_name;
+    while (<RDR>)
+    {
+        $tst_name = $_;
+        $tst_name =~ s/[\r\n]//g;
+        $test_fake_run = $test_fake_run." --tester-fake=\"".
+                         escape_str($tst_name)."\"";
+        $test_fake_run = $test_fake_run." --tester-run=\"".
+                         escape_str($tst_name)."\"";
+
+        $opts = $opts." --test-name=\"".escape_str($tst_name)."\"";
+        $test_specified = 1;
+    }
 }
 
 if ($test_specified > 0)

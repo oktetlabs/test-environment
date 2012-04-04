@@ -118,7 +118,30 @@ enum trc_log_parse_flags {
                                                     from '<new>' section
                                                     of rule as conflicting
                                                     results from logs */
+    TRC_LOG_PARSE_RRESULTS       = (1 << 16),  /**< Generate updating
+                                                    rules of type @c
+                                                    TRC_UPDATE_RRESULTS */
+    TRC_LOG_PARSE_RRESULT        = (1 << 17),  /**< Generate updating
+                                                    rules of type @c
+                                                    TRC_UPDATE_RRESULT */
+    TRC_LOG_PARSE_RRENTRY        = (1 << 18),  /**< Generate updating
+                                                    rules of type @c
+                                                    TRC_UPDATE_RRENTRY */
+    TRC_LOG_PARSE_RVERDICT       = (1 << 19),  /**< Generate updating
+                                                    rules of type @c
+                                                    TRC_UPDATE_RVERDICT */
+    TRC_LOG_PARSE_PATHS          = (1 << 20),  /**< Print paths of all
+                                                    scripts encountered in
+                                                    parsed logs */
+    TRC_LOG_PARSE_NO_PE          = (1 << 21),  /**< Do not take into
+                                                    consideration prologues
+                                                    and epilogues */
 };
+
+/** All rule type flags */
+#define TRC_LOG_PARSE_RTYPES \
+    (TRC_LOG_PARSE_RRESULTS | TRC_LOG_PARSE_RRESULT | \
+     TRC_LOG_PARSE_RRENTRY | TRC_LOG_PARSE_RVERDICT)
 
 #ifdef __cplusplus
 } /* extern "C" */

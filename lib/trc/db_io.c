@@ -579,13 +579,86 @@ get_result(xmlNodePtr node, const char *name, te_test_status *result)
 
 /* See description in trc_db.h */
 te_errno
+get_expected_verdict(xmlNodePtr node, char **verdict)
+{
+    int rc;
+
+    if (xmlStrcmp(node->name, CONST_CHAR2XML("verdict")) != 0)
+    {
+        ERROR("Unexpected node '%s' in the tagged result entry",
+              node->name);
+        return TE_RC(TE_TRC, TE_EFMT);
+    }
+
+    rc = get_text_content(node, "verdict", verdict);
+    if (rc != 0)
+    {
+        ERROR("Failed to get verdict text");
+        return TE_RC(TE_TRC, TE_EFMT);
+    }
+
+    return 0;
+}
+
+/* See description in trc_db.h */
+te_errno
+get_expected_rentry(xmlNodePtr node, trc_exp_result_entry *rentry)
+{
+    char                   *s = NULL;
+    te_test_verdict        *v;
+    xmlNodePtr              q;
+    int                     rc;
+
+    if (xmlStrcmp(node->name, CONST_CHAR2XML("result")) != 0)
+    {
+        ERROR("Unexpected node '%s' in the tagged result",
+              node->name);
+        return TE_RC(TE_TRC, TE_EFMT);
+    }
+
+    te_test_result_init(&rentry->result);
+
+    rc = get_result(node, "value", &rentry->result.status);
+    if (rc != 0)
+        return rc;
+
+    get_node_property(node, "key", &rentry->key);
+    get_node_property(node, "notes", &rentry->notes);
+
+    q = xmlNodeChildren(node);
+    while (q != NULL)
+    {
+        v = TE_ALLOC(sizeof(*v));
+        if (v == NULL)
+        {
+            trc_exp_result_entry_free(rentry);
+            free(s);
+            return TE_ENOMEM;
+        }
+
+        rc = get_expected_verdict(q, &v->str);
+        if (rc != 0)
+        {
+            trc_exp_result_entry_free(rentry);
+            free(s);
+            return rc;
+        }
+
+        TAILQ_INSERT_TAIL(&rentry->result.verdicts, v, links);
+        q = xmlNodeNext(q);
+    }
+
+    return 0;
+}
+
+/* See description in trc_db.h */
+te_errno
 get_expected_result(xmlNodePtr node, trc_exp_result *result,
                     te_bool tags_tolerate)
 {
     te_errno                rc = 0;
     trc_exp_result_entry   *entry;
-    xmlNodePtr              p, q;
-    te_test_verdict        *v;
+    xmlNodePtr              p;
 
     result->tags_str = XML2CHAR(xmlGetProp(node,
                                            CONST_CHAR2XML("tags")));
@@ -612,50 +685,18 @@ get_expected_result(xmlNodePtr node, trc_exp_result *result,
 
     for (p = xmlNodeChildren(node); p != NULL; p = xmlNodeNext(p))
     {
-        if (xmlStrcmp(p->name, CONST_CHAR2XML("result")) != 0)
-        {
-            ERROR("Unexpected node '%s' in the tagged result",
-                  p->name);
-            return TE_RC(TE_TRC, TE_EFMT);
-        }
-
         entry = TE_ALLOC(sizeof(*entry));
         if (entry == NULL)
             return TE_ENOMEM;
-        te_test_result_init(&entry->result);
-        TAILQ_INSERT_TAIL(&result->results, entry, links);
 
-        rc = get_result(p, "value", &entry->result.status);
+        rc = get_expected_rentry(p, entry);
         if (rc != 0)
-            return rc;
-
-        get_node_property(p, "key", &entry->key);
-        get_node_property(p, "notes", &entry->notes);
-
-        q = xmlNodeChildren(p);
-        while (q != NULL)
         {
-            char *s = NULL;
-
-            rc = get_node_with_text_content(&q, "verdict", &s);
-            if (rc == TE_ENOENT)
-            {
-                ERROR("Unexpected node '%s' in the tagged result "
-                      "entry", q->name);
-                return TE_RC(TE_TRC, TE_EFMT);
-            }
-
-            v = TE_ALLOC(sizeof(*v));
-            if (v == NULL)
-            {
-                free(s);
-                return TE_ENOMEM;
-            }
-
-            v->str = s;
-
-            TAILQ_INSERT_TAIL(&entry->result.verdicts, v, links);
+            free(entry);
+            return rc;
         }
+
+        TAILQ_INSERT_TAIL(&result->results, entry, links);
     }
 
     return 0;
@@ -1255,13 +1296,62 @@ static te_errno trc_update_tests(trc_tests *tests, int flags,
                                  char *(*set_user_attr)(void *, te_bool));
 
 te_errno
+trc_verdict_to_xml(char *v, xmlNodePtr result_node)
+{
+    xmlNodePtr               verd_node;
+
+    if (v == NULL)
+        return 0;
+
+    verd_node =
+        xmlNewChild(result_node, NULL,
+                    BAD_CAST "verdict",
+                    BAD_CAST v);
+    if (verd_node == NULL)
+        return TE_ENOMEM;
+
+    return 0;
+}
+
+te_errno
+trc_exp_result_entry_to_xml(trc_exp_result_entry *res_entry,
+                            xmlNodePtr results_node)
+{
+    te_test_verdict         *verdict;
+    xmlNodePtr               result_node;
+
+    result_node = xmlNewChild(results_node,
+                              NULL,
+                              BAD_CAST "result",
+                              NULL);
+
+    xmlNewProp(result_node, BAD_CAST "value",
+               BAD_CAST te_test_status_to_str(
+                            res_entry->result.status));
+
+    if (res_entry->key != NULL &&
+            strlen(res_entry->key) != 0)
+        xmlNewProp(result_node, BAD_CAST "key",
+                   BAD_CAST res_entry->key);
+
+    if (res_entry->notes != NULL &&
+            strlen(res_entry->notes) != 0)
+        xmlNewProp(result_node, BAD_CAST "notes",
+                   BAD_CAST res_entry->notes);
+
+    TAILQ_FOREACH(verdict,
+                  &res_entry->result.verdicts,
+                  links)
+        trc_verdict_to_xml(verdict->str, result_node);
+
+    return 0;
+}
+
+te_errno
 trc_exp_result_to_xml(trc_exp_result *exp_result, xmlNodePtr results_node,
                       te_bool is_default)
 {   
-    xmlNodePtr               result_node;
-    xmlNodePtr               verd_node;
     trc_exp_result_entry    *res_entry;
-    te_test_verdict         *verdict;
 
     if (exp_result == NULL)
         return 0;
@@ -1295,36 +1385,7 @@ trc_exp_result_to_xml(trc_exp_result *exp_result, xmlNodePtr results_node,
     {
         TAILQ_FOREACH(res_entry, &exp_result->results,
                       links)
-        {
-            result_node = xmlNewChild(results_node,
-                                      NULL,
-                                      BAD_CAST "result",
-                                      NULL);
-
-            xmlNewProp(result_node, BAD_CAST "value",
-                       BAD_CAST te_test_status_to_str(
-                                    res_entry->result.status));
-
-            if (res_entry->key != NULL &&
-                    strlen(res_entry->key) != 0)
-                xmlNewProp(result_node, BAD_CAST "key",
-                           BAD_CAST res_entry->key);
-
-            if (res_entry->notes != NULL &&
-                    strlen(res_entry->notes) != 0)
-                xmlNewProp(result_node, BAD_CAST "notes",
-                           BAD_CAST res_entry->notes);
-
-            TAILQ_FOREACH(verdict,
-                          &res_entry->result.verdicts,
-                          links)
-            {
-                verd_node =
-                    xmlNewChild(result_node, NULL,
-                                BAD_CAST "verdict",
-                                BAD_CAST verdict->str);
-            }
-        }
+            trc_exp_result_entry_to_xml(res_entry, results_node);
     }
 
     return 0; 
