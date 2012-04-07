@@ -3581,37 +3581,6 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
 
                     assert(upd_iter_data != NULL);
 
-
-#if 0
-                    if (test->type == TRC_TEST_SCRIPT &&
-                        upd_test_data == NULL)
-                    {
-                        trc_update_tests_group  *group;
-                        trc_update_test_entry   *test_p;
-
-                        TAILQ_FOREACH(group, ctx->updated_tests,
-                                      links)
-                            if (strcmp(group->path, test->path) == 0)
-                                break;
-
-                        if (group == NULL)
-                        {
-                            group = TE_ALLOC(sizeof(*group));
-                            group->rules = NULL;
-                            group->path = strdup(test->path);
-                            TAILQ_INIT(&group->tests);
-                            TAILQ_INSERT_TAIL(ctx->updated_tests,
-                                              group, links);
-                        }
-
-                        test_p = TE_ALLOC(sizeof(*test_p));
-                        test_p->test = test;
-
-                        TAILQ_INSERT_TAIL(&group->tests,
-                                          test_p, links);
-                    }
-#endif
-
                     /*
                      * Arguments here are sorted - qsort() was
                      * called inside trc_db_walker_step_iter()
@@ -3634,28 +3603,6 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
             }
             else
             {
-                /** Just collect paths of test scripts */
-#if 0
-                trc_update_tests_group  *group;
-
-                if (test->type == TRC_TEST_SCRIPT)
-                {
-                    TAILQ_FOREACH(group, ctx->updated_tests,
-                                  links)
-                        if (strcmp(group->path, test->path) == 0)
-                            break;
-
-                    if (group == NULL)
-                    {
-                        group = TE_ALLOC(sizeof(*group));
-                        group->rules = NULL;
-                        group->path = strdup(test->path);
-                        TAILQ_INIT(&group->tests);
-                        TAILQ_INSERT_TAIL(ctx->updated_tests,
-                                          group, links);
-                    }
-                }
-#endif
                 trc_report_free_test_iter_data(ctx->iter_data);
                 ctx->iter_data = NULL;
             }

@@ -604,7 +604,6 @@ get_expected_verdict(xmlNodePtr node, char **verdict)
 te_errno
 get_expected_rentry(xmlNodePtr node, trc_exp_result_entry *rentry)
 {
-    char                   *s = NULL;
     te_test_verdict        *v;
     xmlNodePtr              q;
     int                     rc;
@@ -632,7 +631,6 @@ get_expected_rentry(xmlNodePtr node, trc_exp_result_entry *rentry)
         if (v == NULL)
         {
             trc_exp_result_entry_free(rentry);
-            free(s);
             return TE_ENOMEM;
         }
 
@@ -640,7 +638,7 @@ get_expected_rentry(xmlNodePtr node, trc_exp_result_entry *rentry)
         if (rc != 0)
         {
             trc_exp_result_entry_free(rentry);
-            free(s);
+            free(v);
             return rc;
         }
 
