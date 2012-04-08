@@ -637,6 +637,16 @@ perl_prepare()
         notcomm_olds = get_hv("notcomm_old", GV_ADD);
         test_path = get_sv("test_path", GV_ADD);
 
+        eval_pv("sub old_wild_eq"
+                "{"
+                "   my @arr = @_;"
+                ""
+                "   return (old($arr[0]) eq $arr[1]) || "
+                "          (exists($old{$arr[0]}) && "
+                "           length($old{$arr[0]}) == 0);"
+                "}",
+                TRUE);
+
         eval_pv("sub notcomm_old"
                 "{"
                 "   $notcomm_old{$_[0]} = 1;"
@@ -696,10 +706,7 @@ perl_prepare()
                 "   {"
                 "       if ($commons{$arg} == 1)"
                 "       {"
-                "           $rc = $rc && (($old{$arg} eq "
-                "                          $new{$arg}) || "
-                "                         (exists($old{$arg}) && "
-                "                          length($old{$arg}) == 0));"
+                "           $rc = $rc && old_wild_eq($arg, $new{$arg});"
                 "       }"
                 "   }"
                 "   return $rc;"
@@ -751,7 +758,7 @@ perl_prepare()
                 "   }"
                 "   if ($rc)"
                 "   {"
-                "       if (old($arr[0]) eq $arr[1])"
+                "       if (old_wild_eq($arr[0], $arr[1]))"
                 "       {"
                 "           comm_exc($arr[0]);"
                 "           return 1;"
@@ -791,7 +798,7 @@ perl_prepare()
                 ""
                 "   for ($i = 1; $i < scalar @arr; $i++)"
                 "   {"
-                "       $rc = $rc || (old($arr[0]) eq $arr[$i]);"
+                "       $rc = $rc || old_wild_eq($arr[0], $arr[$i]);"
                 "   }"
                 "   if (scalar @arr <= 1)"
                 "   {"
@@ -1058,7 +1065,7 @@ main(int argc, char **argv, char **envp)
     PERL_SYS_INIT3(&argc, &argv, &envp);
 #else
     fprintf(stderr, "WARNING: libperl is missed. You cannot use "
-            "--old-match-expr and --old-match-perl.\n");
+            "--matching-expr and --matching-perl.\n");
 #endif
 
     TAILQ_INIT(&args_registered);
