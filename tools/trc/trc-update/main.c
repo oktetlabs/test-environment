@@ -99,11 +99,11 @@ enum {
     TRC_UPDATE_OPT_LOG_WILDS_NEXP,  /**< Generate wildcards for unexpected
                                          results from logs only */
     TRC_UPDATE_OPT_FAKE_LOG,        /**< Fake Tester run log */
-    TRC_UPDATE_OPT_OLD_MATCH_EXPR,  /**< Expression to match iterations
+    TRC_UPDATE_OPT_MATCHING_EXPR,   /**< Expression to match iterations
                                          in TRC with iterations in logs */
-    TRC_UPDATE_OPT_OLD_MATCH_PERL,  /**< Path to iterations matching perl
+    TRC_UPDATE_OPT_MATCHING_PERL,   /**< Path to iterations matching perl
                                          script */
-    TRC_UPDATE_OPT_OLD_MATCH_OTH,   /**< Path to iteration matching
+    TRC_UPDATE_OPT_MATCHING_OTH,    /**< Path to iteration matching
                                          program */
     TRC_UPDATE_OPT_TRC_SAVE,        /**< Path to file where resulting TRC
                                          should be saved */
@@ -251,19 +251,19 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
           TRC_UPDATE_OPT_PE,
           "Take into consideration prologues and epilogues", NULL },
 
-        { "old-match-expr", '\0', POPT_ARG_STRING, NULL,
-          TRC_UPDATE_OPT_OLD_MATCH_EXPR,
+        { "matching-expr", '\0', POPT_ARG_STRING, NULL,
+          TRC_UPDATE_OPT_MATCHING_EXPR,
           "Specify expression to match old iterations from TRC with "
           "new ones (it makes sense when set of parameters was changed)",
           NULL },
 
-        { "old-match-perl", '\0', POPT_ARG_STRING, NULL,
-          TRC_UPDATE_OPT_OLD_MATCH_PERL,
+        { "matching-perl", '\0', POPT_ARG_STRING, NULL,
+          TRC_UPDATE_OPT_MATCHING_PERL,
           "Specify path to a perl script matching old iterations from "
           "TRC with new ones", NULL },
 
-        { "old-match-prog", '\0', POPT_ARG_STRING, NULL,
-          TRC_UPDATE_OPT_OLD_MATCH_OTH,
+        { "matching-prog", '\0', POPT_ARG_STRING, NULL,
+          TRC_UPDATE_OPT_MATCHING_OTH,
           "Specify path to a program matching old iterations from TRC "
           "with new ones", NULL },
 
@@ -446,15 +446,15 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
                 ctx.flags |= TRC_LOG_PARSE_PATHS;
                 break;
 
-            case TRC_UPDATE_OPT_OLD_MATCH_EXPR:
+            case TRC_UPDATE_OPT_MATCHING_EXPR:
                 perl_expr = poptGetOptArg(optCon);
                 break;
 
-            case TRC_UPDATE_OPT_OLD_MATCH_PERL:
+            case TRC_UPDATE_OPT_MATCHING_PERL:
                 perl_script = poptGetOptArg(optCon);
                 break;
 
-            case TRC_UPDATE_OPT_OLD_MATCH_OTH:
+            case TRC_UPDATE_OPT_MATCHING_OTH:
                 oth_prog = poptGetOptArg(optCon);
                 break;
 
