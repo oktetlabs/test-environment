@@ -3441,7 +3441,7 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                 TAILQ_EMPTY(
                     &TAILQ_FIRST(&trc_db_walker_get_test(ctx->db_walker)->
                                         iters.head)->tests.head) &&
-                !(ctx->flags && TRC_LOG_PARSE_PATHS))
+                !(ctx->flags & TRC_LOG_PARSE_PATHS))
             {
                 /*
                  * We use this function only for "non-intermediate"
