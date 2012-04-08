@@ -65,7 +65,7 @@ enum trc_log_parse_flags {
     TRC_LOG_PARSE_LOG_WILDS       = (1 << 6),  /**< Generate wildcards for
                                                     results from logs, not
                                                     from TRC DB */
-    TRC_LOG_PARSE_LOG_WILDS_NEXP  = (1 << 7),  /**< Generate wildcards for
+    TRC_LOG_PARSE_LOG_WILDS_UNEXP = (1 << 7),  /**< Generate wildcards for
                                                     unexpected results from
                                                     logs only */
     TRC_LOG_PARSE_COPY_OLD        = (1 << 8),  /**< Copy results from

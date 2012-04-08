@@ -96,7 +96,7 @@ enum {
     TRC_UPDATE_OPT_NO_WILDS,        /**< Do not generate wildcards */
     TRC_UPDATE_OPT_LOG_WILDS,       /**< Generate wildcards for results
                                          from logs, not from TRC DB */
-    TRC_UPDATE_OPT_LOG_WILDS_NEXP,  /**< Generate wildcards for unexpected
+    TRC_UPDATE_OPT_LOG_WILDS_UNEXP, /**< Generate wildcards for unexpected
                                          results from logs only */
     TRC_UPDATE_OPT_FAKE_LOG,        /**< Fake Tester run log */
     TRC_UPDATE_OPT_MATCHING_EXPR,   /**< Expression to match iterations
@@ -144,9 +144,9 @@ static HV *news = NULL;
 /** Arguments which should have the same values in matching iterations */
 static HV *commons = NULL;
 /** Arguments which can be omitted in an iteration stored in TRC DB */
-static HV *uncomm_olds = NULL;
+static HV *notcomm_olds = NULL;
 /** Arguments which can be omitted in an iteration from a log */
-static HV *uncomm_news = NULL;
+static HV *notcomm_news = NULL;
 #endif
 
 /** Name of the file with expected testing result database */
@@ -223,7 +223,8 @@ static trc_update_tag_logs *add_new_tag_logs(char *tags_str)
  * if so me new options are going to be added.
  *
  * @param argc  Number of elements in array "argv".
- * @param argv  Array of strings that represents all command line arguments.
+ * @param argv  Array of strings that represents all command line
+ *              arguments.
  *
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
@@ -341,8 +342,8 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
           "Generate wildcards for results from logs, not from TRC DB",
           NULL },
 
-        { "log-wilds-nexp", '\0', POPT_ARG_NONE, NULL,
-          TRC_UPDATE_OPT_LOG_WILDS_NEXP,
+        { "log-wilds-unexp", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_LOG_WILDS_UNEXP,
           "Generate wildcards for unexpected results from logs only",
           NULL },
 
@@ -499,7 +500,8 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
                 }
                 else if (s[0] != '\0')
                 {
-                    ERROR("Incorrect value \"%s\" of --fill-new option", s);
+                    ERROR("Incorrect value \"%s\" of --fill-new option",
+                          s);
                     free(s);
                     goto exit;
                 }
@@ -555,9 +557,9 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
                 ctx.flags |= TRC_LOG_PARSE_LOG_WILDS;
                 break;
 
-            case TRC_UPDATE_OPT_LOG_WILDS_NEXP:
+            case TRC_UPDATE_OPT_LOG_WILDS_UNEXP:
                 ctx.flags |= TRC_LOG_PARSE_LOG_WILDS |
-                             TRC_LOG_PARSE_LOG_WILDS_NEXP;
+                             TRC_LOG_PARSE_LOG_WILDS_UNEXP;
                 break;
 
             case TRC_UPDATE_OPT_TAGS_STR:
@@ -631,28 +633,28 @@ perl_prepare()
         olds = get_hv("old", GV_ADD);
         news = get_hv("new", GV_ADD);
         commons = get_hv("commons", GV_ADD);
-        uncomm_news = get_hv("uncomm_new", GV_ADD);
-        uncomm_olds = get_hv("uncomm_old", GV_ADD);
+        notcomm_news = get_hv("notcomm_new", GV_ADD);
+        notcomm_olds = get_hv("notcomm_old", GV_ADD);
         test_path = get_sv("test_path", GV_ADD);
 
-        eval_pv("sub uncomm_old"
+        eval_pv("sub notcomm_old"
                 "{"
-                "   $uncomm_old{$_[0]} = 1;"
+                "   $notcomm_old{$_[0]} = 1;"
                 "   return 1;"
                 "}",
                 TRUE);
 
-        eval_pv("sub uncomm_new"
+        eval_pv("sub notcomm_new"
                 "{"
-                "   $uncomm_new{$_[0]} = 1;"
+                "   $notcomm_new{$_[0]} = 1;"
                 "   return 1;"
                 "}",
                 TRUE);
 
-        eval_pv("sub uncomm"
+        eval_pv("sub notcomm"
                 "{"
-                "   $uncomm_old{$_[0]} = 1;"
-                "   $uncomm_new{$_[0]} = 1;"
+                "   $notcomm_old{$_[0]} = 1;"
+                "   $notcomm_new{$_[0]} = 1;"
                 "   return 1;"
                 "}",
                 TRUE);
@@ -704,13 +706,13 @@ perl_prepare()
                 "}",
                 TRUE);
 
-        eval_pv("sub uncomm_chk"
+        eval_pv("sub notcomm_chk"
                 "{"
                 "   my $arg;"
                 "   foreach $arg (keys %old)"
                 "   {"
                 "       if (!exists($commons{$arg}) &&"
-                "           $uncomm_old{$arg} != 1)"
+                "           $notcomm_old{$arg} != 1)"
                 "       {"
                 "           return 0;"
                 "       }"
@@ -718,7 +720,7 @@ perl_prepare()
                 "   foreach $arg (keys %new)"
                 "   {"
                 "       if (!exists($commons{$arg}) &&"
-                "           $uncomm_new{$arg} != 1)"
+                "           $notcomm_new{$arg} != 1)"
                 "       {"
                 "           return 0;"
                 "       }"
@@ -771,7 +773,7 @@ perl_prepare()
                 "       $rc = $rc && (new($arr[0]) eq $arr[$i]);"
                 "       last if (!($rc));"
                 "   }"
-                "   return uncomm($arr[0]) && $rc;"
+                "   return notcomm($arr[0]) && $rc;"
                 "}",
                 TRUE);
 
@@ -784,7 +786,7 @@ perl_prepare()
                              "sub get_rc"
                              "{"
                              "    return (%s) && comm_eq() "
-                             "           && uncomm_chk() ? 1 : 0;"
+                             "           && notcomm_chk() ? 1 : 0;"
                              "}",
                              perl_expr);
             eval_pv(te_str.ptr, TRUE);
@@ -821,7 +823,7 @@ perl_prepare()
                              "{"
                              "    %s\n"
                              "    return $rc && comm_eq() &&"
-                             "           uncomm_chk() ? 1 : 0;\n"
+                             "           notcomm_chk() ? 1 : 0;\n"
                              "}",
                              script_text);
             eval_pv(te_str.ptr, TRUE);
@@ -900,8 +902,8 @@ func_args_match(const void *iter_ptr,
         hv_clear(news);
         hv_clear(commons);
 
-        hv_clear(uncomm_news);
-        hv_clear(uncomm_olds);
+        hv_clear(notcomm_news);
+        hv_clear(notcomm_olds);
 
         for (i = 0; i < (int)n_args; i++)
         {

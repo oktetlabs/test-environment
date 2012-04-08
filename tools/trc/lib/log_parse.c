@@ -1451,7 +1451,7 @@ trc_update_merge_result(trc_log_parse_ctx *ctx)
     if (p != NULL &&
         !(ctx->flags & TRC_LOG_PARSE_CONFLS_ALL) &&
         !((ctx->flags & TRC_LOG_PARSE_LOG_WILDS) &&
-          !(ctx->flags & TRC_LOG_PARSE_LOG_WILDS_NEXP)) &&
+          !(ctx->flags & TRC_LOG_PARSE_LOG_WILDS_UNEXP)) &&
         trc_is_result_expected(
             p,
             &TAILQ_FIRST(&ctx->iter_data->runs)->result))
