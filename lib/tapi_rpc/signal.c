@@ -613,7 +613,7 @@ rpc_sigismember(rcf_rpc_server *rpcs,
 
     CHECK_RETVAL_VAR(sigismember, out.retval,
         (out.retval != 0 && out.retval != 1 && out.retval != -1), -1);
-    TAPI_RPC_LOG(rpcs, sigmask, "%s, 0x%x", "%d",
+    TAPI_RPC_LOG(rpcs, sigismember, "%s, 0x%x", "%d",
                  signum_rpc2str(signum), (unsigned)set, out.retval);
     RETVAL_INT(sigismember, out.retval);
 }
