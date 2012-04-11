@@ -444,6 +444,15 @@ rcf_ch_kill_process(unsigned int pid)
 
 /* See description in rcf_ch_api.h */
 int
+rcf_ch_free_proc_data(unsigned int pid)
+{
+    UNUSED(pid);
+
+    return 0;
+}
+
+/* See description in rcf_ch_api.h */
+int
 rcf_ch_kill_thread(unsigned int tid)
 {
     if (pthread_cancel((pthread_t)tid) != 0)

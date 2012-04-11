@@ -747,6 +747,15 @@ extern int rcf_ch_start_thread(int *tid, int priority,
 extern int rcf_ch_kill_process(unsigned int pid);
 
 /**
+ * Free process data stored on the Test Agent.
+ *
+ * @param pid           process identifier
+ *
+ * @return Status code
+ */
+extern int rcf_ch_free_proc_data(unsigned int pid);
+
+/**
  * Kill the thread on the Test Agent or NUT served by it.
  *
  * @param tid           thread identifier

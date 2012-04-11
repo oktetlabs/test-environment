@@ -825,6 +825,24 @@ rcf_ch_kill_process(unsigned int pid)
 
 /* See description in rcf_ch_api.h */
 int
+rcf_ch_free_proc_data(unsigned int pid)
+{
+    unsigned int   i;
+
+    for (i = 0; i < tasks_index; i++)
+    {
+        if (tasks[i] == (pid_t)pid)
+        {
+            tasks[i] = 0;
+            break;
+        }
+    }
+
+    return 0;
+}
+
+/* See description in rcf_ch_api.h */
+int
 rcf_ch_kill_thread(unsigned int tid)
 {
     if (pthread_cancel((pthread_t)tid) != 0)

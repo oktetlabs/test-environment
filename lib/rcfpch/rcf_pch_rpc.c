@@ -1169,7 +1169,10 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
             if (rpcs->tid > 0)
                 join_thread_child(rpcs);
             else
+            {
+                rcf_ch_free_proc_data(rpcs->pid);
                 waitpid_child(rpcs);
+            }
         }
     }
 

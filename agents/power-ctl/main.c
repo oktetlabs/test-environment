@@ -469,6 +469,15 @@ rcf_ch_kill_process(unsigned int pid)
 
 /* See description in rcf_ch_api.h */
 int
+rcf_ch_free_proc_data(unsigned int pid)
+{
+    UNUSED(pid);
+
+    return TE_EOPNOTSUPP;
+}
+
+/* See description in rcf_ch_api.h */
+int
 rcf_ch_kill_thread(unsigned int tid)
 {
     UNUSED(tid);
