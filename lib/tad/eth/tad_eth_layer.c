@@ -296,11 +296,11 @@ tad_eth_init_cb(csap_p csap, unsigned int layer)
             case TE_PROTO_ARP:
                 eth_type = ETHERTYPE_ARP;
                 break;
-
+#ifdef ETHERTYPE_IPV6
             case TE_PROTO_IP6:
                 eth_type = ETHERTYPE_IPV6;
                 break;
-
+#endif
 
             default:
                 eth_type = 0;

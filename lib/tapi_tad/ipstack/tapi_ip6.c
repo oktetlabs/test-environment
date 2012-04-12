@@ -214,7 +214,11 @@ tapi_ip6_eth_csap_create(const char *ta_name, int sid,
                          const uint8_t *rem_ip6_addr,
                          int next_header, csap_handle_t *ip6_csap)
 {
+#ifdef ETHERTYPE_IPV6
     const uint16_t  ip_eth = ETHERTYPE_IPV6;
+#else
+    const uint16_t  ip_eth = 0;
+#endif
     te_errno        rc = 0;
     asn_value      *csap_spec = NULL;
 

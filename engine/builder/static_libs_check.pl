@@ -49,7 +49,7 @@ my $result = "";
 
 # Read list of libraries both from standard input and from
 # list of arguments passed to script
-@libs = (@libs, parse_line('[\s]+', 1, $_)) while (<STDIN>);
+#@libs = (@libs, parse_line('[\s]+', 1, $_)) while (<STDIN>);
 @libs = (@libs, parse_line('[\s]+', 1, $_)) foreach (@ARGV);
 
 if (defined($te_ext_libs_path))

@@ -27,7 +27,9 @@ tad_libs_rem()
 # pkg-config used in agent/unix/configure
     STR_ESCAPED=`echo $1 | sed "s/\//@/g"`
     LIBS_ESCAPED=`echo $TA_TAD_LIBS | sed "s/\//@/g"`
-    TA_TAD_LIBS=`echo $LIBS_ESCAPED | sed "s/$STR_ESCAPED//g"`
+    if test -n "$STR_ESCAPED" ; then
+        TA_TAD_LIBS=`echo $LIBS_ESCAPED | sed "s/$STR_ESCAPED//g"`
+    fi
     TA_TAD_LIBS=`echo $TA_TAD_LIBS | sed "s/@/\//g"`
 }
 
