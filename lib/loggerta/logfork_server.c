@@ -160,6 +160,46 @@ logfork_list_add(list **proc_list, char *name,
     return 0;
 }
 
+/** 
+ * Delete process or thread info from the internal list
+ *
+ * @param  proc_list  pointer to the list
+ * @param  pid        process pid
+ * @param  tid        thread pid
+ *
+ * @retval  0    success
+ * @retval  -1   memory allocation failure
+ */
+static int
+logfork_list_del(list **proc_list, 
+                 pid_t pid, uint32_t tid)
+{  
+    list *item = *proc_list;
+    list *prev = NULL;
+    list *tmp = NULL;
+
+    while (item != NULL)
+    {
+        for ( ; item != NULL && !(item->pid == pid &&
+                                  (item->tid == tid || tid == 0));
+             prev = item, item = item->next);
+
+        if (item == NULL)
+            return 0;
+
+        if (prev == NULL)
+            *proc_list = item->next;
+        else
+            prev->next = item->next;
+
+        tmp = item->next;
+        free(item);
+        item = tmp;
+    }
+    
+    return 0;
+}
+
 /**
  * Destroy the internal list of process info, when some failure
  * happens. When everything is going well this routine is never
@@ -298,7 +338,7 @@ logfork_entry(void)
                                   msg.__lgr_user, 
                                   "%s: %s", name_pid, msg.__log_msg);
             }
-            else 
+            else if (!msg.__to_delete) 
             {
                 if (logfork_find_name_by_pid(&data.proc_list, &name, 
                                              msg.pid, msg.tid) == 0)
@@ -311,6 +351,17 @@ logfork_entry(void)
                                      msg.pid, msg.tid) != 0)
                 {
                     ERROR("logfork_entry(): out of Memory");
+                    break;
+                }
+            }
+            else
+            {
+                if (logfork_list_del(&data.proc_list, 
+                                     msg.pid, msg.tid) != 0)
+                {
+                    ERROR("logfork_entry(): failed to delete a "
+                          "entry %s from processes/threads list",
+                          msg.__name);
                     break;
                 }
             }

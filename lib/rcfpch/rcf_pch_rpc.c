@@ -239,6 +239,7 @@ create_thread_child(rpcserver *rpcs)
     }
     
     rpcs->tid = out.tid;
+    rpcs->pid = rpcs->father->pid;
     
     return 0;
 }
@@ -1175,6 +1176,11 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
             }
         }
     }
+
+    if (rpcs->tid > 0)
+        logfork_delete_user(rpcs->pid, rpcs->tid);
+    else
+        logfork_delete_user(rpcs->pid, 0);
 
     rpc_transport_close(rpcs->handle);
     pthread_mutex_unlock(&lock);

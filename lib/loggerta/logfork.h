@@ -47,6 +47,17 @@ extern "C" {
  */
 extern int logfork_register_user(const char *name);
 
+/**
+ * Delete user with a given pid and tid. 
+ *
+ * @param pid  process id
+ * @param tid  thread id
+ *
+ * @retval  0 success
+ * @retval -1 failure
+ */
+extern int logfork_delete_user(pid_t pid, uint32_t tid);
+
 /** 
  * Entry point for log gathering.
  */

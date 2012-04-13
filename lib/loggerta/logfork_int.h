@@ -55,7 +55,10 @@ typedef struct logfork_msg {
     uint32_t tid;
     union {
         struct {
-            char name[LOGFORK_MAXUSER]; /** Logfork user name */
+            char        name[LOGFORK_MAXUSER]; /** Logfork user name */
+            te_bool     to_delete;             /** Delete a record with
+                                                   corresponding pid
+                                                   and tid */
         } notify;
         struct {
             te_log_ts_sec   sec;                  /**< Seconds */
@@ -74,6 +77,7 @@ typedef struct logfork_msg {
 #define __lgr_user   msg.log.user
 #define __log_msg    msg.log.msg 
 #define __name       msg.notify.name
+#define __to_delete  msg.notify.to_delete
 
 #ifdef __cplusplus
 }  /* extern "C" */

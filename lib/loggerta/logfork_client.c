@@ -163,6 +163,7 @@ logfork_register_user(const char *name)
     msg.pid = getpid();
     msg.tid = thread_self();
     msg.is_notif = TRUE;
+    msg.__to_delete = FALSE;
     
     if (logfork_clnt_sockd_lock == NULL)
         logfork_clnt_sockd_lock = thread_mutex_create();
@@ -184,6 +185,37 @@ logfork_register_user(const char *name)
     return 0;
 }
 
+/* See description in logfork.h */
+int
+logfork_delete_user(pid_t pid, uint32_t tid)
+{
+    logfork_msg msg;
+    
+    memset(&msg, 0, sizeof(msg));
+    msg.pid = pid;
+    msg.tid = tid;
+    msg.is_notif = TRUE;
+    msg.__to_delete = TRUE;
+    
+    if (logfork_clnt_sockd_lock == NULL)
+        logfork_clnt_sockd_lock = thread_mutex_create();
+    
+    if (logfork_clnt_sockd == -1 && open_sock() != 0)
+    {
+        return -1;
+    }
+
+    if (send(logfork_clnt_sockd, (char *)&msg, sizeof(msg), 0) !=
+            (ssize_t)sizeof(msg))
+    {
+        fprintf(stderr, "logfork_delete_user() - cannot send "
+                "user delete request: %s\n", strerror(errno));
+        fflush(stderr);
+        return -1;
+    }
+    
+    return 0;
+}
 /** 
  * Function for logging to be used by forked processes.
  *
