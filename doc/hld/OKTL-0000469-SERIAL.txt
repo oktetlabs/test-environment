@@ -1,0 +1,690 @@
+Serial console parsing framework design.
+
+Authors: Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
+         Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
+
+COPYRIGHT Copyright(C) OKTET Labs 2012
+
+PROJECT oktetlabs/te
+
+RESPMGR Konstantin Ushakov
+
+* Status
+
+Not approved
+
+* Content
+
+1. Abbreviations
+2. Teminology
+3. References
+4. Conventions
+5. Introduction
+6. Requirements
+7. Environment and decomposition
+8. Product services
+9. Utilised services
+10. Interfaces
+  1. External interfaces
+  2. Internal interfaces
+11. Data model definition
+12. Processes
+  1. Serial log parser thread
+  2. Tester thread
+13. Events processing
+  1. Agent events
+  2. Parser thread events
+  3. Tester events
+  4. Test events
+14. Configuration parameters
+  1. Tester configuration
+  2. Parser thread configuration
+15. Initialization and shutdown
+16. Algorithms
+  1. The *parser* thread algorithm of search for events
+  2. Updating of the Tester events status and Tester settings
+
+
+* Abbreviations
+
+|------+--------------------|
+| Term | Definition         |
+|------+--------------------|
+| HLD  | Hight Level Design |
+| TE   | Test Environment   |
+
+* Teminology
+
+As the document describes a subsystem in TE it uses teminology and
+abbreviations described in the TE architecture document OKTL-ARCH-0000044.
+
+|-----------------+--------------------------------------------------------|
+| Term            | Definition                                             |
+|-----------------+--------------------------------------------------------|
+| parser          | Instance which captures a serial console output to     |
+|                 | parse it and detect an events.                         |
+| pattern         | Pattern - is a character string.                       |
+| parser event    | The event caught by any parser.                        |
+| Tester event    | The event processed by the Tester.                     |
+| handler         | A handler to process Tester events.                    |
+
+* References
+
+|-----+-------------------------------+---------------------|
+| Ref | Document Title                | Document Identifier |
+|-----+-------------------------------+---------------------|
+|   1 | Test Environment Architecture | OKTL-0000044        |
+
+* Conventions
+
+Terms in *bold* like *handler* mean exactly what is written in the
+definition in the *Terminology* section.
+
+* Introduction
+
+On some projects during testing the tester/developer may be interested in
+serial console logs. For this purpose log_serial thread can be defined on
+the test agent running on the host with conserver which is responsible for
+the logs gathering. This thread connects to the conserver and reads the logs
+from it in arbitrary portions. The logs are then added to the agent logs
+ringbuffer.
+
+It's required to detect certain logs appearance on the console and report it
+back to the test/tester. Example of such logs may be "Kernel panic",
+"Something crashed", "U-Boot bla-bla". These logs can mean that something is
+seriously wrong or may be just a notion of some asynchronous event which has
+just happened on the DUT.
+
+The test (if exists at the moment of the event) should be notified ASAP and
+take appropriate actions. Examples of actions may include diagnostics
+gathering, some smart logging, DUT reboot and not touching the DUT.
+
+* Requirements
+
+OKTL-TE-MKT-0001
+    It should be possible to detect some events that happen on DUT basing 
+    on serial log patterns.
+
+OKTL-TE-MKT-0005
+    It should be possible to specify particular way of the detected events
+    processing.
+
+OKTL-TE-MKT-0010
+    Event processing should be specified by handler (binary application)
+    that should be called on event detection.
+
+OKTL-TE-MKT-0015
+    It should be possible to specify several handlers for the single event 
+    and assign a priority to each handler.
+
+OKTL-TE-MKT-0020
+    It should be possible to specify system behaviour after finish of
+    particular handler: continue event processing by the other handlers;
+    stop event processing; stop test execution; stop the testing sequence.
+    The information about the particular decision should be obtained
+    dynamically from the called handler.
+
+OKTL-TE-MKT-0025
+        It should be possible to specify events and handlers statically 
+        before testing.
+
+OKTL-TE-MKT-0030
+    It should be possible to specify events and handlers dynamically
+    from the test.
+
+OKTL-TE-MKT-0033
+    Events/handlers/patterns added by the test should not take effect
+    after test finish.
+    Note: this requirement should be satisfied via Configurator
+    backup/restore mechanism.
+
+OKTL-TE-DSGN-0035
+    Design should follow recommendations provided in section 2 of this
+    document.
+
+OKTL-TE-SCAL-0050
+    Several serial log sources (test agents) should be supported.
+
+OKTL-TE-SCAL-0055
+    It should be possible to specify that particular pattern should
+    trigger event only if it's detected on the patricular serial
+    log source.
+
+OKTL-TE-RBST-0055
+    The framework should survive test agents crash/restart.
+
+OKTL-TE-USBL-0060
+    Test API for using from tests should be created.
+
+OKTL-TE-DOCS-0040
+    XML schema for new Configurator subtrees should be provided.
+
+OKTL-TE-DOCS-0045
+    Test API should be accompanied doxygen headers to allow automatic
+    documentation generation.
+
+* Environment and decomposition
+
+#+begin_ditaa blue.png -r -S 
+
+                                                         +-----------+
+                                                         |           |
+                                                         |  Handler  |
+                                                         +-----------+
+                                                            ^  |     
+                                                            |  |Result
+                                                        Call|  |      
+                                                            |  v      
+                                                         +----------+
+                                        cfg get/set      |          |
+                             +---------------------------|  Tester  |
+                             |                           |          |
+                             |                           +----------+
+                             |                                 |     
+                             |                                 |Signal
+                             v                                 v     
++-------------+      +--------------+                       +--------+
+| Agent       |      | Configurator |    cfg get/set        |        |
+|             |      |    {s}       |<----------------------|  Test  |
+|             |      +--------------+                       +--------+
+| +-------+   |              |                                  |
+| |Parser |   |              |                                  |
+| |thread |   |              |                                  |
+| +-------+   |              v                                  v
+|             |       +------------+                        +--------+
+|             |       |            |                        |        |
+|             | <-----|     RCF    |<-----------------------| Logger |
+|             |       |            |                        |        |
++-------------+       +------------+                        +--------+
+
+#+end_ditaa
+
+* Product Services
+
+Serial console parsing framework provides:
+  - possibility to save of the serial console output data;
+  - possibility to search and handle events in the serial console output.
+  
+* Utilised services
+
+1. *Configurator* is used to manage and configure of the *parser* threads.
+   There is configured combinations of patterns, events and handlers.
+
+2. *RCF* is used as the only transport mechanism.
+
+3. *Logger* is used to write captured messages from the serial console.
+
+* Interfaces
+
+** External Interfaces
+
+*** Build Options
+
+Additional build option is supported. To compile the agents with support
+of serial console parsing framework should be added option
+*--with-serialparse* to agent type options. See example:
+    TE_TA_TYPE([linux], [], [unix], 
+               [--with-serialparse], [], [], [], [])
+
+*** Parser configuration TAPI
+
+#+BEGIN_SRC C
+
+    /**
+     * Create and launch a new parser
+     * 
+     * @param id            Location of the parser id
+     * @param c_name        The serial console name
+     * @param port          A conserver port
+     * @param user          A user name for the conserver or NULL. In case
+     *                      if NULL, used default value 'tester'.
+     * @param interval      Interval to poll data from the conserver.
+     *                      Use -1 for default value.
+     *
+     * @return Status code
+     * @retval 0            Success
+     * @retval TE_EEXIST    Parser exists
+     */
+    te_errno 
+    tapi_serial_parser_add(tapi_parser_id *id, const char *c_name, int port,
+                           const char *user, int interval);
+
+    /**
+     * Stop and remove a parser
+     * 
+     * @param id            Location of the parser id
+     *
+     * @return Status code
+     * @retval 0            Success
+     * @retval TE_NOENT     Parser not found
+     */
+    te_errno 
+    tapi_serial_parser_del(tapi_parser_id *id);
+
+    /**
+     * Start a parser thread
+     * 
+     * @param id            Location of the parser id
+     *
+     * @return Status code
+     * @retval 0            Success
+     * @retval TE_NOENT     Parser not found
+     */
+    te_errno 
+    tapi_serial_parser_enable(tapi_parser_id *id);
+
+    /**
+     * Stop a parser thread
+     * 
+     * @param id            Location of the parser id
+     *
+     * @return Status code
+     * @retval 0            Success
+     * @retval TE_NOENT     Parser not found
+     */
+    te_errno 
+    tapi_serial_parser_disable(tapi_parser_id *id);
+
+    /**
+     * Enable logging of the serial console to main log
+     * 
+     * @param id            Location of the parser id
+     * @param level         Level of the message for logging (logger_defs.h)
+     *
+     * @return Status code
+     * @retval 0            Success
+     * @retval TE_NOENT     Parser not found
+     */
+    te_errno 
+    tapi_serial_logging_enable(tapi_parser_id *id, int level);
+
+    /**
+     * Disable logging of the serial console to main log
+     * 
+     * @param id            Location of the parser id
+     *
+     * @return Status code
+     * @retval 0            Success
+     * @retval TE_NOENT     Parser not found
+     */
+    te_errno 
+    tapi_serial_logging_disable(tapi_parser_id *id);
+
+    /**
+     * Add parser event to the parser
+     * 
+     * @param id            Location of the parser id
+     * @param d_name        The parser event name
+     * @param e_name        The Tester event name. Use a name of one of the
+     *                      events declarated in the Tester subtree.
+     *
+     * @return Status code
+     * @retval 0            Success
+     * @retval TE_NOENT     Parser not found
+     */
+    te_errno 
+    tapi_serial_parser_event_add(tapi_parser_id *id, const char *d_name,
+                                 const char *e_name);
+
+    /**
+     * Delete parser event
+     * 
+     * @param id            Location of the parser id
+     * @param d_name        The parser event name
+     *
+     * @return Status code
+     * @retval 0            Success
+     * @retval TE_NOENT     Event not found
+     */
+    te_errno 
+    tapi_serial_parser_event_del(tapi_parser_id *id, const char *d_name);
+
+    /**
+     * Reset status for each event of the parser
+     * 
+     * @param id            Location of the parser id
+     * 
+     * @return Status code
+     * @retval 0            Success
+     * @retval TE_NOENT     Parser not found
+     */
+    te_errno
+    tapi_serial_parser_reset(tapi_parser_id *id);
+
+    /**
+     * Add a pattern to the parser event
+     * 
+     * @param id            Location of the parser id
+     * @param d_name        The parser event name
+     * @param p_name        The pattern name
+     * @param pattern       The pattern string
+     *
+     * @return Status code
+     * @retval 0            Success
+     * @retval TE_NOENT     Event not found
+     */
+    te_errno 
+    tapi_serial_parser_pattern_add(tapi_parser_id *id, const char *d_name,
+                                   const char *p_name, const char *pattern);
+
+    /**
+     * Remove a pattern from the parser event
+     * 
+     * @param id            Location of the parser id
+     * @param d_name        The parser event name
+     * @param p_name        The pattern name
+     *
+     * @return Status code
+     * @retval 0            Success
+     * @retval TE_NOENT     Event not found
+     */
+    te_errno 
+    tapi_serial_parser_pattern_del(tapi_parser_id *id, const char *d_name,
+                                   const char *p_name);
+
+#+END_SRC
+
+*** Tester configuration TAPI
+
+#+BEGIN_SRC C
+    /**
+     * Create a new empty Tester event
+     * 
+     * @param name          Event name
+     *
+     * @return Status code
+     * @retval 0            Success
+     * @retval TE_EEXIST    Event exists
+     */
+    te_errno 
+    tapi_serial_event_add(const char *name);
+
+    /**
+     * Remove a Tester event
+     * 
+     * @param name          The event name
+     *
+     * @return Status code
+     * @retval 0            Success
+     * @retval TE_NOENT     Event not found
+     */
+    te_errno 
+    tapi_serial_event_del(const char *name);
+
+    /**
+     * Add a new external handler for an event
+     * 
+     * @param ev_name       Event name
+     * @param h_name        Handler name
+     * @param priority      Handler priority
+     * @param path          Path to the handler
+     *
+     * @return Status code
+     * @retval 0            Success
+     * @retval TE_EEXIST    Handler exists
+     */
+    te_errno 
+    tapi_serial_handler_ext_add(const char *ev_name, const char *h_name, 
+                                int priority, const char *path);
+
+    /**
+     * Add a new internal handler for an event
+     * 
+     * @param ev_name       Event name
+     * @param h_name        Handler name
+     * @param priority      Handler priority
+     * @param signo         Signal number
+     *
+     * @return Status code
+     * @retval 0            Success
+     * @retval TE_EEXIST    Handler exists
+     */
+    te_errno 
+    tapi_serial_handler_int_add(const char *ev_name, const char *h_name, 
+                                int priority, int signo);
+
+    /**
+     * Remove a handler
+     * 
+     * @param name          The handler name
+     *
+     * @return Status code
+     * @retval 0            Success
+     * @retval TE_NOENT     Handler not found
+     */
+    te_errno 
+    tapi_serial_handler_del(const char *name);
+
+#+END_SRC
+
+** Internal Interfaces
+
+*** Configurator subtrees
+
+Two new configuration subtrees are added to the configuration model.
+
+The first subtree is /local/tester/, it is used to declare *Tester events*.
+There is also performed binding of some handlers to declared events.
+|------------------------------------+-------+------------------------------|
+| OID                                | Type  | Description                  |
+|------------------------------------+-------+------------------------------|
+|/local/tester                       |RW none|Tester subtree.               |
+|/local/tester/enable                |RW int |Enable the Tester thread to   |
+|                                    |       |listen for events.            |
+|/local/tester/period                |RW int |Period for polling of events  |
+|                                    |       |status.                       |
+|/local/tester/location              |RW str |Directory with handlers for   |
+|                                    |       |short named handlers.         |
+|/local/tester/event                 |RC none|Subtree of a *Tester event*.  |
+|/local/tester/event/handler         |RC str |Event handler. Use a path to  |
+|                                    |       |the executable as value.      |
+|/local/tester/event/handler/priority|RW int |Handler priority.             |
+|/local/tester/event/handler/signal  |RW int |Signal number.                |
+|/local/tester/event/handler/internal|RW int |Indicates that it is internal |
+|                                    |       |handler. By default, it is    |
+|                                    |       |external.                     |
+
+A new subtree of the agent is /agent/parser. It is used to configure and
+launch a *parser* thread for a serial consoles on the agent.
+|----------------------------------+-------+--------------------------------|
+| OID                              | Type  | Description                    |
+|----------------------------------+-------+--------------------------------|
+|/agent/parser                     |RC str |The *parser* subtree. Use a name|
+|                                  |       |of serial console as value.     |
+|/agent/parser/port                |RW int |Conserver port.                 |
+|/agent/parser/user                |RW str |Conserver user name.            |
+|/agent/parser/enable              |RW int |Start/stop the *parser* thread. |
+|/agent/parser/interval            |RW int |Intreval of polling messages    |
+|                                  |       |from the console.               |
+|/agent/parser/reset               |RW int |Reset status for all events.    |
+|/agent/parser/event               |RC str |*Parser event* subtree. Use a   |
+|                                  |       |name of one of the *Tester      |
+|                                  |       |events* declared in the Tester  |
+|                                  |       |subtree as value.               |
+|/agent/parser/event/pattern       |RC str |Pattern string.                 |
+|/agent/parser/event/counter       |RW int |Counter of the happened event.  |
+|/agent/parser/event/status        |RW int |State of the event.             |
+|/agent/parser/event/logging       |RW int |Enable logging of the console   |
+|                                  |       |messages in the main log.       |
+|/agent/parser/event/logging/level |RW str |Level of the message for logging|
+
+*** Tester-Handler interaction
+
+When an event has been detected, the Tester should to call a sequence of
+handlers. A handler can be internal or external, this indicates the 
+/local/tester/event/handler/internal instance.
+
+If a handler is internal and an event occurred, then the Tester should send
+a signal specified in the handler subtree. The event will be proccesed by
+Test itself.
+
+An external handler is an executable program. The handler has not any input
+parameters. It can to perform any actions to handle the event, but it must
+return one of the following values:
+ - 0 : continue handlers execution
+ - 1 : stop handlers execution
+ - 2 : stop both handlers and test execution
+ - 3 : stop handlers execution, kill the test and stop tests sequence
+       execution.
+
+*** Tester-Test interaction
+
+The *Tester* send a signal to the *test*, when it is necessary. To stop a
+*test* the *SIGTERM* signal is passed by the *Tester*.
+
+* Data model definition
+
+** Pattern
+
+Pattern - is a character string. The serial log message (line) matches a
+pattern if it contains the pattern substring.
+
+** Event
+
+There are two types of events. *Parser event* and *Tester event*. *Tester
+event* is an aggregation of *Parser events*. In a usual case it will be just
+one2one mapping.
+
+*** Parser event
+
+*Parser event* happens if a serial log message matches at least one of the
+patterns, associated with the event. It is processed by the *parser* thread.
+
+*** Tester event
+
+*Tester event* has a set of handlers associated with it. It is occur when
+the *Tester* detects a *Parser event*, then the *Tester* should to call a 
+serial of *handlers*.
+
+** Handler
+
+When it detects of a *Tester event*, a sequence of handlers is called. The
+handler is peresented in the Configurator by /local/tester/event/handler
+subtree. User can use human-readable name for the instance name. If the
+handler is an external handler, then a path to the executable should be used
+as the instance value. In case if the handler is internal handler, than
+signal number must be specified in the corresponding instance.
+
+** Handlers directory
+
+The end user, specifying full path, can use any handler programs or scripts,
+that are located anywhere. But if is used a short name, the handler is
+searched in the default handlers directory.
+
+By default the handlers directory is *RUN_DIR/handlers*. The default
+directory can be changed by user.
+
+** Parser
+
+The *parser* object is structure of data, through which performs
+configuration and managment of a serial console *parser* thread. It is
+presented as /agent/parser subtree and has an unique name for the agent.
+
+** Parser list
+
+To provide of possibility agent to manage of a few *parser* threads, agent
+has a list of the corresponding structures of *parsers*. Identification of
+the *parser* performs by the it instance name.
+
+* Processes
+
+** Serial log parser thread
+
+Serial log *parser* thread is an agent thread. It is responsible for logs
+gathering. The *Configurator* should configure and launch it. It listens for
+the data from the conserver, running on the host, and receives arbitrary
+amount of data. Log messages may be cut in arbitrary place etc. The thread
+parses a data and searches one of events. When event is detected, the thread
+changes the event state in the appropriate instance. Optional, the thread
+can to print data from the serial console in the main log as well as before.
+
+** Tester thread
+
+Tester has a new thread. It should periodically polls a state of the events
+from the Configurator, when an event occurs the thread should  call an
+appropriate handler or a series of handlers.
+
+* Events processing
+
+** Agent events
+
+Agent has a new set of handlers for events called by the *Configurator*.
+These handlers are provides means for the user to possibility of configure
+the /agent/parser subtrees, that are used to manage of the *parser* threads.
+
+** Parser thread events
+
+The *parser* thread should to listen a serial console, waiting for any agent
+event. To handle an event the agent should to change event state of the
+appropriate instance.
+
+** Tester events
+
+When an event occur in the *Tester*, then should be called a sequence of
+handlers, which is descibed in the *Configurator*. There are two types of
+event handlers. An external handler can be called, *Configurator* keeps a 
+path to It. Or the signal can be passed to the *test*.
+
+** Test events
+
+It is a responsibility of the *test* developer to process of the events,
+when received a signal from the *Tester*.
+
+* Configuration parameters
+
+** Tester configuration
+
+There is configurable polling timeout interval between cycles of calls to
+the *Configurator*. Per cycle *Tester* gets info about each event for all
+agents.
+
+** Parser thread configuration
+
+Before starting of the *parser* thread should be configured connection to the
+console. Must be specified following parameters: console name, port, user,
+interval (of console polling). It is optional to launch logging of the
+console.
+
+* Initialization and shutdown
+
+** Initialization
+
+The *Tester* should to launch the thread, that will to check events state.
+
+** Shutdown
+
+/* FIXME: Finalization of the *Tester* is in progress. */
+
+* Algorithms
+
+** The *parser* thread algorithm of search for events
+
+After the thread has been started, it should perform the following sequence
+of actions:
+  1. Connection to the serial console.
+  2. Try to get a data from the console.
+  3. For each received block of bytes:
+    1. For each *parser event*:
+      1. Compare the string with each pattern
+      2. If the pattern is a substring of the console string:
+        1. Change the *parser event* status.
+        2. Break the *parser event* loop.
+  4. Sleep timeout before the next attempt to pull the data.
+  5. Return to step 2.
+
+** Updating of the Tester events status and Tester settings
+
+Interaction of the Tester thread with the Configurator is carried out by
+means of *confapi*. The Tester periodically gets info from the Configurator.
+It should to check state of the event instances for all *parser* threads on 
+all agents. Also the Tester should to check, do not has been changed events 
+entities.
+
+Every times when need to check events status the *Tester* should performs
+the following calls to the *Configurator*:
+  1. For each *event* of each *parser*:
+      1. Get the synchronized event state.
+      2. Check the event state. If the event is occured:
+          1. Get list of instances of the *handlers* for the *event*.
+          2. Call the serial of handlers.
+          3. Reset the event status.
