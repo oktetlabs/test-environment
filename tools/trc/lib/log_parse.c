@@ -469,44 +469,43 @@ trc_log_parse_test_entry(trc_log_parse_ctx *ctx, const xmlChar **attrs)
         }
         TAILQ_INIT(&ctx->iter_data->runs);
         TAILQ_INSERT_TAIL(&ctx->iter_data->runs, entry, links);
-    }
     
-    if (ctx->rc == 0 &&
-        (ctx->flags & (TRC_LOG_PARSE_FAKE_LOG |
-                       TRC_LOG_PARSE_LOG_WILDS |
-                       TRC_LOG_PARSE_PATHS)))
-    {
-        if (test->type == TRC_TEST_SCRIPT)
+        if (ctx->flags & (TRC_LOG_PARSE_FAKE_LOG |
+                          TRC_LOG_PARSE_LOG_WILDS |
+                          TRC_LOG_PARSE_PATHS))
         {
-            TAILQ_FOREACH(group, ctx->updated_tests,
-                          links)
-                if (strcmp(group->path, test->path) == 0)
-                    break;
-
-            if (group == NULL)
+            if (test->type == TRC_TEST_SCRIPT)
             {
-                group = TE_ALLOC(sizeof(*group));
-                group->rules = NULL;
-                group->path = strdup(test->path);
-                TAILQ_INIT(&group->tests);
-                TAILQ_INSERT_TAIL(ctx->updated_tests,
-                                  group, links);
-            }
-
-            if (!(ctx->flags & TRC_LOG_PARSE_PATHS))
-            {
-                TAILQ_FOREACH(test_p, &group->tests,
+                TAILQ_FOREACH(group, ctx->updated_tests,
                               links)
-                    if (test_p->test == test)
+                    if (strcmp(group->path, test->path) == 0)
                         break;
 
-                if (test_p == NULL)
+                if (group == NULL)
                 {
-                    test_p = TE_ALLOC(sizeof(*test_p));
-                    test_p->test = test;
+                    group = TE_ALLOC(sizeof(*group));
+                    group->rules = NULL;
+                    group->path = strdup(test->path);
+                    TAILQ_INIT(&group->tests);
+                    TAILQ_INSERT_TAIL(ctx->updated_tests,
+                                      group, links);
+                }
 
-                    TAILQ_INSERT_TAIL(&group->tests,
-                                      test_p, links);
+                if (!(ctx->flags & TRC_LOG_PARSE_PATHS))
+                {
+                    TAILQ_FOREACH(test_p, &group->tests,
+                                  links)
+                        if (test_p->test == test)
+                            break;
+
+                    if (test_p == NULL)
+                    {
+                        test_p = TE_ALLOC(sizeof(*test_p));
+                        test_p->test = test;
+
+                        TAILQ_INSERT_TAIL(&group->tests,
+                                          test_p, links);
+                    }
                 }
             }
         }
