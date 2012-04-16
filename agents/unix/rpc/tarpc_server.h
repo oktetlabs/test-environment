@@ -81,6 +81,8 @@
 #include <pthread.h>
 #endif
 
+#include <semaphore.h>
+
 #ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
 #endif
@@ -311,6 +313,26 @@ check_args(checked_arg *list)
     return rc;
 }
 
+/*
+ * This semaphore is used to eliminate risk of race condition when
+ * we call one function with @c RCF_RPC_CALL and immediately after
+ * that we call another function with @c RCF_RPC_WAIT. The thread
+ * created for the first function unlocks this semaphore just before
+ * calling a function of interest (and after preparations like
+ * registering logger user).
+ *
+ * You SHOULD use MAKE_CALL() macro to call RPC defined with help
+ * of TARPC_FUNC(). Otherwise @c RCF_RPC_CALL will work incorrectly.
+ */
+static sem_t    rpc_call_sem;
+
+/*
+ * Whether main thread still waits for unlocking of rpc_call_sem
+ * semaphore or not (used to awoid calling @b sem_post() on destroyed
+ * semaphore).
+ */
+static te_bool  still_wait;
+
 /** Convert address and register it in the list of checked arguments */
 #define PREPARE_ADDR(_name, _value, _wlen) \
     te_errno                _name ## _rc;                           \
@@ -402,6 +424,7 @@ check_args(checked_arg *list)
         WAIT_START(in->common.start);                            \
         VERB("Calling: %s" , #x);                                \
         gettimeofday(&t_start, NULL);                            \
+        sem_post(&rpc_call_sem);                                 \
         x;                                                       \
         out->common.errno_changed = (_errno_save != errno);      \
         out->common._errno = RPC_ERRNO;                          \
@@ -446,6 +469,14 @@ _func##_proc(void *arg)                                             \
     sigprocmask(SIG_SETMASK, &(data->mask), NULL);                  \
                                                                     \
     { _actions }                                                    \
+    /*                                                              \
+     * This is done to make sure that the semaphore will be         \
+     * unlocked if the function was not actually called via         \
+     * MAKE_CALL() due to incorrect arguments discovering for       \
+     * example.                                                     \
+     */                                                             \
+    if (still_wait == TRUE)                                         \
+        sem_post(&rpc_call_sem);                                    \
                                                                     \
     data->done = TRUE;                                              \
                                                                     \
@@ -489,6 +520,7 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,  \
         case RCF_RPC_CALL:                                          \
         {                                                           \
             pthread_t _tid;                                         \
+            int       _rc;                                          \
                                                                     \
             VERB("%s(): CALL", #_func);                             \
                                                                     \
@@ -504,12 +536,29 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,  \
             sigprocmask(SIG_SETMASK, NULL, &(arg->mask));           \
             arg->done = FALSE;                                      \
                                                                     \
-            if (pthread_create(&_tid, NULL, _func##_proc, arg) != 0)\
+            still_wait = TRUE;                                      \
+                                                                    \
+            if ((_rc = sem_init(&rpc_call_sem, 0, 0)) != 0 ||       \
+                pthread_create(&_tid, NULL, _func##_proc,           \
+                               arg) != 0)                           \
             {                                                       \
+                if (_rc == 0)                                       \
+                    sem_destroy(&rpc_call_sem);                     \
                 free(arg);                                          \
                 out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);   \
                 break;                                              \
             }                                                       \
+                                                                    \
+            while ((_rc = sem_wait(&rpc_call_sem)) == EINTR);       \
+            still_wait = FALSE;                                     \
+            if (_rc != 0)                                           \
+            {                                                       \
+                free(arg);                                          \
+                out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);   \
+                sem_destroy(&rpc_call_sem);                         \
+                break;                                              \
+            }                                                       \
+            sem_destroy(&rpc_call_sem);                             \
                                                                     \
             /*                                                      \
              * Preset 'in' and 'out' with zeros to avoid any        \
