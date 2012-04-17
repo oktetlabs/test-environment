@@ -2033,3 +2033,11 @@ tapi_cfg_alloc_net_addr(cfg_handle net_pool_entry, cfg_handle *p_entry,
 {
     return tapi_cfg_insert_net_addr(net_pool_entry, NULL, p_entry, addr);
 }
+
+/* See the description in tapi_cfg.h */
+te_errno
+tapi_cfg_set_loglevel(const char *agent, int level)
+{
+    return cfg_set_instance_fmt(CVT_INTEGER, (void *)level,
+                             "/agent:%s/sys:/console_loglevel:", agent);
+}

@@ -68,6 +68,8 @@
 #include "unix_internal.h"
 #include "te_shell_cmd.h"
 
+#include <sys/klog.h>
+
 #if __linux__
 static char trash[128];
 #endif
@@ -154,6 +156,12 @@ static te_errno tcp_sndbuf_max_set(unsigned int, const char *,
 static te_errno tcp_sndbuf_max_get(unsigned int, const char *,
                                    char *);
 
+static te_errno console_loglevel_set(unsigned int, const char *,
+                                     const char *);
+
+static te_errno console_loglevel_get(unsigned int, const char *,
+                                     char *);
+
 
 #define SYSTEM_WIDE_PARAM(_name_, _next) \
     RCF_PCH_CFG_NODE_RW(node_##_name_,               \
@@ -165,7 +173,8 @@ RCF_PCH_CFG_NODE_RW(node_udp_rcvbuf_def,
                     "udp_rcvbuf_def",
                     NULL, NULL,
                     udp_rcvbuf_def_get, udp_rcvbuf_def_set);
-SYSTEM_WIDE_PARAM(udp_rcvbuf_max, udp_rcvbuf_def);
+SYSTEM_WIDE_PARAM(console_loglevel, udp_rcvbuf_def);
+SYSTEM_WIDE_PARAM(udp_rcvbuf_max, console_loglevel);
 SYSTEM_WIDE_PARAM(udp_sndbuf_def, udp_rcvbuf_max);
 SYSTEM_WIDE_PARAM(udp_sndbuf_max, udp_sndbuf_def);
 SYSTEM_WIDE_PARAM(tcp_rcvbuf_def, udp_sndbuf_max);
@@ -187,6 +196,75 @@ ta_unix_conf_sys_init(void)
     return 0;
 #endif
     return rcf_pch_add_node("/agent", &node_sys);
+}
+
+/**
+ * Set console log level.
+ *
+ * @param gid          Group identifier (unused)
+ * @param oid          Full object instance identifier (unused)
+ * @param value        Value of the log level
+ *
+ * @return Status code
+ * @retval 0        Success
+ */
+static te_errno
+console_loglevel_set(unsigned int gid, const char *oid, const char *value)
+{
+    int level = atoi(value);
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (klogctl(8, NULL, level) < 0)
+    {
+        ERROR("klogctl: %s", strerror(errno));
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+    return 0;
+}
+
+/**
+ * Get console log level.
+ *
+ * @param gid          Group identifier (unused)
+ * @param oid          Full object instance identifier (unused)
+ * @param value        Value of the log level
+ *
+ * @return Status code
+ * @retval 0        Success
+ */
+static te_errno
+console_loglevel_get(unsigned int gid, const char *oid, char *value)
+{
+    int     level = 0;
+    char    str[] = {0, 0};
+    FILE   *f;
+    int     res;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    f = fopen("/proc/sys/kernel/printk", "r");
+    if (f == NULL)
+    {
+        ERROR("fopen failed: %s", strerror(errno));
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    res = fread(str, 1, 1, f);
+    if (res != 1)
+    {
+        ERROR("fread failed: %s", strerror(errno));
+        fclose(f);
+        return TE_RC(TE_TA_UNIX, TE_EIO);
+    }
+
+    level = atoi(str);
+    fclose(f);
+
+    snprintf(value, RCF_MAX_VAL, "%d", level);
+    return 0;
 }
 
 /**

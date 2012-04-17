@@ -676,6 +676,17 @@ tapi_is_cfg_link(char *s)
 }
 
 /**
+ * Set the console log level
+ * 
+ * @param agent    Test agent name
+ * @param level    Console log level (See printk(9))
+ *
+ * @return Status code
+ * @retval 0            Success
+ */
+extern te_errno tapi_cfg_set_loglevel(const char *agent, int level);
+
+/**
  * Resolve configurator link into its value.
  *
  * @param link     Link to string to dereference
