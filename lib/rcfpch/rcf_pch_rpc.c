@@ -47,6 +47,9 @@
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
+#if HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
 #if HAVE_TIME_H
 #include <time.h>
 #endif
@@ -306,18 +309,25 @@ waitpid_child(rpcserver *rpcs)
 {
     tarpc_waitpid_in  in;
     tarpc_waitpid_out out;
-    
-    if (rpcs->father == NULL || rpcs->father->dead)
+    int status = 0;
+
+    if (rpcs->father != NULL && rpcs->father->dead)
         return;
+    if (rpcs->father == NULL)
+    {
+        if (waitpid(rpcs->pid, &status, 0) == -1)
+            WARN("RPC waitpid() failed on the agent process.");
+        return;
+    }
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
     in.common.op = RCF_RPC_CALL_WAIT;
     in.pid = rpcs->pid;
-    
+
     if (call(rpcs->father, "waitpid", &in, &out) != 0)
         return;
-        
+
     if (out.pid == -1)
     {
         WARN("RPC waitpid() failed on the server %s with errno %r",
