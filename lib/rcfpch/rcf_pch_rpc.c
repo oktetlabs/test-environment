@@ -309,14 +309,15 @@ waitpid_child(rpcserver *rpcs)
 {
     tarpc_waitpid_in  in;
     tarpc_waitpid_out out;
-    int status = 0;
 
     if (rpcs->father != NULL && rpcs->father->dead)
         return;
     if (rpcs->father == NULL)
     {
-        if (waitpid(rpcs->pid, &status, 0) == -1)
-            WARN("RPC waitpid() failed on the agent process.");
+        /*
+         * waitpid() should be called in SIGCHLD signal handler
+         * of Test Agent
+         */
         return;
     }
 
