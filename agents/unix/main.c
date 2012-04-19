@@ -785,8 +785,10 @@ int
 rcf_ch_kill_process(unsigned int pid)
 {
     int            rc = 0;
+    int            rc1 = 0;
     unsigned int   i;
     int            p = pid;
+    int            tries = 0;
 
     for (i = 0; i < tasks_index; i++)
     {
@@ -801,10 +803,21 @@ rcf_ch_kill_process(unsigned int pid)
     if (kill(p, SIGTERM) != 0)
     {
         rc = TE_OS_RC(TE_TA_UNIX, errno);
-        
         ERROR("Failed to send SIGTERM to process with PID=%u: %r",
               pid, rc);
-
+    }
+    else
+    {
+        RING("Sent SIGTERM to PID=%u", pid);
+    }
+    if (rc == 0)
+        while ((rc1 = kill(p, 0)) == 0 && tries < 10)
+        {
+            usleep(10000);
+            tries++;
+        }
+    if (rc != 0 || rc1 == 0 || (rc1 == -1 && errno != ESRCH))
+    {
         if (kill(p, SIGKILL) != 0)
         {
             ERROR("Failed to send SIGKILL to process with PID=%u: %d",
@@ -814,10 +827,6 @@ rcf_ch_kill_process(unsigned int pid)
         {
             RING("Sent SIGKILL to PID=%u", pid);
         }
-    }
-    else
-    {
-        RING("Sent SIGTERM to PID=%u", pid);
     }
 
     return rc;
