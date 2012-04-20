@@ -87,7 +87,8 @@ extern char **environ;
 #define SOLARIS (defined(__sun) || defined(sun)) && \
     (defined(__SVR4) || defined(__svr4__))
 
-extern sigset_t rpcs_received_signals;
+extern sigset_t         rpcs_received_signals;
+extern tarpc_siginfo_t  last_siginfo;
 
 static te_bool dynamic_library_set = FALSE;
 static void *dynamic_library_handle = NULL;
@@ -673,6 +674,23 @@ _sigreceived_1_svc(tarpc_sigreceived_in *in, tarpc_sigreceived_out *out,
     if (id == 0)
         id = rcf_pch_mem_alloc(&rpcs_received_signals);
     out->set = id;
+
+    return TRUE;
+}
+
+/**
+ * Get siginfo_t structure for the lastly received signal.
+ */
+bool_t
+_siginfo_received_1_svc(tarpc_siginfo_received_in *in,
+                        tarpc_siginfo_received_out *out,
+                        struct svc_req *rqstp)
+{
+    UNUSED(in);
+    UNUSED(rqstp);
+    memset(out, 0, sizeof(*out));
+
+    memcpy(&out->siginfo, &last_siginfo, sizeof(last_siginfo));
 
     return TRUE;
 }

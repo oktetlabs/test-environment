@@ -61,6 +61,8 @@ typedef tarpc_ptr    tarpc_fd_set;
 typedef int64_t     tarpc_off_t;
 /** RPC rlim_t analog */
 typedef int32_t     tarpc_rlim_t;
+/** RPC clock_t analogue */
+typedef int64_t     tarpc_clock_t;
 /** RPC time_t analogue */
 typedef int64_t     tarpc_time_t;
 /** RPC suseconds_t analogue */
@@ -2849,7 +2851,45 @@ typedef struct tarpc_void_in tarpc_sigreceived_in;
 
 typedef struct tarpc_sigset_new_out tarpc_sigreceived_out;
 
+/* sigval_t, union sigval */
+union tarpc_sigval switch (tarpc_bool pointer) {
+    case 1: tarpc_ptr sival_ptr;
+    case 0: tarpc_int sival_int;
+};
 
+/* siginfo_t */
+struct tarpc_siginfo_t {
+       tarpc_int        sig_signo;
+       tarpc_int        sig_errno;
+       tarpc_int        sig_code;
+       tarpc_int        sig_trapno;
+       tarpc_pid_t      sig_pid;
+       tarpc_uid_t      sig_uid;
+       tarpc_int        sig_status;
+       tarpc_clock_t    sig_utime;
+       tarpc_clock_t    sig_stime;
+       tarpc_sigval     sig_value;
+       tarpc_int        sig_int;
+       tarpc_ptr        sig_ptr;
+       tarpc_int        sig_overrun;
+       tarpc_int        sig_timerid;
+       tarpc_ptr        sig_addr;
+       int64_t          sig_band;
+       tarpc_int        sig_fd;
+       tarpc_int        sig_addr_lsb;
+};
+
+/* siginfo_received() */
+
+typedef struct tarpc_void_in tarpc_siginfo_received_in;
+
+struct tarpc_siginfo_received_out {
+    struct tarpc_out_arg  common;
+
+    tarpc_siginfo_t     siginfo;
+};
+
+typedef struct tarpc_siginfo_received_out tarpc_siginfo_received_out;
 
 /* gethostbyname */
 
@@ -3288,12 +3328,6 @@ struct tarpc_access_in {
 };
 
 typedef struct tarpc_int_retval_out tarpc_access_out;
-
-/* sigval_t, union sigval */
-union tarpc_sigval switch (tarpc_bool pointer) {
-    case 1: tarpc_ptr sival_ptr;
-    case 0: tarpc_int sival_int;
-};
 
 /* sigevent */
 struct tarpc_sigevent {
@@ -4563,6 +4597,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(sigpending)
         RPC_DEF(sigsuspend)
         RPC_DEF(sigreceived) 
+        RPC_DEF(siginfo_received) 
 
         RPC_DEF(gethostbyname)
         RPC_DEF(gethostbyaddr)

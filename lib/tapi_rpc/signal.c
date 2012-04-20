@@ -48,6 +48,7 @@
 #include <signal.h>
 #endif
 
+#include "log_bufs.h"
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_signal.h"
 
@@ -511,6 +512,94 @@ rpc_sigreceived(rcf_rpc_server *rpcs)
 
     TAPI_RPC_LOG(rpcs, sigreceived, "", "0x%x", (unsigned)out.set);
     RETVAL_RPC_PTR(sigreceived, out.set);
+}
+
+int
+rpc_siginfo_received(rcf_rpc_server *rpcs, tarpc_siginfo_t *siginfo)
+{
+#define PRINT_SI_FIELD(_field) \
+    do {                                                                 \
+        if (strcmp(#_field, "signo") == 0)                               \
+            te_log_buf_append(str, "sig_signo: %s ",                     \
+                              signum_rpc2str(siginfo->sig_signo));       \
+        else if (strcmp(#_field, "errno") == 0)                          \
+            te_log_buf_append(str, "sig_errno: %s ",                     \
+                              errno_rpc2str(siginfo->sig_errno));        \
+        else if (strcmp(#_field, "code") == 0)                           \
+            te_log_buf_append(str, "sig_code: %s ",                      \
+                              si_code_rpc2str(siginfo->sig_code));       \
+        else                                                             \
+            te_log_buf_append(str, "sig_" #_field ": %lld ",             \
+                              ((long long int)siginfo->sig_ ## _field)); \
+    } while(0)
+
+    tarpc_siginfo_received_in  in;
+    tarpc_siginfo_received_out out;
+
+    te_log_buf  *str = NULL;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(siginfo_received, -1);
+    }
+
+    if (siginfo == NULL)
+    {
+        ERROR("%s(): siginfo pointer should not be NULL", __FUNCTION__);
+        RETVAL_INT(siginfo_received, -1);
+    }
+
+    rcf_rpc_call(rpcs, "siginfo_received", &in, &out);
+
+    memcpy(siginfo, &out.siginfo, sizeof(out.siginfo));
+
+    str = te_log_buf_alloc();
+    if (str == NULL)
+    {
+        ERROR("%s(): te_log_buf_alloc() failed", __FUNCTION__);
+        RETVAL_INT(siginfo_received, -1);
+    }
+
+    siginfo->sig_signo = signum_h2rpc(siginfo->sig_signo);
+    siginfo->sig_errno = errno_h2rpc(siginfo->sig_errno);
+    siginfo->sig_code = si_code_h2rpc(siginfo->sig_signo,
+                                      siginfo->sig_code);
+
+    te_log_buf_append(str, "{ ");
+    PRINT_SI_FIELD(signo);
+    PRINT_SI_FIELD(errno);
+    PRINT_SI_FIELD(code);
+    PRINT_SI_FIELD(trapno);
+    PRINT_SI_FIELD(pid);
+    PRINT_SI_FIELD(uid);
+    PRINT_SI_FIELD(status);
+    PRINT_SI_FIELD(utime);
+    PRINT_SI_FIELD(stime);
+
+    te_log_buf_append(str, "sig_value: %u ",
+                      (unsigned)siginfo->sig_value.
+                                             tarpc_sigval_u.
+                                                     sival_int);
+    PRINT_SI_FIELD(int);
+    PRINT_SI_FIELD(ptr);
+    PRINT_SI_FIELD(overrun);
+    PRINT_SI_FIELD(timerid);
+    PRINT_SI_FIELD(addr);
+    PRINT_SI_FIELD(band);
+    PRINT_SI_FIELD(fd);
+    PRINT_SI_FIELD(addr_lsb);
+    te_log_buf_append(str, " }");
+
+    TAPI_RPC_LOG(rpcs, siginfo_received, "%p", "%s", siginfo,
+                 te_log_buf_get(str));
+    te_log_buf_free(str);
+    RETVAL_INT(siginfo_received, 0);
+
+#undef PRINT_SI_FIELD
 }
 
 int

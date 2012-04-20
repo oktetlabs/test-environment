@@ -64,11 +64,13 @@ typedef enum rpc_signum {
     RPC_SIGTTIN, 
     RPC_SIGTTOU,
     RPC_SIGIO,
+    RPC_SIGBUS,
+    RPC_SIGTRAP,
     RPC_SIGUNKNOWN,
 } rpc_signum;
 
 /** Convert RPC signal number to string */
-extern const char * signum_rpc2str(rpc_signum s);
+extern const char *signum_rpc2str(rpc_signum s);
     
 /** Convert RPC signal number to the native one */
 extern int signum_rpc2h(rpc_signum s);
@@ -76,6 +78,70 @@ extern int signum_rpc2h(rpc_signum s);
 /** Convert native signal number to the RPC one */
 extern rpc_signum signum_h2rpc(int s);
 
+/** TA-independent values of signal code */
+typedef enum rpc_si_code {
+    RPC_SI_ASYNCNL = 1,
+    RPC_SI_TKILL,
+    RPC_SI_SIGIO,
+    RPC_SI_ASYNCIO,
+    RPC_SI_MESGQ,
+    RPC_SI_TIMER,
+    RPC_SI_QUEUE,
+    RPC_SI_USER,
+    RPC_SI_KERNEL,
+    RPC_ILL_ILLOPC,
+    RPC_ILL_ILLOPN,
+    RPC_ILL_ILLADDR,
+    RPC_ILL_ILLTRP,
+    RPC_ILL_PRVOPC,
+    RPC_ILL_PRVREG,
+    RPC_ILL_COPROC,
+    RPC_ILL_BADSTK,
+    RPC_FPE_INTDIV,
+    RPC_FPE_INTOVF,
+    RPC_FPE_FLTDIV,
+    RPC_FPE_FLTOVF,
+    RPC_FPE_FLTUND,
+    RPC_FPE_FLTRES,
+    RPC_FPE_RLTINV,
+    RPC_FPE_FLTSUB,
+    RPC_SEGV_MAPERR,
+    RPC_SEGV_ACCERR,
+    RPC_BUS_ADRALN,
+    RPC_BUS_ADRERR,
+    RPC_BUS_OBJERR,
+    RPC_TRAP_BRKPT,
+    RPC_TRAP_TRACE,
+    RPC_CLD_EXITED,
+    RPC_CLD_KILLED,
+    RPC_CLD_DUMPED,
+    RPC_CLD_TRAPPED,
+    RPC_CLD_STOPPED,
+    RPC_CLD_CONTINUED,
+    RPC_POLL_IN,
+    RPC_POLL_OUT,
+    RPC_POLL_MSG,
+    RPC_POLL_ERR,
+    RPC_POLL_PRI,
+    RPC_POLL_HUP,
+    RPC_SI_UNKNOWN,
+} rpc_si_code;
+
+/** Convert RPC signal code to string */
+extern const char *si_code_rpc2str(rpc_si_code si);
+    
+/** Convert RPC signal code to the native one */
+extern int si_code_rpc2h(rpc_si_code si);
+
+/**
+ * Convert native signal code to the RPC one.
+ *
+ * @param s     Signal number
+ * @param si    Native signal code
+ *
+ * @return RPC signal code
+ */
+extern rpc_si_code si_code_h2rpc(rpc_signum s, int si);
 
 /** TA-independent sigevent notification types */
 typedef enum rpc_sigev_notify {

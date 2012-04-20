@@ -79,6 +79,9 @@
 #include "te_sleep.h"
 
 #include "unix_internal.h"
+#include "tarpc.h"
+#include "te_rpc_errno.h"
+#include "te_rpc_signal.h"
 
 /** Send answer to the TEN */
 #define SEND_ANSWER(_fmt...) \
@@ -1401,7 +1404,6 @@ ta_sigchld_handler(void)
 
 sigset_t rpcs_received_signals;
 
-
 /* See description in unix_internal.h */
 void
 signal_registrar(int signum)
@@ -1409,6 +1411,62 @@ signal_registrar(int signum)
     sigaddset(&rpcs_received_signals, signum);
 }
 
+/* Lastly received signal information */
+tarpc_siginfo_t last_siginfo;
+
+/* See description in unix_internal.h */
+void
+signal_registrar_siginfo(int signum, siginfo_t *siginfo, void *context)
+{
+#define COPY_SI_FIELD(_field) \
+    last_siginfo.sig_ ## _field = siginfo->si_ ## _field
+
+    UNUSED(context);
+
+    sigaddset(&rpcs_received_signals, signum);
+    memset(&last_siginfo, 0, sizeof(last_siginfo));
+
+    COPY_SI_FIELD(signo);
+    COPY_SI_FIELD(errno);
+    COPY_SI_FIELD(code);
+#ifdef HAVE_SIGINFO_T_SI_TRAPNO
+    COPY_SI_FIELD(trapno);
+#endif
+    COPY_SI_FIELD(pid);
+    COPY_SI_FIELD(uid);
+    COPY_SI_FIELD(status);
+#ifdef HAVE_SIGINFO_T_SI_UTIME
+    COPY_SI_FIELD(utime);
+#endif
+#ifdef HAVE_SIGINFO_T_SI_STIME
+    COPY_SI_FIELD(stime);
+#endif
+
+    /** 
+     * FIXME: si_value, si_ptr and si_addr fields are not
+     * supported yet
+     */
+
+#ifdef HAVE_SIGINFO_T_SI_INT
+    COPY_SI_FIELD(int);
+#endif
+#ifdef HAVE_SIGINFO_T_SI_OVERRUN
+    COPY_SI_FIELD(overrun);
+#endif
+#ifdef HAVE_SIGINFO_T_SI_TIMERID
+    COPY_SI_FIELD(timerid);
+#endif
+    COPY_SI_FIELD(band);
+#ifdef HAVE_SIGINFO_T_SI_FD
+    COPY_SI_FIELD(fd);
+#endif
+
+#ifdef HAVE_SIGINFO_T_SI_ADDR_LSB
+    COPY_SI_FIELD(addr_lsb);
+#endif
+
+#undef COPY_SI_FIELD
+}
 
 /*
  * TCE support

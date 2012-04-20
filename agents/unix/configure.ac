@@ -131,6 +131,66 @@ AC_CHECK_MEMBERS([struct sigaction.sa_restorer], [], [],
                  [#include <signal.h>])
 
 dnl
+dnl Check for 'si_trapno' member in 'siginfo_t'.
+dnl
+AC_CHECK_MEMBERS([siginfo_t.si_trapno], [], [],
+                 [#include <signal.h>])
+
+dnl
+dnl Check for 'si_addr_lsb' member in 'siginfo_t'.
+dnl
+AC_CHECK_MEMBERS([siginfo_t.si_addr_lsb], [], [],
+                 [#include <signal.h>])
+
+dnl
+dnl Check for 'si_utime' member in 'siginfo_t'.
+dnl
+AC_CHECK_MEMBERS([siginfo_t.si_utime], [], [],
+                 [#include <signal.h>])
+
+dnl
+dnl Check for 'si_stime' member in 'siginfo_t'.
+dnl
+AC_CHECK_MEMBERS([siginfo_t.si_stime], [], [],
+                 [#include <signal.h>])
+
+dnl
+dnl Check for 'si_int' member in 'siginfo_t'.
+dnl
+AC_CHECK_MEMBERS([siginfo_t.si_int], [], [],
+                 [#include <signal.h>])
+
+dnl
+dnl Check for 'si_ptr' member in 'siginfo_t'.
+dnl
+AC_CHECK_MEMBERS([siginfo_t.si_ptr], [], [],
+                 [#include <signal.h>])
+
+dnl
+dnl Check for 'si_overrun' member in 'siginfo_t'.
+dnl
+AC_CHECK_MEMBERS([siginfo_t.si_overrun], [], [],
+                 [#include <signal.h>])
+
+dnl
+dnl Check for 'si_timerid' member in 'siginfo_t'.
+dnl
+AC_CHECK_MEMBERS([siginfo_t.si_timerid], [], [],
+                 [#include <signal.h>])
+
+dnl
+dnl Check for 'si_fd' member in 'siginfo_t'.
+dnl
+AC_CHECK_MEMBERS([siginfo_t.si_fd], [], [],
+                 [#include <signal.h>])
+
+dnl
+dnl Check for 'si_ptr' member in 'siginfo_t'.
+dnl
+AC_CHECK_MEMBERS([siginfo_t.si_ptr], [], [],
+                 [#include <signal.h>])
+
+dnl
 dnl Check for 'arp_dev' member in 'struct arpreq'.
 dnl
 AC_CHECK_MEMBERS([struct arpreq.arp_dev], [], [],

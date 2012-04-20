@@ -76,6 +76,8 @@ signum_rpc2str(rpc_signum s)
         RPC2STR(SIGTTIN);
         RPC2STR(SIGTTOU);
         RPC2STR(SIGIO);
+        RPC2STR(SIGBUS);
+        RPC2STR(SIGTRAP);
         default: return "<SIG_FATAL_ERROR>";
     }
 }
@@ -146,6 +148,12 @@ signum_rpc2h(rpc_signum s)
 #endif
 #ifdef SIGIO
         RPC2H(SIGIO);
+#endif
+#ifdef SIGBUS
+        RPC2H(SIGBUS);
+#endif
+#ifdef SIGTRAP
+        RPC2H(SIGTRAP);
 #endif
 #if defined(SIGUNUSED)
         default: return SIGUNUSED;
@@ -228,10 +236,229 @@ signum_h2rpc(int s)
 #ifdef SIGIO
         H2RPC(SIGIO);
 #endif
+#ifdef SIGBUS
+        H2RPC(SIGBUS);
+#endif
+#ifdef SIGTRAP
+        H2RPC(SIGTRAP);
+#endif
         default: return RPC_SIGUNKNOWN;
     }
 }
 
+/** Convert RPC signal code to string */
+const char *
+si_code_rpc2str(rpc_si_code si)
+{
+    switch (si)
+    {
+        RPC2STR(SI_ASYNCNL);
+        RPC2STR(SI_TKILL);
+        RPC2STR(SI_SIGIO);
+        RPC2STR(SI_ASYNCIO);
+        RPC2STR(SI_MESGQ);
+        RPC2STR(SI_TIMER);
+        RPC2STR(SI_QUEUE);
+        RPC2STR(SI_USER);
+        RPC2STR(SI_KERNEL);
+        RPC2STR(ILL_ILLOPC);
+        RPC2STR(ILL_ILLOPN);
+        RPC2STR(ILL_ILLADDR);
+        RPC2STR(ILL_ILLTRP);
+        RPC2STR(ILL_PRVOPC);
+        RPC2STR(ILL_PRVREG);
+        RPC2STR(ILL_COPROC);
+        RPC2STR(ILL_BADSTK);
+        RPC2STR(FPE_INTDIV);
+        RPC2STR(FPE_INTOVF);
+        RPC2STR(FPE_FLTDIV);
+        RPC2STR(FPE_FLTOVF);
+        RPC2STR(FPE_FLTUND);
+        RPC2STR(FPE_FLTRES);
+        RPC2STR(FPE_RLTINV);
+        RPC2STR(FPE_FLTSUB);
+        RPC2STR(SEGV_MAPERR);
+        RPC2STR(SEGV_ACCERR);
+        RPC2STR(BUS_ADRALN);
+        RPC2STR(BUS_ADRERR);
+        RPC2STR(BUS_OBJERR);
+        RPC2STR(TRAP_BRKPT);
+        RPC2STR(TRAP_TRACE);
+        RPC2STR(CLD_EXITED);
+        RPC2STR(CLD_KILLED);
+        RPC2STR(CLD_DUMPED);
+        RPC2STR(CLD_TRAPPED);
+        RPC2STR(CLD_STOPPED);
+        RPC2STR(CLD_CONTINUED);
+        RPC2STR(POLL_IN);
+        RPC2STR(POLL_OUT);
+        RPC2STR(POLL_MSG);
+        RPC2STR(POLL_ERR);
+        RPC2STR(POLL_PRI);
+        RPC2STR(POLL_HUP);
+        RPC2STR(SI_UNKNOWN);
+        default: return "<SI_CODE_FATAL_ERROR>";
+    }
+}
+    
+/** Convert RPC signal code to the native one */
+int
+si_code_rpc2h(rpc_si_code si)
+{
+    switch (si)
+    {
+        RPC2H_CHECK(SI_ASYNCNL);
+        RPC2H_CHECK(SI_TKILL);
+        RPC2H_CHECK(SI_SIGIO);
+        RPC2H_CHECK(SI_ASYNCIO);
+        RPC2H_CHECK(SI_MESGQ);
+        RPC2H_CHECK(SI_TIMER);
+        RPC2H_CHECK(SI_QUEUE);
+        RPC2H_CHECK(SI_USER);
+        RPC2H_CHECK(SI_KERNEL);
+        RPC2H_CHECK(ILL_ILLOPC);
+        RPC2H_CHECK(ILL_ILLOPN);
+        RPC2H_CHECK(ILL_ILLADDR);
+        RPC2H_CHECK(ILL_ILLTRP);
+        RPC2H_CHECK(ILL_PRVOPC);
+        RPC2H_CHECK(ILL_PRVREG);
+        RPC2H_CHECK(ILL_COPROC);
+        RPC2H_CHECK(ILL_BADSTK);
+        RPC2H_CHECK(FPE_INTDIV);
+        RPC2H_CHECK(FPE_INTOVF);
+        RPC2H_CHECK(FPE_FLTDIV);
+        RPC2H_CHECK(FPE_FLTOVF);
+        RPC2H_CHECK(FPE_FLTUND);
+        RPC2H_CHECK(FPE_FLTRES);
+        RPC2H_CHECK(FPE_RLTINV);
+        RPC2H_CHECK(FPE_FLTSUB);
+        RPC2H_CHECK(SEGV_MAPERR);
+        RPC2H_CHECK(SEGV_ACCERR);
+        RPC2H_CHECK(BUS_ADRALN);
+        RPC2H_CHECK(BUS_ADRERR);
+        RPC2H_CHECK(BUS_OBJERR);
+        RPC2H_CHECK(TRAP_BRKPT);
+        RPC2H_CHECK(TRAP_TRACE);
+        RPC2H_CHECK(CLD_EXITED);
+        RPC2H_CHECK(CLD_KILLED);
+        RPC2H_CHECK(CLD_DUMPED);
+        RPC2H_CHECK(CLD_TRAPPED);
+        RPC2H_CHECK(CLD_STOPPED);
+        RPC2H_CHECK(CLD_CONTINUED);
+        RPC2H_CHECK(POLL_IN);
+        RPC2H_CHECK(POLL_OUT);
+        RPC2H_CHECK(POLL_MSG);
+        RPC2H_CHECK(POLL_ERR);
+        RPC2H_CHECK(POLL_PRI);
+        RPC2H_CHECK(POLL_HUP);
+        RPC2H_CHECK(SI_UNKNOWN);
+
+        default:
+            return 0;
+    }
+}
+
+/** Convert native signal code to the RPC one */
+rpc_si_code
+si_code_h2rpc(rpc_signum s, int si)
+{
+    switch (si)
+    {
+        H2RPC_CHECK(SI_ASYNCNL = 1);
+        H2RPC_CHECK(SI_TKILL);
+        H2RPC_CHECK(SI_SIGIO);
+        H2RPC_CHECK(SI_ASYNCIO);
+        H2RPC_CHECK(SI_MESGQ);
+        H2RPC_CHECK(SI_TIMER);
+        H2RPC_CHECK(SI_QUEUE);
+        H2RPC_CHECK(SI_USER);
+        H2RPC_CHECK(SI_KERNEL);
+    }
+
+    if (s == RPC_SIGILL)
+    {
+        switch (si)
+        {
+            H2RPC_CHECK(ILL_ILLOPC);
+            H2RPC_CHECK(ILL_ILLOPN);
+            H2RPC_CHECK(ILL_ILLADDR);
+            H2RPC_CHECK(ILL_ILLTRP);
+            H2RPC_CHECK(ILL_PRVOPC);
+            H2RPC_CHECK(ILL_PRVREG);
+            H2RPC_CHECK(ILL_COPROC);
+            H2RPC_CHECK(ILL_BADSTK);
+        }
+    }
+    else if (s == RPC_SIGFPE)
+    {
+        switch (si)
+        {
+            H2RPC_CHECK(FPE_INTDIV);
+            H2RPC_CHECK(FPE_INTOVF);
+            H2RPC_CHECK(FPE_FLTDIV);
+            H2RPC_CHECK(FPE_FLTOVF);
+            H2RPC_CHECK(FPE_FLTUND);
+            H2RPC_CHECK(FPE_FLTRES);
+            H2RPC_CHECK(FPE_RLTINV);
+            H2RPC_CHECK(FPE_FLTSUB);
+        }
+    }
+    else if (s == RPC_SIGSEGV)
+    {
+        switch (si)
+        {
+            H2RPC_CHECK(SEGV_MAPERR);
+            H2RPC_CHECK(SEGV_ACCERR);
+        }
+    }
+    else if (s == RPC_SIGBUS)
+    {
+        switch (si)
+        {
+            H2RPC_CHECK(BUS_ADRALN);
+            H2RPC_CHECK(BUS_ADRERR);
+            H2RPC_CHECK(BUS_OBJERR);
+        }
+    }
+    else if (s == RPC_SIGTRAP)
+    {
+        switch (si)
+        {
+            H2RPC_CHECK(TRAP_BRKPT);
+            H2RPC_CHECK(TRAP_TRACE);
+        }
+    }
+    else if (s == RPC_SIGCHLD)
+    {
+        switch (si)
+        {
+            H2RPC_CHECK(CLD_EXITED);
+            H2RPC_CHECK(CLD_KILLED);
+            H2RPC_CHECK(CLD_DUMPED);
+            H2RPC_CHECK(CLD_TRAPPED);
+            H2RPC_CHECK(CLD_STOPPED);
+            H2RPC_CHECK(CLD_CONTINUED);
+        }
+    }
+    else
+    {
+        /*
+         *  These signal codes can be used for
+         *  any signal defined via @b fcntl(@c F_SETSIG)
+         */
+        switch (si)
+        {
+            H2RPC_CHECK(POLL_IN);
+            H2RPC_CHECK(POLL_OUT);
+            H2RPC_CHECK(POLL_MSG);
+            H2RPC_CHECK(POLL_ERR);
+            H2RPC_CHECK(POLL_PRI);
+            H2RPC_CHECK(POLL_HUP);
+        }
+    }
+
+    return RPC_SI_UNKNOWN;
+}
 
 /** Convert RPC sigevent notification type to string */
 const char *

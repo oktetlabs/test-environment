@@ -190,6 +190,18 @@ extern void rpc_sigset_delete(rcf_rpc_server *rpcs, rpc_sigset_p set);
 extern rpc_sigset_p rpc_sigreceived(rcf_rpc_server *rpcs);
 
 /**
+ * Get sininfo_t structure lastly received by special signal
+ * handler 'signal_registrar_siginfo'.
+ *
+ * @param rpcs      RPC server handle
+ * @param siginfo   Where to save siginfo_t structure
+ *
+ * @return 0 or error code
+ */
+extern int rpc_siginfo_received(rcf_rpc_server *rpcs,
+                                tarpc_siginfo_t *siginfo);
+
+/**
  * Examin or change list of currently blocked signal on RPC server side.
  *
  * @param rpcs    RPC server handle

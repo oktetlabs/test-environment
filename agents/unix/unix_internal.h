@@ -50,6 +50,9 @@
 #if HAVE_CTYPE_H
 #include <ctype.h>
 #endif
+#if HAVE_SIGNAL_H
+#include <signal.h>
+#endif
 
 #include "te_sockaddr.h"
 #include "rcf_pch.h"
@@ -224,6 +227,17 @@ extern int ftp_close(int control_socket);
  * @param signum    received signal
  */
 extern void signal_registrar(int signum);
+
+/**
+ * Special signal handler which registers signals and also
+ * saves signal information.
+ * 
+ * @param signum    received signal
+ * @param siginfo   pointer to siginfo_t structure
+ * @param context   pointer to user context
+ */
+extern void signal_registrar_siginfo(int signum, siginfo_t *siginfo,
+                                     void *context);
 
 /**
  * waitpid() analogue, with the same parameters/return value.
