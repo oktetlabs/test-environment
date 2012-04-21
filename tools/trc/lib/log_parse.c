@@ -431,7 +431,9 @@ trc_log_parse_test_entry(trc_log_parse_ctx *ctx, const xmlChar **attrs)
              ctx->test_paths != NULL &&
              !TAILQ_EMPTY(ctx->test_paths)) ||
             ((strcmp(test->name, "prologue") == 0 ||
-              strcmp(test->name, "epilogue") == 0) &&
+              strcmp(test->name, "epilogue") == 0 ||
+              strcmp(test->name, "loop_prologue") == 0 ||
+              strcmp(test->name, "loop_epilogue") == 0) &&
              (ctx->flags & TRC_LOG_PARSE_NO_PE)))
         {
             /* If test is not in one of paths of
