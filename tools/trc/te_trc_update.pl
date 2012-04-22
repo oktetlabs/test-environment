@@ -157,13 +157,13 @@ foreach (@ARGV)
           "      --conf-tester=STRING    Use this if something other \n".
           "                              than tester.conf should be \n".
           "                              used.\n";
-         print "\n".
-          "      --tester-run=STRING     Test path for Tester fake run\n".
-          "                              (if specified, --test-name \n".
-          "                               has no effect on Tester)\n\n";
+#       print "\n".
+#         "      --tester-run=STRING     Test path for Tester fake run\n".
+#         "                              (if specified, --test-name \n".
+#         "                               has no effect on Tester)\n\n";
        
         $rc = system("te-trc-update --help");
-        exit $rc;
+        exit ($rc >> 8);
     }
     elsif ($_ =~ m/^--conf-tester=(.*)$/)
     {
@@ -277,11 +277,7 @@ if ($test_specified > 0)
 
 $rc = system("te-trc-update ".$opts);
 
-if ($rc == 0)
-{
-    $rc = system("rm -f ".join(" ", @tmp_files));
-}
-elsif ($rc & 127)
+if ($rc & 127)
 {
     printf("te-trc-update died with signal %d.%s\n", ($rc & 127),
            ($rc & 128) ? " Core dumped." : "");
@@ -291,4 +287,13 @@ else
     print("te-trc-update failed\n");
 }
 
-exit $rc;
+my $rc_aux = system("rm -f ".join(" ", @tmp_files));
+
+if ($rc != 0)
+{
+    exit ($rc >> 8);
+}
+else
+{
+    exit ($rc_aux >> 8);
+}

@@ -3820,6 +3820,12 @@ trc_update_init_parse_ctx(trc_log_parse_ctx *ctx,
 te_errno
 trc_update_process_logs(trc_update_ctx *gctx)
 {
+#define CHECK_F_RC(func_) \
+    do {                         \
+        if ((rc = (func_)) != 0) \
+            goto cleanup;        \
+    } while (0)
+
     te_errno                    rc = 0;
     trc_log_parse_ctx           ctx;
     trc_update_tag_logs        *tl = NULL;
@@ -3914,13 +3920,15 @@ trc_update_process_logs(trc_update_ctx *gctx)
             !(gctx->flags & TRC_LOG_PARSE_LOG_WILDS))
         {
             printf("Filling user data in TRC DB...\n");
-            trc_update_fill_db_user_data(gctx->db, ctx.updated_tests,
-                                         gctx->db_uid);
+            CHECK_F_RC(trc_update_fill_db_user_data(gctx->db,
+                                                    ctx.updated_tests,
+                                                    gctx->db_uid));
         }
 
         printf("Simplifying expected results...\n");
-        trc_update_simplify_results(gctx->db_uid, ctx.updated_tests,
-                                    gctx->flags);
+        CHECK_F_RC(trc_update_simplify_results(gctx->db_uid,
+                                               ctx.updated_tests,
+                                               gctx->flags));
 
         if (gctx->rules_load_from != NULL)
         {
@@ -3928,15 +3936,16 @@ trc_update_process_logs(trc_update_ctx *gctx)
             trc_update_clear_rules(ctx.db_uid, ctx.updated_tests);
 
             printf("Loading updating rules...\n");
-            trc_update_load_rules(gctx->rules_load_from,
-                                  ctx.updated_tests,
-                                  &ctx.global_rules,
-                                  gctx->flags);
+            CHECK_F_RC(trc_update_load_rules(gctx->rules_load_from,
+                                             ctx.updated_tests,
+                                             &ctx.global_rules,
+                                             gctx->flags));
             
             printf("Applying updating rules...\n");
-            trc_update_apply_rules(gctx->db_uid, ctx.updated_tests,
-                                   &ctx.global_rules,
-                                   gctx->flags);
+            CHECK_F_RC(trc_update_apply_rules(gctx->db_uid,
+                                              ctx.updated_tests,
+                                              &ctx.global_rules,
+                                              gctx->flags));
         }
 
         if (gctx->rules_save_to != NULL ||
@@ -3946,25 +3955,29 @@ trc_update_process_logs(trc_update_ctx *gctx)
             trc_update_rules_free(&ctx.global_rules);
 
             printf("Generating updating rules...\n");
-            trc_update_gen_rules(ctx.db_uid, ctx.updated_tests,
-                                 gctx->flags);
+            CHECK_F_RC(trc_update_gen_rules(ctx.db_uid,
+                                            ctx.updated_tests,
+                                            gctx->flags));
 
             if (gctx->flags & TRC_LOG_PARSE_GEN_APPLY)
             {
                 printf("Applying updating rules...\n");
-                trc_update_apply_rules(gctx->db_uid, ctx.updated_tests,
-                                       &ctx.global_rules,
-                                       gctx->flags &
-                                            ~TRC_LOG_PARSE_RULES_CONFL);
+                CHECK_F_RC(trc_update_apply_rules(
+                                        gctx->db_uid,
+                                        ctx.updated_tests,
+                                        &ctx.global_rules,
+                                        gctx->flags &
+                                            ~TRC_LOG_PARSE_RULES_CONFL));
             }
         }
 
         if (gctx->rules_save_to != NULL)
         {
             printf("Saving updating rules...\n");
-            save_test_rules_to_file(ctx.updated_tests,
-                                    gctx->rules_save_to,
-                                    gctx->cmd);
+            CHECK_F_RC(save_test_rules_to_file(
+                                        ctx.updated_tests,
+                                        gctx->rules_save_to,
+                                        gctx->cmd));
         }
 
         if ((gctx->rules_save_to == NULL ||
@@ -3972,8 +3985,8 @@ trc_update_process_logs(trc_update_ctx *gctx)
             !(gctx->flags & TRC_LOG_PARSE_NO_GEN_WILDS))
         {
             printf("Generating wildcards...\n");
-            trc_update_generate_wilds(gctx->db_uid,
-                                      ctx.updated_tests);
+            CHECK_F_RC(trc_update_generate_wilds(gctx->db_uid,
+                                                 ctx.updated_tests));
         }
 
         printf("Done.\n");
@@ -3986,12 +3999,15 @@ trc_update_process_logs(trc_update_ctx *gctx)
                                     tests_group->path);
     }
 
+cleanup:
     trc_update_clear_rules(ctx.db_uid, ctx.updated_tests);
     trc_update_tests_groups_free(ctx.updated_tests);
     free(ctx.updated_tests);
     ctx.updated_tests = NULL;
     trc_update_rules_free(&ctx.global_rules);
     return rc;
+
+#undef CHECK_F_RC
 }
 
 /* See the description in trc_report.h */
