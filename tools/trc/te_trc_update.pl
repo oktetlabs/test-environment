@@ -282,9 +282,9 @@ if ($rc & 127)
     printf("te-trc-update died with signal %d.%s\n", ($rc & 127),
            ($rc & 128) ? " Core dumped." : "");
 }
-else
+elsif ($rc != 0)
 {
-    print("te-trc-update failed\n");
+    print("te-trc-update failed, exit status is $rc\n");
 }
 
 my $rc_aux = system("rm -f ".join(" ", @tmp_files));
