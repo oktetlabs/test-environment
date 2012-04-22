@@ -3920,9 +3920,9 @@ trc_update_process_logs(trc_update_ctx *gctx)
             !(gctx->flags & TRC_LOG_PARSE_LOG_WILDS))
         {
             printf("Filling user data in TRC DB...\n");
-            CHECK_F_RC(trc_update_fill_db_user_data(gctx->db,
-                                                    ctx.updated_tests,
-                                                    gctx->db_uid));
+            trc_update_fill_db_user_data(gctx->db,
+                                         ctx.updated_tests,
+                                         gctx->db_uid);
         }
 
         printf("Simplifying expected results...\n");
