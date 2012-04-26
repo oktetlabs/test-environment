@@ -2193,6 +2193,11 @@ ethtool_cmd2type(tarpc_ethtool_command cmd)
 #endif
             return TARPC_ETHTOOL_VALUE;
 
+#ifdef ETHTOOL_GPERMADDR
+        case ETHTOOL_GPERMADDR:
+            return TARPC_ETHTOOL_PADDR;
+#endif
+
         default:
             return 0;
     }
@@ -2254,6 +2259,9 @@ ethtool_cmd2str(tarpc_ethtool_command cmd)
 #ifdef ETHTOOL_PHYS_ID
         MACRO2STR(PHYS_ID);
 #endif
+#ifdef ETHTOOL_GPERMADDR
+        MACRO2STR(GPERMADDR);
+#endif
 #ifdef ETHTOOL_GUFO
         MACRO2STR(GUFO);
 #endif
@@ -2308,6 +2316,28 @@ ethtool_data_rpc2h(tarpc_ethtool *rpc_edata, caddr_t *edata_p)
                 COPY_FIELD(ecmd, rpc_ecmd, maxtxpkt);
                 COPY_FIELD(ecmd, rpc_ecmd, maxrxpkt);
 
+                break;
+            }
+
+        case TARPC_ETHTOOL_PADDR:
+            {
+                struct ethtool_perm_addr *eaddr = 
+                        *(struct ethtool_perm_addr **)edata_p;
+                tarpc_ethtool_perm_addr  *rpc_eaddr = 
+                        &rpc_edata->data.tarpc_ethtool_data_u.paddr;
+
+                if (eaddr == NULL)
+                {
+                    eaddr = calloc(sizeof(struct ethtool_perm_addr) +
+                                   sizeof(rpc_eaddr->data), 1);
+                    if (eaddr == NULL)
+                        break;
+                    *edata_p = (caddr_t)eaddr;
+                }
+
+                eaddr->size = sizeof(rpc_eaddr->data);
+                memcpy(eaddr->data, &rpc_eaddr->data,
+                       eaddr->size);
                 break;
             }
 
@@ -2369,6 +2399,25 @@ ethtool_data_h2rpc(tarpc_ethtool *rpc_edata, caddr_t edata)
                 COPY_FIELD(rpc_ecmd, ecmd, maxtxpkt);
                 COPY_FIELD(rpc_ecmd, ecmd, maxrxpkt);
 
+                break;
+            }
+
+        case TARPC_ETHTOOL_PADDR:
+            {
+                struct ethtool_perm_addr *eaddr = 
+                        (struct ethtool_perm_addr *)edata;
+                tarpc_ethtool_perm_addr  *rpc_eaddr = 
+                        &rpc_edata->data.tarpc_ethtool_data_u.paddr;
+
+                if (eaddr->size > sizeof(rpc_eaddr->data))
+                {
+                    ERROR("%s(): too big size of hardware address %d",
+                          __FUNCTION__, eaddr->size);
+                    break;
+                }
+
+                memcpy(&rpc_eaddr->data, eaddr->data,
+                       eaddr->size);
                 break;
             }
 

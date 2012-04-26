@@ -227,7 +227,8 @@ struct tarpc_gettimeofday_out {
 /* Ethtool data types */
 enum tarpc_ethtool_type {
     TARPC_ETHTOOL_CMD = 1,      /**< struct ethtool_cmd */
-    TARPC_ETHTOOL_VALUE = 2     /**< struct ethtool_value */
+    TARPC_ETHTOOL_VALUE = 2,    /**< struct ethtool_value */
+    TARPC_ETHTOOL_PADDR = 3     /**< struct ethtool_perm_addr */
 };
 
 struct tarpc_ethtool_cmd {
@@ -243,6 +244,10 @@ struct tarpc_ethtool_cmd {
     uint32_t maxrxpkt;
 };
 
+struct tarpc_ethtool_perm_addr {
+    tarpc_local data;
+};
+
 struct tarpc_ethtool_value {
     uint32_t data;
 };
@@ -253,6 +258,7 @@ union tarpc_ethtool_data
 {
     case TARPC_ETHTOOL_CMD:     tarpc_ethtool_cmd cmd;
     case TARPC_ETHTOOL_VALUE:   tarpc_ethtool_value value;
+    case TARPC_ETHTOOL_PADDR:   tarpc_ethtool_perm_addr paddr;
     default:                    void;
 };
 

@@ -830,6 +830,23 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                             break;
                         }
 
+                        case TARPC_ETHTOOL_PADDR:
+                        {
+                            struct ethtool_perm_addr *eaddr = 
+                                (struct ethtool_perm_addr *)ifr->ifr_data;
+                            snprintf(ifreq_buf + strlen(ifreq_buf),
+                                     sizeof(ifreq_buf) - strlen(ifreq_buf),
+                                     "hwaddr: %02x:%02x:%02x:%02x:%02x"
+                                     ":%02x",
+                                     (unsigned char)(eaddr->data[0]),
+                                     (unsigned char)(eaddr->data[1]),
+                                     (unsigned char)(eaddr->data[2]),
+                                     (unsigned char)(eaddr->data[3]),
+                                     (unsigned char)(eaddr->data[4]),
+                                     (unsigned char)(eaddr->data[5]));
+                            break;
+                        }
+
                         case TARPC_ETHTOOL_VALUE:
                         {
                             struct ethtool_value *evalue = 
