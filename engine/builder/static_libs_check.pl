@@ -47,9 +47,7 @@ my $cmd_out;
 my $cmd_pid;
 my $result = "";
 
-# Read list of libraries both from standard input and from
-# list of arguments passed to script
-#@libs = (@libs, parse_line('[\s]+', 1, $_)) while (<STDIN>);
+# Read list of libraries from list of arguments passed to script
 @libs = (@libs, parse_line('[\s]+', 1, $_)) foreach (@ARGV);
 
 if (defined($te_ext_libs_path))
@@ -62,7 +60,6 @@ else
 }
 
 # Implementation of binary search in array of strings
-
 sub bin_search_aux
 {
     my $arr = $_[0];

@@ -79,6 +79,20 @@ cat >> $RESULT <<\EOF
 
 EOF
 
+# This searches for symbols in table produced by nm
+# tool. There are three columns, the first one is symbol
+# value which aren't used here, the second one ($2) is
+# symbol type (we are interested only in 'T' type which
+# means that symbol is from code section). In the third
+# column ($3) symbol name is placed. We filter out
+# symbols with names including '@' such as
+# "printf@@GLIBC_2.2.5".
+#
+# __i686.get_pc_thunk.* are used to obtain things like
+# address of Global Offset Table (where addresses of
+# global variables are stored) in position independent
+# code on x86 platform. They should be filtered out to
+# create correct symbol table for TA.
 awk --posix '
 {                                             \
     if ($3 == "") next ;                      \
