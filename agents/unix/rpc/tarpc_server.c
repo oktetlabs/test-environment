@@ -595,6 +595,13 @@ _create_process_1_svc(tarpc_create_process_in *in,
     }
     if (out->pid == 0)
     {
+        /*
+         * Change the process group to allow killing all the children
+         * together with this RPC server and to disallow killing of this
+         * process when its parent RPC server is killed
+         */
+        setpgid(getpid(), getpid());
+
         if (in->flags & RCF_RPC_SERVER_GET_EXEC)
             ta_rpc_execve(in->name.name_val);
         rcf_pch_detach();
