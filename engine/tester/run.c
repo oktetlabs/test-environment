@@ -89,6 +89,9 @@
 /** Print string which may be NULL. */
 #define PRINT_STRING(_str)  ((_str) ? : "")
 
+/** ID assigned by the Tester to the test instance */
+extern unsigned int te_test_id;
+
 #if 0
 #undef TE_LOG_LEVEL
 #define TE_LOG_LEVEL (TE_LL_WARN | TE_LL_ERROR | \
@@ -962,12 +965,16 @@ log_test_result(test_id parent, test_id test, te_test_status status,
  * @param status        Tester internal test status
  * @param result        TE test result
  * @param error         Location for additional error string
+ * @param id            Test ID
  */
 static void
 tester_test_status_to_te_test_result(tester_test_status status,
                                      te_test_result *result,
-                                     const char **error)
+                                     const char **error,
+                                     test_id id)
 {
+    test_id saved_id;
+
     *error = NULL;
 
     switch (status)
@@ -1048,15 +1055,19 @@ tester_test_status_to_te_test_result(tester_test_status status,
     {
         te_test_verdict *v;
 
-#if 0
-        /* TODO: Verdict message has to have correct ID */
-        /* 
-         * Put additional verdict into the log to have correct
-         * results with off-line TRC tools.
-         */
-        TE_LOG(TE_LL_ERROR, "Tester Verdict", TE_LOG_CMSG_USER,
-               "%s", *error);
-#endif
+        if (id >= 0)
+        {
+            /* 
+             * Put additional verdict into the log to have correct
+             * results with off-line TRC tools if the result of
+             * test script execution is considered.
+             */
+            saved_id = te_test_id;
+            te_test_id = id;
+            TE_LOG(TE_LL_ERROR, "Tester Verdict", TE_LOG_CMSG_USER,
+                   "%s", *error);
+            te_test_id = saved_id;
+        }
 
         v = TE_ALLOC(sizeof(*v));
         if (v == NULL)
@@ -2751,7 +2762,14 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
          */
         tester_test_status_to_te_test_result(ctx->current_result.status,
                                              &ctx->current_result.result,
-                                             &ctx->current_result.error);
+                                             &ctx->current_result.error,
+                                             /* Verdicts in case of test
+                                              * fails like segfault
+                                              * should be additionaly
+                                              * reported in log for test
+                                              * scripts only */
+                                             ri->type == RUN_ITEM_SCRIPT ?
+                                               ctx->current_result.id : -1);
 
 #if WITH_TRC
         if (~ctx->flags & TESTER_NO_TRC)
