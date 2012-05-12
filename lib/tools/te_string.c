@@ -108,7 +108,6 @@ void
 te_string_cut(te_string *str, size_t len)
 {
     assert(str != NULL);
-    assert(str->len >= 0);
     if (len > str->len)
         len = str->len;
     assert(str->len >= len);
