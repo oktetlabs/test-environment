@@ -616,6 +616,110 @@ rpc_simple_receiver(rcf_rpc_server *rpcs,
     RETVAL_INT(simple_receiver, out.retval);
 }
 
+/** See description in tapi_rpc_misc.h */
+int
+rpc_pattern_sender(rcf_rpc_server *rpcs,
+                   int s, char *fname, int iomux, int size_min,
+                   int size_max, int size_rnd_once, int delay_min,
+                   int delay_max, int delay_rnd_once, int time2run,
+                   uint64_t *sent, int ignore_err)
+{
+    tarpc_pattern_sender_in  in;
+    tarpc_pattern_sender_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(pattern_sender, -1);
+    }
+
+    if (fname == NULL)
+    {
+        ERROR("%s(): Invalid pattern generating function name",
+              __FUNCTION__);
+        RETVAL_INT(pattern_sender, -1);
+    }
+
+    in.s = s;
+    in.fname.fname_len = strlen(fname);
+    in.fname.fname_val = strdup(fname);
+    in.iomux = iomux;
+    in.size_min = size_min;
+    in.size_max = size_max;
+    in.size_rnd_once = size_rnd_once;
+    in.delay_min = delay_min;
+    in.delay_max = delay_max;
+    in.delay_rnd_once = delay_rnd_once;
+    in.time2run = time2run;
+    in.ignore_err = ignore_err;
+
+    if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
+        rpcs->timeout = TE_SEC2MS(time2run + TAPI_RPC_TIMEOUT_EXTRA_SEC);
+
+    rcf_rpc_call(rpcs, "pattern_sender", &in, &out);
+
+    if (sent != NULL)
+        *sent = out.bytes;
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(pattern_sender, out.retval);
+    TAPI_RPC_LOG(rpcs, pattern_sender, "%d, %s, %s, %d, %d, %d, %d, "
+                 "%d, %d, %d, %d", "%d sent=%u",
+                 s, fname, iomux2str(iomux), size_min, size_max,
+                 size_rnd_once, delay_min, delay_max, delay_rnd_once,
+                 time2run, ignore_err, out.retval,
+                 (unsigned int)out.bytes);
+    RETVAL_INT(pattern_sender, out.retval);
+}
+
+/** See description in tapi_rpc_misc.h */
+int
+rpc_pattern_receiver(rcf_rpc_server *rpcs, int s,
+                     char *fname, int iomux,
+                     uint32_t time2run, uint64_t *received)
+{
+    tarpc_pattern_receiver_in  in;
+    tarpc_pattern_receiver_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(pattern_receiver, -1);
+    }
+
+    if (fname == NULL)
+    {
+        ERROR("%s(): Invalid pattern generating function name",
+              __FUNCTION__);
+        RETVAL_INT(pattern_sender, -1);
+    }
+
+    in.s = s;
+    in.fname.fname_len = strlen(fname);
+    in.fname.fname_val = strdup(fname);
+    in.iomux = iomux;
+    in.time2run = time2run;
+    if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
+        rpcs->timeout = TE_SEC2MS(time2run + TAPI_RPC_TIMEOUT_EXTRA_SEC);
+
+    rcf_rpc_call(rpcs, "pattern_receiver", &in, &out);
+
+    if (received != NULL)
+        *received = out.bytes;
+
+    CHECK_RETVAL_VAR(pattern_receiver, out.retval,
+                     !(out.retval <= 0 && out.retval >= -2), -1);
+    TAPI_RPC_LOG(rpcs, pattern_receiver, "%d, %s, %s, %d",
+                 "%d received=%u", s, fname, iomux2str(iomux), time2run,
+                 out.retval, (unsigned long)out.bytes);
+    RETVAL_INT(pattern_receiver, out.retval);
+}
+
 /**
  * Wait for readable socket.
  *

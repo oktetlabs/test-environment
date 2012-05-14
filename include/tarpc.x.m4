@@ -3594,6 +3594,51 @@ struct tarpc_echoer_out {
     uint64_t    rx_stat<>;
 };
 
+struct tarpc_pattern_sender_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int   s;              /**< Socket to be used */
+    char        fname<>;        /**< Name of function generating a
+                                     pattern */
+    iomux_func  iomux;          /**< Iomux function to be used **/
+    uint32_t    size_min;       /**< Minimum size of the message */
+    uint32_t    size_max;       /**< Maximum size of the message */
+    tarpc_bool  size_rnd_once;  /**< If true, random size should be
+                                     calculated only once and used for
+                                     all messages; if false, random size
+                                     is calculated for each message */
+    uint32_t    delay_min;      /**< Minimum delay between messages in 
+                                     microseconds */
+    uint32_t    delay_max;      /**< Maximum delay between messages in 
+                                     microseconds */
+    tarpc_bool  delay_rnd_once; /**< If true, random delay should be
+                                     calculated only once and used for
+                                     all messages; if false, random
+                                     delay is calculated for each
+                                     message */
+    uint32_t    time2run;       /**< How long run (in seconds) */
+    tarpc_bool  ignore_err;     /**< Ignore errors while run */
+};
+
+struct tarpc_pattern_sender_out {
+    struct tarpc_out_arg common;
+    
+    tarpc_int   retval;     /**< 0 (success) or -1 (failure) */
+    
+    uint64_t    bytes;      /**< Number of sent bytes */
+};
+
+struct tarpc_pattern_receiver_in {
+    struct tarpc_in_arg common;
+    
+    tarpc_int   s;               /**< Socket to be used */
+    char        fname<>;         /**< Pattern generating function */
+    iomux_func  iomux;           /**< Iomux function to be used **/
+    uint32_t    time2run;        /**< Receiving duration (in seconds) */
+};
+
+typedef struct tarpc_simple_receiver_out tarpc_pattern_receiver_out;
+
 struct tarpc_create_process_in {
     struct tarpc_in_arg common;
     
@@ -4649,6 +4694,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
 
         RPC_DEF(simple_sender)
         RPC_DEF(simple_receiver)
+        RPC_DEF(pattern_sender)
+        RPC_DEF(pattern_receiver)
         RPC_DEF(wait_readable)
         RPC_DEF(recv_verify)
         RPC_DEF(flooder)

@@ -242,6 +242,53 @@ extern int rpc_simple_sender(rcf_rpc_server *handle,
 extern int rpc_simple_receiver(rcf_rpc_server *handle,
                                int s, uint32_t time2run,
                                uint64_t *received);
+/**
+ * Patterned data sender.
+ *
+ * @param rpcs              RPC server
+ * @param s                 a socket to be user for sending
+ * @param fname             a function used to generate a pattern
+ * @param iomux             IO multiplexing function
+ * @param size_min          minimum size of the message in bytes
+ * @param size_max          maximum size of the message in bytes
+ * @param size_rnd_once     if true, random size should be calculated
+ *                          only once and used for all messages;
+ *                          if false, random size is calculated for
+ *                          each message
+ * @param delay_min         minimum delay between messages in microseconds
+ * @param delay_max         maximum delay between messages in microseconds
+ * @param delay_rnd_once    if true, random delay should be calculated
+ *                          only once and used for all messages;
+ *                          if false, random delay is calculated for
+ *                          each message
+ * @param time2run          how long run (in seconds)
+ * @param sent              location for number of sent bytes
+ * @param ignore_err        Ignore errors while run
+ *
+ * @return Number of sent bytes or -1 in the case of failure
+ */
+extern int rpc_pattern_sender(rcf_rpc_server *rpcs,
+                              int s, char *fname, int iomux, int size_min,
+                              int size_max, int size_rnd_once,
+                              int delay_min, int delay_max,
+                              int delay_rnd_once, int time2run,
+                              uint64_t *sent, int ignore_err);
+
+/**
+ * Patterned data receiver.
+ *
+ * @param rpcs            RPC server
+ * @param s               a socket to be user for receiving
+ * @param fname           a function used to generate a pattern
+ * @param iomux           IO multiplexing function
+ * @param received        location for number of received bytes
+ *
+ * @return number of received bytes, -2 if data doesn't match the pattern,
+ *         or -1 in the case of another failure
+ */
+extern int rpc_pattern_receiver(rcf_rpc_server *rpcs, int s,
+                                char *fname, int iomux,
+                                uint32_t time2run, uint64_t *received);
 
 /**
  * Wait for readable socket.

@@ -4922,7 +4922,6 @@ recv_verify(tarpc_recv_verify_in *in, tarpc_recv_verify_out *out)
 
 #undef RCV_VF_BUF
 
-
 /*-------------- generic iomux functions --------------------------*/
 
 /* TODO: iomux_funcs should include iomux type, making arg list for all the
@@ -5915,6 +5914,403 @@ echoer(tarpc_echoer_in *in)
     return 0;
 }
 
+/*-------------- pattern_sender() --------------------------*/
+TARPC_FUNC(pattern_sender, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+/* Count of numbers in a sequence (should not be greater that 65280). */
+#define SEQUENCE_NUM 10000
+/* Period of a sequence */
+#define SEQUENCE_PERIOD_NUM 255 + (SEQUENCE_NUM - 255) * 2
+
+/**
+ * Get nth element of a string which is a concatenation of
+ * a periodic sequence 1, 2, 3, ..., SEQUENCE_PERIOD_NUM, 1, 2, ...
+ * where numbers are written in a positional base 256 system.
+ *
+ * @param n     Number
+ *
+ * @return Character code
+ */
+static char
+get_nth_elm(int n)
+{
+    int m;
+
+    n = n % SEQUENCE_PERIOD_NUM + 1;
+
+    if (n <= 255)
+        return n;
+    else
+    {
+        m = n - 256;
+        return m % 2 == 0 ? (m / 2 / 255) + 1 : (m / 2) % 255 + 1;
+    }
+}
+
+/**
+ * Fill a buffer with values provided by @b get_nth_elm().
+ *
+ * @param buf       Buffer
+ * @param size      Buffer size
+ * @param start_n   Starting number in a sequence
+ *
+ * @return 0 on success
+ */
+te_errno
+fill_buff_with_sequence(char *buf, int size, uint64_t start_n)
+{
+    int i;
+    start_n = start_n % SEQUENCE_PERIOD_NUM;
+
+    for (i = 0; i < size; i++)
+    {
+        buf[i] = get_nth_elm(start_n + i);
+    }
+
+    return 0;
+}
+
+/**
+ * Pattern sender.
+ *
+ * @param in                input RPC argument
+ * @param out               output RPC argument
+ *
+ * @return 0 on success or -1 in the case of failure
+ */
+int
+pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
+{
+    int             errno_save = errno;
+    api_func_ptr    pattern_gen_func;
+    api_func        send_func;
+    iomux_funcs     iomux_f;
+    char           *buf;
+
+    int size = rand_range(in->size_min, in->size_max);
+    int delay = rand_range(in->delay_min, in->delay_max);
+
+    time_t start;
+    time_t now;
+
+    int fd = -1;
+    int events = 0;
+    int rc = 0;
+
+    int                     iomux_timeout;
+    iomux_state             iomux_st;
+    iomux_return            iomux_ret;
+    iomux_return_iterator   itr;
+
+    out->bytes = 0;
+
+    RING("%s() started", __FUNCTION__);
+
+    if (in->size_min > in->size_max || in->delay_min > in->delay_max)
+    {
+        ERROR("Incorrect size or delay parameters");
+        return -1;
+    }
+
+    if (tarpc_find_func(in->common.use_libc, "send", &send_func) != 0 ||
+        (pattern_gen_func =
+                rcf_ch_symbol_addr(in->fname.fname_val, TRUE)) == NULL ||
+        iomux_find_func(in->common.use_libc, in->iomux, &iomux_f) != 0)
+        return -1;
+
+    if ((rc = iomux_create_state(in->iomux, &iomux_f, &iomux_st)) != 0)
+    {
+        iomux_close(in->iomux, &iomux_f, &iomux_st);
+        return rc;
+    }
+
+    if ((rc = iomux_add_fd(in->iomux, &iomux_f, &iomux_st,
+                           in->s, POLLOUT)) != 0)
+    {
+        iomux_close(in->iomux, &iomux_f, &iomux_st);
+        return rc;
+    }
+
+    if ((buf = malloc(in->size_max)) == NULL)
+    {
+        ERROR("Out of memory");
+        return -1;
+    }
+
+#define PTRN_SEND_ERROR \
+    do {                                             \
+        iomux_close(in->iomux, &iomux_f, &iomux_st); \
+        free(buf);                                   \
+        return -1;                                   \
+    } while (0)
+
+    for (start = now = time(NULL);
+         (unsigned int)(now - start) <= in->time2run;
+         now = time(NULL))
+    {
+        int len;
+
+        if (!in->size_rnd_once)
+            size = rand_range(in->size_min, in->size_max);
+
+        if ((rc = pattern_gen_func(buf, size, out->bytes)) != 0)
+        {
+            ERROR("%s(): failed to generate a pattern", __FUNCTION__);
+            PTRN_SEND_ERROR;
+        }
+
+        if (!in->delay_rnd_once)
+            delay = rand_range(in->delay_min, in->delay_max);
+
+        if (TE_US2SEC(delay) > (int)(in->time2run) - (now - start) + 1)
+            break;
+
+        usleep(delay);
+        now = time(NULL);
+        iomux_timeout = TE_SEC2MS(in->time2run - (now - start));
+        if (iomux_timeout <= 0)
+            break;
+
+        rc = iomux_wait(in->iomux, &iomux_f, &iomux_st, &iomux_ret,
+                        iomux_timeout);
+
+        if (rc < 0)
+        {
+            if (errno == EINTR)
+                continue;
+            ERROR("%s(): %s wait failed: %d", __FUNCTION__,
+                  iomux2str(in->iomux), errno);
+            PTRN_SEND_ERROR;
+        }
+        else if (rc > 1)
+        {
+            ERROR("%s(): %s wait returned more then one fd", __FUNCTION__,
+                  iomux2str(in->iomux));
+            PTRN_SEND_ERROR;
+        }
+        else if (rc == 0)
+            break;
+
+        itr = IOMUX_RETURN_ITERATOR_START;
+        itr = iomux_return_iterate(in->iomux, &iomux_st, &iomux_ret,
+                                   itr, &fd, &events);
+        if (fd != in->s)
+        {
+            ERROR("%s(): %s wait returned incorrect fd %d instead of %d",
+                  __FUNCTION__, iomux2str(in->iomux), fd, in->s);
+            PTRN_SEND_ERROR;
+        }
+
+        if (!(events & POLLOUT))
+        {
+            ERROR("%s(): %s wait successeed but the socket is "
+                  "not writable", __FUNCTION__, iomux2str(in->iomux));
+            PTRN_SEND_ERROR;
+        }
+
+        len = send_func(in->s, buf, size, 0);
+
+        if (len < 0)
+        {
+            if (!in->ignore_err)
+            {
+                ERROR("send() failed in pattern_sender(): errno %s (%x)",
+                      strerror(errno), errno);
+                PTRN_SEND_ERROR;
+            }
+            else
+            {
+                len = errno = 0;
+                continue;
+            }
+        }
+        out->bytes += len;
+    }
+#undef PTRN_SEND_ERROR
+
+    RING("pattern_sender() stopped, sent %llu bytes",
+         out->bytes);
+
+    iomux_close(in->iomux, &iomux_f, &iomux_st);
+    free(buf);
+
+    /* Clean up errno */
+    errno = errno_save;
+
+    return 0;
+}
+
+/*-------------- pattern_receiver() --------------------------*/
+TARPC_FUNC(pattern_receiver, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+/**
+ * Pattern receiver.
+ *
+ * @param in                input RPC argument
+ * @param out               output RPC argument
+ *
+ * @return 0 on success, -2 in case of data not matching the pattern
+ *         received or -1 in the case of another failure
+ */
+int
+pattern_receiver(tarpc_pattern_receiver_in *in,
+                 tarpc_pattern_receiver_out *out)
+{
+#define MAX_PKT (1024 * 1024)
+    int             errno_save = errno;
+    api_func_ptr    pattern_gen_func;
+    api_func        recv_func;
+    iomux_funcs     iomux_f;
+    char           *buf;
+    char           *check_buf;
+
+    time_t start;
+    time_t now;
+
+    int fd = -1;
+    int events = 0;
+    int rc = 0;
+
+    int                     iomux_timeout;
+    iomux_state             iomux_st;
+    iomux_return            iomux_ret;
+    iomux_return_iterator   itr;
+
+    out->bytes = 0;
+
+    RING("%s() started", __FUNCTION__);
+
+    if (tarpc_find_func(in->common.use_libc, "recv", &recv_func) != 0 ||
+        (pattern_gen_func =
+                rcf_ch_symbol_addr(in->fname.fname_val, TRUE)) == NULL ||
+        iomux_find_func(in->common.use_libc, in->iomux, &iomux_f) != 0)
+        return -1;
+
+    if ((rc = iomux_create_state(in->iomux, &iomux_f, &iomux_st)) != 0)
+    {
+        iomux_close(in->iomux, &iomux_f, &iomux_st);
+        return rc;
+    }
+
+    if ((rc = iomux_add_fd(in->iomux, &iomux_f, &iomux_st,
+                           in->s, POLLIN)) != 0)
+    {
+        iomux_close(in->iomux, &iomux_f, &iomux_st);
+        return rc;
+    }
+
+    if ((buf = malloc(MAX_PKT)) == NULL ||
+        (check_buf = malloc(MAX_PKT)) == NULL)
+    {
+        ERROR("Out of memory");
+        return -1;
+    }
+
+#define PTRN_RECV_ERROR \
+    do {                                             \
+        iomux_close(in->iomux, &iomux_f, &iomux_st); \
+        free(buf);                                   \
+        return -1;                                   \
+    } while (0)
+
+    for (start = now = time(NULL);
+         (unsigned int)(now - start) <= in->time2run;
+         now = time(NULL))
+    {
+        int len;
+
+        now = time(NULL);
+        iomux_timeout = TE_SEC2MS(in->time2run - (now - start));
+        if (iomux_timeout <= 0)
+            break;
+
+        rc = iomux_wait(in->iomux, &iomux_f, &iomux_st, &iomux_ret,
+                        iomux_timeout);
+
+        if (rc < 0)
+        {
+            if (errno == EINTR)
+                continue;
+            ERROR("%s(): %s wait failed: %d", __FUNCTION__,
+                  iomux2str(in->iomux), errno);
+            PTRN_RECV_ERROR;
+        }
+        else if (rc > 1)
+        {
+            ERROR("%s(): %s wait returned more then one fd", __FUNCTION__,
+                  iomux2str(in->iomux));
+            PTRN_RECV_ERROR;
+        }
+        else if (rc == 0)
+            break;
+
+        itr = IOMUX_RETURN_ITERATOR_START;
+        itr = iomux_return_iterate(in->iomux, &iomux_st, &iomux_ret,
+                                   itr, &fd, &events);
+        if (fd != in->s)
+        {
+            ERROR("%s(): %s wait returned incorrect fd %d instead of %d",
+                  __FUNCTION__, iomux2str(in->iomux), fd, in->s);
+            PTRN_RECV_ERROR;
+        }
+
+        if (!(events & POLLIN))
+        {
+            ERROR("%s(): %s wait successeed but the socket is "
+                  "not writable", __FUNCTION__, iomux2str(in->iomux));
+            PTRN_RECV_ERROR;
+        }
+
+        len = recv_func(in->s, buf, MAX_PKT, MSG_DONTWAIT);
+
+        if (len < 0)
+        {
+            ERROR("recv() failed in pattern_receiver(): errno %s (%x)",
+                  strerror(errno), errno);
+            PTRN_RECV_ERROR;
+        }
+        else
+        {
+            if ((rc = pattern_gen_func(check_buf, len, out->bytes)) != 0)
+            {
+                ERROR("%s(): failed to generate a pattern", __FUNCTION__);
+                PTRN_RECV_ERROR;
+            }
+
+            if (memcmp(buf, check_buf, len) != 0)
+            {
+                ERROR("%s(): received data doesn't match a pattern",
+                      __FUNCTION__);
+                iomux_close(in->iomux, &iomux_f, &iomux_st);
+                free(buf);
+                return -2; 
+            }
+        }
+
+        out->bytes += len;
+    }
+#undef PTRN_RECV_ERROR
+
+    RING("pattern_receiver() stopped, received %llu bytes",
+         out->bytes);
+
+    iomux_close(in->iomux, &iomux_f, &iomux_st);
+    free(buf);
+
+    /* Clean up errno */
+    errno = errno_save;
+
+    return 0;
+#undef MAX_PKT
+}
 
 /*-------------- sendfile() ------------------------------*/
 
