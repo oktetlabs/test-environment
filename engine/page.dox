@@ -2,5 +2,18 @@
 
 @section te_eng_introduction Introduction
 
- 
+Test Engine is a set of software components that provide essential features of Test Environment. It is unlikely that you will need to update any of Test Engine components, but more likely you will need to implement some helper libraries that utilize services provided by Test Engine or you will need to add some functionality in Test Agents.
+
+Test Engine consists of the following components:
+- <b>Dispatcher</b>, which is responsible for configuring and starting of another subsystems;
+- <b>Builder</b>, which is responsible for preparing libraries and executables for Test Agents and TE Subsystems as well as NUT bootable images and building the tests;
+- <b>Configurator</b> (Configuration Subsystem, CS), which is responsible for configuring the environment, providing configuration information to tests and for recovering the configuration after failures.
+  Moreover it supports some TEN-local database used by Test Packages to store shared data;
+- <b>Remote Control Facility</b> (RCF), which is responsible for starting Test Agents and for all interactions between Test Engine and Test Agents on behalf of other subsystems and tests;
+- <b>Tester</b>, which is responsible for running a set of Test Packages specified by a user in the mode specified by a user (one-by-one, simultaneous, debugging);
+- <b>Logger</b>, which provides logging facilities for Test Environment (Test Engine and Test Agents) and tests, and log processing tools for users.
+.
+
+@image html ten_decomposition.png "High Level decomposition of Test Engine Components"
+
  */

@@ -38,5 +38,11 @@ Depending on the physical location of Test Agent and the device it controls we c
 
 @image html agt_types.png "Possible physical location of Test Agents"
 
+All communication with Test Agents performed via RCF components. Interactions are done with text-based Test Protocol.
+
+@section te_agt_geatures Test Agent Features
+
+Test Agent supports the following features:
+
 
  */

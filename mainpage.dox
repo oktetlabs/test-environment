@@ -8,7 +8,7 @@ was used for testing SNMP MIBs and CLI commands. Two years later (in 2002) softw
 
 Few years of intensive usage the software in testing projects showed that a deep re-design was necessary to make the architecture flexible and extandable for new and new upcoming features. In 2003 year it was decided that the redesign should be fulfilled. Due to the careful and well-thought design decisions made in 2003 year, the overall TE architecture (main components and interconnections between them) are still valid even though a lot of new features has been added since then. 
 
-@section abbreviations Abbreviations
+@section te_abbreviations Abbreviations
 
 @tdt_start
 @tdt_term DUT
@@ -38,7 +38,14 @@ Apart from other things Test Engine controls Test Agents by means of so-called T
 
 According to initial design Test Engine runs on Linux platform and there is no intend to port it to any other OS type, but Test Agents can be run on different platforms providing particular set of mandatory features for Test Engine. Test Agents are the subject to be ported to hardware/software specific components of test infrastructure.
 
+@section te_tools Test Environment Tools
 
+Apart from main components, TE provides the following set of tools:
+- <b>Report Generator</b> tool representing logs in different formats (<em>RGT</em> tool, see [TODO]);
+- <b>Testing Coverage Estimation</b> tool that gives some report about the quality of test suite we run against the software under test (see [TODO]);
+- <b>Test Result comparator</b> tool that can be used to check the
+difference between different test runs (TRC tool, see [TODO]);
+- <b>Test Package Generator</b> tool.
 
 @section terminology Terminology
 
