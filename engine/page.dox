@@ -16,4 +16,54 @@ Test Engine consists of the following components:
 
 @image html ten_decomposition.png "High Level decomposition of Test Engine Components"
 
+The following diagram gives more detailed information on relations between Test Environment components:
+
+@image html ten_interconnections.png "Interconnections of Test Engine components"
+
+<!--
+@startditaa "ditaa ten_interconnections.png -S"
+
+      Start/stop    +------------------------+            Start/stop
+   +----+-----------+       Dispatcher       +----------------------------+----------+-+
+   |    |           +-+----------------------+                            |          | |
+   |    |             |                                                   |          | |
+   |    |             | Build TE                                          |          | |
+   |    v             v                                                   |          | |
+   |  +-----------------+                   +---------------------+       |          | |
+   |  |                 |  Build tests      |       Tester        |<------+          | |
+   |  |                 |<------------------+                     |                  | |
+   |  |     Builder     |   Build DUT image |  +---------------+  |                  | |
+   |  |                 |<---------------------+     Tests     |  |                  | |
+   |  |                 |                   |  +-+----+--------+  |                  | |
+   |  +-----------------+                   +----|----|--+--------+                  | |
+   |                                             |    |  |                           | |
+   |                                             |    |  | Change/get/backup/restore | |
+   |                                             |    |  |       configuration       | |
+   |                                             |    v  v                           | |
+   |  +-----------------+                        |  +-------------------+            | |
+   |  |                 |                        |  |                   |            | |
+   +->|     Logger      |                        |  |   Configurator    |<-----------+ |
+      |                 |                        |  |       {s}         |              |
+      +--------+--------+                        |  +-------------------+              |
+               |                                 |            |                        |
+               | Get log                         |  Control   |   Configure and        |
+               |                                 | Test Agent | reboot Test Agents     |
+               v                                 v            v                        |
+      +----------------------------------------------------------------+               |
+      |                    Remote Control Facility                     |<--------------+
+      +------------------------------------------+---------------------+
+                            ^                    |
+                            | Commands and       |   Start/stop
+                            |  responses         | TA application
+                            v                    v
+                          +------------------------+
+                          |      Test Agents       |
+                          +------------------------+
+
+@endditaa
+-->
+
+More detailed information on each Test Engine component can be found at a dedicated page:
+TODO: Add references to corresponding pages.
+
  */

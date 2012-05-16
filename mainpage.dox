@@ -55,6 +55,8 @@ difference between different test runs (TRC tool, see [TODO]);
 @tdt_end
 
 
+@image html out.png
+
 - @link logger_api.h Logger API @endlink
 - @link conf_api.h Configurator API @endlink
 - @link rcf_api.h RCF API @endlink
