@@ -11,6 +11,8 @@ Few years of intensive usage the software in testing projects showed that a deep
 @section abbreviations Abbreviations
 
 @tdt_start
+@tdt_term DUT
+@tdt_def  Device Under Test
 @tdt_term RCF
 @tdt_def  Remote Control Facility
 @tdt_term TA

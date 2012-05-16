@@ -2,4 +2,41 @@
 
 @section te_agt_introduction Introduction
 
+Test Agent is a piece of software that in general runs on dedicated host and exports functionality necessary to configure test set-up, generate some traffic, or receive some statistics from device under test or auxiliary testing components.
+Depending on the particular type of an Agent, it can operate as a single process or as a set of processes or threads.
+
+The Agent is a component that is intended for future amendments, extensions and porting to different platforms.
+
+At the time or writing this document TE has Test Agents available for the following Operating Systems:
+- Linux;
+- FreBSD;
+- Windows;
+- Solaris.
+
+Depending on the physical location of Test Agent and the device it controls we can differentiate Agents as following:
+- <b>Auxiliary Agent</b><br/>
+  Test Agent running on an auxiliary station and controlling this station.<br/>
+  Test Protocol is used over a network and all commands are applied to the station on which Test Agent runs. Such Agents are necessary when we do Black Box testing:
+  - to emulate presence of some software or hardware component in the test set-up;
+  - network protocol testing (sending/receiving protocol data);
+  - in interoperability testing;
+  - external interface testing (SNMP, TR-069, CLI).
+  .
+  Please note that a Test Agent can be run on the same station as Test Engine, the only difference is that “reboot” command should never be applied to this Test Agent;
+- <b>Proxy Agent</b><br/>
+  Test Agent running on an auxiliary station and controlling the DUT.<br/>
+  Test Protocol is used over a network and all commands are applied to the DUT (Test Agent interacts with the DUT via a DUT-specific interface).<br/>
+  This kind of Agent is necessary when we need to be able to configure DUT during test scenario or when we want to control some external equipment that provides facilities necessary in the particular test scenarios, but at the same time we only have some external interfaces exported by DUT or auxiliary equipment.
+- <b>Embedded Agent</b><br/>
+  Test Agent running on a DUT and controlling the DUT.<br/>
+  Test Protocol is used over a network or over some other transport (for example, over a serial port) and all commands are applied to the NUT.<br/>
+  This kind of Test Agent is necessary when we want to do White Box testing (i.e. when we are able to integrate our software components into the DUT):
+  - Module testing;
+  - DUP API testing;
+  - DUT-specific management.
+  .
+
+@image html agt_types.png "Possible physical location of Test Agents"
+
+
  */
