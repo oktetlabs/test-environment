@@ -1,22 +1,41 @@
 /** @mainpage
 
+@section te_introduction Introduction
+
+OKTET Labs Test Environment (TE) is a software product that is intended to ease creating automated test suites.
+The history of TE goes back to 2000 year when the first prototype of software was created. At that time the product
+was used for testing SNMP MIBs and CLI commands. Two years later (in 2002) software was extended to support testing of IPv6 protocol.
+
+Few years of intensive usage the software in testing projects showed that a deep re-design was necessary to make the architecture flexible and extandable for new and new upcoming features. In 2003 year it was decided that the redesign should be fulfilled. Due to the careful and well-thought design decisions made in 2003 year, the overall TE architecture (main components and interconnections between them) are still valid even though a lot of new features has been added since then. 
+
 @section abbreviations Abbreviations
 
 @tdt_start
-
 @tdt_term RCF
 @tdt_def  Remote Control Facility
-
 @tdt_term TA
 @tdt_def  Test Agent
-
 @tdt_term TE
 @tdt_def  Test Environment
-
 @tdt_term TEN
 @tdt_def  Test Engine
-
 @tdt_end
+
+@section te_architecture Test Environment Architecture
+
+From the high level point of view TE consists of two main parts:
+- @ref te_engine;
+- @ref te_agents.
+
+The following picture shows high level decomposition of TE components:
+
+@image html hl-decomposition.png "High Level Decomposition of Test Environment components" 
+
+TE subsystems and Test Agents are distributed among several applications running on different stations.
+Apart from other things Test Engine controls Test Agents by means of so-called Test Protocol - a text-based protocol used in communication between Test Engine and Test Agents.
+
+According to initial design Test Engine runs on Linux platform and there is no intend to port it to any other OS type, but Test Agents can be run on different platforms providing particular set of mandatory features for Test Engine. Test Agents are the subject to be ported to hardware/software specific components of test infrastructure.
+
 
 
 @section terminology Terminology

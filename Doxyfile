@@ -161,8 +161,8 @@ TAB_SIZE               = 8
 # You can put \n's in the value part of an alias to insert newlines.
 
 ALIASES                = \
-    tdt_start=<table><tr><td><b>Term</b></td><td><b>Definition</b></td> \
-    tdt_term=</tr><tr><td> tdt_def=</td><td> tdt_end=</td></tr></table>
+    tdt_start=<table><tr><td><b>Term</b></td><td><b>Definition</b> \
+    tdt_term=</td></tr><tr><td> tdt_def=</td><td> tdt_end=</td></tr></table>
 
 # Set the OPTIMIZE_OUTPUT_FOR_C tag to YES if your project consists of C sources 
 # only. Doxygen will then generate output that is more tailored for C. 
@@ -393,7 +393,7 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories 
 # with spaces.
 
-INPUT                  = 
+INPUT                  = mainpage.dox agents/page.dox engine include
 
 # If the value of the INPUT tag contains directories, you can use the 
 # FILE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp 
@@ -451,7 +451,7 @@ EXAMPLE_RECURSIVE      = NO
 # directories that contain image that are included in the documentation (see 
 # the \image command).
 
-IMAGE_PATH             = 
+IMAGE_PATH             = doc/dox_resources
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should 
 # invoke to filter for each input file. Doxygen will invoke the filter program 
