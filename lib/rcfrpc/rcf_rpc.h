@@ -88,7 +88,7 @@
      (rpcs_)->name : "<UNKNOWN>")
 
 
-/** Forward declarations of RPC server context */
+/** RPC server context */
 typedef struct rcf_rpc_server {
     /* Configuration parameters */
     rcf_rpc_op  op;             /**< Instruction for RPC call */
@@ -113,7 +113,7 @@ typedef struct rcf_rpc_server {
     te_bool errno_change_check; /**< Check errno changes in the case
                                      of success */
 
-    char   *nv_lib;             /**< Library name set for the server */
+    char       *nv_lib;         /**< Library name set for the server */
 
     te_bool     use_libc;       /**< Use libc library instead of set one */
     te_bool     use_libc_once;  /**< Same as use_libc, but one call only */
@@ -177,27 +177,25 @@ rcp_rpc_default_timeout(void)
 /**
  * Obtain server handle. RPC server is created/restarted, if necessary.
  *
- * @param ta            a test agent
+ * @param ta            Test Agent name
  * @param name          name of the new server (should not start from
- *                      fork_ or thread_)
- * @param father        father name or NULL (should be NULL if clear is 
- *                      FALSE or existing is TRUE)
- * @param thread        if TRUE, the thread should be created instead 
- *                      process
- * @param existing      get only existing RPC server
- * @param clear         get newly created or restarted RPC server
+ *                      fork_, forkexec_ or thread_) or existing server
+ * @param father        father name or NULL (should be NULL if
+ *                      RCF_RPC_SERVER_GET_REUSE or
+ *                      RCF_RPC_SERVER_GET_EXISTING flag is set).
+ * @param flags         RCF_RPC_SERVER_GET_* flags
  * @param p_handle      location for new RPC server handle or NULL
  *
  * @return Status code
  */
 extern te_errno rcf_rpc_server_get(const char *ta, const char *name,
                                    const char *father, int flags,
-                                   rcf_rpc_server **p_new);
+                                   rcf_rpc_server **p_handle);
 
 /**
  * Create RPC server.
  *
- * @param ta            a test agent
+ * @param ta            Test Agent name
  * @param name          name of the new server
  * @param p_handle      location for new RPC server handle
  *
@@ -352,11 +350,12 @@ rcf_rpc_server_restart(rcf_rpc_server *rpcs)
 extern te_errno rcf_rpc_servers_restart_all(void);
 
 /**
- * Destroy RPC server.
+ * Destroy RPC server. The caller should assume the RPC server non-existent 
+ * even if the function returned non-zero.
  *
  * @param rpcs          RPC server handle
  *
- * @return Status code
+ * @return status code
  */
 extern te_errno rcf_rpc_server_destroy(rcf_rpc_server *rpcs);
 

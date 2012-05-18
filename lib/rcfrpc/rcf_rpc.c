@@ -104,20 +104,7 @@ rpc_server_sem_init(rcf_rpc_server *rpcs)
 }
 
 
-/**
- * Obtain server handle. RPC server is created/restarted, if necessary.
- *
- * @param ta            a test agent
- * @param name          name of the new server (should not start from
- *                      fork_, forkexec_, thread_)
- * @param father        father name or NULL (should be NULL if
- *                      RCF_RPC_SERVER_GET_REUSE or
- *                      RCF_RPC_SERVER_GET_EXISTING is set).
- * @param flags         RCF_RPC_SERVER_GET_* flags
- * @param p_handle      location for new RPC server handle
- *
- * @return Status code
- */
+/* See description in rcf_rpc.h */
 te_errno 
 rcf_rpc_server_get(const char *ta, const char *name,
                    const char *father, int flags,
@@ -484,15 +471,7 @@ rcf_rpc_server_mark_deleted_threads(rcf_rpc_server *rpcs)
     return FALSE;
 }
 
-/**
- * Perform execve() on the RPC server. Filename of the running process
- * if used as the first argument.
- *
- * @param rpcs          RPC server handle
- *
- * @return status code
- */
-
+/* See description in rcf_rpc.h */
 te_errno 
 rcf_rpc_server_exec(rcf_rpc_server *rpcs)
 {
@@ -538,14 +517,7 @@ rcf_rpc_server_exec(rcf_rpc_server *rpcs)
     
 }
 
-/**
- * Destroy RPC server. The caller should assume the RPC server non-existent 
- * even if the function returned non-zero.
- *
- * @param rpcs          RPC server handle
- *
- * @return status code
- */
+/* See description in rcf_rpc.h */
 te_errno 
 rcf_rpc_server_destroy(rcf_rpc_server *rpcs)
 {
@@ -583,19 +555,7 @@ rcf_rpc_server_destroy(rcf_rpc_server *rpcs)
     return 0;
 }
 
-/**
- * Call SUN RPC on the TA via RCF. The function is also used for
- * checking of status of non-blocking RPC call and waiting for
- * the finish of the non-blocking RPC call.
- *
- * @param rpcs          RPC server
- * @param proc          RPC to be called
- * @param in_arg        Input argument
- * @param out_arg       Output argument
- *
- * @attention The status code is returned in rpcs _errno.
- *            If rpcs is NULL the function does nothing.
- */
+/* See description in rcf_rpc.h */
 void
 rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc, 
              void *in_arg, void *out_arg)
@@ -803,7 +763,7 @@ extern int rcf_send_recv_msg(rcf_msg *send_buf, size_t send_size,
  * @param timeout       RPC timeout in milliseconds or 0 (unlimited)
  * @param rpc_name      Name of the RPC (e.g. "bind")
  * @param in            Input parameter C structure
- * @param in            Output parameter C structure
+ * @param out           Output parameter C structure
  *
  * @return Status code
  */
@@ -906,13 +866,7 @@ rcf_ta_call_rpc(const char *ta_name, int session,
 #undef PREFIX_LEN    
 }
 
-/**
- * Check is the RPC server has thread children.
- *
- * @param rpcs          RPC server
- *
- * @return TRUE if RPC server has children
- */
+/* See description in rcf_rpc.h */
 te_bool
 rcf_rpc_server_has_children(rcf_rpc_server *rpcs)
 {
@@ -949,17 +903,7 @@ rcf_rpc_server_has_children(rcf_rpc_server *rpcs)
     return FALSE;    
 }
 
-
-/**
- * Fork RPC server with non-default conditions.
- *
- * @param rpcs          existing RPC server handle
- * @param name          name of the new server
- * @param params        additional parameters for process creation
- * @param p_new         location for new RPC server handle
- *
- * @return Status code
- */
+/* See description in rcf_rpc.h */
 te_errno 
 rcf_rpc_server_create_process(rcf_rpc_server *rpcs, 
                               const char *name, int flags,
