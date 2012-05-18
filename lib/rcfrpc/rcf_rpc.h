@@ -272,7 +272,8 @@ rcf_rpc_server_fork_exec(rcf_rpc_server *rpcs, const char *name,
  *
  * @param rpcs          existing RPC server handle
  * @param name          name of the new server
- * @param params        additional parameters for process creation
+ * @param flags         RCF_RPC_SERVER_GET_* flags to use
+ *                      on process creation
  * @param p_new         location for new RPC server handle
  *
  * @return Status code
