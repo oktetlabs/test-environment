@@ -103,14 +103,69 @@ Here is the diagram of libraries and TE components that take part in RPC data fl
 RCF RPC library is actually reside at the same layer as RCF API library,
 but it is selected to a dedicated library just to split it on functionality basis.
 
+@section te_lib_rpc_server RPC Server
+
 Any RPC call is done in the context of RPC Server. RPC Server is a separate process or
-thread on Test Agent side in which context a function call is done. RPC Server is associated
-with name.
+thread on Test Agent side in which context a function call is done. From Test code point of view
+RPC Server is represented by rcf_rpc_server data structure and it is associated with a pair of
+names - Test Agent name and RPC Server name (this pair of names are used in configurator tree to
+identify RPC Server).
 
-For each RPC Server there are the following records in configurator tree:
-- /agent:<agt_name>/rpcserver:<srv_name> - as the value it keeps parent RPC
-Server name
-- /rpc_server_sid:<agt_name>:<srv_name> - as the value it keeps SID
+In order to create or delete an RPC Server, functions from RCF RPC library should be used:
 
+- rcf_rpc_server_create() - to create an RPC Server with particular name on the particular Test Agent;
+- rcf_rpc_server_destroy() - to destroy an RPC Server.
+.
+
+Creating and deleting an RPC Server is done via Configurator management tree. On Test Agent side this causes
+RCF PCH library to pass control to corresponding configuration model handlers - <b>/agent/rpcserver</b> node.
+
+When a new RPC Server is being created Test Agent creates a new thread or process (depending on the desired location of RPC server).
+Please note that to create an RPC Server in thread context you will first need to create an RPC Server in a process context
+and only then you can create another RPC Server as a thread of that previously created process context RPC Server.
+
+Each RPC Server has its own communication link with Test Agent process. On RPC Server start-up it connects to Test Agent in order to set-up that communication link.
+
+@image html te_lib_rpc_server_context.png "Test Agent and RPC Server context"
+
+<!--
+@startditaa "ditaa te_lib_rpc_server_context.png -S"
+                                             +-------------------------+
+                                             | RPC Server Process      |
+ +-----------------------+       +-------- ->| Name #A                 |
+ |                       |       |           | Parent -                |
+ |  Test Agent Process   |<------+           +-------------------------+
+ |                       |       |
+ +-----------------------+       |  pipes    +-------------------------+
+                                 | sockets   | RPC Server Process      |
+                                 |           | Name #B                 |
+                                 |           | Parent -                |
+                                 +-------- ->|                         |
+                                 |           |  +-------------------+  |
+                                 |           |  | RPC Server Thread |  |
+                                 +----------- ->| Name #C           |  |
+                                             |  | Parent #B         |  |
+                                             |  +-------------------+  |
+                                             +-------------------------+
+@endditaa
+-->
+
+There are the following functions available for creating RPC Server in different contexts:
+- rcf_rpc_server_create();
+- rcf_rpc_server_thread_create();
+- rcf_rpc_server_fork();
+- rcf_rpc_server_fork_exec();
+- rcf_rpc_server_create_process();
+.
+
+Each RPC Server can be switched to use a particular dynamic library on function name resolution during RPC call operation. To change dynamic library name the following function: 
+- rcf_rpc_setlibname().
+
+Once you have an RPC Server handle you are ready to do RPC call by means of the following function:
+- rcf_rpc_call().
+
+@section te_lib_rpc_new_function Adding support for a new RPC
+
+Test code should not use rcf_rpc_call() function directly, but instead it shall use function defined in @ref tapi_rpc.
 
  */
