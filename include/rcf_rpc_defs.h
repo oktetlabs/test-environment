@@ -55,7 +55,7 @@ typedef enum {
 
 
 
-/** Flags for get/create RPC server */
+/** @name Flags for get/create RPC server */
 
 /** Create a subthread of the existing RPC server */
 #define RCF_RPC_SERVER_GET_THREAD   0x01
@@ -78,5 +78,6 @@ typedef enum {
 #define RCF_RPC_SERVER_GET_INHERIT  0x10
 /** Windows-specific: initialize network */
 #define RCF_RPC_SERVER_GET_NET_INIT 0x20
+/*@}*/
 
 #endif /* !__TE_RCF_RPC_DEFS_H__ */
