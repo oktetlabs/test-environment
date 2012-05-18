@@ -1075,7 +1075,7 @@ extern te_errno rcf_ta_kill_thread(const char *ta_name, int session,
  * @param timeout       RPC timeout in milliseconds or 0 (unlimited)
  * @param rpc_name      Name of the RPC (e.g. "bind")
  * @param in            Input parameter C structure
- * @param in            Output parameter C structure
+ * @param out           Output parameter C structure
  *
  * @return Status code
  */
