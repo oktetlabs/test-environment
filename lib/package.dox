@@ -1,0 +1,116 @@
+/**
+
+@page te_lib_rpc Remote Procedure Calls (RPC)
+
+@section te_lib_rpc_introduction Introduction
+
+In the context of TE, Remote Procedure Calls functionality provides the ability to invoke a function on a Test Agent side.
+It can be obvious, but anyway it is worth nothing that in order to call a function on Test Agent a special action
+shall be done to tell Agent to treat that function as a function for RPC calls. I.e. RPC does not allow any function on Test Agent to be called,
+but only a set of functions that were told to be RPC aware.
+
+On Test Engine side RPC functionlity is exported by RCF RPC library: @ref rcfrpc,
+but end users should utilize and if necessary enhance upper layer API exported by @ref tapi_rpc
+
+Here is the diagram of libraries and TE components that take part in RPC data flow:
+
+@image html te_lib_rpc_context.png "Remote Procedure Call context in TE"
+
+<!--
+@startditaa "ditaa te_lib_rpc_context.png -S"
+
++-------------------------------------------------------------------------------------+
+:                           +--------------------+               Test Process Context |
+|           +---------------+       Tests        |               -------------------- |
+|           |               +---------+----------+                                    |
+|           |                         |                                               |
+|           |                         | do RPC call                                   |
+|           |                         v                                               |
+|           |               +--------------------+                                    |
+|           |create/delete  |cYEL  TAPI RPC      |                                    |
+|           | RPC server    |    lib/tapi_rpc    |                                    |
+|           |               +---------+----------+                                    |
+|           |                         |                                               |
+|           |                         | rcf_rpc_call                                  |
+|           |                         v                                               |
+|           |               +--------------------+                 +---------------+  |
+|           |               |cGRE                | Encode/decode   |               |  |
+|           +------------ ->|      RCF RPC       +-------------- ->|    RPC XDR    |  |
+|                           |     lib/rfcrpc     |                 |   lib/rpcxdr  |  |
+|                           +--+--------------+--+                 +-------+-------+  |
+|                              |              |                            |          |
+|            +-----------------+              +--------+                   v          |
+|            | add/del/get/set                         |            +-------------+   |
+|            | "/agent/rpcserver"                      |            |             |   |
+|            | "/rpc_server_sid"                       |            |   SUN RPC   |   |
+|            v                                         |            |   lib/rpc   |   |
+| +----------------------+                             |            +-------------+   |
+| |   Configurator API   |                             |                              |
+| |    lib/confapi       |                             |                              |
+| +----------+-----------+                             | rcf_send_recv_msg            |
++------------|----------------------------+            |                              |
+             | IPC                        :            |                              |
+             v                            |            |                              |
+  +----------------------+                |            |                              |
+  |cEDB                  |                |            |                              |
+  |     Configurator {s} |                |            |                              |
+  +----------------------+                |            |                              |
+             |                            |            |                              |
+             | cfg_add/cfg_del            |            |                              |
+             | cfg_get/cfg_set            |            |                              |
+             v                            |            v                              |
+  +---------------------------------------------------------------+                   |
+  |cGRE                       RCF API                             |                   |
+  |                          lib/rcfapi                           |                   |
+  +-----------------------------+---------------------------------+                   |
+                                |         |                                           |
+                                | IPC     +-------------------------------------------+
+                                v
+  +----------------------------------------------------------------+
+  |cEDB                        RCF                                 |
+  +-----------------------------+----------------------------------+
+                                |                                   
+ :                              |                 Test Engine side  :
+ +------------------------------|-----------------------------------+
+ :                              |                 Test Agent side   :
+                                |
+                                |
+                      +---------|---------+
+                      |         v         |
+                      |  +-------------+  |
+                      |  |   RCF PCH   |  |                          
+                      |  |  lib/rcfpch |  |
+                      |  +-------------+  |
+                      |                   |
+                      |    Test Agent     |
+                      +-------------------+
+
+  +----------------------------------------------+
+  :  +------+                                    |
+  |  |cYEL  | -- To be updated for new RPC calls |
+  |  +------+                                    |
+  |                                              |
+  |  +------+                                    |
+  |  |cEDB  | -- Test Engine Processes           |
+  |  +------+                                    |
+  |                                              |
+  |  IPC      -- Inter Process Communication     |
+  +----------------------------------------------+
+
+@endditaa
+-->
+
+RCF RPC library is actually reside at the same layer as RCF API library,
+but it is selected to a dedicated library just to split it on functionality basis.
+
+Any RPC call is done in the context of RPC Server. RPC Server is a separate process or
+thread on Test Agent side in which context a function call is done. RPC Server is associated
+with name.
+
+For each RPC Server there are the following records in configurator tree:
+- /agent:<agt_name>/rpcserver:<srv_name> - as the value it keeps parent RPC
+Server name
+- /rpc_server_sid:<agt_name>:<srv_name> - as the value it keeps SID
+
+
+ */

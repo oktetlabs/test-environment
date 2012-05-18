@@ -98,6 +98,8 @@ difference between different test runs (TRC tool, see [TODO]);
 
 From end-users (test writers) point of view TE is a set of services that allow creating complex and full-functional tests. All services exported by TE accessible via a set of libraries. Here is the list of libraries available that are useful while writing this or that test cases:
 
+- @ref te_lib_rpc
+
 - @link logger_api.h Logger API @endlink
 - @link conf_api.h Configurator API @endlink
 - @link rcf_api.h RCF API @endlink
