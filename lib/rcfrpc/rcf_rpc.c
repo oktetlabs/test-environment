@@ -358,25 +358,25 @@ rcf_rpc_servers_restart_all(void)
 }
 
 /**
- * Mark threads as deleted in result of execve() call.
- * Clear value of node of RPC server where execve() was called
- * in configuration tree.
+ * Mark threads as finished in result of execve() call.
+ * In configuration tree, clear the value of the node of
+ * the RPC server where execve() was called.
  *
  * @param rpcs          RPC server
  *
- * @return 0 if success
+ * @return 0 on success or error code
  */
-int
+static te_errno
 rcf_rpc_server_mark_deleted_threads(rcf_rpc_server *rpcs)
 {
     unsigned int num, i;
 
-    int   rc = 0;
-    char *value;
-    char *name;
-    char *my_val;
+    te_errno   rc = 0;
+    char      *value = NULL;
+    char      *name = NULL;
+    char      *my_val = NULL;
 
-    cfg_handle  *servers;
+    cfg_handle  *servers = NULL;
     cfg_handle   my_handle;
 
     if (rpcs == NULL)
@@ -405,39 +405,35 @@ rcf_rpc_server_mark_deleted_threads(rcf_rpc_server *rpcs)
     {
         ERROR("%s(): Cannot get the value of the RPC server %s node "
               "in configuration tree", __FUNCTION__, rpcs->name);
+        free(servers);
         return rc;
     }
 
     for (i = 0; i < num; i++)
     {
         if ((rc = cfg_get_instance(servers[i], NULL, &value)) != 0)
-        {
             ERROR("%s(): Cannot get value of RPC server node by its"
                   " handle %d", __FUNCTION__, servers[i]);
-            return rc;
-        }
 
-        if (cfg_get_inst_name(servers[i], &name) != 0)
-        {
+        if (rc == 0 && (rc = cfg_get_inst_name(servers[i], &name)) != 0)
             ERROR("%s(): Cannot get name of RPC server node by its"
                   " handle %d", __FUNCTION__, servers[i]);
-            return rc;
-        }
 
-        if ((strcmp_start("thread_", value) == 0 &&
+        if (rc == 0 &&
+            ((strcmp_start("thread_", value) == 0 &&
              (strncmp(value + strlen("thread_"), rpcs->name,
                       RCF_RPC_NAME_LEN) == 0 ||
               strncmp(value, my_val, RCF_RPC_NAME_LEN) == 0)) ||
             (strcmp_start("thread_", value) != 0 &&
              strcmp_start("thread_", my_val) == 0 &&
              strncmp(my_val + strlen("thread_"), name,
-                     RCF_RPC_NAME_LEN) == 0))
+                     RCF_RPC_NAME_LEN) == 0)))
         {
             if (servers[i] != my_handle)
             {
                 rc = cfg_set_instance_fmt(
                                      CFG_VAL(INTEGER, 1), 
-                                     "/agent:%s/rpcserver:%s/finished:", 
+                                     "/agent:%s/rpcserver:%s/finished:",
                                      rpcs->ta, name);
                 if (rc != 0)
                 {
@@ -453,22 +449,24 @@ rcf_rpc_server_mark_deleted_threads(rcf_rpc_server *rpcs)
                     ERROR("%s(): Cannot set new value for "
                           "RPC server %s", __FUNCTION__, name);
             }
-
-            if (rc != 0)
-            {
-                free(value);
-                free(my_val);
-                free(name);
-                return rc;
-            }
         }
+
         free(value);
+        free(name);
+        value = NULL;
+        name = NULL;
+
+        if (rc != 0)
+        {
+            free(my_val);
+            free(servers);
+            return rc;
+        }
     }
 
-    free(servers);
     free(my_val);
-    free(name);
-    return FALSE;
+    free(servers);
+    return 0;
 }
 
 /* See description in rcf_rpc.h */
@@ -478,7 +476,7 @@ rcf_rpc_server_exec(rcf_rpc_server *rpcs)
     tarpc_execve_in  in;
     tarpc_execve_out out;
     
-    int  rc;
+    te_errno  rc;
 
     if (rpcs == NULL)
         return TE_RC(TE_RCF, TE_EINVAL);
@@ -514,7 +512,6 @@ rcf_rpc_server_exec(rcf_rpc_server *rpcs)
               rpcs->ta, rpcs->name, errno_rpc2str(RPC_ERRNO(rpcs)), rc);
 
     return rc;
-    
 }
 
 /* See description in rcf_rpc.h */
