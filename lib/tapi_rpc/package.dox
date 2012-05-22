@@ -38,7 +38,7 @@ struct foobar_type1 {
     int field;
 };
 
-int foobar(foobar_type1 *param1, const char *param2, int param3, int *param4_out);
+int foobar(struct foobar_type1 *param1, const char *param2, int param3, int *param4_out);
 @endcode
 
 First thing in supporting an RPC call is to define necessary data structures in include/tarpc.x.m4 file.
@@ -106,7 +106,7 @@ For the case of foobar() function the implemetnation of corresponding TAPI RPC f
 @code
 int
 rpc_foobar(rcf_rpc_server *rpcs,
-           foobar_type1 *param1, const char *param2, int param3, int *param4_out)
+           struct foobar_type1 *param1, const char *param2, int param3, int *param4_out)
 {
     struct tarpc_foobar_in in;
     struct tarpc_foobar_out out;
@@ -116,12 +116,10 @@ rpc_foobar(rcf_rpc_server *rpcs,
 
     in.param1.type = param1_type_h2rpc(param1->type); /* Convert enum constants to RPC representation */
     in.param1.field = param1->field; /* We can copy int value as is */
-    in.param2 = strdup(param2); /* Duplicate string parameter */
+    in.param2 = param2; /* Put a pointer to string (XRPC will calculate string length and copy it) */
     in.param3 = param3; /* Copy int parameter as is */
 
     rcf_rpc_call(rpcs, "foobar", &in, &out);
-
-    free(in.param2);
 
     /* Check foobar() function returns value more or equal to -1 */
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(foobar, out.param4);
@@ -141,7 +139,7 @@ You should note the following things:
 - enumeration type should be converted from host representation to corresponding RPC enumeration. This needs to be done in case such constants have different
   values on different hosts. For our example this is not obvious, but imagine we pass <b>errno</b> value, of protocol family type in socket API (@c PF_INET, @c PF_LOCAL, etc.);
 - parameters of integer type are not converted, but copied as is. This is obvious because there can be no conflicts between the value of this type of data on different hosts;
-- parameters that represent string value are copied with memory allocation. After RPC call we free previously allocated memory;
+- parameters that represent string value are copied by XPRC library and we just put a pointer to the beginning of the string;
 - assuming we know the range of return value from a function, we can check that return value with one of macros defined in lib/tapi_rpc/tapi_rpc_internal.h file.
   In our case we check that the return value is more or equal to -1 using CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE() macro. More generic macro to use is CHECK_RETVAL_VAR(),
   but more likely you will find some predefined specific macro;
@@ -159,13 +157,13 @@ Implementation of server side of RPC calls can be found in agents/unix/rpc/tarpc
 For our sample the implementation can look like the following:
 
 @code
-TARPC_FUNC(foobar, {}
+TARPC_FUNC(foobar, {},
 {
-    foobar_type1 param1;
+    struct foobar_type1 param1;
 
     param1.type = param1_type_rpc2h(in->param1.type);
     param1.field = in->param1.field;
-    MAKE_CALL(out->retval = func(&param1, in->param2, in->param3, out->param4));
+    MAKE_CALL(out->retval = func(&param1, in->param2, in->param3, &out->param4));
 }
 )
 @endcode
@@ -191,7 +189,7 @@ void foo(uint8_t *in_buf, size_t in_buf_len, uint8_t *out_buf, size_t *out_buf_l
 include/tarpc.x.m4 file will have the following lines:
 
 @code
-struct rpc_foo_in {
+struct tarpc_foo_in {
     struct tarpc_in_arg common;
 
     uint8_t in_buf<>; /* Input buffer content */
@@ -200,7 +198,7 @@ struct rpc_foo_in {
     tarpc_size_t out_buf_len<>; /* The value kept by out_buf_len address */
 };
 
-struct rpc_foo_out {
+struct tarpc_foo_out {
     struct tarpc_out_arg common;
 
     uint8_t out_buf<>; /* Output buffer content */
@@ -287,7 +285,7 @@ rpc_foo(rcf_rpc_server *rpcs,
             memcpy(out_buf, out.out_buf.out_buf_val, out.out_buf.out_buf_len));
 
         if (out_buf_len != NULL)
-            *out_buf_len = out.out_buf_len;
+            *out_buf_len = out.out_buf_len.out_buf_len_val[0];
     }
 
     TAPI_RPC_LOG(rpcs, foo, "%p, %u, %p, %p", "",
@@ -309,7 +307,7 @@ TARPC_FUNC(foo,
 {
     COPY_ARG(out_buf);
     COPY_ARG(out_buf_len);
-}
+},
 {
 
     /*
@@ -317,7 +315,8 @@ TARPC_FUNC(foo,
      * (for the cases when real buffer length is more than the length
      * passed via out_buf_len parameter).
      */
-    INIT_CHECKED_ARG(out->out_buf.out_buf_val, out->out_buf.out_buf_len, out->out_buf_len.out_buf_len_len);
+    INIT_CHECKED_ARG(out->out_buf.out_buf_val, out->out_buf.out_buf_len,
+                     (out->out_buf_len.out_buf_len_len == 0) ? 0 : out->out_buf_len.out_buf_len_val[0]);
 
     MAKE_CALL(func(in->in_buf.in_buf_val, in->in_buf_len,
                    (out->out_buf.out_buf_len == 0) ? NULL : out->out_buf.out_buf_val,
