@@ -164,7 +164,7 @@ Each RPC Server can be switched to use a particular dynamic library on function 
 Once you have an RPC Server handle you are ready to do RPC call by means of the following function:
 - rcf_rpc_call().
 
-For more information on function exported by RCF RPC library refer to <A HREF="rcf__rpc_8h.html">RCF RPC API</A>.
+For more information on functions exported by RCF RPC library refer to <A HREF="rcf__rpc_8h.html">RCF RPC API</A>.
 
 @section te_lib_rpc_tapi TAPI for RPC
 

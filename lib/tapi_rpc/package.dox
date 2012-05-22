@@ -1,4 +1,13 @@
-/** @page tapi_rpc Test API for Remote Procedure Call
+/**
+
+@page tapi_rpc Test API for Remote Procedure Call
+
+@section tapi_rpc_lib_introduction Introduction
+
+TAPI RPC library is an auxiliary library that hides the details of RPC encoding/decoding procedure.
+Its purpose is to provide an interface for tests that is almost equal to direct function calls made on test side.
+
+The following list of TAPI function groups are supported:
 
 -# <A HREF="tapi__rpc__aio_8h.html">TAPI for asynchronous I/O calls</A>
 -# <A HREF="tapi__rpc__ifnameindex_8h.html">TAPI for interface name/index calls</A>
@@ -11,4 +20,319 @@
 -# <A HREF="tapi__rpcsock__macros_8h.html">Macros for socket API remote calls</A>
 -# <A HREF="tapi__rpc__misc_8h.html">TAPI for miscellaneous remote calls</A>
 
+@section tapi_rpc_lib_framework RPC Development Framework
+
+In most cases a new test suite will require supporting a new set of RPC functions.
+In such cases you will need to extend RPC TAPI and here is a guidelines on how to do it.
+
+Assume we would like to add RPC call for function foobar() that have the following prototype:
+
+@code
+enum foobar_type {
+    FOOBAR_TYPE_A,
+    FOOBAR_TYPE_B,
+};
+
+struct foobar_type1 {
+    enum foobar_type type;
+    int field;
+};
+
+int foobar(foobar_type1 *param1, const char *param2, int param3, int *param4_out);
+@endcode
+
+First thing in supporting an RPC call is to define necessary data structures in include/tarpc.x.m4 file.
+According to the prototype of rcf_rpc_call() function we can see that  to issue RPC we need to pass the folloing information:
+- RPC name;
+- RPC input argument;
+- RPC output argument.
+.
+
+It means that for each function we need to define ONE data structure that will keep ALL input arguments and ONE data structure that will
+keep ALL output values (output arguments and return value). For our example this may look like the following:
+
+@code
+enum tarpc_foobar_type {
+    TARPC_FOOBAR_TYPE_A,
+    TARPC_FOOBAR_TYPE_B,
+};
+
+struct tarpc_foobar_type1 {
+    enum tarpc_foobar_type type;
+    tarpc_int field;
+};
+
+struct tarpc_foobar_in {
+    struct tarpc_in_arg common;
+
+    struct tarpc_foobar_type1 param1;
+    string                    param2<>;
+    tarpc_int                 param3;
+};
+
+struct tarpc_foobar_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int param4;
+    tarpc_int retval;
+};
+
+/* Add foobar function in the list of RPC calls */
+program tarpc
+{
+    version ver0
+    {
+        ...
+        RPC_DEF(foobar)
+        ...
+    } = 1;
+} = 1;
+@endcode
+
+Please note that each structure for input arguments should have struct tarpc_in_arg as the first field of the structure, each structure for output arguments should have struct tarpc_out_arg structure.
+The format of include/tarpc.x.m4 file complies with XDR format specified in RFC 1014.
+
+Now we are ready to implement TAPI side for our foobar() function. Due to the fact that our target is to call foobar() function in the context of another process, we can't use the same name for the function implementation - it may conflict with such a function in our context. To sort this out we prefix all functions with <b>rpc_</b> string.
+
+Any TAPI RPC function should do the following things:
+- define variable for IN arguments;
+- define variable for OUT arguments;
+- fill in fields of IN arguments variable;
+- call rcf_rpc_call();
+- set corresponding output parameters and return value with values extracted from OUT arguments variable.
+.
+
+For the case of foobar() function the implemetnation of corresponding TAPI RPC function could be as following:
+@code
+int
+rpc_foobar(rcf_rpc_server *rpcs,
+           foobar_type1 *param1, const char *param2, int param3, int *param4_out)
+{
+    struct tarpc_foobar_in in;
+    struct tarpc_foobar_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.param1.type = param1_type_h2rpc(param1->type); /* Convert enum constants to RPC representation */
+    in.param1.field = param1->field; /* We can copy int value as is */
+    in.param2 = strdup(param2); /* Duplicate string parameter */
+    in.param3 = param3; /* Copy int parameter as is */
+
+    rcf_rpc_call(rpcs, "foobar", &in, &out);
+
+    free(in.param2);
+
+    /* Check foobar() function returns value more or equal to -1 */
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(foobar, out.param4);
+
+    *param4_out = out.param4;
+
+    TAPI_RPC_LOG(rpcs, foobar, "%s:%d, %s, %d", "%d, %d",
+                 param1_type_h2str(param1->type), param1->field, param2, param3,
+                 out.param4, out.retval);
+
+    RETVAL_INT(foobar, out.retval);
+}
+@endcode
+
+You should note the following things:
+- an extra parameter @p rpcs has been added to rpc_foobar() function in order to be able to specify RPC Server on which to run <b>foobar()</b> function;
+- enumeration type should be converted from host representation to corresponding RPC enumeration. This needs to be done in case such constants have different
+  values on different hosts. For our example this is not obvious, but imagine we pass <b>errno</b> value, of protocol family type in socket API (@c PF_INET, @c PF_LOCAL, etc.);
+- parameters of integer type are not converted, but copied as is. This is obvious because there can be no conflicts between the value of this type of data on different hosts;
+- parameters that represent string value are copied with memory allocation. After RPC call we free previously allocated memory;
+- assuming we know the range of return value from a function, we can check that return value with one of macros defined in lib/tapi_rpc/tapi_rpc_internal.h file.
+  In our case we check that the return value is more or equal to -1 using CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE() macro. More generic macro to use is CHECK_RETVAL_VAR(),
+  but more likely you will find some predefined specific macro;
+- right before returning a value from a function, we should provide log message about our function call. We specify value of input and output arguments and return value;
+- return from a function should be done with one of macros defined in lib/tapi_rpc/tapi_rpc_internal.h file. In our case we return integer, which is why we use RETVAL_INT() macro.
+.
+
+A lot of RPC data types and convert functions are defined under lib/rpc_types library. Mainly this library keeps data types to use while doing RPC calls for system functions with well-known prototypes (like libc functions or functions from POSIX API). The purpose of this library is to export header files analogue to system library files.
+
+Assuming you are implementing RPC calls for some standard API, you should better have a look at lib/rpc_types library and create your own header (and if necessary C source) file with corresponding data types.
+
+Now we are ready to implement server side for our foobar() function.
+Implementation of server side of RPC calls can be found in agents/unix/rpc/tarpc_server.c file. To define a function we should use TARPC_FUNC() macro.
+
+For our sample the implementation can look like the following:
+
+@code
+TARPC_FUNC(foobar, {}
+{
+    foobar_type1 param1;
+
+    param1.type = param1_type_rpc2h(in->param1.type);
+    param1.field = in->param1.field;
+    MAKE_CALL(out->retval = func(&param1, in->param2, in->param3, out->param4));
+}
+)
+@endcode
+
+Please make sure that data types and values of arguments passed to a function call are native for the host where we run this function call.
+In our sample we created local variable @p param1 of type @p foobar_type1 in order to have correct value for the first argument of the function.
+Then we filled each field of this structure with native host values:
+- @p foobar_type1::type field is set by means of helper function
+param1_type_rpc2h() that converts enum tarpc_foobar_type enumeration into native host enumeration of type enum foobar_type;
+- @p foobar_type1::field field is set to the value got from RPC input
+argument structure. This is acceptable because it is just the value of integer type.
+.
+
+One thing that should also be explained is how to pass structures of variable length to and from RPC Server.
+Let's assume we need to pass some data buffer as input parameter and a function shall fill some output buffer in.
+
+Let's implement an RPC function foo() that has the following prototype:
+
+@code
+void foo(uint8_t *in_buf, size_t in_buf_len, uint8_t *out_buf, size_t *out_buf_len);
+@endcode
+
+include/tarpc.x.m4 file will have the following lines:
+
+@code
+struct rpc_foo_in {
+    struct tarpc_in_arg common;
+
+    uint8_t in_buf<>; /* Input buffer content */
+    tarpc_size_t in_buf_len; /* The value of in_buf_len parameter */
+    uint8_t out_buf<>; /* Output buffer content */
+    tarpc_size_t out_buf_len<>; /* The value kept by out_buf_len address */
+};
+
+struct rpc_foo_out {
+    struct tarpc_out_arg common;
+
+    uint8_t out_buf<>; /* Output buffer content */
+    tarpc_size_t out_buf_len<>; /* The value kept by out_buf_len address */
+};
+@endcode
+
+Notes:
+- We define @p rpc_foo_in::out_buf field in order to pass output buffer
+  content to RPC server, i.e. on RPC Server side we would like to have an output buffer
+  with the same pre-filled value as on RPC caller side. This is unnecessary in most of the cases
+  and should be eliminated, but for example it can be useful when we want to check if a function call
+  modifies output buffer or not in case a particular condition and how it modifies it.
+- We define @p rpc_foo_in::out_buf_len field as an array in order to be able
+  to track cases when @p out_buf_len value is @c NULL. We could use two separate fields
+  to get the same results:
+  @code
+  tarpc_bool out_buf_len_null; /* TRUE when out_buf_len parameter is NULL */
+  tarpc_size_t out_buf_len; /* The value of out_buf_len when it is not NULL */
+  @endcode
+- We define @p rpc_foo_in::out_buf array in @p rpc_foo_out data structure in
+  order to be able to encode filled output buffer value;
+- We define @p rpc_foo_in::out_buf_len field in @p rpc_foo_out data
+  structure in order to pass updated value of @p out_buf_len parameter.
+  We define it as an array in order to simplify server side implementation;
+- We use the same names in in and out data structures for @p rpc_foo_in::out_buf
+  and @p rpc_foo_in::out_buf_len fields to make it possible to use some auxiliary
+  macros in implementation of server side.
+.
+
+TAPI implementation for our foo() function may look like the following:
+
+@code
+int
+rpc_foo(rcf_rpc_server *rpcs,
+        uint8_t *in_buf, size_t in_buf_len, uint8_t *out_buf, size_t *out_buf_len,
+        size_t rout_buf_len)
+{
+    struct tarpc_foo_in in;
+    struct tarpc_foo_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    /* Pass information about in_buf parameter */
+    in.in_buf.in_buf_len = (in_buf == NULL) ? 0 : in_buf_len;
+    in.in_buf.in_buf_val = in_buf;
+
+    /*
+     * Copy in_buf_len parameter independently on the value
+     * of in_buf parameter
+     */
+    in.in_buf_len = in_buf_len;
+
+    /*
+     * The size of out_buf buffer can be different from the value passed
+     * via out_buf_len parameter, which is why we added an extra
+     * parameter rout_buf_len. This parameter reflects the real size of
+     * out_buf that we need to transfer from RPC caller to RPC server.
+     */
+    in.out_buf.out_buf_len = (out_buf == NULL) ? 0 : rout_buf_len;
+    in.out_buf.out_buf_val = out_buf;
+
+    /*
+     * We use array data type to pass information whether
+     * the value of out_buf_len parameter is NULL or not.
+     * In our case out_buf_len_val is either NULL or a valid pointer.
+     * In case of NULL, the size of an array is 0, but when it is a valid
+     * data pointer, the size of an array will be 1, because we have only
+     * one element that needs to be passed to RPC server.
+     */
+    in.out_buf_len.out_buf_len_len = (out_buf_len == NULL) ? 0 : 1;
+    in.out_buf_len.out_buf_len_val = out_buf_len;
+
+    rcf_rpc_call(rpcs, "foo", &in, &out);
+
+    /*
+     * In case this was just a call without waiting for the result
+     * we should not copy output parameters (they are not ready yet).
+     */
+    if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT)
+    {
+        if (out_buf != NULL && out.out_buf.out_buf_val != NULL)
+            memcpy(out_buf, out.out_buf.out_buf_val, out.out_buf.out_buf_len));
+
+        if (out_buf_len != NULL)
+            *out_buf_len = out.out_buf_len;
+    }
+
+    TAPI_RPC_LOG(rpcs, foo, "%p, %u, %p, %p", "",
+                 in_buf, in_buf_len, out_buf, out_buf_len);
+
+    RETVAL_VOID(foo);
+}
+@endcode
+
+Please note the following:
+- we encode @p rout_buf_len bytes of @p out_buf buffer to transfer between
+  RPC client and server;
+- we do not copy return value when the case was not blocking RPC start-up.
+.
+
+Server side implementation may look like the following:
+@code
+TARPC_FUNC(foo,
+{
+    COPY_ARG(out_buf);
+    COPY_ARG(out_buf_len);
+}
+{
+
+    /*
+     * Register out_buf for memory corruption in the out of buffer area
+     * (for the cases when real buffer length is more than the length
+     * passed via out_buf_len parameter).
+     */
+    INIT_CHECKED_ARG(out->out_buf.out_buf_val, out->out_buf.out_buf_len, out->out_buf_len.out_buf_len_len);
+
+    MAKE_CALL(func(in->in_buf.in_buf_val, in->in_buf_len,
+                   (out->out_buf.out_buf_len == 0) ? NULL : out->out_buf.out_buf_val,
+                   (out->out_buf_len.out_buf_len_len == 0) ? NULL : out->out_buf_len.out_buf_len_val));
+}
+)
+@endcode
+
+Notes:
+- We copy @p out_buf and @p out_buf_len arguments from IN to OUT;
+- We use INIT_CHECKED_ARG() macro to register our @p out_buf for validation
+  against out of bound update - MAKE_CALL() will automatically check that the data
+  beyond specified buffer length is not updated;
+.
+
 */
+
+

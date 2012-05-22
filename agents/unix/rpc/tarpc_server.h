@@ -414,6 +414,15 @@ check_args(checked_arg *list)
             out->common._errno = _rc;                            \
     } while (0)
 
+/**
+ * Macro to define RPC function content.
+ *
+ * @param _func       RPC function name
+ * @param _copy_args  block of code that can be used for
+ *                    copying input argument values into output
+ *                    (this is usually done for IN/OUT arguments)
+ * @param _actions    RPC function body
+ */
 #define TARPC_FUNC(_func, _copy_args, _actions)                     \
                                                                     \
 typedef struct _func##_arg {                                        \
