@@ -10,8 +10,8 @@ The Agent is a component that is intended for future amendments, extensions and 
 At the time or writing this document TE has Test Agents available for the following Operating Systems:
 - Linux;
 - FreBSD;
-- Windows;
-- Solaris.
+- Windows.
+.
 
 Depending on the physical location of Test Agent and the device it controls we can differentiate Agents as following:
 - <b>Auxiliary Agent</b><br/>

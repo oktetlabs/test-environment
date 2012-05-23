@@ -1,0 +1,20 @@
+/**
+
+@page te_engine_rcf Test Engine: Remote Control Facility (RCF)
+
+@section te_engine_rcf_introduction Introduction
+
+Remote Control Facility (RCF) is a distributed entity allowing interactions between Test Engine and Test Agents.
+
+RCF is responsible for:
+- starting Test Agents during initialization or after reloading the NUT or after Test Agent death;
+- time synchronization;
+- low-level interactions between Test Agents and Test Engine (serial port, telnet, ssh, etc.);
+- construction and passing commands from Test Engine to Test Agents and processing  answers;
+- providing convenient API to other TE subsystems and tests;
+- interpreting commands on the Test Agents calling appropriate handles;
+- logging commands and answers.
+.
+
+ */
+
