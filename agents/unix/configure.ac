@@ -528,6 +528,12 @@ if test "x$with_libnetconf" = xcheck; then
 fi
 
 if test x"$with_libnetconf" != xno; then
+    AC_CHECK_HEADER([netconf.h],
+                    [],
+                    [AC_MSG_ERROR([netconf.h was not found, try to add \
+netconf in TE_PLATFORM macro in your builder.conf])],
+                    [])
+
     # On Linux netlink is default way to configure interfaces and IP
     EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DUSE_LIBNETCONF"
     EXTRA_LDADD="$EXTRA_LDADD -lnetconf"
