@@ -42,7 +42,7 @@ int foobar(struct foobar_type1 *param1, const char *param2, int param3, int *par
 @endcode
 
 First thing in supporting an RPC call is to define necessary data structures in include/tarpc.x.m4 file.
-According to the prototype of rcf_rpc_call() function we can see that  to issue RPC we need to pass the folloing information:
+According to the prototype of rcf_rpc_call() function we can see that  to issue RPC we need to pass the following information:
 - RPC name;
 - RPC input argument;
 - RPC output argument.
@@ -102,7 +102,7 @@ Any TAPI RPC function should do the following things:
 - set corresponding output parameters and return value with values extracted from OUT arguments variable.
 .
 
-For the case of foobar() function the implemetnation of corresponding TAPI RPC function could be as following:
+For the case of foobar() function the implementation of corresponding TAPI RPC function could be as following:
 @code
 int
 rpc_foobar(rcf_rpc_server *rpcs,
@@ -326,11 +326,100 @@ TARPC_FUNC(foo,
 @endcode
 
 Notes:
-- We copy @p out_buf and @p out_buf_len arguments from IN to OUT;
+- We copy @p out_buf and @p out_buf_len arguments from IN to OUT. You should
+  note that for the case of RPC we must pass output arguments (if necessary)
+  first in IN arguments data structure and then all the values function returns
+  or updates are passed via OUT data structure (tarpc_foo_out structure).
+  Because of this we need to copy the content of buffers that potentially
+  could be updated by the function. Field names for such arguments should be the
+  same in input and output arguments structures;
 - We use INIT_CHECKED_ARG() macro to register our @p out_buf for validation
   against out of bound update - MAKE_CALL() will automatically check that the data
   beyond specified buffer length is not updated;
 .
+
+@section tapi_rpc_lib_usage Some usage aspects of TAPI RPC library
+
+@subsection tapi_rpc_lib_usage_error_handling Handling expected errors
+
+Each RPC call (TAPI RPC call) can finish with success or an error. Error condition is analyzed in the context of TAPI RPC function implementation.
+An error condition could be:
+- timeout waiting for RPC call to finish;
+- unexpected return code value or the value of some output parameters
+  (controlled by TAPI RPC implementation logic);
+- Test Agent crash.
+.
+By default if an error occurred during RPC call, TAPI RPC interrupts test execution and passes control to test termination block.
+Sometimes you would expect an error to be returned by a function and you would not want a test to be terminated.
+To tell TAPI RPC that you expect an error condition on RPC call you can use RPC_AWAIT_IUT_ERROR() macro. For example:
+
+@code
+    /*
+     * Check that bind() returns an error when we try to bind a socket
+     * to an address that does not exist on a host.
+     */
+    RPC_AWAIT_IUT_ERROR(tst_srv);
+    rc = rpc_bind(tst_srv, sock_desc, SA(&alien_addr));
+    if (rc != -1)
+        TEST_FAIL("bind() for an address not assigned to any host interface "
+                  "returns %d instead of -1", rc);
+
+    if (RPC_ERRNO(tst_srv) != RPC_EADDRNOTAVAIL)
+    {
+        TEST_FAIL("bind() returns -1 when called for not assigned address, "
+                  "but sets errno to %s instead of %s",
+                  errno_rpc2str(RPC_ERRNO(tst_srv)),
+                  errno_rpc2str(RPC_EADDRNOTAVAIL));
+    }
+@endcode
+
+@subsection tapi_rpc_lib_usage_non_blocking_calls Non blocking calls of RPC
+
+In some tests you may have RPC calls that block until some external event happens and a test is the entity that should cause this external event.
+One possible solution would be to create a separate thread that blocks on RPC call while another thread takes care of necessary event generating.
+This approach could be the right choice for some complex test cases, but in most cases it is enough to use a non blocking RPC call with further calls
+to check/get return status. As soon as non blocking RPC call finishes we can continue our test sequence taking into account that there is a pending
+call on some RPC Server. The type of RPC call can be controlled with rcf_rpc_server::op field of RPC Server.
+
+In the following example we do non blocking call for recv() function on one socket and then call send() function on another socket that causes
+recv() function to return.
+
+@code
+    /*
+     * Tell rcv_srv to do non blocking call.
+     * It means that RPC Server of course blocks on this call,
+     * but RPC caller gets control immediately after launching
+     * this function on RPC Server side.
+     */
+    rcv_srv->op = RCF_RPC_CALL;
+    /* We do not check return value because this does not make sense right now */
+    rpc_recv(rcv_srv, rx_sock, rx_buf, TST_BUF_LEN, 0);
+
+    /* Make sure recv() call blocks */
+    CHECK_RC(rcf_rpc_server_is_op_done(rcv_srv, &rcv_done));
+    if (rcv_done)
+        TEST_FAIL("recv() call is expected to be blocked on incoming data event, but it is not");
+
+    /* By default RPC call is run with RCF_RPC_CALL_WAIT, i.e. blocking call */
+    rc = rpc_send(snd_srv, tx_sock, tx_buf, TST_BUF_LEN, 0);
+    if (rc != TST_BUF_LEN)
+        TEST_FAIL("send() returns %d, but expected return value is %d", rc, TST_BUF_LEN);
+
+    /* Check that recv() call finished */
+    CHECK_RC(rcf_rpc_server_is_op_done(rcv_srv, &rcv_done));
+    if (!rcv_done)
+        TEST_FAIL("recv() call is expected to return on incoming data, but it is not");
+
+    /* Get results of recv() call */
+    rcv_srv->op = RCF_RPC_WAIT;
+    rc = rpc_recv(rcv_srv, rx_sock, rx_buf, TST_BUF_LEN, 0);
+    if (rc != TST_BUF_LEN)
+        TEST_FAIL("recv() returns %d, but expected return value is %d", rc, TST_BUF_LEN);
+
+    if (memcmp(rx_buf, tx_buf, TST_BUF_LEN) != 0)
+        TEST_FAIL("recv() returns buffer whose content does not match with "
+                  "the content of transmitted buffer");
+@endcode
 
 */
 
