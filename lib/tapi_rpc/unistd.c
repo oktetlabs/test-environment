@@ -1747,7 +1747,6 @@ rpc_uname(rcf_rpc_server *rpcs, struct utsname *buf)
         do {                                                \
             strncpy(buf->_dst, out.buf._field._field##_val, \
                     sizeof(buf->_dst));                     \
-            free(out.buf._field._field##_val);              \
         } while(0)
 
         GET_STR(sysname, sysname);
@@ -1756,7 +1755,6 @@ rpc_uname(rcf_rpc_server *rpcs, struct utsname *buf)
         GET_STR(version, osversion);
         GET_STR(machine, machine);
 #undef GET_STR
-        memset(&out, 0, sizeof(out));
     }
 
     TAPI_RPC_LOG(rpcs, uname, "", "%d", out.retval);
