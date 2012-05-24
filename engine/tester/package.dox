@@ -1,0 +1,58 @@
+/**
+
+@page te_engine_tester Test Engine: Tester
+
+@section te_engine_tester_introduction Introduction
+
+Tester is an application of Test Engine that controls running tests according to configuration files.
+
+@image html ten_tester_context.png "Tester context in TE"
+
+<!--
+@startditaa "ditaa ten_tester_context.png -S"
+                                  +-----------------+
+ +---------------+   Build tests  | cGRE            |
+ |    Builder    |<---------------+      Tester     |
+ +---------------+                |                 |
+                                  +--+-----------+--+
+                                     |           |
+                    +-------------+  |           | cfg_create_backup
+                 +--| Package.xml |--+           | cfg_verify_backup
+                 |  |     {d}     |              | cfg_restore_backup
+                 |  +-------------+              v
+                 |                     +--------------------+
+                 | Run                 |  Configurator API  |
+                 v                     +---------+----------+
+          +-------------+                        | IPC
+          |    Tests    |                        v
+          +-------------+              +--------------------+
+                                       |                    |
+                                       |    Configurator    |
+                                       |        {s}         |
+                                       +--------------------+
+@endditaa
+-->
+
+In the context of Test Environment tests are organized in groups called Test Packages.
+From the Tester point of view, the Test Package is a set of executables accompanied by a file package.xml describing how to run these scripts (order, parameters, etc.).
+A package may contain other packages.
+
+It may be specified that some tests of the package should be run one-by-one (a test is started after finishing the previous test) or simultaneously (separate threads (processes) should be started for all the tests). Moreover, a test may be started under a debugger (gdb or valgrind).
+
+It is possible to run the same test with different parameters. Parameters for a test are specified in package.xml file.
+Tests may be iterated with different combinations of parameter values. Such iterations are performed by Tester.
+
+Some tests may be marked as (associated with) checking the particular requirement(s) of the product.
+Tester allows to run tests checking a particular set of requirements.
+
+Tester may be asked to build the tests from sources. In this case tests should be built using GNU tools (make/autoconf/automake).
+All TE libraries used by the tests should be specified in the Builder configuration file and be built/installed before Tester starting.
+
+Tester is responsible for the error recovery. It utilizes a service provided by Configurator to make a backup configuration for each package and test and to restore backups if necessary.
+
+Tester utilizes logging facilities provided by Logger to log test/package starting and finishing events. This information is then used by Report Generator to split the log to sections corresponding to particular tests/packages.
+
+XML schema for Tester configuration file may be found in doc/xsd/tester_config.xsd file.
+
+ */
+
