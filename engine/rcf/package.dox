@@ -16,5 +16,122 @@ RCF is responsible for:
 - logging commands and answers.
 .
 
+The following diagram illustrates data flows in RCF:
+
+@image html ten_rcf_data_flow.png "Data flows in RCF"
+
+@section te_engine_rcf_ta_interaction Interaction with Test Agents
+
+On start-up RCF gets from RCF configuration file the list of Test Agents to be started.
+For each Test Agent the file contains its name, type and additional configuration parameters.
+
+Test Agent type value is used by the RCF to find out which shared library should be dynamically linked to the RCF process to interact with the Test Agent.
+This library “knows” how to start and stop the Test Agent and how to send/receive commands to/from it. It provides to RCF the strictly specified set of functions.
+
+For example, the library <b>rcfunix</b> is responsible for interacting with UNIX-like Test Agents (Linux, BSD, Cygwin).
+It uses <em>scp</em> to copy Test Agent image to the remote host and <em>ssh</em> to start or stop it. TCP connection is used to send/receive commands.
+
+@section te_engine_rcf_test_proto Test Protocol
+
+RCF interacts with the Test Agents via text-based Test Protocol. Some text commands may be accompanied by binary attachments.
+When the RCF is compiled with high log level, all Test Protocol commands and answers appear in the log.
+
+It is possible to create logical sub-channels (“sessions”) in the connection to the Test Agent.
+Inside the particular session, the commands are sent to the Test Agent one-by-one (i.e., next command is sent only after receiving the answer to the previous one).
+However, if several sessions are created, the Test Agent may be asked to do several actions simultaneously
+(for example, generate traffic, catch traffic and call a remote routine).
+
+Efficient using of this feature is possible on multi-thread Test Agents only.
+
+RCF awaits a command acknowledgement before sending the next one.
+
+@section te_engine_rcf_pch Portable Command Handler
+
+Test Agents are usually based on the RCF library “Portable Command Handler” (“rcfpch”) which is responsible for parsing Test Protocol commands and
+calling TA-specific handlers for the command processing. It also provides default handlers and functions for TA-specific handlers implementation.
+
+@section te_engine_rcf_ad Application Domains
+
+All functionality provided by RCF can be divided into several areas – Application Domains. This chapter describes shortly the functionality provided by each AD.
+
+@subsection te_engine_rcf_ad_ta_ctrl Test Agent Control
+
+RCF is able to start the Test Agent, shutdown it, restart Test Agent itself as well as reboot the host on which the Test Agent is running or NUT controlled by the Test Agent.
+RCF allows to retrieve the list of all running Test Agents as well as their types.
+
+RCF discovers a TA death by breaking of the connection or a command time-out. In this case, the TA application is restarted.
+Moreover, RCF may be asked to force a check of the Test Agent validity to discover if all Test Agents are still alive or not.
+
+Finally RCF provides to Logger “get log” command allowing retrieval of the log as a binary attachment.
+
+@subsection te_engine_rcf_ad_cfg TA Configuring
+
+A service of this application domain is used by Configurator as the previous one and allows to add/delete/change object instance on the TA as well as
+obtain the value of existing instance.
+
+It is also possible to perform wildcard get operations.
+
+Usually Configurator issues commands like “get *:*”  or “get /a:a1/b:b1/...” to retrieve identifiers of all instances (or only instances of a particular subtree)
+present on the Test Agent. Then it may separately get value of  each instance by its identifier.
+
+@subsection te_engine_rcf_ad_vars Variables
+
+RCF allows to get or change the value of a global variable of the Test Agent program (integer or string) or an environment variable of the Test Agent (string).
+This feature is used rarely and usually for environment variables only.
+
+@subsection te_engine_rcf_ad_files Files
+
+Following services are included in the application domain:
+- copy file from the Test Engine to the Test Agent;
+- copy file from the Test Agent to the Test Engine;
+- delete file on the Test Agent.
+.
+
+Piece of memory in the TA address space may be copied as well using “/memory/<address>:<length>” path.
+
+Files are transferred between TA and Test Engine as attachments of protocol commands.
+
+@subsection te_engine_rcf_ad_traffic Traffic
+
+Following services are included in the application domain:
+- create/destroy CSAPs (Communication Service Access Points) on the Test Agent;
+- obtain/change CSAP parameters;
+- transmit packets from the Test Agent according to a specified template;
+- receive packets matched to a specified pattern on the Test Agent.
+.
+
+CSAP should be created before any traffic sending or receiving.
+It is similar to socket in Berkeley Socket API, but may provide an access to CLI or other communication facilities as well.
+
+CSAP may consist of several layers to allow send/receive packets corresponding to a protocol stack. For example, it's possible to create CSAP “dhcp.udp.ipv4.aal5.atm”.
+
+Parameters of the CSAP as well as packet templates and patterns are described using ASN.1. Each level (protocol) is described according to its rules.
+
+CSAP parameters and packets on the Test Engine are stored as files on the TEN and passed to/from Test Agent as binary attachments
+(compiling of RCF with high log level however allows to observe content of these files in the log).
+
+Test API libraries are provided to work with TAD. They allow to create CSAP and send/receive packets using functions adapted for particular media and/or protocol.
+
+@subsection te_engine_rcf_ad_proc Routines and Processes
+
+RCF allows to call a C routine on the Test Agent in different ways:
+- call it in the context of the Test Agent;
+- start the thread in the same address space with the routine as an entry point;
+- start the process with the routine as an entry point.
+.
+
+The routine is specified by the name and should correspond to a global routine defined in the Test Agent or a library linked with it (symbol table is built for the Test Agent).
+For process starting, it is also possible to specify the name of the program instead of the name of the routine.
+
+The mechanism described above allows very restricted routine parameters (only integers and strings) and only integer return code. It also does not assume output parameters.
+
+Another mechanism based on SUN RPC is provided by RCF for API testing (“white box” testing). It allows:
+- create a separate process: RPC server;
+- fork one RPC server from another;
+- create a thread in the RPC server;
+- destroy the RPC server;
+- call the routing with arbitrary input and output parameters.
+.
+
  */
 
