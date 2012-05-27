@@ -50,6 +50,11 @@
 /** Invalid poll evend */
 #define POLL_UNKNOWN 0xFFFF
 
+/**
+ * To have these constants defined in Linux, specify
+ * -D_GNU_SOURCE (or other related feature test macro) in
+ * TE_PLATFORM macro in your builder.conf
+ */
 #ifndef POLLRDNORM
 #define POLLRDNORM  0
 #endif

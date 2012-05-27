@@ -1223,7 +1223,13 @@ te_fstat64(te_bool use_libc, int fd, rpc_stat *rpcbuf)
     api_func stat_func;
     int rc;
 
-#ifdef __linux__
+
+/**
+ * To have __USE_LARGEFILE64 defined in Linux, specify
+ * -D_GNU_SOURCE (or other related feature test macro) in
+ * TE_PLATFORM macro in your builder.conf
+ */
+#if defined __linux__ && defined __USE_LARGEFILE64
     struct stat64 buf;
 
     memset(&buf, 0, sizeof(buf));
@@ -4972,6 +4978,25 @@ typedef union iomux_return {
 typedef int iomux_return_iterator;
 #define IOMUX_RETURN_ITERATOR_START 0
 #define IOMUX_RETURN_ITERATOR_END   -1
+
+
+/**
+ * To have these constants defined in Linux, specify
+ * -D_GNU_SOURCE (or other related feature test macro) in
+ * TE_PLATFORM macro in your builder.conf
+ */
+#ifndef POLLRDNORM
+#define POLLRDNORM  0
+#endif
+#ifndef POLLWRNORM
+#define POLLWRNORM  0
+#endif
+#ifndef POLLRDBAND
+#define POLLRDBAND  0
+#endif
+#ifndef POLLWRBAND
+#define POLLWRBAND  0
+#endif
 
 /* Mapping to/from select and POLL*.  Copied from Linux kernel. */
 #define IOMUX_SELECT_READ \
