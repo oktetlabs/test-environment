@@ -393,7 +393,7 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories 
 # with spaces.
 
-INPUT                  = mainpage.dox agents engine include lib/rcfrpc lib/rpc lib/rpc_types lib/rpcxdr lib/tapi_rpc lib/rcfapi lib/rcfpch lib/rcfunix include/tarpc.x.m4 lib/loggerten
+INPUT                  = mainpage.dox engine include lib/rcfrpc lib/rpc lib/rpc_types lib/rpcxdr lib/tapi_rpc lib/rcfapi lib/rcfunix lib/rcfpch include/tarpc.x.m4 lib/loggerten  lib/loggerta agents
 
 # If the value of the INPUT tag contains directories, you can use the 
 # FILE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp 
@@ -402,7 +402,7 @@ INPUT                  = mainpage.dox agents engine include lib/rcfrpc lib/rpc l
 # *.c *.cc *.cxx *.cpp *.c++ *.java *.ii *.ixx *.ipp *.i++ *.inl *.h *.hh *.hxx *.hpp 
 # *.h++ *.idl *.odl *.cs *.php *.php3 *.inc *.m *.mm
 
-FILE_PATTERNS          = *.dox *.c *.h
+FILE_PATTERNS          = *.dox *.h *.c 
 
 # The RECURSIVE tag can be used to turn specify whether or not subdirectories 
 # should be searched for input files as well. Possible values are YES and NO. 

@@ -1,0 +1,12 @@
+/**
+
+@page te_agents_unix Unix Test Agent
+
+@section te_agents_unix_introduction Introduction
+
+The most functional and frequently used agent type is UNIX Agent. Even though it tends to be generic UNIX Agent, it is better adapted for Linux OS.
+
+Sources of UNIX Test Agent can be found under agents/unix directory of TE tree.
+
+ */
+

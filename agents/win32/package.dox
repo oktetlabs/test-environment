@@ -1,0 +1,26 @@
+/** @page te_agents_win Windows Test Agent
+
+@section te_agent_win_introduction Introduction
+
+The implementation of Test Agent for Windows relies on Cygwin framework.
+Currently the functionality of this type of Agent is limited to:
+- RPC Server functionality (POSIX socket API and Winsock API);
+- Network services configuration tree (configuration of IP interfaces
+  and IP routes);
+- Process/thread creation feature;
+- Reboot support.
+.
+
+@section te_agent_win_source Source organization
+
+The sources of Windows Test Agent located under <em>agents/win32</em>
+directory of TE tree.
+- agents/win32/tarpc_server.c - implementation of RPC Server calls;
+- win32.c - implementation of entry point of Test Agent as well as functions
+  of RCF PCH interface;
+- win32conf.c - implementation of configuration nodes for Windows Test
+Agent.
+.
+
+ */
+

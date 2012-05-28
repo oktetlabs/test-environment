@@ -40,9 +40,75 @@ Depending on the physical location of Test Agent and the device it controls we c
 
 All communication with Test Agents performed via RCF components. Interactions are done with text-based Test Protocol.
 
-@section te_agt_geatures Test Agent Features
+@section te_agt_organization Test Agent Organization
 
-Test Agent supports the following features:
+Basically Test Agent consists of:
+- start-up code;
+- generic implementation of PCH functions (lib/rcfpch);
+- OS-specific implementation of some PCH functions (rcf_ch_start_process(), rcf_ch_start_thread(), etc.);
+- OS-specific implementation of callbacks for configurator tree;
+- a set of functions used in RPC;
+- a number of standard RCF Services supported in separate libraries (like TAD).
+.
 
+@image html ta_decomp.png "Test Agent decomposition"
+
+<!--
+@startditaa "ditaa ta_rcfpch.png -S"
+ +----------------------------------------------------------------------------------------------+
+ |                                                                                  Test Agent  |
+ :                                                                                  ----------  |
+ |   +------------------------------------------------------------------------+                 |
+ |   |                                RCF PCH                                 |                 |
+ |   |                               lib/rcfpch                               |                 |
+ |   +----+-------------------+-------------------+----------------------+----+                 |
+ |        |                   |                   |                      |                      |
+ |        |                   |                   |                      |                      |
+ |        v                   v                   |                      v                      |
+ |  +-----------+     +----------------+          |           +----------------------+          |
+ |  |    TAD    |     |    PCH CFG     |          |           |      RPC Server      |          |
+ |  |  lib/tad  |     |  lib/rcfpch/   |          |           |      lib/rcfpch/     |          |
+ |  |           |     | rcf_pch_conf.c |          |           | rcf_pch_rpc_server.c |          |
+ |  +-----------+     +-------+--------+          |           +--+----------------+--+          |
+ |                            |                   |              |                |             |
+ |         +------------------|--=----------------|--=-----------|--=-------------|----------+  |
+ |         :                  |                   |              |                |          |  |
+ |         |                  v                   v              v                v          |  |
+ |         |      +-----------------------+   +----------------------+     +-------------+   |  |
+ |         |      |   Configurator tree   |   | rcf_ch_start_process |     |  RPC Calls  |   |  |
+ |         |      |     node handlers     |   | rcf_ch_start_thread  |     |             |   |  |
+ |         |      |                       |   | ...                  |     +-------------+   |  |
+ |         |      +-----------------------+   +----------------------+                       |  |
+ |         |                                                                                 |  |
+ |         |                                                     OS -specific part           |  |
+ |         +---------------------------------------------------------------------------------+  |
+ +----------------------------------------------------------------------------------------------+
+@endditaa
+-->
+
+On start-up Test Agent does the following things:
+- calls ta_log_init() to initialize logger API;
+- if a Test Agent supports process or thread creation
+  (rcf_ch_start_process(), and rcf_ch_start_thread() are supported),
+  then it is necessary to create a separate thread or process that
+  will receive log messages from different processes and threads run on behalf of Test Agent.
+  lib/loggerta library exports logfork_entry() function that should be used as an entry
+  point for such a thread/process;
+- calls rcf_pch_run() function that passes control to RCF Portable Command Handler.
+.
+
+In RCF PCH Test Agent passively waits for RCF commands. RCF commands are handled in the main loop of RCF PCH library.
+Depending on the command type it can be handled either by generic part of RCF PCH (located under <em>lib/rcfpch/</em>) or
+it can be directed to Agent specific parts of code (located under <em>agents/type/</em>).
+
+Functions declared in lib/rcfpch/rcf_ch_api.h should be exported by a Test Agent, though they can return -1 telling that an operation is not supported.
+
+@section te_agt_types Types of supported Test Agents
+
+Currently we support two main types of Test Agents:
+- @ref te_agents_win;
+- @ref te_agents_unix.
+.
 
  */
+
