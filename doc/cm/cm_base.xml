@@ -99,6 +99,11 @@
          Limit: 1 -->
     <object oid="/agent/interface/link_addr" access="read_write" type="address"/>
     
+    <!-- Broadcast Link layer address for the interface.
+         Name:  empty
+         Limit: 1 -->
+    <object oid="/agent/interface/bcast_link_addr" access="read_write" type="address"/>
+    
     <!-- Maximum Transfer Unit for the interface.
          Name:  empty
          Limit: 1 -->
