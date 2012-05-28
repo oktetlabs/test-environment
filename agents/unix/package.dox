@@ -2,11 +2,47 @@
 
 @page te_agents_unix Unix Test Agent
 
-@section te_agents_unix_introduction Introduction
+@section te_agent_unix_introduction Introduction
 
-The most functional and frequently used agent type is UNIX Agent. Even though it tends to be generic UNIX Agent, it is better adapted for Linux OS.
+The most functional and frequently used agent type is UNIX Agent.
+Even though it tends to be generic UNIX Agent, it is better adapted
+for Linux OS.
 
-Sources of UNIX Test Agent can be found under agents/unix directory of TE tree.
+Sources of UNIX Test Agent can be found under agents/unix
+directory of TE tree.
+
+Unix Test Egent supports the following features:
+- RPC Server functionality;
+- Process/thread creation feature;
+- Rich configuration tree support:
+- Daemons configuration
+  (dhcp, dns, ldap, pppoe, radius, radvd, vtund, 802.1x supplicants);
+- Sniffer support;
+- Control of Power Switch devices;
+- Traffic Application Domain (TAD) support for network protocols
+  (ARP, ATM, DHCP, Ethernet, IGMP, UDP, TCP, IPv4, ICMPv4,
+  IPv6, ICMPv6, PPP, SNMP, iSCSI);
+- Automatic configuration server (ACS) engine
+  for testing TR-069 specification.
+.
+
+@section te_agent_unix_source Source organization
+
+The sources of UNIX Test Agent located under <em>agents/unix</em>
+directory of TE tree:
+- agents/unix/rpc/ - implementation of RPC Server calls;
+- agents/unix/main.c - implementation of entry point of Test Agent as well as functions
+  of RCF PCH interface;
+- agents/unix/conf implementation of configuration nodes for
+  UNIX Test Agent:
+  - agents/unix/conf/base/ - support of base configuration nodes
+    (network interface configuration);
+  - agents/unix/conf/daemons - support of network daemons configuration;
+  - agents/unix/conf/route - support of network routing table configuration;
+  - agents/unix/conf/util - support of configuration models of external
+    utilities integrated in TE (sniffer);
+  .
+.
 
  */
 

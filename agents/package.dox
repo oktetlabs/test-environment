@@ -110,5 +110,13 @@ Currently we support two main types of Test Agents:
 - @ref te_agents_unix.
 .
 
+@section te_agt_extending Extending Test Agent with new functionality
+
+@subsection te_agt_extending_rpc Adding new RPC calls
+
+@ref tapi_rpc page gives guidelines on how to add support for a new RPC call.
+
+@subsection te_agt_extending_cfg Adding new configuration nodes
+
  */
 
