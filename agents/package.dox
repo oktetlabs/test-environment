@@ -2,35 +2,54 @@
 
 @section te_agt_introduction Introduction
 
-Test Agent is a piece of software that in general runs on dedicated host and exports functionality necessary to configure test set-up, generate some traffic, or receive some statistics from device under test or auxiliary testing components.
-Depending on the particular type of an Agent, it can operate as a single process or as a set of processes or threads.
+Test Agent is a piece of software that in general runs on dedicated host and
+exports functionality necessary to configure test set-up, generate some
+traffic, or receive some statistics from device under test or auxiliary
+testing components.
+Depending on the particular type of an Agent, it can operate as a single
+process or as a set of processes or threads.
 
-The Agent is a component that is intended for future amendments, extensions and porting to different platforms.
+The Agent is a component that is intended for future amendments, extensions
+and porting to different platforms.
 
-At the time or writing this document TE has Test Agents available for the following Operating Systems:
+At the time or writing this document TE has Test Agents available for
+the following Operating Systems:
 - Linux;
 - FreBSD;
 - Windows.
 .
 
-Depending on the physical location of Test Agent and the device it controls we can differentiate Agents as following:
+Depending on the physical location of Test Agent and the device it controls
+we can differentiate Agents as following:
 - <b>Auxiliary Agent</b><br/>
   Test Agent running on an auxiliary station and controlling this station.<br/>
-  Test Protocol is used over a network and all commands are applied to the station on which Test Agent runs. Such Agents are necessary when we do Black Box testing:
-  - to emulate presence of some software or hardware component in the test set-up;
+  Test Protocol is used over a network and all commands are applied to
+  the station on which Test Agent runs. Such Agents are necessary when
+  we do Black Box testing:
+  - to emulate presence of some software or hardware component in
+    the test set-up;
   - network protocol testing (sending/receiving protocol data);
   - in interoperability testing;
   - external interface testing (SNMP, TR-069, CLI).
   .
-  Please note that a Test Agent can be run on the same station as Test Engine, the only difference is that “reboot” command should never be applied to this Test Agent;
+  Please note that a Test Agent can be run on the same station as
+  Test Engine, the only difference is that “reboot” command should never
+  be applied to this Test Agent;
 - <b>Proxy Agent</b><br/>
   Test Agent running on an auxiliary station and controlling the DUT.<br/>
-  Test Protocol is used over a network and all commands are applied to the DUT (Test Agent interacts with the DUT via a DUT-specific interface).<br/>
-  This kind of Agent is necessary when we need to be able to configure DUT during test scenario or when we want to control some external equipment that provides facilities necessary in the particular test scenarios, but at the same time we only have some external interfaces exported by DUT or auxiliary equipment.
+  Test Protocol is used over a network and all commands are applied to
+  the DUT (Test Agent interacts with the DUT via a DUT-specific interface).<br/>
+  This kind of Agent is necessary when we need to be able to configure DUT
+  during test scenario or when we want to control some external equipment
+  that provides facilities necessary in the particular test scenarios,
+  but at the same time we only have some external interfaces exported by DUT
+  or auxiliary equipment.
 - <b>Embedded Agent</b><br/>
   Test Agent running on a DUT and controlling the DUT.<br/>
-  Test Protocol is used over a network or over some other transport (for example, over a serial port) and all commands are applied to the NUT.<br/>
-  This kind of Test Agent is necessary when we want to do White Box testing (i.e. when we are able to integrate our software components into the DUT):
+  Test Protocol is used over a network or over some other transport 
+  (for example, over a serial port) and all commands are applied to the NUT.<br/>
+  This kind of Test Agent is necessary when we want to do White Box testing
+  (i.e. when we are able to integrate our software components into the DUT):
   - Module testing;
   - DUP API testing;
   - DUT-specific management.
@@ -38,51 +57,54 @@ Depending on the physical location of Test Agent and the device it controls we c
 
 @image html agt_types.png "Possible physical location of Test Agents"
 
-All communication with Test Agents performed via RCF components. Interactions are done with text-based Test Protocol.
+All communication with Test Agents performed via RCF components.
+Interactions are done with text-based Test Protocol.
 
 @section te_agt_organization Test Agent Organization
 
 Basically Test Agent consists of:
 - start-up code;
 - generic implementation of PCH functions (lib/rcfpch);
-- OS-specific implementation of some PCH functions (rcf_ch_start_process(), rcf_ch_start_thread(), etc.);
+- OS-specific implementation of some PCH functions
+  (rcf_ch_start_process(), rcf_ch_start_thread(), etc.);
 - OS-specific implementation of callbacks for configurator tree;
 - a set of functions used in RPC;
-- a number of standard RCF Services supported in separate libraries (like TAD).
+- a number of standard RCF Services supported in separate libraries
+  (like TAD).
 .
 
 @image html ta_decomp.png "Test Agent decomposition"
 
 <!--
 @startditaa "ditaa ta_rcfpch.png -S"
- +----------------------------------------------------------------------------------------------+
- |                                                                                  Test Agent  |
- :                                                                                  ----------  |
- |   +------------------------------------------------------------------------+                 |
- |   |                                RCF PCH                                 |                 |
- |   |                               lib/rcfpch                               |                 |
- |   +----+-------------------+-------------------+----------------------+----+                 |
- |        |                   |                   |                      |                      |
- |        |                   |                   |                      |                      |
- |        v                   v                   |                      v                      |
- |  +-----------+     +----------------+          |           +----------------------+          |
- |  |    TAD    |     |    PCH CFG     |          |           |      RPC Server      |          |
- |  |  lib/tad  |     |  lib/rcfpch/   |          |           |      lib/rcfpch/     |          |
- |  |           |     | rcf_pch_conf.c |          |           | rcf_pch_rpc_server.c |          |
- |  +-----------+     +-------+--------+          |           +--+----------------+--+          |
- |                            |                   |              |                |             |
- |         +------------------|--=----------------|--=-----------|--=-------------|----------+  |
- |         :                  |                   |              |                |          |  |
- |         |                  v                   v              v                v          |  |
- |         |      +-----------------------+   +----------------------+     +-------------+   |  |
- |         |      |   Configurator tree   |   | rcf_ch_start_process |     |  RPC Calls  |   |  |
- |         |      |     node handlers     |   | rcf_ch_start_thread  |     |             |   |  |
- |         |      |                       |   | ...                  |     +-------------+   |  |
- |         |      +-----------------------+   +----------------------+                       |  |
- |         |                                                                                 |  |
- |         |                                                     OS -specific part           |  |
- |         +---------------------------------------------------------------------------------+  |
- +----------------------------------------------------------------------------------------------+
++----------------------------------------------------------------------------------------------+
+|                                                                                  Test Agent  |
+:                                                                                  ----------  |
+|   +------------------------------------------------------------------------+                 |
+|   |                                RCF PCH                                 |                 |
+|   |                               lib/rcfpch                               |                 |
+|   +----+-------------------+-------------------+----------------------+----+                 |
+|        |                   |                   |                      |                      |
+|        |                   |                   |                      |                      |
+|        v                   v                   |                      v                      |
+|  +-----------+     +----------------+          |           +----------------------+          |
+|  |    TAD    |     |    PCH CFG     |          |           |      RPC Server      |          |
+|  |  lib/tad  |     |  lib/rcfpch/   |          |           |      lib/rcfpch/     |          |
+|  |           |     | rcf_pch_conf.c |          |           | rcf_pch_rpc_server.c |          |
+|  +-----------+     +-------+--------+          |           +--+----------------+--+          |
+|                            |                   |              |                |             |
+|         +------------------|--=----------------|--=-----------|--=-------------|----------+  |
+|         :                  |                   |              |                |          |  |
+|         |                  v                   v              v                v          |  |
+|         |      +-----------------------+   +----------------------+     +-------------+   |  |
+|         |      |   Configurator tree   |   | rcf_ch_start_process |     |  RPC Calls  |   |  |
+|         |      |     node handlers     |   | rcf_ch_start_thread  |     |             |   |  |
+|         |      |                       |   | ...                  |     +-------------+   |  |
+|         |      +-----------------------+   +----------------------+                       |  |
+|         |                                                                                 |  |
+|         |                                                     OS -specific part           |  |
+|         +---------------------------------------------------------------------------------+  |
++----------------------------------------------------------------------------------------------+
 @endditaa
 -->
 
@@ -91,17 +113,24 @@ On start-up Test Agent does the following things:
 - if a Test Agent supports process or thread creation
   (rcf_ch_start_process(), and rcf_ch_start_thread() are supported),
   then it is necessary to create a separate thread or process that
-  will receive log messages from different processes and threads run on behalf of Test Agent.
-  lib/loggerta library exports logfork_entry() function that should be used as an entry
+  will receive log messages from different processes and threads
+  run on behalf of Test Agent.
+  lib/loggerta library exports logfork_entry() function that
+  should be used as an entry
   point for such a thread/process;
-- calls rcf_pch_run() function that passes control to RCF Portable Command Handler.
+- calls rcf_pch_run() function that passes control to
+  RCF Portable Command Handler.
 .
 
-In RCF PCH Test Agent passively waits for RCF commands. RCF commands are handled in the main loop of RCF PCH library.
-Depending on the command type it can be handled either by generic part of RCF PCH (located under <em>lib/rcfpch/</em>) or
-it can be directed to Agent specific parts of code (located under <em>agents/type/</em>).
+In RCF PCH Test Agent passively waits for RCF commands. RCF commands are
+handled in the main loop of RCF PCH library.
+Depending on the command type it can be handled either by generic part of
+RCF PCH (located under <em>lib/rcfpch/</em>) or it can be directed to
+Agent specific parts of code (located under <em>agents/type/</em>).
 
-Functions declared in lib/rcfpch/rcf_ch_api.h should be exported by a Test Agent, though they can return -1 telling that an operation is not supported.
+Functions declared in lib/rcfpch/rcf_ch_api.h should be exported
+by a Test Agent, though they can return -1 telling that an operation
+is not supported.
 
 @section te_agt_types Types of supported Test Agents
 
@@ -117,6 +146,67 @@ Currently we support two main types of Test Agents:
 @ref tapi_rpc page gives guidelines on how to add support for a new RPC call.
 
 @subsection te_agt_extending_cfg Adding new configuration nodes
+
+@copydetails lib/confapi/conf_api.h
+
+Details of API can be found at <a HREF="conf__api_8h.html">Configurator API</a> page.
+
+Here we will explain how to add support for a new objects and instances
+on Test Agent side.
+
+@subsubsection te_agt_extending_cfg_design Design of configuration nodes
+
+First thing to do while creating new configuration nodes is to design
+structure of new nodes, their relationship, access rights and types of
+value kept by them.
+
+Descriptions of configuration nodes are kept under <em>doc/cm/</em> directory
+(<em>cm</em> is derived from Configuration Model). You should update one of
+existing files or create a new one with information about your new nodes.
+
+The format of Configuration Model files complies to format of Configurator
+backups, which makes it possible to use lines from these files in configurator
+configuration file when you need to add this or that object into your run
+time configuration.
+
+Read some more information about configuration objects and instances at
+@ref te_engine_conf_tree.
+
+In our example we will define the following objects:
+
+@code
+  <!-- An example of read-only object with integer type of value.
+       Name: an arbitrary string -->
+  <object oid="/agent/ro_object" access="read_only" type="integer"/>
+  
+  <!-- An example of read-write object with address type of value.
+       Name: an arbitrary string -->
+  <object oid="/agent/rw_object" access="read_write" type="address"/>
+
+
+  <!-- An example of collection object.
+       Name: an arbitrary string -->
+  <object oid="/agent/col_object" access="read_create" type="string"/>
+
+  <!-- An example of a child node of a collection object.
+       Name: an arbitrary string -->
+  <object oid="/agent/col_object/var" access="read_only" type="string"/>
+@endcode
+
+@subsubsection te_agt_extending_cfg_init Test Agent initialization
+
+On Test Agent start-up we should pass control to PCH (Portable Command Handler)
+main loop function rcf_pch_run(). As a part of initialization process for
+configuration support rcf_pch_run() function calls:
+- rcf_ch_conf_init() - to do all Test Agent specific initialization;
+- rcf_ch_conf_root() - to get a pointer to the description of root
+  "agent" configuration node.
+.
+
+In rcf_ch_conf_init() function you should register all object nodes that
+Test Agent will support during its operation. Nodes are registered to RCF PCH
+with rcf_pch_add_node() function where you specify parent object path
+and pointer to object description structure of rcf_pch_cfg_object type.
 
  */
 
