@@ -1220,16 +1220,14 @@ te_fstat(te_bool use_libc, int fd, rpc_stat *rpcbuf)
 int
 te_fstat64(te_bool use_libc, int fd, rpc_stat *rpcbuf)
 {
-    api_func stat_func;
-    int rc;
-
-
 /**
  * To have __USE_LARGEFILE64 defined in Linux, specify
  * -D_GNU_SOURCE (or other related feature test macro) in
  * TE_PLATFORM macro in your builder.conf
  */
 #if defined __linux__ && defined __USE_LARGEFILE64
+    api_func      stat_func;
+    int           rc;
     struct stat64 buf;
 
     memset(&buf, 0, sizeof(buf));
@@ -1244,12 +1242,18 @@ te_fstat64(te_bool use_libc, int fd, rpc_stat *rpcbuf)
         return rc;
 
     FSTAT_COPY(rpcbuf, buf);
+    return 0;
 #else
 /*
  * #error "fstat family is not currently supported for non-linux unixes."
  */
+    UNUSED(use_libc);
+    UNUSED(fd);
+    UNUSED(rpcbuf);
+
+    ERROR("fstat64 is not supported");
+    return -1;
 #endif
-    return 0;
 }
 
 TARPC_FUNC(te_fstat, {},
