@@ -208,5 +208,7 @@ Test Agent will support during its operation. Nodes are registered to RCF PCH
 with rcf_pch_add_node() function where you specify parent object path
 and pointer to object description structure of rcf_pch_cfg_object type.
 
+@image html ta_conf_call_diagram.png "Test Agent configuration support event sequence diagram"
+
  */
 
