@@ -470,6 +470,14 @@ agent_list(char *oid, char **list)
     return (*list = strdup(rcf_ch_conf_agent())) == NULL ? TE_ENOMEM : 0;
 }
 
+
+/* See the description in lib/rcfpch/rcf_ch_api.h */
+int
+rcf_ch_conf_init()
+{
+    return 0;
+}
+
 /**
  * Get root of the tree of supported objects.
  *

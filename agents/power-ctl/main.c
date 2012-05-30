@@ -546,6 +546,12 @@ thread_mutex_unlock(void *mutex)
         pthread_mutex_unlock(mutex);
 }
 
+/* See the description in lib/rcfpch/rcf_ch_api.h */
+int
+rcf_ch_conf_init()
+{
+    return 0;
+}
 
 /**
  * Get root of the tree of supported objects.

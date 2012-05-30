@@ -1,8 +1,11 @@
 /** @file
  * @brief RCF Portable Command Handler
  *
- * Definition of the C API provided by Commands Handler libraries to RCF
+ * Declaration of the C API provided by Commands Handler libraries to RCF
  * Portable Commands Handler.
+ * Functions declared in this header should be defined
+ * for each type of supported Test Agent (find definitions of these
+ * functions under agent/<type> subdirectory).
  *
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
@@ -703,10 +706,13 @@ extern int rcf_ch_call(struct rcf_comm_connection *handle,
  *
  * @param pid           location of pid of the new task
  * @param priority      priority of the new process or -1 if the
- *                        priority is not specified in the command
- * @param rtn           routine entry point name
- * @param is_argv       if TRUE, then routine prototype is
- *                        (int argc, char **argv)
+ *                      priority is not specified in the command
+ * @param rtn           routine entry point name.
+ *                      It is expected that a function has
+ *                      the following argument list (int argc, char **argv)
+ * @param do_exec       whether to do execve after fork() in
+ *                      a newly created process or just to call
+ *                      @p rtn function in a new process
  * @param argc          number of arguments
  * @param params        pointer to array of RCF_MAX_PARAMS length
  *                      with routine arguments
@@ -1001,6 +1007,16 @@ typedef struct rcf_pch_cfg_object {
  *         is skipped.
  */
 extern rcf_pch_cfg_object *rcf_ch_conf_root(void);
+
+/**
+ * Initialize configuration support of Command Handler
+ * (Test Agent specific initialization).
+ *
+ * @return Status of the operation
+ * @retval  0  initialization successfully completed
+ * @retval -1  initialization failed
+ */
+extern int rcf_ch_conf_init(void);
 
 /**
  * Release resources allocated for configuration support.

@@ -901,8 +901,6 @@ RCF_PCH_CFG_NODE_RW(node_xen, "xen",
 
 RCF_PCH_CFG_NODE_AGENT(node_agent, &node_xen);
 
-static te_bool init = FALSE;
-
 
 #define MAX_VLANS 0xfff
 static int vlans_buffer[MAX_VLANS];
@@ -1003,27 +1001,25 @@ interface_release(const char *name)
 #endif
 }
 
-/**
- * Get root of the tree of supported objects.
- *
- * @return root pointer
- */
-rcf_pch_cfg_object *
-rcf_ch_conf_root(void)
+/* See the description in lib/rcfpch/rcf_ch_api.h */
+int
+rcf_ch_conf_init()
 {
+    static te_bool init = FALSE;
+
     if (!init)
     {
 #ifdef USE_LIBNETCONF
         if (netconf_open(&nh) != 0)
         {
             ERROR("Failed to open netconf session");
-            return NULL;
+            return -1;
         }
 #endif
 
         if ((cfg_socket = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
         {
-            return NULL;
+            return -1;
         }
         if (fcntl(cfg_socket, F_SETFD, FD_CLOEXEC) != 0)
         {
@@ -1039,8 +1035,6 @@ rcf_ch_conf_root(void)
                       "configuration socket: %r", errno);
             }
         }
-
-        init = TRUE;
 
         rcf_pch_rsrc_info("/agent/interface",
                           interface_grab,
@@ -1118,9 +1112,10 @@ rcf_ch_conf_root(void)
         if (ta_unix_conf_sniffer_init() != 0)
             ERROR("Failed to add sniffer configuration tree");
 #endif
-    }
+        init = TRUE;
 
-    return &node_agent;
+    }
+    return 0;
 
 fail:
     if (cfg_socket >= 0)
@@ -1133,7 +1128,18 @@ fail:
         close(cfg6_socket);
         cfg6_socket = -1;
     }
-    return NULL;
+    return -1;
+}
+
+/**
+ * Get root of the tree of supported objects.
+ *
+ * @return root pointer
+ */
+rcf_pch_cfg_object *
+rcf_ch_conf_root(void)
+{
+    return &node_agent;
 }
 
 /**

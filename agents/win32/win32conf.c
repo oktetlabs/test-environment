@@ -1322,19 +1322,12 @@ find_ifindex(DWORD addr, DWORD *ifindex)
     return 0;
 }
 
-
-/**
- * Get root of the tree of supported objects.
- *
- * @return root pointer
- */
-rcf_pch_cfg_object *
-
-rcf_ch_conf_root()
+/* See the description in lib/rcfpch/rcf_ch_api.h */
+int
+rcf_ch_conf_init()
 {
     static te_bool init = FALSE;
 
-    /* Link RPC nodes */
     if (!init)
     {
 #ifdef ENABLE_WMI_SUPPORT
@@ -1343,17 +1336,14 @@ rcf_ch_conf_root()
 #endif
 
         if (efport2ifindex() != 0)
-            return NULL;
+            return -1;
 
-        init = TRUE;
 #ifdef RCF_RPC
         rcf_pch_rpc_init();
 #endif
 #ifdef WITH_ISCSI
         if (iscsi_initiator_conf_init() != 0)
-        {
-            return NULL;
-        }
+            return -1;
 #endif
 
 #ifdef ENABLE_WMI_SUPPORT
@@ -1361,27 +1351,37 @@ rcf_ch_conf_root()
             pwmi_init_wbem_objs();
 #endif
         rcf_pch_rsrc_init();
-        rcf_pch_rsrc_info("/agent/interface", 
+        rcf_pch_rsrc_info("/agent/interface",
                           rcf_pch_rsrc_grab_dummy,
                           rcf_pch_rsrc_release_dummy);
 
-
 #ifdef ENABLE_IFCONFIG_STATS
         if (ta_win32_conf_net_if_stats_init() != 0)
-            return NULL;
+            return -1;
 #endif
 #ifdef ENABLE_NET_SNMP_STATS
         if (ta_win32_conf_net_snmp_stats_init() != 0)
-            return NULL;
+            return -1;
 #endif
 
         /* Initialize configurator PHY support */
         if (ta_unix_conf_phy_init() != 0)
-            return NULL;
-    
+            return -1;    
+        
+        init = TRUE;
     }
 
+    return 0;
+}
 
+/**
+ * Get root of the tree of supported objects.
+ *
+ * @return root pointer
+ */
+rcf_pch_cfg_object *
+rcf_ch_conf_root()
+{
     return &node_agent;
 }
 

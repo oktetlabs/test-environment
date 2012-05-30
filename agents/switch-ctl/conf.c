@@ -4054,6 +4054,13 @@ RCF_PCH_CFG_NODE_AGENT(node_agent, &node_cos);
 /*@}*/
 
 
+/* See the description in lib/rcfpch/rcf_ch_api.h */
+int
+rcf_ch_conf_init()
+{
+    return 0;
+}
+
 /* See description in rcf_ch_api.h */
 rcf_pch_cfg_object *
 rcf_ch_conf_root()

@@ -727,7 +727,12 @@ rcf_pch_cfg_init(void)
 {
     TAILQ_INIT(&commits);
 
-    if (rcf_ch_conf_root() != NULL)
+    if (rcf_ch_conf_init() != 0)
+    {
+        ERROR("Failed to initialize Test Agent "
+              "configuration Command Handler");
+    }
+    else if (rcf_ch_conf_root() != NULL)
     {
         /*
          * Agent root OID has length equal to 2, because of root OID
