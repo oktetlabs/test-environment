@@ -27,6 +27,7 @@
 #
 # $Id$
 #
+
 use strict;
 use warnings;
 use IPC::Open2;
@@ -34,6 +35,7 @@ use File::Temp qw/ tempfile /;
 use Cwd;
 
 my @tmp_files = ();
+my $log_save = "";
 
 sub escape_str
 {
@@ -131,6 +133,11 @@ sub download_prepare_log
         $file_name = $tmp_files[$#tmp_files];
     }
 
+    if (defined($log_save) && length($log_save) > 0)
+    {
+        system("cp ".$file_name." ".escape_str($log_save));
+    }
+
     if ($initial_name =~ m/^(.*)[.]raw/ ||
         !($initial_name =~ m/^(.*)[.]xml/))
     {
@@ -157,6 +164,10 @@ foreach (@ARGV)
           "      --conf-tester=STRING    Use this if something other \n".
           "                              than tester.conf should be \n".
           "                              used.\n";
+        print "\n".
+          "      --log-save=STRING       Use this before --log= to save \n".
+          "                              a copy of (downloaded and \n".
+          "                              unpacked) log\n";
 #       print "\n".
 #         "      --tester-run=STRING     Test path for Tester fake run\n".
 #         "                              (if specified, --test-name \n".
@@ -186,6 +197,10 @@ foreach (@ARGV)
                          escape_str($1)."\"";
         $test_specified = 1;
     }
+    elsif ($_ =~ m/^--log-save=(.*)$/)
+    {
+        $log_save = $1;
+    }
     elsif ($_ =~ m/^--log=(.*)$/)
     {
         my $log_file = $1;
@@ -208,6 +223,7 @@ foreach (@ARGV)
         }
 
         $log_specified = 1;
+        $log_save = "";
     }
     elsif ($_ =~ m/^--show-args=(.*)$/)
     {
