@@ -1,8 +1,18 @@
 /** @file 
- * @brief Configurator
+ * @brief Configurator API
  *
- * Exported API
- *
+ * Configurator API exports functionality that makes it possible to:
+ * - register/unregister objects of configuration tree;
+ * - traverse a configuration tree (get parent, neighbor and child nodes);
+ * - add new object instances;
+ * - delete existing object instances;
+ * - change the value of an object instance;
+ * - get the value of an object instace.
+ * .
+ */
+
+/**
+ * @copyright
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
  *
@@ -577,7 +587,7 @@ extern te_errno cfg_set_instance(cfg_handle handle, cfg_val_type type, ...);
  * Set instance by the OID. OID may be format string.
  *
  * Use macro CFG_VAL() to make the second and the third arguments pair.
- * E.g. rc = cfg_set_instance_fmt(NULL, CFG_VAL(INTEGER, 1), "/hello:");
+ * E.g. rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1), "/hello:");
  */
 static inline te_errno
 cfg_set_instance_fmt(cfg_val_type type, const void *val,

@@ -779,6 +779,7 @@ extern int rcf_ch_kill_thread(unsigned int tid);
  * @param gid       group identifier
  * @param oid       full object instance identifier
  * @param value     location for the value
+ *                  (a buffer of RCF_MAX_VAL bytes size)
  * @param instN     Nth instance name (maximum 10) or NULL
  *
  * @return Status code
@@ -827,15 +828,19 @@ typedef te_errno (* rcf_ch_cfg_del)(unsigned int gid, const char *oid,
                                     const char *instN, ...);
 
 /**
- * Prototype for get instance list routine. The routine should
- * allocate memory using malloc().  Caller is responsible for
- * releasing of this memory.
+ * Prototype for a routine that returns the list of instance names
+ * for an object.
+ * The routine should allocate memory for instance list with malloc().
+ * Caller is responsible for releasing of this memory.
  *
  * @param gid       group identifier
  * @param oid       full object instance identifier
- * @param list      location for the list pointer
+ * @param list      location for the returned list pointer
+ *                  (list entries should be separated with SPACE character.
+ *                  For example if we need to return names 'a', 'b', 'c',
+ *                  then returned string would be "a b c"
  * @param instN     Nth instance name (maximum 10, father's
- *                    instance name is last, if fit in 10)
+ *                  instance name is last, if fit in 10)
  *
  * @return Status code
  */
@@ -1015,6 +1020,9 @@ extern rcf_pch_cfg_object *rcf_ch_conf_root(void);
  * @return Status of the operation
  * @retval  0  initialization successfully completed
  * @retval -1  initialization failed
+ *
+ * @note In this function a Test Agent calls rcf_pch_add_node()
+ * in order to register nodes that it will support during its operation.
  */
 extern int rcf_ch_conf_init(void);
 

@@ -147,6 +147,17 @@ Currently we support two main types of Test Agents:
 
 @subsection te_agt_extending_cfg Adding new configuration nodes
 
+@ref te_agents_conf page gives guidelines on how to add new configuration
+nodes to Test Agent and how to use
+<a HREF="conf__api_8h.html">Configurator API</a>.
+
+
+
+
+@page te_agents_conf Creating new configuration nodes in Test Agent
+
+@section Introduction
+
 @copydetails lib/confapi/conf_api.h
 
 Details of API can be found at <a HREF="conf__api_8h.html">Configurator API</a> page.
@@ -154,7 +165,7 @@ Details of API can be found at <a HREF="conf__api_8h.html">Configurator API</a> 
 Here we will explain how to add support for a new objects and instances
 on Test Agent side.
 
-@subsubsection te_agt_extending_cfg_design Design of configuration nodes
+@section te_agt_extending_cfg_design Design of configuration nodes
 
 First thing to do while creating new configuration nodes is to design
 structure of new nodes, their relationship, access rights and types of
@@ -186,21 +197,19 @@ In our example we will define the following objects:
 
   <!-- An example of collection object.
        Name: an arbitrary string -->
-  <object oid="/agent/col_object" access="read_create" type="string"/>
+  <object oid="/agent/col_object" access="read_create" type="none"/>
 
   <!-- An example of a child node of a collection object.
        Name: an arbitrary string -->
   <object oid="/agent/col_object/var" access="read_only" type="string"/>
 @endcode
 
-@subsubsection te_agt_extending_cfg_init Test Agent initialization
+@section te_agt_extending_cfg_init Test Agent initialization
 
 On Test Agent start-up we should pass control to PCH (Portable Command Handler)
 main loop function rcf_pch_run(). As a part of initialization process for
 configuration support rcf_pch_run() function calls:
-- rcf_ch_conf_init() - to do all Test Agent specific initialization;
-- rcf_ch_conf_root() - to get a pointer to the description of root
-  "agent" configuration node.
+- rcf_ch_conf_init() - to do all Test Agent specific initialization.
 .
 
 In rcf_ch_conf_init() function you should register all object nodes that
@@ -209,6 +218,255 @@ with rcf_pch_add_node() function where you specify parent object path
 and pointer to object description structure of rcf_pch_cfg_object type.
 
 @image html ta_conf_call_diagram.png "Test Agent configuration support event sequence diagram"
+
+To specify node description you should use @ref rcf_ch_cfg_node_def.
+
+For example definition of nodes of our sample might look like:
+
+@code
+RCF_PCH_CFG_NODE_RO(ro_node, "ro_object", NULL, NULL, ro_object_get);
+RCF_PCH_CFG_NODE_RW(rw_node, "rw_object", NULL,
+                    &ro_node, /* neighbor node */
+                    rw_object_get, rw_object_set);
+
+RCF_PCH_CFG_NODE_RO(col_obj_var, "var", NULL, NULL, var_get);
+RCF_PCH_CFG_NODE_COLLECTION(col_node, "col_object",
+                            &col_obj_var, /* son node */
+                            &rw_node, /* bother node (neighbor node) */
+                            NULL, NULL, col_list, NULL);
+@endcode
+
+These definitions should be placed in the source of Test Agent.
+Then in the implementation of rcf_ch_conf_init() you should put
+the following line of code that will register your configuration subtree:
+
+@code
+int
+rcf_ch_conf_init(void)
+{
+    ...
+    if (rcf_pch_add_node("/agent", &col_node) != 0)
+    {
+        /* Do error handling */
+    }
+    ...
+}
+@endcode
+
+@section te_agt_extending_cfg_handlers Implementation of node handlers
+
+The main thing to be done is to define node handlers that in most cases
+interact with system interfaces to get necessary value or to update
+system settings.
+
+All data exchange between PCH and CH is done in terms of strings.
+For example if we have a node with the value of integer type we should
+anyway return value in a character string form and on set operation
+the value passed to a callback is in a character string form.
+
+Implementation of handlers for @p ro_object and @p rw_object objects
+might look like the following:
+
+@code
+static te_errno
+ro_object_get(unsigned int gid, const char *oid, char *value, const char *instN,...)
+{
+    int val;
+
+    /*
+     * Some comments about function parameters:
+     * gid - Identifier associated with an operation
+     *       (make sense for SET and COMMIT operations);
+     * oid - Object instance identifier whose value to get;
+     * value - buffer of RCF_MAX_VAL size to fill with value;
+     * instN... - the list of instance names of nodes
+     *            in "oid" starting from the son of "/agent" node.
+     *            For example for "oid": "/agent:Agt_A/ro_object:"
+     *            "instN" will be an empty string, and the next
+     *            element of the list will be NULL.
+     *            for "oid": "/agent:Agt_A/col_object:a/var:"
+     *            "instN" will be "a", the next element will be an
+     *            empty string and the third element will be NULL.
+     */
+
+    ...
+    /* Get value of integer type */
+    ...
+    snprintf(value, RCF_MAX_VAL, "%d", val);
+    return 0;
+}
+
+static te_errno
+rw_object_get(unsigned int gid, const char *oid, char *value, const char *instN,...)
+{
+    ...
+    /* Get the value of address type */
+    ...
+    /* Save address value in the return buffer in string format */
+    if (inet_ntop(af, addr, value, RCF_MAX_VAL) == NULL)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    return 0;
+}
+
+static te_errno
+rw_object_set(unsigned int gid, const char *oid, const char *value, const char *instN,...)
+{
+    if (inet_pton(AF_INET, value, addr_buf) == 1)
+        af= AF_INET;
+    else if (inet_pton(AF_INET6, value, addr_buf) == 1)
+        af = AF_INET6;
+    else
+        ...
+
+    /* Do something with address value */
+
+    return 0;
+}
+@endcode
+
+Please note that for scalar (not collection) objects instance name will be an empty string.
+
+Implementation of handlers for @p col_object might look like the following:
+
+@code
+static te_errno
+var_get(unsigned int gid, const char *oid, char *value, const char *instN,...)
+{
+    /*
+     * oid - "/agent:<agt_name>/col_object:<inst_name>/var:",
+     *       where "agt_name" is an agent name where this code runs,
+     *             "inst_name" is collection object instance name,
+     *             in our sample it is one of: '1', '2', '3', '4'.
+     * value - buffer of RCF_MAX_VAL size to fill with some string value;
+     * instN... - the list of instance names of nodes.
+     *            For our sample "instN" would be one of: '1', '2', '3', '4'.
+     *            Next element of the list would be an empty string
+     *            (as the instance name of "var" node), and the third entry
+     *            would be NULL.
+     */
+    snprintf(value, RCF_MAX_VAL, "STRING VALUE for '%s'", instN);
+
+    return 0;
+}
+
+/*
+ * The function returns the list of instance names of "col_object" object.
+ * Instance names are arbitrary strings that better fits your design.
+ */
+static te_errno
+col_list(unsigned int gid, const char *oid, char **list, const char *instN,...)
+{
+    /*
+     * Here we return predefined list of four instance names:
+     * '1', '2', '3', '4'.
+     * More natuarally this list would grow dynamically depending on
+     * some system attributes. The list can vary from call to call.
+     */
+    *list = strdup("1 2 3 4");
+    if (*list == NULL)
+        TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    return 0;
+}
+@endcode
+
+Collection nodes can support synamic add/del operations which require implementation
+of corresponding handlers:
+
+@code
+RCF_PCH_CFG_NODE_COLLECTION(col_node, "col_object",
+                            &col_obj_var, /* son node */
+                            &rw_node, /* bother node (neighbor node) */
+                            col_add, col_del, col_list, NULL);
+
+static te_errno
+col_add(unsigned int gid, const char *oid, const char *value, const char *instN,...)
+{
+    /*
+     * Add a new instance whose name is "instN".
+     * In case we successfully added an entry, the next call to
+     * col_list() function shall include this new instance name
+     * into the list of instance names.
+     */
+
+    /* Install a new entry that is associated with name instN */
+    
+    return 0;
+}
+
+static te_errno
+col_del(unsigned int gid, const char *oid, const char *instN,...)
+{
+    /*
+     * Remove an entry whose instance name is instN.
+     * The next call to col_list() function shall not include
+     * this instance name in returned list of instance names.
+     */
+
+    /* Deinstall an entry from the system */
+
+    return 0;
+}
+@endcode
+
+Apart from basic get/set/list/add/del handlers there is one more handler
+rcf_pch_cfg_object::commit that is additionally called for each successful
+set/add/del operation. There are two modes of commit call:
+- immediate call (commit is called after successful completion of
+  set/add/del operation);
+- postponed call (commit functions are called after a series of set/add/del
+  operations and duplicate commit calls are avoided).
+.
+
+@image html ta_conf_commit_immediate.png "Commit calls in case of ordinary SET calls"
+
+@image html ta_conf_commit_group.png "Commit calls in case of group context SET calls"
+
+Please note that in the group call case the particular commit function
+is called only once - in our sample <em>commit_X()</em> is called once though
+it is a commit function for <b>/X/a</b> and <b>/X/c</b> objects whose instances are
+updated.
+
+Usually the commit function is specified in parent node and children nodes
+refer to parent node with RCF_PCH_CFG_NODE_RWC() macro:
+
+@code
+static rcf_pch_cfg_object col_node;
+RCF_PCH_CFG_NODE_RWC(col_obj_var2, "var2", NULL, NULL,
+                     var2_get, var2_set,
+                     &col_node);
+RCF_PCH_CFG_NODE_RWC(col_obj_var1, "var1", NULL,
+                     &col_obj_var2, /* brother node */
+                     var1_get, var1_set,
+                     &col_node);
+RCF_PCH_CFG_NODE_COLLECTION(col_node, "col_object",
+                            &col_obj_var1, /* son node */
+                            &rw_node, /* bother node (neighbor node) */
+                            col_add, col_del, col_list, col_commit);
+@endcode
+
+Please note that add/del/set handlers have no way to detect what
+the calling mode takes place (immediate commit or postponed commit).
+The only thing to keep in mind is that commit will be called anyway.
+
+@section te_agt_extending_cfg_usage Usage of Configurator API from test scenarios
+
+Test scenrios should use functions exported via <a HREF="conf__api_8h.html">Configurator API</a>.
+
+Here we will show how to play with samples discussed in previous sections.
+
+@subsection te_agt_extending_cfg_usage_conf Tuning Configurator configuration file
+
+In order to let Configurator know about instances of new nodes we should
+register these new object nodes in configurator tree. Then Configurator will
+be able to get instances of these objects from Test Agent.
+
+
+
+@subsection te_agt_extending_cfg_usage_add_del Adding/Deleting an entry to/from configuration tree
+
+@subsection te_agt_extending_cfg_usage_set Set configuration value operation
 
  */
 
