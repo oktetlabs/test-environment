@@ -52,6 +52,10 @@
 #endif
 
 #include <sys/sendfile.h>
+
+#ifndef __USE_XOPEN_EXTENDED
+#define __USE_XOPEN_EXTENDED
+#endif
 #include <ftw.h>
 
 #include "te_raw_log.h"
