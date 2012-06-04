@@ -899,15 +899,8 @@ RCF_PCH_CFG_NODE_RW(node_xen, "xen",
                     &xen_path_get, &xen_path_set);
 
 
-RCF_PCH_CFG_NODE_AGENT(node_agent, &node_xen);
-
-
 #define MAX_VLANS 0xfff
 static int vlans_buffer[MAX_VLANS];
-
-
-
-
 
 te_bool
 ta_interface_is_mine(const char *ifname)
@@ -1001,6 +994,17 @@ interface_release(const char *name)
 #endif
 }
 
+/**
+ * Initialize base configuration.
+ *
+ * @return Status code.
+ */
+static inline te_errno
+ta_unix_conf_base_init(void)
+{
+    return rcf_pch_add_node("/agent", &node_xen);
+}
+
 /* See the description in lib/rcfpch/rcf_ch_api.h */
 int
 rcf_ch_conf_init()
@@ -1051,6 +1055,9 @@ rcf_ch_conf_init()
         rcf_pch_rsrc_info("/agent/telephony_port",
                           interface_grab,
                           interface_release);
+
+        if (ta_unix_conf_base_init() != 0)
+            goto fail;
 
         if (ta_unix_conf_route_init() != 0)
             goto fail;
@@ -1129,17 +1136,6 @@ fail:
         cfg6_socket = -1;
     }
     return -1;
-}
-
-/**
- * Get root of the tree of supported objects.
- *
- * @return root pointer
- */
-rcf_pch_cfg_object *
-rcf_ch_conf_root(void)
-{
-    return &node_agent;
 }
 
 /**

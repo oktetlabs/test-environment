@@ -890,20 +890,6 @@ typedef struct rcf_pch_cfg_object {
 
 } rcf_pch_cfg_object;
 
-
-/**
- * Root of the Test Agent configuration tree. RCF PCH function is
- * used as list callback.
- *
- * @param _name     node name
- * @param _son      name of the first son
- */
-#define RCF_PCH_CFG_NODE_AGENT(_name, _son) \
-    static rcf_pch_cfg_object _name =                       \
-        { "agent", 0, _son, NULL, NULL, NULL, NULL, NULL,   \
-           (rcf_ch_cfg_list)rcf_pch_agent_list,             \
-           NULL, NULL }
-
 /**
  * Define non-accessible configuration tree node.
  *
@@ -1004,14 +990,6 @@ typedef struct rcf_pch_cfg_object {
           (rcf_ch_cfg_add)_f_add, (rcf_ch_cfg_del)_f_del,           \
           (rcf_ch_cfg_list)_f_list, _f_commit, NULL }
 
-
-/**
- * Get root of the tree of supported objects.
- *
- * @return Root pointer or NULL if standard configuration support
- *         is skipped.
- */
-extern rcf_pch_cfg_object *rcf_ch_conf_root(void);
 
 /**
  * Initialize configuration support of Command Handler

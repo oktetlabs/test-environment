@@ -60,8 +60,6 @@ static long int unit_size = 0;
 
 const char *te_lockdir = "/tmp";
 
-RCF_PCH_CFG_NODE_AGENT(node_agent, NULL);
-
 /* APC: Default name of SNMP community with read-write access */
 const char *apc_rw_community = "private";
 
@@ -550,18 +548,11 @@ thread_mutex_unlock(void *mutex)
 int
 rcf_ch_conf_init()
 {
+    /*
+     * We do not export/support any configuration object,
+     * so we do not register any subtree with rcf_pch_add_node().
+     */
     return 0;
-}
-
-/**
- * Get root of the tree of supported objects.
- *
- * @return root pointer
- */
-rcf_pch_cfg_object *
-rcf_ch_conf_root(void)
-{
-    return &node_agent;
 }
 
 /**

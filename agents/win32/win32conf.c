@@ -549,8 +549,6 @@ static rcf_pch_cfg_object node_env =
 
 RCF_PCH_CFG_NODE_RO(node_uname, "uname", NULL, &node_env, uname_get);
 
-RCF_PCH_CFG_NODE_AGENT(node_agent, &node_uname);
-
 const char *te_lockdir = "/tmp";
 
 /** Mapping of EF ports to interface indices */
@@ -1322,6 +1320,17 @@ find_ifindex(DWORD addr, DWORD *ifindex)
     return 0;
 }
 
+/**
+ * Initialize base configuration.
+ *
+ * @return Status code.
+ */
+static inline te_errno
+ta_win32_conf_base_init(void)
+{
+    return rcf_pch_add_node("/agent", &node_uname);
+}
+
 /* See the description in lib/rcfpch/rcf_ch_api.h */
 int
 rcf_ch_conf_init()
@@ -1336,6 +1345,9 @@ rcf_ch_conf_init()
 #endif
 
         if (efport2ifindex() != 0)
+            return -1;
+
+        if (ta_win32_conf_base_init() != 0)
             return -1;
 
 #ifdef RCF_RPC
@@ -1372,17 +1384,6 @@ rcf_ch_conf_init()
     }
 
     return 0;
-}
-
-/**
- * Get root of the tree of supported objects.
- *
- * @return root pointer
- */
-rcf_pch_cfg_object *
-rcf_ch_conf_root()
-{
-    return &node_agent;
 }
 
 /**

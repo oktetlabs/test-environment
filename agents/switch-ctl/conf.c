@@ -4048,9 +4048,6 @@ RCF_PCH_CFG_NODE_RW(node_cos, "cos",
                     NULL, &node_vlan,
                     cos_get, cos_set);
 
-
-RCF_PCH_CFG_NODE_AGENT(node_agent, &node_cos);
-
 /*@}*/
 
 
@@ -4058,14 +4055,8 @@ RCF_PCH_CFG_NODE_AGENT(node_agent, &node_cos);
 int
 rcf_ch_conf_init()
 {
+    rcf_pch_add_node("/agent", &node_cos);
     return 0;
-}
-
-/* See description in rcf_ch_api.h */
-rcf_pch_cfg_object *
-rcf_ch_conf_root()
-{
-    return &node_agent;
 }
 
 /* See description in rcf_ch_api.h */

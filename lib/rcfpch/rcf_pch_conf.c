@@ -69,6 +69,18 @@
 
 #define OID_ETC "/..."
 
+/**
+ * Root of the Test Agent configuration tree. RCF PCH function is
+ * used as list callback.
+ *
+ * @param _name  node name
+ */
+#define RCF_PCH_CFG_NODE_AGENT(_name) \
+    static rcf_pch_cfg_object _name =                       \
+        { "agent", 0, NULL, NULL, NULL, NULL, NULL, NULL,   \
+           (rcf_ch_cfg_list)rcf_pch_agent_list,             \
+           NULL, NULL }
+
 /** Structure for temporary storing of instances/objects identifiers */
 typedef struct olist {
     struct olist *next;             /**< Pointer to the next element */
@@ -87,6 +99,21 @@ static TAILQ_HEAD(rcf_pch_commit_head_t, rcf_pch_commit_op_t)   commits;
 
 static te_bool      is_group = FALSE;       /**< Is group started? */
 static unsigned int gid;                    /**< Group identifier */
+
+
+/** Test Agent root node */
+RCF_PCH_CFG_NODE_AGENT(node_agent);
+
+/**
+ * Get root of the tree of supported objects.
+ *
+ * @return Root pointer
+ */
+static inline rcf_pch_cfg_object *
+rcf_pch_conf_root(void)
+{
+    return &node_agent;
+}
 
 /** Free all entries of the list */
 static inline void
@@ -559,14 +586,14 @@ process_wildcard(struct rcf_comm_connection *conn, char *cbuf,
     if (strchr(oid, ':') == NULL)
     {
         VERB("Create list of objects by wildcard");
-        rc = create_wildcard_obj_list(rcf_ch_conf_root(),
+        rc = create_wildcard_obj_list(rcf_pch_conf_root(),
                                       NULL, copy, oid, &list);
     }
     else
     {
         VERB("Create list of instances by wildcard");
         
-        rc = create_wildcard_inst_list(rcf_ch_conf_root(),
+        rc = create_wildcard_inst_list(rcf_pch_conf_root(),
                                        NULL, copy, oid, &list);
     }
 
@@ -732,13 +759,13 @@ rcf_pch_cfg_init(void)
         ERROR("Failed to initialize Test Agent "
               "configuration Command Handler");
     }
-    else if (rcf_ch_conf_root() != NULL)
+    else if (rcf_pch_conf_root() != NULL)
     {
         /*
          * Agent root OID has length equal to 2, because of root OID
          * existence with empty subid and name.
          */
-        rcf_pch_cfg_subtree_init(rcf_ch_conf_root(), 2);
+        rcf_pch_cfg_subtree_init(rcf_pch_conf_root(), 2);
     }
 }
 
@@ -830,7 +857,7 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
         memset(inst_names, 0, sizeof(inst_names));
         p_ids = (cfg_inst_subid *)(p_oid->ids);
 
-        for (i = 1, obj = 0, next = rcf_ch_conf_root();
+        for (i = 1, obj = 0, next = rcf_pch_conf_root();
              (i < p_oid->len) && (next != NULL);
             )
         {
@@ -973,7 +1000,7 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
 te_errno 
 rcf_pch_add_node(const char *father, rcf_pch_cfg_object *node)
 {
-    rcf_pch_cfg_object *tmp = rcf_ch_conf_root();
+    rcf_pch_cfg_object *tmp = rcf_pch_conf_root();
     rcf_pch_cfg_object *next;
     cfg_oid            *oid = cfg_convert_oid_str(father);
     int                 i = 1;
@@ -1052,7 +1079,7 @@ te_errno
 rcf_pch_del_node(rcf_pch_cfg_object *node)
 {
     rcf_pch_cfg_object *brother;
-    rcf_pch_cfg_object *father = find_father(node, rcf_ch_conf_root(), 
+    rcf_pch_cfg_object *father = find_father(node, rcf_pch_conf_root(), 
                                              &brother);
     
     if (father == NULL)

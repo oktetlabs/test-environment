@@ -60,13 +60,6 @@ char *ta_name;
 static pthread_mutex_t ta_lock = PTHREAD_MUTEX_INITIALIZER;
 static char *devname;
 
-static int agent_list(char *oid, char **list);
-
-static rcf_pch_conf_object node_agent = 
-    { "agent", NULL, NULL, NULL, NULL, NULL, NULL, 
-      (rcf_ch_conf_list)agent_list};
-
-
 /* Send answer to the TEN */
 #define SEND_ANSWER(_fmt...) \
     do {                                                                  \
@@ -453,40 +446,15 @@ rcf_ch_kill_thread(unsigned int tid)
     return TE_EOPNOTSUPP;
 }
 
-/**
- * Get instance list for object "agent". Returns TA name.
- *
- * @param id            full identifier of the father instance
- * @param list          location for the list pointer
- *
- * @return error code
- * @retval 0            success
- * @retval TE_ENOMEM       cannot allocate memory
- */
-static int 
-agent_list(char *oid, char **list)
-{
-    UNUSED(oid);
-    return (*list = strdup(rcf_ch_conf_agent())) == NULL ? TE_ENOMEM : 0;
-}
-
-
 /* See the description in lib/rcfpch/rcf_ch_api.h */
 int
 rcf_ch_conf_init()
 {
+    /*
+     * We do not export/support any configuration object,
+     * so we do not register any subtree with rcf_pch_add_node().
+     */
     return 0;
-}
-
-/**
- * Get root of the tree of supported objects.
- *
- * @return root pointer
- */
-rcf_pch_conf_object *
-rcf_ch_conf_root()
-{
-    return &node_agent;
 }
 
 /**
