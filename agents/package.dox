@@ -143,24 +143,27 @@ Currently we support two main types of Test Agents:
 
 @subsection te_agt_extending_rpc Adding new RPC calls
 
-@ref tapi_rpc page gives guidelines on how to add support for a new RPC call.
+- @ref tapi_rpc page gives guidelines on how to add support for a new RPC call.
+.
 
 @subsection te_agt_extending_cfg Adding new configuration nodes
 
-@ref te_agents_conf page gives guidelines on how to add new configuration
-nodes to Test Agent and how to use
-<a HREF="conf__api_8h.html">Configurator API</a>.
+- @ref te_agents_conf page gives guidelines on how to add new configuration
+nodes to Test Agent;
+- @ref confapi page gives guidelines on how to work with API from test scenarios.
+.
 
 
 
 
-@page te_agents_conf Creating new configuration nodes in Test Agent
+
+@page te_agents_conf Test Agents: Creating new configuration nodes in Test Agent
 
 @section Introduction
 
 @copydetails lib/confapi/conf_api.h
 
-Details of API can be found at <a HREF="conf__api_8h.html">Configurator API</a> page.
+Details of API usage can be found at @ref confapi page.
 
 Here we will explain how to add support for a new objects and instances
 on Test Agent side.
@@ -449,24 +452,6 @@ RCF_PCH_CFG_NODE_COLLECTION(col_node, "col_object",
 Please note that add/del/set handlers have no way to detect what
 the calling mode takes place (immediate commit or postponed commit).
 The only thing to keep in mind is that commit will be called anyway.
-
-@section te_agt_extending_cfg_usage Usage of Configurator API from test scenarios
-
-Test scenrios should use functions exported via <a HREF="conf__api_8h.html">Configurator API</a>.
-
-Here we will show how to play with samples discussed in previous sections.
-
-@subsection te_agt_extending_cfg_usage_conf Tuning Configurator configuration file
-
-In order to let Configurator know about instances of new nodes we should
-register these new object nodes in configurator tree. Then Configurator will
-be able to get instances of these objects from Test Agent.
-
-
-
-@subsection te_agt_extending_cfg_usage_add_del Adding/Deleting an entry to/from configuration tree
-
-@subsection te_agt_extending_cfg_usage_set Set configuration value operation
 
  */
 

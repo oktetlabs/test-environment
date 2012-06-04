@@ -1,6 +1,168 @@
-/** @page confapi  Configurator
+/** @page confapi API Usage: Configurator API
+
+@section confapi_introduction Usage of Configurator API from test scenarios
+
+Test scenrios should use functions exported via <a HREF="conf__api_8h.html">Configurator API</a>.
+
+Here we will show how to play with samples discussed at @ref te_agents_conf page.
+
+@section confapi_usage_conf Tuning Configurator configuration file
+
+In order to let Configurator know about instances of new nodes we should
+register these new object nodes in configurator tree. Then Configurator will
+be able to get instances of these objects from Test Agent.
+Otherwise Configurator ignores node instances whose object nodes were not
+registered.
+
+@image html ten_conf_startup.png "Configurator start-up event flow"
+
+When Configurator starts it processes configurator configuration file that
+keeps object descriptions that need to be registered in local tree
+of objects (see arrow [2]).
+
+Configuration file can also keep rules to add object instances, but these
+instances can not be applied for "/agent" subtree. "/agent" subtree is
+in control by Test Agents.
+
+Configurator should ask Test Agents about these instances that is why it
+call rcf_ta_cfg_get() function with wildcard object instance identifier
+(arrow [4] in the figure).
+
+When Configurator receives a reply with the list of object instance names
+it checks whether an instance name has corresponding object node in its local
+object tree. If yes, then it adds an instance into its instance configuration
+tree, otherwise it ignores an instance name and tests will not be able to
+access those instances until they register corresponding object nodes in
+Configurator (see arrow [6]).
+
+Regarding an example described at te_agents_conf page, we should add
+the following lines into Configurator configuration file to let Configurator
+know about our new supported object instances:
+
+@code
+  <object oid="/agent/ro_object" access="read_only" type="integer"/>
+  <object oid="/agent/rw_object" access="read_write" type="address"/>
+  <object oid="/agent/col_object" access="read_create" type="none"/>
+  <object oid="/agent/col_object/var" access="read_only" type="string"/>
+@endcode
+
+@section confapi_usage_add_del Adding/Deleting an entry to/from configuration tree
+
+For nodes of "read-create" access type it is possible to add or delete
+an instance in run time (from a test). Access type "read-create" does not
+guarantee the ability to run add or delete operation, but implementation of
+rcf_pch_cfg_object::add and rcf_pch_cfg_object::del functions is required.
+
+Please note that there can be "read-create" objects that do not provide
+implementation of rcf_pch_cfg_object::add or rcf_pch_cfg_object::del
+functions. This mainly means that the number of instances can vary depending
+on events happened on Test Agent. Test Agent reports about the number of
+instances of that objects with rcf_pch_cfg_object::list handler.
+
+In order to add a new object instance you should use one of
+the following functions:
+- cfg_add_instance();
+- cfg_add_instance_str();
+- cfg_add_instance_fmt().
+.
+
+The following diagram shows the sequence of events caused by calling any
+of these functions.
+
+@image html ten_conf_add_instance.png "Sequence of events caused by cfg_add_instance() call"
+
+Similar things happen when you call a function to delete an object instance:
+- cfg_del_instance();
+- cfg_del_instance_fmt().
+.
+
+You can also use <em>local</em> version of instance add functions:
+- cfg_add_instance_local();
+- cfg_add_instance_local_str();
+- cfg_add_instance_local_fmt().
+.
+
+The only difference is that these functions will not cause
+rcf_pch_cfg_object::commit function to be called after rcf_pch_cfg_object::add.
+Instead rcf_pch_cfg_object::commit is called when a test calls cfg_commit()
+or cfg_commit_fmt() function for newly created object instance.
+
+To add a new instance of @p col_object object one could use the following
+piece of code in their tests:
+
+@code
+    rc = cfg_add_instance_fmt(&handle, CFG_VAL(NONE, NULL),
+                              "/agent:%s/col_object:%s", agent_name, instance_name);
+    if (rc != 0)
+        TEST_FAIL("Failed to add a new instance to 'col_object' collection");
+@endcode
+
+@section confapi_usage_set Set/Get configuration value operations
+
+More frequently used operations are to Get node instance value or to update
+node instance value with a new one.
+
+To set a node instance value use:
+- cfg_set_instance();
+- cfg_set_instance_fmt().
+.
+
+Or corresponding local varsions:
+- cfg_set_instance_local();
+- cfg_set_instance_local_fmt().
+.
+
+@image html ten_conf_set_instance.png "Sequence of events caused by cfg_set_instance() call"
+
+One useful feature of object node declaration is specifying dependencies.
+An object node can be supplied with the list of object nodes on whose values
+it depends. Then Configurator will track changes of nodes on which another
+node depends. In case any of these nodes changes its value, Configurator will
+update the local copy of values of dependent nodes.
+
+For example we can specify:
+
+@code
+<object oid="/agent/col_object/var1" access="read_write" type="string"/>
+<object oid="/agent/col_object/var2" access="read_write" type="string">
+    <depends oid="/agent/col_object/var1"/>
+</object>
+@endcode
+
+This means that the value of "/agent/col_object/var2" depends on
+"/agent/col_object/var1" - any changes to "/agent/col_object/var1" may
+cause change of "/agent/col_object/var2".
+
+@image html ten_conf_set_dep_instance.png "Sequence of events caused by cfg_set_instance() call with dependency processing"
+
+To understand the necessity of dependencies we need to know how Configurator
+handles Get operation.
+
+You can use the following functions to get the value of object instance node:
+- cfg_get_instance();
+- cfg_get_instance_fmt().
+.
 
 
-- <A HREF="conf__api_8h.html"> Configurator API</A>
+@image html ten_conf_get_instance.png "Sequence of events caused by cfg_get_instance() call"
+
+Please note that cfg_get_instance() call does not cause any exchange between
+Configurator and Test Agent, but rather value to return is got from local
+object instance database.
+
+If you want to get the value from Test Agent you can do one of the following:
+- call cfg_get_instance_sync() or cfg_get_instance_sync_fmt() that will
+  first synchronize object instance value with Test Agent and the return
+  an updated value;
+- call cfg_synchronize() or cfg_synchronize_fmt() to synchronize a subtree
+  of configuration nodes and then call ordinary cfg_get_instance() function.
+.
+
+@image html ten_conf_get_instance_sync.png "Sequence of events caused by cfg_get_instance_sync() call"
+
+Please note that you should use synced calls only if you are sure that
+object instance values can change in the backgroud, otherwise it is better
+to use non-synced calls in order to minimize data exchange between
+Test Engine and Test Agents.
 
 */
