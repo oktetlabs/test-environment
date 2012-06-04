@@ -771,7 +771,9 @@ extern int rcf_ch_free_proc_data(unsigned int pid);
 extern int rcf_ch_kill_thread(unsigned int tid);
 
 
-/** @name Standard configuration support */
+/** @defgroup rcf_ch_cfg  Command Handler configuration support interface
+ * @{ 
+ */
 
 /**
  * Prototype for get instance value routine.
@@ -890,6 +892,11 @@ typedef struct rcf_pch_cfg_object {
 
 } rcf_pch_cfg_object;
 
+/** @ingroup rcf_ch_cfg
+ * @defgroup rcf_ch_cfg_node_def Configuration node definition macros
+ * @{
+ */
+
 /**
  * Define non-accessible configuration tree node.
  *
@@ -990,6 +997,7 @@ typedef struct rcf_pch_cfg_object {
           (rcf_ch_cfg_add)_f_add, (rcf_ch_cfg_del)_f_del,           \
           (rcf_ch_cfg_list)_f_list, _f_commit, NULL }
 
+/* @} */
 
 /**
  * Initialize configuration support of Command Handler
