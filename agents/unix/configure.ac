@@ -519,7 +519,12 @@ AC_ARG_WITH([libnetconf],
             [with_libnetconf=check])
 
 if test "x$with_libnetconf" = xcheck; then
-    if test x"$host" != x"${host/linux/}" ; then
+    # Check if $host variable keeps 'linux' substring
+    # and replace 'linux' with an empty string.
+    # Then we compare if the original string is equal to
+    # a string after the replacement.
+    up_host=`echo $host | sed "s/linux//"`
+    if test x"$host" != x"${up_host}" ; then
         # Linux platform - use libnetconf by default
         with_libnetconf=yes
     else
