@@ -32,6 +32,7 @@ Engine (in [] brackets - debian package names):
 - libusb, libusb-dev
 - libpam0g-dev
 - libperl-dev
+- bison
 
 We've tested engine on Linux only.
 
