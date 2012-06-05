@@ -393,7 +393,7 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories 
 # with spaces.
 
-INPUT                  = mainpage.dox engine include lib/rcfrpc lib/rpc lib/rpc_types lib/rpcxdr lib/tapi_rpc lib/rcfapi lib/rcfunix lib/rcfpch include/tarpc.x.m4 lib/loggerten  lib/loggerta lib/confapi agents
+INPUT                  = mainpage.dox engine include lib/rcfrpc lib/rpc lib/rpc_types lib/rpcxdr lib/tapi_rpc lib/rcfapi lib/rcfunix lib/rcfpch include/tarpc.x.m4 lib/loggerten  lib/loggerta lib/confapi agents lib/tapi
 
 # If the value of the INPUT tag contains directories, you can use the 
 # FILE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp 
