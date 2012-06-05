@@ -40,7 +40,14 @@ my $log_save = "";
 sub escape_str
 {
     my $str = $_[0];
-    $str =~ s/([\\!"\$])/\\$1/g;
+    $str =~ s/([\\"\$])/\\$1/g;
+    return $str;
+}
+
+sub escape_file
+{
+    my $str = $_[0];
+    $str =~ s/([\\"\$&|])/\\$1/g;
     return $str;
 }
 
@@ -124,25 +131,29 @@ sub download_prepare_log
         $file_name = $file_to_load;
     }
 
+    (undef, $tmp_files[$#tmp_files + 1]) = tempfile("log-XXXX");
+    system("cp ".escape_file($file_name)." ".$tmp_files[$#tmp_files]);
+    $file_name = $tmp_files[$#tmp_files];
+
     if ($initial_name =~ m/^(.*)[.]bz2$/)
     {
         $initial_name = $1;
         (undef, $tmp_files[$#tmp_files + 1]) = tempfile("log-XXXX");
-        system("bzcat ".escape_str($file_name)." > ".
+        system("bzcat ".$file_name." > ".
                $tmp_files[$#tmp_files]);
         $file_name = $tmp_files[$#tmp_files];
     }
 
     if (defined($log_save) && length($log_save) > 0)
     {
-        system("cp ".$file_name." ".escape_str($log_save));
+        system("cp ".$file_name." ".escape_file($log_save));
     }
 
     if ($initial_name =~ m/^(.*)[.]raw/ ||
         !($initial_name =~ m/^(.*)[.]xml/))
     {
         (undef, $tmp_files[$#tmp_files + 1]) = tempfile("log-XXXX");
-        system("te-trc-log ".escape_str($file_name).
+        system("te-trc-log ".$file_name.
                " > ".$tmp_files[$#tmp_files]);
     }
 }
@@ -151,6 +162,8 @@ my $opts = "";
 my $conf_tester = "";
 my $test_fake_run = "";
 my $test_fake_run_aux = "";
+my $last_tags = "";
+my $log_save_by_tags = 0;
 my $test_specified = 0;
 my $log_specified = 0;
 my $no_extract_paths = 0;
@@ -168,6 +181,10 @@ foreach (@ARGV)
           "      --log-save=STRING       Use this before --log= to save \n".
           "                              a copy of (downloaded and \n".
           "                              unpacked) log\n";
+        print "\n".
+          "      --log-save-by-tags      Use this option to save \n".
+          "                              a copy of each (downloaded and \n".
+          "                              unpacked) log named by its tag \n";
 #       print "\n".
 #         "      --tester-run=STRING     Test path for Tester fake run\n".
 #         "                              (if specified, --test-name \n".
@@ -201,10 +218,25 @@ foreach (@ARGV)
     {
         $log_save = $1;
     }
+    elsif ($_ =~ m/^--log-save-by-tags$/)
+    {
+        $log_save_by_tags = 1;
+    }
+    elsif ($_ =~ m/^--tags=(.*)$/)
+    {
+        $last_tags = $1;
+        $opts = $opts." \"".escape_str($_)."\"";
+    }
     elsif ($_ =~ m/^--log=(.*)$/)
     {
         my $log_file = $1;
         my $proto;
+
+        if ($log_save_by_tags == 1 &&
+            (!defined($log_save) || length($log_save) == 0))
+        {
+            $log_save = $last_tags;
+        }
 
         if ($log_file =~ m/^(.*?):/)
         {

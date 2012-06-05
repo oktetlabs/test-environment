@@ -124,6 +124,8 @@ typedef struct trc_log_parse_ctx {
                                                  can be applied to any
                                                  iteration of any test */
 
+    int                 cur_lnum;   /**< Number of currently parsed
+                                         log */
     tqh_strings        *test_paths; /**< Paths of tests to be updated */
 
     unsigned int        stack_size; /**< Size of the stack in elements */
@@ -1291,6 +1293,10 @@ trc_update_set_to_save(te_trc_db *db,
     return trc_update_set_tests_to_save(&db->tests, user_id, to_save);
 }
 
+
+
+
+
 /**
  * Set to_save property of user data for a given element (test or
  * iteration) and all its ancestors.
@@ -1336,6 +1342,218 @@ trc_update_set_propagate_to_save(void *element,
     }
 
     return 0;
+}
+
+/**
+ * Merge a new result into a list on new results for an iteration.
+ *
+ * @param ctx           TRC Log Parse context
+ * @param upd_iter_data TRC Update iteration data
+ * @param te_result     Test result to be merged
+ *
+ * @return Status code
+ */
+static te_errno trc_update_iter_data_merge_result(trc_log_parse_ctx *ctx,
+                                                  trc_update_test_iter_data
+                                                            *upd_iter_data,
+                                                  te_test_result
+                                                                *te_result);
+
+/**
+ * Add a new unexpected result to all the iterations of a given tests.
+ *
+ * @param ctx            TRC Log Parse context
+ * @param tests          Queue of tests
+ * @param te_resul       Result to be added
+ *
+ * @return Status code
+ */
+static te_errno trc_update_tests_add_result(trc_log_parse_ctx *ctx,
+                                            trc_tests *tests,
+                                            te_test_result *te_result);
+
+/**
+ * Add a new unexpected result to all the iterations.
+ *
+ * @param ctx            TRC Log Parse context
+ * @param iters          Queue of iterations
+ * @param te_resul       Result to be added
+ *
+ * @return Status code
+ */
+static te_errno
+trc_update_iters_add_result(trc_log_parse_ctx *ctx,
+                            trc_test_iters *iters,
+                            te_test_result *te_result)
+{
+    trc_update_test_iter_data   *user_data;
+    trc_test_iter               *iter;
+    int                          rc;
+
+    TAILQ_FOREACH(iter, &iters->head, links)
+    {
+        user_data = trc_db_iter_get_user_data(iter, ctx->db_uid);
+        if (user_data != NULL)
+        {
+            if (!TAILQ_EMPTY(&iter->tests.head))
+                rc = trc_update_tests_add_result(ctx, &iter->tests,
+                                                 te_result);
+            else if (user_data->counter < ctx->cur_lnum)
+                rc = trc_update_iter_data_merge_result(ctx,
+                                                       user_data,
+                                                       te_result);
+
+            if (rc != 0)
+                return rc;
+        }
+    }
+
+    return 0;
+}
+
+/** See description above */
+static te_errno
+trc_update_tests_add_result(trc_log_parse_ctx *ctx,
+                            trc_tests *tests,
+                            te_test_result *te_result)
+{
+    trc_update_test_data    *user_data;
+    trc_test                *test;
+    int                      rc;
+
+    TAILQ_FOREACH(test, &tests->head, links)
+    {
+        user_data = trc_db_test_get_user_data(test, ctx->db_uid);
+        if (user_data != NULL)
+        {
+            rc = trc_update_iters_add_result(ctx, &test->iters,
+                                             te_result);
+            if (rc != 0)
+                return rc;
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * Add skipped results to skipped iterations
+ *
+ * @param ctx            TRC Log Parse context
+ *
+ * @return Status code
+ */
+static te_errno
+trc_update_add_skipped(trc_log_parse_ctx *ctx)
+{
+    te_test_result te_result;
+
+    te_result.status = TE_TEST_SKIPPED;
+    TAILQ_INIT(&te_result.verdicts);
+
+    return trc_update_tests_add_result(ctx, &ctx->db->tests,
+                                       &te_result);
+}
+
+
+
+/**
+ * Clear unexpected results if they are only skipped ones
+ * for a given tests.
+ *
+ * @param ctx            TRC Log Parse context
+ * @param tests          Queue of tests
+ * @param te_resul       Result to be added
+ *
+ * @return Status code
+ */
+static te_errno trc_update_tests_clear_skip_only(trc_log_parse_ctx *ctx,
+                                                 trc_tests *tests);
+
+/**
+ * Clear unexpected results if they are only skipped ones
+ * for a given iterations.
+ *
+ * @param ctx            TRC Log Parse context
+ * @param iters          Queue of iterations
+ *
+ * @return Status code
+ */
+static te_errno
+trc_update_iters_clear_skip_only(trc_log_parse_ctx *ctx,
+                                 trc_test_iters *iters)
+{
+    trc_update_test_iter_data   *user_data;
+    trc_test_iter               *iter;
+    int                          rc;
+    trc_exp_result              *result;
+    trc_exp_result_entry        *rentry;
+
+    TAILQ_FOREACH(iter, &iters->head, links)
+    {
+        user_data = trc_db_iter_get_user_data(iter, ctx->db_uid);
+        if (user_data != NULL)
+        {
+            if (!TAILQ_EMPTY(&iter->tests.head))
+                rc = trc_update_tests_clear_skip_only(ctx, &iter->tests);
+            else
+            {
+                SLIST_FOREACH(result, &user_data->new_results, links)
+                {
+                    TAILQ_FOREACH(rentry, &result->results, links)
+                        if (rentry->result.status != TE_TEST_SKIPPED)
+                            break;
+
+                    if (rentry != NULL)
+                        break;
+                }
+
+                if (result == NULL)
+                    trc_exp_results_free(&user_data->new_results);
+            }
+
+            if (rc != 0)
+                return rc;
+        }
+    }
+
+    return 0;
+}
+
+/** See description above */
+static te_errno
+trc_update_tests_clear_skip_only(trc_log_parse_ctx *ctx,
+                                 trc_tests *tests)
+{
+    trc_update_test_data    *user_data;
+    trc_test                *test;
+    int                      rc;
+
+    TAILQ_FOREACH(test, &tests->head, links)
+    {
+        user_data = trc_db_test_get_user_data(test, ctx->db_uid);
+        if (user_data != NULL)
+        {
+            rc = trc_update_iters_clear_skip_only(ctx, &test->iters);
+            if (rc != 0)
+                return rc;
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * Clear unexpected results if they are only skipped ones.
+ *
+ * @param ctx            TRC Log Parse context
+ *
+ * @return Status code
+ */
+static te_errno
+trc_update_clear_skip_only(trc_log_parse_ctx *ctx)
+{
+    return trc_update_tests_clear_skip_only(ctx, &ctx->db->tests);
 }
 
 /**
@@ -1577,43 +1795,20 @@ save_test_rules_to_file(trc_update_tests_groups *updated_tests,
     return 0;
 }
 
-/**
- * Match result from XML logs to results currently presented
- * in TRC, add it to list of new results for a given iteration if
- * it is not expected and not encountered yet.
- *
- * @param ctx   TRC Log Parse context
- *
- * @return Status code
- */
+/** See decription above */
 static te_errno
-trc_update_merge_result(trc_log_parse_ctx *ctx)
+trc_update_iter_data_merge_result(trc_log_parse_ctx *ctx,
+                                  trc_update_test_iter_data *upd_iter_data,
+                                  te_test_result *te_result)
 {
-    int                         rc = 0;
-    trc_update_test_iter_data  *upd_iter_data;
+    trc_exp_result             *merge_result;
+    trc_exp_result_entry       *result_entry;
+    trc_exp_results            *new_results = NULL;
     trc_exp_result             *prev = NULL;
     trc_exp_result             *p;
     trc_exp_result_entry       *q;
-    trc_exp_result             *merge_result;
-    trc_exp_results            *new_results = NULL;
-    te_test_result             *te_result;
-    trc_exp_result_entry       *result_entry;
+    int                         rc = 0;
 
-    p = (trc_exp_result *) trc_db_walker_get_exp_result(ctx->db_walker,
-                                                        ctx->tags);
-    if (p != NULL &&
-        !(ctx->flags & TRC_LOG_PARSE_CONFLS_ALL) &&
-        !((ctx->flags & TRC_LOG_PARSE_LOG_WILDS) &&
-          !(ctx->flags & TRC_LOG_PARSE_LOG_WILDS_UNEXP)) &&
-        trc_is_result_expected(
-            p,
-            &TAILQ_FIRST(&ctx->iter_data->runs)->result))
-        return 0;
-
-    upd_iter_data = trc_db_walker_get_user_data(ctx->db_walker,
-                                                ctx->db_uid);
-    
-    te_result = &TAILQ_FIRST(&ctx->iter_data->runs)->result;
     merge_result = TE_ALLOC(sizeof(*merge_result));
     TAILQ_INIT(&merge_result->results);
 
@@ -1687,6 +1882,41 @@ trc_update_merge_result(trc_log_parse_ctx *ctx)
     }
 
     return 0;
+}
+
+/**
+ * Match result from XML logs to results currently presented
+ * in TRC, add it to list of new results for a given iteration if
+ * it is not expected and not encountered yet.
+ *
+ * @param ctx           TRC Log Parse context
+ *
+ * @return Status code
+ */
+static te_errno
+trc_update_merge_result(trc_log_parse_ctx *ctx)
+{
+    trc_update_test_iter_data  *upd_iter_data;
+    trc_exp_result             *p;
+    te_test_result             *te_result;
+
+    p = (trc_exp_result *) trc_db_walker_get_exp_result(ctx->db_walker,
+                                                        ctx->tags);
+    if (p != NULL &&
+        !(ctx->flags & TRC_LOG_PARSE_CONFLS_ALL) &&
+        !((ctx->flags & TRC_LOG_PARSE_LOG_WILDS) &&
+          !(ctx->flags & TRC_LOG_PARSE_LOG_WILDS_UNEXP)) &&
+        trc_is_result_expected(
+            p,
+            &TAILQ_FIRST(&ctx->iter_data->runs)->result))
+        return 0;
+
+    upd_iter_data = trc_db_walker_get_user_data(ctx->db_walker,
+                                                ctx->db_uid);
+    te_result = &TAILQ_FIRST(&ctx->iter_data->runs)->result;
+
+    return trc_update_iter_data_merge_result(ctx, upd_iter_data,
+                                             te_result);
 }
 
 /**
@@ -3791,6 +4021,8 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                     entry->args_max = 0;
                 }
 
+                upd_iter_data->counter = ctx->cur_lnum;
+
                 if (ctx->flags & (TRC_LOG_PARSE_MERGE_LOG |
                                   TRC_LOG_PARSE_LOG_WILDS))
                     trc_update_merge_result(ctx);
@@ -4022,6 +4254,7 @@ trc_update_process_logs(trc_update_ctx *gctx)
             goto cleanup;        \
     } while (0)
 
+    int                         log_cnt = 0;
     te_errno                    rc = 0;
     trc_log_parse_ctx           ctx;
     trc_update_tag_logs        *tl = NULL;
@@ -4058,6 +4291,9 @@ trc_update_process_logs(trc_update_ctx *gctx)
         printf("\nParsing logs...\n");
 
     do {
+        log_cnt++;
+        ctx.cur_lnum = log_cnt;
+
         if (ctx.log == NULL)
             break;
 
@@ -4071,6 +4307,9 @@ trc_update_process_logs(trc_update_ctx *gctx)
             ERROR("Processing of the XML document with TE log '%s' "
                   "failed: %r", ctx.log, rc);
         }
+
+        if (gctx->flags & TRC_LOG_PARSE_SKIPPED)
+            trc_update_add_skipped(&ctx);
 
         free(ctx.stack_info);
     
@@ -4125,6 +4364,9 @@ trc_update_process_logs(trc_update_ctx *gctx)
         CHECK_F_RC(trc_update_simplify_results(gctx->db_uid,
                                                ctx.updated_tests,
                                                gctx->flags));
+
+        if (gctx->flags & TRC_LOG_PARSE_NO_SKIP_ONLY)
+            trc_update_clear_skip_only(&ctx);
 
         if (gctx->flags & TRC_LOG_PARSE_RULE_UPD_ONLY)
             trc_update_set_to_save(gctx->db,

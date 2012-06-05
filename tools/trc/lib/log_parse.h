@@ -140,6 +140,11 @@ enum trc_log_parse_flags {
                                                     which iterations at
                                                     least one rule was
                                                     applied */
+    TRC_LOG_PARSE_SKIPPED        = (1 << 23),  /**< Show skipped unexpected
+                                                    results */
+    TRC_LOG_PARSE_NO_SKIP_ONLY   = (1 << 24),  /**< Do not show skipped
+                                                    only unexpected
+                                                    results */
 };
 
 /** All rule type flags */

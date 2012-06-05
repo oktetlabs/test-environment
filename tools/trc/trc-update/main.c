@@ -135,6 +135,9 @@ enum {
     TRC_UPDATE_OPT_RULE_UPD_ONLY,   /**< Save only tests for which
                                          iterations at least one rule was
                                          applied */
+    TRC_UPDATE_OPT_SKIPPED,         /**< Show skipped unexpected results */
+    TRC_UPDATE_OPT_NO_SKIP_ONLY,    /**< Do not show skipped only
+                                         unexpected results */
 };
 
 #ifdef HAVE_LIBPERL
@@ -323,6 +326,14 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
           TRC_UPDATE_OPT_RULE_UPD_ONLY,
           "Save only tests to which iterations at least one rule "
           "was applied", NULL },
+
+        { "skipped", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_SKIPPED,
+          "Show skipped unexpected results", NULL },
+
+        { "no-skip-only", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_NO_SKIP_ONLY,
+          "Do not show skipped only unexpected results", NULL },
 
         { "no-use-ids", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_NO_USE_IDS,
@@ -551,6 +562,14 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
 
             case TRC_UPDATE_OPT_RULE_UPD_ONLY:
                 ctx.flags |= TRC_LOG_PARSE_RULE_UPD_ONLY;
+                break;
+
+            case TRC_UPDATE_OPT_SKIPPED:
+                ctx.flags |= TRC_LOG_PARSE_SKIPPED;
+                break;
+
+            case TRC_UPDATE_OPT_NO_SKIP_ONLY:
+                ctx.flags |= TRC_LOG_PARSE_NO_SKIP_ONLY;
                 break;
 
             case TRC_UPDATE_OPT_NO_USE_IDS:

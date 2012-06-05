@@ -158,6 +158,9 @@ typedef struct trc_update_test_iter_data {
     te_bool               to_save;     /**< Should this iteration
                                             be saved? */
     te_bool               to_save_old; /**< Previous value of to_save */
+    int                   counter;     /**< This counter is used for
+                                            discovering skipped iterations
+                                            */
     int                   results_id;  /**< Results ID (used in wildcards
                                             generation) */
     te_bool               in_wildcard; /**< Whether this iteration in
