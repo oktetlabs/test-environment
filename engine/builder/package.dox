@@ -8,13 +8,13 @@ Builder subsystem is not a separate closed software but rather set of
 principles, conventions, standard files, templates and scripts that
 allow to built TE libraries, applications, NUT bootable images and
 Test Suites in a single, convenient, standard and portable way.
-TE Builder is based on GNU autotools (autoconf, automake).
+TE Builder is based on GNU autotools (@prog{autoconf}, @prog{automake}).
 
 From the Builder point of view Test Environment consists of a lot
 of packages: libraries, applications, tools and Test Agents.
 Each package has input files for autotools:
-- <em>configure.ac</em> for autoconf;
-- <em>Makefile.am</em> for automake;
+- @path{configure.ac} for @prog{autoconf};
+- @path{Makefile.am} for @prog{automake};
 - optionally files for autoheader.
 .
 
@@ -27,14 +27,14 @@ may be built for platforms other than host platform.
 
 Builder configuration file contains a set of directives that describe what to
 build and how to build. Available directives can be found in
-<em>engine/builder/builder.m4</em> file.
+@path{engine/builder/builder.m4} file.
 
 By means of Builder configuration file for each platform it is possible
 to specify:
-- options to be passed to <em>configure</em> scripts for all packages
+- options to be passed to @prog{configure} scripts for all packages
   built for this platform;
-- compiler to use (when it is not specified, it is discovered by configure
-  script basing on the platform name);
+- compiler to use (when it is not specified, it is discovered by
+  @prog{configure} script basing on the platform name);
 - pre-processor flags;
 - compiler flags;
 - linker flags;
@@ -42,7 +42,7 @@ to specify:
 .
 
 Additionally for each package it is possible to specify:
-- options to be passed to package <em>configure</em> script;
+- options to be passed to package @prog{configure} script;
 - pre-processor flags;
 - compiler flags;
 - linker flags.
@@ -60,30 +60,325 @@ However it's possible to specify that library or TA sources are located
 in the private place.
 
 If one package should be built for several platforms and/or with different
-parameters, the <em>configure</em> script is called several times for it.
+parameters, the @prog{configure} script is called several times for it.
 In the second case different names should be assigned to these packages in
 the configuration file.
+
+@subsection te_engine_builder_conf_file_samples Samples of Builder configuration files
+
+Here we will discuss the usage of directives defined in @path{engine/builder/builder.m4} file.
+
+@subsubsection te_engine_builder_conf_file_te_platform TE_PLATFORM
+
+@code
+TE_PLATFORM([platform name],
+            [configure parameters],
+            [additional preprocessor flags],
+            [additional compiler flags],
+            [additional linker flags],
+            [list of all libraries to be built])
+@endcode
+
+This directive can be used to specify platform-specific parameters
+that will be applied for building all packages of this platform.
+
+For example if you need to have some target that requires cross compilation
+(for Test Agents) you should write something like the following in your
+builder configuration file:
+
+@code
+TE_PLATFORM([cygwin], [--host=i686-pc-cygwin],
+            [-I${CYGWIN_HOME}/include -D__CYGWIN__],
+            [-Os],
+            [-L${CYGWIN_HOME}/lib],
+            [tools conf_oid rpcxdr rpc_types \
+             comm_net_agent loggerta rcfpch])
+@endcode
+
+In this sample we define a new target platform called cygwin for which
+we require building the following libraries (from Test Engine lib directory):
+@path{tools}, @path{conf_oid}, @path{rpcxdr}, @path{rpc_types},
+@path{comm_net_agent}, @path{loggerta}, @path{rcfpch}.
+
+While building any library from the list the following options are passed:
+- to @prog{configure} script:
+  - @b --host=i686-pc-cygwin
+  .
+- to C preprocessor:
+  - @b -I${CYGWIN_HOME}/include
+  - @b -D__CYGWIN__
+  .
+- to C compiler:
+  - @b -Os
+  .
+- to object linker:
+  - @b -L${CYGWIN_HOME}/lib
+  .
+.
+
+Please note that when you specify parameters for host platform
+(a platform where Test Engine runs) you should keep platform name as
+an empty string. For example:
+
+@code
+TE_PLATFORM([], [], [-D_GNU_SOURCE], [-D_GNU_SOURCE], [],
+            [tools logic_expr conf_oid rpcxdr rpc_types asn ndn \
+             comm_net_agent loggerta rcfpch tce tad tad_dummy \
+             ipc bsapi loggerten rcfapi confapi comm_net_engine rcfunix \
+             tapi rcfrpc tapi_rpc tapi_env trc netconf lua])
+@endcode
+
+@subsubsection te_engine_builder_conf_file_te_lib_params TE_LIB_PARMS
+
+@code
+TE_LIB_PARMS([library name],
+             [platform name],
+             [source directory],
+             [additional configure script parameters],
+             [additional preprocessor flags],
+             [additional compiler flags],
+             [additional linker flags])
+@endcode
+
+If we need to specify some additional options to configure script,
+preprocessor, compiler or object linker, we can use @func{TE_LIB_PARMS} directive
+in your builder configuration file.
+
+For example if we need to add some additional options to configure
+script of tad library, we should use the following:
+
+@code
+TE_LIB_PARMS([tad], [cygwin], [],
+             [--with-eth --with-arp --with-ipstack],
+             [], [], [])
+@endcode
+
+Please note that we do not specify value for source directory parameter,
+which means the source directory of that library located under
+@path{${TE_BASE}/lib/[library name]} subdirectory.
+
+@subsubsection te_engine_builder_conf_file_te_ta_type TE_TA_TYPE
+
+@code
+TE_TA_TYPE([Test Agent type],
+           [platform],
+           [sources location],
+           [additional configure script parameters],
+           [additional preprocessor flags],
+           [additional compiler flags],
+           [additional linker flags],
+           [list of external libraries])
+@endcode
+
+This directive is necessary to build a Test Agent of the particular type.
+Platform type should be one of platforms specified with @func{TE_PLATFORM}
+directive (For host platform this should be an empty string).
+
+Test Agent type value is an arbitrary string that will be reffered
+to from RCF configuration file (@todo ADD LINK TO samples of RCF conf).
+
+Sources of Test Agent are got from @path{[source location]} directory,
+which is either a subdirectory of @path{${TE_BASE}/agents/} directory,
+or full absolute path to sources.
+
+Please note that all items mentioned in the list of external libraries
+specified as the last argument of @func{TE_TA_TYPE} directive must be
+listed in the list of libraries to be build in corresponding
+@func{TE_PLATFORM} directive (with the same platform type).
+
+For example:
+
+@code
+TE_PLATFORM([freebsd], [--host=i386-pc-freebsd6],
+            [-I${FREEBSD6_HOME}/sys-include], [], [-L${FREEBSD6_HOME}/lib],
+            [tools conf_oid rpcxdr rpc_types asn ndn \
+             comm_net_agent loggerta rcfpch tad])
+#
+# Define 'freebsd' platform and list libraries to
+# be built for this platform.
+#
+
+TE_TA_TYPE([freebsd6], [freebsd], [unix],
+           [--with-rcf-rpc], [], [], [],
+           [comm_net_agent ndn asn])
+#
+# Test Agent of type 'freebsd6' requires 'comm_net_agent', 'ndn' and 'asn'
+# libraries. These libraries are listed in TE_PLATFORM() directive for
+# 'freebsd' platform among libraries to be built.
+#
+@endcode
+
+@subsubsection te_engine_builder_conf_file_te_app TE_APP
+
+@code
+TE_APP([list of Test Engine components])
+@endcode
+
+This directive specifies which applications (Test Engine components) to
+build by @ref te_engine_builder.
+
+Normally you will not need to specify this directive because by default
+all necessary Test Engine components are built, but if you for some reason
+need to build only the particular set of Test Engine components you can add
+this directive in your builder configuration file.
+
+By default @func{TE_APP} is set to:
+
+@code
+TE_APP([builder rcf logger tester configurator])
+@endcode
+
+If you need to build only Test Environment tools you can exclude
+building all Test Engine components with:
+
+@code
+TE_APP([])
+@endcode
+
+@subsubsection te_engine_builder_conf_file_te_app_parms TE_APP_PARMS
+
+Each Test Engine application can be built with dedicated set of
+parameters passed to @prog{configure} script, C preprocessor, C compiler
+and object linker. This can be controlled with @func{TE_APP_PARMS} directive.
+
+@code
+TE_APP_PARMS([Test Engine application name],
+             [additional configure script parameters],
+             [additional preprocessor flags],
+             [additional compiler flags],
+             [additional linker flags],
+             [list of libraries])
+@endcode
+
+As the first argument of @func{TE_APP_PARMS} directive you specify
+the name of Test Engine application to which this directive applies.
+The name must be a directory name under @path{${TE_BASE}/engine/}
+directory.
+
+For example:
+
+@code
+TE_APP_PARMS([rcf], [--enable-ltdl-install])
+TE_APP_PARMS([tester], [--with-trc])
+@endcode
+
+Please note that we specify the values only for the first two parameters
+and omit the rest parameter values because they are empty strings.
+
+Please also note that parameter values specified in @func{TE_PLATFORM}
+directive for host platform (with empty string platform name) applied
+to Test Engine applications.
+
+@subsubsection te_engine_builder_conf_file_te_tools TE_TOOLS
+
+While building Test Environment you can build some auxiliary tools.
+The list of tools to be built are specified with @func{TE_TOOLS} directive.
+
+@code
+TE_TOOLS([list of Test Environment tools])
+@endcode
+
+Test Environment tools specified in @func{TE_TOOLS} directive should be
+equal to the names of directories reside under @path{${TE_BASE}/tools/}
+directory.
+
+Normally you would have:
+@code
+TE_TOOLS([rgt trc tce])
+@endcode
+
+@subsubsection te_engine_builder_conf_file_te_tool_parms TE_TOOL_PARMS
+
+Similarly to @func{TE_APP}, @func{TE_APP_PARMS} pair there is
+@func{TE_TOOL_PARMS} supplementing @func{TE_TOOLS} directive.
+
+@func{TE_TOOLS} directive can be used to specify building process parameters
+for the particular Test Environment tool.
+
+@code
+TE_APP_PARMS([Test Environment tool name],
+             [additional configure script parameters],
+             [additional preprocessor flags],
+             [additional compiler flags],
+             [additional linker flags],
+             [list of libraries names])
+@endcode
+
+For example:
+@code
+TE_TOOL_PARMS([rgt], [--with-glib=/mnt/shared/glib])
+@endcode
+
+@subsubsection te_engine_builder_conf_file_te_shell TE_SHELL
+
+You can specify arbitrary shell scripts to run during build procedure
+with @func{TE_SHELL} directive.
+
+@code
+TE_SHELL([shell script to run])
+@endcode
+
+For example @func{TE_SHELL} directive can be useful when you want to set
+values of environment variables if they are not set. Later you can refer
+to these variables in your builder configuration file directives.
+
+@code
+TE_SHELL([test -z "${SOLARIS2_HOME}" && \
+          SOLARIS2_HOME="/srv/local/cross/i386-pc-solaris2.11"])
+#
+# Check if SOLARIS2_HOME environment variable is set.
+# If not set this variable to some default value.
+#
+
+TE_PLATFORM([solaris], [--host=i386-pc-solaris2.11],
+            [-I${SOLARIS2_HOME}/sys-include -D_XOPEN_SOURCE -D_XOPEN_SOURCE_EXTENDED=1 -D__EXTENSIONS__],
+            [-pthreads],
+            [-L${SOLARIS2_HOME}/lib],
+            [tools conf_oid rpcxdr rpc_types asn ndn \
+             comm_net_agent loggerta rcfpch tad])
+#
+# Refer to environment variable from other directives.
+#
+@endcode
+
+@subsubsection te_engine_builder_conf_file_include Include directive
+
+You can keep parts of builder configuration in separate files
+and merge them togeter with the help of @func{include} directive.
+This let reuse common parts of builder configuration in separate files
+(for the cases when you have more than one set-up to build).
+
+@code
+#
+# Assume this is the top level builder configuration file
+# and we need to include a number of files in it.
+#
+
+include(builder.part.common)
+include(builder.part.linux.platform)
+include(builder.part.freebsd.platform)
+@endcode
 
 @section te_engine_builder_build_process Building process
 
 Test Environment build should be initiated <b>ONLY by Dispatcher</b>.
-It is not expected that <em>configure</em> script is run manually.
+It is not expected that @prog{configure} script is run manually.
 
 Building is performed as follows:
--# The root <em>configure</em> script analyses Builder configuration file.
+-# The root @prog{configure} script analyses Builder configuration file.
 It creates directories for all packages to be built and call configure script
-for all host packages. If configure script or Makefile.in file are missing in
-the package source directory, autotools are used to generate them;
--# <em>make</em> is called. It builds and installs libraries,
+for all host packages. If configure script or @path{Makefile.in} file are
+missing in the package source directory, autotools are used to generate them;
+-# @prog{make} is called. It builds and installs libraries,
    TEN applications and Test Agents for the host platform;
--# <em>make</em> calls the Builder script for cross-compiling, which calls
-   <em>configure</em> and <em>make</em> for each package to be cross-compiled.
+-# @prog{make} calls the Builder script for cross-compiling, which calls
+   @prog{configure} and @prog{make} for each package to be cross-compiled.
 .
 
 Re-building of the whole Test Environment is done only if Builder
 configuration file changes.
-Otherwise the <em>configure</em> is called for the package only if there is
-no <em>Makefile</em> in the package build directory.
+Otherwise the @prog{configure} is called for the package only if there is
+no @path{Makefile} in the package build directory.
 
 It is possible to skip a TE building step by specifying <b>--no-builder</b>
 option to Dispatcher.
@@ -91,12 +386,12 @@ option to Dispatcher.
 @section te_engine_builder_tests Building of Tests Packages
 
 Building of the test packages is initiated by Tester during processing of
-<em>package.xml</em> where TP source directory is specified.
-<em>configure</em> or <em>configure.ac</em> should present in
+@path{package.xml} where TP source directory is specified.
+@prog{configure} or @path{configure.ac} should present in
 the source directory.
 
 Tests are always built for the host platforms and installed to
-<b>TE_INSTALL_SUITE</b> directory where the executable scripts are
+@var{TE_INSTALL_SUITE} directory where the executable scripts are
 then accessed by the Tester.
 
 All built tests are included into the distribution.
@@ -106,12 +401,12 @@ option to Dispatcher.
 
 @section te_engine_builder_make Calling make directly
 
-<em>make</em> can be called directly to:
+@prog{make} can be called directly to:
 - make the distribution:<br/>
-  call <em>make</em> in the root of build directory with the target
+  call @prog{make} in the root of build directory with the target
   <b>dist</b> or <b>distcheck</b>;
 - to build/install a pre-configured package without running
-  the Dispatcher:<br/> call <em>make</em> in the package build directory
+  the Dispatcher:<br/> call @prog{make} in the package build directory
   with the target <b>install</b>.
 
 The second approach is useful for fixing compilation errors.
