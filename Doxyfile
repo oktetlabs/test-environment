@@ -43,16 +43,6 @@ OUTPUT_DIRECTORY       = doc/generated
 
 OUTPUT_LANGUAGE        = English
 
-# This tag can be used to specify the encoding used in the generated output. 
-# The encoding is not always determined by the language that is chosen, 
-# but also whether or not the output is meant for Windows or non-Windows users. 
-# In case there is a difference, setting the USE_WINDOWS_ENCODING tag to YES 
-# forces the Windows encoding (this is the default for the Windows binary), 
-# whereas setting the tag to NO uses a Unix-style encoding (the default for 
-# all platforms other than Windows).
-
-USE_WINDOWS_ENCODING   = NO
-
 # If the BRIEF_MEMBER_DESC tag is set to YES (the default) Doxygen will 
 # include brief member descriptions after the members that are listed in 
 # the file and class documentation (similar to JavaDoc). 
@@ -128,13 +118,6 @@ JAVADOC_AUTOBRIEF      = NO
 
 MULTILINE_CPP_IS_BRIEF = NO
 
-# If the DETAILS_AT_TOP tag is set to YES then Doxygen 
-# will output the detailed description near the top, like JavaDoc.
-# If set to NO, the detailed description appears after the member 
-# documentation.
-
-DETAILS_AT_TOP         = NO
-
 # If the INHERIT_DOCS tag is set to YES (the default) then an undocumented 
 # member inherits the documentation from any documented member that it 
 # re-implements.
@@ -162,7 +145,11 @@ TAB_SIZE               = 8
 
 ALIASES                = \
     tdt_start=<table><tr><td><b>Term</b></td><td><b>Definition</b> \
-    tdt_term=</td></tr><tr><td> tdt_def=</td><td> tdt_end=</td></tr></table>
+    tdt_term=</td></tr><tr><td> tdt_def=</td><td> tdt_end=</td></tr></table> \
+    path{1}="<span style='color: #4D4DDB;font-weight:bold'>\1</span>" \
+    prog{1}="<span style='color: #990033;font-weight:bold;font-style:italic'>\1</span>" \
+    func{1}="<span style='color: #000000;font-weight:bold'>\1</span>" \
+    var{1}="@b \1"
 
 # Set the OPTIMIZE_OUTPUT_FOR_C tag to YES if your project consists of C sources 
 # only. Doxygen will then generate output that is more tailored for C. 
