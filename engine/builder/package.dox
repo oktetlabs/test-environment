@@ -4,28 +4,37 @@
 
 @section te_engine_builder_introduction Introduction
 
-Builder subsystem is not a separate closed software but rather set of principles, conventions, standard files, templates and scripts that
-allow to built TE libraries, applications, NUT bootable images and Test Suites in a single, convenient, standard and portable way.
+Builder subsystem is not a separate closed software but rather set of
+principles, conventions, standard files, templates and scripts that
+allow to built TE libraries, applications, NUT bootable images and
+Test Suites in a single, convenient, standard and portable way.
 TE Builder is based on GNU autotools (autoconf, automake).
 
-From the Builder point of view Test Environment consists of a lot of packages: libraries, applications, tools and Test Agents. Each package has input files for autotools:
+From the Builder point of view Test Environment consists of a lot
+of packages: libraries, applications, tools and Test Agents.
+Each package has input files for autotools:
 - <em>configure.ac</em> for autoconf;
 - <em>Makefile.am</em> for automake;
 - optionally files for autoheader.
 .
 
 Each package may be built for one or several platforms.
-The platform for which TEN applications, Test API libraries and tests are built is called host platform.
-Test Agents and libraries linked with them may be built for platforms other than host platform.
+The platform for which TEN applications, Test API libraries and tests are
+built is called host platform. Test Agents and libraries linked with them
+may be built for platforms other than host platform.
 
 @section te_engine_builder_conf_file Builder configuration file
 
-Builder configuration file contains a set of directives that describe what to build and how to build.
-Available directives can be found in <em>engine/builder/builder.m4</em> file.
+Builder configuration file contains a set of directives that describe what to
+build and how to build. Available directives can be found in
+<em>engine/builder/builder.m4</em> file.
 
-By means of Builder configuration file for each platform it is possible to specify:
-- options to be passed to <em>configure</em> scripts for all packages built for this platform;
-- compiler to use (when it is not specified, it is discovered by configure script basing on the platform name);
+By means of Builder configuration file for each platform it is possible
+to specify:
+- options to be passed to <em>configure</em> scripts for all packages
+  built for this platform;
+- compiler to use (when it is not specified, it is discovered by configure
+  script basing on the platform name);
 - pre-processor flags;
 - compiler flags;
 - linker flags;
@@ -39,49 +48,71 @@ Additionally for each package it is possible to specify:
 - linker flags.
 .
 
-For applications (TEN applications, tools, Test Agents), the list of libraries to be linked may be specified as well.
+For applications (TEN applications, tools, Test Agents), the list of
+libraries to be linked may be specified as well.
 
-Executable is built not for each Test Agent, but rather for each Test Agent type (linux, bsd, etc.).
+Executable is built not for each Test Agent, but rather for each
+Test Agent type (linux, bsd, etc.).
 
-By default Builder searches libraries and Test Agent sources in the Test Environment source tree.
-However it's possible to specify that library or TA sources are located in the private place.
+By default Builder searches libraries and Test Agent sources in
+the Test Environment source tree.
+However it's possible to specify that library or TA sources are located
+in the private place.
 
-If one package should be built for several platforms and/or with different parameters, the <em>configure</em> script is called several times for it.
-In the second case different names should be assigned to these packages in the configuration file.
+If one package should be built for several platforms and/or with different
+parameters, the <em>configure</em> script is called several times for it.
+In the second case different names should be assigned to these packages in
+the configuration file.
 
 @section te_engine_builder_build_process Building process
 
-Test Environment build should be initiated <b>ONLY by Dispatcher</b>. It is not expected that <em>configure</em> script is run manually.
+Test Environment build should be initiated <b>ONLY by Dispatcher</b>.
+It is not expected that <em>configure</em> script is run manually.
 
 Building is performed as follows:
--# The root <em>configure</em> script analyses Builder configuration file. It creates directories for all packages to be built and call configure script for all host packages. If configure script or Makefile.in file are missing in the package source directory, autotools are used to generate them;
--# <em>make</em> is called. It builds and installs libraries, TEN applications and Test Agents for the host platform;
--# <em>make</em> calls the Builder script for cross-compiling, which calls <em>configure</em> and <em>make</em> for each package to be cross-compiled.
+-# The root <em>configure</em> script analyses Builder configuration file.
+It creates directories for all packages to be built and call configure script
+for all host packages. If configure script or Makefile.in file are missing in
+the package source directory, autotools are used to generate them;
+-# <em>make</em> is called. It builds and installs libraries,
+   TEN applications and Test Agents for the host platform;
+-# <em>make</em> calls the Builder script for cross-compiling, which calls
+   <em>configure</em> and <em>make</em> for each package to be cross-compiled.
 .
 
-Re-building of the whole Test Environment is done only if Builder configuration file changes.
-Otherwise the <em>configure</em> is called for the package only if there is no <em>Makefile</em> in the package build directory.
+Re-building of the whole Test Environment is done only if Builder
+configuration file changes.
+Otherwise the <em>configure</em> is called for the package only if there is
+no <em>Makefile</em> in the package build directory.
 
-It is possible to skip a TE building step by specifying <b>--no-builder</b> option to Dispatcher.
+It is possible to skip a TE building step by specifying <b>--no-builder</b>
+option to Dispatcher.
 
 @section te_engine_builder_tests Building of Tests Packages
 
-Building of the test packages is initiated by Tester during processing of <em>package.xml</em> where TP source directory is specified.
-<em>configure</em> or <em>configure.ac</em> should present in the source directory.
+Building of the test packages is initiated by Tester during processing of
+<em>package.xml</em> where TP source directory is specified.
+<em>configure</em> or <em>configure.ac</em> should present in
+the source directory.
 
-Tests are always built for the host platforms and installed to <b>TE_INSTALL_SUITE</b> directory where the executable scripts are then accessed by the Tester.
+Tests are always built for the host platforms and installed to
+<b>TE_INSTALL_SUITE</b> directory where the executable scripts are
+then accessed by the Tester.
 
 All built tests are included into the distribution.
 
-Building of tests may be skipped by specifying <b>--tester-no-build</b> option to Dispatcher.
+Building of tests may be skipped by specifying <b>--tester-no-build</b>
+option to Dispatcher.
 
 @section te_engine_builder_make Calling make directly
 
 <em>make</em> can be called directly to:
 - make the distribution:<br/>
-  call <em>make</em> in the root of build directory with the target <b>dist</b> or <b>distcheck</b>;
-- to build/install a pre-configured package without running the Dispatcher:<br/>
-  call <em>make</em> in the package build directory with the target <b>install</b>.
+  call <em>make</em> in the root of build directory with the target
+  <b>dist</b> or <b>distcheck</b>;
+- to build/install a pre-configured package without running
+  the Dispatcher:<br/> call <em>make</em> in the package build directory
+  with the target <b>install</b>.
 
 The second approach is useful for fixing compilation errors.
 

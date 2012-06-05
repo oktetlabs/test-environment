@@ -2,21 +2,37 @@
 
 @section te_eng_introduction Introduction
 
-Test Engine is a set of software components that provide essential features of Test Environment. It is unlikely that you will need to update any of Test Engine components, but more likely you will need to implement some helper libraries that utilize services provided by Test Engine or you will need to add some functionality in Test Agents.
+Test Engine is a set of software components that provide essential features
+of Test Environment. It is unlikely that you will need to update any of
+Test Engine components, but more likely you will need to implement some helper
+libraries that utilize services provided by Test Engine or you will need to
+add some functionality in Test Agents.
 
 Test Engine consists of the following components:
-- @ref te_engine_dispatcher, which is responsible for configuring and starting of another subsystems;
-- @ref te_engine_builder, which is responsible for preparing libraries and executables for Test Agents and TE Subsystems as well as NUT bootable images and building the tests;
-- @ref te_engine_conf, which is responsible for configuring the environment, providing configuration information to tests and for recovering the configuration after failures.
-  Moreover it supports some TEN-local database used by Test Packages to store shared data;
-- @ref te_engine_rcf, which is responsible for starting Test Agents and for all interactions between Test Engine and Test Agents on behalf of other subsystems and tests;
-- @ref te_engine_tester, which is responsible for running a set of Test Packages specified by a user in the mode specified by a user (one-by-one, simultaneous, debugging);
-- @ref te_engine_logger, which provides logging facilities for Test Environment (Test Engine and Test Agents) and tests, and log processing tools for users.
+- @ref te_engine_dispatcher, which is responsible for configuring and
+  starting of another subsystems;
+- @ref te_engine_builder, which is responsible for preparing libraries
+  and executables for Test Agents and TE Subsystems as well as NUT bootable
+  images and building the tests;
+- @ref te_engine_conf, which is responsible for configuring the environment,
+  providing configuration information to tests and for recovering
+  the configuration after failures. Moreover it supports some TEN-local
+  database used by Test Packages to store shared data;
+- @ref te_engine_rcf, which is responsible for starting Test Agents and
+  for all interactions between Test Engine and Test Agents on behalf of
+  other subsystems and tests;
+- @ref te_engine_tester, which is responsible for running a set of
+  Test Packages specified by a user in the mode specified by a user
+  (one-by-one, simultaneous, debugging);
+- @ref te_engine_logger, which provides logging facilities for
+  Test Environment (Test Engine and Test Agents) and tests, and
+  log processing tools for users.
 .
 
 @image html ten_decomposition.png "High Level decomposition of Test Engine Components"
 
-The following diagram gives more detailed information on relations between Test Environment components:
+The following diagram gives more detailed information on
+relations between Test Environment components:
 
 @image html ten_interconnections.png "Interconnections of Test Engine components"
 
@@ -63,48 +79,67 @@ The following diagram gives more detailed information on relations between Test 
 @endditaa
 -->
 
-More detailed information on each Test Engine component can be found at a dedicated page:
-TODO: Add references to corresponding pages.
+
+
 
 @page te_engine_dispatcher Test Engine: Dispatcher
 
 @section te_engine_dispatcher_introduction Introduction
 
-Dispatcher is a subsystem providing a proper initialization and shutdown of the TEN subsystems.
-It prepares the environment (creates directories for temporary files, exports environment variables, etc.), initiates building, if necessary, and initializes TEN applications according to options provided on the command line.
+Dispatcher is a subsystem providing a proper initialization and shutdown
+of the TEN subsystems.
+It prepares the environment (creates directories for temporary files,
+exports environment variables, etc.), initiates building, if necessary,
+and initializes TEN applications according to options provided on
+the command line.
 
-From user point of view Dispatcher is a BASH script that launches processes and TEN components according to specified command line options.
+From user point of view Dispatcher is a BASH script that launches
+processes and TEN components according to specified command line options.
 
-During its operation Dispatcher sets a few environment variables among which the most important are:
-
+During its operation Dispatcher sets a few environment variables among
+which the most important are:
 - <b>TE_BASE</b><br/>
-Location of Test Environment sources. If the Dispatcher script is called from the source directory,
-this variable is exported automatically. Otherwise if building is necessary (i.e.,  TE is not pre-installed),
-<b>TE_BASE</b> should be exported manually.
+Location of Test Environment sources.
+If the Dispatcher script is called from the source directory, this variable
+is exported automatically. Otherwise if building is necessary
+(i.e.,  TE is not pre-installed), <b>TE_BASE</b> should be exported manually.
 - <b>TE_BUILD</b><br/>
 This variable is exported automatically unless already exported.
-It is set to a start directory (a directory from which the Dispatcher script is called) or,
-if a file <em>configure.ac</em> is present in the start directory, to the (created if needed) <em>build</em> subdirectory
+It is set to a start directory (a directory from which the Dispatcher
+script is called) or, if a file <em>configure.ac</em> is present in
+the start directory, to the (created if needed) <em>build</em> subdirectory
 of the start directory: <em>&lt;start directory&gt;/build</em>.
 - <b>TE_INSTALL</b><br/>
-This variable is passed as the value of the <b>--prefix</b> option to the main <em>configure</em> script.
-Moreover, its value is used when path variables for the search of headers and libraries are constructed.
-It may be set manually. If it is empty, it is set to the directory where the Dispatcher script is located
-(if the installed Dispatcher script is used) or to <em>${<b>TE_BUILD</b>}/inst</em> (if  the Dispatcher script from the source directory is used).
+This variable is passed as the value of the <b>--prefix</b> option to
+the main <em>configure</em> script. Moreover, its value is used when
+path variables for the search of headers and libraries are constructed.
+It may be set manually. If it is empty, it is set to the directory where
+the Dispatcher script is located (if the installed Dispatcher script is used)
+or to <em>${<b>TE_BUILD</b>}/inst</em> (if  the Dispatcher script from
+the source directory is used).
 - <b>TE_INSTALL_SUITE</b></br>
-User may export this variable to specify the location of Test Suite executables (for Builder and Tester).
-If this variable is empty, it is set automatically to <em>${<b>TE_INSTALL</b>}/suites</em>.
+User may export this variable to specify the location of Test Suite
+executables (for Builder and Tester). If this variable is empty,
+it is set automatically to <em>${<b>TE_INSTALL</b>}/suites</em>.
 - <b>TE_TMP</b><br/>
-This variable is set by Dispatcher to <em>&lt;start directory&gt;/te_tmp</em> by default.
-However, if it's desirable to use some other directory for temporary files, it may be exported manually.
+This variable is set by Dispatcher to
+<em>&lt;start directory&gt;/te_tmp</em> by default.
+However, if it's desirable to use some other directory for temporary files,
+it may be exported manually.
 - <b>LD_LIBRARY_PATH</b></br>
-This variable is exported by Dispatcher automatically and used for shared library search. It is set to <em>${<b>TE_INSTALL</b>}/&lt;host platform&gt;/lib</em>.
+This variable is exported by Dispatcher automatically and used for shared
+library search. It is set to <em>${<b>TE_INSTALL</b>}/&lt;host platform&gt;/lib</em>.
 - <b>PATH</b><br/>
-Path to TEN executables is provided automatically by Dispatcher. It updates <b>PATH</b> variable by <em>${<b>TE_INSTALL</b>}/&lt;host platform&gt;/bin</em>.
-Moreover, if scripts provided by Logger, Builder and storage library to Dispatcher are not installed yet,
-Dispatcher adds to <b>PATH</b> variable path to these scripts in the source directory.
+Path to TEN executables is provided automatically by Dispatcher.
+It updates <b>PATH</b> variable by <em>${<b>TE_INSTALL</b>}/&lt;host platform&gt;/bin</em>.
+Moreover, if scripts provided by Logger, Builder and storage library to
+Dispatcher are not installed yet, Dispatcher adds to <b>PATH</b> variable
+path to these scripts in the source directory.
 
-The Dispatcher script accepts a lot of command-line options. Some of them are its own options, and the rest are passed through to other TE subsystems.
-The complete list of the script options as well as their descriptions can be obtained by calling the Dispatcher script with the option <b>--help</b>.
+The Dispatcher script accepts a lot of command-line options.
+Some of them are its own options, and the rest are passed throughto
+other TE subsystems. The complete list of the script options as well as
+their descriptions can be obtained by calling the Dispatcher script
+with the option <b>--help</b>.
 
  */

@@ -31,8 +31,8 @@ Unix Test Egent supports the following features:
 The sources of UNIX Test Agent located under <em>agents/unix</em>
 directory of TE tree:
 - agents/unix/rpc/ - implementation of RPC Server calls;
-- agents/unix/main.c - implementation of entry point of Test Agent as well as functions
-  of RCF PCH interface;
+- agents/unix/main.c - implementation of entry point of Test Agent
+  as well as functions of RCF PCH interface;
 - agents/unix/conf implementation of configuration nodes for
   UNIX Test Agent:
   - agents/unix/conf/base/ - support of base configuration nodes

@@ -2,11 +2,20 @@
 
 @section te_introduction Introduction
 
-OKTET Labs Test Environment (TE) is a software product that is intended to ease creating automated test suites.
-The history of TE goes back to 2000 year when the first prototype of software was created. At that time the product
-was used for testing SNMP MIBs and CLI commands. Two years later (in 2002) software was extended to support testing of IPv6 protocol.
+OKTET Labs Test Environment (TE) is a software product that is intended to
+ease creating automated test suites.
+The history of TE goes back to 2000 year when the first prototype of software
+was created. At that time the product was used for testing SNMP MIBs and
+CLI commands. Two years later (in 2002) software was extended to support
+testing of IPv6 protocol.
 
-Few years of intensive usage the software in testing projects showed that a deep re-design was necessary to make the architecture flexible and extandable for new and new upcoming features. In 2003 year it was decided that the redesign should be fulfilled. Due to the careful and well-thought design decisions made in 2003 year, the overall TE architecture (main components and interconnections between them) are still valid even though a lot of new features has been added since then. 
+Few years of intensive usage the software in testing projects showed that
+a deep re-design was necessary to make the architecture flexible and
+extandable for new and new upcoming features. In 2003 year it was decided
+that the redesign should be fulfilled. Due to the careful and well-thought
+design decisions made in 2003 year, the overall TE architecture
+(main components and interconnections between them) are still valid even
+though a lot of new features has been added since then.
 
 @section te_abbreviations Abbreviations
 
@@ -27,24 +36,43 @@ Few years of intensive usage the software in testing projects showed that a deep
 
 @tdt_start
 @tdt_term Communication Service Access Point
-@tdt_def An object, which could be created on a Test Agent to send/receive some data (packets, frames, cells, CLI commands, etc.) A set of primitives to create and destroy CSAP, receive and send data is associated with each type of CSAP.
+@tdt_def An object, which could be created on a Test Agent to send/receive
+some data (packets, frames, cells, CLI commands, etc.) A set of primitives
+to create and destroy CSAP, receive and send data is associated with each
+type of CSAP.
 @tdt_term Device Under Test (DUT)
 @tdt_def Station where a tested hardware/software is located.
 @tdt_term RCF Application Domain
-@tdt_def A semantically independent set of services provided by RCF (for example, TA configuration service).
-A set of API functions, protocol commands and routines of TA libraries for command handling, corresponds to a particular application domain.
+@tdt_def A semantically independent set of services provided by RCF
+(for example, TA configuration service).
+A set of API functions, protocol commands and routines of TA libraries for
+command handling, corresponds to a particular application domain.
 Some application domains may be unsupported by some Test Agents.
 @tdt_term Test
-@tdt_def A complete sequence of actions required to achieve a specific purpose (e.g., a check that tested system provides a required functionality, complies to a standard, etc.) and producing a verdict pass/fail (possibly accompanied by additional data).
+@tdt_def A complete sequence of actions required to achieve a specific purpose
+(e.g., a check that tested system provides a required functionality, complies
+to a standard, etc.) and producing a verdict pass/fail (possibly accompanied
+by additional data).
 @tdt_term Test Package
-@tdt_def Group of tightly related tests or test packages, which may share internal libraries and usually run together (one-by-one or simultaneously). Test Package may consist of one test. It may have a prologue (performing some initialization) and epilogue (releasing resources and restoring TE configuration).
+@tdt_def Group of tightly related tests or test packages, which may share
+internal libraries and usually run together (one-by-one or simultaneously).
+Test Package may consist of one test. It may have a prologue
+(performing some initialization) and epilogue (releasing resources and
+restoring TE configuration).
 @tdt_termTest Agent
-@tdt_defAn application running on the NUT or other station and performing some actions (configuring NUT or itself, interacting with the tested system, sending/receiving packets, etc.) according to instructions provided by the Test Engine. All interactions with the tested system should be performed via Test Agent only.
+@tdt_defAn application running on the NUT or other station and performing
+some actions (configuring NUT or itself, interacting with the tested system,
+sending/receiving packets, etc.) according to instructions provided by
+the Test Engine. All interactions with the tested system should be performed
+via Test Agent only.
 @tdt_term Test Engine
-@tdt_def Set of applications performing testing of tested subsystem according to Test Package(s) and configuration specified by a user.
+@tdt_def Set of applications performing testing of tested subsystem according
+to Test Package(s) and configuration specified by a user.
 It is responsible for:
-- preparing executables for Test Packages, Test Agents and TE Subsystems as well as bootable NUT images;
-- starting Test Agents and configuring the environment and NUT via Test Protocol as well as providing configuration information to tests;
+- preparing executables for Test Packages, Test Agents and TE Subsystems as
+  well as bootable NUT images;
+- starting Test Agents and configuring the environment and NUT via
+  Test Protocol as well as providing configuration information to tests;
 - executing tests in mode and order specified by a user;
 - interacting with Test Agents on behalf of tests;
 - logging and generation of reports.
@@ -53,21 +81,30 @@ It is responsible for:
 @tdt_def Protocol used for Test Engine and Test Agent interaction.
 @tdt_term Test Environment (TE)
 @tdt_def Software product, which includes:
-- software applications (Test Agent, Test Engine, tools, etc.) allowing to perform the sequence of actions specified by the test scenario and obtain results in convenient form;
+- software applications (Test Agent, Test Engine, tools, etc.) allowing to
+  perform the sequence of actions specified by the test scenario and obtain
+  results in convenient form;
 - set of libraries supporting specific protocols, platforms and features;
-- set of documents describing test creation framework and software tools simplifying this task;
-- set of documents describing TE enhancement framework (creation of new libraries, support of new platforms, etc.) and software tools simplifying this task;
-- user guides describing TE usage (how to run tests, possible log formats, libraries API, etc.).
+- set of documents describing test creation framework and software tools
+  simplifying this task;
+- set of documents describing TE enhancement framework
+  (creation of new libraries, support of new platforms, etc.) and
+  software tools simplifying this task;
+- user guides describing TE usage (how to run tests, possible log formats,
+  libraries API, etc.).
 .
 Note, that tests are not considered as part of the TE.
 @tdt_term Test Environment Subsystem
-@tdt_def A mandatory and logically separate module (which may include software, data, documents) of the Test Environment responsible for one of main services provided by TE.
+@tdt_def A mandatory and logically separate module
+(which may include software, data, documents) of the Test Environment
+responsible for one of main services provided by TE.
 The TE Subsystem can provide service to:
 - TE user (for example, TA Creation Framework);
 - tests or
 - other TE subsystems.
 .
-TE Subsystem may run in one or several threads (processes), or on one or several stations (including NUT).
+TE Subsystem may run in one or several threads (processes),
+or on one or several stations (including NUT).
 @tdt_end
 
 @section te_architecture Test Environment Architecture
@@ -80,23 +117,35 @@ The following picture shows high level decomposition of TE components:
 
 @image html hl-decomposition.png "High Level Decomposition of Test Environment components" 
 
-TE subsystems and Test Agents are distributed among several applications running on different stations.
-Apart from other things Test Engine controls Test Agents by means of so-called Test Protocol - a text-based protocol used in communication between Test Engine and Test Agents.
+TE subsystems and Test Agents are distributed among several applications
+running on different stations.
+Apart from other things Test Engine controls Test Agents by means of
+so-called Test Protocol - a text-based protocol used in communication
+between Test Engine and Test Agents.
 
-According to initial design Test Engine runs on Linux platform and there is no intend to port it to any other OS type, but Test Agents can be run on different platforms providing particular set of mandatory features for Test Engine. Test Agents are the subject to be ported to hardware/software specific components of test infrastructure.
+According to initial design Test Engine runs on Linux platform and there is
+no intend to port it to any other OS type, but Test Agents can be run on
+different platforms providing particular set of mandatory features for
+Test Engine. Test Agents are the subject to be ported to hardware/software
+specific components of test infrastructure.
 
 @section te_tools Test Environment Tools
 
 Apart from main components, TE provides the following set of tools:
-- <b>Report Generator</b> tool representing logs in different formats (<em>RGT</em> tool, see [TODO]);
-- <b>Testing Coverage Estimation</b> tool that gives some report about the quality of test suite we run against the software under test (see [TODO]);
+- <b>Report Generator</b> tool representing logs in different formats
+  (<em>RGT</em> tool, see [TODO]);
+- <b>Testing Coverage Estimation</b> tool that gives some report about
+  the quality of test suite we run against the software under test;
 - <b>Test Result comparator</b> tool that can be used to check the
-difference between different test runs (TRC tool, see [TODO]);
+  difference between different test runs (TRC tool);
 - <b>Test Package Generator</b> tool.
 
 @section te_services Test Environment Services
 
-From end-users (test writers) point of view TE is a set of services that allow creating complex and full-functional tests. All services exported by TE accessible via a set of libraries. Here is the list of libraries available that are useful while writing this or that test cases:
+From end-users (test writers) point of view TE is a set of services that
+allow creating complex and full-functional tests. All services exported by TE
+accessible via a set of libraries. Here is the list of libraries available
+that are useful while writing this or that test cases:
 
 - @ref te_lib_rpc
 
