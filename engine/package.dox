@@ -8,6 +8,8 @@ Test Engine components, but more likely you will need to implement some helper
 libraries that utilize services provided by Test Engine or you will need to
 add some functionality in Test Agents.
 
+@image html ten_decomposition.png "High Level decomposition of Test Engine Components"
+
 Test Engine consists of the following components:
 - @ref te_engine_dispatcher, which is responsible for configuring and
   starting of another subsystems;
@@ -28,8 +30,6 @@ Test Engine consists of the following components:
   Test Environment (Test Engine and Test Agents) and tests, and
   log processing tools for users.
 .
-
-@image html ten_decomposition.png "High Level decomposition of Test Engine Components"
 
 The following diagram gives more detailed information on
 relations between Test Environment components:

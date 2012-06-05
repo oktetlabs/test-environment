@@ -109,13 +109,13 @@ or on one or several stations (including NUT).
 
 @section te_architecture Test Environment Architecture
 
-From the high level point of view TE consists of two main parts:
-- @ref te_engine;
-- @ref te_agents.
-
 The following picture shows high level decomposition of TE components:
 
 @image html hl-decomposition.png "High Level Decomposition of Test Environment components" 
+
+From the high level point of view TE consists of two main parts:
+- @ref te_engine;
+- @ref te_agents.
 
 TE subsystems and Test Agents are distributed among several applications
 running on different stations.
