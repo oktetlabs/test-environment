@@ -102,7 +102,7 @@ extern int rcf_comm_agent_wait(rcf_comm_connection *rcc,
 /**
  * Send reply to the Test Engine side of Network Communication library.
  *
- * @param rcc           Handler received from rcf_comm_agent_connect.
+ * @param rcc           Handler received from rcf_comm_agent_init.
  * @param p_buffer      Buffer with reply.
  * @param length        Length of the data to send.
  *
@@ -117,7 +117,7 @@ extern int rcf_comm_agent_reply(rcf_comm_connection *rcc,
  * Close connection.
  *
  * @param p_rcc   Pointer to variable with handler received from 
- *                rcf_comm_agent_connect
+ *                rcf_comm_agent_init.
  *
  * @return Status code.
  * @retval 0            Success.
