@@ -153,7 +153,7 @@ extern int rcf_pch_configure(struct rcf_comm_connection *conn,
 
 /**
  * Default implementation of agent list accessor.
- * This function complies with rcf_ch_cfg_list protoеype.
+ * This function complies with rcf_ch_cfg_list prototype.
  * 
  * @param gid       group identifier
  * @param oid       full object instance identifier
