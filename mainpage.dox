@@ -100,8 +100,9 @@ From end-users (test writers) point of view TE is a set of services that allow c
 
 - @ref te_lib_rpc
 
-- @link logger_api.h Logger API @endlink
-- @link conf_api.h Configurator API @endlink
-- @link rcf_api.h RCF API @endlink
+- @link logger_api.h API Usage: Logger API @endlink
+- @ref confapi
+- @ref rcfapi
+.
 
  */

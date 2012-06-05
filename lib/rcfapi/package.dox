@@ -1,5 +1,66 @@
-/** @page rcfapi Remote Control Facility subsystem
- 
- - <A HREF="rcf__api_8h.html">Remote Control Facility API</A>
+/** @page rcfapi API Usage: Remote Control Facility API
+
+@section rcfapi_introduction Introduction
+
+RCF API is an interface to access RCF services. Some functions of this API
+expected to be used from Test Engine components only (Logger, Configurator),
+but there are few that can be used from test scenarios.
+
+The description of RCF API functions can be found at this page:
+- @link rcf_api.h RCF API @endlink
+.
+
+The following diagram shows components that use this or that RCF API function.
+
+@image html ten_rcfapi_users.png "RCF API Users"
+
+<!--
+@startditaa
++--------------+               +--------+                 +---------+             +-----------+             +----------+
+| cFF8         |               | cFF8   |                 | cFF8    |             | cDEF      |             | cDEF     |
+| Configurator |               | Logger |                 |  Tests  |             |  RCF RPC  |             | TAPI TAD |
++------+-------+               +---+----+                 +----+----+             +-----+-----+             +----+-----+
+       |                           |                           |                        |                        |
+       | rcf_get_ta_list()         |                           |                        |                        |
+       | rcf_log_cfg_changes()     |                           | rcf_ta_get_var()       |                        |
+       | rcf_ta_cfg_get()          | rcf_get_ta_list()         | rcf_ta_set_var()       |                        |
+       | rcf_ta_cfg_set()          | rcf_get_sniffer_dump()    | rcf_ta_get_file()      |                        |
+       | rcf_ta_cfg_add()          | rcf_ta_get_sniffers()     | rcf_ta_put_file()      | rcf_ta_call_rpc()      | rcf_ta_csap_xxx()
+       | rcf_ta_cfg_del()          | rcf_ta_get_log()          | rcf_ta_del_file()      |                        | rcf_ta_trsend_xxx()
+       | rcf_ta_cfg_group()        |                           | rcf_ta_call()          |                        | rcf_ta_trrecv_xxx()
+       | rcf_check_agents()        |                           | rcf_ta_start_task()    |                        | rcf_trpoll()
+       |                           |                           | rcf_ta_start_thread()  |                        |
+       |                           |                           | rcf_ta_kill_task()     |                        |
+       |                           |                           | rcf_ta_kill_thread()   |                        |
+       |                           |                           |                        |                        |
+       V                           V                           V                        V                        V
++-----------------------------------------------------------------------------------------------------------------------+
+|                                                RCF API                                                                |
++-----------------------------------------------------------------------------------------------------------------------+
+@endditaa
+-->
+
+@section rcfapi_test_user RCF API functions for test scenarios
+
+For test scenarios we can use RCF API for:
+- manipulation of environment variables:
+  - rcf_ta_get_var();
+  - rcf_ta_set_var().
+  .
+- manipulation of files on Test Agent side:
+  - rcf_ta_get_file();
+  - rcf_ta_put_file();
+  - rcf_ta_del_file().
+  .
+- calling a function on Test Agent side (do not mix it with RPC calls):
+  - rcf_ta_call().
+  .
+- process and thread manipulation on Test Agent side:
+  - rcf_ta_start_task();
+  - rcf_ta_kill_task();
+  - rcf_ta_start_thread();
+  - rcf_ta_kill_thread().
+  .
+.
 
  */
