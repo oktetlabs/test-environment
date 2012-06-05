@@ -136,6 +136,10 @@ enum trc_log_parse_flags {
     TRC_LOG_PARSE_NO_PE          = (1 << 21),  /**< Do not take into
                                                     consideration prologues
                                                     and epilogues */
+    TRC_LOG_PARSE_RULE_UPD_ONLY  = (1 << 22),  /**< Save only tests for
+                                                    which iterations at
+                                                    least one rule was
+                                                    applied */
 };
 
 /** All rule type flags */

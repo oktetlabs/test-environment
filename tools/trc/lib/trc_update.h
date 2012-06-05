@@ -157,6 +157,7 @@ typedef struct trc_update_test_iter_data {
                                             resulting XML file */
     te_bool               to_save;     /**< Should this iteration
                                             be saved? */
+    te_bool               to_save_old; /**< Previous value of to_save */
     int                   results_id;  /**< Results ID (used in wildcards
                                             generation) */
     te_bool               in_wildcard; /**< Whether this iteration in

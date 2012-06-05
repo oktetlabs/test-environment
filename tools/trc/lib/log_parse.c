@@ -1187,6 +1187,158 @@ trc_update_fill_db_user_data(te_trc_db *db,
 }
 
 /**
+ * Set to_save property of user data for all the tests
+ * from a given queue.
+ *
+ * @param tests         Tests queue
+ * @param user_id       TRC DB user ID
+ * @param to_save       Value of property to be set
+ *
+ * @return Status code
+ */
+static te_errno trc_update_set_tests_to_save(trc_tests *tests,
+                                             unsigned int user_id,
+                                             te_bool to_save);
+
+/**
+ * Set to_save property of user data for all the iterations
+ * from a given queue.
+ *
+ * @param iters         Iterations queue
+ * @param user_id       TRC DB user ID
+ * @param to_save       Value of property to be set
+ * @param restore       Restore previous value of to_save
+ *                      for the iterations
+ *
+ * @return Status code
+ */
+static te_errno
+trc_update_set_iters_to_save(trc_test_iters *iters,
+                             unsigned int user_id,
+                             te_bool to_save,
+                             te_bool restore)
+{
+    trc_update_test_iter_data   *user_data;
+    trc_test_iter               *iter;
+    int                          rc;
+
+    TAILQ_FOREACH(iter, &iters->head, links)
+    {
+        user_data = trc_db_iter_get_user_data(iter, user_id);
+        if (user_data != NULL)
+        {
+            if (restore)
+                user_data->to_save = user_data->to_save_old;
+            else
+            {
+                user_data->to_save_old = user_data->to_save;
+                user_data->to_save = to_save;
+
+                rc = trc_update_set_tests_to_save(&iter->tests,
+                                                  user_id, to_save);
+                if (rc != 0)
+                    return rc;
+            }
+        }
+    }
+
+    return 0;
+}
+
+/** See description above */
+static te_errno
+trc_update_set_tests_to_save(trc_tests *tests,
+                             unsigned int user_id,
+                             te_bool to_save)
+{
+    trc_update_test_data    *user_data;
+    trc_test                *test;
+    int                      rc;
+
+    TAILQ_FOREACH(test, &tests->head, links)
+    {
+        user_data = trc_db_test_get_user_data(test, user_id);
+        if (user_data != NULL)
+        {
+            user_data->to_save = to_save;
+
+            rc = trc_update_set_iters_to_save(&test->iters,
+                                              user_id, to_save,
+                                              FALSE);
+            if (rc != 0)
+                return rc;
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * Set to_save property of user data for all the tests and iterations
+ * in TRC DB.
+ *
+ * @param db            TRC DB
+ * @param user_id       TRC DB user ID
+ * @param to_save       Value of property to be set
+ *
+ * @return Status code
+ */
+static te_errno
+trc_update_set_to_save(te_trc_db *db,
+                       unsigned int user_id,
+                       te_bool to_save)
+{
+    return trc_update_set_tests_to_save(&db->tests, user_id, to_save);
+}
+
+/**
+ * Set to_save property of user data for a given element (test or
+ * iteration) and all its ancestors.
+ *
+ * @param element       Test or iterations
+ * @param is_iter       Is it test or iteration?
+ * @param user_id       TRC DB user ID
+ * @param to_save       Value of property to be set
+ *
+ * @return Status code
+ */
+static te_errno
+trc_update_set_propagate_to_save(void *element,
+                                 te_bool is_iter,
+                                 unsigned int user_id,
+                                 te_bool to_save)
+{
+    trc_test_iter               *iter;
+    trc_test                    *test;
+    trc_update_test_data        *test_data;
+    trc_update_test_iter_data   *iter_data;
+
+    while (element != NULL)
+    {
+        if (is_iter)
+        {
+            iter = (trc_test_iter *)element;
+            iter_data = trc_db_iter_get_user_data(iter, user_id);
+            if (iter_data != NULL)
+                iter_data->to_save = to_save;
+            element = iter->parent;
+        }
+        else
+        {
+            test = (trc_test *)element;
+            test_data = trc_db_test_get_user_data(test, user_id);
+            if (test_data != NULL)
+                test_data->to_save = to_save;
+            element = test->parent;
+        }
+
+        is_iter = !is_iter;
+    }
+
+    return 0;
+}
+
+/**
  * Get XML representation of TRC updating rule.
  *
  * @param rule      TRC updating rule
@@ -1647,12 +1799,14 @@ trc_update_simplify_results(unsigned int db_uid,
  * iteration.
  *
  * @param iter          Test iteration
+ * @param db_uid        TRC DB user id
  * @param iter_data     Auxiliary data attached to the iteration
  * @param rule          TRC updating rule
  * @param flags         Flags
  */
 static te_errno
 trc_update_apply_rverdict(trc_test_iter *iter,
+                          unsigned int db_uid,
                           trc_update_test_iter_data *iter_data,
                           trc_update_rule *rule, uint32_t flags)
 {
@@ -1693,6 +1847,15 @@ trc_update_apply_rverdict(trc_test_iter *iter,
                     free(iter_verdict->str);
                     free(iter_verdict);
 
+                    if ((flags & TRC_LOG_PARSE_RULE_UPD_ONLY) &&
+                        !iter_data->to_save)
+                    {
+                        trc_update_set_propagate_to_save(iter, TRUE,
+                                                         db_uid, TRUE);
+                        trc_update_set_iters_to_save(&iter->parent->iters,
+                                                     db_uid, FALSE, TRUE);
+                    }
+
                     iter_verdict = dup_verdict;
                     if (dup_verdict == NULL)
                         break;
@@ -1709,12 +1872,14 @@ trc_update_apply_rverdict(trc_test_iter *iter,
  * iteration.
  *
  * @param iter          Test iteration
+ * @param db_uid        TRC DB user id
  * @param iter_data     Auxiliary data attached to the iteration
  * @param rule          TRC updating rule
  * @param flags         Flags
  */
 static te_errno
 trc_update_apply_rrentry(trc_test_iter *iter,
+                         unsigned int db_uid,
                          trc_update_test_iter_data *iter_data,
                          trc_update_rule *rule, uint32_t flags)
 {
@@ -1749,6 +1914,15 @@ trc_update_apply_rrentry(trc_test_iter *iter,
                 trc_exp_result_entry_free(iter_rentry);
                 free(iter_rentry);
 
+                if ((flags & TRC_LOG_PARSE_RULE_UPD_ONLY) &&
+                    !iter_data->to_save)
+                {
+                    trc_update_set_propagate_to_save(iter, TRUE,
+                                                     db_uid, TRUE);
+                    trc_update_set_iters_to_save(&iter->parent->iters,
+                                                 db_uid, FALSE, TRUE);
+                }
+
                 iter_rentry = dup_rentry;
                 if (iter_rentry == NULL)
                     break;
@@ -1763,12 +1937,14 @@ trc_update_apply_rrentry(trc_test_iter *iter,
  * iteration.
  *
  * @param iter          Test iteration
+ * @param db_uid        TRC DB user id
  * @param iter_data     Auxiliary data attached to the iteration
  * @param rule          TRC updating rule
  * @param flags         Flags
  */
 static te_errno
 trc_update_apply_rresult(trc_test_iter *iter,
+                         unsigned int db_uid,
                          trc_update_test_iter_data *iter_data,
                          trc_update_rule *rule, uint32_t flags)
 {
@@ -1807,6 +1983,14 @@ trc_update_apply_rresult(trc_test_iter *iter,
             trc_exp_result_free(iter_result);
             free(iter_result);
 
+            if ((flags & TRC_LOG_PARSE_RULE_UPD_ONLY) &&
+                !iter_data->to_save)
+            {
+                trc_update_set_propagate_to_save(iter, TRUE, db_uid, TRUE);
+                trc_update_set_iters_to_save(&iter->parent->iters,
+                                             db_uid, FALSE, TRUE);
+            }
+
             iter_result = dup_result;
             if (iter_result == NULL)
                 break;
@@ -1820,6 +2004,7 @@ trc_update_apply_rresult(trc_test_iter *iter,
  * test iteration.
  *
  * @param iter          Test iteration
+ * @param db_uid        TRC DB user id
  * @param iter_data     Auxiliary data attached to the iteration
  * @param rule          TRC updating rule
  * @param iter_rule_id  Iteration rule id
@@ -1827,6 +2012,7 @@ trc_update_apply_rresult(trc_test_iter *iter,
  */
 static te_errno
 trc_update_apply_rresults(trc_test_iter *iter,
+                          unsigned int db_uid,
                           trc_update_test_iter_data *iter_data,
                           trc_update_rule *rule,
                           int iter_rule_id, uint32_t flags)
@@ -1860,19 +2046,23 @@ trc_update_apply_rresults(trc_test_iter *iter,
         {
             trc_exp_results_free(&iter_data->new_results);
             if (results_dup != NULL)
-            {
                 memcpy(&iter_data->new_results, results_dup,
                        sizeof(*results_dup));
-            }
         }
         else
         {
             trc_exp_results_free(&iter->exp_results);
             if (results_dup != NULL)
-            {
                 memcpy(&iter->exp_results, results_dup,
                        sizeof(*results_dup));
-            }
+        }
+
+        if ((flags & TRC_LOG_PARSE_RULE_UPD_ONLY) &&
+            !iter_data->to_save)
+        {
+            trc_update_set_propagate_to_save(iter, TRUE, db_uid, TRUE);
+            trc_update_set_iters_to_save(&iter->parent->iters,
+                                         db_uid, FALSE, TRUE);
         }
 
         free(results_dup);
@@ -1919,7 +2109,9 @@ trc_update_apply_rules(unsigned int db_uid,
             {
                 iter_data = trc_db_iter_get_user_data(iter, db_uid);
                 
-                if (iter_data == NULL || iter_data->to_save == FALSE)
+                if (iter_data == NULL ||
+                    (iter_data->to_save == FALSE &&
+                     !(flags & TRC_LOG_PARSE_RULE_UPD_ONLY)))
                     continue;
 
                 rule_id = 0;
@@ -1989,6 +2181,7 @@ trc_update_apply_rules(unsigned int db_uid,
                         {
                             case TRC_UPDATE_RRESULTS:
                                 trc_update_apply_rresults(iter,
+                                                          db_uid,
                                                           iter_data,
                                                           rule, rule_id,
                                                           flags);
@@ -1996,18 +2189,21 @@ trc_update_apply_rules(unsigned int db_uid,
 
                             case TRC_UPDATE_RRESULT:
                                 trc_update_apply_rresult(iter,
+                                                         db_uid,
                                                          iter_data,
                                                          rule, flags);
                                 break;
 
                             case TRC_UPDATE_RRENTRY:
                                 trc_update_apply_rrentry(iter,
+                                                         db_uid,
                                                          iter_data,
                                                          rule, flags);
                                 break;
 
                             case TRC_UPDATE_RVERDICT:
                                 trc_update_apply_rverdict(iter,
+                                                          db_uid,
                                                           iter_data,
                                                           rule, flags);
                                 break;
@@ -3929,6 +4125,11 @@ trc_update_process_logs(trc_update_ctx *gctx)
         CHECK_F_RC(trc_update_simplify_results(gctx->db_uid,
                                                ctx.updated_tests,
                                                gctx->flags));
+
+        if (gctx->flags & TRC_LOG_PARSE_RULE_UPD_ONLY)
+            trc_update_set_to_save(gctx->db,
+                                   gctx->db_uid,
+                                   FALSE);
 
         if (gctx->rules_load_from != NULL)
         {

@@ -132,6 +132,9 @@ enum {
                                          encountered in logs */
     TRC_UPDATE_OPT_PE,              /**< Take into consideration prologues
                                          and epilogues */
+    TRC_UPDATE_OPT_RULE_UPD_ONLY,   /**< Save only tests for which
+                                         iterations at least one rule was
+                                         applied */
 };
 
 #ifdef HAVE_LIBPERL
@@ -315,6 +318,11 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
         { "gen-apply", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_GEN_APPLY,
           "Apply updating rules after generating them", NULL },
+
+        { "rule-upd-only", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_RULE_UPD_ONLY,
+          "Save only tests to which iterations at least one rule "
+          "was applied", NULL },
 
         { "no-use-ids", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_NO_USE_IDS,
@@ -539,6 +547,10 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
 
             case TRC_UPDATE_OPT_GEN_APPLY:
                 ctx.flags |= TRC_LOG_PARSE_GEN_APPLY;
+                break;
+
+            case TRC_UPDATE_OPT_RULE_UPD_ONLY:
+                ctx.flags |= TRC_LOG_PARSE_RULE_UPD_ONLY;
                 break;
 
             case TRC_UPDATE_OPT_NO_USE_IDS:
