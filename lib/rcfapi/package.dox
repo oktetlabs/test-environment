@@ -1,4 +1,10 @@
-/** @page rcfapi API Usage: Remote Control Facility API
+/**
+
+<!-- @page rcfapi API Usage: Remote Control Facility API -->
+
+@defgroup rcfapi API Usage: Remote Control Facility API
+@ingroup te_engine_rcf
+@{
 
 @section rcfapi_introduction Introduction
 
@@ -63,4 +69,5 @@ For test scenarios we can use RCF API for:
   .
 .
 
+@} <!-- END rcfapi -->
  */
