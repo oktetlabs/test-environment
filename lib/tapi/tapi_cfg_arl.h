@@ -43,6 +43,11 @@
 extern "C" {
 #endif
 
+/**
+ * @defgroup tapi_conf_arl ARL table configuration
+ * @ingroup tapi_conf
+ * @{
+ */
 
 /** Types of ARL entries */
 typedef enum arl_entry_type {
@@ -212,6 +217,8 @@ extern arl_entry_t * tapi_arl_find(const arl_table_t *p_table,
  * @param p_table  - ARL table
  */
 extern void tapi_arl_print_table(const arl_table_t *p_table);
+
+/**@} <!-- END tapi_conf_arl --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

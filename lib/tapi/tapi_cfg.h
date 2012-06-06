@@ -50,6 +50,11 @@ extern "C" {
 #endif
 
 /**
+ * @addtogroup tapi_conf_iface
+ * @{
+ */
+
+/**
  * Get son of configuration node with MAC address value.
  *
  * @param father    father's OID
@@ -61,9 +66,11 @@ extern "C" {
  */
 extern int tapi_cfg_get_son_mac(const char *father, const char *subid,
                                 const char *name, uint8_t *p_mac);
+/**@} <!-- END tapi_conf_iface --> */
 
 /**
  * @defgroup tapi_conf_switch Network Switch configuration
+ * @ingroup tapi_conf
  * @{
  */
 
@@ -110,10 +117,11 @@ extern int tapi_cfg_switch_vlan_add_port(const char *ta_name,
  */
 extern int tapi_cfg_switch_vlan_del_port(const char *ta_name,
                                          uint16_t vid, unsigned int port);
-/**@}*/
+/**@} <!-- END tapi_conf_switch --> */
 
 /**
  * @defgroup tapi_conf_route Routing Table configuration
+ * @ingroup tapi_conf
  * @{
  */
 
@@ -349,10 +357,11 @@ tapi_cfg_del_route_via_gw(const char *ta, int addr_family,
     return tapi_cfg_del_route_tmp(ta, addr_family, dst_addr, prefix,
                                   gw_addr, NULL, NULL, 0, 0, 0, 0, 0, 0);
 }
-/**@}*/
+/**@} <!-- END tapi_conf_route --> */
 
 /**
  * @defgroup tapi_conf_neigh Heighbor Table configuration
+ * @ingroup tapi_conf
  * @{
  */
 
@@ -436,10 +445,11 @@ extern te_errno tapi_cfg_del_neigh_entry(const char *ta,
  */
 extern te_errno tapi_cfg_del_neigh_dynamic(const char *ta, 
                                            const char *ifname);
-/**@}*/
+/**@} <!-- END tapi_conf_neigh --> */
 
 /**
  * @defgroup tapi_conf_iface Network Interface configuration
+ * @ingroup tapi_conf
  * @{
  */
 
@@ -513,7 +523,7 @@ extern int tapi_cfg_get_bcast_hwaddr(const char *ta,
 extern te_errno tapi_cfg_set_hwaddr(const char *ta, const char *ifname,
                                     const void *hwaddr,
                                     unsigned int hwaddr_len);
-/**@}*/
+/**@} <!-- END tapi_conf_iface --> */
 
 /**
  * Get Configurator handle of free child. The function assumes that

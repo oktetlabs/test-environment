@@ -45,6 +45,11 @@
 extern "C" {
 #endif
 
+/**
+ * @defgroup tapi_conf_dhcp_serv DHCP Server configuration
+ * @ingroup tapi_conf
+ * @{
+ */
 
 /**
  * Add subnet declaration in DHCP server on the Test Agent.
@@ -147,6 +152,9 @@ extern int tapi_cfg_dhcps_add_host_gen(const char            *ta,
                                        int                    host_id_len,
                                        const char            *prefix6,
                                        cfg_handle            *handle);
+
+/**@} <!-- END tapi_conf_dhcp_serv --> */
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

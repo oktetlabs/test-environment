@@ -48,6 +48,12 @@ extern "C" {
 #endif
 
 /**
+ * @defgroup tapi_conf_ip6 IPv6 specific configuration
+ * @ingroup tapi_conf
+ * @{
+ */
+
+/**
  * Get link-local address of the interface.
  *
  * @param ta        Test Agent name
@@ -61,6 +67,8 @@ extern te_errno tapi_cfg_ip6_get_linklocal_addr(const char *ta,
                                                 const char *iface,
                                                 struct sockaddr_in6
                                                     *p_addr);
+
+/**@} <!-- END tapi_conf_ip6 --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

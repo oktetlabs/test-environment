@@ -46,6 +46,11 @@
 extern "C" {
 #endif
 
+/**
+ * @defgroup tapi_conf_stats Network statistics access
+ * @ingroup tapi_conf
+ * @{
+ */
 
 typedef struct tapi_cfg_if_stats {
     uint64_t      in_octets;
@@ -172,6 +177,7 @@ extern te_errno
 tapi_cfg_stats_net_stats_print(const char           *ta,
                                tapi_cfg_net_stats   *stats);
 
+/**@} <!-- END tapi_conf_stats --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

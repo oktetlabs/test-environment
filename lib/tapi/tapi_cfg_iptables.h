@@ -42,6 +42,12 @@
 extern "C" {
 #endif
 
+/**
+ * @defgroup tapi_conf_iptable iptables configuration
+ * @ingroup tapi_conf
+ * @{
+ */
+
 /* Maximum length of iptables command string */
 #define TAPI_CFG_IPTABLES_CMD_LEN_MAX    512
 
@@ -110,6 +116,8 @@ extern te_errno tapi_cfg_iptables_chain_del(const char *ta,
                                             const char *ifname,
                                             const char *table,
                                             const char *chain);
+
+/**@} <!-- END tapi_conf_iptable --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

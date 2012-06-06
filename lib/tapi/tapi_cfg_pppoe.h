@@ -46,6 +46,12 @@ extern "C" {
 #endif
 
 /**
+ * @defgroup tapi_conf_pppoe PPPoE Server configuration
+ * @ingroup tapi_conf
+ * @{
+ */
+
+/**
  * Add interface to PPPoE server configuration on the Test Agent.
  *
  * @param ta            Test Agent
@@ -88,6 +94,8 @@ tapi_cfg_pppoe_server_subnet_set(const char *ta, const char *subnet);
  */
 extern te_errno
 tapi_cfg_pppoe_server_subnet_get(const char *ta, const char **subnet_p);
+
+/**@} <!-- END tapi_conf_pppoe --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

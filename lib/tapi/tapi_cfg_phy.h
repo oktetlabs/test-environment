@@ -41,6 +41,12 @@
 extern "C" {
 #endif
 
+/**
+ * @defgroup tapi_conf_phy Ethernet PHY configuration
+ * @ingroup tapi_conf
+ * @{
+ */
+
 /* Time to sleep after PHY properties has been changed */
 #define TE_PHY_SLEEP_TIME   (10)
 
@@ -357,6 +363,8 @@ extern te_errno tapi_cfg_phy_advertise_one(const char *ta,
                                            const char *if_name,
                                            int advert_speed,
                                            int advert_duplex);
+
+/**@} <!-- END tapi_conf_phy --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

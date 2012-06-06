@@ -2,7 +2,7 @@
  * @brief Network Configuration Model TAPI
  *
  * Definition of test API for basic configuration model
- * (storage/cm/cm_base.xml).
+ * (@path{storage/cm/cm_base.xml}).
  *
  *
  * Copyright (C) 2004 Test Environment authors (see file AUTHORS
@@ -52,6 +52,7 @@ extern "C" {
 
 /**
  * @defgroup tapi_conf_base_net Network Base configuration
+ * @ingroup tapi_conf
  * @{
  */
 
@@ -105,8 +106,7 @@ extern int tapi_cfg_base_ipv6_fw(const char *ta, te_bool *enabled);
  */
 extern int tapi_cfg_base_ip_fw(const char *ta, te_bool *enabled,
                                const char *vrsn);
-
-/**@}*/
+/**@} <!-- END tapi_conf_base_net --> */
 
 /**
  * @addtogroup tapi_conf_iface
@@ -476,7 +476,7 @@ tapi_cfg_base_if_del_vlan(const char *ta, const char *if_name,
 
     return rc;
 }
-/**@}*/
+/**@} <!-- END tapi_conf_iface --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

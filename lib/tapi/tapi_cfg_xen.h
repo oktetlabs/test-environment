@@ -41,6 +41,12 @@ extern "C" {
 struct sockaddr; /** Forward declaration to avoid header inclusion */
 
 /**
+ * @defgroup tapi_conf_xen XEN configuration
+ * @ingroup tapi_conf
+ * @{
+ */
+
+/**
  * Get XEN storage path for templates of domU
  * disk images and where domUs are cloned.
  *
@@ -476,6 +482,7 @@ extern te_errno tapi_cfg_xen_dom_u_migrate(char const *from_ta,
                                            char const *host,
                                            te_bool     live);
 
+/**@} <!-- END tapi_conf_xen --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

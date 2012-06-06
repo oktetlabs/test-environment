@@ -46,6 +46,11 @@
 extern "C" {
 #endif
 
+/**
+ * @defgroup tapi_conf_vtund VTun (Virtual Tunnel) daemon configuration
+ * @ingroup tapi_conf
+ * @{
+ */
 
 /**
  * Create a tunnel between two hosts.
@@ -68,6 +73,8 @@ extern te_errno tapi_cfg_vtund_create_tunnel(
                     const struct sockaddr *srv_addr,
                     cfg_handle            *ta_srv_if,
                     cfg_handle            *ta_clnt_if);
+
+/**@} <!-- END tapi_conf_vtund --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

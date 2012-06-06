@@ -38,6 +38,12 @@
 extern "C" {
 #endif
 
+/**
+ * @defgroup tapi_conf_acse TR-069 Auto Configuration Server Engine (ACSE) configuration
+ * @ingroup tapi_conf
+ * @{
+ */
+
 /** Session states */
 typedef enum { session_no_state,
                session_disconnected,
@@ -666,6 +672,8 @@ extern te_errno tapi_cfg_acse_add_cpe_with_params(
 extern te_errno tapi_cfg_acse_del_cpe(char const *ta,
                                       char const *acs,
                                       char const *cpe);
+
+/**@} <!-- END tapi_conf_acse --> */
 
 #ifdef __cplusplus
 } /* extern "C" */
