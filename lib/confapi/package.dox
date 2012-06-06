@@ -1,8 +1,17 @@
-/** @page confapi API Usage: Configurator API
+/**
+
+<!-- @page confapi API Usage: Configurator API -->
+
+@defgroup confapi API Usage: Configurator API
+@ingroup te_engine_conf
+@{
 
 @section confapi_introduction Usage of Configurator API from test scenarios
 
-Test scenrios should use functions exported via <a HREF="conf__api_8h.html">Configurator API</a>.
+Test scenarios should use functions exported via:
+- base @ref confapi_base (lib/confapi/conf_api.h);
+- semantic based interface @ref tapi_conf.
+.
 
 Here we will show how to play with samples discussed at @ref te_agents_conf page.
 
@@ -165,4 +174,5 @@ object instance values can change in the backgroud, otherwise it is better
 to use non-synced calls in order to minimize data exchange between
 Test Engine and Test Agents.
 
+@} <!-- END confapi -->
 */

@@ -51,6 +51,11 @@ extern "C" {
 #endif
 
 /**
+ * @defgroup tapi_conf_base_net Network Base configuration
+ * @{
+ */
+
+/**
  * Enable/disable IPv4 forwarding on a Test Agent.
  *
  * @param ta        TA name
@@ -100,6 +105,13 @@ extern int tapi_cfg_base_ipv6_fw(const char *ta, te_bool *enabled);
  */
 extern int tapi_cfg_base_ip_fw(const char *ta, te_bool *enabled,
                                const char *vrsn);
+
+/**@}*/
+
+/**
+ * @addtogroup tapi_conf_iface
+ * @{
+ */
 
 /**
  * Get MAC address of TA interface.
@@ -464,6 +476,7 @@ tapi_cfg_base_if_del_vlan(const char *ta, const char *if_name,
 
     return rc;
 }
+/**@}*/
 
 #ifdef __cplusplus
 } /* extern "C" */

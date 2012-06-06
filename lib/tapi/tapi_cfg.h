@@ -62,6 +62,10 @@ extern "C" {
 extern int tapi_cfg_get_son_mac(const char *father, const char *subid,
                                 const char *name, uint8_t *p_mac);
 
+/**
+ * @defgroup tapi_conf_switch Network Switch configuration
+ * @{
+ */
 
 /**
  * Add VLAN on switch.
@@ -106,6 +110,12 @@ extern int tapi_cfg_switch_vlan_add_port(const char *ta_name,
  */
 extern int tapi_cfg_switch_vlan_del_port(const char *ta_name,
                                          uint16_t vid, unsigned int port);
+/**@}*/
+
+/**
+ * @defgroup tapi_conf_route Routing Table configuration
+ * @{
+ */
 
 /** Routing entry data structure */
 typedef struct tapi_rt_entry {
@@ -339,6 +349,12 @@ tapi_cfg_del_route_via_gw(const char *ta, int addr_family,
     return tapi_cfg_del_route_tmp(ta, addr_family, dst_addr, prefix,
                                   gw_addr, NULL, NULL, 0, 0, 0, 0, 0, 0);
 }
+/**@}*/
+
+/**
+ * @defgroup tapi_conf_neigh Heighbor Table configuration
+ * @{
+ */
 
 /**
  * Get neighbour entry.
@@ -420,6 +436,12 @@ extern te_errno tapi_cfg_del_neigh_entry(const char *ta,
  */
 extern te_errno tapi_cfg_del_neigh_dynamic(const char *ta, 
                                            const char *ifname);
+/**@}*/
+
+/**
+ * @defgroup tapi_conf_iface Network Interface configuration
+ * @{
+ */
 
 /**
  * Returns hardware address of specified interface on a particular 
@@ -491,6 +513,7 @@ extern int tapi_cfg_get_bcast_hwaddr(const char *ta,
 extern te_errno tapi_cfg_set_hwaddr(const char *ta, const char *ifname,
                                     const void *hwaddr,
                                     unsigned int hwaddr_len);
+/**@}*/
 
 /**
  * Get Configurator handle of free child. The function assumes that

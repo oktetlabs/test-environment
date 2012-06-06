@@ -1,4 +1,6 @@
-/** @page tapi Test Application Programming Interface
+/**
+<!-- 
+ @page tapi Test Application Programming Interface
  
  -# <A HREF="tapi__cfg_8h.html">Access configuration model API</A>
  -# <A HREF="tapi__bufs_8h.html">Buffers dealer API</A>
@@ -10,8 +12,13 @@
  -# <A HREF="tapi__jmp_8h.html">Test API for thread-safe stack of jump</A>
  -# <A HREF="tapi__sockaddr_8h.html">Test API for generic network addresses</A>
  -# <A HREF="tapi__test_8h.html">Definition of Macros used in test sources</A>
+-->
 
-@page tapi_conf TAPI: Test API for configuration nodes
+<!-- @page tapi_conf TAPI: Test API for configuration nodes -->
+
+@defgroup tapi_conf TAPI: Test API for configuration nodes
+@ingroup confapi
+@{
 
 Test scenarios can use functions exported by Configurator API directly:
 @ref confapi, but there are high level interfaces that simplify access
@@ -30,5 +37,7 @@ The following configuration TAPI groups available:
 - @ref tapi_conf_route
 - @ref tapi_conf_neigh
 - @ref tapi_conf_iface
+.
 
+@} <!-- END tapi_conf -->
  */
