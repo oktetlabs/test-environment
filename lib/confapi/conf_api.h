@@ -65,6 +65,10 @@
 extern "C" {
 #endif
 
+/** @defgroup confapi_base Configurator API
+ * @{
+ */
+
 /** Cast to Configurator Instance Value Pointer */
 #define CFG_IVP(x)     ((cfg_inst_val *)(x))
 
@@ -118,6 +122,11 @@ typedef uint32_t cfg_handle;
 
 /** Invalid Configurator object handle */
 #define CFG_HANDLE_INVALID      0xFFFFFFFF
+
+/** @defgroup confapi_base_traverse Configuration tree traversal
+ * @ingroup confapi_base
+ * @{
+ */
 
 /**
  * Is it Configurator object instance handle?
@@ -375,6 +384,12 @@ extern te_errno cfg_get_brother(cfg_handle handle, cfg_handle *brother);
  * @returns Status code
  */
 extern te_errno cfg_get_father(cfg_handle handle, cfg_handle *father);
+/**@}*/
+
+/** @defgroup confapi_base_access Contriguration tree access operations
+ * @ingroup confapi_base
+ * @{
+ */
 
 /**
  * Create an object instance.
@@ -697,7 +712,12 @@ cfg_get_instance_sync_fmt(cfg_val_type *type, void *val,
     _CFG_HANDLE_BY_FMT;
     return cfg_get_instance_sync(handle, type, val);
 }
+/**@}*/
 
+/** @defgroup confapi_base_sync Synchronization configuration tree with Test Agent
+ * @ingroup confapi_base
+ * @{
+ */
 
 /**
  * Synchronize Configurator database with managed objects.
@@ -723,7 +743,11 @@ cfg_synchronize_fmt(te_bool subtree, const char *oid_fmt, ...)
 
     return cfg_synchronize(oid, subtree);
 }
+/**@}*/
 
+/** @addtogroup confapi_base_traverse
+ * @{
+ */
 
 /** Function handler called during instances enumeration */
 typedef int (* cfg_inst_handler)(
@@ -743,7 +767,12 @@ typedef int (* cfg_inst_handler)(
  */
 extern te_errno cfg_enumerate(cfg_handle handle, cfg_inst_handler callback,
                               void *user_data);
+/**@}*/
 
+/** @defgroup confapi_base_reboot Test Agent reboot
+ * @ingroup confapi_base
+ * @{
+ */
 
 /**
  * Reboot the Test Agent.
@@ -755,6 +784,12 @@ extern te_errno cfg_enumerate(cfg_handle handle, cfg_inst_handler callback,
  */
 extern te_errno cfg_reboot_ta(const char *ta_name, te_bool restore);
 
+/**@}*/
+
+/** @defgroup confapi_base_backup Configuration backup manipulation
+ * @ingroup confapi_base
+ * @{
+ */
 
 /**
  * Create a backup.
@@ -816,7 +851,7 @@ extern te_errno cfg_release_backup(char **name);
  * @return Status code (see te_errno.h)
  */
 extern te_errno cfg_create_config(const char *name, te_bool history);
-
+/**@}*/
 
 /** 
  * Macro to call cfg_wait_changes() from the test without check of
@@ -870,6 +905,8 @@ extern te_errno cfg_tree_print(const char *filename,
  * it is called automatically using atexit() mechanism.
  */
 extern void cfg_api_cleanup(void);
+
+/**@}*/
 
 #ifdef __cplusplus
 }
