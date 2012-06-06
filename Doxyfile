@@ -149,7 +149,10 @@ ALIASES                = \
     path{1}="<span style='color: #4D4DDB;font-weight:bold'>\1</span>" \
     prog{1}="<span style='color: #990033;font-weight:bold;font-style:italic'>\1</span>" \
     func{1}="<span style='color: #000000;font-weight:bold'>\1</span>" \
-    var{1}="@b \1"
+    var{1}="@b \1" \
+    prog_option{1}="<span style='color: #000000;font-weight:bold'>\1</span>" \
+    conf_path{1}="<span style='color: #4D4DDB;font-weight:bold'>\1</span>" \
+    cmd{1}="<span style='color: #000000;font-weight:bold'>\1</span>"
 
 # Set the OPTIMIZE_OUTPUT_FOR_C tag to YES if your project consists of C sources 
 # only. Doxygen will then generate output that is more tailored for C. 
