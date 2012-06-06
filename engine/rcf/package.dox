@@ -1,12 +1,10 @@
 /**
 
-@page te_engine_rcf Test Engine: Remote Control Facility (RCF)
+<!-- @page te_engine_rcf Test Engine: Remote Control Facility (RCF) -->
 
-<!--
 @defgroup te_engine_rcf Test Engine: Remote Control Facility (RCF)
 @ingroup te_engine
 @{
--->
 
 @tableofcontents
 
@@ -186,6 +184,6 @@ Another mechanism based on SUN RPC is provided by RCF for API testing
 - call the routing with arbitrary input and output parameters.
 .
 
-<!-- @} -->
+@} <!-- END te_engine_rcf -->
  */
 

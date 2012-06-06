@@ -1,12 +1,10 @@
 /**
 
-@page te_agents_unix Test Agents: Unix Test Agent
+<!-- @page te_agents_unix Test Agents: Unix Test Agent -->
 
-<!--
 @defgroup te_agents_unix Test Agents: Unix Test Agent
 @ingroup te_agents
 @{
--->
 
 @section te_agent_unix_introduction Introduction
 
@@ -14,7 +12,7 @@ The most functional and frequently used agent type is UNIX Agent.
 Even though it tends to be generic UNIX Agent, it is better adapted
 for Linux OS.
 
-Sources of UNIX Test Agent can be found under agents/unix
+Sources of UNIX Test Agent can be found under @path{agents/unix}
 directory of TE tree.
 
 Unix Test Egent supports the following features:
@@ -34,22 +32,22 @@ Unix Test Egent supports the following features:
 
 @section te_agent_unix_source Source organization
 
-The sources of UNIX Test Agent located under <em>agents/unix</em>
+The sources of UNIX Test Agent located under @path{agents/unix}
 directory of TE tree:
-- agents/unix/rpc/ - implementation of RPC Server calls;
+- @path{agents/unix/rpc} - implementation of RPC Server calls;
 - agents/unix/main.c - implementation of entry point of Test Agent
   as well as functions of RCF PCH interface;
-- agents/unix/conf implementation of configuration nodes for
+- @path{agents/unix/conf} implementation of configuration nodes for
   UNIX Test Agent:
-  - agents/unix/conf/base/ - support of base configuration nodes
+  - @path{agents/unix/conf/base} - support of base configuration nodes
     (network interface configuration);
-  - agents/unix/conf/daemons - support of network daemons configuration;
-  - agents/unix/conf/route - support of network routing table configuration;
-  - agents/unix/conf/util - support of configuration models of external
+  - @path{agents/unix/conf/daemons} - support of network daemons configuration;
+  - @path{agents/unix/conf/route} - support of network routing table configuration;
+  - @path{agents/unix/conf/util} - support of configuration models of external
     utilities integrated in TE (sniffer);
   .
 .
 
-<!-- @} -->
+@} <!-- END te_agents_unix -->
  */
 

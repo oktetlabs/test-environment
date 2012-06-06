@@ -1,12 +1,10 @@
 /**
 
-@page te_engine_conf Test Engine: Configurator
+<!-- @page te_engine_conf Test Engine: Configurator -->
 
-<!--
 @defgroup te_engine_conf Test Engine: Configurator
 @ingroup te_engine
 @{
--->
 
 @section te_engine_conf_introduction Introduction
 
@@ -213,6 +211,6 @@ It is also possible to use a backup-like snapshot as a configuration file,
 which could be useful when you want to reproduce some problem that happens
 with particular configuration set-up.
 
-<!-- @} -->
+@} <!-- END te_engine_conf -->
 */
 

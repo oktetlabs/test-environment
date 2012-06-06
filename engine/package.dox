@@ -1,11 +1,9 @@
 /**
-@page te_engine Test Engine
+<!-- @page te_engine Test Engine -->
 
-<!--
 @defgroup te_engine Test Engine
 @ingroup te
 @{
--->
 
 @section te_eng_introduction Introduction
 
@@ -86,18 +84,14 @@ relations between Test Environment components:
 @endditaa
 -->
 
-<!--
-@}
--->
+@} <!-- END te_engine -->
 
 
-@page te_engine_dispatcher Test Engine: Dispatcher
+<!-- @page te_engine_dispatcher Test Engine: Dispatcher -->
 
-<!--
 @defgroup te_engine_dispatcher Test Engine: Dispatcher
 @ingroup te_engine
 @{
--->
 
 @section te_engine_dispatcher_introduction Introduction
 
@@ -161,5 +155,5 @@ other TE subsystems. The complete list of the script options as well as
 their descriptions can be obtained by calling the Dispatcher script
 with the option @prog_option{--help}.
 
-<!-- @} -->
+@} <!-- END te_engine -->
  */

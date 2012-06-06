@@ -1,12 +1,10 @@
 /**
 
-@page te_engine_builder Test Engine: Builder
+<!-- @page te_engine_builder Test Engine: Builder -->
 
-<!--
 @defgroup te_engine_builder Test Engine: Builder
 @ingroup te_engine
 @{
--->
 
 @section te_engine_builder_introduction Introduction
 
@@ -419,6 +417,6 @@ option to @ref te_engine_dispatcher.
 
 The second approach is useful for fixing compilation errors.
 
-<!-- @} -->
+@} <!-- END te_engine_builder -->
  */
 

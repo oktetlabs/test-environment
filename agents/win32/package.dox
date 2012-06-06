@@ -1,12 +1,10 @@
 /** 
 
-@page te_agents_win Test Agents: Windows Test Agent
+<!-- @page te_agents_win Test Agents: Windows Test Agent -->
 
-<!--
 @defgroup te_agents_win Test Agents: Windows Test Agent
 @ingroup te_agents
 @{
--->
 
 @section te_agent_win_introduction Introduction
 
@@ -21,21 +19,22 @@ Currently the functionality of this type of Agent is limited to:
 
 @section te_agent_win_source Source organization
 
-The sources of Windows Test Agent located under <em>agents/win32</em>
+The sources of Windows Test Agent located under @path{agents/win32}
 directory of TE tree:
 - agents/win32/tarpc_server.c - implementation of RPC Server calls;
-- win32.c - implementation of entry point of Test Agent as well as functions
-  of RCF PCH interface;
-- win32conf.c - implementation of configuration nodes for Windows Test
-Agent.
+- agents/win32/win32.c - implementation of entry point of Test Agent as
+  well as functions of RCF PCH interface;
+- agents/win32/win32conf.c - implementation of configuration nodes for
+  Windows Test Agent.
 .
 
 @section te_agent_win_conf_tree Supported configuration tree
 
-Windows Test Agent supports minimized version of basic configuration doc/cm/cm_base.xml:
+Windows Test Agent supports minimized version of basic configuration
+@path{doc/cm/cm_base.xml}:
 
 @image html ta_win32_conf_tree.png "Configuration subtree supported by Windows Test Agent"
 
-<!-- @} -->
+@} <!-- END te_agents_win -->
  */
 

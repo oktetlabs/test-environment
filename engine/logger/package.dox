@@ -1,12 +1,10 @@
 /**
 
-@page te_engine_logger Test Engine: Logger
+<!-- @page te_engine_logger Test Engine: Logger -->
 
-<!--
 @defgroup te_engine_logger Test Engine: Logger
 @ingroup te_engine
 @{
--->
 
 @section te_engine_logger_introduction Introduction
 
@@ -123,6 +121,6 @@ Apart from C function API, Logger provides script-based mechanism for logging
 to use by Dispatcher and Builder. This interface is necessary to support logging
 during initialization (when TEN components haven't been started yet).
 
-<!-- @} -->
+@} <!-- END te_engine_logger -->
  
  */
