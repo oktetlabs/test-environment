@@ -1401,7 +1401,7 @@ rcf_ch_conf_agent()
  * Release resources allocated for configuration support.
  */
 void
-rcf_ch_conf_release()
+rcf_ch_conf_fini()
 {
 }
 

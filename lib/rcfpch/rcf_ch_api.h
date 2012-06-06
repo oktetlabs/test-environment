@@ -1015,7 +1015,7 @@ extern int rcf_ch_conf_init(void);
 /**
  * Release resources allocated for configuration support.
  */
-extern void rcf_ch_conf_release(void);
+extern void rcf_ch_conf_fini(void);
 
 /**
  * Returns name of the Test Agent (caller does not free or change

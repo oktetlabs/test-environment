@@ -4068,7 +4068,7 @@ rcf_ch_conf_agent()
 
 /* See description in rcf_ch_api.h */
 void
-rcf_ch_conf_release()
+rcf_ch_conf_fini()
 {
     free(poe_ports);
     free(arl_table);    

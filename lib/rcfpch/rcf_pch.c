@@ -1266,7 +1266,7 @@ exit:
               te_rc_err2str(rc2));
         TE_RC_UPDATE(rc, rc2);
     }
-    rcf_ch_conf_release();
+    rcf_ch_conf_fini();
     rcf_pch_rpc_shutdown();
     if (opcode == RCFOP_SHUTDOWN &&
         rcf_ch_shutdown(conn, cmd, cmd_buf_len, answer_plen) < 0)
