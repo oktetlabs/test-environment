@@ -146,18 +146,21 @@ IP addresses, routes, ARP entries, daemons, etc.).
 Their change may lead to re-configuration of remote hosts.
 
 The list of basic configuration objects, which is likely to be supported by
-any Test Agent, can be found in @path{doc/cm/cm_base.xml} file.
+any Test Agent, can be found in @path{${TE_BASE}/doc/cm/cm_base.xml} file.
 
 Other subtrees may be considered as information store: changing instances in
 these subtrees does not affect the hosts controlled by @ref te_agents,
 but may be used to share data between tests.
 
+API to browse configuration trees can be found at
+@ref confapi_base_traverse page.
+
 @section te_engine_conf_oper Configuration Operations
 
 Two operations are allowed for the objects: @cmd{Register} and
 @cmd{Unregister}. @cmd{Register} operation describes attributes of
-a new object (identifier, type, access, dependencies) to Configurator.
-@cmd{Unregister} command forces @ref te_engine_conf to forget about the object.
+a new object (identifier, type, access, dependencies) to @ref te_engine_conf.
+@cmd{Unregister} command forces @ref te_engine_conf to forget about an object.
 Usually a command @cmd{Register} is used in the configuration file.
 
 Three operations are allowed for instances: @cmd{Set} (change the value),
@@ -169,6 +172,9 @@ and instance databases (including different kinds of lookup).
 
 All operations requested in the configuration file and by the tests are
 stored in the history to allow quick configuration restoring.
+
+API to read and modify configuration tree can be found at
+@ref confapi_base_access page.
 
 @section te_engine_conf_backup Configuration Backup
 
@@ -210,6 +216,152 @@ to specify the sequence of configuration operations to be run on
 It is also possible to use a backup-like snapshot as a configuration file,
 which could be useful when you want to reproduce some problem that happens
 with particular configuration set-up.
+
+@subsection te_engine_conf_file_content File content
+
+You can find samples of @ref te_engine_conf configuration files under
+@path{${TE_BASE}/conf} directory.
+
+Normally the structure of @ref te_engine_conf configuration files organized
+as following:
+
+@code
+<?xml version="1.0"?>
+<history>
+  <!-- Register object nodes section -->
+  <register>
+      ...
+  </register>
+
+  <!-- Add object instance section -->
+  <add>
+      ...
+  </add>
+</history>
+@endcode
+
+There can be multiple occurences of register object and add instance sections
+and they can be mixed.
+
+For example:
+
+@code
+<?xml version="1.0"?>
+<history>
+  <register>
+    <object oid="/agent/env" access="read_create" type="string"/>
+    <object oid="/agent/uname" access="read_only" type="string"/>
+  </register>
+  
+  <register>
+    <object oid="/agent/interface" access="read_create" type="none"/>
+    <object oid="/agent/interface/index"
+            access="read_only" type="integer" volatile="true"/>
+
+    <!--
+      For IPv6 interfaces 'net_addr' depends on 'link_addr' because
+      IPv6 Link-Local Address value derived from Link Layer address
+      (MAC address of an interface).
+      It means that once we have an update of 'link_addr',
+      the collection of 'net_addr' should be synced between
+      Test Agent and Configurator.
+     -->
+    <object oid="/agent/interface/net_addr" access="read_create" type="integer">
+      <depends oid="/agent/interface/link_addr"/>
+    </object>
+  </register>
+
+  <register>
+    <object oid="/snmp" access="read_create" type="none"/>
+    <object oid="/snmp/mibs" access="read_create" type="none"/>
+    <object oid="/snmp/mibs/load" access="read_create" type="none"/>
+    <object oid="/snmp/version" access="read_create" type="integer"/>
+    <object oid="/snmp/community" access="read_create" type="string"/>
+    <object oid="/snmp/timeout" access="read_create" type="integer"/>
+  </register>
+
+  <add>
+    <instance oid="/snmp:"/>
+    <instance oid="/snmp:/mibs:"/>
+    <instance oid="/snmp:/mibs:/load:SNMPV2-MIB"/>
+    <instance oid="/snmp:/mibs:/load:IEEE802dot11-MIB"/>
+  </add>
+
+  <add>
+    <instance oid="/snmp:/version:" value="2"/>
+    <instance oid="/snmp:/community:" value="public"/>
+    <instance oid="/snmp:/timeout:" value="5"/>
+  </add>
+</history>
+@endcode
+
+This sample registers few object nodes and then adds some object instances.
+Instance adding feature is very useful when you need to tune some
+configuration parameters via configurator configuration file. Then from
+test scenarios it is possible to gather this information, which means
+there is no need to rebuild sources when you need to change some
+configuration, but instead you can just modify a simple text file.
+
+Note that you can also @cmd{add} new instances and @cmd{set} instance
+values of @conf_path{/agent} subtree.
+
+For example if you want to switch off IPv4 forwarding in your test suite
+you can write the following lines in your configuration file:
+
+@code
+  <register>
+    <object oid="/agent/ip4_fw" access="read_write" type="integer"/>
+  </register>
+
+  <set>
+    <!-- Switch off IPv4 forwarding on Agent 'Agt_A' -->
+    <instance oid="/agent:Agt_A/ip4_fw:" value="0"/>
+  </set>
+@endcode
+
+XSD schema of @ref te_engine_conf configuration file can be found at
+@path{${TE_BASE}/doc/xsd/cs_config.xsd}.
+
+@subsection te_engine_conf_file_features Special features
+
+One useful feature of @ref te_engine_conf configuration file is that
+it is possible to include the content of one file into another with special
+<b>include</b> tag. For example your upper level file can keep only includes
+to different parts of configuration:
+
+@code
+<?xml version="1.0"?>
+<history>
+  <xi:include xmlns:xi="http://www.w3.org/2003/XInclude" href="cs.conf.common" parse="xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2003/XInclude" href="cs.conf.env" parse="xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2003/XInclude" href="cs.conf.hw" parse="xml"/>
+</history>
+@endcode
+
+@ref te_engine_conf allows to use environment variables in the content of
+configuration file. Which makes it possible to tune configuration via
+environment variables without modification of configuration file. For example:
+
+@code
+  <!--
+    Set '/local:Agt_B/libdir:' to the value of environment variable TEST_LIBDIR.
+    If this variable is not set, then the value is set to '/usr/lib'.
+    This is just ordinary "${parameter:-default}" BASH substitution.
+    -->
+  <set>
+    <instance oid="/local:Agt_B/libdir:" value="${TEST_LIBDIR:-/usr/lib}"/>
+  </set>
+  <!--
+    Set the value of '/local:Agt_A/env:LOG_LEVEL' instace to the value of
+    TEST_LOG_LEVEL environment variable.
+    --
+  <add>
+    <instance oid="/local:Agt_A/env:LOG_LEVEL" value="${TEST_LOG_LEVEL}"/>
+  </add>
+@endcode
+
+Actually as object instance value you can use syntax of
+BASH Parameter Substitution.
 
 @} <!-- END te_engine_conf -->
 */
