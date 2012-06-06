@@ -2,6 +2,12 @@
 
 @page te_engine_logger Test Engine: Logger
 
+<!--
+@defgroup te_engine_logger Test Engine: Logger
+@ingroup te_engine
+@{
+-->
+
 @section te_engine_logger_introduction Introduction
 
 Logger provides an API for event logging to TE Subsystems, Test Agents and
@@ -116,5 +122,7 @@ calls by the pre-processor. ERROR, WARN and RING are enabled by default.
 Apart from C function API, Logger provides script-based mechanism for logging
 to use by Dispatcher and Builder. This interface is necessary to support logging
 during initialization (when TEN components haven't been started yet).
+
+<!-- @} -->
  
  */

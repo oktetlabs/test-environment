@@ -1,5 +1,10 @@
 /** @mainpage
 
+<!--
+@defgroup te Test Environment
+@{
+-->
+
 @section te_introduction Introduction
 
 OKTET Labs Test Environment (TE) is a software product that is intended to
@@ -156,5 +161,7 @@ that are useful while writing this or that test cases:
 
 - @ref tapi_conf
 .
+
+<!-- @} -->
 
  */

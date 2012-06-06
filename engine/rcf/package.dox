@@ -2,23 +2,29 @@
 
 @page te_engine_rcf Test Engine: Remote Control Facility (RCF)
 
+<!--
+@defgroup te_engine_rcf Test Engine: Remote Control Facility (RCF)
+@ingroup te_engine
+@{
+-->
+
 @tableofcontents
 
 @section te_engine_rcf_introduction Introduction
 
 Remote Control Facility (RCF) is a distributed entity allowing interactions
-between Test Engine and Test Agents.
+between @ref te_engine and @ref te_agents.
 
 RCF is responsible for:
-- starting Test Agents during initialization or after reloading the NUT or
-  after Test Agent death;
+- starting @ref te_agents during initialization or after reloading the NUT
+  or after Test Agent death;
 - time synchronization;
-- low-level interactions between Test Agents and Test Engine
+- low-level interactions between @ref te_agents and @ref te_engine
   (serial port, telnet, ssh, etc.);
-- construction and passing commands from Test Engine to Test Agents and
-  processing  answers;
+- construction and passing commands from @ref te_engine to @ref te_agents
+  and processing  answers;
 - providing convenient API to other TE subsystems and tests;
-- interpreting commands on the Test Agents calling appropriate handles;
+- interpreting commands on the @ref te_agents calling appropriate handles;
 - logging commands and answers.
 .
 
@@ -28,7 +34,7 @@ The following diagram illustrates data flows in RCF:
 
 @section te_engine_rcf_ta_interaction Interaction with Test Agents
 
-On start-up RCF gets from RCF configuration file the list of Test Agents
+On start-up RCF gets from RCF configuration file the list of @ref te_agents
 to be started. For each Test Agent the file contains its name, type and
 additional configuration parameters.
 
@@ -38,13 +44,13 @@ This library “knows” how to start and stop the Test Agent and how to send/re
 commands to/from it. It provides to RCF the strictly specified set of functions.
 
 For example, the library <b>rcfunix</b> is responsible for interacting with
-UNIX-like Test Agents (Linux, BSD, Cygwin).
-It uses <em>scp</em> to copy Test Agent image to the remote host and <em>ssh</em>
+UNIX-like @ref te_agents (Linux, BSD, Cygwin).
+It uses @prog{scp} to copy Test Agent image to the remote host and @prog{ssh}
 to start or stop it. TCP connection is used to send/receive commands.
 
 @section te_engine_rcf_test_proto Test Protocol
 
-RCF interacts with the Test Agents via text-based Test Protocol.
+RCF interacts with the @ref te_agents via text-based Test Protocol.
 Some text commands may be accompanied by binary attachments.
 When the RCF is compiled with high log level, all Test Protocol commands and
 answers appear in the log.
@@ -57,14 +63,14 @@ However, if several sessions are created, the Test Agent may be asked to do
 several actions simultaneously
 (for example, generate traffic, catch traffic and call a remote routine).
 
-Efficient using of this feature is possible on multi-thread Test Agents only.
+Efficient using of this feature is possible on multi-thread @ref te_agents only.
 
 RCF awaits a command acknowledgement before sending the next one.
 
 @section te_engine_rcf_pch Portable Command Handler
 
-Test Agents are usually based on the RCF library “Portable Command Handler”
-(“rcfpch”) which is responsible for parsing Test Protocol commands and
+@ref te_agents are usually based on the RCF library “Portable Command Handler”
+(@path{lib/rcfpch}) which is responsible for parsing Test Protocol commands and
 calling TA-specific handlers for the command processing. It also provides
 default handlers and functions for TA-specific handlers implementation.
 
@@ -78,29 +84,29 @@ provided by each AD.
 
 RCF is able to start the Test Agent, shutdown it, restart Test Agent itself
 as well as reboot the host on which the Test Agent is running or NUT controlled
-by the Test Agent. RCF allows to retrieve the list of all running Test Agents
+by the Test Agent. RCF allows to retrieve the list of all running @ref te_agents
 as well as their types.
 
 RCF discovers a TA death by breaking of the connection or a command time-out.
 In this case, the TA application is restarted. Moreover, RCF may be asked
-to force a check of the Test Agent validity to discover if all Test Agents
+to force a check of the Test Agent validity to discover if all @ref te_agents
 are still alive or not.
 
-Finally RCF provides to Logger “get log” command allowing retrieval of
-the log as a binary attachment.
+Finally RCF provides to @ref te_engine_logger @cmd{get log} command allowing
+retrieval of the log as a binary attachment.
 
 @subsection te_engine_rcf_ad_cfg TA Configuring
 
-A service of this application domain is used by Configurator as the previous
+A service of this application domain is used by @ref te_engine_conf as the previous
 one and allows to add/delete/change object instance on the TA as well as
 obtain the value of existing instance.
 
 It is also possible to perform wildcard get operations.
 
-Usually Configurator issues commands like “get *:*”  or “get /a:a1/b:b1/...”
-to retrieve identifiers of all instances (or only instances of a particular
-subtree) present on the Test Agent. Then it may separately get value of each
-instance by its identifier.
+Usually @ref te_engine_conf issues commands like @cmd{get *:*}  or
+@cmd{get /a:a1/b:b1/...} to retrieve identifiers of all instances
+(or only instances of a particular subtree) present on the Test Agent.
+Then it may separately get value of each instance by its identifier.
 
 @subsection te_engine_rcf_ad_vars Variables
 
@@ -111,15 +117,15 @@ program (integer or string) or an environment variable of the Test Agent
 @subsection te_engine_rcf_ad_files Files
 
 Following services are included in the application domain:
-- copy file from the Test Engine to the Test Agent;
-- copy file from the Test Agent to the Test Engine;
-- delete file on the Test Agent.
+- copy file from the @ref te_engine to the @ref te_agents;
+- copy file from the @ref te_agents to the @ref te_engine;
+- delete file on the @ref te_agents.
 .
 
 Piece of memory in the TA address space may be copied as well using
-“/memory/<address>:<length>” path.
+@conf_path{/memory/<address>:<length>} path.
 
-Files are transferred between TA and Test Engine as attachments of
+Files are transferred between TA and @ref te_engine as attachments of
 protocol commands.
 
 @subsection te_engine_rcf_ad_traffic Traffic
@@ -138,7 +144,7 @@ CLI or other communication facilities as well.
 
 CSAP may consist of several layers to allow send/receive packets corresponding
 to a protocol stack. For example, it's possible to create CSAP
-“dhcp.udp.ipv4.aal5.atm”.
+"dhcp.udp.ipv4.aal5.atm”.
 
 Parameters of the CSAP as well as packet templates and patterns are described
 using ASN.1. Each level (protocol) is described according to its rules.
@@ -180,5 +186,6 @@ Another mechanism based on SUN RPC is provided by RCF for API testing
 - call the routing with arbitrary input and output parameters.
 .
 
+<!-- @} -->
  */
 

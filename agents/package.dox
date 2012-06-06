@@ -1,4 +1,12 @@
-/** @page te_agents Test Agents
+/**
+
+@page te_agents Test Agents
+
+<!--
+@defgroup te_agents Test Agents
+@ingroup te
+@{
+-->
 
 @section te_agt_introduction Introduction
 
@@ -153,6 +161,7 @@ nodes to Test Agent;
 - @ref confapi page gives guidelines on how to work with API from test scenarios.
 .
 
+<!-- @} -->
 
 
 

@@ -2,6 +2,12 @@
 
 @page te_agents_unix Test Agents: Unix Test Agent
 
+<!--
+@defgroup te_agents_unix Test Agents: Unix Test Agent
+@ingroup te_agents
+@{
+-->
+
 @section te_agent_unix_introduction Introduction
 
 The most functional and frequently used agent type is UNIX Agent.
@@ -44,5 +50,6 @@ directory of TE tree:
   .
 .
 
+<!-- @} -->
  */
 

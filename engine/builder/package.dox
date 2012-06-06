@@ -2,6 +2,12 @@
 
 @page te_engine_builder Test Engine: Builder
 
+<!--
+@defgroup te_engine_builder Test Engine: Builder
+@ingroup te_engine
+@{
+-->
+
 @section te_engine_builder_introduction Introduction
 
 Builder subsystem is not a separate closed software but rather set of
@@ -361,43 +367,45 @@ include(builder.part.freebsd.platform)
 
 @section te_engine_builder_build_process Building process
 
-Test Environment build should be initiated <b>ONLY by Dispatcher</b>.
+Test Environment build should be initiated <b>ONLY</b> by @ref te_engine_dispatcher.
 It is not expected that @prog{configure} script is run manually.
 
 Building is performed as follows:
--# The root @prog{configure} script analyses Builder configuration file.
-It creates directories for all packages to be built and call configure script
-for all host packages. If configure script or @path{Makefile.in} file are
-missing in the package source directory, autotools are used to generate them;
+-# The root @prog{configure} script analyses @ref te_engine_builder
+   configuration file. It creates directories for all packages to be built and
+   call @prog{configure} script for all host packages. If configure script or
+   @path{Makefile.in} file are missing in the package source directory,
+   autotools are used to generate them;
 -# @prog{make} is called. It builds and installs libraries,
    TEN applications and Test Agents for the host platform;
 -# @prog{make} calls the Builder script for cross-compiling, which calls
    @prog{configure} and @prog{make} for each package to be cross-compiled.
 .
 
-Re-building of the whole Test Environment is done only if Builder
+Re-building of the whole Test Environment is done only if @ref te_engine_builder
 configuration file changes.
 Otherwise the @prog{configure} is called for the package only if there is
 no @path{Makefile} in the package build directory.
 
-It is possible to skip a TE building step by specifying <b>--no-builder</b>
-option to Dispatcher.
+It is possible to skip a TE building step by specifying
+@prog_option{--no-builder} option to @ref te_engine_dispatcher.
 
 @section te_engine_builder_tests Building of Tests Packages
 
-Building of the test packages is initiated by Tester during processing of
-@path{package.xml} where TP source directory is specified.
+Building of the test packages is initiated by @ref te_engine_tester during
+processing of @path{package.xml} where test package source directory
+is specified.
 @prog{configure} or @path{configure.ac} should present in
 the source directory.
 
 Tests are always built for the host platforms and installed to
 @var{TE_INSTALL_SUITE} directory where the executable scripts are
-then accessed by the Tester.
+then accessed by the @ref te_engine_tester.
 
 All built tests are included into the distribution.
 
-Building of tests may be skipped by specifying <b>--tester-no-build</b>
-option to Dispatcher.
+Building of tests may be skipped by specifying @prog_option{--tester-no-build}
+option to @ref te_engine_dispatcher.
 
 @section te_engine_builder_make Calling make directly
 
@@ -406,10 +414,11 @@ option to Dispatcher.
   call @prog{make} in the root of build directory with the target
   <b>dist</b> or <b>distcheck</b>;
 - to build/install a pre-configured package without running
-  the Dispatcher:<br/> call @prog{make} in the package build directory
-  with the target <b>install</b>.
+  the @ref te_engine_dispatcher:<br/>
+  call @prog{make} in the package build directory with <b>install</b> target.
 
 The second approach is useful for fixing compilation errors.
 
+<!-- @} -->
  */
 

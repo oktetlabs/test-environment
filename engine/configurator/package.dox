@@ -2,24 +2,32 @@
 
 @page te_engine_conf Test Engine: Configurator
 
+<!--
+@defgroup te_engine_conf Test Engine: Configurator
+@ingroup te_engine
+@{
+-->
+
 @section te_engine_conf_introduction Introduction
 
 Configurator (Configuration Subsystem, CS) is an application of
-Test Engine that exports configuration tree. 
+@ref te_engine that exports configuration tree. 
 A node of configuration tree can be associated with some software or hardware
 component controlled or tracked by a Test Agent. Such nodes have well-known
-path names and require support on Test Agent side. Also Configurator allows
-creating an arbitrary set of auxiliary configuration nodes that are not
+path names and require support on @ref te_agents side. Also @ref te_engine_conf
+allows creating an arbitrary set of auxiliary configuration nodes that are not
 associated with anything and rather play role of shared storage or database.
 
 Configurator features:
 - stores a configuration database;
-- synchronizes the database with Test Agents;
-- provides an API to tests for the configuration reading and changing;
-- provides an API to tests and Tester for backuping, verifying and
-  restoring the configuration;
-- provides an API to tests for Test Agents rebooting with or without
-  restoring of the configuration.
+- synchronizes the database with @ref te_agents (See @ref confapi_base_sync);
+- provides an API for traversing configuration tree;
+- provides an API to tests for the configuration reading and changing
+  (See @ref confapi_base_traverse and @ref confapi_base_access);
+- provides an API to tests and @ref te_engine_tester for backuping,
+  verifying and restoring the configuration (See @ref confapi_base_backup);
+- provides an API to tests for @ref te_agents rebooting with or without
+  restoring of the configuration (See @ref confapi_base_reboot).
 .
 
 @image html ten_conf_context.png "Configurator context in TE"
@@ -85,6 +93,7 @@ Configurator features:
 
 A configuration database consists of two trees: the tree of objects and
 the tree of instances.
+
 Objects are used to specify the attributes of an abstract configuration item:
 - type: integer, string, address (IPv4, IPv6, MAC); 
 - access rights for the configuration item:
@@ -107,11 +116,12 @@ Each object is identified by a string, which consists of several labels
 Each node in the object tree has its own sub-identifier and the full object
 identifier of the node is a sequence of sub-identifiers of its ancestors.
 
-For example, an object “/agent/interface/net_addr” is a son of the object
-“/agent/interface” which in its turn is a son of the object “/agent”.
+For example, an object @conf_path{/agent/interface/net_addr} is a son of
+the object @conf_path{/agent/interface} which in its turn is a son of
+the object @conf_path{/agent}.
 
 Tree of instances contains information about real configuration items
-observed by CS on Test Agents, and/or instances created during processing
+observed by CS on @ref te_agents, and/or instances created during processing
 of the configuration file or test requests.
 
 Each instance also has an object identifier. It also consists of a set of
@@ -120,43 +130,44 @@ of the corresponding object and an instance name, which identifies uniquely
 the particular configuration item.
 Instance name is separated from the sub-identifier by a colon.
 
-For example, the instance “/agent:nut/interface:eth0/net_addr:1.2.3.4” of
-the object “/agent/interface/net_addr” corresponds to IP address “1.2.3.4”
-on the network interface “eth0” of the station on which Test Agent named
-“nut” is running.
+For example, the instance @conf_path{/agent:nut/interface:eth0/net_addr:1.2.3.4}
+of the object @conf_path{/agent/interface/net_addr} corresponds to IP address
+@conf_path{1.2.3.4} on the network interface @conf_path{eth0} of the station
+on which Test Agent named @conf_path{nut} is running.
 
 It's allowed to use empty instance names.
-For example, “/agent/:nut/interface:eth0/link_addr:” identifier is possible
-because the interface may have only one link address.
-An object sub-identifier must not contain symbols ':' (however this symbol
-is allowed in the instance name), '*' and ' ' (space).
+For example, @conf_path{/agent/:nut/interface:eth0/link_addr:} identifier
+is possible because the interface may have only one link address.
+An object sub-identifier must not contain symbols @conf_path{:}
+(however this symbol is allowed in the instance name), '@conf_path{*}' and
+'@conf_path{&nbsp;}' (space).
 
-Instances which belong to “/agent:” subtree correspond to real configuration
-items observed on the Test Agents (network interfaces, IP addresses, routes,
-ARP entries, daemons, etc.). Their change may lead to re-configuration of
-remote hosts.
+Instances which belong to @conf_path{/agent:} subtree correspond to real
+configuration items observed on the @ref te_agents (network interfaces,
+IP addresses, routes, ARP entries, daemons, etc.).
+Their change may lead to re-configuration of remote hosts.
 
 The list of basic configuration objects, which is likely to be supported by
-any Test Agent, can be found in doc/cm/cm_base.xml file.
+any Test Agent, can be found in @path{doc/cm/cm_base.xml} file.
 
 Other subtrees may be considered as information store: changing instances in
-these subtrees does not affect the hosts controlled by Test Agents, but may be
-used to share data between tests.
+these subtrees does not affect the hosts controlled by @ref te_agents,
+but may be used to share data between tests.
 
 @section te_engine_conf_oper Configuration Operations
 
-Two operations are allowed for the objects: <em>Register</em> and
-<em>Unregister</em>. <em>Register</em> operation describes attributes of
+Two operations are allowed for the objects: @cmd{Register} and
+@cmd{Unregister}. @cmd{Register} operation describes attributes of
 a new object (identifier, type, access, dependencies) to Configurator.
-<em>Unregister</em> command forces Configurator to forget about the object.
-Usually a command <em>Register</em> is used in the configuration file.
+@cmd{Unregister} command forces @ref te_engine_conf to forget about the object.
+Usually a command @cmd{Register} is used in the configuration file.
 
-Three operations are allowed for instances: <em>Set</em> (change the value),
-<em>Add</em> (add a new instance) and <em>Delete</em>
+Three operations are allowed for instances: @cmd{Set} (change the value),
+@cmd{Add} (add a new instance) and @cmd{Delete}
 (delete an existing instance).
 
-Moreover, Configurator provides an API for read access to the object and
-instance databases (including different kinds of lookup).
+Moreover, @ref te_engine_conf provides an API for read access to the object
+and instance databases (including different kinds of lookup).
 
 All operations requested in the configuration file and by the tests are
 stored in the history to allow quick configuration restoring.
@@ -176,8 +187,8 @@ Restoring the configuration may be performed using two approaches:
   point in the history):
   - The command list in the history is scanned in reverse order until
    the backup point is met.
-  - The effect of each command is rolled back (for the <em>add</em> command
-    the corresponding instance is deleted, for the <em>delete</em> command
+  - The effect of each command is rolled back (for the @cmd{add} command
+    the corresponding instance is deleted, for the @cmd{delete} command
     the corresponding instance  is added etc.).
   .
 - Restoring by a backup file (used when the backup is not associated with
@@ -190,13 +201,18 @@ Restoring the configuration may be performed using two approaches:
 After a successful restoring of the backup from the history or after
 a successful backup verification the command history may be cut off.
 
+API to manipulate configuration backups can be found at
+@ref confapi_base_backup page.
+
 @section te_engine_conf_file Configuration File
 
-Configurator has its own configuration file where it is possible to specify
-the sequence of configuration operations to be run on Configurator start-up.
+@ref te_engine_conf has its own configuration file where it is possible
+to specify the sequence of configuration operations to be run on
+@ref te_engine_conf start-up.
 It is also possible to use a backup-like snapshot as a configuration file,
 which could be useful when you want to reproduce some problem that happens
 with particular configuration set-up.
 
+<!-- @} -->
 */
 
