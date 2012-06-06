@@ -2,12 +2,12 @@
  * @brief Configurator API
  *
  * Configurator API exports functionality that makes it possible to:
- * - register/unregister objects of configuration tree;
+ * - @cmd{Register}/@cmd{Unregister} objects of configuration tree;
  * - traverse a configuration tree (get parent, neighbor and child nodes);
- * - add new object instances;
- * - delete existing object instances;
+ * - @cmd{Add} new object instances;
+ * - @cmd{Delete} existing object instances;
  * - change the value of an object instance;
- * - get the value of an object instace.
+ * - @cmd{Get} the value of an object instace.
  * .
  */
 
