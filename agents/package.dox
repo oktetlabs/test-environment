@@ -1,12 +1,10 @@
 /**
 
-@page te_agents Test Agents
+<!-- @page te_agents Test Agents -->
 
-<!--
 @defgroup te_agents Test Agents
 @ingroup te
 @{
--->
 
 @section te_agt_introduction Introduction
 
@@ -41,7 +39,7 @@ we can differentiate Agents as following:
   - external interface testing (SNMP, TR-069, CLI).
   .
   Please note that a Test Agent can be run on the same station as
-  Test Engine, the only difference is that “reboot” command should never
+  @ref te_engine, the only difference is that @cmd{reboot} command should never
   be applied to this Test Agent;
 - <b>Proxy Agent</b><br/>
   Test Agent running on an auxiliary station and controlling the DUT.<br/>
@@ -65,14 +63,14 @@ we can differentiate Agents as following:
 
 @image html agt_types.png "Possible physical location of Test Agents"
 
-All communication with Test Agents performed via RCF components.
+All communication with Test Agents performed via @ref te_engine_rcf components.
 Interactions are done with text-based Test Protocol.
 
 @section te_agt_organization Test Agent Organization
 
 Basically Test Agent consists of:
 - start-up code;
-- generic implementation of PCH functions (lib/rcfpch);
+- generic implementation of PCH functions (@path{lib/rcfpch});
 - OS-specific implementation of some PCH functions
   (rcf_ch_start_process(), rcf_ch_start_thread(), etc.);
 - OS-specific implementation of callbacks for configurator tree;
@@ -123,18 +121,18 @@ On start-up Test Agent does the following things:
   then it is necessary to create a separate thread or process that
   will receive log messages from different processes and threads
   run on behalf of Test Agent.
-  lib/loggerta library exports logfork_entry() function that
+  @path{lib/loggerta} library exports logfork_entry() function that
   should be used as an entry
   point for such a thread/process;
 - calls rcf_pch_run() function that passes control to
   RCF Portable Command Handler.
 .
 
-In RCF PCH Test Agent passively waits for RCF commands. RCF commands are
-handled in the main loop of RCF PCH library.
+In RCF PCH Test Agent passively waits for @ref te_engine_rcf commands.
+RCF commands are handled in the main loop of RCF PCH library.
 Depending on the command type it can be handled either by generic part of
-RCF PCH (located under <em>lib/rcfpch/</em>) or it can be directed to
-Agent specific parts of code (located under <em>agents/type/</em>).
+RCF PCH (located under @path{lib/rcfpch}) or it can be directed to
+Agent specific parts of code (located under @path{agents/[type]}).
 
 Functions declared in lib/rcfpch/rcf_ch_api.h should be exported
 by a Test Agent, though they can return -1 telling that an operation
@@ -142,7 +140,7 @@ is not supported.
 
 @section te_agt_types Types of supported Test Agents
 
-Currently we support two main types of Test Agents:
+Currently we support two main types of @ref te_agents:
 - @ref te_agents_win;
 - @ref te_agents_unix.
 .
@@ -161,12 +159,16 @@ nodes to Test Agent;
 - @ref confapi page gives guidelines on how to work with API from test scenarios.
 .
 
-<!-- @} -->
+@} <!-- END te_agents -->
 
 
 
 
-@page te_agents_conf Test Agents: Creating new configuration nodes in Test Agent
+<!-- @page te_agents_conf Test Agents: Creating new configuration nodes in Test Agent -->
+
+@defgroup te_agents_conf Test Agents: Creating new configuration nodes in Test Agent
+@ingroup te_agents
+@{
 
 @section Introduction
 
@@ -183,14 +185,14 @@ First thing to do while creating new configuration nodes is to design
 structure of new nodes, their relationship, access rights and types of
 value kept by them.
 
-Descriptions of configuration nodes are kept under <em>doc/cm/</em> directory
-(<em>cm</em> is derived from Configuration Model). You should update one of
+Descriptions of configuration nodes are kept under @path{doc/cm} directory
+(@path{cm} is derived from Configuration Model). You should update one of
 existing files or create a new one with information about your new nodes.
 
-The format of Configuration Model files complies to format of Configurator
-backups, which makes it possible to use lines from these files in configurator
-configuration file when you need to add this or that object into your run
-time configuration.
+The format of Configuration Model files complies to format of
+@ref te_engine_conf backups, which makes it possible to use lines from these
+files in @ref te_engine_conf configuration file when you need to add this or
+that object into your run time configuration.
 
 Read some more information about configuration objects and instances at
 @ref te_engine_conf_tree.
@@ -383,8 +385,8 @@ col_list(unsigned int gid, const char *oid, char **list, const char *instN,...)
 }
 @endcode
 
-Collection nodes can support synamic add/del operations which require implementation
-of corresponding handlers:
+Collection nodes can support synamic @cmd{add}/@cmd{del} operations which
+require implementation of corresponding handlers:
 
 @code
 RCF_PCH_CFG_NODE_COLLECTION(col_node, "col_object",
@@ -422,23 +424,24 @@ col_del(unsigned int gid, const char *oid, const char *instN,...)
 }
 @endcode
 
-Apart from basic get/set/list/add/del handlers there is one more handler
-rcf_pch_cfg_object::commit that is additionally called for each successful
-set/add/del operation. There are two modes of commit call:
-- immediate call (commit is called after successful completion of
-  set/add/del operation);
-- postponed call (commit functions are called after a series of set/add/del
-  operations and duplicate commit calls are avoided).
+Apart from basic @cmd{get}/@cmd{set}/@cmd{list}/@cmd{add}/@cmd{del} handlers
+there is one more handler rcf_pch_cfg_object::commit that is additionally
+called for each successful @cmd{set}/@cmd{add}/@cmd{del} operation.
+There are two modes of @cmd{commit} call:
+- immediate call (@cmd{commit} is called after successful completion of
+  @cmd{set}/@cmd{add}/@cmd{del} operation);
+- postponed call (@cmd{commit} functions are called after a series of
+  @cmd{set}/@cmd{add}/@cmd{del} operations and duplicate commit calls are avoided).
 .
 
 @image html ta_conf_commit_immediate.png "Commit calls in case of ordinary SET calls"
 
 @image html ta_conf_commit_group.png "Commit calls in case of group context SET calls"
 
-Please note that in the group call case the particular commit function
-is called only once - in our sample <em>commit_X()</em> is called once though
-it is a commit function for <b>/X/a</b> and <b>/X/c</b> objects whose instances are
-updated.
+Please note that in the group call case the particular @cmd{commit} function
+is called only once - in our sample @cmd{commit_X()} is called once though
+it is a @cmd{commit} function for @conf_path{/X/a} and @conf_path{/X/c}
+objects whose instances are updated.
 
 Usually the commit function is specified in parent node and children nodes
 refer to parent node with RCF_PCH_CFG_NODE_RWC() macro:
@@ -458,9 +461,11 @@ RCF_PCH_CFG_NODE_COLLECTION(col_node, "col_object",
                             col_add, col_del, col_list, col_commit);
 @endcode
 
-Please note that add/del/set handlers have no way to detect what
-the calling mode takes place (immediate commit or postponed commit).
+Please note that @cmd{add}/@cmd{del}/@cmd{set} handlers have no way to detect what
+the calling mode takes place (immediate @cmd{commit} or postponed @cmd{commit}).
 The only thing to keep in mind is that commit will be called anyway.
+
+@} <!-- END te_agents_conf -->
 
  */
 
