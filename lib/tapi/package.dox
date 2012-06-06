@@ -21,7 +21,7 @@
 @{
 
 Test scenarios can use functions exported by Configurator API directly:
-@ref confapi, but there are high level interfaces that simplify access
+@ref confapi_base, but there are high level interfaces that simplify access
 to some parts of configuration tree.
 
 The following configuration TAPI groups available:
