@@ -27,11 +27,16 @@ The platform for which TEN applications, Test API libraries and tests are
 built is called host platform. Test Agents and libraries linked with them
 may be built for platforms other than host platform.
 
+Test Environment depends on many third party libraries that need to be
+installed on @ref te_engine host in order to build all Test Environment
+components successfully. The list of required libraries can be found
+in @path{${TE_BASE}/README} file.
+
 @section te_engine_builder_conf_file Builder configuration file
 
 Builder configuration file contains a set of directives that describe what to
 build and how to build. Available directives can be found in
-@path{engine/builder/builder.m4} file.
+@path{${TE_BASE}/engine/builder/builder.m4} file.
 
 By means of Builder configuration file for each platform it is possible
 to specify:
@@ -70,7 +75,11 @@ the configuration file.
 
 @subsection te_engine_builder_conf_file_samples Samples of Builder configuration files
 
-Here we will discuss the usage of directives defined in @path{engine/builder/builder.m4} file.
+You can find samples of @ref te_engine_builder configuration files under
+@path{${TE_BASE}/conf} directory.
+
+Here we will discuss the usage of directives defined in
+@path{${TE_BASE}/engine/builder/builder.m4} file.
 
 @subsubsection te_engine_builder_conf_file_te_platform TE_PLATFORM
 
@@ -100,7 +109,8 @@ TE_PLATFORM([cygwin], [--host=i686-pc-cygwin],
 @endcode
 
 In this sample we define a new target platform called cygwin for which
-we require building the following libraries (from Test Engine lib directory):
+we require building the following libraries
+(from Test Environment @path{${TE_BASE}/lib} directory):
 @path{tools}, @path{conf_oid}, @path{rpcxdr}, @path{rpc_types},
 @path{comm_net_agent}, @path{loggerta}, @path{rcfpch}.
 
@@ -121,7 +131,7 @@ While building any library from the list the following options are passed:
 .
 
 Please note that when you specify parameters for host platform
-(a platform where Test Engine runs) you should keep platform name as
+(a platform where @ref te_engine runs) you should keep platform name as
 an empty string. For example:
 
 @code
@@ -144,11 +154,11 @@ TE_LIB_PARMS([library name],
              [additional linker flags])
 @endcode
 
-If we need to specify some additional options to configure script,
+If we need to specify some additional options to @prog{configure} script,
 preprocessor, compiler or object linker, we can use @func{TE_LIB_PARMS} directive
-in your builder configuration file.
+in your @ref te_engine_builder configuration file.
 
-For example if we need to add some additional options to configure
+For example if we need to add some additional options to @prog{configure}
 script of tad library, we should use the following:
 
 @code
@@ -159,7 +169,8 @@ TE_LIB_PARMS([tad], [cygwin], [],
 
 Please note that we do not specify value for source directory parameter,
 which means the source directory of that library located under
-@path{${TE_BASE}/lib/[library name]} subdirectory.
+@path{${TE_BASE}/lib/[library name]} subdirectory - @path{${TE_BASE}/lib/tad}
+in our sample.
 
 @subsubsection te_engine_builder_conf_file_te_ta_type TE_TA_TYPE
 
@@ -182,7 +193,7 @@ Test Agent type value is an arbitrary string that will be reffered
 to from RCF configuration file (@todo ADD LINK TO samples of RCF conf).
 
 Sources of Test Agent are got from @path{[source location]} directory,
-which is either a subdirectory of @path{${TE_BASE}/agents/} directory,
+which is either a subdirectory of @path{${TE_BASE}/agents} directory,
 or full absolute path to sources.
 
 Please note that all items mentioned in the list of external libraries
@@ -218,13 +229,13 @@ TE_TA_TYPE([freebsd6], [freebsd], [unix],
 TE_APP([list of Test Engine components])
 @endcode
 
-This directive specifies which applications (Test Engine components) to
+This directive specifies which applications (@ref te_engine components) to
 build by @ref te_engine_builder.
 
 Normally you will not need to specify this directive because by default
-all necessary Test Engine components are built, but if you for some reason
-need to build only the particular set of Test Engine components you can add
-this directive in your builder configuration file.
+all necessary @ref te_engine components are built, but if you for some reason
+need to build only the particular set of @ref te_engine components you can add
+this directive in your @ref te_engine_builder configuration file.
 
 By default @func{TE_APP} is set to:
 
@@ -232,8 +243,8 @@ By default @func{TE_APP} is set to:
 TE_APP([builder rcf logger tester configurator])
 @endcode
 
-If you need to build only Test Environment tools you can exclude
-building all Test Engine components with:
+For example if you need to build only Test Environment tools you can exclude
+building all @ref te_engine components with:
 
 @code
 TE_APP([])
@@ -241,7 +252,7 @@ TE_APP([])
 
 @subsubsection te_engine_builder_conf_file_te_app_parms TE_APP_PARMS
 
-Each Test Engine application can be built with dedicated set of
+Each @ref te_engine application can be built with dedicated set of
 parameters passed to @prog{configure} script, C preprocessor, C compiler
 and object linker. This can be controlled with @func{TE_APP_PARMS} directive.
 
@@ -255,8 +266,8 @@ TE_APP_PARMS([Test Engine application name],
 @endcode
 
 As the first argument of @func{TE_APP_PARMS} directive you specify
-the name of Test Engine application to which this directive applies.
-The name must be a directory name under @path{${TE_BASE}/engine/}
+the name of @ref te_engine application to which this directive applies.
+The name must be a directory name under @path{${TE_BASE}/engine}
 directory.
 
 For example:
@@ -283,7 +294,7 @@ TE_TOOLS([list of Test Environment tools])
 @endcode
 
 Test Environment tools specified in @func{TE_TOOLS} directive should be
-equal to the names of directories reside under @path{${TE_BASE}/tools/}
+equal to the names of directories reside under @path{${TE_BASE}/tools}
 directory.
 
 Normally you would have:
@@ -387,6 +398,16 @@ no @path{Makefile} in the package build directory.
 
 It is possible to skip a TE building step by specifying
 @prog_option{--no-builder} option to @ref te_engine_dispatcher.
+
+If you want to cleanup files generated by @ref te_engine_builder
+(@path{Makefile.in}, @path{configure}, etc.) you need to run
+@path{bootstrap.sh} script in Test Environment base directory
+(@var{TE_BASE}).
+
+@code
+cd ${TE_BASE}
+./bootstrap.sh
+@endcode
 
 @section te_engine_builder_tests Building of Tests Packages
 
