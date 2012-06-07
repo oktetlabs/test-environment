@@ -136,8 +136,13 @@ enum {
                                          iterations at least one rule was
                                          applied */
     TRC_UPDATE_OPT_SKIPPED,         /**< Show skipped unexpected results */
-    TRC_UPDATE_OPT_NO_SKIP_ONLY,    /**< Do not show skipped only
-                                         unexpected results */
+    TRC_UPDATE_OPT_NO_SKIP_ONLY,    /**< Do not create rules with
+                                         <conflicts/> containing
+                                         skipped only results */
+    TRC_UPDATE_OPT_NO_EXP_ONLY,     /**< Do not create rules with
+                                         <conflicts/> containing
+                                         expected only results
+                                         if CONFLS_ALL is turned on */
 };
 
 #ifdef HAVE_LIBPERL
@@ -318,6 +323,12 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
           TRC_UPDATE_OPT_CONFLS_ALL,
           "Treat all results from logs as unexpected ones", NULL },
 
+        { "no-exp-only", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_NO_EXP_ONLY,
+          "Do not create rules with <conflicts/> containing "
+          "expected only results in if --confls-all is specified",
+          NULL },
+
         { "gen-apply", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_GEN_APPLY,
           "Apply updating rules after generating them", NULL },
@@ -333,7 +344,9 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
 
         { "no-skip-only", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_NO_SKIP_ONLY,
-          "Do not show skipped only unexpected results", NULL },
+          "Do not create rules with <conflicts/> containing "
+          "skipped only results",
+          NULL },
 
         { "no-use-ids", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_NO_USE_IDS,
@@ -570,6 +583,10 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
 
             case TRC_UPDATE_OPT_NO_SKIP_ONLY:
                 ctx.flags |= TRC_LOG_PARSE_NO_SKIP_ONLY;
+                break;
+
+            case TRC_UPDATE_OPT_NO_EXP_ONLY:
+                ctx.flags |= TRC_LOG_PARSE_NO_EXP_ONLY;
                 break;
 
             case TRC_UPDATE_OPT_NO_USE_IDS:

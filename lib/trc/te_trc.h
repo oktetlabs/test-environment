@@ -84,8 +84,10 @@ typedef struct trc_exp_result_entry {
     te_test_result  result; /**< Test result */
 
     /* Auxiliary information */
-    char       *key;        /**< BugID-like information */
-    char       *notes;      /**< Any kind of notes */
+    char       *key;            /**< BugID-like information */
+    char       *notes;          /**< Any kind of notes */
+    te_bool     is_expected;    /**< Is this result expected
+                                     (used by TRC Update) */
 } trc_exp_result_entry;
 
 /** Head of queue of expected test results */
@@ -274,7 +276,6 @@ typedef enum trc_db_walker_motion {
  * @return Made motion.
  */
 extern trc_db_walker_motion trc_db_walker_move(te_trc_db_walker *walker);
-
 
 /**
  * Get test iteration expected result at the current TRC database

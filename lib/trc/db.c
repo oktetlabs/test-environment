@@ -234,14 +234,10 @@ trc_exp_results_free(trc_exp_results *results)
 void
 trc_free_test_iter(trc_test_iter *iter)
 {
-    //fprintf(stderr, "Free iter args\n");
     trc_free_test_iter_args(&iter->args);
-    //fprintf(stderr, "Free notes\n");
     free(iter->notes);
     free(iter->filename);
-    //fprintf(stderr, "Free exp results\n");
     trc_exp_results_free(&iter->exp_results);
-    //fprintf(stderr, "Free tests\n");
     trc_free_trc_tests(&iter->tests);
 }
 
@@ -961,4 +957,63 @@ trc_db_get_test_by_path(te_trc_db *db, char *path)
     return test;
 
 #undef PATH_ITEM_LEN
+}
+
+/* See the description in trc_db.h */
+const trc_exp_result *
+trc_db_iter_get_exp_result(const trc_test_iter    *iter,
+                           const tqh_strings      *tags)
+{
+    const trc_exp_result       *result;
+    int                         prio;
+    const trc_exp_result       *p;
+    int                         res;
+    const trc_exp_result_entry *q;
+
+    if (iter == NULL)
+        return NULL;
+
+    /* Do we have a tag with expected SKIPPED result? */
+    result = NULL; prio = 0;
+    SLIST_FOREACH(p, &iter->exp_results, links)
+    {
+        VERB("%s: matching start", __FUNCTION__);
+        res = logic_expr_match(p->tags_expr, tags);
+        if (res != -1)
+        {
+            INFO("Matching tag found");
+            TAILQ_FOREACH(q, &p->results, links)
+            {
+                if (q->result.status == TE_TEST_SKIPPED)
+                {
+                    /* Skipped results have top priority in any case */
+                    result = p;
+                    prio = res;
+                    break;
+                }
+            }
+            if (q != NULL)
+                break;
+
+            if (result == NULL || res < prio)
+            {
+                result = p;
+                prio = res;
+            }
+        }
+    }
+
+    /* We have not found matching tagged result */
+    if (result == NULL)
+    {
+        /* May be default expected result exists? */
+        result = iter->exp_default;
+    }
+
+    if (result == NULL)
+    {
+        INFO("Expected result is not known");
+    }
+
+    return result;
 }

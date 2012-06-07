@@ -47,7 +47,11 @@ sub escape_str
 sub escape_file
 {
     my $str = $_[0];
-    $str =~ s/([\\"\$&|])/\\$1/g;
+    $str =~ s/[\\"\$]/\\$1/g;
+    $str =~ s/[&]/_and_/g;
+    $str =~ s/[|]/_or_/g;
+    $str =~ s/[(]/_ob_/g;
+    $str =~ s/[)]/_cb_/g;
     return $str;
 }
 
@@ -132,7 +136,7 @@ sub download_prepare_log
     }
 
     (undef, $tmp_files[$#tmp_files + 1]) = tempfile("log-XXXX");
-    system("cp ".escape_file($file_name)." ".$tmp_files[$#tmp_files]);
+    system("cp ".escape_str($file_name)." ".$tmp_files[$#tmp_files]);
     $file_name = $tmp_files[$#tmp_files];
 
     if ($initial_name =~ m/^(.*)[.]bz2$/)

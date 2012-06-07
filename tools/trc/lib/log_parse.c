@@ -1345,11 +1345,12 @@ trc_update_set_propagate_to_save(void *element,
 }
 
 /**
- * Merge a new result into a list on new results for an iteration.
+ * Merge a new result into a list of new results for an iteration.
  *
  * @param ctx           TRC Log Parse context
  * @param upd_iter_data TRC Update iteration data
  * @param te_result     Test result to be merged
+ * @param is_expected   Is the result expected?
  *
  * @return Status code
  */
@@ -1357,7 +1358,8 @@ static te_errno trc_update_iter_data_merge_result(trc_log_parse_ctx *ctx,
                                                   trc_update_test_iter_data
                                                             *upd_iter_data,
                                                   te_test_result
-                                                                *te_result);
+                                                                *te_result,
+                                                  te_bool is_expected);
 
 /**
  * Add a new unexpected result to all the iterations of a given tests.
@@ -1401,7 +1403,8 @@ trc_update_iters_add_result(trc_log_parse_ctx *ctx,
             else if (user_data->counter < ctx->cur_lnum)
                 rc = trc_update_iter_data_merge_result(ctx,
                                                        user_data,
-                                                       te_result);
+                                                       te_result,
+                                                       TRUE);
 
             if (rc != 0)
                 return rc;
@@ -1437,7 +1440,7 @@ trc_update_tests_add_result(trc_log_parse_ctx *ctx,
 }
 
 /**
- * Add skipped results to skipped iterations
+ * Add skipped results to skipped iterations.
  *
  * @param ctx            TRC Log Parse context
  *
@@ -1455,39 +1458,102 @@ trc_update_add_skipped(trc_log_parse_ctx *ctx)
                                        &te_result);
 }
 
-
+/**
+ * Typedef for a function checking some condition
+ * on given test results.
+ */
+typedef te_bool (*check_res_cond)(trc_exp_results *);
 
 /**
- * Clear unexpected results if they are only skipped ones
- * for a given tests.
+ * Check whether all the results are SKIPPED or not.
+ *
+ * @param results   Test results
+ *
+ * @return @c TRUE or @c FALSE
+ */
+static te_bool
+is_skip_only(trc_exp_results *results)
+{
+    trc_exp_result              *result;
+    trc_exp_result_entry        *rentry;
+
+    SLIST_FOREACH(result, results, links)
+    {
+        TAILQ_FOREACH(rentry, &result->results, links)
+            if (rentry->result.status != TE_TEST_SKIPPED)
+                break;
+
+        if (rentry != NULL)
+            break;
+    }
+
+    if (result == NULL)
+        return TRUE;
+
+    return FALSE;
+}
+
+/**
+ * Check whether all the results are expected or not.
+ *
+ * @param results   Test results
+ *
+ * @return @c TRUE or @c FALSE
+ */
+static te_bool
+is_exp_only(trc_exp_results *results)
+{
+    trc_exp_result              *result;
+    trc_exp_result_entry        *rentry;
+
+    SLIST_FOREACH(result, results, links)
+    {
+        TAILQ_FOREACH(rentry, &result->results, links)
+            if (!rentry->is_expected)
+                break;
+
+        if (rentry != NULL)
+            break;
+    }
+
+    if (result == NULL)
+        return TRUE;
+
+    return FALSE;
+}
+
+/**
+ * For all the tests, clear unexpected iteration results where
+ * for all of them a given condition is @c TRUE.
  *
  * @param ctx            TRC Log Parse context
  * @param tests          Queue of tests
- * @param te_resul       Result to be added
+ * @param cond_func      Condition function
  *
  * @return Status code
  */
-static te_errno trc_update_tests_clear_skip_only(trc_log_parse_ctx *ctx,
-                                                 trc_tests *tests);
+static te_errno trc_update_tests_cond_clear_res(trc_log_parse_ctx *ctx,
+                                                trc_tests *tests,
+                                                check_res_cond cond_func);
 
 /**
- * Clear unexpected results if they are only skipped ones
- * for a given iterations.
+ * For all the iterations, clear unexpected iteration results where
+ * for all of them a given condition is @c TRUE.
  *
  * @param ctx            TRC Log Parse context
  * @param iters          Queue of iterations
+ * @param cond_func      Condition function
  *
  * @return Status code
  */
 static te_errno
-trc_update_iters_clear_skip_only(trc_log_parse_ctx *ctx,
-                                 trc_test_iters *iters)
+trc_update_iters_cond_clear_res(trc_log_parse_ctx *ctx,
+                                trc_test_iters *iters,
+                                check_res_cond cond_func)
 {
     trc_update_test_iter_data   *user_data;
     trc_test_iter               *iter;
     int                          rc;
-    trc_exp_result              *result;
-    trc_exp_result_entry        *rentry;
 
     TAILQ_FOREACH(iter, &iters->head, links)
     {
@@ -1495,20 +1561,11 @@ trc_update_iters_clear_skip_only(trc_log_parse_ctx *ctx,
         if (user_data != NULL)
         {
             if (!TAILQ_EMPTY(&iter->tests.head))
-                rc = trc_update_tests_clear_skip_only(ctx, &iter->tests);
+                rc = trc_update_tests_cond_clear_res(ctx, &iter->tests,
+                                                     cond_func);
             else
             {
-                SLIST_FOREACH(result, &user_data->new_results, links)
-                {
-                    TAILQ_FOREACH(rentry, &result->results, links)
-                        if (rentry->result.status != TE_TEST_SKIPPED)
-                            break;
-
-                    if (rentry != NULL)
-                        break;
-                }
-
-                if (result == NULL)
+                if (cond_func(&user_data->new_results))
                     trc_exp_results_free(&user_data->new_results);
             }
 
@@ -1522,8 +1579,9 @@ trc_update_iters_clear_skip_only(trc_log_parse_ctx *ctx,
 
 /** See description above */
 static te_errno
-trc_update_tests_clear_skip_only(trc_log_parse_ctx *ctx,
-                                 trc_tests *tests)
+trc_update_tests_cond_clear_res(trc_log_parse_ctx *ctx,
+                                trc_tests *tests,
+                                check_res_cond cond_func)
 {
     trc_update_test_data    *user_data;
     trc_test                *test;
@@ -1534,7 +1592,8 @@ trc_update_tests_clear_skip_only(trc_log_parse_ctx *ctx,
         user_data = trc_db_test_get_user_data(test, ctx->db_uid);
         if (user_data != NULL)
         {
-            rc = trc_update_iters_clear_skip_only(ctx, &test->iters);
+            rc = trc_update_iters_cond_clear_res(ctx, &test->iters,
+                                                 cond_func);
             if (rc != 0)
                 return rc;
         }
@@ -1544,16 +1603,18 @@ trc_update_tests_clear_skip_only(trc_log_parse_ctx *ctx,
 }
 
 /**
- * Clear unexpected results if they are only skipped ones.
+ * Clear unexpected iteration results where for all of them
+ * the same condition is @c TRUE.
  *
  * @param ctx            TRC Log Parse context
  *
  * @return Status code
  */
 static te_errno
-trc_update_clear_skip_only(trc_log_parse_ctx *ctx)
+trc_update_cond_clear_res(trc_log_parse_ctx *ctx, check_res_cond cond_func)
 {
-    return trc_update_tests_clear_skip_only(ctx, &ctx->db->tests);
+    return trc_update_tests_cond_clear_res(ctx, &ctx->db->tests,
+                                           cond_func);
 }
 
 /**
@@ -1799,7 +1860,8 @@ save_test_rules_to_file(trc_update_tests_groups *updated_tests,
 static te_errno
 trc_update_iter_data_merge_result(trc_log_parse_ctx *ctx,
                                   trc_update_test_iter_data *upd_iter_data,
-                                  te_test_result *te_result)
+                                  te_test_result *te_result,
+                                  te_bool is_expected)
 {
     trc_exp_result             *merge_result;
     trc_exp_result_entry       *result_entry;
@@ -1815,6 +1877,7 @@ trc_update_iter_data_merge_result(trc_log_parse_ctx *ctx,
     result_entry = TE_ALLOC(sizeof(*result_entry));
     result_entry->key = NULL;
     result_entry->notes = NULL;
+    result_entry->is_expected = is_expected;
     te_test_result_cpy(&result_entry->result, te_result);
     TAILQ_INSERT_HEAD(&merge_result->results,
                       result_entry,
@@ -1899,16 +1962,20 @@ trc_update_merge_result(trc_log_parse_ctx *ctx)
     trc_update_test_iter_data  *upd_iter_data;
     trc_exp_result             *p;
     te_test_result             *te_result;
+    te_bool                     is_expected = FALSE;
 
     p = (trc_exp_result *) trc_db_walker_get_exp_result(ctx->db_walker,
                                                         ctx->tags);
-    if (p != NULL &&
-        !(ctx->flags & TRC_LOG_PARSE_CONFLS_ALL) &&
+    if (p != NULL)
+        is_expected =
+            (trc_is_result_expected(
+                    p,
+                    &TAILQ_FIRST(&ctx->iter_data->runs)->result) != NULL);
+
+    if (!(ctx->flags & TRC_LOG_PARSE_CONFLS_ALL) &&
         !((ctx->flags & TRC_LOG_PARSE_LOG_WILDS) &&
           !(ctx->flags & TRC_LOG_PARSE_LOG_WILDS_UNEXP)) &&
-        trc_is_result_expected(
-            p,
-            &TAILQ_FIRST(&ctx->iter_data->runs)->result))
+        is_expected)
         return 0;
 
     upd_iter_data = trc_db_walker_get_user_data(ctx->db_walker,
@@ -1916,7 +1983,7 @@ trc_update_merge_result(trc_log_parse_ctx *ctx)
     te_result = &TAILQ_FIRST(&ctx->iter_data->runs)->result;
 
     return trc_update_iter_data_merge_result(ctx, upd_iter_data,
-                                             te_result);
+                                             te_result, is_expected);
 }
 
 /**
@@ -4360,13 +4427,16 @@ trc_update_process_logs(trc_update_ctx *gctx)
                                          gctx->db_uid);
         }
 
+        if (gctx->flags & TRC_LOG_PARSE_NO_SKIP_ONLY)
+            trc_update_cond_clear_res(&ctx, is_skip_only);
+
+        if (gctx->flags & TRC_LOG_PARSE_NO_EXP_ONLY)
+            trc_update_cond_clear_res(&ctx, is_exp_only);
+
         printf("Simplifying expected results...\n");
         CHECK_F_RC(trc_update_simplify_results(gctx->db_uid,
                                                ctx.updated_tests,
                                                gctx->flags));
-
-        if (gctx->flags & TRC_LOG_PARSE_NO_SKIP_ONLY)
-            trc_update_clear_skip_only(&ctx);
 
         if (gctx->flags & TRC_LOG_PARSE_RULE_UPD_ONLY)
             trc_update_set_to_save(gctx->db,

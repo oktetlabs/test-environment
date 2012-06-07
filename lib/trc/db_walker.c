@@ -787,18 +787,11 @@ trc_db_walker_move(te_trc_db_walker *walker)
     assert(FALSE);
 }
 
-
 /* See the description in te_trc.h */
 const trc_exp_result *
 trc_db_walker_get_exp_result(const te_trc_db_walker *walker,
                              const tqh_strings      *tags)
 {
-    const trc_exp_result       *result;
-    int                         prio;
-    const trc_exp_result       *p;
-    int                         res;
-    const trc_exp_result_entry *q;
-
     assert(walker->is_iter);
 
     if (walker->unknown > 0)
@@ -812,48 +805,5 @@ trc_db_walker_get_exp_result(const te_trc_db_walker *walker,
         return NULL;
     }
 
-    /* Do we have a tag with expected SKIPPED result? */
-    result = NULL; prio = 0;
-    SLIST_FOREACH(p, &walker->iter->exp_results, links)
-    {
-        VERB("%s: matching start", __FUNCTION__);
-        res = logic_expr_match(p->tags_expr, tags);
-        if (res != -1)
-        {
-            INFO("Matching tag found");
-            TAILQ_FOREACH(q, &p->results, links)
-            {
-                if (q->result.status == TE_TEST_SKIPPED)
-                {
-                    /* Skipped results have top priority in any case */
-                    result = p;
-                    prio = res;
-                    break;
-                }
-            }
-            if (q != NULL)
-                break;
-
-            if (result == NULL || res < prio)
-            {
-                result = p;
-                prio = res;
-            }
-        }
-    }
-
-    /* We have not found matching tagged result */
-    if (result == NULL)
-    {
-        /* May be default expected result exists? */
-        result = walker->iter->exp_default;
-    }
-
-    if (result == NULL)
-    {
-        INFO("Expected result is not known");
-    }
-
-    return result;
+    return trc_db_iter_get_exp_result(walker->iter, tags);
 }
-

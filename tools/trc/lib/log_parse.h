@@ -142,9 +142,14 @@ enum trc_log_parse_flags {
                                                     applied */
     TRC_LOG_PARSE_SKIPPED        = (1 << 23),  /**< Show skipped unexpected
                                                     results */
-    TRC_LOG_PARSE_NO_SKIP_ONLY   = (1 << 24),  /**< Do not show skipped
-                                                    only unexpected
-                                                    results */
+    TRC_LOG_PARSE_NO_SKIP_ONLY   = (1 << 24),  /**< Do not create rules with
+                                                    <conflicts/> containing
+                                                    skipped only results */
+    TRC_LOG_PARSE_NO_EXP_ONLY    = (1 << 25),  /**< Do not create rules with
+                                                    <conflicts/> containing
+                                                    expected only results
+                                                    if CONFLS_ALL is turned
+                                                    on */
 };
 
 /** All rule type flags */

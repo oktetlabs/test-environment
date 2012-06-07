@@ -639,6 +639,21 @@ extern int test_iter_args_match(const trc_test_iter_args  *db_args,
                                 unsigned int               n_args,
                                 trc_report_argument       *args,
                                 te_bool                    is_strict);
+
+/**
+ * Get test iteration expected result.
+ *
+ * @param iter          Test iteration
+ * @param tags          Tags which identify IUT
+ *
+ * @return Expected result.
+ * @return NULL             The test/iteration is unknown for
+ *                          TRC database.
+ */
+extern const trc_exp_result *trc_db_iter_get_exp_result(
+                                 const trc_test_iter    *iter,
+                                 const tqh_strings      *tags);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
