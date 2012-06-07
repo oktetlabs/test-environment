@@ -40,6 +40,11 @@
 #include "rcf_common.h"
 #include "tad_common.h"
 
+/** @defgroup rcfapi_base API: RCF
+ * @ingroup rcfapi
+ * @{
+ */
+
 /** Discover name of the RCF IPC server */
 static inline const char *
 rcf_server_name()
@@ -254,6 +259,9 @@ extern te_errno rcf_ta_create_session(const char *ta_name, int *session);
  * @retval TE_EINPROGRESS  operation is in progress
  * @retval TE_ENOENT       cannot open NUT image file
  * @retval TE_ENOMEM       out of memory
+ * @retval TE_EPERM        operation is not allowed (please check that you
+ *                         enabled @attr_name{rebootable} attribute in RCF
+ *                         configuration file)
  */
 extern te_errno rcf_ta_reboot(const char *ta_name,
                               const char *boot_params,
@@ -1113,6 +1121,8 @@ extern te_errno rcf_shutdown_call(void);
  * it is called automatically using atexit() or similar mechanism.
  */
 extern void rcf_api_cleanup(void);
+
+/**@} <!-- END rcfapi_base --> */
 
 #ifdef __cplusplus
 } /* extern "C" */
