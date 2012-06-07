@@ -40,9 +40,10 @@ according to configuration files.
 
 In the context of Test Environment tests are organized in groups
 called Test Packages. From the Tester point of view, the Test Package is
-a set of executables accompanied by a file @path{package.xml} describing how to
-run these scripts (order, parameters, etc.).
-A package may contain other packages.
+a set of executables (binary or script files can be run in @prog{shell}
+with set of parameters passed via command line) accompanied by a file
+@path{package.xml} describing how to run these scripts
+(execution order, test parameter values, etc.).
 
 It may be specified that some tests of the package should be run one-by-one
 (a test is started after finishing the previous test) or simultaneously
@@ -74,6 +75,194 @@ configuration for each package and test and to restore backups if necessary.
 @ref te_engine_logger to log test/package starting and finishing events.
 This information is then used by Report Generator to split the log to
 sections corresponding to particular tests/packages.
+
+
+@section te_engine_tester_conf Configuration File
+
+@subsection te_engine_tester_conf_root Tester Root Configuration File
+
+Tester configuration file is a root of testing scenario. This file contains
+some auxiliary information like description and list of maintainers as well
+as information about test suites.
+
+XSD schema of @ref te_engine_tester configuration file can be found at
+@path{${TE_BASE}/doc/xsd/tester_config.xsd} file.
+
+@ref te_engine_tester configuration file can look like:
+@code
+<?xml version="1.0"?>
+<tester_cfg version="1.0">
+    <maintainer name="Oleg Kravtsov" mailto="Oleg.Kravtsov@oktetlabs.ru"/>
+
+    <description>IPv6 Protocol Testing</description>
+
+    <suite name="ipv6_host" src="${TE_TS_IPV6_HOST}"/>
+    <suite name="ipv6_router" bin="${TE_TS_IPV6_ROUTER_BIN}"/>
+
+    <run>
+        <package name="ipv6_host"/>
+    </run>
+    <run>
+        <package name="ipv6_router"/>
+    </run>
+</tester_cfg>
+@endcode
+
+Here is some description of used TAGs of configuration file:
+- @attr_name{maintainer} - specify information about the maintainer
+  of this configuration;
+- @attr_name{description} - optional description of this configuration.
+  Please note that this is rather configuration file description and it has
+  nothing in common to the description of test suite(s) - you can refer to
+  the same test suite from different @ref te_engine_tester
+  configuration files;
+- @attr_name{suite} - specify information about the location of top level
+  test package (test suite). This directive tells @ref te_engine_tester
+  where to find sources or binaries of a test suite. The only suites
+  mentioned in @attr_name{suite} directives are built (if necessary) by
+  the @ref te_engine_tester.<br/>
+  @attr_name{suite} tag can keep the following attributes:
+  - @attr_name{name} - specifies test suite name that is used as
+    an identifier associated with this test suite;
+  - @attr_name{src} - tells @ref te_engine_tester where to find sources of
+    mentioned test suite;
+  - @attr_name{bin} - tells @ref te_engine_tester where to find binarires
+    of mentioned test suite (please note that @attr_name{src} and
+    @attr_name{bin} attributes are mutualy exclusive, only one of them can
+    present at the same time in @attr_name{suite} directive).<br/>
+    It is possible not to have both @attr_name{src} and @attr_name{bin}
+    attributes in @attr_name{suite} tag, which means you ask
+    @ref te_engine_tester to build a test suite located under
+    @path{@{TE_BASE}/suites/[suite name]} directory.
+  .
+- @attr_name{run} - a block of tests, packages to run.
+.
+
+In our sample we tell @ref te_engine_tester :
+- to build a test suite located under @path{${TE_TS_IPV6_HOST}} directory.
+  @ref te_engine_tester will ask @ref te_engine_builder to build and install
+  this test suite;
+- to associate a directory @path{${TE_TS_IPV6_ROUTER_BIN}} with installed
+  version of test suite reffered as @attr_val{ipv6_router};
+- to run a test suite named @attr_val{ipv6_host} (it will be run from the
+  place where it is installed by @ref te_engine_builder);
+- to run a test suite named @attr_val{ipv6_router} (it will be run from
+  @path{${TE_TS_IPV6_ROUTER_BIN}}directory that is previously associated
+  with @attr_name{bin} attribute of @attr_name{suite} directive.
+.
+
+If you only need to build a set of test suites you can have
+@ref te_engine_tester configuration file as following:
+<?xml version="1.0"?>
+<tester_cfg version="1.0">
+    <maintainer name="Oleg Kravtsov" mailto="Oleg.Kravtsov@oktetlabs.ru"/>
+    <description>Build IPv6 related test suites</description>
+
+    <suite name="ipv6_host" src="${TE_TS_IPV6_HOST}"/>
+    <suite name="ipv6_router"/>
+</tester_cfg>
+@endcode
+
+This configuration file asks @ref te_engine_tester to:
+- build a test suite whose sources located at
+  @path{${TE_TS_IPV6_HOST}} directory;
+- build a test suite located at @path{${TE_BASE}/suites/ipv6_router}
+  directory.
+.
+
+
+@subsection te_engine_tester_conf_pkg Tester Package Description File
+
+Test package description files contain nodes of testing scenario tree.
+Testing scenario tree is built of test script nodes to be executed with
+particular set of parameters and particular execution order.
+
+In order to group some test scripts together there are entities called
+sessions and packages.
+
+Test script is an external applications to be called by Tester. Test session
+is a complex structure that can include different components to run.
+Test sessions may have prologue that is run at the start of a session,
+epilogue that is executed after the session and keep-alive validation to run
+before and after each test script execution.
+
+XSD schema of Package description files can be found at
+@path{${TE_BASE}/doc/xsd/test_package.xsd}.
+
+Here is an example of the simplest package description file:
+@code
+<?xml version="1.0"?>
+<package version="1.0">
+  <description>Device LED operation Test Suite</description>
+
+    <author mailto="Oleg.Kravtsov@oktetlabs.ru"/>
+
+    <session>
+        <enum name="led_type">
+            <value>Power</value>
+            <value>USB</value>
+            <value>Ethernet</value>
+            <value>Error</value>
+        </enum>
+
+        <keepalive>
+            <script name="notify_test_step"/>
+        </keepalive>
+
+        <prologue>
+            <script name="led_prologue"/>
+        </prologue>
+
+        <epilogue>
+            <script name="led_epilogue"/>
+        </epilogue>
+
+        <run>
+            <script name="led_on_off"/>
+            <arg name="led" type="led_type"/>
+        </run>
+            <script name="led_blink"/>
+            <arg name="led" type="led_type"/>
+        <run>
+    </session>
+</package>
+@endcode
+
+This package description file has:
+- @attr_name{session} - mandatory part of package description file.
+- @attr_name{prologue} - prologue entry. This entry defines execution
+  subtree that is run by @ref te_engine_tester on package start-up.
+  In our case we run only one script called @attr_val{led_prologue},
+  which means that in test suite installation directory in corresponding
+  place there should be a binary file or executable script
+  with name @prog{led_prologue};
+- @attr_name{epilogue} - epilogue entry. This entry defines execution
+  subtree that is run by @ref te_engine_tester on package termination
+  (after processing of all @attr_name{run} entries);
+- @attr_name{keepalive} - this is an entry that @ref te_engine_tester
+  runs after processing each @attr_name{run} entry;
+- @attr_name{run} - an item to run. @attr_name{run} directive can contain
+  one of the following:
+  - @attr_name{script} - to ask @ref te_engine_tester run a single
+    executable (a number of times with different parameters);
+  - @attr_name{package} - to ask @ref te_engine_tester process another
+    package, in which case @ref te_engine_tester will process a separate
+    package description file recursively;
+  - @attr_name{session} - to have nested @attr_name{session} syntax;
+  .
+  In our case we have plain @attr_name{script} directives that point
+  to particular executables with names @attr_val{led_on_off} and
+  @attr_val{led_blink};
+- at the beginning of the @attr_name{session} we define enumeration
+  with @attr_name{enum} TAG that we can later refer while specifying test
+  parameters. In our sample we define enumeration type that can be reffered
+  by name @attr_val{led_type};
+- we refer to enumeration type inside @attr_name{run} TAG when specify
+  parameters for scripts. In our case we define parameter @attr_val{led}
+  that has values of type @attr_val{led_type}, which means the same
+  executable will be run as many number of times as the number of possible
+  values in type @attr_val{led_type}.
+.
 
 XML schema for @ref te_engine_tester configuration file may be found in
 @path{doc/xsd/tester_config.xsd} file.
