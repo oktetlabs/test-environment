@@ -190,7 +190,7 @@ Platform type should be one of platforms specified with @func{TE_PLATFORM}
 directive (For host platform this should be an empty string).
 
 Test Agent type value is an arbitrary string that will be reffered
-to from RCF configuration file (@todo ADD LINK TO samples of RCF conf).
+to from RCF configuration file (See RCF @ref te_engine_rcf_conf_file).
 
 Sources of Test Agent are got from @path{[source location]} directory,
 which is either a subdirectory of @path{${TE_BASE}/agents} directory,

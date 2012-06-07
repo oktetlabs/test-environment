@@ -41,14 +41,14 @@ should be dynamically linked to the RCF process to interact with the Test Agent.
 This library “knows” how to start and stop the Test Agent and how to send/receive
 commands to/from it. It provides to RCF the strictly specified set of functions.
 
-For example, the library <b>rcfunix</b> is responsible for interacting with
+For example, the library @path{rcfunix} is responsible for interacting with
 UNIX-like @ref te_agents (Linux, BSD, Cygwin).
 It uses @prog{scp} to copy Test Agent image to the remote host and @prog{ssh}
 to start or stop it. TCP connection is used to send/receive commands.
 
 @section te_engine_rcf_test_proto Test Protocol
 
-RCF interacts with the @ref te_agents via text-based Test Protocol.
+RCF interacts with the @ref te_agents using text-based Test Protocol.
 Some text commands may be accompanied by binary attachments.
 When the RCF is compiled with high log level, all Test Protocol commands and
 answers appear in the log.
@@ -101,8 +101,8 @@ obtain the value of existing instance.
 
 It is also possible to perform wildcard get operations.
 
-Usually @ref te_engine_conf issues commands like @cmd{get *:*}  or
-@cmd{get /a:a1/b:b1/...} to retrieve identifiers of all instances
+Usually @ref te_engine_conf issues commands like @cmd{get} @conf_path{*:*}  or
+@cmd{get} @conf_path{/a:a1/b:b1/...} to retrieve identifiers of all instances
 (or only instances of a particular subtree) present on the Test Agent.
 Then it may separately get value of each instance by its identifier.
 
@@ -183,6 +183,153 @@ Another mechanism based on SUN RPC is provided by RCF for API testing
 - destroy the RPC server;
 - call the routing with arbitrary input and output parameters.
 .
+
+@section te_engine_rcf_conf_file Configuration File
+
+@ref te_engine_rcf has its own configuration file that specifies the list
+of @ref te_agents to run. Examples of @ref te_engine_rcf configuration file
+can be found under @path{${TE_BASE}/conf} directory.
+
+Simple configuration file looks like the following:
+
+@code
+<?xml version="1.0"?>
+<rcf>
+  <ta name="Agt_B" type="linux_snmp" rcflib="rcfunix" confstr="olwe:5012:sudo:"/>
+</rcf>
+@endcode
+
+This configuration file tells @ref te_engine_rcf to run one Test Agent,
+where the meaning of attributes is following:
+- @attr_name{name} - specifies the name to be associated with running
+  Test Agent. While using functions of @ref rcfapi_base you will need
+  to pass the value of this attribute (@attr_val{Agt_B} in our sample)
+  as the value of the first parameter.
+@code
+    ta_name = "Agt_B";
+    rc = rcf_ta_del_file(ta_name, session_id, file_path);
+@endcode
+
+- @attr_name{type} - specifies type of Test Agent. This value shall match
+  with any type of Test Agent specified via @func{TE_TA_TYPE} directive of
+  @ref te_engine_builder configuration file
+  (See @ref te_engine_builder_conf_file_te_ta_type for additional
+  information). For example:
+@code
+# From builder.conf
+# Agent with WiFi support for PRISM 54 Wireless card
+TE_TA_TYPE([linux_wifi_prism54], [], [unix],
+           [--with-rcf-rpc --enable-wifi --enable-8021x
+            --with-tad=dummy_tad],
+           [-DWIFI_CARD_PRISM54],
+           [], [], [comm_net_agent ndn asn])
+@endcode
+@code
+<?xml version="1.0"?>
+<rcf>
+    <ta name="Agt_A" type="linux_wifi_prism54" rcflib="rcfunix"
+        confstr="marcus:5012:sudo:"/>
+</rcf>
+@endcode
+
+- @attr_name{rcflib} - specifies the name of shared library to be used
+  by @ref te_engine_rcf in order to communicate with this particular
+  Test Agent. @attr_val{rcfunix} corresponds to a library located
+  under @path{${TE_BASE}/lib/rcfunix} directory.
+
+- @attr_name{confstr} - Test Agent configuration parameter that is passed
+  to communication library (to a library specified via @attr_name{rcflib}
+  attribute).
+.
+
+Other attributes that you can specify for a Test Agent are:
+- @attr_name{synch_time} - Enable/disable time synchronization between
+  Test Engine and Test Agent (possile values are @attr_val{yes} or
+  @attr_val{no}, the default is @attr_val{no});
+
+- @attr_name{rebootable} - Tell RCF whether Test Agent can be rebooted
+  or not (possile values are @attr_val{yes} or @attr_val{no},
+  the default is @attr_val{no}).
+  If this attribute is not enabled, rcf_ta_reboot() function from
+  @ref rcfapi_base returns @c TE_EPERM error code;
+
+- @attr_name{disabled} - Whether RCF shall ignore this Test Agent
+  (act as if there was no such Test Agent in configuration file).
+  This attribute can be used to tune RCF configuration via environment
+  variables. For example:
+@code
+  <ta name="Agt_A" type="${TE_TST_TA_TYPE:-linux}" disabled="${TE_TST:-yes}" rcflib="rcfunix"
+      rebootable="${TE_TST_REBOOTABLE}"
+      confstr="${TE_TST}:${TE_TST_PORT:-${TE_RCF_PORT:-50000}}:${TE_TST_SUDO:-sudo:}${TE_TST_VG}"/>
+@endcode
+  This is an example of tunable RCF configuration. Regarding our
+  @attr_name{disabled} attribute we can skip running Test Agent
+  @attr_val{Agt_A} if @var{TE_TST} environment variable is not set;
+
+- @attr_name{fake} - Tells RCF that this Test Agent is already running
+  (for example because it is run under @prog{gdb});
+
+- @attr_name{cold_reboot} - Specifies Power Control Test Agent name and
+  its parameters that can be used to perform cold reboot ot this TA.
+  Usually has the form @attr_val{[power TA name]:[outlet name]},
+  like:
+@code
+<?xml version="1.0"?>
+<rcf>
+  <ta name="Agt_A" type="bsd" rcflib="rcfunix"
+      confstr="192.168.1.2:5050:sudo:"
+      cold_reboot="Agt_Power:5"/>
+  <ta name="Agt_Power" type="power_ctl" rcflib="rcfunix"
+      confstr=":${TE_POWER_PORT:-${TE_RCF_PORT:-50000}}::192.168.1.120"/>
+</rcf>
+@endcode
+.
+
+RCF configuration file allows to specify a number of threads or
+processes to create on Test Agent at start-up. Also it is possible
+to specify the list of functions to be called on Test Agent at
+start-up. These features are implemented via standard
+RCF mechanisms that can be done from test scenarios with calls to:
+- rcf_ta_start_task();
+- rcf_ta_start_thread();
+- rcf_ta_call().
+.
+
+@code
+<?xml version="1.0"?>
+<rcf>
+  <ta name="Agt_C" type="linux" rcflib="rcfunix" confstr="olwe:5000:sudo:">
+    <thread name="log_serial">
+      <arg value="${TE_TST2_LOG_SERIAL}"/>
+      <arg value="WARN"/>
+      <arg value="10"/>
+      <arg value="3109:${TE_LOG_SERIAL_USER:-tester}:${TE_TST2_LOG_SERIAL}"/>
+    </thread>
+    <task name="temp_init" when="${TE_TST_TEMP_TASK}"/>
+    <function name="usb_init">
+      <arg value="ehci"/>
+    </function>
+  </ta>
+</rcf>
+@endcode
+
+This configuration file tells RCF to run one Test Agent named
+@attr_val{Agt_C} and on start-up do:
+-# create a thread in Test Agent application passing
+   control to @attr_val{log_serial} function with four
+   arguments;
+-# if @var{TE_TST_TEMP_TASK} is not empty, create a separate
+   task on Test Agent node using @attr_val{temp_init} function
+   as task entry point;
+-# call function @attr_val{usb_init} passing one argument with
+   value @attr_val{ehci}.
+.
+
+This feature can be useful if we need to do some system initialization
+on Test Agent side and we do not want to modify test suite sources.
+
+XSD schema of @ref te_engine_rcf configuration file can be found at
+@path{${TE_BASE}/doc/xsd/rcf_config.xsd} file.
 
 @} <!-- END te_engine_rcf -->
  */
