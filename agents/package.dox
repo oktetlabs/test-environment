@@ -25,6 +25,8 @@ the following Operating Systems:
 - Windows.
 .
 
+@image html agt_types.png "Possible physical location of Test Agents"
+
 Depending on the physical location of Test Agent and the device it controls
 we can differentiate Agents as following:
 - <b>Auxiliary Agent</b><br/>
@@ -60,8 +62,6 @@ we can differentiate Agents as following:
   - DUP API testing;
   - DUT-specific management.
   .
-
-@image html agt_types.png "Possible physical location of Test Agents"
 
 All communication with Test Agents performed via @ref te_engine_rcf components.
 Interactions are done with text-based Test Protocol.
@@ -149,7 +149,8 @@ Currently we support two main types of @ref te_agents:
 
 @subsection te_agt_extending_rpc Adding new RPC calls
 
-- @ref tapi_rpc page gives guidelines on how to add support for a new RPC call.
+- @ref tapi_rpc_lib_framework section gives guidelines on how to add
+  support for a new RPC call.
 .
 
 @subsection te_agt_extending_cfg Adding new configuration nodes
