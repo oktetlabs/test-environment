@@ -34,7 +34,9 @@ Unix Test Egent supports the following features:
 
 The sources of UNIX Test Agent located under @path{agents/unix}
 directory of TE tree:
-- @path{agents/unix/rpc} - implementation of RPC Server calls;
+- @path{agents/unix/rpc} - implementation of RPC Server calls.<br/>
+  Please refer to @ref tapi_rpc_lib_framework for the details on
+  how to add new RPC calls into @ref te_agents;
 - agents/unix/main.c - implementation of entry point of Test Agent
   as well as functions of RCF PCH interface;
 - @path{agents/unix/conf} implementation of configuration nodes for
@@ -46,6 +48,8 @@ directory of TE tree:
   - @path{agents/unix/conf/util} - support of configuration models of external
     utilities integrated in TE (sniffer);
   .
+  Please refer to @ref te_agents_conf for the details on how to add new
+  configuration nodes into @ref te_agents.
 .
 
 @} <!-- END te_agents_unix -->
