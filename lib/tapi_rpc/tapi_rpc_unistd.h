@@ -54,6 +54,12 @@ extern "C" {
 #endif
 
 /**
+ * @defgroup te_lib_rpc_unistd TAPI for some file operations calls
+ * @ingroup te_lib_rpc_tapi
+ * @{
+ */
+
+/**
  * Open a file or device.
  *
  * @param rpcs      RPC server handle
@@ -994,6 +1000,8 @@ extern int rpc_fstat(rcf_rpc_server *rpcs,
 extern int rpc_fstat64(rcf_rpc_server *rpcs,
                        int fd,
                        rpc_stat *buf);
+
+/**@} <!-- END te_lib_rpc_unistd --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -32,6 +32,12 @@
 #ifndef __TE_TAPI_RPCSOCK_MACROS_H__
 #define __TE_TAPI_RPCSOCK_MACROS_H__
 
+/**
+ * @defgroup te_lib_rpcsock_macros Macros for socket API remote calls
+ * @ingroup te_lib_rpc_tapi
+ * @{
+ */
+
 #ifndef MACRO_ERROR_EXIT
 
 /** Cleanup on test exit */
@@ -434,4 +440,5 @@
                                       path_name, (timeout_));           \
     } while (0)
 
+/**@} <!-- END te_lib_rpcsock_macros --> */
 #endif /* !__TE_TAPI_RPCSOCK_MACROS_H__ */

@@ -42,6 +42,12 @@
 extern "C" {
 #endif
 
+/**
+ * @defgroup te_lib_rpc_winsock2 TAPI for remote calls of Winsock2-specific routines
+ * @ingroup te_lib_rpc_tapi
+ * @{
+ */
+
 /** Windows Event Objects */
 typedef rpc_ptr rpc_wsaevent;
 
@@ -1439,6 +1445,8 @@ wsa_name_convert(const char *name)
     else
         return name;
 }
+
+/**@} <!-- END te_lib_rpc_winsock2 --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

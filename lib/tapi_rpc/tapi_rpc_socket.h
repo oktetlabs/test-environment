@@ -50,6 +50,12 @@ extern "C" {
 #endif
 
 /**
+ * @defgroup te_lib_rpc_socket TAPI for socket API remote calls
+ * @ingroup te_lib_rpc_tapi
+ * @{
+ */
+
+/**
  * Get socket domain native for the address family.
  *
  * @param af        An address family
@@ -957,6 +963,8 @@ extern int rpc_socket_connect_close(rcf_rpc_server *rpcs,
 extern int rpc_socket_listen_close(rcf_rpc_server *rpcs,
                                    const struct sockaddr *addr,
                                    uint32_t time2run);
+/**@} <!-- END te_lib_rpc_socket --> */
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

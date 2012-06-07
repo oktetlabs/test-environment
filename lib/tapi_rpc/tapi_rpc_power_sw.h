@@ -37,6 +37,12 @@
 extern "C" {
 #endif
 
+/**
+ * @defgroup te_lib_rpc_power_sw TAPI for remote calls of power switch
+ * @ingroup te_lib_rpc_tapi
+ * @{
+ */
+
 #define POWER_SW_CMD2_STR(_cmd)                                 \
 (_cmd == CMD_TURN_ON) ?                                         \
     CMD_STR_TURN_ON :                                           \
@@ -97,6 +103,8 @@ extern "C" {
  */
 extern int rpc_power_sw(rcf_rpc_server *rpcs, const char *type,
                         const char *dev,  int mask, const char *cmd);
+
+/**@} <!-- END te_lib_rpc_power_sw --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -45,6 +45,12 @@ extern "C" {
 #endif
 
 /**
+ * @defgroup te_lib_rpc_ifnameindex TAPI for interface name/index calls
+ * @ingroup te_lib_rpc_tapi
+ * @{
+ */
+
+/**
  * Convert network interface name to index.
  *
  * @param handle    RPC server handle
@@ -93,6 +99,8 @@ extern struct if_nameindex *rpc_if_nameindex(rcf_rpc_server *handle);
 extern void rpc_if_freenameindex(rcf_rpc_server *handle,
                                  struct if_nameindex *ptr);
 #endif
+
+/**@} <!-- END te_lib_rpc_ifnameindex --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

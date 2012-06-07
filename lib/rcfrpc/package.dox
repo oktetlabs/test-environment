@@ -1,6 +1,10 @@
 /**
 
-@page te_lib_rpc Remote Procedure Calls (RPC)
+<!-- @page te_lib_rpc API Usage: Remote Procedure Calls (RPC) -->
+
+@defgroup te_lib_rpc API Usage: Remote Procedure Calls (RPC)
+@ingroup te_engine_rcf
+@{
 
 @section te_lib_rpc_introduction Introduction
 
@@ -184,11 +188,12 @@ the following function:
 - rcf_rpc_call().
 
 For more information on functions exported by RCF RPC library refer to
-<A HREF="rcf__rpc_8h.html">RCF RPC API</A>.
+@ref te_lib_rpc_tapi.
 
 @section te_lib_rpc_tapi TAPI for RPC
 
 Test code should not use rcf_rpc_call() function directly, but instead
 it shall use functions exported by @ref tapi_rpc.
 
+/**@} <!-- END te_lib_rpc --> */
  */

@@ -46,6 +46,12 @@ extern "C" {
 #endif
 
 /**
+ * @defgroup te_lib_rpc_signal TAPI for signal and signal sets remote calls
+ * @ingroup te_lib_rpc_tapi
+ * @{
+ */
+
+/**
  * Establish an action to be taken when a given signal @b signum occurs
  * on RPC server.
  *
@@ -320,6 +326,8 @@ extern int rpc_ta_kill_death(rcf_rpc_server *rpcs, tarpc_pid_t pid);
 
 extern int rpc_siginterrupt(rcf_rpc_server *rpcs, rpc_signum signum,
                             int flag);
+
+/**@} <!-- END te_lib_rpc_signal --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

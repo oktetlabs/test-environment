@@ -42,7 +42,11 @@
 extern "C" {
 #endif
 
-
+/**
+ * @defgroup te_lib_rpc_tr069 TAPI for TR-069 ACS
+ * @ingroup te_lib_rpc_tapi
+ * @{
+ */
 
 extern te_errno rpc_cwmp_op_call(rcf_rpc_server *rpcs,
                                  const char *acs_name,
@@ -86,8 +90,7 @@ extern te_errno rpc_cwmp_get_inform(rcf_rpc_server *rpcs,
                                     const char *cpe_name, 
                                     int index, uint8_t *buf,
                                     size_t *buflen);
-
-
+/**@} <!-- END te_lib_rpc_tr069 --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -63,6 +63,12 @@ extern "C" {
 #endif
 
 /**
+ * @defgroup te_lib_rpc_misc TAPI for miscellaneous remote calls
+ * @ingroup te_lib_rpc_tapi
+ * @{
+ */
+
+/**
  * Try to search a given symbol in the current library used by
  * a given PCO with help of @b tarpc_find_func().
  *
@@ -633,6 +639,8 @@ extern int rpc_ioctl_ethtool(rcf_rpc_server *rpcs, int fd,
  */
 extern int rpc_memcmp(rcf_rpc_server *rpcs, 
                       rpc_ptr_off *s1, rpc_ptr_off *s2, size_t n);
+
+/**@} <!-- END te_lib_rpc_misc --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

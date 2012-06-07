@@ -40,6 +40,12 @@ extern "C" {
 #endif
 
 /**
+ * @defgroup te_lib_rpc_aio TAPI for asynchronous I/O calls
+ * @ingroup te_lib_rpc_tapi
+ * @{
+ */
+
+/**
  * Allocate a AIO control block.
  *
  * @param rpcs   RPC server handle
@@ -199,6 +205,7 @@ extern int rpc_aio_suspend(rcf_rpc_server *rpcs, const rpc_aiocb_p *cblist,
 extern int rpc_lio_listio(rcf_rpc_server *rpcs, 
                           rpc_lio_mode mode, const rpc_aiocb_p *cblist,
                           int nent, const tarpc_sigevent *sigevent);
+/**@} <!-- END te_lib_rpc_aio --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

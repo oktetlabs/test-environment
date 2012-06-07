@@ -42,6 +42,12 @@
 extern "C" {
 #endif
 
+/**
+ * @defgroup te_lib_rpc_stdio TAPI for standard I/O calls
+ * @ingroup te_lib_rpc_tapi
+ * @{
+ */
+
 /** Maximum resulting command length for rpc_shell() */
 #define RPC_SHELL_CMDLINE_MAX   1024
 
@@ -264,6 +270,8 @@ extern int rpc_setenv(rcf_rpc_server *rpcs,
  * @return return code
  */
 extern int rpc_unsetenv(rcf_rpc_server *rpcs, const char *name);
+
+/**@} <!-- END te_lib_rpc_stdio --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -39,6 +39,12 @@
 extern "C" {
 #endif
 
+/**
+ * @defgroup te_lib_rpc_telephony TAPI for remote calls of telephony
+ * @ingroup te_lib_rpc_tapi
+ * @{
+ */
+
 /** Numbering plans */
 enum te_numbering_plan {
     TE_TELEPHONY_200        = 1,
@@ -141,6 +147,8 @@ extern int rpc_telephony_dial_number(rcf_rpc_server *rpcs,
   * @return 0 on success or -1 on failure
   */
 extern int rpc_telephony_call_wait(rcf_rpc_server *rpcs, int chan, int timeout);
+
+/**@} <!-- END te_lib_rpc_telephony --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

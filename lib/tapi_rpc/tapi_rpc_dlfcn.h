@@ -40,6 +40,12 @@
 extern "C" {
 #endif
 
+/**
+ * @defgroup te_lib_rpc_dlfcn TAPI for remote calls of dynamic linking loader
+ * @ingroup te_lib_rpc_tapi
+ * @{
+ */
+
 typedef int64_t     rpc_dlhandle;
 typedef int64_t     rpc_dlsymaddr;
 
@@ -104,6 +110,8 @@ extern int rpc_dlsym_call(rcf_rpc_server *rpcs, rpc_dlhandle handle,
  * @return 0 on success, and non-zero on error.
  */
 extern int rpc_dlclose(rcf_rpc_server *rpcs, rpc_dlhandle handle);
+
+/**@} <!-- END te_lib_rpc_dlfcn --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

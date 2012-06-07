@@ -47,6 +47,12 @@ extern "C" {
 #endif
 
 /**
+ * @defgroup te_lib_rpc_netdb TAPI for name/address resolution remote calls
+ * @ingroup te_lib_rpc_tapi
+ * @{
+ */
+
+/**
  * Get network host entry by given name.
  *
  * @param handle     RPC Server
@@ -84,6 +90,8 @@ extern int rpc_getaddrinfo(rcf_rpc_server *handle,
 extern void rpc_freeaddrinfo(rcf_rpc_server *handle,
                              struct addrinfo *res);
 #endif
+
+/**@} <!-- END te_lib_rpc_netdb --> */
 
 #ifdef __cplusplus
 } /* extern "C" */
