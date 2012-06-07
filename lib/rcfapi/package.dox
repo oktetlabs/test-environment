@@ -13,7 +13,7 @@ expected to be used from Test Engine components only (Logger, Configurator),
 but there are few that can be used from test scenarios.
 
 The description of RCF API functions can be found at this page:
-- @link rcf_api.h RCF API @endlink
+- @ref rcfapi_base
 .
 
 The following diagram shows components that use this or that RCF API function.
