@@ -1,0 +1,92 @@
+#!/bin/bash
+#
+# Test Environment: Doxygen filter file 
+#
+# Script to use by Doxygen while processing TE sources.
+# We can invoke external programs and dump their output to
+# Doxygen, which will make it possible to generate some parts
+# of documentation dynamically (for example dump of TE utilities
+# run with --help option).
+# For more details on Doxygen filter feature, read about INPUT_FILTER
+# Doxygen configuration option.
+#
+# Copyright (C) 2003-2012 Test Environment authors (see file AUTHORS
+# in the root directory of the distribution).
+#
+# Test Environment is free software; you can redistribute it and/or 
+# modify it under the terms of the GNU General Public License as 
+# published by the Free Software Foundation; either version 2 of 
+# the License, or (at your option) any later version.
+# 
+# Test Environment is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
+# MA  02111-1307  USA
+#
+# Author Olg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
+#
+# $Id: dispatcher.sh 73998 2012-03-26 07:58:40Z andrey $
+#
+
+filename=$1
+
+# Skip non *.dox files
+if test x"${filename##*.}" = !x"dox"; then
+    cat $1
+    exit
+fi
+
+grep -q "@USER_EXPAND{DISPATCHER_SCRIPT_OPTIONS}" ${filename}
+if test $? -eq 0; then
+
+# Expression comments:
+# 1. prefix ',' character that goes inside some option with a lot of '\'
+#    characters (this is necessary in order to let Doxygen process
+#    @prog_option{} user command as one argumnet function (do not ask why
+#    there are too many '\' chars - if we use less, doxygen does not work).
+#    For example "--tester-run=mysuite/mypkg/mytest:p1={a1,a2}" will be
+#    converted to "--tester-run=mysuite/mypkg/mytest:p1={a1\\\,a2}"
+#    (BTW: three '\' chars on output give a clue on why exactly this number
+#    of '\' chars are used);
+# 2. Enclose long option with "@prog_option{}";
+# 3. Enclose short option with "@prog_option{}";
+# 4. Enclose "dispatcher.sh" string to @prog{}";
+# 5. Double '%' character (to correctly display after doxygen processing;
+# 6. Enclose list elements to @attr_val{} (otherwise doxygen breaks the
+#    output structure adding their own <ul>, <li>, which looks ugly);
+# 7. Eclose log option that specified inside '*' chars with @prog_option{};
+# 8. Substitute "<value>" with &lt;value&gt; (for some reason doxygen just
+#    remove <value> TAG, which is why we need to do somthing with it);
+# 9-10. Emphasize program names in the output (valgrind and gdb);
+# 11-16. Substitute TE component names with corresponding references.
+#
+disp_help=`${TE_BASE}/dispatcher.sh --help | \
+         sed -e 's/^\( *\)\(--[]\[*%{}<>/:a-zA-Z0-9=\-]*\),\([]\[*%{}<>/:a-zA-Z0-9\-]*\)/\1\2\\\\\\\,\3/' \
+             -e 's/^\( *\)\(--[]\[*%{,}<>/:a-zA-Z0-9=\-]*\)/\1@prog_option{\2}/' \
+             -e 's/^\( *\)\(-[a-z]\)/\1@prog_option{\2}/' \
+             -e 's/\(dispatcher.sh\)/@prog{\1}/' \
+             -e 's/%/%%/g' \
+             -e 's/^\( *\)- \([%a-z]*\) /\1@attr_val{\2} /' \
+             -e 's/\*\(--[a-z\-]*\)\*/@prog_option{\1}/' \
+             -e 's/<\(value\)>/\&lt;\1\&gt;/' \
+             -e 's/\(valgrind\)/@prog{\1}/' \
+             -e 's/ \(gdb\)\([ \.$]\)/ @prog{\1}\2/' \
+             -e 's/\*TEN\*/@ref te_engine/' \
+             -e 's/Tester/@ref te_engine_tester/' \
+             -e 's/Configurator/@ref te_engine_conf/' \
+             -e 's/Builder/@ref te_engine_build/' \
+             -e 's/RCF/@ref te_engine_rcf/' \
+             -e 's/Logger/@ref te_engine_logger/' \
+             `
+fi
+
+awk -v disp_help="$disp_help" '
+/^@USER_EXPAND{DISPATCHER_SCRIPT_OPTIONS}$/ { print disp_help; next }
+{ print $0 }
+' < ${filename}
+

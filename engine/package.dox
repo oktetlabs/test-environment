@@ -151,9 +151,13 @@ in the source directory.
 
 The Dispatcher script accepts a lot of command-line options.
 Some of them are its own options, and the rest are passed through to
-other TE subsystems. The complete list of the script options as well as
-their descriptions can be obtained by calling the Dispatcher script
-with the option @prog_option{--help}.
+other TE subsystems. Here is the complete list of the @prog{dispatcher.sh}
+script options as well as their descriptions obtained by calling it with
+@prog_option{--help} option:
+
+<pre class="fragment">
+@USER_EXPAND{DISPATCHER_SCRIPT_OPTIONS}
+</pre>
 
 @} <!-- END te_engine -->
  */
