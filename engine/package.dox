@@ -149,6 +149,8 @@ and storage library to @ref te_engine_dispatcher are not installed yet,
 @ref te_engine_dispatcher adds to @path{PATH} variable path to these scripts
 in the source directory.
 
+@section te_engine_dispatcher_options Command Line Options
+
 The Dispatcher script accepts a lot of command-line options.
 Some of them are its own options, and the rest are passed through to
 other TE subsystems. Here is the complete list of the @prog{dispatcher.sh}
