@@ -95,10 +95,10 @@ Generic options:
   --build=path                  Build package specified in the path.
   --build-log=path              Build package with log level 0xFFFF.
   --build-nolog=path            Build package with undefined log level.
-  --build-cs                    Build configurator.
-  --build-logger                Build logger.
+  --build-cs                    Build Configurator.
+  --build-logger                Build Logger.
   --build-rcf                   Build RCF.
-  --build-tester                Build tester.
+  --build-tester                Build Tester.
   --build-lib-xxx               Build host library xxx.
   --build-ta-xxx                Build Test Agent xxx.
   --build-log-xxx               Build package with log level 0xFFFF.
@@ -187,7 +187,7 @@ Generic options:
   --vg-rcf                      Run RCF under valgrind (without by default)
                                 (without by default)
   --vg-tester                   Run Tester under valgrind (without by default)
-  --gdb-tester                  Run Tester under GDB
+  --gdb-tester                  Run Tester under gdb.
   --tce                         Do TCE processing
 
  --sniff-not-feed-conf          Do not feed the sniffer configuration file
