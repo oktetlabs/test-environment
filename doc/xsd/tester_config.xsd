@@ -6,7 +6,7 @@
   -->
 <schema targetNamespace="http://www.oktetlabs.ru/proteos"
         xmlns:proteos="http://www.oktetlabs.ru/proteos"
-        version="$Id: $"
+        version="$Id$"
         xml:lang="en"
         xmlns="http://www.w3.org/2001/XMLSchema">
 
@@ -141,12 +141,28 @@
                 </documentation>
             </annotation>
         </attribute>
-        <attribute name="path" type="string">
+        <attribute name="src" type="string">
             <annotation>
                 <documentation>
                     Absolute or relative path to the Test Suite sources.
                     Absolute path starts from '/'.  Relative path is
                     calculated from Test Environment base.
+                    This attribute is mutually exclusive with
+                    'bin' attribute.
+                    If this attribute is not specified (nor 'bin'),
+                    it means that sources of a Test Suite are under
+                    '&lt;te_base&gt;/suites/&lt;suite_name&gt;'
+                </documentation>
+            </annotation>
+        </attribute>
+        <attribute name="bin" type="string">
+            <annotation>
+                <documentation>
+                    Absolute or relative path to the Test Suite binaries.
+                    Absolute path starts from '/'.  Relative path is
+                    calculated from Test Environment base.
+                    This attribute is mutually exclusive with
+                    'src' attribute.
                 </documentation>
             </annotation>
         </attribute>
