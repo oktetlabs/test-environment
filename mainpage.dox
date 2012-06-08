@@ -20,6 +20,27 @@ design decisions made in 2003 year, the overall TE architecture
 (main components and interconnections between them) are still valid even
 though a lot of new features has been added since then.
 
+@section te_conventions Conventions
+
+Throught the documentation the following conventions are used:
+- directory pathes or file names marked as: @path{/usr/bin/bash},
+  @path{Makefile};
+- program names (scripts or binary executables) marked as: @prog{gdb},
+  @prog{dispatcher.sh};
+- program options are maked as: @prog_option{--help}, @prog_option{-q};
+- environment variables are marked as: @var{TE_BASE}, @var{${PATH}};
+- different directives in configuration files are marked as:
+  @func{TE_LIB_PARMS}, @func{include};
+- configuration pathes as maked as: @conf_path{/agent/interface},
+  @conf_path{/local:/net:A};
+- names of different attributes (mainly names of XML element attributes)
+  are marked as: @attr_name{type}, @attr_name{src};
+- values of different attributes are marked as: @attr_val{unix},
+  @attr_val{${TE_BASE}/suites/ipv6-demo};
+- different kind of commands or modes are marked as: @cmd{Unregister}, 
+  @cmd{live}.
+.
+
 @section te_abbreviations Abbreviations
 
 @tdt_start
@@ -120,17 +141,93 @@ From the high level point of view TE consists of two main parts:
 - @ref te_engine;
 - @ref te_agents.
 
-TE subsystems and Test Agents are distributed among several applications
+TE subsystems and @ref te_agents are distributed among several applications
 running on different stations.
-Apart from other things Test Engine controls Test Agents by means of
+Apart from other things @ref te_engine controls @ref te_agents by means of
 so-called Test Protocol - a text-based protocol used in communication
-between Test Engine and Test Agents.
+between @ref te_engine and @ref te_agents.
 
-According to initial design Test Engine runs on Linux platform and there is
-no intend to port it to any other OS type, but Test Agents can be run on
+According to initial design @ref te_engine runs on Linux platform and there is
+no intend to port it to any other OS type, but @ref te_agents can be run on
 different platforms providing particular set of mandatory features for
-Test Engine. Test Agents are the subject to be ported to hardware/software
+@ref te_engine. @ref te_agents are the subject to be ported to hardware/software
 specific components of test infrastructure.
+
+@section te_run_time Test Environment operation
+
+The following sequence of events happen each time when you launch
+Test Environment:
+
+-# @ref te_engine_dispatcher script starts with some command line options
+   (for more information on @ref te_engine_dispatcher options read
+    @ref te_engine_dispatcher_options);
+-# @ref te_engine_dispatcher runs @prog{te_log_init} script to initialize
+   script based logging facility. All further actions can be logged via
+   script based interface (@prog{te_log_message} script). Please note that
+   @ref te_engine_logger application hasn't started yet;
+-# @ref te_engine_dispatcher starts @ref te_engine_builder to prepare
+   libraries and executables for all TE Subsystems
+   (except @ref te_engine_dispatcher), Test Packages, @ref te_agents and
+   bootable NUT image(s).
+   @ret te_engine_builder is passed a configuration file that describes
+   a set of executables to be built with a set of options for building
+   process.<br/>
+   @ref te_engine_builder configuration file name specified via
+   @prog_option{--conf-builder} option of @ref te_engine_dispatcher.<br/>
+   (For information about @ref te_engine_builder configuration file
+   read @ref te_engine_builder_conf_file).<br/>
+   Please note that traces of building process are output into the console
+   (they are not accumulated in log file);
+-# As soon as @ref te_engine_builder successfully built and installed all
+   required components, @ref te_engine_dispatcher starts launching
+   @ref te_engine componentns. First component to start is
+   @ref te_engine_logger. @ref te_engine_logger is passed a configuration
+   file whose name can be specified via @prog_option{--conf-logger}
+   @ref te_engine_dispatcher command line option (for information about
+   the format of @ref te_engine_logger configuration file refer to
+   @ref te_engine_logger_conf_file).<br/>
+   @ref te_engine_logger starts listening for incoming log requests that
+   can come from tests and other TEN components;
+-# @ref te_engine_dispatcher starts @ref te_engine_rcf. @ref te_engine_rcf
+   is passed a configuration file that describes @ref te_agents to be started
+   (for information about the format of @ref te_engine_rcf configuration file
+   refer to @ref te_engine_rcf_conf_file).<br/>
+   As a part of initialization @ref te_engine_rcf establishes communication
+   with @ref te_agents using Test Protocol;
+-# As soon as @ref te_engine_rcf has initialized, @ref te_engine_logger
+   starts a thread that is responsible for polling @ref te_agents Test Agents
+   in order to gather log messages accumulated on Test Agent side. Polling
+   interval is configured via @ref te_engine_logger configuration file;
+-# @ref te_engine_dispatcher starts @ref te_engine_conf. @ref te_engine_conf
+   is passed a configuration file that describes configuration objects to
+   register as well as object instances to add (for information about
+   the format of @ref te_engine_conf configuration file refer to 
+   @ref te_engine_conf_file). On start-up @ref te_engine_conf retrives
+   configuration information from @ref te_agents and initializes local trees
+   of objects and instances;
+-# @ref te_engine_dispatcher starts @ref te_engine_tester.
+   @ref te_engine_tester processes configuration file and if necessary asks
+   @ref te_engine_builder to build test suites (test executables).
+   Then @ref te_engine_tester processes test package description files
+   and runs tests in corresponding order and with specified set of parameter
+   values. (For information about @ref te_engine_tester configuration file
+   format refer to @ref te_engine_tester_conf section).<br/>
+   Before running tests, @ref te_engine_tester asks @ref te_engine_conf to
+   make a backup of configuration tree. When all tests are finished
+   @ref te_engine_tester restores the initial configuration from initial
+   backup. To prevent tests from interfering, a backup is created and
+   optionally restored before each test as well.
+-# When @ref te_engine_tester returns (all tests finished),
+   @ref te_engine_dispatcher stops @ref te_engine_conf;
+-# Flushing of the log from all Test Agents is performed;
+-# @ref te_engine_dispatcher stops @ref te_engine_rcf.
+   During its shutdown, @ref te_engine_rcf performs a shutdown of
+   all @ref te_agents;
+-# @ref te_engine_dispatcher stops @ref te_engine_logger.
+   @ref te_engine_dispatcher calls Report Generator tool to convert the log
+   from a raw format to the text and/or HTML format;
+-# @ref te_engine_dispatcher script finishes its work.
+.
 
 @section te_tools Test Environment Tools
 
