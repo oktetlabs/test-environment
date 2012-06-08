@@ -30,7 +30,7 @@
 #
 # Author Olg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
 #
-# $Id: dispatcher.sh 73998 2012-03-26 07:58:40Z andrey $
+# $Id: $
 #
 
 filename=$1
