@@ -113,8 +113,12 @@ Log level is a compile-time value – low log level leads to removing macro
 calls by the pre-processor. ERROR, WARN and RING are enabled by default.
 
 Apart from C function API, Logger provides script-based mechanism for logging
-to use by Dispatcher and Builder. This interface is necessary to support logging
-during initialization (when TEN components haven't been started yet).
+to use by @ref te_engine_dispatcher and @ref te_engine_builder.
+This interface is necessary to support logging during initialization
+(when TEN components haven't been started yet):
+- @prog{te_log_init} - script to initialize logging facility;
+- @prog{te_log_message} - script to use for logging from scripts.
+.
 
 @section te_engine_logger_conf_file Configuration File
 
