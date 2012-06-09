@@ -70,10 +70,12 @@ Interactions are done with text-based Test Protocol.
 
 Basically Test Agent consists of:
 - start-up code;
-- generic implementation of PCH functions (@path{lib/rcfpch});
-- OS-specific implementation of some PCH functions
-  (rcf_ch_start_process(), rcf_ch_start_thread(), etc.);
-- OS-specific implementation of callbacks for configurator tree;
+- generic part - Portable Command Handler (PCH) (sources under
+  @path{lib/rcfpch} directory);
+- OS-specific part - Command Handler (CH) - functions called by PCH
+  (for more information see @ref rcf_ch);
+- OS-specific implementation of callbacks for configurator tree
+  (see @ref rcf_ch_cfg interface);
 - a set of functions used in RPC;
 - a number of standard RCF Services supported in separate libraries
   (like TAD).
@@ -100,7 +102,7 @@ Basically Test Agent consists of:
 |  +-----------+     +-------+--------+          |           +--+----------------+--+          |
 |                            |                   |              |                |             |
 |         +------------------|--=----------------|--=-----------|--=-------------|----------+  |
-|         :                  |                   |              |                |          |  |
+|         :  CH              |                   |              |                |          |  |
 |         |                  v                   v              v                v          |  |
 |         |      +-----------------------+   +----------------------+     +-------------+   |  |
 |         |      |   Configurator tree   |   | rcf_ch_start_process |     |  RPC Calls  |   |  |
