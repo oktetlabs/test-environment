@@ -6,8 +6,6 @@
 @ingroup te_engine
 @{
 
-@tableofcontents
-
 @section te_engine_rcf_introduction Introduction
 
 Remote Control Facility (RCF) is a distributed entity allowing interactions
@@ -331,6 +329,87 @@ on Test Agent side and we do not want to modify test suite sources.
 XSD schema of @ref te_engine_rcf configuration file can be found at
 @path{${TE_BASE}/doc/xsd/rcf_config.xsd} file.
 
+@section te_engine_rcf_comm_lib RCF Communication Library
+
+For each Test Agent listed in @ref te_engine_rcf configuration file
+we specify @attr_name{rcflib} attribute whose value define the name of
+communication library that @ref te_engine_rcf shall use while sending
+or receiving commands to/from that Test Agent. Currently TE supports only
+one type of @ref te_engine_rcf communication library - 
+@ref te_engine_rcf_comm_lib_unix.
+
+@subsection te_engine_rcf_comm_lib_unix RCF UNIX Communication Library
+
+@ref te_engine_rcf_comm_lib_unix should be used to control and interact
+with @ref te_agents on Unix-like hosts. It uses @prog{ssh} and @prog{scp}
+utilities to run commands on other hosts and to copy files
+(Test Agent executables) to other hosts. Output from Test Agent
+(@var{stdout} and @var{stderr}) is directed to TE log with @ref te_engine_rcf
+as logging entity name and Test Agent name as logging user name and
+to @path{ta.<name>} file in run directory.
+
+It is worth nothing that a user who runs @ref te_engine_dispatcher script
+should be able to enter hosts specified in @ref te_engine_rcf configuration
+file without password prompt (e.g. using public key). It requires special
+tunings of SSH daemon on remote host as well.
+
+Apart from @attr_name{rcflib} attribute for each Test Agent
+@ref te_engine_rcf configuration file contains @attr_name{confstr} attribute
+that specifies configuration string passed to communication library.
+The format of this configuration string is library specific.
+
+Configuration string of the @ref te_engine_rcf_comm_lib_unix has
+the following format:
+<pre class="fragment">
+[@attr_val{<host>}]:@attr_val{<port>}:[@attr_val{sudo}][:@attr_val{<shell>}]:[@attr_val{<parameters>}]
+</pre>
+
+where elements in square brackets are optional and may be skipped.
+- @attr_val{<host>} - is IPv4, IPv6 or DNS address of the host where to run
+  Test Agent. If the value is an empty string (skipped), then the Test Agent
+  runs on local host (on a host where @ref te_engine runs);
+- @attr_val{<port>} - is TCP port to bind TCP server on the Test Agent
+  (@ref te_engine_rcf_comm_lib_unix is based on TCP sockets and Test Agent
+  plays role of TCP server in connection establishment with
+  @ref te_engine_rcf, which means @ref te_engine_rcf side shall know to
+  which address and port to connect);
+- @attr_val{sudo} - specify this option when we need to run agent under
+  @prog{sudo} (with root privileges). This can be necessary if Test Agent
+  access resources that require privileged permissions (for example network
+  interface configuration);
+- @attr_val{<shell>} - is usually used to run the Test Agent under
+  @prog{valgrind} tool with a set of options
+  (e.g. @prog{valgrind} @prog_option{--tool=memcheck});
+- @attr_val{<parameters>} - string value that is transparently passed to the
+  Test Agent executables as command-line parameters (each token separated with
+  spaces will go as a separate command line parameter).
+.
+
+Here are few examples of configuration strings suitable for
+@ref te_engine_rcf_comm_lib_unix :
+-
+<pre class="fragment">
+<ta name="Agt_A" type="linux" rcflib="rcfunix" confstr=@attr_val{":12000::"}/>
+</pre>
+will run Test Agent on localhost host with user privileges,
+TCP server will be bound to port 12000;
+-
+<pre class="fragment">
+<ta name="Agt_A" type="linux" rcflib="rcfunix" confstr=@attr_val{":12000::valgrind --tool=helgrind:"}/>
+</pre>
+will run Test Agent on localhost host with user privileges,
+TCP server will be bound to port 12000, the Test Agent will be run under
+@prog{valgrind} with a data-race detection tool;
+-
+<pre class="fragment">
+<ta name="Agt_A" type="linux" rcflib="rcfunix" confstr=@attr_val{"loki:12000:sudo:valgrind --tool=memcheck --num-callers=32:"}/>
+</pre>
+will run Test Agent on @attr_val{loki} host with root privileges.
+The Test Agent will be run under @prog{valgrind} with memory checking tool
+and 32-depth call backtrace.
+.
+
 @} <!-- END te_engine_rcf -->
+
  */
 
