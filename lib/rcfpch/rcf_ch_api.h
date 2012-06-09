@@ -56,6 +56,19 @@
 extern "C" {
 #endif
 
+/** @defgroup rcf_ch Test Agents: Command Handler
+ * Common Handler (CH) is an interface to hide the details of Test Agent
+ * implementation for Portable Command Handler (PCH).
+ * When you support a new type of Test Agent you will need to implement
+ * only these set of functions to let other TE components access
+ * functionality exported by your Test Agent in generic way.
+ *
+ * Definition of these functions could be found under
+ * @path{${TE_BASE}/agents/[agent type]} directory.
+ *
+ * @ingroup te_agents
+ * @{ 
+ */
 
 /*
  * All functions may return -1 (unsupported). In this case no answer
@@ -132,6 +145,10 @@ extern void rcf_ch_unlock();
 
 #endif /* !HAVE_PTHREAD_H */
 
+/** @defgroup rcf_ch_reboot Command Handler: Reboot and shutdown support
+ * @ingroup rcf_ch
+ * @{ 
+ */
 
 /**
  * Shutdown the Test Agent (answer should be sent before shutdown).
@@ -179,6 +196,12 @@ extern int rcf_ch_reboot(struct rcf_comm_connection *handle,
                          char *cbuf, size_t buflen, size_t answer_plen,
                          const uint8_t *ba, size_t cmdlen,
                          const char *params);
+/**@} <!-- END rcf_ch_reboot --> */
+
+/**
+ * @addtogroup rcf_ch_cfg
+ * @{
+ */
 
 /** Configure operations */
 typedef enum {
@@ -214,6 +237,11 @@ typedef enum {
  * @retval  0       command is supported
  * @retval -1       command is not supported
  * @retval other    error returned by communication library
+ *
+ * @note If Test Agent does not want to support their own handler for
+ * configure operations, then a Test Agent shall implement this function
+ * as returning -1 telling PCH that we rely on generic function available
+ * in PCH.
  */
 extern int rcf_ch_configure(struct rcf_comm_connection *handle,
                             char *cbuf, size_t buflen,
@@ -221,7 +249,12 @@ extern int rcf_ch_configure(struct rcf_comm_connection *handle,
                             const uint8_t *ba, size_t cmdlen,
                             rcf_ch_cfg_op_t op,
                             const char *oid, const char *val);
+/**@} <!-- END rcf_ch_cfg --> */
 
+/** @defgroup rcf_ch_var Command Handler: Variables support
+ * @ingroup rcf_ch
+ * @{ 
+ */
 
 /**
  * Get value of the variable from the Test Agent or NUT served by it.
@@ -269,7 +302,12 @@ extern int rcf_ch_vread(struct rcf_comm_connection *handle,
 extern int rcf_ch_vwrite(struct rcf_comm_connection *handle,
                          char *cbuf, size_t buflen, size_t answer_plen,
                          rcf_var_type_t type, const char *var, ...);
+/**@} <!-- END rcf_ch_var --> */
 
+/** @defgroup rcf_ch_addr Command Handler: Symbol name and address resolver support
+ * @ingroup rcf_ch
+ * @{ 
+ */
 
 /**
  * This function may be used by Portable Commands Handler to resolve
@@ -286,7 +324,6 @@ extern int rcf_ch_vwrite(struct rcf_comm_connection *handle,
  */
 extern void *rcf_ch_symbol_addr(const char *name, te_bool is_func);
 
-
 /**
  * This function may be used by Portable Commands Handler to symbol address
  * to its name.
@@ -297,6 +334,12 @@ extern void *rcf_ch_symbol_addr(const char *name, te_bool is_func);
  */
 extern char *rcf_ch_symbol_name(const void *addr);
 
+/**@} <!-- END rcf_ch_addr --> */
+
+/** @defgroup rcf_ch_file Command Handler: File maniputation support
+ * @ingroup rcf_ch
+ * @{ 
+ */
 
 /**
  * Put/get file to/from the Test Agent or NUT served by it.  If the
@@ -327,7 +370,16 @@ extern int rcf_ch_file(struct rcf_comm_connection *handle,
                        char *cbuf, size_t buflen, size_t answer_plen,
                        const uint8_t *ba, size_t cmdlen,
                        rcf_op_t op, const char *filename);
+/**@} <!-- END rcf_ch_file --> */
 
+/** @defgroup rcf_ch_tad Command Handler: Traffic Application Domain (TAD) support
+ * A set of functions exported by a Test Agent to support TAD.
+ * The only supported version of TAD available at @path{lib/tad},
+ * so Test Agent code located under @path{agents/[agent type]} should
+ * not care about this interface.
+ * @ingroup rcf_ch
+ * @{ 
+ */
 
 /**
  * Initialize RCF TAD (Traffic Application Domain).
@@ -665,7 +717,12 @@ extern int rcf_ch_trpoll_cancel(struct rcf_comm_connection *handle,
                                 char *cbuf, size_t buflen,
                                 size_t answer_plen, csap_handle_t csap,
                                 unsigned int poll_id);
+/**@} <!-- END rcf_ch_tad --> */
 
+/** @defgroup rcf_ch_func Command Handler: Function call support
+ * @ingroup rcf_ch
+ * @{ 
+ */
 
 /**
  * Execute routine on the Test Agent or NUT served by it.
@@ -699,7 +756,14 @@ extern int rcf_ch_call(struct rcf_comm_connection *handle,
                        char *cbuf, size_t buflen, size_t answer_plen,
                        const char *rtn, te_bool is_argv,
                        int argc, void **params);
+/**@} <!-- END rcf_ch_func --> */
 
+/** @defgroup rcf_ch_proc Command Handler: Process/thread support
+ * A set of functions exported by a Test Agent to support interface
+ * of Command Handler for Test Agent thread and process manipulations.
+ * @ingroup rcf_ch
+ * @{
+ */
 
 /**
  * Start process on the Test Agent or NUT served by it.
@@ -769,9 +833,12 @@ extern int rcf_ch_free_proc_data(unsigned int pid);
  * @return Status code
  */
 extern int rcf_ch_kill_thread(unsigned int tid);
+/**@} <!-- END rcf_ch_proc --> */
 
-
-/** @defgroup rcf_ch_cfg  Command Handler configuration support interface
+/** @defgroup rcf_ch_cfg Command Handler: Configuration support
+ * A set of functions exported by a Test Agent to support interface
+ * of Command Handler for Test Agent configuration.
+ * @ingroup rcf_ch
  * @{ 
  */
 
@@ -892,8 +959,11 @@ typedef struct rcf_pch_cfg_object {
 
 } rcf_pch_cfg_object;
 
-/** @ingroup rcf_ch_cfg
+/**
  * @defgroup rcf_ch_cfg_node_def Configuration node definition macros
+ * Macros to define configuration nodes supported by @ref te_agents.
+ * Read more information on how to support new nodes at @ref te_agents_conf.
+ * @ingroup rcf_ch_cfg
  * @{
  */
 
@@ -1027,6 +1097,7 @@ extern const char *rcf_ch_conf_agent(void);
 
 /*@}*/
 
+/*@} <!-- END rcf_ch --> */
 
 #ifdef __cplusplus
 } /* extern "C" */
