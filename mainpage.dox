@@ -131,6 +131,74 @@ TE Subsystem may run in one or several threads (processes),
 or on one or several stations (including NUT).
 @tdt_end
 
+
+@section te_deps Test Environment Dependencies
+
+Test Environment depends on a set of 3-rd party libraries and packages.
+
+For building TE components from sources you need:
+- @prog{autoconf} version 2.61 or higher;
+- @prog{automake} 1.9.6 (note: 1.10.* does not work).
+.
+
+For @ref te_engine build and run (in square brackets - debian package names):
+- @lib_name{libxml2-devel} at least 2.6.x (2.6.10)
+  [@lib_name{libxml2} @lib_name{libxml2-dev}];
+- @lib_name{glib2-devel} (@lib_name{glib-2.0} package we use 2.4.8)
+  [@lib_name{libglib2-dev}];
+- @lib_name{popt-devel} (@lib_name{libpopt-dev} on Debian)
+  [@lib_name{libpopt-dev}];
+- @lib_name{libreadline} (for @ref te_engine_tester interactive)
+  [@lib_name{libreadline-common}, @lib_name{libreadline-dev},
+  @lib_name{libreadline-5}];
+- @prog{tcl} (and @lib_name{tcl-devel}, if applicable, e.g. on Fedora Core 2)
+  [@lib_name{tcl}, @lib_name{tcl-dev}];
+- @lib_name{libxslt} (we use 1.1.6)
+  [@lib_name{libxslt1-dev}, @lib_name{libxslt-1.1}];
+- @lib_name{libexpat} [@lib_name{libexpat1}, @lib_name{libexpat1-dev}];
+- @lib_name{flex} >= 2.5.31-31 from sourceforge; @lib_name{flex} 2.5.4a
+  from gnu.org will not work [@lib_name{flex}];
+- @prog{gawk} (@prog{mawk} will not work) [@lib_name{gawk}];
+- any @lib_name{curses} library (@lib_name{ncurses} will work) with
+  development files [@lib_name{ncurses}, @lib_name{ncurses-dev}];
+- @lib_name{perl-Time-HiRes} package on Redhat/Fedora is very usefull
+  (it allows to avoid mixture in log because of unprecise timestamps in
+  messages logged by @ref te_engine_dispatcher (via logging script));
+- @lib_name{libgss0} (>=0.0.18) [@lib_name{libgss0}];
+- Wireless tools - development files [@lib_name{libiw-dev}];
+- PPPoE [@lib_name{pppoe}] [@lib_name{pppoeconf}];
+- @lib_name{curl} libraries [not from debian, should be taken from storage];
+- @lib_name{libusb}, @lib_name{libusb-dev};
+- @lib_name{libpam0g-dev};
+- @lib_name{libperl-dev};
+- @lib_name{bison}.
+.
+
+@ref te_agents_unix :
+
+- @lib_name{expect} and @lib_name{expect-dev} (for TAD CLI only)
+  [@lib_name{expect}, @lib_name{expect-dev}];
+- @lib_name{flex} >= 2.5.31 from sourceforge;
+  @lib_name{flex} 2.5.4a from gnu.org does not work;
+- @lib_name{libexpat};
+- @lib_name{libpcap0.8-dev} (for TAD PCAP only) [@lib_name{libpcap0.8-dev}];
+- @lib_name{libpam} (0.76-22) (not required but suggested)
+  [@lib_name{libpam}];
+- @lib_name{libnl-devel}.
+.
+
+@ref te_agents_win :
+
+- @lib_name{cygwin}, cross-toolchain;
+- @lib_name{libpcap} (crosscompiled for @lib_name{cygwin}).
+  Should be put into standard @path{include/lib} paths of
+  @lib_name{cygwin} cross-compiler - required for TAD library.
+  @lib_name{Winpcap} runtime has to be installed on Windows host.
+
+Of course, @prog{gcc}, @prog{make}, @prog{sed} and other standard development
+tools are required to build sources.
+
+
 @section te_architecture Test Environment Architecture
 
 The following picture shows high level decomposition of TE components:
@@ -152,6 +220,7 @@ no intend to port it to any other OS type, but @ref te_agents can be run on
 different platforms providing particular set of mandatory features for
 @ref te_engine. @ref te_agents are the subject to be ported to hardware/software
 specific components of test infrastructure.
+
 
 @section te_run_time Test Environment operation
 
@@ -229,6 +298,7 @@ Test Environment:
 -# @ref te_engine_dispatcher script finishes its work.
 .
 
+
 @section te_tools Test Environment Tools
 
 Apart from main components, TE provides the following set of tools:
@@ -239,6 +309,8 @@ Apart from main components, TE provides the following set of tools:
 - <b>Test Result comparator</b> tool that can be used to check the
   difference between different test runs (TRC tool);
 - <b>Test Package Generator</b> tool.
+.
+
 
 @section te_services Test Environment Services
 
