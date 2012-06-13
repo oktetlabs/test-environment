@@ -153,6 +153,7 @@ In our sample we tell @ref te_engine_tester :
 
 If you only need to build a set of test suites you can have
 @ref te_engine_tester configuration file as following:
+@code
 <?xml version="1.0"?>
 <tester_cfg version="1.0">
     <maintainer name="Oleg Kravtsov" mailto="Oleg.Kravtsov@oktetlabs.ru"/>
