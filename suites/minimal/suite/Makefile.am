@@ -8,7 +8,7 @@ AM_LDFLAGS = @TS_LDFLAGS@
 
 tetest_PROGRAMS = sample1
 
-MYLDADD = @TS_TE_LIBS@ -lndn -lasn -lpthread
+MYLDADD = @TS_TE_LIBS@
 MYDEPS = @TS_TE_DEPS@
 
 sample1_SOURCES = sample1.c
