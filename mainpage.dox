@@ -329,6 +329,343 @@ that are useful while writing this or that test cases:
 - @ref tapi_conf
 .
 
-@}
+@} <!-- END te -->
+
+
+
+@defgroup te_user TE: User Guide
+@ingroup te
+@{
+
+@section te_user_introduction Introduction
+
+This page gives step by step guideline on where to start with TE and
+how to create a new test suite.
+
+TE can be supplied in two release types:
+- pre-installed form (external headers and binaries are available);
+- source code form (all sources of TE components are available).
+.
+
+@section te_user_build Building TE components
+
+When you get TE in source code form you need to build TE before
+it can be used for testing.
+
+In order to build sources you will need to prepare project-specific
+@ref te_engine_builder configuration file. For the details on how to write
+that configuration file please read @ref te_engine_builder_conf_file section.
+
+For example @path{builder.conf} file for a sample test suite located under
+@path{${TE_BASE}/suites/ipv6-demo} is following:
+
+@code
+@USER_EXPAND{INCLUDE_FILE} suites/ipv6-demo/conf/builder.conf
+@endcode
+
+When you prepared a @ref te_engine_builder configuration file, you are ready
+to start builing process.
+
+Before starting building process you should export @var{TE_BASE} environment
+variable that points to the root directory of Test Environment sources.
+
+In your @path{~/.bashrc} file add:
+@code
+export TE_BASE=/path/to/TE_root_dir
+@endcode
+
+Suppose we have the following structure under our project directory
+(a directory where we run Test Environment building procedure):
+<pre class="fragment">
+@path{${PRJ_ROOT}}
+  +-- @path{conf_ipv6}
+       +-- @path{builder.conf.ipv6_demo}
+</pre>
+
+To start building process we should run the following command:
+<pre class="fragment">
+cd $PRJ_ROOT
+@path{${TE_BASE}}/@prog{dispatcher.sh} @prog_option{--conf-dir=}@path{conf_ipv6} @prog_option{--conf-builder=}@path{builder.conf.ipv6_demo} @prog_option{--build-only} @prog_option{--no-tester}
+</pre>
+
+If you get some errors during building procedure, you should first check
+if your have all necessary packages installed on your development platform.
+Please refer to @ref te_deps section to check the list of required packages
+and libraries.
+
+If you do not specify @var{TE_BUILD} environment variable,
+@ref te_engine_builder creates @path{build} directory under your
+@path{${PRJ_ROOT}} where it calls @prog{configure} scripts and
+calls @prog{make}.
+
+@section te_user_run Running TE components
+
+There is no much sense running TE if you do not have a test suite, but anyway
+it could be useful to run TE without @ref te_engine_builder to check if
+configuration files for @ref te_engine_conf and @ref te_engine_rcf are well
+formatted and they reflect real infrastructure settings.
+
+@subsection te_user_run_rcf Running RCF
+
+@ref te_engine_rcf configuration file specifies the list of Test Agents to
+run with a a set of parameters associated with them. For the detailed
+information on how to write @ref te_engine_rcf configuration file please
+refer to @ref te_engine_rcf_conf_file section.
+
+More likely you will already have some @ref te_engine_rcf configuration file
+or you will need to do your own version of configuration file based on
+existing one.
+
+First thing that you need to take into account while writing
+@ref te_engine_rcf configuration file is the how and where you are going to
+organize testing process.
+
+Suppose you need to test some communication API between two end-points
+(for example it could be Socket API) and you have the following network
+topology:
+
+@image html te_user_net_conf_rcf_sample1.png "Sample network topology"
+
+You would like to test communication between end point pairs:
+- BSD and Windows;
+- BSD and Linux;
+- Windows and Linux.
+.
+
+The API to be tested is the same on all platforms, which means we can use
+the same test suite for each pair. The only thing specific for our test
+set-up is where to run Test Agent that supports interface to be tested
+(assume we exported interface to be tested via @ref te_lib_rpc_tapi).
+
+For testing BSD vs Windows configuration we should use the following set-up:
+
+@image html te_user_net_conf_rcf_sample2.png "TE components location for testing BSD vs Windows configuration"
+
+In this scenario @ref te_engine_rcf configuration file would look like:
+
+@code
+<?xml version="1.0"?>
+<rcf>
+  <ta name="Agt_A" type="bsd" rcflib="rcfunix" confstr="gollum:5000:sudo:"/>
+  <ta name="Agt_B" type="win" rcflib="rcfunix" confstr="aule:5000:sudo:"/>
+</rcf>
+@endcode
+
+Please note that we use the same @ref te_engine_rcf_comm_lib_unix,
+but different Test Agent types.
+
+For testing BSD vs Linux configuration we should use the following set-up:
+
+@image html te_user_net_conf_rcf_sample3.png "TE components location for testing BSD vs Linux configuration"
+
+In this scenario @ref te_engine_rcf configuration file would look like:
+
+@code
+<?xml version="1.0"?>
+<rcf>
+  <ta name="Agt_A" type="bsd" rcflib="rcfunix" confstr="gollum:5000:sudo:"/>
+  <ta name="Agt_B" type="linux" rcflib="rcfunix" confstr=":5000:sudo:"/>
+</rcf>
+@endcode
+
+Note that we can avoid specifying host name for Test Agent @attr_val{Agt_B},
+because it runs on the same host as @ref te_engine.
+
+Similar set-up would be for testing  Windows vs Linux set-up.
+
+Now we have @ref te_engine_rcf configuration files ready and we can run TE
+with @ref te_engine_rcf.
+
+Our project tree has the following structure:
+<pre class="fragment">
+@path{${PRJ_ROOT}}
+  +-- @path{conf_ipv6}
+       +-- @path{builder.conf.ipv6_demo}
+       +-- @path{rcf.conf.bsd_win}
+       +-- @path{rcf.conf.bsd_linux}
+       +-- @path{rcf.conf.linux_win}
+</pre>
+
+To start TE with @ref te_engine_rcf, but still without @ref te_engine_conf
+and @ref te_engine_tester, run:
+<pre class="fragment">
+@path{${TE_BASE}}/@prog{dispatcher.sh} @prog_option{--conf-dir=}@path{conf_ipv6} @prog_option{--conf-builder=}@path{builder.conf.ipv6_demo} @prog_option{--conf-rcf=}@path{rcf.conf.bsd_win} @prog_option{--no-cs} @prog_option{--no-tester}
+</pre>
+
+If you have some problems with copying Test Agent images to set-up hosts or
+if you have problems with connection to these Agents you should first check
+that you are able to enter these hosts without password prompt
+(read @ref te_engine_rcf_comm_lib_unix for more information).
+
+Anyway when @prog{dispatcher.sh} script finishes you can check results in
+text log file @path{build/log.txt}.
+
+@subsection te_user_run_logger Running Logger
+
+@ref te_engine_logger configuration file depends on @ref te_engine_rcf
+configuration file in case we need to specify log polling intervals on
+per Test Agent basis, but in most cases logger configuration file specifies
+common polling interval to use for accessing all Test Agents.
+
+For more information on @ref te_engine_logger configuration file read
+@ref te_engine_logger_conf_file.
+
+More often @ref te_engine_logger configuration file is the same for
+different test set-ups, so preferably if its name is @path{logger.conf},
+because @ref te_engine_dispatcher uses this file name as the default
+@ref te_engine_logger configuration file.
+
+@subsection te_user_run_conf Running Configurator
+
+To run @ref te_engine_conf you need to prepare a configuration file whose
+name is passed to @prog{dispatcher.sh} script.
+For the details on @ref te_engine_conf configuration file read
+@ref te_engine_conf_file section.
+
+Assuming our @ref te_engine_conf configuration file is split into two parts
+we would have the following directory tree structure:
+<pre class="fragment">
+@path{${PRJ_ROOT}}
+  +-- @path{conf_ipv6}
+       +-- @path{builder.conf.ipv6_demo}
+       +-- @path{rcf.conf.bsd_win}
+       +-- @path{rcf.conf.bsd_linux}
+       +-- @path{rcf.conf.linux_win}
+       +-- @path{logger.conf}
+       +-- @path{cs.conf.common}
+       +-- @path{cs.conf.bsd_win}
+       +-- @path{cs.conf.bsd_linux}
+       +-- @path{cs.conf.linux_win}
+</pre>
+
+Where @path{cs.conf.bsd_win} file can look as following:
+<pre class="fragment">
+<?xml version="1.0"?>
+<history>
+  <xi:include href="cs.conf.common" parse="xml"
+              xmlns:xi="http://www.w3.org/2003/XInclude"/>
+  &lt;!-- BSD vs Win specific objects and instances descriptions --&gt;
+</pre>
+
+To start TE with @ref te_engine_rcf, @ref te_engine_conf, but without
+@ref te_engine_tester, run:
+<pre class="fragment">
+@path{${TE_BASE}}/@prog{dispatcher.sh} @prog_option{--conf-dir=}@path{conf_ipv6} @prog_option{--conf-builder=}@path{builder.conf.ipv6_demo} @prog_option{--conf-rcf=}@path{rcf.conf.bsd_win} @prog_option{--conf-cs=}@path{cs.conf.bsd_win} @prog_option{--no-tester}
+</pre>
+
+@subsection te_user_run_tester Running Tester
+
+Running @ref te_engine_tester requires some test suite to be availabe.
+
+@} <!-- END te_user -->
+
+
+
+
+
+
+
+
+@defgroup te_ts TE: Test Suite
+@ingroup te
+@{
+
+@section te_ts_terminology Terminology
+
+@tdt_start
+@tdt_term Test Package
+@tdt_def Group of tightly related tests or test packages, which may share
+internal libraries and usually run together (one-by-one or simultaneously).
+Test Package may consist of one test. It may have a prologue (performing
+some initialization) and epilogue (releasing resources and restoring
+TE configuration).
+@tdt_term Test Script
+@tdt_def A test which is a minimal structural unit of a test harness.
+@tdt_term Test Suite
+@tdt_def Test Package which may be considered as standalone entity from
+organisational point of view and build issues.
+@tdt_tend
+
+@section te_ts_tree_structure Directory tree structure
+
+Test suite can be distributed in two forms:
+-# pre-installed binary form;
+-# source based form.
+.
+
+For pre-installed binary test suite does not require building procedure,
+which is why there is no need to have build related files.
+
+Pre-installed binary test suite has the following directory structure:
+<pre class="fragment">
+@path{${TS_ROOT}}
+  +-- @path{package.xml}
+  +-- @path{prologue}
+  +-- @path{epilogue}
+  +-- @path{p1_test1}
+  +   ...
+  +-- @path{p1_testN}
+  +-- @path{subpackage}
+       +-- @path{package.xml}
+       +-- @path{prologue}
+       +-- @path{epilogue}
+       +-- @path{p2_test1}
+       +   ...
+       +-- @path{p2_testN}
+  ...
+</pre>
+
+A test suite consists of a set of packages each containing a number of
+test executables and package description file. For the details on the format
+of @path{package.xml} files refer to @ref te_engine_tester_conf_pkg section.
+
+Source based test suite additionally has build-specific files. As any other
+component of TE, a source based test suite is expected to be built with the
+help of @ref te_engine_builder. @ref te_engine_builder uses autotools in
+the backgroud, which means a top level package directory shall include:
+- @path{Makefile.in} file;
+- @prog{configure} script.
+.
+
+More often source based test suite will have base files of autotools:
+- @path{Makefile.am};
+- @path{configure.ac}.
+.
+
+The directory structure of source-based test suite is following:
+<pre class="fragment">
+@path{${TS_ROOT}}
+  +-- @path{package.xml}
+  +-- @path{configure.ac}
+  +-- @path{Makefile.am}
+  +-- @path{prologue.c}
+  +-- @path{epilogue.c}
+  +-- @path{p1_test1.c}
+  +   ...
+  +-- @path{p1_testN.c}
+  +-- @path{subpackage}
+       +-- @path{package.xml}
+       +-- @path{Makefile.am}
+       +-- @path{prologue.c}
+       +-- @path{epilogue.c}
+       +-- @path{p2_test1.c}
+       +   ...
+       +-- @path{p2_testN.c}
+  ...
+</pre>
+
+@section te_ts_min Minimal Test Suite
+
+Minimal test suite can be found under @path{suites/minimal/suite} directory.
+This test suite has simplest package description file:
+@code
+@USER_EXPAND{INCLUDE_FILE} suites/minimal/suite/package.xml
+@endcode
+
+Package description file specifies one test executable @prog{sample1} to run.
+
+
+
+@} <!-- END te_user -->
 
  */
