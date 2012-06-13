@@ -1,8 +1,104 @@
 /** @file
- * @brief Test Environment
+ * @brief Test Environment: RCF library for UNIX Test Agents
  *
- * RCF library for UNIX Test Agents
+ * @ref te_engine_rcf_comm_lib_unix should be used to control and interact
+ * with @ref te_agents on Unix-like hosts. It uses @prog{ssh} and @prog{scp}
+ * utilities to run commands on other hosts and to copy files
+ * (Test Agent executables) to other hosts. Output from Test Agent
+ * (@var{stdout} and @var{stderr}) is directed to TE log with
+ * @ref te_engine_rcf as logging entity name and Test Agent name as
+ * logging user name and to @path{ta.<name>} file in run directory.
  *
+ * Apart from @attr_name{rcflib} attribute for each Test Agent
+ * @ref te_engine_rcf configuration file contains @attr_name{confstr}
+ * attribute that specifies configuration string passed to communication
+ * library. The format of this configuration string is library specific.
+ *
+ * Configuration string of the @ref te_engine_rcf_comm_lib_unix has
+ * the following format:
+ * <pre class="fragment">
+ * [[@attr_val{user}@]@attr_val{<IP_address_or_hostname>}]:@attr_val{<port>}
+ * [:@attr_name{key}=@attr_val{<ssh_private_key_file>}]
+ * [:@attr_name{copy_timeout}=@attr_val{<timeout>}]
+ * [:@attr_name{kill_timeout}=@attr_val{<timeout>}][:@attr_val{notcopy}]
+ * [:@attr_val{sudo}][:@attr_val{<shell>}][:@attr_val{<parameters>}]
+ * </pre>
+ *
+ * where elements in square brackets are optional and may be skipped.
+ * - @attr_val{<IP_address_or_hostname>} - is IPv4, IPv6 or DNS address of
+ *   the host where to run Test Agent. If the value is an empty string
+ *   (skipped), then the Test Agent runs on local host (on a host where
+ *   @ref te_engine runs);
+ * - @attr_val{user} - if specified it is the user to log in as on the
+ *   @attr_val{<IP_address_or_hostname>};
+ * - @attr_val{<port>} - is TCP port to bind TCP server on the Test Agent
+ *  (@ref te_engine_rcf_comm_lib_unix is based on TCP sockets and Test Agent
+ *   plays role of TCP server in connection establishment with
+ *   @ref te_engine_rcf, which means @ref te_engine_rcf side shall know to
+ *   which address and port to connect);
+ * - @attr_name{key} - specifies file from which the identity (private key)
+ *   for RSA or DSA authentication is read;
+ * - @attr_name{copy_timeout} - specifies the maximum time duration
+ *   (in seconds) that is allowed for image copy operation. If image copy
+ *   takes more than this timeout, Test Agent start-up procedure fails;
+ * - @attr_name{kill_timeout} - specifies the maximum time duration
+ *   (in seconds) that is allowed for Test Agent termination procedure;
+ * - @attr_val{notcopy} may be used to create symbolic link instead copying
+ *   of the image;
+ * - @attr_val{sudo} - specify this option when we need to run agent under
+ *   @prog{sudo} (with root privileges). This can be necessary if Test Agent
+ *   access resources that require privileged permissions (for example
+ *   network interface configuration);
+ * - @attr_val{<shell>} - is usually used to run the Test Agent under
+ *   @prog{valgrind} tool with a set of options
+ *   (e.g. @prog{valgrind} @prog_option{--tool=memcheck}).
+ *   Note that this part of configuration string CANNOT contain collons;
+ * - @attr_val{<parameters>} - string value that is transparently passed to
+ *   the Test Agent executables as command-line parameters (each token
+ *   separated with spaces will go as a separate command line parameter).
+ * .
+ *
+ * Here are few examples of configuration strings suitable for
+ * @ref te_engine_rcf_comm_lib_unix :
+ * -
+ * <pre class="fragment">
+ * <ta name="Agt_A" type="linux" rcflib="rcfunix"
+ *     confstr=@attr_val{":12000::"}/>
+ * </pre>
+ * will run Test Agent on localhost host with user privileges,
+ * TCP server will be bound to port 12000;
+ * -
+ * <pre class="fragment">
+ * <ta name="Agt_A" type="linux" rcflib="rcfunix"
+ *     confstr=@attr_val{":12000::valgrind --tool=helgrind:"}/>
+ * </pre>
+ * will run Test Agent on localhost host with user privileges,
+ * TCP server will be bound to port 12000, the Test Agent will be run under
+ * @prog{valgrind} with a data-race detection tool;
+ * -
+ * <pre class="fragment">
+ * <ta name="Agt_A" type="linux" rcflib="rcfunix"
+ *     confstr=@attr_val{"loki:12000:sudo:valgrind --tool=memcheck --num-callers=32:"}/>
+ * </pre>
+ * will run Test Agent on @attr_val{loki} host with root privileges.
+ * The Test Agent will be run under @prog{valgrind} with memory checking
+ * tool and 32-depth call backtrace.
+ * .
+ *
+ * @note
+ * It is worth nothing that a user who runs @ref te_engine_dispatcher script
+ * should be able to enter hosts specified in @ref te_engine_rcf
+ * configuration file without password prompt (e.g. using public key).
+ * It requires special tunings of SSH daemon on remote host as well.
+ * File name that keeps private key for a particular Test Agent can be
+ * specified with @attr_name{key} option of configuration string.
+ *
+ * @note
+ * If @attr_val{sudo} element is specified in the configuration string of
+ * a Test Agent, then it is assumed that user is sudoer without password.
+ */
+
+/*
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
  *
