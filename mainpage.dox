@@ -379,7 +379,7 @@ Suppose we have the following structure under our project directory
 <pre class="fragment">
 @path{${PRJ_ROOT}}
   +-- @path{conf_ipv6}
-       +-- @path{builder.conf.ipv6_demo}
+        +-- @path{builder.conf.ipv6_demo}
 </pre>
 
 To start building process we should run the following command:
@@ -480,10 +480,10 @@ Our project tree has the following structure:
 <pre class="fragment">
 @path{${PRJ_ROOT}}
   +-- @path{conf_ipv6}
-       +-- @path{builder.conf.ipv6_demo}
-       +-- @path{rcf.conf.bsd_win}
-       +-- @path{rcf.conf.bsd_linux}
-       +-- @path{rcf.conf.linux_win}
+        +-- @path{builder.conf.ipv6_demo}
+        +-- @path{rcf.conf.bsd_win}
+        +-- @path{rcf.conf.bsd_linux}
+        +-- @path{rcf.conf.linux_win}
 </pre>
 
 To start TE with @ref te_engine_rcf, but still without @ref te_engine_conf
@@ -527,15 +527,15 @@ we would have the following directory tree structure:
 <pre class="fragment">
 @path{${PRJ_ROOT}}
   +-- @path{conf_ipv6}
-       +-- @path{builder.conf.ipv6_demo}
-       +-- @path{rcf.conf.bsd_win}
-       +-- @path{rcf.conf.bsd_linux}
-       +-- @path{rcf.conf.linux_win}
-       +-- @path{logger.conf}
-       +-- @path{cs.conf.common}
-       +-- @path{cs.conf.bsd_win}
-       +-- @path{cs.conf.bsd_linux}
-       +-- @path{cs.conf.linux_win}
+        +-- @path{builder.conf.ipv6_demo}
+        +-- @path{rcf.conf.bsd_win}
+        +-- @path{rcf.conf.bsd_linux}
+        +-- @path{rcf.conf.linux_win}
+        +-- @path{logger.conf}
+        +-- @path{cs.conf.common}
+        +-- @path{cs.conf.bsd_win}
+        +-- @path{cs.conf.bsd_linux}
+        +-- @path{cs.conf.linux_win}
 </pre>
 
 Where @path{cs.conf.bsd_win} file can look as following:
@@ -556,6 +556,90 @@ To start TE with @ref te_engine_rcf, @ref te_engine_conf, but without
 @subsection te_user_run_tester Running Tester
 
 Running @ref te_engine_tester requires some test suite to be availabe.
+
+For more information on @ref te_engine_tester configuration file read
+@ref te_engine_tester_conf_root section.
+
+For information on how to create a test suite read @ref te_ts page.
+
+Suppose you have the following test project directory structure:
+<pre class="fragment">
+@path{${PRJ_ROOT}}
+  +-- @path{conf_ipv6}
+  |     +-- @path{builder.conf.ipv6_demo}
+  |     +-- @path{rcf.conf.bsd_win}
+  |     +-- @path{rcf.conf.bsd_linux}
+  |     +-- @path{rcf.conf.linux_win}
+  |     +-- @path{logger.conf}
+  |     +-- @path{cs.conf.common}
+  |     +-- @path{cs.conf.bsd_win}
+  |     +-- @path{cs.conf.bsd_linux}
+  |     +-- @path{cs.conf.linux_win}
+  |     +-- @path{tester.conf}
+  +-- @path{suite-src}
+        +-- @path{configure.ac}
+        +-- @path{Makefile.am}
+        +-- @path{package.xml}
+        +-- @path{prologue.c}
+        +-- @path{test1.c}
+        +-- @path{test2.c}
+        +-- @path{pkg1}
+        |     +-- @path{package.xml}
+        |     +-- @path{test3.c}
+        |     +-- @path{test4.c}
+        +-- @path{pkg2}
+              +-- @path{package.xml}
+              +-- @path{test5.c}
+              +-- @path{test6.c}
+</pre>
+
+The content of @path{${PRJ_ROOT}/conf_ipv6/tester.conf} is:
+
+@code
+<?xml version="1.0"?>
+<tester_cfg version="1.0">
+    <maintainer mailto="Oleg.Kravtsov@oktetlabs.ru"/>
+    <description>Minimal test suite</description>
+    
+    <suite name="test-suite" src="${PRJ_ROOT}/suite-src"/>
+    <run>
+        <package name="test-suite"/>
+    </run>
+</tester_cfg>
+@endcode
+
+Before we run TE with @ref te_engine_tester we need to make sure
+test suite tree has @prog{configure} script in the top level directory and
+@path{Makefile.in} files in all subdirectories. These files can be generated
+with @prog{autoreconf} utility run in test suite top level directory.
+
+If we need to (re-)build test suite sources at @ref te_engine_tester start-up
+we should run @ref te_engine_dispatcher as:
+<pre class="fragment">
+@path{${TE_BASE}}/@prog{dispatcher.sh} @prog_option{--conf-dir=}@path{conf_ipv6} @prog_option{--conf-builder=}@path{builder.conf.ipv6_demo} @prog_option{--conf-rcf=}@path{rcf.conf.bsd_win} @prog_option{--conf-cs=}@path{cs.conf.bsd_win} @prog_option{--tester-conf=}@path{tester.conf}
+</pre>
+
+This command will build TE, build test suites specified in @path{tester.conf}
+file and run all tests according to @ref te_engine_tester configuration file
+and test package description files.
+
+If you need to run the particular test from a test suite
+(say @path{test6}) you can run:
+<pre class="fragment">
+@path{${TE_BASE}}/@prog{dispatcher.sh} @prog_option{--conf-dir=}@path{conf_ipv6} @prog_option{--conf-builder=}@path{builder.conf.ipv6_demo} @prog_option{--conf-rcf=}@path{rcf.conf.bsd_win} @prog_option{--conf-cs=}@path{cs.conf.bsd_win} @prog_option{--no-builder} @prog_option{--tester-no-build} @prog_option{--tester-run=}@path{test-suite/pkg2/test6}
+</pre>
+
+Please note that we do not specify @ref te_engine_tester configuration file,
+because @ref te_engine_dispatcher uses @path{tester.conf} as the default
+name of @ref te_engine_tester configuration file.
+
+Also note that we ask @ref te_engine_dispatcher to skip building TE
+(@prog_option{--no-builder} option) and skip building test suite
+(assuming we already built it, it is possible to specify
+@prog_option{--tester-no-build} option).
+
+For more information on @ref te_engine_dispatcher options related to
+@ref te_engine_tester please read @ref te_engine_dispatcher_options.
 
 @} <!-- END te_user -->
 
@@ -623,14 +707,21 @@ Source based test suite additionally has build-specific files. As any other
 component of TE, a source based test suite is expected to be built with the
 help of @ref te_engine_builder. @ref te_engine_builder uses autotools in
 the backgroud, which means a top level package directory shall include:
-- @path{Makefile.in} file;
 - @prog{configure} script.
+.
+And all directories shall include:
+- @path{Makefile.in} file;
 .
 
 More often source based test suite will have base files of autotools:
 - @path{Makefile.am};
 - @path{configure.ac}.
 .
+And before running TE we there will be need to generate @prog{configure}
+script and @path{Makefile.in} files with the following command:
+<pre class="fragment">
+@prog{autoreconf} @prog_option{--install} @prog_option{--force}
+</pre>
 
 The directory structure of source-based test suite is following:
 <pre class="fragment">
@@ -656,15 +747,103 @@ The directory structure of source-based test suite is following:
 
 @section te_ts_min Minimal Test Suite
 
-Minimal test suite can be found under @path{suites/minimal/suite} directory.
-This test suite has simplest package description file:
+Minimal test suite can be found under @path{${TE_BASE}/suites/minimal/suite}
+directory.
+
+The structure of minimal project is:
+<pre class="fragment">
+@path{${TE_BASE}/suites/minimal}
+  +-- @path{conf}
+  |     +-- @path{builder.conf}
+  |     +-- @path{cs.conf}
+  |     +-- @path{logger.conf}
+  |     +-- @path{rcf.conf}
+  |     +-- @path{tester.conf}
+  +-- @path{suite}
+        +-- @path{configure.ac}
+        +-- @path{Makefile.am}
+        +-- @path{package.xml}
+        +-- @path{sample1.c}
+</pre>
+
+@ref te_engine_tester configuration file (@path{tester.conf}) refers to
+suite sources and add this suite for @ref te_engine_tester run:
+@code
+@USER_EXPAND{INCLUDE_FILE} suites/minimal/conf/tester.conf
+@endcode
+
+This test suite has simplest package description file (@path{package.xml}):
 @code
 @USER_EXPAND{INCLUDE_FILE} suites/minimal/suite/package.xml
 @endcode
 
 Package description file specifies one test executable @prog{sample1} to run.
 
+To run this test suite do the following steps:
+-# under @path{${TE_BASE}/suites/minimal/suite} run:
+<pre class="fragment">
+@prog{autoreconf} @prog_option{--install} @prog_option{--force}
+</pre>
+This will generate @prog{configure} script and @path{Makefile.in} file
+under @path{${TE_BASE}/suites/minimal/suite directory.
+-# export @var{TS_BASE} environment variable, because @ref te_engine_tester
+   configuration file (@path{tester.conf}) uses it as the value of
+   @attr_name{src} attribute of @attr_name{suite} TAG.
+<pre class="fragment">
+@prog{export} @var{TS_BASE}=@path{${TE_BASE}/suites/minimal/suite}
+</pre>
+-# run TE:
+<pre class="fragment">
+@path{${TE_BASE}/}@prog{dispatcher.sh} @prog_option{--conf-dir}=@path{conf}
+</pre>
+In our test project all configuration file names match with the default
+names, which is why we do not specify them with separate
+@prog_option{--conf-<prog>} options, but only tell where to find
+configuration files with @prog_option{--conf-dir} option.
 
+As the result of these operations a number of directories are created
+that have TE and suite build and installation files.
+
+<pre class="fragment">
+@path{${TE_BASE}/suites/minimal}
+  +-- @path{conf}
+  +-- @path{suite}
+  +-- @path{engine} - @ref te_engine build directory
+  +-- @path{agents} - @ref te_agents build directory
+  +-- @path{lib} - build directory for TE libraries
+  +-- @path{include} - build directory for includes
+  +-- @path{platforms} - platforms build
+  +-- @path{suites} - test suites build directory
+  +-- @path{inst} - installation directory
+        +-- @path{agents} - @ref te_agents installation directory
+        +-- @path{default} - @ref te_test_engine installation directory
+        +-- @path{suites} - test suites installation directory
+              +-- @path{minimal} -- installation directory of our @path{minimal} test suite
+                    +-- @path{package.xml} - installed package description file
+                    +-- @path{sample1} - test executable
+</pre>
+
+Please note that @ref te_engine_tester runs a test suite from
+@path{inst/suites/<suite_name>} directory.
+
+@subsection te_ts_min_builder Autotools files
+
+The content of @path{configure.ac} of our minimal test suite is following:
+@code
+@USER_EXPAND{INCLUDE_FILE} suites/minimal/suite/configure.ac
+@endcode
+
+The content of @path{Makefile.am} is following:
+@code
+@USER_EXPAND{INCLUDE_FILE} suites/minimal/suite/Makefile.am
+@endcode
+
+@subsection te_ts_min_test_file Test scenario file
+
+A test scenario file used in minimal test suite is a C source file:
+@code
+@USER_EXPAND{INCLUDE_FILE} suites/minimal/suite/sample1.c
+@endcode
 
 @} <!-- END te_user -->
 
