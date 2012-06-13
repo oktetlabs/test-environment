@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package version="1.0">
+
+    <description>Minimal Test Suite</description>
+
+    <author mailto="Oleg.Kravtsov@oktetlabs.ru"/>
+
+    <session>
+
+        <run>
+            <script name="sample1"/>
+        </run>
+
+    </session>
+</package>
