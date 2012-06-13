@@ -186,7 +186,7 @@ ALIASES                = tdt_start=<table><tr><td><b>Term</b></td><td><b>Definit
                          "path{1}=<span style='color: #4D4DDB;font-weight:bold'>\1</span>" \
                          "prog{1}=<span style='color: #990033;font-weight:bold;font-style:italic'>\1</span>" \
                          "func{1}=<span style='color: #000000;font-weight:bold'>\1</span>" \
-                         "var{1}=@b \1" \
+                         "var{1}=<span style='color: #000000;font-weight:bold'>\1</span>" \
                          "prog_option{1}=<span style='color: #000000;font-weight:bold'>\1</span>" \
                          "conf_path{1}=<span style='color: #4D4DDB;font-weight:bold'>\1</span>" \
                          "cmd{1}=<span style='color: #000000;font-weight:bold'>\1</span>" \
