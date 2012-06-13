@@ -85,8 +85,14 @@ disp_help=`${TE_BASE}/dispatcher.sh --help | \
              `
 fi
 
-awk -v disp_help="$disp_help" '
+awk -v disp_help="$disp_help" -v filename="suites/ipv6-demo/conf/builder.conf" '
 /^@USER_EXPAND{DISPATCHER_SCRIPT_OPTIONS}$/ { print disp_help; next }
+/^@USER_EXPAND{INCLUDE_FILE}/ {
+    while ((getline line < $2) > 0)
+        print line
+    close($2)
+    next
+}
 { print $0 }
 ' < ${filename}
 
