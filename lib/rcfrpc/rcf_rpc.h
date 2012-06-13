@@ -53,6 +53,12 @@
 #include "tarpc.h"
 
 
+/**
+ * @defgroup te_lib_rcfrpc API: RCF RPC
+ * @ingroup te_lib_rpc
+ * @{
+ */
+
 /** Unspecified RPC timeout in milliseconds */
 #define RCF_RPC_UNSPEC_TIMEOUT      0
 
@@ -493,7 +499,6 @@ extern te_bool rcf_rpc_server_has_children(rcf_rpc_server *rpcs);
         }                                                              \
     } while (0)
 
-
-
+/**@} <!-- END te_lib_rcfrpc --> */
 
 #endif /* !__TE_RCF_RPC_H__ */
