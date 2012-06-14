@@ -62,6 +62,12 @@
 extern "C" {
 #endif
 
+/**
+ * @defgroup te_ts_tapi_test TAPI: Test
+ * @ingroup te_ts
+ * @{
+ */
+
 #ifndef TE_LGR_USER
 /* Tests must define TE_TEST_NAME to be used as 'te_lgr_entity'. */
 #ifndef TE_TEST_NAME
@@ -69,7 +75,7 @@ extern "C" {
 #endif
 #endif
 
-/* 
+/** 
  * Define empty list of test-specific variables 
  * if test does not care about them.
  */
@@ -177,6 +183,13 @@ cleanup_specific:                                                   \
     TEST_END_SPECIFIC;                                              \
     return result
 
+/**
+ * @defgroup te_ts_tapi_test_misc TAPI: Test misc
+ * Miscellaneous definitions useful for test scenarios.
+ *
+ * @ingroup te_ts_tapi_test
+ * @{
+ */
 
 /**
  * Check an expression passed as the argument against zero.
@@ -252,6 +265,125 @@ cleanup_specific:                                                   \
         }                                                   \
     } while (0)
 
+/**@} <!-- END te_ts_tapi_test_misc --> */
+
+/**
+ * @defgroup te_ts_tapi_test_param TAPI: Test parameters
+ *
+ * If you need to pass a parameter to a test scenarion you need
+ * to specify that parameter in @ref te_engine_tester configuration file
+ * (package description file). Each parameter is associated with symbolic
+ * name that should be used as the key while getting value from a test.
+ *
+ * The main function to process test parameters in test scenario context
+ * is test_get_param(). It gets parameter name as an argument value and
+ * returns string value associated with that parameter.
+ *
+ * Apart from base function test_get_param() there are a number of macros
+ * that process type-specific parameters:
+ * - TEST_GET_ENUM_PARAM();
+ * - TEST_GET_STRING_PARAM();
+ * - TEST_GET_INT_PARAM();
+ * - TEST_GET_INT64_PARAM();
+ * - TEST_GET_DOUBLE_PARAM();
+ * - TEST_GET_OCTET_STRING_PARAM();
+ * - TEST_GET_STRING_LIST_PARAM();
+ * - TEST_GET_INT_LIST_PARAM();
+ * - TEST_GET_BOOL_PARAM();
+ * - TEST_GET_BUFF_SIZE().
+ * .
+ *
+ * For example for the following test run (from @path{package.xml}):
+ * @code
+ * <run>
+ *   <script name="comm_sender"/>
+ *     <arg name="size">
+ *       <value>1</value>
+ *       <value>100</value>
+ *     </arg>
+ *     <arg name="oob">
+ *       <value>TRUE</value>
+ *       <value>FALSE</value>
+ *     </arg>
+ *     <arg name="msg">
+ *       <value>Test message</value>
+ *     </arg>
+ * </run>
+ * @endcode
+ * we can have the following test scenario:
+ * @code
+ * int main(int argc, char **argv)
+ * {
+ *     int      size;
+ *     te_bool  oob;
+ *     char    *msg;
+ *
+ *     TEST_START;
+ *
+ *     TEST_GET_INT_PARAM(size);
+ *     TEST_GET_BOOL_PARAM(oob);
+ *     TEST_GET_STRING_PARAM(msg);
+ *     ...
+ * }
+ * @endcode
+ *
+ * Please note that variable name passed to TEST_GET_xxx_PARAM() macro shall
+ * be the same as expected parameter name.
+ *
+ * Test suite can also define parameters of enumeration type. For this kind
+ * of parameters you will need to define a macro based on
+ * TEST_GET_ENUM_PARAM().
+ *
+ * For example if you want specify something like the following in your
+ * @path{package.xml} files:
+ * @code
+ * <enum name="ledtype">
+ *   <value>POWER</value>
+ *   <value>USB</value>
+ *   <value>ETHERNET</value>
+ *   <value>WIFI</value>
+ * </enum>
+ *
+ * <run>
+ *   <script name="led_test"/>
+ *     <arg name="led" type="ledtype"/>
+ * </run>
+ * @endcode
+ * You can define something like this in your test suite header file
+ * (@path{test_suite.h}):
+ * @code
+ * enum ts_led_type {
+ *     TS_LED_TYPE_POWER,
+ *     TS_LED_TYPE_USB,
+ *     TS_LED_TYPE_ETH,
+ *     TS_LED_TYPE_WIFI,
+ * };
+ * #define LEDTYPE_MAPPING_LIST \
+ *            { "POWER", (int)TS_LED_TYPE_POWER },  \
+ *            { "USB", (int)TS_LED_TYPE_USB },      \
+ *            { "ETHERNET", (int)TS_LED_TYPE_ETH }, \
+ *            { "WIFI", (int)TS_LED_TYPE_WIFI }
+ *
+ * #define TEST_GET_LEDTYPE_PARAM(var_name_) \
+ *             TEST_GET_ENUM_PARAM(var_name_, LEDTYPE_MAPPING_LIST)
+ * @endcode
+ *
+ * Then in your test scenario you can write the following:
+ * @code
+ * int main(int argc, char **argv)
+ * {
+ *     enum ts_led_type led_type;
+ *
+ *     TEST_START;
+ *
+ *     TEST_GET_LEDTYPE_PARAM(led_type);
+ *     ...
+ * }
+ * @endcode
+ *
+ * @ingroup te_ts_tapi_test
+ * @{
+ */
 
 /**
  * Generic way to get mapped value of a parameter: string -> enum
@@ -600,6 +732,40 @@ extern const char *print_octet_string(const uint8_t *oct_string,
 extern int test_split_param_list(const char *list, char ***array_p);
 
 /**
+ * Function parses value and converts it to ASN value.
+ * It also handles cfg links.
+ *
+ * @param ns    Preallocated buffer for updated value
+ */
+extern te_errno
+tapi_asn_param_value_parse(char              *pwd,
+                           char             **s,
+                           const asn_type    *type,
+                           asn_value        **parsed_val,
+                           int               *parsed_syms,
+                           char              *ns);
+
+/**
+ * Parse test ASN parameters.
+ *
+ * @param argc          Amount of test parameters
+ * @param argv          Test parameters array
+ * @param conf_prefix   Test ASN parameters prefix
+ * @param conf_type     Test ASN parameters aggregation type
+ * @param conf_value    Resulted ASN parameters aggregation value
+ *
+ * @return 0 if success, or corresponding error otherwise
+ */
+extern te_errno
+tapi_asn_params_get(int argc, char **argv, const char *conf_prefix,
+                    const asn_type *conf_type, asn_value *conf_value);
+/**@} <!-- END te_ts_tapi_test_param --> */
+
+/** @addtogroup te_ts_tapi_test_misc
+ * @{
+ */
+
+/**
  * Signal handler to close TE when Ctrl-C is pressed.
  *
  * @param signum    - signal number
@@ -641,35 +807,6 @@ test_sleep_scale(void)
 }
 
 /**
- * Function parses value and converts it to ASN value.
- * It also handles cfg links.
- *
- * @param ns    Preallocated buffer for updated value
- */
-extern te_errno
-tapi_asn_param_value_parse(char              *pwd,
-                           char             **s,
-                           const asn_type    *type,
-                           asn_value        **parsed_val,
-                           int               *parsed_syms,
-                           char              *ns);
-
-/**
- * Parse test ASN parameters.
- *
- * @param argc          Amount of test parameters
- * @param argv          Test parameters array
- * @param conf_prefix   Test ASN parameters prefix
- * @param conf_type     Test ASN parameters aggregation type
- * @param conf_value    Resulted ASN parameters aggregation value
- *
- * @return 0 if success, or corresponding error otherwise
- */
-extern te_errno
-tapi_asn_params_get(int argc, char **argv, const char *conf_prefix,
-                    const asn_type *conf_type, asn_value *conf_value);
-
-/**
  * Scalable sleep (sleep scale times for _to_sleep seconds).
  *
  * @param _to_sleep     number of seconds to sleep is scale is 1
@@ -689,6 +826,10 @@ tapi_asn_params_get(int argc, char **argv, const char *conf_prefix,
  * @param _to_sleep     number of seconds to sleep is scale is 1
  */
 #define USLEEP(_to_sleep)   te_usleep(test_sleep_scale() * (_to_sleep))
+
+/**@} <!-- END te_ts_tapi_test_misc --> */
+ 
+/**@} <!-- END te_ts_tapi_test --> */
 
 #ifdef __cplusplus
 } /* extern "C" */
