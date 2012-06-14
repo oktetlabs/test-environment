@@ -394,9 +394,9 @@ Please refer to @ref te_deps section to check the list of required packages
 and libraries.
 
 If you do not specify @var{TE_BUILD} environment variable,
-@ref te_engine_builder creates @path{build} directory under your
-@path{${PRJ_ROOT}} where it calls @prog{configure} scripts and
-calls @prog{make}.
+@ref te_engine_builder calls @prog{configure} scripts and
+calls @prog{make} under @path{${PRJ_ROOT}} directory (i.e. a directory
+where you run @prog{dispatcher.sh}.
 
 @section te_user_run Running TE components
 
@@ -641,6 +641,45 @@ Also note that we ask @ref te_engine_dispatcher to skip building TE
 For more information on @ref te_engine_dispatcher options related to
 @ref te_engine_tester please read @ref te_engine_dispatcher_options.
 
+@subsection te_user_log_result Logging results
+
+During TE run time a number of log messages generated from different
+components of TE. All messages are gathered by @ref te_engine_logger and
+put into a binary file that by default has @path{tmp_raw_log} name and
+put under a directory where @prog{dispatcher.sh} run.
+
+You can specify the location and name of binary raw log file exporting
+@var{TE_LOG_RAW} environment variable:
+<pre class="fragment">
+@var{TE_LOG_RAW}=@path{/tmp/my_raw_log} @path{${TE_BASE}}/@prog{dispatcher.sh} @prog_option{--conf-dir=}@path{conf}
+</pre>
+
+Alternatively you may put raw log file under a particular directory, then
+you should specify @prog_option{--log-dir} option:
+<pre class="fragment">
+@path{${TE_BASE}}/@prog{dispatcher.sh} @prog_option{--conf-dir}=@path{conf} @prog_option{--log-dir}=@path{log}
+</pre>
+In this case raw log file will be saved to
+@path{${PRJ_ROOT}/log/tmp_raw_log} file.
+
+By default @ref te_engine_dispatcher will generate log report in plain text
+format (with the help of RGT tool). By default plain text log is put under
+run directory with name @path{log.txt}.
+
+If you want HTML-based multi-page structured log you should pass
+@prog_option{--log-html} option to @ref te_engine_dispatcher specifying
+directory name where to output log in HTML format:
+<pre class="fragment">
+@path{${TE_BASE}}/@prog{dispatcher.sh} @prog_option{--conf-dir}=@path{conf} @prog_option{--log-html}=@path{html-out}
+</pre>
+
+As the result HTML based log report can be found under
+@path{${PRJ_ROOT}/html-out} directory (open @path{index.html} file in
+a browser).
+
+For more information on log related options of @ref te_engine_dispatcher
+read @ref te_engine_dispatcher_options section.
+
 @} <!-- END te_user -->
 
 
@@ -849,7 +888,8 @@ A test scenario file used in minimal test suite is a C source file:
 
 Each test scenario shall have:
 -# Definition of @c TE_TEST_NAME macro in order to specify Entity name
-   of log messages generated from test scenario.
+   of log messages generated from test scenario. Usually this is set to
+   test name.
    @code
    #define TE_TEST_NAME "sample1"
    @endcode
