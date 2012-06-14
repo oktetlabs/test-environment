@@ -845,6 +845,44 @@ A test scenario file used in minimal test suite is a C source file:
 @USER_EXPAND{INCLUDE_FILE} suites/minimal/suite/sample1.c
 @endcode
 
+@section te_ts_scenario_layout Test scenario layout
+
+Each test scenario shall have:
+-# Definition of @c TE_TEST_NAME macro in order to specify Entity name
+   of log messages generated from test scenario.
+   @code
+   #define TE_TEST_NAME "sample1"
+   @endcode
+-# Inclusion of @path{te_config.h} file. This file defines macros generated
+   by TE @prog{configure} script after verification of header files,
+   structure fields, strucure sizes (i.e. it has definitions of
+   @c HAVE_xxx_H, @c SIZEOF_xxx macros).
+   @code
+   #include "te_config.h"
+   @endcode
+-# Inclusion of @path{tapi_test.h} file - basic API for test scenarios.
+   @code
+   #include "tapi_test.h"
+   @endcode
+-# @func{main()} function. A test scenario is an executable, so in case of
+   C source file we should have program entry point, which is @func{main()}
+   function for the default linker script.
+-# Mandatory test points:
+   - TEST_START;
+   - TEST_END;
+   - TEST_SUCCESS.
+   .
+   The mandatory test structure is:
+   @code
+   {
+       TEST_START;
+       ...
+       TEST_SUCCESS;
+   cleanup:
+       TEST_END;
+   }
+   @endcode
+
 @} <!-- END te_user -->
 
  */
