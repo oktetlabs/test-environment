@@ -352,19 +352,19 @@ cleanup_specific:                                                   \
  * You can define something like this in your test suite header file
  * (@path{test_suite.h}):
  * @code
- * enum ts_led_type {
- *     TS_LED_TYPE_POWER,
- *     TS_LED_TYPE_USB,
- *     TS_LED_TYPE_ETH,
- *     TS_LED_TYPE_WIFI,
+ * enum ts_led {
+ *     TS_LED_POWER,
+ *     TS_LED_USB,
+ *     TS_LED_ETH,
+ *     TS_LED_WIFI,
  * };
  * #define LEDTYPE_MAPPING_LIST \
- *            { "POWER", (int)TS_LED_TYPE_POWER },  \
- *            { "USB", (int)TS_LED_TYPE_USB },      \
- *            { "ETHERNET", (int)TS_LED_TYPE_ETH }, \
- *            { "WIFI", (int)TS_LED_TYPE_WIFI }
+ *            { "POWER", (int)TS_LED_POWER },  \
+ *            { "USB", (int)TS_LED_USB },      \
+ *            { "ETHERNET", (int)TS_LED_ETH }, \
+ *            { "WIFI", (int)TS_LED_WIFI }
  *
- * #define TEST_GET_LEDTYPE_PARAM(var_name_) \
+ * #define TEST_GET_LED_PARAM(var_name_) \
  *             TEST_GET_ENUM_PARAM(var_name_, LEDTYPE_MAPPING_LIST)
  * @endcode
  *
@@ -372,11 +372,17 @@ cleanup_specific:                                                   \
  * @code
  * int main(int argc, char **argv)
  * {
- *     enum ts_led_type led_type;
+ *     enum ts_led led;
  *
  *     TEST_START;
  *
- *     TEST_GET_LEDTYPE_PARAM(led_type);
+ *     TEST_GET_LED_PARAM(led);
+ *     ...
+ *     switch (led)
+ *     {
+ *         case TS_LED_POWER:
+ *     ...
+ *     }
  *     ...
  * }
  * @endcode
