@@ -273,7 +273,8 @@ cleanup_specific:                                                   \
  * If you need to pass a parameter to a test scenarion you need
  * to specify that parameter in @ref te_engine_tester configuration file
  * (package description file). Each parameter is associated with symbolic
- * name that should be used as the key while getting value from a test.
+ * name that should be used as the key while getting parameter value in
+ * test scenario context.
  *
  * The main function to process test parameters in test scenario context
  * is test_get_param(). It gets parameter name as an argument value and
@@ -334,7 +335,7 @@ cleanup_specific:                                                   \
  * of parameters you will need to define a macro based on
  * TEST_GET_ENUM_PARAM().
  *
- * For example if you want specify something like the following in your
+ * For example if you want to specify something like the following in your
  * @path{package.xml} files:
  * @code
  * <enum name="ledtype">
@@ -706,10 +707,14 @@ extern int test_map_param_value(const char *var_name,
 /**
  * Transform string value to octet string value.
  *
- * @param str_val   String value
- * @param len       Octet string value length
+ * @param str_val   String value (each byte is in hex format and
+ *                  delimeter is ':' character
+ * @param len       Expected octet string value length
  *
  * @return Octet string value or NULL int case of failure.
+ *
+ * @note Octet string returned by this function should be deallocated
+ * with free() call.
  */
 extern uint8_t *test_get_octet_string_param(const char *str_val,
                                             size_t len);
@@ -727,8 +732,8 @@ extern const char *print_octet_string(const uint8_t *oct_string,
 
 /**
  * Split parameter string into array of string, using ',' as separator.
- * This function creates a duplicate parameter sting to avoid changing the
- * real parameter.
+ * This function creates a duplicate parameter string to avoid changing
+ * the real parameter.
  * 
  * @param list      String to parse
  * @param array_p   Array to return
