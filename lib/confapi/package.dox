@@ -1,10 +1,10 @@
 /**
 
-<!-- @page confapi API Usage: Configurator API -->
+@page confapi API Usage: Configurator API
+- @subpage confapi_base
+- @subpage tapi_conf
 
-@defgroup confapi API Usage: Configurator API
-@ingroup te_engine_conf
-@{
+@tableofcontents
 
 @section confapi_introduction Usage of Configurator API from test scenarios
 
@@ -209,5 +209,4 @@ on start-up for instance @conf_path{/agent:Agt_A/col_object:B/var1:}.
 (For more information about configuration file see 
 @ref te_engine_conf_file section).
 
-@} <!-- END confapi -->
 */

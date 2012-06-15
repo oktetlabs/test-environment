@@ -1,9 +1,15 @@
 /**
-<!-- @page te_engine Test Engine -->
+@page te_engine Test Engine
 
-@defgroup te_engine Test Engine
-@ingroup te
-@{
+- @subpage te_engine_dispatcher
+- @subpage te_engine_builder
+- @subpage te_engine_logger
+- @subpage te_engine_rcf
+- @subpage te_engine_conf
+- @subpage te_engine_tester
+.
+
+@tableofcontents 
 
 @section te_eng_introduction Introduction
 
@@ -84,14 +90,17 @@ relations between Test Environment components:
 @endditaa
 -->
 
-@} <!-- END te_engine -->
+<!-- @} --> <!-- END te_engine -->
 
 
-<!-- @page te_engine_dispatcher Test Engine: Dispatcher -->
+@page te_engine_dispatcher Test Engine: Dispatcher
 
-@defgroup te_engine_dispatcher Test Engine: Dispatcher
+<!-- @defgroup te_engine_dispatcher Test Engine: Dispatcher
 @ingroup te_engine
 @{
+-->
+
+@tableofcontents 
 
 @section te_engine_dispatcher_introduction Introduction
 
@@ -161,5 +170,4 @@ script options as well as their descriptions obtained by calling it with
 @USER_EXPAND{DISPATCHER_SCRIPT_OPTIONS}
 </pre>
 
-@} <!-- END te_engine -->
  */

@@ -1,10 +1,8 @@
 /**
 
-<!-- @page te_agents_unix Test Agents: Unix Test Agent -->
+@page te_agents_unix Test Agents: Unix Test Agent
 
-@defgroup te_agents_unix Test Agents: Unix Test Agent
-@ingroup te_agents
-@{
+@tableofcontents
 
 @section te_agent_unix_introduction Introduction
 
@@ -52,6 +50,5 @@ directory of TE tree:
   configuration nodes into @ref te_agents.
 .
 
-@} <!-- END te_agents_unix -->
  */
 

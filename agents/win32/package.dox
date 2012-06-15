@@ -1,10 +1,8 @@
 /** 
 
-<!-- @page te_agents_win Test Agents: Windows Test Agent -->
+@page te_agents_win Test Agents: Windows Test Agent
 
-@defgroup te_agents_win Test Agents: Windows Test Agent
-@ingroup te_agents
-@{
+@tableofcontents
 
 @section te_agent_win_introduction Introduction
 
@@ -35,6 +33,5 @@ Windows Test Agent supports minimized version of basic configuration
 
 @image html ta_win32_conf_tree.png "Configuration subtree supported by Windows Test Agent"
 
-@} <!-- END te_agents_win -->
  */
 

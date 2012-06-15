@@ -1,10 +1,21 @@
 /**
 
-<!-- @page tapi_rpc Remote Procedure Calls -->
+@page te_lib_rpc_tapi TAPI: Remote Procedure Calls (RPC)
+- @subpage te_lib_rpc_netdb
+- @subpage te_lib_rpc_unistd
+- @subpage te_lib_rpc_power_sw
+- @subpage te_lib_rpc_ifnameindex
+- @subpage te_lib_rpc_telephony
+- @subpage te_lib_rpc_winsock2
+- @subpage te_lib_rpc_aio
+- @subpage te_lib_rpc_socket
+- @subpage te_lib_rpc_tr069
+- @subpage te_lib_rpc_stdio
+- @subpage te_lib_rpc_dlfcn
+- @subpage te_lib_rpc_misc
+- @subpage te_lib_rpc_signal
 
-@defgroup te_lib_rpc_tapi TAPI: Remote Procedure Calls (RPC)
-@ingroup te_lib_rpc
-@{
+@tableofcontents
 
 @section tapi_rpc_lib_introduction Introduction
 

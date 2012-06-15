@@ -1,10 +1,11 @@
 /**
 
-<!-- @page te_engine_rcf Test Engine: Remote Control Facility (RCF) -->
+@page te_engine_rcf Test Engine: Remote Control Facility (RCF)
 
-@defgroup te_engine_rcf Test Engine: Remote Control Facility (RCF)
-@ingroup te_engine
-@{
+- @subpage te_lib_rcfapi
+- @subpage te_lib_rpc
+
+@tableofcontents
 
 @section te_engine_rcf_introduction Introduction
 
@@ -341,8 +342,6 @@ one type of @ref te_engine_rcf communication library -
 @subsection te_engine_rcf_comm_lib_unix RCF UNIX Communication Library
 
 @copydetails lib/rcfunix/rcfunix.c
-
-@} <!-- END te_engine_rcf -->
 
  */
 

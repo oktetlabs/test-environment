@@ -1,10 +1,7 @@
 /**
 
-<!-- @page te_engine_tester Test Engine: Tester -->
-
-@defgroup te_engine_tester Test Engine: Tester
-@ingroup te_engine
-@{
+@page te_engine_tester Test Engine: Tester
+@tableofcontents
 
 @section te_engine_tester_introduction Introduction
 
@@ -267,7 +264,6 @@ This package description file has:
 
 XML schema for @ref te_engine_tester configuration file may be found in
 @path{doc/xsd/tester_config.xsd} file.
-
-@} <!-- END te_engine_tester -->
+ 
  */
 
