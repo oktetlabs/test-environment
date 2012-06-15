@@ -43,6 +43,9 @@
 extern "C" {
 #endif
 
+/** @addtogroup te_ts_tapi_test
+ * @{
+ */
 
 /**
  * Terminate a test with success status.
@@ -68,6 +71,7 @@ extern "C" {
         TEST_STOP;                                                  \
     } while (0)
 
+/**@} <!-- END te_ts_tapi_test --> */
 
 /**
  * A string used to identify per-iteration objectives,
