@@ -48,6 +48,12 @@
 extern "C" {
 #endif
 
+/**
+ * @defgroup rcf_pch Test Agents: Portable Commands Handler
+ * @ingroup te_agents
+ * @{
+ */
+
 #define RCF_PCH_MAX_ID_LEN 128
 
 /**
@@ -74,6 +80,7 @@ extern void rcf_pch_detach(void);
  * @param id    Location for the id.
  */
 void rcf_pch_get_id(char *id);
+/**@} */
 
 /** @name Default Command Handlers.
  *
@@ -230,12 +237,19 @@ extern int rcf_pch_call(struct rcf_comm_connection *conn,
 extern int rcf_pch_rpc(struct rcf_comm_connection *conn, int sid, 
                        const char *data, size_t len,
                        const char *server, uint32_t timeout);
+/**@} */
+
+/** @addtogroup rcf_pch
+ * @{
+ */
 
 /** 
  * Initialize RCF RPC server structures and link RPC configuration
  * nodes to the root.
  */
 extern void rcf_pch_rpc_init(void);
+
+/**@} */
 
 /** 
  * Cleanup RCF RPC server structures. Close all sockets. Release all
@@ -251,6 +265,10 @@ extern void rcf_pch_rpc_atfork(void);
  * Cleanup RCF RPC server structures.
  */
 extern void rcf_pch_rpc_shutdown(void);
+
+/** @addtogroup rcf_pch
+ * @{
+ */
 
 /**
  * Entry function for RPC server. 
@@ -288,8 +306,15 @@ extern te_errno rcf_pch_add_node(const char *father,
  * @return Status code
  */
 extern te_errno rcf_pch_del_node(rcf_pch_cfg_object *node);
+/**@} */
 
 /*--------------- Dynamically grabbed TA resources -------------------*/
+
+/**
+ * @defgroup rcf_pch_rsrc API: Shared TA resources
+ * @ingroup rcf_pch
+ * @{
+ */
 
 /**
  * These resources are resources provided by TA host (interfaces, services)
@@ -416,7 +441,7 @@ extern void rcf_pch_rsrc_init(void);
 /** Directory for locks creation */
 extern const char *te_lockdir;
 
-/*@}*/
+/**@} */
 
 #ifdef __cplusplus
 } /* extern "C" */
