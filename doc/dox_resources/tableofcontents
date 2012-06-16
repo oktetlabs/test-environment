@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# The script addes table of contents for HTML pages generated for all @groups.
+# doxygen names these html files as group__<name>.html. It goes through the
+# files and builds the table basing on <h{level}><a class="anchor">.... marks.
+# The script honors different headings and supports multi-level contents
+
 HTML_DIR=$TE_BASE/doc/generated/html
 
 pushd $HTML_DIR > /dev/null
