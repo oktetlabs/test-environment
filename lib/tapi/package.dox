@@ -1,26 +1,43 @@
 /**
+<!-- 
+ @page tapi Test Application Programming Interface
+ 
+ -# <A HREF="tapi__cfg_8h.html">Access configuration model API</A>
+ -# <A HREF="tapi__bufs_8h.html">Buffers dealer API</A>
+ -# <A HREF="tapi__cfg__arl_8h.html">ARL table configuration model API</A>
+ -# <A HREF="tapi__cfg__base_8h.html">Test API for basic configuration model</A>
+ -# <A HREF="tapi__cfg__dhcp_8h.html">Test API for DHCP configuration</A>
+ -# <A HREF="tapi__cfg__net_8h.html">Test API for network configuration model</A>
+ -# <A HREF="tapi__file_8h.html">Test API for convenient work with files on Test Engine</A>
+ -# <A HREF="tapi__jmp_8h.html">Test API for thread-safe stack of jump</A>
+ -# <A HREF="tapi__sockaddr_8h.html">Test API for generic network addresses</A>
+ -# <A HREF="tapi__test_8h.html">Definition of Macros used in test sources</A>
+-->
 
-@page tapi_conf TAPI: Test API for configuration nodes
-- @subpage tapi_conf_vtund
-- @subpage tapi_conf_iptable
-- @subpage tapi_conf_xen
-- @subpage tapi_conf_arl
-- @subpage tapi_conf_dhcp_serv
-- @subpage tapi_conf_ip6
-- @subpage tapi_conf_phy
-- @subpage tapi_conf_pppoe
-- @subpage tapi_conf_stats
-- @subpage tapi_conf_base_net
-- @subpage tapi_conf_acse
-- @subpage tapi_conf_switch
-- @subpage tapi_conf_route
-- @subpage tapi_conf_neigh
-- @subpage tapi_conf_iface
+<!-- @page tapi_conf TAPI: Test API for configuration nodes -->
 
-@tableofcontents
+@defgroup tapi_conf TAPI: Test API for configuration nodes
+@ingroup confapi
+@{
 
 Test scenarios can use functions exported by Configurator API directly:
 @ref confapi_base, but there are high level interfaces that simplify access
 to some parts of configuration tree.
 
+The following configuration TAPI groups available:
+<!--
+ -# <A HREF="tapi__cfg__arl_8h.html">ARL table configuration model API</A>
+ -# <A HREF="tapi__cfg__base_8h.html">Test API for basic configuration model</A>
+ -# <A HREF="tapi__cfg__dhcp_8h.html">Test API for DHCP configuration</A>
+ -# <A HREF="tapi__cfg__net_8h.html">Test API for network configuration model</A>
+-->
+
+- @ref tapi_conf_switch
+- @ref tapi_conf_base_net
+- @ref tapi_conf_route
+- @ref tapi_conf_neigh
+- @ref tapi_conf_iface
+.
+
+@} <!-- END tapi_conf -->
  */

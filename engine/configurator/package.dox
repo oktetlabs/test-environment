@@ -1,8 +1,10 @@
 /**
 
-@page te_engine_conf Test Engine: Configurator
-- @subpage confapi
-@tableofcontents
+<!-- @page te_engine_conf Test Engine: Configurator -->
+
+@defgroup te_engine_conf Test Engine: Configurator
+@ingroup te_engine
+@{
 
 @section te_engine_conf_introduction Introduction
 
@@ -361,5 +363,6 @@ environment variables without modification of configuration file. For example:
 Actually as object instance value you can use syntax of
 BASH Parameter Substitution.
 
+@} <!-- END te_engine_conf -->
 */
 

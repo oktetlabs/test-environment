@@ -1,9 +1,10 @@
 /**
 
-@page te_engine_logger Test Engine: Logger
-- @subpage logger_api
+<!-- @page te_engine_logger Test Engine: Logger -->
 
-@tableofcontents 
+@defgroup te_engine_logger Test Engine: Logger
+@ingroup te_engine
+@{
 
 @section te_engine_logger_introduction Introduction
 
@@ -199,4 +200,7 @@ you should pass @prog_option{--log-html=[output dir name]} option
 in command line. Then @ref te_engine_dispatcher generates HTML
 pages under specified @path{[output dir name]} directory.
 
+
+@} <!-- END te_engine_logger -->
+ 
  */

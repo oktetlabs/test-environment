@@ -1,16 +1,7 @@
 /** @mainpage
 
-- @subpage te
-- @subpage te_user
-- @subpage te_ts
-
-@page te Test Environment
-- @subpage te_engine
-- @subpage te_agents
-- @subpage te_user
-- @subpage te_ts
-
-@tableofcontents
+@defgroup te Test Environment
+@{
 
 @section te_introduction Introduction
 
@@ -332,18 +323,19 @@ that are useful while writing this or that test cases:
 
 - @link logger_api.h API Usage: Logger API @endlink
 - @ref confapi
-- @ref te_lib_rcfapi
+- @ref rcfapi
 .
 
 - @ref tapi_conf
 .
 
+@} <!-- END te -->
 
 
 
-@page te_user TE: User Guide
-
-@tableofcontents
+@defgroup te_user TE: User Guide
+@ingroup te
+@{
 
 @section te_user_introduction Introduction
 
@@ -688,6 +680,7 @@ a browser).
 For more information on log related options of @ref te_engine_dispatcher
 read @ref te_engine_dispatcher_options section.
 
+@} <!-- END te_user -->
 
 
 
@@ -696,10 +689,9 @@ read @ref te_engine_dispatcher_options section.
 
 
 
-@page te_ts TE: Test Suite
-- @subpage te_ts_tapi_test
-
-@tableofcontents
+@defgroup te_ts TE: Test Suite
+@ingroup te
+@{
 
 @section te_ts_terminology Terminology
 
@@ -999,5 +991,6 @@ a test scenario:
 @copydetails te_ts_tapi_test_param
 
 
+@} <!-- END te_ts -->
 
  */
