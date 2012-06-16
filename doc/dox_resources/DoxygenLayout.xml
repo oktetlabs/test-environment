@@ -2,23 +2,24 @@
   <!-- Navigation index tabs for HTML output -->
   <navindex>
     <tab type="mainpage" visible="yes" title=""/>
-    <tab type="modules" visible="yes" title="Table of Contents" intro=""/>
-    <tab type="pages" visible="no" title="" intro=""/>
-    <tab type="namespaces" visible="yes" title="">
-      <tab type="namespacelist" visible="yes" title="" intro=""/>
-      <tab type="namespacemembers" visible="yes" title="" intro=""/>
+    <tab type="modules" visible="yes" title="Table of Contents"/>
+    <tab type="pages" visible="no" title=""/>
+    <tab type="namespaces" visible="no" title="">
+      <tab type="namespaces" visible="yes" title=""/>
+      <tab type="namespacemembers" visible="yes" title=""/>
     </tab>
     <tab type="classes" visible="no" title="">
-      <tab type="classlist" visible="yes" title="" intro=""/>
+      <tab type="classes" visible="yes" title=""/>
       <tab type="classindex" visible="$ALPHABETICAL_INDEX" title=""/> 
-      <tab type="hierarchy" visible="yes" title="" intro=""/>
-      <tab type="classmembers" visible="yes" title="" intro=""/>
+      <tab type="hierarchy" visible="yes" title=""/>
+      <tab type="classmembers" visible="yes" title=""/>
     </tab>
     <tab type="files" visible="yes" title="">
-      <tab type="filelist" visible="yes" title="" intro=""/>
-      <tab type="globals" visible="yes" title="" intro=""/>
+      <tab type="files" visible="yes" title=""/>
+      <tab type="globals" visible="yes" title=""/>
     </tab>
-    <tab type="examples" visible="yes" title="" intro=""/>  
+    <tab type="dirs" visible="yes" title=""/>
+    <tab type="examples" visible="yes" title=""/>  
   </navindex>
 
   <!-- Layout definition for a class page -->
@@ -62,7 +63,6 @@
     </memberdecl>
     <detaileddescription title=""/>
     <memberdef>
-      <inlineclasses title=""/>
       <typedefs title=""/>
       <enums title=""/>
       <constructors title=""/>
@@ -90,7 +90,6 @@
     </memberdecl>
     <detaileddescription title=""/>
     <memberdef>
-      <inlineclasses title=""/>
       <typedefs title=""/>
       <enums title=""/>
       <functions title=""/>
@@ -118,7 +117,6 @@
     </memberdecl>
     <detaileddescription title=""/>
     <memberdef>
-      <inlineclasses title=""/>
       <defines title=""/>
       <typedefs title=""/>
       <enums title=""/>
@@ -133,11 +131,11 @@
     <briefdescription visible="yes"/>
     <groupgraph visible="$GROUP_GRAPHS"/>
     <memberdecl>
-      <nestedgroups visible="yes" title=""/>
-      <dirs visible="yes" title=""/>
-      <files visible="yes" title=""/>
-      <namespaces visible="yes" title=""/>
       <classes visible="yes" title=""/>
+      <namespaces visible="yes" title=""/>
+      <dirs visible="yes" title=""/>
+      <nestedgroups visible="yes" title=""/>
+      <files visible="yes" title=""/>
       <defines title=""/>
       <typedefs title=""/>
       <enums title=""/>
@@ -156,7 +154,6 @@
     <detaileddescription title=""/>
     <memberdef>
       <pagedocs/>
-      <inlineclasses title=""/>
       <defines title=""/>
       <typedefs title=""/>
       <enums title=""/>
