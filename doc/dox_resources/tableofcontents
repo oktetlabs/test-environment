@@ -1,0 +1,18 @@
+#!/bin/bash
+
+HTML_DIR=$TE_BASE/doc/generated/html
+
+pushd $HTML_DIR > /dev/null
+
+table_header='<div class="toc"><h3>Table of Contents</h3\><ul>'
+table_footer='</ul></div>'
+
+for group_file in group__*.html; do
+    table_content=`cat $group_file | grep -A1 '<h[0-9]*><a class="anchor"' | \
+        sed 's/^--$//' |
+        sed 's/^.*<h\([0-9]*\)>.*id="\(\S*\)">.*/<li class="level\1"><a href="#\2">/' | \
+        sed 's/^\(.*\)<\/h[0-9]*>$/\1<\/a><\/li>/'`
+    table=`echo -n "${table_header} ${table_content} ${table_footer}" | tr '\n' ' '`
+
+    sed -i "/<div class=\"contents\">/ i$table" $group_file
+done
