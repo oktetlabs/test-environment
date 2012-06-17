@@ -593,6 +593,7 @@ INPUT                  = mainpage.dox \
                          te_user_guide.dox \
                          te.dox \
                          te_ts.dox \
+                         te_terminology.dox \
                          engine \
                          include \
                          lib/rcfrpc \
