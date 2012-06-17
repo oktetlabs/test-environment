@@ -328,6 +328,11 @@ if ($test_specified > 0)
 }
 
 $rc = system("te-trc-update ".$opts);
+#(undef, $tmp_files[$#tmp_files + 1]) = tempfile("opt-XXXX");
+#open(MYFILE, "> ".$tmp_files[$#tmp_files]);
+#print MYFILE "te-trc-update $opts";
+#close(MYFILE);
+#$rc = system("te-trc-update --opts-file=".$tmp_files[$#tmp_files]);
 
 if ($rc & 127)
 {

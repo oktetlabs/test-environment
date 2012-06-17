@@ -163,6 +163,8 @@ enum {
     TRC_UPDATE_OPT_SIMPL_TAGS,     /**<  Simplify tag expressions in
                                          lists of unexpected results from
                                          logs */
+    TRC_UPDATE_OPT_FROM_FILE,     /**<   Load additional options from a
+                                         file */
 };
 
 #ifdef HAVE_LIBPERL
@@ -327,31 +329,84 @@ get_tags_list_from_file(char *fname, tqh_strings *tags)
     return 0;
 }
 
+/* Predeclaration, see description below */
+static int trc_update_process_cmd_line_opts(int argc, char **argv,
+                                            te_bool main_call);
+
+/**
+ * Gets additional options from a file.
+ *
+ * @param fname         File name
+ *
+ * @return Status code
+ */
+static te_errno
+get_opts_from_file(char *fname)
+{
+    FILE        *f = fopen(fname, "r");
+    long int     max_opt_len = 100000;
+    char        *s;
+    int          argc;
+    char       **argv;
+    int          rc;
+
+    if (f == NULL)
+    {
+        printf("%s(): failed to open %s\n", __FUNCTION__, fname);
+        return -1;
+    }
+
+    s = TE_ALLOC(sizeof(*s) * max_opt_len);
+    if (s == NULL)
+    {
+        printf("%s(): memory allocation failed\n", __FUNCTION__);
+        return -1;
+    }
+
+    fgets(s, max_opt_len, f);
+    if (poptParseArgvString(s, &argc, (const char ***)&argv) != 0)
+    {
+        printf("%s(): failed to parse additional options from %s\n",
+               __FUNCTION__, fname);
+        return -1;
+    }
+
+    rc = trc_update_process_cmd_line_opts(argc, argv, FALSE);
+
+    free(argv);
+    free(s);
+    fclose(f);
+
+    return rc;
+}
+
 /**
  * Process command line options and parameters specified in argv.
  * The procedure contains "Option table" that should be updated 
  * if so me new options are going to be added.
  *
- * @param argc  Number of elements in array "argv".
- * @param argv  Array of strings that represents all command line
- *              arguments.
+ * @param argc          Number of elements in array "argv".
+ * @param argv          Array of strings that represents all command line
+ *                      arguments.
+ * @param main_call     Whether this call is from main() or not.
  *
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
 static int
-trc_update_process_cmd_line_opts(int argc, char **argv)
+trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
 {
     int             result = EXIT_FAILURE;
     poptContext     optCon;
     int             opt;
+    int             rc;
 
-    trc_update_tag_logs     *tag_logs;
-    tqe_string              *tqe_str;
+    static trc_update_tag_logs     *tag_logs;
+    tqe_string                     *tqe_str;
 
-    char        *s;
-    te_bool      no_use_ids = FALSE;
-    te_bool      log_specified = FALSE;
-    uint32_t     rtype_flags = 0;
+    char           *s;
+    static te_bool  no_use_ids = FALSE;
+    static te_bool  log_specified = FALSE;
+    static uint32_t rtype_flags = 0;
 
     struct poptOption options_table[] = {
         { "test-name", '\0', POPT_ARG_STRING, NULL,
@@ -462,7 +517,7 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
           "of tag expression for logs",
           NULL },
 
-        { "simpl-tags", '\0', POPT_ARG_STRING, NULL,
+        { "simpl-tags", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_SIMPL_TAGS,
           "Simplify tag expressions in lists of unexpected results "
           "from logs", NULL },
@@ -536,6 +591,10 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
           "database.",
           "FILENAME" },
 
+        { "opts-file", '\0', POPT_ARG_STRING, NULL,
+          TRC_UPDATE_OPT_FROM_FILE,
+          "Specify a file with additional options", NULL },
+
         { "version", '\0', POPT_ARG_NONE, NULL, TRC_UPDATE_OPT_VERSION, 
           "Display version information.", NULL },
 
@@ -550,7 +609,6 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
     {
         switch (opt)
         {
-
             case TRC_UPDATE_OPT_PE:
                 ctx.flags &= ~TRC_LOG_PARSE_NO_PE;
                 break;
@@ -779,6 +837,13 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
                 trc_save_to = poptGetOptArg(optCon);
                 break;
 
+            case TRC_UPDATE_OPT_FROM_FILE:
+                s = poptGetOptArg(optCon);
+                rc = get_opts_from_file(s);
+                if (rc < 0)
+                    goto exit;
+                break;
+
             case TRC_UPDATE_OPT_VERSION:
                 printf("Test Environment: %s\n\n%s\n", PACKAGE_STRING,
                        TE_COPYRIGHT);
@@ -790,17 +855,20 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
         }
     }
 
-    if (!no_use_ids && (log_specified ||
-        ((ctx.flags & TRC_LOG_PARSE_RULES_CONFL) &&
-         !(ctx.flags & TRC_LOG_PARSE_GEN_APPLY) &&
-         ctx.rules_save_to != NULL)))
-        ctx.flags |= TRC_LOG_PARSE_USE_RULE_IDS;
+    if (main_call)
+    {
+        if (!no_use_ids && (log_specified ||
+            ((ctx.flags & TRC_LOG_PARSE_RULES_CONFL) &&
+             !(ctx.flags & TRC_LOG_PARSE_GEN_APPLY) &&
+             ctx.rules_save_to != NULL)))
+            ctx.flags |= TRC_LOG_PARSE_USE_RULE_IDS;
 
-    if (!log_specified && ctx.rules_load_from == NULL)
-        ctx.flags |= TRC_LOG_PARSE_RULES_ALL;
+        if (!log_specified && ctx.rules_load_from == NULL)
+            ctx.flags |= TRC_LOG_PARSE_RULES_ALL;
 
-    if (rtype_flags != 0)
-        ctx.flags = (ctx.flags & ~TRC_LOG_PARSE_RTYPES) | rtype_flags;
+        if (rtype_flags != 0)
+            ctx.flags = (ctx.flags & ~TRC_LOG_PARSE_RTYPES) | rtype_flags;
+    }
 
     if (opt != -1)
     {
@@ -1289,7 +1357,7 @@ main(int argc, char **argv, char **envp)
     ctx.flags |= TRC_LOG_PARSE_COPY_OLD | TRC_LOG_PARSE_COPY_OLD_FIRST |
                  TRC_LOG_PARSE_RRESULTS | TRC_LOG_PARSE_NO_PE;
 
-    if (trc_update_process_cmd_line_opts(argc, argv) != EXIT_SUCCESS)
+    if (trc_update_process_cmd_line_opts(argc, argv, TRUE) != EXIT_SUCCESS)
         goto exit;
 
     if (ctx.cmd == NULL)
