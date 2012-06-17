@@ -1,0 +1,423 @@
+/**
+@defgroup te_user TE: User Guide
+@ingroup te
+@{
+
+@section te_user_introduction Introduction
+
+This page gives step by step guideline on where to start with TE and
+how to create a new test suite.
+
+TE can be supplied in two release types:
+- pre-installed form (external headers and binaries are available);
+- source code form (all sources of TE components are available).
+.
+
+@section te_user_build Building TE components
+
+When you get TE in source code form you need to build TE before
+it can be used for testing.
+
+@subsection te_deps Test Environment Dependencies
+
+Test Environment depends on a set of 3-rd party libraries and packages.
+
+For building TE components from sources you need:
+- @prog{autoconf} version 2.61 or higher;
+- @prog{automake} 1.9.6 (note: 1.10.* does not work).
+.
+
+For @ref te_engine build and run (in square brackets - debian package names):
+- @lib_name{libxml2-devel} at least 2.6.x (2.6.10)
+  [@lib_name{libxml2} @lib_name{libxml2-dev}];
+- @lib_name{glib2-devel} (@lib_name{glib-2.0} package we use 2.4.8)
+  [@lib_name{libglib2-dev}];
+- @lib_name{popt-devel} (@lib_name{libpopt-dev} on Debian)
+  [@lib_name{libpopt-dev}];
+- @lib_name{libreadline} (for @ref te_engine_tester interactive)
+  [@lib_name{libreadline-common}, @lib_name{libreadline-dev},
+  @lib_name{libreadline-5}];
+- @prog{tcl} (and @lib_name{tcl-devel}, if applicable, e.g. on Fedora Core 2)
+  [@lib_name{tcl}, @lib_name{tcl-dev}];
+- @lib_name{libxslt} (we use 1.1.6)
+  [@lib_name{libxslt1-dev}, @lib_name{libxslt-1.1}];
+- @lib_name{libexpat} [@lib_name{libexpat1}, @lib_name{libexpat1-dev}];
+- @lib_name{flex} >= 2.5.31-31 from sourceforge; @lib_name{flex} 2.5.4a
+  from gnu.org will not work [@lib_name{flex}];
+- @prog{gawk} (@prog{mawk} will not work) [@lib_name{gawk}];
+- any @lib_name{curses} library (@lib_name{ncurses} will work) with
+  development files [@lib_name{ncurses}, @lib_name{ncurses-dev}];
+- @lib_name{perl-Time-HiRes} package on Redhat/Fedora is very usefull
+  (it allows to avoid mixture in log because of unprecise timestamps in
+  messages logged by @ref te_engine_dispatcher (via logging script));
+- @lib_name{libgss0} (>=0.0.18) [@lib_name{libgss0}];
+- Wireless tools - development files [@lib_name{libiw-dev}];
+- PPPoE [@lib_name{pppoe}] [@lib_name{pppoeconf}];
+- @lib_name{curl} libraries [not from debian, should be taken from storage];
+- @lib_name{libusb}, @lib_name{libusb-dev};
+- @lib_name{libpam0g-dev};
+- @lib_name{libperl-dev};
+- @lib_name{bison}.
+.
+
+@ref te_agents_unix :
+
+- @lib_name{expect} and @lib_name{expect-dev} (for TAD CLI only)
+  [@lib_name{expect}, @lib_name{expect-dev}];
+- @lib_name{flex} >= 2.5.31 from sourceforge;
+  @lib_name{flex} 2.5.4a from gnu.org does not work;
+- @lib_name{libexpat};
+- @lib_name{libpcap0.8-dev} (for TAD PCAP only) [@lib_name{libpcap0.8-dev}];
+- @lib_name{libpam} (0.76-22) (not required but suggested)
+  [@lib_name{libpam}];
+- @lib_name{libnl-devel}.
+.
+
+@ref te_agents_win :
+
+- @lib_name{cygwin}, cross-toolchain;
+- @lib_name{libpcap} (crosscompiled for @lib_name{cygwin}).
+  Should be put into standard @path{include/lib} paths of
+  @lib_name{cygwin} cross-compiler - required for TAD library.
+  @lib_name{Winpcap} runtime has to be installed on Windows host.
+
+Of course, @prog{gcc}, @prog{make}, @prog{sed} and other standard development
+tools are required to build sources.
+
+@subsection te_build_config Build configuration
+
+In order to build sources you will need to prepare project-specific
+@ref te_engine_builder configuration file. For the details on the file
+format please read @ref te_engine_builder_conf_file section.
+
+If you're dealing with existing test suite the file usualy was already
+written by the suite author/maintainer.
+
+For example @path{builder.conf} file for a sample test suite located under
+@path{${TE_BASE}/suites/ipv6-demo} is following:
+
+@code
+@USER_EXPAND{INCLUDE_FILE} suites/ipv6-demo/conf/builder.conf
+@endcode
+
+When you prepared a @ref te_engine_builder configuration file, you are
+ready to start builing process.
+
+Before building you @b must export @var{TE_BASE} environment variable
+that points to the root directory of Test Environment sources.
+
+As you usually work with one copy of Test Environment it is usefull to
+add 
+@code
+export TE_BASE=/path/to/TE_root_dir
+@endcode
+into your @path{~/.bashrc}.
+
+Suppose we have the following structure under our project directory
+(a directory where we run Test Environment building procedure):
+<pre class="fragment">
+@path{${PRJ_ROOT}}
+  +-- @path{conf_ipv6}
+        +-- @path{builder.conf.ipv6_demo}
+</pre>
+
+To start building process we should run the following command:
+<pre class="fragment">
+cd $PRJ_ROOT
+@path{${TE_BASE}}/@prog{dispatcher.sh} @prog_option{--conf-dir=}@path{conf_ipv6} @prog_option{--conf-builder=}@path{builder.conf.ipv6_demo} @prog_option{--build-only} @prog_option{--no-tester}
+</pre>
+
+If you get some errors during building procedure, you should first check
+if your have all necessary packages installed on your development platform.
+Please refer to @ref te_deps section to check the list of required packages
+and libraries.
+
+If you do not specify @var{TE_BUILD} environment variable,
+@ref te_engine_builder calls @prog{configure} scripts and
+calls @prog{make} under @path{${PRJ_ROOT}} directory (i.e. a directory
+where you run @prog{dispatcher.sh}.
+
+@section te_user_run Running TE components
+
+There is no much sense running TE if you do not have a test suite, but anyway
+it could be useful to run TE without @ref te_engine_builder to check if
+configuration files for @ref te_engine_conf and @ref te_engine_rcf are well
+formatted and they reflect real infrastructure settings.
+
+@subsection te_user_run_rcf Running RCF
+
+@ref te_engine_rcf configuration file specifies the list of Test Agents to
+run with a a set of parameters associated with them. For the detailed
+information on how to write @ref te_engine_rcf configuration file please
+refer to @ref te_engine_rcf_conf_file section.
+
+More likely you will already have some @ref te_engine_rcf configuration file
+or you will need to do your own version of configuration file based on
+existing one.
+
+First thing that you need to take into account while writing
+@ref te_engine_rcf configuration file is the how and where you are going to
+organize testing process.
+
+Suppose you need to test some communication API between two end-points
+(for example it could be Socket API) and you have the following network
+topology:
+
+@image html te_user_net_conf_rcf_sample1.png "Sample network topology"
+
+You would like to test communication between end point pairs:
+- BSD and Windows;
+- BSD and Linux;
+- Windows and Linux.
+.
+
+The API to be tested is the same on all platforms, which means we can use
+the same test suite for each pair. The only thing specific for our test
+set-up is where to run Test Agent that supports interface to be tested
+(assume we exported interface to be tested via @ref te_lib_rpc_tapi).
+
+For testing BSD vs Windows configuration we should use the following set-up:
+
+@image html te_user_net_conf_rcf_sample2.png "TE components location for testing BSD vs Windows configuration"
+
+In this scenario @ref te_engine_rcf configuration file would look like:
+
+@code
+<?xml version="1.0"?>
+<rcf>
+  <ta name="Agt_A" type="bsd" rcflib="rcfunix" confstr="gollum:5000:sudo:"/>
+  <ta name="Agt_B" type="win" rcflib="rcfunix" confstr="aule:5000:sudo:"/>
+</rcf>
+@endcode
+
+Please note that we use the same @ref te_engine_rcf_comm_lib_unix,
+but different Test Agent types.
+
+For testing BSD vs Linux configuration we should use the following set-up:
+
+@image html te_user_net_conf_rcf_sample3.png "TE components location for testing BSD vs Linux configuration"
+
+In this scenario @ref te_engine_rcf configuration file would look like:
+
+@code
+<?xml version="1.0"?>
+<rcf>
+  <ta name="Agt_A" type="bsd" rcflib="rcfunix" confstr="gollum:5000:sudo:"/>
+  <ta name="Agt_B" type="linux" rcflib="rcfunix" confstr=":5000:sudo:"/>
+</rcf>
+@endcode
+
+Note that we can avoid specifying host name for Test Agent @attr_val{Agt_B},
+because it runs on the same host as @ref te_engine.
+
+Similar set-up would be for testing  Windows vs Linux set-up.
+
+Now we have @ref te_engine_rcf configuration files ready and we can run TE
+with @ref te_engine_rcf.
+
+Our project tree has the following structure:
+<pre class="fragment">
+@path{${PRJ_ROOT}}
+  +-- @path{conf_ipv6}
+        +-- @path{builder.conf.ipv6_demo}
+        +-- @path{rcf.conf.bsd_win}
+        +-- @path{rcf.conf.bsd_linux}
+        +-- @path{rcf.conf.linux_win}
+</pre>
+
+To start TE with @ref te_engine_rcf, but still without @ref te_engine_conf
+and @ref te_engine_tester, run:
+<pre class="fragment">
+@path{${TE_BASE}}/@prog{dispatcher.sh} @prog_option{--conf-dir=}@path{conf_ipv6} @prog_option{--conf-builder=}@path{builder.conf.ipv6_demo} @prog_option{--conf-rcf=}@path{rcf.conf.bsd_win} @prog_option{--no-cs} @prog_option{--no-tester}
+</pre>
+
+If you have some problems with copying Test Agent images to set-up hosts or
+if you have problems with connection to these Agents you should first check
+that you are able to enter these hosts without password prompt
+(read @ref te_engine_rcf_comm_lib_unix for more information).
+
+Anyway when @prog{dispatcher.sh} script finishes you can check results in
+text log file @path{build/log.txt}.
+
+@subsection te_user_run_logger Running Logger
+
+@ref te_engine_logger configuration file depends on @ref te_engine_rcf
+configuration file in case we need to specify log polling intervals on
+per Test Agent basis, but in most cases logger configuration file specifies
+common polling interval to use for accessing all Test Agents.
+
+For more information on @ref te_engine_logger configuration file read
+@ref te_engine_logger_conf_file.
+
+More often @ref te_engine_logger configuration file is the same for
+different test set-ups, so preferably if its name is @path{logger.conf},
+because @ref te_engine_dispatcher uses this file name as the default
+@ref te_engine_logger configuration file.
+
+@subsection te_user_run_conf Running Configurator
+
+To run @ref te_engine_conf you need to prepare a configuration file whose
+name is passed to @prog{dispatcher.sh} script.
+For the details on @ref te_engine_conf configuration file read
+@ref te_engine_conf_file section.
+
+Assuming our @ref te_engine_conf configuration file is split into two parts
+we would have the following directory tree structure:
+<pre class="fragment">
+@path{${PRJ_ROOT}}
+  +-- @path{conf_ipv6}
+        +-- @path{builder.conf.ipv6_demo}
+        +-- @path{rcf.conf.bsd_win}
+        +-- @path{rcf.conf.bsd_linux}
+        +-- @path{rcf.conf.linux_win}
+        +-- @path{logger.conf}
+        +-- @path{cs.conf.common}
+        +-- @path{cs.conf.bsd_win}
+        +-- @path{cs.conf.bsd_linux}
+        +-- @path{cs.conf.linux_win}
+</pre>
+
+Where @path{cs.conf.bsd_win} file can look as following:
+<pre class="fragment">
+<?xml version="1.0"?>
+<history>
+  <xi:include href="cs.conf.common" parse="xml"
+              xmlns:xi="http://www.w3.org/2003/XInclude"/>
+  &lt;!-- BSD vs Win specific objects and instances descriptions --&gt;
+</pre>
+
+To start TE with @ref te_engine_rcf, @ref te_engine_conf, but without
+@ref te_engine_tester, run:
+<pre class="fragment">
+@path{${TE_BASE}}/@prog{dispatcher.sh} @prog_option{--conf-dir=}@path{conf_ipv6} @prog_option{--conf-builder=}@path{builder.conf.ipv6_demo} @prog_option{--conf-rcf=}@path{rcf.conf.bsd_win} @prog_option{--conf-cs=}@path{cs.conf.bsd_win} @prog_option{--no-tester}
+</pre>
+
+@subsection te_user_run_tester Running Tester
+
+Running @ref te_engine_tester requires some test suite to be availabe.
+
+For more information on @ref te_engine_tester configuration file read
+@ref te_engine_tester_conf_root section.
+
+For information on how to create a test suite read @ref te_ts page.
+
+Suppose you have the following test project directory structure:
+<pre class="fragment">
+@path{${PRJ_ROOT}}
+  +-- @path{conf_ipv6}
+  |     +-- @path{builder.conf.ipv6_demo}
+  |     +-- @path{rcf.conf.bsd_win}
+  |     +-- @path{rcf.conf.bsd_linux}
+  |     +-- @path{rcf.conf.linux_win}
+  |     +-- @path{logger.conf}
+  |     +-- @path{cs.conf.common}
+  |     +-- @path{cs.conf.bsd_win}
+  |     +-- @path{cs.conf.bsd_linux}
+  |     +-- @path{cs.conf.linux_win}
+  |     +-- @path{tester.conf}
+  +-- @path{suite-src}
+        +-- @path{configure.ac}
+        +-- @path{Makefile.am}
+        +-- @path{package.xml}
+        +-- @path{prologue.c}
+        +-- @path{test1.c}
+        +-- @path{test2.c}
+        +-- @path{pkg1}
+        |     +-- @path{package.xml}
+        |     +-- @path{test3.c}
+        |     +-- @path{test4.c}
+        +-- @path{pkg2}
+              +-- @path{package.xml}
+              +-- @path{test5.c}
+              +-- @path{test6.c}
+</pre>
+
+The content of @path{${PRJ_ROOT}/conf_ipv6/tester.conf} is:
+
+@code
+<?xml version="1.0"?>
+<tester_cfg version="1.0">
+    <maintainer mailto="Oleg.Kravtsov@oktetlabs.ru"/>
+    <description>Minimal test suite</description>
+    
+    <suite name="test-suite" src="${PRJ_ROOT}/suite-src"/>
+    <run>
+        <package name="test-suite"/>
+    </run>
+</tester_cfg>
+@endcode
+
+Before we run TE with @ref te_engine_tester we need to make sure
+test suite tree has @prog{configure} script in the top level directory and
+@path{Makefile.in} files in all subdirectories. These files can be generated
+with @prog{autoreconf} utility run in test suite top level directory.
+
+If we need to (re-)build test suite sources at @ref te_engine_tester start-up
+we should run @ref te_engine_dispatcher as:
+<pre class="fragment">
+@path{${TE_BASE}}/@prog{dispatcher.sh} @prog_option{--conf-dir=}@path{conf_ipv6} @prog_option{--conf-builder=}@path{builder.conf.ipv6_demo} @prog_option{--conf-rcf=}@path{rcf.conf.bsd_win} @prog_option{--conf-cs=}@path{cs.conf.bsd_win} @prog_option{--tester-conf=}@path{tester.conf}
+</pre>
+
+This command will build TE, build test suites specified in @path{tester.conf}
+file and run all tests according to @ref te_engine_tester configuration file
+and test package description files.
+
+If you need to run the particular test from a test suite
+(say @path{test6}) you can run:
+<pre class="fragment">
+@path{${TE_BASE}}/@prog{dispatcher.sh} @prog_option{--conf-dir=}@path{conf_ipv6} @prog_option{--conf-builder=}@path{builder.conf.ipv6_demo} @prog_option{--conf-rcf=}@path{rcf.conf.bsd_win} @prog_option{--conf-cs=}@path{cs.conf.bsd_win} @prog_option{--no-builder} @prog_option{--tester-no-build} @prog_option{--tester-run=}@path{test-suite/pkg2/test6}
+</pre>
+
+Please note that we do not specify @ref te_engine_tester configuration file,
+because @ref te_engine_dispatcher uses @path{tester.conf} as the default
+name of @ref te_engine_tester configuration file.
+
+Also note that we ask @ref te_engine_dispatcher to skip building TE
+(@prog_option{--no-builder} option) and skip building test suite
+(assuming we already built it, it is possible to specify
+@prog_option{--tester-no-build} option).
+
+For more information on @ref te_engine_dispatcher options related to
+@ref te_engine_tester please read @ref te_engine_dispatcher_options.
+
+@subsection te_user_log_result Logging results
+
+During TE run time a number of log messages generated from different
+components of TE. All messages are gathered by @ref te_engine_logger and
+put into a binary file that by default has @path{tmp_raw_log} name and
+put under a directory where @prog{dispatcher.sh} run.
+
+You can specify the location and name of binary raw log file exporting
+@var{TE_LOG_RAW} environment variable:
+<pre class="fragment">
+@var{TE_LOG_RAW}=@path{/tmp/my_raw_log} @path{${TE_BASE}}/@prog{dispatcher.sh} @prog_option{--conf-dir=}@path{conf}
+</pre>
+
+Alternatively you may put raw log file under a particular directory, then
+you should specify @prog_option{--log-dir} option:
+<pre class="fragment">
+@path{${TE_BASE}}/@prog{dispatcher.sh} @prog_option{--conf-dir}=@path{conf} @prog_option{--log-dir}=@path{log}
+</pre>
+In this case raw log file will be saved to
+@path{${PRJ_ROOT}/log/tmp_raw_log} file.
+
+By default @ref te_engine_dispatcher will generate log report in plain text
+format (with the help of RGT tool). By default plain text log is put under
+run directory with name @path{log.txt}.
+
+If you want HTML-based multi-page structured log you should pass
+@prog_option{--log-html} option to @ref te_engine_dispatcher specifying
+directory name where to output log in HTML format:
+<pre class="fragment">
+@path{${TE_BASE}}/@prog{dispatcher.sh} @prog_option{--conf-dir}=@path{conf} @prog_option{--log-html}=@path{html-out}
+</pre>
+
+As the result HTML based log report can be found under
+@path{${PRJ_ROOT}/html-out} directory (open @path{index.html} file in
+a browser).
+
+For more information on log related options of @ref te_engine_dispatcher
+read @ref te_engine_dispatcher_options section.
+
+@} <!-- END te_user -->
+*/
