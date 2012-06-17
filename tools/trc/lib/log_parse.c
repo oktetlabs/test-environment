@@ -4879,8 +4879,8 @@ trc_update_process_logs(trc_update_ctx *gctx)
     {
         if (ctx.log == NULL && tqe_str != NULL)
         {
-            ctx.merge_expr = tl->tags_expr;
-            ctx.merge_str = tl->tags_str;
+            ctx.merge_expr = logic_expr_dup(tl->tags_expr);
+            ctx.merge_str = strdup(tl->tags_str);
             ctx.log = tqe_str->v;
             tqe_str = TAILQ_NEXT(tqe_str, links);
             ctx.flags = gctx->flags;

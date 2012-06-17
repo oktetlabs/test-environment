@@ -610,6 +610,7 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
 
             case TRC_UPDATE_OPT_TAGS_LIST:
                 s = poptGetOptArg(optCon);
+                tq_strings_free(&ctx.tags_list, free);
                 parse_tags_list(s, &ctx.tags_list);
                 free(s);
                 ctx.flags |= TRC_LOG_PARSE_GEN_TAGS;
@@ -617,6 +618,7 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
 
             case TRC_UPDATE_OPT_TAGS_LIST_FILE:
                 s = poptGetOptArg(optCon);
+                tq_strings_free(&ctx.tags_list, free);
                 get_tags_list_from_file(s, &ctx.tags_list);
                 free(s);
                 ctx.flags |= TRC_LOG_PARSE_GEN_TAGS;
