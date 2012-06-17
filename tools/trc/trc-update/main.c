@@ -143,6 +143,26 @@ enum {
                                          <conflicts/> containing
                                          expected only results
                                          if CONFLS_ALL is turned on */
+    TRC_UPDATE_OPT_SELF_CONFL,      /**< Get conflicting results
+                                         from expected results of
+                                         an iteration found with
+                                         help of matching function */
+    TRC_UPDATE_OPT_TAGS_LIST,       /**< Specify list of tags to be
+                                         used for automatical generation
+                                         of tag expression for a log */
+    TRC_UPDATE_OPT_TAGS_LIST_FILE,  /**< Specify file with list of tags
+                                         to be used for automatical
+                                         generation of tag expression
+                                         for a log */
+    TRC_UPDATE_OPT_EXT_WILDS,       /**< Extend generated wildcards:
+                                         specify values for all the
+                                         arguments having only
+                                         single possible value in
+                                         all the iterations described by
+                                         this wildcard */
+    TRC_UPDATE_OPT_SIMPL_TAGS,     /**<  Simplify tag expressions in
+                                         lists of unexpected results from
+                                         logs */
 };
 
 #ifdef HAVE_LIBPERL
@@ -200,7 +220,8 @@ static te_bool         set_pos_attr = TRUE;
  * @return
  *      Pointer to structure describing group of logs or NULL
  */
-static trc_update_tag_logs *add_new_tag_logs(char *tags_str)
+static trc_update_tag_logs *
+add_new_tag_logs(char *tags_str)
 {
     trc_update_tag_logs     *tag_logs;
 
@@ -226,6 +247,84 @@ static trc_update_tag_logs *add_new_tag_logs(char *tags_str)
     TAILQ_INSERT_TAIL(&ctx.tags_logs, tag_logs, links);
 
     return tag_logs;
+}
+
+/**
+ * Get list of tags from a command line argument.
+ *
+ * @param tags_list     List of tags to be filled
+ * @param tags          Value of command line argument
+ *
+ * @return Status code
+ */
+static te_errno
+parse_tags_list(char *tags_list, tqh_strings *tags)
+{
+    char        *s = tags_list;
+    char        *t;
+    char        *p;
+    tqe_string  *tqs = NULL;
+
+    while (s != NULL && s[0] != '\0')
+    {
+        t = strchr(s, ',');
+        if (t == NULL)
+            p = s + strlen(s);
+        else
+            p = t;
+
+        tqs = TE_ALLOC(sizeof(*tqs));
+        tqs->v = TE_ALLOC(p - s + 1);
+        memcpy(tqs->v, s, p - s);
+        tqs->v[p - s] = '\0';
+
+        TAILQ_INSERT_TAIL(tags, tqs, links);
+
+        if (t == NULL)
+            s = t;
+        else
+            s = t + 1;
+    }
+
+    return 0;
+}
+
+/**
+ * Get list of tags from a file.
+ *
+ * @param fname         File name
+ * @param tags          Value of command line argument
+ *
+ * @return Status code
+ */
+static te_errno
+get_tags_list_from_file(char *fname, tqh_strings *tags)
+{
+    FILE        *f = fopen(fname, "r");
+    int          max_tag_len = 100;
+    char         s[max_tag_len];
+    char        *end_line;
+    tqe_string  *tqs = NULL;
+
+    while (!feof(f))
+    {
+        if (fgets(s, max_tag_len, f) == NULL)
+            break;
+
+        end_line = strchr(s, '\n');
+        if (end_line != NULL)
+            *end_line = '\0';
+        if (strlen(s) == 0)
+            continue;
+
+        tqs = TE_ALLOC(sizeof(*tqs));
+        tqs->v = strdup(s);
+        TAILQ_INSERT_TAIL(tags, tqs, links);
+    }
+
+    fclose(f);
+
+    return 0;
 }
 
 /**
@@ -323,6 +422,11 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
           TRC_UPDATE_OPT_CONFLS_ALL,
           "Treat all results from logs as unexpected ones", NULL },
 
+        { "self-confl", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_SELF_CONFL,
+          "Get conflictiong results from expected results of an iteration "
+          "found with help of matching function", NULL },
+
         { "no-exp-only", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_NO_EXP_ONLY,
           "Do not create rules with <conflicts/> containing "
@@ -347,6 +451,21 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
           "Do not create rules with <conflicts/> containing "
           "skipped only results",
           NULL },
+        { "tags-list", '\0', POPT_ARG_STRING, NULL,
+          TRC_UPDATE_OPT_TAGS_LIST,
+          "Specify tags list for automatic generation of tag expression "
+          "for logs", NULL },
+
+        { "tags-list-file", '\0', POPT_ARG_STRING, NULL,
+          TRC_UPDATE_OPT_TAGS_LIST_FILE,
+          "Specify a file with tags list for automatic generation "
+          "of tag expression for logs",
+          NULL },
+
+        { "simpl-tags", '\0', POPT_ARG_STRING, NULL,
+          TRC_UPDATE_OPT_SIMPL_TAGS,
+          "Simplify tag expressions in lists of unexpected results "
+          "from logs", NULL },
 
         { "no-use-ids", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_NO_USE_IDS,
@@ -368,6 +487,12 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
           TRC_UPDATE_OPT_NO_WILDS,
           "Do not generate wildcards in resulting TRC",
           NULL },
+
+        { "ext-wilds", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_EXT_WILDS,
+          "In every generated wildcard specify value for any "
+          "argument having only the single value in all the iterations "
+          "described by the wildcard", NULL },
 
         { "log-wilds", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_LOG_WILDS,
@@ -483,6 +608,24 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
                 perl_expr = poptGetOptArg(optCon);
                 break;
 
+            case TRC_UPDATE_OPT_TAGS_LIST:
+                s = poptGetOptArg(optCon);
+                parse_tags_list(s, &ctx.tags_list);
+                free(s);
+                ctx.flags |= TRC_LOG_PARSE_GEN_TAGS;
+                break;
+
+            case TRC_UPDATE_OPT_TAGS_LIST_FILE:
+                s = poptGetOptArg(optCon);
+                get_tags_list_from_file(s, &ctx.tags_list);
+                free(s);
+                ctx.flags |= TRC_LOG_PARSE_GEN_TAGS;
+                break;
+
+            case TRC_UPDATE_OPT_SIMPL_TAGS:
+                ctx.flags |= TRC_LOG_PARSE_SIMPL_TAGS;
+                break;
+
             case TRC_UPDATE_OPT_MATCHING_PERL:
                 perl_script = poptGetOptArg(optCon);
                 break;
@@ -569,6 +712,10 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
                 ctx.flags |= TRC_LOG_PARSE_CONFLS_ALL;
                 break;
 
+            case TRC_UPDATE_OPT_SELF_CONFL:
+                ctx.flags |= TRC_LOG_PARSE_SELF_CONFL;
+                break;
+
             case TRC_UPDATE_OPT_GEN_APPLY:
                 ctx.flags |= TRC_LOG_PARSE_GEN_APPLY;
                 break;
@@ -599,6 +746,10 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
 
             case TRC_UPDATE_OPT_NO_WILDS:
                 ctx.flags |= TRC_LOG_PARSE_NO_GEN_WILDS;
+                break;
+
+            case TRC_UPDATE_OPT_EXT_WILDS:
+                ctx.flags |= TRC_LOG_PARSE_EXT_WILDS;
                 break;
 
             case TRC_UPDATE_OPT_LOG_WILDS:
@@ -655,9 +806,9 @@ trc_update_process_cmd_line_opts(int argc, char **argv)
         goto exit;
     }
 
-    if (poptGetArg(optCon) != NULL)
+    if ((s = (char *)poptGetArg(optCon)) != NULL)
     {
-        ERROR("Unexpected arguments in command line");
+        ERROR("Unexpected arguments in command line: %s", s);
         goto exit;
     }
 
@@ -669,7 +820,7 @@ exit:
 }
 
 #ifdef HAVE_LIBPERL
-int
+static int
 perl_prepare()
 {
     te_string   te_str;
@@ -944,7 +1095,7 @@ perl_prepare()
  * @return ITER_NO_MATCH if not matching, ITER_WILD_MATCH if
  *         matching.
  */
-int
+static int
 func_args_match(const void *iter_ptr,
                 unsigned int n_args, trc_report_argument *args,
                 void *data)

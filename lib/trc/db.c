@@ -261,6 +261,20 @@ trc_free_test_iters(trc_test_iters *iters)
 
 /* See description in trc_db.h */
 void
+trc_free_trc_test(trc_test *test)
+{
+    if (test == NULL)
+        return;
+
+    free(test->name);
+    free(test->notes);
+    free(test->objective);
+    free(test->filename);
+    trc_free_test_iters(&test->iters);
+}
+
+/* See description in trc_db.h */
+void
 trc_free_trc_tests(trc_tests *tests)
 {
     trc_test   *p;
@@ -268,11 +282,7 @@ trc_free_trc_tests(trc_tests *tests)
     while ((p = TAILQ_FIRST(&tests->head)) != NULL)
     {
         TAILQ_REMOVE(&tests->head, p, links);
-        free(p->name);
-        free(p->notes);
-        free(p->objective);
-        free(p->filename);
-        trc_free_test_iters(&p->iters);
+        trc_free_trc_test(p);
         free(p);
     }
 }

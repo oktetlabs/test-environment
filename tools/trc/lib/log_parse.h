@@ -150,6 +150,22 @@ enum trc_log_parse_flags {
                                                     expected only results
                                                     if CONFLS_ALL is turned
                                                     on */
+    TRC_LOG_PARSE_SELF_CONFL     = (1 << 26),  /**< Get conflicting results
+                                                    from expected results of
+                                                    an iteration found with
+                                                    help of matching
+                                                    function */
+    TRC_LOG_PARSE_GEN_TAGS       = (1 << 27),  /**< Generate tags for
+                                                    logs */
+    TRC_LOG_PARSE_EXT_WILDS      = (1 << 28),  /**< Specify a value for
+                                                    each argument in
+                                                    wildcard where it is
+                                                    possible for a given
+                                                    wildcard */
+    TRC_LOG_PARSE_SIMPL_TAGS     = (1 << 29),  /**< Simplify tag
+                                                    expressions in lists
+                                                    of unexpected results
+                                                    from logs */
 };
 
 /** All rule type flags */

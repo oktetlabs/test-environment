@@ -91,6 +91,8 @@ typedef struct trc_log_parse_ctx {
     unsigned int        db_uid;     /**< TRC database user ID */
     const char         *log;        /**< Name of the file with log */
     tqh_strings        *tags;       /**< List of tags */
+    tqh_strings        *gen_tags;   /**< List of tags used for generating
+                                         tag expression automatically */
     te_trc_db_walker   *db_walker;  /**< TRC database walker */
     char               *run_name;   /**< Name of the tests run the
                                          current log belongs to */
@@ -1871,6 +1873,18 @@ trc_update_iter_data_merge_result(trc_log_parse_ctx *ctx,
     trc_exp_result_entry       *q;
     int                         rc = 0;
 
+    tqe_string  *tqs_p;
+    tqe_string  *tqs_q;
+    tqe_string  *tqs_r;
+    char        *s;
+    char        *dup_tag;
+    int          max_expr_len = 1000;
+    int          cur_pos = 0;
+    tqh_strings  tag_names;
+    tqh_strings *tags_list;
+
+    TAILQ_INIT(&tag_names);
+
     merge_result = TE_ALLOC(sizeof(*merge_result));
     TAILQ_INIT(&merge_result->results);
 
@@ -1882,6 +1896,72 @@ trc_update_iter_data_merge_result(trc_log_parse_ctx *ctx,
     TAILQ_INSERT_HEAD(&merge_result->results,
                       result_entry,
                       links);
+
+    if ((ctx->flags & TRC_LOG_PARSE_GEN_TAGS) &&
+        (ctx->merge_str == NULL ||
+         strcmp(ctx->merge_str, "UNSPEC") == 0))
+    {
+        free(ctx->merge_str);
+        ctx->merge_str = TE_ALLOC(max_expr_len);
+
+        if (!TAILQ_EMPTY(ctx->gen_tags) &&
+            strcmp(TAILQ_FIRST(ctx->gen_tags)->v, "*") == 0)
+        {
+            TAILQ_FOREACH(tqs_q, ctx->tags, links)
+            {
+                dup_tag = strdup(tqs_q->v);
+                s = strchr(dup_tag, ':');
+                if (s != NULL)
+                    *s = '\0';
+                if (tq_strings_add_uniq(&tag_names, dup_tag) != 0)
+                    free(dup_tag);
+            }
+
+            tags_list = &tag_names;
+        }
+        else
+            tags_list = ctx->gen_tags;
+
+        TAILQ_FOREACH(tqs_p, tags_list, links)
+        {
+            tqs_r = NULL;
+
+            TAILQ_FOREACH(tqs_q, ctx->tags, links)
+            {
+                s = strchr(tqs_q->v, ':');
+
+                if ((s != NULL &&
+                     (int)strlen(tqs_p->v) == s - tqs_q->v &&
+                     memcmp(tqs_p->v, tqs_q->v, s - tqs_q->v) == 0) ||
+                    strcmp(tqs_p->v, tqs_q->v) == 0)
+                    tqs_r = tqs_q;
+            }
+
+            if (tqs_r != NULL)
+            {
+                if (cur_pos != 0)
+                {
+                    snprintf(ctx->merge_str + cur_pos,
+                             max_expr_len - cur_pos,
+                             "&");
+                    cur_pos++;
+                }
+
+                snprintf(ctx->merge_str + cur_pos,
+                         max_expr_len - cur_pos,
+                         "%s", tqs_r->v);
+                cur_pos += strlen(tqs_r->v);
+
+                s = strchr(ctx->merge_str, ':');
+                if (s != NULL)
+                    *s = '=';
+            }
+        }
+
+        tq_strings_free(&tag_names, free);
+        logic_expr_free(ctx->merge_expr);
+        logic_expr_parse(ctx->merge_str, &ctx->merge_expr);
+    }
 
     merge_result->tags_expr = logic_expr_dup(ctx->merge_expr);
     if (ctx->flags & TRC_LOG_PARSE_TAGS_STR)
@@ -1987,6 +2067,328 @@ trc_update_merge_result(trc_log_parse_ctx *ctx)
 }
 
 /**
+ * Predeclaration of function, see description below.
+ */
+static te_errno trc_update_generate_test_wilds(unsigned int db_uid,
+                                               trc_test *test,
+                                               uint32_t flags);
+/**
+ * Simplify tag expressions for a given list of iteration results.
+ *
+ * @param results   List of iteration results
+ * @param flags     Flags
+ *
+ * @return Status code
+ */
+static te_errno
+simplify_log_exprs(trc_exp_results *results,
+                   uint32_t flags)
+{
+    trc_exp_result             *p;
+    trc_exp_result             *q;
+    trc_exp_result             *r;
+    trc_exp_result_entry       *entry_p;
+    trc_exp_result_entry       *entry_q;
+    trc_test                   *test;
+    trc_test_iter              *iter;
+    logic_expr                 *expr_p;
+    logic_expr                 *expr_q;
+    logic_expr                **array;
+    int                         size;
+    trc_update_args_group      *args_group;
+    trc_test_iter_arg          *arg;
+    trc_test_iter_arg          *iter_arg; 
+    unsigned int                n_args;
+    trc_update_test_iter_data  *iter_data;
+    te_string                   te_str;
+
+    int   i = 0;
+    int   j = 0;
+    char *tag;
+    char *s;
+
+    /*
+     * In this function a fake test is created. Every its iteration is
+     * formed from one of results passed to this function. We get one of
+     * conjuncts from logical tag expression of this result, and then
+     * consider tags in this conjuncts as arguments, and result marked by
+     * this expression - as a result of an iteration of fake test with such
+     * arguments. This strange thing is done just to apply wildcard
+     * generating algorithm which was not initially intended
+     * to be used for such a purpose.
+     */
+
+    test = TE_ALLOC(sizeof(*test));
+    test->type = TRC_TEST_SCRIPT;
+    TAILQ_INIT(&test->iters.head);
+
+    args_group = TE_ALLOC(sizeof(*args_group));
+    args_group->args = TE_ALLOC(sizeof(trc_test_iter_args));
+    TAILQ_INIT(&args_group->args->head);
+
+    n_args = 0;
+
+    SLIST_FOREACH(p, results, links)
+    {
+        expr_p = logic_expr_dup(p->tags_expr);
+        logic_expr_dnf(&expr_p, NULL);
+        /*
+         * Split disjunctive normal form into array
+         * of its conjuncts.
+         */
+        logic_expr_dnf_split(expr_p, &array, &size);
+        logic_expr_free(expr_p);
+        
+        /*
+         * Extract names of all the tags.
+         */
+        for (i = 0; i < size; i++)
+        {
+            expr_p = array[i];
+
+            while (expr_p != NULL)
+            {
+                if (expr_p->type == LOGIC_EXPR_AND)
+                    expr_q = expr_p->u.binary.rhv;
+                else
+                    expr_q = expr_p;
+
+                tag = logic_expr_to_str(expr_q);
+                s = strchr(tag, '=');
+                if (s != NULL)
+                    *s = '\0';
+
+                TAILQ_FOREACH(arg, &args_group->args->head, links)
+                    if (strcmp(arg->name, tag) == 0)
+                        break;
+
+                if (arg == NULL)
+                {
+                    arg = TE_ALLOC(sizeof(*arg));
+                    arg->name = tag;
+                    TAILQ_INSERT_TAIL(&args_group->args->head, arg, links);
+                    n_args++;
+                }
+                else
+                    free(tag);
+
+                if (expr_p->type == LOGIC_EXPR_AND)
+                    expr_p = expr_p->u.binary.lhv;
+                else
+                    expr_p = NULL;
+            }
+            logic_expr_free(array[i]);
+        }
+        free(array);
+    }
+
+    /*
+     * Generate fake test iterations.
+     */
+    SLIST_FOREACH(p, results, links)
+    {
+        expr_p = logic_expr_dup(p->tags_expr);
+        logic_expr_dnf(&expr_p, NULL);
+        logic_expr_dnf_split(expr_p, &array, &size);
+        logic_expr_free(expr_p);
+        
+        for (i = 0; i < size; i++)
+        {
+            expr_p = array[i];
+
+            TAILQ_FOREACH(arg, &args_group->args->head, links)
+                arg->value = strdup("NEXISTS");
+
+            while (expr_p != NULL)
+            {
+                if (expr_p->type == LOGIC_EXPR_AND)
+                    expr_q = expr_p->u.binary.rhv;
+                else
+                    expr_q = expr_p;
+
+                tag = logic_expr_to_str(expr_q);
+                s = strchr(tag, '=');
+                if (s != NULL)
+                    *s = '\0';
+
+                TAILQ_FOREACH(arg, &args_group->args->head, links)
+                    if (strcmp(arg->name, tag) == 0)
+                        break;
+
+                assert(arg != NULL);
+                
+                free(arg->value);
+                if (s == NULL)
+                    arg->value = strdup("EXISTS");
+                else
+                    arg->value = strdup(s + 1);
+
+                free(tag);
+
+                if (expr_p->type == LOGIC_EXPR_AND)
+                    expr_p = expr_p->u.binary.lhv;
+                else
+                    expr_p = NULL;
+            }
+
+            TAILQ_FOREACH(iter, &test->iters.head, links)
+            {
+                iter_data = trc_db_iter_get_user_data(iter, 0);
+
+                if (test_iter_args_match(args_group->args,
+                                         iter_data->args_n,
+                                         iter_data->args,
+                                         TRUE) !=
+                                            ITER_NO_MATCH)
+                {
+                    entry_p = TAILQ_FIRST(&p->results);
+                    TAILQ_FOREACH(entry_q,
+                                  &SLIST_FIRST(
+                                        &iter->exp_results)->results,
+                                  links)
+                        if (trc_update_rentry_cmp(entry_q, entry_p) == 0)
+                            break;
+
+                    if (entry_q == NULL)
+                    {
+                        entry_q = trc_exp_result_entry_dup(entry_p);
+                        TAILQ_INSERT_TAIL(
+                                &SLIST_FIRST(
+                                    &iter->exp_results)->results,
+                                entry_q,
+                                links);
+                        break;
+                    }
+                }
+            }
+            
+            if (iter == NULL)
+            {
+                iter = TE_ALLOC(sizeof(*iter));
+                TAILQ_INIT(&iter->args.head);
+                LIST_INIT(&iter->users);
+                SLIST_INIT(&iter->exp_results);
+                iter_data = TE_ALLOC(sizeof(*iter_data));
+                iter_data->args =
+                    TE_ALLOC(sizeof(trc_report_argument) * n_args);
+                iter_data->args_n = n_args;
+                iter_data->args_max = n_args;
+                iter_data->to_save = TRUE;
+                j = 0;
+
+                TAILQ_FOREACH(arg, &args_group->args->head, links)
+                {
+                    iter_data->args[j].name = strdup(arg->name);
+                    iter_data->args[j].value = strdup(arg->value);
+                    j++;
+
+                    iter_arg = TE_ALLOC(sizeof(*iter_arg));
+                    iter_arg->name = strdup(arg->name);
+                    iter_arg->value = arg->value;
+                    TAILQ_INSERT_TAIL(&iter->args.head, iter_arg, links);
+                    arg->value = NULL;
+                }
+
+                q = trc_exp_result_dup(p);
+                q->tags_str = strdup("unspecified");
+                logic_expr_parse(q->tags_str, &q->tags_expr);
+                SLIST_INSERT_HEAD(&iter->exp_results, q, links);
+
+                trc_db_set_user_data(iter, TRUE, 0, iter_data);
+                TAILQ_INSERT_TAIL(&test->iters.head, iter, links);
+            }
+
+            logic_expr_free(array[i]);
+        }
+        free(array);
+    }
+
+    /*
+     * Generate wildcards for fake test.
+     */
+    trc_update_generate_test_wilds(0, test, flags);
+
+    trc_exp_results_free(results);
+
+    p = NULL;
+    q = NULL;
+    r = NULL;
+
+    /*
+     * Transform wildcards into results marked by proper
+     * tag expressions.
+     */
+
+    TAILQ_FOREACH(iter, &test->iters.head, links)
+    {
+        p = SLIST_FIRST(&iter->exp_results);
+
+        memset(&te_str, 0, sizeof(te_str));
+        te_str.ptr = NULL;
+
+        if (trc_update_result_cmp(p, q) != 0)
+        {
+            if (r != NULL)
+            {
+                logic_expr_parse(r->tags_str, &r->tags_expr);
+                SLIST_INSERT_HEAD(results, r, links);
+            }
+
+            r = trc_exp_result_dup(p);
+            logic_expr_free(r->tags_expr);
+            r->tags_expr = NULL;
+            free(r->tags_str);
+            r->tags_str = NULL;
+        }
+        else
+            te_string_append(&te_str, "%s|", r->tags_str);
+
+
+        TAILQ_FOREACH(arg, &iter->args.head, links)
+        {
+            if (strlen(arg->value) > 0)
+            {
+                if (te_str.ptr != NULL &&
+                    te_str.ptr[strlen(te_str.ptr) - 1] != '|')
+                    te_string_append(&te_str, "&");
+
+                if (strcmp(arg->value, "EXISTS") == 0)
+                    te_string_append(&te_str, "%s", arg->name);
+                else if (strcmp(arg->value, "NEXISTS") != 0)
+                    te_string_append(&te_str, "%s=%s", arg->name,
+                                     arg->value);
+                else
+                    te_string_append(&te_str, "!%s", arg->name);
+            }
+        }
+
+        free(r->tags_str);
+        if (te_str.ptr == NULL || strlen(te_str.ptr) == 0)
+            r->tags_str = strdup("linux");
+        else
+            r->tags_str = te_str.ptr;
+
+        if (TAILQ_NEXT(iter, links) == NULL)
+        {
+            logic_expr_parse(r->tags_str, &r->tags_expr);
+            SLIST_INSERT_HEAD(results, r, links);
+        }
+
+        q = p;
+    }
+
+    TAILQ_FOREACH(iter, &test->iters.head, links)
+    {
+        iter_data = trc_db_iter_get_user_data(iter, 0);
+        trc_update_free_test_iter_data(iter_data);
+    }
+
+    trc_free_trc_test(test);
+
+    return 0;
+}
+
+/**
  * Merge the same results having different tags into
  * single records.
  *
@@ -1999,7 +2401,7 @@ trc_update_merge_result(trc_log_parse_ctx *ctx)
 static te_errno
 trc_update_simplify_results(unsigned int db_uid,
                             trc_update_tests_groups *updated_tests,
-                            int flags)
+                            uint32_t flags)
 
 {
     trc_update_tests_group      *group;
@@ -2034,6 +2436,9 @@ trc_update_simplify_results(unsigned int db_uid,
                 }
                 else
                     new_results = &iter_data->new_results;
+
+                if (flags & TRC_LOG_PARSE_SIMPL_TAGS)
+                    simplify_log_exprs(new_results, flags);
 
                 SLIST_FOREACH(p, new_results, links)
                 {
@@ -2382,7 +2787,7 @@ static te_errno
 trc_update_apply_rules(unsigned int db_uid,
                        trc_update_tests_groups *updated_tests,
                        trc_update_rules *global_rules,
-                       int flags)
+                       uint32_t flags)
 {
     trc_update_tests_group      *group;
     trc_update_test_entry       *test_entry;
@@ -2783,7 +3188,7 @@ static te_errno
 trc_update_load_rules(char *filename,
                       trc_update_tests_groups *updated_tests,
                       trc_update_rules *global_rules,
-                      int flags)
+                      uint32_t flags)
 {
     xmlParserCtxtPtr        parser;
     xmlDocPtr               xml_doc;
@@ -3435,7 +3840,7 @@ trc_update_get_iters_args_combs(unsigned int db_uid,
  * @return 0 if next combination was generated, -1 if current
  *         combination is the last one.
  */
-int
+static int
 get_next_args_comb(te_bool *args_comb,
                    int args_count,
                    int *cur_comb_count)
@@ -3500,7 +3905,7 @@ get_next_args_comb(te_bool *args_comb,
  *
  * @return Status code
  */
-te_errno
+static te_errno
 args_comb_to_wildcard(te_bool *args_comb,
                       int args_count,
                       trc_report_argument *iter_args,
@@ -3514,7 +3919,7 @@ args_comb_to_wildcard(te_bool *args_comb,
         arg = TE_ALLOC(sizeof(*arg));
         arg->name = strdup(iter_args[i].name);
 
-        if (args_comb[i])
+        if (args_comb == NULL || args_comb[i])
             arg->value = strdup(iter_args[i].value);
         else
         {
@@ -3543,7 +3948,7 @@ args_comb_to_wildcard(te_bool *args_comb,
  *
  * @return Status code
  */
-te_errno
+static te_errno
 mark_iters_in_wildcards(unsigned int db_uid,
                         trc_test *test,
                         trc_update_args_group  *args_group,
@@ -3578,6 +3983,76 @@ mark_iters_in_wildcards(unsigned int db_uid,
 }
 
 /**
+ * Specify in a given wildcard values for all the arguments
+ * having only one possible value in all the iterations
+ * descibed by this wildcard.
+ *
+ * @param db_uid    TRC DB user id
+ * @param test      Test
+ * @param wildcard  Wildcard
+ *
+ * @return Status code
+ */
+static te_errno
+trc_update_extend_wild(unsigned int db_uid,
+                       trc_test *test,
+                       trc_update_args_group *wildcard)
+{
+    trc_update_args_group       *ext_wild = NULL;
+    trc_test_iter               *iter;
+    trc_update_test_iter_data   *iter_data;
+    trc_test_iter_arg           *iter_arg;
+    trc_test_iter_arg           *wild_arg;
+
+    TAILQ_FOREACH(iter, &test->iters.head, links)
+    {
+        iter_data = trc_db_iter_get_user_data(iter, db_uid);
+        if (iter_data == NULL || iter_data->to_save == FALSE)
+            continue;
+
+        if (test_iter_args_match(wildcard->args, iter_data->args_n,
+                                 iter_data->args, TRUE) !=
+                                                    ITER_NO_MATCH)
+        {
+            if (ext_wild == NULL)
+            {
+                ext_wild = TE_ALLOC(sizeof(*ext_wild));
+                ext_wild->args = TE_ALLOC(sizeof(trc_test_iter_args));
+                TAILQ_INIT(&ext_wild->args->head);
+                args_comb_to_wildcard(NULL, iter_data->args_n,
+                                      iter_data->args,
+                                      ext_wild);
+            }
+            else
+            {
+                iter_arg = TAILQ_FIRST(&iter->args.head);
+                wild_arg = TAILQ_FIRST(&ext_wild->args->head);
+
+                while (iter_arg != NULL)
+                {
+                    assert(wild_arg != NULL);
+
+                    if (strcmp(iter_arg->value, wild_arg->value) != 0)
+                        wild_arg->value[0] = '\0';
+
+                    iter_arg = TAILQ_NEXT(iter_arg, links);
+                    wild_arg = TAILQ_NEXT(wild_arg, links);
+                }
+            }
+        }
+    }
+
+    if (ext_wild != NULL)
+    {
+        trc_free_test_iter_args(wildcard->args);
+        wildcard->args = ext_wild->args;
+        free(ext_wild);
+    }
+
+    return 0;
+}
+
+/**
  * Generate all wildcards for a given group of arguments and
  * a given kind of results. We need considering several group
  * of arguments because some tests have different set of arguments
@@ -3589,15 +4064,17 @@ mark_iters_in_wildcards(unsigned int db_uid,
  *                      which wildcards should be generated
  * @param args_group    Group of arguments
  * @param wildcards     Where to place generated wildcards
+ * @param flags         Flags
  *
  * @return Status code
  */
-te_errno
+static te_errno
 trc_update_gen_args_group_wilds(unsigned int db_uid,
                                 trc_test *test,
                                 int results_id,
                                 trc_update_args_group *args_group,
-                                trc_update_args_groups *wildcards)
+                                trc_update_args_groups *wildcards,
+                                uint32_t flags)
 {
     te_bool            *args_in_wild;
     int                 args_count = 0;
@@ -3717,6 +4194,8 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
             {
                 SLIST_REMOVE_HEAD(&cur_comb_wilds, links);
                 SLIST_INSERT_HEAD(wildcards, p_group, links);
+                if (flags & TRC_LOG_PARSE_EXT_WILDS)
+                    trc_update_extend_wild(db_uid, test, p_group);
             }
         }
     } while (get_next_args_comb(args_in_wild, args_count,
@@ -3733,9 +4212,10 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
  *
  * @return Status code
  */
-te_errno
+static te_errno
 trc_update_generate_test_wilds(unsigned int db_uid,
-                               trc_test *test)
+                               trc_test *test,
+                               uint32_t flags)
 {
     int ids_count;
     int res_id;
@@ -3766,7 +4246,8 @@ trc_update_generate_test_wilds(unsigned int db_uid,
                                         &args_groups);
         SLIST_FOREACH(args_group, &args_groups, links)
             trc_update_gen_args_group_wilds(db_uid, test, res_id,
-                                            args_group, &wildcards);
+                                            args_group, &wildcards,
+                                            flags);
 
         trc_update_args_groups_free(&args_groups);
     }
@@ -3830,12 +4311,14 @@ trc_update_generate_test_wilds(unsigned int db_uid,
  *
  * @param db_uid        TRC DB User ID
  * @param updated_tests Tests to be updated
+ * @param flags         Flags
  *
  * @return Status code
  */
-te_errno
+static te_errno
 trc_update_generate_wilds(unsigned int db_uid,
-                          trc_update_tests_groups *updated_tests)
+                          trc_update_tests_groups *updated_tests,
+                          uint32_t flags)
 {
     trc_update_tests_group  *group;
     trc_update_test_entry   *test_entry;
@@ -3843,7 +4326,8 @@ trc_update_generate_wilds(unsigned int db_uid,
     TAILQ_FOREACH(group, updated_tests, links)
     {
         TAILQ_FOREACH(test_entry, &group->tests, links)
-            trc_update_generate_test_wilds(db_uid, test_entry->test);
+            trc_update_generate_test_wilds(db_uid, test_entry->test,
+                                           flags);
     }
 
     return 0;
@@ -3903,8 +4387,12 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
 
             if (trc_log_parse_stack_pop(ctx))
             {
-                /* Step iteration back */
-                trc_db_walker_step_back(ctx->db_walker);
+                if (trc_db_walker_is_iter(ctx->db_walker))
+                {
+                    /* Step iteration back */
+                    trc_db_walker_step_back(ctx->db_walker);
+                }
+
                 /* Step test entry back */
                 trc_db_walker_step_back(ctx->db_walker);
             }
@@ -3935,7 +4423,9 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                 TAILQ_EMPTY(
                     &TAILQ_FIRST(&trc_db_walker_get_test(ctx->db_walker)->
                                         iters.head)->tests.head) &&
-                !(ctx->flags & TRC_LOG_PARSE_PATHS))
+                !(ctx->flags & TRC_LOG_PARSE_PATHS) &&
+                !((ctx->flags & TRC_LOG_PARSE_FAKE_LOG) &&
+                  (ctx->flags & TRC_LOG_PARSE_SELF_CONFL)))
             {
                 /*
                  * We use this function only for "non-intermediate"
@@ -4093,6 +4583,49 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                 if (ctx->flags & (TRC_LOG_PARSE_MERGE_LOG |
                                   TRC_LOG_PARSE_LOG_WILDS))
                     trc_update_merge_result(ctx);
+                else if ((ctx->flags & TRC_LOG_PARSE_SELF_CONFL) &&
+                         !TAILQ_EMPTY(
+                            &trc_db_walker_get_test(ctx->db_walker)->
+                                                            iters.head) &&
+                         TAILQ_EMPTY(
+                           &TAILQ_FIRST(
+                            &trc_db_walker_get_test(ctx->db_walker)->
+                                                 iters.head)->tests.head))
+                {
+                    /* 
+                     * Getting conflicting results from an iteration
+                     * defined by matching function
+                     */
+                    trc_db_walker_step_back(ctx->db_walker);
+
+                    if (trc_db_walker_step_iter(ctx->db_walker,
+                                                upd_iter_data->args_n,
+                                                upd_iter_data->args,
+                                                FALSE, FALSE, FALSE,
+                                                ctx->db_uid,
+                                                ctx->func_args_match))
+                    {
+                        trc_test_iter *iter =
+                            trc_db_walker_get_iter(ctx->db_walker);
+                        assert(iter != NULL);
+                        memcpy(&upd_iter_data->new_results,
+                               trc_exp_results_dup(&iter->exp_results),
+                               sizeof(trc_exp_results));
+                    }
+                    else
+                    {
+                        te_test_result te_result;
+
+                        trc_db_walker_step_back(ctx->db_walker);
+
+                        te_result.status = TE_TEST_SKIPPED;
+                        TAILQ_INIT(&te_result.verdicts);
+                        trc_update_iter_data_merge_result(ctx,
+                                                          upd_iter_data,
+                                                          &te_result,
+                                                          TRUE);
+                    }
+                }
 
                 trc_report_free_test_iter_data(ctx->iter_data);
                 ctx->iter_data = NULL;
@@ -4327,12 +4860,15 @@ trc_update_process_logs(trc_update_ctx *gctx)
     trc_update_tag_logs        *tl = NULL;
     tqe_string                 *tqe_str = NULL;
     trc_update_tests_group     *tests_group;
+    logic_expr                 *expr = NULL;
 
     trc_update_init_parse_ctx(&ctx, gctx);
     ctx.log = gctx->fake_log;
     ctx.flags = TRC_LOG_PARSE_FAKE_LOG;
     if (gctx->flags & TRC_LOG_PARSE_PATHS)
         ctx.flags |= TRC_LOG_PARSE_PATHS;
+    if (gctx->flags & TRC_LOG_PARSE_SELF_CONFL)
+        ctx.flags |= TRC_LOG_PARSE_SELF_CONFL;
 
     tl = TAILQ_FIRST(&gctx->tags_logs);
     if (tl != NULL)
@@ -4349,6 +4885,13 @@ trc_update_process_logs(trc_update_ctx *gctx)
             tqe_str = TAILQ_NEXT(tqe_str, links);
             ctx.flags = gctx->flags;
         }
+    }
+
+    if (ctx.flags & TRC_LOG_PARSE_FAKE_LOG)
+    {
+        ctx.merge_str = strdup("UNSPEC");
+        logic_expr_parse(ctx.merge_str, &expr);
+        ctx.merge_expr = expr;
     }
 
     ctx.updated_tests = TE_ALLOC(sizeof(trc_update_tests_groups));
@@ -4383,14 +4926,20 @@ trc_update_process_logs(trc_update_ctx *gctx)
         if (tl == NULL)
             break;
 
+        logic_expr_free(ctx.merge_expr);
+        free(ctx.merge_str);
+        tq_strings_free(ctx.tags, free);
         free(ctx.tags);
+
         trc_update_init_parse_ctx(&ctx, gctx);
         ctx.func_args_match = NULL;
+        ctx.gen_tags = &gctx->tags_list;
 
         if (tqe_str != NULL)
         {
-            ctx.merge_expr = tl->tags_expr;
-            ctx.merge_str = tl->tags_str;
+            ctx.merge_expr = logic_expr_dup(tl->tags_expr);
+            if (tl->tags_str != NULL)
+                ctx.merge_str = strdup(tl->tags_str);
             ctx.log = tqe_str->v;
             tqe_str = TAILQ_NEXT(tqe_str, links);
         }
@@ -4404,8 +4953,9 @@ trc_update_process_logs(trc_update_ctx *gctx)
                 tqe_str = TAILQ_FIRST(&tl->logs);
 
             ctx.log = tqe_str->v;
-            ctx.merge_expr = tl->tags_expr;
-            ctx.merge_str = tl->tags_str;
+            ctx.merge_expr = logic_expr_dup(tl->tags_expr);
+            if (tl->tags_str != NULL)
+                ctx.merge_str = strdup(tl->tags_str);
             tqe_str = TAILQ_NEXT(tqe_str, links);
         }
 
@@ -4499,7 +5049,8 @@ trc_update_process_logs(trc_update_ctx *gctx)
         {
             printf("Generating wildcards...\n");
             CHECK_F_RC(trc_update_generate_wilds(gctx->db_uid,
-                                                 ctx.updated_tests));
+                                                 ctx.updated_tests,
+                                                 gctx->flags));
         }
 
         printf("Done.\n");

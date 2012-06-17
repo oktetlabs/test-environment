@@ -484,6 +484,13 @@ extern void trc_db_free(te_trc_db *db);
 extern void trc_remove_exp_results(te_trc_db *db);
 
 /**
+ * Free resources allocated for the test.
+ *
+ * @param test     Test to be freed
+ */
+extern void trc_free_trc_test(trc_test *test);
+
+/**
  * Free resources allocated for the list of tests.
  *
  * @param tests     List of tests to be freed

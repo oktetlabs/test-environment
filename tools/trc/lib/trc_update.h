@@ -64,6 +64,10 @@ typedef struct trc_update_ctx {
     te_trc_db               *db;              /**< TRC DB */
     unsigned int             db_uid;          /**< TRC DB user ID */
     tqh_strings              test_names;      /**< Test paths */
+    tqh_strings              tags_list;       /**< List of tags for
+                                                   automatical determining
+                                                   of tag expression for
+                                                   a log */
     trc_update_tags_logs     tags_logs;       /**< Queue of logs grouped by
                                                    tag expressions */
     char                    *fake_log;        /**< Tester fake run XML log

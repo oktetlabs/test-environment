@@ -356,6 +356,7 @@ trc_update_init_ctx(trc_update_ctx *ctx_p)
     memset(ctx_p, 0, sizeof(ctx_p));
     TAILQ_INIT(&ctx_p->test_names);
     TAILQ_INIT(&ctx_p->tags_logs);
+    TAILQ_INIT(&ctx_p->tags_list);
 }
 
 /* See the description in trc_update.h */
@@ -366,6 +367,7 @@ trc_update_free_ctx(trc_update_ctx *ctx)
         return;
 
     trc_update_tags_logs_free(&ctx->tags_logs);
+    tq_strings_free(&ctx->tags_list, free);
     tq_strings_free(&ctx->test_names, free);
     free(ctx->fake_log);
     free(ctx->rules_load_from);
