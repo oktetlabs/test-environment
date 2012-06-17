@@ -17,3 +17,9 @@ EOF
 
 doxygen
 ./doc/dox_resources/tableofcontents
+
+echo "" >&2
+echo "" >&2
+echo "###########################################" >&2
+echo "## See doc/generated/html/index.html ######" >&2
+echo "###########################################" >&2
