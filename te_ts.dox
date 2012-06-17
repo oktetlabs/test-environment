@@ -1,265 +1,307 @@
 /**
-@defgroup te Test Environment
+
+@defgroup te_ts TE: Test Suite
+@ingroup te
 @{
 
-@section te_introduction Introduction
-
-OKTET Labs Test Environment (TE) is a software product that is
-intended to ease creating automated test suites.  The history of TE
-goes back to 2000 year when the first prototype of software was
-created. At that time the product was used for testing SNMP MIBs and
-CLI commands. Two years later (in 2002) software was extended to
-support testing of IPv6 protocol.
-
-Few years of intensive usage the software in testing projects showed
-that a deep re-design was necessary to make the architecture flexible
-and extandable for new and new upcoming features. In 2003 year it was
-decided that the redesign should be fulfilled. Due to the careful and
-well-thought design decisions made in 2003 year, the overall TE
-architecture (main components and interconnections between them) are
-still valid even though a lot of new features has been added since
-then.
-
-@section te_conventions Conventions
-
-Throught the documentation the following conventions are used:
-- directory paths or file names marked as: @path{/usr/bin/bash},
-  @path{Makefile};
-- program names (scripts or binary executables) marked as: @prog{gdb},
-  @prog{dispatcher.sh};
-- program options are maked as: @prog_option{--help}, @prog_option{-q};
-- environment variables are marked as: @var{TE_BASE}, @var{${PATH}};
-- different directives in configuration files are marked as:
-  @func{TE_LIB_PARMS}, @func{include};
-- configuration pathes as maked as: @conf_path{/agent/interface},
-  @conf_path{/local:/net:A};
-- names of different attributes (mainly names of XML element attributes)
-  are marked as: @attr_name{type}, @attr_name{src};
-- values of different attributes are marked as: @attr_val{unix},
-  @attr_val{${TE_BASE}/suites/ipv6-demo};
-- different kind of commands or modes are marked as: @cmd{Unregister}, 
-  @cmd{live}.
-.
-
-@section te_abbreviations Abbreviations
+@section te_ts_terminology Terminology
 
 @tdt_start
-@tdt_term DUT
-@tdt_def  Device Under Test
-@tdt_term RCF
-@tdt_def  Remote Control Facility
-@tdt_term TA
-@tdt_def  Test Agent
-@tdt_term TE
-@tdt_def  Test Environment
-@tdt_term TEN
-@tdt_def  Test Engine
-@tdt_end
-
-@section terminology Terminology
-
-@tdt_start
-@tdt_term Communication Service Access Point
-@tdt_def An object, which could be created on a Test Agent to send/receive
-some data (packets, frames, cells, CLI commands, etc.) A set of primitives
-to create and destroy CSAP, receive and send data is associated with each
-type of CSAP.
-@tdt_term Device Under Test (DUT)
-@tdt_def Station where a tested hardware/software is located.
-@tdt_term RCF Application Domain
-@tdt_def A semantically independent set of services provided by RCF
-(for example, TA configuration service).
-A set of API functions, protocol commands and routines of TA libraries for
-command handling, corresponds to a particular application domain.
-Some application domains may be unsupported by some Test Agents.
-@tdt_term Test
-@tdt_def A complete sequence of actions required to achieve a specific purpose
-(e.g., a check that tested system provides a required functionality, complies
-to a standard, etc.) and producing a verdict pass/fail (possibly accompanied
-by additional data).
 @tdt_term Test Package
 @tdt_def Group of tightly related tests or test packages, which may share
 internal libraries and usually run together (one-by-one or simultaneously).
-Test Package may consist of one test. It may have a prologue
-(performing some initialization) and epilogue (releasing resources and
-restoring TE configuration).
-@tdt_termTest Agent
-@tdt_defAn application running on the NUT or other station and performing
-some actions (configuring NUT or itself, interacting with the tested system,
-sending/receiving packets, etc.) according to instructions provided by
-the Test Engine. All interactions with the tested system should be performed
-via Test Agent only.
-@tdt_term Test Engine
-@tdt_def Set of applications performing testing of tested subsystem according
-to Test Package(s) and configuration specified by a user.
-It is responsible for:
-- preparing executables for Test Packages, Test Agents and TE Subsystems as
-  well as bootable NUT images;
-- starting Test Agents and configuring the environment and NUT via
-  Test Protocol as well as providing configuration information to tests;
-- executing tests in mode and order specified by a user;
-- interacting with Test Agents on behalf of tests;
-- logging and generation of reports.
-.
-@tdt_term Test Protocol
-@tdt_def Protocol used for Test Engine and Test Agent interaction.
-@tdt_term Test Environment (TE)
-@tdt_def Software product, which includes:
-- software applications (Test Agent, Test Engine, tools, etc.) allowing to
-  perform the sequence of actions specified by the test scenario and obtain
-  results in convenient form;
-- set of libraries supporting specific protocols, platforms and features;
-- set of documents describing test creation framework and software tools
-  simplifying this task;
-- set of documents describing TE enhancement framework
-  (creation of new libraries, support of new platforms, etc.) and
-  software tools simplifying this task;
-- user guides describing TE usage (how to run tests, possible log formats,
-  libraries API, etc.).
-.
-Note, that tests are not considered as part of the TE.
-@tdt_term Test Environment Subsystem
-@tdt_def A mandatory and logically separate module
-(which may include software, data, documents) of the Test Environment
-responsible for one of main services provided by TE.
-The TE Subsystem can provide service to:
-- TE user (for example, TA Creation Framework);
-- tests or
-- other TE subsystems.
-.
-TE Subsystem may run in one or several threads (processes),
-or on one or several stations (including NUT).
-@tdt_end
+Test Package may consist of one test. It may have a prologue (performing
+some initialization) and epilogue (releasing resources and restoring
+TE configuration).
+@tdt_term Test Script
+@tdt_def A test which is a minimal structural unit of a test harness.
+@tdt_term Test Suite
+@tdt_def Test Package which may be considered as standalone entity from
+organisational point of view and build issues.
+@tdt_tend
 
-@section te_architecture Test Environment Architecture
+@section te_ts_tree_structure Directory tree structure
 
-The following picture shows high level decomposition of TE components:
-
-@image html hl-decomposition.png "High Level Decomposition of Test Environment components" 
-
-From the high level point of view TE consists of two main parts:
-- @ref te_engine;
-- @ref te_agents.
-
-TE subsystems and @ref te_agents are distributed among several applications
-running on different stations.
-Apart from other things @ref te_engine controls @ref te_agents by means of
-so-called Test Protocol - a text-based protocol used in communication
-between @ref te_engine and @ref te_agents.
-
-According to initial design @ref te_engine runs on Linux platform and there is
-no intend to port it to any other OS type, but @ref te_agents can be run on
-different platforms providing particular set of mandatory features for
-@ref te_engine. @ref te_agents are the subject to be ported to hardware/software
-specific components of test infrastructure.
-
-
-@section te_run_time Test Environment operation
-
-The following sequence of events happen each time when you launch
-Test Environment:
-
--# @ref te_engine_dispatcher script starts with some command line options
-   (for more information on @ref te_engine_dispatcher options read
-    @ref te_engine_dispatcher_options);
--# @ref te_engine_dispatcher runs @prog{te_log_init} script to initialize
-   script based logging facility. All further actions can be logged via
-   script based interface (@prog{te_log_message} script). Please note that
-   @ref te_engine_logger application hasn't started yet;
--# @ref te_engine_dispatcher starts @ref te_engine_builder to prepare
-   libraries and executables for all TE Subsystems
-   (except @ref te_engine_dispatcher), Test Packages, @ref te_agents and
-   bootable NUT image(s).
-   @ret te_engine_builder is passed a configuration file that describes
-   a set of executables to be built with a set of options for building
-   process.<br/>
-   @ref te_engine_builder configuration file name specified via
-   @prog_option{--conf-builder} option of @ref te_engine_dispatcher.<br/>
-   (For information about @ref te_engine_builder configuration file
-   read @ref te_engine_builder_conf_file).<br/>
-   Please note that traces of building process are output into the console
-   (they are not accumulated in log file);
--# As soon as @ref te_engine_builder successfully built and installed all
-   required components, @ref te_engine_dispatcher starts launching
-   @ref te_engine componentns. First component to start is
-   @ref te_engine_logger. @ref te_engine_logger is passed a configuration
-   file whose name can be specified via @prog_option{--conf-logger}
-   @ref te_engine_dispatcher command line option (for information about
-   the format of @ref te_engine_logger configuration file refer to
-   @ref te_engine_logger_conf_file).<br/>
-   @ref te_engine_logger starts listening for incoming log requests that
-   can come from tests and other TEN components;
--# @ref te_engine_dispatcher starts @ref te_engine_rcf. @ref te_engine_rcf
-   is passed a configuration file that describes @ref te_agents to be started
-   (for information about the format of @ref te_engine_rcf configuration file
-   refer to @ref te_engine_rcf_conf_file).<br/>
-   As a part of initialization @ref te_engine_rcf establishes communication
-   with @ref te_agents using Test Protocol;
--# As soon as @ref te_engine_rcf has initialized, @ref te_engine_logger
-   starts a thread that is responsible for polling @ref te_agents Test Agents
-   in order to gather log messages accumulated on Test Agent side. Polling
-   interval is configured via @ref te_engine_logger configuration file;
--# @ref te_engine_dispatcher starts @ref te_engine_conf. @ref te_engine_conf
-   is passed a configuration file that describes configuration objects to
-   register as well as object instances to add (for information about
-   the format of @ref te_engine_conf configuration file refer to 
-   @ref te_engine_conf_file). On start-up @ref te_engine_conf retrives
-   configuration information from @ref te_agents and initializes local trees
-   of objects and instances;
--# @ref te_engine_dispatcher starts @ref te_engine_tester.
-   @ref te_engine_tester processes configuration file and if necessary asks
-   @ref te_engine_builder to build test suites (test executables).
-   Then @ref te_engine_tester processes test package description files
-   and runs tests in corresponding order and with specified set of parameter
-   values. (For information about @ref te_engine_tester configuration file
-   format refer to @ref te_engine_tester_conf section).<br/>
-   Before running tests, @ref te_engine_tester asks @ref te_engine_conf to
-   make a backup of configuration tree. When all tests are finished
-   @ref te_engine_tester restores the initial configuration from initial
-   backup. To prevent tests from interfering, a backup is created and
-   optionally restored before each test as well.
--# When @ref te_engine_tester returns (all tests finished),
-   @ref te_engine_dispatcher stops @ref te_engine_conf;
--# Flushing of the log from all Test Agents is performed;
--# @ref te_engine_dispatcher stops @ref te_engine_rcf.
-   During its shutdown, @ref te_engine_rcf performs a shutdown of
-   all @ref te_agents;
--# @ref te_engine_dispatcher stops @ref te_engine_logger.
-   @ref te_engine_dispatcher calls Report Generator tool to convert the log
-   from a raw format to the text and/or HTML format;
--# @ref te_engine_dispatcher script finishes its work.
+Test suite can be distributed in two forms:
+-# pre-installed binary form;
+-# source based form.
 .
 
+For pre-installed binary test suite does not require building procedure,
+which is why there is no need to have build related files.
 
-@section te_tools Test Environment Tools
+Pre-installed binary test suite has the following directory structure:
+<pre class="fragment">
+@path{${TS_ROOT}}
+  +-- @path{package.xml}
+  +-- @path{prologue}
+  +-- @path{epilogue}
+  +-- @path{p1_test1}
+  +   ...
+  +-- @path{p1_testN}
+  +-- @path{subpackage}
+       +-- @path{package.xml}
+       +-- @path{prologue}
+       +-- @path{epilogue}
+       +-- @path{p2_test1}
+       +   ...
+       +-- @path{p2_testN}
+  ...
+</pre>
 
-Apart from main components, TE provides the following set of tools:
-- <b>Report Generator</b> tool representing logs in different formats
-  (<em>RGT</em> tool, see [TODO]);
-- <b>Testing Coverage Estimation</b> tool that gives some report about
-  the quality of test suite we run against the software under test;
-- <b>Test Result comparator</b> tool that can be used to check the
-  difference between different test runs (TRC tool);
-- <b>Test Package Generator</b> tool.
+A test suite consists of a set of packages each containing a number of
+test executables and package description file. For the details on the format
+of @path{package.xml} files refer to @ref te_engine_tester_conf_pkg section.
+
+Source based test suite additionally has build-specific files. As any other
+component of TE, a source based test suite is expected to be built with the
+help of @ref te_engine_builder. @ref te_engine_builder uses autotools in
+the backgroud, which means a top level package directory shall include:
+- @prog{configure} script.
+.
+And all directories shall include:
+- @path{Makefile.in} file;
 .
 
+More often source based test suite will have base files of autotools:
+- @path{Makefile.am};
+- @path{configure.ac}.
+.
+And before running TE we there will be need to generate @prog{configure}
+script and @path{Makefile.in} files with the following command:
+<pre class="fragment">
+@prog{autoreconf} @prog_option{--install} @prog_option{--force}
+</pre>
 
-@section te_services Test Environment Services
+The directory structure of source-based test suite is following:
+<pre class="fragment">
+@path{${TS_ROOT}}
+  +-- @path{package.xml}
+  +-- @path{configure.ac}
+  +-- @path{Makefile.am}
+  +-- @path{prologue.c}
+  +-- @path{epilogue.c}
+  +-- @path{p1_test1.c}
+  +   ...
+  +-- @path{p1_testN.c}
+  +-- @path{subpackage}
+       +-- @path{package.xml}
+       +-- @path{Makefile.am}
+       +-- @path{prologue.c}
+       +-- @path{epilogue.c}
+       +-- @path{p2_test1.c}
+       +   ...
+       +-- @path{p2_testN.c}
+  ...
+</pre>
 
-From end-users (test writers) point of view TE is a set of services that
-allow creating complex and full-functional tests. All services exported by TE
-accessible via a set of libraries. Here is the list of libraries available
-that are useful while writing this or that test cases:
+@section te_ts_min Minimal Test Suite
 
-- @ref te_lib_rpc
+Minimal test suite can be found under @path{${TE_BASE}/suites/minimal/suite}
+directory.
 
-- @link logger_api.h API Usage: Logger API @endlink
-- @ref confapi
-- @ref rcfapi
+The structure of minimal project is:
+<pre class="fragment">
+@path{${TE_BASE}/suites/minimal}
+  +-- @path{conf}
+  |     +-- @path{builder.conf}
+  |     +-- @path{cs.conf}
+  |     +-- @path{logger.conf}
+  |     +-- @path{rcf.conf}
+  |     +-- @path{tester.conf}
+  +-- @path{suite}
+        +-- @path{configure.ac}
+        +-- @path{Makefile.am}
+        +-- @path{package.xml}
+        +-- @path{sample1.c}
+</pre>
+
+@ref te_engine_tester configuration file (@path{tester.conf}) refers to
+suite sources and add this suite for @ref te_engine_tester run:
+@code
+@USER_EXPAND{INCLUDE_FILE} suites/minimal/conf/tester.conf
+@endcode
+
+This test suite has simplest package description file (@path{package.xml}):
+@code
+@USER_EXPAND{INCLUDE_FILE} suites/minimal/suite/package.xml
+@endcode
+
+Package description file specifies one test executable @prog{sample1} to run.
+
+To run this test suite do the following steps:
+-# under @path{${TE_BASE}/suites/minimal/suite} run:
+<pre class="fragment">
+@prog{autoreconf} @prog_option{--install} @prog_option{--force}
+</pre>
+This will generate @prog{configure} script and @path{Makefile.in} file
+under @path{${TE_BASE}/suites/minimal/suite directory.
+-# export @var{TS_BASE} environment variable, because @ref te_engine_tester
+   configuration file (@path{tester.conf}) uses it as the value of
+   @attr_name{src} attribute of @attr_name{suite} TAG.
+<pre class="fragment">
+@prog{export} @var{TS_BASE}=@path{${TE_BASE}/suites/minimal/suite}
+</pre>
+-# run TE:
+<pre class="fragment">
+@path{${TE_BASE}/}@prog{dispatcher.sh} @prog_option{--conf-dir}=@path{conf}
+</pre>
+In our test project all configuration file names match with the default
+names, which is why we do not specify them with separate
+@prog_option{--conf-<prog>} options, but only tell where to find
+configuration files with @prog_option{--conf-dir} option.
+
+As the result of these operations a number of directories are created
+that have TE and suite build and installation files.
+
+<pre class="fragment">
+@path{${TE_BASE}/suites/minimal}
+  +-- @path{conf}
+  +-- @path{suite}
+  +-- @path{engine} - @ref te_engine build directory
+  +-- @path{agents} - @ref te_agents build directory
+  +-- @path{lib} - build directory for TE libraries
+  +-- @path{include} - build directory for includes
+  +-- @path{platforms} - platforms build
+  +-- @path{suites} - test suites build directory
+  +-- @path{inst} - installation directory
+        +-- @path{agents} - @ref te_agents installation directory
+        +-- @path{default} - @ref te_test_engine installation directory
+        +-- @path{suites} - test suites installation directory
+              +-- @path{minimal} -- installation directory of our @path{minimal} test suite
+                    +-- @path{package.xml} - installed package description file
+                    +-- @path{sample1} - test executable
+</pre>
+
+Please note that @ref te_engine_tester runs a test suite from
+@path{inst/suites/<suite_name>} directory.
+
+@subsection te_ts_min_builder Autotools files
+
+The content of @path{configure.ac} of our minimal test suite is following:
+@code
+@USER_EXPAND{INCLUDE_FILE} suites/minimal/suite/configure.ac
+@endcode
+
+The content of @path{Makefile.am} is following:
+@code
+@USER_EXPAND{INCLUDE_FILE} suites/minimal/suite/Makefile.am
+@endcode
+
+@subsection te_ts_min_test_file Test scenario file
+
+A test scenario file used in minimal test suite is a C source file:
+@code
+@USER_EXPAND{INCLUDE_FILE} suites/minimal/suite/sample1.c
+@endcode
+
+@section te_ts_scenario_layout Test scenario layout
+
+Each test scenario shall have:
+-# Definition of @c TE_TEST_NAME macro in order to specify Entity name
+   of log messages generated from test scenario. Usually this is set to
+   test name.
+   @code
+   #define TE_TEST_NAME "sample1"
+   @endcode
+-# Inclusion of @path{te_config.h} file. This file defines macros generated
+   by TE @prog{configure} script after verification of header files,
+   structure fields, strucure sizes (i.e. it has definitions of
+   @c HAVE_xxx_H, @c SIZEOF_xxx macros).
+   @code
+   #include "te_config.h"
+   @endcode
+-# Inclusion of @path{tapi_test.h} file - basic API for test scenarios.
+   @code
+   #include "tapi_test.h"
+   @endcode
+-# @func{main()} function. A test scenario is an executable, so in case of
+   C source file we should have program entry point, which is @func{main()}
+   function for the default linker script. @func{main()} function has to have
+   @var{argc}, @var{argv} parameters, because macros defined at tapi_test.h
+   depend on them;
+-# Mandatory test points:
+   - TEST_START;
+   - TEST_END;
+   - TEST_SUCCESS.
+   .
+   The mandatory test structure is:
+   @code
+   {
+       TEST_START;
+       ...
+       TEST_SUCCESS;
+   cleanup:
+       TEST_END;
+   }
+   @endcode
 .
 
-- @ref tapi_conf
+The following things should be taken into account while writing
+a test scenario:
+- If you need to add local variables to your test scenario, put them BEFORE
+  TEST_START macro:
+  @code
+  {
+      /* Local variables go before TEST_START macro */
+      int              sock;
+      struct sockaddr *addr4;
+      struct sockaddr *addr6;
+      int              opt_val;
+
+      TEST_START;
+      ...
+      TEST_SUCCESS;
+  cleanup:
+      TEST_END;
+  }
+  @endcode
+- If a set of tests require definition of the same set of local variables
+  we can avoid duplication these variables from test to test by using
+  TEST_START_VARS macro:
+  @code
+  /* test_suite.h */
+  #define TEST_START_VARS \
+      int sock;                 \
+      struct sockaddr *addr4;   \
+      struct sockaddr *addr6
+  @endcode
+  In each test scenarion we will have:
+  @code
+  ...
+  #include "test_suite.h"
+  ...
+  int main(int argc, char **argv)
+  {
+      /* Define test-specific local variables */
+      int              opt_val;
+
+      TEST_START;
+      ...
+      sock = rpc_socket(rpc_srv,
+                        RPC_AF_INET, RPC_SOCK_STREAM, RPC_IPPROTO_TCP);
+      ...
+  }
+  @endcode
+- Another useful macros are:
+  - TEST_START_SPECIFIC;
+  - TEST_END_SPECIFIC.
+  .
+  They can be defined if you need some common parts of code to be executed
+  during TEST_START and TEST_END procedures. For example tests suites that
+  use tapi_env library may define these macros as:
+  @code
+  #define TEST_START_VARS TEST_START_ENV_VARS
+  #define TEST_START_SPECIFIC TEST_START_ENV
+  #define TEST_END_SPECIFIC TEST_END_ENV
+  @endcode
 .
 
-@} <!-- END te -->
-*/
+@section te_ts_scenario_params Test parameters
+
+@copydetails te_ts_tapi_test_param
+
+
+@} <!-- END te_ts -->
+
+ */
