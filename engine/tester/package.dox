@@ -38,23 +38,23 @@ according to configuration files.
 @endditaa
 -->
 
-In the context of Test Environment tests are organized in groups
-called Test Packages. From the Tester point of view, the Test Package is
-a set of executables (binary or script files can be run in @prog{shell}
-with set of parameters passed via command line) accompanied by a file
-@path{package.xml} describing how to run these scripts
-(execution order, test parameter values, etc.).
+In the context of Test Environment tests are organized in groups called Test
+Packages. From the Tester point of view, the Test Package is a set of
+executables (binary or script files can be run in @prog{shell} with set of
+parameters passed via command line) accompanied by a file @path{package.xml}
+describing how to run these scripts (execution order, test parameter values,
+etc.).
 
 It may be specified that some tests of the package should be run one-by-one
 (a test is started after finishing the previous test) or simultaneously
 (separate threads (processes) should be started for all the tests).
-Moreover, a test may be started under a debugger
-(@prog{gdb} or @prog{valgrind}).
+Moreover, a test may be started under a debugger (@prog{gdb} or
+@prog{valgrind}).
 
-It is possible to run the same test with different parameters. Parameters for
-a test are specified in @path{package.xml} file. Tests may be iterated with
-different combinations of parameter values. Such iterations are performed by
-@ref te_engine_tester.
+It is possible to run the same test with different parameters. Parameters
+for a test are specified in @path{package.xml} file. Tests may be iterated
+with different combinations of parameter values. Such iterations are
+performed by @ref te_engine_tester.
 
 Some tests may be marked as (associated with) checking the particular
 requirement(s) of the product. @ref te_engine_tester allows to run tests
@@ -138,7 +138,7 @@ Here is some description of used TAGs of configuration file:
 - @attr_name{run} - a block of tests, packages to run.
 .
 
-In our sample we tell @ref te_engine_tester :
+In the above example we tell @ref te_engine_tester :
 - to build a test suite located under @path{${TE_TS_IPV6_HOST}} directory.
   @ref te_engine_tester will ask @ref te_engine_builder to build and install
   this test suite;
