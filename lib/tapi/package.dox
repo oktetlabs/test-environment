@@ -40,4 +40,40 @@ The following configuration TAPI groups available:
 .
 
 @} <!-- END tapi_conf -->
- */
+
+
+@defgroup te_lib_tapi_conf_net TAPI: Test Agent Network topology
+@ingroup te_ts
+@{
+
+In most cases a test scenario requires a special phisical set-up to
+be prepared. The simplest example is when a test expects two nodes to have
+a physical connection. From test point of view it does not matter where
+these nodes reside - the same test should work on different physical set-ups.
+
+Partly physical set-up for a test run is configured via
+@ref te_engine_rcf_conf_file where we specify @ref te_agents to run together
+with their physical locations (network hosts).
+
+Each host can have a number of network interfaces some of which can be
+connected with interfaces of another hosts mentioned in
+@ref te_engine_rcf_conf_file. If we specify relation between network
+interfaces we would clarify network topology, not just a list of hosts used
+in test procedure.
+
+@image html te_lib_tapi_net_cfg_rcf_only.png "Network topology from RCF point of view"
+
+From @ref te_engine_rcf point of view all hosts where we run @ref te_agents
+should be accessible from a host where we run @ref te_engine.
+It is not necessary to be a direct link access - for example we can run
+@ref te_engine on our local PC, but @ref te_agents can reside on remote hosts
+reside in another countries accessed via the Internet.
+
+To specify network topology of hosts used in test set-up we need to
+specify relationship between network interfaces.
+
+@image html te_lib_tapi_net_cfg_nets.png "Network topology between Test Agent hosts"
+
+@} <!-- END te_lib_tapi_conf_net -->
+
+*/
