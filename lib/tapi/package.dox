@@ -46,6 +46,8 @@ The following configuration TAPI groups available:
 @ingroup te_ts
 @{
 
+@section te_lib_tapi_conf_net_introduction Introduction
+
 In most cases a test scenario requires a special phisical set-up to
 be prepared. The simplest example is when a test expects two nodes to have
 a physical connection. From test point of view it does not matter where
