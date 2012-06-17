@@ -556,6 +556,7 @@ te_bool
 trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
                         trc_report_argument *args, te_bool force,
                         te_bool no_wildcards, te_bool split_results,
+                        te_bool no_match_to_new,
                         unsigned int db_uid,
                         func_args_match_ptr func_args_match)
 {
@@ -582,8 +583,11 @@ trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
         {
             if (func_args_match == NULL || walker->iter->newly_created)
             {
-                match_result = test_iter_args_match(&walker->iter->args,
-                                                    n_args, args, TRUE);
+                if (walker->iter->newly_created && no_match_to_new)
+                    match_result = ITER_NO_MATCH;
+                else
+                    match_result = test_iter_args_match(&walker->iter->args,
+                                                        n_args, args, TRUE);
             }
             else
             {

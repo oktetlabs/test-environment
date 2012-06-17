@@ -233,6 +233,11 @@ typedef int (*func_args_match_ptr)(const void *,
  *                          wildcard matches specified arguments in DB.
  *                          If ! @a force, look at only non-wildcards
  *                          iterations when matching.
+ * @param split_results     For each result: split tag expression of
+ *                          results in conjuncts, replace single result
+ *                          with its copies marked by different
+ *                          conjuncts.
+ * @param no_match_to_new   No match to newly created iterations
  * @param db_uid            TRC database user ID
  * @param func_args_match   Function to be used instead
  *                          @b test_iter_args_match() if required.
@@ -245,6 +250,7 @@ extern te_bool trc_db_walker_step_iter(te_trc_db_walker *walker,
                                        te_bool force,
                                        te_bool no_wildcards,
                                        te_bool split_results,
+                                       te_bool no_match_to_new,
                                        unsigned int db_uid,
                                        func_args_match_ptr
                                                 func_args_match);

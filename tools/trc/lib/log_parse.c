@@ -4470,6 +4470,11 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                                           * fake log
                                           */
                                          FALSE,
+                                         /*
+                                          * Try to match to new iterations
+                                          * too to check TRC.
+                                          */
+                                         FALSE,
                                          ctx->db_uid,
                                          func_ptr))
             {
@@ -4602,6 +4607,7 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                                                 upd_iter_data->args_n,
                                                 upd_iter_data->args,
                                                 FALSE, FALSE, FALSE,
+                                                TRUE,
                                                 ctx->db_uid,
                                                 ctx->func_args_match))
                     {

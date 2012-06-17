@@ -189,10 +189,10 @@ foreach (@ARGV)
           "      --log-save-by-tags      Use this option to save \n".
           "                              a copy of each (downloaded and \n".
           "                              unpacked) log named by its tag \n";
-#       print "\n".
-#         "      --tester-run=STRING     Test path for Tester fake run\n".
-#         "                              (if specified, --test-name \n".
-#         "                               has no effect on Tester)\n\n";
+        print "\n".
+          "      --tester-run=STRING     Test path for Tester fake run\n".
+          "                              (if specified, --test-name \n".
+          "                               has no effect on Tester)\n\n";
        
         $rc = system("te-trc-update --help");
         exit ($rc >> 8);
