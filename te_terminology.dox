@@ -6,16 +6,32 @@
 @section te_abbreviations Abbreviations
 
 @tdt_start
+@tdt_term API
+@tdt_def  Application Programming Interface
+@tdt_term CLI
+@tdt_def  Command Line Interface
+@tdt_term CSAP
+@tdt_def  Communication Service Access Point
 @tdt_term DUT
-@tdt_def  Device Under Test
+@tdt_def  Device Under Testing
+@tdt_term LAN
+@tdt_def  Local Area Network
+@tdt_term NUT
+@tdt_def  Node Under Testing
 @tdt_term RCF
 @tdt_def  Remote Control Facility
+@tdt_term RGT
+@tdt_def  Report Generator Tool
 @tdt_term TA
 @tdt_def  Test Agent
+@tdt_term TAD
+@tdt_def  Traffic Application Domain of the RCFG
+@tdt_term TCE
+@tdt_def  Test Coverage Estimation
 @tdt_term TE
 @tdt_def  Test Environment
 @tdt_term TEN
-@tdt_def  Test Engine
+@tdt_def  TE Engine
 @tdt_end
 
 @section terminology Terminology
