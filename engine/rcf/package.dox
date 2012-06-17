@@ -182,7 +182,7 @@ Another mechanism based on SUN RPC is provided by RCF for API testing
 - call the routing with arbitrary input and output parameters.
 .
 
-@section te_engine_rcf_conf_file Configuration File
+@section te_engine_rcf_conf_file RCF Configuration File
 
 @ref te_engine_rcf @b has its own configuration file that specifies the list
 of @ref te_agents to run. Examples of @ref te_engine_rcf configuration file
