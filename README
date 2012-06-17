@@ -31,6 +31,8 @@ can find in real life are supported.
 
 The documentation can be then found at doc/generated/html/
 
+Some pictures require 'ditaa' to be installed.
+
 2. Static documents. Can be found in doc/ folder. May be outdated -- check
 doxygen documentation first.
 
