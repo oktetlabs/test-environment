@@ -1,4 +1,7 @@
 /** @file
+ *
+ * @page rcfunix_conflib RCF Library for UNIX Test Agents
+ * 
  * @brief Test Environment: RCF library for UNIX Test Agents
  *
  * @ref te_engine_rcf_comm_lib_unix should be used to control and interact
@@ -9,6 +12,7 @@
  * @ref te_engine_rcf as logging entity name and Test Agent name as
  * logging user name and to @path{ta.<name>} file in run directory.
  *
+ * 
  * Apart from @attr_name{rcflib} attribute for each Test Agent
  * @ref te_engine_rcf configuration file contains @attr_name{confstr}
  * attribute that specifies configuration string passed to communication

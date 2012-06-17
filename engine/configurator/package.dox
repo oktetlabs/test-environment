@@ -133,12 +133,14 @@ of the object @conf_path{/agent/interface/net_addr} corresponds to IP address
 @conf_path{1.2.3.4} on the network interface @conf_path{eth0} of the station
 on which Test Agent named @conf_path{nut} is running.
 
-It's allowed to use empty instance names.
-For example, @conf_path{/agent/:nut/interface:eth0/link_addr:} identifier
-is possible because the interface may have only one link address.
-An object sub-identifier must not contain symbols @conf_path{:}
-(however this symbol is allowed in the instance name), '@conf_path{*}' and
-'@conf_path{&nbsp;}' (space).
+It's allowed to use empty instance names.  For example,
+@conf_path{/agent/:nut/interface:eth0/link_addr:} identifier is possible
+because the interface may have only one link address.  An object
+sub-identifier must not contain symbols @conf_path{:} (however this symbol
+is allowed in the instance name), '@conf_path{*}' and '@conf_path{&nbsp;}'
+(space).
+
+Empty instance name is used when the object has only one instance.
 
 Instances which belong to @conf_path{/agent:} subtree correspond to real
 configuration items observed on the @ref te_agents (network interfaces,
@@ -148,8 +150,8 @@ Their change may lead to re-configuration of remote hosts.
 The list of basic configuration objects, which is likely to be supported by
 any Test Agent, can be found in @path{${TE_BASE}/doc/cm/cm_base.xml} file.
 
-Other subtrees may be considered as information store: changing instances in
-these subtrees does not affect the hosts controlled by @ref te_agents,
+Other subtrees may be considered as information storage: changing instances
+in these subtrees does not affect the hosts controlled by @ref te_agents,
 but may be used to share data between tests.
 
 API to browse configuration trees can be found at
@@ -217,7 +219,7 @@ It is also possible to use a backup-like snapshot as a configuration file,
 which could be useful when you want to reproduce some problem that happens
 with particular configuration set-up.
 
-@subsection te_engine_conf_file_content File content
+@subsection te_engine_conf_file_content File Syntax
 
 You can find samples of @ref te_engine_conf configuration files under
 @path{${TE_BASE}/conf} directory.
@@ -324,10 +326,10 @@ XSD schema of @ref te_engine_conf configuration file can be found at
 
 @subsection te_engine_conf_file_features Special features
 
-One useful feature of @ref te_engine_conf configuration file is that
-it is possible to include the content of one file into another with special
-<b>include</b> tag. For example your upper level file can keep only includes
-to different parts of configuration:
+One useful feature of @ref te_engine_conf configuration file is that it is
+possible to include the content of one file into another with XML @b include
+tag. For example your upper level file can keep only includes to different
+parts of configuration:
 
 @code
 <?xml version="1.0"?>
@@ -360,8 +362,8 @@ environment variables without modification of configuration file. For example:
   </add>
 @endcode
 
-Actually as object instance value you can use syntax of
-BASH Parameter Substitution.
+Actually as object instance value you can use syntax of BASH Parameter
+Substitution.
 
 @} <!-- END te_engine_conf -->
 */

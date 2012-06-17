@@ -140,7 +140,7 @@ CLI or other communication facilities as well.
 
 CSAP may consist of several layers to allow send/receive packets corresponding
 to a protocol stack. For example, it's possible to create CSAP
-"dhcp.udp.ipv4.aal5.atm”.
+"dhcp.udp.ipv4.aal5.atm".
 
 Parameters of the CSAP as well as packet templates and patterns are described
 using ASN.1. Each level (protocol) is described according to its rules.
@@ -174,7 +174,7 @@ The mechanism described above allows very restricted routine parameters
 It also does not assume output parameters.
 
 Another mechanism based on SUN RPC is provided by RCF for API testing
-(“white box” testing). It allows:
+(white box testing). It allows:
 - create a separate process: RPC server;
 - fork one RPC server from another;
 - create a thread in the RPC server;
@@ -184,7 +184,7 @@ Another mechanism based on SUN RPC is provided by RCF for API testing
 
 @section te_engine_rcf_conf_file Configuration File
 
-@ref te_engine_rcf has its own configuration file that specifies the list
+@ref te_engine_rcf @b has its own configuration file that specifies the list
 of @ref te_agents to run. Examples of @ref te_engine_rcf configuration file
 can be found under @path{${TE_BASE}/conf} directory.
 
@@ -237,7 +237,7 @@ TE_TA_TYPE([linux_wifi_prism54], [], [unix],
 
 - @attr_name{confstr} - Test Agent configuration parameter that is passed
   to communication library (to a library specified via @attr_name{rcflib}
-  attribute).
+  attribute). See @ref te_engine_rcf_comm_lib.
 .
 
 Other attributes that you can specify for a Test Agent are:
@@ -283,6 +283,8 @@ Other attributes that you can specify for a Test Agent are:
 @endcode
 .
 
+@subsection te_engine_rcf_conf_file_threads Agent side threads/processes
+
 RCF configuration file allows to specify a number of threads or
 processes to create on Test Agent at start-up. Also it is possible
 to specify the list of functions to be called on Test Agent at
@@ -326,6 +328,23 @@ This configuration file tells RCF to run one Test Agent named
 This feature can be useful if we need to do some system initialization
 on Test Agent side and we do not want to modify test suite sources.
 
+Another good example is serial logs collection:
+
+@code
+<thread name="log_serial" when="${TE_AGT_LOG_SERIAL}">
+    <arg value="${TE_AGT_LOG_SERIAL}"/>
+    <arg value="WARN"/>
+    <arg value="10"/>
+    <arg value="3109:${TE_LOG_SERIAL_USER:-tester}:${TE_AGT_LOG_SERIAL}"/>
+</thread>
+@endcode
+
+Below element tells RCF that an agent should have a thread running
+log_serial() function if @var{TE_AGT_LOG_SERIAL} is set. Arguments are passed
+to the thead function.
+
+@subsection te_engine_rcf_conf_file_xsd RCF Configuration file XSD
+
 XSD schema of @ref te_engine_rcf configuration file can be found at
 @path{${TE_BASE}/doc/xsd/rcf_config.xsd} file.
 
@@ -340,7 +359,7 @@ one type of @ref te_engine_rcf communication library -
 
 @subsection te_engine_rcf_comm_lib_unix RCF UNIX Communication Library
 
-@copydetails lib/rcfunix/rcfunix.c
+@copydetails rcfunix_conflib
 
 @} <!-- END te_engine_rcf -->
 
