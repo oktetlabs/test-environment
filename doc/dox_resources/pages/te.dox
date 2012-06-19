@@ -103,12 +103,11 @@ hardware/software specific components of test infrastructure.
 @section te_tools Test Environment Tools
 
 Apart from main components, TE provides the following set of tools:
-- <b>Report Generator</b> tool representing logs in different formats
-  (<em>RGT</em> tool, see [TODO]);
+- @ref rgt representing logs in different formats;
+- @ref trc utility that can be used to check the difference between
+  different test runs (TRC tool);
 - <b>Testing Coverage Estimation</b> tool that gives some report about
   the quality of test suite we run against the software under test;
-- <b>Test Result comparator</b> tool that can be used to check the
-  difference between different test runs (TRC tool);
 - <b>Test Package Generator</b> tool.
 .
 

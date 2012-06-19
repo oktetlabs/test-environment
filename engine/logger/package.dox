@@ -175,31 +175,35 @@ Each log message is associated with:
   Each library must have its own logger user name;
 .
 
+Example of log message (in text format):
+<pre class="formated">
+ERROR  Tester  Run Path  16:15:50 592 ms
+Test path requested by user not found.
+Path: sockapi-ts/level5/extension/dont_accelerate
+</pre>
+
+
 All log messages accumulated by @ref te_engine_tester into @path{tmp_raw_log}
 file that is by default put under a directory from which
 @ref te_engine_dispatcher script is called. The directory where to put
-@path{tmp_raw_log} file can be overwritten specifying @prog_option{--log-dir}
+@path{tmp_raw_log} file can be overwritten specifying @prog_option{\-\-log-dir}
 option to @ref te_engine_dispatcher.
 
-@todo Add link to RGT
-
-Report generator tool (RGT) should be used to convert raw logs into
-different formats. Conversion may be done in @cmd{live} or @cmd{postponed}
-modes.
+@ref rgt should be used to convert raw logs into different
+formats. Conversion may be done in @cmd{live} or @cmd{postponed} modes.
 
 @cmd{Live} mode is suitable to use when it is necessary to get log output
 in the text format on the fly. @ref te_engine_dispatcher command-line option
-@prog_option{--live–log} should be used to get logs on the fly.
+@prog_option{\-\-live-log} should be used to get logs on the fly.
 
 In @cmd{postponed} mode raw log is first converted to XML format
 (structured, time ordered) and then XML file can be converted to
 HTML or text format log.
 
 To ask @ref te_engine_dispatcher prepare HTML version of the log
-you should pass @prog_option{--log-html=[output dir name]} option
+you should pass @prog_option{\-\-log-html=[output dir name]} option
 in command line. Then @ref te_engine_dispatcher generates HTML
 pages under specified @path{[output dir name]} directory.
-
 
 @} <!-- END te_engine_logger -->
  

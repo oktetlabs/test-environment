@@ -1,0 +1,76 @@
+/**
+
+@defgroup rgt Report Generator Tool
+@{
+
+@section rgt_introduction Introduction
+
+All TE subsystems (except for @ref te_dispatcher as it's a shell script) and
+Agents generate log in @b RAW format. All the logs are gathered by the @ref
+te_engine_logger and written into @path{tmp_raw_log} file.
+
+Report Generator Tool (RGT) is a software package that generates human-convenient
+representations of raw log format.
+
+It supports:
+- conversion into XML, HTML and plain text formats;
+- run-time filtering;
+- live and postponed log processing modes.
+
+@section rgt_logs_processing Logs Processing Logic
+
+The below diagram shows the logs processing logic used by the RGT.
+
+@image html rgt_processing_logic.png RGT log processing logic
+
+<b>Coarse TXT report</b> is a report without smaller amount of logic (no
+expected results etc). However it can be generated on fly.
+
+@section rgt_output_formats Output Formats
+
+As it was mentioned above there are two main output formats:
+- HTML (single or multi-file)
+- TXT
+
+@subsection rgt_output_formats_txt Text Format
+
+Usually the test package has a wrapper script called @path{log.sh} which 
+
+Example of text log:
+<pre class="fragmented">
+ERROR  Tester  Run Path  16:15:50 592 ms
+Test path requested by user not found.
+Path: sockapi-ts/level5/extension/dont_accelerate
+</pre>
+
+See @te_engine_logger_log_msg for details on the log format.
+
+To generate text log one can usually use @prog{scripts/log.sh} or
+@prog{log.sh} wrapper script.
+
+@subsection rgt_output_formats_html HTML Format
+
+HTML log can be generated with @prog{scripts/html-log.sh} @prog{html-log.sh}
+wrapper script. Or you can pass <b>\-\-log-html=[output_dir_name]</b> to the
+@prog{dispatcher.sh}.
+
+This will generate a huge amount of html files in the @path{output_dir_name}
+or in @path{html/} if no explicit path was specified. @path{index.html} is
+the staring point.
+
+See example of the HTML log below:
+
+@image html rgt_html_report.png "HTML report example"
+
+On the left there is a test tree. Tests are groupped by packages. Inside
+package there may be several sessions. See @te_engine_tester_conf_root for
+details on the file format.
+
+If you click on a test on the left frame corresponding log will open on the
+right one.
+
+@b{Log Filter} button allows you to filter the logs on particular page. This
+may not work well in certain browsers.
+
+@}<!-- END rgt -->
+*/

@@ -148,6 +148,9 @@ Moreover, if scripts provided by @ref te_engine_logger, @ref te_engine_builder
 and storage library to @ref te_engine_dispatcher are not installed yet,
 @ref te_engine_dispatcher adds to @path{PATH} variable path to these scripts
 in the source directory.
+- @var{TE_LOG_DIR}</br>
+Directory to store log files. Usually set to @var{TE_RUN_DIR} which in it's
+turn is set to the current directory (@path{PWD}).
 
 @section te_run_time Start/stop sequence
 
