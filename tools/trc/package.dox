@@ -1,0 +1,339 @@
+/**
+
+@defgroup trc Test Resuts Comparator
+@{
+
+@section trc_introduction Introduction
+
+Test Environment allows to create structured test harnesses with
+parametrized test packages and scripts.
+
+Behaviour of tests and testing results may differ for different conditions:
+versions of tested product, operating system or NUTs. Usually it is not an
+option to adapt a test to different conditions, since it will significantly
+complicate the test and may lead to endless updates of the tests to newly
+arising conditions.
+
+However, to track regressions in the tested product and find out differences
+in product behaviour in different conditions, it is necessary to know which
+test verdicts are expected for specified version/conditions and which are
+not.
+
+Testing Results Comparator (TRC) tool provides an interface to a database of
+the expected test results for the product. It allows to:
+- update the database according to obtained test results;
+- obtain the report with the list of unexpected results;
+- associate addtional information (like bug IDs) with the test record in the
+  DB.
+
+@section trc_tool Tool execution
+
+TRC is invoked automatically at the end of @prog{dispatcher.sh} execution or
+manually with the @prog{trc.sh} script located in the test suite.
+
+In both cases it will produce report like below:
+
+<pre class="fragmented">
+Run (total)                            2616
+  Passed, as expected                  2456
+  Failed, as expected                    97
+  Passed unexpectedly                    45
+  Failed unexpectedly                    18
+  Aborted (no useful result)              0
+  New (expected result is not known)      0
+Not Run (total)                       13725
+  Skipped, as expected                    0
+  Skipped unexpectedly                    0
+</pre>
+
+@subsection trc_tool_result Result explanation
+
+<table>
+<tr>
+  <td><b>Number</b></td>
+  <td>Description</td>
+</tr>
+<tr>
+  <td>Run(total)</td>
+  <td>Total number of iterations executed.</td>
+</tr>
+<tr>
+  <td>Passed, as expected</td>
+  <td>Number of tests which were expected to pass and passed</td>
+</tr>
+<tr>
+  <td>Failed, as expected</td>
+  <td>Number of tests which were expected to pass and passed</td>
+</tr>
+<tr>
+  <td>Passed unexpectedly</td>
+  <td>Number of tests which were not expected to pass but passed. For
+  instance because the bug got fixed and TRC was not udpated. Or because
+  certain SW version has a known problem.</td>
+</tr>
+<tr>
+  <td>Failed unexpectedly</td>
+  <td>Number of tests which were not expected to fail but failed. The usual
+  failures -- test is good and was expected to pass but things went wrong.</td>
+</tr>
+<tr>
+  <td>Aborted</td>
+  <td>Will appear if test was kiled with Ctrl-C or by a signal; tests which
+  died of SEGFAULT signal are also considered as aborted.</td>
+</tr>
+<tr>
+  <td>Not Run (total)</td>
+  <td>Total number of iterations which were not executed. This one makes
+  sence only if TRC DB contains @b SKIPPED expectations. These are usefull
+  for platform/version-specific tests which make no sence in certain conditions.</td>
+</tr>
+<tr>
+  <td>Skipped as expected</td>
+  <td>The tests were skipped as we expected. In the below example TRC is not
+  filled properly so Not Run is not a sum of expected and unexpected counters.</td>
+</tr>
+<tr>
+  <td>Skipped unexpectedly</td>
+  <td>The test was expected to execute in given conditions but it did not.</td>
+</tr>
+</table>
+
+The skipped section
+
+@subsection trc_tool_runtime Runtime results comparison
+
+If @b te_tester is built with @prog_option(\-\-with-trc) flag then it will
+perform run-time results comparison.
+
+To pass the flag add
+
+<pre class="fragmented">
+TE_APP_PARMS([tester], [--with-trc])
+</pre>
+
+into @path{builder.conf}, see @ref te_engine_builder_conf_file_te_app_parms
+for details.
+
+When running @b te_tester which was built with enabled runtime TRC support
+the usual output:
+
+<pre class="fragmented">
+Starting package arp
+Starting test prologue                                               PASSED
+Starting test arp_change                                             PASSED
+Starting test arp_change                                             PASSED
+Starting test stale_entry                                            PASSED
+Starting test stale_entry                                            FAILED
+Done package arp PASSED
+</pre>
+
+is replaced with:
+
+<pre class="fragmented">
+Starting package arp
+Starting test prologue                                               pass
+Starting test arp_change                                             pass
+Starting test arp_change                                             pass
+Starting test stale_entry                                            pass
+Starting test stale_entry                                            fail
+Done package arp pass
+</pre>
+
+where
+- @b pass means that test expectedly passed;
+- @b fail means that test expectedly failed.
+
+And in the text log after test completion Tester will add Obtained and
+Expected resutls.
+
+<pre class="fragmented">
+RING Tester Run 23:13:39 743 ms
+Obtained result is:
+FAILED
+Expected results are:
+PASSED
+</pre>
+
+@section trc_tags Tags
+
+Every test can be executed in various conditions:
+- different HW;
+- different SW (version or instance);
+- different configuration of the SW/HW under test;
+- and many others.
+
+The expected behaviou may differ depending on all these factors. So for
+proper judgement of the result TRC should be given the description of the
+conditions in which the test was executed.
+
+For instance if the test validates a cross-platform application or library
+the expected behaviour may differ depending on the operating system. So on
+one OS the test will pass and on another it will fail in a certain
+manner. And both results are expected and acceptable.
+
+To describe the conditions in which the test (or tests) was executed TRC is
+given a number of tags. The tags can either be passed to the
+@prog{dispatcher.sh} or can be passed directly to the TRC tool.
+
+In the first case @prog{dispatcher.sh} will include full list of tags into
+the log (RING message with Entity=Dispatcher and User=TRC tags). TRC is
+capable of parsing the log and finding the tags list; so when asked to
+produce a report basing on the log file it will (if not asked the oposite
+with @prog_option{\-\-ignore-log-tags} option) take them into account.
+
+Explicit tags are passed to the TRC tool via @prog_option(\-\-tag=mytag}
+option.
+
+@todo Other TRC options description.
+
+@section trc_db TRC Database Syntax
+
+TRC database is an XML file with pretty simple syntax. XSD for it can be
+found at @path{doc/xsd/trc_db.xsd}.
+
+Below are some examples of the syntax features.
+
+@subsection trc_db_simple Simple entry
+
+@code
+<test name="mytest" type="script">
+  <objective>Check this freaking functionality.</objective>
+  <iter result="PASSED">
+    <notes/>
+    <arg name="env">VAR.iut_only</arg>
+  </iter>
+</test>
+@endcode
+
+@subsection trc_db_tags Tags
+
+If certain test is expected to fail if tag @b mytag is present you can write:
+
+@code
+<iter result="PASSED">
+  <arg name="arg">foobar</arg>
+  <notes/>
+  <results tags="mytag">
+    <result value="FAILED"/>
+  </results>
+</iter>
+@endcode
+
+In general this is a bad way to describe the failure. Because it's unnatural
+for the test to fail in a random manner. Usually you expect the test to fail
+in exact way and you want to know if the test fails differently. See the
+next example for the way to describe such condition.
+
+TRC supports logical expressions in the tags section, so the following
+examples are valid:
+
+@code
+<results tags="linux&amp;x86">
+  <result value="FAILED"/>
+</results>
+<results tags="!freebsd|!windows">
+  <result value="FAILED"/>
+</results>
+@endcode
+
+Tags are passed to the TRC tool as @prog_option{\-\-tag=mytag} -- meaning
+that the run should be compared against expected results for the tag
+mytag. For example @prog_option{\-\-tag=linux} means that we're running on
+linux. And @prog_option{\-\-tag=\!linux} means that we're not.
+
+@subsection trc_db_verdicts Verdicts
+
+Imagine that the test @b foobar is expected to fail because of socket
+creation failure. Then one can write:
+
+@code
+<iter result="PASSED">
+  <arg name="arg">foobar</arg>
+  <notes/>
+  <results tags="mytag">
+    <result value="FAILED">
+      <verdict>Failed to create a socket, errno=EPERM</verdict>
+    </result>
+  </results>
+</iter>
+@endcode
+
+@b Verdict is a special message which test produces during it's
+execution. It can be just before failure or at the middle. It's produced
+with TEST_VERDICT() call.
+
+@subsection trc_db_tags_cmp Tags Comparison
+
+@code
+<iter result="PASSED">
+  <arg name="arg">foobar</arg>
+  <notes/>
+  <!-- Below it's written that (num>5)&(val<=3) -->
+  <results tags="(num&gt;5)&amp;(val&lt;=3)">
+    <result value="FAILED">
+      <verdict>Failed to do something at certain step</verdict>
+    </result>
+  </results>
+</iter>
+@endcode
+
+The above code specifies certain conditions in which the test is expected to
+fail. To be specific '(num >= 5) and (val < 3)'. Special characters must be
+escaped.
+
+Values are passed to the trc tool (or @prog{trc.sh} wrapper script} as
+@prog_option{\-\-tag=num:3}.
+
+
+Supported operators are ( operator : representation):
+- > : \&gt;
+- < : \&lt;
+- <= : \&lt;=
+- >= : \&gt;=
+- = : =
+
+@subsection trc_db_keys Keys
+
+@code
+<iter result="PASSED">
+  <arg name="arg">foobar</arg>
+  <notes/>
+  <results tags="mytag&amp;some_other_tag" key="OL 239">
+    <result value="FAILED">
+      <verdict>Failed to do something at certain step</verdict>
+    </result>
+  </results>
+</iter>
+@endcode
+
+If during test behaviour investigation or development a bug to track the
+failure was created - it should be added as a 'key' to the TRC database
+result. Each project has it's own agreement on keys syntax and
+semantics; from the TRC point of view it's an arbitrary string.
+
+@subsection trc_db_notes Notes
+
+@code
+<iter result="PASSED">
+  <arg name="arg">foobar</arg>
+  <notes/>
+  <results tags="mytag&amp;some_other_tag" key="WONTFIX" notes="This is a known system behaviour">
+    <result value="FAILED">
+      <verdict>Failed to do something at certain step</verdict>
+    </result>
+  </results>
+</iter>
+@endcode
+
+@b Notes attribute provides a way to describe the reasons or aspects of the
+result. This is extremely useful when you're dealing with so-called features
+of the product which often have WONTFIX key. It's also worth noting if the
+result is unstable.
+
+@section trc_update Database update
+
+@todo Add information about trc_update utility.
+
+@} <!-- TRC -->
+
+*/
