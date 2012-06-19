@@ -577,7 +577,7 @@ WARN_FORMAT            = "$file:$line: $text"
 # and error messages should be written. If left blank the output is written
 # to stderr.
 
-WARN_LOGFILE           =
+WARN_LOGFILE           = doxygen.warn
 
 #---------------------------------------------------------------------------
 # configuration options related to the input files
@@ -589,9 +589,8 @@ WARN_LOGFILE           =
 # with spaces.
 
 INPUT                  = mainpage.dox \
-                         package.dox \
                          te_user_guide.dox \
-                         te.dox \
+                         doc/dox_resources/pages \
                          te_ts.dox \
                          te_terminology.dox \
                          engine \
@@ -642,7 +641,6 @@ RECURSIVE              = YES
 
 EXCLUDE                = auxdir \
                          build \
-                         doc \
                          tools/gct \
                          suites
 
