@@ -47,18 +47,52 @@ See @ref te_terminology for the abbreviations and terminology.
 
 @section te_architecture Test Environment Architecture
 
-The following picture shows high level decomposition of TE components:
-
-@image html hl-decomposition.png "High Level Decomposition of Test Environment components" 
-
 From the high level point of view TE consists of two main parts:
 - @ref te_engine;
 - @ref te_agents.
 
+The following picture shows high level decomposition of TE components:
+
+@image html hl-decomposition.png "High Level Decomposition of Test Environment components"
+
+There are several kinds of Test Agents (see the diagram below):
+
+- Test Agent running on an auxiliary station and controlling this station:
+Test Protocol is used over a network and all commands are applied to the
+station on which Test Agent runs.
+- Test Agent running on an auxiliary station and controlling the NUT: @ref
+te_engine_rcf_test_proto is used over a network and all commands are applied
+to the NUT (Test Agent interacts with the NUT via a NUT-specific interface).
+- Test Agent running on a NUT and controlling the NUT: Test Protocol is used
+over a network or over some other transport (for example, over a serial port
+or Ethernet) and all commands are applied to the NUT.
+
+Seletion of appropriate usage scenario depends on the object being
+tested. If it's a network device the Test Agent can run either on the device
+itself or (if black box testing is performed or device hardware is not
+capable of running the agent) on an auxiliary station. If a network library
+is tested then the agent should probably be running on the NUT itself (in
+such case NUT is the host on which the service that uses the library is
+running).
+
+Apart from these three kinds of agents (or should they be called 'Test Agent
+usage scenarios') there can exist arbitrary number of agents running on
+other equipments which participates in the testing process. Examples
+include:
+- other hosts which are used for traffic generation;
+- proxy agents which are used to control various sevices used for network
+envrionment creation or DUT configuration via managemnt protocols;
+- agents used for debug information collection, for instance serial logs.
+
+The below diagram shows various scenarios and Test Agents locations.
+
+@image html te_agent_types.png Stations and applications participating in the testing process
+
 TE subsystems and @ref te_agents are distributed among several applications
 running on different stations.  Apart from other things @ref te_engine
-controls @ref te_agents by means of so-called Test Protocol - a text-based
-protocol used in communication between @ref te_engine and @ref te_agents.
+controls @ref te_agents by means of so-called @ref te_engine_rcf_test_proto
+- a text-based protocol used in communication between @ref te_engine and
+@ref te_agents.
 
 According to initial design @ref te_engine runs on Linux platform and there
 is no intend to port it to any other OS type, but @ref te_agents can be run
