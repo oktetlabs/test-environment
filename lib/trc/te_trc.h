@@ -209,12 +209,13 @@ extern te_bool trc_db_walker_step_test(te_trc_db_walker *walker,
  * Typedef for function matching iterations in TRC with
  * iterations from XML log. The first argument is pointer to
  * TRC iteration, the second one is the number of arguments
- * in the array pointer to which is passed as the third argument,
- * the last arguments is user data pointer.
+ * in the array pointer to which is passed as the third argument.
+ * The last argument indicates whether to use function for
+ * filtering out some iterations instead of matching.
  */
 typedef int (*func_args_match_ptr)(const void *,
                                    unsigned int, trc_report_argument *,
-                                   void *);
+                                   te_bool);
 
 /**
  * Move walker from the current position to the test iteration with

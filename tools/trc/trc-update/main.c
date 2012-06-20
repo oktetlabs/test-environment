@@ -1097,11 +1097,24 @@ perl_prepare()
         if (perl_expr != NULL)
         {
             te_string_append(&te_str,
+                             "my $filter = 1;\n"
+                             "my $rc = 0;\n"
+                             "sub set_filter"
+                             "{"
+                             "    $filter = @_[0];\n"
+                             "    return 1;\n"
+                             "}\n"
                              "sub get_rc"
                              "{"
-                             "    return (%s) && comm_eq() "
-                             "           && notcomm_chk() ? 1 : 0;"
-                             "}",
+                             "    $rc = (%s);\n"
+                             "    return $rc && comm_eq() "
+                             "           && notcomm_chk() ? 1 : 0;\n"
+                             "}\n"
+                             "sub get_filter"
+                             "{"
+                             "    get_rc();"
+                             "    return $filter;\n"
+                             "}\n",
                              perl_expr);
             eval_pv(te_str.ptr, TRUE);
         }
@@ -1133,13 +1146,25 @@ perl_prepare()
             fread(script_text, sizeof(*script_text), flen, f);
 
             te_string_append(&te_str,
-                             "sub get_rc"
+                             "my $filter = 1;\n"
+                             "my $rc = 0;\n"
+                             "sub get_vals"
                              "{"
                              "    %s\n"
+                             "}"
+                             "sub get_rc"
+                             "{"
+                             "    get_vals();"
                              "    return $rc && comm_eq() &&"
                              "           notcomm_chk() ? 1 : 0;\n"
+                             "}"
+                             "sub get_filter"
+                             "{"
+                             "    get_vals();"
+                             "    return $filter;\n"
                              "}",
                              script_text);
+
             eval_pv(te_str.ptr, TRUE);
 
             free(script_text);
@@ -1157,10 +1182,11 @@ perl_prepare()
  * Function to match iteration in TRC with iteration from logs
  * using one of perl_expr, perl_script, oth_prog.
  *
- * @param iter      Iteration in TRC
- * @param n_args    Number of arguments of iteration from log
- * @param args      Arguments of iteration from log
- * @param data      TRC Update data attached to iteration
+ * @param iter          Iteration in TRC
+ * @param n_args        Number of arguments of iteration from log
+ * @param args          Arguments of iteration from log
+ * @param filter_mode   Whether to use this function for filtering
+ *                      out instead of matching?
  *
  * @return ITER_NO_MATCH if not matching, ITER_WILD_MATCH if
  *         matching.
@@ -1168,10 +1194,9 @@ perl_prepare()
 static int
 func_args_match(const void *iter_ptr,
                 unsigned int n_args, trc_report_argument *args,
-                void *data)
+                te_bool filter_mode)
 {
     trc_test_iter             *iter = (trc_test_iter *)iter_ptr;
-    trc_update_test_iter_data *iter_data = data;
     trc_test_iter_arg         *arg;
 
 #ifdef HAVE_LIBPERL
@@ -1189,8 +1214,7 @@ func_args_match(const void *iter_ptr,
     TAILQ_INIT(&arg_names);
     TAILQ_INIT(&common_args);
 
-    if (iter_data != NULL)
-        return ITER_NO_MATCH;
+    assert(iter != NULL);
 
     if (perl_expr != NULL || perl_script != NULL)
     {
@@ -1263,12 +1287,15 @@ func_args_match(const void *iter_ptr,
         PUSHMARK(SP);
         PUTBACK;
 
-        rc = call_pv("get_rc", G_SCALAR | G_NOARGS);
+        if (!filter_mode)
+            rc = call_pv("get_rc", G_SCALAR | G_NOARGS);
+        else
+            rc = call_pv("get_filter", G_SCALAR | G_NOARGS);
 
         SPAGAIN;
         if (rc != 1)
         {
-            printf("get_rc() perl function returned unexpected "
+            printf("Perl function returned unexpected "
                    "result\n");
             exit(1);
         }

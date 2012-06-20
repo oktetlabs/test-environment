@@ -590,12 +590,8 @@ trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
                                                         n_args, args, TRUE);
             }
             else
-            {
-                void *iter_data = trc_db_iter_get_user_data(walker->iter,
-                                                            db_uid);
                 match_result = func_args_match(walker->iter,
-                                               n_args, args, iter_data);
-            }
+                                               n_args, args, FALSE);
 
             if (match_result != ITER_NO_MATCH)
             {

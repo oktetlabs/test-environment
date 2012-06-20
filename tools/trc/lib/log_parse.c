@@ -4409,6 +4409,7 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
             te_bool                        to_save;
             func_args_match_ptr            func_ptr = NULL;
             trc_test                      *test;
+            trc_test_iter                 *iter;
 
             test = trc_db_walker_get_test(ctx->db_walker);
             entry = TAILQ_FIRST(&ctx->iter_data->runs);
@@ -4418,11 +4419,7 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
             assert(strcmp(tag, "meta") == 0);
             ctx->state = TRC_LOG_PARSE_TEST;
 
-            if (!TAILQ_EMPTY(&trc_db_walker_get_test(ctx->db_walker)->
-                                iters.head) &&
-                TAILQ_EMPTY(
-                    &TAILQ_FIRST(&trc_db_walker_get_test(ctx->db_walker)->
-                                        iters.head)->tests.head) &&
+            if (test->type == TRC_TEST_SCRIPT &&
                 !(ctx->flags & TRC_LOG_PARSE_PATHS) &&
                 !((ctx->flags & TRC_LOG_PARSE_FAKE_LOG) &&
                   (ctx->flags & TRC_LOG_PARSE_SELF_CONFL)))
@@ -4584,18 +4581,19 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                 }
 
                 upd_iter_data->counter = ctx->cur_lnum;
+                iter = trc_db_walker_get_iter(ctx->db_walker);
 
+                if (test->type != TRC_TEST_SCRIPT ||
+                    ctx->func_args_match == NULL ||
+                    ctx->func_args_match(iter, upd_iter_data->args_n,
+                                         upd_iter_data->args,
+                                         TRUE) != ITER_NO_MATCH)
+                {
                 if (ctx->flags & (TRC_LOG_PARSE_MERGE_LOG |
                                   TRC_LOG_PARSE_LOG_WILDS))
                     trc_update_merge_result(ctx);
                 else if ((ctx->flags & TRC_LOG_PARSE_SELF_CONFL) &&
-                         !TAILQ_EMPTY(
-                            &trc_db_walker_get_test(ctx->db_walker)->
-                                                            iters.head) &&
-                         TAILQ_EMPTY(
-                           &TAILQ_FIRST(
-                            &trc_db_walker_get_test(ctx->db_walker)->
-                                                 iters.head)->tests.head))
+                         test->type == TRC_TEST_SCRIPT)
                 {
                     /* 
                      * Getting conflicting results from an iteration
@@ -4631,6 +4629,7 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                                                           &te_result,
                                                           TRUE);
                     }
+                }
                 }
 
                 trc_report_free_test_iter_data(ctx->iter_data);
