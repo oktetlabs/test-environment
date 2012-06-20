@@ -1,5 +1,9 @@
 /** @mainpage
 
+@section copyright Copyright
+
+Copyright (c) 2000-2012 Oktet Labs
+
 @section main_intro Introductions
 
 This is a documentation for the OKTET Labs. Test Environment (TE) product.
