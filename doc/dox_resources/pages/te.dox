@@ -106,6 +106,7 @@ Apart from main components, TE provides the following set of tools:
 - @ref rgt representing logs in different formats;
 - @ref trc utility that can be used to check the difference between
   different test runs (TRC tool);
+- @ref sniffer 
 - <b>Testing Coverage Estimation</b> tool that gives some report about
   the quality of test suite we run against the software under test;
 - <b>Test Package Generator</b> tool.

@@ -302,5 +302,6 @@ instances @ref te_engine_conf trees.
 You can read the logs in text or HTML format. See @ref rgt_output_formats
 for more info on logs generation and looks.
 
+
 @} <!-- END te_user -->
 */

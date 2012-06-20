@@ -43,22 +43,27 @@ Packages. From the Tester point of view, the Test Package is a set of
 executables (binary or script files can be run in @prog{shell} with set of
 parameters passed via command line) accompanied by a file @path{package.xml}
 describing how to run these scripts (execution order, test parameter values,
-etc.).
+etc.). See @ref te_engine_tester_concepts for more details.
 
+<!--
 It may be specified that some tests of the package should be run one-by-one
 (a test is started after finishing the previous test) or simultaneously
 (separate threads (processes) should be started for all the tests).
 Moreover, a test may be started under a debugger (@prog{gdb} or
 @prog{valgrind}).
+-->
 
 It is possible to run the same test with different parameters. Parameters
 for a test are specified in @path{package.xml} file. Tests may be iterated
 with different combinations of parameter values. Such iterations are
 performed by @ref te_engine_tester.
 
+@ref te_engine_tester has complex parameters iteration and multiplication
+logic, see @ref te_engine_tester_iteration.
+
 Some tests may be marked as (associated with) checking the particular
 requirement(s) of the product. @ref te_engine_tester allows to run tests
-checking a particular set of requirements.
+checking a particular set of requirements. See @ref te_engine_tester_req.
 
 @ref te_engine_tester may be asked to build the tests from sources.
 In this case tests should be built using GNU tools
@@ -76,6 +81,55 @@ configuration for each package and test and to restore backups if necessary.
 This information is then used by Report Generator to split the log to
 sections corresponding to particular tests/packages.
 
+@section te_engine_tester_concepts Tester Concepts
+
+@b Test is a complete sequence of actions required to achieve a specific
+purpose (check that tested system provides a required functionality,
+complies a standard, etc.) and producing a verdict pass/fail (possibly
+accompanied by additional data).
+
+@b Test @b Package is a group of tightly related tests or test packages,
+which may share internal libraries and usually run together (one-by-one or
+simultaneously). Test Package may consist of one test. It may have a
+prologue (performing some initialization) and epilogue (releasing resources
+and restoring TE configuration).
+
+@b Test @b Script is a test which is a minimal structural unit of a test harness.
+
+@b Test @b Suite is a Test Package which may be considered as standalone entity from
+organisational point of view and build issues.
+
+The hierarchy of these objects is:
+- Test Suite consists of several Test Packages;
+- Test Package includes several Tests;
+- each Test has a corresponding Test Script.
+
+@section te_engine_tester_req Test Requirements
+
+Requirements are string labels which describe:
+- product features;
+- configuration features;
+- scenario description.
+
+Test can be associated with a set of requirements. I.e.
+- @b LINUX -- the test should be executed only on Linux;
+- @b LINUX-3.2 -- specific kernel version is required;
+- @b PRODUCTION_BUILD -- test should be executed only on production build
+(non-debug);
+- @b SELECT -- test checks select() function behaviour;
+- @b IGMP -- test checks IGMP-support of the product;
+- @b LONG -- test scenario is really long;
+- @b BROKEN -- test scenario is broken - avoid!.
+
+Requirements can e normal and sticky. Sticky requirements are inherited by
+all descendants (see the hierarchy description in @ref te_engine_tester_concepts).
+
+Tester can be asked to run test satisfying certain requirements:
+
+<pre class="fragment">
+$ @prog{dispatcher.sh} @prog_option{\-\-tester-req=\!BROKEN} : skip broken tests
+$ @prog{dispatcher.sh} @prog_option{\-\-tester-req=IGMP} @prog_option{\-\-tester-req=\!LONG} : run fast IGMP tests
+</pre>
 
 @section te_engine_tester_conf Configuration File
 
@@ -265,8 +319,194 @@ This package description file has:
   values in type @attr_val{led_type}.
 .
 
+@subsection te_engine_tester_package_syntax Package File Syntax
+
 XML schema for @ref te_engine_tester configuration file may be found in
 @path{doc/xsd/tester_config.xsd} file.
+
+@section te_engine_tester_iteration Iteration and usecases
+
+@subsection te_engine_tester_iteration_parameters Parameters
+
+Every test has a set of parameters and every parameter has certain
+values. In the @path{package.xml} file it's represented as:
+
+@code
+<session>
+  <run>
+    <script name="test1"/>
+    <arg name="arg1">
+       <value>val1</value>
+       <value>val2</value>
+       <value>val3</value>
+    </arg>
+   </run>
+</session>
+@endcode
+
+So test @b test1 has one argument @b arg1 which has three possible values
+@b val1, @b val2 and @b val3.
+
+When executed it will result in:
+<pre class="fragment">
+$ ./run.sh --tester-run=myts/mypackage/test1
+....
+Staring package mypackage
+Starting test test1             PASSED     <- arg1=val1
+Starting test test1             PASSED     <- arg1=val2
+Starting test test1             PASSED     <- arg1=val3
+Done package mypackage PASSED
+</pre>
+
+You can run test with specific argument value or values:
+
+<pre class="fragment">
+$ ./run.sh --tester-run=mysuite/mypkg/test1:arg1=val2
+or
+$ ./run.sh --tester-run=mysuite/mypkg/test1:arg1={val1, val3}
+</pre>
+
+@prog_option{\-\-tester-run-from} and @prog_option{\-\-tester-run-to} can be
+used to run part of the sequence.
+
+To run the second iteration one should call:
+
+<pre class="fragment">
+$ ./run.sh --tester-run=mysuite/mypkg/test1%2
+...
+Staring package mypackage
+Starting test test1             PASSED     <- arg1=val2
+Done package mypackage PASSED
+</pre>
+
+You can also specify a step with @prog_option(test1%1+2) sytax, this will
+run only odd iterations.
+
+Iteration is specified with an asterisk:
+
+<pre class="fragment">
+$ ./run.sh --tester-run=mysuite/mypkg/test1%2*3
+...
+Staring package mypackage
+Starting test test1             PASSED     <- arg1=val2
+Starting test test1             PASSED     <- arg1=val2
+Starting test test1             PASSED     <- arg1=val2
+Done package mypackage PASSED
+</pre>
+
+Negation with tilda:
+
+<pre class="fragment">
+$ ./run.sh --tester-run=myts/mypackage/test1:arg1~=val2
+....
+Staring package mypackage
+Starting test test1             PASSED     <- arg1=val1
+Starting test test1             PASSED     <- arg1=val3
+Done package mypackage PASSED
+</pre>
+
+@subsection te_engine_tester_iteration_types Types
+
+Arguments can have certain types. If explicit values are specified:
+
+@code
+<session>
+  <run>
+    <script name="test1"/>
+    <arg name="arg1" type="boolean">
+       <value>True</value>
+       <value>False</value>
+    </arg>
+   </run>
+</session>
+@endcode
+
+then they are checked agains given type. If no values then all values of the
+type are iterated:
+
+@code
+<enum name="sock_type">
+  <value>SOCK_STREAM</value>
+  <value>SOCK_DGRAM</value>
+</enum>
+<session>
+  <run>
+    <script name="test1"/>
+    <arg name="socket_type" type="sock_type"/>
+   </run>
+</session>
+@endcode
+
+@subsection te_engine_teste_iteration_multiplication Multiplication
+
+Set of argument values are multiplied:
+
+@code
+<session>
+  <run>
+    <script name="test1"/>
+    <arg name="arg1">
+       <value>val1</value>
+       <value>val2</value>
+    </arg>
+    <arg name="arg2">
+       <value>val3</value>
+       <value>val4</value>
+    </arg>
+   </run>
+</session>
+@endcode
+
+results into
+
+<pre class="fragment">
+$ ./run.sh --tester-run=mysuite/mypkg/test1
+...
+Staring package mypackage
+Starting test test1             PASSED     <- arg1=val1, arg2=val3
+Starting test test1             PASSED     <- arg1=val1, arg2=val4
+Starting test test1             PASSED     <- arg1=val2, arg2=val3
+Starting test test1             PASSED     <- arg1=val2, arg2=val4
+Done package mypackage PASSED
+</pre>
+
+If full multiplication should not be performed then @b list attribute should
+be used:
+
+@code
+<session>
+  <run>
+    <script name="test1"/>
+    <arg name="arg1" list="mylist">
+       <value>val1</value>
+       <value>val2</value>
+    </arg>
+    <arg name="arg2" list="mylist">
+       <value>val3</value>
+       <value>val4</value>
+    </arg>
+   </run>
+</session>
+@endcode
+
+results into
+
+<pre class="fragment">
+$ ./run.sh --tester-run=mysuite/mypkg/test1
+...
+Staring package mypackage
+Starting test test1             PASSED     <- arg1=val1, arg2=val3
+Starting test test1             PASSED     <- arg1=val2, arg2=val4
+Done package mypackage PASSED
+</pre>
+
+Important points:
+- number of values for all arguments in the same list should be equal;
+- multiplication and lists can be compbined;
+- multiplication significantly increases number of test iterations, so one
+should be sure that he wants to check all combinations.
+
+@todo More details should be added.
 
 @} <!-- END te_engine_tester -->
  */

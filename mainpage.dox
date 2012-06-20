@@ -4,6 +4,32 @@
 
 This is a documentation for the OKTET Labs. Test Environment (TE) product.
 
+It's key features include
+- Black and white box testing
+- Distributed testing
+- Automatic testing
+- Test coverage estimation
+- Regression tracking tools
+- Cross-platform testing
+- Networking protocols support
+- Strong scenarios parametrization system.
+
+It was used in quite a few projects while testing
+- IPv4/IPv6 Socket API (more than 8000 tests)
+- Ethernet switches
+- Home Gateway
+- TR-069 clients
+- IEEE 802.2 (LLC), IEEE 802.1Q (VLAN)
+- IEEE 802.1D (STP)
+- ATM/AAL5 testing
+- Elements of 802.1X, WPA, WPA2, RADIUS client on Access Point
+- iSCSI
+- CLI
+- Testing SNMP MIBs
+- DHCP Client
+- CableHome1.0
+- Hyperlan2 MAC layer.
+
 @section main_further Where to start
 
 If you want to known details about the Test Environment architecture it's
