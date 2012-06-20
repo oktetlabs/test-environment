@@ -1,9 +1,18 @@
 /** @mainpage
 
+@section main_intro Introductions
 
-- @ref te
-- @ref te_user
-- @ref te_ts
+This is a documentation for the OKTET Labs. Test Environment (TE) product.
+
+@section main_further Where to start
+
+If you want to known details about the Test Environment architecture it's
+worth reading @ref te section.
+
+If you need to build and use TE you should head to @ref te_user.
+
+If you want to learn more about test suites, their sources structure and how
+to create a new continue with  @ref te_ts.
 .
 
  */

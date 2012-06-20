@@ -1,6 +1,7 @@
 /**
 
 @defgroup rgt Report Generator Tool
+@ingroup te
 @{
 
 @section rgt_introduction Introduction
@@ -34,13 +35,14 @@ As it was mentioned above there are two main output formats:
 
 @subsection rgt_output_formats_txt Text Format
 
-Usually the test package has a wrapper script called @path{log.sh} which 
+Usually the test package has a wrapper script called @path{log.sh} which is
+located in the @path{scripts/} directory.
 
 Example of text log:
-<pre class="fragmented">
+<pre class="fragment">
 ERROR  Tester  Run Path  16:15:50 592 ms
 Test path requested by user not found.
-Path: sockapi-ts/level5/extension/dont_accelerate
+Path: foobar-ts/foo_package/mytest
 </pre>
 
 See @te_engine_logger_log_msg for details on the log format.
@@ -50,7 +52,7 @@ To generate text log one can usually use @prog{scripts/log.sh} or
 
 @subsection rgt_output_formats_html HTML Format
 
-HTML log can be generated with @prog{scripts/html-log.sh} @prog{html-log.sh}
+HTML log can be generated with @prog{scripts/html-log.sh} or @prog{html-log.sh}
 wrapper script. Or you can pass <b>\-\-log-html=[output_dir_name]</b> to the
 @prog{dispatcher.sh}.
 

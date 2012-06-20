@@ -1,6 +1,6 @@
 /**
 
-@defgroup trc Test Resuts Comparator
+@defgroup trc Test Results Comparator
 @{
 
 @section trc_introduction Introduction
@@ -33,7 +33,7 @@ manually with the @prog{trc.sh} script located in the test suite.
 
 In both cases it will produce report like below:
 
-<pre class="fragmented">
+<pre class="fragment">
 Run (total)                            2616
   Passed, as expected                  2456
   Failed, as expected                    97
@@ -107,7 +107,7 @@ perform run-time results comparison.
 
 To pass the flag add
 
-<pre class="fragmented">
+<pre class="fragment">
 TE_APP_PARMS([tester], [--with-trc])
 </pre>
 
@@ -117,10 +117,10 @@ for details.
 When running @b te_tester which was built with enabled runtime TRC support
 the usual output:
 
-<pre class="fragmented">
+<pre class="fragment">
 Starting package arp
 Starting test prologue                                               PASSED
-Starting test arp_change                                             PASSED
+Starting test arp_remove                                             PASSED
 Starting test arp_change                                             PASSED
 Starting test stale_entry                                            PASSED
 Starting test stale_entry                                            FAILED
@@ -129,10 +129,10 @@ Done package arp PASSED
 
 is replaced with:
 
-<pre class="fragmented">
+<pre class="fragment">
 Starting package arp
 Starting test prologue                                               pass
-Starting test arp_change                                             pass
+Starting test arp_remove                                             PASSED?
 Starting test arp_change                                             pass
 Starting test stale_entry                                            pass
 Starting test stale_entry                                            fail
@@ -141,12 +141,14 @@ Done package arp pass
 
 where
 - @b pass means that test expectedly passed;
+- @b PASSED? and @b FAILED? mean that test passed or failed but there is no
+expectation for it in the TRC database;
 - @b fail means that test expectedly failed.
 
 And in the text log after test completion Tester will add Obtained and
 Expected resutls.
 
-<pre class="fragmented">
+<pre class="fragment">
 RING Tester Run 23:13:39 743 ms
 Obtained result is:
 FAILED
@@ -186,10 +188,16 @@ option.
 
 @todo Other TRC options description.
 
-@section trc_db TRC Database Syntax
+@section trc_db TRC Database
+
+@subsection trc_db_syntax Syntax
 
 TRC database is an XML file with pretty simple syntax. XSD for it can be
 found at @path{doc/xsd/trc_db.xsd}.
+
+The file is usually located in the @path{conf/} directory in the suite. You
+can explicitly pass the path to the database with the @prog_option{\-\-db}
+option.
 
 Below are some examples of the syntax features.
 
@@ -329,6 +337,43 @@ semantics; from the TRC point of view it's an arbitrary string.
 result. This is extremely useful when you're dealing with so-called features
 of the product which often have WONTFIX key. It's also worth noting if the
 result is unstable.
+
+@subsection trc_db_wildcards Wildcards
+
+TRC database supports wildcard entries. If parameter value is ommited:
+
+@code
+<iter result="PASSED">
+  <arg name="sock_type"/>
+  <results tags="linux" notes="Test fails because of a known system bug" key="WONTFIX">
+    <result value="FAILED"/>
+  </results>
+</iter>
+@endcode
+
+then the entry describes expected results for all iterations of the test
+with particular parameter. In the above example for all types of socket the
+test will fail because of a known system bug.
+
+@subsection trc_db_navigation Database navigation tips
+
+As the database may be huge and contain several thousands of tests there
+exists a simple search mechanism.
+
+Every iteration in the TRC database is identified by it's arguments and
+their values.
+
+TRC tool is capable of searching the iteration by either parameter
+name/value pair or MD5 hash calculated from the set of iteration parameters
+and their values
+
+<pre class="fragment">
+./trc.sh --search --test=<test> --hash=<MD5hash>
+./trc.sh --search --test=<test> --params <param1> <value1> [param2 value2]...
+</pre>
+
+Sure there is no need to calculate the MD5 hash manually. It's printed in
+the log right in the beginning of the test
 
 @section trc_update Database update
 

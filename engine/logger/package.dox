@@ -179,7 +179,7 @@ Example of log message (in text format):
 <pre class="formated">
 ERROR  Tester  Run Path  16:15:50 592 ms
 Test path requested by user not found.
-Path: sockapi-ts/level5/extension/dont_accelerate
+Path: foobar-ts/foo_package/mytest
 </pre>
 
 
