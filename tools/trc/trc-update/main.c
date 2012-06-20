@@ -1091,14 +1091,29 @@ perl_prepare()
                 "}",
                 TRUE);
 
+        eval_pv("my $rc;\n"
+                "my $filter;\n",
+                TRUE);
+
+        eval_pv("sub arg_diff\n"
+                "{\n"
+                "   my $arg = @_[0];\n"
+                "   my $val1 = @_[1];\n"
+                "   my $val2 = @_[2];\n"
+                "\n"
+                "   $filter = (new($arg) eq $val2);\n"
+                "   return comm_exc($arg) && old_wild_eq($arg, $val1) &&\n"
+                "          new($arg) eq $val2;\n"
+                "}\n",
+                TRUE);
         memset(&te_str, 0, sizeof(te_str));
         te_str.ptr = NULL;
 
         if (perl_expr != NULL)
         {
             te_string_append(&te_str,
-                             "my $filter = 1;\n"
-                             "my $rc = 0;\n"
+                             "$filter = 1;\n"
+                             "$rc = 0;\n"
                              "sub set_filter"
                              "{"
                              "    $filter = @_[0];\n"
@@ -1146,8 +1161,8 @@ perl_prepare()
             fread(script_text, sizeof(*script_text), flen, f);
 
             te_string_append(&te_str,
-                             "my $filter = 1;\n"
-                             "my $rc = 0;\n"
+                             "$filter = 1;\n"
+                             "$rc = 0;\n"
                              "sub get_vals"
                              "{"
                              "    %s\n"

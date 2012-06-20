@@ -4589,47 +4589,47 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                                          upd_iter_data->args,
                                          TRUE) != ITER_NO_MATCH)
                 {
-                if (ctx->flags & (TRC_LOG_PARSE_MERGE_LOG |
-                                  TRC_LOG_PARSE_LOG_WILDS))
-                    trc_update_merge_result(ctx);
-                else if ((ctx->flags & TRC_LOG_PARSE_SELF_CONFL) &&
-                         test->type == TRC_TEST_SCRIPT)
-                {
-                    /* 
-                     * Getting conflicting results from an iteration
-                     * defined by matching function
-                     */
-                    trc_db_walker_step_back(ctx->db_walker);
-
-                    if (trc_db_walker_step_iter(ctx->db_walker,
-                                                upd_iter_data->args_n,
-                                                upd_iter_data->args,
-                                                FALSE, FALSE, FALSE,
-                                                TRUE,
-                                                ctx->db_uid,
-                                                ctx->func_args_match))
+                    if (ctx->flags & (TRC_LOG_PARSE_MERGE_LOG |
+                                      TRC_LOG_PARSE_LOG_WILDS))
+                        trc_update_merge_result(ctx);
+                    else if ((ctx->flags & TRC_LOG_PARSE_SELF_CONFL) &&
+                             test->type == TRC_TEST_SCRIPT)
                     {
-                        trc_test_iter *iter =
-                            trc_db_walker_get_iter(ctx->db_walker);
-                        assert(iter != NULL);
-                        memcpy(&upd_iter_data->new_results,
-                               trc_exp_results_dup(&iter->exp_results),
-                               sizeof(trc_exp_results));
-                    }
-                    else
-                    {
-                        te_test_result te_result;
-
+                        /* 
+                         * Getting conflicting results from an iteration
+                         * defined by matching function
+                         */
                         trc_db_walker_step_back(ctx->db_walker);
 
-                        te_result.status = TE_TEST_SKIPPED;
-                        TAILQ_INIT(&te_result.verdicts);
-                        trc_update_iter_data_merge_result(ctx,
-                                                          upd_iter_data,
-                                                          &te_result,
-                                                          TRUE);
+                        if (trc_db_walker_step_iter(ctx->db_walker,
+                                                    upd_iter_data->args_n,
+                                                    upd_iter_data->args,
+                                                    FALSE, FALSE, FALSE,
+                                                    TRUE,
+                                                    ctx->db_uid,
+                                                    ctx->func_args_match))
+                        {
+                            trc_test_iter *iter =
+                                trc_db_walker_get_iter(ctx->db_walker);
+                            assert(iter != NULL);
+                            memcpy(&upd_iter_data->new_results,
+                                   trc_exp_results_dup(&iter->exp_results),
+                                   sizeof(trc_exp_results));
+                        }
+                        else
+                        {
+                            te_test_result te_result;
+
+                            trc_db_walker_step_back(ctx->db_walker);
+
+                            te_result.status = TE_TEST_SKIPPED;
+                            TAILQ_INIT(&te_result.verdicts);
+                            trc_update_iter_data_merge_result(ctx,
+                                                              upd_iter_data,
+                                                              &te_result,
+                                                              TRUE);
+                        }
                     }
-                }
                 }
 
                 trc_report_free_test_iter_data(ctx->iter_data);
