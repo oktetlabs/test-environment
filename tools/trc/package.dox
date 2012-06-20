@@ -181,7 +181,7 @@ capable of parsing the log and finding the tags list; so when asked to
 produce a report basing on the log file it will (if not asked the oposite
 with @prog_option{\-\-ignore-log-tags} option) take them into account.
 
-Explicit tags are passed to the TRC tool via @prog_option(\-\-tag=mytag}
+Explicit tags are passed to the TRC tool via @prog_option{\-\-tag=mytag}
 option.
 
 @todo Other TRC options description.
