@@ -1,0 +1,538 @@
+/**
+
+@defgroup sniffer Sniffer framework
+@ingroup te_agents_unix
+@{
+The main purpose of the sniffer framework is to provide infrastructure for sniffing on the network interfaces and storing information about the packets sent/received there.
+@section sniffer_launch How to launch
+To use the sniffer framework make sure that the three following points are performed.
+@subsection sniffer_build Build options
+To compile agents with support of the sniffer framework should be added option <b>--with-sniffers</b> in two places. As
+described <b>TA</b> options and library options for the <b>rcfpch</b> library. See example:
+@code
+    TE_LIB_PARMS([rcfpch], [], [], [--with-sniffers], [], [], [])
+    TE_TA_TYPE([linux], [], [unix], [--with-sniffers=yes], [], [], [], [])
+@endcode
+If are used a few platforms or agents types the options should be added for each agent and platform.
+If the TE is built with sniffer framework and some agents do not support the sniffer framework, then this agents should be built with <b>--with-sniffers=sniffers_dummy</b> option.
+See example:
+@code
+    TE_LIB_PARMS([rcfpch], [], [], [--with-sniffers], [], [], [])
+    # Agent with Power Unit support, it do not support the sniffer framework.
+    TE_TA_TYPE([power_ctl], [], [power-ctl], [--with-tad=tad_dummy --with-sniffers=sniffers_dummy],
+               [], [], [], [comm_net_agent])
+
+    TE_LIB_PARMS([rcfpch], [linux_other], [], [--with-sniffers], [], [], [])
+    TE_TA_TYPE([linux64], [linux_other], [unix], [--with-sniffers=yes], [], [], [], [])
+@endcode
+
+@subsection sniffer_logger_config Logger config
+The <b>Logger</b> config file has mandatory part. This is mandatory, even
+if you do not use the sniffer framework (due to the design of the framework).
+The part contains default and user settings for sniffer polling process.
+A more detailed description of the <b>Logger</b> configurations see below in
+the <b>Logger settings </b> @ref sniffer_logger_settings section.
+
+@subsection sniffer_conf_subtrees Configurator objects subtree
+Config file of the <b>Configurator</b> should contains the following objects subtrees:
+@code
+  <?xml version="1.0"?>
+  <history>
+    <register>
+      <object oid="/agent/sniffer_settings" access="read_only" type="none"/>
+      <object oid="/agent/sniffer_settings/enable" access="read_write" type="integer"/>
+      <object oid="/agent/sniffer_settings/filter_exp_str" access="read_write" type="string"/>
+      <object oid="/agent/sniffer_settings/filter_exp_file" access="read_write" type="string"/>
+      <object oid="/agent/sniffer_settings/snaplen" access="read_write" type="integer"/>
+      <object oid="/agent/sniffer_settings/tmp_logs" access="read_only" type="none"/>
+      <object oid="/agent/sniffer_settings/tmp_logs/path" access="read_write" type="string"/>
+      <object oid="/agent/sniffer_settings/tmp_logs/file_size" access="read_write" type="integer"/>
+      <object oid="/agent/sniffer_settings/tmp_logs/total_size" access="read_write" type="integer"/>
+      <object oid="/agent/sniffer_settings/tmp_logs/rotation" access="read_write" type="integer"/>
+      <object oid="/agent/sniffer_settings/tmp_logs/overfill_meth" access="read_write" type="integer"/>
+    </register>
+    <register>
+      <object oid="/agent/interface/sniffer" access="read_create" type="integer"/>
+      <object oid="/agent/interface/sniffer/enable" access="read_write" type="integer"/>
+      <object oid="/agent/interface/sniffer/filter_exp_str" access="read_write" type="string"/>
+      <object oid="/agent/interface/sniffer/filter_exp_file" access="read_write" type="string"/>
+      <object oid="/agent/interface/sniffer/snaplen" access="read_write" type="integer"/>
+      <object oid="/agent/interface/sniffer/tmp_logs" access="read_only" type="none"/>
+      <object oid="/agent/interface/sniffer/tmp_logs/sniffer_space" access="read_write" type="integer"/>
+      <object oid="/agent/interface/sniffer/tmp_logs/file_size" access="read_write" type="integer"/>
+      <object oid="/agent/interface/sniffer/tmp_logs/rotation" access="read_write" type="integer"/>
+      <object oid="/agent/interface/sniffer/tmp_logs/overfill_meth" access="read_write" type="integer"/>
+    </register>
+  </history>
+@endcode
+After each launch of the TE, automatically generates a file <b>сs.сonf.sniffer</b>. That is used to launch sniffers configured by the <b>Dispatcher</b> options. If there is no sniffers launched by <b>Dispatcher</b>, then the file will contains only xml header and the open/close history tags.
+
+@section sniffer_use_cases Simple use cases
+Sniffer can be started by few ways. Here some examples to launch sniffer.
+By default all capture logs location is <b>TE_LOG_DIR/caps</b>. A detailed
+description about setting up and running sniffers see below in the
+respective sections.
+
+  -  Example to start the sniffer on the agent <b>Agt_B</b> for interface <b>eth0</b> using the <b>Dispatcher</b> options:
+@code
+         ./dispatcher.sh --sniff=Agt_B/eth0
+@endcode
+  - It is possible to setup the started sniffer from cli. Now the sniffer will be have name <b>clisniff</b> and filter expression "ip and udp":
+@code
+         ./dispatcher.sh --sniff=Agt_B/eth0 --sniff-name=clisniff --sniff-filter="ip and udp"
+@endcode
+  - To add and launch a sniffer from Configurator, should to describe the sniffer in the conf file of Configurator. There must be added the sniffer instance. To launch the sniffer <b>enable</b> field in the sniffer subtree should be set to 1. The example to add and launch the sniffer on the agent <b>Agt_A</b> for interface <b>lo</b> with name <b>mysniffer</b>:
+@code
+         <add>
+           <instance oid="/agent:Agt_A/interface:lo/sniffer:mysniffer" value="0"/>
+         </add>
+         <set>
+           <instance oid="/agent:Agt_A/interface:lo/sniffer:mysniffer/enable:" value="1"/>
+         </set>
+@endcode
+  - It is possible to start a sniffer from Test API. The example demonstrates how to add/del a new sniffer with name <b>newsniffer</b> for agent <b>Agt_B</b> on the interface <b>lo</b>. The sniffer will be use the filter expression "<b>ip and udp</b>" and overfill handle method for temporary files - <b>rotation</b>.
+@code
+         #include "tapi_sniffer.h"
+
+         tapi_sniffer_id    *snif;         
+         snif = tapi_sniffer_add("Agt_B", "lo", "newsniffer", "ip and udp", 0);
+         tapi_sniffer_del(snif);
+@endcode
+
+@section sniffer_configuration Configuration
+Configurations of sniffer framework divided on two main parts. A first part is worked on the agent side. It includes options responsible to add and configuration of sniffer processes. The management performed via the <b>Configurator</b>. There are few ways to create and configure sniffers. This can be done via the command line of <b>Dispatcher</b>, via the config file of <b>Configurator</b> or directly from a test application using TAPI.
+The second part of the framework is worked on the <b>TEN</b> side in the <b>Logger</b> subsystem. It performs collect of logs from all sniffers. Setting of this part happens at start of the <b>Logger</b>. Configuration for it can be passed by means of a configuration file or using command line options of the <b>Dispatcher</b>.
+By default capture logs location is <b>TE_LOG_DIR/caps</b>.
+
+@subsection sniffer_cli Command line options for Dispatcher
+Additional command line options for dispatcher.sh are supported. It is possible to add sniffers and set their settings by command line options. The same settings of the <b>Logger</b> can be changed here.
+<table class="inline" border=1>
+    <tr class="row0">
+        <td class="col0 leftalign"> <strong>Option</strong></td>
+        <td class="col1"> <strong>Description</strong></td>
+    </tr>
+    <tr class="row1">
+        <td class="col0 leftalign"> –sniff-not-feed-conf       </td>
+        <td class="col1"> Do not feed the sniffer configuration file to Configurator.</td>
+    </tr>
+    <tr class="row2">
+        <td class="col0 leftalign"> –sniff=&lt;TA/iface&gt;          </td>
+        <td class="col1"> Run sniffer on <strong>iface</strong> of the <strong>TA</strong>.</td>
+    </tr>
+    <tr class="row3">
+        <td class="col0 leftalign"> –sniff-filter=&lt;filter&gt;     </td>
+        <td class="col1"> Add for the sniffer filter(tcpdump-like syntax). See &#039;man 7 pcap-filter&#039;.</td>
+    </tr>
+    <tr class="row4">
+        <td class="col0 leftalign"> –sniff-name=&lt;name&gt;         </td>
+        <td class="col1 leftalign"> Add for the sniffer a human-readable name.     </td>
+    </tr>
+    <tr class="row5">
+        <td class="col0 leftalign" rowspan="2"> –sniff-snaplen=&lt;val&gt;       </td>
+        <td class="col1"> Add for the sniffer restriction on maximum number of bytes to capture for one packet.</td>
+    </tr>
+    <tr class="row6">
+        <td class="col1 leftalign"> By default: unlimited.</td>
+    </tr>
+    <tr class="row7">
+        <td class="col0 leftalign" rowspan="2"> –sniff-space=&lt;val&gt;</td>
+        <td class="col1"> Add for the sniffer restriction on maximum overall size of temporary files in Mb.</td>
+    </tr>
+    <tr class="row8">
+        <td class="col1 leftalign"> By default: 64Mb.</td>
+    </tr>
+    <tr class="row9">
+        <td class="col0 leftalign" rowspan="2"> –sniff-fsize=&lt;val&gt;</td>
+        <td class="col1"> Add for the sniffer restriction on maximum size of the one temporary file in Mb.</td>
+    </tr>
+    <tr class="row10">
+        <td class="col1 leftalign"> By default: 16Mb.</td>
+    </tr>
+    <tr class="row11">
+        <td class="col0 leftalign" rowspan="2"> –sniff-rotation=&lt;x&gt;        </td>
+        <td class="col1"> Add for the sniffer restriction on number of temporary files. This option excluded by</td>
+    </tr>
+    <tr class="row12">
+        <td class="col1"> the <strong>–sniff-ta-log-ofill-drop</strong> option. By default: 4.</td>
+    </tr>
+    <tr class="row13">
+        <td class="col0 leftalign" rowspan="2"> –sniff-ofill-drop          </td>
+        <td class="col1"> Change overfill handle method of temporary files for the sniffer to tail drop.</td>
+    </tr>
+    <tr class="row14">
+        <td class="col1"> By default overfill handle method is rotation. </td>
+    </tr>
+    <tr class="row15">
+        <td class="col0 leftalign" rowspan="2"> –sniff-log-dir=&lt;path&gt;      </td>
+        <td class="col1 leftalign"> Path to the <strong>TEN</strong> side capture files.</td>
+    </tr>
+    <tr class="row16">
+        <td class="col1 leftalign"> By default used: TE_LOG_DIR/caps.</td>
+    </tr>
+    <tr class="row17">
+        <td class="col0 leftalign" rowspan="7"> –sniff-log-name &lt;pattern&gt;  </td>
+        <td class="col1"> <strong>TEN</strong> side log file naming pattern, the following format specifies are supported:</td>
+    </tr>
+    <tr class="row18">
+        <td class="col1 leftalign"> - \%a : agent name</td>
+    </tr>
+    <tr class="row19">
+        <td class="col1 leftalign"> - \%u : user name</td>
+    </tr>
+    <tr class="row20">
+        <td class="col1 leftalign"> - \%i : interface name</td>
+    </tr>
+    <tr class="row21">
+        <td class="col1 leftalign"> - \%s : sniffer name</td>
+    </tr>
+    <tr class="row22">
+        <td class="col1 leftalign"> - \%n : sniffer session sequence number</td>
+    </tr>
+    <tr class="row23">
+        <td class="col1 leftalign"> By default <strong>\%a_\%i_\%s_\%n</strong> is used.</td>
+    </tr>
+    <tr class="row24">
+        <td class="col0 leftalign" rowspan="2"> –sniff-log-size=&lt;val&gt;      </td>
+        <td class="col1"> Maximum <strong>TEN</strong> side logs cumulative size for one sniffer in Mb.</td>
+    </tr>
+    <tr class="row25">
+        <td class="col1 leftalign"> By default: 256 Mb.               </td>
+    </tr>
+    <tr class="row26">
+        <td class="col0 leftalign" rowspan="2"> –sniff-log-fsize=&lt;val&gt;     </td>
+        <td class="col1"> Maximum <strong>TEN</strong> side capture file size for each sniffer in Mb.</td>
+    </tr>
+    <tr class="row27">
+        <td class="col1 leftalign"> By default: 64 Mb.</td>
+    </tr>
+    <tr class="row28">
+        <td class="col0 leftalign" rowspan="2"> –sniff-log-ofill-drop      </td>
+        <td class="col1 leftalign"> Change overfill handle method to tail drop.</td>
+    </tr>
+    <tr class="row29">
+        <td class="col1"> By default overfill handle method is rotation. </td>
+    </tr>
+    <tr class="row30">
+        <td class="col0 leftalign" rowspan="2"> –sniff-log-period=&lt;val&gt;    </td>
+        <td class="col1"> Period of taken logs from agents in milliseconds.</td>
+    </tr>
+    <tr class="row31">
+        <td class="col1 leftalign"> By default: 200 msec.</td>
+    </tr>
+    <tr class="row32">
+        <td class="col0 leftalign">–sniff-log-conv-disable     </td>
+        <td class="col1"> Disable capture logs conversion and merge with the main log.</td>
+    </tr>
+</table>
+Example how to add and configure a sniffer:
+@code
+   ./dispatcher.sh --sniff=Agt_B/eth0 --sniff-filter="ip and udp" --sniff-name=clisniff
+   --sniff-snaplen=500 --sniff-space=300 --sniff-fsize=3 --sniff-rotation=3
+@endcode
+Example how to configure <b>TEN</b> side capture logs polling settings and location:
+@code
+   ./dispatcher.sh --sniff-log-name=%n_%i_%s_%a --sniff-log-size=500
+   --sniff-log-fsize=100 --sniff-log-period=150 --sniff-log-dir=/tmp
+@endcode
+If are you launch the sniffers by the command line options for an interfaces, should be sure that the interfaces are configuring, while Configurator processing the conf files. Otherwise, if the interfaces are configured later, for example in the prolog, should to use command line option <b>--sniff-not-feed-conf</b> to configure and launch the sniffers later. To activate sniffers configurations at the right time can be used the <b>confapi</b>. Use the following code to launch command line sniffers when it is needed (e.g. in prolog):
+@code
+    char *te_sniff_csconf = getenv("TE_SNIFF_CSCONF");
+    if (te_sniff_csconf != NULL)
+    {
+        CHECK_RC(cfg_restore_backup_nohistory(te_sniff_csconf));
+    }
+@endcode
+
+@subsection sniffer_logger_settings Logger settings
+Polling process and result capture logs location is configured by XML file. By default used
+<b>logger.conf</b> from the <b>conf/</b> directory, but config file path may be changed by <b>Dispatcher</b>
+command line option <b>--conf-logger=<filename></b>. The same from command line may be changed
+other settings of <b>Logger</b>. The command line options have a higher priority. Settings described in the table below.
+<table class="inline" border=1>
+    <tr class="row0">
+        <td class="col0 leftalign"> <strong>Setting name</strong>            </td>
+        <td class="col1 leftalign"> <strong>Description</strong>                      </td>
+    </tr>
+    <tr class="row1">
+        <td class="col0 leftalign" rowspan="7">snif_fname</td>
+        <td class="col1"> <strong>TEN</strong> side log file naming pattern, the following format specifies are supported:</td>
+    </tr>
+    <tr class="row2">
+        <td class="col1"> - \%a : agent name</td>
+    </tr>
+    <tr class="row3">
+        <td class="col1"> - \%u : user name</td>
+    </tr>
+    <tr class="row4">
+        <td class="col1"> - \%i : interface name</td>
+    </tr>
+    <tr class="row5">
+        <td class="col1"> - \%s : sniffer name</td>
+    </tr>
+    <tr class="row6">
+        <td class="col1"> - \%n : sniffer session sequence number</td>
+    </tr>
+    <tr class="row7">
+        <td class="col1 leftalign"> By default <strong>\%a_\%i_\%s_\%n</strong> is used.   </td>
+    </tr>
+    <tr class="row8">
+        <td class="col0 leftalign" rowspan="2">snif_path</td>
+        <td class="col1"> Path to the <strong>TEN</strong> side capture files.</td>
+    </tr>
+    <tr class="row9">
+        <td class="col1 leftalign"> By default: TE_LOG_DIR/caps          </td>
+    </tr>
+    <tr class="row10">
+        <td class="col0 leftalign" rowspan="2">snif_max_fsize</td>
+        <td class="col1"> Max file size for one sniffer in Mb. </td>
+    </tr>
+    <tr class="row11">
+        <td class="col1 leftalign"> By default: 64 Mb.                    </td>
+    </tr>
+    <tr class="row12">
+        <td class="col0 leftalign" rowspan="2">snif_space                   </td>
+        <td class="col1"> Max total capture files size for one sniffer in Mb.</td>
+    </tr>
+    <tr class="row13">
+        <td class="col1 leftalign"> By default: 256 Mb.      </td>
+    </tr>
+    <tr class="row14">
+        <td class="col0 leftalign">snif_rotation                </td>
+        <td class="col1"> Rotate logger side temporary logs across <strong>x</strong> files for each sniffer.</td>
+    </tr>
+    <tr class="row15">
+        <td class="col0 leftalign" rowspan="2">snif_overall_size            </td>
+        <td class="col1"> Max total files size for all sniffers in Mb (Is not supported now).</td>
+    </tr>
+    <tr class="row16">
+        <td class="col1"> By default: unlimited. </td>
+    </tr>
+    <tr class="row17">
+        <td class="col0 leftalign" rowspan="3">snif_ovefill_meth            </td>
+        <td class="col1 leftalign"> Overfill handle method:              </td>
+    </tr>
+    <tr class="row18">
+        <td class="col1 leftalign"> 0 - rotation(default)                </td>
+    </tr>
+    <tr class="row19">
+        <td class="col1 leftalign"> 1 - tail drop.                       </td>
+    </tr>
+    <tr class="row20">
+        <td class="col0 leftalign" rowspan="2">snif_period                  </td>
+        <td class="col1"> Period of taken logs from agents in milliseconds.</td>
+    </tr>
+    <tr class="row21">
+        <td class="col1"> By default: 200 msec.</td>
+    </tr>
+</table>
+Configuration file contains the set of default settings and set of user setting.
+Example of user settings setup is below.
+@code
+   <userSnifferSets>
+        <snif_fname value="%a_%i_%n_%s"/>
+        <snif_path value="/home/andrey/work/trunk/caps"/>
+        <snif_max_fsize value="250"/>
+        <snif_space value="500"/>
+        <snif_rotation value="0"/>
+        <snif_overall_size value="40"/>
+        <snif_ovefill_meth value="0"/>
+        <snif_period value="150"/>
+   </userSnifferSets>
+@endcode
+
+@subsection sniffer_configurator_trees Configurator trees
+Two configuration subtrees are added to the agent configuration model.
+Generic configuration subtree /agent/sniffer_settings/ which represents
+agent-wide sniffer configuration. Sniffers uses some of these fields by default if the value to them is not defined personally.
+<table class="inline" border=1>
+    <tr class="row0">
+        <td class="col0 leftalign"> <strong>OID</strong>                                       </td>
+        <td class="col1"> <strong>Description</strong></td>
+    </tr>
+    <tr class="row1">
+        <td class="col0 leftalign">/agent/sniffer_settings                        </td>
+        <td class="col1">Sniffer object.</td>
+    </tr>
+    <tr class="row2">
+        <td class="col0 leftalign">/agent/sniffer_settings/enable                 </td>
+        <td class="col1">Enable the sniffer settings lock.</td>
+    </tr>
+    <tr class="row3">
+        <td class="col0 leftalign">/agent/sniffer_settings/filter_exp_str         </td>
+        <td class="col1">Filter expression string, by default: empty.</td>
+    </tr>
+    <tr class="row4">
+        <td class="col0 leftalign">/agent/sniffer_settings/filter_exp_file        </td>
+        <td class="col1">Filter file contains expression tcpdump-like filter syntax.</td>
+    </tr>
+    <tr class="row5">
+        <td class="col0 leftalign" rowspan="2">/agent/sniffer_settings/snaplen                </td>
+        <td class="col1">Maximum packet capture size for all sniffers.</td>
+    </tr>
+    <tr class="row6">
+        <td class="col1">By default unlimited.</td>
+    </tr>
+    <tr class="row7">
+        <td class="col0 leftalign">/agent/sniffer_settings/tmp_logs               </td>
+        <td class="col1">Dump files settings.</td>
+    </tr>
+    <tr class="row8">
+        <td class="col0 leftalign">/agent/sniffer_settings/tmp_logs/path          </td>
+        <td class="col1">Path to temporary capture files.</td>
+    </tr>
+    <tr class="row9">
+        <td class="col0 leftalign" rowspan="2">/agent/sniffer_settings/tmp_logs/total_size    </td>
+        <td class="col1">Max total capture files size for all agent sniffers, Mb.</td>
+    </tr>
+    <tr class="row10">
+        <td class="col1">By defualt 256 Mb.</td>
+    </tr>
+    <tr class="row11">
+        <td class="col0 leftalign">/agent/sniffer_settings/tmp_logs/file_size     </td>
+        <td class="col1">Max capture file size in Mb, by default 16 Mb.</td>
+    </tr>
+    <tr class="row12">
+        <td class="col0 leftalign" rowspan="2">/agent/sniffer_settings/tmp_logs/rotation      </td>
+        <td class="col1">Rotate agent side temporary logs across <strong>x</strong> files.</td>
+    </tr>
+    <tr class="row13">
+        <td class="col1">By defaul <strong>x</strong> = 4.</td>
+    </tr>
+    <tr class="row14">
+        <td class="col0" rowspan="3">/agent/sniffer_settings/tmp_logs/overfill_meth </td>
+        <td class="col1">Overfill handle method:</td>
+    </tr>
+    <tr class="row15">
+        <td class="col1">0 - rotation(default)</td>
+    </tr>
+    <tr class="row16">
+        <td class="col1">1 - tail drop.</td>
+    </tr>
+</table>
+Example of subtree:
+@code
+  <set>
+    <instance oid="/agent:Agt_A/sniffer_settings:/filter_exp_str:" value=""/>
+    <instance oid="/agent:Agt_A/sniffer_settings:/snaplen:" value="300"/>
+    <instance oid="/agent:Agt_A/sniffer_settings:/tmp_logs:/file_size:" value="5"/>
+    <instance oid="/agent:Agt_A/sniffer_settings:/tmp_logs:/path:" value="tmp/"/>
+    <instance oid="/agent:Agt_A/sniffer_settings:/tmp_logs:/total_size:" value="3"/>
+    <instance oid="/agent:Agt_A/sniffer_settings:/tmp_logs:/rotation:" value="4"/>
+    <instance oid="/agent:Agt_A/sniffer_settings:/tmp_logs:/overfill_meth:" value="0"/>
+  </set>
+@endcode
+Plus a per-interface /agent/interface/sniffer/ subtree which is responsible
+for configuration of a specific sniffer instances is added. Each sniffer instance in the
+configurato subtree has a <b>sniffer name</b> which is by design (cause it's a
+name of the object instance) uniq across the interface.
+<table class="inline" border=1>
+    <tr class="row0">
+        <td class="col0 leftalign"> <strong>OID</strong></td>
+        <td class="col1"> <strong>Description</strong></td>
+    </tr>
+    <tr class="row1">
+        <td class="col0 leftalign">/agent/interface/sniffer                       </td>
+        <td class="col1"> Sniffer name contains read only value of <strong>ssn</strong>.</td>
+    </tr>
+    <tr class="row2">
+        <td class="col0 leftalign">/agent/interface/sniffer/enable                </td>
+        <td class="col1"> Enable the sniffer.</td>
+    </tr>
+    <tr class="row3">
+        <td class="col0 leftalign">/agent/interface/sniffer/filter_exp_str        </td>
+        <td class="col1"> Filter expression string, by default: empty.</td>
+    </tr>
+    <tr class="row4">
+        <td class="col0 leftalign">/agent/interface/sniffer/filter_exp_file       </td>
+        <td class="col1"> Filter file contains expression tcpdump-like filter syntax.</td>
+    </tr>
+    <tr class="row5">
+        <td class="col0 leftalign">/agent/interface/sniffer/snaplen               </td>
+        <td class="col1"> Maximum packet capture size in bytes, by default unlimited.</td>
+    </tr>
+    <tr class="row6">
+        <td class="col0 leftalign">/agent/interface/sniffer/tmp_logs              </td>
+        <td class="col1"> Dump files settings subtree.</td>
+    </tr>
+    <tr class="row7">
+        <td class="col0" rowspan="2">/agent/interface/sniffer/tmp_logs/sniffer_space</td>
+        <td class="col1"> Max total dump files size for the sniffer in Mb.</td>
+    </tr>
+    <tr class="row8">
+        <td class="col1"> By defualt 64 Mb.</td>
+    </tr>
+    <tr class="row9">
+        <td class="col0 leftalign">/agent/interface/sniffer/tmp_logs/file_size    </td>
+        <td class="col1"> Max capture file size (Mb), by default is 16 Mb.</td>
+    </tr>
+    <tr class="row10">
+        <td class="col0 leftalign" rowspan="2">/agent/interface/sniffer/tmp_logs/rotation     </td>
+        <td class="col1"> Rotate agent side temporary logs across <strong>x</strong> files.</td>
+    </tr>
+    <tr class="row11">
+        <td class="col1"> By defaul <strong>x</strong> = 4.</td>
+    </tr>
+    <tr class="row12">
+        <td class="col0" rowspan="3">/agent/interface/sniffer/tmp_logs/overfill_meth</td>
+        <td class="col1"> Overfill handle method:</td>
+    </tr>
+    <tr class="row13">
+        <td class="col1"> 0 - rotation(default)</td>
+    </tr>
+    <tr class="row14">
+        <td class="col1"> 1 - tail drop.</td>
+    </tr>
+</table>
+Example of subtree:
+@code
+  <add>
+    <instance oid="/agent:Agt_A/interface:lo/sniffer:mysniffer" value="0"/>
+  </add>
+  <set>
+    <instance oid="/agent:Agt_A/interface:lo/sniffer:mysniffer/filter_exp_str:" 
+                  value="ip or udp or tcp"/>
+    <instance oid="/agent:Agt_A/interface:lo/sniffer:mysniffer/snaplen:" value="300"/>
+    <instance oid="/agent:Agt_A/interface:lo/sniffer:mysniffer/tmp_logs:/sniffer_space:" value="6"/>
+    <instance oid="/agent:Agt_A/interface:lo/sniffer:mysniffer/tmp_logs:/file_size:" value="2"/>
+    <instance oid="/agent:Agt_A/interface:lo/sniffer:mysniffer/tmp_logs:/rotation:" value="3"/>
+    <instance oid="/agent:Agt_A/interface:lo/sniffer:mysniffer/tmp_logs:/overfill_meth:" value="1"/>
+    <instance oid="/agent:Agt_A/interface:lo/sniffer:mysniffer/enable:" value="1"/>
+  </set>
+@endcode
+  - If the same settings declarated in both subtrees (file_size,
+  overfill_type, snaplen), use the one that declarated in the interface
+  subtree.
+  - <b>sniffer_space</b>, <b>file_size</b> and <b>rotation</b> are
+  restricting the parameters. By default this parameters means that sniffer
+  capture files can take no more than 64Mb space on the disk, size of the
+  one file can not exceed 16 Mb and can be created not more than 4 files.
+
+@subsection sniffer_tapi Sniffer Test API
+The Test API provides ability add/remove sniffers, suspend/resume the work
+of sniffers, insert mark packets to logs. It is possible to manage of
+sniffers via <b>Configurator</b> TAPI. Note, during the sniffer is working,
+its settings cannot be changed.
+The complete list and detailed description functions of Test API you can
+find in lib/tapi/tapi_sniffer.h file.<br/>
+The example below demonstrates how to add a new sniffer with name
+<b>newsniffer</b> for agent <b>Agt_B</b> on the interface <b>lo</b>.
+The sniffer will be use the filter expression <b>"ip and udp"</b> and
+overfill handle method for temporary files - <b>rotation</b>. After starting
+the sniffer is called a request to insert a marker packet. Then the work of
+the sniffer is suspended and renewable. And at the end the sniffer is
+removed.
+@code
+   #include "tapi_sniffer.h"
+
+   tapi_sniffer_id    *snif;
+
+   snif = tapi_sniffer_add("Agt_B", "lo", "newsniffer", "ip", TRUE); /* Add new sniffer */
+   tapi_sniffer_mark(NULL, snif, "My first marker packet.");         /* Insert marker packet */
+   tapi_sniffer_stop(snif);                                          /* Suspend the sniffer work*/
+   tapi_sniffer_start(snif);                                         /* Renew the sniffer work */
+   tapi_sniffer_del(snif)                                            /* Delete the sniffer */
+@endcode
+
+@} <!-- Sniffer -->
+
+*/
