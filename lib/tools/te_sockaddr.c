@@ -278,7 +278,7 @@ te_sockaddr_get_size_by_af(int af)
             return sizeof(struct sockaddr_in6);
             
         default:
-            ERROR("%s(): Address family %d is not supported, ",
+            ERROR("%s(): Address family %d is not supported, "
                   "operation has no effect", __FUNCTION__, (int)af);
     }
 
