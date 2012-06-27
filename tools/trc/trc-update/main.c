@@ -858,7 +858,8 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
     if (main_call)
     {
         if (!no_use_ids && (log_specified ||
-            ((ctx.flags & TRC_LOG_PARSE_RULES_CONFL) &&
+            ((ctx.flags &
+              (TRC_LOG_PARSE_RULES_CONFL | TRC_LOG_PARSE_SELF_CONFL)) &&
              !(ctx.flags & TRC_LOG_PARSE_GEN_APPLY) &&
              ctx.rules_save_to != NULL)))
             ctx.flags |= TRC_LOG_PARSE_USE_RULE_IDS;
@@ -1112,8 +1113,6 @@ perl_prepare()
         if (perl_expr != NULL)
         {
             te_string_append(&te_str,
-                             "$filter = 1;\n"
-                             "$rc = 0;\n"
                              "sub set_filter"
                              "{"
                              "    $filter = @_[0];\n"
@@ -1127,6 +1126,7 @@ perl_prepare()
                              "}\n"
                              "sub get_filter"
                              "{"
+                             "    $filter = 1;" 
                              "    get_rc();"
                              "    return $filter;\n"
                              "}\n",
@@ -1161,20 +1161,20 @@ perl_prepare()
             fread(script_text, sizeof(*script_text), flen, f);
 
             te_string_append(&te_str,
-                             "$filter = 1;\n"
-                             "$rc = 0;\n"
                              "sub get_vals"
                              "{"
                              "    %s\n"
                              "}"
                              "sub get_rc"
                              "{"
+                             "    $rc = 0;"
                              "    get_vals();"
                              "    return $rc && comm_eq() &&"
                              "           notcomm_chk() ? 1 : 0;\n"
                              "}"
                              "sub get_filter"
                              "{"
+                             "    $filter = 1;\n"
                              "    get_vals();"
                              "    return $filter;\n"
                              "}",
