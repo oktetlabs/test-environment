@@ -70,6 +70,9 @@ typedef struct trc_update_ctx {
                                                    a log */
     trc_update_tags_logs     tags_logs;       /**< Queue of logs grouped by
                                                    tag expressions */
+    trc_update_tags_logs     diff_logs;       /**< Another queue of logs to
+                                                   be compared with the
+                                                   first one */
     char                    *fake_log;        /**< Tester fake run XML log
                                                    path */
     char                    *rules_load_from; /**< Path to file with
@@ -150,7 +153,11 @@ typedef TAILQ_HEAD(trc_update_rules, trc_update_rule) trc_update_rules;
 
 /** TRC Update test iteration data attached to iteration in TRC DB */
 typedef struct trc_update_test_iter_data {
-    trc_exp_results       new_results; /**< Non-matching TRC results from
+    trc_exp_results       new_results; /**< Non-matching test results from
+                                            logs */
+    trc_exp_results       df_results;  /**< Test results from the second
+                                            group of logs which was not
+                                            found in the first group of
                                             logs */
     trc_update_rule      *rule;        /**< Updating rule for this
                                             iteration */

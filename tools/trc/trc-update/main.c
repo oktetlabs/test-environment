@@ -160,11 +160,19 @@ enum {
                                          single possible value in
                                          all the iterations described by
                                          this wildcard */
-    TRC_UPDATE_OPT_SIMPL_TAGS,     /**<  Simplify tag expressions in
+    TRC_UPDATE_OPT_SIMPL_TAGS,      /**< Simplify tag expressions in
                                          lists of unexpected results from
                                          logs */
-    TRC_UPDATE_OPT_FROM_FILE,     /**<   Load additional options from a
+    TRC_UPDATE_OPT_FROM_FILE,       /**< Load additional options from a
                                          file */
+    TRC_UPDATE_OPT_DIFF,            /**< Show results from the second group
+                                         of logs which were not presented
+                                         in the first group of logs */
+    TRC_UPDATE_OPT_DIFF_NO_TAGS,    /**< Show results from the second group
+                                         of logs which were not presented
+                                         in the first group of logs -
+                                         not taking into account tag
+                                         expressions */
 };
 
 #ifdef HAVE_LIBPERL
@@ -218,12 +226,14 @@ static te_bool         set_pos_attr = TRUE;
  * Add new group of logs.
  *
  * @param tags_str  Tag expression
+ * @param in_diff   Whether log is to be added to
+ *                  the group of logs to be compared
  *
  * @return
  *      Pointer to structure describing group of logs or NULL
  */
 static trc_update_tag_logs *
-add_new_tag_logs(char *tags_str)
+add_new_tag_logs(char *tags_str, te_bool in_diff)
 {
     trc_update_tag_logs     *tag_logs;
 
@@ -246,7 +256,10 @@ add_new_tag_logs(char *tags_str)
         return NULL;
     }
 
-    TAILQ_INSERT_TAIL(&ctx.tags_logs, tag_logs, links);
+    if (in_diff)
+        TAILQ_INSERT_TAIL(&ctx.diff_logs, tag_logs, links);
+    else
+        TAILQ_INSERT_TAIL(&ctx.tags_logs, tag_logs, links);
 
     return tag_logs;
 }
@@ -401,6 +414,7 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
     int             rc;
 
     static trc_update_tag_logs     *tag_logs;
+    static te_bool                  in_diff = FALSE;
     tqe_string                     *tqe_str;
 
     char           *s;
@@ -574,6 +588,19 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
           NULL, TRC_UPDATE_OPT_FAKE_LOG,
           "Specify log file of fake Tester run in XML format", NULL },
 
+        { "diff", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_DIFF,
+          "Consider all the results from the logs specified after "
+          "this option which was not met in the logs specified "
+          "before this option", NULL },
+
+        { "diff-no-tags", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_DIFF_NO_TAGS,
+          "Consider all the results from the logs specified after "
+          "this option which was not met in the logs specified "
+          "before this option - not taking into account tag expressions",
+          NULL },
+
         { "print-paths", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_PATHS,
           "Print paths of all test scripts encountered in logs "
@@ -629,20 +656,23 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
                 break;
 
             case TRC_UPDATE_OPT_TAGS:
-                tag_logs = add_new_tag_logs(poptGetOptArg(optCon));
+                tag_logs = add_new_tag_logs(poptGetOptArg(optCon),
+                                            in_diff);
                 if (tag_logs == NULL)
                     goto exit;
                 break;
 
             case TRC_UPDATE_OPT_LOG:
-                if (TAILQ_EMPTY(&ctx.tags_logs))
+                if (TAILQ_EMPTY(in_diff ? &ctx.diff_logs :
+                                                &ctx.tags_logs))
                 {
-                    tag_logs = add_new_tag_logs(strdup("UNSPEC"));
+                    tag_logs = add_new_tag_logs(strdup("UNSPEC"), in_diff);
                     if (tag_logs == NULL)
                         goto exit;
                 }
                 else
-                    tag_logs = TAILQ_LAST(&ctx.tags_logs,
+                    tag_logs = TAILQ_LAST(in_diff ?
+                                            &ctx.diff_logs : &ctx.tags_logs,
                                           trc_update_tags_logs);
 
                 tqe_str = malloc(sizeof(tqe_string));
@@ -652,6 +682,16 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
 
                 log_specified = TRUE;
 
+                break;
+
+            case TRC_UPDATE_OPT_DIFF:
+                in_diff = TRUE;
+                ctx.flags |= TRC_LOG_PARSE_DIFF;
+                break;
+
+            case TRC_UPDATE_OPT_DIFF_NO_TAGS:
+                in_diff = TRUE;
+                ctx.flags |= TRC_LOG_PARSE_DIFF_NO_TAGS;
                 break;
 
             case TRC_UPDATE_OPT_FAKE_LOG:

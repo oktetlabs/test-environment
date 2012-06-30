@@ -37,46 +37,49 @@ extern "C" {
 
 /** TRC XML log parsing options */
 enum trc_log_parse_flags {
-    TRC_LOG_PARSE_IGNORE_LOG_TAGS = (1 << 0),  /**< Ignore TRC tags
+    TRC_LOG_PARSE_IGNORE_LOG_TAGS
+                               = (1LLU << 0),  /**< Ignore TRC tags
                                                     extracted
                                                     from the log */
-    TRC_LOG_PARSE_FAKE_LOG        = (1 << 1),  /**< Parse log of fake
+    TRC_LOG_PARSE_FAKE_LOG     = (1LLU << 1),  /**< Parse log of fake
                                                     Tester run */
-    TRC_LOG_PARSE_MERGE_LOG       = (1 << 2),  /**< Merge iterations from
+    TRC_LOG_PARSE_MERGE_LOG    = (1LLU << 2),  /**< Merge iterations from
                                                     log into TRC DB
                                                     performing TRC
                                                     update */
-    TRC_LOG_PARSE_RULES_ALL       = (1 << 3),  /**< Generate updating rules
+    TRC_LOG_PARSE_RULES_ALL    = (1LLU << 3),  /**< Generate updating rules
                                                     for all possible results
                                                     (not only those for
                                                     which there are new
                                                     results in logs) */
-    TRC_LOG_PARSE_USE_RULE_IDS    = (1 << 4),  /**< Insert updating rule
+    TRC_LOG_PARSE_USE_RULE_IDS = (1LLU << 4),  /**< Insert updating rule
                                                     ID in user_attr
                                                     attribute of test
                                                     iterations in
                                                     generated TRC
                                                     to simplify applying
                                                     of edited rules */
-    TRC_LOG_PARSE_NO_GEN_WILDS    = (1 << 5),  /**< Do not replace test
+    TRC_LOG_PARSE_NO_GEN_WILDS = (1LLU << 5),  /**< Do not replace test
                                                     iterations with
                                                     wildcards in
                                                     generated TRC */
-    TRC_LOG_PARSE_LOG_WILDS       = (1 << 6),  /**< Generate wildcards for
+    TRC_LOG_PARSE_LOG_WILDS    = (1LLU << 6),  /**< Generate wildcards for
                                                     results from logs, not
                                                     from TRC DB */
-    TRC_LOG_PARSE_LOG_WILDS_UNEXP = (1 << 7),  /**< Generate wildcards for
+    TRC_LOG_PARSE_LOG_WILDS_UNEXP
+                               = (1LLU << 7),  /**< Generate wildcards for
                                                     unexpected results from
                                                     logs only */
-    TRC_LOG_PARSE_COPY_OLD        = (1 << 8),  /**< Copy results from
+    TRC_LOG_PARSE_COPY_OLD     = (1LLU << 8),  /**< Copy results from
                                                     current TRC DB in <new>
                                                     section of updating
                                                     rule */
-    TRC_LOG_PARSE_COPY_CONFLS     = (1 << 9),  /**< Copy conflicting results
+    TRC_LOG_PARSE_COPY_CONFLS  = (1LLU << 9),  /**< Copy conflicting results
                                                     from logs in <news>
                                                     section of updating
                                                     rule */
-    TRC_LOG_PARSE_COPY_OLD_FIRST  = (1 << 10), /**< If both COPY_CONFLS and
+    TRC_LOG_PARSE_COPY_OLD_FIRST
+                               = (1LLU << 10), /**< If both COPY_CONFLS and
                                                     COPY_OLD are specified,
                                                     copy expected results
                                                     from current TRC DB in
@@ -86,10 +89,10 @@ enum trc_log_parse_flags {
                                                     copy conlficting
                                                     results from logs to
                                                     the same place */
-    TRC_LOG_PARSE_CONFLS_ALL      = (1 << 11), /**< Treat all results from
+    TRC_LOG_PARSE_CONFLS_ALL   = (1LLU << 11), /**< Treat all results from
                                                     logs as unexpected
                                                     ones */
-    TRC_LOG_PARSE_COPY_BOTH       = (1 << 12), /**< If both COPY_CONFLS and
+    TRC_LOG_PARSE_COPY_BOTH    = (1LLU << 12), /**< If both COPY_CONFLS and
                                                     COPY_BOTH are specified,
                                                     copy both results from
                                                     existing TRC and
@@ -102,13 +105,13 @@ enum trc_log_parse_flags {
                                                     TRC firstly, otherwise
                                                     firstly copy results
                                                     from logs */
-    TRC_LOG_PARSE_TAGS_STR        = (1 << 13), /**< Do not change string
+    TRC_LOG_PARSE_TAGS_STR     = (1LLU << 13), /**< Do not change string
                                                     representation of
                                                     tags */
-    TRC_LOG_PARSE_GEN_APPLY       = (1 << 14), /**< Apply updating rules
+    TRC_LOG_PARSE_GEN_APPLY    = (1LLU << 14), /**< Apply updating rules
                                                     after generating
                                                     them */
-    TRC_LOG_PARSE_RULES_CONFL     = (1 << 15), /**< If applying of a rule
+    TRC_LOG_PARSE_RULES_CONFL  = (1LLU << 15), /**< If applying of a rule
                                                     leads to replacing
                                                     some alredy existing
                                                     expected results with
@@ -118,54 +121,69 @@ enum trc_log_parse_flags {
                                                     from '<new>' section
                                                     of rule as conflicting
                                                     results from logs */
-    TRC_LOG_PARSE_RRESULTS       = (1 << 16),  /**< Generate updating
+    TRC_LOG_PARSE_RRESULTS    = (1LLU << 16),  /**< Generate updating
                                                     rules of type @c
                                                     TRC_UPDATE_RRESULTS */
-    TRC_LOG_PARSE_RRESULT        = (1 << 17),  /**< Generate updating
+    TRC_LOG_PARSE_RRESULT     = (1LLU << 17),  /**< Generate updating
                                                     rules of type @c
                                                     TRC_UPDATE_RRESULT */
-    TRC_LOG_PARSE_RRENTRY        = (1 << 18),  /**< Generate updating
+    TRC_LOG_PARSE_RRENTRY     = (1LLU << 18),  /**< Generate updating
                                                     rules of type @c
                                                     TRC_UPDATE_RRENTRY */
-    TRC_LOG_PARSE_RVERDICT       = (1 << 19),  /**< Generate updating
+    TRC_LOG_PARSE_RVERDICT    = (1LLU << 19),  /**< Generate updating
                                                     rules of type @c
                                                     TRC_UPDATE_RVERDICT */
-    TRC_LOG_PARSE_PATHS          = (1 << 20),  /**< Print paths of all
+    TRC_LOG_PARSE_PATHS       = (1LLU << 20),  /**< Print paths of all
                                                     scripts encountered in
                                                     parsed logs */
-    TRC_LOG_PARSE_NO_PE          = (1 << 21),  /**< Do not take into
+    TRC_LOG_PARSE_NO_PE       = (1LLU << 21),  /**< Do not take into
                                                     consideration prologues
                                                     and epilogues */
-    TRC_LOG_PARSE_RULE_UPD_ONLY  = (1 << 22),  /**< Save only tests for
+    TRC_LOG_PARSE_RULE_UPD_ONLY
+                              = (1LLU << 22),  /**< Save only tests for
                                                     which iterations at
                                                     least one rule was
                                                     applied */
-    TRC_LOG_PARSE_SKIPPED        = (1 << 23),  /**< Show skipped unexpected
+    TRC_LOG_PARSE_SKIPPED     = (1LLU << 23),  /**< Show skipped unexpected
                                                     results */
-    TRC_LOG_PARSE_NO_SKIP_ONLY   = (1 << 24),  /**< Do not create rules with
+    TRC_LOG_PARSE_NO_SKIP_ONLY
+                              = (1LLU << 24),  /**< Do not create rules with
                                                     <conflicts/> containing
                                                     skipped only results */
-    TRC_LOG_PARSE_NO_EXP_ONLY    = (1 << 25),  /**< Do not create rules with
+    TRC_LOG_PARSE_NO_EXP_ONLY = (1LLU << 25),  /**< Do not create rules with
                                                     <conflicts/> containing
                                                     expected only results
                                                     if CONFLS_ALL is turned
                                                     on */
-    TRC_LOG_PARSE_SELF_CONFL     = (1 << 26),  /**< Get conflicting results
+    TRC_LOG_PARSE_SELF_CONFL  = (1LLU << 26),  /**< Get conflicting results
                                                     from expected results of
                                                     an iteration found with
                                                     help of matching
                                                     function */
-    TRC_LOG_PARSE_GEN_TAGS       = (1 << 27),  /**< Generate tags for
+    TRC_LOG_PARSE_GEN_TAGS    = (1LLU << 27),  /**< Generate tags for
                                                     logs */
-    TRC_LOG_PARSE_EXT_WILDS      = (1 << 28),  /**< Specify a value for
+    TRC_LOG_PARSE_EXT_WILDS   = (1LLU << 28),  /**< Specify a value for
                                                     each argument in
                                                     wildcard where it is
                                                     possible for a given
                                                     wildcard */
-    TRC_LOG_PARSE_SIMPL_TAGS     = (1 << 29),  /**< Simplify tag
+    TRC_LOG_PARSE_SIMPL_TAGS  = (1LLU << 29),  /**< Simplify tag
                                                     expressions in lists
                                                     of unexpected results
                                                     from logs */
+    TRC_LOG_PARSE_DIFF        = (1LLU << 30),  /**< Show results from the
+                                                    second group of logs
+                                                    which were not
+                                                    presented in the first
+                                                    group of logs */
+    TRC_LOG_PARSE_DIFF_NO_TAGS
+                              = (1LLU << 31),  /**< Show results from the
+                                                    second group of logs
+                                                    which were not
+                                                    presented in the first
+                                                    group of logs -
+                                                    not taking into account
+                                                    tag expressions */
 };
 
 /** All rule type flags */

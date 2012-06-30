@@ -560,6 +560,8 @@ trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
                         unsigned int db_uid,
                         func_args_match_ptr func_args_match)
 {
+    UNUSED(db_uid);
+
     assert(!walker->is_iter);
 
     if (walker->unknown > 0)

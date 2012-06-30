@@ -23,6 +23,7 @@
  * MA  02111-1307  USA
  *
  *
+ * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
  * $Id$
@@ -86,7 +87,7 @@ typedef struct trc_log_parse_ctx {
 
     te_errno            rc;         /**< Status of processing */
 
-    unsigned int        flags;      /**< Processing flags */
+    uint64_t            flags;      /**< Processing flags */
     te_trc_db          *db;         /**< TRC database handle */
     unsigned int        db_uid;     /**< TRC database user ID */
     const char         *log;        /**< Name of the file with log */
@@ -1027,6 +1028,7 @@ trc_update_gen_user_data(void *data, te_bool is_iter)
     {
         trc_update_test_iter_data *iter_d = TE_ALLOC(sizeof(*iter_d));
         SLIST_INIT(&iter_d->new_results);
+        SLIST_INIT(&iter_d->df_results);
 
         if (to_save)
             iter_d->to_save = TRUE;
@@ -1524,38 +1526,67 @@ is_exp_only(trc_exp_results *results)
     return FALSE;
 }
 
+/** Result editing operation */
+typedef enum result_ops {
+    RESULT_OP_CLEAR = 1,        /**< Clear results */
+    RESULT_OP_DF_REPLACE,       /**< Replace new_results with
+                                     df_results */
+    RESULT_OP_EXCLUDE_EMPTY,    /**< Exclude tests having
+                                     empty lists of unexpected
+                                     results in all their
+                                     iterations */
+} result_ops;
+
 /**
- * For all the tests, clear unexpected iteration results where
- * for all of them a given condition is @c TRUE.
+ * For all the tests, perform a given operation on a list of
+ * unexpected results where for all of them a given condition
+ * is @c TRUE.
  *
  * @param ctx            TRC Log Parse context
  * @param tests          Queue of tests
  * @param cond_func      Condition function
+ * @param op             Result editing operation
+ * @param all_empty      Will be set to @c TRUE if
+ *                       all the lists of unexpected
+ *                       results are empty
  *
  * @return Status code
  */
-static te_errno trc_update_tests_cond_clear_res(trc_log_parse_ctx *ctx,
-                                                trc_tests *tests,
-                                                check_res_cond cond_func);
+static te_errno trc_update_tests_cond_res_op(trc_log_parse_ctx *ctx,
+                                             trc_tests *tests,
+                                             check_res_cond cond_func,
+                                             result_ops op,
+                                             te_bool *all_empty);
 
 /**
- * For all the iterations, clear unexpected iteration results where
- * for all of them a given condition is @c TRUE.
+ * For all the iterations, perform a given operation on a list of
+ * unexpected results where for all of them a given condition
+ * is @c TRUE.
  *
  * @param ctx            TRC Log Parse context
  * @param iters          Queue of iterations
  * @param cond_func      Condition function
+ * @param op             Result editing operation
+ * @param all_empty      Will be set to @c TRUE if
+ *                       all the lists of unexpected
+ *                       results are empty
  *
  * @return Status code
  */
 static te_errno
-trc_update_iters_cond_clear_res(trc_log_parse_ctx *ctx,
-                                trc_test_iters *iters,
-                                check_res_cond cond_func)
+trc_update_iters_cond_res_op(trc_log_parse_ctx *ctx,
+                             trc_test_iters *iters,
+                             check_res_cond cond_func,
+                             result_ops op, te_bool *all_empty)
 {
     trc_update_test_iter_data   *user_data;
     trc_test_iter               *iter;
     int                          rc;
+    trc_exp_result              *q;
+    trc_exp_result              *prev;
+    trc_exp_result              *q_tvar;
+    te_bool                      my_all_empty = TRUE;
+    te_bool                      all_empty_aux = TRUE;
 
     TAILQ_FOREACH(iter, &iters->head, links)
     {
@@ -1563,12 +1594,53 @@ trc_update_iters_cond_clear_res(trc_log_parse_ctx *ctx,
         if (user_data != NULL)
         {
             if (!TAILQ_EMPTY(&iter->tests.head))
-                rc = trc_update_tests_cond_clear_res(ctx, &iter->tests,
-                                                     cond_func);
+            {
+                rc = trc_update_tests_cond_res_op(ctx, &iter->tests,
+                                                  cond_func, op,
+                                                  &all_empty_aux);
+                if (!all_empty_aux)
+                    my_all_empty = FALSE;
+            }
             else
             {
-                if (cond_func(&user_data->new_results))
-                    trc_exp_results_free(&user_data->new_results);
+                if (cond_func == NULL ||
+                    cond_func(&user_data->new_results))
+                {
+                    switch (op)
+                    {
+                        case RESULT_OP_CLEAR:
+                            trc_exp_results_free(&user_data->new_results);
+                            break;
+
+                        case RESULT_OP_DF_REPLACE:
+                            trc_exp_results_free(&user_data->new_results);
+
+                            prev = NULL;
+                            SLIST_FOREACH_SAFE(q, &user_data->df_results,
+                                               links, q_tvar)
+                            {
+                                SLIST_REMOVE_HEAD(&user_data->df_results,
+                                                  links);
+
+                                if (prev != NULL)
+                                    SLIST_INSERT_AFTER(prev, q, links);
+                                else
+                                    SLIST_INSERT_HEAD(
+                                                &user_data->new_results,
+                                                q, links);
+
+                                prev = q;
+                            }
+
+                            break;
+
+                        default:
+                            break;
+                    }
+                }
+
+                if (!SLIST_EMPTY(&user_data->new_results))
+                    my_all_empty = FALSE;
             }
 
             if (rc != 0)
@@ -1576,28 +1648,56 @@ trc_update_iters_cond_clear_res(trc_log_parse_ctx *ctx,
         }
     }
 
+    if (my_all_empty && op == RESULT_OP_EXCLUDE_EMPTY)
+    {
+        TAILQ_FOREACH(iter, &iters->head, links)
+        {
+            user_data = trc_db_iter_get_user_data(iter, ctx->db_uid);
+            if (user_data != NULL)
+                user_data->to_save = FALSE;
+        }
+    }
+
+    if (all_empty != NULL)
+        *(te_bool *)all_empty = my_all_empty;
+
     return 0;
 }
 
 /** See description above */
 static te_errno
-trc_update_tests_cond_clear_res(trc_log_parse_ctx *ctx,
-                                trc_tests *tests,
-                                check_res_cond cond_func)
+trc_update_tests_cond_res_op(trc_log_parse_ctx *ctx,
+                             trc_tests *tests,
+                             check_res_cond cond_func,
+                             result_ops op,
+                             te_bool *all_empty)
 {
     trc_update_test_data    *user_data;
     trc_test                *test;
     int                      rc;
+    te_bool                  my_all_empty = FALSE;
+
+    if (all_empty != NULL)
+        *(te_bool *)all_empty = TRUE;
 
     TAILQ_FOREACH(test, &tests->head, links)
     {
         user_data = trc_db_test_get_user_data(test, ctx->db_uid);
         if (user_data != NULL)
         {
-            rc = trc_update_iters_cond_clear_res(ctx, &test->iters,
-                                                 cond_func);
+            rc = trc_update_iters_cond_res_op(ctx, &test->iters,
+                                              cond_func, op,
+                                              &my_all_empty);
             if (rc != 0)
                 return rc;
+
+            if (my_all_empty == FALSE)
+            {
+                if (all_empty != NULL)
+                    *(te_bool *)all_empty = FALSE;
+            }
+            else if (op == RESULT_OP_EXCLUDE_EMPTY)
+                user_data->to_save = FALSE;
         }
     }
 
@@ -1605,18 +1705,21 @@ trc_update_tests_cond_clear_res(trc_log_parse_ctx *ctx,
 }
 
 /**
- * Clear unexpected iteration results where for all of them
- * the same condition is @c TRUE.
+ * Perform a given operation on a list of unexpected results
+ * where for all of them a given condition is @c TRUE.
  *
  * @param ctx            TRC Log Parse context
+ * @param cond_func      Condition function
+ * @param op             Result editing operation
  *
  * @return Status code
  */
 static te_errno
-trc_update_cond_clear_res(trc_log_parse_ctx *ctx, check_res_cond cond_func)
+trc_update_cond_res_op(trc_log_parse_ctx *ctx, check_res_cond cond_func,
+                          result_ops op)
 {
-    return trc_update_tests_cond_clear_res(ctx, &ctx->db->tests,
-                                           cond_func);
+    return trc_update_tests_cond_res_op(ctx, &ctx->db->tests,
+                                        cond_func, op, NULL);
 }
 
 /**
@@ -1858,6 +1961,87 @@ save_test_rules_to_file(trc_update_tests_groups *updated_tests,
     return 0;
 }
 
+/**
+ * Try to find test iteration result in a given list.
+ *
+ * @param find_result       Result to be found
+ * @param results           List of results where to search
+ * @param no_tags           If @c TRUE, tag expressions won't
+ *                          be taken into account
+ * @param result_found      If result was found, it will be set
+ *                          to @c TRUE
+ * @param entry_found       If result entry was found, it will
+ *                          be set to @c TRUE
+ * @param result            If result was found, it will be set
+ *                          to its pointer in list; otherwise
+ *                          it will be set to the pointer of
+ *                          the element of the list after which
+ *                          new result can be placed
+ *
+ * @return Status code
+ */
+static te_errno
+trc_update_find_result(trc_exp_result *find_result,
+                       trc_exp_results *results,
+                       te_bool no_tags, te_bool *result_found,
+                       te_bool *entry_found,
+                       trc_exp_result **result)
+{
+    trc_exp_result             *prev = NULL;
+    trc_exp_result             *p;
+    trc_exp_result_entry       *q;
+    int                         rc = 0;
+    te_bool                     tags_fit;
+
+    *result_found = FALSE;
+    *entry_found = FALSE;
+    *result = NULL;
+
+    if (!SLIST_EMPTY(results))
+    {
+        SLIST_FOREACH(p, results, links)
+        {
+            tags_fit = 
+                (p->tags_str == NULL && find_result->tags_str == NULL) ||
+                (p->tags_str != NULL && find_result->tags_str != NULL &&
+                (rc = strcmp(p->tags_str, find_result->tags_str)) <= 0);
+
+            if (no_tags || (rc == 0 && tags_fit))
+            {
+                TAILQ_FOREACH(q, &p->results, links)
+                    if (te_test_result_cmp(
+                            &q->result,
+                            &TAILQ_FIRST(
+                                &find_result->results)->result) == 0)
+                        break;
+
+                if (q != NULL)
+                {
+                    *result = p;
+                    *result_found = TRUE;
+                    *entry_found = TRUE;
+                    return 0;
+                }
+                else if (!no_tags)
+                {
+                    *result = p;
+                    *result_found = TRUE;
+                    return 0;
+                }
+            }
+            else if (!no_tags && rc != 0 && tags_fit)
+            {
+                *result = prev;
+                return 0;
+            }
+
+            prev = p;
+        }
+    }
+
+    return 0;
+}
+
 /** See decription above */
 static te_errno
 trc_update_iter_data_merge_result(trc_log_parse_ctx *ctx,
@@ -1867,11 +2051,11 @@ trc_update_iter_data_merge_result(trc_log_parse_ctx *ctx,
 {
     trc_exp_result             *merge_result;
     trc_exp_result_entry       *result_entry;
-    trc_exp_results            *new_results = NULL;
-    trc_exp_result             *prev = NULL;
-    trc_exp_result             *p;
-    trc_exp_result_entry       *q;
-    int                         rc = 0;
+    trc_exp_results            *results_list = NULL;
+    trc_exp_result             *res = NULL;
+    te_bool                     result_found = FALSE;
+    te_bool                     entry_found = FALSE;
+    te_bool                     process_result = FALSE;
 
     tqe_string  *tqs_p;
     tqe_string  *tqs_q;
@@ -1901,6 +2085,11 @@ trc_update_iter_data_merge_result(trc_log_parse_ctx *ctx,
         (ctx->merge_str == NULL ||
          strcmp(ctx->merge_str, "UNSPEC") == 0))
     {
+        /*
+         * Creating tag expression from the list of tags
+         * got from the log.
+         */
+
         free(ctx->merge_str);
         ctx->merge_str = TE_ALLOC(max_expr_len);
 
@@ -1978,51 +2167,49 @@ trc_update_iter_data_merge_result(trc_log_parse_ctx *ctx,
     merge_result->key = NULL;
     merge_result->notes = NULL;
 
-    new_results = &upd_iter_data->new_results;
+    results_list = &upd_iter_data->new_results;
 
-    if (SLIST_EMPTY(new_results))
+    if (!(ctx->flags & (TRC_LOG_PARSE_DIFF | TRC_LOG_PARSE_DIFF_NO_TAGS)))
     {
-        SLIST_INSERT_HEAD(new_results,
-                          merge_result, links);
+        process_result = TRUE;
     }
     else
     {
-        SLIST_FOREACH(p, new_results, links)
+        trc_update_find_result(merge_result, results_list, 
+                               !!(ctx->flags & TRC_LOG_PARSE_DIFF_NO_TAGS),
+                               &result_found, &entry_found, &res);
+        if (!(result_found && entry_found))
         {
-            if ((p->tags_str == NULL && merge_result->tags_str == NULL) ||
-                (p->tags_str != NULL && merge_result->tags_str != NULL &&
-                (rc = strcmp(p->tags_str, merge_result->tags_str)) <= 0))
-                break;
-
-            prev = p;
-        }
-
-        if (p != NULL && rc == 0)
-        {
-            TAILQ_FOREACH(q, &p->results, links)
-                if (te_test_result_cmp(
-                        &q->result,
-                        &TAILQ_FIRST(&merge_result->results)->result) == 0)
-                    break;
-                
-            if (q == NULL)
-            {
-                TAILQ_REMOVE(&merge_result->results, result_entry,
-                             links);
-                TAILQ_INSERT_TAIL(&p->results, result_entry, links);
-            }
-
-            trc_exp_result_free(merge_result);
-        }
-        else
-        {
-            if (prev != NULL)
-                SLIST_INSERT_AFTER(prev, merge_result, links);
-            else
-                SLIST_INSERT_HEAD(new_results,
-                                  merge_result, links);
+            process_result = TRUE;
+            results_list = &upd_iter_data->df_results;
         }
     }
+
+    if (process_result)
+    {
+        trc_update_find_result(merge_result, results_list, FALSE,
+                               &result_found, &entry_found, &res);
+
+        if (!result_found)
+        {
+            if (res != NULL)
+                SLIST_INSERT_AFTER(res, merge_result, links);
+            else
+                SLIST_INSERT_HEAD(results_list,
+                                  merge_result, links);
+        }
+        else if (result_found && !entry_found)
+        {
+            TAILQ_REMOVE(&merge_result->results, result_entry,
+                         links);
+            TAILQ_INSERT_TAIL(&res->results, result_entry, links);
+            trc_exp_result_free(merge_result);
+        }
+        else /* if (result_found && entry_found) */
+            trc_exp_result_free(merge_result);
+    }
+    else
+        trc_exp_result_free(merge_result);
 
     return 0;
 }
@@ -2071,7 +2258,7 @@ trc_update_merge_result(trc_log_parse_ctx *ctx)
  */
 static te_errno trc_update_generate_test_wilds(unsigned int db_uid,
                                                trc_test *test,
-                                               uint32_t flags);
+                                               uint64_t flags);
 /**
  * Simplify tag expressions for a given list of iteration results.
  *
@@ -2082,7 +2269,7 @@ static te_errno trc_update_generate_test_wilds(unsigned int db_uid,
  */
 static te_errno
 simplify_log_exprs(trc_exp_results *results,
-                   uint32_t flags)
+                   uint64_t flags)
 {
     trc_exp_result             *p;
     trc_exp_result             *q;
@@ -2401,7 +2588,7 @@ simplify_log_exprs(trc_exp_results *results,
 static te_errno
 trc_update_simplify_results(unsigned int db_uid,
                             trc_update_tests_groups *updated_tests,
-                            uint32_t flags)
+                            uint64_t flags)
 
 {
     trc_update_tests_group      *group;
@@ -2510,7 +2697,7 @@ static te_errno
 trc_update_apply_rverdict(trc_test_iter *iter,
                           unsigned int db_uid,
                           trc_update_test_iter_data *iter_data,
-                          trc_update_rule *rule, uint32_t flags)
+                          trc_update_rule *rule, uint64_t flags)
 {
     te_test_verdict         *dup_verdict;
     trc_exp_result          *iter_result;
@@ -2583,7 +2770,7 @@ static te_errno
 trc_update_apply_rrentry(trc_test_iter *iter,
                          unsigned int db_uid,
                          trc_update_test_iter_data *iter_data,
-                         trc_update_rule *rule, uint32_t flags)
+                         trc_update_rule *rule, uint64_t flags)
 {
     trc_exp_result_entry    *dup_rentry;
     trc_exp_result          *iter_result;
@@ -2648,7 +2835,7 @@ static te_errno
 trc_update_apply_rresult(trc_test_iter *iter,
                          unsigned int db_uid,
                          trc_update_test_iter_data *iter_data,
-                         trc_update_rule *rule, uint32_t flags)
+                         trc_update_rule *rule, uint64_t flags)
 {
     trc_exp_result  *old_result = NULL;
     trc_exp_result  *new_result = NULL;
@@ -2717,7 +2904,7 @@ trc_update_apply_rresults(trc_test_iter *iter,
                           unsigned int db_uid,
                           trc_update_test_iter_data *iter_data,
                           trc_update_rule *rule,
-                          int iter_rule_id, uint32_t flags)
+                          int iter_rule_id, uint64_t flags)
 {
     trc_exp_results             *results_dup;
 
@@ -2787,7 +2974,7 @@ static te_errno
 trc_update_apply_rules(unsigned int db_uid,
                        trc_update_tests_groups *updated_tests,
                        trc_update_rules *global_rules,
-                       uint32_t flags)
+                       uint64_t flags)
 {
     trc_update_tests_group      *group;
     trc_update_test_entry       *test_entry;
@@ -3188,7 +3375,7 @@ static te_errno
 trc_update_load_rules(char *filename,
                       trc_update_tests_groups *updated_tests,
                       trc_update_rules *global_rules,
-                      uint32_t flags)
+                      uint64_t flags)
 {
     xmlParserCtxtPtr        parser;
     xmlDocPtr               xml_doc;
@@ -3202,7 +3389,7 @@ trc_update_load_rules(char *filename,
 #if HAVE_XMLERROR
     xmlError           *err;
 #endif
-    te_errno            rc;
+    te_errno            rc = 0;
 
     UNUSED(flags);
 
@@ -3379,7 +3566,7 @@ trc_update_clear_rules(unsigned int db_uid,
 static te_errno
 trc_update_gen_rverdict(trc_test_iter *iter,
                         trc_update_rules *rules,
-                        uint32_t flags)
+                        uint64_t flags)
 {
     trc_exp_result              *result;
     trc_exp_result_entry        *rentry;
@@ -3422,7 +3609,7 @@ trc_update_gen_rverdict(trc_test_iter *iter,
 static te_errno
 trc_update_gen_rrentry(trc_test_iter *iter,
                        trc_update_rules *rules,
-                       uint32_t flags)
+                       uint64_t flags)
 {
     trc_exp_result              *result;
     trc_exp_result_entry        *rentry;
@@ -3462,7 +3649,7 @@ trc_update_gen_rrentry(trc_test_iter *iter,
 static te_errno
 trc_update_gen_rresult(trc_test_iter *iter,
                        trc_update_rules *rules,
-                       uint32_t flags)
+                       uint64_t flags)
 {
     trc_exp_result              *result;
     trc_exp_result              *res_dup;
@@ -3504,7 +3691,7 @@ static trc_update_rule *
 trc_update_gen_rresults(trc_test_iter *iter,
                         trc_update_test_iter_data *iter_data,
                         trc_update_rules *rules,
-                        uint32_t flags)
+                        uint64_t flags)
 {
     trc_exp_result              *p;
     trc_exp_result              *q;
@@ -3615,7 +3802,7 @@ trc_update_gen_rresults(trc_test_iter *iter,
 static te_errno
 trc_update_gen_rules(unsigned int db_uid,
                      trc_update_tests_groups *updated_tests,
-                     uint32_t flags)
+                     uint64_t flags)
 {
     trc_update_tests_group      *group = NULL;
     trc_update_test_entry       *test1 = NULL;
@@ -4074,7 +4261,7 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
                                 int results_id,
                                 trc_update_args_group *args_group,
                                 trc_update_args_groups *wildcards,
-                                uint32_t flags)
+                                uint64_t flags)
 {
     te_bool            *args_in_wild;
     int                 args_count = 0;
@@ -4215,7 +4402,7 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
 static te_errno
 trc_update_generate_test_wilds(unsigned int db_uid,
                                trc_test *test,
-                               uint32_t flags)
+                               uint64_t flags)
 {
     int ids_count;
     int res_id;
@@ -4318,7 +4505,7 @@ trc_update_generate_test_wilds(unsigned int db_uid,
 static te_errno
 trc_update_generate_wilds(unsigned int db_uid,
                           trc_update_tests_groups *updated_tests,
-                          uint32_t flags)
+                          uint64_t flags)
 {
     trc_update_tests_group  *group;
     trc_update_test_entry   *test_entry;
@@ -4862,6 +5049,7 @@ trc_update_process_logs(trc_update_ctx *gctx)
     int                         log_cnt = 0;
     te_errno                    rc = 0;
     trc_log_parse_ctx           ctx;
+    trc_update_tags_logs       *tls;
     trc_update_tag_logs        *tl = NULL;
     tqe_string                 *tqe_str = NULL;
     trc_update_tests_group     *tests_group;
@@ -4875,7 +5063,15 @@ trc_update_process_logs(trc_update_ctx *gctx)
     if (gctx->flags & TRC_LOG_PARSE_SELF_CONFL)
         ctx.flags |= TRC_LOG_PARSE_SELF_CONFL;
 
-    tl = TAILQ_FIRST(&gctx->tags_logs);
+    tls = &gctx->tags_logs;
+    tl = TAILQ_FIRST(tls);
+    if (tl == NULL &&
+        (gctx->flags & (TRC_LOG_PARSE_DIFF | TRC_LOG_PARSE_DIFF_NO_TAGS)))
+    {
+        tls = &gctx->diff_logs;
+        tl = TAILQ_FIRST(tls);
+    }
+
     if (tl != NULL)
         tqe_str = TAILQ_FIRST(&tl->logs);
 
@@ -4911,6 +5107,12 @@ trc_update_process_logs(trc_update_ctx *gctx)
 
         if (ctx.log == NULL)
             break;
+
+        if ((gctx->flags &
+             (TRC_LOG_PARSE_DIFF | TRC_LOG_PARSE_DIFF_NO_TAGS)) &&
+            tls == &gctx->tags_logs)
+            ctx.flags &= ~(TRC_LOG_PARSE_DIFF |
+                           TRC_LOG_PARSE_DIFF_NO_TAGS);
 
         if (xmlSAXUserParseFile(&sax_handler, &ctx, ctx.log) != 0)
         {
@@ -4953,9 +5155,20 @@ trc_update_process_logs(trc_update_ctx *gctx)
             tl = TAILQ_NEXT(tl, links);
 
             if (tl == NULL)
-                break;
-            else
-                tqe_str = TAILQ_FIRST(&tl->logs);
+            {
+                if ((gctx->flags &
+                     (TRC_LOG_PARSE_DIFF | TRC_LOG_PARSE_DIFF_NO_TAGS)) &&
+                    tls == &gctx->tags_logs)
+                {
+                    tls = &gctx->diff_logs;
+                    tl = TAILQ_FIRST(tls);
+                }
+
+                if (tl == NULL)
+                    break;
+            }
+
+            tqe_str = TAILQ_FIRST(&tl->logs);
 
             ctx.log = tqe_str->v;
             ctx.merge_expr = logic_expr_dup(tl->tags_expr);
@@ -4968,7 +5181,6 @@ trc_update_process_logs(trc_update_ctx *gctx)
         if (!((gctx->flags & TRC_LOG_PARSE_LOG_WILDS) ||
               (gctx->flags & TRC_LOG_PARSE_PATHS)))
             ctx.flags |= TRC_LOG_PARSE_MERGE_LOG;
-
     } while (1);
 
     if (!(gctx->flags & TRC_LOG_PARSE_PATHS))
@@ -4983,10 +5195,17 @@ trc_update_process_logs(trc_update_ctx *gctx)
         }
 
         if (gctx->flags & TRC_LOG_PARSE_NO_SKIP_ONLY)
-            trc_update_cond_clear_res(&ctx, is_skip_only);
+            trc_update_cond_res_op(&ctx, is_skip_only, RESULT_OP_CLEAR);
 
         if (gctx->flags & TRC_LOG_PARSE_NO_EXP_ONLY)
-            trc_update_cond_clear_res(&ctx, is_exp_only);
+            trc_update_cond_res_op(&ctx, is_exp_only, RESULT_OP_CLEAR);
+
+        if (gctx->flags &
+            (TRC_LOG_PARSE_DIFF | TRC_LOG_PARSE_DIFF_NO_TAGS))
+        {
+            trc_update_cond_res_op(&ctx, NULL, RESULT_OP_DF_REPLACE);
+            trc_update_cond_res_op(&ctx, NULL, RESULT_OP_EXCLUDE_EMPTY);
+        }
 
         printf("Simplifying expected results...\n");
         CHECK_F_RC(trc_update_simplify_results(gctx->db_uid,

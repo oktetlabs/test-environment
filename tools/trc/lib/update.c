@@ -78,6 +78,12 @@ trc_update_free_test_iter_data(trc_update_test_iter_data *data)
         trc_exp_result_free(q);
     }
 
+    SLIST_FOREACH_SAFE(q, &data->df_results, links, q_tvar)
+    {
+        SLIST_REMOVE_HEAD(&data->df_results, links);
+        trc_exp_result_free(q);
+    }
+
     for (data->args_n = 0; data->args_n < data->args_max; data->args_n++)
     {
         free(data->args[data->args_n].name);
@@ -356,6 +362,7 @@ trc_update_init_ctx(trc_update_ctx *ctx_p)
     memset(ctx_p, 0, sizeof(ctx_p));
     TAILQ_INIT(&ctx_p->test_names);
     TAILQ_INIT(&ctx_p->tags_logs);
+    TAILQ_INIT(&ctx_p->diff_logs);
     TAILQ_INIT(&ctx_p->tags_list);
 }
 
@@ -367,6 +374,7 @@ trc_update_free_ctx(trc_update_ctx *ctx)
         return;
 
     trc_update_tags_logs_free(&ctx->tags_logs);
+    trc_update_tags_logs_free(&ctx->diff_logs);
     tq_strings_free(&ctx->tags_list, free);
     tq_strings_free(&ctx->test_names, free);
     free(ctx->fake_log);
