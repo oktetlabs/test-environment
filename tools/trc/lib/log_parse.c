@@ -1535,6 +1535,9 @@ typedef enum result_ops {
                                      empty lists of unexpected
                                      results in all their
                                      iterations */
+    RESULT_OP_EXCL_EXP_EMPTY,   /**< Exclude tests and iterations
+                                     having empty lists of expected
+                                     results */
 } result_ops;
 
 /**
@@ -1600,6 +1603,9 @@ trc_update_iters_cond_res_op(trc_log_parse_ctx *ctx,
                                                   &all_empty_aux);
                 if (!all_empty_aux)
                     my_all_empty = FALSE;
+
+                if (all_empty_aux && op == RESULT_OP_EXCL_EXP_EMPTY)
+                    user_data->to_save = FALSE;
             }
             else
             {
@@ -1639,8 +1645,14 @@ trc_update_iters_cond_res_op(trc_log_parse_ctx *ctx,
                     }
                 }
 
-                if (!SLIST_EMPTY(&user_data->new_results))
+                if (!SLIST_EMPTY(&user_data->new_results) ||
+                    (!SLIST_EMPTY(&iter->exp_results) &&
+                     op == RESULT_OP_EXCL_EXP_EMPTY))
                     my_all_empty = FALSE;
+
+                if (SLIST_EMPTY(&iter->exp_results) &&
+                    op == RESULT_OP_EXCL_EXP_EMPTY)
+                    user_data->to_save = FALSE;
             }
 
             if (rc != 0)
@@ -1696,7 +1708,8 @@ trc_update_tests_cond_res_op(trc_log_parse_ctx *ctx,
                 if (all_empty != NULL)
                     *(te_bool *)all_empty = FALSE;
             }
-            else if (op == RESULT_OP_EXCLUDE_EMPTY)
+            else if (op == RESULT_OP_EXCLUDE_EMPTY ||
+                     op == RESULT_OP_EXCL_EXP_EMPTY)
                 user_data->to_save = FALSE;
         }
     }
@@ -5276,6 +5289,10 @@ trc_update_process_logs(trc_update_ctx *gctx)
                                                  ctx.updated_tests,
                                                  gctx->flags));
         }
+
+        if (gctx->flags &
+            (TRC_LOG_PARSE_DIFF | TRC_LOG_PARSE_DIFF_NO_TAGS))
+            trc_update_cond_res_op(&ctx, NULL, RESULT_OP_EXCL_EXP_EMPTY);
 
         printf("Done.\n");
     }
