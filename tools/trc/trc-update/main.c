@@ -420,7 +420,7 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
     char           *s;
     static te_bool  no_use_ids = FALSE;
     static te_bool  log_specified = FALSE;
-    static uint32_t rtype_flags = 0;
+    static uint64_t rtype_flags = 0;
 
     struct poptOption options_table[] = {
         { "test-name", '\0', POPT_ARG_STRING, NULL,

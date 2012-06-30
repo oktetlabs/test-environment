@@ -60,7 +60,7 @@ typedef TAILQ_HEAD(trc_update_tags_logs,
 
 /** Context of TRC Update tool */
 typedef struct trc_update_ctx {
-    unsigned int             flags;           /**< Flags */
+    uint64_t                 flags;           /**< Flags */
     te_trc_db               *db;              /**< TRC DB */
     unsigned int             db_uid;          /**< TRC DB user ID */
     tqh_strings              test_names;      /**< Test paths */
