@@ -1942,6 +1942,9 @@ save_test_rules_to_file(trc_update_tests_groups *updated_tests,
 
     TAILQ_FOREACH(group, updated_tests, links)
     {
+        if (TAILQ_EMPTY(group->rules))
+            continue;
+
         test_node = xmlNewChild(root, NULL, BAD_CAST "test",
                                 NULL);
         if (test_node == NULL)
