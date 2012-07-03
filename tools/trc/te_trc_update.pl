@@ -171,7 +171,16 @@ my $log_save_by_tags = 0;
 my $test_specified = 0;
 my $log_specified = 0;
 my $no_extract_paths = 0;
+my $tags_by_logs = 0;
 my $rc = 0;
+
+foreach (@ARGV)
+{
+    if ($_ =~ /--tags-by-logs/)
+    {
+        $tags_by_logs = 1;
+    }
+}
 
 foreach (@ARGV)
 {
@@ -190,12 +199,19 @@ foreach (@ARGV)
           "                              a copy of each (downloaded and \n".
           "                              unpacked) log named by its tag \n";
         print "\n".
-          "      --tester-run=STRING     Test path for Tester fake run\n".
-          "                              (if specified, --test-name \n".
-          "                               has no effect on Tester)\n\n";
+          "      --tags-by-logs          If --tags is unspecified, use \n".
+          "                              log file name as tag name\n\n";
+        #print "\n".
+        #  "      --tester-run=STRING     Test path for Tester fake run\n".
+        #  "                              (if specified, --test-name \n".
+        #  "                               has no effect on Tester)\n\n";
        
         $rc = system("te-trc-update --help");
         exit ($rc >> 8);
+    }
+    elsif ($_ =~ m/^--tags-by-logs$/)
+    {
+        #do nothing
     }
     elsif ($_ =~ m/^--conf-tester=(.*)$/)
     {
@@ -235,6 +251,13 @@ foreach (@ARGV)
     {
         my $log_file = $1;
         my $proto;
+
+        if ((!defined($last_tags) || length($last_tags) == 0) &&
+            $tags_by_logs == 1)
+        {
+            $log_file =~ /([^\/]*)$/;
+            $opts .= " --tags=".escape_file($1);
+        }
 
         if ($log_save_by_tags == 1 &&
             (!defined($log_save) || length($log_save) == 0))
