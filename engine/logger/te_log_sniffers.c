@@ -77,6 +77,11 @@ static const char pcap_hbuf[SNIF_PCAP_HSIZE];
 static unsigned long long filled_space = 0;
 
 /**
+ * Mutex to share agents list
+ */
+static pthread_mutex_t te_log_sniffer_mutex;
+
+/**
  * Capture files list.
  */
 typedef struct file_list_s {
@@ -1167,6 +1172,7 @@ snif_mark_cleanup:
 void
 sniffers_init(void)
 {
+    pthread_mutex_init(&te_log_sniffer_mutex, NULL);
     SLIST_INIT(&snif_ta_h);
     SLIST_INIT(&snif_mrk_h);
 }
@@ -1185,7 +1191,7 @@ sniffers_handler(char *agent)
     char           *snif_buf    = NULL;
     size_t          snif_len    = SNIF_MIN_LIST_SIZE;
     int             rc;
-    snif_ta_l       snif_ta;
+    snif_ta_l      *snif_ta;
     snif_id_l      *snif;
 
     if (snifp_sets.errors == TRUE)
@@ -1195,9 +1201,13 @@ sniffers_handler(char *agent)
     }
     polling_period = snifp_sets.period * 1000;
 
-    strncpy(snif_ta.agent, agent, RCF_MAX_NAME);
-    SLIST_INIT(&snif_ta.snif_hl);
-    SLIST_INSERT_HEAD(&snif_ta_h, &snif_ta, ent_l_ta);
+    SNIFFER_MALLOC(snif_ta, sizeof(snif_ta_l));
+
+    strncpy(snif_ta->agent, agent, RCF_MAX_NAME);
+    SLIST_INIT(&snif_ta->snif_hl);
+    pthread_mutex_lock(&te_log_sniffer_mutex);
+    SLIST_INSERT_HEAD(&snif_ta_h, snif_ta, ent_l_ta);
+    pthread_mutex_unlock(&te_log_sniffer_mutex);
 
     SNIFFER_MALLOC(snif_buf, snif_len);
 
@@ -1209,10 +1219,10 @@ sniffers_handler(char *agent)
         rc = rcf_ta_get_sniffers(agent, NULL, &snif_buf, &snif_len, TRUE);
         if ((snif_len != 0) && (rc == 0))
         {
-            sniffer_parse_list_buf(snif_buf, snif_len, &snif_ta.snif_hl,
+            sniffer_parse_list_buf(snif_buf, snif_len, &snif_ta->snif_hl,
                                    agent);
 
-            SLIST_FOREACH(snif, &snif_ta.snif_hl, ent_l)
+            SLIST_FOREACH(snif, &snif_ta->snif_hl, ent_l)
             {
                 if (snif->log_exst)
                 {
@@ -1232,7 +1242,11 @@ sniffers_handler_exit:
     if (snif_buf != NULL)
         free(snif_buf);
 
-    sniffer_clean_list(&snif_ta.snif_hl);
+    sniffer_clean_list(&snif_ta->snif_hl);
 
-    SLIST_REMOVE(&snif_ta_h, &snif_ta, snif_ta_l, ent_l_ta);
+    pthread_mutex_lock(&te_log_sniffer_mutex);
+    SLIST_REMOVE(&snif_ta_h, snif_ta, snif_ta_l, ent_l_ta);
+    pthread_mutex_unlock(&te_log_sniffer_mutex);
+
+    free(snif_ta);
 }
