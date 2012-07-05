@@ -50,13 +50,13 @@
 #else
 #error popt library (development version) is required for Logger
 #endif
+#ifdef HAVE_DIRENT_H
+#include <dirent.h>
+#else
+#error dirent library is required for Logger
+#endif
 
 #include <sys/sendfile.h>
-
-#ifndef __USE_XOPEN_EXTENDED
-#define __USE_XOPEN_EXTENDED
-#endif
-#include <ftw.h>
 
 #include "te_raw_log.h"
 #include "logger_int.h"
@@ -69,6 +69,7 @@
         assert(0);
 
 #define SNIF_MIN_LIST_SIZE 1024
+#define SNIF_MAX_PATH_LENGTH 256
 
 /* The PCAP file header. */
 static const char pcap_hbuf[SNIF_PCAP_HSIZE];
@@ -855,20 +856,37 @@ ten_get_sniffer_dump(const char *ta_name, snif_id_l *snif)
 }
 
 /**
- * Callback function to clean up directory with sniffers logs.
+ * Recursively cleanup directory from .pcap files
+ * 
+ * @param dirname   Directory name
  */
-static int
-unlink_cb(const char *fpath, const struct stat *sb, int typeflag,
-              struct FTW *ftwbuf)
+static void
+sniffer_cleanup_dir(const char *dirname)
 {
-    UNUSED(sb);
-    UNUSED(typeflag);
-    UNUSED(ftwbuf);
+    DIR             *dir;
+    struct dirent   *ent;
+    char             fname[SNIF_MAX_PATH_LENGTH];
+    char            *tmp;
 
-    if (strstr(fpath, ".pcap") != NULL)
-        return remove(fpath);
+    dir = opendir(dirname);
+    if (dir == NULL)
+        return;
 
-    return 0;
+    while ((ent = readdir(dir)) != NULL)
+    {
+        if (strcmp(ent->d_name, ".") == 0 ||
+            strcmp(ent->d_name, "..") == 0)
+            continue;
+
+        snprintf(fname, SNIF_MAX_PATH_LENGTH, "%s/%s", dirname,
+                 ent->d_name);
+        if (ent->d_type == DT_DIR)
+            sniffer_cleanup_dir(fname);
+        else if ((tmp = strstr(fname, ".pcap")) != NULL &&
+                 *(tmp + strlen(".pcap")) == '\0')
+            remove(fname);
+    }
+    closedir(dir);
 }
 
 /**
@@ -888,16 +906,7 @@ sniffers_logs_cleanup(char *agt_fldr)
     }
     /* Cleanup the agent working directory. */
     else if (errno == EEXIST)
-    {
-        nftw(agt_fldr, unlink_cb, 64, FTW_DEPTH | FTW_PHYS);
-        errno = 0;
-        if (mkdir(agt_fldr, S_IRWXU | S_IRWXG | S_IRWXO) != 0 && 
-            errno != EEXIST)
-        {
-            ERROR("Couldn't create directory, %d\n", errno);
-            return;
-        }
-    }
+        sniffer_cleanup_dir(agt_fldr);
 }
 
 /**
