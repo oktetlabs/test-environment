@@ -721,6 +721,55 @@ send_recv_flags_h2rpc(unsigned int flags)
 }
 
 
+/** Convert RPC path MTU discovery argument to string */
+extern const char *
+mtu_discover_arg_rpc2str(rpc_mtu_discover_arg arg)
+{
+    switch (arg)
+    {
+        RPC2STR(IP_PMTUDISC_DONT);
+        RPC2STR(IP_PMTUDISC_WANT);
+        RPC2STR(IP_PMTUDISC_DO);
+        RPC2STR(IP_PMTUDISC_PROBE);
+        RPC2STR(IP_PMTUDISC_UNKNOWN);
+
+        default: return "<MTU_DISCOVER_ARG_FATAL_ERROR>";
+    }
+}
+
+int
+mtu_discover_arg_rpc2h(rpc_mtu_discover_arg arg)
+{
+    switch (arg)
+    {
+        RPC2H_CHECK(IP_PMTUDISC_DONT);
+        RPC2H_CHECK(IP_PMTUDISC_WANT);
+        RPC2H_CHECK(IP_PMTUDISC_DO);
+        RPC2H_CHECK(IP_PMTUDISC_PROBE);
+
+       default:
+            WARN("%s is converted to 0",
+                 mtu_discover_arg_rpc2str(arg));
+            return 0;
+    }
+}
+
+/** Convert native path MTU discovery argument to RPC one */
+rpc_mtu_discover_arg
+mtu_discover_arg_h2rpc(int arg)
+{
+    switch (arg)
+    {
+        H2RPC_CHECK(IP_PMTUDISC_DONT);
+        H2RPC_CHECK(IP_PMTUDISC_WANT);
+        H2RPC_CHECK(IP_PMTUDISC_DO);
+        H2RPC_CHECK(IP_PMTUDISC_PROBE);
+
+        default: 
+            return RPC_IP_PMTUDISC_UNKNOWN;
+    }
+}
+
 /** Convert RPC socket option constant to its level. */
 rpc_socklevel
 rpc_sockopt2level(rpc_sockopt opt)

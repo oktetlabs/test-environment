@@ -290,6 +290,25 @@ extern unsigned int send_recv_flags_rpc2h(unsigned int flags);
 /** Convert native send/receive flags to RPC flags */
 extern unsigned int send_recv_flags_h2rpc(unsigned int flags);
 
+/**
+ * TA-independent names of path MTU discovery arguments.
+ */
+typedef enum rpc_mtu_discover_arg {
+    RPC_IP_PMTUDISC_DONT = 0,       /**< Do not send DF frames */
+    RPC_IP_PMTUDISC_WANT,           /**< Use data about routes */
+    RPC_IP_PMTUDISC_DO,             /**< Send DF frames always */
+    RPC_IP_PMTUDISC_PROBE,          /**< Ignore destination MTU */
+    RPC_IP_PMTUDISC_UNKNOWN,        /**< Unknown */
+} rpc_mtu_discover_arg;
+
+/** Convert RPC path MTU discovery argument to string */
+extern const char *mtu_discover_arg_rpc2str(rpc_mtu_discover_arg arg);
+
+/** Convert RPC path MTU discovery argument constant to native one */
+extern int mtu_discover_arg_rpc2h(rpc_mtu_discover_arg opt);
+
+/** Convert native path MTU discovery argument to RPC one */
+extern rpc_mtu_discover_arg mtu_discover_arg_h2rpc(int arg);
 
 /**
  * TA-independent names of socket options.
