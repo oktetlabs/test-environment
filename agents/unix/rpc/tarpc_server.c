@@ -2308,6 +2308,11 @@ tarpc_setsockopt(tarpc_setsockopt_in *in, tarpc_setsockopt_out *out,
         {
             param->integer = in_optval->option_value_u.opt_int;
             *optlen = sizeof(int);
+
+            if (in->level == RPC_SOL_IP &&
+                in->optname == RPC_IP_MTU_DISCOVER)
+                param->integer = mtu_discover_arg_rpc2h(param->integer);
+
             break;
         }
 
@@ -2566,6 +2571,12 @@ tarpc_getsockopt(tarpc_getsockopt_in *in, tarpc_getsockopt_out *out,
             {
                 *(int *)opt = socktype_h2rpc(*(int *)opt);
             }
+            else if (in->level == RPC_SOL_IP &&
+                     in->optname == RPC_IP_MTU_DISCOVER)
+            {
+                *(int *)opt = mtu_discover_arg_h2rpc(*(int *)opt);
+            }
+
             out_optval->option_value_u.opt_int = *(int *)opt;
             break;
         }
