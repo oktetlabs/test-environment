@@ -959,22 +959,34 @@ perl_prepare()
 
         eval_pv("sub notcomm_old"
                 "{"
-                "   $notcomm_old{$_[0]} = 1;"
+                "   my $arg;"
+                "   foreach $arg (@_)"
+                "   {"
+                "       $notcomm_old{$arg} = 1;"
+                "   }"
                 "   return 1;"
                 "}",
                 TRUE);
 
         eval_pv("sub notcomm_new"
                 "{"
-                "   $notcomm_new{$_[0]} = 1;"
+                "   my $arg;"
+                "   foreach $arg (@_)"
+                "   {"
+                "       $notcomm_new{$arg} = 1;"
+                "   }"
                 "   return 1;"
                 "}",
                 TRUE);
 
         eval_pv("sub notcomm"
                 "{"
-                "   $notcomm_old{$_[0]} = 1;"
-                "   $notcomm_new{$_[0]} = 1;"
+                "   my $arg;"
+                "   foreach $arg (@_)"
+                "   {"
+                "       $notcomm_old{$arg} = 1;"
+                "       $notcomm_new{$arg} = 1;"
+                "   }"
                 "   return 1;"
                 "}",
                 TRUE);
