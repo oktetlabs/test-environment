@@ -180,7 +180,7 @@ in different contexts:
 
 Each RPC Server can be switched to use a particular dynamic library on
 function name resolution during RPC call operation. To change dynamic library
-name the following function: 
+name the following function shall be used: 
 - rcf_rpc_setlibname().
 
 Once you have an RPC Server handle you are ready to do RPC call by means of
@@ -188,7 +188,7 @@ the following function:
 - rcf_rpc_call().
 
 For more information on functions exported by RCF RPC library refer to
-@ref te_lib_rpc.
+@ref te_lib_rcfrpc.
 
 @section te_lib_rpc_tapi_section TAPI for RPC
 
