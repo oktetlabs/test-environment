@@ -8,15 +8,18 @@
 
 @section tapi_rpc_lib_introduction Introduction
 
-TAPI RPC library is an auxiliary library that hides the details of RPC encoding/decoding procedure.
-Its purpose is to provide an interface for tests that is almost equal to direct function calls made on test side.
+TAPI RPC library is an auxiliary library that hides the details of RPC
+encoding/decoding procedure. Its purpose is to provide an interface for
+tests that is almost equal to direct function calls made on test side.
 
 @section tapi_rpc_lib_framework RPC Development Framework
 
-In most cases a new test suite will require supporting a new set of RPC functions.
-In such cases you will need to extend RPC TAPI and here is a guidelines on how to do it.
+In most cases a new test suite will require supporting a new set of
+RPC functions. In such cases you will need to extend RPC TAPI and here is
+a guidelines on how to do it.
 
-Assume we would like to add RPC call for function foobar() that have the following prototype:
+Assume we would like to add RPC call for function @b foobar() that have
+the following prototype:
 
 @code
 enum foobar_type {
@@ -32,15 +35,21 @@ struct foobar_type1 {
 int foobar(struct foobar_type1 *param1, const char *param2, int param3, int *param4_out);
 @endcode
 
-First thing in supporting an RPC call is to define necessary data structures in include/tarpc.x.m4 file.
-According to the prototype of rcf_rpc_call() function we can see that  to issue RPC we need to pass the following information:
+@subsection tapi_rpc_lib_framework_engine_side Support RPC call on Test Engine side
+
+First thing in supporting an RPC call is to define necessary data structures
+in include/tarpc.x.m4 file. According to the prototype of rcf_rpc_call()
+function we can see that  to issue RPC we need to pass the following
+information:
 - RPC name;
 - RPC input argument;
 - RPC output argument.
 .
 
-It means that for each function we need to define ONE data structure that will keep ALL input arguments and ONE data structure that will
-keep ALL output values (output arguments and return value). For our example this may look like the following:
+It means that for each function we need to define ONE data structure that
+will keep ALL input arguments and ONE data structure that will keep ALL
+output values (output arguments and return value). For our example this may
+look like the following:
 
 @code
 enum tarpc_foobar_type {
@@ -80,20 +89,29 @@ program tarpc
 } = 1;
 @endcode
 
-Please note that each structure for input arguments should have struct tarpc_in_arg as the first field of the structure, each structure for output arguments should have struct tarpc_out_arg structure.
-The format of include/tarpc.x.m4 file complies with XDR format specified in RFC 1014.
+Please note that each structure for input arguments should have
+struct tarpc_in_arg as the first field of the structure, each structure for
+output arguments should have struct tarpc_out_arg structure.
+The format of include/tarpc.x.m4 file complies with XDR format specified
+in RFC 1014.
 
-Now we are ready to implement TAPI side for our foobar() function. Due to the fact that our target is to call foobar() function in the context of another process, we can't use the same name for the function implementation - it may conflict with such a function in our context. To sort this out we prefix all functions with <b>rpc_</b> string.
+Now we are ready to implement TAPI side for our @b foobar() function.
+Due to the fact that our target is to call @b foobar() function in the context
+of another process, we can't use the same name for the function
+implementation - it may conflict with such a function in our context.
+To sort this out we prefix all functions with <b>rpc_</b> string.
 
 Any TAPI RPC function should do the following things:
 - define variable for IN arguments;
 - define variable for OUT arguments;
 - fill in fields of IN arguments variable;
 - call rcf_rpc_call();
-- set corresponding output parameters and return value with values extracted from OUT arguments variable.
+- set corresponding output parameters and return value with values extracted
+from OUT arguments variable.
 .
 
-For the case of foobar() function the implementation of corresponding TAPI RPC function could be as following:
+For the case of @b foobar() function the implementation of corresponding
+TAPI RPC function could be as following:
 @code
 int
 rpc_foobar(rcf_rpc_server *rpcs,
@@ -126,24 +144,57 @@ rpc_foobar(rcf_rpc_server *rpcs,
 @endcode
 
 You should note the following things:
-- an extra parameter @p rpcs has been added to rpc_foobar() function in order to be able to specify RPC Server on which to run <b>foobar()</b> function;
-- enumeration type should be converted from host representation to corresponding RPC enumeration. This needs to be done in case such constants have different
-  values on different hosts. For our example this is not obvious, but imagine we pass <b>errno</b> value, of protocol family type in socket API (@c PF_INET, @c PF_LOCAL, etc.);
-- parameters of integer type are not converted, but copied as is. This is obvious because there can be no conflicts between the value of this type of data on different hosts;
-- parameters that represent string value are copied by XPRC library and we just put a pointer to the beginning of the string;
-- assuming we know the range of return value from a function, we can check that return value with one of macros defined in lib/tapi_rpc/tapi_rpc_internal.h file.
-  In our case we check that the return value is more or equal to -1 using CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE() macro. More generic macro to use is CHECK_RETVAL_VAR(),
-  but more likely you will find some predefined specific macro;
-- right before returning a value from a function, we should provide log message about our function call. We specify value of input and output arguments and return value;
-- return from a function should be done with one of macros defined in lib/tapi_rpc/tapi_rpc_internal.h file. In our case we return integer, which is why we use RETVAL_INT() macro.
+- an extra parameter @p rpcs has been added to @b rpc_foobar() function in order
+  to be able to specify RPC Server on which to run @b foobar() function;
+- enumeration type should be converted from host representation to
+  corresponding RPC enumeration. This needs to be done in case such constants
+  have different values on different hosts. For our example this is not
+  obvious, but imagine we pass @b errno value, or protocol family type in
+  socket API (@c PF_INET, @c PF_LOCAL, etc.);
+- parameters of integer type are not converted, but copied as is.
+  This is obvious because there can be no conflicts between the value of
+  this type of data on different hosts;
+- parameters that represent string value are copied by XPRC library and we
+  just put a pointer to the beginning of the string. Please note that to
+  force XRPC library treat a parameter as a string to copy we shall specify
+  that parameter in tarpc.x.m4 file in the following form:
+  @code
+  string param_name<>;
+  @endcode
+- assuming we know the range of return value from a function, we can check
+  the return value is in range with one of macros defined in
+  lib/tapi_rpc/tapi_rpc_internal.h file.
+  In our case we check that the return value is more or equal to -1 using
+  CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE() macro. More generic macro to use is
+  CHECK_RETVAL_VAR(), but more likely you will find some predefined
+  specific macro;
+- right before returning a value from a function, we should provide log
+  message about our function call. We specify value of input and output
+  arguments and return value;
+- return from a function should be done with one of macros defined in
+  lib/tapi_rpc/tapi_rpc_internal.h file. In our case we return integer,
+  which is why we use RETVAL_INT() macro.
 .
 
-A lot of RPC data types and convert functions are defined under lib/rpc_types library. Mainly this library keeps data types to use while doing RPC calls for system functions with well-known prototypes (like libc functions or functions from POSIX API). The purpose of this library is to export header files analogue to system library files.
+A lot of RPC data types and convert functions are defined under
+lib/rpc_types library. Mainly this library keeps data types to use while
+doing RPC calls for system functions with well-known prototypes (like libc
+functions or functions from POSIX API). The purpose of this library is to
+export header files analogue to system library files.
 
-Assuming you are implementing RPC calls for some standard API, you should better have a look at lib/rpc_types library and create your own header (and if necessary C source) file with corresponding data types.
+Assuming you are implementing RPC calls for some standard API, you should
+better have a look at lib/rpc_types library and create your own header
+(and if necessary C source) file with corresponding data types.
 
-Now we are ready to implement server side for our foobar() function.
-Implementation of server side of RPC calls can be found in agents/unix/rpc/tarpc_server.c file. To define a function we should use TARPC_FUNC() macro.
+@subsection tapi_rpc_lib_framework_ta_side Support RPC call on Test Agent side
+
+Now we are ready to implement server side for our @b foobar() function.
+Implementation of server side of RPC calls can be found under:
+- for @ref te_agents_unix - agents/unix/rpc/tarpc_server.c file;
+- for @ref te_agents_win - agents/win32/tarpc_server.c file.
+.
+
+To define a new RPC function call we should use TARPC_FUNC() macro.
 
 For our sample the implementation can look like the following:
 
@@ -159,14 +210,81 @@ TARPC_FUNC(foobar, {},
 )
 @endcode
 
-Please make sure that data types and values of arguments passed to a function call are native for the host where we run this function call.
-In our sample we created local variable @p param1 of type @p foobar_type1 in order to have correct value for the first argument of the function.
+Please make sure that data types and values of arguments passed to a function
+call are native for the host where we run this function call.
+In our sample we created local variable @p param1 of type @p foobar_type1
+in order to have correct value for the first argument of the function.
 Then we filled each field of this structure with native host values:
 - @p foobar_type1::type field is set by means of helper function
-param1_type_rpc2h() that converts enum tarpc_foobar_type enumeration into native host enumeration of type enum foobar_type;
+  param1_type_rpc2h() that converts enum tarpc_foobar_type enumeration into
+  native host enumeration of type enum foobar_type;
 - @p foobar_type1::field field is set to the value got from RPC input
-argument structure. This is acceptable because it is just the value of integer type.
+  argument structure. This is acceptable because it is just the value of
+  integer type.
 .
+
+Please also note that for our sample we should better use @p func_ptr
+instead of @p func - refer to @ref tapi_rpc_lib_framework_ta_side_TARPC_FUNC
+section for the details.
+
+@subsubsection tapi_rpc_lib_framework_ta_side_TARPC_FUNC Aspects of TARPC_FUNC() macro
+
+In the context of code blocks represented as the second and the third
+argument of TARPC_FUNC() macro the following variables are defined:
+- @p in of type @b tarpc_<func_name>_in (for our @b foobar sample it would
+  be <b>struct tarpc_foobar_in</b>) - keeps RPC input arguments for a call;
+- @p out of type @b tarpc_<func_name>_out (for our @b foobar sample it would
+  be <b>struct tarpc_foobar_out</b>) - location for RPC output arguments
+  of a call;
+- @p func - pointer to an address of RPC function to be called.
+  The type of this variable is @ref api_func, which assumes the first
+  argument of the function is of integer type and the return value is
+  of integer type.
+  If your function does not match that prototype you shall use one of
+  the following names while calling your function:
+  - @ref func_ptr;
+  - @ref func_void;
+  - @ref func_ret_ptr;
+  - @ref func_ptr_ret_ptr;
+  - @ref func_void_ret_ptr.
+  .
+  The usage of the correct reference name is desired to fix compilation
+  warning that might pop up due to implicit cast to a different function type.
+  In our @b foobar sample we should have used @ref func_ptr instead of
+  @p func, because @b foobar() function gets a pointer as the value of
+  the first argument and returns an integer, which matches exactly
+  @ref api_func_ptr prototype. I.e. MAKE_CALL() line in @b foobar sample
+  would be:
+  @code
+  MAKE_CALL(out->retval = func_ptr(&param1, in->param2, in->param3, &out->param4));
+  @endcode
+.
+
+An address of function to be called (@b func variable in the content
+of TARPC_FUNC() macro) is searched among symbols of either user-specified
+library or among the symbols from an ordered set of objects consisting of
+the Test Agent image file, together with any objects loaded at program
+start-up as specified by that process image file
+(for example, shared libraries).
+
+The place where to search for desired symbol is controlled with
+@b in->common.use_libc field that is tarpc_in_arg::use_libc, but from user
+point of view the type of library to use is controlled via RPC Server
+settings (read @ref tapi_rpc_lib_usage_library_name for more information).
+
+This feature allows you to provide alternative implementations of the same
+function in different dynamic libraries between which you can switch
+from test context.
+
+Normally you would have functions statically linked with Test Agent.
+Regarding our @b foobar sample you could add @b foobar() function to
+an appropriate source file that will be later linked into Test Agent binary.
+
+If you have a look at agents/unix/rpc/tarpc_server.c file you will find that
+together with TARPC_FUNC() code blocks it keeps implementation of some
+private functions to be called. For example check_port_is_free() function.
+
+@subsection tapi_rpc_lib_framework_more_samples Using arrays of variable length as in/out parameters of RPC calls
 
 One thing that should also be explained is how to pass structures of variable length to and from RPC Server.
 Let's assume we need to pass some data buffer as input parameter and a function shall fill some output buffer in.
@@ -412,7 +530,71 @@ recv() function to return.
                   "the content of transmitted buffer");
 @endcode
 
-/**@} <!-- END te_lib_rpc_tapi --> */
+@subsection tapi_rpc_lib_usage_library_name Library name to resolve RPC call symbols
+
+By default RPC Server resolves symbols from Test Agent executable,
+which means it will take into account symbols of @b libc and other libraries
+linked together with Test Agent. Please note that here under the symbol to
+resolve we mean function whose address is set to @b func variable in
+the context of TARPC_FUNC() macro
+(read @ref tapi_rpc_lib_framework_ta_side_TARPC_FUNC for more information).
+
+Here we will explain how to tell RPC Server to search RPC call symbol in
+user-specified library.
+
+By default a newly created RPC Server searches for symbols in Test Agent
+binary, but as soon as you specify an alternative library it will use that
+library instead. To switch to an alternative library use
+rcf_rpc_setlibname() function:
+
+@code
+    rcf_rpc_server *rpc_srv;
+
+    CHECK_RC(rcf_rpc_server_create(ta_name, "tst_srv", &rpc_srv));
+    CHECK_RC(rcf_rpc_setlibname(rpc_srv, "/path/to/libmy_shared_library.so"));
+@endcode
+
+You should keep in mind that on Test Agent side RPC Server will first call
+a code block defined under TARPC_FUNC() macro and inside this code block
+you can do a call to a function that was found by RPC Server in
+appropriate library.
+
+Sometimes you may need to call a function from @b libc library without
+switching default dynamic library name. This can be done with the help of
+two fields of rcf_rpc_server data structure:
+- rcf_rpc_server::use_libc - to use @b libc library (and Test Agent global
+  symbols) for name resolution in next RPC calls;
+- rcf_rpc_server::use_libc_once - to use @b libc library for name resolution
+  only for the next RPC call.
+.
+
+For example:
+
+@code
+  CHECK_RC(rcf_rpc_server_create(ta_name, "tst_srv", &rpc_srv));
+  CHECK_RC(rcf_rpc_setlibname(rpc_srv, "/path/to/libmy_shared_library.so"));
+
+  /* Call socket() function from libmy_shared_library.so */
+  sock_1 = rpc_socket(rpc_srv, RPC_PF_INET, RPC_SOCK_STREAM, RPC_PROTO_DEF);
+
+  /* Call socket() function from libc library */
+  rpc_srv->use_libc_once = TRUE;
+  sock_2 = rpc_socket(rpc_srv, RPC_PF_INET, RPC_SOCK_STREAM, RPC_PROTO_DEF);
+
+  /* Next call will be again from libmy_shared_library.so */
+  rpc_bind(rpc_srv, sock_1, bind_addr_1);
+
+  /* To switch completely to libc we can do: */
+  rpc_srv->use_libc = TRUE;
+  rpc_bind(rpc_srv, sock_2, bind_addr_2);
+  rpc_listen(rpc_srv, sock_2, 1);
+
+  /* Now switch back to libmy_shared_library.so */
+  rpc_srv->use_libc = FALSE;
+  rpc_connect(rpc_srv, sock_1, bind_addr_2);
+@endcode
+
+@} <!-- END te_lib_rpc_tapi -->
 
 */
 

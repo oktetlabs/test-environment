@@ -194,18 +194,98 @@
     } while (FALSE)
         
 
+/**
+ * @name Some generic prototypes of RPC calls
+ * RPC framework provides a set of generic macros to
+ * define this or that RPC call, but in order to avoid
+ * warnings with function type casts we define a number of
+ * prototypes that can be used in casting generic function
+ * pointer to your function type.
+ */
+
+/**
+ * Type of RPC call function where
+ * - the first argument is of integer type;
+ * - return value is an integer.
+ * .
+ */
 typedef int (*api_func)(int param,...);
+/**
+ * Type of RPC call function where
+ * - the first argument is of pointer type;
+ * - return value is an integer.
+ * .
+ */
 typedef int (*api_func_ptr)(void *param,...);
+/**
+ * Type of RPC call function where
+ * - there is no arguments;
+ * - return value is an integer.
+ * .
+ */
 typedef int (*api_func_void)();
+/**
+ * Type of RPC call function where
+ * - the first argument is of integer type;
+ * - return value is a pointer.
+ * .
+ */
 typedef void *(*api_func_ret_ptr)(int param,...);
+/**
+ * Type of RPC call function where
+ * - the first argument is of pointer type;
+ * - return value is a pointer.
+ * .
+ */
 typedef void *(*api_func_ptr_ret_ptr)(void *param,...);
+/**
+ * Type of RPC call function where
+ * - there is no arguments;
+ * - return value is a pointer.
+ * .
+ */
 typedef void *(*api_func_void_ret_ptr)();
 
+/** @} */
+
+/**
+ * @name RPC call reference name depending on RPC function prototype
+ * The third argument of TARPC_FUNC() macro defines context in which
+ * function call is made. That call can be done via @p func variable
+ * defined in the macro context, but the type of @p func variable is
+ * api_func, which may not match with RPC function prototype.
+ * In order to avoid compilation warning associated with incorrect
+ * function type you can use the following names instead of @p func -
+ * they are just casted versions of @p func variable.
+ */
+
+/**
+ * RPC function call reference name to use when RPC call matches
+ * @ref api_func_ptr prototype
+ */
 #define func_ptr                ((api_func_ptr)func)
+/**
+ * RPC function call reference name to use when RPC call matches
+ * @ref api_func_void prototype
+ */
 #define func_void               ((api_func_void)func)
+/**
+ * RPC function call reference name to use when RPC call matches
+ * @ref api_func_ret_ptr prototype
+ */
 #define func_ret_ptr            ((api_func_ret_ptr)func)
+/**
+ * RPC function call reference name to use when RPC call matches
+ * @ref api_func_ptr_ret_ptr prototype
+ */
 #define func_ptr_ret_ptr        ((api_func_ptr_ret_ptr)func)
+/**
+ * RPC function call reference name to use when RPC call matches
+ * @ref api_func_void_ret_ptr prototype
+ */
 #define func_void_ret_ptr       ((api_func_void_ret_ptr)func)
+
+/** @} */
 
 /**
  * Convert shutdown parameter from RPC to native representation.
