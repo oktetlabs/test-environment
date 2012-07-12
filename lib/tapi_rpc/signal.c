@@ -389,6 +389,35 @@ rpc_sigset_delete(rcf_rpc_server *rpcs, rpc_sigset_p set)
 
 
 int
+rpc_sigset_cmp(rcf_rpc_server *rpcs,
+               const rpc_sigset_p first_set,
+               const rpc_sigset_p second_set)
+{
+    tarpc_sigset_cmp_in  in;
+    tarpc_sigset_cmp_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(sigset_cmp, -1);
+    }
+
+    in.first_set = (tarpc_sigset_t)first_set;
+    in.second_set = (tarpc_sigset_t)second_set;
+
+    rcf_rpc_call(rpcs, "sigset_cmp", &in, &out);
+
+    CHECK_RETVAL_VAR(sigset_cmp, out.retval,
+                     !(out.retval >= -1 && out.retval <= 1), -1);
+    TAPI_RPC_LOG(rpcs, sigset_cmp, "0x%x, 0x%x", "%d",
+                 (unsigned)first_set, (unsigned)second_set, out.retval);
+    RETVAL_INT(sigset_cmp, out.retval);
+}
+
+int
 rpc_sigprocmask(rcf_rpc_server *rpcs,
                 rpc_sighow how, const rpc_sigset_p set,
                 rpc_sigset_p oldset)

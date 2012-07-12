@@ -206,6 +206,18 @@ extern rpc_sigset_p rpc_sigreceived(rcf_rpc_server *rpcs);
  */
 extern int rpc_siginfo_received(rcf_rpc_server *rpcs,
                                 tarpc_siginfo_t *siginfo);
+/**
+ * Compare two signal masks.
+ *
+ * @param rpcs          RPC server handle
+ * @param sig_first     The first signal mask
+ * @param sig_second    The second signal mask
+ *
+ * @return -1, 0 or 1 as a result of comparison
+ */
+extern int rpc_sigset_cmp(rcf_rpc_server *rpcs,
+                          const rpc_sigset_p first_set,
+                          const rpc_sigset_p second_set);
 
 /**
  * Examin or change list of currently blocked signal on RPC server side.

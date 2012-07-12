@@ -1955,6 +1955,43 @@ TARPC_FUNC(sigprocmask, {},
 }
 )
 
+/*-------------- sigset_cmp() ------------------------------*/
+
+/**
+ * Compare two signal masks.
+ *
+ * @param sig_first     The first signal mask
+ * @param sig_second    The second signal mask
+ *
+ * @return -1, 0 or 1 as a result of comparison
+ */
+int
+sigset_cmp(sigset_t *sig_first, sigset_t *sig_second)
+{
+    int          i;
+    int          in_first;
+    int          in_second;
+
+    for (i = 1; i <= SIGRTMAX; i++)
+    {
+        in_first = sigismember(sig_first, i);
+        in_second = sigismember(sig_second, i);
+        if (in_first != in_second)
+            return (in_first < in_second) ? -1 : 1;
+    }
+
+    return 0;
+}
+
+TARPC_FUNC(sigset_cmp, {},
+{
+    sigset_t    *sig1 = (sigset_t *)rcf_pch_mem_get(in->first_set);
+    sigset_t    *sig2 = (sigset_t *)rcf_pch_mem_get(in->second_set);
+
+    MAKE_CALL(out->retval = func_ptr(sig1, sig2));
+}
+)
+
 /*-------------- kill() --------------------------------*/
 
 TARPC_FUNC(kill, {},

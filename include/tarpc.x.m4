@@ -2780,6 +2780,16 @@ struct tarpc_sigset_delete_in {
 
 typedef struct tarpc_void_out tarpc_sigset_delete_out;
 
+/* sigset_cmp() */
+
+struct tarpc_sigset_cmp_in {
+    struct tarpc_in_arg common;
+
+    tarpc_sigset_t      first_set;    /**< Handle of the first signal set */
+    tarpc_sigset_t      second_set;   /**< Handle of the second signal set */
+};
+
+typedef struct tarpc_int_retval_out tarpc_sigset_cmp_out;
 
 /* sigprocmask() */
 
@@ -4640,6 +4650,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(sigset_new)
         RPC_DEF(sigset_delete)
         RPC_DEF(sigprocmask)
+        RPC_DEF(sigset_cmp)
         RPC_DEF(sigemptyset)
         RPC_DEF(sigfillset)
         RPC_DEF(sigaddset)
