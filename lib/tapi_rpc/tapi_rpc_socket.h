@@ -956,6 +956,27 @@ extern int rpc_recvmmsg_alt(rcf_rpc_server *rpcs, int fd,
                             rpc_send_recv_flags flags,
                             struct tarpc_timespec *timeout);
 
+/**
+ * Send data from connected or non-connected socket with help of
+ * sendmmsg() function. This operation takes place on RPC server side.
+ *
+ * @param rpcs      RPC server handle
+ * @param fd        file descriptor
+ * @param mmsg      array of @b rpc_mmsghdr structures that holds the
+ *                  messages to be sent
+ * @param vlen      length of mmsg array
+ * @param flags     bitwise OR of zero or more of the flags; 
+ *                  see @b rpc_send for more information
+ *
+ * @return Number of sent packets, otherwise -1 when an error occured.
+ *
+ * @se msg_len field of each message will be set to number of actually
+ *     sent bytes
+ */
+extern int rpc_sendmmsg_alt(rcf_rpc_server *rpcs, int fd,
+                            struct rpc_mmsghdr *mmsg, unsigned int vlen,
+                            rpc_send_recv_flags flags);
+
 extern int rpc_socket_connect_close(rcf_rpc_server *rpcs,
                                     const struct sockaddr *addr,
                                     uint32_t time2run);

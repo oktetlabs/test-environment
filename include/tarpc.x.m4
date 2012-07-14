@@ -975,6 +975,23 @@ struct tarpc_recvmmsg_alt_out {
     struct tarpc_mmsghdr    mmsg<>;
 };
 
+struct tarpc_sendmmsg_alt_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int               fd;
+    struct tarpc_mmsghdr    mmsg<>;
+    tarpc_uint              vlen;
+    tarpc_uint              flags;
+};
+
+struct tarpc_sendmmsg_alt_out {
+    struct tarpc_out_arg    common;
+
+    tarpc_int               retval;
+
+    struct tarpc_mmsghdr    mmsg<>;
+};
+
 /* cmsg_data_parse_ip_pktinfo() */
 struct tarpc_cmsg_data_parse_ip_pktinfo_in {
     struct tarpc_in_arg common;

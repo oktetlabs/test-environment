@@ -170,7 +170,20 @@
 
 /** System call number of recvmmsg function */
 #ifndef SYS_recvmmsg
-#define SYS_recvmmsg 299
+#ifdef __NR_recvmmsg
+#define SYS_recvmmsg __NR_recvmmsg
+#else
+#define SYS_recvmmsg -1
+#endif
+#endif
+
+/** System call number of sendmmsg function */
+#ifndef SYS_sendmmsg
+#ifdef __NR_sendmmsg
+#define SYS_sendmmsg __NR_sendmmsg
+#else
+#define SYS_sendmmsg -1
+#endif
 #endif
 
 /** Extract sigset from in argument */
@@ -326,12 +339,14 @@ typedef struct checked_arg {
     int         len;          /**< Whole length of the buffer */
     int         len_visible;  /**< Length passed to the function
                                    under test */
+    char       *name;         /**< Argument name to be displayed
+                                   in error message */
 } checked_arg;
 
 /** Initialise the checked argument and add it into the list */
 static inline void
-init_checked_arg(checked_arg **list, uint8_t *real_arg,
-                 int len, int len_visible)
+init_checked_arg_gen(checked_arg **list, uint8_t *real_arg,
+                     int len, int len_visible, char *name)
 {
     checked_arg *arg;
 
@@ -354,12 +369,22 @@ init_checked_arg(checked_arg **list, uint8_t *real_arg,
     arg->real_arg = real_arg;
     arg->len = len;
     arg->len_visible = len_visible;
+    arg->name = name;
     arg->next = *list;
     *list = arg;
 }
 
 #define INIT_CHECKED_ARG(_real_arg, _len, _len_visible) \
-    init_checked_arg(list_ptr, (uint8_t *)(_real_arg), _len, _len_visible)
+    init_checked_arg_gen(list_ptr, (uint8_t *)(_real_arg), _len, \
+                         _len_visible,  #_real_arg)
+
+static inline void
+init_checked_arg(checked_arg **list, uint8_t *real_arg,
+                 int len, int len_visible)
+{
+    return init_checked_arg_gen(list, real_arg, len, len_visible,
+                                "unnamed");
+}
 
 /** Verify that arguments are not corrupted */
 static inline int
@@ -375,8 +400,9 @@ check_args(checked_arg *list)
         if (memcmp(cur->real_arg + cur->len_visible, cur->control,
                    cur->len - cur->len_visible) != 0)
         {
-            ERROR("Visible length is %u.\nControl is:%Tm"
+            ERROR("Argument %s:\nVisible length is %u.\nControl is:%Tm"
                   "Current is:%Tm + %Tm",
+                  cur->name,
                   cur->len_visible, cur->control,
                   cur->len - cur->len_visible,
                   cur->real_arg, cur->len_visible,
@@ -391,12 +417,25 @@ check_args(checked_arg *list)
     return rc;
 }
 
-/** Convert address and register it in the list of checked arguments */
-#define PREPARE_ADDR(_name, _value, _wlen) \
+/**
+ * Convert address and register it in the list of checked arguments.
+ *
+ * @param _name         Where to place converted value handle
+ * @param _value        Value to be converted
+ * @param _wlen         Visible len (all beyond this len should remain
+ *                      unchanged after function call.
+ * @param _is_local     Whether local variable or dynamically allocated
+ *                      memory should be used to store converted value
+ * @param _do_register  If @c TRUE, register argument in the list
+ *                      to be checked after function call.
+ */
+#define PREPARE_ADDR_GEN(_name, _value, _wlen, _is_local, \
+                         _do_register) \
     te_errno                _name ## _rc;                           \
     struct sockaddr_storage _name ## _st;   /* Storage */           \
     socklen_t               _name ## len;                           \
     struct sockaddr        *_name;                                  \
+    struct sockaddr        *_name ## _dup = NULL;                   \
                                                                     \
     if (!(_value.flags & TARPC_SA_RAW &&                            \
           _value.raw.raw_len > sizeof(struct sockaddr_storage)))    \
@@ -410,9 +449,38 @@ check_args(checked_arg *list)
         }                                                           \
         else                                                        \
         {                                                           \
-            INIT_CHECKED_ARG((char *)_name, _name ## len, _wlen);   \
+            if (!_is_local)                                         \
+            {                                                       \
+                if (_name != NULL)                                  \
+                {                                                   \
+                    _name ## _dup = calloc(1, _name ## len);        \
+                    if (_name ## _dup == NULL)                      \
+                        out->common._errno = TE_ENOMEM;             \
+                    else                                            \
+                        memcpy(_name ## _dup, _name, _name ## len); \
+                }                                                   \
+                                                                    \
+                if (_do_register)                                   \
+                INIT_CHECKED_ARG((char *)_name ## _dup,             \
+                                 _name ## len,                      \
+                                 _wlen);                            \
+            }                                                       \
+            else if (_do_register)                                  \
+                INIT_CHECKED_ARG((char *)_name, _name ## len,       \
+                                 _wlen);                            \
         }                                                           \
     }
+
+/**
+ * Convert address and register it in the list of checked arguments.
+ *
+ * @param _name     Where to place converted value handle
+ * @param _value    Value to be converted
+ * @param _wlen     Visible len (all beyond this len should remain
+ *                  unchanged after function call.
+ */
+#define PREPARE_ADDR(_name, _value, _wlen) \
+    PREPARE_ADDR_GEN(_name, _value, _wlen, TRUE, TRUE)
 
 /**
  * Copy in variable argument to out variable argument and zero in argument.
