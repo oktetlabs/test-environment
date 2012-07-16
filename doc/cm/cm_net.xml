@@ -61,5 +61,46 @@
          Value: 0 (agent), 1(nut), others... -->
     <object oid="/net/node/type" access="read_create" type="integer"/>
 
+
+    <!-- Root object of network pool
+         Name: ip4 or ip6
+         Value: None -->
+    <object oid="/net_pool" access="read_create" type="none"/>
+
+    <!-- Network pool entry (subnetwork information)
+         Name: Network address
+         Value: Whether this network pool entry is reserved or
+                it is free to use (1 - reserved, 0 - free to use).
+
+         Network address together with prefix length give complete
+         information for allocation of network address that is from
+         the particular subnetwork.
+    -->
+    <object oid="/net_pool/entry" access="read_create" type="integer"/>
+
+    <!-- Prefix length for this pool entry
+         Name: Empty
+         Value: Prefix length -->
+    <object oid="/net_pool/entry/prefix"
+            access="read_write" type="integer"/>
+
+    <!-- The number of entries allocated from this network address pool
+         Name: Empty
+         Value: The number of entries -->
+    <object oid="/net_pool/entry/n_entries"
+            access="read_write" type="integer"/>
+
+    <!-- A node to keep a collection of allocated network addresses
+         Name: Empty
+         Value: None -->
+    <object oid="/net_pool/entry/pool" access="read_write" type="none"/>
+
+    <!-- A node to keep the exact instance of allocated network address
+         Name: Allocated network address
+         Value: TODO -->
+    <object oid="/net_pool/entry/pool/entry"
+            access="read_create" type="integer"/>
+  </register>
+
 </backup>
 

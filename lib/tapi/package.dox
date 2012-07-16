@@ -47,13 +47,15 @@ specify relationship between network interfaces.
 Later the information about network interfaces can be used by test scenario
 to prepare necessary test set-up.
 
+@section te_lib_tapi_conf_net_basic_cfg_tree Basic configuration tree nodes
+
 From test scenarios point of view network configuration can be analized
 with the help of functions exported by @ref tapi_conf_net library.
 
 The library gets information from local configurator management tree that
 shall be prepared by hands for each physical set-up.
 
-Nodes responsible for @ref tapi_conf_net are:
+Configuration nodes responsible for @ref tapi_conf_net are:
 - @conf_path{/net} - root object of network configuration tree. Instance name
   represents network name - an arbitrary string that is associated with 
   a group of nodes belonging to the network.
@@ -79,14 +81,168 @@ Nodes responsible for @ref tapi_conf_net are:
 - @conf_path{/net/node/type} - type of the network node. Each node is
   assigned with its logical type value:
   - @ref NUT - Node Under Test - node of this type exports functionality
-    that we are to test;
+    that we are to test.
+    In configuration tree the value of this node is of integer type and
+    should be equal to 1;
   - @ref TST - Tester Node - node of this type provides auxiliary services
     to make it possible to do the testing of functionality exported by
     @ref DUT or @ref NUT.
+    In configuration tree the value of this node is of integer type and 
+    should be equal to 0.
   .
+.
 
+For our sample configuration we would add the following lines in
+@ref te_engine_conf_file
+- Register necessary object:
+  @code
+    <register>
+      <object oid="/net" access="read_create" type="none"/>
+      <object oid="/net/node" access="read_create" type="string"/>
+      <object oid="/net/node/type" access="read_create" type="integer"/>
+    </register>
+  @endcode
+- Add set-up specific instances:
+  @code
+    <add>
+      <instance oid="/net:net1"/>
+      <instance oid="/net:net1/node:A"
+                value="/agent:Agt_A/interface:eth1"/>
+      <instance oid="/net:net1/node:A/type:" value="0"/>
+      <instance oid="/net:net1/node:B"
+              value="/agent:Agt_C/interface:hme2"/>
+      <instance oid="/net:net1/node:B/type:" value="1"/>
 
+      <instance oid="/net:net1"/>
+      <instance oid="/net:net1/node:A"
+                value="/agent:Agt_B/interface:eth2"/>
+      <instance oid="/net:net1/node:A/type:" value="0"/>
+      <instance oid="/net:net1/node:B"
+              value="/agent:Agt_C/interface:hme1"/>
+      <instance oid="/net:net1/node:B/type:" value="1"/>
+    </add>
+  @endcode
+.
 
+Please note that in our sample we have two @ref te_agents running on
+host @attr_val{h1}. Depending on our design and the type of @ref te_agents
+we can use particular combinations of (Test Agent, interface name) pairs
+(for example @attr_val{Agt_B} may be a dedicated Test Agent that does not
+support interface configuration, i.e. it is not expected to have
+instances of @conf_path{/agent/interface} object).
+
+Assuming we have only @attr_val{Agt_A} that exports instances of
+@conf_path{/agent/interface} configuration tree we would have:
+@code
+  <add>
+    <instance oid="/net:net1"/>
+    <instance oid="/net:net1/node:A"
+              value="/agent:Agt_A/interface:eth1"/>
+    <instance oid="/net:net1/node:A/type:" value="0"/>
+    <instance oid="/net:net1/node:B"
+            value="/agent:Agt_C/interface:hme2"/>
+    <instance oid="/net:net1/node:B/type:" value="1"/>
+
+    <instance oid="/net:net1"/>
+    <instance oid="/net:net1/node:A"
+              value="/agent:Agt_A/interface:eth2"/>
+    <instance oid="/net:net1/node:A/type:" value="0"/>
+    <instance oid="/net:net1/node:B"
+            value="/agent:Agt_C/interface:hme1"/>
+    <instance oid="/net:net1/node:B/type:" value="1"/>
+  </add>
+@endcode
+
+@section te_lib_tapi_conf_net_addr_cfg_tree Network addresses configuration tree nodes
+
+Apart from basic network topology configuration we can specify pools of
+network addresses that can be used for address asignment on network nodes
+(network interfaces specified as the value of instances of
+@conf_path{/net/node} object).
+
+First group of nodes relates to the pool of networks:
+- @conf_path{/net_pool} - root object of network address pools.
+  Instance name is expected to be either @conf_path{ip4} or @conf_path{ip6}
+  depending on the type of test subnetworks kept in the pool;
+- @conf_path{/net_pool/entry} - pool entry that specifies a subnetwork.
+  Instance name is expected to be a valid IPv4 or IPv6 address depending
+  on the name of @conf_path{/net_pool} instance;
+- @conf_path{/net_pool/entry/prefix} - prefix length for the address
+  specified as instance name of @conf_path{/net_pool/entry} object.
+- @conf_path{/net_pool/entry/pool} - a node to keep track of allocated
+  network addresses;
+- @conf_path{/net_pool/entry/pool/entry} - network address entry allocated
+  from the pool @conf_path{/net_pool/entry}.
+.
+
+Another group of nodes is an extension of @conf_path{/net} objects that
+save information about assigned network addresses:
+- @conf_path{/net/ip4_subnet} - track IPv4 subnets whose addresses are
+  asssigned to nodes of this @conf_path{/net};
+- @conf_path{/net/ip6_subnet} - the same as @conf_path{/net/ip4_subnet}, but
+  for IPv6 addresses;
+- @conf_path{/net/node/ip4_address} - track of IPv4 addresses assigned to
+  the particular network node;
+- @conf_path{/net/node/ip6_address} - the same as
+  @conf_path{/net/node/ip4_address}, but for IPv6 addresses.
+.
+
+Please note that the only nodes we should take care of are:
+- @conf_path{/net_pool};
+- @conf_path{/net_pool/entry};
+- @conf_path{/net_pool/entry/prefix}.
+.
+
+All the other nodes are tracked by @ref tapi_conf_net library internally.
+
+To specify pools of networks we would write something like the following
+in our @ref te_engine_conf_file
+
+@code
+<register>
+  <object oid="/net" access="read_create" type="none"/>
+  <object oid="/net/ip4_subnet" access="read_create" type="address"/>
+  <object oid="/net/ip6_subnet" access="read_create" type="address"/>
+  <object oid="/net/node" access="read_create" type="string"/>
+  <object oid="/net/node/type" access="read_create" type="integer"/>
+  <object oid="/net/node/ip4_address" access="read_create" type="address"/>
+  <object oid="/net/node/ip6_address" access="read_create" type="address"/>
+</register>
+
+<register>
+  <object oid="/net_pool" access="read_create" type="none"/>
+  <object oid="/net_pool/entry" access="read_create" type="integer"/>
+  <object oid="/net_pool/entry/prefix" access="read_write" type="integer"/>
+  <object oid="/net_pool/entry/n_entries"
+          access="read_write" type="integer"/>
+  <object oid="/net_pool/entry/pool" access="read_write" type="none"/>
+  <object oid="/net_pool/entry/pool/entry"
+          access="read_create" type="integer"/>
+</register>
+
+<add>
+  <instance oid="/net_pool:ip4"/>
+  <instance oid="/net_pool:ip6"/>
+</add>
+
+<add>
+  <instance oid="/net_pool:ip4/entry:10.38.10.0" value="0"/>
+  <instance oid="/net_pool:ip4/entry:10.38.11.0" value="0"/>
+</add>
+<set>
+  <instance oid="/net_pool:ip4/entry:10.38.10.0/prefix:" value="24"/>
+  <instance oid="/net_pool:ip4/entry:10.38.11.0/prefix:" value="24"/>
+</set>
+
+<add>
+  <instance oid="/net_pool:ip6/entry:fec0:0:0::" value="0"/>
+  <instance oid="/net_pool:ip6/entry:fec0:0:1::" value="0"/>
+</add>
+<set>
+  <instance oid="/net_pool:ip6/entry:fec0:0:0::/prefix:" value="48"/>
+  <instance oid="/net_pool:ip6/entry:fec0:0:1::/prefix:" value="48"/>
+</set>
+@endcode
 
 @} <!-- END te_lib_tapi_conf_net -->
 
