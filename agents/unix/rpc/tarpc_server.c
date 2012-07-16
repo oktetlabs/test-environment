@@ -3547,7 +3547,16 @@ msghdr_free(struct msghdr *msg)
         }                                                               \
         else                                                            \
         {                                                               \
-            (msg_)->msg_name = (tarpc_msg_)->msg_name.raw.raw_val;      \
+            (msg_)->msg_name = TE_ALLOC((tarpc_msg_)->msg_namelen);     \
+            if ((msg_)->msg_name == NULL)                               \
+            {                                                           \
+                ERROR("%s(): failed to allocate memory for address",    \
+                      __FUNCTION__);                                    \
+                goto finish;                                            \
+            }                                                           \
+            memcpy((msg_)->msg_name,                                    \
+                   (tarpc_msg_)->msg_name.raw.raw_val,                  \
+                   (tarpc_msg_)->msg_namelen);                          \
             (msg_)->msg_namelen = (tarpc_msg_)->msg_namelen;            \
         }                                                               \
                                                                         \
