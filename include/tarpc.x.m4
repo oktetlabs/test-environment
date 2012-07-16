@@ -4615,6 +4615,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(recvmsg)
 
         RPC_DEF(recvmmsg_alt)
+        RPC_DEF(sendmmsg_alt)
 
         RPC_DEF(bind)
         RPC_DEF(check_port_is_free)
