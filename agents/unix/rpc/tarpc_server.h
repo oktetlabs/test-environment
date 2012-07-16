@@ -155,6 +155,10 @@
 #include <sys/utsname.h>
 #endif
 
+#ifdef HAVE_SYS_SYSCALL_H
+#include <sys/syscall.h>
+#endif
+
 #define TE_ERRNO_LOG_UNKNOWN_OS_ERRNO
 
 #include "te_stdint.h"
@@ -173,7 +177,15 @@
 #ifdef __NR_recvmmsg
 #define SYS_recvmmsg __NR_recvmmsg
 #else
+#if __GNUC__
+#if __x86_64__ || __ppc64__
+#define SYS_recvmmsg 299
+#else
+#define SYS_recvmmsg 337
+#endif
+#else
 #define SYS_recvmmsg -1
+#endif
 #endif
 #endif
 
@@ -182,7 +194,15 @@
 #ifdef __NR_sendmmsg
 #define SYS_sendmmsg __NR_sendmmsg
 #else
+#if __GNUC__
+#if __x86_64__ || __ppc64__
+#define SYS_sendmmsg 307
+#else
+#define SYS_sendmmsg 345
+#endif
+#else
 #define SYS_sendmmsg -1
+#endif
 #endif
 #endif
 
