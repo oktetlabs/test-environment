@@ -244,6 +244,11 @@ in our @ref te_engine_conf_file
 </set>
 @endcode
 
+To manipulate network topology and pools of subnetworks use:
+- @ref tapi_conf_net;
+- @ref tapi_conf_net_pool.
+.
+
 @} <!-- END te_lib_tapi_conf_net -->
 
 */
