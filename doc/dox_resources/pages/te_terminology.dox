@@ -12,11 +12,11 @@
 @tdt_def  Command Line Interface
 @tdt_term CSAP
 @tdt_def  Communication Service Access Point
-@tdt_term DUT
+@tdt_term @anchor DUT DUT
 @tdt_def  Device Under Testing
 @tdt_term LAN
 @tdt_def  Local Area Network
-@tdt_term NUT
+@tdt_term @anchor NUT NUT
 @tdt_def  Node Under Testing
 @tdt_term RCF
 @tdt_def  Remote Control Facility
@@ -32,6 +32,8 @@
 @tdt_def  Test Environment
 @tdt_term TEN
 @tdt_def  TE Engine
+@tdt_term @anchor TST TST
+@tdt_def  Tester Node
 @tdt_end
 
 @section terminology Terminology

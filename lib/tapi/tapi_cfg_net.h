@@ -39,6 +39,11 @@
 extern "C" {
 #endif
 
+/**
+ * @defgroup tapi_conf_net Network topology configuration of Test Agents
+ * @ingroup tapi_conf
+ * @{
+ */
 
 /** All possible node types of /net/node configuration model */
 enum net_node_type {
@@ -271,6 +276,8 @@ extern int tapi_cfg_net_assign_ip_one_end(unsigned int af, cfg_net_t *net,
  * @return Status code (see te_errno.h)
  */
 extern te_errno tapi_cfg_net_delete_all(void);
+
+/**@} <!-- END tapi_conf_net --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

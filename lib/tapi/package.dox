@@ -10,7 +10,7 @@ to some parts of configuration tree.
 @} <!-- END tapi_conf -->
 
 
-@defgroup te_lib_tapi_conf_net TAPI: Test Agent Network topology
+@defgroup te_lib_tapi_conf_net TAPI: Network topology configuration of Test Agents
 @ingroup te_ts
 @{
 
@@ -43,6 +43,50 @@ To specify network topology of hosts used in test set-up we need to
 specify relationship between network interfaces.
 
 @image html te_lib_tapi_net_cfg_nets.png "Network topology between Test Agent hosts"
+
+Later the information about network interfaces can be used by test scenario
+to prepare necessary test set-up.
+
+From test scenarios point of view network configuration can be analized
+with the help of functions exported by @ref tapi_conf_net library.
+
+The library gets information from local configurator management tree that
+shall be prepared by hands for each physical set-up.
+
+Nodes responsible for @ref tapi_conf_net are:
+- @conf_path{/net} - root object of network configuration tree. Instance name
+  represents network name - an arbitrary string that is associated with 
+  a group of nodes belonging to the network.
+- @conf_path{/net/node} - network node object. Represents a point of network
+  configuration that reside in corresponding network. Instance name is
+  an arbitrary string, but the value should keep a reference to configuration
+  tree node associated with this network point.<br/>
+  More often the value has the following format:
+  <pre class="fragment">
+    @conf_path{/agent:<agent name>/interface:<interface name>}
+  </pre>
+  E.g.: @conf_path{/agent:Agt_A/interface:eth0}, which means a nodes is
+  associated with interface @conf_path{eth0} that reside on the host
+  where Test Agent @conf_path{Agt_A} runs (to find out host name where
+  Test Agent runs we should have a look at @ref te_engine_rcf_conf_file).
+  You can extend the format of @conf_path{/net/node} value if necessary,
+  for example for the case when a node is assocated with a bridge port
+  the value would be:
+  <pre class="fragment">
+    @conf_path{/agent:<agent name>/port:<port id>}
+  </pre>
+  E.g.: @conf_path{/agent:bridge/port:20}.
+- @conf_path{/net/node/type} - type of the network node. Each node is
+  assigned with its logical type value:
+  - @ref NUT - Node Under Test - node of this type exports functionality
+    that we are to test;
+  - @ref TST - Tester Node - node of this type provides auxiliary services
+    to make it possible to do the testing of functionality exported by
+    @ref DUT or @ref NUT.
+  .
+
+
+
 
 @} <!-- END te_lib_tapi_conf_net -->
 
