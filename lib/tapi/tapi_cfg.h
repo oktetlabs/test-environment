@@ -526,6 +526,12 @@ extern te_errno tapi_cfg_set_hwaddr(const char *ta, const char *ifname,
 /**@} <!-- END tapi_conf_iface --> */
 
 /**
+ * @defgroup tapi_conf_net_pool Manipulation of network address pools
+ * @ingroup tapi_conf
+ * @{
+ */
+
+/**
  * Get Configurator handle of free child. The function assumes that
  * all children of the parent has integer value. Zero value is considered
  * as the child is free. The child is marked as non-free by set of 1
@@ -669,6 +675,7 @@ extern int tapi_cfg_alloc_net_addr(cfg_handle        net_pool_entry,
 extern int tapi_cfg_add_net_addr(cfg_handle       net_pool_entry,
                                  struct sockaddr *add_addr,
                                  cfg_handle      *p_entry);
+/** @} <!-- END tapi_conf_net_pool --> */
 
 /**
  * Set Environment variables specified in /local/env on corresponding
