@@ -210,7 +210,7 @@ a successful backup verification the command history may be cut off.
 API to manipulate configuration backups can be found at
 @ref confapi_base_backup page.
 
-@section te_engine_conf_file Configuration File
+@section te_engine_conf_file Configurator Configuration File
 
 @ref te_engine_conf has its own configuration file where it is possible
 to specify the sequence of configuration operations to be run on
