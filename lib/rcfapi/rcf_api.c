@@ -1147,8 +1147,9 @@ rcf_get_ta_list(char *buf, size_t *len)
 
     if (ans == NULL)
     {
-        ERROR("Unexpected short message");
-        return TE_RC(TE_RCF_API, TE_EIPC);
+        /* There is no TA configured */
+        *len = 0;
+        return 0;
     }
 
     if (ans->error != 0)
