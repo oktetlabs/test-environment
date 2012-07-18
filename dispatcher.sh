@@ -55,13 +55,13 @@ Generic options:
     In configuration files options below <filename> is full name of the
     configuration file or name of the file in the configuration directory.
 
-  --conf-builder=<filename>     Builder config file (builder.conf by default)
-  --conf-cs=<filename>          Configurator config file (cs.conf by default)
-  --conf-logger=<filename>      Logger config file (logger.conf by default)
-  --conf-rcf=<filename>         RCF config file (rcf.conf by default)
+  --conf-builder=<filename>     Builder config file (${CONF_BUILDER} by default)
+  --conf-cs=<filename>          Configurator config file (${CONF_CS} by default)
+  --conf-logger=<filename>      Logger config file (${CONF_LOGGER} by default)
+  --conf-rcf=<filename>         RCF config file (${CONF_RCF} by default)
   --conf-rgt=<filename>         RGT config file (rgt.conf by default)
-  --conf-tester=<filename>      Tester config file (tester.conf by default)
-  --conf-nut=<filename>         NUT config file (nut.conf by default)
+  --conf-tester=<filename>      Tester config file (${CONF_TESTER} by default)
+  --conf-nut=<filename>         NUT config file (${CONF_NUT} by default)
 
   --script=<filename>           Name of the file with shell script to be
                                 included as source
@@ -320,7 +320,7 @@ TE_SNIFF_SNAPLEN=
 CONF_BUILDER=builder.conf
 CONF_LOGGER=logger.conf
 CONF_TESTER=tester.conf
-CONF_CS=configurator.conf
+CONF_CS=cs.conf
 CONF_RCF=rcf.conf
 CONF_RGT=
 CONF_NUT=nut.conf

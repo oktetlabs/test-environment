@@ -154,7 +154,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
                              "/rpcserver_sid:%s:%s",
                              ta, name) != 0)
     {
-         /* Server is created in the configurator.conf */
+         /* Server is created in the cs.conf */
         if ((rc1 = rcf_ta_create_session(ta, &sid)) != 0)
         {
             ERROR("Cannot allocate RCF SID");

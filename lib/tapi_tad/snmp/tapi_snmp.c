@@ -2974,7 +2974,7 @@ tapi_snmp_load_cfg_mibs(const char *dir_path)
     {
         if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
         {
-            WARN("There is no MIB entries specified in configurator.conf");
+            WARN("There is no MIB entries specified in configurator tree");
             return 0;
         }
         else
@@ -2987,7 +2987,7 @@ tapi_snmp_load_cfg_mibs(const char *dir_path)
 
     if (num == 0)
     {
-        WARN("There is no MIB entries specified in configurator.conf");
+        WARN("There is no MIB entries specified in configurator tree");
         goto cleanup;
     }
 
