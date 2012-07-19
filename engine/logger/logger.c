@@ -827,6 +827,10 @@ process_cmd_line_opts(int argc, const char **argv)
     /* Get Logger configuration file name (optional) */
     cfg_file = poptGetArg(optCon);
 
+    /* Interpret empty strings as no arguments provided */
+    if (cfg_file != NULL && strlen(cfg_file) == 0)
+        cfg_file = NULL;
+
     if ((cfg_file != NULL) && (poptGetArg(optCon) != NULL))
     {
         poptFreeContext(optCon);

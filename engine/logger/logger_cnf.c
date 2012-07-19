@@ -241,6 +241,9 @@ configParser(const char *file_name)
 {
     int res = 0;
 
+    if (file_name == NULL)
+        return 0;
+
     res = xmlSAXUserParseFile(loggerSAXHandler, NULL, file_name);
     xmlCleanupParser();
     xmlMemoryDump();

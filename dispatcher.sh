@@ -326,7 +326,7 @@ CONF_RGT=
 CONF_NUT=nut.conf
 
 # Whether NUTs processing is requested
-DO_NUTS=
+CONF_NUT_SET=
 # Whether NUTs should be built
 BUILD_NUTS=yes
 
@@ -427,13 +427,13 @@ process_opts()
             
             --conf-dir=*) CONF_DIR="${1#--conf-dir=}" ;;
             
-            --conf-builder=*) CONF_BUILDER="${1#--conf-builder=}" ;;
-            --conf-logger=*) CONF_LOGGER="${1#--conf-logger=}" ;;
-            --conf-tester=*) CONF_TESTER="${1#--conf-tester=}" ;;
-            --conf-cs=*) CONF_CS="${1#--conf-cs=}" ;;
-            --conf-rcf=*) CONF_RCF=${1#--conf-rcf=} ;;
-            --conf-rgt=*) CONF_RGT=${1#--conf-rgt=} ;;
-            --conf-nut=*) DO_NUTS=yes ; CONF_NUT="${1#--conf-nut=}" ;;
+            --conf-builder=*) CONF_BUILDER_SET=1; CONF_BUILDER="${1#--conf-builder=}" ;;
+            --conf-logger=*) CONF_LOGGER_SET=1; CONF_LOGGER="${1#--conf-logger=}" ;;
+            --conf-tester=*) CONF_TESTER_SET=1; CONF_TESTER="${1#--conf-tester=}" ;;
+            --conf-cs=*) CONF_CS_SET=1; CONF_CS="${1#--conf-cs=}" ;;
+            --conf-rcf=*) CONF_RCF_SET=1; CONF_RCF=${1#--conf-rcf=} ;;
+            --conf-rgt=*) CONF_RGT_SET=1; CONF_RGT=${1#--conf-rgt=} ;;
+            --conf-nut=*) CONF_NUT_SET=1; CONF_NUT="${1#--conf-nut=}" ;;
             --force) TE_NO_PROMPT=yes ;;
 
             --tce) DO_TCE=yes ;;
@@ -716,9 +716,23 @@ export TE_NO_AUTOTOOL
 export TE_NO_PROMPT
 
 for i in BUILDER LOGGER TESTER CS RCF RGT NUT ; do
+    CONF_FILE_SET="$(eval echo '${CONF_'$i'_SET}')"
     CONF_FILE="$(eval echo '$CONF_'$i)"
     if test -n "${CONF_FILE}" -a "${CONF_FILE:0:1}" != "/" ; then
         eval CONF_$i=\"${CONF_DIR}/${CONF_FILE}\"
+        CONF_FILE="$(eval echo '$CONF_'$i)"
+        if test ! -f ${CONF_FILE} ; then
+          # Conf file does not exist at specified path.
+          # Check if this is the default value or user-specified
+          if test -n "${CONF_FILE_SET}" ; then
+              # User-specified, so rise an exception
+              echo "Cannot find $i configuration file at ${CONF_FILE} path"
+              exit 1;
+          fi
+
+          # Set Conf file path to empty string.
+          eval CONF_$i=
+        fi
     fi
 done
 
@@ -885,7 +899,7 @@ if test -n "${SUITE_SOURCES}" -a -n "${BUILD_TS}" ; then
     te_build_suite `basename ${SUITE_SOURCES}` $SUITE_SOURCES || exit_with_log
 fi
 
-if test -n "${DO_NUTS}" ; then
+if test -n "${CONF_NUT_SET}" ; then
     if test ! -e "${CONF_NUT}" ; then
         echo "Specified NUTs configuration file does not exists:" >&2
         echo '    '"${CONF_NUT}" >&2
@@ -894,10 +908,10 @@ if test -n "${DO_NUTS}" ; then
 elif test -e "${CONF_NUT}" ; then
     # If NUT configuration file is not specified explicitly,
     # but default exists, then use it
-    DO_NUTS=yes
+    CONF_NUT_SET=1
 fi
 
-if test -n "${DO_NUTS}" -a -n "${BUILD_NUTS}" ; then
+if test -n "${CONF_NUT_SET}" -a -n "${BUILD_NUTS}" ; then
     if test -z "${QUIET}" ; then
         te_build_nuts "${CONF_NUT}" || exit_with_log
     else
