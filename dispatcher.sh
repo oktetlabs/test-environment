@@ -213,7 +213,7 @@ Generic options:
                                 files for the sniffer to tail drop.
                                 By default overfill handle method is rotation.
  --sniff-log-dir=<path>         Path to the *TEN* side capture files.
-                                By default used: ${TE_SNIFF_LOG_DIR}.
+                                By default used: ${TE_SNIFF_DEF_LOG_DIR}.
  --sniff-log-name=<pattern>     *TEN* side log file naming pattern, the
                                 following format specifies are supported:
                                 - %a : agent name
@@ -300,7 +300,7 @@ CONF_DIR=
 TE_LOG_DIR="${TE_RUN_DIR}"
 
 # Default directory for capture log files
-TE_SNIFF_DEF_LOG_DIR=
+TE_SNIFF_DEF_LOG_DIR="${TE_RUN_DIR}/caps"
 
 # Sniffer polling setting
 TE_SNIFF_LOG_OSIZE=0     # Megabytes (unlimited)
@@ -443,7 +443,7 @@ process_opts()
 
             --sniff-log-conv-disable) TE_SNIFF_LOG_CONV_DISABLE=true ;;
             --sniff-log-dir=*) TE_SNIFF_LOG_DIR="${1#--sniff-log-dir=}"
-                export TE_SNIFF_LOG_DIR ;;
+                 ;;
             --sniff-log-osize=*) TE_SNIFF_LOG_OSIZE="${1#--sniff-log-osize=}"
                 export TE_SNIFF_LOG_OSIZE ;;
             --sniff-log-space=*) TE_SNIFF_LOG_SPACE="${1#--sniff-log-space=}"
@@ -891,6 +891,21 @@ else
     te_builder_opts $BUILDER_OPTS || exit_with_log
 fi
 
+if test -z "${TE_SNIFF_LOG_DIR}" ; then
+    TE_SNIFF_LOG_DIR="${TE_SNIFF_DEF_LOG_DIR}"
+    # Get capture logs path from the Logger configuration file
+    if test -f "${CONF_LOGGER}" ; then
+        tmp=`te_log_get_path ${CONF_LOGGER}`
+        if test -n "${tmp}" ; then
+            TE_SNIFF_LOG_DIR="${tmp}"
+        fi
+    fi
+fi
+# Export directory path for sniffer capture
+[[ ${TE_SNIFF_LOG_DIR} == /* ]] || [[ ${TE_SNIFF_LOG_DIR} == \~/* ]] ||
+   TE_SNIFF_LOG_DIR="${TE_RUN_DIR}/${TE_SNIFF_LOG_DIR}"
+export TE_SNIFF_LOG_DIR
+
 # Goto the directory where the script was called ${TE_RUN_DIR}.
 # It has to be the current dir for all TE Engine applications.
 cd "${TE_RUN_DIR}"
@@ -1072,14 +1087,6 @@ fi
 # Processing of sniffers capture logs
 #
 myecho -n "--->>> Logs conversion..."
-
-# If capture logs path is not declared in the Dispatcher, It getting from
-# the Logger configuration file
-if test -z ${TE_SNIFF_LOG_DIR} ; then
-    TE_SNIFF_LOG_DIR=`te_log_get_path ${CONF_LOGGER}`
-fi
-[[ ${TE_SNIFF_LOG_DIR} == /* ]] || [[ ${TE_SNIFF_LOG_DIR} == \~/* ]] ||
-   TE_SNIFF_LOG_DIR="${TE_RUN_DIR}/${TE_SNIFF_LOG_DIR}"
 
 merge_comm=""
 if test -z ${TE_SNIFF_LOG_CONV_DISABLE} ; then
