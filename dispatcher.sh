@@ -1089,6 +1089,9 @@ fi
 myecho -n "--->>> Logs conversion..."
 
 merge_comm=""
+if test ! -d ${TE_SNIFF_LOG_DIR} ; then
+    TE_SNIFF_LOG_CONV_DISABLE=true;
+fi
 if test -z ${TE_SNIFF_LOG_CONV_DISABLE} ; then
     idx=0
     for plog in `ls ${TE_SNIFF_LOG_DIR}/ | grep \.pcap$`; do
