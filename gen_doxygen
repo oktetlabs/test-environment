@@ -1,4 +1,10 @@
 #!/bin/bash
+#
+# doxygen filter can expect the following environment variables are set:
+# - DOWNLOAD_DOC_LINK - path to TAR.GZ packed documentation file.
+#                       If this variable is set, then "Download"
+#                       section will be added to the documentation mainpage.
+#
 
 help() {
     cat <<EOF
