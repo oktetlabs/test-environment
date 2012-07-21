@@ -173,6 +173,13 @@ enum {
                                          in the first group of logs -
                                          not taking into account tag
                                          expressions */
+    TRC_UPDATE_OPT_NO_GEN_FSS,      /**< Do not try to find out subsets
+                                         corresponding to every possible
+                                         iteration record, do not use
+                                         algorithms based on it */
+    TRC_UPDATE_OPT_FSS_UNLIM,       /**< Do not resrict amount of time used
+                                         to find out subsets for every
+                                         possible iteration record */
 };
 
 #ifdef HAVE_LIBPERL
@@ -601,6 +608,18 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
           "before this option - not taking into account tag expressions",
           NULL },
 
+        { "no-gen-fss", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_NO_GEN_FSS,
+          "Do not try to find out subsets corresponding to every possible "
+          "iteration record, do not use algorithms based on it",
+          NULL },
+
+        { "fss-unlim", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_FSS_UNLIM,
+          "Do not resrict amount of time used to find out subsets for "
+          "every possible iteration record",
+          NULL },
+
         { "print-paths", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_PATHS,
           "Print paths of all test scripts encountered in logs "
@@ -692,6 +711,14 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
             case TRC_UPDATE_OPT_DIFF_NO_TAGS:
                 in_diff = TRUE;
                 ctx.flags |= TRC_LOG_PARSE_DIFF_NO_TAGS;
+                break;
+
+            case TRC_UPDATE_OPT_NO_GEN_FSS:
+                ctx.flags |= TRC_LOG_PARSE_NO_GEN_FSS;
+                break;
+
+            case TRC_UPDATE_OPT_FSS_UNLIM:
+                ctx.flags |= TRC_LOG_PARSE_FSS_UNLIM;
                 break;
 
             case TRC_UPDATE_OPT_FAKE_LOG:

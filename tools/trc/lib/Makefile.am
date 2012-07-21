@@ -16,7 +16,8 @@ noinst_HEADERS = \
 	trc_tools.h \
 	re_subst.h \
 	trc_diff.h \
-	log_parse.h
+	log_parse.h \
+	gen_wilds.h
 
 noinst_LIBRARIES = \
 	libtrc_report.a \
@@ -30,7 +31,8 @@ libtrc_report_a_SOURCES = \
 	log_parse.c \
 	report_html.c \
 	re_subst.c \
-	html.c
+	html.c \
+	gen_wilds.c
 
 libtrc_diff_a_SOURCES = \
 	tags.c \
@@ -42,4 +44,5 @@ libtrc_diff_a_SOURCES = \
 	log_parse.c \
 	report.c \
 	re_subst.c \
-	html.c
+	html.c \
+	gen_wilds.c

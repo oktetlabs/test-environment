@@ -187,17 +187,40 @@ typedef struct trc_update_test_iter_data {
     unsigned int          args_max;    /**< Count of elements for
                                             each space was allocated
                                             in arguments array */
+
+    int     *set_nums;      /**< Numbers of sets in which this iteration
+                                 is included */
+    int      nums_cnt;      /**< Count of sets */
+    int      nums_max;      /**< Maximum count of sets before reallocation
+                                 of memory will be required */
 } trc_update_test_iter_data;
 
 /** TRC Update test data attached to test in TRC DB */
 typedef struct trc_update_test_data {
     te_bool     to_save; /**< Should this test be saved? */
 } trc_update_test_data;
+ 
+/** Predeclaration, see definition below */
+struct trc_update_args_group;
+typedef struct trc_update_args_group trc_update_args_group;
+
+/** List of TRC DB wildcards */
+typedef SLIST_HEAD(trc_update_args_groups, trc_update_args_group)
+                                                trc_update_args_groups;
 
 /** Entry of queue containing information about tests to be updated */
 typedef struct trc_update_test_entry {
     TAILQ_ENTRY(trc_update_test_entry)   links; /**< List links */
     trc_test                            *test;  /**< Test in TRC DB */
+
+    trc_update_args_groups  *sets;      /**< Sets of iterations
+                                             described by all possible
+                                             iteration records */
+    int                      sets_cnt;  /**< Count of sets */
+    int                      sets_max;  /**< Maximum count of sets before
+                                             reallocation will be
+                                             required */
+
 } trc_update_test_entry;
 
 /** Queue containing information about tests to be updated */
@@ -220,7 +243,7 @@ typedef TAILQ_HEAD(trc_update_tests_groups,
                    trc_update_tests_group) trc_update_tests_groups;
 
 /** Group of iteration arguments (describes wildcard) */
-typedef struct trc_update_args_group {
+struct trc_update_args_group {
     SLIST_ENTRY(trc_update_args_group)  links;       /**< List links */
     trc_test_iter_args                 *args;        /**< Arguments */
 
@@ -228,11 +251,7 @@ typedef struct trc_update_args_group {
                                         matching wildcard */
     trc_exp_result   *exp_default; /**< Default result of iterations
                                         matching wildcard */
-} trc_update_args_group;
-
-/** List of TRC DB wildcards */
-typedef SLIST_HEAD(trc_update_args_groups, trc_update_args_group)
-                                                trc_update_args_groups;
+};
 
 /**
  * Initialize TRC Update tool context.

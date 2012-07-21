@@ -1,5 +1,5 @@
 /** @file
- * @brief Testing Results Comparator: report tool
+ * @brief Testing Results Comparator: tools
  *
  * Definition of XML log parsing common types and routines.
  *
@@ -184,6 +184,23 @@ enum trc_log_parse_flags {
                                                     group of logs -
                                                     not taking into account
                                                     tag expressions */
+    TRC_LOG_PARSE_INTERSEC_WILDS
+                              = (1LLU << 32),  /**< It's allowed for
+                                                    iteration to have more
+                                                    than one wildcard
+                                                    describing it */
+    TRC_LOG_PARSE_NO_GEN_FSS  = (1LLU << 33),  /**< Do not try to
+                                                    find out subsets
+                                                    corresponding to
+                                                    every possible
+                                                    iteration record, do
+                                                    not use algorithms
+                                                    based on it */
+    TRC_LOG_PARSE_FSS_UNLIM   = (1LLU << 34),  /**< Do not resrict amount
+                                                    of time used to
+                                                    find out subsets for
+                                                    every possible
+                                                    iteration record */
 };
 
 /** All rule type flags */

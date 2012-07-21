@@ -90,6 +90,7 @@ trc_update_free_test_iter_data(trc_update_test_iter_data *data)
         free(data->args[data->args_n].value);
     }
     free(data->args);
+    free(data->set_nums);
 
     free(data);
 }
@@ -162,8 +163,15 @@ trc_update_rules_free(trc_update_rules *rules)
 void
 trc_update_test_entry_free(trc_update_test_entry *test_entry)
 {
+    int i;
+
     if (test_entry == NULL)
         return;
+
+    for (i = 0; i < test_entry->sets_cnt; i++)
+        trc_update_args_groups_free(&test_entry->sets[i]);
+
+    free(test_entry->sets);
 }
 
 /* See the description in trc_update.h */
@@ -217,6 +225,8 @@ void
 trc_update_args_group_free(trc_update_args_group *args_group)
 {
     trc_free_test_iter_args(args_group->args);
+    trc_exp_results_free(args_group->exp_results);
+    trc_exp_result_free(args_group->exp_default);
 }
 
 /* See the description in trc_update.h */

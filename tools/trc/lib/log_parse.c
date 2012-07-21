@@ -60,6 +60,9 @@
 #include "trc_update.h"
 #include "trc_diff.h"
 #include "trc_db.h"
+#include "gen_wilds.h"
+#include <time.h>
+#include <sys/time.h>
 
 #define CONST_CHAR2XML  (const xmlChar *)
 #define XML2CHAR(p)     ((char *)p)
@@ -2269,9 +2272,13 @@ trc_update_merge_result(trc_log_parse_ctx *ctx)
                                              te_result, is_expected);
 }
 
-/**
- * Predeclaration of function, see description below.
- */
+/* Predeclaration of function, see description below. */
+static te_errno trc_update_gen_test_wilds_fss(unsigned int db_uid,
+                                              trc_update_test_entry
+                                                            *test_entry,
+                                              uint64_t flags);
+
+/* Predeclaration of function, see description below. */
 static te_errno trc_update_generate_test_wilds(unsigned int db_uid,
                                                trc_test *test,
                                                uint64_t flags);
@@ -2293,6 +2300,7 @@ simplify_log_exprs(trc_exp_results *results,
     trc_exp_result_entry       *entry_p;
     trc_exp_result_entry       *entry_q;
     trc_test                   *test;
+    trc_update_test_entry      *test_entry;
     trc_test_iter              *iter;
     logic_expr                 *expr_p;
     logic_expr                 *expr_q;
@@ -2321,7 +2329,9 @@ simplify_log_exprs(trc_exp_results *results,
      * to be used for such a purpose.
      */
 
-    test = TE_ALLOC(sizeof(*test));
+    test_entry = TE_ALLOC(sizeof(*test_entry));
+
+    test_entry->test = test = TE_ALLOC(sizeof(*test));
     test->type = TRC_TEST_SCRIPT;
     TAILQ_INIT(&test->iters.head);
 
@@ -2509,7 +2519,12 @@ simplify_log_exprs(trc_exp_results *results,
     /*
      * Generate wildcards for fake test.
      */
-    trc_update_generate_test_wilds(0, test, flags);
+    if (trc_update_gen_test_wilds_fss(
+                                0, test_entry,
+                                flags | TRC_LOG_PARSE_INTERSEC_WILDS) < 0)
+        trc_update_generate_test_wilds(
+                                    0, test,
+                                    flags | TRC_LOG_PARSE_INTERSEC_WILDS);
 
     trc_exp_results_free(results);
 
@@ -2586,7 +2601,10 @@ simplify_log_exprs(trc_exp_results *results,
         trc_update_free_test_iter_data(iter_data);
     }
 
+    trc_update_test_entry_free(test_entry);
+    free(test_entry);
     trc_free_trc_test(test);
+    free(test);
 
     return 0;
 }
@@ -4293,6 +4311,9 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
     trc_test_iter               *iter2;
     trc_update_test_iter_data   *iter_data2;
 
+    te_bool allow_intersect = !!(flags & TRC_LOG_PARSE_INTERSEC_WILDS);
+    te_bool new_iter_added;
+
     memset(&cur_comb_wilds, 0, sizeof(cur_comb_wilds));
     SLIST_INIT(&cur_comb_wilds);
 
@@ -4307,20 +4328,24 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
         TAILQ_FOREACH(iter1, &test->iters.head, links)
         {
             iter_data1 = trc_db_iter_get_user_data(iter1, db_uid);
-            if (iter_data1 == NULL || iter_data1->in_wildcard)
+            if (iter_data1 == NULL ||
+                (!allow_intersect && iter_data1->in_wildcard))
                 continue;
 
             if (test_iter_args_match(args_group->args, iter_data1->args_n,
                                      iter_data1->args, TRUE) !=
                                                         ITER_NO_MATCH)
             {
+                p_group = NULL;
+#if 0
+                /** TODO: check whether code is useless */
                 SLIST_FOREACH(p_group, &cur_comb_wilds, links)
                     if (test_iter_args_match(p_group->args,
                                              iter_data1->args_n,
                                              iter_data1->args,
                                              TRUE) != ITER_NO_MATCH)
                         break;
-
+#endif
                 if (p_group != NULL)
                     continue;
                 else if (iter_data1->results_id == results_id)
@@ -4333,6 +4358,7 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
                                           iter_data1->args,
                                           new_group);
 
+                    new_iter_added = FALSE;
                     TAILQ_FOREACH(iter2, &test->iters.head, links)
                     {
                         iter_data2 =
@@ -4343,15 +4369,19 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
                         if (test_iter_args_match(new_group->args,
                                                  iter_data2->args_n,
                                                  iter_data2->args,
-                                                 TRUE) != ITER_NO_MATCH &&
-                            (iter_data2->in_wildcard ||
-                             iter_data2->results_id != results_id))
+                                                 TRUE) != ITER_NO_MATCH)
                         {
-                            break;
+                            if ((!allow_intersect &&
+                                 iter_data2->in_wildcard) ||
+                                iter_data2->results_id != results_id)
+                                break;
+
+                            if (!iter_data2->in_wildcard)
+                                new_iter_added = TRUE;
                         }
                     }
 
-                    if (iter2 != NULL)
+                    if (iter2 != NULL || !new_iter_added)
                     {
                         trc_free_test_iter_args(new_group->args);
                         free(new_group);
@@ -4510,7 +4540,562 @@ trc_update_generate_test_wilds(unsigned int db_uid,
 }
 
 /**
- * Generate wildcards for all tests to be updated.
+ * This variable is used to restrict time which can take
+ * generation of full subset structure before it is terminated
+ * and another approach not requiring it is used.
+ */
+static struct timeval   tv_before_gen_fss;
+
+/**
+ * Determine full subset structure for all the wildcards including
+ * non-void values of arguments from a given group. Determining
+ * "full subset structure" means determining subset of iterations
+ * desribed by each of these wildcards.
+ *
+ * @param db_uid        TRC DB user ID
+ * @param test_entry    Record describing test to be updated
+ * @param results_id    ID of result wich should be in all the
+ *                      iterations described by generated wildcards
+ * @param args_group    Set of arguments which should have non-void
+ *                      values in generated wildcards
+ * @param flags         Flags
+ *
+ * @return Status code
+ */
+te_errno
+trc_update_gen_args_group_fss(unsigned int db_uid,
+                              trc_update_test_entry *test_entry,
+                              int results_id,
+                              trc_update_args_group *args_group,
+                              uint64_t flags)
+{
+    te_bool            *args_in_wild;
+    int                 args_count = 0;
+    int                 i;
+    int                 j;
+    int                 args_wild_count = 0;
+    int                *comm_sets = NULL;
+    int                 sets_num = 0;
+    int                 comm_set_num = 0;
+
+    trc_update_args_groups       cur_comb_wilds;
+    trc_update_args_groups       wrong_wilds;
+    trc_update_args_group       *p_group;
+    trc_update_args_group       *new_group;
+    trc_test_iter_arg           *arg;
+    trc_test_iter               *iter1;
+    trc_update_test_iter_data   *iter_data1;
+    trc_test_iter               *iter2;
+    trc_update_test_iter_data   *iter_data2;
+    trc_test                    *test = test_entry->test;
+
+    struct timeval   tv_after;
+    int              rc = 0;
+
+#define TIME_DIFF \
+    (gettimeofday(&tv_after, NULL),                                 \
+         (tv_after.tv_sec - tv_before_gen_fss.tv_sec) * 1000000 +   \
+         (tv_after.tv_usec = tv_before_gen_fss.tv_usec))
+
+    memset(&cur_comb_wilds, 0, sizeof(cur_comb_wilds));
+    SLIST_INIT(&cur_comb_wilds);
+    memset(&wrong_wilds, 0, sizeof(wrong_wilds));
+    SLIST_INIT(&wrong_wilds);
+
+    TAILQ_FOREACH(arg, &args_group->args->head, links)
+        args_count++;
+
+    args_in_wild = TE_ALLOC(sizeof(te_bool) * args_count);
+    for (i = 0; i < args_count; i++)
+        args_in_wild[i] = FALSE;
+
+    do {
+        if (TIME_DIFF >= 1000000L &&
+            !(flags & TRC_LOG_PARSE_FSS_UNLIM))
+        {
+            rc = -2;
+            break;
+        }
+
+        TAILQ_FOREACH(iter1, &test->iters.head, links)
+        {
+            if (TIME_DIFF >= 1000000L &&
+                !(flags & TRC_LOG_PARSE_FSS_UNLIM))
+            {
+                rc = -2;
+                break;
+            }
+
+            iter_data1 = trc_db_iter_get_user_data(iter1, db_uid);
+            if (iter_data1 == NULL)
+                continue;
+
+            if (test_iter_args_match(args_group->args, iter_data1->args_n,
+                                     iter_data1->args, TRUE) !=
+                                                        ITER_NO_MATCH)
+            {
+                SLIST_FOREACH(p_group, &cur_comb_wilds, links)
+                    if (test_iter_args_match(p_group->args,
+                                             iter_data1->args_n,
+                                             iter_data1->args,
+                                             TRUE) != ITER_NO_MATCH)
+                        break;
+
+                if (p_group != NULL)
+                    continue;
+                else if (iter_data1->results_id == results_id)
+                {
+                    SLIST_FOREACH(p_group, &wrong_wilds, links)
+                        if (test_iter_args_match(p_group->args,
+                                                 iter_data1->args_n,
+                                                 iter_data1->args,
+                                                 TRUE) != ITER_NO_MATCH)
+                            break;
+
+                    if (p_group != NULL)
+                        continue;
+
+                    sets_num = iter_data1->nums_cnt;
+                    comm_sets = TE_ALLOC(sizeof(int) * sets_num);
+                    for (i = 0; i < sets_num; i++)
+                        comm_sets[i] = iter_data1->set_nums[i];
+
+                    new_group = TE_ALLOC(sizeof(*new_group));
+                    new_group->args = TE_ALLOC(sizeof(trc_test_iter_args));
+                    TAILQ_INIT(&new_group->args->head);
+
+                    args_comb_to_wildcard(args_in_wild, args_count,
+                                          iter_data1->args,
+                                          new_group);
+                    new_group->exp_results =
+                        trc_exp_results_dup((struct trc_exp_results *)
+                                            &iter1->exp_results);
+                    new_group->exp_default =
+                        trc_exp_result_dup((struct trc_exp_result *)
+                                           iter1->exp_default);
+
+                    TAILQ_FOREACH(iter2, &test->iters.head, links)
+                    {
+                        iter_data2 =
+                            trc_db_iter_get_user_data(iter2, db_uid);
+                        if (iter_data2 == NULL)
+                            continue;
+
+                        if (test_iter_args_match(new_group->args,
+                                                 iter_data2->args_n,
+                                                 iter_data2->args,
+                                                 TRUE) != ITER_NO_MATCH)
+                        {
+                            if (iter_data2->results_id != results_id)
+                                break;
+
+                            for (i = 0; i < sets_num; i++)
+                            {
+                                for (j = 0; j < iter_data2->nums_cnt; j++)
+                                    if (iter_data2->set_nums[j] ==
+                                                            comm_sets[i])
+                                        break;
+
+                                if (j == iter_data2->nums_cnt)
+                                {
+                                    j = i;
+                                    for ( ; i < sets_num - 1; i++)
+                                        comm_sets[i] = comm_sets[i + 1];
+                                    i = j - 1;
+                                    sets_num--;
+                                }
+                            }
+                        }
+                    }
+
+                    if (sets_num > 0)
+                    {
+                        if (iter2 == NULL)
+                        {
+                            for (i = 0; i < sets_num; i++)
+                            {
+                                /* 
+                                 * Having belonging to some sets in common
+                                 * is not enough - set of iterations of
+                                 * interest should be one of these sets
+                                 * to be rejected.
+                                 */
+                                TAILQ_FOREACH(iter2, &test->iters.head,
+                                              links)
+                                {
+                                    iter_data2 =
+                                        trc_db_iter_get_user_data(iter2,
+                                                                  db_uid);
+                                    if (iter_data2 == NULL)
+                                        continue;
+
+                                    for (j = 0; j < iter_data2->nums_cnt;
+                                         j++)
+                                        if (iter_data2->set_nums[j] ==
+                                                            comm_sets[i])
+                                            break;
+
+                                    if (j < iter_data2->nums_cnt &&
+                                        test_iter_args_match(
+                                                    new_group->args,
+                                                    iter_data2->args_n,
+                                                    iter_data2->args,
+                                                    TRUE) == ITER_NO_MATCH)
+                                        break;
+                                }
+
+                                if (iter2 != NULL)
+                                {
+                                    j = i;
+                                    for ( ; i < sets_num - 1; i++)
+                                        comm_sets[i] = comm_sets[i + 1];
+                                    i = j - 1;
+                                    sets_num--;
+                                }
+                            }
+
+                            iter2 = NULL;
+                        }
+
+                        assert(sets_num <= 1 || iter2 != NULL);
+                        if (sets_num == 1)
+                            comm_set_num = comm_sets[0];
+                    }
+
+                    free(comm_sets);
+
+                    if (iter2 != NULL)
+                    {
+                        /*
+                         * Wildcards to which iterations with different
+                         * results match
+                         */
+                        SLIST_INSERT_HEAD(&wrong_wilds, new_group,
+                                          links);
+                        continue;
+                    }
+
+                    if (sets_num > 0)
+                    {
+                        /*
+                         * There is already such set - just one more
+                         * wildcard defining it.
+                         */
+                        SLIST_INSERT_HEAD(&test_entry->sets[comm_set_num],
+                                          new_group, links);
+                    }
+                    else
+                    {
+                        if (test_entry->sets_cnt >=
+                                            test_entry->sets_max)
+                        {
+                            test_entry->sets =
+                                realloc(test_entry->sets,
+                                        ((test_entry->sets_max + 1) * 2) *
+                                        sizeof(trc_update_args_group));
+                            test_entry->sets_max =
+                                        (test_entry->sets_max + 1) * 2;
+                        }
+
+                        SLIST_INIT(
+                            &test_entry->sets[test_entry->sets_cnt]);
+
+                        SLIST_INSERT_HEAD(
+                            &test_entry->sets[test_entry->sets_cnt],
+                            new_group, links);
+
+                        TAILQ_FOREACH(iter2, &test->iters.head, links)
+                        {
+                            iter_data2 =
+                                trc_db_iter_get_user_data(iter2, db_uid);
+                            if (iter_data2 == NULL)
+                                continue;
+                            if (test_iter_args_match(new_group->args,
+                                                     iter_data2->args_n,
+                                                     iter_data2->args,
+                                                     TRUE) != ITER_NO_MATCH)
+                            {
+                                if (iter_data2->nums_cnt >=
+                                            iter_data2->nums_max)
+                                {
+                                    iter_data2->set_nums = 
+                                             realloc(
+                                                iter_data2->set_nums,
+                                                ((iter_data2->nums_max +
+                                                 1) * 2) * sizeof(int));
+
+                                    iter_data2->nums_max += 1;
+                                    iter_data2->nums_max *= 2;
+                                }
+
+                                iter_data2->set_nums[
+                                            iter_data2->nums_cnt] =
+                                                test_entry->sets_cnt;
+                                iter_data2->nums_cnt++;
+                            }
+                        }
+
+                        test_entry->sets_cnt++;
+                    }
+
+                    new_group = TE_ALLOC(sizeof(*new_group));
+                    new_group->args = TE_ALLOC(sizeof(trc_test_iter_args));
+                    TAILQ_INIT(&new_group->args->head);
+
+                    args_comb_to_wildcard(args_in_wild, args_count,
+                                          iter_data1->args,
+                                          new_group);
+
+                    SLIST_INSERT_HEAD(&cur_comb_wilds, new_group,
+                                      links);
+                }
+            }
+        }
+
+        trc_update_args_groups_free(&cur_comb_wilds);
+        trc_update_args_groups_free(&wrong_wilds);
+    } while (get_next_args_comb(args_in_wild, args_count,
+                                &args_wild_count) == 0);
+
+    return rc;
+#undef TIME_DIFF
+}
+
+/**
+ * Generate wildcards for a given tests from full structure
+ * of iteration sets (so it has postfix "fss") described by
+ * (each set corresponds to some wildcard describing it).
+ * It can require too much time to build such a structure,
+ * use trc_update_generate_test_wilds() in such cases.
+ *
+ * @param db_uid        TRC DB User ID
+ * @param test_entry    TRC Update test entry
+ * @param flags         Flags
+ *
+ * @return Status code
+ */
+te_errno
+trc_update_gen_test_wilds_fss(unsigned int db_uid,
+                              trc_update_test_entry *test_entry,
+                              uint64_t flags)
+{
+    int          ids_count;
+    int          res_id;
+    int          i = 0;
+    int          j = 0;
+    int          k = 0;
+    int          l = 0;
+    int          rc = 0;
+    int          cur_set_cnt;
+
+    trc_update_args_groups       args_groups;
+    trc_update_args_group       *args_group;
+    trc_test_iter               *iter;
+    trc_update_test_iter_data   *iter_data;
+    trc_exp_results             *dup_results;
+    trc_test_iter_args          *dup_args;
+    trc_test_iter_arg           *arg;
+
+    int      set_num;
+    
+    problem     *wild_prbs;
+    int          p_id = 0;
+
+    if (flags & TRC_LOG_PARSE_NO_GEN_FSS)
+        return -1;
+
+    if (test_entry->test->type != TRC_TEST_SCRIPT)
+        return 0;
+
+    ids_count = trc_update_group_test_iters(db_uid, test_entry->test);
+
+    gettimeofday(&tv_before_gen_fss, NULL);
+
+    for (res_id = 1; res_id <= ids_count; res_id++)
+    {
+        cur_set_cnt = test_entry->sets_cnt;
+        memset(&args_groups, 0, sizeof(args_groups));
+        SLIST_INIT(&args_groups);
+
+        trc_update_get_iters_args_combs(db_uid, test_entry->test, res_id,
+                                        &args_groups);
+
+        SLIST_FOREACH(args_group, &args_groups, links)
+        {
+            rc = trc_update_gen_args_group_fss(db_uid, test_entry,
+                                               res_id, args_group,
+                                               flags);
+            if (rc < 0)
+            {
+                trc_update_args_groups_free(&args_groups);
+                TAILQ_FOREACH(iter, &test_entry->test->iters.head, links)
+                {
+                    iter_data = trc_db_iter_get_user_data(iter, db_uid);
+                    if (iter_data == NULL || !iter_data->to_save)
+                        continue;
+
+                    iter_data->results_id = 0;
+                }
+
+                return rc;
+            }
+        }
+
+        trc_update_args_groups_free(&args_groups);
+    }
+
+    wild_prbs = calloc(ids_count, sizeof(*wild_prbs));
+
+    for (res_id = 1; res_id <= ids_count; res_id++)
+    {
+        p_id = res_id - 1;
+        wild_prbs[p_id].set_max = 10;
+        wild_prbs[p_id].set_num = 0;
+        wild_prbs[p_id].sets = calloc(wild_prbs[p_id].set_max,
+                                   sizeof(set));
+        k = 0;
+
+        TAILQ_FOREACH(iter, &test_entry->test->iters.head, links)
+        {
+            iter_data = trc_db_iter_get_user_data(iter, db_uid);
+            if (iter_data == NULL || !iter_data->to_save ||
+                iter_data->results_id != res_id)
+                continue;
+
+            k++;
+
+            for (i = 0; i < iter_data->nums_cnt; i++)
+            {
+                for (j = 0; j < wild_prbs[p_id].set_num; j++)
+                    if (wild_prbs[p_id].sets[j].id ==
+                                                iter_data->set_nums[i])
+                        break;
+
+                if (j == wild_prbs[p_id].set_num)
+                {
+                    if (wild_prbs[p_id].set_num ==
+                                        wild_prbs[p_id].set_max)
+                    {
+                        wild_prbs[p_id].set_max *= 2;
+                        wild_prbs[p_id].sets =
+                            realloc(wild_prbs[p_id].sets,
+                                    sizeof(set) *
+                                            wild_prbs[p_id].set_max);
+                    }
+
+                    set_num = wild_prbs[p_id].set_num;
+                    wild_prbs[p_id].sets[set_num].els =
+                                                calloc(1, sizeof(int));
+                    wild_prbs[p_id].sets[set_num].els[0] = k - 1;
+                    wild_prbs[p_id].sets[set_num].max = 1;
+                    wild_prbs[p_id].sets[set_num].num = 1;
+                    wild_prbs[p_id].sets[set_num].id =
+                                                iter_data->set_nums[i];
+                    wild_prbs[p_id].set_num++;
+                }
+                else
+                {
+                    l = wild_prbs[p_id].sets[j].num;
+                    if (l == wild_prbs[p_id].sets[j].max)
+                    {
+                        wild_prbs[p_id].sets[j].max *= 2;
+                        wild_prbs[p_id].sets[j].els =
+                           realloc(wild_prbs[p_id].sets[j].els,
+                                   sizeof(int) *
+                                    wild_prbs[p_id].sets[j].max);
+                    }
+
+                    wild_prbs[p_id].sets[j].els[l] = k - 1;
+                    wild_prbs[p_id].sets[j].num++;
+                }
+            }
+        }
+
+        wild_prbs[p_id].elm_num = k;
+        get_fss_solution(&wild_prbs[p_id],
+                         !!(flags & TRC_LOG_PARSE_INTERSEC_WILDS) ?
+                             ALG_EXACT_COV_BOTH : ALG_SET_COV_GREEDY);
+    }
+
+    /* Delete original iterations - they will be replaced by wildcards */
+    iter = TAILQ_FIRST(&test_entry->test->iters.head);
+    if (iter != NULL)
+    {
+        do {
+            TAILQ_REMOVE(&test_entry->test->iters.head, iter, links);
+            iter_data = trc_db_iter_get_user_data(iter, db_uid);
+            if (iter_data != NULL)
+            {
+                free(iter_data->set_nums);
+                iter_data->set_nums = NULL;
+            }
+            trc_update_free_test_iter_data(iter_data);
+            if (iter->node != NULL)
+            {
+                xmlUnlinkNode(iter->node);
+                xmlFreeNode(iter->node);
+            }
+            trc_free_test_iter(iter);
+            free(iter);
+        } while ((iter =
+                    TAILQ_FIRST(&test_entry->test->iters.head)) != NULL);
+    }
+
+    /* Insert generated wildcards in TRC DB */
+    for (i = 0; i < ids_count; i++)
+    {
+        for (j = 0; j < wild_prbs[i].sol_num; j++)
+        {
+            l = wild_prbs[i].sol[j];
+
+            args_group = SLIST_FIRST(
+                            &test_entry->sets[wild_prbs[i].sets[l].id]);
+            while (SLIST_NEXT(args_group, links) != NULL)
+                args_group = SLIST_NEXT(args_group, links);
+
+            iter = TE_ALLOC(sizeof(*iter));
+            iter->exp_default = trc_exp_result_dup(
+                                        args_group->exp_default);
+            dup_results = trc_exp_results_dup(
+                                        args_group->exp_results);
+            memcpy(&iter->exp_results, dup_results, sizeof(*dup_results));
+            free(dup_results);
+            TAILQ_INIT(&iter->args.head);
+            dup_args = trc_test_iter_args_dup(args_group->args);
+            while ((arg = TAILQ_FIRST(&dup_args->head)) != NULL)
+            {
+                TAILQ_REMOVE(&dup_args->head, arg, links);
+                TAILQ_INSERT_TAIL(&iter->args.head, arg, links);
+            }
+
+            free(dup_args);
+            iter->parent = test_entry->test;
+
+            if (test_entry->test->filename != NULL)
+                iter->filename = strdup(test_entry->test->filename);
+
+            iter_data = TE_ALLOC(sizeof(*iter_data));
+            iter_data->to_save = TRUE;
+            trc_db_iter_set_user_data(iter, db_uid, iter_data);
+
+            TAILQ_INSERT_TAIL(&test_entry->test->iters.head, iter, links);
+        }
+        problem_free(&wild_prbs[i]);
+    }
+
+    for (i = 0; i < test_entry->sets_cnt; i++)
+        trc_update_args_groups_free(&test_entry->sets[i]);
+
+    free(test_entry->sets);
+    test_entry->sets = NULL;
+    test_entry->sets_cnt = test_entry->sets_max = 0;
+    free(wild_prbs);
+
+    return 0;
+}
+
+/**
+ * Generate wildcards.
  *
  * @param db_uid        TRC DB User ID
  * @param updated_tests Tests to be updated
@@ -4518,19 +5103,24 @@ trc_update_generate_test_wilds(unsigned int db_uid,
  *
  * @return Status code
  */
-static te_errno
-trc_update_generate_wilds(unsigned int db_uid,
-                          trc_update_tests_groups *updated_tests,
-                          uint64_t flags)
+te_errno
+trc_update_generate_wilds_gen(unsigned int db_uid,
+                              trc_update_tests_groups *updated_tests,
+                              uint64_t flags)
 {
     trc_update_tests_group  *group;
     trc_update_test_entry   *test_entry;
+    int                      rc = 0;
 
     TAILQ_FOREACH(group, updated_tests, links)
     {
         TAILQ_FOREACH(test_entry, &group->tests, links)
-            trc_update_generate_test_wilds(db_uid, test_entry->test,
-                                           flags);
+        {
+            rc = trc_update_gen_test_wilds_fss(db_uid, test_entry, flags);
+            if (rc < 0)
+                trc_update_generate_test_wilds(db_uid, test_entry->test,
+                                               flags);
+        }
     }
 
     return 0;
@@ -5288,9 +5878,9 @@ trc_update_process_logs(trc_update_ctx *gctx)
             !(gctx->flags & TRC_LOG_PARSE_NO_GEN_WILDS))
         {
             printf("Generating wildcards...\n");
-            CHECK_F_RC(trc_update_generate_wilds(gctx->db_uid,
-                                                 ctx.updated_tests,
-                                                 gctx->flags));
+            CHECK_F_RC(trc_update_generate_wilds_gen(gctx->db_uid,
+                                                     ctx.updated_tests,
+                                                     gctx->flags));
         }
 
         if (gctx->flags &
