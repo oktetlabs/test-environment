@@ -483,7 +483,6 @@ greedy_set_cov(problem *prb)
                 max_i = i;
         }
 
-        printf("max = %d\n", prb->sets[max_i].n_diff);
         avail[max_i] = -1;
         n_avail--;
         O_min[N_min] = max_i;
