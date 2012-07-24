@@ -8246,9 +8246,6 @@ TARPC_FUNC(sendmmsg_alt,
             out->mmsg.mmsg_val[j].msg_len = mmsg[j].msg_len;
             msghdr_free(msg);
        }
-
-        for (j = 0; j < out->mmsg.mmsg_len; j++)
-            free(mmsg[j].msg_hdr.msg_control);
     }
 finish:
     ;
