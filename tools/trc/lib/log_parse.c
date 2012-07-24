@@ -5014,7 +5014,7 @@ trc_update_gen_test_wilds_fss(unsigned int db_uid,
         wild_prbs[p_id].elm_num = k;
         get_fss_solution(&wild_prbs[p_id],
                          !!(flags & TRC_LOG_PARSE_INTERSEC_WILDS) ?
-                             ALG_EXACT_COV_BOTH : ALG_SET_COV_GREEDY);
+                             ALG_SET_COV_GREEDY : ALG_EXACT_COV_BOTH);
     }
 
     /* Delete original iterations - they will be replaced by wildcards */
