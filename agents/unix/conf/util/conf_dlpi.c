@@ -70,30 +70,44 @@
 static te_errno
 dlpi_open(const char *ifname, int *fd)
 {
-    te_errno    rc;
-    char        devname[32];
+    const char *fpath[] = {
+        "/dev/%s", /* Some old Solaris version worked with this path */
+        "/dev/net/%s", /* Solaris 5.11 requires /dev/net prefix */
+    };
+    size_t      i;
+    char        path[32];
+    te_errno    rc = TE_EOPNOTSUPP;
 
     assert(ifname != NULL);
     assert(fd != NULL);
 
-    if (snprintf(devname, sizeof(devname), "/dev/%s", ifname) >=
-            (int)sizeof(devname))
+    for (i = 0; i < sizeof(fpath) / sizeof(fpath[0]); i++)
     {
-        ERROR("%s:%u: Too small buffer", __FUNCTION__, __LINE__);
-        return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
-    }
+        int len;
 
-    *fd = open(devname, O_RDWR);
-    if (*fd < 0)
-    {
+        len = snprintf(path, sizeof(path), fpath[i], ifname);
+        if (len >= (int)sizeof(path))
+        {
+            ERROR("%s:%u: Too small buffer", __FUNCTION__, __LINE__);
+            return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
+        }
+
+        *fd = open(path, O_RDWR);
+        if (*fd >= 0)
+        {
+            VERB("DLPI: Opened '%s'", path);
+            return 0;
+        }
+
         rc = te_rc_os2te(errno);
         if (rc != TE_ENOENT)
-            ERROR("%s(): Failed to open device %s: %r", __FUNCTION__,
-                  devname, rc);
-        return TE_RC(TE_TA_UNIX, rc);
+        {
+            ERROR("%s(): Failed to open device '%s': %r",
+                  __FUNCTION__, path, rc);
+        }
     }
 
-    return 0;
+    return TE_RC(TE_TA_UNIX, rc);
 }
 
 /* See the description in conf_dlpi.h */
@@ -547,9 +561,15 @@ ta_unix_conf_dlpi_phys_bcast_addr_get(const char *name, void *addr,
 
     if (info_ack->dl_brdcst_addr_length == 0)
     {
-        ERROR("%s(): Zero broadcat address length in DL_INFO_ACK",
-              __FUNCTION__);
-        rc = TE_EPROTO;
+        VERB("%s(): Zero broadcat address length in DL_INFO_ACK",
+             __FUNCTION__);
+
+        /*
+         * From man page of DL_INFO_ACK:
+         * When the Stream is unattached, or when the PPA does not support
+         * broadcast, 'dl_brdcst_addr_length' will be set to zero (0).
+         */
+        memset(addr, 0, (*addrlen = ETHER_ADDR_LEN));
         goto exit;
     }
     *addrlen = info_ack->dl_brdcst_addr_length;

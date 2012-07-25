@@ -46,15 +46,8 @@
 #endif
 
 /* Solaris sream interface */
-#ifdef HAVE_STROPTS_H
-#include <stropts.h>
-#endif
 #ifdef HAVE_INET_ND_H
 #include <inet/nd.h>
-#endif
-#if defined(HAVE_STROPTS_H) && defined(HAVE_INET_ND_H) && \
-    !defined(SUN_I_STR)
-#define SUN_I_STR 1
 #endif
 
 #include "te_stdint.h"
@@ -68,7 +61,9 @@
 #include "unix_internal.h"
 #include "te_shell_cmd.h"
 
+#ifdef HAVE_SYS_KLOG_H
 #include <sys/klog.h>
+#endif
 
 #if __linux__
 static char trash[128];
@@ -78,10 +73,10 @@ static char trash[128];
  * System wide settings both max and default parameters of sndbuf/rcvbuf:
  * Linux UDP: /proc/sys/net/core/
  *             [rmem_max, rmem_default, wmem_max, wmem_default]
- * Solaris UDP: ioctl()
+ * Solaris UDP: 'ndd' utility
  * Linux TCP: /proc/sys/net/ipv4/
  *             [tcp_rmem, tcp_wmem]
- * Solaris TCP: ioctl()
+ * Solaris TCP: 'ndd' utility
  */
 
 static te_errno rcvbuf_def_set(unsigned int, const char *,
@@ -211,17 +206,23 @@ ta_unix_conf_sys_init(void)
 static te_errno
 console_loglevel_set(unsigned int gid, const char *oid, const char *value)
 {
+#ifdef HAVE_SYS_KLOG_H
     int level = atoi(value);
+#endif
 
     UNUSED(gid);
     UNUSED(oid);
 
+#ifdef HAVE_SYS_KLOG_H
     if (klogctl(8, NULL, level) < 0)
     {
         ERROR("klogctl: %s", strerror(errno));
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
     return 0;
+#else
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif
 }
 
 /**
@@ -279,51 +280,63 @@ console_loglevel_get(unsigned int gid, const char *oid, char *value)
  *
  * @return              Status code.
  */
-#if SUN_I_STR
+#if defined(__sun)
 static te_errno
 sun_ioctl(char *drv, char *param, int cmd, char *value)
 {
-    int             fd;
-    struct strioctl si;
-    int             rc;
-    char            dev[80];
-    char            cmd_req[80];
-    int             flags;
+    int       out_fd;
+    FILE     *fp;
+    char      shell_cmd[80];
+    te_errno  rc = 0;
+    pid_t     pid;
+    int       status;
 
     if (cmd == ND_GET)
-    {
-        si.ic_cmd = ND_GET;
-        flags = O_RDONLY;
-        sprintf(cmd_req,"%s%c", param, '\0');
-    }
+        snprintf(shell_cmd, sizeof(shell_cmd),
+                 "/usr/sbin/ndd -get /dev/%s %s", drv, param);
     else
+        snprintf(shell_cmd, sizeof(shell_cmd),
+                 "/usr/sbin/ndd -set /dev/%s %s %s", drv, param, value);
+
+    if ((pid = te_shell_cmd(shell_cmd, -1, NULL, &out_fd, NULL)) < 0)
     {
-        si.ic_cmd = ND_SET;
-        flags = O_WRONLY;
-        snprintf(cmd_req, 80, "%s%c%s%c", param, '\0', value, '\0');
+        ERROR("Failed to execute '%s': (%s)",
+              shell_cmd, strerror(errno));
+        return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
-    snprintf(dev, 80, "/dev/%s", drv);
-    if ((fd = open(dev, flags)) < 0)
-        return TE_OS_RC(TE_TA_UNIX, errno);
-
-    si.ic_timout = 0;
-    si.ic_len = sizeof(cmd_req);
-    si.ic_dp = cmd_req;
-
-    if ((rc = ioctl(fd, I_STR, &si)) < 0)
+    if ((fp = fdopen(out_fd, "r")) == NULL)
     {
-        close(fd);
-        return TE_OS_RC(TE_TA_UNIX, errno);
+        ERROR("Failed to obtain file pointer for shell command output");
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+        goto cleanup;
     }
 
     if (cmd == ND_GET)
     {
-        strncpy(value, cmd_req, strlen(cmd_req));
+        if (fgets(value, RCF_MAX_VAL, fp) == NULL)
+        {
+            ERROR("Failed to get shell command execution result '%s'",
+                  shell_cmd);
+            rc = TE_OS_RC(TE_TA_UNIX, TE_EFAULT);
+        }
+        else
+        {
+            size_t len = strlen(value);
+
+            /* Cut trailing new line character */
+            if (len != 0)
+                value[len - 1] = '\0';
+        }
     }
 
-    close(fd);
-    return 0;
+cleanup:
+    if (fp != NULL)
+        fclose(fp);
+    close(out_fd);
+    ta_waitpid(pid, &status, 0);
+
+    return rc;
 }
 #endif
 
@@ -454,7 +467,7 @@ tcp_sndbuf_max_set(unsigned int gid, const char *oid,
     rc = tcp_mem_set("/proc/sys/net/ipv4/tcp_wmem", bmem, 3);
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
-#elif SUN_I_STR
+#elif defined(__sun)
     rc = sun_ioctl("tcp", "tcp_max_buf", ND_SET, (char *)value);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
@@ -495,7 +508,7 @@ tcp_sndbuf_max_get(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     sprintf(value,"%d", bmem[2]);
-#elif SUN_I_STR
+#elif defined(__sun)
     rc = sun_ioctl("tcp", "tcp_max_buf", ND_GET, value);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -543,7 +556,7 @@ tcp_sndbuf_def_set(unsigned int gid, const char *oid,
     rc = tcp_mem_set("/proc/sys/net/ipv4/tcp_wmem", bmem, 3);
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
-#elif SUN_I_STR
+#elif defined(__sun)
     rc = sun_ioctl("tcp", "tcp_xmit_hiwat", ND_SET, (char *)value);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
@@ -584,7 +597,7 @@ tcp_sndbuf_def_get(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     sprintf(value,"%d", bmem[1]);
-#elif SUN_I_STR
+#elif defined(__sun)
     rc = sun_ioctl("tcp", "tcp_xmit_hiwat", ND_GET, value);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -631,7 +644,7 @@ tcp_rcvbuf_max_set(unsigned int gid, const char *oid,
     rc = tcp_mem_set("/proc/sys/net/ipv4/tcp_rmem", bmem, 3);
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
-#elif SUN_I_STR
+#elif defined(__sun)
     rc = sun_ioctl("tcp", "tcp_max_buf", ND_SET, (char *)value);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
@@ -672,7 +685,7 @@ tcp_rcvbuf_max_get(unsigned int gid, const char *oid,
 
     sprintf(value,"%d", bmem[2]);
 
-#elif SUN_I_STR
+#elif defined(__sun)
     rc = sun_ioctl("tcp", "tcp_max_buf", ND_GET, value);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -718,7 +731,7 @@ tcp_rcvbuf_def_set(unsigned int gid, const char *oid,
     rc = tcp_mem_set("/proc/sys/net/ipv4/tcp_rmem", bmem, 3);
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
-#elif SUN_I_STR
+#elif defined(__sun)
     rc = sun_ioctl("tcp", "tcp_recv_hiwat", ND_SET, (char *)value);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
@@ -758,7 +771,7 @@ tcp_rcvbuf_def_get(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     sprintf(value,"%d", bmem[1]);
-#elif SUN_I_STR
+#elif defined(__sun)
     rc = sun_ioctl("tcp", "tcp_recv_hiwat", ND_GET, value);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -1119,7 +1132,7 @@ udp_sndbuf_max_set(unsigned int gid, const char *oid,
     }
 #if __linux__
     rc = sndbuf_max_set(gid, oid, value);
-#elif SUN_I_STR
+#elif defined(__sun)
     rc = sun_ioctl("udp", "udp_max_buf", ND_SET, (char *)value);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
@@ -1153,7 +1166,7 @@ udp_sndbuf_max_get(unsigned int gid, const char *oid,
 
 #if __linux__
     rc = sndbuf_max_get(gid, oid, value);
-#elif SUN_I_STR
+#elif defined(__sun)
     rc = sun_ioctl("udp", "udp_max_buf", ND_GET, value);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -1186,7 +1199,7 @@ udp_sndbuf_def_set(unsigned int gid, const char *oid,
     }
 #if __linux__
     rc = sndbuf_def_set(gid, oid, value);
-#elif SUN_I_STR
+#elif defined(__sun)
     rc = sun_ioctl("udp", "udp_xmit_hiwat", ND_SET, (char *)value);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
@@ -1219,7 +1232,7 @@ udp_sndbuf_def_get(unsigned int gid, const char *oid,
     }
 #if __linux__
     rc = sndbuf_def_get(gid, oid, value);
-#elif SUN_I_STR
+#elif defined(__sun)
     rc = sun_ioctl("udp", "udp_xmit_hiwat", ND_GET, value);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -1252,7 +1265,7 @@ udp_rcvbuf_max_set(unsigned int gid, const char *oid,
     }
 #if __linux__
     rc = rcvbuf_max_set(gid, oid, value);
-#elif SUN_I_STR
+#elif defined(__sun)
     rc = sun_ioctl("udp", "udp_max_buf", ND_SET, (char *)value);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
@@ -1285,7 +1298,7 @@ udp_rcvbuf_max_get(unsigned int gid, const char *oid,
     }
 #if __linux__
     rc = rcvbuf_max_get(gid, oid, value);
-#elif SUN_I_STR
+#elif defined(__sun)
     rc = sun_ioctl("udp", "udp_max_buf", ND_GET, value);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -1319,7 +1332,7 @@ udp_rcvbuf_def_set(unsigned int gid, const char *oid,
 
 #if __linux__
     rc = rcvbuf_def_set(gid, oid, value);
-#elif SUN_I_STR
+#elif defined(__sun)
     rc = sun_ioctl("udp", "udp_recv_hiwat", ND_SET, (char *)value);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
@@ -1352,7 +1365,7 @@ udp_rcvbuf_def_get(unsigned int gid, const char *oid,
     }
 #if __linux__
     rc = rcvbuf_def_get(gid, oid, value);
-#elif SUN_I_STR
+#elif defined(__sun)
     rc = sun_ioctl("udp", "udp_recv_hiwat", ND_GET, value);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOENT);

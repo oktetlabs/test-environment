@@ -12,7 +12,7 @@ AM_CFLAGS = -fno-strict-aliasing $(TE_CFLAGS)
 AM_LDFLAGS = -L$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib \
              -Wl,-Bstatic $(TE_LDFLAGS)
 
-LIBS = $(TAD_LIBS) @LIBS@
+LIBS = @LIBS@
 
 EXTRA_DIST=symtbl_funcs
 
@@ -22,22 +22,38 @@ noinst_HEADERS = unix_internal.h dahdi_user.h
 
 taexec_PROGRAMS = ta
 
+ta_extra_sources =
+if WITH_TELEPHONY
+ta_extra_sources += telephony.c
+endif
+
+if WITH_POWER_SW
+ta_extra_sources += power_sw.c
+endif
+
 ta_SOURCES = main.c ftp_routines.c log_serial.c log_remote.c \
-telephony.c power_sw.c
+             $(ta_extra_sources)
 
 ta_LDADD = symtbl.o conf/libconf.a rpc/libtarpc.a -lrcfpch -lm \
            -l$(TAD) $(TE_LDADD) \
            -lrpcxdr -lrpc_types -lconf_oid -lloggerta -lrcfpch -ltools \
-           $(EXTRA_LDADD) -lpcap
+           $(EXTRA_LDADD)
 
 CLEANFILES = symtbl.c
 
-SYMTBL_OBJECTS = main.o ftp_routines.o log_serial.o log_remote.o \
-telephony.o power_sw.o
+SYMTBL_OBJECTS = main.o ftp_routines.o log_serial.o log_remote.o
 SYMTBL_LIBS = $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtools.a \
               $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librcfpch.a \
               $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/lib$(TAD).a \
               conf/libconf.a rpc/libtarpc.a
+
+if WITH_TELEPHONY
+SYMTBL_OBJECTS += telephony.o
+endif
+
+if WITH_POWER_SW
+SYMTBL_OBJECTS += power_sw.o
+endif
 
 if ISCSI_TARGET_USE
 SYMTBL_LIBS+=\

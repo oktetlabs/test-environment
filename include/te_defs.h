@@ -103,6 +103,12 @@ typedef enum te_bool3 {
 /* User name for all control messages (from Tester and tests) */
 #define TE_LOG_CMSG_USER          "Control"
 
+#ifndef __CONCAT
+#define __CONCAT(_a, _b) _a##_b
+#endif
+
+#define TE_CONCAT(_a, _b) __CONCAT(_a, _b)
+
 /**
  * Determines minimum from two arguments. If arguments are equal,
  * preference is given to the first one.

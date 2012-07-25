@@ -45,10 +45,6 @@
 #include <netpacket/packet.h>
 #endif
 
-#if HAVE_SYS_IOCTL_H
-#include <sys/ioctl.h>
-#endif
-
 #include <fcntl.h>
 
 #include <string.h>
@@ -60,7 +56,6 @@
 
 #include "tad_eth_impl.h"
 #include "logger_ta_fast.h" 
-
 
 
 /**
@@ -114,30 +109,17 @@ tad_tcpip_flood(csap_p csap, const char  *usr_param, tad_pkts *pkts)
         tad_eth_rw_data     *spec_data = csap_get_rw_data(csap);
         struct sockaddr_ll   bind_addr;
         struct ifreq         if_req;
-        int                  cfg_socket;
         int                  buf_size;
+        unsigned int         ifindex;
 
-        cfg_socket = socket(AF_INET, SOCK_DGRAM, 0);
-        if (cfg_socket < 0)
+        ifindex = if_nametoindex(spec_data->sap.name);
+        if (ifindex == 0)
         {
             rc = TE_OS_RC(TE_TAD_PF_PACKET, errno);
-            ERROR("%s(): socket(AF_INET, SOCK_DGRAM, 0) failed: %r",
-                  __FUNCTION__, rc);
-            return rc;
-        }
-
-        strncpy(if_req.ifr_name, spec_data->sap.name, sizeof(if_req.ifr_name));
-
-        if (ioctl(cfg_socket, SIOCGIFINDEX, &if_req))
-        {
-            rc = TE_OS_RC(TE_TAD_PF_PACKET, errno);
-            ERROR("%s(): ioctl(%s, SIOCGIFINDEX) failed: %r",
+            ERROR("%s(): if_nametoindex(%s) failed: %r",
                   __FUNCTION__, spec_data->sap.name, rc);
-            close(cfg_socket);
             return rc;
         }
-
-        close(cfg_socket);
 
         out_socket = socket(PF_PACKET, SOCK_RAW, htons(0));
         if (out_socket < 0)
@@ -170,7 +152,7 @@ tad_tcpip_flood(csap_p csap, const char  *usr_param, tad_pkts *pkts)
         memset(&bind_addr, 0, sizeof(bind_addr));
         bind_addr.sll_family = AF_PACKET;
         bind_addr.sll_protocol = htons(0);
-        bind_addr.sll_ifindex = if_req.ifr_ifindex;
+        bind_addr.sll_ifindex = ifindex;
 
         if (bind(out_socket, SA(&bind_addr), sizeof(bind_addr)) < 0)
         {

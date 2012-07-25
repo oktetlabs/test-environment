@@ -39,7 +39,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
-#include <sys/fcntl.h>
+#include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/file.h>
 #include <math.h>

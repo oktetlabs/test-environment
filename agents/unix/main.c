@@ -1661,9 +1661,10 @@ env(void)
 te_errno
 ta_vlan_get_parent(const char *ifname, char *parent)
 {
-    char f_buf[200];
+    te_errno rc = 0;
+    char     f_buf[200];
 
-    *parent = 0;
+    *parent = '\0';
 #if defined __linux__
     {
         FILE *proc_vlans = fopen("/proc/net/vlan/config", "r");
@@ -1711,10 +1712,15 @@ ta_vlan_get_parent(const char *ifname, char *parent)
 #elif defined __sun__
     {
         int   out_fd = -1;
-        FILE *out;
+        FILE *out = NULL;
         int   status;
-        pid_t dladm_cmd_pid = te_shell_cmd("LANG=POSIX dladm show-link -p",
-                                           -1, NULL, &out_fd, NULL);
+        char  cmd[80];
+        pid_t dladm_cmd_pid;
+       
+        snprintf(cmd, sizeof(cmd),
+                 "LANG=POSIX /usr/sbin/dladm show-link -p -o OVER %s",
+                 ifname);
+        dladm_cmd_pid = te_shell_cmd(cmd, -1, NULL, &out_fd, NULL);
         VERB("%s(<%s>): cmd pid %d, out fd %d",
              __FUNCTION__, ifname, (int)dladm_cmd_pid, out_fd);
         if (dladm_cmd_pid < 0)
@@ -1723,32 +1729,25 @@ ta_vlan_get_parent(const char *ifname, char *parent)
             return TE_RC(TE_TA_UNIX, TE_ESHCMD);
         }
 
-        out = fdopen(out_fd, "r");
-        while (fgets(f_buf, sizeof(f_buf), out) != NULL)
+        if ((out = fdopen(out_fd, "r")) == NULL)
         {
-            char *s = strchr(f_buf, ' ');
-            char *p;
-            *s = 0;
-            s++;
-            if (strcmp(ifname, f_buf) != 0)
-                continue;
-            if (strncmp(s, "type=vlan ", sizeof("type=vlan ") - 1) != 0)
-                continue;
-
-            VERB("%s(): found parent <%s> for if <%s>",
-                 __FUNCTION__, s, ifname);
-
-            s = strstr(s, "device");
-            if (s == NULL)
-                continue;
-            s = strchr(s, '=');
-            if (*s) s++; /* skip '=' */
-            p = parent;
-            while(*s != 0 && !isspace(*s))
-                *(p++) = *(s++);
-            *p = 0;
-            break;
+            ERROR("Failed to obtain file pointer for shell command output");
+            rc = TE_OS_RC(TE_TA_UNIX, errno);
+            goto cleanup;
         }
+        if (fgets(f_buf, sizeof(f_buf), out) != NULL)
+        {
+            size_t len = strlen(f_buf);
+
+            /* Cut trailing new line character */
+            if (len != 0 && f_buf[len - 1] == '\n')
+                f_buf[len - 1] = '\0';
+            snprintf(parent, IFNAMSIZ, "%s", f_buf);
+        }
+cleanup:
+        if (out != NULL)
+            fclose(out);
+        close(out_fd);
 
         ta_waitpid(dladm_cmd_pid, &status, 0);
         if (status != 0)
@@ -1757,10 +1756,9 @@ ta_vlan_get_parent(const char *ifname, char *parent)
                   __FUNCTION__, status);
             return TE_RC(TE_TA_UNIX, TE_ESHCMD);
         }
-        fclose(out);
     }
 #endif
-    return 0;
+    return rc;
 }
 
 /**

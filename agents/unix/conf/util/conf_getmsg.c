@@ -82,6 +82,10 @@
 
 #define PATH_GETMSG_DEV     "/dev/arp"
 
+#ifndef IRE_CACHETABLE
+#define IRE_CACHETABLE          (IRE_CACHE | IRE_BROADCAST | IRE_LOCAL | \
+                                 IRE_LOOPBACK)
+#endif /* IRE_CACHETABLE */
 
 static void *getmsg_buf = NULL;
 static size_t getmsg_buflen = 0;
@@ -90,7 +94,7 @@ static char hugebuf[8192];
 
 
 /* See the description in */
-te_errno
+static te_errno
 ta_unix_conf_get_mib(unsigned int mib_level, unsigned int mib_name,
                      void **buf, size_t *buflen, size_t *miblen)
 {
@@ -408,11 +412,13 @@ route_entry_process(const mib2_ipRouteEntry_t *rt)
 
     if (*ifname == '\0')
     {
-        ta_rt_info_t    rt_info;
+        ta_rt_info_t rt_info;
 
-        memset(&rt_info, 0, sizeof(rt_info));
+        ta_rt_info_init(TA_RT_TYPE_UNICAST, &rt_info);
+        
         rt_info.dst.ss_family = AF_INET;
         SIN(&rt_info)->sin_addr.s_addr = rt->ipRouteNextHop;
+
         rc = ta_unix_conf_outgoing_if(&rt_info);
         if (rc != 0)
             return rc;

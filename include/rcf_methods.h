@@ -188,6 +188,42 @@ typedef te_errno (* rcf_talib_receive)(rcf_talib_handle handle,
 typedef te_errno (* rcf_talib_close)(rcf_talib_handle  handle,
                                      fd_set           *select_set);
 
+/**
+ * Structure to keep RCF TA methods.
+ * A library that implements RCF TA communication type
+ * shall export this data structure via RCF_TALIB_METHODS_DEFINE() macro.
+ */
+struct rcf_talib_methods {
+    rcf_talib_start     start;    /**< Start TA */
+    rcf_talib_close     close;    /**< Close TA */
+    rcf_talib_finish    finish;   /**< Stop TA */
+    rcf_talib_connect   connect;  /**< Connect to TA */
+    rcf_talib_transmit  transmit; /**< Transmit to TA */
+    rcf_talib_is_ready  is_ready; /**< Is data from TA pending */
+    rcf_talib_receive   receive;  /**< Receive from TA */
+};
+
+/**
+ * Export RCF TA communication library methods.
+ *
+ * @param talib_prefix_  Prefix name used in method functions
+ *
+ * @note This macro expects TE_LIB_NAME is defined with the name
+ * of the library. For the case of rcfunix library TE_LIB_NAME
+ * is defined as a part of command line options in Makefile.am
+ */
+#define RCF_TALIB_METHODS_DEFINE(talib_prefix_) \
+extern struct rcf_talib_methods TE_CONCAT(TE_LIB_NAME, _methods);        \
+struct rcf_talib_methods TE_CONCAT(TE_LIB_NAME, _methods) = {            \
+    talib_prefix_ ## _start,                                            \
+    talib_prefix_ ## _close,                                            \
+    talib_prefix_ ## _finish,                                           \
+    talib_prefix_ ## _connect,                                          \
+    talib_prefix_ ## _transmit,                                         \
+    talib_prefix_ ## _is_ready,                                         \
+    talib_prefix_ ## _receive                                           \
+}
+
 #ifdef __cplusplus
 }
 #endif

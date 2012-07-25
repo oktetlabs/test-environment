@@ -533,7 +533,9 @@ rt_msghdr_to_ta_rt_info(const struct rt_msghdr *msg, ta_rt_info_t *rt_info)
         {
             ta_rt_info_t tmp_rt;
 
+            ta_rt_info_init(TA_RT_TYPE_UNICAST, &tmp_rt);
             memcpy(&tmp_rt.dst, &rt_info->gw, addrlen);
+
             VERB("%s(): Resolve outgoing interface for gateway %s",
                  __FUNCTION__,
                  te_sockaddr_get_ipstr(CONST_SA(&tmp_rt.dst)));
@@ -720,6 +722,10 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
             msg->rtm_type = RTM_CHANGE;
             break;
 
+        case TA_CFG_OBJ_GET:
+            msg->rtm_type = RTM_GET;
+            break;
+
         default:
             ERROR("Route action %u is supported", (unsigned)action);
             RETURN_RC(TE_RC(TE_TA_UNIX, TE_ENOSYS));
@@ -745,7 +751,7 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
             break;
 
         default:
-            ERROR("Routes of type %d are not supported yet");
+            ERROR("Routes of type %d are not supported yet", rt_info->type);
             RETURN_RC(TE_RC(TE_TA_UNIX, TE_ENOSYS));
     }
 
@@ -757,8 +763,22 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
     msg->rtm_msglen += addrlen;
     memcpy(addr, &rt_info->dst, addrlen);
 
-    /* If prefix is less than IP address length, if is route to host */
-    if (rt_info->prefix == te_netaddr_get_size(rt_info->dst.ss_family) << 3)
+    /*
+     * Check if this is a host route.
+     * - prefix is equal to IP address length;
+     * - prefix is zero and destination address is not all-zero;
+     *
+     * The second case is handled because we allow users to not specify
+     * prefix value when they search for a host route.
+     * Actually the best would be to force users fill prefix value
+     * correctly in all the cases (i.e. to set it to the size of
+     * network address), but this will require modifications different
+     * parts of code.
+     * In the future we should probably clear up this stuff, so TODO.
+     */
+    if (rt_info->prefix == te_netaddr_get_size(rt_info->dst.ss_family) << 3 ||
+        (rt_info->prefix == 0 &&
+         !te_sockaddr_is_wildcard(CONST_SA(&rt_info->dst))))
     {
         msg->rtm_flags |= RTF_HOST;
     }
@@ -827,22 +847,34 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
         addr = SA(((const uint8_t *)addr) + addrlen);
     }
 
-    /* Netmask */
-    addrlen = te_sockaddr_get_size_by_af(rt_info->dst.ss_family);
-    if (msglen < addrlen)
-        RETURN_RC(TE_RC(TE_TA_UNIX, TE_ESMALLBUF));
-    msglen -= addrlen;
-    msg->rtm_msglen += addrlen;
-    rc = te_sockaddr_mask_by_prefix(addr, addrlen, rt_info->dst.ss_family,
-                                    rt_info->prefix);
-    if (rc != 0)
+    /*
+     * Netmask
+     * Do not include netmask value in case we search for a host route.
+     * From run-time Solaris behavior it follows that:
+     * - we should not specify netmask for host routes;
+     * - we should specify netmask when we get default route
+     *   (DST: wildcard, Netmask: wildcard)
+     */
+    if (rt_info->prefix != 0 ||
+        te_sockaddr_is_wildcard(CONST_SA(&rt_info->dst)))
     {
-        ERROR("%s(): te_sockaddr_mask_by_prefix() failed: %r",
-              __FUNCTION__, rc);
-        RETURN_RC(rc);
+        addrlen = te_sockaddr_get_size_by_af(rt_info->dst.ss_family);
+        if (msglen < addrlen)
+            RETURN_RC(TE_RC(TE_TA_UNIX, TE_ESMALLBUF));
+        msglen -= addrlen;
+        msg->rtm_msglen += addrlen;
+        rc = te_sockaddr_mask_by_prefix(addr, addrlen,
+                                        rt_info->dst.ss_family,
+                                        rt_info->prefix);
+        if (rc != 0)
+        {
+            ERROR("%s(): te_sockaddr_mask_by_prefix() failed: %r",
+                  __FUNCTION__, rc);
+            RETURN_RC(rc);
+        }
+        msg->rtm_addrs |= RTA_NETMASK;
+        addr = SA(((const uint8_t *)addr) + addrlen);
     }
-    msg->rtm_addrs |= RTA_NETMASK;
-    addr = SA(((const uint8_t *)addr) + addrlen);
 
     /* Interface */
     if (rt_info->flags & TA_RT_INFO_FLG_IF)
@@ -967,20 +999,13 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
     }
 
     rtm = (struct rt_msghdr *)rt_buf;
-    rtm->rtm_msglen = sizeof(*rtm);
-    rtm->rtm_version = RTM_VERSION;
-    rtm->rtm_type = RTM_GET;
-    rtm->rtm_addrs = RTA_DST;
-    rtm->rtm_pid = rt_pid;
-    rtm->rtm_seq = ++rt_seq;
-
-    addrlen = te_sockaddr_get_size(CONST_SA(&rt_info->dst));
-    memcpy(rt_buf + rtm->rtm_msglen, &rt_info->dst, addrlen);
-#if HAVE_STRUCT_SOCKADDR_SA_LEN
-    SA(rt_buf + rtm->rtm_msglen)->sa_len = addrlen;
-#endif
-    rtm->rtm_msglen += addrlen;
-
+    rc = ta_rt_info_to_rt_msghdr(TA_CFG_OBJ_GET, rt_info, rtm, rt_buflen);
+    if (rc != 0)
+    {
+        ERROR("ta_rt_info_to_rt_msghdr: ERROR happened for RT with DST %s",
+              te_sockaddr_get_ipstr(CONST_SA(&rt_info->dst)));
+        goto cleanup;
+    }
     assert(rtm->rtm_msglen <= rt_buflen);
 
     VERB("%s(): dst=%s seq=%u", __FUNCTION__,

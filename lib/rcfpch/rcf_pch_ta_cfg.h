@@ -117,6 +117,7 @@ typedef enum ta_cfg_obj_action {
     TA_CFG_OBJ_CREATE, /**< Create a new entry in the system */
     TA_CFG_OBJ_DELETE, /**< Delete an existing entry */
     TA_CFG_OBJ_SET, /**< Change some attribute of an existing entry */
+    TA_CFG_OBJ_GET, /**< Find/get an entry */
 } ta_cfg_obj_action_e;
 
 /** Object data structure, which is inserted into collection */
@@ -317,6 +318,21 @@ typedef struct ta_rt_info_t {
 #define TA_RT_INFO_FLG_TOS    0x0040
 /** Source address is specified for the route */
 #define TA_RT_INFO_FLG_SRC    0x0080
+
+/**
+ * Initialize ta_rt_info_t data structure.
+ *
+ * @param type     Which route type to set for @p rt_info
+ * @param rt_info  Routing information data structure to initialize
+ *
+ * @return N/A
+ */
+static inline void
+ta_rt_info_init(ta_route_type type, ta_rt_info_t *rt_info)
+{
+    memset(rt_info, 0, sizeof(*rt_info));
+    rt_info->type = type;
+}
 
 /**
  * Parses route instance name and fills in a part of rt_info 

@@ -971,8 +971,8 @@ tapi_cfg_net_assign_ip(unsigned int af, cfg_net_t *net,
                                   &net_hndl);
         if (rc != 0)
         {
-            ERROR("%s: Failed to allocate net to assign: %r",
-                  __FUNCTION__, rc);
+            ERROR("%s: Failed to allocate %s net to assign: %r",
+                  __FUNCTION__, (af == AF_INET) ? "ip4" : "ip6", rc);
             return rc;
         }
     }

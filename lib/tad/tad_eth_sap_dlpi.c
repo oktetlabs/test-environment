@@ -99,45 +99,99 @@ typedef struct dlpi_data {
                                     (FIXME: temporary solution) */
 } dlpi_data;
 
+static te_errno dlpi_sap_open(tad_eth_sap *sap,
+                              uint8_t *local_addr, size_t *local_addr_len);
+static te_errno dlpi_sap_close(tad_eth_sap *sap);
 
 /**
- * Split a device name into a device type name and a unit number.
+ * Open a new DLPI Stream over specified network interface.
  *
- * Returns -1 on error, 0 on success.
+ * @param dlpi    DLPI context structrue
+ * @param ifname  network interface name to open
+ * @param fd    file descriptor of a new DLPI Stream (OUT)
+ *
+ * @return Status of the operation.
+ *
+ * @note In case of an error @p fd is set to the value
+ *       that is less than zero.
  */
-static int
-split_dname_unmb(tad_eth_sap *sap)
+static te_errno
+sap_fd_open(dlpi_data *dlpi, const char *ifname, int *fd)
 {
-    dlpi_data *dlpi = (dlpi_data *)sap->data;
+    char  path[TAD_ETH_SAP_IFNAME_SIZE];
+    char  dev_name[TAD_ETH_SAP_IFNAME_SIZE];
+    char *eos = NULL;
     char *cp;
-    char *eos;
-    char *dn = "/dev/";
 
-    /* Look for a number at the end of the device name string */
-    cp = sap->name + strlen(sap->name) - 1;
-    if (*cp < '0' || *cp > '9')
+    /*
+     * The right thing to do is to use dlpi_open() function,
+     * but it is from Solaris-specifc libdlpi library.
+     * Right now we try to open a device file manually
+     * guessing its location.
+     * In generic case you would have a file named:
+     * "/dev/{drivername}", which will open a Stream of DL_STYLE2
+     * that will require ATTACH operation to be issued.
+     * Attach operation associates a Stream with the physical point
+     * of attachment (PPA).
+     *
+     * On Solaris 5.11 there are device files named:
+     * "/dev/net/{ifname}" and "/dev/ipnet/{ifname}".
+     * Opening these files leads to creating a Stream of DL_STYLE1
+     * that do not require attach operation because they already attached
+     * to corresponding PPA.
+     *
+     * We first try to open a file under "/dev/net/{ifname}" and
+     * if failed try to open "/dev/{drivername}" file.
+     */
+
+    snprintf(path, sizeof(path), "/dev/net/%s", ifname);
+    if ((*fd = open(path, O_RDWR)) >= 0)
     {
-        ERROR("%s missing unit number", sap->name);
-        return -1;
+        snprintf(dlpi->name, sizeof(dlpi->name), "%s", path);
+        return 0;
+    }
+
+    /*
+     * Split interface name into two parts:
+     * 'driver name' and 'unit number'.
+     * We will try to open a file "/dev/{drivername}".
+     */
+    cp = ifname + strlen(ifname) - 1;
+    if (!isdigit(*cp))
+    {
+        ERROR("Interface name '%s' is incompatible: missing unit number",
+              ifname);
+        return TE_RC(TE_TAD_DLPI, TE_EINVAL);
     }
 
     /* Digits at the end of string are unit number */
-    while ((cp - 1) >= sap->name &&
-          *(cp - 1) >= '0' && *(cp - 1) <= '9')
+    while ((cp - 1) >= ifname && isdigit(*(cp - 1)))
         cp--;
 
-    strcpy(dlpi->name, dn);
-    strncpy(dlpi->name + strlen(dn), sap->name, (int)(cp - sap->name));
-    dlpi->unit = strtol(cp, &eos, 10);
-    if (*eos != '\0')
+    if (ifname - cp >= sizeof(dev_name))
     {
-        ERROR("%s bad unit number", sap->name);
-        return -1;
+        ERROR("Interface name is too long");
+        return TE_OS_RC(TE_TAD_DLPI, TE_E2BIG);
+    }
+    dlpi->unit = strtol(cp, &eos, 10);
+    if (eos == NULL || eos == cp || *eos != '\0')
+    {
+        ERROR("Bad unit number in interface name '%s'", ifname);
+        return TE_RC(TE_TAD_DLPI, TE_EINVAL);
+    }
+
+    memcpy(dev_name, ifname, (size_t)(cp - ifname));
+    dev_name[(size_t)(cp - ifname)] = '\0';
+    snprintf(path, sizeof(path), "/dev/%s", dev_name);
+
+    if ((*fd = open(path, O_RDWR)) < 0)
+    {
+        ERROR("Failed to open '%s' device", path);
+        return TE_OS_RC(TE_TAD_DLPI, errno);
     }
 
     return 0;
 }
-
 
 /**
  * Return error string in accordance with passed errno.
@@ -371,8 +425,9 @@ dlpi_ack(int fd, char *resp, int resp_len)
                           dlprim(dlp->dl_primitive), rc);
                     break;
                 default:
-                    ERROR("getmsg(%s) dlerrno:%s",
+                    ERROR("getmsg(%s) in reply to %s, dlerrno: %s",
                           dlprim(dlp->dl_primitive),
+                          dlprim(dlp->error_ack.dl_error_primitive),
                           dlstrerror(dlp->error_ack.dl_errno));
                           rc = TE_RC(TE_TAD_DLPI, TE_EINVAL);
                     break;
@@ -418,12 +473,13 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
     dlpi_data     *dlpi;
     te_errno       rc = 0;
     dl_info_req_t *req;
+    size_t         addr_len;
 
     assert(sap);
     assert(ifname);
 
     memset(sap, 0, sizeof(tad_eth_sap));
-    strncpy(sap->name, ifname, TAD_ETH_SAP_IFNAME_SIZE);
+    snprintf(sap->name, sizeof(sap->name), "%s", ifname);
     sap->data = calloc(1, sizeof(struct dlpi_data));
     assert(sap->data);
 
@@ -433,15 +489,8 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
 
     req = (dl_info_req_t *)dlpi->buf;
 
-    split_dname_unmb(sap);
-
-    dlpi->fd = open(dlpi->name, O_RDWR);
-    if (dlpi->fd < 0)
-    {
-       rc = TE_OS_RC(TE_TAD_DLPI, errno);
-       ERROR("Stream device opening failure, %r", rc);
+    if ((rc = sap_fd_open(dlpi, ifname, &dlpi->fd)) != 0)
        goto err_exit;
-    }
 
     req->dl_primitive = DL_INFO_REQ;
     rc = dlpi_request(dlpi->fd, (char *)req, sizeof(dl_info_req_t));
@@ -465,10 +514,32 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
     VERB("B: Set close_possible FALSE on init"); 
     dlpi->close_possible = FALSE;
 
+    /*
+     * Fill in local address value in order to be able to
+     * send packets whose source address is not specified
+     * in traffic templace.
+     */
+    addr_len = sizeof(sap->addr);
+
+    if ((rc = dlpi_sap_open(sap, sap->addr, &addr_len)) != 0)
+    {
+        ERROR("Failed to get MAC address of '%s' network interface",
+              ifname);
+        return rc;
+    }
+    if ((rc = dlpi_sap_close(sap)) != 0)
+    {
+        ERROR("Failed to close SAP after getting MAC address of '%s' "
+              "network interface", ifname);
+        return rc;
+    }
+
     return 0;
 
 err_exit:
-    close(dlpi->fd);
+    if (dlpi->fd >= 0)
+        close(dlpi->fd);
+
     free(dlpi->buf);
     free(sap->data);
     return rc;
@@ -487,23 +558,24 @@ tad_eth_sap_detach(tad_eth_sap *sap)
 }
 
 static te_errno
-dlpi_sap_open(tad_eth_sap *sap)
+dlpi_sap_open(tad_eth_sap *sap, uint8_t *local_addr, size_t *local_addr_len)
 {
     dlpi_data          *dlpi = (dlpi_data *)sap->data;
     te_errno            rc = 0;
     union DL_primitives dlp;
 
-
     if (dlpi->close_possible)  /* FIXME */
         return 0;
 
-    if (dlpi->dl_info.dl_provider_style == DL_STYLE1)
+    if (dlpi->dl_info.dl_provider_style != DL_STYLE1 &&
+        dlpi->dl_info.dl_provider_style != DL_STYLE2)
     {
-        ERROR("DLS provider supports DL_STYLE1");
+        ERROR("Unknown DL_STYLE");
         rc = TE_RC(TE_TAD_DLPI, TE_EINVAL);
         return rc;
     }
-    else if (dlpi->dl_info.dl_provider_style == DL_STYLE2)
+
+    if (dlpi->dl_info.dl_provider_style == DL_STYLE2)
     {
         dlp.attach_req.dl_primitive = DL_ATTACH_REQ;
         dlp.attach_req.dl_ppa = dlpi->unit;
@@ -515,12 +587,6 @@ dlpi_sap_open(tad_eth_sap *sap)
         rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
         if (rc != 0)
            return rc;
-    }
-    else
-    {
-        ERROR("Unknown DL_STYLE");
-        rc = TE_RC(TE_TAD_DLPI, TE_EINVAL);
-        return rc;
     }
 
     /* Bind DLSAP to the Stream */
@@ -537,6 +603,24 @@ dlpi_sap_open(tad_eth_sap *sap)
     rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_BIND_ACK_SIZE);
     if (rc != 0)
         return rc;
+
+    /*
+     * Fill in local address value based on the information
+     * returned in DL_BIND_ACK message.
+     */
+    if (local_addr != NULL)
+    {
+        dl_bind_ack_t *bind_ack = &dlp.bind_ack;
+
+        if (bind_ack->dl_addr_length < *local_addr_len)
+        {
+            ERROR("Address length is too big %d", bind_ack->dl_addr_length);
+            return TE_OS_RC(TE_TAD_DLPI, TE_E2BIG);
+        }
+        memcpy(local_addr, ((uint8_t *)bind_ack) + bind_ack->dl_addr_offset,
+               bind_ack->dl_addr_length);
+        *local_addr_len = bind_ack->dl_addr_length;
+    }
 
 #ifdef DLIOCRAW
     /*
@@ -575,53 +659,47 @@ dlpi_sap_close(tad_eth_sap *sap)
 
     if (dlpi->close_possible)   /* FIXME */
     {
-        if (dlpi->dl_info.dl_provider_style == DL_STYLE1)
-        {
-            ERROR("DLS provider supports DL_STYLE1");
-            rc = TE_RC(TE_TAD_DLPI, TE_EINVAL);
-            return rc;
-        }
-        else if (dlpi->dl_info.dl_provider_style == DL_STYLE2)
-        {
-            dlp.attach_req.dl_primitive = DL_UNBIND_REQ;
-            rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
-            if (rc != 0)
-               return rc;
-
-            memset(&dlp, 0, sizeof(dlp));
-            rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
-            if (rc != 0)
-               return rc;
-        }
-        else
+        if (dlpi->dl_info.dl_provider_style != DL_STYLE1 &&
+            dlpi->dl_info.dl_provider_style != DL_STYLE2)
         {
             ERROR("Unknown DL_STYLE");
             rc = TE_RC(TE_TAD_DLPI, TE_EINVAL);
             return rc;
         }
 
-        /* Detach DLSAP from the Stream */
-        memset(&dlp, 0, sizeof(dlp));
-        dlp.bind_req.dl_primitive = DL_DETACH_REQ;
-        dlp.attach_req.dl_ppa = dlpi->unit;
-
+        dlp.attach_req.dl_primitive = DL_UNBIND_REQ;
         rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
         if (rc != 0)
-            return rc;
+           return rc;
 
         memset(&dlp, 0, sizeof(dlp));
         rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
+        if (rc != 0)
+           return rc;
 
-        /* FIXME */
-        VERB("B: Set close_possible FALSE on closure");
+        if (dlpi->dl_info.dl_provider_style == DL_STYLE2)
+        {
+            /* Detach DLSAP from the Stream */
+            memset(&dlp, 0, sizeof(dlp));
+            dlp.bind_req.dl_primitive = DL_DETACH_REQ;
+            dlp.attach_req.dl_ppa = dlpi->unit;
+
+            rc = dlpi_request(dlpi->fd, (char *)&dlp, sizeof(dlp));
+            if (rc != 0)
+                return rc;
+
+            memset(&dlp, 0, sizeof(dlp));
+            rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
+
+            /* FIXME */
+            VERB("B: Set close_possible FALSE on closure");
+        }
         dlpi->close_possible = FALSE;
         return 0;
     }
-    else
-    {        
-        ERROR("No sending/receiving processes on CSAP, cannot stop.");
-        return TE_RC(TE_TAD_DLPI, TE_EBADF);
-    }
+        
+    ERROR("No sending/receiving processes on CSAP, cannot stop.");
+    return TE_RC(TE_TAD_DLPI, TE_EBADF);
 }
 
 
@@ -631,7 +709,7 @@ tad_eth_sap_send_open(tad_eth_sap *sap,
                       unsigned int mode)
 {
     UNUSED(mode);
-    return dlpi_sap_open(sap);
+    return dlpi_sap_open(sap, NULL, NULL);
 }
 
 
@@ -692,7 +770,7 @@ tad_eth_sap_recv_open(tad_eth_sap *sap,
     te_errno            rc;
     union DL_primitives dlp;
 
-    rc = dlpi_sap_open(sap);
+    rc = dlpi_sap_open(sap, NULL, NULL);
     if (rc != 0)
         return rc;
 

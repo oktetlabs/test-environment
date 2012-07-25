@@ -234,6 +234,9 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
     tad_eth_sap_data   *data;
     int                 cfg_socket;
     struct ifreq        if_req;
+#ifdef USE_PF_PACKET
+    unsigned int        ifindex;
+#endif
     te_errno            rc;
 
     if (ifname == NULL || sap == NULL) 
@@ -375,12 +378,11 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
 #endif
 
 #ifdef USE_PF_PACKET
-    memset(&if_req, 0, sizeof(if_req));
-    strncpy(if_req.ifr_name, ifname, sizeof(if_req.ifr_name));
-    if (ioctl(cfg_socket, SIOCGIFINDEX, &if_req))
+    ifindex = if_nametoindex(ifname);
+    if (ifindex == 0)
     {
         rc = TE_OS_RC(TE_TAD_PF_PACKET, errno);
-        ERROR("%s(): ioctl(%s, SIOCGIFINDEX) failed: %r",
+        ERROR("%s(): if_nametoindex(%s) failed: %r",
               __FUNCTION__, ifname, rc);
         close(cfg_socket);
         return rc;
@@ -399,7 +401,7 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
 #endif
 
 #ifdef USE_PF_PACKET
-    data->ifindex = if_req.ifr_ifindex;
+    data->ifindex = ifindex;
     data->in = data->out = -1;
 #else
     data->in = data->out = NULL;

@@ -767,6 +767,7 @@ TARPC_FUNC(gettimeofday,
 }
 )
 
+#if defined WITH_TELEPHONY
 /*-------------- telephony_check_dial_tone() -----------------------*/
 
 TARPC_FUNC(telephony_open_channel, {},
@@ -822,6 +823,7 @@ TARPC_FUNC(telephony_call_wait, {},
     MAKE_CALL(out->retval = func(in->chan, in->timeout));
 }
 )
+#endif /* WITH_TELEPHONY */
 
 
 /*-------------- socket() ------------------------------*/
@@ -7472,12 +7474,14 @@ TARPC_FUNC(getrlimit,
 }
 )
 
+#if defined WITH_POWER_SW
 /*------------ power_sw() -----------------------------------*/
 TARPC_FUNC(power_sw, {},
 {
     MAKE_CALL(out->retval = func(in->type, in->dev, in->mask, in->cmd));
 }
 )
+#endif
 
 /*------------ cmsg_data_parse_ip_pktinfo() ------------------*/
 bool_t

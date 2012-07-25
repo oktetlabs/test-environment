@@ -219,15 +219,7 @@ typedef struct ta {
 
     te_bool            dynamic;             /**< Dynamic creation flag */
 
-    /** @name Methods */
-    rcf_talib_start     start;              /**< Start TA */
-    rcf_talib_close     close;              /**< Close TA */
-    rcf_talib_finish    finish;             /**< Stop TA */
-    rcf_talib_connect   connect;            /**< Connect to TA */
-    rcf_talib_transmit  transmit;           /**< Transmit to TA */
-    rcf_talib_is_ready  is_ready;           /**< Is data from TA pending */
-    rcf_talib_receive   receive;            /**< Receive from TA */
-    /*@}*/
+    struct rcf_talib_methods m; /**< TA-specific Methods */
 } ta;
 
 
@@ -368,8 +360,9 @@ find_user_request(usrreq *req, int sid)
 static int
 resolve_ta_methods(ta *agent, char *libname)
 {
-    void *handle;
-    char name[RCF_MAX_NAME];
+    struct rcf_talib_methods *m;
+    char                      name[RCF_MAX_NAME];
+    void                     *handle;
 
     sprintf(name, "lib%s.so", libname);
     if ((handle = dlopen(name, RTLD_LAZY)) == NULL)
@@ -379,29 +372,16 @@ resolve_ta_methods(ta *agent, char *libname)
         return -1;
     }
 
-#define RESOLVE_SYMBOL(sym) \
-    do {                                                        \
-        sprintf(name, "%s_"#sym, libname);                      \
-        if ((agent->sym = dlsym(handle, name)) == NULL)         \
-        {                                                       \
-            ERROR("FATAL ERROR: Cannot resolve symbol '%s' "    \
-                  "in the shared library", name);               \
-            if (dlclose(handle) != 0)                           \
-                ERROR("dlclose() failed");                      \
-            return -1;                                          \
-        }                                                       \
-    } while (0)
-
-    RESOLVE_SYMBOL(start);
-    RESOLVE_SYMBOL(close);
-    RESOLVE_SYMBOL(finish);
-    RESOLVE_SYMBOL(connect);
-    RESOLVE_SYMBOL(transmit);
-    RESOLVE_SYMBOL(is_ready);
-    RESOLVE_SYMBOL(receive);
-
-#undef RESOLVE_SYMBOL
-
+    snprintf(name, sizeof(name), "%s_methods", libname);
+    if ((m = dlsym(handle, name)) == NULL)
+    {
+        ERROR("FATAL ERROR: Cannot resolve symbol '%s' "
+              "in the shared library '%s'", name, libname);
+        if (dlclose(handle) != 0)
+            ERROR("dlclose() failed");
+        return -1;
+    }
+    memcpy(&agent->m, m, sizeof(agent->m));
     agent->dlhandle = handle;
 
     return 0;
@@ -666,11 +646,11 @@ consume_answer(ta *agent)
         set = set0;
         tv = tv0;
         select(FD_SETSIZE, &set, NULL, NULL, &tv);
-        if ((agent->is_ready)(agent->handle))
+        if ((agent->m.is_ready)(agent->handle))
         {
             size_t len = sizeof(cmd);
 
-            if ((agent->receive)(agent->handle, cmd, &len, &ba) != 0)
+            if ((agent->m.receive)(agent->handle, cmd, &len, &ba) != 0)
             {
                 ERROR("Failed to receive answer from TA %s", agent->name);
                 return -1;
@@ -703,7 +683,8 @@ synchronize_time(ta *agent)
 
     sprintf(cmd, "%s time string %u:%u", TE_PROTO_VWRITE,
                   (unsigned)tv.tv_sec, (unsigned)tv.tv_usec);
-    if ((rc = (agent->transmit)(agent->handle, cmd, strlen(cmd) + 1)) != 0)
+    if ((rc = (agent->m.transmit)(agent->handle,
+                                  cmd, strlen(cmd) + 1)) != 0)
     {
         ERROR("Failed to transmit command to TA '%s' error=%r", 
               agent->name, rc);
@@ -848,7 +829,7 @@ startup_tasks(ta *agent)
              (task->mode == RCF_THREAD) ? "thread" : "process",
              agent->name, task->entry, args);
         VERB("Running startup task %s", cmd);
-        (agent->transmit)(agent->handle, cmd, strlen(cmd) + 1);
+        (agent->m.transmit)(agent->handle, cmd, strlen(cmd) + 1);
         rc = consume_answer(agent);
         
         if (rc != 0 || strncmp(cmd, "SID 0 0", 7) != 0)
@@ -877,7 +858,7 @@ set_ta_dead(ta *agent)
         ERROR("TA '%s' is dead", agent->name);
         answer_all_requests(&(agent->sent), TE_ETADEAD);
         answer_all_requests(&(agent->waiting), TE_ETADEAD);
-        rc = (agent->close)(agent->handle, &set0);
+        rc = (agent->m.close)(agent->handle, &set0);
         if (rc != 0)
             ERROR("Failed to close connection with TA '%s': rc=%r",
                   agent->name, rc);
@@ -906,12 +887,12 @@ set_ta_unrecoverable(ta *agent)
 
             if (~agent->flags & TA_DEAD)
             {
-                rc = (agent->close)(agent->handle, &set0);
+                rc = (agent->m.close)(agent->handle, &set0);
                 if (rc != 0)
                     ERROR("Failed to close connection with TA '%s': "
                           "rc=%r", agent->name, rc);
             }
-            rc = (agent->finish)(agent->handle, NULL);
+            rc = (agent->m.finish)(agent->handle, NULL);
             if (rc != 0)
                 ERROR("Failed to finish TA '%s': rc=%r",
                       agent->name, rc);
@@ -939,14 +920,14 @@ init_agent(ta *agent)
          agent->name, agent->type, agent->conf);
     agent->restart_timestamp = time(NULL);
     if (agent->flags & TA_FAKE)
-        RING("TA '%s' has been already started");
+        RING("TA '%s' has been already started", agent->name);
 
     /* Initially mark TA as dead - no valid connection */
     agent->flags |= TA_DEAD;
 
-    if ((rc = (agent->start)(agent->name, agent->type,
-                             agent->conf, &(agent->handle),
-                             &(agent->flags))) != 0)
+    if ((rc = (agent->m.start)(agent->name, agent->type,
+                               agent->conf, &(agent->handle),
+                               &(agent->flags))) != 0)
     {
         if (!is_reboot)
         {
@@ -957,7 +938,7 @@ init_agent(ta *agent)
         return rc;
     }
     INFO("TA '%s' started, trying to connect", agent->name);
-    if ((rc = (agent->connect)(agent->handle, &set0, &tv0)) != 0)
+    if ((rc = (agent->m.connect)(agent->handle, &set0, &tv0)) != 0)
     {
         ERROR("Cannot connect to TA '%s' error=%r", agent->name, rc);
         set_ta_unrecoverable(agent);
@@ -1015,17 +996,17 @@ force_reboot(ta *agent, usrreq *req)
 
     if (~agent->flags & TA_DEAD)
     {
-        rc = (agent->close)(agent->handle, &set0);
+        rc = (agent->m.close)(agent->handle, &set0);
         if (rc != 0)
             ERROR("Failed to close connection with TA '%s': rc=%r",
                   agent->name, rc);
         agent->flags |= TA_DEAD;
     }
 
-    rc = (agent->finish)(agent->handle,
-                         (req == NULL) ? NULL :
-                         (req->message->data_len > 0) ?
-                            req->message->data : NULL);
+    rc = (agent->m.finish)(agent->handle,
+                           (req == NULL) ? NULL :
+                           (req->message->data_len > 0) ?
+                                req->message->data : NULL);
     if (rc != 0)
     {
         ERROR("Cannot reboot TA %s", agent->name);
@@ -1230,7 +1211,7 @@ save_attachment(ta *agent, rcf_msg *msg, size_t cmdlen, char *ba)
         size_t maxlen = sizeof(cmd);
         int rc;
 
-        rc = (agent->receive)(agent->handle, cmd, &maxlen, NULL);
+        rc = (agent->m.receive)(agent->handle, cmd, &maxlen, NULL);
         if (rc != 0 && rc != TE_RC(TE_COMM, TE_EPENDING))
         {
             ERROR("Failed receive rest of binary attachment TA %s - "
@@ -1409,7 +1390,7 @@ process_reply(ta *agent)
             ptr++;                                          \
     } while (0)
 
-    rc = (agent->receive)(agent->handle, cmd, &len, &ba);
+    rc = (agent->m.receive)(agent->handle, cmd, &len, &ba);
 
     if (TE_RC_GET_ERROR(rc) == TE_ESMALLBUF)
     {
@@ -1701,7 +1682,7 @@ process_reply(ta *agent)
                     if (rc != 0)
                     {
                         n -= start_len;
-                        msg->error = (agent->receive)(agent->handle, 
+                        msg->error = (agent->m.receive)(agent->handle, 
                                          msg->file + start_len, &n, NULL);
                     } 
                 }
@@ -1799,7 +1780,7 @@ transmit_cmd(ta *agent, usrreq *req)
     len = strlen(cmd) + 1;
     while (TRUE)
     {
-        if ((rc = (agent->transmit)(agent->handle, data, len)) != 0)
+        if ((rc = (agent->m.transmit)(agent->handle, data, len)) != 0)
         {
             req->message->error = TE_RC(TE_RCF, rc);
             ERROR("Failed to transmit command to TA '%s' errno %r", 
@@ -2662,7 +2643,8 @@ process_user_request(usrreq *req)
                     {
                         sprintf(cmd, "SID %d %s",
                                 ++agt->sid, TE_PROTO_SHUTDOWN);
-                        (agt->transmit)(agt->handle, cmd, strlen(cmd) + 1);
+                        (agt->m.transmit)(agt->handle,
+                                          cmd, strlen(cmd) + 1);
                         answer_all_requests(&(agt->sent), TE_EIO);
                         answer_all_requests(&(agt->pending), TE_EIO);
                         answer_all_requests(&(agt->waiting), TE_EIO);
@@ -2674,13 +2656,13 @@ process_user_request(usrreq *req)
 
                             select(FD_SETSIZE, &set, NULL, NULL, &tv);
 
-                            if ((agt->is_ready)(agt->handle))
+                            if ((agt->m.is_ready)(agt->handle))
                             {
                                 char    answer[16];
                                 char   *ba;
                                 size_t  len = sizeof(cmd);
 
-                                if ((agt->receive)(agt->handle, cmd,
+                                if ((agt->m.receive)(agt->handle, cmd,
                                                    &len, &ba) != 0)
                                 {
                                     continue;
@@ -2693,7 +2675,7 @@ process_user_request(usrreq *req)
 
                                 INFO("Test Agent '%s' is down", agt->name);
                                 agt->flags |= TA_DOWN;
-                                (agt->close)(agt->handle, &set0);
+                                (agt->m.close)(agt->handle, &set0);
                                 break; /** Leave current 'while' loop */
                             }
                         }
@@ -2704,7 +2686,7 @@ process_user_request(usrreq *req)
 
                     if (agt->handle != NULL)
                     {
-                        if ((agt->finish)(agt->handle, NULL) != 0)
+                        if ((agt->m.finish)(agt->handle, NULL) != 0)
                         {
                             ERROR("Cannot finish TA '%s'", agt->name);
                             break; /** Leave 'do/while' block */
@@ -2817,9 +2799,9 @@ process_user_request(usrreq *req)
             if (send_cmd(agent, req) != 0)
             {
                 VERB("Reboot using TA type support library");
-                rc = (agent->finish)(agent->handle,
-                                     req->message->data_len > 0 ?
-                                     req->message->data : NULL);
+                rc = (agent->m.finish)(agent->handle,
+                                       req->message->data_len > 0 ?
+                                       req->message->data : NULL);
                 if (rc != 0)
                 {
                     ERROR("Cannot reboot TA '%s'", agent->name);
@@ -2881,7 +2863,7 @@ rcf_shutdown()
             continue;
 
         sprintf(cmd, "SID %d %s", ++agent->sid, TE_PROTO_SHUTDOWN);
-        (agent->transmit)(agent->handle, cmd, strlen(cmd) + 1);
+        (agent->m.transmit)(agent->handle, cmd, strlen(cmd) + 1);
         answer_all_requests(&(agent->sent), TE_EIO);
         answer_all_requests(&(agent->pending), TE_EIO);        
         answer_all_requests(&(agent->waiting), TE_EIO);        
@@ -2897,13 +2879,13 @@ rcf_shutdown()
             if (agent->flags & (TA_DOWN | TA_DEAD))
                 continue;
 
-            if ((agent->is_ready)(agent->handle))
+            if ((agent->m.is_ready)(agent->handle))
             {
                 char    answer[16];
                 char   *ba;
                 size_t  len = sizeof(cmd);
                 
-                if ((agent->receive)(agent->handle, cmd, &len, &ba) != 0)
+                if ((agent->m.receive)(agent->handle, cmd, &len, &ba) != 0)
                     continue;
                     
                 sprintf(answer, "SID %d 0", agent->sid);
@@ -2913,7 +2895,7 @@ rcf_shutdown()
 
                 INFO("Test Agent '%s' is down", agent->name);
                 agent->flags |= TA_DOWN;
-                (agent->close)(agent->handle, &set0);
+                (agent->m.close)(agent->handle, &set0);
                 shutdown_num--;
             }
         }
@@ -2924,7 +2906,7 @@ rcf_shutdown()
             ERROR("Soft shutdown of TA '%s' failed", agent->name);
         if (agent->handle != NULL)
         {
-            if ((agent->finish)(agent->handle, NULL) != 0)
+            if ((agent->m.finish)(agent->handle, NULL) != 0)
                 ERROR("Cannot finish TA '%s'", agent->name);
             agent->handle = NULL;
         }
@@ -3150,7 +3132,7 @@ main(int argc, const char *argv[])
         {
             usrreq *next;
             
-            if ((agent->is_ready)(agent->handle))
+            if ((agent->m.is_ready)(agent->handle))
                 process_reply(agent);
                 
             now = time(NULL);

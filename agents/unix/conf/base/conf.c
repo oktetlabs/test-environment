@@ -324,12 +324,29 @@ typedef union gen_ip_address {
 const char *te_lockdir = "/tmp";
 
 /* Auxiliary variables used for during configuration request processing */
-#if HAVE_STRUCT_LIFREQ
+
+/*
+ * To access attributes of a network interface we can use
+ * ioctl based interface available on most UNIX systems.
+ * Widely used data structure in interface-related ioctl calls
+ * is "struct ifreq", but on some systems (for example Solaris)
+ * this structure is obsoleted and "struct lifreq" is used
+ * instead.
+ *
+ * We try to avoid code duplication that only differs in
+ * structure and field names, which is why we try to use
+ * system independent names (prefixed with "my_").
+ */
+#ifdef HAVE_STRUCT_LIFREQ
 #define my_ifreq        lifreq
 #define my_ifr_name     lifr_name
 #define my_ifr_flags    lifr_flags
 #define my_ifr_addr     lifr_addr
 #define my_ifr_mtu      lifr_mtu
+#define my_ifr_hwaddr_data(req_)   \
+        ((struct sockaddr_dl *)&(req_).lifr_addr)->sdl_data
+#define my_ifr_hwaddr_family(req_) \
+        ((struct sockaddr_dl *)&(req_).lifr_addr)->sdl_family
 #define MY_SIOCGIFFLAGS     SIOCGLIFFLAGS
 #define MY_SIOCSIFFLAGS     SIOCSLIFFLAGS
 #define MY_SIOCGIFADDR      SIOCGLIFADDR
@@ -340,13 +357,15 @@ const char *te_lockdir = "/tmp";
 #define MY_SIOCSIFNETMASK   SIOCSLIFNETMASK
 #define MY_SIOCGIFBRDADDR   SIOCGLIFBRDADDR
 #define MY_SIOCSIFBRDADDR   SIOCSLIFBRDADDR
+#define MY_SIOCGIFHWADDR    SIOCGLIFHWADDR
 #else
 #define my_ifreq        ifreq
 #define my_ifr_name     ifr_name
 #define my_ifr_flags    ifr_flags
 #define my_ifr_addr     ifr_addr
 #define my_ifr_mtu      ifr_mtu
-#define my_ifr_hwaddr   ifr_hwaddr
+#define my_ifr_hwaddr_data(req_) (req_).ifr_hwaddr.sa_data
+#define my_ifr_hwaddr_family(req_) (req_).ifr_hwaddr.sa_family
 #define MY_SIOCGIFFLAGS     SIOCGIFFLAGS
 #define MY_SIOCSIFFLAGS     SIOCSIFFLAGS
 #define MY_SIOCGIFADDR      SIOCGIFADDR
@@ -357,7 +376,13 @@ const char *te_lockdir = "/tmp";
 #define MY_SIOCSIFNETMASK   SIOCSIFNETMASK
 #define MY_SIOCGIFBRDADDR   SIOCGIFBRDADDR
 #define MY_SIOCSIFBRDADDR   SIOCSIFBRDADDR
+
+#if defined SIOCGIFHWADDR
+#define MY_SIOCGIFHWADDR    SIOCGIFHWADDR
 #endif
+
+#endif /* !HAVE_STRUCT_LIFREQ */
+
 static struct my_ifreq req;
 
 static char buf[4096];
@@ -1737,8 +1762,190 @@ interface_list_ifreq_cb(struct my_ifreq *ifr, void *opaque)
 
 #endif
 
+#if defined __sun__
+/**
+ * Callback function used in VLAN iteration procedure.
+ *
+ * @param ifname       Parent interface name
+ * @param vlan_id      VID value
+ * @param vlan_ifname  VLAN network interface name
+ * @param user_data    Opaque data pointer passed as the value
+ *                     of an argument to sun_iterate_vlans() function
+ *
+ * @return Directive to continue or to interrupt traveral
+ * @retval 0 - Stop VLAN traversal
+ * @retval 1 - Continue VLAN traversal
+ */
+typedef int (* sun_iterate_vlan_cb_f)(const char *ifname,
+                                      int vlan_id,
+                                      const char *vlan_ifname,
+                                      void *user_data);
 
+/**
+ * Iterate VLANs of the particular interface
+ *
+ * @param ifname     network interface name whose VLANs to iterate
+ * @param cb         callback function to use for each VLAN
+ * @param user_data  opaque data pointer passed to @p cb function
+ *
+ * @return Status of the operation
+ */
+static te_errno
+sun_iterate_vlans(const char *ifname,
+                  sun_iterate_vlan_cb_f cb, void *user_data)
+{
+    te_errno  rc = 0;
+    int       out_fd = -1;
+    FILE     *out_fp;
+    int       status;
+    char      f_buf[200];
+    pid_t     dladm_cmd_pid;
 
+    /*
+     * The name of VLAN interface can be an arbitrary string,
+     * so we need to use 'dladm' to detect it.
+     */
+    dladm_cmd_pid = te_shell_cmd(
+            "LANG=POSIX /usr/sbin/dladm show-vlan -p -o LINK,VID,OVER",
+            -1, NULL, &out_fd, NULL);
+
+    if (dladm_cmd_pid < 0)
+    {
+        ERROR("%s(): start of dladm failed", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+
+    if ((out_fp = fdopen(out_fd, "r")) == NULL)
+    {
+        ERROR("Failed to obtain file pointer for shell command output");
+        rc = TE_OS_RC(TE_TA_UNIX, te_rc_os2te(errno));
+        goto cleanup;
+    }
+
+    while (fgets(f_buf, sizeof(f_buf), out_fp) != NULL)
+    {
+        size_t  ofs;
+        char   *s = f_buf;
+        char   *vlan_str;
+        int     vlan_id;
+
+        VERB("%s(): read line: <%s>", __FUNCTION__, f_buf);
+        /* Find delimeters between LINK and VID fields */
+        s = strchr(s, ':');
+        if (s == NULL)
+        {
+            ERROR("%s() Unexpected format 'dladm' output: '%s'",
+                  __FUNCTION__, f_buf);
+            rc = TE_OS_RC(TE_TA_UNIX, TE_EINVAL);
+            break;
+        }
+        *s++ = '\0';
+
+        /* Find delimeters between VID and OVER fields */
+        vlan_str = s;
+        s = strchr(vlan_str, ':');
+        if (s == NULL)
+        {   
+            ERROR("%s() Unexpected format 'dladm' output: '%s'", 
+                  __FUNCTION__, f_buf);
+            rc = TE_OS_RC(TE_TA_UNIX, TE_EINVAL);
+            break;
+        }
+        *s++ = '\0';
+
+        /* Check if VLAN is OVER specified network interface */
+        ofs = strcspn(s," \n\r\t");
+        s[ofs] = '\0';
+
+        if (strcmp(s, ifname) != 0)
+            continue;
+
+        vlan_id = atoi(vlan_str);
+
+        /* Call user callback and check if we need to continue */
+        if (cb(ifname, vlan_id, f_buf, user_data) == 0)
+            break;
+    }
+
+    /*
+     * Read out all the command output, because otherwise we can have
+     * program killed by SIGPIPE signal, which will cause ta_waitpid
+     * return non-zero status.
+     */
+    while (fgets(f_buf, sizeof(f_buf), out_fp) != NULL)
+        ;
+
+cleanup:
+    if (out_fp != NULL)
+        fclose(out_fp);
+    close(out_fd);
+
+    ta_waitpid(dladm_cmd_pid, &status, 0);
+    if (status != 0)
+    {
+        ERROR("%s(): Non-zero status of dladm: %d",
+              __FUNCTION__, status);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+
+    return rc;
+}
+
+/** Structure to save information about VLAN IDs */
+struct sun_vlan_list {
+    size_t  vlans_size; /**< The size of @p vlans array */
+    int    *vlans; /**< Array to fill in VID values */
+    size_t  vlans_num; /**< Number of filled entries in @p vlans array */
+    te_errno rc; /**< Processing result */
+};
+
+/** Callback function to register VID values. */
+static int
+sun_vlan_list(const char *ifname,
+              int vlan_id, const char *vlan_ifname, void *user_data)
+{
+    struct sun_vlan_list *vlan_info = (struct sun_vlan_list *)user_data;
+
+    UNUSED(vlan_ifname);
+
+    if (vlan_info->vlans_size <= vlan_info->vlans_num)
+    {
+        ERROR("Too many VLANs for %s interface", ifname);
+        vlan_info->rc = TE_OS_RC(TE_TA_UNIX, TE_ENOSPC);
+        return 0; /* Interrupt VLAN traversal */
+    }
+
+    vlan_info->vlans[vlan_info->vlans_num] = vlan_id;
+    vlan_info->vlans_num++;
+
+    return 1; /* Continue VLAN traversal */
+}
+
+/** Structure to save VLAN interface name */
+struct sun_vlan_name {
+    int vlan_id; /**< VLAN ID whose name to get */
+    size_t vlan_ifname_size; /**< The size of @p vlan_ifname array */
+    char *vlan_ifname; /**< Array to fill in with interface name */
+};
+
+/** Callback function to get VLAN interface name */
+static int
+sun_vlan_find_name(const char *ifname,
+                   int vlan_id, const char *vlan_ifname, void *user_data)
+{
+    struct sun_vlan_name *vlan_name = (struct sun_vlan_name *)user_data;
+
+    UNUSED(ifname);
+
+    if (vlan_name->vlan_id == vlan_id)
+    {
+        snprintf(vlan_name->vlan_ifname, vlan_name->vlan_ifname_size,
+                 "%s", vlan_ifname);
+        return 0; /* Interrupt VLAN traversal */
+    }
+    return 1; /* Continue VLAN traversal */
+}
+#endif /* __sun__ */
 
 
 
@@ -1757,17 +1964,21 @@ interface_list_ifreq_cb(struct my_ifreq *ifr, void *opaque)
 te_errno
 ta_vlan_get_children(const char *devname, size_t *n_vlans, int *vlans)
 {
-    char f_buf[200];
+    size_t   n_vlans_size;
+    te_errno rc = 0;
 
     if (devname == NULL ||n_vlans == NULL || vlans == NULL)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    n_vlans_size = *n_vlans;
 
     VERB("%s(): enter for device: <%s>", __FUNCTION__, devname);
     *n_vlans = 0;
 #if defined __linux__
     {
-        FILE   *proc_vlans = fopen("/proc/net/vlan/config", "r");
-        int     vlan_id;
+        FILE *proc_vlans = fopen("/proc/net/vlan/config", "r");
+        int   vlan_id;
+        char  f_buf[200];
 
         if (proc_vlans == NULL)
         {
@@ -1807,6 +2018,13 @@ ta_vlan_get_children(const char *devname, size_t *n_vlans, int *vlans)
             space_ofs = strcspn(s, " \t\n\r");
             s[space_ofs] = 0;
 
+            if (n_vlans_size <= *n_vlans)
+            {
+                ERROR("Too many VLANs for %s interface", devname);
+                rc = TE_OS_RC(TE_TA_UNIX, TE_ENOSPC);
+                break;
+            }
+
             if (strcmp(s, devname) == 0)
                 vlans[(*n_vlans)++] = vlan_id;
         }
@@ -1814,60 +2032,17 @@ ta_vlan_get_children(const char *devname, size_t *n_vlans, int *vlans)
     }
 #elif defined __sun__
     {
-        int   out_fd = -1;
-        FILE *out;
-        int   status;
-        pid_t dladm_cmd_pid = te_shell_cmd("LANG=POSIX dladm show-link -p",
-                                           -1, NULL, &out_fd, NULL);
-        if (dladm_cmd_pid < 0)
-        {
-            ERROR("%s(): start of dladm failed", __FUNCTION__);
-            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-        }
+        struct sun_vlan_list vlan_info = { n_vlans_size, vlans, 0, 0 };
 
-        out = fdopen(out_fd, "r");
-        while (fgets(f_buf, sizeof(f_buf), out) != NULL)
-        {
-            size_t ofs;
-            char *s = f_buf;
-            int vlan_id;
-
-            VERB("%s(): read line: <%s>", __FUNCTION__, f_buf);
-            /* skip "<ifname> type=" */
-            s = strchr(s, ' ');
-            s++;
-            s = strchr(s, '=');
-            s++;
-            if (strncmp(s, "vlan", 4) != 0)
-                continue;
-            s += sizeof("vlan") - 1;
-            vlan_id = atoi(s);
-
-            s = strstr(s, "device=");
-            if (s == NULL)
-                continue;
-            VERB("%s(): find vlan: %d, s: <%s>", __FUNCTION__, vlan_id, s);
-            s += sizeof("device=") - 1;
-            ofs = strcspn(s," \n\r\t");
-            s[ofs] = 0;
-            if (strcmp(s, devname) != 0)
-                continue;
-
-            vlans[(*n_vlans)++] = vlan_id;
-        }
-
-        ta_waitpid(dladm_cmd_pid, &status, 0);
-        if (status != 0)
-        {
-            ERROR("%s(): Non-zero status of dladm: %d",
-                  __FUNCTION__, status);
-            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-        }
-        fclose(out);
+        rc = sun_iterate_vlans(devname, sun_vlan_list, &vlan_info);
+        if (rc == 0 && vlan_info.rc != 0)
+            rc = vlan_info.rc;
+        else
+            *n_vlans = vlan_info.vlans_num;
     }
 #endif
 
-    return 0;
+    return rc;
 }
 
 /**
@@ -1875,7 +2050,10 @@ ta_vlan_get_children(const char *devname, size_t *n_vlans, int *vlans)
  *
  * @param devname       name of network device
  * @param vlan_id       VLAN id
- * @param v_ifname      location for VLAN ifname,
+ * @param v_ifname      location for VLAN ifname
+ *                      (for Solaris port this field will be set to
+ *                      an empty string in case there is no such VLAN
+ *                      interface configured in the system)
  *
  * @return status
  */
@@ -1883,17 +2061,22 @@ static te_errno
 vlan_ifname_get_internal(const char *ifname, int vlan_id,
                          char *v_ifname)
 {
+    te_errno rc = 0;
+
 #if defined __linux__
     sprintf(v_ifname, "%s.%d", ifname, vlan_id);
 #elif defined __sun__
-    size_t offset = 0;
-    while (!isdigit(ifname[offset])) offset++;
+    {
+        struct sun_vlan_name vlan_name = { vlan_id, IF_NAMESIZE, v_ifname };
 
-    memcpy(v_ifname, ifname, offset);
-    sprintf(v_ifname + offset, "%d", vlan_id * 1000 +
-            atoi(ifname + offset));
+        v_ifname[0] = '\0';
+        rc = sun_iterate_vlans(ifname, sun_vlan_find_name, &vlan_name);
+    }
+#else
+    ERROR("%s() Not supported", __FUNCTION__);
+    rc = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #endif
-    return 0;
+    return rc;
 }
 
 /**
@@ -1961,6 +2144,7 @@ vlans_list(unsigned int gid, const char *oid, char **list,
     for (i = 0; i < n_vlans; i++)
         b += sprintf(b, "%d ", vlans_buffer[i]);
 
+    RING("VLAN list: '%s'", *list);
     return 0;
 }
 
@@ -1977,38 +2161,35 @@ vlans_list(unsigned int gid, const char *oid, char **list,
  */
 static te_errno
 vlans_add(unsigned int gid, const char *oid, const char *value,
-              const char *ifname, const char *vid_str)
+          const char *ifname, const char *vid_str)
 {
-#if LINUX_VLAN_SUPPORT
-    struct vlan_ioctl_args if_request;
-#endif
-    int vid = atoi(vid_str);
-    int l_errno = 0;
     te_errno rc;
+    int      vid = atoi(vid_str);
 
     UNUSED(value);
 
-    VERB("%s: gid=%u oid='%s', vid %s, ifname %s, errno %d",
-         __FUNCTION__, gid, oid, vid_str, ifname, l_errno);
-
+    VERB("%s: gid=%u oid='%s', vid %s, ifname %s",
+         __FUNCTION__, gid, oid, vid_str, ifname);
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
-    {
         return TE_RC(TE_TA_UNIX, rc);
-    }
 
 #if LINUX_VLAN_SUPPORT
-    if (cfg_socket < 0)
     {
-        ERROR("%s: non-init cfg socket", cfg_socket);
-        return TE_RC(TE_TA_UNIX, TE_EFAULT);
-    }
-    if_request.cmd = ADD_VLAN_CMD;
-    strcpy(if_request.device1, ifname);
-    if_request.u.VID = vid;
+        struct vlan_ioctl_args if_request;
 
-    if (ioctl(cfg_socket, SIOCSIFVLAN, &if_request) < 0)
-        l_errno = errno;
+        if (cfg_socket < 0)
+        {
+            ERROR("%s: non-init cfg socket", cfg_socket);
+            return TE_RC(TE_TA_UNIX, TE_EFAULT);
+        }
+
+        if_request.cmd = ADD_VLAN_CMD;
+        strcpy(if_request.device1, ifname);
+        if_request.u.VID = vid;
+
+        if (ioctl(cfg_socket, SIOCSIFVLAN, &if_request) < 0)
+            rc = te_rc_os2te(errno);
 #if 0
     {
         char vlan_if_name[IFNAMSIZ];
@@ -2022,20 +2203,62 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
             return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
 #endif
+        return TE_RC(TE_TA_UNIX, rc);
+    }
 #elif defined __sun__
     {
         char vlan_if_name[IFNAMSIZ];
-        vlan_ifname_get_internal(ifname, vid, vlan_if_name);
+        
+        rc = vlan_ifname_get_internal(ifname, vid, vlan_if_name);
+        if (rc != 0)
+            return rc;
 
-        sprintf(buf, "LANG=POSIX ifconfig %s plumb >/dev/null",
-                vlan_if_name);
-        return ta_system(buf) != 0 ? TE_RC(TE_TA_UNIX, TE_ESHCMD) : 0;
+        /* Check if there is no VLAN with the same VID in the system */
+        if (vlan_if_name[0] != '\0')
+            return TE_RC(TE_TA_UNIX, TE_EEXIST);
+
+        snprintf(buf, sizeof(buf),
+                 "LANG=POSIX /usr/sbin/dladm create-vlan -l %s -v %d",
+                 ifname, vid);
+        if (ta_system(buf) != 0)
+            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+
+        /* Get VLAN interface name assigned by the system */
+        rc = vlan_ifname_get_internal(ifname, vid, vlan_if_name);
+        if (rc != 0)
+            return rc;
+        if (vlan_if_name[0] == '\0')
+        {
+            ERROR("Unexpected error happened while adding VLAN interface "
+                  "OVER '%s' with VID '%d'", ifname, vid);
+            return TE_RC(TE_TA_UNIX, TE_EFAULT);
+        }
+
+        /* Now we need to create a network interface associated with VLAN */
+        snprintf(buf, sizeof(buf),
+                 "LANG=POSIX /usr/sbin/ipadm create-ip %s", vlan_if_name);
+        if (ta_system(buf) != 0)
+        {
+            ERROR("Failed to create a network interface associated with "
+                  "VLAN interface '%s'", vlan_if_name);
+            
+            snprintf(buf, sizeof(buf),
+                     "LANG=POSIX /usr/sbin/dladm delete-vlan %s",
+                     vlan_if_name);
+            ta_system(buf);
+
+            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        }
+
+        RING("VLAN interface '%s' added: VID '%d' OVER '%s'",
+             vlan_if_name, vid, ifname);
+
+        return 0;
     }
 #else
     ERROR("This test agent does not support VLANs");
-    return TE_RC(TE_TA_UNIX, EINVAL);
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #endif
-    return TE_RC(TE_TA_UNIX, l_errno);
 }
 
 /**
@@ -2051,50 +2274,73 @@ static te_errno
 vlans_del(unsigned int gid, const char *oid, const char *ifname,
           const char *vid_str)
 {
-#if LINUX_VLAN_SUPPORT
-    struct vlan_ioctl_args if_request;
-#endif
-    int vid = atoi(vid_str);
-    int l_errno = 0;
-
     te_errno rc;
+    int      vid = atoi(vid_str);
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
-    {
         return TE_RC(TE_TA_UNIX, rc);
-    }
 
 #if LINUX_VLAN_SUPPORT
-    if (cfg_socket < 0)
     {
-        ERROR("%s: non-init cfg socket", cfg_socket);
-        return TE_RC(TE_TA_UNIX, TE_EFAULT);
-    }
-    if_request.cmd = DEL_VLAN_CMD;
-    vlan_ifname_get_internal(ifname, vid, if_request.device1);
-    if_request.u.VID = vid;
+        struct vlan_ioctl_args if_request;
 
-    if (ioctl(cfg_socket, SIOCSIFVLAN, &if_request) < 0)
-        l_errno = errno;
+        if (cfg_socket < 0)
+        {
+            ERROR("%s: non-init cfg socket", cfg_socket);
+            return TE_RC(TE_TA_UNIX, TE_EFAULT);
+        }
+        if_request.cmd = DEL_VLAN_CMD;
+        vlan_ifname_get_internal(ifname, vid, if_request.device1);
+        if_request.u.VID = vid;
+
+        if (ioctl(cfg_socket, SIOCSIFVLAN, &if_request) < 0)
+            rc = te_rc_os2te(errno);
+    
+        return TE_RC(TE_TA_UNIX, rc);
+    }
 #elif defined __sun__
     {
         char vlan_if_name[IFNAMSIZ];
-        vlan_ifname_get_internal(ifname, vid, vlan_if_name);
 
-        sprintf(buf, "LANG=POSIX ifconfig %s unplumb >/dev/null",
-                vlan_if_name);
-        return ta_system(buf) != 0 ? TE_RC(TE_TA_UNIX, TE_ESHCMD) : 0;
+        /*
+         * Check if VLAN with specific VID and
+         * OVER specified interface exists.
+         */
+        rc = vlan_ifname_get_internal(ifname, vid, vlan_if_name);
+        if (rc != 0)
+            return rc;
+
+        if (vlan_if_name[0] == '\0')
+        {
+            ERROR("Can't find VLAN OVER '%s' with VID '%d'",
+                  ifname, vid);
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+
+        /* First we need to delete an interface */
+        snprintf(buf, sizeof(buf),
+                "LANG=POSIX /usr/sbin/ipadm delete-ip %s", vlan_if_name);
+        if (ta_system(buf) != 0)
+            WARN("Failed to delete network interface '%s'", vlan_if_name);
+
+        /* Now delete VLAN link */
+        snprintf(buf, sizeof(buf),
+                 "LANG=POSIX /usr/sbin/dladm delete-vlan %s", vlan_if_name);
+        if (ta_system(buf) != 0)
+        {
+            rc = TE_ESHCMD;
+            ERROR("Failed to delete VLAN link '%s'", vlan_if_name);
+        }
+        else
+            RING("VLAN interface '%s' deleted: VID '%d' OVER '%s'",
+                 vlan_if_name, vid, ifname);
+
+        return TE_RC(TE_TA_UNIX, rc);
     }
 #else
     ERROR("This test agent does not support VLANs");
-    return TE_RC(TE_TA_UNIX, EINVAL);
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #endif
-
-
-    VERB("%s: gid=%u oid='%s', vid %s, ifname %s, errno %d",
-         __FUNCTION__, gid, oid, vid_str, ifname, l_errno);
-
-    return TE_RC(TE_TA_UNIX, l_errno);
 }
 
 /**
@@ -2422,7 +2668,7 @@ static te_errno
 mcast_link_addr_add(unsigned int gid, const char *oid,
                     const char *value, const char *ifname, const char *addr)
 {
-    te_errno rc;
+    te_errno rc = 0;
 #ifndef __linux__
     ifs_list_el *p = interface_stream_list;
     mma_list_el *q;
@@ -4131,12 +4377,39 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-#ifdef SIOCGIFHWADDR
+#ifdef MY_SIOCGIFHWADDR
     memset(&req, 0, sizeof(req));
     strcpy(req.my_ifr_name, ifname);
-    CFG_IOCTL(cfg_socket, SIOCGIFHWADDR, &req);
 
-    ptr = (const uint8_t *)req.my_ifr_hwaddr.sa_data;
+    if (ioctl(cfg_socket, MY_SIOCGIFHWADDR, (caddr_t)&req) != 0)
+    {
+        static const uint8_t zero_mac[ETHER_ADDR_LEN] = {};
+
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+
+        /*
+         * For the case of loopback interface SIOCGIFHWADDR
+         * can return an error with errno code set to EADDRNOTAVAIL.
+         * There is nothing wrong here and we need to check that
+         * we really deal with loopback interface.
+         */
+        if (errno != EADDRNOTAVAIL)
+        {
+            ERROR("line %u: ioctl(MY_SIOCGIFHWADDR) failed: %r",
+                  __LINE__, rc);
+            return rc;
+        }
+        CFG_IOCTL(cfg_socket, MY_SIOCGIFFLAGS, &req);
+        if (!(req.my_ifr_flags & IFF_LOOPBACK))
+        {
+            ERROR("line %u: ioctl(MY_SIOCGIFHWADDR) failed: %r "
+                  "for non loopback interface", __LINE__, rc);
+            return rc;
+        }
+        ptr = zero_mac;
+    }
+    else
+        ptr = (const uint8_t *)my_ifr_hwaddr_data(req);
 
 #elif HAVE_SYS_DLPI_H
     do {
@@ -4224,12 +4497,10 @@ link_addr_set(unsigned int gid, const char *oid, const char *value,
               const char *ifname)
 {
     te_errno rc = 0;
-    char     aux[65];
+    uint8_t  link_addr[ETHER_ADDR_LEN];
 
     UNUSED(gid);
     UNUSED(oid);
-
-    memset(aux, 0, 65);
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
@@ -4240,29 +4511,21 @@ link_addr_set(unsigned int gid, const char *oid, const char *value,
        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    strncpy(aux, value, 64);
+    if (link_addr_a2n(link_addr, sizeof(link_addr), value) == -1)
+    {
+        ERROR("%s: Link layer address conversation issue", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
 
 #ifdef SIOCSIFHWADDR
     strcpy(req.my_ifr_name, ifname);
-    req.my_ifr_hwaddr.sa_family = AF_LOCAL;
-
-    if ((rc = link_addr_a2n((uint8_t *)req.my_ifr_hwaddr.sa_data,
-                            ETHER_ADDR_LEN, aux)) == -1)
-    {
-        ERROR("%s: Link layer address conversation issue", __FUNCTION__);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-    rc = 0;
+    my_ifr_hwaddr_family(req) = AF_LOCAL;
+    memcpy(my_ifr_hwaddr_data(req), link_addr, sizeof(link_addr));
 
     CFG_IOCTL(cfg_socket, SIOCSIFHWADDR, &req);
 #elif HAVE_SYS_DLPI_H
-    if ((rc = link_addr_a2n((uint8_t *)buf, ETHER_ADDR_LEN, aux)) == -1)
-    {
-        ERROR("%s: Link layer address conversation issue", __FUNCTION__);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-
-    rc = ta_unix_conf_dlpi_phys_addr_set(ifname, buf, ETHER_ADDR_LEN);
+    rc = ta_unix_conf_dlpi_phys_addr_set(ifname,
+                                         link_addr, sizeof(link_addr));
     if (rc != 0)
     {
         ERROR("Failed to set interface link-layer address using "
@@ -4307,9 +4570,9 @@ bcast_link_addr_set(unsigned int gid, const char *oid,
 
 #ifdef SIOCSIFHWBROADCAST
     strcpy(req.my_ifr_name, ifname);
-    req.my_ifr_hwaddr.sa_family = AF_LOCAL;
+    my_ifr_hwaddr_family(req) = AF_LOCAL;
 
-    if ((rc = link_addr_a2n((uint8_t *)req.my_ifr_hwaddr.sa_data, 6,
+    if ((rc = link_addr_a2n((uint8_t *)my_ifr_hwaddr_data(req), 6,
                             value)) == -1)
     {
         ERROR("%s: Link layer address conversation issue", __FUNCTION__);

@@ -395,6 +395,12 @@ ta_rt_parse_inst_name(const char *name, ta_rt_info_t *rt_info)
         rt_info->tos = atoi(ptr);
         rt_info->flags |= TA_RT_INFO_FLG_TOS;
     }
+    /*
+     * Set the route type to unicast by default.
+     * We anyway support only unicast and blackhole
+     * route types.
+     */
+    rt_info->type = TA_RT_TYPE_UNICAST;
     
     return 0;
 }

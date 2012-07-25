@@ -15,6 +15,9 @@ AC_PROG_INSTALL
 
 TE_LIB_SET
 
+AC_ARG_WITH([name],,)
+AC_SUBST([with_name])
+
 AC_CONFIG_HEADERS([package.h])
 
 AC_CONFIG_FILES([Makefile])

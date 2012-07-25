@@ -47,6 +47,34 @@ if test "$with_rcf_rpc" ; then
     TE_CPPFLAGS="$TE_CPPFLAGS -DRCF_RPC"
 fi    
 
+# Include telephony support by default
+AC_ARG_WITH([telephony],
+            [AS_HELP_STRING([--without-telephony],
+              [Disable support DAHDI interface via RPC calls. \
+Default - enabled.])],
+            [if test "x${withval}" = "xyes"; then
+                 with_telephony=yes;
+             fi], [with_telephony=yes])
+
+AM_CONDITIONAL(WITH_TELEPHONY, test "x$with_telephony" = "xyes")
+if test "x$with_telephony" = "xyes"; then
+    TE_CPPFLAGS="$TE_CPPFLAGS -DWITH_TELEPHONY"
+fi
+
+# Include power switch support by default
+AC_ARG_WITH([power_sw],
+            [AS_HELP_STRING([--without-power_sw],
+              [Disable support for power switch via RPC calls. \
+Default - enabled.])],
+            [if test "x${withval}" = "xyes"; then
+                 with_power_sw=yes;
+             fi], [with_power_sw=yes])
+
+AM_CONDITIONAL(WITH_POWER_SW, test "x$with_power_sw" = "xyes")
+if test "x$with_power_sw" = "xyes"; then
+    TE_CPPFLAGS="$TE_CPPFLAGS -DWITH_POWER_SW"
+fi
+
 dnl #######################################################################
 dnl Newer BSD systems don't have a compatible rtentry - use ortentry
 dnl #######################################################################
@@ -298,6 +326,7 @@ AC_CHECK_HEADERS([security/pam_appl.h])
 
 AC_CHECK_HEADERS([sys/utsname.h])
 AC_CHECK_HEADERS([sys/systeminfo.h])
+AC_CHECK_HEADERS([sys/klog.h])
 AC_CHECK_HEADERS([linux/if_vlan.h])
 
 dnl
@@ -618,7 +647,7 @@ fi
 AC_SUBST([EXTRA_CPPFLAGS])
 AC_SUBST([EXTRA_LDADD])
 
-DYNAMIC_LIBS="-ldl -lpthread"
+DYNAMIC_LIBS="-ldl -lpthread -lnsl -lsendfile -lsocket"
 
 #if ! test "$cross_compiling" = "yes" ; then
 case "$host" in 
@@ -627,7 +656,7 @@ case "$host" in
    *) 
        S_LIBS=
        D_LIBS=
-       for i in $LIBS ; do
+       for i in $LIBS $TAD_LIBS ; do
            echo Scan $i
            found=
            for k in ${DYNAMIC_LIBS} ; do

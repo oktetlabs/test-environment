@@ -100,6 +100,25 @@
  * @note
  * If @attr_val{sudo} element is specified in the configuration string of
  * a Test Agent, then it is assumed that user is sudoer without password.
+ *
+ * @section rcfunix_conflib Building RCF UNIX library
+ * In order to build RCF UNIX library you should just mention rcfunix
+ * in the list of platform libraries:
+ * TE_PLATFORM([], [], [-D_GNU_SOURCE], [-D_GNU_SOURCE], [],
+ *             [tools ... rcfunix ...])
+ * This will build default version of rcfunix suitable for Linux,
+ * but there can be some UNIX specific issues that need to be resolved
+ * with an alternative build of rcfunix. For example there is a minor
+ * difference of this library for Solaris (On Solaris we should use
+ * 'coreadm' utility to configure the name of core files).
+ * To sort this out we can build a version of rcfunix for Solaris:
+ *
+ * TE_PLATFORM([], [], [-D_GNU_SOURCE], [-D_GNU_SOURCE], [],
+ *             [tools ... rcfunix rcfsolaris ...])
+ * TE_LIB_PARMS([rcfsolaris], [], [rcfunix], [], [-DRCF_UNIX_SOLARIS])
+ *
+ * Then in RCF configuration file we can specify 'rcfsolaris' as
+ * the value of 'rcflib' attribute.
  */
 
 /*
@@ -344,7 +363,7 @@ system_with_timeout(const char *cmd, int timeout)
  *
  * @return Error code.
  */
-te_errno
+static te_errno
 rcfunix_start(const char *ta_name, const char *ta_type,
               const char *conf_str, rcf_talib_handle *handle,
               unsigned int *flags)
@@ -562,7 +581,11 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     {
         sprintf(cmd, RCFUNIX_SSH "%s %s \"", ta->key, ta->host);
     }
+#if defined RCF_UNIX_SOLARIS
+    strcat(cmd, "sudo /usr/bin/coreadm -g /tmp/core.%n-%p-%t -e global; ");
+#else
     strcat(cmd, "sudo sysctl -w kernel.core_pattern=\"core.%h-%p-%t\"; ");
+#endif
     if (ta->sudo)
     {
         strcat(cmd, "sudo ");
@@ -582,8 +605,12 @@ rcfunix_start(const char *ta_name, const char *ta_type,
             ta_type, ta->postfix, ta->ta_name, ta->port,
             (conf_str == NULL) ? "" : conf_str);
 
+#if defined RCF_UNIX_SOLARIS
+    strcat(cmd, "; sudo /usr/bin/coreadm -g /tmp/core -e global ");
+#else
     /* Enquote command in double quotes for non-local agent */
     strcat(cmd, "; sudo sysctl -w kernel.core_pattern=\"core\" ");
+#endif
     strcat(cmd, "; sudo mv /tmp/core* /var/tmp ");
     if (!ta->is_local)
     {
@@ -626,7 +653,7 @@ bad_confstr:
  *
  * @return Error code.
  */
-te_errno
+static te_errno
 rcfunix_finish(rcf_talib_handle handle, const char *parms)
 {
     unix_ta    *ta = (unix_ta *)handle;
@@ -727,7 +754,7 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
  *
  * @return Error code.
  */
-te_errno
+static te_errno
 rcfunix_close(rcf_talib_handle handle, fd_set *select_set)
 {
     return rcf_net_engine_close(&(((unix_ta *)handle)->conn), select_set);
@@ -750,7 +777,7 @@ rcfunix_close(rcf_talib_handle handle, fd_set *select_set)
  *
  * @return Error code.
  */
-te_errno
+static te_errno
 rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
                 struct timeval *select_tm)
 {
@@ -811,7 +838,7 @@ rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
  *
  * @return Error code.
  */
-te_errno
+static te_errno
 rcfunix_transmit(rcf_talib_handle handle, char *data, size_t len)
 {
     return rcf_net_engine_transmit(((unix_ta *)handle)->conn, data, len);
@@ -824,7 +851,7 @@ rcfunix_transmit(rcf_talib_handle handle, char *data, size_t len)
  *
  * @return TRUE, if data are pending; FALSE otherwise
  */
-te_bool
+static te_bool
 rcfunix_is_ready(rcf_talib_handle handle)
 {
     return (handle == NULL) ? FALSE :
@@ -861,9 +888,11 @@ rcfunix_is_ready(rcf_talib_handle handle)
  *
  * @retval other        OS errno
  */
-te_errno
+static te_errno
 rcfunix_receive(rcf_talib_handle handle, char *buf, size_t *len, char **pba)
 {
     return rcf_net_engine_receive(((unix_ta *)handle)->conn, buf, len, pba);
 }
+
+RCF_TALIB_METHODS_DEFINE(rcfunix);
 
