@@ -1247,8 +1247,18 @@ cwmp_new_session(int socket, acs_t *acs)
     getpeername(socket, SA(&(new_sess->cpe_addr)),
                &(new_sess->cpe_addr_len));
 
+    new_sess->state = CWMP_NOP;
+    new_sess->acs_owner = acs;
+    new_sess->cpe_owner = NULL;
+    new_sess->channel = channel;
+    new_sess->rpc_item = NULL;
+    new_sess->sending_fd = NULL;
+    new_sess->def_heap = mheap_create(new_sess);
+
     cwmp_init_soap(new_sess, socket);
 
+    VERB("Init session for ACS '%s', sess ptr %p, acs ptr %p",
+         acs->name, new_sess, acs);
     if (acs->ssl)
     {
         /* TODO: Investigate, how to pass SSL certificate correct.
@@ -1273,30 +1283,18 @@ cwmp_new_session(int socket, acs_t *acs)
             soap_print_fault(&new_sess->m_soap, stderr);
             ERROR("soap_ssl_server_context failed, soap error %d",
                 new_sess->m_soap.error);
+            mheap_free_user(new_sess->def_heap, new_sess);
             free(new_sess);
             free(channel);
             /* TODO: what error return here? */
             return TE_ECONNREFUSED;
         }
-    }
-
-    VERB("Init session for ACS '%s', sess ptr %p, acs ptr %p",
-         acs->name, new_sess, acs);
-    new_sess->state = CWMP_NOP;
-    new_sess->acs_owner = acs;
-    new_sess->cpe_owner = NULL;
-    new_sess->channel = channel;
-    new_sess->rpc_item = NULL;
-    new_sess->sending_fd = NULL;
-    new_sess->def_heap = mheap_create(new_sess);
-
-    if (acs->ssl)
-    {
         if (soap_ssl_accept(&new_sess->m_soap))
         {
             RING("soap_ssl_accept failed, soap error %d",
                 new_sess->m_soap.error);
             soap_free(&new_sess->m_soap);
+            mheap_free_user(new_sess->def_heap, new_sess);
             free(new_sess);
             free(channel);
             return TE_ECONNREFUSED;
