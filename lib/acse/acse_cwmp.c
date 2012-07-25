@@ -1278,25 +1278,23 @@ cwmp_new_session(int socket, acs_t *acs)
                         random data to seed randomness */
               NULL /* optional server identification
                     to enable SSL session cache (must be a unique name) */
-            ))
+            ) != 0 ||
+            soap_ssl_accept(&new_sess->m_soap) != 0)
         {
-            soap_print_fault(&new_sess->m_soap, stderr);
-            ERROR("soap_ssl_server_context failed, soap error %d",
-                new_sess->m_soap.error);
-            mheap_free_user(new_sess->def_heap, new_sess);
-            free(new_sess);
-            free(channel);
-            /* TODO: what error return here? */
-            return TE_ECONNREFUSED;
-        }
-        if (soap_ssl_accept(&new_sess->m_soap))
-        {
-            RING("soap_ssl_accept failed, soap error %d",
-                new_sess->m_soap.error);
+            const char **descr = soap_faultstring(&new_sess->m_soap);
+
+            soap_set_fault(&new_sess->m_soap);
+            ERROR("%s: GSOAP error %d: %s",  __FUNCTION__,
+                  new_sess->m_soap.error,
+                  (descr != NULL && *descr != NULL) ?
+                      *descr : "[no description]");
+
+            /* soap_print_fault(&new_sess->m_soap, stderr); */
             soap_done(&new_sess->m_soap);
             mheap_free_user(new_sess->def_heap, new_sess);
             free(new_sess);
             free(channel);
+            /* TODO: what error return here? */
             return TE_ECONNREFUSED;
         }
     }
@@ -1769,7 +1767,7 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
     RING("%s() called, cwmp sess state %d, sync_mode %d, rpc_item %p",
          __FUNCTION__, session->state, cpe->sync_mode, rpc_item);
 
-    if (TAILQ_EMPTY(&cpe->rpc_queue) && cpe->sync_mode)
+    if (rpc_item == NULL && cpe->sync_mode)
     {
         /* do nothing, wait for EPC with RPC to be sent */
         RING("sess %p queue is empty, sync mode; state <- PENDING",
@@ -1786,8 +1784,7 @@ acse_cwmp_send_rpc(struct soap *soap, cwmp_session_t *session)
 
     /* TODO add check, whether HoldRequests was set on - think, for what? */
 
-    if (TAILQ_EMPTY(&cpe->rpc_queue) ||
-        CWMP_RPC_NONE == rpc_item->params->rpc_cpe)
+    if (rpc_item == NULL || CWMP_RPC_NONE == rpc_item->params->rpc_cpe)
     {
 
         RING("CPE '%s', empty list of RPC calls, response 204", cpe->name);
