@@ -1293,7 +1293,7 @@ cwmp_new_session(int socket, acs_t *acs)
         {
             RING("soap_ssl_accept failed, soap error %d",
                 new_sess->m_soap.error);
-            soap_free(&new_sess->m_soap);
+            soap_done(&new_sess->m_soap);
             mheap_free_user(new_sess->def_heap, new_sess);
             free(new_sess);
             free(channel);
