@@ -17,6 +17,15 @@ AC_PROG_RANLIB
 AC_PROG_LIBTOOL
 AC_PROG_INSTALL
 
+DIRS="`${CC} ${TE_CPPFLAGS} ${TE_CFLAGS} --print-search-dirs | \
+      grep libraries | sed s/libraries// | sed s/=//g | sed s/:/\ /g`"
+DIRS="${TE_EXT_LIBS_PATH} ${DIRS} `echo $LD_LIBRARY_PATH | sed s/:/\ /g`"
+AC_CACHE_VAL(lt_cv_sys_lib_search_path_spec,
+             [lt_cv_sys_lib_search_path_spec="${DIRS}"])
+AC_CACHE_VAL(lt_cv_sys_lib_dlsearch_path_spec,
+             [lt_cv_sys_lib_dlsearch_path_spec="${DIRS}"])
+LT_INIT
+
 if test x$host != x${host%windows} ; then
     RANLIB=touch
 else    
