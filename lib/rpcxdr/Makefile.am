@@ -8,6 +8,8 @@ AM_CFLAGS = @TE_CFLAGS@ -Wno-unused-parameter -Wno-unused-variable \
 
 include_HEADERS=rpc_xdr.h tarpc.h
 
+# Workaround for bug in latest libtool: libtool defines ECHO, but uses $echo
+export echo=echo
 
 if WINDOWS
 
