@@ -13,10 +13,9 @@ AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
 # Checks for programs.
 AC_PROG_CC
-AC_PROG_RANLIB
-AC_PROG_LIBTOOL
-AC_PROG_INSTALL
 
+# Fixing libraries search paths in libtool - they are wrong when
+# cross-compiling for different bitness takes place
 DIRS="`${CC} ${TE_CPPFLAGS} ${TE_CFLAGS} --print-search-dirs | \
       grep libraries | sed s/libraries// | sed s/=//g | sed s/:/\ /g`"
 DIRS="${TE_EXT_LIBS_PATH} ${DIRS} `echo $LD_LIBRARY_PATH | sed s/:/\ /g`"
@@ -25,11 +24,19 @@ AC_CACHE_VAL(lt_cv_sys_lib_search_path_spec,
 AC_CACHE_VAL(lt_cv_sys_lib_dlsearch_path_spec,
              [lt_cv_sys_lib_dlsearch_path_spec="${DIRS}"])
 LT_INIT
+AC_PROG_RANLIB
+AC_PROG_INSTALL
 
 if test x$host != x${host%windows} ; then
     RANLIB=touch
-else    
-    AC_PROG_RANLIB
+else
+    RANLIB_BYPASS_CMD="${RANLIB}"
+    AC_SUBST(RANLIB_BYPASS_CMD)
+    if test x${abs_builddir} != x ; then
+        RANLIB=${abs_builddir}/ranlib_noargs_bypass
+    else
+        RANLIB=./ranlib_noargs_bypass
+    fi
 fi    
 
 AM_CONDITIONAL(WINDOWS, test x$host != x${host%windows})
@@ -136,6 +143,8 @@ fi
 AC_CONFIG_HEADER([config.h])
 
 AC_CONFIG_FILES([Makefile])
+
+AC_CONFIG_FILES([ranlib_noargs_bypass], [chmod +x ranlib_noargs_bypass])
 
 TE_LIB_RESTORE
 
