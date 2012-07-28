@@ -23,6 +23,7 @@ AC_CACHE_VAL(lt_cv_sys_lib_search_path_spec,
              [lt_cv_sys_lib_search_path_spec="${DIRS}"])
 AC_CACHE_VAL(lt_cv_sys_lib_dlsearch_path_spec,
              [lt_cv_sys_lib_dlsearch_path_spec="${DIRS}"])
+AC_PROG_LIBTOOL
 LT_INIT
 AC_PROG_RANLIB
 AC_PROG_INSTALL
