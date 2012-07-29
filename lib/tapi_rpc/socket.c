@@ -2252,7 +2252,7 @@ rpc_sendmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
     }
 
     snprintf(str_buf + strlen(str_buf), sizeof(str_buf) - strlen(str_buf),
-             "), %d, %s, ", vlen, send_recv_flags_rpc2str(flags));
+             "), %d, %s", vlen, send_recv_flags_rpc2str(flags));
     TAPI_RPC_LOG(rpcs, sendmmsg_alt, "%d, %p(%s", "%d",
                  fd, mmsg, str_buf, out.retval);
     RETVAL_INT(sendmmsg_alt, out.retval);
