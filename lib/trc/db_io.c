@@ -566,6 +566,8 @@ get_result(xmlNodePtr node, const char *name, te_test_status *result)
         *result = TE_TEST_SKIPPED;
     else if (strcmp(tmp, "UNSPEC") == 0)
         *result = TE_TEST_UNSPEC;
+    else if (strcmp(tmp, "FAKED") == 0)
+        *result = TE_TEST_FAKED;
     else
     {
         ERROR("Unknown result '%s' of the test iteration", tmp);

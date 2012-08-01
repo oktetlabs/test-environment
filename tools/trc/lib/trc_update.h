@@ -151,6 +151,15 @@ typedef struct trc_update_rule {
 /** TRC updating rules queue */
 typedef TAILQ_HEAD(trc_update_rules, trc_update_rule) trc_update_rules;
 
+/** Results simplification status */
+typedef enum res_simpl_stat {
+    RES_NO_SIMPLE = 0,  /**< Not simplified yet */
+    RES_TO_REPLACE,     /**< Should be replaced
+                             with already known
+                             simplified version */
+    RES_SIMPLE,         /**< Already simplified */
+} res_simpl_stat;
+
 /** TRC Update test iteration data attached to iteration in TRC DB */
 typedef struct trc_update_test_iter_data {
     trc_exp_results       new_results; /**< Non-matching test results from
@@ -176,6 +185,7 @@ typedef struct trc_update_test_iter_data {
                                             generation) */
     te_bool               in_wildcard; /**< Whether this iteration in
                                             some wildcard already or not */
+    res_simpl_stat        r_simple;    /**< Results simplification status */
 
     /*
      * We store this kind of representation of arguments to make

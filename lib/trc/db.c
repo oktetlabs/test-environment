@@ -147,6 +147,8 @@ trc_exp_result_entry_dup(trc_exp_result_entry *rentry)
 
     te_test_result_cpy(&dup_entry->result, &rentry->result);
 
+    dup_entry->is_expected = rentry->is_expected;
+
     return dup_entry;
 }
 

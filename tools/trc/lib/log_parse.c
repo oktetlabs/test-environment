@@ -2628,8 +2628,11 @@ trc_update_simplify_results(unsigned int db_uid,
     trc_update_tests_group      *group;
     trc_update_test_entry       *test_entry;
     trc_test_iter               *iter;
+    trc_test_iter               *iter_aux;
     trc_update_test_iter_data   *iter_data;
+    trc_update_test_iter_data   *iter_data_aux;
     trc_exp_results             *new_results = NULL;
+    trc_exp_results             *new_res_aux = NULL;
     trc_exp_result              *p;
     trc_exp_result              *q;
     trc_exp_result              *tvar;
@@ -2641,6 +2644,22 @@ trc_update_simplify_results(unsigned int db_uid,
     {
         TAILQ_FOREACH(test_entry, &group->tests, links)
         {
+            if (flags & TRC_LOG_PARSE_LOG_WILDS)
+            {
+                TAILQ_FOREACH(iter, &test_entry->test->iters.head, links)
+                {
+                    iter_data = trc_db_iter_get_user_data(iter, db_uid);
+                    
+                    if (iter_data == NULL || iter_data->to_save == FALSE)
+                        continue;
+
+                    new_results = &iter->exp_results;
+                    trc_exp_results_free(new_results);
+                    trc_exp_results_cpy(new_results,
+                                        &iter_data->new_results);
+                }
+            }
+
             TAILQ_FOREACH(iter, &test_entry->test->iters.head, links)
             {
                 iter_data = trc_db_iter_get_user_data(iter, db_uid);
@@ -2648,15 +2667,34 @@ trc_update_simplify_results(unsigned int db_uid,
                 if (iter_data == NULL || iter_data->to_save == FALSE)
                     continue;
 
+                if (iter_data->r_simple == RES_SIMPLE)
+                    continue;
+
                 if (flags & TRC_LOG_PARSE_LOG_WILDS)
-                {
                     new_results = &iter->exp_results;
-                    trc_exp_results_free(new_results);
-                    trc_exp_results_cpy(new_results,
-                                        &iter_data->new_results);
-                }
                 else
                     new_results = &iter_data->new_results;
+
+                for (iter_aux = TAILQ_NEXT(iter, links);
+                     iter_aux != NULL;
+                     iter_aux = TAILQ_NEXT(iter_aux, links))
+                {
+                    iter_data_aux =
+                        trc_db_iter_get_user_data(iter_aux, db_uid);
+                    
+                    if (iter_data_aux == NULL ||
+                        iter_data_aux->to_save == FALSE)
+                        continue;
+
+                    if (flags & TRC_LOG_PARSE_LOG_WILDS)
+                        new_res_aux = &iter_aux->exp_results;
+                    else
+                        new_res_aux = &iter_data_aux->new_results;
+
+                    if (trc_update_results_cmp(new_results,
+                                               new_res_aux) == 0)
+                        iter_data_aux->r_simple = RES_TO_REPLACE;
+                }
 
                 if (flags & TRC_LOG_PARSE_SIMPL_TAGS)
                     simplify_log_exprs(new_results, flags);
@@ -2708,6 +2746,40 @@ trc_update_simplify_results(unsigned int db_uid,
                                          links);
                             trc_exp_result_free(q);
                         }
+                    }
+                }
+
+                iter_data->r_simple = RES_SIMPLE;
+
+                /*
+                 * Replace same results with simplified ones to
+                 * avoid multiple processing of the same problem.
+                 */
+                for (iter_aux = TAILQ_NEXT(iter, links);
+                     iter_aux != NULL;
+                     iter_aux = TAILQ_NEXT(iter_aux, links))
+                {
+                    iter_data_aux =
+                        trc_db_iter_get_user_data(iter_aux, db_uid);
+                    
+                    if (iter_data_aux == NULL ||
+                        iter_data_aux->to_save == FALSE)
+                        continue;
+
+                    if (iter_data_aux->r_simple == RES_SIMPLE)
+                        continue;
+
+                    if (flags & TRC_LOG_PARSE_LOG_WILDS)
+                        new_res_aux = &iter_aux->exp_results;
+                    else
+                        new_res_aux = &iter_data_aux->new_results;
+
+                    if (iter_data_aux->r_simple == RES_TO_REPLACE)
+                    {
+                        trc_exp_results_free(new_res_aux);
+                        trc_exp_results_cpy(new_res_aux,
+                                            new_results);
+                        iter_data_aux->r_simple = RES_SIMPLE;
                     }
                 }
             }

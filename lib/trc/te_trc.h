@@ -102,7 +102,7 @@ typedef struct trc_exp_result {
     char        *tags_str;   /**< String representation of tags logical
                                  expression */
     logic_expr  *tags_expr;  /**< Tags logical expression */
-    tqh_strings *tags;       /**< Tag strings merged whe updating
+    tqh_strings *tags;       /**< Tag strings merged when updating
                                   from logs */
 
     trc_exp_result_entry_head  results; /**< Results expected for such
