@@ -224,6 +224,22 @@ struct tarpc_gettimeofday_out {
     struct tarpc_timezone   tz<>;
 };
 
+/* gethostname() */
+struct tarpc_gethostname_in {
+    struct tarpc_in_arg common;
+
+    char                name<>;
+    tarpc_size_t        len;
+};
+
+struct tarpc_gethostname_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int            retval;
+
+    char                 name<>;
+};
+
 /* Ethtool data types */
 enum tarpc_ethtool_type {
     TARPC_ETHTOOL_CMD = 1,      /**< struct ethtool_cmd */
@@ -4567,6 +4583,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(getpid)
         RPC_DEF(pthread_self)
         RPC_DEF(gettimeofday)
+        RPC_DEF(gethostname)
         
         RPC_DEF(access)
 

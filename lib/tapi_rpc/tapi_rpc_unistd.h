@@ -1001,6 +1001,17 @@ extern int rpc_fstat64(rcf_rpc_server *rpcs,
                        int fd,
                        rpc_stat *buf);
 
+/**
+ * Get hostname
+ *
+ * @param rpcs      RPC server
+ * @param name      Hostname
+ * @param len       Length of buffer in name argument
+ *
+ * @return  -1 in the case of failure or 0 on success
+ */
+extern int rpc_gethostname(rcf_rpc_server *rpcs, char *name, size_t len);
+
 /**@} <!-- END te_lib_rpc_unistd --> */
 
 #ifdef __cplusplus

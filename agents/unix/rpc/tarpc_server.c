@@ -767,6 +767,16 @@ TARPC_FUNC(gettimeofday,
 }
 )
 
+/*-------------- gethostname() --------------------------------*/
+TARPC_FUNC(gethostname,
+{
+    COPY_ARG(name);
+},
+{
+    MAKE_CALL(out->retval = func_ptr(out->name.name_val, in->len));
+}
+)
+
 #if defined WITH_TELEPHONY
 /*-------------- telephony_check_dial_tone() -----------------------*/
 

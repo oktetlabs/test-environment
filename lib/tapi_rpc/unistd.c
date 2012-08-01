@@ -2055,3 +2055,36 @@ rpc_fstat64(rcf_rpc_server *rpcs,
     RETVAL_INT(te_fstat64, out.retval);
 }
 
+int
+rpc_gethostname(rcf_rpc_server *rpcs, char *name, size_t len)
+{
+    tarpc_gethostname_in  in;
+    tarpc_gethostname_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(gethostname, -1);
+    }
+
+    if (name != NULL && rpcs->op != RCF_RPC_WAIT)
+    {
+        in.name.name_len = len;
+        in.name.name_val = name;
+    }
+    in.len = len;
+
+    rcf_rpc_call(rpcs, "gethostname", &in, &out);
+
+    if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT &&
+        name != NULL && out.name.name_val != NULL)
+        memcpy(name, out.name.name_val, out.name.name_len);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(gethostname, out.retval);
+    TAPI_RPC_LOG(rpcs, gethostname, "%s, %d", "%d",
+                 name, len, out.retval);
+    RETVAL_INT(gethostname, out.retval);
+}
