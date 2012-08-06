@@ -13,12 +13,10 @@ AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
 # Checks for programs.
 AC_PROG_CC
-AC_PROG_LIBTOOL
+AC_FIXED_LIBTOOL_RANLIB
 AC_PROG_INSTALL
 if test x$host != x${host%windows} ; then
     RANLIB=touch
-else    
-    AC_PROG_RANLIB
 fi    
 
 AM_CONDITIONAL(WINDOWS, test x$host != x${host%windows})
