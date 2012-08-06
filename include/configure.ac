@@ -15,14 +15,6 @@ AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 AC_PROG_CC
 AC_PROG_INSTALL
 
-# This is done because libtool can sometimes call
-# ranlib without any argument and cause build crash
-AC_PROG_RANLIB
-RANLIB_BYPASS_CMD="${RANLIB}"
-AC_SUBST(RANLIB_BYPASS_CMD)
-AC_CONFIG_FILES([ranlib_noargs_bypass],
-                [chmod +x ranlib_noargs_bypass])
-
 TE_LIB_SET
 
 AC_CONFIG_HEADERS([te_config_internal.h])

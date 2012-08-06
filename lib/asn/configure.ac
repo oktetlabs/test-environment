@@ -13,7 +13,7 @@ AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
 # Checks for programs.
 AC_PROG_CC
-AC_FIXED_LIBTOOL_RANLIB
+AC_PROG_LIBTOOL
 AC_PROG_INSTALL
 
 # We use APP here as we need to build tests

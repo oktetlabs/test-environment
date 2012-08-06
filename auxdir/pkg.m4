@@ -54,29 +54,4 @@ AC_DEFUN([PKG_CHECK_MODULES], [
   fi
 ])
 
-dnl AC_FIXED_LIBTOOL configures libtool fixing libraries search paths
-dnl in it - they are wrong when cross-compiling for different bitness
-dnl takes place
-AC_DEFUN([AC_FIXED_LIBTOOL],[
-    DIRS="`${CC} ${TE_CPPFLAGS} ${TE_CFLAGS} --print-search-dirs | \
-          grep libraries | sed s/libraries// | sed s/=//g | sed s/:/\ /g`"
-    DIRS="${TE_EXT_LIBS_PATH} ${DIRS} `echo $LD_LIBRARY_PATH | sed s/:/\ /g`"
-    AC_CACHE_VAL(lt_cv_sys_lib_search_path_spec,
-                 [lt_cv_sys_lib_search_path_spec="${DIRS}"])
-    AC_CACHE_VAL(lt_cv_sys_lib_dlsearch_path_spec,
-                 [lt_cv_sys_lib_dlsearch_path_spec="${DIRS}"])
-dnl If old version of Libtool is used, LT_INIT and this macro
-dnl does not work, but AC_PROG_LIBTOOL will at least configure Libtool
-dnl in usual way.
-    AC_PROG_LIBTOOL
-    LT_INIT
-])
 
-AC_DEFUN([AC_FIXED_RANLIB],[
-    RANLIB=${TE_PLATFORM_PATH}/include/ranlib_noargs_bypass
-])
-
-AC_DEFUN([AC_FIXED_LIBTOOL_RANLIB],[
-    AC_FIXED_LIBTOOL
-    AC_FIXED_RANLIB
-])
