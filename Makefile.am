@@ -45,6 +45,9 @@ EXTRA_DIST+=@SUITE_SCRIPTS_EXTRA_DIST@
 
 endif
 
+# Workaround for bug in latest libtool: libtool defines ECHO, but uses $echo
+export echo=echo
+
 all: configure.ac install-data
 
 dist-hook:
