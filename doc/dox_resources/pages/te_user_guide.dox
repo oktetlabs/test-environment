@@ -95,8 +95,7 @@ For @ref te_engine build and run (in square brackets - debian package names):
 - @lib_name{libexpat};
 - @lib_name{libpcap0.8-dev} (for TAD PCAP only) [@lib_name{libpcap0.8-dev}];
 - @lib_name{libpam} (0.76-22) (not required but suggested)
-  [@lib_name{libpam}];
-- @lib_name{libnl-devel}.
+  [@lib_name{libpam}].
 .
 
 @ref te_agents_win :

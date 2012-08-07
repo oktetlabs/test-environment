@@ -103,7 +103,6 @@ Unix Test Agent
 - libexpat
 - libpcap0.8-dev (for TAD PCAP only) [libpcap0.8-dev]
 - libpam (0.76-22) (not required but suggested) [libpam]
-- libnl-devel
 
 We are using versions of libraries specified in parentheses.
 
