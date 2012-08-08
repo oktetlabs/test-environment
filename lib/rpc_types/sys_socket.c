@@ -2225,6 +2225,12 @@ ethtool_cmd2type(tarpc_ethtool_command cmd)
 #ifdef ETHTOOL_SGSO
         case ETHTOOL_SGSO:
 #endif
+#ifdef ETHTOOL_GGRO
+        case ETHTOOL_GGRO:
+#endif
+#ifdef ETHTOOL_SGRO
+        case ETHTOOL_SGRO:
+#endif
 #ifdef ETHTOOL_GFLAGS
         case ETHTOOL_GFLAGS:
 #endif
@@ -2298,6 +2304,12 @@ ethtool_cmd2str(tarpc_ethtool_command cmd)
 #endif
 #ifdef ETHTOOL_SGSO
         MACRO2STR(SGSO);
+#endif
+#ifdef ETHTOOL_GGRO
+        MACRO2STR(GGRO);
+#endif
+#ifdef ETHTOOL_SGRO
+        MACRO2STR(SGRO);
 #endif
 #ifdef ETHTOOL_GFLAGS
         MACRO2STR(GFLAGS);
