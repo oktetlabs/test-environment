@@ -222,6 +222,7 @@ typedef struct acs_t {
     const char  *cert;          /**< ACS certificate                */
     te_bool      ssl;           /**< SSL usage boolean flag         */
     uint16_t     port;          /**< TCP port value in host byte order */
+    uint16_t     udp_port;      /**< UDP port value in host byte order */
     auth_mode_t  auth_mode;     /**< Authentication mode            */
     te_bool      traffic_log;   /**< Flag, whether to log CWMP traffic */
 

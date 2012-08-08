@@ -476,6 +476,29 @@ acs_port(acs_t *acs, acse_epc_config_data_t *params)
 }
 
 /**
+ * Access to the ACS UDP port value.
+ *
+ * @param acs           ACS record
+ * @param params        EPC parameters struct
+ *
+ * @return      Status code.
+ */
+static te_errno
+acs_udp_port(acs_t *acs, acse_epc_config_data_t *params)
+{
+    VERB("ACS-udp-port config, fun %d, value '%s', acs ptr %p, old val %d",
+            (int)params->op.fun, params->value, acs, (int)acs->udp_port);
+    if (params->op.fun == EPC_CFG_MODIFY)
+        acs->udp_port = atoi(params->value);
+    else
+        sprintf(params->value, "%i", acs->udp_port);
+
+    VERB("ACS-udp-port config, value '%s', new val %d",
+            params->value, (int)acs->udp_port);
+    return 0;
+}
+
+/**
  * Set the ACS SSL flag.
  *
  * @param acs           ACS record
@@ -820,6 +843,7 @@ struct config_acs_item_t {
     {"ssl",  acs_ssl},
     {"traffic_log",  acs_traffic_log},
     {"port", acs_port},
+    {"udp_port", acs_udp_port},
     {"enabled", acs_enabled},
     {"http_response", acs_http_resp},
 };

@@ -149,6 +149,7 @@ acse_is_int_var(const char *name)
 {
     return
         ((0 == strcmp(name, "port"))     ||
+         (0 == strcmp(name, "udp_port")) ||
          (0 == strcmp(name, "ssl"))      ||
          (0 == strcmp(name, "enabled"))  ||
          (0 == strcmp(name, "cr_state")) ||
@@ -235,6 +236,7 @@ tapi_acse_ta_cs_init(tapi_acse_context_t *ctx)
     if (CFG_HANDLE_INVALID == acs_handle) /* ACS on ACSE was created */
     {
         COPY_ACS_CPE_PARAM(C_ACS, CVT_INTEGER, "port");
+        COPY_ACS_CPE_PARAM(C_ACS, CVT_INTEGER, "udp_port");
         COPY_ACS_CPE_PARAM(C_ACS, CVT_STRING, "http_root");
         COPY_ACS_CPE_PARAM(C_ACS, CVT_STRING, "auth_mode");
         COPY_ACS_CPE_PARAM(C_ACS, CVT_STRING, "url");

@@ -597,8 +597,12 @@ RCF_PCH_CFG_NODE_RW(node_acs_port, "port",
                     NULL, &node_acs_ssl,
                     &cfg_acs_call_get, &cfg_acs_call_set);
 
-RCF_PCH_CFG_NODE_RW(node_acs_traffic_log, "traffic_log", 
+RCF_PCH_CFG_NODE_RW(node_acs_udp_port, "udp_port", 
                     NULL, &node_acs_port,
+                    &cfg_acs_call_get, &cfg_acs_call_set);
+
+RCF_PCH_CFG_NODE_RW(node_acs_traffic_log, "traffic_log", 
+                    NULL, &node_acs_udp_port,
                     &cfg_acs_call_get, &cfg_acs_call_set);
 
 RCF_PCH_CFG_NODE_RW(node_acs_auth_mode, "auth_mode", 
