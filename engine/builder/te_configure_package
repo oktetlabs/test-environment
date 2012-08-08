@@ -141,6 +141,7 @@ ADD_CPPFLAGS="$ADD_CPPFLAGS -I${TE_BUILD}/platforms/${PLATFORM}/include \
 ADD_LDFLAGS="$ADD_LDFLAGS -L${TE_BUILD}/platforms/${PLATFORM}/lib \
 -L${TE_INSTALL}/${PLATFORM}/lib"
 export TE_EXT_LIBS_PATH="${TE_BUILD}/platforms/${PLATFORM}/lib"
+export TE_PLATFORM_PATH="${TE_BUILD}/platforms/${PLATFORM}/"
 
 PARMS="$PARMS --build=`gcc -dumpmachine` \
        TE_BASE=\"$TE_BASE\" \
