@@ -589,7 +589,6 @@ tapi_acse_wait_cr_state(tapi_acse_context_t *ctx,
 }
 
 
-
 /*
  * ================== local wrappers for RCF RPC =================
  */
@@ -1034,8 +1033,9 @@ tapi_acse_set_pvalues_sync(tapi_acse_context_t *ctx,
     te_errno rc;
     int sync_mode;
     cwmp_sess_state_t cwmp_state;
+
     T_CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_OBTAIN,
-                                  "sync_mode", &sync_mode, VA_END_LIST));
+                                    "sync_mode", &sync_mode, VA_END_LIST));
     T_CHECK_RC(tapi_acse_get_cwmp_state(ctx, &cwmp_state));
     if (sync_mode != 1 || cwmp_state != CWMP_PENDING)
     {
@@ -1056,13 +1056,14 @@ tapi_acse_get_pvalues_sync(tapi_acse_context_t *ctx,
     te_errno rc;
     int sync_mode;
     cwmp_sess_state_t cwmp_state;
+
     T_CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_OBTAIN,
-                                  "sync_mode", &sync_mode, VA_END_LIST));
+                                    "sync_mode", &sync_mode, VA_END_LIST));
     T_CHECK_RC(tapi_acse_get_cwmp_state(ctx, &cwmp_state));
     if (sync_mode != 1 || cwmp_state != CWMP_PENDING)
     {
         ERROR("Call %s in wrong state, sync_mode is %d, cwmp state is %d",
-             __FUNCTION__, sync_mode, cwmp_state);
+              __FUNCTION__, sync_mode, cwmp_state);
         return TE_RC(TE_TAPI, TE_EDEADLK);
     }
     T_CHECK_RC(tapi_acse_get_parameter_values(ctx, names));
@@ -1119,11 +1120,13 @@ tapi_acse_get_parameter_names_resp(tapi_acse_context_t *ctx,
 {
     cwmp_data_from_cpe_t from_cpe_loc = {.p = NULL};
     te_errno rc = tapi_acse_cpe_rpc_response(ctx, NULL, &from_cpe_loc);
+
     if (0 == rc && NULL != resp && NULL != from_cpe_loc.p)
     {
         int i;
         ParameterInfoList *name_list =
             from_cpe_loc.get_parameter_names_r->ParameterList;
+
         (*resp) = (string_array_t *)malloc(sizeof(string_array_t));
         (*resp)->size = name_list->__size;
         (*resp)->items = calloc(name_list->__size, sizeof(char*));
@@ -1316,6 +1319,7 @@ tapi_acse_cpe_disconnect(tapi_acse_context_t *ctx)
     if (!ctx->change_sync)
     {
         int hold_requests, sync_mode;
+
         T_CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_OBTAIN,
                                       "hold_requests", &hold_requests,
                                       "sync_mode", &sync_mode,
