@@ -2236,7 +2236,14 @@ struct tarpc_pselect_in {
     tarpc_sigset_t          sigmask;
 };
 
-typedef struct tarpc_int_retval_out tarpc_pselect_out;
+struct tarpc_pselect_out {
+    struct tarpc_out_arg    common;
+
+    tarpc_int               retval;
+
+    struct tarpc_timespec   timeout<>;
+};
+
 
 
 /* poll() */
@@ -2281,6 +2288,7 @@ struct tarpc_ppoll_out {
     tarpc_int               retval;
 
     struct tarpc_pollfd     ufds<>;
+    struct tarpc_timespec   timeout<>;
 };
 
 /* epoll_create() */

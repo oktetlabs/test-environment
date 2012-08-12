@@ -894,6 +894,13 @@ rpc_pselect(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "pselect", &in, &out);
 
+    if (rpcs->last_op != RCF_RPC_CALL && timeout != NULL &&
+        out.timeout.timeout_val != NULL && RPC_IS_CALL_OK(rpcs))
+    {
+        timeout->tv_sec = out.timeout.timeout_val[0].tv_sec;
+        timeout->tv_nsec = out.timeout.timeout_val[0].tv_nsec;
+    }
+
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(pselect, out.retval);
     TAPI_RPC_LOG(rpcs, pselect, "%d, 0x%x, 0x%x, 0x%x, %s, 0x%x", "%d",
                  n, (unsigned)readfds, (unsigned)writefds,
@@ -1114,6 +1121,13 @@ rpc_ppoll_gen(rcf_rpc_server *rpcs,
     pollreq2str(ufds, rnfds, str_buf_1, sizeof(str_buf_1));
 
     rcf_rpc_call(rpcs, "ppoll", &in, &out);
+
+    if (rpcs->last_op != RCF_RPC_CALL && timeout != NULL &&
+        out.timeout.timeout_val != NULL && RPC_IS_CALL_OK(rpcs))
+    {
+        timeout->tv_sec = out.timeout.timeout_val[0].tv_sec;
+        timeout->tv_nsec = out.timeout.timeout_val[0].tv_nsec;
+    }
 
     if (RPC_IS_CALL_OK(rpcs))
     {

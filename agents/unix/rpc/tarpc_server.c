@@ -2898,16 +2898,18 @@ TARPC_FUNC(getsockopt,
 
 /*-------------- pselect() --------------------------------*/
 
-TARPC_FUNC(pselect, {},
+TARPC_FUNC(pselect,
+{
+    COPY_ARG(timeout);
+},
 {
     struct timespec tv;
 
-    if (in->timeout.timeout_len > 0)
+    if (out->timeout.timeout_len > 0)
     {
-        tv.tv_sec = in->timeout.timeout_val[0].tv_sec;
-        tv.tv_nsec = in->timeout.timeout_val[0].tv_nsec;
+        tv.tv_sec = out->timeout.timeout_val[0].tv_sec;
+        tv.tv_nsec = out->timeout.timeout_val[0].tv_nsec;
     }
-    INIT_CHECKED_ARG((char *)&tv, sizeof(tv), 0);
 
     /*
      * The pointer may be a NULL and, therefore, contain uninitialized
@@ -2921,8 +2923,15 @@ TARPC_FUNC(pselect, {},
                                  (fd_set *)rcf_pch_mem_get(in->readfds),
                                  (fd_set *)rcf_pch_mem_get(in->writefds),
                                  (fd_set *)rcf_pch_mem_get(in->exceptfds),
-                                 in->timeout.timeout_len == 0 ? NULL : &tv,
+                                 out->timeout.timeout_len == 0 ? NULL : &tv,
                                  rcf_pch_mem_get(in->sigmask)));
+
+    if (out->timeout.timeout_len > 0)
+    {
+        out->timeout.timeout_val[0].tv_sec = tv.tv_sec;
+        out->timeout.timeout_val[0].tv_nsec = tv.tv_nsec;
+    }
+
 #ifdef __linux__
     if (out->retval >= 0 && out->common.errno_changed &&
         out->common._errno == RPC_ENOSYS)
@@ -3907,18 +3916,18 @@ TARPC_FUNC(ppoll,
         return TRUE;
     }
     COPY_ARG(ufds);
+    COPY_ARG(timeout);
 },
 {
     struct pollfd ufds[RPC_POLL_NFDS_MAX];
     struct timespec tv;
     unsigned int i;
 
-    if (in->timeout.timeout_len > 0)
+    if (out->timeout.timeout_len > 0)
     {
-        tv.tv_sec = in->timeout.timeout_val[0].tv_sec;
-        tv.tv_nsec = in->timeout.timeout_val[0].tv_nsec;
+        tv.tv_sec = out->timeout.timeout_val[0].tv_sec;
+        tv.tv_nsec = out->timeout.timeout_val[0].tv_nsec;
     }
-    INIT_CHECKED_ARG((char *)&tv, sizeof(tv), 0);
     INIT_CHECKED_ARG((char *)rcf_pch_mem_get(in->sigmask),
                      sizeof(sigset_t), 0);
 
@@ -3938,13 +3947,20 @@ TARPC_FUNC(ppoll,
              ufds[i].revents);
     }
 
-    VERB("ppoll(): call with ufds=0x%lx, nfds=%u, timeout=%d",
-         (unsigned long int)ufds, in->nfds, in->timeout);
+    VERB("ppoll(): call with ufds=0x%lx, nfds=%u, timeout=%p",
+         (unsigned long int)ufds, in->nfds,
+         out->timeout.timeout_len > 0 ? out->timeout.timeout_val : NULL);
     MAKE_CALL(out->retval = func_ptr(ufds, in->nfds,
-                                     in->timeout.timeout_len == 0 ? NULL :
-                                                                    &tv,
+                                     out->timeout.timeout_len == 0 ? NULL :
+                                                                     &tv,
                                      rcf_pch_mem_get(in->sigmask)));
     VERB("ppoll(): retval=%d", out->retval);
+
+    if (out->timeout.timeout_len > 0)
+    {
+        out->timeout.timeout_val[0].tv_sec = tv.tv_sec;
+        out->timeout.timeout_val[0].tv_nsec = tv.tv_nsec;
+    }
 
     for (i = 0; i < out->ufds.ufds_len; i++)
     {
