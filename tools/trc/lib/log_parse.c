@@ -2086,6 +2086,15 @@ trc_update_iter_data_merge_result(trc_log_parse_ctx *ctx,
     tqh_strings  tag_names;
     tqh_strings *tags_list;
 
+    if ((ctx->flags & TRC_LOG_PARSE_NO_INCOMPL) &&
+        te_result->status == TE_TEST_INCOMPLETE)
+        return 0;
+
+    if ((ctx->flags & TRC_LOG_PARSE_NO_R_FAIL) &&
+        te_result->status == TE_TEST_FAILED &&
+        TAILQ_EMPTY(&te_result->verdicts))
+        return 0;
+
     TAILQ_INIT(&tag_names);
 
     merge_result = TE_ALLOC(sizeof(*merge_result));

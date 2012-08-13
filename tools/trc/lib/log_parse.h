@@ -201,6 +201,13 @@ enum trc_log_parse_flags {
                                                     find out subsets for
                                                     every possible
                                                     iteration record */
+    TRC_LOG_PARSE_NO_R_FAIL   = (1LLU << 35),  /**< Do not consider
+                                                    results of kind
+                                                    "FAILED without
+                                                     verdicts" */
+    TRC_LOG_PARSE_NO_INCOMPL  = (1LLU << 36),  /**< Do not consider
+                                                    INCOMPLETE
+                                                    results */
 };
 
 /** All rule type flags */
