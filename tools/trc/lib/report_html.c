@@ -2254,6 +2254,7 @@ trc_report_test_iter_entry_output(
     const trc_report_test_iter_entry *iter,
     unsigned int                      flags)
 {
+    te_bool        is_exp = (iter == NULL) ? FALSE : iter->is_exp;
     te_test_status status =
         (iter == NULL) ? TE_TEST_UNSPEC : iter->result.status;
 
@@ -2271,12 +2272,12 @@ trc_report_test_iter_entry_output(
               * obtained result is not PASSED as expected
               */
              (~flags & TRC_REPORT_NO_EXP_PASSED) ||
-             (status != TE_TEST_PASSED) || (!iter->is_exp)) &&
+             (status != TE_TEST_PASSED) || (!is_exp)) &&
             (/* 
               * NO_EXPECTED is clear or obtained result is equal
               * to expected
               */
-             (~flags & TRC_REPORT_NO_EXPECTED) || (!iter->is_exp));
+             (~flags & TRC_REPORT_NO_EXPECTED) || (!is_exp));
 }
 
 /**
