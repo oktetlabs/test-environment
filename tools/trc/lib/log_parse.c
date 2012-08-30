@@ -2150,7 +2150,9 @@ trc_update_iter_data_merge_result(trc_log_parse_ctx *ctx,
                 if ((s != NULL &&
                      (int)strlen(tqs_p->v) == s - tqs_q->v &&
                      memcmp(tqs_p->v, tqs_q->v, s - tqs_q->v) == 0) ||
-                    strcmp(tqs_p->v, tqs_q->v) == 0)
+                    strcmp(tqs_p->v, tqs_q->v) == 0 ||
+                    (tqs_p->v[0] == '?' &&
+                     strstr(tqs_q->v, tqs_p->v + 1) != NULL))
                     tqs_r = tqs_q;
             }
 
@@ -2164,14 +2166,24 @@ trc_update_iter_data_merge_result(trc_log_parse_ctx *ctx,
                     cur_pos++;
                 }
 
-                snprintf(ctx->merge_str + cur_pos,
-                         max_expr_len - cur_pos,
-                         "%s", tqs_r->v);
-                cur_pos += strlen(tqs_r->v);
+                if (tqs_p->v[0] != '?')
+                {
+                    snprintf(ctx->merge_str + cur_pos,
+                             max_expr_len - cur_pos,
+                             "%s", tqs_r->v);
+                    cur_pos += strlen(tqs_r->v);
 
-                s = strchr(ctx->merge_str, ':');
-                if (s != NULL)
-                    *s = '=';
+                    s = strchr(ctx->merge_str, ':');
+                    if (s != NULL)
+                        *s = '=';
+                }
+                else
+                {
+                    snprintf(ctx->merge_str + cur_pos,
+                             max_expr_len - cur_pos,
+                             "%s", tqs_p->v + 1);
+                    cur_pos += strlen(tqs_p->v) - 1;
+                }
             }
         }
 
@@ -5788,6 +5800,9 @@ trc_update_process_logs(trc_update_ctx *gctx)
     if (!(gctx->flags & TRC_LOG_PARSE_PATHS))
         printf("\nParsing logs...\n");
 
+    if (gctx->flags & TRC_LOG_PARSE_MATCH_LOGS)
+        ctx.func_args_match = NULL;
+
     do {
         log_cnt++;
         ctx.cur_lnum = log_cnt;
@@ -5826,7 +5841,9 @@ trc_update_process_logs(trc_update_ctx *gctx)
         free(ctx.tags);
 
         trc_update_init_parse_ctx(&ctx, gctx);
-        ctx.func_args_match = NULL;
+
+        if (!(gctx->flags & TRC_LOG_PARSE_MATCH_LOGS))
+            ctx.func_args_match = NULL;
         ctx.gen_tags = &gctx->tags_list;
 
         if (tqe_str != NULL)

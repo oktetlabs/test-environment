@@ -105,6 +105,8 @@ enum {
                                          script */
     TRC_UPDATE_OPT_MATCHING_OTH,    /**< Path to iteration matching
                                          program */
+    TRC_UPDATE_OPT_MATCH_LOGS,      /**< Match iterations from testing logs
+                                         (not from fake log as usual) */
     TRC_UPDATE_OPT_TRC_SAVE,        /**< Path to file where resulting TRC
                                          should be saved */
     TRC_UPDATE_OPT_TAGS_STR,        /**< Do not change string
@@ -457,6 +459,11 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
           "Specify path to a program matching old iterations from TRC "
           "with new ones", NULL },
 
+        { "match-logs", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_MATCH_LOGS,
+          "Use matching expression or script to filter iterations from "
+          "testing logs", NULL },
+
         { "rules", 'r', POPT_ARG_STRING, NULL, TRC_UPDATE_OPT_RULES,
           "Specify updating rules file in XML format", NULL },
 
@@ -746,6 +753,18 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
                 perl_expr = poptGetOptArg(optCon);
                 break;
 
+            case TRC_UPDATE_OPT_MATCHING_PERL:
+                perl_script = poptGetOptArg(optCon);
+                break;
+
+            case TRC_UPDATE_OPT_MATCHING_OTH:
+                oth_prog = poptGetOptArg(optCon);
+                break;
+
+            case TRC_UPDATE_OPT_MATCH_LOGS:
+                ctx.flags |= TRC_LOG_PARSE_MATCH_LOGS;
+                break;
+
             case TRC_UPDATE_OPT_TAGS_LIST:
                 s = poptGetOptArg(optCon);
                 tq_strings_free(&ctx.tags_list, free);
@@ -764,14 +783,6 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
 
             case TRC_UPDATE_OPT_SIMPL_TAGS:
                 ctx.flags |= TRC_LOG_PARSE_SIMPL_TAGS;
-                break;
-
-            case TRC_UPDATE_OPT_MATCHING_PERL:
-                perl_script = poptGetOptArg(optCon);
-                break;
-
-            case TRC_UPDATE_OPT_MATCHING_OTH:
-                oth_prog = poptGetOptArg(optCon);
                 break;
 
             case TRC_UPDATE_OPT_RULES:
