@@ -402,7 +402,7 @@ rpc_sigset_cmp(rcf_rpc_server *rpcs,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_INT(sigset_cmp, -1);
+        RETVAL_INT(sigset_cmp, -2);
     }
 
     in.first_set = (tarpc_sigset_t)first_set;
@@ -414,7 +414,8 @@ rpc_sigset_cmp(rcf_rpc_server *rpcs,
                      !(out.retval >= -1 && out.retval <= 1), -1);
     TAPI_RPC_LOG(rpcs, sigset_cmp, "0x%x, 0x%x", "%d",
                  (unsigned)first_set, (unsigned)second_set, out.retval);
-    RETVAL_INT(sigset_cmp, out.retval);
+    TAPI_RPC_OUT(sigset_cmp, FALSE);
+    return (int)out.retval;
 }
 
 int
