@@ -148,6 +148,8 @@ enum {
     TRC_UPDATE_OPT_NO_R_FAIL,       /**< Do not consider results of kind
                                          "FAILED without verdicts */
     TRC_UPDATE_OPT_NO_INCOMPL,      /**< Do not consider INCOMPLETE results */
+    TRC_UPDATE_OPT_NO_INT_ERR,      /**< Do not consider results with internal
+                                         error */
     TRC_UPDATE_OPT_SELF_CONFL,      /**< Get conflicting results
                                          from expected results of
                                          an iteration found with
@@ -529,6 +531,11 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
           "Do not consider INCOMPLETE results",
           NULL },
 
+       { "no-int-err", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_NO_INT_ERR,
+          "Do not consider results with internal error",
+          NULL },
+
         { "gen-apply", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_GEN_APPLY,
           "Apply updating rules after generating them", NULL },
@@ -893,6 +900,10 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
 
             case TRC_UPDATE_OPT_NO_INCOMPL:
                 ctx.flags |= TRC_LOG_PARSE_NO_INCOMPL;
+                break;
+
+            case TRC_UPDATE_OPT_NO_INT_ERR:
+                ctx.flags |= TRC_LOG_PARSE_NO_INT_ERR;
                 break;
 
             case TRC_UPDATE_OPT_NO_USE_IDS:

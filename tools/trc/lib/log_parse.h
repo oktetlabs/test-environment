@@ -208,7 +208,10 @@ enum trc_log_parse_flags {
     TRC_LOG_PARSE_NO_INCOMPL  = (1LLU << 36),  /**< Do not consider
                                                     INCOMPLETE
                                                     results */
-    TRC_LOG_PARSE_MATCH_LOGS  = (1LLU << 37),  /**< Use user
+    TRC_LOG_PARSE_NO_INT_ERR  = (1LLU << 37),  /**< Do not consider
+                                                    results with
+                                                    internal error */
+    TRC_LOG_PARSE_MATCH_LOGS  = (1LLU << 38),  /**< Use user
                                                     matching
                                                     function to filter
                                                     iterations from

@@ -2075,6 +2075,7 @@ trc_update_iter_data_merge_result(trc_log_parse_ctx *ctx,
     te_bool                     result_found = FALSE;
     te_bool                     entry_found = FALSE;
     te_bool                     process_result = FALSE;
+    te_test_verdict            *verdict;
 
     tqe_string  *tqs_p;
     tqe_string  *tqs_q;
@@ -2094,6 +2095,13 @@ trc_update_iter_data_merge_result(trc_log_parse_ctx *ctx,
         te_result->status == TE_TEST_FAILED &&
         TAILQ_EMPTY(&te_result->verdicts))
         return 0;
+
+    if (ctx->flags & TRC_LOG_PARSE_NO_INT_ERR)
+    {
+        TAILQ_FOREACH(verdict, &te_result->verdicts, links)
+            if (strcmp(verdict->str, "Internal error") == 0)
+                return 0;
+    }
 
     TAILQ_INIT(&tag_names);
 
