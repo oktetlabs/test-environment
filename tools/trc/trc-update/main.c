@@ -1021,9 +1021,10 @@ perl_prepare()
                 "{"
                 "   my @arr = @_;"
                 ""
-                "   return (old($arr[0]) eq $arr[1]) || "
-                "          (exists($old{$arr[0]}) && "
-                "           length($old{$arr[0]}) == 0);"
+                "   return 1 if (old($arr[0]) eq $arr[1]);"
+                "   return 2 if (exists($old{$arr[0]}) && "
+                "                length($old{$arr[0]}) == 0);"
+                "   return 0;"
                 "}",
                 TRUE);
 
@@ -1093,12 +1094,18 @@ perl_prepare()
         eval_pv("sub comm_eq"
                 "{"
                 "   my $rc = 1;"
+                "   my $eq_r = 0;"
                 "   my $arg;"
                 "   foreach $arg (keys %commons)"
                 "   {"
                 "       if ($commons{$arg} == 1)"
                 "       {"
-                "           $rc = $rc && old_wild_eq($arg, $new{$arg});"
+                "           $eq_r = old_wild_eq($arg, $new{$arg});"
+                "           return 0 if ($eq_r == 0);"
+                "           if ($eq_r > $rc)"
+                "           {"
+                "               $rc = $eq_r;"
+                "           }"
                 "       }"
                 "   }"
                 "   return $rc;"
@@ -1242,9 +1249,10 @@ perl_prepare()
                              "}\n"
                              "sub get_rc"
                              "{"
+                             "    my $eq_r = comm_eq();"
                              "    $rc = (%s);\n"
-                             "    return $rc && comm_eq() "
-                             "           && notcomm_chk() ? 1 : 0;\n"
+                             "    return ($rc &&"
+                             "            notcomm_chk()) ? $eq_r : 0;\n"
                              "}\n"
                              "sub get_filter"
                              "{"
@@ -1289,10 +1297,11 @@ perl_prepare()
                              "}"
                              "sub get_rc"
                              "{"
+                             "    my $eq_r = comm_eq();"
                              "    $rc = 0;"
                              "    get_vals();"
-                             "    return $rc && comm_eq() &&"
-                             "           notcomm_chk() ? 1 : 0;\n"
+                             "    return ($rc &&"
+                             "            notcomm_chk()) ? $eq_r : 0;\n"
                              "}"
                              "sub get_filter"
                              "{"
@@ -1446,6 +1455,8 @@ func_args_match(const void *iter_ptr,
         tq_strings_free(&common_args, free);
 
         if (rc == 1)
+            return ITER_EXACT_MATCH;
+        else if (rc == 2)
             return ITER_WILD_MATCH;
         else
             return ITER_NO_MATCH;
@@ -1461,6 +1472,8 @@ func_args_match(const void *iter_ptr,
             waitpid(child, &status, 0);
             if (status == 0)
                 return ITER_WILD_MATCH;
+            else if (status == 1)
+                return ITER_EXACT_MATCH;
             else
                 return ITER_NO_MATCH;
         }
