@@ -5794,7 +5794,7 @@ flooder(tarpc_flooder_in *in)
                     fd = sndrs[i];
                     events = 0;
 
-                    for (j = 0; i < rcvnum; j++)
+                    for (j = 0; j < rcvnum; j++)
                     {
                         if (sndrs[i] != rcvrs[j])
                             continue;
