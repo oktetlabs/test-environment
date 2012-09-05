@@ -221,9 +221,9 @@ AC_ARG_WITH([snmp],,
 # In our case we want it to be linked statically, so that
 # we should take care about this.
 #
-    LIB_PATHNAME=
-    $NET_SNMP_CONFIG_FULL_PATH --libs | grep crypto >/dev/null ||
-         find_lib crypto
+    LIB_PATHNAME=\
+            $NET_SNMP_CONFIG_FULL_PATH --libs | grep crypto >/dev/null || \
+            find_lib crypto
 
     if test -n "${LIB_PATHNAME}" ; then
         tad_libs_rem "$LIB_PATHNAME"

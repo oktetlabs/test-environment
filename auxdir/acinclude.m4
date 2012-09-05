@@ -6202,6 +6202,22 @@ fi
 if test -z "$UTIL_FULL_PATH_LOCATION"; then
     #
     # We did not find a utility in specified user path, let's try to find it
+    # in platform specific /bin.
+    #  
+
+    AC_MSG_CHECKING([for ${TE_PLATFORM_PATH}/bin/${TE_UTILITY_NAME}])
+    if test -x "${TE_PLATFORM_PATH}/bin/${TE_UTILITY_NAME}"; then
+        UTIL_FULL_PATH_LOCATION="${TE_PLATFORM_PATH}/bin/$TE_UTILITY_NAME"
+        AC_MSG_RESULT([yes])
+        break
+    else
+        AC_MSG_RESULT([no])
+    fi
+fi
+
+if test -z "$UTIL_FULL_PATH_LOCATION"; then
+    #
+    # We did not find a utility in specified user path, let's try to find it
     # based on Compiler location.
     #  
     if test -n "$host_alias"; then
