@@ -742,7 +742,7 @@ rpcserver_dead_set(unsigned int gid, const char *oid, char *value,
         }
         rpcs->dead = TRUE;
         if (rpcs->sent > 0)
-            rpc_error(rpcs, TE_RC(TE_RPC, TE_ERPCKILLED));
+            rpc_error(rpcs, TE_RC(TE_RPC, TE_ERPCDEAD));
     }
 
     pthread_mutex_unlock(&lock);
@@ -1187,6 +1187,13 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
             }
         }
     }
+
+    /*
+     * Request to deleted RPC server should be answered
+     * to unblock TA for new RCF requests processing.
+     */
+    if (rpcs->sent > 0)
+        rpc_error(rpcs, TE_ERPCDEAD);
 
     if (rpcs->tid > 0)
         logfork_delete_user(rpcs->pid, rpcs->tid);
