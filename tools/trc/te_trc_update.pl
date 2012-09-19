@@ -164,6 +164,7 @@ sub download_prepare_log
 
 my $opts = "";
 my $conf_tester = "";
+my $test_reqs = "";
 my $test_fake_run = "";
 my $test_fake_run_aux = "";
 my $last_tags = "";
@@ -211,11 +212,16 @@ foreach (@ARGV)
     }
     elsif ($_ =~ m/^--tags-by-logs$/)
     {
-        #do nothing
+        # do nothing
     }
     elsif ($_ =~ m/^--conf-tester=(.*)$/)
     {
         $conf_tester = " --conf-tester=\"".escape_str($1)."\"";
+    }
+    elsif ($_ =~ m/^--tester-req=(.*)$/)
+    {
+        $test_reqs = $test_reqs." --tester-req=\"".
+                     escape_str($1)."\"";
     }
     elsif ($_ =~ m/^--test-name=(.*)$/)
     {
@@ -339,12 +345,12 @@ if ($test_specified > 0)
            "\${TE_BASE}/dispatcher.sh --conf-dir=\${CONFDIR} ".
            "${conf_tester} ${test_fake_run} --no-builder ".
            "--tester-no-build --no-cs --tester-no-cs --no-rcf ".
-           "--tester-no-reqs 1>/dev/null --log-txt=/dev/null\n".
+           "${test_reqs} 1>/dev/null --log-txt=/dev/null\n".
            "else\n".
            "TE_LOG_RAW=\"".escape_str($fake_raw_log)."\" ".
            "./run.sh ${conf_tester} ${test_fake_run} --no-builder ".
            "--tester-no-build --no-cs --tester-no-cs --no-rcf ".
-           "--tester-no-reqs 1>/dev/null --log-txt=/dev/null\n".
+           "${test_reqs} 1>/dev/null --log-txt=/dev/null\n".
            "fi");
     download_prepare_log($fake_raw_log);
     $opts = $opts." --fake-log=".$tmp_files[$#tmp_files];
