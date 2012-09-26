@@ -358,8 +358,8 @@ route_load_attrs(ta_cfg_obj_t *obj)
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
 
-        //~ rc = ta_obj_value_set(TA_OBJ_TYPE_ROUTE, obj->name, val,
-                              //~ obj->gid);
+        rc = ta_obj_value_set(TA_OBJ_TYPE_ROUTE, obj->name, val,
+                              obj->gid);
         if (rc != 0)
         {
             ERROR("Failed to set route object value: %r", rc);
