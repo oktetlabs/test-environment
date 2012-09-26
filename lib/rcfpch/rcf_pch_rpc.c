@@ -497,7 +497,8 @@ dispatch(void *arg)
                 (pass_time > rpcs->timeout ||
                  (rpcs->timeout == 0xFFFFFFFF && now - rpcs->sent > 5)))
             {
-                ERROR("Timeout on server %s", rpcs->name);
+                ERROR("Timeout on server %s (timeout=%ds)",
+                      rpcs->name, rpcs->timeout);
                 rpcs->dead = TRUE;
                 rpc_error(rpcs, TE_ERPCTIMEOUT);
                 continue;
