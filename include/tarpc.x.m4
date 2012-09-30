@@ -3199,6 +3199,33 @@ struct tarpc_system_out {
     tarpc_wait_status_value  status_value;
 };
 
+/* chroot() */
+struct tarpc_chroot_in {
+    struct tarpc_in_arg common;
+
+    char                path<>;
+};
+
+typedef struct tarpc_int_retval_out tarpc_chroot_out;
+
+/* copy_ta_libs() */
+struct tarpc_copy_ta_libs_in {
+    struct tarpc_in_arg common;
+
+    char                path<>;
+};
+
+typedef struct tarpc_int_retval_out tarpc_copy_ta_libs_out;
+
+/* rm_ta_libs() */
+struct tarpc_rm_ta_libs_in {
+    struct tarpc_in_arg common;
+
+    char                path<>;
+};
+
+typedef struct tarpc_int_retval_out tarpc_rm_ta_libs_out;
+
 /* rpc_vlan_get_parent() */
 
 struct tarpc_rpc_vlan_get_parent_in {
@@ -4720,6 +4747,9 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(fclose)
         RPC_DEF(te_shell_cmd)
         RPC_DEF(system)
+        RPC_DEF(chroot)
+        RPC_DEF(copy_ta_libs)
+        RPC_DEF(rm_ta_libs)
         RPC_DEF(rpc_vlan_get_parent)
         RPC_DEF(waitpid)
         RPC_DEF(fileno)

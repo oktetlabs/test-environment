@@ -1351,7 +1351,7 @@ rcf_ch_conf_init()
             return -1;
 
 #ifdef RCF_RPC
-        rcf_pch_rpc_init();
+        rcf_pch_rpc_init(NULL);
 #endif
 #ifdef WITH_ISCSI
         if (iscsi_initiator_conf_init() != 0)

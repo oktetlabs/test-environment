@@ -1012,6 +1012,38 @@ extern int rpc_fstat64(rcf_rpc_server *rpcs,
  */
 extern int rpc_gethostname(rcf_rpc_server *rpcs, char *name, size_t len);
 
+/**
+ * Change root directory.
+ *
+ * @param rpcs      RPC server
+ * @param path      Path to a new root directory
+ *
+ * @return  -1 in the case of failure or 0 on success
+ */
+extern int rpc_chroot(rcf_rpc_server *rpcs, char *path);
+
+/**
+ * Copy dynamic libraries necessary to run TA to its
+ * directory (can be used to perform exec() after chroot()).
+ *
+ * @param rpcs      RPC server
+ * @param path      Path to a new root directory
+ *
+ * @return  -1 in the case of failure or 0 on success
+ */
+extern int rpc_copy_ta_libs(rcf_rpc_server *rpcs, char *path);
+
+/**
+ * Removie lib/ folder from TA folder (used for cleanup
+ * after rpc_copy_ta_libs()).
+ *
+ * @param rpcs      RPC server
+ * @param path      Path to a new root directory
+ *
+ * @return  -1 in the case of failure or 0 on success
+ */
+extern int rpc_rm_ta_libs(rcf_rpc_server *rpcs, char *path);
+
 /**@} <!-- END te_lib_rpc_unistd --> */
 
 #ifdef __cplusplus

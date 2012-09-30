@@ -577,11 +577,11 @@ dispatch(void *arg)
  * nodes to the root.
  */
 void 
-rcf_pch_rpc_init()
+rcf_pch_rpc_init(const char *tmp_path)
 {
     pthread_t tid = 0;
 
-    if (rpc_transport_init() != 0)
+    if (rpc_transport_init(tmp_path) != 0)
         return;
 
     if ((rpc_buf = malloc(RCF_RPC_HUGE_BUF_LEN)) == NULL)

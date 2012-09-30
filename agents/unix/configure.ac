@@ -47,6 +47,9 @@ if test "$with_rcf_rpc" ; then
     TE_CPPFLAGS="$TE_CPPFLAGS -DRCF_RPC"
 fi    
 
+AH_TEMPLATE([TE_AGT_PLATFORM],[TA platform])
+AC_DEFINE_UNQUOTED([TE_AGT_PLATFORM], ["${TE_PLATFORM}"], [])
+
 # Include telephony support by default
 AC_ARG_WITH([telephony],
             [AS_HELP_STRING([--without-telephony],

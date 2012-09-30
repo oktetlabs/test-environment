@@ -2102,3 +2102,90 @@ rpc_gethostname(rcf_rpc_server *rpcs, char *name, size_t len)
                  name, len, out.retval);
     RETVAL_INT(gethostname, out.retval);
 }
+
+int
+rpc_chroot(rcf_rpc_server *rpcs, char *path)
+{
+    tarpc_chroot_in  in;
+    tarpc_chroot_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(chroot, -1);
+    }
+
+    if (path != NULL)
+    {
+        in.path.path_len = strlen(path) + 1;
+        in.path.path_val = strdup(path);
+    }
+
+    rcf_rpc_call(rpcs, "chroot", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(chroot, out.retval);
+    TAPI_RPC_LOG(rpcs, chroot, "%s", "%d",
+                 path, out.retval);
+    RETVAL_INT(chroot, out.retval);
+}
+
+int
+rpc_copy_ta_libs(rcf_rpc_server *rpcs, char *path)
+{
+    tarpc_copy_ta_libs_in  in;
+    tarpc_copy_ta_libs_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(copy_ta_libs, -1);
+    }
+
+    if (path != NULL)
+    {
+        in.path.path_len = strlen(path) + 1;
+        in.path.path_val = strdup(path);
+    }
+
+    rcf_rpc_call(rpcs, "copy_ta_libs", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(copy_ta_libs, out.retval);
+    TAPI_RPC_LOG(rpcs, copy_ta_libs, "", "%d",
+                 out.retval);
+    RETVAL_INT(copy_ta_libs, out.retval);
+}
+
+int
+rpc_rm_ta_libs(rcf_rpc_server *rpcs, char *path)
+{
+    tarpc_rm_ta_libs_in  in;
+    tarpc_rm_ta_libs_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(rm_ta_libs, -1);
+    }
+
+    if (path != NULL)
+    {
+        in.path.path_len = strlen(path) + 1;
+        in.path.path_val = strdup(path);
+    }
+
+    rcf_rpc_call(rpcs, "rm_ta_libs", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(rm_ta_libs, out.retval);
+    TAPI_RPC_LOG(rpcs, rm_ta_libs, "", "%d",
+                 out.retval);
+    RETVAL_INT(rm_ta_libs, out.retval);
+}

@@ -219,7 +219,7 @@ tcp_nodelay_enable(int sock)
  * Initialize RPC transport.
  */
 te_errno
-rpc_transport_init()
+rpc_transport_init(const char *tmp_path)
 {
     char port[64];
     
@@ -302,7 +302,7 @@ rpc_transport_init()
 #else
     addr.sun_family = AF_UNIX;
     snprintf(addr.sun_path, sizeof(addr.sun_path), 
-             "/tmp/terpc_%lu", (unsigned long)getpid());
+             "/%s/terpc_%lu", tmp_path, (unsigned long)getpid());
     len = sizeof(addr) - UNIX_PATH_MAX + strlen(addr.sun_path);
     unlink(addr.sun_path);
 #endif    

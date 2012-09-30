@@ -90,8 +90,9 @@ extern char **environ;
 extern sigset_t         rpcs_received_signals;
 extern tarpc_siginfo_t  last_siginfo;
 
-static te_bool dynamic_library_set = FALSE;
-static void *dynamic_library_handle = NULL;
+static te_bool   dynamic_library_set = FALSE;
+static char      dynamic_library_name[RCF_MAX_PATH];
+static void     *dynamic_library_handle = NULL;
 
 /**
  * Set name of the dynamic library to be used to resolve function
@@ -157,6 +158,7 @@ tarpc_setlibname(const char *libname)
         return TE_RC(TE_TA_UNIX, TE_ENOSPC);
     }
     dynamic_library_set = TRUE;
+    strncpy(dynamic_library_name, libname, strlen(libname) + 1);
     RING("Dynamic library is set to '%s'", libname);
 
     if (tce_get_peer_function != NULL)
@@ -569,6 +571,7 @@ ta_rpc_execve(const char *name)
         PRINT("No execve function: errno=%d", rc);
         exit(1);
     }
+
     rc = func((void *)ta_execname, argv, environ);
     if (rc != 0)
     {
@@ -4513,6 +4516,343 @@ TARPC_FUNC(system, {},
     out->status_value = r_st.value;
 }
 )
+
+/*-------------- chroot() --------------------------------*/
+TARPC_FUNC(chroot, {},
+{
+    char *chroot_path = NULL;
+    char *ta_dir_path = NULL;
+    char *ta_execname_path = NULL;
+    char *port_path = getenv("TE_RPC_PORT");
+    
+    chroot_path = realpath(in->path.path_val, NULL);
+    ta_dir_path = realpath(ta_dir, NULL);
+    ta_execname_path = realpath(ta_execname, NULL);
+    port_path = realpath(port_path, NULL);
+
+    if (chroot_path == NULL || ta_dir_path == NULL ||
+        ta_execname_path == NULL || port_path == NULL)
+    {
+        if (chroot_path == NULL)
+            ERROR("%s(): failed to determine absolute path of "
+                  "chroot() argument", __FUNCTION__);
+        if (ta_dir_path == NULL)
+            ERROR("%s(): failed to determine absolute path of ta_dir",
+                  __FUNCTION__);
+        if (ta_execname_path == NULL)
+            ERROR("%s(): failed to determine absolute path "
+                  "of ta_execname", __FUNCTION__);
+        /**
+         * Path for port can be undefined if we do not use
+         * AF_UNIX sockets for communication.
+         */
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        out->retval = -1;
+        goto finish;
+    }
+
+    if (strstr(ta_dir_path, chroot_path) != ta_dir_path ||
+        strstr(ta_execname_path, chroot_path) != ta_execname_path ||
+        (port_path != NULL && strstr(port_path, chroot_path) != port_path))
+    {
+        ERROR("%s(): argument of chroot() must be such that TA "
+              "folder is inside new root tree");
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
+        out->retval = -1;
+        goto finish;
+    }
+
+    MAKE_CALL(out->retval = func_ptr(chroot_path));
+
+    if (out->retval == 0)
+    {
+        /*
+         * Change paths used by TE so that they will be
+         * inside a new root.
+         */
+    
+        strcpy(ta_dir, ta_dir_path + strlen(chroot_path));
+        strcpy((char *)ta_execname,
+               ta_execname_path + strlen(chroot_path));
+        if (port_path != NULL)
+            setenv("TE_RPC_PORT",
+                   strdup(port_path + strlen(chroot_path)), 1);
+   }
+
+finish:
+
+    free(chroot_path);
+    free(ta_dir_path);
+    free(ta_execname_path);
+    free(port_path);
+}
+)
+
+/*-------------- copy_ta_libs ---------------------------*/
+/** Maximum shell command lenght */
+#define MAX_CMD 1000
+
+/**
+ * Check that string was not truncated.
+ *
+ * @param _call     snprintf() call
+ * @param _str      String
+ * @param _size     Maximum available size
+ */
+#define CHECK_SNPRINTF(_call, _str, _size) \
+    do {                                        \
+        int _rc;                                \
+        _rc = _call;                            \
+        if (_rc >= (int)(_size))                \
+        {                                       \
+            ERROR("%s(): %s was truncated",     \
+                  __FUNCTION__, (_str));        \
+            return -1;                          \
+        }                                       \
+    } while (0)
+
+/**
+ * Call system() and check result.
+ *
+ * @param _cmd  Shell command to execute
+ */
+#define SYSTEM(_cmd) \
+    if (system(_cmd) < 0)                               \
+    {                                                   \
+        if (errno == ECHILD)                            \
+            errno = 0;                                  \
+        else                                            \
+        {                                               \
+            ERROR("%s(): system(%s) failed with %r",    \
+                  __FUNCTION__, cmd, errno);            \
+            return -1;                                  \
+        }                                               \
+    }
+
+/**
+ * Obtain string wihtout spaces on both ends.
+ *
+ * @param str   String
+ *
+ * @return Pointer to first non-space position in
+ *         str.
+ */
+char *
+trim(char *str)
+{
+    int i = 0;
+
+    for (i = strlen(str) - 1; i >= 0; i--)
+    {
+        if (str[i] == ' ' || str[i] == '\t'
+            || str[i] == '\n' || str[i] == '\r')
+            str[i] = '\0';
+        else
+            break;
+    }
+
+    for (i = 0; i < (int)strlen(str); i++)
+        if (str[i] != ' ' && str[i] != '\t')
+            break;
+
+    return str + i;
+}
+
+/**
+ * Copy shared libraries to TA folder.
+ *
+ * @param path Path to TA folder.
+ *
+ * @return 0 on success or -1
+ */
+int
+copy_ta_libs(char *path)
+{
+    char    path_to_lib[RCF_MAX_PATH];
+    char    str[RCF_MAX_PATH];
+    char    cmd[MAX_CMD];
+    char   *begin_path = 0; 
+    te_bool was_cut = FALSE;
+    char   *s;
+    FILE   *f;
+    FILE   *f_list;
+    te_bool ld_found = FALSE;
+
+    struct stat file_stat;
+
+    CHECK_SNPRINTF(
+        snprintf(str, MAX_CMD, "%s/ta_libs_list", path),
+        str, MAX_CMD);
+    f_list = fopen(str, "w");
+    if (f_list == NULL)
+    {
+        ERROR("%s(): failed to create file to store list of libs",
+              __FUNCTION__);
+        return -1;
+    }
+
+    CHECK_SNPRINTF(snprintf(cmd, MAX_CMD,
+                            "(ldd %s | sed \"s/.*=>[ \t]*//\" "
+                            "| sed \"s/(0x[0-9a-f]*)$//\")", ta_execname),
+                   cmd, MAX_CMD);
+
+    if (dynamic_library_set)
+        CHECK_SNPRINTF(
+                snprintf(cmd + strlen(cmd), MAX_CMD - strlen(cmd),
+                         " && (ldd %s | sed \"s/.*=>[ \t]*//\" "
+                         "| sed \"s/(0x[0-9a-f]*)$//\") && "
+                         "(echo \"%s\")", dynamic_library_name,
+                         dynamic_library_name),
+                cmd + strlen(cmd), MAX_CMD - strlen(cmd));
+
+    f = popen(cmd, "r");
+    if (f == NULL)
+    {
+        ERROR("%s(): failed to obtain ldd output for TA", __FUNCTION__);
+        return -1;
+    }
+
+    while (fgets(str, RCF_MAX_PATH, f) != NULL)
+    {
+        begin_path = trim(str);
+
+        if (strstr(begin_path, "/ld-") != NULL ||
+            strstr(begin_path, "/ld.") != NULL)
+            ld_found = TRUE;
+
+        if (stat(begin_path, &file_stat) >= 0)
+        {
+            CHECK_SNPRINTF(snprintf(path_to_lib, RCF_MAX_PATH,
+                                    "%s/%s", path, begin_path),
+                           path_to_lib, RCF_MAX_PATH);
+
+            fprintf(f_list, "%s\n", path_to_lib);
+            was_cut = FALSE;
+
+            while ((s = strrchr(path_to_lib, '/')) != NULL)
+            {
+                if (stat(path_to_lib, &file_stat) >= 0)
+                    break;
+                *s = '\0';
+                was_cut = TRUE;
+            }
+            if (was_cut)
+            {
+                s = path_to_lib + strlen(path_to_lib);
+                *s = '/';
+            }
+
+            fprintf(f_list, "%s\n", path_to_lib);
+
+            CHECK_SNPRINTF(snprintf(path_to_lib, RCF_MAX_PATH, "%s/%s",
+                                    path, begin_path),
+                           path_to_lib, RCF_MAX_PATH);
+            s = strrchr(path_to_lib, '/');
+
+            if (s == NULL)
+            {
+                ERROR("%s(): incorrect path %s", __FUNCTION__,
+                      path_to_lib);
+                return -1;
+            }
+            else
+                *s = '\0';
+
+            CHECK_SNPRINTF(snprintf(cmd, MAX_CMD, "mkdir -p \"%s\" && "
+                                    "cp \"%s\" \"%s\"",
+                                    path_to_lib, begin_path, path_to_lib),
+                           cmd, MAX_CMD);
+            SYSTEM(cmd);
+        }
+    }
+
+    if (!ld_found)
+    {
+        CHECK_SNPRINTF(snprintf(cmd, MAX_CMD, "cp /lib/ld.* \"%s/lib\"",
+                                path),
+                       cmd, MAX_CMD);
+        SYSTEM(cmd);
+    }
+
+    if (pclose(f) < 0)
+    {
+        if (errno == ECHILD)
+            errno = 0;
+        else
+        {
+            ERROR("%s(): pclose() failed with %r",
+                  __FUNCTION__, errno);
+            return -1;
+        }
+    }
+
+    fclose(f_list);
+
+    return 0;
+}
+
+TARPC_FUNC(copy_ta_libs, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in->path.path_val));
+}
+)
+
+/*-------------- rm_ta_libs ---------------------------*/
+/**
+ * Remove libraries copied by copy_ta_libs().
+ *
+ * @param path From where to remove.
+ * 
+ * @return 0 on success or -1
+ */
+int
+rm_ta_libs(char *path)
+{
+    char    str[RCF_MAX_PATH];
+    char    cmd[RCF_MAX_PATH];
+    char   *s;
+    FILE   *f_list;
+
+    CHECK_SNPRINTF(snprintf(str, MAX_CMD, "%s/ta_libs_list", path),
+                            str, MAX_CMD);
+    f_list = fopen(str, "r");
+    if (f_list == NULL)
+    {
+        ERROR("%s(): failed to create file to store list of libs",
+              __FUNCTION__);
+        return -1;
+    }
+
+    while (fgets(str, RCF_MAX_PATH, f_list) != NULL)
+    {
+        s = trim(str);
+        if (strstr(s, path) != s)
+            ERROR("Attempt to delete %s not in TA folder", s);
+        else
+        {
+            CHECK_SNPRINTF(snprintf(cmd, RCF_MAX_PATH, "rm -rf %s", s),
+                           cmd, RCF_MAX_PATH);
+            SYSTEM(cmd);
+        }
+    }
+
+    fclose(f_list);
+    CHECK_SNPRINTF(snprintf(cmd, RCF_MAX_PATH,
+                           "rm -rf %s/ta_libs_list", ta_dir),
+             cmd, RCF_MAX_PATH);
+    SYSTEM(cmd);
+
+    return 0;
+}
+
+TARPC_FUNC(rm_ta_libs, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in->path.path_val));
+}
+)
+
+#undef SYSTEM
+#undef MAX_CMD
 
 /*-------------- rpc_vlan_get_parent----------------------*/
 bool_t

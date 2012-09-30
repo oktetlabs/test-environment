@@ -564,6 +564,9 @@ neigh_dynamic_list(unsigned int gid, const char *oid, char **list,
 static te_errno agent_platform_get(unsigned int, const char *, char *,
                                    const char *, ...);
 
+static te_errno agent_dir_get(unsigned int, const char *, char *,
+                              const char *, ...);
+
 static te_errno nameserver_get(unsigned int, const char *, char *,
                                const char *, ...);
 
@@ -712,9 +715,12 @@ RCF_PCH_CFG_NODE_RO(node_platform, "platform",
                     NULL, NULL,
                     (rcf_ch_cfg_list)agent_platform_get);
 
+RCF_PCH_CFG_NODE_RO(node_dir, "dir",
+                    NULL, &node_platform,
+                    (rcf_ch_cfg_list)agent_dir_get);
 
 RCF_PCH_CFG_NODE_RO(node_dns, "dns",
-                    NULL, &node_platform,
+                    NULL, &node_dir,
                     (rcf_ch_cfg_list)nameserver_get);
 
 RCF_PCH_CFG_NODE_RO(node_neigh_state, "state",
@@ -1089,7 +1095,7 @@ rcf_ch_conf_init()
 
 #ifdef RCF_RPC
         /* Link RPC nodes */
-        rcf_pch_rpc_init();
+        rcf_pch_rpc_init(ta_dir);
 #endif
 
 #ifdef CFG_UNIX_DAEMONS
@@ -5966,11 +5972,22 @@ agent_platform_get(unsigned int gid, const char *oid, char *result,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(instance);
-#ifdef TE_AGT_PLATFORM_OTHER
-    memcpy(result, "linux_other", sizeof("linux_other"));
+#ifdef TE_AGT_PLATFORM
+    memcpy(result, TE_AGT_PLATFORM, sizeof(TE_AGT_PLATFORM));
 #else
     memcpy(result, "default", sizeof("default"));
 #endif
+    return 0;
+}
+
+static te_errno
+agent_dir_get(unsigned int gid, const char *oid, char *result,
+              const char *instance, ...)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(instance);
+    memcpy(result, ta_dir, strlen(ta_dir) + 1);
     return 0;
 }
 

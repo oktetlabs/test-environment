@@ -246,8 +246,11 @@ extern int rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
 /** 
  * Initialize RCF RPC server structures and link RPC configuration
  * nodes to the root.
+ *
+ * @param tmp_path Path to folder where temporary
+ *                 files should be stored
  */
-extern void rcf_pch_rpc_init(void);
+extern void rcf_pch_rpc_init(const char *tmp_path);
 
 /**@} */
 

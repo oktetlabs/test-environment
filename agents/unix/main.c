@@ -122,7 +122,14 @@ extern char *rcf_ch_symbol_name_auto(const void *addr);
 DEFINE_LGR_ENTITY("(unix)");
 
 /** Test Agent executable name */
-const char *ta_execname = NULL;
+/**
+ * This is done to avoid possible problems
+ * with build conficts in test suites due to
+ * changed definition of this variable.
+ */
+char ta_execname_storage[RCF_MAX_PATH];
+const char *ta_execname = ta_execname_storage;
+
 /** Test Agent name */
 const char *ta_name = "(unix)";
 /** Test Agent data and binaries location */ 
@@ -1991,7 +1998,7 @@ main(int argc, char **argv)
         return -1;
     }
 
-    ta_execname = argv[0];
+    strcpy(ta_execname, argv[0]);
     strcpy(ta_dir, argv[0]);
     tmp = strrchr(ta_dir, '/');
     if (tmp == NULL)

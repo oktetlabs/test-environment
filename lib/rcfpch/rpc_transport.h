@@ -43,8 +43,11 @@ typedef int rpc_transport_handle;
 
 /**
  * Initialize RPC transport.
+ *
+ * @param tmp_path Path to folder where temporary
+ *                 files should be stored
  */
-extern te_errno rpc_transport_init();
+extern te_errno rpc_transport_init(const char *tmp_path);
 
 /**
  * Shutdown RPC transport.
