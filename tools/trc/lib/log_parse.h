@@ -216,6 +216,10 @@ enum trc_log_parse_flags {
                                                     function to filter
                                                     iterations from
                                                     testing logs */
+    TRC_LOG_PARSE_FILT_LOG    = (1LLU << 39),  /**< Log to be used
+                                                    for filtering out
+                                                    iterations not
+                                                    appearing in it */
 };
 
 /** All rule type flags */

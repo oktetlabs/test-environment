@@ -555,8 +555,8 @@ trc_report_argument_compare (const void *arg1, const void *arg2)
 te_bool
 trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
                         trc_report_argument *args, te_bool force,
-                        te_bool no_wildcards, te_bool split_results,
-                        te_bool no_match_to_new,
+                        te_bool split_results,
+                        uint32_t match_flags,
                         unsigned int db_uid,
                         func_args_match_ptr func_args_match)
 {
@@ -575,46 +575,76 @@ trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
         int match_result = 0;
 
         trc_test_iter *iter = NULL;
-        trc_test_iter *exact_iter = NULL;
+        trc_test_iter *old_exact_iter = NULL;
+        trc_test_iter *new_exact_iter = NULL;
         trc_test_iter *wild_iter = NULL;
+        trc_test_iter *iter_to_copy = NULL;
+        te_bool        dup_detected = FALSE;
 
         qsort(args, n_args, sizeof(*args), trc_report_argument_compare);
         for (walker->iter = TAILQ_FIRST(&walker->test->iters.head);
              walker->iter != NULL;
              walker->iter = TAILQ_NEXT(walker->iter, links))
         {
-            if (func_args_match == NULL || walker->iter->newly_created)
-            {
-                if (walker->iter->newly_created && no_match_to_new)
-                    match_result = ITER_NO_MATCH;
-                else
-                    match_result = test_iter_args_match(&walker->iter->args,
-                                                        n_args, args, TRUE);
-            }
+            if (func_args_match == NULL || walker->iter->pkg_found)
+                match_result = test_iter_args_match(&walker->iter->args,
+                                                    n_args, args, TRUE);
             else
                 match_result = func_args_match(walker->iter,
                                                n_args, args, FALSE);
 
             if (match_result != ITER_NO_MATCH)
             {
-                if (match_result == ITER_WILD_MATCH)
-                    wild_iter = walker->iter;
-                else
-                    exact_iter = walker->iter;
-
                 iter = walker->iter;
                 found++;
+
+                if (match_result == ITER_WILD_MATCH)
+                {
+                    /*
+                     * TRC Update tool does not create
+                     * wildcards iterations to be matched
+                     * during log processing - so no need
+                     * in new_ or old_ prefix.
+                     */
+                    if (wild_iter != NULL ||
+                        old_exact_iter != NULL)
+                        dup_detected = TRUE;
+                    wild_iter = walker->iter;
+                }
+                else if (iter->pkg_found)
+                {
+                    if (new_exact_iter != NULL)
+                    {
+                        dup_detected = TRUE;
+                        ERROR("TRC Update generates duplicates!");
+                    }
+                    new_exact_iter = walker->iter;
+                }
+                else
+                {
+                    if (old_exact_iter != NULL ||
+                        wild_iter != NULL)
+                        dup_detected = TRUE;
+                    old_exact_iter = walker->iter;
+                }
             }
         }
 
-        if (!no_wildcards)
+        if (match_flags == 0)
             walker->iter = iter;
-        else
-            walker->iter = exact_iter;
+        if (walker->iter == NULL &&
+            !(match_flags & ITER_NO_MATCH_OLD))
+            walker->iter = old_exact_iter;
+        if (walker->iter == NULL &&
+            !(match_flags & ITER_NO_MATCH_NEW))
+            walker->iter = new_exact_iter;
+        if (walker->iter == NULL &&
+            !(match_flags &
+              (ITER_NO_MATCH_WILD | ITER_NO_MATCH_OLD)))
+            walker->iter = wild_iter;
 
         /* nothing found */
-        if (walker->iter == NULL ||
-            (no_wildcards && exact_iter == NULL))
+        if (walker->iter == NULL)
         {
             if (force)
             {
@@ -628,10 +658,16 @@ trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
                     return FALSE;
                 }
 
-                walker->iter->newly_created = TRUE;
+                walker->iter->pkg_found = TRUE;
 
-                if (wild_iter != NULL && wild_iter->filename != NULL)
-                    walker->iter->filename = strdup(wild_iter->filename);
+                if (wild_iter != NULL)
+                    iter_to_copy = wild_iter;
+                else if (old_exact_iter != NULL)
+                    iter_to_copy = old_exact_iter;
+
+                if (iter_to_copy != NULL && iter_to_copy->filename != NULL)
+                    walker->iter->filename =
+                                strdup(iter_to_copy->filename);
                 else if (walker->test->filename != NULL)
                     walker->iter->filename =
                         strdup(walker->test->filename);
@@ -639,9 +675,9 @@ trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
                     walker->iter->filename =
                         strdup(walker->db->filename);
 
-                if (no_wildcards && wild_iter != NULL)
+                if (iter_to_copy != NULL)
                    trc_db_test_iter_res_cpy(walker->iter,
-                                            wild_iter);
+                                            iter_to_copy);
                 else
                     walker->iter->exp_default =
                         exp_defaults_get(TE_TEST_PASSED);
@@ -652,9 +688,8 @@ trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
                 walker->unknown++;
             }
         }
-        else if ((found > 1 && !no_wildcards)
-                 || found > 2 || (found == 2 && (wild_iter == NULL ||
-                                  exact_iter == NULL)))
+
+        if (dup_detected)
         {
             char *hash = trc_db_test_params_hash(n_args, args);
             ERROR("TEST='%s || %s'\n"
@@ -667,9 +702,7 @@ trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
             free(hash);
         }
         else
-        {
             VERB("Step iteration - OK", walker->unknown);
-        }
     }
 
     walker->is_iter = TRUE;
