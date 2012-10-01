@@ -345,8 +345,7 @@ trc_log_parse_test_entry(trc_log_parse_ctx *ctx, const xmlChar **attrs)
             if (!trc_db_walker_step_test(ctx->db_walker,
                                          XML2CHAR(attrs[1]), TRUE))
             {
-                ERROR("Unable to create a new test entry %s",
-                      attrs[1]);
+                ERROR("Unable to create a new test entry");
                 ctx->rc = TE_ENOMEM;
             }
             else
@@ -5346,25 +5345,12 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                                           * script in TRC update
                                           * process
                                           */
-                                         ((ctx->flags &
+                                         (ctx->flags &
                                             (TRC_LOG_PARSE_FAKE_LOG |
                                              TRC_LOG_PARSE_MERGE_LOG |
                                              TRC_LOG_PARSE_LOG_WILDS)) &&
-                                           test->type == TRC_TEST_SCRIPT ?
-                                             ITER_NO_MATCH_WILD : 0) |
-                                         /*
-                                          * Do not try to match to
-                                          * old iterations if we
-                                          * already processed fake
-                                          * logs. I.e. match only
-                                          * to iterations actually
-                                          * found in package.xml.
-                                          */
-                                         (((ctx->flags &
-                                            TRC_LOG_PARSE_FAKE_LOG) &&
-                                            !(ctx->flags &
-                                             TRC_LOG_PARSE_FILT_LOG)) ?
-                                             0 : ITER_NO_MATCH_OLD),
+                                          test->type == TRC_TEST_SCRIPT ?
+                                                TRUE : FALSE,
                                          /* 
                                           * Currently not used - 
                                           * split results with complex
@@ -5373,6 +5359,11 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                                           * obtaining "raw" TRC for
                                           * TRC update parsing
                                           * fake log
+                                          */
+                                         FALSE,
+                                         /*
+                                          * Try to match to new iterations
+                                          * too to check TRC.
                                           */
                                          FALSE,
                                          ctx->db_uid,
@@ -5390,8 +5381,6 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                 }
                 break;
             }
-
-            iter = trc_db_walker_get_iter(ctx->db_walker);
 
             if (!(ctx->flags & (TRC_LOG_PARSE_FAKE_LOG |
                                 TRC_LOG_PARSE_MERGE_LOG |
@@ -5438,6 +5427,7 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
             }
             else if (!(ctx->flags & TRC_LOG_PARSE_PATHS))
             {
+
                 upd_iter_data = trc_db_walker_get_user_data(ctx->db_walker,
                                                             ctx->db_uid);
 
@@ -5446,17 +5436,6 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
      
                 if (upd_iter_data == NULL)
                 {
-                    if (ctx->flags & TRC_LOG_PARSE_FILT_LOG)
-                    {
-                        int j = 0;
-                        printf("Path=%s\n", test->path);
-                        for (j = 0; j < (int)entry->args_n; j++)
-                        {
-                            printf("%s=%s\n", entry->args[j].name,
-                                   entry->args[j].value);
-                        }
-                    }
-                    assert(!(ctx->flags & TRC_LOG_PARSE_FILT_LOG));
                     to_save = TRUE;
 
                     /* Attach iteration data to TRC database */
@@ -5482,16 +5461,6 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
 
                     assert(upd_iter_data != NULL);
 
-                    if (!(ctx->flags & TRC_LOG_PARSE_FILT_LOG) &&
-                        (ctx->flags & TRC_LOG_PARSE_FAKE_LOG))
-                    {
-                        /*
-                         * TODO: it should not be named "newly_created",
-                         *  but rather "found_in_package".
-                         */
-                        iter->pkg_found = TRUE;
-                    }
-
                     /*
                      * Arguments here are sorted - qsort() was
                      * called inside trc_db_walker_step_iter()
@@ -5504,11 +5473,9 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                     entry->args_n = 0;
                     entry->args_max = 0;
                 }
-                else if ((ctx->flags & TRC_LOG_PARSE_FILT_LOG) &&
-                         (ctx->flags & TRC_LOG_PARSE_FAKE_LOG))
-                    upd_iter_data->filtered = TRUE;
 
                 upd_iter_data->counter = ctx->cur_lnum;
+                iter = trc_db_walker_get_iter(ctx->db_walker);
 
                 if (test->type != TRC_TEST_SCRIPT ||
                     ctx->func_args_match == NULL ||
@@ -5516,11 +5483,8 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                                          upd_iter_data->args,
                                          TRUE) != ITER_NO_MATCH)
                 {
-                    if ((ctx->flags & (TRC_LOG_PARSE_MERGE_LOG |
-                                      TRC_LOG_PARSE_LOG_WILDS)) &&
-                        (!(ctx->flags & TRC_LOG_PARSE_FILT_LOG) ||
-                         upd_iter_data->filtered) &&
-                        !(ctx->flags & TRC_LOG_PARSE_FAKE_LOG))
+                    if (ctx->flags & (TRC_LOG_PARSE_MERGE_LOG |
+                                      TRC_LOG_PARSE_LOG_WILDS))
                         trc_update_merge_result(ctx);
                     else if ((ctx->flags & TRC_LOG_PARSE_SELF_CONFL) &&
                              test->type == TRC_TEST_SCRIPT)
@@ -5534,8 +5498,8 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                         if (trc_db_walker_step_iter(ctx->db_walker,
                                                     upd_iter_data->args_n,
                                                     upd_iter_data->args,
-                                                    FALSE, FALSE,
-                                                    ITER_NO_MATCH_NEW,
+                                                    FALSE, FALSE, FALSE,
+                                                    TRUE,
                                                     ctx->db_uid,
                                                     ctx->func_args_match))
                         {
@@ -5797,7 +5761,6 @@ trc_update_process_logs(trc_update_ctx *gctx)
     tqe_string                 *tqe_str = NULL;
     trc_update_tests_group     *tests_group;
     logic_expr                 *expr = NULL;
-    te_bool                     fake_filter = FALSE;
 
     trc_update_init_parse_ctx(&ctx, gctx);
     ctx.log = gctx->fake_log;
@@ -5876,23 +5839,9 @@ trc_update_process_logs(trc_update_ctx *gctx)
             trc_update_add_skipped(&ctx);
 
         free(ctx.stack_info);
-        ctx.stack_info = NULL;
-        ctx.stack_pos = 0;
-        ctx.stack_size = 0;
     
         if (tl == NULL)
             break;
-
-        if ((ctx.flags & TRC_LOG_PARSE_FAKE_LOG) &&
-            !(ctx.flags & TRC_LOG_PARSE_FILT_LOG) &&
-            gctx->fake_filt_log != NULL)
-        {
-            ctx.flags |= TRC_LOG_PARSE_FILT_LOG |
-                         TRC_LOG_PARSE_MERGE_LOG;
-            ctx.log = gctx->fake_filt_log;
-            fake_filter = TRUE;
-            continue;
-        }
 
         logic_expr_free(ctx.merge_expr);
         free(ctx.merge_str);
@@ -5944,9 +5893,6 @@ trc_update_process_logs(trc_update_ctx *gctx)
         if (!((gctx->flags & TRC_LOG_PARSE_LOG_WILDS) ||
               (gctx->flags & TRC_LOG_PARSE_PATHS)))
             ctx.flags |= TRC_LOG_PARSE_MERGE_LOG;
-
-        if (fake_filter)
-            ctx.flags |= TRC_LOG_PARSE_FILT_LOG;
     } while (1);
 
     if (!(gctx->flags & TRC_LOG_PARSE_PATHS))

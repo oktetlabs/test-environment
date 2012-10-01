@@ -75,11 +75,6 @@ typedef struct trc_update_ctx {
                                                    first one */
     char                    *fake_log;        /**< Tester fake run XML log
                                                    path */
-    char                    *fake_filt_log;   /**< Tester fake run XML log
-                                                   path (this log is used
-                                                   for filtering out
-                                                   iterations not matching
-                                                   some reqs) */
     char                    *rules_load_from; /**< Path to file with
                                                    updating rules to
                                                    apply */
@@ -190,8 +185,6 @@ typedef struct trc_update_test_iter_data {
                                             generation) */
     te_bool               in_wildcard; /**< Whether this iteration in
                                             some wildcard already or not */
-    te_bool               filtered;    /**< Iteration was found in fake
-                                            filter log */
     res_simpl_stat        r_simple;    /**< Results simplification status */
 
     /*

@@ -218,18 +218,6 @@ typedef int (*func_args_match_ptr)(const void *,
                                    te_bool);
 
 /**
- * Iteration matching flags.
- */
-typedef enum iter_match_flags {
-    ITER_NO_MATCH_OLD   = 0x1,     /**< Do not match to iterations from
-                                        existing TRC DB */
-    ITER_NO_MATCH_WILD  = 0x2,     /**< Do not match to wildcard
-                                        iterations */
-    ITER_NO_MATCH_NEW   = 0x4,     /**< Do not match to iterations
-                                        created by a tool */
-} iter_match_flags;
-
-/**
  * Move walker from the current position to the test iteration with
  * specified arguments.
  *
@@ -242,11 +230,15 @@ typedef enum iter_match_flags {
  * @param force             Force to create DB entry, if it does not
  *                          exist (if resources allocation fails, FALSE is
  *                          returned, else TRUE is returned)
+ * @param no_wildcards      If @a force, also create new DB entry if only
+ *                          wildcard matches specified arguments in DB.
+ *                          If ! @a force, look at only non-wildcards
+ *                          iterations when matching.
  * @param split_results     For each result: split tag expression of
  *                          results in conjuncts, replace single result
  *                          with its copies marked by different
  *                          conjuncts.
- * @param match_flags       Matching flags
+ * @param no_match_to_new   No match to newly created iterations
  * @param db_uid            TRC database user ID
  * @param func_args_match   Function to be used instead
  *                          @b test_iter_args_match() if required.
@@ -257,8 +249,9 @@ extern te_bool trc_db_walker_step_iter(te_trc_db_walker *walker,
                                        unsigned int n_args,
                                        trc_report_argument *args,
                                        te_bool force,
+                                       te_bool no_wildcards,
                                        te_bool split_results,
-                                       uint32_t match_flags,
+                                       te_bool no_match_to_new,
                                        unsigned int db_uid,
                                        func_args_match_ptr
                                                 func_args_match);

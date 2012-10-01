@@ -388,7 +388,6 @@ trc_update_free_ctx(trc_update_ctx *ctx)
     tq_strings_free(&ctx->tags_list, free);
     tq_strings_free(&ctx->test_names, free);
     free(ctx->fake_log);
-    free(ctx->fake_filt_log);
     free(ctx->rules_load_from);
     free(ctx->rules_save_to);
     free(ctx->cmd);
