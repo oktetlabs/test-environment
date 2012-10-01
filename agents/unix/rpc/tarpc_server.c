@@ -4678,8 +4678,11 @@ copy_ta_libs(char *path)
     FILE   *f;
     FILE   *f_list;
     te_bool ld_found = FALSE;
+    int     saved_errno = errno;
 
     struct stat file_stat;
+
+    errno = 0;
 
     CHECK_SNPRINTF(
         snprintf(str, MAX_CMD, "%s/ta_libs_list", path),
@@ -4792,6 +4795,8 @@ copy_ta_libs(char *path)
 
     fclose(f_list);
 
+    if (errno == 0)
+        errno = saved_errno;
     return 0;
 }
 
@@ -4816,6 +4821,9 @@ rm_ta_libs(char *path)
     char    cmd[RCF_MAX_PATH];
     char   *s;
     FILE   *f_list;
+    int     saved_errno = errno;
+
+    errno = 0;
 
     CHECK_SNPRINTF(snprintf(str, MAX_CMD, "%s/ta_libs_list", path),
                             str, MAX_CMD);
@@ -4846,6 +4854,8 @@ rm_ta_libs(char *path)
              cmd, RCF_MAX_PATH);
     SYSTEM(cmd);
 
+    if (errno == 0)
+        errno = saved_errno;
     return 0;
 }
 
