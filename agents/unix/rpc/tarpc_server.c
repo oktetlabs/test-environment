@@ -4669,6 +4669,7 @@ int
 copy_ta_libs(char *path)
 {
     char    path_to_lib[RCF_MAX_PATH];
+    char    path_to_chmod[RCF_MAX_PATH];
     char    str[RCF_MAX_PATH];
     char    cmd[MAX_CMD];
     char   *begin_path = 0; 
@@ -4743,6 +4744,7 @@ copy_ta_libs(char *path)
             }
 
             fprintf(f_list, "%s\n", path_to_lib);
+            memcpy(path_to_chmod, path_to_lib, RCF_MAX_PATH);
 
             CHECK_SNPRINTF(snprintf(path_to_lib, RCF_MAX_PATH, "%s/%s",
                                     path, begin_path),
@@ -4759,8 +4761,10 @@ copy_ta_libs(char *path)
                 *s = '\0';
 
             CHECK_SNPRINTF(snprintf(cmd, MAX_CMD, "mkdir -p \"%s\" && "
-                                    "cp \"%s\" \"%s\"",
-                                    path_to_lib, begin_path, path_to_lib),
+                                    "cp \"%s\" \"%s\" && "
+                                    "chmod -R a+rwx \"%s\"",
+                                    path_to_lib, begin_path, path_to_lib,
+                                    path_to_chmod),
                            cmd, MAX_CMD);
             SYSTEM(cmd);
         }
