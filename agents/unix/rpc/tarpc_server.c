@@ -4697,7 +4697,7 @@ copy_ta_libs(char *path)
                             "| sed \"s/(0x[0-9a-f]*)$//\")", ta_execname),
                    cmd, MAX_CMD);
 
-    if (dynamic_library_set)
+    if (dynamic_library_set && strlen(dynamic_library_name) != 0)
         CHECK_SNPRINTF(
                 snprintf(cmd + strlen(cmd), MAX_CMD - strlen(cmd),
                          " && (ldd %s | sed \"s/.*=>[ \t]*//\" "
