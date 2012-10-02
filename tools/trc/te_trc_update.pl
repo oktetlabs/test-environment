@@ -345,15 +345,37 @@ if ($test_specified > 0)
            "\${TE_BASE}/dispatcher.sh --conf-dir=\${CONFDIR} ".
            "${conf_tester} ${test_fake_run} --no-builder ".
            "--tester-no-build --no-cs --tester-no-cs --no-rcf ".
-           "${test_reqs} 1>/dev/null --log-txt=/dev/null\n".
+           "--tester-no-reqs 1>/dev/null --log-txt=/dev/null\n".
            "else\n".
            "TE_LOG_RAW=\"".escape_str($fake_raw_log)."\" ".
            "./run.sh ${conf_tester} ${test_fake_run} --no-builder ".
            "--tester-no-build --no-cs --tester-no-cs --no-rcf ".
-           "${test_reqs} 1>/dev/null --log-txt=/dev/null\n".
+           "--tester-no-reqs 1>/dev/null --log-txt=/dev/null\n".
            "fi");
     download_prepare_log($fake_raw_log);
     $opts = $opts." --fake-log=".$tmp_files[$#tmp_files];
+
+    if (!(!defined($test_reqs) || length($test_reqs) == 0))
+    {
+        (undef, $tmp_files[$#tmp_files + 1]) = tempfile("log-XXXX");
+        my $fake_filter_raw_log = getcwd()."/".$tmp_files[$#tmp_files];
+        print("Fake tester run for filtering...\n");
+        system("if test x\${TE_BASE} != \"x\" -a ".
+               "        x\${CONFDIR} != \"x\" ; then\n".
+               "TE_LOG_RAW=\"".escape_str($fake_filter_raw_log)."\" ".
+               "\${TE_BASE}/dispatcher.sh --conf-dir=\${CONFDIR} ".
+               "${conf_tester} ${test_fake_run} --no-builder ".
+               "--tester-no-build --no-cs --tester-no-cs --no-rcf ".
+               "${test_reqs} 1>/dev/null --log-txt=/dev/null\n".
+               "else\n".
+               "TE_LOG_RAW=\"".escape_str($fake_filter_raw_log)."\" ".
+               "./run.sh ${conf_tester} ${test_fake_run} --no-builder ".
+               "--tester-no-build --no-cs --tester-no-cs --no-rcf ".
+               "${test_reqs} 1>/dev/null --log-txt=/dev/null\n".
+               "fi");
+        download_prepare_log($fake_filter_raw_log);
+        $opts = $opts." --fake-filter-log=".$tmp_files[$#tmp_files];
+    }
 }
 
 $rc = system("te-trc-update ".$opts);

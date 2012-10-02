@@ -99,6 +99,9 @@ enum {
     TRC_UPDATE_OPT_LOG_WILDS_UNEXP, /**< Generate wildcards for unexpected
                                          results from logs only */
     TRC_UPDATE_OPT_FAKE_LOG,        /**< Fake Tester run log */
+    TRC_UPDATE_OPT_FAKE_FILT_LOG,   /**< Fake Tester run log used for
+                                         filtering out iterations
+                                         not matching some reqs */
     TRC_UPDATE_OPT_MATCHING_EXPR,   /**< Expression to match iterations
                                          in TRC with iterations in logs */
     TRC_UPDATE_OPT_MATCHING_PERL,   /**< Path to iterations matching perl
@@ -622,6 +625,13 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
           NULL, TRC_UPDATE_OPT_FAKE_LOG,
           "Specify log file of fake Tester run in XML format", NULL },
 
+        { "fake-filter-log", '\0',
+          POPT_ARG_STRING | POPT_ARGFLAG_DOC_HIDDEN,
+          NULL, TRC_UPDATE_OPT_FAKE_FILT_LOG,
+          "Specify log file of fake Tester run in XML format "
+          "(to be used for filtering out some iterations)",
+          NULL },
+
         { "diff", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_DIFF,
           "Consider all the results from the logs specified after "
@@ -750,6 +760,10 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
 
             case TRC_UPDATE_OPT_FAKE_LOG:
                 ctx.fake_log = poptGetOptArg(optCon);
+                break;
+
+            case TRC_UPDATE_OPT_FAKE_FILT_LOG:
+                ctx.fake_filt_log = poptGetOptArg(optCon);
                 break;
 
             case TRC_UPDATE_OPT_PATHS:

@@ -75,6 +75,11 @@ typedef struct trc_update_ctx {
                                                    first one */
     char                    *fake_log;        /**< Tester fake run XML log
                                                    path */
+    char                    *fake_filt_log;   /**< Tester fake run XML log
+                                                   path (this log is used
+                                                   for filtering out
+                                                   iterations not matching
+                                                   some reqs) */
     char                    *rules_load_from; /**< Path to file with
                                                    updating rules to
                                                    apply */
@@ -160,6 +165,14 @@ typedef enum res_simpl_stat {
     RES_SIMPLE,         /**< Already simplified */
 } res_simpl_stat;
 
+/** Predeclaration, see definition below */
+struct trc_update_args_group;
+typedef struct trc_update_args_group trc_update_args_group;
+
+/** List of TRC DB wildcards */
+typedef SLIST_HEAD(trc_update_args_groups, trc_update_args_group)
+                                                trc_update_args_groups;
+
 /** TRC Update test iteration data attached to iteration in TRC DB */
 typedef struct trc_update_test_iter_data {
     trc_exp_results       new_results; /**< Non-matching test results from
@@ -185,7 +198,13 @@ typedef struct trc_update_test_iter_data {
                                             generation) */
     te_bool               in_wildcard; /**< Whether this iteration in
                                             some wildcard already or not */
+    te_bool               filtered;    /**< Iteration was found in fake
+                                            filter log */
     res_simpl_stat        r_simple;    /**< Results simplification status */
+
+    trc_update_args_groups  all_wilds; /**< Here all possible wildcards
+                                            defining the same iteration(s)
+                                            can be stored */
 
     /*
      * We store this kind of representation of arguments to make
@@ -210,14 +229,6 @@ typedef struct trc_update_test_data {
     te_bool     to_save; /**< Should this test be saved? */
 } trc_update_test_data;
  
-/** Predeclaration, see definition below */
-struct trc_update_args_group;
-typedef struct trc_update_args_group trc_update_args_group;
-
-/** List of TRC DB wildcards */
-typedef SLIST_HEAD(trc_update_args_groups, trc_update_args_group)
-                                                trc_update_args_groups;
-
 /** Entry of queue containing information about tests to be updated */
 typedef struct trc_update_test_entry {
     TAILQ_ENTRY(trc_update_test_entry)   links; /**< List links */
@@ -297,6 +308,14 @@ extern void trc_update_tag_logs_free(trc_update_tag_logs *tag_logs);
  * @param tags_logs     Queue pointer
  */
 extern void trc_update_tags_logs_free(trc_update_tags_logs *tags_logs);
+
+/**
+ * Initialize TRC Update test iteration data.
+ *
+ * @param data      Data to be initialized.
+ */
+extern void trc_update_init_test_iter_data(
+                        trc_update_test_iter_data *data);
 
 /**
  * Free TRC Update test iteration data.

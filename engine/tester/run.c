@@ -2557,7 +2557,7 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
          */
         (void)trc_db_walker_step_iter(ctx->trc_walker,
                                       ctx->n_args,
-                                      args, FALSE, FALSE, FALSE, FALSE,
+                                      args, FALSE, 0, FALSE,
                                       0, NULL);
         ctx->do_trc_walker = TRUE;
 

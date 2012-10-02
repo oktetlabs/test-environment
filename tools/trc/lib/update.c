@@ -64,10 +64,25 @@ do {                                \
  
 /* See the description in trc_update.h */
 void
+trc_update_init_test_iter_data(trc_update_test_iter_data *data)
+{
+    memset(data, sizeof(*data), 0);
+    SLIST_INIT(&data->new_results);
+    SLIST_INIT(&data->df_results);
+    SLIST_INIT(&data->all_wilds);
+    data->rule = NULL;
+    data->args = NULL;
+    data->set_nums = NULL;
+}
+
+/* See the description in trc_update.h */
+void
 trc_update_free_test_iter_data(trc_update_test_iter_data *data)
 {
     trc_exp_result             *q;
     trc_exp_result             *q_tvar;
+    trc_update_args_group      *args_group;
+    trc_update_args_group      *args_group_tvar;
 
     if (data == NULL)
         return;
@@ -82,6 +97,13 @@ trc_update_free_test_iter_data(trc_update_test_iter_data *data)
     {
         SLIST_REMOVE_HEAD(&data->df_results, links);
         trc_exp_result_free(q);
+    }
+
+    SLIST_FOREACH_SAFE(args_group, &data->all_wilds,
+                       links, args_group_tvar)
+    {
+        SLIST_REMOVE_HEAD(&data->all_wilds, links);
+        trc_update_args_group_free(args_group);
     }
 
     for (data->args_n = 0; data->args_n < data->args_max; data->args_n++)
@@ -388,6 +410,7 @@ trc_update_free_ctx(trc_update_ctx *ctx)
     tq_strings_free(&ctx->tags_list, free);
     tq_strings_free(&ctx->test_names, free);
     free(ctx->fake_log);
+    free(ctx->fake_filt_log);
     free(ctx->rules_load_from);
     free(ctx->rules_save_to);
     free(ctx->cmd);
