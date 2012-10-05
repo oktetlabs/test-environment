@@ -28,6 +28,15 @@
 # $Id$
 #
 
+bin_sh=`ls -l /bin/sh | sed "s/^.*-> //g"`
+if (test x$bin_sh != x"/bin/bash") && (test x$bin_sh != x"bash") ; then
+    echo "#############################################"
+    echo "#### /bin/sh is not bash on your system. ####"
+    echo "#### This can make TE build and usage    ####"
+    echo "#### impossible.                         ####"
+    echo "#############################################"
+fi
+
 TE_RUN_DIR="${PWD}"
 
 DISPATCHER="$(which "$0")"
