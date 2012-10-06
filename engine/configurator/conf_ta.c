@@ -134,6 +134,11 @@ cfg_ta_add_agent_instances()
             free(ta_list.list);
             return TE_ENOMEM;
         }
+
+        /** Avoiding treating instance as object after overfilling */
+        if (cfg_inst_seq_num == 0)
+            cfg_inst_seq_num = 1;
+
         strcpy(cfg_all_inst[i]->name, ta);
         sprintf(cfg_all_inst[i]->oid, CFG_TA_PREFIX"%s", ta);
         cfg_all_inst[i]->handle = i | (cfg_inst_seq_num++) << 16;

@@ -90,7 +90,7 @@ int cfg_all_inst_size;
 static int cfg_all_inst_max = 1;
 
 /** Unique sequence number of the next instance */
-int cfg_inst_seq_num = 2;
+unsigned int cfg_inst_seq_num = 1;
 
 /** Delay for configuration changes accomodation */
 uint32_t cfg_conf_delay;
@@ -1235,6 +1235,10 @@ cfg_db_add_children(cfg_instance *inst)
             }
         }
 
+        /** Avoiding treating instance as object after overfilling */
+        if (cfg_inst_seq_num == 0)
+            cfg_inst_seq_num = 1;
+
         cfg_all_inst[i]->handle = i | (cfg_inst_seq_num++) << 16;
         cfg_all_inst[i]->name[0] = '\0';
         cfg_all_inst[i]->obj = obj1;
@@ -1433,6 +1437,10 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
             RET(err);
         }
     }
+
+    /** Avoiding treating instance as object after overfilling */
+    if (cfg_inst_seq_num == 0)
+        cfg_inst_seq_num = 1;
 
     /*
      * It is a new instance in local DB, so that mark it as not

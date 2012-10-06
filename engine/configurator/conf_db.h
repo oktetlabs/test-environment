@@ -115,7 +115,7 @@ typedef struct cfg_instance {
 extern cfg_instance cfg_inst_root;
 extern cfg_instance **cfg_all_inst;
 extern int cfg_all_inst_size;
-extern int cfg_inst_seq_num;
+extern unsigned int cfg_inst_seq_num;
 
 #define CFG_TA_PREFIX   "/agent:"
 
