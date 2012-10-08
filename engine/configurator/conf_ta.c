@@ -129,31 +129,19 @@ cfg_ta_add_agent_instances()
             {
                 free(cfg_all_inst[i]->oid);
                 free(cfg_all_inst[i]);
-                cfg_all_inst[i] = NULL;
             }
             ERROR("Out of memory");
             free(ta_list.list);
             return TE_ENOMEM;
         }
 
-        /** Avoiding treating an instance as an object after overfilling */
-        if (cfg_inst_seq_num == 0xFFFFFFFF)
-        {
-            for (; i > 0; i--)
-            {
-                free(cfg_all_inst[i]->oid);
-                free(cfg_all_inst[i]);
-                cfg_all_inst[i] = NULL;
-            }
-            free(ta_list.list);
-            ERROR("%s(): instance counter overfilled", __FUNCTION__);
-            return TE_ENOMEM;
-        }
+        /** Avoiding treating instance as object after overfilling */
+        if (cfg_inst_seq_num == 0)
+            cfg_inst_seq_num = 1;
 
         strcpy(cfg_all_inst[i]->name, ta);
         sprintf(cfg_all_inst[i]->oid, CFG_TA_PREFIX"%s", ta);
-        cfg_all_inst[i]->handle = i |
-                                  ((cfg_inst_seq_num++ >> 16) + 1) << 16;
+        cfg_all_inst[i]->handle = i | (cfg_inst_seq_num++) << 16;
         cfg_all_inst[i]->obj = cfg_all_obj[1];
         if (i == 1)
             cfg_all_inst[0]->son = cfg_all_inst[i];

@@ -90,7 +90,7 @@ int cfg_all_inst_size;
 static int cfg_all_inst_max = 1;
 
 /** Unique sequence number of the next instance */
-uint32_t cfg_inst_seq_num = 1;
+unsigned int cfg_inst_seq_num = 1;
 
 /** Delay for configuration changes accomodation */
 uint32_t cfg_conf_delay;
@@ -1235,18 +1235,11 @@ cfg_db_add_children(cfg_instance *inst)
             }
         }
 
-        /** Avoiding treating an instance as an object after overfilling */
-        if (cfg_inst_seq_num == 0xFFFFFFFF)
-        {
-            free(cfg_all_inst[i]->oid);
-            free(cfg_all_inst[i]);
-            cfg_all_inst[i] = NULL;
-            ERROR("%s(): instance counter overfilled", __FUNCTION__);
-            return TE_ENOMEM;
-        }
+        /** Avoiding treating instance as object after overfilling */
+        if (cfg_inst_seq_num == 0)
+            cfg_inst_seq_num = 1;
 
-        cfg_all_inst[i]->handle = i |
-                                  ((cfg_inst_seq_num++ >> 16) + 1) << 16;
+        cfg_all_inst[i]->handle = i | (cfg_inst_seq_num++) << 16;
         cfg_all_inst[i]->name[0] = '\0';
         cfg_all_inst[i]->obj = obj1;
         cfg_all_inst[i]->father = inst;
@@ -1445,15 +1438,9 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
         }
     }
 
-    /** Avoiding treating an instance as an object after overfilling */
-    if (cfg_inst_seq_num == 0xFFFFFFFF)
-    {
-        free(inst->oid);
-        free(inst);
-        cfg_all_inst[i] = NULL;
-        ERROR("%s(): instance counter overfilled", __FUNCTION__);
-        RET(TE_ENOMEM);
-    }
+    /** Avoiding treating instance as object after overfilling */
+    if (cfg_inst_seq_num == 0)
+        cfg_inst_seq_num = 1;
 
     /*
      * It is a new instance in local DB, so that mark it as not
@@ -1462,8 +1449,7 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
      * when this object is added to the Test Agent.
      */
     inst->added = FALSE;
-    inst->handle = i |
-                   ((cfg_inst_seq_num++ >> 16) + 1) << 16;
+    inst->handle = i | (cfg_inst_seq_num++) << 16;
     strcpy(inst->name, s->name);
     inst->obj = obj;
     inst->father = father;
