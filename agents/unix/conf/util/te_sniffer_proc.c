@@ -253,14 +253,15 @@ make_file_name(void)
     
     if (dumpinfo.template_file_name != NULL)
     {
-        res = snprintf(file_name, SNIF_MAX_NAME + 1, "%s%s_%d.pcap", 
+        res = snprintf(file_name, SNIF_MAX_NAME + 1, "%s%s_%zd.pcap", 
                        dumpinfo.file_path, dumpinfo.template_file_name, 
                        dumpinfo.log_num);
     }
     else
     {
-        res = snprintf(file_name, SNIF_MAX_NAME, "%s%.12llu_%d.pcap", 
-                       dumpinfo.file_path, absolute_offset, dumpinfo.log_num);
+        res = snprintf(file_name, SNIF_MAX_NAME, "%s%.12llu_%zd.pcap", 
+                       dumpinfo.file_path, absolute_offset,
+                       dumpinfo.log_num);
     }
     
     if (res > SNIF_MAX_NAME)
