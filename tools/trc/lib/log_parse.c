@@ -5463,16 +5463,6 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
      
                 if (upd_iter_data == NULL)
                 {
-                    if (ctx->flags & TRC_LOG_PARSE_FILT_LOG)
-                    {
-                        int j = 0;
-                        printf("Path=%s\n", test->path);
-                        for (j = 0; j < (int)entry->args_n; j++)
-                        {
-                            printf("%s=%s\n", entry->args[j].name,
-                                   entry->args[j].value);
-                        }
-                    }
                     assert(!(ctx->flags & TRC_LOG_PARSE_FILT_LOG));
                     to_save = TRUE;
 
@@ -5500,8 +5490,9 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                     assert(upd_iter_data != NULL);
 
                     if (!(ctx->flags & TRC_LOG_PARSE_FILT_LOG) &&
-                        (ctx->flags & TRC_LOG_PARSE_FAKE_LOG))
-                        iter->pkg_found = TRUE;
+                        ((ctx->flags & TRC_LOG_PARSE_FAKE_LOG) |
+                         (ctx->flags & TRC_LOG_PARSE_LOG_WILDS)))
+                        iter->log_found = TRUE;
 
                     /*
                      * Arguments here are sorted - qsort() was

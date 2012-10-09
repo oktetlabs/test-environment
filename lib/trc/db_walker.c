@@ -586,7 +586,7 @@ trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
              walker->iter != NULL;
              walker->iter = TAILQ_NEXT(walker->iter, links))
         {
-            if (func_args_match == NULL || walker->iter->pkg_found)
+            if (func_args_match == NULL || walker->iter->log_found)
                 match_result = test_iter_args_match(&walker->iter->args,
                                                     n_args, args, TRUE);
             else
@@ -611,7 +611,7 @@ trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
                         dup_detected = TRUE;
                     wild_iter = walker->iter;
                 }
-                else if (iter->pkg_found)
+                else if (iter->log_found)
                 {
                     if (new_exact_iter != NULL)
                     {

@@ -117,8 +117,8 @@ typedef struct trc_test_iter {
                                          the list of all its siblings
                                          belonging to the same file */
 
-    te_bool             pkg_found;  /**< Whether this iteration was
-                                         found in package.xml by TRC
+    te_bool             log_found;  /**< Whether this iteration was
+                                         found in log by TRC
                                          Update Tool or not */
 } trc_test_iter;
 
