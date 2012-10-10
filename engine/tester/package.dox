@@ -121,14 +121,27 @@ Test can be associated with a set of requirements. I.e.
 - @b LONG -- test scenario is really long;
 - @b BROKEN -- test scenario is broken - avoid!.
 
-Requirements can e normal and sticky. Sticky requirements are inherited by
+Requirements can be normal and sticky. Sticky requirements are inherited by
 all descendants (see the hierarchy description in @ref te_engine_tester_concepts).
 
-Tester can be asked to run test satisfying certain requirements:
+Tester can be asked to run test satisfying certain requirements
+via @prog_option{--tester-req} option which can be set to logical
+expression where logical variables are test requirements and logical
+operators are ! (not; should be escaped in bash), | (or) and & (and).
+For example,
 
 <pre class="fragment">
-$ @prog{dispatcher.sh} @prog_option{\-\-tester-req=\!BROKEN} : skip broken tests
-$ @prog{dispatcher.sh} @prog_option{\-\-tester-req=IGMP} @prog_option{\-\-tester-req=\!LONG} : run fast IGMP tests
+$ @prog{dispatcher.sh} @prog_option{--tester-req=\!BROKEN} : skip broken tests
+$ @prog{dispatcher.sh} @prog_option{--tester-req="MSG_MORE|TCP_CORK"} : run all the tests involving MSG_MORE flag or TCP_CORK socket option
+</pre>
+
+If you specify multiple @prog_option{--tester-req} options, it works as
+if their values are concatenated into a single logical expression by
+means of & (and) logical operator and passed with a single
+@prog_option{--tester-req} option.
+
+<pre class="fragment">
+$ @prog{dispatcher.sh} @prog_option{--tester-req=IGMP} @prog_option{--tester-req=\!LONG} : run fast IGMP tests
 </pre>
 
 @section te_engine_tester_conf Configuration File
