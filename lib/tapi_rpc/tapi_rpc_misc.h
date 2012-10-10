@@ -270,6 +270,8 @@ extern int rpc_simple_receiver(rcf_rpc_server *handle,
  * @param time2run          how long run (in seconds)
  * @param sent              location for number of sent bytes
  * @param ignore_err        Ignore errors while run
+ * @param send_failed       This will be set to @c TRUE if it was send()
+ *                          who failed
  *
  * @return Number of sent bytes or -1 in the case of failure
  */
@@ -278,7 +280,8 @@ extern int rpc_pattern_sender(rcf_rpc_server *rpcs,
                               int size_max, int size_rnd_once,
                               int delay_min, int delay_max,
                               int delay_rnd_once, int time2run,
-                              uint64_t *sent, int ignore_err);
+                              uint64_t *sent, int ignore_err,
+                              te_bool *send_failed);
 
 /**
  * Patterned data receiver.
@@ -288,13 +291,16 @@ extern int rpc_pattern_sender(rcf_rpc_server *rpcs,
  * @param fname           a function used to generate a pattern
  * @param iomux           IO multiplexing function
  * @param received        location for number of received bytes
+ * @param recv_failed     This will be set to @c TRUE if it was recv()
+ *                        who failed
  *
  * @return number of received bytes, -2 if data doesn't match the pattern,
  *         or -1 in the case of another failure
  */
 extern int rpc_pattern_receiver(rcf_rpc_server *rpcs, int s,
                                 char *fname, int iomux,
-                                uint32_t time2run, uint64_t *received);
+                                uint32_t time2run, uint64_t *received,
+                                te_bool *recv_failed);
 
 /**
  * Wait for readable socket.

@@ -6636,6 +6636,7 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
             {
                 ERROR("send() failed in pattern_sender(): errno %s (%x)",
                       strerror(errno), errno);
+                out->func_failed = TRUE;
                 PTRN_SEND_ERROR;
             }
             else
@@ -6791,6 +6792,7 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
         {
             ERROR("recv() failed in pattern_receiver(): errno %s (%x)",
                   strerror(errno), errno);
+            out->func_failed = TRUE;
             PTRN_RECV_ERROR;
         }
         else

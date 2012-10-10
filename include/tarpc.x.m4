@@ -3701,9 +3701,11 @@ struct tarpc_pattern_sender_in {
 struct tarpc_pattern_sender_out {
     struct tarpc_out_arg common;
     
-    tarpc_int   retval;     /**< 0 (success) or -1 (failure) */
+    tarpc_int   retval;         /**< 0 (success) or -1 (failure) */
     
-    uint64_t    bytes;      /**< Number of sent bytes */
+    uint64_t    bytes;          /**< Number of sent bytes */
+    tarpc_bool  func_failed;    /**< TRUE if it was data transmitting
+                                     function who failed */
 };
 
 struct tarpc_pattern_receiver_in {
@@ -3715,7 +3717,7 @@ struct tarpc_pattern_receiver_in {
     uint32_t    time2run;        /**< Receiving duration (in seconds) */
 };
 
-typedef struct tarpc_simple_receiver_out tarpc_pattern_receiver_out;
+typedef struct tarpc_pattern_sender_out tarpc_pattern_receiver_out;
 
 struct tarpc_create_process_in {
     struct tarpc_in_arg common;
