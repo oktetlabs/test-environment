@@ -87,11 +87,10 @@ rpc_find_func(rcf_rpc_server *rpcs, const char * func_name)
         RETVAL_INT(rpc_find_func, -1);
     }
 
-    in.func_name = strdup(func_name);
+    in.func_name = (char *)func_name;
 
     rcf_rpc_call(rpcs, "rpc_find_func", &in, &out);
 
-    free(in.func_name);
     rc = out.find_result;
 
     CHECK_RETVAL_VAR(rpc_find_func, rc, (rc < 0), -1);
@@ -132,7 +131,7 @@ rpc_vlan_get_parent(rcf_rpc_server *rpcs, const char *vlan_ifname,
         RETVAL_INT(rpc_vlan_get_parent, -1);
     }
 
-    in.ifname.ifname_val = strdup(vlan_ifname);
+    in.ifname.ifname_val = (char *)vlan_ifname;
     in.ifname.ifname_len = strlen(vlan_ifname) + 1;
 
     rcf_rpc_call(rpcs, "rpc_vlan_get_parent", &in, &out);
@@ -171,11 +170,10 @@ rpc_get_sizeof(rcf_rpc_server *rpcs, const char *type_name)
         RETVAL_INT(get_sizeof, -1);
     }
 
-    in.typename = strdup(type_name);
+    in.typename = (char *)type_name;
 
     rcf_rpc_call(rpcs, "get_sizeof", &in, &out);
 
-    free(in.typename);
     rc = out.size;
 
     CHECK_RETVAL_VAR(get_sizeof, rc, (rc < -1), -1);
@@ -254,11 +252,9 @@ rpc_get_addrof(rcf_rpc_server *rpcs, const char *name)
         RETVAL_RPC_PTR(get_addrof, RPC_NULL);
     }
 
-    in.name = strdup(name);
+    in.name = (char *)name;
 
     rcf_rpc_call(rpcs, "get_addrof", &in, &out);
-
-    free(in.name);
 
     TAPI_RPC_LOG(rpcs, get_addrof, "%s", "%u", name, out.addr);
     RETVAL_RPC_PTR(get_addrof, out.addr);
@@ -281,12 +277,10 @@ rpc_get_var(rcf_rpc_server *rpcs, const char *name, tarpc_size_t size)
         TAPI_JMP_DO(TE_EFAIL);
     }
 
-    in.name = strdup(name);
+    in.name = (char *)name;
     in.size = size;
 
     rcf_rpc_call(rpcs, "get_var", &in, &out);
-
-    free(in.name);
 
     CHECK_RETVAL_VAR_IS_BOOL(get_var, out.found);
     TAPI_RPC_LOG(rpcs, get_var, "%s, %u", "%llu%s",
@@ -314,13 +308,11 @@ rpc_set_var(rcf_rpc_server *rpcs, const char *name,
         TAPI_JMP_DO(TE_EFAIL);
     }
 
-    in.name = strdup(name);
+    in.name = (char *)name;
     in.size = size;
     in.val = val;
 
     rcf_rpc_call(rpcs, "set_var", &in, &out);
-
-    free(in.name);
 
     CHECK_RETVAL_VAR_IS_BOOL(get_var, out.found);
     TAPI_RPC_LOG(rpcs, set_var, "%s, %u, %llu", "%s",
@@ -645,7 +637,7 @@ rpc_pattern_sender(rcf_rpc_server *rpcs,
 
     in.s = s;
     in.fname.fname_len = strlen(fname);
-    in.fname.fname_val = strdup(fname);
+    in.fname.fname_val = fname;
     in.iomux = iomux;
     in.size_min = size_min;
     in.size_max = size_max;
@@ -705,7 +697,7 @@ rpc_pattern_receiver(rcf_rpc_server *rpcs, int s,
 
     in.s = s;
     in.fname.fname_len = strlen(fname);
-    in.fname.fname_val = strdup(fname);
+    in.fname.fname_val = fname;
     in.iomux = iomux;
     in.time2run = time2run;
     if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
@@ -802,7 +794,7 @@ rpc_recv_verify(rcf_rpc_server *rpcs, int s,
     if (rpcs->op != RCF_RPC_WAIT)
     {
         in.fname.fname_len = strlen(gen_data_fname) + 1;
-        in.fname.fname_val = strdup(gen_data_fname);
+        in.fname.fname_val = (char *)gen_data_fname;
     }
 #endif
 

@@ -919,7 +919,7 @@ rcf_rpc_server_create_process(rcf_rpc_server *rpcs,
     in.common.op = RCF_RPC_CALL_WAIT;
     in.common.use_libc = FALSE;
     in.name.name_len = strlen(name) + 1;
-    in.name.name_val = strdup(name);
+    in.name.name_val = (char *)name;
     in.flags = flags;
     
     if ((rc = rcf_ta_call_rpc(rpcs->ta, rpcs->sid, rpcs->name,
@@ -928,8 +928,6 @@ rcf_rpc_server_create_process(rcf_rpc_server *rpcs,
         return rc;
     }
     
-    free(in.name.name_val);
-        
     if (out.pid < 0)
     {
         ERROR("RPC create_process() failed on the server %s with errno %r", 

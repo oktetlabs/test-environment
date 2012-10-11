@@ -83,8 +83,8 @@ rpc_cwmp_op_call(rcf_rpc_server *rpcs,
 
     rpcs->op = RCF_RPC_CALL_WAIT;
 
-    in.acs_name = strdup(acs_name);
-    in.cpe_name = strdup(cpe_name);
+    in.acs_name = acs_name;
+    in.cpe_name = cpe_name;
     in.cwmp_rpc = cwmp_rpc;
 
     if (buf != NULL && buflen != 0)
@@ -139,8 +139,8 @@ rpc_cwmp_op_check(rcf_rpc_server *rpcs,
 
     rpcs->op = RCF_RPC_CALL_WAIT;
 
-    in.acs_name = strdup(acs_name);
-    in.cpe_name = strdup(cpe_name);
+    in.acs_name = acs_name;
+    in.cpe_name = cpe_name;
     in.request_id = request_id;
     in.cwmp_rpc = cwmp_rpc_acs;
 
@@ -190,8 +190,8 @@ rpc_cwmp_conn_req(rcf_rpc_server *rpcs,
 
     rpcs->op = RCF_RPC_CALL_WAIT;
 
-    in.acs_name = strdup(acs_name);
-    in.cpe_name = strdup(cpe_name);
+    in.acs_name = acs_name;
+    in.cpe_name = cpe_name;
 
     rcf_rpc_call(rpcs, "cwmp_conn_req", &in, &out);
 

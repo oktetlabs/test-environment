@@ -140,8 +140,6 @@ ADD_CPPFLAGS="$ADD_CPPFLAGS -I${TE_BUILD}/platforms/${PLATFORM}/include \
 -I${TE_INSTALL}/${PLATFORM}/include"
 ADD_LDFLAGS="$ADD_LDFLAGS -L${TE_BUILD}/platforms/${PLATFORM}/lib \
 -L${TE_INSTALL}/${PLATFORM}/lib"
-export TE_EXT_LIBS_PATH="${TE_BUILD}/platforms/${PLATFORM}/lib"
-export TE_PLATFORM_PATH="${TE_BUILD}/platforms/${PLATFORM}/"
 
 PARMS="$PARMS --build=`gcc -dumpmachine` \
        TE_BASE=\"$TE_BASE\" \
@@ -152,7 +150,9 @@ PARMS="$PARMS --build=`gcc -dumpmachine` \
        TE_LDADD=\"$LDADD\" \
        TE_PATH=\"$TE_PATH\" \
        TE_INSTALL=\"$TE_INSTALL\" \
-       TE_PLATFORM=$PLATFORM"
+       TE_PLATFORM=\"$PLATFORM\" \
+       TE_EXT_LIBS_PATH=\"${TE_BUILD}/platforms/${PLATFORM}/lib\" \
+       TE_PLATFORM_PATH=\"${TE_BUILD}/platforms/${PLATFORM}/\""
 
 if test "x${KIND}" = "xINCLUDE" -a "x${PLATFORM}" = "x${TE_HOST}" ; then
     ${SCRIPT_DIR}/te_create_inst_dirs ${DESTDIR}/${PREFIX}/.. 

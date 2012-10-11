@@ -52,6 +52,8 @@ rcf_pch_rpc_server(const char *name)
 {
     rpc_transport_handle handle;
     uint8_t             *buf = NULL;
+    int                  pid = getpid();
+    int                  tid = thread_self();
     
 #define STOP(msg...)    \
     do {                \

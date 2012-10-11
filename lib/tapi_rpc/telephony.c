@@ -191,7 +191,7 @@ rpc_telephony_dial_number(rcf_rpc_server *rpcs,
     }
 
     in.chan = chan;
-    in.number = strdup(number);
+    in.number = (char *)number;
 
     rcf_rpc_call(rpcs, "telephony_dial_number", &in, &out);
 
