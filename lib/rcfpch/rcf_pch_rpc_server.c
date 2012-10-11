@@ -65,6 +65,12 @@ rcf_pch_rpc_server(const char *name)
     signal(SIGTERM, sig_handler);
 #endif
 
+    /*
+     * This is done to delete user registered by rcf_ch_start_process(),
+     * if it was created by it but not destroyed (otherwise harmless).
+     */
+    logfork_delete_user(pid, tid);
+
     if (logfork_register_user(name) != 0)
     {
         fprintf(stderr,
@@ -86,11 +92,11 @@ rcf_pch_rpc_server(const char *name)
 #if defined(__CYGWIN__) && !defined(WINDOWS)
     RING("RPC server '%s' (%u-bit, cygwin) (re-)started (PID %d, TID %u)",
          name, (unsigned)(sizeof(void *) << 3),
-         (int)getpid(), (unsigned)thread_self());
+         (int)pid, (unsigned)tid);
 #else
     RING("RPC server '%s' (%u-bit) (re-)started (PID %d, TID %u)",
          name, (unsigned)(sizeof(void *) << 3),
-         (int)getpid(), (unsigned)thread_self());
+         (int)pid, (unsigned)tid);
 #endif             
 
     while (TRUE)
@@ -161,7 +167,8 @@ rcf_pch_rpc_server(const char *name)
             STOP("Sending data failed in main RPC server loop");
     }
 
-cleanup:    
+cleanup:
+    logfork_delete_user(pid, tid);
     rpc_transport_close(handle);
     free(buf);
     

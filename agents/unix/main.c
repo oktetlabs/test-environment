@@ -584,6 +584,7 @@ rcf_ch_start_process(pid_t *pid,
                     return TE_RC(TE_TA_UNIX, TE_E2BIG);
                 }
                 
+                logfork_delete_user(getpid(), thread_self());
                 memset(argv, 0, sizeof(argv));
                 argv[0] = ta_execname;
                 argv[1] = "exec";
@@ -1998,7 +1999,7 @@ main(int argc, char **argv)
         return -1;
     }
 
-    strcpy(ta_execname, argv[0]);
+    strcpy((char *)ta_execname, argv[0]);
     strcpy(ta_dir, argv[0]);
     tmp = strrchr(ta_dir, '/');
     if (tmp == NULL)

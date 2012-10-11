@@ -1122,6 +1122,7 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
     
     uint8_t buf[64];
     size_t  len = sizeof(buf);
+    te_bool soft_shutdown = FALSE;
     
     UNUSED(gid);
     UNUSED(oid);
@@ -1163,7 +1164,8 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
             rpc_transport_send(rpcs->handle, (uint8_t *)"FIN",
                                sizeof("FIN")) != 0 ||
             rpc_transport_recv(rpcs->handle, buf, &len, 5) != 0 ||
-            strcmp((char *)buf, "OK") != 0)
+            strcmp((char *)buf, "OK") != 0 ||
+            !(soft_shutdown = TRUE))
         {
             RING("Kill RPC server '%s'", rpcs->name);
             if (rpcs->tid > 0)
@@ -1196,10 +1198,13 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
     if (rpcs->sent > 0)
         rpc_error(rpcs, TE_ERPCDEAD);
 
-    if (rpcs->tid > 0)
-        logfork_delete_user(rpcs->pid, rpcs->tid);
-    else
-        logfork_delete_user(rpcs->pid, 0);
+    if (!soft_shutdown)
+    {
+        if (rpcs->tid > 0)
+            logfork_delete_user(rpcs->pid, rpcs->tid);
+        else
+            logfork_delete_user(rpcs->pid, 0);
+    }
 
     rpc_transport_close(rpcs->handle);
     pthread_mutex_unlock(&lock);
