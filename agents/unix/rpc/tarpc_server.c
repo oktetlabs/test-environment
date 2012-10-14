@@ -6510,9 +6510,6 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
     int size = rand_range(in->size_min, in->size_max);
     int delay = rand_range(in->delay_min, in->delay_max);
 
-    time_t start;
-    time_t now;
-
     int fd = -1;
     int events = 0;
     int rc = 0;
@@ -6521,6 +6518,9 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
     iomux_state             iomux_st;
     iomux_return            iomux_ret;
     iomux_return_iterator   itr;
+
+    struct timeval tv_start;
+    struct timeval tv_now;
 
     out->bytes = 0;
 
@@ -6564,9 +6564,13 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
         return -1;                                   \
     } while (0)
 
-    for (start = now = time(NULL);
-         (unsigned int)(now - start) <= in->time2run;
-         now = time(NULL))
+#define MSEC_DIFF \
+    (TE_SEC2MS(tv_now.tv_sec - tv_start.tv_sec) + \
+     TE_US2MS(tv_now.tv_usec - tv_start.tv_usec))
+
+    for (gettimeofday(&tv_start, NULL);
+         MSEC_DIFF <= (int)TE_SEC2MS(in->time2run);
+         gettimeofday(&tv_now, NULL))
     {
         int len;
 
@@ -6582,12 +6586,12 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
         if (!in->delay_rnd_once)
             delay = rand_range(in->delay_min, in->delay_max);
 
-        if (TE_US2SEC(delay) > (int)(in->time2run) - (now - start) + 1)
+        if (TE_US2MS(delay) > (int)TE_SEC2MS(in->time2run) - MSEC_DIFF)
             break;
 
         usleep(delay);
-        now = time(NULL);
-        iomux_timeout = TE_SEC2MS(in->time2run - (now - start));
+        gettimeofday(&tv_now, NULL);
+        iomux_timeout = (int)TE_SEC2MS(in->time2run) - MSEC_DIFF;
         if (iomux_timeout <= 0)
             break;
 
@@ -6648,6 +6652,7 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
         out->bytes += len;
     }
 #undef PTRN_SEND_ERROR
+#undef MSEC_DIFF
 
     RING("pattern_sender() stopped, sent %llu bytes",
          out->bytes);
@@ -6689,9 +6694,6 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
     char           *buf;
     char           *check_buf;
 
-    time_t start;
-    time_t now;
-
     int fd = -1;
     int events = 0;
     int rc = 0;
@@ -6700,6 +6702,9 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
     iomux_state             iomux_st;
     iomux_return            iomux_ret;
     iomux_return_iterator   itr;
+
+    struct timeval tv_start;
+    struct timeval tv_now;
 
     out->bytes = 0;
 
@@ -6738,14 +6743,17 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
         return -1;                                   \
     } while (0)
 
-    for (start = now = time(NULL);
-         (unsigned int)(now - start) <= in->time2run;
-         now = time(NULL))
+#define MSEC_DIFF \
+    (TE_SEC2MS(tv_now.tv_sec - tv_start.tv_sec) + \
+     TE_US2MS(tv_now.tv_usec - tv_start.tv_usec))
+
+    for (gettimeofday(&tv_start, NULL);
+         MSEC_DIFF <= (int)TE_SEC2MS(in->time2run);
+         gettimeofday(&tv_now, NULL))
     {
         int len;
 
-        now = time(NULL);
-        iomux_timeout = TE_SEC2MS(in->time2run - (now - start));
+        iomux_timeout = (int)TE_SEC2MS(in->time2run) - MSEC_DIFF;
         if (iomux_timeout <= 0)
             break;
 
@@ -6816,6 +6824,7 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
         out->bytes += len;
     }
 #undef PTRN_RECV_ERROR
+#undef MSEC_DIFF
 
     RING("pattern_receiver() stopped, received %llu bytes",
          out->bytes);
