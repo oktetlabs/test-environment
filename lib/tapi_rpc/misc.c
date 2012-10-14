@@ -644,7 +644,7 @@ rpc_pattern_sender(rcf_rpc_server *rpcs,
     }
 
     in.s = s;
-    in.fname.fname_len = strlen(fname);
+    in.fname.fname_len = strlen(fname) + 1;
     in.fname.fname_val = strdup(fname);
     in.iomux = iomux;
     in.size_min = size_min;
@@ -704,7 +704,7 @@ rpc_pattern_receiver(rcf_rpc_server *rpcs, int s,
     }
 
     in.s = s;
-    in.fname.fname_len = strlen(fname);
+    in.fname.fname_len = strlen(fname) + 1;
     in.fname.fname_val = strdup(fname);
     in.iomux = iomux;
     in.time2run = time2run;
