@@ -72,13 +72,16 @@ rpc_fopen(rcf_rpc_server *rpcs,
     }
 
     rpcs->op = RCF_RPC_CALL_WAIT;
-    in.path = (char *)(path == NULL ? "" : path);
-    in.mode = (char *)(mode == NULL ? "" : mode);
+    in.path = strdup(path == NULL ? "" : path);
+    in.mode = strdup(mode == NULL ? "" : mode);
 
     rcf_rpc_call(rpcs, "fopen", &in, &out);
 
     TAPI_RPC_LOG(rpcs, fopen, "%s, %s", "0x%x",
                  path, mode, (unsigned)out.mem_ptr);
+
+    free(in.path);
+    free(in.mode);
 
     RETVAL_RPC_PTR(fopen, out.mem_ptr);
 }
@@ -101,12 +104,14 @@ rpc_fdopen(rcf_rpc_server *rpcs, int fd,
 
     rpcs->op = RCF_RPC_CALL_WAIT;
     in.fd = fd;
-    in.mode = (char *)(mode == NULL ? "" : mode);
+    in.mode = strdup(mode == NULL ? "" : mode);
 
     rcf_rpc_call(rpcs, "fdopen", &in, &out);
 
     TAPI_RPC_LOG(rpcs, fdopen, "%d, %s", "0x%x",
                  fd, mode, (unsigned)out.mem_ptr);
+
+    free(in.mode);
 
     RETVAL_RPC_PTR(fdopen, out.mem_ptr);
 }
@@ -178,13 +183,16 @@ rpc_popen(rcf_rpc_server *rpcs,
     }
 
     rpcs->op = RCF_RPC_CALL_WAIT;
-    in.cmd = (char *)(cmd == NULL ? "" : cmd);
-    in.mode = (char *)(mode== NULL ? "" : mode);
+    in.cmd = strdup(cmd == NULL ? "" : cmd);
+    in.mode = strdup(mode== NULL ? "" : mode);
 
     rcf_rpc_call(rpcs, "popen", &in, &out);
 
     TAPI_RPC_LOG(rpcs, popen, "%s %s", "0x%x",
                  cmd, mode, (unsigned)out.mem_ptr);
+
+    free(in.cmd);
+    free(in.mode);
 
     RETVAL_RPC_PTR(popen, out.mem_ptr);
 }
@@ -641,6 +649,8 @@ rpc_system(rcf_rpc_server *rpcs, const char *cmd)
     tarpc_system_out    out;
     rpc_wait_status     rc;
 
+    char *cmd_dup = strdup(cmd);
+
     memset(&rc, 0, sizeof(rc));
     rc.flag = RPC_WAIT_STATUS_UNKNOWN;
 
@@ -650,11 +660,12 @@ rpc_system(rcf_rpc_server *rpcs, const char *cmd)
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server", __FUNCTION__);
+        free(cmd_dup);
         RETVAL_WAIT_STATUS(system, rc);
     }
 
     in.cmd.cmd_len = strlen(cmd) + 1;
-    in.cmd.cmd_val = (char *)cmd;
+    in.cmd.cmd_val = (char *)cmd_dup;
 
     rcf_rpc_call(rpcs, "system", &in, &out);
     rc.flag = out.status_flag;

@@ -51,7 +51,12 @@
 
 #define FILL_CALLBACK(func) \
    do {                                                                 \
-       in.callback = (char *)(callback == NULL ? "" : callback);        \
+       if ((in.callback = strdup(callback == NULL ? ""                  \
+                                                  : callback)) == NULL) \
+       {                                                                \
+           ERROR("Out of memory");                                      \
+           RETVAL_INT(func, -1);                                        \
+       }                                                                \
    } while (0)                                     
 
 int 
@@ -1392,6 +1397,8 @@ rpc_wsa_send(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "wsa_send", &in, &out);
     
+    free(in.callback);
+
     if (RPC_IS_CALL_OK(rpcs))
     {
         if (bytes_sent != NULL && out.bytes_sent.bytes_sent_val != NULL)
@@ -1488,6 +1495,8 @@ rpc_wsa_recv(rcf_rpc_server *rpcs,
    }
 
     rcf_rpc_call(rpcs, "wsa_recv", &in, &out);
+
+    free(in.callback);
 
     if (RPC_IS_CALL_OK(rpcs) &&
         iov != NULL && out.vector.vector_val != NULL)
@@ -1597,6 +1606,8 @@ rpc_wsa_send_to(rcf_rpc_server *rpcs, int s, const struct rpc_iovec *iov,
     }
 
     rcf_rpc_call(rpcs, "wsa_send_to", &in, &out);
+
+    free(in.callback);
 
     if (RPC_IS_CALL_OK(rpcs))
     {
@@ -1716,6 +1727,8 @@ rpc_wsa_recv_from(rcf_rpc_server *rpcs, int s,
     }
 
     rcf_rpc_call(rpcs, "wsa_recv_from", &in, &out);
+
+    free(in.callback);
 
     if (RPC_IS_CALL_OK(rpcs))
     {
@@ -1996,6 +2009,8 @@ rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
     FILL_CALLBACK(wsa_recv_msg);
 
     rcf_rpc_call(rpcs, "wsa_recv_msg", &in, &out);
+
+    free(in.callback);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(wsa_recv_msg, out.retval);
 
@@ -2891,6 +2906,8 @@ rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s, rpc_ioctl_code control_code,
 call:
     rcf_rpc_call(rpcs, "wsa_ioctl", &in, &out);
 
+    free(in.callback);
+
     if (RPC_IS_CALL_OK(rpcs) && (out.retval == 0))
     {
         if (bytes_returned != NULL && 
@@ -3395,6 +3412,8 @@ rpc_read_file_ex(rcf_rpc_server *rpcs,
     FILL_CALLBACK(read_file_ex);
     
     rcf_rpc_call(rpcs, "read_file_ex", &in, &out);
+    
+    free(in.callback);
 
     if (op == RCF_RPC_CALL)
         out.retval = TRUE;
@@ -3483,6 +3502,8 @@ rpc_write_file_ex(rcf_rpc_server *rpcs,
     FILL_CALLBACK(write_file_ex);
     
     rcf_rpc_call(rpcs, "write_file_ex", &in, &out);
+    
+    free(in.callback);
 
     if (op == RCF_RPC_CALL)
         out.retval = TRUE;

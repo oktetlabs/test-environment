@@ -1400,7 +1400,7 @@ rpc_open(rcf_rpc_server *rpcs,
     if (path != NULL)
     {
         in.path.path_len = strlen(path) + 1;
-        in.path.path_val = (char *)path;
+        in.path.path_val = (char *)strdup(path); /* FIXME */
     }
     in.flags = flags;
     in.mode  = mode;
@@ -1434,7 +1434,7 @@ rpc_open64(rcf_rpc_server *rpcs,
     if (path != NULL)
     {
         in.path.path_len = strlen(path) + 1;
-        in.path.path_val = (char *)path;
+        in.path.path_val = (char *)strdup(path); /* FIXME */
     }
     in.flags = flags;
     in.mode  = mode;
@@ -1665,7 +1665,7 @@ rpc_access(rcf_rpc_server *rpcs,
     if (path != NULL)
     {
         in.path.path_len = strlen(path) + 1;
-        in.path.path_val = (char *)path;
+        in.path.path_val = (char *)strdup(path); /* FIXME */
     }
 
     rcf_rpc_call(rpcs, "access", &in, &out);
@@ -1703,7 +1703,11 @@ rpc_getpwnam(rcf_rpc_server *rpcs, const char *name)
         RETVAL_PTR(getpwnam, NULL);
     }
 
-    in.name.name_val = (char *)name;
+    if ((in.name.name_val = strdup(name)) == NULL)
+    {
+        ERROR("Out of memory");
+        RETVAL_PTR(getpwnam, NULL);
+    }
     in.name.name_len = strlen(name) + 1;
 
     rcf_rpc_call(rpcs, "getpwnam", &in, &out);
@@ -1711,6 +1715,7 @@ rpc_getpwnam(rcf_rpc_server *rpcs, const char *name)
     CHECK_RETVAL_VAR(getpwnam, out.passwd.name.name_val,
                      FALSE, NULL);
 
+    free(in.name.name_val);
     res = (!RPC_IS_CALL_OK(rpcs) || out.passwd.name.name_val == NULL) ?
           NULL : &passwd;
 
@@ -2116,7 +2121,7 @@ rpc_chroot(rcf_rpc_server *rpcs, char *path)
     if (path != NULL)
     {
         in.path.path_len = strlen(path) + 1;
-        in.path.path_val = path;
+        in.path.path_val = strdup(path);
     }
 
     rcf_rpc_call(rpcs, "chroot", &in, &out);
@@ -2145,7 +2150,7 @@ rpc_copy_ta_libs(rcf_rpc_server *rpcs, char *path)
     if (path != NULL)
     {
         in.path.path_len = strlen(path) + 1;
-        in.path.path_val = path;
+        in.path.path_val = strdup(path);
     }
 
     rcf_rpc_call(rpcs, "copy_ta_libs", &in, &out);
@@ -2174,7 +2179,7 @@ rpc_rm_ta_libs(rcf_rpc_server *rpcs, char *path)
     if (path != NULL)
     {
         in.path.path_len = strlen(path) + 1;
-        in.path.path_val = path;
+        in.path.path_val = strdup(path);
     }
 
     rcf_rpc_call(rpcs, "rm_ta_libs", &in, &out);

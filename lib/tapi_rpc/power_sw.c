@@ -72,7 +72,7 @@ rpc_power_sw(rcf_rpc_server *rpcs, const char *type,
         return -1;
     }
 
-    in.dev = (char *)(dev == NULL ? "unspec" : dev);
+    in.dev = (dev == NULL) ? strdup("unspec") : strdup(dev);
 
     rcf_rpc_call(rpcs, "power_sw", &in, &out);
 
@@ -80,6 +80,9 @@ rpc_power_sw(rcf_rpc_server *rpcs, const char *type,
                  (type != NULL) ? type : "unspec",
                  (dev != NULL) ? dev : "unspec",
                  mask, cmd, out.retval);
+
+    if (in.dev != NULL)
+        free(in.dev);
 
     RETVAL_INT(power_sw, out.retval);
 }

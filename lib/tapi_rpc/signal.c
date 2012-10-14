@@ -59,6 +59,8 @@ rpc_signal(rcf_rpc_server *rpcs,
 {
     tarpc_signal_in  in;
     tarpc_signal_out out;
+    
+    char *copy = NULL;
 
     char *res = NULL;
 
@@ -70,9 +72,16 @@ rpc_signal(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_PTR(signal, NULL);
     }
+    
+    if ((copy = strdup(handler != NULL ? handler : "")) == NULL)
+    {
+        ERROR("Out of memory");
+        rpcs->_errno = TE_ENOMEM;
+        RETVAL_PTR(signal, NULL);
+    }
 
     in.signum = signum;
-    in.handler = (char *)(handler != NULL ? handler : "");
+    in.handler = copy;
 
     rcf_rpc_call(rpcs, "signal", &in, &out);
                  
@@ -82,6 +91,7 @@ rpc_signal(rcf_rpc_server *rpcs,
         res = out.handler;
         out.handler = NULL;
     }
+    free(copy);
 
     TAPI_RPC_LOG(rpcs, signal, "%s, %s", "%s", signum_rpc2str(signum),
                  (handler != NULL) ? handler : "(null)",
@@ -96,6 +106,8 @@ rpc_bsd_signal(rcf_rpc_server *rpcs,
     tarpc_bsd_signal_in  in;
     tarpc_bsd_signal_out out;
     
+    char *copy = NULL;
+
     char *res = NULL;
 
     memset(&in, 0, sizeof(in));
@@ -107,8 +119,15 @@ rpc_bsd_signal(rcf_rpc_server *rpcs,
         RETVAL_PTR(bsd_signal, NULL);
     }
     
+    if ((copy = strdup(handler != NULL ? handler : "")) == NULL)
+    {
+        ERROR("Out of memory");
+        rpcs->_errno = TE_ENOMEM;
+        RETVAL_PTR(bsd_signal, NULL);
+    }
+
     in.signum = signum;
-    in.handler = (char *)(handler != NULL ? handler : "");
+    in.handler = copy;
 
     rcf_rpc_call(rpcs, "bsd_signal", &in, &out);
                  
@@ -118,6 +137,7 @@ rpc_bsd_signal(rcf_rpc_server *rpcs,
         res = out.handler;
         out.handler = NULL;
     }
+    free(copy);
 
     TAPI_RPC_LOG(rpcs, bsd_signal, "%s, %s", "%s", signum_rpc2str(signum),
                  (handler != NULL) ? handler : "(null)",
@@ -156,6 +176,8 @@ rpc_sysv_signal(rcf_rpc_server *rpcs,
     tarpc_sysv_signal_in  in;
     tarpc_sysv_signal_out out;
     
+    char *copy = NULL;
+
     char *res = NULL;
 
     memset(&in, 0, sizeof(in));
@@ -167,8 +189,15 @@ rpc_sysv_signal(rcf_rpc_server *rpcs,
         RETVAL_PTR(sysv_signal, NULL);
     }
     
+    if ((copy = strdup(handler != NULL ? handler : "")) == NULL)
+    {
+        ERROR("Out of memory");
+        rpcs->_errno = TE_ENOMEM;
+        RETVAL_PTR(sysv_signal, NULL);
+    }
+
     in.signum = signum;
-    in.handler = (char *)(handler != NULL ? handler : "");
+    in.handler = copy;
 
     rcf_rpc_call(rpcs, "sysv_signal", &in, &out);
                  
@@ -178,6 +207,7 @@ rpc_sysv_signal(rcf_rpc_server *rpcs,
         res = out.handler;
         out.handler = NULL;
     }
+    free(copy);
 
     TAPI_RPC_LOG(rpcs, sysv_signal, "%s, %s", "%s", signum_rpc2str(signum),
                  (handler != NULL) ? handler : "(null)",
