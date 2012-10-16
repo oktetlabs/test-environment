@@ -265,6 +265,10 @@ extern te_errno ta_unix_conf_phy_init();
 netconf_handle nh = NETCONF_HANDLE_INVALID;
 #endif
 
+#ifdef WITH_AGGREGATION
+extern te_errno ta_unix_conf_aggr_init();
+#endif
+
 #ifdef WITH_SNIFFERS
 extern te_errno ta_unix_conf_sniffer_init();
 extern te_errno ta_unix_conf_sniffer_cleanup();
@@ -1146,6 +1150,14 @@ rcf_ch_conf_init()
 
         rcf_pch_rsrc_init();
         
+#ifdef WITH_AGGREGATION
+        if (ta_unix_conf_aggr_init() != 0)
+        {
+            ERROR("Failed to add aggregation configuration tree");
+            goto fail;
+        }
+#endif
+
 #ifdef WITH_SNIFFERS
         if (ta_unix_conf_sniffer_init() != 0)
             ERROR("Failed to add sniffer configuration tree");

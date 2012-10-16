@@ -120,7 +120,7 @@ aggr_interface_get_free(const char *format, char ifname[IFNAMSIZ])
         snprintf(ifname, IFNAMSIZ, format, i);
         snprintf(rsrc, RCF_MAX_VAL, "/agent:%s/interface:%s", 
                  ta_name, ifname);
-        if (if_nametoindex(ifname) > 0 && ta_rsrc_create_lock(rsrc) == 0)
+        if (if_nametoindex(ifname) == 0 && ta_rsrc_create_lock(rsrc) == 0)
             break;
     }
     if (i == INT_MAX)
@@ -140,7 +140,6 @@ static te_errno
 trunk_create(aggregation *aggr)
 {
     FILE *f;
-    int   rc;
 
     /* Get a name for the new bond device */
     aggr_interface_get_free("bond%d", aggr->ifname);
@@ -148,8 +147,8 @@ trunk_create(aggregation *aggr)
     f = fopen("/sys/class/net/bonding_masters", "a");
     if (f == NULL)
     {
-        rc = ta_system("modprobe bonding");
-        if (rc != 0)
+        if (ta_system("modprobe bonding") != 0 &&
+            ta_system("/sbin/modprobe bonding") != 0)
         {
             ERROR("Failed to modprobe bonding module, is it compiled?");
             ta_rsrc_delete_lock(rsrc);
@@ -194,7 +193,7 @@ trunk_destroy(aggregation *aggr)
         ERROR("Failed to open /sys/class/net/bonding_masters");
         return TE_RC(TE_TA_UNIX, errno);
     }
-    fwrite("+", 1, 1, f);
+    fwrite("-", 1, 1, f);
     fwrite(aggr->ifname, strlen(aggr->ifname), 1, f);
     fclose(f);
 
@@ -322,6 +321,7 @@ aggregation_find(const char *name)
     {
         if (strcmp(a->name, name) == 0)
         {
+#if 0
             if (!ta_interface_is_mine(a->ifname))
             {
                 ERROR("Internal test error: aggregation interface "
@@ -330,6 +330,7 @@ aggregation_find(const char *name)
                       "direct configurator API", a->ifname);
                 return NULL;
             }
+#endif
             return a;
         }
     }
@@ -400,10 +401,17 @@ aggregation_add(unsigned int gid, const char *oid, char *value,
         free(a);
         return rc;
     }
+    a->name = strdup(aggr_name);
+    if (a->name == NULL)
+    {
+        free(a);
+        return -1;
+    }
 
     /* Insert aggregation into the linked list */
     a->next = aggregation_list_head;
-    aggregation_list_head->next = a;
+    aggregation_list_head = a;
+
     return 0;
 }
 
@@ -568,6 +576,12 @@ aggr_member_list(unsigned int gid, const char *oid, char **member_list,
     UNUSED(oid);
 
     aggregation *a = aggregation_find(aggr_name);
+    if (a == NULL)
+    {
+        ERROR("Failed to find aggregation %s", aggr_name);
+        return TE_ENOENT;
+    }
+
     return aggr_types_data[a->type].list(a, member_list);
 }
 
@@ -579,8 +593,18 @@ RCF_PCH_CFG_NODE_COLLECTION(node_aggr_member, "member",
                             aggr_member_add, aggr_member_del,
                             aggr_member_list, NULL);
 
-RCF_PCH_CFG_NODE_COLLECTION(node_aggr, "aggregation", 
-                            &node_aggr_member, NULL,
-                            aggregation_add, aggregation_del,
-                            aggregation_list, NULL);
+static rcf_pch_cfg_object node_aggr =
+    { "aggregation", 0, &node_aggr_member, NULL,
+      (rcf_ch_cfg_get)aggregation_get,
+      NULL,
+      (rcf_ch_cfg_add)aggregation_add,
+      (rcf_ch_cfg_del)aggregation_del,
+      (rcf_ch_cfg_list)aggregation_list,
+      NULL, NULL };
+      
+te_errno
+ta_unix_conf_aggr_init(void)
+{
+    return rcf_pch_add_node("/agent", &node_aggr);
+}
 
