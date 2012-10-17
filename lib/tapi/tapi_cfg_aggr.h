@@ -70,6 +70,18 @@ extern int tapi_cfg_aggr_destroy_bond(const char *ta, const char *name);
 extern int tapi_cfg_aggr_bond_enslave(const char *ta, const char *name,
                                       const char *slave_if);
 
+/**
+ * Release a slave interface from a bondN interface.
+ *
+ * @param ta        Test Agent name
+ * @param name      Name of aggregation node
+ * @param slave_if  Name of interface to be freed
+ *
+ * @return Status code
+ */
+extern int tapi_cfg_aggr_bond_free_slave(const char *ta, const char *name,
+                                         const char *slave_if);
+
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -147,8 +147,10 @@ trunk_create(aggregation *aggr)
     f = fopen("/sys/class/net/bonding_masters", "a");
     if (f == NULL)
     {
-        if (ta_system("modprobe bonding") != 0 &&
-            ta_system("/sbin/modprobe bonding") != 0)
+        if ((ta_system("modprobe -r bonding") != 0 &&
+             ta_system("/sbin/modprobe -r bonding") != 0) ||
+            (ta_system("modprobe bonding mode=802.3ad") != 0 &&
+             ta_system("/sbin/modprobe bonding mode=802.3ad") != 0))
         {
             ERROR("Failed to modprobe bonding module, is it compiled?");
             ta_rsrc_delete_lock(rsrc);

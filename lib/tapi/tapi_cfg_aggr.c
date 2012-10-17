@@ -38,6 +38,30 @@
 #include "tapi_cfg_base.h"
 #include "te_ethernet.h"
 
+#define CHECK_BOND(ta_, name_) \
+    do {                                                            \
+        int             rc_;                                        \
+        cfg_val_type    val_type_ = CVT_STRING;                     \
+        char           *aggr_type_ = NULL;                          \
+        rc_ = cfg_get_instance_fmt(                                 \
+                        &val_type_, &aggr_type_,                    \
+                        "/agent:%s/aggregation:%s",                 \
+                        ta_, name_);                                \
+        if (rc_ != 0 || aggr_type_ == NULL)                         \
+        {                                                           \
+            ERROR("Failed to obtain type of aggregation node");     \
+            return rc_;                                             \
+        }                                                           \
+        if (strcmp(aggr_type_, "802.3ad") != 0)                     \
+        {                                                           \
+            ERROR("Aggregation %s is not bond interface",           \
+                  name_);                                           \
+            free(aggr_type_);                                       \
+            return -1;                                              \
+        }                                                           \
+        free(aggr_type_);                                           \
+    } while (0)
+
 /* See the description in tapi_cfg_aggr.h */
 int
 tapi_cfg_aggr_create_bond(const char *ta, const char *name,
@@ -106,6 +130,8 @@ tapi_cfg_aggr_destroy_bond(const char *ta, const char *name)
     cfg_handle      aggr_handle = CFG_HANDLE_INVALID;
     cfg_handle      rsrc_handle = CFG_HANDLE_INVALID;
 
+    CHECK_BOND(ta, name);
+
     val_type = CVT_STRING;
     rc = cfg_get_instance_fmt(
                         &val_type, &bond_ifname,
@@ -165,6 +191,8 @@ tapi_cfg_aggr_bond_enslave(const char *ta, const char *name,
     cfg_handle     *ip_addrs = NULL;
     unsigned int    ip_addrs_num = 0;
     char            oid[CFG_OID_MAX];
+
+    CHECK_BOND(ta, name);
 
     val_type = CVT_STRING;
     rc = cfg_get_instance_fmt(
@@ -241,5 +269,26 @@ tapi_cfg_aggr_bond_enslave(const char *ta, const char *name,
     }
 
     free(bond_ifname);
+    return 0;
+}
+
+/* See the description in tapi_cfg_aggr.h */
+int
+tapi_cfg_aggr_bond_free_slave(const char *ta, const char *name,
+                              const char *slave_if)
+{
+    int             rc = 0;
+
+    CHECK_BOND(ta, name);
+
+    rc = cfg_del_instance_fmt(FALSE,
+                              "/agent:%s/aggregation:%s/member:%s",
+                              ta, name, slave_if);
+    if (rc != 0)
+    {
+        ERROR("Failed to release slave interface");
+        return rc;
+    }
+
     return 0;
 }
