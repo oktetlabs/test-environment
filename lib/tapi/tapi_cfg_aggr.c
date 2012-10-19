@@ -186,10 +186,6 @@ tapi_cfg_aggr_bond_enslave(const char *ta, const char *name,
     cfg_val_type    val_type;
     char           *bond_ifname = NULL;
     cfg_handle      slave_handle = CFG_HANDLE_INVALID;
-    uint8_t         mac_addr[ETHER_ADDR_LEN];
-    uint8_t         cmp_addr[ETHER_ADDR_LEN];
-    cfg_handle     *ip_addrs = NULL;
-    unsigned int    ip_addrs_num = 0;
     char            oid[CFG_OID_MAX];
 
     CHECK_BOND(ta, name);
@@ -221,49 +217,20 @@ tapi_cfg_aggr_bond_enslave(const char *ta, const char *name,
         return rc;
     }
 
-    snprintf(oid, CFG_OID_MAX, "/agent:%s/interface:%s", ta, 
-             bond_ifname);
-    rc = tapi_cfg_base_if_get_mac(oid, mac_addr);
-    if (rc != 0)
-    {
-        ERROR("Failed to get MAC address of bond interface");
-        free(bond_ifname);
-        return rc;
-    }
-
-    memset(cmp_addr, 0, sizeof(cmp_addr));
-    if (memcmp(cmp_addr, mac_addr, sizeof(mac_addr)) == 0)
-    {
-        ERROR("Bond interface has no MAC address assigned to it"); 
-        free(bond_ifname);
-        return -1;
-    }
-
-    rc = cfg_find_pattern_fmt(&ip_addrs_num, &ip_addrs,
-                              "/agent:%s/interface:%s/net_addr:*",
-                               ta, bond_ifname);
-    if (rc != 0)
-    {
-        ERROR("Failed to get IP addresses assigned to bond interface");
-        free(bond_ifname);
-        return rc;
-    }
-
-    if (ip_addrs_num == 0)
-    {
-        ERROR("Bond interface has no IP addresses assigned to it");
-        free(bond_ifname);
-        return -1;
-    }
-
-    free(ip_addrs);
-
     rc = cfg_add_instance_fmt(&slave_handle, CVT_NONE, NULL,
                               "/agent:%s/aggregation:%s/member:%s",
                               ta, name, slave_if);
     if (rc != 0)
     {
         ERROR("Failed to enslave interface");
+        free(bond_ifname);
+        return rc;
+    }
+
+    rc = tapi_cfg_base_if_up(ta, slave_if);
+    if (rc != 0)
+    {
+        ERROR("Failed to bring enslaved interface up");
         free(bond_ifname);
         return rc;
     }

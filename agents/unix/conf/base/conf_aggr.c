@@ -147,22 +147,10 @@ trunk_create(aggregation *aggr)
     f = fopen("/sys/class/net/bonding_masters", "a");
     if (f == NULL)
     {
-        if ((ta_system("modprobe -r bonding") != 0 &&
-             ta_system("/sbin/modprobe -r bonding") != 0) ||
-            (ta_system("modprobe bonding mode=802.3ad") != 0 &&
-             ta_system("/sbin/modprobe bonding mode=802.3ad") != 0))
-        {
-            ERROR("Failed to modprobe bonding module, is it compiled?");
-            ta_rsrc_delete_lock(rsrc);
-            return TE_RC(TE_TA_UNIX, TE_ENOSYS);
-        }
-        f = fopen("/sys/class/net/bonding_masters", "a");
-        if (f == NULL)
-        {
-            ERROR("Failed to open /sys/class/net/bonding_masters");
-            ta_rsrc_delete_lock(rsrc);
-            return TE_RC(TE_TA_UNIX, errno);
-        }
+        ERROR("Failed to open /sys/class/net/bonding_masters: "
+              "is bonding module loaded?");
+        ta_rsrc_delete_lock(rsrc);
+        return TE_RC(TE_TA_UNIX, errno);
     }
     fwrite("+", 1, 1, f);
     fwrite(aggr->ifname, strlen(aggr->ifname), 1, f);
