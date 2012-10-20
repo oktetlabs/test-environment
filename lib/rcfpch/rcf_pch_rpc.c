@@ -545,6 +545,8 @@ dispatch(void *arg)
             
             if (rpcs->timeout == 0xFFFFFFFF) /* execve() */
             {
+                rpc_transport_handle old_handle;
+
                 rpcs->sent = 0;
                 if (rpcs->tid > 0)
                 {
@@ -557,11 +559,13 @@ dispatch(void *arg)
                     }
                 }
 
+                old_handle = rpcs->handle;
                 if (connect_getpid(rpcs) != 0)
                 {
                     rpcs->dead = TRUE;
                     continue;
                 }
+                rpc_transport_close(old_handle);
             }
             
             rpcs->timeout = rpcs->sent = rpcs->last_sid = 0;
