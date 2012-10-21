@@ -1754,10 +1754,15 @@ trc_update_rule_to_xml(trc_update_rule *rule, xmlNodePtr node)
 #define ID_LEN 20
     char            id_val[ID_LEN];
     xmlNodePtr      rule_node;
+    xmlNodePtr      args_node;
+    xmlNodePtr      arg_node;
     xmlNodePtr      defaults;
     xmlNodePtr      old_res;
     xmlNodePtr      new_res;
     xmlNodePtr      confl_res;
+
+    trc_update_wilds_list_entry *wild;
+    trc_test_iter_arg           *arg;
 
     rule_node = xmlNewChild(node, NULL, BAD_CAST "rule", NULL);
     if (rule->rule_id > 0)
@@ -1768,6 +1773,39 @@ trc_update_rule_to_xml(trc_update_rule *rule, xmlNodePtr node)
 
     if (rule->type == TRC_UPDATE_RRESULT)
         xmlNewProp(rule_node, BAD_CAST "type", BAD_CAST "result");
+
+    if (rule->wilds != NULL)
+    {
+        SLIST_FOREACH(wild, rule->wilds, links)
+        {
+            args_node = xmlNewChild(rule_node, NULL,
+                                    BAD_CAST "args", NULL);
+            if (args_node == NULL)
+            {
+                ERROR("%s(): failed to create <args> node", __FUNCTION__);
+                return TE_ENOMEM;
+            }
+
+            if (wild->is_strict)
+                xmlNewProp(args_node, BAD_CAST "type",
+                           BAD_CAST "strict");
+
+            TAILQ_FOREACH(arg, &wild->args->head, links)
+            {
+                arg_node = xmlNewChild(args_node, NULL,
+                                       BAD_CAST "arg",
+                                       BAD_CAST arg->value);
+                if (arg_node == NULL)
+                {
+                    ERROR("%s(): failed to create <arg> node",
+                          __FUNCTION__);
+                    return TE_ENOMEM;
+                }
+                xmlNewProp(arg_node, BAD_CAST "name",
+                           BAD_CAST arg->name);
+            }
+        }
+    }
 
     if (rule->type == TRC_UPDATE_RRESULTS)
     {
@@ -2306,11 +2344,19 @@ trc_update_merge_result(trc_log_parse_ctx *ctx)
 static te_errno trc_update_gen_test_wilds_fss(unsigned int db_uid,
                                               trc_update_test_entry
                                                             *test_entry,
+                                              te_bool grouped,
+                                              int groups_cnt,
+                                              trc_update_args_groups
+                                                                *wildcards,
                                               uint64_t flags);
 
 /* Predeclaration of function, see description below. */
 static te_errno trc_update_generate_test_wilds(unsigned int db_uid,
                                                trc_test *test,
+                                               te_bool grouped,
+                                               int groups_cnt,
+                                               trc_update_args_groups
+                                                           *save_wildcards,
                                                uint64_t flags);
 /**
  * Simplify tag expressions for a given list of iteration results.
@@ -2551,10 +2597,10 @@ simplify_log_exprs(trc_exp_results *results,
      * Generate wildcards for fake test.
      */
     if (trc_update_gen_test_wilds_fss(
-                                0, test_entry,
+                                0, test_entry, FALSE, 0, NULL,
                                 flags | TRC_LOG_PARSE_INTERSEC_WILDS) < 0)
         trc_update_generate_test_wilds(
-                                    0, test,
+                                    0, test, FALSE, 0, NULL,
                                     flags | TRC_LOG_PARSE_INTERSEC_WILDS);
 
     trc_exp_results_free(results);
@@ -3249,6 +3295,160 @@ trc_update_apply_rules(unsigned int db_uid,
                 }
             }
         }
+    }
+
+    return 0;
+}
+
+/**
+ * Determine whether a given rule matches to a given iteration.
+ *
+ * @param rule      TRC updating rule
+ * @param iter      Test iteration
+ * @param db_uid    TRC DB UID
+ *
+ * @return @c TRUE or @c FALSE
+ */
+static te_bool
+trc_update_rule_match_iter(trc_update_rule *rule,
+                           trc_test_iter *iter,
+                           int db_uid)
+{
+    trc_exp_result              *iter_result;
+    trc_exp_result_entry        *iter_rentry;
+    te_test_verdict             *iter_verdict;
+    trc_exp_result              *rule_result;
+    trc_update_test_iter_data   *iter_data;
+
+    switch (rule->type)
+    {
+        case TRC_UPDATE_RRESULTS:
+            iter_data = trc_db_iter_get_user_data(iter, db_uid);
+            if ((rule->rule_id != 0 && iter_data->rule_id != 0 &&
+                 rule->rule_id == iter_data->rule_id) ||
+                ((rule->def_res == NULL ||
+                  trc_update_result_cmp(
+                                  (struct trc_exp_result *)
+                                  iter->exp_default,
+                                  rule->def_res) == 0) &&
+                 (rule->old_res == NULL ||
+                  trc_update_results_cmp(
+                                   (trc_exp_results *)
+                                   &iter->exp_results,
+                                   rule->old_res) == 0) &&
+                 (rule->confl_res == NULL ||
+                  trc_update_results_cmp(
+                                   &iter_data->new_results,
+                                   rule->confl_res) == 0)))
+                return TRUE;
+            break;
+
+        case TRC_UPDATE_RRESULT:
+            rule_result = SLIST_FIRST(rule->old_res);
+            if (rule_result == NULL)
+                return TRUE;
+            SLIST_FOREACH(iter_result, &iter->exp_results, links)
+                if (trc_update_result_cmp(iter_result, rule_result) == 0)
+                    return TRUE;
+          break;
+
+        case TRC_UPDATE_RRENTRY:
+            if (rule->old_re == NULL)
+                return TRUE;
+            SLIST_FOREACH(iter_result, &iter->exp_results, links)
+                TAILQ_FOREACH(iter_rentry, &iter_result->results, links)
+                    if (trc_update_rentry_cmp(iter_rentry,
+                                              rule->old_re) == 0)
+                    return TRUE;
+          break;
+
+        case TRC_UPDATE_RVERDICT:
+            SLIST_FOREACH(iter_result, &iter->exp_results, links)
+                TAILQ_FOREACH(iter_rentry, &iter_result->results, links)
+                    TAILQ_FOREACH(iter_verdict,
+                                  &iter_rentry->result.verdicts,
+                                  links)
+                        if (strcmp_null(iter_verdict->str,
+                                        rule->old_v) == 0)
+                            return TRUE;
+        break;
+
+        default:
+        break;
+    }
+
+    return FALSE;
+}
+
+/**
+ * Generate <args> tags for a rule (i.e. determine
+ * wildcards describing all the iterations the rule
+ * can be applied to).
+ *
+ * @param test_entry  TRC Update test entry
+ * @param db_uid      TRC DB UID
+ * @param rule        TRC updating rule
+ * @param flags       Flags
+ *
+ * @return Status code
+ */
+static te_errno
+trc_update_rule_gen_args(trc_update_test_entry *test_entry,
+                         int db_uid,
+                         trc_update_rule *rule,
+                         uint64_t flags)
+{
+    trc_update_args_groups          wildcards;
+    trc_update_args_group          *args_group;
+    trc_update_wilds_list_entry    *wilds_list_entry;
+    trc_test_iter                  *iter;
+    trc_update_test_iter_data      *iter_data = NULL;
+    int                             rc;
+
+    TAILQ_FOREACH(iter, &test_entry->test->iters.head, links)
+    {
+        iter_data = trc_db_iter_get_user_data(iter, db_uid);
+        if (iter_data == NULL || iter_data->to_save == FALSE)
+            continue;
+        iter_data->in_wildcard = FALSE;
+        if (trc_update_rule_match_iter(rule, iter, db_uid))
+            iter_data->results_id = 1;
+        else
+            iter_data->results_id = 2;
+    }
+
+    memset(&wildcards, 0, sizeof(wildcards));
+    SLIST_INIT(&wildcards);
+
+    rc = trc_update_gen_test_wilds_fss(db_uid, test_entry,
+                                       TRUE, 2, &wildcards, flags);
+    if (rc < 0)
+        trc_update_generate_test_wilds(db_uid, test_entry->test,
+                                       TRUE, 2, &wildcards, flags);
+
+    rule->wilds = TE_ALLOC(sizeof(*(rule->wilds)));
+    SLIST_INIT(rule->wilds);
+
+    SLIST_FOREACH(args_group, &wildcards, links)
+    {
+        if (args_group->group_id != 1)
+            continue;
+
+        wilds_list_entry = TE_ALLOC(sizeof(*wilds_list_entry));
+        wilds_list_entry->is_strict = TRUE;
+        wilds_list_entry->args = args_group->args;
+        args_group->args = NULL;
+        SLIST_INSERT_HEAD(rule->wilds, wilds_list_entry, links);
+    }
+
+    trc_update_args_groups_free(&wildcards);
+
+    TAILQ_FOREACH(iter, &test_entry->test->iters.head, links)
+    {
+        iter_data = trc_db_iter_get_user_data(iter, db_uid);
+        if (iter_data == NULL || iter_data->to_save == FALSE)
+            continue;
+        iter_data->in_wildcard = FALSE;
     }
 
     return 0;
@@ -4048,6 +4248,16 @@ trc_update_gen_rules(unsigned int db_uid,
                     }
                 }
             }
+
+            if (flags & TRC_LOG_PARSE_RULE_ARGS)
+            {
+                TAILQ_FOREACH(rule, group->rules, links)
+                {
+                    if (rule->wilds == NULL)
+                        trc_update_rule_gen_args(test1, db_uid,
+                                                 rule, flags);
+                }
+            }
         }
     }
 
@@ -4149,6 +4359,7 @@ trc_update_get_iters_args_combs(unsigned int db_uid,
 
             args_group = TE_ALLOC(sizeof(*args_group));
             args_group->args = trc_update_args_wild_dup(&iter->args);
+            args_group->group_id = results_id;
 
             SLIST_INSERT_HEAD(args_groups, args_group, links);
         }
@@ -4522,6 +4733,7 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
                     new_group->exp_default =
                         trc_exp_result_dup((struct trc_exp_result *)
                                            iter1->exp_default);
+                    new_group->group_id = args_group->group_id;
 
                     SLIST_INSERT_HEAD(&cur_comb_wilds, new_group,
                                       links);
@@ -4552,14 +4764,23 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
 /**
  * Generate wildcards for a given test.
  *
- * @param db_uid        TRC DB User ID
- * @param test          Test
+ * @param db_uid            TRC DB User ID
+ * @param test              Test
+ * @param grouped           Test iterations are grouped already
+ * @param groups_cnt        Number of groups
+ * @param save_wildcards    If not null, generated wildcards
+ *                          should be stored here without changing
+ *                          the set of test iterations
+ * @param flags             Flags
  *
  * @return Status code
  */
 static te_errno
 trc_update_generate_test_wilds(unsigned int db_uid,
                                trc_test *test,
+                               te_bool grouped,
+                               int groups_cnt,
+                               trc_update_args_groups *save_wildcards,
                                uint64_t flags)
 {
     int ids_count;
@@ -4577,7 +4798,10 @@ trc_update_generate_test_wilds(unsigned int db_uid,
     if (test->type != TRC_TEST_SCRIPT)
         return 0;
 
-    ids_count = trc_update_group_test_iters(db_uid, test);
+    if (!grouped)
+        ids_count = trc_update_group_test_iters(db_uid, test);
+    else
+        ids_count = groups_cnt;
 
     memset(&wildcards, 0, sizeof(wildcards));
     SLIST_INIT(&wildcards);
@@ -4600,7 +4824,7 @@ trc_update_generate_test_wilds(unsigned int db_uid,
     /* Delete original iterations - they will be replaced by wildcards */
     iter = TAILQ_FIRST(&test->iters.head);
 
-    if (iter != NULL)
+    if (iter != NULL && save_wildcards == NULL)
     {
         do {
             TAILQ_REMOVE(&test->iters.head, iter, links);
@@ -4617,37 +4841,42 @@ trc_update_generate_test_wilds(unsigned int db_uid,
     }
 
     /* Insert generated wildcards in TRC DB */
-    SLIST_FOREACH(args_group, &wildcards, links)
+    if (save_wildcards == NULL)
     {
-        iter = TE_ALLOC(sizeof(*iter));
-        iter->exp_default = trc_exp_result_dup(
-                                    args_group->exp_default);
-        dup_results = trc_exp_results_dup(
-                                    args_group->exp_results);
-        memcpy(&iter->exp_results, dup_results, sizeof(*dup_results));
-        free(dup_results);
-        TAILQ_INIT(&iter->args.head);
-        dup_args = trc_test_iter_args_dup(args_group->args);
-        while ((arg = TAILQ_FIRST(&dup_args->head)) != NULL)
+        SLIST_FOREACH(args_group, &wildcards, links)
         {
-            TAILQ_REMOVE(&dup_args->head, arg, links);
-            TAILQ_INSERT_TAIL(&iter->args.head, arg, links);
+            iter = TE_ALLOC(sizeof(*iter));
+            iter->exp_default = trc_exp_result_dup(
+                                        args_group->exp_default);
+            dup_results = trc_exp_results_dup(
+                                        args_group->exp_results);
+            memcpy(&iter->exp_results, dup_results, sizeof(*dup_results));
+            free(dup_results);
+            TAILQ_INIT(&iter->args.head);
+            dup_args = trc_test_iter_args_dup(args_group->args);
+            while ((arg = TAILQ_FIRST(&dup_args->head)) != NULL)
+            {
+                TAILQ_REMOVE(&dup_args->head, arg, links);
+                TAILQ_INSERT_TAIL(&iter->args.head, arg, links);
+            }
+
+            free(dup_args);
+            iter->parent = test;
+
+            if (test->filename != NULL)
+                iter->filename = strdup(test->filename);
+
+            iter_data = TE_ALLOC(sizeof(*iter_data));
+            iter_data->to_save = TRUE;
+            trc_db_iter_set_user_data(iter, db_uid, iter_data);
+
+            TAILQ_INSERT_TAIL(&test->iters.head, iter, links);
         }
-
-        free(dup_args);
-        iter->parent = test;
-
-        if (test->filename != NULL)
-            iter->filename = strdup(test->filename);
-
-        iter_data = TE_ALLOC(sizeof(*iter_data));
-        iter_data->to_save = TRUE;
-        trc_db_iter_set_user_data(iter, db_uid, iter_data);
-
-        TAILQ_INSERT_TAIL(&test->iters.head, iter, links);
+        trc_update_args_groups_free(&wildcards);
     }
+    else
+        memcpy(save_wildcards, &wildcards, sizeof(wildcards));
 
-    trc_update_args_groups_free(&wildcards);
     return 0;
 }
 
@@ -4785,6 +5014,7 @@ trc_update_gen_args_group_fss(unsigned int db_uid,
                     new_group->exp_default =
                         trc_exp_result_dup((struct trc_exp_result *)
                                            iter1->exp_default);
+                    new_group->group_id = args_group->group_id;
 
                     TAILQ_FOREACH(iter2, &test->iters.head, links)
                     {
@@ -4982,6 +5212,12 @@ trc_update_gen_args_group_fss(unsigned int db_uid,
  *
  * @param db_uid        TRC DB User ID
  * @param test_entry    TRC Update test entry
+ * @param grouped       Whether test iterations are grouped
+ *                      already or not
+ * @param groups_cnt    Number of iteration groups
+ * @param wildcards     If not null, generated wildcards
+ *                      should be stored here without changing
+ *                      the set of test iterations
  * @param flags         Flags
  *
  * @return Status code
@@ -4989,6 +5225,9 @@ trc_update_gen_args_group_fss(unsigned int db_uid,
 te_errno
 trc_update_gen_test_wilds_fss(unsigned int db_uid,
                               trc_update_test_entry *test_entry,
+                              te_bool grouped,
+                              int groups_cnt,
+                              trc_update_args_groups *wildcards,
                               uint64_t flags)
 {
     int          ids_count;
@@ -5002,6 +5241,7 @@ trc_update_gen_test_wilds_fss(unsigned int db_uid,
 
     trc_update_args_groups       args_groups;
     trc_update_args_group       *args_group;
+    trc_update_args_group       *args_group_dup;
     trc_test_iter               *iter;
     trc_update_test_iter_data   *iter_data;
     trc_exp_results             *dup_results;
@@ -5019,7 +5259,10 @@ trc_update_gen_test_wilds_fss(unsigned int db_uid,
     if (test_entry->test->type != TRC_TEST_SCRIPT)
         return 0;
 
-    ids_count = trc_update_group_test_iters(db_uid, test_entry->test);
+    if (!grouped)
+        ids_count = trc_update_group_test_iters(db_uid, test_entry->test);
+    else
+        ids_count = groups_cnt;
 
     gettimeofday(&tv_before_gen_fss, NULL);
 
@@ -5150,7 +5393,7 @@ trc_update_gen_test_wilds_fss(unsigned int db_uid,
 
     /* Delete original iterations - they will be replaced by wildcards */
     iter = TAILQ_FIRST(&test_entry->test->iters.head);
-    if (iter != NULL)
+    if (iter != NULL && wildcards == NULL)
     {
         do {
             TAILQ_REMOVE(&test_entry->test->iters.head, iter, links);
@@ -5184,32 +5427,47 @@ trc_update_gen_test_wilds_fss(unsigned int db_uid,
             while (SLIST_NEXT(args_group, links) != NULL)
                 args_group = SLIST_NEXT(args_group, links);
 
-            iter = TE_ALLOC(sizeof(*iter));
-            iter->exp_default = trc_exp_result_dup(
-                                        args_group->exp_default);
-            dup_results = trc_exp_results_dup(
-                                        args_group->exp_results);
-            memcpy(&iter->exp_results, dup_results, sizeof(*dup_results));
-            free(dup_results);
-            TAILQ_INIT(&iter->args.head);
-            dup_args = trc_test_iter_args_dup(args_group->args);
-            while ((arg = TAILQ_FIRST(&dup_args->head)) != NULL)
+            if (wildcards != NULL)
             {
-                TAILQ_REMOVE(&dup_args->head, arg, links);
-                TAILQ_INSERT_TAIL(&iter->args.head, arg, links);
+                args_group_dup = TE_ALLOC(sizeof(*args_group_dup));
+                args_group_dup->exp_results = args_group->exp_results;
+                args_group->exp_results = NULL;
+                args_group_dup->exp_default = args_group->exp_default;
+                args_group->exp_default = NULL;
+                args_group_dup->group_id = args_group->group_id;
+                SLIST_INSERT_HEAD(wildcards, args_group_dup, links);
             }
+            else
+            {
+                iter = TE_ALLOC(sizeof(*iter));
+                iter->exp_default = trc_exp_result_dup(
+                                            args_group->exp_default);
+                dup_results = trc_exp_results_dup(
+                                            args_group->exp_results);
+                memcpy(&iter->exp_results, dup_results,
+                       sizeof(*dup_results));
+                free(dup_results);
+                TAILQ_INIT(&iter->args.head);
+                dup_args = trc_test_iter_args_dup(args_group->args);
+                while ((arg = TAILQ_FIRST(&dup_args->head)) != NULL)
+                {
+                    TAILQ_REMOVE(&dup_args->head, arg, links);
+                    TAILQ_INSERT_TAIL(&iter->args.head, arg, links);
+                }
 
-            free(dup_args);
-            iter->parent = test_entry->test;
+                free(dup_args);
+                iter->parent = test_entry->test;
 
-            if (test_entry->test->filename != NULL)
-                iter->filename = strdup(test_entry->test->filename);
+                if (test_entry->test->filename != NULL)
+                    iter->filename = strdup(test_entry->test->filename);
 
-            iter_data = TE_ALLOC(sizeof(*iter_data));
-            iter_data->to_save = TRUE;
-            trc_db_iter_set_user_data(iter, db_uid, iter_data);
+                iter_data = TE_ALLOC(sizeof(*iter_data));
+                iter_data->to_save = TRUE;
+                trc_db_iter_set_user_data(iter, db_uid, iter_data);
 
-            TAILQ_INSERT_TAIL(&test_entry->test->iters.head, iter, links);
+                TAILQ_INSERT_TAIL(&test_entry->test->iters.head,
+                                  iter, links);
+            }
         }
         problem_free(&wild_prbs[i]);
     }
@@ -5247,10 +5505,11 @@ trc_update_generate_wilds_gen(unsigned int db_uid,
     {
         TAILQ_FOREACH(test_entry, &group->tests, links)
         {
-            rc = trc_update_gen_test_wilds_fss(db_uid, test_entry, flags);
+            rc = trc_update_gen_test_wilds_fss(db_uid, test_entry,
+                                               FALSE, 0, NULL, flags);
             if (rc < 0)
                 trc_update_generate_test_wilds(db_uid, test_entry->test,
-                                               flags);
+                                               FALSE, 0, NULL, flags);
         }
     }
 

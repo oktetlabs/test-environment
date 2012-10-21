@@ -133,6 +133,8 @@ enum {
                                          type @c TRC_UPDATE_RRENTRY */
     TRC_UPDATE_OPT_RVERDICT,        /**< Generate updating rules of
                                          type @c TRC_UPDATE_RVERDICT */
+    TRC_UPDATE_OPT_RULE_ARGS,       /**< Generate <args> tags for generated
+                                         rules */
     TRC_UPDATE_OPT_PATHS,           /**< Print paths of all test scripts
                                          encountered in logs */
     TRC_UPDATE_OPT_PE,              /**< Take into consideration prologues
@@ -499,6 +501,11 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
         { "rules-verdict", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_RVERDICT,
           "Create updating rules for <verdict> tags",
+          NULL },
+
+        { "rule-args", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_RULE_ARGS,
+          "Create <args> tags for updating rules",
           NULL },
 
         { "rules-confl", '\0', POPT_ARG_NONE, NULL,
@@ -874,6 +881,10 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
 
             case TRC_UPDATE_OPT_RVERDICT:
                 rtype_flags |= TRC_LOG_PARSE_RVERDICT;
+                break;
+
+            case TRC_UPDATE_OPT_RULE_ARGS:
+                ctx.flags |= TRC_LOG_PARSE_RULE_ARGS;
                 break;
 
             case TRC_UPDATE_OPT_RULES_CONFL:

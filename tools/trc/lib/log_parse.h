@@ -220,6 +220,9 @@ enum trc_log_parse_flags {
                                                     for filtering out
                                                     iterations not
                                                     appearing in it */
+    TRC_LOG_PARSE_RULE_ARGS   = (1LLU << 40),  /**< Generate <args>
+                                                    tags for generated
+                                                    rules */
 };
 
 /** All rule type flags */

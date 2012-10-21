@@ -272,6 +272,7 @@ struct trc_update_args_group {
                                         matching wildcard */
     trc_exp_result   *exp_default; /**< Default result of iterations
                                         matching wildcard */
+    int               group_id;    /**< Group ID */
 };
 
 /**
