@@ -1790,6 +1790,7 @@ trc_update_rule_to_xml(trc_update_rule *rule, xmlNodePtr node)
                 xmlNewProp(args_node, BAD_CAST "type",
                            BAD_CAST "strict");
 
+            assert(wild->args != NULL);
             TAILQ_FOREACH(arg, &wild->args->head, links)
             {
                 arg_node = xmlNewChild(args_node, NULL,
@@ -3436,6 +3437,7 @@ trc_update_rule_gen_args(trc_update_test_entry *test_entry,
 
         wilds_list_entry = TE_ALLOC(sizeof(*wilds_list_entry));
         wilds_list_entry->is_strict = TRUE;
+        assert(args_group->args != NULL);
         wilds_list_entry->args = args_group->args;
         args_group->args = NULL;
         SLIST_INSERT_HEAD(rule->wilds, wilds_list_entry, links);
@@ -5435,6 +5437,8 @@ trc_update_gen_test_wilds_fss(unsigned int db_uid,
                 args_group_dup->exp_default = args_group->exp_default;
                 args_group->exp_default = NULL;
                 args_group_dup->group_id = args_group->group_id;
+                args_group_dup->args = args_group->args;
+                args_group->args = NULL;
                 SLIST_INSERT_HEAD(wildcards, args_group_dup, links);
             }
             else
