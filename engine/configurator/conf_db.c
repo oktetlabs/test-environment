@@ -90,7 +90,7 @@ int cfg_all_inst_size;
 static int cfg_all_inst_max = 1;
 
 /** Unique sequence number of the next instance */
-unsigned int cfg_inst_seq_num = 1;
+uint16_t cfg_inst_seq_num = 1;
 
 /** Delay for configuration changes accomodation */
 uint32_t cfg_conf_delay;
