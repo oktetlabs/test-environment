@@ -96,7 +96,8 @@ rpc_signal(rcf_rpc_server *rpcs,
     TAPI_RPC_LOG(rpcs, signal, "%s, %s", "%s", signum_rpc2str(signum),
                  (handler != NULL) ? handler : "(null)",
                  res != NULL ? res : "(null)");
-    RETVAL_PTR(signal, res);
+    TAPI_RPC_OUT(signal, (res == NULL || strcmp(res, "SIG_ERR") == 0));
+    return res;
 }
 
 char *
@@ -142,7 +143,8 @@ rpc_bsd_signal(rcf_rpc_server *rpcs,
     TAPI_RPC_LOG(rpcs, bsd_signal, "%s, %s", "%s", signum_rpc2str(signum),
                  (handler != NULL) ? handler : "(null)",
                  res != NULL ? res : "(null)");
-    RETVAL_PTR(bsd_signal, res);
+    TAPI_RPC_OUT(bsd_signal, (res == NULL || strcmp(res, "SIG_ERR") == 0));
+    return res;
 }
 
 int
@@ -212,7 +214,8 @@ rpc_sysv_signal(rcf_rpc_server *rpcs,
     TAPI_RPC_LOG(rpcs, sysv_signal, "%s, %s", "%s", signum_rpc2str(signum),
                  (handler != NULL) ? handler : "(null)",
                  res != NULL ? res : "(null)");
-    RETVAL_PTR(sysv_signal, res);
+    TAPI_RPC_OUT(sysv_signal, (res == NULL || strcmp(res, "SIG_ERR") == 0));
+    return res;
 }
 
 int
