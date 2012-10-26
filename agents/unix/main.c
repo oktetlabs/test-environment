@@ -1190,7 +1190,7 @@ ta_rtn_unlink(char *arg)
 
     VERB("%s(): arg=%s rc=%d errno=%d", __FUNCTION__,
          (arg == NULL) ? "(null)" : arg, rc, errno);
-    return (rc == 0) ? 0 : errno;
+    return (rc == 0) ? 0 : TE_OS_RC(TE_TA_UNIX, errno);
 }
 
 
