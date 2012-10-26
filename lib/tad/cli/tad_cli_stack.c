@@ -206,7 +206,7 @@ define_kernel_version(cli_csap_specific_data_p spec_data)
         (ptr += strlen("version ")) != NULL &&
         sscanf(ptr, "%d.%d.", &major_ver, &minor_ver) == 2)
     {
-        if (major_ver >= 2 && minor_ver > 4)
+        if ((major_ver >= 2 && minor_ver > 4) || major_ver >= 3)
             spec_data->kernel_like_2_4 = FALSE;
     }
 
