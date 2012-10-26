@@ -266,7 +266,8 @@ try_ta_symtbl:
 /**
  * Find the pointer to function by its name in table.
  * Try to convert string to long int and cast it to the pointer
- * in the case if function is implemented as a static one.
+ * in the case if function is implemented as a static one. Use it
+ * for signal handlers only.
  *
  * @param name  function name (or pointer value converted to string)
  * @param handler returned pointer to function or NULL if error
@@ -288,11 +289,20 @@ name2handler(const char *name, void **handler)
         char *tmp;
         int   id;
 
-        id = strtol(name, &tmp, 10);
-        if (tmp == name || *tmp != '\0')
-            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        if (strcmp(name, "SIG_ERR") == 0)
+            *handler = (void *)SIG_ERR;
+        else if (strcmp(name, "SIG_DFL") == 0)
+            *handler = (void *)SIG_DFL;
+        else if (strcmp(name, "SIG_IGN") == 0)
+            *handler = (void *)SIG_IGN;
+        else
+        {
+            id = strtol(name, &tmp, 10);
+            if (tmp == name || *tmp != '\0')
+                return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-        *handler = rcf_pch_mem_get(id);
+            *handler = rcf_pch_mem_get(id);
+        }
     }
     return 0;
 }
@@ -300,7 +310,7 @@ name2handler(const char *name, void **handler)
 /**
  * Find the function name in table according to pointer to one.
  * Try to convert pointer value to string in the case if function
- * is implemented as a static one.
+ * is implemented as a static one. Use it for signal handlers only.
  *
  * @param handler  pointer to function
  *
@@ -311,7 +321,13 @@ handler2name(void *handler)
 {
     char *tmp;
 
-    if (handler == NULL)
+    if (handler == (void *)SIG_ERR)
+        tmp = strdup("SIG_ERR");
+    else if (handler == (void *)SIG_DFL)
+        tmp = strdup("SIG_DFL");
+    else if (handler == (void *)SIG_IGN)
+        tmp = strdup("SIG_IGN");
+    else if (handler == NULL)
         tmp = strdup("0");
     else if ((tmp = rcf_ch_symbol_name(handler)) != NULL)
         tmp = strdup(tmp);
@@ -372,6 +388,21 @@ _rpc_find_func_1_svc(tarpc_rpc_find_func_in  *in,
 
     out->find_result = tarpc_find_func(in->common.use_libc,
                                        in->func_name, &func);
+    return TRUE;
+}
+
+/*-------------- rpc_is_alive() --------------------------------*/
+
+bool_t
+_rpc_is_alive_1_svc(tarpc_rpc_is_alive_in  *in,
+                    tarpc_rpc_is_alive_out *out,
+                    struct svc_req         *rqstp)
+{
+    UNUSED(rqstp);
+    UNUSED(in);
+
+    memset(out, 0, sizeof(*out));
+
     return TRUE;
 }
 
@@ -2069,11 +2100,9 @@ TARPC_FUNC(signal,
 
         MAKE_CALL(old_handler = func_ret_ptr(signum, handler));
 
+        out->handler = handler2name(old_handler);
         if (old_handler != SIG_ERR)
         {
-            /* FIXME */
-            out->handler = handler2name(old_handler);
-
             /*
              * Delete signal from set of received signals when
              * signal registrar is set for the signal.
@@ -2109,10 +2138,9 @@ TARPC_FUNC(bsd_signal,
 
         MAKE_CALL(old_handler = func_ret_ptr(signum, handler));
 
+        out->handler = handler2name(old_handler);
         if (old_handler != SIG_ERR)
         {
-            /* FIXME */
-            out->handler = handler2name(old_handler);
 
             /*
              * Delete signal from set of received signals when
@@ -2149,11 +2177,9 @@ TARPC_FUNC(sysv_signal,
 
         MAKE_CALL(old_handler = func_ret_ptr(signum, handler));
 
+        out->handler = handler2name(old_handler);
         if (old_handler != SIG_ERR)
         {
-            /* FIXME */
-            out->handler = handler2name(old_handler);
-
             /*
              * Delete signal from set of received signals when
              * signal registrar is set for the signal.

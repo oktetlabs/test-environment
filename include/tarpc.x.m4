@@ -394,11 +394,15 @@ struct tarpc_rpc_find_func_out {
     tarpc_int find_result;     /**< Result returned by tarpc_find_func */
 };
 
-
 /* rpc_is_op_done() */
 
 typedef struct tarpc_void_in  tarpc_rpc_is_op_done_in;
 typedef struct tarpc_void_out tarpc_rpc_is_op_done_out;
+
+/* rpc_is_alive() */
+
+typedef struct tarpc_void_in  tarpc_rpc_is_alive_in;
+typedef struct tarpc_void_out tarpc_rpc_is_alive_out;
 
 /* setlibname() */
 
@@ -4603,6 +4607,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
 
         RPC_DEF(rpc_find_func)
         RPC_DEF(rpc_is_op_done)
+        RPC_DEF(rpc_is_alive)
         RPC_DEF(setlibname)
 
         RPC_DEF(get_sizeof)

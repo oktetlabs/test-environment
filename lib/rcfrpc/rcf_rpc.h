@@ -425,6 +425,15 @@ extern void rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
 extern te_errno rcf_rpc_server_is_op_done(rcf_rpc_server *rpcs,
                                           te_bool *done);
 
+/**
+ * Check whether RPC server is alive.
+ *
+ * @param rpcs          existing RPC server handle
+ *
+ * @return Status code
+ */
+extern te_errno rcf_rpc_server_is_alive(rcf_rpc_server *rpcs);
+
 /** Free memory allocated by rcf_rpc_call */
 static inline void
 rcf_rpc_free_result(void *out_arg, xdrproc_t out_proc)

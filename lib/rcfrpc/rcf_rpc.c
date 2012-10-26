@@ -560,7 +560,8 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
     tarpc_in_arg  *in = (tarpc_in_arg *)in_arg;
     tarpc_out_arg *out = (tarpc_out_arg *)out_arg;
     
-    te_bool op_is_done;
+    te_bool     op_is_done;
+    te_bool     is_alive;
 
     if (rpcs == NULL)
     {
@@ -574,7 +575,8 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
         return;
     }
     
-    op_is_done = strcmp(proc, "rpc_is_op_done") == 0;
+    op_is_done = (strcmp(proc, "rpc_is_op_done") == 0);
+    is_alive = (strcmp(proc, "rpc_is_alive") == 0);
 
     VERB("Calling RPC %s", proc);
         
@@ -598,7 +600,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
             return;
         }
     }
-    else 
+    else if (!is_alive)
     {
         if (rpcs->tid0 == 0)
         {
@@ -632,7 +634,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
     rpcs->last_op = rpcs->op;
     rpcs->last_use_libc = rpcs->use_libc_once;
 
-    if (!op_is_done)
+    if (!op_is_done && !is_alive)
         strcpy(rpcs->proc, proc); 
 
     rpcs->_errno = rcf_ta_call_rpc(rpcs->ta, rpcs->sid, rpcs->name, 
@@ -703,6 +705,37 @@ rcf_rpc_server_is_op_done(rcf_rpc_server *rpcs, te_bool *done)
     }
 
     *done = (out.common.done != 0);
+
+    return 0;
+}
+
+/* See description in rcf_rpc.h */
+te_errno
+rcf_rpc_server_is_alive(rcf_rpc_server *rpcs)
+{
+    tarpc_rpc_is_alive_in   in;
+    tarpc_rpc_is_alive_out  out;
+    rcf_rpc_op              old_op;
+
+    if (rpcs == NULL)
+        return TE_RC(TE_RCF, TE_EINVAL);
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    old_op = rpcs->op;
+    rpcs->op = RCF_RPC_IS_DONE;
+    rcf_rpc_call(rpcs, "rpc_is_alive", &in, &out);
+    rpcs->op = old_op;
+    
+    if (rpcs->_errno != 0)
+    {
+        ERROR("Failed to call rpc_is_alive() on the RPC server %s",
+              rpcs->name);
+        return rpcs->_errno;
+    }
+    else
+        RING("RPC server %s is alive", rpcs->name);
 
     return 0;
 }
