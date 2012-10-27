@@ -677,7 +677,7 @@ case "$host" in
        LIBS="${S_LIBS} -Wl,-Bdynamic ${D_LIBS}" ;;
 esac
 
-AC_ARG_WITH([aggr], , , [with_aggr=yes])
+AC_ARG_WITH([aggr], , [with_aggr=yes], [])
 AM_CONDITIONAL(CFG_UNIX_AGGR, test "x$with_aggr" != "x")
 if test "x$with_aggr" != "x" ; then
     EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_AGGREGATION"
