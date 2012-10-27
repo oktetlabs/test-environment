@@ -430,9 +430,9 @@ extern te_errno rcf_rpc_server_is_op_done(rcf_rpc_server *rpcs,
  *
  * @param rpcs          existing RPC server handle
  *
- * @return Status code
+ * @return @c TRUE or @c FALSE
  */
-extern te_errno rcf_rpc_server_is_alive(rcf_rpc_server *rpcs);
+extern te_bool rcf_rpc_server_is_alive(rcf_rpc_server *rpcs);
 
 /** Free memory allocated by rcf_rpc_call */
 static inline void

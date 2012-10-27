@@ -710,7 +710,7 @@ rcf_rpc_server_is_op_done(rcf_rpc_server *rpcs, te_bool *done)
 }
 
 /* See description in rcf_rpc.h */
-te_errno
+te_bool
 rcf_rpc_server_is_alive(rcf_rpc_server *rpcs)
 {
     tarpc_rpc_is_alive_in   in;
@@ -718,7 +718,7 @@ rcf_rpc_server_is_alive(rcf_rpc_server *rpcs)
     rcf_rpc_op              old_op;
 
     if (rpcs == NULL)
-        return TE_RC(TE_RCF, TE_EINVAL);
+        return FALSE;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -732,12 +732,12 @@ rcf_rpc_server_is_alive(rcf_rpc_server *rpcs)
     {
         ERROR("Failed to call rpc_is_alive() on the RPC server %s",
               rpcs->name);
-        return rpcs->_errno;
+        return FALSE;
     }
     else
         RING("RPC server %s is alive", rpcs->name);
 
-    return 0;
+    return TRUE;
 }
 
 /* See description in rcf_rpc.h */
