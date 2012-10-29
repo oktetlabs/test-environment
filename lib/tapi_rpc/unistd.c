@@ -128,7 +128,8 @@ rpc_pipe2(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "pipe2", &in, &out);
 
-    if (RPC_IS_CALL_OK(rpcs) && filedes != NULL)
+    if (RPC_IS_CALL_OK(rpcs) && filedes != NULL &&
+        rpcs->last_op != RCF_RPC_CALL)
         memcpy(filedes, out.filedes.filedes_val, sizeof(int) * 2);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(pipe2, out.retval);
