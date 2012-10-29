@@ -34,8 +34,11 @@
 #ifndef __TE_RPC_FCNTL_H__
 #define __TE_RPC_FCNTL_H__
 
-#include "te_rpc_defs.h"
+#if HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
 
+#include "te_rpc_defs.h"
 
 #ifdef __cplusplus
 extern "C" {
