@@ -1554,6 +1554,28 @@ rpc_pthread_self(rcf_rpc_server *rpcs)
     return out.retval;
 }
 
+tarpc_pid_t
+rpc_gettid(rcf_rpc_server *rpcs)
+{
+    tarpc_call_gettid_in  in;
+    tarpc_call_gettid_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(call_gettid, -1);
+    }
+
+    rcf_rpc_call(rpcs, "call_gettid", &in, &out);
+
+    TAPI_RPC_LOG(rpcs, call_gettid, "", "%d",
+                 out.retval);
+    return out.retval;
+}
+
 tarpc_uid_t
 rpc_getuid(rcf_rpc_server *rpcs)
 {

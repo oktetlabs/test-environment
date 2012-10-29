@@ -2055,6 +2055,61 @@ TARPC_FUNC(pthread_kill, {},
 }
 )
 
+/*-------------- tgkill() ------------------------------*/
+
+/**
+ * Use tgkill() system call.
+ *
+ * @param tgid      Thread GID
+ * @param tid       Thread ID
+ * @param sig       Signal to be sent
+ *
+ * @return Status code
+ */
+int
+call_tgkill(int tgid, int tid, int sig)
+{
+#ifndef SYS_tgkill
+    ERROR("tgkill() is not defined");
+    errno = ENOENT;
+    return -1;
+#else
+    return syscall(SYS_tgkill, tgid, tid, sig);
+#endif
+}
+
+TARPC_FUNC(call_tgkill, {},
+{
+    MAKE_CALL(out->retval = func(in->tgid, in->tid,
+                                 signum_rpc2h(in->sig)));
+}
+)
+
+/*-------------- gettid() ------------------------------*/
+
+/**
+ * Use gettid() system call.
+ *
+ * @return Thread ID or -1
+ */
+int
+call_gettid()
+{
+#ifndef SYS_gettid
+    ERROR("gettid() is not defined");
+    errno = ENOENT;
+    return -1;
+#else
+    return syscall(SYS_gettid);
+#endif
+}
+
+TARPC_FUNC(call_gettid, {},
+{
+    MAKE_CALL(out->retval = func_void());
+}
+)
+
 /*-------------- waitpid() --------------------------------*/
 
 TARPC_FUNC(waitpid, {},

@@ -771,6 +771,15 @@ extern pid_t rpc_getpid(rcf_rpc_server *rpcs);
 extern tarpc_pthread_t rpc_pthread_self(rcf_rpc_server *rpcs);
 
 /**
+ * Get thread ID. This is linux-specific system call.
+ *
+ * @param rpcs      RPC server handle
+ *
+ * @return 0 on success or -1 on failure
+ */
+extern int rpc_gettid(rcf_rpc_server *rpcs);
+
+/**
  * Query the real user ID on the RPC server.
  *
  * @param rpcs RPC server handle

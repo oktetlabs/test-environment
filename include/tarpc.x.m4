@@ -2767,6 +2767,23 @@ struct tarpc_pthread_kill_in {
 
 typedef struct tarpc_int_retval_out tarpc_pthread_kill_out;
 
+/* call_tgkill() */
+
+struct tarpc_call_tgkill_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int       tgid;
+    tarpc_int       tid;
+    tarpc_signum    sig;
+};
+
+typedef struct tarpc_int_retval_out tarpc_call_tgkill_out;
+
+/* call_gettid() */
+
+typedef struct tarpc_void_in tarpc_call_gettid_in;
+typedef struct tarpc_int_retval_out tarpc_call_gettid_out;
+
 /* waitpid() */
 
 struct tarpc_waitpid_in {
@@ -4722,6 +4739,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(sigaction)
         RPC_DEF(kill)
         RPC_DEF(pthread_kill)
+        RPC_DEF(call_gettid)
+        RPC_DEF(call_tgkill)
         RPC_DEF(ta_kill_death)
 
         RPC_DEF(sigset_new)

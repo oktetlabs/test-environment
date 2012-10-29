@@ -277,6 +277,40 @@ rpc_pthread_kill(rcf_rpc_server *rpcs, tarpc_pthread_t tid,
     RETVAL_INT(pthread_kill, out.retval);
 }
 
+int
+rpc_tgkill(rcf_rpc_server *rpcs, tarpc_int tgid,
+           tarpc_int tid, rpc_signum sig)
+{
+    tarpc_call_tgkill_in  in;
+    tarpc_call_tgkill_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(call_tgkill, -1);
+    }
+
+    if (sig != RPC_SIGUSR1 && sig != RPC_SIGUSR2)
+        WARN("%s(): sending to thread signal other than "
+             "RPC_SIGUSR1 and RPC_SIGUSR2 can be dangerous!",
+             __FUNCTION__);
+
+    in.sig = sig;
+    in.tgid = tgid;
+    in.tid = tid;
+
+    rcf_rpc_call(rpcs, "call_tgkill", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(call_tgkill, out.retval);
+    TAPI_RPC_LOG(rpcs, call_tgkill, "%d, %d, %s", "%d",
+                 tgid, tid, signum_rpc2str(sig),
+                 out.retval);
+    RETVAL_INT(call_tgkill, out.retval);
+}
+
 tarpc_pid_t
 rpc_waitpid(rcf_rpc_server *rpcs, tarpc_pid_t pid, rpc_wait_status *status, 
             rpc_waitpid_opts options)
