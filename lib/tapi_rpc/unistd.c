@@ -124,7 +124,7 @@ rpc_pipe2(rcf_rpc_server *rpcs,
 
     in.flags = fcntl_flags_rpc2h(flags);
     if ((int)fcntl_flags_h2rpc(in.flags) != flags)
-        in.flags = in.flags | flags;
+        in.flags = in.flags | (~fcntl_flags_h2rpc(in.flags) & flags);
 
     rcf_rpc_call(rpcs, "pipe2", &in, &out);
 
