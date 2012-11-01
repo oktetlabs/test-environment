@@ -2246,6 +2246,9 @@ ethtool_cmd2type(tarpc_ethtool_command cmd)
 #ifdef ETHTOOL_SUFO
         case ETHTOOL_SUFO:
 #endif
+#ifdef ETHTOOL_RESET
+        case ETHTOOL_RESET:
+#endif
             return TARPC_ETHTOOL_VALUE;
 
 #ifdef ETHTOOL_GPERMADDR

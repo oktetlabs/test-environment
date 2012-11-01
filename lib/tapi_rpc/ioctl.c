@@ -473,6 +473,9 @@ rpc_ioctl(rcf_rpc_server *rpcs,
 #ifdef ETHTOOL_GUFO
                 case ETHTOOL_GUFO:
 #endif
+#ifdef ETHTOOL_RESET
+                case ETHTOOL_RESET:
+#endif
                     in.access = IOCTL_RD;
                     break;
 
