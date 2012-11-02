@@ -1115,7 +1115,6 @@ rpc_getsockname_gen(rcf_rpc_server *rpcs,
         rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
         RETVAL_INT(getsockname, -1);
     }
-    rpcs->op = RCF_RPC_CALL_WAIT;
 
     in.fd = s;
     if (namelen != NULL && rpcs->op != RCF_RPC_WAIT)
@@ -1127,7 +1126,7 @@ rpc_getsockname_gen(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "getsockname", &in, &out);
 
-    if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT)
+    if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_CALL)
     {
         sockaddr_rpc2h(&out.addr, name, rnamelen,
                        NULL, namelen);
@@ -1171,7 +1170,6 @@ rpc_getpeername_gen(rcf_rpc_server *rpcs,
         rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
         RETVAL_INT(getpeername, -1);
     }
-    rpcs->op = RCF_RPC_CALL_WAIT;
 
     in.fd = s;
     if (namelen != NULL && rpcs->op != RCF_RPC_WAIT)
@@ -1183,7 +1181,7 @@ rpc_getpeername_gen(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "getpeername", &in, &out);
 
-    if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT)
+    if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_CALL)
     {
         sockaddr_rpc2h(&out.addr, name, rnamelen,
                        NULL, namelen);
