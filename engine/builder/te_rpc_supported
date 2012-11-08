@@ -50,11 +50,30 @@ cat >> rpc_supported.h <<\EOF
 
 EOF
 
+if [ "x${NM_FORMAT}" = "x" ] ; then
+    NM_FORMAT=bsd
+elif [ "x${NM_FORMAT}" != "xsysv" ] && \
+     [ "x${NM_FORMAT}" != "xbsd" ] ; then
+    echo "${NM_FORMAT} nm format is not supported"
+    exit 1
+fi
+
 for i in $* ; do
-    $NM --demangle --format=bsd --extern-only --defined-only $i | \
+if [ "x${NM_FORMAT}" = "xbsd" ] ; then
+    $NM --demangle --format=${NM_FORMAT} --extern-only \
+        --defined-only $i | \
     awk --posix '
     {                                                                 \
         if ($3 == "" || $2 != "T" || match($3, "1_svc") == 0) next ;  \
         printf "#define HAVE%s\n", $3 ;                               \
     } ' >> rpc_supported.h
+else
+    $NM --demangle --format=${NM_FORMAT} --extern-only \
+        --defined-only $i | grep ".*|.*|.*|.*|.*|.*|" | sed "s/|/ | /g" | \
+    awk --posix '
+    {                                                                   \
+        if ($1 == "" || $7 != "FUNC" || match($1, "1_svc") == 0) next ; \
+        printf "#define HAVE%s\n", $1 ;                                 \
+    } ' >> rpc_supported.h
+fi
 done

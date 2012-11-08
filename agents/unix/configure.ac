@@ -634,14 +634,24 @@ if test -n "$with_iptables"; then
     EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_IPTABLES"
 fi
 
+AC_CHECK_LIB([pcap], [pcap_open_live], [PCAP_AVAIL=yes])
+
 AC_ARG_WITH([sniffers],
             AS_HELP_STRING([--with-sniffers=yes],
                            [enable sniffers (default is NO)]),
             [], [with_sniffers=""])
 
-AM_CONDITIONAL(CFG_SNIFFERS_SUPPORT, test "$with_sniffers" = "yes")
-AM_CONDITIONAL(CFG_SNIFFERS_DUMMY, test "$with_sniffers" != "yes")
-if test "$with_sniffers" = "yes" ; then
+if test "x${PCAP_AVAIL}" != "xyes" ; then
+    if test "x$with_sniffers" = "xyes" ; then
+        with_sniffers=""
+        AC_MSG_WARN([Failed to enable sniffers because
+                     pcap library is not available])
+    fi
+fi
+
+AM_CONDITIONAL([CFG_SNIFFERS_SUPPORT], [test "x$with_sniffers" = "xyes"])
+AM_CONDITIONAL([CFG_SNIFFERS_DUMMY], [test "x$with_sniffers" != "xyes"])
+if test "x$with_sniffers" = "xyes" ; then
         EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_SNIFFERS"
 fi
 
@@ -649,6 +659,9 @@ AC_SUBST([EXTRA_CPPFLAGS])
 AC_SUBST([EXTRA_LDADD])
 
 DYNAMIC_LIBS="-ldl -lpthread -lnsl -lsendfile -lsocket"
+if test x${PCAP_AVAIL} = "xyes" ; then
+    DYNAMIC_LIBS="${DYNAMIC_LIBS} -lpcap"
+fi
 
 #if ! test "$cross_compiling" = "yes" ; then
 case "$host" in 
@@ -682,6 +695,19 @@ AM_CONDITIONAL(CFG_UNIX_AGGR, test "x$with_aggr" != "x")
 if test "x$with_aggr" != "x" ; then
     EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_AGGREGATION"
 fi
+
+#
+# On PPC64 function descriptors are used which are
+# placed in data section like variables, not in
+# text one - so we cannot distinguish functions
+# and variables with --format=bsd in nm output
+#
+if test "x${host:0:9}" = "xpowerpc64" ; then
+    NM_FORMAT=sysv
+else
+    NM_FORMAT=bsd
+fi
+AC_SUBST([NM_FORMAT])
 
 dnl end of "conf" staff
 

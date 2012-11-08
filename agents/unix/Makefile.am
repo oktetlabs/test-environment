@@ -79,7 +79,8 @@ endif
 
 symtbl.c: $(SYMTBL_OBJECTS) $(SYMTBL_LIBS) @TE_DEPENDENCIES@ \
           $(srcdir)/symtbl_funcs
-	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" \
-            empty $(srcdir)/symtbl_funcs $@ \
-                  $(SYMTBL_OBJECTS) $(SYMTBL_LIBS) @TE_DEPENDENCIES@
+	NM_FORMAT=@NM_FORMAT@ $(srcdir)/../../engine/builder/te_generate_symtbl \
+		"${NM}" \
+		empty $(srcdir)/symtbl_funcs $@ \
+		$(SYMTBL_OBJECTS) $(SYMTBL_LIBS) @TE_DEPENDENCIES@
 

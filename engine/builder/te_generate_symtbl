@@ -46,8 +46,20 @@ shift 4
 te_bs_symtbl_tmp=$RESULT.tmp
 
 rm -f $te_bs_symtbl_tmp
-$NM --demangle --format=bsd --extern-only --defined-only $* \
-    >> $te_bs_symtbl_tmp
+if [ "x${NM_FORMAT}" = "x" ] ; then
+    NM_FORMAT=bsd
+fi
+
+if [ "x${NM_FORMAT}" = "xbsd" ] ; then
+    $NM --demangle --format=${NM_FORMAT} --extern-only --defined-only $* \
+        >> $te_bs_symtbl_tmp
+elif [ "x${NM_FORMAT}" = "xsysv" ] ; then
+    $NM --demangle --format=${NM_FORMAT} --extern-only --defined-only $* \
+        | grep ".*|.*|.*|.*|.*|.*|" | sed "s/|/ | /g" >> $te_bs_symtbl_tmp
+else
+    echo "nm format ${NM_FORMAT} is not supported"
+    exit 1
+fi
 
 cat > $RESULT <<\EOF
 /*
@@ -93,17 +105,29 @@ EOF
 # global variables are stored) in position independent
 # code on x86 platform. They should be filtered out to
 # create correct symbol table for TA.
-awk --posix '
-{                                             \
-    if ($3 == "") next ;                      \
-    if ($3 == "__i686.get_pc_thunk.bx") next; \
-    if ($3 == "__i686.get_pc_thunk.cx") next; \
-    if (match($3, "@") != 0) next;            \
-    if ($2 != "T")                            \
-        printf("extern int %s;\n", $3) ;      \
-    else                                      \
-        printf("extern int %s();\n", $3);     \
-} ' $te_bs_symtbl_tmp >> $RESULT
+
+if [ "x${NM_FORMAT}" = "xbsd" ] ; then
+    var_num=3
+    type_num=2
+    type_val=T
+else
+    var_num=1
+    type_num=7
+    type_val=FUNC
+fi
+
+awk --posix "
+{                                                       \
+    if (\$$var_num == \"\") next ;                      \
+    if (\$$var_num == \"__i686.get_pc_thunk.bx\") next; \
+    if (\$$var_num == \"__i686.get_pc_thunk.cx\") next; \
+    if (match(\$$var_num, \"@\") != 0) next;            \
+    if (\$$type_num != \"$type_val\")                   \
+        printf(\"extern int %s;\n\", \$$var_num) ;      \
+    else                                                \
+        printf(\"extern int %s();\n\", \$$var_num);     \
+} " $te_bs_symtbl_tmp >> $RESULT
+
 
 if ! test ${ADD_VARS} = empty ; then
     for i in `cat ${ADD_VARS}` ; do
@@ -126,17 +150,19 @@ static struct {
 } ta_symbol_table[] = {
 EOF
 
-awk --posix '
-{                                                    \
-    if ($3 == "") next ;                             \
-    if ($3 == "__i686.get_pc_thunk.bx") next;        \
-    if ($3 == "__i686.get_pc_thunk.cx") next;        \
-    if (match($3, "@") != 0) next;                   \
-    if ($2 != "T")                                   \
-        printf("    { \"%s\", 0, &%s },\n", $3, $3); \
-    else                                             \
-        printf("    { \"%s\", 1, %s },\n", $3, $3);  \
-} ' $te_bs_symtbl_tmp >> $RESULT
+awk --posix "
+{                                                               \
+    if (\$$var_num == \"\") next ;                              \
+    if (\$$var_num == \"__i686.get_pc_thunk.bx\") next;         \
+    if (\$$var_num == \"__i686.get_pc_thunk.cx\") next;         \
+    if (match(\$$var_num, \"@\") != 0) next;                    \
+    if (\$$type_num != \"$type_val\")                           \
+        printf(\"    { \\\"%s\\\", 0, &%s },\\n\",              \
+               \$$var_num, \$$var_num);                         \
+    else                                                        \
+        printf(\"    { \\\"%s\\\", 1, %s },\\n\",               \
+               \$$var_num, \$$var_num);                         \
+} " $te_bs_symtbl_tmp >> $RESULT
 
 if ! test ${ADD_VARS} = empty ; then
     for i in `cat ${ADD_VARS}` ; do

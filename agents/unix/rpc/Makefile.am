@@ -27,6 +27,7 @@ rpc_unsupported.c: $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/include/tarpc.h \
 	$(srcdir)/../../../engine/builder/te_rpc_unsupported $< 
         
 rpc_supported.h: tarpc_server.o @TE_DEPENDENCIES@
-	$(srcdir)/../../../engine/builder/te_rpc_supported "${NM}" $^
+	NM_FORMAT=@NM_FORMAT@ $(srcdir)/../../../engine/builder/te_rpc_supported \
+		  "${NM}" $^
 
 endif
