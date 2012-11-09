@@ -906,3 +906,53 @@ rpc_sigaction(rcf_rpc_server *rpcs, rpc_signum signum,
                  out.retval);
     RETVAL_INT(sigaction, out.retval);
 }
+
+int
+rpc_sigaltstack(rcf_rpc_server *rpcs, tarpc_stack_t *ss,
+                tarpc_stack_t *oss)
+{
+    tarpc_sigaltstack_in  in;
+    tarpc_sigaltstack_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(sigaltstack, -1);
+    }
+
+    if (ss != NULL)
+    {
+        in.ss.ss_val = ss;
+        in.ss.ss_len = 1;
+    }
+    if (oss != NULL)
+    {
+        in.oss.oss_val = oss;
+        in.oss.oss_len = 1;
+    }
+
+    rcf_rpc_call(rpcs, "sigaltstack", &in, &out);
+
+    if (RPC_IS_CALL_OK(rpcs) && oss != NULL &&
+        rpcs->op != RCF_RPC_CALL)
+        *oss = *(out.oss.oss_val);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(sigaltstack, out.retval);
+    TAPI_RPC_LOG(rpcs, sigaltstack, "%p{0x%x, %s, %u}}, "
+                 "%p{0x%x, %s, %u}}", "%d",
+                 ss,
+                 (ss == NULL) ? 0 : ss->ss_sp,
+                 (ss == NULL) ? "" :
+                    sigaltstack_flags_rpc2str(ss->ss_flags),
+                 (ss == NULL) ? 0 : ss->ss_size,
+                 oss,
+                 (oss == NULL) ? 0 : oss->ss_sp,
+                 (oss == NULL) ? "" :
+                    sigaltstack_flags_rpc2str(oss->ss_flags),
+                 (oss == NULL) ? 0 : oss->ss_size,
+                 out.retval);
+    RETVAL_INT(sigaltstack, out.retval);
+}

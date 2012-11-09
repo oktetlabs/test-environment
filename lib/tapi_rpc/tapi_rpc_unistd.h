@@ -888,6 +888,15 @@ extern rpc_ptr rpc_malloc(rcf_rpc_server *rpcs, size_t size);
  */
 extern void rpc_free(rcf_rpc_server *rpcs, rpc_ptr buf);
 
+/**
+ * Get address in the TA address space by its ID.
+ *
+ * @param rpcs    RPC server handle
+ * @param id      Address ID
+ *
+ * @return  Value of address in the TA address space 
+ */
+extern uint64_t rpc_get_addr_by_id(rcf_rpc_server *rpcs, rpc_ptr id);
 
 /**
  * Allocate a buffer of specified size in the TA address space.

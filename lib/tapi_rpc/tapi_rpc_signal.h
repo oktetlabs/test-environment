@@ -180,6 +180,19 @@ extern int rpc_sigaction(rcf_rpc_server *rpcs,
                          const struct rpc_struct_sigaction *act,
                          struct rpc_struct_sigaction *oldact);
 
+/**
+ * Set and/or get signal stack context.
+ *
+ * @param rpcs      RPC server handle
+ * @param ss        New aternate signal stack or NULL
+ * @param oss       Pointer where to save information
+ *                  about current alternate signal stack
+ *                  or NULL
+ *
+ * @return 0 on success or -1 on failure
+ */
+extern int rpc_sigaltstack(rcf_rpc_server *rpcs, tarpc_stack_t *ss,
+                           tarpc_stack_t *oss);
 
 /**
  * Allocate new signal set on RPC server side.

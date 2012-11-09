@@ -34,6 +34,7 @@
 
 #include "te_rpc_defs.h"
 #include "tarpc.h"
+#include "te_errno.h"
 
 
 #ifdef __cplusplus

@@ -1476,6 +1476,39 @@ signal_registrar_siginfo(int signum, siginfo_t *siginfo, void *context)
 #undef COPY_SI_FIELD
 }
 
+#ifdef SS_ONSTACK
+/** 
+ * Address of the first variable of
+ * the signal handler (used to check whether
+ * is is really executed on alternate signal
+ * stack)
+ */
+long long unsigned int    onstack_addr = 0;
+/**
+ * Whether SS_ONSTACK flag was returned
+ * by sigaltstack() or not
+ */
+te_bool                   was_onstack = FALSE;
+
+/* See description in unix_internal.h */
+void
+signal_registrar_onstack(int signum)
+{
+    stack_t oss;
+
+    sigaddset(&rpcs_received_signals, signum);
+
+    onstack_addr = (long long unsigned int)
+                    ((uint8_t *)&oss - (uint8_t *)NULL);
+    was_onstack = FALSE;
+
+    memset(&oss, 0, sizeof(oss));
+    sigaltstack(NULL, &oss);
+    if (oss.ss_flags == SS_ONSTACK)
+        was_onstack = TRUE;
+}
+#endif
+
 /*
  * TCE support
  */

@@ -2401,6 +2401,83 @@ TARPC_FUNC(sigaction,
 }
 )
 
+/** Convert tarpc_stack_t to stack_t.
+ *
+ * @param tarpc_s   Pointer to TARPC structure
+ * @param h_s       Pointer to native structure
+ *
+ * @return @c 0 on success or @c -1
+ * */
+int
+stack_t_tarpc2h(tarpc_stack_t *tarpc_s, stack_t *h_s)
+{
+    if (tarpc_s == NULL || h_s == NULL)
+        return -1;
+
+    h_s->ss_sp = rcf_pch_mem_get(tarpc_s->ss_sp);
+    h_s->ss_flags = sigaltstack_flags_rpc2h(tarpc_s->ss_flags);
+    h_s->ss_size = tarpc_s->ss_size;
+
+    return 0;
+}
+
+/** Convert stack_t to tarpc_stack_t.
+ *
+ * @param h_s       Pointer to native structure
+ * @param tarpc_s   Pointer to TARPC structure
+ *
+ * @return @c 0 on success or @c -1
+ * */
+int
+stack_t_h2tarpc(stack_t *h_s, tarpc_stack_t *tarpc_s)
+{
+    if (tarpc_s == NULL || h_s == NULL)
+        return -1;
+
+    tarpc_s->ss_sp = rcf_pch_mem_get_id(h_s->ss_sp);
+    if (tarpc_s->ss_sp == 0 && h_s->ss_sp != NULL)
+        tarpc_s->ss_sp = RPC_UNKNOWN_ADDR;
+    tarpc_s->ss_flags = sigaltstack_flags_h2rpc(h_s->ss_flags);
+    tarpc_s->ss_size = h_s->ss_size;
+
+    return 0;
+}
+
+/*-------------- sigaltstack() -----------------------------*/
+TARPC_FUNC(sigaltstack,
+{
+    COPY_ARG(oss);
+},
+{
+    tarpc_stack_t      *out_ss = NULL;
+
+    stack_t      ss;
+    stack_t      oss;
+    stack_t     *ss_arg = NULL;
+    stack_t     *oss_arg = NULL;
+
+    memset(&ss, 0, sizeof(ss));
+    memset(&oss, 0, sizeof(ss));
+
+    if (in->ss.ss_len != 0)
+    {
+        stack_t_tarpc2h(in->ss.ss_val, &ss);
+        ss_arg = &ss;
+    }
+
+    if (out->oss.oss_len != 0)
+    {
+        out_ss = out->oss.oss_val;
+        stack_t_tarpc2h(out->oss.oss_val, &oss);
+        oss_arg = &oss;
+    }
+
+    MAKE_CALL(out->retval = func_ptr(ss_arg, oss_arg));
+
+    if (oss_arg != NULL)
+        stack_t_h2tarpc(oss_arg, out_ss);
+})
+
 /*-------------- setsockopt() ------------------------------*/
 
 #if HAVE_STRUCT_IPV6_MREQ_IPV6MR_IFINDEX
@@ -7789,6 +7866,20 @@ TARPC_FUNC(free, {},
     rcf_pch_mem_free(in->buf);
 }
 )
+
+/*------------ get_addr_by_id ---------------------------*/
+bool_t
+_get_addr_by_id_1_svc(tarpc_get_addr_by_id_in  *in,
+                      tarpc_get_addr_by_id_out *out,
+                      struct svc_req           *rqstp)
+{
+    UNUSED(rqstp);
+    out->retval =
+            (uint64_t)((uint8_t *)rcf_pch_mem_get(in->id) -
+                       (uint8_t *)NULL);
+
+    return TRUE;
+}
 
 /*-------------- memalign() ------------------------------*/
 

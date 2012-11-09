@@ -1917,6 +1917,38 @@ rpc_free(rcf_rpc_server *rpcs, rpc_ptr buf)
 }
 
 /**
+ * Get address in the TA address space by its ID.
+ *
+ * @param rpcs    RPC server handle
+ * @param id      Address ID
+ *
+ * @return  Value of address in the TA address space 
+ */
+uint64_t
+rpc_get_addr_by_id(rcf_rpc_server *rpcs, rpc_ptr id)
+{
+    tarpc_get_addr_by_id_in     in;
+    tarpc_get_addr_by_id_out    out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_RPC_PTR(get_addr_by_id, 0);
+    }
+
+    in.id = id;
+
+    rcf_rpc_call(rpcs, "get_addr_by_id", &in, &out);
+
+    TAPI_RPC_LOG(rpcs, get_addr_by_id, "%d", "%llu",
+                 id, out.retval);
+    RETVAL_PTR64(malloc, (rpc_ptr)out.retval);
+}
+
+/**
  * Allocate a buffer of specified size in the TA address space
  * aligned at a specified boundary.
  *

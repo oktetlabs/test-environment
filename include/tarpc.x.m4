@@ -927,6 +927,13 @@ struct tarpc_sigaction {
     tarpc_int       flags;       /**< Flags to be passed to sigaction */
 };
 
+/* sigaltstack() */
+struct tarpc_stack_t {
+    tarpc_ptr       ss_sp;      /**< Base address of stack */
+    tarpc_int       ss_flags;   /**< Flags */
+    tarpc_size_t    ss_size;    /**< Number of bytes in stack */
+};
+
 /* sendmsg() / recvmsg() */
 
 struct tarpc_cmsghdr {
@@ -1719,6 +1726,17 @@ struct tarpc_free_in {
 
 struct tarpc_free_out {
     struct tarpc_out_arg common;
+};
+
+/* get_addr_by_id */
+struct tarpc_get_addr_by_id_in {
+    struct tarpc_in_arg  common;
+    tarpc_ptr            id;     /**< A pointer in the TA address space */
+};
+
+struct tarpc_get_addr_by_id_out {
+    struct tarpc_out_arg common;
+    uint64_t             retval; /**< Address value */
 };
 
 /* memalign */
@@ -2742,6 +2760,24 @@ struct tarpc_sigaction_out {
 
     struct tarpc_sigaction  oldact<>;   /**< If it's non-null, the previous
                                              action will be saved */
+    tarpc_int               retval;
+};
+
+/* sigaltstack */
+
+struct tarpc_sigaltstack_in {
+    struct tarpc_in_arg     common;
+
+    struct tarpc_stack_t    ss<>;   /**< New alternate signal stack */
+    struct tarpc_stack_t    oss<>;  /**< State of existing alternate */
+};
+
+struct tarpc_sigaltstack_out {
+    struct tarpc_out_arg    common;
+
+    struct tarpc_stack_t    oss<>;  /**< State of existing alternate
+                                         signal stack saved here if
+                                         it's non-null */
     tarpc_int               retval;
 };
 
@@ -4648,6 +4684,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
 
         RPC_DEF(malloc)
         RPC_DEF(free)
+        RPC_DEF(get_addr_by_id)
         RPC_DEF(memalign)
         RPC_DEF(memcmp)
 
@@ -4737,6 +4774,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(siginterrupt)
         RPC_DEF(sysv_signal)
         RPC_DEF(sigaction)
+        RPC_DEF(sigaltstack)
         RPC_DEF(kill)
         RPC_DEF(pthread_kill)
         RPC_DEF(call_gettid)

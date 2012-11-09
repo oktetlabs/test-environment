@@ -686,6 +686,43 @@ sigaction_flags_h2rpc(unsigned int flags)
         (!!(flags & ~SA_FLAGS_ALL) * RPC_SA_UNKNOWN);
 }
 
+#define RPC_SS_FLAGS_ALL \
+    (RPC_SS_ONSTACK | RPC_SS_DISABLE)
+
+#define SS_FLAGS_ALL \
+    (SS_ONSTACK | SS_DISABLE)
+
+#define SS_FLAGS_UNKNOWN  0xFFFFFFFF
+
+/** Convert RPC sigaltstack flags to native flags */
+unsigned int
+sigaltstack_flags_rpc2h(rpc_ss_flags flags)
+{
+    if ((flags & ~RPC_SS_FLAGS_ALL) != 0)
+        return SS_FLAGS_UNKNOWN;
+    return
+#ifdef SS_ONSTACK
+        (!!(flags & RPC_SS_ONSTACK) * SS_ONSTACK) |
+#endif
+#ifdef SS_DISABLE
+        (!!(flags & RPC_SS_DISABLE) * SS_DISABLE) |
+#endif
+        0;
+}
+
+/** Convert native sigaltstack flags to RPC flags */
+rpc_ss_flags
+sigaltstack_flags_h2rpc(unsigned int flags)
+{
+    return
+#ifdef SS_ONSTACK
+        (!!(flags & SS_ONSTACK) * RPC_SS_ONSTACK) |
+#endif
+#ifdef SS_DISABLE
+        (!!(flags & SS_DISABLE) * RPC_SS_DISABLE) |
+#endif
+        (!!(flags & ~SS_FLAGS_ALL) * RPC_SS_UNKNOWN);
+}
 
 /**
  * Convert RPC sigevent structure to string.

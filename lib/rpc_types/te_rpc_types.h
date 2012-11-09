@@ -35,7 +35,8 @@
 #define __TE_RPC_TYPES_H__
 
 
-#define RPC_NULL    0
+#define RPC_NULL            0
+#define RPC_UNKNOWN_ADDR    0xFFFFFFFF
 
 /** Option length should be calculated automatically */
 #define RPC_OPTLEN_AUTO         0xFFFFFFFF

@@ -42,6 +42,8 @@
 #include "te_stdint.h"
 #include "ta_common.h"
 #include "rcf_pch_mem.h"
+#include "te_rpc_types.h"
+#include "te_rpc_types.h"
 
 /** Chunk of reallocation of identifiers array */
 #define IDS_CHUNK   128
@@ -64,6 +66,9 @@ rcf_pch_mem_alloc(void *mem)
 {
     rcf_pch_mem_id id = 0;
 
+    if (mem == NULL)
+        return 0;
+
     if (lock == NULL)
         lock = thread_mutex_create();
         
@@ -71,8 +76,17 @@ rcf_pch_mem_alloc(void *mem)
     
     if (ids_len == used)
     {
-        void **tmp = realloc(ids, (ids_len + IDS_CHUNK) * sizeof(void *));
+        void **tmp = NULL;
         
+        if (ids_len + IDS_CHUNK >= RPC_UNKNOWN_ADDR)
+        {
+            fprintf(stderr, "Too many memory addresses have id now!");
+            thread_mutex_unlock(lock);
+            return 0;
+        }
+
+        tmp = realloc(ids, (ids_len + IDS_CHUNK) * sizeof(void *));
+
         if (tmp == NULL)
         {
             fprintf(stderr, "Out of memory!");
@@ -184,6 +198,8 @@ rcf_pch_mem_get_id(void *mem)
 {
     rcf_pch_mem_id id;
 
+    if (mem == NULL)
+        return 0;
     if (lock == NULL)
         lock = thread_mutex_create();
         

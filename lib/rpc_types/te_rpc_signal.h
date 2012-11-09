@@ -233,6 +233,31 @@ extern unsigned int sigaction_flags_rpc2h(unsigned int flags);
 /** Convert native sigaction flags to RPC flags */
 extern unsigned int sigaction_flags_h2rpc(unsigned int flags);
 
+/**
+ * TA-independent sigaltstack() flags.
+ */
+typedef enum rpc_ss_flags {
+    RPC_SS_ONSTACK  = 1,    /**< The process is executing on the
+                                 alternate signal stack */
+    RPC_SS_DISABLE  = 2,    /**< The alternate signal stack is
+                                 disabled */
+    RPC_SS_UNKNOWN  = 4,    /**< Unknown flag */
+} rpc_ss_flags;
+
+#define SS_FLAGS_MAPPING_LIST \
+    RPC_BIT_MAP_ENTRY(SS_ONSTACK), \
+    RPC_BIT_MAP_ENTRY(SS_DISABLE)
+
+/**
+ * sigaltstack_flags_rpc2str()
+ */
+RPCBITMAP2STR(sigaltstack_flags, SS_FLAGS_MAPPING_LIST)
+
+/** Convert RPC sigaltstack flags to native flags */
+extern unsigned int sigaltstack_flags_rpc2h(rpc_ss_flags flags);
+
+/** Convert native sigaltstack flags to RPC flags */
+extern rpc_ss_flags sigaltstack_flags_h2rpc(unsigned int flags);
 
 /**
  * Convert RPC sigevent structure to string.
