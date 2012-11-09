@@ -1156,15 +1156,36 @@ TARPC_FUNC(recvfrom,
     COPY_ARG_ADDR(from);
 },
 {
+    te_bool          free_name = FALSE;
     struct sockaddr *addr_ptr;
-    socklen_t addr_len;
+    socklen_t        addr_len;
 
     PREPARE_ADDR(from, out->from, out->fromlen.fromlen_len == 0 ? 0 :
                                         *out->fromlen.fromlen_val);
     if (out->from.raw.raw_len > sizeof(struct sockaddr_storage))
     {
-        addr_ptr = (struct sockaddr *)(out->from.raw.raw_val);
+        /*
+         * Do not just assign - sockaddr_output_h2rpc()
+         * converts RAW address only if it was changed by the
+         * function.
+         */
         addr_len = out->from.raw.raw_len;
+        if (addr_len > 0 &&
+            out->from.raw.raw_val != NULL)
+        {
+            addr_ptr = calloc(1, addr_len);
+            if (addr_ptr == NULL)
+            {
+                ERROR("%s(): Failed to allocate memory for an address",
+                      __FUNCTION__);
+                out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+                goto finish;
+            }
+            free_name = TRUE;
+            memcpy(addr_ptr, out->from.raw.raw_val, addr_len);
+        }
+        else
+            addr_ptr = (struct sockaddr *)out->from.raw.raw_val;
     }
     else
     {
@@ -1183,6 +1204,10 @@ TARPC_FUNC(recvfrom,
                           out->fromlen.fromlen_len == 0 ? 0 :
                               *(out->fromlen.fromlen_val),
                           &(out->from));
+
+finish:
+    if (free_name)
+        free(addr_ptr);
 }
 )
 
@@ -3862,6 +3887,7 @@ TARPC_FUNC(recvmsg,
 
     unsigned int  i;
     struct msghdr msg;
+    te_bool       free_name = FALSE;
 
     memset(iovec_arr, 0, sizeof(iovec_arr));
     memset(&msg, 0, sizeof(msg));
@@ -3877,12 +3903,31 @@ TARPC_FUNC(recvmsg,
 
         PREPARE_ADDR(name, rpc_msg->msg_name, rpc_msg->msg_namelen);
         
-        if (rpc_msg->msg_namelen < sizeof(struct sockaddr))
-        {
+        if (rpc_msg->msg_namelen <= sizeof(struct sockaddr_storage))
             msg.msg_name = name;
-        }
         else
-            msg.msg_name = rpc_msg->msg_name.raw.raw_val;
+        {
+            /*
+             * Do not just assign - sockaddr_output_h2rpc()
+             * converts RAW address only if it was changed by the
+             * function.
+             */
+            if (rpc_msg->msg_name.raw.raw_len > 0 &&
+                rpc_msg->msg_name.raw.raw_val != NULL)
+            {
+                msg.msg_name = calloc(1, rpc_msg->msg_name.raw.raw_len);
+                if (msg.msg_name == NULL)
+                {
+                    out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+                    goto finish;
+                }
+                free_name = TRUE;
+                memcpy(msg.msg_name, rpc_msg->msg_name.raw.raw_val,
+                       rpc_msg->msg_name.raw.raw_len);
+            }
+            else
+                msg.msg_name = rpc_msg->msg_name.raw.raw_val;
+        }
         msg.msg_namelen = rpc_msg->msg_namelen;
 
         msg.msg_iovlen = rpc_msg->msg_iovlen;
@@ -3946,10 +3991,14 @@ TARPC_FUNC(recvmsg,
         VERB("recvmsg(): out msg=%s", msghdr2str(&msg));
 
         rpc_msg->msg_flags = send_recv_flags_h2rpc(msg.msg_flags);
-        if (rpc_msg->msg_namelen < sizeof(struct sockaddr))
+        if (rpc_msg->msg_namelen <= sizeof(struct sockaddr_storage))
             sockaddr_output_h2rpc(msg.msg_name, namelen,
                                   rpc_msg->msg_name.raw.raw_len,
                                   &(rpc_msg->msg_name));
+        else
+            RING("Address length %d is bigger than size %d of "
+                 "sockaddr_storage structure",
+                 rpc_msg->msg_namelen, sizeof(struct sockaddr_storage));
         rpc_msg->msg_namelen = msg.msg_namelen;
 
         if (rpc_msg->msg_iov.msg_iov_val != NULL)
@@ -4015,6 +4064,8 @@ TARPC_FUNC(recvmsg,
         }
     }
     finish:
+    if (free_name)
+        free(msg.msg_name);
     free(msg.msg_control);
 }
 )
@@ -8525,11 +8576,14 @@ TARPC_FUNC(recvmmsg_alt,
 {
     struct iovec        iovec_arr[RCF_RPC_MAX_MSGHDR][RCF_RPC_MAX_IOVEC];
     struct mmsghdr_alt  mmsg[RCF_RPC_MAX_MSGHDR];
+    te_bool             free_name[RCF_RPC_MAX_MSGHDR];
 
     unsigned int  i;
     unsigned int  j;
     struct timespec  tv;
     struct timespec *ptv = NULL;
+
+    memset(free_name, 0, sizeof(free_name));
 
     if (in->timeout.timeout_len > 0)
     {
@@ -8558,6 +8612,7 @@ TARPC_FUNC(recvmmsg_alt,
 
         for (j = 0; j < out->mmsg.mmsg_len; j++)
         {
+            free_name[j] = FALSE;
             mmsg[j].msg_len = out->mmsg.mmsg_val[j].msg_len;
             msg = &mmsg[j].msg_hdr;
             rpc_msg = &(out->mmsg.mmsg_val[j].msg_hdr);
@@ -8581,7 +8636,24 @@ TARPC_FUNC(recvmmsg_alt,
             if (rpc_msg->msg_namelen < sizeof(struct sockaddr))
                 msg->msg_name = name[j];
             else
-                msg->msg_name = rpc_msg->msg_name.raw.raw_val;
+            {
+                if (rpc_msg->msg_name.raw.raw_len > 0 &&
+                    rpc_msg->msg_name.raw.raw_val != NULL)
+                {
+                    msg->msg_name = calloc(1,
+                                           rpc_msg->msg_name.raw.raw_len);
+                    if (msg->msg_name == NULL)
+                    {
+                        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+                        goto finish;
+                    }
+                    free_name[j] = TRUE;
+                    memcpy(msg->msg_name, rpc_msg->msg_name.raw.raw_val,
+                           rpc_msg->msg_name.raw.raw_len);
+                }
+                else
+                    msg->msg_name = rpc_msg->msg_name.raw.raw_val;
+            }
             msg->msg_namelen = rpc_msg->msg_namelen;
 
             msg->msg_iovlen = rpc_msg->msg_iovlen;
@@ -8728,7 +8800,11 @@ TARPC_FUNC(recvmmsg_alt,
     }
     finish:
     for (j = 0; j < out->mmsg.mmsg_len; j++)
+    {
         free(mmsg[j].msg_hdr.msg_control);
+        if (free_name[j])
+            free(mmsg[j].msg_hdr.msg_name);
+    }
 }
 )
 
