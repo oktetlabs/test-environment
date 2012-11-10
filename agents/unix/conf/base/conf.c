@@ -3136,6 +3136,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
 
     sa_family_t     family;
     gen_ip_address  ip_addr;
+    struct in6_addr zero_ip6_addr;
     te_errno        rc;
 
     UNUSED(gid);
@@ -3146,12 +3147,20 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
 
     family = str_addr_family(addr);
 
+    memset(&zero_ip6_addr, 0, sizeof(zero_ip6_addr));
+
     /* Validate address to be added */
     if (inet_pton(family, addr, &ip_addr) <= 0 ||
-        ip_addr.ip4_addr.s_addr == 0 ||
-        IN_CLASSD(ip_addr.ip4_addr.s_addr) ||
-        IN_EXPERIMENTAL(ip_addr.ip4_addr.s_addr))
+        (family == AF_INET && ip_addr.ip4_addr.s_addr == 0) ||
+        (family == AF_INET6 && memcmp(&ip_addr.ip6_addr,
+                                      &zero_ip6_addr,
+                                      sizeof(zero_ip6_addr)) == 0) ||
+        (family == AF_INET &&
+         (IN_CLASSD(ip_addr.ip4_addr.s_addr) ||
+          IN_EXPERIMENTAL(ip_addr.ip4_addr.s_addr))))
     {
+        ERROR("%s(): Trying to add incorrect address %s",
+              __FUNCTION__, addr);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
