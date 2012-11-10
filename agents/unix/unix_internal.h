@@ -240,14 +240,6 @@ extern void signal_registrar_siginfo(int signum, siginfo_t *siginfo,
                                      void *context);
 
 /**
- * Special signal handler which registers signals
- * and checks sigaltstack() return value.
- * 
- * @param signum    received signal
- */
-extern void signal_registrar_onstack(int signum);
-
-/**
  * waitpid() analogue, with the same parameters/return value.
  * Only WNOHANG option is supported for now.
  * Process groups are not supported for now.
