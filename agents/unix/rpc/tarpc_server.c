@@ -3996,9 +3996,16 @@ TARPC_FUNC(recvmsg,
                                   rpc_msg->msg_name.raw.raw_len,
                                   &(rpc_msg->msg_name));
         else
+        {
             RING("Address length %d is bigger than size %d of "
                  "sockaddr_storage structure",
                  rpc_msg->msg_namelen, sizeof(struct sockaddr_storage));
+            if (rpc_msg->msg_name.raw.raw_val != NULL &&
+                msg.msg_name != NULL)
+                memcpy(rpc_msg->msg_name.raw.raw_val, msg.msg_name,
+                       rpc_msg->msg_name.raw.raw_len < msg.msg_namelen ?
+                        rpc_msg->msg_name.raw.raw_len : msg.msg_namelen);
+        }
         rpc_msg->msg_namelen = msg.msg_namelen;
 
         if (rpc_msg->msg_iov.msg_iov_val != NULL)
@@ -8733,6 +8740,17 @@ TARPC_FUNC(recvmmsg_alt,
                 sockaddr_output_h2rpc(msg->msg_name, name_len[j],
                                       rpc_msg->msg_name.raw.raw_len,
                                       &(rpc_msg->msg_name));
+            else
+            {
+                if (msg->msg_name != NULL &&
+                    rpc_msg->msg_name.raw.raw_val != NULL)
+                    memcpy(rpc_msg->msg_name.raw.raw_val, msg->msg_name,
+                           rpc_msg->msg_name.raw.raw_len <
+                                                msg->msg_namelen ?
+                                rpc_msg->msg_name.raw.raw_len :
+                                msg->msg_namelen);
+            }
+
             rpc_msg->msg_namelen = msg->msg_namelen;
 
             if (rpc_msg->msg_iov.msg_iov_val != NULL)
