@@ -1509,7 +1509,7 @@ rpc_create_child_process_socket(const char *method,
  * @param answer     answer location
  * @param rpcs       RPC server handle
  * @param s          socket to be checked
- * @param timeout    timeout in seconds
+ * @param timeout    timeout in milliseconds
  * @param type       type of checking: "READ" or "WRITE"
  *
  * @return status code

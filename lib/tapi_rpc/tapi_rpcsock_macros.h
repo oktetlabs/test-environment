@@ -236,7 +236,6 @@
  */
 #define CLEANUP_RPC_CLOSE(rpcs_, sockd_) \
     do {                                                            \
-        rpc_stat        buf;                                        \
         if ((sockd_) >= 0 && (rpcs_) != NULL)                       \
         {                                                           \
             RPC_AWAIT_IUT_ERROR(rpcs_);                             \
@@ -330,7 +329,7 @@
  *                   (it should be of type 'te_bool')
  * @param rpcs_      RPC server handle
  * @param sockd_     Socket to be checked on readabilty
- * @param timeout_   timeout in seconds
+ * @param timeout_   timeout in milliseconds
  *
  * @note In case of failure it calls TEST_FAIL macro, otherwise it
  * gets back just after the checking
@@ -338,7 +337,7 @@
 #define GET_READABILITY(answer_, rpcs_, sockd_, timeout_) \
     do {                                                                 \
         if (tapi_rpc_get_rw_ability(&(answer_), rpcs_, sockd_, timeout_, \
-                               "READ") != 0)                             \
+                                    "READ") != 0)                        \
             TEST_STOP;                                                   \
     } while (0)
 
@@ -349,7 +348,7 @@
  *                   (it should be of type 'te_bool')
  * @param rpcs_      RPC server handle
  * @param sockd_     Socket to be checked on writability
- * @param timeout_   timeout in seconds
+ * @param timeout_   timeout in milliseconds
  *
  * @note In case of failure it calls TEST_FAIL macro, otherwise it
  * gets back just after the checking
