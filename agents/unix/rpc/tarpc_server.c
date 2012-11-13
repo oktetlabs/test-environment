@@ -960,7 +960,10 @@ check_port_is_free(uint16_t port)
     addr.sin_port = htons(port);
     rc = bind(fd, SA(&addr), sizeof(addr));
     if (rc != 0)
+    {
+        close(fd);
         return FALSE;
+    }
 
     close(fd);
     fd = socket(PF_INET, SOCK_DGRAM, 0);
@@ -972,7 +975,10 @@ check_port_is_free(uint16_t port)
 
     rc = bind(fd, SA(&addr), sizeof(addr));
     if (rc != 0)
+    {
+        close(fd);
         return FALSE;
+    }
     close(fd);
 
     return TRUE;
