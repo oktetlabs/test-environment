@@ -3993,7 +3993,7 @@ TARPC_FUNC(recvmsg,
         rpc_msg->msg_flags = send_recv_flags_h2rpc(msg.msg_flags);
         if (rpc_msg->msg_namelen <= sizeof(struct sockaddr_storage))
             sockaddr_output_h2rpc(msg.msg_name, namelen,
-                                  rpc_msg->msg_name.raw.raw_len,
+                                  msg.msg_namelen,
                                   &(rpc_msg->msg_name));
         else
         {
@@ -8738,7 +8738,7 @@ TARPC_FUNC(recvmmsg_alt,
             rpc_msg->msg_flags = send_recv_flags_h2rpc(msg->msg_flags);
             if (rpc_msg->msg_namelen < sizeof(struct sockaddr))
                 sockaddr_output_h2rpc(msg->msg_name, name_len[j],
-                                      rpc_msg->msg_name.raw.raw_len,
+                                      msg->msg_namelen,
                                       &(rpc_msg->msg_name));
             else
             {

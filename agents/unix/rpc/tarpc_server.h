@@ -443,7 +443,7 @@ check_args(checked_arg *list)
  * @param _name         Where to place converted value handle
  * @param _value        Value to be converted
  * @param _wlen         Visible len (all beyond this len should remain
- *                      unchanged after function call.
+ *                      unchanged after function call).
  * @param _is_local     Whether local variable or dynamically allocated
  *                      memory should be used to store converted value
  * @param _do_register  If @c TRUE, register argument in the list
