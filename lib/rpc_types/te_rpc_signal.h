@@ -185,33 +185,38 @@ extern int sighow_rpc2h(rpc_sighow how);
 typedef enum rpc_sa_flags {
     RPC_SA_NOCLDSTOP  = 1,     /**< Don't receive notification when
                                     child process stop */
-    RPC_SA_RESETHAND  = 2,     /**< Restore the signal action to the
-                                    default state once the signal handler
-                                    has been called */
-    RPC_SA_ONESHOT    = 2,     /**< Alias of RPC_SA_RESETHAND */
-    RPC_SA_ONSTACK    = 4,     /**< Call the signal handler on an alternate
+    RPC_SA_NOCLDWAIT  = 2,     /**< Don't transform children into zombies
+                                    when they terminate */
+    RPC_SA_SIGINFO    = 4,     /**< In this case, sa_sigaction() should be
+                                    set instead of sa_handler */
+    RPC_SA_ONSTACK    = 8,     /**< Call the signal handler on an alternate
                                     signal  stack */
-    RPC_SA_RESTART    = 8,     /**< Make certain system calls restartable
+    RPC_SA_RESTART    = 0x10,  /**< Make certain system calls restartable
                                     across signals */
-    RPC_SA_NODEFER    = 0x10,  /**< Do not prevent the signal from being
+    RPC_SA_NODEFER    = 0x20,  /**< Do not prevent the signal from being
                                     received from within its own signal
                                     handler */
-    RPC_SA_NOMASK     = 0x10,  /**< Alias of RPC_SA_NODEFER */
-    RPC_SA_SIGINFO    = 0x20,  /**< In this case, sa_sigaction() should be
-                                    set instead of sa_handler */
-    RPC_SA_RESTORER   = 0x40,   /** < element is obsolete and
-                                     should not be used
-                                     (but Linux uses yet!) */
-    RPC_SA_UNKNOWN    = 0x80   /**< Incorrect flag */
+    RPC_SA_RESETHAND  = 0x40,  /**< Restore the signal action to the
+                                    default state once the signal handler
+                                    has been called */
+    RPC_SA_NOMASK     = 0x20,  /**< Alias of RPC_SA_NODEFER */
+    RPC_SA_ONESHOT    = 0x40,  /**< Alias of RPC_SA_RESETHAND */
+    RPC_SA_STACK      = 8,     /**< Alias of RPC_SA_ONSTACK */
+    RPC_SA_RESTORER   = 0x80,  /**< element is obsolete and
+                                    should not be used
+                                    (but Linux uses yet!) */
+    RPC_SA_INTERRUPT  = 0x100, /**< Historical, deprecated */
+    RPC_SA_UNKNOWN    = 0x200  /**< Incorrect flag */
 } rpc_sa_flags;
 
 #define RPC_SA_FLAGS_ALL \
-    (RPC_SA_NOCLDSTOP | RPC_SA_ONESHOT | RPC_SA_RESETHAND |     \
-     RPC_SA_ONSTACK | RPC_SA_RESTART | RPC_SA_NOMASK |          \
-     RPC_SA_NODEFER | RPC_SA_SIGINFO | RPC_SA_RESTORER)
+    (RPC_SA_NOCLDSTOP | RPC_SA_NOCLDWAIT | RPC_SA_ONESHOT | \
+     RPC_SA_RESETHAND | RPC_SA_ONSTACK | RPC_SA_RESTART | RPC_SA_NOMASK | \
+     RPC_SA_NODEFER | RPC_SA_SIGINFO | RPC_SA_RESTORER | RPC_SA_INTERRUPT)
 
 #define SA_FLAGS_MAPPING_LIST \
     RPC_BIT_MAP_ENTRY(SA_NOCLDSTOP), \
+    RPC_BIT_MAP_ENTRY(SA_NOCLDWAIT), \
     RPC_BIT_MAP_ENTRY(SA_RESETHAND), \
     RPC_BIT_MAP_ENTRY(SA_ONESHOT),   \
     RPC_BIT_MAP_ENTRY(SA_ONSTACK),   \
@@ -220,6 +225,7 @@ typedef enum rpc_sa_flags {
     RPC_BIT_MAP_ENTRY(SA_NOMASK),    \
     RPC_BIT_MAP_ENTRY(SA_SIGINFO),   \
     RPC_BIT_MAP_ENTRY(SA_RESTORER),  \
+    RPC_BIT_MAP_ENTRY(SA_INTERRUPT), \
     RPC_BIT_MAP_ENTRY(SA_UNKNOWN)
 
 /**

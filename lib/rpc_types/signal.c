@@ -555,6 +555,13 @@ sighow_rpc2h(rpc_sighow how)
 #define SA_NOCLDSTOP      0
 #endif
 
+#ifdef SA_NOCLDWAIT
+#define HAVE_SA_NOCLDWAIT 1
+#else
+#define HAVE_SA_NOCLDWAIT 0
+#define SA_NOCLDWAIT      0
+#endif
+
 #ifdef SA_ONESHOT
 #define HAVE_SA_ONESHOT   1
 #else
@@ -604,11 +611,17 @@ sighow_rpc2h(rpc_sighow how)
 #define SA_SIGINFO        0
 #endif
 
+#ifdef SA_INTERRUPT
+#define HAVE_SA_INTERRUPT   1
+#else
+#define HAVE_SA_INTERRUPT   0
+#define SA_INTERRUPT        0
+#endif
 
 #define SA_FLAGS_ALL \
-    (SA_NOCLDSTOP | SA_ONESHOT | SA_RESETHAND |  \
-     SA_ONSTACK | SA_RESTART | SA_NOMASK |       \
-     SA_NODEFER | SA_SIGINFO | SA_RESTORER)
+    (SA_NOCLDSTOP | SA_NOCLDWAIT | SA_ONESHOT | \
+     SA_RESETHAND |  SA_ONSTACK | SA_RESTART | \
+     SA_NOMASK | SA_NODEFER | SA_SIGINFO | SA_RESTORER | SA_INTERRUPT)
 
 
 #define SA_FLAGS_UNKNOWN  0xFFFFFFFF
@@ -623,6 +636,9 @@ sigaction_flags_rpc2h(unsigned int flags)
     return
 #ifdef SA_NOCLDSTOP
         (!!(flags & RPC_SA_NOCLDSTOP) * SA_NOCLDSTOP) |
+#endif
+#ifdef SA_NOCLDWAIT
+        (!!(flags & RPC_SA_NOCLDWAIT) * SA_NOCLDWAIT) |
 #endif
 #ifdef SA_ONESHOT
         (!!(flags & RPC_SA_ONESHOT) * SA_ONESHOT) |
@@ -648,6 +664,9 @@ sigaction_flags_rpc2h(unsigned int flags)
 #ifdef SA_RESTORER
         (!!(flags & RPC_SA_RESTORER) * SA_RESTORER) |
 #endif
+#ifdef SA_INTERRUPT
+        (!!(flags & RPC_SA_INTERRUPT) * SA_INTERRUPT) |
+#endif
         0;
 }
 
@@ -658,6 +677,9 @@ sigaction_flags_h2rpc(unsigned int flags)
     return
 #ifdef SA_NOCLDSTOP
         (!!(flags & SA_NOCLDSTOP) * RPC_SA_NOCLDSTOP) |
+#endif
+#ifdef SA_NOCLDWAIT
+        (!!(flags & SA_NOCLDWAIT) * RPC_SA_NOCLDWAIT) |
 #endif
 #ifdef SA_ONESHOT
         (!!(flags & SA_ONESHOT) * RPC_SA_ONESHOT) |
@@ -683,11 +705,22 @@ sigaction_flags_h2rpc(unsigned int flags)
 #ifdef SA_RESTORER
         (!!(flags & SA_RESTORER) * RPC_SA_RESTORER) |
 #endif
+#ifdef SA_INTERRUPT
+        (!!(flags & SA_INTERRUPT) * RPC_SA_INTERRUPT) |
+#endif
         (!!(flags & ~SA_FLAGS_ALL) * RPC_SA_UNKNOWN);
 }
 
 #define RPC_SS_FLAGS_ALL \
     (RPC_SS_ONSTACK | RPC_SS_DISABLE)
+
+#ifndef SS_ONSTACK
+#define SS_ONSTACK 0
+#endif
+
+#ifndef SS_DISABLE
+#define SS_DISABLE 0
+#endif
 
 #define SS_FLAGS_ALL \
     (SS_ONSTACK | SS_DISABLE)
