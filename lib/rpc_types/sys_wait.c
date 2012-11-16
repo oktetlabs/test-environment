@@ -49,7 +49,11 @@ int
 waitpid_opts_rpc2h(rpc_waitpid_opts opts)
 {
     return (!!(opts & RPC_WNOHANG) * WNOHANG) |
-           (!!(opts & RPC_WUNTRACED) * WUNTRACED);
+           (!!(opts & RPC_WUNTRACED) * WUNTRACED) |
+#ifdef WCONTINUED
+           (!!(opts & RPC_WCONTINUED) * WCONTINUED) |
+#endif
+           0;
 }
 
 
@@ -61,6 +65,7 @@ wait_status_flag_rpc2str(rpc_wait_status_flag flag)
         flag == RPC_WAIT_STATUS_EXITED ? "EXITED" :
         flag == RPC_WAIT_STATUS_SIGNALED ? "SIGNALED" :
         flag == RPC_WAIT_STATUS_STOPPED ? "STOPPED" :
+        flag == RPC_WAIT_STATUS_RESUMED ? "RESUMED" :
         flag == RPC_WAIT_STATUS_CORED ? "CORED" : "UNKNOWN";
 }
 
@@ -90,6 +95,10 @@ wait_status_h2rpc(int st)
         ret.flag = RPC_WAIT_STATUS_STOPPED;
         ret.value = signum_h2rpc(WSTOPSIG(st));
     }
+#ifdef WIFCONTINUED
+    else if (WIFCONTINUED(st))
+        ret.flag = RPC_WAIT_STATUS_RESUMED;
+#endif
 
     return ret;
 }

@@ -45,9 +45,12 @@ extern "C" {
  * TA-independent waitpid options.
  */
 typedef enum rpc_waitpid_opts {
-    RPC_WNOHANG   = 0x1, /**< return immediately if no child has exited */
-    RPC_WUNTRACED = 0x2, /**< to also return for children which are 
-                              stopped and not traced */
+    RPC_WNOHANG    = 0x1, /**< return immediately if no child has exited */
+    RPC_WUNTRACED  = 0x2, /**< also return for children which are 
+                               stopped and not traced */
+    RPC_WCONTINUED = 0x4, /**< also return for children which are 
+                               resumed by SIGCONT */
+    RPC_WSYSTEM    = 0x8, /**< Call waitpid() not using ta_waitpid() */
 } rpc_waitpid_opts;
 
 /** Convert RPC waitpid options to native options */
@@ -61,6 +64,7 @@ typedef enum rpc_wait_status_flag {
     RPC_WAIT_STATUS_EXITED,
     RPC_WAIT_STATUS_SIGNALED,
     RPC_WAIT_STATUS_STOPPED,
+    RPC_WAIT_STATUS_RESUMED,
     RPC_WAIT_STATUS_CORED,
     RPC_WAIT_STATUS_UNKNOWN
 } rpc_wait_status_flag;

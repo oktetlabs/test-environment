@@ -2148,7 +2148,8 @@ TARPC_FUNC(waitpid, {},
     int             st;
     rpc_wait_status r_st;
 
-    func = (api_func)ta_waitpid;
+    if (!(in->options & RPC_WSYSTEM))
+        func = (api_func)ta_waitpid;
     MAKE_CALL(out->pid = func(in->pid, &st,
                               waitpid_opts_rpc2h(in->options)));
     r_st = wait_status_h2rpc(st);
