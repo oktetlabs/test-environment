@@ -295,6 +295,8 @@ name2handler(const char *name, void **handler)
             *handler = (void *)SIG_DFL;
         else if (strcmp(name, "SIG_IGN") == 0)
             *handler = (void *)SIG_IGN;
+        else if (strcmp(name, "NULL") == 0)
+            *handler = NULL;
         else
         {
             id = strtol(name, &tmp, 10);
@@ -328,7 +330,7 @@ handler2name(void *handler)
     else if (handler == (void *)SIG_IGN)
         tmp = strdup("SIG_IGN");
     else if (handler == NULL)
-        tmp = strdup("0");
+        tmp = strdup("NULL");
     else if ((tmp = rcf_ch_symbol_name(handler)) != NULL)
         tmp = strdup(tmp);
     else if ((tmp = calloc(1, 16)) != NULL)
@@ -337,7 +339,11 @@ handler2name(void *handler)
         int id = rcf_pch_mem_get_id(handler);
 
         if (id == 0)
+        {
             id = rcf_pch_mem_alloc(handler);
+            RING("Unknown signal handler 0x%x is registered as "
+                 "ID %d in RPC server memory", handler, id);
+        }
 
         /* FIXME */
         sprintf(tmp, "%d", id);
