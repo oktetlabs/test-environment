@@ -1140,33 +1140,20 @@ acse_send(struct soap *soap, const char *s, size_t n)
          (session->cpe_owner->acs->traffic_log)))
     {
         if (log_len >= LOG_MAX)
-            log_len = LOG_MAX - 1;
+            log_len = LOG_MAX-1;
+        log_buf = mheap_alloc(session->def_heap, log_len + 1);
 
-        if (memcmp(s, "HTTP", strlen("HTTP") == 0))
+        if (NULL != log_buf)
         {
-            log_buf = mheap_alloc(session->def_heap, log_len + 1);
+            memcpy(log_buf, s, log_len);
+            log_buf[log_len] = '\0';
 
-            if (NULL != log_buf)
-            {
-                memcpy(log_buf, s, log_len);
-                log_buf[log_len] = '\0';
-
-                RING("Send %u bytes to %s %s/%s: (printed %u bytes)\n%s", n,
-                     session->acs_owner ? "ACS" : "CPE",
-                     session->acs_owner ? session->acs_owner->name :
-                                          session->cpe_owner->acs->name,
-                     session->acs_owner ? "(none)" :
-                                           session->cpe_owner->name,
-                    log_len, log_buf);
-            }
-        }
-        else
-        {
-            RING("Send %u bytes of non-HTTP traffic to %s %s/%s", n,
-                 session->acs_owner ? "ACS" : "CPE",
-                 session->acs_owner ? session->acs_owner->name :
-                                      session->cpe_owner->acs->name,
-                 session->acs_owner ? "(none)" : session->cpe_owner->name);
+            RING("Send %u bytes to %s %s/%s: (printed %u bytes)\n%s", n,
+                session->acs_owner ? "ACS" : "CPE",
+                session->acs_owner ? session->acs_owner->name :
+                                     session->cpe_owner->acs->name,
+                session->acs_owner ? "(none)" : session->cpe_owner->name,
+                log_len, log_buf);
         }
     }
     /* call standard gSOAP fsend */
