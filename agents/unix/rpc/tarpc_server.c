@@ -7027,10 +7027,15 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
 
         if (len < 0)
         {
+            int recv_errno = errno;
+
             ERROR("recv() failed in pattern_receiver(): errno %s (%x)",
                   strerror(errno), errno);
             out->func_failed = TRUE;
-            PTRN_RECV_ERROR;
+            if (recv_errno != ECONNRESET)
+                PTRN_RECV_ERROR;
+            else
+                len = 0;
         }
         else
         {
