@@ -206,7 +206,8 @@
  */
 #define CLEANUP_RPC_SIGACTION(rpcs_, signum_, action_, old_handler_) \
     do {                                                                \
-        if ((rpcs_ != NULL) && (action_) != NULL )                      \
+        if ((rpcs_ != NULL) && (action_) != NULL &&                     \
+            (old_handler_) != NULL)                                     \
         {                                                               \
             rpc_struct_sigaction    _old_act;                           \
                                                                         \
