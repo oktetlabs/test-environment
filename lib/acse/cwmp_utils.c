@@ -608,8 +608,6 @@ cwmp_val_array_get_str(cwmp_values_array_t *a,
     return TE_ENOENT;
 }
 
-#define VAL_LOG_MAX 1024
-
 te_errno
 cwmp_val_array_log(unsigned log_level, const char *intro,
                    cwmp_values_array_t *a)
@@ -852,53 +850,77 @@ size_t
 snprint_ParamValueStruct(char *buf, size_t len,
                          cwmp__ParameterValueStruct *p_v)
 {
-    size_t rest_len = len;
-    size_t used;
+    int     rv;
+    size_t  used;
 
-    char *p = buf;
-    void *v  = p_v->Value;
-    int  type = p_v->__type;
-
-    used = snprintf(p, rest_len, "%s (type %s) = ", p_v->Name,
-            soap_simple_type_string(p_v->__type));
-    if (used > rest_len)
+    if (p_v == NULL || p_v->Name == NULL || buf == NULL)
     {
-        WARN("%s(): string was cut to %d bytes", __FUNCTION__, rest_len);
-        return rest_len;
+        return 0;
     }
-    p+= used; rest_len -= used;
-    switch (type)
+
+    if ((rv = snprintf(buf, len,
+                       "%s (type %s) = ",
+                       p_v->Name,
+                       soap_simple_type_string(p_v->__type))) < 0)
+    {
+        return 0;
+    }
+
+    used = (size_t)rv;
+
+    if (used >= len)
+    {
+        return len;
+    }
+
+    switch (p_v->__type)
     {
         case SOAP_TYPE_string:
         case SOAP_TYPE_SOAP_ENC__base64:
-            used = snprintf(p, rest_len, "'%s'", (char *)v);
+            rv = snprintf(buf + used, len - used, "'%s'",
+                            (char *)(p_v->Value));
             break;
         case SOAP_TYPE_time:
-            used = snprintf(p, rest_len, "time %dsec",
-                            (int)(*((time_t *)v)));
+            rv = snprintf(buf + used, len - used, "time %dsec",
+                            (int)(*((time_t *)(p_v->Value))));
             break;
         case SOAP_TYPE_byte:
-            used = snprintf(p, rest_len, "%d", (int)(*((char *)v)));
+            rv = snprintf(buf + used, len - used, "%d",
+                            (int)(*((char *)(p_v->Value))));
             break;
         case SOAP_TYPE_int:
-            used = snprintf(p, rest_len, "%d", *((int *)v));
+            rv = snprintf(buf + used, len - used, "%d",
+                            *((int *)(p_v->Value)));
             break;
         case SOAP_TYPE_unsignedInt:
-            used = snprintf(p, rest_len, "%u", *((uint32_t *)v));
+            rv = snprintf(buf + used, len - used, "%u",
+                            *((uint32_t *)(p_v->Value)));
             break;
         case SOAP_TYPE_unsignedByte:
-            used = snprintf(p, rest_len, "%u", (uint32_t)(*((uint8_t *)v)));
+            rv = snprintf(buf + used, len - used, "%u",
+                            (uint32_t)(*((uint8_t *)(p_v->Value))));
             break;
         case SOAP_TYPE_xsd__boolean:
-            used = snprintf(p, rest_len, *((int *)v) ? "True" : "False");
+            rv = snprintf(buf + used, len - used,
+                            *((int *)(p_v->Value)) ? "True" : "False");
             break;
+        default:
+            rv = -1;
     }
-    if (used > rest_len)
+
+    if (rv < 0)
     {
-        WARN("%s(): string was cut to %d bytes", __FUNCTION__, rest_len);
-        return (size_t)(p - buf) + rest_len;
+        return 0;
     }
-    return (size_t)(p - buf) + used;
+
+    used += (size_t)rv;
+
+    if (used >= len)
+    {
+        return len;
+    }
+
+    return used;
 }
 
 size_t

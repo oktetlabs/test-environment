@@ -40,6 +40,8 @@ extern "C" {
 /** End of var-args list. */
 #define VA_END_LIST (va_end_list_ptr)
 
+#define VAL_LOG_MAX 1024
+
 
 /*
  * Useful structs to some CWMP parameters processing.
