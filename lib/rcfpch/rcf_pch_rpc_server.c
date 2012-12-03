@@ -111,7 +111,7 @@ rcf_pch_rpc_server(const char *name)
         
         strcpy(rpc_name, "Unknown");
         
-        if (rpc_transport_recv(handle, buf, &len, 0xFFFF) != 0)
+        if (rpc_transport_recv(handle, buf, &len, 0xFFFFF) != 0)
             STOP("Connection with TA is broken!");
             
         if (strcmp((char *)buf, "FIN") == 0)
