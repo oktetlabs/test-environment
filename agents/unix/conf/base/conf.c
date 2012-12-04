@@ -2162,7 +2162,7 @@ vlans_list(unsigned int gid, const char *oid, char **list,
     for (i = 0; i < n_vlans; i++)
         b += sprintf(b, "%d ", vlans_buffer[i]);
 
-    RING("VLAN list: '%s'", *list);
+    VERB("VLAN list: '%s'", *list);
     return 0;
 }
 
