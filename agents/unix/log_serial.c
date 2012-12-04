@@ -46,7 +46,24 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
+#ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif
+#ifdef HAVE_NETINET_IP_H
+#include <netinet/ip.h>
+#endif
+#ifdef HAVE_NETDB_H
+#include <netdb.h>
+#endif
+#ifdef HAVE_SYS_IOCTL_H
+#include <sys/ioctl.h>
+#endif
+#ifdef HAVE_NET_IF_H
+#include <net/if.h>
+#endif
+#ifdef HAVE_NET_IF_ARP_H
+#include <net/if_arp.h>
+#endif
 #include <unistd.h>
 #include <pthread.h>
 #include <semaphore.h>
@@ -78,6 +95,10 @@
 #define CONSERVER_START     CONSERVER_ESCAPE ";"
 #define CONSERVER_SPY       CONSERVER_ESCAPE "s"
 #define CONSERVER_STOP      CONSERVER_ESCAPE "."
+
+#define NETCONSOLE_PREF     "netconsole:"
+
+te_bool ta_netconsole_configured = FALSE;
 
 static te_log_level
 map_name_to_level(const char *name)
@@ -302,6 +323,285 @@ close_conserver_cleanup(long fd)
 #endif
 
 /**
+ * Get addresses by host name.
+ *
+ * @param host_name     Host name
+ * @param host_ipv4     Here IPv4 address will be saved if not NULL
+ * @param ipv4_found    Will be set to TRUE if IPv4 address found
+ * @param host_ipv6     Here IPv6 address will be saved if not NULL
+ * @param ipv6_found    Will be set to TRUE if IPv6 address found
+ *
+ * @return -1 on failue, 0 on success
+ */
+static int 
+get_host_addrs(const char *host_name, struct sockaddr_in *host_ipv4,
+               te_bool *ipv4_found, struct sockaddr_in6 *host_ipv6,
+               te_bool *ipv6_found)
+{
+#if defined(HAVE_GETADDRINFO) && defined(HAVE_NETDB_H)
+    struct addrinfo    *addrs;
+    struct addrinfo    *p;
+    int                 rc = 0;
+
+    rc = getaddrinfo(host_name, NULL, NULL,
+                     &addrs);
+    if (rc < 0)
+    {
+        ERROR("%s(): failed to get info about the host %s, errno '%s'",
+              __FUNCTION__, host_name, strerror(rc));
+        return -1;
+    }
+
+    for (p = addrs; p != NULL; p = p->ai_next)
+    {
+        if (p->ai_family == AF_INET && host_ipv4 != NULL &&
+            ipv4_found != NULL)
+        {
+            memcpy(host_ipv4, p->ai_addr, p->ai_addrlen);
+            *ipv4_found = TRUE;
+        }
+        else if (p->ai_family == AF_INET6 && host_ipv6 != NULL &&
+                 ipv6_found != NULL)
+        {
+            memcpy(host_ipv6, p->ai_addr, p->ai_addrlen);
+            *ipv6_found = TRUE;
+        }
+    }
+
+    freeaddrinfo(addrs);
+    return 0;
+#else
+    ERROR("%s(): was not compiled due to lack of system features",
+          __FUNCTION__);
+    return -1;
+#endif
+}
+
+/**
+ * Configure netconsole kernel module.
+ *
+ * @param argc Number of arguments
+ * @param argv Array of arguments
+ *
+ * @return 0 on success, -1 on failure
+ */
+int
+configure_netconsole(int argc, char *argv[])
+{
+#define IFS_BUF_SIZE 1024
+#define MAX_STR 1024
+#if defined(SIOCGARP) && defined(SIOCGIFCONF)
+    in_port_t       local_port;
+    in_port_t       remote_port;
+    char           *remote_host_name;
+    char           *endptr = NULL;
+    char            local_host_name[HOST_NAME_MAX];
+
+    struct sockaddr_in  local_ipv4_addr;
+    struct sockaddr_in  remote_ipv4_addr;
+    te_bool             local_ipv4_found = FALSE;
+    te_bool             remote_ipv4_found = FALSE;
+    int                 rc;
+    int                 s = -1;
+    struct arpreq       remote_hwaddr_req;
+
+    char            buf[IFS_BUF_SIZE];
+    struct ifconf   ifc;
+    int             i;
+    int             ifs_count;
+
+    char    cmdline[MAX_STR];
+    int     n = 0;
+
+    if (argc != 3)
+    {
+        ERROR("%s(): wrong number of arguments", __FUNCTION__);
+        return -1;
+    }
+
+    remote_host_name = (char *)argv[1];
+    local_port = strtol(argv[0], &endptr, 10);
+    if (endptr == NULL || *endptr != '\0')
+    {
+        ERROR("%s(): failed to process local port", __FUNCTION__);
+        return -1;
+    }
+    remote_port = strtol(argv[2], &endptr, 10);
+    if (endptr == NULL || *endptr != '\0')
+    {
+        ERROR("%s(): failed to process remote port", __FUNCTION__);
+        return -1;
+    }
+
+    if (gethostname(local_host_name, HOST_NAME_MAX) < 0)
+    {
+        ERROR("%s(): failed to obtain host name", __FUNCTION__);
+        return -1;
+    }
+
+    rc = get_host_addrs(local_host_name, &local_ipv4_addr,
+                        &local_ipv4_found, NULL, NULL);
+    if (rc < 0)
+    {
+        ERROR("%s(): failed to obtain addresses of local host",
+              __FUNCTION__);
+        return -1;
+    }
+
+    rc = get_host_addrs(remote_host_name, &remote_ipv4_addr,
+                        &remote_ipv4_found, NULL, NULL);
+    if (rc < 0)
+    {
+        ERROR("%s(): failed to obtain addresses of remote host",
+              __FUNCTION__);
+        return -1;
+    }
+
+    if (!local_ipv4_found || !remote_ipv4_found)
+    {
+        ERROR("%s(): failed to find IPv4 address for local and/or "
+              "remote host", __FUNCTION__);
+        return -1;
+    }
+
+    s = socket(AF_INET, SOCK_DGRAM, 0);
+    if (s == -1)
+    {
+        ERROR("%s(): failed to create datagram socket, errno '%s'",
+              __FUNCTION__, strerror(errno));
+        return -1;
+    }
+
+    memset(&ifc, 0, sizeof(ifc));
+    ifc.ifc_len = sizeof(buf);
+    ifc.ifc_buf = buf;
+
+    if (ioctl(s, SIOCGIFCONF, &ifc) < 0)
+    {
+        ERROR("%s(): ioctl(SIOCGIFCONF) failed, errno '%s'",
+              __FUNCTION__, strerror(errno));
+        close(s);
+        return -1;
+    }
+
+    ifs_count = ifc.ifc_len / sizeof (struct ifreq);
+
+    for (i = 0; i < ifs_count; i++)
+    {
+        if (memcmp(&ifc.ifc_req[i].ifr_addr, &local_ipv4_addr,
+                   sizeof(local_ipv4_addr)) == 0)
+            break;
+    }
+
+    if (i == ifs_count)
+    {
+        ERROR("%s(): local interface not found", __FUNCTION__); 
+        return -1;
+        close(s);
+    }
+
+    local_ipv4_addr.sin_port = htons(local_port);
+    remote_ipv4_addr.sin_port = htons(remote_port);
+
+    rc = bind(s, (struct sockaddr *)&local_ipv4_addr,
+              sizeof(local_ipv4_addr)); 
+    if (rc < 0)
+    {
+        ERROR("%s(): failed to bind datagram socket, errno '%s'",
+              __FUNCTION__, strerror(errno));
+        close(s);
+        return -1;
+    }
+
+    rc = sendto(s, "", strlen("") + 1, 0,
+                (struct sockaddr *)&remote_ipv4_addr,
+                sizeof(remote_ipv4_addr));
+    if (rc < 0)
+    {
+        ERROR("%s(): failed to send data from datagram socket, errno '%s'",
+              __FUNCTION__, strerror(errno));
+        close(s);
+        return -1;
+    }
+    usleep(500000);
+
+    memset(&remote_hwaddr_req, 0, sizeof(remote_hwaddr_req));
+    memcpy(&remote_hwaddr_req.arp_pa, &remote_ipv4_addr,
+           sizeof(remote_ipv4_addr));
+    ((struct sockaddr_in *)&remote_hwaddr_req.arp_pa)->sin_port = 0;
+    strncpy(remote_hwaddr_req.arp_dev, ifc.ifc_req[i].ifr_name,
+            sizeof(remote_hwaddr_req.arp_dev));
+    ((struct sockaddr_in *)&remote_hwaddr_req.arp_ha)->sin_family =
+                                                            ARPHRD_ETHER;
+
+    if (ioctl(s, SIOCGARP, &remote_hwaddr_req) < 0)
+    {
+        ERROR("%s(): ioctl(SIOCGARP) failed with errno '%s'",
+              __FUNCTION__, strerror(errno));
+        close(s);
+        return -1;
+    }
+
+    close(s);
+
+    n = snprintf(cmdline, MAX_STR,
+                 "/sbin/modprobe netconsole netconsole=%d@",
+                 (int)local_port);
+    inet_ntop(AF_INET, &local_ipv4_addr.sin_addr, cmdline + n,
+              MAX_STR - n);
+    n = strlen(cmdline);
+    n += snprintf(cmdline + n, MAX_STR - n, "/%s,%d@",
+                  ifc.ifc_req[i].ifr_name, (int)remote_port);
+    inet_ntop(AF_INET, &remote_ipv4_addr.sin_addr, cmdline + n,
+              MAX_STR - n);
+    n = strlen(cmdline);
+
+    n += snprintf(cmdline + n, MAX_STR - n,
+                  "/%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx",
+                  0xff & (int)(remote_hwaddr_req.arp_ha.sa_data[0]),
+                  0xff & (int)(remote_hwaddr_req.arp_ha.sa_data[1]),
+                  0xff & (int)(remote_hwaddr_req.arp_ha.sa_data[2]),
+                  0xff & (int)(remote_hwaddr_req.arp_ha.sa_data[3]),
+                  0xff & (int)(remote_hwaddr_req.arp_ha.sa_data[4]),
+                  0xff & (int)(remote_hwaddr_req.arp_ha.sa_data[5]));
+
+    if (system("/sbin/modprobe -r netconsole") != 0)
+    {
+        usleep(500000);
+        if (system("/sbin/modprobe -r netconsole"))
+        {
+            ERROR("%s(): Failed to unload netconsole module",
+                  __FUNCTION__);
+            return -1;
+        }
+    }
+
+    if (system(cmdline) != 0)
+    {
+        usleep(500000);
+        if (system(cmdline) != 0)
+        {
+            ERROR("%s(): '%s' command failed", __FUNCTION__, cmdline);
+            return -1;
+        }
+    }
+
+    ta_netconsole_configured = TRUE;
+
+    return 0;
+#else
+    UNUSED(argc);
+    UNUSED(argv);
+
+    ERROR("%s(): was not compiled due to lack of system features",
+          __FUNCTION__);
+    return -1;
+#endif
+#undef MAX_STR
+#undef IFS_BUF_SIZE
+}
+
+/**
  * Log host serial output via Logger component
  *
  * @param ready       Parameter release semaphore
@@ -347,6 +647,8 @@ log_serial(void *ready, int argc, char *argv[])
 
     time_t now;
     time_t last_alive = 0;
+
+    struct   sockaddr_in  local_addr;
 
 #define MAYBE_DO_LOG \
     do {                                                            \
@@ -410,7 +712,28 @@ log_serial(void *ready, int argc, char *argv[])
         return TE_OS_RC(TE_TA_UNIX, rc);
     }
 
-    if (*argv[3] != '/')
+    if (strncmp(argv[3], NETCONSOLE_PREF, strlen(NETCONSOLE_PREF)) == 0)
+    {
+        memset(&local_addr, 0, sizeof(local_addr));
+        local_addr.sin_addr.s_addr = INADDR_ANY;
+        local_addr.sin_port = strtol(argv[3] + strlen(NETCONSOLE_PREF),
+                                     NULL, 10);
+        local_addr.sin_port = htons(local_addr.sin_port);
+        poller.fd = socket(AF_INET, SOCK_DGRAM, 0);
+        if (poller.fd < 0)
+        {
+            sem_post(ready);
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+        if (bind(poller.fd, (struct sockaddr *)&local_addr,
+                 sizeof(local_addr)) < 0)
+        {
+            sem_post(ready);
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+        sem_post(ready);
+    }
+    else if (*argv[3] != '/')
     {
         static char tmp[128];
         strncpy(tmp, argv[3], sizeof(tmp) - 1);

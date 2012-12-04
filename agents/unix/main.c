@@ -118,6 +118,8 @@ typedef struct ta_children_dead {
 extern void *rcf_ch_symbol_addr_auto(const char *name, te_bool is_func);
 extern char *rcf_ch_symbol_name_auto(const void *addr);
 
+extern te_bool ta_netconsole_configured;
+
 /** Logger entity name */
 DEFINE_LGR_ENTITY("(unix)");
 
@@ -1924,7 +1926,6 @@ rcf_ch_rpc_server_thread(void *ready, int argc, char *argv[])
 }
 #endif
 
-
 /**
  * Entry point of the Unix Test Agent.
  *
@@ -1954,6 +1955,8 @@ main(int argc, char **argv)
         fprintf(stderr, "Failed to set RLIMIT_CORE\n");
         /* Continue */
     }
+
+    ta_netconsole_configured = FALSE;
 
     /* Skip the environment */
     for (; *av != NULL; av++);
@@ -2109,6 +2112,17 @@ main(int argc, char **argv)
         {
             fprintf(stderr, "pthread_join(logfork_tid) failed: rc=%d\n",
                     rc);
+        }
+    }
+
+    if (ta_netconsole_configured)
+    {
+        if (system("/sbin/modprobe -r netconsole") != 0)
+        {
+            usleep(500000);
+            if (system("/sbin/modprobe -r netconsole") != 0)
+                fprintf(stderr, "Failed to unload netconsole module",
+                        __FUNCTION__);
         }
     }
 

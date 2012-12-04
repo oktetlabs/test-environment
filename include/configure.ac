@@ -122,6 +122,7 @@ netdb.h \
 netinet/ether.h \
 netinet/if_ether.h \
 netinet/in_systm.h \
+netinet/in.h \
 netinet/ip.h \
 netinet/ip_icmp.h \
 netinet/udp.h \
