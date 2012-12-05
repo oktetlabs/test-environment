@@ -100,228 +100,6 @@
 
 te_bool ta_netconsole_configured = FALSE;
 
-static te_log_level
-map_name_to_level(const char *name)
-{
-    static const struct {
-        char           *name;
-        te_log_level    level;
-    } levels[] = {{"ERROR", TE_LL_ERROR},
-                  {"WARN",  TE_LL_WARN},
-                  {"RING",  TE_LL_RING},
-                  {"INFO",  TE_LL_INFO},
-                  {"VERB",  TE_LL_VERB},
-                  {"PACKET", TE_LL_PACKET}};
-    unsigned i;
-
-    for (i = 0; i < sizeof(levels) / sizeof(*levels); i++)
-    {
-        if (!strcmp(levels[i].name, name))
-            return levels[i].level;
-    }
-    return 0;
-}
-
-
-/**
- * Auxiliary procedure to connect to conserver.
- *
- * @return connected socket or -1 if failed
- *
- * @param port     A port to connect
- * @param user     A conserver user name
- * @param console  A console name
- *
- * @sa open_conserver
- */
-static int
-connect_conserver(int port, const char *user, const char *console)
-{
-    int                sock = socket(PF_INET, SOCK_STREAM, 0);
-    struct sockaddr_in inaddr;
-
-    char               buf[32];
-    int                len;
-
-#define EXPECT_OK \
-    do { \
-        if (read(sock, buf, 4) < 4 || memcmp(buf, "ok\r\n", 4) != 0) \
-        { \
-            ERROR("Conserver sent us non-ok, errno=%d", errno); \
-            close(sock); \
-            return -1; \
-        } \
-    } while(0);
-
-    if (sock < 0)
-    {
-        ERROR("Cannot create socket: errno=%d", errno);
-        return -1;
-    }
-
-#if HAVE_FCNTL_H
-    /*
-     * Try to set close-on-exec flag, but ignore failures,
-     * since it's not critical.
-     */
-    (void)fcntl(sock, F_SETFD, FD_CLOEXEC);
-#endif
-
-    inaddr.sin_family      = AF_INET;
-    inaddr.sin_port        = htons(port);
-    inaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    VERB("Connecting to conserver at localhost:%d", port);
-    if (connect(sock, (struct sockaddr *)&inaddr, sizeof(inaddr)) < 0)
-    {
-        ERROR("Unable to connect to conserver on port %d: errno=%d",
-              port, errno);
-        close(sock);
-        return -1;
-    }
-    EXPECT_OK;
-    VERB("Connected");
-    strcpy(buf, "login ");
-    strncat(buf, user, sizeof(buf) - 8);
-    strcat(buf, "\n");
-    len = strlen(buf);
-    if (write(sock, buf, len) < len)
-    {
-        ERROR("Error writing to conserver socket, errno=%d", errno);
-        close(sock);
-        return -1;
-    }
-    EXPECT_OK;
-    VERB("Logged in");
-
-    strcpy(buf, "call ");
-    strncat(buf, console, sizeof(buf) - 7);
-    strcat(buf, "\n");
-    len = strlen(buf);
-    if (write(sock, buf, len) < len)
-    {
-        ERROR("Error writing to conserver socket, errno=%d", errno);
-        close(sock);
-        return -1;
-    }
-
-    return sock;
-
-#undef EXPECT_OK
-}
-
-
-/**
- * Connects to conserver listening on a given port at localhost and
- * authenticates to it.
- *
- * @return connected socket (or -1 if failed)
- *
- * @param conserver  A colon-separated string of the form:
- *                   port:user:console
- */
-static int
-open_conserver(const char *conserver)
-{
-    int   port;
-    int   sock;
-    char  buf[1];
-    char *tmp;
-    char  user[64];
-    char *console;
-
-    port = strtoul(conserver, &tmp, 10);
-
-    if (port <= 0 || *tmp != ':')
-    {
-        ERROR ("Bad port: \"%s\"", conserver);
-        return -1;
-    }
-    strcpy(user, tmp + 1);
-    console = strchr(user, ':');
-    if (console == NULL)
-    {
-        ERROR ("No console specified: \"%s\"", conserver);
-        return -1;
-    }
-    *console++ = '\0';
-
-    sock = connect_conserver(port, user, console);
-    if (sock < 0)
-        return -1;
-    port = 0;
-    for(;;)
-    {
-        if (read(sock, buf, 1) < 1)
-        {
-            ERROR("Error getting console port, errno=%d", errno);
-            close(sock);
-            return -1;
-        }
-        if (*buf == '\r')
-            continue;
-        if (*buf == '\n')
-            break;
-        if (!isdigit(*buf))
-        {
-            char err_msg[64] = "";
-
-            err_msg[0] = *buf;
-            read(sock, err_msg + 1, sizeof(err_msg) - 2);
-            ERROR("Conserver said: \"%s\", quitting", err_msg);
-            close(sock);
-            return -1;
-        }
-        port = (port * 10) + *buf - '0';
-    }
-
-    close(sock);
-    sock = connect_conserver(port, user, console);
-    if (sock < 0)
-        return -1;
-
-#define SKIP_LINE \
-    do { \
-        for(*buf = '\0'; *buf != '\n'; ) \
-        { \
-            if (read(sock, buf, 1) < 1) \
-            { \
-                ERROR("Error reading from conserver, errno=%d", errno); \
-                close(sock); \
-                return -1; \
-            } \
-       } \
-    } while(0)
-
-    SKIP_LINE;
-    write(sock, CONSERVER_START, CONSERVER_CMDLEN);
-    SKIP_LINE;
-    write(sock, CONSERVER_SPY, CONSERVER_CMDLEN);
-    SKIP_LINE;
-    fcntl(sock, F_SETFL, O_NONBLOCK | fcntl(sock, F_GETFL));
-    return sock;
-#undef SKIP_LINE
-}
-
-
-/* Note: if there are several log_serial threads and
- * one is using conserver, others will be treated in
- * the same way. However, such situation is unrealistic,
- * and even then, sending a few bytes to a serial device
- * should not hurt much
- */
-static te_bool use_conserver = FALSE;
-#if 0
-static void
-close_conserver_cleanup(long fd)
-{
-    char buf[1];
-
-    write(fd, CONSERVER_STOP, CONSERVER_CMDLEN);
-    while(read(fd, buf, 1) == 1);
-    close(fd);
-}
-#endif
-
 /**
  * Get addresses by host name.
  *
@@ -376,6 +154,339 @@ get_host_addrs(const char *host_name, struct sockaddr_in *host_ipv4,
     return -1;
 #endif
 }
+
+static te_log_level
+map_name_to_level(const char *name)
+{
+    static const struct {
+        char           *name;
+        te_log_level    level;
+    } levels[] = {{"ERROR", TE_LL_ERROR},
+                  {"WARN",  TE_LL_WARN},
+                  {"RING",  TE_LL_RING},
+                  {"INFO",  TE_LL_INFO},
+                  {"VERB",  TE_LL_VERB},
+                  {"PACKET", TE_LL_PACKET}};
+    unsigned i;
+
+    for (i = 0; i < sizeof(levels) / sizeof(*levels); i++)
+    {
+        if (!strcmp(levels[i].name, name))
+            return levels[i].level;
+    }
+    return 0;
+}
+
+
+/**
+ * Auxiliary procedure to connect to conserver.
+ *
+ * @return connected socket or -1 if failed
+ *
+ * @param srv_address   An address to connect
+ * @param user          A conserver user name
+ * @param console       A console name
+ *
+ * @sa open_conserver
+ */
+static int
+connect_conserver(struct sockaddr_storage *srv_addr, const char *user,
+                  const char *console)
+{
+    int                sock = -1;
+
+    char               buf[32];
+    int                len;
+
+#define EXPECT_OK \
+    do { \
+        if (read(sock, buf, 4) < 4 || memcmp(buf, "ok\r\n", 4) != 0) \
+        { \
+            ERROR("Conserver sent us non-ok, errno=%d", errno); \
+            close(sock); \
+            return -1; \
+        } \
+    } while(0);
+
+    sock = socket(SA(srv_addr)->sa_family == AF_INET ? PF_INET : PF_INET6,
+                  SOCK_STREAM, 0);
+    if (sock < 0)
+    {
+        ERROR("Cannot create socket: errno=%d", errno);
+        return -1;
+    }
+
+#if HAVE_FCNTL_H
+    /*
+     * Try to set close-on-exec flag, but ignore failures,
+     * since it's not critical.
+     */
+    (void)fcntl(sock, F_SETFD, FD_CLOEXEC);
+#endif
+
+    VERB("Connecting to conserver");
+    if (connect(sock, (struct sockaddr *)srv_addr, sizeof(*srv_addr)) < 0)
+    {
+        ERROR("Unable to connect to conserver: errno=%d",
+              errno);
+        close(sock);
+        return -1;
+    }
+    EXPECT_OK;
+    VERB("Connected");
+    strcpy(buf, "login ");
+    strncat(buf, user, sizeof(buf) - 8);
+    strcat(buf, "\n");
+    len = strlen(buf);
+    if (write(sock, buf, len) < len)
+    {
+        ERROR("Error writing to conserver socket, errno=%d", errno);
+        close(sock);
+        return -1;
+    }
+    EXPECT_OK;
+    VERB("Logged in");
+
+    strcpy(buf, "call ");
+    strncat(buf, console, sizeof(buf) - 7);
+    strcat(buf, "\n");
+    len = strlen(buf);
+    if (write(sock, buf, len) < len)
+    {
+        ERROR("Error writing to conserver socket, errno=%d", errno);
+        close(sock);
+        return -1;
+    }
+
+    return sock;
+
+#undef EXPECT_OK
+}
+
+
+/**
+ * Connects to conserver listening on a given port at localhost and
+ * authenticates to it.
+ *
+ * @return connected socket (or -1 if failed)
+ *
+ * @param conserver  A colon-separated string of the form:
+ *                   [(IP address or host name):]port:user:console
+ *                   (parenthesises are necessary only for IPv6 address)
+ */
+static int
+open_conserver(const char *conserver)
+{
+    in_port_t   port;
+    int         sock;
+    char        buf[1];
+    char       *tmp = NULL;
+    char       *dup_arg = NULL;
+    char        user[64];
+    char       *console = NULL;
+    char       *parenthesis = NULL;
+    char       *point = NULL;
+    char       *colon = NULL;
+    char       *endptr = NULL;
+    te_bool     is_ipv4 = TRUE;
+
+    struct sockaddr_storage srv_addr;
+
+    if (strlen(conserver) == 0)
+    {
+        ERROR("Conserver configuration is void string");
+        return -1;
+    }
+    dup_arg = strdup(conserver);
+    tmp = dup_arg;
+    point = strchr(tmp, '.');
+    colon = strchr(tmp, ':');
+    strtol(tmp, &endptr, 10);
+
+    memset(&srv_addr, 0, sizeof(srv_addr));
+
+    if (*tmp == '(' || (point != NULL && point < colon) ||
+        (endptr != NULL && *endptr != ':'))
+    {
+        if (*tmp == '(')
+        {
+            tmp++;
+            parenthesis = strchr(tmp, ')');
+            if (parenthesis == NULL)
+            {
+                ERROR("Wrong conserver configuration string: \"%s\"",
+                      conserver);
+                free(dup_arg);
+                return -1;
+            }
+            *parenthesis = '\0';
+            colon = parenthesis + 1;
+            if (*colon != ':')
+            {
+                ERROR("Bad conserver configuration string: \"%s\"",
+                      conserver);
+                free(dup_arg);
+                return -1;
+            }
+        }
+        else
+            *colon = '\0';
+
+        point = strchr(tmp, '.');
+        if (point == NULL)
+            is_ipv4 = FALSE;
+        
+        if (is_ipv4)
+            SIN(&srv_addr)->sin_family = AF_INET;
+        else
+            SIN6(&srv_addr)->sin6_family = AF_INET6;
+
+        if (inet_pton(is_ipv4 ? AF_INET : AF_INET6,
+                      tmp,
+                      is_ipv4 ? &SIN(&srv_addr)->sin_addr :
+                                &SIN6(&srv_addr)->sin6_addr) != 1)
+        {
+            struct sockaddr_in  ipv4_addr;
+            struct sockaddr_in6 ipv6_addr;
+            te_bool             ipv4_found;
+            te_bool             ipv6_found;
+            int                 rc;
+
+            rc = get_host_addrs(tmp, &ipv4_addr, &ipv4_found,
+                                &ipv6_addr, &ipv6_found);
+            if (rc == 0)
+            {
+                if (ipv4_found)
+                    memcpy(&srv_addr, &ipv4_addr, sizeof(ipv4_addr));
+                else if (ipv6_found)
+                    memcpy(&srv_addr, &ipv6_addr, sizeof(ipv6_addr));
+                else rc = -1;
+            }
+
+            if (rc < 0)
+            {
+                ERROR("Bad address or host name: \"%s\"", conserver);
+                free(dup_arg);
+                return -1;
+            }
+        }
+
+        tmp = colon + 1;
+    }
+    else
+    {
+        SIN(&srv_addr)->sin_addr.s_addr = htonl(INADDR_ANY);
+        SIN(&srv_addr)->sin_family = AF_INET;
+    }
+
+    port = strtoul(tmp, &colon, 10);
+
+    if (port <= 0 || *colon != ':')
+    {
+        ERROR ("Bad port: \"%s\"", conserver);
+        free(dup_arg);
+        return -1;
+    }
+
+    if (is_ipv4)
+        SIN(&srv_addr)->sin_port = htons(port);
+    else
+        SIN6(&srv_addr)->sin6_port = htons(port);
+
+    strcpy(user, colon + 1);
+    console = strchr(user, ':');
+    if (console == NULL)
+    {
+        ERROR ("No console specified: \"%s\"", conserver);
+        free(dup_arg);
+        return -1;
+    }
+    *console++ = '\0';
+
+    free(dup_arg);
+
+    sock = connect_conserver(&srv_addr, user, console);
+    if (sock < 0)
+        return -1;
+
+    port = 0;
+    for(;;)
+    {
+        if (read(sock, buf, 1) < 1)
+        {
+            ERROR("Error getting console port, errno=%d", errno);
+            close(sock);
+            return -1;
+        }
+        if (*buf == '\r')
+            continue;
+        if (*buf == '\n')
+            break;
+        if (!isdigit(*buf))
+        {
+            char err_msg[64] = "";
+
+            err_msg[0] = *buf;
+            read(sock, err_msg + 1, sizeof(err_msg) - 2);
+            ERROR("Conserver said: \"%s\", quitting", err_msg);
+            close(sock);
+            return -1;
+        }
+        port = (port * 10) + *buf - '0';
+    }
+
+    if (is_ipv4)
+        SIN(&srv_addr)->sin_port = htons(port);
+    else
+        SIN6(&srv_addr)->sin6_port = htons(port);
+
+    close(sock);
+    sock = connect_conserver(&srv_addr, user, console);
+    if (sock < 0)
+        return -1;
+
+#define SKIP_LINE \
+    do { \
+        for(*buf = '\0'; *buf != '\n'; ) \
+        { \
+            if (read(sock, buf, 1) < 1) \
+            { \
+                ERROR("Error reading from conserver, errno=%d", errno); \
+                close(sock); \
+                return -1; \
+            } \
+       } \
+    } while(0)
+
+    SKIP_LINE;
+    write(sock, CONSERVER_START, CONSERVER_CMDLEN);
+    SKIP_LINE;
+    write(sock, CONSERVER_SPY, CONSERVER_CMDLEN);
+    SKIP_LINE;
+    fcntl(sock, F_SETFL, O_NONBLOCK | fcntl(sock, F_GETFL));
+    return sock;
+#undef SKIP_LINE
+}
+
+
+/* Note: if there are several log_serial threads and
+ * one is using conserver, others will be treated in
+ * the same way. However, such situation is unrealistic,
+ * and even then, sending a few bytes to a serial device
+ * should not hurt much
+ */
+static te_bool use_conserver = FALSE;
+#if 0
+static void
+close_conserver_cleanup(long fd)
+{
+    char buf[1];
+
+    write(fd, CONSERVER_STOP, CONSERVER_CMDLEN);
+    while(read(fd, buf, 1) == 1);
+    close(fd);
+}
+#endif
 
 /**
  * Configure netconsole kernel module.
@@ -715,7 +826,7 @@ log_serial(void *ready, int argc, char *argv[])
     if (strncmp(argv[3], NETCONSOLE_PREF, strlen(NETCONSOLE_PREF)) == 0)
     {
         memset(&local_addr, 0, sizeof(local_addr));
-        local_addr.sin_addr.s_addr = INADDR_ANY;
+        local_addr.sin_addr.s_addr = htonl(INADDR_ANY);
         local_addr.sin_port = strtol(argv[3] + strlen(NETCONSOLE_PREF),
                                      NULL, 10);
         local_addr.sin_port = htons(local_addr.sin_port);
