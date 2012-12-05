@@ -343,8 +343,8 @@ open_conserver(const char *conserver)
 
         if (inet_pton(is_ipv4 ? AF_INET : AF_INET6,
                       tmp,
-                      is_ipv4 ? &SIN(&srv_addr)->sin_addr :
-                                &SIN6(&srv_addr)->sin6_addr) != 1)
+                      is_ipv4 ? (void *)&SIN(&srv_addr)->sin_addr :
+                                (void *)&SIN6(&srv_addr)->sin6_addr) != 1)
         {
             struct sockaddr_in  ipv4_addr;
             struct sockaddr_in6 ipv6_addr;
