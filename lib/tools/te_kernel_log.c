@@ -150,6 +150,12 @@ te_get_host_addrs(const char *host_name, struct sockaddr_in *host_ipv4,
     freeaddrinfo(addrs);
     return 0;
 #else
+    UNUSED(host_name);
+    UNUSED(host_ipv4);
+    UNUSED(ipv4_found);
+    UNUSED(host_ipv6);
+    UNUSED(ipv6_found);
+
     ERROR("%s(): was not compiled due to lack of system features",
           __FUNCTION__);
     return -1;
@@ -377,6 +383,9 @@ open_conserver(const char *conserver)
     {
         SIN(&srv_addr)->sin_addr.s_addr = htonl(INADDR_ANY);
         SIN(&srv_addr)->sin_family = AF_INET;
+        /* If address is omitted but colon remained */
+        if (*tmp == ':')
+            tmp++;
     }
 
     port = strtoul(tmp, &colon, 10);
