@@ -341,11 +341,6 @@ dnl
 AC_CHECK_HEADERS([linux/ppdev.h])
 
 dnl
-dnl Obtaining network info about host name (and/or service)
-dnl
-AC_CHECK_FUNCS([getaddrinfo])
-
-dnl
 dnl We do not need epoll really, since we use it via RPC and dlopen,
 dnl but we do need the header for struct epoll_event.
 dnl

@@ -83,6 +83,8 @@
 #include "te_rpc_errno.h"
 #include "te_rpc_signal.h"
 
+#include "te_kernel_log.h"
+
 /** Send answer to the TEN */
 #define SEND_ANSWER(_fmt...) \
     do {                                                                \
@@ -1972,6 +1974,8 @@ main(int argc, char **argv)
     }
 #endif
     
+    te_kernel_log_set_system_func(&ta_system);
+
     /*
      * Set locale to POSIX in order to get all messages in standard
      * format, language, etc.
@@ -2121,7 +2125,7 @@ main(int argc, char **argv)
         {
             usleep(500000);
             if (system("/sbin/modprobe -r netconsole") != 0)
-                fprintf(stderr, "Failed to unload netconsole module",
+                fprintf(stderr, "%s(): failed to unload netconsole module",
                         __FUNCTION__);
         }
     }

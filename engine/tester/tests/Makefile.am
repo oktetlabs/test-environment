@@ -39,4 +39,4 @@ check_PROGRAMS = scen_op_test
 
 scen_op_test_SOURCES = scen_op_test.c ../scenario.c
 
-LDADD=-llogger_file -ltools @XML2_LIBS@
+LDADD=-llogger_file -lpthread -ltools @XML2_LIBS@

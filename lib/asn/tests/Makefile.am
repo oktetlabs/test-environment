@@ -33,5 +33,5 @@ free_part.c
 noinst_HEADERS=test_types.h
 
 # link flags for tests. 
-LDADD=-lndn -lasn -llogger_file -ltools
+LDADD=-lndn -lasn -llogger_file -lpthread -ltools
 

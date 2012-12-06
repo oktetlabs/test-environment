@@ -10,7 +10,8 @@ bin_PROGRAMS = te-trc-report
 te_trc_report_SOURCES = main.c
 
 te_trc_report_LDADD = -ltrc_report -ltrc -llogic_expr -llogger_file \
-                      -ltools -lpopt -lcrypto @XML2_LIBS@ @TE_LDADD@
+                      -lpthread -ltools -lpopt -lcrypto @XML2_LIBS@ \
+                      @TE_LDADD@
 
 te_trc_report_DEPENDENCIES = @TE_DEPENDENCIES@ \
 	$(top_builddir)/lib/libtrc_report.a \

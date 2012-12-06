@@ -54,11 +54,11 @@ libcwmp_data_la_SOURCES = cwmp_data.c cwmp_utils.c
 
 # acse_dummy_LDFLAGS = -lgsoap
 # acse_single_LDADD = -lacse_epc -lacse_cwmp -lgsoapssl -lz \
-#             -llogger_file -ltools -lcrypto -lrt -lssl
+#             -llogger_file -lpthread -ltools -lcrypto -lrt -lssl
 
 #acse_cli_LDADD = -lcwmp_data  -lacse_cwmp -lgsoapssl -llogger_file \
-#            -ltools -lrt -lssl -lcrypto -lz -lpopt -ldl
-# acse_cli_LDADD = -lacse_epc -llogger_file -ltools -lrt -lpopt
+#            -lpthread -ltools -lrt -lssl -lcrypto -lz -lpopt -ldl
+# acse_cli_LDADD = -lacse_epc -llogger_file -lpthread -ltools -lrt -lpopt
 
 install-exec-hook:
 	touch -c -r libacse_cwmp.* $(DESTDIR)/$(libdir)/libacse_cwmp.*

@@ -31,6 +31,13 @@
 
 #include "logger_internal.h"
 
+#define TE_EXPAND_XML 1
+#include "te_expand.h"
+
+#include "rcf_common.h"
+#include <pthread.h>
+#include <semaphore.h>
+#include "te_kernel_log.h"
 
 /* TA single linked list */
 extern ta_inst *ta_list;
@@ -40,6 +47,14 @@ extern snif_polling_sets_t snifp_sets;
 
 /* Path to the directory for logs */
 extern const char *te_log_dir;
+
+static te_bool   thread_parsed = FALSE;
+static char     *thread_name = NULL;
+
+static int   argc = 0;
+static char *argv[RCF_MAX_PARAMS];
+
+sem_t   args_processed;
 
 /**
  * User call back called when an opening tag has been processed.
@@ -186,6 +201,155 @@ startElementLGR(void           *ctx,
     {
         snifp_sets.period = (unsigned)strtoul(atts[1], NULL, 0);
     }
+    else if (!strcmp(name, "thread"))
+    {
+        char *result = NULL;
+        int   when_id = 0;
+        int   name_id = 0;
+
+        if (!strcmp(atts[0], "name"))
+        {
+            when_id = 2;
+            name_id = 0;
+        }
+        else
+        {
+            when_id = 0;
+            name_id = 2;
+        }
+
+        if (atts[when_id] == NULL || atts[name_id] == NULL)
+        {
+            ERROR("Not enough attributes is specified for a thread");
+            return;
+        }
+
+        if (strcmp(atts[when_id], "when"))
+        {
+            ERROR("Failed to find 'when' attribute in <thread>");
+            return;
+        }
+        if (te_expand_env_vars(atts[when_id + 1], NULL, &result) != 0)
+        {
+            ERROR("Failed to expand '%s'", atts[when_id + 1]);
+            return;
+        }
+        if (strlen(result) == 0)
+        {
+            free(result);
+            return;
+        }
+        free(result);
+
+        if (strcmp(atts[name_id], "name"))
+        {
+            ERROR("Failed to find 'name' attribute in <thread>");
+            return;
+        }
+        if (te_expand_env_vars(atts[name_id + 1], NULL, &result) != 0)
+        {
+            ERROR("Failed to expand '%s'", atts[name_id + 1]);
+            return;
+        }
+            
+        if (strlen(result) == 0)
+        {
+            free(result);
+            return;
+        }
+
+        argc = 0;
+        thread_name = result;
+        thread_parsed = TRUE;
+    }
+    else if (!strcmp(name, "arg"))
+    {
+        if (strcmp(atts[0], "value"))
+        {
+            ERROR("Failed to find 'value' attribute in <arg>");
+            return;
+        }
+        if (argc >= RCF_MAX_PARAMS - 1)
+        {
+            ERROR("Too many <arg> elements");
+            return;
+        }
+
+        if (te_expand_env_vars(atts[1], NULL, &argv[argc]) != 0)
+        {
+            ERROR("Failed to expand argument value '%s'",
+                  atts[1]);
+            return;
+        }
+        argc++;
+    }
+}
+
+/**
+ * Logger thread wrapper.
+ *
+ * @param arg   Unused
+ *
+ * @return NULL
+ */
+void *
+logger_thread_wrapper(void *arg)
+{
+    int rc;
+
+    UNUSED(arg);
+
+    if (strcmp(thread_name, "log_serial") == 0)
+        rc = log_serial(&args_processed, argc, argv);
+    else
+    {
+        ERROR("Unknown thread %s", thread_name);
+        sem_post(&args_processed);
+        return NULL;
+    }
+
+    if (rc != 0)
+    {
+        ERROR("%s() failed", thread_name);
+        sem_post(&args_processed);
+    }
+
+    return NULL;
+}
+
+/**
+ * User call back called when a closing tag has been processed.
+ *
+ * @param ctx       XML parser context
+ * @param xml_name  Element name
+ */
+static void
+endElementLGR(void           *ctx,
+              const xmlChar  *xml_name)
+{
+    UNUSED(ctx);
+
+    if (strcmp((char *)xml_name, "thread") == 0 && thread_parsed)
+    {
+        pthread_t thread_id;
+
+        argv[argc] = NULL;
+        sem_init(&args_processed, 0, 0);
+        pthread_create(&thread_id, NULL, logger_thread_wrapper,
+                       NULL);
+        sem_wait(&args_processed);
+        sem_destroy(&args_processed);
+        thread_parsed = FALSE;
+    }
+
+    if (strcmp((char *)xml_name, "thread") == 0)
+    {
+        int i;
+
+        for (i = 0; i < argc; i++)
+            free(argv[i]);
+        argc = 0;
+    }
 }
 
 xmlSAXHandler loggerSAXHandlerStruct = {
@@ -204,7 +368,7 @@ xmlSAXHandler loggerSAXHandlerStruct = {
     NULL, /***startDocumentLGR*/
     NULL, /***endDocumentLGR*/
     startElementLGR,
-    NULL, /***endElementLGR*/
+    endElementLGR,
     NULL, /*referenceLGR*/
     NULL, /***charactersLGR*/
     NULL, /*ignorableWhitespaceLGR*/
