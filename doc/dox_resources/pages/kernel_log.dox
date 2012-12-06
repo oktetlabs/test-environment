@@ -1,0 +1,95 @@
+/**
+
+@defgroup kernel_log Kernel Logging
+@ingroup te_engine
+@{
+Kernel log can be obtained from two sources - either from serial console
+(directly or via Conserver) or from netconsole kernel module sending kernel
+logs via UDP to the specified address.
+
+TE can process kernel log either in Test Agent or in Logger.
+
+@section kernel_log_direct Using serial console directly
+
+Serial console can be logged directly only in Test Agent residing on the
+same host as this serial console.
+
+To configure direct serial console logging, in @ref te_engine_rcf_conf_file
+add a child <strong>thread</strong> tag to the <strong>ta</strong> tag
+corresponding to related Test Agent:
+
+@code
+<thread name="log_serial" when="<!--if not void, thread will be created-->">
+    <arg value="elrond"/><!-- Host name to be displayed in log -->
+    <arg value="WARN"/> <!-- Log messages level -->
+    <arg value="10"/> <!-- Timeout, in milliseconds; when elapsed, what
+                           gathered will be printed -->
+    <arg value="/dev/ttyS0"/> <!-- Path to serial console -->
+    <arg value="exclusive"/> <!-- What to do if other process has already
+                                  opened this device file: if argument is
+                                  omitted or value is 'exclusive', exit
+                                  with error;
+                                  if value is 'force', kill other
+                                  process(es) using the serial console
+                                  before opening it;
+                                  if value is 'shared', just open it. -->
+</thread>
+@endcode
+
+@section kernel_log_conserver Using Conserver
+
+If you have configured Conserver, you can tell Test Agent to use it adding
+the following <strong>thread</strong> child in its tag in
+@ref te_engine_rcf_conf_file :
+
+@code
+<thread name="log_serial" when="<!-- not used but should not be void-->">
+    <arg value="elrond"/><!-- Host name to be displayed in log -->
+    <arg value="WARN"/> <!-- Log messages level -->
+    <arg value="10"/> <!-- Timeout, in milliseconds; when elapsed, what
+                           gathered will be printed -->
+    <!-- Conserver configuration string; the first parameter can be
+         omitted if conserver resides on the same host; IPv6 address
+         should be specified in parenthesis -->
+    <arg value="address or hostname:port:user:console"/>
+</thread>
+@endcode
+
+If you want to use Logger directly, the above tag should be specified in
+Logger @ref te_engine_logger_conf_file instead.
+
+@section kernel_log_netconsole Using Netconsole
+
+If kernel netconsole module is configured already then all you should do is
+to add in tag corresponding to Test Agent residing on the host to which
+netconsole sends logs in @ref te_engine_rcf_conf_file the following:
+
+@code
+<thread name="log_serial" when="<!--not used but should not be void-->">
+    <arg value="elrond"/><!-- Host name to be displayed in log -->
+    <arg value="WARN"/> <!-- Log messages level -->
+    <arg value="10"/> <!-- Timeout, in milliseconds; when elapsed, what
+                           gathered will be printed -->
+    <!-- Supposing that netconsole sends logs to UDP port 1234 -->
+    <arg value="netconsole:1234"/>
+</thread>
+@endcode
+
+If Logger resides on the host to which logs are sent, you can specify this
+tag in Logger @ref te_engine_logger_conf_file instead to use Logger
+directly.
+
+If netconsole kernel module is not configured and you wish to configure it
+from Test Agent automatically, in @ref te_engine_rcf_conf_file add the
+following in corresponding TA tag:
+
+@code
+    <function name="configure_netconsole" when="<!--not used but should not be void-->">
+        <arg value="local_port"/> <!-- Local port for sending logs -->
+        <arg value="remote_host"/> <!-- To which host to send logs -->
+        <arg value="remote_port"/> <!-- UDP port on the remote host -->
+    </function>
+@endcode
+@} <!-- Kernel log -->
+
+*/
