@@ -705,7 +705,11 @@ rpc_send_msg_more(rcf_rpc_server *rpcs, int s, rpc_ptr buf,
 static void
 tarpc_msghdr_free(tarpc_msghdr *msg)
 {
+    int i;
+
     free(msg->msg_iov.msg_iov_val);
+    for (i = 0; i < (int)msg->msg_control.msg_control_len; i++)
+        free(msg->msg_control.msg_control_val[i].data.data_val);
     free(msg->msg_control.msg_control_val);
 }
 
@@ -772,46 +776,25 @@ msghdr_rpc2tarpc(const rpc_msghdr *rpc_msg, tarpc_msghdr *tarpc_msg)
 
     if (rpc_msg->msg_control != NULL)
     {
-        struct cmsghdr *c;
-        unsigned int    i;
+        int             rc;
 
         struct tarpc_cmsghdr *rpc_c;
 
         rpc_c = tarpc_msg->msg_control.msg_control_val =
                 TE_ALLOC(sizeof(tarpc_cmsghdr) * RCF_RPC_MAX_CMSGHDR);
 
-        for (i = 0, c = CMSG_FIRSTHDR((struct msghdr *)rpc_msg); 
-             i < RCF_RPC_MAX_CMSGHDR && c != NULL;
-             i++, rpc_c++, c = CMSG_NXTHDR((struct msghdr *)rpc_msg, c))
+        rc = msg_control_h2rpc(
+                        (uint8_t *)CMSG_FIRSTHDR((struct msghdr *)rpc_msg),
+                        rpc_msg->msg_controllen,
+                        &tarpc_msg->msg_control.msg_control_val,
+                        &tarpc_msg->msg_control.msg_control_len);
+
+        if (rc != 0)
         {
-            uint8_t *data = CMSG_DATA(c);
-            
-            if ((int)(c->cmsg_len) < data - (uint8_t *)c)
-            {
-                ERROR("Incorrect content of cmsg is not supported");
-                return TE_EINVAL;
-            }
-            
-            rpc_c->level = socklevel_h2rpc(c->cmsg_level);
-            rpc_c->type = sockopt_h2rpc(c->cmsg_level, c->cmsg_type);
-            if ((rpc_c->data.data_len = 
-                     c->cmsg_len - (data - (uint8_t *)c)) > 0)
-                rpc_c->data.data_val = data;
+            ERROR("%s(): failed to convert control message to TARPC"
+                  "format", __FUNCTION__);
+            return rc;
         }
-        
-        if (i == RCF_RPC_MAX_CMSGHDR)
-        {
-            ERROR("Too many cmsg headers - increase "
-                  "RCF_RPC_MAX_CMSGHDR");
-            return TE_ENOMEM;
-        }
-        
-        if (i == 0)
-        {
-            WARN("Incorrect msg_control length is not supported"); 
-            tarpc_msg->msg_control.msg_control_val = NULL;
-        }
-        tarpc_msg->msg_control.msg_control_len = i;
     }
 
     return 0;
@@ -991,33 +974,21 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
         }
         if (msg->msg_control != NULL)
         {
-            struct cmsghdr *c;
-            unsigned int    i;
-            
-            struct tarpc_cmsghdr *rpc_c = 
-                rpc_msg.msg_control.msg_control_val;
-            
-            for (i = 0, c = CMSG_FIRSTHDR((struct msghdr *)msg); 
-                 i < rpc_msg.msg_control.msg_control_len && c != NULL; 
-                 i++, c = CMSG_NXTHDR((struct msghdr *)msg, c), rpc_c++)
+            uint8_t *first_cmsg =
+                            (uint8_t *)CMSG_FIRSTHDR((struct msghdr *)msg);
+            int      retval;
+
+            retval = msg_control_rpc2h(rpc_msg.msg_control.msg_control_val,
+                                       rpc_msg.msg_control.msg_control_len,
+                                       first_cmsg,
+                                       (size_t *)&msg->msg_controllen);
+            if (retval != 0)
             {
-                c->cmsg_level = socklevel_rpc2h(rpc_c->level);
-                c->cmsg_type = sockopt_rpc2h(rpc_c->type);
-                c->cmsg_len = CMSG_LEN(rpc_c->data.data_len);
-                if (rpc_c->data.data_val != NULL)
-                    memcpy(CMSG_DATA(c), rpc_c->data.data_val, 
-                           rpc_c->data.data_len);
-            }
-            
-            if (c == NULL && i < rpc_msg.msg_control.msg_control_len)
-            {
-                ERROR("Unexpected lack of space in auxiliary buffer");
-                rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
+                ERROR("%s(): control message conversion failed",
+                      __FUNCTION__);
+                rpcs->_errno = TE_RC(TE_RCF, retval);
                 RETVAL_INT(recvmsg, -1);
             }
-            
-            if (c != NULL)
-                msg->msg_controllen = (char *)c - (char *)msg->msg_control;
         }
 
         msg->msg_flags = (rpc_send_recv_flags)rpc_msg.msg_flags;
@@ -1600,8 +1571,6 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                        out.raw_optval.raw_optval_len);
             else if (*out.raw_optlen.raw_optlen_val > 0)
             {
-                struct cmsghdr *c;
-                unsigned int    i;
                 unsigned int    len = out.optval.optval_val[0].
                                         option_value_u.
                                         opt_ip_pktoptions.
@@ -1612,31 +1581,20 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                                                 opt_ip_pktoptions.
                                                 opt_ip_pktoptions_val;
 
-                c = raw_optval;
-                c->cmsg_len = CMSG_LEN(rpc_c->data.data_len);
+                int      rc;
+                int      tmp_optlen = raw_roptlen;
 
-                for (i = 0;
-                     CMSG_TOTAL_LEN(c) <=
-                        CMSG_REMAINED_LEN(c, raw_optval, raw_roptlen) &&
-                     i < len;
-                     i++, rpc_c++, c = CMSG_NEXT(c),
-                     c->cmsg_len = CMSG_LEN(rpc_c->data.data_len))
+                rc = msg_control_rpc2h(rpc_c, len, raw_optval,
+                                       (size_t *)&tmp_optlen);
+                if (rc != 0)
                 {
-                    c->cmsg_level = socklevel_rpc2h(rpc_c->level);
-                    c->cmsg_type = sockopt_rpc2h(rpc_c->type);
-                    if (rpc_c->data.data_val != NULL)
-                        memcpy(CMSG_DATA(c), rpc_c->data.data_val, 
-                               rpc_c->data.data_len);
-                }
-
-                *raw_optlen = (uint8_t *)c - (uint8_t *)raw_optval;
-
-                if (i < len)
-                {
-                    ERROR("Unexpected lack of space in buffer");
-                    rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
+                    ERROR("%s(): failed to convert control message",
+                          __FUNCTION__);
+                    rpcs->_errno = TE_RC(TE_RCF, rc);
                     RETVAL_INT(getsockopt, -1);
                 }
+                if (raw_optlen != NULL)
+                    *raw_optlen = tmp_optlen;
             }
 
             if (opt_val_str == NULL)
@@ -2108,34 +2066,21 @@ rpc_recvmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
             }
             if (msg->msg_control != NULL)
             {
-                struct cmsghdr *c;
-                unsigned int    i;
+                uint8_t *first_cmsg =
+                            (uint8_t *)CMSG_FIRSTHDR((struct msghdr *)msg);
+                int      retval;
 
-                struct tarpc_cmsghdr *rpc_c =
-                    rpc_msg->msg_control.msg_control_val;
-
-                for (i = 0, c = CMSG_FIRSTHDR((struct msghdr *)msg);
-                     i < rpc_msg->msg_control.msg_control_len && c != NULL;
-                     i++, c = CMSG_NXTHDR((struct msghdr *)msg, c), rpc_c++)
+                retval = msg_control_rpc2h(
+                                    rpc_msg->msg_control.msg_control_val,
+                                    rpc_msg->msg_control.msg_control_len,
+                                    first_cmsg,
+                                    &msg->msg_controllen);
+                if (retval != 0)
                 {
-                    c->cmsg_level = socklevel_rpc2h(rpc_c->level);
-                    c->cmsg_type = sockopt_rpc2h(rpc_c->type);
-                    c->cmsg_len = CMSG_LEN(rpc_c->data.data_len);
-                    if (rpc_c->data.data_val != NULL)
-                        memcpy(CMSG_DATA(c), rpc_c->data.data_val,
-                               rpc_c->data.data_len);
+                    ERROR("%s(): cmsghdr data conversion failed",
+                          __FUNCTION__);
+                    rpcs->_errno = TE_RC(TE_RCF, retval);
                 }
-
-                if (c == NULL && i < rpc_msg->msg_control.msg_control_len)
-                {
-                    ERROR("Unexpected lack of space in auxiliary buffer");
-                    rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
-                    RETVAL_INT(recvmmsg_alt, -1);
-                }
-
-                if (c != NULL)
-                    msg->msg_controllen = (char *)c -
-                        (char *)msg->msg_control;
             }
 
             msg->msg_flags = (rpc_send_recv_flags)rpc_msg->msg_flags;

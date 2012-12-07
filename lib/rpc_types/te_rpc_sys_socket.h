@@ -82,6 +82,61 @@ extern "C" {
     (size_t)((len) - ((uint8_t *)(c) - (uint8_t *)(p)))
 
 /**
+ * Convert native cmsghdr data representation into TARPC one.
+ *
+ * @param level     Originating protocol
+ * @param type      Protocol-specific type
+ * @param data      Data to be converted
+ * @param len       Length of data to be converted
+ * @param rpc_cmsg  Where to place converted value
+ *
+ * @return 0 on success or error code
+ */
+extern te_errno cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
+                                tarpc_cmsghdr *rpc_cmsg);
+/**
+ * Convert TARPC cmsghdr data representation into native one.
+ *
+ * @param rpc_cmsg  TARPC structure with data to be converted
+ * @param data      Where to place converted data
+ * @param len       Maximum length of converted data (will be
+ *                  updated to actual length)
+ *
+ * @return 0 on success or error code
+ */
+extern te_errno cmsg_data_rpc2h(tarpc_cmsghdr *rpc_cmsg,
+                                uint8_t *data, int *len);
+
+/**
+ * Convert native control message representation into TARPC one.
+ *
+ * @param cmsg_buf          Buffer with control message to be converted
+ * @param cmsg_len          Length of control message
+ * @param rpc_cmsg          Where to place converted control message
+ * @param rpc_cmsg_count    Will be set to count of cmsghdr headers
+ *                          in a message
+ *
+ * @return 0 on success or error code
+ */
+extern te_errno msg_control_h2rpc(uint8_t *cmsg_buf, size_t cmsg_len,
+                                  tarpc_cmsghdr **rpc_cmsg,
+                                  unsigned int *rpc_cmsg_count);
+
+/**
+ * Convert TARPC control message representation into native one.
+ *
+ * @param rpc_cmsg          Control message to be converted
+ * @param rpc_cmsg_count    Count of cmsghdr headers
+ * @param cmsg_buf          Where to place converted control message
+ * @param cmsg_len          Available space in @p cmsg_buf
+ *
+ * @return 0 on success or error code
+ */
+extern te_errno msg_control_rpc2h(tarpc_cmsghdr *rpc_cmsg,
+                                  unsigned int rpc_cmsg_count,
+                                  uint8_t *cmsg_buf, size_t *cmsg_len);
+
+/**
  * TA-independent protocol families.
  */
 typedef enum rpc_socket_domain {

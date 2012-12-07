@@ -2950,71 +2950,16 @@ tarpc_getsockopt(tarpc_getsockopt_in *in, tarpc_getsockopt_out *out,
                                             opt_ip_pktoptions_len
             if (optlen > 0)
             {
-                struct cmsghdr      *c;
-                tarpc_cmsghdr       *rpc_c;
-                int                  i;
-                uint8_t             *data;
+                int                  rc;
 
-                for (i = 0, c = (struct cmsghdr *)opt;
-                     CMSG_TOTAL_LEN(c) <=
-                            CMSG_REMAINED_LEN(c, opt, optlen) &&
-                     c->cmsg_len > 0;
-                     i++, c = CMSG_NEXT(c));
-
-                if ((uint8_t *)c - (uint8_t *)opt < (int)optlen)
+                rc = msg_control_h2rpc((uint8_t *)opt, optlen,
+                                       &OPTVAL, &OPTLEN);
+                if (rc != 0)
                 {
                     ERROR("Failed to process IP_PKTOPTIONS value");
                     out->retval = -1;
-                    out->common._errno = TE_RC(TE_RPC, TE_EILSEQ);
+                    out->common._errno = TE_RC(TE_TA_UNIX, rc);
                     break;
-                }
-
-                rpc_c = OPTVAL = calloc(1, sizeof(*rpc_c) * i);
-                OPTLEN = i;
-
-                if (i > 0 && rpc_c == NULL)
-                {
-                    ERROR("Out of memory when processing "
-                          "IP_PKTOPTIONS value");
-                    out->common._errno = TE_RC(TE_TA_UNIX,
-                                               TE_ENOMEM);
-                    out->retval = -1;
-                    break;
-                }
-
-                for (i = 0, c = (struct cmsghdr *)opt;
-                     i < (int)OPTLEN;
-                     i++, c = CMSG_NEXT(c), rpc_c++)
-                {
-                    data = CMSG_DATA(c);
-
-                    rpc_c->level = socklevel_h2rpc(c->cmsg_level);
-                    rpc_c->type = sockopt_h2rpc(c->cmsg_level,
-                                                c->cmsg_type);
-
-                    if ((rpc_c->data.data_len =
-                             c->cmsg_len - (data - (uint8_t *)c)) > 0)
-                    {
-                        rpc_c->data.data_val =
-                                malloc(rpc_c->data.data_len);
-                        if (rpc_c->data.data_val == NULL)
-                        {
-                            for (i--, rpc_c--; i >= 0; i--, rpc_c--)
-                                free(rpc_c->data.data_val);
-                            free(OPTVAL);
-                            OPTVAL = NULL;
-                            OPTLEN = 0;
-
-                            ERROR("Out of memory when processing "
-                                  "IP_PKTOPTIONS value");
-                            out->common._errno = TE_RC(TE_TA_UNIX,
-                                                       TE_ENOMEM);
-                            out->retval = -1;
-                            break;
-                        }
-                        memcpy(rpc_c->data.data_val, data,
-                               rpc_c->data.data_len);
-                    }
                 }
             }
 
@@ -3807,13 +3752,8 @@ msghdr_free(struct msghdr *msg)
                                                                         \
         if ((tarpc_msg_)->msg_control.msg_control_val != NULL)          \
         {                                                               \
-            struct cmsghdr *c;                                          \
-            unsigned int    i;                                          \
-            int             len =                                       \
-                                calculate_msg_controllen((tarpc_msg_)); \
-                                                                        \
-            struct tarpc_cmsghdr *rpc_c =                               \
-                (tarpc_msg_)->msg_control.msg_control_val;              \
+            int      len = calculate_msg_controllen((tarpc_msg_));      \
+            int      retval;                                            \
                                                                         \
             if (((msg_)->msg_control = calloc(1, len)) == NULL)         \
             {                                                           \
@@ -3822,16 +3762,17 @@ msghdr_free(struct msghdr *msg)
             }                                                           \
             (msg_)->msg_controllen = len;                               \
                                                                         \
-            for (i = 0, c = CMSG_FIRSTHDR((msg_));                      \
-                 i < (tarpc_msg_)->msg_control.msg_control_len;         \
-                 i++, c = CMSG_NXTHDR((msg_), c), rpc_c++)              \
+            retval = msg_control_rpc2h(                                 \
+                        (tarpc_msg_)->msg_control.msg_control_val,      \
+                        (tarpc_msg_)->msg_control.msg_control_len,      \
+                        (msg_)->msg_control, &(msg_)->msg_controllen);  \
+            if (retval != 0)                                            \
             {                                                           \
-                c->cmsg_level = socklevel_rpc2h(rpc_c->level);          \
-                c->cmsg_type = sockopt_rpc2h(rpc_c->type);              \
-                c->cmsg_len = CMSG_LEN(rpc_c->data.data_len);           \
-                if (rpc_c->data.data_val != NULL)                       \
-                    memcpy(CMSG_DATA(c), rpc_c->data.data_val,          \
-                           rpc_c->data.data_len);                       \
+                ERROR("%s(): failed to convert control message from "   \
+                      "TARPC representation",                           \
+                      __FUNCTION__);                                    \
+                out->common._errno = TE_RC(TE_TA_UNIX, retval);         \
+                goto finish;                                            \
             }                                                           \
                                                                         \
             INIT_CHECKED_ARG((msg_)->msg_control,                       \
@@ -4033,54 +3974,23 @@ TARPC_FUNC(recvmsg,
         /* in case retval < 0 cmsg is not filled */
         if (out->retval >= 0 && msg.msg_control != NULL)
         {
-            struct cmsghdr *c;
-            int             i;
-
+            int                   rc;
+            unsigned int          rpc_len;
             struct tarpc_cmsghdr *rpc_c;
 
-            /* Calculate number of elements to allocate an array */
-            for (i = 0, c = CMSG_FIRSTHDR(&msg);
-                 c != NULL;
-                 i++, c = CMSG_NXTHDR(&msg, c));
-
-            rpc_c = rpc_msg->msg_control.msg_control_val =
-                calloc(1, sizeof(*rpc_c) * i);
-
-            if (rpc_msg->msg_control.msg_control_val == NULL)
+            rc = msg_control_h2rpc(msg.msg_control,
+                                   msg.msg_controllen,
+                                   &rpc_c, &rpc_len);
+            if (rc != 0)
             {
-                out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+                ERROR("%s(): failed cmsghdr conversion",
+                      __FUNCTION__);
+                out->common._errno = TE_RC(TE_TA_UNIX, rc);
                 goto finish;
             }
-            /* Fill the array */
-            for (i = 0, c = CMSG_FIRSTHDR(&msg);
-                 c != NULL;
-                 i++, c = CMSG_NXTHDR(&msg, c), rpc_c++)
-            {
-                uint8_t *data = CMSG_DATA(c);
 
-                rpc_c->level = socklevel_h2rpc(c->cmsg_level);
-                rpc_c->type = sockopt_h2rpc(c->cmsg_level,
-                                              c->cmsg_type);
-                if ((rpc_c->data.data_len =
-                         c->cmsg_len - (data - (uint8_t *)c)) > 0)
-                {
-                    rpc_c->data.data_val =
-                        malloc(rpc_c->data.data_len);
-                    if (rpc_c->data.data_val == NULL)
-                    {
-                        for (i--, rpc_c--; i >= 0; i--, rpc_c--)
-                            free(rpc_c->data.data_val);
-                        free(rpc_msg->msg_control.msg_control_val);
-                        rpc_msg->msg_control.msg_control_val = NULL;
-
-                        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-                        goto finish;
-                    }
-                    memcpy(rpc_c->data.data_val, data,
-                           rpc_c->data.data_len);
-                }
-            }
-            rpc_msg->msg_control.msg_control_len = i;
+            rpc_msg->msg_control.msg_control_val = rpc_c;
+            rpc_msg->msg_control.msg_control_len = rpc_len;
         }
     }
     finish:
@@ -8783,54 +8693,23 @@ TARPC_FUNC(recvmmsg_alt,
             /* in case retval < 0 cmsg is not filled */
             if (out->retval >= 0 && msg->msg_control != NULL)
             {
-                struct cmsghdr *c;
-                int             i;
-
+                int                   rc;
+                unsigned int          rpc_len;
                 struct tarpc_cmsghdr *rpc_c;
 
-                /* Calculate number of elements to allocate an array */
-                for (i = 0, c = CMSG_FIRSTHDR(msg);
-                     c != NULL;
-                     i++, c = CMSG_NXTHDR(msg, c));
-
-                rpc_c = rpc_msg->msg_control.msg_control_val =
-                    calloc(1, sizeof(*rpc_c) * i);
-
-                if (rpc_msg->msg_control.msg_control_val == NULL)
+                rc = msg_control_h2rpc(msg->msg_control,
+                                       msg->msg_controllen,
+                                       &rpc_c, &rpc_len);
+                if (rc != 0)
                 {
-                    out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+                    ERROR("%s(): failed cmsghdr conversion",
+                          __FUNCTION__);
+                    out->common._errno = TE_RC(TE_TA_UNIX, rc);
                     goto finish;
                 }
-                /* Fill the array */
-                for (i = 0, c = CMSG_FIRSTHDR(msg);
-                     c != NULL;
-                     i++, c = CMSG_NXTHDR(msg, c))
-                {
-                    uint8_t *data = CMSG_DATA(c);
 
-                    rpc_c->level = socklevel_h2rpc(c->cmsg_level);
-                    rpc_c->type = sockopt_h2rpc(c->cmsg_level,
-                                                c->cmsg_type);
-                    if ((rpc_c->data.data_len =
-                             c->cmsg_len - (data - (uint8_t *)c)) > 0)
-                    {
-                        rpc_c->data.data_val = malloc(rpc_c->data.data_len);
-                        if (rpc_c->data.data_val == NULL)
-                        {
-                            for (i--, rpc_c--; i >= 0; i--, rpc_c--)
-                                free(rpc_c->data.data_val);
-                            free(rpc_msg->msg_control.msg_control_val);
-                            rpc_msg->msg_control.msg_control_val = NULL;
-
-                            out->common._errno = TE_RC(TE_TA_UNIX,
-                                                       TE_ENOMEM);
-                            goto finish;
-                        }
-                        memcpy(rpc_c->data.data_val, data,
-                               rpc_c->data.data_len);
-                    }
-                }
-                rpc_msg->msg_control.msg_control_len = i;
+                rpc_msg->msg_control.msg_control_val = rpc_c;
+                rpc_msg->msg_control.msg_control_len = rpc_len;
             }
         }
     }

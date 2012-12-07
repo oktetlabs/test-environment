@@ -108,6 +108,7 @@ extern const char *inet_ntop(int af, const void *src, char *dst,
 #include "logger_api.h"
 #include "te_alloc.h"
 #include "te_sockaddr.h"
+#include "rcf_rpc_defs.h"
 
 #ifndef WINDOWS
 #include "tarpc.h"
@@ -2505,3 +2506,302 @@ ethtool_data_h2rpc(tarpc_ethtool *rpc_edata, caddr_t edata)
 }
 #undef COPY_FIELD
 #endif /* HAVE_LINUX_ETHTOOL_H */
+
+/**
+ * Described in te_rpc_sys_socket.h
+ */
+te_errno
+cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
+                tarpc_cmsghdr *rpc_cmsg)
+{
+    int rpc_level;
+    int rpc_type;
+
+    if (data == NULL || rpc_cmsg == NULL)
+    {
+        ERROR("%s(): incorrect parameters", __FUNCTION__);
+        return TE_EINVAL;
+    }
+
+    rpc_level = socklevel_h2rpc(level);
+    rpc_type = sockopt_h2rpc(level, type);
+
+    rpc_cmsg->data_aux.type = TARPC_CMSG_DATA_RAW;
+
+    rpc_cmsg->data.data_len = 0;   
+    rpc_cmsg->data.data_val = NULL;   
+    if (len == 0)
+    {
+        RING("%s(): trying to convert value of zero length", __FUNCTION__);
+        return 0;
+    }
+
+    switch(rpc_level)
+    {
+        case RPC_SOL_IP:
+            switch(rpc_type)
+            {
+                case RPC_IP_TTL:
+
+                    if (len != sizeof(int32_t))
+                    {
+                        ERROR("%s(): incorrect data len for IP_TTL value",
+                              __FUNCTION__);
+                        return TE_EINVAL;
+                    }
+                    rpc_cmsg->data_aux.type = TARPC_CMSG_DATA_INT;
+                    rpc_cmsg->data_aux.tarpc_cmsg_data_u.int_data =
+                                                        *(int32_t *)data;
+                    break;
+            }
+
+            break;
+    }
+
+    rpc_cmsg->data.data_val = TE_ALLOC(len);
+    if (rpc_cmsg->data.data_val == NULL)
+    {
+        ERROR("%s(): failed to allocate memory for "
+              "TARPC representation", __FUNCTION__);
+        return TE_ENOMEM;
+    }
+    memcpy(rpc_cmsg->data.data_val, data, len);
+    rpc_cmsg->data.data_len = len;
+
+    return 0;
+}
+
+/**
+ * Described in te_rpc_sys_socket.h
+ */
+te_errno
+cmsg_data_rpc2h(tarpc_cmsghdr *rpc_cmsg,
+                uint8_t *data, int *len)
+{
+    if (data == NULL || len == NULL)
+    {
+        ERROR("%s(): incorrect parameters", __FUNCTION__);
+        return TE_EINVAL;
+    }
+
+    if (rpc_cmsg->data.data_len == 0 &&
+        rpc_cmsg->data_aux.type == TARPC_CMSG_DATA_RAW)
+    {
+        *len = 0;
+        return 0;
+    }
+
+    switch(rpc_cmsg->data_aux.type)
+    {
+        case TARPC_CMSG_DATA_INT:
+            {
+                int32_t value;
+
+                value = rpc_cmsg->data_aux.tarpc_cmsg_data_u.int_data;
+                if (*len < (int)sizeof(value))
+                {
+                    ERROR("%s(): not enough memory for "
+                          "numeric value", __FUNCTION__);
+                    return TE_ENOMEM;
+                }
+
+                memcpy(data, &value, sizeof(value));
+                *len = sizeof(value);
+                return 0;
+            }
+
+            break;
+
+        default:
+            break;
+    }
+
+    if (*len < (int)rpc_cmsg->data.data_len)
+    {
+        ERROR("%s(): not enough memory for "
+              "native value", __FUNCTION__);
+        return TE_ENOMEM;
+    }
+
+    memcpy(data, rpc_cmsg->data.data_val,
+           rpc_cmsg->data.data_len);
+    *len = rpc_cmsg->data.data_len;
+
+    return 0;
+}
+
+/**
+ * Described in te_rpc_sys_socket.h
+ */
+te_errno
+msg_control_h2rpc(uint8_t *cmsg_buf, size_t cmsg_len,
+                  tarpc_cmsghdr **rpc_cmsg,
+                  unsigned int *rpc_cmsg_count)
+{
+    struct cmsghdr      *c;
+    int                  i;
+    uint8_t             *data;
+    int                  data_len;
+    int                  rc;
+    tarpc_cmsghdr       *rpc_cmsg_aux;
+
+    if (cmsg_buf == NULL || cmsg_len == 0)
+    {
+        RING("%s(): trying to convert value of zero length",
+             __FUNCTION__);
+        if (rpc_cmsg_count != NULL)
+            *rpc_cmsg_count = 0;
+        if (rpc_cmsg != NULL)
+            *rpc_cmsg = NULL;
+        return 0;
+    }
+
+    if (cmsg_len < sizeof(struct cmsghdr))
+    {
+        ERROR("%s(): buffer length is too small to contain a single "
+              "cmsghdr structure", __FUNCTION__);
+        return TE_EINVAL;
+    }
+
+    if (rpc_cmsg == NULL ||
+        rpc_cmsg_count == NULL)
+    {
+        ERROR("%s(): not specified where to place converted value",
+              __FUNCTION__);
+        return 0;
+    }
+
+    for (i = 0, c = (struct cmsghdr *)cmsg_buf;
+         CMSG_TOTAL_LEN(c) <=
+                CMSG_REMAINED_LEN(c, cmsg_buf, cmsg_len) &&
+         c->cmsg_len > 0;
+         i++, c = CMSG_NEXT(c));
+
+    if ((uint8_t *)c - (uint8_t *)cmsg_buf < (int)cmsg_len)
+    {
+        ERROR("%s(): failed to process control message", __FUNCTION__);
+        return TE_EILSEQ;
+    }
+
+    if (i > RCF_RPC_MAX_CMSGHDR)
+    {
+        ERROR("%s(): too many cmsghdr structures", __FUNCTION__);
+        return TE_EILSEQ;
+    }
+
+    *rpc_cmsg = calloc(1, sizeof(**rpc_cmsg) * i);
+    *rpc_cmsg_count = i;
+
+    if (i > 0 && *rpc_cmsg == NULL)
+    {
+        ERROR("%s(): out of memory when processing "
+              "control message", __FUNCTION__);
+        *rpc_cmsg_count = 0;
+        return TE_ENOMEM;
+    }
+
+    rpc_cmsg_aux = *rpc_cmsg;
+    for (i = 0, c = (struct cmsghdr *)cmsg_buf;
+         i < (int)*rpc_cmsg_count;
+         i++, c = CMSG_NEXT(c), rpc_cmsg_aux++)
+    {
+        data = CMSG_DATA(c);
+
+        rpc_cmsg_aux->level = socklevel_h2rpc(c->cmsg_level);
+        rpc_cmsg_aux->type = sockopt_h2rpc(c->cmsg_level,
+                                           c->cmsg_type);
+        data_len = c->cmsg_len - (data - (uint8_t *)c);
+
+        if (data_len > 0)
+        {
+            rc = cmsg_data_h2rpc(c->cmsg_level, c->cmsg_type,
+                                 CMSG_DATA(c), data_len,
+                                 rpc_cmsg_aux);
+            if (rc != 0)
+            {
+                for (i--, rpc_cmsg_aux--; i >= 0; i--, rpc_cmsg_aux--)
+                    free(rpc_cmsg_aux->data.data_val);
+                free(rpc_cmsg_aux);
+                *rpc_cmsg = NULL;
+                *rpc_cmsg_count = 0;
+
+                ERROR("%s(): conversion of cmsghdr failed", __FUNCTION__);
+                return rc;
+            }
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * Described in te_rpc_sys_socket.h
+ */
+te_errno
+msg_control_rpc2h(tarpc_cmsghdr *rpc_cmsg,
+                  unsigned int rpc_cmsg_count,
+                  uint8_t *cmsg_buf, size_t *cmsg_len)
+{
+    struct cmsghdr *c;
+    unsigned int    i;
+    int             data_len = 0;
+    int             rc;
+
+    if (rpc_cmsg == NULL || rpc_cmsg_count == 0)
+    {
+        if (cmsg_len != NULL)
+            *cmsg_len = 0;
+        return 0;
+    }
+
+    if (cmsg_buf == NULL || cmsg_len == NULL ||
+        *cmsg_len == 0)
+    {
+        ERROR("%s(): no specified where to place "
+              "converted value", __FUNCTION__);
+        return 0;
+    }
+
+    if (*cmsg_len < (int)sizeof(struct cmsghdr) &&
+        *cmsg_len != 0)
+    {
+        ERROR("%s(): too small control message buffer",
+              __FUNCTION__);
+        return TE_EINVAL;
+    }
+
+    c = (struct cmsghdr *)cmsg_buf;
+    c->cmsg_len = CMSG_LEN(rpc_cmsg->data.data_len);
+
+    for (i = 0;
+         i < rpc_cmsg_count;
+         i++, rpc_cmsg++, c = CMSG_NEXT(c))
+    {
+        c->cmsg_level = socklevel_rpc2h(rpc_cmsg->level);
+        c->cmsg_type = sockopt_rpc2h(rpc_cmsg->type);
+        data_len = CMSG_REMAINED_LEN(c, cmsg_buf,
+                                     *cmsg_len) -
+                   ((uint8_t *)CMSG_DATA(c) -
+                    (uint8_t *)c);
+        rc = cmsg_data_rpc2h(rpc_cmsg,
+                             CMSG_DATA(c), &data_len);
+        if (rc == 0)
+            c->cmsg_len = CMSG_LEN(data_len);
+        else
+        {
+            ERROR("%s(): failed to convert cmsghdr data",
+                  __FUNCTION__);
+            return rc;
+        }
+    }
+
+    *cmsg_len = (uint8_t *)c - (uint8_t *)cmsg_buf;
+
+    if (i < rpc_cmsg_count)
+    {
+        ERROR("%s(): unexpected lack of space in buffer", __FUNCTION__);
+        return TE_EINVAL;
+    }
+
+    return 0;
+}

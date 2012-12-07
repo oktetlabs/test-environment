@@ -935,11 +935,22 @@ struct tarpc_stack_t {
 };
 
 /* sendmsg() / recvmsg() */
+enum tarpc_cmsg_data_type {
+    TARPC_CMSG_DATA_RAW = 0,
+    TARPC_CMSG_DATA_INT = 1
+};
+
+union tarpc_cmsg_data switch (tarpc_cmsg_data_type type) {
+    case TARPC_CMSG_DATA_RAW:   void;
+    case TARPC_CMSG_DATA_INT:   tarpc_int int_data;   /**< Integer value */
+};
 
 struct tarpc_cmsghdr {
     uint32_t level;     /**< Originating protocol */
     uint32_t type;      /**< Protocol-specific type */
     uint8_t  data<>;    /**< Data */
+
+    tarpc_cmsg_data data_aux;   /**< Non-raw representation if possible */
 };    
 
 struct tarpc_msghdr {
