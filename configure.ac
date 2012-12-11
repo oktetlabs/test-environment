@@ -195,14 +195,14 @@ for p in ${TE_BS_PLATFORMS} ; do
         # you tell it --no-overwrite-dir).
         #
         if !(test -h platforms/${p}/include) ; then
-        cp -r platforms/${p}/include/* ${TE_BUILD}/include/ && \
-        rm -rf platforms/${p}/include && \
-        ln -s ${TE_BUILD}/include platforms/${p}/include || exit 1
+            cp -r platforms/${p}/include/* ${TE_BUILD}/include/ && \
+            rm -rf platforms/${p}/include && \
+            ln -s ${TE_BUILD}/include platforms/${p}/include || exit 1
         fi
         if !(test -h platforms/${p}/lib) ; then
-        cp -r platforms/${p}/lib/* ${TE_BUILD}/lib/ && \
-        rm -rf platforms/${p}/lib && \
-        ln -s ${TE_BUILD}/lib platforms/${p}/lib || exit 1
+            cp -r platforms/${p}/lib/* ${TE_BUILD}/lib/ && \
+            rm -rf platforms/${p}/lib && \
+            ln -s ${TE_BUILD}/lib platforms/${p}/lib || exit 1
         fi
     fi
     
