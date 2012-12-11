@@ -36,14 +36,15 @@ tad_libs_rem()
 # FIXME: make it AC macro
 find_lib()
 {
+LIB_NAME=$1
 LIB_PATHNAME=
 FILES=
 START=`pwd`
 DIRS="`${CC} ${TE_CPPFLAGS} ${TE_CFLAGS} --print-search-dirs | \
       grep libraries | sed s/libraries// | sed s/=//g | sed s/:/\ /g`"
 DIRS="${TE_EXT_LIBS_PATH} ${DIRS} `echo $LD_LIBRARY_PATH | sed s/:/\ /g`"
-for i in $DIRS ; do
-    if cd $i 2>/dev/null ; then
+for k in $DIRS ; do
+    if cd $k 2>/dev/null ; then
         DIR=`pwd`
 
 # FIXME: It is VERY dirty hack for solaris_64 platform
@@ -57,9 +58,9 @@ for i in $DIRS ; do
             fi
         fi
 
-        for j in `find -L $DIR -name lib$1\*.a 2>/dev/null` ; do
+        for j in `find -L $DIR -name lib${LIB_NAME}\*.a 2>/dev/null` ; do
             name=`basename $j`;
-            suffix=${name/lib$1/};
+            suffix=${name/lib${LIB_NAME}/};
             if test "$suffix" = ".a" ||
                test -z `echo $suffix | sed -s "s,^[[0-9._-]]*.a$,,"`; then
                 FILES=$j;
@@ -75,8 +76,8 @@ if test -z "$FILES" ; then
     return ;
 fi    
 
-for i in $FILES ; do
-    LIB_PATHNAME=$i ;
+for k in $FILES ; do
+    LIB_PATHNAME=$k ;
     return ;
 done
 }
