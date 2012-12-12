@@ -10,6 +10,8 @@ AC_CONFIG_MACRO_DIR([../../auxdir])
 
 AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
+AC_CONFIG_HEADERS([config.h])
+
 dnl Checks for programs.
 AC_PROG_CC
 AC_C_INLINE
@@ -36,8 +38,6 @@ fi
 AC_SUBST([TAD], [$with_tad])
 
 AC_SUBST([TAD_LIBS])
-
-AC_CONFIG_HEADERS([config.h])
 
 AC_ARG_WITH([rcf_rpc], , , )
 
