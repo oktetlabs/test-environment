@@ -392,8 +392,11 @@ configure_netconsole(in_port_t local_port, const char *remote_host_name,
 
     return 0;
 #else
-    UNUSED(argc);
-    UNUSED(argv);
+    UNUSED(local_port);
+    UNUSED(remote_host_name);
+    UNUSED(remote_port);
+    UNUSED(target_name);
+    UNUSED(target_dir_path);
 
     ERROR("%s(): was not compiled due to lack of system features",
           __FUNCTION__);
