@@ -632,7 +632,7 @@ static te_errno
 netconsole_list(unsigned int gid, const char *oid, char **list)
 {
 #define BUF_SIZE    2048
-    char buf[BUF_SIZE];
+    char buf[BUF_SIZE] = "";
     int  n = 0;
     int  rc = 0;
     int  tmp_err;
