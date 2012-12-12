@@ -80,16 +80,27 @@ tag in Logger @ref te_engine_logger_conf_file instead to use Logger
 directly.
 
 If netconsole kernel module is not configured and you wish to configure it
-from Test Agent automatically, in @ref te_engine_rcf_conf_file add the
-following in corresponding TA tag:
+from Test Agent automatically, in @ref te_engine_conf_file add the
+following (replacing <strong>Agt_A</strong> with whatever you need):
 
 @code
-    <function name="configure_netconsole" when="<!--not used but should not be void-->">
-        <arg value="local_port"/> <!-- Local port for sending logs -->
-        <arg value="remote_host"/> <!-- To which host to send logs -->
-        <arg value="remote_port"/> <!-- UDP port on the remote host -->
-    </function>
+<register>
+    <object oid="/agent/configfs" access="read_create" type="string"/>
+    <object oid="/agent/netconsole" access="read_create" type="string"/>
+</register>
+<add>
+    <instance oid="/agent:Agt_A/configfs:configfs"/>
+    <instance oid="/agent:Agt_A/netconsole:netconsole_name"
+              <!-- local_port:remote_host:remote_port -->
+              value="6666:kili:6666"/> 
+</add>
 @endcode
+
+You can add more than one <strong>netconsole</strong> node, but only one
+<strong>configfs</strong> node. If you do not add <strong>configfs</strong>
+node, dynamic netconsole configuring will not be used but kernel module
+will be reloaded with new parameters.
+
 @} <!-- Kernel log -->
 
 */
