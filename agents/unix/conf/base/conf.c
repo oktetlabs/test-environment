@@ -258,6 +258,8 @@ extern te_errno ta_unix_conf_iptables_init();
 extern te_errno ta_unix_conf_acse_init();
 #endif
 
+extern te_errno ta_unix_conf_configfs_init();
+extern te_errno ta_unix_conf_netconsole_init();
 extern te_errno ta_unix_conf_sys_init();
 extern te_errno ta_unix_conf_phy_init();
 
@@ -1146,6 +1148,12 @@ rcf_ch_conf_init()
 
         /* Initialize configurator PHY support */
         if (ta_unix_conf_phy_init() != 0)
+            goto fail;
+
+        if (ta_unix_conf_configfs_init() != 0)
+            goto fail;
+
+        if (ta_unix_conf_netconsole_init() != 0)
             goto fail;
 
         rcf_pch_rsrc_init();
@@ -2294,6 +2302,9 @@ vlans_del(unsigned int gid, const char *oid, const char *ifname,
 {
     te_errno rc;
     int      vid = atoi(vid_str);
+
+    UNUSED(gid);
+    UNUSED(oid);
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);

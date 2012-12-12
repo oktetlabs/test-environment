@@ -112,7 +112,7 @@ te_kernel_log_set_system_func(void *p)
 /**
  * Described in te_kernel_log.h
  */
-int 
+te_errno 
 te_get_host_addrs(const char *host_name, struct sockaddr_in *host_ipv4,
                   te_bool *ipv4_found, struct sockaddr_in6 *host_ipv6,
                   te_bool *ipv6_found)
@@ -121,14 +121,16 @@ te_get_host_addrs(const char *host_name, struct sockaddr_in *host_ipv4,
     struct addrinfo    *addrs;
     struct addrinfo    *p;
     int                 rc = 0;
+    int                 tmp_err;
 
     rc = getaddrinfo(host_name, NULL, NULL,
                      &addrs);
     if (rc < 0)
     {
+        tmp_err = errno;
         ERROR("%s(): failed to get info about the host %s, errno '%s'",
-              __FUNCTION__, host_name, strerror(rc));
-        return -1;
+              __FUNCTION__, host_name, strerror(tmp_err));
+        return te_rc_os2te(tmp_err);
     }
 
     for (p = addrs; p != NULL; p = p->ai_next)
@@ -158,7 +160,7 @@ te_get_host_addrs(const char *host_name, struct sockaddr_in *host_ipv4,
 
     ERROR("%s(): was not compiled due to lack of system features",
           __FUNCTION__);
-    return -1;
+    return TE_ENOSYS;
 #endif
 }
 
@@ -369,7 +371,7 @@ open_conserver(const char *conserver)
                 else rc = -1;
             }
 
-            if (rc < 0)
+            if (rc != 0)
             {
                 ERROR("Bad address or host name: \"%s\"", conserver);
                 free(dup_arg);

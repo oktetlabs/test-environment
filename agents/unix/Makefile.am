@@ -31,7 +31,7 @@ if WITH_POWER_SW
 ta_extra_sources += power_sw.c
 endif
 
-ta_SOURCES = main.c ftp_routines.c log_netconsole.c log_remote.c \
+ta_SOURCES = main.c ftp_routines.c log_remote.c \
              $(ta_extra_sources)
 
 ta_LDADD = symtbl.o conf/libconf.a rpc/libtarpc.a -lrcfpch -lm \
@@ -41,7 +41,7 @@ ta_LDADD = symtbl.o conf/libconf.a rpc/libtarpc.a -lrcfpch -lm \
 
 CLEANFILES = symtbl.c
 
-SYMTBL_OBJECTS = main.o ftp_routines.o log_netconsole.o log_remote.o
+SYMTBL_OBJECTS = main.o ftp_routines.o log_remote.o
 SYMTBL_LIBS = $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtools.a \
               $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librcfpch.a \
               $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/lib$(TAD).a \

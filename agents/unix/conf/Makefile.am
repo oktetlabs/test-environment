@@ -29,6 +29,8 @@ libconf_a_SOURCES = \
 	base/conf_stats.c \
 	base/conf_sys.c \
 	base/conf_phy.c \
+	base/conf_netconsole.c \
+	base/conf_configfs.c \
 	route/conf_route.c \
 	route/conf_route_libnetconf.c \
 	route/conf_route_socket.c \

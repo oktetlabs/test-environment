@@ -285,7 +285,12 @@ if test -n "$with_rcf_rpc" -o -n "$with_cfg_unix_daemons" ; then
                   AC_CHECK_LIB([dl], [dlopen], [],
                                AC_MSG_ERROR([No dynamic linker API found])))
 fi
-   
+
+dnl
+dnl Check for mkdtemp() function.
+dnl
+AC_CHECK_FUNCS([mkdtemp])
+
 dnl
 dnl POSIX threads are provided by:
 dnl - -lpthread in Linux;
