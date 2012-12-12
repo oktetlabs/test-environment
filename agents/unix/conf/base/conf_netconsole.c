@@ -288,7 +288,19 @@ configure_netconsole(in_port_t local_port, const char *remote_host_name,
              0xff & (int)(remote_hwaddr_req.arp_ha.sa_data[4]),
              0xff & (int)(remote_hwaddr_req.arp_ha.sa_data[5]));
 
-    if (strlen(configfs_mount_point) == 0)
+    if (ta_system("/sbin/modprobe netconsole") != 0)
+    {
+        ERROR("%s(): failed to do modprobe netconsole",
+              __FUNCTION__);
+        return TE_EUNKNOWN;
+    }
+
+    SNPRINTF(cmdline, MAX_STR,
+             "failed to compose netconsole configfs dir checking command",
+             "cd %s/netconsole/ || exit 1", configfs_mount_point);
+
+    if (strlen(configfs_mount_point) == 0 ||
+        ta_system(cmdline) != 0)
     {
         UNUSED(target_name);
         UNUSED(target_dir_path);
@@ -322,17 +334,13 @@ configure_netconsole(in_port_t local_port, const char *remote_host_name,
                 return TE_EUNKNOWN;
             }
         }
+
+        if (target_dir_path != NULL)
+            *target_dir_path = NULL;
     }
     else
     {
         char tmp_path[RCF_MAX_PATH];
-
-        if (ta_system("/sbin/modprobe netconsole") != 0)
-        {
-            ERROR("%s(): failed to do modprobe netconsole",
-                  __FUNCTION__);
-            return TE_EUNKNOWN;
-        }
 
         SNPRINTF(tmp_path, RCF_MAX_PATH,
                  "failed to compose target directory path",
@@ -512,7 +520,7 @@ netconsole_del(unsigned int gid, const char *oid, const char *name)
     {
         if (strcmp(target->name, name) == 0)
         {
-            if (strlen(configfs_mount_point) == 0)
+            if (target->target_dir_path == NULL)
             {
                 if (ta_system("/sbin/modprobe -r netconsole") != 0)
                 {
