@@ -666,7 +666,8 @@ netconsole_list(unsigned int gid, const char *oid, char **list)
             return TE_RC(TE_TA_UNIX, TE_ENOMEM);
         }
     }
-    buf[strlen(buf) - 1] = '\0';
+    if (strlen(buf) > 0)
+        buf[strlen(buf) - 1] = '\0';
 
     if ((*list = strdup(buf)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
