@@ -114,6 +114,8 @@ typedef SLIST_HEAD(netconsole_targets,
 
 static netconsole_targets     targets;
 
+static te_bool netconsole_was_loaded = TRUE;
+
 /**
  * Configure netconsole kernel module.
  *
@@ -287,6 +289,10 @@ configure_netconsole(in_port_t local_port, const char *remote_host_name,
              0xff & (int)(remote_hwaddr_req.arp_ha.sa_data[3]),
              0xff & (int)(remote_hwaddr_req.arp_ha.sa_data[4]),
              0xff & (int)(remote_hwaddr_req.arp_ha.sa_data[5]));
+
+    if (SLIST_EMPTY(&targets) &&
+        ta_system("lsmod | grep netconsole || exit 1") != 0)
+        netconsole_was_loaded = FALSE;
 
     if (ta_system("/sbin/modprobe netconsole") != 0)
     {
@@ -549,6 +555,16 @@ netconsole_del(unsigned int gid, const char *oid, const char *name)
             }
 
             SLIST_REMOVE(&targets, target, netconsole_target, links);
+            if (target->target_dir_path != NULL)
+            {
+                if (SLIST_EMPTY(&targets) && !netconsole_was_loaded)
+                {
+                    if (ta_system("/sbin/modprobe -r netconsole") != 0)
+                        ERROR("%s(): failed to unload netconsole module",
+                              __FUNCTION__);
+                }
+            }
+
             free(target->name);
             free(target->value);
             free(target->target_dir_path);
