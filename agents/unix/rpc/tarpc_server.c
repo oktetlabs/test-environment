@@ -894,6 +894,14 @@ TARPC_FUNC(dup, {}, { MAKE_CALL(out->fd = func(in->oldfd)); })
 
 TARPC_FUNC(dup2, {}, { MAKE_CALL(out->fd = func(in->oldfd, in->newfd)); })
 
+/*-------------- dup3() -------------------------------*/
+
+TARPC_FUNC(dup3, {},
+{
+    MAKE_CALL(out->fd = func(in->oldfd, in->newfd, in->flags));
+}
+)
+
 /*-------------- close() ------------------------------*/
 
 TARPC_FUNC(close, {}, { MAKE_CALL(out->retval = func(in->fd)); })

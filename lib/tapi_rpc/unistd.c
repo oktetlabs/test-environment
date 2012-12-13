@@ -287,6 +287,33 @@ rpc_dup2(rcf_rpc_server *rpcs,
     RETVAL_INT(dup2, out.fd);
 }
 
+int
+rpc_dup3(rcf_rpc_server *rpcs,
+         int oldfd, int newfd, int flags)
+{
+    tarpc_dup3_in   in;
+    tarpc_dup3_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(dup3, -1);
+    }
+
+    in.flags = fcntl_flags_rpc2h(flags);
+    in.oldfd = oldfd;
+    in.newfd = newfd;
+
+    rcf_rpc_call(rpcs, "dup3", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(dup3, out.fd);
+    TAPI_RPC_LOG(rpcs, dup3, "%d, %d, %s", "%d", oldfd, newfd,
+                 fcntl_flags_rpc2str(flags), out.fd);
+    RETVAL_INT(dup3, out.fd);
+}
 
 int
 rpc_read_gen(rcf_rpc_server *rpcs,

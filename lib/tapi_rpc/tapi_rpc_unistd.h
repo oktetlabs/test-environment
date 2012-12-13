@@ -145,6 +145,21 @@ extern int rpc_dup2(rcf_rpc_server *rpcs,
                     int oldfd, int newfd);
 
 /**
+ * Duplicate an open file descriptor on RPC server side.
+ * 
+ * @note See @b dup3 manual page for more information
+ *
+ * @param rpcs    RPC server handle
+ * @param oldfd   file descriptor to be duplicated
+ * @param newfd   new file descriptor
+ * @param flags   RPC_O_CLOEXEC flag
+ *
+ * @return  New file descriptor or -1 when an error occured.
+ */
+extern int rpc_dup3(rcf_rpc_server *rpcs,
+                    int oldfd, int newfd, int flags);
+
+/**
  * Write up to @b count bytes from buffer @b buf to file with descriptor 
  * @b fd.
  * @note See write(2) manual page for more information
