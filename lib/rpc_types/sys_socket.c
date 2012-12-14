@@ -2596,6 +2596,35 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
 #undef EXT_ERR_FIELD_H2TARPC
 #endif
                     break;
+
+                case RPC_IP_PKTINFO:
+#ifdef HAVE_STRUCT_IN_PKTINFO
+                    {
+                        struct in_pktinfo          *pktinfo;
+                        tarpc_in_pktinfo           *tarpc_pktinfo;
+
+                        if (len < (int)sizeof(struct in_pktinfo))
+                        {
+                            ERROR("%s(): incorrect data len for IP_PKTINFO "
+                                  "value", __FUNCTION__);
+                            return TE_EINVAL;
+                        }
+
+                        rpc_cmsg->data_aux.type =
+                                            TARPC_CMSG_DATA_PKTINFO;
+                        pktinfo = (struct in_pktinfo *)data;
+                        tarpc_pktinfo =
+                            &rpc_cmsg->data_aux.tarpc_cmsg_data_u.pktinfo;
+
+                        tarpc_pktinfo->ipi_spec_dst =
+                                    ntohl(pktinfo->ipi_spec_dst.s_addr);
+                        tarpc_pktinfo->ipi_addr =
+                                    ntohl(pktinfo->ipi_addr.s_addr);
+                        tarpc_pktinfo->ipi_ifindex = pktinfo->ipi_ifindex;
+                    }
+#endif
+                    break;
+
             }
 
             break;
@@ -2665,13 +2694,13 @@ cmsg_data_rpc2h(tarpc_cmsghdr *rpc_cmsg,
                 struct sockaddr            *sa;
 
                 max_len = rpc_cmsg->data.data_len;
-                if ((int)2 * sizeof(struct sockaddr_storage) > max_len)
+                if (2 * (int)sizeof(struct sockaddr_storage) > max_len)
                     max_len = 2 * sizeof(struct sockaddr_storage);
 
                 if (*len < max_len)
                 {
                     ERROR("%s(): not enough memory for "
-                          "native value", __FUNCTION__);
+                          "native IP_RECVERR value", __FUNCTION__);
                     return TE_ENOMEM;
                 }
 
@@ -2704,6 +2733,34 @@ cmsg_data_rpc2h(tarpc_cmsghdr *rpc_cmsg,
                 return 0;
             }
 #undef EXT_ERR_FIELD_TARPC2H
+#endif
+            break;
+
+        case TARPC_CMSG_DATA_PKTINFO:
+#ifdef HAVE_STRUCT_IN_PKTINFO
+            {
+                struct in_pktinfo          *pktinfo;
+                tarpc_in_pktinfo           *tarpc_pktinfo;
+
+                if (*len < (int)sizeof(*pktinfo))
+                {
+                    ERROR("%s(): not enough memory for "
+                          "native IP_PKTINFO value", __FUNCTION__);
+                    return TE_ENOMEM;
+                }
+
+                pktinfo = (struct in_pktinfo *)data;
+                tarpc_pktinfo =
+                    &rpc_cmsg->data_aux.tarpc_cmsg_data_u.pktinfo;
+
+                pktinfo->ipi_spec_dst.s_addr =
+                                htonl(tarpc_pktinfo->ipi_spec_dst);
+                pktinfo->ipi_addr.s_addr = htonl(tarpc_pktinfo->ipi_addr);
+                pktinfo->ipi_ifindex = tarpc_pktinfo->ipi_ifindex;
+
+                *len = sizeof(*pktinfo);
+                return 0;
+            }
 #endif
             break;
 

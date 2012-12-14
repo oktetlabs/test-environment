@@ -65,6 +65,12 @@ AC_CHECK_TYPES([struct sock_extended_err], [], [],
                [#include <linux/errqueue.h>])
 
 dnl
+dnl Check for 'struct in_pktinfo'
+dnl
+AC_CHECK_TYPES([struct in_pktinfo], [], [],
+               [#include <netinet/in.h>])
+
+dnl
 dnl Check for Solaris-style sysinfo()
 dnl
 AC_CHECK_HEADERS([sys/systeminfo.h])

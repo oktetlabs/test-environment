@@ -949,7 +949,8 @@ struct tarpc_stack_t {
 enum tarpc_cmsg_data_type {
     TARPC_CMSG_DATA_RAW = 0,
     TARPC_CMSG_DATA_INT = 1,
-    TARPC_CMSG_DATA_SOCK_EXT_ERR = 2
+    TARPC_CMSG_DATA_SOCK_EXT_ERR = 2,
+    TARPC_CMSG_DATA_PKTINFO = 3
 };
 
 /* struct sock_extended_err */
@@ -965,13 +966,22 @@ struct tarpc_sock_extended_err {
                                      where an error originated */
 };
 
+/* struct in_pktinfo */
+struct tarpc_in_pktinfo {
+    uint32_t                ipi_spec_dst;
+    uint32_t                ipi_addr;
+    tarpc_int               ipi_ifindex;
+};
+
+/* Data in control message */
 union tarpc_cmsg_data switch (tarpc_cmsg_data_type type) {
     case TARPC_CMSG_DATA_RAW:   void;
     case TARPC_CMSG_DATA_INT:   tarpc_int int_data;   /**< Integer value */
 
     case TARPC_CMSG_DATA_SOCK_EXT_ERR:
-                tarpc_sock_extended_err     ext_err; /**< Socket extended
-                                                          error */
+                tarpc_sock_extended_err     ext_err; /**< IP_RECVERR */
+    case TARPC_CMSG_DATA_PKTINFO:
+                tarpc_in_pktinfo            pktinfo; /**< IP_PKTINFO */
 };
 
 struct tarpc_cmsghdr {
