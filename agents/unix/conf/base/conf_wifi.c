@@ -1604,30 +1604,41 @@ wifi_channel_get(unsigned int gid, const char *oid, char *value,
     memset(&wrq, 0, sizeof(wrq));
 
     if (iw_get_range_info(skfd, ifname, &range) < 0)
-        return TE_RC(TE_TA_UNIX, TE_EFAULT);
-
-    if ((rc = wifi_get_item(ifname, SIOCGIWFREQ, &wrq)) != 0)
-        return rc;
-
-    freq = iw_freq2float(&(wrq.u.freq));
-
-    channel = iw_freq_to_channel(freq, &range);
-
-    if (freq < KILO)
     {
-        WARN("iw_freq2float() function returns channel, not frequency");
-
-        channel = (int)freq;
-    }
-
-    if (channel < 0)
-    {
-        ERROR("Cannot get current channel number on %s interface", ifname);
-
         return TE_RC(TE_TA_UNIX, TE_EFAULT);
     }
 
-    sprintf(value, "%d", channel);
+    if ((rc = wifi_get_item(ifname, SIOCGIWFREQ, &wrq)) == 0)
+    {
+        freq = iw_freq2float(&(wrq.u.freq));
+
+        channel = iw_freq_to_channel(freq, &range);
+
+        if (freq < KILO)
+        {
+            WARN("iw_freq2float() function returns channel, not frequency");
+
+            channel = (int)freq;
+        }
+
+        if (channel < 0)
+        {
+            ERROR("Cannot get current channel "
+                  "number on %s interface", ifname);
+
+            return TE_RC(TE_TA_UNIX, TE_EFAULT);
+        }
+
+        sprintf(value, "%d", channel);
+    }
+    else
+    {
+        if (errno == EINVAL)
+            /* Not supported, return empty value.*/
+            sprintf(value, "");
+        else
+            return rc;
+    }
 
     return 0;
 }
