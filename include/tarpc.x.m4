@@ -948,12 +948,30 @@ struct tarpc_stack_t {
 /* sendmsg() / recvmsg() */
 enum tarpc_cmsg_data_type {
     TARPC_CMSG_DATA_RAW = 0,
-    TARPC_CMSG_DATA_INT = 1
+    TARPC_CMSG_DATA_INT = 1,
+    TARPC_CMSG_DATA_SOCK_EXT_ERR = 2
+};
+
+/* struct sock_extended_err */
+struct tarpc_sock_extended_err {
+    tarpc_int   ee_errno;
+    tarpc_int   ee_origin;
+    tarpc_int   ee_type;
+    tarpc_int   ee_code;
+    tarpc_int   ee_pad;
+    tarpc_int   ee_info;
+    tarpc_int   ee_data;
+    tarpc_sa    ee_offender;    /**< Address of network object
+                                     where an error originated */
 };
 
 union tarpc_cmsg_data switch (tarpc_cmsg_data_type type) {
     case TARPC_CMSG_DATA_RAW:   void;
     case TARPC_CMSG_DATA_INT:   tarpc_int int_data;   /**< Integer value */
+
+    case TARPC_CMSG_DATA_SOCK_EXT_ERR:
+                tarpc_sock_extended_err     ext_err; /**< Socket extended
+                                                          error */
 };
 
 struct tarpc_cmsghdr {

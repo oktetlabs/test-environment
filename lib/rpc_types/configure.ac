@@ -58,6 +58,13 @@ int a = IP_MTU;],
 ])
 
 dnl
+dnl Check for 'struct sock_extended_err'
+dnl
+AC_CHECK_HEADERS([linux/errqueue.h])
+AC_CHECK_TYPES([struct sock_extended_err], [], [],
+               [#include <linux/errqueue.h>])
+
+dnl
 dnl Check for Solaris-style sysinfo()
 dnl
 AC_CHECK_HEADERS([sys/systeminfo.h])

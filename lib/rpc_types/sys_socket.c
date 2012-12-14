@@ -74,6 +74,9 @@ extern const char *inet_ntop(int af, const void *src, char *dst,
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
+#if HAVE_LINUX_ERRQUEUE_H
+#include <linux/errqueue.h>
+#endif
 #if HAVE_NETINET_TCP_H
 #include <netinet/tcp.h>
 #endif
@@ -2543,7 +2546,7 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
             {
                 case RPC_IP_TTL:
 
-                    if (len != sizeof(int32_t))
+                    if (len != (int)sizeof(int32_t))
                     {
                         ERROR("%s(): incorrect data len for IP_TTL value",
                               __FUNCTION__);
@@ -2552,6 +2555,46 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
                     rpc_cmsg->data_aux.type = TARPC_CMSG_DATA_INT;
                     rpc_cmsg->data_aux.tarpc_cmsg_data_u.int_data =
                                                         *(int32_t *)data;
+                    break;
+
+                case RPC_IP_RECVERR:
+#ifdef HAVE_STRUCT_SOCK_EXTENDED_ERR
+#define EXT_ERR_FIELD_H2TARPC(_field) \
+    (tarpc_ext_err->_field = ext_err->_field)
+                    {
+                        struct sock_extended_err   *ext_err;
+                        tarpc_sock_extended_err    *tarpc_ext_err;
+                        struct sockaddr            *sa;
+
+                        if (len < (int)sizeof(struct sock_extended_err))
+                        {
+                            ERROR("%s(): incorrect data len for IP_RECVERR "
+                                  "value", __FUNCTION__);
+                            return TE_EINVAL;
+                        }
+
+                        rpc_cmsg->data_aux.type =
+                                            TARPC_CMSG_DATA_SOCK_EXT_ERR;
+                        ext_err = (struct sock_extended_err *)data;
+                        tarpc_ext_err =
+                            &rpc_cmsg->data_aux.tarpc_cmsg_data_u.ext_err;
+
+                        EXT_ERR_FIELD_H2TARPC(ee_errno);
+                        EXT_ERR_FIELD_H2TARPC(ee_origin);
+                        EXT_ERR_FIELD_H2TARPC(ee_type);
+                        EXT_ERR_FIELD_H2TARPC(ee_code);
+                        EXT_ERR_FIELD_H2TARPC(ee_pad);
+                        EXT_ERR_FIELD_H2TARPC(ee_info);
+                        EXT_ERR_FIELD_H2TARPC(ee_data);
+
+                        sa = SO_EE_OFFENDER(ext_err);
+
+                        sockaddr_input_h2rpc(
+                                        sa,
+                                        &tarpc_ext_err->ee_offender);
+                    }
+#undef EXT_ERR_FIELD_H2TARPC
+#endif
                     break;
             }
 
@@ -2609,7 +2652,59 @@ cmsg_data_rpc2h(tarpc_cmsghdr *rpc_cmsg,
                 *len = sizeof(value);
                 return 0;
             }
+            break;
 
+        case TARPC_CMSG_DATA_SOCK_EXT_ERR:
+#ifdef HAVE_STRUCT_SOCK_EXTENDED_ERR
+#define EXT_ERR_FIELD_TARPC2H(_field) \
+    (ext_err->_field = tarpc_ext_err->_field)
+            {
+                struct sock_extended_err   *ext_err;
+                tarpc_sock_extended_err    *tarpc_ext_err;
+                int                         max_len;
+                struct sockaddr            *sa;
+
+                max_len = rpc_cmsg->data.data_len;
+                if ((int)2 * sizeof(struct sockaddr_storage) > max_len)
+                    max_len = 2 * sizeof(struct sockaddr_storage);
+
+                if (*len < max_len)
+                {
+                    ERROR("%s(): not enough memory for "
+                          "native value", __FUNCTION__);
+                    return TE_ENOMEM;
+                }
+
+                *len = max_len;
+
+                ext_err = (struct sock_extended_err *)data;
+                tarpc_ext_err =
+                    &rpc_cmsg->data_aux.tarpc_cmsg_data_u.ext_err;
+
+                EXT_ERR_FIELD_TARPC2H(ee_errno);
+                EXT_ERR_FIELD_TARPC2H(ee_origin);
+                EXT_ERR_FIELD_TARPC2H(ee_type);
+                EXT_ERR_FIELD_TARPC2H(ee_code);
+                EXT_ERR_FIELD_TARPC2H(ee_pad);
+                EXT_ERR_FIELD_TARPC2H(ee_info);
+                EXT_ERR_FIELD_TARPC2H(ee_data);
+
+                sa = SO_EE_OFFENDER(ext_err);
+
+                if (sockaddr_rpc2h(&tarpc_ext_err->ee_offender,
+                                   sa,
+                                   max_len -
+                                      ((uint8_t *)sa - (uint8_t *)ext_err),
+                                   NULL, NULL) != 0)
+                {
+                    ERROR("%s(): failed to process SO_EE_OFFENDER()",
+                          __FUNCTION__);
+                    return TE_ENOMEM;
+                }
+                return 0;
+            }
+#undef EXT_ERR_FIELD_TARPC2H
+#endif
             break;
 
         default:
@@ -2721,7 +2816,7 @@ msg_control_h2rpc(uint8_t *cmsg_buf, size_t cmsg_len,
             {
                 for (i--, rpc_cmsg_aux--; i >= 0; i--, rpc_cmsg_aux--)
                     free(rpc_cmsg_aux->data.data_val);
-                free(rpc_cmsg_aux);
+                free(*rpc_cmsg);
                 *rpc_cmsg = NULL;
                 *rpc_cmsg_count = 0;
 
