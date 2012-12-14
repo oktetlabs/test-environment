@@ -1044,8 +1044,8 @@ rpc_cmsg_data_parse_ip_pktinfo(rcf_rpc_server *rpcs,
                                           out.retval);
     if (RPC_IS_CALL_OK(rpcs))
     {
-        ipi_spec_dst->s_addr = out.ipi_spec_dst;
-        ipi_addr->s_addr = out.ipi_addr;
+        ipi_spec_dst->s_addr = htonl(out.ipi_spec_dst);
+        ipi_addr->s_addr = htonl(out.ipi_addr);
         *ipi_ifindex = out.ipi_ifindex;
     }
     TAPI_RPC_LOG(rpcs, cmsg_data_parse_ip_pktinfo,

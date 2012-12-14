@@ -8058,8 +8058,8 @@ _cmsg_data_parse_ip_pktinfo_1_svc(tarpc_cmsg_data_parse_ip_pktinfo_in *in,
     }    
     else
     {
-        out->ipi_spec_dst = pktinfo->ipi_spec_dst.s_addr;
-        out->ipi_addr = pktinfo->ipi_addr.s_addr;
+        out->ipi_spec_dst = ntohl(pktinfo->ipi_spec_dst.s_addr);
+        out->ipi_addr = ntohl(pktinfo->ipi_addr.s_addr);
         out->ipi_ifindex = pktinfo->ipi_ifindex;
         out->retval = 0; 
     }
