@@ -1010,7 +1010,6 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
     RETVAL_INT(recvmsg, out.retval);
 }
 
-
 int 
 rpc_cmsg_data_parse_ip_pktinfo(rcf_rpc_server *rpcs,
                                uint8_t *data, uint32_t data_len,
@@ -1018,47 +1017,22 @@ rpc_cmsg_data_parse_ip_pktinfo(rcf_rpc_server *rpcs,
                                struct in_addr *ipi_addr,
                                int *ipi_ifindex)
 {
-    tarpc_cmsg_data_parse_ip_pktinfo_in  in;
-    tarpc_cmsg_data_parse_ip_pktinfo_out out;
+    tarpc_cmsg_data_parse_ip_pktinfo_in     in;
+    tarpc_cmsg_data_parse_ip_pktinfo_out    out;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
 
-    if (rpcs == NULL)
-    {
-        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_INT(cmsg_data_parse_ip_pktinfo, -1);
-    }
+    UNUSED(rpcs);
+    UNUSED(data);
+    UNUSED(data_len);
+    UNUSED(ipi_spec_dst);
+    UNUSED(ipi_addr);
+    UNUSED(ipi_ifindex);
 
-    if (data == NULL || data_len == 0 ||
-        ipi_addr == NULL || ipi_ifindex == 0)
-    {
-        ERROR("%s(): Invalid parameters to function", __FUNCTION__);
-        RETVAL_INT(cmsg_data_parse_ip_pktinfo, -1);
-    }
-    in.data.data_val = data;
-    in.data.data_len = data_len;
-    
-    rcf_rpc_call(rpcs, "cmsg_data_parse_ip_pktinfo", &in, &out);
-    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(cmsg_data_parse_ip_pktinfo, 
-                                          out.retval);
-    if (RPC_IS_CALL_OK(rpcs))
-    {
-        ipi_spec_dst->s_addr = htonl(out.ipi_spec_dst);
-        ipi_addr->s_addr = htonl(out.ipi_addr);
-        *ipi_ifindex = out.ipi_ifindex;
-    }
-    TAPI_RPC_LOG(rpcs, cmsg_data_parse_ip_pktinfo,
-                 "%p, %u, %p->%s, %p->%s, %p->%d", "%d",
-                 data, data_len, ipi_spec_dst, 
-                 (out.retval == 0) ? inet_ntoa(*ipi_spec_dst) :
-                                     "undetermined",
-                 ipi_addr, 
-                 (out.retval == 0) ? inet_ntoa(*ipi_addr) : "undetermined",
-                 ipi_ifindex,
-                 (out.retval == 0) ? *ipi_ifindex : 0,
-                 out.retval);
-    RETVAL_INT(cmsg_data_parse_ip_pktinfo, out.retval);
+    RING("%s(): this function is no longer supported since "
+         "IP_PKTINFO is now processed correctly by TE", __FUNCTION__);
+    RETVAL_INT(cmsg_data_parse_ip_pktinfo, -1);
 }
 
 int

@@ -947,10 +947,13 @@ struct tarpc_stack_t {
 
 /* sendmsg() / recvmsg() */
 enum tarpc_cmsg_data_type {
-    TARPC_CMSG_DATA_RAW = 0,
-    TARPC_CMSG_DATA_INT = 1,
-    TARPC_CMSG_DATA_SOCK_EXT_ERR = 2,
-    TARPC_CMSG_DATA_PKTINFO = 3
+    TARPC_CMSG_DATA_RAW = 0,            /* raw data */
+    TARPC_CMSG_DATA_BYTE = 1,           /* uint8_t */
+    TARPC_CMSG_DATA_INT = 2,            /* int */
+    TARPC_CMSG_DATA_SOCK_EXT_ERR = 3,   /* struct sock_extended_err */
+    TARPC_CMSG_DATA_PKTINFO = 4,        /* struct in_pktinfo */
+    TARPC_CMSG_DATA_TV = 5,             /* struct timeval */
+    TARPC_CMSG_DATA_TS = 6              /* struct timespec */
 };
 
 /* struct sock_extended_err */
@@ -977,11 +980,16 @@ struct tarpc_in_pktinfo {
 union tarpc_cmsg_data switch (tarpc_cmsg_data_type type) {
     case TARPC_CMSG_DATA_RAW:   void;
     case TARPC_CMSG_DATA_INT:   tarpc_int int_data;   /**< Integer value */
+    case TARPC_CMSG_DATA_BYTE:  uint8_t   byte_data;  /**< Byte value */
 
     case TARPC_CMSG_DATA_SOCK_EXT_ERR:
                 tarpc_sock_extended_err     ext_err; /**< IP_RECVERR */
     case TARPC_CMSG_DATA_PKTINFO:
                 tarpc_in_pktinfo            pktinfo; /**< IP_PKTINFO */
+    case TARPC_CMSG_DATA_TV:
+                struct tarpc_timeval        tv;      /**< SO_TIMESTAMP */
+    case TARPC_CMSG_DATA_TS:
+                struct tarpc_timespec       ts;      /**< SO_TIMESTAMPNS */
 };
 
 struct tarpc_cmsghdr {
@@ -4978,7 +4986,6 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(wsa_connect)
         RPC_DEF(wsa_ioctl)
         RPC_DEF(get_wsa_ioctl_overlapped_result)
-        RPC_DEF(cmsg_data_parse_ip_pktinfo)
 
         RPC_DEF(create_window)
         RPC_DEF(destroy_window)

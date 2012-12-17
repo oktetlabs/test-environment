@@ -8040,33 +8040,6 @@ TARPC_FUNC(power_sw, {},
 )
 #endif
 
-/*------------ cmsg_data_parse_ip_pktinfo() ------------------*/
-bool_t
-_cmsg_data_parse_ip_pktinfo_1_svc(tarpc_cmsg_data_parse_ip_pktinfo_in *in,
-                                  tarpc_cmsg_data_parse_ip_pktinfo_out *out,
-                                  struct svc_req *rqstp)
-{
-    struct in_pktinfo *pktinfo = (struct in_pktinfo *)(in->data.data_val);
-    UNUSED(rqstp);
-
-    memset(out, 0, sizeof(*out));
-
-    if (in->data.data_len < sizeof(*pktinfo))
-    {
-        ERROR("Too small buffer is provided as pktinfo data");
-        out->retval = -1;
-    }    
-    else
-    {
-        out->ipi_spec_dst = ntohl(pktinfo->ipi_spec_dst.s_addr);
-        out->ipi_addr = ntohl(pktinfo->ipi_addr.s_addr);
-        out->ipi_ifindex = pktinfo->ipi_ifindex;
-        out->retval = 0; 
-    }
-
-    return TRUE;
-}
-
 /*------------ mcast_join_leave() ---------------------------*/
 void
 mcast_join_leave(tarpc_mcast_join_leave_in  *in,

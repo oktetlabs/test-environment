@@ -2517,8 +2517,9 @@ te_errno
 cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
                 tarpc_cmsghdr *rpc_cmsg)
 {
-    int rpc_level;
-    int rpc_type;
+    int     rpc_level;
+    int     rpc_type;
+    te_bool processed = FALSE;
 
     if (data == NULL || rpc_cmsg == NULL)
     {
@@ -2545,6 +2546,7 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
             switch(rpc_type)
             {
                 case RPC_IP_TTL:
+                case RPC_IP_RECVTTL:
 
                     if (len != (int)sizeof(int32_t))
                     {
@@ -2555,6 +2557,30 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
                     rpc_cmsg->data_aux.type = TARPC_CMSG_DATA_INT;
                     rpc_cmsg->data_aux.tarpc_cmsg_data_u.int_data =
                                                         *(int32_t *)data;
+                    processed = TRUE;
+                    break;
+
+                case RPC_IP_TOS:
+
+                    if (len == (int)sizeof(int32_t))
+                    {
+                        rpc_cmsg->data_aux.type = TARPC_CMSG_DATA_INT;
+                        rpc_cmsg->data_aux.tarpc_cmsg_data_u.int_data =
+                                                        *(int32_t *)data;
+                    }
+                    else if (len == (int)sizeof(uint8_t))
+                    {
+                        rpc_cmsg->data_aux.type = TARPC_CMSG_DATA_BYTE;
+                        rpc_cmsg->data_aux.tarpc_cmsg_data_u.byte_data =
+                                                        *(uint8_t *)data;
+                    }
+                    else
+                    {
+                        ERROR("%s(): incorrect data len %d "
+                              "for IP_TOS value", __FUNCTION__, len);
+                        return TE_EINVAL;
+                    }
+                    processed = TRUE;
                     break;
 
                 case RPC_IP_RECVERR:
@@ -2592,6 +2618,7 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
                         sockaddr_input_h2rpc(
                                         sa,
                                         &tarpc_ext_err->ee_offender);
+                        processed = TRUE;
                     }
 #undef EXT_ERR_FIELD_H2TARPC
 #endif
@@ -2621,6 +2648,7 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
                         tarpc_pktinfo->ipi_addr =
                                     ntohl(pktinfo->ipi_addr.s_addr);
                         tarpc_pktinfo->ipi_ifindex = pktinfo->ipi_ifindex;
+                        processed = TRUE;
                     }
 #endif
                     break;
@@ -2628,7 +2656,68 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
             }
 
             break;
+
+        case RPC_SOL_SOCKET:
+            switch(rpc_type)
+            {
+                case RPC_SO_TIMESTAMP:
+                    {
+                        struct timeval          *tv;
+                        struct tarpc_timeval    *tarpc_tv;
+
+                        if (len < (int)sizeof(struct timeval))
+                        {
+                            ERROR("%s(): incorrect data len for "
+                                  "SO_TIMESTAMP value", __FUNCTION__);
+                            return TE_EINVAL;
+                        }
+
+                        rpc_cmsg->data_aux.type =
+                                            TARPC_CMSG_DATA_TV;
+                        tv = (struct timeval *)data;
+                        tarpc_tv =
+                            &rpc_cmsg->data_aux.tarpc_cmsg_data_u.tv;
+
+                        tarpc_tv->tv_sec = tv->tv_sec;
+                        tarpc_tv->tv_usec = tv->tv_usec;
+                        processed = TRUE;
+                    }
+
+                    break;
+
+                case RPC_SO_TIMESTAMPNS:
+                    {
+                        struct timespec          *ts;
+                        struct tarpc_timespec    *tarpc_ts;
+
+                        if (len < (int)sizeof(struct timespec))
+                        {
+                            ERROR("%s(): incorrect data len for "
+                                  "SO_TIMESTAMPNS value", __FUNCTION__);
+                            return TE_EINVAL;
+                        }
+
+                        rpc_cmsg->data_aux.type =
+                                            TARPC_CMSG_DATA_TS;
+                        ts = (struct timespec *)data;
+                        tarpc_ts =
+                            &rpc_cmsg->data_aux.tarpc_cmsg_data_u.ts;
+                        tarpc_ts->tv_sec = ts->tv_sec;
+                        tarpc_ts->tv_nsec = ts->tv_nsec;
+                        processed = TRUE;
+                    }
+
+                    break;
+            }
+
+            break;
     }
+
+    if (!processed)
+        WARN("%s(): for (%s, %s) cmsghdr data is processed as a "
+             "raw value, this can cause bitness problem",
+             __FUNCTION__, socklevel_rpc2str(rpc_level),
+             sockopt_rpc2str(rpc_type));
 
     rpc_cmsg->data.data_val = TE_ALLOC(len);
     if (rpc_cmsg->data.data_val == NULL)
@@ -2665,6 +2754,24 @@ cmsg_data_rpc2h(tarpc_cmsghdr *rpc_cmsg,
 
     switch(rpc_cmsg->data_aux.type)
     {
+        case TARPC_CMSG_DATA_BYTE:
+            {
+                uint8_t value;
+
+                value = rpc_cmsg->data_aux.tarpc_cmsg_data_u.byte_data;
+                if (*len < (int)sizeof(value))
+                {
+                    ERROR("%s(): not enough memory for "
+                          "byte value", __FUNCTION__);
+                    return TE_ENOMEM;
+                }
+
+                memcpy(data, &value, sizeof(value));
+                *len = sizeof(value);
+                return 0;
+            }
+            break;
+
         case TARPC_CMSG_DATA_INT:
             {
                 int32_t value;
@@ -2681,6 +2788,54 @@ cmsg_data_rpc2h(tarpc_cmsghdr *rpc_cmsg,
                 *len = sizeof(value);
                 return 0;
             }
+            break;
+
+        case TARPC_CMSG_DATA_TV:
+            {
+                struct timeval          *tv;
+                struct tarpc_timeval    *tarpc_tv;
+
+                if (*len < (int)sizeof(struct timeval))
+                {
+                    ERROR("%s(): not enough memory for "
+                          "timeval value", __FUNCTION__);
+                    return TE_EINVAL;
+                }
+
+                tv = (struct timeval *)data;
+                tarpc_tv =
+                    &rpc_cmsg->data_aux.tarpc_cmsg_data_u.tv;
+
+                tv->tv_sec = tarpc_tv->tv_sec;
+                tv->tv_usec = tarpc_tv->tv_usec;
+                *len = sizeof(*tv);
+                return 0;
+            }
+
+            break;
+
+        case TARPC_CMSG_DATA_TS:
+            {
+                struct timespec          *ts;
+                struct tarpc_timespec    *tarpc_ts;
+
+                if (*len < (int)sizeof(struct timespec))
+                {
+                    ERROR("%s(): not enough memory for "
+                          "timespec value", __FUNCTION__);
+                    return TE_EINVAL;
+                }
+
+                ts = (struct timespec *)data;
+                tarpc_ts =
+                    &rpc_cmsg->data_aux.tarpc_cmsg_data_u.ts;
+
+                ts->tv_sec = tarpc_ts->tv_sec;
+                ts->tv_nsec = tarpc_ts->tv_nsec;
+                *len = sizeof(*ts);
+                return 0;
+            }
+
             break;
 
         case TARPC_CMSG_DATA_SOCK_EXT_ERR:
@@ -2767,6 +2922,11 @@ cmsg_data_rpc2h(tarpc_cmsghdr *rpc_cmsg,
         default:
             break;
     }
+
+    WARN("%s(): for (%s, %s) cmsghdr data is processed as a "
+         "raw value, this can cause bitness problem",
+         __FUNCTION__, socklevel_rpc2str(rpc_cmsg->level),
+         sockopt_rpc2str(rpc_cmsg->type));
 
     if (*len < (int)rpc_cmsg->data.data_len)
     {
