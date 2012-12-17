@@ -1667,3 +1667,88 @@ rpc_ioctl_ethtool(rcf_rpc_server *rpcs, int fd,
 }
 #endif /* HAVE_LINUX_ETHTOOL_H */
 
+int
+rpc_raw2integer(rcf_rpc_server *rpcs, uint8_t *data,
+                size_t len)
+{
+    tarpc_raw2integer_in    in;
+    tarpc_raw2integer_out   out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+    if (data == NULL || len == 0)
+    {
+        ERROR("%s(): Invalid 'data'", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    in.data.data_val = data;
+    in.data.data_len = len;
+
+    rcf_rpc_call(rpcs, "raw2integer", &in, &out);
+
+    if (out.retval == 0)
+    {
+        memset(data, 0, len);
+        if (len == 1)
+            *(uint8_t *)data = out.number;
+        else if (len == 2)
+            *(uint16_t *)data = out.number;
+        else if (len == 4)
+            *(uint32_t *)data = out.number;
+        else if (len == 8)
+            *(uint64_t *)data = out.number;
+        else
+        {
+            ERROR("%s(): incorrect len of numeric data",
+                  __FUNCTION__);
+            return TE_RC(TE_TAPI, TE_EINVAL);
+        }
+    }
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(raw2integer, out.retval);
+    TAPI_RPC_LOG(rpcs, raw2integer, "%p, %d", "%d number=%lld",
+                 data, len, out.retval, (long long int)out.number);
+    RETVAL_INT(raw2integer, out.retval);
+}
+
+int
+rpc_integer2raw(rcf_rpc_server *rpcs, uint64_t number,
+                uint8_t *data, size_t len)
+{
+    tarpc_integer2raw_in    in;
+    tarpc_integer2raw_out   out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+    if (data == NULL || len == 0)
+    {
+        ERROR("%s(): Invalid 'data'", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    in.number = number;
+    in.len = len;
+
+    rcf_rpc_call(rpcs, "integer2raw", &in, &out);
+
+    if (out.retval == 0)
+        memcpy(data, out.data.data_val, out.data.data_len);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(integer2raw, out.retval);
+    TAPI_RPC_LOG(rpcs, integer2raw, "%lld, %p, %d", "%d",
+                 (long long int)number, data, len, out.retval);
+    RETVAL_INT(integer2raw, out.retval);
+}

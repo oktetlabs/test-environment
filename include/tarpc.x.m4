@@ -1797,6 +1797,35 @@ struct tarpc_get_addr_by_id_out {
     uint64_t             retval; /**< Address value */
 };
 
+/* raw2integer */
+struct tarpc_raw2integer_in {
+    struct tarpc_in_arg     common;
+
+    uint8_t     data<>;     /**< Raw data */
+};
+
+struct tarpc_raw2integer_out {
+    struct tarpc_out_arg    common;
+    tarpc_int               retval;
+
+    uint64_t    number;     /**< Converted value */
+};
+
+/* integer2raw */
+struct tarpc_integer2raw_in {
+    struct tarpc_in_arg     common;
+
+    uint64_t        number;    /**< Number to be converted */
+    tarpc_size_t    len;       /**< Size of integer type */
+};
+
+struct tarpc_integer2raw_out {
+    struct tarpc_out_arg    common;
+    tarpc_int               retval;
+
+    uint8_t     data<>;     /**< Converted number */
+};
+
 /* memalign */
 struct tarpc_memalign_in {
     struct tarpc_in_arg  common;
@@ -4743,6 +4772,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(malloc)
         RPC_DEF(free)
         RPC_DEF(get_addr_by_id)
+        RPC_DEF(raw2integer)
+        RPC_DEF(integer2raw)
         RPC_DEF(memalign)
         RPC_DEF(memcmp)
 

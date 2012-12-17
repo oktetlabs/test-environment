@@ -646,6 +646,34 @@ extern int rpc_ioctl_ethtool(rcf_rpc_server *rpcs, int fd,
 extern int rpc_memcmp(rcf_rpc_server *rpcs, 
                       rpc_ptr_off *s1, rpc_ptr_off *s2, size_t n);
 
+/**
+ * Convert raw data to integer (this is useful when raw data was
+ * obtained from a test machine with different endianness).
+ *
+ * @param rpcs  RPC server
+ * @param data  Data to be converted
+ * @param len   Length of data to be converted
+ *
+ * @return @c 0 on success or @c -1
+ */
+extern int rpc_raw2integer(rcf_rpc_server *rpcs, uint8_t *data,
+                           size_t len);
+
+/**
+ * Convert integer value to raw representation (this is useful
+ * when raw data is to be processed by a test machine with different
+ * endianness).
+ *
+ * @param rpcs      RPC server
+ * @param number    Number to be converted
+ * @param data      Buffer where to place converted value
+ * @param len       Integer type size
+ *
+ * @return @c 0 on success or @c -1
+ */
+extern int rpc_integer2raw(rcf_rpc_server *rpcs, uint64_t number,
+                           uint8_t *data, size_t len);
+
 /**@} <!-- END te_lib_rpc_misc --> */
 
 #ifdef __cplusplus

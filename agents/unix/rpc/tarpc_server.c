@@ -7894,6 +7894,148 @@ _get_addr_by_id_1_svc(tarpc_get_addr_by_id_in  *in,
     return TRUE;
 }
 
+/*------------ raw2integer ---------------------------*/
+TARPC_FUNC(raw2integer, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+/**
+ * Convert raw data to integer.
+ *
+ * @param in    Input data
+ * @param out   Output data
+ *
+ * @return @c 0 on success or @c -1
+ */
+int
+raw2integer(tarpc_raw2integer_in *in,
+            tarpc_raw2integer_out *out)
+{
+    uint8_t     single_byte;
+    uint16_t    two_bytes;
+    uint32_t    four_bytes;
+    uint64_t    eight_bytes;
+
+    if (in->data.data_val == NULL ||
+        in->data.data_len == 0)
+    {
+        RING("%s(): trying to convert zero-length value",
+             __FUNCTION__);
+        return 0;
+    }
+
+    if (in->data.data_len == sizeof(single_byte))
+    {
+        single_byte = *(uint8_t *)(in->data.data_val);
+        out->number = single_byte;
+    }
+    else if (in->data.data_len == sizeof(two_bytes))
+    {
+        two_bytes = *(uint16_t *)(in->data.data_val);
+        out->number = two_bytes;
+    }
+    else if (in->data.data_len == sizeof(four_bytes))
+    {
+        four_bytes = *(uint32_t *)(in->data.data_val);
+        out->number = four_bytes;
+    }
+    else if (in->data.data_len == sizeof(eight_bytes))
+    {
+        eight_bytes = *(uint64_t *)(in->data.data_val);
+        out->number = eight_bytes;
+    }
+    else
+    {
+        ERROR("%s(): incorrect len %d for raw data",
+              __FUNCTION__, in->data.data_len);
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return -1;
+    }
+
+    return 0;
+}
+
+/*------------ integer2raw ---------------------------*/
+TARPC_FUNC(integer2raw, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+/**
+ * Convert integer value to raw representation.
+ *
+ * @param in    Input data
+ * @param out   Output data
+ *
+ * @return @c 0 on success or @c -1
+ */
+int
+integer2raw(tarpc_integer2raw_in *in,
+            tarpc_integer2raw_out *out)
+{
+    uint8_t     single_byte;
+    uint16_t    two_bytes;
+    uint32_t    four_bytes;
+    uint64_t    eight_bytes;
+
+    void *p = NULL;
+
+    if (in->len == 0)
+    {
+        RING("%s(): trying to convert zero-length value",
+             __FUNCTION__);
+        return 0;
+    }
+
+    out->data.data_val = NULL;
+    out->data.data_len = 0;
+
+    if (in->len == sizeof(single_byte))
+    {
+        single_byte = (uint8_t)in->number;
+        p = &single_byte;
+    }
+    else if (in->len == sizeof(two_bytes))
+    {
+        two_bytes = (uint16_t)in->number;
+        p = &two_bytes;
+    }
+    else if (in->len == sizeof(four_bytes))
+    {
+        four_bytes = (uint32_t)in->number;
+        p = &four_bytes;
+    }
+    else if (in->len == sizeof(eight_bytes))
+    {
+        eight_bytes = (uint64_t)in->number;
+        p = &eight_bytes;
+    }
+    else
+    {
+        ERROR("%s(): incorrect len %d for numeric data",
+              __FUNCTION__, in->len);
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return -1;
+    }
+
+    out->data.data_val = calloc(1, in->len);
+    if (out->data.data_val == NULL)
+    {
+        ERROR("%s(): failed to allocate space for numeric data",
+              __FUNCTION__);
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        return -1;
+    }
+
+    memcpy(out->data.data_val, p, in->len);
+    out->data.data_len = in->len;
+
+    return 0;
+}
+
 /*-------------- memalign() ------------------------------*/
 
 TARPC_FUNC(memalign, {},
