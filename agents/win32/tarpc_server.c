@@ -1844,6 +1844,7 @@ TARPC_FUNC(setsockopt, {},
                 memcpy(&addr,
                        &(in_optval->option_value_u.opt_ipaddr),
                        sizeof(struct in_addr));
+                addr.s_addr = htonl(addr.s_addr);
                 optlen = sizeof(addr);
                 break;
             }
@@ -1873,9 +1874,13 @@ TARPC_FUNC(setsockopt, {},
                 memcpy(&mreq.imr_multiaddr,
                        &(in_optval->option_value_u.opt_mreqn.imr_multiaddr),
                        sizeof(struct in_addr));
+                mreq.imr_multiaddr.s_addr
+                    = htonl(mreq.imr_multiaddr.s_addr);
                 memcpy(&mreq.imr_interface,
                        &(in_optval->option_value_u.opt_mreqn.imr_address),
                        sizeof(struct in_addr));
+                mreq.imr_interface.s_addr
+                    = htonl(mreq.imr_interface.s_addr);
                 
                 optlen = sizeof(mreq);
                 break;
@@ -2053,6 +2058,10 @@ TARPC_FUNC(getsockopt,
                 memcpy(&(out->optval.optval_val[0].
                          option_value_u.opt_ipaddr),
                        addr, sizeof(*addr));
+                out->optval.optval_val[0].
+                         option_value_u.opt_ipaddr =
+                        ntohl(out->optval.optval_val[0].
+                                 option_value_u.opt_ipaddr);
                 break;
             }
 

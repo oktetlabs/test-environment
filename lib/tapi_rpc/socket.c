@@ -1245,20 +1245,30 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                     case OPT_IPADDR:
                         memcpy(&val.option_value_u.opt_ipaddr,
                                &opt->address, sizeof(opt->address));
+                        val.option_value_u.opt_ipaddr =
+                            ntohl(val.option_value_u.opt_ipaddr);
                         break;
 
                     case OPT_MREQ:
                         memcpy(&val.option_value_u.opt_mreq.imr_multiaddr,
                                &opt->multiaddr, sizeof(opt->multiaddr));
+                        val.option_value_u.opt_mreq.imr_multiaddr =
+                          ntohl(val.option_value_u.opt_mreq.imr_multiaddr);
                         memcpy(&val.option_value_u.opt_mreq.imr_address,
                                &opt->address, sizeof(opt->address));
+                        val.option_value_u.opt_mreq.imr_address =
+                            ntohl(val.option_value_u.opt_mreq.imr_address);
                         break;
 
                     case OPT_MREQN:
                         memcpy(&val.option_value_u.opt_mreqn.imr_multiaddr,
                                &opt->multiaddr, sizeof(opt->multiaddr));
+                        val.option_value_u.opt_mreqn.imr_multiaddr =
+                          ntohl(val.option_value_u.opt_mreqn.imr_multiaddr);
                         memcpy(&val.option_value_u.opt_mreqn.imr_address,
                                &opt->address, sizeof(opt->address));
+                        val.option_value_u.opt_mreqn.imr_address =
+                          ntohl(val.option_value_u.opt_mreqn.imr_address);
                         val.option_value_u.opt_mreqn.imr_ifindex =
                             opt->ifindex;
                         break;
@@ -1386,6 +1396,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                                    &out.optval.optval_val[0].
                                        option_value_u.opt_ipaddr,
                                    sizeof(opt->address));
+                            opt->address = htonl(opt->address);
                             te_log_buf_append(opt_val_str, "{ %s }",
                                 inet_ntop(AF_INET, &opt->address,
                                           addr_buf, sizeof(addr_buf)));
@@ -1396,10 +1407,12 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                                    &out.optval.optval_val[0].
                                      option_value_u.opt_mreq.imr_multiaddr,
                                    sizeof(opt->multiaddr));
+                            opt->multiaddr = htonl(opt->multiaddr);
                             memcpy(&opt->address,
                                    &out.optval.optval_val[0].
                                      option_value_u.opt_mreq.imr_address,
                                    sizeof(opt->address));
+                            opt->address = htonl(opt->address);
                             te_log_buf_append(opt_val_str,
                                 "{ imr_multiaddr: %s, imr_interface: %s }",
                                 inet_ntop(AF_INET, &opt->multiaddr,
@@ -1413,10 +1426,12 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                                    &out.optval.optval_val[0].
                                      option_value_u.opt_mreqn.imr_multiaddr,
                                    sizeof(opt->multiaddr));
+                            opt->multiaddr = htonl(opt->multiaddr);
                             memcpy(&opt->address,
                                    &out.optval.optval_val[0].
                                      option_value_u.opt_mreqn.imr_address,
                                    sizeof(opt->address));
+                            opt->address = htonl(opt->address);
                             opt->ifindex =
                                 val.option_value_u.opt_mreqn.imr_ifindex;
                             te_log_buf_append(opt_val_str,
@@ -1745,6 +1760,8 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
                         memcpy(&val.option_value_u.opt_ipaddr,
                                (char *)&(opt->address),
                                sizeof(opt->address));
+                        val.option_value_u.opt_ipaddr =
+                            ntohl(val.option_value_u.opt_ipaddr);
                         te_log_buf_append(opt_val_str, "{ %s }",
                                             inet_ntop(AF_INET,
                                                 (char *)&(opt)->address,
@@ -1757,9 +1774,13 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
                         memcpy(&val.option_value_u.opt_mreq.imr_multiaddr,
                               (char *)&(opt->multiaddr),
                               sizeof(opt->multiaddr));
+                        val.option_value_u.opt_mreq.imr_multiaddr =
+                          ntohl(val.option_value_u.opt_mreq.imr_multiaddr);
                         memcpy(&val.option_value_u.opt_mreq.imr_address,
                                (char *)&(opt->address),
                                sizeof(opt->address));
+                        val.option_value_u.opt_mreq.imr_address =
+                          ntohl(val.option_value_u.opt_mreq.imr_address);
 
                         te_log_buf_append(opt_val_str, 
                             "{ imr_multiaddr: %s, imr_interface: %s }",
@@ -1776,9 +1797,13 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
                         memcpy(&val.option_value_u.opt_mreqn.imr_multiaddr,
                               (char *)&(opt->multiaddr),
                               sizeof(opt->multiaddr));
+                        val.option_value_u.opt_mreqn.imr_multiaddr =
+                          ntohl(val.option_value_u.opt_mreqn.imr_multiaddr);
                         memcpy(&val.option_value_u.opt_mreqn.imr_address,
                                (char *)&(opt->address),
                                sizeof(opt->address));
+                        val.option_value_u.opt_mreqn.imr_address =
+                          ntohl(val.option_value_u.opt_mreqn.imr_address);
                         val.option_value_u.opt_mreqn.imr_ifindex =
                         opt->ifindex;
 

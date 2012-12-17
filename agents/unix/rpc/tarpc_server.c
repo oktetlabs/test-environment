@@ -2597,9 +2597,13 @@ tarpc_setsockopt(tarpc_setsockopt_in *in, tarpc_setsockopt_out *out,
             memcpy(&param->mreq.imr_multiaddr,
                    &in_optval->option_value_u.opt_mreq.imr_multiaddr,
                    sizeof(param->mreq.imr_multiaddr));
+            param->mreq.imr_multiaddr.s_addr =
+                htonl(param->mreq.imr_multiaddr.s_addr);
             memcpy(&param->mreq.imr_interface,
                    &in_optval->option_value_u.opt_mreq.imr_address,
                    sizeof(param->mreq.imr_interface));
+            param->mreq.imr_interface.s_addr =
+                htonl(param->mreq.imr_interface.s_addr);
             *optlen = sizeof(param->mreq);
             break;
         }
@@ -2610,9 +2614,13 @@ tarpc_setsockopt(tarpc_setsockopt_in *in, tarpc_setsockopt_out *out,
             memcpy((char *)&(param->mreqn.imr_multiaddr),
                    &in_optval->option_value_u.opt_mreqn.imr_multiaddr,
                    sizeof(param->mreqn.imr_multiaddr));
+            param->mreqn.imr_multiaddr.s_addr =
+                htonl(param->mreqn.imr_multiaddr.s_addr);
             memcpy((char *)&(param->mreqn.imr_address),
                    &in_optval->option_value_u.opt_mreqn.imr_address,
                    sizeof(param->mreqn.imr_address));
+            param->mreqn.imr_address.s_addr =
+                htonl(param->mreqn.imr_address.s_addr);
 
             param->mreqn.imr_ifindex =
                 in_optval->option_value_u.opt_mreqn.imr_ifindex;
@@ -2641,6 +2649,7 @@ tarpc_setsockopt(tarpc_setsockopt_in *in, tarpc_setsockopt_out *out,
         {
             memcpy(&param->addr, &in_optval->option_value_u.opt_ipaddr,
                    sizeof(struct in_addr));
+            param->addr.s_addr = htonl(param->addr.s_addr);
             *optlen = sizeof(param->addr);
             break;
         }
@@ -2864,8 +2873,12 @@ tarpc_getsockopt(tarpc_getsockopt_in *in, tarpc_getsockopt_out *out,
 
             memcpy(&out_optval->option_value_u.opt_mreqn.imr_multiaddr,
                    &(mreqn->imr_multiaddr), sizeof(mreqn->imr_multiaddr));
+            out_optval->option_value_u.opt_mreqn.imr_multiaddr =
+                ntohl(out_optval->option_value_u.opt_mreqn.imr_multiaddr);
             memcpy(&out_optval->option_value_u.opt_mreqn.imr_address,
                    &(mreqn->imr_address), sizeof(mreqn->imr_address));
+            out_optval->option_value_u.opt_mreqn.imr_address =
+                ntohl(out_optval->option_value_u.opt_mreqn.imr_address);
             out_optval->option_value_u.opt_mreqn.imr_ifindex =
                 mreqn->imr_ifindex;
 #else
@@ -2882,8 +2895,12 @@ tarpc_getsockopt(tarpc_getsockopt_in *in, tarpc_getsockopt_out *out,
 
             memcpy(&out_optval->option_value_u.opt_mreq.imr_multiaddr,
                    &(mreq->imr_multiaddr), sizeof(mreq->imr_multiaddr));
+            out_optval->option_value_u.opt_mreq.imr_multiaddr =
+                ntohl(out_optval->option_value_u.opt_mreq.imr_multiaddr);
             memcpy(&out_optval->option_value_u.opt_mreq.imr_address,
                    &(mreq->imr_interface), sizeof(mreq->imr_interface));
+            out_optval->option_value_u.opt_mreq.imr_address =
+                ntohl(out_optval->option_value_u.opt_mreq.imr_address);
             break;
         }
 
@@ -2901,6 +2918,8 @@ tarpc_getsockopt(tarpc_getsockopt_in *in, tarpc_getsockopt_out *out,
         case OPT_IPADDR:
             memcpy(&out_optval->option_value_u.opt_ipaddr,
                    opt, sizeof(struct in_addr));
+            out_optval->option_value_u.opt_ipaddr =
+                ntohl(out_optval->option_value_u.opt_ipaddr);
             break;
 
         case OPT_IPADDR6:
