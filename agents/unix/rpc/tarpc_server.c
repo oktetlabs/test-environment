@@ -7946,9 +7946,32 @@ raw2integer(tarpc_raw2integer_in *in,
         eight_bytes = *(uint64_t *)(in->data.data_val);
         out->number = eight_bytes;
     }
+    else if (in->data.data_len <= sizeof(out->number))
+    {
+        int      x;
+        uint8_t *p;
+
+        WARN("%s(): incorrect length %d for raw data, "
+             "trying to interpret according to endianness",
+             __FUNCTION__, in->data.data_len);
+
+        out->number = 0;
+        x = 1;
+        p = (uint8_t *)&x;
+        if (p[sizeof(x) - 1] > 0)
+        {
+            /* Big-endian */
+            p = (uint8_t *)&out->number +
+                    (sizeof(out->number) - in->data.data_len);
+            memcpy(p, in->data.data_val, in->data.data_len);
+        }
+        else /* Little-endian */
+            memcpy(&out->number, in->data.data_val,
+                   in->data.data_len);
+    }
     else
     {
-        ERROR("%s(): incorrect len %d for raw data",
+        ERROR("%s(): incorrect length %d for integer data",
               __FUNCTION__, in->data.data_len);
         out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
         return -1;
@@ -8015,7 +8038,7 @@ integer2raw(tarpc_integer2raw_in *in,
     }
     else
     {
-        ERROR("%s(): incorrect len %d for numeric data",
+        ERROR("%s(): incorrect length %d for integer data",
               __FUNCTION__, in->len);
         out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
         return -1;
@@ -8024,7 +8047,7 @@ integer2raw(tarpc_integer2raw_in *in,
     out->data.data_val = calloc(1, in->len);
     if (out->data.data_val == NULL)
     {
-        ERROR("%s(): failed to allocate space for numeric data",
+        ERROR("%s(): failed to allocate space for integer data",
               __FUNCTION__);
         out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
         return -1;

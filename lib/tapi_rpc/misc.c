@@ -1713,10 +1713,9 @@ rpc_raw2integer(rcf_rpc_server *rpcs, uint8_t *data,
             *(uint64_t *)data = out.number;
         else
         {
-            ERROR("%s(): incorrect len of numeric data",
-                  __FUNCTION__);
-            free(str);
-            return TE_RC(TE_TAPI, TE_EINVAL);
+            WARN("%s(): incorrect length of integer data",
+                 __FUNCTION__);
+            memcpy(data, &out.number, len);
         }
     }
 
