@@ -56,6 +56,7 @@
 
 #include "te_defs.h"
 #include "te_printf.h"
+#include "te_string.h"
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_unistd.h"
 #include "tapi_rpc_misc.h"
@@ -1674,6 +1675,8 @@ rpc_raw2integer(rcf_rpc_server *rpcs, uint8_t *data,
     tarpc_raw2integer_in    in;
     tarpc_raw2integer_out   out;
 
+    char    *str;
+
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
 
@@ -1693,6 +1696,10 @@ rpc_raw2integer(rcf_rpc_server *rpcs, uint8_t *data,
 
     rcf_rpc_call(rpcs, "raw2integer", &in, &out);
 
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(raw2integer, out.retval);
+
+    str = raw2string(data, len);
+
     if (out.retval == 0)
     {
         memset(data, 0, len);
@@ -1708,13 +1715,15 @@ rpc_raw2integer(rcf_rpc_server *rpcs, uint8_t *data,
         {
             ERROR("%s(): incorrect len of numeric data",
                   __FUNCTION__);
+            free(str);
             return TE_RC(TE_TAPI, TE_EINVAL);
         }
     }
 
-    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(raw2integer, out.retval);
-    TAPI_RPC_LOG(rpcs, raw2integer, "%p, %d", "%d number=%lld",
-                 data, len, out.retval, (long long int)out.number);
+    TAPI_RPC_LOG(rpcs, raw2integer, "%p (%s), %d", "%d number=%lld",
+                 data, str == NULL ? "" : str, len, out.retval,
+                 (long long int)out.number);
+    free(str);
     RETVAL_INT(raw2integer, out.retval);
 }
 
@@ -1724,6 +1733,8 @@ rpc_integer2raw(rcf_rpc_server *rpcs, uint64_t number,
 {
     tarpc_integer2raw_in    in;
     tarpc_integer2raw_out   out;
+
+    char    *str;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -1748,7 +1759,10 @@ rpc_integer2raw(rcf_rpc_server *rpcs, uint64_t number,
         memcpy(data, out.data.data_val, out.data.data_len);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(integer2raw, out.retval);
-    TAPI_RPC_LOG(rpcs, integer2raw, "%lld, %p, %d", "%d",
-                 (long long int)number, data, len, out.retval);
+    str = raw2string(data, len);
+    TAPI_RPC_LOG(rpcs, integer2raw, "%lld, %p, %d", "%d raw=%s",
+                 (long long int)number, data, len, out.retval,
+                 str == NULL ? "" : str);
+    free(str);
     RETVAL_INT(integer2raw, out.retval);
 }

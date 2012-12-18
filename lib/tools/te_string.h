@@ -81,6 +81,44 @@ extern void te_string_cut(te_string *str, size_t len);
  */
 extern void te_string_free(te_string *str);
 
+/**
+ * Get string representation of raw data.
+ *
+ * @param data  Buffer
+ * @param size  Number of bytes
+ *
+ * @return String representation
+ */
+static inline
+char *raw2string(uint8_t *data, int size)
+{
+    te_string  str = TE_STRING_INIT;
+    int        i = 0;
+
+    if (te_string_append(&str, "[ ") != 0)
+    {
+        te_string_free(&str);
+        return NULL;
+    }
+
+    for (i = 0; i < size; i++)
+    {
+        if (te_string_append(&str, "%#02x ", data[i]) != 0)
+        {
+            te_string_free(&str);
+            return NULL;
+        }
+    }
+
+    if (te_string_append(&str, "]") != 0)
+    {
+        te_string_free(&str);
+        return NULL;
+    }
+
+    return str.ptr;
+}
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
