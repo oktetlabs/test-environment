@@ -8109,10 +8109,13 @@ set_buf(const char *src_buf,
 /*-------------------------- Read buffer ----------------------------*/
 TARPC_FUNC(get_buf, {},
 {
-    out->dst_buf.dst_buf_len = in->len;
+    size_t len = in->len;
+
     MAKE_CALL(func(in->src_buf, in->src_off,
                    &out->dst_buf.dst_buf_val,
-                   &out->dst_buf.dst_buf_len));
+                   &len));
+
+    out->dst_buf.dst_buf_len = len;
 }
 )
 
@@ -8129,6 +8132,8 @@ get_buf(tarpc_ptr src_buf_base, size_t src_offset,
 
         if (buf == NULL)
         {
+            RING("%s(): failed to allocate %ld bytes",
+                 __FUNCTION__, (long int)*len);
             *len = 0;
             errno = ENOMEM;
         }
@@ -8140,6 +8145,8 @@ get_buf(tarpc_ptr src_buf_base, size_t src_offset,
     }
     else if (*len != 0)
     {
+        RING("%s(): trying to get bytes from NULL address",
+             __FUNCTION__);
         errno = EFAULT;
         *len = 0;
     }

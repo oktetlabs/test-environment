@@ -45,6 +45,8 @@
 #include "te_rpc_types.h"
 #include "te_rpc_types.h"
 
+#include "logger_api.h"
+
 /** Chunk of reallocation of identifiers array */
 #define IDS_CHUNK   128
 
