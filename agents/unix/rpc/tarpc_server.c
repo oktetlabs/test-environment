@@ -2095,8 +2095,8 @@ TARPC_FUNC(kill, {},
 
 TARPC_FUNC(pthread_kill, {},
 {
-    MAKE_CALL(out->retval = func((pthread_t)in->tid,
-                                 signum_rpc2h(in->signum)));
+    MAKE_CALL(out->retval = ((int (*)(pthread_t, int))func)
+                                (in->tid, signum_rpc2h(in->signum)));
 }
 )
 
