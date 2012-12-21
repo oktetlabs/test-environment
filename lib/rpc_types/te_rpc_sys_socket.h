@@ -37,6 +37,7 @@
 
 #include "te_rpc_defs.h"
 #include "te_param.h"
+#include "logger_api.h"
 #ifndef WINDOWS
 #include "tarpc.h"
 #endif
@@ -964,14 +965,143 @@ extern const char * sockaddr_h2str(const struct sockaddr *addr);
 extern const char * addr_family_sockaddr_str(
                         rpc_socket_addr_family addr_family);
 
+/**
+ * TA-independent ethtool commands.
+ */
+typedef enum rpc_ethtool_cmd {
+    RPC_ETHTOOL_UNKNOWN     = 0,
+    RPC_ETHTOOL_GSET        = 1,
+    RPC_ETHTOOL_SSET        = 2,
+    RPC_ETHTOOL_GDRVINFO    = 3,
+    RPC_ETHTOOL_GREGS       = 4,
+    RPC_ETHTOOL_GWOL        = 5,
+    RPC_ETHTOOL_SWOL        = 6,
+    RPC_ETHTOOL_GMSGLVL     = 7,
+    RPC_ETHTOOL_SMSGLVL     = 8,
+    RPC_ETHTOOL_NWAY_RST    = 9,
+    RPC_ETHTOOL_GLINK       = 10,
+    RPC_ETHTOOL_GEEPROM     = 11,
+    RPC_ETHTOOL_SEEPROM     = 12,
+    RPC_ETHTOOL_GCOALESCE   = 14, /* Defined to have the same value
+                                     as native constant */
+    RPC_ETHTOOL_SCOALESCE,
+    RPC_ETHTOOL_GRINGPARAM,
+    RPC_ETHTOOL_SRINGPARAM,
+    RPC_ETHTOOL_GPAUSEPARAM,
+    RPC_ETHTOOL_SPAUSEPARAM,
+    RPC_ETHTOOL_GRXCSUM,
+    RPC_ETHTOOL_SRXCSUM,
+    RPC_ETHTOOL_GTXCSUM,
+    RPC_ETHTOOL_STXCSUM,
+    RPC_ETHTOOL_GSG,
+    RPC_ETHTOOL_SSG,
+    RPC_ETHTOOL_TEST,
+    RPC_ETHTOOL_GSTRINGS,
+    RPC_ETHTOOL_PHYS_ID,
+    RPC_ETHTOOL_GSTATS,
+    RPC_ETHTOOL_GTSO,
+    RPC_ETHTOOL_STSO,
+    RPC_ETHTOOL_GPERMADDR,
+    RPC_ETHTOOL_GUFO,
+    RPC_ETHTOOL_SUFO,
+    RPC_ETHTOOL_GGSO,
+    RPC_ETHTOOL_SGSO,
+    RPC_ETHTOOL_GFLAGS,
+    RPC_ETHTOOL_SFLAGS,
+    RPC_ETHTOOL_GPFLAGS,
+    RPC_ETHTOOL_SPFLAGS,
+    RPC_ETHTOOL_GRXFH,
+    RPC_ETHTOOL_SRXFH,
+    RPC_ETHTOOL_GGRO,
+    RPC_ETHTOOL_SGRO,
+    RPC_ETHTOOL_GRXRINGS,
+    RPC_ETHTOOL_GRXCLSRLCNT,
+    RPC_ETHTOOL_GRXCLSRULE,
+    RPC_ETHTOOL_GRXCLSRLALL,
+    RPC_ETHTOOL_SRXCLSRLDEL,
+    RPC_ETHTOOL_SRXCLSRLINS,
+    RPC_ETHTOOL_FLASHDEV,
+    RPC_ETHTOOL_RESET
+} rpc_ethtool_cmd;
 
-#if HAVE_LINUX_ETHTOOL_H
+/**
+ * TA-independent reset flags.
+ */
+typedef enum rpc_ethtool_reset_flags {
+    RPC_ETH_RESET_MGMT              = 1 << 0,
+    RPC_ETH_RESET_IRQ               = 1 << 1,
+    RPC_ETH_RESET_DMA               = 1 << 2,
+    RPC_ETH_RESET_FILTER            = 1 << 3,
+    RPC_ETH_RESET_OFFLOAD           = 1 << 4,
+    RPC_ETH_RESET_MAC               = 1 << 5,
+    RPC_ETH_RESET_PHY               = 1 << 6,
+    RPC_ETH_RESET_RAM               = 1 << 7,
+    RPC_ETH_RESET_SHARED_MGMT       = 1 << 16,
+    RPC_ETH_RESET_SHARED_IRQ        = 1 << 17,
+    RPC_ETH_RESET_SHARED_DMA        = 1 << 18,
+    RPC_ETH_RESET_SHARED_FILTER     = 1 << 19,
+    RPC_ETH_RESET_SHARED_OFFLOAD    = 1 << 20,
+    RPC_ETH_RESET_SHARED_MAC        = 1 << 21,
+    RPC_ETH_RESET_SHARED_PHY        = 1 << 22,
+    RPC_ETH_RESET_SHARED_RAM        = 1 << 23,
+    RPC_ETH_RESET_DEDICATED = 0x0000ffff,
+    RPC_ETH_RESET_ALL       = 0xffffffff,
+} rpc_ethtool_reset_flags;
+
+#define ETHTOOL_RESET_FLAGS_MAPPING_LIST \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_MGMT),              \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_IRQ),               \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_DMA),               \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_FILTER),            \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_OFFLOAD),           \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_MAC),               \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_PHY),               \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_RAM),               \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_SHARED_MGMT),       \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_SHARED_IRQ),        \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_SHARED_DMA),        \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_SHARED_FILTER),     \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_SHARED_OFFLOAD),    \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_SHARED_MAC),        \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_SHARED_PHY),        \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_SHARED_RAM)
+
+/**
+ * ethtool_reset_flags_aux_rpc2str()
+ */
+RPCBITMAP2STR(ethtool_reset_flags_aux, ETHTOOL_RESET_FLAGS_MAPPING_LIST);
+
+/** Convert ethtool reset flags from RPC to string representation */
+extern const char *ethtool_reset_flags_rpc2str(uint32_t flags);
+
+/** Convert ethtool reset flags from RPC to native representation */
+extern uint32_t ethtool_reset_flags_rpc2h(uint32_t flags);
+
+/** Convert ethtool reset flags from native representation to RPC one */
+extern uint32_t ethtool_reset_flags_h2rpc(uint32_t flags);
+
+/** Convert RPC ethtool command to string */
+extern const char *ethtool_cmd_rpc2str(rpc_ethtool_cmd ethtool_cmd);
+
+static inline const char *
+ethtool_cmd2str(rpc_ethtool_cmd ethtool_cmd)
+{
+    UNUSED(ethtool_cmd);
+    ERROR("Use ethtool_cmd_rpc2str() instead of %s()",
+          __FUNCTION__);
+    return "unknown";
+}
+
+/** Convert RPC ethtool command to native one */
+extern int ethtool_cmd_rpc2h(rpc_ethtool_cmd ethtool_cmd);
+
+/** Convert native ethtool command to RPC one */
+extern rpc_ethtool_cmd ethtool_cmd_h2rpc(int ethtool_cmd);
 
 /** Convert ethtool command to TARPC_ETHTOOL_* types of its data. */
-extern tarpc_ethtool_type ethtool_cmd2type(tarpc_ethtool_command cmd);
-/** Returns a string with ethtool command name. */
-extern const char * ethtool_cmd2str(tarpc_ethtool_command cmd);
+extern tarpc_ethtool_type ethtool_cmd2type(rpc_ethtool_cmd cmd);
 
+#if HAVE_LINUX_ETHTOOL_H
 /**
  * Copy ethtool data from RPC data structure to host. 
  *

@@ -248,6 +248,9 @@ enum tarpc_ethtool_type {
 };
 
 struct tarpc_ethtool_cmd {
+    uint32_t cmd;           /* this field is defined only to keep
+                               old tests using native constants
+                               working */
     uint32_t supported;
     uint32_t advertising;
     uint16_t speed;
@@ -256,16 +259,29 @@ struct tarpc_ethtool_cmd {
     uint8_t  phy_address;
     uint8_t  transceiver;
     uint8_t  autoneg;
+    uint8_t  mdio_support;
     uint32_t maxtxpkt;
     uint32_t maxrxpkt;
+    uint16_t speed_hi;
+    uint8_t  eth_tp_mdix;
+    uint8_t  reserved2;
+    uint32_t lp_advertising;
+    uint32_t reserved[2];
 };
 
 struct tarpc_ethtool_perm_addr {
+    uint32_t    cmd;        /* this field is defined only to keep
+                               old tests using native constants
+                               working */
+    uint32_t    size;
     tarpc_local data;
 };
 
 struct tarpc_ethtool_value {
-    uint32_t data;
+    uint32_t    cmd;        /* this field is defined only to keep
+                               old tests using native constants
+                               working */
+    uint32_t    data;
 };
 
 /** struct ethtool_* */
@@ -4191,7 +4207,6 @@ struct tarpc_overfill_fd_out {
 
     uint64_t    bytes;      /**< Number of sent bytes */
 };
-
 
 /* setrlimit() */
 

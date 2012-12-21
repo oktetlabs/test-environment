@@ -121,7 +121,6 @@ rpc_ioctl(rcf_rpc_server *rpcs,
         in.req.req_len = 1;
     }
 
-
     switch (request)
     {
         case RPC_SIOCGSTAMP:
@@ -426,9 +425,9 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                 break;
             }
 
-#if HAVE_LINUX_ETHTOOL_H
         case RPC_SIOCETHTOOL:
         {
+            int           size = 0;
             struct ifreq *ifr = (struct ifreq *)arg;
             tarpc_ifreq  *rpc_ifreq = 
                     &in.req.req_val[0].ioctl_request_u.req_ifreq;
@@ -442,66 +441,59 @@ rpc_ioctl(rcf_rpc_server *rpcs,
 
             if (ifr->ifr_data == NULL)
                 break;
-            ethtool_data_h2rpc(&rpc_ifreq->rpc_ifr_ethtool, ifr->ifr_data);
+            rpc_ifreq->rpc_ifr_ethtool.command =
+                    *((tarpc_ethtool_command *)(ifr->ifr_data));
+            rpc_ifreq->rpc_ifr_ethtool.data.type = ethtool_cmd2type(
+                                        rpc_ifreq->rpc_ifr_ethtool.command);
+
+            switch (rpc_ifreq->rpc_ifr_ethtool.data.type)
+            {
+                case TARPC_ETHTOOL_CMD:
+                    size = sizeof(tarpc_ethtool_cmd);
+                    break;
+
+                case TARPC_ETHTOOL_PADDR:
+                    size = sizeof(tarpc_ethtool_perm_addr);
+                    break;
+
+                case TARPC_ETHTOOL_VALUE:
+                    size = sizeof(tarpc_ethtool_value);
+                    break;
+
+                default:
+                    size = 0;
+                    break;
+            }
+
+            memcpy(&rpc_ifreq->rpc_ifr_ethtool.data.tarpc_ethtool_data_u,
+                   ifr->ifr_data, size);
 
             switch (rpc_ifreq->rpc_ifr_ethtool.command)
             {
-                case ETHTOOL_GSET:
-                case ETHTOOL_GMSGLVL:
-                case ETHTOOL_GLINK:
-#ifdef ETHTOOL_GRXCSUM
-                case ETHTOOL_GRXCSUM:
-#endif
-#ifdef ETHTOOL_GTXCSUM
-                case ETHTOOL_GTXCSUM:
-#endif
-#ifdef ETHTOOL_GSG
-                case ETHTOOL_GSG:
-#endif
-#ifdef ETHTOOL_GTSO
-                case ETHTOOL_GTSO:
-#endif
-#ifdef ETHTOOL_GGSO
-                case ETHTOOL_GGSO:
-#endif
-#ifdef ETHTOOL_GFLAGS
-                case ETHTOOL_GFLAGS:
-#endif
-#ifdef ETHTOOL_PHYS_ID
-                case ETHTOOL_PHYS_ID:
-#endif
-#ifdef ETHTOOL_GUFO
-                case ETHTOOL_GUFO:
-#endif
-#ifdef ETHTOOL_RESET
-                case ETHTOOL_RESET:
-#endif
+                case RPC_ETHTOOL_GSET:
+                case RPC_ETHTOOL_GMSGLVL:
+                case RPC_ETHTOOL_GLINK:
+                case RPC_ETHTOOL_GRXCSUM:
+                case RPC_ETHTOOL_GTXCSUM:
+                case RPC_ETHTOOL_GSG:
+                case RPC_ETHTOOL_GTSO:
+                case RPC_ETHTOOL_GGSO:
+                case RPC_ETHTOOL_GFLAGS:
+                case RPC_ETHTOOL_PHYS_ID:
+                case RPC_ETHTOOL_GUFO:
+                case RPC_ETHTOOL_RESET:
                     in.access = IOCTL_RD;
                     break;
 
-                case ETHTOOL_SSET:
-                case ETHTOOL_SMSGLVL:
-#ifdef ETHTOOL_SRXCSUM
-                case ETHTOOL_SRXCSUM:
-#endif
-#ifdef ETHTOOL_STXCSUM
-                case ETHTOOL_STXCSUM:
-#endif
-#ifdef ETHTOOL_SSG
-                case ETHTOOL_SSG:
-#endif
-#ifdef ETHTOOL_STSO
-                case ETHTOOL_STSO:
-#endif
-#ifdef ETHTOOL_SGSO
-                case ETHTOOL_SGSO:
-#endif
-#ifdef ETHTOOL_SFLAGS
-                case ETHTOOL_SFLAGS:
-#endif
-#ifdef ETHTOOL_SUFO
-                case ETHTOOL_SUFO:
-#endif
+                case RPC_ETHTOOL_SSET:
+                case RPC_ETHTOOL_SMSGLVL:
+                case RPC_ETHTOOL_SRXCSUM:
+                case RPC_ETHTOOL_STXCSUM:
+                case RPC_ETHTOOL_SSG:
+                case RPC_ETHTOOL_STSO:
+                case RPC_ETHTOOL_SGSO:
+                case RPC_ETHTOOL_SFLAGS:
+                case RPC_ETHTOOL_SUFO:
                     in.access = IOCTL_WR;
                     break;
 
@@ -510,7 +502,6 @@ rpc_ioctl(rcf_rpc_server *rpcs,
             }
             break;
         }
-#endif /* HAVE_LINUX_ETHTOOL_H */
 
         default:
             ERROR("Unsupported ioctl code: %d", request);
@@ -573,14 +564,39 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                                         rpc_ifreq->rpc_ifr_flags);
                         break;
 
-#if HAVE_LINUX_ETHTOOL_H
                     case RPC_SIOCETHTOOL:
-                        *(tarpc_ethtool_command *)(ifreq->ifr_data) = 
-                                rpc_ifreq->rpc_ifr_ethtool.command;
-                        ethtool_data_rpc2h(&rpc_ifreq->rpc_ifr_ethtool,
-                                           &ifreq->ifr_data);
-                        break;
-#endif
+                        {
+                            int size;
+
+                            switch (rpc_ifreq->rpc_ifr_ethtool.data.type)
+                            {
+                                case TARPC_ETHTOOL_CMD:
+                                    size = sizeof(tarpc_ethtool_cmd);
+                                    break;
+
+                                case TARPC_ETHTOOL_PADDR:
+                                    size = sizeof(tarpc_ethtool_perm_addr);
+                                    break;
+
+                                case TARPC_ETHTOOL_VALUE:
+                                    size = sizeof(tarpc_ethtool_value);
+                                    break;
+
+                                default:
+                                    size = 0;
+                                    break;
+                            }
+
+                            memcpy(ifreq->ifr_data,
+                                   &rpc_ifreq->rpc_ifr_ethtool.data.
+                                                tarpc_ethtool_data_u,
+                                   size);
+
+                            *((tarpc_ethtool_command *)(ifreq->ifr_data)) = 
+                                    rpc_ifreq->rpc_ifr_ethtool.command;
+                            break;
+                        }
+
                     case RPC_SIOCGIFINDEX:
                         ifreq->ifr_ifindex = rpc_ifreq->rpc_ifr_ifindex;
 
@@ -800,7 +816,6 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                                      ((struct ifreq *)arg)->ifr_flags)));
                     break;
 
-#if HAVE_LINUX_ETHTOOL_H
                 case RPC_SIOCETHTOOL:
                 {
                     struct ifreq            *ifr = (struct ifreq *)arg;
@@ -810,14 +825,15 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                     
                     snprintf(ifreq_buf + strlen(ifreq_buf),
                              sizeof(ifreq_buf) - strlen(ifreq_buf),
-                             "ethtool %s: ", ethtool_cmd2str(cmd));
+                             "ethtool %s: ", ethtool_cmd_rpc2str(cmd));
                     switch (type)
                     {
                         case TARPC_ETHTOOL_CMD:
                         {
-                            struct ethtool_cmd *ecmd = 
-                                (struct ethtool_cmd *)ifr->ifr_data;
-
+                            struct tarpc_ethtool_cmd *ecmd =
+                                (struct tarpc_ethtool_cmd *)
+                                                            ifr->ifr_data;
+                                
                             snprintf(ifreq_buf + strlen(ifreq_buf),
                                      sizeof(ifreq_buf) - strlen(ifreq_buf),
                                      "supported %x, advertising %x, "
@@ -835,29 +851,39 @@ rpc_ioctl(rcf_rpc_server *rpcs,
 
                         case TARPC_ETHTOOL_PADDR:
                         {
-                            struct ethtool_perm_addr *eaddr = 
-                                (struct ethtool_perm_addr *)ifr->ifr_data;
+                            struct tarpc_ethtool_perm_addr *eaddr = 
+                                (struct tarpc_ethtool_perm_addr *)
+                                                            ifr->ifr_data;
                             snprintf(ifreq_buf + strlen(ifreq_buf),
                                      sizeof(ifreq_buf) - strlen(ifreq_buf),
                                      "hwaddr: %02x:%02x:%02x:%02x:%02x"
                                      ":%02x",
-                                     (unsigned char)(eaddr->data[0]),
-                                     (unsigned char)(eaddr->data[1]),
-                                     (unsigned char)(eaddr->data[2]),
-                                     (unsigned char)(eaddr->data[3]),
-                                     (unsigned char)(eaddr->data[4]),
-                                     (unsigned char)(eaddr->data[5]));
+                                     (unsigned char)(eaddr->data.data[0]),
+                                     (unsigned char)(eaddr->data.data[1]),
+                                     (unsigned char)(eaddr->data.data[2]),
+                                     (unsigned char)(eaddr->data.data[3]),
+                                     (unsigned char)(eaddr->data.data[4]),
+                                     (unsigned char)(eaddr->data.data[5]));
                             break;
                         }
 
                         case TARPC_ETHTOOL_VALUE:
                         {
-                            struct ethtool_value *evalue = 
-                                (struct ethtool_value *)ifr->ifr_data;
+                            struct tarpc_ethtool_value *evalue =
+                                (struct tarpc_ethtool_value *)ifr->ifr_data;
 
-                            snprintf(ifreq_buf + strlen(ifreq_buf),
-                                     sizeof(ifreq_buf) - strlen(ifreq_buf),
-                                     "data %u", evalue->data);
+                            if (cmd == RPC_ETHTOOL_RESET)
+                            snprintf(
+                                ifreq_buf + strlen(ifreq_buf),
+                                sizeof(ifreq_buf) -
+                                                strlen(ifreq_buf),
+                                "data %s",
+                                ethtool_reset_flags_rpc2str(evalue->data));
+                            else
+                                snprintf(ifreq_buf + strlen(ifreq_buf),
+                                         sizeof(ifreq_buf) -
+                                                strlen(ifreq_buf),
+                                         "data %u", evalue->data);
                             break;
                         }
 
@@ -868,7 +894,6 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                     }
                     break;
                 }
-#endif /* HAVE_LINUX_ETHTOOL_H */
 
                 default:
                     req_val = " unknown request ";

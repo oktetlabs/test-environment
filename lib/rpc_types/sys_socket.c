@@ -2184,81 +2184,417 @@ addr_family_sockaddr_str(rpc_socket_addr_family addr_family)
     }
 }
 
-#if HAVE_LINUX_ETHTOOL_H
+const char *
+ethtool_reset_flags_rpc2str(uint32_t flags)
+{
+#define ARR_LEN 10
+#define STR_LEN 100
+    static char str_arr[ARR_LEN][STR_LEN];
+    static int  cur_idx = 0;
+    char       *result = NULL;
+
+    if (flags == RPC_ETH_RESET_DEDICATED)
+    {
+        snprintf(str_arr[cur_idx], STR_LEN, "ETH_RESET_DEDICATED");
+        result = str_arr[cur_idx];
+    }
+    else if (flags == RPC_ETH_RESET_ALL)
+    {
+        snprintf(str_arr[cur_idx], STR_LEN, "ETH_RESET_ALL");
+        result = str_arr[cur_idx];
+    }
+
+    if (result != NULL)
+    {
+        cur_idx++;
+        if (cur_idx >= ARR_LEN)
+            cur_idx = 0;
+        return result;
+    }
+    else
+        return ethtool_reset_flags_aux_rpc2str(flags);
+
+#undef ARR_LEN
+#undef STR_LEN
+}
+
+/** Convert ethtool reset flags from RPC to native representation */
+extern uint32_t
+ethtool_reset_flags_rpc2h(uint32_t flags)
+{
+    int x;
+    int y;
+
+#if HAVE_DECL_ETH_RESET_DEDICATED
+    if (flags == RPC_ETH_RESET_DEDICATED)
+        return ETH_RESET_DEDICATED;
+#endif
+#if HAVE_DECL_ETH_RESET_ALL
+    if (flags == RPC_ETH_RESET_ALL)
+        return ETH_RESET_ALL;
+#endif
+    x =
+#if HAVE_DECL_ETH_RESET_MGMT
+        (!!(flags & RPC_ETH_RESET_MGMT) * ETH_RESET_MGMT) |
+#endif
+#if HAVE_DECL_ETH_RESET_IRQ
+        (!!(flags & RPC_ETH_RESET_IRQ) * ETH_RESET_IRQ) |
+#endif
+#if HAVE_DECL_ETH_RESET_DMA
+        (!!(flags & RPC_ETH_RESET_DMA) * ETH_RESET_DMA) |
+#endif
+#if HAVE_DECL_ETH_RESET_FILTER
+        (!!(flags & RPC_ETH_RESET_FILTER) * ETH_RESET_FILTER) |
+#endif
+#if HAVE_DECL_ETH_RESET_OFFLOAD
+        (!!(flags & RPC_ETH_RESET_OFFLOAD) * ETH_RESET_OFFLOAD) |
+#endif
+#if HAVE_DECL_ETH_RESET_MAC
+        (!!(flags & RPC_ETH_RESET_MAC) * ETH_RESET_MAC) |
+#endif
+#if HAVE_DECL_ETH_RESET_PHY
+        (!!(flags & RPC_ETH_RESET_PHY) * ETH_RESET_PHY) |
+#endif
+#if HAVE_DECL_ETH_RESET_RAM
+        (!!(flags & RPC_ETH_RESET_RAM) * ETH_RESET_RAM) |
+#endif
+        0;
+    y =
+#if HAVE_DECL_ETH_RESET_MGMT
+        (!!(flags & RPC_ETH_RESET_SHARED_MGMT) * ETH_RESET_MGMT) |
+#endif
+#if HAVE_DECL_ETH_RESET_IRQ
+        (!!(flags & RPC_ETH_RESET_SHARED_IRQ) * ETH_RESET_IRQ) |
+#endif
+#if HAVE_DECL_ETH_RESET_DMA
+        (!!(flags & RPC_ETH_RESET_SHARED_DMA) * ETH_RESET_DMA) |
+#endif
+#if HAVE_DECL_ETH_RESET_FILTER
+        (!!(flags & RPC_ETH_RESET_SHARED_FILTER) * ETH_RESET_FILTER) |
+#endif
+#if HAVE_DECL_ETH_RESET_OFFLOAD
+        (!!(flags & RPC_ETH_RESET_SHARED_OFFLOAD) * ETH_RESET_OFFLOAD) |
+#endif
+#if HAVE_DECL_ETH_RESET_MAC
+        (!!(flags & RPC_ETH_RESET_SHARED_MAC) * ETH_RESET_MAC) |
+#endif
+#if HAVE_DECL_ETH_RESET_PHY
+        (!!(flags & RPC_ETH_RESET_SHARED_PHY) * ETH_RESET_PHY) |
+#endif
+#if HAVE_DECL_ETH_RESET_RAM
+        (!!(flags & RPC_ETH_RESET_SHARED_RAM) * ETH_RESET_RAM) |
+#endif
+        0;
+
+    return (x | (y << 16));
+}
+
+/** Convert ethtool reset flags from native representation to RPC one */
+extern uint32_t
+ethtool_reset_flags_h2rpc(uint32_t flags)
+{
+    int x;
+    int y;
+
+#if HAVE_DECL_ETH_RESET_DEDICATED
+    if (flags == ETH_RESET_DEDICATED)
+        return RPC_ETH_RESET_DEDICATED;
+#endif
+#if HAVE_DECL_ETH_RESET_ALL
+    if (flags == ETH_RESET_ALL)
+        return RPC_ETH_RESET_ALL;
+#endif
+    x =
+#if HAVE_DECL_ETH_RESET_MGMT
+        (!!(flags & ETH_RESET_MGMT) * RPC_ETH_RESET_MGMT) |
+#endif
+#if HAVE_DECL_ETH_RESET_IRQ
+        (!!(flags & ETH_RESET_IRQ) * RPC_ETH_RESET_IRQ) |
+#endif
+#if HAVE_DECL_ETH_RESET_DMA
+        (!!(flags & ETH_RESET_DMA) * RPC_ETH_RESET_DMA) |
+#endif
+#if HAVE_DECL_ETH_RESET_FILTER
+        (!!(flags & ETH_RESET_FILTER) * RPC_ETH_RESET_FILTER) |
+#endif
+#if HAVE_DECL_ETH_RESET_OFFLOAD
+        (!!(flags & ETH_RESET_OFFLOAD) * RPC_ETH_RESET_OFFLOAD) |
+#endif
+#if HAVE_DECL_ETH_RESET_MAC
+        (!!(flags & ETH_RESET_MAC) * RPC_ETH_RESET_MAC) |
+#endif
+#if HAVE_DECL_ETH_RESET_PHY
+        (!!(flags & ETH_RESET_PHY) * RPC_ETH_RESET_PHY) |
+#endif
+#if HAVE_DECL_ETH_RESET_RAM
+        (!!(flags & ETH_RESET_RAM) * RPC_ETH_RESET_RAM) |
+#endif
+        0;
+
+    flags = (flags >> 16);
+
+    y =
+#if HAVE_DECL_ETH_RESET_MGMT
+        (!!(flags & ETH_RESET_MGMT) * RPC_ETH_RESET_SHARED_MGMT) |
+#endif
+#if HAVE_DECL_ETH_RESET_IRQ
+        (!!(flags & ETH_RESET_IRQ) * RPC_ETH_RESET_SHARED_IRQ) |
+#endif
+#if HAVE_DECL_ETH_RESET_DMA
+        (!!(flags & ETH_RESET_DMA) * RPC_ETH_RESET_SHARED_DMA) |
+#endif
+#if HAVE_DECL_ETH_RESET_FILTER
+        (!!(flags & ETH_RESET_FILTER) * RPC_ETH_RESET_SHARED_FILTER) |
+#endif
+#if HAVE_DECL_ETH_RESET_OFFLOAD
+        (!!(flags & ETH_RESET_OFFLOAD) * RPC_ETH_RESET_SHARED_OFFLOAD) |
+#endif
+#if HAVE_DECL_ETH_RESET_MAC
+        (!!(flags & ETH_RESET_MAC) * RPC_ETH_RESET_SHARED_MAC) |
+#endif
+#if HAVE_DECL_ETH_RESET_PHY
+        (!!(flags & ETH_RESET_PHY) * RPC_ETH_RESET_SHARED_PHY) |
+#endif
+#if HAVE_DECL_ETH_RESET_RAM
+        (!!(flags & ETH_RESET_RAM) * RPC_ETH_RESET_SHARED_RAM) |
+#endif
+        0;
+
+    return (x | y);
+}
+
+/** Convert RPC ethtool command to string */
+const char *
+ethtool_cmd_rpc2str(rpc_ethtool_cmd ethtool_cmd)
+{
+    switch (ethtool_cmd)
+    {
+        RPC2STR(ETHTOOL_UNKNOWN);
+        RPC2STR(ETHTOOL_GSET);
+        RPC2STR(ETHTOOL_SSET);
+        RPC2STR(ETHTOOL_GDRVINFO);
+        RPC2STR(ETHTOOL_GREGS);
+        RPC2STR(ETHTOOL_GWOL);
+        RPC2STR(ETHTOOL_SWOL);
+        RPC2STR(ETHTOOL_GMSGLVL);
+        RPC2STR(ETHTOOL_SMSGLVL);
+        RPC2STR(ETHTOOL_NWAY_RST);
+        RPC2STR(ETHTOOL_GLINK);
+        RPC2STR(ETHTOOL_GEEPROM);
+        RPC2STR(ETHTOOL_SEEPROM);
+        RPC2STR(ETHTOOL_GCOALESCE);
+        RPC2STR(ETHTOOL_SCOALESCE);
+        RPC2STR(ETHTOOL_GRINGPARAM);
+        RPC2STR(ETHTOOL_SRINGPARAM);
+        RPC2STR(ETHTOOL_GPAUSEPARAM);
+        RPC2STR(ETHTOOL_SPAUSEPARAM);
+        RPC2STR(ETHTOOL_GRXCSUM);
+        RPC2STR(ETHTOOL_SRXCSUM);
+        RPC2STR(ETHTOOL_GTXCSUM);
+        RPC2STR(ETHTOOL_STXCSUM);
+        RPC2STR(ETHTOOL_GSG);
+        RPC2STR(ETHTOOL_SSG);
+        RPC2STR(ETHTOOL_TEST);
+        RPC2STR(ETHTOOL_GSTRINGS);
+        RPC2STR(ETHTOOL_PHYS_ID);
+        RPC2STR(ETHTOOL_GSTATS);
+        RPC2STR(ETHTOOL_GTSO);
+        RPC2STR(ETHTOOL_STSO);
+        RPC2STR(ETHTOOL_GPERMADDR);
+        RPC2STR(ETHTOOL_GUFO);
+        RPC2STR(ETHTOOL_SUFO);
+        RPC2STR(ETHTOOL_GGSO);
+        RPC2STR(ETHTOOL_SGSO);
+        RPC2STR(ETHTOOL_GFLAGS);
+        RPC2STR(ETHTOOL_SFLAGS);
+        RPC2STR(ETHTOOL_GPFLAGS);
+        RPC2STR(ETHTOOL_SPFLAGS);
+        RPC2STR(ETHTOOL_GRXFH);
+        RPC2STR(ETHTOOL_SRXFH);
+        RPC2STR(ETHTOOL_GGRO);
+        RPC2STR(ETHTOOL_SGRO);
+        RPC2STR(ETHTOOL_GRXRINGS);
+        RPC2STR(ETHTOOL_GRXCLSRLCNT);
+        RPC2STR(ETHTOOL_GRXCLSRULE);
+        RPC2STR(ETHTOOL_GRXCLSRLALL);
+        RPC2STR(ETHTOOL_SRXCLSRLDEL);
+        RPC2STR(ETHTOOL_SRXCLSRLINS);
+        RPC2STR(ETHTOOL_FLASHDEV);
+        RPC2STR(ETHTOOL_RESET);
+
+        /*
+         * We should never reach the code below, because all value of the
+         * enum have already checked.
+         */
+        default: return "<ETHTOOL_FATAL_ERROR>";
+    }
+}
+
+/** Convert RPC ethtool command to native one */
+int
+ethtool_cmd_rpc2h(rpc_ethtool_cmd ethtool_cmd)
+{
+    switch (ethtool_cmd)
+    {
+        RPC2H_CHECK(ETHTOOL_UNKNOWN);
+        RPC2H_CHECK(ETHTOOL_GSET);
+        RPC2H_CHECK(ETHTOOL_SSET);
+        RPC2H_CHECK(ETHTOOL_GDRVINFO);
+        RPC2H_CHECK(ETHTOOL_GREGS);
+        RPC2H_CHECK(ETHTOOL_GWOL);
+        RPC2H_CHECK(ETHTOOL_SWOL);
+        RPC2H_CHECK(ETHTOOL_GMSGLVL);
+        RPC2H_CHECK(ETHTOOL_SMSGLVL);
+        RPC2H_CHECK(ETHTOOL_NWAY_RST);
+        RPC2H_CHECK(ETHTOOL_GLINK);
+        RPC2H_CHECK(ETHTOOL_GEEPROM);
+        RPC2H_CHECK(ETHTOOL_SEEPROM);
+        RPC2H_CHECK(ETHTOOL_GCOALESCE);
+        RPC2H_CHECK(ETHTOOL_SCOALESCE);
+        RPC2H_CHECK(ETHTOOL_GRINGPARAM);
+        RPC2H_CHECK(ETHTOOL_SRINGPARAM);
+        RPC2H_CHECK(ETHTOOL_GPAUSEPARAM);
+        RPC2H_CHECK(ETHTOOL_SPAUSEPARAM);
+        RPC2H_CHECK(ETHTOOL_GRXCSUM);
+        RPC2H_CHECK(ETHTOOL_SRXCSUM);
+        RPC2H_CHECK(ETHTOOL_GTXCSUM);
+        RPC2H_CHECK(ETHTOOL_STXCSUM);
+        RPC2H_CHECK(ETHTOOL_GSG);
+        RPC2H_CHECK(ETHTOOL_SSG);
+        RPC2H_CHECK(ETHTOOL_TEST);
+        RPC2H_CHECK(ETHTOOL_GSTRINGS);
+        RPC2H_CHECK(ETHTOOL_PHYS_ID);
+        RPC2H_CHECK(ETHTOOL_GSTATS);
+        RPC2H_CHECK(ETHTOOL_GTSO);
+        RPC2H_CHECK(ETHTOOL_STSO);
+        RPC2H_CHECK(ETHTOOL_GPERMADDR);
+        RPC2H_CHECK(ETHTOOL_GUFO);
+        RPC2H_CHECK(ETHTOOL_SUFO);
+        RPC2H_CHECK(ETHTOOL_GGSO);
+        RPC2H_CHECK(ETHTOOL_SGSO);
+        RPC2H_CHECK(ETHTOOL_GFLAGS);
+        RPC2H_CHECK(ETHTOOL_SFLAGS);
+        RPC2H_CHECK(ETHTOOL_GPFLAGS);
+        RPC2H_CHECK(ETHTOOL_SPFLAGS);
+        RPC2H_CHECK(ETHTOOL_GRXFH);
+        RPC2H_CHECK(ETHTOOL_SRXFH);
+        RPC2H_CHECK(ETHTOOL_GGRO);
+        RPC2H_CHECK(ETHTOOL_SGRO);
+        RPC2H_CHECK(ETHTOOL_GRXRINGS);
+        RPC2H_CHECK(ETHTOOL_GRXCLSRLCNT);
+        RPC2H_CHECK(ETHTOOL_GRXCLSRULE);
+        RPC2H_CHECK(ETHTOOL_GRXCLSRLALL);
+        RPC2H_CHECK(ETHTOOL_SRXCLSRLDEL);
+        RPC2H_CHECK(ETHTOOL_SRXCLSRLINS);
+        RPC2H_CHECK(ETHTOOL_FLASHDEV);
+        RPC2H_CHECK(ETHTOOL_RESET);
+
+        default:
+            WARN("%s is converted to 0",
+                 ethtool_cmd_rpc2str(ethtool_cmd));
+            return 0;
+    }
+}
+
+/** Convert native ethtool command to RPC one */
+rpc_ethtool_cmd
+ethtool_cmd_h2rpc(int ethtool_cmd)
+{
+    switch (ethtool_cmd)
+    {
+        H2RPC_CHECK(ETHTOOL_UNKNOWN);
+        H2RPC_CHECK(ETHTOOL_GSET);
+        H2RPC_CHECK(ETHTOOL_SSET);
+        H2RPC_CHECK(ETHTOOL_GDRVINFO);
+        H2RPC_CHECK(ETHTOOL_GREGS);
+        H2RPC_CHECK(ETHTOOL_GWOL);
+        H2RPC_CHECK(ETHTOOL_SWOL);
+        H2RPC_CHECK(ETHTOOL_GMSGLVL);
+        H2RPC_CHECK(ETHTOOL_SMSGLVL);
+        H2RPC_CHECK(ETHTOOL_NWAY_RST);
+        H2RPC_CHECK(ETHTOOL_GLINK);
+        H2RPC_CHECK(ETHTOOL_GEEPROM);
+        H2RPC_CHECK(ETHTOOL_SEEPROM);
+        H2RPC_CHECK(ETHTOOL_GCOALESCE);
+        H2RPC_CHECK(ETHTOOL_SCOALESCE);
+        H2RPC_CHECK(ETHTOOL_GRINGPARAM);
+        H2RPC_CHECK(ETHTOOL_SRINGPARAM);
+        H2RPC_CHECK(ETHTOOL_GPAUSEPARAM);
+        H2RPC_CHECK(ETHTOOL_SPAUSEPARAM);
+        H2RPC_CHECK(ETHTOOL_GRXCSUM);
+        H2RPC_CHECK(ETHTOOL_SRXCSUM);
+        H2RPC_CHECK(ETHTOOL_GTXCSUM);
+        H2RPC_CHECK(ETHTOOL_STXCSUM);
+        H2RPC_CHECK(ETHTOOL_GSG);
+        H2RPC_CHECK(ETHTOOL_SSG);
+        H2RPC_CHECK(ETHTOOL_TEST);
+        H2RPC_CHECK(ETHTOOL_GSTRINGS);
+        H2RPC_CHECK(ETHTOOL_PHYS_ID);
+        H2RPC_CHECK(ETHTOOL_GSTATS);
+        H2RPC_CHECK(ETHTOOL_GTSO);
+        H2RPC_CHECK(ETHTOOL_STSO);
+        H2RPC_CHECK(ETHTOOL_GPERMADDR);
+        H2RPC_CHECK(ETHTOOL_GUFO);
+        H2RPC_CHECK(ETHTOOL_SUFO);
+        H2RPC_CHECK(ETHTOOL_GGSO);
+        H2RPC_CHECK(ETHTOOL_SGSO);
+        H2RPC_CHECK(ETHTOOL_GFLAGS);
+        H2RPC_CHECK(ETHTOOL_SFLAGS);
+        H2RPC_CHECK(ETHTOOL_GPFLAGS);
+        H2RPC_CHECK(ETHTOOL_SPFLAGS);
+        H2RPC_CHECK(ETHTOOL_GRXFH);
+        H2RPC_CHECK(ETHTOOL_SRXFH);
+        H2RPC_CHECK(ETHTOOL_GGRO);
+        H2RPC_CHECK(ETHTOOL_SGRO);
+        H2RPC_CHECK(ETHTOOL_GRXRINGS);
+        H2RPC_CHECK(ETHTOOL_GRXCLSRLCNT);
+        H2RPC_CHECK(ETHTOOL_GRXCLSRULE);
+        H2RPC_CHECK(ETHTOOL_GRXCLSRLALL);
+        H2RPC_CHECK(ETHTOOL_SRXCLSRLDEL);
+        H2RPC_CHECK(ETHTOOL_SRXCLSRLINS);
+        H2RPC_CHECK(ETHTOOL_FLASHDEV);
+        H2RPC_CHECK(ETHTOOL_RESET);
+
+        default: return RPC_ETHTOOL_UNKNOWN;
+    }
+}
+
 /** Convert ethtool command to TARPC_ETHTOOL_* types of its data */
 tarpc_ethtool_type
-ethtool_cmd2type(tarpc_ethtool_command cmd)
+ethtool_cmd2type(rpc_ethtool_cmd cmd)
 {
     switch (cmd)
     {
-        case ETHTOOL_GSET:
-        case ETHTOOL_SSET:
+        case RPC_ETHTOOL_GSET:
+        case RPC_ETHTOOL_SSET:
             return TARPC_ETHTOOL_CMD;
 
-        case ETHTOOL_GMSGLVL:
-        case ETHTOOL_SMSGLVL:
-        case ETHTOOL_NWAY_RST:
-        case ETHTOOL_GLINK:
-#ifdef ETHTOOL_GRXCSUM
-        case ETHTOOL_GRXCSUM:
-#endif
-#ifdef ETHTOOL_SRXCSUM
-        case ETHTOOL_SRXCSUM:
-#endif
-#ifdef ETHTOOL_GTXCSUM
-        case ETHTOOL_GTXCSUM:
-#endif
-#ifdef ETHTOOL_STXCSUM
-        case ETHTOOL_STXCSUM:
-#endif
-#ifdef ETHTOOL_GSG
-        case ETHTOOL_GSG:
-#endif
-#ifdef ETHTOOL_SSG
-        case ETHTOOL_SSG:
-#endif
-#ifdef ETHTOOL_GTSO
-        case ETHTOOL_GTSO:
-#endif
-#ifdef ETHTOOL_STSO
-        case ETHTOOL_STSO:
-#endif
-#ifdef ETHTOOL_GGSO
-        case ETHTOOL_GGSO:
-#endif
-#ifdef ETHTOOL_SGSO
-        case ETHTOOL_SGSO:
-#endif
-#ifdef ETHTOOL_GGRO
-        case ETHTOOL_GGRO:
-#endif
-#ifdef ETHTOOL_SGRO
-        case ETHTOOL_SGRO:
-#endif
-#ifdef ETHTOOL_GFLAGS
-        case ETHTOOL_GFLAGS:
-#endif
-#ifdef ETHTOOL_SFLAGS
-        case ETHTOOL_SFLAGS:
-#endif
-#ifdef ETHTOOL_PHYS_ID
-        case ETHTOOL_PHYS_ID:
-#endif
-#ifdef ETHTOOL_GUFO
-        case ETHTOOL_GUFO:
-#endif
-#ifdef ETHTOOL_SUFO
-        case ETHTOOL_SUFO:
-#endif
-#ifdef ETHTOOL_RESET
-        case ETHTOOL_RESET:
-#endif
+        case RPC_ETHTOOL_GMSGLVL:
+        case RPC_ETHTOOL_SMSGLVL:
+        case RPC_ETHTOOL_NWAY_RST:
+        case RPC_ETHTOOL_GLINK:
+        case RPC_ETHTOOL_GRXCSUM:
+        case RPC_ETHTOOL_SRXCSUM:
+        case RPC_ETHTOOL_GTXCSUM:
+        case RPC_ETHTOOL_STXCSUM:
+        case RPC_ETHTOOL_GSG:
+        case RPC_ETHTOOL_SSG:
+        case RPC_ETHTOOL_GTSO:
+        case RPC_ETHTOOL_STSO:
+        case RPC_ETHTOOL_GGSO:
+        case RPC_ETHTOOL_SGSO:
+        case RPC_ETHTOOL_GGRO:
+        case RPC_ETHTOOL_SGRO:
+        case RPC_ETHTOOL_GFLAGS:
+        case RPC_ETHTOOL_SFLAGS:
+        case RPC_ETHTOOL_PHYS_ID:
+        case RPC_ETHTOOL_GUFO:
+        case RPC_ETHTOOL_SUFO:
+        case RPC_ETHTOOL_RESET:
             return TARPC_ETHTOOL_VALUE;
 
-#ifdef ETHTOOL_GPERMADDR
-        case ETHTOOL_GPERMADDR:
+        case RPC_ETHTOOL_GPERMADDR:
             return TARPC_ETHTOOL_PADDR;
-#endif
 
         default:
             return 0;
@@ -2266,83 +2602,7 @@ ethtool_cmd2type(tarpc_ethtool_command cmd)
     return 0;
 }
 
-/** Returns a string with ethtool command name. */
-const char *
-ethtool_cmd2str(tarpc_ethtool_command cmd)
-{
-    switch (cmd)
-    {
-#define MACRO2STR(_macro) \
-    case ETHTOOL_ ## _macro:            \
-        return #_macro;
-
-        MACRO2STR(GSET);
-        MACRO2STR(SSET);
-        MACRO2STR(GMSGLVL);
-        MACRO2STR(SMSGLVL);
-        MACRO2STR(NWAY_RST);
-        MACRO2STR(GLINK);
-#ifdef ETHTOOL_GRXCSUM
-        MACRO2STR(GRXCSUM);
-#endif
-#ifdef ETHTOOL_SRXCSUM
-        MACRO2STR(SRXCSUM);
-#endif
-#ifdef ETHTOOL_GTXCSUM
-        MACRO2STR(GTXCSUM);
-#endif
-#ifdef ETHTOOL_STXCSUM
-        MACRO2STR(STXCSUM);
-#endif
-#ifdef ETHTOOL_GSG
-        MACRO2STR(GSG);
-#endif
-#ifdef ETHTOOL_SSG
-        MACRO2STR(SSG);
-#endif
-#ifdef ETHTOOL_GTSO
-        MACRO2STR(GTSO);
-#endif
-#ifdef ETHTOOL_STSO
-        MACRO2STR(STSO);
-#endif
-#ifdef ETHTOOL_GGSO
-        MACRO2STR(GGSO);
-#endif
-#ifdef ETHTOOL_SGSO
-        MACRO2STR(SGSO);
-#endif
-#ifdef ETHTOOL_GGRO
-        MACRO2STR(GGRO);
-#endif
-#ifdef ETHTOOL_SGRO
-        MACRO2STR(SGRO);
-#endif
-#ifdef ETHTOOL_GFLAGS
-        MACRO2STR(GFLAGS);
-#endif
-#ifdef ETHTOOL_SFLAGS
-        MACRO2STR(SFLAGS);
-#endif
-#ifdef ETHTOOL_PHYS_ID
-        MACRO2STR(PHYS_ID);
-#endif
-#ifdef ETHTOOL_GPERMADDR
-        MACRO2STR(GPERMADDR);
-#endif
-#ifdef ETHTOOL_GUFO
-        MACRO2STR(GUFO);
-#endif
-#ifdef ETHTOOL_SUFO
-        MACRO2STR(SUFO);
-#endif
-#undef MACRO2STR
-        default:
-            return "(unknown)";
-    }
-    return NULL; /* unreachable */
-}
-
+#if HAVE_LINUX_ETHTOOL_H
 #define COPY_FIELD(to, from, fname) \
     (to)->fname = (from)->fname;
 /**
@@ -2356,7 +2616,7 @@ ethtool_cmd2str(tarpc_ethtool_command cmd)
 void 
 ethtool_data_rpc2h(tarpc_ethtool *rpc_edata, caddr_t *edata_p)
 {
-    switch (ethtool_cmd2type(rpc_edata->command))
+    switch (rpc_edata->data.type)
     {
         case TARPC_ETHTOOL_CMD:
             {
@@ -2373,6 +2633,7 @@ ethtool_data_rpc2h(tarpc_ethtool *rpc_edata, caddr_t *edata_p)
                     *edata_p = (caddr_t)ecmd;
                 }
 
+                /* cmd field is assigned at the end of the function */
                 COPY_FIELD(ecmd, rpc_ecmd, supported);
                 COPY_FIELD(ecmd, rpc_ecmd, advertising);
                 COPY_FIELD(ecmd, rpc_ecmd, speed);
@@ -2381,8 +2642,27 @@ ethtool_data_rpc2h(tarpc_ethtool *rpc_edata, caddr_t *edata_p)
                 COPY_FIELD(ecmd, rpc_ecmd, phy_address);
                 COPY_FIELD(ecmd, rpc_ecmd, transceiver);
                 COPY_FIELD(ecmd, rpc_ecmd, autoneg);
+#ifdef HAVE_ETHTOOL_CMD_MDIO_SUPPORT
+                COPY_FIELD(ecmd, rpc_ecmd, mdio_support);
+#endif
                 COPY_FIELD(ecmd, rpc_ecmd, maxtxpkt);
                 COPY_FIELD(ecmd, rpc_ecmd, maxrxpkt);
+#ifdef HAVE_ETHTOOL_CMD_SPEED_HI
+                COPY_FIELD(ecmd, rpc_ecmd, speed_hi);
+#endif
+#ifdef HAVE_ETHTOOL_CMD_ETH_TP_MDIX
+                COPY_FIELD(ecmd, rpc_ecmd, eth_tp_mdix);
+#endif
+#ifdef HAVE_ETHTOOL_CMD_RESERVED2
+                COPY_FIELD(ecmd, rpc_ecmd, reserved2);
+#endif
+#ifdef HAVE_ETHTOOL_CMD_LP_ADVERTISING
+                COPY_FIELD(ecmd, rpc_ecmd, lp_advertising);
+#endif
+#ifdef HAVE_ETHTOOL_CMD_RESERVED
+                COPY_FIELD(ecmd, rpc_ecmd, reserved[0]);
+                COPY_FIELD(ecmd, rpc_ecmd, reserved[1]);
+#endif
 
                 break;
             }
@@ -2403,6 +2683,7 @@ ethtool_data_rpc2h(tarpc_ethtool *rpc_edata, caddr_t *edata_p)
                     *edata_p = (caddr_t)eaddr;
                 }
 
+                /* cmd field is assigned at the end of the function */
                 eaddr->size = sizeof(rpc_eaddr->data);
                 memcpy(eaddr->data, &rpc_eaddr->data,
                        eaddr->size);
@@ -2424,7 +2705,12 @@ ethtool_data_rpc2h(tarpc_ethtool *rpc_edata, caddr_t *edata_p)
                     *edata_p = (caddr_t)evalue;
                 }
 
-                COPY_FIELD(evalue, rpc_evalue, data);
+                /* cmd field is assigned at the end of the function */
+                if (rpc_edata->command == RPC_ETHTOOL_RESET)
+                    evalue->data = ethtool_reset_flags_rpc2h(
+                                                rpc_evalue->data);
+                else
+                    COPY_FIELD(evalue, rpc_evalue, data);
 
                 break;
             }
@@ -2433,7 +2719,8 @@ ethtool_data_rpc2h(tarpc_ethtool *rpc_edata, caddr_t *edata_p)
             ERROR("%s: Unknown ethtool command.", __FUNCTION__);
             break;
     }
-    *((tarpc_ethtool_command *)(*edata_p)) = rpc_edata->command;
+    *((uint32_t *)(*edata_p)) =
+                           ethtool_cmd_rpc2h(rpc_edata->command);
 }
 
 /**
@@ -2445,7 +2732,7 @@ ethtool_data_rpc2h(tarpc_ethtool *rpc_edata, caddr_t *edata_p)
 void 
 ethtool_data_h2rpc(tarpc_ethtool *rpc_edata, caddr_t edata)
 {
-    rpc_edata->command = *((tarpc_ethtool_command *)edata);
+    rpc_edata->command = ethtool_cmd_h2rpc(*((uint32_t *)edata));
     rpc_edata->data.type = ethtool_cmd2type(rpc_edata->command);
     switch (rpc_edata->data.type)
     {
@@ -2456,6 +2743,7 @@ ethtool_data_h2rpc(tarpc_ethtool *rpc_edata, caddr_t edata)
                 tarpc_ethtool_cmd  *rpc_ecmd = 
                         &rpc_edata->data.tarpc_ethtool_data_u.cmd;
 
+                /* cmd field is not used here */
                 COPY_FIELD(rpc_ecmd, ecmd, supported);
                 COPY_FIELD(rpc_ecmd, ecmd, advertising);
                 COPY_FIELD(rpc_ecmd, ecmd, speed);
@@ -2464,8 +2752,27 @@ ethtool_data_h2rpc(tarpc_ethtool *rpc_edata, caddr_t edata)
                 COPY_FIELD(rpc_ecmd, ecmd, phy_address);
                 COPY_FIELD(rpc_ecmd, ecmd, transceiver);
                 COPY_FIELD(rpc_ecmd, ecmd, autoneg);
+#ifdef HAVE_ETHTOOL_CMD_MDIO_SUPPORT
+                COPY_FIELD(rpc_ecmd, ecmd, mdio_support);
+#endif
                 COPY_FIELD(rpc_ecmd, ecmd, maxtxpkt);
                 COPY_FIELD(rpc_ecmd, ecmd, maxrxpkt);
+#ifdef HAVE_ETHTOOL_CMD_SPEED_HI
+                COPY_FIELD(rpc_ecmd, ecmd, speed_hi);
+#endif
+#ifdef HAVE_ETHTOOL_CMD_ETH_TP_MDIX
+                COPY_FIELD(rpc_ecmd, ecmd, eth_tp_mdix);
+#endif
+#ifdef HAVE_ETHTOOL_CMD_RESERVED2
+                COPY_FIELD(rpc_ecmd, ecmd, reserved2);
+#endif
+#ifdef HAVE_ETHTOOL_CMD_LP_ADVERTISING
+                COPY_FIELD(rpc_ecmd, ecmd, lp_advertising);
+#endif
+#ifdef HAVE_ETHTOOL_CMD_RESERVED
+                COPY_FIELD(rpc_ecmd, ecmd, reserved[0]);
+                COPY_FIELD(rpc_ecmd, ecmd, reserved[1]);
+#endif
 
                 break;
             }
@@ -2484,6 +2791,8 @@ ethtool_data_h2rpc(tarpc_ethtool *rpc_edata, caddr_t edata)
                     break;
                 }
 
+                /* cmd field is not used here */
+                rpc_eaddr->size = eaddr->size;
                 memcpy(&rpc_eaddr->data, eaddr->data,
                        eaddr->size);
                 break;
@@ -2496,7 +2805,12 @@ ethtool_data_h2rpc(tarpc_ethtool *rpc_edata, caddr_t edata)
                 tarpc_ethtool_value  *rpc_evalue = 
                         &rpc_edata->data.tarpc_ethtool_data_u.value;
 
-                COPY_FIELD(rpc_evalue, evalue, data);
+                /* cmd field is not used here */
+                if (rpc_edata->command == RPC_ETHTOOL_RESET)
+                    rpc_evalue->data = ethtool_reset_flags_h2rpc(
+                                                        evalue->data);
+                else
+                    COPY_FIELD(rpc_evalue, evalue, data);
 
                 break;
             }

@@ -272,6 +272,31 @@ AC_CHECK_DECL([TCP_CA_Loss], [AC_DEFINE([TCP_CA_LOSS],
 #include <netinet/tcp.h>
 ])
 
+dnl
+dnl Check for ethtool reset flags
+dnl
+AC_CHECK_DECLS([ETH_RESET_MGMT, ETH_RESET_IRQ,
+                ETH_RESET_DMA, ETH_RESET_FILTER,
+                ETH_RESET_OFFLOAD, ETH_RESET_MAC,
+                ETH_RESET_PHY, ETH_RESET_RAM,
+                ETH_RESET_DEDICATED, ETH_RESET_ALL], [],
+               [], [
+#include <linux/ethtool.h>
+])
+
+dnl
+dnl Check for some members for ethtool_cmd structure
+dnl
+AC_CHECK_MEMBERS([struct ethtool_cmd.mdio_support,
+                  struct ethtool_cmd.speed_hi,
+                  struct ethtool_cmd.eth_tp_mdix,
+                  struct ethtool_cmd.reserved2,
+                  struct ethtool_cmd.lp_advertising,
+                  struct ethtool_cmd.reserved], [], [],
+                  [
+#include <linux/ethtool.h>
+])
+
 AC_CONFIG_FILES([Makefile])
 
 TE_LIB_RESTORE
