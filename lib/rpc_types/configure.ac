@@ -275,7 +275,9 @@ AC_CHECK_DECL([TCP_CA_Loss], [AC_DEFINE([TCP_CA_LOSS],
 dnl
 dnl Check for ethtool flags
 dnl
-AC_CHECK_DECLS([ETH_FLAG_LRO], [], [], [
+AC_CHECK_DECLS([ETH_FLAG_TXVLAN, ETH_FLAG_RXVLAN,
+                ETH_FLAG_LRO, ETH_FLAG_NTUPLE,
+                ETH_FLAG_RXHASH], [], [], [
 #include <linux/ethtool.h>
 ])
 

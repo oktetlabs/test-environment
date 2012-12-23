@@ -2225,8 +2225,20 @@ ethtool_flags_rpc2h(uint32_t flags)
     UNUSED(flags);
 
     return
-#ifdef HAVE_DECL_ETH_FLAG_LRO
+#if HAVE_DECL_ETH_FLAG_TXVLAN
+        (!!(flags & RPC_ETH_FLAG_TXVLAN) * ETH_FLAG_TXVLAN) |
+#endif
+#if HAVE_DECL_ETH_FLAG_RXVLAN
+        (!!(flags & RPC_ETH_FLAG_RXVLAN) * ETH_FLAG_RXVLAN) |
+#endif
+#if HAVE_DECL_ETH_FLAG_LRO
         (!!(flags & RPC_ETH_FLAG_LRO) * ETH_FLAG_LRO) |
+#endif
+#if HAVE_DECL_ETH_FLAG_NTUPLE
+        (!!(flags & RPC_ETH_FLAG_NTUPLE) * ETH_FLAG_NTUPLE) |
+#endif
+#if HAVE_DECL_ETH_FLAG_RXHASH
+        (!!(flags & RPC_ETH_FLAG_RXHASH) * ETH_FLAG_RXHASH) |
 #endif
         0;
 }
@@ -2237,8 +2249,20 @@ uint32_t ethtool_flags_h2rpc(uint32_t flags)
     UNUSED(flags);
 
     return
-#ifdef HAVE_DECL_ETH_FLAG_LRO
+#if HAVE_DECL_ETH_FLAG_TXVLAN
+        (!!(flags & ETH_FLAG_TXVLAN) * RPC_ETH_FLAG_TXVLAN) |
+#endif
+#if HAVE_DECL_ETH_FLAG_RXVLAN
+        (!!(flags & ETH_FLAG_RXVLAN) * RPC_ETH_FLAG_RXVLAN) |
+#endif
+#if HAVE_DECL_ETH_FLAG_LRO
         (!!(flags & ETH_FLAG_LRO) * RPC_ETH_FLAG_LRO) |
+#endif
+#if HAVE_DECL_ETH_FLAG_NTUPLE
+        (!!(flags & ETH_FLAG_NTUPLE) * RPC_ETH_FLAG_NTUPLE) |
+#endif
+#if HAVE_DECL_ETH_FLAG_RXHASH
+        (!!(flags & ETH_FLAG_RXHASH) * RPC_ETH_FLAG_RXHASH) |
 #endif
         0;
 }

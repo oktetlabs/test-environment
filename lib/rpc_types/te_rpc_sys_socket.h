@@ -969,11 +969,19 @@ extern const char * addr_family_sockaddr_str(
  * TA-independent ethtool flags.
  */
 typedef enum rpc_ethtool_flags {
-    RPC_ETH_FLAG_LRO = (1 << 15)
+    RPC_ETH_FLAG_TXVLAN     = (1 << 7),
+    RPC_ETH_FLAG_RXVLAN     = (1 << 8),
+    RPC_ETH_FLAG_LRO        = (1 << 15),
+    RPC_ETH_FLAG_NTUPLE     = (1 << 27),
+    RPC_ETH_FLAG_RXHASH     = (1 << 28),
 } rpc_ethtool_flags;
 
 #define ETHTOOL_FLAGS_MAPPING_LIST \
-    RPC_BIT_MAP_ENTRY(ETH_FLAG_LRO)
+    RPC_BIT_MAP_ENTRY(ETH_FLAG_TXVLAN),     \
+    RPC_BIT_MAP_ENTRY(ETH_FLAG_RXVLAN),     \
+    RPC_BIT_MAP_ENTRY(ETH_FLAG_LRO),        \
+    RPC_BIT_MAP_ENTRY(ETH_FLAG_NTUPLE),     \
+    RPC_BIT_MAP_ENTRY(ETH_FLAG_RXHASH)
 
 /**
  * ethtool_flags_rpc2str()
