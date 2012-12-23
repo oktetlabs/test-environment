@@ -453,8 +453,8 @@ check_args(checked_arg *list)
                          _do_register) \
     te_errno                _name ## _rc;                           \
     struct sockaddr_storage _name ## _st;   /* Storage */           \
-    socklen_t               _name ## len;                           \
-    struct sockaddr        *_name;                                  \
+    socklen_t               _name ## len = 0;                       \
+    struct sockaddr        *_name = NULL;                           \
     struct sockaddr        *_name ## _dup = NULL;                   \
                                                                     \
     if (!(_value.flags & TARPC_SA_RAW &&                            \

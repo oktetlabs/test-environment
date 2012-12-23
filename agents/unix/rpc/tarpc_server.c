@@ -3972,8 +3972,11 @@ TARPC_FUNC(recvmsg,
         VERB("recvmsg(): out msg=%s", msghdr2str(&msg));
 
         rpc_msg->msg_flags = send_recv_flags_h2rpc(msg.msg_flags);
-        if (rpc_msg->msg_namelen <= sizeof(struct sockaddr_storage))
-            sockaddr_output_h2rpc(msg.msg_name, namelen,
+
+        if (msg.msg_namelen <= sizeof(struct sockaddr_storage))
+            sockaddr_output_h2rpc(msg.msg_name,
+                                  namelen > 0 ?
+                                    namelen : rpc_msg->msg_name.raw.raw_len,
                                   msg.msg_namelen,
                                   &(rpc_msg->msg_name));
         else
@@ -8723,6 +8726,7 @@ TARPC_FUNC(recvmmsg_alt,
             mmsg[j].msg_len = out->mmsg.mmsg_val[j].msg_len;
             msg = &mmsg[j].msg_hdr;
             rpc_msg = &(out->mmsg.mmsg_val[j].msg_hdr);
+            name_len[j] = 0;
 
             if (!(rpc_msg->msg_name.flags & TARPC_SA_RAW &&
                   rpc_msg->msg_name.raw.raw_len >
@@ -8734,14 +8738,15 @@ TARPC_FUNC(recvmmsg_alt,
                                          &name[j], &name_len[j]);
 
                 if (name_rc != 0)
+                {
                     out->common._errno = name_rc;
-                else
-                    INIT_CHECKED_ARG((char *)name[j], name_len[j],
-                                     rpc_msg->msg_namelen);
-            }
+                    goto finish;
+                }
 
-            if (rpc_msg->msg_namelen < sizeof(struct sockaddr))
+                INIT_CHECKED_ARG((char *)name[j], name_len[j],
+                                 rpc_msg->msg_namelen);
                 msg->msg_name = name[j];
+            }
             else
             {
                 if (rpc_msg->msg_name.raw.raw_len > 0 &&
@@ -8836,8 +8841,12 @@ TARPC_FUNC(recvmmsg_alt,
             rpc_msg = &(out->mmsg.mmsg_val[j].msg_hdr);
 
             rpc_msg->msg_flags = send_recv_flags_h2rpc(msg->msg_flags);
-            if (rpc_msg->msg_namelen < sizeof(struct sockaddr))
-                sockaddr_output_h2rpc(msg->msg_name, name_len[j],
+
+            if (msg->msg_namelen < sizeof(struct sockaddr_storage))
+                sockaddr_output_h2rpc(msg->msg_name,
+                                      name_len[j] > 0 ?
+                                        name_len[j] :
+                                        rpc_msg->msg_name.raw.raw_len,
                                       msg->msg_namelen,
                                       &(rpc_msg->msg_name));
             else
