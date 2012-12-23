@@ -966,6 +966,83 @@ extern const char * addr_family_sockaddr_str(
                         rpc_socket_addr_family addr_family);
 
 /**
+ * TA-independent ethtool flags.
+ */
+typedef enum rpc_ethtool_flags {
+    RPC_ETH_FLAG_LRO = (1 << 15)
+} rpc_ethtool_flags;
+
+#define ETHTOOL_FLAGS_MAPPING_LIST \
+    RPC_BIT_MAP_ENTRY(ETH_FLAG_LRO)
+
+/**
+ * ethtool_flags_rpc2str()
+ */
+RPCBITMAP2STR(ethtool_flags, ETHTOOL_FLAGS_MAPPING_LIST);
+
+/** Convert ethtool flags from RPC to native representation */
+extern uint32_t ethtool_flags_rpc2h(uint32_t flags);
+
+/** Convert ethtool flags from native representation to RPC one */
+extern uint32_t ethtool_flags_h2rpc(uint32_t flags);
+
+/**
+ * TA-independent ethtool reset flags.
+ */
+typedef enum rpc_ethtool_reset_flags {
+    RPC_ETH_RESET_MGMT              = 1 << 0,
+    RPC_ETH_RESET_IRQ               = 1 << 1,
+    RPC_ETH_RESET_DMA               = 1 << 2,
+    RPC_ETH_RESET_FILTER            = 1 << 3,
+    RPC_ETH_RESET_OFFLOAD           = 1 << 4,
+    RPC_ETH_RESET_MAC               = 1 << 5,
+    RPC_ETH_RESET_PHY               = 1 << 6,
+    RPC_ETH_RESET_RAM               = 1 << 7,
+    RPC_ETH_RESET_SHARED_MGMT       = 1 << 16,
+    RPC_ETH_RESET_SHARED_IRQ        = 1 << 17,
+    RPC_ETH_RESET_SHARED_DMA        = 1 << 18,
+    RPC_ETH_RESET_SHARED_FILTER     = 1 << 19,
+    RPC_ETH_RESET_SHARED_OFFLOAD    = 1 << 20,
+    RPC_ETH_RESET_SHARED_MAC        = 1 << 21,
+    RPC_ETH_RESET_SHARED_PHY        = 1 << 22,
+    RPC_ETH_RESET_SHARED_RAM        = 1 << 23,
+    RPC_ETH_RESET_DEDICATED = 0x0000ffff,
+    RPC_ETH_RESET_ALL       = 0xffffffff,
+} rpc_ethtool_reset_flags;
+
+#define ETHTOOL_RESET_FLAGS_MAPPING_LIST \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_MGMT),              \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_IRQ),               \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_DMA),               \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_FILTER),            \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_OFFLOAD),           \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_MAC),               \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_PHY),               \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_RAM),               \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_SHARED_MGMT),       \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_SHARED_IRQ),        \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_SHARED_DMA),        \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_SHARED_FILTER),     \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_SHARED_OFFLOAD),    \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_SHARED_MAC),        \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_SHARED_PHY),        \
+    RPC_BIT_MAP_ENTRY(ETH_RESET_SHARED_RAM)
+
+/**
+ * ethtool_reset_flags_aux_rpc2str()
+ */
+RPCBITMAP2STR(ethtool_reset_flags_aux, ETHTOOL_RESET_FLAGS_MAPPING_LIST);
+
+/** Convert ethtool reset flags from RPC to string representation */
+extern const char *ethtool_reset_flags_rpc2str(uint32_t flags);
+
+/** Convert ethtool reset flags from RPC to native representation */
+extern uint32_t ethtool_reset_flags_rpc2h(uint32_t flags);
+
+/** Convert ethtool reset flags from native representation to RPC one */
+extern uint32_t ethtool_reset_flags_h2rpc(uint32_t flags);
+
+/**
  * TA-independent ethtool commands.
  */
 typedef enum rpc_ethtool_cmd {
@@ -1023,62 +1100,6 @@ typedef enum rpc_ethtool_cmd {
     RPC_ETHTOOL_FLASHDEV,
     RPC_ETHTOOL_RESET
 } rpc_ethtool_cmd;
-
-/**
- * TA-independent reset flags.
- */
-typedef enum rpc_ethtool_reset_flags {
-    RPC_ETH_RESET_MGMT              = 1 << 0,
-    RPC_ETH_RESET_IRQ               = 1 << 1,
-    RPC_ETH_RESET_DMA               = 1 << 2,
-    RPC_ETH_RESET_FILTER            = 1 << 3,
-    RPC_ETH_RESET_OFFLOAD           = 1 << 4,
-    RPC_ETH_RESET_MAC               = 1 << 5,
-    RPC_ETH_RESET_PHY               = 1 << 6,
-    RPC_ETH_RESET_RAM               = 1 << 7,
-    RPC_ETH_RESET_SHARED_MGMT       = 1 << 16,
-    RPC_ETH_RESET_SHARED_IRQ        = 1 << 17,
-    RPC_ETH_RESET_SHARED_DMA        = 1 << 18,
-    RPC_ETH_RESET_SHARED_FILTER     = 1 << 19,
-    RPC_ETH_RESET_SHARED_OFFLOAD    = 1 << 20,
-    RPC_ETH_RESET_SHARED_MAC        = 1 << 21,
-    RPC_ETH_RESET_SHARED_PHY        = 1 << 22,
-    RPC_ETH_RESET_SHARED_RAM        = 1 << 23,
-    RPC_ETH_RESET_DEDICATED = 0x0000ffff,
-    RPC_ETH_RESET_ALL       = 0xffffffff,
-} rpc_ethtool_reset_flags;
-
-#define ETHTOOL_RESET_FLAGS_MAPPING_LIST \
-    RPC_BIT_MAP_ENTRY(ETH_RESET_MGMT),              \
-    RPC_BIT_MAP_ENTRY(ETH_RESET_IRQ),               \
-    RPC_BIT_MAP_ENTRY(ETH_RESET_DMA),               \
-    RPC_BIT_MAP_ENTRY(ETH_RESET_FILTER),            \
-    RPC_BIT_MAP_ENTRY(ETH_RESET_OFFLOAD),           \
-    RPC_BIT_MAP_ENTRY(ETH_RESET_MAC),               \
-    RPC_BIT_MAP_ENTRY(ETH_RESET_PHY),               \
-    RPC_BIT_MAP_ENTRY(ETH_RESET_RAM),               \
-    RPC_BIT_MAP_ENTRY(ETH_RESET_SHARED_MGMT),       \
-    RPC_BIT_MAP_ENTRY(ETH_RESET_SHARED_IRQ),        \
-    RPC_BIT_MAP_ENTRY(ETH_RESET_SHARED_DMA),        \
-    RPC_BIT_MAP_ENTRY(ETH_RESET_SHARED_FILTER),     \
-    RPC_BIT_MAP_ENTRY(ETH_RESET_SHARED_OFFLOAD),    \
-    RPC_BIT_MAP_ENTRY(ETH_RESET_SHARED_MAC),        \
-    RPC_BIT_MAP_ENTRY(ETH_RESET_SHARED_PHY),        \
-    RPC_BIT_MAP_ENTRY(ETH_RESET_SHARED_RAM)
-
-/**
- * ethtool_reset_flags_aux_rpc2str()
- */
-RPCBITMAP2STR(ethtool_reset_flags_aux, ETHTOOL_RESET_FLAGS_MAPPING_LIST);
-
-/** Convert ethtool reset flags from RPC to string representation */
-extern const char *ethtool_reset_flags_rpc2str(uint32_t flags);
-
-/** Convert ethtool reset flags from RPC to native representation */
-extern uint32_t ethtool_reset_flags_rpc2h(uint32_t flags);
-
-/** Convert ethtool reset flags from native representation to RPC one */
-extern uint32_t ethtool_reset_flags_h2rpc(uint32_t flags);
 
 /** Convert RPC ethtool command to string */
 extern const char *ethtool_cmd_rpc2str(rpc_ethtool_cmd ethtool_cmd);

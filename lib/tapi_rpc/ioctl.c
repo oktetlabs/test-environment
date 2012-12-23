@@ -873,12 +873,21 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                                 (struct tarpc_ethtool_value *)ifr->ifr_data;
 
                             if (cmd == RPC_ETHTOOL_RESET)
-                            snprintf(
-                                ifreq_buf + strlen(ifreq_buf),
-                                sizeof(ifreq_buf) -
-                                                strlen(ifreq_buf),
-                                "data %s",
-                                ethtool_reset_flags_rpc2str(evalue->data));
+                                snprintf(
+                                    ifreq_buf + strlen(ifreq_buf),
+                                    sizeof(ifreq_buf) -
+                                                    strlen(ifreq_buf),
+                                    "data %s",
+                                    ethtool_reset_flags_rpc2str(
+                                                            evalue->data));
+                            else if (cmd == RPC_ETHTOOL_GFLAGS ||
+                                     cmd == RPC_ETHTOOL_SFLAGS)
+                                snprintf(
+                                    ifreq_buf + strlen(ifreq_buf),
+                                    sizeof(ifreq_buf) -
+                                                    strlen(ifreq_buf),
+                                    "data %s",
+                                    ethtool_flags_rpc2str(evalue->data));
                             else
                                 snprintf(ifreq_buf + strlen(ifreq_buf),
                                          sizeof(ifreq_buf) -

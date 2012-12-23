@@ -2218,6 +2218,31 @@ ethtool_reset_flags_rpc2str(uint32_t flags)
 #undef STR_LEN
 }
 
+/** Convert ethtool flags from RPC to native representation */
+uint32_t
+ethtool_flags_rpc2h(uint32_t flags)
+{
+    UNUSED(flags);
+
+    return
+#ifdef HAVE_DECL_ETH_FLAG_LRO
+        (!!(flags & RPC_ETH_FLAG_LRO) * ETH_FLAG_LRO) |
+#endif
+        0;
+}
+
+/** Convert ethtool flags from native representation to RPC one */
+uint32_t ethtool_flags_h2rpc(uint32_t flags)
+{
+    UNUSED(flags);
+
+    return
+#ifdef HAVE_DECL_ETH_FLAG_LRO
+        (!!(flags & ETH_FLAG_LRO) * RPC_ETH_FLAG_LRO) |
+#endif
+        0;
+}
+
 /** Convert ethtool reset flags from RPC to native representation */
 extern uint32_t
 ethtool_reset_flags_rpc2h(uint32_t flags)
@@ -2709,6 +2734,10 @@ ethtool_data_rpc2h(tarpc_ethtool *rpc_edata, caddr_t *edata_p)
                 if (rpc_edata->command == RPC_ETHTOOL_RESET)
                     evalue->data = ethtool_reset_flags_rpc2h(
                                                 rpc_evalue->data);
+                else if (rpc_edata->command == RPC_ETHTOOL_GFLAGS ||
+                         rpc_edata->command == RPC_ETHTOOL_SFLAGS)
+                    evalue->data = ethtool_flags_rpc2h(
+                                                rpc_evalue->data);
                 else
                     COPY_FIELD(evalue, rpc_evalue, data);
 
@@ -2808,6 +2837,10 @@ ethtool_data_h2rpc(tarpc_ethtool *rpc_edata, caddr_t edata)
                 /* cmd field is not used here */
                 if (rpc_edata->command == RPC_ETHTOOL_RESET)
                     rpc_evalue->data = ethtool_reset_flags_h2rpc(
+                                                        evalue->data);
+                else if (rpc_edata->command == RPC_ETHTOOL_GFLAGS ||
+                         rpc_edata->command == RPC_ETHTOOL_SFLAGS)
+                    rpc_evalue->data = ethtool_flags_h2rpc(
                                                         evalue->data);
                 else
                     COPY_FIELD(rpc_evalue, evalue, data);

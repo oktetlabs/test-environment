@@ -273,6 +273,13 @@ AC_CHECK_DECL([TCP_CA_Loss], [AC_DEFINE([TCP_CA_LOSS],
 ])
 
 dnl
+dnl Check for ethtool flags
+dnl
+AC_CHECK_DECLS([ETH_FLAG_LRO], [], [], [
+#include <linux/ethtool.h>
+])
+
+dnl
 dnl Check for ethtool reset flags
 dnl
 AC_CHECK_DECLS([ETH_RESET_MGMT, ETH_RESET_IRQ,
