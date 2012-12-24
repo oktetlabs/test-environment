@@ -786,9 +786,21 @@ rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
     char       *tmp;
     size_t      len = 16;
     char       *host;
-    int         tries = 10;
+    int         tries = 3;
     
+    char                *env_retry_max;
+    char                *number;
+    char                *endptr;
+
     (void)select_tm;
+
+    env_retry_max = getenv("RCF_TA_MAX_CONN_ATTEMPTS");
+    if (env_retry_max != NULL)
+    {
+        rc = strtol(env_retry_max, &endptr, 10);
+        if (!(endptr == NULL || *endptr != '\0'))
+            tries = rc;
+    }
 
     unix_ta *ta = (unix_ta *)handle;
     
@@ -801,7 +813,7 @@ rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
     VERB("Connecting to TA '%s'", ta->ta_name);
 
     while ((rc = rcf_net_engine_connect(host, ta->port, &ta->conn, 
-                                        select_set)) != 0 && tries-- > 0)
+                                        select_set)) != 0 && (--tries) > 0)
     {
        WARN("Connecting to TA failed (%r) - connect again after delay\n", 
             rc);
