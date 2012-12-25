@@ -789,7 +789,6 @@ rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
     int         tries = 3;
     
     char                *env_retry_max;
-    char                *number;
     char                *endptr;
 
     (void)select_tm;
@@ -851,7 +850,7 @@ rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
  * @return Error code.
  */
 static te_errno
-rcfunix_transmit(rcf_talib_handle handle, char *data, size_t len)
+rcfunix_transmit(rcf_talib_handle handle, const void *data, size_t len)
 {
     return rcf_net_engine_transmit(((unix_ta *)handle)->conn, data, len);
 }

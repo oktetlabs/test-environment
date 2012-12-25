@@ -53,7 +53,6 @@
 
 
 static char vcm_address[20];
-static struct sockaddr_in vcm_address_in;
 
 static char vcmconn_path[500];
 
@@ -109,10 +108,11 @@ vcm_swversion_get(unsigned int gid, const char *oid,
 
 static te_errno
 vcm_swversion_set(unsigned int gid, const char *oid,
-          char *value, const char *name)
+                  char *value, const char *name)
 {
     UNUSED(oid);
     UNUSED(gid);
+    UNUSED(name);
     char box_name[100];
     char *p;
     char out_buffer[1000];
@@ -169,6 +169,7 @@ vcm_parameter_get(unsigned int gid, const char *oid,
 {
     UNUSED(oid);
     UNUSED(gid);
+    UNUSED(name);
 
     strcpy(value, "");
     return 0;
@@ -181,6 +182,7 @@ vcm_parameter_set(unsigned int gid, const char *oid,
 {
     UNUSED(oid);
     UNUSED(gid);
+    UNUSED(name);
     char box_name[100];
     char *p;
     char out_buffer[1000];
