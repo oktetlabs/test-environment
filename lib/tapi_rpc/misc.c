@@ -1669,6 +1669,45 @@ rpc_ioctl_ethtool(rcf_rpc_server *rpcs, int fd,
 #endif /* HAVE_LINUX_ETHTOOL_H */
 
 int
+rpc_multiple_iomux(rcf_rpc_server *rpcs, int fd, iomux_func iomux,
+                   int events, int count, int exp_rc, int *number,
+                   int *last_rc)
+{
+    struct tarpc_multiple_iomux_in    in;
+    struct tarpc_multiple_iomux_out   out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    in.fd = fd;
+    in.iomux = iomux;
+    in.events = events;
+    in.count = count;
+    in.exp_rc = exp_rc;
+
+    rcf_rpc_call(rpcs, "multiple_iomux", &in, &out);
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(multiple_iomux, out.retval);
+
+    if (number != NULL)
+        *number = out.number;
+    if (last_rc != NULL)
+        *last_rc = out.last_rc;
+
+    TAPI_RPC_LOG(rpcs, multiple_iomux, "%d, %s, %s, %d, %d, %p, %p",
+                 "%d number=%d last_rc=%d",
+                 fd, iomux2str(iomux), poll_event_rpc2str(events),
+                 count, exp_rc, number, last_rc, out.retval, out.number,
+                 out.last_rc);
+    RETVAL_INT(multiple_iomux, out.retval);
+}
+
+int
 rpc_raw2integer(rcf_rpc_server *rpcs, uint8_t *data,
                 size_t len)
 {

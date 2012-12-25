@@ -91,7 +91,14 @@ extern unsigned int poll_event_rpc2h(unsigned int events);
 
 extern unsigned int poll_event_h2rpc(unsigned int events);
 
-
+/**
+ * Convert integer representation of I/O multiplexer into
+ * a string one.
+ *
+ * @param iomux     Integer representation
+ *
+ * @return String representation
+ */
 static inline const char *
 iomux2str(iomux_func iomux)
 {
@@ -112,6 +119,35 @@ iomux2str(iomux_func iomux)
         default:
             return "<unknown>";
     }
+}
+
+/**
+ * Convert string representation of I/O multiplexer into
+ * an integer one.
+ *
+ * @param iomux     String representation
+ *
+ * @return Integer representation
+ */
+static inline int
+str2iomux(const char *iomux)
+{
+    if (iomux == NULL)
+        return 0;
+    else if (strcmp(iomux, "select") == 0)
+        return FUNC_SELECT;
+    else if (strcmp(iomux, "pselect") == 0)
+        return FUNC_PSELECT;
+    else if (strcmp(iomux, "poll") == 0)
+        return FUNC_POLL;
+    else if (strcmp(iomux, "ppoll") == 0)
+        return FUNC_PPOLL;
+    else if (strcmp(iomux, "epoll") == 0)
+        return FUNC_EPOLL;
+    else if (strcmp(iomux, "epoll_pwait") == 0)
+        return FUNC_EPOLL_PWAIT;
+    else
+        return 0;
 }
 
 #ifdef __cplusplus

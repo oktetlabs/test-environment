@@ -4208,6 +4208,28 @@ struct tarpc_overfill_fd_out {
     uint64_t    bytes;      /**< Number of sent bytes */
 };
 
+/* multiple_iomux() */
+struct tarpc_multiple_iomux_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int   fd;         /* On which fd to call iomux */
+    iomux_func  iomux;      /* Which iomux to call */
+    tarpc_int   events;     /* With which events iomux should
+                               be called */
+    tarpc_int   count;      /* How many times to call iomux */
+    tarpc_int   exp_rc;     /* Expected iomux return value */ 
+};
+
+struct tarpc_multiple_iomux_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int   retval;     /**< 0 (success) or -1 (failure) */
+    tarpc_int   number;     /**< Number of the last successfully
+                                 called iomux */
+    tarpc_int   last_rc;    /**< Value returned by the last call 
+                                 of iomux */
+};
+
 /* setrlimit() */
 
 struct tarpc_setrlimit_in {
@@ -4859,6 +4881,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(epoll_ctl)
         RPC_DEF(epoll_wait)
         RPC_DEF(epoll_pwait)
+
+        RPC_DEF(multiple_iomux)
 
         RPC_DEF(getsockopt)
         RPC_DEF(setsockopt)

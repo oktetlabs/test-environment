@@ -7579,6 +7579,84 @@ overfill_fd_exit:
     return ret;
 }
 
+/*-------------- multiple_iomux() ----------------------*/
+TARPC_FUNC(multiple_iomux,{},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+int
+multiple_iomux(tarpc_multiple_iomux_in *in,
+               tarpc_multiple_iomux_out *out)
+{
+    iomux_funcs     iomux_f;
+    iomux_state     iomux_st;
+    int             ret;
+    int             events;
+    int             i;
+    int             saved_errno = 0;
+
+    if (iomux_find_func(in->common.use_libc, in->iomux, &iomux_f) != 0)
+    {
+        ERROR("%s(): Failed to resolve iomux %s function(s)",
+              __FUNCTION__, iomux2str(in->iomux));
+        return -1;
+    }
+
+    if ((ret = iomux_create_state(in->iomux, &iomux_f, &iomux_st)) != 0)
+    {
+        ERROR("%s(): failed to set up iomux %s state", __FUNCTION__,
+              iomux2str(in->iomux));
+        return -1;
+    }
+
+    events = poll_event_rpc2h(in->events);
+
+    if ((ret = iomux_add_fd(in->iomux, &iomux_f, &iomux_st,
+                            in->fd, events)) != 0)
+    {
+        ERROR("%s(): failed to set up iomux %s state", __FUNCTION__,
+              iomux2str(in->iomux));
+        goto multiple_iomux_exit;
+    }
+
+    for (i = 0; i < in->count; i++)
+    {
+        ret = iomux_wait(in->iomux, &iomux_f, &iomux_st, NULL, 0);
+        if (ret == 0)
+            break;
+        else if (ret < 0)
+        {
+            saved_errno = errno;
+            ERROR("%s(): iomux failed with errno %s",
+                  strerror(saved_errno));
+            break;
+        }
+        else if (ret != in->exp_rc)
+        {
+            ERROR("%s(): unexpected value %d was returned by iomux call",
+                  __FUNCTION__, ret);
+            break;
+        }
+    }
+
+    out->number = i;
+    out->last_rc = ret;
+
+multiple_iomux_exit:
+
+    iomux_close(in->iomux, &iomux_f, &iomux_st);
+
+    if (saved_errno != 0)
+        errno = saved_errno;
+
+    if (ret != in->exp_rc || out->number < in->count)
+        return -1;
+
+    return 0;
+}
+
 #ifdef LIO_READ
 
 #ifdef HAVE_UNION_SIGVAL_SIVAL_PTR

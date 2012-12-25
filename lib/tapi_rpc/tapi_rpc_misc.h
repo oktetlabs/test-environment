@@ -647,6 +647,25 @@ extern int rpc_memcmp(rcf_rpc_server *rpcs,
                       rpc_ptr_off *s1, rpc_ptr_off *s2, size_t n);
 
 /**
+ * Call I/O multiplexing function multiple times.
+ *
+ * @param rpcs      RPC server handle
+ * @param fd        File descriptor
+ * @param iomux     Iomux to be called
+ * @param events    @b poll() events to be checked for
+ * @param count     How many times to call a function
+ * @param exp_rc    Expected return value
+ * @param number    If not @c NULL, will be set to the number
+ *                  of iomux calls before timeout occured or
+ *                  an error was returned.
+ * @param last_rc   If not @c NULL, will be set to the last
+ *                  return value of an iomux function.
+ */
+extern int rpc_multiple_iomux(rcf_rpc_server *rpcs, int fd,
+                              iomux_func iomux, int events, int count,
+                              int exp_rc, int *number, int *last_rc);
+
+/**
  * Convert raw data to integer (this is useful when raw data was
  * obtained from a test machine with different endianness).
  *
