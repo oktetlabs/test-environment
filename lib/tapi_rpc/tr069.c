@@ -100,6 +100,9 @@ rpc_cwmp_op_call(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "cwmp_op_call", &in, &out);
 
+    free(in.acs_name);
+    free(in.cpe_name);
+
     RING("RPC (%s,%s): cwmp_op_call(%s, %s, rpc %d) -> %r",
                  rpcs->ta, rpcs->name,
                  acs_name, cpe_name, (int)cwmp_rpc,
@@ -145,6 +148,9 @@ rpc_cwmp_op_check(rcf_rpc_server *rpcs,
     in.cwmp_rpc = cwmp_rpc_acs;
 
     rcf_rpc_call(rpcs, "cwmp_op_check", &in, &out);
+
+    free(in.acs_name);
+    free(in.cpe_name);
 
     if (buf != NULL && buflen != NULL && out.buf.buf_val != NULL)
     {
@@ -194,6 +200,9 @@ rpc_cwmp_conn_req(rcf_rpc_server *rpcs,
     in.cpe_name = strdup(cpe_name);
 
     rcf_rpc_call(rpcs, "cwmp_conn_req", &in, &out);
+
+    free(in.acs_name);
+    free(in.cpe_name);
 
     return out.status;
 }

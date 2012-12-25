@@ -158,6 +158,8 @@ rpc_fill_aiocb(rcf_rpc_server *rpcs, rpc_aiocb_p cb,
 
     rcf_rpc_call(rpcs, "fill_aiocb", &in, &out);
 
+    free(in.sigevent.function);
+
     TAPI_RPC_LOG(rpcs, fill_aiocb, "%u, %d, %s, %d, %u, %u, %s", "",
                  cb, fildes, lio_opcode_rpc2str(opcode), 
                  reqprio, buf, nbytes, tarpc_sigevent2str(sigevent));

@@ -138,6 +138,7 @@ rpc_vlan_get_parent(rcf_rpc_server *rpcs, const char *vlan_ifname,
 
     rcf_rpc_call(rpcs, "rpc_vlan_get_parent", &in, &out);
 
+    free(in.ifname.ifname_val);
     memcpy(parent_ifname, out.ifname.ifname_val,
            out.ifname.ifname_len);
 
@@ -662,6 +663,8 @@ rpc_pattern_sender(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "pattern_sender", &in, &out);
 
+    free(in.fname.fname_val);
+
     if (sent != NULL)
         *sent = out.bytes;
 
@@ -713,6 +716,8 @@ rpc_pattern_receiver(rcf_rpc_server *rpcs, int s,
         rpcs->timeout = TE_SEC2MS(time2run + TAPI_RPC_TIMEOUT_EXTRA_SEC);
 
     rcf_rpc_call(rpcs, "pattern_receiver", &in, &out);
+
+    free(in.fname.fname_val);
 
     if (received != NULL)
         *received = out.bytes;
@@ -799,15 +804,15 @@ rpc_recv_verify(rcf_rpc_server *rpcs, int s,
     in.s = s;
     in.start = start;
 
-#if 1
     if (rpcs->op != RCF_RPC_WAIT)
     {
         in.fname.fname_len = strlen(gen_data_fname) + 1;
         in.fname.fname_val = strdup(gen_data_fname);
     }
-#endif
 
     rcf_rpc_call(rpcs, "recv_verify", &in, &out);
+
+    free(in.fname.fname_val);
 
     TAPI_RPC_LOG(rpcs, recv_verify, "%d, %d", "%d",
                  s, (uint32_t)start, out.retval);

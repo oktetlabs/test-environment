@@ -195,6 +195,8 @@ rpc_telephony_dial_number(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "telephony_dial_number", &in, &out);
 
+    free(in.number);
+
     TAPI_RPC_LOG(rpcs, telephony_dial_number, "%d, %s", "%d",
                  chan, number, out.retval);
     RETVAL_INT(telephony_dial_number, out.retval);

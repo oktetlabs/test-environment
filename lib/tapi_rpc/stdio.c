@@ -677,6 +677,8 @@ rpc_system(rcf_rpc_server *rpcs, const char *cmd)
     if (rc.value > 0)
         rpcs->err_log = TE_LL_ERROR;
 
+    free(cmd_dup);
+
     TAPI_RPC_LOG(rpcs, system, "%s", "%s %u",
                  cmd, wait_status_flag_rpc2str(rc.flag), rc.value);
     RETVAL_WAIT_STATUS(system, rc);
