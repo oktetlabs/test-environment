@@ -707,7 +707,13 @@ fi
 # text one - so we cannot distinguish functions
 # and variables with --format=bsd in nm output
 #
-if test "x${host:0:9}" = "xpowerpc64" ; then
+# Please note that the following code is a replace for
+# "${host:0:9}", but this expression is BASH specific
+# and won't work for DASH, which is why we do this
+# in not elegant, but portable way.
+#
+host_prefix=`echo $host | sed -e 's/\(..........\).*/\1/'`
+if test "x$host_prefix" = "xpowerpc64" ; then
     NM_FORMAT=sysv
 else
     NM_FORMAT=bsd

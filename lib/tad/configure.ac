@@ -60,7 +60,14 @@ for k in $DIRS ; do
 
         for j in `find -L $DIR -name lib${LIB_NAME}\*.a 2>/dev/null` ; do
             name=`basename $j`;
-            suffix=${name/lib${LIB_NAME}/};
+            #
+            # The following lines are portable way of getting the result
+            # of command: "suffix=${name/lib${LIB_NAME}/};"
+            # but this command does not work in DASH, but only in BASH.
+            # 
+            cmd="echo $name | sed -e 's/^\\(lib${LIB_NAME}\\)\\(.*\\)/\\2/'"
+            suffix=`eval $cmd`
+
             if test "$suffix" = ".a" ||
                test -z `echo $suffix | sed -s "s,^[[0-9._-]]*.a$,,"`; then
                 FILES=$j;
