@@ -712,7 +712,7 @@ fi
 # and won't work for DASH, which is why we do this
 # in not elegant, but portable way.
 #
-host_prefix=`echo $host | sed -e 's/\(..........\).*/\1/'`
+host_prefix=`echo $host | sed -e 's/\(.........\).*/\1/'`
 if test "x$host_prefix" = "xpowerpc64" ; then
     NM_FORMAT=sysv
 else
