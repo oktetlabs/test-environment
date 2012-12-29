@@ -1889,6 +1889,11 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
 
         in.raw_optval.raw_optval_len = raw_roptlen;
         in.raw_optval.raw_optval_val = (void *)raw_optval;
+
+        if (optname == RPC_SO_BINDTODEVICE &&
+            strnlen(raw_optval, raw_roptlen) < raw_roptlen)
+            te_log_buf_append(opt_val_str, "%s ", raw_optval);
+
         te_log_buf_append(opt_val_str, "[");
         for (i = 0; i < raw_roptlen; ++i)
         {
