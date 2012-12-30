@@ -59,7 +59,9 @@ te_errno
 test_run_item_enum_args(const run_item *ri, test_var_arg_enum_cb callback,
                         void *opaque)
 {
-    te_errno            rc = TE_RC(TE_TESTER, TE_ENOENT);
+    te_errno            rc_ok = TE_RC(TE_TESTER, TE_ENOENT);
+    te_errno            rc = rc_ok;
+    te_errno            rc_bad = 0;
     const test_var_arg *var;
     const test_var_arg *arg;
 
@@ -89,8 +91,8 @@ test_run_item_enum_args(const run_item *ri, test_var_arg_enum_cb callback,
                 {
                     /* Variable is not overridden */
                     rc = callback(var, opaque);
-                    if (rc != 0)
-                        return rc;
+                    if (rc != rc_ok && rc != 0)
+                        rc_bad = rc;
                 }
             }
         }
@@ -102,11 +104,14 @@ test_run_item_enum_args(const run_item *ri, test_var_arg_enum_cb callback,
     TAILQ_FOREACH(arg, &ri->args, links)
     {
         rc = callback(arg, opaque);
-        if (rc != 0)
-            return rc;
+        if (rc != rc_ok && rc != 0)
+            rc_bad = rc;
     }
 
-    return rc;
+    if (rc_bad == 0)
+        return rc;
+    else
+        return rc_bad;
 }
 
 

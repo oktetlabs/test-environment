@@ -1239,9 +1239,7 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
     free(params_str);
 
     if (flags & TESTER_FAKE)
-    {
         *status = TESTER_TEST_FAKED;
-    }
     else
     {
         /* Initialize as INCOMPLETE before processing */
@@ -2398,7 +2396,10 @@ run_prepare_arg_cb(const test_var_arg *va, void *opaque)
                                 &data->arg->reqs,
                                 &value);
     if (rc != 0)
-        return rc;
+    {
+        data->arg->value = "[FAILED TO GET ARGUMENT VALUE]";
+        goto callback_return;
+    }
 
     VERB("%s: value name=%s ref=%p ext=%p plain=%s", __FUNCTION__,
          value->name, value->ref, value->ext, value->plain);
@@ -2410,16 +2411,21 @@ run_prepare_arg_cb(const test_var_arg *va, void *opaque)
     {
         ERROR("Unable to get value of the argument of the run item '%s'",
               run_item_name(data->ri));
-        return TE_RC(TE_TESTER, TE_ESRCH);
+        data->arg->value = "[FAILED TO GET ARGUMENT VALUE]";
+        rc = TE_RC(TE_TESTER, TE_ESRCH);
+        goto callback_return;
     }
 
     VERB("%s(): arg=%s run_get_value() -> %s reqs=%p", __FUNCTION__,
          data->arg->name, data->arg->value, TAILQ_FIRST(&data->arg->reqs));
 
+    rc = 0;
+
+callback_return:
     /* Move to the next argument */
     data->arg++;
 
-    return 0;
+    return rc;
 }
 
 /**
@@ -2450,10 +2456,8 @@ run_prepare_args(const test_iter_arg *ctx_args,
     SLIST_INIT(&data.lists);
 
     rc = test_run_item_enum_args(ri, run_prepare_arg_cb, &data);
-    if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
-    {
-        return rc;
-    }
+    if (!(rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT))
+        rc = 0;
 
     while ((p = SLIST_FIRST(&data.lists)) != NULL)
     {
@@ -2461,7 +2465,7 @@ run_prepare_args(const test_iter_arg *ctx_args,
         free(p);
     }
 
-    return 0;
+    return rc;
 }
 
 static tester_cfg_walk_ctl
@@ -2472,6 +2476,7 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     tester_ctx         *ctx;
     tester_ctx         *parent_ctx;
     te_errno            rc;
+    te_bool             args_preparation_fail = FALSE;
 
     assert(gctx != NULL);
     ctx = SLIST_FIRST(&gctx->ctxs);
@@ -2532,10 +2537,7 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                               parent_ctx != NULL ? parent_ctx->n_args : 0,
                               ri, iter, ctx->args);
         if (rc != 0)
-        {
-            ctx->current_result.status = rc;
-            return TESTER_CFG_WALK_FAULT; 
-        }
+            args_preparation_fail = TRUE;
     }
 
 #if WITH_TRC
@@ -2572,8 +2574,17 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     ctx->current_result.exp_status = TRC_VERDICT_UNKNOWN;
 #endif
 
-    EXIT("CONT");
-    return TESTER_CFG_WALK_CONT;
+    if (args_preparation_fail)
+    {
+        ctx->current_result.status = TESTER_TEST_FAILED;
+        EXIT("EARGS");
+        return TESTER_CFG_WALK_EARGS;
+    }
+    else
+    {
+        EXIT("CONT");
+        return TESTER_CFG_WALK_CONT;
+    }
 }
 
 static tester_cfg_walk_ctl
