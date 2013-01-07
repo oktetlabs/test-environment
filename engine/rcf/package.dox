@@ -34,6 +34,11 @@ On start-up RCF gets from RCF configuration file the list of @ref te_agents
 to be started. For each Test Agent the file contains its name, type and
 additional configuration parameters.
 
+After TA was run, RCF tries to connect to it several times (3 by default)
+before exiting with failure if connection cannot be established. The number
+of attempts to connect can be changed with @var{RCF_TA_MAX_CONN_ATTEMPTS}
+environment variable.
+
 Test Agent type value is used by the RCF to find out which shared library
 should be dynamically linked to the RCF process to interact with the Test Agent.
 This library “knows” how to start and stop the Test Agent and how to send/receive
