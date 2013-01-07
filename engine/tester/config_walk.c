@@ -261,8 +261,8 @@ walk_test_session(const tester_cfg_walk *walk, const void *opaque,
          */
         if (session->epilogue != NULL &&
             (!(tester_global_context.flags & TESTER_BREAK_SESSION) ||
-              ((tester_global_context.flags & TESTER_BREAK_SESSION) &&
-                                     ctl != TESTER_CFG_WALK_STOP)))
+              (tester_global_context.flags & TESTER_BREAK_SESSION) &&
+                                    ctl != TESTER_CFG_WALK_STOP))
         {
             ctl_tmp = walk_service(walk, opaque, id_off,
                                    session->epilogue,
@@ -374,8 +374,7 @@ walk_repeat(const tester_cfg_walk *walk, const void *opaque,
         else
             ctl = TESTER_CFG_WALK_CONT;
 
-        if (ctl == TESTER_CFG_WALK_CONT && run != NULL &&
-            !(flags & TESTER_CFG_WALK_SKIP_REPEAT))
+        if (ctl == TESTER_CFG_WALK_CONT && run != NULL)
         {
             switch (run->type)
             {
@@ -486,10 +485,6 @@ walk_iterate(const tester_cfg_walk *walk, const void *opaque,
         if (ctl == TESTER_CFG_WALK_CONT)
             ctl = walk_repeat(walk, opaque, curr_id_off, flags, run,
                               keepalive, exception);
-        else if (ctl == TESTER_CFG_WALK_EARGS)
-            ctl = walk_repeat(walk, opaque, curr_id_off,
-                              flags | TESTER_CFG_WALK_SKIP_REPEAT, run,
-                              NULL, NULL);
         else if (ctl == TESTER_CFG_WALK_SKIP)
             ctl = TESTER_CFG_WALK_CONT;
 

@@ -614,7 +614,6 @@ typedef enum tester_cfg_walk_ctl {
     TESTER_CFG_WALK_INTR,   /**< Interrupt testing because of keep-alive
                                  validation or exception handler failure */
     TESTER_CFG_WALK_FAULT,  /**< Interrupt because of internal error */
-    TESTER_CFG_WALK_EARGS,  /**< Skipping due to incorrect arguments */
 } tester_cfg_walk_ctl;
 
 /** Walk is in service routine */
@@ -623,12 +622,6 @@ typedef enum tester_cfg_walk_ctl {
 #define TESTER_CFG_WALK_FORCE_EXCEPTION     2
 
 #define TESTER_CFG_WALK_OUTPUT_PARAMS     4
-
-/** 
- * Run only repeat_start(), repeat_end() for what should be skipped
- * due to incorrect arguments in iter_start().
- */
-#define TESTER_CFG_WALK_SKIP_REPEAT       8
 
 /**
  * Functions to be called when traversing Tester configuration.
