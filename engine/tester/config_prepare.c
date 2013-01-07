@@ -321,11 +321,9 @@ prepare_calc_iters(run_item *ri)
     data.n_args = 0;
     data.n_iters = 1;
 
-    rc = test_run_item_enum_args(ri, prepare_arg_cb, &data);
+    rc = test_run_item_enum_args(ri, prepare_arg_cb, TRUE, &data);
     if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
-    {
         return rc;
-    }
 
     ri->n_args = data.n_args;
     ri->n_iters = data.n_iters;

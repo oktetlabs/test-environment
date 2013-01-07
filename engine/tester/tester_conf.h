@@ -433,15 +433,18 @@ typedef te_errno (* test_var_arg_enum_cb)(const test_var_arg *va,
  * Enumerate run item arguments including inherited from session
  * variables.
  *
- * @param ri            Run item
- * @param callback      Function to be called for each argument
- * @param opaque        Data to be passed in callback function
+ * @param ri                Run item
+ * @param callback          Function to be called for each argument
+ * @param up_to_first_err   Whether to stop on the first encountered
+ *                          error when enumerating arguments
+ * @param opaque            Data to be passed in callback function
  *
  * @return Status code.
  */
-extern te_errno test_run_item_enum_args(const run_item       *ri,
-                                        test_var_arg_enum_cb  callback,
-                                        void                 *opaque);
+extern te_errno test_run_item_enum_args(const run_item *ri,
+                                        test_var_arg_enum_cb callback,
+                                        te_bool up_to_first_err,
+                                        void *opaque);
 
 /**
  * Find argument of the run item by name.
@@ -614,6 +617,7 @@ typedef enum tester_cfg_walk_ctl {
     TESTER_CFG_WALK_INTR,   /**< Interrupt testing because of keep-alive
                                  validation or exception handler failure */
     TESTER_CFG_WALK_FAULT,  /**< Interrupt because of internal error */
+    TESTER_CFG_WALK_EARGS,  /**< Skipping due to incorrect arguments */
 } tester_cfg_walk_ctl;
 
 /** Walk is in service routine */
@@ -622,6 +626,12 @@ typedef enum tester_cfg_walk_ctl {
 #define TESTER_CFG_WALK_FORCE_EXCEPTION     2
 
 #define TESTER_CFG_WALK_OUTPUT_PARAMS     4
+
+/** 
+ * Run only repeat_start(), repeat_end() for what should be skipped
+ * due to incorrect arguments in iter_start().
+ */
+#define TESTER_CFG_WALK_SKIP_REPEAT       8
 
 /**
  * Functions to be called when traversing Tester configuration.

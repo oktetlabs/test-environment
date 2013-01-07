@@ -57,9 +57,10 @@
 /* See the description in tester_conf.h */
 te_errno
 test_run_item_enum_args(const run_item *ri, test_var_arg_enum_cb callback,
-                        void *opaque)
+                        te_bool up_to_first_err, void *opaque)
 {
     te_errno            rc = TE_RC(TE_TESTER, TE_ENOENT);
+    te_errno            rc_bad = 0;
     const test_var_arg *var;
     const test_var_arg *arg;
 
@@ -90,7 +91,12 @@ test_run_item_enum_args(const run_item *ri, test_var_arg_enum_cb callback,
                     /* Variable is not overridden */
                     rc = callback(var, opaque);
                     if (rc != 0)
-                        return rc;
+                    {
+                        if (up_to_first_err)
+                            return rc;
+                        else
+                            rc_bad = rc;
+                    }
                 }
             }
         }
@@ -103,10 +109,18 @@ test_run_item_enum_args(const run_item *ri, test_var_arg_enum_cb callback,
     {
         rc = callback(arg, opaque);
         if (rc != 0)
-            return rc;
+        {
+            if (up_to_first_err)
+                return rc;
+            else
+                rc_bad = rc;
+        }
     }
 
-    return rc;
+    if (rc_bad == 0)
+        return rc;
+    else
+        return rc_bad;
 }
 
 
@@ -187,7 +201,8 @@ test_run_item_find_arg(const run_item *ri, const char *name,
     data.name = name;
     data.n_iters = 1;
 
-    rc = test_run_item_enum_args(ri, test_run_item_find_arg_cb, &data);
+    rc = test_run_item_enum_args(ri, test_run_item_find_arg_cb,
+                                 TRUE, &data);
     if (TE_RC_GET_ERROR(rc) == TE_EEXIST)
     {
         if (n_values != NULL)
