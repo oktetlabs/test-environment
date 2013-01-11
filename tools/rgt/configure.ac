@@ -229,6 +229,19 @@ then
     EXTRA_CPPFLAGS=${EXTRA_CPPFLAGS}" "-I${TE_BASE}/include
 fi
 
+# Large (>2Gb) log files support
+AC_ARG_WITH([large_logs],
+            [AS_HELP_STRING([--with-large-logs],
+              [Enable support for large logs in RGT. \
+Default - disabled.])],
+            [if test "x${withval}" = "xyes"; then
+                 with_large_logs=yes;
+             fi], [])
+
+if test "x$with_large_logs" = "xyes"; then
+    EXTRA_CPPFLAGS="${EXTRA_CPPFLAGS} -D_LARGEFILE64_SOURCE \
+                    -D_FILE_OFFSET_BITS=64"
+fi
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST

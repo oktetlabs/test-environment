@@ -14,6 +14,9 @@
 #include    <stdio.h>
 #include    <stdlib.h>
 
+#define _LARGEFILE64_SOURCE
+#define _FILE_OFFSET_BITS   64
+
 #define LINE_LENGTH 1024
 
 int
