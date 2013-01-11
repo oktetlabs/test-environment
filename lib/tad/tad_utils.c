@@ -1678,7 +1678,6 @@ tad_send_recv_generate_pattern(csap_p csap, asn_value *template,
     te_errno        rc = 0;
     unsigned int    layer;
     asn_value      *pattern_unit;
-    asn_value      *pdus;
 
     ENTRY(CSAP_LOG_FMT, CSAP_LOG_ARGS(csap));
 
@@ -1687,13 +1686,6 @@ tad_send_recv_generate_pattern(csap_p csap, asn_value *template,
         ERROR_ASN_INIT_VALUE(ndn_traffic_pattern_unit);
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
     }
-    if ((pdus = asn_init_value(ndn_generic_pdu_sequence)) == NULL)
-    {
-        ERROR_ASN_INIT_VALUE(ndn_generic_pdu_sequence);
-        asn_free_value(pattern_unit);
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
-    }
-
 
     for (layer = 0; layer < csap->depth; layer++)
     {
