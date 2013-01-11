@@ -200,7 +200,7 @@ Here is some description of used TAGs of configuration file:
     It is possible not to have both @attr_name{src} and @attr_name{bin}
     attributes in @attr_name{suite} tag, which means you ask
     @ref te_engine_tester to build a test suite located under
-    @path{@{TE_BASE}/suites/[suite name]} directory.
+    @path{${TE_BASE}/suites/[suite name]} directory.
   .
 - @attr_name{run} - a block of tests, packages to run.
 .
