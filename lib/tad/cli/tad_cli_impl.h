@@ -95,16 +95,47 @@ typedef enum cli_conn_type {
 #define CLI_CSAP_DEFAULT_TIMEOUT    25 /**< Seconds to wait for prompt */
 #endif
 
-#define CLI_PROMPT_STATUS_COMMAND   0x1 /**< command-prompt present */
-#define CLI_PROMPT_STATUS_LOGIN     0x2 /**< login-prompt present */
-#define CLI_PROMPT_STATUS_PASSWORD  0x4 /**< password-prompt present */
-
 /** We still haven't got a reply for the previous command */
 #define CLI_CSAP_STATUS_REPLY_WAITING 0x01
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** Maximum possible length of prompt value */
+#define PROMPT_VAL_MAX 40
+
+/** CLI prompt information */
+typedef struct cli_csap_prompt {
+    char          val[PROMPT_VAL_MAX]; /**< Prompt value */
+    int           len; /**< Prompt value length */
+    enum exp_type type; /**< Prompt type (fixed string, regexp, etc.) */
+} cli_csap_prompt;
+
+/**
+ * A set of possible CLI prompts.
+ *
+ * Implementation of CLI CSAP uses a separate process in which context
+ * functions of Expect library run. Expect library can help waiting for
+ * a number of patterns telling us which pattern matches the data read
+ * from output.
+ * CLI CSAP was designed with an assumption that 'send' operations results
+ * in some data output that follows with so called COMMAND PROMPT,
+ * i.e. a fixed string that tells it is ready to accept the next command.
+ * Some commands expect a login/password can be asked in reply, which is why
+ * we have two more prompt types: LOGIN PROMPT and PASSWORD PROMPT.
+ *
+ * The values for all prompt types can be specified on CSAP creation
+ * (command prompt is mandatory), but you can overwrite prompt values
+ * for each 'send' operation. I.e. if you know that as the result of some
+ * command you will get command prompt that differs from original you
+ * need to specify new value for command prompt as a part of 'send' PDU.
+ */
+typedef struct cli_csap_prompts {
+    cli_csap_prompt login; /**< Login prompt */
+    cli_csap_prompt passwd; /**< Password prompt */
+    cli_csap_prompt cmd; /**< Command prompt */
+} cli_csap_prompts_t;
 
 /* 
  * CLI CSAP specific data
@@ -144,10 +175,27 @@ typedef struct cli_csap_specific_data
 
 
     uint32_t status; /**< Status bits of the CSAP */
-    uint32_t prompts_status;   /**< Available prompts found on init             */
 
-    struct exp_case prompts[CLI_MAX_PROMPTS]; /**< expect cases structure that
-                                                   contains known prompts     */
+    /**
+     * A set of prompts found on init.
+     * These values are used for any 'send' operation that does not
+     * have prompt information in its PDU.
+     */
+    cli_csap_prompts_t init_prompts;
+    /**
+     * A set of prompts to be used in current waiting for response action.
+     * The value is copied from @p init_prompts and then particular prompts
+     * are overwritten with values kept in packet PDU (if specified).
+     */
+    cli_csap_prompts_t cur_prompts;
+
+    /**
+     * An array of prompts passed to Expect library.
+     * This value is a converted form of @p cur_prompts field
+     * suitable for Expect library.
+     */
+    struct exp_case prompts[CLI_MAX_PROMPTS];
+
     int   read_timeout; /**< Number of second to wait for data                */
     
 } cli_csap_specific_data_t;

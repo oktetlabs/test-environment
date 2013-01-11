@@ -544,10 +544,12 @@ cli_session_alive(cli_csap_specific_data_p spec_data)
  * @param asn_name     Name of the field to read.
  * @param str_value    Pointer to returned string.
  *
- * @return 0 on success or -1 if not found. 
+ * @return 0 on success or -1 if not found.
+ *
+ * @note Function modifies @p str_value only on success.
  */ 
 static int
-cli_get_asn_string_value(asn_value * csap_spec,
+cli_get_asn_string_value(const asn_value *csap_spec,
                          const char *asn_name,
                          char **str_value)
 {
@@ -556,22 +558,24 @@ cli_get_asn_string_value(asn_value * csap_spec,
 
     if (tmp_len > 0)
     {
+        char *val;
+
         /* allocate memory for the string */
-        *str_value = (char *) malloc(tmp_len + 1);
-        if (*str_value == NULL)
+        val = (char *) malloc(tmp_len + 1);
+        if (val == NULL)
             return TE_ENOMEM;
 
-        rc = asn_read_value_field(csap_spec, *str_value,
+        rc = asn_read_value_field(csap_spec, val,
                                   &tmp_len, asn_name);
         if (rc != 0)
         {
-            free(*str_value);
-            *str_value = NULL;
+            free(val);
             rc = TE_EINVAL;
         }
         else
         {
-            (*str_value)[tmp_len] = '\0';
+            val[tmp_len] = '\0';
+            *str_value = val;
         }
     }
     else
@@ -582,6 +586,70 @@ cli_get_asn_string_value(asn_value * csap_spec,
     return rc;
 }
 
+/**
+ * Get the value of prompt parameter that can be either fixed value
+ * or regular expression.
+ *
+ * @param cli_container  ASN container where to get the value from
+ * @param param_name     Name of prompt parameter whose value to get
+ * @param prompt         Expect match structure
+ *
+ * @return Status of the operation
+ */
+int
+cli_container_get_prompt_param(const asn_value *cli_container, const char *param_name, cli_csap_prompt *prompt)
+{
+    /* Pairs of ASN to Expect value mappings */
+    struct param_type {
+        const char    *asn_type; /**< ASN value type */
+        enum exp_type  exp_type; /**< Expect value type */
+    } types_asn2exp[] = {
+        { "plain", exp_exact },
+        { "script", exp_regexp },
+    };
+    unsigned int  i;
+    char         *str_val;
+    char          cmd_buf[32];
+    int           rc = TE_EINVAL;
+
+    for (i = 0; i < sizeof(types_asn2exp) / sizeof(types_asn2exp[0]); i++)
+    {
+        snprintf(cmd_buf, sizeof(cmd_buf), "%s.#%s",
+                 param_name, types_asn2exp[i].asn_type);
+
+        rc = cli_get_asn_string_value(cli_container, cmd_buf, &str_val);
+        if (rc == 0)
+        {
+            prompt->len = snprintf(prompt->val, sizeof(prompt->val), "%s", str_val);
+            prompt->type = types_asn2exp[i].exp_type;
+            free(str_val);
+            return rc;
+        }
+    }
+    return rc;
+}
+
+/**
+ * Update CLI prompt values based on the information kept in
+ * ASN container (CSAP SPEC or Data PDU).
+ *
+ * @param cli_container  ASN container where to get data from
+ * @param cli_prompts    Storage of CLI prompt values (to update
+ *                       according to information kept in @p cli_container)
+ *
+ * @return N/A
+ */
+void
+cli_container_get_prompt_params(const asn_value *cli_container,
+                                cli_csap_prompts_t *cli_prompts)
+{
+    /* Get command-prompt value */
+    cli_container_get_prompt_param(cli_container, "command-prompt", &cli_prompts->cmd);
+    /* Get login-prompt value */
+    cli_container_get_prompt_param(cli_container, "login-prompt", &cli_prompts->login);
+    /* Get password-prompt value */
+    cli_container_get_prompt_param(cli_container, "password-prompt", &cli_prompts->passwd);
+}
 
 /**************************************************************************
  *
@@ -616,7 +684,13 @@ free_cli_csap_data(cli_csap_specific_data_p spec_data)
 
     for (i = 0; i < CLI_MAX_PROMPTS; i++)
     {
-        free(spec_data->prompts[i].pattern);
+        /*
+         * spec_data->prompts[i].pattern points to
+         * a buffer in spec_data->cur_prompts or
+         * spec_data->init_prompts, i.e. it is incorrect
+         * to free them.
+         */
+
         free(spec_data->prompts[i].re);
     }
 
@@ -741,7 +815,7 @@ tad_cli_write_cb(csap_p csap, const tad_pkt *pkt)
 
     int    timeout;
     size_t bytes_written;
-    int    ret;
+    int    ret, ret2;
 
 
     VERB("%s() Called with CSAP %d", __FUNCTION__, csap->id);
@@ -768,9 +842,17 @@ tad_cli_write_cb(csap_p csap, const tad_pkt *pkt)
 
     timeout = csap->stop_latency_timeout;
 
+    /**
+     * Send the following information to Expect aware process:
+     * - timeout to wait for reply;
+     * - prompt values to use in reply processing;
+     * - command to run.
+     */
     ret = write(spec_data->data_sock, &timeout, sizeof(timeout));
+    ret2 = write(spec_data->data_sock, &spec_data->cur_prompts, sizeof(spec_data->cur_prompts));
     bytes_written = write(spec_data->data_sock, buf, buf_len);
-    if (ret != (int)sizeof(timeout) || bytes_written != buf_len)
+    if (ret != (int)sizeof(timeout) || ret2 != (int)sizeof(spec_data->cur_prompts) ||
+        bytes_written != buf_len)
     {
         ERROR("%s(): Cannot write '%s' command to Expect side, "
               "rc = %d, errno = %d",
@@ -802,7 +884,7 @@ tad_cli_write_read_cb(csap_p csap, unsigned int timeout,
     cli_csap_specific_data_p spec_data;
 
     size_t bytes_written;
-    int    ret;
+    int    ret, ret2;
     te_errno    rc;
 
     struct timeval tv = { timeout / 1000000, timeout % 1000000 };
@@ -857,8 +939,10 @@ tad_cli_write_read_cb(csap_p csap, unsigned int timeout,
     VERB("Send command '%s' to Expect side", w_buf);
 
     ret = write(spec_data->data_sock, &timeout, sizeof(timeout));
+    ret2 = write(spec_data->data_sock, &spec_data->cur_prompts, sizeof(spec_data->cur_prompts));
     bytes_written = write(spec_data->data_sock, w_buf, w_buf_len);
-    if (ret != (int)sizeof(timeout) || bytes_written != w_buf_len)
+    if (ret != (int)sizeof(timeout) || ret2 != (int)sizeof(spec_data->cur_prompts) ||
+        bytes_written != w_buf_len)
     {
         ERROR("%s(): Cannot write '%s' command to Expect side, "
               "rc = %d, errno = %d",
@@ -888,6 +972,44 @@ tad_cli_write_read_cb(csap_p csap, unsigned int timeout,
     return rc;
 }
 
+/**
+ * Convert prompt information from generic to Expect specific format.
+ *
+ * @param cur_prompts  values of prompts in application format
+ * @param exp_prompts  values of prompts in Expect format
+ *
+ * @return N/A
+ */
+void
+prepare_exp_prompts(cli_csap_prompts_t *cur_prompts, struct exp_case *exp_prompts)
+{
+    if (cur_prompts->cmd.len != 0)
+    {
+        exp_prompts->pattern = cur_prompts->cmd.val;
+        exp_prompts->type = cur_prompts->cmd.type;
+        exp_prompts->value = CLI_COMMAND_PROMPT;
+        exp_prompts++;
+    }
+
+    if (cur_prompts->login.len != 0)
+    {
+        exp_prompts->pattern = cur_prompts->login.val;
+        exp_prompts->type = cur_prompts->login.type;
+        exp_prompts->value = CLI_LOGIN_PROMPT;
+        exp_prompts++;
+    }
+    
+    if (cur_prompts->passwd.len != 0)
+    {
+        exp_prompts->pattern = cur_prompts->passwd.val;
+        exp_prompts->type = cur_prompts->passwd.type;
+        exp_prompts->value = CLI_PASSWORD_PROMPT;
+        exp_prompts++;
+    }
+
+    exp_prompts->type = exp_end;
+}
+
 
 /* See description tad_cli_impl.h */
 te_errno
@@ -898,9 +1020,7 @@ tad_cli_rw_init_cb(csap_p csap)
     int sv[2];
     int pipe_descrs[2];
 
-    struct exp_case *prompt;    /**< prompts the Expect process waits
-                                     from the CLI session                     */
-
+    cli_csap_prompts_t         *init_prompts;
     cli_csap_specific_data_p    cli_spec_data; /**< CLI CSAP specific data    */
     asn_value                  *cli_csap_spec; /**< ASN value with csap init
                                                     parameters */
@@ -1015,82 +1135,42 @@ tad_cli_rw_init_cb(csap_p csap)
     }
 
     cli_spec_data->program = cli_programs[cli_spec_data->conn_type];
-    cli_spec_data->prompts_status = 0;
 
-    prompt = &cli_spec_data->prompts[0];
 
-    /* Get command-prompt value (mandatory) */
-    if ((rc = cli_get_asn_string_value(cli_csap_spec,
-                  "command-prompt.#plain", &prompt->pattern)) == 0)
-    {
-        cli_spec_data->prompts_status |= CLI_PROMPT_STATUS_COMMAND;
-        prompt->type = exp_glob;
-    }
-    else if ((rc = cli_get_asn_string_value(cli_csap_spec,
-                       "command-prompt.#script", &prompt->pattern)) == 0)
-    {
-        cli_spec_data->prompts_status |= CLI_PROMPT_STATUS_COMMAND;
-        prompt->type = exp_regexp;
-    }
-    else
+    /* Get initial values of prompt parameters from CSAP SPEC */
+    init_prompts = &cli_spec_data->init_prompts;
+    cli_container_get_prompt_params(cli_csap_spec, init_prompts);
+
+    /* Check that command-prompt value is specified (it is mandatory) */
+    if (init_prompts->cmd.len == 0)
     {
         ERROR("Cannot get command prompt value");
         goto error;
     }
-    VERB("command-prompt: %s", prompt->pattern);
-    prompt->value = CLI_COMMAND_PROMPT;
-    prompt++;
+    VERB("command-prompt: %s", init_prompts->cmd.val);
 
-    /* Get login-prompt value (optional) */
-    if ((rc = cli_get_asn_string_value(cli_csap_spec,
-                  "login-prompt.#plain", &prompt->pattern)) == 0)
-    {
-        cli_spec_data->prompts_status |= CLI_PROMPT_STATUS_LOGIN;
-        prompt->type = exp_glob;
-    }
-    else if ((rc = cli_get_asn_string_value(cli_csap_spec,
-                       "login-prompt.#script", &prompt->pattern)) == 0)
-    {
-        cli_spec_data->prompts_status |= CLI_PROMPT_STATUS_LOGIN;
-        prompt->type = exp_regexp;
-    }
+    /* login-prompt value is optional */
+    if (init_prompts->login.len != 0)
+        VERB("login-prompt = %s", init_prompts->login.val);
 
-    if (prompt->pattern != NULL)
-    {
-        VERB("login-prompt = %s", prompt->pattern);
-        prompt->value = CLI_LOGIN_PROMPT;
-        prompt++;
-    }
+    /* password-prompt value is optional */
+    if (init_prompts->passwd.len != 0)
+        VERB("password-prompt = %s", init_prompts->passwd.val);
 
-    /* Get password-prompt value (optional) */
-    if ((rc = cli_get_asn_string_value(cli_csap_spec,
-                  "password-prompt.#plain", &prompt->pattern)) == 0)
-    {
-        cli_spec_data->prompts_status |= CLI_PROMPT_STATUS_PASSWORD;
-        prompt->type = exp_glob;
-    }
-    else if ((rc = cli_get_asn_string_value(cli_csap_spec,
-                       "password-prompt.#script", &prompt->pattern)) == 0)
-    {
-        VERB("  password-prompt=%s\n", prompt->pattern);
-        cli_spec_data->prompts_status |= CLI_PROMPT_STATUS_PASSWORD;
-        prompt->type = exp_regexp;
-    }
+    /*
+     * Configure expect prompts based on values specified in CSAP init.
+     * In order to be able to accept user commands Expect aware process
+     * should get COMMAND PROMPT. As a part of getting COMMAND PROMPT
+     * action the output can contain requests to enter login and password.
+     */
+    prepare_exp_prompts(init_prompts, &cli_spec_data->prompts[0]);
 
-    if (prompt->pattern != NULL)
-    {
-        VERB("password-prompt = %s", prompt->pattern);
-        prompt->value = CLI_PASSWORD_PROMPT;
-        prompt++;
-    }
-
-    prompt->type = exp_end;
 
     /* Get user value (optional) */
     if ((rc = cli_get_asn_string_value(cli_csap_spec,
                   "user.#plain", &cli_spec_data->user)) != 0)
     {
-        if ((cli_spec_data->prompts_status & CLI_PROMPT_STATUS_LOGIN) != 0)
+        if (init_prompts->login.len != 0)
         {
             ERROR("Cannot find '%s' value although login prompt "
                   "specified", "user name");
@@ -1106,7 +1186,7 @@ tad_cli_rw_init_cb(csap_p csap)
     if ((rc = cli_get_asn_string_value(cli_csap_spec,
                   "password.#plain", &cli_spec_data->password)) != 0)
     {
-        if ((cli_spec_data->prompts_status & CLI_PROMPT_STATUS_PASSWORD) != 0)
+        if (init_prompts->passwd.len != 0)
         {
             ERROR("Cannot find 'password' value although "
                   "password prompt specified");
@@ -1493,6 +1573,22 @@ cli_expect_wait_for_prompt(cli_csap_specific_data_p spec_data)
         return -1;
     }
 
+    {
+        struct exp_case *exp_prompt = &spec_data->prompts[0];
+
+        VERB(stderr, "Start waiting for:\n");
+        while (exp_prompt->type != exp_end)
+        {
+            VERB(stderr, "'%s', '%s', val %d\n",
+                 (exp_prompt->type == exp_glob) ? "exp_glob" :
+                 ((exp_prompt->type == exp_exact) ? "exp_exact" : "exp_regexp"),
+                 exp_prompt->pattern,
+                 exp_prompt->value);
+
+            exp_prompt++;
+        }
+    }
+
     res = exp_expectv(spec_data->io, spec_data->prompts);
 
     switch (res)
@@ -1594,7 +1690,21 @@ cli_expect_main(cli_csap_specific_data_p spec_data)
                   "rc = %d, errno = %d", rc, errno);
             cli_expect_finalize(spec_data, SYNC_RES_FAILED);
         }
-        
+        rc = read(spec_data->data_sock, &spec_data->cur_prompts, sizeof(spec_data->cur_prompts));
+        if (rc != (int)sizeof(spec_data->cur_prompts))
+        {
+            ERROR("Cannot read current prompts from CSAP Engine, "
+                  "rc = %d, errno = %d", rc, errno);
+            cli_expect_finalize(spec_data, SYNC_RES_FAILED);
+        }
+
+        /*
+         * Prepare a set of prompts Expect should be waiting for
+         * based on the values passed as a part of command control
+         * information.
+         */
+        prepare_exp_prompts(&spec_data->cur_prompts, &spec_data->prompts[0]);
+
         VERB("Start command mark, timeout %d", timeout);
 
         /* Update Expect timeout value */

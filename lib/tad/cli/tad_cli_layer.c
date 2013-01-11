@@ -39,6 +39,9 @@
 #include "tad_cli_impl.h"
 
 
+extern void cli_container_get_prompt_params(const asn_value *cli_container,
+                                            cli_csap_prompts_t *cli_prompts);
+
 /* See description in tad_cli_impl.h */
 te_errno
 tad_cli_gen_bin_cb(csap_p csap, unsigned int layer,
@@ -46,12 +49,13 @@ tad_cli_gen_bin_cb(csap_p csap, unsigned int layer,
                    const tad_tmpl_arg_t *args, size_t arg_num, 
                    tad_pkts *sdus, tad_pkts *pdus)
 {
+    cli_csap_specific_data_p cli_spec_data = csap_get_rw_data(csap);
+
     te_errno    rc;
     int         msg_len;
     size_t      read_len;
     char       *msg;
 
-    UNUSED(csap);
     UNUSED(layer);
     UNUSED(opaque);
     UNUSED(args);
@@ -84,6 +88,17 @@ tad_cli_gen_bin_cb(csap_p csap, unsigned int layer,
               "asn_read_value_field(), expected %d", __FUNCTION__,
               (unsigned)read_len, msg_len);
     }
+
+    /* 
+     * Prepare prompt patterns for the ongoing command run
+     * 1. Copy patters initialized on CSAP create;
+     * 2. Overwrite patterns with values specified in PDU.
+     *
+     * Right before the command is passed to cli_expect_main
+     * process we pass this structure content.
+     */
+    cli_spec_data->cur_prompts = cli_spec_data->init_prompts;
+    cli_container_get_prompt_params(tmpl_pdu, &cli_spec_data->cur_prompts);
 
     tad_pkts_move(pdus, sdus);
     rc = tad_pkts_add_new_seg(pdus, TRUE,

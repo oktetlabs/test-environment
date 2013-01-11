@@ -35,7 +35,14 @@
 
 /* CLI-Message definitions */
 static asn_named_entry_t _ndn_cli_message_ne_array [] = {
-    { "message", &ndn_data_unit_char_string_s, {PRIVATE, NDN_CLI_MESSAGE} }
+    { "message",        &ndn_data_unit_char_string_s,
+        {PRIVATE, NDN_CLI_MESSAGE} },
+    { "command-prompt", &ndn_data_unit_char_string_s,
+        {PRIVATE, NDN_CLI_COMMAND_PROMPT} },
+    { "password-prompt",&ndn_data_unit_char_string_s,
+        {PRIVATE, NDN_CLI_PASSWORD_PROMPT} },
+    { "password",       &ndn_data_unit_char_string_s,
+        {PRIVATE, NDN_CLI_PASSWORD} },
 };
 
 asn_type ndn_cli_message_s = {

@@ -248,6 +248,39 @@ extern int tapi_cli_send(const char *ta_name, int sid,
  * Send specified command to the CSAP's CLI session and receive response.
  * This function is blocking, returns after all commands are sent and
  * response is received or timeout ocured.
+ * The function allows to specify prompts to be used for this operation.
+ *
+ * @param ta_name             Test Agent name;
+ * @param sid                 RCF session identifier;
+ * @param cli_csap            CSAP handle;
+ * @param command             Command to send;
+ * @param msg                 Returned CLI response to command
+ *                            (memory for the response is allocated
+ *                            inside this routine);
+ * @param timeout             CLI response timeout in seconds;
+ * @param cmd_prompt_type     Type of command prompt;
+ * @param cmd_prompt          Command prompt to use for command run;
+ * @param passwd_prompt_type  Type of password prompt;
+ * @param passwd_prompt       Password prompt value (NULL to use default);
+ *
+ * @return zero on success, otherwise standard or common TE error code.
+ *
+ * @note If necessary to update login prompt, login name or password
+ * for a particular command, please update this function adding new
+ * parameters.
+ */
+extern int tapi_cli_send_recv_with_prompts(const char *ta_name, int sid,
+                                           csap_handle_t cli_csap, const char *command,
+                                           char **msg, unsigned int timeout,
+                                           tapi_cli_prompt_t cmd_prompt_type,
+                                           const char *cmd_prompt,
+                                           tapi_cli_prompt_t passwd_prompt_type,
+                                           const char *passwd_prompt);
+
+/**
+ * Send specified command to the CSAP's CLI session and receive response.
+ * This function is blocking, returns after all commands are sent and
+ * response is received or timeout ocured.
  *
  * @param ta_name       Test Agent name;
  * @param sid           RCF session identifier;
@@ -259,10 +292,44 @@ extern int tapi_cli_send(const char *ta_name, int sid,
  *
  * @return zero on success, otherwise standard or common TE error code.
  */
-extern int tapi_cli_send_recv(const char *ta_name, int sid,
-                              csap_handle_t cli_csap, const char *command,
-                              char **msg, unsigned int timeout);
+static inline int
+tapi_cli_send_recv(const char *ta_name, int sid,
+                   csap_handle_t cli_csap, const char *command,
+                   char **msg, unsigned int timeout)
+{
+    return tapi_cli_send_recv_with_prompts(ta_name, sid, cli_csap, command, msg, timeout,
+                                           TAPI_CLI_PROMPT_TYPE_PLAIN, NULL,
+                                           TAPI_CLI_PROMPT_TYPE_PLAIN, NULL);
+}
 
+/**
+ * Send specified command to the CSAP's CLI session and receive response.
+ * The function allows to specify command prompt value to use while
+ * analyzing the response (suitable when switching between command views).
+ *
+ * @param ta_name          Test Agent name;
+ * @param sid              RCF session identifier;
+ * @param cli_csap         CSAP handle;
+ * @param command          Command to send;
+ * @param msg              Returned CLI response to command (memory for the
+ *                         response is allocated inside this routine);
+ * @param timeout          CLI response timeout in seconds;
+ * @param cmd_prompt_type  Type of command prompt;
+ * @param cmd_prompt       Command prompt to use for command run.
+
+ * @return zero on success, otherwise standard or common TE error code.
+ */
+static inline int
+tapi_cli_send_recv_with_prompt(const char *ta_name, int sid,
+                               csap_handle_t cli_csap, const char *command,
+                               char **msg, unsigned int timeout,
+                               tapi_cli_prompt_t cmd_prompt_type,
+                               const char *cmd_prompt)
+{
+    return tapi_cli_send_recv_with_prompts(ta_name, sid, cli_csap, command, msg, timeout,
+                                           cmd_prompt_type, cmd_prompt,
+                                           TAPI_CLI_PROMPT_TYPE_PLAIN, NULL);
+}
 
 /**
  * Macro around tapi_cli_csap_local_create()

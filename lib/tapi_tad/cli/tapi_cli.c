@@ -112,37 +112,37 @@ const char * const tapi_cli_shell_pprompt_dflt = "assword: ";
  * @param login_prompt_type     Expected login prompt type
  *                              (plain or regular expression)
  * @param login_prompt          Expected login prompt
- *                              (when login name may be sent)
- * @param login_name            Login name to be sent if login
- *                              prompt is detected
- * @param password_prompt_type  Expected password prompt type
+ *                              (when login may be sent)
+ * @oparam login_name           Login name to use on matching with
+ *                              login prompt
+ * @param passwd_prompt_type    Expected password prompt type
  *                              (plain or regular expression)
- * @param password_prompt       Expected password prompt
+ * @param passwd_prompt         Expected password prompt
  *                              (when password may be sent)
- * @param password              Password to be sent if password
- *                              prompt is detected
+ * @param passwd                Password to use on matching with
+ *                              password prompt
  *
  * @return length of added parameters string.
  */
 static int
 tapi_cli_csap_add_prompts(char *buf, int buf_size,
-                          tapi_cli_prompt_t command_prompt_type,
-                          const char *command_prompt,
+                          tapi_cli_prompt_t cmd_prompt_type,
+                          const char *cmd_prompt,
                           tapi_cli_prompt_t login_prompt_type,
                           const char *login_prompt,
                           const char *login_name,
-                          tapi_cli_prompt_t password_prompt_type,
-                          const char *password_prompt,
-                          const char *password)
+                          tapi_cli_prompt_t passwd_prompt_type,
+                          const char *passwd_prompt,
+                          const char *passwd)
 {
     int len = 0;
     
-    if (command_prompt != NULL)
+    if (cmd_prompt != NULL)
         len += snprintf(buf + len, buf_size - len,
                         ", command-prompt %s : \"%s\"",
-                        (command_prompt_type == TAPI_CLI_PROMPT_TYPE_REG_EXP) ?
+                        (cmd_prompt_type == TAPI_CLI_PROMPT_TYPE_REG_EXP) ?
                         "script" : "plain",
-                        command_prompt);
+                        cmd_prompt);
 
     if (login_prompt != NULL)
         len += snprintf(buf + len, buf_size - len,
@@ -155,16 +155,16 @@ tapi_cli_csap_add_prompts(char *buf, int buf_size,
         len += snprintf(buf + len, buf_size - len,
                         ", user plain : \"%s\"", login_name);
 
-    if (password_prompt != NULL)
+    if (passwd_prompt != NULL)
         len += snprintf(buf + len, buf_size - len,
                         ", password-prompt %s : \"%s\"",
-                        (password_prompt_type == TAPI_CLI_PROMPT_TYPE_REG_EXP) ?
+                        (passwd_prompt_type == TAPI_CLI_PROMPT_TYPE_REG_EXP) ?
                         "script" : "plain",
-                        password_prompt);
+                        passwd_prompt);
 
-    if (password != NULL)
+    if (passwd != NULL)
         len += snprintf(buf + len, buf_size - len,
-                        ", password plain : \"%s\"", password);
+                        ", password plain : \"%s\"", passwd);
 
     return len;
 }
@@ -435,8 +435,15 @@ tapi_cli_csap_create(const char *ta_name, int sid,
 
 
 static int
-tapi_internal_write_cmd_to_file(char *tmp_name, const char *command)
+tapi_internal_write_cmd_to_file(char *tmp_name, const char *command,
+                                tapi_cli_prompt_t cmd_prompt_type,
+                                const char *cmd_prompt,
+                                tapi_cli_prompt_t passwd_prompt_type,
+                                const char *passwd_prompt)
 {
+    char *buf;
+    int   buf_size = TAPI_CLI_CSAP_STR_MAXLEN;
+    int   len = 0;
     int   rc;
     FILE *f;
 
@@ -446,15 +453,33 @@ tapi_internal_write_cmd_to_file(char *tmp_name, const char *command)
     if ((rc = te_make_tmp_file(tmp_name)) != 0)
         return TE_RC(TE_TAPI, rc);
 
+    buf = (char *)malloc(buf_size);
+    if (buf == NULL)
+        return TE_RC(TE_TAPI, TE_ENOMEM);
+
     VERB("%s() file: %s\n", __FUNCTION__, tmp_name);
 
     if ((f = fopen(tmp_name, "w+")) == NULL)
     {
         ERROR("fopen(%s, \"w+\" failed with errno %d", tmp_name, errno);
+        free(buf);
         return TE_OS_RC(TE_TAPI, errno);
     }
 
-    fprintf(f, "{ pdus { cli : { message plain : \"%s\" } } }", command);
+    len += snprintf(buf + len, buf_size - len,
+                    "{ pdus { cli : { message plain : \"%s\"", command);
+
+    len += tapi_cli_csap_add_prompts(buf + len, buf_size - len,
+                                     cmd_prompt_type, cmd_prompt,
+                                     TAPI_CLI_PROMPT_TYPE_PLAIN, NULL, NULL,
+                                     passwd_prompt_type, passwd_prompt,
+                                     NULL);
+
+    len += snprintf(buf + len, buf_size - len, "} } }");
+
+    fprintf(f, "%s", buf);
+    free(buf);
+
     fclose(f);
     
     return 0;
@@ -481,7 +506,9 @@ tapi_internal_cli_send(const char *ta_name, int sid, csap_handle_t cli_csap,
     if (ta_name == NULL)
         return TE_RC(TE_TAPI, TE_EINVAL);
 
-    if ((rc = tapi_internal_write_cmd_to_file(tmp_name, command)) != 0)
+    if ((rc = tapi_internal_write_cmd_to_file(tmp_name, command,
+                                              TAPI_CLI_PROMPT_TYPE_PLAIN, NULL,
+                                              TAPI_CLI_PROMPT_TYPE_PLAIN, NULL)) != 0)
     {
         ERROR("Failed to create send pattern for CLI session");
         return rc;
@@ -611,7 +638,11 @@ tapi_cli_msg_handler(const char *msg_fname, void *user_param)
 static int
 tapi_internal_cli_send_recv(const char *ta_name, int sid,
                             csap_handle_t cli_csap, const char *command,
-                            char **msg, unsigned int timeout)
+                            char **msg, unsigned int timeout,
+                            tapi_cli_prompt_t cmd_prompt_type,
+                            const char *cmd_prompt,
+                            tapi_cli_prompt_t passwd_prompt_type,
+                            const char *passwd_prompt)
 {
     int  rc = 0;
     char tmp_fname[] = "/tmp/te_cli_tr_sendrecv.XXXXXX";
@@ -624,7 +655,9 @@ tapi_internal_cli_send_recv(const char *ta_name, int sid,
 
     VERB("%s() started", __FUNCTION__);
 
-    if ((rc = tapi_internal_write_cmd_to_file(tmp_fname, command)) != 0)
+    if ((rc = tapi_internal_write_cmd_to_file(tmp_fname, command,
+                                              cmd_prompt_type, cmd_prompt,
+                                              passwd_prompt_type, passwd_prompt)) != 0)
     {
         ERROR("Failed to create send pattern for CLI session");
         return rc;
@@ -672,22 +705,32 @@ tapi_cli_send(const char *ta_name, int sid,
 /**
  * Send specified command to the CSAP's CLI session and receive response.
  *
- * @param ta_name       Test Agent name;
- * @param sid           RCF session identifier;
- * @param cli_csap      CSAP handle;
- * @param command       Command to send;
- * @param msg           Returned CLI response to command (memory for the
- *                      response is allocated inside this routine);
- * @param timeout       CLI response timeout in seconds;
+ * @param ta_name             Test Agent name;
+ * @param sid                 RCF session identifier;
+ * @param cli_csap            CSAP handle;
+ * @param command             Command to send;
+ * @param msg                 Returned CLI response to command (memory for the
+ *                            response is allocated inside this routine);
+ * @param timeout             CLI response timeout in seconds;
+ * @param cmd_prompt_type     Type of command prompt;
+ * @param cmd_prompt          Command prompt to use for command run;
+ * @param passwd_prompt_type  Type of password prompt;
+ * @param passwd_prompt       Password prompt value (NULL to use default);
  *
  * @return zero on success, otherwise standard or common TE error code.
  */
 int
-tapi_cli_send_recv(const char *ta_name, int sid,
-                   csap_handle_t cli_csap, const char *command,
-                   char **msg, unsigned int timeout)
+tapi_cli_send_recv_with_prompts(const char *ta_name, int sid,
+                                csap_handle_t cli_csap, const char *command,
+                                char **msg, unsigned int timeout,
+                                tapi_cli_prompt_t cmd_prompt_type,
+                                const char *cmd_prompt,
+                                tapi_cli_prompt_t passwd_prompt_type,
+                                const char *passwd_prompt)
 {
     return tapi_internal_cli_send_recv(ta_name, sid, cli_csap,
-                                       command, msg, timeout);
+                                       command, msg, timeout,
+                                       cmd_prompt_type, cmd_prompt,
+                                       passwd_prompt_type, passwd_prompt);
 }
 
