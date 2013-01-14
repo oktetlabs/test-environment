@@ -1981,7 +1981,7 @@ rpc_get_addr_by_id(rcf_rpc_server *rpcs, rpc_ptr id)
 
     TAPI_RPC_LOG(rpcs, get_addr_by_id, "%d", "%llu",
                  id, out.retval);
-    RETVAL_PTR64(malloc, (rpc_ptr)out.retval);
+    RETVAL_PTR64(malloc, out.retval);
 }
 
 /**
@@ -2090,6 +2090,32 @@ rpc_getrlimit(rcf_rpc_server *rpcs,
                  rlim == NULL ? 0 : rlim->rlim_cur,
                  rlim == NULL ? 0 : rlim->rlim_max);
     RETVAL_INT(getrlimit, out.retval);
+}
+
+int64_t
+rpc_sysconf(rcf_rpc_server *rpcs, rpc_sysconf_name name)
+{
+    tarpc_sysconf_in  in;
+    tarpc_sysconf_out out;
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(sysconf, -1);
+    }
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.name = name;
+
+    rcf_rpc_call(rpcs, "sysconf", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(sysconf, out.retval);
+    TAPI_RPC_LOG(rpcs, sysconf, "%s", "%lld",
+                 sysconf_name_rpc2str(name),
+                 (long long int)out.retval);
+    RETVAL_INT64(sysconf, out.retval);
 }
 
 int

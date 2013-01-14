@@ -4258,6 +4258,18 @@ struct tarpc_getrlimit_out {
     struct tarpc_rlimit   rlim<>; /**< struct rlimit */
 };
 
+/* sysconf() */
+struct tarpc_sysconf_in {
+    struct tarpc_in_arg  common;
+
+    tarpc_int            name;      /**< sysconf() constant name */
+};
+
+struct tarpc_sysconf_out {
+    struct tarpc_out_arg  common;
+
+    int64_t               retval;   /**< Value of the system resource */
+};
 
 /* get_sizeof() */
 struct tarpc_get_sizeof_in {
@@ -5065,6 +5077,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         
         RPC_DEF(setrlimit)
         RPC_DEF(getrlimit)
+        RPC_DEF(sysconf)
 
         RPC_DEF(mcast_join_leave)
 

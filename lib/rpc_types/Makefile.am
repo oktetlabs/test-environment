@@ -24,6 +24,7 @@ include_HEADERS = \
 	te_rpc_sys_stat.h \
 	te_rpc_sys_wait.h \
 	te_rpc_wsa.h \
+	te_rpc_sysconf.h \
     te_rpc_dlfcn.h
 
 if WINDOWS
@@ -55,7 +56,8 @@ EXTRA_DIST=\
 	sys_epoll.c \
 	sys_resource.c \
 	sys_stat.c \
-	sys_wait.c
+	sys_wait.c \
+	sysconf_name.c
 
 else
 
@@ -78,6 +80,7 @@ nodist_librpc_types_la_SOURCES = \
 	sys_stat_conv.c \
 	sys_wait_conv.c \
 	wsa_conv.c \
+	sysconf_name_conv.c \
     dlfcn_conv.c
 
 CLEANFILES=$(nodist_librpc_types_la_SOURCES)
@@ -97,6 +100,7 @@ EXTRA_DIST=\
 	sys_stat.c \
 	sys_wait.c \
 	wsa.c \
+	sysconf_name.c \
     dlfcn.c
 
 %_conv.c: %.c

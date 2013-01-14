@@ -73,6 +73,7 @@ typedef struct rpc_ptr_off {
 #include "te_rpc_sys_resource.h"
 #include "te_rpc_sys_systeminfo.h"
 #include "te_rpc_sys_time.h"
+#include "te_rpc_sysconf.h"
 #include "te_rpc_errno.h"
 #include "te_rpc_dlfcn.h"
 

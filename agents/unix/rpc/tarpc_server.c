@@ -8303,6 +8303,14 @@ TARPC_FUNC(getrlimit,
 }
 )
 
+/*-------------- sysconf() ------------------------------*/
+
+TARPC_FUNC(sysconf, {},
+{
+    MAKE_CALL(out->retval = func(sysconf_name_rpc2h(in->name)));
+}
+)
+
 #if defined WITH_POWER_SW
 /*------------ power_sw() -----------------------------------*/
 TARPC_FUNC(power_sw, {},

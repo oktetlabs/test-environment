@@ -1019,6 +1019,18 @@ extern int rpc_getrlimit(rcf_rpc_server *rpcs,
                          int resource, tarpc_rlimit *rlim);
 
 /**
+ * RPC sysconf() call.
+ *
+ * @param rpcs          RPC server
+ * @param name          Name of sysconf() constant
+ *
+ * @return    -1 in the case of failure or a value of system
+ *            resource
+ */
+extern int64_t rpc_sysconf(rcf_rpc_server *rpcs,
+                           rpc_sysconf_name name);
+
+/**
  * Get file status.
  *
  * @param rpcs          RPC server
