@@ -519,6 +519,42 @@ Important points:
 - multiplication significantly increases number of test iterations, so one
 should be sure that he wants to check all combinations.
 
+@subsection te_engine_teste_iteration_variable Variables
+
+You can specify variables in package description file and later refer to
+values of these variables when specifying values for test arguments.
+
+@code
+<session>
+  <var name="long_path" global="true">
+    <value>/this/is/very/long/path/to/a/file/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</value>
+  </var>
+  <var name="up_case_name">
+    <value>AAAAAA.TXT</value>
+  </var>
+
+  <run>
+    <script name="readdir"/>
+    <arg name="path">
+       <value>/</value>
+       <value>/dir</value>
+       <value ref="long_path"/>
+    </arg>
+  </run>
+
+  <run>
+    <script name="file_open"/>
+    <arg name="path">
+       <value ref="up_case_name"/>
+    </arg>
+  </run>
+</session>
+@endcode
+
+In this sample we create two variables @b long_path and @b up_case_name with particular values.
+Later we can refer to these variables using @attr_name{ref} attribute - as one of values for @b path
+parameter of @b readdir test or as the value for @b path parameter of @b file_open test.
+
 @todo More details should be added.
 
 @} <!-- END te_engine_tester -->
