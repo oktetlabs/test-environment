@@ -382,6 +382,77 @@ tapi_cfg_base_if_arp_disable(const char *ta, const char * iface)
 }
 
 /**
+ * Add VLAN interface and get its name.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       interface name
+ * @param vid           VLAN ID to create
+ * @param vlan_ifname   pointer to return the name of new interface
+ *
+ * @note MTU of the new VLAN interface is OS-dependent. For example, Linux
+ * makes this MTU equal to the master interface MTU; Solaris creates VLAN
+ * interface with maximum allowed MTU independently from the master
+ * interface settings. Caller should care about MTU himself.
+ *
+ * @return Status code
+ */
+te_errno tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
+                                   uint16_t vid, char **vlan_ifname);
+
+/**
+ * Add VLAN interface if necessary and get its name.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       interface name
+ * @param vid           VLAN ID to get the name
+ * @param vlan_ifname   pointer to return the name of new interface
+ *
+ * @note MTU of the new VLAN interface is OS-dependent. For example, Linux
+ * makes this MTU equal to the master interface MTU; Solaris creates VLAN
+ * interface with maximum allowed MTU independently from the master
+ * interface settings. Caller should care about MTU himself.
+ *
+ * @return Status code
+ */
+static inline te_errno
+tapi_cfg_base_if_add_get_vlan(const char *ta, const char *if_name,
+                              uint16_t vid, char **vlan_ifname)
+{
+    cfg_val_type val = CVT_STRING;
+    unsigned int    count = 0;
+    cfg_handle      *handles = NULL;
+    char buf[128];
+
+    if (cfg_get_instance_fmt(&val, vlan_ifname,
+                             "/agent:%s/interface:%s/vlans:%d/ifname:",
+                             ta, if_name, vid) &&
+        /* Check if Priority only mode enabled */
+        cfg_get_instance_fmt(&val, vlan_ifname,
+                             "/agent:%s/interface:%s/vlans:%d/ifname:",
+                             ta, if_name, (vid | 0x1000)) &&
+        /* Check if VLAN only vlan mode enabled */
+        cfg_get_instance_fmt(&val, vlan_ifname,
+                             "/agent:%s/interface:%s/vlans:%d/ifname:",
+                             ta, if_name, (vid | 0x2000)) )
+    {
+        /* Try to search interface directly in case of windows VLANS */
+        snprintf(buf, sizeof(buf), "/agent:%s/interface:%s.%d/",
+                 ta, if_name, vid);
+        cfg_find_pattern(buf, &count, &handles);
+        if (count > 0)
+        {
+            cfg_get_inst_name(*handles, vlan_ifname);
+            free(handles);
+            return 0;
+        } else
+            return tapi_cfg_base_if_add_vlan(ta, if_name, vid, vlan_ifname);
+    }
+
+    return 0;
+}
+
+
+/**
  * Delete VLAN interface.
  *
  * @param ta            Test Agent name
@@ -405,89 +476,6 @@ tapi_cfg_base_if_del_vlan(const char *ta, const char *if_name,
 
     return rc;
 }
-
-/**
- * Add VLAN interface and get its name.
- *
- * @param ta            Test Agent name
- * @param if_name       interface name
- * @param vid           VLAN ID to create
- * @param vlan_ifname   pointer to return the name of new interface
- *
- * @note MTU of the new VLAN interface is OS-dependent. For example, Linux
- * makes this MTU equal to the master interface MTU; Solaris creates VLAN
- * interface with maximum allowed MTU independently from the master
- * interface settings. Caller should care about MTU himself.
- *
- * @return Status code
- */
-te_errno tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
-                                   uint16_t vid, char **vlan_ifname);
-
-/**
- * Delete VLAN if it exists and add VLAN interface and get its name if
- * possible.
- *
- * @param ta            Test Agent name
- * @param if_name       interface name
- * @param vid           VLAN ID to get the name
- * @param vlan_ifname   pointer to return the name of new interface
- *
- * @note MTU of the new VLAN interface is OS-dependent. For example, Linux
- * makes this MTU equal to the master interface MTU; Solaris creates VLAN
- * interface with maximum allowed MTU independently from the master
- * interface settings. Caller should care about MTU himself.
- *
- * @return Status code
- */
-static inline te_errno
-tapi_cfg_base_if_add_get_vlan(const char *ta, const char *if_name,
-                              uint16_t vid, char **vlan_ifname)
-{
-    cfg_val_type    val = CVT_STRING;
-    unsigned int    count = 0;
-    cfg_handle      *handles = NULL;
-    char             buf[128];
-    int              vlan_not_found;
-
-    vlan_not_found = cfg_get_instance_fmt(
-                            &val, vlan_ifname,
-                            "/agent:%s/interface:%s/vlans:%d/ifname:",
-                            ta, if_name, vid);
-    if (!vlan_not_found)
-    {
-        tapi_cfg_base_if_del_vlan(ta, if_name, vid);
-        vlan_not_found = 1;
-    }
-    else
-    {
-        /* Try to search interface directly in case of windows VLANS */
-        snprintf(buf, sizeof(buf), "/agent:%s/interface:%s.%d/",
-                 ta, if_name, vid);
-        cfg_find_pattern(buf, &count, &handles);
-        if (count > 0)
-        {
-            tapi_cfg_base_if_del_vlan(ta, if_name, vid);
-            free(handles);
-        }
-    }
-
-    if (vlan_not_found &&
-        /* Check if Priority only mode enabled */
-        cfg_get_instance_fmt(&val, vlan_ifname,
-                             "/agent:%s/interface:%s/vlans:%d/ifname:",
-                             ta, if_name, (vid | 0x1000)) &&
-        /* Check if VLAN only vlan mode enabled */
-        cfg_get_instance_fmt(&val, vlan_ifname,
-                             "/agent:%s/interface:%s/vlans:%d/ifname:",
-                             ta, if_name, (vid | 0x2000)) )
-    {
-        return tapi_cfg_base_if_add_vlan(ta, if_name, vid, vlan_ifname);
-    }
-
-    return 0;
-}
-
 /**@} <!-- END tapi_conf_iface --> */
 
 #ifdef __cplusplus
