@@ -1207,9 +1207,9 @@ rpc_overfill_buffers_gen(rcf_rpc_server *rpcs, int sock, uint64_t *sent,
         *sent = out.bytes;
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(overfill_buffers, out.retval);
-    TAPI_RPC_LOG(rpcs, overfill_buffers, "%d, %s", "%d sent=%d",
+    TAPI_RPC_LOG(rpcs, overfill_buffers, "%d, %s", "%d sent=%lld",
                  sock, iomux2str(iomux),
-                 out.retval, (int)(out.bytes));
+                 out.retval, (long long int)(out.bytes));
     RETVAL_INT(overfill_buffers, out.retval);
 }
 
@@ -1236,9 +1236,8 @@ rpc_overfill_fd(rcf_rpc_server *rpcs, int write_end, uint64_t *sent)
         *sent = out.bytes;
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(overfill_fd, out.retval);
-    TAPI_RPC_LOG(rpcs, overfill_fd, "%d", "%d sent=%d",
-                 write_end, out.retval,
-                 (sent != NULL) ? (int)(*sent) : -1);
+    TAPI_RPC_LOG(rpcs, overfill_fd, "%d", "%d sent=%lld",
+                 write_end, out.retval, (long long int)(out.bytes));
     RETVAL_INT(overfill_fd, out.retval);
 }
 
