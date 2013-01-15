@@ -791,7 +791,7 @@ msghdr_rpc2tarpc(const rpc_msghdr *rpc_msg, tarpc_msghdr *tarpc_msg)
 
         if (rc != 0)
         {
-            ERROR("%s(): failed to convert control message to TARPC"
+            ERROR("%s(): failed to convert control message to TARPC "
                   "format", __FUNCTION__);
             return rc;
         }
@@ -2073,12 +2073,13 @@ rpc_recvmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
                 uint8_t *first_cmsg =
                             (uint8_t *)CMSG_FIRSTHDR((struct msghdr *)msg);
                 int      retval;
+                size_t   controllen = msg->msg_controllen;
 
                 retval = msg_control_rpc2h(
                                     rpc_msg->msg_control.msg_control_val,
                                     rpc_msg->msg_control.msg_control_len,
-                                    first_cmsg,
-                                    &msg->msg_controllen);
+                                    first_cmsg, &controllen);
+                msg->msg_controllen = controllen;
                 if (retval != 0)
                 {
                     ERROR("%s(): cmsghdr data conversion failed",

@@ -3360,10 +3360,20 @@ msg_control_h2rpc(uint8_t *cmsg_buf, size_t cmsg_len,
          c->cmsg_len > 0;
          i++, c = CMSG_NEXT(c));
 
-    if ((uint8_t *)c - (uint8_t *)cmsg_buf < (int)cmsg_len)
+    if ((uint8_t *)c - (uint8_t *)cmsg_buf != (int)cmsg_len)
     {
-        ERROR("%s(): failed to process control message", __FUNCTION__);
-        return TE_EILSEQ;
+        WARN("%s(): actual size of control messages is %d "
+             "but %d was specified", __FUNCTION__,
+             (uint8_t *)c - (uint8_t *)cmsg_buf +
+                                        CMSG_TOTAL_LEN(c),
+             (int)cmsg_len);
+        if (CMSG_TOTAL_LEN(c) >
+                CMSG_REMAINED_LEN(c, cmsg_buf, cmsg_len))
+        {
+            ERROR("%s(): controll messages seems to take "
+                  "more space that was allowed", __FUNCTION__);
+            return TE_EILSEQ;
+        }
     }
 
     if (i > RCF_RPC_MAX_CMSGHDR)
