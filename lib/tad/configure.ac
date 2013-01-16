@@ -212,10 +212,20 @@ AC_ARG_WITH([snmp],,
     TE_BINUTIL([net-snmp-config], [NET_SNMP_CONFIG_FULL_PATH])
 
     for i in `$NET_SNMP_CONFIG_FULL_PATH --libs`; do
-        if test ${i:0:2} = "-l"; then
-            find_lib ${i:2}
+        # Please note that the following code is a replace for
+        # "${i:0:2}", but this expression is BASH specific
+        # and won't work for DASH, which is why we do this
+        # in not elegant, but portable way.
+        #
+        i_prefix=`echo $i | sed -e 's/\(..\).*/\1/'`
+
+        if test "x$i_prefix" = "x-l"; then
+            # The following code is a replace for "${i:2}"
+            lib_name=`echo $i | sed -e 's/\(..\)\(.*\)/\2/'`
+
+            find_lib ${lib_name}
             if test -z "${LIB_PATHNAME}" ; then
-                AC_MSG_WARN([Cannot find ${i:2} library])
+                AC_MSG_WARN([Cannot find ${lib_name} library])
             fi
             tad_libs_rem "$LIB_PATHNAME"
             TA_TAD_LIBS="$TA_TAD_LIBS ${LIB_PATHNAME}"
