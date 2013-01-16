@@ -104,6 +104,9 @@ Unix Test Agent
 - libpcap0.8-dev (for TAD PCAP only) [libpcap0.8-dev]
 - libpam (0.76-22) (not required but suggested) [libpam]
 
+For SNMP support:
+- libsnmp-dev
+
 We are using versions of libraries specified in parentheses.
 
 Windows Test Agent
