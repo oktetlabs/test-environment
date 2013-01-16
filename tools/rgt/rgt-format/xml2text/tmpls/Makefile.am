@@ -43,4 +43,7 @@ dist_pkgdata_DATA = \
                     log_msg_file_end.tmpl       \
                     log_msg_file_start.tmpl     \
                     br.tmpl                     \
-                    log_packet_proto_start.tmpl
+                    log_packet_start.tmpl       \
+                    log_packet_proto_start.tmpl \
+                    log_packet_field_start.tmpl \
+                    log_packet_field_data.tmpl

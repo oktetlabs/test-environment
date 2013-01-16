@@ -27,12 +27,9 @@
 
 #include "xml2gen.h"
 
-static int packet_num = 0;
+#include "capture.h"
 
-/* Max attribute length in one line */
-int  rgt_max_attribute_length = 98;
-/* A tag to separate lines */
-const char *rgt_line_separator = "<br>";
+static int packet_num = 0;
 
 #define RGT_GET_TMPL_IDX(_idx, _shortname)                      \
     if (_idx == -1)                                             \
@@ -103,6 +100,9 @@ RGT_DEF_FUNC(proc_log_packet_field_start)
     static int      LOG_PACKET_FIELD_DATA  = -1;
 
     RGT_FUNC_UNUSED_PRMS();
+
+    if (!detailed_packets)
+        return;
 
     if (depth_ctx->user_data == NULL)
         fd = (FILE *)(*((void **)(ctx->user_data)));

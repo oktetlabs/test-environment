@@ -38,10 +38,19 @@
 #include "logger_defs.h"
 #include "te_raw_log.h"
 
+#include "capture.h"
+
 #include "xml2gen.h"
 #include "xml2html-multi.h"
 
 #define RGT_HTML_USE_TIN_NAMES 1
+
+/* Max attribute length in one line */
+int  rgt_max_attribute_length = 98;
+/* A tag to separate lines */
+const char *rgt_line_separator = "<br>";
+/* Flag turning on detailed packet dumps in log. */
+int detailed_packets = 1;
 
 /** Structure to keep basic user data in general parsing context */
 typedef struct gen_ctx_user {

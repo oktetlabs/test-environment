@@ -36,10 +36,14 @@
 #include "xml2gen.h"
 #include "xml2text.h"
 
+#include "capture.h"
+
 /* Max attribute length in one line */
 int rgt_max_attribute_length = 76;
 /* A tag to separate lines */
 const char *rgt_line_separator = "\n";
+/* Flag turning on detailed packet dumps in log. */
+int detailed_packets = 0;
 
 /** Structure to keep basic user data in general parsing context */
 typedef struct gen_ctx_user {
@@ -47,7 +51,17 @@ typedef struct gen_ctx_user {
                                the result */
 } gen_ctx_user_t;
 
-RGT_PROCESS_CMDLINE_DUMMY();
+/* RGT format-specific options table */
+struct poptOption rgt_options_table[] = {
+    { "detailed-packets", 'P', POPT_ARG_NONE, &detailed_packets, NULL,
+      "Print more detailed packet dumps", NULL },
+    POPT_TABLEEND
+};
+
+void rgt_process_cmdline(poptContext con, int val) {
+    UNUSED(con);
+    UNUSED(val);
+}
 
 RGT_DEF_FUNC(proc_document_start)
 {
@@ -86,24 +100,6 @@ RGT_DEF_FUNC(proc_document_end)
     fclose(fd);
 }
 
-RGT_DEF_FUNC(proc_log_packet_proto_start)
-{
-    FILE           *fd = ((gen_ctx_user_t *)ctx->user_data)->fd;
-    rgt_attrs_t    *attrs;
-    const char     *name;
-
-    RGT_FUNC_UNUSED_PRMS();
-
-    attrs = rgt_tmpls_attrs_new(xml_attrs);
-    if (rgt_tmpls_xml_attrs_get(xml_attrs, "showname") == NULL &&
-        (name = rgt_tmpls_xml_attrs_get(xml_attrs, "name")) != NULL)
-    {
-        rgt_tmpls_attrs_add_fstr(attrs, "showname", "%s", name);
-    }
-    rgt_tmpls_output(fd, &xml2fmt_tmpls[LOG_PACKET_PROTO_START], attrs);
-    rgt_tmpls_attrs_free(attrs);
-}
-
 RGT_DEF_DUMMY_FUNC(proc_session_start)
 RGT_DEF_DUMMY_FUNC(proc_session_end)
 RGT_DEF_DUMMY_FUNC(proc_pkg_start)
@@ -138,10 +134,8 @@ RGT_DEF_FUNC(name_)                                          \
 DEF_FUNC_WITH_ATTRS(proc_log_msg_start, LOG_MSG_START)
 DEF_FUNC_WITHOUT_ATTRS(proc_log_msg_end, LOG_MSG_END)
 
-RGT_DEF_DUMMY_FUNC(proc_log_packet_start)
 RGT_DEF_DUMMY_FUNC(proc_log_packet_end)
 RGT_DEF_DUMMY_FUNC(proc_log_packet_proto_end)
-RGT_DEF_DUMMY_FUNC(proc_log_packet_field_start)
 
 RGT_DEF_DUMMY_FUNC(proc_branch_start)
 RGT_DEF_DUMMY_FUNC(proc_branch_end)

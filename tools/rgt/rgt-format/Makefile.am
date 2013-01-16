@@ -40,14 +40,14 @@ GEN_DEP = libxml2fmt_core.a $(top_builddir)/lib/tmpls/libtmpls.a
 
 noinst_LIBRARIES = libxml2fmt_core.a libcapture.a
 libxml2fmt_core_a_SOURCES = xml2fmt_core.c
-libcapture_a_SOURCES = capture.c
+libcapture_a_SOURCES = capture.c capture.h
 
 noinst_HEADERS = xml2gen.h
 
 bin_PROGRAMS = rgt-xml2html rgt-xml2text rgt-xml2html-multi
 
-rgt_xml2text_SOURCES = xml2text/xml2text.c xml2text.h
-rgt_xml2text_LDADD = $(GEN_LDADD)
+rgt_xml2text_SOURCES = xml2text/xml2text.c xml2text.h capture.h
+rgt_xml2text_LDADD = $(GEN_LDADD) -lcapture
 rgt_xml2text_DEPENDENCIES = $(GEN_DEP)
 
 rgt_xml2html_SOURCES = xml2html/xml2html.c xml2html.h

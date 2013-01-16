@@ -33,8 +33,17 @@
 
 #include <errno.h>
 
+#include "capture.h"
+
 #include "xml2gen.h"
 #include "xml2html.h"
+
+/* Max attribute length in one line */
+int  rgt_max_attribute_length = 98;
+/* A tag to separate lines */
+const char *rgt_line_separator = "<br>";
+/* Flag turning on detailed packet dumps in log. */
+int detailed_packets = 1;
 
 /** Enumeration for colours of the log entries */
 typedef enum rgt_row_colour {

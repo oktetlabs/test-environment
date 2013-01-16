@@ -83,6 +83,7 @@ Generic options:
                                 to be generated (do not generate by default)
   --log-txt=<filename>          Name of the file with logs in text format
                                 to be generated (log.txt by default)
+  --log-txt-detailed-packets    Include detailed packet dumps in text log.
 
   --no-builder                  Do not build TE
   --no-nuts-build               Do not build NUTs
@@ -414,6 +415,7 @@ process_opts()
             --log-txt=*)        RGT_LOG_TXT="${1#--log-txt=}" ;;
             --log-html=*)       RGT_LOG_HTML="${1#--log-html=}" ;;
             --log-plain-html=*) RGT_LOG_HTML_PLAIN="${1#--log-plain-html=}" ;;
+            --log-txt-detailed-packets) RGT_LOG_TXT_DETAILED_PACKETS=true ;;
 
             --gdb-tester)   GDB_TESTER=yes ;;
 
@@ -1136,7 +1138,12 @@ if test -n "${RGT_LOG_TXT}" -o -n "${RGT_LOG_HTML_PLAIN}" ; then
         fi
 
         if test -n "${RGT_LOG_TXT}" ; then
-            rgt-xml2text -f "${LOG_XML_MERGED}" -o "${RGT_LOG_TXT}"
+            if test -z ${RGT_LOG_TXT_DETAILED_PACKETS} ; then
+                rgt-xml2text -f "${LOG_XML_MERGED}" -o "${RGT_LOG_TXT}"
+            else
+                rgt-xml2text -f "${LOG_XML_MERGED}" -o "${RGT_LOG_TXT}" \
+                             --detailed-packets
+            fi
         fi
         if test -n "${RGT_LOG_HTML_PLAIN}" ; then
             rgt-xml2html -f "${LOG_XML_MERGED}" -o "${RGT_LOG_HTML_PLAIN}"
