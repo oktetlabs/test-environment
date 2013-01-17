@@ -107,7 +107,7 @@ typedef struct test_value_type {
     char                           *name;       /**< Type name */
     const struct test_value_type   *type;       /**< Parent type */
     test_entity_values              values;     /**< Values */
-    test_session                   *context;    /**< Test session in
+    const test_session             *context;    /**< Test session in
                                                      which this type
                                                      was defined */
 } test_value_type;

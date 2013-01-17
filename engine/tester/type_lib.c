@@ -79,7 +79,8 @@ static test_entity_value boolean_true = {
 /** Boolean type */
 static test_value_type boolean = {
     { NULL }, "boolean", NULL,
-    { TAILQ_HEAD_INITIALIZER(boolean.values.head), 0 }
+    { TAILQ_HEAD_INITIALIZER(boolean.values.head), 0 },
+    NULL
 };
 
 /** List of predefined types */
