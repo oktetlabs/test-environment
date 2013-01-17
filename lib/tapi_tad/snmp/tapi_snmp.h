@@ -92,7 +92,7 @@ extern "C" {
        
 /** SNMP Object Identifier */
 typedef struct {
-    size_t length;          /**< length of Ogject id */
+    size_t length;          /**< length of Object id */
     oid    id[MAX_OID_LEN]; /**< Object identifier */
 } tapi_snmp_oid_t;
 
