@@ -182,7 +182,7 @@ tester_type_check_plain_value(const test_value_type *type,
     te_errno    rc;
     const void *data = plain;
 
-    rc = test_entity_values_enum(NULL, &type->values,
+    rc = test_entity_values_enum(NULL, type->context, &type->values,
                                  check_plain_value_cb, &data,
                                  NULL, NULL);
     if (rc == TE_EEXIST)

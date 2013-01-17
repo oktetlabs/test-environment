@@ -230,6 +230,8 @@ test_run_item_find_arg(const run_item *ri, const char *name,
  * Enumerate singleton values of the entity value in current variables
  * context.
  *
+ * @param ri            Run item or NULL
+ * @param context       Test session or NULL
  * @param vars          Variables context or NULL
  * @param value         Entity value which may be not a singleton
  * @param callback      Function to be called for each singleton value
@@ -243,6 +245,7 @@ test_run_item_find_arg(const run_item *ri, const char *name,
  */
 static te_errno
 test_entity_value_enum_values(const run_item          *ri,
+                              const test_session      *context,
                               const test_entity_value *value,
                               test_entity_value_enum_cb callback,
                               void *opaque,
@@ -255,6 +258,9 @@ test_entity_value_enum_values(const run_item          *ri,
     assert(callback != NULL);
 
     ENTRY("ri=%p value=%p", ri, value);
+
+    if (context == NULL && ri != NULL)
+        context = ri->context;
 
     if (value->plain != NULL)
     {
@@ -273,7 +279,7 @@ test_entity_value_enum_values(const run_item          *ri,
          * Forward variable to the reference since it is in the same
          * context.
          */
-        rc = test_entity_value_enum_values(ri, value->ref,
+        rc = test_entity_value_enum_values(ri, context, value->ref,
                                            callback, opaque,
                                            enum_error_cb, ee_opaque);
 
@@ -284,7 +290,7 @@ test_entity_value_enum_values(const run_item          *ri,
     }
     else if (value->ext != NULL)
     {
-        if (ri == NULL || ri->context == NULL)
+        if (context == NULL)
         {
             /*
              * No variables context, therefore, it is a singleton
@@ -299,9 +305,9 @@ test_entity_value_enum_values(const run_item          *ri,
         }
         else
         {
-            const test_vars_args *vars;
-            const test_session  *ctx = ri->context;
-            test_var_arg   *var;
+            const test_vars_args    *vars;
+            const test_session      *ctx = context;
+            test_var_arg            *var;
 
             do
             {
@@ -347,9 +353,9 @@ test_entity_value_enum_values(const run_item          *ri,
              value->type->name, &value->type->values);
         /*
          * Enumerate values of the specified type.
-         * Type does not have variables context.
          */
-        rc = test_entity_values_enum(NULL, &value->type->values,
+        rc = test_entity_values_enum(NULL, value->type->context,
+                                     &value->type->values,
                                      callback, opaque,
                                      enum_error_cb, ee_opaque);
 
@@ -368,6 +374,7 @@ test_entity_value_enum_values(const run_item          *ri,
 /* See the description in tester_conf.h */
 te_errno
 test_entity_values_enum(const run_item                  *ri,
+                        const test_session              *context,
                         const test_entity_values        *values,
                         test_entity_value_enum_cb        callback,
                         void                            *opaque,
@@ -384,7 +391,7 @@ test_entity_values_enum(const run_item                  *ri,
 
     TAILQ_FOREACH(v, &values->head, links)
     {
-        rc = test_entity_value_enum_values(ri, v, callback, opaque,
+        rc = test_entity_value_enum_values(ri, context, v, callback, opaque,
                                            enum_error_cb, ee_opaque);
         if (rc != 0)
             break;
@@ -406,14 +413,15 @@ test_var_arg_enum_values(const run_item *ri, const test_var_arg *va,
     if (TAILQ_EMPTY(&va->values.head))
     {
         assert(va->type != NULL);
-        return test_entity_values_enum(NULL, &va->type->values,
+        return test_entity_values_enum(NULL, va->type->context,
+                                       &va->type->values,
                                        callback, opaque,
                                        enum_error_cb, ee_opaque);
     }
     else
     {
-        return test_entity_values_enum(ri, &va->values, callback, opaque,
-                                       enum_error_cb, ee_opaque);
+        return test_entity_values_enum(ri, NULL, &va->values, callback,
+                                       opaque, enum_error_cb, ee_opaque);
     }
 }
 

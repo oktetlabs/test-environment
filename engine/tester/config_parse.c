@@ -1244,6 +1244,7 @@ alloc_and_get_enum(xmlNodePtr node, const test_session *session,
     p = TE_ALLOC(sizeof(*p));
     if (p == NULL)
         return TE_RC(TE_TESTER, TE_ENOMEM);
+    p->context = session;
     TAILQ_INIT(&p->values.head);
 
     p->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
@@ -2460,7 +2461,7 @@ cleanup:
 /**
  * Parse Tester configuratin file.
  *
- * @param cfg           Tester configuratin with not parsed file
+ * @param cfg           Tester configuration with not parsed file
  * @param build         Build test suites
  * @param verbose       Be verbose in the case of build failure
  *

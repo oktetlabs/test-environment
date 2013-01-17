@@ -96,12 +96,20 @@ typedef struct test_entity_values {
 } test_entity_values;
 
 
+/* Forwards */
+/** Test session */
+struct test_session;
+typedef struct test_session test_session;
+
 /** Description of value's type */
 typedef struct test_value_type {
-    SLIST_ENTRY(test_value_type)    links;  /**< List links */
-    char                           *name;   /**< Type name */
-    const struct test_value_type   *type;   /**< Parent type */
-    test_entity_values              values; /**< Values */
+    SLIST_ENTRY(test_value_type)    links;      /**< List links */
+    char                           *name;       /**< Type name */
+    const struct test_value_type   *type;       /**< Parent type */
+    test_entity_values              values;     /**< Values */
+    test_session                   *context;    /**< Test session in
+                                                     which this type
+                                                     was defined */
 } test_value_type;
 
 /** List of value's types */
@@ -200,7 +208,7 @@ typedef TAILQ_HEAD(run_items, run_item) run_items;
 
 
 /** Test session */
-typedef struct test_session {
+struct test_session {
     const struct test_session  *parent; /**< Parent test session */
 
     char               *name;           /**< Name or NULL */
@@ -214,7 +222,7 @@ typedef struct test_session {
     run_items           run_items;      /**< List of run items */
     te_bool             simultaneous;   /**< Run all items simultaneously */
     unsigned int        flags;          /**< Flags */
-} test_session;
+};
 
 
 /** Information about test script */
@@ -494,6 +502,8 @@ typedef te_errno (* test_entity_value_enum_error_cb)(
 /**
  * Enumerate values from the list in current variables context.
  *
+ * @param ri            Run item or NULL
+ * @param context       Test session or NULL
  * @param vars          Variables context or NULL
  * @param values        List of values
  * @param callback      Function to be called for each singleton value
@@ -507,6 +517,7 @@ typedef te_errno (* test_entity_value_enum_error_cb)(
  */
 extern te_errno test_entity_values_enum(
                     const run_item                  *ri,
+                    const test_session              *context,
                     const test_entity_values        *values,
                     test_entity_value_enum_cb        callback,
                     void                            *opaque,
