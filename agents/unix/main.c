@@ -1693,28 +1693,47 @@ ta_vlan_get_parent(const char *ifname, char *parent)
         }
         while (fgets(f_buf, sizeof(f_buf), proc_vlans) != NULL)
         {
+            char *delim;
             size_t space_ofs;
             char *s = f_buf;
             char *p = parent;
 
+            /*
+             * While paring VLAN record we should take into account
+             * the format of /proc/net/vlan/config file:
+             * <VLAN if name> | <VLAN ID> | <Parent if name>
+             * Please note that <VLAN if name> field may be quite long
+             * and as the result there can be NO space between
+             * <VLAN if name>  value and '|' delimeter. Also we should
+             * take into account that '|' character is allowed for
+             * interface name value.
+             *
+             * Extract <VLAN if name> value first.
+             */
+            delim = strstr(s, "| ");
+            if (delim == NULL)
+                continue;
+            
+            *delim++ = '\0';
+            /* Trim interface name (remove spaces before '|' delimeter) */
             space_ofs = strcspn(s, " \t\n\r");
             s[space_ofs] = 0;
 
             if (strcmp(s, ifname) != 0)
                 continue;
 
-            s += space_ofs + 1;
+            s = delim;
+            /* Find next delimiter (we do not need VLAN ID field) */
+            s = strstr(s, "| ");
+            if (s == NULL)
+                continue;
 
-            s = strchr(s, '|');
             s++;
-            s = strchr(s, '|');
-            s++;
-
             while (isspace(*s)) s++;
 
             while (!isspace(*s))
                 *p++ = *s++;
-            *p = 0;
+            *p = '\0';
             break;
         }
         fclose(proc_vlans);
