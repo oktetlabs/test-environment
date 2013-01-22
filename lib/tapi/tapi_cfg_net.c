@@ -223,6 +223,63 @@ tapi_cfg_net_free_nets(cfg_nets_t *nets)
     }
 }
 
+/* See description in tapi_cfg_net.h */
+te_errno
+tapi_cfg_net_register_net(const char *name, cfg_net_t *net, ...)
+{
+    cfg_net_node_t *node;
+    const char     *node_val;
+    int             node_num = 1;
+    te_errno        rc;
+    va_list         ap;
+
+    rc = cfg_add_instance_fmt(&net->handle, CFG_VAL(NONE, 0),
+                              "/net:%s", name);
+    if (rc != 0)
+        return rc;
+
+    net->nodes = NULL;
+    net->n_nodes = 0;
+
+    va_start(ap, net);
+
+    while ((node_val = va_arg(ap, const char *)) != NULL)
+    {
+        net->nodes = realloc(net->nodes, sizeof(*net->nodes) * node_num);
+        node = &net->nodes[node_num - 1];
+        
+        node->type = va_arg(ap, enum net_node_type);
+
+        rc = cfg_add_instance_fmt(&node->handle, CFG_VAL(STRING, node_val),
+                                  "/net:%s/node:%d", name, node_num);
+        if (rc != 0)
+        {
+            ERROR("Failed to add node!");
+            break;
+        }
+        rc = cfg_add_instance_fmt(NULL, CFG_VAL(INTEGER, node->type),
+                                  "/net:%s/node:%d/type:", name, node_num);
+        if (rc != 0)
+            break;
+
+        node_num++;
+    }
+
+    if (rc == 0)
+        net->n_nodes = (node_num - 1);
+
+    va_end(ap);
+
+    return rc;
+}
+
+/* See description in tapi_cfg_net.h */
+te_errno
+tapi_cfg_net_unregister_net(const char *name, cfg_net_t *net)
+{
+    free(net->nodes);
+    return cfg_del_instance_fmt(TRUE, "/net:%s", name);
+}
 
 /* See description in tapi_cfg_net.h */
 int

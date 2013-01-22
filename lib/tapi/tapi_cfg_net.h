@@ -105,6 +105,42 @@ extern void tapi_cfg_net_free_net(cfg_net_t *net);
  */
 extern void tapi_cfg_net_free_nets(cfg_nets_t *nets);
 
+/**
+ * Register a new network in '/net' CM tree.
+ * The function could be useful when you need to build
+ * a network dynamically (for example if you want to build some
+ * L3 network with a set of nodes, which you later want to assign
+ * IP addresses or do some other stuff available for 'cfg_net_t'
+ * data types).
+ *
+ * @param name  network name to assign
+ * @param net   placeholder for a network data to be filled in
+ * 
+ * Other parameters are pairs of type:
+ * - "const char *node_oid_str" - the value of '/net/node' instance
+ *   to be added into a newly created network; 
+ * - "enum net_node_type node_type" - node type value of
+ *   '/net/node/type' instance.
+ * .
+ * Trailing NULL tells there is no more pairs.
+ *
+ * @return Status of the operation.
+ */
+extern te_errno tapi_cfg_net_register_net(const char *name,
+                                          cfg_net_t *net, ...);
+
+/**
+ * Unregister net previously registered with
+ * tapi_cfg_net_register_net() function.
+ *
+ * @param name  network name to unregister
+ * @param net   network data structure (previously filled in with
+ *              tapi_cfg_net_register_net() function)
+ *
+ * @return Status of the operation.
+ */
+extern te_errno tapi_cfg_net_unregister_net(const char *name,
+                                            cfg_net_t *net);
 
 /**
  * Get pair (if available) from each configured network.
