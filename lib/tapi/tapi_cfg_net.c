@@ -656,6 +656,19 @@ tapi_cfg_net_reserve_all(void)
                 break;
             }
 
+            /*
+             * We should reserve resource only for OIDs that point to
+             * "agent" subtree. Apart from "agent" we may have some
+             * user-designed nodes, like "nut" subtree.
+             */
+            if (strcmp((((cfg_inst_subid *)(oid->ids))[1].subid),
+                       "agent") != 0)
+            {
+                cfg_free_oid(oid);
+                free(oid_str);
+                continue;
+            }
+
             rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, oid_str),
                                       "/agent:%s/rsrc:%s",
                                       CFG_OID_GET_INST_NAME(oid, 1),
