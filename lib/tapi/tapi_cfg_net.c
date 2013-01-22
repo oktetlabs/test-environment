@@ -1126,6 +1126,112 @@ tapi_cfg_net_assign_ip(unsigned int af, cfg_net_t *net,
 
 /* See description in tapi_cfg_net.h */
 te_errno
+tapi_cfg_net_unassign_ip(unsigned int af, cfg_net_t *net,
+                         tapi_cfg_net_assigned *assigned)
+{
+    cfg_val_type  type;
+    cfg_handle    pool_handle;
+    cfg_handle    pool_entry_handle;
+    char         *if_oid;
+    char         *net_addr_str;
+    size_t        i;
+    te_errno      rc;
+
+    UNUSED(af);
+
+    /*
+     * Unassign addresses to each node of the net.
+     */
+    for (i = 0; i < net->n_nodes; ++i)
+    {
+        /* instance name is an IP address */
+        if ((rc = cfg_get_inst_name(assigned->entries[i],
+                                    &net_addr_str)) != 0)
+        {
+            ERROR("Failed to get network address value");
+            return rc;
+        }
+
+        /* Get interface OID */
+        type = CVT_STRING;
+        rc = cfg_get_instance(net->nodes[i].handle, &type, &if_oid);
+        if (rc != 0)
+        {
+            ERROR("Failed to get node instance value, err %r", rc);
+            return rc;
+        }
+
+        /* Delete network address from TA */
+        rc = cfg_del_instance_fmt(FALSE, "%s/net_addr:%s",
+                                  if_oid, net_addr_str);
+        if (rc != 0)
+        {
+            ERROR("Failed to delete network address '%s' "
+                  "from '%s', err %r",
+                  net_addr_str, if_oid, rc);
+            return rc;
+        }
+
+        if ((rc = cfg_get_father(assigned->entries[i],
+                                 &pool_handle)) != 0 ||
+            (rc = cfg_get_father(pool_handle,
+                                 &pool_entry_handle)) != 0)
+        {
+            ERROR("Failed to get '/net_pool/entry/' instance handle");
+            return rc;
+        }
+
+        /* Delete "/net_pool/entry/pool/entry" instance  */
+        rc = cfg_del_instance(assigned->entries[i], TRUE);
+        if (rc != 0)
+        {
+            ERROR("Failed to delete ip address instance from net/node");
+        }
+        else
+        {
+            char *pool_entry_oid_str;
+            int   n_entries;
+
+            type = CVT_INTEGER;
+            if (cfg_get_oid_str(pool_entry_handle,
+                                &pool_entry_oid_str) == 0 &&
+                cfg_get_instance_fmt(&type, &n_entries,
+                                     "%s/n_entries:",
+                                     pool_entry_oid_str) == 0)
+            {
+                n_entries--;
+                rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, n_entries),
+                                          "%s/n_entries:",
+                                          pool_entry_oid_str);
+                if (rc != 0)
+                {
+                    ERROR("Failed to update '%s/n_entries:' "
+                          "instance value, err %r",
+                          pool_entry_oid_str, rc);
+                    /* Continue processing anyway */
+                }
+
+                if (n_entries == 0)
+                {
+                    /* Reset pool entry "in use" value */
+                    cfg_set_instance(pool_entry_handle,
+                                     CFG_VAL(INTEGER, 0));
+                }
+            }
+        }
+        
+        /* 
+         * "/net/node/ip[4|6]_address" instance is deleted when we
+         * unregister a network (with tapi_cfg_net_unregister_net()
+         * function), so there is no need to do anything special here
+         * for the '/net' subtree.
+         */
+    }
+    return 0;
+}
+
+/* See description in tapi_cfg_net.h */
+te_errno
 tapi_cfg_net_all_assign_ip(unsigned int af)
 {
     te_errno        rc;

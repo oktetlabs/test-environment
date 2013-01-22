@@ -255,6 +255,18 @@ extern int tapi_cfg_net_assign_ip(unsigned int af, cfg_net_t *net,
                                   tapi_cfg_net_assigned *assigned);
 
 /**
+ * Reset previously assigned IP addresses from a network.
+ *
+ * @param af        Address family
+ * @param net       Configuration network
+ * @param assigned  Information about done assignments (to be unregistered)
+ *
+ * @return Status of the operation.
+ */
+extern te_errno tapi_cfg_net_unassign_ip(unsigned int af, cfg_net_t *net,
+                                         tapi_cfg_net_assigned *assigned);
+
+/**
  * Assign IP subnets for all configuration network.
  *
  * @param af            Address family
