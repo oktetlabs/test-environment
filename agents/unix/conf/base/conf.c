@@ -2202,7 +2202,9 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
 
 #if LINUX_VLAN_SUPPORT
     {
-        struct vlan_ioctl_args if_request;
+        struct vlan_ioctl_args  if_request;
+        struct ifreq            ifr;
+        te_bool                 try_restore_ip_addr = TRUE;
 
         if (cfg_socket < 0)
         {
@@ -2210,12 +2212,63 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
             return TE_RC(TE_TA_UNIX, TE_EFAULT);
         }
 
+        /*
+         * On old CentOS kernels existing IP address
+         * is removed from parent interface when VLAN
+         * is created - so we try to save it and restore
+         * after creating VLAN.
+         */
+        ifr.ifr_addr.sa_family = AF_INET;
+        strncpy(ifr.ifr_name, ifname, IFNAMSIZ - 1); 
+        if (ioctl(cfg_socket, SIOCGIFADDR, &ifr) != 0)
+            try_restore_ip_addr = FALSE;
+
         if_request.cmd = ADD_VLAN_CMD;
         strcpy(if_request.device1, ifname);
         if_request.u.VID = vid;
 
+        /*
+         * Creating VLAN.
+         */
         if (ioctl(cfg_socket, SIOCSIFVLAN, &if_request) < 0)
             rc = te_rc_os2te(errno);
+
+        /*
+         * Restoring IP address on parent interface.
+         */
+        if (try_restore_ip_addr &&
+            ((struct sockaddr_in *)
+                        &ifr.ifr_addr)->sin_addr.s_addr != 0)
+        {
+            struct ifreq    ifr_aux;
+            int             rc_aux;
+
+            /*
+             * IP address disappears on parent interface not
+             * instantly.
+             */
+            usleep(500000);
+
+            memcpy(&ifr_aux, &ifr, sizeof(ifr));
+            if (ioctl(cfg_socket, SIOCGIFADDR, &ifr_aux) != 0 ||
+                ((struct sockaddr_in *)
+                        &ifr_aux.ifr_addr)->sin_addr.s_addr !=
+                ((struct sockaddr_in *)
+                        &ifr.ifr_addr)->sin_addr.s_addr)
+            {
+                rc_aux = ioctl(cfg_socket, SIOCSIFADDR, &ifr);
+                if (rc_aux == 0)
+                    RING("IP address %s was restored on "
+                         "parent interface %s",
+                         inet_ntoa(((struct sockaddr_in *)
+                                      &ifr.ifr_addr)->sin_addr),
+                         ifname);
+                else
+                    ERROR("Failed to restore IP address on "
+                          "parent interface: %s",
+                          strerror(errno));
+            }
+        }
 #if 0
     {
         char vlan_if_name[IFNAMSIZ];
