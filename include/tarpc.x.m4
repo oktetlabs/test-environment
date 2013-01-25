@@ -4366,6 +4366,29 @@ struct tarpc_mcast_join_leave_out {
     tarpc_int            retval;
 };
 
+/* mcast_source_join_leave() */
+enum tarpc_source_joining_method {
+    TARPC_MCAST_SOURCE_ADD_DROP = 1,   /* sockopt IP_ADD/DROP_SOURCE_MEMBERSHIP */
+    TARPC_MCAST_SOURCE_JOIN_LEAVE = 2  /* sockopt MCAST_JOIN/LEAVE_SOURCE_GROUP */
+};
+
+struct tarpc_mcast_source_join_leave_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int                   fd;           /**< TA-local socket */
+    tarpc_int                   family;       /**< Address family */
+    uint8_t                     multiaddr<>;  /**< Multicast group address */
+    uint8_t                     sourceaddr<>; /**< Source address */
+    tarpc_int                   ifindex;      /**< Interface index */
+    tarpc_bool                  leave_group;  /**< Leave the group */
+    tarpc_source_joining_method how;          /**< How to join the group */
+};
+
+struct tarpc_mcast_source_join_leave_out {
+    struct tarpc_out_arg common;
+    tarpc_int            retval;
+};
+
 /* cpe_get_rpc_methods() */
 typedef struct tarpc_void_in tarpc_cpe_get_rpc_methods_in;
 
@@ -5080,6 +5103,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(sysconf)
 
         RPC_DEF(mcast_join_leave)
+        RPC_DEF(mcast_source_join_leave)
 
         RPC_DEF(cwmp_op_call)
         RPC_DEF(cwmp_op_check)

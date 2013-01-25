@@ -1657,6 +1657,109 @@ rpc_mcast_leave(rcf_rpc_server *rpcs, int s,
     return rpc_mcast_join_leave(rpcs, s, mcast_addr, if_index, TRUE, how);
 }
 
+/* 
+ * Join or leave multicast group with source.
+ * For description see tapi_rpc_misc.h
+ */
+int
+rpc_mcast_source_join_leave(rcf_rpc_server *rpcs, int s,
+                            const struct sockaddr *mcast_addr,
+                            const struct sockaddr *source_addr,
+                            int if_index, te_bool leave_group,
+                            tarpc_source_joining_method how)
+{
+    struct tarpc_mcast_source_join_leave_in    in;
+    struct tarpc_mcast_source_join_leave_out   out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+    if (mcast_addr == NULL)
+    {
+        ERROR("%s(): Invalid 'mcast_addr'", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+    if (source_addr == NULL)
+    {
+        ERROR("%s(): Invalid 'mcast_addr'", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    in.fd = s;
+    in.ifindex = if_index;
+    in.leave_group = leave_group;
+    in.family = addr_family_h2rpc(mcast_addr->sa_family);
+
+    if ((in.multiaddr.multiaddr_len =
+         te_netaddr_get_size(mcast_addr->sa_family)) == 0)
+    {
+        ERROR("%s(): 'te_netaddr_get_size(%s)' has returned error",
+              __FUNCTION__, addr_family_rpc2str(mcast_addr->sa_family));
+        RETVAL_INT(mcast_join_leave, -1);
+    }
+    if ((in.multiaddr.multiaddr_val =
+         te_sockaddr_get_netaddr(mcast_addr)) == NULL)
+    {
+        ERROR("%s(): 'te_sockaddr_get_netaddr(%s)' has returned error",
+              __FUNCTION__, te_sockaddr2str(mcast_addr));
+        RETVAL_INT(mcast_join_leave, -1);
+    }
+
+    if ((in.sourceaddr.sourceaddr_len =
+         te_netaddr_get_size(source_addr->sa_family)) == 0)
+    {
+        ERROR("%s(): 'te_netaddr_get_size(%s)' has returned error",
+              __FUNCTION__, addr_family_rpc2str(source_addr->sa_family));
+        RETVAL_INT(mcast_source_join_leave, -1);
+    }
+    if ((in.sourceaddr.sourceaddr_val =
+         te_sockaddr_get_netaddr(source_addr)) == NULL)
+    {
+        ERROR("%s(): 'te_sockaddr_get_netaddr(%s)' has returned error",
+              __FUNCTION__, te_sockaddr2str(source_addr));
+        RETVAL_INT(mcast_source_join_leave, -1);
+    }
+
+    in.how = how;
+
+    rcf_rpc_call(rpcs, "mcast_source_join_leave", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(mcast_source_join_leave,
+                                          out.retval);
+    TAPI_RPC_LOG(rpcs, mcast_source_join_leave, "%d, %s, %s, %d, %s, %s",
+                 "%d", s, te_sockaddr2str(mcast_addr),
+                 te_sockaddr2str(source_addr), if_index,
+                 leave_group? "LEAVE" : "JOIN",
+                 how == TARPC_MCAST_SOURCE_ADD_DROP ?
+                    "IP_(ADD|DROP)_SOURCE_MEMBERSHIP" :
+                     "MCAST_(JOIN|LEAVE)_SOURCE_GROUP",
+                 out.retval);
+    RETVAL_INT(mcast_source_join_leave, out.retval);
+}
+
+int
+rpc_mcast_source_join(rcf_rpc_server *rpcs, int s,
+                      const struct sockaddr *mcast_addr,
+                      const struct sockaddr *source_addr,
+                      int if_index, tarpc_joining_method how)
+{
+    return rpc_mcast_source_join_leave(rpcs, s, mcast_addr, source_addr,
+                                       if_index, FALSE, how);
+}
+int
+rpc_mcast_source_leave(rcf_rpc_server *rpcs, int s,
+                       const struct sockaddr *mcast_addr,
+                       const struct sockaddr *source_addr,
+                       int if_index, tarpc_joining_method how)
+{
+    return rpc_mcast_source_join_leave(rpcs, s, mcast_addr, source_addr,
+                                       if_index, TRUE, how);
+}
 
 #if HAVE_LINUX_ETHTOOL_H
 int

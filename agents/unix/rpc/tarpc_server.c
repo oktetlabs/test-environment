@@ -8522,6 +8522,149 @@ TARPC_FUNC(mcast_join_leave, {},
     MAKE_CALL(func_ptr(in, out));
 })
 
+/*------------ mcast_source_join_leave() -----------------------*/
+void
+mcast_source_join_leave(tarpc_mcast_source_join_leave_in  *in,
+                        tarpc_mcast_source_join_leave_out *out)
+{
+    api_func            setsockopt_func;
+    api_func_ret_ptr    if_indextoname_func;
+    api_func            ioctl_func;
+
+    if (tarpc_find_func(in->common.use_libc, "setsockopt",
+                        &setsockopt_func) != 0 ||
+        tarpc_find_func(in->common.use_libc, "if_indextoname",
+                        (api_func *)&if_indextoname_func) != 0 ||
+        tarpc_find_func(in->common.use_libc, "ioctl",
+                        &ioctl_func) != 0)
+    {
+        ERROR("Cannot resolve function name");
+        out->retval = -1;
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+        return;
+    }
+
+    memset(out, 0, sizeof(tarpc_mcast_source_join_leave_out));
+    if (in->family == RPC_AF_INET)
+    {
+        assert(in->multiaddr.multiaddr_len == sizeof(struct in_addr));
+        assert(in->sourceaddr.sourceaddr_len == sizeof(struct in_addr));
+        switch (in->how)
+        {
+            case TARPC_MCAST_SOURCE_ADD_DROP:
+            {
+#ifdef IP_DROP_SOURCE_MEMBERSHIP
+                char                    if_name[IFNAMSIZ];
+                struct ifreq            ifrequest;
+                struct ip_mreq_source   mreq;
+
+                memset(&mreq, 0, sizeof(mreq));
+
+                if (in->ifindex != 0)
+                {
+                    if (if_indextoname_func(in->ifindex, if_name) == NULL)
+                    {
+                        ERROR("Invalid interface index specified");
+                        out->retval = -1;
+                        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENXIO);
+                        return;
+                    }
+                    else
+                    {
+                        memset(&ifrequest, 0, sizeof(struct ifreq));
+                        memcpy(&(ifrequest.ifr_name), if_name, IFNAMSIZ);
+                        if (ioctl_func(in->fd, SIOCGIFADDR, &ifrequest) < 0)
+                        {
+                            ERROR("No IPv4 address on interface %s",
+                                  if_name);
+                            out->retval = -1;
+                            out->common._errno = TE_RC(TE_TA_UNIX,
+                                                       TE_ENXIO);
+                            return;
+                        }
+
+                        memcpy(&mreq.imr_interface,
+                               &SIN(&ifrequest.ifr_addr)->sin_addr,
+                               sizeof(struct in_addr));
+                    }
+                }
+                memcpy(&mreq.imr_multiaddr, in->multiaddr.multiaddr_val,
+                       sizeof(struct in_addr));
+                memcpy(&mreq.imr_sourceaddr, in->sourceaddr.sourceaddr_val,
+                       sizeof(struct in_addr));
+                out->retval = setsockopt_func(in->fd, IPPROTO_IP,
+                                              in->leave_group ?
+                                                IP_DROP_SOURCE_MEMBERSHIP :
+                                                IP_ADD_SOURCE_MEMBERSHIP,
+                                              &mreq, sizeof(mreq));
+                if (out->retval != 0)
+                {
+                    ERROR("Attempt to join IPv4 multicast group failed");
+                    out->common._errno = TE_RC(TE_TA_UNIX, errno);
+                }
+#else
+                ERROR("MCAST_DROP_SOURCE_MEMBERSHIP is not supported "
+                      "for current Agent type");
+                out->retval = -1;
+                out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
+#endif
+                break;
+            }
+
+            case TARPC_MCAST_SOURCE_JOIN_LEAVE:
+            {
+#ifdef MCAST_LEAVE_SOURCE_GROUP
+                struct group_source_req     gsr_req;
+                struct sockaddr_in         *sin_multicast;
+                struct sockaddr_in         *sin_source;
+
+                sin_multicast = SIN(&gsr_req.gsr_group);
+                sin_multicast->sin_family = AF_INET;
+                memcpy(&sin_multicast->sin_addr,
+                       in->multiaddr.multiaddr_val,
+                       sizeof(struct in_addr));
+                sin_source = SIN(&gsr_req.gsr_source);
+                sin_source->sin_family = AF_INET;
+                memcpy(&sin_source->sin_addr, in->sourceaddr.sourceaddr_val,
+                       sizeof(struct in_addr));
+                gsr_req.gsr_interface = in->ifindex;
+                out->retval = setsockopt_func(in->fd, IPPROTO_IP,
+                                              in->leave_group ?
+                                                  MCAST_LEAVE_SOURCE_GROUP :
+                                                  MCAST_JOIN_SOURCE_GROUP,
+                                              &gsr_req, sizeof(gsr_req));
+                if (out->retval != 0)
+                {
+                    ERROR("Attempt to join IP multicast group failed");
+                    out->common._errno = TE_RC(TE_TA_UNIX, errno);
+                }
+#else
+                ERROR("MCAST_LEAVE_SOURCE_GROUP is not supported "
+                      "for current Agent type");
+                out->retval = -1;
+                out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
+#endif
+                break;
+            }
+            default:
+                ERROR("Unknown multicast source join method");
+                out->retval = -1;
+                out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+    }
+    else
+    {
+        ERROR("Unsupported multicast address family %d", in->family);
+        out->retval = -1;
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+}
+
+TARPC_FUNC(mcast_source_join_leave, {},
+{
+    MAKE_CALL(func_ptr(in, out));
+})
+
 /*-------------- dlopen() --------------------------*/
 TARPC_FUNC(ta_dlopen, {},
 {

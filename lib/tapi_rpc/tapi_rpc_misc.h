@@ -614,6 +614,40 @@ extern int rpc_mcast_leave(rcf_rpc_server *rpcs, int s,
                            const struct sockaddr *mcast_addr, int if_index,
                            tarpc_joining_method how);
 
+/**
+ * Join a multicasting group with source on specified interface.
+ * 
+ * @param  rpcs        RPC server handle
+ * @param  s           socket descriptor
+ * @param  mcast_addr  multicast address
+ * @param  source_addr source address
+ * @param  if_index    interface index
+ * @param  how         joining method:
+ *
+ * @value TARPC_MCAST_SOURCE_ADD_DROP   
+ *          sockopt IP_ADD/DROP_SOURCE_MEMBERSHIP
+ * @value TARPC_MCAST_SOURCE_JOIN_LEAVE 
+ *          sockopt MCAST_JOIN/LEAVE_SOURCE_GROUP
+ * 
+ * @return 0 on success, -1 on failure
+ */
+extern int rpc_mcast_source_join(rcf_rpc_server *rpcs, int s,
+                                 const struct sockaddr *mcast_addr,
+                                 const struct sockaddr *source_addr,
+                                 int if_index,
+                                 tarpc_joining_method how);
+
+/**
+ * Leave a multicasting group with source.
+ *
+ * Parameters are same as above.
+ */
+extern int rpc_mcast_source_leave(rcf_rpc_server *rpcs, int s,
+                                  const struct sockaddr *mcast_addr,
+                                  const struct sockaddr *source_addr,
+                                  int if_index,
+                                  tarpc_joining_method how);
+
 #if HAVE_LINUX_ETHTOOL_H
 /**
  * Perform ethtool ioctl
