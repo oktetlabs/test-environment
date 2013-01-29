@@ -648,6 +648,16 @@ extern int rpc_mcast_source_leave(rcf_rpc_server *rpcs, int s,
                                   int if_index,
                                   tarpc_joining_method how);
 
+extern int rpc_common_mcast_join(rcf_rpc_server *rpcs, int s,
+                                 const struct sockaddr *mcast_addr,
+                                 const struct sockaddr *source_addr,
+                                 int if_index, tarpc_joining_method how);
+
+extern int rpc_common_mcast_leave(rcf_rpc_server *rpcs, int s,
+                                  const struct sockaddr *mcast_addr,
+                                  const struct sockaddr *source_addr,
+                                  int if_index, tarpc_joining_method how);
+
 #if HAVE_LINUX_ETHTOOL_H
 /**
  * Perform ethtool ioctl

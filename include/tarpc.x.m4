@@ -4347,7 +4347,9 @@ struct tarpc_set_var_out {
 enum tarpc_joining_method {
     TARPC_MCAST_ADD_DROP = 1,   /* sockopt IP_ADD/DROP_MULTICAST */
     TARPC_MCAST_JOIN_LEAVE = 2, /* sockopt MCAST_JOIN/LEAVE_GROUP */
-    TARPC_MCAST_WSA = 3         /* WSAJoinLeaf, no leave */
+    TARPC_MCAST_WSA = 3,        /* WSAJoinLeaf, no leave */
+    TARPC_MCAST_SOURCE_ADD_DROP = 4,   /* sockopt IP_ADD/DROP_SOURCE_MEMBERSHIP */
+    TARPC_MCAST_SOURCE_JOIN_LEAVE = 5  /* sockopt MCAST_JOIN/LEAVE_SOURCE_GROUP */
 };
 
 struct tarpc_mcast_join_leave_in {
@@ -4366,12 +4368,6 @@ struct tarpc_mcast_join_leave_out {
     tarpc_int            retval;
 };
 
-/* mcast_source_join_leave() */
-enum tarpc_source_joining_method {
-    TARPC_MCAST_SOURCE_ADD_DROP = 1,   /* sockopt IP_ADD/DROP_SOURCE_MEMBERSHIP */
-    TARPC_MCAST_SOURCE_JOIN_LEAVE = 2  /* sockopt MCAST_JOIN/LEAVE_SOURCE_GROUP */
-};
-
 struct tarpc_mcast_source_join_leave_in {
     struct tarpc_in_arg common;
 
@@ -4381,7 +4377,7 @@ struct tarpc_mcast_source_join_leave_in {
     uint8_t                     sourceaddr<>; /**< Source address */
     tarpc_int                   ifindex;      /**< Interface index */
     tarpc_bool                  leave_group;  /**< Leave the group */
-    tarpc_source_joining_method how;          /**< How to join the group */
+    tarpc_joining_method        how;          /**< How to join the group */
 };
 
 struct tarpc_mcast_source_join_leave_out {

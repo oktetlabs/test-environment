@@ -1666,7 +1666,7 @@ rpc_mcast_source_join_leave(rcf_rpc_server *rpcs, int s,
                             const struct sockaddr *mcast_addr,
                             const struct sockaddr *source_addr,
                             int if_index, te_bool leave_group,
-                            tarpc_source_joining_method how)
+                            tarpc_joining_method how)
 {
     struct tarpc_mcast_source_join_leave_in    in;
     struct tarpc_mcast_source_join_leave_out   out;
@@ -1759,6 +1759,34 @@ rpc_mcast_source_leave(rcf_rpc_server *rpcs, int s,
 {
     return rpc_mcast_source_join_leave(rpcs, s, mcast_addr, source_addr,
                                        if_index, TRUE, how);
+}
+
+int
+rpc_common_mcast_join(rcf_rpc_server *rpcs, int s,
+                      const struct sockaddr *mcast_addr,
+                      const struct sockaddr *source_addr,
+                      int if_index, tarpc_joining_method how)
+{
+    if (how == TARPC_MCAST_ADD_DROP || how == TARPC_MCAST_JOIN_LEAVE)
+        return rpc_mcast_join_leave(rpcs, s, mcast_addr, if_index,
+                                    FALSE, how);
+    else
+        return rpc_mcast_source_join_leave(rpcs, s, mcast_addr, source_addr,
+                                           if_index, FALSE, how);
+}
+
+int
+rpc_common_mcast_leave(rcf_rpc_server *rpcs, int s,
+                       const struct sockaddr *mcast_addr,
+                       const struct sockaddr *source_addr,
+                       int if_index, tarpc_joining_method how)
+{
+    if (how == TARPC_MCAST_ADD_DROP || how == TARPC_MCAST_JOIN_LEAVE)
+        return rpc_mcast_join_leave(rpcs, s, mcast_addr, if_index,
+                                    TRUE, how);
+    else
+        return rpc_mcast_source_join_leave(rpcs, s, mcast_addr, source_addr,
+                                           if_index, TRUE, how);
 }
 
 #if HAVE_LINUX_ETHTOOL_H
