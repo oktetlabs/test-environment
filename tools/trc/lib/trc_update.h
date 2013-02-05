@@ -92,6 +92,8 @@ typedef struct trc_update_ctx {
     func_args_match_ptr      func_args_match; /**< Function to match
                                                    iterations in TRC with
                                                    iterations from logs */
+    char                    *tags_gather_to;  /**< Where to save gathered
+                                                   tags */
 } trc_update_ctx;
 
 /** Entry of list of wildcards used in updating rules */

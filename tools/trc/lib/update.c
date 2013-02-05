@@ -414,6 +414,7 @@ trc_update_free_ctx(trc_update_ctx *ctx)
     free(ctx->rules_load_from);
     free(ctx->rules_save_to);
     free(ctx->cmd);
+    free(ctx->tags_gather_to);
 }
 
 /* See the description in trc_update.h */

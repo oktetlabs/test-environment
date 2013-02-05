@@ -6061,10 +6061,25 @@ trc_update_process_logs(trc_update_ctx *gctx)
     trc_update_tags_logs       *tls;
     trc_update_tag_logs        *tl = NULL;
     tqe_string                 *tqe_str = NULL;
+    tqe_string                 *tqe_p = NULL;
+    tqe_string                 *tqe_q = NULL;
+    tqe_string                 *tqe_r = NULL;
+    int                         cmp_result = 0;
     trc_update_tests_group     *tests_group;
     logic_expr                 *expr = NULL;
     te_bool                     fake_filter = FALSE;
+    tqh_strings                 collected_tags;
+    FILE                       *tags_file = NULL;
 
+    if (gctx->flags & TRC_LOG_PARSE_TAGS_GATHER)
+    {
+        tags_file = fopen(gctx->tags_gather_to, "w");
+        if (tags_file == NULL)
+            fprintf(stderr, "Failed to open %s\n",
+                    gctx->tags_gather_to);
+    }
+
+    TAILQ_INIT(&collected_tags);
     trc_update_init_parse_ctx(&ctx, gctx);
     ctx.log = gctx->fake_log;
     ctx.flags = TRC_LOG_PARSE_FAKE_LOG;
@@ -6162,6 +6177,31 @@ trc_update_process_logs(trc_update_ctx *gctx)
 
         logic_expr_free(ctx.merge_expr);
         free(ctx.merge_str);
+
+        if (gctx->flags & TRC_LOG_PARSE_TAGS_GATHER)
+        {
+            TAILQ_FOREACH(tqe_p, ctx.tags, links)
+            {
+                cmp_result = 1;
+                TAILQ_FOREACH(tqe_q, &collected_tags, links)
+                {
+                    cmp_result = strcmp(tqe_p->v, tqe_q->v);
+                    if (cmp_result <= 0)
+                        break;
+                }
+
+                if (cmp_result != 0)
+                {
+                    tqe_r = TE_ALLOC(sizeof(*tqe_r));
+                    tqe_r->v = strdup(tqe_p->v);
+                    if (tqe_q != NULL)
+                        TAILQ_INSERT_BEFORE(tqe_q, tqe_r, links);
+                    else
+                        TAILQ_INSERT_TAIL(&collected_tags, tqe_r, links);
+                }
+            }
+        }
+
         tq_strings_free(ctx.tags, free);
         free(ctx.tags);
 
@@ -6214,6 +6254,14 @@ trc_update_process_logs(trc_update_ctx *gctx)
         if (fake_filter)
             ctx.flags |= TRC_LOG_PARSE_FILT_LOG;
     } while (1);
+
+    if ((gctx->flags & TRC_LOG_PARSE_TAGS_GATHER) && tags_file != NULL)
+    {
+        TAILQ_FOREACH(tqe_q, &collected_tags, links)
+            fprintf(tags_file, "%s\n", tqe_q->v);
+        tq_strings_free(ctx.tags, free);
+        fclose(tags_file);
+    }
 
     if (!(gctx->flags & TRC_LOG_PARSE_PATHS))
     {

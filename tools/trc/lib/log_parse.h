@@ -223,6 +223,9 @@ enum trc_log_parse_flags {
     TRC_LOG_PARSE_RULE_ARGS   = (1LLU << 40),  /**< Generate <args>
                                                     tags for generated
                                                     rules */
+    TRC_LOG_PARSE_TAGS_GATHER = (1LLU << 41),  /**< Gather tags from
+                                                    logs and print
+                                                    them */
 };
 
 /** All rule type flags */

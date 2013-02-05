@@ -166,6 +166,9 @@ enum {
                                          to be used for automatical
                                          generation of tag expression
                                          for a log */
+    TRC_UPDATE_OPT_TAGS_GATHER,     /**< Gather all the different tags
+                                         from the specified logs and
+                                         printf them */
     TRC_UPDATE_OPT_EXT_WILDS,       /**< Extend generated wildcards:
                                          specify values for all the
                                          arguments having only
@@ -564,6 +567,7 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
           "Do not create rules with <conflicts/> containing "
           "skipped only results",
           NULL },
+
         { "tags-list", '\0', POPT_ARG_STRING, NULL,
           TRC_UPDATE_OPT_TAGS_LIST,
           "Specify tags list for automatic generation of tag expression "
@@ -574,6 +578,11 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
           "Specify a file with tags list for automatic generation "
           "of tag expression for logs",
           NULL },
+
+        { "tags-gather", '\0', POPT_ARG_STRING, NULL,
+          TRC_UPDATE_OPT_TAGS_GATHER,
+          "Gather all the different tags from the specified logs and "
+          "save them in a specified file", NULL },
 
         { "simpl-tags", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_SIMPL_TAGS,
@@ -807,6 +816,11 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
                 get_tags_list_from_file(s, &ctx.tags_list);
                 free(s);
                 ctx.flags |= TRC_LOG_PARSE_GEN_TAGS;
+                break;
+
+            case TRC_UPDATE_OPT_TAGS_GATHER:
+                ctx.flags |= TRC_LOG_PARSE_TAGS_GATHER;
+                ctx.tags_gather_to = poptGetOptArg(optCon);
                 break;
 
             case TRC_UPDATE_OPT_SIMPL_TAGS:
