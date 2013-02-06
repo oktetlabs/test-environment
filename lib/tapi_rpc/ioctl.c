@@ -478,6 +478,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                 case RPC_ETHTOOL_GSG:
                 case RPC_ETHTOOL_GTSO:
                 case RPC_ETHTOOL_GGSO:
+                case RPC_ETHTOOL_GGRO:
                 case RPC_ETHTOOL_GFLAGS:
                 case RPC_ETHTOOL_PHYS_ID:
                 case RPC_ETHTOOL_GUFO:
@@ -492,6 +493,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                 case RPC_ETHTOOL_SSG:
                 case RPC_ETHTOOL_STSO:
                 case RPC_ETHTOOL_SGSO:
+                case RPC_ETHTOOL_SGRO:
                 case RPC_ETHTOOL_SFLAGS:
                 case RPC_ETHTOOL_SUFO:
                     in.access = IOCTL_WR;
