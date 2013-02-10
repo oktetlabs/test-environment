@@ -75,6 +75,20 @@ extern int rcf_pch_run(const char *confstr, const char *info);
 extern void rcf_pch_detach(void);
 
 /**
+ * Detach from the Test Engine before vfork().
+ *
+ * @param saved_conn    Where to save a connection handle
+ */
+extern void rcf_pch_detach_vfork(void **saved_conn);
+
+/**
+ * Attach to the Test Engine after vfork() in the parent process.
+ *
+ * @param saved_conn    Connection handle to be restored
+ */
+extern void rcf_pch_attach_vfork(void *saved_conn);
+
+/**
  * Get the rcf session identifier.
  * 
  * @param id    Location for the id.

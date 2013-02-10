@@ -290,6 +290,54 @@ extern te_errno rcf_rpc_server_create_process(rcf_rpc_server *rpcs,
                                               rcf_rpc_server **p_new);
 
 /**
+ * Call vfork() in RPC server.
+ *
+ * @param rpcs          Existing RPC server handle
+ * @param name          Name of the new server
+ * @param time_to_wait  How much time to wait after
+ *                      vfork() call
+ * @param pid           If not NULL, will be set to
+ *                      result of vfork() call
+ * @param elapsed_time  Time elapsed until vfork() returned
+ *
+ * @return Status code
+ */
+extern te_errno rcf_rpc_server_vfork(rcf_rpc_server *rpcs, 
+                                     const char *name,
+                                     uint32_t time_to_wait,
+                                     pid_t *pid,
+                                     uint32_t *elapsed_time);
+
+/**
+ * Input/output parameters for rcf_rpc_server_vfork() called
+ * in a thread.
+ */
+typedef struct vfork_thread_data {
+    rcf_rpc_server  *rpcs;           /**< RPC server handle */
+    char            *name;           /**< Name for a new RPC server */
+    uint32_t         time_to_wait;   /**< How much time to wait after
+                                          vfork() call? */
+    pid_t            pid;            /**< PID returned by vfork() */
+    uint32_t         elapsed_time;   /**< Time elapsed before vfork()
+                                          returned */
+    te_errno         err;            /**< Error code returned by
+                                          rcf_rpc_server_vfork() */
+} vfork_thread_data;
+
+/**
+ * Call rcf_rpc_server_vfork() in a new thread.
+ *
+ * @param data          Data to be passed to the thread
+ * @param thread_id     Where to save an ID of the created thread
+ * @param p_new         Where to save an ID of the created RPC server
+ *
+ * @return Status code
+ */
+extern te_errno rcf_rpc_server_vfork_in_thread(vfork_thread_data *data,
+                                               pthread_t *thread_id,
+                                               rcf_rpc_server **p_new);
+
+/**
  * Perform execve() on the RPC server. Filename of the running process
  * if used as the first argument.
  *

@@ -652,6 +652,66 @@ _create_process_1_svc(tarpc_create_process_in *in,
     return TRUE;
 }
 
+/*-------------- vfork() -------------------------------------*/
+bool_t
+_vfork_1_svc(tarpc_vfork_in *in,
+             tarpc_vfork_out *out,
+             struct svc_req *rqstp)
+{
+    struct timeval  t_start;
+    struct timeval  t_finish;
+    api_func_void   func;
+    int             rc;
+    void            *saved_conn;
+
+    UNUSED(rqstp);
+    memset(out, 0, sizeof(*out));
+
+    rc = tarpc_find_func(FALSE, "vfork", (api_func *)&func);
+    if (rc != 0)
+    {
+        rc = errno;
+        ERROR("No vfork() function: errno=%d", rc);
+        out->common._errno = TE_OS_RC(TE_TA_UNIX, rc);
+        return TRUE;
+    }
+
+    rcf_pch_detach_vfork(&saved_conn);
+    gettimeofday(&t_start, NULL);
+    out->pid = func();
+    gettimeofday(&t_finish, NULL);
+    out->elapsed_time = (t_finish.tv_sec - t_start.tv_sec) * 1000 +
+                        (t_finish.tv_usec - t_start.tv_sec) / 1000;
+
+    if (out->pid == -1)
+    {
+        rcf_pch_attach_vfork(saved_conn);
+        out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);
+        return TRUE;
+    }
+
+    if (out->pid == 0)
+    {
+        /*
+         * Change the process group to allow killing all the children
+         * together with this RPC server and to disallow killing of this
+         * process when its parent RPC server is killed
+         */
+        setpgid(getpid(), getpid());
+
+        rcf_pch_detach();
+        rcf_pch_rpc_server(in->name.name_val);
+        exit(EXIT_FAILURE);
+    }
+    else
+    {
+        usleep(in->time_to_wait * 1000);
+        rcf_pch_attach_vfork(saved_conn);
+    }
+
+    return TRUE;
+}
+
 /*-------------- thread_create() -----------------------------*/
 bool_t
 _thread_create_1_svc(tarpc_thread_create_in *in,

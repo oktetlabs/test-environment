@@ -1292,3 +1292,20 @@ rcf_pch_detach(void)
     rcf_comm_agent_close(&conn);
     rcf_pch_rpc_atfork();
 }
+
+/** Detach from the Test Engine before vfork() */
+void 
+rcf_pch_detach_vfork(void **saved_conn)
+{
+    *saved_conn = conn;
+    conn = NULL;
+}
+
+/** Attach to the Test Engine after vfork() in the parent process */
+void 
+rcf_pch_attach_vfork(void *saved_conn)
+{
+    /* Close connection created after vfork() but before exec(). */
+    rcf_comm_agent_close(&conn);
+    conn = saved_conn;
+}

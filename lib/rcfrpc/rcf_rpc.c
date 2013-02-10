@@ -957,7 +957,8 @@ rcf_rpc_server_create_process(rcf_rpc_server *rpcs,
     
     if ((rc = rcf_ta_call_rpc(rpcs->ta, rpcs->sid, rpcs->name,
                               1000, "create_process", &in, &out)) != 0)
-    {                              
+    { 
+        free(in.name.name_val);
         return rc;
     }
     
@@ -989,4 +990,81 @@ rcf_rpc_server_create_process(rcf_rpc_server *rpcs,
     }
     
     return rc;
-}                              
+}                           
+
+/* See description in rcf_rpc.h */
+te_errno
+rcf_rpc_server_vfork(rcf_rpc_server *rpcs, 
+                     const char *name,
+                     uint32_t time_to_wait,
+                     pid_t *pid, uint32_t *elapsed_time)
+{
+    tarpc_vfork_in      in;
+    tarpc_vfork_out     out;
+    te_errno            rc;
+
+    if (rpcs == NULL)
+        return TE_RC(TE_RCF_API, TE_EINVAL);
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
+        rpcs->timeout = rpcs->def_timeout;
+
+    in.common.op = RCF_RPC_CALL_WAIT;
+    in.common.use_libc = rpcs->use_libc || rpcs->use_libc_once;
+    in.name.name_len = strlen(name) + 1;
+    in.name.name_val = strdup(name);
+    in.time_to_wait = time_to_wait;
+    
+    rc = rcf_ta_call_rpc(rpcs->ta, rpcs->sid, rpcs->name,
+                         rpcs->timeout, "vfork", &in, &out);
+    
+    free(in.name.name_val);
+
+    if (pid != NULL)
+        *pid = out.pid;
+    if (elapsed_time != NULL)
+        *elapsed_time = out.elapsed_time;
+
+    return rc;
+} 
+
+/**
+ * Entry function for a thread with rcf_rpc_server_vfork() called.
+ *
+ * @param data      Input/output parameters
+ *
+ * @return data
+ */
+static void *
+vfork_thread_func(void *data)
+{
+    vfork_thread_data *p = data;
+
+    p->err = rcf_rpc_server_vfork(p->rpcs, p->name, p->time_to_wait,
+                                  &(p->pid), &(p->elapsed_time));
+    return data;
+}
+
+/* See description in rcf_rpc.h */
+te_errno
+rcf_rpc_server_vfork_in_thread(vfork_thread_data *data,
+                               pthread_t *thread_id,
+                               rcf_rpc_server **p_new)
+{
+    int rc;
+
+    if (data == NULL || thread_id == NULL || p_new == NULL)
+        return TE_RC(TE_RCF_API, TE_EINVAL);
+
+    rc = pthread_create(thread_id, NULL, &vfork_thread_func, data);
+    if (rc != 0)
+        return rc;
+
+    usleep(500000);
+    rc = rcf_rpc_server_get(data->rpcs->ta, data->name, data->rpcs->name,
+                            RCF_RPC_SERVER_GET_REGISTER, p_new);
+    return rc;
+}

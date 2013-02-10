@@ -3892,6 +3892,26 @@ struct tarpc_create_process_out {
     int32_t     pid;
 };
 
+/* vfork() */
+struct tarpc_vfork_in {
+    struct tarpc_in_arg common;
+    
+    char        name<>;          /**< RPC server name */
+    uint32_t    time_to_wait;    /**< How much time to wait after
+                                      vfork() call before
+                                      returning from the function,
+                                      in milliseconds */
+};
+
+struct tarpc_vfork_out {
+    struct tarpc_out_arg common;
+    
+    int32_t     pid;
+    uint32_t    elapsed_time;       /**< How much time elapsed until
+                                         vfork() returned,
+                                         in milliseconds */
+};
+
 struct tarpc_thread_create_in {
     struct tarpc_in_arg common;
     
@@ -4826,6 +4846,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(set_var)
         
         RPC_DEF(create_process)
+        RPC_DEF(vfork)
         RPC_DEF(thread_create)
         RPC_DEF(thread_cancel)
         RPC_DEF(thread_join)
