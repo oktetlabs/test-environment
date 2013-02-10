@@ -667,7 +667,7 @@ _vfork_1_svc(tarpc_vfork_in *in,
     UNUSED(rqstp);
     memset(out, 0, sizeof(*out));
 
-    rc = tarpc_find_func(FALSE, "vfork", (api_func *)&func);
+    rc = tarpc_find_func(in->common.use_libc, "vfork", (api_func *)&func);
     if (rc != 0)
     {
         rc = errno;
