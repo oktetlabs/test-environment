@@ -681,7 +681,7 @@ _vfork_1_svc(tarpc_vfork_in *in,
     out->pid = func();
     gettimeofday(&t_finish, NULL);
     out->elapsed_time = (t_finish.tv_sec - t_start.tv_sec) * 1000 +
-                        (t_finish.tv_usec - t_start.tv_sec) / 1000;
+                        (t_finish.tv_usec - t_start.tv_usec) / 1000;
 
     if (out->pid == -1)
     {

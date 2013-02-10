@@ -1028,6 +1028,9 @@ rcf_rpc_server_vfork(rcf_rpc_server *rpcs,
     if (elapsed_time != NULL)
         *elapsed_time = out.elapsed_time;
 
+    RING("RPC (%s, %s): vfork(%s, %u) -> %d (elapsed=%u)",
+         rpcs->ta, rpcs->name, name, time_to_wait, out.pid,
+         out.elapsed_time);
     return rc;
 } 
 
