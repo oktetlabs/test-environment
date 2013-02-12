@@ -6797,7 +6797,7 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
     (TE_SEC2MS(tv_now.tv_sec - tv_start.tv_sec) + \
      TE_US2MS(tv_now.tv_usec - tv_start.tv_usec))
 
-    for (gettimeofday(&tv_start, NULL);
+    for (gettimeofday(&tv_start, NULL), gettimeofday(&tv_now, NULL);
          MSEC_DIFF <= (int)TE_SEC2MS(in->time2run);
          gettimeofday(&tv_now, NULL))
     {
@@ -6976,7 +6976,7 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
     (TE_SEC2MS(tv_now.tv_sec - tv_start.tv_sec) + \
      TE_US2MS(tv_now.tv_usec - tv_start.tv_usec))
 
-    for (gettimeofday(&tv_start, NULL);
+    for (gettimeofday(&tv_start, NULL), gettimeofday(&tv_now, NULL);
          MSEC_DIFF <= (int)TE_SEC2MS(in->time2run);
          gettimeofday(&tv_now, NULL))
     {
