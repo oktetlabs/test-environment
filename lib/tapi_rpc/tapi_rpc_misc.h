@@ -737,6 +737,16 @@ extern int rpc_raw2integer(rcf_rpc_server *rpcs, uint8_t *data,
 extern int rpc_integer2raw(rcf_rpc_server *rpcs, uint64_t number,
                            uint8_t *data, size_t len);
 
+/**
+ * Specioal function for sockapi-ts/basic/vfork_check_hang test.
+ *
+ * @param rpcs      RPC server
+ * @param use_exec  Use @b execve() or @b _exit() function
+ *
+ * @return @c 0 on success or @c -1
+ */
+extern int rpc_vfork_pipe_exec(rcf_rpc_server *rpcs, te_bool use_exec);
+
 /**@} <!-- END te_lib_rpc_misc --> */
 
 #ifdef __cplusplus

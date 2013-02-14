@@ -9279,3 +9279,124 @@ finish:
     ;
 }
 )
+
+/*------------ vfork_pipe_exec() -----------------------*/
+int
+vfork_pipe_exec(tarpc_vfork_pipe_exec_in *in)
+{
+    api_func_ptr        pipe_func;
+    api_func_void       vfork_func;
+    api_func            read_func;
+    api_func_ptr        execve_func;
+    api_func            write_func;
+
+    int pipefd[2];
+    int pid;
+    te_errno      rc;
+    struct pollfd fds;
+
+    memset(&fds, 0, sizeof(fds));
+
+    char       *argv[4];
+
+    if (tarpc_find_func(in->common.use_libc, "pipe",
+                        (api_func *)&pipe_func) != 0)
+    {
+        ERROR("Failed to find function \"pipe\"");
+        return -1;
+    }
+    if (tarpc_find_func(in->common.use_libc, "vfork",
+                        (api_func *)&vfork_func) != 0)
+    {
+        ERROR("Failed to find function \"vfork\"");
+        return -1;
+    }
+    if (tarpc_find_func(in->common.use_libc, "read",
+                        (api_func *)&read_func) != 0)
+    {
+        ERROR("Failed to find function \"read\"");
+        return -1;
+    }
+    if (tarpc_find_func(in->common.use_libc, "execve",
+                        (api_func *)&execve_func) != 0)
+    {
+        ERROR("Failed to find function \"execve\"");
+        return -1;
+    }
+    if (tarpc_find_func(in->common.use_libc, "write",
+                        (api_func *)&write_func) != 0)
+    {
+        ERROR("Failed to find function \"write\"");
+        return -1;
+    }
+
+    if ((rc = pipe_func(pipefd)) != 0)
+    {
+        ERROR("pipe() failed with error %r", TE_OS_RC(TE_TA_UNIX, errno));
+        return -1;
+    }
+
+    pid = vfork_func();
+
+    if (pid < 0)
+    {
+        ERROR("vfork() failed with error %r", TE_OS_RC(TE_TA_UNIX, errno));
+        return pid;
+    }
+
+    if (pid > 0)
+    {
+        write(pipefd[1], "Test message", 12);
+        RING("Parent process is unblocked");
+        return 0;
+    }
+    else
+    {
+        sleep(1);
+        fds.fd = pipefd[0];
+        fds.events = POLLIN;
+        if (poll(&fds, 1, 1000) != 0)
+        {
+            ERROR("vfork() doesn't hang!");
+            return -1;
+        }
+        else
+            RING("Parent process is still hanging");
+
+        if (in->use_exec)
+        {
+            memset(argv, 0, sizeof(argv));
+            argv[0] = (char *)ta_execname;
+            argv[1] = "exec";
+            argv[2] = "sleep_and_print";
+
+            if ((rc = execve_func((void *)ta_execname, argv, environ)) < 0)
+            {
+                ERROR("execve() failed with error %r",
+                      TE_OS_RC(TE_TA_UNIX, errno));
+                return rc;
+            }
+            return 0;
+        }
+        else
+        {
+            RING("Child process is finished.");
+            _exit(0);
+        }
+    }
+
+    return 0;
+}
+
+int
+sleep_and_print()
+{
+    sleep(1);
+    return 0;
+}
+
+TARPC_FUNC(vfork_pipe_exec, {}, 
+{
+    MAKE_CALL(out->retval = func_ptr(in));
+}
+)

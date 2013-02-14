@@ -4824,6 +4824,15 @@ struct tarpc_socket_listen_close_in {
 };
 typedef struct tarpc_int_retval_out tarpc_socket_listen_close_out;
 
+/* vfork_pipe_exec() */
+struct tarpc_vfork_pipe_exec_in {
+    struct tarpc_in_arg common;
+
+    tarpc_bool      use_exec;
+};
+
+typedef struct tarpc_int_retval_out tarpc_vfork_pipe_exec_out;
+
 program tarpc
 {
     version ver0
@@ -5136,5 +5145,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
 
         RPC_DEF(socket_connect_close)
         RPC_DEF(socket_listen_close)
+
+        RPC_DEF(vfork_pipe_exec)
     } = 1;
 } = 1;

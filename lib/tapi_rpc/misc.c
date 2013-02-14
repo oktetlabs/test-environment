@@ -1939,3 +1939,28 @@ rpc_integer2raw(rcf_rpc_server *rpcs, uint64_t number,
     free(str);
     RETVAL_INT(integer2raw, out.retval);
 }
+
+int
+rpc_vfork_pipe_exec(rcf_rpc_server *rpcs, te_bool use_exec)
+{
+    tarpc_vfork_pipe_exec_in    in;
+    tarpc_vfork_pipe_exec_out   out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    in.use_exec = use_exec;
+
+    rcf_rpc_call(rpcs, "vfork_pipe_exec", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(vfork_pipe_exec, out.retval);
+    TAPI_RPC_LOG(rpcs, vfork_pipe_exec, "%d", "%d",
+                 use_exec, out.retval);
+    RETVAL_INT(vfork_pipe_exec, out.retval);
+}
