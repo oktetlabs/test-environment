@@ -9295,6 +9295,8 @@ vfork_pipe_exec(tarpc_vfork_pipe_exec_in *in)
     te_errno      rc;
     struct pollfd fds;
 
+    static int global_var = 1;
+
     memset(&fds, 0, sizeof(fds));
 
     char       *argv[4];
@@ -9348,11 +9350,17 @@ vfork_pipe_exec(tarpc_vfork_pipe_exec_in *in)
     {
         write(pipefd[1], "Test message", 12);
         RING("Parent process is unblocked");
+        if (global_var != 2)
+        {
+            ERROR("'global_var' was not changed from the child process");
+            return -1;
+        }
         return 0;
     }
     else
     {
         sleep(1);
+        global_var = 2;
         fds.fd = pipefd[0];
         fds.events = POLLIN;
         if (poll(&fds, 1, 1000) != 0)
