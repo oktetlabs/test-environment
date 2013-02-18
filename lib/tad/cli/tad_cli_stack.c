@@ -1576,10 +1576,10 @@ cli_expect_wait_for_prompt(cli_csap_specific_data_p spec_data)
     {
         struct exp_case *exp_prompt = &spec_data->prompts[0];
 
-        VERB(stderr, "Start waiting for:\n");
+        VERB("Start waiting for:\n");
         while (exp_prompt->type != exp_end)
         {
-            VERB(stderr, "'%s', '%s', val %d\n",
+            VERB("'%s', '%s', val %d\n",
                  (exp_prompt->type == exp_glob) ? "exp_glob" :
                  ((exp_prompt->type == exp_exact) ? "exp_exact" : "exp_regexp"),
                  exp_prompt->pattern,
@@ -1778,12 +1778,59 @@ cli_expect_main(cli_csap_specific_data_p spec_data)
 
         /* Transfer CLI session output to the CSAP Engine */
         reply_len = (exp_match - exp_buffer);
-        rc = write(spec_data->data_sock, exp_buffer, reply_len);
-        if (rc != reply_len)
+
+        /*
+         * Output the reply byte by byte removing ESCape sequences.
+         * We need to remove ESC sequences because CSAP Engine removes
+         * echoed characters not taking into account any ESC sequences,
+         * i.e. if we do not remove them, we will return some garbage
+         * to the user.
+         * When we have equipment that sends a lot of different ESC
+         * sequences, we will have to rewrite this code to support all
+         * of them, but for now we are happy with excluding only the
+         * particular ESC/CSI sequence "CSI J".
+         */
+
+#define ESC_SEQ_START 0x1b /* Start ESC sequence character */
+#define ESC_CSI_CHAR  '[' /* Control Sequence Introducer (ESC + '[') */
+
+        i = 0;
+        while (i < reply_len)
         {
-            ERROR("Failed to send command reply to CSAP Engine, "
-                  "rc = %d, errno = %d", rc, errno);
-            cli_expect_finalize(spec_data, SYNC_RES_FAILED);
+            if (exp_buffer[i] == ESC_SEQ_START)
+            {
+                /* ESCape Sequence starts */
+                if ((i + 1) >= reply_len ||
+                    exp_buffer[i + 1] != ESC_CSI_CHAR)
+                {
+                    ERROR("Broken or unsupported ESC sequence");
+                    /* Flush all the data without parsing */
+                    write(spec_data->data_sock, exp_buffer + i, reply_len - i);
+                    break;
+                }
+                /*
+                 * Right now we support only "CSI J" sequence that
+                 * means "Erase from cursor to end of the screen".
+                 */
+                if ((i + 2) >= reply_len ||
+                    exp_buffer[i + 2] != 'J')
+                {
+                    ERROR("Unsupported ESC sequence");
+                    /* Flush all the data without parsing */
+                    write(spec_data->data_sock, exp_buffer + i, reply_len - i);
+                    break;
+                }
+                i += 3;
+                continue;
+            }
+            rc = write(spec_data->data_sock, &exp_buffer[i], 1);
+            if (rc != 1)
+            {
+                ERROR("Failed to send command reply to CSAP Engine, "
+                      "rc = %d, errno = %d", rc, errno);
+                cli_expect_finalize(spec_data, SYNC_RES_FAILED);
+            }
+            i++;
         }
 
         /* Send trailing '\0' character to finish transfer */
