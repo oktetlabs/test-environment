@@ -9296,6 +9296,7 @@ vfork_pipe_exec(tarpc_vfork_pipe_exec_in *in)
     struct pollfd fds;
 
     static int global_var = 1;
+    int stack_var = 1;
 
     memset(&fds, 0, sizeof(fds));
 
@@ -9355,12 +9356,19 @@ vfork_pipe_exec(tarpc_vfork_pipe_exec_in *in)
             ERROR("'global_var' was not changed from the child process");
             return -1;
         }
+        if (stack_var != 2)
+        {
+            ERROR("'stack_var' was not changed from the child process");
+            return -1;
+        }
         return 0;
     }
     else
     {
         sleep(1);
         global_var = 2;
+        *((volatile int *)&stack_var);
+        stack_var = 2;
         fds.fd = pipefd[0];
         fds.events = POLLIN;
         if (poll(&fds, 1, 1000) != 0)
