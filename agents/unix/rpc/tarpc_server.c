@@ -7228,6 +7228,8 @@ socket_to_file(tarpc_socket_to_file_in *in)
         goto local_exit;
     }
     timeout.tv_sec += time2run;
+    call_timeout.tv_sec = time2run;
+    call_timeout.tv_usec = 0;
 
     INFO("%s(): time2run=%ld, timeout timestamp=%ld.%06ld", __FUNCTION__,
          time2run, (long)timeout.tv_sec, (long)timeout.tv_usec);
