@@ -5,7 +5,7 @@ ACLOCAL_AMFLAGS = -I $(TE_M4)
 
 AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/include \
               $(TE_CPPFLAGS) \
-              -include te_config.h -include config.h $(EXTRA_CPPFLAGS)
+              $(EXTRA_CPPFLAGS)
 
 AM_CFLAGS = -fno-strict-aliasing $(TE_CFLAGS)
 

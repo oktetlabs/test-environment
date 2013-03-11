@@ -98,6 +98,12 @@ AC_CHECK_TYPES([struct ip_opts], [], [],
                [#include <netinet/in.h>])
 
 dnl
+dnl Check for 'struct group_req'
+dnl
+AC_CHECK_TYPES([struct group_req], [], [],
+               [#include <netinet/in.h>])
+
+dnl
 dnl Check for 'struct tcp_info'
 dnl
 AC_CHECK_TYPES([struct tcp_info], [], [],
@@ -156,6 +162,12 @@ AC_CHECK_MEMBERS([struct lifreq.lifr_mtu], [], [], [
 ])
 
 dnl
+dnl Check for 'arp_dev' member in 'struct arpreq'.
+dnl
+AC_CHECK_MEMBERS([struct arpreq.arp_dev], [], [],
+                 [#include <net/if_arp.h>])
+
+dnl
 dnl Check for 'sa_restorer' member in 'struct sigaction'.
 dnl
 AC_CHECK_MEMBERS([struct sigaction.sa_restorer], [], [],
@@ -201,6 +213,12 @@ dnl
 dnl Check for 'si_overrun' member in 'siginfo_t'.
 dnl
 AC_CHECK_MEMBERS([siginfo_t.si_overrun], [], [],
+                 [#include <signal.h>])
+
+dnl
+dnl Check for 'si_band' member in 'siginfo_t'.
+dnl
+AC_CHECK_MEMBERS([siginfo_t.si_band], [], [],
                  [#include <signal.h>])
 
 dnl

@@ -147,8 +147,10 @@ rlimit_resource_h2rpc(int resource)
 #ifdef RLIMIT_CORE
         H2RPC(RLIMIT_CORE);
 #endif
+#if !defined RLIMIT_AS || RLIMIT_AS != RLIMIT_RSS
 #ifdef RLIMIT_RSS
         H2RPC(RLIMIT_RSS);
+#endif
 #endif
 #ifdef RLIMIT_NOFILE
         H2RPC(RLIMIT_NOFILE);

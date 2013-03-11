@@ -35,9 +35,6 @@
 #define TE_LGR_USER      "Daemons"
 #endif
 
-#include "te_config.h"
-#include "config.h"
-
 #include <string.h>
 #include <time.h>
 #include <sys/types.h>

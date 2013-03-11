@@ -26,6 +26,11 @@
  * $Id$
  */
 
+#include "te_config.h"
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #ifdef ENABLE_8021X
 #include <stddef.h>
 #include "conf_daemons.h"

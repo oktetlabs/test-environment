@@ -1,7 +1,8 @@
 
 ACLOCAL_AMFLAGS = -I @TE_M4@
 
-AM_CPPFLAGS = @TE_CPPFLAGS@ -I. -I$(DESTDIR)/$(includedir) -include config.h
+AM_CPPFLAGS = @TE_CPPFLAGS@ -I. -I$(DESTDIR)/$(includedir)
+
 AM_CFLAGS = @TE_CFLAGS@ -Wno-unused-parameter -Wno-unused-variable \
             -fno-strict-aliasing
 
@@ -74,7 +75,10 @@ tarpc.h tarpc_xdr.c tarpc_dummy.c: $(srcdir)/../../include/tarpc.x.m4 @RPCDEFS@
 	rpcgen -h -M tarpc.x -o tarpc.h
 	cat tarpc.h | grep -v "#define _.* " | grep -v '<pthread.h>' > tarpc.h.tmp ; 
 	mv tarpc.h.tmp tarpc.h
-	rpcgen -c -M tarpc.x -o tarpc_xdr.c
+	rpcgen -c -M tarpc.x -o tarpc_xdr.c.tmp
+	echo '#include "config.h"' > tarpc_xdr.c
+	cat tarpc_xdr.c.tmp >> tarpc_xdr.c
+	rm tarpc_xdr.c.tmp
 	$(srcdir)/../../engine/builder/te_generate_rpctbl tmp.x.m4 --generate-dummy
 	rm -f tarpc.x tmp.x.m4
 

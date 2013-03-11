@@ -30,10 +30,12 @@
 
 #define TE_LGR_USER     "RPC"
 
-#include "tarpc_server.h"
-
 #include "te_config.h"
+#ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
+
+#include "tarpc_server.h"
 
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
@@ -215,6 +217,13 @@ tarpc_find_func(te_bool use_libc, const char *name, api_func *func)
         /* Error is always logged from tarpc_setlibname() */
         return rc;
     }
+#if defined (__QNX__)
+    /*
+     * QNX may set errno to ESRCH even after successful
+     * call to 'getenv'.
+     */
+    errno = 0;
+#endif
 
     if (use_libc)
     {
@@ -2609,7 +2618,9 @@ typedef union sockopt_param {
 #if HAVE_STRUCT_TCP_INFO
     struct tcp_info     tcpi;
 #endif
+#if HAVE_STRUCT_GROUP_REQ
     struct group_req    gr_req;
+#endif
 } sockopt_param;
 
 static void
@@ -2724,6 +2735,7 @@ tarpc_setsockopt(tarpc_setsockopt_in *in, tarpc_setsockopt_out *out,
 
         case OPT_GROUP_REQ:
         {
+#if HAVE_STRUCT_GROUP_REQ
             sockaddr_rpc2h(&in_optval->option_value_u.
                            opt_group_req.gr_group,
                            (struct sockaddr *)&(param->gr_req.gr_group),
@@ -2732,6 +2744,12 @@ tarpc_setsockopt(tarpc_setsockopt_in *in, tarpc_setsockopt_out *out,
                 in_optval->option_value_u.opt_group_req.gr_interface;
             *optlen = sizeof(param->gr_req);
             break;
+#else
+            ERROR("'struct group_req' is not defined");
+            out->common._errno = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+            out->retval = -1;
+            break;
+#endif
         }
 
         default:
@@ -3270,6 +3288,8 @@ tarpc_ioctl_pre(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                                 req_ifreq.rpc_ifr_flags);
                     break;
 
+                    /* QNX does not support SIOCGIFNAME */
+#ifdef SIOCGIFNAME
                 case RPC_SIOCGIFNAME:
 #if SOLARIS
                     req->ifreq.ifr_index =
@@ -3281,6 +3301,7 @@ tarpc_ioctl_pre(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                         req_ifreq.rpc_ifr_ifindex;
 #endif
                     break;
+#endif /* SIOCGIFNAME */
 
                 case RPC_SIOCSIFMTU:
 #if HAVE_STRUCT_IFREQ_IFR_MTU
@@ -3490,6 +3511,8 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                             sizeof(req->ifreq.ifr_name);
                     break;
 
+                    /* QNX does not support SIOCGIFINDEX */
+#ifdef SIOCGIFINDEX
                 case RPC_SIOCGIFINDEX:
 #if SOLARIS
                     out->req.req_val[0].ioctl_request_u.req_ifreq.
@@ -3499,6 +3522,7 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                             rpc_ifr_ifindex = req->ifreq.ifr_ifindex;
 #endif
                     break;
+#endif /* SIOCGIFINDEX */
 
                 case RPC_SIOCGIFADDR:
                 case RPC_SIOCSIFADDR:
@@ -8946,7 +8970,11 @@ recvmmsg_alt(int fd, struct mmsghdr_alt *mmsghdr, unsigned int vlen,
                         &recvmmsg_func) == 0)
         return recvmmsg_func(fd, mmsghdr, vlen, flags, timeout);
     else
+#if defined (__QNX__)
+        return -1;
+#else
         return syscall(SYS_recvmmsg, fd, mmsghdr, vlen, flags, timeout);
+#endif
 }
 
 TARPC_FUNC(recvmmsg_alt,
@@ -9206,7 +9234,11 @@ sendmmsg_alt(int fd, struct mmsghdr_alt *mmsghdr, unsigned int vlen,
                         &sendmmsg_func) == 0)
         return sendmmsg_func(fd, mmsghdr, vlen, flags);
     else
+#if defined (__QNX__)
+        return -1;
+#else
         return syscall(SYS_sendmmsg, fd, mmsghdr, vlen, flags);
+#endif
 }
 
 TARPC_FUNC(sendmmsg_alt,

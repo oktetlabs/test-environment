@@ -75,6 +75,12 @@
  *
  * $Id: $
  */
+
+#include "te_config.h"
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "te_errno.h"
 #include "te_defs.h"
 #include "te_sniffer_proc.h"

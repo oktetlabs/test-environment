@@ -54,6 +54,9 @@
 #include <signal.h>
 #include <string.h>
 #include <sys/un.h>
+#if defined (__QNX__)
+#include <spawn.h>
+#endif
 #ifdef _SYS_QUEUE_H_
 #include <sys/queue.h>
 #else
@@ -567,6 +570,7 @@ rcf_ch_start_process(pid_t *pid,
     {
         VERB("fork process with entry point '%s'", rtn);
 
+#if !defined (__QNX__)
         if ((*pid = fork()) == 0)
         {
             rcf_pch_detach();
@@ -608,7 +612,42 @@ rcf_ch_start_process(pid_t *pid,
                 exit(0);
             }
         }
-        else if (*pid > 0)
+        else 
+#else
+        if (do_exec)
+        {
+            /*
+             * In QNX we can't do 'fork' from a thread
+             * (we have a separate logger thread right now), which
+             * is why we do 'spawn' call here.
+             */
+            struct inheritance  inh;
+            const char         *argv[30];
+
+            memset(&inh, 0, sizeof(inh));
+            memset(argv, 0, sizeof(argv));
+            argv[0] = ta_execname;
+            argv[1] = "exec";
+            argv[2] = rtn;
+            memcpy(argv + 3, params, argc * sizeof(void *));
+
+            *pid = spawn(ta_execname,
+                         0, /* int fd_count */
+                         NULL, /* const int fd_map[ ] */
+                         &inh,
+                         argv, NULL);
+        }
+        else
+        {
+            /*
+             * Actually it is easy to support and*/
+            ERROR("NOT do_exec (direct function call "
+                  "in a separate process is not supported)");
+            *pid = 0;
+            return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+        }
+#endif /* __QNX__ */
+        if (*pid > 0)
         {
             store_pid(*pid);
             return 0;
@@ -1466,7 +1505,9 @@ signal_registrar_siginfo(int signum, siginfo_t *siginfo, void *context)
 #ifdef HAVE_SIGINFO_T_SI_TIMERID
     COPY_SI_FIELD(timerid);
 #endif
+#ifdef HAVE_SIGINFO_T_SI_BAND
     COPY_SI_FIELD(band);
+#endif
 #ifdef HAVE_SIGINFO_T_SI_FD
     COPY_SI_FIELD(fd);
 #endif
@@ -1988,7 +2029,7 @@ main(int argc, char **argv)
         }
     }
 #endif
-    
+
     te_kernel_log_set_system_func(&ta_system);
 
     /*
@@ -2004,6 +2045,11 @@ main(int argc, char **argv)
     /* Forget user's home and initial working directories */
     unsetenv("PWD");
     unsetenv("HOME");
+
+#if defined (__QNX__)
+    /* 'unsetenv' may set errno to ESRCH even when successful */
+    errno = 0;
+#endif
 
     /* 
      * Change working directory to /tmp in order to create all
@@ -2030,7 +2076,9 @@ main(int argc, char **argv)
         *(tmp + 1) = 0;
 
     memset(&sigact, 0, sizeof(sigact));
+#ifdef SA_RESTART
     sigact.sa_flags = SA_RESTART;
+#endif
     sigemptyset(&sigact.sa_mask);
 
     /* FIXME: Is it used by RPC */
@@ -2043,6 +2091,10 @@ main(int argc, char **argv)
             ERROR("Cannot set SIGINT action: %r");
         }
     }
+#if defined (__QNX__)
+    /* 'getenv' may set errno to ESRCH even when successful */
+    errno = 0;
+#endif
 
     /* FIXME: Is it used by RPC */
     sigact.sa_handler = (void *)ta_sigpipe_handler;

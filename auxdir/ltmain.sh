@@ -2919,7 +2919,7 @@ EOF
 	    age="$number_minor"
 	    revision="$number_revision"
 	    ;;
-	  freebsd-aout|freebsd-elf|sunos)
+	  freebsd-aout|freebsd-elf|qnx|sunos)
 	    current="$number_major"
 	    revision="$number_minor"
 	    age="0"
@@ -3047,6 +3047,11 @@ EOF
 	  # Make executables depend on our current version.
 	  verstring="$verstring:${current}.0"
 	  ;;
+
+        qnx)
+          major=".$current"
+          versuffix=".$current"
+          ;;
 
 	sunos)
 	  major=".$current"

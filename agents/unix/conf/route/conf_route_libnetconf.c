@@ -28,6 +28,11 @@
  * $Id: $
  */
 
+#include "te_config.h"
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #if defined(USE_LIBNETCONF)
 
 #if !defined(__linux__)
@@ -36,11 +41,6 @@
 #endif
 
 #define TE_LGR_USER     "Unix Conf Route NetLink"
-
-#include "te_config.h"
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include <stdio.h>
 #if HAVE_SYS_TYPES_H

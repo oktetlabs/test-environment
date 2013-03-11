@@ -4397,8 +4397,6 @@ link_addr_n2a(unsigned char *addr, int alen,
 }
 #endif
 
-#if defined(SIOCSIFHWADDR) || defined(SIOCSIFHWBROADCAST) || \
-    defined(HAVE_SYS_DLPI_H)
 static int
 link_addr_a2n(uint8_t *lladdr, int len, const char *str)
 {
@@ -4441,7 +4439,6 @@ link_addr_a2n(uint8_t *lladdr, int len, const char *str)
     }
     return i + 1;
 }
-#endif
 
 /**
  * Get hardware address of the interface.

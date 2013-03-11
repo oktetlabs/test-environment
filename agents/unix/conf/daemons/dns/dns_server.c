@@ -27,6 +27,11 @@
  * $Id$
  */
 
+#include "te_config.h"
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #ifdef WITH_DNS_SERVER
 
 #include "conf_daemons.h"

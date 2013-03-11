@@ -99,6 +99,10 @@
 #error Unable to print socklen_t integers
 #endif
 
+#if defined (__QNX__)
+#define TE_USE_SPECIFIC_ASPRINTF 1
+#endif /* __QNX__ */
+
 /* Note: enable this for solaris if asprintf is not implemented */
 #if TE_USE_SPECIFIC_ASPRINTF
 static inline int

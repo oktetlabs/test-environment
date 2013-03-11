@@ -1153,10 +1153,12 @@ te_rc_os2te(int err)
 #ifdef EHOSTUNREACH
         case EHOSTUNREACH: return TE_EHOSTUNREACH;
 #endif 
-        
+
+#if !defined EBUSY || EBUSY != EALREADY
 #ifdef EALREADY
         case EALREADY: return TE_EALREADY;
-#endif     
+#endif
+#endif
         
 #ifdef EINPROGRESS
         case EINPROGRESS: return TE_EINPROGRESS;

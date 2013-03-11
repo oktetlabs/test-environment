@@ -72,6 +72,10 @@
 
 #include "te_kernel_log.h"
 
+#ifndef HOST_NAME_MAX
+#define HOST_NAME_MAX _POSIX_HOST_NAME_MAX
+#endif
+
 /*
  * snprintf() wrapper.
  *
@@ -259,8 +263,10 @@ configure_netconsole(in_port_t local_port, const char *remote_host_name,
     memcpy(&remote_hwaddr_req.arp_pa, &remote_ipv4_addr,
            sizeof(remote_ipv4_addr));
     ((struct sockaddr_in *)&remote_hwaddr_req.arp_pa)->sin_port = 0;
+#ifdef HAVE_STRUCT_ARPREQ_ARP_DEV
     strncpy(remote_hwaddr_req.arp_dev, ifc.ifc_req[i].ifr_name,
             sizeof(remote_hwaddr_req.arp_dev));
+#endif
     ((struct sockaddr_in *)&remote_hwaddr_req.arp_ha)->sin_family =
                                                             ARPHRD_ETHER;
 
