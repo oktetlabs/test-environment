@@ -10,7 +10,7 @@
                                                 ; unspecified value
 .equ    POWER_SW_NO_RESET           =   0x40    ; Power switch with no
                                                 ; 'reset line X' command
-.equ    POWER_SW_N_LINES            =   0x04    ; Power switch with four
+.equ    POWER_SW_N_LINES            =   0x08    ; Power switch with four
                                                 ; servicable lines
 ;   ASCII symbols
 .equ    CR_SYMBOL                   =   0x0d    ; Provokes command execution
@@ -31,7 +31,7 @@
                                                 ; command symbols and
                                                 ; special UART symbols.
 
-.equ    CHANNEL_NUMBER_MASK         =   0x03    ; Mask '00000011' to extract
+.equ    CHANNEL_NUMBER_MASK         =   0x07    ; Mask '00000111' to extract
                                                 ; port number from command byte
 
 .equ    CHANNEL_NUMBER_0_MASK       =   0x01    ; Mask '00000001' to TURN ON
