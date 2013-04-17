@@ -65,6 +65,8 @@
 
 #define SET_MSEC(_poll) ((_poll) % 1000000)
 
+/* Raw log file length checking period */
+#define RAW_FILE_CHECK_PERIOD 100
 
 DEFINE_LGR_ENTITY("Logger");
 
@@ -77,12 +79,19 @@ snif_polling_sets_t snifp_sets;
 const char *te_log_dir = NULL;
 
 /* Raw log file */
-static FILE *raw_file = NULL;
+static FILE    *raw_file = NULL;
+/* Raw log file location */
+static char    *te_log_raw = NULL;
+/* Is the raw log file length bigger than 4Gb */
+static te_bool  raw_log_too_big = FALSE;
+/* raw log file check counter */
+static int      raw_file_check_cnt = 0;
 
 /** Logger PID */
 static pid_t    pid;
 
 static unsigned int         lgr_flags = 0;
+
 /** @name Logger global context flags */
 #define LOGGER_FOREGROUND   0x01    /**< Run Logger in foreground */
 #define LOGGER_NO_RCF       0x02    /**< Run Logger without interaction
@@ -143,9 +152,30 @@ void
 lgr_register_message(const void *buf, size_t len)
 {
     static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+    struct stat            raw_file_stat;
+    te_errno               rc;
 
-    if ((lgr_flags & LOGGER_CHECK) && !lgr_message_valid(buf, len))
+    if (((lgr_flags & LOGGER_CHECK) && !lgr_message_valid(buf, len)) ||
+        raw_log_too_big)
         return;
+
+    if (raw_file_check_cnt-- <= 0)
+    {
+        raw_file_check_cnt = RAW_FILE_CHECK_PERIOD;
+        rc = stat(te_log_raw, &raw_file_stat);
+        if (rc < 0)
+        {
+            ERROR("FATAL ERROR: raw log file '%s' stat() failure: "
+                  "errno=%d", te_log_raw, errno);
+            return;
+        }
+        /* Set that raw file is too big when it's bigger then 4Gb */
+        if (raw_file_stat.st_size > ((off_t)1 << 32))
+        {
+            raw_log_too_big = TRUE;
+            return;
+        }
+    }
 
     pthread_mutex_lock(&mutex);
     if (fwrite(buf, len, 1, raw_file) != 1)
@@ -933,7 +963,6 @@ main(int argc, const char *argv[])
     int         scale = 0;
     pthread_t   te_thread;
     ta_inst    *ta_el;
-    char       *te_log_raw = NULL;
 
     if (process_cmd_line_opts(argc, argv) != EXIT_SUCCESS)
     {
