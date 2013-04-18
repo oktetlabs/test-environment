@@ -170,7 +170,7 @@ lgr_register_message(const void *buf, size_t len)
             return;
         }
         /* Set that raw file is too big when it's bigger then 4Gb */
-        if (raw_file_stat.st_size > ((off_t)1 << 32))
+        if (raw_file_stat.st_size > ((off64_t)1 << 32))
         {
             raw_log_too_big = TRUE;
             return;
