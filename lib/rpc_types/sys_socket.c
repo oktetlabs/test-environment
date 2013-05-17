@@ -180,6 +180,12 @@ typedef struct tarpc_sa tarpc_sa;
 #include "te_rpc_defs.h"
 #include "te_rpc_sys_socket.h"
 
+/** TCP_USER_TIMEOUT is defined in lunix/tcp.h, but lunix/tcp.h has
+ * conflicts with netinet/tcp.h
+ */
+#ifndef TCP_USER_TIMEOUT
+#define TCP_USER_TIMEOUT 18
+#endif
 
 /** Convert RPC domain to string */
 const char *
@@ -880,6 +886,7 @@ rpc_sockopt2level(rpc_sockopt opt)
         case RPC_TCP_INFO:
         case RPC_TCP_DEFER_ACCEPT:
         case RPC_TCP_QUICKACK:
+        case RPC_TCP_USER_TIMEOUT:
             return RPC_SOL_TCP;
 
         case RPC_UDP_NOCHECKSUM:
@@ -995,6 +1002,7 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(TCP_INFO);
         RPC2STR(TCP_DEFER_ACCEPT);
         RPC2STR(TCP_QUICKACK);
+        RPC2STR(TCP_USER_TIMEOUT);
 
         RPC2STR(UDP_NOCHECKSUM);
         RPC2STR(UDP_CORK);
@@ -1108,6 +1116,7 @@ sockopt_rpc2h(rpc_sockopt opt)
         RPC2H_CHECK(TCP_INFO);
         RPC2H_CHECK(TCP_DEFER_ACCEPT);
         RPC2H_CHECK(TCP_QUICKACK);
+        RPC2H_CHECK(TCP_USER_TIMEOUT);
         RPC2H_CHECK(UDP_NOCHECKSUM);
         RPC2H_CHECK(UDP_CORK);
         default:
@@ -1314,6 +1323,7 @@ sockopt_is_boolean(rpc_sockopt opt)
         case RPC_TCP_NODELAY:
         case RPC_TCP_CORK:
         case RPC_TCP_QUICKACK:
+        case RPC_TCP_USER_TIMEOUT:
 
         case RPC_UDP_NOCHECKSUM:
         case RPC_UDP_CORK:
