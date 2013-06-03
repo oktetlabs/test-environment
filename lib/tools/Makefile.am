@@ -19,7 +19,8 @@ include_HEADERS = \
 	te_iscsi.h \
 	tq_string.h \
 	te_string.h \
-	log_bufs.h
+	log_bufs.h \
+	te_sigmap.h
 
 if WINDOWS
 
@@ -57,7 +58,8 @@ libtools_la_SOURCES = \
 	te_kernel_log.c \
 	te_format.c \
 	tq_string.c \
-	te_string.c
+	te_string.c \
+	te_sigmap.c
 
 liblog_bufs_la_SOURCES = log_bufs.c
 

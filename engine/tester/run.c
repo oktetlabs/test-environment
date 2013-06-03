@@ -65,6 +65,8 @@
 #include "tester_result.h"
 #include "tester_interactive.h"
 #include "tester_flags.h"
+#include "tester_serial_thread.h"
+#include "te_shell_cmd.h"
 
 /** Define it to enable support of timeouts in Tester */
 #undef TESTER_TIMEOUT_SUPPORT
@@ -1127,6 +1129,7 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
     char        postfix[32] = "";
     char        vg_filename[32] = "";
     char       *tmp;
+    pid_t       pid;
 
     assert(status != NULL);
 
@@ -1245,13 +1248,23 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
         /* Initialize as INCOMPLETE before processing */
         *status = TESTER_TEST_INCOMPLETE;
 
-        VERB("ID=%d system(%s)", exec_id, cmd);
-        ret = system(cmd);
-        if (ret == -1)
+        VERB("ID=%d te_shell_cmd(%s)", exec_id, cmd);
+        pid = te_shell_cmd(cmd, -1, NULL, NULL, NULL);
+        if (pid < 0)
         {
-            ERROR("system(%s) failed: errno %d", cmd, errno);
+            ERROR("te_shell_cmd(%s) failed: %s", cmd, strerror(errno));
             free(cmd);
-            return TE_OS_RC(TE_TESTER, errno);;
+            return TE_OS_RC(TE_TESTER, errno);
+        }
+
+        tester_set_serial_pid(pid);
+        pid = waitpid(pid, &ret, 0);
+        tester_release_serial_pid();
+        if (pid < 0)
+        {
+            ERROR("waitpid failed: %s", strerror(errno));
+            free(cmd);
+            return TE_OS_RC(TE_TESTER, errno);
         }
 
 #ifdef WCOREDUMP
@@ -1329,6 +1342,8 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
     }
 
     free(cmd);
+    if (tester_check_serial_stop() == TRUE)
+        *status = TESTER_TEST_STOPPED;
 
     EXIT("%u", *status);
 

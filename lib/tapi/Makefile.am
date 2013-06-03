@@ -3,7 +3,7 @@ ACLOCAL_AMFLAGS = -I @TE_M4@
 
 AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir)
 AM_CFLAGS = @TE_CFLAGS@ 
-AM_LDFLAGS = @TE_LDFLAGS@ 
+AM_LDFLAGS = @TE_LDFLAGS@
 
 include_HEADERS = \
 	tapi_test.h \
@@ -29,6 +29,7 @@ include_HEADERS = \
 	tapi_sh_env.h \
 	tapi_cfg_acse.h \
 	tapi_sniffer.h \
+	tapi_serial_parse.h \
 	tapi_cfg_aggr.h
 
 lib_LTLIBRARIES = libtapi.la
@@ -56,6 +57,7 @@ libtapi_la_SOURCES = \
 	tapi_reqs.c \
 	tapi_cfg_acse.c \
 	tapi_sniffer.c \
+	tapi_serial_parse.c \
 	tapi_cfg_aggr.c
 
 install-exec-hook:

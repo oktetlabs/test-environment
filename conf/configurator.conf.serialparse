@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<history>
+  <register>
+    <object oid="/local/tester" access="read_write" type="none"/>
+    <object oid="/local/tester/enable" access="read_write" type="integer"/>
+    <object oid="/local/tester/period" access="read_write" type="integer"/>
+    <object oid="/local/tester/location" access="read_write" type="string"/>
+    <object oid="/local/tester/event" access="read_create" type="none"/>
+    <object oid="/local/tester/event/handler" access="read_create" type="string"/>
+    <object oid="/local/tester/event/handler/priority" access="read_write" type="integer"/>
+    <object oid="/local/tester/event/handler/signal" access="read_write" type="string"/>
+    <object oid="/local/tester/event/handler/internal" access="read_write" type="integer"/>
+  </register>
+  <register>
+    <object oid="/agent/parser" access="read_create" type="string"/>
+    <object oid="/agent/parser/port" access="read_write" type="integer"/>
+    <object oid="/agent/parser/user" access="read_write" type="string"/>
+    <object oid="/agent/parser/enable" access="read_write" type="integer"/>
+    <object oid="/agent/parser/interval" access="read_write" type="integer"/>
+    <object oid="/agent/parser/reset" access="read_write" type="integer"/>
+    <object oid="/agent/parser/mode" access="read_write" type="string"/>
+    <object oid="/agent/parser/event" access="read_create" type="string"/>
+    <object oid="/agent/parser/event/pattern" access="read_create" type="string"/>
+    <object oid="/agent/parser/event/counter" access="read_write" type="integer" volatile="true"/>
+    <object oid="/agent/parser/event/status" access="read_write" type="integer" volatile="true"/>
+    <object oid="/agent/parser/logging" access="read_write" type="integer"/>
+    <object oid="/agent/parser/logging/level" access="read_write" type="string"/>
+  </register>
+</history>

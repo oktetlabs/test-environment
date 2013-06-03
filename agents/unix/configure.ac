@@ -678,6 +678,16 @@ if test "x$with_sniffers" = "xyes" ; then
         EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_SNIFFERS"
 fi
 
+AC_ARG_WITH([serialparse],
+            AS_HELP_STRING([--with-serialparse],
+                           [enable serial parsers (default is NO)]),
+            [with_serialparse=yes], [with_serialparse=""])
+
+AM_CONDITIONAL(CFG_SERIALPARSE_SUPPORT, test "$with_serialparse" = "yes")
+if test "$with_serialparse" = "yes" ; then
+    EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_SERIALPARSE"
+fi
+
 AC_SUBST([EXTRA_CPPFLAGS])
 AC_SUBST([EXTRA_LDADD])
 

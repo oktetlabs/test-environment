@@ -1,0 +1,144 @@
+<?xml version="1.0"?>
+<backup>
+
+    <!-- This configuration model is intended for describing of
+         configuration information related to serial console parse -->
+
+    <!--
+        Copyright (C) 2003-2012 Test Environment authors (see file AUTHORS
+        in the root directory of the distribution).
+
+        Test Environment is free software; you can redistribute it
+        and/or modify it under the terms of the GNU General Public
+        License as published by the Free Software Foundation; either
+        version 2 of the License, or (at your option) any later
+        version.
+        
+        Test Environment is distributed in the hope that it will be
+        useful, but WITHOUT ANY WARRANTY; without even the implied
+        warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+        PURPOSE. See the GNU General Public License for more details.
+        
+        You should have received a copy of the GNU General Public
+        License along with this program; if not, write to the Free
+        Software Foundation, Inc., 59 Temple Place, Suite 330,
+        Boston, MA  02111-1307  USA
+        
+        Author: Andrey Dmitrov E-mail: Andrey.Dmitrov@oktetlabs.ru
+    -->
+
+    <!-- Objects registered by Configurator itself -->
+
+    <!-- Tester configure subtree
+         Name:  empty -->
+    <object oid="/local/tester" access="read_write" type="none"/>
+
+    <!-- Enable thread of the Tester to handle serial console events
+         Name:  empty 
+         Value: 0 (disabled) or 1 (enabled) -->
+    <object oid="/local/tester/enable" access="read_write" type="integer"/>
+
+    <!-- Period of polling events states froms agents serial console parsers
+         Name:  empty
+         Value: sleep pseriod in milliseconds -->
+    <object oid="/local/tester/period" access="read_write" type="integer"/>
+
+    <!-- Path to the directory where should be searching of the short named
+         handlers.
+         Name:  empty
+         Value: path -->
+    <object oid="/local/tester/location" access="read_write" type="string"/>
+
+    <!-- Tester events subtree
+         Name:  empty -->
+    <object oid="/local/tester/event" access="read_create" type="none"/>
+
+    <!-- The event handler
+         Name:  A human-readable handler name
+         Value: Name of the executebale file -->
+    <object oid="/local/tester/event/handler" access="read_create" type="string"/>
+
+    <!-- Priority of the handler in the sequence
+         Name:  empty
+         Value: priority number -->
+    <object oid="/local/tester/event/handler/priority" access="read_write" type="integer"/>
+
+    <!-- Signal that should be sent from Tester to test for internal handlers
+         Name:  empty
+         Value: Signal name -->
+    <object oid="/local/tester/event/handler/signal" access="read_write" type="string"/>
+
+    <!-- Flag to indicate internal or external handler is
+         Name:  empty
+         Value: 0 (external) or 1 (internal)  -->
+    <object oid="/local/tester/event/handler/internal" access="read_write" type="integer"/>
+
+
+    <!-- Tha serial console parse thread subtree
+         Name:  A human-readable parser name
+         Value: Name of the serial console on the conserver or tty name -->
+    <object oid="/agent/parser" access="read_create" type="string"/>
+
+    <!-- The port number for connection to the conserver
+         Name:  empty
+         Value: Port number -->
+    <object oid="/agent/parser/port" access="read_write" type="integer"/>
+
+    <!-- Used as user name of messages that will be logged from the serial
+         console
+         Name:  empty
+         Value: User name -->
+    <object oid="/agent/parser/user" access="read_write" type="string"/>
+
+    <!-- Start/stop the thread
+         Name:  empty
+         Value: 0 (stop) or 1 (start) -->
+    <object oid="/agent/parser/enable" access="read_write" type="integer"/>
+
+    <!-- Interval of gathering data from the serial console
+         Name:  empty
+         Value: Interval in millisecond -->
+    <object oid="/agent/parser/interval" access="read_write" type="integer"/>
+
+    <!-- Reset status of eache event on the parser
+         Name:  empty
+         Value: use 1 to perform reset -->
+    <object oid="/agent/parser/reset" access="read_write" type="integer"/>
+
+    <!-- The sharing mode
+         Name:  empty
+         Value: exclusive, force or share -->
+    <object oid="/agent/parser/mode" access="read_write" type="string"/>
+
+    <!-- The agent event subtree
+         Name:  A human-readable name of the event
+         Value: Name of instace of the Tester event -->
+    <object oid="/agent/parser/event" access="read_create" type="string"/>
+
+    <!-- Patterns to search the event
+         Name:  A index number of the pattern, is a positive integer
+         Value: A pattern -->
+    <object oid="/agent/parser/event/pattern" access="read_create" type="string"/>
+
+    <!-- Counter of event occurrences
+         Name:  empty
+         Value: the number of occurrences -->
+    <object oid="/agent/parser/event/counter" access="read_write" type="integer" volatile="true"/>
+
+    <!-- The event status
+         Name:  empty
+         Value: 0 (event not detected) or 1 (event has been detected) -->
+    <object oid="/agent/parser/event/status" access="read_write" type="integer" volatile="true"/>
+
+    <!-- Enable the logging of the serial console
+         Name:  empty
+         Value: 0 (disabled) or 1 (enabled) -->
+    <object oid="/agent/parser/logging" access="read_write" type="integer"/>
+
+    <!-- The Logger level of messages that will be logged
+         Name:  empty
+         Value: Name of the Logger level -->
+    <object oid="/agent/parser/logging/level" access="read_write" type="string"/>
+
+</backup>
+

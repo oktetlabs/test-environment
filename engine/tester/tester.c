@@ -62,6 +62,8 @@
 #include "te_trc.h"
 #endif
 
+#include "tester_serial_thread.h"
+
 /** Logging entity name of the Tester subsystem */
 DEFINE_LGR_ENTITY("Tester");
 
@@ -800,6 +802,11 @@ main(int argc, char *argv[])
                 tester_reqs_expr_to_string(tester_global_context.targets));
     }
 
+    /* 
+     *  Start the Tester thread to handle events of the serial consoles
+     */
+    tester_start_serial_thread();
+
     /*
      * Initialize pseudo-random number generator after command-line
      * options processing, since random seed may be passed as
@@ -893,6 +900,7 @@ main(int argc, char *argv[])
     RING("Done");
 
 exit:
+    tester_stop_serial_thread();
     tester_global_free(&tester_global_context);
     tester_term_cleanup();
 

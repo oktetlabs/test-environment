@@ -66,6 +66,11 @@ libconf_a_SOURCES += util/conf_sniffer.c
 libconf_a_SOURCES += util/te_sniffer_proc.c
 endif
 
+if CFG_SERIALPARSE_SUPPORT
+noinst_HEADERS += util/conf_serial_parser.h
+libconf_a_SOURCES += util/conf_serial_parser.c util/te_serial_parser.c
+endif
+
 if CFG_UNIX_8021X
 libconf_a_SOURCES += daemons/8021x/conf_8021x.c
 endif
