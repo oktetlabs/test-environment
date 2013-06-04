@@ -1,0 +1,415 @@
+/**
+
+@defgroup serial Packet Serial Parser
+@ingroup te
+@{
+
+Serial console parsing framework provide ability to detect certain logs appearance on the console and report it back to the test. Example of such logs may be “Kernel panic”, “Something crashed”, “U-Boot bla-bla”. The test (if exists at the moment of the event) will be notified ASAP and can take appropriate actions. Examples of actions may include diagnostics gathering, some smart logging, DUT reboot and not touching the DUT. Also it is possible just save serial console output into the TE logs.
+
+@section serial_launch How to launch
+To use the framework of serial console parsing make sure that the two following steps done.
+@subsection serial_launch_build Build options
+To compile the agents with support of serial console parsing framework should be added option <b>–with-serialparse</b> to agent type options:
+@code
+TE_TA_TYPE([linux], [], [unix], [--with-serialparse], [], [], [], [])
+@endcode
+
+@subsection serial_launch_conf Configurator objects
+The TE has auxiliary configuration file <b>configurator.conf.serialparse</b> with configurator objects for the serial parser management. The file should be included to the config: 
+@code
+<xi:include href="configurator.conf.serialparse" parse="xml" xmlns:xi="http://www.w3.org/2003/XInclude"/>
+@endcode
+
+To use event handlers the instance <b>/local:</b> should be added and value of the instance <b>/local:/tester:/enable:</b> should be set to <b>1</b>. The last to launch the thread on the Tester to handle events.
+@code
+<?xml version="1.0"?>
+<history>
+    <add>
+      <instance oid="/local:"/>
+    </add>
+    <set>
+      <instance oid="/local:/tester:/enable:" value="1"/>
+    </set>
+</history>
+@endcode
+
+@section serial_use Simple use cases
+There are two ways to configure and manage the serial console parsers: using the <b>configurator</b> and using the <b>Test API</b>. See the examples below for the both methods.
+
+@subsection serial_use_logging Logging of the serial console
+By default the logging is <b>enabled</b> for all active parsers. So to launch the logging should be added and enabled a <b>parser</b> instance. Level of the logs by default is <b>WARN</b>.
+
+@subsubsection serial_use_logging_conf Configurator
+To logging serial console messages to the main log, insert the following code to the configuration file. The code launches a new thread on the agent <b>Agt_A</b>. The thread establishes connection with a serial console named <b>console_name</b> by port <b>3105</b> and gathers messages from the console. <b>my_parser</b> is name of the parser.
+@code
+<add>
+  <instance oid="/agent:Agt_A/parser:my_parser" value="console_name"/>
+</add>
+<set>
+  <instance oid="/agent:Agt_A/parser:my_parser/port:" value="3105"/>
+  <instance oid="/agent:Agt_A/parser:my_parser/enable:" value="1"/>
+</set>
+@endcode
+
+User can enable, disable or set of message level value of the logging:
+@code
+<set>
+  <instance oid="/agent:Agt_A/parser:my_parser/logging:/level:" value="RING"/>
+  <instance oid="/agent:Agt_A/parser:my_parser/logging:" value="1"/>
+</set>
+@endcode
+There is the variable <b>logging</b> sets to <b>1</b>, it is to enable logging (<b>0</b> - disable). The the log <b>level</b> sets to <b>RING</b>.
+
+@subsubsection serial_use_logging_tapi Test API
+The second way to launch logging of the serial console is a using of the <b>Test API</b>. See the following code example to launch the same parser as before, but from a <b>test</b>:
+@code
+#include "tapi_serial_parse.h"
+
+tapi_parser_id     *pars;
+
+pars = tapi_serial_id_init("Agt_A", "console_name", "my_parser");
+
+tapi_serial_parser_add(pars);
+tapi_serial_logging_enable(pars, "WARN");
+
+tapi_serial_parser_del(pars);
+tapi_serial_id_cleanup(pars);
+@endcode
+
+@note By default port for connection to the conserver is <b>3109</b>. User can change any connection configurations in the <b>parser id</b> structure. For more detailed description see the @ref serial_config_tapi section.
+
+@subsubsection serial_use_logging_rcf RCF
+<b>RCF API</b> also can be used to launch logging thread. In this case the thread will be launched without any participation of Configurator. See the following example. 
+@code
+<?xml version="1.0"?>
+<rcf>
+<ta name="Agt_A" type="linux" fake="no" synch_time="no" rebootable="no"
+    rcflib="rcfunix" confstr="bilbo:18001:sudo:">
+     <thread name="serial_console_log" when="rcfuser">
+          <arg value="rcfuser"/>
+          <arg value="WARN"/>
+          <arg value="100"/>
+          <arg value="3105:user:console_name"/>
+     </thread>
+</ta>
+</rcf>
+@endcode
+
+@subsection serial_use_event Event handling
+To handle any events, one or more <b>event</b> and <b>handler</b> instances should be added on the <b>Tester</b> subtree. For detailed description of handlers see the @ref serial_arch_tester section. The value of the <b>handler</b> instance is a path to the executable (binary or shell command). To detect events to <b>agent</b> should be added <b>parser</b> instance. The parser should contain <b>event</b> instance. Use a name of one of the <b>events</b> declared in the <b>Tester</b> subtree as value of the <b>agent event</b> instance, in the examples it is <b>my_event</b> value. Also should be added <b>pattern</b> instances. Patterns used to detect events. An event happens if a serial log message matches at least one of the patterns, associated with the <b>event</b>. Write a pattern to the value of the <b>pattern</b> instance.
+@subsubsection serial_use_event_conf Configurator
+There is example how to add a parser with events via configuration file:
+@code
+<?xml version="1.0"?>
+<history>
+    <add>
+      <instance oid="/local:"/>
+      <instance oid="/local:/tester:/event:my_event"/>
+      <instance oid="/local:/tester:/event:my_event/handler:external_handler"
+                value="/home/andrey/work/trunk/handlers/new_handler"/>
+      <instance oid="/local:/tester:/event:my_event/handler:internal_handler"/>
+      
+      <instance oid="/agent:Agt_A/parser:my_parser" value="console_name"/>
+      <instance oid="/agent:Agt_A/parser:my_parser/event:ag_ev" value="my_event"/>
+      <instance oid="/agent:Agt_A/parser:my_parser/event:ag_ev/pattern:1" value="fooo"/>
+      <instance oid="/agent:Agt_A/parser:my_parser/event:ag_ev/pattern:2" value="bar"/>
+    </add>
+    <set>
+      <instance oid="/local:/tester:/enable:" value="1"/>
+      <instance oid="/local:/tester:/event:my_event/handler:internal_handler/internal:" value="1"/>
+      <instance oid="/local:/tester:/event:my_event/handler:internal_handler/signal:" value="SIGINT"/>
+      <instance oid="/agent:Agt_A/parser:my_parser/port:" value="3105"/>
+      <instance oid="/agent:Agt_A/parser:my_parser/enable:" value="1"/>
+    </set>
+</history>
+@endcode
+@note The instance name of <b>pattern</b> object is index <b>number</b>, should be used only <b>integer numbers greater than zero</b>. 
+
+@subsubsection serial_use_event_tapi Test API
+The second way to handle events is using the <b>Test API</b>. See the following code example to launch the same parser as before, but from a test: 
+@code
+#include "tapi_serial_parse.h"
+
+...
+
+tapi_parser_id      *pars;
+
+...
+
+pars = tapi_serial_id_init("Agt_A", "console_name", "my_parser");
+pars->port = 3105;
+
+tapi_serial_tester_event_add("my_event");
+tapi_serial_handler_ext_add("my_event", "external_handler", 0,
+                          "/home/andrey/work/trunk/handlers/new_handler");
+tapi_serial_handler_int_add("my_event", "internal_handler", 0, SIGINT);
+
+tapi_serial_parser_add(pars);
+tapi_serial_parser_event_add(pars, "ag_ev", "my_event");
+tapi_serial_parser_pattern_add(pars, "ag_ev", 1, "fooo");
+tapi_serial_parser_pattern_add(pars, "ag_ev", 2, "bar");
+
+tapi_serial_parser_del(pars);
+tapi_serial_tester_event_del("my_event");
+tapi_serial_id_cleanup(pars);
+@endcode
+
+@section serial_arch Architecture of the framework
+
+@subsection serial_arch_agent Agent
+To listen serial console, perform the logging of the received data, to parse data for events a new thread starts on the <b>agent</b>. The serial console parser thread is responsible for logs gathering. The <b>Configurator</b> performs configure and launch it. It listens for the data from the conserver running on the host and receives arbitrary amount of data. The thread parses a data and searches one of events. When event is detected, the thread changes the event state in the appropriate instance. Optional, the thread can to print data from the serial console in the main log.
+
+@subsection serial_arch_tester Tester
+The <b>Tester</b> has a separate thread too. It should periodically poll status of the parsers events from the Configurator, when an event occurs the thread calls an appropriate handler or a series of handlers.
+
+@subsubsection serial_arch_handlers Handlers
+When an event has been detect, the Tester calls a sequence of handlers. A handler can be internal or external, this indicates the <b>/local/tester/event/handler/internal</b> instance. The handler subtree has <b>priority</b> field, that is used to control of the handlers sequence. The higher priority - the sooner the handler performed.<br/>
+
+If a <b>handler</b> is <b>internal</b> and an event occurred, then the Tester should send a <b>signal</b> specified in the <b>handler</b> subtree. The <b>event</b> will be processed by <b>test</b> itself.<br/>
+
+An <b>external</b> handler is an executable program. It can to perform any actions to handle the event, but it must return one of the following values:
+
+   - 0 : continue handlers execution
+   - 1 : stop handlers execution
+   - 2 : stop both handlers and test execution
+   - 3 : stop handlers execution, kill the test and stop tests sequence execution.
+
+The end user, specifying full path, can use any handler programs or scripts, that are located anywhere. But if is used a short name, the handler is searched in the default handlers directory.
+
+@note By default the handlers directory is <b>RUN_DIR/handlers</b>. The directory of handlers can be changed by user. 
+
+@section serial_config Configuration
+
+@subsection serial_config_conf Configurator
+Two configuration subtrees provided to manage the serial parser framework.
+The first subtree is <b>/local/tester</b>, it is used to declare <b>Tester events</b>. There is also performed binding of some <b>handlers</b> to the events. 
+<table class="inline"  border=1>
+    <tr class="row0">
+        <td class="col0 leftalign"> OID                                </td>
+        <td class="col1 leftalign"> Type   </td>
+        <td class="col2 leftalign"> Description                   </td>
+    </tr>
+    <tr class="row1">
+        <td class="col0 leftalign">/local/tester                       </td>
+        <td class="col1"> RW none</td>
+        <td class="col2 leftalign"> Tester subtree.               </td>
+    </tr>
+    <tr class="row2">
+        <td class="col0 leftalign">/local/tester/enable                </td>
+        <td class="col1"> RW int </td>
+        <td class="col2"> Enable the Tester thread to listen for events. By default disabled.</td>
+    </tr>
+    <tr class="row3">
+        <td class="col0 leftalign">/local/tester/period                </td>
+        <td class="col1"> RW int </td>
+        <td class="col2"> Period for polling of events status. By default is 100 milliseconds.</td>
+    </tr>
+    <tr class="row4">
+        <td class="col0 leftalign">/local/tester/location              </td>
+        <td class="col1"> RW str </td>
+        <td class="col2"> Directory with handlers for short named handlers. By default <b>RUN_DIR/handlers</b> is used</td>
+    </tr>
+    <tr class="row5">
+        <td class="col0 leftalign">/local/tester/event                 </td>
+        <td class="col1"> RC none</td>
+        <td class="col2 leftalign"> Subtree of a <b>Tester event</b>.  </td>
+    </tr>
+    <tr class="row6">
+        <td class="col0 leftalign">/local/tester/event/handler         </td>
+        <td class="col1"> RC str </td>
+        <td class="col2"> Event handler. Use a path to the executable as value.</td>
+    </tr>
+    <tr class="row7">
+        <td class="col0">/local/tester/event/handler/priority</td>
+        <td class="col1"> RW int </td>
+        <td class="col2"> Handler priority.By default is <b>0</b></td>
+    </tr>
+    <tr class="row8">
+        <td class="col0 leftalign">/local/tester/event/handler/signal  </td>
+        <td class="col1"> RW int </td>
+        <td class="col2 leftalign"> Signal number.                </td>
+    </tr>
+    <tr class="row9">
+        <td class="col0">/local/tester/event/handler/internal</td>
+        <td class="col1"> RW int </td>
+        <td class="col2"> Indicates that it is internal handler. By default, it is external.</td>
+    </tr>
+</table>
+
+A new subtree of the agent is <b>/agent/parser</b>. It is used to configure and launch a <b>parser</b> thread for a serial consoles on the agent.
+
+<table class="inline" border=1>
+    <tr class="row0">
+        <td class="col0 leftalign"> OID                              </td>
+        <td class="col1 leftalign"> Type   </td>
+        <td class="col2 leftalign"> Description                    </td>
+    </tr>
+    <tr class="row1">
+        <td class="col0 leftalign">/agent/parser                     </td>
+        <td class="col1"> RC str </td>
+        <td class="col2"> The <b>parser</b> subtree. Use a name of serial console as value.</td>
+    </tr>
+    <tr class="row2">
+        <td class="col0 leftalign">/agent/parser/port                </td>
+        <td class="col1"> RW int </td>
+        <td class="col2"> Conserver port corresponds to the parameters of conserver launch. By default is <b>3109</b>.</td>
+    </tr>
+    <tr class="row3">
+        <td class="col0 leftalign">/agent/parser/user                </td>
+        <td class="col1"> RW str </td>
+        <td class="col2"> Conserver user name. By default is <b>tester</b></td>
+    </tr>
+    <tr class="row4">
+        <td class="col0 leftalign">/agent/parser/enable              </td>
+        <td class="col1"> RW int </td>
+        <td class="col2"> Start/stop the <b>parser</b> thread. </td>
+    </tr>
+    <tr class="row5">
+        <td class="col0 leftalign">/agent/parser/interval            </td>
+        <td class="col1"> RW int </td>
+        <td class="col2"> Intreval of polling messages from the console.</td>
+    </tr>
+    <tr class="row6">
+        <td class="col0 leftalign">/agent/parser/reset               </td>
+        <td class="col1"> RW int </td>
+        <td class="col2 leftalign"> Reset status for all events.    </td>
+    </tr>
+    <tr class="row7">
+        <td class="col0 leftalign">/agent/parser/event               </td>
+        <td class="col1"> RC str </td>
+        <td class="col2"> <b>Parser event</b> subtree. Use a name of one of the <b>Tester events</b></td>
+    </tr>
+    <tr class="row8">
+        <td class="col0 leftalign">                                  </td>
+        <td class="col1 leftalign">        </td>
+        <td class="col2"> declared in the Tester subtree as value.</td>
+    </tr>
+    <tr class="row9">
+        <td class="col0 leftalign">/agent/parser/event/pattern       </td>
+        <td class="col1"> RC str </td>
+        <td class="col2 leftalign"> Pattern string.                 </td>
+    </tr>
+    <tr class="row10">
+        <td class="col0 leftalign">/agent/parser/event/counter       </td>
+        <td class="col1"> RW int </td>
+        <td class="col2 leftalign"> Counter of the happened event.  </td>
+    </tr>
+    <tr class="row11">
+        <td class="col0 leftalign">/agent/parser/event/status        </td>
+        <td class="col1"> RW int </td>
+        <td class="col2 leftalign"> Status of the event.             </td>
+    </tr>
+    <tr class="row12">
+        <td class="col0 leftalign">/agent/parser/logging             </td>
+        <td class="col1"> RW int </td>
+        <td class="col2"> Enable logging of the console messages in the main log. By defaul enabled.</td>
+    </tr>
+    <tr class="row13">
+        <td class="col0 leftalign">/agent/parser/logging/level       </td>
+        <td class="col1"> RW str </td>
+        <td class="col2"> Level of the message for logging. By default is <b>WARN</b>.</td>
+    </tr>
+</table>
+
+Configuration exmaple:
+@code
+<?xml version="1.0"?>
+  <history>
+    <add>
+      <instance oid="/local:"/>
+      <instance oid="/local:/tester:/event:new_event"/>
+      <instance oid="/local:/tester:/event:new_event/handler:1" value="~/work/trunk/handlers/myserialhandler"/>
+      <instance oid="/local:/tester:/event:new_event/handler:2" value="ext_handler_short_name"/>
+      <instance oid="/local:/tester:/event:new_event/handler:3"/>
+      
+      <instance oid="/agent:Agt_A/parser:new_parser" value="console_name"/>
+      <instance oid="/agent:Agt_A/parser:new_parser/event:ag_ev" value="new_event"/>
+      <instance oid="/agent:Agt_A/parser:new_parser/event:ag_ev/pattern:1" value="fooo"/>
+      <instance oid="/agent:Agt_A/parser:new_parser/event:ag_ev/pattern:2" value="bar"/>
+    </add>
+    <set>
+      <instance oid="/local:/tester:/enable:" value="1"/>
+      <instance oid="/local:/tester:/period:" value="200"/>
+      <instance oid="/local:/tester:/location:" value="/home/andrey/work/trunk/handlers"/>
+      <instance oid="/local:/tester:/event:new_event/handler:1/priority:" value="3"/>
+      <instance oid="/local:/tester:/event:new_event/handler:2/priority:" value="2"/>
+      <instance oid="/local:/tester:/event:new_event/handler:3/priority:" value="1"/>
+      <instance oid="/local:/tester:/event:new_event/handler:3/internal:" value="1"/>
+      <instance oid="/local:/tester:/event:new_event/handler:3/signal:" value="SIGINT"/>
+      
+      <instance oid="/agent:Agt_A/parser:new_parser/port:" value="3105"/>
+      <instance oid="/agent:Agt_A/parser:new_parser/user:" value="tester"/>
+      <instance oid="/agent:Agt_A/parser:new_parser/interval:" value="100"/>
+      <instance oid="/agent:Agt_A/parser:new_parser/logging:" value="1"/>
+      <instance oid="/agent:Agt_A/parser:new_parser/logging:/level:" value="WARN"/>
+      <instance oid="/agent:Agt_A/parser:new_parser/enable:" value="1"/>
+    </set>
+  </history>
+@endcode
+
+@subsection serial_config_tapi Test API
+The Test API provides the possibilities to add, delete, configure and manage the parser threads and event handlers. The complete list and detailed description functions of the Test API you can find here lib/tapi/tapi_serial_parse.h.
+
+<b>Test API</b> uses a <b>tapi_parser_id</b> structure to configure and control a parser:
+@code
+  typedef struct tapi_parser_id {
+      const char *ta;      /**< Test agent name */
+      const char *name;    /**< The parser name */
+      const char *c_name;  /**< Serial console name */
+      const char *user;    /**< A user name for the conserver or NULL. In case if NULL, used default value 'tester'. */
+      int port;            /**< Port of the console */
+      int interval;        /**< Interval to poll data from the conserver. Use -1 for default value. */
+  } tapi_parser_id;
+@endcode
+
+It is possible to initialize the <b>parser id</b> structure using the <b>TAPI</b>. In this case the structure should be cleaned after use, because <b>TAPI</b> function allocates memory. Use the <b>tapi_serial_id_cleanup()</b> to cleanup the <b>id</b> structure. By default the <b>user</b> field value is <b>NULL</b>, it means in logs will use the default user - <b>tester</b>. Default port is <b>3109</b>, interval - <b>100</b> milliseconds. See the following example.
+
+@code
+  #include "tapi_serial_parse.h"
+  
+  tapi_parser_id     *pars;
+  
+  /* Initialize identifier*/
+  pars = tapi_serial_id_init("Agt_B", "console_name", "my_parser");
+  
+  /* Cleanup identifier */
+  tapi_serial_id_cleanup(pars);
+@endcode
+
+Test API using example:
+@code
+#include "tapi_serial_parse.h"
+
+tapi_parser_id      pars;
+int                 pat_i;
+
+pars.ta         = "Agt_A";
+pars.name       = "new_parser";
+pars.c_name     = "console_name";
+pars.user       = NULL;
+pars.port       = 3109;
+pars.interval   = -1;              /* value -1 is used to set default value of the polling period */
+
+/* Add and initialize parser elements */
+tapi_serial_tester_event_add("new_event");
+tapi_serial_handler_ext_add("new_event", "ext_h", 5, "ext_handler_short_name");
+tapi_serial_handler_int_add("new_event", "int_h", 4, SIGINT);
+tapi_serial_parser_add(&pars);
+tapi_serial_parser_disable(&pars);
+tapi_serial_parser_enable(&pars);
+tapi_serial_logging_enable(&pars, NULL);
+tapi_serial_parser_event_add(&pars, "tapi_event", "new_event");
+pat_i = tapi_serial_parser_pattern_add(&pars, "tapi_event", "Segmentation fault");
+
+/* Remove the initialized elements */
+tapi_serial_parser_pattern_del(&pars, "tapi_event", pat_i);
+tapi_serial_parser_event_del(&pars, "tapi_event");
+tapi_serial_logging_disable(&pars);
+tapi_serial_parser_del(&pars);
+tapi_serial_handler_del("new_event", "ext_h");
+tapi_serial_handler_del("new_event", "int_h");
+tapi_serial_tester_event_del("new_event");
+@endcode
+
+@} <!-- Serial Parser -->
+*/
