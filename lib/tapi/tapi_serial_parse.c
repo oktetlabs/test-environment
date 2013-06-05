@@ -466,5 +466,5 @@ tapi_serial_handler_del(const char *ev_name, const char *h_name)
 {
     if (cfg_del_instance_fmt(FALSE, TE_TESTER_HANDL, ev_name, h_name) != 0)
         WARN("Couldn't delete serial handler %s from event %s",
-             ev_name, h_name);
+             h_name, ev_name);
 }

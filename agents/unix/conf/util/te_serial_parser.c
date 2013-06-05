@@ -276,7 +276,7 @@ parser_data_processing(serial_parser_t *parser, char *buffer)
     }
 
     if (parser->logging == TRUE)
-        LGR_MESSAGE(parser->level, parser->user, "%s", buffer);
+        LGR_MESSAGE(parser->level, parser->c_name, "%s", buffer);
 
     if (pthread_mutex_unlock(&parser->mutex) != 0)
     {
