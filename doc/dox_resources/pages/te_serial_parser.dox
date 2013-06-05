@@ -15,9 +15,9 @@ TE_TA_TYPE([linux], [], [unix], [--with-serialparse], [], [], [], [])
 @endcode
 
 @subsection serial_launch_conf Configurator objects
-The TE has auxiliary configuration file <b>configurator.conf.serialparse</b> with configurator objects for the serial parser management. The file should be included to the config: 
+The TE has auxiliary configuration file <b>cs.conf.serial</b> with configurator objects for the serial parser management. The file should be included to the config: 
 @code
-<xi:include href="configurator.conf.serialparse" parse="xml" xmlns:xi="http://www.w3.org/2003/XInclude"/>
+<xi:include href="cs.conf.serial" parse="xml" xmlns:xi="http://www.w3.org/2003/XInclude"/>
 @endcode
 
 To use event handlers the instance <b>/local:</b> should be added and value of the instance <b>/local:/tester:/enable:</b> should be set to <b>1</b>. The last to launch the thread on the Tester to handle events.
