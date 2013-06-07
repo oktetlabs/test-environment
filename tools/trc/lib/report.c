@@ -51,7 +51,7 @@ static trc_report_stats not_run = { 0, 0, 0, 0, 0, 0, 1, 0, 0, 0 };
 void
 trc_report_init_ctx(trc_report_ctx *ctx)
 {
-    memset(ctx, 0, sizeof(ctx));
+    memset(ctx, 0, sizeof(*ctx));
     TAILQ_INIT(&ctx->tags);
     TAILQ_INIT(&ctx->merge_fns);
     TAILQ_INIT(&ctx->cut_paths);
