@@ -914,7 +914,7 @@ proc_chars(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
            const rgt_xmlChar *ch, size_t len)
 {
     FILE       *fd = ((depth_ctx_user_t *)depth_ctx->user_data)->fd;
-#if (defined WITH_LIBXML) && LIBXML_VERSION >= 20700
+#if 0 && (defined WITH_LIBXML) && LIBXML_VERSION >= 20700
     const char        *entity = NULL;
     const rgt_xmlChar *p, *ch_begin, *ch_end;
 #endif
