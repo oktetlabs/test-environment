@@ -310,6 +310,7 @@ typedef enum {
  * @todo Make it 'enum' when %r specified will be supported.
  */
 typedef enum {
+    TE_MODULE_NONE = 0, /**< Module is not specified */
     TE_IPC = 1,         /**< TE IPC */
     TE_COMM,            /**< RCF<->TA communication libraries */
     TE_RCF,             /**< RCF application */
@@ -433,7 +434,7 @@ te_rc_mod2str(te_errno err)
         MOD2STR(TRC);
         MOD2STR(ACSE);
         MOD2STR(TA_ACSE);
-        case 0: return "";
+        case TE_MODULE_NONE: return "";
         default:
             snprintf(unknown_module, sizeof(unknown_module),
                      "Unknown(%u)", TE_RC_GET_MODULE(err));
