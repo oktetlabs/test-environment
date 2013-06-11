@@ -201,6 +201,8 @@ fcntl_rpc2str(rpc_fcntl_command cmd)
         RPC2STR(F_SETLKW);
         RPC2STR(F_SETOWN);
         RPC2STR(F_GETOWN);
+        RPC2STR(F_SETOWN_EX);
+        RPC2STR(F_GETOWN_EX);
         RPC2STR(F_SETSIG);
         RPC2STR(F_GETSIG);
         RPC2STR(F_SETLEASE);
@@ -232,6 +234,8 @@ fcntl_rpc2h(rpc_fcntl_command cmd)
         RPC2H_CHECK(F_GETOWN);
         RPC2H_CHECK(F_SETOWN);
         RPC2H_CHECK(F_GETSIG);
+        RPC2H_CHECK(F_GETOWN_EX);
+        RPC2H_CHECK(F_SETOWN_EX);
         RPC2H_CHECK(F_SETSIG);
         RPC2H_CHECK(F_GETLEASE);
         RPC2H_CHECK(F_SETLEASE);

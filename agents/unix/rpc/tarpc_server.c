@@ -3195,20 +3195,40 @@ TARPC_FUNC(pselect,
 
 /*-------------- fcntl() --------------------------------*/
 
-TARPC_FUNC(fcntl, {},
+TARPC_FUNC(fcntl,
 {
-    long arg = in->arg;
-
-    if (in->cmd == RPC_F_SETFL)
-        arg = fcntl_flags_rpc2h(in->arg);
-    else if (in->cmd == RPC_F_SETSIG)
-        arg = signum_rpc2h(in->arg);
+    COPY_ARG(arg);
+},
+{
+    long              int_arg;
+    struct f_owner_ex foex_arg;
 
     if (in->cmd == RPC_F_GETFD || in->cmd == RPC_F_GETFL ||
         in->cmd == RPC_F_GETSIG)
         MAKE_CALL(out->retval = func(in->fd, fcntl_rpc2h(in->cmd)));
+    else if (in->cmd == RPC_F_GETOWN_EX || in->cmd == RPC_F_SETOWN_EX)
+    {
+        foex_arg.type =
+            out->arg.arg_val[0].fcntl_request_u.req_f_owner_ex.type;
+        foex_arg.pid =
+            out->arg.arg_val[0].fcntl_request_u.req_f_owner_ex.pid;
+        MAKE_CALL(out->retval = func(in->fd, fcntl_rpc2h(in->cmd),
+                                     &foex_arg));
+        out->arg.arg_val[0].fcntl_request_u.req_f_owner_ex.type =
+            foex_arg.type;
+        out->arg.arg_val[0].fcntl_request_u.req_f_owner_ex.pid =
+            foex_arg.pid;
+    }
     else
-        MAKE_CALL(out->retval = func(in->fd, fcntl_rpc2h(in->cmd), arg));
+    {
+        int_arg = out->arg.arg_val[0].fcntl_request_u.req_int;
+        if (in->cmd == RPC_F_SETFL)
+            int_arg = fcntl_flags_rpc2h(int_arg);
+        else if (in->cmd == RPC_F_SETSIG)
+            int_arg = signum_rpc2h(int_arg);
+        MAKE_CALL(out->retval =
+                    func(in->fd, fcntl_rpc2h(in->cmd), int_arg));
+    }
 
     if (in->cmd == RPC_F_GETFL)
         out->retval = fcntl_flags_h2rpc(out->retval);

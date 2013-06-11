@@ -127,6 +127,8 @@ typedef enum rpc_fcntl_command {
     RPC_F_SETLKW,
     RPC_F_SETOWN,
     RPC_F_GETOWN,
+    RPC_F_SETOWN_EX,
+    RPC_F_GETOWN_EX,
     RPC_F_SETSIG,
     RPC_F_GETSIG,
     RPC_F_SETLEASE,

@@ -545,6 +545,11 @@ struct rpc_epoll_event {
     rpc_epoll_data_t data;      /* User data variable */
 };
 
+struct rpc_f_owner_ex {
+    int   type;
+    pid_t pid;
+};
+
 extern int rpc_epoll_create(rcf_rpc_server *rpcs, int size);
 extern int rpc_epoll_create1(rcf_rpc_server *rpcs, int flags);
 extern int rpc_epoll_ctl(rcf_rpc_server *rpcs, int epfd, int oper, int fd,
@@ -705,7 +710,7 @@ extern int rpc_ioctl(rcf_rpc_server *rpcs,
  *         See @b fcntl manual page for more information.
  */
 extern int rpc_fcntl(rcf_rpc_server *rpcs,
-                     int fd, int cmd, int arg);
+                     int fd, int cmd, ...);
 
 /**
  * Create a pair file descriptor on RPC server side, pointing to a pipe 

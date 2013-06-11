@@ -2704,18 +2704,37 @@ struct tarpc_ioctl_out {
 
 /* fcntl() */
 
+enum fcntl_type {
+    FCNTL_UNKNOWN,
+    FCNTL_INT,
+    FCNTL_F_OWNER_EX
+    
+};
+
+/** struct f_owner_ex */
+struct tarpc_f_owner_ex {
+    tarpc_int   type;
+    tarpc_pid_t pid;
+};
+
+union fcntl_request switch (fcntl_type type) {
+    case FCNTL_INT:         tarpc_int                req_int;
+    case FCNTL_F_OWNER_EX:  struct tarpc_f_owner_ex  req_f_owner_ex;
+};
+
 struct tarpc_fcntl_in {
     struct tarpc_in_arg common;
-    
-    tarpc_int   fd;
-    tarpc_int   cmd;
-    tarpc_int   arg;
+
+    tarpc_int       fd;
+    tarpc_int       cmd;
+    fcntl_request   arg<>;
 };
 
 struct tarpc_fcntl_out {
     struct tarpc_out_arg common;
-    
-    tarpc_int   retval;
+
+    fcntl_request   arg<>;
+    tarpc_int       retval;
 };
 
 

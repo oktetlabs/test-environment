@@ -1487,13 +1487,19 @@ rpc_open64(rcf_rpc_server *rpcs,
 
 int
 rpc_fcntl(rcf_rpc_server *rpcs, int fd,
-            int cmd, int arg)
+            int cmd, ...)
 {
     tarpc_fcntl_in  in;
     tarpc_fcntl_out out;
 
+    fcntl_request   req;
+    va_list         ap;
+    int            *arg;
+    char            req_val[128];
+
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
+    memset(&req_val, 0, sizeof(req_val));
 
     if (rpcs == NULL)
     {
@@ -1501,15 +1507,67 @@ rpc_fcntl(rcf_rpc_server *rpcs, int fd,
         RETVAL_INT(fcntl, -1);
     }
 
+    va_start(ap, cmd);
+    arg = va_arg(ap, int *);
+    va_end(ap);
+
     in.fd = fd;
     in.cmd = cmd;
-    in.arg = arg;
+
+    if (cmd != RPC_F_GETOWN_EX || cmd != RPC_F_SETOWN_EX || arg != NULL)
+    {
+        memset(&req, 0, sizeof(req));
+        in.arg.arg_val = &req;
+        in.arg.arg_len = 1;
+    }
+
+    switch (cmd)
+    {
+        case RPC_F_GETOWN_EX:
+        case RPC_F_SETOWN_EX:
+            if (arg != NULL)
+            {
+                in.arg.arg_val[0].type = FCNTL_F_OWNER_EX;
+                in.arg.arg_val[0].fcntl_request_u.req_f_owner_ex.type =
+                    ((struct rpc_f_owner_ex *)arg)->type;
+                in.arg.arg_val[0].fcntl_request_u.req_f_owner_ex.pid =
+                    ((struct rpc_f_owner_ex *)arg)->pid;
+            }
+            break;
+        default:
+            in.arg.arg_val[0].type = FCNTL_INT;
+            in.arg.arg_val[0].fcntl_request_u.req_int = (long)arg;
+            break;
+    }
 
     rcf_rpc_call(rpcs, "fcntl", &in, &out);
 
+    if (out.retval == 0 && out.arg.arg_val != NULL)
+    {
+        assert((cmd != RPC_F_GETOWN_EX && cmd != RPC_F_SETOWN_EX) ||
+               arg != NULL);
+
+        switch (in.arg.arg_val[0].type)
+        {
+            case FCNTL_F_OWNER_EX:
+                ((struct rpc_f_owner_ex *)arg)->type =
+                    out.arg.arg_val[0].fcntl_request_u.req_f_owner_ex.type;
+                ((struct rpc_f_owner_ex *)arg)->pid =
+                    out.arg.arg_val[0].fcntl_request_u.req_f_owner_ex.pid;
+
+                snprintf(req_val, sizeof(req_val), ", {%d, %d}",
+                         ((struct rpc_f_owner_ex *)arg)->type,
+                         ((struct rpc_f_owner_ex *)arg)->pid);
+                break;
+            default:
+                snprintf(req_val, sizeof(req_val), ", %d", (long)arg);
+                break;
+        }
+    }
+
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(fcntl, out.retval);
-    TAPI_RPC_LOG(rpcs, fcntl, "%d, %s, %d", "%d",
-                 fd, fcntl_rpc2str(cmd), arg, out.retval);
+    TAPI_RPC_LOG(rpcs, fcntl, "%d, %s%s", "%d",
+                 fd, fcntl_rpc2str(cmd), req_val, out.retval);
     RETVAL_INT(fcntl, out.retval);
 }
 
