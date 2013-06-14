@@ -602,7 +602,7 @@ extern te_errno cfg_set_instance(cfg_handle handle, cfg_val_type type, ...);
 /**
  * Set instance by the OID. OID may be format string.
  *
- * Use macro CFG_VAL() to make the second and the third arguments pair.
+ * Use macro CFG_VAL() to make the first and the second arguments pair.
  * E.g. rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1), "/hello:");
  */
 static inline te_errno
