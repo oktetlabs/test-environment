@@ -382,12 +382,15 @@ te_errno
 scenario_add_act(testing_scenario *scenario,
                  const unsigned int first,
                  const unsigned int last,
-                 const unsigned int flags)
+                 const unsigned int flags,
+                 const char *hash)
 {
     testing_act *act = scenario_new_act(first, last, flags);
 
     if (act == NULL)
         return TE_ENOMEM;
+
+    act->hash = hash;
 
     TAILQ_INSERT_TAIL(scenario, act, links);
 
@@ -401,7 +404,8 @@ scenario_add_act(testing_scenario *scenario,
 te_errno
 scenario_act_copy(testing_scenario *scenario, const testing_act *act)
 {
-    return scenario_add_act(scenario, act->first, act->last, act->flags);
+    return scenario_add_act(scenario, act->first, act->last, act->flags,
+                            act->hash);
 }
 
 /* See the description in tester_run.h */
@@ -425,7 +429,7 @@ scenario_copy(testing_scenario *dst, const testing_scenario *src)
 te_errno
 scenario_by_bit_mask(testing_scenario *scenario, unsigned int offset,
                      const uint8_t *bm, unsigned int bm_len,
-                     unsigned int bit_weight)
+                     unsigned int bit_weight, const char *hash)
 {
     te_errno        rc;
     unsigned int    bit;
@@ -445,7 +449,7 @@ scenario_by_bit_mask(testing_scenario *scenario, unsigned int offset,
                 rc = scenario_add_act(scenario,
                                       offset + start * bit_weight,
                                       offset + bit * bit_weight - 1,
-                                      0);
+                                      0, hash);
                 if (rc != 0)
                     return rc;
             }
@@ -464,7 +468,7 @@ scenario_by_bit_mask(testing_scenario *scenario, unsigned int offset,
         rc = scenario_add_act(scenario,
                               offset + start * bit_weight,
                               offset + bm_len * bit_weight - 1,
-                              0);
+                              0, hash);
         if (rc != 0)
             return rc;
     }

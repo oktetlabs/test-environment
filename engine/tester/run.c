@@ -1659,7 +1659,6 @@ run_item_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 {
     tester_run_data    *gctx = opaque;
     tester_ctx         *ctx;
-    te_errno            rc;
 
     assert(gctx != NULL);
     ctx = SLIST_FIRST(&gctx->ctxs);
@@ -1705,9 +1704,7 @@ run_item_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
         }
 
         if (ctx->backup == NULL)
-        {
-            rc = run_create_cfg_backup(ctx, test_get_attrs(ri)->track_conf);
-        }
+            run_create_cfg_backup(ctx, test_get_attrs(ri)->track_conf);
     }
 
     assert(ctx->args == NULL);
@@ -2142,7 +2139,8 @@ run_keepalive_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
 
-    if ((status != TESTER_TEST_PASSED) && (status != TESTER_TEST_FAKED))
+    if (((int)status != TESTER_TEST_PASSED) &&
+        ((int)status != TESTER_TEST_FAKED))
     {
         ERROR("Keep-alive validation failed: %u", status);
         ctx->group_result.status =
@@ -2646,6 +2644,7 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     tester_run_data    *gctx = opaque;
     tester_ctx         *ctx;
     unsigned int        tin;
+    char               *hash_str;
 
     UNUSED(flags);
 
@@ -2657,6 +2656,21 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
           gctx->act != NULL ? (int)gctx->act->last : -1,
           gctx->act != NULL ? gctx->act->flags : 0,
           gctx->act_id);
+
+    if (ri->type == RUN_ITEM_SCRIPT && gctx->act != NULL &&
+        gctx->act->hash != NULL && ~ctx->flags & TESTER_INLOGUE)
+    {
+        hash_str = test_params_hash(ctx->args, ri->n_args);
+
+        if (strcmp(hash_str, gctx->act->hash) != 0)
+        {
+            ctx->current_result.status = TESTER_TEST_INCOMPLETE;
+            ctx->group_step = TRUE;
+            free(hash_str);
+            return TESTER_CFG_WALK_SKIP;
+        }
+        free(hash_str);
+    }
 
     /* FIXME: Optimize */
     /* verb overwrites quiet */

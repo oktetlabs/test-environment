@@ -522,7 +522,8 @@ test_path_proc_test_start(run_item *run, unsigned int cfg_id_off,
         assert(run->type == RUN_ITEM_SESSION);
         /* Session without name */
     }
-    else if (strcmp(name, ctx->item->name) != 0)
+    else if (strcmp(name, ctx->item->name) != 0 &&
+             strcmp("", ctx->item->name) != 0)
     {
         EXIT("SKIP - no match");
         return TESTER_CFG_WALK_SKIP;
@@ -652,7 +653,8 @@ test_path_proc_test_start(run_item *run, unsigned int cfg_id_off,
             /* End of path */
             assert(gctx->rc == 0);
             gctx->rc = scenario_by_bit_mask(ctx->scenario, cfg_id_off, bm,
-                                            run->n_iters, run->weight);
+                                            run->n_iters, run->weight,
+                                            ctx->item->hash);
 
             free(bm);
 
@@ -821,7 +823,8 @@ process_test_path(const tester_cfgs *cfgs, test_path *path)
 
     if (TAILQ_EMPTY(&path->head))
     {
-        rc = scenario_add_act(&path->scen, 0, cfgs->total_iters - 1, 0);
+        rc = scenario_add_act(&path->scen, 0, cfgs->total_iters - 1, 0,
+                              NULL);
         EXIT("%r", rc);
         return rc;
     }
@@ -840,7 +843,7 @@ process_test_path(const tester_cfgs *cfgs, test_path *path)
     {
         unsigned int    i;
 
-        rc = scenario_add_act(&path->scen, sn, sn, 0);
+        rc = scenario_add_act(&path->scen, sn, sn, 0, NULL);
 
         assert(item->iterate > 0);
         for (i = 0; rc == 0 && i < item->iterate - 1; ++i)
@@ -1027,7 +1030,7 @@ merge_test_paths(test_paths *paths, const unsigned int total_iters,
         /* No test paths to run are specified, scenarion is still empty */
         assert(TAILQ_EMPTY(scenario));
         /* Add act with all items */
-        rc = scenario_add_act(scenario, 0, total_iters - 1, 0);
+        rc = scenario_add_act(scenario, 0, total_iters - 1, 0, NULL);
         if (rc != 0)
             goto exit;
         /* Apply collected flags */
