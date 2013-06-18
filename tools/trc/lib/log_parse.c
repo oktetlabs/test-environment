@@ -3406,26 +3406,36 @@ trc_update_rule_gen_args(trc_update_test_entry *test_entry,
     trc_update_test_iter_data      *iter_data = NULL;
     int                             rc;
 
-    TAILQ_FOREACH(iter, &test_entry->test->iters.head, links)
-    {
-        iter_data = trc_db_iter_get_user_data(iter, db_uid);
-        if (iter_data == NULL || iter_data->to_save == FALSE)
-            continue;
-        iter_data->in_wildcard = FALSE;
-        if (trc_update_rule_match_iter(rule, iter, db_uid))
-            iter_data->results_id = 1;
+    rc = 0;
+
+    do {
+        TAILQ_FOREACH(iter, &test_entry->test->iters.head, links)
+        {
+            iter_data = trc_db_iter_get_user_data(iter, db_uid);
+            if (iter_data == NULL || iter_data->to_save == FALSE)
+                continue;
+
+            iter_data->in_wildcard = FALSE;
+            if (trc_update_rule_match_iter(rule, iter, db_uid))
+                iter_data->results_id = 1;
+            else
+                iter_data->results_id = 2;
+        }
+
+        memset(&wildcards, 0, sizeof(wildcards));
+        SLIST_INIT(&wildcards);
+
+        if (rc == 0)
+            rc = trc_update_gen_test_wilds_fss(db_uid, test_entry,
+                                               TRUE, 2, &wildcards, flags);
         else
-            iter_data->results_id = 2;
-    }
-
-    memset(&wildcards, 0, sizeof(wildcards));
-    SLIST_INIT(&wildcards);
-
-    rc = trc_update_gen_test_wilds_fss(db_uid, test_entry,
-                                       TRUE, 2, &wildcards, flags);
-    if (rc < 0)
-        trc_update_generate_test_wilds(db_uid, test_entry->test,
-                                       TRUE, 2, &wildcards, flags);
+        {
+            rc = trc_update_generate_test_wilds(db_uid, test_entry->test,
+                                                TRUE, 2, &wildcards, flags);
+            if (rc < 0)
+                break;
+        }
+    } while (rc < 0);
 
     rule->wilds = TE_ALLOC(sizeof(*(rule->wilds)));
     SLIST_INIT(rule->wilds);
