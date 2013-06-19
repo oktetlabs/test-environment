@@ -390,7 +390,7 @@ acse_epc_socket(void)
 te_errno
 acse_epc_conf_send(const acse_epc_config_data_t *msg)
 {
-    ssize_t msg_len = 0, sendrc;
+    ssize_t  sendrc;
     te_errno rc = 0;
 
     if (msg == NULL)
@@ -402,10 +402,7 @@ acse_epc_conf_send(const acse_epc_config_data_t *msg)
         return TE_EBADFD;
     }
 
-    msg_len = sizeof(acse_epc_config_data_t);
-
     sendrc = write(epc_socket, msg, sizeof(*msg));
-
     if (sendrc < 0)
     {
         ERROR("%s(): write to fd %d failed, OS error %s",
