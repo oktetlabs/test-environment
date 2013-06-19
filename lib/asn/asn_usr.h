@@ -58,22 +58,22 @@ struct asn_type;
 typedef struct asn_type asn_type;
 
 
-/** bit 'named syntax' for compound type syntacies. */
+/** bit 'named syntax' for compound type syntaxes. */
 #define ASN_SYN_NAMED   1
-/** bit 'ordered sequence' for compound type syntacies. */
+/** bit 'ordered sequence' for compound type syntaxes. */
 #define ASN_SYN_ORDER   2
-/** bit 'ordered sequence' for compound type syntacies. */
+/** bit 'ordered sequence' for compound type syntaxes. */
 #define ASN_SYN_ARRAY   4
 
 /**
- * Enumerated type with ASN syntax codes. All syntax codes are devided into
+ * Enumerated type with ASN syntax codes. All syntax codes are divided into
  * the following groups:
- *  - primitive syntacies, internal presentaion of which does
+ *  - primitive syntaxes, internal presentation of which does
  *      not require memory allocation.
- *  - primitive syntacies, internal presentaion of which
+ *  - primitive syntaxes, internal presentation of which
  *      requires memory allocation, because number of octets occupied
  *      depends on the value.
- *  - constractive syntacies.
+ *  - constractive syntaxes.
  *      Codes of types, which specification contain array of namedValues
  *      (with types), have lower bit zero.
  */
@@ -265,7 +265,7 @@ extern const asn_type  asn_base_int32_s; /**< INTEGER (0..4294967295) */
 
 
 /**
- * Declaraion of struct ASN value
+ * Declaration of struct ASN value
  */
 struct asn_value;
 
@@ -763,7 +763,7 @@ asn_check_value_contains(asn_value *container, asn_value *value);
 
 /*
  * ======================================================================
- * All methods below are depricated, or will become such in nearest
+ * All methods below are deprecated, or will become such in nearest
  * future. It is recommended to use methods above, if there is
  * applicable to your task.
  * ======================================================================
