@@ -66,7 +66,6 @@ typedef struct testing_act {
     unsigned int last;  /**< Number of the last item */
 
     unsigned int flags; /**< Flags (tester_flags) for the act */
-    const char  *hash;  /**< Test iteration hash (optional) */
 
 } testing_act;
 
@@ -109,15 +108,13 @@ extern testing_act *scenario_new_act(const unsigned int first,
  * @param first         The first item
  * @param last          The last item
  * @param flags         Act flags
- * @param hash          Test iteration hash or @c NULL
  *
  * @return Status code.
  */
 extern te_errno scenario_add_act(testing_scenario *scenario,
                                  const unsigned int first,
                                  const unsigned int last,
-                                 const unsigned int flags,
-                                 const char *hash);
+                                 const unsigned int flags);
 
 /**
  * Copy act to scenario.
@@ -149,7 +146,6 @@ extern te_errno scenario_copy(testing_scenario       *dst,
  * @param bm            Bit mask with acts to run
  * @param bm_len        Length of the bit mask
  * @param bit_weight    Weight of single bit in the mask
- * @param hash          Test iteration HASH or @c NULL
  *
  * @return Status code.
  */
@@ -157,8 +153,7 @@ extern te_errno scenario_by_bit_mask(testing_scenario *scenario,
                                      unsigned int      offset,
                                      const uint8_t    *bm,
                                      unsigned int      bm_len,
-                                     unsigned int      bit_weight,
-                                     const char       *hash);
+                                     unsigned int      bit_weight);
 
 /**
  * Append one scenario to another specified number of times.

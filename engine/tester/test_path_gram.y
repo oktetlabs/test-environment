@@ -96,8 +96,6 @@ test_path_new_item(char *name)
         return TE_ENOMEM;
     }
 
-    memset(item, 0, sizeof(*item));
-
     TAILQ_INIT(&item->args);
 
     item->name = name;
@@ -200,7 +198,7 @@ test_path_new_arg_value(char *value)
 
 %token SLASH COLON EQUAL GLOB COMMA OPEN CLOSE ITERATE SELECT STEP
 %token <num> NUMBER
-%token <str> STRING HASH_STR
+%token <str> STRING
 
 %%
 
@@ -210,14 +208,6 @@ path_flexible:
     path
     |
     path SLASH
-    |
-    HASH_STR
-    {
-        VERB("HASH_STR");
-        if (test_path_new_item(strdup("")) != 0)
-            YYABORT;
-        item->hash = $1;
-    }
     ;
 
 path: 
@@ -280,13 +270,6 @@ item_select:
                   (int)(item->select));
             YYABORT;
         }
-    }
-    |
-    item_simple SELECT HASH_STR
-    {
-        VERB("item_select -> item_simple SELECT STRING");
-        assert(item != NULL);
-        item->hash = $3;
     }
     |
     item_simple
