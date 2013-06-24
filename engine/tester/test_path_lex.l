@@ -133,6 +133,16 @@ extern int test_path_str_pos;
                                 return NUMBER;
                             }
                         }
+<INITIAL,NUM>[[:xdigit:]]{32}   {
+                            BEGIN(INITIAL);
+                            yylval->str = strdup(yytext);
+                            if (yylval->str == NULL)
+                            {
+                                ERROR("strdup(%s) failed", yytext);
+                                REJECT;
+                            }
+                            return HASH_STR;
+                        }
 [-_[:alnum:].]+         {
                             yylval->str = strdup(yytext);
                             if (yylval->str == NULL)

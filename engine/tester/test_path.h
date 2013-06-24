@@ -92,6 +92,8 @@ typedef struct test_path_item {
     TAILQ_HEAD(, test_path_arg) args;   /**< Arguments */
 
     char           *name;       /**< Path item name */
+    const char     *hash;       /**< Hash of the test path with parameters
+                                     to run */
     unsigned int    select;     /**< Number of the iteration to run */
     unsigned int    step;       /**< Length of the cycle to apply number
                                      of the iteration to run */

@@ -136,7 +136,7 @@ Generic options:
         <arg>           := <param-name>=<values> | <param-name>~=<values>
         <values>        := <value> | { <values-list> }
         <values-list>   := <value>[,<values-list>]
-        <iter-select>   := <iter-number>[+<step>]
+        <iter-select>   := <iter-number>[+<step>] | <hash>
     For example,
         --tester-run=mysuite/mypkg/mytest:p1={a1,a2}
     requests to run all iterations of the test 'mytest' when its parameter
