@@ -146,10 +146,6 @@
 #if defined(HAVE_SECURITY_PAM_APPL_H) && defined(HAVE_LIBPAM)
 #include <security/pam_appl.h>
 
-#ifdef WITH_SERIALPARSE
-#include <conf_serial_parser.h>
-#endif
-
 #define TA_USE_PAM  1
 
 /** Data passed between 'set_change_passwd' and 'conv_fun' callback fun */
@@ -260,6 +256,11 @@ extern te_errno ta_unix_conf_iptables_init();
 
 #ifdef WITH_TR069_SUPPORT
 extern te_errno ta_unix_conf_acse_init();
+#endif
+
+#ifdef WITH_SERIALPARSE
+extern te_errno ta_unix_serial_parser_init();
+extern te_errno ta_unix_serial_parser_cleanup();
 #endif
 
 extern te_errno ta_unix_conf_configfs_init();
