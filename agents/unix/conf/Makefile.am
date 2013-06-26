@@ -25,6 +25,7 @@ noinst_LIBRARIES=libconf.a
 
 libconf_a_SOURCES = \
 	base/conf.c \
+	base/conf_eth.c \
 	base/conf_stats.c \
 	base/conf_sys.c \
 	base/conf_phy.c \

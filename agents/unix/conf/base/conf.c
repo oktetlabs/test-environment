@@ -266,6 +266,7 @@ extern te_errno ta_unix_conf_configfs_init();
 extern te_errno ta_unix_conf_netconsole_init();
 extern te_errno ta_unix_conf_sys_init();
 extern te_errno ta_unix_conf_phy_init();
+extern te_errno ta_unix_conf_eth_init(void);
 
 #ifdef USE_LIBNETCONF
 netconf_handle nh = NETCONF_HANDLE_INVALID;
@@ -1158,6 +1159,9 @@ rcf_ch_conf_init()
             goto fail;
 
         if (ta_unix_conf_netconsole_init() != 0)
+            goto fail;
+
+        if (ta_unix_conf_eth_init() != 0)
             goto fail;
 
         rcf_pch_rsrc_init();
