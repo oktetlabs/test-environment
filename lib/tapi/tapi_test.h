@@ -150,6 +150,7 @@ extern "C" {
      * campaign termination.                                        \
      */                                                             \
     (void)signal(SIGUSR1, te_test_sig_handler);                     \
+    (void)signal(SIGUSR2, te_test_sig_handler);                     \
                                                                     \
     /*                                                              \
      * Set jump point to cleanup_specific label to handle           \

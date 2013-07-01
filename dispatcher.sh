@@ -165,6 +165,9 @@ Generic options:
                                 output the result together with OK
   --tester-interactive          Interactive ask user for tests to run.
 
+  --test-sigusr2-verdict        Handle the SIGUSR2 signal in test and stop it by TEST_VERDICT.
+                                By default the SIGUSR2 handled like SIGINT, it stops testing.
+
   --trc-log=<filename>          Generate bzip2-ed TRC log
   --trc-db=<filename>           TRC database to be used
   --trc-tag=<TAG>               Tag to get specific expected results
@@ -490,6 +493,8 @@ process_opts()
             --no-ts-build) BUILD_TS= ; TESTER_OPTS="${TESTER_OPTS} --nobuild" ;;
 
             --tester-*) TESTER_OPTS="${TESTER_OPTS} --${1#--tester-}" ;;
+            --test-sigusr2-verdict*) TE_TEST_SIGUSR2_VERDICT=1
+                export TE_TEST_SIGUSR2_VERDICT ;;
 
             --trc-log=*) TRC_LOG="${1#--trc-log=}" ;;
             --trc-db=*) 

@@ -70,6 +70,13 @@ te_test_sig_handler(int signum)
     {
         TEST_FAIL("Test is killed by SIGUSR1");
     }
+    else if (signum == SIGUSR2)
+    {
+        if (getenv("TE_TEST_SIGUSR2_VERDICT") != NULL)
+            TEST_VERDICT("Test is stopped by SIGUSR2");
+        else
+            exit(TE_EXIT_SIGINT);
+    }
 }
 
 
