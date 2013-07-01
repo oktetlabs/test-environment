@@ -145,6 +145,9 @@ if (_rc != 0) \
 
     rc = cfg_find_pattern_fmt(&n_handles, &handles,
                               SERIAL_FMT_HLR "*/priority:", event_name);
+    if (rc != 0)
+        return rc;
+
     for (i = 0; (unsigned)i < n_handles; i++)
     {
         TE_SERIAL_MALLOC(h, sizeof(tester_serial_handler_t));
@@ -292,10 +295,11 @@ tester_handle_serial_event(const char *event_name)
     int                         res;
     te_bool                     h_exec;    /* While value is TRUE handlers
                                               executes */
+    te_bool                     fail = FALSE;
 
     if ((rc = tester_serial_get_handlers(event_name, &hh)) != 0)
     {
-        ERROR("Failed to get event by name %s", event_name);
+        ERROR("Couldn't get handlers list of event %s: %r", event_name, rc);
         return rc;
     }
 
@@ -311,14 +315,23 @@ tester_handle_serial_event(const char *event_name)
                 if (pid.id > 0)
                 {
                     if (kill(pid.id, h->signal) < 0)
-                        ERROR("kill(%d, %d) failed: %s", pid.id,
-                              h->signal, strerror(errno));
+                    {
+                        if (errno == ESRCH)
+                        {
+                            fail = TRUE;
+                            VERB("kill(%d, %d) failed: %s", pid.id,
+                                 h->signal, strerror(errno));
+                        }
+                        else
+                            ERROR("kill(%d, %d) failed: %s", pid.id,
+                                  h->signal, strerror(errno));
+                    }
                 }
                 pthread_mutex_unlock(&pid.mutex);
             }
             else
             {
-                RING("Call external handler %s", h->path);
+                INFO("Call external handler %s", h->path);
                 res = tester_serial_call_handler(h->path);
                 switch (res)
                 {
@@ -336,10 +349,20 @@ tester_handle_serial_event(const char *event_name)
                         if (pid.id > 0)
                         {
                             if (kill(pid.id, SIGTERM) < 0)
-                                ERROR("kill(%d, %d) failed: %s", pid.id,
-                                      h->signal, strerror(errno));
-                            WARN("Test has been stopped by the serial"
-                                 " console handler %s", h->name);
+                            {
+                                if (errno == ESRCH)
+                                {
+                                    fail = TRUE;
+                                    VERB("kill(%d, %d) failed: %s", pid.id,
+                                         h->signal, strerror(errno));
+                                }
+                                else
+                                    ERROR("kill(%d, %d) failed: %s", pid.id,
+                                          h->signal, strerror(errno));
+                            }
+                            else
+                                WARN("Test has been stopped by the serial"
+                                     " console handler %s", h->name);
                         }
                         pthread_mutex_unlock(&pid.mutex);
                         break;
@@ -351,8 +374,17 @@ tester_handle_serial_event(const char *event_name)
                         if (pid.id > 0)
                         {
                             if (kill(pid.id, SIGTERM) < 0)
-                                ERROR("kill(%d, %d) failed: %s", pid.id,
-                                      h->signal, strerror(errno));
+                            {
+                                if (errno == ESRCH)
+                                {
+                                    fail = TRUE;
+                                    VERB("kill(%d, %d) failed: %s", pid.id,
+                                         h->signal, strerror(errno));
+                                }
+                                else
+                                    ERROR("kill(%d, %d) failed: %s", pid.id,
+                                          h->signal, strerror(errno));
+                            }
                         }
                         pthread_mutex_unlock(&pid.mutex);
 
@@ -378,6 +410,9 @@ tester_handle_serial_event(const char *event_name)
             free(h->path);
         free(h);
     }
+
+    if (fail)
+        return TE_EFAIL;
 
     return 0;
 }
@@ -442,9 +477,14 @@ tester_serial_thread(void)
                 }
 
                 rc = tester_handle_serial_event(event_name);
-                if (rc != 0)
+                if (rc != 0 && rc != TE_EFAIL)
                 {
                     ERROR("Couldn't handle the event %s", event_name);
+                    free(event_name);
+                    continue;
+                }
+                else if (rc == TE_EFAIL)
+                {
                     free(event_name);
                     continue;
                 }
