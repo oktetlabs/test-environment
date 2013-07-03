@@ -58,6 +58,7 @@ extern asn_type ndn_ip4_csap_s;
 extern asn_type ndn_ip6_csap_s;
 extern asn_type ndn_udp_csap_s;
 extern asn_type ndn_dhcpv4_csap_s;
+extern asn_type ndn_dhcpv6_csap_s;
 extern asn_type ndn_tcp_csap_s;
 extern asn_type ndn_iscsi_csap_s;
 #ifdef HAS_SNMP
@@ -83,6 +84,7 @@ static asn_named_entry_t _ndn_generic_csap_layer_ne_array[] = {
     { "icmp6",  &asn_base_null_s,       {PRIVATE, TE_PROTO_ICMP6} },
     { "udp",    &ndn_udp_csap_s,        {PRIVATE, TE_PROTO_UDP} },
     { "dhcp",   &ndn_dhcpv4_csap_s,     {PRIVATE, TE_PROTO_DHCP} },
+    { "dhcp6",  &ndn_dhcpv6_csap_s,     {PRIVATE, TE_PROTO_DHCP6} },
     { "tcp",    &ndn_tcp_csap_s,        {PRIVATE, TE_PROTO_TCP} },
     { "iscsi",  &ndn_iscsi_csap_s,      {PRIVATE, TE_PROTO_ISCSI} },
 #ifdef HAS_SNMP
@@ -117,6 +119,7 @@ extern asn_type ndn_icmp4_message_s;
 extern asn_type ndn_icmp6_message_s;
 extern asn_type ndn_udp_header_s;
 extern asn_type ndn_dhcpv4_message_s;
+extern asn_type ndn_dhcpv6_message_s;
 extern asn_type ndn_tcp_header_s;
 extern asn_type ndn_iscsi_message_s;
 #ifdef HAS_SNMP
@@ -141,6 +144,7 @@ static asn_named_entry_t _ndn_generic_pdu_ne_array[] = {
     { "icmp6",  &ndn_icmp6_message_s,     {PRIVATE, TE_PROTO_ICMP6} },
     { "udp",    &ndn_udp_header_s,        {PRIVATE, TE_PROTO_UDP} },
     { "dhcp",   &ndn_dhcpv4_message_s,    {PRIVATE, TE_PROTO_DHCP} },
+    { "dhcp6",  &ndn_dhcpv6_message_s,    {PRIVATE, TE_PROTO_DHCP6} },
     { "tcp",    &ndn_tcp_header_s,        {PRIVATE, TE_PROTO_TCP} },
     { "iscsi",  &ndn_iscsi_message_s,     {PRIVATE, TE_PROTO_ISCSI} },
 #ifdef HAS_SNMP

@@ -69,79 +69,75 @@
 #include "logger_api.h"
 #include "tad_dhcp_impl.h"
 
-
 /* See description tad_dhcp_impl.h */
 te_errno
 tad_dhcp_rw_init_cb(csap_p csap)
 {
-    dhcp_csap_specific_data_t *dhcp_spec_data; 
-    struct sockaddr_in local;
-    struct sockaddr_in *ifa;
-
-    int             opt = 1;
-    int             mode, rc;
-    size_t          len;
-    struct ifreq   *interface;
-
+    dhcp_csap_specific_data_t  *dhcp_spec_data;
+    struct sockaddr_in          local;
+    struct sockaddr_in         *ifa;
+    int                         opt = 1;
+    int                         mode, rc;
+    size_t                      len;
+    struct ifreq               *interface;
 
     len = sizeof(mode);
     rc = asn_read_value_field(csap->layers[csap_get_rw_layer(csap)].nds,
                               &mode, &len, "mode");
     if (rc != 0)
-        return rc; /* If this field is not set, then CSAP cannot process */ 
+        return rc; /* If this field is not set, then CSAP cannot process */
 
     dhcp_spec_data = malloc(sizeof(*dhcp_spec_data));
     if (dhcp_spec_data == NULL)
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
-    
+
     dhcp_spec_data->ipaddr = malloc(INET_ADDRSTRLEN + 1);
     dhcp_spec_data->mode = mode;
 
     /* opening incoming socket */
-    dhcp_spec_data->in = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); 
+    dhcp_spec_data->in = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (dhcp_spec_data->in < 0)
     {
         return TE_OS_RC(TE_TAD_CSAP, errno);
     }
 
     opt = 1;
-    if (setsockopt(dhcp_spec_data->in, SOL_SOCKET, SO_REUSEADDR, 
+    if (setsockopt(dhcp_spec_data->in, SOL_SOCKET, SO_REUSEADDR,
                    (void *)&opt, sizeof(opt)) != 0)
     {
         return TE_OS_RC(TE_TAD_CSAP, errno);
     }
 
     local.sin_family = AF_INET;
-    local.sin_port = htons(mode == DHCP4_CSAP_MODE_SERVER ? 
-                           DHCP_SERVER_PORT : DHCP_CLIENT_PORT); 
+    local.sin_port = htons(mode == DHCP4_CSAP_MODE_SERVER ?
+                           DHCP_SERVER_PORT : DHCP_CLIENT_PORT);
     local.sin_addr.s_addr = INADDR_ANY;
 
     if (bind(dhcp_spec_data->in, SA(&local), sizeof(local)) != 0)
     {
         return TE_OS_RC(TE_TAD_CSAP, errno);
     }
-    /* 
+    /*
      * shutdown(SHUT_WR) looks reasonable here, but it can't be
      * called on not connected socket.
      */
 
-
     /* opening outgoing socket */
-    dhcp_spec_data->out = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); 
+    dhcp_spec_data->out = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (dhcp_spec_data->out < 0)
     {
         return TE_OS_RC(TE_TAD_CSAP, errno);
     }
 
     opt = 1;
-    if (setsockopt(dhcp_spec_data->out, SOL_SOCKET, SO_REUSEADDR, 
+    if (setsockopt(dhcp_spec_data->out, SOL_SOCKET, SO_REUSEADDR,
                    (void *)&opt, sizeof(opt)) != 0)
     {
         return TE_OS_RC(TE_TAD_CSAP, errno);
-    } 
+    }
 
-    interface = calloc(sizeof(struct ifreq) + 
-                       sizeof(struct sockaddr_storage) - 
+    interface = calloc(sizeof(struct ifreq) +
+                       sizeof(struct sockaddr_storage) -
                        sizeof(struct sockaddr), 1);
     if (interface == NULL)
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
@@ -154,12 +150,12 @@ tad_dhcp_rw_init_cb(csap_p csap)
     {
         if (setsockopt(dhcp_spec_data->out, SOL_SOCKET, SO_BINDTODEVICE,
                        interface->ifr_ifrn.ifrn_name,
-                       strlen(interface->ifr_ifrn.ifrn_name) + 1) != 0) 
+                       strlen(interface->ifr_ifrn.ifrn_name) + 1) != 0)
         {
             rc  = TE_OS_RC(TE_TAD_CSAP, errno);
         }
     }
-    else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL) 
+    else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
         rc = 0;
     }
@@ -177,19 +173,12 @@ tad_dhcp_rw_init_cb(csap_p csap)
         return errno;
     }
     ifa = (struct sockaddr_in *)&interface->ifr_addr;
-    strncpy(dhcp_spec_data->ipaddr, 
-            inet_ntoa(ifa->sin_addr), 
+    strncpy(dhcp_spec_data->ipaddr,
+            inet_ntoa(ifa->sin_addr),
             INET_ADDRSTRLEN);
 
-    if (rc != 0)
-    {
-        free(interface);
-        tad_dhcp_rw_destroy_cb(csap);
-        return rc;
-    }
-
     opt = 1;
-    if (setsockopt(dhcp_spec_data->out, SOL_SOCKET, SO_BROADCAST, 
+    if (setsockopt(dhcp_spec_data->out, SOL_SOCKET, SO_BROADCAST,
                    (void *)&opt, sizeof(opt)) != 0)
     {
         free(interface);
@@ -204,7 +193,7 @@ tad_dhcp_rw_init_cb(csap_p csap)
         free(interface);
         return TE_OS_RC(TE_TAD_CSAP, errno);
     }
-    /* 
+    /*
      * shutdown(SHUT_RD) looks reasonable here, but it can't be
      * called on not connected socket.
      */
@@ -216,22 +205,166 @@ tad_dhcp_rw_init_cb(csap_p csap)
     return 0;
 }
 
+/* See description tad_dhcp_impl.h */
+te_errno
+tad_dhcp6_rw_init_cb(csap_p csap)
+{
+    dhcp_csap_specific_data_t  *dhcp_spec_data;
+    struct sockaddr_in6         local;
+    struct sockaddr            *ifa;
+    int                         opt = 1;
+    int                         mode;
+    int                         rc;
+    size_t                      len;
+    struct ifreq               *interface;
+
+    len = sizeof(mode);
+    if ((rc = asn_read_value_field(
+                csap->layers[csap_get_rw_layer(csap)].nds,
+                &mode, &len, "mode")) != 0)
+    {
+        return rc;
+    }
+
+    if ((dhcp_spec_data = malloc(sizeof(*dhcp_spec_data))) == NULL)
+    {
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    }
+
+    dhcp_spec_data->ipaddr = malloc(INET6_ADDRSTRLEN + 1);
+
+    dhcp_spec_data->mode = mode;
+
+    if ((dhcp_spec_data->in = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP)) < 0)
+    {
+        return TE_OS_RC(TE_TAD_CSAP, errno);
+    }
+
+    opt = 1;
+    if (setsockopt(dhcp_spec_data->in, SOL_SOCKET, SO_REUSEADDR,
+                   (void *)&opt, sizeof(opt)) != 0)
+    {
+        return TE_OS_RC(TE_TAD_CSAP, errno);
+    }
+
+    memset(&local, 0, sizeof(local));
+    local.sin6_family = AF_INET6;
+    local.sin6_port = htons(mode == DHCP6_CSAP_MODE_SERVER ?
+                            DHCP6_SERVER_PORT : DHCP6_CLIENT_PORT);
+    /* local.sin6_addr.s6_addr == IN6ADDR_ANY */
+
+    if (bind(dhcp_spec_data->in, SA(&local), sizeof(local)) != 0)
+    {
+        return TE_OS_RC(TE_TAD_CSAP, errno);
+    }
+
+    if ((dhcp_spec_data->out =
+            socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP)) < 0)
+    {
+        return TE_OS_RC(TE_TAD_CSAP, errno);
+    }
+
+    opt = 1;
+    if (setsockopt(dhcp_spec_data->out, SOL_SOCKET, SO_REUSEADDR,
+                   (void *)&opt, sizeof(opt)) != 0)
+    {
+        return TE_OS_RC(TE_TAD_CSAP, errno);
+    }
+
+    if ((interface =
+            calloc(sizeof(struct ifreq) +
+                        sizeof(struct sockaddr_storage) -
+                            sizeof(struct sockaddr),
+                   1)) == NULL)
+    {
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    }
+
+    len = IFNAMSIZ;
+    if ((rc =
+            asn_read_value_field(csap->layers[csap_get_rw_layer(csap)].nds,
+                                 interface->ifr_ifrn.ifrn_name,
+                                 &len, "iface")) == 0)
+    {
+        if (setsockopt(dhcp_spec_data->out, SOL_SOCKET, SO_BINDTODEVICE,
+                       interface->ifr_ifrn.ifrn_name,
+                       strlen(interface->ifr_ifrn.ifrn_name) + 1) != 0)
+        {
+            rc  = TE_OS_RC(TE_TAD_CSAP, errno);
+        }
+    }
+    else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
+    {
+        rc = 0;
+    }
+
+    if (rc != 0)
+    {
+        free(interface);
+        tad_dhcp_rw_destroy_cb(csap);
+        return rc;
+    }
+
+    if (ioctl(dhcp_spec_data->in, SIOCGIFHWADDR, interface) != 0)
+    {
+        free(interface);
+        return errno;
+    }
+
+    ifa = &interface->ifr_hwaddr;
+
+    /* HW -> LL address */
+    local.sin6_addr.s6_addr[0] = 0xfe;
+    local.sin6_addr.s6_addr[0] = 0x80;
+    (local.sin6_addr.s6_addr + 8)[0] = ifa->sa_data[0] | 0x2;
+    (local.sin6_addr.s6_addr + 8)[1] = ifa->sa_data[1];
+    (local.sin6_addr.s6_addr + 8)[2] = ifa->sa_data[2];
+    (local.sin6_addr.s6_addr + 8)[3] = 0xff;
+    (local.sin6_addr.s6_addr + 8)[4] = 0xfe;
+    (local.sin6_addr.s6_addr + 8)[5] = ifa->sa_data[3];
+    (local.sin6_addr.s6_addr + 8)[6] = ifa->sa_data[4];
+    (local.sin6_addr.s6_addr + 8)[7] = ifa->sa_data[5];
+
+    inet_ntop(AF_INET6, local.sin6_addr.s6_addr,
+              dhcp_spec_data->ipaddr, INET6_ADDRSTRLEN);
+
+    opt = 1;
+    if (setsockopt(dhcp_spec_data->out, SOL_SOCKET, SO_BROADCAST,
+                   (void *)&opt, sizeof(opt)) != 0)
+    {
+        free(interface);
+        tad_dhcp_rw_destroy_cb(csap);
+        return TE_OS_RC(TE_TAD_CSAP, errno);
+    }
+
+    if (bind(dhcp_spec_data->out, SA(&local), sizeof(local)) != 0)
+    {
+        free(interface);
+        return TE_OS_RC(TE_TAD_CSAP, errno);
+    }
+
+    free(interface);
+
+    csap_set_rw_data(csap, dhcp_spec_data);
+
+    return 0;
+}
 
 /* See description tad_dhcp_impl.h */
 te_errno
 tad_dhcp_rw_destroy_cb(csap_p csap)
 {
-    dhcp_csap_specific_data_t *spec_data = csap_get_rw_data(csap); 
-     
+    dhcp_csap_specific_data_t *spec_data = csap_get_rw_data(csap);
+
     if (spec_data->in >= 0)
-        close(spec_data->in);    
+        close(spec_data->in);
 
     if (spec_data->out >= 0)
-        close(spec_data->out);    
+        close(spec_data->out);
+
     return 0;
 }
 
- 
 /* See description tad_dhcp_impl.h */
 te_errno
 tad_dhcp_read_cb(csap_p csap, unsigned int timeout,
@@ -245,7 +378,6 @@ tad_dhcp_read_cb(csap_p csap, unsigned int timeout,
 
     return rc;
 }
-
 
 /* See description tad_dhcp_impl.h */
 te_errno
@@ -261,7 +393,7 @@ tad_dhcp_write_cb(csap_p csap, const tad_pkt *pkt)
     te_errno            rc;
 
     assert(csap != NULL);
-    spec_data = csap_get_rw_data(csap); 
+    spec_data = csap_get_rw_data(csap);
 
     if (spec_data->out < 0)
     {
@@ -279,7 +411,7 @@ tad_dhcp_write_cb(csap_p csap, const tad_pkt *pkt)
 
     memset(&dest, 0, sizeof(dest));
     dest.sin_family = AF_INET;
-    dest.sin_port = htons(spec_data->mode == DHCP4_CSAP_MODE_SERVER ? 
+    dest.sin_port = htons(spec_data->mode == DHCP4_CSAP_MODE_SERVER ?
                           DHCP_CLIENT_PORT : DHCP_SERVER_PORT);
     dest.sin_addr.s_addr = INADDR_BROADCAST;
 
@@ -292,7 +424,56 @@ tad_dhcp_write_cb(csap_p csap, const tad_pkt *pkt)
     msg.msg_flags = 0;
 
     ret = sendmsg(spec_data->out, &msg, 0);
-    if (ret < 0) 
+    if (ret < 0)
+    {
+        return TE_OS_RC(TE_TAD_CSAP, errno);
+    }
+
+    return 0;
+}
+
+/* See description tad_dhcp_impl.h */
+te_errno
+tad_dhcp6_write_cb(csap_p csap, const tad_pkt *pkt)
+{
+    dhcp_csap_specific_data_t  *spec_data;
+    struct sockaddr_in6         dest;
+    ssize_t                     ret;
+    struct msghdr               msg;
+    size_t                      iovlen = tad_pkt_seg_num(pkt);
+    struct iovec                iov[iovlen];
+    te_errno                    rc;
+
+    assert(csap != NULL);
+    spec_data = csap_get_rw_data(csap);
+
+    if (spec_data->out < 0)
+    {
+        ERROR(CSAP_LOG_FMT "no output socket", CSAP_LOG_ARGS(csap));
+        return TE_RC(TE_TAD_CSAP, TE_EIO);
+    }
+
+    /* Convert packet segments to IO vector */
+    if ((rc = tad_pkt_segs_to_iov(pkt, iov, iovlen)) != 0)
+    {
+        ERROR("Failed to convert segments to IO vector: %r", rc);
+        return rc;
+    }
+
+    memset(&dest, 0, sizeof(dest));
+    dest.sin6_family = AF_INET6;
+    dest.sin6_port = htons(spec_data->mode == DHCP6_CSAP_MODE_SERVER ? 
+                           DHCP6_CLIENT_PORT : DHCP6_SERVER_PORT);
+
+    msg.msg_name = SA(&dest);
+    msg.msg_namelen = sizeof(dest);
+    msg.msg_iov = iov;
+    msg.msg_iovlen = iovlen;
+    msg.msg_control = NULL;
+    msg.msg_controllen = 0;
+    msg.msg_flags = 0;
+
+    if ((ret = sendmsg(spec_data->out, &msg, 0)) < 0)
     {
         return TE_OS_RC(TE_TAD_CSAP, errno);
     }

@@ -26,7 +26,6 @@
  *
  * $Id$
  */
-
 #define TE_LGR_USER     "TAD Utils"
 
 #include "te_config.h"
@@ -52,26 +51,23 @@
 #include <sys/filio.h>
 #endif
 
-
 /* for ntohs, etc */
-#include <sys/socket.h> 
-#include <netinet/in.h> 
+#include <sys/socket.h>
+#include <netinet/in.h>
 #include <netinet/tcp.h>
-
 
 #include "tad_csap_inst.h"
 #include "tad_csap_support.h"
 #include "tad_utils.h"
-#include "asn_usr.h" 
-#include "ndn.h" 
+#include "asn_usr.h"
+#include "ndn.h"
 #include "logger_api.h"
 #include "logger_ta_fast.h"
-
 
 /**
  * Description see in tad_utils.h
  */
-int 
+int
 tad_confirm_pdus(csap_p csap, te_bool recv, asn_value *pdus,
                  void **layer_opaque)
 {
@@ -129,17 +125,17 @@ tad_confirm_pdus(csap_p csap, te_bool recv, asn_value *pdus,
     }
 #else
     for (layer = 0; (rc == 0) && (layer < csap->depth); layer++)
-    { 
+    {
         csap_layer_confirm_pdu_cb_t  confirm_cb;
         char                         label[40];
         asn_value                   *layer_pdu;
 
-        snprintf(label, sizeof(label), "%d.#%s", 
+        snprintf(label, sizeof(label), "%d.#%s",
                 layer, csap->layers[layer].proto);
 
         rc = asn_get_descendent(pdus, &layer_pdu, label);
 
-        if (rc != 0) 
+        if (rc != 0)
         {
             ERROR("%s(CSAP %d): asn_get_descendent rc %r, "
                   "confirm layer %d, label %s",
@@ -168,48 +164,44 @@ tad_confirm_pdus(csap_p csap, te_bool recv, asn_value *pdus,
     return rc;
 }
 
-
-
 #if 0 /* This function is not used at all now, leave it in sources
          until respective NDN method will be complete. */
-
-
 /**
  * Generic method to match data in incoming packet with DATA_UNIT pattern
- * field. If data matches, it will be written into respective field in 
- * pkt_pdu. 
+ * field. If data matches, it will be written into respective field in
+ * pkt_pdu.
  * Label of field should be provided by user. If pattern has "plain"
  * type, data will be simply compared. If it is integer, data will be
  * converted from "network byte order" to "host byte order" before matching.
  *
- * @param pattern_pdu   ASN value with pattern PDU. 
- * @param pkt_pdu       ASN value with parsed packet PDU, may be NULL 
- *                      if parsed packet is not need (OUT). 
+ * @param pattern_pdu   ASN value with pattern PDU.
+ * @param pkt_pdu       ASN value with parsed packet PDU, may be NULL
+ *                      if parsed packet is not need (OUT).
  * @param data          binary data to be matched.
- * @param d_len         length of data packet to be matched, in bytes. 
+ * @param d_len         length of data packet to be matched, in bytes.
  * @param label         textual label of desired field.
  *
  * @return zero on success (that means "data matches to the pattern"),
- *              otherwise error code. 
+ *              otherwise error code.
  *
- * This function is depricated, and leaved here only for easy backward 
- * rollbacks. Use 'ndn_match_data_units' instead. 
- * This function will be removed just when 'ndn_match_data_units' will 
+ * This function is depricated, and leaved here only for easy backward
+ * rollbacks. Use 'ndn_match_data_units' instead.
+ * This function will be removed just when 'ndn_match_data_units' will
  * be completed and debugged.
  */
-int 
-tad_univ_match_field(const tad_data_unit_t *pattern, asn_value *pkt_pdu, 
+int
+tad_univ_match_field(const tad_data_unit_t *pattern, asn_value *pkt_pdu,
                      uint8_t *data, size_t d_len, const char *label)
-{ 
+{
     char labels_buffer[200];
     int  rc = 0;
     int  user_int;
- 
+
     strcpy(labels_buffer, label);
     strcat(labels_buffer, ".#plain");
 
     if (data == NULL)
-        return TE_EWRONGPTR; 
+        return TE_EWRONGPTR;
 
     VERB("label '%s', du type %d", label, pattern->du_type);
 
@@ -221,13 +213,13 @@ tad_univ_match_field(const tad_data_unit_t *pattern, asn_value *pkt_pdu,
         case TAD_DU_INTERVALS:
             switch (d_len)
             {
-                case 2: 
+                case 2:
                     user_int = ntohs(*((uint16_t *)data));
                     break;
-                case 4: 
+                case 4:
                     user_int = ntohl(*((uint32_t *)data));
                     break;
-                case 8: 
+                case 8:
                     return TE_EOPNOTSUPP;
                 default:
                     user_int = *data;
@@ -236,7 +228,7 @@ tad_univ_match_field(const tad_data_unit_t *pattern, asn_value *pkt_pdu,
             break;
         default:
             break;
-    } 
+    }
 
     switch (pattern->du_type)
     {
@@ -245,14 +237,14 @@ tad_univ_match_field(const tad_data_unit_t *pattern, asn_value *pkt_pdu,
             if (user_int == pattern->val_i32)
             {
                 VERB(
-                        "univ_match of %s; INT, data IS matched\n", 
+                        "univ_match of %s; INT, data IS matched\n",
                         labels_buffer);
                 if (pkt_pdu)
                     rc = asn_write_value_field(pkt_pdu, &user_int,
                                       sizeof(user_int), labels_buffer);
             }
             else
-            { 
+            {
                 rc = TE_ETADNOTMATCH;
             }
             break;
@@ -268,7 +260,7 @@ tad_univ_match_field(const tad_data_unit_t *pattern, asn_value *pkt_pdu,
                         user_int <= pattern->val_intervals.end[i] )
                         break;
                 }
-                F_VERB("after loop: i %d, u_i %d", 
+                F_VERB("after loop: i %d, u_i %d",
                         i, user_int);
                 if (i == pattern->val_intervals.length)
                     rc = TE_ETADNOTMATCH;
@@ -281,29 +273,29 @@ tad_univ_match_field(const tad_data_unit_t *pattern, asn_value *pkt_pdu,
 
         case TAD_DU_STRING:
             if (strncmp(data, pattern->val_string, d_len) == 0)
-            { 
+            {
                 F_VERB("univ_match; data IS matched\n");
                 if (pkt_pdu)
-                    rc = asn_write_value_field(pkt_pdu, data, d_len, 
+                    rc = asn_write_value_field(pkt_pdu, data, d_len,
                                             labels_buffer);
             }
             else
-            { 
+            {
                 rc = TE_ETADNOTMATCH;
             }
             break;
 
         case TAD_DU_DATA:
-            if (d_len == pattern->val_mask.length && 
+            if (d_len == pattern->val_mask.length &&
                 memcmp(data, pattern->val_mask.pattern, d_len) == 0)
-            { 
+            {
                 F_VERB("univ_match; data IS matched\n");
                 if (pkt_pdu)
-                    rc = asn_write_value_field(pkt_pdu, data, d_len, 
+                    rc = asn_write_value_field(pkt_pdu, data, d_len,
                                                labels_buffer);
             }
             else
-            { 
+            {
                 rc = TE_ETADNOTMATCH;
             }
             break;
@@ -315,8 +307,8 @@ tad_univ_match_field(const tad_data_unit_t *pattern, asn_value *pkt_pdu,
             {
                 unsigned n;
 
-                const uint8_t *d = data; 
-                const uint8_t *m = pattern->val_mask.mask; 
+                const uint8_t *d = data;
+                const uint8_t *m = pattern->val_mask.mask;
                 const uint8_t *p = pattern->val_mask.pattern;
 
                 for (n = 0; n < d_len; n++, d++, p++, m++)
@@ -327,20 +319,20 @@ tad_univ_match_field(const tad_data_unit_t *pattern, asn_value *pkt_pdu,
                     }
 
                 if (pkt_pdu)
-                    rc = asn_write_value_field(pkt_pdu, data, d_len, 
+                    rc = asn_write_value_field(pkt_pdu, data, d_len,
                                                labels_buffer);
             }
             break;
         case TAD_DU_INT_NM:
             if (pkt_pdu)
-                rc = asn_write_value_field(pkt_pdu, &user_int, 
+                rc = asn_write_value_field(pkt_pdu, &user_int,
                                            sizeof(user_int), labels_buffer);
             break;
 
         case TAD_DU_DATA_NM:
             if (pkt_pdu)
-                rc = asn_write_value_field(pkt_pdu, data, d_len, 
-                                           labels_buffer); 
+                rc = asn_write_value_field(pkt_pdu, data, d_len,
+                                           labels_buffer);
             break;
 
         default:
@@ -348,25 +340,22 @@ tad_univ_match_field(const tad_data_unit_t *pattern, asn_value *pkt_pdu,
     }
     return rc;
 }
-
-
 #endif
 
-
 /**
- * Parse textual presentation of expression. 
- * Syntax is very restricted Perl-like, references to template arguments 
- * noted as $1, $2, etc. All (sub)expressions except simple constants  and 
- * references to vaiables should be in parantheses, no priorities of 
- * operations are detected. 
+ * Parse textual presentation of expression.
+ * Syntax is very restricted Perl-like, references to template arguments
+ * noted as $1, $2, etc. All (sub)expressions except simple constants  and
+ * references to vaiables should be in parantheses, no priorities of
+ * operations are detected.
  *
- * @param string        text with expression. 
+ * @param string        text with expression.
  * @param expr          location for pointer to new expression (OUT).
  * @param syms          location for number of parsed symbols (OUT).
  *
  * @return status code.
  */
-int 
+int
 tad_int_expr_parse(const char *string, tad_int_expr_t **expr, int *syms)
 {
     const char *p = string;
@@ -380,31 +369,30 @@ tad_int_expr_parse(const char *string, tad_int_expr_t **expr, int *syms)
     if ((*expr = calloc(1, sizeof(**expr))) == NULL)
         return TE_ENOMEM;
 
-    *syms = 0; 
+    *syms = 0;
 
     while (isspace(*p))
         p++;
 
-    if (*p == '(') 
+    if (*p == '(')
     {
         tad_int_expr_t *sub_expr;
         int             sub_expr_parsed = 0;
 
         p++;
 
-
-        while (isspace(*p)) 
-            p++; 
+        while (isspace(*p))
+            p++;
         if (*p == '-')
         {
             (*expr)->n_type = TAD_EXPR_U_MINUS;
-            (*expr)->d_len = 1; 
+            (*expr)->d_len = 1;
             p++;
-            while (isspace(*p)) 
-                p++; 
+            while (isspace(*p))
+                p++;
         }
         else
-        { 
+        {
             (*expr)->n_type = TAD_EXPR_ADD;
             (*expr)->d_len = 2;
         }
@@ -416,19 +404,19 @@ tad_int_expr_parse(const char *string, tad_int_expr_t **expr, int *syms)
         if (rc)
             goto parse_error;
 
-        p += sub_expr_parsed; 
-        memcpy((*expr)->exprs, sub_expr, sizeof(tad_int_expr_t)); 
+        p += sub_expr_parsed;
+        memcpy((*expr)->exprs, sub_expr, sizeof(tad_int_expr_t));
         free(sub_expr);
-        while (isspace(*p)) p++; 
+        while (isspace(*p)) p++;
 
         if ((*expr)->d_len > 1)
-        { 
+        {
             switch (*p)
             {
                 case '+':
-                    (*expr)->n_type = TAD_EXPR_ADD;    
+                    (*expr)->n_type = TAD_EXPR_ADD;
                     break;
-                case '-': 
+                case '-':
                     (*expr)->n_type = TAD_EXPR_SUBSTR;
                     break;
                 case '*':
@@ -440,14 +428,14 @@ tad_int_expr_parse(const char *string, tad_int_expr_t **expr, int *syms)
                 case '%':
                     (*expr)->n_type = TAD_EXPR_MOD;
                     break;
-                default: 
+                default:
                     WARN("%s(): unknown op %d", __FUNCTION__, (int)*p);
                     goto parse_error;
             }
             p++;
 
             while (isspace(*p))
-                p++; 
+                p++;
 
             rc = tad_int_expr_parse(p, &sub_expr, &sub_expr_parsed);
             VERB("second subexpr parsed, rc %r, syms %d",
@@ -455,18 +443,18 @@ tad_int_expr_parse(const char *string, tad_int_expr_t **expr, int *syms)
             if (rc)
                 goto parse_error;
 
-            p += sub_expr_parsed; 
-            memcpy((*expr)->exprs + 1, sub_expr, sizeof(tad_int_expr_t)); 
+            p += sub_expr_parsed;
+            memcpy((*expr)->exprs + 1, sub_expr, sizeof(tad_int_expr_t));
             free(sub_expr);
         }
         while (isspace(*p))
-            p++; 
+            p++;
 
         if (*p != ')')
             goto parse_error;
         p++;
 
-        *syms = p - string; 
+        *syms = p - string;
     }
     else if (isdigit(*p)) /* integer constant */
     {
@@ -489,8 +477,8 @@ tad_int_expr_parse(const char *string, tad_int_expr_t **expr, int *syms)
         }
 
         if (isxdigit(*p))
-        { 
-            val = strtoll(p, &endptr, base); 
+        {
+            val = strtoll(p, &endptr, base);
             p = endptr;
         }
 
@@ -504,9 +492,9 @@ tad_int_expr_parse(const char *string, tad_int_expr_t **expr, int *syms)
             (*expr)->d_len = 4;
             (*expr)->val_i32 = val;
         }
-        *syms = p - string; 
+        *syms = p - string;
     }
-    else if (*p == '$') 
+    else if (*p == '$')
     {
         p++;
         if (isdigit(*p))
@@ -514,12 +502,12 @@ tad_int_expr_parse(const char *string, tad_int_expr_t **expr, int *syms)
             char *endptr;
             (*expr)->n_type = TAD_EXPR_ARG_LINK;
             (*expr)->arg_num = strtol(p, &endptr, 10);
-            *syms = endptr - string; 
+            *syms = endptr - string;
         }
         else
             goto parse_error;
     }
-    else 
+    else
         goto parse_error;
 
     return 0;
@@ -540,7 +528,7 @@ static void
 tad_int_expr_free_subtree(tad_int_expr_t *expr)
 {
     if (expr->n_type != TAD_EXPR_CONSTANT &&
-        expr->n_type != TAD_EXPR_ARG_LINK) 
+        expr->n_type != TAD_EXPR_ARG_LINK)
     {
         unsigned i;
 
@@ -552,14 +540,14 @@ tad_int_expr_free_subtree(tad_int_expr_t *expr)
 }
 
 /**
- * Free data allocated for expression. 
+ * Free data allocated for expression.
  */
-void 
+void
 tad_int_expr_free(tad_int_expr_t *expr)
 {
     if(expr == NULL)
-        return; 
-    tad_int_expr_free_subtree(expr); 
+        return;
+    tad_int_expr_free_subtree(expr);
     free(expr);
 }
 
@@ -572,15 +560,15 @@ tad_int_expr_free(tad_int_expr_t *expr)
  *
  * @return status code.
  */
-int 
-tad_int_expr_calculate(const tad_int_expr_t *expr, 
+int
+tad_int_expr_calculate(const tad_int_expr_t *expr,
                        const tad_tmpl_arg_t *args, size_t num_args,
-                       int64_t *result) 
+                       int64_t *result)
 {
     int rc;
 
     if (expr == NULL || result == NULL)
-        return TE_EWRONGPTR; 
+        return TE_EWRONGPTR;
 
     switch (expr->n_type)
     {
@@ -602,7 +590,7 @@ tad_int_expr_calculate(const tad_int_expr_t *expr,
                 if (ar_n < 0 || ((size_t)ar_n) >= num_args)
                 {
                     ERROR("%s(): wrong arg ref: %d, num of iter. args: %d",
-                          __FUNCTION__, ar_n, num_args); 
+                          __FUNCTION__, ar_n, num_args);
                     return TE_ETADWRONGNDS;
                 }
 
@@ -617,12 +605,12 @@ tad_int_expr_calculate(const tad_int_expr_t *expr,
             VERB("%s(): arg link result %d", __FUNCTION__, (int)(*result));
             break;
 
-        default: 
+        default:
         {
             int64_t r1, r2;
 
             rc = tad_int_expr_calculate(expr->exprs, args, num_args, &r1);
-            if (rc != 0) 
+            if (rc != 0)
                 return rc;
 
             /* there is only one unary arithmetic operation */
@@ -630,7 +618,7 @@ tad_int_expr_calculate(const tad_int_expr_t *expr,
             {
                 rc = tad_int_expr_calculate(expr->exprs + 1, args,
                                             num_args, &r2);
-                if (rc != 0) 
+                if (rc != 0)
                     return rc;
             }
             VERB("%s(): left %d, right %d, op %d",
@@ -639,22 +627,22 @@ tad_int_expr_calculate(const tad_int_expr_t *expr,
             switch (expr->n_type)
             {
                 case TAD_EXPR_ADD:
-                    *result = r1 + r2; 
+                    *result = r1 + r2;
                     break;
                 case TAD_EXPR_SUBSTR:
-                    *result = r1 - r2; 
+                    *result = r1 - r2;
                     break;
                 case TAD_EXPR_MULT:
-                    *result = r1 * r2; 
+                    *result = r1 * r2;
                     break;
                 case TAD_EXPR_DIV:
-                    *result = r1 / r2; 
+                    *result = r1 / r2;
                     break;
                 case TAD_EXPR_MOD:
-                    *result = r1 % r2; 
+                    *result = r1 % r2;
                     break;
                 case TAD_EXPR_U_MINUS:
-                    *result = - r1; 
+                    *result = - r1;
                     break;
                 default:
                     ERROR("%s(): unknown type of expr node: %d",
@@ -668,7 +656,6 @@ tad_int_expr_calculate(const tad_int_expr_t *expr,
     return 0;
 }
 
-
 /**
  * Initialize tad_int_expr_t structure with single constant value.
  *
@@ -681,8 +668,8 @@ tad_int_expr_constant(int64_t n)
 {
     tad_int_expr_t *ret = calloc(1, sizeof(*ret));
 
-    if (ret == NULL) 
-        return NULL; 
+    if (ret == NULL)
+        return NULL;
 
     ret->n_type = TAD_EXPR_CONSTANT;
     ret->d_len = 8;
@@ -694,14 +681,14 @@ tad_int_expr_constant(int64_t n)
 
 /**
  * Initialize tad_int_expr_t structure with single constant value, storing
- * binary array up to 8 bytes length. Array is assumed as "network byte 
- * order" and converted to "host byte order" while saveing 
+ * binary array up to 8 bytes length. Array is assumed as "network byte
+ * order" and converted to "host byte order" while saveing
  * in 64-bit integer.
  *
  * @param arr   pointer to binary array.
  * @param len   length of array.
  *
- * @return  pointer to new tad_int_expr_r structure, or NULL if no memory 
+ * @return  pointer to new tad_int_expr_r structure, or NULL if no memory
  *          or too beg length passed.
  */
 tad_int_expr_t *
@@ -712,11 +699,11 @@ tad_int_expr_constant_arr(uint8_t *arr, size_t len)
 
     if (len > sizeof(int64_t))
         return NULL;
-            
+
     ret = calloc(1, sizeof(*ret));
 
-    if (ret == NULL) 
-        return NULL; 
+    if (ret == NULL)
+        return NULL;
 
     memcpy(((uint8_t *)&val) + sizeof(uint64_t) - len, arr, len);
 
@@ -726,20 +713,18 @@ tad_int_expr_constant_arr(uint8_t *arr, size_t len)
     ret->val_i64 = tad_ntohll(val);
 
     return ret;
-
 }
 
-
 /**
- * Convert 64-bit integer from network order to the host and vise versa. 
+ * Convert 64-bit integer from network order to the host and vise versa.
  *
  * @param n     integer to be converted.
  *
  * @return converted integer
  */
-uint64_t 
+uint64_t
 tad_ntohll(uint64_t n)
-{ 
+{
     uint16_t test_val = 0xff00;
 
     if (test_val != ntohs(test_val))
@@ -752,15 +737,14 @@ tad_ntohll(uint64_t n)
 
         return ret;
     }
-    else 
+    else
         return n;
 }
 
-
-/* See description in tad_utils.h */ 
+/* See description in tad_utils.h */
 int
-tad_data_unit_convert_by_label(const asn_value *pdu_val, 
-                               const char *label, 
+tad_data_unit_convert_by_label(const asn_value *pdu_val,
+                               const char *label,
                                tad_data_unit_t *location)
 {
     int         rc;
@@ -771,23 +755,23 @@ tad_data_unit_convert_by_label(const asn_value *pdu_val,
 
     if (pdu_val == NULL || label == NULL || location == NULL)
         return TE_EWRONGPTR;
-    
+
     if (asn_get_syntax(pdu_val, "") == CHOICE)
     {
-        if ((rc = asn_get_choice_value(pdu_val, 
+        if ((rc = asn_get_choice_value(pdu_val,
                                        (asn_value **)&clear_pdu_val,
                                        NULL, NULL)) != 0)
             return rc;
     }
     else
-        clear_pdu_val = pdu_val; 
+        clear_pdu_val = pdu_val;
 
     clear_pdu_type = asn_get_type(clear_pdu_val);
     rc = asn_label_to_tag(clear_pdu_type, label, &tag);
 
     if (rc != 0)
     {
-        ERROR("%s(): wrong label %s, ASN type %s", 
+        ERROR("%s(): wrong label %s, ASN type %s",
              __FUNCTION__, label, asn_get_type_name(clear_pdu_type));
         return rc;
     }
@@ -799,8 +783,8 @@ tad_data_unit_convert_by_label(const asn_value *pdu_val,
 
 
 
-/* See description in tad_utils.h */ 
-int 
+/* See description in tad_utils.h */
+int
 tad_data_unit_convert(const asn_value  *pdu_val,
                       asn_tag_value     tag_value,
                       tad_data_unit_t  *location)
@@ -826,7 +810,7 @@ tad_data_unit_convert(const asn_value  *pdu_val,
                   __FUNCTION__, tag_value, asn_get_name(pdu_val), rc);
             return rc;
         }
-    } 
+    }
 
     rc = tad_data_unit_convert_simple(ch_du_field, location);
     if (rc != 0)
@@ -836,14 +820,14 @@ tad_data_unit_convert(const asn_value  *pdu_val,
 }
 
 int
-tad_data_unit_convert_simple(const asn_value *ch_du_field, 
+tad_data_unit_convert_simple(const asn_value *ch_du_field,
                              tad_data_unit_t *location)
 {
     int  rc;
 
     const asn_value *du_field;
     asn_tag_class    t_class;
-    uint16_t         t_val; 
+    uint16_t         t_val;
     asn_syntax       plain_syntax;
 
     if (ch_du_field == NULL || location == NULL)
@@ -853,7 +837,7 @@ tad_data_unit_convert_simple(const asn_value *ch_du_field,
         tad_data_unit_clear(location);
 
     rc = asn_get_choice_value(ch_du_field, (asn_value **)&du_field,
-                              &t_class, &t_val); 
+                              &t_class, &t_val);
     if (rc != 0)
     {
         ERROR("%s(field name %s): rc from get choice: %r",
@@ -871,7 +855,7 @@ tad_data_unit_convert_simple(const asn_value *ch_du_field,
                 case BOOL:
                 case INTEGER:
                 case ENUMERATED:
-                    location->du_type = TAD_DU_I32; 
+                    location->du_type = TAD_DU_I32;
                     rc = asn_read_int32(du_field, &(location->val_i32), "");
                     if (rc != 0)
                         ERROR("%s(): read integer rc %r", __FUNCTION__, rc);
@@ -894,7 +878,7 @@ tad_data_unit_convert_simple(const asn_value *ch_du_field,
                     ERROR("No yet support for syntax %d", plain_syntax);
                     return TE_EOPNOTSUPP;
 
-                default: 
+                default:
                     ERROR("%s(field name %s): strange syntax %d",
                           __FUNCTION__, asn_get_name(ch_du_field),
                           plain_syntax);
@@ -902,7 +886,7 @@ tad_data_unit_convert_simple(const asn_value *ch_du_field,
 
             }
 
-            /* process string values */ 
+            /* process string values */
             if (location->du_type != TAD_DU_I32)
             {
                 size_t  len = asn_get_length(du_field, "");
@@ -915,7 +899,7 @@ tad_data_unit_convert_simple(const asn_value *ch_du_field,
                 }
 
                 if ((d_ptr = calloc(len, 1)) == NULL)
-                    return TE_ENOMEM; 
+                    return TE_ENOMEM;
 
                 rc = asn_read_value_field(du_field, d_ptr, &len, "");
                 if (rc)
@@ -923,7 +907,7 @@ tad_data_unit_convert_simple(const asn_value *ch_du_field,
                     free(d_ptr);
                     ERROR("rc from asn_read for some string: %r", rc);
                     return rc;
-                } 
+                }
 
                 location->val_data.len = len;
 
@@ -975,19 +959,18 @@ tad_data_unit_convert_simple(const asn_value *ch_du_field,
         default:
             WARN("%s(): No support for choice: tag %d at sending",
                  __FUNCTION__, t_val);
-    } 
+    }
 
     return 0;
 }
 
-
 /**
- * Clear data_unit structure, e.g. free data allocated for internal usage. 
+ * Clear data_unit structure, e.g. free data allocated for internal usage.
  * Memory block used by data_unit itself is not freed!
- * 
- * @param du    pointer to data_unit structure to be cleared. 
+ *
+ * @param du    pointer to data_unit structure to be cleared.
  */
-void 
+void
 tad_data_unit_clear(tad_data_unit_t *du)
 {
     if (du == NULL)
@@ -1016,10 +999,9 @@ tad_data_unit_clear(tad_data_unit_t *du)
     du->du_type = TAD_DU_UNDEF;
 }
 
-
 /* See description in tad_utils.h */
-int 
-tad_data_unit_from_bin(const uint8_t *data, size_t d_len, 
+int
+tad_data_unit_from_bin(const uint8_t *data, size_t d_len,
                        tad_data_unit_t *location)
 {
     if (data == NULL || location == NULL)
@@ -1037,8 +1019,8 @@ tad_data_unit_from_bin(const uint8_t *data, size_t d_len,
 
 /* See description in tad_utils.h */
 int
-tad_data_unit_to_bin(const tad_data_unit_t *du_tmpl, 
-                     const tad_tmpl_arg_t *args, size_t arg_num, 
+tad_data_unit_to_bin(const tad_data_unit_t *du_tmpl,
+                     const tad_tmpl_arg_t *args, size_t arg_num,
                      uint8_t *data_place, size_t d_len)
 {
     int rc = 0;
@@ -1051,12 +1033,12 @@ tad_data_unit_to_bin(const tad_data_unit_t *du_tmpl,
     switch (du_tmpl->du_type)
     {
         case TAD_DU_EXPR:
-        {               
+        {
             int64_t iterated, no_iterated;
 
             rc = tad_int_expr_calculate(du_tmpl->val_int_expr,
                                         args, arg_num, &iterated);
-            if (rc != 0)                                    
+            if (rc != 0)
             {
                 ERROR("%s(): int expr calc error %x", __FUNCTION__, rc);
             }
@@ -1105,7 +1087,7 @@ tad_data_unit_to_bin(const tad_data_unit_t *du_tmpl,
  * Make hex dump of packet into log with RING log level.
  *
  * @param csap    CSAP descriptor structure
- * @param usr_param     string with some user parameter, not used 
+ * @param usr_param     string with some user parameter, not used
  *                      in this callback
  * @param pkt           pointer to packet binary data
  * @param pkt_len       length of packet
@@ -1126,7 +1108,6 @@ tad_dump_hex(csap_p csap, const char *usr_param,
 
     return 0;
 }
-
 
 /* See description in tad_utils.h */
 te_errno
@@ -1150,7 +1131,7 @@ tad_tcp_push_fin(int socket, const uint8_t *data, size_t length)
     }
 
     if ((sent = send(socket, data, length, 0)) < 0)
-    { 
+    {
         rc = te_rc_os2te(errno);
         F_ERROR("Send last FIN & PUSH fail: errno %r", rc);
         return rc;
@@ -1178,25 +1159,23 @@ tad_tcp_push_fin(int socket, const uint8_t *data, size_t length)
 #endif
 }
 
-
-
 /**
  * Calculate, how much  ways are no insert nds_protos sequence
- * into csap protos sequence. 
- * If there are more then one way, they are not calculated accurately, 
+ * into csap protos sequence.
+ * If there are more then one way, they are not calculated accurately,
  * just number, greater 1, is returned.
  *
  * @param csap_seq_len  length of array layers
- * @param layers        array with CSAP layers descriptors 
+ * @param layers        array with CSAP layers descriptors
  * @param nds_seq_len   length of array nds_protos
- * @param nds_protos    array with NDS protos tags 
+ * @param nds_protos    array with NDS protos tags
  *
- * @return calculate quantity (zero, 1 or more), or -1 on error. 
+ * @return calculate quantity (zero, 1 or more), or -1 on error.
  */
-static int 
+static int
 tad_compare_seqs(size_t csap_seq_len, const csap_layer_t *layers,
                  size_t nds_seq_len, const te_tad_protocols_t *nds_protos)
-{ 
+{
     int csap_shift = 0;
     int both_shift = 0;
 
@@ -1221,7 +1200,7 @@ tad_compare_seqs(size_t csap_seq_len, const csap_layer_t *layers,
         EXIT("Sequence length in CSAP is %u and less than "
                "sequence length in NDS which is equal to %u",
                (unsigned)csap_seq_len, (unsigned)nds_seq_len);
-        return 0; 
+        return 0;
     }
 
     VERB("%s(): Compare '%d' vs '%d'", __FUNCTION__,
@@ -1243,7 +1222,6 @@ tad_compare_seqs(size_t csap_seq_len, const csap_layer_t *layers,
     /* recursive calls cannot return -1 */
     return csap_shift + both_shift;
 }
-
 
 /* See description in tad_utils.h */
 int
@@ -1278,36 +1256,34 @@ tad_check_pdu_seq(csap_p csap, asn_value *pdus)
         rc = asn_get_indexed(pdus, &gen_pdu, i, NULL);
         if (rc != 0)
         {
-            ERROR("%s(CSAP %d): asn_get_indexed failed %r", 
+            ERROR("%s(CSAP %d): asn_get_indexed failed %r",
                   __FUNCTION__, csap->id, rc);
             break;
         }
         rc = asn_get_choice_value(gen_pdu, NULL, NULL, &pdu_tag);
         if (rc != 0)
         {
-            ERROR("%s(CSAP %d): asn_get_choice failed %r", 
+            ERROR("%s(CSAP %d): asn_get_choice failed %r",
                   __FUNCTION__, csap->id, rc);
             break;
-        } 
+        }
         nds_protos[i] = pdu_tag;
-    } 
+    }
 
-    if (rc == 0) 
+    if (rc == 0)
     {
-        int ways_insert = tad_compare_seqs(csap->depth, 
-                                           csap->layers, 
-                                           nds_len, 
-                                           nds_protos);
+        int ways_insert = tad_compare_seqs(csap->depth, csap->layers,
+                                           nds_len, nds_protos);
 
         if (ways_insert < 1)
         {
-            ERROR("%s(CSAP %d): There is no way to fix PDUs", 
+            ERROR("%s(CSAP %d): There is no way to fix PDUs",
                   __FUNCTION__, csap->id);
             rc = TE_ETADWRONGNDS;
         }
         else if (ways_insert > 1)
         {
-            ERROR("%s(CSAP %d): There are many ways to fix PDUs", 
+            ERROR("%s(CSAP %d): There are many ways to fix PDUs",
                   __FUNCTION__, csap->id);
             rc = TE_ETADWRONGNDS;
         }
@@ -1321,7 +1297,7 @@ tad_check_pdu_seq(csap_p csap, asn_value *pdus)
             {
                 asn_value *new_pdu;
 
-                if (nds_protos[pos_in_old_nds] == 
+                if (nds_protos[pos_in_old_nds] ==
                     csap->layers[i].proto_tag)
                 {
                     pos_in_old_nds++;
@@ -1335,10 +1311,9 @@ tad_check_pdu_seq(csap_p csap, asn_value *pdus)
                 if (rc != 0)
                 {
                     ERROR("%s(CSAP %d) parse '%s' failed %r, sym %d",
-                          __FUNCTION__, csap->id, 
+                          __FUNCTION__, csap->id,
                           buf, rc, syms);
                     break;
-
                 }
                 rc = asn_insert_indexed(pdus, new_pdu, i, "");
                 if (rc != 0)
@@ -1387,6 +1362,8 @@ te_proto_from_str(const char *proto_txt)
         case 'd':
             if (strcmp(proto_txt + 1, "hcp") == 0)
                 return TE_PROTO_DHCP;
+            if (strcmp(proto_txt + 1, "hcp6") == 0)
+                return TE_PROTO_DHCP6;
             break;
 
         case 'e':
@@ -1433,13 +1410,11 @@ te_proto_from_str(const char *proto_txt)
         case 'u':
             if (strcmp(proto_txt + 1, "dp") == 0)
                 return TE_PROTO_UDP;
-            break; 
-    } 
+            break;
+    }
 
     return TE_PROTO_INVALID;
 }
-
-
 
 const char *
 te_proto_to_str(te_tad_protocols_t proto)
@@ -1447,7 +1422,7 @@ te_proto_to_str(te_tad_protocols_t proto)
     switch (proto)
     {
          case TE_PROTO_INVALID:
-            return NULL; 
+            return NULL;
 
          case TE_PROTO_AAL5:
              return "aal5";
@@ -1466,6 +1441,9 @@ te_proto_to_str(te_tad_protocols_t proto)
 
          case TE_PROTO_DHCP:
              return "dhcp";
+
+         case TE_PROTO_DHCP6:
+             return "dhcp6";
 
          case TE_PROTO_ETH:
              return "eth";
@@ -1502,7 +1480,7 @@ te_proto_to_str(te_tad_protocols_t proto)
 
          case TE_PROTO_SOCKET:
              return "socket";
-         
+
          case TE_PROTO_PPP:
              return "ppp";
 
@@ -1512,7 +1490,6 @@ te_proto_to_str(te_tad_protocols_t proto)
     }
     return NULL;
 }
-
 
 /* See description tad_utils.h */
 te_errno
@@ -1524,8 +1501,8 @@ tad_common_write_read_cb(csap_p csap, unsigned int timeout,
     unsigned int    layer = csap_get_rw_layer(csap);
 
     rc = csap_get_proto_support(csap, layer)->write_cb(csap, w_pkt);
-    
-    if (rc == 0)  
+
+    if (rc == 0)
         rc = csap_get_proto_support(csap, layer)->read_cb(csap, timeout,
                                                           r_pkt, r_pkt_len);
 
@@ -1551,7 +1528,7 @@ tad_common_read_cb_sock(csap_p csap, int sock, unsigned int flags,
         return TE_RC(TE_TAD_CSAP, TE_EIO);
     }
 
-    ret_val = poll(&pfd, 1, TE_US2MS(timeout)); 
+    ret_val = poll(&pfd, 1, TE_US2MS(timeout));
 
     if (ret_val == 0)
     {
@@ -1573,6 +1550,7 @@ tad_common_read_cb_sock(csap_p csap, int sock, unsigned int flags,
         ERROR("FIONREAD failed");
         nread = 0x10000;
     }
+
     if (nread > (int)tad_pkt_len(pkt))
     {
         rc = tad_pkt_realloc_segs(pkt, nread);
@@ -1602,7 +1580,6 @@ tad_common_read_cb_sock(csap_p csap, int sock, unsigned int flags,
         msg.msg_iovlen = iovlen;
 
         /* TODO: possibly MSG_TRUNC and other flags are required */
-
         flags |= MSG_TRUNC;
         r = recvmsg(sock, &msg, flags);
 
@@ -1613,6 +1590,7 @@ tad_common_read_cb_sock(csap_p csap, int sock, unsigned int flags,
                  CSAP_LOG_ARGS(csap), sock, rc);
             return rc;
         }
+
         if (r == 0)
         {
             return TE_RC(TE_TAD_CSAP, TE_ETADENDOFDATA);
@@ -1661,7 +1639,6 @@ tad_pthread_create(pthread_t *thread,
     return 0;
 }
 
-
 /**
  * Generate Traffic Pattern NDS by template for send/receive command.
  *
@@ -1672,8 +1649,8 @@ tad_pthread_create(pthread_t *thread,
  * @return Status code.
  */
 te_errno
-tad_send_recv_generate_pattern(csap_p csap, asn_value *template, 
-                               asn_value **pattern)
+tad_send_recv_generate_pattern(csap_p csap,
+                               asn_value *template, asn_value **pattern)
 {
     te_errno        rc = 0;
     unsigned int    layer;
@@ -1689,10 +1666,10 @@ tad_send_recv_generate_pattern(csap_p csap, asn_value *template,
 
     for (layer = 0; layer < csap->depth; layer++)
     {
-        csap_spt_type_p csap_spt_descr; 
+        csap_spt_type_p csap_spt_descr;
 
-        asn_value *layer_tmpl_pdu; 
-        asn_value *layer_pattern; 
+        asn_value *layer_tmpl_pdu;
+        asn_value *layer_pattern;
         asn_value *gen_pattern_pdu = asn_init_value(ndn_generic_pdu);
 
         if (gen_pattern_pdu == NULL)
@@ -1713,24 +1690,24 @@ tad_send_recv_generate_pattern(csap_p csap, asn_value *template,
                                                      layer_tmpl_pdu,
                                                      &layer_pattern);
 
-        VERB("%s(): layer %u: generate pattern cb rc %r", 
+        VERB("%s(): layer %u: generate pattern cb rc %r",
              __FUNCTION__, layer, rc);
 
-        if (rc == 0) 
+        if (rc == 0)
             rc = asn_put_choice(gen_pattern_pdu, layer_pattern);
 
         VERB("%s(): put choice: %r", __FUNCTION__, rc);
-        if (rc == 0) 
-            rc = asn_insert_indexed(pattern_unit, gen_pattern_pdu, 
+        if (rc == 0)
+            rc = asn_insert_indexed(pattern_unit, gen_pattern_pdu,
                                     layer, "pdus");
         else
             asn_free_value(gen_pattern_pdu);
 
         VERB("%s(): insert into pdus: %r", __FUNCTION__, rc);
 
-        if (rc != 0) 
+        if (rc != 0)
             break;
-    } 
+    }
 
     if (rc == 0)
     {
@@ -1754,10 +1731,9 @@ tad_send_recv_generate_pattern(csap_p csap, asn_value *template,
     return rc;
 }
 
-
 /* See the description in tad_utils.h */
 te_errno
-tad_convert_payload(const asn_value *ndn_payload, 
+tad_convert_payload(const asn_value *ndn_payload,
                     tad_payload_spec_t *pld_spec)
 {
     const asn_value *payload;
@@ -1779,7 +1755,7 @@ tad_convert_payload(const asn_value *ndn_payload,
 
     switch (t_val)
     {
-        case NDN_PLD_BYTES:  
+        case NDN_PLD_BYTES:
         {
             int     len;
             size_t  rlen;
@@ -1896,7 +1872,7 @@ tad_convert_payload(const asn_value *ndn_payload,
             break;
         }
 
-        case NDN_PLD_FUNC:  
+        case NDN_PLD_FUNC:
         {
             char   func_name[256];
             size_t fn_len = sizeof(func_name);
@@ -1908,7 +1884,7 @@ tad_convert_payload(const asn_value *ndn_payload,
                       __FUNCTION__, rc);
                 break;
             }
-            if ((pld_spec->func = (tad_user_generate_method) 
+            if ((pld_spec->func = (tad_user_generate_method)
                         rcf_ch_symbol_addr(func_name, 1)) == NULL)
             {
                 ERROR("Function '%s' for payload generation not found",
@@ -1920,7 +1896,7 @@ tad_convert_payload(const asn_value *ndn_payload,
             break;
         }
 
-        case NDN_PLD_LEN:   
+        case NDN_PLD_LEN:
         {
             int32_t len;
 
@@ -1950,32 +1926,32 @@ tad_convert_payload(const asn_value *ndn_payload,
                 if (rc != 0)
                     break;
                 INFO("%s(): stream function <%s>", __FUNCTION__, func_name);
-                if ((pld_spec->stream.func = (tad_stream_callback) 
-                                    rcf_ch_symbol_addr(func_name, 1)) 
+                if ((pld_spec->stream.func = (tad_stream_callback)
+                                    rcf_ch_symbol_addr(func_name, 1))
                     == NULL)
                 {
                     ERROR("Function %s for stream NOT found",
                           func_name);
-                    rc = TE_RC(TE_TAD_CH, TE_ENOENT); 
+                    rc = TE_RC(TE_TAD_CH, TE_ENOENT);
                 }
 
                 if ((rc = asn_get_child_value(payload, &du_field, PRIVATE,
                                               NDN_PLD_STR_OFF)) != 0)
                     break;
 
-                tad_data_unit_convert_simple(du_field, 
+                tad_data_unit_convert_simple(du_field,
                                              &(pld_spec->stream.offset));
 
                 if ((rc = asn_get_child_value(payload, &du_field, PRIVATE,
                                               NDN_PLD_STR_LEN)) != 0)
                     break;
 
-                tad_data_unit_convert_simple(du_field, 
+                tad_data_unit_convert_simple(du_field,
                                              &(pld_spec->stream.length));
             }
             break;
 
-        default: 
+        default:
             pld_spec->type = TAD_PLD_UNKNOWN;
             rc = TE_ETADWRONGNDS;
     }
@@ -2042,4 +2018,3 @@ tad_du_realloc(tad_data_unit_t *du, size_t size)
     du->val_data.len = size;
     return 0;
 }
-
