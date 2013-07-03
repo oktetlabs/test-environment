@@ -315,7 +315,7 @@ tad_dhcp6_rw_init_cb(csap_p csap)
 
     /* HW -> LL address */
     local.sin6_addr.s6_addr[0] = 0xfe;
-    local.sin6_addr.s6_addr[0] = 0x80;
+    local.sin6_addr.s6_addr[1] = 0x80;
     (local.sin6_addr.s6_addr + 8)[0] = ifa->sa_data[0] | 0x2;
     (local.sin6_addr.s6_addr + 8)[1] = ifa->sa_data[1];
     (local.sin6_addr.s6_addr + 8)[2] = ifa->sa_data[2];

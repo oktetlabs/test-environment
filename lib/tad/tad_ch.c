@@ -160,7 +160,9 @@ rcf_ch_tad_init(void)
 #endif
 #ifdef WITH_DHCP
     extern te_errno csap_support_dhcp_register(void);
+    extern te_errno csap_support_dhcp6_register(void);
     CHECK_RC(csap_support_dhcp_register());
+    CHECK_RC(csap_support_dhcp6_register());
 #endif
 #ifdef WITH_BRIDGE
     extern te_errno csap_support_bridge_register(void);

@@ -801,7 +801,6 @@ dhcpv4_option55_has_code(const struct dhcp_option *opt, uint8_t type)
     return FALSE;
 }
 
-
 /**
  * Creates DHCPv4 CSAP in server mode
  * (Sends/receives traffic from/on DHCPv4 server port)
@@ -844,6 +843,57 @@ tapi_dhcpv4_plain_csap_create(const char *ta_name,
     if (rc == 0)
     {
         rc = tapi_tad_csap_create(ta_name, 0, "dhcp", csap_spec, dhcp_csap);
+    }
+
+    asn_free_value(csap_spec);
+    asn_free_value(asn_dhcp_csap);
+
+    return rc;
+}
+
+/**
+ * Creates DHCPv6 CSAP in server mode
+ * (Sends/receives traffic from/on DHCPv4 server port)
+ *
+ * @param ta_name       Test Agent name
+ * @param iface         Tester interfase used to send/receive
+ *                      DHCPv6 messages
+ * @param mode          DHCPv6 mode (client or server)
+ * @param dhcp_csap     Pointer to DHCPv6 CSAP handle (OUT)
+ *
+ * @return  Status of the operation
+ */
+int
+tapi_dhcpv6_plain_csap_create(const char *ta_name,
+                              const char *iface,
+                              dhcp_csap_mode mode,
+                              csap_handle_t *dhcp_csap)
+{
+    int         rc;
+    asn_value  *asn_dhcp_csap;
+    asn_value  *csap_spec;
+    asn_value  *csap_layers;
+    asn_value  *csap_layer_spec;
+
+    csap_spec       = asn_init_value(ndn_csap_spec);
+    csap_layers     = asn_init_value(ndn_csap_layers);
+    csap_layer_spec = asn_init_value(ndn_generic_csap_layer);
+    asn_dhcp_csap   = asn_init_value(ndn_dhcpv6_csap);
+
+    asn_put_child_value(csap_spec, csap_layers, PRIVATE, NDN_CSAP_LAYERS);
+    asn_write_int32(asn_dhcp_csap, mode, "mode");
+    asn_write_value_field(asn_dhcp_csap, iface, strlen(iface) + 1, "iface");
+
+    if ((rc = asn_write_component_value(csap_layer_spec, asn_dhcp_csap,
+                                        "#dhcp6"))  == 0)
+    {
+        rc = asn_insert_indexed(csap_layers, csap_layer_spec, -1, "");
+    }
+
+    if (rc == 0)
+    {
+        rc = tapi_tad_csap_create(ta_name, 0, "dhcp6",
+                                  csap_spec, dhcp_csap);
     }
 
     asn_free_value(csap_spec);

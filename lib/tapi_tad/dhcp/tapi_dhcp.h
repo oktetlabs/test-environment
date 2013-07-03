@@ -328,6 +328,11 @@ extern int tapi_dhcpv4_plain_csap_create(const char *ta_name,
                                          dhcp_csap_mode mode,
                                          csap_handle_t *dhcp_csap);
 
+extern int tapi_dhcpv6_plain_csap_create(const char *ta_name,
+                                         const char *iface,
+                                         dhcp_csap_mode mode,
+                                         csap_handle_t *dhcp_csap);
+
 extern int tapi_dhcpv4_message_send(const char *ta_name,
                                     csap_handle_t dhcp_csap,
                                     const struct dhcp_message *dhcp_msg);
