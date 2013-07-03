@@ -852,57 +852,6 @@ tapi_dhcpv4_plain_csap_create(const char *ta_name,
 }
 
 /**
- * Creates DHCPv6 CSAP in server mode
- * (Sends/receives traffic from/on DHCPv4 server port)
- *
- * @param ta_name       Test Agent name
- * @param iface         Tester interfase used to send/receive
- *                      DHCPv6 messages
- * @param mode          DHCPv6 mode (client or server)
- * @param dhcp_csap     Pointer to DHCPv6 CSAP handle (OUT)
- *
- * @return  Status of the operation
- */
-int
-tapi_dhcpv6_plain_csap_create(const char *ta_name,
-                              const char *iface,
-                              dhcp_csap_mode mode,
-                              csap_handle_t *dhcp_csap)
-{
-    int         rc;
-    asn_value  *asn_dhcp_csap;
-    asn_value  *csap_spec;
-    asn_value  *csap_layers;
-    asn_value  *csap_layer_spec;
-
-    csap_spec       = asn_init_value(ndn_csap_spec);
-    csap_layers     = asn_init_value(ndn_csap_layers);
-    csap_layer_spec = asn_init_value(ndn_generic_csap_layer);
-    asn_dhcp_csap   = asn_init_value(ndn_dhcpv6_csap);
-
-    asn_put_child_value(csap_spec, csap_layers, PRIVATE, NDN_CSAP_LAYERS);
-    asn_write_int32(asn_dhcp_csap, mode, "mode");
-    asn_write_value_field(asn_dhcp_csap, iface, strlen(iface) + 1, "iface");
-
-    if ((rc = asn_write_component_value(csap_layer_spec, asn_dhcp_csap,
-                                        "#dhcp6"))  == 0)
-    {
-        rc = asn_insert_indexed(csap_layers, csap_layer_spec, -1, "");
-    }
-
-    if (rc == 0)
-    {
-        rc = tapi_tad_csap_create(ta_name, 0, "dhcp6",
-                                  csap_spec, dhcp_csap);
-    }
-
-    asn_free_value(csap_spec);
-    asn_free_value(asn_dhcp_csap);
-
-    return rc;
-}
-
-/**
  * Creates ASN.1 text file with traffic template of one DHCPv4 message
  *
  * @param dhcp_msg     DHCPv4 message
@@ -1488,4 +1437,121 @@ cleanup1:
 
 cleanup0:
     return rc;
+}
+
+/**
+ * Creates DHCPv6 CSAP in server mode
+ * (Sends/receives traffic from/on DHCPv4 server port)
+ *
+ * @param ta_name       Test Agent name
+ * @param iface         Tester interfase used to send/receive
+ *                      DHCPv6 messages
+ * @param mode          DHCPv6 mode (client or server)
+ * @param dhcp_csap     Pointer to DHCPv6 CSAP handle (OUT)
+ *
+ * @return  Status of the operation
+ */
+int
+tapi_dhcpv6_plain_csap_create(const char *ta_name,
+                              const char *iface,
+                              dhcp_csap_mode mode,
+                              csap_handle_t *dhcp_csap)
+{
+    int         rc;
+    asn_value  *asn_dhcp_csap;
+    asn_value  *csap_spec;
+    asn_value  *csap_layers;
+    asn_value  *csap_layer_spec;
+
+    csap_spec       = asn_init_value(ndn_csap_spec);
+    csap_layers     = asn_init_value(ndn_csap_layers);
+    csap_layer_spec = asn_init_value(ndn_generic_csap_layer);
+    asn_dhcp_csap   = asn_init_value(ndn_dhcpv6_csap);
+
+    asn_put_child_value(csap_spec, csap_layers, PRIVATE, NDN_CSAP_LAYERS);
+    asn_write_int32(asn_dhcp_csap, mode, "mode");
+    asn_write_value_field(asn_dhcp_csap, iface, strlen(iface) + 1, "iface");
+
+    if ((rc = asn_write_component_value(csap_layer_spec, asn_dhcp_csap,
+                                        "#dhcp6"))  == 0)
+    {
+        rc = asn_insert_indexed(csap_layers, csap_layer_spec, -1, "");
+    }
+
+    if (rc == 0)
+    {
+        rc = tapi_tad_csap_create(ta_name, 0, "dhcp6",
+                                  csap_spec, dhcp_csap);
+    }
+
+    asn_free_value(csap_spec);
+    asn_free_value(asn_dhcp_csap);
+
+    return rc;
+}
+
+/**
+ * Creates traffic template of one DHCPv6 message
+ *
+ * @param dhcp6_msg DHCPv6 message in ASN representation
+ * @param templ_p   Traffic template
+ *
+ * @return status code
+ */
+int
+dhcpv6_prepare_traffic_template(const asn_value *dhcp6_msg,
+                                asn_value **templ_p)
+{
+    asn_value  *asn_pdus;
+    asn_value  *asn_pdu;
+    int         rc;
+
+    assert(dhcp6_msg != NULL);
+
+    *templ_p = asn_init_value(ndn_traffic_template);
+    asn_pdus = asn_init_value(ndn_generic_pdu_sequence);
+    asn_pdu = asn_init_value(ndn_generic_pdu);
+
+    rc = asn_write_component_value(asn_pdu, dhcp6_msg, "#dhcp6");
+    if (rc == 0)
+        rc = asn_insert_indexed(asn_pdus, asn_pdu, -1, "");
+    if (rc == 0)
+        rc = asn_write_component_value(*templ_p, asn_pdus, "pdus");
+
+    return TE_RC(TE_TAPI, rc);
+}
+
+/**
+ * Creates traffic pattern of one DHCPv6 message
+ *
+ * @param dhcp6_msg      DHCPv6 message in ASN representation
+ * @param pattern_p      Traffic pattern (OUT)
+ *
+ * @return status code
+ */
+int
+dhcpv6_prepare_traffic_pattern(const asn_value *dhcp6_msg,
+                               asn_value **pattern_p)
+{
+    asn_value  *asn_pattern_unit;
+    asn_value  *asn_pdus;
+    asn_value  *asn_pdu;
+    int         rc;
+
+    assert(dhcp6_msg != NULL);
+
+    *pattern_p = asn_init_value(ndn_traffic_pattern);
+    asn_pattern_unit = asn_init_value(ndn_traffic_pattern_unit);
+    asn_pdus = asn_init_value(ndn_generic_pdu_sequence);
+    asn_pdu = asn_init_value(ndn_generic_pdu);
+
+    rc = asn_write_component_value(asn_pdu, dhcp6_msg, "#dhcp6");
+    if (rc == 0)
+        rc = asn_insert_indexed(asn_pdus, asn_pdu, -1, "");
+    if (rc == 0)
+        rc = asn_write_component_value(asn_pattern_unit, asn_pdus, "pdus");
+    if (rc == 0)
+        rc = asn_insert_indexed(*pattern_p, asn_pattern_unit, -1, "");
+
+    return TE_RC(TE_TAPI, rc);
 }

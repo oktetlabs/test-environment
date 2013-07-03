@@ -328,11 +328,6 @@ extern int tapi_dhcpv4_plain_csap_create(const char *ta_name,
                                          dhcp_csap_mode mode,
                                          csap_handle_t *dhcp_csap);
 
-extern int tapi_dhcpv6_plain_csap_create(const char *ta_name,
-                                         const char *iface,
-                                         dhcp_csap_mode mode,
-                                         csap_handle_t *dhcp_csap);
-
 extern int tapi_dhcpv4_message_send(const char *ta_name,
                                     csap_handle_t dhcp_csap,
                                     const struct dhcp_message *dhcp_msg);
@@ -438,4 +433,14 @@ extern te_errno tapi_dhcp_release_ip_addr(char const *ta,
                                           char const *if_name,
                                           struct sockaddr const *ip_addr);
 
+extern int tapi_dhcpv6_plain_csap_create(const char *ta_name,
+                                         const char *iface,
+                                         dhcp_csap_mode mode,
+                                         csap_handle_t *dhcp_csap);
+
+int dhcpv6_prepare_traffic_template(const asn_value *dhcp6_msg,
+                                    asn_value **templ_p);
+
+int dhcpv6_prepare_traffic_pattern(const asn_value *dhcp_msg,
+                                   asn_value **pattern_p);
 #endif /* !__TE_TAPI_DHCP_H__ */
