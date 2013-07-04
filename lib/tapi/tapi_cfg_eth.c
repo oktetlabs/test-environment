@@ -62,13 +62,6 @@ tapi_eth_common_get(const char *ta, const char *ifname, const char *field,
 
 /* See description in the tapi_cfg_eth.h */
 te_errno
-tapi_eth_link_get(const char *ta, const char *ifname, int *link)
-{
-    return tapi_eth_common_get(ta, ifname, "link", link);
-}
-
-/* See description in the tapi_cfg_eth.h */
-te_errno
 tapi_eth_gro_get(const char *ta, const char *ifname, int *gro)
 {
     return tapi_eth_common_get(ta, ifname, "gro", gro);

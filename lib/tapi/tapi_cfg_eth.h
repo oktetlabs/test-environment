@@ -34,18 +34,6 @@ extern "C" {
 #endif
 
 /**
- * Get link number of an ethernet interface
- * 
- * @param ta        Test agent name
- * @param ifname    Interface name
- * @param link      Location for the link number
- * 
- * @return Status code
- */
-extern te_errno tapi_eth_link_get(const char *ta, const char *ifname,
-                                 int *link);
-
-/**
  * Get GRO value of an ethernet interface
  * 
  * @param ta        Test agent name

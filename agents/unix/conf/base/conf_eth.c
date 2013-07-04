@@ -82,8 +82,6 @@ eth_cmd_get(unsigned int gid, const char *oid, char *value,
         eval.cmd = ETHTOOL_GTSO;
     else if (strstr(oid, "/flags:") != NULL)
         eval.cmd = ETHTOOL_GFLAGS;
-    else if (strstr(oid, "/link:") != NULL)
-        eval.cmd = ETHTOOL_GLINK;
     else
         return TE_EINVAL;
 
@@ -186,9 +184,7 @@ eth_reset_get(unsigned int gid, const char *oid, char *value,
     return 0;
 }
 
-RCF_PCH_CFG_NODE_RO(eth_link, "link", NULL, NULL, eth_cmd_get);
-
-RCF_PCH_CFG_NODE_RW(eth_reset, "reset", NULL, &eth_link,
+RCF_PCH_CFG_NODE_RW(eth_reset, "reset", NULL, NULL,
                     eth_reset_get, eth_cmd_set);
 
 RCF_PCH_CFG_NODE_RW(eth_gro, "gro", NULL, &eth_reset,
