@@ -56,6 +56,17 @@
 /* Max path length to external handler */
 #define TESTER_SERIAL_MAX_PATH  256
 
+/* 
+ * Default timeout of waiting between attempts to appeal to configurator in
+ * case if it busy by a local sequence, in microseconds
+ */
+#define SERIAL_WAIT_LOCAL_SEQ_TIMEOUT 10000
+
+/*
+ * Attemtions limit to avoid infinity loop
+ */
+#define SERIAL_WAIT_LOCAL_SEQ_LIMIT 1000
+
 /** Allowable results of the Tester serial events handlers */
 typedef enum {
     SERIAL_EVENT_CONTINUE, /**< Continue handlers execution */
@@ -103,6 +114,20 @@ typedef struct tester_serial_handler_t {
 SLIST_HEAD(serial_hand_h_t, tester_serial_handler_t);
 typedef struct serial_hand_h_t serial_hand_h_t;
 
+/** Counter to avoid infinite loops in configurator waiting */
+static int serial_wait_local_counter = 0;
+
+/**
+ * Try perform request to configurator and wait if it busy by local sequence
+ */
+#define SERIAL_WAIT_LOCAL_SEQ(_func) \
+do { \
+    serial_wait_local_counter = 0; \
+    while ((rc = (_func)) == TE_RC(TE_CS, TE_EACCES) && \
+           serial_wait_local_counter++ < SERIAL_WAIT_LOCAL_SEQ_LIMIT) \
+        usleep(SERIAL_WAIT_LOCAL_SEQ_TIMEOUT); \
+} while (0)
+
 /**
  * Get sequence of the Tester event handlers from Configurator
  * 
@@ -143,8 +168,8 @@ if (_rc != 0) \
     continue; \
 }
 
-    rc = cfg_find_pattern_fmt(&n_handles, &handles,
-                              SERIAL_FMT_HLR "*/priority:", event_name);
+    SERIAL_WAIT_LOCAL_SEQ(cfg_find_pattern_fmt(&n_handles, &handles,
+        SERIAL_FMT_HLR "*/priority:", event_name));
     if (rc != 0)
         return rc;
 
@@ -154,28 +179,30 @@ if (_rc != 0) \
         h->name = NULL;
         h->path = NULL;
 
-        rc = cfg_get_father(handles[i], &h->handle);
+        SERIAL_WAIT_LOCAL_SEQ(cfg_get_father(handles[i], &h->handle));
         SERIAL_CHECK_RC(rc, "Couldn't get the handler instance handle");
 
         type = CVT_INTEGER;
-        rc = cfg_get_instance(handles[i], &type, &h->priority);
+        SERIAL_WAIT_LOCAL_SEQ(cfg_get_instance(handles[i], &type,
+                                               &h->priority));
         SERIAL_CHECK_RC(rc, "Couldn't get the handler instance priority");
 
-        rc = cfg_get_inst_name(h->handle, &h->name);
+        SERIAL_WAIT_LOCAL_SEQ(cfg_get_inst_name(h->handle, &h->name));
         SERIAL_CHECK_RC(rc, "Couldn't get the handler instance name");
 
         if (h->name == NULL)
             SERIAL_CHECK_RC(TE_ENOENT, "The handler name is NULL");
 
         type = CVT_INTEGER;
-        rc = cfg_get_instance_fmt(&type, &h->internal, SERIAL_FMT_HLR
-                                  "%s/internal:", event_name, h->name);
+        SERIAL_WAIT_LOCAL_SEQ(cfg_get_instance_fmt(&type, &h->internal, 
+            SERIAL_FMT_HLR "%s/internal:", event_name, h->name));
         SERIAL_CHECK_RC(rc, "Failed to get the handler type");
 
         if (h->internal == FALSE)
         {
             type = CVT_STRING;
-            rc = cfg_get_instance(h->handle, &type, &h->path);
+            SERIAL_WAIT_LOCAL_SEQ(cfg_get_instance(h->handle, &type,
+                                                   &h->path));
             SERIAL_CHECK_RC(rc, "Failed to get the handler %s path inst",
                             h->name);
             if (h->path == NULL)
@@ -185,8 +212,8 @@ if (_rc != 0) \
         {
             signame = NULL;
             type = CVT_STRING;
-            rc = cfg_get_instance_fmt(&type, &signame, SERIAL_FMT_HLR
-                                      "%s/signal:", event_name, h->name);
+            SERIAL_WAIT_LOCAL_SEQ(cfg_get_instance_fmt(&type, &signame,
+                SERIAL_FMT_HLR "%s/signal:", event_name, h->name));
             SERIAL_CHECK_RC(rc, "Failed to get the handler signal");
             if (signame == NULL)
                 SERIAL_CHECK_RC(TE_RC(TE_TESTER, TE_EINVAL),
@@ -239,13 +266,14 @@ tester_serial_call_handler(const char *path)
     char           *loc = NULL;
     cfg_val_type    type;
     int             res;
+    int             rc;
 
     if (*path != '/' && *path != '~')
     {
         type = CVT_STRING;
-        res = cfg_get_instance_fmt(&type, &loc,
-                                   SERIAL_FMT_LOC "/location:");
-        if (res != 0 || loc == NULL)
+        SERIAL_WAIT_LOCAL_SEQ(cfg_get_instance_fmt(&type, &loc,
+            SERIAL_FMT_LOC "/location:"));
+        if (rc != 0 || loc == NULL)
         {
             ERROR("Failed to get path to the handlers directory");
             return -1;
@@ -434,7 +462,8 @@ tester_serial_thread(void)
     int             status;
 
     type = CVT_INTEGER;
-    rc = cfg_get_instance_fmt(&type, &period, "/local:/tester:/period:");
+    SERIAL_WAIT_LOCAL_SEQ(cfg_get_instance_fmt(&type, &period,
+                                               "/local:/tester:/period:"));
     if (rc != 0)
     {
         ERROR("Failed to get the parser period");
@@ -446,13 +475,14 @@ tester_serial_thread(void)
 
     while (stop_thread == FALSE)
     {
-        rc = cfg_find_pattern_fmt(&n_handles, &handles,
-                                  "/agent:*/parser:*/event:*/status:");
+        SERIAL_WAIT_LOCAL_SEQ(cfg_find_pattern_fmt(&n_handles, &handles,
+            "/agent:*/parser:*/event:*/status:"));
         if (rc != 0)
             return rc;
         for (i = 0; (unsigned)i < n_handles; i++)
         {
-            rc = cfg_get_instance_sync(handles[i], &type, &status);
+            SERIAL_WAIT_LOCAL_SEQ(cfg_get_instance_sync(handles[i], &type,
+                                  &status));
             if (rc != 0)
             {
                 ERROR("Couldn't get the event status");
@@ -460,7 +490,8 @@ tester_serial_thread(void)
             }
             if (status != FALSE)
             {
-                rc = cfg_get_father(handles[i], &event_handle);
+                SERIAL_WAIT_LOCAL_SEQ(cfg_get_father(handles[i],
+                                                     &event_handle));
                 if (rc != 0)
                 {
                     ERROR("Couldn't get the event");
@@ -469,7 +500,8 @@ tester_serial_thread(void)
 
                 event_name = NULL;
                 type = CVT_STRING;
-                rc = cfg_get_instance(event_handle, &type, &event_name);
+                SERIAL_WAIT_LOCAL_SEQ(cfg_get_instance(event_handle, &type,
+                                                       &event_name));
                 if (rc != 0 || event_name == NULL)
                 {
                     ERROR("Couldn't get the event name");
@@ -490,7 +522,8 @@ tester_serial_thread(void)
                 }
 
                 type = CVT_INTEGER;
-                rc = cfg_set_instance(handles[i], type, FALSE);
+                SERIAL_WAIT_LOCAL_SEQ(cfg_set_instance(handles[i], type,
+                                                       FALSE));
                 if (rc != 0)
                 {
                     ERROR("Couldn't change event %s status", event_name);
@@ -568,7 +601,8 @@ tester_start_serial_thread(void)
 
     /* Check support of the serial parsing framework */
     type = CVT_INTEGER;
-    rc = cfg_get_instance_fmt(&type, &enable, "/local:/tester:/enable:");
+    SERIAL_WAIT_LOCAL_SEQ(cfg_get_instance_fmt(&type, &enable,
+                                               "/local:/tester:/enable:"));
     if ((rc != 0 && TE_RC(TE_CS, TE_ENOENT)) || enable == FALSE)
         return 0;
 
