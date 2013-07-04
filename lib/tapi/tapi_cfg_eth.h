@@ -151,19 +151,6 @@ extern te_errno tapi_eth_flags_set(const char *ta, const char *ifname,
  */
 extern te_errno tapi_eth_reset(const char *ta, const char *ifname);
 
-/**
- * Get interface hardware address
- * 
- * @param ta        Test agent name
- * @param ifname    Interface name
- * @param addr      Pointer to buffer for address,
- *                  Note: the buffer size should be at least ETHER_ADDR_LEN
- * 
- * @return Status code
- */
-extern te_errno tapi_eth_permaddr_get(const char *ta, const char *ifname,
-                                      unsigned char *addr);
-
 
 #ifdef __cplusplus
 } /* extern "C" */

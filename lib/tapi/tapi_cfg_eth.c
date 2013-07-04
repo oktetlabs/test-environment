@@ -153,25 +153,3 @@ tapi_eth_reset(const char *ta, const char *ifname)
 {
     return tapi_eth_common_set(ta, ifname, "reset", 1);
 }
-
-/* See description in the tapi_cfg_eth.h */
-te_errno
-tapi_eth_permaddr_get(const char *ta, const char *ifname,
-                      unsigned char *o_addr)
-{
-    cfg_val_type        type = CVT_ADDRESS;
-    int                 rc;
-    struct sockaddr    *addr = NULL;
-
-    if ((rc = cfg_get_instance_fmt(&type, &addr,
-                                   TE_CFG_TA_ETH_FMT "/permaddr:",
-                                   ta, ifname)) != 0)
-        ERROR("Failed to get hardware address: %r", rc);
-    else
-    {
-        memcpy(o_addr, addr->sa_data, ETHER_ADDR_LEN);
-        free(addr);
-    }
-
-    return rc;
-}

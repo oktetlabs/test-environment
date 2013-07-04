@@ -164,72 +164,6 @@ eth_cmd_set(unsigned int gid, const char *oid, char *value,
 }
 
 /**
- * Get permanent hardware address
- *
- * @param gid          Group identifier
- * @param oid          Full object instance identifier
- * @param value        Location to save value
- * @param ifname       Interface name
- *
- * @return Status code
- */
-static te_errno
-eth_permaddr_get(unsigned int gid, const char *oid, char *value,
-                 const char *ifname)
-{
-    struct ifreq                ifr;
-    struct ethtool_perm_addr   *addr;
-    unsigned int                i;
-    unsigned int                offt = 0;
-    int                         res;
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-    memset(&ifr, 0, sizeof(ifr));
-
-    addr = malloc(sizeof(*addr) + IFHWADDRLEN);
-    memset(addr, 0, sizeof(*addr) + IFHWADDRLEN);
-    addr->size = IFHWADDRLEN;
-    addr->cmd = ETHTOOL_GPERMADDR;
-
-    ifr.ifr_data = (void *)addr;
-    strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name));
-
-    if (ioctl(cfg_socket, SIOCETHTOOL, &ifr) != 0)
-    {
-        ERROR("ioctl failed: %s", strerror(errno));
-        free(addr);
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    }
-
-    if (addr->size != IFHWADDRLEN)
-    {
-        ERROR("Obtained hardware address has wrong length %u", addr->size);
-        free(addr);
-        return TE_OS_RC(TE_TA_UNIX, TE_EFAULT);
-    }
-
-    for (i = 0; i < addr->size; i++)
-    {
-        if ((res = snprintf(value + offt, RCF_MAX_VAL - offt,
-                            i == 0 ? "%x" : ":%x", addr->data[i])) < 0 ||
-            (unsigned int)res > RCF_MAX_VAL - offt)
-        {
-            ERROR("failed to write address to the value buffer: %s",
-                  strerror(errno));
-            free(addr);
-            return TE_OS_RC(TE_TA_UNIX, errno);
-        }
-        offt += res;
-    }
-
-    free(addr);
-
-    return 0;
-}
-
-/**
  * Get reset value (dummy)
  *
  * @param gid          Group identifier
@@ -257,10 +191,7 @@ RCF_PCH_CFG_NODE_RO(eth_link, "link", NULL, NULL, eth_cmd_get);
 RCF_PCH_CFG_NODE_RW(eth_reset, "reset", NULL, &eth_link,
                     eth_reset_get, eth_cmd_set);
 
-RCF_PCH_CFG_NODE_RO(eth_permaddr, "permaddr", NULL, &eth_reset,
-                    eth_permaddr_get);
-
-RCF_PCH_CFG_NODE_RW(eth_gro, "gro", NULL, &eth_permaddr,
+RCF_PCH_CFG_NODE_RW(eth_gro, "gro", NULL, &eth_reset,
                     eth_cmd_get, eth_cmd_set);
 
 RCF_PCH_CFG_NODE_RW(eth_gso, "gso", NULL, &eth_gro,
