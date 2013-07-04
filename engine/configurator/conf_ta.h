@@ -119,6 +119,36 @@ extern int cfg_ta_sync_dependants(cfg_instance *inst);
  */
 extern void cfg_ta_log_syncing(te_bool flag);
 
+/**
+ * Perform check whether local commands sequence is started or not.
+ * If started then set msg @a _cfg_msg rc to TE_EACCES and return from the
+ * current function.
+ * 
+ * @param _cmd      Command name
+ * @param _cfg_msg  cfg_msg argument
+ * @param _ret_exp  Return expression
+ */
+#define CFG_CHECK_NO_LOCAL_SEQ_EXP(_cmd, _cfg_msg, _ret_exp) \
+if (local_cmd_seq) \
+{ \
+    (_cfg_msg)->rc = TE_EACCES; \
+    VERB("Non local %s command while local command " \
+         "sequence is active %r", _cmd, (_cfg_msg)->rc); \
+    _ret_exp \
+}
+
+/**
+ * The CFG_CHECK_NO_LOCAL_SEQ_EXP wrapper, return status code
+ */
+#define CFG_CHECK_NO_LOCAL_SEQ_RC(_cmd, _cfg_msg) \
+    CFG_CHECK_NO_LOCAL_SEQ_EXP(_cmd, _cfg_msg, {return (_cfg_msg)->rc;})
+
+/**
+ * The CFG_CHECK_NO_LOCAL_SEQ_EXP wrapper, perform break
+ */
+#define CFG_CHECK_NO_LOCAL_SEQ_BREAK(_cmd, _cfg_msg) \
+    CFG_CHECK_NO_LOCAL_SEQ_EXP(_cmd, _cfg_msg, {break;})
+
 #ifdef __cplusplus
 }
 #endif

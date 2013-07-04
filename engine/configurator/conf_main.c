@@ -97,10 +97,7 @@ cfg_avoid_local_cmd_problem(const char *cmd, const char *oid,
     {
         if (!msg_local)
         {
-            msg->rc = TE_EACCES;
-            ERROR("Non local %s command while local command "
-                  "sequence is active %r", cmd, msg->rc);
-            return msg->rc;
+            CFG_CHECK_NO_LOCAL_SEQ_RC(cmd, msg);
         }
         else
         {
@@ -909,6 +906,11 @@ log_msg(cfg_msg *msg, te_bool before)
         level = TE_LL_INFO;
         addon = " OK";
     }
+    else if (msg->rc == TE_RC(TE_CS, TE_EACCES))
+    {
+        level = TE_LL_VERB;
+        addon = " local sequence started";
+    }
     else
     {
         level = TE_LL_ERROR;
@@ -1386,6 +1388,7 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
             break;
 
         case CFG_FIND:
+            CFG_CHECK_NO_LOCAL_SEQ_BREAK("find", *msg);
             /* Synchronize /agent/volatile subtree if necessary */
             if (((*msg)->rc = cfg_sync_agt_volatile(
                                   ((cfg_find_msg *)*msg)->oid)) != 0)
@@ -1408,6 +1411,7 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
             break;
 
         case CFG_PATTERN:
+            CFG_CHECK_NO_LOCAL_SEQ_BREAK("pattern", *msg);
             /* Synchronize /agent/volatile subtree if necessary */
             if (((*msg)->rc = cfg_sync_agt_volatile(
                                   ((cfg_pattern_msg *)*msg)->pattern)) != 0)
@@ -1420,6 +1424,7 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
             break;
 
         case CFG_FAMILY:
+            CFG_CHECK_NO_LOCAL_SEQ_BREAK("family", *msg);
             cfg_process_msg_family((cfg_family_msg *)*msg);
             break;
 
@@ -1440,6 +1445,7 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
             break;
 
         case CFG_GET:
+            CFG_CHECK_NO_LOCAL_SEQ_BREAK("get", *msg);
             process_get((cfg_get_msg *)(*msg));
             break;
 
