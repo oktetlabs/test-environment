@@ -371,7 +371,7 @@ parse_config(const char *file, te_bool restore)
  * @return Status code
  */
 static int
-cfg_sync_agt_volatile(const char *inst_name)
+cfg_sync_agt_volatile(cfg_msg *msg, const char *inst_name)
 {
     char *ta;
     char  oid[CFG_OID_MAX];
@@ -379,10 +379,13 @@ cfg_sync_agt_volatile(const char *inst_name)
     if (!cfg_oid_match_volatile(inst_name, &ta))
         return 0;
 
+    CFG_CHECK_NO_LOCAL_SEQ_RC("sync_agt_volatile", msg);
+
     TE_SPRINTF(oid, CFG_TA_PREFIX"%s", ta);
     free(ta);
 
-    return cfg_ta_sync(oid, TRUE);
+    msg->rc = cfg_ta_sync(oid, TRUE);
+    return msg->rc;
 }
 
 #if 0
@@ -454,7 +457,7 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
         return;
 
     /* Synchronize /agent/volatile subtree if necessary */
-    if ((msg->rc = cfg_sync_agt_volatile(oid)) != 0)
+    if (cfg_sync_agt_volatile((cfg_msg *)msg, oid) != 0)
     {
         cfg_wipe_cmd_error(CFG_ADD, CFG_HANDLE_INVALID);
         return;
@@ -1388,10 +1391,9 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
             break;
 
         case CFG_FIND:
-            CFG_CHECK_NO_LOCAL_SEQ_BREAK("find", *msg);
             /* Synchronize /agent/volatile subtree if necessary */
-            if (((*msg)->rc = cfg_sync_agt_volatile(
-                                  ((cfg_find_msg *)*msg)->oid)) != 0)
+            if (cfg_sync_agt_volatile(*msg,
+                                      ((cfg_find_msg *)*msg)->oid) != 0)
             {
                 break;
             }
@@ -1411,10 +1413,9 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
             break;
 
         case CFG_PATTERN:
-            CFG_CHECK_NO_LOCAL_SEQ_BREAK("pattern", *msg);
             /* Synchronize /agent/volatile subtree if necessary */
-            if (((*msg)->rc = cfg_sync_agt_volatile(
-                                  ((cfg_pattern_msg *)*msg)->pattern)) != 0)
+            if (cfg_sync_agt_volatile(*msg,
+                ((cfg_pattern_msg *)*msg)->pattern) != 0)
             {
                 break;
             }
