@@ -331,6 +331,18 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
             {
                 const xmlChar *parent_dep;
 
+                if ((attr = xmlGetProp_exp(tmp, (xmlChar *)"cond")) != NULL)
+                {
+                    /* in case add condition is specified */
+                    if (strcmp(attr, "false") == 0 || strcmp(attr, "") == 0)
+                    {
+                        xmlFree((xmlChar *)attr);
+                        tmp = xmlNodeNext(tmp);
+                        continue;
+                    }
+                    xmlFree((xmlChar *)attr);
+                }
+
                 if ((oid = (xmlChar *)xmlGetProp_exp(tmp, (xmlChar *)"oid"))
                         == NULL)
                     RETERR(TE_EINVAL, "Incorrect %s command format",
