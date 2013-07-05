@@ -49,6 +49,8 @@
 #include "te_ethtool.h"
 #endif
 
+#include "te_rpc_sys_socket.h"
+
 /**
  * Get single ethernet interface configuration value.
  *
@@ -146,8 +148,8 @@ eth_cmd_set(unsigned int gid, const char *oid, char *value,
     {
         if (eval.data == 0)
             return 0;
-        eval.cmd = ETHTOOL_RESET;
-        eval.data = ETH_RESET_ALL;
+        eval.cmd = RPC_ETHTOOL_RESET;
+        eval.data = RPC_ETH_RESET_ALL;
     }
     else
         return TE_EINVAL;
