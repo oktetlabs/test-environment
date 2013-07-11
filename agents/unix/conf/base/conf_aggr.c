@@ -223,6 +223,7 @@ static te_errno
 trunk_list(aggregation *aggr, char **member_list)
 {
     FILE *f;
+    char *c;
 
     if (snprintf(buf, sizeof(buf), "/sys/class/net/%s/bonding/slaves", 
                  aggr->ifname) <= 0)
@@ -235,8 +236,13 @@ trunk_list(aggregation *aggr, char **member_list)
     {
         ERROR("Failed to open file \"%s\"", buf);
     }
+
+    memset(buf, 0, sizeof(buf));
     fread(buf, sizeof(buf), 1, f);
     fclose(f);
+
+    if ((c = strchr(buf, '\n')) != NULL)
+        *c = 0;
 
     if ((*member_list = strdup(buf)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
