@@ -618,7 +618,8 @@ rgt_stream_copy(const char *out_str, const char *in_str)
     chunk[RGT_CHUNK_SIZE] = '\0';
     if (strcmp(out_str, "-") != 0)
     {
-        out_fd = open(out_str, O_CREAT | O_WRONLY | O_TRUNC);
+        out_fd = open(out_str, O_CREAT | O_WRONLY | O_TRUNC,
+                      S_IRUSR | S_IWUSR | S_IRGRP);
         if (out_fd == -1)
         {
             fprintf(stderr, "Couldn't open the file: %s; %s\n",
