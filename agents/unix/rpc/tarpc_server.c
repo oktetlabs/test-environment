@@ -9349,8 +9349,8 @@ vfork_pipe_exec(tarpc_vfork_pipe_exec_in *in)
     te_errno      rc;
     struct pollfd fds;
 
-    static int global_var = 1;
-    int stack_var = 1;
+    static volatile int global_var = 1;
+    volatile int stack_var = 1;
 
     memset(&fds, 0, sizeof(fds));
 
@@ -9421,7 +9421,6 @@ vfork_pipe_exec(tarpc_vfork_pipe_exec_in *in)
     {
         sleep(1);
         global_var = 2;
-        *((volatile int *)&stack_var);
         stack_var = 2;
         fds.fd = pipefd[0];
         fds.events = POLLIN;
