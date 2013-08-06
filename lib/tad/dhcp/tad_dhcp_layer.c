@@ -311,8 +311,6 @@ tad_dhcp6_confirm_tmpl_cb(csap_p csap, unsigned int layer,
                                             "transaction-id.#plain")) != 0)
                 return rc;
         }
-        else
-            return rc;
     }
     else
     { /* relay/server message */
@@ -326,8 +324,6 @@ tad_dhcp6_confirm_tmpl_cb(csap_p csap, unsigned int layer,
                                             "hop-count.#plain")) != 0)
                 return rc;
         }
-        else
-            return rc;
     }
 
     proto_data = csap_get_proto_spec_data(csap, layer);
@@ -467,6 +463,8 @@ tad_dhcp6_gen_bin_cb(csap_p csap, unsigned int layer,
     {
         if ((rc = dhcp6_calculate_options_data(options, &len)) != 0)
             return rc;
+
+        bitlen += len << 3;
     }
 
     /* Allocate memory for binary template of the header */
