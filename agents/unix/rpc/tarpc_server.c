@@ -2131,15 +2131,20 @@ sigset_cmp(sigset_t *sig_first, sigset_t *sig_second)
     int          i;
     int          in_first;
     int          in_second;
+    int          saved_errno = errno;
 
     for (i = 1; i <= SIGRTMAX; i++)
     {
         in_first = sigismember(sig_first, i);
         in_second = sigismember(sig_second, i);
         if (in_first != in_second)
+        {
+            errno = saved_errno;
             return (in_first < in_second) ? -1 : 1;
+        }
     }
 
+    errno = saved_errno;
     return 0;
 }
 
