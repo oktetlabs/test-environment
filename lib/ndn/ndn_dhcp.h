@@ -149,9 +149,9 @@ typedef enum {
 } ndn_dhcp_opt_type;
 
 typedef enum {
-    DUID_LLT,
-    DUID_LL,
-    DUID_EN,
+    DUID_LLT = 1,
+    DUID_LL = 2,
+    DUID_EN = 3,
 } ndn_dhcp_duid_type;
 
 extern asn_type *ndn_dhcpv4_message;
