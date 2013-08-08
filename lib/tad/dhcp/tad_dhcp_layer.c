@@ -1335,6 +1335,9 @@ fill_dhcp6_options(void *buf, const asn_value *options)
     uint8_t     uint8_val;
     uint16_t    uint16_val;
     uint32_t    uint32_val;
+    uint8_t     uint8_val_net;
+    uint16_t    uint16_val_net;
+    uint32_t    uint32_val_net;
     uint16_t    opt_type;
     uint16_t    duid_type;
 
@@ -1353,7 +1356,15 @@ fill_dhcp6_options(void *buf, const asn_value *options)
                                        _name ".#plain")) != 0)              \
             break;                                                          \
                                                                             \
-        memcpy(buf, &_type##_val, len);                                     \
+        /* We need to write values in the network byte order */             \
+        if (strcmp(#_type, "uint8") == 0)                                   \
+            _type##_val_net = _type##_val; /* the same as host byte order */\
+        else if (strcmp(#_type, "uint16") == 0)                             \
+            _type##_val_net = htons(_type##_val);                           \
+        else /* uint32 */                                                   \
+            _type##_val_net = htonl(_type##_val);                           \
+                                                                            \
+        memcpy(buf, &_type##_val_net, len);                                 \
         buf += len;                                                         \
     } while (0)
 
@@ -1374,18 +1385,8 @@ fill_dhcp6_options(void *buf, const asn_value *options)
 
         READ_FIELD_VALUE(opt, uint16, "length");
 
-        if ((len = asn_get_length(opt, "value.#plain")) > 0)
-        {   /* Option 'value' field is specified directly */
-            if ((rc = asn_read_value_field(opt, buf, &len,
-                                       "value.#plain")) != 0)
-                break;
-
-            buf += len;
-
-            continue;
-        }
-        else if (opt_type == DHCP6_OPT_RAPID_COMMIT ||
-                 opt_type == DHCP6_OPT_RECONF_ACCEPT)
+        if (opt_type == DHCP6_OPT_RAPID_COMMIT ||
+            opt_type == DHCP6_OPT_RECONF_ACCEPT)
         {   /* nothing else */
             continue;
         }
@@ -1575,6 +1576,17 @@ fill_dhcp6_options(void *buf, const asn_value *options)
 
             READ_FIELD_VALUE(opt_body, uint32, "enterprise-number");
             READ_FIELD_OCTETS(opt_body, "option-data");
+        }
+        else
+        {   /* Read 'value' field directly */
+            len = asn_get_length(opt, "value.#plain");
+            if ((rc = asn_read_value_field(opt, buf, &len,
+                                       "value.#plain")) != 0)
+                break;
+
+            buf += len;
+
+            continue;
         }
     }
     return rc;
