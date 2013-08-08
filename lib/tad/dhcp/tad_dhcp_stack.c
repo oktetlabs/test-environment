@@ -462,8 +462,12 @@ tad_dhcp6_write_cb(csap_p csap, const tad_pkt *pkt)
 
     memset(&dest, 0, sizeof(dest));
     dest.sin6_family = AF_INET6;
-    dest.sin6_port = htons(spec_data->mode == DHCP6_CSAP_MODE_SERVER ? 
+    dest.sin6_port = htons(spec_data->mode == DHCP6_CSAP_MODE_SERVER ?
                            DHCP6_CLIENT_PORT : DHCP6_SERVER_PORT);
+    inet_pton(AF_INET6,
+        "FF02::1:2"
+        /*FIXME hardcoded All_DHCP_Relay_Agents_and_Servers address*/,
+        dest.sin6_addr.s6_addr);
 
     msg.msg_name = SA(&dest);
     msg.msg_namelen = sizeof(dest);
