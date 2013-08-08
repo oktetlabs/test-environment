@@ -125,6 +125,16 @@ static const tad_bps_pkt_frag tad_dhcp6_bps_hdr[] =
       TAD_DU_I32, FALSE },
     { "transaction-id", 24, BPS_FLD_CONST_DEF(NDN_DHCP6_TID, 0),
       TAD_DU_I32, FALSE },
+};
+
+#if 0
+/**
+ * Definition of DHCPv6 relay message header
+ */
+static const tad_bps_pkt_frag tad_dhcp6_bps_hdr[] =
+{
+    { "msg-type", 8, BPS_FLD_NO_DEF(NDN_DHCP6_TYPE),
+      TAD_DU_I32, FALSE },
     { "hop-count", 8, BPS_FLD_CONST_DEF(NDN_DHCP6_HOPCNT, 0),
       TAD_DU_I32, FALSE },
     { "link-addr", 128, BPS_FLD_CONST_DEF(NDN_DHCP6_LADDR, 0),
@@ -132,6 +142,7 @@ static const tad_bps_pkt_frag tad_dhcp6_bps_hdr[] =
     { "peer-addr", 128, BPS_FLD_CONST_DEF(NDN_DHCP6_PADDR, 0),
       TAD_DU_OCTS, FALSE},
 };
+#endif
 
 #define TAD_DHCP_OPTIONS
 
@@ -300,8 +311,10 @@ tad_dhcp6_confirm_tmpl_cb(csap_p csap, unsigned int layer,
 
     assert(type >= DHCP6_MSG_SOLICIT && type <= DHCP6_MSG_RELAY_REPL);
 
+#if 0
     if (type != DHCP6_MSG_RELAY_FORW && type != DHCP6_MSG_RELAY_REPL)
     { /* client/server message */
+#endif
         rc = asn_read_value_field(layer_pdu, &trid,
                                   &len, "transaction-id.#plain");
         if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
@@ -311,6 +324,7 @@ tad_dhcp6_confirm_tmpl_cb(csap_p csap, unsigned int layer,
                                             "transaction-id.#plain")) != 0)
                 return rc;
         }
+#if 0
     }
     else
     { /* relay/server message */
@@ -325,6 +339,7 @@ tad_dhcp6_confirm_tmpl_cb(csap_p csap, unsigned int layer,
                 return rc;
         }
     }
+#endif
 
     proto_data = csap_get_proto_spec_data(csap, layer);
 
@@ -987,16 +1002,20 @@ tad_dhcp6_match_post_cb(csap_p              csap,
 
     msg_type = data[0];
 
+#if 0
     if (msg_type != DHCP6_MSG_RELAY_FORW &&
         msg_type != DHCP6_MSG_RELAY_REPL)
     { /* client/server message */
+#endif
         data += 4; /* msg-type (1 octet) + transaction-id (3 octets) */
+#if 0
     }
     else
     { /* relay/server forward/reply message */
         data += 34; /* msg-type (1 octet) + hop-count (1 octet) +
                        link-address (16 octets) + peer-address (16 octets) */
     }
+#endif
 
     opt_list = asn_init_value(ndn_dhcpv6_options);
 
