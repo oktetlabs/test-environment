@@ -123,13 +123,13 @@ static const tad_bps_pkt_frag tad_dhcp6_bps_hdr[] =
 {
     { "msg-type", 8, BPS_FLD_NO_DEF(NDN_DHCP6_TYPE),
       TAD_DU_I32, FALSE },
-    { "transaction-id", 24, BPS_FLD_NO_DEF(NDN_DHCP6_TID),
+    { "transaction-id", 24, BPS_FLD_CONST_DEF(NDN_DHCP6_TID, 0),
       TAD_DU_I32, FALSE },
-    { "hop-count", 8, BPS_FLD_NO_DEF(NDN_DHCP6_HOPCNT),
+    { "hop-count", 8, BPS_FLD_CONST_DEF(NDN_DHCP6_HOPCNT, 0),
       TAD_DU_I32, FALSE },
-    { "link-addr", 128, BPS_FLD_NO_DEF(NDN_DHCP6_LADDR),
+    { "link-addr", 128, BPS_FLD_CONST_DEF(NDN_DHCP6_LADDR, 0),
       TAD_DU_OCTS, FALSE},
-    { "peer-addr", 128, BPS_FLD_NO_DEF(NDN_DHCP6_PADDR),
+    { "peer-addr", 128, BPS_FLD_CONST_DEF(NDN_DHCP6_PADDR, 0),
       TAD_DU_OCTS, FALSE},
 };
 
