@@ -810,13 +810,13 @@ process_dhcp6_options(asn_value *opt_list, uint8_t **data_p,
 
                 if (opt_type == DHCP6_OPT_IA_NA)
                 {
-                    FILL_DHCP_OPT_FIELD(option_body, "T1", 4);
-                    FILL_DHCP_OPT_FIELD(option_body, "T2", 4);
+                    FILL_DHCP_OPT_FIELD(option_body, "t1", 4);
+                    FILL_DHCP_OPT_FIELD(option_body, "t2", 4);
                 }
 
                 if (opt_type == DHCP6_OPT_IAADDR)
                 {
-                    FILL_DHCP_OPT_FIELD(option_body, "IPv6-address", 16);
+                    FILL_DHCP_OPT_FIELD(option_body, "ipv6-address", 16);
                     FILL_DHCP_OPT_FIELD(option_body, "preferred-lifetime", 4);
                     FILL_DHCP_OPT_FIELD(option_body, "valid-lifetime", 4);
                 }
@@ -862,8 +862,8 @@ process_dhcp6_options(asn_value *opt_list, uint8_t **data_p,
 
             FILL_DHCP_OPT_FIELD(option_body, "protocol", 1);
             FILL_DHCP_OPT_FIELD(option_body, "algorithm", 1);
-            FILL_DHCP_OPT_FIELD(option_body, "RDM", 1);
-            FILL_DHCP_OPT_FIELD(option_body, "relay detection", 8);
+            FILL_DHCP_OPT_FIELD(option_body, "rdm", 1);
+            FILL_DHCP_OPT_FIELD(option_body, "relay-detection", 8);
             FILL_DHCP_OPT_FIELD(option_body, "auth-info", opt_len - 11);
 
             asn_put_child_value(opt, option_body, PRIVATE, NDN_DHCP6_AUTH);
@@ -1433,14 +1433,18 @@ fill_dhcp6_options(void *buf, const asn_value *options)
                                          NDN_DHCP6_IA_NA)) != 0)
                 break;
             READ_FIELD_VALUE(opt_body, uint32, "iaid");
-            READ_FIELD_VALUE(opt_body, uint32, "T1");
-            READ_FIELD_VALUE(opt_body, uint32, "T2");
+            READ_FIELD_VALUE(opt_body, uint32, "t1");
+            READ_FIELD_VALUE(opt_body, uint32, "t2");
 
             if ((rc = asn_get_child_value(opt_body, &sub_opt, PRIVATE,
-                                          NDN_DHCP6_OPTIONS)) != 0)
-                break;
-
-            if ((rc = fill_dhcp6_options(buf, sub_opt)) != 0)
+                                          NDN_DHCP6_OPTIONS)) == 0)
+            {
+                if ((rc = fill_dhcp6_options(buf, sub_opt)) != 0)
+                    break;
+            }
+            else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
+                rc = 0;
+            else
                 break;
         }
         else if (opt_type == DHCP6_OPT_IA_TA)
@@ -1462,7 +1466,7 @@ fill_dhcp6_options(void *buf, const asn_value *options)
             if((rc = asn_get_child_value(opt, &opt_body, PRIVATE,
                                          NDN_DHCP6_IA_ADDR)) != 0)
                 break;
-            READ_FIELD_OCTETS(opt_body, "ipv6_addr");
+            READ_FIELD_OCTETS(opt_body, "ipv6-address");
             READ_FIELD_VALUE(opt_body, uint32, "preferred-lifetime");
             READ_FIELD_VALUE(opt_body, uint32, "valid-lifetime");
 
@@ -1512,7 +1516,7 @@ fill_dhcp6_options(void *buf, const asn_value *options)
 
             READ_FIELD_VALUE(opt_body, uint8, "protocol");
             READ_FIELD_VALUE(opt_body, uint8, "algorithm");
-            READ_FIELD_VALUE(opt_body, uint8, "RDM");
+            READ_FIELD_VALUE(opt_body, uint8, "rdm");
             READ_FIELD_OCTETS(opt_body, "replay-detection");
             READ_FIELD_OCTETS(opt_body, "auth-info");
         }

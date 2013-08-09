@@ -149,13 +149,13 @@ asn_type ndn_dhcpv6_message_s;
 
 static asn_named_entry_t _ndn_dhcpv6_ia_na_ne_array [] = {
     { "iaid", &ndn_data_unit_int32_s, {PRIVATE, NDN_DHCP6_IAID} },
-    { "T1", &ndn_data_unit_int32_s, {PRIVATE, NDN_DHCP6_TIME} },
-    { "T2", &ndn_data_unit_int32_s, {PRIVATE, NDN_DHCP6_TIME} },
+    { "t1", &ndn_data_unit_int32_s, {PRIVATE, NDN_DHCP6_TIME} },
+    { "t2", &ndn_data_unit_int32_s, {PRIVATE, NDN_DHCP6_TIME} },
     { "options", &ndn_dhcpv6_options_s, {PRIVATE, NDN_DHCP6_OPTIONS} },
 };
 
 static asn_type ndn_dhcpv6_ia_na_s = {
-    "DHCPv6-IA_NA", {PRIVATE, NDN_DHCP6_IA_NA}, SEQUENCE,
+    "DHCPv6-IA-NA", {PRIVATE, NDN_DHCP6_IA_NA}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_dhcpv6_ia_na_ne_array),
     {_ndn_dhcpv6_ia_na_ne_array}
 };
@@ -166,13 +166,13 @@ static asn_named_entry_t _ndn_dhcpv6_ia_ta_ne_array [] = {
 };
 
 static asn_type ndn_dhcpv6_ia_ta_s = {
-    "DHCPv6-IA_TA", {PRIVATE, NDN_DHCP6_IA_TA}, SEQUENCE,
+    "DHCPv6-IA-TA", {PRIVATE, NDN_DHCP6_IA_TA}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_dhcpv6_ia_ta_ne_array),
     {_ndn_dhcpv6_ia_ta_ne_array}
 };
 
 static asn_named_entry_t _ndn_dhcpv6_ia_addr_ne_array [] = {
-    { "IPv6_address", &ndn_data_unit_ip6_address_s,
+    { "ipv6-address", &ndn_data_unit_ip6_address_s,
         {PRIVATE, NDN_DHCP6_IP6_ADDR} },
     { "preferred-lifetime", &ndn_data_unit_int32_s,
         {PRIVATE, NDN_DHCP6_TIME} },
@@ -182,7 +182,7 @@ static asn_named_entry_t _ndn_dhcpv6_ia_addr_ne_array [] = {
 };
 
 static asn_type ndn_dhcpv6_ia_addr_s = {
-    "DHCPv6-IA_ADDR", {PRIVATE, NDN_DHCP6_IA_ADDR}, SEQUENCE,
+    "DHCPv6-IA-ADDR", {PRIVATE, NDN_DHCP6_IA_ADDR}, SEQUENCE,
     TE_ARRAY_LEN(_ndn_dhcpv6_ia_addr_ne_array),
     {_ndn_dhcpv6_ia_addr_ne_array}
 };
@@ -212,8 +212,8 @@ asn_type *ndn_dhcpv6_oro = &ndn_dhcpv6_oro_s;
 static asn_named_entry_t _ndn_dhcpv6_auth_ne_array [] = {
     { "protocol", &ndn_data_unit_int8_s, {PRIVATE, NDN_DHCP6_AUTH_PROTO}},
     { "algorithm", &ndn_data_unit_int8_s, {PRIVATE, NDN_DHCP6_AUTH_ALG}},
-    { "RDM", &ndn_data_unit_int8_s, {PRIVATE, NDN_DHCP6_AUTH_RDM}},
-    { "relay detection", &ndn_data_unit_octet_string_s,
+    { "rdm", &ndn_data_unit_int8_s, {PRIVATE, NDN_DHCP6_AUTH_RDM}},
+    { "relay-detection", &ndn_data_unit_octet_string_s,
         {PRIVATE, NDN_DHCP6_AUTH_RELAY_DETECT}},
     { "auth-info", &ndn_data_unit_octet_string_s,
         {PRIVATE, NDN_DHCP6_AUTH_INFO}},
@@ -301,19 +301,19 @@ static asn_named_entry_t _ndn_dhcpv6_option_ne_array [] = {
     { "relay-messade", &ndn_dhcpv6_message_s,
         {PRIVATE, NDN_DHCP6_RELAY_MESSAGE}},
     { "duid", &ndn_dhcpv6_duid_s, {PRIVATE, NDN_DHCP6_DUID}},
-    { "ia_na", &ndn_dhcpv6_ia_na_s, {PRIVATE, NDN_DHCP6_IA_NA}},
-    { "ia_ta", &ndn_dhcpv6_ia_ta_s, {PRIVATE, NDN_DHCP6_IA_TA}},
-    { "ia_addr", &ndn_dhcpv6_ia_addr_s, {PRIVATE, NDN_DHCP6_IA_ADDR}},
+    { "ia-na", &ndn_dhcpv6_ia_na_s, {PRIVATE, NDN_DHCP6_IA_NA}},
+    { "ia-ta", &ndn_dhcpv6_ia_ta_s, {PRIVATE, NDN_DHCP6_IA_TA}},
+    { "ia-addr", &ndn_dhcpv6_ia_addr_s, {PRIVATE, NDN_DHCP6_IA_ADDR}},
     { "oro", &ndn_dhcpv6_oro_s, {PRIVATE, NDN_DHCP6_ORO}},
     { "auth", &ndn_dhcpv6_auth_s, {PRIVATE, NDN_DHCP6_AUTH}},
     { "servaddr", &ndn_data_unit_ip6_address_s,
         {PRIVATE, NDN_DHCP6_SERVADDR}},
     { "status", &ndn_dhcpv6_status_s, {PRIVATE, NDN_DHCP6_STATUS}},
-    { "user_class_data", &ndn_dhcpv6_class_data_list_s,
+    { "user-class-data", &ndn_dhcpv6_class_data_list_s,
         {PRIVATE, NDN_DHCP6_USER_CLASS}},
-    { "vendor_class", &ndn_dhcpv6_vendor_class_s,
+    { "vendor-class", &ndn_dhcpv6_vendor_class_s,
         {PRIVATE, NDN_DHCP6_VENDOR_CLASS}},
-    { "vendor_specific", &ndn_dhcpv6_vendor_specific_s,
+    { "vendor-specific", &ndn_dhcpv6_vendor_specific_s,
         {PRIVATE, NDN_DHCP6_VENDOR_SPECIFIC}},
 };
 
