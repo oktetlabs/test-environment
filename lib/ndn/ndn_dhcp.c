@@ -187,9 +187,42 @@ static asn_type ndn_dhcpv6_ia_addr_s = {
     {_ndn_dhcpv6_ia_addr_ne_array}
 };
 
+static asn_named_entry_t _ndn_dhcpv6_ia_pd_ne_array [] = {
+    { "iaid", &ndn_data_unit_int32_s, {PRIVATE, NDN_DHCP6_IAID} },
+    { "t1", &ndn_data_unit_int32_s, {PRIVATE, NDN_DHCP6_TIME} },
+    { "t2", &ndn_data_unit_int32_s, {PRIVATE, NDN_DHCP6_TIME} },
+    { "options", &ndn_dhcpv6_options_s, {PRIVATE, NDN_DHCP6_OPTIONS} },
+};
+
+static asn_type ndn_dhcpv6_ia_pd_s = {
+    "DHCPv6-IA-PD", {PRIVATE, NDN_DHCP6_IA_PD}, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_dhcpv6_ia_pd_ne_array),
+    {_ndn_dhcpv6_ia_pd_ne_array}
+};
+
+static asn_named_entry_t _ndn_dhcpv6_ia_prefix_ne_array [] = {
+    { "preferred-lifetime", &ndn_data_unit_int32_s,
+        {PRIVATE, NDN_DHCP6_TIME} },
+    { "valid-lifetime", &ndn_data_unit_int32_s,
+        {PRIVATE, NDN_DHCP6_TIME} },
+    { "prefix-length", &ndn_data_unit_int8_s,
+        {PRIVATE, NDN_DHCP6_IP6_PREFIX}},
+    { "prefix-address", &ndn_data_unit_ip6_address_s,
+        {PRIVATE, NDN_DHCP6_IP6_ADDR} },
+    { "options", &ndn_dhcpv6_options_s, {PRIVATE, NDN_DHCP6_OPTIONS} },
+};
+
+static asn_type ndn_dhcpv6_ia_prefix_s = {
+    "DHCPv6-IA-PREFIX", {PRIVATE, NDN_DHCP6_IA_PREFIX}, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_dhcpv6_ia_prefix_ne_array),
+    {_ndn_dhcpv6_ia_prefix_ne_array}
+};
+
 asn_type *ndn_dhcpv6_ia_na = &ndn_dhcpv6_ia_na_s;
 asn_type *ndn_dhcpv6_ia_ta = &ndn_dhcpv6_ia_ta_s;
 asn_type *ndn_dhcpv6_ia_addr = &ndn_dhcpv6_ia_addr_s;
+asn_type *ndn_dhcpv6_ia_pd = &ndn_dhcpv6_ia_pd_s;
+asn_type *ndn_dhcpv6_ia_prefix = &ndn_dhcpv6_ia_prefix_s;
 
 static asn_named_entry_t _ndn_dhcpv6_opcode_ne_array [] = {
     { "opcode", &ndn_data_unit_int16_s, {PRIVATE, NDN_DHCP6_OPCODE}},
@@ -317,6 +350,9 @@ static asn_named_entry_t _ndn_dhcpv6_option_ne_array [] = {
         {PRIVATE, NDN_DHCP6_VENDOR_SPECIFIC}},
     { "elapsed-time",  &ndn_data_unit_int16_s,
         {PRIVATE, NDN_DHCP6_ELAPSED_TIME} },
+    { "ia-pd", &ndn_dhcpv6_ia_pd_s, {PRIVATE, NDN_DHCP6_IA_PD}},
+    { "ia-prefix", &ndn_dhcpv6_ia_prefix_s,
+        {PRIVATE, NDN_DHCP6_IA_PREFIX}},
 };
 
 static asn_type ndn_dhcpv6_option_s = {

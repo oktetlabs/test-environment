@@ -761,79 +761,91 @@ process_dhcp6_options(asn_value *opt_list, uint8_t **data_p,
                                     PRIVATE, NDN_DHCP6_DUID);
             }
         }
+        else if (opt_type == DHCP6_OPT_RELAY_MSG)
+        { /* DHCP6 relayed message */
+            msg_type = data[0];
+
+            option_body = asn_init_value(ndn_dhcpv6_message);
+            FILL_DHCP_OPT_FIELD(option_body, "msg-type", 1);
+            FILL_DHCP_OPT_FIELD(option_body, "transaction-id", 3);
+
+            if (msg_type == DHCP6_MSG_RELAY_FORW ||
+                msg_type == DHCP6_MSG_RELAY_REPL)
+            { /* relay/server forward/reply message */
+                FILL_DHCP_OPT_FIELD(option_body, "link-address", 16);
+                FILL_DHCP_OPT_FIELD(option_body, "peer-address", 16);
+            }
+
+            sub_opt_list = asn_init_value(ndn_dhcpv6_options);
+
+            process_dhcp6_options(sub_opt_list, &data,
+                                  data_ptr, data_len);
+
+            asn_put_child_value(option_body, sub_opt_list,
+                                PRIVATE, NDN_DHCP6_OPTIONS);
+
+            asn_put_child_value(opt, option_body,
+                                PRIVATE, NDN_DHCP6_RELAY_MESSAGE);
+        }
         else if (opt_type == DHCP6_OPT_IA_NA    ||
                  opt_type == DHCP6_OPT_IA_TA    ||
                  opt_type == DHCP6_OPT_IAADDR   ||
-                 opt_type == DHCP6_OPT_RELAY_MSG)
-        {
-            if (opt_type == DHCP6_OPT_RELAY_MSG)
-            { /* DHCP6 relayed message */
-                msg_type = data[0];
+                 opt_type == DHCP6_OPT_IA_PD    ||
+                 opt_type == DHCP6_OPT_IA_PREFIX)
+        { /* IA_NA, IA_TA, IA_ADDR, IA_PD and IA_PREFIX options */
+            option_body =
+                asn_init_value(
+                    (opt_type == DHCP6_OPT_IA_NA) ?
+                        ndn_dhcpv6_ia_na :
+                            (opt_type == DHCP6_OPT_IA_TA) ?
+                                ndn_dhcpv6_ia_ta :
+                                    (opt_type == DHCP6_OPT_IAADDR) ?
+                                        ndn_dhcpv6_ia_addr :
+                                            (opt_type == DHCP6_OPT_IA_PD) ?
+                                                ndn_dhcpv6_ia_pd :
+                                                    ndn_dhcpv6_ia_prefix);
 
-                option_body = asn_init_value(ndn_dhcpv6_message);
-                FILL_DHCP_OPT_FIELD(option_body, "msg-type", 1);
-                FILL_DHCP_OPT_FIELD(option_body, "transaction-id", 3);
-
-                if (msg_type == DHCP6_MSG_RELAY_FORW ||
-                    msg_type == DHCP6_MSG_RELAY_REPL)
-                { /* relay/server forward/reply message */
-                    FILL_DHCP_OPT_FIELD(option_body, "link-address", 16);
-                    FILL_DHCP_OPT_FIELD(option_body, "peer-address", 16);
-                }
-
-                sub_opt_list = asn_init_value(ndn_dhcpv6_options);
-
-                process_dhcp6_options(sub_opt_list, &data,
-                                      data_ptr, data_len);
-
-                asn_put_child_value(option_body, sub_opt_list,
-                                    PRIVATE, NDN_DHCP6_OPTIONS);
-
-                asn_put_child_value(opt, option_body,
-                                    PRIVATE, NDN_DHCP6_RELAY_MESSAGE);
+            if (opt_type == DHCP6_OPT_IA_NA ||
+                opt_type == DHCP6_OPT_IA_TA ||
+                opt_type == DHCP6_OPT_IA_PD)
+            {
+                FILL_DHCP_OPT_FIELD(option_body, "iaid", 4);
             }
-            else
-            { /* IA_NA, IA_TA or IA_ADDR options */
-                option_body =
-                    asn_init_value(
-                        (opt_type == DHCP6_OPT_IA_NA) ?
-                            ndn_dhcpv6_ia_na :
-                                (opt_type == DHCP6_OPT_IA_TA) ?
-                                    ndn_dhcpv6_ia_ta :
-                                        ndn_dhcpv6_ia_addr);
 
-                if (opt_type == DHCP6_OPT_IA_NA ||
-                    opt_type == DHCP6_OPT_IA_TA)
-                {
-                    FILL_DHCP_OPT_FIELD(option_body, "iaid", 4);
-                }
-
-                if (opt_type == DHCP6_OPT_IA_NA)
-                {
-                    FILL_DHCP_OPT_FIELD(option_body, "t1", 4);
-                    FILL_DHCP_OPT_FIELD(option_body, "t2", 4);
-                }
-
-                if (opt_type == DHCP6_OPT_IAADDR)
-                {
-                    FILL_DHCP_OPT_FIELD(option_body, "ipv6-address", 16);
-                    FILL_DHCP_OPT_FIELD(option_body, "preferred-lifetime", 4);
-                    FILL_DHCP_OPT_FIELD(option_body, "valid-lifetime", 4);
-                }
-
-                sub_opt_list = asn_init_value(ndn_dhcpv6_options);
-
-                process_dhcp6_options(sub_opt_list, &data,
-                                      data_ptr, data_len);
-
-                asn_put_child_value(
-                    opt, option_body, PRIVATE,
-                        (opt_type == DHCP6_OPT_IA_NA) ?
-                            NDN_DHCP6_IA_NA :
-                                (opt_type == DHCP6_OPT_IA_TA) ?
-                                    NDN_DHCP6_IA_TA :
-                                        NDN_DHCP6_IA_ADDR);
+            if (opt_type == DHCP6_OPT_IA_NA ||
+                opt_type == DHCP6_OPT_IA_PD)
+            {
+                FILL_DHCP_OPT_FIELD(option_body, "t1", 4);
+                FILL_DHCP_OPT_FIELD(option_body, "t2", 4);
             }
+
+            if (opt_type == DHCP6_OPT_IAADDR)
+            {
+                FILL_DHCP_OPT_FIELD(option_body, "ipv6-address", 16);
+                FILL_DHCP_OPT_FIELD(option_body, "preferred-lifetime", 4);
+                FILL_DHCP_OPT_FIELD(option_body, "valid-lifetime", 4);
+            }
+
+            if (opt_type == DHCP6_OPT_IA_PREFIX)
+            {
+                FILL_DHCP_OPT_FIELD(option_body, "preferred-lifetime", 4);
+                FILL_DHCP_OPT_FIELD(option_body, "valid-lifetime", 4);
+                FILL_DHCP_OPT_FIELD(option_body, "prefix-length", 1);
+                FILL_DHCP_OPT_FIELD(option_body, "prefix-address", 16);
+            }
+
+            sub_opt_list = asn_init_value(ndn_dhcpv6_options);
+
+            process_dhcp6_options(sub_opt_list, &data,
+                                  data_ptr, data_len);
+
+            asn_put_child_value(
+                opt, option_body, PRIVATE,
+                    (opt_type == DHCP6_OPT_IA_NA) ?
+                        NDN_DHCP6_IA_NA :
+                            (opt_type == DHCP6_OPT_IA_TA) ?
+                                NDN_DHCP6_IA_TA :
+                                    NDN_DHCP6_IA_ADDR);
         }
         else if (opt_type == DHCP6_OPT_ORO)
         {
@@ -1459,10 +1471,14 @@ fill_dhcp6_options(void *buf, const asn_value *options)
             READ_FIELD_VALUE(opt_body, uint32, "iaid");
 
             if ((rc = asn_get_child_value(opt_body, &sub_opt, PRIVATE,
-                                          NDN_DHCP6_OPTIONS)) != 0)
-                break;
-
-            if ((rc = fill_dhcp6_options(buf, sub_opt)) != 0)
+                                          NDN_DHCP6_OPTIONS)) == 0)
+            {
+                if ((rc = fill_dhcp6_options(buf, sub_opt)) != 0)
+                    break;
+            }
+            else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
+                rc = 0;
+            else
                 break;
         }
         else if (opt_type == DHCP6_OPT_IAADDR)
@@ -1475,10 +1491,14 @@ fill_dhcp6_options(void *buf, const asn_value *options)
             READ_FIELD_VALUE(opt_body, uint32, "valid-lifetime");
 
             if ((rc = asn_get_child_value(opt_body, &sub_opt, PRIVATE,
-                                          NDN_DHCP6_OPTIONS)) != 0)
-                break;
-
-            if ((rc = fill_dhcp6_options(buf, sub_opt)) != 0)
+                                          NDN_DHCP6_OPTIONS)) == 0)
+            {
+                if ((rc = fill_dhcp6_options(buf, sub_opt)) != 0)
+                    break;
+            }
+            else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
+                rc = 0;
+            else
                 break;
         }
         else if (opt_type == DHCP6_OPT_ORO)
@@ -1510,10 +1530,14 @@ fill_dhcp6_options(void *buf, const asn_value *options)
             READ_FIELD_VALUE(opt_body, uint32, "transaction-id");
 
             if((rc = asn_get_child_value(opt_body, &sub_opt, PRIVATE,
-                                         NDN_DHCP6_OPTIONS)) != 0)
-                break;
-
-            if ((rc = fill_dhcp6_options(buf, sub_opt)) != 0)
+                                         NDN_DHCP6_OPTIONS)) == 0)
+            {
+                if ((rc = fill_dhcp6_options(buf, sub_opt)) != 0)
+                    break;
+            }
+            else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
+                rc = 0;
+            else
                 break;
         }
         else if (opt_type == DHCP6_OPT_AUTH)
@@ -1588,6 +1612,47 @@ fill_dhcp6_options(void *buf, const asn_value *options)
 
             READ_FIELD_VALUE(opt_body, uint32, "enterprise-number");
             READ_FIELD_OCTETS(opt_body, "option-data");
+        }
+        else if (opt_type == DHCP6_OPT_IA_PD)
+        {
+            if((rc = asn_get_child_value(opt, &opt_body, PRIVATE,
+                                         NDN_DHCP6_IA_PD)) != 0)
+                break;
+            READ_FIELD_VALUE(opt_body, uint32, "iaid");
+            READ_FIELD_VALUE(opt_body, uint32, "t1");
+            READ_FIELD_VALUE(opt_body, uint32, "t2");
+
+            if ((rc = asn_get_child_value(opt_body, &sub_opt, PRIVATE,
+                                          NDN_DHCP6_OPTIONS)) == 0)
+            {
+                if ((rc = fill_dhcp6_options(buf, sub_opt)) != 0)
+                    break;
+            }
+            else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
+                rc = 0;
+            else
+                break;
+        }
+        else if (opt_type == DHCP6_OPT_IA_PREFIX)
+        {
+            if((rc = asn_get_child_value(opt, &opt_body, PRIVATE,
+                                         NDN_DHCP6_IA_PREFIX)) != 0)
+                break;
+            READ_FIELD_VALUE(opt_body, uint32, "preferred-lifetime");
+            READ_FIELD_VALUE(opt_body, uint32, "valid-lifetime");
+            READ_FIELD_VALUE(opt_body, uint8, "prefix-length");
+            READ_FIELD_OCTETS(opt_body, "prefix-address");
+
+            if ((rc = asn_get_child_value(opt_body, &sub_opt, PRIVATE,
+                                          NDN_DHCP6_OPTIONS)) == 0)
+            {
+                if ((rc = fill_dhcp6_options(buf, sub_opt)) != 0)
+                    break;
+            }
+            else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
+                rc = 0;
+            else
+                break;
         }
         else
         {   /* Read 'value' field directly */

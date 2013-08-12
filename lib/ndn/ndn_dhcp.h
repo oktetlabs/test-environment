@@ -88,6 +88,7 @@ typedef enum {
     NDN_DHCP6_ORO,
     NDN_DHCP6_OPCODE,
     NDN_DHCP6_IP6_ADDR,
+    NDN_DHCP6_IP6_PREFIX,
     NDN_DHCP6_RELAY_MESSAGE,
     NDN_DHCP6_AUTH,
     NDN_DHCP6_AUTH_PROTO,
@@ -108,6 +109,8 @@ typedef enum {
     NDN_DHCP6_VENDOR_SPECIFIC,
     NDN_DHCP6_VENDOR_SPECIFIC_DATA,
     NDN_DHCP6_ELAPSED_TIME,
+    NDN_DHCP6_IA_PD,
+    NDN_DHCP6_IA_PREFIX,
 } ndn_dhcp6_tags_t;
 
 typedef enum {
@@ -147,6 +150,13 @@ typedef enum {
     DHCP6_OPT_INTERFACE_ID = 18,
     DHCP6_OPT_RECONF_MSG = 19,
     DHCP6_OPT_RECONF_ACCEPT = 20,
+    /* Options 21, 22? */
+    DHCP6_OPT_DNS_RECURSIVE = 23,
+    DHCP6_OPT_DOMAIN_SEARCH_LIST = 24,
+    DHCP6_OPT_IA_PD = 25,
+    DHCP6_OPT_IA_PREFIX =26,
+    /* Options 27 - 30? */
+    DHCP6_OPT_SNTP_SERVER = 31,
 } ndn_dhcp_opt_type;
 
 typedef enum {
@@ -165,6 +175,8 @@ extern asn_type *ndn_dhcpv6_duid;
 extern asn_type *ndn_dhcpv6_ia_na;
 extern asn_type *ndn_dhcpv6_ia_ta;
 extern asn_type *ndn_dhcpv6_ia_addr;
+extern asn_type *ndn_dhcpv6_ia_pd;
+extern asn_type *ndn_dhcpv6_ia_prefix;
 extern asn_type *ndn_dhcpv6_opcode;
 extern asn_type *ndn_dhcpv6_oro;
 extern asn_type *ndn_dhcpv6_auth;
