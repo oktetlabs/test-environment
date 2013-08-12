@@ -107,6 +107,7 @@ typedef enum {
     NDN_DHCP6_VENDOR_CLASS_DATA,
     NDN_DHCP6_VENDOR_SPECIFIC,
     NDN_DHCP6_VENDOR_SPECIFIC_DATA,
+    NDN_DHCP6_ELAPSED_TIME,
 } ndn_dhcp6_tags_t;
 
 typedef enum {

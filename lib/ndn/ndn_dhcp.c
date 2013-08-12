@@ -315,6 +315,8 @@ static asn_named_entry_t _ndn_dhcpv6_option_ne_array [] = {
         {PRIVATE, NDN_DHCP6_VENDOR_CLASS}},
     { "vendor-specific", &ndn_dhcpv6_vendor_specific_s,
         {PRIVATE, NDN_DHCP6_VENDOR_SPECIFIC}},
+    { "elapsed-time",  &ndn_data_unit_int16_s,
+        {PRIVATE, NDN_DHCP6_ELAPSED_TIME} },
 };
 
 static asn_type ndn_dhcpv6_option_s = {

@@ -856,6 +856,10 @@ process_dhcp6_options(asn_value *opt_list, uint8_t **data_p,
                 asn_put_child_value(opt, option_body, PRIVATE, NDN_DHCP6_ORO);
             }
         }
+        else if (opt_type == DHCP6_OPT_ELAPSED_TIME)
+        {
+            FILL_DHCP_OPT_FIELD(opt, "elapsed-time", 2);
+        }
         else if (opt_type == DHCP6_OPT_AUTH)
         {
             option_body = asn_init_value(ndn_dhcpv6_auth);
@@ -1484,13 +1488,17 @@ fill_dhcp6_options(void *buf, const asn_value *options)
                 break;
 
             n_oro = asn_get_length(opt_body, "");
-            for (j = 0; i < n_oro; j++)
+            for (j = 0; j < n_oro; j++)
             {
                 if ((rc = asn_get_indexed(opt_body, &sub_opt, j, "")) != 0)
                     break;
 
-                READ_FIELD_VALUE(sub_opt, uint16, "requested-option-code");
+                READ_FIELD_VALUE(sub_opt, uint16, "opcode");
             }
+        }
+        else if (opt_type == DHCP6_OPT_ELAPSED_TIME)
+        {
+            READ_FIELD_VALUE(opt, uint16, "elapsed-time");
         }
         else if (opt_type == DHCP6_OPT_RELAY_MSG)
         {
@@ -1540,7 +1548,7 @@ fill_dhcp6_options(void *buf, const asn_value *options)
                 break;
 
             n_oro = asn_get_length(opt_body, "");
-            for (j = 0; i < n_oro; j++)
+            for (j = 0; j < n_oro; j++)
             {
                 if ((rc = asn_get_indexed(opt_body, &sub_opt, j, "")) != 0)
                     break;
@@ -1562,7 +1570,7 @@ fill_dhcp6_options(void *buf, const asn_value *options)
                 break;
 
             n_oro = asn_get_length(sub_opt, "");
-            for (j = 0; i < n_oro; j++)
+            for (j = 0; j < n_oro; j++)
             {
                 if ((rc = asn_get_indexed(sub_opt,
                                           &sub_sub_opt, j, "")) != 0)
