@@ -115,7 +115,7 @@ typedef enum {
 
 typedef enum {
     DHCP6_MSG_SOLICIT = 1,
-    DHCP6_MSG_ADVERTIZE, /*2*/
+    DHCP6_MSG_ADVERTISE, /*2*/
     DHCP6_MSG_REQUEST, /*3*/
     DHCP6_MSG_CONFIRM, /*4*/
     DHCP6_MSG_RENEW, /*5*/
