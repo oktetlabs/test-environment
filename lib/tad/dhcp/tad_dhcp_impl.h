@@ -63,11 +63,11 @@ extern "C" {
  * DHCP CSAP specific data
  */
 typedef struct dhcp_csap_specific_data {
-    int   in;           /**< Socket for receiving data to the media  */
-    int   out;          /**< Socket for sending data to the media  */
-    int   mode;
-    char *ipaddr;       /**< Address of asked interface, socket binds to it */
-
+    int                     in;/**< Socket for receiving data  */
+    int                     out;/**< Socket for sending data */
+    int                     mode;/**< CSAP mode (client or server) */
+    char                   *ipaddr;/**< Address socket binds to it */
+    struct sockaddr_in6     local; /** IPv6 address socket binds to it */
 } dhcp_csap_specific_data_t;
 
 /**
