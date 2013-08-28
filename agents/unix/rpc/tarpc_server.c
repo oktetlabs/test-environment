@@ -5714,7 +5714,7 @@ typedef union iomux_funcs {
 #endif
 } iomux_funcs;
 
-#define IOMUX_MAX_POLLED_FDS 10
+#define IOMUX_MAX_POLLED_FDS 64
 typedef union iomux_state {
     struct {
         int maxfds;
@@ -5902,10 +5902,26 @@ static inline int
 iomux_add_fd(iomux_func iomux, iomux_funcs *funcs, iomux_state *state,
              int fd, int events)
 {
+
+#define IOMUX_CHECK_LIMIT(_nfds)                                \
+do {                                                              \
+    if (_nfds >= IOMUX_MAX_POLLED_FDS)                            \
+    {                                                             \
+        ERROR("%s(): failed to add file descriptor to the list "  \
+              "for %s(), it has reached the limit %d",            \
+              __FUNCTION__, iomux2str(iomux),                     \
+              IOMUX_MAX_POLLED_FDS);                              \
+        errno = ENOSPC;                                           \
+        return -1;                                                \
+    }                                                             \
+} while(0)
+    
+
     switch (iomux)
     {
         case FUNC_SELECT:
         case FUNC_PSELECT:
+            IOMUX_CHECK_LIMIT(state->select.nfds);
             iomux_select_set_state(state, fd, events, FALSE);
             state->select.maxfds = MAX(state->select.maxfds, fd);
             state->select.fds[state->select.nfds] = fd;
@@ -5914,11 +5930,7 @@ iomux_add_fd(iomux_func iomux, iomux_funcs *funcs, iomux_state *state,
 
         case FUNC_POLL:
         case FUNC_PPOLL:
-            if (state->poll.nfds == IOMUX_MAX_POLLED_FDS)
-            {
-                errno = ENOSPC;
-                return -1;
-            }
+            IOMUX_CHECK_LIMIT(state->poll.nfds);
             state->poll.fds[state->poll.nfds].fd = fd;
             state->poll.fds[state->poll.nfds].events = events;
             state->poll.nfds++;
@@ -5935,6 +5947,9 @@ iomux_add_fd(iomux_func iomux, iomux_funcs *funcs, iomux_state *state,
         }
 #endif
     }
+
+#undef IOMUX_CHECK_LIMIT
+
     return 0;
 }
 
