@@ -3235,8 +3235,8 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
                                       &zero_ip6_addr,
                                       sizeof(zero_ip6_addr)) == 0) ||
         (family == AF_INET &&
-         (IN_CLASSD(ip_addr.ip4_addr.s_addr) ||
-          IN_EXPERIMENTAL(ip_addr.ip4_addr.s_addr))))
+         (IN_CLASSD(ntohl(ip_addr.ip4_addr.s_addr)) ||
+          IN_EXPERIMENTAL(ntohl(ip_addr.ip4_addr.s_addr)))))
     {
         ERROR("%s(): Trying to add incorrect address %s",
               __FUNCTION__, addr);
