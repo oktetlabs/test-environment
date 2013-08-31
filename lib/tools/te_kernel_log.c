@@ -531,6 +531,7 @@ log_serial(void *ready, int argc, char *argv[])
     int             len;
     int             rest_len;
     struct pollfd   poller;
+    int             incomp_str_count = 0;
 
     time_t now;
     time_t last_alive = 0;
@@ -538,33 +539,37 @@ log_serial(void *ready, int argc, char *argv[])
     struct   sockaddr_in  local_addr;
 
 #define MAYBE_DO_LOG \
-    do {                                                            \
-        if (current != buffer)                                      \
-        {                                                           \
-            *current = '\0';                                        \
-            newline = strrchr(buffer, '\n');                        \
-            if (newline == NULL)                                    \
-            {                                                       \
-                rest_len = 0;                                       \
-            }                                                       \
-            else                                                    \
-            {                                                       \
-                *newline++ = '\0';                                  \
-                if (*newline == '\r')                               \
-                   newline++;                                       \
-                rest_len = current - newline;                       \
-            }                                                       \
-                                                                    \
-            if (*buffer != '\0')                                    \
-                LGR_MESSAGE(TE_LL_WARN, user, "%s", buffer);        \
-            if (rest_len > 0)                                       \
-                memmove(buffer, newline, rest_len);                 \
-                                                                    \
-            current = buffer + rest_len;                            \
-            *current = '\0';                                        \
-            current_timeout = LOG_SERIAL_ALIVE_TIMEOUT;             \
-        }                                                           \
-    } while (0)
+do {                                                            \
+    if (current != buffer)                                      \
+    {                                                           \
+        *current = '\0';                                        \
+        newline = strrchr(buffer, '\n');                        \
+        if (newline == NULL)                                    \
+        {                                                       \
+            incomp_str_count++;                                 \
+            rest_len = strlen(buffer);                          \
+        }                                                       \
+        else                                                    \
+        {                                                       \
+            incomp_str_count = 10;                              \
+            *newline++ = '\0';                                  \
+            if (*newline == '\r')                               \
+               newline++;                                       \
+            rest_len = current - newline;                       \
+        }                                                       \
+                                                                \
+        if ((*buffer != '\0' && incomp_str_count >= 10) || rest_len == 0) \
+        {                                                       \
+            LGR_MESSAGE(TE_LL_WARN, user, "%s", buffer);        \
+            incomp_str_count = 0;                               \
+            if (rest_len > 0 && newline != NULL)                \
+                memmove(buffer, newline, rest_len);             \
+            current = buffer + rest_len;                        \
+            *current = '\0';                                    \
+            current_timeout = LOG_SERIAL_ALIVE_TIMEOUT;         \
+        }                                                       \
+    }                                                           \
+} while (0)
 
     if (argc < 4)
     {
@@ -681,10 +686,6 @@ log_serial(void *ready, int argc, char *argv[])
     fence   = buffer + LOG_SERIAL_MAX_LEN;
     *fence  = '\0';
 
-#if 0
-    pthread_cleanup_push((void (*)(void *))close_conserver_cleanup,
-                         (void *)(long)poller.fd);
-#endif
     pthread_cleanup_push(free, buffer);
     for (;;)
     {
@@ -750,10 +751,11 @@ log_serial(void *ready, int argc, char *argv[])
             MAYBE_DO_LOG;
         }
     }
+
+    if (*buffer != '\0')
+        LGR_MESSAGE(TE_LL_WARN, user, "%s", buffer);
+
     pthread_cleanup_pop(1); /* free buffer */
-#if 0
-    pthread_cleanup_pop(1); /* close fd */
-#endif
     return 0;
 #undef MAYBE_DO_LOG
 }
