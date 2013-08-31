@@ -563,8 +563,12 @@ do {                                                            \
             LGR_MESSAGE(TE_LL_WARN, user, "%s", buffer);        \
             incomp_str_count = 0;                               \
             if (rest_len > 0 && newline != NULL)                \
+            {                                                   \
+                current = buffer + rest_len;                    \
                 memmove(buffer, newline, rest_len);             \
-            current = buffer + rest_len;                        \
+            }                                                   \
+            else                                                \
+                current = buffer;                               \
             *current = '\0';                                    \
             current_timeout = LOG_SERIAL_ALIVE_TIMEOUT;         \
         }                                                       \
