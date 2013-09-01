@@ -1227,7 +1227,7 @@ socket_listen_close(const struct sockaddr *addr,
         rc = listen_func(s, 1);
         if( rc != 0 )
         {
-            ERROR("%s(): bind() function failed", __FUNCTION__);
+            ERROR("%s(): listen() function failed", __FUNCTION__);
             return -1;
         }
         close_func(s);
