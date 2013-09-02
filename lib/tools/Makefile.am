@@ -6,6 +6,7 @@ AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir)
 AM_CFLAGS = @TE_CFLAGS@ -fno-strict-aliasing
 
 include_HEADERS = \
+	te_serial_parser.h \
 	te_tools.h \
 	te_sleep.h \
 	te_bufs.h \

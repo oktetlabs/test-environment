@@ -27,8 +27,8 @@
  * $Id$
  */
 
-#ifndef __TE_CONF_SERIAL_PARSER_H__
-#define __TE_CONF_SERIAL_PARSER_H__
+#ifndef __TE_SERIAL_PARSER_H__
+#define __TE_SERIAL_PARSER_H__
 
 #ifdef __cplusplus
 extern "C" {
@@ -85,7 +85,7 @@ typedef struct serial_parser_t {
     char    name[TE_SERIAL_MAX_NAME + 1];   /**< Name of the parser */
     char    c_name[TE_SERIAL_MAX_NAME + 1]; /**< The serial console name */
     char    user[TE_SERIAL_MAX_NAME + 1];   /**< User name */
-    char    mode[TE_SERIAL_MAX_NAME + 1];   /**< Share mod */
+    char    mode[TE_SERIAL_MAX_NAME + 1];   /**< Share mode */
 
     te_bool enable;                     /**< The parser thread state */
     int     port;                       /**< The serial console port */
@@ -93,7 +93,8 @@ typedef struct serial_parser_t {
     te_bool logging;                    /**< Enable logging from console
                                              to the main log */
     int     level;                      /**< Message level for logging */
-    
+    te_bool rcf;                        /**< Launched via RCF */
+
     pthread_t                     thread;     /**< Thread identifier */
     pthread_mutex_t               mutex;      /**< Provides access to this
                                                    struct */
@@ -142,4 +143,4 @@ extern int serial_console_log(void *ready, int argc, char *argv[]);
 } /* extern "C" */
 #endif
 
-#endif /* ndef __TE_CONF_SERIAL_PARSER_H__ */
+#endif /* ndef __TE_SERIAL_PARSER_H__ */

@@ -43,6 +43,15 @@ extern "C" {
 #endif
 
 /**
+ * Map Logger level name to the value
+ * 
+ * @param name  Name of the level
+ * 
+ * @return Level number
+ */
+extern int map_name_to_level(const char *name);
+
+/**
  * Get addresses by host name.
  *
  * @param host_name     Host name

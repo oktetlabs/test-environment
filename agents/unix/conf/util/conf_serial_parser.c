@@ -36,7 +36,8 @@
 #include "config.h"
 #endif
 
-#include "conf_serial_parser.h"
+#include "te_serial_parser.h"
+#include "te_kernel_log.h"
 
 #include "logger_api.h"
 #include "te_raw_log.h"
@@ -47,35 +48,6 @@
 
 /**< Head of the parsers list */
 SLIST_HEAD(, serial_parser_t) parsers_h;
-
-/**
- * Map Logger level name to the value
- * 
- * @param name  Name of the level
- * 
- * @return Level number
- */
-static te_log_level
-map_name_to_level(const char *name)
-{
-    static const struct {
-        char           *name;
-        te_log_level    level;
-    } levels[] = {{"ERROR", TE_LL_ERROR},
-                  {"WARN",  TE_LL_WARN},
-                  {"RING",  TE_LL_RING},
-                  {"INFO",  TE_LL_INFO},
-                  {"VERB",  TE_LL_VERB},
-                  {"PACKET", TE_LL_PACKET}};
-    unsigned i;
-
-    for (i = 0; i < sizeof(levels) / sizeof(*levels); i++)
-    {
-        if (!strcmp(levels[i].name, name))
-            return levels[i].level;
-    }
-    return 0;
-}
 
 /**
  * Check return code of the pthread_mutex_lock and
@@ -248,6 +220,7 @@ parser_add(unsigned int gid, const char *oid, char *cname,
 
     TE_SERIAL_MALLOC(parser, sizeof(serial_parser_t));
     parser->enable      = FALSE;
+    parser->rcf         = FALSE;
     parser->port        = TE_SERIAL_PORT;
     parser->interval    = TE_SERIAL_INTERVAL;
     parser->logging     = TRUE;
@@ -1174,57 +1147,6 @@ ta_unix_serial_parser_cleanup(void)
         SLIST_REMOVE_HEAD(&parsers_h, ent_pars_l);
         free(parser);
     }
-
-    return 0;
-}
-
-/* See description in conf_serial_parser.h */
-int
-serial_console_log(void *ready, int argc, char *argv[])
-{
-    serial_parser_t parser;
-    int             rc;
-
-    if (argc < 4)
-    {
-        ERROR("Too few parameters to serial_console_log");
-        sem_post(ready);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-
-    strncpy(parser.user, argv[0], TE_SERIAL_MAX_NAME);
-    parser.level = map_name_to_level(argv[1]);
-    if (parser.level == 0)
-    {
-        ERROR("Error level %s is unknown", argv[1]);
-        sem_post(ready);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-
-    parser.interval = strtol(argv[2], NULL, 10);
-    if (parser.interval <= 0)
-    {
-        ERROR("Invalid interval value: %s", argv[2]);
-        sem_post(ready);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-
-    strncpy(parser.c_name, argv[3], TE_SERIAL_MAX_NAME);
-    if (argc == 5)
-        strncpy(parser.mode, argv[4], TE_SERIAL_MAX_NAME);
-    sem_post(ready);
-
-    parser.logging = TRUE;
-    parser.port = -1;
-    rc = pthread_mutex_init(&parser.mutex, NULL);
-    if (rc != 0)
-    {
-        ERROR("Couldn't init mutex of the %s parser, error: %s",
-              parser.name, strerror(rc));
-        return TE_OS_RC(TE_TA_UNIX, rc);
-    }
-
-    te_serial_parser(&parser);
 
     return 0;
 }

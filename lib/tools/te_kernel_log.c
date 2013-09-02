@@ -81,6 +81,7 @@
 #include "rcf_common.h"
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
+#include "te_serial_parser.h"
 
 #ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
@@ -164,7 +165,9 @@ te_get_host_addrs(const char *host_name, struct sockaddr_in *host_ipv4,
 #endif
 }
 
-static te_log_level
+
+/* See description in the te_kernel_log.h */
+int
 map_name_to_level(const char *name)
 {
     static const struct {
@@ -479,33 +482,102 @@ open_conserver(const char *conserver)
 #undef SKIP_LINE
 }
 
-
-/* Note: if there are several log_serial threads and
- * one is using conserver, others will be treated in
- * the same way. However, such situation is unrealistic,
- * and even then, sending a few bytes to a serial device
- * should not hurt much
- */
-static te_bool use_conserver = FALSE;
-#if 0
-static void
-close_conserver_cleanup(long fd)
-{
-    char buf[1];
-
-    write(fd, CONSERVER_STOP, CONSERVER_CMDLEN);
-    while(read(fd, buf, 1) == 1);
-    close(fd);
-}
-#endif
-
 /**
- * Described in te_kernel_log.h
+ * Processing of the serial console output data
+ * 
+ * @param parser    Pointer to the parser config
+ * @param buffer    Buffer with a data
  */
+static void
+parser_data_processing(serial_parser_t *parser, char *buffer)
+{
+    serial_event_t   *event;
+    serial_pattern_t *pat;
+
+    if (pthread_mutex_lock(&parser->mutex) != 0)
+    {
+        ERROR("Couldn't to lock the mutex");
+        return;
+    }
+
+    SLIST_FOREACH(event, &parser->events, ent_ev_l)
+    {
+        SLIST_FOREACH(pat, &event->patterns, ent_pat_l)
+        {
+            if (strstr(buffer, pat->v) != NULL)
+            {
+                event->status = TRUE;
+                event->count++;
+                break;
+            }
+        }
+    }
+
+    if (parser->logging == TRUE)
+        LGR_MESSAGE(parser->level, parser->c_name, "%s", buffer);
+
+    if (pthread_mutex_unlock(&parser->mutex) != 0)
+    {
+        ERROR("Couldn't to unlock the mutex");
+        return;
+    }
+}
+
+/* See description in te_kernel_log.h */
 int
 log_serial(void *ready, int argc, char *argv[])
 {
-    char           user[64] = "";
+    serial_parser_t parser;
+    int             rc;
+
+    if (argc < 4)
+    {
+        ERROR("Too few parameters to serial_console_log");
+        sem_post(ready);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    strncpy(parser.user, argv[0], TE_SERIAL_MAX_NAME);
+    parser.level = map_name_to_level(argv[1]);
+    if (parser.level == 0)
+    {
+        ERROR("Error level %s is unknown", argv[1]);
+        sem_post(ready);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    parser.interval = strtol(argv[2], NULL, 10);
+    if (parser.interval <= 0)
+    {
+        ERROR("Invalid interval value: %s", argv[2]);
+        sem_post(ready);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    strncpy(parser.c_name, argv[3], TE_SERIAL_MAX_NAME);
+    if (argc == 5)
+        strncpy(parser.mode, argv[4], TE_SERIAL_MAX_NAME);
+    sem_post(ready);
+
+    parser.logging = TRUE;
+    parser.port = -1;
+    rc = pthread_mutex_init(&parser.mutex, NULL);
+    if (rc != 0)
+    {
+        ERROR("Couldn't init mutex of the %s parser, error: %s",
+              parser.name, strerror(rc));
+        return TE_OS_RC(TE_TA_UNIX, rc);
+    }
+
+    te_serial_parser(&parser);
+
+    return 0;
+}
+
+/* See description in the te_serial_parser.h */
+int 
+te_serial_parser(serial_parser_t *parser)
+{
     char           tmp[RCF_MAX_PATH + 16];
 
     /*
@@ -525,18 +597,17 @@ log_serial(void *ready, int argc, char *argv[])
     char * volatile fence;
     volatile int    current_timeout = LOG_SERIAL_ALIVE_TIMEOUT;
 
-    te_log_level    level;
     char           *newline;
     int             interval;
     int             len;
     int             rest_len;
     struct pollfd   poller;
-    int             incomp_str_count = 0;
 
-    time_t now;
-    time_t last_alive = 0;
-
-    struct   sockaddr_in  local_addr;
+    time_t  now;
+    time_t  last_alive = 0;
+    int     incomp_str_count = 0;
+    te_bool rcf;
+    char    user[TE_SERIAL_MAX_NAME + 1];
 
 #define MAYBE_DO_LOG \
 do {                                                            \
@@ -560,7 +631,10 @@ do {                                                            \
                                                                 \
         if ((*buffer != '\0' && incomp_str_count >= 10) || rest_len == 0) \
         {                                                       \
-            LGR_MESSAGE(TE_LL_WARN, user, "%s", buffer);        \
+            if (rcf)                                            \
+                LGR_MESSAGE(TE_LL_WARN, user, "%s", buffer);    \
+            else                                                \
+                parser_data_processing(parser, buffer);         \
             incomp_str_count = 0;                               \
             if (rest_len > 0 && newline != NULL)                \
             {                                                   \
@@ -575,113 +649,89 @@ do {                                                            \
     }                                                           \
 } while (0)
 
-    if (argc < 4)
+    TE_SERIAL_MALLOC(buffer, LOG_SERIAL_MAX_LEN + 1);
+
+    if (pthread_mutex_lock(&parser->mutex) != 0)
     {
-        ERROR("Too few parameters to log_serial");
-        sem_post(ready);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-    strncpy(user, argv[0], sizeof(user) - 1);
-    level = map_name_to_level(argv[1]);
-    if (level == 0)
-    {
-        ERROR("Error level %s is unknown", argv[1]);
-        sem_post(ready);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        ERROR("Couldn't to lock the mutex");
+        return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
-    interval = strtol(argv[2], NULL, 10);
-    if (interval <= 0)
-    {
-        ERROR("Invalid interval value: %s", argv[2]);
-        sem_post(ready);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
+    interval = parser->interval;
+    rcf = parser->rcf;
+    strncpy(user, parser->c_name, sizeof(user));
 
-    if ((buffer = malloc(LOG_SERIAL_MAX_LEN + 1)) == NULL)
+    if (strncmp(parser->c_name, NETCONSOLE_PREF,
+                strlen(NETCONSOLE_PREF)) == 0)
     {
-        int rc = errno;
+        struct sockaddr_in local_addr;
 
-        ERROR("%s(): malloc failed at line %d: %d", __FUNCTION__,
-              __LINE__, rc);
-        sem_post(ready);
-        return TE_OS_RC(TE_TA_UNIX, rc);
-    }
-
-    if (strncmp(argv[3], NETCONSOLE_PREF, strlen(NETCONSOLE_PREF)) == 0)
-    {
         memset(&local_addr, 0, sizeof(local_addr));
         local_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-        local_addr.sin_port = strtol(argv[3] + strlen(NETCONSOLE_PREF),
-                                     NULL, 10);
+        local_addr.sin_port =
+            strtol(parser->c_name + strlen(NETCONSOLE_PREF), NULL, 10);
         local_addr.sin_port = htons(local_addr.sin_port);
+
+        pthread_mutex_unlock(&parser->mutex);
         poller.fd = socket(AF_INET, SOCK_DGRAM, 0);
-        if (poller.fd < 0)
-        {
-            sem_post(ready);
-            return TE_OS_RC(TE_TA_UNIX, errno);
-        }
-        if (bind(poller.fd, (struct sockaddr *)&local_addr,
+        if (poller.fd < 0 || 
+            bind(poller.fd, (struct sockaddr *)&local_addr,
                  sizeof(local_addr)) < 0)
-        {
-            sem_post(ready);
             return TE_OS_RC(TE_TA_UNIX, errno);
-        }
-        sem_post(ready);
     }
-    else if (*argv[3] != '/')
+    else if (*parser->c_name != '/')
     {
-        static char tmp[128];
-        strncpy(tmp, argv[3], sizeof(tmp) - 1);
-        sem_post(ready);
-        poller.fd = open_conserver(tmp);
-        if (poller.fd < 0)
-        {
+        if (parser->port >= 0)
+            snprintf(tmp, RCF_MAX_PATH, "%d:%s:%s", parser->port,
+                     parser->user, parser->c_name);
+        else
+            strncpy(tmp, parser->c_name, RCF_MAX_PATH);
+        pthread_mutex_unlock(&parser->mutex);
+        if ((poller.fd = open_conserver(tmp)) < 0)
             return TE_OS_RC(TE_TA_UNIX, errno);
-        }
-        use_conserver = TRUE;
     }
     else
     {
-        if (argc < 5 || strcmp(argv[4], "exclusive") == 0)
+        if (strlen(parser->mode) == 0 ||
+            strcmp(parser->mode, "exclusive") == 0)
         {
-            sprintf(tmp, "fuser -s %s", argv[3]);
+            sprintf(tmp, "fuser -s %s", parser->mode);
             if (func_system(tmp) == 0)
             {
-                sem_post(ready);
-                ERROR("%s is already is use, won't log", argv[3]);
+                pthread_mutex_unlock(&parser->mutex);
+                ERROR("%s is already is use, won't log", parser->c_name);
                 return TE_RC(TE_TA_UNIX, TE_EBUSY);
             }
         }
-        else if (strcmp(argv[4], "force") == 0)
+        else if (strcmp(parser->mode, "force") == 0)
         {
-            sprintf(tmp, "fuser -s -k %s", argv[3]);
+            sprintf(tmp, "fuser -s -k %s", parser->c_name);
             if (func_system(tmp) == 0)
-                WARN("%s was in use, killing the process", argv[3]);
+                WARN("%s was in use, killing the process", parser->c_name);
         }
-        else if (strcmp(argv[4], "shared") == 0)
+        else if (strcmp(parser->mode, "shared") == 0)
         {
-            sprintf(tmp, "fuser -s %s", argv[3]);
+            sprintf(tmp, "fuser -s %s", parser->c_name);
             if (func_system(tmp) == 0)
-                WARN("%s is in use, logging anyway", argv[3]);
+                WARN("%s is in use, logging anyway", parser->c_name);
         }
         else
         {
-            sem_post(ready);
-            ERROR("Invalid sharing mode '%s'", argv[4]);
+            pthread_mutex_unlock(&parser->mutex);
+            ERROR("Invalid sharing mode '%s'", parser->mode);
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
 
-        poller.fd = open(argv[3], O_RDONLY | O_NOCTTY | O_NONBLOCK);
+        poller.fd = open(parser->c_name, O_RDONLY | O_NOCTTY | O_NONBLOCK);
         if (poller.fd < 0)
         {
             int rc = errno;
 
-            sem_post(ready);
-            ERROR("Cannot open %s: %d", argv[3], rc);
+            pthread_mutex_unlock(&parser->mutex);
+            ERROR("Cannot open %s: %d", parser->c_name, rc);
             return TE_OS_RC(TE_TA_UNIX, rc);
         }
-        sem_post(ready);
+        pthread_mutex_unlock(&parser->mutex);
     }
 
     current = buffer;
@@ -755,10 +805,6 @@ do {                                                            \
             MAYBE_DO_LOG;
         }
     }
-
-    if (*buffer != '\0')
-        LGR_MESSAGE(TE_LL_WARN, user, "%s", buffer);
-
     pthread_cleanup_pop(1); /* free buffer */
     return 0;
 #undef MAYBE_DO_LOG
