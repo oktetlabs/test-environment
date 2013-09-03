@@ -537,6 +537,8 @@ log_serial(void *ready, int argc, char *argv[])
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
+    memset(&parser, 0, sizeof(parser));
+
     strncpy(parser.user, argv[0], TE_SERIAL_MAX_NAME);
     parser.level = map_name_to_level(argv[1]);
     if (parser.level == 0)
@@ -559,6 +561,7 @@ log_serial(void *ready, int argc, char *argv[])
         strncpy(parser.mode, argv[4], TE_SERIAL_MAX_NAME);
     sem_post(ready);
 
+    parser.rcf = TRUE;
     parser.logging = TRUE;
     parser.port = -1;
     rc = pthread_mutex_init(&parser.mutex, NULL);
