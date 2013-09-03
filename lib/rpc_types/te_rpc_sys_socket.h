@@ -147,6 +147,7 @@ typedef enum rpc_socket_domain {
     RPC_PF_PACKET,  /**< Low level packet interface */
     RPC_PF_LOCAL,   /**< Local communication */
     RPC_PF_UNIX,    /**< Synonym of RPC_PF_LOCAL */
+    RPC_PF_ETHER,   /**< Non-standard family for Ethernet addresses */
     RPC_PF_UNSPEC   /**< Unspecified */
 } rpc_socket_domain;
 

@@ -154,6 +154,10 @@ typedef enum te_bool3 {
 #define SIN6(_p)        ((struct sockaddr_in6 *)(_p))
 /** Cast to 'const struct sockaddr_in6 *' type. */
 #define CONST_SIN6(_p)  ((const struct sockaddr_in6 *)(_p))
+/** Cast to 'struct sockaddr_un *' type. */
+#define SUN(_p)         ((struct sockaddr_un *)(_p))
+/** Cast to 'const struct sockaddr_un *' type. */
+#define CONST_SUN(_p)  ((const struct sockaddr_un *)(_p))
 
 
 /** Convert seconds to milliseconds. */
