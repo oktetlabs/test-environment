@@ -154,15 +154,13 @@ struct tarpc_sin6 {
 
 /** AF_LOCAL-specific part of generic address */
 struct tarpc_local {
-    uint8_t     data[108];  /**< Path to pipe file */
+    uint8_t     data[6];    /**< Ethernet address */
 };
 
 enum tarpc_socket_addr_family {
     TARPC_AF_INET = 1,
     TARPC_AF_INET6 = 2,
     TARPC_AF_LOCAL = 4,
-    TARPC_AF_UNIX = 5,
-    TARPC_AF_ETHER = 6,
     TARPC_AF_UNSPEC = 7
 };
 
@@ -176,7 +174,8 @@ enum tarpc_flags {
 union tarpc_sa_data switch (tarpc_socket_addr_family type) {
     case TARPC_AF_INET:     struct tarpc_sin    in;     /**< IPv4 */
     case TARPC_AF_INET6:    struct tarpc_sin6   in6;    /**< IPv6 */
-    case TARPC_AF_LOCAL:    struct tarpc_local  local;  /**< UNIX socket */
+    case TARPC_AF_LOCAL:    struct tarpc_local  local;  /**< Ethernet
+                                                             address */
     default:                void;                       /**< Nothing by
                                                              default */
 };
