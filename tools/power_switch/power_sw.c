@@ -33,6 +33,7 @@
 #define     REBOOT_SLEEP_TIME       2 /* seconds */
 #define     TURN_OFF                0
 #define     TURN_ON                 1
+#define     RESET                   2
 
 /**
  * Parse parse invocation command line to extract parameters.
@@ -154,7 +155,7 @@ usage()
 }
 
 void
-turn_on_off(int fd, unsigned int mask, int sock_num, int turn_on)
+turn_on_off(int fd, unsigned int mask, int sock_num, int command_code)
 {
     int             i;
     unsigned int    socket;
@@ -166,7 +167,11 @@ turn_on_off(int fd, unsigned int mask, int sock_num, int turn_on)
     {
         if (mask & socket)
         {
-            command[0] = (turn_on ? 0x60 : 0x40) | i;
+            command[0] = ((command_code == TURN_ON) ?
+                            0x60 :
+                            (command_code == TURN_OFF) ?
+                                0x40 :
+                                    0x50 /* RESET command */) | i;
             write(fd, command, 2);
         }
 
@@ -190,6 +195,7 @@ recognize_power_switch(int fd, int *rebootable, int *sockets_num)
     char    reply[5];
     int     rc;
 
+    memset(reply, 0, 5);
     /* Send 'get signature' command. */
     rc = write(fd, command, 2);
     /* Read 1 byte of echo, 3 bytes of reply, and 1 more byte for '#'. */
@@ -197,7 +203,7 @@ recognize_power_switch(int fd, int *rebootable, int *sockets_num)
     /* Check if signature (bytes 1-3) is valid. */
     if (reply[1] != '1' || !reply[2] & 0x40 || reply[3] != '0' )
     {
-        printf("Device is not a Power Switch.\n");
+        printf("Device is not a Power Switch. %s\n", reply);
         return 0;
     }
     *sockets_num = reply[2] & 0x1F;
@@ -217,42 +223,34 @@ int
 check_dev_params(int fd)
 {
     struct termios term;
-    speed_t        baud;
-    int            parity;
-    int fixed = 0;
 
     if (tcgetattr(fd, &term) < 0)
     {
-        printf("Error: failed to get device attributes.\n");
+        printf("Failed to get device attributes.\n");
         return -1;
     }
-    baud = cfgetospeed(&term);
-    parity = (term.c_cflag & PARENB)? 1 : 0;
-    if (!parity)
+
+    term.c_iflag = 0;
+    term.c_oflag = 0;
+    term.c_cflag = CREAD | CLOCAL | CS8;
+    term.c_lflag = 0;
+
+    if (cfsetospeed(&term, B115200) < 0)
     {
-        printf("Parity check was enabled, disabling\n");
-        term.c_cflag |= PARENB;
-        fixed = 1;
+        printf("Failed to set output baudrate\n");
     }
-    if (baud != B115200)
+
+    if (cfsetispeed(&term, B115200) < 0)
     {
-        printf("Baudrate was %d, fixing to 115200\n", baud);
-        if (cfsetspeed(&term, B115200) < 0)
-        {
-            printf("Setting speed to 115200 failed\n");
-            return -1;
-        }
-        fixed = 1;
+        printf("Failed to set input baudrate\n");
     }
-    /* Settings were changed, need updating. */
-    if (fixed)
+
+    if (tcsetattr(fd, TCSADRAIN, &term) < 0)
     {
-        if (tcsetattr(fd, TCSANOW, &term) < 0)
-        {
-            printf("Applying parameters failed\n");
-            return -1;
-        }
+        printf("Applying parameters failed\n");
+        return -1;
     }
+
     return 0;
 }
 
@@ -353,10 +351,16 @@ main(int argc, char **argv)
 
         if (strcmp(command, COMMAND_RST) == 0)
         {
-            /* TODO command rst support */
-            turn_on_off(fd, mask, sockets_num, TURN_OFF);
-            sleep(REBOOT_SLEEP_TIME);
-            turn_on_off(fd, mask, sockets_num, TURN_ON);
+            if (is_rebootable == 1)
+            {
+                turn_on_off(fd, mask, sockets_num, RESET);
+            }
+            else
+            {
+                turn_on_off(fd, mask, sockets_num, TURN_OFF);
+                sleep(REBOOT_SLEEP_TIME);
+                turn_on_off(fd, mask, sockets_num, TURN_ON);
+            }
         }
         else
         {
