@@ -105,7 +105,7 @@ extern "C" {
 static inline te_bool
 te_sockaddr_is_af_supported(int af)
 {
-    return (af == AF_INET) || (af == AF_INET6);   
+    return (af == AF_INET) || (af == AF_INET6) || (af == AF_LOCAL);
 }
 
 /**

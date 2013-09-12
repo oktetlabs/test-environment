@@ -3648,6 +3648,11 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                                       sizeof(req->arpreq.arp_pa),
                                       &(out->req.req_val[0].ioctl_request_u.
                                           req_arpreq.rpc_arp_pa));
+                /*
+                 * Replace address family for Ethernet address to process it
+                 * properly in RPC functions
+                 */
+                req->arpreq.arp_ha.sa_family = TE_AF_ETHER;
                 /* Copy HW address */
                 sockaddr_output_h2rpc(&(req->arpreq.arp_ha),
                                       sizeof(req->arpreq.arp_ha),

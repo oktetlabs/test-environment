@@ -139,11 +139,18 @@ struct tarpc_local {
 };
 typedef struct tarpc_local tarpc_local;
 
+struct tarpc_sun {
+    uint8_t path[UNIX_PATH_MAX];
+};
+typedef struct tarpc_sun tarpc_sun;
+
 enum tarpc_socket_addr_family {
-    TARPC_AF_INET = 1,
-    TARPC_AF_INET6 = 2,
-    TARPC_AF_LOCAL = 4,
-    TARPC_AF_UNSPEC = 7,
+    TARPC_AF_INET = RPC_AF_INET,
+    TARPC_AF_INET6 = RPC_AF_INET6,
+    TARPC_AF_LOCAL = RPC_AF_LOCAL,
+    TARPC_AF_UNIX = TARPC_AF_UNIX,
+    TARPC_AF_ETHER = TARPC_AF_ETHER,
+    TARPC_AF_UNSPEC = RPC_AF_UNSPEC,
 };
 typedef enum tarpc_socket_addr_family tarpc_socket_addr_family;
 
@@ -160,6 +167,7 @@ struct tarpc_sa_data {
         struct tarpc_sin in;
         struct tarpc_sin6 in6;
         struct tarpc_local local;
+        struct tarpc_sun un;
     } tarpc_sa_data_u;
 };
 typedef struct tarpc_sa_data tarpc_sa_data;
@@ -198,6 +206,7 @@ domain_rpc2str(rpc_socket_domain domain)
         RPC2STR(PF_PACKET);
         RPC2STR(PF_LOCAL);
         RPC2STR(PF_UNIX);
+        RPC2STR(PF_ETHER);
         RPC2STR(PF_UNSPEC);
         RPC2STR(PF_UNKNOWN);
 
@@ -221,6 +230,7 @@ domain_rpc2h(rpc_socket_domain domain)
         RPC2H_CHECK(PF_PACKET);
         RPC2H_CHECK(PF_LOCAL);
         RPC2H_CHECK(PF_UNIX);
+        RPC2H_CHECK(PF_ETHER);
         default:
             WARN("%s is converted to PF_MAX(%u)",
                  domain_rpc2str(domain), PF_MAX);
@@ -275,12 +285,13 @@ addr_family_rpc2h(rpc_socket_addr_family addr_family)
         RPC2H_CHECK(AF_INET);
         RPC2H_CHECK(AF_INET6);
         RPC2H_CHECK(AF_PACKET);
+        RPC2H_CHECK(AF_ETHER);
+        RPC2H_CHECK(AF_UNSPEC);
+#ifdef AF_LOCAL
         RPC2H_CHECK(AF_LOCAL);
         RPC2H_CHECK(AF_UNIX);
-        RPC2H_CHECK(AF_UNSPEC);
-#ifdef AF_LOCAL        
-        case RPC_AF_ETHER: return AF_LOCAL;
-#endif        
+#endif
+        case RPC_AF_ETHER: return TE_AF_ETHER;
         case RPC_AF_UNKNOWN: return AF_MAX;
 
         default:
@@ -302,8 +313,9 @@ addr_family_h2rpc(int addr_family)
         H2RPC_CHECK(AF_UNSPEC);
         /* AF_UNIX is equal to AF_LOCAL */
 #ifdef AF_LOCAL        
-        case AF_LOCAL: return RPC_AF_ETHER;
+        case AF_LOCAL: return RPC_AF_LOCAL;
 #endif        
+        case TE_AF_ETHER: return RPC_AF_ETHER;
         default: return RPC_AF_UNKNOWN;
     }
 }
@@ -1824,16 +1836,25 @@ sockaddr_input_h2rpc(const struct sockaddr *sa, tarpc_sa *rpc)
         }
 
 #ifdef AF_LOCAL
+        /* AF_UNIX */
         case AF_LOCAL:
             rpc->sa_family = rpc->data.type = RPC_AF_LOCAL;
+            memcpy(rpc->data.tarpc_sa_data_u.un.path,
+                   &CONST_SUN(sa)->sun_path,
+                   sizeof(rpc->data.tarpc_sa_data_u.un.path));
+            break;
+#endif
+
+        case TE_AF_ETHER:
+            rpc->sa_family = rpc->data.type = RPC_AF_ETHER;
             assert(sizeof(sa->sa_data) >=
                    sizeof(rpc->data.tarpc_sa_data_u.local.data));
             memcpy(rpc->data.tarpc_sa_data_u.local.data, sa->sa_data,
                    sizeof(rpc->data.tarpc_sa_data_u.local.data));
             break;
-#endif
 
         default:
+            ERROR("Unsupported address family %d", sa->sa_family);
             assert(FALSE);
             break;
     }
@@ -1941,23 +1962,36 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
         }
 
 #ifdef AF_LOCAL
+        /* AF_UNIX */
         case AF_LOCAL:
-            if (len < (socklen_t)sizeof(struct sockaddr))
+            if (len < sizeof(struct sockaddr_un))
             {
-                ERROR("%s(): Address is to short (%u) to be 'struct "
-                      "sockaddr' (%u) - assertion failure",
+                ERROR("%s(): Address has wrong length (%u) to be 'struct "
+                      "sockaddr_un' (%u) - assertion failure",
                       __FUNCTION__, (unsigned)len,
-                      (unsigned)sizeof(struct sockaddr));
-                assert(FALSE); /* Not supported yet */
-                return;
+                      (unsigned)sizeof(struct sockaddr_un));
+                assert(FALSE);
             }
             rpc->sa_family = rpc->data.type = RPC_AF_LOCAL;
-            assert(sizeof(sa->sa_data) >=
-                   sizeof(rpc->data.tarpc_sa_data_u.local.data));
+            memcpy(rpc->data.tarpc_sa_data_u.un.path,
+                   &CONST_SUN(sa)->sun_path,
+                   sizeof(rpc->data.tarpc_sa_data_u.un.path));
+            break;
+#endif
+
+        case TE_AF_ETHER:
+           if (len < (socklen_t)sizeof(struct sockaddr))
+            {
+               ERROR("%s(): Address is to short (%u) to be 'struct "
+                     "sockaddr' (%u) assertion failure",
+                      __FUNCTION__, (unsigned)len,
+                     (unsigned)sizeof(struct sockaddr));
+               assert(FALSE);
+            }
+            rpc->sa_family = rpc->data.type = RPC_AF_ETHER;
             memcpy(rpc->data.tarpc_sa_data_u.local.data, sa->sa_data,
                    sizeof(rpc->data.tarpc_sa_data_u.local.data));
             break;
-#endif
 
         default:
             WARN("%s(): Address family %u is not supported - use raw "
@@ -1985,7 +2019,7 @@ sockaddr_rpc2h(const tarpc_sa *rpc,
                struct sockaddr **sa_out, socklen_t *salen_out)
 {
     struct sockaddr    *res_sa;
-    socklen_t           len_auto;
+    socklen_t           len_auto = 0;
 
     assert(rpc != NULL);
 
@@ -2065,7 +2099,26 @@ sockaddr_rpc2h(const tarpc_sa *rpc,
             break;
         }
 
+        case RPC_AF_UNIX:
         case RPC_AF_LOCAL:
+            if (res_sa != NULL)
+            {
+                if (salen < sizeof(struct sockaddr_un))
+                {
+                    ERROR("%s(): Address has wrong length (%u) to be "
+                          "'struct sockaddr_un' (%u) - assertion failure",
+                          __FUNCTION__, (unsigned)salen,
+                          (unsigned)sizeof(struct sockaddr_un));
+                    assert(FALSE);
+                }
+                memcpy(SUN(res_sa)->sun_path,
+                       rpc->data.tarpc_sa_data_u.un.path,
+                       sizeof(rpc->data.tarpc_sa_data_u.un.path));
+                len_auto = sizeof(struct sockaddr_un);
+            }
+            break;
+
+       case RPC_AF_ETHER:
             if (res_sa != NULL)
             {
                 assert(sizeof(res_sa->sa_data) >=
@@ -2082,14 +2135,7 @@ sockaddr_rpc2h(const tarpc_sa *rpc,
 
         default:
             if (res_sa != NULL)
-            {
                 assert(FALSE);
-                len_auto = 0;
-            }
-            else
-            {
-                len_auto = 0;
-            }
             break;
     }
 
@@ -2134,6 +2180,26 @@ sockaddr_h2str(const struct sockaddr *addr)
 
         switch (rpc_sa->data.type)
         {
+            case RPC_AF_UNIX:
+            case RPC_AF_LOCAL:
+                snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
+                         " %s", rpc_sa->data.tarpc_sa_data_u.un.path);
+                break;
+
+            case RPC_AF_ETHER:
+            {
+                int i;
+
+                snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
+                         " %2.2x",
+                         rpc_sa->data.tarpc_sa_data_u.local.data[0]);
+                for (i = 1; i < 6; i++)
+                    snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
+                             ":%2.2x",
+                             rpc_sa->data.tarpc_sa_data_u.local.data[i]);
+                break;
+            }
+
             case RPC_AF_INET:
             {
                 char addr_buf[INET_ADDRSTRLEN];

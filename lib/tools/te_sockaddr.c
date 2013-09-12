@@ -46,6 +46,9 @@
 #if HAVE_ARPA_INET_H
 #include <arpa/inet.h>
 #endif
+#if HAVE_SYS_UN_H
+#include <sys/un.h>
+#endif
 
 #else /* __CYGWIN__ */
 
@@ -589,6 +592,14 @@ te_sockaddr2str(const struct sockaddr *sa)
     {
         return "<Not supported address family>";
     }
+
+#ifdef AF_LOCAL
+    if (sa->sa_family == AF_LOCAL)
+    {
+        snprintf(ptr, SOCKADDR2STR_ADDRSTRLEN, "%s", SUN(sa)->sun_path);
+        return ptr;
+    }
+#endif
 
     addr_ptr = te_sockaddr_get_netaddr(sa);
     assert(addr_ptr != NULL);

@@ -137,6 +137,12 @@ extern te_errno msg_control_rpc2h(tarpc_cmsghdr *rpc_cmsg,
                                   unsigned int rpc_cmsg_count,
                                   uint8_t *cmsg_buf, size_t *cmsg_len);
 
+/**< Non-standard protocol family for Ethernet addresses */
+#define TE_PF_ETHER (PF_MAX + 1)
+
+/**< Non-standard address family for Ethernet addresses */
+#define TE_AF_ETHER TE_PF_ETHER
+
 /**
  * TA-independent protocol families.
  */
@@ -147,6 +153,7 @@ typedef enum rpc_socket_domain {
     RPC_PF_PACKET,  /**< Low level packet interface */
     RPC_PF_LOCAL,   /**< Local communication */
     RPC_PF_UNIX,    /**< Synonym of RPC_PF_LOCAL */
+    RPC_PF_ETHER,   /**< Non-standard family for Ethernet addresses */
     RPC_PF_UNSPEC   /**< Unspecified */
 } rpc_socket_domain;
 
