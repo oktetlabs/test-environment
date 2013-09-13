@@ -3558,6 +3558,11 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                 case RPC_SIOCGIFDSTADDR:
                 case RPC_SIOCSIFDSTADDR:
                 case RPC_SIOCGIFHWADDR:
+                    /*
+                     * Replace address family for Ethernet address to
+                     * process it properly in RPC functions
+                     */
+                    req->ifreq.ifr_addr.sa_family = TE_AF_ETHER;
                     sockaddr_output_h2rpc(&(req->ifreq.ifr_addr),
                                           sizeof(req->ifreq.ifr_addr),
                                           sizeof(req->ifreq.ifr_addr),
