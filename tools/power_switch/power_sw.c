@@ -238,11 +238,13 @@ check_dev_params(int fd)
     if (cfsetospeed(&term, B115200) < 0)
     {
         printf("Failed to set output baudrate\n");
+        return -1;
     }
 
     if (cfsetispeed(&term, B115200) < 0)
     {
         printf("Failed to set input baudrate\n");
+        return -1;
     }
 
     if (tcsetattr(fd, TCSADRAIN, &term) < 0)

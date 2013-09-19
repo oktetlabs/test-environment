@@ -64,6 +64,7 @@
 #define REBOOT_SLEEP_TIME       2 /* seconds */
 #define TURN_OFF                0
 #define TURN_ON                 1
+#define RESET                   2
 #define TTY_DEV_BAUDRATE        B115200
 
 static const char   parport_dev_dflt[] = PARPORT_DEV_DFLT;
@@ -91,7 +92,11 @@ turn_on_off(int fd, unsigned int mask, int sock_num, int cmd)
     {
         if (mask & socket)
         {
-            command[0] = ((cmd == TURN_ON) ? 0x60 : 0x40) | i;
+            command[0] = ((cmd == TURN_ON) ?
+                            0x60 :
+                            (cmd == TURN_OFF) ?
+                                0x40 :
+                                    0x50 /* RESET command */) | i;
             write(fd, command, 2);
         }
 
@@ -132,55 +137,46 @@ recognize_power_switch(int fd, int *rebootable, int *sockets_num)
 }
 
 /**
- * Check if device speed is set to 115200 bps and parity check is off.
- * If not, fix them.
+ * Add prober TTY settins: Baud 115200, parity check OFF, 8bit.
  *
- * @param[in]   fd          Descriptor associated with the device.
+ * @param[in]   fd  Device descriptor.
  *
- * @return      Operation status.
+ * @return      0 - success, -1 fail.
  */
-static int
+int
 check_dev_params(int fd)
 {
     struct termios term;
-    speed_t        baud;
-    int            parity;
-    int fixed = 0;
 
     if (tcgetattr(fd, &term) < 0)
     {
-        ERROR("Failed to get TTY device attributes.");
+        ERROR("Failed to get device attributes.\n");
         return -1;
     }
-    baud = cfgetospeed(&term);
-    parity = (term.c_cflag & PARENB)? 1 : 0;
-    if (!parity)
+
+    term.c_iflag = 0;
+    term.c_oflag = 0;
+    term.c_cflag = CREAD | CLOCAL | CS8;
+    term.c_lflag = 0;
+
+    if (cfsetospeed(&term, B115200) < 0)
     {
-        ERROR("TTY parity check was enabled, disabling.");
-        term.c_cflag |= PARENB;
-        fixed = 1;
+        ERROR("Failed to set output baudrate\n");
+        return -1;
     }
-    if (baud != TTY_DEV_BAUDRATE)
+
+    if (cfsetispeed(&term, B115200) < 0)
     {
-        ERROR("TTY baudrate is %d, fixing to %d.",
-              baud, TTY_DEV_BAUDRATE);
-        if (cfsetspeed(&term, TTY_DEV_BAUDRATE) < 0)
-        {
-            ERROR("Setting TTY baudrate to %d failed.", TTY_DEV_BAUDRATE);
-            return -1;
-        }
-        fixed = 1;
+        ERROR("Failed to set input baudrate\n");
+        return -1;
     }
-    /* Settings were changed, need updating. */
-    if (fixed)
+
+    if (tcsetattr(fd, TCSADRAIN, &term) < 0)
     {
-        if (tcsetattr(fd, TCSANOW, &term) < 0)
-        {
-            ERROR("Applying TTY baudrate and parity "
-                  "check parameters failed.");
-            return -1;
-        }
+        ERROR("Applying parameters failed\n");
+        return -1;
     }
+
     return 0;
 }
 
@@ -315,10 +311,16 @@ power_sw(int type, const char *dev, int mask, int cmd)
 
         if (cmd == CMD_RESTART)
         {
-            /* TODO command rst support */
-            turn_on_off(fd, mask, sockets_num, TURN_OFF);
-            sleep(REBOOT_SLEEP_TIME);
-            turn_on_off(fd, mask, sockets_num, TURN_ON);
+            if (is_rebootable == 1)
+            {
+                turn_on_off(fd, mask, sockets_num, RESET);
+            }
+            else
+            {
+                turn_on_off(fd, mask, sockets_num, TURN_OFF);
+                sleep(REBOOT_SLEEP_TIME);
+                turn_on_off(fd, mask, sockets_num, TURN_ON);
+            }
         }
         else
         {
