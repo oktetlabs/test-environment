@@ -3558,11 +3558,7 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                 case RPC_SIOCGIFDSTADDR:
                 case RPC_SIOCSIFDSTADDR:
                 case RPC_SIOCGIFHWADDR:
-                    /*
-                     * Replace address family for Ethernet address to
-                     * process it properly in RPC functions
-                     */
-                    req->ifreq.ifr_addr.sa_family = TE_AF_ETHER;
+                    TE_IOCTL_AF_LOCAL2ETHER(req->ifreq.ifr_addr.sa_family);
                     sockaddr_output_h2rpc(&(req->ifreq.ifr_addr),
                                           sizeof(req->ifreq.ifr_addr),
                                           sizeof(req->ifreq.ifr_addr),
@@ -3653,11 +3649,7 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                                       sizeof(req->arpreq.arp_pa),
                                       &(out->req.req_val[0].ioctl_request_u.
                                           req_arpreq.rpc_arp_pa));
-                /*
-                 * Replace address family for Ethernet address to process it
-                 * properly in RPC functions
-                 */
-                req->arpreq.arp_ha.sa_family = TE_AF_ETHER;
+                TE_IOCTL_AF_LOCAL2ETHER(req->arpreq.arp_ha.sa_family);
                 /* Copy HW address */
                 sockaddr_output_h2rpc(&(req->arpreq.arp_ha),
                                       sizeof(req->arpreq.arp_ha),

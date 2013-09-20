@@ -144,6 +144,26 @@ extern te_errno msg_control_rpc2h(tarpc_cmsghdr *rpc_cmsg,
 #define TE_AF_ETHER TE_PF_ETHER
 
 /**
+ * Replace address family for Ethernet address to process it properly in
+ * RPC functions
+ */
+#define TE_IOCTL_AF_LOCAL2ETHER(_family) \
+do {                                \
+    if ((_family) == AF_LOCAL)      \
+        (_family) = TE_AF_ETHER;    \
+} while (0)
+
+/**
+ * Replace address family for Ethernet address to process it properly in
+ * ioctl calls
+ */
+#define TE_IOCTL_AF_ETHER2LOCAL(_family) \
+do {                                \
+    if ((_family) == TE_AF_ETHER)   \
+        (_family) = AF_LOCAL;       \
+} while (0)
+
+/**
  * TA-independent protocol families.
  */
 typedef enum rpc_socket_domain {
