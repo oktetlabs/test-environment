@@ -456,8 +456,9 @@ tester_serial_thread(void)
     int             period;
     unsigned        n_handles;
     cfg_handle     *handles         = NULL;
-    cfg_handle      event_handle;
+    cfg_handle      status_handle;
     char           *event_name      = NULL;
+    char           *ag_event        = NULL;
     int             i;
     int             status;
 
@@ -476,31 +477,42 @@ tester_serial_thread(void)
     while (stop_thread == FALSE)
     {
         SERIAL_WAIT_LOCAL_SEQ(cfg_find_pattern_fmt(&n_handles, &handles,
-            "/agent:*/parser:*/event:*/status:"));
+            "/agent:*/parser:*/event:*"));
+
         if (rc != 0)
             return rc;
         for (i = 0; (unsigned)i < n_handles; i++)
         {
-            SERIAL_WAIT_LOCAL_SEQ(cfg_get_instance_sync(handles[i], &type,
-                                  &status));
-            if (rc != 0)
+            SERIAL_WAIT_LOCAL_SEQ(cfg_get_oid_str(handles[i], &ag_event));
+            if (rc != 0 || ag_event == NULL)
             {
-                ERROR("Couldn't get the event status");
+                ERROR("Couldn't get event oid");
                 continue;
             }
-            if (status != FALSE)
-            {
-                SERIAL_WAIT_LOCAL_SEQ(cfg_get_father(handles[i],
-                                                     &event_handle));
-                if (rc != 0)
-                {
-                    ERROR("Couldn't get the event");
-                    continue;
-                }
 
+            SERIAL_WAIT_LOCAL_SEQ(cfg_find_fmt(&status_handle, "%s/status:",
+                                               ag_event));
+            if (rc != 0)
+            {
+                ERROR("Couldn't get event status handle of %s", ag_event);
+                free(ag_event);
+                continue;
+            }
+            free(ag_event);
+
+            SERIAL_WAIT_LOCAL_SEQ(cfg_get_instance(status_handle,
+                                                   &type, &status));
+            if (rc != 0)
+            {
+                ERROR("Couldn't get event status");
+                continue;
+            }
+
+            if (status != 0)
+            {
                 event_name = NULL;
                 type = CVT_STRING;
-                SERIAL_WAIT_LOCAL_SEQ(cfg_get_instance(event_handle, &type,
+                SERIAL_WAIT_LOCAL_SEQ(cfg_get_instance(handles[i], &type,
                                                        &event_name));
                 if (rc != 0 || event_name == NULL)
                 {
@@ -522,7 +534,7 @@ tester_serial_thread(void)
                 }
 
                 type = CVT_INTEGER;
-                SERIAL_WAIT_LOCAL_SEQ(cfg_set_instance(handles[i], type,
+                SERIAL_WAIT_LOCAL_SEQ(cfg_set_instance(status_handle, type,
                                                        FALSE));
                 if (rc != 0)
                 {
@@ -545,6 +557,7 @@ tester_serial_thread(void)
             break;
         usleep(period);
     }
+
     return 0;
 }
 
