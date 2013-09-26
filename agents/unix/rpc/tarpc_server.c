@@ -4119,6 +4119,7 @@ TARPC_FUNC(recvmsg,
             unsigned int          rpc_len;
             struct tarpc_cmsghdr *rpc_c;
 
+            TE_SCM_RIGHTS2TE(msg.msg_control);
             rc = msg_control_h2rpc(msg.msg_control,
                                    msg.msg_controllen,
                                    &rpc_c, &rpc_len);

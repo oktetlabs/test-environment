@@ -833,6 +833,7 @@ rpc_sockopt2level(rpc_sockopt opt)
         case RPC_SO_DGRAM_ERRIND:
         case RPC_SO_TIMESTAMP:
         case RPC_SO_TIMESTAMPNS:
+        case RPC_SCM_RIGHTS:
             return RPC_SOL_SOCKET;
 
         case RPC_IP_ADD_MEMBERSHIP:
@@ -1019,6 +1020,8 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(UDP_NOCHECKSUM);
         RPC2STR(UDP_CORK);
 
+        RPC2STR(SCM_RIGHTS);
+
         RPC2STR(SOCKOPT_UNKNOWN);
         default: return "<SOCKOPT_FATAL_ERROR>";
     }
@@ -1131,6 +1134,7 @@ sockopt_rpc2h(rpc_sockopt opt)
         RPC2H_CHECK(TCP_USER_TIMEOUT);
         RPC2H_CHECK(UDP_NOCHECKSUM);
         RPC2H_CHECK(UDP_CORK);
+        RPC2H_CHECK(SCM_RIGHTS);
         default:
             WARN("%s is converted to RPC_SOCKOPT_MAX(%u)",
                  sockopt_rpc2str(opt), RPC_SOCKOPT_MAX);
@@ -1199,6 +1203,8 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC_CHECK(SO_DGRAM_ERRIND);
                 H2RPC_CHECK(SO_TIMESTAMP);
                 H2RPC_CHECK(SO_TIMESTAMPNS);
+                case TE_SCM_RIGHTS:
+                    return RPC_SCM_RIGHTS;
                 default: return RPC_SOCKOPT_UNKNOWN;
             }
             break;
@@ -3154,6 +3160,19 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
                         processed = TRUE;
                     }
 
+                    break;
+
+                case RPC_SCM_RIGHTS:
+                    if (len != (int)sizeof(int32_t))
+                    {
+                        ERROR("%s(): incorrect data len for SCM_RIGHTS"
+                              " value", __FUNCTION__);
+                        return TE_EINVAL;
+                    }
+                    rpc_cmsg->data_aux.type = TARPC_CMSG_DATA_INT;
+                    rpc_cmsg->data_aux.tarpc_cmsg_data_u.int_data =
+                                                        *(int32_t *)data;
+                    processed = TRUE;
                     break;
             }
 

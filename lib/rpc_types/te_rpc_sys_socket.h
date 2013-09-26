@@ -638,9 +638,28 @@ typedef enum rpc_sockopt {
     RPC_SO_TIMESTAMPNS,     /**< Enabling/disabling the receiving of the 
                                  SO_TIMESTAMPNS control message. */
 
+    RPC_SCM_RIGHTS,         /**< Transfer file descriptors */
+
     RPC_SOCKOPT_UNKNOWN     /**< Invalid socket option */
 
 } rpc_sockopt;
+
+/**
+ * Transfer file descriptor.
+ * It's defined to be processed properly in TE RPC conversion functions.
+ * The system SCM_RIGHTS can not be used because it is equal to SO_DEBUG.
+ */
+#define TE_SCM_RIGHTS 1000
+
+/**
+ * Replace SCM_RIGHTS to process it properly in TE RPC functions
+ */
+#define TE_SCM_RIGHTS2TE(_cmsg) \
+do {                                                                \
+    if (((struct cmsghdr *)(_cmsg))->cmsg_level == SOL_SOCKET &&    \
+        ((struct cmsghdr *)(_cmsg))->cmsg_type == SCM_RIGHTS)       \
+        ((struct cmsghdr *)(_cmsg))->cmsg_type = TE_SCM_RIGHTS;     \
+} while (0)
 
 /** Convert RPC socket option to string */
 extern const char * sockopt_rpc2str(rpc_sockopt opt);
