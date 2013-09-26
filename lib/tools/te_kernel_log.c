@@ -671,16 +671,22 @@ do {                                                            \
 
         memset(&local_addr, 0, sizeof(local_addr));
         local_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-        local_addr.sin_port =
-            strtol(parser->c_name + strlen(NETCONSOLE_PREF), NULL, 10);
-        local_addr.sin_port = htons(local_addr.sin_port);
+        if (parser->port < 0)
+            parser->port =
+                strtol(parser->c_name + strlen(NETCONSOLE_PREF), NULL, 10);
+
+        local_addr.sin_port = htons(parser->port);
 
         pthread_mutex_unlock(&parser->mutex);
         poller.fd = socket(AF_INET, SOCK_DGRAM, 0);
         if (poller.fd < 0 || 
             bind(poller.fd, (struct sockaddr *)&local_addr,
                  sizeof(local_addr)) < 0)
+        {
+            ERROR("netconsole init socket() or bind() failed: %s",
+                  strerror(errno));
             return TE_OS_RC(TE_TA_UNIX, errno);
+        }
     }
     else if (*parser->c_name != '/')
     {
