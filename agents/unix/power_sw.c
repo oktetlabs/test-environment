@@ -118,22 +118,39 @@ recognize_power_switch(int fd, int *rebootable, int *sockets_num)
 {
     char    command[] = "$\r";
     char    reply[5];
-    int     rc;
+    int     i = 0;
+    int     rc = 0;
 
-    /* Send 'get signature' command. */
-    rc = write(fd, command, 2);
-    /* Read 1 byte of echo, 3 bytes of reply, and 1 more byte for '#'. */
-    rc = read(fd, reply, 5);
-    /* Check if signature (bytes 1-3) is valid. */
-    if (reply[1] != '1' || (reply[2] & 0x40) == 0 || reply[3] != '0' )
+    while (++i < 5)
     {
-        ERROR("Power switch signature was not received on specified"
-              "power TTY device.");
-        return 0;
-    }
-    *sockets_num = reply[2] & 0x1F;
-    *rebootable = (reply[2] & 0x20)? 1 : 0;
-    return 1;
+        /* Send 'get signature' command. */
+        rc = write(fd, command, 2);
+        /* Read 1 byte of echo, 3 bytes of reply, and 1 more byte for '#'. */
+        rc = read(fd, reply, 5);
+        /* Check if signature (bytes 1-3) is valid. */
+        if (reply[1] != '1' || (reply[2] & 0x40) == 0 || reply[3] != '0' )
+        {
+            ERROR("Power switch signature was not received on specified"
+                  "power TTY device.");
+
+            /*
+             * This may happen sometimes.
+             * We'll try again several times and cry when
+             * all our attempts failed.
+             */
+        }
+        else
+        {
+            *sockets_num = reply[2] & 0x1F;
+            *rebootable = (reply[2] & 0x20)? 1 : 0;
+            rc = 1;
+            break;
+        }
+
+        usleep(100000); /* Repeat attempt 0.1 sec later */
+    };
+
+    return rc;
 }
 
 /**
