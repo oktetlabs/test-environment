@@ -1111,7 +1111,18 @@ if test -z ${TE_SNIFF_LOG_CONV_DISABLE} ; then
         plog="${TE_SNIFF_LOG_DIR}/${plog}"
         xlogs[${idx}]=${plog/%.pcap/.xml}
         # Conversion from pcap to TE XML
-        tshark -r ${plog} -T pdml | rgt-pdml2xml - ${xlogs[idx]}
+        if type tshark 1>2 2> /dev/null ; then
+            tshark -r ${plog} -T pdml 2> /dev/null | rgt-pdml2xml - ${xlogs[idx]}
+        else
+            myecho ""
+            myecho "--->>> NOTE: tshark is missing, so sniffer logs won't be merged with the report"
+            if test -z "$LIVE_LOG" ; then
+                echo   "--->>>       find them in ${TE_SNIFF_LOG_DIR} directory"
+            fi
+            myecho -n "--->>> Continue logs conversion without sniffer logs..."
+            break
+        fi
+
         # Construct command to merge all capture logs 
         merge_comm="${merge_comm} ${xlogs[${idx}]}"
         let "idx += 1"
