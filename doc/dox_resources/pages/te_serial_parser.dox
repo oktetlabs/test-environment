@@ -1,7 +1,7 @@
 /**
 
 @defgroup serial Packet Serial Parser
-@ingroup te
+@ingroup kernel_log
 @{
 
 Serial console parsing framework provide ability to detect certain logs appearance on the console and report it back to the test. Example of such logs may be “Kernel panic”, “Something crashed”, “U-Boot bla-bla”. The test (if exists at the moment of the event) will be notified ASAP and can take appropriate actions. Examples of actions may include diagnostics gathering, some smart logging, DUT reboot and not touching the DUT. Also it is possible just save serial console output into the TE logs.
@@ -227,7 +227,7 @@ The first subtree is <b>/local/tester</b>, it is used to declare <b>Tester event
     <tr class="row8">
         <td class="col0 leftalign">/local/tester/event/handler/signal  </td>
         <td class="col1"> RW int </td>
-        <td class="col2 leftalign"> Signal number.                </td>
+        <td class="col2 leftalign"> Signal number. <b>SIGINT</b> is used by default.</td>
     </tr>
     <tr class="row9">
         <td class="col0">/local/tester/event/handler/internal</td>

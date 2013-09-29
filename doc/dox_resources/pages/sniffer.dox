@@ -1,7 +1,7 @@
 /**
 
 @defgroup sniffer Packet Sniffer
-@ingroup te
+@ingroup te_engine_logger
 @{
 The main purpose of the sniffer framework is to provide infrastructure for sniffing on the network interfaces and storing information about the packets sent/received there.
 @section sniffer_launch How to launch
