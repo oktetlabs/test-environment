@@ -1322,10 +1322,13 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
                     *status = TESTER_TEST_PASSED;
                     break;
 
+                case TE_EXIT_SIGUSR2:
                 case TE_EXIT_SIGINT:
                     *status = TESTER_TEST_STOPPED;
-                    ERROR("ID=%d was interrupted by SIGINT, shut down",
-                          exec_id);
+                    ERROR("ID=%d was interrupted by %s, shut down",
+                          exec_id,
+                          WEXITSTATUS(ret) == TE_EXIT_SIGINT ? "SIGINT" :
+                                                               "SIGUSR2");
                     break;
 
                 case TE_EXIT_NOT_FOUND:

@@ -75,7 +75,7 @@ te_test_sig_handler(int signum)
         if (getenv("TE_TEST_SIGUSR2_VERDICT") != NULL)
             RING_VERDICT("Test is stopped by SIGUSR2");
         else
-            exit(TE_EXIT_SIGINT);
+            exit(TE_EXIT_SIGUSR2);
     }
 }
 
