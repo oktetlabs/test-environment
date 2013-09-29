@@ -506,6 +506,9 @@ parser_data_processing(serial_parser_t *parser, char *buffer)
         {
             if (strstr(buffer, pat->v) != NULL)
             {
+                WARN("Parser %s has detected overlap with pattern '%s'. "
+                     "Tester event %s is activated.", parser->name, pat->v,
+                     event->t_name);
                 event->status = TRUE;
                 event->count++;
                 break;
