@@ -219,7 +219,10 @@ if (_rc != 0) \
                 SERIAL_CHECK_RC(TE_RC(TE_TESTER, TE_EINVAL),
                                 "Failed to get the handler signal");
 
-            h->signal = map_name_to_signo(signame);
+            if (strlen(signame) > 0)
+                h->signal = map_name_to_signo(signame);
+            else
+                h->signal = SIGINT; /* Default */
             free(signame);
         }
 
