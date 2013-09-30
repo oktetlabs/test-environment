@@ -358,6 +358,12 @@ tester_handle_serial_event(const char *event_name)
                                   h->signal, strerror(errno));
                     }
                 }
+                else
+                {
+                    fail = TRUE;
+                    VERB("Can not send signal to process with pid %d",
+                         pid.id);
+                }
                 pthread_mutex_unlock(&pid.mutex);
             }
             else
@@ -503,11 +509,12 @@ tester_serial_thread(void)
             }
             free(ag_event);
 
+            type = CVT_INTEGER;
             SERIAL_WAIT_LOCAL_SEQ(cfg_get_instance(status_handle,
                                                    &type, &status));
             if (rc != 0)
             {
-                ERROR("Couldn't get event status");
+                ERROR("Couldn't get event status %s", te_rc_mod2str(rc));
                 continue;
             }
 
