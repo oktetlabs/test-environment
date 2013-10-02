@@ -1121,9 +1121,10 @@ struct tarpc_cmsg_data_parse_ip_pktinfo_out {
 struct tarpc_bind_in {
     struct tarpc_in_arg common;
 
-    tarpc_int           fd;     /**< TA-local socket */
-    struct tarpc_sa     addr;   /**< Socket name */
-    tarpc_socklen_t     len;    /**< Length to be passed to bind() */
+    tarpc_int           fd;         /**< TA-local socket */
+    struct tarpc_sa     addr;       /**< Socket name */
+    tarpc_socklen_t     len;        /**< Length to be passed to bind() */
+    tarpc_bool          fwd_len;    /**< Use the specified length @a len */
 };
 
 typedef struct tarpc_int_retval_out tarpc_bind_out;

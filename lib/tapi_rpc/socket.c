@@ -100,9 +100,21 @@ rpc_socket(rcf_rpc_server *rpcs,
     RETVAL_INT(socket, out.fd);
 }
 
-int
-rpc_bind(rcf_rpc_server *rpcs,
-         int s, const struct sockaddr *my_addr)
+/**
+ * Generic function to call rpc_bind()
+ *
+ * @param rpcs      RPC server handle
+ * @param s         socket descriptor
+ * @param my_addr   pointer to a @b sockaddr structure
+ * @param len       length to be passed to bind()
+ * @param fwd_len   forward the specified length in parameter @a len
+ *
+ * @return 0 on success or -1 on failure 
+ * @note See @b bind manual page for more infrormation.
+ */
+static int
+rpc_bind_gen(rcf_rpc_server *rpcs, int s, const struct sockaddr *my_addr,
+             socklen_t len, te_bool fwd_len)
 {
     tarpc_bind_in  in;
     tarpc_bind_out out;
@@ -117,6 +129,8 @@ rpc_bind(rcf_rpc_server *rpcs,
     }
 
     in.fd = s;
+    in.len = len;
+    in.fwd_len = fwd_len;
     sockaddr_input_h2rpc(my_addr, &in.addr);
 
     rcf_rpc_call(rpcs, "bind", &in, &out);
@@ -125,6 +139,21 @@ rpc_bind(rcf_rpc_server *rpcs,
     TAPI_RPC_LOG(rpcs, bind, "%d, %s", "%d", s, sockaddr_h2str(my_addr),
                  out.retval);
     RETVAL_INT(bind, out.retval);
+}
+
+/* See description in the tapi_rpc_socket.h */
+int
+rpc_bind(rcf_rpc_server *rpcs, int s, const struct sockaddr *my_addr)
+{
+    return rpc_bind_gen(rpcs, s, my_addr, 0, FALSE);
+}
+
+/* See description in the tapi_rpc_socket.h */
+int
+rpc_bind_len(rcf_rpc_server *rpcs, int s, const struct sockaddr *my_addr,
+             socklen_t addrlen)
+{
+    return rpc_bind_gen(rpcs, s, my_addr, addrlen, TRUE);
 }
 
 int rpc_bind_raw(rcf_rpc_server *rpcs, int s,

@@ -502,6 +502,13 @@ extern int rpc_cmsg_data_parse_ip_pktinfo(rcf_rpc_server *rpcs,
 extern int rpc_bind(rcf_rpc_server *rpcs,
                     int s, const struct sockaddr *my_addr);
 
+/**
+ * The same as rpc_bind(), but there is @a addrlen parameter. It is used to
+ * specify length to be passed to bind().
+ */
+extern int rpc_bind_len(rcf_rpc_server *rpcs, int s,
+                        const struct sockaddr *my_addr, socklen_t addrlen);
+
 extern int rpc_bind_raw(rcf_rpc_server *rpcs, int s,
                         const struct sockaddr *my_addr, socklen_t addrlen);
 

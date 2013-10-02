@@ -1007,7 +1007,9 @@ TARPC_FUNC(bind, {},
     else
     {
         PREPARE_ADDR(my_addr, in->addr, 0);
-        MAKE_CALL(out->retval = func(in->fd, my_addr, my_addrlen));
+        MAKE_CALL(out->retval = func(in->fd, my_addr,
+                                     in->fwd_len ? in->len :
+                                                   my_addrlen));
     }
 }
 )
