@@ -1111,7 +1111,7 @@ if test -z ${TE_SNIFF_LOG_CONV_DISABLE} ; then
         plog="${TE_SNIFF_LOG_DIR}/${plog}"
         xlogs[${idx}]=${plog/%.pcap/.xml}
         # Conversion from pcap to TE XML
-        if type tshark 1>2 2> /dev/null ; then
+        if type tshark >/dev/null 2> /dev/null ; then
             tshark -r ${plog} -T pdml 2> /dev/null | rgt-pdml2xml - ${xlogs[idx]}
         else
             myecho ""
