@@ -60,6 +60,7 @@ typedef enum dhcp_option_type {
     DHCP_OPT_NETBIOS_NAME_SERVER        = 44,   /**< NETBIOS name server */
     DHCP_OPT_NETBIOS_NODE_TYPE          = 46,   /**< NETBIOS node type */
     DHCP_OPT_NETBIOS_SCOPE              = 47,   /**< NETBIOS scope */
+    DHCP_OPT_REQUESTED_IP               = 50,   /**< Requested IP */
     DHCP_OPT_LEASE                      = 51,   /**< Lease time */
     DHCP_OPT_MESSAGE_TYPE               = 53,   /**< DHCP Message Type */
     DHCP_OPT_SERVER_ID                  = 54,   /**< Server Identifier */

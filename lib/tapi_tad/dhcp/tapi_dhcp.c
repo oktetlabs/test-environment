@@ -78,9 +78,6 @@
 
 #define DHCP_MAGIC_SIZE        4
 
-#define SERVER_ID_OPTION       54
-#define REQUEST_IP_ADDR_OPTION 50
-
 #define CHECK_RC(expr_) \
     do {                                                \
         int rc_ = (expr_);                              \
@@ -1260,11 +1257,11 @@ dhcp_request_reply(const char *ta, csap_handle_t csap,
         dhcpv4_message_set_ciaddr(request, myaddr);
 
     if (type != DHCPDISCOVER)
-        dhcpv4_message_add_option(request, SERVER_ID_OPTION,
+        dhcpv4_message_add_option(request, DHCP_OPT_SERVER_ID,
                                   sizeof(srvaddr->s_addr),
                                   &srvaddr->s_addr);
     if (type == DHCPREQUEST)
-        dhcpv4_message_add_option(request, REQUEST_IP_ADDR_OPTION,
+        dhcpv4_message_add_option(request, DHCP_OPT_REQUESTED_IP,
                                   sizeof(myaddr->s_addr),
                                   &myaddr->s_addr);
 
@@ -1326,7 +1323,7 @@ dhcp_request_reply(const char *ta, csap_handle_t csap,
         }
 
         if ((server_id_option = dhcpv4_message_get_option(reply,
-                                                          54)) == NULL)
+                                    DHCP_OPT_SERVER_ID)) == NULL)
         {
             ERROR("Cannot get ServerID option");
             rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
