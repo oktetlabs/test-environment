@@ -178,8 +178,10 @@
 #define SYS_recvmmsg __NR_recvmmsg
 #else
 #if __GNUC__
-#if __x86_64__ || __ppc64__
+#if __x86_64__ || __powerpc64__
 #define SYS_recvmmsg 299
+#elif __powerpc__
+#define SYS_recvmmsg 343
 #else
 #define SYS_recvmmsg 337
 #endif
@@ -195,8 +197,10 @@
 #define SYS_sendmmsg __NR_sendmmsg
 #else
 #if __GNUC__
-#if __x86_64__ || __ppc64__
+#if __x86_64__ || __powerpc64__ 
 #define SYS_sendmmsg 307
+#elif __powerpc__
+#define SYS_sendmmsg 349
 #else
 #define SYS_sendmmsg 345
 #endif

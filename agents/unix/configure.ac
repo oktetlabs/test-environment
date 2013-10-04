@@ -730,7 +730,7 @@ if test "x$with_aggr" != "x" ; then
 fi
 
 #
-# On PPC64 function descriptors are used which are
+# On PowerPC function descriptors are used which are
 # placed in data section like variables, not in
 # text one - so we cannot distinguish functions
 # and variables with --format=bsd in nm output
@@ -741,7 +741,8 @@ fi
 # in not elegant, but portable way.
 #
 host_prefix=`echo $host | sed -e 's/\(.........\).*/\1/'`
-if test "x$host_prefix" = "xpowerpc64" ; then
+if test "x$host_prefix" = "xpowerpc64" || \
+   test "x$host_prefix" = "xpowerpc"; then
     NM_FORMAT=sysv
 else
     NM_FORMAT=bsd
