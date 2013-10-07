@@ -394,7 +394,7 @@ if test -n "$with_rcf_rpc" ; then
     dnl Find library with SunRPC XDR functions.
     dnl -lnsl on Solaris2 (SunOS 5.11);
     dnl
-    AC_SEARCH_LIBS([xdr_bytes], [rpc nsl], [],
+    AC_SEARCH_LIBS([xdr_bytes], [rpc nsl tirpc], [],
                    AC_MSG_ERROR([No RPC library found]))
 
     AH_TEMPLATE([xdr_uint8_t], [RPC XDR for unsigned 8bit width type])
