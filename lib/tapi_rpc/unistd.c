@@ -60,8 +60,8 @@
 
 
 /** @name String buffers for snprintf() operations */
-static char str_buf_1[4096];
-static char str_buf_2[4096];
+static char str_buf_1[8192];
+static char str_buf_2[8192];
 /*@}*/
 
 
