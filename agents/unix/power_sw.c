@@ -79,12 +79,13 @@ static const char   tty_dev_dflt[] = TTY_DEV_DFLT;
  * @param[in]   sock_num    Number of power lines device can control.
  * @param[in]   cmd         Turn specified lines ON or OFF.
  */
-static void
+static int
 turn_on_off(int fd, unsigned int mask, int sock_num, int cmd)
 {
-    int             i;
+    int             i, j, rc;
     unsigned int    socket;
     char            command[2];
+    char            reply[2];
 
     command[1] = '\r';
     socket = 1;
@@ -97,11 +98,35 @@ turn_on_off(int fd, unsigned int mask, int sock_num, int cmd)
                             (cmd == TURN_OFF) ?
                                 0x40 :
                                     0x50 /* RESET command */) | i;
-            write(fd, command, 2);
+
+            j = 0;
+            rc = -1;
+            while (++j < 5)
+            {
+                if ((rc = write(fd, command, 2)) == -1)
+                    continue;
+
+                if ((rc = read(fd, reply, 2)) == -1)
+                    continue;
+
+                if (command[0] == reply[0] && reply[1] == '#')
+                {
+                    rc = 0;
+                    break;
+                }
+            }
+
+            if (rc != 0)
+            {
+                ERROR("TTY device does not return proper command reply");
+                return rc;
+            }
         }
 
         socket *= 2;
     }
+
+    return 0;
 }
 
 /**
@@ -214,6 +239,7 @@ power_sw(int type, const char *dev, int mask, int cmd)
     int             fd;
     int             is_rebootable;
     int             sockets_num;
+    int             rc;
 
     if (type == DEV_TYPE_UNSPEC)
         type = DEV_TYPE_DFLT;
@@ -330,22 +356,28 @@ power_sw(int type, const char *dev, int mask, int cmd)
         {
             if (is_rebootable == 1)
             {
-                turn_on_off(fd, mask, sockets_num, RESET);
+                rc = turn_on_off(fd, mask, sockets_num, RESET);
             }
             else
             {
-                turn_on_off(fd, mask, sockets_num, TURN_OFF);
-                sleep(REBOOT_SLEEP_TIME);
-                turn_on_off(fd, mask, sockets_num, TURN_ON);
+                if ((rc = turn_on_off(fd, mask, sockets_num,
+                                      TURN_OFF)) == 0)
+                {
+                    sleep(REBOOT_SLEEP_TIME);
+                    rc = turn_on_off(fd, mask, sockets_num, TURN_ON);
+                }
             }
         }
         else
         {
-            turn_on_off(fd, mask, sockets_num,
+            rc = turn_on_off(fd, mask, sockets_num,
                         (cmd == CMD_TURN_ON) ? TURN_ON : TURN_OFF);
         }
 
         close(fd);
+
+        if (rc != 0)
+            return -1;
     }
 
     return 0;
