@@ -104,21 +104,33 @@ turn_on_off(int fd, unsigned int mask, int sock_num, int cmd)
             while (++j < 5)
             {
                 if ((rc = write(fd, command, 2)) == -1)
+                {
+                    ERROR("Failed to send command to TTY device");
+                    usleep(100000); /* Repeat attempt 0.1 sec later */
                     continue;
+                }
 
                 if ((rc = read(fd, reply, 2)) == -1)
+                {
+                    ERROR("Failed to receive reply from TTY device");
+                    usleep(100000); /* Repeat attempt 0.1 sec later */
                     continue;
+                }
 
                 if (command[0] == reply[0] && reply[1] == '#')
                 {
                     rc = 0;
                     break;
                 }
+
+                ERROR("Command reply from TTY device does "
+                      "not match command");
+                usleep(100000); /* Repeat attempt 0.1 sec later */
             }
 
             if (rc != 0)
             {
-                ERROR("TTY device does not return proper command reply");
+                ERROR("TTY device did not executed command");
                 return rc;
             }
         }

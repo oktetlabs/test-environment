@@ -154,12 +154,13 @@ usage()
          DEV_TYPE_TTY, DEV_TYPE_PARPORT);
 }
 
-void
+int
 turn_on_off(int fd, unsigned int mask, int sock_num, int command_code)
 {
-    int             i;
+    int             i, j, rc;
     unsigned int    socket;
     char            command[2];
+    char            reply[2];
 
     command[1] = '\r';
     socket = 1;
@@ -172,11 +173,47 @@ turn_on_off(int fd, unsigned int mask, int sock_num, int command_code)
                             (command_code == TURN_OFF) ?
                                 0x40 :
                                     0x50 /* RESET command */) | i;
-            write(fd, command, 2);
+
+            j = 0;
+            rc = -1;
+            while (++j < 5)
+            {
+                if ((rc = write(fd, command, 2)) == -1)
+                {
+                    printf("Failed to send command to TTY device\n");
+                    usleep(100000); /* Repeat attempt 0.1 sec later */
+                    continue;
+                }
+
+                if ((rc = read(fd, reply, 2)) == -1)
+                {
+                    printf("Failed to receive reply from TTY device\n");
+                    usleep(100000); /* Repeat attempt 0.1 sec later */
+                    continue;
+                }
+
+                if (command[0] == reply[0] && reply[1] == '#')
+                {
+                    rc = 0;
+                    break;
+                }
+
+                printf("Command reply from TTY device does "
+                       "not match command\n");
+                usleep(100000); /* Repeat attempt 0.1 sec later */
+            }
+
+            if (rc != 0)
+            {
+                printf("TTY device did not executed command");
+                return rc;
+            }
         }
 
         socket *= 2;
     }
+
+    return 0;
 }
 
 /**
@@ -193,22 +230,39 @@ recognize_power_switch(int fd, int *rebootable, int *sockets_num)
 {
     char    command[] = "$\r";
     char    reply[5];
-    int     rc;
+    int     rc = 0;
+    int     i = 0;
 
-    memset(reply, 0, 5);
-    /* Send 'get signature' command. */
-    rc = write(fd, command, 2);
-    /* Read 1 byte of echo, 3 bytes of reply, and 1 more byte for '#'. */
-    rc = read(fd, reply, 5);
-    /* Check if signature (bytes 1-3) is valid. */
-    if (reply[1] != '1' || !reply[2] & 0x40 || reply[3] != '0' )
+    while (++i < 5)
     {
-        printf("Device is not a Power Switch. %s\n", reply);
-        return 0;
-    }
-    *sockets_num = reply[2] & 0x1F;
-    *rebootable = (reply[2] & 0x20)? 1 : 0;
-    return 1;
+        /* Send 'get signature' command. */
+        rc = write(fd, command, 2);
+        /* Read 1 byte of echo, 3 bytes of reply, and 1 more byte for '#'. */
+        rc = read(fd, reply, 5);
+        /* Check if signature (bytes 1-3) is valid. */
+        if (reply[1] != '1' || (reply[2] & 0x40) == 0 || reply[3] != '0' )
+        {
+            printf("Power switch signature was not received on specified"
+                  "power TTY device.\n");
+
+            /*
+             * This may happen sometimes.
+             * We'll try again several times and cry when
+             * all our attempts failed.
+             */
+        }
+        else
+        {
+            *sockets_num = reply[2] & 0x1F;
+            *rebootable = (reply[2] & 0x20)? 1 : 0;
+            rc = 1;
+            break;
+        }
+
+        usleep(100000); /* Repeat attempt 0.1 sec later */
+    };
+
+    return rc;
 }
 
 /**
@@ -355,21 +409,39 @@ main(int argc, char **argv)
         {
             if (is_rebootable == 1)
             {
-                turn_on_off(fd, mask, sockets_num, RESET);
+                if (turn_on_off(fd, mask, sockets_num, RESET) != 0)
+                {
+                    close(fd);
+                    return 5;
+                }
             }
             else
             {
-                turn_on_off(fd, mask, sockets_num, TURN_OFF);
+                if (turn_on_off(fd, mask, sockets_num, TURN_OFF) != 0)
+                {
+                    close(fd);
+                    return 5;
+                }
+
                 sleep(REBOOT_SLEEP_TIME);
-                turn_on_off(fd, mask, sockets_num, TURN_ON);
+
+                if (turn_on_off(fd, mask, sockets_num, TURN_ON) != 0)
+                {
+                    close(fd);
+                    return 5;
+                }
             }
         }
         else
         {
-            turn_on_off(fd, mask, sockets_num,
+            if (turn_on_off(fd, mask, sockets_num,
                         (strcmp(command, COMMAND_ON) == 0) ?
                                                 TURN_ON :
-                                                    TURN_OFF);
+                                                    TURN_OFF) != 0)
+            {
+                close(fd);
+                return 5;
+            }
         }
 
         close(fd);
