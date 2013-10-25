@@ -502,6 +502,32 @@ tarpc_timespec2str(const struct tarpc_timespec *tv)
 }
 
 /**
+ * Convert 'struct tarpc_hwtstamp_config' to string.
+ *
+ * @note Static buffer is used for return value.
+ *
+ * @param hw_cfg     pointer to 'struct tarpc_hwtstamp_config'
+ *
+ * @return null-terminated string
+ */
+const char *
+tarpc_hwtstamp_config2str(const tarpc_hwtstamp_config *hw_cfg)
+{
+    static char buf[32];
+
+    if (hw_cfg == NULL)
+    {
+        strcpy(buf, "(nil)");
+    }
+    else
+    {
+        sprintf(buf, "{%d,%d,%d}", hw_cfg->flags,
+                hw_cfg->tx_type, hw_cfg->rx_filter);
+    }
+    return buf;
+}
+
+/**
  * Simple sender.
  *
  * @param rpcs            RPC server

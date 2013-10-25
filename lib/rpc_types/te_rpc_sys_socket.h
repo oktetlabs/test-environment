@@ -638,6 +638,10 @@ typedef enum rpc_sockopt {
     RPC_SO_TIMESTAMPNS,     /**< Enabling/disabling the receiving of the 
                                  SO_TIMESTAMPNS control message. */
 
+    RPC_SO_TIMESTAMPING,    /**< Instructs the socket layer which kind of
+                                 information about HW timestamps is
+                                 wanted. */
+
     RPC_SCM_RIGHTS,         /**< Transfer file descriptors */
 
     RPC_SOCKOPT_UNKNOWN     /**< Invalid socket option */
@@ -899,6 +903,7 @@ typedef enum rpc_ioctl_code {
     RPC_SIOCGARP,           /**< Get ARP mapping */
     RPC_SG_IO,
     RPC_SIOCETHTOOL,        /**< Linux-specific Ethtool */
+    RPC_SIOCSHWTSTAMP,
     
     /* Winsock2-specific codes */
     RPC_SIO_ADDRESS_LIST_CHANGE,

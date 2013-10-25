@@ -306,14 +306,25 @@ struct tarpc_ethtool {
     tarpc_ethtool_data      data;
 };
 
+/** tarpc_hwtstamp_config */
+struct tarpc_hwtstamp_config {
+    tarpc_int flags;        /* no flags defined right now, must be zero */
+    tarpc_int tx_type;      /* HWTSTAMP_TX_* */
+    tarpc_int rx_filter;    /* HWTSTAMP_FILTER_* */
+};
+
 /** struct ifreq */
 struct tarpc_ifreq {
-    char            rpc_ifr_name<>; /**< Interface name */
-    struct tarpc_sa rpc_ifr_addr;   /**< Different interface addresses */
-    tarpc_int       rpc_ifr_flags;  /**< Interface flags */
-    tarpc_int       rpc_ifr_ifindex;/**< Interface index */
-    uint32_t        rpc_ifr_mtu;    /**< Interface MTU */
-    tarpc_ethtool   rpc_ifr_ethtool; /**< Ethtool command structure */
+    char                    rpc_ifr_name<>; /**< Interface name */
+    struct tarpc_sa         rpc_ifr_addr;   /**< Different interface
+                                                 addresses */
+    tarpc_int               rpc_ifr_flags;  /**< Interface flags */
+    tarpc_int               rpc_ifr_ifindex;/**< Interface index */
+    uint32_t                rpc_ifr_mtu;    /**< Interface MTU */
+    tarpc_ethtool           rpc_ifr_ethtool; /**< Ethtool command
+                                                  structure */
+    tarpc_hwtstamp_config   rpc_ifr_hwstamp; /**< HW timestamping
+                                                  configuration */
 };
 
 /** struct ifconf */
@@ -2673,7 +2684,8 @@ enum ioctl_type {
     IOCTL_IFREQ,
     IOCTL_IFCONF,
     IOCTL_ARPREQ,
-    IOCTL_SGIO
+    IOCTL_SGIO,
+    IOCTL_HWTSTAMP_CONFIG
     
 };
 

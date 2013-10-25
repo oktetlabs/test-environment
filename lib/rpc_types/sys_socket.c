@@ -103,6 +103,9 @@ extern const char *inet_ntop(int af, const void *src, char *dst,
 #if HAVE_LINUX_ETHTOOL_H
 #include "te_ethtool.h"
 #endif
+#if HAVE_LINUX_NET_TSTAMP_H
+#include <linux/net_tstamp.h>
+#endif
 
 #endif
 
@@ -833,6 +836,7 @@ rpc_sockopt2level(rpc_sockopt opt)
         case RPC_SO_DGRAM_ERRIND:
         case RPC_SO_TIMESTAMP:
         case RPC_SO_TIMESTAMPNS:
+        case RPC_SO_TIMESTAMPING:
         case RPC_SCM_RIGHTS:
             return RPC_SOL_SOCKET;
 
@@ -954,6 +958,7 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(SO_DGRAM_ERRIND);
         RPC2STR(SO_TIMESTAMP);
         RPC2STR(SO_TIMESTAMPNS);
+        RPC2STR(SO_TIMESTAMPING);
         RPC2STR(IP_ADD_MEMBERSHIP);
         RPC2STR(IP_DROP_MEMBERSHIP);
         RPC2STR(IP_MULTICAST_IF);
@@ -1074,6 +1079,7 @@ sockopt_rpc2h(rpc_sockopt opt)
         RPC2H_CHECK(SO_DGRAM_ERRIND);
         RPC2H_CHECK(SO_TIMESTAMP);
         RPC2H_CHECK(SO_TIMESTAMPNS);
+        RPC2H_CHECK(SO_TIMESTAMPING);
         RPC2H_CHECK(IP_ADD_MEMBERSHIP);
         RPC2H_CHECK(IP_DROP_MEMBERSHIP);
         RPC2H_CHECK(IP_MULTICAST_IF);
@@ -1203,6 +1209,7 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC_CHECK(SO_DGRAM_ERRIND);
                 H2RPC_CHECK(SO_TIMESTAMP);
                 H2RPC_CHECK(SO_TIMESTAMPNS);
+                H2RPC_CHECK(SO_TIMESTAMPING);
                 case TE_SCM_RIGHTS:
                     return RPC_SCM_RIGHTS;
                 default: return RPC_SOCKOPT_UNKNOWN;
@@ -1316,7 +1323,7 @@ sockopt_is_boolean(rpc_sockopt opt)
         case RPC_SO_EXCLUSIVEADDRUSE:
         case RPC_SO_DGRAM_ERRIND:
         case RPC_SO_TIMESTAMP:
-        case RPC_SO_TIMESTAMPNS:
+        case RPC_SO_TIMESTAMPING:
 
         case RPC_IP_MULTICAST_LOOP:
         case RPC_IP_PKTINFO:
@@ -1632,6 +1639,8 @@ ioctl_rpc2str(rpc_ioctl_code code)
         RPC2STR(SG_IO);
         RPC2STR(SIOCETHTOOL);
 
+        RPC2STR(SIOCSHWTSTAMP);
+
         RPC2STR(SIO_ADDRESS_LIST_CHANGE);
         RPC2STR(SIO_ADDRESS_LIST_QUERY);
         RPC2STR(SIO_ADDRESS_LIST_SORT);
@@ -1704,6 +1713,7 @@ ioctl_rpc2h(rpc_ioctl_code code)
         RPC2H_CHECK(SIOCGARP);
         RPC2H_CHECK(SG_IO);
         RPC2H_CHECK(SIOCETHTOOL);
+        RPC2H_CHECK(SIOCSHWTSTAMP);
 
         RPC2H_CHECK(SIO_ADDRESS_LIST_CHANGE);
         RPC2H_CHECK(SIO_ADDRESS_LIST_QUERY);
@@ -2733,9 +2743,9 @@ ethtool_cmd2type(rpc_ethtool_cmd cmd)
     return 0;
 }
 
-#if HAVE_LINUX_ETHTOOL_H
 #define COPY_FIELD(to, from, fname) \
     (to)->fname = (from)->fname;
+#if HAVE_LINUX_ETHTOOL_H
 /**
  * Copy ethtool data from RPC data structure to host. 
  *
@@ -2960,8 +2970,55 @@ ethtool_data_h2rpc(tarpc_ethtool *rpc_edata, caddr_t edata)
     }
 
 }
-#undef COPY_FIELD
 #endif /* HAVE_LINUX_ETHTOOL_H */
+
+#if HAVE_LINUX_NET_TSTAMP_H
+
+/**
+ * Copy hwtstamp_config data from RPC data structure to host. 
+ *
+ * @param rpc_hwdata RPC hwtstamp_config data structure
+ * @param hwdata_p   pointer to return host hwtstamp_config structure;
+ *                   this structure is allocated if the pointer is
+ *                   initialised to NULL
+ */
+void
+hwtstamp_config_data_rpc2h(tarpc_hwtstamp_config *rpc_hwdata,
+                           caddr_t *hwdata_p)
+{
+    struct hwtstamp_config *hw_cfg = 
+                        *(struct hwtstamp_config **)hwdata_p;
+    if (hw_cfg == NULL)
+    {
+        hw_cfg = calloc(sizeof(struct hwtstamp_config ), 1);
+        if (hw_cfg == NULL)
+            return;
+        *hwdata_p = (caddr_t)hw_cfg;
+    }
+    COPY_FIELD(hw_cfg, rpc_hwdata, flags);
+    COPY_FIELD(hw_cfg, rpc_hwdata, tx_type);
+    COPY_FIELD(hw_cfg, rpc_hwdata, rx_filter);
+}
+
+/**
+ * Copy hwtstamp_config data from the host data structure to RPC. 
+ *
+ * @param hwdata     hwtstamp_config structure
+ * @param rpc_hwdata RPC hwtstamp_config data structure
+ */
+void
+hwtstamp_config_data_h2rpc(tarpc_hwtstamp_config *rpc_hwdata,
+                           caddr_t hwdata)
+{
+    struct hwtstamp_config *hw_cfg = 
+                        (struct hwtstamp_config *)hwdata;
+    COPY_FIELD(rpc_hwdata, hw_cfg, flags);
+    COPY_FIELD(rpc_hwdata, hw_cfg, tx_type);
+    COPY_FIELD(rpc_hwdata, hw_cfg, rx_filter);
+}
+
+#endif
+#undef COPY_FIELD
 
 /**
  * Described in te_rpc_sys_socket.h

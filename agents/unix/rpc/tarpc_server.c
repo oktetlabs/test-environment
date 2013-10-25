@@ -69,6 +69,10 @@
 #include <unistd.h>
 #endif
 
+#ifdef HAVE_LINUX_NET_TSTAMP_H
+#include <linux/net_tstamp.h>
+#endif
+
 #include "te_defs.h"
 #include "te_queue.h"
 #include "te_tools.h"
@@ -2646,7 +2650,11 @@ tarpc_setsockopt(tarpc_setsockopt_in *in, tarpc_setsockopt_out *out,
             if (in->level == RPC_SOL_IP &&
                 in->optname == RPC_IP_MTU_DISCOVER)
                 param->integer = mtu_discover_arg_rpc2h(param->integer);
-
+#ifdef HAVE_LINUX_NET_TSTAMP_H
+            if (in->level == RPC_SOL_SOCKET &&
+                in->optname == RPC_SO_TIMESTAMPING)
+                param->integer = hwtstamp_instr_rpc2h(param->integer);
+#endif
             break;
         }
 
@@ -3358,11 +3366,17 @@ tarpc_ioctl_pre(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                                     &req->ifreq.ifr_data);
                     break;
 #endif /* HAVE_LINUX_ETHTOOL_H */
-
+#if HAVE_LINUX_NET_TSTAMP_H
+                case RPC_SIOCSHWTSTAMP:
+                    hwtstamp_config_data_rpc2h(
+                                    &(out->req.req_val[0].ioctl_request_u.
+                                      req_ifreq.rpc_ifr_hwstamp),
+                                    &req->ifreq.ifr_data);
+                    break;
+#endif
             }
             break;
         }
-
         case IOCTL_IFCONF:
         {
             char *buf = NULL;
@@ -3578,7 +3592,15 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                     free(req->ifreq.ifr_data);
                     break;
 #endif /* HAVE_LINUX_ETHTOOL_H */
-
+#if HAVE_LINUX_NET_TSTAMP_H
+                case RPC_SIOCSHWTSTAMP:
+                    hwtstamp_config_data_h2rpc(
+                                    &(out->req.req_val[0].ioctl_request_u.
+                                      req_ifreq.rpc_ifr_hwstamp),
+                                    req->ifreq.ifr_data);
+                    free(req->ifreq.ifr_data);
+                    break;
+#endif /* HAVE_LINUX_NET_TSTAMP_H */
                 default:
                     ERROR("Unsupported IOCTL request %d of type IFREQ",
                           in->code);

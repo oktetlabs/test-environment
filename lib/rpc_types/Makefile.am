@@ -11,6 +11,7 @@ include_HEADERS = \
 	te_rpc_aio.h \
 	te_rpc_errno.h \
 	te_rpc_fcntl.h \
+	te_rpc_linux_net_tstamp.h \
 	te_rpc_netdb.h \
 	te_rpc_net_if_arp.h \
 	te_rpc_net_if.h \
@@ -72,6 +73,7 @@ nodist_librpc_types_la_SOURCES = \
 	netdb_conv.c \
 	net_if_arp_conv.c \
 	net_if_conv.c \
+	linux_net_tstamp_conv.c \
 	signal_conv.c \
 	sys_poll_conv.c \
 	sys_epoll_conv.c \
@@ -92,6 +94,7 @@ EXTRA_DIST=\
 	netdb.c \
 	net_if_arp.c \
 	net_if.c \
+	linux_net_tstamp.c \
 	signal.c \
 	sys_poll.c \
 	sys_epoll.c \

@@ -100,7 +100,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -424,6 +424,27 @@ rpc_ioctl(rcf_rpc_server *rpcs,
 #endif
                 break;
             }
+
+        case RPC_SIOCSHWTSTAMP:
+        {
+            struct ifreq *ifr = (struct ifreq *)arg;
+            tarpc_ifreq  *rpc_ifreq = 
+                    &in.req.req_val[0].ioctl_request_u.req_ifreq;
+
+            in.req.req_val[0].type = IOCTL_IFREQ;
+            if (ifr == NULL)
+                break;
+            rpc_ifreq->rpc_ifr_name.rpc_ifr_name_val = ifr->ifr_name;
+            rpc_ifreq->rpc_ifr_name.rpc_ifr_name_len =
+                    sizeof(ifr->ifr_name);
+
+            if (ifr->ifr_data == NULL)
+                break;
+
+            memcpy(&rpc_ifreq->rpc_ifr_hwstamp, ifr->ifr_data,
+                   sizeof(tarpc_hwtstamp_config));
+            break;
+        }
 
         case RPC_SIOCETHTOOL:
         {
@@ -818,6 +839,17 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                                      ((struct ifreq *)arg)->ifr_flags)));
                     break;
 
+                case RPC_SIOCSHWTSTAMP:
+                {
+                    struct ifreq *ifr = (struct ifreq *)arg;
+                    snprintf(ifreq_buf + strlen(ifreq_buf),
+                             sizeof(ifreq_buf) - strlen(ifreq_buf),
+                             "HW timestamp config: %s",
+                                tarpc_hwtstamp_config2str(
+                                    (struct tarpc_tarpc_hwtstamp_config *)
+                                        ifr->ifr_data));
+                    break;
+                }
                 case RPC_SIOCETHTOOL:
                 {
                     struct ifreq            *ifr = (struct ifreq *)arg;

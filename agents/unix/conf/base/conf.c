@@ -88,6 +88,10 @@
 #include <libdlpi.h>
 #endif
 
+#ifdef _NET_TIMESTAMPING_H
+#include <linux/net_tstamp.h>
+#endif
+
 #if HAVE_LINUX_IF_VLAN_H
 #include <linux/if_vlan.h>
 #define LINUX_VLAN_SUPPORT 1

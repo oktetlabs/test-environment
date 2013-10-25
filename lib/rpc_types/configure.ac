@@ -306,6 +306,10 @@ AC_CHECK_MEMBERS([struct ethtool_cmd.mdio_support,
 #include <linux/ethtool.h>
 ])
 
+AC_CHECK_HEADERS([linux/net_tstamp.h])
+AC_CHECK_TYPES([struct hwtstamp_config], [], [],
+               [#include <linux/net_tstamp.h>])
+
 AC_CONFIG_FILES([Makefile])
 
 TE_LIB_RESTORE
