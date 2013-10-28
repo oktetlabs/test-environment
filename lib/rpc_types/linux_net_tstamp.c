@@ -46,6 +46,7 @@
 unsigned int
 hwtstamp_instr_rpc2h(unsigned flags)
 {
+#if HAVE_LINUX_NET_TSTAMP_H
     if ((flags & ~SOF_TIMESTAMPING_MASK) != 0)
         return HWTSTAMP_UNKNOWN;
 
@@ -64,11 +65,15 @@ hwtstamp_instr_rpc2h(unsigned flags)
            | (!!(flags & RPC_SOF_TIMESTAMPING_RAW_HARDWARE) *
               SOF_TIMESTAMPING_RAW_HARDWARE)
            ;
+#else
+       return HWTSTAMP_UNKNOWN;
+#endif
 }
 
 unsigned int
 hwtstamp_instr_h2rpc(unsigned int flags)
 {
+#if HAVE_LINUX_NET_TSTAMP_H
     return (!!(flags & SOF_TIMESTAMPING_TX_HARDWARE) *
             RPC_SOF_TIMESTAMPING_TX_HARDWARE)
            | (!!(flags & SOF_TIMESTAMPING_TX_SOFTWARE) *
@@ -84,6 +89,9 @@ hwtstamp_instr_h2rpc(unsigned int flags)
            | (!!(flags & SOF_TIMESTAMPING_RAW_HARDWARE) *
               RPC_SOF_TIMESTAMPING_RAW_HARDWARE)
            ;
+#else
+       return HWTSTAMP_UNKNOWN;
+#endif
 }
 
 #define FT_UNKNOWN        0xFFFFFFFF
@@ -97,9 +105,11 @@ hwtstamp_tx_types_rpc2h(rpc_hwtstamp_tx_types type)
 {
     switch(type)
     {
+#if HAVE_LINUX_NET_TSTAMP_H
         RPC2H_CHECK(HWTSTAMP_TX_OFF);
         RPC2H_CHECK(HWTSTAMP_TX_ON);
         RPC2H_CHECK(HWTSTAMP_TX_ONESTEP_SYNC);
+#endif
         default: return FT_UNKNOWN;
     }
 }
@@ -109,6 +119,7 @@ hwtstamp_rx_filters_rpc2h(rpc_hwtstamp_rx_filters filter)
 {
     switch(filter)
     {
+#if HAVE_LINUX_NET_TSTAMP_H
         RPC2H_CHECK(HWTSTAMP_FILTER_NONE);
         RPC2H_CHECK(HWTSTAMP_FILTER_ALL);
         RPC2H_CHECK(HWTSTAMP_FILTER_SOME);
@@ -124,6 +135,7 @@ hwtstamp_rx_filters_rpc2h(rpc_hwtstamp_rx_filters filter)
         RPC2H_CHECK(HWTSTAMP_FILTER_PTP_V2_EVENT);
         RPC2H_CHECK(HWTSTAMP_FILTER_PTP_V2_SYNC);
         RPC2H_CHECK(HWTSTAMP_FILTER_PTP_V2_DELAY_REQ);
+#endif
         default: return FT_UNKNOWN;
     }
 }
