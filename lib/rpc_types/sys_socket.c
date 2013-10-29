@@ -3220,6 +3220,36 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
 
                     break;
 
+                case RPC_SO_TIMESTAMPING:
+                    {
+                        struct timespec                 *ts;
+                        struct tarpc_scm_timestamping   *tarpc_tstamp;
+
+                        if (len < 3 * ((int)sizeof(struct timespec)))
+                        {
+                            ERROR("%s(): incorrect data len for "
+                                  "SO_TIMESTAMPING value", __FUNCTION__);
+                            return TE_EINVAL;
+                        }
+
+                        rpc_cmsg->data_aux.type =
+                                            TARPC_CMSG_DATA_TSTAMP;
+                        ts = (struct timespec *)data;
+                        tarpc_tstamp =
+                            &rpc_cmsg->data_aux.tarpc_cmsg_data_u.tstamp;
+                        tarpc_tstamp->systime.tv_sec = ts->tv_sec;
+                        tarpc_tstamp->systime.tv_nsec = ts->tv_nsec;
+                        ts++;
+                        tarpc_tstamp->hwtimetrans.tv_sec = ts->tv_sec;
+                        tarpc_tstamp->hwtimetrans.tv_nsec = ts->tv_nsec;
+                        ts++;
+                        tarpc_tstamp->hwtimeraw.tv_sec = ts->tv_sec;
+                        tarpc_tstamp->hwtimeraw.tv_nsec = ts->tv_nsec;
+                        processed = TRUE;
+                    }
+
+                    break;
+
                 case RPC_SCM_RIGHTS:
                     if (len != (int)sizeof(int32_t))
                     {
@@ -3357,6 +3387,36 @@ cmsg_data_rpc2h(tarpc_cmsghdr *rpc_cmsg,
                 ts->tv_sec = tarpc_ts->tv_sec;
                 ts->tv_nsec = tarpc_ts->tv_nsec;
                 *len = sizeof(*ts);
+                return 0;
+            }
+
+            break;
+
+        case TARPC_CMSG_DATA_TSTAMP:
+            {
+                struct timespec                 *ts;
+                struct tarpc_scm_timestamping   *tarpc_tstamp;
+
+                if (*len < 3 * ((int)sizeof(struct timespec)))
+                {
+                    ERROR("%s(): not enough memory for "
+                          "scm_timestamping value", __FUNCTION__);
+                    return TE_EINVAL;
+                }
+
+                ts = (struct timespec *)data;
+                tarpc_tstamp =
+                    &rpc_cmsg->data_aux.tarpc_cmsg_data_u.ts;
+
+                ts->tv_sec = tarpc_tstamp->systime.tv_sec;
+                ts->tv_nsec = tarpc_tstamp->systime.tv_nsec;
+                ts++;
+                ts->tv_sec = tarpc_tstamp->hwtimetrans.tv_sec;
+                ts->tv_nsec = tarpc_tstamp->hwtimetrans.tv_nsec;
+                ts++;
+                ts->tv_sec = tarpc_tstamp->hwtimeraw.tv_sec;
+                ts->tv_nsec = tarpc_tstamp->hwtimeraw.tv_nsec;
+                *len = 3 * sizeof(*ts);
                 return 0;
             }
 

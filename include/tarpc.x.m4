@@ -377,6 +377,13 @@ struct tarpc_timespec {
     int64_t     tv_nsec;
 };
 
+/** struct scm_timestamping */
+struct tarpc_scm_timestamping {
+    tarpc_timespec systime;
+    tarpc_timespec hwtimetrans;
+    tarpc_timespec hwtimeraw;
+};
+
 /** Function gets nothing */
 struct tarpc_void_in {
     struct tarpc_in_arg     common;
@@ -987,7 +994,8 @@ enum tarpc_cmsg_data_type {
     TARPC_CMSG_DATA_SOCK_EXT_ERR = 3,   /* struct sock_extended_err */
     TARPC_CMSG_DATA_PKTINFO = 4,        /* struct in_pktinfo */
     TARPC_CMSG_DATA_TV = 5,             /* struct timeval */
-    TARPC_CMSG_DATA_TS = 6              /* struct timespec */
+    TARPC_CMSG_DATA_TS = 6,             /* struct timespec */
+    TARPC_CMSG_DATA_TSTAMP = 7          /* struct scm_timestamping */
 };
 
 /* struct sock_extended_err */
@@ -1017,13 +1025,15 @@ union tarpc_cmsg_data switch (tarpc_cmsg_data_type type) {
     case TARPC_CMSG_DATA_BYTE:  uint8_t   byte_data;  /**< Byte value */
 
     case TARPC_CMSG_DATA_SOCK_EXT_ERR:
-                tarpc_sock_extended_err     ext_err; /**< IP_RECVERR */
+                tarpc_sock_extended_err       ext_err; /**< IP_RECVERR */
     case TARPC_CMSG_DATA_PKTINFO:
-                tarpc_in_pktinfo            pktinfo; /**< IP_PKTINFO */
+                tarpc_in_pktinfo              pktinfo; /**< IP_PKTINFO */
     case TARPC_CMSG_DATA_TV:
-                struct tarpc_timeval        tv;      /**< SO_TIMESTAMP */
+                struct tarpc_timeval          tv;    /**< SO_TIMESTAMP */
     case TARPC_CMSG_DATA_TS:
-                struct tarpc_timespec       ts;      /**< SO_TIMESTAMPNS */
+                struct tarpc_timespec         ts;    /**< SO_TIMESTAMPNS */
+    case TARPC_CMSG_DATA_TSTAMP:
+                struct tarpc_scm_timestamping tstamp;/**< SO_TIMESTAMPING */
 };
 
 struct tarpc_cmsghdr {
