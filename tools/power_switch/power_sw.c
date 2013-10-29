@@ -180,14 +180,14 @@ turn_on_off(int fd, unsigned int mask, int sock_num, int command_code)
             {
                 if ((rc = write(fd, command, 2)) == -1)
                 {
-                    printf("Failed to send command to TTY device\n");
+                    printf("ERROR: Failed to send command to TTY device\n");
                     usleep(100000); /* Repeat attempt 0.1 sec later */
                     continue;
                 }
 
                 if ((rc = read(fd, reply, 2)) == -1)
                 {
-                    printf("Failed to receive reply from TTY device\n");
+                    printf("ERROR: Failed to get reply from TTY device\n");
                     usleep(100000); /* Repeat attempt 0.1 sec later */
                     continue;
                 }
@@ -198,20 +198,21 @@ turn_on_off(int fd, unsigned int mask, int sock_num, int command_code)
                     break;
                 }
 
-                printf("Command reply from TTY device does "
-                       "not match command\n");
+                printf("ERROR: Reply does not match command\n");
                 usleep(100000); /* Repeat attempt 0.1 sec later */
             }
 
             if (rc != 0)
             {
-                printf("TTY device did not executed command");
+                printf("FAIL: command was not executed\n");
                 return rc;
             }
         }
 
         socket *= 2;
     }
+
+    printf("OK\n");
 
     return 0;
 }
@@ -242,8 +243,7 @@ recognize_power_switch(int fd, int *rebootable, int *sockets_num)
         /* Check if signature (bytes 1-3) is valid. */
         if (reply[1] != '1' || (reply[2] & 0x40) == 0 || reply[3] != '0' )
         {
-            printf("Power switch signature was not received on specified"
-                  "power TTY device.\n");
+            printf("ERROR: signature was not received\n");
 
             /*
              * This may happen sometimes.
@@ -280,7 +280,7 @@ check_dev_params(int fd)
 
     if (tcgetattr(fd, &term) < 0)
     {
-        printf("Failed to get device attributes.\n");
+        printf("FAIL: Failed to get TTY device attributes\n");
         return -1;
     }
 
@@ -291,19 +291,19 @@ check_dev_params(int fd)
 
     if (cfsetospeed(&term, B115200) < 0)
     {
-        printf("Failed to set output baudrate\n");
+        printf("FAIL: Failed to set TTY output baudrate\n");
         return -1;
     }
 
     if (cfsetispeed(&term, B115200) < 0)
     {
-        printf("Failed to set input baudrate\n");
+        printf("FAIL: Failed to set TTY input baudrate\n");
         return -1;
     }
 
     if (tcsetattr(fd, TCSADRAIN, &term) < 0)
     {
-        printf("Applying parameters failed\n");
+        printf("FAIL: Failed to apply TTY device attributes\n");
         return -1;
     }
 
@@ -386,20 +386,19 @@ main(int argc, char **argv)
 
         if ((fd = open(device, O_RDWR)) < 0)
         {
-            printf("Failed to open TTY device %s\n", device);
+            printf("FAIL: Failed to open TTY device %s\n", device);
             return 2;
         }
 
         if (check_dev_params(fd) < 0)
         {
-            printf("Error while checking parameters %s\n", device);
             close(fd);
             return 3;
         }
 
         if (!recognize_power_switch(fd, &is_rebootable, &sockets_num))
         {
-            printf("Power switch was not "
+            printf("FAIL: Power switch was not "
                    "recognized on device %s\n", device);
             close(fd);
             return 4;
