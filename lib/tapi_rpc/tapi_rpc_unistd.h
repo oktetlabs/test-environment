@@ -1094,6 +1094,17 @@ extern int rpc_copy_ta_libs(rcf_rpc_server *rpcs, char *path);
  */
 extern int rpc_rm_ta_libs(rcf_rpc_server *rpcs, char *path);
 
+/**
+ * Execute program @a filename
+ * 
+ * @param rpcs      RPC server
+ * @param filename  Pathname to the program or script
+ * @param argv      Array of argument strings
+ * @param envp      Array of strings which are passed as environment
+ */
+extern int rpc_execve_gen(rcf_rpc_server *rpcs, const char *filename,
+                          char *const argv[], char *const envp[]);
+
 /**@} <!-- END te_lib_rpc_unistd --> */
 
 #ifdef __cplusplus

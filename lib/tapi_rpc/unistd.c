@@ -2375,3 +2375,83 @@ rpc_rm_ta_libs(rcf_rpc_server *rpcs, char *path)
                  out.retval);
     RETVAL_INT(rm_ta_libs, out.retval);
 }
+
+/**
+ * Convert NULL terminated array to iovec array
+ * 
+ * @param arr   NULL terminated array
+ * @param o_iov Location for iovec array
+ *              Note! Memory of the array should be freed
+ * 
+ * @return Length of the array with NULL argument
+ */
+static size_t
+unistd_arr_null_to_iov(char *const *arr, struct tarpc_iovec **o_iov)
+{
+    size_t              i;
+    char *const        *ptr;
+    struct tarpc_iovec *iov;
+    size_t              len;
+
+    if (arr == NULL)
+    {
+        *o_iov = NULL;
+        return 0;
+    }
+
+    for (i = 0, ptr = arr; *ptr != NULL; i++, ptr++)
+        ;
+
+    len = i + 1;
+
+    iov = calloc(len, sizeof(*iov));
+
+    for (i = 0, ptr = arr; i < len; i++, ptr++)
+    {
+        iov[i].iov_base.iov_base_val = (uint8_t *)*ptr;
+        if (*ptr != NULL)
+            iov[i].iov_len = iov[i].iov_base.iov_base_len =
+                             strlen(*ptr) + 1;
+        else
+            iov[i].iov_len = iov[i].iov_base.iov_base_len = 0;
+    }
+
+    *o_iov = iov;
+
+    return len;
+}
+
+/* See description in the tapi_rpc_unistd.h */
+int
+rpc_execve_gen(rcf_rpc_server *rpcs, const char *filename,
+               char *const argv[], char *const envp[])
+{
+    tarpc_execve_gen_in   in;
+    tarpc_execve_gen_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(execve_gen, -1);
+    }
+
+    in.argv.argv_len = unistd_arr_null_to_iov(argv,
+        (struct tarpc_iovec **)&in.argv.argv_val);
+    in.envp.envp_len = unistd_arr_null_to_iov(envp,
+        (struct tarpc_iovec **)&in.envp.envp_val);
+    in.filename = (char *)filename;
+
+    rcf_rpc_call(rpcs, "execve_gen", &in, &out);
+
+    free(in.argv.argv_val);
+    free(in.envp.envp_val);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(execve_gen, out.retval);
+    TAPI_RPC_LOG(rpcs, execve_gen, "", "%d", out.retval);
+    
+    rcf_rpc_free_result(&out, (xdrproc_t)xdr_tarpc_execve_gen_out);
+    return out.retval;
+}

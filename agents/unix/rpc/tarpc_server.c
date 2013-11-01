@@ -825,6 +825,68 @@ TARPC_FUNC(execve, {},
 }
 )
 
+/*-------------- execve_gen() ---------------------------------*/
+
+/**
+ * Convert iovec array to NULL terminated array
+ * 
+ * @param list_ptr  List of arguments for INIT_CHECKED_ARG macros
+ * @param iov       iovec array
+ * @param arr       Location for NULL terminated array
+ */
+static void
+unistd_iov_to_arr_null(checked_arg **list_ptr, struct tarpc_iovec *iov,
+                       size_t len, char *arr[])
+{
+    size_t i;
+
+    if (len == 0)
+        return;
+
+    for (i = 0; i < len; i++)
+    {
+        INIT_CHECKED_ARG(iov[i].iov_base.iov_base_val,
+                         iov[i].iov_base.iov_base_len,
+                         iov[i].iov_base.iov_base_len);
+        arr[i] = (char *)iov[i].iov_base.iov_base_val;
+    }
+}
+
+int
+execve_gen(const char *filename, char *const argv[], char *const envp[])
+{
+    api_func_ptr func_execve;
+
+    if (tarpc_find_func(FALSE, "execve",
+                        (api_func *)&func_execve) != 0)
+    {
+        ERROR("Failed to find function execve()");
+        return -1;
+    }
+
+    return func_execve((void *)filename, argv, envp);
+}
+
+TARPC_FUNC(execve_gen, {},
+{
+    char *argv[in->argv.argv_len];
+    char *envp[in->envp.envp_len];
+
+    unistd_iov_to_arr_null(list_ptr, in->argv.argv_val,
+                           in->argv.argv_len, argv);
+    unistd_iov_to_arr_null(list_ptr, in->envp.envp_val,
+                           in->envp.envp_len, envp);
+
+    /* Wait until main thread sends answer to non-blocking RPC call */
+    sleep(1);
+
+    MAKE_CALL(func_ptr((void *)in->filename,
+                       in->argv.argv_len == 0 ? NULL : argv,
+                       in->envp.envp_len == 0 ? NULL : envp));
+}
+)
+
+
 /*-------------- exit() --------------------------------*/
 TARPC_FUNC(exit, {}, { MAKE_CALL(func(in->status)); })
 

@@ -4882,6 +4882,15 @@ struct tarpc_vfork_pipe_exec_in {
 
 typedef struct tarpc_int_retval_out tarpc_vfork_pipe_exec_out;
 
+struct tarpc_execve_gen_in {
+    struct tarpc_in_arg common;
+    string              filename<>;
+    struct tarpc_iovec  argv<>;
+    struct tarpc_iovec  envp<>;
+};
+
+typedef struct tarpc_int_retval_out tarpc_execve_gen_out;
+
 program tarpc
 {
     version ver0
@@ -4909,6 +4918,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(thread_cancel)
         RPC_DEF(thread_join)
         RPC_DEF(execve)
+        RPC_DEF(execve_gen)
         RPC_DEF(getpid)
         RPC_DEF(pthread_self)
         RPC_DEF(gettimeofday)
