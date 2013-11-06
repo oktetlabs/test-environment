@@ -857,6 +857,8 @@ typedef enum rpc_ioctl_code {
                                  for socket I/O */
     RPC_FIONREAD,           /**< Get number of immediately readable
                                  bytes */
+    RPC_FIONCLEX,
+    RPC_FIOCLEX,
     RPC_SIOCATMARK,         /**< Determine if the current location
                                  in the input data is pointing to
                                  out-of-band data */

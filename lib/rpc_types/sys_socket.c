@@ -1612,6 +1612,8 @@ ioctl_rpc2str(rpc_ioctl_code code)
         RPC2STR(FIOASYNC);
         RPC2STR(FIONBIO);
         RPC2STR(FIONREAD);
+        RPC2STR(FIONCLEX);
+        RPC2STR(FIOCLEX);
         RPC2STR(SIOCATMARK);
         RPC2STR(SIOCINQ);
         RPC2STR(SIOCSPGRP);
@@ -1689,6 +1691,8 @@ ioctl_rpc2h(rpc_ioctl_code code)
         RPC2H_CHECK(FIOASYNC);
         RPC2H_CHECK(FIONBIO);
         RPC2H_CHECK(FIONREAD);
+        RPC2H_CHECK(FIONCLEX);
+        RPC2H_CHECK(FIOCLEX);
         RPC2H_CHECK(SIOCATMARK);
         RPC2H_CHECK(SIOCINQ);
         RPC2H_CHECK(SIOCSPGRP);

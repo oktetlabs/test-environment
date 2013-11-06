@@ -164,6 +164,8 @@ rpc_ioctl(rcf_rpc_server *rpcs,
         case RPC_SIOCINQ:
         case RPC_SIOCGPGRP:
         case RPC_SIOUNKNOWN:
+        case RPC_FIONCLEX:
+        case RPC_FIOCLEX:
             in.access = IOCTL_RD;
             if (arg != NULL)
             {
