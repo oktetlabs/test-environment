@@ -805,7 +805,8 @@ main(int argc, char *argv[])
     /* 
      *  Start the Tester thread to handle events of the serial consoles
      */
-    tester_start_serial_thread();
+    if ((~tester_global_context.flags & TESTER_NO_RUN))
+        tester_start_serial_thread();
 
     /*
      * Initialize pseudo-random number generator after command-line
