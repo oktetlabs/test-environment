@@ -246,6 +246,51 @@ AC_ARG_WITH([snmp],,
     if test -n "${LIB_PATHNAME}" ; then
         tad_libs_rem "$LIB_PATHNAME"
         TA_TAD_LIBS="$TA_TAD_LIBS ${LIB_PATHNAME}"
+
+        if test -n "${LIB_PATHNAME}" ; then
+            CRYPTO_LIB=${LIB_PATHNAME}
+            find_lib z
+
+            #
+            # libcrypto may require libz to be added at linking state,
+            # which is why we need to check if it is necessary or not.
+            # Here we use trick:
+            # - We know that crypto library has COMP_zlib() function
+            #   that depends on some symbols from 'libz', which is why
+            #   we try to check for this function compilation;
+            # - AC_CHECK_LIB() macro uses library name as the first
+            #   argument and it will prepend it with "-l" on doing trial
+            #   linking test. In our case we use full path to .a files,
+            #   so we can't use 'crypto' as the first agrument;
+            # - We use 'c' name for ('libc' library) as fake library
+            #   which is linked with any application by default anyway;
+            # - We first try to mount with ${CRYPTO_LIB} specifying it
+            #   in the list of extra libraries (there we are free to
+            #   specify anything - it is transparently passed to the linker
+            #   command line);
+            # - If that linking test passes it means we do not need libz
+            #   and as the result do nothing, but otherwise we re-run
+            #   that linking test again, but already with two libraries
+            #   dpecified in extra libraries list: ${CRYPTO_LIB} and
+            #   ${LIB_PATHNAME}. Here ${LIB_PATHNAME} is the path to just
+            #   found 'z' library for which we called "find_lib z";
+            # - This time we use 'm' library name ('libm' library) in
+            #   AC_CHECK_LIB() macro because autoconf caches previous
+            #   checks and if we used 'c' name again it would got
+            #   the result from cache and the verdict would be "no".
+            #   It does not matter for autoconf that the list of extra
+            #   libraries has changed - it put attention to only 'library'
+            #   and 'function' arguments.
+            #
+            AC_CHECK_LIB([c], [COMP_zlib], [], [
+                AC_CHECK_LIB([m], [COMP_zlib], [
+                      tad_libs_rem "$LIB_PATHNAME"
+                      TA_TAD_LIBS="$TA_TAD_LIBS ${LIB_PATHNAME}"],
+                    [AC_MSG_WARN([crypto library does not have COMP_zlib \
+                                  or we can not link with it!])],
+                    [${CRYPTO_LIB} ${LIB_PATHNAME}])],
+                         [${CRYPTO_LIB}])
+        fi
     fi
 
     AC_CONFIG_FILES([snmp/Makefile])
