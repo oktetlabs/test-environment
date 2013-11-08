@@ -58,7 +58,8 @@ for k in $DIRS ; do
             fi
         fi
 
-        for j in `find -L $DIR -name lib${LIB_NAME}\*.a 2>/dev/null` ; do
+        tmp=`find -L $DIR -maxdepth 1 -name lib${LIB_NAME}\*.a 2>/dev/null`
+        for j in $tmp ; do
             name=`basename $j`;
             #
             # The following lines are portable way of getting the result

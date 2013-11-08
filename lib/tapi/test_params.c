@@ -113,8 +113,6 @@ test_get_param(int argc, char *argv[], const char *name)
                   "cannot find '=' delimeter", name);
             return NULL;
         }
-        while (isspace(*ptr))
-            ptr++;
 
         break;
     }
