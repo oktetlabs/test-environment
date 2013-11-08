@@ -196,6 +196,14 @@ typedef enum {
     TE_E_LOG_FILE_FULL,  /**< Log file is full */
     TE_E_PORT_UNREACHABLE, /**< Port is unreachable */
     TE_WSANOTINITIALISED, /**< WSAStartup() not called */
+
+    TE_E_SHARING_VIOLATION, /**< Problem with share attributes
+                                 while openning a file */
+    TE_E_INVALID_NAME,     /**< The file name, directory name or
+                                volume label syntax is incorrect */
+    TE_E_BAD_PATHNAME,     /**< Invalid pathname */
+    TE_E_ROOT_FULL,        /**< It is impossible to add a new entry
+                                to ROOT directory */
     
     /* TE-specific error codes */
     TE_EUNSPEC,         /**< Undefined OS errno 
@@ -436,6 +444,10 @@ te_rc_mod2str(te_errno err)
         MOD2STR(TA_ACSE);
         case TE_MODULE_NONE: return "";
         default:
+            /* Fix warning "case value ‘0’ not in enumerated type" */
+            if (TE_RC_GET_MODULE(err) == 0)
+                return "";
+
             snprintf(unknown_module, sizeof(unknown_module),
                      "Unknown(%u)", TE_RC_GET_MODULE(err));
             return unknown_module;
@@ -606,6 +618,10 @@ te_rc_err2str(te_errno err)
         ERR2STR(E_GEN_FAILURE);
         ERR2STR(E_LOG_FILE_FULL);
         ERR2STR(E_PORT_UNREACHABLE);
+        ERR2STR(E_SHARING_VIOLATION);
+        ERR2STR(E_INVALID_NAME);
+        ERR2STR(E_BAD_PATHNAME);
+        ERR2STR(E_ROOT_FULL);
         ERR2STR(EUNSPEC);
         ERR2STR(EUNKNOWN);
 
@@ -1204,7 +1220,23 @@ te_rc_os2te(int err)
 #if defined(ECANCELED) && (ECANCELED != ENOMEDIUM)
         case ECANCELED: return TE_ECANCELED;
 #endif  
- 
+
+#if defined USER_DEFINED_ERRNO_1
+       case USER_DEFINED_ERRNO_1: return USER_DEFINED_ERRNO_1_MAP;
+#endif
+
+#if defined USER_DEFINED_ERRNO_2
+       case USER_DEFINED_ERRNO_2: return USER_DEFINED_ERRNO_2_MAP;
+#endif
+
+#if defined USER_DEFINED_ERRNO_3
+       case USER_DEFINED_ERRNO_3: return USER_DEFINED_ERRNO_3_MAP;
+#endif
+
+#if defined USER_DEFINED_ERRNO_4
+       case USER_DEFINED_ERRNO_4: return USER_DEFINED_ERRNO_4_MAP;
+#endif
+
         default:
 #ifdef TE_ERRNO_LOG_UNKNOWN_OS_ERRNO
             ERROR("Unknown OS errno %d converted to EUNKNOWN", err);

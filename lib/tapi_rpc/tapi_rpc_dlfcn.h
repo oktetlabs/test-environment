@@ -6,7 +6,6 @@
  *
  * Copyright (C) 2010 Test Environment authors (see file AUTHORS in
  * the root directory of the distribution).
- * Copyright (c) 2010 Level5 Networks Corp.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License

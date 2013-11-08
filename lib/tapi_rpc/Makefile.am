@@ -23,7 +23,8 @@ include_HEADERS= \
     tapi_rpc_params.h \
     tapi_rpc_internal.h \
     tapi_rpc_power_sw.h \
-    tapi_rpc_dlfcn.h
+    tapi_rpc_dlfcn.h \
+    tapi_rpc_dirent.h
 
 lib_LTLIBRARIES=libtapi_rpc.la
 
@@ -42,7 +43,8 @@ libtapi_rpc_la_SOURCES= \
     wsa.c \
     power_sw.c \
     dlfcn.c \
-    pipe.c
+    pipe.c \
+    dirent.c
 
 
 install-exec-hook:

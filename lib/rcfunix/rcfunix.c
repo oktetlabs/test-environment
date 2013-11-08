@@ -25,7 +25,7 @@
  * [:@attr_name{key}=@attr_val{<ssh_private_key_file>}]
  * [:@attr_name{copy_timeout}=@attr_val{<timeout>}]
  * [:@attr_name{kill_timeout}=@attr_val{<timeout>}][:@attr_val{notcopy}]
- * [:@attr_val{sudo}][:@attr_val{<shell>}][:@attr_val{<parameters>}]
+ * [:@attr_val{sudo|su}][:@attr_val{<shell>}][:@attr_val{<parameters>}]
  * </pre>
  *
  * where elements in square brackets are optional and may be skipped.
@@ -49,8 +49,8 @@
  *   (in seconds) that is allowed for Test Agent termination procedure;
  * - @attr_val{notcopy} may be used to create symbolic link instead copying
  *   of the image;
- * - @attr_val{sudo} - specify this option when we need to run agent under
- *   @prog{sudo} (with root privileges). This can be necessary if Test Agent
+ * - @attr_val{sudo|su} - specify this option when we need to run agent under
+ *   @prog{sudo|su} (with root privileges). This can be necessary if Test Agent
  *   access resources that require privileged permissions (for example
  *   network interface configuration);
  * - @attr_val{<shell>} - is usually used to run the Test Agent under
@@ -200,7 +200,7 @@
  *
  * [[user@]<IP address or hostname>]:<port>
  *     [:key=<ssh private key file>][:copy_timeout=<timeout>]
- *     [:kill_timeout=<timeout>][:notcopy][:sudo][:<shell>][:parameters]
+ *     [:kill_timeout=<timeout>][:notcopy][:sudo|su][:<shell>][:parameters]
  *
  * If host is not specified, the Test Agent is started on the local
  * host.  It is assumed that user starting Dispatcher may use ssh/scp
@@ -249,6 +249,7 @@ typedef struct unix_ta {
     unsigned int    kill_timeout;   /**< TA kill timeout */
 
     te_bool sudo;       /**< Manipulate process using sudo */
+    te_bool su;         /**< Run process using "su -c" */
     te_bool notcopy;    /**< Do not copy TA image to remote host */
     te_bool is_local;   /**< TA is started on the local PC */
 
@@ -513,14 +514,23 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         GET_TOKEN;
     }
     else
-        ta->sudo = FALSE;
+        ta->notcopy = FALSE;
     if (token != NULL && strcmp(token, "sudo") == 0)
     {
         ta->sudo = TRUE;
         GET_TOKEN;
     }
     else
+    {
         ta->sudo = FALSE;
+        if (token != NULL && strcmp(token, "su") == 0)
+        {
+            ta->su = TRUE;
+            GET_TOKEN;
+        }
+        else
+            ta->su = FALSE;
+    }
 
     shell = token;
 
@@ -570,7 +580,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         ERROR("Failed to copy TA images/data %s to the %s:/tmp: %r",
               ta_type, ta->host, rc);
         ERROR("Failed cmd: %s", cmd);
-        free(dup);
+        free(conf_str_dup);
         return rc;
     }
     
@@ -587,9 +597,10 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     strcat(cmd, "sudo sysctl -w kernel.core_pattern=\"core.%h-%p-%t\"; ");
 #endif
     if (ta->sudo)
-    {
         strcat(cmd, "sudo ");
-    }
+    else if (ta->su)
+        strcat(cmd, "su -c '");
+
     if ((shell != NULL) && (strlen(shell) > 0))
     {
         VERB("Using '%s' as shell for TA '%s'", shell, ta->ta_name);
@@ -604,6 +615,9 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     sprintf(cmd + strlen(cmd), "/tmp/%s%s/ta %s %s %s",
             ta_type, ta->postfix, ta->ta_name, ta->port,
             (conf_str == NULL) ? "" : conf_str);
+
+    if (ta->su)
+        sprintf(cmd + strlen(cmd), "'");
 
 #if defined RCF_UNIX_SOLARIS
     strcat(cmd, "; sudo /usr/bin/coreadm -g /tmp/core -e global ");

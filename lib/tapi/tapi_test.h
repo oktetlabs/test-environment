@@ -185,6 +185,20 @@ cleanup_specific:                                                   \
     return result
 
 /**
+ * Terminate a test with skip status, reporting the reason.
+ *
+ * @param fmt       reason message format string with parameters
+ */
+#define TEST_SKIP(fmt...) \
+    do {                                                \
+        result = TE_EXIT_SKIP;                          \
+        RING("Test Skipped in %s, line %d, %s()",       \
+             __FILE__, __LINE__, __FUNCTION__);         \
+        RING(fmt);                                      \
+        TEST_STOP;                                      \
+    } while (0)
+
+/**
  * @defgroup te_ts_tapi_test_misc TAPI: Test misc
  * Miscellaneous definitions useful for test scenarios.
  *
@@ -549,6 +563,8 @@ cleanup_specific:                                                   \
         var_name_ = (unsigned char *)oct_string_;                       \
     } while (0)
 
+/** Default separator for argument list */
+#define TEST_LIST_PARAM_SEPARATOR   ','
 
 /**
  * The macro to get parameter of type 'char *[]', i.e. array of 
@@ -566,7 +582,8 @@ cleanup_specific:                                                   \
         {                                                           \
             TEST_STOP;                                              \
         }                                                           \
-        (var_len_) = test_split_param_list(str_val_, &(var_name_)); \
+        (var_len_) = test_split_param_list(str_val_,                \
+                TEST_LIST_PARAM_SEPARATOR, &(var_name_));           \
         if ((var_len_) == 0)                                        \
         {                                                           \
             TEST_STOP;                                              \
@@ -592,7 +609,8 @@ cleanup_specific:                                                   \
         {                                                               \
             TEST_STOP;                                                  \
         }                                                               \
-        (var_len_) = test_split_param_list(str_val_, &str_array);       \
+        (var_len_) = test_split_param_list(str_val_,                    \
+                TEST_LIST_PARAM_SEPARATOR, &str_array);                 \
         if ((var_len_) == 0 ||                                          \
             ((var_name_) = calloc(sizeof(int), (var_len_))) == NULL)    \
         {                                                               \
@@ -611,6 +629,56 @@ cleanup_specific:                                                   \
         free(str_array[0]); free(str_array);                            \
     } while (0)
 
+/**
+ * The macro to get parameter of bit mask type.
+ *
+ * @param var_name_  Variable whose name is the same as the name of
+ *                   parameter we get the value
+ * @param maps_      An array of mappings: string -> enum of each entry
+ *                   of a bitmask
+ */
+#define TEST_GET_BIT_MASK_PARAM(var_name_, maps_...) \
+    do {                                                                \
+        const char  *str_val_;                                          \
+        const char  *tmp_;                                              \
+        char       **str_array;                                         \
+        int          i;                                                 \
+        int          bit_map_len;                                       \
+        int          mapped_val_;                                       \
+        struct param_map_entry maps[] = {                               \
+            maps_,                                                      \
+            { NULL, 0 },                                                \
+        };                                                              \
+                                                                        \
+        memset(&(var_name_), 0, sizeof(var_name_));                     \
+        if ((str_val_ = test_get_param(argc, argv,                      \
+                                       #var_name_)) == NULL)            \
+        {                                                               \
+            TEST_STOP;                                                  \
+        }                                                               \
+        tmp_ = str_val_;                                                \
+        while (isspace(*tmp_))                                          \
+            tmp_++;                                                     \
+        if (*tmp_ == '\0')                                              \
+            break;                                                      \
+                                                                        \
+        bit_map_len = test_split_param_list(str_val_, '|', &str_array); \
+        if (bit_map_len == 0)                                           \
+        {                                                               \
+            TEST_STOP;                                                  \
+        }                                                               \
+        for (i = 0; i < bit_map_len; i++)                               \
+        {                                                               \
+            if (test_map_param_value(#var_name_, maps,                  \
+                                     str_array[i], &mapped_val_) != 0)  \
+            {                                                           \
+                memset(&(var_name_), 0, sizeof(var_name_));             \
+                TEST_STOP;                                              \
+            }                                                           \
+            var_name_ |= mapped_val_;                                   \
+        }                                                               \
+        free(str_array[0]); free(str_array);                            \
+    } while (0)
 
 /**
  * The list of values allowed for parameter of type 'te_bool'
@@ -732,16 +800,18 @@ extern const char *print_octet_string(const uint8_t *oct_string,
                                       size_t len);
 
 /**
- * Split parameter string into array of string, using ',' as separator.
+ * Split parameter string into array of string, using specified separator.
  * This function creates a duplicate parameter string to avoid changing
  * the real parameter.
  * 
  * @param list      String to parse
+ * @param sep       Separator to split string
  * @param array_p   Array to return
  *
  * @return Length of the list or 0 on error
  */
-extern int test_split_param_list(const char *list, char ***array_p);
+extern int test_split_param_list(const char *list, char sep,
+                                 char ***array_p);
 
 /**
  * Function parses value and converts it to ASN value.

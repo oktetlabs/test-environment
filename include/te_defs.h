@@ -90,6 +90,11 @@ typedef enum te_bool3 {
 #define TE_EXIT_SIGUSR2     0x4
 /** Script to be run not found */
 #define TE_EXIT_NOT_FOUND   0x7f
+/**
+ * Script tells that the test case does not
+ * make sense (can't be run) with passed parameters.
+ */
+#define TE_EXIT_SKIP        0x5
 
 
 /**
@@ -98,7 +103,9 @@ typedef enum te_bool3 {
  *
  * @param _x    unused argument 
  */
+#ifndef UNUSED
 #define UNUSED(_x)      (void)(_x)
+#endif
 
 /* Entity name used to logging Control messages from Tester */
 #define TE_LOG_CMSG_ENTITY_TESTER "Tester"

@@ -46,7 +46,6 @@ EXTRA_DIST = te_shell_cmd.c te_log_fmt.c te_log_file.c log_bufs.c \
 
 else
 
-LIBS ="-lpthread"
 lib_LTLIBRARIES = libtools.la liblog_bufs.la liblogger_file.la
 
 libtools_la_SOURCES = \
@@ -68,7 +67,8 @@ liblogger_file_la_SOURCES = logger_file.c
 
 install-exec-hook:
 	for i in $(lib_LTLIBRARIES) ; do \
-		touch -c -r $$i $(DESTDIR)/$(libdir)/$${i/.la/}.* ; \
+		j=`echo $${i} | sed -e 's/.la//'`; \
+		touch -c -r $$i $(DESTDIR)/$(libdir)/$${j}.* ; \
 	done
 
 install-data-hook:

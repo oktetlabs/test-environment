@@ -506,7 +506,7 @@ rpc_lseek(rcf_rpc_server *rpcs,
 
     TAPI_RPC_LOG(rpcs, lseek, "%d, %lld, %s", "%lld",
                  fd, pos, lseek_mode_rpc2str(mode), out.retval);
-    RETVAL_INT(lseek, out.retval);
+    RETVAL_INT64(lseek, out.retval);
 }
 
 int
@@ -2244,6 +2244,269 @@ rpc_fstat64(rcf_rpc_server *rpcs,
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(fstat, out.retval);
     TAPI_RPC_LOG(rpcs, fstat64, "%d", "%d", fd, out.retval);
     RETVAL_INT(te_fstat64, out.retval);
+}
+
+int
+rpc_stat_func(rcf_rpc_server *rpcs,
+              const char *path,
+              rpc_stat *buf)
+{
+    tarpc_te_stat_in  in;
+    tarpc_te_stat_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(te_stat, -1);
+    }
+
+    if (buf == NULL)
+    {
+        ERROR("%s(): stat buffer pointer", __FUNCTION__);
+        RETVAL_INT(te_stat, -1);
+    }
+
+    if (path != NULL)
+    {
+        in.path.path_len = strlen(path) + 1;
+        in.path.path_val = (char *)strdup(path);
+    }
+
+    rcf_rpc_call(rpcs, "te_stat", &in, &out);
+
+    if (RPC_IS_CALL_OK(rpcs))
+        memcpy(buf, &out.buf, sizeof(out.buf));
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(stat, out.retval);
+    TAPI_RPC_LOG(rpcs, stat, "%s",
+                 "%d { atime %llu, ctime %llu, mtime %llu}",
+                 path, out.retval,
+                 out.buf.te_atime, out.buf.te_ctime, out.buf.te_mtime);
+    RETVAL_INT(te_stat, out.retval);
+}
+
+int
+rpc_unlink(rcf_rpc_server *rpcs, const char *path)
+{
+    tarpc_unlink_in  in;
+    tarpc_unlink_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(unlink, -1);
+    }
+
+    if (path != NULL)
+    {
+        in.path.path_len = strlen(path) + 1;
+        in.path.path_val = (char *)strdup(path);
+    }
+
+    rcf_rpc_call(rpcs, "unlink", &in, &out);
+
+    if (path != NULL)
+        free(in.path.path_val);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(unlink, out.retval);
+    TAPI_RPC_LOG(rpcs, unlink, "%s", "%d", path, out.retval);
+    RETVAL_INT(unlink, out.retval);
+}
+
+int
+rpc_rename(rcf_rpc_server *rpcs,
+           const char *path_old, const char *path_new)
+{
+    tarpc_rename_in  in;
+    tarpc_rename_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(rename, -1);
+    }
+
+    if (path_old != NULL)
+    {
+        in.path_old.path_old_len = strlen(path_old) + 1;
+        in.path_old.path_old_val = (char *)strdup(path_old);
+    }
+    if (path_new != NULL)
+    {
+        in.path_new.path_new_len = strlen(path_new) + 1;
+        in.path_new.path_new_val = (char *)strdup(path_new);
+    }
+
+    rcf_rpc_call(rpcs, "rename", &in, &out);
+
+    if (path_old != NULL)
+        free(in.path_old.path_old_val);
+    if (path_new != NULL)
+        free(in.path_new.path_new_val);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(rename, out.retval);
+    TAPI_RPC_LOG(rpcs, rename, "%s, %s", "%d",
+                 path_old, path_new, out.retval);
+    RETVAL_INT(rename, out.retval);
+}
+
+int
+rpc_mkdir(rcf_rpc_server *rpcs, const char *path, rpc_file_mode_flags mode)
+{
+    tarpc_mkdir_in  in;
+    tarpc_mkdir_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(mkdir, -1);
+    }
+
+    if (path != NULL)
+    {
+        in.path.path_len = strlen(path) + 1;
+        in.path.path_val = (char *)strdup(path);
+    }
+    in.mode  = mode;
+
+    rcf_rpc_call(rpcs, "mkdir", &in, &out);
+
+    if (path != NULL)
+        free(in.path.path_val);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(mkdir, out.retval);
+    TAPI_RPC_LOG(rpcs, mkdir, "%s, %s", "%d",
+                 path, file_mode_flags_rpc2str(mode), out.retval);
+    RETVAL_INT(mkdir, out.retval);
+
+}
+
+int
+rpc_rmdir(rcf_rpc_server *rpcs, const char *path)
+{
+    tarpc_rmdir_in  in;
+    tarpc_rmdir_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(rmdir, -1);
+    }
+
+    if (path != NULL)
+    {
+        in.path.path_len = strlen(path) + 1;
+        in.path.path_val = (char *)strdup(path);
+    }
+
+    rcf_rpc_call(rpcs, "rmdir", &in, &out);
+
+    if (path != NULL)
+        free(in.path.path_val);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(rmdir, out.retval);
+    TAPI_RPC_LOG(rpcs, rmdir, "%s", "%d", path, out.retval);
+    RETVAL_INT(rmdir, out.retval);
+}
+
+int
+rpc_fstatvfs(rcf_rpc_server *rpcs, int fd, tarpc_statvfs *buf)
+{
+    tarpc_fstatvfs_in  in;
+    tarpc_fstatvfs_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(fstatvfs, -1);
+    }
+
+    if (buf == NULL)
+    {
+        ERROR("%s(): stat buffer pointer", __FUNCTION__);
+        RETVAL_INT(fstatvfs, -1);
+    }
+
+    in.fd = fd;
+    in.buf = *buf;
+
+    rcf_rpc_call(rpcs, "fstatvfs", &in, &out);
+
+    if (RPC_IS_CALL_OK(rpcs))
+        memcpy(buf, &out.buf, sizeof(out.buf));
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(fstatvfs, out.retval);
+    TAPI_RPC_LOG(rpcs, fstatvfs, "%d",
+                 "%d {BLK: %u, TOTAL: %llu, FREE: %llu}", 
+                 fd, out.retval,
+                 out.buf.f_bsize,
+                 out.buf.f_blocks,
+                 out.buf.f_bfree);
+    RETVAL_INT(fstatvfs, out.retval);
+}
+
+int
+rpc_statvfs(rcf_rpc_server *rpcs, const char *path, tarpc_statvfs *buf)
+{
+    tarpc_statvfs_in  in;
+    tarpc_statvfs_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(statvfs, -1);
+    }
+
+    if (buf == NULL)
+    {
+        ERROR("%s(): stat buffer pointer", __FUNCTION__);
+        RETVAL_INT(statvfs, -1);
+    }
+
+    if (path != NULL)
+    {
+        in.path.path_len = strlen(path) + 1;
+        in.path.path_val = (char *)strdup(path);
+    }
+    in.buf = *buf;
+
+    rcf_rpc_call(rpcs, "statvfs", &in, &out);
+
+    if (path != NULL)
+        free(in.path.path_val);
+
+    if (RPC_IS_CALL_OK(rpcs))
+        memcpy(buf, &out.buf, sizeof(out.buf));
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(statvfs, out.retval);
+    TAPI_RPC_LOG(rpcs, statvfs, "%s",
+                 "%d {BLK: %u, TOTAL: %llu, FREE: %llu}",
+                 path, out.retval,
+                 out.buf.f_bsize,
+                 out.buf.f_blocks,
+                 out.buf.f_bfree);
+    RETVAL_INT(statvfs, out.retval);
 }
 
 int

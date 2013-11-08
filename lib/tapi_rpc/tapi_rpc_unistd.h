@@ -8,7 +8,6 @@
  *
  * Copyright (C) 2005 Test Environment authors (see file AUTHORS in
  * the root directory of the distribution).
- * Copyright (c) 2005 Level5 Networks Corp.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -1050,6 +1049,89 @@ extern int rpc_fstat(rcf_rpc_server *rpcs,
 extern int rpc_fstat64(rcf_rpc_server *rpcs,
                        int fd,
                        rpc_stat *buf);
+
+/**
+ * Get file status.
+ *
+ * @param rpcs  RPC server
+ * @param path  path to a file
+ * @param buf   Buffer for file status.
+ *
+ * @return     -1 in the case of failure or 0 on success
+ */
+extern int rpc_stat_func(rcf_rpc_server *rpcs,
+                        const char *path,
+                        rpc_stat *buf);
+
+/**
+ * Remove a directory entry.
+ *
+ * @param rpcs      RPC server
+ * @parma path      Path of the file to be removed
+ *
+ * @return  -1 in the case of failure or 0 on success
+ */
+extern int rpc_unlink(rcf_rpc_server *rpcs, const char *path);
+
+/**
+ * Create a directory.
+ *
+ * @param rpcs      RPC server
+ * @parma path      Path of the directory to be created
+ * @param mode      The permission bits to assign to a new directory
+ *
+ * @return  -1 in the case of failure or 0 on success
+ */
+extern int rpc_mkdir(rcf_rpc_server *rpcs,
+                     const char *path, rpc_file_mode_flags mode);
+
+/**
+ * Remove a directory.
+ *
+ * @param rpcs      RPC server
+ * @parma path      Path of the directory to be removed
+ *
+ * @return  -1 in the case of failure or 0 on success
+ */
+extern int rpc_rmdir(rcf_rpc_server *rpcs, const char *path);
+
+/**
+ * Rename a directory entry.
+ *
+ * @param rpcs      RPC server
+ * @param path_old  Current directory entry path
+ * @param path_new  New directory entry path
+ *
+ * @return  -1 in the case of failure or 0 on success
+ */
+extern int rpc_rename(rcf_rpc_server *rpcs,
+                      const char *path_old, const char *path_new);
+
+/**
+ * Get file system information.
+ *
+ * @param rpcs   RPC server
+ * @param fd     file descriptor opened on file system whose information
+ *               we want to obtain
+ * @param buf    structure with file system information (OUT)
+ *
+ * @return  -1 in the case of failure or 0 on success
+ */
+extern int rpc_fstatvfs(rcf_rpc_server *rpcs,
+                        int fd, tarpc_statvfs *buf);
+
+/**
+ * Get file system information by path.
+ *
+ * @param rpcs   RPC server
+ * @param path   path to a directory entry on a volume whose information
+ *               we want to obtain
+ * @param buf    structure with file system information (OUT)
+ *
+ * @return  -1 in the case of failure or 0 on success
+ */
+extern int rpc_statvfs(rcf_rpc_server *rpcs,
+                       const char *path, tarpc_statvfs *buf);
 
 /**
  * Get hostname

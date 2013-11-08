@@ -622,9 +622,9 @@ struct tarpc_stat {
     uint64_t st_size;
     uint64_t st_blksize;
     uint64_t st_blocks;
-    /* uint64_t st_atime; */
-    /* uint64_t st_mtime; */
-    /* uint64_t st_ctime; */
+    uint64_t te_atime;
+    uint64_t te_mtime;
+    uint64_t te_ctime;
     tarpc_bool ifsock;
     tarpc_bool iflnk;
     tarpc_bool ifreg;
@@ -662,6 +662,175 @@ struct tarpc_te_fstat64_out {
 
     tarpc_int retval;
     struct tarpc_stat buf;
+};
+
+struct tarpc_te_stat_in {
+    struct tarpc_in_arg common;
+    char                path<>;
+
+    struct tarpc_stat buf;
+};
+
+struct tarpc_te_stat_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int retval;
+    struct tarpc_stat buf;
+};
+
+/* unlink() */
+struct tarpc_unlink_in {
+    struct tarpc_in_arg common;
+
+    char                path<>;
+};
+
+struct tarpc_unlink_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int            retval;
+};
+
+/* rename() */
+struct tarpc_rename_in {
+    struct tarpc_in_arg common;
+
+    char                path_old<>;
+    char                path_new<>;
+};
+
+struct tarpc_rename_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int            retval;
+};
+
+/* mkdir() */
+struct tarpc_mkdir_in {
+    struct tarpc_in_arg common;
+
+    char                path<>;
+    tarpc_int           mode;
+};
+
+struct tarpc_mkdir_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int            retval;
+};
+
+/* rmdir() */
+struct tarpc_rmdir_in {
+    struct tarpc_in_arg common;
+
+    char                path<>;
+};
+    
+struct tarpc_rmdir_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int            retval;
+};
+
+/* fstatvfs() */
+struct tarpc_statvfs {
+    uint32_t f_bsize; /* file system block size */
+    uint64_t f_blocks; /* total number of blocks on file system in units of 'f_frsize' */
+    uint64_t f_bfree; /* total number of free blocks */
+};
+
+typedef struct tarpc_statvfs tarpc_statvfs;
+
+struct tarpc_fstatvfs_in {
+    struct tarpc_in_arg  common;
+    tarpc_int            fd;
+
+    struct tarpc_statvfs buf;
+};
+
+struct tarpc_fstatvfs_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int            retval;
+    struct tarpc_statvfs buf;
+};
+
+/* statvfs() */
+struct tarpc_statvfs_in {
+    struct tarpc_in_arg  common;
+
+    char                 path<>;
+    struct tarpc_statvfs buf;
+};
+
+struct tarpc_statvfs_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int            retval;
+    struct tarpc_statvfs buf;
+};
+
+/* struct_dirent_props() */
+struct tarpc_struct_dirent_props_in {
+    struct tarpc_in_arg common;
+};
+
+struct tarpc_struct_dirent_props_out {
+    struct tarpc_out_arg common;
+
+    tarpc_uint           retval;
+};
+
+/* opendir() */
+struct tarpc_opendir_in {
+    struct tarpc_in_arg common;
+
+    char                path<>;
+};
+
+struct tarpc_opendir_out {
+    struct tarpc_out_arg common;
+
+    tarpc_ptr            mem_ptr;
+};
+
+/* closedir() */
+struct tarpc_closedir_in {
+    struct tarpc_in_arg common;
+
+    tarpc_ptr           mem_ptr;
+};
+
+struct tarpc_closedir_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int            retval;
+};
+
+/* readdir() */
+struct tarpc_dirent {
+    uint64_t   d_ino; /* inode number (mandatory) */
+    char       d_name<>; /* filename (mandatory) */
+
+    uint64_t   d_off; /* offset to the next dirent (may be not supported) */
+    tarpc_int  d_type; /* type of file (may be not supported) */
+    tarpc_uint d_namelen; /* The size of the d_name member 
+                             (not including trailing zero).
+                             (may be not supported) */
+    tarpc_uint d_props; /* Properties of 'struct dirent' */
+};
+
+struct tarpc_readdir_in {
+    struct tarpc_in_arg common;
+
+    tarpc_ptr           mem_ptr;
+};
+
+struct tarpc_readdir_out {
+    struct tarpc_out_arg common;
+
+    tarpc_bool           ret_null;
+    tarpc_dirent         dent<>;
 };
 
 /* read() / write() / write_and_close() */
@@ -4947,6 +5116,18 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(shutdown)
         RPC_DEF(te_fstat)
         RPC_DEF(te_fstat64)
+        RPC_DEF(te_stat)
+
+        RPC_DEF(unlink)
+        RPC_DEF(rename)
+        RPC_DEF(mkdir)
+        RPC_DEF(rmdir)
+        RPC_DEF(fstatvfs)
+        RPC_DEF(statvfs)
+        RPC_DEF(struct_dirent_props)
+        RPC_DEF(opendir)
+        RPC_DEF(readdir)
+        RPC_DEF(closedir)
 
         RPC_DEF(read)
         RPC_DEF(write)

@@ -28,6 +28,7 @@
  */
 
 #include "te_config.h"
+
 #include "te_stdint.h"
 #include "ta_common.h"
 #include "te_errno.h"
@@ -72,6 +73,9 @@
 #endif
 #if HAVE_SYS_SELECT_H
 #include <sys/select.h>
+#endif
+#if HAVE_ARPA_INET_H
+#include <arpa/inet.h>
 #endif
 
 #if (RPC_TRANSPORT == RPC_TRANSPORT_TCP)
@@ -263,7 +267,8 @@ rpc_transport_init(const char *tmp_path)
 #endif    
 #if RPC_TRANSPORT == RPC_TRANSPORT_UNIX
     struct sockaddr_un  addr;
-#endif    
+#endif
+   char addr_str[INET_ADDRSTRLEN]; 
 
     int len;
     
@@ -312,7 +317,12 @@ rpc_transport_init(const char *tmp_path)
 #endif
 
     if (bind(lsock, (struct sockaddr *)&addr, len) < 0)
-        RETERR("Failed to bind RPC listening socket");
+        RETERR("Failed to bind RPC listening socket (%s): %s",
+               (SA(&addr)->sa_family == AF_UNIX) ?
+                   ((struct sockaddr_un *)&addr)->sun_path :
+                   inet_ntop(AF_INET, &SIN(&addr)->sin_addr,
+                             addr_str, sizeof(addr_str)),
+                   strerror(errno));
         
     if (listen(lsock, 1) < 0)
         RETERR("listen() failed for RPC listening socket");

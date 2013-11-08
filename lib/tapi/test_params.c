@@ -94,6 +94,17 @@ test_get_param(int argc, char *argv[], const char *name)
             continue;
 
         ptr = argv[i] + strlen(name);
+
+        /*
+         * May be we matched another name that just has our name
+         * in the beginning.
+         */
+        if (!isspace(*ptr) && *ptr != '=')
+        {
+            ptr = NULL;
+            continue;
+        }
+
         while (isspace(*ptr))
             ptr++;
         if (*(ptr++) != '=')
@@ -257,11 +268,10 @@ print_octet_string(const uint8_t *oct_string, size_t len)
 }
 
 #define TEST_LIST_PARAM_CHUNK       8
-#define TEST_LIST_PARAM_SEPARATOR   ','
 
 /** See the description in tapi_test.h */
 int
-test_split_param_list(const char *list, char ***array_p)
+test_split_param_list(const char *list, char sep, char ***array_p)
 {
     char  **array = NULL;
     char   *ptr = strdup(list);
@@ -288,7 +298,7 @@ test_split_param_list(const char *list, char ***array_p)
         length++;
 
         /* Find next value */
-        ptr = strchr(ptr, TEST_LIST_PARAM_SEPARATOR);
+        ptr = strchr(ptr, sep);
         if (ptr == NULL)
         {
             /* No new separators */

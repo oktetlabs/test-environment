@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2004 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
- * Copyright (c) 2005 Level5 Networks Corp.
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -30,12 +29,6 @@
 
 #ifndef __TARPC_SERVER_H__
 #define __TARPC_SERVER_H__
-
-#include "te_config.h"
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 
 #ifdef HAVE_STDIO_H
 #include <stdio.h>
@@ -283,6 +276,14 @@ typedef void *(*api_func_ptr_ret_ptr)(void *param,...);
  */
 typedef void *(*api_func_void_ret_ptr)();
 
+/**
+ * Type of RPC call function where
+ * - the first argument is of integer type;
+ * - return value is an integer64.
+ * .
+ */
+typedef int64_t (*api_func_ret_int64)(int param,...);
+
 /** @} */
 
 /**
@@ -321,6 +322,11 @@ typedef void *(*api_func_void_ret_ptr)();
  * @ref api_func_void_ret_ptr prototype
  */
 #define func_void_ret_ptr       ((api_func_void_ret_ptr)func)
+/**
+ * RPC function call reference name to use when RPC call matches
+ * @ref api_func_ret_int64 prototype
+ */
+#define func_ret_int64          ((api_func_ret_int64)func)
 
 /** @} */
 

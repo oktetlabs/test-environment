@@ -777,8 +777,7 @@ prepare_nets(tapi_env_nets *nets, cfg_nets_t *cfg_nets)
         {
             ERROR("No IPv4 networks are assigned to net '%s'", net_oid);
             free(net_oid);
-            rc = TE_EENV;
-            break;
+            continue;
         }
         
         /* Get IPv4 subnet address */

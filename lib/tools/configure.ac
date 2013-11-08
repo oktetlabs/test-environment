@@ -31,6 +31,7 @@ if test x$host = x${host%windows} ; then
     dnl - -lpthread in Linux;
     dnl - -lc_r (-lkse) in FreeBSD;
     dnl - -lpthread in NetBSD ('pth' package).
+    dnl - -lc in QNX (usually included automatically)
     dnl
     AC_SEARCH_LIBS([pthread_create], [pthread kse c_r], [],
                    AC_MSG_ERROR([No POSIX threads]))

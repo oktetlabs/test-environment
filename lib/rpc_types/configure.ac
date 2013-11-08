@@ -81,6 +81,17 @@ dnl
 AC_CHECK_HEADERS([sys/epoll.h])
 
 dnl
+dnl Check for dirent.h
+dnl
+AC_CHECK_HEADERS([dirent.h])
+
+dnl
+dnl Check for 'd_type' member in 'struct dirent'.
+dnl
+AC_CHECK_MEMBERS([struct dirent.d_type], [], [],
+                 [#include <dirent.h>])
+
+dnl
 dnl Check for 'sa_restorer' member in 'struct sigaction'.
 dnl
 AC_CHECK_MEMBERS([struct sigaction.sa_restorer], [], [],

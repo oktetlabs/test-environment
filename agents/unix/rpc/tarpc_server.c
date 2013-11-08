@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2004 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
- * Copyright (c) 2005 Level5 Networks Corp.
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -67,6 +66,13 @@
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+
+#ifdef HAVE_SYS_STATVFS_H
+#include <sys/statvfs.h>
+#endif
+#ifdef HAVE_DIRENT_H
+#include <dirent.h>
 #endif
 
 #ifdef HAVE_LINUX_NET_TSTAMP_H
@@ -1498,6 +1504,166 @@ TARPC_FUNC(te_fstat64, {},
 
 #undef FSTAT_COPY
 
+#ifndef TE_POSIX_FS_PROVIDED
+/*-------------- unlink() --------------------------------*/
+TARPC_FUNC(unlink, {},
+{
+    MAKE_CALL(out->retval = func_ptr((in->path.path_len == 0) ? NULL :
+                                      in->path.path_val));
+}
+)
+
+/*-------------- rename() --------------------------------*/
+TARPC_FUNC(rename, {},
+{
+    MAKE_CALL(out->retval = func_ptr((in->path_old.path_old_len == 0) ?
+                                      NULL : in->path_old.path_old_val,
+                                     (in->path_new.path_new_len == 0) ?
+                                      NULL : in->path_new.path_new_val));
+}
+)
+
+/*-------------- mkdir() --------------------------------*/
+TARPC_FUNC(mkdir, {},
+{
+    MAKE_CALL(out->retval = func_ptr((in->path.path_len == 0) ?
+                                      NULL : in->path.path_val,
+                                     file_mode_flags_rpc2h(in->mode)));
+}
+)
+
+/*-------------- rmdir() --------------------------------*/
+TARPC_FUNC(rmdir, {},
+{
+    MAKE_CALL(out->retval = func_ptr((in->path.path_len == 0) ? NULL :
+                                      in->path.path_val));
+}
+)
+
+/*-------------- fstatvfs()-----------------------------*/
+TARPC_FUNC(fstatvfs, {},
+{
+    struct statvfs stat;
+
+    MAKE_CALL(out->retval = func(in->fd, &stat));
+
+    out->buf.f_bsize = stat.f_bsize;
+    out->buf.f_blocks = stat.f_blocks;
+    out->buf.f_bfree = stat.f_bfree;
+}
+)
+
+/*-------------- statvfs()-----------------------------*/
+TARPC_FUNC(statvfs, {},
+{
+    struct statvfs stat;
+
+    MAKE_CALL(out->retval = func_ptr((in->path.path_len == 0) ?
+                                     NULL : in->path.path_val, &stat));
+
+    out->buf.f_bsize = stat.f_bsize;
+    out->buf.f_blocks = stat.f_blocks;
+    out->buf.f_bfree = stat.f_bfree;
+}
+)
+
+#ifdef HAVE_DIRENT_H
+/* struct_dirent_props */
+unsigned int
+struct_dirent_props(void)
+{
+    unsigned int props = 0;
+
+#ifdef HAVE_STRUCT_DIRENT_D_TYPE
+    props |= RPC_DIRENT_HAVE_D_TYPE;
+#endif
+#if defined HAVE_STRUCT_DIRENT_D_OFF || defined HAVE_STRUCT_DIRENT_D_OFFSET
+    props |= RPC_DIRENT_HAVE_D_OFF;
+#endif
+#ifdef HAVE_STRUCT_DIRENT_D_NAMELEN
+    props |= RPC_DIRENT_HAVE_D_NAMLEN;
+#endif
+    props |= RPC_DIRENT_HAVE_D_INO;
+    return props;
+}
+
+TARPC_FUNC(struct_dirent_props, {},
+{
+    MAKE_CALL(out->retval = func_void());
+}
+)
+#endif /* HAVE_DIRENT_H */
+
+/*-------------- opendir() --------------------------------*/
+TARPC_FUNC(opendir, {},
+{
+    MAKE_CALL(out->mem_ptr = 
+        rcf_pch_mem_alloc(func_ptr_ret_ptr((in->path.path_len == 0) ? NULL :
+                                            in->path.path_val)));
+}
+)
+
+/*-------------- closedir() --------------------------------*/
+TARPC_FUNC(closedir, {},
+{
+    MAKE_CALL(out->retval = func_ptr(rcf_pch_mem_get(in->mem_ptr)));
+    rcf_pch_mem_free(in->mem_ptr);
+}
+)
+
+/*-------------- readdir() --------------------------------*/
+TARPC_FUNC(readdir, {},
+{
+    struct dirent *dent;
+
+    MAKE_CALL(dent = (struct dirent *)
+                        func_ptr(rcf_pch_mem_get(in->mem_ptr)));
+    if (dent == NULL)
+    {
+        out->ret_null = TRUE;
+    }
+    else
+    {
+        tarpc_dirent *rpc_dent;
+
+        rpc_dent = (tarpc_dirent *)calloc(1, sizeof(*rpc_dent));
+        if (rpc_dent == NULL)
+            out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        else
+        {
+            out->dent.dent_len = 1;
+
+            out->ret_null = FALSE;
+            out->dent.dent_val = rpc_dent;
+
+            rpc_dent->d_name.d_name_val = strdup(dent->d_name);
+            rpc_dent->d_name.d_name_len = strlen(dent->d_name) + 1;
+            rpc_dent->d_ino = dent->d_ino;
+#ifdef HAVE_STRUCT_DIRENT_D_OFF
+            rpc_dent->d_off = dent->d_off;
+#elif defined HAVE_STRUCT_DIRENT_D_OFFSET
+            rpc_dent->d_off = dent->d_offset;
+#else
+            rpc_dent->d_off = 0;
+#endif
+
+#ifdef HAVE_STRUCT_DIRENT_D_TYPE
+            rpc_dent->d_type = d_type_h2rpc(dent->d_type);
+#else
+            rpc_dent->d_type = RPC_DT_UNKNOWN;
+#endif
+#ifdef HAVE_STRUCT_DIRENT_D_NAMELEN
+            rpc_dent->d_namelen = dent->d_namelen;
+#else
+            rpc_dent->d_namelen = 0;
+#endif
+            rpc_dent->d_props = struct_dirent_props();
+        }
+    }
+}
+)
+#endif
+
 /*-------------- sendto() ------------------------------*/
 
 TARPC_FUNC(sendto, {},
@@ -1781,13 +1947,37 @@ TARPC_FUNC(writev,
 }
 )
 
+#ifndef TE_POSIX_FS_PROVIDED
 /*-------------- lseek() ------------------------------*/
 
 TARPC_FUNC(lseek, {},
 {
-    MAKE_CALL(out->retval = func(in->fd, in->pos,
-        lseek_mode_rpc2h(in->mode)));
+    if (sizeof(off_t) == 4)
+    {
+        if (in->pos > UINT_MAX)
+        {
+            ERROR("'offset' value passed to lseek "
+                  "exceeds 'off_t' data type range");
+            out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+        else
+        {
+            MAKE_CALL(out->retval = func(in->fd, (off_t)in->pos,
+                                         lseek_mode_rpc2h(in->mode)));
+        }
+    }
+    else if (sizeof(off_t) == 8)
+    {
+        MAKE_CALL(out->retval = func_ret_int64(in->fd, in->pos,
+                                               lseek_mode_rpc2h(in->mode)));
+    }
+    else
+    {
+        ERROR("Unexpected size of 'off_t' for lseek call");
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
 })
+#endif
 
 /*-------------- fsync() ------------------------------*/
 
@@ -4789,6 +4979,7 @@ TARPC_FUNC(socketpair,
 }
 )
 
+#ifndef TE_POSIX_FS_PROVIDED
 /*-------------- open() --------------------------------*/
 TARPC_FUNC(open, {},
 {
@@ -4798,6 +4989,7 @@ TARPC_FUNC(open, {},
                                  file_mode_flags_rpc2h(in->mode)));
 }
 )
+#endif
 
 /*-------------- open64() --------------------------------*/
 TARPC_FUNC(open64, {},

@@ -26,7 +26,8 @@ include_HEADERS = \
 	te_rpc_sys_wait.h \
 	te_rpc_wsa.h \
 	te_rpc_sysconf.h \
-    te_rpc_dlfcn.h
+        te_rpc_dlfcn.h \
+        te_rpc_dirent.h
 
 if WINDOWS
 
@@ -83,7 +84,8 @@ nodist_librpc_types_la_SOURCES = \
 	sys_wait_conv.c \
 	wsa_conv.c \
 	sysconf_name_conv.c \
-    dlfcn_conv.c
+        dlfcn_conv.c \
+        dirent.c
 
 CLEANFILES=$(nodist_librpc_types_la_SOURCES)
 

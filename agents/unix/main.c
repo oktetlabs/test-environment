@@ -1616,7 +1616,21 @@ ta_waitpid(pid_t pid, int *p_status, int options)
 
     /* Start race: who'll get the status, our waitpid() or SIGCHILD?
      * We are ready to handle both cases! */
-    rc = waitpid(pid, &status, options);
+    status = 0;
+#ifndef SA_RESTART
+    /*
+     * If SA_RESTART is not defined, waitpid() will not be resumed and
+     * it will fail with 'EINTR' errno. This will happen any time we
+     * receive a signal about child termination (any we registered for
+     * handling of this signal).
+     */
+    do {
+#endif
+        rc = waitpid(pid, &status, options);
+#ifndef SA_RESTART
+    } while ((rc < 0) && (errno == EINTR));
+#endif
+
     if (rc > 0)
     {
         /* We've got the real status */

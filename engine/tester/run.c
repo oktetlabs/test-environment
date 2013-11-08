@@ -797,8 +797,22 @@ test_params_hash(test_iter_arg *args, unsigned int n_args)
         }
 
         VERB("%s %s", name, value);
-        len += snprintf(buf + len, sizeof(buf) - len - 1,
+        len += snprintf(buf + len, sizeof(buf) - len,
                         "%s%s %s", (i != 0) ? " " : "", name, value);
+        /*
+         * In case buffer size is too short to dump the whole string
+         * snprintf dumps only a part of string (that fits into the buffer)
+         * and returns the number of bytes it would have been written
+         * if buffer was bigger in size.
+         * We may easily have buffer overflow here, so we should catch
+         * such a condition and set current buffer length to total buffer
+         * length value in order to have '0' length for the next
+         * snprintf() call.
+         * In any case this buffer is filled in for debugging purposes,
+         * so there is no much need to care about it.
+         */
+        if (len >= sizeof(buf))
+            len = sizeof(buf);
 
         if (i != 0)
             MD5_Update(&md5, " ", (unsigned long) 1);
@@ -1341,6 +1355,11 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
                     ERROR("Serious error occured during execution of "
                           "the test, shut down");
                     break;
+
+                case TE_EXIT_SKIP:
+                    *status = TESTER_TEST_SKIPPED;
+                    break;
+
                 default:
                     *status = TESTER_TEST_FAILED;
             }
@@ -1399,6 +1418,7 @@ run_script(run_item *ri, test_script *script,
         case TESTER_TEST_PASSED:
         case TESTER_TEST_FAILED:
         case TESTER_TEST_SEARCH:
+        case TESTER_TEST_SKIPPED:
             ctl = TESTER_CFG_WALK_CONT;
             break;
 

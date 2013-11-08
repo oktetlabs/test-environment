@@ -166,6 +166,8 @@ ifname_without_vlan(const char *ifname)
 static inline char *
 ifname_without_vlan(const char *ifname)
 {
+    UNUSED(ifname);
+
     ERROR("This test agent does not support VLANs");
     return NULL;
 }

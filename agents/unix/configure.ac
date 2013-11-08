@@ -270,6 +270,28 @@ AC_CHECK_MEMBERS([union sigval.sigval_ptr], [], [],
                  [#include <signal.h>])
 
 dnl
+dnl Check for 'd_type' member in 'struct dirent'.
+dnl
+AC_CHECK_MEMBERS([struct dirent.d_type], [], [],
+                 [#include <dirent.h>])
+dnl
+dnl Check for 'd_off' member in 'struct dirent'.
+dnl
+AC_CHECK_MEMBERS([struct dirent.d_off], [], [],
+                 [#include <dirent.h>])
+dnl
+dnl Check for 'd_offset' member in 'struct dirent'.
+dnl
+AC_CHECK_MEMBERS([struct dirent.d_offset], [], [],
+                 [#include <dirent.h>])
+dnl
+dnl Check for 'd_namelen' member in 'struct dirent'.
+dnl
+AC_CHECK_MEMBERS([struct dirent.d_namelen], [], [],
+                 [#include <dirent.h>])
+
+
+dnl
 dnl Berkley Socket API is provided by:
 dnl - -lc on Linux, FreeBSD (5, 6), NetNSD (1.6, 2.0);
 dnl - -lsocket on Solaris2 (SunOS 5.11).
@@ -314,6 +336,7 @@ dnl POSIX threads are provided by:
 dnl - -lpthread in Linux;
 dnl - -lc_r (-lkse) in FreeBSD;
 dnl - -lpthread in NetBSD ('pth' package).
+dnl - -lc in QNX (usually included automatically)
 dnl
 AC_SEARCH_LIBS([pthread_create], [pthread kse c_r], [],
                AC_MSG_ERROR([No POSIX threads]))
@@ -352,6 +375,8 @@ AC_CHECK_HEADERS([sys/utsname.h])
 AC_CHECK_HEADERS([sys/systeminfo.h])
 AC_CHECK_HEADERS([sys/klog.h])
 AC_CHECK_HEADERS([linux/if_vlan.h])
+AC_CHECK_HEADERS([dirent.h])
+AC_CHECK_HEADERS([sys/statvfs.h])
 
 dnl
 dnl Terminal devices

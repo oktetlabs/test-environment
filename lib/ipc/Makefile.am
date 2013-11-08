@@ -19,7 +19,8 @@ libipc_la_SOURCES = client.c portmap_common.c ipc_common.c
 
 install-exec-hook:
 	for i in $(lib_LTLIBRARIES) ; do \
-		touch -c -r $$i $(DESTDIR)/$(libdir)/$${i/.la/}.* ; \
+		j=`echo $${i} | sed -e 's/.la//'`; \
+		touch -c -r $$i $(DESTDIR)/$(libdir)/$${j/.la/}.* ; \
 	done
 
 install-data-hook:

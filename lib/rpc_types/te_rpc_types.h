@@ -6,7 +6,6 @@
  * 
  * Copyright (C) 2005 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
- * Copyright (c) 2005 Level5 Networks Corp.
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -77,6 +76,7 @@ typedef struct rpc_ptr_off {
 #include "te_rpc_sysconf.h"
 #include "te_rpc_errno.h"
 #include "te_rpc_dlfcn.h"
+#include "te_rpc_dirent.h"
 
 #else
 

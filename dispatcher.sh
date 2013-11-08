@@ -375,7 +375,7 @@ process_opts()
                     OPTS="${CONF_DIR}/${OPTS}"
                 fi
                 if test -f ${OPTS} ; then
-                    process_opts $(cat ${OPTS})
+                    process_opts $(cat ${OPTS} | grep -v '^#')
                     # Don't want to see the option after expansion
                     opt=
                 else
