@@ -296,6 +296,15 @@ asn_assign_value(asn_value *dst, const asn_value *src)
         if ((src->data.other == NULL) || (len == 0))
         { /* data is not specified yet, value is incomplete.*/
             dst->data.other = NULL;
+
+            /*
+             * We can have an empty string or empty octet string
+             * and in order to process the value correctly we need
+             * to copy 'txt_len' field, otherwise we will not be able
+             * to 'sprint' empty value.
+             */
+            dst->len = src->len;
+            dst->txt_len = src->txt_len;
             return 0;
         }
 
