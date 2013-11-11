@@ -3,7 +3,6 @@
  *
  * Sniffer process implementation.
  *
- *
  * Copyright (C) 2012 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
  *
@@ -22,58 +21,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- *
- ****************************************************************************
- *
- * This software contains some code blocks of The Tcpdump Group "sniffex.c"
- * demonstration source code, released as follows:
- * 
- * sniffex.c
- * Sniffer example of TCP/IP packet capture using libpcap.
- * Version 0.1.1 (2005-07-05)
- * Copyright (c) 2005 The Tcpdump Group
- * 
- * "sniffex.c" is distributed under these terms:
- * 
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Because this is a derivative work, you must comply with the "sniffer.c"
- *    terms reproduced above.
- * 2. Redistributions of source code must retain the Tcpdump Group copyright
- *    notice at the top of this source file, this list of conditions and the
- *    following disclaimer.
- * 3. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 4. The names "tcpdump" or "libpcap" may not be used to endorse or promote
- *    products derived from this software without prior written permission.
- *
- * THERE IS ABSOLUTELY NO WARRANTY FOR THIS PROGRAM.
- * BECAUSE THE PROGRAM IS LICENSED FREE OF CHARGE, THERE IS NO WARRANTY
- * FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW.  EXCEPT WHEN
- * OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES
- * PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED
- * OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.  THE ENTIRE RISK AS
- * TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU.  SHOULD THE
- * PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING,
- * REPAIR OR CORRECTION.
- * 
- * IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING
- * WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MAY MODIFY AND/OR
- * REDISTRIBUTE THE PROGRAM AS PERMITTED ABOVE, BE LIABLE TO YOU FOR DAMAGES,
- * INCLUDING ANY GENERAL, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING
- * OUT OF THE USE OR INABILITY TO USE THE PROGRAM (INCLUDING BUT NOT LIMITED
- * TO LOSS OF DATA OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY
- * YOU OR THIRD PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER
- * PROGRAMS), EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGES.
- * <end of "sniffex.c" terms>
- *
  * @author Andrey A. Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
  *
- * $Id: $
+ * $Id$
  */
 
 #include "te_config.h"
@@ -122,7 +72,8 @@ typedef struct dump_info {
     char           *file_path;              /**< Capture file path */
     char           *file_name;              /**< File for the raw packets */
     size_t          file_size;              /**< Max file size */
-    size_t          max_fnum;               /**< Max filse num to rotation */
+    size_t          max_fnum;               /**< Max filse num to
+                                                 rotation */
     size_t          log_num;                /**< Log sequence number */
     size_t          total_size;             /**< Total files size */
     pcap_dumper_t  *dumper;                 /**< Structure for capture file
@@ -141,7 +92,8 @@ static pcap_t             *handle = NULL;      /**< Session handle. */
 static te_bool             fstop;              /**< Stop flag */
 static dump_info           dumpinfo;           /**< Dump files info */
 
-SIMPLEQ_HEAD(filelist, file_list_s) head_file_list;  /**< Capture files list */
+/** Capture files list */
+SIMPLEQ_HEAD(filelist, file_list_s) head_file_list;
 
 /**
  * Putting file name into the list
@@ -408,7 +360,8 @@ dump_packet(unsigned char *user, const struct pcap_pkthdr *h,
     offset = pcap_dump_ftell(dumpinfo.dumper);
 
     if ((dumpinfo.file_size != 0) && 
-        (offset + h->caplen + sizeof(struct pcap_pkthdr) > dumpinfo.file_size))
+        (offset + h->caplen + sizeof(struct pcap_pkthdr) >
+        dumpinfo.file_size))
     {
         pcap_dump_close(dumpinfo.dumper);
         if (dumpinfo.fd != -1)
@@ -434,7 +387,8 @@ dump_packet(unsigned char *user, const struct pcap_pkthdr *h,
         if (file_list_put(dumpinfo.file_name) != 0)
             fprintf(stderr, "Couldn't add dump file name to list!\n");
         if ((dumpinfo.fd = open(dumpinfo.file_name, O_RDWR)) == -1)
-            fprintf(stderr, "Couldn't get file descriptor of the dump file\n");
+            fprintf(stderr,
+                    "Couldn't get file descriptor of the dump file\n");
         fnum = count_fnum();
         if ((dumpinfo.max_fnum != 0) && (fnum > dumpinfo.max_fnum) &&
             (dumpinfo.overfilltype == ROTATION))
@@ -498,13 +452,15 @@ usage(void)
     printf("    -F conf_file            Filter expression file\n");
     printf("    -h                      Help\n");
     printf("    -i interface            Interface name, required arg\n");
-    printf("    -o                      Change overfill handle method to \n");
-    printf("                            tail drop, default type is rotation\n");
+    printf("    -o                      Change overfill handle method to"
+           " \n");
+    printf("                            tail drop, default type is "
+           "rotation\n");
     printf("    -p                      Enable promiscuous mode, default "
            "disabled\n");
     printf("    -P file_path            Agent folder path, required arg\n");
-    printf("    -r rotation_num         Max number files to rotate, defualt 0 "
-           "(unlimited)\n");
+    printf("    -r rotation_num         Max number files to rotate, "
+           "defualt 0 (unlimited)\n");
     printf("    -q seq_num              Sniffer session sequence number, "
            "required arg\n");
     printf("    -s snaplen              Snapshot length in bytes, "
@@ -538,7 +494,8 @@ wrong_arg(char optopt)
             break;
 
         case 'F':
-            fprintf(stderr, "-%c without configuration file name\n", optopt);
+            fprintf(stderr, "-%c without configuration file name\n",
+                    optopt);
             break;
 
         case 'i':
@@ -702,8 +659,8 @@ te_sniffer_process(int argc, char *argv[])
     }
     else
     {
-        fprintf(stderr, "Mandatory arguments: interface name, sniffer name, "
-                        "sniffer path, sequence number.\n");
+        fprintf(stderr, "Mandatory arguments: interface name, sniffer "
+                        "name, sniffer path, sequence number.\n");
         fprintf(stderr, "Type -h for more information.\n");
         goto cleanup;
     }
