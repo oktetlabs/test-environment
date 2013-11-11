@@ -823,14 +823,43 @@ tapi_snmp_gen_csap_create(const char *ta, int sid, const char *snmp_agent,
 }
 
 
+/**
+ * Structure to keep pkt handler private data.
+ * We added this structure in order to be able to return
+ * error status caused by the failure of ASN packet processing
+ * because return type of callback function for rcf_ta_trsend_recv()
+ * is 'void' which assumes an error should be returned via private
+ * data parameter.
+ * In tapi_snmp_message_t we have 'err_status' field, but it is pure
+ * SNMP specific field that is in use when we receive SNMP reply
+ * with an error code.
+ * But we had no chance to pass up information about such a bloody
+ * error as ASN packet is not well formatted.
+ * Now we can do it my means of 'rc' field in 'snmp_pkt_handler_data'
+ * data structure.
+ */
+typedef struct snmp_pkt_handler_data {
+    tapi_snmp_message_t *plain_msg; /**< SNMP message got */
+    int                  rc; /**< Status code from pkt handler */
+} snmp_pkt_handler_data;
+
+/** Reset pkt handler data to be passed to callback function */
+#define TAPI_SNMP_PKT_HANDLER_DATA_RESET(data_, msg_) \
+    do {                                                \
+        memset(msg_, 0, sizeof(*(msg_)));               \
+        (data_)->plain_msg = msg_;                      \
+        (data_)->rc = 0;                                \
+    } while (0)
 
 void
 tapi_snmp_pkt_handler(const char *fn, void *p)
 {
-    int         rc;
-    int         s_parsed;
-    asn_value  *packet;
-    asn_value  *snmp_message;
+    snmp_pkt_handler_data *data = (snmp_pkt_handler_data *)p;
+    tapi_snmp_message_t   *plain_msg;
+    int                    rc;
+    int                    s_parsed;
+    asn_value             *packet;
+    asn_value             *snmp_message;
 
 #if DEBUG
     VERB("%s, file: %s\n", __FUNCTION__, fn);
@@ -841,12 +870,15 @@ tapi_snmp_pkt_handler(const char *fn, void *p)
         fprintf(stderr, "NULL data pointer in tapi_snmp_pkt_handler!\n");
         return;
     }
+    plain_msg = data->plain_msg;
+
     rc = asn_parse_dvalue_in_file(fn, ndn_raw_packet, &packet, &s_parsed);
     VERB("SNMP pkt handler, parse file rc: %x, syms: %d\n", rc, s_parsed);
 #if DEBUG
     if (rc == 0)
     {
         struct timeval timestamp;
+
         rc = ndn_get_timestamp(packet, &timestamp);
         VERB("got timestamp, rc: %x, sec: %d, mcs: %d.\n",
                 rc, (int)timestamp.tv_sec, (int)timestamp.tv_usec);
@@ -857,7 +889,6 @@ tapi_snmp_pkt_handler(const char *fn, void *p)
 
     if (rc == 0)
     {
-        tapi_snmp_message_t *plain_msg = (tapi_snmp_message_t *)p;
 
         VERB("parse SNMP file OK!\n");
 
@@ -869,6 +900,24 @@ tapi_snmp_pkt_handler(const char *fn, void *p)
         /* abnormal situation in SNMP message */
         if (plain_msg->num_var_binds == 0)
             plain_msg->err_status = rc;
+    }
+    else
+    {
+        char cmd[128];
+        int  fd;
+        char snmp_file[32] = "/tmp/snmp_err_pkt.XXXXXX";
+
+        if ((fd = mkstemp(snmp_file)) >= 0)
+        {
+            close(fd);
+            snprintf(cmd, sizeof(cmd),
+                     "cp %s %s", fn, snmp_file);
+            system(cmd);
+        }
+
+        ERROR("Failed to parse SNMP packet (saved in %s): %r",
+              snmp_file, rc);
+        data->rc = rc;
     }
 }
 
@@ -1062,12 +1111,17 @@ tapi_snmp_operation(const char *ta, int sid, int csap_id,
 
     if (rc == 0)
     {
-        memset(msg, 0, sizeof(*msg));
+        snmp_pkt_handler_data data;
+
+        TAPI_SNMP_PKT_HANDLER_DATA_RESET(&data, msg);
         num = 1;
         timeout = 5000; /** @todo Fix me */
 
         rc = rcf_ta_trsend_recv(ta, sid, csap_id, tmp_name,
-                                tapi_snmp_pkt_handler, msg, timeout, &num);
+                                tapi_snmp_pkt_handler, &data,
+                                timeout, &num);
+        if (rc == 0 && data.rc != 0)
+            rc = data.rc;
 
         if (rc != 0)
             ERROR("rcf_ta_trsend_recv rc %r", rc);
@@ -1106,7 +1160,8 @@ tapi_snmp_get_row(const char *ta, int sid, int csap_id,
     unsigned int  timeout;
     char          tmp_name[] = "/tmp/te_snmp_get_row.XXXXXX";
     int           rc, num;
-    tapi_snmp_message_t msg;
+    tapi_snmp_message_t      msg;
+    snmp_pkt_handler_data    data;
     tapi_get_row_par_list_t *gp_head = NULL;
     tapi_get_row_par_list_t *get_par;
 
@@ -1201,10 +1256,13 @@ tapi_snmp_get_row(const char *ta, int sid, int csap_id,
 
     VERB("in %s: num_vars %d\n", __FUNCTION__, num_vars);
 
-    memset(&msg, 0, sizeof(msg));
+
+    TAPI_SNMP_PKT_HANDLER_DATA_RESET(&data, &msg);
     timeout = 5000; /** @todo Fix me. */
     rc = rcf_ta_trsend_recv(ta, sid, csap_id, tmp_name,
-                            tapi_snmp_pkt_handler, &msg, timeout, &num);
+                            tapi_snmp_pkt_handler, &data, timeout, &num);
+    if (rc == 0 && data.rc != 0)
+        rc = data.rc;
 
     if (rc)
     {
@@ -1311,13 +1369,18 @@ tapi_snmp_set_vbs(const char *ta, int sid, int csap_id,
 
     if (rc == 0)
     {
-        memset(&msg, 0, sizeof(msg));
+        snmp_pkt_handler_data data;
+
+        TAPI_SNMP_PKT_HANDLER_DATA_RESET(&data, &msg);
         num = 1;
         timeout = 5000; /** @todo Fix me */
 
         rc = rcf_ta_trsend_recv(ta, sid, csap_id, tmp_name,
-                                tapi_snmp_pkt_handler, &msg, timeout, &num);
-
+                                tapi_snmp_pkt_handler, &data,
+                                timeout, &num);
+    
+        if (rc == 0 && data.rc != 0)
+            rc = data.rc;
     }
     if (rc == 0)
     {
@@ -1864,7 +1927,7 @@ tapi_snmp_walk(const char *ta, int sid, int csap_id,
             rc = callback(&vb, userdata);
 
             tapi_snmp_free_varbind(&vb);
-           VERB("user callback in walk return %x", rc);
+            VERB("user callback in walk return %x", rc);
 
             if (rc)
                 return rc;
