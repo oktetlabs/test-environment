@@ -1540,6 +1540,7 @@ TARPC_FUNC(rmdir, {},
 }
 )
 
+#ifdef HAVE_SYS_STATVFS_H
 /*-------------- fstatvfs()-----------------------------*/
 TARPC_FUNC(fstatvfs, {},
 {
@@ -1566,6 +1567,7 @@ TARPC_FUNC(statvfs, {},
     out->buf.f_bfree = stat.f_bfree;
 }
 )
+#endif /* HAVE_SYS_STATVFS_H */
 
 #ifdef HAVE_DIRENT_H
 /* struct_dirent_props */
