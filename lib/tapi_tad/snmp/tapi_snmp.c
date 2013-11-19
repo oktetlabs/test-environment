@@ -400,6 +400,28 @@ tapi_snmp_free_message(tapi_snmp_message_t *snmp_message)
     }
 }
 
+/* See description in tapi_snmp.h */
+tapi_snmp_oct_string_t *
+tapi_snmp_mk_oct_string(uint8_t *data, size_t data_len)
+{
+    tapi_snmp_oct_string_t *oct_string;
+
+    oct_string = malloc(sizeof(*oct_string) + data_len);
+    if (oct_string != NULL)
+    {
+        oct_string->len = data_len;
+        memcpy(oct_string->data, data, data_len);
+    }
+
+    return oct_string;
+}
+
+/* See description in tapi_snmp.h */
+void
+tapi_snmp_free_oct_string(tapi_snmp_oct_string_t *oct_string)
+{
+    free(oct_string);
+}
 
 /* See description in tapi_snmp.h */
 int

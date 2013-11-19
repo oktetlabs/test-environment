@@ -353,6 +353,26 @@ extern void tapi_snmp_free_varbind(tapi_snmp_varbind_t *varbind);
 extern void tapi_snmp_free_message(tapi_snmp_message_t *snmp_message);
 
 /**
+ * Allocate octet string data structure based on user specified data buffer.
+ *
+ * @param data      buffer with data
+ * @param data_len  size of data buffer
+ *
+ * @return Allocated octet sting data structure
+ */
+extern tapi_snmp_oct_string_t *tapi_snmp_mk_oct_string(uint8_t *data,
+                                                       size_t data_len);
+
+/**
+ * Free octet string allocated with tapi_snmp_mk_oct_string()
+ *
+ * @param oct_string  octet string to free
+ *
+ * @return N/A
+ */
+extern void tapi_snmp_free_oct_string(tapi_snmp_oct_string_t *oct_string);
+
+/**
  * Convert SNMP-Message ASN.1 value to plain C structure.
  *
  * @param pkt           ASN.1 value of type SNMP-Message or Generic-PDU
