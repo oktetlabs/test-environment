@@ -715,6 +715,29 @@ cleanup_specific:                                                   \
     TEST_GET_ENUM_PARAM(var_name_, BOOL3_MAPPING_LIST)
 
 
+/**
+ * Get the value of parameter that represents IPv4 address.
+ *
+ * @param var_name_  Name of the variable used to get the value of
+ *                   "var_name_" parameter of type 'in_addr_t' (OUT)
+ */
+#define TEST_GET_IP4_PARAM(var_name_) \
+    do {                                                                \
+        const char *str_val_;                                           \
+        int         rc_;                                                \
+                                                                        \
+        if ((str_val_ = test_get_param(argc, argv,                      \
+                                       #var_name_)) == NULL)            \
+        {                                                               \
+            TEST_STOP;                                                  \
+        }                                                               \
+        rc_ = inet_pton(AF_INET, str_val_, &(var_name_));               \
+        if (rc_ != 1)                                                   \
+            TEST_FAIL("The value of '" #var_name_ "' parameter is "     \
+                      "not seem to be a valid IPv4 address: %s",        \
+                      str_val_);                                        \
+    } while (0)
+
 /** Abstaract enum to 'buf_size' parameter */
 typedef enum sapi_buf_size {
     SIZE_ZERO,
