@@ -3536,6 +3536,11 @@ ta_unix_conf_daemons_init()
     {
         return rc;
     }
+
+#ifdef WITH_PPPOE_SERVER
+    if ((rc = pppoe_client_add()) != 0)
+        return rc;
+#endif
     
     return 0;
 }

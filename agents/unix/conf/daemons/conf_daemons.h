@@ -350,6 +350,13 @@ extern te_errno vtund_release(const char *name);
 extern te_errno slapd_add(void);
 
 /**
+ * Add PPPoE client support nodes to the configuration tree.
+ *
+ * @return Status of the operation.
+ */
+extern te_errno pppoe_client_add(void);
+
+/**
  * Initializes conf_daemons support.
  *
  * @return Status code (see te_errno.h)

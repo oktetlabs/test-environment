@@ -228,6 +228,8 @@ typedef struct pam_message const pam_message_t;
 /** User environment */
 extern char **environ;
 
+extern int link_addr_a2n(uint8_t *lladdr, int len, const char *str);
+
 #ifdef ENABLE_8021X
 extern te_errno ta_unix_conf_supplicant_init();
 extern te_errno supplicant_grab(const char *name);
@@ -4416,7 +4418,7 @@ link_addr_n2a(unsigned char *addr, int alen,
 }
 #endif
 
-static int
+int
 link_addr_a2n(uint8_t *lladdr, int len, const char *str)
 {
     const char *arg = str;
