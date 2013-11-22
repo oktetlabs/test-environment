@@ -427,25 +427,27 @@ rpc_ioctl(rcf_rpc_server *rpcs,
             }
 
         case RPC_SIOCSHWTSTAMP:
-        {
-            struct ifreq *ifr = (struct ifreq *)arg;
-            tarpc_ifreq  *rpc_ifreq = 
-                    &in.req.req_val[0].ioctl_request_u.req_ifreq;
+            in.access = IOCTL_RD;
+            if (arg != NULL)
+            {
+                struct ifreq *ifr = (struct ifreq *)arg;
+                tarpc_ifreq  *rpc_ifreq =
+                        &in.req.req_val[0].ioctl_request_u.req_ifreq;
 
-            in.req.req_val[0].type = IOCTL_IFREQ;
-            if (ifr == NULL)
-                break;
-            rpc_ifreq->rpc_ifr_name.rpc_ifr_name_val = ifr->ifr_name;
-            rpc_ifreq->rpc_ifr_name.rpc_ifr_name_len =
-                    sizeof(ifr->ifr_name);
+                in.req.req_val[0].type = IOCTL_IFREQ;
+                if (ifr == NULL)
+                    break;
+                rpc_ifreq->rpc_ifr_name.rpc_ifr_name_val = ifr->ifr_name;
+                rpc_ifreq->rpc_ifr_name.rpc_ifr_name_len =
+                        sizeof(ifr->ifr_name);
 
-            if (ifr->ifr_data == NULL)
-                break;
+                if (ifr->ifr_data == NULL)
+                    break;
 
-            memcpy(&rpc_ifreq->rpc_ifr_hwstamp, ifr->ifr_data,
-                   sizeof(tarpc_hwtstamp_config));
+                memcpy(&rpc_ifreq->rpc_ifr_hwstamp, ifr->ifr_data,
+                       sizeof(tarpc_hwtstamp_config));
+            }
             break;
-        }
 
         case RPC_SIOCETHTOOL:
         {
