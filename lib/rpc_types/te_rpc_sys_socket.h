@@ -1207,6 +1207,28 @@ extern void ethtool_data_h2rpc(tarpc_ethtool *rpc_edata, caddr_t edata);
 
 #endif /* HAVE_LINUX_ETHTOOL_H */
 
+#if HAVE_LINUX_NET_TSTAMP_H
+/**
+ * Copy hwtstamp_config data from RPC data structure to host. 
+ *
+ * @param rpc_hwdata RPC hwtstamp_config data structure
+ * @param hwdata_p   pointer to return host hwtstamp_config structure;
+ *                   this structure is allocated if the pointer is
+ *                   initialised to NULL
+ */
+extern void hwtstamp_config_data_rpc2h(tarpc_hwtstamp_config *rpc_hwdata,
+                                       caddr_t *hwdata_p);
+
+/**
+ * Copy hwtstamp_config data from the host data structure to RPC. 
+ *
+ * @param hwdata     hwtstamp_config structure
+ * @param rpc_hwdata RPC hwtstamp_config data structure
+ */
+extern void hwtstamp_config_data_h2rpc(tarpc_hwtstamp_config *rpc_hwdata,
+                                       caddr_t hwdata);
+#endif /* HAVE_LINUX_NET_TSTAMP_H */
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
