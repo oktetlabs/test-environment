@@ -712,21 +712,48 @@ process_dhcp6_options(asn_value *opt_list, uint8_t **data_p,
     uint16_t                    opt_type;
     uint16_t                    opt_len;
     uint8_t                     msg_type;
+    uint16_t                    u16_val;
+    uint32_t                    u32_val;
+
+/*
+ * Need to translate data notation order from network to host
+ */
+#define FILL_DHCP_OPT_FIELD_INT(_obj, _label, _size) \
+    do {                                                    \
+        if (_size == sizeof(uint32_t))                      \
+        {                                                   \
+            u32_val = ntohl(*((uint32_t *)data));           \
+            asn_write_value_field(_obj, &u32_val, _size,    \
+                                  _label ".#plain");        \
+        }                                                   \
+        else if (_size == sizeof(uint16_t))                 \
+        {                                                   \
+            u16_val = ntohs(*((uint16_t *)data));           \
+            asn_write_value_field(_obj, &u16_val, _size,    \
+                                  _label ".#plain");        \
+        }                                                   \
+        else                                                \
+            /* uint8_t or else */                           \
+            asn_write_value_field(_obj, data, _size,        \
+                              _label ".#plain");            \
+                                                            \
+        data += _size;                                      \
+    } while(0);
 
     while (data < (data_ptr + data_len))
     {
         opt = asn_init_value(ndn_dhcpv6_option);
 
-        opt_type = *((uint16_t *)data);
-        FILL_DHCP_OPT_FIELD(opt, "type",  2);
+        opt_type = ntohs(*((uint16_t *)data));
+        FILL_DHCP_OPT_FIELD_INT(opt, "type",  2);
 
-        opt_len = *((uint16_t *)data);
-        FILL_DHCP_OPT_FIELD(opt, "length", 2);
+        opt_len = ntohs(*((uint16_t *)data));
+        FILL_DHCP_OPT_FIELD_INT(opt, "length", 2);
 
         if (opt_type == DHCP6_OPT_CLIENTID ||
             opt_type == DHCP6_OPT_SERVERID)
         {
-            type16 = *((uint16_t *)data);
+            type16 = ntohs(*((uint16_t *)data));
 
             if (type16 != DUID_LL && type16 != DUID_LLT && type16 != DUID_EN)
             {
@@ -736,23 +763,24 @@ process_dhcp6_options(asn_value *opt_list, uint8_t **data_p,
             else
             {
                 option_body = asn_init_value(ndn_dhcpv6_duid);
-                FILL_DHCP_OPT_FIELD(option_body, "type", 2);
+                FILL_DHCP_OPT_FIELD_INT(option_body, "type", 2);
                 if (type16 == DUID_EN)
                 {
-                    FILL_DHCP_OPT_FIELD(option_body, "enterprise-number", 4);
+                    FILL_DHCP_OPT_FIELD_INT(option_body,
+                                            "enterprise-number", 4);
                     FILL_DHCP_OPT_FIELD(option_body, "identifier",
                                         opt_len - 6);
                 }
                 else if (type16 == DUID_LLT)
                 {
-                    FILL_DHCP_OPT_FIELD(option_body, "hardware-type", 2);
-                    FILL_DHCP_OPT_FIELD(option_body, "time", 4);
+                    FILL_DHCP_OPT_FIELD_INT(option_body, "hardware-type", 2);
+                    FILL_DHCP_OPT_FIELD_INT(option_body, "time", 4);
                     FILL_DHCP_OPT_FIELD(option_body, "link-layer-address",
                                     opt_len - 8);
                 }
                 else /* DUID_LL */
                 {
-                    FILL_DHCP_OPT_FIELD(option_body, "hardware-type", 2);
+                    FILL_DHCP_OPT_FIELD_INT(option_body, "hardware-type", 2);
                     FILL_DHCP_OPT_FIELD(option_body, "link-layer-address",
                                     opt_len - 4);
                 }
@@ -809,27 +837,29 @@ process_dhcp6_options(asn_value *opt_list, uint8_t **data_p,
                 opt_type == DHCP6_OPT_IA_TA ||
                 opt_type == DHCP6_OPT_IA_PD)
             {
-                FILL_DHCP_OPT_FIELD(option_body, "iaid", 4);
+                FILL_DHCP_OPT_FIELD_INT(option_body, "iaid", 4);
             }
 
             if (opt_type == DHCP6_OPT_IA_NA ||
                 opt_type == DHCP6_OPT_IA_PD)
             {
-                FILL_DHCP_OPT_FIELD(option_body, "t1", 4);
-                FILL_DHCP_OPT_FIELD(option_body, "t2", 4);
+                FILL_DHCP_OPT_FIELD_INT(option_body, "t1", 4);
+                FILL_DHCP_OPT_FIELD_INT(option_body, "t2", 4);
             }
 
             if (opt_type == DHCP6_OPT_IAADDR)
             {
                 FILL_DHCP_OPT_FIELD(option_body, "ipv6-address", 16);
-                FILL_DHCP_OPT_FIELD(option_body, "preferred-lifetime", 4);
-                FILL_DHCP_OPT_FIELD(option_body, "valid-lifetime", 4);
+                FILL_DHCP_OPT_FIELD_INT(option_body,
+                                        "preferred-lifetime", 4);
+                FILL_DHCP_OPT_FIELD_INT(option_body, "valid-lifetime", 4);
             }
 
             if (opt_type == DHCP6_OPT_IA_PREFIX)
             {
-                FILL_DHCP_OPT_FIELD(option_body, "preferred-lifetime", 4);
-                FILL_DHCP_OPT_FIELD(option_body, "valid-lifetime", 4);
+                FILL_DHCP_OPT_FIELD_INT(option_body,
+                                        "preferred-lifetime", 4);
+                FILL_DHCP_OPT_FIELD_INT(option_body, "valid-lifetime", 4);
                 FILL_DHCP_OPT_FIELD(option_body, "prefix-length", 1);
                 FILL_DHCP_OPT_FIELD(option_body, "prefix-address", 16);
             }
@@ -860,17 +890,18 @@ process_dhcp6_options(asn_value *opt_list, uint8_t **data_p,
 
                 do {
                     sub_opt = asn_init_value(ndn_dhcpv6_opcode);
-                    FILL_DHCP_OPT_FIELD(sub_opt, "opcode", 2);
+                    FILL_DHCP_OPT_FIELD_INT(sub_opt, "opcode", 2);
                     asn_insert_indexed(option_body, sub_opt, -1, ""),
                     opt_len -= 2;
                 } while (opt_len > 0);
 
-                asn_put_child_value(opt, option_body, PRIVATE, NDN_DHCP6_ORO);
+                asn_put_child_value(opt, option_body,
+                                    PRIVATE, NDN_DHCP6_ORO);
             }
         }
         else if (opt_type == DHCP6_OPT_ELAPSED_TIME)
         {
-            FILL_DHCP_OPT_FIELD(opt, "elapsed-time", 2);
+            FILL_DHCP_OPT_FIELD_INT(opt, "elapsed-time", 2);
         }
         else if (opt_type == DHCP6_OPT_AUTH)
         {
@@ -892,7 +923,7 @@ process_dhcp6_options(asn_value *opt_list, uint8_t **data_p,
         {
             option_body = asn_init_value(ndn_dhcpv6_status);
 
-            FILL_DHCP_OPT_FIELD(option_body, "status-code", 2);
+            FILL_DHCP_OPT_FIELD_INT(option_body, "status-code", 2);
             FILL_DHCP_OPT_FIELD(option_body, "status-message", opt_len - 2);
 
             asn_put_child_value(opt, option_body, PRIVATE, NDN_DHCP6_STATUS);
@@ -903,10 +934,10 @@ process_dhcp6_options(asn_value *opt_list, uint8_t **data_p,
 
             do {
                 sub_opt = asn_init_value(ndn_dhcpv6_class_data);
-                type16 = *((uint16_t *)data);
+                type16 = ntohs(*((uint16_t *)data));
                 /* type16 is used to save class-data-len value !*/
 
-                FILL_DHCP_OPT_FIELD(sub_opt, "class-data-len", 2);
+                FILL_DHCP_OPT_FIELD_INT(sub_opt, "class-data-len", 2);
                 opt_len -= 2;
 
                 FILL_DHCP_OPT_FIELD(sub_opt, "class-data-opaque", type16);
@@ -922,17 +953,17 @@ process_dhcp6_options(asn_value *opt_list, uint8_t **data_p,
         {
             option_body = asn_init_value(ndn_dhcpv6_vendor_class);
 
-            FILL_DHCP_OPT_FIELD(option_body, "enterprise-number", 4);
+            FILL_DHCP_OPT_FIELD_INT(option_body, "enterprise-number", 4);
             opt_len -= 4;
 
             class_data_list = asn_init_value(ndn_dhcpv6_class_data_list);
 
             do {
                 sub_opt = asn_init_value(ndn_dhcpv6_class_data);
-                type16 = *((uint16_t *)data);
+                type16 = ntohs(*((uint16_t *)data));
                 /* type16 is used to save class-data-len value !*/
 
-                FILL_DHCP_OPT_FIELD(sub_opt, "class-data-len", 2);
+                FILL_DHCP_OPT_FIELD_INT(sub_opt, "class-data-len", 2);
                 opt_len -= 2;
 
                 FILL_DHCP_OPT_FIELD(sub_opt, "class-data-opaque", type16);
@@ -951,7 +982,7 @@ process_dhcp6_options(asn_value *opt_list, uint8_t **data_p,
         {
             option_body = asn_init_value(ndn_dhcpv6_vendor_specific);
 
-            FILL_DHCP_OPT_FIELD(option_body, "enterprise-number", 4);
+            FILL_DHCP_OPT_FIELD_INT(option_body, "enterprise-number", 4);
             opt_len -= 4;
 
             /* Do not process vendor-specific options here !*/
@@ -1038,7 +1069,7 @@ tad_dhcp6_match_post_cb(csap_p              csap,
     process_dhcp6_options(opt_list, &data, data_ptr, data_len);
 
     asn_put_child_value(meta_pkt_layer->nds, opt_list,
-                        PRIVATE, NDN_DHCP_OPTIONS);
+                        PRIVATE, NDN_DHCP6_OPTIONS);
 
     VERB("MATCH CALLBACK OK\n");
 
