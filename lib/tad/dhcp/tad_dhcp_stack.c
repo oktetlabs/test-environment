@@ -242,7 +242,6 @@ tad_dhcp6_rw_init_cb(csap_p csap)
         return TE_OS_RC(TE_TAD_CSAP, errno);
     }
 
-    opt = 1;
     if (setsockopt(dhcp_spec_data->in, SOL_SOCKET, SO_REUSEADDR,
                    (void *)&opt, sizeof(opt)) != 0)
     {
@@ -313,7 +312,7 @@ tad_dhcp6_rw_init_cb(csap_p csap)
         return TE_OS_RC(TE_TAD_CSAP, errno);
     }
 
-    dhcp_spec_data->out = -1;
+    dhcp_spec_data->out = -1; /* Do not use it */
 
     free(interface);
 
@@ -415,31 +414,9 @@ tad_dhcp6_write_cb(csap_p csap, const tad_pkt *pkt)
     size_t                      iovlen = tad_pkt_seg_num(pkt);
     struct iovec                iov[iovlen];
     te_errno                    rc;
-    int                         opt;
-    int                         out;
 
     assert(csap != NULL);
     spec_data = csap_get_rw_data(csap);
-
-    if ((out = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP)) < 0)
-    {
-        return TE_OS_RC(TE_TAD_CSAP, errno);
-    }
-
-    shutdown(out, SHUT_RD);
-
-    opt = 1;
-    if (setsockopt(out, SOL_SOCKET, SO_REUSEADDR,
-                   (void *)&opt, sizeof(opt)) != 0)
-    {
-        return TE_OS_RC(TE_TAD_CSAP, errno);
-    }
-
-    if (bind(out, SA(&spec_data->local),
-             sizeof(spec_data->local)) != 0)
-    {
-        return TE_OS_RC(TE_TAD_CSAP, errno);
-    }
 
     /* Convert packet segments to IO vector */
     if ((rc = tad_pkt_segs_to_iov(pkt, iov, iovlen)) != 0)
@@ -465,12 +442,10 @@ tad_dhcp6_write_cb(csap_p csap, const tad_pkt *pkt)
     msg.msg_controllen = 0;
     msg.msg_flags = 0;
 
-    if ((ret = sendmsg(out, &msg, 0)) < 0)
+    if ((ret = sendmsg(spec_data->in, &msg, 0)) < 0)
     {
         return TE_OS_RC(TE_TAD_CSAP, errno);
     }
-
-    close(out);
 
     return 0;
 }
