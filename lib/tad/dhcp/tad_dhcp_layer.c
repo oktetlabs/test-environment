@@ -693,6 +693,7 @@ tad_dhcp_match_post_cb(csap_p              csap,
     }
 
     VERB("MATCH CALLBACK OK\n");
+#undef FILL_DHCP_OPT_FIELD
 #endif /* TAD_DHCP_OPTIONS */
 
     return rc;
@@ -711,6 +712,7 @@ process_dhcp6_options(asn_value *opt_list, uint8_t **data_p,
     uint16_t                    type16;
     uint16_t                    opt_type;
     uint16_t                    opt_len;
+    size_t                      opt_data_len;
     uint8_t                     msg_type;
     uint16_t                    u16_val;
     uint32_t                    u32_val;
@@ -738,6 +740,15 @@ process_dhcp6_options(asn_value *opt_list, uint8_t **data_p,
                               _label ".#plain");            \
                                                             \
         data += _size;                                      \
+        opt_data_len -= _size;                              \
+    } while(0);
+
+#define FILL_DHCP_OPT_FIELD(_obj, _label, _size) \
+    do {                                            \
+        asn_write_value_field(_obj, data, _size,    \
+                              _label ".#plain");    \
+        data += _size;                              \
+        opt_data_len -= _size;                      \
     } while(0);
 
     while (data < (data_ptr + data_len))
@@ -745,9 +756,13 @@ process_dhcp6_options(asn_value *opt_list, uint8_t **data_p,
         opt = asn_init_value(ndn_dhcpv6_option);
 
         opt_type = ntohs(*((uint16_t *)data));
-        FILL_DHCP_OPT_FIELD_INT(opt, "type",  2);
+        opt_len = ntohs(*((uint16_t *)(data + sizeof(uint16_t))));
+        /* Trick to process lists of suboptions correctly */
+        opt_data_len = (size_t)opt_len +
+                            sizeof(opt_type) +
+                                sizeof(opt_len);
 
-        opt_len = ntohs(*((uint16_t *)data));
+        FILL_DHCP_OPT_FIELD_INT(opt, "type",  2);
         FILL_DHCP_OPT_FIELD_INT(opt, "length", 2);
 
         if (opt_type == DHCP6_OPT_CLIENTID ||
@@ -807,7 +822,7 @@ process_dhcp6_options(asn_value *opt_list, uint8_t **data_p,
             sub_opt_list = asn_init_value(ndn_dhcpv6_options);
 
             process_dhcp6_options(sub_opt_list, &data,
-                                  data_ptr, data_len);
+                                  data, opt_data_len);
 
             asn_put_child_value(option_body, sub_opt_list,
                                 PRIVATE, NDN_DHCP6_OPTIONS);
@@ -867,7 +882,10 @@ process_dhcp6_options(asn_value *opt_list, uint8_t **data_p,
             sub_opt_list = asn_init_value(ndn_dhcpv6_options);
 
             process_dhcp6_options(sub_opt_list, &data,
-                                  data_ptr, data_len);
+                                  data, opt_data_len);
+
+            asn_put_child_value(option_body, sub_opt_list,
+                                PRIVATE, NDN_DHCP6_OPTIONS);
 
             asn_put_child_value(
                 opt, option_body, PRIVATE,
