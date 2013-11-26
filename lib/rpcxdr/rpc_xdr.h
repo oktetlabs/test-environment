@@ -41,7 +41,7 @@ extern "C" {
  * Huge RPC buffer length - if encode fails with this buffer length, 
  * it's assumed that error is not related to lack of space.
  */
-#define RCF_RPC_HUGE_BUF_LEN     (8 * 1024 * 1024)
+#define RCF_RPC_HUGE_BUF_LEN     (20 * 1024 * 1024)
 
 /** Maximum length of the RPC */
 #define RCF_RPC_MAX_NAME        64
