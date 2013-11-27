@@ -303,7 +303,9 @@ tad_dhcp6_confirm_tmpl_cb(csap_p csap, unsigned int layer,
     int                         type;
     int                         trid;
     size_t                      len = sizeof (type);
+#if 0
     uint8_t                     hop_count;
+#endif
 
     if ((rc = asn_read_value_field(layer_pdu, &type,
                                    &len, "msg-type.#plain")) != 0)
@@ -703,7 +705,6 @@ static void
 process_dhcp6_options(asn_value *opt_list, uint8_t **data_p,
                       uint8_t *data_ptr, size_t data_len)
 {
-    uint8_t                    *data = *data_p;
     asn_value                  *opt;
     asn_value                  *sub_opt_list;
     asn_value                  *sub_opt;
@@ -724,39 +725,39 @@ process_dhcp6_options(asn_value *opt_list, uint8_t **data_p,
     do {                                                    \
         if (_size == sizeof(uint32_t))                      \
         {                                                   \
-            u32_val = ntohl(*((uint32_t *)data));           \
+            u32_val = ntohl(*((uint32_t *)(*data_p)));      \
             asn_write_value_field(_obj, &u32_val, _size,    \
                                   _label ".#plain");        \
         }                                                   \
         else if (_size == sizeof(uint16_t))                 \
         {                                                   \
-            u16_val = ntohs(*((uint16_t *)data));           \
+            u16_val = ntohs(*((uint16_t *)(*data_p)));      \
             asn_write_value_field(_obj, &u16_val, _size,    \
                                   _label ".#plain");        \
         }                                                   \
         else                                                \
             /* uint8_t or else */                           \
-            asn_write_value_field(_obj, data, _size,        \
+            asn_write_value_field(_obj, *data_p, _size,     \
                               _label ".#plain");            \
                                                             \
-        data += _size;                                      \
+        *data_p += _size;                                   \
         opt_data_len -= _size;                              \
     } while(0);
 
 #define FILL_DHCP_OPT_FIELD(_obj, _label, _size) \
     do {                                            \
-        asn_write_value_field(_obj, data, _size,    \
+        asn_write_value_field(_obj, *data_p, _size, \
                               _label ".#plain");    \
-        data += _size;                              \
+        *data_p += _size;                           \
         opt_data_len -= _size;                      \
     } while(0);
 
-    while (data < (data_ptr + data_len))
+    while (*data_p < (data_ptr + data_len))
     {
         opt = asn_init_value(ndn_dhcpv6_option);
 
-        opt_type = ntohs(*((uint16_t *)data));
-        opt_len = ntohs(*((uint16_t *)(data + sizeof(uint16_t))));
+        opt_type = ntohs(*((uint16_t *)(*data_p)));
+        opt_len = ntohs(*((uint16_t *)(*data_p + sizeof(uint16_t))));
         /* Trick to process lists of suboptions correctly */
         opt_data_len = (size_t)opt_len +
                             sizeof(opt_type) +
@@ -768,7 +769,7 @@ process_dhcp6_options(asn_value *opt_list, uint8_t **data_p,
         if (opt_type == DHCP6_OPT_CLIENTID ||
             opt_type == DHCP6_OPT_SERVERID)
         {
-            type16 = ntohs(*((uint16_t *)data));
+            type16 = ntohs(*((uint16_t *)(*data_p)));
 
             if (type16 != DUID_LL && type16 != DUID_LLT && type16 != DUID_EN)
             {
@@ -788,16 +789,18 @@ process_dhcp6_options(asn_value *opt_list, uint8_t **data_p,
                 }
                 else if (type16 == DUID_LLT)
                 {
-                    FILL_DHCP_OPT_FIELD_INT(option_body, "hardware-type", 2);
+                    FILL_DHCP_OPT_FIELD_INT(option_body,
+                                            "hardware-type", 2);
                     FILL_DHCP_OPT_FIELD_INT(option_body, "time", 4);
                     FILL_DHCP_OPT_FIELD(option_body, "link-layer-address",
-                                    opt_len - 8);
+                                        opt_len - 8);
                 }
                 else /* DUID_LL */
                 {
-                    FILL_DHCP_OPT_FIELD_INT(option_body, "hardware-type", 2);
+                    FILL_DHCP_OPT_FIELD_INT(option_body,
+                                            "hardware-type", 2);
                     FILL_DHCP_OPT_FIELD(option_body, "link-layer-address",
-                                    opt_len - 4);
+                                        opt_len - 4);
                 }
 
                 asn_put_child_value(opt, option_body,
@@ -806,7 +809,7 @@ process_dhcp6_options(asn_value *opt_list, uint8_t **data_p,
         }
         else if (opt_type == DHCP6_OPT_RELAY_MSG)
         { /* DHCP6 relayed message */
-            msg_type = data[0];
+            msg_type = (*data_p)[0];
 
             option_body = asn_init_value(ndn_dhcpv6_message);
             FILL_DHCP_OPT_FIELD(option_body, "msg-type", 1);
@@ -821,8 +824,8 @@ process_dhcp6_options(asn_value *opt_list, uint8_t **data_p,
 
             sub_opt_list = asn_init_value(ndn_dhcpv6_options);
 
-            process_dhcp6_options(sub_opt_list, &data,
-                                  data, opt_data_len);
+            process_dhcp6_options(sub_opt_list, data_p,
+                                  *data_p, opt_data_len);
 
             asn_put_child_value(option_body, sub_opt_list,
                                 PRIVATE, NDN_DHCP6_OPTIONS);
@@ -881,8 +884,8 @@ process_dhcp6_options(asn_value *opt_list, uint8_t **data_p,
 
             sub_opt_list = asn_init_value(ndn_dhcpv6_options);
 
-            process_dhcp6_options(sub_opt_list, &data,
-                                  data, opt_data_len);
+            process_dhcp6_options(sub_opt_list, data_p,
+                                  *data_p, opt_data_len);
 
             asn_put_child_value(option_body, sub_opt_list,
                                 PRIVATE, NDN_DHCP6_OPTIONS);
@@ -952,7 +955,7 @@ process_dhcp6_options(asn_value *opt_list, uint8_t **data_p,
 
             do {
                 sub_opt = asn_init_value(ndn_dhcpv6_class_data);
-                type16 = ntohs(*((uint16_t *)data));
+                type16 = ntohs(*((uint16_t *)(*data_p)));
                 /* type16 is used to save class-data-len value !*/
 
                 FILL_DHCP_OPT_FIELD_INT(sub_opt, "class-data-len", 2);
@@ -978,7 +981,7 @@ process_dhcp6_options(asn_value *opt_list, uint8_t **data_p,
 
             do {
                 sub_opt = asn_init_value(ndn_dhcpv6_class_data);
-                type16 = ntohs(*((uint16_t *)data));
+                type16 = ntohs(*((uint16_t *)(*data_p)));
                 /* type16 is used to save class-data-len value !*/
 
                 FILL_DHCP_OPT_FIELD_INT(sub_opt, "class-data-len", 2);
@@ -1038,11 +1041,13 @@ tad_dhcp6_match_post_cb(csap_p              csap,
     tad_pkt                    *pkt;
     te_errno                    rc;
     unsigned int                bitoff = 0;
-    uint8_t                    *data_ptr;
     uint8_t                    *data;
+    uint8_t                    *data_ptr;
     size_t                      data_len;
     asn_value                  *opt_list;
+#if 0
     uint8_t                     msg_type;
+#endif
 
     if (~csap->state & CSAP_STATE_RESULTS)
         return 0;
@@ -1065,9 +1070,9 @@ tad_dhcp6_match_post_cb(csap_p              csap,
     data_ptr = data = tad_pkt_first_seg(pkt)->data_ptr;
     data_len = tad_pkt_first_seg(pkt)->data_len;
 
+#if 0
     msg_type = data[0];
 
-#if 0
     if (msg_type != DHCP6_MSG_RELAY_FORW &&
         msg_type != DHCP6_MSG_RELAY_REPL)
     { /* client/server message */
