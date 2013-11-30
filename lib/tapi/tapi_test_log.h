@@ -71,6 +71,20 @@ extern "C" {
         TEST_STOP;                                                  \
     } while (0)
 
+/**
+ * Set test termination status to failure, report an error.
+ * Should be used instead of TEST_FAIL in the cleanup section.
+ *
+ * @param fmt       error message format string with parameters
+ */
+#define CLEANUP_TEST_FAIL(fmt...) \
+    do {                                                            \
+        ERROR("Test Failed in %s, line %d, %s()",                   \
+              __FILE__, __LINE__, __FUNCTION__);                    \
+        ERROR(fmt);                                                 \
+        result = EXIT_FAILURE;                                      \
+    } while (0)
+
 /**@} <!-- END te_ts_tapi_test --> */
 
 /**
