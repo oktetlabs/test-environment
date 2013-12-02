@@ -25,7 +25,7 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- * $Id: conf.c 24823 2006-03-05 07:24:43Z arybchik $
+ * $Id$
  */
 
 #ifndef __TE_TA_UNIX_CONF_ROUTE_H__

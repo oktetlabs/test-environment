@@ -1,8 +1,6 @@
 /** @file
  * @breaf TE TAPI for Forwarder additional module external declarations
  *
- * Copyright (c) 2005 Level5 Networks Corp.
- *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
  * $Id$

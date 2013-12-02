@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
- * Copyright (c) 2005 Level5 Networks Corp.
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -126,7 +125,7 @@ extern char *ta_name;
 
 #define METRIC_DEFAULT  20
 
-/* Version of Solarflare driver */
+/* Version of the driver */
 #define DRIVER_VERSION_UNKNOWN 0
 #define DRIVER_VERSION_2_1 1
 #define DRIVER_VERSION_2_2 2
@@ -804,7 +803,7 @@ efport2ifindex(void)
         strcpy(driver_type, NDIS_SF_2_1);
         if (!driver_type_reported)
         {
-          RING("Solarflare drivers will be used to resolve ef* interfaces,"
+          RING("Vendor drivers will be used to resolve ef* interfaces,"
                " if any");
         }
       }
@@ -814,7 +813,7 @@ efport2ifindex(void)
       strcpy(driver_type, NDIS_SF_2_1);
       if (!driver_type_reported)
       {
-        RING("Solarflare drivers will be used to resolve ef* interfaces, "
+        RING("Vendor drivers will be used to resolve ef* interfaces, "
              "if any");
       }
     }
@@ -1190,7 +1189,7 @@ ifindex2ifname(DWORD ifindex)
         ERROR("ifindex2frname failed");
         return NULL;
     }
-    if (strcmp_start("Solarflare Virtual", friendly_name) == 0)
+    if (strcmp_start("Vendor Virtual", friendly_name) == 0)
     {
         if (!wmi_imported)
         {
@@ -2281,7 +2280,7 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
     
     if (NULL == strstr(ifname, "ef"))
     {
-        ERROR("Tried to set MTU on non-Solarflare adapter.");
+        ERROR("Tried to set MTU on non-testable adapter.");
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
     

@@ -1,5 +1,5 @@
 /** @file
- * @brief Level5-specific stuff
+ * @brief Vendor-specific stuff
  *
  * iSCSI Initiator configuration
  *

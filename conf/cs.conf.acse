@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <history>
 
-  <!-- Socket API testing configuration with 3 hosts and Level5
+  <!-- Socket API testing configuration with 3 hosts
        environment, but Linux kernel stack testing. -->
 
   <register> 

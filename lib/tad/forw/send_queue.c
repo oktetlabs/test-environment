@@ -1,8 +1,6 @@
 /** @file
  * @breaf TE TAD Forwarder additional module internal implementation
  *
- * Copyright (c) 2005 Level5 Networks Corp.
- *
  * @author Konstantin Ushakov <kostik@oktetlabs.ru>
  *
  * $Id$

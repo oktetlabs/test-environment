@@ -294,7 +294,7 @@ iscsi_win32_detect_initiator_name(void)
 /**
  * Name of the SF Initiator vendor.
  */
-#define ISCSI_SF_MANUFACTURER_NAME "Solarflare Communications"
+#define ISCSI_SF_MANUFACTURER_NAME "My Company"
 
 /**
  * Location of the MS & L5 Initiator configuration parameters

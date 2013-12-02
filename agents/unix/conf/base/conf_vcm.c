@@ -57,7 +57,8 @@ static char vcm_address[20];
 static char vcmconn_path[500];
 
 /* TODO: explore correct -cp option! */
-static char java_command_base[] = "/usr/bin/java -cp /home/konst/work/tilgin/vcm-connector/vcm-connector-3.0.3-1/lib/axis-ant.jar:/home/konst/work/tilgin/vcm-connector/vcm-connector-3.0.3-1/lib/axis-schema.jar:/home/konst/work/tilgin/vcm-connector/vcm-connector-3.0.3-1/lib/axis.jar:/home/konst/work/tilgin/vcm-connector/vcm-connector-3.0.3-1/lib/commons-discovery-0.2.jar:/home/konst/work/tilgin/vcm-connector/vcm-connector-3.0.3-1/lib/commons-logging-1.0.4.jar:/home/konst/work/tilgin/vcm-connector/vcm-connector-3.0.3-1/lib/jaxrpc.jar:/home/konst/work/tilgin/vcm-connector/vcm-connector-3.0.3-1/lib/log4j-1.2.8.jar:/home/konst/work/tilgin/vcm-connector/vcm-connector-3.0.3-1/lib/saaj.jar:/home/konst/work/tilgin/vcm-connector/vcm-connector-3.0.3-1/lib/start.jar:/home/konst/work/tilgin/vcm-connector/vcm-connector-3.0.3-1/lib/vcm-appserver.jar:/home/konst/work/tilgin/vcm-connector/vcm-connector-3.0.3-1/lib/vcm-connector.jar:/home/konst/work/tilgin/vcm-connector/vcm-connector-3.0.3-1/lib/wsdl4j-1.5.1.jar:target/all/vcm-connector-client.jar com.tilgin.vcm.connector.client.VoodTerminalServicesTestClient";
+/* fixme!!!! */
+static char java_command_base[] = "/usr/bin/java -cp <my_path> com.tilgin.vcm.connector.client.VoodTerminalServicesTestClient";
 
 /**
  * Get route value.
