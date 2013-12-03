@@ -275,6 +275,7 @@ rcf_ch_csap_create(struct rcf_comm_connection *rcfc,
     int              syms; 
     te_errno         rc; 
     const asn_value *csap_layers;
+    csap_spt_type_p  csap_spt_descr;
     int32_t          i32_tmp;
 
     UNUSED(cmdlen);
@@ -382,20 +383,19 @@ rcf_ch_csap_create(struct rcf_comm_connection *rcfc,
      * Initialize read/write layer (the lowest) af first.
      */
     new_csap->rw_layer = new_csap->depth - 1;
-    if (csap_get_proto_support(new_csap, csap_get_rw_layer(new_csap))
-            ->rw_init_cb == NULL)
+    csap_spt_descr =
+        csap_get_proto_support(new_csap, csap_get_rw_layer(new_csap));
+    if (csap_spt_descr->rw_init_cb == NULL)
     {
-        ERROR("The lowest CSAP layer does not have read/write "
-              "initialization routine");
+        ERROR("The lowest CSAP layer '%s' does not have read/write "
+              "initialization routine", csap_spt_descr->proto);
         rc = TE_RC(TE_TAD_CH, TE_EPROTONOSUPPORT);
         goto exit;
     }
-    else if ((rc = csap_get_proto_support(new_csap,
-                                          csap_get_rw_layer(new_csap))
-                       ->rw_init_cb(new_csap)) != 0)
+    else if ((rc = csap_spt_descr->rw_init_cb(new_csap)) != 0)
     {
-        ERROR("Initialization of the lowest layer to read/write "
-              "failed: %r", rc);
+        ERROR("Initialization of the lowest layer '%s' to read/write "
+              "failed: %r", csap_spt_descr->proto, rc);
         goto exit;
     }
 
@@ -404,8 +404,7 @@ rcf_ch_csap_create(struct rcf_comm_connection *rcfc,
      */
     for (layer = new_csap->depth; layer-- > 0; )
     {
-        csap_spt_type_p  csap_spt_descr = 
-            csap_get_proto_support(new_csap, layer);
+        csap_spt_descr = csap_get_proto_support(new_csap, layer);
 
         if ((csap_spt_descr->init_cb != NULL) &&
             (rc = csap_spt_descr->init_cb(new_csap, layer)) != 0)
