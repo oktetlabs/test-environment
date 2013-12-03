@@ -342,6 +342,16 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
                  conn_descr->agt);
     } 
 
+    if (conn_descr->rcv_csap != CSAP_INVALID_HANDLE ||
+        conn_descr->snd_csap != CSAP_INVALID_HANDLE ||
+        conn_descr->arp_csap != CSAP_INVALID_HANDLE)
+    {
+        if ((rc = cfg_synchronize_fmt(TRUE, "/agent:%s/csap:*",
+                                      conn_descr->agt)) != 0)
+            ERROR("%s(): cfg_synchronize_fmt(/agent:%s/csap:*) failed: %r",
+                  __FUNCTION__, conn_descr->agt, rc);
+    }
+
     if (conn_descr->messages != NULL)
         while (conn_descr->messages->cqh_first != 
                (void *)conn_descr->messages)
@@ -871,7 +881,11 @@ tapi_tcp_wait_open(tapi_tcp_handler_t handler, int timeout)
 
     tapi_tcp_conns_db_init();
     if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
+    {
+        ERROR("%s(): failed to find connection descriptor",
+              __FUNCTION__);
         return TE_RC(TE_TAPI, TE_EINVAL);
+    }
 
     if (conn_descr->seq_sent == 0) /* have no SYN sent yet */
     {
@@ -952,6 +966,7 @@ tapi_tcp_wait_open(tapi_tcp_handler_t handler, int timeout)
 #undef CHECK_ERROR
 
 cleanup:
+    ERROR("%s() failed", __FUNCTION__);
     tapi_tcp_destroy_conn_descr(conn_descr);
     return TE_RC(TE_TAPI, rc);
 }
@@ -1104,7 +1119,6 @@ tapi_tcp_destroy_connection(tapi_tcp_handler_t handler)
 
     if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
         return TE_RC(TE_TAPI, TE_EINVAL);
-
 
     rc = tapi_tcp_destroy_conn_descr(conn_descr);
 

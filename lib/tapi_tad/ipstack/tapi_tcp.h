@@ -647,7 +647,7 @@ extern int tapi_tcp_destroy_connection(tapi_tcp_handler_t handler);
  *
  * @return Status code
  */ 
-extern int tapi_tcp_wait_open(tapi_tcp_handler_t hanlder, int timeout);
+extern int tapi_tcp_wait_open(tapi_tcp_handler_t handler, int timeout);
 
 /**
  * Wait for some incoming message in emulated TCP connection. 
