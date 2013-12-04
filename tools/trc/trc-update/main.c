@@ -188,10 +188,15 @@ enum {
                                          in the first group of logs -
                                          not taking into account tag
                                          expressions */
-    TRC_UPDATE_OPT_NO_GEN_FSS,      /**< Do not try to find out subsets
-                                         corresponding to every possible
-                                         iteration record, do not use
-                                         algorithms based on it */
+    TRC_UPDATE_OPT_NO_GEN_FSS,      /**< Do not try to find out all subsets
+                                         of iterations corresponding to
+                                         every possible iteration record,
+                                         do not use algorithms based on it
+                                         (obsolete; turned on by default) */
+    TRC_UPDATE_OPT_GEN_FSS,         /**< Try to find out all subsets of
+                                         iterations corresponding to
+                                         every possible iteration record
+                                         and use algorithms based on it */
     TRC_UPDATE_OPT_FSS_UNLIM,       /**< Do not resrict amount of time used
                                          to find out subsets for every
                                          possible iteration record */
@@ -661,10 +666,15 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
           "before this option - not taking into account tag expressions",
           NULL },
 
-        { "no-gen-fss", '\0', POPT_ARG_NONE, NULL,
+        { "no-gen-fss", '\0', POPT_ARG_NONE | POPT_ARGFLAG_DOC_HIDDEN, NULL,
           TRC_UPDATE_OPT_NO_GEN_FSS,
-          "Do not try to find out subsets corresponding to every possible "
-          "iteration record, do not use algorithms based on it",
+          "Obsolete",
+          NULL },
+
+        { "gen-fss", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_GEN_FSS,
+          "Try to find out subsets corresponding to every possible "
+          "iteration record and use algorithms based on it",
           NULL },
 
         { "fss-unlim", '\0', POPT_ARG_NONE, NULL,
@@ -767,7 +777,11 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
                 break;
 
             case TRC_UPDATE_OPT_NO_GEN_FSS:
-                ctx.flags |= TRC_LOG_PARSE_NO_GEN_FSS;
+                // Obsolete, do nothing
+                break;
+
+            case TRC_UPDATE_OPT_GEN_FSS:
+                ctx.flags &= ~TRC_LOG_PARSE_NO_GEN_FSS;
                 break;
 
             case TRC_UPDATE_OPT_FSS_UNLIM:
@@ -1573,7 +1587,8 @@ main(int argc, char **argv, char **envp)
     trc_update_init_ctx(&ctx);
 
     ctx.flags |= TRC_LOG_PARSE_COPY_OLD | TRC_LOG_PARSE_COPY_OLD_FIRST |
-                 TRC_LOG_PARSE_RRESULTS | TRC_LOG_PARSE_NO_PE;
+                 TRC_LOG_PARSE_RRESULTS | TRC_LOG_PARSE_NO_PE |
+                 TRC_LOG_PARSE_NO_GEN_FSS;
 
     if (trc_update_process_cmd_line_opts(argc, argv, TRUE) != EXIT_SUCCESS)
         goto exit;
