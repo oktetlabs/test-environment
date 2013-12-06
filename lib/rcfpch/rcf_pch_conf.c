@@ -1087,11 +1087,36 @@ rcf_pch_del_node(rcf_pch_cfg_object *node)
         VERB("Failed to find node family");
         return TE_RC(TE_RCF_PCH, TE_ENOENT);
     }
+
     if (brother != NULL)
         brother->brother = node->brother;
     else
         father->son = node->brother;
-        
+
+    /*
+     * OBJ nodes are static variables that can be reused at any next stage,
+     * which means that when we delete a separate node we should be able
+     * to add it later.
+     *
+     * While adding a node we take into account its brothers, because it is
+     * possible to add a set of nodes (linked together at one call).
+     * When we delete a node we specify __exact__ node to remove from
+     * the list, so it means we need to clean it from any links to
+     * brother nodes. Otherwise we would have a situation when we have
+     * not added node with links to brothers. Then if we add this node again
+     * we may have a situation when linked list of nodes becomes circular
+     * list (without trailing NULL). Then this will cause dead loop if we
+     * try to find a node that does not exist in the list.
+     * This problem was revealed while doing:
+     * - add 'hdcpserver';
+     * - del 'dhcpserver';
+     * - add 'dhcpserver';
+     * - search for 'pppoeserver' - dead loop in create_wildcard_inst_list()
+     *                              function because we did not register
+     *                              'pppoeserver'.
+     */
+    node->brother = NULL; 
+
     return 0;
 }
 
