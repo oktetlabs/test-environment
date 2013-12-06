@@ -170,7 +170,7 @@ tad_dhcp_rw_init_cb(csap_p csap)
     if (ioctl(dhcp_spec_data->in, SIOCGIFADDR, interface) != 0)
     {
         free(interface);
-        return errno;
+        return TE_OS_RC(TE_TAD_CSAP, errno);
     }
     ifa = (struct sockaddr_in *)&interface->ifr_addr;
     strncpy(dhcp_spec_data->ipaddr,
@@ -274,7 +274,7 @@ tad_dhcp6_rw_init_cb(csap_p csap)
     else
     {
         free(interface);
-        return errno;
+        return TE_OS_RC(TE_TAD_CSAP, errno);
     }
 
     memset(&dhcp_spec_data->local, 0, sizeof(dhcp_spec_data->local));
@@ -299,7 +299,7 @@ tad_dhcp6_rw_init_cb(csap_p csap)
     else
     {
         free(interface);
-        return errno;
+        return TE_OS_RC(TE_TAD_CSAP, errno);
     }
 
     inet_ntop(AF_INET6, dhcp_spec_data->local.sin6_addr.s6_addr,
