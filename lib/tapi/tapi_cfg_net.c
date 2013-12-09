@@ -841,8 +841,6 @@ tapi_cfg_net_all_up(te_bool force)
     /* Bring interfaces up */
     for (k = 0; k < n_nodes; k++)
     {
-        cfg_val_type    type;
-
         if (nodes[k] == NULL)
             continue; /* The interface was already up */
         rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
@@ -1285,6 +1283,56 @@ tapi_cfg_net_unassign_ip(unsigned int af, cfg_net_t *net,
          */
     }
     return 0;
+}
+
+te_errno
+tapi_cfg_net_assigned_get_subnet_ip(tapi_cfg_net_assigned *assigned,
+                                    struct sockaddr **addr,
+                                    unsigned int *prefix_len)
+{
+    int              rc;
+    cfg_val_type     type;
+    cfg_handle       net_hndl;
+    char            *net_oid = NULL;
+    struct sockaddr *net_addr = NULL;
+
+    /* Check if subnet handle is valid */
+    if (assigned == NULL ||
+        assigned->pool == CFG_HANDLE_INVALID)
+    {
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    net_hndl = assigned->pool;
+    rc = cfg_get_oid_str(net_hndl, &net_oid);
+    if (rc != 0)
+    {
+        ERROR("Failed to get subnet instance name: %r", rc);
+        return rc;
+    }
+    rc = cfg_get_inst_name_type(net_hndl, CVT_ADDRESS, CFG_IVP(&net_addr));
+    if (rc != 0)
+    {
+        ERROR("Failed to retrive subnet address: %r", rc);
+        free(net_oid);
+        return rc;
+    }
+
+    /* Get prefix length */
+    type = CVT_INTEGER;
+    rc = cfg_get_instance_fmt(&type, prefix_len, "%s/prefix:", net_oid);
+    if (rc != 0)
+    {
+        ERROR("Failed to get subnet '%s' prefix: %r", net_oid, rc);
+        free(net_addr);
+    }
+    else
+    {
+        *addr = net_addr;
+    }
+    free(net_oid);
+
+    return rc;
 }
 
 /* See description in tapi_cfg_net.h */

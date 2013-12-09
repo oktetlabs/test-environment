@@ -319,6 +319,20 @@ extern int tapi_cfg_net_assign_ip_one_end(unsigned int af, cfg_net_t *net,
                                           tapi_cfg_net_assigned *assigned);
 
 /**
+ * Obtain information about subnet address and prefix length.
+ *
+ * @param assigned    subnet assignments handle 
+ * @param addr        subnet address (OUT)
+ * @param prefix_len  subnet prefix length (OUT)
+ *
+ * @return Status of the operation
+ */
+extern te_errno tapi_cfg_net_assigned_get_subnet_ip(
+        tapi_cfg_net_assigned *assigned,
+        struct sockaddr **addr,
+        unsigned int *prefix_len);
+
+/**
  * Delete all nets from network configuration.
  *
  * @return Status code (see te_errno.h)
