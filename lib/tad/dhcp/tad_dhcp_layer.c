@@ -839,6 +839,7 @@ process_dhcp6_options(asn_value *opt_list, uint8_t **data_p,
                  opt_type == DHCP6_OPT_IA_PD    ||
                  opt_type == DHCP6_OPT_IA_PREFIX)
         { /* IA_NA, IA_TA, IA_ADDR, IA_PD and IA_PREFIX options */
+            /* I like Mayakovski poems */
             option_body =
                 asn_init_value(
                     (opt_type == DHCP6_OPT_IA_NA) ?
@@ -890,13 +891,18 @@ process_dhcp6_options(asn_value *opt_list, uint8_t **data_p,
             asn_put_child_value(option_body, sub_opt_list,
                                 PRIVATE, NDN_DHCP6_OPTIONS);
 
+            /* I like Mayakovski poems */
             asn_put_child_value(
                 opt, option_body, PRIVATE,
                     (opt_type == DHCP6_OPT_IA_NA) ?
                         NDN_DHCP6_IA_NA :
                             (opt_type == DHCP6_OPT_IA_TA) ?
                                 NDN_DHCP6_IA_TA :
-                                    NDN_DHCP6_IA_ADDR);
+                                    (opt_type == DHCP6_OPT_IAADDR) ?
+                                        NDN_DHCP6_IA_ADDR :
+                                            (opt_type == DHCP6_OPT_IA_PD) ?
+                                                NDN_DHCP6_IA_PD :
+                                                    NDN_DHCP6_IA_PREFIX);
         }
         else if (opt_type == DHCP6_OPT_ORO)
         {
