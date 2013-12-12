@@ -1105,7 +1105,7 @@ rshd_release(const char *name)
 
 #ifdef WITH_TFTP_SERVER
 
-static int tfpt_server_index;
+static int tftp_server_index;
 
 /**
  * Get address which TFTP daemon should bind to.
@@ -1478,7 +1478,7 @@ RCF_PCH_CFG_NODE_RW(node_ds_tftpserver, "tftpserver",
                     xinetd_get, xinetd_set);
 
 te_errno 
-tftp_server_grab(const char *name);
+tftpserver_grab(const char *name)
 {
     FILE *f = NULL;
     FILE *g = NULL;
@@ -1486,14 +1486,17 @@ tftp_server_grab(const char *name);
     
     UNUSED(name);
     
-    if ((rc = ds_create_backup(XINETD_ETC_DIR, "tftp", &tftp_index)) != 0)
+    if ((rc = ds_create_backup(XINETD_ETC_DIR,
+                               "tftp", &tftp_server_index)) != 0)
+    {
         return rc;
+    }
     
-    ds_config_touch(tftp_index);
+    ds_config_touch(tftp_server_index);
 
     /* Set -v option to tftp */
-    OPEN_BACKUP(tftp_index, f);
-    OPEN_CONFIG(tftp_index, g);
+    OPEN_BACKUP(tftp_server_index, f);
+    OPEN_CONFIG(tftp_server_index, g);
 
     while (fgets(buf, sizeof(buf), f) != NULL)
     {
@@ -1515,7 +1518,7 @@ tftp_server_grab(const char *name);
 
     if ((rc = rcf_pch_add_node("/agent", &node_ds_tftpserver)) != 0)
     {
-        ds_restore_backup(tftp_index);
+        ds_restore_backup(tftp_server_index);
         return rc;
     }
     
@@ -1523,14 +1526,16 @@ tftp_server_grab(const char *name);
 }
 
 te_errno 
-tftp_server_release(const char *name)
+tftpserver_release(const char *name)
 {
     UNUSED(name);
     
     if (rcf_pch_del_node(&node_ds_tftpserver) != 0)
         return 0;
-    ds_restore_backup(tftp_index);
+    ds_restore_backup(tftp_server_index);
     ta_system("/etc/init.d/xinetd restart >/dev/null");
+
+    return 0;
 }
 
 
