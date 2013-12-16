@@ -1821,8 +1821,10 @@ trc_update_tests(trc_tests *tests, int flags, int uid,
  * @param test      From which test to start
  * @param is_first  Whether this test is first in
  *                  list of its siblings or not
+ * @param is_top    Whether this is a top element in TRC DB
  */
-static te_errno trc_tests_pos(trc_test *test, te_bool is_first);
+static te_errno trc_tests_pos(trc_test *test, te_bool is_first,
+                              te_bool is_top);
 
 /**
  * Compute "file_pos" properties value for
@@ -1848,24 +1850,31 @@ trc_iters_pos(trc_test_iter *iter, te_bool is_first)
     filename = iter->filename;
 
     do {
-        if ((filename == NULL && p->filename == NULL) ||
-            (filename != NULL && p->filename != NULL &&
-             strcmp(p->filename, filename) == 0))
+        if (strcmp_null(filename, p->filename) == 0)
         {
-            /** "pos" attribute is aready set in file */
+            /* Check that "pos" attribute is not already set in file */
             if (p->node != NULL &&
                 xmlGetProp(p->node, CONST_CHAR2XML("pos")) != NULL)
                 return -1;
 
             p->file_pos = ++pos;
             test = TAILQ_FIRST(&p->tests.head);
-            if (trc_tests_pos(test, TRUE) != 0)
+            if (trc_tests_pos(test, TRUE, FALSE) != 0)
                 return -1;
         }
         else if (is_first)
         {
+            const char            *filename_oth = p->filename;
+            trc_test_iter         *p_prev = p;
+
             if (trc_iters_pos(p, FALSE) != 0)
                 return -1;
+
+            /* Skip iterations that were handled by recursive call. */
+            while ((p = TAILQ_NEXT(p, links)) != NULL &&
+                   strcmp_null(p->filename, filename_oth) == 0)
+                p_prev = p;
+            p = p_prev;
         }
         else
             break;
@@ -1877,7 +1886,7 @@ trc_iters_pos(trc_test_iter *iter, te_bool is_first)
 
 /** See description above */
 static te_errno
-trc_tests_pos(trc_test *test, te_bool is_first)
+trc_tests_pos(trc_test *test, te_bool is_first, te_bool is_top)
 {
     int              pos = 0;
     char            *filename;
@@ -1891,12 +1900,14 @@ trc_tests_pos(trc_test *test, te_bool is_first)
     filename = test->filename;
 
     do {
-        if ((filename == NULL && p->filename == NULL) ||
-            (filename != NULL && p->filename != NULL &&
-             strcmp(p->filename, filename) == 0))
+        if (strcmp_null(filename, p->filename) == 0)
         {
-            /** "pos" attribute is aready set in file */
-            if (p->node != NULL &&
+            /* Check that "pos" attribute was not already set in file
+             * we loaded previously by checking the top <test> element in
+             * TRC DB - it is unlikely that somebody can set it by
+             * mistake for it, as it can be done by copying manually output
+             * of TRC update tool for some test. */
+            if (is_top && p->node != NULL &&
                 xmlGetProp(p->node, CONST_CHAR2XML("pos")) != NULL)
                 return -1;
 
@@ -1907,11 +1918,23 @@ trc_tests_pos(trc_test *test, te_bool is_first)
         }
         else if (is_first)
         {
-            if (trc_tests_pos(p, FALSE) != 0)
+            const char       *filename_oth = p->filename;
+            trc_test         *p_prev = p;
+
+            if (trc_tests_pos(p, FALSE, FALSE) != 0)
                 return -1;
+
+            /* Skip tests that were handled by recursive call. */
+
+            while ((p = TAILQ_NEXT(p, links)) != NULL &&
+                   strcmp_null(p->filename, filename_oth) == 0)
+                p_prev = p;
+            p = p_prev;
         }
         else
             break;
+
+        is_top = FALSE;
     } while ((p = TAILQ_NEXT(p, links)) != NULL);
 
     return 0;
@@ -2006,7 +2029,8 @@ trc_db_save(te_trc_db *db, const char *filename, int flags,
     }
 
     test = TAILQ_FIRST(&db->tests.head);
-    trc_tests_pos(test, TRUE);
+    if (flags & TRC_SAVE_POS_ATTR)
+        trc_tests_pos(test, TRUE, TRUE);
 
     if ((rc = trc_update_tests(&db->tests, flags, uid, to_save,
                                set_user_attr)) != 0)

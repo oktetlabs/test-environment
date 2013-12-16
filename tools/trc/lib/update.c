@@ -292,15 +292,6 @@ trc_update_args_wild_dup(trc_test_iter_args *args)
 
 /* See the description in trc_update.h */
 int
-strcmp_null(char *s1, char *s2)
-{
-    DUMMY_CMP(s1, s2);
-
-    return strcmp(s1, s2);
-}
-
-/* See the description in trc_update.h */
-int
 te_test_result_cmp(te_test_result *p, te_test_result *q)
 {
     int              rc;

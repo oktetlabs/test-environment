@@ -330,6 +330,30 @@ strcmp_start(const char *pattern, const char *str)
 {
     return strncmp(pattern, str, strlen(pattern));
 }
+
+/**
+ * Compare strings.
+ *
+ * @param s1     The first result
+ * @param s2     The second result
+ *
+ * @result value returned by strcmp() if both s1 and s2
+ *         are not NULL, 0 if they are both NULL,
+ *         1 if only the first one is not NULL,
+ *         -1 if only the second one is not NULL.
+ */
+static inline int strcmp_null(const char *s1, const char *s2)
+{
+    if (s1 == NULL && s2 == NULL)
+        return 0;
+    else if (s1 == NULL)
+        return -1;
+    else if (s2 == NULL)
+        return 1;
+
+    return strcmp(s1, s2);
+}
+
 #endif
 
 #if HAVE_STDLIB_H && HAVE_ERRNO_H
