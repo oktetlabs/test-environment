@@ -1852,11 +1852,6 @@ trc_iters_pos(trc_test_iter *iter, te_bool is_first)
     do {
         if (strcmp_null(filename, p->filename) == 0)
         {
-            /* Check that "pos" attribute is not already set in file */
-            if (p->node != NULL &&
-                xmlGetProp(p->node, CONST_CHAR2XML("pos")) != NULL)
-                return -1;
-
             p->file_pos = ++pos;
             test = TAILQ_FIRST(&p->tests.head);
             if (trc_tests_pos(test, TRUE, FALSE) != 0)
