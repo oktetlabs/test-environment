@@ -151,6 +151,12 @@ static te_errno tcp_sndbuf_max_set(unsigned int, const char *,
 static te_errno tcp_sndbuf_max_get(unsigned int, const char *,
                                    char *);
 
+static te_errno tcp_timestamps_set(unsigned int, const char *,
+                                   const char *);
+
+static te_errno tcp_timestamps_get(unsigned int, const char *,
+                                   char *);
+
 static te_errno console_loglevel_set(unsigned int, const char *,
                                      const char *);
 
@@ -176,7 +182,8 @@ SYSTEM_WIDE_PARAM(tcp_rcvbuf_def, udp_sndbuf_max);
 SYSTEM_WIDE_PARAM(tcp_rcvbuf_max, tcp_rcvbuf_def);
 SYSTEM_WIDE_PARAM(tcp_sndbuf_def, tcp_rcvbuf_max);
 SYSTEM_WIDE_PARAM(tcp_sndbuf_max, tcp_sndbuf_def);
-SYSTEM_WIDE_PARAM(rcvbuf_def, tcp_sndbuf_max);
+SYSTEM_WIDE_PARAM(tcp_timestamps, tcp_sndbuf_max);
+SYSTEM_WIDE_PARAM(rcvbuf_def, tcp_timestamps);
 SYSTEM_WIDE_PARAM(rcvbuf_max, rcvbuf_def);
 SYSTEM_WIDE_PARAM(sndbuf_def, rcvbuf_max);
 SYSTEM_WIDE_PARAM(sndbuf_max, sndbuf_def);
@@ -348,7 +355,6 @@ tcp_mem_get(const char *proc_file, int *par_array, int len)
     int       i = 0;
     char     *tmp;
     char     *next_token;
-    char     *token;
     char     *save_ptr;
 
     if ((f = fopen(proc_file, "r")) == NULL)
@@ -367,7 +373,6 @@ tcp_mem_get(const char *proc_file, int *par_array, int len)
             return -1;
         }
         next_token = strtok_r(trash, "\t", &save_ptr);
-        token = trash;
         do {
             par_array[i] = strtol(next_token, &tmp, 10);
             if ((tmp == next_token) && (par_array[i] == 0))
@@ -773,6 +778,91 @@ tcp_rcvbuf_def_get(unsigned int gid, const char *oid,
     sprintf(value,"%d", bmem[1]);
 #elif defined(__sun)
     rc = sun_ioctl("tcp", "tcp_recv_hiwat", ND_GET, value);
+#else
+    rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
+    return rc;
+}
+
+/**
+ * Set TCP timestamps.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         to be set as tcp_timestamps value
+ *
+ * @return              Status code
+ */
+static te_errno
+tcp_timestamps_set(unsigned int gid, const char *oid,
+                   const char *value)
+{
+    te_errno  rc = 0;
+
+#if __linux__
+    char     *tmp;
+    int       bmem = 0;
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (value == NULL)
+    {
+        ERROR("A value to set is not provided");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+#if __linux__
+    rc = tcp_mem_get("/proc/sys/net/ipv4/tcp_timestamps", &bmem, 1);
+    if (rc != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    bmem = strtol(value, &tmp, 10);
+    if (tmp == value || *tmp != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    rc = tcp_mem_set("/proc/sys/net/ipv4/tcp_timestamps", &bmem, 1);
+    if (rc != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+#else
+    rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+
+    return rc;
+}
+
+/**
+ * Get TCP timestamps value.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         to be get as tcp_timestamps value
+ *
+ * @return              Status code
+ */
+static te_errno
+tcp_timestamps_get(unsigned int gid, const char *oid,
+                   char *value)
+{
+    te_errno  rc = 0;
+#if __linux__
+    int       bmem = 0;
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (value == NULL)
+    {
+        ERROR("A value to set is not provided");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+#if __linux__
+    rc = tcp_mem_get("/proc/sys/net/ipv4/tcp_timestamps", &bmem, 1);
+    if (rc != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    sprintf(value,"%d", bmem);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif
