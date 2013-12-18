@@ -758,6 +758,15 @@ extern int rpc_integer2raw(rcf_rpc_server *rpcs, uint64_t number,
  */
 extern int rpc_vfork_pipe_exec(rcf_rpc_server *rpcs, te_bool use_exec);
 
+/**
+ * Flush network routes.
+ *
+ * @param rpcs      RPC server
+ *
+ * @return @c 0 on success or TE errno in case of failure
+ */
+extern te_errno tapi_net_route_flush(rcf_rpc_server *rpcs);
+
 /**@} <!-- END te_lib_rpc_misc --> */
 
 #ifdef __cplusplus
