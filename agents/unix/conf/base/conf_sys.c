@@ -164,17 +164,16 @@ static te_errno console_loglevel_get(unsigned int, const char *,
                                      char *);
 
 
-#define SYSTEM_WIDE_PARAM(_name_, _next) \
-    RCF_PCH_CFG_NODE_RW(node_##_name_,               \
-                        #_name_,                     \
-                        NULL, &node_##_next,         \
-                        _name_##_get, _name_##_set); \
+#define SYSTEM_WIDE_PARAM(_name, _next) \
+    RCF_PCH_CFG_NODE_RW(node_##_name,               \
+                        #_name,                     \
+                        NULL, &node_##_next,        \
+                        _name##_get, _name##_set);
 
-#define SYSTEM_WIDE_PARAM_COMMON(_name_, _next) \
-    RCF_PCH_CFG_NODE_RW(node_##_name_,               \
-                        #_name_,                     \
-                        NULL, &node_##_next,         \
-                        proc_sys_common_get, proc_sys_common_set); \
+#define SYSTEM_WIDE_PARAM_COMMON(_name, _next) \
+    RCF_PCH_CFG_NODE_RW(node_##_name, #_name,   \
+                        NULL, &node_##_next,    \
+                        proc_sys_common_get, proc_sys_common_set);
 
 RCF_PCH_CFG_NODE_RW(node_udp_rcvbuf_def,
                     "udp_rcvbuf_def",
@@ -434,6 +433,61 @@ tcp_mem_set(const char *proc_file, int *par_array, int len)
     fputs(tmp, f);
 
     fclose(f);
+    return 0;
+}
+
+/**
+ * Put a number value in a system file like
+ * /proc/sys/net/ipv4/tcp_timestamps
+ * 
+ * @param path      Full path with file name
+ * @param offset    Offset from the first number
+ * @param value     String with value
+ * 
+ * return Status code
+ */
+static te_errno
+proc_sys_set_value(const char *path, int offset, const char *value)
+{
+    char       *tmp;
+    int         bmem[offset + 1];
+
+    memset(bmem, 0, sizeof(*bmem) * (offset + 1));
+
+    if (tcp_mem_get(path, bmem, offset + 1) != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    bmem[offset] = strtol(value, &tmp, 10);
+    if (tmp == value || *tmp != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    if (tcp_mem_set(path, bmem, offset + 1) != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    return 0;
+}
+
+/**
+ * Get a number value from a system file like
+ * /proc/sys/net/ipv4/tcp_timestamps
+ * 
+ * @param path      Full path with file name
+ * @param offset    Offset from the first number
+ * @param value     Buffer for string with value
+ * 
+ * return Status code
+ */
+static te_errno
+proc_sys_get_value(const char *path, int offset, char *value)
+{
+    int bmem[offset + 1];
+
+    memset(bmem, 0, sizeof(*bmem) * (offset + 1));
+
+    if (tcp_mem_get(path, bmem, offset + 1) != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    sprintf(value, "%d", bmem[offset]);
+
     return 0;
 }
 #endif
@@ -805,15 +859,6 @@ static te_errno
 proc_sys_common_set(unsigned int gid, const char *oid,
                     const char *value)
 {
-    te_errno  rc = 0;
-
-#if __linux__
-    char       *tmp;
-    int         bmem[3] = {0, };
-    int         offset = 0;
-    const char *path;
-#endif
-
     UNUSED(gid);
     UNUSED(oid);
 
@@ -825,28 +870,16 @@ proc_sys_common_set(unsigned int gid, const char *oid,
 
 #if __linux__
     if (strstr(oid, "/tcp_timestamps:") != NULL)
-        path = "/proc/sys/net/ipv4/tcp_timestamps";
+        return proc_sys_set_value("/proc/sys/net/ipv4/tcp_timestamps",
+                                  0, value);
     else if (strstr(oid, "/tcp_syncookies:") != NULL)
-        path = "/proc/sys/net/ipv4/tcp_syncookies";
-    else
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        return proc_sys_set_value("/proc/sys/net/ipv4/tcp_syncookies",
+                                  0, value);
 
-    rc = tcp_mem_get(path, bmem, offset + 1);
-    if (rc != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-    bmem[offset] = strtol(value, &tmp, 10);
-    if (tmp == value || *tmp != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-    rc = tcp_mem_set(path, bmem, offset + 1);
-    if (rc != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
 #else
-    rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
-
-    return rc;
 }
 
 /**
@@ -863,13 +896,6 @@ static te_errno
 proc_sys_common_get(unsigned int gid, const char *oid,
                     char *value)
 {
-    te_errno  rc = 0;
-#if __linux__
-    int         bmem[3] = {0, };
-    int         offset = 0;
-    const char *path;
-#endif
-
     UNUSED(gid);
     UNUSED(oid);
 
@@ -881,20 +907,14 @@ proc_sys_common_get(unsigned int gid, const char *oid,
 
 #if __linux__
     if (strstr(oid, "/tcp_timestamps:") != NULL)
-        path = "/proc/sys/net/ipv4/tcp_timestamps";
+        return proc_sys_get_value("/proc/sys/net/ipv4/tcp_timestamps", 0,
+                                  value);
     else if (strstr(oid, "/tcp_syncookies:") != NULL)
-        path = "/proc/sys/net/ipv4/tcp_syncookies";
-    else
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    rc = tcp_mem_get(path, bmem, offset + 1);
-    if (rc != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    sprintf(value, "%d", bmem[offset]);
-#else
-    rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
+        return proc_sys_get_value("/proc/sys/net/ipv4/tcp_syncookies", 0,
+                                  value);
 #endif
-    return rc;
+
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
 }
 
 /**
