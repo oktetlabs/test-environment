@@ -1989,30 +1989,3 @@ rpc_vfork_pipe_exec(rcf_rpc_server *rpcs, te_bool use_exec)
                  use_exec, out.retval);
     RETVAL_INT(vfork_pipe_exec, out.retval);
 }
-
-te_errno
-tapi_net_route_flush(rcf_rpc_server *rpcs)
-{
-    int     fd;
-    te_bool wait_err = FALSE;
-
-    if (RPC_AWAITING_ERROR(rpcs))
-        wait_err = TRUE;
-
-    if ((fd = rpc_open(rpcs, "/proc/sys/net/ipv4/route/flush",
-                       RPC_O_WRONLY, 0)) < 0)
-        return TE_RC(TE_TAPI, TE_EFAIL);
-
-    if (wait_err)
-        RPC_AWAIT_IUT_ERROR(rpcs);
-    if (rpc_write(rpcs, fd, "1", 1) < 0)
-        return TE_RC(TE_TAPI, TE_EFAIL);
-
-    if (wait_err)
-        RPC_AWAIT_IUT_ERROR(rpcs);
-    if (rpc_close(rpcs, fd) != 0)
-        return TE_RC(TE_TAPI, TE_EFAIL);
-
-    return 0;
-}
-

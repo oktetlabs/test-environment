@@ -6,6 +6,7 @@ AM_CFLAGS = @TE_CFLAGS@
 AM_LDFLAGS = @TE_LDFLAGS@
 
 include_HEADERS = \
+	tapi_proc.h \
 	tapi_test.h \
 	tapi_test_log.h \
 	tapi_jmp.h \
@@ -36,6 +37,7 @@ include_HEADERS = \
 lib_LTLIBRARIES = libtapi.la
 
 libtapi_la_SOURCES = \
+	tapi_proc.c \
 	test_params.c \
 	tapi_jmp.c \
 	tapi_sockaddr.c \
