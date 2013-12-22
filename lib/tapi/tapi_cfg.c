@@ -381,8 +381,6 @@ route_parse_inst_name(const char *inst_name, tapi_rt_entry_t *rt)
     int          prefix;
     char        *ptr;
     char        *end_ptr;
-    char        *term_byte; /* Pointer to the trailing zero byte 
-                               in 'inst_name' */
     static char  inst_copy[RCF_MAX_VAL];
 
     int          family = (strchr(inst_name, ':') == NULL) ?
@@ -414,8 +412,6 @@ route_parse_inst_name(const char *inst_name, tapi_rt_entry_t *rt)
     tmp = tmp1;
 
     rt->prefix = prefix;
-
-    term_byte = (char *)(tmp + strlen(tmp));
 
     if ((ptr = strstr(tmp, "metric=")) != NULL)
     {
@@ -2038,8 +2034,8 @@ tapi_cfg_alloc_net_addr(cfg_handle net_pool_entry, cfg_handle *p_entry,
 te_errno
 tapi_cfg_set_loglevel(const char *agent, int level)
 {
-    return cfg_set_instance_fmt(CVT_INTEGER, (void *)level,
-                             "/agent:%s/sys:/console_loglevel:", agent);
+    return cfg_set_instance_fmt(CFG_VAL(INTEGER, level),
+                                "/agent:%s/sys:/console_loglevel:", agent);
 }
 
 /* See the description in tapi_cfg.h */
