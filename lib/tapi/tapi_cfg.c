@@ -2041,3 +2041,40 @@ tapi_cfg_set_loglevel(const char *agent, int level)
     return cfg_set_instance_fmt(CVT_INTEGER, (void *)level,
                              "/agent:%s/sys:/console_loglevel:", agent);
 }
+
+/* See the description in tapi_cfg.h */
+te_errno
+tapi_cfg_set_loglevel_save(const char *ta, int new_val, int *old_val)
+{
+    int       prev_val = -1;
+    te_errno  rc = 0;
+
+    if (old_val != NULL)
+    {
+        rc = cfg_get_instance_fmt(CVT_INTEGER, &prev_val,
+                                  "/agent:%s/sys:/console_loglevel:", ta);
+        if (rc != 0)
+        {
+            ERROR("%s(): failed to get current kernel log level",
+                  __FUNCTION__);
+            *old_val = -1;
+            return rc;
+        }
+
+        *old_val = prev_val;
+    }
+
+    if (new_val != prev_val && new_val >= 0)
+    {
+        rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, new_val),
+                                  "/agent:%s/sys:/console_loglevel:", ta);
+        if (rc != 0)
+        {
+            ERROR("%s(): failed to set kernel log level to %d",
+                  __FUNCTION__, new_val);
+            return rc;
+        }
+    }
+
+    return 0;
+}

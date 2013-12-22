@@ -796,6 +796,18 @@ static inline char * tapi_get_cfg_link(char *link)
     return NULL;
 }
 
+/**
+ * Set kernel log level to a new value optionally saving the old one.
+ *
+ * @param ta        Agent name
+ * @param new_val   Value to be set (ignored if less than zero)
+ * @param old_val   Where to save previous value (ignored if NULL)
+ *
+ * @return 0 on success or status code
+ */
+extern te_errno tapi_cfg_set_loglevel_save(const char *ta, int new_val,
+                                           int *old_val);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
