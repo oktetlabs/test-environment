@@ -444,7 +444,7 @@ process_opts()
             --conf-builder=*) CONF_BUILDER_SET=1; CONF_BUILDER="${1#--conf-builder=}" ;;
             --conf-logger=*) CONF_LOGGER_SET=1; CONF_LOGGER="${1#--conf-logger=}" ;;
             --conf-tester=*) CONF_TESTER_SET=1; CONF_TESTER="${1#--conf-tester=}" ;;
-            --conf-cs=*) CONF_CS_SET=1; CONF_CS="${CONF_CS}${CONF_CS:+ }${1#--conf-cs=}"; echo "CONF_CS=$CONF_CS" ;;
+            --conf-cs=*) CONF_CS_SET=1; CONF_CS="${CONF_CS}${CONF_CS:+ }${1#--conf-cs=}" ;;
             --conf-rcf=*) CONF_RCF_SET=1; CONF_RCF=${1#--conf-rcf=} ;;
             --conf-rgt=*) CONF_RGT_SET=1; CONF_RGT=${1#--conf-rgt=} ;;
             --conf-nut=*) CONF_NUT_SET=1; CONF_NUT="${1#--conf-nut=}" ;;
