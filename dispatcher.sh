@@ -330,13 +330,13 @@ TE_SNIFF_FILTER=
 TE_SNIFF_SNAPLEN=
 
 # Configuration files
-CONF_BUILDER=builder.conf
-CONF_LOGGER=logger.conf
-CONF_TESTER=tester.conf
-CONF_CS=cs.conf
-CONF_RCF=rcf.conf
-CONF_RGT=
-CONF_NUT=nut.conf
+CONF_BUILDER_DFLT=builder.conf
+CONF_LOGGER_DFLT=logger.conf
+CONF_TESTER_DFLT=tester.conf
+CONF_CS_DFLT=cs.conf
+CONF_RCF_DFLT=rcf.conf
+CONF_RGT_DFLT=
+CONF_NUT_DFLT=nut.conf
 
 # Whether NUTs processing is requested
 CONF_NUT_SET=
@@ -444,7 +444,7 @@ process_opts()
             --conf-builder=*) CONF_BUILDER_SET=1; CONF_BUILDER="${1#--conf-builder=}" ;;
             --conf-logger=*) CONF_LOGGER_SET=1; CONF_LOGGER="${1#--conf-logger=}" ;;
             --conf-tester=*) CONF_TESTER_SET=1; CONF_TESTER="${1#--conf-tester=}" ;;
-            --conf-cs=*) CONF_CS_SET=1; CONF_CS="${1#--conf-cs=}" ;;
+            --conf-cs=*) CONF_CS_SET=1; CONF_CS="${CONF_CS}${CONF_CS:+ }${1#--conf-cs=}"; echo "CONF_CS=$CONF_CS" ;;
             --conf-rcf=*) CONF_RCF_SET=1; CONF_RCF=${1#--conf-rcf=} ;;
             --conf-rgt=*) CONF_RGT_SET=1; CONF_RGT=${1#--conf-rgt=} ;;
             --conf-nut=*) CONF_NUT_SET=1; CONF_NUT="${1#--conf-nut=}" ;;
@@ -733,23 +733,31 @@ export TE_NO_PROMPT
 
 for i in BUILDER LOGGER TESTER CS RCF RGT NUT ; do
     CONF_FILE_SET="$(eval echo '${CONF_'$i'_SET}')"
-    CONF_FILE="$(eval echo '$CONF_'$i)"
-    if test -n "${CONF_FILE}" -a "${CONF_FILE:0:1}" != "/" ; then
-        eval CONF_$i=\"${CONF_DIR}/${CONF_FILE}\"
-        CONF_FILE="$(eval echo '$CONF_'$i)"
-        if test ! -f ${CONF_FILE} ; then
-          # Conf file does not exist at specified path.
-          # Check if this is the default value or user-specified
-          if test -n "${CONF_FILE_SET}" ; then
-              # User-specified, so rise an exception
-              echo "Cannot find $i configuration file at ${CONF_FILE} path"
-              exit 1;
-          fi
-
-          # Set Conf file path to empty string.
-          eval CONF_$i=
+    CONF_FILES="$(eval echo '$CONF_'$i)"
+    CONF_FILES_DFLT="$(eval echo \$CONF_${i}_DFLT)"
+    CONF_FILES="${CONF_FILES:-$CONF_FILES_DFLT}"
+    CONF_FILES_POST=
+    for CONF_FILE in $CONF_FILES ; do
+        if test -n "${CONF_FILE}" -a "${CONF_FILE:0:1}" != "/" ; then
+            eval CONF_FILE_$i=\"${CONF_DIR}/${CONF_FILE}\"
+            CONF_FILE="$(eval echo '$CONF_FILE_'$i)"
+            if test ! -f ${CONF_FILE} ; then
+                # Conf file does not exist at specified path.
+                # Check if this is the default value or user-specified
+                if test -n "${CONF_FILE_SET}" ; then
+                    # User-specified, so rise an exception
+                    echo "Cannot find $i configuration file at "\
+                         "${CONF_FILE} path"
+                    exit 1;
+                fi
+                
+                # Set Conf file path to empty string.
+                eval CONF_$i=
+            fi
         fi
-    fi
+        CONF_FILES_POST="${CONF_FILES_POST}${CONF_FILES_POST:+ }$CONF_FILE"                
+    done
+    eval CONF_$i=\$CONF_FILES_POST
 done
 
 # Create directory for temporary files

@@ -49,7 +49,9 @@ static char *filename;
 
 static struct ipc_server *server = NULL; /**< IPC Server handle */
 
-static const char *cs_cfg_file       = NULL;  /**< Configuration file name*/
+#define MAX_CFG_FILES 16
+/** Configuration file names */
+static const char *cs_cfg_file[16] =  {NULL, };  
 static const char *cs_sniff_cfg_file = NULL;  /**< Configuration file name
                                                    for sniffer framework */
 
@@ -294,6 +296,8 @@ parse_config(const char *file, te_bool restore)
     xmlNodePtr  root;
     int         rc;
     int         subst;
+
+    RING("Parsing %s", filename);
 
     if (file == NULL)
         return 0;
@@ -1543,6 +1547,12 @@ process_cmd_line_opts(int argc, char **argv)
 {
     poptContext  optCon;
     int          rc;
+    int          cfg_file_num = 0;
+    const char  *cfg_files = NULL;
+
+    int i;
+    for (i = 0; i < argc; i++)
+      RING("arg %d - %s", i, argv[i]);
 
     /* Option Table */
     struct poptOption options_table[] = {
@@ -1580,13 +1590,22 @@ process_cmd_line_opts(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    cs_cfg_file = poptGetArg(optCon);
-    if (cs_cfg_file == NULL)
+    cfg_files = poptGetArg(optCon);
+    RING("%s: cfg_files=%s", __FUNCTION__, cfg_files);
+    cs_cfg_file[0] = strtok(cfg_files, " ");
+    RING("%s: cs_cfg_file=%s", __FUNCTION__, cs_cfg_file[0]);
+    while( cfg_file_num < MAX_CFG_FILES &&
+           cs_cfg_file[cfg_file_num++] != NULL) {
+      cs_cfg_file[cfg_file_num] = strtok(NULL, " ");
+      RING("%s: cs_cfg_file=%s", __FUNCTION__, cs_cfg_file[cfg_file_num]);
+    } 
+    if (cs_cfg_file[0] == NULL)
     {
-        ERROR("No configuration file in command-line arguments");
-        poptFreeContext(optCon);
-        return EXIT_FAILURE;
+      ERROR("No configuration file in command-line arguments");
+      poptFreeContext(optCon);
+      return EXIT_FAILURE;
     }
+
     if (poptGetArg(optCon) != NULL)
     {
         ERROR("Unexpected arguments in command-line");
@@ -1626,6 +1645,7 @@ main(int argc, char **argv)
 {
     int result = EXIT_FAILURE;
     int rc;
+    int cfg_file_id;
 
 
     if (atexit(free_resources) != 0)
@@ -1675,10 +1695,18 @@ main(int argc, char **argv)
         goto exit;
     }
 
-    if ((rc = parse_config(cs_cfg_file, FALSE)) != 0)
+    for (cfg_file_id = 0;
+         cs_cfg_file[cfg_file_id] != NULL && cfg_file_id < MAX_CFG_FILES;
+         cfg_file_id++)
     {
-        ERROR("Fatal error during configuration file parsing");
+      RING("-> %s", cs_cfg_file[cfg_file_id]);
+      if ((rc = parse_config(cs_cfg_file[cfg_file_id], FALSE)) != 0)
+      {
+        ERROR("Fatal error during configuration file parsing: %d - %s",
+              cfg_file_id,
+              cs_cfg_file[cfg_file_id]);
         goto exit;
+      }
     }
 
     if (cs_sniff_cfg_file != NULL &&
