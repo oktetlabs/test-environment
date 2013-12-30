@@ -30,7 +30,15 @@ TE_LIB_SET
 AM_CONDITIONAL(DIST_RPCDEFS, test -n "$with_rpcdefs")
 RPCDEFS=
 RPCDEFS_DIST_FILES=
-with_rpcdefs="${with_rpcdefs//,/ }"
+#
+# The following lines are portable way of getting the result
+# of command: "with_rpcdefs="${with_rpcdefs//,/ }""
+# but this command does not work in DASH, but only in BASH.
+# 
+cmd="echo $with_rpcdefs | sed -e 's/,/ /g'"
+with_rpcdefs=`eval $cmd`
+
+#with_rpcdefs="${with_rpcdefs//,/ }"
 for i in $with_rpcdefs ; do 
     TMP=`basename $i`
     if test ! -e $i -a -e ${srcdir}/$TMP ; then
