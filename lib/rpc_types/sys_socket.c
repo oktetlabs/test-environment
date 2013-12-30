@@ -70,6 +70,9 @@ extern const char *inet_ntop(int af, const void *src, char *dst,
 #if HAVE_SYS_FILIO_H
 #include <sys/filio.h>
 #endif
+#if HAVE_SYS_UN_H
+#include <sys/un.h>
+#endif
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif

@@ -1424,10 +1424,9 @@ TARPC_FUNC(shutdown, {},
 int
 te_fstat(te_bool use_libc, int fd, rpc_stat *rpcbuf)
 {
-    api_func stat_func;
-    int rc;
-
 #ifdef __linux__
+    api_func    stat_func;
+    int         rc;
     struct stat buf;
 
     memset(&buf, 0, sizeof(buf));
@@ -1442,13 +1441,17 @@ te_fstat(te_bool use_libc, int fd, rpc_stat *rpcbuf)
         return rc;
 
     FSTAT_COPY(rpcbuf, buf);
-
+    return 0;
 #else
+    UNUSED(use_libc);
+    UNUSED(rpcbuf);
+
 /*
  * #error "fstat family is not currently supported for non-linux unixes."
 */
+    errno = EOPNOTSUPP;
+    return -1;
 #endif
-    return 0;
 }
 
 int
@@ -2449,6 +2452,10 @@ int
 call_tgkill(int tgid, int tid, int sig)
 {
 #ifndef SYS_tgkill
+    UNUSED(tgid);
+    UNUSED(tid);
+    UNUSED(sig);
+
     ERROR("tgkill() is not defined");
     errno = ENOENT;
     return -1;
@@ -3469,14 +3476,16 @@ TARPC_FUNC(fcntl,
     COPY_ARG(arg);
 },
 {
-    long              int_arg;
-    struct f_owner_ex foex_arg;
+    long int_arg;
 
     if (in->cmd == RPC_F_GETFD || in->cmd == RPC_F_GETFL ||
         in->cmd == RPC_F_GETSIG)
         MAKE_CALL(out->retval = func(in->fd, fcntl_rpc2h(in->cmd)));
+#if defined (F_GETOWN_EX) || defined (F_SETOWN_EX)
     else if (in->cmd == RPC_F_GETOWN_EX || in->cmd == RPC_F_SETOWN_EX)
     {
+        struct f_owner_ex foex_arg;
+
         foex_arg.type =
             out->arg.arg_val[0].fcntl_request_u.req_f_owner_ex.type;
         foex_arg.pid =
@@ -3488,6 +3497,7 @@ TARPC_FUNC(fcntl,
         out->arg.arg_val[0].fcntl_request_u.req_f_owner_ex.pid =
             foex_arg.pid;
     }
+#endif
     else
     {
         int_arg = out->arg.arg_val[0].fcntl_request_u.req_int;

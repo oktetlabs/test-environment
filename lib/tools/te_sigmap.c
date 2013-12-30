@@ -55,7 +55,10 @@ static const struct {
                   {"SIGPIPE",  SIGPIPE},
                   {"SIGALRM",  SIGALRM},
                   {"SIGTERM",  SIGTERM},
-                  {"SIGSTKFLT",  SIGSTKFLT}};
+#ifdef SIGSTKFLT
+                  {"SIGSTKFLT",  SIGSTKFLT},
+#endif
+};
 
 /* See description in the te_sigmap.h */
 int

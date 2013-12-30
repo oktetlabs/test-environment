@@ -51,6 +51,7 @@
 
 #include "te_rpc_sys_socket.h"
 
+#if defined (SIOCETHTOOL)
 /**
  * Get single ethernet interface configuration value.
  *
@@ -209,3 +210,12 @@ ta_unix_conf_eth_init(void)
 {
     return rcf_pch_add_node("/agent/interface", &eth_flags);
 }
+#else
+te_errno
+ta_unix_conf_eth_init(void)
+{
+    INFO("Extra ethernet interface configurations are not supported");
+    return 0;
+}
+#endif /* !SIOCETHTOOL */
+
