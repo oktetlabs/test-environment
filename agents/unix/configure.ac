@@ -52,12 +52,11 @@ AC_DEFINE_UNQUOTED([TE_AGT_PLATFORM], ["${TE_PLATFORM}"], [])
 
 # Include telephony support by default
 AC_ARG_WITH([telephony],
-            [AS_HELP_STRING([--without-telephony],
-              [Disable support DAHDI interface via RPC calls. \
-Default - enabled.])],
-            [if test "x${withval}" = "xyes"; then
-                 with_telephony=yes;
-             fi], [with_telephony=yes])
+            [AS_HELP_STRING([--with-telephony],
+              [Enable support DAHDI interface via RPC calls. \
+Default - disabled.])],
+            [],
+            [with_telephony=no])
 
 AM_CONDITIONAL(WITH_TELEPHONY, test "x$with_telephony" = "xyes")
 if test "x$with_telephony" = "xyes"; then
