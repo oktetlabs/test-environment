@@ -93,9 +93,35 @@ extern te_errno tapi_cfg_tcp_timestamps_set(rcf_rpc_server *rpcs, int value,
 extern te_errno tapi_cfg_tcp_timestamps_get(rcf_rpc_server *rpcs,
                                             int *value);
 
+/**
+ * Get RPF filtering value of TA interface.
+ *
+ * @param rpcs      RPC server
+ * @param ifname    Interface name
+ * @param rp_filter location for RPF filtering value
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_if_rp_filter_get(rcf_rpc_server *rpcs,
+                                          const char *ifname,
+                                          int *rp_filter);
+
+/**
+ * Set RPF filtering value of TA interface.
+ *
+ * @param rpcs      RPC server
+ * @param ifname    Interface name
+ * @param rp_filter New RPF filtering value
+ * @param old_value Location for previous RPF filtering value or @c NULL
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_if_rp_filter_set(rcf_rpc_server *rpcs,
+                                          const char *ifname,
+                                          int rp_filter, int *old_value);
+
 
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
 #endif /* !__TE_TAPI_PROC_H__ */
-

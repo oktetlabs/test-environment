@@ -536,6 +536,11 @@ static te_errno status_get(unsigned int, const char *, char *,
 static te_errno status_set(unsigned int, const char *, const char *,
                            const char *);
 
+static te_errno rp_filter_get(unsigned int, const char *, char *,
+                              const char *);
+static te_errno rp_filter_set(unsigned int, const char *, const char *,
+                              const char *);
+
 static te_errno promisc_get(unsigned int, const char *, char *,
                             const char *);
 static te_errno promisc_set(unsigned int, const char *, const char *,
@@ -781,7 +786,10 @@ RCF_PCH_CFG_NODE_COLLECTION(node_vlans, "vlans",
                             vlans_add, vlans_del,
                             vlans_list, NULL);
 
-RCF_PCH_CFG_NODE_RW(node_promisc, "promisc", NULL, &node_vlans,
+RCF_PCH_CFG_NODE_RW(node_rp_filter, "rp_filter", NULL, &node_vlans,
+                    rp_filter_get, rp_filter_set);
+
+RCF_PCH_CFG_NODE_RW(node_promisc, "promisc", NULL, &node_rp_filter,
                     promisc_get, promisc_set);
 
 RCF_PCH_CFG_NODE_RW(node_status, "status", NULL, &node_promisc,
@@ -5397,6 +5405,106 @@ iface_ip6_accept_ra_set(unsigned int gid, const char *oid,
 }
 
 /**
+ * Get RPF filtering value
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         value location
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+rp_filter_get(unsigned int gid, const char *oid, char *value,
+              const char *ifname)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if __linux__
+    FILE *fd;
+    int   res;
+    char  path[128];
+
+    if ((res = snprintf(path, sizeof(path),
+                        "/proc/sys/net/ipv4/conf/%s/rp_filter",
+                        ifname)) < 0 || res == sizeof(path))
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    if ((fd = fopen(path, "r")) == NULL)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    if (fread(value, 1, 1, fd) != 2)
+    {
+        fclose(fd);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+    fclose(fd);
+    value[1] = 0;
+#else
+    UNUSED(value);
+    UNUSED(ifname);
+
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+
+    return 0;
+}
+
+/**
+ * Set RPF filtering value
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         new value pointer
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+rp_filter_set(unsigned int gid, const char *oid, const char *value,
+              const char *ifname)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if __linux__
+    FILE *fd;
+    int   res;
+    char  path[128];
+
+    if (*value < '0' || *value > '2' || *(value + 1) != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    if ((res = snprintf(path, sizeof(path),
+                        "/proc/sys/net/ipv4/conf/%s/rp_filter",
+                        ifname)) < 0 || res == sizeof(path))
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    if ((fd = fopen(path, "w")) == NULL)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    
+    if (fputc(*value, fd) != *value ||
+        fputc('\n', fd) != '\n')
+    {
+        fclose(fd);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    fclose(fd);
+
+#else
+    UNUSED(value);
+    UNUSED(ifname);
+
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+
+    return 0;
+}
+
+/**
  * Get promiscuous mode of the interface ("0" - normal or "1" - promiscuous)
  *
  * @param gid           group identifier (unused)
@@ -5463,7 +5571,6 @@ promisc_set(unsigned int gid, const char *oid, const char *value,
 
     return 0;
 }
-
 
 static te_errno
 neigh_find(const char *oid, const char *ifname, const char *addr,

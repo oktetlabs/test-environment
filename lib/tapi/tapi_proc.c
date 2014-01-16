@@ -149,3 +149,45 @@ tapi_cfg_tcp_timestamps_get(rcf_rpc_server *rpcs, int *value)
         ERROR("Failed to get tcp_timestamps value");
     return rc;
 }
+
+/* See description in tapi_proc.h */
+te_errno 
+tapi_cfg_if_rp_filter_get(rcf_rpc_server *rpcs, const char *ifname,
+                          int *rp_filter)
+{
+    cfg_val_type  val_type = CVT_INTEGER;
+    te_errno      rc;
+
+    rc = cfg_get_instance_fmt(&val_type, rp_filter, 
+                              "/agent:%s/interface:%s/rp_filter:",
+                              rpcs->ta, ifname);
+    if (rc != 0)
+        ERROR("Failed to get interface rp_filter value");
+    return rc;
+}
+
+/* See description in tapi_proc.h */
+te_errno
+tapi_cfg_if_rp_filter_set(rcf_rpc_server *rpcs, const char *ifname,
+                          int rp_filter, int *old_value)
+{
+    te_errno rc;
+
+    if (old_value != NULL)
+    {
+        rc = tapi_cfg_if_rp_filter_get(rpcs, ifname, old_value);
+        if (rc != 0)
+        {
+            ERROR("Failed to get old rp_filter value");
+            return rc;
+        }
+    }
+
+    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, rp_filter),
+                              "/agent:%s/interface:%s/rp_filter:",
+                              rpcs->ta, ifname);
+    if (rc != 0)
+        ERROR("Failed to set rp_filter value for interface %s", ifname);
+
+    return rc;
+}
