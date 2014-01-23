@@ -488,6 +488,33 @@ tapi_cfg_base_if_add_get_vlan(const char *ta, const char *if_name,
     return 0;
 }
 
+/**
+ * It is the same function as @p tapi_cfg_base_if_get_mtu, but it is more
+ * user-friendly to use it in tests.
+ * 
+ * @param agent     Agent name
+ * @param interface Interface name
+ * @param mtu       Location for MTU value
+ * 
+ * @return Status code
+ */
+extern te_errno tapi_cfg_base_if_get_mtu_u(const char *agent,
+                                           const char *interface, int *mtu);
+
+/**
+ * Set new MTU value
+ * 
+ * @param agent     Agent name
+ * @param interface Interface name
+ * @param mtu       MTU value
+ * @param old_mtu   Location for old MTU value or @c NULL
+ * 
+ * @return Status code
+ */
+extern te_errno tapi_cfg_base_if_set_mtu(const char *agent,
+                                         const char *interface, int mtu,
+                                         int *old_mtu);
+
 /**@} <!-- END tapi_conf_iface --> */
 
 #ifdef __cplusplus

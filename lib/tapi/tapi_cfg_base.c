@@ -716,3 +716,94 @@ tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
 
     return rc;
 }
+
+/* See description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_base_if_get_mtu_u(const char *agent, const char *interface,
+                           int *mtu)
+{
+    te_errno        rc;
+    cfg_val_type    type = CVT_INTEGER;
+
+    if ((rc = cfg_get_instance_fmt(&type, (void *)mtu,
+                                   "/agent:%s/interface:%s/mtu:",
+                                   agent, interface)) != 0)
+        ERROR("Failed to get MTU value for %s on %s: %r", interface,
+              agent, rc);
+
+    return rc;
+}
+
+/* See description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_base_if_set_mtu(const char *agent, const char *interface, int mtu,
+                         int *old_mtu)
+{
+    te_errno        rc;
+    int             old_mtu_l = 0;
+    int             assigned_mtu;
+
+#define MTU_ERR(_error_msg...) \
+do { \
+    ERROR(_error_msg); \
+    return rc; \
+} while(0)
+
+    if ((rc = tapi_cfg_base_if_get_mtu_u(agent, interface,
+                                         &old_mtu_l)) != 0)
+        MTU_ERR("Failed to get old MTU value for %s on %s: %r",
+                interface, agent, rc);
+
+    if (old_mtu != NULL)
+        *old_mtu = old_mtu_l;
+
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, mtu),
+                                   "/agent:%s/interface:%s/mtu:",
+                                   agent, interface)) != 0)
+        MTU_ERR("Failed to set new MTU for %s on %s: %r",
+                interface, agent, rc);
+
+    /**
+     * IPv6 doesn't support MTU value less then 1280, IPv6 address
+     * is removed from interface if set such MTU. The address doesn't
+     * come back automatically if then MTU is set back. But it returns
+     * if restart the network interface.
+     */
+    if (old_mtu_l < 1280 && mtu >= 1280)
+    {
+        RING("Network interface %s on %s will put down/up to avoid "
+             "configurator-IPv6 problems.", interface, agent);
+        if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 0),
+                                       "/agent:%s/interface:%s/status:",
+                                        agent, interface)) != 0)
+            MTU_ERR("Failed to put down interface %s on %s: %r", 
+                    interface, agent, rc);
+        CFG_WAIT_CHANGES;
+
+        if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
+                                       "/agent:%s/interface:%s/status:",
+                                       agent, interface)) != 0)
+            MTU_ERR("Failed to put up interface %s on %s: %r", 
+                    interface, agent, rc);
+        CFG_WAIT_CHANGES;
+    }
+
+    if (tapi_cfg_base_if_get_mtu_u(agent, interface, &assigned_mtu) != 0)
+        MTU_ERR("Failed to get assigned MTU value for %s on %s: %r",
+                interface, agent, rc);
+
+    if (assigned_mtu != mtu)
+    {
+        if (assigned_mtu == old_mtu_l)
+            ERROR("MTU was set to %d, but currently it is equal to old "
+                  "MTU %d", mtu, assigned_mtu);
+        else
+            ERROR("MTU was set to %d, but currently it is %d", mtu,
+                  assigned_mtu);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+#undef MTU_ERR
+
+    return rc;
+}
