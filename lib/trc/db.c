@@ -977,7 +977,6 @@ trc_db_iter_get_exp_result(const trc_test_iter    *iter,
                            const tqh_strings      *tags)
 {
     const trc_exp_result       *result;
-    int                         prio;
     const trc_exp_result       *p;
     int                         res;
     const trc_exp_result_entry *q;
@@ -986,7 +985,7 @@ trc_db_iter_get_exp_result(const trc_test_iter    *iter,
         return NULL;
 
     /* Do we have a tag with expected SKIPPED result? */
-    result = NULL; prio = 0;
+    result = NULL;
     SLIST_FOREACH(p, &iter->exp_results, links)
     {
         VERB("%s: matching start", __FUNCTION__);
@@ -1000,18 +999,14 @@ trc_db_iter_get_exp_result(const trc_test_iter    *iter,
                 {
                     /* Skipped results have top priority in any case */
                     result = p;
-                    prio = res;
                     break;
                 }
             }
             if (q != NULL)
                 break;
 
-            if (result == NULL || res < prio)
-            {
+            if (result == NULL)
                 result = p;
-                prio = res;
-            }
         }
     }
 
