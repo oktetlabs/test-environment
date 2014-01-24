@@ -778,7 +778,7 @@ do { \
                                         agent, interface)) != 0)
             MTU_ERR("Failed to put down interface %s on %s: %r", 
                     interface, agent, rc);
-        CFG_WAIT_CHANGES;
+        sleep(1);
 
         if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
                                        "/agent:%s/interface:%s/status:",
