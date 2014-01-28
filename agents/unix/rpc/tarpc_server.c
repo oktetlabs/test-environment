@@ -1419,7 +1419,10 @@ TARPC_FUNC(shutdown, {},
     tobuf->ifblk = S_ISBLK(outbuf.st_mode);    \
     tobuf->ifdir = S_ISDIR(outbuf.st_mode);    \
     tobuf->ifchr = S_ISCHR(outbuf.st_mode);    \
-    tobuf->ififo = S_ISFIFO(outbuf.st_mode);
+    tobuf->ififo = S_ISFIFO(outbuf.st_mode);   \
+    tobuf->te_atime = outbuf.st_atime;         \
+    tobuf->te_ctime = outbuf.st_ctime;         \
+    tobuf->te_mtime = outbuf.st_mtime
 
 int
 te_fstat(te_bool use_libc, int fd, rpc_stat *rpcbuf)
@@ -1441,6 +1444,21 @@ te_fstat(te_bool use_libc, int fd, rpc_stat *rpcbuf)
         return rc;
 
     FSTAT_COPY(rpcbuf, buf);
+    return 0;
+#elif defined __QNX__
+    api_func    stat_func;
+    int         rc;
+    struct stat buf;
+
+    memset(&buf, 0, sizeof(buf));
+
+    if ((rc = fstat(fd, &buf)) < 0)
+        return rc;
+
+    rpcbuf->te_atime = buf.st_atime;
+    rpcbuf->te_ctime = buf.st_ctime;
+    rpcbuf->te_mtime = buf.st_mtime;
+
     return 0;
 #else
     UNUSED(use_libc);
