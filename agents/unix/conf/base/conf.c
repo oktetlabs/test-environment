@@ -3312,7 +3312,8 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
          * interface yet.
          */
 
-        list = netconf_net_addr_dump(nh, (unsigned char)family);
+        list = netconf_net_addr_dump_iface(nh, (unsigned char)family,
+                                           ifindex);
         if (list == NULL)
         {
             ERROR("%s(): Cannot get list of addresses", __FUNCTION__);
@@ -3329,21 +3330,14 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
 
                 if (if_indextoname(naddr->ifindex, tmp) == NULL)
                     strcpy(tmp, "unknown");
-
-                /* Do not exit with error if the address exists on needed
+                /**
+                 * Exit without error if the address exists on needed
                  * interface.
                  */
-                if (ifindex == (unsigned int)naddr->ifindex)
-                {
-                    VERB("%s(): Address '%s' already exists "
-                         "on interface '%s'", __FUNCTION__, addr, tmp);
-                    return 0;
-                }
-
-                ERROR("%s(): Address '%s' already exists "
-                      "on interface '%s'", __FUNCTION__, addr, tmp);
                 netconf_list_free(list);
-                return TE_RC(TE_TA_UNIX, TE_EEXIST);
+                VERB("%s(): Address '%s' already exists "
+                     "on interface '%s'", __FUNCTION__, addr, tmp);
+                return 0;
             }
         }
 
