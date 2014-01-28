@@ -1064,6 +1064,30 @@ extern int rpc_stat_func(rcf_rpc_server *rpcs,
                         rpc_stat *buf);
 
 /**
+ * Create a new link for existing file.
+ *
+ * @param rpcs   RPC server
+ * @parma path1  Pathname naming an existing file
+ * @param path2  Pathname naming the new directory entry to be created
+ *
+ * @return  -1 in the case of failure or 0 on success
+ */
+extern int rpc_link(rcf_rpc_server *rpcs,
+                    const char *path1, const char *path2);
+
+/**
+ * Create a symbolic link to a file.
+ *
+ * @param rpcs   RPC server
+ * @parma path1  String contained in the symbolic link
+ * @param path2  Name of the symbolic link created
+ *
+ * @return  -1 in the case of failure or 0 on success
+ */
+extern int rpc_symlink(rcf_rpc_server *rpcs,
+                       const char *path1, const char *path2);
+
+/**
  * Remove a directory entry.
  *
  * @param rpcs      RPC server

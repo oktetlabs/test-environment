@@ -1508,6 +1508,26 @@ TARPC_FUNC(te_fstat64, {},
 #undef FSTAT_COPY
 
 #ifndef TE_POSIX_FS_PROVIDED
+/*-------------- link() --------------------------------*/
+TARPC_FUNC(link, {},
+{
+    MAKE_CALL(out->retval = func_ptr((in->path1.path1_len == 0) ? NULL :
+                                      in->path1.path1_val,
+                                     (in->path2.path2_len == 0) ? NULL :
+                                      in->path2.path2_val));
+}
+)
+
+/*-------------- symlink() --------------------------------*/
+TARPC_FUNC(symlink, {},
+{
+    MAKE_CALL(out->retval = func_ptr((in->path1.path1_len == 0) ? NULL :
+                                      in->path1.path1_val,
+                                     (in->path2.path2_len == 0) ? NULL :
+                                      in->path2.path2_val));
+}
+)
+
 /*-------------- unlink() --------------------------------*/
 TARPC_FUNC(unlink, {},
 {

@@ -1560,7 +1560,7 @@ rpc_fcntl(rcf_rpc_server *rpcs, int fd,
                          ((struct rpc_f_owner_ex *)arg)->pid);
                 break;
             default:
-                snprintf(req_val, sizeof(req_val), ", %d", (long)arg);
+                snprintf(req_val, sizeof(req_val), ", %ld", (long)arg);
                 break;
         }
     }
@@ -2286,6 +2286,84 @@ rpc_stat_func(rcf_rpc_server *rpcs,
                  path, out.retval,
                  out.buf.te_atime, out.buf.te_ctime, out.buf.te_mtime);
     RETVAL_INT(te_stat, out.retval);
+}
+
+int
+rpc_link(rcf_rpc_server *rpcs,
+         const char *path1, const char *path2)
+{
+    tarpc_link_in  in;
+    tarpc_link_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(link, -1);
+    }
+
+    if (path1 != NULL)
+    {
+        in.path1.path1_len = strlen(path1) + 1;
+        in.path1.path1_val = (char *)strdup(path1);
+    }
+    if (path2 != NULL)
+    {
+        in.path2.path2_len = strlen(path2) + 1;
+        in.path2.path2_val = (char *)strdup(path2);
+    }
+
+    rcf_rpc_call(rpcs, "link", &in, &out);
+
+    if (path1 != NULL)
+        free(in.path1.path1_val);
+    if (path2 != NULL)
+        free(in.path2.path2_val);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(link, out.retval);
+    TAPI_RPC_LOG(rpcs, link, "%s, %s", "%d", path1, path2, out.retval);
+    RETVAL_INT(link, out.retval);
+}
+
+int
+rpc_symlink(rcf_rpc_server *rpcs,
+            const char *path1, const char *path2)
+{
+    tarpc_symlink_in  in;
+    tarpc_symlink_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(symlink, -1);
+    }
+
+    if (path1 != NULL)
+    {
+        in.path1.path1_len = strlen(path1) + 1;
+        in.path1.path1_val = (char *)strdup(path1);
+    }
+    if (path2 != NULL)
+    {
+        in.path2.path2_len = strlen(path2) + 1;
+        in.path2.path2_val = (char *)strdup(path2);
+    }
+
+    rcf_rpc_call(rpcs, "symlink", &in, &out);
+
+    if (path1 != NULL)
+        free(in.path1.path1_val);
+    if (path2 != NULL)
+        free(in.path2.path2_val);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(symlink, out.retval);
+    TAPI_RPC_LOG(rpcs, symlink, "%s, %s", "%d", path1, path2, out.retval);
+    RETVAL_INT(symlink, out.retval);
 }
 
 int

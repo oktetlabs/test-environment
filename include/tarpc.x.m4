@@ -678,6 +678,34 @@ struct tarpc_te_stat_out {
     struct tarpc_stat buf;
 };
 
+/* link() */
+struct tarpc_link_in {
+    struct tarpc_in_arg common;
+
+    char                path1<>;
+    char                path2<>;
+};
+
+struct tarpc_link_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int            retval;
+};
+
+/* symlink() */
+struct tarpc_symlink_in {
+    struct tarpc_in_arg common;
+
+    char                path1<>;
+    char                path2<>;
+};
+
+struct tarpc_symlink_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int            retval;
+};
+
 /* unlink() */
 struct tarpc_unlink_in {
     struct tarpc_in_arg common;
@@ -5118,6 +5146,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(te_fstat64)
         RPC_DEF(te_stat)
 
+        RPC_DEF(link)
+        RPC_DEF(symlink)
         RPC_DEF(unlink)
         RPC_DEF(rename)
         RPC_DEF(mkdir)
