@@ -168,6 +168,14 @@ typedef enum te_bool3 {
 /** Cast to 'const struct sockaddr_un *' type. */
 #define CONST_SUN(_p)  ((const struct sockaddr_un *)(_p))
 
+/**
+ * Platform-independent defines for
+ * standard input, output and error
+ * file descriptors.
+ */
+#define RPC_STDIN_FILENO 0
+#define RPC_STDOUT_FILENO 1
+#define RPC_STDERR_FILENO 2
 
 /** Convert seconds to milliseconds. */
 #define TE_SEC2MS(_sec)         ((_sec) * 1000)
