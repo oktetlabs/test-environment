@@ -208,6 +208,30 @@ te_sockaddr_set_wildcard(struct sockaddr *addr)
     }
 }
 
+/* See the description in te_sockaddr.h */
+void
+te_sockaddr_set_localhost(struct sockaddr *addr)
+{
+    switch (addr->sa_family)
+    {
+        case AF_INET:
+            SIN(addr)->sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+            break;
+
+        case AF_INET6:
+        {
+            char buf[16] = { 0, };
+            buf[15] = 1;
+            memcpy(&(SIN6(addr)->sin6_addr), buf, sizeof(buf));
+        }
+            break;
+            
+        default:
+            ERROR("%s(): Address family %d is not supported, "
+                  "operation has no effect", __FUNCTION__, addr->sa_family);
+            break;
+    }
+}
 
 /* See the description in te_sockaddr.h */
 te_bool

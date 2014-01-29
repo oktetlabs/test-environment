@@ -95,6 +95,21 @@ tapi_sockaddr_clone(rcf_rpc_server *pco,
     return tapi_allocate_port_htons(pco, te_sockaddr_get_port_ptr(SA(dst)));
 }
 
+/**
+ * Obtain an exact copy of a given socket address. 
+ *
+ * @param src   existing sockaddr
+ * @param dst   location for a clone
+ *
+ * @return Status code.
+ */
+static inline void
+tapi_sockaddr_clone_exact(const struct sockaddr *src, 
+                          struct sockaddr_storage *dst)
+{
+    memcpy(dst, src, te_sockaddr_get_size(src));
+}
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
