@@ -521,7 +521,7 @@ rcf_rpc_server_destroy(rcf_rpc_server *rpcs)
     int rc;
     
     if (rpcs == NULL)
-        return TE_RC(TE_RCF, TE_EINVAL);
+        return 0;
     
     VERB("Destroy RPC server %s", rpcs->name);
     
