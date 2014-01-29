@@ -210,7 +210,7 @@ te_sockaddr_set_wildcard(struct sockaddr *addr)
 
 /* See the description in te_sockaddr.h */
 void
-te_sockaddr_set_localhost(struct sockaddr *addr)
+te_sockaddr_set_loopback(struct sockaddr *addr)
 {
     switch (addr->sa_family)
     {
