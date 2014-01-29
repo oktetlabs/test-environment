@@ -79,6 +79,65 @@ tapi_sh_env_set(rcf_rpc_server *pco,
     return rc;
 }
 
+/**
+ * Check whether environment variable exists, save its current value
+ * if it does, then set a new value.
+ *
+ * @param pco               PCO handle
+ * @param env_name          Name of the environment variable
+ * @param existed     [out] Whether this variable already existed
+ *                          in an environment or not
+ * @param old_value   [out] Where to save existing value
+ * @param new_value         New value
+ * @param restart           Should the PCO be restarted
+ *
+ * @result errno
+ */
+static inline te_errno
+tapi_sh_env_save_set(rcf_rpc_server *pco,
+                     const char *env_name, te_bool *existed,
+                     char **old_value,
+                     const char *new_value,
+                     te_bool restart)
+{
+    cfg_handle  handle;
+    te_errno    rc = 0;
+
+    cfg_val_type     type;
+
+    if (existed != NULL)
+        *existed = FALSE;
+    if (old_value != NULL)
+        *old_value = NULL;
+
+    rc = cfg_find_fmt(&handle, "/agent:%s/env:%s", pco->ta, env_name);
+    if (rc != 0)
+    {
+        /* add the instance */
+        CHECK_RC(cfg_add_instance_fmt(&handle,
+                                      CFG_VAL(STRING, new_value),
+                                      "/agent:%s/env:%s",
+                                      pco->ta, env_name));
+    }
+    else
+    {
+        /* exists */
+        if (existed != NULL)
+            *existed = TRUE;
+
+        if (old_value != NULL)
+        {
+            type = CVT_STRING;
+            CHECK_RC(cfg_get_instance(handle, &type, old_value));
+        }
+        CHECK_RC(cfg_set_instance(handle, CVT_STRING, new_value));
+    }
+
+    if (restart)
+        CHECK_RC(rcf_rpc_server_restart(pco));
+
+    return 0;
+}
 
 /**
  * Unset environment for the agent and may be restart given PCO.
