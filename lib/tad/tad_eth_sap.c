@@ -473,7 +473,7 @@ tad_eth_sap_send_open(tad_eth_sap *sap, unsigned int mode)
      */
     memset(&bind_addr, 0, sizeof(bind_addr));
     bind_addr.sll_family = AF_PACKET;
-    bind_addr.sll_protocol = htons(0);
+    bind_addr.sll_protocol = htons(ETH_P_ALL);
     bind_addr.sll_ifindex = data->ifindex;
 
     if (bind(data->out, SA(&bind_addr), sizeof(bind_addr)) < 0)
