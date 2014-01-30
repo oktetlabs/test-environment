@@ -429,7 +429,7 @@ tad_ip4_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
 
                 /* Corrupt checksum if necessary */
                 if (ntohs(csum) == TE_IP4_UPPER_LAYER_CSUM_BAD)
-                    tmp++;
+                    tmp = ((tmp + 1) == 0) ? tmp + 2 : tmp + 1;
 
                 /* Write calculcated checksum to packet */
                 memcpy((uint8_t *)seg->data_ptr +
