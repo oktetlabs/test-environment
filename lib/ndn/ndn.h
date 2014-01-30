@@ -177,7 +177,11 @@ typedef enum {
     NDN_PKT_PAYLOAD,
 } ndn_raw_packet_tags_t;
 
-
+typedef enum {
+    TE_IP4_UPPER_LAYER_CSUM_CORRECT = 0,
+    TE_IP4_UPPER_LAYER_CSUM_ZERO,
+    TE_IP4_UPPER_LAYER_CSUM_BAD
+} te_ip4_upper_layer_csum_t;
 
 /* NDN ASN types. */
     /* DATA-UNIT wrappers over respecive bit integer fields */

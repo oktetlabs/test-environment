@@ -375,6 +375,7 @@ tad_ip4_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
     unsigned int        frags_i;
     tad_pkts            frags;
     tad_pkt            *frag;
+    uint16_t            csum;
 
     if (data->upper_chksm_offset != -1)
     {
@@ -407,21 +408,34 @@ tad_ip4_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
                 seg_data.checksum += calculate_checksum(&tmp, sizeof(tmp));
             }
 
+            /* Get checksum from template */
+            csum = *(uint16_t *)((uint8_t *)seg->data_ptr +
+                                 data->upper_chksm_offset);
+
             /* Preset checksum field by zeros */
             memset((uint8_t *)seg->data_ptr + data->upper_chksm_offset,
                    0, 2);
 
-            /* Upper layer data checksum */
-            (void)tad_pkt_enumerate_seg(sdu, tad_ip4_upper_checksum_seg_cb,
-                                        &seg_data);
+            if (ntohs(csum) != TE_IP4_UPPER_LAYER_CSUM_ZERO)
+            {
+                /* Upper layer data checksum */
+                (void)tad_pkt_enumerate_seg(sdu,
+                                            tad_ip4_upper_checksum_seg_cb,
+                                            &seg_data);
 
-            /* Finalize checksum calculation */
-            tmp = ~((seg_data.checksum & 0xffff) +
-                    (seg_data.checksum >> 16));
+                /* Finalize checksum calculation */
+                tmp = ~((seg_data.checksum & 0xffff) +
+                        (seg_data.checksum >> 16));
 
-            /* Write calculcated checksum to packet */
-            memcpy((uint8_t *)seg->data_ptr + data->upper_chksm_offset,
-                   &tmp, sizeof(tmp));
+                /* Corrupt checksum if necessary */
+                if (ntohs(csum) == TE_IP4_UPPER_LAYER_CSUM_BAD)
+                    tmp++;
+
+                /* Write calculcated checksum to packet */
+                memcpy((uint8_t *)seg->data_ptr +
+                       data->upper_chksm_offset,
+                       &tmp, sizeof(tmp));
+            }
         }
     }
 
