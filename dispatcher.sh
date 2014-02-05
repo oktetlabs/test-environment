@@ -353,6 +353,42 @@ RGT_LOG_HTML_PLAIN=
 # Name of the directory for structured HTML logs to be genetated
 RGT_LOG_HTML=
 
+TE_TESTER_SCRIPTS=
+export TE_TA_LIST_FILE=ta.list
+
+process_script_opt()
+{
+    script_req="${1#--$2=}"
+    script_file=
+    script_opts=
+    for i in ${script_req//:/ } ; do
+        if test -z "${script_file}" ; then
+            script_file="$i"
+        else
+            script_opts="$script_opts $i"
+        fi
+    done
+    if test "${script_file:0:1}" != "/" ; then 
+        script_file="${CONF_DIR}/${script_file}"
+    fi
+}
+
+run_script()
+{
+    script_file=$1
+    if test -f "${script_file}" ; then
+        TE_EXTRA_OPTS=
+        . "${script_file}"
+        if test -n "${TE_EXTRA_OPTS}" ; then
+            process_opts ${TE_EXTRA_OPTS}
+            TE_EXTRA_OPTS=
+        fi
+    else
+        echo "File with shell script ${script_file} not found" >&2
+        exit 1
+    fi
+}
+
 #
 # Process Dispatcher options.
 #
@@ -385,31 +421,21 @@ process_opts()
                 ;;
 
             --script=* )
-                script_req="${1#--script=}"
-                script_file=
-                script_opts=
-                for i in ${script_req//:/ } ; do
-                    if test -z "${script_file}" ; then
-                        script_file="$i"
-                    else
-                        script_opts="$script_opts $i"
-                    fi
-                done
-                if test "${script_file:0:1}" != "/" ; then 
-                    script_file="${CONF_DIR}/${script_file}"
-                fi
+                process_script_opt $1 script
+                run_script ${script_file}
+                ;;
+
+            --tester-script=* )
+                process_script_opt $1 tester-script
                 if test -f "${script_file}" ; then
-                    TE_EXTRA_OPTS=
-                    . "${script_file}"
-                    if test -n "${TE_EXTRA_OPTS}" ; then
-                        process_opts ${TE_EXTRA_OPTS}
-                        TE_EXTRA_OPTS=
-                    fi
+                    TE_TESTER_SCRIPTS="${TE_TESTER_SCRIPTS} \
+                                              ${script_file}"
                 else
                     echo "File with shell script ${script_file} not found" >&2
                     exit 1
                 fi
                 ;;
+
 
             -q) QUIET=yes ;;
             -n) BUILDER= ; TESTER_OPTS="${TESTER_OPTS} --nobuild" ;;
@@ -1045,6 +1071,11 @@ else
     RCF_OK=yes
     CS_OK=yes
 fi
+
+for i in ${TE_TESTER_SCRIPTS} ; do
+    script_opts=
+    run_script $i
+done
 
 if test ${START_OK} -eq 0 -a -n "${TESTER}" ; then
     te_log_message Dispatcher Start \

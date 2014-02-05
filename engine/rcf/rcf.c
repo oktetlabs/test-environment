@@ -2988,6 +2988,7 @@ main(int argc, const char *argv[])
     ta     *agent;
     int     result = EXIT_FAILURE;
     int     rc;
+    char   *ta_list_file;
 
     if ((rc = process_cmd_line_opts(argc, argv)) != EXIT_SUCCESS)
     {
@@ -3014,6 +3015,9 @@ main(int argc, const char *argv[])
         ERROR("FATAL ERROR: TE_TMP is empty");
         goto exit;
     }
+
+    if ((ta_list_file = getenv("TE_TA_LIST_FILE")) != NULL)
+        unlink(ta_list_file); 
 
     if (parse_config(cfg_file) != 0)
         goto exit;

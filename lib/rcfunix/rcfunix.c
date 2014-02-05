@@ -381,6 +381,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     char       *conf_str_dup;
     char       *dup;
     char       *shell;
+    char       *ta_list_file;
 
     RING("Starting TA '%s' type '%s' conf_str '%s'",
          ta_name, ta_type, conf_str);
@@ -648,6 +649,20 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 
     *handle = (rcf_talib_handle)ta;
 
+    if ((ta_list_file = getenv("TE_TA_LIST_FILE")) != NULL)
+    {
+        FILE *f = fopen(ta_list_file, "a");
+        if (f != NULL)
+        {
+            fprintf(f, "%s\t\t%s\t\t%s\t\t/tmp/%s%s",
+                    ta->ta_name, ta->host, ta->ta_type,
+                    ta->ta_type, ta->postfix);
+            fclose(f);
+        }
+        else
+            ERROR("Failed to open '%s' for writing", ta_list_file);
+    }
+
     return 0;
 
 bad_confstr:
@@ -805,7 +820,27 @@ rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
     char                *env_retry_max;
     char                *endptr;
 
+    char                *ta_list_fn;
+    FILE                *ta_list_f = NULL;
+
     (void)select_tm;
+
+#define TA_LIST_F_ERROR \
+    do {                                          \
+        if (ta_list_f != NULL)                    \
+        {                                         \
+            fprintf(ta_list_f, "\t\t<ERROR>\n");  \
+            fclose(ta_list_f);                    \
+            ta_list_f = NULL;                     \
+        }                                         \
+    } while (0)
+
+    if ((ta_list_fn = getenv("TE_TA_LIST_FILE")) != NULL)
+    {
+        ta_list_f = fopen(ta_list_fn, "a");
+        if (ta_list_f == NULL)
+            ERROR("Failed to open '%s' for writing", ta_list_fn);
+    }
 
     env_retry_max = getenv("RCF_TA_MAX_CONN_ATTEMPTS");
     if (env_retry_max != NULL)
@@ -834,22 +869,34 @@ rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
     }
     
     if (rc != 0)
+    {
+        TA_LIST_F_ERROR;
         return rc;
+    }
 
     if ((rc = rcf_net_engine_receive(ta->conn, buf, &len, &tmp)) != 0)
     {
         ERROR("Cannot read TA PID from the TA %s (error %x)", ta->ta_name, 
               rc);
+        TA_LIST_F_ERROR;
+        return TE_RC(TE_RCF, TE_EINVAL);
     }
     
     if (strncmp(buf, "PID ", 4) != 0 || 
         (ta->pid = strtol(buf + 4, &tmp, 10), *tmp != 0))
     {
         ta->pid = 0;
+        TA_LIST_F_ERROR;
         return TE_RC(TE_RCF, TE_EINVAL);
     }
     
     INFO("PID of TA %s is %d", ta->ta_name, ta->pid);
+    if (ta_list_f != NULL)
+    {
+        fprintf(ta_list_f, "\t\t%lu\n", (long unsigned int)ta->pid);
+        fclose(ta_list_f);
+        ta_list_f = NULL;
+    }
     
     return 0;
 }
