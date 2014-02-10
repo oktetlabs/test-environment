@@ -59,7 +59,7 @@ extern "C" {
  * @param c     Pointer to cmsghdr structure
  */
 #define CMSG_TOTAL_LEN(c) \
-    CMSG_SPACE((c)->cmsg_len - (CMSG_DATA(c) - (uint8_t *)(c)))
+    CMSG_SPACE((c)->cmsg_len - ((uint8_t *)CMSG_DATA(c) - (uint8_t *)(c)))
 
 /**
  * Pointer to the next cmsghdr structure
