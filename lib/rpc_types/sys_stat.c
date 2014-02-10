@@ -59,9 +59,15 @@ file_mode_flags_rpc2h(unsigned int flags)
         (!!(flags & RPC_S_IWUSR) * S_IWUSR) |
         (!!(flags & RPC_S_IXUSR) * S_IXUSR) |
         (!!(flags & RPC_S_IRWXU) * S_IRWXU) |
+#ifdef S_IREAD
         (!!(flags & RPC_S_IREAD) * S_IREAD) |
+#endif
+#ifdef S_IWRITE
         (!!(flags & RPC_S_IWRITE) * S_IWRITE) |
+#endif
+#ifdef S_IEXEC
         (!!(flags & RPC_S_IEXEC) * S_IEXEC) |
+#endif
         (!!(flags & RPC_S_IRGRP) * S_IRGRP) |
         (!!(flags & RPC_S_IWGRP) * S_IWGRP) |
         (!!(flags & RPC_S_IXGRP) * S_IXGRP) |
