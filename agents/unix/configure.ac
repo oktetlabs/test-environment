@@ -323,6 +323,16 @@ if test -n "$with_rcf_rpc" -o -n "$with_cfg_unix_daemons" ; then
     AC_CHECK_FUNC([dlopen], [],
                   AC_CHECK_LIB([dl], [dlopen], [],
                                AC_MSG_ERROR([No dynamic linker API found])))
+
+    dnl
+    dnl Check if RTLD_NODELETE constant is defined
+    dnl (it could be defined either as a macro or
+    dnl as an element of enumeration).
+    dnl
+    AH_TEMPLATE([HAVE_RTLD_NODELETE], [check RTLD_NODELETE constant])
+    AC_TRY_LINK([#include <dlfcn.h>],
+                [dlopen("", RTLD_NODELETE); ],
+                [AC_DEFINE(HAVE_RTLD_NODELETE)])
 fi
 
 dnl

@@ -150,7 +150,11 @@ tarpc_setlibname(const char *libname)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
     }
     dynamic_library_handle = dlopen(*libname == '\0' ? NULL : libname,
-                                    RTLD_LAZY | RTLD_NODELETE);
+                                    RTLD_LAZY
+#ifdef HAVE_RTLD_NODELETE
+                                    | RTLD_NODELETE
+#endif
+                                    );
     if (dynamic_library_handle == NULL)
     {
         if (*libname == 0)
