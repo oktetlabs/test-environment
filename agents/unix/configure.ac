@@ -662,9 +662,26 @@ netconf in TE_PLATFORM macro in your builder.conf])],
     # On Linux netlink is default way to configure interfaces and IP
     EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DUSE_LIBNETCONF"
     EXTRA_LDADD="$EXTRA_LDADD -lnetconf"
-else 
+else
+    #
+    # We do not use netconf interface, so the only thing we can do
+    # is to use ioctl interface and routing sockets.
+ 
+    # Check if we have routing sockets
+    AC_CHECK_HEADERS([net/route.h])
+    AC_CHECK_TYPES([struct rt_msghdr],
+                   [EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DUSE_ROUTE_SOCKET"],
+                   [], [
+                   #if HAVE_UNISTD_H
+                   #include <unistd.h>
+                   #endif
+                   #if HAVE_NET_ROUTE_H
+                   #include <net/route.h>
+                   #endif
+    ])
+
     # The rest should use IOCTL interface for now
-    EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DUSE_IOCTL -DUSE_ROUTE_SOCKET"
+    EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DUSE_IOCTL"
 fi
 
 AC_ARG_ENABLE([vcm],
