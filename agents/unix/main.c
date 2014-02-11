@@ -2028,6 +2028,7 @@ main(int argc, char **argv)
         /* Continue */
     }
 
+#if defined (AT_SYSINFO)
     /* Skip the environment */
     for (; *av != NULL; av++);
 
@@ -2040,6 +2041,7 @@ main(int argc, char **argv)
             break;
         }
     }
+#endif /* AT_SYSINFO */
 #endif
 
     te_kernel_log_set_system_func(&ta_system);
