@@ -5555,11 +5555,41 @@ TARPC_FUNC(unsetenv, {},
                 ERROR("Failed to duplicate string '%s'",                \
                       pw->pw_##_field);                                 \
                 out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);      \
-                goto finish;                                            \
+                return -1;                                              \
             }                                                           \
             out->passwd._field._field##_len =                           \
                 strlen(out->passwd._field._field##_val) + 1;            \
         } while (0)
+
+/**
+ * Copy the content of 'struct passwd' to RPC output structure.
+ *
+ * @param out   RPC output structure to fill in
+ * @param pw    system native 'struct passwd' structure
+ *
+ * @return Status of the operation
+ * @retval 0   on success
+ * @retval -1  on failure
+ *
+ * @note We added this function because some systems might not have
+ *       all the fields and we need to track this. For example Android
+ *       does not export 'gecos' field.
+ */
+static int
+copy_passwd_struct(struct tarpc_getpwnam_out *out, struct passwd *pw)
+{
+    PUT_STR(name);
+    PUT_STR(passwd);
+    out->passwd.uid = pw->pw_uid;
+    out->passwd.gid = pw->pw_gid;
+#ifdef HAVE_STRUCT_PASSWD_PW_GECOS
+    PUT_STR(gecos);
+#endif
+    PUT_STR(dir);
+    PUT_STR(shell);
+
+    return 0;
+}
 
 TARPC_FUNC(getpwnam, {},
 {
@@ -5571,20 +5601,13 @@ TARPC_FUNC(getpwnam, {},
 
     if (pw != NULL)
     {
-        PUT_STR(name);
-        PUT_STR(passwd);
-        out->passwd.uid = pw->pw_uid;
-        out->passwd.gid = pw->pw_gid;
-        PUT_STR(gecos);
-        PUT_STR(dir);
-        PUT_STR(shell);
-
+        copy_passwd_struct(out, pw);
     }
     else
     {
         ERROR("getpwnam() returned NULL");
     }
-finish:
+
     if (!RPC_IS_ERRNO_RPC(out->common._errno))
     {
         free(out->passwd.name.name_val);

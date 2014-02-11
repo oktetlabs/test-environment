@@ -289,6 +289,12 @@ dnl
 AC_CHECK_MEMBERS([struct dirent.d_namelen], [], [],
                  [#include <dirent.h>])
 
+dnl
+dnl Check for 'pw_gecos' member in 'struct passwd'.
+dnl
+AC_CHECK_MEMBERS([struct passwd.pw_gecos], [], [],
+                 [#include <pwd.h>])
+
 
 dnl
 dnl Berkley Socket API is provided by:
