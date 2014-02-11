@@ -3195,14 +3195,14 @@ tarpc_getsockopt(tarpc_getsockopt_in *in, tarpc_getsockopt_out *out,
 
     if (out_optval->opttype == OPT_MREQN
 #if HAVE_STRUCT_IP_MREQN
-        && optlen < sizeof(struct ip_mreqn)
+        && optlen < (socklen_t)sizeof(struct ip_mreqn)
 #endif
         )
     {
         out_optval->opttype = OPT_MREQ;
     }
     if (out_optval->opttype == OPT_MREQ &&
-        optlen < sizeof(struct ip_mreq))
+        optlen < (socklen_t)sizeof(struct ip_mreq))
     {
         out_optval->opttype = OPT_IPADDR;
     }
@@ -4326,7 +4326,8 @@ TARPC_FUNC(recvmsg,
 
         PREPARE_ADDR(name, rpc_msg->msg_name, rpc_msg->msg_namelen);
         
-        if (rpc_msg->msg_namelen <= sizeof(struct sockaddr_storage))
+        if (rpc_msg->msg_namelen <=
+                (tarpc_socklen_t)sizeof(struct sockaddr_storage))
             msg.msg_name = name;
         else
         {
@@ -4415,7 +4416,8 @@ TARPC_FUNC(recvmsg,
 
         rpc_msg->msg_flags = send_recv_flags_h2rpc(msg.msg_flags);
 
-        if (msg.msg_namelen <= sizeof(struct sockaddr_storage))
+        if (msg.msg_namelen <=
+                (tarpc_socklen_t)sizeof(struct sockaddr_storage))
             sockaddr_output_h2rpc(msg.msg_name,
                                   namelen > 0 ?
                                     namelen : rpc_msg->msg_name.raw.raw_len,
@@ -9560,7 +9562,8 @@ TARPC_FUNC(recvmmsg_alt,
 
             rpc_msg->msg_flags = send_recv_flags_h2rpc(msg->msg_flags);
 
-            if (msg->msg_namelen < sizeof(struct sockaddr_storage))
+            if (msg->msg_namelen <
+                    (tarpc_socklen_t)sizeof(struct sockaddr_storage))
                 sockaddr_output_h2rpc(msg->msg_name,
                                       name_len[j] > 0 ?
                                         name_len[j] :
