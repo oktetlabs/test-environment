@@ -73,7 +73,11 @@
 #include "te_kernel_log.h"
 
 #ifndef HOST_NAME_MAX
+#ifdef _POSIX_HOST_NAME_MAX
 #define HOST_NAME_MAX _POSIX_HOST_NAME_MAX
+#else
+#define HOST_NAME_MAX 64
+#endif
 #endif
 
 /*
