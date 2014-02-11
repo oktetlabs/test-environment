@@ -404,6 +404,11 @@ dnl
 AC_CHECK_TYPES([struct epoll_event], [], [],
                [#include <sys/epoll.h>])
 
+dnl
+dnl Check for 'struct if_nameindex'
+dnl
+AC_CHECK_TYPES([struct if_nameindex], [], [],
+               [#include <net/if.h>])
 
 dnl
 dnl Asynchronous I/O:

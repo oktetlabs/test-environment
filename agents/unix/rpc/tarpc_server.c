@@ -2251,7 +2251,7 @@ TARPC_FUNC(if_indextoname,
 }
 )
 
-
+#if HAVE_STRUCT_IF_NAMEINDEX
 /*-------------- if_nameindex() ------------------------------*/
 
 TARPC_FUNC(if_nameindex, {},
@@ -2307,6 +2307,7 @@ TARPC_FUNC(if_freenameindex, {},
     rcf_pch_mem_free(in->mem_ptr);
 }
 )
+#endif /* HAVE_STRUCT_IF_NAMEINDEX */
 
 /*-------------- sigset_t constructor ---------------------------*/
 
