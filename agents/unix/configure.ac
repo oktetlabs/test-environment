@@ -416,6 +416,25 @@ dnl
 AC_CHECK_TYPES([struct if_nameindex], [], [],
                [#include <net/if.h>])
 
+
+dnl
+dnl Check for 'struct sg_io_hdr'
+dnl
+AC_CHECK_HEADERS([scsi/sg.h])
+AC_CHECK_HEADERS([cam/scsi/scsi_sg.h])
+
+AC_CHECK_TYPES([struct sg_io_hdr], [], [], [
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#if HAVE_SCSI_SG_H
+#include <scsi/sg.h>
+#endif
+#if HAVE_CAM_SCSI_SCSI_SG_H
+#include <cam/scsi/scsi_sg.h>
+#endif
+])
+
 dnl
 dnl Asynchronous I/O:
 dnl - FreeBSD has in -lc;
