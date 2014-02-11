@@ -51,7 +51,7 @@
 
 #include "te_rpc_sys_socket.h"
 
-#if defined (SIOCETHTOOL)
+#ifdef HAVE_LINUX_ETHTOOL_H
 /**
  * Get single ethernet interface configuration value.
  *
@@ -217,5 +217,5 @@ ta_unix_conf_eth_init(void)
     INFO("Extra ethernet interface configurations are not supported");
     return 0;
 }
-#endif /* !SIOCETHTOOL */
+#endif /* !HAVE_LINUX_ETHTOOL_H */
 

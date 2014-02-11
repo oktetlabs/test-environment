@@ -59,6 +59,7 @@
 
 #include "te_ethernet_phy.h"
 
+#if !defined __ANDROID__
 /* Stdout output buffer size: need to pick up command execution output */
 #define BUFFER_SIZE (1024)
 /* Size of interface name */
@@ -1788,3 +1789,11 @@ phy_commit(unsigned int gid, const cfg_oid *p_oid)
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #endif /* __linux__ && HAVE_LINUX_ETHTOOL_H */
 }
+#else
+extern te_errno
+ta_unix_conf_phy_init(void)
+{
+    INFO("Phy interface configurations are not supported");
+    return 0;
+}
+#endif /* __ANDROID__ */
