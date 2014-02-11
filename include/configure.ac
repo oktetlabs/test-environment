@@ -95,6 +95,20 @@ AC_CHECK_HEADERS([netinet/in.h], [], [], [
 #endif
 ])
 
+AH_TEMPLATE([in_port_t], [check if in_port_t data type is defined])
+AC_CHECK_TYPES([in_port_t], [],
+               [AC_DEFINE(in_port_t, unsigned short int)], [
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+])
+
 AC_CHECK_HEADERS([\
 aio.h \
 arpa/inet.h \
