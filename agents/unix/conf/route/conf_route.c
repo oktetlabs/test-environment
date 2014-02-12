@@ -74,6 +74,7 @@
 #include "unix_internal.h"
 #include "conf_route.h"
 
+#if defined(USE_LIBNETCONF) || defined(USE_ROUTE_SOCKET)
 
 #ifndef IF_NAMESIZE
 #define IF_NAMESIZE IFNAMSIZ
@@ -663,13 +664,6 @@ static rcf_pch_cfg_object node_route =
 
 /* See the description in conf_route.h */
 te_errno
-ta_unix_conf_route_init(void)
-{
-    return rcf_pch_add_node("/agent", &node_route);
-}
-
-/* See the description in conf_route.h */
-te_errno
 ta_unix_conf_outgoing_if(ta_rt_info_t *rt_info)
 {
     te_errno    rc;
@@ -718,3 +712,20 @@ ta_unix_conf_outgoing_if(ta_rt_info_t *rt_info)
     }
     return 0;
 }
+
+/* See the description in conf_route.h */
+te_errno
+ta_unix_conf_route_init(void)
+{
+    return rcf_pch_add_node("/agent", &node_route);
+}
+#else
+/* See the description in conf_route.h */
+te_errno
+ta_unix_conf_route_init(void)
+{
+    INFO("Network route configurations are not supported");
+    return 0;
+}
+#endif /* !USE_LIBNETCONF && !USE_ROUTE_SOCKET */
+
