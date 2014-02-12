@@ -28,6 +28,8 @@
  * $Id$
  */
 
+#include "te_config.h"
+
 #include "tapi_rpc.h"
 #include "te_bufs.h"
 
