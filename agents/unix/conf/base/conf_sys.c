@@ -187,7 +187,12 @@ SYSTEM_WIDE_PARAM(tcp_rcvbuf_def, udp_sndbuf_max);
 SYSTEM_WIDE_PARAM(tcp_rcvbuf_max, tcp_rcvbuf_def);
 SYSTEM_WIDE_PARAM(tcp_sndbuf_def, tcp_rcvbuf_max);
 SYSTEM_WIDE_PARAM(tcp_sndbuf_max, tcp_sndbuf_def);
-SYSTEM_WIDE_PARAM_COMMON(tcp_syncookies, tcp_sndbuf_max);
+SYSTEM_WIDE_PARAM_COMMON(tcp_syn_retries, tcp_sndbuf_max);
+SYSTEM_WIDE_PARAM_COMMON(tcp_keepalive_time, tcp_syn_retries);
+SYSTEM_WIDE_PARAM_COMMON(tcp_keepalive_probes, tcp_keepalive_time);
+SYSTEM_WIDE_PARAM_COMMON(tcp_keepalive_intvl, tcp_keepalive_probes);
+SYSTEM_WIDE_PARAM_COMMON(tcp_retries2, tcp_keepalive_intvl);
+SYSTEM_WIDE_PARAM_COMMON(tcp_syncookies, tcp_retries2);
 SYSTEM_WIDE_PARAM_COMMON(tcp_timestamps, tcp_syncookies);
 SYSTEM_WIDE_PARAM(rcvbuf_def, tcp_timestamps);
 SYSTEM_WIDE_PARAM(rcvbuf_max, rcvbuf_def);
@@ -847,7 +852,8 @@ tcp_rcvbuf_def_get(unsigned int gid, const char *oid,
 
 /**
  * Common function to set a value in /proc/sys.
- * Supported nodes: tcp_timestamps, tcp_syncookies
+ * Supported nodes: tcp_timestamps, tcp_syncookies, tcp_keepalive_time,
+ * tcp_keepalive_probes, tcp_keepalive_intvl, tcp_retries2, tcp_syn_retries
  *
  * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
@@ -869,12 +875,20 @@ proc_sys_common_set(unsigned int gid, const char *oid,
     }
 
 #if __linux__
+#define ELSE_IF_IPV4_FIELD(_field) \
+    else if (strstr(oid, "/" #_field ":") != NULL) \
+        return proc_sys_set_value("/proc/sys/net/ipv4/" #_field, 0, value);
+
     if (strstr(oid, "/tcp_timestamps:") != NULL)
         return proc_sys_set_value("/proc/sys/net/ipv4/tcp_timestamps",
                                   0, value);
-    else if (strstr(oid, "/tcp_syncookies:") != NULL)
-        return proc_sys_set_value("/proc/sys/net/ipv4/tcp_syncookies",
-                                  0, value);
+    ELSE_IF_IPV4_FIELD(tcp_syncookies)
+    ELSE_IF_IPV4_FIELD(tcp_keepalive_time)
+    ELSE_IF_IPV4_FIELD(tcp_keepalive_probes)
+    ELSE_IF_IPV4_FIELD(tcp_keepalive_intvl)
+    ELSE_IF_IPV4_FIELD(tcp_retries2)
+    ELSE_IF_IPV4_FIELD(tcp_syn_retries)
+#undef ELSE_IF_IPV4_FIELD
 
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 #else
@@ -884,7 +898,8 @@ proc_sys_common_set(unsigned int gid, const char *oid,
 
 /**
  * Common function to get a value from /proc/sys.
- * Supported nodes: tcp_timestamps, tcp_syncookies
+ * Supported nodes: tcp_timestamps, tcp_syncookies, tcp_keepalive_time,
+ * tcp_keepalive_probes, tcp_keepalive_intvl, tcp_retries2, tcp_syn_retries
  *
  * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
@@ -906,12 +921,20 @@ proc_sys_common_get(unsigned int gid, const char *oid,
     }
 
 #if __linux__
+#define ELSE_IF_IPV4_FIELD(_field) \
+    else if (strstr(oid, "/" #_field ":") != NULL) \
+        return proc_sys_get_value("/proc/sys/net/ipv4/" #_field, 0, value);
+
     if (strstr(oid, "/tcp_timestamps:") != NULL)
         return proc_sys_get_value("/proc/sys/net/ipv4/tcp_timestamps", 0,
                                   value);
-    else if (strstr(oid, "/tcp_syncookies:") != NULL)
-        return proc_sys_get_value("/proc/sys/net/ipv4/tcp_syncookies", 0,
-                                  value);
+    ELSE_IF_IPV4_FIELD(tcp_syncookies)
+    ELSE_IF_IPV4_FIELD(tcp_keepalive_time)
+    ELSE_IF_IPV4_FIELD(tcp_keepalive_probes)
+    ELSE_IF_IPV4_FIELD(tcp_keepalive_intvl)
+    ELSE_IF_IPV4_FIELD(tcp_retries2)
+    ELSE_IF_IPV4_FIELD(tcp_syn_retries)
+#undef ELSE_IF_IPV4_FIELD
 #endif
 
     return TE_RC(TE_TA_UNIX, TE_ENOENT);

@@ -67,48 +67,6 @@ tapi_cfg_net_route_flush(rcf_rpc_server *rpcs)
 
 /* See description in tapi_proc.h */
 te_errno
-tapi_cfg_tcp_syncookies_set(rcf_rpc_server *rpcs, int value, int *old_value)
-{
-    cfg_val_type  val_type = CVT_INTEGER;
-    te_errno      rc;
-
-    if (old_value != NULL)
-    {
-        rc = cfg_get_instance_fmt(&val_type, old_value, 
-                                  "/agent:%s/sys:/tcp_syncookies:",
-                                  rpcs->ta);
-        if (rc != 0)
-        {
-            ERROR("Failed to get tcp_syncookies value");
-            return rc;
-        }
-    }
-
-    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, value),
-                              "/agent:%s/sys:/tcp_syncookies:",
-                              rpcs->ta);
-    if (rc != 0)
-        ERROR("Failed to set new tcp_syncookies value");
-
-    return rc;
-}
-
-/* See description in tapi_proc.h */
-te_errno
-tapi_cfg_tcp_syncookies_get(rcf_rpc_server *rpcs, int *value)
-{
-    cfg_val_type  val_type = CVT_INTEGER;
-    te_errno      rc;
-
-    rc = cfg_get_instance_fmt(&val_type, value, 
-                              "/agent:%s/sys:/tcp_syncookies:", rpcs->ta);
-    if (rc != 0)
-        ERROR("Failed to get tcp_syncookies value");
-    return rc;
-}
-
-/* See description in tapi_proc.h */
-te_errno
 tapi_cfg_tcp_timestamps_set(rcf_rpc_server *rpcs, int value, int *old_value)
 {
     cfg_val_type  val_type = CVT_INTEGER;
@@ -191,3 +149,58 @@ tapi_cfg_if_rp_filter_set(rcf_rpc_server *rpcs, const char *ifname,
 
     return rc;
 }
+
+/**
+ * Macros to define similar functions to get and set system values in /proc
+ * 
+ * @param _name     Field name to be used in functions name.
+ * @param _path     Path in configurator tree, it should include '%s'
+ *                  modifier for agent name.
+ */
+#define DEFINE_API_FUNC_TA_ONLY(_name, _path) \
+te_errno                                                                \
+tapi_cfg_##_name##_set(rcf_rpc_server *rpcs, int value, int *old_value) \
+{                                                                       \
+    cfg_val_type  val_type = CVT_INTEGER;                               \
+    te_errno      rc;                                                   \
+                                                                        \
+    if (old_value != NULL)                                              \
+    {                                                                   \
+        rc = cfg_get_instance_fmt(&val_type, old_value, _path, rpcs->ta); \
+        if (rc != 0)                                                    \
+        {                                                               \
+            ERROR("Failed to get " #_name " value");                    \
+            return rc;                                                  \
+        }                                                               \
+    }                                                                   \
+    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, value), _path, rpcs->ta); \
+    if (rc != 0)                                                        \
+        ERROR("Failed to set new " #_name " value");                    \
+    return rc;                                                          \
+}                                                                       \
+                                                                        \
+te_errno                                                                \
+tapi_cfg_##_name##_get(rcf_rpc_server *rpcs, int *value)                \
+{                                                                       \
+    cfg_val_type  val_type = CVT_INTEGER;                               \
+    te_errno      rc;                                                   \
+                                                                        \
+    rc = cfg_get_instance_fmt(&val_type, value, _path, rpcs->ta);       \
+    if (rc != 0)                                                        \
+        ERROR("Failed to get " #_name " value");                        \
+    return rc;                                                          \
+}
+
+DEFINE_API_FUNC_TA_ONLY(tcp_syncookies, "/agent:%s/sys:/tcp_syncookies:")
+DEFINE_API_FUNC_TA_ONLY(tcp_keepalive_time,
+                        "/agent:%s/sys:/tcp_keepalive_time:")
+DEFINE_API_FUNC_TA_ONLY(tcp_keepalive_probes,
+                        "/agent:%s/sys:/tcp_keepalive_probes:")
+DEFINE_API_FUNC_TA_ONLY(tcp_keepalive_intvl,
+                        "/agent:%s/sys:/tcp_keepalive_intvl:")
+DEFINE_API_FUNC_TA_ONLY(tcp_retries2,
+                        "/agent:%s/sys:/tcp_retries2:")
+DEFINE_API_FUNC_TA_ONLY(tcp_syn_retries,
+                        "/agent:%s/sys:/tcp_syn_retries:")
+
+#undef DEFINE_API_FUNC_TA_ONLY

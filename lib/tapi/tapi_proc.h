@@ -120,6 +120,120 @@ extern te_errno tapi_cfg_if_rp_filter_set(rcf_rpc_server *rpcs,
                                           const char *ifname,
                                           int rp_filter, int *old_value);
 
+/**
+ * Set a new tcp_keepalive_time value.
+ *
+ * @param rpcs      RPC server
+ * @param value     Value to be set
+ * @param old_value Location for previous value or @c NULL
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_tcp_keepalive_time_set(rcf_rpc_server *rpcs,
+                                                int value, int *old_value);
+
+/**
+ * Get tcp_keepalive_time value.
+ *
+ * @param rpcs      RPC server
+ * @param value     Location for the value
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_tcp_keepalive_time_get(rcf_rpc_server *rpcs,
+                                                int *value);
+
+/**
+ * Set a new tcp_keepalive_probes value.
+ *
+ * @param rpcs      RPC server
+ * @param value     Value to be set
+ * @param old_value Location for previous value or @c NULL
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_tcp_keepalive_probes_set(rcf_rpc_server *rpcs,
+                                                  int value,
+                                                  int *old_value);
+
+/**
+ * Get tcp_keepalive_probes value.
+ *
+ * @param rpcs      RPC server
+ * @param value     Location for the value
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_tcp_keepalive_probes_get(rcf_rpc_server *rpcs,
+                                                  int *value);
+
+/**
+ * Set a new tcp_keepalive_intvl value.
+ *
+ * @param rpcs      RPC server
+ * @param value     Value to be set
+ * @param old_value Location for previous value or @c NULL
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_tcp_keepalive_intvl_set(rcf_rpc_server *rpcs,
+                                                 int value, int *old_value);
+
+/**
+ * Get tcp_keepalive_intvl value.
+ *
+ * @param rpcs      RPC server
+ * @param value     Location for the value
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_tcp_keepalive_intvl_get(rcf_rpc_server *rpcs,
+                                                 int *value);
+
+/**
+ * Set a new tcp_retries2 value.
+ *
+ * @param rpcs      RPC server
+ * @param value     Value to be set
+ * @param old_value Location for previous value or @c NULL
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_tcp_retries2_set(rcf_rpc_server *rpcs, int value,
+                                          int *old_value);
+
+/**
+ * Get tcp_retries2 value.
+ *
+ * @param rpcs      RPC server
+ * @param value     Location for the value
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_tcp_retries2_get(rcf_rpc_server *rpcs, int *value);
+
+/**
+ * Set a new tcp_syn_retries value.
+ *
+ * @param rpcs      RPC server
+ * @param value     Value to be set
+ * @param old_value Location for previous value or @c NULL
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_tcp_syn_retries_set(rcf_rpc_server *rpcs,
+                                             int value, int *old_value);
+
+/**
+ * Get tcp_syn_retries value.
+ *
+ * @param rpcs      RPC server
+ * @param value     Location for the value
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_tcp_syn_retries_get(rcf_rpc_server *rpcs,
+                                             int *value);
 
 #ifdef __cplusplus
 } /* extern "C" */
