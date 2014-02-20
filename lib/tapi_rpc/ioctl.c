@@ -158,6 +158,8 @@ rpc_ioctl(rcf_rpc_server *rpcs,
             }
             break;
 
+        case RPC_SIOCOUTQ:
+        case RPC_TIOCOUTQ:
         case RPC_FIONREAD:
         case RPC_SIOCATMARK:
         case RPC_SIOCINQ:

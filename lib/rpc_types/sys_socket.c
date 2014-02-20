@@ -1618,6 +1618,8 @@ ioctl_rpc2str(rpc_ioctl_code code)
         RPC2STR(FIOCLEX);
         RPC2STR(SIOCATMARK);
         RPC2STR(SIOCINQ);
+        RPC2STR(SIOCOUTQ);
+        RPC2STR(TIOCOUTQ);
         RPC2STR(SIOCSPGRP);
         RPC2STR(SIOCGPGRP);
         RPC2STR(SIOCGIFCONF);
@@ -1697,6 +1699,8 @@ ioctl_rpc2h(rpc_ioctl_code code)
         RPC2H_CHECK(FIOCLEX);
         RPC2H_CHECK(SIOCATMARK);
         RPC2H_CHECK(SIOCINQ);
+        RPC2H_CHECK(TIOCOUTQ);
+        RPC2H_CHECK(SIOCOUTQ);
         RPC2H_CHECK(SIOCSPGRP);
         RPC2H_CHECK(SIOCGPGRP);
         RPC2H_CHECK(SIOCGIFCONF);

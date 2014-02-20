@@ -865,6 +865,9 @@ typedef enum rpc_ioctl_code {
                                  unread data in the receive buffer.
                                  (UDP) Returns the size of the next
                                  pending datagram. */
+    RPC_SIOCOUTQ,           /**< Returns the amount of unsent data in the 
+                                 socket send queue. */
+    RPC_TIOCOUTQ,           /**< Synonym of the RPC_SIOCOUTQ option */
 
     RPC_SIOCSPGRP,          /**< Set the process of process group to
                                  send SIGIO or SIGURG signals to when
