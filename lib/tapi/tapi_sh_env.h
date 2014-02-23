@@ -80,6 +80,37 @@ tapi_sh_env_set(rcf_rpc_server *pco,
 }
 
 /**
+ * Set integer shell environment for the given agent and may be restart
+ * a PCO so it's aware.
+ *
+ * @param pco            PCO handle
+ * @param env_name       Name of the environment variable
+ * @param env_value      New value
+ * @param force          Should we only add or overwrite?
+ * @param restart        Should the PCO be restarted
+ *
+ * @result errno
+ */
+static inline te_errno
+tapi_sh_env_set_int(rcf_rpc_server *pco,
+                    const char *env_name, int env_value,
+                    te_bool force, te_bool restart)
+{
+    char env_value_str[32];
+    int  res;
+
+    if ((res = snprintf(env_value_str, sizeof(env_value_str),
+                        "%d", env_value)) < 0 ||
+        res > (int)sizeof(env_value_str))
+    {
+        ERROR("Failed to convert int value to string to set env");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    return tapi_sh_env_set(pco, env_name, env_value_str, force, restart);
+}
+
+/**
  * Check whether environment variable exists, save its current value
  * if it does, then set a new value.
  *
