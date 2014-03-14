@@ -625,6 +625,8 @@ do {                                                            \
         {                                                       \
             incomp_str_count++;                                 \
             rest_len = strlen(buffer);                          \
+            if (rest_len == LOG_SERIAL_MAX_LEN)                 \
+                incomp_str_count = 10;                          \
         }                                                       \
         else                                                    \
         {                                                       \
