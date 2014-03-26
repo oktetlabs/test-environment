@@ -854,6 +854,25 @@ rpc_setsockopt(rcf_rpc_server *rpcs,
                               optname, optval, NULL, 0, 0);
 }
 
+/**
+ * Wrapper function to set int socket option.
+ *
+ * See rpc_setsockopt_gen() for parameters description. @a level is
+ * derived from @a optname using rpc_sockopt2level() function.
+ * @a raw_optval and @a raw_optlen are passed as @c NULL and @c 0
+ * correspondingly.
+ *
+ * @return Status code
+ *
+ * @sa rpc_setsockopt_gen()
+ */
+static inline int
+rpc_setsockopt_int(rcf_rpc_server *rpcs,
+                   int s, rpc_sockopt optname, int optval)
+{
+    return rpc_setsockopt_gen(rpcs, s, rpc_sockopt2level(optname),
+                              optname, &optval, NULL, 0, 0);
+}
 
 /**
  *  Query the current name of the specified socket on RPC server side,
