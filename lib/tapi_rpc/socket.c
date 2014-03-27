@@ -2289,3 +2289,32 @@ rpc_socket_listen_close(rcf_rpc_server *rpcs,
                  sockaddr_h2str(addr), time2run, out.retval);
     RETVAL_INT(socket_listen_close, out.retval);
 }
+
+int
+rpc_setsockopt_check_int(rcf_rpc_server *rpcs,
+                         int s, rpc_sockopt optname, int optval)
+{
+    int rc;
+    int getval;
+    int awaiting_err = rpcs->iut_err_jump;
+
+    rc = rpc_setsockopt_gen(rpcs, s, rpc_sockopt2level(optname),
+                            optname, &optval, NULL, 0, 0);
+    if (rc != 0)
+        return rc;
+
+    rpcs->iut_err_jump = awaiting_err;
+    rpc_getsockopt(rpcs, s, optname, &getval);
+    if (optval != getval)
+    {
+        ERROR("Changing %s value failure: set %d, got %d",
+              sockopt_rpc2str(optname), optval, getval);
+        rpcs->_errno = TE_RC(TE_TAPI, TE_EINVAL);
+        rpcs->err_log = TRUE;
+        rc = -1;
+        if (awaiting_err)
+            TAPI_JMP_DO(TE_EFAIL);
+    }
+
+    return rc;
+}
