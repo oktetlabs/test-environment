@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<trc_db>
+  <test name="ipv6-demo" type="package">
+    <objective>Test Suite platform-ts</objective>
+    <notes/>
+    <iter result="PASSED">
+      <notes/>
+      <test name="prologue" type="script">
+        <objective/>
+        <notes/>
+        <iter result="PASSED">
+          <notes/>
+        </iter>
+      </test>
+      <test name="sockets" type="package">
+        <objective>IPv6 Socket support</objective>
+        <notes/>
+        <iter result="PASSED">
+          <notes/>
+          <test name="opt_ipv6_only" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+              <arg name="env">{{{'pco_iut':IUT},addr:'iut_addr6':inet6:unicast,addr:'iut_addr4':inet:unicast},{{'pco_tst':tester}}}</arg>
+              <notes/>
+            </iter>
+          </test>
+          <test name="send_recv" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+              <arg name="env">'net':IUT{{{'pco_iut':IUT},addr:'iut_addr':inet6:ip4mapped_uc,addr:'iut_lladdr':ether:unicast,if:'iut_if'},{{'pco_tst':tester},addr:'tst_addr':inet6:ip4mapped_uc,addr:'tst_lladdr':ether:unicast,if:'tst_if'}}</arg>
+              <arg name="sock_type">SOCK_STREAM</arg>
+              <notes/>
+            </iter>
+            <iter result="PASSED">
+              <arg name="env">'net':IUT{{{'pco_iut':IUT},addr:'iut_addr':inet6:ip4mapped_uc,addr:'iut_lladdr':ether:unicast,if:'iut_if'},{{'pco_tst':tester},addr:'tst_addr':inet6:ip4mapped_uc,addr:'tst_lladdr':ether:unicast,if:'tst_if'}}</arg>
+              <arg name="sock_type">SOCK_DGRAM</arg>
+              <notes/>
+            </iter>
+            <iter result="PASSED">
+              <arg name="env">'net':IUT{{{'pco_iut':IUT},addr:'iut_addr':inet6:unicast,addr:'iut_lladdr':ether:unicast,if:'iut_if'},{{'pco_tst':tester},addr:'tst_addr':inet6:unicast,addr:'tst_lladdr':ether:unicast,if:'tst_if'}}</arg>
+              <arg name="sock_type">SOCK_STREAM</arg>
+              <notes/>
+            </iter>
+            <iter result="PASSED">
+              <arg name="env">'net':IUT{{{'pco_iut':IUT},addr:'iut_addr':inet6:unicast,addr:'iut_lladdr':ether:unicast,if:'iut_if'},{{'pco_tst':tester},addr:'tst_addr':inet6:unicast,addr:'tst_lladdr':ether:unicast,if:'tst_if'}}</arg>
+              <arg name="sock_type">SOCK_DGRAM</arg>
+              <notes/>
+            </iter>
+          </test>
+        </iter>
+      </test>
+    </iter>
+  </test>
+</trc_db>

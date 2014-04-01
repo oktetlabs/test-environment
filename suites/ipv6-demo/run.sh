@@ -17,16 +17,20 @@ popd >/dev/null
 
 export TE_TS_IPV6_DEMO=${RUNDIR}/tests
 
-RCF_CONF=""
-CONFIGURATOR_CONF=""
-case $1 in
-    --cfg=*)
-        CFG="${1#--cfg=}"
-        RCF_CONF="--conf-rcf=rcf.conf.${CFG}"
-        CONFIGURATOR_CONF="--conf-cs=configurator.conf.${CFG}"
-        shift 1
-        ;;
-esac
+while test -n "$1" ; do
+    case $1 in
+        --help) usage ;;
+        --cfg=*) cfg=${1#--cfg=} ;;
+        *)  RUN_OPTS="${RUN_OPTS} $1" ;;
+    esac
+    shift 1
+done
+
+if test -z "$cfg" ; then
+    cfg=ulmo
+fi
+
+RUN_OPTS="--script=env.$cfg --conf-cs=cs.conf --conf-rcf=rcf.conf"
 
 echo "Run tests (script arguments are passed to dispatcher.sh)"
 echo ""
@@ -39,7 +43,9 @@ else
 fi
 
 ${TE_BASE}/dispatcher.sh --conf-dir=${RUNDIR}/conf \
-    ${RCF_CONF} ${CONFIGURATOR_CONF} --log-html=html-out $@
+    --log-html=html-out --trc-db=trc.xml \
+    --trc-html=trc-report.html --trc-no-total \
+    --trc-no-unspec --trc-comparison=normalised ${RUN_OPTS}
 
 if [ $? -eq 0 ] ; then
     echo OK
