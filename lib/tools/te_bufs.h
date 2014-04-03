@@ -92,6 +92,24 @@ te_make_buf_min(size_t min, size_t *p_len)
     return te_make_buf(min, min + 10, p_len);
 }
 
+/**
+ * Allocate memory and fill it with the @p byte
+ * 
+ * @param num   Items number
+ * @param size  Item instance size
+ * @param byte  Byte to fill memory
+ * 
+ * @return Pointer to the memory block
+ */
+static inline void *
+te_calloc_fill(size_t num, size_t size, int byte)
+{
+    void *buf = calloc(num, size);
+
+    memset(buf, byte, num * size);
+    return buf;
+}
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
