@@ -3404,7 +3404,7 @@ cmsg_data_rpc2h(tarpc_cmsghdr *rpc_cmsg,
 
         case TARPC_CMSG_DATA_TSTAMP:
             {
-                struct timespec                 *ts;
+                struct tarpc_timespec           *ts;
                 struct tarpc_scm_timestamping   *tarpc_tstamp;
 
                 if (*len < 3 * ((int)sizeof(struct timespec)))
@@ -3416,7 +3416,7 @@ cmsg_data_rpc2h(tarpc_cmsghdr *rpc_cmsg,
 
                 ts = (struct timespec *)data;
                 tarpc_tstamp =
-                    &rpc_cmsg->data_aux.tarpc_cmsg_data_u.ts;
+                    &rpc_cmsg->data_aux.tarpc_cmsg_data_u.tstamp;
 
                 ts->tv_sec = tarpc_tstamp->systime.tv_sec;
                 ts->tv_nsec = tarpc_tstamp->systime.tv_nsec;
