@@ -6634,6 +6634,11 @@ flooder(tarpc_flooder_in *in)
         return -1;
     }
 
+    if (bulkszs > sizeof(snd_buf))
+    {
+        ERROR("Size of sent data is too long");
+        return -1;
+    }
     /* Create iomux status and fill it with our fds. */
     if ((rc = iomux_create_state(iomux, &iomux_f, &iomux_st)) != 0)
     {
