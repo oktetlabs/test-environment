@@ -32,7 +32,8 @@ include_HEADERS = \
 	tapi_cfg_acse.h \
 	tapi_sniffer.h \
 	tapi_serial_parse.h \
-	tapi_cfg_aggr.h
+	tapi_cfg_aggr.h \
+	tapi_cfg_cmd_monitor.h
 
 lib_LTLIBRARIES = libtapi.la
 

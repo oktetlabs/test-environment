@@ -60,6 +60,7 @@
 
 #include "te_alloc.h"
 #include "te_param.h"
+#include "te_expand.h"
 #include "tester_conf.h"
 #include "type_lib.h"
 
@@ -95,7 +96,8 @@ static te_errno alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg,
 static te_errno parse_test_package(tester_cfg         *cfg,
                                    const test_session *session,
                                    test_package       *pkg,
-                                   char const         *src);
+                                   char const         *src,
+                                   run_item           *ritem);
 
 static void run_item_free(run_item *run);
 static void run_items_free(run_items *runs);
@@ -1563,6 +1565,163 @@ vars_process(xmlNodePtr *node, test_session *session,
     return rc;
 }
 
+/**
+ * Free memory occupied by command monitor description.
+ *
+ * @param monitor   Monitor description structure pointer
+ */
+static void
+cmd_monitor_descr_free(cmd_monitor_descr *monitor)
+{
+    free(monitor->command);
+    free(monitor->ta);
+    free(monitor);
+}
+
+/**
+ * Get command monitor property value and expand environment
+ * variables in it
+ *
+ * @param node        XML node with a priperty
+ * @param value [out] Where to store property value
+ * @param name        Property name
+ *
+ * @return 0 on success, error code on failure
+ */
+static te_errno
+cmd_monitor_get_prop(xmlNodePtr *node, char **value, char *name)
+{
+    char *expanded = NULL;
+    int   rc = 0;
+
+    if (*value != NULL)
+    {
+        ERROR("%s(): duplicated <%s> encountered",
+             __FUNCTION__, name);
+        return TE_RC(TE_TESTER, TE_EINVAL);
+    }
+    if ((rc = get_node_with_text_content(
+                                    node, name,
+                                    value)) != 0)
+        return rc;
+
+    if (te_expand_env_vars(*value,
+                           NULL, &expanded) == 0)
+    {
+        free(*value);
+        *value = expanded;
+    }
+    else
+    {
+        ERROR("%s(): failed to expand environment "
+              "variables in '%s'",
+             __FUNCTION__, *value);
+        return TE_RC(TE_TESTER, TE_EINVAL);
+    }
+
+    return 0;
+}
+
+/**
+ * Get command monitor descriptions from <command_monitor> nodes
+ *
+ * @param node    The first <command_monitor> node
+ * @param ritem   run_item where to store command monitor descriptions
+ *
+ * @return 0 on success, error code on failure
+ */
+static te_errno
+monitors_process(xmlNodePtr *node, run_item *ritem)
+{
+    te_errno rc = 0;
+    xmlNodePtr p;
+    cmd_monitor_descr *monitor;
+    static int monitor_id = -1;
+
+    while (*node != NULL)
+    {
+        char *time_to_wait = NULL;
+        char *run_monitor = NULL;
+
+        if (xmlStrcmp((*node)->name,
+                      CONST_CHAR2XML("command_monitor")) != 0)
+            break;
+
+        monitor = calloc(1, sizeof(*monitor));
+        p = xmlNodeChildren(*node);
+        while (p != NULL)
+        {
+            if (xmlStrcmp(p->name,
+                          CONST_CHAR2XML("command")) == 0)
+            {
+                if ((rc = cmd_monitor_get_prop(&p, &monitor->command,
+                                               "command")) != 0)
+                {
+                    cmd_monitor_descr_free(monitor); 
+                    return rc;
+                }
+            }
+            if (xmlStrcmp(p->name,
+                          CONST_CHAR2XML("ta")) == 0)
+            {
+                if ((rc = cmd_monitor_get_prop(&p, &monitor->ta,
+                                               "ta")) != 0)
+                {
+                    cmd_monitor_descr_free(monitor); 
+                    return rc;
+                }
+            }
+            else if (xmlStrcmp(p->name,
+                               CONST_CHAR2XML("time_to_wait")) == 0)
+            {
+                if ((rc = cmd_monitor_get_prop(&p, &time_to_wait,
+                                               "time_to_wait")) != 0)
+                {
+                    cmd_monitor_descr_free(monitor); 
+                    return rc;
+                }
+                monitor->time_to_wait = atoi(time_to_wait);
+                free(time_to_wait);
+            }
+            else if (xmlStrcmp(p->name,
+                               CONST_CHAR2XML("run_monitor")) == 0)
+            {
+                if ((rc = cmd_monitor_get_prop(&p, &run_monitor,
+                                               "run_monitor")) != 0)
+                {
+                    cmd_monitor_descr_free(monitor); 
+                    return rc;
+                }
+                monitor->run_monitor =
+                    (atoi(run_monitor) == 0 ? FALSE : TRUE);
+                free(run_monitor);
+            }
+            else
+            {
+                ERROR("%s(): unexpected node name '%s' encountered",
+                      __FUNCTION__, XML2CHAR(p->name));
+                cmd_monitor_descr_free(monitor); 
+                return TE_RC(TE_TESTER, TE_EINVAL);
+            }
+        }
+
+        monitor_id++;
+        snprintf(monitor->name, TESTER_CMD_MONITOR_NAME_LEN,
+                 "tester_monitor%d", monitor_id);
+        TAILQ_INSERT_TAIL(&ritem->cmd_monitors, monitor, links);
+        (*node) = xmlNodeNext(*node);
+    }
+
+    if (monitor->ta == NULL)
+    {
+        char *ta = getenv("TE_IUT_TA_NAME");
+
+        if (ta != NULL)
+            monitor->ta = strdup(ta);
+    }
+
+    return 0;
+}
 
 /**
  * Get session description.
@@ -1576,7 +1735,7 @@ vars_process(xmlNodePtr *node, test_session *session,
  */
 static te_errno
 get_session(xmlNodePtr node, tester_cfg *cfg, const test_session *parent,
-            test_session *session)
+            test_session *session, run_item *ritem)
 {
     te_errno rc;
     int parse_break;
@@ -1596,6 +1755,8 @@ get_session(xmlNodePtr node, tester_cfg *cfg, const test_session *parent,
         return rc;
 
     node = xmlNodeChildren(node);
+
+    monitors_process(&node, ritem);
 
     /* Get information about variables */
     while (node != NULL)
@@ -1709,7 +1870,7 @@ get_session(xmlNodePtr node, tester_cfg *cfg, const test_session *parent,
  */
 static te_errno
 get_package(xmlNodePtr node, tester_cfg *cfg, const test_session *session,
-            test_package **pkg)
+            test_package **pkg, run_item *ritem)
 {
     te_errno        rc;
     test_package   *p;
@@ -1735,7 +1896,8 @@ get_package(xmlNodePtr node, tester_cfg *cfg, const test_session *session,
     /* Parse test package also getting optional 'src' attribute */
     rc = parse_test_package(cfg, session, p,
                             XML2CHAR(xmlGetProp(node,
-                                                CONST_CHAR2XML("src"))));
+                                                CONST_CHAR2XML("src"))),
+                            ritem);
     if (rc != 0)
     {
         ERROR("Parsing/preprocessing of the package '%s' failed",
@@ -1774,6 +1936,7 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
         return TE_RC(TE_TESTER, TE_ENOMEM);
     TAILQ_INIT(&p->args);
     SLIST_INIT(&p->lists);
+    TAILQ_INIT(&p->cmd_monitors);
     p->context = session;
     p->iterate = 1;
 
@@ -1819,7 +1982,13 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
         ERROR("Empty 'run' item");
         return TE_RC(TE_TESTER, TE_EINVAL);
     }
-    
+
+    if (monitors_process(&node, p) != 0)
+    {
+        ERROR("Failed to process <command_monitor> nodes");
+        return TE_RC(TE_TESTER, TE_EINVAL);
+    }
+
     if (xmlStrcmp(node->name, CONST_CHAR2XML("script")) == 0)
     {
         p->type = RUN_ITEM_SCRIPT;
@@ -1833,7 +2002,7 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
         p->type = RUN_ITEM_SESSION;
         TAILQ_INIT(&p->u.session.vars);
         TAILQ_INIT(&p->u.session.run_items);
-        rc = get_session(node, cfg, session, &p->u.session);
+        rc = get_session(node, cfg, session, &p->u.session, p);
         if (rc != 0)
             return rc;
     }
@@ -1841,7 +2010,7 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
              xmlStrcmp(node->name, CONST_CHAR2XML("package")) == 0)
     {
         p->type = RUN_ITEM_PACKAGE;
-        rc = get_package(node, cfg, session, &p->u.package);
+        rc = get_package(node, cfg, session, &p->u.package, p);
         if (rc != 0)
             return rc;
     }
@@ -1890,7 +2059,8 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
  */
 static te_errno
 get_test_package(xmlNodePtr root, tester_cfg *cfg,
-                 const test_session *session, test_package *pkg)
+                 const test_session *session, test_package *pkg,
+                 run_item *ritem)
 {
     xmlNodePtr  node;
     xmlChar    *s;
@@ -1974,7 +2144,7 @@ get_test_package(xmlNodePtr root, tester_cfg *cfg,
     if (node != NULL &&
         xmlStrcmp(node->name, CONST_CHAR2XML("session")) == 0)
     {
-        rc = get_session(node, cfg, session, &pkg->session);
+        rc = get_session(node, cfg, session, &pkg->session, ritem);
         if (rc != 0)
             return rc;
         node = xmlNodeNext(node);
@@ -2339,7 +2509,7 @@ tests_info_free(tests_info *ti)
  */
 static te_errno
 parse_test_package(tester_cfg *cfg, const test_session *session,
-                   test_package *pkg, char const *src)
+                   test_package *pkg, char const *src, run_item *ritem)
 {
     xmlParserCtxtPtr    parser = NULL;
     xmlDocPtr           doc = NULL;
@@ -2432,7 +2602,8 @@ parse_test_package(tester_cfg *cfg, const test_session *session,
         pkg->ti = &ti;
     }
 
-    rc = get_test_package(xmlDocGetRootElement(doc), cfg, session, pkg);
+    rc = get_test_package(xmlDocGetRootElement(doc), cfg, session,
+                          pkg, ritem);
     if (rc != 0)
     {
         ERROR("Preprocessing of Test Package '%s' from file '%s' failed", 
@@ -2728,6 +2899,7 @@ static void
 run_item_free(run_item *run)
 {
     test_var_arg_list  *list;
+    cmd_monitor_descr  *monitor;
 
     if (run == NULL)
         return;
@@ -2760,6 +2932,12 @@ run_item_free(run_item *run)
     {
         SLIST_REMOVE(&run->lists, list, test_var_arg_list, links);
         free(list);
+    }
+
+    while ((monitor = TAILQ_FIRST(&run->cmd_monitors)) != NULL)
+    {
+        TAILQ_REMOVE(&run->cmd_monitors, monitor, links);
+        cmd_monitor_descr_free(monitor);
     }
 
     free(run);

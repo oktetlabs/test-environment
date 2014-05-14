@@ -288,6 +288,9 @@ extern te_errno ta_unix_conf_sniffer_init();
 extern te_errno ta_unix_conf_sniffer_cleanup();
 #endif
 
+extern te_errno ta_unix_conf_cmd_monitor_init(void);
+extern te_errno ta_unix_conf_cmd_monitor_cleanup(void);
+
 /**
  * Determine family of the address in string representation.
  *
@@ -1196,6 +1199,9 @@ rcf_ch_conf_init()
         if (ta_unix_conf_sniffer_init() != 0)
             ERROR("Failed to add sniffer configuration tree");
 #endif
+
+        ta_unix_conf_cmd_monitor_init();
+
         init = TRUE;
 
     }
@@ -1241,6 +1247,7 @@ rcf_ch_conf_fini()
 #ifdef CFG_UNIX_DAEMONS
     ta_unix_conf_daemons_release();
 #endif
+    ta_unix_conf_cmd_monitor_cleanup();
     if (cfg_socket >= 0)
         (void)close(cfg_socket);
     if (cfg6_socket >= 0)

@@ -19,7 +19,8 @@ EXTRA_DIST=daemons/ldap/slapd.conf daemons/ldap/slapd_run.sh
 
 noinst_HEADERS = \
 	route/conf_route.h \
-	util/conf_dlpi.h
+	util/conf_dlpi.h \
+	util/te_cmd_monitor.h
         
 noinst_LIBRARIES=libconf.a
 
@@ -35,7 +36,9 @@ libconf_a_SOURCES = \
 	route/conf_route_libnetconf.c \
 	route/conf_route_socket.c \
 	util/conf_getmsg.c \
-	util/conf_dlpi.c
+	util/conf_dlpi.c \
+	util/te_cmd_monitor.c \
+	util/conf_cmd_monitor.c
 
 CLEANFILES=
 

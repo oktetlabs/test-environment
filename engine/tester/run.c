@@ -67,6 +67,7 @@
 #include "tester_flags.h"
 #include "tester_serial_thread.h"
 #include "te_shell_cmd.h"
+#include "tapi_cfg_cmd_monitor.h"
 
 /** Define it to enable support of timeouts in Tester */
 #undef TESTER_TIMEOUT_SUPPORT
@@ -1735,6 +1736,29 @@ run_item_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                 return TESTER_CFG_WALK_FAULT;
         }
 
+    }
+
+    if (!(gctx->flags & TESTER_FAKE))
+    {
+        cmd_monitor_descr *monitor; 
+
+        TAILQ_FOREACH(monitor, &ri->cmd_monitors, links)
+        {
+            if (monitor->ta != NULL)
+            {
+                if (tapi_cfg_cmd_monitor_begin(monitor->ta, monitor->name,
+                                               monitor->command,
+                                               monitor->time_to_wait) == 0)
+                    monitor->enabled = TRUE;
+                else
+                    ERROR("Failed to enable command monitor for '%s'",
+                          monitor->command);
+            }
+        }
+    }
+
+    if (~flags & TESTER_CFG_WALK_SERVICE)
+    {
         if (ctx->backup == NULL)
             run_create_cfg_backup(ctx, test_get_attrs(ri)->track_conf);
     }
@@ -1785,6 +1809,28 @@ run_item_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
           gctx->act != NULL ? (int)gctx->act->last : -1,
           gctx->act != NULL ? gctx->act->flags : 0,
           gctx->act_id);
+
+    if (!(gctx->flags & TESTER_FAKE))
+    {
+        cmd_monitor_descr *monitor; 
+        int rc;
+
+        TAILQ_FOREACH(monitor, &ri->cmd_monitors, links)
+        {
+            if (monitor->ta != NULL)
+            {
+                if (monitor->enabled)
+                {
+                    if (tapi_cfg_cmd_monitor_end(monitor->ta,
+                                                 monitor->name) == 0)
+                        monitor->enabled = FALSE;
+                    else
+                        ERROR("Failed to enable command monitor for '%s'",
+                              monitor->command);
+                }
+            }
+        }
+    }
 
 #if WITH_TRC
     if (ctx->do_trc_walker && test_get_name(ri) != NULL)
