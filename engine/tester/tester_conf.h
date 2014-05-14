@@ -43,6 +43,7 @@
 #include "tester_flags.h"
 #include "tester_reqs.h"
 #include "tester_build.h"
+#include "tester_cmd_monitor.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -271,32 +272,6 @@ typedef struct test_var_arg_list {
  */
 typedef SLIST_HEAD(test_var_arg_lists, test_var_arg_list)
     test_var_arg_lists;
-
-/** Maximum length of command monitor object name */
-#define TESTER_CMD_MONITOR_NAME_LEN 100
-
-/** Command monitor description */
-typedef struct cmd_monitor_descr {
-    TAILQ_ENTRY(cmd_monitor_descr)   links;  /**< Queue links */
-
-    char  name[TESTER_CMD_MONITOR_NAME_LEN]; /**< Object name */
-    char *command;                           /**< Command to be
-                                                  monitored */
-    int   time_to_wait;                      /**< Time to wait before
-                                                  executing command the
-                                                  next time */
-    te_bool   enabled;                       /**< Whether command monitor
-                                                  is enabled or not */
-    te_bool   run_monitor;                   /**< Whether we should run
-                                                  this monitor or not */
-    char     *ta;                            /**< Name of test agent on
-                                                  which to run this
-                                                  monitor */
-} cmd_monitor_descr;
-
-/** Head of a queue of cmd_monitor_descrs */
-typedef TAILQ_HEAD(cmd_monitor_descrs, cmd_monitor_descr)
-                                              cmd_monitor_descrs;
 
 /** Unified run item */
 struct run_item {

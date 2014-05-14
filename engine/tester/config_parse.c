@@ -63,6 +63,7 @@
 #include "te_expand.h"
 #include "tester_conf.h"
 #include "type_lib.h"
+#include "tester_cmd_monitor.h"
 
 #include "tester.h"
 
@@ -1566,19 +1567,6 @@ vars_process(xmlNodePtr *node, test_session *session,
 }
 
 /**
- * Free memory occupied by command monitor description.
- *
- * @param monitor   Monitor description structure pointer
- */
-static void
-cmd_monitor_descr_free(cmd_monitor_descr *monitor)
-{
-    free(monitor->command);
-    free(monitor->ta);
-    free(monitor);
-}
-
-/**
  * Get command monitor property value and expand environment
  * variables in it
  *
@@ -1636,7 +1624,6 @@ monitors_process(xmlNodePtr *node, run_item *ritem)
     te_errno rc = 0;
     xmlNodePtr p;
     cmd_monitor_descr *monitor;
-    static int monitor_id = -1;
 
     while (*node != NULL)
     {
@@ -1657,7 +1644,7 @@ monitors_process(xmlNodePtr *node, run_item *ritem)
                 if ((rc = cmd_monitor_get_prop(&p, &monitor->command,
                                                "command")) != 0)
                 {
-                    cmd_monitor_descr_free(monitor); 
+                    free_cmd_monitor(monitor); 
                     return rc;
                 }
             }
@@ -1667,7 +1654,7 @@ monitors_process(xmlNodePtr *node, run_item *ritem)
                 if ((rc = cmd_monitor_get_prop(&p, &monitor->ta,
                                                "ta")) != 0)
                 {
-                    cmd_monitor_descr_free(monitor); 
+                    free_cmd_monitor(monitor); 
                     return rc;
                 }
             }
@@ -1677,7 +1664,7 @@ monitors_process(xmlNodePtr *node, run_item *ritem)
                 if ((rc = cmd_monitor_get_prop(&p, &time_to_wait,
                                                "time_to_wait")) != 0)
                 {
-                    cmd_monitor_descr_free(monitor); 
+                    free_cmd_monitor(monitor); 
                     return rc;
                 }
                 monitor->time_to_wait = atoi(time_to_wait);
@@ -1689,7 +1676,7 @@ monitors_process(xmlNodePtr *node, run_item *ritem)
                 if ((rc = cmd_monitor_get_prop(&p, &run_monitor,
                                                "run_monitor")) != 0)
                 {
-                    cmd_monitor_descr_free(monitor); 
+                    free_cmd_monitor(monitor); 
                     return rc;
                 }
                 if (strcasecmp(run_monitor, "yes") == 0)
@@ -1705,14 +1692,14 @@ monitors_process(xmlNodePtr *node, run_item *ritem)
             {
                 ERROR("%s(): unexpected node name '%s' encountered",
                       __FUNCTION__, XML2CHAR(p->name));
-                cmd_monitor_descr_free(monitor); 
+                free_cmd_monitor(monitor); 
                 return TE_RC(TE_TESTER, TE_EINVAL);
             }
         }
 
-        monitor_id++;
+        tester_monitor_id++;
         snprintf(monitor->name, TESTER_CMD_MONITOR_NAME_LEN,
-                 "tester_monitor%d", monitor_id);
+                 "tester_monitor%d", tester_monitor_id);
 
         if (monitor->ta == NULL)
         {
@@ -2905,7 +2892,6 @@ static void
 run_item_free(run_item *run)
 {
     test_var_arg_list  *list;
-    cmd_monitor_descr  *monitor;
 
     if (run == NULL)
         return;
@@ -2940,11 +2926,7 @@ run_item_free(run_item *run)
         free(list);
     }
 
-    while ((monitor = TAILQ_FIRST(&run->cmd_monitors)) != NULL)
-    {
-        TAILQ_REMOVE(&run->cmd_monitors, monitor, links);
-        cmd_monitor_descr_free(monitor);
-    }
+    free_cmd_monitors(&run->cmd_monitors);
 
     free(run);
 }

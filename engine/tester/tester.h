@@ -40,6 +40,7 @@
 #include "tester_run.h"
 #include "type_lib.h"
 #include "tester_flags.h"
+#include "tester_cmd_monitor.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -58,6 +59,9 @@ typedef struct tester_global {
     testing_scenario    scenario;   /**< Testing scenario */
     test_requirements   reqs;       /**< List of requirements known by
                                      *   the tester */
+
+    cmd_monitor_descrs  cmd_monitors;   /**< Command monitors specifier via
+                                             command line */
 } tester_global;
 
 extern tester_global tester_global_context;

@@ -33,7 +33,8 @@ noinst_HEADERS = \
 	tester_term.h \
 	tester_interactive.h \
 	tester.h \
-	tester_serial_thread.h
+	tester_serial_thread.h \
+	tester_cmd_monitor.h
 
 
 bin_PROGRAMS = te_tester 
@@ -57,7 +58,8 @@ te_tester_SOURCES = \
 	verdicts.c \
 	tester.c \
 	tester_interactive.c \
-	tester_serial_thread.c
+	tester_serial_thread.c \
+	tester_cmd_monitor.c
 
 CLEANFILES = \
 	test_path_lex.h \

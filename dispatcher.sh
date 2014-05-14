@@ -129,6 +129,9 @@ Generic options:
                                 requirements (default).
   --tester-verbskip             Force Tester to log skipped iterations.
 
+  --tester-cmd-monitor          Specify command monitor to be run for all
+                                tests in form [ta,]time_to_wait:command
+
     The following Tester options get test path as a value:
         <testpath>      :=  / | <path-item> | <testpath>/<path-item>
         <path-item>     := <test-name>[:<args>][%<iter-select>][*<repeat>]

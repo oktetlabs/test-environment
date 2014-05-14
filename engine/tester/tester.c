@@ -109,6 +109,8 @@ tester_global_init(tester_global *global)
 
     TAILQ_INIT(&global->scenario);
 
+    TAILQ_INIT(&global->cmd_monitors);
+
     return 0;
 }
 
@@ -131,6 +133,7 @@ tester_global_free(tester_global *global)
     tq_strings_free(&global->trc_tags, free);
 #endif
     scenario_free(&global->scenario);
+    free_cmd_monitors(&global->cmd_monitors);
 }
 
 
@@ -221,6 +224,8 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
         TESTER_OPT_TRC_TAG,
         TESTER_OPT_TRC_COMPARISON,
         TESTER_OPT_BREAK_SESSION,
+
+        TESTER_OPT_CMD_MONITOR,
     };
 
     /* Option Table */
@@ -378,6 +383,11 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
 
         { "version", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_VERSION,
           "Display version information.", NULL },
+
+        { "cmd-monitor", '\0', POPT_ARG_STRING, NULL, 
+          TESTER_OPT_CMD_MONITOR,
+          "Command monitor in form [ta,]time_to_wait:command",
+          NULL },
 
         POPT_AUTOHELP
         POPT_TABLEEND
@@ -635,6 +645,64 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
                 global->flags |= TESTER_BREAK_SESSION;
                 break;
 
+            case TESTER_OPT_CMD_MONITOR:
+            {
+                char *s = poptGetOptArg(optCon);
+                char *colon = NULL;
+                char *command = NULL;
+                char *comma = NULL;
+                char *ta = NULL;
+                char *time_to_wait = NULL;
+
+                cmd_monitor_descr *monitor = NULL;
+
+                colon = strchr(s, ':');
+                if (colon == NULL)
+                {
+                    ERROR("Incorrect command monitor "
+                          "specification '%s'", s);
+                    free(s);
+                    poptFreeContext(optCon);
+                    return rc;
+                }
+                *colon = '\0';
+                command = colon + 1;
+
+                comma = strchr(s, ',');
+                if (comma != NULL)
+                {
+                    ta = s;
+                    *comma = '\0';
+                    time_to_wait = comma + 1;
+                }
+                else
+                {
+                    time_to_wait = s;
+                }
+
+                monitor = calloc(1, sizeof(*monitor));
+                monitor->enabled = FALSE;
+                monitor->run_monitor = TRUE;
+                if (ta != NULL)
+                    monitor->ta = strdup(ta);
+                else
+                {
+                    ta = getenv("TE_IUT_TA_NAME");
+                    if (ta != NULL)
+                        monitor->ta = strdup(ta);
+                }
+                monitor->command = strdup(command);
+                monitor->time_to_wait = atoi(time_to_wait);
+
+                tester_monitor_id++;
+                snprintf(monitor->name, TESTER_CMD_MONITOR_NAME_LEN,
+                         "tester_monitor%d", tester_monitor_id);
+
+                TAILQ_INSERT_TAIL(&global->cmd_monitors, monitor, links);
+                free(s);
+                break;
+            }
+
             case TESTER_OPT_VERSION:
                 printf("Test Environment: %s\n\n%s\n", PACKAGE_STRING,
                        TE_COPYRIGHT);
@@ -877,6 +945,7 @@ main(int argc, char *argv[])
         (void)tester_log_global();
         if (!!(tester_global_context.flags & TESTER_LOG_REQS_LIST))
             (void)tester_log_reqs();
+        start_cmd_monitors(&tester_global_context.cmd_monitors);
         rc = tester_run(&tester_global_context.scenario,
                         tester_global_context.targets,
                         &tester_global_context.cfgs,
@@ -884,6 +953,7 @@ main(int argc, char *argv[])
                         tester_global_context.trc_db,
                         &tester_global_context.trc_tags,
                         tester_global_context.flags);
+        stop_cmd_monitors(&tester_global_context.cmd_monitors);
         if (rc != 0)
         {
 #if 1

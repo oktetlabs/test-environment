@@ -67,7 +67,6 @@
 #include "tester_flags.h"
 #include "tester_serial_thread.h"
 #include "te_shell_cmd.h"
-#include "tapi_cfg_cmd_monitor.h"
 
 /** Define it to enable support of timeouts in Tester */
 #undef TESTER_TIMEOUT_SUPPORT
@@ -1739,23 +1738,7 @@ run_item_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     }
 
     if (!(gctx->flags & TESTER_FAKE))
-    {
-        cmd_monitor_descr *monitor; 
-
-        TAILQ_FOREACH(monitor, &ri->cmd_monitors, links)
-        {
-            if (monitor->ta != NULL && monitor->run_monitor)
-            {
-                if (tapi_cfg_cmd_monitor_begin(monitor->ta, monitor->name,
-                                               monitor->command,
-                                               monitor->time_to_wait) == 0)
-                    monitor->enabled = TRUE;
-                else
-                    ERROR("Failed to enable command monitor for '%s'",
-                          monitor->command);
-            }
-        }
-    }
+        start_cmd_monitors(&ri->cmd_monitors);
 
     if (~flags & TESTER_CFG_WALK_SERVICE)
     {
@@ -1811,25 +1794,7 @@ run_item_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
           gctx->act_id);
 
     if (!(gctx->flags & TESTER_FAKE))
-    {
-        cmd_monitor_descr *monitor; 
-
-        TAILQ_FOREACH(monitor, &ri->cmd_monitors, links)
-        {
-            if (monitor->ta != NULL)
-            {
-                if (monitor->enabled)
-                {
-                    if (tapi_cfg_cmd_monitor_end(monitor->ta,
-                                                 monitor->name) == 0)
-                        monitor->enabled = FALSE;
-                    else
-                        ERROR("Failed to enable command monitor for '%s'",
-                              monitor->command);
-                }
-            }
-        }
-    }
+        stop_cmd_monitors(&ri->cmd_monitors);
 
 #if WITH_TRC
     if (ctx->do_trc_walker && test_get_name(ri) != NULL)
