@@ -1744,7 +1744,7 @@ run_item_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 
         TAILQ_FOREACH(monitor, &ri->cmd_monitors, links)
         {
-            if (monitor->ta != NULL)
+            if (monitor->ta != NULL && monitor->run_monitor)
             {
                 if (tapi_cfg_cmd_monitor_begin(monitor->ta, monitor->name,
                                                monitor->command,

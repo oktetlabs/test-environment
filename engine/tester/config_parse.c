@@ -1692,8 +1692,13 @@ monitors_process(xmlNodePtr *node, run_item *ritem)
                     cmd_monitor_descr_free(monitor); 
                     return rc;
                 }
-                monitor->run_monitor =
-                    (atoi(run_monitor) == 0 ? FALSE : TRUE);
+                if (strcasecmp(run_monitor, "yes") == 0)
+                    monitor->run_monitor = TRUE;
+                else if (strcasecmp(run_monitor, "no") == 0)
+                    monitor->run_monitor = FALSE;
+                else
+                    monitor->run_monitor =
+                        (atoi(run_monitor) == 0 ? FALSE : TRUE);
                 free(run_monitor);
             }
             else
