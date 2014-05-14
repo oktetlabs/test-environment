@@ -45,6 +45,7 @@
 #include "te_errno.h"
 #include "rcf_ch_api.h"
 #include "logger_api.h"
+#include "rcf_pch.h"
 
 #include "te_cmd_monitor.h"
 
@@ -83,10 +84,10 @@ static te_errno
 cmd_monitor_add(unsigned int gid, const char *oid, char *value, char *name)
 {
     cmd_monitor_t   *monitor;
-    int              rc;
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(value);
 
     monitor = monitor_find_by_name(name);
     if (monitor != NULL)

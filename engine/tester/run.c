@@ -1813,7 +1813,6 @@ run_item_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     if (!(gctx->flags & TESTER_FAKE))
     {
         cmd_monitor_descr *monitor; 
-        int rc;
 
         TAILQ_FOREACH(monitor, &ri->cmd_monitors, links)
         {

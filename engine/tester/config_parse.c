@@ -1708,16 +1708,17 @@ monitors_process(xmlNodePtr *node, run_item *ritem)
         monitor_id++;
         snprintf(monitor->name, TESTER_CMD_MONITOR_NAME_LEN,
                  "tester_monitor%d", monitor_id);
+
+        if (monitor->ta == NULL)
+        {
+            char *ta = getenv("TE_IUT_TA_NAME");
+
+            if (ta != NULL)
+                monitor->ta = strdup(ta);
+        }
+
         TAILQ_INSERT_TAIL(&ritem->cmd_monitors, monitor, links);
         (*node) = xmlNodeNext(*node);
-    }
-
-    if (monitor->ta == NULL)
-    {
-        char *ta = getenv("TE_IUT_TA_NAME");
-
-        if (ta != NULL)
-            monitor->ta = strdup(ta);
     }
 
     return 0;
