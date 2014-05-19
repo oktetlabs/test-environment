@@ -521,7 +521,10 @@ process_opts()
 
             --no-ts-build) BUILD_TS= ; TESTER_OPTS="${TESTER_OPTS} --nobuild" ;;
 
-            --tester-*) TESTER_OPTS="${TESTER_OPTS} --${1#--tester-}" ;;
+            --tester-*)
+                opt_name="${1%%=*}"
+                opt_str="--${opt_name#--tester-}=\"${1#${opt_name}=}\""
+                TESTER_OPTS="${TESTER_OPTS} ${opt_str}" ;;
             --test-sigusr2-verdict*) TE_TEST_SIGUSR2_VERDICT=1
                 export TE_TEST_SIGUSR2_VERDICT ;;
 
@@ -1089,10 +1092,10 @@ if test ${START_OK} -eq 0 -a -n "${TESTER}" ; then
         gdb -x gdb.te_tester.init te_tester
         rm gdb.te_tester.init
     elif test -n "$VG_TESTER" ; then
-        valgrind ${VG_OPTIONS} te_tester ${TESTER_OPTS} "${CONF_TESTER}" \
-            2>valgrind.te_tester
+        eval "valgrind ${VG_OPTIONS} te_tester ${TESTER_OPTS} \"${CONF_TESTER}\" \
+              2>valgrind.te_tester"
     else
-        te_tester ${TESTER_OPTS} "${CONF_TESTER}"
+        eval "te_tester ${TESTER_OPTS} \"${CONF_TESTER}\""
     fi
     START_OK=$?
 fi
