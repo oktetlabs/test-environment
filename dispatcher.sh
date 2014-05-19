@@ -521,10 +521,11 @@ process_opts()
 
             --no-ts-build) BUILD_TS= ; TESTER_OPTS="${TESTER_OPTS} --nobuild" ;;
 
-            --tester-*)
+            --tester-*=[^\"]*)
                 opt_name="${1%%=*}"
                 opt_str="--${opt_name#--tester-}=\"${1#${opt_name}=}\""
                 TESTER_OPTS="${TESTER_OPTS} ${opt_str}" ;;
+            --tester-*) TESTER_OPTS="${TESTER_OPTS} --${1#--tester-}" ;;
             --test-sigusr2-verdict*) TE_TEST_SIGUSR2_VERDICT=1
                 export TE_TEST_SIGUSR2_VERDICT ;;
 
