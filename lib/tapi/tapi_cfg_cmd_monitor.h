@@ -46,23 +46,23 @@ tapi_cfg_cmd_monitor_begin(char const *ta,
     te_errno rc;
 
     rc = cfg_add_instance_fmt(NULL, CVT_NONE, NULL,
-                              "/agent:%s/monitor:%s",
+                              "/agent:%s/command_monitor:%s",
                               ta, name);
     if (rc != 0)
         return rc;
 
     if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, time_to_wait),
-                                   "/agent:%s/monitor:%s/time_to_wait:",
+                                   "/agent:%s/command_monitor:%s/time_to_wait:",
                                    ta, name)) != 0 ||
         (rc = cfg_set_instance_fmt(CFG_VAL(STRING, command),
-                                   "/agent:%s/monitor:%s/command:",
+                                   "/agent:%s/command_monitor:%s/command:",
                                    ta, name)) != 0 ||
         (rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
-                                   "/agent:%s/monitor:%s/enable:",
+                                   "/agent:%s/command_monitor:%s/enable:",
                                    ta, name)) != 0)
     {
         cfg_del_instance_fmt(FALSE,
-                             "/agent:%s/monitor:%s",
+                             "/agent:%s/command_monitor:%s",
                              ta, name);
         return rc;
     }

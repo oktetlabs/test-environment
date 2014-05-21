@@ -78,7 +78,8 @@ start_cmd_monitors(cmd_monitor_descrs *monitors)
     {
         if (monitor->ta != NULL && monitor->run_monitor)
         {
-            if (tapi_cfg_cmd_monitor_begin(monitor->ta, monitor->name,
+            if (tapi_cfg_cmd_monitor_begin(monitor->ta,
+                                           monitor->name,
                                            monitor->command,
                                            monitor->time_to_wait) == 0)
                 monitor->enabled = TRUE;

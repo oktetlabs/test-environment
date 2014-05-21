@@ -366,7 +366,7 @@ RCF_PCH_CFG_NODE_RW(monitor_time, "time_to_wait", NULL,
                     monitor_common_get, monitor_common_set);
 
 static rcf_pch_cfg_object node_monitor_inst =
-    { "monitor", 0, &monitor_time, NULL,
+    { "command_monitor", 0, &monitor_time, NULL,
       NULL, NULL,
       (rcf_ch_cfg_add)cmd_monitor_add, (rcf_ch_cfg_del)cmd_monitor_del,
       (rcf_ch_cfg_list)cmd_monitors_list, NULL, NULL };
