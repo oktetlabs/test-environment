@@ -55,7 +55,7 @@ free_cmd_monitor(cmd_monitor_descr *monitor)
 }
 
 /* See description in tester_cmd_monitor.h */
-extern
+void
 free_cmd_monitors(cmd_monitor_descrs *monitors)
 {
     cmd_monitor_descr  *monitor;
