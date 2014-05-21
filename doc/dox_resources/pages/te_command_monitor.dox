@@ -51,11 +51,11 @@ and stop it with
 tapi_cfg_cmd_monitor_end(ta_name, monitor_name);
 @endcode
 
-Here ta_name is unique Test Agent name, monitor_name is monitor node name
-used to identify it within the Test Agent's configuration subtree,
-command is command to be executed and logged periodically, time_to_wait
-specifies time to wait between subsequent command executions (in
-milliseconds).
+Here <b>ta_name</b> is unique Test Agent name, <b>monitor_name</b> is
+monitor node name used to identify it within the Test Agent's
+configuration subtree, <b>command</b> is command to be executed and logged
+periodically, <b>time_to_wait</b> specifies time to wait between subsequent
+command executions (in milliseconds).
 
 For example,
 
@@ -124,7 +124,7 @@ eventually passed as <b>--cmd-monitor</b> option to Tester).
 --tester-cmd-monitor="[ta_name,]time_to_wait:command"
 @endcode
 
-ta_name is optional here; if not specified, then it is taken from
+<b>ta_name</b> is optional here; if not specified, then it is taken from
 TE_IUT_TA_NAME environment variable.
 
 For example, to log onload_stackdump output every second while running

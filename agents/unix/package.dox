@@ -27,7 +27,9 @@ Unix Test Egent supports the following features:
   (ARP, ATM, DHCP, Ethernet, IGMP, UDP, TCP, IPv4, ICMPv4,
   IPv6, ICMPv6, PPP, SNMP, iSCSI);
 - Automatic configuration server (ACS) engine
-  for testing TR-069 specification.
+  for testing TR-069 specification;
+- Periodically running specified commands and logging
+  their output (@ref te_cmd_monitor).
 .
 
 @section te_agent_unix_source Source organization
