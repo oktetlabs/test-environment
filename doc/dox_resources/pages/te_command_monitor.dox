@@ -77,10 +77,10 @@ Inside @path{package.xml} you can specify command output logging by adding
 inside this @attr_name{run} or @attr_name{session} nodes the specified
 command output logging will be run.
 
-For example, if you want for all the tests from some package run
-onload_stackdump when they are run with Onload library, you can add the
-@attr_name{command_monitor} node in @attr_name{session} child node of the
-@attr_name{package} node:
+For example, if you want to run onload_stackdump and log its output
+every second for all the tests from some package when they are run with
+Onload library, you can add the @attr_name{command_monitor} node in
+@attr_name{session} child node of the @attr_name{package} node:
 
 @code
 <?xml version="1.0"?>
