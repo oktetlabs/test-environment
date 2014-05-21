@@ -1,0 +1,139 @@
+/**
+ 
+@defgroup te_cmd_monitor Command Output Logging
+@ingroup te_engine_logger
+@{
+TE Command Output Logging feature allows to execute periodically some
+shell command on <b>Test Agent</b> and print its output in the testing log.
+Is is currently available only for Unix TA.
+
+There are three ways to configure and use this feature - in tests via its
+<b>Test API</b>, in @path{package.xml} with using XML tag 
+@attr_name{command_monitor}, and in @path{dispatcher.sh}(@path{run.sh})
+command line with <b>--tester-cmd-monitor</b> option. All these ways
+ultimately use Configurator TAPI to add/change/remove
+@attr_name{command_monitor} nodes in configuration subtree of Test Agent of
+interest.
+
+@section cmd_monitor_conf Configuration tree
+
+To use this feature, you need to register @attr_name{command_monitor} node
+and its children in configuration file of Configurator by adding in it
+
+@code
+<register>
+    <object oid="/agent/command_monitor"
+            access="read_create" type="none">
+    </object>
+    <object oid="/agent/command_monitor/time_to_wait"
+            access="read_write" type="integer">
+    </object>
+    <object oid="/agent/command_monitor/command"
+            access="read_write" type="string">
+    </object>
+    <object oid="/agent/command_monitor/enable"
+            access="read_write" type="integer">
+    </object>
+</register>
+@endcode
+
+@section cmd_monitor_tapi Test API
+
+You can start logging command output by executing
+
+@code
+tapi_cfg_cmd_monitor_begin(ta_name, monitor_name, command, time_to_wait);
+@endcode
+
+and stop it with
+
+@code
+tapi_cfg_cmd_monitor_end(ta_name, monitor_name);
+@endcode
+
+Here ta_name is unique Test Agent name, monitor_name is monitor node name
+used to identify it within the Test Agent's configuration subtree,
+command is command to be executed and logged periodically, time_to_wait
+specifies time to wait between subsequent command executions (in
+milliseconds).
+
+For example,
+
+@code
+tapi_cfg_cmd_monitor_begin(pco_iut->ta, "stackdump_monitor",
+                           "/tmp/te_onload_stdump",
+                           1000);
+/* Now it loggs output of te_onload_stdump every second. */
+<...>
+tapi_cfg_cmd_monitor_end(pco_iut->ta, "stackdump_monitor");
+/* Logging stopped. */
+@endcode
+
+@section cmd_monitor_pkg Defining command output logging in package.xml
+
+Inside @path{package.xml} you can specify command output logging by adding
+@attr_name{command_monitor} nodes as the first children of either
+@attr_name{run} or @attr_name{session} nodes. After that for all the tests
+inside this @attr_name{run} or @attr_name{session} nodes the specified
+command output logging will be run.
+
+For example, if you want for all the tests from some package run
+onload_stackdump when they are run with Onload library, you can add the
+@attr_name{command_monitor} node in @attr_name{session} child node of the
+@attr_name{package} node:
+
+@code
+<?xml version="1.0"?>
+<package version="1.0">
+    <description>Input/Output multiplexing</description>
+    <author mailto="Andrew.Rybchenko@oktetlabs.ru"/>
+
+    <session>
+        <command_monitor>
+            <ta>Agt_A</ta>
+            <command>${SFC_ONLOAD_GNU}/tools/ip/onload_stackdump</command>
+            <time_to_wait>1000</time_to_wait>
+            <run_monitor>${L5_RUN}</run_monitor>
+        </command_monitor>
+        <!--- Tests specification --->
+    </session>
+</package>
+
+@endcode
+
+Here @attr_name{run_monitor} specifies a condition that should be met to
+enable this command output logging. If the text inside it is "yes" or
+non-zero number, it is considered true (L5_RUN environment variable
+evaluates to "yes" when tests are run with Onload library). This node
+is optional; if it is omitted, specified command output logging is
+always enabled. Node @attr_name{ta}, specifying the name of Test Agent
+on which to run and log output of a given @attr_name{command}, is
+optional as well; if it is omitted, then name of Test Agent is taken
+from TE_IUT_TA_NAME environment variable.
+
+You can specify several @attr_name{command_monitor} nodes to enable
+logging of several commands simultaneously.
+
+@section cmd_monitor_cli Command line option
+
+You can use command line option <b>--tester-cmd-monitor</b> when running
+@path{dispatcher.sh}(perhaps via @path{run.sh} of your test suite; it is
+eventually passed as <b>--cmd-monitor</b> option to Tester).
+
+@code
+--tester-cmd-monitor="[ta_name,]time_to_wait:command"
+@endcode
+
+ta_name is optional here; if not specified, then it is taken from
+TE_IUT_TA_NAME environment variable.
+
+For example, to log onload_stackdump output every second while running
+sockapi-ts/iomux/many_sockets test:
+
+@code
+./run.sh --cfg=l5elrond --tester-run=sockapi-ts/iomux/many_sockets -n
+--tester-cmd-monitor="1000:$SFC_ONLOAD_GNU/tools/ip/onload_stackdump"
+@endcode
+
+@} <!-- Command Output Logging -->
+*/
