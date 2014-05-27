@@ -154,13 +154,16 @@ te_command_monitor(void *arg)
                             char *p = NULL;
 
                             p = strrchr(buf, '\n');
-                            if (p != NULL)
-                            {
-                                p = '\0';
-                                MONITOR_OUT;
+                            if (p == NULL)
+                                p = buf + STR_LEN;
+
+                            *p = '\0';
+                            MONITOR_OUT;
+                            if (p < buf + STR_LEN)
                                 memmove(buf, p + 1,
-                                        STR_LEN - (p + 1 - buf));
-                            }
+                                        STR_LEN - (p + 1 - buf) + 1);
+                            else
+                                buf[0] = '\0';
                         }
                         buf_pos = strlen(buf);
                     }
