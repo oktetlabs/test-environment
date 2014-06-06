@@ -118,6 +118,12 @@ extern const char *inet_ntop(int af, const void *src, char *dst,
 #include "te_sockaddr.h"
 #include "rcf_rpc_defs.h"
 
+#ifdef __unix__
+#ifndef SO_REUSEPORT
+#define SO_REUSEPORT 15
+#endif
+#endif
+
 #ifndef WINDOWS
 #include "tarpc.h"
 #else
@@ -818,6 +824,7 @@ rpc_sockopt2level(rpc_sockopt opt)
         case RPC_SO_RCVLOWAT:
         case RPC_SO_RCVTIMEO:
         case RPC_SO_REUSEADDR:
+        case RPC_SO_REUSEPORT:
         case RPC_SO_SNDBUF:
         case RPC_SO_SNDLOWAT:
         case RPC_SO_UPDATE_ACCEPT_CONTEXT:
@@ -940,6 +947,7 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(SO_RCVLOWAT);
         RPC2STR(SO_RCVTIMEO);
         RPC2STR(SO_REUSEADDR);
+        RPC2STR(SO_REUSEPORT);
         RPC2STR(SO_SNDBUF);
         RPC2STR(SO_SNDLOWAT);
         RPC2STR(SO_UPDATE_ACCEPT_CONTEXT);
@@ -1061,6 +1069,7 @@ sockopt_rpc2h(rpc_sockopt opt)
         RPC2H_CHECK(SO_RCVLOWAT);
         RPC2H_CHECK(SO_RCVTIMEO);
         RPC2H_CHECK(SO_REUSEADDR);
+        RPC2H_CHECK(SO_REUSEPORT);
         RPC2H_CHECK(SO_SNDBUF);
         RPC2H_CHECK(SO_SNDLOWAT);
         RPC2H_CHECK(SO_UPDATE_ACCEPT_CONTEXT);
@@ -1191,6 +1200,7 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC_CHECK(SO_RCVLOWAT);
                 H2RPC_CHECK(SO_RCVTIMEO);
                 H2RPC_CHECK(SO_REUSEADDR);
+                H2RPC_CHECK(SO_REUSEPORT);
                 H2RPC_CHECK(SO_SNDBUF);
                 H2RPC_CHECK(SO_SNDLOWAT);
                 H2RPC_CHECK(SO_UPDATE_CONNECT_CONTEXT);
@@ -1320,6 +1330,7 @@ sockopt_is_boolean(rpc_sockopt opt)
         case RPC_SO_KEEPALIVE:
         case RPC_SO_OOBINLINE:
         case RPC_SO_REUSEADDR:
+        case RPC_SO_REUSEPORT:
         case RPC_SO_DONTLINGER:
         case RPC_SO_USELOOPBACK:
         case RPC_SO_EXCLUSIVEADDRUSE:

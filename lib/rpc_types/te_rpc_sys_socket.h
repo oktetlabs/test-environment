@@ -434,6 +434,8 @@ typedef enum rpc_sockopt {
                                  validating addresses supplied in a
                                  'bind' call should allow to reuse
                                  a local address */
+    RPC_SO_REUSEPORT,       /**< Enables duplicate address and port
+                                 bindings */
     RPC_SO_SNDBUF,          /**< Get/set send buffer size */
     RPC_SO_SNDLOWAT,        /**< Specify the minimum number of bytes
                                  in the buffer until the socket layer
