@@ -114,6 +114,7 @@
                 </xs:simpleType>
             </xs:attribute>
             <xs:attribute name="parent-dep" type="yes_no" default="yes" />
+            <xs:attribute name="cond" type="xs:string"/>
         </xs:complexType>
     </xs:element>
 
