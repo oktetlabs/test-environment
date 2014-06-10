@@ -213,6 +213,54 @@ extern te_errno tapi_cfg_tcp_retries2_set(rcf_rpc_server *rpcs, int value,
 extern te_errno tapi_cfg_tcp_retries2_get(rcf_rpc_server *rpcs, int *value);
 
 /**
+ * Set a new tcp_orphan_retries value.
+ *
+ * @param rpcs      RPC server
+ * @param value     Value to be set
+ * @param old_value Location for previous value or @c NULL
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_tcp_orphan_retries_set(rcf_rpc_server *rpcs,
+                                                int value,
+                                                int *old_value);
+
+/**
+ * Get tcp_orphan_retries value.
+ *
+ * @param rpcs      RPC server
+ * @param value     Location for the value
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_tcp_orphan_retries_get(rcf_rpc_server *rpcs,
+                                                int *value);
+
+/**
+ * Set a new tcp_fin_timeout value.
+ *
+ * @param rpcs      RPC server
+ * @param value     Value to be set
+ * @param old_value Location for previous value or @c NULL
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_tcp_fin_timeout_set(rcf_rpc_server *rpcs,
+                                             int value,
+                                             int *old_value);
+
+/**
+ * Get tcp_fin_timeout value.
+ *
+ * @param rpcs      RPC server
+ * @param value     Location for the value
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_tcp_fin_timeout_get(rcf_rpc_server *rpcs,
+                                             int *value);
+
+/**
  * Set a new tcp_syn_retries value.
  *
  * @param rpcs      RPC server

@@ -192,7 +192,9 @@ SYSTEM_WIDE_PARAM_COMMON(tcp_keepalive_time, tcp_syn_retries);
 SYSTEM_WIDE_PARAM_COMMON(tcp_keepalive_probes, tcp_keepalive_time);
 SYSTEM_WIDE_PARAM_COMMON(tcp_keepalive_intvl, tcp_keepalive_probes);
 SYSTEM_WIDE_PARAM_COMMON(tcp_retries2, tcp_keepalive_intvl);
-SYSTEM_WIDE_PARAM_COMMON(tcp_syncookies, tcp_retries2);
+SYSTEM_WIDE_PARAM_COMMON(tcp_orphan_retries, tcp_retries2);
+SYSTEM_WIDE_PARAM_COMMON(tcp_fin_timeout, tcp_orphan_retries);
+SYSTEM_WIDE_PARAM_COMMON(tcp_syncookies, tcp_fin_timeout);
 SYSTEM_WIDE_PARAM_COMMON(tcp_timestamps, tcp_syncookies);
 SYSTEM_WIDE_PARAM(rcvbuf_def, tcp_timestamps);
 SYSTEM_WIDE_PARAM(rcvbuf_max, rcvbuf_def);
@@ -853,7 +855,8 @@ tcp_rcvbuf_def_get(unsigned int gid, const char *oid,
 /**
  * Common function to set a value in /proc/sys.
  * Supported nodes: tcp_timestamps, tcp_syncookies, tcp_keepalive_time,
- * tcp_keepalive_probes, tcp_keepalive_intvl, tcp_retries2, tcp_syn_retries
+ * tcp_keepalive_probes, tcp_keepalive_intvl, tcp_retries2,
+ * tcp_orphan_retries, tcp_fin_timeout, tcp_syn_retries
  *
  * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
@@ -887,6 +890,8 @@ proc_sys_common_set(unsigned int gid, const char *oid,
     ELSE_IF_IPV4_FIELD(tcp_keepalive_probes)
     ELSE_IF_IPV4_FIELD(tcp_keepalive_intvl)
     ELSE_IF_IPV4_FIELD(tcp_retries2)
+    ELSE_IF_IPV4_FIELD(tcp_orphan_retries)
+    ELSE_IF_IPV4_FIELD(tcp_fin_timeout)
     ELSE_IF_IPV4_FIELD(tcp_syn_retries)
 #undef ELSE_IF_IPV4_FIELD
 
@@ -899,7 +904,8 @@ proc_sys_common_set(unsigned int gid, const char *oid,
 /**
  * Common function to get a value from /proc/sys.
  * Supported nodes: tcp_timestamps, tcp_syncookies, tcp_keepalive_time,
- * tcp_keepalive_probes, tcp_keepalive_intvl, tcp_retries2, tcp_syn_retries
+ * tcp_keepalive_probes, tcp_keepalive_intvl, tcp_retries2,
+ * tcp_orphan_retries, tcp_fin_timeout, tcp_syn_retries
  *
  * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
@@ -933,6 +939,8 @@ proc_sys_common_get(unsigned int gid, const char *oid,
     ELSE_IF_IPV4_FIELD(tcp_keepalive_probes)
     ELSE_IF_IPV4_FIELD(tcp_keepalive_intvl)
     ELSE_IF_IPV4_FIELD(tcp_retries2)
+    ELSE_IF_IPV4_FIELD(tcp_orphan_retries)
+    ELSE_IF_IPV4_FIELD(tcp_fin_timeout)
     ELSE_IF_IPV4_FIELD(tcp_syn_retries)
 #undef ELSE_IF_IPV4_FIELD
 #endif
