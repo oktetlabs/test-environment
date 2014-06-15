@@ -1440,6 +1440,9 @@ sockopt_is_boolean(rpc_sockopt opt)
         case RPC_IPV6_ROUTER_ALERT:
         case RPC_IPV6_V6ONLY:
         case RPC_IPV6_HOPLIMIT:
+        case RPC_IPV6_DSTOPTS:
+        case RPC_IPV6_HOPOPTS:
+        case RPC_IPV6_RTHDR:
 
         case RPC_TCP_NODELAY:
         case RPC_TCP_CORK:
