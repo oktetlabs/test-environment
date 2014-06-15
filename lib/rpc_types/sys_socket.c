@@ -847,6 +847,13 @@ rpc_sockopt2level(rpc_sockopt opt)
         case RPC_SO_TIMESTAMPNS:
         case RPC_SO_TIMESTAMPING:
         case RPC_SCM_RIGHTS:
+        case RPC_SO_BSDCOMPAT:
+        case RPC_SO_DOMAIN:
+        case RPC_SO_MARK:
+        case RPC_SO_PASSCRED:
+        case RPC_SO_PROTOCOL:
+        case RPC_SO_RCVBUFFORCE:
+        case RPC_SO_SNDBUFFORCE:
             return RPC_SOL_SOCKET;
 
         case RPC_IP_ADD_MEMBERSHIP:
@@ -871,6 +878,12 @@ rpc_sockopt2level(rpc_sockopt opt)
         case RPC_IP_MTU_DISCOVER:
         case RPC_IP_RECEIVE_BROADCAST:
         case RPC_IP_DONTFRAGMENT:
+        case RPC_IP_FREEBIND:
+        case RPC_IP_MULTICAST_ALL:
+        case RPC_IP_NODEFRAG:
+        case RPC_IP_RECVORIGDSTADDR:
+        case RPC_IP_TRANSPARENT:
+        case RPC_IP_HDRINCL:
             return RPC_SOL_IP;
 
         case RPC_IPV6_UNICAST_HOPS:
@@ -886,6 +899,7 @@ rpc_sockopt2level(rpc_sockopt opt)
         case RPC_IPV6_HOPOPTS:
         case RPC_IPV6_FLOWINFO:
         case RPC_IPV6_RECVHOPLIMIT:
+        case RPC_IPV6_HOPLIMIT:
         case RPC_IPV6_NEXTHOP:
         case RPC_IPV6_MULTICAST_LOOP:
         case RPC_IPV6_ADD_MEMBERSHIP:
@@ -913,6 +927,9 @@ rpc_sockopt2level(rpc_sockopt opt)
         case RPC_TCP_DEFER_ACCEPT:
         case RPC_TCP_QUICKACK:
         case RPC_TCP_USER_TIMEOUT:
+        case RPC_TCP_LINGER2:
+        case RPC_TCP_SYNCNT:
+        case RPC_TCP_WINDOW_CLAMP:
             return RPC_SOL_TCP;
 
         case RPC_UDP_NOCHECKSUM:
@@ -969,6 +986,14 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(SO_TIMESTAMP);
         RPC2STR(SO_TIMESTAMPNS);
         RPC2STR(SO_TIMESTAMPING);
+        RPC2STR(SO_BSDCOMPAT);
+        RPC2STR(SO_DOMAIN);
+        RPC2STR(SO_MARK);
+        RPC2STR(SO_PASSCRED);
+        RPC2STR(SO_PROTOCOL);
+        RPC2STR(SO_RCVBUFFORCE);
+        RPC2STR(SO_SNDBUFFORCE);
+
         RPC2STR(IP_ADD_MEMBERSHIP);
         RPC2STR(IP_DROP_MEMBERSHIP);
         RPC2STR(IP_MULTICAST_IF);
@@ -991,6 +1016,12 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(IP_MTU_DISCOVER);
         RPC2STR(IP_RECEIVE_BROADCAST);
         RPC2STR(IP_DONTFRAGMENT);
+        RPC2STR(IP_FREEBIND);
+        RPC2STR(IP_MULTICAST_ALL);
+        RPC2STR(IP_NODEFRAG);
+        RPC2STR(IP_RECVORIGDSTADDR);
+        RPC2STR(IP_TRANSPARENT);
+        RPC2STR(IP_HDRINCL);
 
         RPC2STR(IPV6_UNICAST_HOPS);
         RPC2STR(IPV6_MULTICAST_HOPS);
@@ -1005,6 +1036,7 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(IPV6_HOPOPTS);
         RPC2STR(IPV6_FLOWINFO);
         RPC2STR(IPV6_RECVHOPLIMIT);
+        RPC2STR(IPV6_HOPLIMIT);
         RPC2STR(IPV6_NEXTHOP);
         RPC2STR(IPV6_MULTICAST_LOOP);
         RPC2STR(IPV6_ADD_MEMBERSHIP);
@@ -1031,6 +1063,9 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(TCP_DEFER_ACCEPT);
         RPC2STR(TCP_QUICKACK);
         RPC2STR(TCP_USER_TIMEOUT);
+        RPC2STR(TCP_LINGER2);
+        RPC2STR(TCP_SYNCNT);
+        RPC2STR(TCP_WINDOW_CLAMP);
 
         RPC2STR(UDP_NOCHECKSUM);
         RPC2STR(UDP_CORK);
@@ -1091,6 +1126,14 @@ sockopt_rpc2h(rpc_sockopt opt)
         RPC2H_CHECK(SO_TIMESTAMP);
         RPC2H_CHECK(SO_TIMESTAMPNS);
         RPC2H_CHECK(SO_TIMESTAMPING);
+        RPC2H_CHECK(SO_BSDCOMPAT);
+        RPC2H_CHECK(SO_DOMAIN);
+        RPC2H_CHECK(SO_MARK);
+        RPC2H_CHECK(SO_PASSCRED);
+        RPC2H_CHECK(SO_PROTOCOL);
+        RPC2H_CHECK(SO_RCVBUFFORCE);
+        RPC2H_CHECK(SO_SNDBUFFORCE);
+
         RPC2H_CHECK(IP_ADD_MEMBERSHIP);
         RPC2H_CHECK(IP_DROP_MEMBERSHIP);
         RPC2H_CHECK(IP_MULTICAST_IF);
@@ -1112,6 +1155,13 @@ sockopt_rpc2h(rpc_sockopt opt)
         RPC2H_CHECK(IP_MTU_DISCOVER);
         RPC2H_CHECK(IP_RECEIVE_BROADCAST);
         RPC2H_CHECK(IP_DONTFRAGMENT);
+        RPC2H_CHECK(IP_FREEBIND);
+        RPC2H_CHECK(IP_MULTICAST_ALL);
+        RPC2H_CHECK(IP_NODEFRAG);
+        RPC2H_CHECK(IP_RECVORIGDSTADDR);
+        RPC2H_CHECK(IP_TRANSPARENT);
+        RPC2H_CHECK(IP_HDRINCL);
+
         RPC2H_CHECK(IPV6_ADDRFORM);
         RPC2H_CHECK(IPV6_RECVPKTINFO);
         RPC2H_CHECK(IPV6_HOPOPTS);
@@ -1120,6 +1170,7 @@ sockopt_rpc2h(rpc_sockopt opt)
         RPC2H_CHECK(IPV6_PKTOPTIONS);
         RPC2H_CHECK(IPV6_CHECKSUM);
         RPC2H_CHECK(IPV6_RECVHOPLIMIT);
+        RPC2H_CHECK(IPV6_HOPLIMIT);
         RPC2H_CHECK(IPV6_NEXTHOP);
         RPC2H_CHECK(IPV6_AUTHHDR);
         RPC2H_CHECK(IPV6_UNICAST_HOPS);
@@ -1137,6 +1188,7 @@ sockopt_rpc2h(rpc_sockopt opt)
         RPC2H_CHECK(IPV6_LEAVE_ANYCAST);
         RPC2H_CHECK(IPV6_IPSEC_POLICY);
         RPC2H_CHECK(IPV6_XFRM_POLICY);
+
         RPC2H_CHECK(TCP_MAXSEG);
         RPC2H_CHECK(TCP_NODELAY);
         RPC2H_CHECK(TCP_CORK);
@@ -1149,6 +1201,10 @@ sockopt_rpc2h(rpc_sockopt opt)
         RPC2H_CHECK(TCP_DEFER_ACCEPT);
         RPC2H_CHECK(TCP_QUICKACK);
         RPC2H_CHECK(TCP_USER_TIMEOUT);
+        RPC2H_CHECK(TCP_LINGER2);
+        RPC2H_CHECK(TCP_SYNCNT);
+        RPC2H_CHECK(TCP_WINDOW_CLAMP);
+
         RPC2H_CHECK(UDP_NOCHECKSUM);
         RPC2H_CHECK(UDP_CORK);
         RPC2H_CHECK(SCM_RIGHTS);
@@ -1222,6 +1278,13 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC_CHECK(SO_TIMESTAMP);
                 H2RPC_CHECK(SO_TIMESTAMPNS);
                 H2RPC_CHECK(SO_TIMESTAMPING);
+                H2RPC_CHECK(SO_BSDCOMPAT);
+                H2RPC_CHECK(SO_DOMAIN);
+                H2RPC_CHECK(SO_MARK);
+                H2RPC_CHECK(SO_PASSCRED);
+                H2RPC_CHECK(SO_PROTOCOL);
+                H2RPC_CHECK(SO_RCVBUFFORCE);
+                H2RPC_CHECK(SO_SNDBUFFORCE);
                 case TE_SCM_RIGHTS:
                     return RPC_SCM_RIGHTS;
                 default: return RPC_SOCKOPT_UNKNOWN;
@@ -1239,6 +1302,9 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC_CHECK(TCP_KEEPALIVE_THRESHOLD);
                 H2RPC_CHECK(TCP_KEEPALIVE_ABORT_THRESHOLD);
                 H2RPC_CHECK(TCP_INFO);
+                H2RPC_CHECK(TCP_LINGER2);
+                H2RPC_CHECK(TCP_SYNCNT);
+                H2RPC_CHECK(TCP_WINDOW_CLAMP);
                 default: return RPC_SOCKOPT_UNKNOWN;
             }
             break;
@@ -1267,6 +1333,12 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC_CHECK(IP_MTU_DISCOVER);
                 H2RPC_CHECK(IP_RECEIVE_BROADCAST);
                 H2RPC_CHECK(IP_DONTFRAGMENT);
+                H2RPC_CHECK(IP_FREEBIND);
+                H2RPC_CHECK(IP_MULTICAST_ALL);
+                H2RPC_CHECK(IP_NODEFRAG);
+                H2RPC_CHECK(IP_RECVORIGDSTADDR);
+                H2RPC_CHECK(IP_TRANSPARENT);
+                H2RPC_CHECK(IP_HDRINCL);
                 default: return RPC_SOCKOPT_UNKNOWN;
             }
             break;
@@ -1287,6 +1359,7 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC_CHECK(IPV6_HOPOPTS);
                 H2RPC_CHECK(IPV6_FLOWINFO);
                 H2RPC_CHECK(IPV6_RECVHOPLIMIT);
+                H2RPC_CHECK(IPV6_HOPLIMIT);
                 H2RPC_CHECK(IPV6_NEXTHOP);
                 H2RPC_CHECK(IPV6_MULTICAST_LOOP);
                 H2RPC_CHECK(IPV6_ADD_MEMBERSHIP);
@@ -1338,6 +1411,9 @@ sockopt_is_boolean(rpc_sockopt opt)
         case RPC_SO_TIMESTAMP:
         case RPC_SO_TIMESTAMPNS:
         case RPC_SO_TIMESTAMPING:
+        case RPC_SO_BSDCOMPAT:
+        case RPC_SO_MARK:
+        case RPC_SO_PASSCRED:
 
         case RPC_IP_MULTICAST_LOOP:
         case RPC_IP_PKTINFO:
@@ -1349,6 +1425,11 @@ sockopt_is_boolean(rpc_sockopt opt)
         case RPC_IP_MTU_DISCOVER:
         case RPC_IP_RECEIVE_BROADCAST:
         case RPC_IP_DONTFRAGMENT:
+        case RPC_IP_FREEBIND:
+        case RPC_IP_MULTICAST_ALL:
+        case RPC_IP_RECVORIGDSTADDR:
+        case RPC_IP_TRANSPARENT:
+        case RPC_IP_HDRINCL:
 
         case RPC_IPV6_RECVPKTINFO:
         case RPC_IPV6_PKTOPTIONS:
@@ -1358,6 +1439,7 @@ sockopt_is_boolean(rpc_sockopt opt)
         case RPC_IPV6_RECVERR:
         case RPC_IPV6_ROUTER_ALERT:
         case RPC_IPV6_V6ONLY:
+        case RPC_IPV6_HOPLIMIT:
 
         case RPC_TCP_NODELAY:
         case RPC_TCP_CORK:
