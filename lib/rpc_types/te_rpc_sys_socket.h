@@ -476,13 +476,16 @@ typedef enum rpc_sockopt {
 
     RPC_SO_DGRAM_ERRIND,    /**< Delayed ICMP errors on not connected
                                  datagram socket */
-    RPC_SO_BSDCOMPAT,
-    RPC_SO_DOMAIN,
-    RPC_SO_MARK,
-    RPC_SO_PASSCRED,
-    RPC_SO_PROTOCOL,
-    RPC_SO_RCVBUFFORCE,
-    RPC_SO_SNDBUFFORCE,
+    RPC_SO_BSDCOMPAT,       /**< Enable BSD bug-to-bug compatibility */
+    RPC_SO_DOMAIN,          /**< Retrieves the socket domain */
+    RPC_SO_MARK,            /**< Set the mark for each sent packet */
+    RPC_SO_PASSCRED,        /**< Enable receiving of the SCM_CREDENTIALS
+                                 control message */
+    RPC_SO_PROTOCOL,        /**< Retrieves the socket protocol */
+    RPC_SO_RCVBUFFORCE,     /**< Like SO_RCVBUF, but the rmem_max limit can
+                                 be overridden */
+    RPC_SO_SNDBUFFORCE,     /**< Like SO_SNDBUF, but the wmem_max limit can
+                                 be overridden */
 
     RPC_IP_ADD_MEMBERSHIP,  /**< Join a multicast group */
     RPC_IP_DROP_MEMBERSHIP, /**< Leave a multicast group */
@@ -540,19 +543,22 @@ typedef enum rpc_sockopt {
     RPC_IP_MTU_DISCOVER,    /**< Enable/disable Path MTU discover
                                  on the socket */
 
-    RPC_IP_RECEIVE_BROADCAST,/**< Winsock2 specific option. 
-                                 Allows or blocks broadcast reception. */
+    RPC_IP_RECEIVE_BROADCAST, /**< Winsock2 specific option. 
+                                  Allows or blocks broadcast reception. */
     RPC_IP_DONTFRAGMENT,    /**< Winsock2 specific option. 
                                  Indicates that data should not be
                                  fragmented regardless of the local MTU.
                                  Valid only for message oriented protocols.
                                  All Microsoft providers silently ignore
                                  this option. */
-    RPC_IP_FREEBIND,
-    RPC_IP_MULTICAST_ALL,
-    RPC_IP_NODEFRAG,
-    RPC_IP_RECVORIGDSTADDR,
-    RPC_IP_TRANSPARENT,
+    RPC_IP_FREEBIND,        /**< Allows binding to a nonlocal IP address */
+    RPC_IP_MULTICAST_ALL,   /**< Modify the delivery policy of multicast
+                                 messages */
+    RPC_IP_NODEFRAG,        /**< Disable the reassembly of outgoing packets
+                                 in the netfilter */
+    RPC_IP_RECVORIGDSTADDR, /**< Enables the IP_ORIGDSTADDR ancillary
+                                 message in recvmsg */
+    RPC_IP_TRANSPARENT,     /**< Enables transparent proxying */
 
     RPC_IPV6_UNICAST_HOPS,  /**< Hop limit for unicast packets */
 
@@ -613,7 +619,7 @@ typedef enum rpc_sockopt {
     RPC_IPV6_FLOWINFO,      /**< Deliver the flow ID */
     
     RPC_IPV6_RECVHOPLIMIT,  /**< Deliver the hop count of the packet */
-    RPC_IPV6_HOPLIMIT,
+    RPC_IPV6_HOPLIMIT,      /**< Set delivery of control messages */
  
     RPC_TCP_MAXSEG,         /**< Set/get the maximum segment size for
                                  outgoing TCP packets */
@@ -630,11 +636,12 @@ typedef enum rpc_sockopt {
     RPC_TCP_KEEPALIVE_ABORT_THRESHOLD,  /**< Abort TCP connection after
                                              this keep-alive failed period
                                              in milliseconds */
-    RPC_TCP_LINGER2,
-    RPC_TCP_SYNCNT,
-    RPC_TCP_WINDOW_CLAMP,
+    RPC_TCP_LINGER2,        /**< The lifetime of orphaned FIN_WAIT2 state
+                                 sockets */
+    RPC_TCP_SYNCNT,         /**< Number of SYN retransmits */
+    RPC_TCP_WINDOW_CLAMP,   /**< Bound the size of the advertised */
 
-    RPC_TCP_INFO,
+    RPC_TCP_INFO,           /**< Gather info about the socket */
     RPC_TCP_DEFER_ACCEPT,   /**< Allows a listener to be awakened only when
                                  data arrives on the socket.*/
     RPC_TCP_QUICKACK,       /**< Enable/disable quickack mode */
