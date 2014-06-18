@@ -1723,7 +1723,8 @@ trc_report_key_entry *
 trc_report_key_add(trc_keys *keys,
                    const char *key_name,
                    const trc_report_test_iter_entry *iter_entry,
-                   const char *test_name, const char *test_path)
+                   const char *test_name, const char *key_test_path,
+                   const char *test_path)
 {
     trc_report_key_entry        *key = trc_report_key_find(keys, key_name);
     trc_report_key_test_entry   *key_test = NULL;
@@ -1746,7 +1747,7 @@ trc_report_key_add(trc_keys *keys,
 
     TAILQ_FOREACH(key_test, &key->tests, links)
     {
-        if (strcmp(test_path, key_test->path) == 0)
+        if (strcmp(key_test_path, key_test->key_path) == 0)
         {
             /* Do not duplicate iterations, exit */
             TAILQ_INSERT_TAIL(&key_test->iters, key_iter, links);
@@ -1764,6 +1765,7 @@ trc_report_key_add(trc_keys *keys,
     }
     key_test->name = strdup(test_name);
     key_test->path = strdup(test_path);
+    key_test->key_path = strdup(key_test_path);
 
     TAILQ_INIT(&key_test->iters);
     TAILQ_INSERT_TAIL(&key_test->iters, key_iter, links);
@@ -1779,7 +1781,8 @@ int
 trc_report_keys_add(trc_keys *keys,
                     const char *key_names,
                     const trc_report_test_iter_entry *iter_entry,
-                    const char *test_name, const char *test_path)
+                    const char *test_name, const char *key_test_path,
+                    const char *test_path)
 {
     int     count = 0;
     char   *p = NULL;
@@ -1787,7 +1790,7 @@ trc_report_keys_add(trc_keys *keys,
     if ((key_names == NULL) || (*key_names == '\0'))
     {
         trc_report_key_add(keys, TRC_REPORT_KEY_UNSPEC, iter_entry,
-                           test_name, test_path);
+                           test_name, key_test_path, test_path);
         return ++count;
     }
 
@@ -1802,7 +1805,7 @@ trc_report_keys_add(trc_keys *keys,
                 break;
 
             trc_report_key_add(keys, tmp_key_name, iter_entry,
-                               test_name, test_path);
+                               test_name, key_test_path, test_path);
             free(tmp_key_name);
             key_names = p + 1;
             while (*key_names == ' ')
@@ -1811,7 +1814,7 @@ trc_report_keys_add(trc_keys *keys,
         else
         {
             trc_report_key_add(keys, key_names, iter_entry,
-                               test_name, test_path);
+                               test_name, key_test_path, test_path);
             key_names = NULL;
         }
         count++;
@@ -1871,6 +1874,9 @@ trc_keys_free(trc_keys *keys)
                 free(key_iter);
             }
             TAILQ_REMOVE(&key->tests, key_test, links);
+            free(key_test->name);
+            free(key_test->path);
+            free(key_test->key_path);
             free(key_test);
         }
         TAILQ_REMOVE(keys, key, links);
@@ -1986,7 +1992,8 @@ trc_keys_iter_add(trc_keys *keys,
                     trc_report_keys_add(keys,
                                         iter_data->exp_result->key,
                                         iter_entry, test->name,
-                                        key_test_path);
+                                        key_test_path,
+                                        test_path);
                 }
 
                 free(key_test_path);
@@ -2189,7 +2196,7 @@ trc_report_keys_to_html(FILE           *f,
              FWRITE_FMT("%s", key_test->name);
              if (!keys_only)
              {
-                 FWRITE_FMT("#%s", key_test->path);
+                 FWRITE_FMT("#%s", key_test->key_path);
                  TAILQ_FOREACH(key_iter, &key_test->iters, links)
                  {
                      FWRITE_FMT("|%d", key_iter->iter->tin);
@@ -3443,3 +3450,96 @@ cleanup:
     unlink(filename);
     return rc;
 }
+
+/** See the description in trc_report.h */
+te_errno
+trc_report_to_perl(trc_report_ctx *gctx, const char *filename)
+{
+    FILE                  *f;
+    te_errno               rc = 0;
+    trc_keys              *keys = NULL;
+    trc_report_key_entry  *key;
+    tqe_string            *tag;
+
+    f = fopen(filename, "w");
+    if (f == NULL)
+    {
+        rc = te_rc_os2te(errno);
+        ERROR("Failed to open file to write Perl report to: %r", rc);
+        return rc;
+    }
+
+    fprintf(f, "@tags = (\n");
+    TAILQ_FOREACH(tag, &gctx->tags, links)
+        fprintf(f, "  '%s',\n", tag->v);
+    fprintf(f, ");\n");
+
+    if ((keys = trc_keys_alloc()) == NULL)
+    {
+        rc = te_rc_os2te(errno);
+        goto cleanup;
+    }
+
+    rc = trc_report_keys_collect(keys, gctx,
+                                 TRC_REPORT_KEYS_EXPECTED);
+    if (rc != 0)
+        goto cleanup;
+
+    fprintf(f, "\n%%keys = (\n");
+    for (key = TAILQ_FIRST(keys);
+         key != NULL;
+         key = TAILQ_NEXT(key, links))
+    {
+        trc_report_key_test_entry *key_test = NULL;
+
+        if (strcmp(key->name, TRC_REPORT_KEY_UNSPEC) == 0)
+            continue;
+
+        fprintf(f, "  '%s' => [\n", key->name);
+
+        TAILQ_FOREACH(key_test, &key->tests, links)
+        {
+            fprintf(f, "    '%s',\n", key_test->path);
+        }
+
+        fprintf(f, "  ],\n", key->name);
+    }
+    fprintf(f, ");\n");
+
+    trc_keys_free(keys);
+    if ((keys = trc_keys_alloc()) == NULL)
+    {
+        rc = te_rc_os2te(errno);
+        goto cleanup;
+    }
+
+    rc = trc_report_keys_collect(keys, gctx,
+                                 TRC_REPORT_KEYS_EXPECTED);
+    if (rc != 0)
+        goto cleanup;
+
+    fprintf(f, "\n@unexp_results_tests = (\n");
+    for (key = TAILQ_FIRST(keys);
+         key != NULL;
+         key = TAILQ_NEXT(key, links))
+    {
+        trc_report_key_test_entry *key_test = NULL;
+
+        if (strcmp(key->name, TRC_REPORT_KEY_UNSPEC) != 0)
+            continue;
+
+        TAILQ_FOREACH(key_test, &key->tests, links)
+        {
+            fprintf(f, "  '%s',\n", key_test->path);
+        }
+    }
+    fprintf(f, ");\n");
+
+cleanup:
+    trc_keys_free(keys);
+    fclose(f);
+    if (rc != 0)
+        unlink(filename);
+    return rc;
+}
+

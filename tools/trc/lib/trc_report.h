@@ -207,11 +207,14 @@ typedef struct trc_report_key_iter_entry {
 typedef struct trc_report_key_test_entry {
     TAILQ_ENTRY(trc_report_key_test_entry)   links; /**< List links */
     TAILQ_HEAD(, trc_report_key_iter_entry)  iters; /**< Iterations list */
-    char                                    *name;  /**< Test name */
-    char                                    *path;  /**< Test path */
-    int                                      count; /**< Amount of iteration
-                                                         failed due to
-                                                         specific key */
+
+    char                        *name;      /**< Test name */
+    char                        *path;      /**< Test path */
+    char                        *key_path;  /**< Test path with key
+                                                 appended */
+    int                          count;     /**< Amount of iteration
+                                                 failed due to
+                                                 specific key */
 } trc_report_key_test_entry;
 
 
@@ -285,6 +288,8 @@ extern te_errno trc_report_to_html(trc_report_ctx *ctx,
  */
 extern void trc_report_free_test_iter_data(trc_report_test_iter_data *data);
 
+extern te_errno trc_report_to_perl(trc_report_ctx *gctx,
+                                   const char *filename);
 
 #ifdef __cplusplus
 } /* extern "C" */

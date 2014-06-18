@@ -93,6 +93,7 @@ enum {
     TRC_OPT_MERGE,
     TRC_OPT_CUT,
     TRC_OPT_SHOW_CMD_FILE,
+    TRC_OPT_PERL,
 };
 
 /** HTML report configuration */
@@ -105,7 +106,6 @@ typedef struct trc_report_html {
     FILE           *header;     /**< File with header */
 } trc_report_html;
 
-
 /** Should database be initialized from scratch */
 static te_bool init_db = FALSE;
 /** Be quiet, do not output grand total statistics to stdout */
@@ -117,6 +117,8 @@ static char *db_fn = NULL;
 static const char *xml_log_fn = NULL;
 /** Name of the file with report in TXT format */
 static char *txt_fn = NULL;
+/** Name of the file with report in Perl format */
+static char *perl_fn = NULL;
 
 /** List of HTML reports to generate */
 static TAILQ_HEAD(trc_report_htmls, trc_report_html) reports;
@@ -179,6 +181,10 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
 
         { "html", 'h', POPT_ARG_STRING, NULL, TRC_OPT_HTML,
           "Name of the file for report in HTML format.",
+          "FILENAME" },
+
+        { "perl", '\n', POPT_ARG_STRING, NULL, TRC_OPT_PERL,
+          "Name of the file for report in Perl format.",
           "FILENAME" },
 
         { "html-logs", '\0', POPT_ARG_STRING, NULL, TRC_OPT_HTML_LOGS,
@@ -399,6 +405,12 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
                 TAILQ_INSERT_TAIL(&reports, report, links);
                 report->filename = (char *)poptGetOptArg(optCon);
                 report->flags = 0;
+                break;
+            }
+
+            case TRC_OPT_PERL:
+            {
+                perl_fn = (char *)poptGetOptArg(optCon);
                 break;
             }
 
@@ -709,6 +721,15 @@ main(int argc, char *argv[])
         }
     }
 
+    if (perl_fn != NULL)
+    {
+        if (trc_report_to_perl(&ctx, perl_fn) != 0)
+        {
+            ERROR("Failed to generate report in Perl format");
+            goto exit;
+        }
+    }
+
     /* Update expected testing results database, if requested */
     if ((ctx.flags & TRC_REPORT_UPDATE_DB) &&
         (trc_db_save(ctx.db, db_fn, 0, 0, NULL, NULL, NULL) != 0))
@@ -742,6 +763,7 @@ exit:
 
     free(db_fn);
     free(txt_fn);
+    free(perl_fn);
 
     xmlCleanupParser();
     logic_expr_int_lex_destroy();
