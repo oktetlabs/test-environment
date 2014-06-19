@@ -602,6 +602,12 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     else if (ta->su)
         strcat(cmd, "su -c '");
 
+    /* 
+     * Add directory with agent to the PATH
+     */
+    sprintf(cmd + strlen(cmd), "PATH=$PATH:/tmp/%s%s ", ta_type,
+            ta->postfix);
+
     if ((shell != NULL) && (strlen(shell) > 0))
     {
         VERB("Using '%s' as shell for TA '%s'", shell, ta->ta_name);
