@@ -804,11 +804,9 @@ msghdr_rpc2tarpc(const rpc_msghdr *rpc_msg, tarpc_msghdr *tarpc_msg)
 
     if (rpc_msg->msg_control != NULL)
     {
-        int             rc;
+        int rc;
 
-        struct tarpc_cmsghdr *rpc_c;
-
-        rpc_c = tarpc_msg->msg_control.msg_control_val =
+        tarpc_msg->msg_control.msg_control_val =
                 TE_ALLOC(sizeof(tarpc_cmsghdr) * RCF_RPC_MAX_CMSGHDR);
 
         rc = msg_control_h2rpc(
@@ -1172,6 +1170,37 @@ rpc_getpeername_gen(rcf_rpc_server *rpcs,
     RETVAL_INT(getpeername, out.retval);
 }
 
+static te_bool
+mreq_source_cpy(tarpc_mreq_source *opt, struct option_value *val,
+                rpc_sockopt optname)
+{
+    if (opt->type != OPT_MREQ_SOURCE)
+    {
+        ERROR("Unknown option type for %s get request",
+              sockopt_rpc2str(optname));
+        return FALSE;
+    }
+    
+    val->opttype = opt->type; 
+    
+    memcpy(&val->option_value_u.opt_mreq_source.imr_multiaddr,
+           &opt->multiaddr, sizeof(opt->multiaddr));
+    val->option_value_u.opt_mreq_source.imr_multiaddr =
+      ntohl(val->option_value_u.opt_mreq_source.imr_multiaddr);
+    
+    memcpy(&val->option_value_u.opt_mreq_source.imr_interface,
+           &opt->interface, sizeof(opt->interface));
+    val->option_value_u.opt_mreq_source.imr_interface =
+      ntohl(val->option_value_u.opt_mreq_source.imr_interface);
+    
+    memcpy(&val->option_value_u.opt_mreq_source.imr_sourceaddr,
+           &opt->sourceaddr, sizeof(opt->sourceaddr));
+    val->option_value_u.opt_mreq_source.imr_sourceaddr =
+      ntohl(val->option_value_u.opt_mreq_source.imr_sourceaddr);
+
+    return TRUE;
+}
+
 int
 rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                    int s, rpc_socklevel level, rpc_sockopt optname,
@@ -1308,6 +1337,13 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                 }
                 break;
             }
+
+            case RPC_IP_ADD_SOURCE_MEMBERSHIP:
+            case RPC_IP_DROP_SOURCE_MEMBERSHIP:
+            case RPC_IP_BLOCK_SOURCE:
+            case RPC_IP_UNBLOCK_SOURCE:
+                mreq_source_cpy((tarpc_mreq_source *)optval, &val, optname);
+                break;
 
             case RPC_TCP_INFO:
                 val.opttype = OPT_TCP_INFO;
@@ -1479,6 +1515,51 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                     }
                     break;
                 }
+
+            case RPC_IP_ADD_SOURCE_MEMBERSHIP:
+            case RPC_IP_DROP_SOURCE_MEMBERSHIP:
+            case RPC_IP_BLOCK_SOURCE:
+            case RPC_IP_UNBLOCK_SOURCE:
+            {
+                tarpc_mreq_source *opt = (tarpc_mreq_source *)optval;
+                char addr_buf[3][INET_ADDRSTRLEN] = {{0,}, {0,}, {0,}};
+ 
+                memset(opt, 0, sizeof(*opt));
+                opt->type = out.optval.optval_val[0].opttype;
+
+                if (opt->type != OPT_MREQ_SOURCE)
+                {
+                    ERROR("Unknown option type for %s get reply",
+                          sockopt_rpc2str(optname));
+                    break;
+                }
+
+                memcpy(&opt->multiaddr, &out.optval.optval_val->
+                       option_value_u.opt_mreq_source.imr_multiaddr,
+                       sizeof(opt->multiaddr));
+                opt->multiaddr = htonl(opt->multiaddr);
+
+                memcpy(&opt->interface, &out.optval.optval_val->
+                       option_value_u.opt_mreq_source.imr_interface,
+                       sizeof(opt->interface));
+                opt->interface = htonl(opt->interface);
+
+                memcpy(&opt->sourceaddr, &out.optval.optval_val->
+                       option_value_u.opt_mreq_source.imr_sourceaddr,
+                       sizeof(opt->sourceaddr));
+                opt->sourceaddr = htonl(opt->sourceaddr);
+
+                te_log_buf_append(opt_val_str,
+                    "{ imr_multiaddr: %s, imr_interface: %s, "
+                    "imr_sourceaddr: %s }",
+                    inet_ntop(AF_INET, &opt->multiaddr, addr_buf[0],
+                             sizeof(addr_buf[0])),
+                    inet_ntop(AF_INET, &opt->interface, addr_buf[1],
+                             sizeof(addr_buf[1])),
+                    inet_ntop(AF_INET, &opt->sourceaddr, addr_buf[2],
+                             sizeof(addr_buf[2])));
+                break;
+            }
 
                 case RPC_TCP_INFO:
 #define COPY_TCP_INFO_FIELD(_name) \
@@ -1861,6 +1942,29 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
                 break;
             }
 
+            case RPC_IP_ADD_SOURCE_MEMBERSHIP:
+            case RPC_IP_DROP_SOURCE_MEMBERSHIP:
+            case RPC_IP_BLOCK_SOURCE:
+            case RPC_IP_UNBLOCK_SOURCE:
+            {
+                char addr_buf[3][INET_ADDRSTRLEN] = {{0,}, {0,}, {0,}};
+                tarpc_mreq_source *opt = (tarpc_mreq_source *)optval;
+
+                if (!mreq_source_cpy(opt, &val, optname))
+                    break;
+
+                te_log_buf_append(opt_val_str,
+                    "{ imr_multiaddr: %s, imr_interface: %s, "
+                    "imr_sourceaddr: %s }",
+                    inet_ntop(AF_INET, &opt->multiaddr, addr_buf[0],
+                             sizeof(addr_buf[0])),
+                    inet_ntop(AF_INET, &opt->interface, addr_buf[1],
+                             sizeof(addr_buf[1])),
+                    inet_ntop(AF_INET, &opt->sourceaddr, addr_buf[2],
+                             sizeof(addr_buf[2])));
+                break;
+            }
+
             case RPC_MCAST_JOIN_GROUP:
             case RPC_MCAST_LEAVE_GROUP:
             {
@@ -1956,7 +2060,6 @@ rpc_recvmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
                  struct tarpc_timespec *timeout)
 {
     char                  str_buf[1024];
-    rcf_rpc_op            op;
     tarpc_recvmmsg_alt_in  in;
     tarpc_recvmmsg_alt_out out;
 
@@ -1982,7 +2085,6 @@ rpc_recvmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
         RETVAL_INT(recvmmsg_alt, -1);
     }
 
-    op = rpcs->op;
     in.fd = fd;
     in.flags = flags;
     in.vlen = vlen;
@@ -2153,7 +2255,6 @@ rpc_sendmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
                  unsigned int vlen, rpc_send_recv_flags flags)
 {
     char                   str_buf[1024];
-    rcf_rpc_op             op;
     tarpc_sendmmsg_alt_in  in;
     tarpc_sendmmsg_alt_out out;
 
@@ -2173,7 +2274,6 @@ rpc_sendmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
         RETVAL_INT(sendmmsg_alt, -1);
     }
 
-    op = rpcs->op;
     in.fd = fd;
     in.flags = flags;
     in.vlen = vlen;

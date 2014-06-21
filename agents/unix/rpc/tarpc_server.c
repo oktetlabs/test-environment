@@ -485,6 +485,7 @@ static type_info_t type_info[] =
    {"struct linger", sizeof(struct linger)},
     {"struct in_addr", sizeof(struct in_addr)},
     {"struct ip_mreq", sizeof(struct ip_mreq)},
+    {"struct ip_mreq_source", sizeof(struct ip_mreq_source)},
 #if HAVE_STRUCT_IP_MREQN
     {"struct ip_mreqn", sizeof(struct ip_mreqn)},
 #endif
@@ -2921,22 +2922,23 @@ TARPC_FUNC(sigaltstack,
 #endif
 
 typedef union sockopt_param {
-    int                 integer;
-    char               *str;
-    struct timeval      tv;
-    struct linger       linger;
-    struct in_addr      addr;
-    struct in6_addr     addr6;
-    struct ip_mreq      mreq;
+    int                   integer;
+    char                 *str;
+    struct timeval        tv;
+    struct linger         linger;
+    struct in_addr        addr;
+    struct in6_addr       addr6;
+    struct ip_mreq        mreq;
+    struct ip_mreq_source mreq_source;
 #if HAVE_STRUCT_IP_MREQN
-    struct ip_mreqn     mreqn;
+    struct ip_mreqn       mreqn;
 #endif
-    struct ipv6_mreq    mreq6;
+    struct ipv6_mreq      mreq6;
 #if HAVE_STRUCT_TCP_INFO
-    struct tcp_info     tcpi;
+    struct tcp_info       tcpi;
 #endif
 #if HAVE_STRUCT_GROUP_REQ
-    struct group_req    gr_req;
+    struct group_req      gr_req;
 #endif
 } sockopt_param;
 
@@ -2997,6 +2999,30 @@ tarpc_setsockopt(tarpc_setsockopt_in *in, tarpc_setsockopt_out *out,
             param->mreq.imr_interface.s_addr =
                 htonl(param->mreq.imr_interface.s_addr);
             *optlen = sizeof(param->mreq);
+            break;
+        }
+
+        case OPT_MREQ_SOURCE:
+        {
+            memcpy((char *)&(param->mreq_source.imr_multiaddr),
+                   &in_optval->option_value_u.opt_mreq_source.imr_multiaddr,
+                   sizeof(param->mreq_source.imr_multiaddr));
+            param->mreq_source.imr_multiaddr.s_addr =
+                htonl(param->mreq_source.imr_multiaddr.s_addr);
+
+            memcpy((char *)&(param->mreq_source.imr_interface),
+                   &in_optval->option_value_u.opt_mreq_source.imr_interface,
+                   sizeof(param->mreq_source.imr_interface));
+            param->mreq_source.imr_interface.s_addr =
+                htonl(param->mreq_source.imr_interface.s_addr);
+
+            memcpy((char *)&(param->mreq_source.imr_sourceaddr),
+                  &in_optval->option_value_u.opt_mreq_source.imr_sourceaddr,
+                   sizeof(param->mreq_source.imr_sourceaddr));
+            param->mreq_source.imr_sourceaddr.s_addr =
+                htonl(param->mreq_source.imr_sourceaddr.s_addr);
+
+            *optlen = sizeof(param->mreq_source);
             break;
         }
 
@@ -3168,6 +3194,9 @@ tarpc_sockoptlen(const option_value *optval)
         case OPT_MREQ:
             return sizeof(struct ip_mreq);
 
+        case OPT_MREQ_SOURCE:
+            return sizeof(struct ip_mreq_source);
+
         case OPT_MREQ6:
             return sizeof(struct ipv6_mreq);
 
@@ -3300,6 +3329,33 @@ tarpc_getsockopt(tarpc_getsockopt_in *in, tarpc_getsockopt_out *out,
                    &(mreq->imr_interface), sizeof(mreq->imr_interface));
             out_optval->option_value_u.opt_mreq.imr_address =
                 ntohl(out_optval->option_value_u.opt_mreq.imr_address);
+            break;
+        }
+
+        case OPT_MREQ_SOURCE:
+        {
+            struct ip_mreq_source *mreq = (struct ip_mreq_source *)opt;
+
+            memcpy(&out_optval->option_value_u.opt_mreq_source.
+                   imr_multiaddr,
+                   &(mreq->imr_multiaddr), sizeof(mreq->imr_multiaddr));
+            out_optval->option_value_u.opt_mreq_source.imr_multiaddr =
+                ntohl(out_optval->option_value_u.opt_mreq_source.
+                      imr_multiaddr);
+
+            memcpy(&out_optval->option_value_u.opt_mreq_source.
+                   imr_interface,
+                   &(mreq->imr_interface), sizeof(mreq->imr_interface));
+            out_optval->option_value_u.opt_mreq_source.imr_interface =
+                ntohl(out_optval->option_value_u.opt_mreq_source.
+                      imr_interface);
+
+            memcpy(&out_optval->option_value_u.opt_mreq_source.
+                   imr_sourceaddr,
+                   &(mreq->imr_sourceaddr), sizeof(mreq->imr_sourceaddr));
+            out_optval->option_value_u.opt_mreq_source.imr_sourceaddr =
+                ntohl(out_optval->option_value_u.opt_mreq_source.
+                      imr_sourceaddr);
             break;
         }
 
@@ -6634,7 +6690,7 @@ flooder(tarpc_flooder_in *in)
         return -1;
     }
 
-    if (bulkszs > sizeof(snd_buf))
+    if (bulkszs > (int)sizeof(snd_buf))
     {
         ERROR("Size of sent data is too long");
         return -1;

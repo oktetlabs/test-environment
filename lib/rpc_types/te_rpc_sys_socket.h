@@ -489,6 +489,14 @@ typedef enum rpc_sockopt {
 
     RPC_IP_ADD_MEMBERSHIP,  /**< Join a multicast group */
     RPC_IP_DROP_MEMBERSHIP, /**< Leave a multicast group */
+    RPC_IP_ADD_SOURCE_MEMBERSHIP,  /**< Join a multicast group and allow
+                                        receiving data only from a specified
+                                        source. */
+    RPC_IP_DROP_SOURCE_MEMBERSHIP, /**< Leave a source-specific group */
+    RPC_IP_BLOCK_SOURCE,    /**< Stop receiving multicast data from a 
+                                 specific source in a given group */
+    RPC_IP_UNBLOCK_SOURCE,  /**< Unblock previously blocked multicast
+                                 source */
     RPC_IP_HDRINCL,         /**< If enabled, the user supplies an IP
                                  header in front of the user data */
 

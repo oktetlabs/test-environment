@@ -2753,7 +2753,8 @@ enum option_type {
     OPT_TCP_INFO        = 9,
     OPT_HANDLE          = 10,
     OPT_GROUP_REQ       = 11,
-    OPT_IP_PKTOPTIONS   = 12
+    OPT_IP_PKTOPTIONS   = 12,
+    OPT_MREQ_SOURCE     = 13
 };
 
 struct tarpc_linger {
@@ -2772,6 +2773,19 @@ struct tarpc_mreqn {
     uint32_t            multiaddr;
     uint32_t            address;
     tarpc_int           ifindex;
+};
+
+struct option_value_mreq_source {
+    uint32_t    imr_multiaddr;  /**< IP multicast group address */
+    uint32_t    imr_interface;  /**< IP address of local interface */
+    uint32_t    imr_sourceaddr; /**< IP address of multicast source */
+};
+
+struct tarpc_mreq_source {
+    enum option_type    type;
+    uint32_t            multiaddr;
+    uint32_t            interface;
+    uint32_t            sourceaddr;
 };
 
 struct option_value_mreq {
@@ -2833,6 +2847,7 @@ union option_value switch (option_type opttype) {
     case OPT_TIMEVAL:       struct tarpc_timeval opt_timeval;
     case OPT_MREQN:         struct option_value_mreqn opt_mreqn;
     case OPT_MREQ:          struct option_value_mreq opt_mreq;
+    case OPT_MREQ_SOURCE:   struct option_value_mreq_source opt_mreq_source;
     case OPT_MREQ6:         struct option_value_mreq6 opt_mreq6;
     case OPT_IPADDR:        uint32_t opt_ipaddr;
     case OPT_IPADDR6:       uint32_t opt_ipaddr6[4];
