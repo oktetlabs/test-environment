@@ -52,7 +52,7 @@ for my $bug_line (<STDIN>)
     {
         my %bug_unspec = ();
         $bug_unspec{'id'} = 'unspecified';
-        $bug_unspec{'summary'} = 'Test failures are expected but no keys are specified';
+        $bug_unspec{'summary'} = 'Unexpected test results without bug specified';
         $bug_unspec{'priority'} = 'unknown';
         $bug_unspec{'status'} = 'unknown';
         $bug_unspec{'project'} = 'unknown';

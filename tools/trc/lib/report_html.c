@@ -1976,7 +1976,7 @@ trc_keys_iter_add(trc_keys *keys,
                 }
                 else if ((flags & TRC_REPORT_KEYS_UNEXPECTED) != 0)
                 {
-                    key_add = (!is_exp) && (has_key || has_verdict);
+                    key_add = (!is_exp);
                 }
                 else
                 {
