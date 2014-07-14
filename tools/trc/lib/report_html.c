@@ -3514,7 +3514,7 @@ trc_report_to_perl(trc_report_ctx *gctx, const char *filename)
     }
 
     rc = trc_report_keys_collect(keys, gctx,
-                                 TRC_REPORT_KEYS_EXPECTED);
+                                 TRC_REPORT_KEYS_UNEXPECTED);
     if (rc != 0)
         goto cleanup;
 
