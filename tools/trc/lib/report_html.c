@@ -3460,6 +3460,8 @@ trc_report_to_perl(trc_report_ctx *gctx, const char *filename)
     trc_keys              *keys = NULL;
     trc_report_key_entry  *key;
     tqe_string            *tag;
+    tqh_strings            unexp_tests;
+    tqe_string            *tqe_str;
 
     f = fopen(filename, "w");
     if (f == NULL)
@@ -3518,6 +3520,7 @@ trc_report_to_perl(trc_report_ctx *gctx, const char *filename)
     if (rc != 0)
         goto cleanup;
 
+    TAILQ_INIT(&unexp_tests);
     fprintf(f, "\n@unexp_results_tests = (\n");
     for (key = TAILQ_FIRST(keys);
          key != NULL;
@@ -3525,15 +3528,30 @@ trc_report_to_perl(trc_report_ctx *gctx, const char *filename)
     {
         trc_report_key_test_entry *key_test = NULL;
 
-        if (strcmp(key->name, TRC_REPORT_KEY_UNSPEC) != 0)
-            continue;
-
         TAILQ_FOREACH(key_test, &key->tests, links)
         {
-            fprintf(f, "  '%s',\n", key_test->path);
+            int found = 0;
+
+            TAILQ_FOREACH(tqe_str, &unexp_tests, links)
+            {
+              if (strcmp(tqe_str->v, key_test->path) == 0)
+              {
+                  found = 1;
+                  break;
+              }
+            }
+
+            if (found == 0)
+            {
+                fprintf(f, "  '%s',\n", key_test->path);
+                tqe_str = calloc(1, sizeof(*tqe_str));
+                tqe_str->v = strdup(key_test->path);
+                TAILQ_INSERT_TAIL(&unexp_tests, tqe_str, links);
+            }
         }
     }
     fprintf(f, ");\n");
+    tq_strings_free(&unexp_tests, free);
 
 cleanup:
     trc_keys_free(keys);
