@@ -2917,14 +2917,13 @@ static te_errno
 ds_vncserver_add(unsigned int gid, const char *oid, const char *value,
                  const char *number)
 {
-    uint32_t n;
     char    *tmp;
     
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(value);
     
-    n = strtol(number, &tmp, 10);
+    strtol(number, &tmp, 10);
     if (tmp == number || *tmp != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     
@@ -3156,14 +3155,13 @@ ds_sshd_add(unsigned int gid, const char *oid, const char *value,
             const char *port)
 {
     uint32_t pid = sshd_exists((char *)port);
-    uint32_t p;
     char    *tmp;
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(value);
 
-    p = strtol(port, &tmp, 10);
+    strtol(port, &tmp, 10);
     if (tmp == port || *tmp != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     
@@ -3261,7 +3259,6 @@ RCF_PCH_CFG_NODE_COLLECTION(node_ds_sshd, "sshd",
                             NULL, NULL, 
                             ds_sshd_add, ds_sshd_del, ds_sshd_list, NULL);
 
-
 /*--------------------------- X server ---------------------------------*/
 
 /** 
@@ -3321,14 +3318,13 @@ ds_xvfb_add(unsigned int gid, const char *oid, const char *value,
             const char *number)
 {
     uint32_t pid = xvfb_exists((char *)number);
-    uint32_t n;
     char    *tmp;
     
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(value);
     
-    n = strtol(number, &tmp, 10);
+    strtol(number, &tmp, 10);
     if (tmp == number || *tmp != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     
@@ -3508,7 +3504,7 @@ static struct {
     { "/agent/vtund", vtund_grab, vtund_release }
 #endif
 
-};    
+};
 
 /**
  * Initializes conf_daemons support.
