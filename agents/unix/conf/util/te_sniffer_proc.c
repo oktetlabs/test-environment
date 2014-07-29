@@ -25,6 +25,7 @@
 #include <signal.h>
 #include <fcntl.h>
 #include <sys/queue.h>
+#include <sys/stat.h>
 
 #define MAXIMUM_SNAPLEN 65535
 #define SNIF_MAX_NAME 255
@@ -547,7 +548,6 @@ te_sniffer_process(int argc, char *argv[])
 
     struct bpf_program   fp;                  /* The compiled filter */
     te_bool              pflag          = 0;  /* Promiscuous mode flag */
-    unsigned long        sequence_num   = 0;
     int                  op;
 
     global_init();
@@ -603,7 +603,7 @@ te_sniffer_process(int argc, char *argv[])
                 break;
 
             case 'q':
-                sequence_num = atol(optarg);
+                /* Unused. */
                 break;
 
             case 's':
