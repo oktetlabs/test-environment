@@ -772,6 +772,16 @@ if test "$with_serialparse" = "yes" ; then
     EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_SERIALPARSE"
 fi
 
+
+AC_ARG_WITH([sfptpd],
+            AS_HELP_STRING([--with-sfptpd],
+                           [enable sfptpd (default is NO)]),
+            [with_sfptpd=yes], [with_sfptpd=""])
+AM_CONDITIONAL(CFG_SFPTPD_SUPPORT, test "$with_sfptpd" = "yes")
+if test "$with_sfptpd" = "yes" ; then
+    EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_SFPTPD"
+fi
+
 AC_SUBST([EXTRA_CPPFLAGS])
 AC_SUBST([EXTRA_LDADD])
 

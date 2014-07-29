@@ -366,4 +366,12 @@ extern te_errno ta_unix_conf_daemons_init(void);
 /** Release resources allocated for the configuration support. */
 extern void ta_unix_conf_daemons_release(void);
 
+#ifdef WITH_SFPTPD
+/** Init sfptpd subtree. */
+extern te_errno ta_unix_conf_sfptpd_init(void);
+
+/** Release resources allocated for sfptpd management. */
+extern void ta_unix_conf_sfptpd_release(void);
+#endif
+
 #endif /* __TE_TA_UNIX_CONF_DAEMONS_H__ */

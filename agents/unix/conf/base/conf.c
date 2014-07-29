@@ -1127,6 +1127,10 @@ rcf_ch_conf_init()
         rcf_pch_rpc_init(ta_dir);
 #endif
 
+#ifdef WITH_SFPTPD
+        if (ta_unix_conf_sfptpd_init() != 0)
+            goto fail;
+#endif
 #ifdef CFG_UNIX_DAEMONS
         if (ta_unix_conf_daemons_init() != 0)
             goto fail;
@@ -1246,6 +1250,9 @@ rcf_ch_conf_fini()
 #endif
 #ifdef CFG_UNIX_DAEMONS
     ta_unix_conf_daemons_release();
+#endif
+#ifdef WITH_SFPTPD
+    ta_unix_conf_sfptpd_release();
 #endif
     ta_unix_conf_cmd_monitor_cleanup();
     if (cfg_socket >= 0)
