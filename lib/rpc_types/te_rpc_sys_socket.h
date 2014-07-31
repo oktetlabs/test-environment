@@ -45,6 +45,25 @@
 extern "C" {
 #endif
 
+/**
+ * Onload specific structure for TX HW timestamps.
+ */
+typedef struct rpc_onload_scm_timestamping_stream {
+  struct timespec  first_sent;  /**< Time segment was first sent. */
+  struct timespec  last_sent;   /**< Time segment was last sent. */
+  size_t           len;         /**< Number of bytes of message payload. */
+} rpc_onload_scm_timestamping_stream;
+
+/**
+ * Packet transmission timestamps
+ */
+typedef struct rpc_scm_timestamping {
+    struct timespec systime;      /**< System time. */
+    struct timespec hwtimetrans;  /**< HW timestamp transformed to system
+                                       time. */
+    struct timespec hwtimeraw;    /**< Original HW timestamp. */
+} rpc_scm_timestamping;
+
 /** Length of the common part of the "struct sockaddr" */
 #define SA_COMMON_LEN \
     (sizeof(struct sockaddr) - sizeof(((struct sockaddr *)0)->sa_data))
@@ -486,6 +505,9 @@ typedef enum rpc_sockopt {
                                  be overridden */
     RPC_SO_SNDBUFFORCE,     /**< Like SO_SNDBUF, but the wmem_max limit can
                                  be overridden */
+    RPC_ONLOAD_SCM_TIMESTAMPING_STREAM, /**< Solarflare Onload specific
+                                             socket option to decode HW TX
+                                             timestamps */
 
     RPC_IP_ADD_MEMBERSHIP,  /**< Join a multicast group */
     RPC_IP_DROP_MEMBERSHIP, /**< Leave a multicast group */

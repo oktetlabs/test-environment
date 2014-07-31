@@ -4503,6 +4503,7 @@ TARPC_FUNC(recvmsg,
             }
         }
 
+        rpc_msg->msg_controllen = msg.msg_controllen;
         /* in case retval < 0 cmsg is not filled */
         if (out->retval >= 0 && msg.msg_control != NULL)
         {

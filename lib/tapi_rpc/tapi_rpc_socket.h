@@ -311,6 +311,8 @@ typedef struct rpc_msghdr {
     void             *msg_control;      /**< ancillary data */
     
     socklen_t            msg_controllen; /**< length of ancillary data */
+    size_t               msg_rcontrollen; /**< Actual received length of
+                                               ancillary data */
     rpc_send_recv_flags  msg_flags;      /**< flags returned by recvmsg() */
 
     /* Non-standard fields for test purposes */

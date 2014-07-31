@@ -43,11 +43,19 @@
 
 #define HWTSTAMP_UNKNOWN 0xFFFF
 
+/**
+ * Solarflare Onload specific flag. It is hardcoded because Onload header
+ * must not be included here, but the flag is needed here to be used in
+ * functions recvmsg() and recvmmsg().
+ */
+#define ONLOAD_SOF_TIMESTAMPING_STREAM (1 << 23)
+
 unsigned int
 hwtstamp_instr_rpc2h(unsigned flags)
 {
 #if HAVE_LINUX_NET_TSTAMP_H
-    if ((flags & ~SOF_TIMESTAMPING_MASK) != 0)
+    if ((flags & ~SOF_TIMESTAMPING_MASK) != 0 &&
+    (flags & RPC_ONLOAD_SOF_TIMESTAMPING_STREAM) == 0)
         return HWTSTAMP_UNKNOWN;
 
     return (!!(flags & RPC_SOF_TIMESTAMPING_TX_HARDWARE) *
@@ -64,6 +72,8 @@ hwtstamp_instr_rpc2h(unsigned flags)
               SOF_TIMESTAMPING_SYS_HARDWARE)
            | (!!(flags & RPC_SOF_TIMESTAMPING_RAW_HARDWARE) *
               SOF_TIMESTAMPING_RAW_HARDWARE)
+           | (!!(flags & RPC_ONLOAD_SOF_TIMESTAMPING_STREAM) *
+              ONLOAD_SOF_TIMESTAMPING_STREAM)
            ;
 #else
        return HWTSTAMP_UNKNOWN;
@@ -88,6 +98,8 @@ hwtstamp_instr_h2rpc(unsigned int flags)
               RPC_SOF_TIMESTAMPING_SYS_HARDWARE)
            | (!!(flags & SOF_TIMESTAMPING_RAW_HARDWARE) *
               RPC_SOF_TIMESTAMPING_RAW_HARDWARE)
+           | (!!(flags & ONLOAD_SOF_TIMESTAMPING_STREAM) *
+              RPC_ONLOAD_SOF_TIMESTAMPING_STREAM)
            ;
 #else
        return HWTSTAMP_UNKNOWN;

@@ -384,6 +384,13 @@ struct tarpc_scm_timestamping {
     tarpc_timespec hwtimeraw;
 };
 
+/** Solarflare Onload specific struct onload_scm_timestamping_stream */
+struct tarpc_onload_scm_timestamping_stream {
+    tarpc_timespec first_sent;
+    tarpc_timespec last_sent;
+    tarpc_size_t len;
+};
+
 /** Function gets nothing */
 struct tarpc_void_in {
     struct tarpc_in_arg     common;
@@ -1192,7 +1199,8 @@ enum tarpc_cmsg_data_type {
     TARPC_CMSG_DATA_PKTINFO = 4,        /* struct in_pktinfo */
     TARPC_CMSG_DATA_TV = 5,             /* struct timeval */
     TARPC_CMSG_DATA_TS = 6,             /* struct timespec */
-    TARPC_CMSG_DATA_TSTAMP = 7          /* struct scm_timestamping */
+    TARPC_CMSG_DATA_TSTAMP = 7,         /* struct scm_timestamping */
+    TARPC_CMSG_DATA_TSTAMP_STREAM = 8   /* struct onload_scm_timestamping_stream */
 };
 
 /* struct sock_extended_err */
@@ -1231,6 +1239,9 @@ union tarpc_cmsg_data switch (tarpc_cmsg_data_type type) {
                 struct tarpc_timespec         ts;    /**< SO_TIMESTAMPNS */
     case TARPC_CMSG_DATA_TSTAMP:
                 struct tarpc_scm_timestamping tstamp;/**< SO_TIMESTAMPING */
+    case TARPC_CMSG_DATA_TSTAMP_STREAM:
+                struct tarpc_onload_scm_timestamping_stream sf_txts; /**< SF Onload TX TCP SO_TIMESTAMPING */
+                
 };
 
 struct tarpc_cmsghdr {
@@ -1248,6 +1259,7 @@ struct tarpc_msghdr {
     struct tarpc_iovec   msg_iov<>;      /**< Vector */
     tarpc_size_t         msg_iovlen;     /**< Passed to recvmsg() */
     struct tarpc_cmsghdr msg_control<>;  /**< Control info array */
+    tarpc_size_t         msg_controllen; /**< Control data buffer length */
     tarpc_int            msg_flags;      /**< Flags on received message */
 };
 

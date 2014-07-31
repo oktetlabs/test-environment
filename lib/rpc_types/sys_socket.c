@@ -124,6 +124,13 @@ extern const char *inet_ntop(int af, const void *src, char *dst,
 #endif
 #endif
 
+/**
+ * Solarflare Onload specific socket option to retrieve TX TCP timestamps.
+ */
+#ifndef ONLOAD_SCM_TIMESTAMPING_STREAM
+#define ONLOAD_SCM_TIMESTAMPING_STREAM (1 << 23)
+#endif
+
 #ifndef WINDOWS
 #include "tarpc.h"
 #else
@@ -854,6 +861,7 @@ rpc_sockopt2level(rpc_sockopt opt)
         case RPC_SO_PROTOCOL:
         case RPC_SO_RCVBUFFORCE:
         case RPC_SO_SNDBUFFORCE:
+        case RPC_ONLOAD_SCM_TIMESTAMPING_STREAM:
             return RPC_SOL_SOCKET;
 
         case RPC_IP_ADD_MEMBERSHIP:
@@ -997,6 +1005,7 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(SO_PROTOCOL);
         RPC2STR(SO_RCVBUFFORCE);
         RPC2STR(SO_SNDBUFFORCE);
+        RPC2STR(ONLOAD_SCM_TIMESTAMPING_STREAM);
 
         RPC2STR(IP_ADD_MEMBERSHIP);
         RPC2STR(IP_DROP_MEMBERSHIP);
@@ -1141,6 +1150,7 @@ sockopt_rpc2h(rpc_sockopt opt)
         RPC2H_CHECK(SO_PROTOCOL);
         RPC2H_CHECK(SO_RCVBUFFORCE);
         RPC2H_CHECK(SO_SNDBUFFORCE);
+        RPC2H_CHECK(ONLOAD_SCM_TIMESTAMPING_STREAM);
 
         RPC2H_CHECK(IP_ADD_MEMBERSHIP);
         RPC2H_CHECK(IP_DROP_MEMBERSHIP);
@@ -1243,7 +1253,6 @@ sockopt_rpc2h(rpc_sockopt opt)
 #define SOL_UDP         IPPROTO_UDP
 #endif
 
-
 /** Convert native socket options to RPC one */
 rpc_sockopt
 sockopt_h2rpc(int opt_type, int opt)
@@ -1297,6 +1306,7 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC_CHECK(SO_PROTOCOL);
                 H2RPC_CHECK(SO_RCVBUFFORCE);
                 H2RPC_CHECK(SO_SNDBUFFORCE);
+                H2RPC_CHECK(ONLOAD_SCM_TIMESTAMPING_STREAM);
                 case TE_SCM_RIGHTS:
                     return RPC_SCM_RIGHTS;
                 default: return RPC_SOCKOPT_UNKNOWN;
@@ -1430,6 +1440,7 @@ sockopt_is_boolean(rpc_sockopt opt)
         case RPC_SO_BSDCOMPAT:
         case RPC_SO_MARK:
         case RPC_SO_PASSCRED:
+        case RPC_ONLOAD_SCM_TIMESTAMPING_STREAM:
 
         case RPC_IP_MULTICAST_LOOP:
         case RPC_IP_PKTINFO:
@@ -3144,6 +3155,32 @@ hwtstamp_config_data_h2rpc(tarpc_hwtstamp_config *rpc_hwdata,
 #undef COPY_FIELD
 
 /**
+ * Copy values from usual timespec to tarpc_timespec structure
+ * 
+ * @param dst  RPC timespec structure
+ * @param src  System timespec structure
+ */
+static inline void
+timespec_h2rpc(tarpc_timespec *dst, struct timespec *src)
+{
+    dst->tv_sec = src->tv_sec;
+    dst->tv_nsec = src->tv_nsec;
+}
+
+/**
+ * Copy values from tarpc_timespec to usual timespec structure
+ * 
+ * @param dst  System timespec structure
+ * @param src  RPC timespec structure
+ */
+static inline void
+timespec_rpc2h(struct timespec *dst, tarpc_timespec *src)
+{
+    dst->tv_sec = src->tv_sec;
+    dst->tv_nsec = src->tv_nsec;
+}
+
+/**
  * Described in te_rpc_sys_socket.h
  */
 te_errno
@@ -3359,18 +3396,47 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
                         ts = (struct timespec *)data;
                         tarpc_tstamp =
                             &rpc_cmsg->data_aux.tarpc_cmsg_data_u.tstamp;
-                        tarpc_tstamp->systime.tv_sec = ts->tv_sec;
-                        tarpc_tstamp->systime.tv_nsec = ts->tv_nsec;
+
+                        timespec_h2rpc(&tarpc_tstamp->systime, ts);
                         ts++;
-                        tarpc_tstamp->hwtimetrans.tv_sec = ts->tv_sec;
-                        tarpc_tstamp->hwtimetrans.tv_nsec = ts->tv_nsec;
+                        timespec_h2rpc(&tarpc_tstamp->hwtimetrans, ts);
                         ts++;
-                        tarpc_tstamp->hwtimeraw.tv_sec = ts->tv_sec;
-                        tarpc_tstamp->hwtimeraw.tv_nsec = ts->tv_nsec;
+                        timespec_h2rpc(&tarpc_tstamp->hwtimeraw, ts);
                         processed = TRUE;
                     }
 
                     break;
+
+                case RPC_ONLOAD_SCM_TIMESTAMPING_STREAM:
+                {
+                    struct tarpc_onload_scm_timestamping_stream *rpcts;
+                    struct rpc_onload_scm_timestamping_stream *ts;
+
+                    if (len < (int)sizeof(*ts))
+                    {
+                        ERROR("%s(): incorrect data len for "
+                              "ONLOAD_SCM_TIMESTAMPING_STREAM value",
+                              __FUNCTION__);
+                        return TE_EINVAL;
+                    }
+
+                    rpc_cmsg->data_aux.type =
+                                          TARPC_CMSG_DATA_TSTAMP_STREAM;
+                    ts = (struct rpc_onload_scm_timestamping_stream *)data;
+
+                    rpcts =
+                        &rpc_cmsg->data_aux.tarpc_cmsg_data_u.sf_txts;
+
+                    timespec_h2rpc(&rpcts->first_sent,
+                                           &ts->first_sent);
+                    timespec_h2rpc(&rpcts->last_sent,
+                                           &ts->last_sent);
+
+                    rpcts->len = ts->len;
+
+                    processed = TRUE;
+                    break;
+                }
 
                 case RPC_SCM_RIGHTS:
                     if (len != (int)sizeof(int32_t))
@@ -3516,33 +3582,58 @@ cmsg_data_rpc2h(tarpc_cmsghdr *rpc_cmsg,
 
         case TARPC_CMSG_DATA_TSTAMP:
             {
-                struct tarpc_timespec           *ts;
-                struct tarpc_scm_timestamping   *tarpc_tstamp;
+                rpc_scm_timestamping *ts;
+                struct tarpc_scm_timestamping *tarpc_tstamp;
 
-                if (*len < 3 * ((int)sizeof(struct timespec)))
+                if (*len < (int)sizeof(*ts))
                 {
                     ERROR("%s(): not enough memory for "
                           "scm_timestamping value", __FUNCTION__);
                     return TE_EINVAL;
                 }
 
-                ts = (struct timespec *)data;
+                ts = (rpc_scm_timestamping *)data;
                 tarpc_tstamp =
                     &rpc_cmsg->data_aux.tarpc_cmsg_data_u.tstamp;
 
-                ts->tv_sec = tarpc_tstamp->systime.tv_sec;
-                ts->tv_nsec = tarpc_tstamp->systime.tv_nsec;
-                ts++;
-                ts->tv_sec = tarpc_tstamp->hwtimetrans.tv_sec;
-                ts->tv_nsec = tarpc_tstamp->hwtimetrans.tv_nsec;
-                ts++;
-                ts->tv_sec = tarpc_tstamp->hwtimeraw.tv_sec;
-                ts->tv_nsec = tarpc_tstamp->hwtimeraw.tv_nsec;
-                *len = 3 * sizeof(*ts);
+                timespec_rpc2h(&ts->systime, &tarpc_tstamp->systime);
+                timespec_rpc2h(&ts->hwtimetrans,
+                               &tarpc_tstamp->hwtimetrans);
+                timespec_rpc2h(&ts->hwtimeraw, &tarpc_tstamp->hwtimeraw);
+
+                *len = sizeof(*ts);
                 return 0;
             }
 
             break;
+
+        case TARPC_CMSG_DATA_TSTAMP_STREAM:
+            {
+                struct tarpc_onload_scm_timestamping_stream *rpcts;
+                struct rpc_onload_scm_timestamping_stream *ts;
+
+                if (*len < (int)sizeof(*ts))
+                {
+                    ERROR("%s(): not enough memory for "
+                          "onload_scm_timestamping_stream value",
+                          __FUNCTION__);
+                    return TE_EINVAL;
+                }
+
+                ts = (struct rpc_onload_scm_timestamping_stream *)data;
+                rpcts =
+                    &rpc_cmsg->data_aux.tarpc_cmsg_data_u.sf_txts;
+
+                timespec_rpc2h(&ts->first_sent, &rpcts->first_sent);
+                timespec_rpc2h(&ts->last_sent, &rpcts->last_sent);
+
+                ts->len = rpcts->len;
+
+                *len = sizeof(*ts);
+                return 0;
+            }
+            break;
+
 
         case TARPC_CMSG_DATA_SOCK_EXT_ERR:
 #ifdef HAVE_STRUCT_SOCK_EXTENDED_ERR
