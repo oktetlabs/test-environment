@@ -198,6 +198,71 @@ tapi_sh_env_unset(rcf_rpc_server *pco, const char *env_name,
     return (force && rc == TE_ENOENT) ? 0 : rc;
 }
 
+/**
+ * Set integer shell environment and save previous value if it is necessary.
+ *
+ * @param pco            PCO handle
+ * @param env_name       Name of the environment variable
+ * @param env_value      New value
+ * @param force          Should we only add or overwrite?
+ * @param restart        Should the PCO be restarted
+ * @param existed        [out] Whether this variable already existed
+ *                       in an environment or not
+ * @param old_value      [out] Where to save existing value
+ *
+ * @result Status code
+ */
+static inline te_errno
+tapi_sh_env_save_set_int(rcf_rpc_server *pco,
+                         const char *env_name, int env_value,
+                         te_bool restart, te_bool *existed,
+                         int *old_value)
+{
+    char env_value_str[32];
+    char *old_value_str = NULL;
+    int  res;
+
+    if ((res = snprintf(env_value_str, sizeof(env_value_str),
+                        "%d", env_value)) < 0 ||
+        res > (int)sizeof(env_value_str))
+    {
+        ERROR("Failed to convert int value to string to set env");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if ((res = tapi_sh_env_save_set(pco, env_name, existed, &old_value_str,
+                                   env_value_str, restart)) != 0)
+        return res;
+
+    if (old_value != NULL && old_value_str != NULL)
+        *old_value = strtol(old_value_str, NULL, 0);
+
+    free(old_value_str);
+
+    return 0;
+}
+
+/**
+ * Rollback environment variable
+ * 
+ * @param pco            PCO handle
+ * @param env_name       The environment variable name
+ * @param existed        Did this variable exist in an environment or not
+ * @param env_value      Value to set if the env existed
+ * @param restart        Should the PCO be restarted
+ *
+ * @result Status code
+ */
+static inline te_errno
+tapi_sh_env_rollback_int(rcf_rpc_server *pco, const char *env_name,
+                         te_bool existed, int env_value, te_bool restart)
+{
+    if (!existed)
+        return tapi_sh_env_unset(pco, env_name, FALSE, restart);
+
+    return tapi_sh_env_set_int(pco, env_name, env_value, TRUE, restart);
+}
+
 #ifdef __cplusplus
 }
 #endif
