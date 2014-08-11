@@ -1018,18 +1018,16 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
             }
         }
 
-        msg->msg_rcontrollen = rpc_msg.msg_controllen;
         msg->msg_flags = (rpc_send_recv_flags)rpc_msg.msg_flags;
 
         snprintf(str_buf, sizeof(str_buf),
                  "msg_name: %p, msg_namelen: %" TE_PRINTF_SOCKLEN_T "d, "
                  "msg_iov: %p, msg_iovlen: %" TE_PRINTF_SIZE_T "d, "
                  "msg_control: %p, msg_controllen: "
-                 "%" TE_PRINTF_SOCKLEN_T "d, msg_rcontrollen %d, "
+                 "%" TE_PRINTF_SOCKLEN_T "d, "
                  "msg_flags: %s", msg->msg_name, msg->msg_namelen,
                  msg->msg_iov, msg->msg_iovlen,
                  msg->msg_control, msg->msg_controllen,
-                 msg->msg_rcontrollen,
                  send_recv_flags_rpc2str(msg->msg_flags));
     }
 
