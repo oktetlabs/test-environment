@@ -3733,6 +3733,7 @@ tarpc_ioctl_pre(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
 #endif /* HAVE_LINUX_ETHTOOL_H */
 #if HAVE_LINUX_NET_TSTAMP_H
                 case RPC_SIOCSHWTSTAMP:
+                case RPC_SIOCGHWTSTAMP:
                     hwtstamp_config_data_rpc2h(
                                     &(out->req.req_val[0].ioctl_request_u.
                                       req_ifreq.rpc_ifr_hwstamp),
@@ -3959,6 +3960,7 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
 #endif /* HAVE_LINUX_ETHTOOL_H */
 #if HAVE_LINUX_NET_TSTAMP_H
                 case RPC_SIOCSHWTSTAMP:
+                case RPC_SIOCGHWTSTAMP:
                     hwtstamp_config_data_h2rpc(
                                     &(out->req.req_val[0].ioctl_request_u.
                                       req_ifreq.rpc_ifr_hwstamp),

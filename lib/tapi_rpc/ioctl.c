@@ -428,6 +428,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                 break;
             }
 
+        case RPC_SIOCGHWTSTAMP:
         case RPC_SIOCSHWTSTAMP:
             in.access = IOCTL_RD;
             if (arg != NULL)
@@ -845,6 +846,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                     break;
 
                 case RPC_SIOCSHWTSTAMP:
+                case RPC_SIOCGHWTSTAMP:
                 {
                     struct ifreq *ifr = (struct ifreq *)arg;
                     snprintf(ifreq_buf + strlen(ifreq_buf),

@@ -124,6 +124,10 @@ extern const char *inet_ntop(int af, const void *src, char *dst,
 #endif
 #endif
 
+#ifndef SIOCGHWTSTAMP
+#define SIOCGHWTSTAMP 0x89b1
+#endif
+
 /**
  * Solarflare Onload specific socket option to retrieve TX TCP timestamps.
  */
@@ -1770,6 +1774,7 @@ ioctl_rpc2str(rpc_ioctl_code code)
         RPC2STR(SIOCETHTOOL);
 
         RPC2STR(SIOCSHWTSTAMP);
+        RPC2STR(SIOCGHWTSTAMP);
 
         RPC2STR(SIO_ADDRESS_LIST_CHANGE);
         RPC2STR(SIO_ADDRESS_LIST_QUERY);
@@ -1848,6 +1853,7 @@ ioctl_rpc2h(rpc_ioctl_code code)
         RPC2H_CHECK(SG_IO);
         RPC2H_CHECK(SIOCETHTOOL);
         RPC2H_CHECK(SIOCSHWTSTAMP);
+        RPC2H_CHECK(SIOCGHWTSTAMP);
 
         RPC2H_CHECK(SIO_ADDRESS_LIST_CHANGE);
         RPC2H_CHECK(SIO_ADDRESS_LIST_QUERY);

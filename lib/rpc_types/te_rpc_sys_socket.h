@@ -963,6 +963,7 @@ typedef enum rpc_ioctl_code {
     RPC_SG_IO,
     RPC_SIOCETHTOOL,        /**< Linux-specific Ethtool */
     RPC_SIOCSHWTSTAMP,
+    RPC_SIOCGHWTSTAMP,
     
     /* Winsock2-specific codes */
     RPC_SIO_ADDRESS_LIST_CHANGE,
