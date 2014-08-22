@@ -186,6 +186,22 @@ ifname_without_vlan(const char *ifname)
  */
 extern te_errno ta_vlan_get_parent(const char *ifname, char *parent);
 
+/**
+ * Get slaves devices names for bonding interface.
+ * If passed interface is not bonding, method sets 'slaves_num' to zero
+ * and return success.
+ *
+ * @param ifname        interface name
+ * @param slvs          location of slaves interfaces names
+ * @param slaves_num    Number of slaves interfaces
+ *
+ * @return status
+ */
+extern te_errno ta_bond_get_slaves(const char *ifname,
+                                   char slvs[][IFNAMSIZ],
+                                   int *slaves_num);
+
+
 #define PRINT(msg...) \
     do {                                                \
        printf(msg); printf("\n"); fflush(stdout);       \

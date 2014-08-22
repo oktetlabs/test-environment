@@ -5545,11 +5545,11 @@ TARPC_FUNC(rm_ta_libs, {},
 #undef SYSTEM
 #undef MAX_CMD
 
-/*-------------- rpc_vlan_get_parent----------------------*/
+/*-------------- vlan_get_parent----------------------*/
 bool_t
-_rpc_vlan_get_parent_1_svc(tarpc_rpc_vlan_get_parent_in *in,
-                           tarpc_rpc_vlan_get_parent_out *out,
-                           struct svc_req *rqstp)
+_vlan_get_parent_1_svc(tarpc_vlan_get_parent_in *in,
+                       tarpc_vlan_get_parent_out *out,
+                       struct svc_req *rqstp)
 {
     char *str;
 
@@ -5557,7 +5557,7 @@ _rpc_vlan_get_parent_1_svc(tarpc_rpc_vlan_get_parent_in *in,
     memset(out, 0, sizeof(*out));
     VERB("PID=%d TID=%llu: Entry %s",
          (int)getpid(), (unsigned long long int)pthread_self(),
-         "rpc_vlan_get_parent");
+         "vlan_get_parent");
 
     if ((str = (char *)calloc(IF_NAMESIZE, 1)) == NULL)
     {
@@ -5572,6 +5572,38 @@ _rpc_vlan_get_parent_1_svc(tarpc_rpc_vlan_get_parent_in *in,
     out->common._errno = ta_vlan_get_parent(in->ifname.ifname_val,
                                             out->ifname.ifname_val);
 
+    out->retval = (out->common._errno == 0) ? 0 : -1;
+
+    return TRUE;
+}
+
+/*-------------- bond_get_slaves----------------------*/
+bool_t
+_bond_get_slaves_1_svc(tarpc_bond_get_slaves_in *in,
+                       tarpc_bond_get_slaves_out *out,
+                       struct svc_req *rqstp)
+{
+    char slaves[16][IFNAMSIZ];
+    int i;
+
+    UNUSED(rqstp);
+    memset(out, 0, sizeof(*out));
+    VERB("PID=%d TID=%llu: Entry %s",
+         (int)getpid(), (unsigned long long int)pthread_self(),
+         "bond_get_slaves");
+
+    out->slaves_num = in->slaves_num;
+    out->common._errno = ta_bond_get_slaves(in->ifname.ifname_val,
+                                            slaves, &(out->slaves_num));
+
+    if ((out->slaves.slaves_val =
+            (tarpc_ifname *)calloc(out->slaves_num,
+                                   sizeof(tarpc_ifname))) == NULL)
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    out->slaves.slaves_len = out->slaves_num;
+
+    for (i = 0; i < out->slaves_num; i++)
+        memcpy(out->slaves.slaves_val[i].ifname, slaves[i], IFNAMSIZ);
     out->retval = (out->common._errno == 0) ? 0 : -1;
 
     return TRUE;

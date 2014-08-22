@@ -1843,6 +1843,57 @@ cleanup:
     return rc;
 }
 
+/* See description in unix_internal.h */
+te_errno
+ta_bond_get_slaves(const char *ifname, char slvs[][IFNAMSIZ],
+                   int *slaves_num)
+{
+    int    i = 0;
+    char   path[64];
+    char  *line = NULL;
+    size_t len = 0;
+
+    memset(path, 0, sizeof(path));
+    snprintf(path, sizeof(path), "/proc/net/bonding/%s", ifname);
+
+    FILE *proc_bond = fopen(path, "r");
+    if (proc_bond == NULL)
+    {
+        if (errno == ENOENT)
+        {
+            VERB("%s: no proc bond file ", __FUNCTION__);
+            *slaves_num = 0;
+            return 0; /* no bond support module loaded, no slaves */
+        }
+
+        ERROR("%s(): Failed to open %s %s",
+              __FUNCTION__, path, strerror(errno));
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    while (i < *slaves_num && getline(&line, &len, proc_bond) != -1)
+    {
+        char *ifname = strstr(line, "Slave Interface");
+        if (ifname == NULL)
+            continue;
+        ifname = strstr(line, ": ") + 2;
+        if (ifname == NULL)
+            continue;
+        ifname[strlen(ifname) - 1] = '\0';
+        if (strlen(ifname) > IFNAMSIZ)
+        {
+            ERROR("%s(): interface name is too long", __FUNCTION__);
+            return TE_RC(TE_TA_UNIX, TE_ENAMETOOLONG);
+        }
+        strcpy(slvs[i], ifname);
+        i++;
+    }
+    free(line);
+    *slaves_num = i;
+    fclose(proc_bond);
+    return 0;
+}
+
 /**
  * Method for generating stream of data.
  * Prototype is according with callback type 'tad_stream_callback'

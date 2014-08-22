@@ -101,15 +101,14 @@ rpc_find_func(rcf_rpc_server *rpcs, const char * func_name)
 }
 
 /* See description in tapi_rpc_misc.h */
-
 int
 rpc_vlan_get_parent(rcf_rpc_server *rpcs, const char *vlan_ifname,
                     char *parent_ifname)
 {   
     int rc;
 
-    struct tarpc_rpc_vlan_get_parent_in  in;
-    struct tarpc_rpc_vlan_get_parent_out out;
+    struct tarpc_vlan_get_parent_in  in;
+    struct tarpc_vlan_get_parent_out out;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -117,25 +116,25 @@ rpc_vlan_get_parent(rcf_rpc_server *rpcs, const char *vlan_ifname,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_INT(rpc_vlan_get_parent, -1);
+        RETVAL_INT(vlan_get_parent, -1);
     }
 
     if (vlan_ifname == NULL)
     {
         ERROR("%s(): NULL interface name", __FUNCTION__);
-        RETVAL_INT(rpc_vlan_get_parent, -1);
+        RETVAL_INT(vlan_get_parent, -1);
     }
 
     if (parent_ifname == NULL)
     {
         ERROR("%s(): Pointer parent_ifname is NULL", __FUNCTION__);
-        RETVAL_INT(rpc_vlan_get_parent, -1);
+        RETVAL_INT(vlan_get_parent, -1);
     }
 
     in.ifname.ifname_val = strdup(vlan_ifname);
     in.ifname.ifname_len = strlen(vlan_ifname) + 1;
 
-    rcf_rpc_call(rpcs, "rpc_vlan_get_parent", &in, &out);
+    rcf_rpc_call(rpcs, "vlan_get_parent", &in, &out);
 
     free(in.ifname.ifname_val);
     memcpy(parent_ifname, out.ifname.ifname_val,
@@ -146,7 +145,63 @@ rpc_vlan_get_parent(rcf_rpc_server *rpcs, const char *vlan_ifname,
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(rpc_vlan_get_parent, rc);
     TAPI_RPC_LOG(rpcs, rpc_vlan_get_parent, "%s, %p( %s )", "%d",
                  vlan_ifname, parent_ifname, parent_ifname, rc);
-    RETVAL_INT(rpc_vlan_get_parent, rc);
+    RETVAL_INT(vlan_get_parent, rc);
+}
+
+int
+rpc_bond_get_slaves(rcf_rpc_server *rpcs, const char *bond_ifname,
+                    char slaves[][IFNAMSIZ], int *slaves_num)
+{
+    int rc;
+    int i;
+
+    struct tarpc_bond_get_slaves_in  in;
+    struct tarpc_bond_get_slaves_out out;
+    char                   str_buf[1024];
+
+    memset(str_buf, 0, sizeof(str_buf));
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(bond_get_slaves, -1);
+    }
+
+    if (bond_ifname == NULL)
+    {
+        ERROR("%s(): NULL interface name", __FUNCTION__);
+        RETVAL_INT(bond_get_slaves, -1);
+    }
+
+    if (slaves == NULL)
+    {
+        ERROR("%s(): Pointer slaves is NULL", __FUNCTION__);
+        RETVAL_INT(bond_get_slaves, -1);
+    }
+
+    in.ifname.ifname_val = strdup(bond_ifname);
+    in.ifname.ifname_len = strlen(bond_ifname) + 1;
+    in.slaves_num = *slaves_num;
+
+    rcf_rpc_call(rpcs, "bond_get_slaves", &in, &out);
+    free(in.ifname.ifname_val);
+    *slaves_num = out.slaves_num;
+    for (i = 0; i < *slaves_num; i++)
+    {
+        memcpy(slaves[i], out.slaves.slaves_val[i].ifname,
+               IFNAMSIZ);
+        snprintf(str_buf + strlen(str_buf), sizeof(str_buf) -
+                 strlen(str_buf), "%s%s", (i == 0) ? "" : ", ", slaves[i]);
+    }
+
+    rc = out.retval;
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(rpc_bond_get_slaves, rc);
+    TAPI_RPC_LOG(rpcs, rpc_bond_get_slaves, "%s, %p(%s), %d", "%d",
+                 bond_ifname, slaves, str_buf, *slaves_num, rc);
+    RETVAL_INT(bond_get_slaves, rc);
 }
 
 /* See description in tapi_rpc_misc.h */

@@ -3659,20 +3659,41 @@ struct tarpc_rm_ta_libs_in {
 
 typedef struct tarpc_int_retval_out tarpc_rm_ta_libs_out;
 
-/* rpc_vlan_get_parent() */
+/* vlan_get_parent() */
 
-struct tarpc_rpc_vlan_get_parent_in {
+struct tarpc_vlan_get_parent_in {
     struct tarpc_in_arg common;
 
     char ifname<>;
 };
 
-struct tarpc_rpc_vlan_get_parent_out {
+struct tarpc_vlan_get_parent_out {
     struct tarpc_out_arg    common;
 
     tarpc_int retval;
 
     char ifname<>;
+};
+
+/* bond_get_slaves() */
+struct tarpc_ifname {
+    char     ifname[16];    /**< Interface name */
+};
+
+struct tarpc_bond_get_slaves_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int slaves_num;
+    char      ifname<>;
+};
+
+struct tarpc_bond_get_slaves_out {
+    struct tarpc_out_arg    common;
+
+    tarpc_int retval;
+
+    tarpc_ifname    slaves<>;
+    tarpc_int       slaves_num;
 };
 
 /* getenv() */
@@ -5301,7 +5322,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(chroot)
         RPC_DEF(copy_ta_libs)
         RPC_DEF(rm_ta_libs)
-        RPC_DEF(rpc_vlan_get_parent)
+        RPC_DEF(vlan_get_parent)
+        RPC_DEF(bond_get_slaves)
         RPC_DEF(waitpid)
         RPC_DEF(fileno)
         RPC_DEF(getpwnam)

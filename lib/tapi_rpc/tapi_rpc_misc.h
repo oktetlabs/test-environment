@@ -49,6 +49,9 @@
 #if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#if HAVE_NET_IF_H
+#include <net/if.h>
+#endif
 
 #include "te_defs.h"
 #include "te_stdint.h"
@@ -93,6 +96,21 @@ extern te_bool rpc_find_func(rcf_rpc_server *rpcs,
 extern int rpc_vlan_get_parent(rcf_rpc_server *rpcs,
                                const char *vlan_ifname,
                                char *parent_ifname);
+/**
+ * Return slaves network interfaces names of bond interface.
+ *
+ * @param handle        RPC server handle
+ * @param bond_ifname   Bond interface name
+ * @param slaves        Pointer to the slaves network interfaces names
+ *                      with at least @c IF_NAMESIZE bytes size for each
+ * @param slaves_num    Number of interfaces in @p slaves
+ *
+ * @return 0 on success or -1 in the case of failure
+ *
+ */
+extern int rpc_bond_get_slaves(rcf_rpc_server *rpcs,
+                               const char *bond_ifname,
+                               char slaves[][IFNAMSIZ], int *slaves_num);
 
 /**
  * Get host value of sizeof(type_name).
