@@ -33,6 +33,14 @@
 #include "config.h"
 #endif
 
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+
+#ifdef HAVE_SIGNAL_H
+#include <signal.h>
+#endif
+
 #include "conf_daemons.h"
 
 /** sfptpd daemon process id. */
@@ -58,8 +66,11 @@ sfptpd_enable_get(unsigned int gid, const char *oid, char *value)
 {
     UNUSED(gid);
     UNUSED(oid);
-    *value = 0;
-    snprintf(value, RCF_MAX_VAL, "%d", sfptpd_pid == -1 ? FALSE : TRUE);
+
+    if (sfptpd_pid == -1 || kill(sfptpd_pid, 0) != 0)
+        snprintf(value, RCF_MAX_VAL, "%d", 0);
+    else
+        snprintf(value, RCF_MAX_VAL, "%d", 1);
 
     return 0;
 }

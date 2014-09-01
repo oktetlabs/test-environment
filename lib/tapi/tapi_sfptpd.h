@@ -64,6 +64,26 @@ tapi_sfptpd_disable(rcf_rpc_server *rpcs)
                                   rpcs->ta));
 }
 
+/**
+ * sfptpd daemon status.
+ *
+ * @param rpcs RPC server
+ * 
+ * @return @c TRUE if deaimon is enabled
+ */
+static inline te_bool
+tapi_sfptpd_status(rcf_rpc_server *rpcs)
+{
+    cfg_val_type val_type;
+    int val;
+
+    val_type = CVT_INTEGER;
+    CHECK_RC(cfg_get_instance_fmt(&val_type, &val,
+                                  "/agent:%s/sfptpd:/enable:", rpcs->ta));
+
+    return val == 0 ? FALSE : TRUE;
+}
+
 
 #ifdef __cplusplus
 } /* extern "C" */
