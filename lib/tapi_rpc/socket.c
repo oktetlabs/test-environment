@@ -2355,6 +2355,7 @@ rpc_socket_connect_close(rcf_rpc_server *rpcs,
     in.time2run = time2run;
     sockaddr_input_h2rpc(addr, &in.addr);
 
+    rpcs->errno_change_check = 0;
     rcf_rpc_call(rpcs, "socket_connect_close", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(socket_connect_close, out.retval);
