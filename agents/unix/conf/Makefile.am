@@ -78,6 +78,10 @@ if CFG_SFPTPD_SUPPORT
 libconf_a_SOURCES += daemons/sfptpd.c 
 endif
 
+if CFG_NTPD_SUPPORT
+libconf_a_SOURCES += daemons/ntpd.c 
+endif
+
 if CFG_UNIX_8021X
 libconf_a_SOURCES += daemons/8021x/conf_8021x.c
 endif

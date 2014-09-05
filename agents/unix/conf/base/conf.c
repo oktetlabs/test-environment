@@ -1127,6 +1127,11 @@ rcf_ch_conf_init()
         rcf_pch_rpc_init(ta_dir);
 #endif
 
+#ifdef WITH_NTPD
+        if (ta_unix_conf_ntpd_init() != 0)
+            goto fail;
+#endif
+
 #ifdef WITH_SFPTPD
         if (ta_unix_conf_sfptpd_init() != 0)
             goto fail;

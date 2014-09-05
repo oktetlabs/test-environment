@@ -374,4 +374,9 @@ extern te_errno ta_unix_conf_sfptpd_init(void);
 extern void ta_unix_conf_sfptpd_release(void);
 #endif
 
+#ifdef WITH_NTPD
+/** Init NTP daemon subtree. */
+extern te_errno ta_unix_conf_ntpd_init(void);
+#endif
+
 #endif /* __TE_TA_UNIX_CONF_DAEMONS_H__ */

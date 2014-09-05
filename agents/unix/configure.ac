@@ -782,6 +782,15 @@ if test "$with_sfptpd" = "yes" ; then
     EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_SFPTPD"
 fi
 
+AC_ARG_WITH([ntpd],
+            AS_HELP_STRING([--with-ntpd],
+                           [enable ntpd (default is NO)]),
+            [with_ntpd=yes], [with_ntpd=""])
+AM_CONDITIONAL(CFG_NTPD_SUPPORT, test "$with_ntpd" = "yes")
+if test "$with_ntpd" = "yes" ; then
+    EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_NTPD"
+fi
+
 AC_SUBST([EXTRA_CPPFLAGS])
 AC_SUBST([EXTRA_LDADD])
 
