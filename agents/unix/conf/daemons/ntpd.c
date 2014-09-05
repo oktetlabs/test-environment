@@ -143,6 +143,12 @@ do {                                                                    \
         }
 
         res = ta_system(cmd);
+
+        if (WIFEXITED(res))
+            res = WEXITSTATUS(res);
+        else
+            continue;
+
         if (service != NULL && (res == 2 || res < 0 || res > 3))
             continue;
 
