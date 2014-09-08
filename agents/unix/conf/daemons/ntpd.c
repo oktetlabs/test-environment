@@ -149,7 +149,7 @@ do {                                                                    \
         else
             continue;
 
-        if (service != NULL && (res == 2 || res < 0 || res > 3))
+        if (service != NULL && res != 0 && res != 3)
             continue;
 
         if (act == ACT_STATUS)
