@@ -396,12 +396,6 @@ tapi_tcp_ip4_pattern_unit(in_addr_t src_addr, in_addr_t dst_addr,
     int num;
     asn_value *pu = NULL;
 
-    struct in_addr in_src_addr;
-    struct in_addr in_dst_addr;
-
-    in_src_addr.s_addr = src_addr;
-    in_dst_addr.s_addr = dst_addr;
-
     do {
         if (result_value == NULL) { rc = TE_EWRONGPTR; break; }
 
