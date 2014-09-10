@@ -508,6 +508,9 @@ typedef enum rpc_sockopt {
     RPC_ONLOAD_SCM_TIMESTAMPING_STREAM, /**< Solarflare Onload specific
                                              socket option to decode HW TX
                                              timestamps */
+    RPC_SO_BUSY_POLL,     /**< Sets the approximate time in microseconds to
+                               busy poll on a blocking receive when there is
+                               no data. */
 
     RPC_IP_ADD_MEMBERSHIP,  /**< Join a multicast group */
     RPC_IP_DROP_MEMBERSHIP, /**< Leave a multicast group */

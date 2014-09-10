@@ -866,6 +866,7 @@ rpc_sockopt2level(rpc_sockopt opt)
         case RPC_SO_RCVBUFFORCE:
         case RPC_SO_SNDBUFFORCE:
         case RPC_ONLOAD_SCM_TIMESTAMPING_STREAM:
+        case RPC_SO_BUSY_POLL:
             return RPC_SOL_SOCKET;
 
         case RPC_IP_ADD_MEMBERSHIP:
@@ -1010,6 +1011,7 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(SO_RCVBUFFORCE);
         RPC2STR(SO_SNDBUFFORCE);
         RPC2STR(ONLOAD_SCM_TIMESTAMPING_STREAM);
+        RPC2STR(SO_BUSY_POLL);
 
         RPC2STR(IP_ADD_MEMBERSHIP);
         RPC2STR(IP_DROP_MEMBERSHIP);
@@ -1155,6 +1157,7 @@ sockopt_rpc2h(rpc_sockopt opt)
         RPC2H_CHECK(SO_RCVBUFFORCE);
         RPC2H_CHECK(SO_SNDBUFFORCE);
         RPC2H_CHECK(ONLOAD_SCM_TIMESTAMPING_STREAM);
+        RPC2H_CHECK(SO_BUSY_POLL);
 
         RPC2H_CHECK(IP_ADD_MEMBERSHIP);
         RPC2H_CHECK(IP_DROP_MEMBERSHIP);
@@ -1311,6 +1314,7 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC_CHECK(SO_RCVBUFFORCE);
                 H2RPC_CHECK(SO_SNDBUFFORCE);
                 H2RPC_CHECK(ONLOAD_SCM_TIMESTAMPING_STREAM);
+                H2RPC_CHECK(SO_BUSY_POLL);
                 case TE_SCM_RIGHTS:
                     return RPC_SCM_RIGHTS;
                 default: return RPC_SOCKOPT_UNKNOWN;
