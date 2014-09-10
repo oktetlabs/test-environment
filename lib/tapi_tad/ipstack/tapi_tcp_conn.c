@@ -1505,7 +1505,26 @@ tapi_tcp_update_sent_seq(tapi_tcp_handler_t handler, size_t new_sent_len)
     return conn_update_sent_seq(tapi_tcp_find_conn(handler), new_sent_len);
 }
 
+static inline int
+conn_update_sent_ack(tapi_tcp_connection_t *conn_descr, size_t ack)
+{
+    if (conn_descr == NULL)
+        return 0;
 
+    conn_descr->ack_sent = ack;
+
+    VERB("%s() last ack sent %u", __FUNCTION__, conn_descr->ack_sent,
+         conn_descr->last_len_sent);
+
+    return 0;
+}
+
+int
+tapi_tcp_update_sent_ack(tapi_tcp_handler_t handler, size_t ack)
+{
+    tapi_tcp_conns_db_init(); 
+    return conn_update_sent_ack(tapi_tcp_find_conn(handler), ack);
+}
 
 
 int
@@ -1527,5 +1546,14 @@ tapi_tcp_conn_template(tapi_tcp_handler_t handler,
                              payload, len, tmpl);
 }
 
+csap_handle_t
+tapi_tcp_conn_snd_csap(tapi_tcp_handler_t handler)
+{
+    tapi_tcp_connection_t *conn_descr;
 
+    tapi_tcp_conns_db_init();
+    if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
 
+    return conn_descr->snd_csap;
+}

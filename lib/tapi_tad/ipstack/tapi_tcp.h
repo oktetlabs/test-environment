@@ -1008,4 +1008,23 @@ extern te_errno tapi_tcp_ip6_eth_csap_create(const char *ta_name, int sid,
                                              int rem_port,
                                              csap_handle_t *tcp_csap);
 
+/**
+ * Get sender CSAP from TCP connection context.
+ * 
+ * @param handler TAPI handler of the TCP connection
+ * 
+ * @return CSAP id
+ */
+extern csap_handle_t tapi_tcp_conn_snd_csap(tapi_tcp_handler_t handler);
+
+/**
+ * Set last sent ACK number of the sender CSAP in TCP connection context.
+ * 
+ * @param handler TAPI handler of the TCP connection
+ * @param ack     ACK number to set
+ * 
+ * @return Status code
+ */
+extern int tapi_tcp_update_sent_ack(tapi_tcp_handler_t handler, size_t ack);
+
 #endif /* !__TE_TAPI_TCP_H__ */
