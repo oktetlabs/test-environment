@@ -1027,4 +1027,14 @@ extern csap_handle_t tapi_tcp_conn_snd_csap(tapi_tcp_handler_t handler);
  */
 extern int tapi_tcp_update_sent_ack(tapi_tcp_handler_t handler, size_t ack);
 
+/**
+ * Wait for any packet in this connection while timeout expired.
+ *
+ * @param handler  TAPI handler of the TCP connection
+ * @param timeout  Timeout in milliseconds
+ *
+ * @return zero on success (one or more messages got), errno otherwise
+ */
+extern int tapi_tcp_wait_packet(tapi_tcp_handler_t handler, int timeout);
+
 #endif /* !__TE_TAPI_TCP_H__ */

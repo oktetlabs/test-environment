@@ -1514,7 +1514,7 @@ conn_update_sent_ack(tapi_tcp_connection_t *conn_descr, size_t ack)
     conn_descr->ack_sent = ack;
 
     VERB("%s() last ack sent %u", __FUNCTION__, conn_descr->ack_sent,
-         conn_descr->last_len_sent);
+         conn_descr->ack_sent);
 
     return 0;
 }
@@ -1557,3 +1557,64 @@ tapi_tcp_conn_snd_csap(tapi_tcp_handler_t handler)
 
     return conn_descr->snd_csap;
 }
+
+/**
+ * Wait for any packet in this connection while timeout expired.
+ *
+ * @param conn_descr    pointer to TAPI connection descriptor
+ * @param timeout       timeout in milliseconds
+ *
+ * @return zero on success (one or more messages got), errno otherwise
+ */
+static inline int
+conn_wait_packet(tapi_tcp_connection_t *conn_descr, unsigned int timeout)
+{
+    te_errno        rc;
+    unsigned int    num = 0;
+
+    if (conn_descr == NULL)
+    {
+        ERROR("%s: connection descriptor is NULL", __FUNCTION__);
+        return TE_EINVAL;
+    }
+
+    rc = rcf_ta_trrecv_get(conn_descr->agt, conn_descr->rcv_sid,
+                           conn_descr->rcv_csap,
+                           tcp_conn_pkt_handler, conn_descr, &num);
+    if (rc != 0)
+    {
+        ERROR("%s: rcf_ta_trrecv_get() failed", __FUNCTION__);
+        return rc;
+    }
+
+    INFO("received %d messages", num);
+    if (num == 0)
+    {
+        sleep((timeout + 999) / 1000);
+        rc = rcf_ta_trrecv_get(conn_descr->agt, conn_descr->rcv_sid,
+                               conn_descr->rcv_csap,
+                               tcp_conn_pkt_handler, conn_descr, &num);
+        if (rc != 0)
+        {
+            ERROR("%s: rcf_ta_trrecv_get() failed", __FUNCTION__);
+            return rc;
+        }
+        if (num == 0)
+            return TE_ETIMEDOUT;
+    }
+
+    return 0;
+}
+
+int
+tapi_tcp_wait_packet(tapi_tcp_handler_t handler, int timeout)
+{
+    tapi_tcp_connection_t *conn_descr;
+
+    if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    /* It is simply wrapper for external use of static inline method. */
+    return conn_wait_packet(conn_descr, timeout);
+}
+
