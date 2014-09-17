@@ -1558,6 +1558,19 @@ tapi_tcp_conn_snd_csap(tapi_tcp_handler_t handler)
     return conn_descr->snd_csap;
 }
 
+csap_handle_t
+tapi_tcp_conn_rcv_csap(tapi_tcp_handler_t handler)
+{
+    tapi_tcp_connection_t *conn_descr;
+
+    tapi_tcp_conns_db_init();
+    if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    return conn_descr->rcv_csap;
+}
+
+
 /**
  * Wait for any packet in this connection while timeout expired.
  *
