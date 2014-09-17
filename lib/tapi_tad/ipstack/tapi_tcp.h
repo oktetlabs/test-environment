@@ -1046,4 +1046,13 @@ extern int tapi_tcp_update_sent_ack(tapi_tcp_handler_t handler, size_t ack);
  */
 extern int tapi_tcp_wait_packet(tapi_tcp_handler_t handler, int timeout);
 
+/**
+ * Pull received packets.
+ *
+ * @param handler  TAPI handler of the TCP connection
+ *
+ * @return Packets number or @c -1 in case of error
+ */
+extern int tapi_tcp_get_packets(tapi_tcp_handler_t handler);
+
 #endif /* !__TE_TAPI_TCP_H__ */

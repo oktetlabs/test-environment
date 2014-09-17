@@ -1631,3 +1631,24 @@ tapi_tcp_wait_packet(tapi_tcp_handler_t handler, int timeout)
     return conn_wait_packet(conn_descr, timeout);
 }
 
+int
+tapi_tcp_get_packets(tapi_tcp_handler_t handler)
+{
+    tapi_tcp_connection_t *conn_descr;
+    unsigned int num = 0;
+    te_errno rc;
+
+    if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    rc = rcf_ta_trrecv_get(conn_descr->agt, conn_descr->rcv_sid,
+                           conn_descr->rcv_csap,
+                           tcp_conn_pkt_handler, conn_descr, &num);
+    if (rc != 0)
+    {
+        ERROR("%s: rcf_ta_trrecv_get() failed", __FUNCTION__);
+        return -1;
+    }
+
+    return num;
+}
