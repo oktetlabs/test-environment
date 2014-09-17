@@ -307,10 +307,7 @@ tapi_sniffer_del(tapi_sniffer_id *id)
     int rc;
 
     if (id == NULL)
-    {
-        ERROR("Sniffer ID is null");
-        return TE_RC(TE_TAPI, TE_EINVAL);
-    }
+        return 0;
 
     rc = cfg_del_instance_fmt(FALSE, TE_CFG_SNIF_FMT, id->ta, 
                               id->ifname, id->snifname);
