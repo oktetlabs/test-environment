@@ -121,6 +121,11 @@ eth_cmd_set(unsigned int gid, const char *oid, char *value,
     struct ethtool_value    eval;
     char                   *endp;
     int                     rc;
+    uint32_t                cmd, data;
+    char                    slaves[2][IFNAMSIZ];
+    char                    if_par[IF_NAMESIZE];
+    int                     slaves_num = 2;
+    int                     i;
 
     UNUSED(gid);
 
@@ -139,53 +144,50 @@ eth_cmd_set(unsigned int gid, const char *oid, char *value,
     }
 
     if (strstr(oid, "/gro:") != NULL)
-        eval.cmd = ETHTOOL_SGRO;
+        cmd = eval.cmd = ETHTOOL_SGRO;
     else if (strstr(oid, "/gso:") != NULL)
-        eval.cmd = ETHTOOL_SGSO;
+        cmd = eval.cmd = ETHTOOL_SGSO;
     else if (strstr(oid, "/tso:") != NULL)
-        eval.cmd = ETHTOOL_STSO;
+        cmd = eval.cmd = ETHTOOL_STSO;
     else if (strstr(oid, "/flags:") != NULL)
-        eval.cmd = ETHTOOL_SFLAGS;
+        cmd = eval.cmd = ETHTOOL_SFLAGS;
     else if (strstr(oid, "/reset:") != NULL)
     {
-        char slaves[2][IFNAMSIZ];
-        char if_par[IF_NAMESIZE];
-        int  slaves_num = 2;
-        int  i;
         if (eval.data == 0)
             return 0;
-        eval.cmd = ETHTOOL_RESET;
-        eval.data = ETH_RESET_ALL;
-
-        if ((rc = ta_vlan_get_parent(ifname, if_par)) != 0)
-            return rc;
-        if ((rc = ta_bond_get_slaves(strlen(if_par) == 0 ? ifname : if_par,
-                                     slaves, &slaves_num)) != 0)
-            return rc;
-        if (slaves_num != 0)
-        {
-            for (i = 0; i < slaves_num; i++)
-            {
-                eval.cmd = ETHTOOL_RESET;
-                eval.data = ETH_RESET_ALL;
-                strncpy(ifr.ifr_name, slaves[i], sizeof(ifr.ifr_name));
-
-                if (ioctl(cfg_socket, SIOCETHTOOL, &ifr) != 0)
-                {
-                    ERROR("ioctl failed on %s: %s", ifr.ifr_name,
-                          strerror(errno));
-                    return TE_OS_RC(TE_TA_UNIX, errno);
-                }
-                if (i != slaves_num - 1)
-                    sleep(10);
-            }
-            return 0;
-        }
-        if (strlen(if_par) != 0)
-            strncpy(ifr.ifr_name, if_par, sizeof(ifr.ifr_name));
+        cmd = eval.cmd = ETHTOOL_RESET;
+        data = eval.data = ETH_RESET_ALL;
     }
     else
         return TE_EINVAL;
+
+    if ((rc = ta_vlan_get_parent(ifname, if_par)) != 0)
+        return rc;
+    if ((rc = ta_bond_get_slaves(strlen(if_par) == 0 ? ifname : if_par,
+                                 slaves, &slaves_num)) != 0)
+        return rc;
+    if (slaves_num != 0)
+    {
+        for (i = 0; i < slaves_num; i++)
+        {
+            eval.cmd = cmd;
+            if (cmd == ETHTOOL_RESET)
+                eval.data = data;
+            strncpy(ifr.ifr_name, slaves[i], sizeof(ifr.ifr_name));
+
+            if (ioctl(cfg_socket, SIOCETHTOOL, &ifr) != 0)
+            {
+                ERROR("ioctl failed on %s: %s", ifr.ifr_name,
+                      strerror(errno));
+                return TE_OS_RC(TE_TA_UNIX, errno);
+            }
+            if (i != slaves_num - 1)
+                sleep(10);
+        }
+        return 0;
+    }
+    if (strlen(if_par) != 0)
+        strncpy(ifr.ifr_name, if_par, sizeof(ifr.ifr_name));
 
     if (ioctl(cfg_socket, SIOCETHTOOL, &ifr) != 0)
     {
