@@ -431,6 +431,18 @@ rpc_sendbuf_off(rcf_rpc_server *rpcs, int s, rpc_ptr_off *buf, size_t len,
 extern ssize_t rpc_send_msg_more(rcf_rpc_server *rpcs, int s, rpc_ptr buf, 
                                 size_t first_len, size_t second_len);
 
+/**
+ * Transmit many 1-byte messages to socket descriptor @b s on RPC server
+ * side by using send(@c MSG_DONTWAIT) calls.
+ *
+ * @param rpcs       RPC server handle
+ * @param s          socket descriptor
+ * @param delay      Delay between sends (in microseconds)
+ *
+ * @return On succes, number of bytes actually sent, otherwise -1.
+ */
+extern ssize_t rpc_send_one_byte_many(rcf_rpc_server *rpcs, int s,
+                                      int delay);
 
 /**
  * Receive messages and store them in the buffer @b buf of length @b len.

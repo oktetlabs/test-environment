@@ -1075,6 +1075,16 @@ struct tarpc_send_msg_more_in {
 
 typedef struct tarpc_ssize_t_retval_out tarpc_send_msg_more_out;
 
+/* send_one_byte_many() */
+
+struct tarpc_send_one_byte_many_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int       fd;
+    tarpc_int       delay;
+};
+
+typedef struct tarpc_ssize_t_retval_out tarpc_send_one_byte_many_out;
 
 /* recv() */
 
@@ -5216,6 +5226,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(recvbuf)
         RPC_DEF(sendbuf)
         RPC_DEF(send_msg_more)
+        RPC_DEF(send_one_byte_many)
 
         RPC_DEF(readv)
         RPC_DEF(writev)

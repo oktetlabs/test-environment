@@ -725,6 +725,33 @@ rpc_send_msg_more(rcf_rpc_server *rpcs, int s, rpc_ptr buf,
     RETVAL_INT(send_msg_more, out.retval);
 }
 
+ssize_t
+rpc_send_one_byte_many(rcf_rpc_server *rpcs, int s, int delay)
+{
+    tarpc_send_one_byte_many_in  in;
+    tarpc_send_one_byte_many_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(send_one_byte_many, -1);
+    }
+
+    in.fd = s;
+    in.delay = delay;
+
+    rpcs->errno_change_check = 0;
+    rcf_rpc_call(rpcs, "send_one_byte_many", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(send_one_byte_many, out.retval);
+    TAPI_RPC_LOG(rpcs, send_one_byte_many, "%d, %d", "%d", s, delay,
+                 out.retval);
+    RETVAL_INT(send_one_byte_many, out.retval);
+}
+
 /**
  * Release memory allocated for value of tarpc_msghdr type.
  *

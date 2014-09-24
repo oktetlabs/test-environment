@@ -1935,6 +1935,35 @@ send_msg_more(tarpc_send_msg_more_in *in)
     return res1 + res2;
 }
 
+/*------------ send_one_byte_many() --------------------------*/
+TARPC_FUNC(send_one_byte_many, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in));
+}
+)
+
+ssize_t
+send_one_byte_many(tarpc_send_one_byte_many_in *in)
+{
+    int      sent = 0;
+    int      rc;
+    char     buf = 'A';
+    api_func send_func;
+
+    if (tarpc_find_func(in->common.use_libc, "send", &send_func) != 0)
+    {
+        ERROR("Failed to find function \"send\"");
+        return -1;
+    }
+
+    do {
+        rc = send_func(in->fd, &buf, 1, MSG_DONTWAIT);
+        if (in->delay != 0)
+            usleep(in->delay);
+    } while (rc > 0 && (sent += rc));
+    return sent;
+}
+
 /*-------------- readv() ------------------------------*/
 
 TARPC_FUNC(readv,
