@@ -247,6 +247,28 @@ extern tarpc_pid_t rpc_te_shell_cmd(rcf_rpc_server *rpcs,
 extern char *rpc_getenv(rcf_rpc_server *rpcs, const char *name);
 
 /**
+ * Get integer environment variable.
+ *
+ * @param rpcs  RPC server handle
+ * @param name  Variable name
+ * @param val   Value location
+ *
+ * @return @c 0 on success, otherwise @c -1
+ */
+static inline int
+rpc_getenv_int(rcf_rpc_server *rpcs, const char *name, int *val)
+{
+    char *strval = rpc_getenv(rpcs, name);
+
+    if (strval == NULL)
+        return -1;
+
+    *val = atoi(strval);
+    free(strval);
+    return 0;
+}
+
+/**
  * Add the variable with specified value to the environment or change
  * value of the existing variable.
  *
@@ -269,6 +291,7 @@ extern int rpc_setenv(rcf_rpc_server *rpcs,
  * @return return code
  */
 extern int rpc_unsetenv(rcf_rpc_server *rpcs, const char *name);
+
 
 /**@} <!-- END te_lib_rpc_stdio --> */
 
