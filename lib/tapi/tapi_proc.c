@@ -207,5 +207,7 @@ DEFINE_API_FUNC_TA_ONLY(tcp_syn_retries,
 DEFINE_API_FUNC_TA_ONLY(tcp_fin_timeout,
                         "/agent:%s/sys:/tcp_fin_timeout:")
 DEFINE_API_FUNC_TA_ONLY(somaxconn, "/agent:%s/sys:/somaxconn:")
+DEFINE_API_FUNC_TA_ONLY(neigh_gc_thresh3,
+                        "/agent:%s/sys:/neigh_gc_thresh3:")
 
 #undef DEFINE_API_FUNC_TA_ONLY
