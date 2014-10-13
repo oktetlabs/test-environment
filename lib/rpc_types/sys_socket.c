@@ -3216,7 +3216,7 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
     rpc_cmsg->data.data_val = NULL;   
     if (len == 0)
     {
-        RING("%s(): trying to convert value of zero length", __FUNCTION__);
+        INFO("%s(): trying to convert value of zero length", __FUNCTION__);
         return 0;
     }
 
@@ -3766,7 +3766,7 @@ msg_control_h2rpc(uint8_t *cmsg_buf, size_t cmsg_len,
 
     if (cmsg_buf == NULL || cmsg_len == 0)
     {
-        RING("%s(): trying to convert value of zero length",
+        INFO("%s(): trying to convert value of zero length",
              __FUNCTION__);
         if (rpc_cmsg_count != NULL)
             *rpc_cmsg_count = 0;
