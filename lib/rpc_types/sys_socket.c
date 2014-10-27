@@ -3396,8 +3396,9 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
 
                         if (len < 3 * ((int)sizeof(struct timespec)))
                         {
-                            ERROR("%s(): incorrect data len for "
-                                  "SO_TIMESTAMPING value", __FUNCTION__);
+                            ERROR("%s(): incorrect data len %d for "
+                                  "SO_TIMESTAMPING value",
+                                  __FUNCTION__, len);
                             return TE_EINVAL;
                         }
 
@@ -3424,9 +3425,9 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
 
                     if (len < (int)sizeof(*ts))
                     {
-                        ERROR("%s(): incorrect data len for "
+                        ERROR("%s(): incorrect data len %d/%d for "
                               "ONLOAD_SCM_TIMESTAMPING_STREAM value",
-                              __FUNCTION__);
+                              __FUNCTION__, len, sizeof(*ts));
                         return TE_EINVAL;
                     }
 

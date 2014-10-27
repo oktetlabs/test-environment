@@ -292,7 +292,7 @@ extern te_errno tapi_cfg_tcp_syn_retries_get(rcf_rpc_server *rpcs,
  *
  * @return Status code
  */
-extern te_errno tapi_cfg_somaxconn_set(rcf_rpc_server *rpcs,
+extern te_errno tapi_cfg_core_somaxconn_set(rcf_rpc_server *rpcs,
                                        int value, int *old_value);
 
 /**
@@ -303,7 +303,8 @@ extern te_errno tapi_cfg_somaxconn_set(rcf_rpc_server *rpcs,
  *
  * @return Status code
  */
-extern te_errno tapi_cfg_somaxconn_get(rcf_rpc_server *rpcs, int *value);
+extern te_errno tapi_cfg_core_somaxconn_get(rcf_rpc_server *rpcs,
+                                            int *value);
 
 /**
  * Set a new value to /proc/sys/net/ipv4/neigh/default/gc_thresh3.
@@ -327,6 +328,52 @@ extern te_errno tapi_cfg_neigh_gc_thresh3_set(rcf_rpc_server *rpcs,
  */
 extern te_errno tapi_cfg_neigh_gc_thresh3_get(rcf_rpc_server *rpcs,
                                               int *value);
+
+/**
+ * Set a new igmp_max_memberships value.
+ *
+ * @param rpcs      RPC server
+ * @param value     Value to be set
+ * @param old_value Location for previous value or @c NULL
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_igmp_max_memberships_set(rcf_rpc_server *rpcs,
+                                                 int value, int *old_value);
+
+/**
+ * Get igmp_max_memberships value.
+ *
+ * @param rpcs      RPC server
+ * @param value     Location for the value
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_igmp_max_memberships_get(rcf_rpc_server *rpcs,
+                                                  int *value);
+
+/**
+ * Set a new /proc/sys/net/core/optmem_max value.
+ *
+ * @param rpcs      RPC server
+ * @param value     Value to be set
+ * @param old_value Location for previous value or @c NULL
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_core_optmem_max_set(rcf_rpc_server *rpcs,
+                                             int value, int *old_value);
+
+/**
+ * Get /proc/sys/net/core/optmem_max value.
+ *
+ * @param rpcs      RPC server
+ * @param value     Location for the value
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_core_optmem_max_get(rcf_rpc_server *rpcs,
+                                             int *value);
 
 #ifdef __cplusplus
 } /* extern "C" */

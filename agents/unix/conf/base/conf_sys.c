@@ -189,7 +189,9 @@ SYSTEM_WIDE_PARAM(tcp_sndbuf_def, tcp_rcvbuf_max);
 SYSTEM_WIDE_PARAM(tcp_sndbuf_max, tcp_sndbuf_def);
 SYSTEM_WIDE_PARAM_COMMON(neigh_gc_thresh3, tcp_sndbuf_max);
 SYSTEM_WIDE_PARAM_COMMON(somaxconn, neigh_gc_thresh3);
-SYSTEM_WIDE_PARAM_COMMON(tcp_syn_retries, somaxconn);
+SYSTEM_WIDE_PARAM_COMMON(optmem_max, somaxconn);
+SYSTEM_WIDE_PARAM_COMMON(igmp_max_memberships, optmem_max);
+SYSTEM_WIDE_PARAM_COMMON(tcp_syn_retries, igmp_max_memberships);
 SYSTEM_WIDE_PARAM_COMMON(tcp_keepalive_time, tcp_syn_retries);
 SYSTEM_WIDE_PARAM_COMMON(tcp_keepalive_probes, tcp_keepalive_time);
 SYSTEM_WIDE_PARAM_COMMON(tcp_keepalive_intvl, tcp_keepalive_probes);
@@ -890,6 +892,9 @@ proc_sys_common_set(unsigned int gid, const char *oid,
     else if (strstr(oid, "/somaxconn:") != NULL)
         return proc_sys_set_value("/proc/sys/net/core/somaxconn", 0,
                                   value);
+    else if (strstr(oid, "/optmem_max:") != NULL)
+        return proc_sys_set_value("/proc/sys/net/core/optmem_max", 0,
+                                  value);
     else if (strstr(oid, "/neigh_gc_thresh3:") != NULL)
         return proc_sys_set_value("/proc/sys/net/ipv4/neigh/default/"
                                   "gc_thresh3", 0, value);
@@ -901,6 +906,7 @@ proc_sys_common_set(unsigned int gid, const char *oid,
     ELSE_IF_IPV4_FIELD(tcp_orphan_retries)
     ELSE_IF_IPV4_FIELD(tcp_fin_timeout)
     ELSE_IF_IPV4_FIELD(tcp_syn_retries)
+    ELSE_IF_IPV4_FIELD(igmp_max_memberships)
 #undef ELSE_IF_IPV4_FIELD
 
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -945,6 +951,9 @@ proc_sys_common_get(unsigned int gid, const char *oid,
     else if (strstr(oid, "/somaxconn:") != NULL)
         return proc_sys_get_value("/proc/sys/net/core/somaxconn", 0,
                                   value);
+    else if (strstr(oid, "/optmem_max:") != NULL)
+        return proc_sys_get_value("/proc/sys/net/core/optmem_max", 0,
+                                  value);
     else if (strstr(oid, "/neigh_gc_thresh3:") != NULL)
         return proc_sys_get_value("/proc/sys/net/ipv4/neigh/default/"
                                   "gc_thresh3", 0, value);
@@ -956,6 +965,7 @@ proc_sys_common_get(unsigned int gid, const char *oid,
     ELSE_IF_IPV4_FIELD(tcp_orphan_retries)
     ELSE_IF_IPV4_FIELD(tcp_fin_timeout)
     ELSE_IF_IPV4_FIELD(tcp_syn_retries)
+    ELSE_IF_IPV4_FIELD(igmp_max_memberships)
 #undef ELSE_IF_IPV4_FIELD
 #endif
 
