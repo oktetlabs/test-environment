@@ -4866,6 +4866,59 @@ mtu_get(unsigned int gid, const char *oid, char *value,
 }
 
 /**
+ * Change MTU for the specified interface.
+ * 
+ * @param ifname  Interface name
+ * @param mtu     MTU value
+ * 
+ * @return Error code.
+ */
+static te_errno
+change_mtu(const char *ifname, int mtu)
+{
+    te_errno  rc = 0;
+    te_bool   status;
+
+    req.my_ifr_mtu = mtu;
+    strcpy(req.my_ifr_name, ifname);
+    if (ioctl(cfg_socket, MY_SIOCSIFMTU, (intptr_t)&req) != 0)
+    {
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+        if (errno != EBUSY)
+        {
+            ERROR("Failed to change MTU to %d on interface %s: %r",
+                  mtu, ifname, TE_OS_RC(TE_TA_UNIX, errno));
+            return rc;
+        }
+
+        /* Try to down interface */
+        if (ta_interface_status_get(ifname, &status) == 0 &&
+            status && ta_interface_status_set(ifname, FALSE) == 0)
+        {
+            te_errno  rc1;
+
+            RING("Interface '%s' is pushed down/up to set a new MTU",
+                 ifname);
+
+            if (ioctl(cfg_socket, MY_SIOCSIFMTU, (intptr_t)&req) == 0)
+                rc = 0;
+            else
+                ERROR("Failed to change MTU to %d on interface %s: %r",
+                      mtu, ifname, TE_OS_RC(TE_TA_UNIX, errno));
+
+            if ((rc1 = ta_interface_status_set(ifname, TRUE)) != 0)
+            {
+                ERROR("Failed to up interface after mtu changing "
+                      "error %r", rc1);
+                return rc1;
+            }
+        }
+    }
+
+    return rc;
+}
+
+/**
  * Change MTU of the interface.
  *
  * @param gid           group identifier (unused)
@@ -4882,6 +4935,10 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
     char     *tmp;
     te_errno  rc = 0;
     long      mtu;
+    int       slaves_num = 2;
+    char      slaves[2][IF_NAMESIZE] = {{0}};
+    char      if_par[IF_NAMESIZE] = {0};
+    int       i;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -4893,41 +4950,28 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
     if (tmp == value || *tmp != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
+    if ((rc = ta_vlan_get_parent(ifname, if_par)) != 0)
+        return rc;
+    if ((rc = ta_bond_get_slaves(strlen(if_par) == 0 ? ifname : if_par,
+                                 slaves, &slaves_num)) != 0)
+        return rc;
+
 #if (defined(SIOCGIFMTU)  && defined(HAVE_STRUCT_IFREQ_IFR_MTU))   || \
     (defined(SIOCGLIFMTU) && defined(HAVE_STRUCT_LIFREQ_LIFR_MTU))
-    req.my_ifr_mtu = mtu;
-    strcpy(req.my_ifr_name, ifname);
-    if (ioctl(cfg_socket, MY_SIOCSIFMTU, (intptr_t)&req) != 0)
+
+    if (slaves_num != 0)
     {
-        rc = TE_OS_RC(TE_TA_UNIX, errno);
-
-        if (errno == EBUSY)
+        for (i = 0; i < slaves_num; i++)
         {
-            te_bool status;
-
-            /* Try to down interface */
-            if (ta_interface_status_get(ifname, &status) == 0 &&
-                status && ta_interface_status_set(ifname, FALSE) == 0)
-            {
-                int rc1;
-
-                WARN("Interface '%s' is pushed down/up to set a new MTU",
-                     ifname);
-
-                if (ioctl(cfg_socket, MY_SIOCSIFMTU, (intptr_t)&req) == 0)
-                {
-                    rc = 0;
-                }
-
-                if ((rc1 = ta_interface_status_set(ifname, TRUE)) != 0)
-                {
-                    ERROR("Failed to up interface after changing of mtu "
-                          "error %r", rc1);
-                    return rc1;
-                }
-            }
+            if ((rc = change_mtu(slaves[i], mtu)) != 0)
+                break;
         }
     }
+    else if (strlen(if_par) != 0)
+        rc = change_mtu(if_par, mtu);
+
+    if (rc == 0)
+        rc = change_mtu(ifname, mtu);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
