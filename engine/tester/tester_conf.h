@@ -216,6 +216,7 @@ struct test_session {
     test_attrs          attrs;          /**< Test attributes */
     test_value_types    types;          /**< Types declared in session */
     test_vars_args      vars;           /**< List of variables */
+    test_requirements   reqs;           /**< List of requirements */
     run_item           *exception;      /**< Exception handler */
     run_item           *keepalive;      /**< Keep-alive handler */
     run_item           *prologue;       /**< Prologue */

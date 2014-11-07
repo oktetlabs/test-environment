@@ -1733,6 +1733,8 @@ get_session(xmlNodePtr node, tester_cfg *cfg, const test_session *parent,
     te_errno rc;
     int parse_break;
 
+    TAILQ_INIT(&session->reqs);
+
     ENTRY("session=%p", session);
     session->parent = parent;
 
@@ -1764,6 +1766,14 @@ get_session(xmlNodePtr node, tester_cfg *cfg, const test_session *parent,
             return rc;
         }
         node = xmlNodeNext(node);
+    }
+
+    /* Information about requirements is optional */
+    rc = get_requirements(&node, &session->reqs, TRUE);
+    if (rc != 0)
+    {
+        ERROR("Failed to get information about session requirements");
+        return rc;
     }
 
     /* Get 'exception' handler */

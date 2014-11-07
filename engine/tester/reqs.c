@@ -555,7 +555,7 @@ tester_is_run_required(const logic_expr        *targets,
             break;
 
         case RUN_ITEM_SESSION:
-            reqs = NULL;
+            reqs = &test->u.session.reqs;
             break;
 
         case RUN_ITEM_PACKAGE:
