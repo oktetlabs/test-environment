@@ -291,3 +291,23 @@ lseek_mode_h2rpc(int mode)
         default: return RPC_SEEK_INVALID;
     }    
 }
+
+unsigned int
+splice_flags_rpc2h(unsigned int flags)
+{
+    UNUSED(flags);  /* Possibly unused */
+    return 0
+#ifdef SPLICE_F_MOVE
+        | (!!(flags & RPC_SPLICE_F_MOVE) * SPLICE_F_MOVE)
+#endif
+#ifdef SPLICE_F_NONBLOCK
+        | (!!(flags & RPC_SPLICE_F_NONBLOCK) * SPLICE_F_NONBLOCK)
+#endif
+#ifdef SPLICE_F_MORE
+        | (!!(flags & RPC_SPLICE_F_MORE) * SPLICE_F_MORE)
+#endif
+#ifdef SPLICE_F_GIFT
+        | (!!(flags & RPC_SPLICE_F_GIFT) * SPLICE_F_GIFT)
+#endif
+        ;
+}

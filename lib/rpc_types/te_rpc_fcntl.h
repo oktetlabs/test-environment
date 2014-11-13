@@ -161,6 +161,30 @@ extern int lseek_mode_rpc2h(rpc_lseek_mode mode);
 extern rpc_lseek_mode lseek_mode_h2rpc(int mode);
 
 
+/**
+ * Splice flags
+ */
+typedef enum rpc_splice_flags {
+    RPC_SPLICE_F_MOVE     = 0x1,
+    RPC_SPLICE_F_NONBLOCK = 0x2,
+    RPC_SPLICE_F_MORE     = 0x4,
+    RPC_SPLICE_F_GIFT     = 0x8,
+} rpc_splice_flags;
+
+#define SPLICE_FLAGS_MAPPING_LIST \
+    RPC_BIT_MAP_ENTRY(SPLICE_F_MOVE), \
+    RPC_BIT_MAP_ENTRY(SPLICE_F_NONBLOCK), \
+    RPC_BIT_MAP_ENTRY(SPLICE_F_MORE), \
+    RPC_BIT_MAP_ENTRY(SPLICE_F_GIFT)
+
+/**
+ * splice_flags_rpc2str()
+ */
+RPCBITMAP2STR(splice_flags, FCNTL_FLAGS_MAPPING_LIST)
+
+extern unsigned int splice_flags_rpc2h(rpc_splice_flags mode);
+
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

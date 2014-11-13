@@ -4274,6 +4274,27 @@ struct tarpc_sendfile_out {
     tarpc_off_t     offset<>;   /**< new offset returned by the function */
 };
 
+/* splice() */
+struct tarpc_splice_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int           fd_in;
+    tarpc_off_t         off_in<>;
+    tarpc_int           fd_out;
+    tarpc_off_t         off_out<>;
+    tarpc_size_t        len;
+    tarpc_int           flags;
+};
+
+struct tarpc_splice_out {
+    struct tarpc_out_arg  common;
+
+    tarpc_ssize_t   retval;     /**< Returned length */
+    tarpc_off_t     off_in<>;   /**< new in offset returned by the
+                                     function */
+    tarpc_off_t     off_out<>;  /**< new out offset returned by the
+                                     function */
+};
 
 /* socket_to_file() */
 struct tarpc_socket_to_file_in {
@@ -5370,6 +5391,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(echoer)
 
         RPC_DEF(sendfile)
+        RPC_DEF(splice)
         RPC_DEF(socket_to_file)
 
         RPC_DEF(ftp_open)

@@ -1154,6 +1154,57 @@ rpc_sendfile(rcf_rpc_server *rpcs, int out_fd, int in_fd,
     RETVAL_INT(sendfile, out.retval);
 }
 
+ssize_t
+rpc_splice(rcf_rpc_server *rpcs, int fd_in, tarpc_off_t *off_in,
+           int fd_out, tarpc_off_t *off_out, size_t len, int flags)
+{
+    tarpc_off_t      start_in = (off_in != NULL) ? *off_in : 0;
+    tarpc_off_t      start_out = (off_out != NULL) ? *off_out : 0;
+    tarpc_splice_in  in;
+    tarpc_splice_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(splice, -1);
+    }
+    in.fd_in = fd_in;
+    in.fd_out = fd_out;
+    in.len = len;
+    in.flags = flags;
+    if (off_in != NULL && rpcs->op != RCF_RPC_WAIT)
+    {
+        in.off_in.off_in_len = 1;
+        in.off_in.off_in_val = off_in;
+    }
+    if (off_out != NULL && rpcs->op != RCF_RPC_WAIT)
+    {
+        in.off_out.off_out_len = 1;
+        in.off_out.off_out_val = off_out;
+    }
+
+    rcf_rpc_call(rpcs, "splice", &in, &out);
+
+    if (RPC_IS_CALL_OK(rpcs))
+    {
+        if (off_in != NULL && out.off_in.off_in_val != NULL)
+            *off_in = out.off_in.off_in_val[0];
+        if (off_out != NULL && out.off_out.off_out_val != NULL)
+            *off_out = out.off_out.off_out_val[0];
+    }
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(splice, out.retval);
+    TAPI_RPC_LOG(rpcs, splice, "%d, %p(%lld), %d, %p(%lld), %u, %s",
+                 "%d off_in=%lld off_in=%lld",
+                 fd_in, off_in, start_in, fd_out, off_out, start_out,
+                 (unsigned)len, splice_flags_rpc2str(flags),
+                 out.retval, (off_in != NULL) ? (long long)*off_in : 0LL,
+                 (off_out != NULL) ? (long long)*off_out : 0LL);
+    RETVAL_INT(splice, out.retval);
+}
 
 /* See description in tapi_rpcsock.h */
 ssize_t

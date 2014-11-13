@@ -7705,6 +7705,35 @@ TARPC_FUNC(sendfile,
 }
 )
 
+
+/*-------------- splice() ------------------------------*/
+TARPC_FUNC(splice,
+{
+    COPY_ARG(off_in);
+    COPY_ARG(off_out);
+},
+{
+    off_t off_in = 0;
+    off_t off_out = 0;
+
+    if (out->off_in.off_in_len > 0)
+        off_in = *out->off_in.off_in_val;
+    if (out->off_out.off_out_len > 0)
+        off_out = *out->off_out.off_out_val;
+
+    MAKE_CALL(out->retval =
+        func(in->fd_in,
+             out->off_in.off_in_len == 0 ? NULL : &off_in,
+             in->fd_out,
+             out->off_out.off_out_len == 0 ? NULL : &off_out,
+             in->len, splice_flags_rpc2h(in->flags)));
+    if (out->off_in.off_in_len > 0)
+        out->off_in.off_in_val[0] = (tarpc_off_t)off_in;
+    if (out->off_out.off_out_len > 0)
+        out->off_out.off_out_val[0] = (tarpc_off_t)off_out;
+}
+)
+
 /*-------------- socket_to_file() ------------------------------*/
 #define SOCK2FILE_BUF_LEN  4096
 

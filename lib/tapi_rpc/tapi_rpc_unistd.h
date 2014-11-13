@@ -674,6 +674,9 @@ extern ssize_t rpc_sendfile(rcf_rpc_server *rpcs, int out_fd, int in_fd,
                             tarpc_off_t *offset, size_t count,
                             tarpc_bool force64);
 
+extern ssize_t rpc_splice(rcf_rpc_server *rpcs, int fd_in,
+                          tarpc_off_t *off_in, int fd_out,
+                          tarpc_off_t *off_out, size_t len, int flags);
 
 /**
  * Manipulate the underlying device parameters of special files. In
