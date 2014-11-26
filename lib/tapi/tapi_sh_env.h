@@ -80,6 +80,55 @@ tapi_sh_env_set(rcf_rpc_server *pco,
 }
 
 /**
+ * Get shell environment for the given agent.
+ *
+ * @param pco            PCO handle
+ * @param env_name       Name of the environment variable
+ * @param val            Location for value, memory is allocated with
+ *                       malloc, so the obtained string must be freed after
+ *                       using
+ *
+ * @result errno
+ */
+static inline te_errno
+tapi_sh_env_get(rcf_rpc_server *pco, const char *env_name, char **val)
+{
+    cfg_val_type  val_type = CVT_STRING;
+    te_errno      rc;
+
+    rc = cfg_get_instance_fmt(&val_type, val, "/agent:%s/env:%s",
+                              pco->ta, env_name);
+    if (rc != 0)
+        ERROR("Failed to get env %s", env_name);
+
+    return rc;
+}
+
+/**
+ * Get int shell environment for the given agent.
+ *
+ * @param pco            PCO handle
+ * @param env_name       Name of the environment variable
+ * @param val            Location for value
+ *
+ * @result errno
+ */
+static inline te_errno
+tapi_sh_env_get_int(rcf_rpc_server *pco, const char *env_name, int *val)
+{
+    te_errno rc;
+    char *strval;
+
+    if ((rc = tapi_sh_env_get(pco, env_name, &strval)) != 0)
+        return rc;
+
+    *val = atoi(strval);
+    free(strval);
+
+    return 0;
+}
+
+/**
  * Set integer shell environment for the given agent and may be restart
  * a PCO so it's aware.
  *
