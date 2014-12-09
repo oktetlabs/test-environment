@@ -180,7 +180,7 @@ typedef enum rpc_splice_flags {
 /**
  * splice_flags_rpc2str()
  */
-RPCBITMAP2STR(splice_flags, FCNTL_FLAGS_MAPPING_LIST)
+RPCBITMAP2STR(splice_flags, SPLICE_FLAGS_MAPPING_LIST)
 
 extern unsigned int splice_flags_rpc2h(rpc_splice_flags mode);
 
