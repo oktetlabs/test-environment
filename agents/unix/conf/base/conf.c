@@ -4967,7 +4967,7 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
                 break;
         }
     }
-    else if (strlen(if_par) != 0)
+    else if (strlen(if_par) != 0 && strcmp(if_par, "eth0") != 0)
         rc = change_mtu(if_par, mtu);
 
     if (rc == 0)
