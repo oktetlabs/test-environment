@@ -61,6 +61,8 @@
 #include "tapi_rpc_misc.h"
 #include "tapi_rpc_winsock2.h"
 #include "tapi_rpc_signal.h"
+#include "tapi_test.h"
+#include "tapi_cfg_base.h"
 
 /* See description in tapi_rpc_misc.h */
 
@@ -2094,4 +2096,65 @@ rpc_vfork_pipe_exec(rcf_rpc_server *rpcs, te_bool use_exec)
     TAPI_RPC_LOG(rpcs, vfork_pipe_exec, "%d", "%d",
                  use_exec, out.retval);
     RETVAL_INT(vfork_pipe_exec, out.retval);
+}
+
+/**
+ * Determine if the interface is grabbed by the testing.
+ * 
+ * @param rpcs       RPC server handler
+ * @param interface  Interface name
+ * 
+ * @return @c TRUE if the interface is grabbed.
+ */
+static te_bool
+interface_is_mine(rcf_rpc_server *rpcs, const char *interface)
+{
+    cfg_val_type  val_type = CVT_STRING;
+    char         *val;
+
+    if (cfg_get_instance_fmt(&val_type, &val, "/agent:%s/rsrc:%s", rpcs->ta,
+                            interface) == 0)
+    {
+        free(val);
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+/* See description in tapi_cfg_base.h */
+void
+tapi_set_if_mtu_smart(rcf_rpc_server *rpcs,
+                      const struct if_nameindex *interface, int mtu,
+                      int *old_mtu)
+{
+    int       slaves_num = 2;
+    char      slaves[2][IFNAMSIZ];
+    char      if_par[IFNAMSIZ];
+    te_bool   parent = FALSE;
+    int       i;
+
+    if (!interface_is_mine(rpcs, interface->if_name))
+        TEST_FAIL("Interface is not owned");
+
+    memset(slaves, 0, sizeof(slaves));
+    memset(if_par, 0, sizeof(if_par));
+
+    rpc_vlan_get_parent(rpcs, interface->if_name, if_par);
+    if (strlen(if_par) != 0 && interface_is_mine(rpcs, if_par))
+        parent = TRUE;
+
+    rpc_bond_get_slaves(rpcs, parent ? if_par : interface->if_name,
+                        slaves, &slaves_num);
+
+    for (i = 0; i < slaves_num; i++)
+        CHECK_RC(tapi_cfg_base_if_set_mtu_ext(rpcs->ta, slaves[i], mtu,
+                                              NULL, TRUE));
+
+    if (parent)
+        CHECK_RC(tapi_cfg_base_if_set_mtu_ext(rpcs->ta, if_par, mtu,
+                                              old_mtu, TRUE));
+
+    CHECK_RC(tapi_cfg_base_if_set_mtu(rpcs->ta, interface->if_name, mtu,
+                                      old_mtu));
 }

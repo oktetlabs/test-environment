@@ -853,10 +853,11 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                              sizeof(ifreq_buf) - strlen(ifreq_buf),
                              "HW timestamp config: %s",
                                 tarpc_hwtstamp_config2str(
-                                    (struct tarpc_tarpc_hwtstamp_config *)
-                                        ifr->ifr_data));
+                                            (struct tarpc_hwtstamp_config *)
+                                            ifr->ifr_data));
                     break;
                 }
+
                 case RPC_SIOCETHTOOL:
                 {
                     struct ifreq            *ifr = (struct ifreq *)arg;

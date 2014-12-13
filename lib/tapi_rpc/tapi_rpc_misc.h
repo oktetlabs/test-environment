@@ -776,6 +776,20 @@ extern int rpc_integer2raw(rcf_rpc_server *rpcs, uint64_t number,
  */
 extern int rpc_vfork_pipe_exec(rcf_rpc_server *rpcs, te_bool use_exec);
 
+/**
+ * Set new MTU value taking in mind VLAN and bonding features.
+ * 
+ * @param agent      RPC Server handler
+ * @param interface  Interface handler
+ * @param mtu        MTU value
+ * @param old_mtu    Location for old MTU value or @c NULL
+ * 
+ * @return Status code
+ */
+extern void tapi_set_if_mtu_smart(rcf_rpc_server *rpcs,
+                                  const struct if_nameindex *interface,
+                                  int mtu, int *old_mtu);
+
 /**@} <!-- END te_lib_rpc_misc --> */
 
 #ifdef __cplusplus

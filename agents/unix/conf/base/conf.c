@@ -4932,13 +4932,7 @@ static te_errno
 mtu_set(unsigned int gid, const char *oid, const char *value,
         const char *ifname)
 {
-    char     *tmp;
     te_errno  rc = 0;
-    long      mtu;
-    int       slaves_num = 2;
-    char      slaves[2][IF_NAMESIZE] = {{0}};
-    char      if_par[IF_NAMESIZE] = {0};
-    int       i;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -4946,32 +4940,9 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-    mtu = strtol(value, &tmp, 10);
-    if (tmp == value || *tmp != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-    if ((rc = ta_vlan_get_parent(ifname, if_par)) != 0)
-        return rc;
-    if ((rc = ta_bond_get_slaves(strlen(if_par) == 0 ? ifname : if_par,
-                                 slaves, &slaves_num)) != 0)
-        return rc;
-
 #if (defined(SIOCGIFMTU)  && defined(HAVE_STRUCT_IFREQ_IFR_MTU))   || \
     (defined(SIOCGLIFMTU) && defined(HAVE_STRUCT_LIFREQ_LIFR_MTU))
-
-    if (slaves_num != 0)
-    {
-        for (i = 0; i < slaves_num; i++)
-        {
-            if ((rc = change_mtu(slaves[i], mtu)) != 0)
-                break;
-        }
-    }
-    else if (strlen(if_par) != 0 && strcmp(if_par, "eth0") != 0)
-        rc = change_mtu(if_par, mtu);
-
-    if (rc == 0)
-        rc = change_mtu(ifname, mtu);
+    rc = change_mtu(ifname, strtol(value, NULL, 10));
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif

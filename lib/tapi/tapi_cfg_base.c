@@ -66,7 +66,6 @@
 #include "tapi_cfg_base.h"
 #include "tapi_sockaddr.h"
 
-
 /* See the description in tapi_cfg_base.h */
 int
 tapi_cfg_base_ip_fw(const char *ta, te_bool *enabled, const char *vrsn)
@@ -736,8 +735,8 @@ tapi_cfg_base_if_get_mtu_u(const char *agent, const char *interface,
 
 /* See description in tapi_cfg_base.h */
 te_errno
-tapi_cfg_base_if_set_mtu(const char *agent, const char *interface, int mtu,
-                         int *old_mtu)
+tapi_cfg_base_if_set_mtu_ext(const char *agent, const char *interface,
+                             int mtu, int *old_mtu, te_bool fast)
 {
     te_errno        rc;
     int             old_mtu_l = 0;
@@ -785,7 +784,10 @@ do { \
                                        agent, interface)) != 0)
             MTU_ERR("Failed to put up interface %s on %s: %r", 
                     interface, agent, rc);
-        CFG_WAIT_CHANGES;
+        if (fast)
+            usleep(100000);
+        else
+            CFG_WAIT_CHANGES;
     }
 
     if (tapi_cfg_base_if_get_mtu_u(agent, interface, &assigned_mtu) != 0)
