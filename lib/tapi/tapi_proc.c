@@ -212,5 +212,7 @@ DEFINE_API_FUNC_TA_ONLY(neigh_gc_thresh3,
 DEFINE_API_FUNC_TA_ONLY(igmp_max_memberships,
                         "/agent:%s/sys:/igmp_max_memberships:")
 DEFINE_API_FUNC_TA_ONLY(core_optmem_max, "/agent:%s/sys:/optmem_max:")
+DEFINE_API_FUNC_TA_ONLY(tcp_max_syn_backlog,
+                        "/agent:%s/sys:/tcp_max_syn_backlog:")
 
 #undef DEFINE_API_FUNC_TA_ONLY

@@ -375,6 +375,30 @@ extern te_errno tapi_cfg_core_optmem_max_set(rcf_rpc_server *rpcs,
 extern te_errno tapi_cfg_core_optmem_max_get(rcf_rpc_server *rpcs,
                                              int *value);
 
+/**
+ * Set a new tcp_max_syn_backlog value.
+ *
+ * @param rpcs      RPC server
+ * @param value     Value to be set
+ * @param old_value Location for previous value or @c NULL
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_tcp_max_syn_backlog_set(rcf_rpc_server *rpcs,
+                                                 int value, int *old_value);
+
+/**
+ * Get tcp_max_syn_backlog value.
+ *
+ * @param rpcs      RPC server
+ * @param value     Location for the value
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_tcp_max_syn_backlog_get(rcf_rpc_server *rpcs,
+                                                  int *value);
+
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
