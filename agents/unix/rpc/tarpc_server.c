@@ -8239,6 +8239,7 @@ multiple_iomux(tarpc_multiple_iomux_in *in,
     int             events;
     int             i;
     int             saved_errno = 0;
+    int             zero_ret = 0;
 
     if (iomux_find_func(in->common.use_libc, in->iomux, &iomux_f) != 0)
     {
@@ -8268,7 +8269,7 @@ multiple_iomux(tarpc_multiple_iomux_in *in,
     {
         ret = iomux_wait(in->iomux, &iomux_f, &iomux_st, NULL, 0);
         if (ret == 0)
-            break;
+            zero_ret++;
         else if (ret < 0)
         {
             saved_errno = errno;
@@ -8286,6 +8287,7 @@ multiple_iomux(tarpc_multiple_iomux_in *in,
 
     out->number = i;
     out->last_rc = ret;
+    out->zero_rc = zero_ret;
 
 multiple_iomux_exit:
 

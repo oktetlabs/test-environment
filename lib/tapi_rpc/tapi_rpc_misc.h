@@ -733,10 +733,12 @@ extern int rpc_memcmp(rcf_rpc_server *rpcs,
  *                  an error was returned.
  * @param last_rc   If not @c NULL, will be set to the last
  *                  return value of an iomux function.
+ * @param zero_rc   If not @c NULL, number of zero code returned by iomux
  */
 extern int rpc_multiple_iomux(rcf_rpc_server *rpcs, int fd,
                               iomux_func iomux, int events, int count,
-                              int exp_rc, int *number, int *last_rc);
+                              int exp_rc, int *number, int *last_rc,
+                              int *zero_rc);
 
 /**
  * Convert raw data to integer (this is useful when raw data was

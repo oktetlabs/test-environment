@@ -4573,6 +4573,7 @@ struct tarpc_multiple_iomux_out {
                                  called iomux */
     tarpc_int   last_rc;    /**< Value returned by the last call 
                                  of iomux */
+    tarpc_int   zero_rc;    /**< Number of zero code returned by iomux */
 };
 
 /* setrlimit() */

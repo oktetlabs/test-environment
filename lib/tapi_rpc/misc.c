@@ -1939,7 +1939,7 @@ rpc_ioctl_ethtool(rcf_rpc_server *rpcs, int fd,
 int
 rpc_multiple_iomux(rcf_rpc_server *rpcs, int fd, iomux_func iomux,
                    int events, int count, int exp_rc, int *number,
-                   int *last_rc)
+                   int *last_rc, int *zero_rc)
 {
     struct tarpc_multiple_iomux_in    in;
     struct tarpc_multiple_iomux_out   out;
@@ -1966,12 +1966,14 @@ rpc_multiple_iomux(rcf_rpc_server *rpcs, int fd, iomux_func iomux,
         *number = out.number;
     if (last_rc != NULL)
         *last_rc = out.last_rc;
+    if (zero_rc != NULL)
+        *zero_rc = out.zero_rc;
 
     TAPI_RPC_LOG(rpcs, multiple_iomux, "%d, %s, %s, %d, %d, %p, %p",
-                 "%d number=%d last_rc=%d",
+                 "%d number=%d last_rc=%d, zero_rc=%d",
                  fd, iomux2str(iomux), poll_event_rpc2str(events),
                  count, exp_rc, number, last_rc, out.retval, out.number,
-                 out.last_rc);
+                 out.last_rc, out.zero_rc);
     RETVAL_INT(multiple_iomux, out.retval);
 }
 
