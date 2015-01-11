@@ -4562,6 +4562,7 @@ struct tarpc_multiple_iomux_in {
     tarpc_int   events;     /* With which events iomux should
                                be called */
     tarpc_int   count;      /* How many times to call iomux */
+    tarpc_int   duration;   /* Call iomux during a specified time */
     tarpc_int   exp_rc;     /* Expected iomux return value */ 
 };
 

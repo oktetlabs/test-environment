@@ -1938,8 +1938,8 @@ rpc_ioctl_ethtool(rcf_rpc_server *rpcs, int fd,
 
 int
 rpc_multiple_iomux(rcf_rpc_server *rpcs, int fd, iomux_func iomux,
-                   int events, int count, int exp_rc, int *number,
-                   int *last_rc, int *zero_rc)
+                   int events, int count, int duration, int exp_rc,
+                   int *number, int *last_rc, int *zero_rc)
 {
     struct tarpc_multiple_iomux_in    in;
     struct tarpc_multiple_iomux_out   out;
@@ -1958,6 +1958,7 @@ rpc_multiple_iomux(rcf_rpc_server *rpcs, int fd, iomux_func iomux,
     in.events = events;
     in.count = count;
     in.exp_rc = exp_rc;
+    in.duration = duration;
 
     rcf_rpc_call(rpcs, "multiple_iomux", &in, &out);
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(multiple_iomux, out.retval);

@@ -8240,6 +8240,8 @@ multiple_iomux(tarpc_multiple_iomux_in *in,
     int             i;
     int             saved_errno = 0;
     int             zero_ret = 0;
+    struct timeval  tv_start;
+    struct timeval  tv_finish;
 
     if (iomux_find_func(in->common.use_libc, in->iomux, &iomux_f) != 0)
     {
@@ -8265,7 +8267,10 @@ multiple_iomux(tarpc_multiple_iomux_in *in,
         goto multiple_iomux_exit;
     }
 
-    for (i = 0; i < in->count; i++)
+    if (in->duration != -1)
+        gettimeofday(&tv_start, NULL);
+
+    for (i = 0; i < in->count || in->count == -1; i++)
     {
         ret = iomux_wait(in->iomux, &iomux_f, &iomux_st, NULL, 0);
         if (ret == 0)
@@ -8281,6 +8286,14 @@ multiple_iomux(tarpc_multiple_iomux_in *in,
         {
             ERROR("%s(): unexpected value %d was returned by iomux call",
                   __FUNCTION__, ret);
+            break;
+        }
+
+        if (in->duration != -1)
+        {
+            gettimeofday(&tv_finish, NULL);
+            if (in->duration < (tv_finish.tv_sec - tv_start.tv_sec) * 1000 +
+                              (tv_finish.tv_usec - tv_start.tv_usec) / 1000)
             break;
         }
     }

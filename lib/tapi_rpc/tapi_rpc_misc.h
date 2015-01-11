@@ -726,7 +726,9 @@ extern int rpc_memcmp(rcf_rpc_server *rpcs,
  * @param fd        File descriptor
  * @param iomux     Iomux to be called
  * @param events    @b poll() events to be checked for
- * @param count     How many times to call a function
+ * @param count     How many times to call a function or @c -1 for unlimited
+ * @param duration  Call iomux during a specified time in milliseconds
+ *                  or @c -1
  * @param exp_rc    Expected return value
  * @param number    If not @c NULL, will be set to the number
  *                  of iomux calls before timeout occured or
@@ -737,8 +739,8 @@ extern int rpc_memcmp(rcf_rpc_server *rpcs,
  */
 extern int rpc_multiple_iomux(rcf_rpc_server *rpcs, int fd,
                               iomux_func iomux, int events, int count,
-                              int exp_rc, int *number, int *last_rc,
-                              int *zero_rc);
+                              int duration, int exp_rc, int *number,
+                              int *last_rc, int *zero_rc);
 
 /**
  * Convert raw data to integer (this is useful when raw data was
