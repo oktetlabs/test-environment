@@ -131,6 +131,28 @@ aux_threads_add(pthread_t tid)
     THREADS_UNLOCK;
 }
 
+/* See description in unix_internal.h */
+void
+aux_threads_del(void)
+{
+    threads_list *thread;
+    pthread_t self = pthread_self();
+
+    THREADS_LOCK;
+    SLIST_FOREACH(thread, &threads_list_h, ent_l)
+    {
+        if (thread->child == self)
+            break;
+    }
+
+    if (thread == NULL)
+        ERROR("Failed to find aux thread context");
+    else
+        thread->child = 0;
+    THREADS_UNLOCK;
+}
+
+
 /**
  * Try to cancel the aux thread if it was started. It can be useful if RPC
  * function hangs.
@@ -194,8 +216,8 @@ aux_threads_cleanup(void)
         rc = aux_threads_cancel_child(thread->child);
         SLIST_REMOVE(&threads_list_h, thread, threads_list, ent_l);
         free(thread);
-
     }
+
     THREADS_UNLOCK;
 
     if (!last_thread)

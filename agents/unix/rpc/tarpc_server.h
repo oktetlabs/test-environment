@@ -598,11 +598,9 @@ check_args(checked_arg *list)
 static inline void
 thread_setcanceltype(void)
 {
-#ifdef HAVE_PTHREAD_H
     if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL) != 0)
         ERROR("Failed to set thread cancel type for the non-blocking call "
               "thread: %r", RPC_ERRNO);
-#endif
 }
 
 /**
@@ -650,6 +648,7 @@ _func##_proc(void *arg)                                             \
                                                                     \
     data->done = TRUE;                                              \
                                                                     \
+    aux_threads_del();                                              \
     return arg;                                                     \
 }                                                                   \
                                                                     \
