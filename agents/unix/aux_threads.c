@@ -156,7 +156,7 @@ aux_threads_cancel_child(pthread_t tid)
             return TE_RC(TE_TA_UNIX, TE_EFAIL);
         }
 
-            RING("Aux thread with a non-blocking call was canceled");
+        RING("Aux thread with a non-blocking RPC was canceled");
         return 0;
     }
     else if (rc == ESRCH)
