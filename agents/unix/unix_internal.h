@@ -306,6 +306,22 @@ extern te_errno ta_interface_status_set(const char *ifname, te_bool status);
 extern int cfg_socket;
 extern int cfg6_socket;
 
+/**
+ * Initialize context for aux threads which are used to make non-blocking
+ * RPC call.
+ */
+extern te_errno aux_threads_init(void);
+
+/**
+ * Cleanup the aux threads context.
+ */
+extern te_errno aux_threads_cleanup(void);
+
+/**
+ * Save thread identifier which is used for non-blocking RPC call.
+ */
+extern void aux_threads_add(pthread_t tid);
+
 /** TR-069 stuff */
 
 #ifdef WITH_TR069_SUPPORT

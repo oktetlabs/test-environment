@@ -593,6 +593,19 @@ check_args(checked_arg *list)
     } while (0)
 
 /**
+ * Set asynchronous thread cancel type for the non-blocking call thread.
+ */
+static inline void
+thread_setcanceltype(void)
+{
+#ifdef HAVE_PTHREAD_H
+    if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL) != 0)
+        ERROR("Failed to set thread cancel type for the non-blocking call "
+              "thread: %r", RPC_ERRNO);
+#endif
+}
+
+/**
  * Macro to define RPC function content.
  *
  * @param _func       RPC function name
@@ -630,6 +643,7 @@ _func##_proc(void *arg)                                             \
                                                                     \
     VERB("Entry thread %s", #_func);                                \
                                                                     \
+    thread_setcanceltype();                                         \
     sigprocmask(SIG_SETMASK, &(data->mask), NULL);                  \
                                                                     \
     { _actions }                                                    \
@@ -697,6 +711,7 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,  \
                 out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);   \
                 break;                                              \
             }                                                       \
+            aux_threads_add(_tid);                                  \
                                                                     \
             /*                                                      \
              * Preset 'in' and 'out' with zeros to avoid any        \

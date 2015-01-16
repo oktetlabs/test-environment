@@ -504,6 +504,20 @@ thread_self()
     return (uint32_t)pthread_self();
 }
 
+/* See description in rcf_rpc_defs.h */
+int
+rcf_rpc_server_init(void)
+{
+    return 0;
+}
+
+/* See description in rcf_rpc_defs.h */
+int
+rcf_rpc_server_finalize(void)
+{
+    return 0;
+}
+
 /* See description in rcf_ch_api.h */
 void *
 thread_mutex_create(void)

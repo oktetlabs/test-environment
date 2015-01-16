@@ -81,7 +81,7 @@ rcf_pch_rpc_server(const char *name)
     
 #ifdef HAVE_PTHREAD_H
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-#endif    
+#endif
     
     if (rpc_transport_connect_ta(name, &handle) != 0)
         return NULL;
@@ -99,8 +99,14 @@ rcf_pch_rpc_server(const char *name)
          (int)pid, (unsigned)tid);
 #endif             
 
+#ifdef __unix__
+    if (rcf_rpc_server_init() != 0)
+        STOP("Failed to initialize RPC server");
+#endif
+
     while (TRUE)
     {
+        const char *reply = "OK";
         char      rpc_name[RCF_RPC_MAX_NAME];        
                                         /* RPC name, i.e. "bind" */
         void     *in = NULL;            /* Input parameter C structure */
@@ -108,7 +114,7 @@ rcf_pch_rpc_server(const char *name)
         rpc_info *info = NULL;          /* RPC information */
         te_bool   result = FALSE;       /* "rc" attribute */
         size_t    len = RCF_RPC_HUGE_BUF_LEN;
-        
+
         strcpy(rpc_name, "Unknown");
         
         if (rpc_transport_recv(handle, buf, &len, 0xFFFFF) != 0)
@@ -116,15 +122,17 @@ rcf_pch_rpc_server(const char *name)
             
         if (strcmp((char *)buf, "FIN") == 0)
         {
-            if (rpc_transport_send(handle, (uint8_t *)"OK", 
-                                   sizeof("OK")) == 0)
-            {
-                RING("RPC server '%s' finished", name);
-            }
+#ifdef __unix__
+            if (rcf_rpc_server_finalize() != 0)
+                reply = "FAILED";
+#endif
+
+            if (rpc_transport_send(handle, (uint8_t *)reply,
+                                   strlen(reply) + 1) == 0)
+                RING("RPC server '%s' finishing status: %s", name, reply);
             else
-            {
                 ERROR("Failed to send 'OK' in response to 'FIN'");
-            }
+
             goto cleanup;
         }
         

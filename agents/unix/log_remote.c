@@ -121,7 +121,6 @@ log_remote(void *ready, int argc, char *argv[])
     fd_set             r_set;
     struct timeval     timeout;
     uint8_t           *buffer;
-    int                offset;
 
     /* reading arguments */
     if (argc < 5)
@@ -236,9 +235,7 @@ log_remote(void *ready, int argc, char *argv[])
         sem_post(ready);
         return TE_OS_RC(TE_TA_UNIX, rc);
     }
-    
-    offset = 0;
-    
+
     sem_post(ready);
     
     pthread_cleanup_push((void (*) (void *))close,

@@ -80,4 +80,24 @@ typedef enum {
 #define RCF_RPC_SERVER_GET_NET_INIT 0x20
 /*@}*/
 
+#ifdef __unix__
+/**
+ * Initialize RPC server.
+ * 
+ * @note This feature is supported only for unix agent.
+ * 
+ * @return Status code
+ */
+extern int rcf_rpc_server_init(void);
+
+/**
+ * Finalize RPC server work.
+ * 
+ * @note This feature is supported only for unix agent.
+ * 
+ * @return Status code
+ */
+extern int rcf_rpc_server_finalize(void);
+#endif
+
 #endif /* !__TE_RCF_RPC_DEFS_H__ */

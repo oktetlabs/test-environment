@@ -912,7 +912,6 @@ rcf_ch_kill_thread(unsigned int tid)
     {
         if (pthread_join((pthread_t)tid, NULL) != 0)
             return TE_OS_RC(TE_TA_UNIX, errno);
-
         return 0;
     }
 }
@@ -2014,6 +2013,19 @@ thread_mutex_unlock(void *mutex)
         pthread_mutex_unlock(mutex);
 }
 
+/* See description in ta_common.h */
+int
+rcf_rpc_server_init(void)
+{
+    return aux_threads_init();
+}
+
+/* See description in ta_common.h */
+int
+rcf_rpc_server_finalize(void)
+{
+    return aux_threads_cleanup();
+}
 
 #ifdef RCF_RPC
 /**
@@ -2044,7 +2056,7 @@ rcf_ch_rpc_server_thread(void *ready, int argc, char *argv[])
     
     sem_post(ready);
     rcf_pch_rpc_server(name);
-    
+
     return 0;
 }
 #endif
@@ -2061,7 +2073,6 @@ main(int argc, char **argv)
     int rc, retval = 0;
     
     pthread_t   logfork_tid;
-    te_bool     logfork_join = FALSE;
 
     struct sigaction    sigact;
     
@@ -2218,10 +2229,6 @@ main(int argc, char **argv)
         fprintf(stderr, "pthread_create(logfork_entry) failed: rc=%d\n",
                 rc);
         /* Continue */
-    }
-    else
-    {
-        logfork_join = TRUE;
     }
 
     /* FIXME Is it OK position? */

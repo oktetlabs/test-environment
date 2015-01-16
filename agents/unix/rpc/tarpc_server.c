@@ -784,8 +784,7 @@ _thread_join_1_svc(tarpc_thread_join_in *in,
     UNUSED(rqstp);
     memset(out, 0, sizeof(*out));
 
-    out->retval = pthread_join((pthread_t)in->tid,
-                               NULL);
+    out->retval = pthread_join((pthread_t)in->tid, NULL);
     return TRUE;
 }
 

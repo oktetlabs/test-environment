@@ -277,26 +277,35 @@ delete_thread_child(rpcserver *rpcs)
  * Join thread child RPC server.
  *
  * @param rpcs    RPC server handle
+ * 
+ * @return Status code
  */
-static void
+static int
 join_thread_child(rpcserver *rpcs)
 {
     tarpc_thread_join_in  in;
     tarpc_thread_join_out out;
-    
+    int rc;
+
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
     in.common.op = RCF_RPC_CALL_WAIT;
     in.tid = rpcs->tid;
-    
-    if (call(rpcs->father, "thread_join", &in, &out) != 0)
-        return;
-        
+
+    if ((rc = call(rpcs->father, "thread_join", &in, &out)) != 0)
+    {
+        ERROR("thread_join call failed");
+        return rc;
+    }
+
     if (out.retval != 0)
     {
-        WARN("RPC thread_join() failed on the server %s with errno %r",
+        ERROR("RPC thread_join() failed on the server %s with errno %r",
               rpcs->father->name, out.common._errno);
+        return TE_RC(TE_RCF_PCH, te_rc_os2te(out.retval));
     }
+
+    return 0;
 }
 
 /**
@@ -1032,6 +1041,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_RCF_PCH, TE_ENOMEM);
     }
     
+    memset(rpcs, 0, sizeof(*rpcs));
     strcpy(rpcs->name, new_name);
     strcpy(rpcs->value, value);
     rpcs->father = father;
@@ -1123,14 +1133,14 @@ static te_errno
 rpcserver_del(unsigned int gid, const char *oid, const char *name)
 {
     rpcserver *rpcs, *prev;
-    
+    te_errno   rc = 0;
     uint8_t buf[64];
     size_t  len = sizeof(buf);
     te_bool soft_shutdown = FALSE;
     
     UNUSED(gid);
     UNUSED(oid);
-    
+
     pthread_mutex_lock(&lock);
     for (rpcs = list, prev = NULL; 
          rpcs != NULL; 
@@ -1175,7 +1185,7 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
             if (rpcs->tid > 0)
             {
                 delete_thread_child(rpcs);
-                join_thread_child(rpcs);
+                rc = join_thread_child(rpcs);
             }
             else
             {
@@ -1186,7 +1196,7 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
         else
         {
             if (rpcs->tid > 0)
-                join_thread_child(rpcs);
+                rc = join_thread_child(rpcs);
             else
             {
                 rcf_ch_free_proc_data(rpcs->pid);
@@ -1215,7 +1225,7 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
     
     free(rpcs);
     
-    return 0;
+    return rc;
 }
 
 static te_errno
