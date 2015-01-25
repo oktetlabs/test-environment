@@ -194,7 +194,6 @@
     RPC_FUNC_WITH_EXACT_RETVAL(rpcs_, sent_, len_, write, \
                                sockd_, buf_, len_)
 
-
 /**
  * Restore signal action set before the test
  *
@@ -206,7 +205,7 @@
  */
 #define CLEANUP_RPC_SIGACTION(rpcs_, signum_, action_, old_handler_) \
     do {                                                                \
-        if ((rpcs_ != NULL) && (action_) != NULL &&                     \
+        if ((rpcs_ != NULL) && ptr_is_not_null(action_) &&              \
             (old_handler_) != NULL)                                     \
         {                                                               \
             rpc_struct_sigaction    _old_act;                           \

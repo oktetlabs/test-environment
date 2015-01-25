@@ -402,6 +402,21 @@ te_make_tmp_file(char *tmp_name)
                   __FUNCTION__);                                \
     } while (0)
 
+/** 
+ * Check if a pointer is @c NULL. It's to avoid warnings in macroses.
+ * 
+ * @param ptr   A pointer
+ * 
+ * @return @c TRUE if @p ptr is not NULL
+ */
+static inline te_bool
+ptr_is_not_null(void *ptr)
+{
+    if (ptr != NULL)
+        return TRUE;
+    return FALSE;
+}
+
 /* Tests related part */
 /* fixme kostik: should be moved */
 
