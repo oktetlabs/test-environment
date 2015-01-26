@@ -62,6 +62,10 @@
     "PURPOSE.\n"
     
 
+#ifndef NULL
+#define NULL ((void *)0)
+#endif
+
 /** Boolean type to be used everywhere in Test Environment */
 typedef unsigned char te_bool;
 
