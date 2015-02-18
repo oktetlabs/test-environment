@@ -8123,6 +8123,104 @@ overfill_buffers_exit:
     return ret;
 }
 
+/*-------------- iomux_splice() -----------------------------*/
+TARPC_FUNC(iomux_splice,{},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+int
+iomux_splice(tarpc_iomux_splice_in *in,
+             tarpc_iomux_splice_out *out)
+{
+    int             ret = 0;
+    api_func        splice_func;
+    iomux_funcs     iomux_f;
+    iomux_state     iomux_st;
+    struct timeval  now;
+    struct timeval  end;
+
+    if (gettimeofday(&end, NULL))
+    {
+        ERROR("%s(): gettimeofday(now) failed): %d",
+              __FUNCTION__, errno);
+        return -1;
+    }
+    end.tv_sec += (time_t)(in->time2run);
+
+    iomux_state_init_invalid(in->iomux, &iomux_st);
+
+    if (tarpc_find_func(in->common.use_libc, "splice", &splice_func) != 0)
+    {
+        ERROR("%s(): Failed to resolve splice() function", __FUNCTION__);
+        ret = -1;
+        goto iomux_splice_exit;
+    }
+
+    if (iomux_find_func(in->common.use_libc, in->iomux, &iomux_f) != 0)
+    {
+        ERROR("%s(): Failed to resolve iomux %s function(s)",
+              __FUNCTION__, iomux2str(in->iomux));
+        ret = -1;
+        goto iomux_splice_exit;
+    }
+
+    /* Create iomux status and fill it with in and out fds. */
+    if ((ret = iomux_create_state(in->iomux, &iomux_f, &iomux_st)) != 0 ||
+        (ret = iomux_add_fd(in->iomux, &iomux_f, &iomux_st,
+                           in->fd_in, POLLIN)) != 0 ||
+        (ret = iomux_add_fd(in->iomux, &iomux_f, &iomux_st,
+                           in->fd_out, POLLOUT)) != 0)
+    {
+        ERROR("%s(): failed to set up iomux %s state", __FUNCTION__,
+              iomux2str(in->iomux));
+        goto iomux_splice_exit;
+    }
+
+    do {
+        ret = iomux_wait(in->iomux, &iomux_f, &iomux_st, NULL, 1000);
+        if (ret < 0)
+        {
+            if (errno == EINTR)
+                continue; /* probably, SIGCHLD */
+            out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);
+            ERROR("%s(): %s() failed", __FUNCTION__, iomux2str(in->iomux));
+            break;
+        }
+
+        if (gettimeofday(&now, NULL))
+        {
+            ERROR("%s(): gettimeofday(now) failed): %d",
+                  __FUNCTION__, errno);
+            ret = -1;
+            break;
+        }
+
+        if (ret < 2)
+        {
+            usleep(10000);
+            continue;
+        }
+
+        ret = splice_func(in->fd_in, NULL, in->fd_out, NULL, in->len,
+                          splice_flags_rpc2h(in->flags));
+        if (ret != (int)in->len)
+        {
+            ERROR("splice() returned %d instead of %d",
+                  ret, in->len);
+            ret = -1;
+            break;
+        }
+
+    } while (end.tv_sec > now.tv_sec);
+
+iomux_splice_exit:
+    iomux_close(in->iomux, &iomux_f, &iomux_st);
+
+    return (ret > 0) ? 0 : ret;
+}
+
 /*-------------- overfill_fd() -----------------------------*/
 TARPC_FUNC(overfill_fd,{},
 {

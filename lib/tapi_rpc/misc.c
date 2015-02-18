@@ -1114,6 +1114,45 @@ rpc_iomux_echoer(rcf_rpc_server *rpcs,
     RETVAL_INT(echoer, out.retval);
 }
 
+/* See description in tapi_rpc_misc.h */
+int
+rpc_iomux_splice(rcf_rpc_server *rpcs, int iomux, int fd_in, int fd_out,
+                 size_t len, int flags, int time2run)
+{
+    tarpc_iomux_splice_in  in;
+    tarpc_iomux_splice_out out;
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(iomux_splice, -1);
+    }
+
+    in.fd_in = fd_in;
+    in.fd_out = fd_out;
+    in.len = len;
+    in.flags = flags;
+    in.time2run = time2run;
+    in.iomux = iomux;
+
+    if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
+    {
+        rpcs->timeout = TE_SEC2MS(time2run + TAPI_RPC_TIMEOUT_EXTRA_SEC);
+    }
+
+    rcf_rpc_call(rpcs, "iomux_splice", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(iomux_splice, out.retval);
+
+    TAPI_RPC_LOG(rpcs, iomux_splice, "%s, %d, %d, %d, %s, %d",
+                 "%d",
+                 iomux2str(iomux), fd_in, fd_out, len,
+                 splice_flags_rpc2str(flags), time2run, out.retval);
+    RETVAL_INT(iomux_splice, out.retval);
+}
+
 ssize_t
 rpc_sendfile(rcf_rpc_server *rpcs, int out_fd, int in_fd,
              tarpc_off_t *offset, size_t count, tarpc_bool force64)

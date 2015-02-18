@@ -415,6 +415,24 @@ extern int rpc_iomux_echoer(rcf_rpc_server *handle,
                             uint64_t *tx_stat, uint64_t *rx_stat);
 
 /**
+ * Routine which calls I/O multiplexing function and then calls splice.
+ *
+ * @param handle        RPC server
+ * @param iomux         type of I/O Multiplexing function
+ *                      (@b select(), @b pselect(), @b poll())
+ * @param fd_in         file descriptor opened for writing
+ * @param fd_out        file descriptor opened for reading
+ * @param len           'len' parameter for @b splice() call
+ * @param flags         flags for @b splice() call
+ * @param time2run      Duration of the call
+ *
+ * @return number of sent bytes or -1 in the case of failure
+ */
+extern int rpc_iomux_splice(rcf_rpc_server *rpcs, int iomux, int fd_in,
+                            int fd_out, size_t len, int flags,
+                            int time2run);
+
+/**
  * Routine which receives data from opened socket descriptor and write its
  * to the file. Processing is finished when timeout expired.
  *

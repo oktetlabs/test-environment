@@ -4538,6 +4538,24 @@ struct tarpc_overfill_buffers_out {
     uint64_t    bytes;      /**< Number of sent bytes */
 };
 
+/* iomux_splice() */
+struct tarpc_iomux_splice_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int       fd_in;
+    tarpc_int       fd_out;
+    tarpc_size_t    len;
+    tarpc_int       flags;
+    uint32_t        time2run;        /**< How long run (in seconds) */
+    iomux_func      iomux;
+};
+
+struct tarpc_iomux_splice_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int   retval;     /**< 0 (success) or -1 (failure) */
+};
+
 /* overfill_fd() */
 struct tarpc_overfill_fd_in {
     struct tarpc_in_arg common;
@@ -5391,6 +5409,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(recv_verify)
         RPC_DEF(flooder)
         RPC_DEF(echoer)
+        RPC_DEF(iomux_splice)
 
         RPC_DEF(sendfile)
         RPC_DEF(splice)
