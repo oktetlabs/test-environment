@@ -6563,11 +6563,12 @@ iomux_wait(iomux_func iomux, iomux_funcs *funcs, iomux_state *state,
             }
             else
             {
-                struct epoll_event ev;
-
+                struct epoll_event ev[IOMUX_MAX_POLLED_FDS];
                 rc = (iomux == FUNC_EPOLL) ?
-                        funcs->epoll.wait(state->epoll, &ev, 1, timeout) :
-                        funcs->epoll.wait(state->epoll, &ev, 1, timeout,
+                        funcs->epoll.wait(state->epoll, ev,
+                                          IOMUX_MAX_POLLED_FDS, timeout) :
+                        funcs->epoll.wait(state->epoll, ev,
+                                          IOMUX_MAX_POLLED_FDS, timeout,
                                           NULL);
             }
             break;
