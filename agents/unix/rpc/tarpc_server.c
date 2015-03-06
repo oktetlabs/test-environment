@@ -8135,12 +8135,18 @@ int
 iomux_splice(tarpc_iomux_splice_in *in,
              tarpc_iomux_splice_out *out)
 {
-    int             ret = 0;
-    api_func        splice_func;
-    iomux_funcs     iomux_f;
-    iomux_state     iomux_st;
-    struct timeval  now;
-    struct timeval  end;
+    int                     ret = 0;
+    api_func                splice_func;
+    iomux_funcs             iomux_f;
+    iomux_state             iomux_st;
+    iomux_state             iomux_st_rd;
+    iomux_return            iomux_ret;
+    iomux_return_iterator   itr;
+    struct timeval          now;
+    struct timeval          end;
+    te_bool                 out_ev = FALSE;
+    int                     fd = -1;
+    int                     events = 0;
 
     if (gettimeofday(&end, NULL))
     {
@@ -8151,6 +8157,7 @@ iomux_splice(tarpc_iomux_splice_in *in,
     end.tv_sec += (time_t)(in->time2run);
 
     iomux_state_init_invalid(in->iomux, &iomux_st);
+    iomux_state_init_invalid(in->iomux, &iomux_st_rd);
 
     if (tarpc_find_func(in->common.use_libc, "splice", &splice_func) != 0)
     {
@@ -8178,9 +8185,23 @@ iomux_splice(tarpc_iomux_splice_in *in,
               iomux2str(in->iomux));
         goto iomux_splice_exit;
     }
+    /* Create iomux status and fill it with in fd. */
+    if ((ret = iomux_create_state(in->iomux, &iomux_f,
+                                  &iomux_st_rd)) != 0 ||
+        (ret = iomux_add_fd(in->iomux, &iomux_f, &iomux_st_rd,
+                            in->fd_in, POLLIN)) != 0)
+    {
+        ERROR("%s(): failed to set up iomux %s state", __FUNCTION__,
+              iomux2str(in->iomux));
+        goto iomux_splice_exit;
+    }
 
     do {
-        ret = iomux_wait(in->iomux, &iomux_f, &iomux_st, NULL, 1000);
+        if (out_ev)
+            ret = iomux_wait(in->iomux, &iomux_f, &iomux_st_rd, NULL, 1000);
+        else
+            ret = iomux_wait(in->iomux, &iomux_f, &iomux_st, &iomux_ret,
+                             1000);
         if (ret < 0)
         {
             if (errno == EINTR)
@@ -8198,7 +8219,23 @@ iomux_splice(tarpc_iomux_splice_in *in,
             break;
         }
 
-        if (ret < 2)
+        if (ret == 1 && !out_ev)
+        {
+            itr = IOMUX_RETURN_ITERATOR_START;
+            itr = iomux_return_iterate(in->iomux, &iomux_st, &iomux_ret,
+                                       itr, &fd, &events);
+            if (!(events & POLLOUT))
+            {
+                usleep(10000);
+                continue;
+            }
+            out_ev = TRUE;
+            continue;
+        }
+
+        if (out_ev && ret == 0)
+            continue;
+        if (ret == 0)
         {
             usleep(10000);
             continue;
@@ -8213,7 +8250,7 @@ iomux_splice(tarpc_iomux_splice_in *in,
             ret = -1;
             break;
         }
-
+        out_ev = FALSE;
     } while (end.tv_sec > now.tv_sec);
 
 iomux_splice_exit:
