@@ -2140,30 +2140,6 @@ rpc_vfork_pipe_exec(rcf_rpc_server *rpcs, te_bool use_exec)
     RETVAL_INT(vfork_pipe_exec, out.retval);
 }
 
-/**
- * Determine if the interface is grabbed by the testing.
- * 
- * @param rpcs       RPC server handler
- * @param interface  Interface name
- * 
- * @return @c TRUE if the interface is grabbed.
- */
-static te_bool
-interface_is_mine(rcf_rpc_server *rpcs, const char *interface)
-{
-    cfg_val_type  val_type = CVT_STRING;
-    char         *val;
-
-    if (cfg_get_instance_fmt(&val_type, &val, "/agent:%s/rsrc:%s", rpcs->ta,
-                            interface) == 0)
-    {
-        free(val);
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
 /* See description in tapi_cfg_base.h */
 void
 tapi_set_if_mtu_smart(rcf_rpc_server *rpcs,
@@ -2176,14 +2152,14 @@ tapi_set_if_mtu_smart(rcf_rpc_server *rpcs,
     te_bool   parent = FALSE;
     int       i;
 
-    if (!interface_is_mine(rpcs, interface->if_name))
+    if (!tapi_interface_is_mine(rpcs, interface->if_name))
         TEST_FAIL("Interface is not owned");
 
     memset(slaves, 0, sizeof(slaves));
     memset(if_par, 0, sizeof(if_par));
 
     rpc_vlan_get_parent(rpcs, interface->if_name, if_par);
-    if (strlen(if_par) != 0 && interface_is_mine(rpcs, if_par))
+    if (strlen(if_par) != 0 && tapi_interface_is_mine(rpcs, if_par))
         parent = TRUE;
 
     rpc_bond_get_slaves(rpcs, parent ? if_par : interface->if_name,
