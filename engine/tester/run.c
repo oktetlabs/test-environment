@@ -1859,6 +1859,7 @@ run_session_start(run_item *ri, test_session *session,
 {
     tester_run_data    *gctx = opaque;
     tester_ctx         *ctx;
+    te_errno            rc;
 
     UNUSED(ri);
     UNUSED(session);
@@ -1882,6 +1883,15 @@ run_session_start(run_item *ri, test_session *session,
         ctx = tester_run_more_ctx(gctx, TRUE);
         if (ctx == NULL)
             return TESTER_CFG_WALK_FAULT;
+    }
+
+    rc = tester_get_sticky_reqs(&ctx->reqs, &session->reqs);
+    if (rc != 0)
+    {
+        ERROR("%s(): tester_get_sticky_reqs() failed: %r",
+              __FUNCTION__, rc);
+        ctx->current_result.status = rc;
+        return TESTER_CFG_WALK_FAULT;
     }
 
     EXIT("CONT");
