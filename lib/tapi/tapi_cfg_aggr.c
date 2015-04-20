@@ -52,9 +52,10 @@
             ERROR("Failed to obtain type of aggregation node");     \
             return rc_;                                             \
         }                                                           \
-        if (strcmp(aggr_type_, "802.3ad") != 0)                     \
+        if (strcmp(aggr_type_, "bond") != 0 &&                      \
+            strcmp(aggr_type_, "team") != 0 )                       \
         {                                                           \
-            ERROR("Aggregation %s is not bond interface",           \
+            ERROR("Aggregation %s is not bond or team interface",   \
                   name_);                                           \
             free(aggr_type_);                                       \
             return -1;                                              \
@@ -65,7 +66,7 @@
 /* See the description in tapi_cfg_aggr.h */
 int
 tapi_cfg_aggr_create_bond(const char *ta, const char *name,
-                          char **ifname)
+                          char **ifname, const char *type)
 {
     int             rc = 0;
     cfg_val_type    val_type;
@@ -74,7 +75,7 @@ tapi_cfg_aggr_create_bond(const char *ta, const char *name,
     cfg_handle      rsrc_handle = CFG_HANDLE_INVALID;
     char            oid[CFG_OID_MAX];
 
-    rc = cfg_add_instance_fmt(&aggr_handle, CVT_STRING, "802.3ad",
+    rc = cfg_add_instance_fmt(&aggr_handle, CVT_STRING, type,
                               "/agent:%s/aggregation:%s",
                               ta, name);
     if (rc != 0)

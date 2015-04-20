@@ -42,11 +42,12 @@ extern "C" {
  * @param name      Name of aggregation node
  * @param ifname    Where to place the name of created
  *                  interface
+ * @param type      Typy of team or bonding
  *
  * @return Status code
  */
 extern int tapi_cfg_aggr_create_bond(const char *ta, const char *name,
-                                     char **ifname);
+                                     char **ifname, const char *type);
 
 /**
  * Destroy bondN interface.

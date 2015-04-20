@@ -1,7 +1,7 @@
 /** @file
  * @brief Link trunking and bridging support
  *
- * Unix TA link trunks (IEEE 802.3ad) and link bridges support
+ * Unix TA link bonding, team and link bridges support
  *
  *
  * Copyright (C) 2006 Test Environment authors (see file AUTHORS
@@ -54,15 +54,24 @@
 #include <linux/sockios.h>
 #endif
 
+static char buf[4096];
+
 /** 
  * Type of link aggregations. This enum should be syncronised with
  * aggr_types_data array.
  */
 typedef enum aggr_type {
-    AGGREGATION_TRUNK_802_3ad = 0,  /**< 802.3ad trunk */
+    AGGREGATION_BONDING = 0,        /**< bonding */
+    AGGREGATION_TEAM,               /**< team */
     AGGREGATION_BRIDGE,             /**< ethernet bridge */
     AGGREGATION_INVALID             /**< Invalid (error) type */
 } aggr_type;
+
+typedef enum aggr_mode {
+    AGGREGATION_MODE_AB = 1,   /**< Active backup mode */
+    AGGREGATION_MODE_LACP = 4, /**< LACP mode */
+    AGGREGATION_MODE_INVALID   /**< Invalid (error) type */
+} aggr_mode;
 
 /** Internal structure for each created aggregation */
 typedef struct aggregation {
@@ -70,6 +79,7 @@ typedef struct aggregation {
 
     const char *name;               /**< User-provided name */
     aggr_type   type;               /**< Type of this aggregation */
+    aggr_mode   mode;               /**< Mode of this aggregation */
     char        ifname[IFNAMSIZ];   /**< Interface name */
 } aggregation;
 
@@ -133,13 +143,16 @@ aggr_interface_get_free(const char *format, char ifname[IFNAMSIZ])
 }
 
 /*
- * Trunk (IEEE 802.3ad) support
+ * Bonding support
  */
 
 static te_errno 
 trunk_create(aggregation *aggr)
 {
     FILE *f;
+
+    if (ta_system("sudo /sbin/modprobe bonding max_bonds=0") != 0)
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
 
     /* Get a name for the new bond device */
     aggr_interface_get_free("bond%d", aggr->ifname);
@@ -161,6 +174,54 @@ trunk_create(aggregation *aggr)
         ERROR("Bonding driver failed to create interface \"%s\"", aggr->ifname);
         ta_rsrc_delete_lock(rsrc);
         return TE_RC(TE_TA_UNIX, TE_ENODEV);
+    }
+
+    /* Configure bonding mode */
+    memset(buf, 0, sizeof(buf));
+    if (snprintf(buf, sizeof(buf), "/sys/class/net/%s/bonding/mode",
+                 aggr->ifname) <= 0)
+    {
+        ERROR("Failed to snprintf filename in /sys");
+        return TE_RC(TE_TA_UNIX, errno);
+    }
+    f = fopen(buf, "w");
+    if (f == NULL)
+    {
+        ERROR("Failed to open /sys/class/net/bonding_masters: "
+              "is bonding module loaded?");
+        ta_rsrc_delete_lock(rsrc);
+        return TE_RC(TE_TA_UNIX, errno);
+    }
+    memset(buf, 0, sizeof(buf));
+    if (snprintf(buf, sizeof(buf), "%d", aggr->mode) <= 0)
+    {
+        ERROR("Failed to snprintf filename in /sys");
+        return TE_RC(TE_TA_UNIX, errno);
+    }
+    fwrite(buf, strlen(buf), 1, f);
+    fclose(f);
+
+    /* Configure bonding policy */
+    if (aggr->mode == AGGREGATION_MODE_LACP)
+    {
+        memset(buf, 0, sizeof(buf));
+        if (snprintf(buf, sizeof(buf),
+                     "/sys/class/net/%s/bonding/xmit_hash_policy",
+                     aggr->ifname) <= 0)
+        {
+            ERROR("Failed to snprintf filename in /sys");
+            return TE_RC(TE_TA_UNIX, errno);
+        }
+        f = fopen(buf, "w");
+        if (f == NULL)
+        {
+            ERROR("Failed to open /sys/class/net/bonding_masters: "
+                  "is bonding module loaded?");
+            ta_rsrc_delete_lock(rsrc);
+            return TE_RC(TE_TA_UNIX, errno);
+        }
+        fwrite("1", 1, 1, f);
+        fclose(f);
     }
 
     /* Linux does not allow to add slave interfaces when master is not up */
@@ -246,7 +307,110 @@ trunk_list(aggregation *aggr, char **member_list)
 
     if ((*member_list = strdup(buf)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    
+
+    return 0;
+}
+
+/*
+ * Team support
+ */
+
+static te_errno
+team_create(aggregation *aggr)
+{
+    /* Get a name for the new bond device */
+    aggr_interface_get_free("bond%d", aggr->ifname);
+
+    if (aggr->mode == AGGREGATION_MODE_AB)
+    {
+        snprintf(buf, sizeof(buf),
+                 "/usr/bin/teamd -t %s -d -g -c '{\"device\":\"%s\", "
+                 "\"runner\":{\"name\":\"activebackup\"}}'",
+                aggr->ifname, aggr->ifname);
+    }
+    else if (aggr->mode == AGGREGATION_MODE_LACP)
+    {
+        snprintf(buf, sizeof(buf),
+                 "/usr/bin/teamd -t %s -d -g -c '{\"device\":\"%s\", "
+                 "\"runner\":{\"name\":\"lacp\", "
+                 "\"tx_hash\": [\"l3\", \"l4\"]}}'",
+                 aggr->ifname, aggr->ifname);
+    }
+    else
+    {
+        ERROR("Incorrect mode value: %d", aggr->mode);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+    if (ta_system(buf) != 0)
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    if (if_nametoindex(aggr->ifname) <= 0)
+    {
+        ERROR("teamd failed to create interface \"%s\"", aggr->ifname);
+        ta_rsrc_delete_lock(rsrc);
+        return TE_RC(TE_TA_UNIX, TE_ENODEV);
+    }
+
+    ta_interface_status_set(aggr->ifname, TRUE);
+
+    return 0;
+}
+
+static te_errno
+team_destroy(aggregation *aggr)
+{
+    ta_interface_status_set(aggr->ifname, FALSE);
+
+    snprintf(buf, sizeof(buf),
+             "/usr/bin/teamd -t %s -k", aggr->ifname);
+    if (ta_system(buf) != 0)
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+
+    if (if_nametoindex(aggr->ifname) > 0)
+    {
+        ERROR("teamd failed to delete interface \"%s\"", aggr->ifname);
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
+    }
+    return 0;
+}
+
+static te_errno
+team_add(aggregation *aggr, const char *ifname)
+{
+    ta_interface_status_set(ifname, FALSE);
+    snprintf(buf, sizeof(buf),
+             "/usr/bin/teamdctl %s port add %s", aggr->ifname, ifname);
+    if (ta_system(buf) != 0)
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    return 0;
+}
+
+static te_errno
+team_del(aggregation *aggr, const char *ifname)
+{
+    snprintf(buf, sizeof(buf),
+             "/usr/bin/teamdctl %s port remove %s", aggr->ifname, ifname);
+    if (ta_system(buf) != 0)
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    return 0;
+}
+
+static te_errno
+team_list(aggregation *aggr, char **member_list)
+{
+    FILE *f;
+
+    TE_SPRINTF(buf,
+               "sudo /usr/bin/teamnl %s ports | sed s/[0-9]*:\\ *// "
+               "| sed s/:.*// | awk \'{print}\' ORS=\'\'",
+               aggr->ifname);
+    f = popen(buf, "r");
+    memset(buf, 0, sizeof(buf));
+    fread(buf, sizeof(buf), 1, f);
+    (void)pclose(f);
+
+    if ((*member_list = strdup(buf)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
     return 0;
 }
 
@@ -261,7 +425,8 @@ trunk_list(aggregation *aggr, char **member_list)
  * aggr_type enum.
  */
 static aggr_type_info aggr_types_data[] = {
-    {"802.3ad", trunk_create, trunk_destroy, trunk_add, trunk_del, trunk_list},
+    {"bond", trunk_create, trunk_destroy, trunk_add, trunk_del, trunk_list},
+    {"team", team_create, team_destroy, team_add, team_del, team_list},
     //{"bridge", bridge_create, bridge_destroy, bridge_add, bridge_del}
 };
 #define AGGR_TYPES_NUMBER \
@@ -276,14 +441,17 @@ static  aggregation *aggregation_list_head = NULL;
  * to aggr_type
  */
 static inline aggr_type
-aggr_value_to_type(const char *type_string)
+aggr_value_to_type(const char *type_string, aggr_mode *mode)
 {
     aggr_type_info *t;
 
     for (t = aggr_types_data; t - aggr_types_data < AGGR_TYPES_NUMBER; t++)
     {
-        if (strcmp(t->value, type_string) == 0)
+        if (strncmp(t->value, type_string, strlen(t->value)) == 0)
+        {
+            *mode = atoi(type_string + strlen(t->value));
             return (aggr_type)(t - aggr_types_data);
+        }
     }
     ERROR("Failed to convert string \"%s\" to aggregation type", 
           type_string);
@@ -370,7 +538,8 @@ aggregation_add(unsigned int gid, const char *oid, char *value,
                 const char *aggr_name)
 {
     aggregation *a = aggregation_find(aggr_name);
-    aggr_type    type = aggr_value_to_type(value);
+    aggr_mode    mode;
+    aggr_type    type = aggr_value_to_type(value, &mode);
     te_errno     rc;
 
     UNUSED(gid);
@@ -391,6 +560,7 @@ aggregation_add(unsigned int gid, const char *oid, char *value,
     /* Do the real job */
     a = calloc(sizeof(aggregation), 1);
     a->type = type;
+    a->mode = mode;
     rc = aggr_types_data[type].create(a);
     if (rc != 0)
     {
