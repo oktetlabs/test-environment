@@ -1851,21 +1851,34 @@ ta_bond_get_slaves(const char *ifname, char slvs[][IFNAMSIZ],
     char   path[64];
     char  *line = NULL;
     size_t len = 0;
+    char buf[256];
 
     memset(path, 0, sizeof(path));
+    memset(buf, 0, sizeof(path));
     snprintf(path, sizeof(path), "/proc/net/bonding/%s", ifname);
 
     FILE *proc_bond = fopen(path, "r");
+    if (proc_bond == NULL && errno == ENOENT)
+    {
+        /* Set here path for logging purpose */
+        memset(buf, 0, sizeof(path));
+        snprintf(path, sizeof(path), "/usr/bin/teamnl %s ports", ifname);
+        TE_SPRINTF(buf,
+               "sudo /usr/bin/teamnl %s ports | "
+               "sed s/[0-9]*:\\ */Slave\\ Interface:\\ / "
+               "| sed 's/\\([0-9]\\):.*/\\1/'", ifname);
+        proc_bond = popen(buf, "r");
+    }
     if (proc_bond == NULL)
     {
         if (errno == ENOENT)
         {
-            VERB("%s: no proc bond file ", __FUNCTION__);
+            VERB("%s: no proc bond file and no team", __FUNCTION__);
             *slaves_num = 0;
             return 0; /* no bond support module loaded, no slaves */
         }
 
-        ERROR("%s(): Failed to open %s %s",
+        ERROR("%s(): Failed to read %s %s",
               __FUNCTION__, path, strerror(errno));
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
