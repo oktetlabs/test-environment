@@ -187,7 +187,6 @@ tapi_cfg_aggr_bond_enslave(const char *ta, const char *name,
     cfg_val_type    val_type;
     char           *bond_ifname = NULL;
     cfg_handle      slave_handle = CFG_HANDLE_INVALID;
-    char            oid[CFG_OID_MAX];
 
     CHECK_BOND(ta, name);
 
