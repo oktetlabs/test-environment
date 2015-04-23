@@ -41,7 +41,8 @@ PKG_CHECK_MODULES(TAD, te-$with_tad)
 
 AC_MSG_CHECKING(for net-snmp library)
 AC_CHECK_HEADERS([net-snmp/session_api.h], , ,
-                 [#include <net-snmp/net-snmp-config.h>]
+                 [#include <net-snmp/net-snmp-config.h>
+                  #include <net-snmp/library/snmp_transport.h>]
                 )
 AC_PATH_PROG(NET_SNMP_CONFIG, net-snmp-config, no)
 if test "$NET_SNMP_CONFIG" = "no" ; then
