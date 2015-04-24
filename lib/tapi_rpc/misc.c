@@ -2146,8 +2146,6 @@ tapi_set_if_mtu_smart(rcf_rpc_server *rpcs,
                       const struct if_nameindex *interface, int mtu,
                       int *old_mtu)
 {
-    int       slaves_num = 2;
-    char      slaves[2][IFNAMSIZ];
     char      if_par[IFNAMSIZ];
     te_bool   parent = FALSE;
     int       i;
@@ -2155,19 +2153,11 @@ tapi_set_if_mtu_smart(rcf_rpc_server *rpcs,
     if (!tapi_interface_is_mine(rpcs, interface->if_name))
         TEST_FAIL("Interface is not owned");
 
-    memset(slaves, 0, sizeof(slaves));
     memset(if_par, 0, sizeof(if_par));
 
     rpc_vlan_get_parent(rpcs, interface->if_name, if_par);
     if (strlen(if_par) != 0 && tapi_interface_is_mine(rpcs, if_par))
         parent = TRUE;
-
-    rpc_bond_get_slaves(rpcs, parent ? if_par : interface->if_name,
-                        slaves, &slaves_num);
-
-    for (i = 0; i < slaves_num; i++)
-        CHECK_RC(tapi_cfg_base_if_set_mtu_ext(rpcs->ta, slaves[i], mtu,
-                                              NULL, TRUE));
 
     if (parent)
         CHECK_RC(tapi_cfg_base_if_set_mtu_ext(rpcs->ta, if_par, mtu,
