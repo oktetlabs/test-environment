@@ -2148,7 +2148,6 @@ tapi_set_if_mtu_smart(rcf_rpc_server *rpcs,
 {
     char      if_par[IFNAMSIZ];
     te_bool   parent = FALSE;
-    int       i;
 
     if (!tapi_interface_is_mine(rpcs, interface->if_name))
         TEST_FAIL("Interface is not owned");
