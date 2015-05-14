@@ -1196,6 +1196,48 @@ rpc_sendfile(rcf_rpc_server *rpcs, int out_fd, int in_fd,
 }
 
 ssize_t
+rpc_sendfile_via_splice(rcf_rpc_server *rpcs, int out_fd, int in_fd,
+                        tarpc_off_t *offset, size_t count)
+{
+    tarpc_off_t                   start = (offset != NULL) ? *offset : 0;
+    tarpc_sendfile_via_splice_in  in;
+    tarpc_sendfile_via_splice_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(sendfile_via_splice, -1);
+    }
+    in.out_fd = out_fd;
+    in.in_fd = in_fd;
+    in.count = count;
+    if (offset != NULL && rpcs->op != RCF_RPC_WAIT)
+    {
+        in.offset.offset_len = 1;
+        in.offset.offset_val = offset;
+    }
+
+    rcf_rpc_call(rpcs, "sendfile_via_splice", &in, &out);
+
+
+    if (RPC_IS_CALL_OK(rpcs))
+    {
+        if (offset != NULL && out.offset.offset_val != NULL)
+            *offset = out.offset.offset_val[0];
+    }
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(sendfile_via_splice, out.retval);
+    TAPI_RPC_LOG(rpcs, sendfile_via_splice,
+                 "%d, %d, %p(%lld), %u", "%d offset=%lld",
+                 out_fd, in_fd, offset, start, (unsigned)count,
+                 out.retval, (offset != NULL) ? (long long)*offset : 0LL);
+    RETVAL_INT(sendfile_via_splice, out.retval);
+}
+
+ssize_t
 rpc_splice(rcf_rpc_server *rpcs, int fd_in, tarpc_off_t *off_in,
            int fd_out, tarpc_off_t *off_out, size_t len, int flags)
 {

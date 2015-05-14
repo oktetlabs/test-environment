@@ -4274,6 +4274,24 @@ struct tarpc_sendfile_out {
     tarpc_off_t     offset<>;   /**< new offset returned by the function */
 };
 
+/* sendfile_via_splice() */
+struct tarpc_sendfile_via_splice_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int           out_fd;
+    tarpc_int           in_fd;
+    tarpc_off_t         offset<>;
+    tarpc_size_t        count;
+    tarpc_bool          force64;
+};
+
+struct tarpc_sendfile_via_splice_out {
+    struct tarpc_out_arg  common;
+
+    tarpc_ssize_t   retval;     /**< Returned length */
+    tarpc_off_t     offset<>;   /**< new offset returned by the function */
+};
+
 /* splice() */
 struct tarpc_splice_in {
     struct tarpc_in_arg common;
@@ -5412,6 +5430,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(iomux_splice)
 
         RPC_DEF(sendfile)
+        RPC_DEF(sendfile_via_splice)
         RPC_DEF(splice)
         RPC_DEF(socket_to_file)
 

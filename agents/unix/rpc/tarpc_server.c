@@ -7704,7 +7704,101 @@ TARPC_FUNC(sendfile,
     }
 }
 )
+#if 1
+/*-------------- sendfile_via_splice() ------------------------------*/
 
+#if (SIZEOF_OFF_T == 8)
+typedef off_t   ta_off64_t;
+#else
+typedef uint64_t ta_off64_t;
+#endif
+tarpc_ssize_t
+sendfile_via_splice(tarpc_sendfile_via_splice_in *in,
+                    tarpc_sendfile_via_splice_out *out)
+{
+    api_func_ptr    pipe_func;
+    api_func        splice_func;
+    api_func        close_func;
+    ssize_t         to_pipe;
+    ssize_t         from_pipe = 0;
+    int             pipefd[2];
+    unsigned int    flags = 0;
+    off_t           offset = 0;
+    int             ret = 0;
+
+#ifdef SPLICE_F_NONBLOCK
+    flags = SPLICE_F_NONBLOCK | SPLICE_F_MOVE;
+#endif
+
+    if (tarpc_find_func(in->common.use_libc, "pipe",
+                        (api_func *)&pipe_func) != 0)
+    {
+        ERROR("%s(): Failed to resolve pipe() function", __FUNCTION__);
+        return -1;
+    }
+    if (tarpc_find_func(in->common.use_libc, "splice", &splice_func) != 0)
+    {
+        ERROR("%s(): Failed to resolve splice() function", __FUNCTION__);
+        return -1;
+    }
+    if (tarpc_find_func(in->common.use_libc, "close", &close_func) != 0)
+    {
+        ERROR("%s(): Failed to resolve close() function", __FUNCTION__);
+        return -1;
+    }
+
+    if (pipe_func(pipefd) != 0)
+    {
+        ERROR("pipe() failed with error %r", TE_OS_RC(TE_TA_UNIX, errno));
+        return -1;
+    }
+
+    if (out->offset.offset_len > 0)
+            offset = *out->offset.offset_val;
+    if ((to_pipe = splice_func(in->in_fd,
+                               out->offset.offset_len == 0 ? NULL : &offset,
+                               pipefd[1], NULL, in->count, flags)) < 0)
+    {
+        ERROR("splice() to pipe failed with error %r",
+              TE_OS_RC(TE_TA_UNIX, errno));
+        ret = -1;
+        goto sendfile_via_splice_exit;
+    }
+    if (out->offset.offset_len > 0)
+            out->offset.offset_val[0] = (tarpc_off_t)offset;
+
+    if ((from_pipe = splice_func(pipefd[0], NULL, in->out_fd, NULL,
+                                 in->count, flags)) < 0)
+    {
+        ERROR("splice() from pipe failed with error %r",
+              TE_OS_RC(TE_TA_UNIX, errno));
+        ret = -1;
+        goto sendfile_via_splice_exit;
+    }
+    if (to_pipe != from_pipe)
+    {
+        ERROR("Two splice() calls returns different amount of data",
+              TE_OS_RC(TE_TA_UNIX, EMSGSIZE));
+        errno = EMSGSIZE;
+        ret = -1;
+    }
+sendfile_via_splice_exit:
+    if (close_func(pipefd[0]) < 0 ||
+        close_func(pipefd[1]) < 0)
+        ret = -1;
+    return ret == -1 ? ret : from_pipe;
+}
+
+TARPC_FUNC(sendfile_via_splice,
+{
+    COPY_ARG(offset);
+},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+#endif
 
 /*-------------- splice() ------------------------------*/
 TARPC_FUNC(splice,
