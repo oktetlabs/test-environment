@@ -7707,11 +7707,6 @@ TARPC_FUNC(sendfile,
 #if 1
 /*-------------- sendfile_via_splice() ------------------------------*/
 
-#if (SIZEOF_OFF_T == 8)
-typedef off_t   ta_off64_t;
-#else
-typedef uint64_t ta_off64_t;
-#endif
 tarpc_ssize_t
 sendfile_via_splice(tarpc_sendfile_via_splice_in *in,
                     tarpc_sendfile_via_splice_out *out)
