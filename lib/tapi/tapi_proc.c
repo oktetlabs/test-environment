@@ -202,6 +202,8 @@ DEFINE_API_FUNC_TA_ONLY(tcp_retries2,
                         "/agent:%s/sys:/tcp_retries2:")
 DEFINE_API_FUNC_TA_ONLY(tcp_orphan_retries,
                         "/agent:%s/sys:/tcp_orphan_retries:")
+DEFINE_API_FUNC_TA_ONLY(tcp_synack_retries,
+                        "/agent:%s/sys:/tcp_synack_retries:")
 DEFINE_API_FUNC_TA_ONLY(tcp_syn_retries,
                         "/agent:%s/sys:/tcp_syn_retries:")
 DEFINE_API_FUNC_TA_ONLY(tcp_fin_timeout,

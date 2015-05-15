@@ -192,7 +192,8 @@ SYSTEM_WIDE_PARAM_COMMON(neigh_gc_thresh3, tcp_max_syn_backlog);
 SYSTEM_WIDE_PARAM_COMMON(somaxconn, neigh_gc_thresh3);
 SYSTEM_WIDE_PARAM_COMMON(optmem_max, somaxconn);
 SYSTEM_WIDE_PARAM_COMMON(igmp_max_memberships, optmem_max);
-SYSTEM_WIDE_PARAM_COMMON(tcp_syn_retries, igmp_max_memberships);
+SYSTEM_WIDE_PARAM_COMMON(tcp_synack_retries, igmp_max_memberships);
+SYSTEM_WIDE_PARAM_COMMON(tcp_syn_retries, tcp_synack_retries);
 SYSTEM_WIDE_PARAM_COMMON(tcp_keepalive_time, tcp_syn_retries);
 SYSTEM_WIDE_PARAM_COMMON(tcp_keepalive_probes, tcp_keepalive_time);
 SYSTEM_WIDE_PARAM_COMMON(tcp_keepalive_intvl, tcp_keepalive_probes);
@@ -861,7 +862,7 @@ tcp_rcvbuf_def_get(unsigned int gid, const char *oid,
  * Common function to set a value in /proc/sys.
  * Supported nodes: tcp_timestamps, tcp_syncookies, tcp_keepalive_time,
  * tcp_keepalive_probes, tcp_keepalive_intvl, tcp_retries2,
- * tcp_orphan_retries, tcp_fin_timeout, tcp_syn_retries,
+ * tcp_orphan_retries, tcp_fin_timeout, tcp_syn_retries, tcp_synack_retries,
  * tcp_max_syn_backlog,
  *
  * @param gid           group identifier (unused)
@@ -908,6 +909,7 @@ proc_sys_common_set(unsigned int gid, const char *oid,
     ELSE_IF_IPV4_FIELD(tcp_orphan_retries)
     ELSE_IF_IPV4_FIELD(tcp_fin_timeout)
     ELSE_IF_IPV4_FIELD(tcp_syn_retries)
+    ELSE_IF_IPV4_FIELD(tcp_synack_retries)
     ELSE_IF_IPV4_FIELD(igmp_max_memberships)
     ELSE_IF_IPV4_FIELD(tcp_max_syn_backlog)
 #undef ELSE_IF_IPV4_FIELD
@@ -922,7 +924,7 @@ proc_sys_common_set(unsigned int gid, const char *oid,
  * Common function to get a value from /proc/sys.
  * Supported nodes: tcp_timestamps, tcp_syncookies, tcp_keepalive_time,
  * tcp_keepalive_probes, tcp_keepalive_intvl, tcp_retries2,
- * tcp_orphan_retries, tcp_fin_timeout, tcp_syn_retries,
+ * tcp_orphan_retries, tcp_fin_timeout, tcp_syn_retries, tcp_synack_retries,
  * tcp_max_syn_backlog,
  *
  * @param gid           group identifier (unused)
@@ -969,6 +971,7 @@ proc_sys_common_get(unsigned int gid, const char *oid,
     ELSE_IF_IPV4_FIELD(tcp_orphan_retries)
     ELSE_IF_IPV4_FIELD(tcp_fin_timeout)
     ELSE_IF_IPV4_FIELD(tcp_syn_retries)
+    ELSE_IF_IPV4_FIELD(tcp_synack_retries)
     ELSE_IF_IPV4_FIELD(igmp_max_memberships)
     ELSE_IF_IPV4_FIELD(tcp_max_syn_backlog)
 #undef ELSE_IF_IPV4_FIELD
