@@ -358,6 +358,44 @@ rpc_read_gen(rcf_rpc_server *rpcs,
     RETVAL_INT(read, out.retval);
 }
 
+
+int
+rpc_read_via_splice(rcf_rpc_server *rpcs,
+                    int fd, void *buf, size_t count)
+{
+    tarpc_read_via_splice_in  in;
+    tarpc_read_via_splice_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return -1;
+    }
+
+    in.fd = fd;
+    in.len = count;
+    if (buf != NULL && rpcs->op != RCF_RPC_WAIT)
+    {
+        in.buf.buf_len = count;
+        in.buf.buf_val = buf;
+    }
+    rcf_rpc_call(rpcs, "read_via_splice", &in, &out);
+
+    if (RPC_IS_CALL_OK(rpcs))
+    {
+        if (buf != NULL && out.buf.buf_val != NULL)
+            memcpy(buf, out.buf.buf_val, out.buf.buf_len);
+    }
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(read_via_splice, out.retval);
+    TAPI_RPC_LOG(rpcs, read_via_splice, "%d, %p, %u", "%d",
+                 fd, buf, count, out.retval);
+    RETVAL_INT(read_via_splice, out.retval);
+}
+
 int
 rpc_write(rcf_rpc_server *rpcs,
           int fd, const void *buf, size_t count)
@@ -388,6 +426,38 @@ rpc_write(rcf_rpc_server *rpcs,
     TAPI_RPC_LOG(rpcs, write, "%d, %p, %u", "%d",
                  fd, buf, count, out.retval);
     RETVAL_INT(write, out.retval);
+}
+
+int
+rpc_write_via_splice(rcf_rpc_server *rpcs,
+                     int fd, const void *buf, size_t count)
+{
+    tarpc_write_via_splice_in  in;
+    tarpc_write_via_splice_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(write, -1);
+    }
+
+    in.fd = fd;
+    in.len = count;
+    if (buf != NULL && rpcs->op != RCF_RPC_WAIT)
+    {
+        in.buf.buf_len = count;
+        in.buf.buf_val = (uint8_t *)buf;
+    }
+
+    rcf_rpc_call(rpcs, "write_via_splice", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(write_via_splice, out.retval);
+    TAPI_RPC_LOG(rpcs, write_via_splice, "%d, %p, %u", "%d",
+                 fd, buf, count, out.retval);
+    RETVAL_INT(write_via_splice, out.retval);
 }
 
 int

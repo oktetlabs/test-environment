@@ -173,6 +173,9 @@ extern int rpc_dup3(rcf_rpc_server *rpcs,
 extern int rpc_write(rcf_rpc_server *rpcs,
                      int fd, const void *buf, size_t count);
 
+extern int rpc_write_via_splice(rcf_rpc_server *rpcs,
+                                int fd, const void *buf, size_t count);
+
 /**
  * Write up to @b count bytes from buffer @b buf to file with descriptor 
  * @b fd and close this file descriptor.
@@ -234,6 +237,9 @@ rpc_writebuf_off(rcf_rpc_server *rpcs, int fd,
 extern int rpc_read_gen(rcf_rpc_server *rpcs,
                         int fd, void *buf, size_t count,
                         size_t rbuflen);
+
+extern int rpc_read_via_splice(rcf_rpc_server *rpcs,
+                               int fd, void *buf, size_t count);
 
 /**
  * Attemp to read up to @b count bytes from file with descriptor @b fd

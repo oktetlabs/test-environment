@@ -894,6 +894,12 @@ typedef struct tarpc_write_in tarpc_write_and_close_in;
 
 typedef struct tarpc_ssize_t_retval_out tarpc_write_and_close_out;
 
+typedef struct tarpc_read_in  tarpc_read_via_splice_in;
+typedef struct tarpc_read_out tarpc_read_via_splice_out;
+
+typedef struct tarpc_write_in tarpc_write_via_splice_in;
+typedef struct tarpc_write_out tarpc_write_via_splice_out;
+
 /* ReadFile() / WriteFile() */
 
 struct tarpc_read_file_in {
@@ -5278,6 +5284,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
 
         RPC_DEF(read)
         RPC_DEF(write)
+        RPC_DEF(read_via_splice)
+        RPC_DEF(write_via_splice)
         RPC_DEF(write_and_close)
 
         RPC_DEF(readbuf)

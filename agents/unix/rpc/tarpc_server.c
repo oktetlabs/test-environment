@@ -1763,6 +1763,92 @@ TARPC_FUNC(read,
 }
 )
 
+/*-------------- read_via_splice() ------------------------------*/
+
+tarpc_ssize_t
+read_via_splice(tarpc_read_via_splice_in *in,
+                tarpc_read_via_splice_out *out)
+{
+    api_func_ptr    pipe_func;
+    api_func        splice_func;
+    api_func        close_func;
+    api_func        read_func;
+    ssize_t         to_pipe;
+    ssize_t         from_pipe = 0;
+    int             pipefd[2];
+    unsigned int    flags = 0;
+    int             ret = 0;
+
+#ifdef SPLICE_F_NONBLOCK
+    flags = SPLICE_F_MOVE;
+#endif
+
+    if (tarpc_find_func(in->common.use_libc, "pipe",
+                        (api_func *)&pipe_func) != 0)
+    {
+        ERROR("%s(): Failed to resolve pipe() function", __FUNCTION__);
+        return -1;
+    }
+    if (tarpc_find_func(in->common.use_libc, "splice", &splice_func) != 0)
+    {
+        ERROR("%s(): Failed to resolve splice() function", __FUNCTION__);
+        return -1;
+    }
+    if (tarpc_find_func(in->common.use_libc, "close", &close_func) != 0)
+    {
+        ERROR("%s(): Failed to resolve close() function", __FUNCTION__);
+        return -1;
+    }
+    if (tarpc_find_func(in->common.use_libc, "read", &read_func) != 0)
+    {
+        ERROR("%s(): Failed to resolve read() function", __FUNCTION__);
+        return -1;
+    }
+
+    if (pipe_func(pipefd) != 0)
+    {
+        ERROR("pipe() failed with error %r", TE_OS_RC(TE_TA_UNIX, errno));
+        return -1;
+    }
+
+    if ((to_pipe = splice_func(in->fd, NULL,
+                               pipefd[1], NULL, in->len, flags)) < 0)
+    {
+        ERROR("splice() to pipe failed with error %r",
+              TE_OS_RC(TE_TA_UNIX, errno));
+        ret = -1;
+        goto read_via_splice_exit;
+    }
+    if ((from_pipe = read_func(pipefd[0], out->buf.buf_val, in->len)) < 0)
+    {
+        ERROR("read() from pipe failed with error %r",
+              TE_OS_RC(TE_TA_UNIX, errno));
+        ret = -1;
+        goto read_via_splice_exit;
+    }
+    if (to_pipe != from_pipe)
+    {
+        ERROR("read() and splice() calls return different amount of data",
+              TE_OS_RC(TE_TA_UNIX, EMSGSIZE));
+        errno = EMSGSIZE;
+        ret = -1;
+    }
+read_via_splice_exit:
+    if (close_func(pipefd[0]) < 0 ||
+        close_func(pipefd[1]) < 0)
+        ret = -1;
+    return ret == -1 ? ret : from_pipe;
+}
+
+TARPC_FUNC(read_via_splice,
+{
+    COPY_ARG(buf);
+},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
 /*-------------- write() ------------------------------*/
 
 TARPC_FUNC(write, {},
@@ -1770,6 +1856,88 @@ TARPC_FUNC(write, {},
     INIT_CHECKED_ARG(in->buf.buf_val, in->buf.buf_len, 0);
 
     MAKE_CALL(out->retval = func(in->fd, in->buf.buf_val, in->len));
+}
+)
+
+/*-------------- write_via_splice() ------------------------------*/
+
+tarpc_ssize_t
+write_via_splice(tarpc_write_via_splice_in *in)
+{
+    api_func_ptr    pipe_func;
+    api_func        splice_func;
+    api_func        close_func;
+    api_func        write_func;
+    ssize_t         to_pipe;
+    ssize_t         from_pipe = 0;
+    int             pipefd[2];
+    unsigned int    flags = 0;
+    int             ret = 0;
+
+#ifdef SPLICE_F_NONBLOCK
+    flags = SPLICE_F_MOVE;
+#endif
+
+    if (tarpc_find_func(in->common.use_libc, "pipe",
+                        (api_func *)&pipe_func) != 0)
+    {
+        ERROR("%s(): Failed to resolve pipe() function", __FUNCTION__);
+        return -1;
+    }
+    if (tarpc_find_func(in->common.use_libc, "splice", &splice_func) != 0)
+    {
+        ERROR("%s(): Failed to resolve splice() function", __FUNCTION__);
+        return -1;
+    }
+    if (tarpc_find_func(in->common.use_libc, "close", &close_func) != 0)
+    {
+        ERROR("%s(): Failed to resolve close() function", __FUNCTION__);
+        return -1;
+    }
+    if (tarpc_find_func(in->common.use_libc, "write", &write_func) != 0)
+    {
+        ERROR("%s(): Failed to resolve write() function", __FUNCTION__);
+        return -1;
+    }
+
+    if (pipe_func(pipefd) != 0)
+    {
+        ERROR("pipe() failed with error %r", TE_OS_RC(TE_TA_UNIX, errno));
+        return -1;
+    }
+
+    if ((to_pipe = write_func(pipefd[1], in->buf.buf_val, in->len)) < 0)
+    {
+        ERROR("write() to pipe failed with error %r",
+              TE_OS_RC(TE_TA_UNIX, errno));
+        ret = -1;
+        goto write_via_splice_exit;
+    }
+    if ((from_pipe = splice_func(pipefd[0], NULL, in->fd, NULL,
+                                 in->len, flags)) < 0)
+    {
+        ERROR("splice() from pipe failed with error %r",
+              TE_OS_RC(TE_TA_UNIX, errno));
+        ret = -1;
+        goto write_via_splice_exit;
+    }
+    if (to_pipe != from_pipe)
+    {
+        ERROR("write() and splice() calls return different amount of data",
+              TE_OS_RC(TE_TA_UNIX, EMSGSIZE));
+        errno = EMSGSIZE;
+        ret = -1;
+    }
+write_via_splice_exit:
+    if (close_func(pipefd[0]) < 0 ||
+        close_func(pipefd[1]) < 0)
+        ret = -1;
+    return ret == -1 ? ret : from_pipe;
+}
+
+TARPC_FUNC(write_via_splice, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in));
 }
 )
 
@@ -7704,7 +7872,7 @@ TARPC_FUNC(sendfile,
     }
 }
 )
-#if 1
+
 /*-------------- sendfile_via_splice() ------------------------------*/
 
 tarpc_ssize_t
@@ -7772,7 +7940,7 @@ sendfile_via_splice(tarpc_sendfile_via_splice_in *in,
     }
     if (to_pipe != from_pipe)
     {
-        ERROR("Two splice() calls returns different amount of data",
+        ERROR("Two splice() calls return different amount of data",
               TE_OS_RC(TE_TA_UNIX, EMSGSIZE));
         errno = EMSGSIZE;
         ret = -1;
@@ -7792,8 +7960,6 @@ TARPC_FUNC(sendfile_via_splice,
     MAKE_CALL(out->retval = func_ptr(in, out));
 }
 )
-
-#endif
 
 /*-------------- splice() ------------------------------*/
 TARPC_FUNC(splice,
