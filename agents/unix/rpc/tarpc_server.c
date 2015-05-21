@@ -1810,6 +1810,14 @@ read_via_splice(tarpc_read_via_splice_in *in,
         ERROR("pipe() failed with error %r", TE_OS_RC(TE_TA_UNIX, errno));
         return -1;
     }
+    if (in->fd == pipefd[0] || in->fd == pipefd[1])
+    {
+        ERROR("Aux pipe fd and in fd is the same",
+              TE_OS_RC(TE_TA_UNIX, EFAULT));
+        errno = EFAULT;
+        ret = -1;
+        goto read_via_splice_exit;
+    }
 
     if ((to_pipe = splice_func(in->fd, NULL,
                                pipefd[1], NULL, in->len, flags)) < 0)
@@ -1904,6 +1912,14 @@ write_via_splice(tarpc_write_via_splice_in *in)
     {
         ERROR("pipe() failed with error %r", TE_OS_RC(TE_TA_UNIX, errno));
         return -1;
+    }
+    if (in->fd == pipefd[0] || in->fd == pipefd[1])
+    {
+        ERROR("Aux pipe fd and in fd is the same",
+              TE_OS_RC(TE_TA_UNIX, EFAULT));
+        errno = EFAULT;
+        ret = -1;
+        goto write_via_splice_exit;
     }
 
     if ((to_pipe = write_func(pipefd[1], in->buf.buf_val, in->len)) < 0)
