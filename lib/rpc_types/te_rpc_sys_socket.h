@@ -315,6 +315,14 @@ typedef enum rpc_shut_how {
                              function flag zero */
 } rpc_shut_how;
 
+#define RPC_SHUTDOWN_HOW  \
+    { "shut_unknown", RPC_SHUT_UNKNOWN },   \
+    { "shut_rd", RPC_SHUT_RD },             \
+    { "shut_wr", RPC_SHUT_WR },             \
+    { "shut_rdwr", RPC_SHUT_RDWR },         \
+    { "shut_none", RPC_SHUT_NONE }
+
+
 /** Convert RPC protocol to string */
 extern const char * shut_how_rpc2str(rpc_shut_how how);
 
