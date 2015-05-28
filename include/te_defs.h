@@ -414,7 +414,7 @@ te_make_tmp_file(char *tmp_name)
  * @return @c TRUE if @p ptr is not NULL
  */
 static inline te_bool
-ptr_is_not_null(void *ptr)
+ptr_is_not_null(const void *ptr)
 {
     if (ptr != NULL)
         return TRUE;
