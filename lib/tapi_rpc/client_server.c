@@ -278,13 +278,14 @@ cleanup:
 
 /* See the description in tapi_rpc_client_server.h */
 int
-rpc_dgram_connection_gen(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
-                         rpc_socket_proto proto,
-                         const struct sockaddr *srvr_addr,
-                         const struct sockaddr *clnt_addr,
-                         int *srvr_s, int *clnt_s,
-                         te_bool srvr_connect,
-                         te_bool clnt_connect)
+rpc_dgram_connection_gen_wild(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
+                              rpc_socket_proto proto,
+                              const struct sockaddr *srvr_addr,
+                              const struct sockaddr *clnt_addr,
+                              int *srvr_s, int *clnt_s,
+                              te_bool srvr_connect,
+                              te_bool clnt_connect,
+                              te_bool bind_wildcard)
 {
     int srvr_sock = -1;
     int clnt_sock = -1;
@@ -298,8 +299,7 @@ rpc_dgram_connection_gen(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
 
     if ((srvr_sock = rpc_create_and_bind_socket(srvr,
                          RPC_SOCK_DGRAM, proto,
-                         FALSE, /* Do not bind to 
-                                   wildcard address */
+                         bind_wildcard,
                          FALSE, /* Do not set
                                    SO_REUSEADDR */
                          SA(srvr_addr) /* FIXME */)) < 0)
@@ -357,12 +357,14 @@ rpc_dgram_connection(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
 
 /* See the description in tapi_rpc_client_server.h */
 int
-rpc_gen_connection(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
-                   rpc_socket_type sock_type,
-                   rpc_socket_proto proto,
-                   const struct sockaddr *srvr_addr,
-                   const struct sockaddr *clnt_addr,
-                   int *srvr_s, int *clnt_s)
+rpc_gen_connection_wild(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
+                        rpc_socket_type sock_type,
+                        rpc_socket_proto proto,
+                        const struct sockaddr *srvr_addr,
+                        const struct sockaddr *clnt_addr,
+                        int *srvr_s, int *clnt_s,
+                        te_bool srvr_connect,
+                        te_bool bind_wildcard)
 {
     switch (sock_type)
     {
@@ -373,9 +375,11 @@ rpc_gen_connection(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
             break;
 
         case RPC_SOCK_DGRAM:
-            return rpc_dgram_connection(srvr, clnt, proto,
-                                        srvr_addr, clnt_addr,
-                                        srvr_s, clnt_s);
+            return rpc_dgram_connection_gen_wild(srvr, clnt, proto,
+                                                 srvr_addr, clnt_addr,
+                                                 srvr_s, clnt_s,
+                                                 srvr_connect, TRUE,
+                                                 bind_wildcard);
             break;
 
         default:

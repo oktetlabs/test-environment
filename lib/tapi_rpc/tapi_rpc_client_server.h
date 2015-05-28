@@ -254,6 +254,8 @@ extern int rpc_stream_connection(rcf_rpc_server *srvr,
  *                      or not
  * @param clnt_connect  Whether we should call @b connect() on @p clnt_s
  *                      or not
+ * @param bind_wildcard Whether we should bind @p srvr_s socket to wildcard
+ *                      address or to unicast one
  *
  * @return Status of the operation
  *
@@ -263,14 +265,51 @@ extern int rpc_stream_connection(rcf_rpc_server *srvr,
  * @note When the function returns @c -1 it reports the reason of the
  * failure with ERROR() macro.
  */
-extern int rpc_dgram_connection_gen(rcf_rpc_server *srvr,
-                                    rcf_rpc_server *clnt,
-                                    rpc_socket_proto proto,
-                                    const struct sockaddr *srvr_addr,
-                                    const struct sockaddr *clnt_addr,
-                                    int *srvr_s, int *clnt_s,
-                                    te_bool srvr_connect,
-                                    te_bool clnt_connect);
+extern int rpc_dgram_connection_gen_wild(rcf_rpc_server *srvr,
+                                         rcf_rpc_server *clnt,
+                                         rpc_socket_proto proto,
+                                         const struct sockaddr *srvr_addr,
+                                         const struct sockaddr *clnt_addr,
+                                         int *srvr_s, int *clnt_s,
+                                         te_bool srvr_connect,
+                                         te_bool clnt_connect,
+                                         te_bool bind_wildcard);
+
+static inline int
+rpc_dgram_connection_gen(rcf_rpc_server *srvr,
+                         rcf_rpc_server *clnt,
+                         rpc_socket_proto proto,
+                         const struct sockaddr *srvr_addr,
+                         const struct sockaddr *clnt_addr,
+                         int *srvr_s, int *clnt_s,
+                         te_bool srvr_connect,
+                         te_bool clnt_connect)
+{
+    return rpc_dgram_connection_gen_wild(srvr, clnt, proto,
+                                         srvr_addr, clnt_addr,
+                                         srvr_s, clnt_s, srvr_connect,
+                                         clnt_connect, FALSE);
+}
+
+/** 
+ * The macro is a wrapper over rpc_dgram_connection_gen_wild function.
+ * In case of failure it calls TEST_FAIL() macro, so that it should be
+ * called in test context only.
+ */
+#define GEN_DGRAM_CONN_WILD(srvr_, clnt_, proto_, srvr_addr_, \
+                            clnt_addr_, srvr_s_, clnt_s_, \
+                            srvr_connect_, clnt_connect_, bind_wildcard_) \
+    do {                                                                  \
+        if (rpc_dgram_connection_gen_wild(srvr_, clnt_,                   \
+                                          proto_, srvr_addr_, clnt_addr_, \
+                                          srvr_s_, clnt_s_,               \
+                                          srvr_connect_,                  \
+                                          clnt_connect_,                  \
+                                          bind_wildcard_) != 0)           \
+        {                                                                 \
+            TEST_FAIL("Cannot create a connection of type SOCK_DGRAM");   \
+        }                                                                 \
+    } while (0)
 
 /** 
  * The macro is a wrapper over rpc_dgram_connection_gen function.
@@ -360,12 +399,28 @@ extern int rpc_dgram_connection(rcf_rpc_server *srvr,
  * @note When the function returns @c -1 it reports the reason of the
  * failure with ERROR() macro.
  */
-extern int rpc_gen_connection(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
-                              rpc_socket_type sock_type,
-                              rpc_socket_proto proto,
-                              const struct sockaddr *srvr_addr,
-                              const struct sockaddr *clnt_addr,
-                              int *srvr_s, int *clnt_s);
+extern int rpc_gen_connection_wild(rcf_rpc_server *srvr,
+                                   rcf_rpc_server *clnt,
+                                   rpc_socket_type sock_type,
+                                   rpc_socket_proto proto,
+                                   const struct sockaddr *srvr_addr,
+                                   const struct sockaddr *clnt_addr,
+                                   int *srvr_s, int *clnt_s,
+                                   te_bool srvr_connect,
+                                   te_bool bind_wildcard);
+
+static inline int
+rpc_gen_connection(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
+                   rpc_socket_type sock_type,
+                   rpc_socket_proto proto,
+                   const struct sockaddr *srvr_addr,
+                   const struct sockaddr *clnt_addr,
+                   int *srvr_s, int *clnt_s)
+{
+    return rpc_gen_connection_wild(srvr, clnt, sock_type,
+                                   proto, srvr_addr, clnt_addr,
+                                   srvr_s, clnt_s, TRUE, FALSE);
+}
 
 /** 
  * The macro is a wrapper over gen_connection function.
@@ -379,6 +434,27 @@ extern int rpc_gen_connection(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
                                sock_type_, proto_,                      \
                                srvr_addr_, clnt_addr_,                  \
                                srvr_s_, clnt_s_) != 0)                  \
+        {                                                               \
+            TEST_FAIL("Cannot create a connection of type %s",          \
+                       socktype_rpc2str(sock_type_));                   \
+        }                                                               \
+    } while (0)
+
+/** 
+ * The macro is a wrapper over gen_connection function.
+ * In case of failure it calls TEST_FAIL() macro, so that it should be
+ * called in test context only.
+ */
+#define GEN_CONNECTION_WILD(srvr_, clnt_, sock_type_, proto_,           \
+                            srvr_addr_, clnt_addr_, srvr_s_, clnt_s_,   \
+                            bind_wildcard_)                             \
+    do {                                                                \
+        if (rpc_gen_connection_wild(srvr_, clnt_,                       \
+                                    sock_type_, proto_,                 \
+                                    srvr_addr_, clnt_addr_,             \
+                                    srvr_s_, clnt_s_,                   \
+                                    !bind_wildcard_,                    \
+                                    bind_wildcard_) != 0)               \
         {                                                               \
             TEST_FAIL("Cannot create a connection of type %s",          \
                        socktype_rpc2str(sock_type_));                   \
