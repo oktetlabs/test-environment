@@ -1610,7 +1610,7 @@ conn_wait_packet(tapi_tcp_connection_t *conn_descr, unsigned int timeout)
             break;
 
         gettimeofday(&tv2, NULL);
-        if (TIMEVAL_SUB(tv1, tv2) / (unsigned int)1000 >= timeout)
+        if (TIMEVAL_SUB(tv2, tv1) / (unsigned int)1000 >= timeout)
             break;
 
         usleep(1000);
