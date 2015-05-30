@@ -66,6 +66,18 @@ te_usleep(unsigned int to_sleep)
     (void)usleep(to_sleep); 
 }
 
+/**
+ * Substract tv1 to tv2 of type struct timeval.
+ *
+ * @param tv1   
+ * @param tv2
+ *
+ * @return Diff in microseconds
+ */
+#define TIMEVAL_SUB(_tv1, _tv2) \
+    (((_tv1).tv_sec - (_tv2).tv_sec) * 1000000L + \
+     ((_tv1).tv_usec - (_tv2).tv_usec))
+
 #ifdef __cplusplus
 extern "C" {
 #endif
