@@ -63,6 +63,7 @@
 #include "conf_api.h"
 
 #include "logger_api.h"
+#include "te_sleep.h"
 
 #include "tapi_tcp.h"
 #include "tapi_tad.h"
@@ -1572,18 +1573,21 @@ tapi_tcp_conn_rcv_csap(tapi_tcp_handler_t handler)
 
 
 /**
- * Wait for any packet in this connection while timeout expired.
+ * Wait for any packet in this connection until timeout is expired.
  *
- * @param conn_descr    pointer to TAPI connection descriptor
- * @param timeout       timeout in milliseconds
+ * @param conn_descr    Pointer to TAPI connection descriptor
+ * @param timeout       Timeout in milliseconds
  *
- * @return zero on success (one or more messages got), errno otherwise
+ * @return Zero is returned on success (one or more messages got),
+ *         otherwise - TE errno.
  */
 static inline int
 conn_wait_packet(tapi_tcp_connection_t *conn_descr, unsigned int timeout)
 {
     te_errno        rc;
     unsigned int    num = 0;
+    struct timeval  tv1;
+    struct timeval  tv2;
 
     if (conn_descr == NULL)
     {
@@ -1591,19 +1595,9 @@ conn_wait_packet(tapi_tcp_connection_t *conn_descr, unsigned int timeout)
         return TE_EINVAL;
     }
 
-    rc = rcf_ta_trrecv_get(conn_descr->agt, conn_descr->rcv_sid,
-                           conn_descr->rcv_csap,
-                           tcp_conn_pkt_handler, conn_descr, &num);
-    if (rc != 0)
+    gettimeofday(&tv1, NULL);
+    while (num == 0)
     {
-        ERROR("%s: rcf_ta_trrecv_get() failed", __FUNCTION__);
-        return rc;
-    }
-
-    INFO("received %d messages", num);
-    if (num == 0)
-    {
-        sleep((timeout + 999) / 1000);
         rc = rcf_ta_trrecv_get(conn_descr->agt, conn_descr->rcv_sid,
                                conn_descr->rcv_csap,
                                tcp_conn_pkt_handler, conn_descr, &num);
@@ -1612,9 +1606,18 @@ conn_wait_packet(tapi_tcp_connection_t *conn_descr, unsigned int timeout)
             ERROR("%s: rcf_ta_trrecv_get() failed", __FUNCTION__);
             return rc;
         }
-        if (num == 0)
-            return TE_ETIMEDOUT;
+        if (num > 0)
+            break;
+
+        gettimeofday(&tv2, NULL);
+        if (TIMEVAL_SUB(tv1, tv2) / (unsigned int)1000 >= timeout)
+            break;
+
+        usleep(1000);
     }
+
+    if (num == 0)
+        return TE_RC(TE_TAPI, TE_ETIMEDOUT);
 
     return 0;
 }
