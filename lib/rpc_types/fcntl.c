@@ -207,6 +207,8 @@ fcntl_rpc2str(rpc_fcntl_command cmd)
         RPC2STR(F_SETLEASE);
         RPC2STR(F_GETLEASE);
         RPC2STR(F_NOTIFY);
+        RPC2STR(F_SETPIPE_SZ);
+        RPC2STR(F_GETPIPE_SZ);
         default: return "<F_UNKNOWN>";
     }
 }
@@ -239,6 +241,8 @@ fcntl_rpc2h(rpc_fcntl_command cmd)
         RPC2H_CHECK(F_GETLEASE);
         RPC2H_CHECK(F_SETLEASE);
         RPC2H_CHECK(F_NOTIFY);
+        RPC2H_CHECK(F_SETPIPE_SZ);
+        RPC2H_CHECK(F_GETPIPE_SZ);
         default: return F_UNKNOWN;
     }
 }

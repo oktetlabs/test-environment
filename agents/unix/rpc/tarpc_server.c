@@ -3792,7 +3792,11 @@ TARPC_FUNC(fcntl,
     long int_arg;
 
     if (in->cmd == RPC_F_GETFD || in->cmd == RPC_F_GETFL ||
-        in->cmd == RPC_F_GETSIG)
+        in->cmd == RPC_F_GETSIG
+#if defined (F_GETPIPE_SZ)
+        || in->cmd == RPC_F_GETPIPE_SZ
+#endif
+        )
         MAKE_CALL(out->retval = func(in->fd, fcntl_rpc2h(in->cmd)));
 #if defined (F_GETOWN_EX) || defined (F_SETOWN_EX)
     else if (in->cmd == RPC_F_GETOWN_EX || in->cmd == RPC_F_SETOWN_EX)

@@ -133,6 +133,8 @@ typedef enum rpc_fcntl_command {
     RPC_F_SETLEASE,
     RPC_F_GETLEASE,
     RPC_F_NOTIFY,
+    RPC_F_SETPIPE_SZ,
+    RPC_F_GETPIPE_SZ,
     RPC_F_UNKNOWN
 } rpc_fcntl_command;
 
