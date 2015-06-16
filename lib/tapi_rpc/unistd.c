@@ -1612,7 +1612,7 @@ rpc_fcntl(rcf_rpc_server *rpcs, int fd,
 
     rcf_rpc_call(rpcs, "fcntl", &in, &out);
 
-    if (out.retval == 0 && out.arg.arg_val != NULL)
+    if (out.arg.arg_val != NULL)
     {
         assert((cmd != RPC_F_GETOWN_EX && cmd != RPC_F_SETOWN_EX) ||
                arg != NULL);
