@@ -68,7 +68,7 @@ socket_domain_by_af(int af)
     {
         case AF_INET:   return PF_INET;
         case AF_INET6:  return PF_INET6;
-        default:        return PF_MAX;
+        default:        return REAL_PF_MAX;
     }
 }
 
