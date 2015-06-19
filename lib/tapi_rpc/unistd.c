@@ -1630,7 +1630,9 @@ rpc_fcntl(rcf_rpc_server *rpcs, int fd,
                          ((struct rpc_f_owner_ex *)arg)->pid);
                 break;
             default:
-                snprintf(req_val, sizeof(req_val), ", %ld", (long)arg);
+                if (cmd != RPC_F_GETFD && cmd != RPC_F_GETFL &&
+                    cmd != RPC_F_GETSIG && cmd != RPC_F_GETPIPE_SZ)
+                    snprintf(req_val, sizeof(req_val), ", %ld", (long)arg);
                 break;
         }
     }
