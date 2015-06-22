@@ -3476,6 +3476,11 @@ tarpc_getsockopt(tarpc_getsockopt_in *in, tarpc_getsockopt_out *out,
             {
                 *(int *)opt = socktype_h2rpc(*(int *)opt);
             }
+            else if (in->level == RPC_SOL_SOCKET &&
+                     in->optname == RPC_SO_PROTOCOL)
+            {
+                *(int *)opt = proto_h2rpc(*(int *)opt);
+            }
             else if (in->level == RPC_SOL_IP &&
                      in->optname == RPC_IP_MTU_DISCOVER)
             {
