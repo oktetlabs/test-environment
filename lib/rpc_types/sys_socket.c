@@ -255,8 +255,8 @@ domain_rpc2h(rpc_socket_domain domain)
         RPC2H_CHECK(PF_ETHER);
         default:
             WARN("%s is converted to PF_MAX(%u)",
-                 domain_rpc2str(domain), REAL_PF_MAX);
-            return REAL_PF_MAX;
+                 domain_rpc2str(domain), PF_INVALID);
+            return PF_INVALID;
     }
 }
 

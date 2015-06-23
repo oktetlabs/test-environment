@@ -45,8 +45,9 @@
 extern "C" {
 #endif
 
-/** PF_MAX was increased in 3.9 kernel */
-#define REAL_PF_MAX 41
+/** PF_MAX was increased in 3.9 kernel. TE should use PF_INVALID instead
+ *  of PF_MAX */
+#define PF_INVALID 50
 
 /**
  * Onload specific structure for TX HW timestamps.
@@ -159,7 +160,7 @@ extern te_errno msg_control_rpc2h(tarpc_cmsghdr *rpc_cmsg,
                                   uint8_t *cmsg_buf, size_t *cmsg_len);
 
 /**< Non-standard protocol family for Ethernet addresses */
-#define TE_PF_ETHER (REAL_PF_MAX + 1)
+#define TE_PF_ETHER (PF_INVALID + 1)
 
 /**< Non-standard address family for Ethernet addresses */
 #define TE_AF_ETHER TE_PF_ETHER
