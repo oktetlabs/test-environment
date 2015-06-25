@@ -101,7 +101,9 @@ telephony_open_channel(int port)
     int                     chan; /* File descriptor of channel */
     int                     param; /* ioctl parameter */
 
-    snprintf(dahdi_dev, DAHDI_DEV_LEN, "/dev/dahdi/%d", port);
+    snprintf(dahdi_dev, DAHDI_DEV_LEN, "/dev/dahdi/chan/001/00%d", port);
+
+    ERROR("FOOBAR dahdi '%s'", dahdi_dev);
 
     if ((chan = open(dahdi_dev, O_RDWR)) < 0)
     {
