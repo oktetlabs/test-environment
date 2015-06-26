@@ -687,6 +687,9 @@ shut_how_rpc2str(rpc_shut_how how)
 
 #define MSG_MAX         0xFFFFFFFF
 
+/** We can't include onload headers but we need ONLOAD_MSG_WARM */
+#define MSG_WARM        0x400
+
 /** All flags supported on the host platform */
 #define MSG_ALL         (MSG_OOB | MSG_PEEK | MSG_DONTROUTE |   \
                          MSG_DONTWAIT | MSG_WAITALL |           \
@@ -694,7 +697,7 @@ shut_how_rpc2str(rpc_shut_how how)
                          MSG_CTRUNC | MSG_ERRQUEUE |            \
                          MSG_MORE | MSG_CONFIRM | MSG_EOR |     \
                          MSG_MCAST | MSG_BCAST | MSG_PARTIAL |  \
-                         MSG_WAITFORONE)
+                         MSG_WAITFORONE | MSG_WARM)
 
 /**
  * Generate warning in the log, if requested RPC mask contains flag
@@ -737,6 +740,7 @@ send_recv_flags_rpc2h(unsigned int flags)
            (!!(flags & RPC_MSG_EOR) * MSG_EOR) |
            (!!(flags & RPC_MSG_PARTIAL) * MSG_PARTIAL) |
            (!!(flags & RPC_MSG_WAITFORONE) * MSG_WAITFORONE) |
+           (!!(flags & RPC_MSG_WARM) * MSG_WARM) |
            (!!(flags & RPC_MSG_UNKNOWN) * MSG_MAX) |
            (!!(flags & ~RPC_MSG_ALL) * MSG_MAX);
 }
@@ -760,6 +764,7 @@ send_recv_flags_h2rpc(unsigned int flags)
            (!!(flags & MSG_EOR) * RPC_MSG_EOR) |
            (!!(flags & MSG_PARTIAL) * RPC_MSG_PARTIAL) |
            (!!(flags & MSG_WAITFORONE) * RPC_MSG_WAITFORONE) |
+           (!!(flags & MSG_WARM) * RPC_MSG_WARM) |
            (!!(flags & MSG_ERRQUEUE) * RPC_MSG_ERRQUEUE) |
            (!!(flags & ~MSG_ALL) * RPC_MSG_UNKNOWN);
 }
