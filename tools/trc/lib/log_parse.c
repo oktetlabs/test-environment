@@ -5249,7 +5249,6 @@ trc_update_gen_test_wilds_fss(unsigned int db_uid,
     int          k = 0;
     int          l = 0;
     int          rc = 0;
-    int          cur_set_cnt;
 
     trc_update_args_groups       args_groups;
     trc_update_args_group       *args_group;
@@ -5280,7 +5279,6 @@ trc_update_gen_test_wilds_fss(unsigned int db_uid,
 
     for (res_id = 1; res_id <= ids_count; res_id++)
     {
-        cur_set_cnt = test_entry->sets_cnt;
         memset(&args_groups, 0, sizeof(args_groups));
         SLIST_INIT(&args_groups);
 
