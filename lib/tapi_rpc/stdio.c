@@ -494,7 +494,6 @@ rpc_shell_get_all2(rcf_rpc_server *rpcs, char **pbuf,
 {
     char   *buf[2];
     size_t  bytes[2];
-    size_t  read1, read2;
     char    cmdline[RPC_SHELL_CMDLINE_MAX];
     int     fd[2];
 
@@ -529,7 +528,6 @@ rpc_shell_get_all2(rcf_rpc_server *rpcs, char **pbuf,
         return rc;
     }
 
-    read1 = read2 = 0;
     buf[0] = buf[1] = NULL;
     if (pbuf != NULL)
     {
@@ -576,7 +574,6 @@ rpc_shell_get_all3(rcf_rpc_server *rpcs, char **pbuf,
 {
     char   *buf[2];
     size_t  bytes[2];
-    size_t  read1, read2;
     char    cmdline[RPC_SHELL_CMDLINE_MAX];
     int     fd[2];
 
@@ -611,7 +608,6 @@ rpc_shell_get_all3(rcf_rpc_server *rpcs, char **pbuf,
         return rc;
     }
 
-    read1 = read2 = 0;
     buf[0] = buf[1] = NULL;
     if (pbuf != NULL)
     {

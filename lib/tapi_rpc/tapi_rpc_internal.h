@@ -254,7 +254,7 @@ do {                                                                    \
     do {                                                            \
         int64_t __retval = (int64_t)(_retval);                      \
                                                                     \
-        TAPI_RPC_OUT(_func, __retval == (int64_t)NULL);             \
+        TAPI_RPC_OUT(_func, __retval == 0);                         \
                                                                     \
         return __retval;                                            \
     } while (0)
