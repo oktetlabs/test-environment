@@ -145,6 +145,8 @@ typedef struct rcf_rpc_server {
                                 /**< Pointer to the variable in
                                      RPC server context to check
                                      state of non-blocking RPC */
+    te_bool         silent;     /**< Perform next RPC call without
+                                     logging */
 } rcf_rpc_server;
 
 

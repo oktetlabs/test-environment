@@ -194,7 +194,8 @@ rcf_rpc_server_get(const char *ta, const char *name,
     {
         return TE_RC(TE_RCF_API, TE_ENOMEM);
     }
-    
+    memset(rpcs, 0, sizeof(*rpcs));
+
     if ((rc1 = rpc_server_sem_init(rpcs)) != 0)
     {
         free(rpcs);
