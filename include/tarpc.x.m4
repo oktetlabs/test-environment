@@ -2862,6 +2862,11 @@ struct option_value_tcp_info {
     uint32_t    tcpi_snd_cwnd;
     uint32_t    tcpi_advmss;
     uint32_t    tcpi_reordering;
+
+    uint32_t    tcpi_rcv_rtt;
+    uint32_t    tcpi_rcv_space;
+
+    uint32_t    tcpi_total_retrans;
 };
 
 struct tarpc_group_req {

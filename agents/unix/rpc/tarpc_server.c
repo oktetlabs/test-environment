@@ -3634,6 +3634,10 @@ tarpc_getsockopt(tarpc_getsockopt_in *in, tarpc_getsockopt_out *out,
             COPY_TCP_INFO_FIELD(tcpi_snd_cwnd);
             COPY_TCP_INFO_FIELD(tcpi_advmss);
             COPY_TCP_INFO_FIELD(tcpi_reordering);
+            COPY_TCP_INFO_FIELD(tcpi_rcv_rtt);
+            COPY_TCP_INFO_FIELD(tcpi_rcv_space);
+            COPY_TCP_INFO_FIELD(tcpi_total_retrans);
+
 #else
             ERROR("'struct tcp_info' is not defined");
             out->common._errno = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);

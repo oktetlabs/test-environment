@@ -1409,6 +1409,9 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                 COPY_TCP_INFO_FIELD(tcpi_snd_cwnd);
                 COPY_TCP_INFO_FIELD(tcpi_advmss);
                 COPY_TCP_INFO_FIELD(tcpi_reordering);
+                COPY_TCP_INFO_FIELD(tcpi_rcv_rtt);
+                COPY_TCP_INFO_FIELD(tcpi_rcv_space);
+                COPY_TCP_INFO_FIELD(tcpi_total_retrans);
 
 #undef COPY_TCP_INFO_FIELD
 
@@ -1645,6 +1648,10 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                     COPY_TCP_INFO_FIELD(tcpi_snd_cwnd);
                     COPY_TCP_INFO_FIELD(tcpi_advmss);
                     COPY_TCP_INFO_FIELD(tcpi_reordering);
+                    COPY_TCP_INFO_FIELD(tcpi_rcv_rtt);
+                    COPY_TCP_INFO_FIELD(tcpi_rcv_space);
+                    COPY_TCP_INFO_FIELD(tcpi_total_retrans);
+
                     te_log_buf_append(opt_val_str, " }");
 #undef COPY_TCP_INFO_FIELD
                     break;
