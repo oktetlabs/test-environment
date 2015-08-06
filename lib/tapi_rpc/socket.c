@@ -1670,6 +1670,13 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                     break;
                 }
 
+                case RPC_SO_TIMESTAMPING:
+                    *(int *)optval =
+                        out.optval.optval_val[0].option_value_u.opt_int;
+                    te_log_buf_append(opt_val_str, "%s",
+                        timestamping_flags_rpc2str(*(int *)optval));
+                    break;
+
                 default:
                     *(int *)optval =
                         out.optval.optval_val[0].option_value_u.opt_int;
@@ -2036,6 +2043,13 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
                 val.opttype = OPT_IPADDR6;
                 memcpy(val.option_value_u.opt_ipaddr6, optval,
                        sizeof(struct in6_addr));
+                break;
+
+            case RPC_SO_TIMESTAMPING:
+                val.opttype = OPT_INT;
+                val.option_value_u.opt_int = *(int *)optval;
+                te_log_buf_append(opt_val_str, "%s",
+                    timestamping_flags_rpc2str(*(int *)optval));
                 break;
 
             default:

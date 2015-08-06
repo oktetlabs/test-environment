@@ -25,7 +25,7 @@
  *
  * @author Yurij Plotnikov <Yurij.Plotnikov@oktetlabs.ru>
  *
- * $Id: fcntl.c 82950 2013-06-11 07:56:47Z yuran $
+ * $Id$
  */
 
 #include "te_config.h"
@@ -48,14 +48,34 @@
  * must not be included here, but the flag is needed here to be used in
  * functions recvmsg() and recvmmsg().
  */
+#ifndef ONLOAD_SOF_TIMESTAMPING_STREAM
 #define ONLOAD_SOF_TIMESTAMPING_STREAM (1 << 23)
+#endif
+
+/** Temporary hack: define flags which have been added in recent linux
+ * versions.  */
+#ifndef SOF_TIMESTAMPING_OPT_ID
+#define SOF_TIMESTAMPING_OPT_ID (1<<7)
+#endif
+#ifndef SOF_TIMESTAMPING_TX_SCHED
+#define SOF_TIMESTAMPING_TX_SCHED (1<<8)
+#endif
+#ifndef SOF_TIMESTAMPING_TX_ACK
+#define SOF_TIMESTAMPING_TX_ACK (1<<9)
+#endif
+#ifndef SOF_TIMESTAMPING_OPT_CMSG
+#define SOF_TIMESTAMPING_OPT_CMSG (1<<10)
+#endif
+#ifndef SOF_TIMESTAMPING_OPT_TSONLY
+#define SOF_TIMESTAMPING_OPT_TSONLY (1<<11)
+#endif
 
 unsigned int
 hwtstamp_instr_rpc2h(unsigned flags)
 {
 #if HAVE_LINUX_NET_TSTAMP_H
-    if ((flags & ~SOF_TIMESTAMPING_MASK) != 0 &&
-    (flags & RPC_ONLOAD_SOF_TIMESTAMPING_STREAM) == 0)
+    if ((flags & ~RPC_SOF_TIMESTAMPING_MASK) != 0 &&
+        (flags & RPC_ONLOAD_SOF_TIMESTAMPING_STREAM) == 0)
         return HWTSTAMP_UNKNOWN;
 
     return (!!(flags & RPC_SOF_TIMESTAMPING_TX_HARDWARE) *
@@ -72,6 +92,26 @@ hwtstamp_instr_rpc2h(unsigned flags)
               SOF_TIMESTAMPING_SYS_HARDWARE)
            | (!!(flags & RPC_SOF_TIMESTAMPING_RAW_HARDWARE) *
               SOF_TIMESTAMPING_RAW_HARDWARE)
+#ifdef SOF_TIMESTAMPING_OPT_ID
+           | (!!(flags & RPC_SOF_TIMESTAMPING_OPT_ID) *
+              SOF_TIMESTAMPING_OPT_ID)
+#endif
+#ifdef SOF_TIMESTAMPING_TX_SCHED
+           | (!!(flags & RPC_SOF_TIMESTAMPING_TX_SCHED) *
+              SOF_TIMESTAMPING_TX_SCHED)
+#endif
+#ifdef SOF_TIMESTAMPING_TX_ACK
+           | (!!(flags & RPC_SOF_TIMESTAMPING_TX_ACK) *
+              SOF_TIMESTAMPING_TX_ACK)
+#endif
+#ifdef SOF_TIMESTAMPING_OPT_CMSG
+           | (!!(flags & RPC_SOF_TIMESTAMPING_OPT_CMSG) *
+              SOF_TIMESTAMPING_OPT_CMSG)
+#endif
+#ifdef  SOF_TIMESTAMPING_OPT_TSONLY
+           | (!!(flags & RPC_SOF_TIMESTAMPING_OPT_TSONLY) *
+              SOF_TIMESTAMPING_OPT_TSONLY)
+#endif
            | (!!(flags & RPC_ONLOAD_SOF_TIMESTAMPING_STREAM) *
               ONLOAD_SOF_TIMESTAMPING_STREAM)
            ;
@@ -84,6 +124,10 @@ unsigned int
 hwtstamp_instr_h2rpc(unsigned int flags)
 {
 #if HAVE_LINUX_NET_TSTAMP_H
+    if ((flags & ~SOF_TIMESTAMPING_MASK) != 0 &&
+        (flags & ONLOAD_SOF_TIMESTAMPING_STREAM) == 0)
+        return HWTSTAMP_UNKNOWN;
+
     return (!!(flags & SOF_TIMESTAMPING_TX_HARDWARE) *
             RPC_SOF_TIMESTAMPING_TX_HARDWARE)
            | (!!(flags & SOF_TIMESTAMPING_TX_SOFTWARE) *
@@ -98,6 +142,26 @@ hwtstamp_instr_h2rpc(unsigned int flags)
               RPC_SOF_TIMESTAMPING_SYS_HARDWARE)
            | (!!(flags & SOF_TIMESTAMPING_RAW_HARDWARE) *
               RPC_SOF_TIMESTAMPING_RAW_HARDWARE)
+#ifdef SOF_TIMESTAMPING_OPT_ID
+           | (!!(flags & SOF_TIMESTAMPING_OPT_ID) *
+              RPC_SOF_TIMESTAMPING_OPT_ID)
+#endif
+#ifdef SOF_TIMESTAMPING_TX_SCHED
+           | (!!(flags & SOF_TIMESTAMPING_TX_SCHED) *
+              RPC_SOF_TIMESTAMPING_TX_SCHED)
+#endif
+#ifdef SOF_TIMESTAMPING_TX_ACK
+           | (!!(flags & SOF_TIMESTAMPING_TX_ACK) *
+              RPC_SOF_TIMESTAMPING_TX_ACK)
+#endif
+#ifdef SOF_TIMESTAMPING_OPT_CMSG
+           | (!!(flags & SOF_TIMESTAMPING_OPT_CMSG) *
+              RPC_SOF_TIMESTAMPING_OPT_CMSG)
+#endif
+#ifdef  SOF_TIMESTAMPING_OPT_TSONLY
+           | (!!(flags & SOF_TIMESTAMPING_OPT_TSONLY) *
+              RPC_SOF_TIMESTAMPING_OPT_TSONLY)
+#endif
            | (!!(flags & ONLOAD_SOF_TIMESTAMPING_STREAM) *
               RPC_ONLOAD_SOF_TIMESTAMPING_STREAM)
            ;

@@ -572,14 +572,10 @@ tarpc_hwtstamp_config2str(const tarpc_hwtstamp_config *hw_cfg)
     static char buf[32];
 
     if (hw_cfg == NULL)
-    {
         strcpy(buf, "(nil)");
-    }
     else
-    {
         sprintf(buf, "{%d,%d,%d}", hw_cfg->flags,
                 hw_cfg->tx_type, hw_cfg->rx_filter);
-    }
     return buf;
 }
 
