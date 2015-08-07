@@ -55,7 +55,7 @@ autotool()
         autoheader || exit 1 ;
     fi ;
     autoconf -Wall || exit 1 ;
-    automake || exit 1 ;
+    automake --add-missing || exit 1 ;
     popd >/dev/null
     AUTOTOOL_DONE=yes
 }

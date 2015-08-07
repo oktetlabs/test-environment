@@ -1,8 +1,8 @@
 dnl                                               -*- Autoconf -*-
 dnl Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.59])
-AC_INIT([tapower-ctl], [0.01], [Boris.Misenov@oktetlabs.ru])
+AC_PREREQ([2.69])
+AC_INIT([tapower-ctl],[0.01],[Boris.Misenov@oktetlabs.ru])
 AC_CONFIG_SRCDIR([main.c])
 
 AC_CONFIG_AUX_DIR([../../auxdir])

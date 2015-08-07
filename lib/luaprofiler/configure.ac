@@ -1,8 +1,8 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.59)
-AC_INIT(luaprofiler, 2.0.2)
+AC_PREREQ([2.69])
+AC_INIT([luaprofiler],[2.0.2])
 AC_CONFIG_SRCDIR([src/core_profiler.h])
 AC_CONFIG_HEADERS([config.h])
 

@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT([clientserver], [0.01], [Andrey.Dmitrov@oktetlabs.ru])
+AC_INIT([clientserver],[0.01],[Andrey.Dmitrov@oktetlabs.ru])
 
 AC_CONFIG_SRCDIR([clientserver.c])
 AC_CONFIG_AUX_DIR([../../auxdir])

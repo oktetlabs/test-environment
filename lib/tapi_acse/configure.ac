@@ -1,5 +1,5 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT([tapi_acse], [0.02], [Konstantin.Abramenko@oktetlabs.ru])
+AC_INIT([tapi_acse],[0.02],[Konstantin.Abramenko@oktetlabs.ru])
 
 AC_CONFIG_SRCDIR([tapi_acse.h])
 

@@ -1,7 +1,7 @@
 dnl                                               -*- Autoconf -*-
 dnl Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.59)
+AC_PREREQ([2.69])
 AC_INIT([ta-unix],[0.8],[Elena.Vengerova@oktetlabs.ru])
 AC_CONFIG_SRCDIR([main.c])
 
@@ -14,6 +14,7 @@ AC_CONFIG_HEADERS([config.h])
 
 dnl Checks for programs.
 AC_PROG_CC
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AC_C_INLINE
 
 AC_PROG_INSTALL
@@ -336,9 +337,9 @@ if test -n "$with_rcf_rpc" -o -n "$with_cfg_unix_daemons" ; then
     dnl as an element of enumeration).
     dnl
     AH_TEMPLATE([HAVE_RTLD_NODELETE], [check RTLD_NODELETE constant])
-    AC_TRY_LINK([#include <dlfcn.h>],
-                [dlopen("", RTLD_NODELETE); ],
-                [AC_DEFINE(HAVE_RTLD_NODELETE)])
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <dlfcn.h>]],
+                                    [[dlopen("", RTLD_NODELETE); ]])],
+                   [AC_DEFINE(HAVE_RTLD_NODELETE)],[])
 fi
 
 dnl

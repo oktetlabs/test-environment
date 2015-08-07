@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT([acse], [0.01], [Edward.Makarov@oktetlabs.ru])
+AC_INIT([acse],[0.01],[Edward.Makarov@oktetlabs.ru])
 
 AC_CONFIG_SRCDIR([configure.ac])
 AC_CONFIG_AUX_DIR([../../auxdir])

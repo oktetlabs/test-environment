@@ -24,9 +24,9 @@
 #
 # Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 
-AC_PREREQ([2.59])
+AC_PREREQ([2.69])
 
-AC_INIT([test_environment], [0.9], [Elena.Vengerova@oktetlabs.ru])
+AC_INIT([test_environment],[0.9],[Elena.Vengerova@oktetlabs.ru])
 
 AC_CONFIG_AUX_DIR([auxdir])
 
@@ -156,7 +156,7 @@ if test ! -e configure ; then
     echo "Calling aclocal/autoheader/autoconf/automake in `pwd`"
     aclocal -I "${TE_BASE}/auxdir" || exit 1 ;
     autoconf || exit 1 ;
-    automake || exit 1 ;
+    automake --add-missing || exit 1 ;
 fi
 cd "${WORK_DIR}"
 AC_CONFIG_SUBDIRS(doc)

@@ -1,5 +1,5 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT([te_rcf], [0.01], [Elena.Vangerova@oktetlabs.ru])
+AC_INIT([te_rcf],[0.01],[Elena.Vangerova@oktetlabs.ru])
 
 AC_CONFIG_SRCDIR([rcf.c])
 

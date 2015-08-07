@@ -1,8 +1,8 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.59])
-AC_INIT([tce], [1.0], [Artem.Andreev@oktetlabs.ru])
+AC_PREREQ([2.69])
+AC_INIT([tce],[1.0],[Artem.Andreev@oktetlabs.ru])
 
 AC_CONFIG_SRCDIR([tce_generic.c])
 
@@ -13,6 +13,7 @@ AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
 # Checks for programs.
 AC_PROG_CC
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AC_FIXED_LIBTOOL_RANLIB
 AC_PROG_INSTALL
 

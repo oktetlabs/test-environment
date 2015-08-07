@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.53)
-AC_INIT([cs-ts], 0.1, Andrew.Rybchenko@oktetlabs.ru)
+AC_PREREQ([2.69])
+AC_INIT([cs-ts],[0.1],[Andrew.Rybchenko@oktetlabs.ru])
 
 AC_CONFIG_SRCDIR([Doxyfile])
 

@@ -923,7 +923,7 @@ if test -n "$BUILDER" ; then
         fi
         aclocal -I "${TE_BASE}/auxdir" || exit_with_log
         autoconf || exit_with_log
-        automake || exit_with_log
+        automake --add-missing || exit_with_log
     fi
     popd >/dev/null
     # FINAL ${TE_BASE}/configure --prefix=${TE_INSTALL} --with-config=${CONF_BUILDER} 2>&1 | te_builder_log

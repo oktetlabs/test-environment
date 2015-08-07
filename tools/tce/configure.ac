@@ -1,8 +1,8 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.59])
-AC_INIT([tce], [1.0], [Artem.Andreev@oktetlabs.ru])
+AC_PREREQ([2.69])
+AC_INIT([tce],[1.0],[Artem.Andreev@oktetlabs.ru])
 AC_CONFIG_SRCDIR([tce_gcc])
 
 AC_CONFIG_AUX_DIR([../../auxdir])

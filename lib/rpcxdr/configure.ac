@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.59)
+AC_PREREQ([2.69])
 AC_INIT([rpcxdr],[0.02],[Elena.Vengerova@oktetlabs.ru])
 
 AC_CONFIG_SRCDIR([rpc_xdr.h])
@@ -13,6 +13,7 @@ AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
 # Checks for programs.
 AC_PROG_CC
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 
 # Fixing libraries search paths in libtool - they are wrong when
 # cross-compiling for different bitness takes place

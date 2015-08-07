@@ -1,8 +1,8 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.61)
-AC_INIT([acse], [0.02], [Konstantin.Abramenko@oktetlabs.ru])
+AC_PREREQ([2.69])
+AC_INIT([acse],[0.02],[Konstantin.Abramenko@oktetlabs.ru])
 
 AC_CONFIG_SRCDIR([acse.c])
 

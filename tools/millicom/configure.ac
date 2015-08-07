@@ -1,9 +1,9 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.59])
+AC_PREREQ([2.69])
 
-AC_INIT([millicom], [0.02], [Konstantin.Abramenko@oktetlabs.ru])
+AC_INIT([millicom],[0.02],[Konstantin.Abramenko@oktetlabs.ru])
 
 AC_CONFIG_AUX_DIR([../../auxdir])
 AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
@@ -28,7 +28,20 @@ AC_HEADER_TIME
 
 # Checks for library functions.
 AC_FUNC_SETVBUF_REVERSED
-AC_TYPE_SIGNAL
+AC_DIAGNOSE([obsolete],[your code may safely assume C89 semantics that
+RETSIGTYPE is void. Remove this warning and the `AC_CACHE_CHECK' when you
+adjust the code.])dnl
+AC_CACHE_CHECK([return type of signal handlers],[ac_cv_type_signal],
+[AC_COMPILE_IFELSE([AC_LANG_PROGRAM([#include <sys/types.h>
+#include <signal.h>
+],
+  [return *(signal (0, 0)) (0) == 1;])],
+  [ac_cv_type_signal=int],
+  [ac_cv_type_signal=void])])
+AC_DEFINE_UNQUOTED([RETSIGTYPE],[$ac_cv_type_signal],
+                   [Define as the return type of signal handlers
+                    (`int' or `void').])
+
 
 AC_CONFIG_FILES([Makefile])
 
