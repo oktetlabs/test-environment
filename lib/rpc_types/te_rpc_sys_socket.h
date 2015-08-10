@@ -62,7 +62,7 @@ typedef struct rpc_onload_scm_timestamping_stream {
  * Packet transmission timestamps
  */
 typedef struct rpc_scm_timestamping {
-    struct timespec systime;      /**< System time. */
+    struct timespec systime;      /**< Software timestamp. */
     struct timespec hwtimetrans;  /**< HW timestamp transformed to system
                                        time. */
     struct timespec hwtimeraw;    /**< Original HW timestamp. */
@@ -526,6 +526,8 @@ typedef enum rpc_sockopt {
     RPC_SO_BUSY_POLL,     /**< Sets the approximate time in microseconds to
                                busy poll on a blocking receive when there is
                                no data. */
+    RPC_SO_SELECT_ERR_QUEUE, /**< Make selcet() detect events on error
+                                  queue. */
 
     RPC_IP_ADD_MEMBERSHIP,  /**< Join a multicast group */
     RPC_IP_DROP_MEMBERSHIP, /**< Leave a multicast group */

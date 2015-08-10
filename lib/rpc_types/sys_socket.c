@@ -128,6 +128,10 @@ extern const char *inet_ntop(int af, const void *src, char *dst,
 #define SIOCGHWTSTAMP 0x89b1
 #endif
 
+#ifndef SO_SELECT_ERR_QUEUE
+#define SO_SELECT_ERR_QUEUE 45
+#endif
+
 /**
  * Solarflare Onload specific socket option to retrieve TX TCP timestamps.
  */
@@ -872,6 +876,7 @@ rpc_sockopt2level(rpc_sockopt opt)
         case RPC_SO_SNDBUFFORCE:
         case RPC_ONLOAD_SCM_TIMESTAMPING_STREAM:
         case RPC_SO_BUSY_POLL:
+        case RPC_SO_SELECT_ERR_QUEUE:
             return RPC_SOL_SOCKET;
 
         case RPC_IP_ADD_MEMBERSHIP:
@@ -1017,6 +1022,7 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(SO_SNDBUFFORCE);
         RPC2STR(ONLOAD_SCM_TIMESTAMPING_STREAM);
         RPC2STR(SO_BUSY_POLL);
+        RPC2STR(SO_SELECT_ERR_QUEUE);
 
         RPC2STR(IP_ADD_MEMBERSHIP);
         RPC2STR(IP_DROP_MEMBERSHIP);
@@ -1163,6 +1169,7 @@ sockopt_rpc2h(rpc_sockopt opt)
         RPC2H_CHECK(SO_SNDBUFFORCE);
         RPC2H_CHECK(ONLOAD_SCM_TIMESTAMPING_STREAM);
         RPC2H_CHECK(SO_BUSY_POLL);
+        RPC2H_CHECK(SO_SELECT_ERR_QUEUE);
 
         RPC2H_CHECK(IP_ADD_MEMBERSHIP);
         RPC2H_CHECK(IP_DROP_MEMBERSHIP);
@@ -1320,6 +1327,7 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC_CHECK(SO_SNDBUFFORCE);
                 H2RPC_CHECK(ONLOAD_SCM_TIMESTAMPING_STREAM);
                 H2RPC_CHECK(SO_BUSY_POLL);
+                H2RPC_CHECK(SO_SELECT_ERR_QUEUE);
                 case TE_SCM_RIGHTS:
                     return RPC_SCM_RIGHTS;
                 default: return RPC_SOCKOPT_UNKNOWN;
