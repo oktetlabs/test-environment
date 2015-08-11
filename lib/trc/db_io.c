@@ -187,22 +187,22 @@ update_files(xmlNodePtr node)
          * work with non-element nodes with which original
          * xInclude nodes are replaced during processing.
          */
-        if (prop != NULL)
+        for (prop = node->properties; prop != NULL; prop = prop->next) 
         {
-            do {
-                if (xmlStrEqual(prop->name,
-                                CONST_CHAR2XML("href")))
-                    break;
-                prop = prop->next;
-            } while (prop != NULL);
-
-            if (prop != NULL)
+            if (xmlStrEqual(prop->name,
+                            CONST_CHAR2XML("href")))
             {
                 file = TE_ALLOC(sizeof(*file));
-                file->filename = (char *)xmlStrdup(
-                                        prop->children->content);
+                file->filename = (char *)xmlStrdup(prop->children->content);
                 TAILQ_INSERT_TAIL(inc_files, file, links);
+                break;
             }
+        }
+        if (prop == NULL)
+        {
+            file = TE_ALLOC(sizeof(*file));
+            file->filename = strdup("<unknown>");
+            TAILQ_INSERT_TAIL(inc_files, file, links);
         }
     }
     else if (node->type == XML_XINCLUDE_END ||
