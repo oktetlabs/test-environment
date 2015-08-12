@@ -1994,6 +1994,32 @@ get_ta_type(cfg_nets_t *cfg_nets, cfg_net_node_t *node)
     return type;
 }
 
+
+/* See description in tapi_env.h */
+tapi_env_addr_type
+tapi_get_addr_type(tapi_env *env, const char *name)
+{
+    tapi_env_addr    *p;
+
+    if (env == NULL || name == NULL)
+    {
+        ERROR("%s(): Invalid arguments", __FUNCTION__);
+        return TAPI_ENV_ADDR_INVALID;
+    }
+
+    /* do we have an address with such name? if yes - just return it */
+    for (p = env->addrs.cqh_first;
+         p != (void *)&env->addrs;
+         p = p->links.cqe_next)
+    {
+        if (p->name != NULL && strcmp(p->name, name) == 0)
+            return p->type;
+    }
+
+    ERROR("%s(): Address %s was not found", __FUNCTION__, name);
+    return TAPI_ENV_ADDR_INVALID;
+}
+
 /**
  * Check that network node type matches type of requested PCOs.
  *

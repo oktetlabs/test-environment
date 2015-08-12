@@ -181,6 +181,21 @@
     } while (0)
 
 /**
+ * Check that the address is fake. Name of the variable must
+ * match name of the address in environment configuration string.
+ *
+ * @param addr_     address
+ * @param fake_     Whether the address has FAKE type (OUT)
+ */
+#define CHECK_ADDR_FAKE(addr_, fake_)     \
+    do {                                        \
+        fake_ = FALSE;                          \
+        if (tapi_get_addr_type(&env, #addr_) == \
+            TAPI_ENV_ADDR_FAKE_UNICAST)         \
+            fake_ = TRUE;                       \
+    } while (0)
+
+/**
  * Get the value of link-layer address parameter.
  * Name of the variable must match name of the address
  * in environment configuration string.
@@ -275,6 +290,7 @@ typedef enum {
     TAPI_ENV_ADDR_IP4MAPPED_UC,     /**< Unicast IPv4-mapped IPv6 address */
     TAPI_ENV_ADDR_LINKLOCAL,        /**< Link-local IPv6 address */
     TAPI_ENV_ADDR_SITELOCAL,        /**< Site-local IPv6 address */
+    TAPI_ENV_ADDR_INVALID,
 } tapi_env_addr_type;
 
 
@@ -544,6 +560,18 @@ extern rcf_rpc_server *tapi_env_get_pco(tapi_env *env, const char *name);
 extern const struct sockaddr * tapi_env_get_addr(tapi_env *env,
                                                  const char *name,
                                                  socklen_t *addrlen);
+
+
+/**
+ * Get type address from environment by name.
+ *
+ * @param env       Environment
+ * @param name      Name of the address in configuration string
+ *
+ * @return Type of address.
+ */
+extern tapi_env_addr_type tapi_get_addr_type(tapi_env *env,
+                                             const char *name);
 
 /**
  * Get system name of the interface named in configuration string
