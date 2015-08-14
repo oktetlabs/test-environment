@@ -48,21 +48,18 @@
 #include "te_errno.h"
 #include "te_rpc_sys_socket.h"
 #include "rcf_rpc.h"
-#include "tapi_env.h"
 #include "tapi_cfg.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-TEST_START_ENV_VARS;
-
 #define CHECK_SET_TRANSPARENT_GEN(pco_iut_, iut_addr_, iut_s_, pco_tst_, \
                                   tst_addr_, gw_, fake_)               \
 do {                                                                   \
-    int fake = fake_;                                                  \
-    if (!fake_)                                                        \
-        CHECK_ADDR_FAKE(iut_addr_, fake);                              \
+    int fake = FALSE /*fake_*/;                                        \
+    /*if (!fake_) */                                                   \
+    /*    CHECK_ADDR_FAKE(iut_addr_, fake); */                         \
     if (fake)                                                          \
     {                                                                  \
         const struct sockaddr  *gw_addr = NULL;                        \
@@ -71,8 +68,8 @@ do {                                                                   \
         int                     route_prefix;                          \
         int                     opt_val = 1;                           \
                                                                        \
-        if (gw_ == NULL)                                               \
-            TEST_GET_ADDR_NO_PORT(gw_addr);                            \
+        /* if (gw_ == NULL)   */                                       \
+        /*    TEST_GET_ADDR_NO_PORT(gw_addr); */                       \
                                                                        \
         domain = rpc_socket_domain_by_addr(iut_addr_);                 \
         af = addr_family_rpc2h(domain);                                \
@@ -104,15 +101,15 @@ do {                                                                   \
 #define CHECK_CLEAR_TRANSPARENT(iut_addr_, pco_tst_, tst_addr_) \
 do {                                                                   \
     int fake = FALSE;                                                  \
-    CHECK_ADDR_FAKE(iut_addr_, fake);                                  \
+    /*CHECK_ADDR_FAKE(iut_addr_, fake);*/                              \
     if (fake)                                                          \
     {                                                                  \
-        const struct sockaddr  *gw_addr;                               \
+        const struct sockaddr  *gw_addr = NULL;                        \
         rpc_socket_domain       domain;                                \
         int                     af;                                    \
         int                     route_prefix;                          \
                                                                        \
-        TEST_GET_ADDR_NO_PORT(gw_addr);                                \
+        /* TEST_GET_ADDR_NO_PORT(gw_addr); */                          \
                                                                        \
         domain = rpc_socket_domain_by_addr(iut_addr_);                 \
         af = addr_family_rpc2h(domain);                                \
@@ -543,11 +540,11 @@ rpc_gen_connection(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
 #define GEN_CONNECTION(srvr_, clnt_, sock_type_, proto_,                \
                        srvr_addr_, clnt_addr_, srvr_s_, clnt_s_)        \
     do {                                                                \
-        te_bool fake;                                                   \
-        const struct sockaddr  *gw_addr;                                \
-        CHECK_ADDR_FAKE(clnt_addr_, fake);                              \
-        if (fake)                                                       \
-            TEST_GET_ADDR_NO_PORT(gw_addr);                             \
+        te_bool fake = FALSE;                                           \
+        const struct sockaddr  *gw_addr = NULL;                         \
+        /* CHECK_ADDR_FAKE(clnt_addr_, fake); */                        \
+        /* if (fake) */                                                 \
+        /*    TEST_GET_ADDR_NO_PORT(gw_addr); */                        \
         if (rpc_gen_connection(srvr_, clnt_,                            \
                                sock_type_, proto_,                      \
                                srvr_addr_, clnt_addr_,                  \
@@ -568,11 +565,11 @@ rpc_gen_connection(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
                             srvr_addr_, clnt_addr_, srvr_s_, clnt_s_,   \
                             bind_wildcard_)                             \
     do {                                                                \
-        te_bool fake;                                                   \
-        const struct sockaddr  *gw_addr;                                \
-        CHECK_ADDR_FAKE(clnt_addr_, fake);                              \
-        if (fake)                                                       \
-            TEST_GET_ADDR_NO_PORT(gw_addr);                             \
+        te_bool fake = FALSE;                                           \
+        const struct sockaddr  *gw_addr = NULL;                         \
+        /* CHECK_ADDR_FAKE(clnt_addr_, fake); */                        \
+        /* if (fake) */                                                 \
+        /*    TEST_GET_ADDR_NO_PORT(gw_addr); */                        \
         if (rpc_gen_connection_wild(srvr_, clnt_,                       \
                                     sock_type_, proto_,                 \
                                     srvr_addr_, clnt_addr_,             \
