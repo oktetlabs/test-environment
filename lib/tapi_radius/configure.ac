@@ -1,7 +1,7 @@
 
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.69])
+AC_PREREQ([2.59])
 AC_INIT([tapi_radius],[0.02],[Boris.Misenov@oktetlabs.ru])
 
 AC_CONFIG_SRCDIR([tapi_radius.c])

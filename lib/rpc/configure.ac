@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.69])
+AC_PREREQ([2.59])
 AC_INIT([rpc],[1.0],[Elena.Vengerova@oktetlabs.ru])
 
 AC_CONFIG_SRCDIR([rpc.h])
