@@ -37,6 +37,7 @@ dist_mybin_SCRIPTS = \
     te_rpc_conv \
     te_tests_info.sh \
     te_struct_layout \
+    te_functions \
     static_libs_check.pl
 
 # Scripts to be installed by 'install'

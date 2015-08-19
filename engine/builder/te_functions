@@ -1,0 +1,83 @@
+#! /bin/bash
+#
+# Test Environment Builder
+#
+# Collection of functions.
+#
+# Copyright (C) 2004 Test Environment authors (see file AUTHORS in
+# the root directory of the distribution).
+#
+# Test Environment is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of
+# the License, or (at your option) any later version.
+#
+# Test Environment is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+# MA  02111-1307  USA
+#
+#
+# Author Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>
+#
+# $Id$
+#
+
+##
+# Calculate a signature of the specified agent
+#
+# @param name of agent host
+# @param compiler with flags
+#
+te_ta_signature()
+{
+    local HOST=$1
+    local CC=$2
+    ssh $HOST '
+    GCC_TARGET=$(
+        '$CC' -print-multiarch 2>/dev/null ||
+        '$CC' -dumpmachine 2>/dev/null)
+    if test "$GCC_TARGET" == ${GCC_TARGET/-linux-gnu} ; then
+        echo "$GCC_TARGET"
+    else
+        TEMP_IN=$(mktemp --suffix=.c)
+        echo "int main(){return 0;}" >$TEMP_IN
+        TEMP_OUT=$(mktemp)
+        '$CC' $TEMP_IN -o $TEMP_OUT
+        LIBC=`ldd $TEMP_OUT |
+            sed -n "s/^\s*libc.so.6 => \(.*\)(0x[0-9a-f]*)$/\1/p"`
+        rm -f $TEMP_OUT
+        rm -f $TEMP_IN
+
+        LIBC_VERSION=`$LIBC | sed -n "s/.*version \([0-9\.]*\).*/\1/p;q"`
+        KERN_HEADERS=`$LIBC | sed -n "s/.*Linux \([0-9\.]*\).*/\1/p"`
+        echo "${GCC_TARGET}_glibc${LIBC_VERSION}_kern${KERN_HEADERS}"
+    fi | sed "s/[-\.]/_/g"
+    '
+}
+
+##
+# Executes the instructions on specified host
+#
+# @param platform signature
+# @param instructions
+#
+te_eval_or_ssh() {
+    local SSHVAR=${1}_SSH
+    shift
+    if test -z "${!SSHVAR}" ; then
+        ( eval "${@}" )
+    else
+        ${!SSHVAR} "
+            cd '$PWD'
+            export SFC_ONLOAD_HEADERS=$SFC_ONLOAD_HEADERS
+            export SFC_ONLOAD_GNU=$SFC_ONLOAD_GNU
+            ${@}
+        "
+    fi
+}

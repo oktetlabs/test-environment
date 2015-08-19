@@ -743,6 +743,8 @@ if test -z "$CONF_DIR" ; then
     fi
 fi
 
+# Include collection of functions
+. $TE_BASE/engine/builder/te_functions
 
 # Process command-line options
 cmd_line_opts="$@"
