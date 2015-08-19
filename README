@@ -126,6 +126,16 @@ flex (>= 2.5.31), gawk, ncurses-dev, libgss3 | libgss0 (>= 0.0.18),
 libiw-dev, pppoe, pppoeconf, libusb-dev, libpam0g-dev, autoconf (>= 2.61),
 automake1.9, bison, libxml-parser-perl
 
+Autoupdate configure.ac
+-----------------------
+
+To update the configure.ac, you can use the autoupdate tool.
+
+Note: After execution autoupdate tool required version (AC_PREREQ) will be
+installed to the current autoconf version. Then it should be reduced to the
+lowest possible version.
+
+
 2.2 External libraries
 ~~~~~~~~~~~~~~~~~~~~~~
 
