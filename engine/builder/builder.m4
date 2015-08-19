@@ -239,7 +239,8 @@ dnl
 define([TE_TA_TYPE],
 [
 [
-if test -n "${TE_BS_TA_$1_SOURCES}" ;
+SOURCES=TE_BS_TA_$1_SOURCES
+if test -n "${!SOURCES}" ;
 then
     TE_BS_CONF_ERR="configuration for TA $1 is specified twice" ; 
     break ; 
@@ -258,19 +259,21 @@ if ! test -d "$SOURCES" ; then
     fi
 fi
 TE_BS_TA="$TE_BS_TA $1"
-TE_BS_TA_$1_SOURCES=$SOURCES
-TE_BS_TA_$1_PARMS="$4"
-TE_BS_TA_$1_CPPFLAGS="$5"
-TE_BS_TA_$1_CFLAGS="$6"
-TE_BS_TA_$1_LDFLAGS="$7"
-TE_BS_TA_$1_LIBS="$8"
+dnl $1 could be "${TE_IUT_TA_TYPE}"
+dnl For declosure of substitutions use declare
+declare "TE_BS_TA_$1_SOURCES"=$SOURCES
+declare "TE_BS_TA_$1_PARMS"="$4"
+declare "TE_BS_TA_$1_CPPFLAGS"="$5"
+declare "TE_BS_TA_$1_CFLAGS"="$6"
+declare "TE_BS_TA_$1_LDFLAGS"="$7"
+declare "TE_BS_TA_$1_LIBS"="$8"
 [
 if test -z "$2" ; then
     PLATFORM=${TE_HOST};
 else
     PLATFORM=$2;
 fi
-TE_BS_TA_$1_PLATFORM=$PLATFORM
+declare "TE_BS_TA_$1_PLATFORM"=$PLATFORM
 ]
 ])
 

@@ -32,6 +32,7 @@
 . builder.conf.processed
 
 SCRIPT_DIR=`dirname $0`
+. ${SCRIPT_DIR}/te_functions
 
 KIND=$1
 PACKAGE=$2
@@ -67,9 +68,12 @@ configure_package()
 
     echo ${PKGSRC}/configure -q --prefix=$PREFIX ${PARMS}
 
-    TE_DEPENDENCIES="$DEPENDENCIES" \
-    CFLAGS= \
-    eval ${PKGSRC}/configure '-q --prefix=$PREFIX' ${PARMS}
+    te_eval_or_ssh "${PLATFORM}" "
+        export TE_EXT_LIBS_FILE=\"$TE_EXT_LIBS_FILE\"
+        TE_DEPENDENCIES='$DEPENDENCIES' \\
+        CFLAGS= \\
+        ${PKGSRC}/configure -q --prefix=$PREFIX ${PARMS}
+    "
 }
 
 # Create list of linked libraries and dependencies for the package
@@ -115,8 +119,13 @@ mkdir -p $PKGBUILDDIR ;
 cd $PKGBUILDDIR ;
 
 if test -e Makefile ; then
-    make install-data || exit 1
-    exit 0
+# Code "echo=echo" was added, for bug fixing of a look "X--tag=CC: command not found"
+# See https://lists.gnu.org/archive/html/bug-libtool/2008-04/msg00011.html
+    te_eval_or_ssh "${PLATFORM}" "
+        echo=echo \\
+        make install-data || exit 1
+    "
+    exit $?
 fi
 
 if test ! -e ${PKGSRC}/configure ; then
@@ -172,6 +181,10 @@ if test $? -ne 0 ; then
     fi
 fi
 
-make install-data || exit 1
-
-exit 0
+# Code "echo=echo" was added, for bug fixing of a look "X--tag=CC: command not found"
+# See https://lists.gnu.org/archive/html/bug-libtool/2008-04/msg00011.html
+te_eval_or_ssh "${PLATFORM}" "
+    echo=echo \\
+    make install-data || exit 1
+"
+exit $?

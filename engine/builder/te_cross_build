@@ -30,6 +30,9 @@
 
 . builder.conf.processed
 
+SCRIPT_DIR=`dirname $0`
+. ${SCRIPT_DIR}/te_functions
+
 PREFIX=$1
 DUMMY=
 
@@ -52,9 +55,15 @@ for p in ${TE_BS_PLATFORMS} ; do
             $PREFIX || exit 1
     done
     for package in $LIBS ; do
-        pushd ${TE_BUILD}/platforms/${p}/lib/$package >/dev/null
-        make ${BUILD_MAKEFLAGS} install || exit 1
-        popd >/dev/null
+# Code "echo=echo" was added, for bug fixing of a look "X--tag=CC: command not found"
+# See https://lists.gnu.org/archive/html/bug-libtool/2008-04/msg00011.html
+        te_eval_or_ssh "${p}" "
+            pushd ${TE_BUILD}/platforms/${p}/lib/$package >/dev/null
+            echo=echo \\
+            make ${BUILD_MAKEFLAGS} install || exit 1
+            popd >/dev/null
+        "
+        res=$?; if test "$res" -ne "0" ; then exit $res; fi
     done
 done
 
@@ -67,9 +76,15 @@ for package in $DUMMY $TE_BS_TA ; do
     fi
     ${TE_BASE}/engine/builder/te_configure_package TA $package $package \
         $package $PLATFORM $PKGSRC $PREFIX || exit 1
-    cd agents/$package
-    make ${BUILD_MAKEFLAGS} install || exit 1
-    cd ../..
+# Code "echo=echo" was added, for bug fixing of a look "X--tag=CC: command not found"
+# See https://lists.gnu.org/archive/html/bug-libtool/2008-04/msg00011.html
+    te_eval_or_ssh "TE_BS_TA_${PLATFORM}" "
+        cd agents/$package
+        echo=echo \\
+        make ${BUILD_MAKEFLAGS} install || exit 1
+        cd ../..
+    "
+    res=$?; if test "$res" -ne "0" ; then exit $res; fi
 done
 
 exit 0
