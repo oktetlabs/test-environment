@@ -203,24 +203,16 @@ rpc_stream_server(rcf_rpc_server *srvr,
 
 /* See the description in tapi_rpc_client_server.h */
 int
-rpc_stream_client_fake(rcf_rpc_server *clnt,
-                       rpc_socket_domain domain, rpc_socket_proto proto,
-                       const struct sockaddr *clnt_addr,
-                       te_bool fake,
-                       rcf_rpc_server *srvr,
-                       const struct sockaddr *srvr_addr,
-                       const struct sockaddr *gw)
+rpc_stream_client(rcf_rpc_server *clnt,
+                  rpc_socket_domain domain, rpc_socket_proto proto,
+                  const struct sockaddr *clnt_addr)
 {
     int sockd = -1;
-
+    
     sockd = rpc_socket(clnt, domain, RPC_SOCK_STREAM, proto);
 
     if (clnt_addr != NULL)
     {
-        if (fake)
-            SET_TRANSPARENT(clnt, clnt_addr, sockd, srvr, srvr_addr,
-                            gw);
-
          rpc_bind(clnt, sockd, clnt_addr);
     }
 
@@ -229,13 +221,11 @@ rpc_stream_client_fake(rcf_rpc_server *clnt,
 
 /* See the description in tapi_rpc_client_server.h */
 int
-rpc_stream_connection_fake(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
-                           rpc_socket_proto proto,
-                           const struct sockaddr *srvr_addr,
-                           const struct sockaddr *clnt_addr,
-                           const struct sockaddr *gw_addr,
-                           te_bool fake,
-                           int *srvr_s, int *clnt_s)
+rpc_stream_connection(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
+                      rpc_socket_proto proto,
+                      const struct sockaddr *srvr_addr,
+                      const struct sockaddr *clnt_addr,
+                      int *srvr_s, int *clnt_s)
 {
     int result        = EXIT_SUCCESS;
     int srvr_sock     = -1;
@@ -251,10 +241,9 @@ rpc_stream_connection_fake(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
         return -1;
     }
 
-    if ((clnt_sock = rpc_stream_client_fake(clnt,
+    if ((clnt_sock = rpc_stream_client(clnt,
                          rpc_socket_domain_by_addr(clnt_addr),
-                         proto, clnt_addr, fake, srvr, srvr_addr,
-                         gw_addr)) < 0)
+                         proto, clnt_addr)) < 0)
     {
         ERROR("%s(): Cannot create clent socket of type SOCK_STREAM",
               __FUNCTION__);
@@ -373,19 +362,16 @@ rpc_gen_connection_wild(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
                         rpc_socket_proto proto,
                         const struct sockaddr *srvr_addr,
                         const struct sockaddr *clnt_addr,
-                        const struct sockaddr *gw_addr,
                         int *srvr_s, int *clnt_s,
                         te_bool srvr_connect,
-                        te_bool bind_wildcard,
-                        te_bool fake)
+                        te_bool bind_wildcard)
 {
     switch (sock_type)
     {
         case RPC_SOCK_STREAM:
-            return rpc_stream_connection_fake(srvr, clnt, proto,
-                                              srvr_addr, clnt_addr,
-                                              gw_addr, fake,
-                                              srvr_s, clnt_s);
+            return rpc_stream_connection(srvr, clnt, proto,
+                                         srvr_addr, clnt_addr, 
+                                         srvr_s, clnt_s);
             break;
 
         case RPC_SOCK_DGRAM:

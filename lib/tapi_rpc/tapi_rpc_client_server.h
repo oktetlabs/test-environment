@@ -48,84 +48,10 @@
 #include "te_errno.h"
 #include "te_rpc_sys_socket.h"
 #include "rcf_rpc.h"
-#include "tapi_cfg.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#define CHECK_SET_TRANSPARENT_GEN(pco_iut_, iut_addr_, iut_s_, pco_tst_, \
-                                  tst_addr_, gw_, fake_)               \
-do {                                                                   \
-    int fake = FALSE /*fake_*/;                                        \
-    /*if (!fake_) */                                                   \
-    /*    CHECK_ADDR_FAKE(iut_addr_, fake); */                         \
-    if (fake)                                                          \
-    {                                                                  \
-        const struct sockaddr  *gw_addr = NULL;                        \
-        rpc_socket_domain       domain;                                \
-        int                     af;                                    \
-        int                     route_prefix;                          \
-        int                     opt_val = 1;                           \
-                                                                       \
-        /* if (gw_ == NULL)   */                                       \
-        /*    TEST_GET_ADDR_NO_PORT(gw_addr); */                       \
-                                                                       \
-        domain = rpc_socket_domain_by_addr(iut_addr_);                 \
-        af = addr_family_rpc2h(domain);                                \
-        route_prefix = te_netaddr_get_size(addr_family_rpc2h(          \
-                        domain)) * 8;                                  \
-                                                                       \
-        tapi_cfg_add_route(pco_tst_->ta, af,                           \
-                te_sockaddr_get_netaddr(iut_addr_),                    \
-                route_prefix,                                          \
-                te_sockaddr_get_netaddr(((gw_ == NULL) ?               \
-                                            gw_addr : gw_)),           \
-                NULL, te_sockaddr_get_netaddr(tst_addr_),              \
-                0, 0, 0, 0,                                            \
-                0, 0, NULL);                                           \
-        rpc_setsockopt(pco_iut_, iut_s_, RPC_IP_TRANSPARENT, &opt_val); \
-    }                                                                  \
-} while(0)
-
-
-#define CHECK_SET_TRANSPARENT(pco_iut_, iut_addr_, iut_s_, pco_tst_,     \
-                              tst_addr_)                                 \
-        CHECK_SET_TRANSPARENT_GEN(pco_iut_, iut_addr_, iut_s_, pco_tst_, \
-                                  tst_addr_, NULL, FALSE)
-#define SET_TRANSPARENT(pco_iut_, iut_addr_, iut_s_, pco_tst_, \
-                        tst_addr_, gw_addr_) \
-        CHECK_SET_TRANSPARENT_GEN(pco_iut_, iut_addr_, iut_s_, pco_tst_,  \
-                                  tst_addr_, gw_addr_, TRUE)
-
-#define CHECK_CLEAR_TRANSPARENT(iut_addr_, pco_tst_, tst_addr_) \
-do {                                                                   \
-    int fake = FALSE;                                                  \
-    /*CHECK_ADDR_FAKE(iut_addr_, fake);*/                              \
-    if (fake)                                                          \
-    {                                                                  \
-        const struct sockaddr  *gw_addr = NULL;                        \
-        rpc_socket_domain       domain;                                \
-        int                     af;                                    \
-        int                     route_prefix;                          \
-                                                                       \
-        /* TEST_GET_ADDR_NO_PORT(gw_addr); */                          \
-                                                                       \
-        domain = rpc_socket_domain_by_addr(iut_addr_);                 \
-        af = addr_family_rpc2h(domain);                                \
-        route_prefix = te_netaddr_get_size(addr_family_rpc2h(          \
-                        domain)) * 8;                                  \
-                                                                       \
-        tapi_cfg_del_route_tmp(pco_tst_->ta, af,                       \
-                               te_sockaddr_get_netaddr(iut_addr_),     \
-                               route_prefix,                           \
-                               te_sockaddr_get_netaddr(gw_addr),       \
-                               NULL,                                   \
-                               te_sockaddr_get_netaddr(tst_addr_),     \
-                               0, 0, 0, 0,                             \
-                               0, 0);                                  \
-    }                                                                  \
-} while(0)
 
 /**
  * Create socket of type @p sock_type from @p domain domain and bind it
@@ -205,38 +131,21 @@ extern int rpc_stream_server(rcf_rpc_server *srvr,
 
 /**
  * Create a client socket of type @c SOCK_STREAM ready to connect to
- * a remote peer (some listening socket). Call @b SET_TRANSPARENT() rutine
- * when @b fake is @c TRUE
+ * a remote peer (some listening socket)
  *
  * @param clnt          PCO where socket will be opened on
  * @param domain        Domain for the socket
  * @param proto         Protocol for the socket
  * @param clnt_addr     Address to bind client to or @c NULL
- * @param fake          Whether @b clnt_addr is not local
- * @param srvr          Peer PCO
- * @param srvr_addr     Address on peer PCO
  * 
  * @return Created socket or -1.
  *
  * @copydoc lib-stream_client-alg
  */
-extern int rpc_stream_client_fake(rcf_rpc_server *clnt,
-                                  rpc_socket_domain domain,
-                                  rpc_socket_proto proto,
-                                  const struct sockaddr *clnt_addr,
-                                  te_bool fake,
-                                  rcf_rpc_server *srvr,
-                                  const struct sockaddr *srvr_addr,
-                                  const struct sockaddr *gw_addr);
-
-static inline int
-rpc_stream_client(rcf_rpc_server *clnt,
-                  rpc_socket_domain domain, rpc_socket_proto proto,
-                  const struct sockaddr *clnt_addr)
-{
-    return rpc_stream_client_fake(clnt, domain, proto, clnt_addr,
-                                  FALSE, NULL, NULL, NULL);
-}
+extern int rpc_stream_client(rcf_rpc_server *clnt,
+                             rpc_socket_domain domain,
+                             rpc_socket_proto proto,
+                             const struct sockaddr *clnt_addr);
 
 /** @page lib-stream_client_server Create a connection with connection oriented sockets
  *
@@ -288,7 +197,6 @@ rpc_stream_client(rcf_rpc_server *clnt,
  * @param srvr_addr     Server address to be used as a template 
  *                      for @b bind() on server side (IN/OUT)
  * @param clnt_addr     Address to bind client to or @c NULL
- * @param fake          Whether @b clnt_addr is not local 
  * @param srvr_s        Descriptor of the socket reside on @p srvr (OUT)
  * @param clnt_s        Descriptor of the socket reside on @p clnt (OUT)
  *
@@ -300,27 +208,12 @@ rpc_stream_client(rcf_rpc_server *clnt,
  * @note When the function returns @c -1 it reports the reason of the
  * failure with ERROR() macro.
  */
-extern int rpc_stream_connection_fake(rcf_rpc_server *srvr,
-                                      rcf_rpc_server *clnt,
-                                      rpc_socket_proto proto,
-                                      const struct sockaddr *srvr_addr,
-                                      const struct sockaddr *clnt_addr,
-                                      const struct sockaddr *gw_addr,
-                                      te_bool fake,
-                                      int *srvr_s, int *clnt_s);
-
-static inline int
-rpc_stream_connection(rcf_rpc_server *srvr,
+extern int rpc_stream_connection(rcf_rpc_server *srvr,
                                  rcf_rpc_server *clnt,
                                  rpc_socket_proto proto,
                                  const struct sockaddr *srvr_addr,
                                  const struct sockaddr *clnt_addr,
-                                 int *srvr_s, int *clnt_s)
-{
-    return rpc_stream_connection_fake(srvr, clnt, proto, srvr_addr,
-                                      clnt_addr, NULL, FALSE, srvr_s,
-                                      clnt_s);
-}
+                                 int *srvr_s, int *clnt_s);
 
 /** @page lib-dgram_client_server Create a connectionless pair of sockets that can communicate with each other without specifying any addresses in their I/O operations 
  *
@@ -512,11 +405,9 @@ extern int rpc_gen_connection_wild(rcf_rpc_server *srvr,
                                    rpc_socket_proto proto,
                                    const struct sockaddr *srvr_addr,
                                    const struct sockaddr *clnt_addr,
-                                   const struct sockaddr *gw_addr,
                                    int *srvr_s, int *clnt_s,
                                    te_bool srvr_connect,
-                                   te_bool bind_wildcard,
-                                   te_bool fake);
+                                   te_bool bind_wildcard);
 
 static inline int
 rpc_gen_connection(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
@@ -524,12 +415,11 @@ rpc_gen_connection(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
                    rpc_socket_proto proto,
                    const struct sockaddr *srvr_addr,
                    const struct sockaddr *clnt_addr,
-                   const struct sockaddr *gw_addr,
-                   int *srvr_s, int *clnt_s, te_bool fake)
+                   int *srvr_s, int *clnt_s)
 {
     return rpc_gen_connection_wild(srvr, clnt, sock_type,
-                                   proto, srvr_addr, clnt_addr, gw_addr,
-                                   srvr_s, clnt_s, TRUE, FALSE, fake);
+                                   proto, srvr_addr, clnt_addr,
+                                   srvr_s, clnt_s, TRUE, FALSE);
 }
 
 /** 
@@ -540,16 +430,10 @@ rpc_gen_connection(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
 #define GEN_CONNECTION(srvr_, clnt_, sock_type_, proto_,                \
                        srvr_addr_, clnt_addr_, srvr_s_, clnt_s_)        \
     do {                                                                \
-        te_bool fake = FALSE;                                           \
-        const struct sockaddr  *gw_addr = NULL;                         \
-        /* CHECK_ADDR_FAKE(clnt_addr_, fake); */                        \
-        /* if (fake) */                                                 \
-        /*    TEST_GET_ADDR_NO_PORT(gw_addr); */                        \
         if (rpc_gen_connection(srvr_, clnt_,                            \
                                sock_type_, proto_,                      \
                                srvr_addr_, clnt_addr_,                  \
-                               fake ? gw_addr : NULL,                   \
-                               srvr_s_, clnt_s_, fake) != 0)            \
+                               srvr_s_, clnt_s_) != 0)                  \
         {                                                               \
             TEST_FAIL("Cannot create a connection of type %s",          \
                        socktype_rpc2str(sock_type_));                   \
@@ -565,18 +449,12 @@ rpc_gen_connection(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
                             srvr_addr_, clnt_addr_, srvr_s_, clnt_s_,   \
                             bind_wildcard_)                             \
     do {                                                                \
-        te_bool fake = FALSE;                                           \
-        const struct sockaddr  *gw_addr = NULL;                         \
-        /* CHECK_ADDR_FAKE(clnt_addr_, fake); */                        \
-        /* if (fake) */                                                 \
-        /*    TEST_GET_ADDR_NO_PORT(gw_addr); */                        \
         if (rpc_gen_connection_wild(srvr_, clnt_,                       \
                                     sock_type_, proto_,                 \
                                     srvr_addr_, clnt_addr_,             \
-                                    fake ? gw_addr : NULL,              \
                                     srvr_s_, clnt_s_,                   \
                                     !bind_wildcard_,                    \
-                                    bind_wildcard_, fake) != 0)         \
+                                    bind_wildcard_) != 0)               \
         {                                                               \
             TEST_FAIL("Cannot create a connection of type %s",          \
                        socktype_rpc2str(sock_type_));                   \
