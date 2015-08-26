@@ -126,6 +126,10 @@ flex (>= 2.5.31), gawk, ncurses-dev, libgss3 | libgss0 (>= 0.0.18),
 libiw-dev, pppoe, pppoeconf, libusb-dev, libpam0g-dev, autoconf (>= 2.61),
 automake1.9, bison, libxml-parser-perl
 
+Unix Test Agent dependencies in 1 line (Debian packages):
+
+make, gawk, pkg-config, gcc, g++, bison, flex (>= 2.5.31).
+
 Autoupdate configure.ac
 -----------------------
 
