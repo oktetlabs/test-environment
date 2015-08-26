@@ -70,8 +70,7 @@ install-exec-hook:
 	pushd $(DESTDIR)/$(prefix) >/dev/null ; \
 	ln -sf $(TE_HOST)/bin/dispatcher.sh dispatcher.sh ; \
 	ln -sf $(TE_HOST)/bin/common_vars.sh common_vars.sh ; \
-	popd >/dev/null ; \
-	$(srcdir)/engine/builder/te_cross_build $(prefix)
+	popd >/dev/null ;
 
 uninstall-hook:
 	pushd $(DESTDIR)/$(prefix) >/dev/null ; \

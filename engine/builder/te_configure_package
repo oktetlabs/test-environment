@@ -163,8 +163,8 @@ PARMS="$PARMS --build=`gcc -dumpmachine` \
        TE_EXT_LIBS_PATH=\"${TE_BUILD}/platforms/${PLATFORM}/lib\" \
        TE_PLATFORM_PATH=\"${TE_BUILD}/platforms/${PLATFORM}/\""
 
-if test "x${KIND}" = "xINCLUDE" -a "x${PLATFORM}" = "x${TE_HOST}" ; then
-    ${SCRIPT_DIR}/te_create_inst_dirs ${DESTDIR}/${PREFIX}/.. 
+if test "x${KIND}" = "xINCLUDE" ; then
+    ${SCRIPT_DIR}/te_create_inst_dirs ${DESTDIR}/${PREFIX}/.. ${PLATFORM}
 fi
 
 configure_package

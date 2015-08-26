@@ -36,13 +36,18 @@ SCRIPT_DIR=`dirname $0`
 PREFIX=$1
 DUMMY=
 
-for p in ${TE_BS_PLATFORMS} ; do
-    if test $p = ${TE_HOST} ; then continue ; fi
+build_platform() {
+    local p=$1
+    local mode=$2
 
-    ${TE_BASE}/engine/builder/te_configure_package INCLUDE include \
-        ${p}_include platforms/${p}/include $p ${TE_BASE}/include \
-        $PREFIX || exit 1
+    if test "$mode" = "all" -o \
+        ! -f platforms/${p}/include/Makefile ; then
+        ${TE_BASE}/engine/builder/te_configure_package INCLUDE include \
+            "${p}_include" "platforms/${p}/include" "$p" "${TE_BASE}/include" \
+            "$PREFIX" || exit 1
+    fi
 
+    local libs=
     LIBS=`eval echo '$'${p}'_LIBS'`
     for package in $LIBS ; do
         PKGNAME=${p}_$package
@@ -50,11 +55,15 @@ for p in ${TE_BS_PLATFORMS} ; do
         if test -z "$PKGSRC" ; then
             PKGSRC=${TE_BASE}/lib/$package ;
         fi
-        ${TE_BASE}/engine/builder/te_configure_package LIB $package \
-            ${p}_$package platforms/${p}/lib/$package $p $PKGSRC \
-            $PREFIX || exit 1
+        if test "$mode" = "all" -o \
+            ! -f platforms/${p}/lib/$package/Makefile ; then
+            ${TE_BASE}/engine/builder/te_configure_package LIB "$package" \
+                "${p}_$package" "platforms/${p}/lib/$package" "$p" "$PKGSRC" \
+                "$PREFIX" || exit 1
+            libs="$libs $package"
+        fi
     done
-    for package in $LIBS ; do
+    for package in $libs ; do
 # Code "echo=echo" was added, for bug fixing of a look "X--tag=CC: command not found"
 # See https://lists.gnu.org/archive/html/bug-libtool/2008-04/msg00011.html
         te_eval_or_ssh "${p}" "
@@ -65,17 +74,24 @@ for p in ${TE_BS_PLATFORMS} ; do
         "
         res=$?; if test "$res" -ne "0" ; then exit $res; fi
     done
-done
+    test -z "$libs"
+}
 
-for package in $DUMMY $TE_BS_TA ; do
+build_agent() {
+    local package=$1
+    local mode=$2
+
     PLATFORM=`eval echo '$TE_BS_TA_'${package}'_PLATFORM'` ;
-    if test "$PLATFORM" = ${TE_HOST} ; then continue ; fi ;
+    if test "$PLATFORM" = "${TE_HOST}" ; then return 0 ; fi ;
     PKGSRC=`eval echo '$TE_BS_TA_'${package}'_SOURCES'` ;
     if test -z "$PKGSRC" ; then
         PKGSRC=${TE_BASE}/agents/$package ;
     fi
-    ${TE_BASE}/engine/builder/te_configure_package TA $package $package \
-        $package $PLATFORM $PKGSRC $PREFIX || exit 1
+    if test "$mode" != "all" -a -f agents/$package/ta ; then
+        return 0
+    fi
+    ${TE_BASE}/engine/builder/te_configure_package TA "$package" "$package" \
+        "$package" "$PLATFORM" "$PKGSRC" "$PREFIX" || exit 1
 # Code "echo=echo" was added, for bug fixing of a look "X--tag=CC: command not found"
 # See https://lists.gnu.org/archive/html/bug-libtool/2008-04/msg00011.html
     te_eval_or_ssh "TE_BS_TA_${PLATFORM}" "
@@ -85,6 +101,67 @@ for package in $DUMMY $TE_BS_TA ; do
         cd ../..
     "
     res=$?; if test "$res" -ne "0" ; then exit $res; fi
-done
+}
+
+build() {
+    declare -A PIDS
+    declare -A CONSTRUCTED
+
+    for ta in ${BUILD_TA_FOR} ; do
+        local TA_TYPE="${ta}_TA_TYPE"
+        local p=${!TA_TYPE}
+        if test -z "$p" ; then
+            echo "Unknown hostname (--build-ta-for=$ta)"
+            exit 1
+        fi
+        if test -n "${CONSTRUCTED[$p]}" ; then continue ; fi
+        (
+            build_platform "$p" all
+            build_agent "$p" all
+        ) >"$p.log" 2>&1 &
+        PIDS[$!]="$p"
+        CONSTRUCTED[$p]=yes
+    done
+
+    if test -n "${BUILD_TA}" ; then
+        for p in ${TE_BS_PLATFORMS} ; do
+            if test "$p" = "${TE_HOST}" ; then continue ; fi
+            if test -n "${CONSTRUCTED[$p]}" ; then continue ; fi
+            (
+                local mode=$BUILD_TA
+                build_platform "$p" "$mode" || mode=all
+                for package in $DUMMY $TE_BS_TA ; do
+                    if test "$package" != "$p" ; then continue ; fi
+                    build_agent "$p" "$mode"
+                done
+            ) >"$p.log" 2>&1 &
+            PIDS[$!]="$p"
+            CONSTRUCTED[$p]=yes
+        done
+    fi
+
+    for pid in "${!PIDS[@]}"; do
+        echo "Build agent ${PIDS[$pid]} - waiting"
+        if wait "$pid" ; then
+            cat "${PIDS[$pid]}.log"
+            echo "Build agent ${PIDS[$pid]} - pass"
+        else
+            res=$?
+            cat "${PIDS[$pid]}.log"
+            local HOST="${PIDS[$pid]}_HOST"
+            echo "Build agent ${PIDS[$pid]} - fail($res, ${!HOST})"
+            exit $res
+        fi
+    done
+
+    if test -n "${BUILD_TA}" ; then
+        for package in $DUMMY $TE_BS_TA ; do
+            if test -n "${CONSTRUCTED[$package]}" ; then continue ; fi
+            build_agent "$package" "$BUILD_TA"
+        done
+    fi
+}
+
+build
 
 exit 0

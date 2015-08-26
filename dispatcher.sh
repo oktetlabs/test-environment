@@ -85,7 +85,7 @@ Generic options:
                                 to be generated (log.txt by default)
   --log-txt-detailed-packets    Include detailed packet dumps in text log.
 
-  --no-builder                  Do not build TE
+  --no-builder                  Do not build TE and TA
   --no-nuts-build               Do not build NUTs
   --no-tester                   Do not run Tester
   --no-cs                       Do not run Configurator
@@ -110,10 +110,14 @@ Generic options:
   --build-rcf                   Build RCF.
   --build-tester                Build Tester.
   --build-lib-xxx               Build host library xxx.
-  --build-ta-xxx                Build Test Agent xxx.
   --build-log-xxx               Build package with log level 0xFFFF.
   --build-nolog-xxx             Build package with undefined log level.
   --build-parallel[=num]        Enable parallel build using num threads.
+
+  --build-ta-none               Don't build Test Agents.
+  --build-ta-missing            Build only new Test Agents.
+  --build-ta-all                Force build all Test Agents.
+  --build-ta-for=<hostname>     Rebuild agent (and all the libraries) used for <hostname>.
 
   --tester-suite=<name>:<path>  Specify path to the Test Suite.
   --tester-no-run               Don't run any tests.
@@ -305,6 +309,8 @@ TESTER=yes
 RCF=yes
 CS=yes
 LOGGER=yes
+BUILD_TA=all
+BUILD_TA_FOR=
 
 # Whether Test Suite should be built
 BUILD_TS=yes
@@ -441,7 +447,9 @@ process_opts()
 
 
             -q) QUIET=yes ;;
-            -n) BUILDER= ; TESTER_OPTS="${TESTER_OPTS} --nobuild" ;;
+            -n) BUILDER= ; TESTER_OPTS="${TESTER_OPTS} --nobuild"
+                BUILD_TA= ; BUILD_TA_FOR=
+                ;;
             --live-log)  LIVE_LOG=yes ; TESTER_OPTS="-q ${TESTER_OPTS}" ;;
 
             --log-txt=*)        RGT_LOG_TXT="${1#--log-txt=}" ;;
@@ -460,7 +468,7 @@ process_opts()
                          VG_LOGGER=yes
                          VG_TESTER=yes ;;
         
-            --no-builder) BUILDER= ;;
+            --no-builder) BUILDER= ; BUILD_TA= ; BUILD_TA_FOR= ;;
             --no-nuts-build) BUILD_NUTS= ;;
             --no-tester) TESTER= ;;
             --no-cs) CS= ;;
@@ -578,7 +586,12 @@ process_opts()
                 BUILDER_OPTS="${BUILDER_OPTS} --pathnolog=${1#--build-nolog=}"
                 BUILDER=
                 ;;
-                
+
+            --build-ta-none)    BUILD_TA= ;;
+            --build-ta-missing) BUILD_TA=missing ;;
+            --build-ta-all)     BUILD_TA=all ;;
+            --build-ta-for=*)   BUILD_TA_FOR="${BUILD_TA_FOR} ${1#--build-ta-for=}" ;;
+
             --build-*) 
                 BUILDER_OPTS="${BUILDER_OPTS} --${1#--build-}" 
                 BUILDER=
@@ -911,6 +924,7 @@ fi
 
 # Build Test Environment
 
+export TE_EXT_LIBS_FILE="${TE_BUILD}/te_ext_libs_files"
 TE_BUILD_LOG="${TE_RUN_DIR}/build.log"
 if test -n "$BUILDER" ; then
     pushd "${TE_BASE}" >/dev/null
@@ -938,6 +952,16 @@ if test -n "$BUILDER" ; then
         "${TE_BASE}/configure" -q --prefix="${TE_INSTALL}" \
             --with-config="${CONF_BUILDER}" || exit_with_log
         make install || exit_with_log
+    fi
+fi
+
+if test -n "$BUILD_TA" -o -n "$BUILD_TA_FOR" ; then
+    export BUILD_TA=$BUILD_TA
+    export BUILD_TA_FOR=$BUILD_TA_FOR
+    if test -n "${QUIET}" ; then
+        te_cross_build "${TE_INSTALL}" >>"${TE_BUILD_LOG}" || exit_with_log
+    else
+        te_cross_build "${TE_INSTALL}" || exit_with_log
     fi
 fi
 
