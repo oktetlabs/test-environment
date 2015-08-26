@@ -87,3 +87,24 @@ te_eval_or_ssh() {
         "
     fi
 }
+
+
+##
+# Check if the @p list contains the @p target
+#
+# @param target String for search
+# @param list   Elements list
+#
+# @return       @c 0 in case target argument is found,
+#               else - @c 1 is returned.
+#
+te_is_in_list() {
+    local target=$1
+    shift
+    for i in ${@} ; do
+        if test "$target" = "$i" ; then
+            return 0
+        fi
+    done
+    return 1
+}
