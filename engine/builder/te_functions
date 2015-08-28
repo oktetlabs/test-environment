@@ -81,8 +81,7 @@ te_eval_or_ssh() {
     else
         ${!SSHVAR} "
             cd '$PWD'
-            export SFC_ONLOAD_HEADERS=$SFC_ONLOAD_HEADERS
-            export SFC_ONLOAD_GNU=$SFC_ONLOAD_GNU
+            $TE_EVAL_OR_SSH_EXPORT
             ${@}
         "
     fi
