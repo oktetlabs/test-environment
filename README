@@ -130,6 +130,10 @@ Unix Test Agent dependencies in 1 line (Debian packages):
 
 make, gawk, pkg-config, gcc, g++, bison, flex (>= 2.5.31).
 
+Unix Test Agent dependencies in 1 line (Redhat/CentOS packages):
+
+make, gawk, pkg-config, gcc, g++, bison, flex (>= 2.5.31), glibc-static.
+
 Autoupdate configure.ac
 -----------------------
 
