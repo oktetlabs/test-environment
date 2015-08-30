@@ -3285,7 +3285,8 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
                         tarpc_sock_extended_err    *tarpc_ext_err;
                         struct sockaddr            *sa;
 
-                        if (len < (int)sizeof(struct sock_extended_err))
+                        if (len != sizeof(struct sock_extended_err) +
+                                   (int)sizeof(*sa))
                         {
                             ERROR("%s(): incorrect data len for IP_RECVERR "
                                   "value", __FUNCTION__);
@@ -3407,7 +3408,7 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
                         struct timespec                 *ts;
                         struct tarpc_scm_timestamping   *tarpc_tstamp;
 
-                        if (len < 3 * ((int)sizeof(struct timespec)))
+                        if (len != 3 * ((int)sizeof(struct timespec)))
                         {
                             ERROR("%s(): incorrect data len %d for "
                                   "SO_TIMESTAMPING value",
@@ -3436,7 +3437,7 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
                     struct tarpc_onload_scm_timestamping_stream *rpcts;
                     struct rpc_onload_scm_timestamping_stream *ts;
 
-                    if (len < (int)sizeof(*ts))
+                    if (len != (int)sizeof(*ts))
                     {
                         ERROR("%s(): incorrect data len %d/%d for "
                               "ONLOAD_SCM_TIMESTAMPING_STREAM value",
@@ -3669,17 +3670,13 @@ cmsg_data_rpc2h(tarpc_cmsghdr *rpc_cmsg,
                 int                         max_len;
                 struct sockaddr            *sa;
 
-                max_len = rpc_cmsg->data.data_len;
-                if (2 * (int)sizeof(struct sockaddr_storage) > max_len)
-                    max_len = 2 * sizeof(struct sockaddr_storage);
-
+                max_len = sizeof(*sa) + sizeof(*ext_err);
                 if (*len < max_len)
                 {
                     ERROR("%s(): not enough memory for "
                           "native IP_RECVERR value", __FUNCTION__);
                     return TE_ENOMEM;
                 }
-
                 *len = max_len;
 
                 ext_err = (struct sock_extended_err *)data;
