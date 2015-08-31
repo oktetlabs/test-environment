@@ -3945,3 +3945,18 @@ msg_control_rpc2h(tarpc_cmsghdr *rpc_cmsg,
 
     return 0;
 }
+
+/* Described in te_rpc_sys_socket.h */
+const char *
+scm_tstamp_rpc2str(rpc_scm_tstamp type)
+{
+    switch (type)
+    {
+        RPC2STR(SCM_TSTAMP_SND);
+        RPC2STR(SCM_TSTAMP_SCHED);
+        RPC2STR(SCM_TSTAMP_ACK);
+
+        default:
+            return "<Unknown value>";
+    }
+}

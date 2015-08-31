@@ -68,6 +68,19 @@ typedef struct rpc_scm_timestamping {
     struct timespec hwtimeraw;    /**< Original HW timestamp. */
 } rpc_scm_timestamping;
 
+/**
+ * The type of softawre timestamp which is passed in @b sock_extended_err
+ * @b ee_info.
+ */
+typedef enum rpc_scm_tstamp {
+    RPC_SCM_TSTAMP_SND = 0, /**< Skb is passed to NIC or HW timestamp. */
+    RPC_SCM_TSTAMP_SCHED,   /**< Data enters the packet scheduler. */
+    RPC_SCM_TSTAMP_ACK,     /**< Data is acknowledged. */
+} rpc_scm_tstamp;
+
+/** Convert RPC domain to string */
+extern const char * scm_tstamp_rpc2str(rpc_scm_tstamp type);
+
 /** Length of the common part of the "struct sockaddr" */
 #define SA_COMMON_LEN \
     (sizeof(struct sockaddr) - sizeof(((struct sockaddr *)0)->sa_data))
