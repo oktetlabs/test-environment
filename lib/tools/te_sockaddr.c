@@ -614,7 +614,23 @@ te_sockaddr2str(const struct sockaddr *sa)
 
     if (!te_sockaddr_is_af_supported(sa->sa_family))
     {
-        return "<Not supported address family>";
+        if (sa->sa_family == AF_UNSPEC)
+        {
+            int offt = 0;
+            int i;
+
+            offt += snprintf(ptr, SOCKADDR2STR_ADDRSTRLEN,
+                             "<Address family is AF_UNSPEC raw value=");
+            for (i = 0; i < (int)sizeof(*sa); i++)
+                offt += snprintf(ptr + offt,
+                                 SOCKADDR2STR_ADDRSTRLEN - offt, "%2.2x",
+                                 *((uint8_t *)sa + i));
+            snprintf(ptr + offt, SOCKADDR2STR_ADDRSTRLEN - offt, ">");
+
+            return ptr;
+        }
+        else
+            return "<Not supported address family>";
     }
 
 #ifdef AF_LOCAL
