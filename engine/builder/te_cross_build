@@ -103,6 +103,16 @@ build_agent() {
     res=$?; if test "$res" -ne "0" ; then exit $res; fi
 }
 
+print_platform() {
+    local HOSTVAR="${1}_HOST"
+    echo "${1}${HOSTVAR:+ on }${!HOSTVAR}"
+}
+
+print_build_agent_start() {
+    echo "Build agent $(print_platform $1) - start"
+    echo "  log file location: $(readlink -f "$2")"
+}
+
 build() {
     declare -A PIDS
     declare -A CONSTRUCTED
@@ -115,6 +125,7 @@ build() {
             exit 1
         fi
         if test -n "${CONSTRUCTED[$p]}" ; then continue ; fi
+        print_build_agent_start "$p" "$p.log" >&2
         (
             build_platform "$p" all
             build_agent "$p" all
@@ -127,6 +138,7 @@ build() {
         for p in ${TE_BS_PLATFORMS} ; do
             if test "$p" = "${TE_HOST}" ; then continue ; fi
             if test -n "${CONSTRUCTED[$p]}" ; then continue ; fi
+            print_build_agent_start "$p" "$p.log" >&2
             (
                 local mode=$BUILD_TA
                 build_platform "$p" "$mode" || mode=all
@@ -141,15 +153,13 @@ build() {
     fi
 
     for pid in "${!PIDS[@]}"; do
-        echo "Build agent ${PIDS[$pid]} - waiting"
+        local p="${PIDS[$pid]}"
         if wait "$pid" ; then
-            cat "${PIDS[$pid]}.log"
-            echo "Build agent ${PIDS[$pid]} - pass"
+            echo "Build agent $(print_platform $p) - pass" >&2
         else
             res=$?
-            cat "${PIDS[$pid]}.log"
-            local HOST="${PIDS[$pid]}_HOST"
-            echo "Build agent ${PIDS[$pid]} - fail($res, ${!HOST})"
+            cat "$p.log" >&2
+            echo "Build agent $(print_platform $p) - fail ($res)" >&2
             exit $res
         fi
     done
