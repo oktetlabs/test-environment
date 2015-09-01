@@ -28,7 +28,7 @@
 # $Id$
 #
 
-. builder.conf.processed
+. ${TE_BUILD}/builder.conf.processed
 
 SCRIPT_DIR=`dirname $0`
 . ${SCRIPT_DIR}/te_functions
