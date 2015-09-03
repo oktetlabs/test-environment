@@ -128,11 +128,11 @@ automake1.9, bison, libxml-parser-perl
 
 Unix Test Agent dependencies in 1 line (Debian packages):
 
-make, gawk, pkg-config, gcc, g++, bison, flex (>= 2.5.31).
+apt-get install make gawk pkg-config gcc g++ bison flex
 
 Unix Test Agent dependencies in 1 line (Redhat/CentOS packages):
 
-make, gawk, pkg-config, gcc, g++, bison, flex (>= 2.5.31), glibc-static.
+yum install make gawk pkgconfig gcc gcc-c++ bison flex glibc-static
 
 Autoupdate configure.ac
 -----------------------
