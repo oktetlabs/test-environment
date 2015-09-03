@@ -62,8 +62,10 @@ dnl
 dnl Check for 'struct sock_extended_err'
 dnl
 AC_CHECK_HEADERS([linux/errqueue.h])
-AC_CHECK_TYPES([struct sock_extended_err], [], [],
-               [#include <linux/errqueue.h>])
+AC_CHECK_TYPES([struct sock_extended_err], [], [], [
+#include <time.h>
+#include <linux/errqueue.h>
+])
 
 dnl
 dnl Check for 'struct in_pktinfo'
