@@ -36,6 +36,26 @@ SCRIPT_DIR=`dirname $0`
 PREFIX=$1
 DUMMY=
 
+need_build_platform() {
+    local p=$1
+    local mode=$2
+
+    if test "$mode" = "all" -o \
+        ! -f platforms/${p}/include/Makefile ; then
+        return 0
+    fi
+
+    LIBS=`eval echo '$'${p}'_LIBS'`
+    for package in $LIBS ; do
+        if test "$mode" = "all" -o \
+            ! -f platforms/${p}/lib/$package/Makefile ; then
+            return 0
+        fi
+    done
+
+    return 1
+}
+
 build_platform() {
     local p=$1
     local mode=$2
@@ -75,6 +95,18 @@ build_platform() {
         res=$?; if test "$res" -ne "0" ; then exit $res; fi
     done
     test -z "$libs"
+}
+
+need_build_agent() {
+    local package=$1
+    local mode=$2
+
+    PLATFORM=`eval echo '$TE_BS_TA_'${package}'_PLATFORM'` ;
+    if test "$PLATFORM" = "${TE_HOST}" ; then return 1 ; fi ;
+    if test "$mode" != "all" -a -f agents/$package/ta ; then
+        return 1
+    fi
+    return 0
 }
 
 build_agent() {
@@ -138,14 +170,20 @@ build() {
         for p in ${TE_BS_PLATFORMS} ; do
             if test "$p" = "${TE_HOST}" ; then continue ; fi
             if test -n "${CONSTRUCTED[$p]}" ; then continue ; fi
+            local AGENT_EXIST=$(te_is_in_list $p $DUMMY $TE_BS_TA \
+                && echo yes || echo no)
+            if ! need_build_platform "$p" "$BUILD_TA" && \
+                ( test "$AGENT_EXIST" = "no" || \
+                ! need_build_agent "$p" "$BUILD_TA" ) ; then
+                continue
+            fi
             print_build_agent_start "$p" "$p.log" >&2
             (
                 local mode=$BUILD_TA
                 build_platform "$p" "$mode" || mode=all
-                for package in $DUMMY $TE_BS_TA ; do
-                    if test "$package" != "$p" ; then continue ; fi
+                if test "$AGENT_EXIST" = "yes" ; then
                     build_agent "$p" "$mode"
-                done
+                fi
             ) >"$p.log" 2>&1 &
             PIDS[$!]="$p"
             CONSTRUCTED[$p]=yes
