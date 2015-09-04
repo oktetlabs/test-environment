@@ -70,6 +70,9 @@
 #ifndef EPOLLHUP
 #define EPOLLHUP 0
 #endif
+#ifndef EPOLLRDHUP
+#define EPOLLRDHUP 0
+#endif
 #ifndef EPOLLONESHOT
 #define EPOLLONESHOT 0
 #endif
@@ -108,6 +111,7 @@
                           EPOLLRDNORM | EPOLLWRNORM | \
                           EPOLLRDBAND | EPOLLWRBAND | \
                           EPOLLMSG | EPOLLERR | EPOLLHUP | \
+                          EPOLLRDHUP | \
                           EPOLLONESHOT | EPOLLET)
 
 /** All known epoll flags */
@@ -129,6 +133,7 @@ epoll_event_rpc2h(unsigned int events)
            (!!(events & RPC_EPOLLMSG) * EPOLLMSG) |
            (!!(events & RPC_EPOLLERR) * EPOLLERR) |
            (!!(events & RPC_EPOLLHUP) * EPOLLHUP) |
+           (!!(events & RPC_EPOLLRDHUP) * EPOLLRDHUP) |
            (!!(events & RPC_EPOLLONESHOT) * EPOLLONESHOT) |
            (!!(events & RPC_EPOLLET) * EPOLLET);
 }
@@ -157,6 +162,7 @@ epoll_event_h2rpc(unsigned int events)
            | (!!(events & EPOLLMSG) * RPC_EPOLLMSG)
            | (!!(events & EPOLLERR) * RPC_EPOLLERR)
            | (!!(events & EPOLLHUP) * RPC_EPOLLHUP)
+           | (!!(events & EPOLLRDHUP) * RPC_EPOLLRDHUP)
            | (!!(events & EPOLLONESHOT) * RPC_EPOLLONESHOT)
            | (!!(events & EPOLLET) * RPC_EPOLLET)
            ;

@@ -58,14 +58,18 @@ typedef enum rpc_poll_event {
     RPC_POLLERR      = 0x0080, /**< Error condition */
     RPC_POLLHUP      = 0x0100, /**< Hung up */
     RPC_POLLNVAL     = 0x0200, /**< Invalid request: fd not open */
-    RPC_POLL_UNKNOWN = 0x0400  /**< Invalid poll event */
+    RPC_POLLRDHUP    = 0x0400, /**< Stream socket peer closed
+                                    connection, or shut down
+                                    writing half of connection. */
+    RPC_POLL_UNKNOWN = 0x0800  /**< Invalid poll event */
 } rpc_poll_event;
 
 /** All known poll events */
 #define RPC_POLL_ALL        (RPC_POLLIN | RPC_POLLPRI | RPC_POLLOUT | \
                              RPC_POLLRDNORM | RPC_POLLWRNORM | \
                              RPC_POLLRDBAND | RPC_POLLWRBAND | \
-                             RPC_POLLERR | RPC_POLLHUP | RPC_POLLNVAL)
+                             RPC_POLLERR | RPC_POLLHUP | RPC_POLLNVAL | \
+                             RPC_POLLRDHUP)
 
 /** List of mapping numerical value to string for 'rpc_poll_event' */
 #define POLL_EVENT_MAPPING_LIST \
@@ -79,6 +83,7 @@ typedef enum rpc_poll_event {
             RPC_BIT_MAP_ENTRY(POLLERR), \
             RPC_BIT_MAP_ENTRY(POLLHUP), \
             RPC_BIT_MAP_ENTRY(POLLNVAL), \
+            RPC_BIT_MAP_ENTRY(POLLRDHUP), \
             RPC_BIT_MAP_ENTRY(POLL_UNKNOWN)
 
 /**

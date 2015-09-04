@@ -64,6 +64,8 @@ typedef enum rpc_epoll_evt {
     RPC_EPOLLERR     = 0x008,
     RPC_EPOLLHUP     = 0x010,
 
+    RPC_EPOLLRDHUP   = 0x2000,
+
     RPC_EPOLL_UNKNOWN = 0x800,  /**< Invalid poll event */
 
     RPC_EPOLLONESHOT = (1 << 30),
@@ -76,6 +78,7 @@ typedef enum rpc_epoll_evt {
                               RPC_EPOLLRDBAND | RPC_EPOLLWRBAND | \
                               RPC_EPOLLMSG | \
                               RPC_EPOLLERR | RPC_EPOLLHUP | \
+                              RPC_EPOLLRDHUP | \
                               RPC_EPOLLONESHOT | RPC_EPOLLET)
 
 /** All known epoll flags */
@@ -92,6 +95,7 @@ typedef enum rpc_epoll_evt {
             RPC_BIT_MAP_ENTRY(EPOLLWRBAND), \
             RPC_BIT_MAP_ENTRY(EPOLLERR), \
             RPC_BIT_MAP_ENTRY(EPOLLHUP), \
+            RPC_BIT_MAP_ENTRY(EPOLLRDHUP), \
             RPC_BIT_MAP_ENTRY(EPOLLMSG), \
             RPC_BIT_MAP_ENTRY(EPOLLONESHOT), \
             RPC_BIT_MAP_ENTRY(EPOLLET), \

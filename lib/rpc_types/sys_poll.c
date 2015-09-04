@@ -66,12 +66,16 @@
 #ifndef POLLWRBAND
 #define POLLWRBAND  0
 #endif
+#ifndef POLLRDHUP
+#define POLLRDHUP  0
+#endif
 
 /** All known poll events */
 #define POLL_ALL        (POLLIN | POLLPRI | POLLOUT | \
                          POLLRDNORM | POLLWRNORM | \
                          POLLRDBAND | POLLWRBAND | \
-                         POLLERR | POLLHUP | POLLNVAL)
+                         POLLERR | POLLHUP | POLLNVAL | \
+                         POLLRDHUP)
 
 unsigned int
 poll_event_rpc2h(unsigned int events)
@@ -88,7 +92,8 @@ poll_event_rpc2h(unsigned int events)
            (!!(events & RPC_POLLWRBAND) * POLLWRBAND) |
            (!!(events & RPC_POLLERR) * POLLERR) |
            (!!(events & RPC_POLLHUP) * POLLHUP) |
-           (!!(events & RPC_POLLNVAL) * POLLNVAL);
+           (!!(events & RPC_POLLNVAL) * POLLNVAL) |
+           (!!(events & RPC_POLLRDHUP) * POLLRDHUP);
 }
 
 unsigned int
@@ -105,5 +110,6 @@ poll_event_h2rpc(unsigned int events)
            | (!!(events & POLLERR) * RPC_POLLERR)
            | (!!(events & POLLHUP) * RPC_POLLHUP)
            | (!!(events & POLLNVAL) * RPC_POLLNVAL)
+           | (!!(events & POLLRDHUP) * RPC_POLLRDHUP)
            ;
 }
