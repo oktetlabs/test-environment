@@ -36,6 +36,35 @@ SCRIPT_DIR=`dirname $0`
 PREFIX=$1
 DUMMY=
 
+##
+# Check the ability to create files in the given directory
+#
+# @param platform signature
+# @param directory for check
+#
+# @par Scenario:
+#
+# -# Create a file and check the result
+# -# Check that the file exists
+# -# Remove the file and check the result
+#
+# Note: if any operation fails the script execution will be interrupted
+#
+fs_sanity_check() {
+    local iseval=true
+    te_eval_or_ssh "$1" "
+        test -n \"\$iseval\" && return 0
+        set -e
+        fname=\"\$(mktemp \"$2/XXXXXX\")\"
+        test -f \"\$fname\"
+        rm \"\$fname\"
+    "
+    if test "$?" -ne "0" ; then
+        echo "nfs sanity check fail ($2)" >&2
+        exit 1
+    fi
+}
+
 need_build_platform() {
     local p=$1
     local mode=$2
@@ -60,6 +89,8 @@ build_platform() {
     local p=$1
     local mode=$2
 
+    mkdir -p "platforms/${p}"
+    fs_sanity_check "${p}" "platforms/${p}"
     if test "$mode" = "all" -o \
         ! -f platforms/${p}/include/Makefile ; then
         ${TE_BASE}/engine/builder/te_configure_package INCLUDE include \
@@ -122,6 +153,8 @@ build_agent() {
     if test "$mode" != "all" -a -f agents/$package/ta ; then
         return 0
     fi
+    mkdir -p "agents/$package"
+    fs_sanity_check "TE_BS_TA_${PLATFORM}" "agents/$package"
     ${TE_BASE}/engine/builder/te_configure_package TA "$package" "$package" \
         "$package" "$PLATFORM" "$PKGSRC" "$PREFIX" || exit 1
 # Code "echo=echo" was added, for bug fixing of a look "X--tag=CC: command not found"

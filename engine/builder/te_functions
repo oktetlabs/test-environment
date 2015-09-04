@@ -80,7 +80,7 @@ te_eval_or_ssh() {
         ( eval "${@}" )
     else
         ${!SSHVAR} "
-            cd '$PWD'
+            cd '$PWD' || exit 1
             $TE_EVAL_OR_SSH_EXPORT
             ${@}
         "
