@@ -74,7 +74,8 @@ need_build_platform() {
         return 0
     fi
 
-    LIBS=`eval echo '$'${p}'_LIBS'`
+    local plibs="${p}_LIBS"
+    LIBS="${!plibs}"
     for package in $LIBS ; do
         if test "$mode" = "all" -o \
             ! -f platforms/${p}/lib/$package/Makefile ; then
@@ -99,10 +100,12 @@ build_platform() {
     fi
 
     local libs=
-    LIBS=`eval echo '$'${p}'_LIBS'`
+    local plibs="${p}_LIBS"
+    LIBS="${!plibs}"
     for package in $LIBS ; do
         PKGNAME=${p}_$package
-        PKGSRC=`eval echo '$TE_BS_LIB_'${PKGNAME}'_SOURCES'`
+        local ppkgsrc="TE_BS_LIB_${PKGNAME}_SOURCES"
+        PKGSRC="${!ppkgsrc}"
         if test -z "$PKGSRC" ; then
             PKGSRC=${TE_BASE}/lib/$package ;
         fi
@@ -132,7 +135,8 @@ need_build_agent() {
     local package=$1
     local mode=$2
 
-    PLATFORM=`eval echo '$TE_BS_TA_'${package}'_PLATFORM'` ;
+    local pplatform="TE_BS_TA_${package}_PLATFORM"
+    PLATFORM="${!pplatform}"
     if test "$PLATFORM" = "${TE_HOST}" ; then return 1 ; fi ;
     if test "$mode" != "all" -a -f agents/$package/ta ; then
         return 1
@@ -144,9 +148,11 @@ build_agent() {
     local package=$1
     local mode=$2
 
-    PLATFORM=`eval echo '$TE_BS_TA_'${package}'_PLATFORM'` ;
+    local pplatform="TE_BS_TA_${package}_PLATFORM"
+    PLATFORM="${!pplatform}"
     if test "$PLATFORM" = "${TE_HOST}" ; then return 0 ; fi ;
-    PKGSRC=`eval echo '$TE_BS_TA_'${package}'_SOURCES'` ;
+    local ppkgsrc="TE_BS_TA_${package}_SOURCES"
+    PKGSRC="${!ppkgsrc}"
     if test -z "$PKGSRC" ; then
         PKGSRC=${TE_BASE}/agents/$package ;
     fi
