@@ -176,7 +176,8 @@ build_agent() {
 
 print_platform() {
     local HOSTVAR="${1}_HOST"
-    echo "${1}${HOSTVAR:+ on }${!HOSTVAR}"
+    local HOST=${!HOSTVAR}
+    echo "${1}${HOST:+ on }${HOST}"
 }
 
 print_build_agent_start() {
