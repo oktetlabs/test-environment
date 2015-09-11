@@ -225,7 +225,7 @@ tcp_nodelay_enable(int sock)
 te_errno
 rpc_transport_init(const char *tmp_path)
 {
-    char port[64];
+    char port[256];
     
 #if (RPC_TRANSPORT == RPC_TRANSPORT_WINPIPE)
     int  i;
