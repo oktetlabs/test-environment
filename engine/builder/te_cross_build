@@ -160,12 +160,12 @@ build_agent() {
         return 0
     fi
     mkdir -p "agents/$package"
-    fs_sanity_check "TE_BS_TA_${PLATFORM}" "agents/$package"
+    fs_sanity_check "${PLATFORM}" "agents/$package"
     ${TE_BASE}/engine/builder/te_configure_package TA "$package" "$package" \
         "$package" "$PLATFORM" "$PKGSRC" "$PREFIX" || exit 1
 # Code "echo=echo" was added, for bug fixing of a look "X--tag=CC: command not found"
 # See https://lists.gnu.org/archive/html/bug-libtool/2008-04/msg00011.html
-    te_eval_or_ssh "TE_BS_TA_${PLATFORM}" "
+    te_eval_or_ssh "${PLATFORM}" "
         cd agents/$package
         echo=echo \\
         make ${BUILD_MAKEFLAGS} install || exit 1
