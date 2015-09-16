@@ -419,7 +419,7 @@ static int
 tcp_mem_set(const char *proc_file, int *par_array, int len)
 {
     FILE     *f;
-    char      tmp[80];
+    char      tmp[128];
 
     if ((f = fopen(proc_file, "w")) == NULL)
     {
