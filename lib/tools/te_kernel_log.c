@@ -79,8 +79,6 @@
 #include "te_raw_log.h"
 #include "logger_api.h"
 #include "rcf_common.h"
-#include "rcf_ch_api.h"
-#include "rcf_pch.h"
 #include "te_serial_parser.h"
 
 #ifdef HAVE_ARPA_INET_H
