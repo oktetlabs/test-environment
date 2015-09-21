@@ -5573,7 +5573,7 @@ copy_ta_libs(char *path)
 {
     char    path_to_lib[RCF_MAX_PATH];
     char    path_to_chmod[RCF_MAX_PATH];
-    char    str[RCF_MAX_PATH];
+    char    str[MAX_CMD];
     char    cmd[MAX_CMD];
     char   *begin_path = 0; 
     te_bool was_cut = FALSE;
