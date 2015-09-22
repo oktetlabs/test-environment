@@ -62,7 +62,6 @@
 int 
 rpc_wsa_startup(rcf_rpc_server *rpcs)
 {
-    rcf_rpc_op                 op;
     tarpc_wsa_startup_in  in;
     tarpc_wsa_startup_out out; 
 
@@ -75,7 +74,6 @@ rpc_wsa_startup(rcf_rpc_server *rpcs)
         RETVAL_INT(wsa_startup, -1);
     }
 
-    op = rpcs->op;
     rcf_rpc_call(rpcs, "wsa_startup", &in, &out);
 
     TAPI_RPC_LOG(rpcs, WSAStartup, "", "%d", out.retval);
@@ -86,7 +84,6 @@ rpc_wsa_startup(rcf_rpc_server *rpcs)
 int 
 rpc_wsa_cleanup(rcf_rpc_server *rpcs)
 {
-    rcf_rpc_op                 op;
     tarpc_wsa_cleanup_in  in;
     tarpc_wsa_cleanup_out out; 
 
@@ -99,7 +96,6 @@ rpc_wsa_cleanup(rcf_rpc_server *rpcs)
         RETVAL_INT(wsa_cleanup, -1);
     }
 
-    op = rpcs->op;
     rcf_rpc_call(rpcs, "wsa_cleanup", &in, &out);
 
     TAPI_RPC_LOG(rpcs, WSACleanup, "", "%d", out.retval);
@@ -1333,7 +1329,6 @@ rpc_wsa_send(rcf_rpc_server *rpcs,
              ssize_t *bytes_sent, rpc_overlapped overlapped,
              const char *callback)
 {
-    rcf_rpc_op         op;
     tarpc_wsa_send_in  in;
     tarpc_wsa_send_out out;
 
@@ -1351,9 +1346,6 @@ rpc_wsa_send(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(wsa_send, -1);
     }
-
-    op = rpcs->op;
-
 
     if (iovcnt > RCF_RPC_MAX_IOVEC)
     {
@@ -1421,7 +1413,6 @@ rpc_wsa_recv(rcf_rpc_server *rpcs,
              ssize_t *bytes_received, rpc_overlapped overlapped,
              const char *callback)
 {
-    rcf_rpc_op         op;
     tarpc_wsa_recv_in  in;
     tarpc_wsa_recv_out out;
 
@@ -1439,9 +1430,6 @@ rpc_wsa_recv(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(wsa_recv, -1);
     }
-
-    op = rpcs->op;
-
 
     if (riovcnt > RCF_RPC_MAX_IOVEC)
     {
@@ -1538,7 +1526,6 @@ rpc_wsa_send_to(rcf_rpc_server *rpcs, int s, const struct rpc_iovec *iov,
                 ssize_t *bytes_sent, const struct sockaddr *to,
                 rpc_overlapped overlapped, const char *callback)
 {
-    rcf_rpc_op            op;
     tarpc_wsa_send_to_in  in;
     tarpc_wsa_send_to_out out;
 
@@ -1556,8 +1543,6 @@ rpc_wsa_send_to(rcf_rpc_server *rpcs, int s, const struct rpc_iovec *iov,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(wsa_send_to, -1);
     }
-
-    op = rpcs->op;
 
     if (iovcnt > RCF_RPC_MAX_IOVEC)
     {
@@ -1633,7 +1618,6 @@ rpc_wsa_recv_from(rcf_rpc_server *rpcs, int s,
                   socklen_t *fromlen, rpc_overlapped overlapped,
                   const char *callback)
 {
-    rcf_rpc_op              op;
     tarpc_wsa_recv_from_in  in;
     tarpc_wsa_recv_from_out out;
 
@@ -1651,9 +1635,6 @@ rpc_wsa_recv_from(rcf_rpc_server *rpcs, int s,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(wsa_recv_from, -1);
     }
-
-    op = rpcs->op;
-
 
     if (riovcnt > RCF_RPC_MAX_IOVEC)
     {
@@ -1776,7 +1757,6 @@ int
 rpc_wsa_send_disconnect(rcf_rpc_server *rpcs,
                         int s, const struct rpc_iovec *iov)
 {
-    rcf_rpc_op                    op;
     tarpc_wsa_send_disconnect_in  in;
     tarpc_wsa_send_disconnect_out out;
     struct tarpc_iovec            iovec_arr;
@@ -1792,9 +1772,6 @@ rpc_wsa_send_disconnect(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(wsa_send_disconnect, -1);
     }
-
-    op = rpcs->op;
-
 
     in.s = s;
 
@@ -1829,7 +1806,6 @@ int
 rpc_wsa_recv_disconnect(rcf_rpc_server *rpcs,
                         int s, const struct rpc_iovec *iov)
 {
-    rcf_rpc_op                    op;
     tarpc_wsa_recv_disconnect_in  in;
     tarpc_wsa_recv_disconnect_out out;
     struct tarpc_iovec            iovec_arr;
@@ -1845,9 +1821,6 @@ rpc_wsa_recv_disconnect(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(wsa_recv_disconnect, -1);
     }
-
-    op = rpcs->op;
-
 
     in.s = s;
 
@@ -1897,7 +1870,6 @@ rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
                  rpc_overlapped overlapped, const char *callback)
 {
     char                   str_buf[1024] = {'\0', };
-    rcf_rpc_op             op;
     tarpc_wsa_recv_msg_in  in;
     tarpc_wsa_recv_msg_out out;
     struct tarpc_msghdr    rpc_msg;
@@ -1915,8 +1887,6 @@ rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(wsa_recv_msg, -1);
     }
-
-    op = rpcs->op;
 
     memset(&rpc_msg, 0, sizeof(rpc_msg));
 
@@ -2176,7 +2146,6 @@ int
 rpc_wsa_duplicate_socket(rcf_rpc_server *rpcs,
                      int s, pid_t pid, uint8_t *info, int *info_len)
 {
-    rcf_rpc_op op;
 
     tarpc_duplicate_socket_in  in;
     tarpc_duplicate_socket_out out;
@@ -2201,9 +2170,6 @@ rpc_wsa_duplicate_socket(rcf_rpc_server *rpcs,
         rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
         RETVAL_INT(duplicate_socket, -1);
     }
-
-    op = rpcs->op;
-
 
     in.s = s;
     in.pid = pid;
@@ -2403,7 +2369,6 @@ rpc_wsa_address_to_string(rcf_rpc_server *rpcs, struct sockaddr *addr,
                           socklen_t addrlen, uint8_t *info, int info_len,
                           char *addrstr, ssize_t *addrstr_len)
 {
-    rcf_rpc_op                      op;
     tarpc_wsa_address_to_string_in  in;
     tarpc_wsa_address_to_string_out out;
     tarpc_size_t                    alen = 0;
@@ -2416,9 +2381,6 @@ rpc_wsa_address_to_string(rcf_rpc_server *rpcs, struct sockaddr *addr,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(wsa_address_to_string, -1);
     }
-
-
-    op = rpcs->op;
 
     sockaddr_input_h2rpc(addr, &in.addr);
     in.addrlen = addrlen;
@@ -2466,7 +2428,6 @@ rpc_wsa_string_to_address(rcf_rpc_server *rpcs, char *addrstr,
                           uint8_t *info, int info_len,
                           struct sockaddr *addr, socklen_t *addrlen)
 {
-    rcf_rpc_op                      op;
     tarpc_wsa_string_to_address_in  in;
     tarpc_wsa_string_to_address_out out;
 
@@ -2478,9 +2439,6 @@ rpc_wsa_string_to_address(rcf_rpc_server *rpcs, char *addrstr,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(wsa_string_to_address, -1);
     }
-
-
-    op = rpcs->op;
 
     in.addrstr.addrstr_val = addrstr;
     in.addrstr.addrstr_len = strlen(addrstr) + 1;
@@ -2522,7 +2480,6 @@ int
 rpc_wsa_cancel_async_request(rcf_rpc_server *rpcs,
                              rpc_handle async_task_handle)
 {
-    rcf_rpc_op                         op;
     tarpc_wsa_cancel_async_request_in  in;
     tarpc_wsa_cancel_async_request_out out;
 
@@ -2534,9 +2491,6 @@ rpc_wsa_cancel_async_request(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(wsa_cancel_async_request, -1);
     }
-
-
-    op = rpcs->op;
 
     in.async_task_handle = (tarpc_handle)async_task_handle;
 
@@ -2558,7 +2512,6 @@ int
 rpc_alloc_wsabuf(rcf_rpc_server *rpcs, size_t len,
                  rpc_ptr *wsabuf, rpc_ptr *wsabuf_buf)
 {
-    rcf_rpc_op             op;
     tarpc_alloc_wsabuf_in  in;
     tarpc_alloc_wsabuf_out out;
 
@@ -2570,8 +2523,6 @@ rpc_alloc_wsabuf(rcf_rpc_server *rpcs, size_t len,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(alloc_wsabuf, -1);
     }
-
-    op = rpcs->op;
 
     in.len = len;
 
@@ -2589,7 +2540,6 @@ rpc_alloc_wsabuf(rcf_rpc_server *rpcs, size_t len,
 void 
 rpc_free_wsabuf(rcf_rpc_server *rpcs, rpc_ptr wsabuf)
 {
-    rcf_rpc_op            op;
     tarpc_free_wsabuf_in  in;
     tarpc_free_wsabuf_out out;
 
@@ -2601,8 +2551,6 @@ rpc_free_wsabuf(rcf_rpc_server *rpcs, rpc_ptr wsabuf)
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_VOID(free_wsabuf);
     }
-
-    op = rpcs->op;
 
     in.wsabuf = (tarpc_ptr)wsabuf;
 
@@ -2626,7 +2574,6 @@ rpc_wsa_connect(rcf_rpc_server *rpcs, int s, const struct sockaddr *addr,
                 rpc_ptr caller_wsabuf, rpc_ptr callee_wsabuf,
                 rpc_qos *sqos)
 {
-    rcf_rpc_op            op;
     tarpc_wsa_connect_in  in;
     tarpc_wsa_connect_out out;
 
@@ -2639,8 +2586,6 @@ rpc_wsa_connect(rcf_rpc_server *rpcs, int s, const struct sockaddr *addr,
         RETVAL_INT(wsa_connect, -1);
     }
 
-    op = rpcs->op;
-    
     in.s = s;
 
     sockaddr_input_h2rpc(addr, &in.addr);
@@ -2767,7 +2712,6 @@ rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s, rpc_ioctl_code control_code,
               unsigned int outbuf_len, size_t *bytes_returned,
               rpc_overlapped overlapped, const char *callback)
 {
-    rcf_rpc_op           op;
     tarpc_wsa_ioctl_in   in;
     tarpc_wsa_ioctl_out  out;
     
@@ -2778,8 +2722,6 @@ rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s, rpc_ioctl_code control_code,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(wsa_ioctl, -1);
     }
-
-    op = rpcs->op;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -3024,7 +2966,6 @@ rpc_wsa_async_get_host_by_addr(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
                                rpc_socket_type type,
                                rpc_ptr buf, ssize_t buflen) 
 {
-    rcf_rpc_op                           op;
     tarpc_wsa_async_get_host_by_addr_in  in;
     tarpc_wsa_async_get_host_by_addr_out out;
 
@@ -3043,7 +2984,6 @@ rpc_wsa_async_get_host_by_addr(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
     for (i = 0; i < addrlen; i++)
         snprintf(str_buf, sizeof(str_buf) - strlen(str_buf),
                  "%02x", *(addr + i));
-    op = rpcs->op;
 
     in.hwnd = (tarpc_hwnd)hwnd;
     in.wmsg = wmsg;
@@ -3076,7 +3016,6 @@ rpc_wsa_async_get_host_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
                                unsigned int wmsg, char *name,
                                rpc_ptr buf, ssize_t buflen) 
 {
-    rcf_rpc_op                           op;
     tarpc_wsa_async_get_host_by_name_in  in;
     tarpc_wsa_async_get_host_by_name_out out;
 
@@ -3088,8 +3027,6 @@ rpc_wsa_async_get_host_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_RPC_PTR(wsa_async_get_host_by_name, RPC_NULL);
     }
-
-    op = rpcs->op;
 
     in.hwnd = (tarpc_hwnd)hwnd;
     in.wmsg = wmsg;
@@ -3115,7 +3052,6 @@ rpc_wsa_async_get_proto_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
                                 unsigned int wmsg, char *name,
                                 rpc_ptr buf, ssize_t buflen) 
 {
-    rcf_rpc_op                            op;
     tarpc_wsa_async_get_proto_by_name_in  in;
     tarpc_wsa_async_get_proto_by_name_out out;
 
@@ -3127,8 +3063,6 @@ rpc_wsa_async_get_proto_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_RPC_PTR(wsa_async_get_proto_by_name, RPC_NULL);
     }
-
-    op = rpcs->op;
 
     in.hwnd = (tarpc_hwnd)hwnd;
     in.wmsg = wmsg;
@@ -3154,7 +3088,6 @@ rpc_wsa_async_get_proto_by_number(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
                                   unsigned int wmsg, int number,
                                   rpc_ptr buf, ssize_t buflen) 
 {
-    rcf_rpc_op                              op;
     tarpc_wsa_async_get_proto_by_number_in  in;
     tarpc_wsa_async_get_proto_by_number_out out;
 
@@ -3166,8 +3099,6 @@ rpc_wsa_async_get_proto_by_number(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_RPC_PTR(wsa_async_get_proto_by_number, RPC_NULL);
     }
-
-    op = rpcs->op;
 
     in.hwnd = (tarpc_hwnd)hwnd;
     in.wmsg = wmsg;
@@ -3187,7 +3118,6 @@ rpc_wsa_async_get_serv_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
                                unsigned int wmsg, char *name, char *proto,
                                rpc_ptr buf, ssize_t buflen) 
 {
-    rcf_rpc_op                           op;
     tarpc_wsa_async_get_serv_by_name_in  in;
     tarpc_wsa_async_get_serv_by_name_out out;
 
@@ -3199,8 +3129,6 @@ rpc_wsa_async_get_serv_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_RPC_PTR(wsa_async_get_serv_by_name, RPC_NULL);
     }
-
-    op = rpcs->op;
 
     in.hwnd = (tarpc_hwnd)hwnd;
     in.wmsg = wmsg;
@@ -3233,7 +3161,6 @@ rpc_wsa_async_get_serv_by_port(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
                                unsigned int wmsg, int port, char *proto,
                                rpc_ptr buf, ssize_t buflen) 
 {
-    rcf_rpc_op                           op;
     tarpc_wsa_async_get_serv_by_port_in  in;
     tarpc_wsa_async_get_serv_by_port_out out;
 
@@ -3245,8 +3172,6 @@ rpc_wsa_async_get_serv_by_port(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_RPC_PTR(wsa_async_get_serv_by_port, RPC_NULL);
     } 
-
-    op = rpcs->op;
 
     in.hwnd = (tarpc_hwnd)hwnd;
     in.wmsg = wmsg;
@@ -3283,7 +3208,6 @@ rpc_wsa_join_leaf(rcf_rpc_server *rpcs, int s, const struct sockaddr *addr,
                   rpc_ptr caller_wsabuf, rpc_ptr callee_wsabuf,
                   rpc_qos *sqos, rpc_join_leaf_flags flags)
 {
-    rcf_rpc_op            op;
     tarpc_wsa_join_leaf_in  in;
     tarpc_wsa_join_leaf_out out;
 
@@ -3296,8 +3220,6 @@ rpc_wsa_join_leaf(rcf_rpc_server *rpcs, int s, const struct sockaddr *addr,
         RETVAL_INT(wsa_connect, -1);
     }
 
-    op = rpcs->op;
-    
     in.s = s;
     in.flags = flags;
     
@@ -3518,7 +3440,6 @@ int
 rpc_overfill_buffers_ex(rcf_rpc_server *rpcs, int sock, uint64_t *sent,
                         te_bool is_nonblocking)
 {
-    rcf_rpc_op                 op;
     tarpc_overfill_buffers_in in;
     tarpc_overfill_buffers_out out;
 
@@ -3527,7 +3448,6 @@ rpc_overfill_buffers_ex(rcf_rpc_server *rpcs, int sock, uint64_t *sent,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(overfill_buffers, -1);
     }
-    op = rpcs->op;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
