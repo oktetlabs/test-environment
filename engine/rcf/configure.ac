@@ -17,6 +17,9 @@ TE_APP_SET
 # Checks for libraries
 TE_PATH_LIBXML2
 
+AC_SUBST([TE_BASE])
+AC_SUBST([TE_BUILD])
+
 AC_CONFIG_HEADERS([package.h])
 
 AC_CONFIG_FILES([Makefile])
