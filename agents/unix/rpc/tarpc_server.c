@@ -5720,7 +5720,7 @@ TARPC_FUNC(copy_ta_libs, {},
 int
 rm_ta_libs(char *path)
 {
-    char    str[RCF_MAX_PATH];
+    char    str[MAX_CMD];
     char    cmd[RCF_MAX_PATH];
     char   *s;
     FILE   *f_list;
