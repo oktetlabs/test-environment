@@ -836,6 +836,17 @@ extern void tapi_set_if_mtu_smart(rcf_rpc_server *rpcs,
                                   const struct if_nameindex *interface,
                                   int mtu, int *old_mtu);
 
+/**
+ * Check if the interface is VLAN interface.
+ * 
+ * @param rpcs       RPC server handler
+ * @param interface  Interface name
+ * 
+ * @return @c TRUE if the interface is grabbed.
+ */
+extern te_bool tapi_interface_is_vlan(rcf_rpc_server *rpcs,
+                                      const struct if_nameindex *interface);
+
 /**@} <!-- END te_lib_rpc_misc --> */
 
 #ifdef __cplusplus

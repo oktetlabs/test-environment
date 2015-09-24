@@ -2178,7 +2178,7 @@ rpc_vfork_pipe_exec(rcf_rpc_server *rpcs, te_bool use_exec)
     RETVAL_INT(vfork_pipe_exec, out.retval);
 }
 
-/* See description in tapi_cfg_base.h */
+/* See description in tapi_rpc_misc.h */
 void
 tapi_set_if_mtu_smart(rcf_rpc_server *rpcs,
                       const struct if_nameindex *interface, int mtu,
@@ -2202,4 +2202,19 @@ tapi_set_if_mtu_smart(rcf_rpc_server *rpcs,
 
     CHECK_RC(tapi_cfg_base_if_set_mtu(rpcs->ta, interface->if_name, mtu,
                                       old_mtu));
+}
+
+/* See description in tapi_rpc_misc.h */
+te_bool
+tapi_interface_is_vlan(rcf_rpc_server *rpcs,
+                       const struct if_nameindex *interface)
+{
+    char if_par[IFNAMSIZ] = {0};
+
+    rpc_vlan_get_parent(rpcs, interface->if_name, if_par);
+
+    if (strlen(if_par) > 0)
+        return TRUE;
+
+    return FALSE;
 }
