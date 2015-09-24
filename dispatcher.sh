@@ -119,8 +119,6 @@ Generic options:
   --build-ta-all                Force build all Test Agents.
   --build-ta-for=<hostname>     Rebuild agent (and all the libraries) used for <hostname>.
 
-  --no-rcf-cc-simple            Do not execute simple RCF consistency checks.
-
   --tester-suite=<name>:<path>  Specify path to the Test Suite.
   --tester-no-run               Don't run any tests.
   --tester-no-build             Don't build any Test Suites.
@@ -304,9 +302,6 @@ VG_CS=
 VG_LOGGER=
 VG_TESTER=
 GDB_TESTER=
-
-# RCF consistency checks options
-RCF_CONSISTENCY_CHECKS_SIMPLE=yes
 
 # Subsystems to be initialized
 BUILDER=yes
@@ -606,8 +601,6 @@ process_opts()
                 BUILDER_OPTS="${BUILDER_OPTS} --path=${1#--build=}"
                 BUILDER=
                 ;;
-
-            --no-rcf-cc-simple) RCF_CONSISTENCY_CHECKS_SIMPLE= ;;
 
             *)  echo "Unknown option: $1" >&2;
                 usage
@@ -976,15 +969,6 @@ if test -n "${QUIET}" ; then
     te_builder_opts --quiet="${TE_BUILD_LOG}" $BUILDER_OPTS || exit_with_log
 else
     te_builder_opts $BUILDER_OPTS || exit_with_log
-fi
-
-if test "$RCF_CONSISTENCY_CHECKS_SIMPLE" = "yes" ; then
-    if "$TE_BASE/engine/builder/te_rcf_consistency_checks" --check ; then
-        echo "Simple RCF consistency check succeeded" >&2
-    else
-        echo "Simple RCF consistency check failed" >&2
-        exit 1
-    fi
 fi
 
 if test -z "${TE_SNIFF_LOG_DIR}" ; then

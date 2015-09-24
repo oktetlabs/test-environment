@@ -71,7 +71,6 @@ configure_package()
     te_eval_or_ssh "${PLATFORM}" "
         export TE_EXT_LIBS_FILE=\"$TE_EXT_LIBS_FILE\"
         TE_DEPENDENCIES='$DEPENDENCIES' \\
-        TE_BUILD='$TE_BUILD' \\
         CFLAGS= \\
         ${PKGSRC}/configure -q --prefix=$PREFIX ${PARMS}
     "

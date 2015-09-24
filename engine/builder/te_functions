@@ -81,6 +81,7 @@ te_eval_or_ssh() {
     else
         ${!SSHVAR} "
             cd '$PWD' || exit 1
+            $TE_EVAL_OR_SSH_EXPORT
             ${@}
         "
     fi
