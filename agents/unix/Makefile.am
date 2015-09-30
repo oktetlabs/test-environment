@@ -66,11 +66,14 @@ endif
 
 SYMTBL_LIBS+=@CURL_LIB@
 
+# Changing variables in the 'Makefile' will be found using
+# the dependence on the 'Makefile'
 ta_DEPENDENCIES = @TE_DEPENDENCIES@ $(SYMTBL_LIBS) symtbl.o \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librpcxdr.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librpc_types.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libconf_oid.a \
-    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libloggerta.a 
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libloggerta.a \
+    Makefile
 
 if CFG_TR069
 ta_DEPENDENCIES += $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libacse_cwmp.a
