@@ -151,6 +151,7 @@ eth_cmd_set(unsigned int gid, const char *oid, char *value,
         cmd = eval.cmd = ETHTOOL_STSO;
     else if (strstr(oid, "/flags:") != NULL)
         cmd = eval.cmd = ETHTOOL_SFLAGS;
+#ifdef ETHTOOL_RESET
     else if (strstr(oid, "/reset:") != NULL)
     {
         if (eval.data == 0)
@@ -158,6 +159,7 @@ eth_cmd_set(unsigned int gid, const char *oid, char *value,
         cmd = eval.cmd = ETHTOOL_RESET;
         data = eval.data = ETH_RESET_ALL;
     }
+#endif
     else
         return TE_EINVAL;
 
@@ -171,8 +173,10 @@ eth_cmd_set(unsigned int gid, const char *oid, char *value,
         for (i = 0; i < slaves_num; i++)
         {
             eval.cmd = cmd;
+#ifdef ETHTOOL_RESET
             if (cmd == ETHTOOL_RESET)
                 eval.data = data;
+#endif
             strncpy(ifr.ifr_name, slaves[i], sizeof(ifr.ifr_name));
 
             if (ioctl(cfg_socket, SIOCETHTOOL, &ifr) != 0)
