@@ -34,7 +34,7 @@ endif
 ta_SOURCES = main.c ftp_routines.c log_remote.c aux_threads.c \
              $(ta_extra_sources)
 
-ta_LDADD = symtbl.o conf/libconf.a rpc/libtarpc.a -lrcfpch -lm \
+ta_LDADD = symtbl.o conf/libconf.a rpc/libtarpc.a -lrcfpch \
            -l$(TAD) $(TE_LDADD) \
            -lrpcxdr -lrpc_types -lconf_oid -lloggerta -lrcfpch -ltools \
            $(EXTRA_LDADD)

@@ -91,6 +91,30 @@ for k in $FILES ; do
 done
 }
 
+##
+# Find and add a specified library in the variable @b TA_TAD_LIBS
+#
+# @param lib Specified library
+#
+add_lib_in_TA_TAD_LIBS() {
+    local lib=$1
+
+    # In case dynamic libc linking we add simple '-l${lib}', in case static
+    # linking we find absolute path to 'lib${lib}.a' by function 'find_lib'.
+    # Then 'TA_TAD_LIBS' libraries will be added to the variable 'LIBS'
+    # with options '-Wl,-Bstatic' and '-Wl,-Bdynamic'.
+    # There is example in the file 'agents/unix/configure.ac'.
+    if test "${with_static_libc}" = "no" ; then
+        LIB_PATHNAME="-l${lib}"
+    else
+        find_lib "${lib}"
+        if test -z "${LIB_PATHNAME}" ; then
+            AC_MSG_ERROR([Cannot find static $lib library])
+        fi
+    fi
+    tad_libs_rem "$LIB_PATHNAME"
+    TA_TAD_LIBS="$TA_TAD_LIBS ${LIB_PATHNAME}";
+}
 
 # Check for C compiler features
 AC_C_CONST
@@ -299,6 +323,10 @@ AC_ARG_WITH([snmp],,
  fi
 ], [w_snmp=false])
 
+AC_ARG_WITH([static_libc],
+            AS_HELP_STRING([--with-static-libc],
+                           [enable static libc (default is YES)]))
+
 AC_ARG_WITH([cli],, 
 [if test "${withval}" = yes; then
     w_cli=true;
@@ -309,26 +337,20 @@ AC_ARG_WITH([cli],,
     fi
     tad_libs_rem "$LIB_PATHNAME"
     TA_TAD_LIBS="$TA_TAD_LIBS ${LIB_PATHNAME}";
-    find_lib util
-    if test -z "${LIB_PATHNAME}" ; then
-        AC_MSG_ERROR([Cannot find static util library])
-    fi
+
+    add_lib_in_TA_TAD_LIBS util
+
 # tcl and m libraries are needed for expect library
 # and they don't link automatically by some linkers
-    tad_libs_rem "$LIB_PATHNAME"
-    TA_TAD_LIBS="$TA_TAD_LIBS ${LIB_PATHNAME}";
     find_lib tcl
     if test -z "${LIB_PATHNAME}" ; then
         AC_MSG_ERROR([Cannot find static tcl library])
     fi
     tad_libs_rem "$LIB_PATHNAME"
     TA_TAD_LIBS="$TA_TAD_LIBS ${LIB_PATHNAME}";
-    find_lib m
-    if test -z "${LIB_PATHNAME}" ; then
-        AC_MSG_ERROR([Cannot find static m library])
-    fi
-    tad_libs_rem "$LIB_PATHNAME"
-    TA_TAD_LIBS="$TA_TAD_LIBS ${LIB_PATHNAME}";
+
+    add_lib_in_TA_TAD_LIBS m
+
     AC_CONFIG_FILES([cli/Makefile])
  fi
 ], [w_cli=false])

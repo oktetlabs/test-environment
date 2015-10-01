@@ -800,6 +800,18 @@ if test x${PCAP_AVAIL} = "xyes" ; then
     DYNAMIC_LIBS="${DYNAMIC_LIBS} -lpcap"
 fi
 
+dnl m library is necessary for telephony.c
+AC_SEARCH_LIBS([cos], [m])
+
+AC_ARG_WITH([static_libc],
+            AS_HELP_STRING([--with-static-libc],
+                           [enable static libc (default is YES)]))
+if test "${with_static_libc}" = "no" ; then
+    # If the library name is a part of the variable 'DYNAMIC_LIBS',
+    # then dynamic version of this library will be used for linking.
+    DYNAMIC_LIBS="${DYNAMIC_LIBS} -lm -lutil -lrt"
+fi
+
 #if ! test "$cross_compiling" = "yes" ; then
 case "$host" in 
    sparc*linux*) TE_CPPFLAGS="$TE_CPPFLAGS -DNO_DL" ;;
