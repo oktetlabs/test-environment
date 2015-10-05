@@ -1,0 +1,170 @@
+#! /bin/bash
+#
+# Test Environment Builder
+#
+# Script provides API for consistency checks of RPC between TE and TA
+# It can generate checksum or c source file with checksum
+# It can extract checksum from target file
+# And it can manipulate the list of extern files for checksum
+#
+# Copyright (C) 2004 Test Environment authors (see file AUTHORS in
+# the root directory of the distribution).
+#
+# Test Environment is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of
+# the License, or (at your option) any later version.
+#
+# Test Environment is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+# MA  02111-1307  USA
+#
+#
+# Author Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>
+#
+# $Id$
+#
+
+EXT_FILES=${TE_BUILD}/te_rcf_consistency_checks_files
+
+##
+# Function creates a list of files for consistency check
+#
+rpc_files() {
+    echo "$TE_BASE/include/tarpc.x.m4"
+    echo "$TE_BASE/agents/unix/Makefile.am"
+    echo "$TE_BASE/engine/rcf/Makefile.am"
+
+    find $TE_BASE/agents \
+        $TE_BASE/lib/rcfpch \
+        $TE_BASE/lib/rcfrpc \
+        $TE_BASE/lib/tapi \
+        $TE_BASE/lib/tapi_rpc \
+        $TE_BASE/engine/rcf \
+        -type f -name "*.c" -o -name "*.h"
+
+    test -f "${EXT_FILES}" && cat "${EXT_FILES}"
+}
+
+##
+# Function calculates checksum and adds it to the marker
+#
+# @param list List of tools for checksum.
+#
+# @note if you'd like to limit che checksummed data by SVN ID only,
+#       you can add such a line after "xargs cat":
+#        sed -n '/^ \* \$Id: .*\$$/p' |
+#
+generate() {
+    echo -n "rcf_consistency_checks;sha512sum;"
+    rpc_files |
+        sed '/^\s*$/d' |
+        sort -u |
+        xargs cat |
+        sha512sum |
+        awk '{print $1}'
+}
+
+##
+# Function extracts checksum from target file
+#
+# @param target Target file
+#
+detect() {
+    strings $1 |
+        sed -n 's/^rcf_consistency_checks;sha512sum;/&/p'
+}
+
+##
+# Function generates the c source file from input stream
+#
+# @note Leading and trailing zeros protect the @b strings execution
+#       in @b detect. They separate a line from nearby data.
+#
+generate_c() {
+    echo "static const char "
+    echo "data[] = { 0x00,"
+    tr -d '\n' |
+        od -v -A n -t x1 -w8 |
+        sed -r 's/[[:xdigit:]]{2}/0x&,/g'
+    echo "0x00 };"
+    echo "const char * const"
+    echo "rcf_consistency_checks = &data[1];"
+}
+
+##
+# Function performs the consistency check
+#
+# @return Targets number which should be rebuilt.
+#
+check() {
+    local FAIL=
+    declare -A STATUS
+    local TE="$($0 --detect=${TE_INSTALL}/default/bin/te_rcf)"
+
+    for HOST in TE_IUT TE_TST1 TE_TST2 TE_TST3 ; do
+        if test -z ${!HOST} ; then continue ; fi
+
+        local pTYPE=${HOST}_TA_TYPE
+        local TYPE=${!pTYPE}
+
+        TA="$($0 --detect=${TE_INSTALL}/agents/$TYPE/ta)"
+        if test "$TE" != "$TA" ; then
+            FAIL=yes
+            break
+        fi
+    done
+
+    if test "$FAIL" != "yes" ; then
+        return 0
+    fi
+
+    FAIL=0
+    local SOURCE="$($0 --generate)"
+    if test "$TE" != "$SOURCE" ; then
+        echo "Rebuild TE is required" >&2
+        FAIL=$((FAIL+1))
+    fi
+
+    for HOST in TE_IUT TE_TST1 TE_TST2 TE_TST3 ; do
+        if test -z ${!HOST} ; then continue ; fi
+
+        local pTYPE=${HOST}_TA_TYPE
+        local TYPE=${!pTYPE}
+
+        case "${STATUS[$TYPE]}" in
+            pass) continue ;;
+            fail) ;;
+            *)  TA="$($0 --detect=${TE_INSTALL}/agents/$TYPE/ta)"
+                if test "$TA" != "$SOURCE" ; then
+                    STATUS[$TYPE]=fail
+                else
+                    STATUS[$TYPE]=pass
+                    continue
+                fi
+                ;;
+        esac
+        echo "Rebuild TA for ${!HOST} ($TYPE) is required" >&2
+        FAIL=$((FAIL+1))
+    done
+
+    return $FAIL
+}
+
+case "$1" in
+    --extfiles-exist) test -f "${EXT_FILES}" ;;
+    --extfiles-add)   cat >> "${EXT_FILES}" ;;
+    --extfiles-del)   rm -f "${EXT_FILES}" ;;
+
+    --generate)       generate | sed '/^\s*$/d' ;;
+    --generate-c)     generate | generate_c ;;
+
+    --detect=*)       detect "${1#--detect=}" ;;
+    --check)          check ;;
+esac

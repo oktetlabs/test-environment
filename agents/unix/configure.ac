@@ -865,6 +865,9 @@ else
 fi
 AC_SUBST([NM_FORMAT])
 
+AC_SUBST([TE_BASE])
+AC_SUBST([TE_BUILD])
+
 dnl end of "conf" staff
 
 AC_CONFIG_FILES([Makefile rpc/Makefile conf/Makefile])

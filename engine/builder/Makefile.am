@@ -38,6 +38,7 @@ dist_mybin_SCRIPTS = \
     te_tests_info.sh \
     te_struct_layout \
     te_functions \
+    te_rcf_consistency_checks \
     static_libs_check.pl
 
 # Scripts to be installed by 'install'

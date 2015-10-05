@@ -42,3 +42,11 @@ te_rcf_tadead_DEPENDENCIES = $(DESTDIR)/$(libdir)/liblogger_ten.a \
                              $(DESTDIR)/$(libdir)/libipc.a \
                              $(DESTDIR)/$(libdir)/libtools.a
 
+te_rcf_SOURCES += rcf_consistency_checks.c
+
+.PHONY: rcf_consistency_checks.c
+rcf_consistency_checks.c:
+	TE_BASE="@TE_BASE@" \
+	TE_BUILD="@TE_BUILD@" \
+	"@TE_BASE@/engine/builder/te_rcf_consistency_checks" \
+		--generate-c >$@
