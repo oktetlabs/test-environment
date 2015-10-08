@@ -182,7 +182,44 @@ print_platform() {
 
 print_build_agent_start() {
     echo "Build agent $(print_platform $1) - start"
-    echo "  log file location: $(readlink -f "$2")"
+    echo "  location of log files: $(readlink -f "$p").{1,2}.log"
+}
+
+add_timestamps() {
+    gawk -vHEADER="$1" '{
+        print strftime("%F %T"), HEADER ":", $0
+        fflush()
+    }'
+}
+
+print_without_timestamps() {
+    tail -f -c +1 --pid=$2 "$1" |
+        sed -u 's/^[^ ]* [^ ]* [^ ]* //'
+}
+
+build_platform_and_agent() {
+    local p=$1
+    local mode=$2
+
+    if test "$p" = "${TE_HOST}" ; then return ; fi
+    if test -n "${CONSTRUCTED[$p]}" ; then return ; fi
+    local AGENT_EXIST=$(te_is_in_list $p $DUMMY $TE_BS_TA \
+        && echo yes || echo no)
+    if ! need_build_platform "$p" "$mode" && \
+        ( test "$AGENT_EXIST" = "no" || \
+        ! need_build_agent "$p" "$mode" ) ; then
+        return
+    fi
+    print_build_agent_start "$p" >&2
+    (
+        build_platform "$p" "$mode" || mode=all
+        if test "$AGENT_EXIST" = "yes" ; then
+            build_agent "$p" "$mode"
+        fi
+    ) 2> >( add_timestamps stderr >$p.2.log ) \
+      1> >( add_timestamps stdout >$p.1.log ) &
+    PIDS[$!]="$p"
+    CONSTRUCTED[$p]=yes
 }
 
 build() {
@@ -193,52 +230,34 @@ build() {
         local TA_TYPE="${ta}_TA_TYPE"
         local p=${!TA_TYPE}
         if test -z "$p" ; then
-            echo "Unknown hostname (--build-ta-for=$ta)"
+            echo "Unknown hostname (--build-ta-for=$ta)" >&2
             exit 1
         fi
-        if test -n "${CONSTRUCTED[$p]}" ; then continue ; fi
-        print_build_agent_start "$p" "$p.log" >&2
-        (
-            build_platform "$p" all
-            build_agent "$p" all
-        ) >"$p.log" 2>&1 &
-        PIDS[$!]="$p"
-        CONSTRUCTED[$p]=yes
+        build_platform_and_agent "$p" all
     done
 
     if test -n "${BUILD_TA}" ; then
         for p in ${TE_BS_PLATFORMS} ; do
-            if test "$p" = "${TE_HOST}" ; then continue ; fi
-            if test -n "${CONSTRUCTED[$p]}" ; then continue ; fi
-            local AGENT_EXIST=$(te_is_in_list $p $DUMMY $TE_BS_TA \
-                && echo yes || echo no)
-            if ! need_build_platform "$p" "$BUILD_TA" && \
-                ( test "$AGENT_EXIST" = "no" || \
-                ! need_build_agent "$p" "$BUILD_TA" ) ; then
-                continue
-            fi
-            print_build_agent_start "$p" "$p.log" >&2
-            (
-                local mode=$BUILD_TA
-                build_platform "$p" "$mode" || mode=all
-                if test "$AGENT_EXIST" = "yes" ; then
-                    build_agent "$p" "$mode"
-                fi
-            ) >"$p.log" 2>&1 &
-            PIDS[$!]="$p"
-            CONSTRUCTED[$p]=yes
+            build_platform_and_agent "$p" "$BUILD_TA"
         done
     fi
 
     for pid in "${!PIDS[@]}"; do
         local p="${PIDS[$pid]}"
-        if wait "$pid" ; then
+
+        print_without_timestamps "$p.2.log" "$pid" >&2 &
+        local ppid="$!"
+
+        wait "$pid"
+        local res="$?"
+
+        wait "$ppid"
+
+        if test "$res" = "0" ; then
             echo "Build agent $(print_platform $p) - pass" >&2
         else
-            res=$?
-            cat "$p.log" >&2
             echo "Build agent $(print_platform $p) - fail ($res)" >&2
-            exit $res
+            exit "$res"
         fi
     done
 
