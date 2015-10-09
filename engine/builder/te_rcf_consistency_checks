@@ -31,7 +31,7 @@
 # $Id$
 #
 
-EXT_FILES=${TE_BUILD}/te_rcf_consistency_checks_files
+EXT_FILES=te_rcf_consistency_checks_files
 
 ##
 # Function creates a list of files for consistency check
@@ -50,6 +50,7 @@ rpc_files() {
         -type f -name "*.c" -o -name "*.h"
 
     test -f "${EXT_FILES}" && cat "${EXT_FILES}"
+    echo "$TE_RCF_CONSISTENCY_CHECKS_EXT_FILES"
 }
 
 ##
@@ -158,9 +159,9 @@ check() {
 }
 
 case "$1" in
-    --extfiles-exist) test -f "${EXT_FILES}" ;;
-    --extfiles-add)   cat >> "${EXT_FILES}" ;;
-    --extfiles-del)   rm -f "${EXT_FILES}" ;;
+    --extfiles-exist) test -f "$2${EXT_FILES}" ;;
+    --extfiles-add)   cat >> "$2${EXT_FILES}" ;;
+    --extfiles-del)   rm -f "$2${EXT_FILES}" ;;
 
     --generate)       generate | sed '/^\s*$/d' ;;
     --generate-c)     generate | generate_c ;;

@@ -161,6 +161,13 @@ build_agent() {
     fi
     mkdir -p "agents/$package"
     fs_sanity_check "${PLATFORM}" "agents/$package"
+
+    ${TE_BASE}/engine/builder/te_rcf_consistency_checks \
+        --extfiles-del "agents/$package/"
+    echo "$TE_RCF_CONSISTENCY_CHECKS_EXT_FILES" |
+        ${TE_BASE}/engine/builder/te_rcf_consistency_checks \
+            --extfiles-add "agents/$package/"
+
     ${TE_BASE}/engine/builder/te_configure_package TA "$package" "$package" \
         "$package" "$PLATFORM" "$PKGSRC" "$PREFIX" || exit 1
 # Code "echo=echo" was added, for bug fixing of a look "X--tag=CC: command not found"
