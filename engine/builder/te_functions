@@ -52,11 +52,22 @@ te_ta_signature_local()
         *-linux-gnu | \
         *-redhat-linux )
             local TEMP_IN=$(mktemp --suffix=.c)
-            echo "int main(){return 0;}" >$TEMP_IN
+            echo '
+                #include <stdio.h>
+                #include <linux/version.h>
+                int main() {
+                    printf("%i.%i.%i",
+                        LINUX_VERSION_CODE/0x10000,
+                        LINUX_VERSION_CODE/0x100  %0x100,
+                        LINUX_VERSION_CODE        %0x100);
+                    return 0;
+                }
+            ' >$TEMP_IN
             local TEMP_OUT=$(mktemp)
             $CC $TEMP_IN -o $TEMP_OUT
             local LIBC=`ldd $TEMP_OUT |
                 sed -n "s/^\s*libc.so.6 => \(.*\)(0x[0-9a-f]*)$/\1/p"`
+            local LINUX_VERSION_CODE=`$TEMP_OUT`
             rm -f $TEMP_OUT
             rm -f $TEMP_IN
 
@@ -64,12 +75,17 @@ te_ta_signature_local()
                 sed -n "s/.*version \([0-9\.]*\).*/\1/p;q"`
             local KERN_HEADERS=`$LIBC |
                 sed -n "s/.*Linux \([0-9\.]*\).*/\1/p"`
-            echo "${GCC_TARGET}_glibc${LIBC_VERSION}_kern${KERN_HEADERS}"
+
+            echo -n "${GCC_TARGET}"
+            echo -n "_glibc${LIBC_VERSION}"
+            echo -n "_with${KERN_HEADERS}"
+            echo "_header${LINUX_VERSION_CODE}"
             ;;
 
         * ) echo "$GCC_TARGET" ;;
     esac | te_ta_sanitize
 }
+
 
 ##
 # Calculate a signature of the specified agent
