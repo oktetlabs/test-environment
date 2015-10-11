@@ -1000,6 +1000,13 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
             cmsg_hdrs[0].data.data_len = msg->msg_controllen -
                                          msg->msg_cmsghdr_num *
                                          CMSG_ALIGN(sizeof(struct cmsghdr));
+            if (msg->msg_controllen <
+                msg->msg_cmsghdr_num * CMSG_ALIGN(sizeof(struct cmsghdr)))
+            {
+                ERROR("Too small control data length");
+                rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
+                RETVAL_INT(recvmsg, -1);
+            }
         }
         rpc_msg.msg_controllen = msg->msg_controllen;
     }
