@@ -176,36 +176,36 @@ AC_SUBST(PREFIX_HOST)
 LIB_SUBDIRS=
 LIB_DIST_SUBDIRS=
 for p in ${TE_BS_PLATFORMS} ; do
-    if test $p = ${TE_HOST} ; then 
-        mkdir -p platforms/${p} && \
+    test $p != ${TE_HOST} && continue
+
+    mkdir -p platforms/${p} && \
+    rm -rf platforms/${p}/include && \
+    rm -rf platforms/${p}/lib && \
+    ln -s ${TE_BUILD}/include platforms/${p}/include && \
+    ln -s ${TE_BUILD}/lib platforms/${p}/lib || exit 1
+
+    "${TE_BASE}/engine/builder/te_configure_package" INCLUDE include \
+            include platforms/${p}/include ${TE_HOST} \
+            "${TE_BASE}/include" "$prefix" || exit 1
+
+    #
+    # Doing this the second time looks crazy and crazy it is, however
+    # it is done due to crazy behaviour of tar on some hosts where it
+    # refuses to place files in directories pointed by symlinks but
+    # deletes those symlinks and creates its own directories (even if
+    # you tell it --no-overwrite-dir).
+    #
+    if !(test -h platforms/${p}/include) ; then
+        cp -r platforms/${p}/include/* ${TE_BUILD}/include/ && \
         rm -rf platforms/${p}/include && \
-        rm -rf platforms/${p}/lib && \
-        ln -s ${TE_BUILD}/include platforms/${p}/include && \
-        ln -s ${TE_BUILD}/lib platforms/${p}/lib || exit 1
-
-        "${TE_BASE}/engine/builder/te_configure_package" INCLUDE include \
-                include platforms/${p}/include ${TE_HOST} \
-                "${TE_BASE}/include" "$prefix" || exit 1
-
-        #
-        # Doing this the second time looks crazy and crazy it is, however
-        # it is done due to crazy behaviour of tar on some hosts where it
-        # refuses to place files in directories pointed by symlinks but
-        # deletes those symlinks and creates its own directories (even if
-        # you tell it --no-overwrite-dir).
-        #
-        if !(test -h platforms/${p}/include) ; then
-            cp -r platforms/${p}/include/* ${TE_BUILD}/include/ && \
-            rm -rf platforms/${p}/include && \
-            ln -s ${TE_BUILD}/include platforms/${p}/include || exit 1
-        fi
-        if !(test -h platforms/${p}/lib) ; then
-            cp -r platforms/${p}/lib/* ${TE_BUILD}/lib/ && \
-            rm -rf platforms/${p}/lib && \
-            ln -s ${TE_BUILD}/lib platforms/${p}/lib || exit 1
-        fi
+        ln -s ${TE_BUILD}/include platforms/${p}/include || exit 1
     fi
-    
+    if !(test -h platforms/${p}/lib) ; then
+        cp -r platforms/${p}/lib/* ${TE_BUILD}/lib/ && \
+        rm -rf platforms/${p}/lib && \
+        ln -s ${TE_BUILD}/lib platforms/${p}/lib || exit 1
+    fi
+
     LIBS=`eval echo '$'${p}'_LIBS'`
     echo LIBS=$LIBS
 
@@ -219,9 +219,7 @@ for p in ${TE_BS_PLATFORMS} ; do
         PKGBUILDDIR=platforms/${p}/lib/$package
         mkdir -p "${PKGBUILDDIR}"
         NAME="$(basename "$PKGSRC")"
-        
-        if test $p != ${TE_HOST} ; then continue ; fi
-        
+
         if test -z "$no_create" ; then
             "${TE_BASE}/engine/builder/te_configure_package" LIB \
                  $package $PKGNAME ${PKGBUILDDIR} ${TE_HOST} \
