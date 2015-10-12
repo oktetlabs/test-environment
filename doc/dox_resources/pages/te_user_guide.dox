@@ -201,12 +201,13 @@ located in you test suite directory or by direct @prog{dispatcher.sh}
 invocation.
 
 You should either specify all the configuration files with
-@prog_option{\-\-conf-*} options or use the default once (see the dispatcher
+@prog_option{\-\-conf-*} options or use the default ones (see the dispatcher
 script):
 
 <pre class="fragment">
 CONF_BUILDER=builder.conf
-CONF_LOGGER=logger.confCONF_TESTER=tester.conf
+CONF_LOGGER=logger.conf
+CONF_TESTER=tester.conf
 CONF_CS=configurator.conf
 CONF_RCF=rcf.conf
 </pre>
