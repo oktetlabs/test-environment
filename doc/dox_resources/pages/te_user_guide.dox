@@ -167,7 +167,7 @@ can call:
 
 <pre class="fragment">
 cd $PRJ_ROOT
-@path{${TE_BASE}}/@prog{run.sh} @prog_option{--cfg=myconfiguration_name} \-\-tester-norun
+@path{${TE_BASE}}/@prog{run.sh} @prog_option{--cfg=myconfiguration_name} @prog_option{--tester-norun}
 </pre>
 
 @prog{run.sh} script is a wrapper for @prog{dispatcher.sh} which introduces
