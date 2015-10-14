@@ -881,6 +881,11 @@ rpc_sendmsg(rcf_rpc_server *rpcs,
         in.msg.msg_len = 1;
 
         msghdr_rpc2tarpc(msg, &rpc_msg);
+
+        /** Initialize @b msg_flags with a random value by default, it
+         * should not affect anything since the field is ignored. */
+        if (!msg->msg_flags_set)
+            rpc_msg.msg_flags = tapi_send_recv_flags_rand();
     }
 
     rcf_rpc_call(rpcs, "sendmsg", &in, &out);
@@ -941,6 +946,11 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
     {
         in.msg.msg_val = &rpc_msg;
         in.msg.msg_len = 1;
+
+        /** Initialize @b msg_flags with a random value by default, it
+         * should not affect anything since the field is "write only". */
+        if (!msg->msg_flags_set)
+            msg->msg_flags = tapi_send_recv_flags_rand();
 
         if (msg->msg_riovlen > RCF_RPC_MAX_IOVEC)
         {
@@ -2162,6 +2172,12 @@ rpc_recvmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
             rpc_msg = &rpc_mmsg[j].msg_hdr;
             rpc_mmsg[j].msg_len = mmsg[j].msg_len;
 
+            /** Initialize @b msg_flags with a random value by default, it
+             * should not affect anything since the field is
+             * "write only". */
+            if (!msg->msg_flags_set)
+                msg->msg_flags = tapi_send_recv_flags_rand();
+
             if (msg->msg_riovlen > RCF_RPC_MAX_IOVEC)
             {
                 rpcs->_errno = TE_RC(TE_RCF, TE_ENOMEM);
@@ -2346,6 +2362,10 @@ rpc_sendmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
             rpc_mmsg[j].msg_len = mmsg[j].msg_len;
 
             msghdr_rpc2tarpc(msg, rpc_msg);
+            /** Initialize @b msg_flags with a random value by default, it
+             * should not affect anything since the field is ignored. */
+            if (!msg->msg_flags_set)
+                rpc_msg->msg_flags = tapi_send_recv_flags_rand();
         }
     }
 

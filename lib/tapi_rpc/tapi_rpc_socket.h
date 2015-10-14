@@ -309,7 +309,7 @@ typedef struct rpc_msghdr {
     struct rpc_iovec *msg_iov;          /**< scatter/gather array */
     size_t            msg_iovlen;       /**< elements in msg_iov */
     void             *msg_control;      /**< ancillary data */
-    
+
     socklen_t            msg_controllen; /**< length of ancillary data */
     rpc_send_recv_flags  msg_flags;      /**< flags returned by recvmsg() */
 
@@ -321,12 +321,22 @@ typedef struct rpc_msghdr {
                                              in msg_iov */
     int               msg_cmsghdr_num;  /**< Number of elements in
                                              the array */
+    te_bool           msg_flags_set;    /**< flags should not be overwritten
+                                             in RPC with a random value */
 } rpc_msghdr;
 
 struct rpc_mmsghdr {
     struct rpc_msghdr msg_hdr;  /* Message header */
     unsigned int      msg_len;  /* Number of received bytes for header */
 };
+
+/** Generate a random value in range 0-RPC_MSG_UNKNOWN for @b msg_flags
+ * initialization. */
+static inline int
+tapi_send_recv_flags_rand(void)
+{
+    return rand_range(0, RPC_MSG_UNKNOWN);
+}
 
 /**
  * Send message to a connected or non-connected socket.
