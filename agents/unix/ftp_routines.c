@@ -268,7 +268,7 @@ ftp_open(const char *uri, int flags, int passive, int offset, int *sock)
     struct sockaddr_in addr;
     struct sockaddr_in addr1;
     socklen_t          addr1_len = sizeof(addr1);
-    uint8_t            inaddr[4];
+    uint8_t            inaddr[4] = {0,0,0,0};
     
     char user[FTP_TEST_LOGIN_MAX];
     char passwd[FTP_TEST_PASSWD_MAX];
