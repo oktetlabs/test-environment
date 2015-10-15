@@ -125,6 +125,9 @@ extern int tapi_cfg_switch_vlan_del_port(const char *ta_name,
  * @{
  */
 
+/** Maximum length of the route type name */
+#define TYPE_NAMESIZE 32
+
 /** Routing entry data structure */
 typedef struct tapi_rt_entry {
     struct sockaddr_storage dst; /**< Route for this destination address */
@@ -138,6 +141,7 @@ typedef struct tapi_rt_entry {
     uint32_t mtu; /**< Route MTU value (for TCP) */
     uint32_t win; /**< Route Window value (for TCP) */
     uint32_t irtt; /**< Route IRTT value (for TCP) */
+    char     type[TYPE_NAMESIZE]; /**< Route Type value (for TCP) */
 
     uint32_t table; /**< Route Table ID value (for TCP) */
 

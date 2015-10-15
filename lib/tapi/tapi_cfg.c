@@ -523,6 +523,7 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
             char           *dev_name;
             cfg_oid        *oid;
             void           *val_p;
+            char           *type_val;
 
             handle1 = handle2;
 
@@ -547,6 +548,11 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
                 val_p = &tbl[i].win;
             else if (strcmp(name, "irtt") == 0)
                 val_p = &tbl[i].irtt;
+            else if (strcmp(name, "type") == 0)
+            {
+                val_p = &type_val;
+                type = CVT_STRING;
+            }
             else if (strcmp(name, "src") == 0)
             {
                 type = CVT_ADDRESS;
@@ -579,6 +585,11 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
             {
                 strncpy(tbl[i].dev, dev_name, sizeof(tbl[i].dev) - 1);
                 free(dev_name);
+            }
+            else if (strcmp(name, "type") == 0)
+            {
+                strncpy(tbl[i].type, type_val, sizeof(tbl[i].type) - 1);
+                free(type_val);
             }
 
             free(oid);
@@ -676,7 +687,9 @@ tapi_cfg_add_full_route(const char *ta, int addr_family,
         return tapi_cfg_add_blackhole(ta, addr_family, dst_addr,
                                       prefix, cfg_hndl);
     }
-    if (type != NULL && strcmp(type, "unicast") != 0)
+    if (type != NULL &&
+        strcmp(type, "unicast") != 0 &&
+        strcmp(type, "local") != 0)
     {
         ERROR("Route type '%s' is not supported yet", type);
         return TE_RC(TE_TAPI, TE_EINVAL);
@@ -715,7 +728,9 @@ tapi_cfg_modify_full_route(const char *ta, int addr_family,
                             int win, int irtt, int table,
                             cfg_handle *cfg_hndl)
 {
-    if (type != NULL && strcmp(type, "unicast") != 0)
+    if (type != NULL &&
+        strcmp(type, "unicast") != 0 &&
+        strcmp(type, "local") != 0)
     {
         ERROR("Route type '%s' is not supported yet", type);
         return TE_RC(TE_TAPI, TE_EINVAL);
@@ -1057,8 +1072,6 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
                     break;
                 }
 
-/* Commented out until route type support is back into Configurator - A.A */
-#if 0
                 if ((type != NULL) &&
                     ((rc = cfg_set_instance_local_fmt(CFG_VAL(STRING, type),
                           "/agent:%s/route:%s/type:", ta, route_inst_name))
@@ -1069,7 +1082,6 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
                           __FUNCTION__, type, route_inst_name, ta, rc);
                     break;
                 }
-#endif
                 
                 CFG_RT_SET_LOCAL(win);
                 CFG_RT_SET_LOCAL(mtu);

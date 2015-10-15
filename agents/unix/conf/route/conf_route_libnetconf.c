@@ -356,7 +356,6 @@ ta_unix_conf_route_change(ta_cfg_obj_action_e  action,
     if (cmd != NETCONF_CMD_DEL)
         route.type = rt_info->type;
 
-#if 0
     /* This is difference from old version */
     if ((route.type == NETCONF_RTN_BLACKHOLE) ||
         (route.type == NETCONF_RTN_UNREACHABLE) ||
@@ -368,7 +367,6 @@ ta_unix_conf_route_change(ta_cfg_obj_action_e  action,
     {
         route.scope = NETCONF_RT_SCOPE_LINK;
     }
-#endif
 
     if ((rt_info->flags & TA_RT_INFO_FLG_IF) != 0)
     {

@@ -445,10 +445,7 @@ route_src_get(unsigned int gid, const char *oid,
 
 DEF_ROUTE_SET_FUNC(src);
 DEF_ROUTE_SET_FUNC(dev);
-/* FIXME: Route types are disabled until Configurator is redesigned - A.A */
-#if 0
 DEF_ROUTE_SET_FUNC(type);
-#endif
 
 static te_errno
 route_dev_get(unsigned int gid, const char *oid,
@@ -466,8 +463,6 @@ route_dev_get(unsigned int gid, const char *oid,
     return 0;
 }
 
-/* FIXME: Route types are disabled until Configurator is redesigned - A.A */
-#if 0
 static te_errno
 route_type_get(unsigned int gid, const char *oid,
               char *value, const char *route) 
@@ -486,7 +481,6 @@ route_type_get(unsigned int gid, const char *oid,
     sprintf(value, "%s", ta_rt_type2name(rt_info->type));
     return 0;
 }
-#endif
 
 #undef DEF_ROUTE_GET_FUNC
 #undef DEF_ROUTE_SET_FUNC
@@ -637,13 +631,10 @@ RCF_PCH_CFG_NODE_COLLECTION(node_blackhole, "blackhole",
 
 static rcf_pch_cfg_object node_route;
 
-/* FIXME: Route types are disabled until Configurator is redesigned - A.A */
-#if 0
 RCF_PCH_CFG_NODE_RWC(node_route_type, "type", NULL, NULL,
                      route_type_get, route_type_set, &node_route);
-#endif
 
-RCF_PCH_CFG_NODE_RWC(node_route_irtt, "irtt", NULL, NULL,
+RCF_PCH_CFG_NODE_RWC(node_route_irtt, "irtt", NULL, &node_route_type,
                      route_irtt_get, route_irtt_set, &node_route);
 
 RCF_PCH_CFG_NODE_RWC(node_route_win, "win", NULL, &node_route_irtt,
