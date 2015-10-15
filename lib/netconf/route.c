@@ -272,6 +272,12 @@ netconf_route_modify(netconf_handle nh, netconf_cmd cmd,
                            RTA_PRIORITY);
     }
 
+    if (route->table != NETCONF_RT_TABLE_MAIN)
+    {
+        netconf_append_rta(h, &(route->table), sizeof(route->table),
+                           RTA_TABLE);
+    }
+
     memset(mxbuf, sizeof(mxbuf), 0);
     mxbuflen = 0;
 

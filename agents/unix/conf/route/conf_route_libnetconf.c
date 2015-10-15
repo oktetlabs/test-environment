@@ -92,8 +92,11 @@
 
 extern netconf_handle nh;
 
-/** Temponary buffer for list functions */
-static char buf[4096];
+/** Max length of temporary buffer for list functions */
+#define BUF_MAXLENGTH (4096)
+
+/** Temporary buffer for list functions */
+static char buf[BUF_MAXLENGTH];
 
 /**
  * Flush routing table cache.
@@ -185,7 +188,8 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
             if ((rt_info->prefix != route->dstlen) ||
                 (((rt_info->metric & TA_RT_INFO_FLG_METRIC) != 0) &&
                  (rt_info->metric != (uint32_t)route->metric)) ||
-                (rt_info->tos != route->tos))
+                (rt_info->tos != route->tos)||
+                (rt_info->table != route->table))
             {
                 continue;
             }
@@ -278,6 +282,12 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
         {
             rt_info->flags |= TA_RT_INFO_FLG_IRTT;
             rt_info->irtt = route->irtt;
+        }
+
+        if (route->table != NETCONF_RT_TABLE_MAIN)
+        {
+            rt_info->flags |= TA_RT_INFO_FLG_TABLE;
+            rt_info->table = route->table;
         }
 
         /* Find the first one */
@@ -408,6 +418,9 @@ ta_unix_conf_route_change(ta_cfg_obj_action_e  action,
     if ((rt_info->flags & TA_RT_INFO_FLG_IRTT) != 0)
         route.irtt = rt_info->irtt;
 
+    if ((rt_info->flags & TA_RT_INFO_FLG_TABLE) != 0)
+        route.table = rt_info->table;
+
     if (netconf_route_modify(nh, cmd, &route) < 0)
     {
         ERROR("%s(): Cannot change route", __FUNCTION__);
@@ -453,9 +466,6 @@ ta_unix_conf_route_list(char **list)
             continue;
         }
 
-        if (route->table != NETCONF_RT_TABLE_MAIN)
-            continue;
-
         if (route->oifindex == 0)
             continue;
 
@@ -490,6 +500,10 @@ ta_unix_conf_route_list(char **list)
 
         if (route->tos != 0)
             cur_ptr += sprintf(cur_ptr, ",tos=%d", route->tos);
+
+        if (route->table != NETCONF_RT_TABLE_MAIN)
+            cur_ptr += snprintf(cur_ptr, &buf[BUF_MAXLENGTH-1]-cur_ptr,
+                                ",table=%d", route->table);
     }
 
     netconf_list_free(nlist);

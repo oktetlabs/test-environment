@@ -139,6 +139,8 @@ typedef struct tapi_rt_entry {
     uint32_t win; /**< Route Window value (for TCP) */
     uint32_t irtt; /**< Route IRTT value (for TCP) */
 
+    uint32_t table; /**< Route Table ID value (for TCP) */
+
     cfg_handle hndl; /**< Handle of the entry in configurator */
 } tapi_rt_entry_t;
 
@@ -153,7 +155,12 @@ typedef struct tapi_rt_entry {
 #define TAPI_RT_TOS     0x0008
 /** Default source address is specified for the route */
 #define TAPI_RT_SRC     0x0010
+/** Table ID for the route */
+#define TAPI_RT_TABLE   0x0020
 /*@}*/
+
+/** Default table for normal rules */
+#define TAPI_RT_TABLE_MAIN 254
 
 /**
  * Gets routing table on the specified Test Agent
@@ -209,17 +216,36 @@ extern int tapi_cfg_add_route(const char *ta, int addr_family,
                               cfg_handle *rt_hndl);
 
 /**
+ * Same as tapi_cfg_add_route() but allows to specify a route type and
+ * route table id
+ * NOTE: currently only "blackhole" and "unicast" types are supported.
+ */
+extern int tapi_cfg_add_full_route(const char *ta, int addr_family,
+                                   const void *dst_addr, int prefix,
+                                   const void *gw_addr, const char *dev,
+                                   const void *src_addr, const char *type,
+                                   uint32_t flags, int metric,
+                                   int tos, int mtu,
+                                   int win, int irtt, int table,
+                                   cfg_handle *cfg_hndl);
+
+/**
  * Same as tapi_cfg_add_route() but allows to specify a route type
  * NOTE: currently only "blackhole" and "unicast" types are supported.
  */
-extern int tapi_cfg_add_typed_route(const char *ta, int addr_family,
-                                    const void *dst_addr, int prefix,
-                                    const void *gw_addr, const char *dev, 
-                                    const void *src_addr, const char *type,
-                                    uint32_t flags, int metric, 
-                                    int tos, int mtu,
-                                    int win, int irtt, 
-                                    cfg_handle *cfg_hndl);
+static inline int
+tapi_cfg_add_typed_route(const char *ta, int addr_family,
+                         const void *dst_addr, int prefix,
+                         const void *gw_addr, const char *dev,
+                         const void *src_addr, const char *type,
+                         uint32_t flags, int metric, int tos, int mtu,
+                         int win, int irtt, cfg_handle *cfg_hndl)
+{
+    return tapi_cfg_add_full_route(ta, addr_family, dst_addr, prefix,
+                                   gw_addr, dev, src_addr, type, flags,
+                                   metric, tos, mtu, win, irtt,
+                                   TAPI_RT_TABLE_MAIN, cfg_hndl);
+}
 
 
 /**
@@ -258,19 +284,38 @@ extern int tapi_cfg_modify_route(const char *ta, int addr_family,
                                  cfg_handle *rt_hndl);
 
 /**
+ * Same as tapi_cfg_modify_route() but allows to specify a route type and
+ * route table id
+ * NOTE: currently only "blackhole" and "unicast" types are supported.
+ */
+extern int tapi_cfg_modify_full_route(const char *ta, int addr_family,
+                                      const void *dst_addr, int prefix,
+                                      const void *gw_addr, const char *dev,
+                                      const void *src_addr,
+                                      const char *type,
+                                      uint32_t flags, int metric,
+                                      int tos, int mtu,
+                                      int win, int irtt, int table,
+                                      cfg_handle *cfg_hndl);
+
+/**
  * Same as tapi_cfg_modify_route() but allows to specify a route type.
  * NOTE: currently "unicast" type is supported, so the function behaves
  * exactly like tapi_cfg_modify_route().
  */
-extern int tapi_cfg_modify_typed_route(const char *ta, int addr_family,
-                                       const void *dst_addr, int prefix,
-                                       const void *gw_addr, const char *dev,
-                                       const void *src_addr,
-                                       const char *type,
-                                       uint32_t flags, int metric, 
-                                       int tos, int mtu,
-                                       int win, int irtt, 
-                                       cfg_handle *cfg_hndl);
+static inline int
+tapi_cfg_modify_typed_route(const char *ta, int addr_family,
+                            const void *dst_addr, int prefix,
+                            const void *gw_addr, const char *dev,
+                            const void *src_addr, const char *type,
+                            uint32_t flags, int metric, int tos, int mtu,
+                            int win, int irtt, cfg_handle *cfg_hndl)
+{
+    return tapi_cfg_modify_full_route(ta, addr_family, dst_addr, prefix,
+                                      gw_addr, dev, src_addr, type, flags,
+                                      metric, tos, mtu, win, irtt,
+                                      TAPI_RT_TABLE_MAIN, cfg_hndl);
+}
 
 
 /**

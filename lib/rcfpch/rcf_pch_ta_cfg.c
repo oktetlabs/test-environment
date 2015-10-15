@@ -74,6 +74,7 @@ extern int inet_pton(int af, const char *src, void *dst);
 #include "logger_api.h"
 #include "rcf_pch_ta_cfg.h"
 
+#include <netconf.h>
 
 #define TA_OBJS_NUM 10
 static ta_cfg_obj_t ta_objs[TA_OBJS_NUM];
@@ -338,7 +339,6 @@ ta_rt_parse_inst_name(const char *name, ta_rt_info_t *rt_info)
     char        *tmp, *tmp1;
     int          prefix;
     char        *ptr;
-    char        *end_ptr;
     char        *term_byte; /* Pointer to the trailing zero byte
                                in instance name */
     static char  inst_copy[RCF_MAX_VAL];
@@ -384,17 +384,29 @@ ta_rt_parse_inst_name(const char *name, ta_rt_info_t *rt_info)
 
     if ((ptr = strstr(tmp, "metric=")) != NULL)
     {
-        end_ptr = ptr += strlen("metric=");
+        ptr += strlen("metric=");
         rt_info->metric = atoi(ptr);
         rt_info->flags |= TA_RT_INFO_FLG_METRIC;
     }
     
     if ((ptr = strstr(tmp, "tos=")) != NULL)
     {
-        end_ptr = ptr += strlen("tos=");
+        ptr += strlen("tos=");
         rt_info->tos = atoi(ptr);
         rt_info->flags |= TA_RT_INFO_FLG_TOS;
     }
+
+    if ((ptr = strstr(tmp, "table=")) != NULL)
+    {
+        ptr += strlen("table=");
+        rt_info->table = atoi(ptr);
+        rt_info->flags |= TA_RT_INFO_FLG_TABLE;
+    }
+    else
+    {
+        rt_info->table = NETCONF_RT_TABLE_MAIN;
+    }
+
     /*
      * Set the route type to unicast by default.
      * We anyway support only unicast and blackhole

@@ -300,6 +300,7 @@ typedef struct ta_rt_info_t {
     uint32_t                irtt;   /**< Route transfer time */
     uint32_t                tos;    /**< Route type of service */
     ta_route_type           type;   /**< Route type (e.g. unicast) */
+    uint32_t                table;  /**< Route table id */
 } ta_rt_info_t;
 
 /** Gateway address is specified for the route */
@@ -318,6 +319,8 @@ typedef struct ta_rt_info_t {
 #define TA_RT_INFO_FLG_TOS    0x0040
 /** Source address is specified for the route */
 #define TA_RT_INFO_FLG_SRC    0x0080
+/** Table ID is specified for the route */
+#define TA_RT_INFO_FLG_TABLE  0x0100
 
 /**
  * Initialize ta_rt_info_t data structure.

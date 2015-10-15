@@ -89,7 +89,8 @@ static int tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta,
                              const void *gw_addr, const char *dev,
                              const void *src_addr, const char *type,
                              uint32_t flags, int metric, int tos, int mtu,
-                             int win, int irtt, cfg_handle *cfg_hndl);
+                             int win, int irtt, int table,
+                             cfg_handle *cfg_hndl);
 
 static int tapi_cfg_neigh_op(enum tapi_cfg_oper op, const char *ta,
                              const char *ifname,
@@ -380,7 +381,6 @@ route_parse_inst_name(const char *inst_name, tapi_rt_entry_t *rt)
     char        *tmp, *tmp1;
     int          prefix;
     char        *ptr;
-    char        *end_ptr;
     static char  inst_copy[RCF_MAX_VAL];
 
     int          family = (strchr(inst_name, ':') == NULL) ?
@@ -415,18 +415,27 @@ route_parse_inst_name(const char *inst_name, tapi_rt_entry_t *rt)
 
     if ((ptr = strstr(tmp, "metric=")) != NULL)
     {
-        end_ptr = ptr += strlen("metric=");
-        rt->metric = atoi(end_ptr);
+        ptr += strlen("metric=");
+        rt->metric = atoi(ptr);
         rt->flags |= TAPI_RT_METRIC;
     }
     
     if ((ptr = strstr(tmp, "tos=")) != NULL)
     {
-        end_ptr = ptr += strlen("tos=");
-        rt->metric = atoi(end_ptr);
+        ptr += strlen("tos=");
+        rt->metric = atoi(ptr);
         rt->flags |= TAPI_RT_TOS;
     }       
-    
+
+    if ((ptr = strstr(tmp, "table=")) != NULL)
+    {
+        ptr += strlen("table=");
+        rt->table = atoi(ptr);
+        rt->flags |= TAPI_RT_TABLE;
+    }
+    else
+        rt->table = TAPI_RT_TABLE_MAIN;
+
     return 0;
 }
 
@@ -615,7 +624,8 @@ tapi_cfg_add_route(const char *ta, int addr_family,
 {
     return tapi_cfg_route_op(OP_ADD, ta, addr_family,
                              dst_addr, prefix, gw_addr, dev, src_addr, NULL,
-                             flags, metric, tos, mtu, win, irtt, cfg_hndl);
+                             flags, metric, tos, mtu, win, irtt,
+                             TAPI_RT_TABLE_MAIN, cfg_hndl);
 }
 
 static int
@@ -654,12 +664,12 @@ tapi_cfg_add_blackhole(const char *ta, int addr_family,
 
 /* See the description in tapi_cfg.h */
 int
-tapi_cfg_add_typed_route(const char *ta, int addr_family,
-                         const void *dst_addr, int prefix,
-                         const void *gw_addr, const char *dev, 
-                         const void *src_addr, const char *type,
-                         uint32_t flags, int metric, int tos, int mtu,
-                         int win, int irtt, cfg_handle *cfg_hndl)
+tapi_cfg_add_full_route(const char *ta, int addr_family,
+                        const void *dst_addr, int prefix,
+                        const void *gw_addr, const char *dev,
+                        const void *src_addr, const char *type,
+                        uint32_t flags, int metric, int tos, int mtu,
+                        int win, int irtt, int table, cfg_handle *cfg_hndl)
 {
     if (type != NULL && strcmp(type, "blackhole") == 0)
     {
@@ -673,7 +683,8 @@ tapi_cfg_add_typed_route(const char *ta, int addr_family,
     }
     return tapi_cfg_route_op(OP_ADD, ta, addr_family,
                              dst_addr, prefix, gw_addr, dev, src_addr, type,
-                             flags, metric, tos, mtu, win, irtt, cfg_hndl);
+                             flags, metric, tos, mtu, win, irtt, table,
+                             cfg_hndl);
 }
 
 
@@ -689,18 +700,20 @@ tapi_cfg_modify_route(const char *ta, int addr_family,
 {
     return tapi_cfg_route_op(OP_MODIFY, ta, addr_family,
                              dst_addr, prefix, gw_addr, dev, src_addr, NULL,
-                             flags, metric, tos, mtu, win, irtt, cfg_hndl);
+                             flags, metric, tos, mtu, win, irtt,
+                             TAPI_RT_TABLE_MAIN, cfg_hndl);
 }
 
 
 /* See the description in tapi_cfg.h */
 int
-tapi_cfg_modify_typed_route(const char *ta, int addr_family,
+tapi_cfg_modify_full_route(const char *ta, int addr_family,
                             const void *dst_addr, int prefix,
                             const void *gw_addr, const char *dev,
                             const void *src_addr, const char *type,
                             uint32_t flags, int metric, int tos, int mtu,
-                            int win, int irtt, cfg_handle *cfg_hndl)
+                            int win, int irtt, int table,
+                            cfg_handle *cfg_hndl)
 {
     if (type != NULL && strcmp(type, "unicast") != 0)
     {
@@ -709,7 +722,8 @@ tapi_cfg_modify_typed_route(const char *ta, int addr_family,
     }
     return tapi_cfg_route_op(OP_MODIFY, ta, addr_family,
                              dst_addr, prefix, gw_addr, dev, src_addr, type,
-                             flags, metric, tos, mtu, win, irtt, cfg_hndl);
+                             flags, metric, tos, mtu, win, irtt, table,
+                             cfg_hndl);
 }
 
 /* See the description in tapi_cfg.h */
@@ -723,7 +737,8 @@ tapi_cfg_del_route_tmp(const char *ta, int addr_family,
 {
     return tapi_cfg_route_op(OP_DEL, ta, addr_family,
                              dst_addr, prefix, gw_addr, dev, src_addr, NULL,
-                             flags, metric, tos, mtu, win, irtt, NULL);
+                             flags, metric, tos, mtu, win, irtt,
+                             TAPI_RT_TABLE_MAIN, NULL);
 }
 
 /* See the description in tapi_cfg.h */
@@ -846,6 +861,7 @@ tapi_cfg_del_neigh_dynamic(const char *ta, const char *ifname)
  * @param gw_addr       Gateway address of the route
  * @param dev           Interface name
  * @param type          Route type
+ * @param table         Route table ID
  * @param cfg_hndl      Handle of the route in Configurator DB (OUT)
  *
  * @return Status code
@@ -857,7 +873,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
                   const void *dst_addr, int prefix, const void *gw_addr,
                   const char *dev, const void *src_addr, const char *type,
                   uint32_t flags, int metric, int tos, int mtu, int win,
-                  int irtt, cfg_handle *cfg_hndl)
+                  int irtt, int table, cfg_handle *cfg_hndl)
 {
     cfg_handle  handle;
     char        dst_addr_str[INET6_ADDRSTRLEN];
@@ -960,6 +976,9 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
 
     if (tos > 0)
         PUT_INTO_BUF(route_inst_name, ",tos=%d", tos);
+
+    if (table != TAPI_RT_TABLE_MAIN)
+        PUT_INTO_BUF(route_inst_name, ",table=%d", table);
 
     /* Prepare structure with gateway address */
     memset(&ss, 0, sizeof(ss));
