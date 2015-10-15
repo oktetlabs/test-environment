@@ -136,11 +136,9 @@ static te_bool  rcf_tr_op_ring = TRUE;
 /* Declare and initialize (or obtain old) IPC library handle. */
 #define RCF_API_INIT \
     thread_ctx_t *ctx_handle = get_ctx_handle(TRUE);            \
-    struct ipc_client *ipc_handle;                              \
                                                                 \
     if (ctx_handle == NULL || ctx_handle->ipc_handle == NULL)   \
         return TE_RC(TE_RCF_API, TE_EIPC);                      \
-    ipc_handle = ctx_handle->ipc_handle
 
 
 /* Validate TA name argument */
@@ -2669,7 +2667,7 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
             handler(msg.file, user_param);
 
         anslen = sizeof(msg);
-        if ((rc = wait_rcf_ipc_message(ipc_handle,
+        if ((rc = wait_rcf_ipc_message(ctx_handle->ipc_handle,
                                        &(ctx_handle->msg_buf_head),
                                        rcf_message_match, &match_data,
                                        &msg, &anslen, NULL)) != 0)
@@ -2861,7 +2859,7 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
 
         handler(msg.file, user_param);
         anslen = sizeof(msg);
-        if ((rc = wait_rcf_ipc_message(ipc_handle,
+        if ((rc = wait_rcf_ipc_message(ctx_handle->ipc_handle,
                                        &(ctx_handle->msg_buf_head),
                                        rcf_message_match, &match_data,
                                        &msg, &anslen, NULL)) != 0)
@@ -3099,7 +3097,8 @@ rcf_trpoll(rcf_trpoll_csap *csaps, unsigned int n_csaps,
     while (!cancel && (n_active > 0))
     {
         anslen = sizeof(msg);
-        rc = wait_rcf_ipc_message(ipc_handle, &(ctx_handle->msg_buf_head),
+        rc = wait_rcf_ipc_message(ctx_handle->ipc_handle,
+                                  &(ctx_handle->msg_buf_head),
                                   rcf_message_match_poll, &poll_match_data,
                                   &msg, &anslen, NULL);
         if (rc != 0)
@@ -3142,7 +3141,8 @@ rcf_trpoll(rcf_trpoll_csap *csaps, unsigned int n_csaps,
     while (n_active > 0)
     {
         anslen = sizeof(msg);
-        rc = wait_rcf_ipc_message(ipc_handle, &(ctx_handle->msg_buf_head),
+        rc = wait_rcf_ipc_message(ctx_handle->ipc_handle,
+                                  &(ctx_handle->msg_buf_head),
                                   rcf_message_match_poll, &poll_match_data,
                                   &msg, &anslen, NULL);
         if (rc == 0)
