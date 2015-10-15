@@ -2446,6 +2446,9 @@ rcf_ta_check_start(void)
         if (req == NULL)
         {
             rc = TE_RC(TE_RCF, TE_ENOMEM);
+            ERROR("Unable to allocate memory "
+                  "to check TA '%s' state, error=%r",
+                  agent->name, rc);
             break;
         }
 
