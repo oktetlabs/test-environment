@@ -561,7 +561,7 @@ sniffer_save_info(const char *agent, snif_id_l *snif, int fd_o)
     
     gettimeofday(&ts, 0);
     SNIFFER_TS_CPY(mark.h.ts, ts);
-    mark.h.caplen = strlen(mark.message) + SNIF_MARK_PSIZE;
+    mark.h.caplen = res + SNIF_MARK_PSIZE;
     mark.h.len = mark.h.caplen;
 
     sniffer_insert_marker(fd_o, &mark);
