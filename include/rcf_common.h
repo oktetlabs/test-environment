@@ -41,7 +41,7 @@
 
 #define RCF_MAX_ID          256 /**< Maximum object or stack
                                      identifier length */
-#define RCF_MAX_VAL         (128  * 6) /**< Maximum length of variable value
+#define RCF_MAX_VAL         (128  * 8) /**< Maximum length of variable value
                                      or object instance value */
 #define RCF_MAX_PATH        256 /**< Maximum full file name */
 
