@@ -101,7 +101,7 @@ sub bin_search
     my $arr = $_[0];
     my $val = $_[1];
 
-    return bin_search_aux($arr, $val, 0, scalar @$arr);
+    return bin_search_aux($arr, $val, 0, scalar @$arr - 1);
 }
 
 if ($te_ext_libs_path ne "")
