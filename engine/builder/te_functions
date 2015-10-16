@@ -44,9 +44,34 @@ te_ta_sanitize()
 te_ta_signature_local()
 {
     local CC=$1
+
+    # Use option '-print-multiarch' with different gcc versions
+    # gives different results:
+    #  - exit code @c 1 with message on stderr (for old gcc version in
+    #    RHEL 6, Debian 6)
+    #  - exit code @c 0 with empty message (for RHEL 7)
+    #  - exit code @c 0 with correct triplet on stdout (for Ubuntu 14.04,
+    #    Debian 7 or 8)
     local GCC_TARGET=$($CC -print-multiarch 2>/dev/null)
     if test -z "$GCC_TARGET" ; then
-        GCC_TARGET=$($CC -dumpmachine 2>/dev/null)
+        # '-dumpmachine' returns triplet independently on options
+        # '-m32' and '-m64'
+        GCC_TARGET=$($CC -dumpmachine)
+
+        # Determine architecture manually
+        local march=i386
+        if echo | $CC -E -dM - |
+            grep -q '^#define\s*__x86_64__\s*1$' ; then
+            march=x86_64
+        fi
+
+        # Fix the triplet if it is necessary
+        case "$GCC_TARGET:$march" in
+            x86_64-*:x86_64 ) ;;
+            x86_64-*:i386 )   GCC_TARGET="i386-${GCC_TARGET#*-}" ;;
+            *:x86_64 )        GCC_TARGET="x86_64-${GCC_TARGET#*-}" ;;
+            *:* )             ;;
+        esac
     fi
     case "$GCC_TARGET" in
         *-linux-gnu | \
