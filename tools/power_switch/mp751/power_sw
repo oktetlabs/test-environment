@@ -11,9 +11,16 @@ exit 1
 
 case "$2" in
     "rst" ) ACT="-ton" ;;
-    "on"  ) ACT="-off" ;;
-    "off" ) ACT="-on" ;;
+    "on"  ) ACT="-on" ;;
+    "off" ) ACT="-off" ;;
     *     ) print_help ;;
 esac
 
-/usr/local/bin/mp751 ${ACT}
+N=$(($1))
+for I in `seq 1 4`; do
+    if [ $((N & 1)) == 1 ];
+    then
+        /usr/local/bin/mp751 ${I} ${ACT}
+    fi
+    ((N /= 2))
+done
