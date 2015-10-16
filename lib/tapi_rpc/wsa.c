@@ -2290,7 +2290,7 @@ rpc_wait_for_multiple_events(rcf_rpc_server *rpcs,
     }
 
     CHECK_RETVAL_VAR(wait_for_multiple_events, out.retval, FALSE,
-                     WSA_WAIT_FAILED);
+                     (int)WSA_WAIT_FAILED);
     TAPI_RPC_LOG(rpcs, WSAWaitForMultipleEvents,
                  "%d, %p, %s, %d, %s", "%s",
                  count, events, wait_all ? "true" : "false", timeout,
