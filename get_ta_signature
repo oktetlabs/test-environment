@@ -50,16 +50,16 @@ process_opts()
 {
     for opt ; do
         case "$opt" in
-            --cc=* )        CC="${1#--cc=}" ;;
-            --host=* )      HOST="${1#--host=}" ;;
-            --te-base=* )   TE_BASE="${1#--te-base=}" ;;
+            --cc=* )        CC="${opt#--cc=}" ;;
+            --host=* )      HOST="${opt#--host=}" ;;
+            --te-base=* )   TE_BASE="${opt#--te-base=}" ;;
 
             -h | --help )
                 usage
                 exit 0
                 ;;
 
-            *)  echo "Unknown option: $1" >&2;
+            *)  echo "Unknown option: $opt" >&2;
                 usage
                 exit 1
                 ;;
