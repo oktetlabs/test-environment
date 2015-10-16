@@ -1,0 +1,19 @@
+#!/bin/bash
+
+print_help()
+{
+cat <<EOF
+usage:  power_sw mask mode  (mask is 0xF, mode is on/off/rst)
+
+EOF
+exit 1
+}
+
+case "$2" in
+    "rst" ) ACT="-ton" ;;
+    "on"  ) ACT="-off" ;;
+    "off" ) ACT="-on" ;;
+    *     ) print_help ;;
+esac
+
+/usr/local/bin/mp751 ${ACT}
