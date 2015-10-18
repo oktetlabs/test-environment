@@ -128,10 +128,6 @@ extern const char *inet_ntop(int af, const void *src, char *dst,
 #define SIOCGHWTSTAMP 0x89b1
 #endif
 
-#ifndef SO_SELECT_ERR_QUEUE
-#define SO_SELECT_ERR_QUEUE 45
-#endif
-
 /**
  * Solarflare Onload specific socket option to retrieve TX TCP timestamps.
  */
