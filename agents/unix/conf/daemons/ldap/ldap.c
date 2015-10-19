@@ -116,14 +116,14 @@ ds_slapd_add(unsigned int gid, const char *oid, const char *value,
             const char *port)
 {
     uint32_t pid = slapd_exists((char *)port);
-    uint32_t p;
+    long p;
     char    *tmp;
 
     UNUSED(gid);
     UNUSED(oid);
 
     p = strtol(port, &tmp, 10);
-    if (tmp == port || *tmp != 0)
+    if (tmp == port || *tmp != 0 || p < 0 || p > 0xffff)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     if (pid != 0)
