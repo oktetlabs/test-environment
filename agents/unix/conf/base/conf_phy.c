@@ -53,6 +53,10 @@
 #include <stropts.h>
 #endif
 
+#ifdef HAVE_SYS_IOCTL_H
+#include <sys/ioctl.h>
+#endif
+
 #if HAVE_LINUX_ETHTOOL_H
 #include "te_ethtool.h"
 #endif
