@@ -68,6 +68,7 @@
 #include "tapi_rpc_socket.h"
 #include "tapi_rpcsock_macros.h"
 #include "te_alloc.h"
+#include "tapi_test_log.h"
 
 int
 rpc_socket(rcf_rpc_server *rpcs,
@@ -853,6 +854,25 @@ msghdr_rpc2tarpc(const rpc_msghdr *rpc_msg, tarpc_msghdr *tarpc_msg)
     return 0;
 }
 
+/**
+ * Check field @b msg_flags value is zero, skip this check if flag
+ * @c RPC_MSG_FLAGS_NO_CHECK is set into field @b msg_flags_mode.
+ *
+ * @param msg   Returned msghdr structure
+ */
+static void
+msghdr_check_msg_flags(rpc_msghdr *msg)
+{
+    if (msg == NULL || (msg->msg_flags_mode & RPC_MSG_FLAGS_NO_CHECK) != 0)
+        return;
+
+    if (msg->msg_flags != 0)
+    {
+        TEST_VERDICT("Non-zero msg_flags value was returned: %s",
+                     send_recv_flags_rpc2str(msg->msg_flags));
+    }
+}
+
 ssize_t
 rpc_sendmsg(rcf_rpc_server *rpcs,
             int s, const struct rpc_msghdr *msg, rpc_send_recv_flags flags)
@@ -881,10 +901,9 @@ rpc_sendmsg(rcf_rpc_server *rpcs,
         in.msg.msg_len = 1;
 
         msghdr_rpc2tarpc(msg, &rpc_msg);
-
         /** Initialize @b msg_flags with a random value by default, it
          * should not affect anything since the field is ignored. */
-        if (!msg->msg_flags_set)
+        if ((msg->msg_flags_mode & RPC_MSG_FLAGS_NO_SET) == 0)
             rpc_msg.msg_flags = tapi_send_recv_flags_rand();
     }
 
@@ -949,7 +968,7 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
 
         /** Initialize @b msg_flags with a random value by default, it
          * should not affect anything since the field is "write only". */
-        if (!msg->msg_flags_set)
+        if ((msg->msg_flags_mode & RPC_MSG_FLAGS_NO_SET) == 0)
             msg->msg_flags = tapi_send_recv_flags_rand();
 
         if (msg->msg_riovlen > RCF_RPC_MAX_IOVEC)
@@ -1078,6 +1097,10 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
     TAPI_RPC_LOG(rpcs, recvmsg, "%d, %p(%s), %s", "%ld",
                  s, msg, str_buf, send_recv_flags_rpc2str(flags),
                  (long)out.retval);
+
+    if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT &&
+        out.retval >= 0)
+        msghdr_check_msg_flags(msg);
     RETVAL_INT(recvmsg, out.retval);
 }
 
@@ -2175,7 +2198,7 @@ rpc_recvmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
             /** Initialize @b msg_flags with a random value by default, it
              * should not affect anything since the field is
              * "write only". */
-            if (!msg->msg_flags_set)
+            if ((msg->msg_flags_mode & RPC_MSG_FLAGS_NO_SET) == 0)
                 msg->msg_flags = tapi_send_recv_flags_rand();
 
             if (msg->msg_riovlen > RCF_RPC_MAX_IOVEC)
@@ -2319,6 +2342,14 @@ rpc_recvmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
 
     TAPI_RPC_LOG(rpcs, recvmmsg_alt, "%d, %p(%s", "%d",
                  fd, mmsg, str_buf, out.retval);
+
+    if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT &&
+        mmsg != NULL && out.mmsg.mmsg_val != NULL && out.retval >= 0)
+    {
+        for (j = 0; j < out.mmsg.mmsg_len; j++)
+            msghdr_check_msg_flags(&mmsg[j].msg_hdr);
+    }
+
     RETVAL_INT(recvmmsg_alt, out.retval);
 }
 
@@ -2362,9 +2393,10 @@ rpc_sendmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
             rpc_mmsg[j].msg_len = mmsg[j].msg_len;
 
             msghdr_rpc2tarpc(msg, rpc_msg);
+
             /** Initialize @b msg_flags with a random value by default, it
              * should not affect anything since the field is ignored. */
-            if (!msg->msg_flags_set)
+            if ((msg->msg_flags_mode & RPC_MSG_FLAGS_NO_SET) == 0)
                 rpc_msg->msg_flags = tapi_send_recv_flags_rand();
         }
     }

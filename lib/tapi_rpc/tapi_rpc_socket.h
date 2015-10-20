@@ -301,6 +301,22 @@ rpc_recvfrom(rcf_rpc_server *rpcs,
                                   fromlen == NULL) ? 0 : *fromlen);
 }
 
+/**
+ * Flags set which determines behavior of @b msg_flags processing. In
+ * general default value is @c 0 in this case a random value is passed in
+ * msg_flags field and then returned value will be checked:
+ * - for recvmsg()-like functions returned value has to be zero unless the
+ *   cases when some flags are really expected;
+ * - for sendmsg()-like functions the field must be unchanged.
+ */
+typedef enum rpc_msg_flags_mode {
+    RPC_MSG_FLAGS_SET_CHECK = 0,  /**< Set random flags and check returned
+                                       value */
+    RPC_MSG_FLAGS_NO_CHECK = 1,   /**< Do not check returned flags value */
+    RPC_MSG_FLAGS_NO_SET = 2,     /**< Do not overwrite flags with a random
+                                       vlue */
+} rpc_msg_flags_mode;
+
 /** Store information about message */
 typedef struct rpc_msghdr {
     /* Standard fields - do not change types/order! */
@@ -314,15 +330,15 @@ typedef struct rpc_msghdr {
     rpc_send_recv_flags  msg_flags;      /**< flags returned by recvmsg() */
 
     /* Non-standard fields for test purposes */
-    socklen_t         msg_rnamelen;     /**< real size of protocol
+    socklen_t          msg_rnamelen;    /**< real size of protocol
                                              address buffer to be copied
                                              by RPC */
-    size_t            msg_riovlen;      /**< real number of elements
+    size_t             msg_riovlen;     /**< real number of elements
                                              in msg_iov */
-    int               msg_cmsghdr_num;  /**< Number of elements in
+    int                msg_cmsghdr_num; /**< Number of elements in
                                              the array */
-    te_bool           msg_flags_set;    /**< flags should not be overwritten
-                                             in RPC with a random value */
+    rpc_msg_flags_mode msg_flags_mode;  /**< determine how to process
+                                             field msg_flags */
 } rpc_msghdr;
 
 struct rpc_mmsghdr {
