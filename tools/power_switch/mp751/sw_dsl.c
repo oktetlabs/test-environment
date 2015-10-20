@@ -7,7 +7,7 @@
  *
  * Usage: sw_dsl [dev] [A|V|?]
  *  A or V - to turn on ADSL or VDSL
- *  num    - the number of the device in the attachment order, starting from 1
+ *  num    - the number of the device in the usb devices order, starting from 1
  *  none of A or V flips the mode
  *  ?      - only prints the current mode
  *
@@ -107,7 +107,8 @@ main(int argc, char* argv[])
     int                     num;
     char                    mode = ' ';
 
-    if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)
+    if (argc > 1 &&
+        (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0))
     {
         printf("Usage: %s [A|V] [num]\n"
                "    A or V - to turn on ADSL or VDSL\n"
@@ -133,6 +134,14 @@ main(int argc, char* argv[])
             if ((*c == 'V' || *c == 'A' || *c == '?') && mode == ' ')
             {
                 mode = *c;
+            }
+            else if (*c == 'v')
+            {
+                mode = 'V';
+            }
+            else if (*c == 'a')
+            {
+                mode = 'A';
             }
             else if (*c >= '1' && *c <= '9' && device_number == 0)
             {
