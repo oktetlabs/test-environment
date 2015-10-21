@@ -2346,7 +2346,7 @@ rpc_recvmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
     if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT &&
         mmsg != NULL && out.mmsg.mmsg_val != NULL && out.retval >= 0)
     {
-        for (j = 0; j < out.mmsg.mmsg_len; j++)
+        for (j = 0; j < out.mmsg.mmsg_len && (int)j < out.retval; j++)
             msghdr_check_msg_flags(&mmsg[j].msg_hdr);
     }
 
