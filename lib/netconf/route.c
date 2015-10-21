@@ -278,7 +278,7 @@ netconf_route_modify(netconf_handle nh, netconf_cmd cmd,
                            RTA_TABLE);
     }
 
-    memset(mxbuf, sizeof(mxbuf), 0);
+    memset(mxbuf, 0, sizeof(mxbuf));
     mxbuflen = 0;
 
     if (route->mtu != 0)
