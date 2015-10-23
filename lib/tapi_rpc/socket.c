@@ -1098,8 +1098,7 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
                  s, msg, str_buf, send_recv_flags_rpc2str(flags),
                  (long)out.retval);
 
-    if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT &&
-        out.retval >= 0)
+    if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT && out.retval > 0)
         msghdr_check_msg_flags(msg);
     RETVAL_INT(recvmsg, out.retval);
 }
