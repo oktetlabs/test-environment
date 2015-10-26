@@ -418,9 +418,10 @@ case mod_:\
 
             case 's':
             {
-                char *arg_str;
+                (void)va_arg(ap, char *);
 /* FIXME: What are you doing here? */
 #if 0
+                char *arg_str;
                 char *fake_str;
                 int   percent_count = 0;
                 int   i;
@@ -430,9 +431,7 @@ case mod_:\
 
                 *spec_start = '\0';
                 VFLUSH(s0, ap0);
-#endif
                 arg_str = va_arg(ap, char *);
-#if 0
                 va_copy(ap0, ap);
                 
                 for (tmp = arg_str; *tmp != '\0'; tmp++)

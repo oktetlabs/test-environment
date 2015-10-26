@@ -249,8 +249,8 @@ power_sw(int type, const char *dev, int mask, int cmd)
 {
     unsigned char   mode;
     int             fd;
-    int             is_rebootable;
-    int             sockets_num;
+    int             is_rebootable = 0;
+    int             sockets_num = 0;
     int             rc;
 
     if (type == DEV_TYPE_UNSPEC)
