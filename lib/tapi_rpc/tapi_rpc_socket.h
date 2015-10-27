@@ -355,6 +355,17 @@ tapi_send_recv_flags_rand(void)
 }
 
 /**
+ * Enable/disable @b rpc_msghdr.msg_flags flags value initialization and 
+ * check inside RPCs.
+ *
+ * @note By default the flags value is initialized and checked in all RPCs
+ * where @b rpc_msg is used.
+ *
+ * @param enable    Set @c TRUE to enable init and check
+ */
+extern void tapi_rpc_msghdr_msg_flags_init_check(te_bool enable);
+
+/**
  * Send message to a connected or non-connected socket.
  * This operation takes place on RPC server side.
  *
