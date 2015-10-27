@@ -108,7 +108,6 @@ tad_tcpip_flood(csap_p csap, const char  *usr_param, tad_pkts *pkts)
     {
         tad_eth_rw_data     *spec_data = csap_get_rw_data(csap);
         struct sockaddr_ll   bind_addr;
-        struct ifreq         if_req;
         int                  buf_size;
         unsigned int         ifindex;
 
