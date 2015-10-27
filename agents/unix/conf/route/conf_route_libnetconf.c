@@ -473,6 +473,34 @@ ta_unix_conf_route_list(char **list)
         if (!ta_interface_is_mine(ifname))
             continue;
 
+        /*
+         * If you create a new network address for any network interface,
+         * then it automatically adds a several routes. One of these routes
+         * has parameters:
+         *   - table = local,
+         *   - type = broadcast,
+         *   - empty field gateway,
+         *   - dst field has the last bits set to 0, according to the
+         *     network mask used for the address.
+         * In older kernels this route is removed when a secondary network
+         * address is deleted. Sometimes configurator for rollback has to
+         * remove a secondary network address. This causes removal of the
+         * route. Configurator should restore the route using the following
+         * steps:
+         *   1. Add the route with parameters: dst, gateway, table.
+         *   2. Add remaining fields one by one.
+         * But the kernel does not allow to create the route using only the
+         * parameters of the first point. So the test fails.
+         */
+        if ((route->table == NETCONF_RT_TABLE_LOCAL) &&
+            (route->type == NETCONF_RTN_BROADCAST) &&
+            (route->dst != NULL) &&
+            (route->dstlen == 32) &&
+            ((route->dst[3] & 1) == 0) &&
+            (route->gateway == NULL) &&
+            (route->src != NULL))
+            continue;
+
         /* Append this route to the list */
 
         if (cur_ptr != buf)
