@@ -3272,7 +3272,7 @@ static uint32_t
 xvfb_exists(char *number)
 {
     FILE *f = popen(PS_ALL_PID_ARGS " | grep 'Xvfb' | grep -v grep", "r");
-    char  line[128];
+    char  line[1024];
     int   len = strlen(number);
     
     buf[0] = 0;
@@ -3282,7 +3282,7 @@ xvfb_exists(char *number)
 
         if (tmp == NULL)
         {
-            ERROR("xvfb_list: ps returned %s", line);
+            ERROR("xvfb_exists: ps returned %s", line);
             break;
         }
         
@@ -3403,7 +3403,7 @@ static te_errno
 ds_xvfb_list(unsigned int gid, const char *oid, char **list)
 {
     FILE *f = popen(PS_ALL_ARGS " | grep 'Xvfb' | grep -v grep", "r");
-    char  line[128];
+    char  line[1024];
     char *s = buf;
 
     UNUSED(gid);
