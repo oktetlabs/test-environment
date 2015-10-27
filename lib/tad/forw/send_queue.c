@@ -174,6 +174,8 @@ tadf_sendq_entry_remove(sendq_t *queue, sendq_entry_t  *entry)
     return 0;
 }
 
+#if 0
+/* this code is not used */
 /**
  * Finds the entry in the send queue due to it's send time.
  * The function sets the entry pointer to the entry (in case
@@ -203,7 +205,7 @@ tadf_sendq_entry_find(sendq_t *queue,
         if ((current->send_time.tv_sec == send_time->tv_sec) &&
             (current->send_time.tv_usec == send_time->tv_usec))
         {
-            entry = &(current);
+            *entry = &(current);
             pthread_mutex_unlock(&queue->sendq_lock);
             return 0;
         }
@@ -213,6 +215,7 @@ tadf_sendq_entry_find(sendq_t *queue,
     /* if we are here we failed to find the entry */
     return TE_RC(TE_TA_EXT, TE_ENOENT);
 }
+#endif
 
 /**
  * This function initalizes the objects of the send queue:
