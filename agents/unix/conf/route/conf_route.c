@@ -408,8 +408,6 @@ DEF_ROUTE_GET_FUNC(win);
 DEF_ROUTE_SET_FUNC(win);
 DEF_ROUTE_GET_FUNC(irtt);
 DEF_ROUTE_SET_FUNC(irtt);
-DEF_ROUTE_GET_FUNC(table);
-DEF_ROUTE_SET_FUNC(table);
 
 static te_errno
 route_src_get(unsigned int gid, const char *oid,
