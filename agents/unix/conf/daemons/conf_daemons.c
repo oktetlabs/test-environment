@@ -3271,7 +3271,8 @@ RCF_PCH_CFG_NODE_COLLECTION(node_ds_sshd, "sshd",
 static uint32_t
 xvfb_exists(char *number)
 {
-    FILE *f = popen(PS_ALL_PID_ARGS " | grep 'Xvfb' | grep -v grep", "r");
+    FILE *f = popen(PS_ALL_PID_ARGS
+                    " | grep -w 'Xvfb' | grep -v grep", "r");
     char  line[1024];
     int   len = strlen(number);
     
@@ -3402,7 +3403,7 @@ ds_xvfb_del(unsigned int gid, const char *oid, const char *number)
 static te_errno
 ds_xvfb_list(unsigned int gid, const char *oid, char **list)
 {
-    FILE *f = popen(PS_ALL_ARGS " | grep 'Xvfb' | grep -v grep", "r");
+    FILE *f = popen(PS_ALL_ARGS " | grep -w 'Xvfb' | grep -v grep", "r");
     char  line[1024];
     char *s = buf;
 
@@ -3417,7 +3418,7 @@ ds_xvfb_list(unsigned int gid, const char *oid, char **list)
         
         if (tmp == NULL)
         {
-            ERROR("xvfb_list: ps returned %s", line);
+            WARN("xvfb_list: ps returned %s", line);
             break;
         }
 
