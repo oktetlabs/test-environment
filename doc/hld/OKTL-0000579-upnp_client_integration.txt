@@ -1,0 +1,499 @@
+UPnP client integration design
+
+Author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
+
+* Introduction
+In general UPnP framework is really huge and extremely extendable. It provides
+ability for management of arbitrary items from light bulbs to network routers
+with media content and goes far to Internet of Things in its extensions. So
+try to write a specific RPC to all UPnP actions is really crazy. Instead it
+would be better to have an iterface to send an arbitrary UPnP request, which
+is formed on TEN side. Then returned data can be parsed and processed in test
+API libraries using the gupnp library. Actually a script test writer should
+operate only with user-friendly functions in result. So no run time problems
+with UPnP request forming should happen.
+
+
+* Requirementes:
+000100     Discovering UPnP devices in the local network.
+    The following abilities should be supported:
+    000110     search all devices;
+    000120     search device by a specified name or other parameters;
+    000130     get the device properies like name, UDN, URL etc.
+
+000200     Discovering UPnP services in the network.
+    The following abilities should be supported:
+    000210     get all available services;
+    000220     search a service of the specified type;
+    000230     get services on the specified device.
+
+000300      Ability to send UPnP requests to services.
+    000310      It should be possible to send arbitrary UPnP request.
+    000320      Retruned data can be parsed and processed on the agent side.
+                or TEN side in dependence on RPC aims.
+
+000400      Usable Test API.
+    000410      Test scripts writer should not operate directly with UPnP data,
+                appropriate test API functions should be written to do that.
+
+000500      UPnP client.
+    UPnP client should provide abilities to:
+    000510      discover devices/services;
+    000520      send arbitrary UPnP requests;
+    000530      handle and forward data which is returned by the requests;
+    000540      handle events and notifications:
+        000541      device/service disconnection;
+        000542      other notifications.
+
+* Build options
+The extension should be built optionaly. An option should be introduced into
+builder config to determine if the UPnP extension should be included to the
+build.
+
+
+* Environment and decomposition
+See simplified decomposition on image:
+https://oktetlabs.ru/~andrey/imgs/upnp_decomposition.png
+
+
+* Processes
+Aux process is started on test agent using Configurator. The process plays the
+role of a UPnP client. A target UPnP schema can be set to specify desired
+devices/services to be discovered and served.
+
+
+* Configurator subtree
+/agent/rpcserver/upnp_client                  | UPnP client subtree 
+/agent/rpcserver/upnp_client/enable           | Start/stop UPnP client process
+/agent/rpcserver/upnp_client/target_schema    | UPnP service/device schema
+
+
+* TA - UPnP client communication
+At the moment TA - UPnP client communication is considered to be synchronous.
+I.e. if TA sends a request, it must wait for the reply from the UPnP process.
+But in future asynchronous actions can be introduced.
+
+** IPC
+Inter-process communication can be fullfilled using UNIX sockets. The
+communication process is synchronous and initiator is only TA process.
+
+*** A request event handling
+It is possible to attach the socket for listening incoming events in the main
+event loop. See *g_main_loop_run* description for details.
+
+** Generic protocol
+    <int: request ID><int: action type><action specific data>
+
+*** Conventions
+Type *string* means charcter string which end with '\0' symbol.
+*...* means that the last field can be repeated a few times.
+
+*** UPnP action (request)
+**** Initial request (Test Agent -> UPnP process)
+    <int: request ID><int: action type><action specific data>
+    <action specific data> := <string: action><int: IN parameters number><parameters list>...
+                                              <int: OUT parameters number><parameters list>...
+    <parameters list> := <string: parameter name><string: parameter value>
+
+**** Request reply (UPnP process -> Test Agent)
+    <int: request ID><action specific data>
+In case of success:
+    <action specific data> := <int: status SUCCESS><int: OUT parameters number><parameters list>...
+    <parameters list> := <string: parameter name><string: parameter value>
+In case of fail:
+    <action specific data> := <int: status ERROR><string: error message>
+
+*** Get device info
+**** Initial request
+    <int: request ID><int: action type><action specific data>
+    <action specific data> := <string: device *friendly_name*>
+        Note: zero length string can be used to retrieve all available devices.
+**** Reply
+    <int: request ID><action specific data>
+    <action specific data> := <int: devices number><parameters number><device parameters>...
+    <device parameters> := all required parameters for struct
+                           tapi_upnp_device_info initialization in format:
+                           <string: parameter name><string: parameter value>
+
+*** Get service info
+**** Initial request
+    <int: request ID><int: action type><action specific data>
+    <action specific data> := <string: service ID><string: device UDN>
+        Note: zero length strings of *service ID* and *device UDN* can be
+        used to ignore appropriate parameter filtering and retrieve all
+        available services.
+**** Reply
+    <int: request ID><action specific data>
+    <action specific data> := <int: services number><int: parameters number><service parameters>...
+                              <int: actions number><service action>...
+                              <int: variables number><service variable>...
+    <service parameters> := all required parameters for struct
+                            tapi_upnp_service_info initialization in format:
+                            <string: parameter name><string: parameter value>
+    <service action> := <string: name><int: arguments number><action argument>...
+    <action argument> := <string: name><bool: direction><string: variable name>
+    <service variable> := <string: name><int: parameters number><variable parameters>...
+    <variable parameters> := variable parameters required for struct
+                             tapi_upnp_variable initialization in format:
+                             <string: parameter name><string: parameter value>
+
+* Test API
+The most parsing and processing responsibilities belong to Test API library.
+But a test apllication should operate only with user-friendly functions, it
+should no operate with any UPnP data directly.
+
+** Prefix
+Prefix *tapi_upnp_* should be used for all test API functions and structures
+which can be used by a test script writer.
+
+** Errors handling
+By default if a call fails test should jump to *cleanup* from the function
+with appropriate error message/verdict. But it should be possible to avoid
+the jumping using RPC_AWAIT_IUT_ERROR() macro.
+
+** UPnP devices and services context
+*** Devcie context
+#+BEGIN_SRC C
+/* A UPnP device parameters. */
+typedef struct tapi_upnp_device_info {
+    rcf_rpc_server *rpcs;
+    char *friendly_name;
+    char *type;
+    char *location;
+    char *udn;
+    ...
+} tapi_upnp_device_info;
+
+/**
+ * Retrieve information about a UPnP device.
+ * 
+ * @param rpcs       RPC server handle.
+ * @param name       Device name or @c NULL to get the first found device.
+ * @param device     Devices context array.
+ * @param device_len The array length.
+ *
+ * @return Discovered devices number or @c -1 in case of failure.
+ */
+extern int tapi_upnp_get_device_info(rcf_rpc_server *rpcs,
+                                     const char *name,
+                                     tapi_upnp_device_info *device,
+                                     size_t device_len);
+#+END_SRC
+
+*** Services info
+#+BEGIN_SRC C
+/* UPnP variable parameters. */
+typedef struct tapi_upnp_variable {
+    char *name;
+    char *type;
+    te_bool send_events;
+    char *allowed_values;
+    char *default;
+    uint64_t minimum;
+    uint64_t maximum;
+    uint64_t step;
+} tapi_upnp_variable;
+
+/** UPnP action argument parameters.
+ * Note! The only changable field is @b value. It can be set by user to
+ * specify a value or read to get the value after an action execution,
+ * other data is filled when service context is retrieved.
+ */
+typedef struct tapi_upnp_argument {
+    char               *name;
+    te_bool             direction;
+    tapi_upnp_variable *variable;
+    char               *value;      /**< IN/OUT value, set @c NULL to left
+                                         the variable unspecified. */
+} tapi_upnp_argument;
+
+/* UPnP action. */
+typedef struct tapi_upnp_action {
+    char               *name;
+    size_t              arguments_len;
+    tapi_upnp_argument *arguments;
+} tapi_upnp_action;
+
+/* UPnP service information. */
+typedef struct tapi_upnp_service_info {
+    tapi_upnp_device_info *device; /**< Device info, can be @c NULL */
+    rcf_rpc_server *rpcs;
+    char *id;
+    char *location;
+    char *url_base;
+    char *udn;
+    ...
+    size_t              actions_len;
+    tapi_upnp_action   *actions;
+    size_t              variables_len;
+    tapi_upnp_variable *variables;
+} tapi_upnp_service_info;
+
+/**
+ * Retrieve information about available UPnP services.
+ *
+ * @param rpcs          RPC server handle or @c NULL if @p device is specified
+ * @param device        The device which provides the service, can be
+ *                      unspecified (@c NULL).
+ * @param service_id    Service ID string or @c NULL.
+ * @param sevice        Service context array.
+ * @param sevice_len    Service context array length.
+ * 
+ * @return Discovered services number or @c -1 in case of failure.
+ */
+extern int tapi_upnp_get_service_info(rcf_rpc_server *rpcs,
+                                      tapi_upnp_device_info *device,
+                                      const char *service_id,
+                                      tapi_upnp_service_info *sevice,
+                                      size_t sevice_len);
+#+END_SRC
+
+*** Test API for service ContentDirectory
+#+BEGIN_SRC C
+/* Multimedia content types which can be returned as a resource. */
+typedef enum tapi_upnp_cd_resource_type {
+    TAPI_UPNP_CD_RESOURCE_AUDIO = 0,
+    TAPI_UPNP_CD_RESOURCE_IMAGE,
+    TAPI_UPNP_CD_RESOURCE_VIDEO,
+    TAPI_UPNP_CD_RESOURCE_OTHER
+} tapi_upnp_cd_resource_type;
+
+typedef enum tapi_upnp_cd_object_type {
+    TAPI_UPNP_CD_RESOURCE_CONTAINER = 0,
+    TAPI_UPNP_CD_RESOURCE_ITEM
+} tapi_upnp_cd_object_type;
+
+/* Parameters of an object in ContentDirectory service. */
+typedef struct tapi_upnp_cd_object_data {
+    char    *id;
+    char    *parent_id;
+    char    *persistent_id;
+    char    *title;
+    char    *description;
+    te_bool  searchable;
+    tapi_upnp_cd_object_type type; /**< The object is container */
+} tapi_upnp_cd_object_data;
+
+/* Parameters of a resource in ContentDirectory service. */
+typedef struct tapi_upnp_cd_resource {
+    /** TODO: perhaps protocolInfo can be parsed and specified with enums. I
+     * think it might be useful e.g. to determine content files type (video,
+     * audio, image). But probably it is rather tricky to do it completely.
+     * Andrey */
+    char                       *protocol_info;
+    tapi_upnp_cd_resource_type  type;
+    char                       *uri;
+    uint64_t                    size;
+    uint64_t                    duration;
+    ...
+} tapi_upnp_cd_resource;
+
+/** An item context in ContentDirectory service. */
+typedef struct tapi_upnp_cd_item {
+    tapi_upnp_cd_object_data    obj;
+    size_t                      resources_len;
+    tapi_upnp_cd_resource      *resources;
+} tapi_upnp_cd_item;
+
+/** A container context in ContentDirectory service. */
+typedef struct tapi_upnp_cd_container {
+    tapi_upnp_cd_object_data obj;
+    size_t                  containers_len; /**< Child containers number */
+    tapi_upnp_cd_container *containers;     /**< Child containers array */
+    size_t                  items_len;      /**< Items number */
+    tapi_upnp_cd_item      *items;          /**< Items array */
+} tapi_upnp_cd_container;
+
+/** Parameters of an object in ContentDirectory service. */
+typedef union tapi_upnp_cd_object {
+    tapi_upnp_cd_container  container;
+    tapi_upnp_cd_item       item;
+} tapi_upnp_cd_object;
+
+/**
+ * Retrieve information about a ContentDirectory object.
+ * 
+ * @param service   ContentDirectory service context.
+ * @param id        Wanted object identifier or @c NULL.
+ * @param title     Wanted object title or @c NULL.
+ * @param obj       Object location for returned data.
+ * 
+ * @return Status code.
+ */
+extern te_errno tapi_upnp_cd_get_obj_info(tapi_upnp_service_info *service,
+                                          const char *id, const char *title,
+                                          tapi_upnp_cd_object *obj);
+
+/**
+ * Retrieve information about a container child objects. Returned data about
+ * the children will be saved inside the  @p container.
+ * 
+ * @param service   ContentDirectory service context.
+ * @param container The container location.
+ * 
+ * @return Status code.
+ */
+extern te_errno tapi_upnp_cd_get_children(tapi_upnp_service_info *service,
+                                          tapi_upnp_cd_container *container);
+
+/**
+ * Get URLs of all existed media resources, which satisfy to set filtering
+ * options.
+ *
+ * @param device        Device context or @c NULL.
+ * @param service       Servcie context or @c NULL. Note! @p device or
+ *                      @p servcie or both should be specified.
+ * @param container     Container or @c NULL.
+ * @param url_list      Pointer for URLs array.
+ * @param url_list_len  URLs array length.
+ * 
+ * @return Status code.
+ */
+extern te_errno tapi_upnp_cd_get_all_media_url(tapi_upnp_device_info *device,
+                                               tapi_upnp_service_info *service,
+                                               tapi_upnp_cd_container *container,
+                                               char **url_list,
+                                               size_t *url_list_len);
+#+END_SRC
+
+
+* RPC calls
+Three RPC calls should be added.
+TODO: fill in detailed information about RPC calls.
+
+** Get device info
+The RPC should be called inside *tapi_upnp_get_device_info()* and
+retrieve device context data.
+
+** Get service info
+The RPC should be called inside *tapi_upnp_get_service_info()* and
+retrieve service context data.
+
+** UPnP action
+RPC call to perform arbitrary UPnP request.
+#+BEGIN_SRC C
+/**
+ * Execute a UPnP action. Note! @b IN arguments @b value of the @p action
+ * should be initialized by user or set to @c NULL, @b OUT arguments
+ * @b value must be initialized with @c NULL.
+ * 
+ * @param service   Service context.
+ * @param action    Requested action.
+ *
+ * @return Status code.
+ */
+extern te_errno rpc_upnp_action(tapi_upnp_service_info *service,
+                                tapi_upnp_action *action);
+
+/**
+ * Free allocated memory in all @b OUT @b action arguments.
+ * 
+ * @param action    The action context.
+ */
+extern void tapi_upnp_action_cleanup(tapi_upnp_action *action);
+#+END_SRC
+
+
+* Implementation hints
+** External libraries
+    libgssdp
+    libgupnp
+    libgupnp-av
+Developer versions of the libraries should be installed for build.
+
+** External API
+*** Send UPnP request
+The following call or relatives can be used to send a UPnP request
+(copied form https://developer.gnome.org/gupnp/unstable/GUPnPServiceProxy.html#gupnp-service-proxy-send-action):
+
+#+BEGIN_SRC C
+/**
+ * gupnp_service_proxy_send_action:
+ * @proxy: A #GUPnPServiceProxy
+ * @action: An action
+ * @error: (allow-none): The location where to store any error, or %NULL
+ * @...: tuples of in parameter name, in parameter type, and in parameter
+ * value, followed by %NULL, and then tuples of out parameter name,
+ * out parameter type, and out parameter value location, terminated with %NULL
+ *
+ * Sends action @action with parameters @Varargs to the service exposed by
+ * @proxy synchronously. If an error occurred, @error will be set. In case of
+ * a UPnPError the error code will be the same in @error.
+ *
+ * Return value: %TRUE if sending the action was succesful.
+ **/
+gboolean
+gupnp_service_proxy_send_action (GUPnPServiceProxy *proxy,
+                                 const char        *action,
+                                 GError           **error,
+                                 ...)
+#+END_SRC
+
+
+* References
+http://upnp.org/specs/arch/UPnP-arch-DeviceArchitecture-v2.0.pdf
+http://www.upnp.org/specs/av/upnp-av-contentdirectory-v1-service.pdf
+http://www.upnp.org/specs/av/UPnP-av-ContentDirectory-v4-Service.pdf
+Presentation:
+http://upnp.org/resources/documents/UPnP_UDA_tutorial_July2014.pdf
+https://wiki.gnome.org/Projects/GUPnP#Documentation
+https://developer.gnome.org/glib/stable/glib-The-Main-Event-Loop.html#glib-The-Main-Event-Loop.description
+
+
+* To be determined!
+** SCPD forwarding
+Perhaps there is a way to forward service description document (SCPD) with a
+Service description and then parse it in Test API library. It would be much
+comfrotable to do it there avoiding passing this wide information through IPC
+and RPC mechanisms.
+
+
+
+* Appendix A. Test API using example.
+#+BEGIN_SRC C
+/** The UPnP client is run on @b pco_iut from the package prologue using
+ *  configurator. */
+ 
+int
+main(void)
+{
+    rcf_rpc_server *pco_iut;
+    rcf_rpc_server *pco_tst;
+    tapi_upnp_device_info device;
+    tapi_upnp_service_info service;
+
+    char  *url_list = NULL;
+    size_t len = 0;
+    size_t i;
+
+    ...
+    TEST_START;
+    ...
+
+    /* Get device context. */
+    tapi_upnp_get_device_info(pco_iut, "Twonky Server at bilbo", &device, 1);
+
+    /* Get service ContentDirectory context. */
+    tapi_upnp_get_service_info(NULL, &device,
+                               "urn:upnp-org:serviceId:ContentDirectory",
+                               &service, 1);
+
+    /* Find all media files rpovided by the service. */
+    tapi_upnp_cd_get_all_media_url(NULL, service, NULL, &url_list, &len);
+
+    if (len == 0)
+        TEST_VERDICT("Multimedia files were not discovered");
+
+    for (i = 0; i < len; i++)
+    {
+        /* Play the multimedia files on Tester using VLC. */
+        rpc_te_shell_cmd(rpc_tst, "cvlc %s", url_list[i]);
+
+        /* Wait while streaming is not finished or do anything else. */
+    }
+
+cleanup:
+    /* Clean all allocated variables. */
+    TEST_END;
+}
+#+END_SRC
