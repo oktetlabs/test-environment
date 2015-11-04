@@ -439,8 +439,8 @@ open_conserver(const char *conserver)
             char err_msg[64] = "";
 
             err_msg[0] = *buf;
-            read(sock, err_msg + 1, sizeof(err_msg) - 2);
-            ERROR("Conserver said: \"%s\", quitting", err_msg);
+            if (read(sock, err_msg + 1, sizeof(err_msg) - 2) > 0)
+                ERROR("Conserver said: \"%s\", quitting", err_msg);
             close(sock);
             return -1;
         }
@@ -471,11 +471,17 @@ open_conserver(const char *conserver)
     } while(0)
 
     SKIP_LINE;
-    write(sock, CONSERVER_START, CONSERVER_CMDLEN);
+    if (write(sock, CONSERVER_START, CONSERVER_CMDLEN) < 0)
+        ERROR("Failed to write message '%s' to the conserver socket",
+              CONSERVER_START);
     SKIP_LINE;
-    write(sock, CONSERVER_SPY, CONSERVER_CMDLEN);
+    if (write(sock, CONSERVER_SPY, CONSERVER_CMDLEN) < 0)
+        ERROR("Failed to write message '%s' to the conserver socket",
+              CONSERVER_SPY);
     SKIP_LINE;
-    fcntl(sock, F_SETFL, O_NONBLOCK | fcntl(sock, F_GETFL));
+    if (fcntl(sock, F_SETFL, O_NONBLOCK | fcntl(sock, F_GETFL)) != 0)
+        ERROR("Failed to set O_NONBLOCK flag to the conserver socket: %s",
+              strerror(errno));
     return sock;
 #undef SKIP_LINE
 }
