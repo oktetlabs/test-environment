@@ -606,6 +606,7 @@ te_serial_parser(serial_parser_t *parser)
     char * volatile current;
     char * volatile fence;
     volatile int    current_timeout = LOG_SERIAL_ALIVE_TIMEOUT;
+    volatile int    incomp_str_count = 0;
 
     char           *newline;
     int             interval;
@@ -615,7 +616,6 @@ te_serial_parser(serial_parser_t *parser)
 
     time_t  now;
     time_t  last_alive = 0;
-    int     incomp_str_count = 0;
     te_bool rcf;
     char    user[TE_SERIAL_MAX_NAME + 1];
 
