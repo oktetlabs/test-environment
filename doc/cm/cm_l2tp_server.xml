@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<backup>
+
+    <!--
+        This configuration model is intended for describing of configuration
+        related to l2tp server on Agents
+
+        Copyright (C) 2003-2009 Test Environment authors (see file AUTHORS
+        in the root directory of the distribution).
+
+        Test Environment is free software; you can redistribute it
+        and/or modify it under the terms of the GNU General Public
+        License as published by the Free Software Foundation; either
+        version 2 of the License, or (at your option) any later
+        version.
+
+        Test Environment is distributed in the hope that it will be
+        useful, but WITHOUT ANY WARRANTY; without even the implied
+        warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+        PURPOSE. See the GNU General Public License for more details.
+
+        You should have received a copy of the GNU General Public
+        License along with this program; if not, write to the Free
+        Software Foundation, Inc., 59 Temple Place, Suite 330,
+        Boston, MA  02111-1307  USA
+    -->
+
+    <!-- Root object for the L2TP server
+         Name: empty -->
+    <object oid="/agent/l2tp_server/" 
+        access="read_write" type="integer"/>
+    <!-- ppp interface which starts when connection
+         between server and client is established
+         Name: empty -->
+    <object oid="/agent/l2tp_server/pppX" 
+        access="read_create" type="integer"/>
+    <!-- L2TP server local address start
+         Name: empty -->
+    <object oid="/agent/l2tp_server/pppX/l2tp_server_addr" 
+        access="read_write" type="integer"/>
+    <!-- L2TP client address
+         Name: empty -->
+    <object oid="/agent/l2tp_server/pppX/l2tp_client_addr" 
+        access="read_write" type="integer"/>
+</backup>
