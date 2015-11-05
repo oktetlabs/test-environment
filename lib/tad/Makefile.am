@@ -58,12 +58,14 @@ lib@with_name@_a_SOURCES =
 lib@with_name@_a_DEPENDENCIES = $(TAD_FULL_LIBLIST)
 
 lib@with_name@.a: $(lib@with_name@_a_DEPENDENCIES)
-	AR_SCRIPT="CREATE $@\n" ; \
-	for i in $(TAD_FULL_LIBLIST) ; do \
-		AR_SCRIPT="$${AR_SCRIPT}ADDLIB $$i\n" ; \
-	done ; \
-	AR_SCRIPT="$${AR_SCRIPT}SAVE\nEND\n" ; \
-	echo -e $${AR_SCRIPT} | $(AR) -M
+	{ \
+	    echo "CREATE $@" ; \
+	    for i in $(TAD_FULL_LIBLIST) ; do \
+	        echo "ADDLIB $$i" ; \
+	    done ; \
+	    echo "SAVE" ; \
+	    echo "END" ; \
+	} | $(AR) -M
 	$(RANLIB) $@
 
 
@@ -72,13 +74,14 @@ mypkg_DATA = te-@with_name@.pc
 CLEANFILES = te-@with_name@.pc
 
 te-@with_name@.pc:
-	echo -n -e "\
-	Name: te-$(with_name)\n\
-	Description: Traffic Application Domain for TE\n\
-	Version: $(PACKAGE_VERSION)\n\
-	Requires:\n\
-	Libs: @TA_TAD_LIBS@\n\
-	Cflags: \n" > $@
+	{ \
+	    echo "Name: te-$(with_name)" ; \
+	    echo "Description: Traffic Application Domain for TE" ; \
+	    echo "Version: $(PACKAGE_VERSION)" ; \
+	    echo "Requires:" ; \
+	    echo "Libs: @TA_TAD_LIBS@" ; \
+	    echo "Cflags: " ; \
+	} > $@
 
 install-exec-hook:
 	touch -c -r lib@with_name@.a $(DESTDIR)/$(libdir)/lib@with_name@.a
