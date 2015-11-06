@@ -31,7 +31,7 @@
         access="read_write" type="integer"/>
     <!-- This identifier describes different
          options for L2TP server, 
-         e.g. require_chap=yes(space instead of _) -->
+         e.g. require_chap=yes(_ instead of space) -->
     <object oid="/agent/l2tp_server/option" 
         access="read_create" type="string"/>
     <!-- This identifier describes different
@@ -43,6 +43,6 @@
     <object oid="/agent/l2tp_server/l2tp_server_addr" 
         access="read_write" type="integer"/>
     <!-- L2TP client address -->
-    <object oid="/agent/l2tp_server/l2tp_client_addr" 
+    <object oid="/agent/l2tp_server/sl2tp_client_addr" 
         access="read_write" type="integer"/>
 </backup>
