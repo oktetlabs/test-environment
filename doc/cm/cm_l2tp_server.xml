@@ -26,20 +26,23 @@
     -->
 
     <!-- Root object for the L2TP server
-         Name: empty -->
+         Name: empty-->
     <object oid="/agent/l2tp_server/" 
         access="read_write" type="integer"/>
-    <!-- ppp interface which starts when connection
-         between server and client is established
-         Name: empty -->
-    <object oid="/agent/l2tp_server/pppX" 
-        access="read_create" type="integer"/>
-    <!-- L2TP server local address start
-         Name: empty -->
-    <object oid="/agent/l2tp_server/pppX/l2tp_server_addr" 
+    <!-- This identifier describes different
+         options for L2TP server, 
+         e.g. require_chap=yes(space instead of _) -->
+    <object oid="/agent/l2tp_server/option" 
+        access="read_create" type="string"/>
+    <!-- This identifier describes different
+         options for PPP connection, 
+         e.g. mtu=1200 -->
+    <object oid="/agent/l2tp_server/option/pppopt" 
+        access="read_create" type="string"/>        
+    <!-- L2TP server local address start -->
+    <object oid="/agent/l2tp_server/l2tp_server_addr" 
         access="read_write" type="integer"/>
-    <!-- L2TP client address
-         Name: empty -->
-    <object oid="/agent/l2tp_server/pppX/l2tp_client_addr" 
+    <!-- L2TP client address -->
+    <object oid="/agent/l2tp_server/l2tp_client_addr" 
         access="read_write" type="integer"/>
 </backup>
