@@ -43,6 +43,6 @@
     <object oid="/agent/l2tp_server/l2tp_server_addr" 
         access="read_write" type="integer"/>
     <!-- L2TP client address -->
-    <object oid="/agent/l2tp_server/sl2tp_client_addr" 
+    <object oid="/agent/l2tp_server/l2tp_client_addr" 
         access="read_write" type="integer"/>
 </backup>
