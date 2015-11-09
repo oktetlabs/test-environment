@@ -26,23 +26,94 @@
     -->
 
     <!-- Root object for the L2TP server
-         Name: empty-->
+         Name: empty -->
     <object oid="/agent/l2tp_server/" 
-        access="read_write" type="integer"/>
-    <!-- This identifier describes different
-         options for L2TP server, 
-         e.g. require_chap=yes(_ instead of space) -->
-    <object oid="/agent/l2tp_server/option" 
+        access="read_write" type="none"/>
+
+    <!-- Specify the range of ip addresses the LNS will 
+         assign to the connecting LAC PPP tunnels. 
+         Multiple ranges can be defined. 
+         Name: at least one ip range, like
+         192.168.80.6-192.168.80.15 -->
+    <object oid="/agent/l2tp_server/ip_range" 
         access="read_create" type="string"/>
-    <!-- This identifier describes different
-         options for PPP connection, 
-         e.g. mtu=1200 -->
-    <object oid="/agent/l2tp_server/option/pppopt" 
-        access="read_create" type="string"/>        
-    <!-- L2TP server local address start -->
-    <object oid="/agent/l2tp_server/l2tp_server_addr" 
+
+    <!-- This identifier describes the local
+         ip address of the L2TP server
+         Name: empty -->
+    <object oid="/agent/l2tp_server/local_ip" 
         access="read_write" type="integer"/>
-    <!-- L2TP client address -->
-    <object oid="/agent/l2tp_server/l2tp_client_addr" 
+
+    <!-- This identifier describes the connected
+         clients
+         Name: empty ip4 address from ip range -->
+    <object oid="/agent/l2tp_server/connected" 
+        access="read_only" type="integer"/>
+
+    <!-- The L2TP packet payload.
+         Name: empty -->
+    <object oid="/agent/l2tp_server/length_bit" 
         access="read_write" type="integer"/>
+
+    <!-- Require the remote peer to get authenticated  
+         via CHAP for the ppp authentication..
+         Name: empty -->
+    <object oid="/agent/l2tp_server/require_chap" 
+        access="read_write" type="integer"/>
+
+    <!-- Refuse the remote peer to get authenticated  
+         via PAP for the ppp authentication..
+         Name: empty -->
+    <object oid="/agent/l2tp_server/refuse_pap" 
+        access="read_write" type="integer"/>    
+
+    <!-- Require the remote peer to authenticate itself.
+         Name: empty -->
+    <object oid="/agent/l2tp_server/require_authentication" 
+        access="read_write" type="integer"/>       
+
+    <!-- Specify the path for a file which contains pppd 
+         configuration parameters to be used
+         Name: path file name with the length less or equal to 128 -->
+    <object oid="/agent/l2tp_server/pppopt" 
+        access="read_write" type="string"/>
+
+    <!-- Specifying the MTU
+         Name: empty -->
+    <object oid="/agent/l2tp_server/pppopt/mtu" 
+        access="read_write" type="integer"/>   
+
+    <!-- Specifying the MRU
+         Name: empty -->
+    <object oid="/agent/l2tp_server/pppopt/mru" 
+        access="read_write" type="integer"/> 
+
+    <!-- pppd will presume 
+         the peer to be dead if n LCP echo-requests are 
+         sent without receiving a valid LCP echo-reply. 
+         Name: empty -->
+    <object oid="/agent/l2tp_server/pppopt/lcp-echo-failure" 
+        access="read_write" type="integer"/> 
+
+    <!-- pppd will send an LCP 
+         echo-request frame to the peer every n seconds
+         Name: empty -->
+    <object oid="/agent/l2tp_server/pppopt/lcp-echo-interval" 
+        access="read_write" type="integer"/>
+
+    <!-- Addtitional options to pppd
+         Name: empty -->
+    <object oid="/agent/l2tp_server/pppopt/option" 
+        access="read_create" type="string"/>
+
+    <!-- User name CHAP
+         Name: empty  -->         
+    <object oid="/agent/l2tp_server/pppopt/chap_user" 
+        access="read_create" type="string"/> 
+
+    <!-- User password CHAP
+         Name: empty -->         
+    <object oid="/agent/l2tp_server/pppopt/chap_passw" 
+        access="read_write" type="string"/> 
+
 </backup>
