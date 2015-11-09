@@ -5,7 +5,7 @@
         This configuration model is intended for describing of configuration
         related to l2tp server on Agents
 
-        Copyright (C) 2003-2009 Test Environment authors (see file AUTHORS
+        Copyright (C) 2015 Test Environment authors (see file AUTHORS
         in the root directory of the distribution).
 
         Test Environment is free software; you can redistribute it
@@ -33,8 +33,7 @@
     <!-- Specify the range of ip addresses the LNS will 
          assign to the connecting LAC PPP tunnels. 
          Multiple ranges can be defined. 
-         Name: at least one ip range, like
-         192.168.80.6-192.168.80.15 -->
+         Name: any -->
     <object oid="/agent/l2tp_server/ip_range" 
         access="read_create" type="string"/>
 
@@ -102,18 +101,19 @@
         access="read_write" type="integer"/>
 
     <!-- Addtitional options to pppd
-         Name: empty -->
+         Name: as example: nodeflate, noproxyarp, lock.
+               Other options can be found in man pppd -->
     <object oid="/agent/l2tp_server/pppopt/option" 
         access="read_create" type="string"/>
 
     <!-- User name CHAP
          Name: empty  -->         
     <object oid="/agent/l2tp_server/pppopt/chap_user" 
-        access="read_create" type="string"/> 
+        access="read_write" type="string"/> 
 
     <!-- User password CHAP
          Name: empty -->         
-    <object oid="/agent/l2tp_server/pppopt/chap_passw" 
+    <object oid="/agent/l2tp_server/pppopt/chap_user/chap_passw" 
         access="read_write" type="string"/> 
 
 </backup>
