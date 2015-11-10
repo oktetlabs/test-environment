@@ -722,7 +722,7 @@ extern te_errno asn_put_choice(asn_value *container, asn_value *value);
  *
  * @return  Status code
  */
-te_errno asn_path_from_extended(const asn_value *node, const char *ext_path,
+te_errno asn_path_from_extended(asn_value *node, const char *ext_path,
                                 char *asn_path, unsigned int asn_path_len,
                                 te_bool auto_insert);
 
