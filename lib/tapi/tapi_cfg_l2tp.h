@@ -53,7 +53,7 @@ extern te_errno
 tapi_cfg_l2tp_server_range_add(const char *ta, const char *iprange);
 
 /**
- * Delete iprange from L2TP server configuration on the Test Agent.
+ * Delete ip range from L2TP server configuration on the Test Agent.
  *
  * @param ta            Test Agent
  * @param iprange       IP range to remove
@@ -96,7 +96,7 @@ tapi_cfg_l2tp_server_range_del(const char *ta, const char *iprange);
  */
  extern te_errno
  tapi_cfg_l2tp_server_option_set(const char *ta, 
-                                 const kind_opt, const char *px_option);
+                                 const char *kind_opt, const char *px_option);
 
 /**
  * Get an option of L2TP server.
@@ -109,7 +109,7 @@ tapi_cfg_l2tp_server_range_del(const char *ta, const char *iprange);
  */
  extern te_errno
  tapi_cfg_l2tp_server_option_get(const char *ta, 
-                                 const kind_opt, const char **px_option);
+                                 const *kind_opt, const char **px_option);
 
 /**
  * Add a new option to pppd.
