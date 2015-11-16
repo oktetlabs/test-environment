@@ -77,6 +77,7 @@ extern const char *inet_ntop(int af, const void *src, char *dst,
 #include <netinet/in.h>
 #endif
 #if HAVE_LINUX_ERRQUEUE_H
+#include <asm/types.h>
 #include <linux/errqueue.h>
 #endif
 #if HAVE_NETINET_TCP_H
