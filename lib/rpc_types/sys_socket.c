@@ -2519,6 +2519,8 @@ ethtool_reset_flags_rpc2h(uint32_t flags)
     int x;
     int y;
 
+    UNUSED(flags);
+
 #if HAVE_DECL_ETH_RESET_DEDICATED
     if (flags == RPC_ETH_RESET_DEDICATED)
         return ETH_RESET_DEDICATED;
