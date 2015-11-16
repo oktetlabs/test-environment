@@ -117,12 +117,17 @@ build_platform() {
             libs="$libs $package"
         fi
     done
+
+    local TE_CFLAGS_NAME="${p}_CFLAGS_VAR"
+    local TE_CPPFLAGS_NAME="${p}_CPPFLAGS_VAR"
     for package in $libs ; do
 # Code "echo=echo" was added, for bug fixing of a look "X--tag=CC: command not found"
 # See https://lists.gnu.org/archive/html/bug-libtool/2008-04/msg00011.html
         te_eval_or_ssh "${p}" "
             pushd ${TE_BUILD}/platforms/${p}/lib/$package >/dev/null
             echo=echo \\
+            TE_CFLAGS_VAR='${!TE_CFLAGS_NAME}' \\
+            TE_CPPFLAGS_VAR='${!TE_CPPFLAGS_NAME}' \\
             make ${BUILD_MAKEFLAGS} install || exit 1
             popd >/dev/null
         "
@@ -170,11 +175,16 @@ build_agent() {
 
     ${TE_BASE}/engine/builder/te_configure_package TA "$package" "$package" \
         "$package" "$PLATFORM" "$PKGSRC" "$PREFIX" || exit 1
+
+    local TE_CFLAGS_NAME="${package}_CFLAGS_VAR"
+    local TE_CPPFLAGS_NAME="${package}_CPPFLAGS_VAR"
 # Code "echo=echo" was added, for bug fixing of a look "X--tag=CC: command not found"
 # See https://lists.gnu.org/archive/html/bug-libtool/2008-04/msg00011.html
     te_eval_or_ssh "${PLATFORM}" "
         cd agents/$package
         echo=echo \\
+        TE_CFLAGS_VAR='${!TE_CFLAGS_NAME}' \\
+        TE_CPPFLAGS_VAR='${!TE_CPPFLAGS_NAME}' \\
         make ${BUILD_MAKEFLAGS} install || exit 1
         cd ../..
     "

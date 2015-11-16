@@ -68,11 +68,15 @@ configure_package()
 
     echo ${PKGSRC}/configure -q --prefix=$PREFIX ${PARMS}
 
+    local TE_CFLAGS_NAME="${PLATFORM}_CFLAGS_VAR"
+    local TE_CPPFLAGS_NAME="${PLATFORM}_CPPFLAGS_VAR"
     te_eval_or_ssh "${PLATFORM}" "
         export TE_EXT_LIBS_FILE=\"$TE_EXT_LIBS_FILE\"
         TE_DEPENDENCIES='$DEPENDENCIES' \\
         TE_BUILD='$TE_BUILD' \\
         CFLAGS= \\
+        TE_CFLAGS_VAR='${!TE_CFLAGS_NAME}' \\
+        TE_CPPFLAGS_VAR='${!TE_CPPFLAGS_NAME}' \\
         ${PKGSRC}/configure -q --prefix=$PREFIX ${PARMS}
     "
 }
