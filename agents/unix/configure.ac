@@ -110,6 +110,12 @@ AC_CHECK_TYPES([struct tcp_info], [], [],
                [#include <netinet/tcp.h>])
 
 dnl
+dnl Check for 'tcpi_rcv_rtt' member in 'struct tcp_info'.
+dnl
+AC_CHECK_MEMBERS([struct tcp_info.tcpi_rcv_rtt], [], [],
+                 [#include <netinet/in.h>])
+
+dnl
 dnl Check for 'ipv6mr_interface' member in 'struct ipv6_mreq'.
 dnl
 AC_CHECK_MEMBERS([struct ipv6_mreq.ipv6mr_interface], [], [],
