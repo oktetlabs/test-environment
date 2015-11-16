@@ -4,8 +4,8 @@ SUBDIRS= @TAD_SUBDIRS@ .
 ACLOCAL_AMFLAGS = -I @TE_M4@
 
 AM_CPPFLAGS = -I$(top_srcdir) @TE_CPPFLAGS@ @TAD_CH_DEFS@ \
-              -I$(DESTDIR)/$(includedir)
-AM_CFLAGS = @TE_CFLAGS@
+              -I$(DESTDIR)/$(includedir) $(TE_CPPFLAGS_VAR)
+AM_CFLAGS = @TE_CFLAGS@ $(TE_CFLAGS_VAR)
 
 include_HEADERS = \
 	tad_csap_inst.h \

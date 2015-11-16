@@ -6,8 +6,8 @@ SUBDIRS = lib
 # from some TE variables
 #
 AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(srcdir)/include \
-              -I$(DESTDIR)/$(includedir) 
-AM_CFLAGS = @TE_CFLAGS@ 
+              -I$(DESTDIR)/$(includedir) $(TE_CPPFLAGS_VAR)
+AM_CFLAGS = @TE_CFLAGS@ $(TE_CFLAGS_VAR)
 AM_LDFLAGS = -L$(DESTDIR)/$(libdir) -L@abs_top_builddir@/lib \
              -L@abs_top_builddir@/..
 

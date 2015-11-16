@@ -1,8 +1,9 @@
 
 ACLOCAL_AMFLAGS = -I @TE_M4@
 
-AM_CPPFLAGS = -I$(top_srcdir)/lib @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir)
-AM_CFLAGS = @TE_CFLAGS@ @XML2_CFLAGS@
+AM_CPPFLAGS = -I$(top_srcdir)/lib @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) \
+              $(TE_CPPFLAGS_VAR)
+AM_CFLAGS = @TE_CFLAGS@ @XML2_CFLAGS@ $(TE_CFLAGS_VAR)
 AM_LDFLAGS = -L$(top_builddir)/lib @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir)
 
 bin_PROGRAMS = te-trc-report

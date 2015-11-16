@@ -1,7 +1,7 @@
 
 AM_CPPFLAGS = -I$(top_srcdir) @TE_CPPFLAGS@ @TAD_CH_DEFS@ \
-              -I$(DESTDIR)/$(includedir)
-AM_CFLAGS = @TE_CFLAGS@ 
+              -I$(DESTDIR)/$(includedir) $(TE_CPPFLAGS_VAR)
+AM_CFLAGS = @TE_CFLAGS@ $(TE_CFLAGS_VAR)
 
 noinst_HEADERS = tad_ipstack_impl.h
 

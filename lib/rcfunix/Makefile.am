@@ -2,8 +2,8 @@
 ACLOCAL_AMFLAGS = -I @TE_M4@
 
 AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) \
-              -DTE_LIB_NAME=@with_name@
-AM_CFLAGS = @TE_CFLAGS@
+              -DTE_LIB_NAME=@with_name@ $(TE_CPPFLAGS_VAR)
+AM_CFLAGS = @TE_CFLAGS@ $(TE_CFLAGS_VAR)
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir)
 
 lib_LTLIBRARIES=lib@with_name@.la

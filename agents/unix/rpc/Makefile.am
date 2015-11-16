@@ -2,9 +2,9 @@
 ACLOCAL_AMFLAGS = -I $(TE_M4)
 
 AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/include $(TE_CPPFLAGS) \
-              -I$(srcdir)/..
+              -I$(srcdir)/.. $(TE_CPPFLAGS_VAR)
 
-AM_CFLAGS = -fno-strict-aliasing $(TE_CFLAGS)
+AM_CFLAGS = -fno-strict-aliasing $(TE_CFLAGS) $(TE_CFLAGS_VAR)
 
 noinst_HEADERS = tarpc_server.h
         

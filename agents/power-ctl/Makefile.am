@@ -1,8 +1,8 @@
 ACLOCAL_AMFLAGS = -I $(TE_M4)
 
 AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/include $(TE_CPPFLAGS) \
-              -include te_config.h -include config.h
-AM_CFLAGS = $(TE_CFLAGS)
+              -include te_config.h -include config.h $(TE_CPPFLAGS_VAR)
+AM_CFLAGS = $(TE_CFLAGS) $(TE_CFLAGS_VAR)
 
 AM_LDFLAGS = -L$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib -Wl,-Bstatic \
              @TE_LDFLAGS@

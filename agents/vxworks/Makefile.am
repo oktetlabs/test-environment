@@ -9,9 +9,9 @@ install-exec-hook:
 
 else
 
-AM_CPPFLAGS = @TE_CPPFLAGS@ \
+AM_CPPFLAGS = @TE_CPPFLAGS@ $(TE_CPPFLAGS_VAR) \
               -I$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/include 
-AM_CFLAGS = @TE_CFLAGS@
+AM_CFLAGS = @TE_CFLAGS@ $(TE_CFLAGS_VAR)
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib
 
 libtavxworks_a_DEPENDENCIES=@TE_DEPENDENCIES@

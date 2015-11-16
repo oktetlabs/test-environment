@@ -1,8 +1,9 @@
 
 ACLOCAL_AMFLAGS = -I @TE_M4@
 
-AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) -I$(top_srcdir)/../../agents/unix
-AM_CFLAGS = @TE_CFLAGS@ -pthread
+AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) \
+              -I$(top_srcdir)/../../agents/unix $(TE_CPPFLAGS_VAR)
+AM_CFLAGS = @TE_CFLAGS@ -pthread $(TE_CFLAGS_VAR)
 AM_LDFLAGS = @TE_LDFLAGS@
 
 lib_LIBRARIES = libiscsi_initiator_conf.a

@@ -1,8 +1,8 @@
 
 ACLOCAL_AMFLAGS = -I @TE_M4@
 
-AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir)
-AM_CFLAGS = @TE_CFLAGS@
+AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) $(TE_CPPFLAGS_VAR)
+AM_CFLAGS = @TE_CFLAGS@ $(TE_CFLAGS_VAR)
 
 include_HEADERS=conf_api.h conf_types.h conf_messages.h
 

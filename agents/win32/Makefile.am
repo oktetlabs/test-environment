@@ -3,8 +3,8 @@ ACLOCAL_AMFLAGS = -I $(TE_M4)
 AM_CPPFLAGS=$(TE_CPPFLAGS) \
             -I$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/include \
             -include te_config.h -include config.h -fno-strict-aliasing \
-            -D_WIN32_WINNT=0x0501 -D'INCLUDE(x)='
-AM_CFLAGS=$(TE_CFLAGS)
+            -D_WIN32_WINNT=0x0501 -D'INCLUDE(x)=' $(TE_CPPFLAGS_VAR)
+AM_CFLAGS=$(TE_CFLAGS) $(TE_CFLAGS_VAR)
 AM_LDFLAGS=$(TE_LDFLAGS) -L$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib
 
 tadir=$(prefix)/@with_name@

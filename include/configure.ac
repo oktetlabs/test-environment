@@ -25,6 +25,9 @@ AC_CONFIG_FILES([ranlib_noargs_bypass],
 
 TE_LIB_SET
 
+CPPFLAGS=${CPPFLAGS}" "${TE_CPPFLAGS_VAR}
+CFLAGS=${CFLAGS}" "${TE_CFLAGS_VAR}
+
 AC_CONFIG_HEADERS([te_config_internal.h])
 AH_TOP([#ifndef __TE_CONFIG_INTERNAL_H__
 #error te_config_internal.h cannot be included directly

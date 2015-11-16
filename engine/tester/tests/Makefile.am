@@ -1,8 +1,9 @@
 
 ACLOCAL_AMFLAGS = -I @TE_M4@
 
-AM_CPPFLAGS = -I$(top_srcdir) @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) 
-AM_CFLAGS = @TE_CFLAGS@ @XML2_CFLAGS@
+AM_CPPFLAGS = -I$(top_srcdir) @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) \
+              $(TE_CPPFLAGS_VAR)
+AM_CFLAGS = @TE_CFLAGS@ @XML2_CFLAGS@ $(TE_CFLAGS_VAR)
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir) -static
 
 TESTS = scen_op_1 \

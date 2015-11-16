@@ -27,6 +27,9 @@
 
 ACLOCAL_AMFLAGS = -I @TE_M4@
 
+AM_CPPFLAGS = @TE_CPPFLAGS@ $(TE_CPPFLAGS_VAR)
+AM_CFLAGS = @TE_CFLAGS@ $(TE_CFLAGS_VAR)
+
 te_headers = \
 	te_defs.h \
 	te_errno.h \

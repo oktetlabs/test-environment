@@ -26,6 +26,9 @@ AC_CHECK_TOOL(NM, nm)
 
 TE_APP_SET
 
+CPPFLAGS=${CPPFLAGS}" "${TE_CPPFLAGS_VAR}
+CFLAGS=${CFLAGS}" "${TE_CFLAGS_VAR}
+
 AC_ARG_WITH([name], , , [with_name=linux])
 
 AC_SUBST([with_name])

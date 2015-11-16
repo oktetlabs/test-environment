@@ -5,9 +5,11 @@ ACLOCAL_AMFLAGS = -I $(TE_M4)
 
 AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/include \
               $(TE_CPPFLAGS) \
-              $(EXTRA_CPPFLAGS)
+              $(EXTRA_CPPFLAGS) \
+              $(TE_CPPFLAGS_VAR)
 
-AM_CFLAGS = -fno-strict-aliasing $(TE_CFLAGS)
+AM_CFLAGS = -fno-strict-aliasing $(TE_CFLAGS) \
+            $(TE_CFLAGS_VAR)
 
 AM_LDFLAGS = -L$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib \
              -Wl,-Bstatic $(TE_LDFLAGS)

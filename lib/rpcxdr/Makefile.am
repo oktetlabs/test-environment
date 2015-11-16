@@ -1,10 +1,11 @@
 
 ACLOCAL_AMFLAGS = -I @TE_M4@
 
-AM_CPPFLAGS = @TE_CPPFLAGS@ -I. -I$(DESTDIR)/$(includedir)
+AM_CPPFLAGS = @TE_CPPFLAGS@ -I. -I$(DESTDIR)/$(includedir) \
+              $(TE_CPPFLAGS_VAR)
 
 AM_CFLAGS = @TE_CFLAGS@ -Wno-unused-parameter -Wno-unused-variable \
-            -fno-strict-aliasing
+            -fno-strict-aliasing $(TE_CFLAGS_VAR)
 
 
 include_HEADERS=rpc_xdr.h tarpc.h

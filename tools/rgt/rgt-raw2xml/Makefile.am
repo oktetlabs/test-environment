@@ -26,8 +26,9 @@
 SUBDIRS = include lib lua
 
 AM_CPPFLAGS = -I$(top_srcdir) @TE_CPPFLAGS@ @EXTRA_CPPFLAGS@ \
-              -D_FILE_OFFSET_BITS=64 -DNDEBUG
-AM_CFLAGS = @TE_CFLAGS@ -I $(srcdir)/include -Wextra -Werror
+              -D_FILE_OFFSET_BITS=64 -DNDEBUG $(TE_CPPFLAGS_VAR)
+AM_CFLAGS = @TE_CFLAGS@ -I $(srcdir)/include -Wextra -Werror \
+            $(TE_CFLAGS_VAR)
 GEN_LDADD = @TE_LDFLAGS@
 
 bin_PROGRAMS = rgt-raw2xml-sorted

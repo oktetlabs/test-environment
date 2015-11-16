@@ -1,9 +1,9 @@
 
 ACLOCAL_AMFLAGS = -I @TE_M4@
 
-AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir)
+AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) $(TE_CPPFLAGS_VAR)
 
-AM_CFLAGS = @TE_CFLAGS@ -fno-strict-aliasing
+AM_CFLAGS = @TE_CFLAGS@ -fno-strict-aliasing $(TE_CFLAGS_VAR)
 
 include_HEADERS = \
 	te_serial_parser.h \

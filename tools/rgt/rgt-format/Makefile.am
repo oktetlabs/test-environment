@@ -31,8 +31,8 @@ SUBDIRS = $(RGT_SUBDIRS) .
 pkgdatadir = $(datadir)/$(subdir)
 
 AM_CPPFLAGS = -I$(top_srcdir) @TE_CPPFLAGS@ \
-              -I$(top_srcdir)/lib/tmpls @EXTRA_CPPFLAGS@
-AM_CFLAGS = @TE_CFLAGS@ @GLIB_CFLAGS@ @XML_PARSER_CFLAGS@
+              -I$(top_srcdir)/lib/tmpls @EXTRA_CPPFLAGS@ $(TE_CPPFLAGS_VAR)
+AM_CFLAGS = @TE_CFLAGS@ @GLIB_CFLAGS@ @XML_PARSER_CFLAGS@ $(TE_CFLAGS_VAR)
 
 GEN_LDADD = -L. -L$(top_builddir)/lib/tmpls -lxml2fmt_core @GLIB_LIBS@ \
             @TE_LDFLAGS@ @XML_PARSER_LIBS@  -ltmpls -lpopt

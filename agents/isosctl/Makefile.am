@@ -1,8 +1,10 @@
  
 ACLOCAL_AMFLAGS = -I @TE_M4@
 
-AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/include
-AM_CFLAGS = @TE_CFLAGS@ 
+AM_CPPFLAGS = @TE_CPPFLAGS@ \
+              -I$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/include \
+              $(TE_CPPFLAGS_VAR)
+AM_CFLAGS = @TE_CFLAGS@ $(TE_CFLAGS_VAR)
 
 taisosctl_SOURCES=isosctl.c
 

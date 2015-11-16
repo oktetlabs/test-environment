@@ -22,6 +22,9 @@ AC_PROG_INSTALL
 
 TE_LIB_SET
 
+CPPFLAGS=${CPPFLAGS}" "${TE_CPPFLAGS_VAR}
+CFLAGS=${CFLAGS}" "${TE_CFLAGS_VAR}
+
 tad_libs_rem()
 {
 # It is used to delete possible duplicate to avoid possible craziness of
