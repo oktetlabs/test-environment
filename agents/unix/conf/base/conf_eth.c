@@ -77,14 +77,20 @@ eth_cmd_get(unsigned int gid, const char *oid, char *value,
     ifr.ifr_data = (void *)&eval;
     strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name));
 
-    if (strstr(oid, "/gro:") != NULL)
-        eval.cmd = ETHTOOL_GGRO;
-    else if (strstr(oid, "/gso:") != NULL)
+    if (strstr(oid, "/gso:") != NULL)
         eval.cmd = ETHTOOL_GGSO;
+#ifdef ETHTOOL_GGRO
+    else if (strstr(oid, "/gro:") != NULL)
+        eval.cmd = ETHTOOL_GGRO;
+#endif
+#ifdef ETHTOOL_GTSO
     else if (strstr(oid, "/tso:") != NULL)
         eval.cmd = ETHTOOL_GTSO;
+#endif
+#ifdef ETHTOOL_GFLAGS
     else if (strstr(oid, "/flags:") != NULL)
         eval.cmd = ETHTOOL_GFLAGS;
+#endif
     else
         return TE_EINVAL;
 
@@ -143,14 +149,20 @@ eth_cmd_set(unsigned int gid, const char *oid, char *value,
         return TE_EINVAL;
     }
 
-    if (strstr(oid, "/gro:") != NULL)
-        cmd = eval.cmd = ETHTOOL_SGRO;
-    else if (strstr(oid, "/gso:") != NULL)
+    if (strstr(oid, "/gso:") != NULL)
         cmd = eval.cmd = ETHTOOL_SGSO;
+#ifdef ETHTOOL_SGRO
+    else if (strstr(oid, "/gro:") != NULL)
+        cmd = eval.cmd = ETHTOOL_SGRO;
+#endif
+#ifdef ETHTOOL_STSO
     else if (strstr(oid, "/tso:") != NULL)
         cmd = eval.cmd = ETHTOOL_STSO;
+#endif
+#ifdef ETHTOOL_SFLAGS
     else if (strstr(oid, "/flags:") != NULL)
         cmd = eval.cmd = ETHTOOL_SFLAGS;
+#endif
 #ifdef ETHTOOL_RESET
     else if (strstr(oid, "/reset:") != NULL)
     {
