@@ -134,6 +134,7 @@ eth_cmd_set(unsigned int gid, const char *oid, char *value,
     int                     i;
 
     UNUSED(gid);
+    UNUSED(data);
 
     memset(&ifr, 0, sizeof(ifr));
     memset(&eval, 0, sizeof(eval));
