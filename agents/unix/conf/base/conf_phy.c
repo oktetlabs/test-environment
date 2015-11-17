@@ -1695,7 +1695,9 @@ phy_commit(unsigned int gid, const cfg_oid *p_oid)
              ADVERTISED_100baseT_Full |
              ADVERTISED_1000baseT_Half |
              ADVERTISED_1000baseT_Full |
+#ifdef ADVERTISED_2500baseX_Full
              ADVERTISED_2500baseX_Full |
+#endif
              ADVERTISED_10000baseT_Full)) == 0)
         {
             list_item->ecmd.advertising = ecmd.supported &
@@ -1705,7 +1707,9 @@ phy_commit(unsigned int gid, const cfg_oid *p_oid)
                  ADVERTISED_100baseT_Full |
                  ADVERTISED_1000baseT_Half |
                  ADVERTISED_1000baseT_Full |
+#ifdef ADVERTISED_2500baseX_Full
                  ADVERTISED_2500baseX_Full |
+#endif
                  ADVERTISED_10000baseT_Full);
         }
     }
@@ -1770,7 +1774,9 @@ phy_commit(unsigned int gid, const cfg_oid *p_oid)
               ADVERTISED_100baseT_Full |
               ADVERTISED_1000baseT_Half |
               ADVERTISED_1000baseT_Full |
+#ifdef ADVERTISED_2500baseX_Full
               ADVERTISED_2500baseX_Full |
+#endif
               ADVERTISED_10000baseT_Full)) != list_item->ecmd.advertising)
         {
             ERROR("failed to advertise needfull modes at %s", ifname);
