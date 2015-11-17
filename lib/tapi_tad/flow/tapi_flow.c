@@ -641,7 +641,8 @@ static inline char *tapi_cfg_link_dereference(char *link)
         }
 
         if ((strstr(link, "address") != NULL) || 
-            (strstr(link, "net_addr") != NULL))
+            (strstr(link, "net_addr") != NULL) ||
+            (strstr(link, "fake_addr") != NULL))
         {
             uint8_t *ip =
                 (uint8_t *)&((struct sockaddr_in *)addr)->sin_addr.s_addr;
