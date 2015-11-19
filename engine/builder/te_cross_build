@@ -197,9 +197,13 @@ print_platform() {
     echo "${1}${HOST:+ on }${HOST}"
 }
 
+print_agent_log_files() {
+    echo "$(readlink -f "$1").{1,2}.log"
+}
+
 print_build_agent_start() {
     echo "Build agent $(print_platform $1) - start"
-    echo "  location of log files: $(readlink -f "$p").{1,2}.log"
+    echo "  location of log files: $(print_agent_log_files "$p")"
 }
 
 add_timestamps() {
@@ -240,6 +244,7 @@ build_platform_and_agent() {
 }
 
 build() {
+    declare -A ERRORS
     declare -A PIDS
     declare -A CONSTRUCTED
 
@@ -274,9 +279,19 @@ build() {
             echo "Build agent $(print_platform $p) - pass" >&2
         else
             echo "Build agent $(print_platform $p) - fail ($res)" >&2
-            exit "$res"
+            ERRORS[$p]=$res
         fi
     done
+
+    if test "${#ERRORS[@]}" -ne "0" ; then
+        echo "Build failed. For more details see files:"
+        for p in "${!ERRORS[@]}"; do
+            echo "  $(print_agent_log_files "$p")"
+        done
+
+        # Returns the last value of an array (last error)
+        exit "${ERRORS[@]:(-1)}"
+    fi
 
     if test -n "${BUILD_TA}" ; then
         for package in $DUMMY $TE_BS_TA ; do
