@@ -25,115 +25,140 @@
         Boston, MA  02111-1307  USA
     -->
 
-    <!-- An object for the L2TP server's global section
+    <!-- A root object for the L2TP server
          Name: none -->
-    <object oid="/agent/l2tp_global/" 
+    <object oid="/agent/l2tp/" 
         access="read_write" type="none"/>
-
-    <!-- Debug parameters for the global
-         Name: avp, network, packet, state, tunnel 
-     	 Value: 0 (no) or 1 (yes)-->
-    <object oid="/agent/l2tp_global/debug" 
-        access="read_write" type="integer"/>
 
     <!-- The IP address of the interface on which the daemon listens
-    	 and the UDP port xl2tpd should use.
-         Name: like 192.168.1.1:1701-->
-    <object oid="/agent/l2tp_global/listen" 
-        access="read_write" type="none"/>   
+         Name: empty-->
+    <object oid="/agent/l2tp/listen" 
+        access="read_write" type="integer"/>   
 
-    <!-- An object for the L2TP server
+    <!-- The UDP port xl2tpd should use.
+         Name: empty-->
+    <object oid="/agent/l2tp/port" 
+        access="read_write" type="integer"/>  
+
+    <!-- An object for the LNS section
          Name: LNS session name -->
-    <object oid="/agent/l2tp_server/" 
+    <object oid="/agent/l2tp/lns" 
         access="read_write" type="none"/>
 
-    <!-- The range of ip addresses the LNS will assign to the 
-    	 connecting LAC PPP tunnels and the range of ip addresses of LAC's 
-    	 which are allowed to connect to xl2tpd acting as a LNS.
-         Name: ip_range, lac
-     	 Value: like 192.168.1.2-192.168.1.10 -->
-    <object oid="/agent/l2tp_server/range/" 
-        access="read_write" type="string"/>
+    <!-- The range of ipv4 addresses the LNS will assign to the 
+         connecting LAC PPP tunnels and the range of ipv4 addresses of LAC's 
+         which are allowed to connect to xl2tpd acting as a LNS.
+         Name: ip_range, lac -->
+    <object oid="/agent/l2tp/lns/range/" 
+        access="read_write" type="none"/>
+
+    <!-- As we can have several diaposons there is a necessity
+         to have an object which specifies the number of the interval
+         Name: interval nubmer -->
+    <object oid="/agent/l2tp/lns/range/inum" 
+        access="read_write" type="none"/>
+
+    <!-- The beginning of the ipv4 pool
+         Name: empty-->
+    <object oid="/agent/l2tp/lns/range/inum/start" 
+        access="read_write" type="integer"/>
+
+    <!-- The end of the ipv4 pool
+         Name: empty-->
+    <object oid="/agent/l2tp/lns/range/inum/end" 
+        access="read_write" type="none"/>
 
     <!-- This identifier describes the connected
          clients to LNS
-         Name: IPv4 address from ip range in human notation (with dots)-->
-    <object oid="/agent/l2tp_server/connected" 
+         Name: IPv4 address from ip_range in human notation (with dots)-->
+    <object oid="/agent/l2tp/lns/connected" 
         access="read_only" type="none"/>
 
     <!-- This identifier describes the local
-         ip address of the L2TP server
-         Name: IPv4 in human notation (with dots) -->
-    <object oid="/agent/l2tp_server/local_ip" 
-        access="read_write" type="none"/>
+         ipv4 address of the L2TP server
+         Name: empty -->
+    <object oid="/agent/l2tp/lns/local_ip" 
+        access="read_write" type="integer"/>
 
     <!-- The L2TP additional bits.
          Name: hidden, length, flow 
-     	 Value: 0 (no) or 1 (yes)-->
-    <object oid="/agent/l2tp_server/bit" 
+         Value: 0 (no) or 1 (yes)-->
+    <object oid="/agent/l2tp/lns/bit" 
         access="read_write" type="integer"/>
 
     <!-- Authentication methods.
          Name: chap, pap or empty.
          Empty name is needed for the remote peer 
          to authenticate itself. -->
-    <object oid="/agent/l2tp_server/authentication" 
+    <object oid="/agent/l2tp/lns/authentication" 
         access="read_write" type="none"/>
 
     <!-- Whether refuse the authentication.
          Name: yes, no -->
-    <object oid="/agent/l2tp_server/authentication/refuse" 
+    <object oid="/agent/l2tp/lns/authentication/refuse" 
         access="read_write" type="none"/>
 
     <!-- Whether require the authentication.
          Name: yes, no -->
-    <object oid="/agent/l2tp_server/authentication/require" 
+    <object oid="/agent/l2tp/lns/authentication/require" 
         access="read_write" type="none"/>
 
-    <!-- Authentication secrets.
-         Name: empty
-         Value: string with four fields (client, server, secret, IP addresses)
-         seperated by "," -->
-    <object oid="/agent/l2tp_server/authentication/secrets" 
-        access="read_write" type="string"/>      
-
-    <!-- Enable/disable the debug for pppd.
-         Name: yes, no -->
-    <object oid="/agent/l2tp_server/ppp_debug" 
+    <!-- Client for the authentication secrets.
+         Name: any 
+               "*" indicates that any client is allowed-->
+    <object oid="/agent/l2tp/lns/authentication/client" 
         access="read_write" type="none"/>
+
+    <!-- Server for the authentication secrets.
+         Name: any 
+               "*" indicates that any server is allowed -->
+    <object oid="/agent/l2tp/lns/authentication/client/server" 
+        access="read_write" type="none"/>    
+
+    <!-- Secret for the authentication secrets.
+         Name: any
+               "*" indicates that any secret is allowed -->
+    <object oid="/agent/l2tp/lns/authentication/client/secret" 
+        access="read_write" type="string"/>    
+
+    <!-- IPv4 for the authentication secrets.
+         Name: IPv4 in human notation (with dots) 
+               "*" indicates that any IP address is allowed -->
+    <object oid="/agent/l2tp/lns/authentication/client/ipv4" 
+        access="read_write" type="none"/>          
 
     <!-- Rest authentication parameters.
          Name: unix, challange
          Value: 0 (no) or 1 (yes) -->
-    <object oid="/agent/l2tp_server/rest_auth" 
+    <object oid="/agent/l2tp/lns/rest_auth" 
         access="read_write" type="integer"/>
 
     <!-- Root object for the pppd configuration parameters
          Name: empty -->
-    <object oid="/agent/l2tp_server/pppopt/" 
+    <object oid="/agent/l2tp/lns/pppopt/" 
         access="read_write" type="none"/> 
 
     <!-- Specifying the MTU
          Name: empty -->
-    <object oid="/agent/l2tp_server/pppopt/mtu" 
+    <object oid="/agent/l2tp/lns/pppopt/mtu" 
         access="read_write" type="integer"/>   
 
     <!-- Specifying the MRU
          Name: empty -->
-    <object oid="/agent/l2tp_server/pppopt/mru" 
+    <object oid="/agent/l2tp/lns/pppopt/mru" 
         access="read_write" type="integer"/> 
 
     <!-- pppd will presume 
          the peer to be dead if n LCP echo-requests are 
          sent without receiving a valid LCP echo-reply. 
          Name: empty -->
-    <object oid="/agent/l2tp_server/pppopt/lcp-echo-failure" 
+    <object oid="/agent/l2tp/lns/pppopt/lcp-echo-failure" 
         access="read_write" type="integer"/> 
 
     <!-- pppd will send an LCP 
          echo-request frame to the peer every n seconds
          Name: empty -->
-    <object oid="/agent/l2tp_server/pppopt/lcp-echo-interval" 
+    <object oid="/agent/l2tp/lns/pppopt/lcp-echo-interval" 
         access="read_write" type="integer"/>
 
     <!-- Addtitional options to pppd
