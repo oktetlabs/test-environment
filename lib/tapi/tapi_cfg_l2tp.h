@@ -37,100 +37,273 @@
 #include <sys/socket.h>
 #endif
 
+#include <stdbool.h>
+#include <stdint.h>
 #include "conf_api.h"
 
+/** The following MACROS are needed for API */
+#define CHAP 1 /**< CHAP authentication */
+#define PAP  2 /**< PAP authentication */
+#define AUTH 3 /**< remote peer authentication */
+#define LAC true /**< Determine LAC range */
+#define IPRANGE false /**< Determine ip range */
+#define REQUIRE true  /**< See the 'struct auth_prot' */
+#define REFUSE false  /**< See the 'struct auth_prot' */
+
+/** Structure for the IP-address pool */
+typedef struct ipv4_range {
+    struct sockaddr_in start; /**< The left boundary of the pool */
+    struct sockaddr_in end;   /**< The right boundary of the pool */
+    bool               is_lac /**< This field describes the pool appointment.
+                                   Pool may belong to the ip range or 
+                                   to the lac*/
+} ipv4_range;
+
+/** Node of the single-linked list for the connected clients */
+typedef struct l2tp_connected {
+    struct l2tp_connected  *next;   /**< Next node */
+    struct sockaddr_in      cipv4;  /**< Connected client IP */
+
+} l2tp_connected;
+
+/** CHAP|PAP secret structure */
+typedef struct ppp_secret {
+    int8_t              is_chap;  /**< CHAP|PAP secret */
+    char               *client;   /**< Client name */
+    char               *server;   /**< Server name */
+    char               *secret;   /**< Secret name */
+    struct sockaddr_in  sipv4;    /**< IP address */
+} ppp_secret;
+
+/** CHAP|PAP single-linked list */
+typedef struct secret_list {
+    struct secret_list *next; /**< Next node */
+    ppp_secret          snode;
+} secret_list;
+
+/** Structure for desired authentication */
+typedef struct auth_prot {
+    int8_t  auth_prot; /**< CHAP|PAP|AUTH */
+    bool    demand;    /**< REQUIRE|REFUSE */
+} auth_prot;
 
 /**
- * Add ip range to L2TP server configuration on the Test Agent.
+ * Set a listen/local ip.
  *
  * @param ta            Test Agent
- * @param iprange       IP range from where server appoints 
-                        an IP address to the client
- *
- * @return Status code
- */
-extern te_errno
-tapi_cfg_l2tp_server_range_add(const char *ta, const char *iprange);
-
-/**
- * Delete ip range from L2TP server configuration on the Test Agent.
- *
- * @param ta            Test Agent
- * @param iprange       IP range to remove
- *
- * @return Status code
- */
-extern te_errno
-tapi_cfg_l2tp_server_range_del(const char *ta, const char *iprange);
-
-/**
- * Set a local ip of L2TP server.
- *
- * @param ta            Test Agent
+ * @param lns           If NULL the global listen ip will be set,
+                        otherwise it will set local ip to the specified lns
  * @param local         New IP adress
  *
  * @return Status code
  */
  extern te_errno
- tapi_cfg_l2tp_server_local_set(const char *ta, const char *local);
+ tapi_cfg_l2tp_ip_set(const char *ta, const char *lns, 
+                      struct sockaddr_in *local);
 
 /**
- * Get a current local ip of L2TP server.
+ * Get a current listen/local ip.
  *
  * @param ta            Test Agent
+ * @param is_lnc        If NULL the global listen ip will be got,
+                        otherwise it will got local ip to the specified lns
  * @param local         Returned pointer to the current local ip
  *
  * @return Status code
  */
+
  extern te_errno
- tapi_cfg_l2tp_server_local_get(const char *ta, const char **local);
+ tapi_cfg_l2tp_ip_get(const char *ta, const char *lns, 
+                      struct sockaddr_in **local);
 
 /**
- * Set an option of L2TP server.
+ * Add ip range to the configuration.
  *
  * @param ta            Test Agent
- * @param kind_opt      Which file's option must be changed(pppd/xl2tpd)
- * @param px_option     New option
+ * @param lns           The name of the section to modify
+ * @param ipv4_range    IP address pool
+ *
+ * @return Status code
+ */
+
+extern te_errno 
+tapi_cfg_l2tp_lns_range_add(const char *ta, const char *lns, 
+                            const ipv4_range *iprange);
+
+/**
+ * Delete specified ip range from the configuration.
+ *
+ * @param ta            Test Agent
+ * @param lns           The name of the section to modify
+ * @param ipv4_range    IP address pool
+ *
+ * @return Status code
+ */
+extern te_errno 
+tapi_cfg_l2tp_lns_range_del(const char *ta, const char *lns,
+                            const ipv4_range *iprange);
+
+/**
+ * Get the list of connected clients.
+ *
+ * @param ta       Test Agent
+ * @param lns      The name of the section
+ * @param local    Returned pointer to the list of connected ip
+ *
+ * @return Status code
+ */
+
+ extern te_errno
+ tapi_cfg_l2tp_lns_connected_get(const char *ta, const char *lns, 
+                                 l2tp_connected *connected);
+
+/**
+ * Set the bit parameter's value for the specified LNS.
+ *
+ * @param ta        Test Agent
+ * @param lns       The name of the section
+ * @param bit_name  Name of the parameter(e.g. hidden, length, flow)
+ * @param selector  If true the bit_name value will be "yes"
+                    otherwise "no"
  *
  * @return Status code
  */
  extern te_errno
- tapi_cfg_l2tp_server_option_set(const char *ta, 
-                                 const char *kind_opt, const char *px_option);
+ tapi_cfg_l2tp_lns_bit_set(const char *ta, const char *lns, 
+                           const char *bit_name, bool selector);
 
+/*May be there is a sense to return the list of bit params with
+their values?*/
 /**
- * Get an option of L2TP server.
+ * Get the bit parameter's value for the specified LNS.
  *
- * @param ta            Test Agent
- * @param kind_opt      Which file's option must be get(pppd/xl2tpd)
- * @param px_option     Returned pointer to the current option
+ * @param ta        Test Agent
+ * @param lns       The name of the section
+ * @param bit_name  Name of the parameter(e.g. hidden, length, flow)
+ * @param selector  Returned pointer to the current bit parameter value
  *
  * @return Status code
  */
  extern te_errno
- tapi_cfg_l2tp_server_option_get(const char *ta, 
-                                 const *kind_opt, const char **px_option);
+ tapi_cfg_l2tp_lns_bit_get(const char *ta, const char *lns, 
+                           const char *bit_name, bool *selector);
 
 /**
- * Add a new option to pppd.
+ * Set the instance to yes or no for "/authentication/refuse|require".
  *
- * @param ta            Test Agent
- * @param p_option      Option to add
+ * @param ta          Test Agent
+ * @param lns         The name of the section
+ * @param param       Desired authentication
+ * @param ins_name    true(yes) or false(no)
  *
  * @return Status code
  */
  extern te_errno
- tapi_cfg_l2tp_server_option_add(const char *ta, const char *p_option);
+ tapi_cfg_l2tp_lns_set_auth(const char *ta, const char *lns, 
+                            auth_prot param, bool ins_name);
+ /**
+ * Get the instance to yes or no for "/authentication/refuse|require".
+ *
+ * @param ta          Test Agent
+ * @param lns         The name of the section
+ * @param param       Desired authentication
+ * @param instance    Returned pointer to the authentication parameter,
+                      like "yes" or "no"
+ *
+ * @return Status code
+ */
+ extern te_errno
+ tapi_cfg_l2tp_lns_get_auth(const char *ta, const char *lns, 
+                            auth_prot param, char *instance);
+
+/**
+ * Add chap|pap secret.
+ *
+ * @param ta            Test Agent
+ * @param lns           The name of the section
+ * @param new_secret    Secret to add
+ *
+ * @return Status code
+ */
+
+extern te_errno 
+tapi_cfg_l2tp_lns_secret_add(const char *ta, const char *lns, 
+                             const ppp_secret *new_secret);
+/**
+ * Delete chap|pap secret.
+ *
+ * @param ta            Test Agent
+ * @param lns           The name of the section
+ * @param new_secret    Secret to delete
+ *
+ * @return Status code
+ */
+
+extern te_errno 
+tapi_cfg_l2tp_lns_secret_delete(const char *ta, const char *lns, 
+                                const ppp_secret *prev_secret);
+
+/**
+ * Set numerical options for pppd such as mtu, mru, 
+ * lcp-echo-failure, lcp-echo-interval.
+ *
+ * @param ta       Test Agent
+ * @param lns      The name of the section
+ * @param ptype    Macro which will specify the value's name to change 
+ *                 (e.g. MTU, MRU, LCP_E_F, LCP_E_I)
+ * @param value    New value
+ *
+ * @return Status code
+ */
+
+extern te_errno 
+tapi_cfg_l2tp_lns_pppopt_set(const char *ta, const char *lns, 
+                             int8_t ptype, int value);
+
+/**
+ * Get numerical options from pppd such as mtu, mru, 
+ * lcp-echo-failure, lcp-echo-interval.
+ *
+ * @param ta       Test Agent
+ * @param lns      The name of the section
+ * @param ptype    Macro which will specify the value's name to get 
+ *                 (e.g. MTU, MRU, LCP_E_F, LCP_E_I)
+ * @param value    Returned pointer to the current value
+ *
+ * @return Status code
+ */
+
+extern te_errno 
+tapi_cfg_l2tp_lns_pppopt_get(const char *ta, const char *lns, 
+                             int8_t ptype, int *value);
+
+/**
+ * Add an option to pppd.
+ *
+ * @param ta        Test Agent
+ * @param lns       The name of the section
+ * @param pparam    New param
+ *
+ * @return Status code
+ */
+
+extern te_errno 
+tapi_cfg_l2tp_lns_pppopt_add(const char *ta, const char *lns, 
+                             const char *pparam);
 
 /**
  * Delete an option from pppd.
  *
- * @param ta            Test Agent
- * @param p_option      Option to delete
+ * @param ta        Test Agent
+ * @param lns       The name of the section
+ * @param pparam    New param
  *
  * @return Status code
  */
- extern te_errno
- tapi_cfg_l2tp_server_option_del(const char *ta, const char *p_option);
+
+extern te_errno 
+tapi_cfg_l2tp_lns_pppopt_del(const char *ta, const char *lns, 
+                             const char *pparam);
+
 
 #endif /* !__TE_TAPI_CFG_L2TP_H__ */
