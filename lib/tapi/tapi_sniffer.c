@@ -24,7 +24,7 @@
  *
  * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
  *
- * $Id: 
+ * $Id$
  */
 
 #define TE_LGR_USER     "TAPI Sniffer"

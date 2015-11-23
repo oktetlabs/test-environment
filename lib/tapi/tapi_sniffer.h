@@ -24,7 +24,7 @@
  *
  * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
  *
- * $Id: 
+ * $Id$
  */
 
 #ifndef __TE_TAPI_SNIFFER_H__
