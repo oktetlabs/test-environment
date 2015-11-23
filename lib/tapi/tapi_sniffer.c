@@ -193,7 +193,7 @@ tapi_sniffer_add(const char *ta, const char *iface, const char *name,
         ERROR("Malloc error");
         return NULL;
     }
-    memset(newsnid, 0, sizeof(newsnid));
+    memset(newsnid, 0, sizeof(*newsnid));
 
     rc = cfg_add_instance_fmt(NULL, CVT_NONE, NULL, TE_CFG_SNIF_FMT,
                               ta, iface, snifname);
