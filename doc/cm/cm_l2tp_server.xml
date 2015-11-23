@@ -103,13 +103,13 @@
     <object oid="/agent/l2tp/lns/authentication/require" 
         access="read_write" type="none"/>
 
-    <!-- Client for the authentication secrets.
+    <!-- Client name for the authentication secrets.
          Name: any 
                "*" indicates that any client is allowed-->
     <object oid="/agent/l2tp/lns/authentication/client" 
         access="read_write" type="none"/>
 
-    <!-- Server for the authentication secrets.
+    <!-- Server name for the authentication secrets.
          Name: any 
                "*" indicates that any server is allowed -->
     <object oid="/agent/l2tp/lns/authentication/client/server" 
