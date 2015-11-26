@@ -42,13 +42,15 @@
 #include "conf_api.h"
 
 /** The following MACROS are needed for API */
-#define CHAP 1 /**< CHAP authentication */
-#define PAP  2 /**< PAP authentication */
-#define AUTH 3 /**< remote peer authentication */
-#define LAC true /**< Determine LAC range */
-#define IPRANGE false /**< Determine ip range */
 #define REQUIRE true  /**< See the 'struct auth_prot' */
 #define REFUSE false  /**< See the 'struct auth_prot' */
+
+/** Authentication type */
+enum auth_type {
+    CHAP   = 0,          /**< CHAP authentication */
+    PAP    = 1,          /**< PAP authentication */
+    AUTH   = 2,          /**< remote peer authentication */
+} ;
 
 /** Structure for the IP-address pool */
 typedef struct ipv4_range {
@@ -172,8 +174,6 @@ tapi_cfg_l2tp_lns_range_del(const char *ta, const char *lns,
  tapi_cfg_l2tp_lns_bit_set(const char *ta, const char *lns, 
                            const char *bit_name, bool selector);
 
-/*May be there is a sense to return the list of bit params with
-their values?*/
 /**
  * Get the bit parameter's value for the specified LNS.
  *
@@ -244,38 +244,112 @@ tapi_cfg_l2tp_lns_secret_delete(const char *ta, const char *lns,
                                 const ppp_secret *prev_secret);
 
 /**
- * Set numerical options for pppd such as mtu, mru, 
- * lcp-echo-failure, lcp-echo-interval.
+ * Set MTU size
  *
  * @param ta       Test Agent
  * @param lns      The name of the section
- * @param ptype    Macro which will specify the value's name to change 
- *                 (e.g. MTU, MRU, LCP_E_F, LCP_E_I)
  * @param value    New value
  *
  * @return Status code
  */
 
 extern te_errno 
-tapi_cfg_l2tp_lns_pppopt_set(const char *ta, const char *lns, 
-                             int8_t ptype, int value);
+tapi_cfg_l2tp_lns_mtu_set(const char *ta, const char *lns, int value);
 
 /**
- * Get numerical options from pppd such as mtu, mru, 
- * lcp-echo-failure, lcp-echo-interval.
+ * Get MTU size
  *
  * @param ta       Test Agent
  * @param lns      The name of the section
- * @param ptype    Macro which will specify the value's name to get 
- *                 (e.g. MTU, MRU, LCP_E_F, LCP_E_I)
  * @param value    Returned pointer to the current value
  *
  * @return Status code
  */
 
 extern te_errno 
-tapi_cfg_l2tp_lns_pppopt_get(const char *ta, const char *lns, 
-                             int8_t ptype, int *value);
+tapi_cfg_l2tp_lns_mtu_get(const char *ta, const char *lns, int *value);
+
+/**
+ * Set MRU size
+ *
+ * @param ta       Test Agent
+ * @param lns      The name of the section
+ * @param value    New value
+ *
+ * @return Status code
+ */
+
+extern te_errno 
+tapi_cfg_l2tp_lns_mru_set(const char *ta, const char *lns, int value);
+
+/**
+ * Get MRU size
+ *
+ * @param ta       Test Agent
+ * @param lns      The name of the section
+ * @param value    Returned pointer to the current value
+ *
+ * @return Status code
+ */
+
+extern te_errno 
+tapi_cfg_l2tp_lns_mru_get(const char *ta, const char *lns, int *value);
+
+/**
+ * Set lcp-echo-failure.
+ *
+ * @param ta       Test Agent
+ * @param lns      The name of the section
+ * @param value    New value
+ *
+ * @return Status code
+ */
+
+extern te_errno 
+tapi_cfg_l2tp_lns_lcp_echo_failure_set(const char *ta, const char *lns,
+                                       int value);
+
+/**
+ * Get lcp-echo-failure.
+ *
+ * @param ta       Test Agent
+ * @param lns      The name of the section
+ * @param value    Returned pointer to the current value
+ *
+ * @return Status code
+ */
+
+extern te_errno 
+tapi_cfg_l2tp_lns_lcp_echo_failure_get(const char *ta, const char *lns,
+                                       int *value);
+
+/**
+ * Set lcp-echo-interval.
+ *
+ * @param ta       Test Agent
+ * @param lns      The name of the section
+ * @param value    New value
+ *
+ * @return Status code
+ */
+
+extern te_errno 
+tapi_cfg_l2tp_lns_lcp_echo_interval_set(const char *ta, const char *lns,
+                                        int value);
+
+/**
+ * Get lcp-echo-interval.
+ *
+ * @param ta       Test Agent
+ * @param lns      The name of the section
+ * @param value    Returned pointer to the current value
+ *
+ * @return Status code
+ */
+
+extern te_errno 
+tapi_cfg_l2tp_lns_lcp_echo_interval_get(const char *ta, const char *lns,
+                                        int *value);
 
 /**
  * Add an option to pppd.
@@ -296,7 +370,7 @@ tapi_cfg_l2tp_lns_pppopt_add(const char *ta, const char *lns,
  *
  * @param ta        Test Agent
  * @param lns       The name of the section
- * @param pparam    New param
+ * @param pparam    Param to delete
  *
  * @return Status code
  */
