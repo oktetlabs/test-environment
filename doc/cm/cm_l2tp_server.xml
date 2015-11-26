@@ -127,10 +127,16 @@
     <object oid="/agent/l2tp/lns/authentication/client/ipv4" 
         access="read_write" type="none"/>          
 
-    <!-- Rest authentication parameters.
-         Name: unix, challange
+    <!-- Use challenge authentication to authenticate peer.
+         Name: empty
          Value: 0 (no) or 1 (yes) -->
-    <object oid="/agent/l2tp/lns/rest_auth" 
+    <object oid="/agent/l2tp/lns/use_challange" 
+        access="read_write" type="integer"/>
+
+    <!-- Use /etc/passwd for remote peer ppp authentication.
+         Name: empty
+         Value: 0 (no) or 1 (yes) -->
+    <object oid="/agent/l2tp/lns/unix_auth" 
         access="read_write" type="integer"/>
 
     <!-- Root object for the pppd configuration parameters
@@ -164,7 +170,7 @@
     <!-- Addtitional options to pppd
          Name: as example: nodeflate, noproxyarp, lock.
                Other options can be found in man pppd -->
-    <object oid="/agent/l2tp_server/pppopt/option" 
+    <object oid="/agent/l2tp/pppopt/option" 
         access="read_create" type="none"/>
 
 </backup>
