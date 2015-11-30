@@ -44,6 +44,8 @@
 /** The following MACROS are needed for API */
 #define REQUIRE true  /**< See the 'struct auth_prot' */
 #define REFUSE false  /**< See the 'struct auth_prot' */
+#define ALLOW true    /**< See the 'struct auth_prot' */
+#define BAN false     /**< See the 'struct auth_prot' */
 
 /** Authentication type */
 enum auth_type {
@@ -61,13 +63,6 @@ typedef struct ipv4_range {
                                    to the lac*/
 } ipv4_range;
 
-/** Node of the single-linked list for the connected clients */
-typedef struct l2tp_connected {
-    struct l2tp_connected  *next;   /**< Next node */
-    struct sockaddr_in      cipv4;  /**< Connected client IP */
-
-} l2tp_connected;
-
 /** CHAP|PAP secret structure */
 typedef struct ppp_secret {
     int8_t              is_chap;  /**< CHAP|PAP secret */
@@ -77,11 +72,6 @@ typedef struct ppp_secret {
     struct sockaddr_in  sipv4;    /**< IP address */
 } ppp_secret;
 
-/** CHAP|PAP single-linked list */
-typedef struct secret_list {
-    struct secret_list *next; /**< Next node */
-    ppp_secret          snode;
-} secret_list;
 
 /** Structure for desired authentication */
 typedef struct auth_prot {
@@ -124,13 +114,15 @@ typedef struct auth_prot {
  * @param ta            Test Agent
  * @param lns           The name of the section to modify
  * @param ipv4_range    IP address pool
+ * @param law           The class of the added ip range
+                        ALLOW|BAN
  *
  * @return Status code
  */
 
 extern te_errno 
 tapi_cfg_l2tp_lns_range_add(const char *ta, const char *lns, 
-                            const ipv4_range *iprange);
+                            const ipv4_range *iprange, bool law);
 
 /**
  * Delete specified ip range from the configuration.
@@ -138,12 +130,14 @@ tapi_cfg_l2tp_lns_range_add(const char *ta, const char *lns,
  * @param ta            Test Agent
  * @param lns           The name of the section to modify
  * @param ipv4_range    IP address pool
+ * @param law           The class of the removed ip range
+                        ALLOW|BAN
  *
  * @return Status code
  */
 extern te_errno 
 tapi_cfg_l2tp_lns_range_del(const char *ta, const char *lns,
-                            const ipv4_range *iprange);
+                            const ipv4_range *iprange, bool law);
 
 /**
  * Get the list of connected clients.
@@ -157,7 +151,7 @@ tapi_cfg_l2tp_lns_range_del(const char *ta, const char *lns,
 
  extern te_errno
  tapi_cfg_l2tp_lns_connected_get(const char *ta, const char *lns, 
-                                 l2tp_connected *connected);
+                                 struct sockaddr_in *connected);
 
 /**
  * Set the bit parameter's value for the specified LNS.
@@ -202,7 +196,7 @@ tapi_cfg_l2tp_lns_range_del(const char *ta, const char *lns,
  tapi_cfg_l2tp_lns_set_auth(const char *ta, const char *lns, 
                             auth_prot param, bool ins_name);
  /**
- * Get the instance to yes or no for "/authentication/refuse|require".
+ * Get the instance name "/authentication/refuse|require".
  *
  * @param ta          Test Agent
  * @param lns         The name of the section

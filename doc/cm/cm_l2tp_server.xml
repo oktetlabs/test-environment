@@ -45,28 +45,54 @@
     <object oid="/agent/l2tp/lns" 
         access="read_write" type="none"/>
 
-    <!-- The range of ipv4 addresses the LNS will assign to the 
-         connecting LAC PPP tunnels and the range of ipv4 addresses of LAC's 
-         which are allowed to connect to xl2tpd acting as a LNS.
-         Name: ip_range, lac -->
-    <object oid="/agent/l2tp/lns/range/" 
+    <!-- A root object for specifying the number of the
+         ipv4 pool and the pool itself 
+         Name: 'banned' determines the ip addresses which will not be assigned
+                to clients 
+               'allowed' determines the address pool-->
+    <object oid="/agent/l2tp/lns/ip" 
         access="read_write" type="none"/>
 
     <!-- As we can have several diaposons there is a necessity
          to have an object which specifies the number of the interval
          Name: interval nubmer -->
-    <object oid="/agent/l2tp/lns/range/inum" 
+    <object oid="/agent/l2tp/lns/ip/inum" 
         access="read_write" type="none"/>
 
     <!-- The beginning of the ipv4 pool
          Name: empty-->
-    <object oid="/agent/l2tp/lns/range/inum/start" 
+    <object oid="/agent/l2tp/lns/ip/inum/start" 
         access="read_write" type="integer"/>
 
     <!-- The end of the ipv4 pool
          Name: empty-->
-    <object oid="/agent/l2tp/lns/range/inum/end" 
+    <object oid="/agent/l2tp/lns/ip/inum/end" 
+        access="read_write" type="integer"/>
+
+    <!-- A root object for specifying the number of the
+         lac ranges and the lac ranges themselves 
+         Name: 'banned' determines the ip addresses of the clients
+                which will be ignored by LNS
+               'allowed' determines the ip addresses which can establish
+                the connection with LNS -->
+    <object oid="/agent/l2tp/lns/lac" 
         access="read_write" type="none"/>
+
+    <!-- As we can have several diaposons there is a necessity
+         to have an object which specifies the number of the interval
+         Name: interval nubmer -->
+    <object oid="/agent/l2tp/lns/lac/lnum" 
+        access="read_write" type="none"/>
+
+    <!-- The beginning of the lac interval
+         Name: empty-->
+    <object oid="/agent/l2tp/lns/lac/lnum/start" 
+        access="read_write" type="integer"/>
+
+    <!-- The end of the lac interval
+         Name: empty-->
+    <object oid="/agent/l2tp/lns/lac/lnum/end" 
+        access="read_write" type="integer"/>
 
     <!-- This identifier describes the connected
          clients to LNS
