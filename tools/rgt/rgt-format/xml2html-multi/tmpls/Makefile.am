@@ -39,6 +39,7 @@ dist_pkgdata_DATA = \
     js_log_names_start.tmpl\
     doc_ref_to_node.tmpl\
     doc_cntrl_node_title.tmpl\
+    doc_cntrl_node_hash.tmpl\
     log_msg_start.tmpl\
     log_msg_end.tmpl\
     param_start.tmpl\

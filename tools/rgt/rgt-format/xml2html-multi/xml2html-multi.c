@@ -580,6 +580,7 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     const char       *result = rgt_tmpls_xml_attrs_get(xml_attrs, "result");
     const char       *tin = rgt_tmpls_xml_attrs_get(xml_attrs, "tin");
     const char       *err = rgt_tmpls_xml_attrs_get(xml_attrs, "err");
+    const char       *hash = rgt_tmpls_xml_attrs_get(xml_attrs, "hash");
     const char       *node_class;
     char              fname[255];
     rgt_attrs_t      *attrs;
@@ -640,6 +641,12 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     rgt_tmpls_attrs_add_fstr(attrs, "err", err);
     rgt_tmpls_output(depth_user->fd,
                      &xml2fmt_tmpls[DOC_CNTRL_NODE_TITLE], attrs);
+
+    if (hash != NULL && hash[0] != 0)
+    {
+        rgt_tmpls_output(depth_user->fd,
+                         &xml2fmt_tmpls[DOC_CNTRL_NODE_HASH], attrs);
+    }
 
     rgt_tmpls_attrs_add_fstr(attrs, "fname", fname);
     rgt_tmpls_attrs_add_fstr(attrs, "class", node_class);
