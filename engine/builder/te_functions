@@ -76,7 +76,7 @@ te_ta_signature_local()
     case "$GCC_TARGET" in
         *-linux-gnu | \
         *-redhat-linux )
-            local TEMP_IN="$(mktemp).c"
+            local TEMP_IN="$(mktemp /tmp/tmp.XXXXXXXXXX.c)"
             echo '
                 #include <stdio.h>
                 #include <linux/version.h>
