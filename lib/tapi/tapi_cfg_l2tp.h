@@ -4,7 +4,7 @@
  * Definition of TAPI to configure L2TP.
  *
  *
- * Copyright (C) 2015 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2015 Test Environment authors (see file REST_AUTHORS
  * in the root directory of the distribution).
  *
  * This library is free software; you can redistribute it and/or
@@ -26,7 +26,6 @@
  * @author Albert Podusenko <albert.podusenko@oktetlabs.ru>
  *
  */
-
 #ifndef __TE_TAPI_CFG_L2TP_H__
 #define __TE_TAPI_CFG_L2TP_H__
 
@@ -41,31 +40,41 @@
 #include <stdint.h>
 #include "conf_api.h"
 
-/** The following MACROS are needed for API */
-#define REQUIRE true  /**< See the 'struct auth_prot' */
-#define REFUSE false  /**< See the 'struct auth_prot' */
-#define ALLOW true    /**< See the 'struct auth_prot' */
-#define BAN false     /**< See the 'struct auth_prot' */
-
 /** Authentication type */
 enum auth_type {
-    CHAP   = 0,          /**< CHAP authentication */
-    PAP    = 1,          /**< PAP authentication */
-    AUTH   = 2,          /**< remote peer authentication */
-} ;
+    CHAP      = 0,     /**< CHAP authentication */
+    PAP       = 1,     /**< PAP authentication */
+    REST_AUTH = 2      /**< Remote peer authentication */
+};
+
+/** The law defining the type of the ip range */
+enum principle {
+    DENY  = 0,    /**< For ipv4 addresses which must be denied*/
+    ALLOW = 1     /**< For ipv4 addresses which must be allowed */
+};
+
+/** Type of the request for the auth_type */
+enum request {
+    REFUSE  = 0,    /**< Refuse CHAP|PAP|REST_AUTH */
+    REQUIRE = 1     /**< Require CHAP|PAP|REST_AUTH */
+};
+
+/** Subset to which the certain ip range addresses belongs */
+enum subset {
+    IP_RANGE  = 0,    /**< ip range*/
+    LAC       = 1     /**< lac */
+};
 
 /** Structure for the IP-address pool */
 typedef struct ipv4_range {
-    struct sockaddr_in start; /**< The left boundary of the pool */
-    struct sockaddr_in end;   /**< The right boundary of the pool */
-    bool               is_lac /**< This field describes the pool appointment.
-                                   Pool may belong to the ip range or 
-                                   to the lac*/
+    struct sockaddr_in start;   /**< The left boundary of the pool */
+    struct sockaddr_in end;     /**< The right boundary of the pool */
+    enum principle     type;    /**< Above pool can be allowed or denied */
 } ipv4_range;
 
 /** CHAP|PAP secret structure */
 typedef struct ppp_secret {
-    int8_t              is_chap;  /**< CHAP|PAP secret */
+    enum auth_prot      is_chap;  /**< CHAP|PAP secret */
     char               *client;   /**< Client name */
     char               *server;   /**< Server name */
     char               *secret;   /**< Secret name */
@@ -74,10 +83,10 @@ typedef struct ppp_secret {
 
 
 /** Structure for desired authentication */
-typedef struct auth_prot {
-    int8_t  auth_prot; /**< CHAP|PAP|AUTH */
-    bool    demand;    /**< REQUIRE|REFUSE */
-} auth_prot;
+typedef struct auth {
+    enum auth_prot protocol; /**< CHAP|PAP|REST_AUTH */
+    enum principle type;     /**< REQUIRE|REFUSE */
+} auth;
 
 /**
  * Set a listen/local ip.
@@ -106,7 +115,7 @@ typedef struct auth_prot {
 
  extern te_errno
  tapi_cfg_l2tp_ip_get(const char *ta, const char *lns, 
-                      struct sockaddr_in **local);
+                      struct sockaddr_in *local);
 
 /**
  * Add ip range to the configuration.
@@ -122,7 +131,7 @@ typedef struct auth_prot {
 
 extern te_errno 
 tapi_cfg_l2tp_lns_range_add(const char *ta, const char *lns, 
-                            const ipv4_range *iprange, bool law);
+                            const ipv4_range *iprange, enum subset kind);
 
 /**
  * Delete specified ip range from the configuration.
@@ -137,21 +146,21 @@ tapi_cfg_l2tp_lns_range_add(const char *ta, const char *lns,
  */
 extern te_errno 
 tapi_cfg_l2tp_lns_range_del(const char *ta, const char *lns,
-                            const ipv4_range *iprange, bool law);
+                            const ipv4_range *iprange, enum subset kind);
 
 /**
  * Get the list of connected clients.
  *
- * @param ta       Test Agent
- * @param lns      The name of the section
- * @param local    Returned pointer to the list of connected ip
+ * @param ta         Test Agent
+ * @param lns        The name of the section
+ * @param connected  The connected ip addresses
  *
  * @return Status code
  */
 
  extern te_errno
  tapi_cfg_l2tp_lns_connected_get(const char *ta, const char *lns, 
-                                 struct sockaddr_in *connected);
+                                 struct sockaddr_in ***connected, size_t *num);
 
 /**
  * Set the bit parameter's value for the specified LNS.
@@ -188,7 +197,7 @@ tapi_cfg_l2tp_lns_range_del(const char *ta, const char *lns,
  * @param ta          Test Agent
  * @param lns         The name of the section
  * @param param       Desired authentication
- * @param ins_name    true(yes) or false(no)
+ * @param instance    true(yes) or false(no)
  *
  * @return Status code
  */

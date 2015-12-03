@@ -30,7 +30,8 @@
     <object oid="/agent/l2tp/" 
         access="read_write" type="none"/>
 
-    <!-- The IP address of the interface on which the daemon listens
+    <!-- The IP address of the interface on which 
+         the daemon listens
          Name: empty-->
     <object oid="/agent/l2tp/listen" 
         access="read_write" type="integer"/>   
@@ -45,58 +46,22 @@
     <object oid="/agent/l2tp/lns" 
         access="read_write" type="none"/>
 
-    <!-- A root object for specifying the number of the
-         ipv4 pool and the pool itself 
-         Name: 'banned' determines the ip addresses which will not be assigned
-                to clients 
-               'allowed' determines the address pool-->
-    <object oid="/agent/l2tp/lns/ip" 
-        access="read_write" type="none"/>
+    <!-- This object stores the ranges of ipv4 addresses
+         which will(not) be assigned to the clients 
+         Name: allow<START>-<END> for allowed ip_ranges 
+               deny<START>-<END> for denied ip_ranges-->
+    <object oid="/agent/l2tp/lns/ip_range" >
 
-    <!-- As we can have several diaposons there is a necessity
-         to have an object which specifies the number of the interval
-         Name: interval nubmer -->
-    <object oid="/agent/l2tp/lns/ip/inum" 
-        access="read_write" type="none"/>
-
-    <!-- The beginning of the ipv4 pool
-         Name: empty-->
-    <object oid="/agent/l2tp/lns/ip/inum/start" 
-        access="read_write" type="integer"/>
-
-    <!-- The end of the ipv4 pool
-         Name: empty-->
-    <object oid="/agent/l2tp/lns/ip/inum/end" 
-        access="read_write" type="integer"/>
-
-    <!-- A root object for specifying the number of the
-         lac ranges and the lac ranges themselves 
-         Name: 'banned' determines the ip addresses of the clients
-                which will be ignored by LNS
-               'allowed' determines the ip addresses which can establish
-                the connection with LNS -->
-    <object oid="/agent/l2tp/lns/lac" 
-        access="read_write" type="none"/>
-
-    <!-- As we can have several diaposons there is a necessity
-         to have an object which specifies the number of the interval
-         Name: interval nubmer -->
-    <object oid="/agent/l2tp/lns/lac/lnum" 
-        access="read_write" type="none"/>
-
-    <!-- The beginning of the lac interval
-         Name: empty-->
-    <object oid="/agent/l2tp/lns/lac/lnum/start" 
-        access="read_write" type="integer"/>
-
-    <!-- The end of the lac interval
-         Name: empty-->
-    <object oid="/agent/l2tp/lns/lac/lnum/end" 
-        access="read_write" type="integer"/>
+    <!-- This object stores the ranges of LAC's ipv4 addresses
+         which can(can't) establish the connection with LNS
+         Name: allow<START>-<END> for allowed lac_ranges 
+               deny<START>-<END> for denied lac_ranges-->
+    <object oid="/agent/l2tp/lns/lac_range" >
 
     <!-- This identifier describes the connected
          clients to LNS
-         Name: IPv4 address from ip_range in human notation (with dots)-->
+         Name: IPv4 address from ip_range in 
+               human notation (with dots)-->
     <object oid="/agent/l2tp/lns/connected" 
         access="read_only" type="none"/>
 
@@ -156,7 +121,7 @@
     <!-- Use challenge authentication to authenticate peer.
          Name: empty
          Value: 0 (no) or 1 (yes) -->
-    <object oid="/agent/l2tp/lns/use_challange" 
+    <object oid="/agent/l2tp/lns/use_challenge" 
         access="read_write" type="integer"/>
 
     <!-- Use /etc/passwd for remote peer ppp authentication.
