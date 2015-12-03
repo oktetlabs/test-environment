@@ -1592,7 +1592,7 @@ process_cmd_line_opts(int argc, char **argv)
 
     cfg_files = poptGetArg(optCon);
     RING("%s: cfg_files=%s", __FUNCTION__, cfg_files);
-    cs_cfg_file[0] = strtok(cfg_files, " ");
+    cs_cfg_file[0] = strtok((char *)cfg_files, " ");
     RING("%s: cs_cfg_file=%s", __FUNCTION__, cs_cfg_file[0]);
     while( cfg_file_num < MAX_CFG_FILES &&
            cs_cfg_file[cfg_file_num++] != NULL) {
