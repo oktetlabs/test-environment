@@ -125,7 +125,7 @@ cd $PKGBUILDDIR ;
 
 # If the file 'Makefile' exists and its update was successful (auto start
 # autotools on the local machine), then we run 'make'
-if test -e Makefile && make Makefile ; then
+if test -e Makefile && recursive_update_makefiles '.' ; then
 # Code "echo=echo" was added, for bug fixing of a look "X--tag=CC: command not found"
 # See https://lists.gnu.org/archive/html/bug-libtool/2008-04/msg00011.html
     te_eval_or_ssh "${PLATFORM}" "
@@ -179,7 +179,7 @@ configure_package
 
 # If the file 'Makefile' could not create or update fails,
 # then we try to perform 'autotool'
-if test $? -ne 0 || ! make Makefile ; then
+if test $? -ne 0 || ! recursive_update_makefiles '.' ; then
     if test x${TE_NO_AUTOTOOL} != "xyes" ; then
         autotool
         configure_package

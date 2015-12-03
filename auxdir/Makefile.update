@@ -1,0 +1,9 @@
+include $(MASTER_FILE)
+update-recursive: $(MASTER_FILE)
+	for subdir in $(SUBDIRS); do \
+	    test -z "$$subdir" -o "$$subdir" = "." && continue; \
+	    $(MAKE) -C "$$subdir" \
+	        MASTER_FILE=$(MASTER_FILE) \
+	        MAKEFILE_UPDATE=$(MAKEFILE_UPDATE) \
+	        -f "$(MAKEFILE_UPDATE)" update-recursive; \
+	done

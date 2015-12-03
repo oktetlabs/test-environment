@@ -168,3 +168,17 @@ te_is_in_list() {
     done
     return 1
 }
+
+##
+# Recursively update Makefiles
+#
+# @param $1     Directory name
+#
+# @return exit code from @b make
+#
+recursive_update_makefiles() {
+    local filename="$TE_BASE/auxdir/Makefile.update"
+    make -C "$1" MASTER_FILE=Makefile MAKEFILE_UPDATE="$filename" \
+        -f "$filename" update-recursive
+    return $?
+}
