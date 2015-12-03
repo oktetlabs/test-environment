@@ -219,6 +219,7 @@ cfg_wipe_cmd_error(uint8_t type, cfg_handle handle)
     }
 }
 
+#if 0
 static void
 print_tree(cfg_instance *inst, int indent)
 {
@@ -279,6 +280,7 @@ print_otree(cfg_object *obj, int indent)
         RING("Configuration model objects tree:\n%Tf", "objects");
     }
 }
+#endif
 
 /**
  * Parse and execute the configuration file.
