@@ -120,11 +120,17 @@ Windows Test Agent
  
 Linux dependencies in 1 line (Debian packages):
 
-libxml2-dev (>= 2.6.10), libglib2.0-dev, libpopt-dev, libreadline-dev |
-libreadline5-dev (>= 5.0), tcl-dev, libxslt1-dev (>= 1.1.6), libexpat1-dev,
-flex (>= 2.5.31), gawk, ncurses-dev, libgss3 | libgss0 (>= 0.0.18),
-libiw-dev, pppoe, pppoeconf, libusb-dev, libpam0g-dev, autoconf (>= 2.61),
-automake1.9, bison, libxml-parser-perl
+build-essential, libxml2-dev (>= 2.6.10), libglib2.0-dev, libpopt-dev, 
+libreadline-dev | libreadline5-dev (>= 5.0), tcl-dev, 
+libxslt1-dev (>= 1.1.6), libexpat1-dev, flex (>= 2.5.31), 
+gawk, ncurses-dev, libgss3 | libgss0 (>= 0.0.18), libiw-dev, pppoe, 
+pppoeconf, libusb-dev, libpam0g-dev, autoconf (>= 2.61), 
+automake1.9 | automake (>= 1.9), ol-te-cross-libs, libperl-dev, bison, 
+libxml-parser-perl, libpcap0.8-dev, libsnmp-dev
+
+Recommends: libcurl4-openssl-dev (>= 7.18.1-1-basic1), gsoap
+
+Or, you can use ol-te meta-package from lenny-ol repository.
 
 Unix Test Agent dependencies in 1 line (Debian packages):
 
