@@ -1006,4 +1006,3 @@ pppoeserver_release(const char *name)
 
     return 0;
 }
-

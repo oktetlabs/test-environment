@@ -41,51 +41,51 @@
 #include "conf_api.h"
 
 /** Authentication type */
-enum auth_type {
-    CHAP      = 0,     /**< CHAP authentication */
-    PAP       = 1,     /**< PAP authentication */
-    REST_AUTH = 2      /**< Remote peer authentication */
+enum l2tp_auth_prot {
+    L2TP_AUTH_PROT_CHAP      = 0,     /**< CHAP authentication */
+    L2TP_AUTH_PROT_PAP       = 1,     /**< PAP authentication */
+    L2TP_AUTH_PROT_REST_AUTH = 2      /**< Remote peer authentication */
 };
 
 /** The law defining the type of the ip range */
-enum principle {
-    DENY  = 0,    /**< For ipv4 addresses which must be denied*/
-    ALLOW = 1     /**< For ipv4 addresses which must be allowed */
+enum l2tp_policy {
+    L2TP_POLICY_DENY  = 0,    /**< For ipv4 addresses which must be denied*/
+    L2TP_POLICY_ALLOW = 1     /**< For ipv4 addresses which must be allowed */
 };
 
 /** Type of the request for the auth_type */
-enum request {
-    REFUSE  = 0,    /**< Refuse CHAP|PAP|REST_AUTH */
-    REQUIRE = 1     /**< Require CHAP|PAP|REST_AUTH */
+enum l2tp_auth_policy {
+    L2TP_AUTH_POLICY_REFUSE  = 0,    /**< Refuse CHAP|PAP|REST_AUTH */
+    L2TP_AUTH_POLICY_REQUIRE = 1     /**< Require CHAP|PAP|REST_AUTH */
 };
 
 /** Subset to which the certain ip range addresses belongs */
-enum subset {
-    IP_RANGE  = 0,    /**< ip range*/
-    LAC       = 1     /**< lac */
+enum l2tp_iprange_class {
+    L2TP_IP_RANGE_CLASS_IP  = 0,    /**< ip range*/
+    L2TP_IP_RANGE_CLASS_LAC = 1     /**< lac */
 };
 
 /** Structure for the IP-address pool */
-typedef struct ipv4_range {
+typedef struct l2tp_ipv4_range {
     struct sockaddr_in start;   /**< The left boundary of the pool */
     struct sockaddr_in end;     /**< The right boundary of the pool */
-    enum principle     type;    /**< Above pool can be allowed or denied */
+    enum l2tp_policy   type;    /**< Above pool can be allowed or denied */
 } ipv4_range;
 
 /** CHAP|PAP secret structure */
-typedef struct ppp_secret {
-    enum auth_prot      is_chap;  /**< CHAP|PAP secret */
-    char               *client;   /**< Client name */
-    char               *server;   /**< Server name */
-    char               *secret;   /**< Secret name */
-    struct sockaddr_in  sipv4;    /**< IP address */
+typedef struct l2tp_ppp_secret {
+    enum l2tp_auth_prot  is_chap;  /**< CHAP|PAP secret */
+    char                *client;   /**< Client name */
+    char                *server;   /**< Server name */
+    char                *secret;   /**< Secret name */
+    struct sockaddr_in   sipv4;    /**< IP address */
 } ppp_secret;
 
 
 /** Structure for desired authentication */
-typedef struct auth {
-    enum auth_prot protocol; /**< CHAP|PAP|REST_AUTH */
-    enum principle type;     /**< REQUIRE|REFUSE */
+typedef struct l2tp_auth {
+    enum l2tp_auth_prot    protocol; /**< CHAP|PAP|REST_AUTH */
+    enum l2tp_auth_policy  type;     /**< REQUIRE|REFUSE */
 } auth;
 
 /**
