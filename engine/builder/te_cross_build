@@ -249,7 +249,7 @@ build() {
     declare -A CONSTRUCTED
 
     for ta in ${BUILD_TA_FOR} ; do
-        local TA_TYPE="${ta}_TA_TYPE"
+        local TA_TYPE="$(te_hostname2shname "${ta}_TA_TYPE")"
         local p=${!TA_TYPE}
         if test -z "$p" ; then
             echo "Unknown hostname (--build-ta-for=$ta)" >&2

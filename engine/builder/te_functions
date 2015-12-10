@@ -182,3 +182,20 @@ recursive_update_makefiles() {
         -f "$filename" update-recursive
     return $?
 }
+
+##
+# Convert hostname to valid for sh variable name
+#
+# @param $1     Hostname
+#
+# @return       Valid name of variable
+#
+te_hostname2shname() {
+    echo "$1" |
+    sed '
+        s/-/_1/g
+        s/\./_2/g
+        s/^[0-9]/_&/
+    '
+}
+
