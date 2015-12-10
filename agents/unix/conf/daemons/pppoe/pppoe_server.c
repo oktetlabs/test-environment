@@ -321,7 +321,7 @@ pppoe_server_stop(te_pppoe_server *pppoe)
 }
 
 /**
- * Stop pppoe-server process
+ * Start pppoe-server process
  *
  * @param pppoe   pppoe server structure
  *
