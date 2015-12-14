@@ -596,6 +596,13 @@
          Name: address+prefix -->
     <object oid="/agent/blackhole" access="read_create" type="none"/>
 
+    <!-- Routing policy database entry
+         Name: contains all fields of rule with delimiter ",".
+         List of available fields: priority, family, type, dstlen, src,
+         dst, goto, tos, fwmark, fwmask, table, flow, iifname, oifname.
+         e.g. "priority=32766,family=2,type=1,table=254" -->
+    <object oid="/agent/rule" access="read_create" type="none"/>
+
     <!-- RPC server.
          Name: RPC server name
          Value: name of the father -->
