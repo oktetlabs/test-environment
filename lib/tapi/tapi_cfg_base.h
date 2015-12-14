@@ -44,6 +44,7 @@
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "conf_api.h"
+#include "tapi_cfg_ip_rule.h"
 
 
 #ifdef __cplusplus
