@@ -38,8 +38,9 @@ ta_SOURCES = main.c ftp_routines.c log_remote.c aux_threads.c \
 
 ta_LDADD = symtbl.o conf/libconf.a rpc/libtarpc.a -lrcfpch \
            -l$(TAD) $(TE_LDADD) \
-           -lrpcxdr -lrpc_types -lconf_oid -lloggerta -lrcfpch -ltools \
-           $(EXTRA_LDADD)
+           -lrpcxdr -lrpc_types -lloggerta -lrcfpch -ltools \
+           $(EXTRA_LDADD) \
+           -lconf_oid
 
 CLEANFILES = symtbl.c
 

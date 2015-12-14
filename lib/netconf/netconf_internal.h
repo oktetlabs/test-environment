@@ -153,6 +153,13 @@ void netconf_route_node_free(netconf_node *node);
 void netconf_neigh_node_free(netconf_node *node);
 
 /**
+ * Free memory used by node of rule type.
+ *
+ * @param node          Node to free
+ */
+void netconf_rule_node_free(netconf_node *node);
+
+/**
  * Send request to kernel and receive response.
  *
  * @param nh            Neconf handle

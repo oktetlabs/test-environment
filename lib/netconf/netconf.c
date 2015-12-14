@@ -309,6 +309,10 @@ netconf_node_free(netconf_node *node)
             netconf_neigh_node_free(node);
             break;
 
+        case NETCONF_NODE_RULE:
+            netconf_rule_node_free(node);
+            break;
+
         default:
             NETCONF_ASSERT(0);
             free(node);

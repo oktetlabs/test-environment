@@ -24,6 +24,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "conf_ip_rule.h"
+
 /** Invalid netconf session handle */
 #define NETCONF_HANDLE_INVALID NULL
 
@@ -168,8 +170,12 @@ typedef enum netconf_node_type {
     NETCONF_NODE_LINK,                  /**< Network device */
     NETCONF_NODE_NET_ADDR,              /**< Network address */
     NETCONF_NODE_ROUTE,                 /**< Routing table entry */
-    NETCONF_NODE_NEIGH                  /**< Neighbour table entry */
+    NETCONF_NODE_NEIGH,                 /**< Neighbour table entry */
+    NETCONF_NODE_RULE                   /**< Rule entry in the routing
+                                             policy database */
 } netconf_node_type;
+
+typedef te_conf_ip_rule netconf_rule;
 
 /** Information node of the list */
 typedef struct netconf_node {
@@ -179,6 +185,7 @@ typedef struct netconf_node {
         netconf_net_addr  net_addr;
         netconf_route     route;
         netconf_neigh     neigh;
+        netconf_rule      rule;
     } data;                             /**< Network data */
     struct netconf_node  *next;         /**< Next node of the list */
     struct netconf_node  *prev;         /**< Previous node of the list */
@@ -294,6 +301,38 @@ int netconf_route_modify(netconf_handle nh, netconf_cmd cmd,
  */
 netconf_list *netconf_route_dump(netconf_handle nh,
                                  unsigned char family);
+
+/**
+ * Set default values to fields in rule struct.
+ *
+ * @param rule          Rule entry struct
+ */
+void netconf_rule_init(netconf_rule *rule);
+
+/**
+ * Get list of all rules. Free it with @b netconf_list_free() function.
+ *
+ * @param nh            Netconf session handle
+ * @param family        Address type to filter list
+ *                      (or AF_UNSPEC to get both)
+ *
+ * @return List, or @c NULL in case of error (check @b errno for details).
+ */
+netconf_list *netconf_rule_dump(netconf_handle nh,
+                                unsigned char family);
+
+/**
+ * Modify some rule. You should call netconf_rule_init() on struct
+ * before.
+ *
+ * @param nh            Netconf session handle
+ * @param cmd           Action to do
+ * @param rule          Rule to modify
+ *
+ * @return @c 0 on success, @c -1 on error (check @b errno for details).
+ */
+int netconf_rule_modify(netconf_handle nh, netconf_cmd cmd,
+                        const netconf_rule *rule);
 
 /**
  * Set default values to fields in neighbour struct.
