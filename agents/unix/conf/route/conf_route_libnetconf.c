@@ -87,10 +87,10 @@
 #include "unix_internal.h"
 #include "conf_route.h"
 #include "ta_common.h"
+#include "conf_netconf.h"
 
 #include <netconf.h>
 
-extern netconf_handle nh;
 
 /** Max length of temporary buffer for list functions */
 #define BUF_MAXLENGTH (4096)

@@ -2,8 +2,9 @@
 ACLOCAL_AMFLAGS = -I $(TE_M4)
 
 AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/include $(TE_CPPFLAGS) \
-              -I$(srcdir)/.. -I$(srcdir)/util -I$(srcdir)/route \
-              -I$(srcdir)/daemons -I. @EXTRA_CPPFLAGS@ $(TE_CPPFLAGS_VAR)
+              -I$(srcdir)/.. -I$(srcdir)/base -I$(srcdir)/util \
+              -I$(srcdir)/route -I$(srcdir)/daemons -I. \
+              @EXTRA_CPPFLAGS@ $(TE_CPPFLAGS_VAR)
 
 AM_CFLAGS = -fno-strict-aliasing $(TE_CFLAGS) $(TE_CFLAGS_VAR)
 
@@ -18,6 +19,7 @@ ta_SCRIPTS=daemons/ldap/slapd_run.sh
 EXTRA_DIST=daemons/ldap/slapd.conf daemons/ldap/slapd_run.sh
 
 noinst_HEADERS = \
+	base/conf_netconf.h \
 	route/conf_route.h \
 	util/conf_dlpi.h \
 	util/te_cmd_monitor.h
