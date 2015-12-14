@@ -669,6 +669,69 @@ te_sockaddr2str(const struct sockaddr *sa)
 
 
 /* See the description in te_sockaddr.h */
+te_errno
+te_sockaddr_h2str(const struct sockaddr *sa, char **string)
+{
+    char buf[INET6_ADDRSTRLEN];
+    const char* result = NULL;
+
+    switch(sa->sa_family)
+    {
+        case AF_INET:
+        case AF_INET6:
+            result = inet_ntop(sa->sa_family,
+                               sa->sa_family == AF_INET ?
+                               (const void *)&(CONST_SIN (sa)->sin_addr ) :
+                               (const void *)&(CONST_SIN6(sa)->sin6_addr),
+                               buf, sizeof(buf));
+            break;
+
+        default:
+            *string = NULL;
+            return TE_RC(TE_TOOL_EXT, TE_EAFNOSUPPORT);
+    }
+
+    if (result == NULL)
+    {
+        *string = NULL;
+        return TE_OS_RC(TE_TOOL_EXT, errno);
+    }
+
+    *string = strdup(buf);
+    return 0;
+}
+
+
+/* See the description in te_sockaddr.h */
+te_errno
+te_sockaddr_str2h(const char *string, struct sockaddr *sa)
+{
+    int result;
+    /*
+     * It's an simple check on an address type (127.0.0.1 or ff01::01).
+     * Then `inet_pton` function performs a full check and parse value.
+     */
+    if (strchr(string, ':') != NULL)
+    {
+        sa->sa_family = AF_INET6;
+        result = inet_pton(AF_INET6, string, &SIN6(sa)->sin6_addr);
+    }
+    else
+    {
+        sa->sa_family = AF_INET;
+        result = inet_pton(AF_INET, string, &SIN(sa)->sin_addr);
+    }
+
+    switch(result)
+    {
+        case  1: return 0;
+        case -1: return TE_RC(TE_TOOL_EXT, TE_EAFNOSUPPORT);
+        default: return TE_RC(TE_TOOL_EXT, TE_EINVAL);
+    }
+}
+
+
+/* See the description in te_sockaddr.h */
 void
 te_mreq_set_mr_multiaddr(int af, void *mreq, const void *addr)
 {

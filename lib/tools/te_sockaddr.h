@@ -337,6 +337,36 @@ extern int te_sockaddrncmp(const struct sockaddr *a1, socklen_t a1len,
 extern const char *te_sockaddr2str(const struct sockaddr *sa);
 
 /**
+ * Convert a @b sockaddr to a string or return an error.
+ *
+ * @param [in]sa        source @b sockaddr
+ * @param [out]string   result of conversion
+ *
+ * @return                      status code
+ * @retval 0                    successful
+ * @retval TE_EAFNOSUPPORT      family is not supported
+ * @retval value of @b errno    @b inet_ntop was fail
+ *
+ * @note Free allocated memory on @b string
+ */
+extern te_errno te_sockaddr_h2str(const struct sockaddr *sa,
+                                  char **string);
+
+/**
+ * Convert a string to a @b sockaddr or return an error.
+ *
+ * @param [in]string    source string
+ * @param [out]sa       result @b sockaddr
+ *
+ * @return                      status code
+ * @retval 0                    successful
+ * @retval TE_EAFNOSUPPORT      family is not supported
+ * @retval TE_EINVAL            @p string doesn't contain a valid network
+ *                              address
+ */
+extern te_errno te_sockaddr_str2h(const char *string, struct sockaddr *sa);
+
+/**
  * Returns the size of network address from a particular family
  *
  * @param af  Address family
