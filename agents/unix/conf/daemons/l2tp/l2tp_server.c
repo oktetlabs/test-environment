@@ -5,22 +5,22 @@
 #include "rcf_ch_api.h"
 
 /** L2TP global section name */
-#define L2TP_GLOBAL "[global]"
+#define L2TP_GLOBAL           "[global]"
 
 /** L2TP executable file */
-#define L2TP_SERVER_EXEC "/etc/init.d/xl2tpd"
+#define L2TP_SERVER_EXEC      "/etc/init.d/xl2tpd"
 
 /** L2TP config file */
-#define L2TP_SERVER_CONF "/usr/sbin/xl2tpd.conf"
+#define L2TP_SERVER_CONF      "/usr/sbin/xl2tpd.conf"
 
 /** CHAP secrets file */
-#define L2TP_CHAP_SECRETS "/etc/ppp/chap-secrets"
+#define L2TP_CHAP_SECRETS     "/etc/ppp/chap-secrets"
 
 /** PAP secrets file */
-#define L2TP_PAP_SECRETS "/etc/ppp/pap-secrets"
+#define L2TP_PAP_SECRETS      "/etc/ppp/pap-secrets"
 
 /** Name of the option in L2TP config file */
-#define PPP_OPTIONS "pppoptfile"
+#define PPP_OPTIONS           "pppoptfile"
 
 /** Default buffer size for command-line construction */
 #define L2TP_SERVER_LIST_SIZE 1024
@@ -41,7 +41,6 @@ enum l2tp_secret_prot {
 enum l2tp_option_type {
     L2TP_OPTION_TYPE_PPP    = 0, /**< PPP options class */
     L2TP_OPTION_TYPE_L2TP   = 1, /**< L2TP options class */
-    L2TP_OPTION_TYPE_SECRET = 2  /**< CHAP|PAP secrets class */
 };
 
 /** CHAP|PAP secret structure */
@@ -119,26 +118,6 @@ l2tp_server_find()
 }
 
 /**
- * Return pointer to L2TP section structure
- * @param l2tp         L2TP server structure
- * @param name         Name of the section in the following
- *                     format - [lns default]|[global]
- *
- * @return L2TP section structure
- */
-static te_l2tp_section *
-l2tp_section_find(te_l2tp_server *l2tp, const char *name)
-{
-    te_l2tp_section *l2tp_section;
-
-    for (l2tp_section = SLIST_FIRST(&l2tp->section);
-        l2tp_section != NULL && strcmp(l2tp_section->secname, name) != 0;
-        l2tp_section = SLIST_NEXT(l2tp_section, list));
-
-    return l2tp_section;
-}
-
-/**
  * Prepare configuration file for L2TP server
  *
  * @param l2tp    l2tp server structure
@@ -170,7 +149,7 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
-    //THERE MUST BE DEFAULT OPTIONS ADDING
+    //THERE MUST BE DEFAULT OPTIONS ADDING????
 
     for (l2tp_section = SLIST_FIRST(&l2tp->section); l2tp_section != NULL;
             l2tp_section = SLIST_NEXT(l2tp_section, list))
@@ -399,7 +378,16 @@ l2tp_server_commit(unsigned int gid, const char *oid)
     return 0;
 }
 
-
+/**
+ * Find l2tp server option in options list
+ *
+ * @param l2tp          l2tp server structure
+ * @param section       lns section where certain option is located
+ * @param type          the class of the options (L2TP|PPP)
+ * @param name          option name to look for
+ *
+ * @return l2tp server option structure
+ */
 static te_l2tp_option *
 l2tp_find_option(te_l2tp_server *l2tp, const char *section,
                  enum l2tp_option_type type, const char *name)
@@ -432,9 +420,20 @@ l2tp_find_option(te_l2tp_server *l2tp, const char *section,
     return opt;
 }
 
+/**
+ * Get callback for /agent/l2tp/listen or /agent/l2tp/port node.
+ *
+ * @param gid           group identifier
+ * @param oid           full identifier of the father instance
+ * @param value         returned server option value
+ * @param l2tp_name     name of the l2tp instance is always empty
+ * @param option        instance name to look for (listen|port)
+ *
+ * @return status code
+ */
 static te_errno
 l2tp_global_opt_get(unsigned gid, const char *oid, const char *value,
-                const char *l2tp_name, const char *option)
+                    const char *l2tp_name, const char *option)
 {
     te_l2tp_server *l2tp = l2tp_server_find();
     te_l2tp_option *opt;
@@ -453,6 +452,17 @@ l2tp_global_opt_get(unsigned gid, const char *oid, const char *value,
     return TE_RC(TE_TA_UNIX,TE_ENOENT);
 }
 
+/**
+ * Set callback for /agent/l2tp/listen or /agent/l2tp/port node.
+ *
+ * @param gid           group identifier
+ * @param oid           full identifier of the father instance
+ * @param value         l2tp server option value
+ * @param l2tp_name     name of the l2tp instance is always empty
+ * @param option        option name to modify
+ *
+ * @return status code
+ */
 static te_errno
 l2tp_global_opt_set(unsigned int gid, const char *oid, const char *value,
                     const char *l2tp_name, const char *option)
@@ -476,65 +486,111 @@ l2tp_global_opt_set(unsigned int gid, const char *oid, const char *value,
     return TE_RC(TE_TA_UNIX,TE_ENOENT);
 }
 
+/**
+ * Return pointer to L2TP section structure
+ * @param l2tp         L2TP server structure
+ * @param name         Name of the section in the following
+ *                     format - [lns default]|[global]
+ *
+ * @return L2TP section structure
+ */
+static te_l2tp_section *
+l2tp_section_find(te_l2tp_server *l2tp, const char *name)
+{
+    te_l2tp_section *l2tp_section;
+
+    for (l2tp_section = SLIST_FIRST(&l2tp->section);
+         l2tp_section != NULL && strcmp(l2tp_section->secname, name) != 0;
+         l2tp_section = SLIST_NEXT(l2tp_section, list));
+
+    return l2tp_section;
+}
+
+/**
+ * Add callback for /agent/l2tp/lns node.
+ *
+ * @param gid           group identifier
+ * @param oid           full identifier of the father instance
+ * @param value         unused value of /agent/l2tp/lns instance
+ * @param l2tp_name     name of the l2tp instance is always empty
+ * @param name          lns section name to add to the list
+ *
+ * @return status code
+ */
 static te_errno
-l2tp_global_opt_add(unsigned int gid, const char *oid, const char *value,
-                    const char *l2tp_name, const char *option)
+l2tp_lns_section_add(unsigned int gid, const char *oid, const char *value,
+                     const char *l2tp_name, const char *name)
 {
     te_l2tp_server  *l2tp = l2tp_server_find();
-    te_l2tp_section *l2tp_section = l2tp_section_find(l2tp, L2TP_GLOBAL);;
-    te_l2tp_option  *opt;
+    te_l2tp_section *l2tp_section;
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(l2tp_name);
 
-    if ((opt = l2tp_find_option(l2tp, L2TP_GLOBAL, L2TP_OPTION_TYPE_L2TP,
-                                option)) != NULL)
+    if ((l2tp_section = l2tp_section_find(l2tp, name)) != NULL)
     {
         return TE_RC(TE_TA_UNIX,  TE_EEXIST);
     }
 
-    opt = (te_l2tp_option *)malloc(sizeof(te_l2tp_option));
-    memset(opt, '\0', sizeof(sizeof(opt)));
-    opt->name = strdup(option);
-    opt->value = strdup(value);
-    SLIST_INSERT_HEAD(&l2tp_section->l2tp_option, opt, list);
+    l2tp_section = (te_l2tp_section *)malloc(sizeof(te_l2tp_section));
+    memset(l2tp_section, '\0', sizeof(sizeof(l2tp_section)));
+    l2tp_section->secname = strdup(name);
+
+    SLIST_INSERT_HEAD(&l2tp->section, l2tp_section, list);
     l2tp->changed = TRUE;
 
     return 0;
 
 }
 
+/**
+ * Delete callback from /agent/l2tp/lns node.
+ *
+ * @param gid           group identifier
+ * @param oid           full identifier of the father instance
+ * @param l2tp_name     name of the l2tp instance is always empty
+ * @param name          lns section name to add to the list
+ *
+ * @return status code
+ */
 static te_errno
-l2tp_global_option_del(unsigned int gid, const char *oid, const char *value,
-                       const char *l2tp_name, const char *option)
+l2tp_lns_section_del(unsigned int gid, const char *oid,
+                     const char *l2tp_name, const char *name)
 {
     te_l2tp_server  *l2tp = l2tp_server_find();
-    te_l2tp_section *l2tp_section = l2tp_section_find(l2tp, L2TP_GLOBAL);
-    te_l2tp_option  *opt;
+    te_l2tp_section *l2tp_section;
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(l2tp_name);
 
-    if ((opt = l2tp_find_option(l2tp, L2TP_GLOBAL, L2TP_OPTION_TYPE_L2TP,
-                                    option)) == NULL)
+    if ((l2tp_section = l2tp_section_find(l2tp, name)) == NULL)
     {
-        TE_RC(TE_TA_UNIX,TE_ENOENT);
+        return TE_RC(TE_TA_UNIX,  TE_ENOENT);
     }
-    SLIST_REMOVE(&l2tp_section->l2tp_option, opt, te_l2tp_option, list);
+    SLIST_REMOVE(&l2tp->section, l2tp_section, te_l2tp_section, list);
     l2tp->changed = TRUE;
 
     return 0;
 }
 
+/**
+ * List callback for /agent/l2tp/lns node.
+ *
+ * @param gid           group identifier
+ * @param oid           full identifier of the father instance
+ * @param list          location of the lns sections list
+ * @param l2tp_name     name of the l2tp instance is always empty
+
+ * @return status code
+ */
 static te_errno
-l2tp_option_list(unsigned int gid, const char *oid, char **list,
-                        const char *l2tp_name, const char *option)
+l2tp_lns_section_list(unsigned int gid, const char *oid,
+                      char **list, const char *l2tp_name)
 {
     te_l2tp_server  *l2tp = l2tp_server_find();
-    te_l2tp_section *l2tp_section = l2tp_section_find(l2tp, L2TP_GLOBAL);
-    te_l2tp_option  *opt;
+    te_l2tp_section *l2tp_section;
     uint32_t         list_size;
     uint32_t         list_len;
 
@@ -543,15 +599,15 @@ l2tp_option_list(unsigned int gid, const char *oid, char **list,
     UNUSED(l2tp_name);
 
     list_size = L2TP_SERVER_LIST_SIZE;
-    if ((*list = (char *)calloc(1, list_size))  == NULL)
+    if ((*list = (char *)calloc(1, list_size)) == NULL)
     {
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
     list_len = 0;
 
-    SLIST_FOREACH(opt, &l2tp_section->l2tp_option, list)
+    SLIST_FOREACH(l2tp_section, &l2tp->section, list)
     {
-        if (list_len + strlen(opt->name) + 1 >= list_size)
+        if (list_len + strlen(l2tp_section->secname) + 1 >= list_size)
         {
             list_size *= 2;
             if ((*list = realloc(*list, list_size)) == NULL)
@@ -560,10 +616,16 @@ l2tp_option_list(unsigned int gid, const char *oid, char **list,
             }
         }
 
-        list_len += sprintf(*list + list_len, "%s ", opt->name);
+        list_len += sprintf(*list + list_len, "%s ", l2tp_section->secname);
     }
 
     return 0;
+
+}
+
+static te_errno
+l2tp_ip_range_get()
+{
 
 }
 
@@ -574,20 +636,23 @@ static rcf_pch_cfg_object node_l2tp_listen =
         { "listen", 0, NULL, NULL,
           (rcf_ch_cfg_get)l2tp_global_opt_get,
           (rcf_ch_cfg_set)l2tp_global_opt_set,
-          (rcf_ch_cfg_add)l2tp_global_option_del,
-          (rcf_ch_cfg_del)l2tp_global_option_del,
-          NULL, NULL, &node_l2tp};
+          NULL, NULL, NULL, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_port =
         { "port", 0, NULL, &node_l2tp_listen,
           (rcf_ch_cfg_get)l2tp_global_opt_get,
           (rcf_ch_cfg_set)l2tp_global_opt_set,
-          (rcf_ch_cfg_add)l2tp_global_option_del,
-          (rcf_ch_cfg_del)l2tp_global_option_del,
-          NULL, NULL, &node_l2tp};
+          NULL, NULL, NULL, NULL, &node_l2tp };
 
-static rcf_pch_cfg_object node_l2tp_lns;
 static rcf_pch_cfg_object node_l2tp_lns_ip;
+
+static rcf_pch_cfg_object node_l2tp_lns =
+        { "lns", 0, &node_l2tp_lns_ip, &node_l2tp_port,
+         NULL, NULL,
+         (rcf_ch_cfg_add)l2tp_lns_section_add,
+         (rcf_ch_cfg_del)l2tp_lns_section_del,
+         (rcf_ch_cfg_list)l2tp_lns_section_list, NULL, &node_l2tp };
+
 static rcf_pch_cfg_object node_l2tp_lns_ip_range;
 static rcf_pch_cfg_object node_l2tp_lns_lac_range;
 static rcf_pch_cfg_object node_l2tp_connected;
@@ -607,6 +672,3 @@ static rcf_pch_cfg_object node_l2tp_lns_einterval;
 static rcf_pch_cfg_object node_l2tp_lns_efailure;
 static rcf_pch_cfg_object node_l2tp_lns_pppopt;
 
-typedef struct boo {
-    int a;
-} boo;
