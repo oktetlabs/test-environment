@@ -350,7 +350,7 @@ wpa_supp_start(const char *ifname, const char *conf_fname)
              "wext -B >/dev/null 2>&1", ifname, conf_fname);
 #else
     snprintf(buf, sizeof(buf),
-             "/sbin/wpa_supplicant -i %s -c %s -D "
+             "/sbin/wpa_supplicant -dd -i %s -c %s -D "
              "wext -B", ifname, conf_fname);
 #endif
 
