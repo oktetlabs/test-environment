@@ -178,8 +178,17 @@ rule_list_cb_internal(struct nlmsghdr *h, netconf_list *list)
         {
             CASE_SOCKADDR(FRA_DST,      dst,        DST);
             CASE_SOCKADDR(FRA_SRC,      src,        SRC);
+/*
+ * The name @b FRA_IFNAME in old kernel headers (for example 2.6.32) is
+ * the member of enum, but in new headers the name is defined as
+ * "define" variable.
+ */
+#ifdef FRA_IFNAME
             CASE_STRING  (FRA_IIFNAME,  iifname,    IIFNAME);
             CASE_STRING  (FRA_OIFNAME,  oifname,    OIFNAME);
+#else
+            CASE_STRING  (FRA_IFNAME,   iifname,    IIFNAME);
+#endif
             CASE_UINT32  (FRA_GOTO,     goto_index, GOTO);
             CASE_UINT32  (FRA_PRIORITY, priority,   PRIORITY);
             CASE_UINT32  (FRA_FWMARK,   fwmark,     FWMARK);
@@ -378,8 +387,17 @@ rule_modify(netconf_handle nh, netconf_cmd cmd, const netconf_rule *rule,
 
     NETCONF_APPEND_RTA_SOCKADDR(FRA_DST,      dst,        DST);
     NETCONF_APPEND_RTA_SOCKADDR(FRA_SRC,      src,        SRC);
+/*
+ * The name @b FRA_IFNAME in old kernel headers (for example 2.6.32) is
+ * the member of enum, but in new headers the name is defined as
+ * "define" variable.
+ */
+#ifdef FRA_IFNAME
     NETCONF_APPEND_RTA_STR     (FRA_IIFNAME,  iifname,    IIFNAME);
     NETCONF_APPEND_RTA_STR     (FRA_OIFNAME,  oifname,    OIFNAME);
+#else
+    NETCONF_APPEND_RTA_STR     (FRA_IFNAME,   iifname,    IIFNAME);
+#endif
     NETCONF_APPEND_RTA_FIELD   (FRA_GOTO,     goto_index, GOTO);
     NETCONF_APPEND_RTA_FIELD   (FRA_PRIORITY, priority,   PRIORITY);
     NETCONF_APPEND_RTA_FIELD   (FRA_FWMARK,   fwmark,     FWMARK);
