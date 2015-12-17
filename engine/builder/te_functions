@@ -90,6 +90,11 @@ te_ta_signature_local()
             ' >$TEMP_IN
             local TEMP_OUT=$(mktemp)
             $CC $TEMP_IN -o $TEMP_OUT
+            if test $? -ne 0; then
+                echo "Cannot build application to get variable"\
+                    "LINUX_VERSION_CODE" >&2
+                exit 1
+            fi
             local LIBC=`ldd $TEMP_OUT |
                 sed -n "s/^\s*libc.so.6 => \(.*\)(0x[0-9a-f]*)$/\1/p"`
             local LINUX_VERSION_CODE=`$TEMP_OUT`
@@ -126,6 +131,9 @@ te_ta_signature()
         . '${TE_BASE}/engine/builder/te_functions'
         te_ta_signature_local '$CC'
     "
+    local RES=$?
+    test $RES -ne 0 && exit $RES
+    return 0
 }
 
 
