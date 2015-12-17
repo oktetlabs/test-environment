@@ -23,7 +23,7 @@
 #define PPP_OPTIONS           "pppoptfile"
 
 /** Default buffer size for command-line construction */
-#define L2TP_SERVER_LIST_SIZE 1024
+#define L2TP_SERVER_LIST_SIZE 2048
 
 /**
  * Default amount of memory allocated for list methods
