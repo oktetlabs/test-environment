@@ -265,8 +265,7 @@ pppoe_server_is_running(te_pppoe_server *pppoe)
 
     UNUSED(pppoe);
 
-    sprintf(buf, 
-     " | grep -v grep | grep -q %s >/dev/null 2>&1",
+    sprintf(buf, PS_ALL_COMM " | grep -v grep | grep -q %s >/dev/null 2>&1",
             PPPOE_SERVER_EXEC);
 
     is_running = (ta_system(buf) == 0);
