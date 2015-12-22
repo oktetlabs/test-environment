@@ -34,7 +34,7 @@
          the daemon listens
          Name: empty-->
     <object oid="/agent/l2tp/listen" 
-        access="read_write" type="integer"/>   
+        access="read_write" type="address"/>   
 
     <!-- The UDP port xl2tpd should use.
          Name: empty-->
@@ -42,7 +42,7 @@
         access="read_write" type="integer"/>  
 
     <!-- An object for the LNS section
-         Name: LNS session name -->
+         Name: LNS section name -->
     <object oid="/agent/l2tp/lns" 
         access="read_write" type="none"/>
 
@@ -69,7 +69,7 @@
          ipv4 address of the L2TP server
          Name: empty -->
     <object oid="/agent/l2tp/lns/local_ip" 
-        access="read_write" type="integer"/>
+        access="read_write" type="address"/>
 
     <!-- The L2TP additional bits.
          Name: hidden, length, flow 
@@ -78,44 +78,43 @@
         access="read_write" type="integer"/>
 
     <!-- Authentication methods.
-         Name: chap, pap or empty.
-         Empty name is needed for the remote peer 
-         to authenticate itself. -->
-    <object oid="/agent/l2tp/lns/authentication" 
+         Name: chap, pap or authentication for
+         the remote peer to authenticate itself. -->
+    <object oid="/agent/l2tp/lns/auth" 
         access="read_write" type="none"/>
 
     <!-- Whether refuse the authentication.
          Name: yes, no -->
-    <object oid="/agent/l2tp/lns/authentication/refuse" 
+    <object oid="/agent/l2tp/lns/auth/refuse" 
         access="read_write" type="none"/>
 
     <!-- Whether require the authentication.
          Name: yes, no -->
-    <object oid="/agent/l2tp/lns/authentication/require" 
+    <object oid="/agent/l2tp/lns/auth/require" 
         access="read_write" type="none"/>
 
     <!-- Client name for the authentication secrets.
          Name: any 
                "*" indicates that any client is allowed-->
-    <object oid="/agent/l2tp/lns/authentication/client" 
+    <object oid="/agent/l2tp/lns/auth/client" 
         access="read_write" type="none"/>
 
     <!-- Server name for the authentication secrets.
          Name: any 
                "*" indicates that any server is allowed -->
-    <object oid="/agent/l2tp/lns/authentication/client/server" 
+    <object oid="/agent/l2tp/lns/auth/client/server" 
         access="read_write" type="none"/>    
 
     <!-- Secret for the authentication secrets.
          Name: any
                "*" indicates that any secret is allowed -->
-    <object oid="/agent/l2tp/lns/authentication/client/secret" 
+    <object oid="/agent/l2tp/lns/auth/client/secret" 
         access="read_write" type="string"/>    
 
     <!-- IPv4 for the authentication secrets.
          Name: IPv4 in human notation (with dots) 
                "*" indicates that any IP address is allowed -->
-    <object oid="/agent/l2tp/lns/authentication/client/ipv4" 
+    <object oid="/agent/l2tp/lns/auth/client/ipv4" 
         access="read_write" type="none"/>          
 
     <!-- Use challenge authentication to authenticate peer.
