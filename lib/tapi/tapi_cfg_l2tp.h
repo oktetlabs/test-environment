@@ -70,7 +70,7 @@ typedef struct l2tp_ipv4_range {
     struct sockaddr_in start;   /**< The left boundary of the pool */
     struct sockaddr_in end;     /**< The right boundary of the pool */
     enum l2tp_policy   type;    /**< Above pool can be allowed or denied */
-} ipv4_range;
+} l2tp_ipv4_range;
 
 /** CHAP|PAP secret structure */
 typedef struct l2tp_ppp_secret {
@@ -94,13 +94,13 @@ typedef struct l2tp_auth {
  * @param ta            Test Agent
  * @param lns           If NULL the global listen ip will be set,
                         otherwise it will set local ip to the specified lns
- * @param local         New IP adress
+ * @param local         New IP address
  *
  * @return Status code
  */
- extern te_errno
- tapi_cfg_l2tp_ip_set(const char *ta, const char *lns, 
-                      struct sockaddr_in *local);
+extern te_errno
+tapi_cfg_l2tp_ip_set(const char *ta, const char *lns,
+                     struct sockaddr_in *local);
 
 /**
  * Get a current listen/local ip.
@@ -113,40 +113,42 @@ typedef struct l2tp_auth {
  * @return Status code
  */
 
- extern te_errno
- tapi_cfg_l2tp_ip_get(const char *ta, const char *lns, 
-                      struct sockaddr_in *local);
+extern te_errno
+tapi_cfg_l2tp_ip_get(const char *ta, const char *lns,
+                     struct sockaddr_in *local);
 
 /**
  * Add ip range to the configuration.
  *
  * @param ta            Test Agent
  * @param lns           The name of the section to modify
- * @param ipv4_range    IP address pool
+ * @param iprange       IP address pool
  * @param law           The class of the added ip range
                         ALLOW|BAN
  *
  * @return Status code
  */
 
-extern te_errno 
-tapi_cfg_l2tp_lns_range_add(const char *ta, const char *lns, 
-                            const ipv4_range *iprange, enum subset kind);
+extern te_errno
+tapi_cfg_l2tp_lns_range_add(const char *ta, const char *lns,
+                            const l2tp_ipv4_range *iprange, 
+                            enum l2tp_iprange_class kind);
 
 /**
  * Delete specified ip range from the configuration.
  *
  * @param ta            Test Agent
  * @param lns           The name of the section to modify
- * @param ipv4_range    IP address pool
+ * @param iprange    IP address pool
  * @param law           The class of the removed ip range
                         ALLOW|BAN
  *
  * @return Status code
  */
-extern te_errno 
+extern te_errno
 tapi_cfg_l2tp_lns_range_del(const char *ta, const char *lns,
-                            const ipv4_range *iprange, enum subset kind);
+                            const l2tp_ipv4_range *iprange, 
+                            enum l2tp_iprange_class kind);
 
 /**
  * Get the list of connected clients.
@@ -158,9 +160,9 @@ tapi_cfg_l2tp_lns_range_del(const char *ta, const char *lns,
  * @return Status code
  */
 
- extern te_errno
- tapi_cfg_l2tp_lns_connected_get(const char *ta, const char *lns, 
-                                 struct sockaddr_in ***connected, size_t *num);
+extern te_errno
+tapi_cfg_l2tp_lns_connected_get(const char *ta, const char *lns,
+                                struct sockaddr_in ***connected, size_t *num);
 
 /**
  * Set the bit parameter's value for the specified LNS.
@@ -173,9 +175,9 @@ tapi_cfg_l2tp_lns_range_del(const char *ta, const char *lns,
  *
  * @return Status code
  */
- extern te_errno
- tapi_cfg_l2tp_lns_bit_set(const char *ta, const char *lns, 
-                           const char *bit_name, bool selector);
+extern te_errno
+tapi_cfg_l2tp_lns_bit_set(const char *ta, const char *lns,
+                          const char *bit_name, bool selector);
 
 /**
  * Get the bit parameter's value for the specified LNS.
@@ -187,9 +189,9 @@ tapi_cfg_l2tp_lns_range_del(const char *ta, const char *lns,
  *
  * @return Status code
  */
- extern te_errno
- tapi_cfg_l2tp_lns_bit_get(const char *ta, const char *lns, 
-                           const char *bit_name, bool *selector);
+extern te_errno
+tapi_cfg_l2tp_lns_bit_get(const char *ta, const char *lns,
+                          const char *bit_name, bool *selector);
 
 /**
  * Set the instance to yes or no for "/authentication/refuse|require".
@@ -201,23 +203,23 @@ tapi_cfg_l2tp_lns_range_del(const char *ta, const char *lns,
  *
  * @return Status code
  */
- extern te_errno
- tapi_cfg_l2tp_lns_set_auth(const char *ta, const char *lns, 
-                            auth_prot param, bool ins_name);
- /**
- * Get the instance name "/authentication/refuse|require".
- *
- * @param ta          Test Agent
- * @param lns         The name of the section
- * @param param       Desired authentication
- * @param instance    Returned pointer to the authentication parameter,
-                      like "yes" or "no"
- *
- * @return Status code
- */
- extern te_errno
- tapi_cfg_l2tp_lns_get_auth(const char *ta, const char *lns, 
-                            auth_prot param, char *instance);
+extern te_errno
+tapi_cfg_l2tp_lns_set_auth(const char *ta, const char *lns,
+                           enum l2tp_auth_prot param, bool ins_name);
+/**
+* Get the instance name "/authentication/refuse|require".
+*
+* @param ta          Test Agent
+* @param lns         The name of the section
+* @param param       Desired authentication
+* @param instance    Returned pointer to the authentication parameter,
+                     like "yes" or "no"
+*
+* @return Status code
+*/
+extern te_errno
+tapi_cfg_l2tp_lns_get_auth(const char *ta, const char *lns,
+                           enum l2tp_auth_prot param, char *instance);
 
 /**
  * Add chap|pap secret.
@@ -229,9 +231,9 @@ tapi_cfg_l2tp_lns_range_del(const char *ta, const char *lns,
  * @return Status code
  */
 
-extern te_errno 
-tapi_cfg_l2tp_lns_secret_add(const char *ta, const char *lns, 
-                             const ppp_secret *new_secret);
+extern te_errno
+        tapi_cfg_l2tp_lns_secret_add(const char *ta, const char *lns,
+                                     const ppp_secret *new_secret);
 /**
  * Delete chap|pap secret.
  *
@@ -242,8 +244,8 @@ tapi_cfg_l2tp_lns_secret_add(const char *ta, const char *lns,
  * @return Status code
  */
 
-extern te_errno 
-tapi_cfg_l2tp_lns_secret_delete(const char *ta, const char *lns, 
+extern te_errno
+tapi_cfg_l2tp_lns_secret_delete(const char *ta, const char *lns,
                                 const ppp_secret *prev_secret);
 
 /**
@@ -256,7 +258,7 @@ tapi_cfg_l2tp_lns_secret_delete(const char *ta, const char *lns,
  * @return Status code
  */
 
-extern te_errno 
+extern te_errno
 tapi_cfg_l2tp_lns_mtu_set(const char *ta, const char *lns, int value);
 
 /**
@@ -269,7 +271,7 @@ tapi_cfg_l2tp_lns_mtu_set(const char *ta, const char *lns, int value);
  * @return Status code
  */
 
-extern te_errno 
+extern te_errno
 tapi_cfg_l2tp_lns_mtu_get(const char *ta, const char *lns, int *value);
 
 /**
@@ -282,7 +284,7 @@ tapi_cfg_l2tp_lns_mtu_get(const char *ta, const char *lns, int *value);
  * @return Status code
  */
 
-extern te_errno 
+extern te_errno
 tapi_cfg_l2tp_lns_mru_set(const char *ta, const char *lns, int value);
 
 /**
@@ -308,9 +310,9 @@ tapi_cfg_l2tp_lns_mru_get(const char *ta, const char *lns, int *value);
  * @return Status code
  */
 
-extern te_errno 
-tapi_cfg_l2tp_lns_lcp_echo_failure_set(const char *ta, const char *lns,
-                                       int value);
+extern te_errno
+        tapi_cfg_l2tp_lns_lcp_echo_failure_set(const char *ta, const char *lns,
+                                               int value);
 
 /**
  * Get lcp-echo-failure.
@@ -322,7 +324,7 @@ tapi_cfg_l2tp_lns_lcp_echo_failure_set(const char *ta, const char *lns,
  * @return Status code
  */
 
-extern te_errno 
+extern te_errno
 tapi_cfg_l2tp_lns_lcp_echo_failure_get(const char *ta, const char *lns,
                                        int *value);
 
@@ -336,7 +338,7 @@ tapi_cfg_l2tp_lns_lcp_echo_failure_get(const char *ta, const char *lns,
  * @return Status code
  */
 
-extern te_errno 
+extern te_errno
 tapi_cfg_l2tp_lns_lcp_echo_interval_set(const char *ta, const char *lns,
                                         int value);
 
@@ -350,7 +352,7 @@ tapi_cfg_l2tp_lns_lcp_echo_interval_set(const char *ta, const char *lns,
  * @return Status code
  */
 
-extern te_errno 
+extern te_errno
 tapi_cfg_l2tp_lns_lcp_echo_interval_get(const char *ta, const char *lns,
                                         int *value);
 
@@ -364,8 +366,8 @@ tapi_cfg_l2tp_lns_lcp_echo_interval_get(const char *ta, const char *lns,
  * @return Status code
  */
 
-extern te_errno 
-tapi_cfg_l2tp_lns_pppopt_add(const char *ta, const char *lns, 
+extern te_errno
+tapi_cfg_l2tp_lns_pppopt_add(const char *ta, const char *lns,
                              const char *pparam);
 
 /**
@@ -378,8 +380,8 @@ tapi_cfg_l2tp_lns_pppopt_add(const char *ta, const char *lns,
  * @return Status code
  */
 
-extern te_errno 
-tapi_cfg_l2tp_lns_pppopt_del(const char *ta, const char *lns, 
+extern te_errno
+tapi_cfg_l2tp_lns_pppopt_del(const char *ta, const char *lns,
                              const char *pparam);
 
 
