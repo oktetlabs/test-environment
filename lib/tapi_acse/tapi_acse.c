@@ -246,6 +246,8 @@ tapi_acse_ta_cs_init(tapi_acse_context_t *ctx)
     {
         COPY_ACS_CPE_PARAM(C_CPE, CVT_STRING, "login");
         COPY_ACS_CPE_PARAM(C_CPE, CVT_STRING, "passwd");
+        COPY_ACS_CPE_PARAM(C_CPE, CVT_STRING, "cr_login");
+        COPY_ACS_CPE_PARAM(C_CPE, CVT_STRING, "cr_passwd");
     }
 
 #undef COPY_ACS_PARAM
