@@ -49,6 +49,7 @@
 #include "unix_internal.h"
 #include "te_shell_cmd.h"
 #include "ta_common.h"
+#include "te_string.h"
 
 #if __linux__
 
@@ -374,6 +375,20 @@ iptables_chain_del(unsigned int  gid, const char *oid,
     if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
     {
         ERROR("Failed to flush the chain %s_%s, rc=%r", chain, ifname, rc);
+        return rc;
+    }
+
+    /* Remove all rules which refer to the current chain */
+    snprintf(cmd_buf, IPTABLES_CMD_BUF_SIZE,
+             "/sbin/iptables-save | "
+             "grep -v -- '-j %s_%s' | "
+             "/sbin/iptables-restore",
+             chain, ifname);
+    rc = ta_system(cmd_buf);
+    if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
+    {
+        ERROR("Failed to remove all rules referring to the chain %s_%s, "
+              "rc=%r", chain, ifname, rc);
         return rc;
     }
 
@@ -766,10 +781,13 @@ iptables_cmd_set(unsigned int  gid, const char *oid,
                  const char   *dummy, const char *table,
                  const char   *chain)
 {
-    int rc = 0;
-    char buf[IPTABLES_CMD_BUF_SIZE] = {0, };
-    char *val_p = (char *)value;
-    char *cmd_p = (char *)buf;
+    int         rc = 0;
+    char        command;
+    const char *val_p;
+    const char *parameter_j_p;
+    te_string   buf = TE_STRING_INIT;
+
+    static const char *parameter_j = " -j";
 
     UNUSED(gid);
     UNUSED(oid);
@@ -778,41 +796,115 @@ iptables_cmd_set(unsigned int  gid, const char *oid,
     INFO("%s(ifname=%s, table=%s, chain=%s): %s", __FUNCTION__,
          ifname, table, chain, value);
 
-    cmd_p += sprintf(cmd_p, "/sbin/iptables -t %s ", table);
-
 #define SKIP_SPACES(_p)                                 \
     while (isspace(*(_p))) (_p)++;
 
+    /*
+     * Any @p value for iptables must begin with one of the following
+     * commands (@c '-A', @c '-I' or @c '-D') and may contain the parameter
+     * @c '-j'. The @p value may contain one of two substitutions.
+     *
+     * The first substitution is located after the command @c '-A',
+     * @c '-I' or @c '-D'. The second substitution is located after
+     * the parameter @c '-j' without target value. Second substitution takes
+     * precedence.
+     */
+    rc = te_string_append(&buf, "/sbin/iptables -t %s ", table);
+    if (rc)
+    {
+        te_string_free(&buf);
+        return rc;
+    }
+
+    /*
+     * Find parameter @c " -j" without target value. If this parameter
+     * contains target, then the second substitution is not performed.
+     */
+    parameter_j_p = strstr(value, parameter_j);
+    if (parameter_j_p != NULL)
+    {
+        te_bool contain_space;
+
+        val_p = parameter_j_p + strlen(parameter_j);
+
+        contain_space = (*val_p == ' ');
+        SKIP_SPACES(val_p);
+
+        /*
+         * The parameter @c "-j" doesn't have a target in one of two cases:
+         * - any number of spaces and end of line;
+         * - one or more spaces and new parameter (@c '-').
+         */
+        if (!((*val_p == '\0') ||
+              (contain_space && *val_p == '-')))
+            parameter_j_p = NULL;
+    }
+
+    val_p = (char *)value;
     SKIP_SPACES(val_p);
-    if (*val_p != '-')
+    if (*val_p++ != '-')
     {
         ERROR("Invalid rule format");
+        te_string_free(&buf);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    val_p++;
-    if ((*val_p == 'A') || (*val_p == 'D') || (*val_p == 'I'))
-    {
-        cmd_p += sprintf(cmd_p, "-%c ", *val_p++);
-    }
-    else
+    command = *val_p++;
+    if (!((command == 'A') || (command == 'D') || (command == 'I')))
     {
         ERROR("Unknown iptables rule action");
+        te_string_free(&buf);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    SKIP_SPACES(val_p);
-    cmd_p += sprintf(cmd_p, " %s_%s %s", chain, ifname, val_p);
-#undef SKIP_SPACES
-
-    INFO("Execute cmd: '%s'", buf);
-
-    rc = ta_system(buf);
-    if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
+    if (parameter_j_p)
     {
-        ERROR("Command '%s' returned %r", buf, rc);
+        /*
+         * The first substitution should not be applied because the second
+         * is found.
+         */
+        SKIP_SPACES(val_p);
+        if (*val_p == '-')
+        {
+            ERROR("iptables rule action has two substitutions");
+            te_string_free(&buf);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+
+        /*
+         * Copy a command and move the pointers to the parameter @c "-j".
+         */
+        rc = te_string_append(&buf, "-%c %s ", command, val_p);
+        if (rc)
+        {
+            te_string_free(&buf);
+            return rc;
+        }
+
+        buf.len -= strlen(val_p) - (parameter_j_p - val_p);
+        val_p = parameter_j_p + strlen(parameter_j);
+
+        command = 'j';
+    }
+    rc = te_string_append(&buf, "-%c %s_%s%s", command, chain, ifname,
+                          val_p);
+    if (rc)
+    {
+        te_string_free(&buf);
+        return rc;
     }
 
+#undef SKIP_SPACES
+
+    INFO("Execute cmd: '%s'", buf.ptr);
+
+    rc = ta_system(buf.ptr);
+    if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
+    {
+        ERROR("Command '%s' returned %r", buf.ptr, rc);
+    }
+
+    te_string_free(&buf);
     return rc;
 }
 
