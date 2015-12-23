@@ -207,7 +207,7 @@ typedef struct pam_message const pam_message_t;
 #endif
 
 #ifdef USE_LIBNETCONF
-#include <netconf.h>
+#include "netconf.h"
 #endif
 
 #ifndef ENABLE_IFCONFIG_STATS

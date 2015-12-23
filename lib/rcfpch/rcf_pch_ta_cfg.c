@@ -74,7 +74,16 @@ extern int inet_pton(int af, const char *src, void *dst);
 #include "logger_api.h"
 #include "rcf_pch_ta_cfg.h"
 
-#include <netconf.h>
+#ifdef WITH_NETCONF
+#include "netconf.h"
+#else
+
+/**
+ * Default routing table id
+ */
+#define LOCAL_RT_TABLE_MAIN 254
+
+#endif
 
 #define TA_OBJS_NUM 10
 static ta_cfg_obj_t ta_objs[TA_OBJS_NUM];
@@ -404,7 +413,11 @@ ta_rt_parse_inst_name(const char *name, ta_rt_info_t *rt_info)
     }
     else
     {
+#ifdef WITH_NETCONF
         rt_info->table = NETCONF_RT_TABLE_MAIN;
+#else
+        rt_info->table = LOCAL_RT_TABLE_MAIN;
+#endif
     }
 
     /*

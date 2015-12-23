@@ -37,7 +37,7 @@
 #endif
 
 #ifdef USE_LIBNETCONF
-#include <netconf.h>
+#include "netconf.h"
 #endif
 
 #if ((!defined(__linux__)) && (defined(USE_LIBNETCONF)))

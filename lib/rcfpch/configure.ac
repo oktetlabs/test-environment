@@ -40,6 +40,11 @@ if test -n "$with_sniffers"; then
     EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_SNIFFERS"
 fi
 
+AM_CONDITIONAL(WITH_NETCONF, test "$with_netconf" = "yes")
+if test "$with_netconf" = "yes"; then
+    EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_NETCONF"
+fi
+
 AC_SUBST([EXTRA_CPPFLAGS])
 
 AC_CONFIG_FILES([Makefile])

@@ -89,7 +89,7 @@
 #include "ta_common.h"
 #include "conf_netconf.h"
 
-#include <netconf.h>
+#include "netconf.h"
 
 
 /** Max length of temporary buffer for list functions */
