@@ -348,8 +348,6 @@ ta_rt_parse_inst_name(const char *name, ta_rt_info_t *rt_info)
     char        *tmp, *tmp1;
     int          prefix;
     char        *ptr;
-    char        *term_byte; /* Pointer to the trailing zero byte
-                               in instance name */
     static char  inst_copy[RCF_MAX_VAL];
     int          family;
 
@@ -388,8 +386,6 @@ ta_rt_parse_inst_name(const char *name, ta_rt_info_t *rt_info)
     }
     tmp = tmp1;
     rt_info->prefix = prefix;
-
-    term_byte = (char *)(tmp + strlen(tmp));
 
     if ((ptr = strstr(tmp, "metric=")) != NULL)
     {
