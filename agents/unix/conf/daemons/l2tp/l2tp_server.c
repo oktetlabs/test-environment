@@ -1168,7 +1168,8 @@ te_l2tp_ip_compare(char *range, char *ip)
  *  @param l2tp     l2tp server structure
  *  @param cip      address for checking
  *
- *  @return         status code
+ *  @return         0 if belong
+                    otherwise -1
  */
 static te_errno
 te_l2tp_check_accessory(te_l2tp_server *l2tp, char *cip)
@@ -1195,9 +1196,8 @@ te_l2tp_check_accessory(te_l2tp_server *l2tp, char *cip)
  * @return status code
  */
 static te_errno
-l2tp_clients_add()
+te_l2tp_clients_add(te_l2tp_server *l2tp)
 {
-    te_l2tp_server    *l2tp = l2tp_server_find();
     te_l2tp_connected *client;
     struct ifaddrs    *tmp;
     char               cip[INET6_ADDRSTRLEN];
@@ -1218,11 +1218,13 @@ l2tp_clients_add()
                           tmp->ifa_ifu.ifu_dstaddr)->sin_addr,
                           cip, INET_ADDRSTRLEN);
                 client = (te_l2tp_connected *)calloc(1, sizeof(te_l2tp_connected));
-                if (client != NULL)
-                    client->cname = strdup(cip);
-                else
+                if (client == NULL)
                     return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-                SLIST_INSERT_HEAD(&l2tp->client, client, list);
+                else if (te_l2tp_check_accessory(l2tp, cip) == 0)
+                {
+                    client->cname = strdup(cip);
+                    SLIST_INSERT_HEAD(&l2tp->client, client, list);
+                }
             }
         }
     }
@@ -1235,7 +1237,7 @@ l2tp_clients_add()
  *
  * @param gid           group identifier
  * @param oid           full identifier of the father instance
- * @param list          location of the lns sections list
+ * @param list          location of the connected clients
  * @param l2tp_name     name of the l2tp instance is always empty
 
  * @return status code
@@ -1244,9 +1246,32 @@ static te_errno
 l2tp_lns_connected_list(unsigned int gid, const char *oid,
                         char **list, const char *l2tp_name)
 {
+    te_l2tp_server    *l2tp = l2tp_server_find();
+    te_l2tp_connected *l2tp_connected;
+    uint32_t          *list_size;
+
     te_string str = TE_STRING_INIT;
-    //ifconfig | tee /tmp/file.diff
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(l2tp_name);
+
+    if (te_l2tp_clients_add(l2tp) == 0)
+    {
+        list_size = L2TP_SERVER_LIST_SIZE;
+        if ((*list = (char *)calloc(1, list_size)) == NULL)
+        {
+            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        }
+        SLIST_FOREACH(l2tp_connected, &l2tp->client, list)
+        {
+            te_string_append(&str, l2tp_connected->cname);
+        }
+        *list = str.ptr;
+        return 0;
+    }
+    return TE_RC(TE_TA_UNIX, TE_ENOENT); 
 }
+
 
 static rcf_pch_cfg_object node_l2tp;
 
