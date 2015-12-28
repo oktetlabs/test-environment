@@ -39,6 +39,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "conf_api.h"
+#include <netinet/in.h>
 
 /** Authentication type */
 enum l2tp_auth_prot {
@@ -65,10 +66,16 @@ enum l2tp_iprange_class {
     L2TP_IP_RANGE_CLASS_LAC = 1     /**< lac */
 };
 
+enum l2tp_bit {
+    L2TP_BIT_HIDDEN = 0,    /**< hidden bit option */
+    L2TP_BIT_LENGTH = 1,    /**< flow bits option */
+    L2TP_BIT_FLOW   = 2,    /**< hidden bit option */
+} l2tp_bit;
+
 /** Structure for the IP-address pool */
 typedef struct l2tp_ipv4_range {
-    struct sockaddr_in start;   /**< The left boundary of the pool */
-    struct sockaddr_in end;     /**< The right boundary of the pool */
+    struct sockaddr_in *start;   /**< The left boundary of the pool */
+    struct sockaddr_in *end;     /**< The right boundary of the pool */
     enum l2tp_policy   type;    /**< Above pool can be allowed or denied */
 } l2tp_ipv4_range;
 
@@ -86,7 +93,8 @@ typedef struct l2tp_ppp_secret {
 typedef struct l2tp_auth {
     enum l2tp_auth_prot    protocol; /**< CHAP|PAP|REST_AUTH */
     enum l2tp_auth_policy  type;     /**< REQUIRE|REFUSE */
-} auth;
+} l2tp_auth;
+
 
 /**
  * Set a listen/local ip.
@@ -131,7 +139,7 @@ tapi_cfg_l2tp_ip_get(const char *ta, const char *lns,
 
 extern te_errno
 tapi_cfg_l2tp_lns_range_add(const char *ta, const char *lns,
-                            const l2tp_ipv4_range *iprange, 
+                            const l2tp_ipv4_range *iprange,
                             enum l2tp_iprange_class kind);
 
 /**
@@ -147,7 +155,7 @@ tapi_cfg_l2tp_lns_range_add(const char *ta, const char *lns,
  */
 extern te_errno
 tapi_cfg_l2tp_lns_range_del(const char *ta, const char *lns,
-                            const l2tp_ipv4_range *iprange, 
+                            const l2tp_ipv4_range *iprange,
                             enum l2tp_iprange_class kind);
 
 /**
@@ -169,7 +177,7 @@ tapi_cfg_l2tp_lns_connected_get(const char *ta, const char *lns,
  *
  * @param ta        Test Agent
  * @param lns       The name of the section
- * @param bit_name  Name of the parameter(e.g. hidden, length, flow)
+ * @param bit       Desired bit option to change
  * @param selector  If true the bit_name value will be "yes"
                     otherwise "no"
  *
@@ -177,7 +185,7 @@ tapi_cfg_l2tp_lns_connected_get(const char *ta, const char *lns,
  */
 extern te_errno
 tapi_cfg_l2tp_lns_bit_set(const char *ta, const char *lns,
-                          const char *bit_name, bool selector);
+                          enum l2tp_bit bit, bool selector);
 
 /**
  * Get the bit parameter's value for the specified LNS.
@@ -297,7 +305,7 @@ tapi_cfg_l2tp_lns_mru_set(const char *ta, const char *lns, int value);
  * @return Status code
  */
 
-extern te_errno 
+extern te_errno
 tapi_cfg_l2tp_lns_mru_get(const char *ta, const char *lns, int *value);
 
 /**
@@ -383,6 +391,3 @@ tapi_cfg_l2tp_lns_pppopt_add(const char *ta, const char *lns,
 extern te_errno
 tapi_cfg_l2tp_lns_pppopt_del(const char *ta, const char *lns,
                              const char *pparam);
-
-
-#endif /* !__TE_TAPI_CFG_L2TP_H__ */
