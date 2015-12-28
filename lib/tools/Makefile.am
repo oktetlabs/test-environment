@@ -21,7 +21,8 @@ include_HEADERS = \
 	tq_string.h \
 	te_string.h \
 	log_bufs.h \
-	te_sigmap.h
+	te_sigmap.h \
+	te_dbuf.h
 
 if WINDOWS
 
@@ -59,7 +60,8 @@ libtools_la_SOURCES = \
 	te_format.c \
 	tq_string.c \
 	te_string.c \
-	te_sigmap.c
+	te_sigmap.c \
+	te_dbuf.c
 
 liblog_bufs_la_SOURCES = log_bufs.c
 
@@ -79,4 +81,3 @@ install-data-hook:
 all: install
 
 endif
-
