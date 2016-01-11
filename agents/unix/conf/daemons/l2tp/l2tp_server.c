@@ -39,14 +39,6 @@
 /** Name which isolate the L2TP secrets from others */
 #define L2TP_BOUND           "#L2TP secret tests"
 
-/** Max length of certain string X.X.X.X-Y.Y.Y.Y-Z.Z.Z.Z */
-#define L2TP_IP_CMP_LENGTH 47
-
-/** This pattern is for checking ip address*/
-#define PATTERN              "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|" \
-                             "25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}" \
-                             "|2[0-4][0-9]|25[0-5])$"
-
 /** Default buffer size for command-line construction */
 #define L2TP_SERVER_LIST_SIZE 1024
 
@@ -58,26 +50,26 @@
 
 
 
-int l2tp_pid = 0; /**< pid of xl2tpd */
+static int l2tp_pid = -1; /**< pid of xl2tpd */
 
 /** Authentication type */
 enum l2tp_secret_prot {
-    L2TP_SECRET_PROT_CHAP = 0,   /**< CHAP authentication */
-    L2TP_SECRET_PROT_PAP  = 1    /**< PAP authentication */
+    L2TP_SECRET_PROT_CHAP ,   /**< CHAP authentication */
+    L2TP_SECRET_PROT_PAP      /**< PAP authentication */
 };
 
 /** The class of the options */
 enum l2tp_option_type {
-    L2TP_OPTION_TYPE_PPP    = 0, /**< PPP options class */
-    L2TP_OPTION_TYPE_L2TP   = 1, /**< L2TP options class */
-    L2TP_OPTION_TYPE_SECRET = 2, /**< SECRET options */
+    L2TP_OPTION_TYPE_PPP   , /**< PPP options class */
+    L2TP_OPTION_TYPE_L2TP  , /**< L2TP options class */
+    L2TP_OPTION_TYPE_SECRET, /**< SECRET options */
 };
 
 /** CHAP|PAP secret's field */
 enum l2tp_secret_field {
-    L2TP_SECRET_FIELD_SERVER = 0,   /**< Server field */
-    L2TP_SECRET_FIELD_SECRET = 1,   /**< Secret field  */
-    L2TP_SECRET_FIELD_IPV4   = 2,   /**< IPv4 field  */
+    L2TP_SECRET_FIELD_SERVER,   /**< Server field */
+    L2TP_SECRET_FIELD_SECRET,   /**< Secret field  */
+    L2TP_SECRET_FIELD_IPV4  ,   /**< IPv4 field  */
 };
 
 /** CHAP|PAP secret structure */
@@ -123,7 +115,7 @@ typedef struct te_l2tp_server {
 } te_l2tp_server;
 
 static te_bool
-l2tp_is_running(te_l2tp_server *l2tp);
+        l2tp_is_running(te_l2tp_server *l2tp);
 
 /** Static L2TP server structure */
 static te_l2tp_server l2tp_server;
@@ -240,7 +232,7 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
     chap_secret_file = fopen(L2TP_CHAP_SECRETS, "a+");
     pap_secret_file = fopen(L2TP_PAP_SECRETS, "a+");
     if (l2tp_file == NULL || chap_secret_file == NULL
-                          || pap_secret_file == NULL)
+        || pap_secret_file == NULL)
     {
         ERROR("Failed to open files for writing: %s", strerror(errno));
         return TE_OS_RC(TE_TA_UNIX, errno);
@@ -250,7 +242,7 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
     fprintf(chap_secret_file, "\n%s\n", L2TP_BOUND);
     fprintf(pap_secret_file, "\n%s\n", L2TP_BOUND);
     for (l2tp_section = SLIST_FIRST(&l2tp->section); l2tp_section != NULL;
-            l2tp_section = SLIST_NEXT(l2tp_section, list))
+         l2tp_section = SLIST_NEXT(l2tp_section, list))
     {
         fprintf(l2tp_file, "%s\n", l2tp_section);
         for (l2tp_option = SLIST_FIRST(&l2tp_section->l2tp_option);
@@ -344,8 +336,9 @@ l2tp_is_running(te_l2tp_server *l2tp)
     memset(buf, '\0', sizeof(buf));
     gotpid = strtok(buf, " ");
 
-    gotpid != NULL ? l2tp_pid = atoi(gotpid) : l2tp_pid = 0;
-    is_running = (te_bool) (l2tp_pid != 0);
+    if (gotpid != NULL)
+        l2tp_pid = atoi(gotpid);
+    is_running = l2tp_pid != 0;
     INFO("L2TP server is%s running", (is_running) ? "" : " not");
     return is_running;
 }
@@ -372,6 +365,7 @@ l2tp_server_stop(te_l2tp_server *l2tp)
         l2tp_pid = 0;
     }
     else if (l2tp_is_running(l2tp))
+    {
         if (!access(L2TP_INIT_SCRIPT, 0))
         {
             TE_SPRINTF(stop, "%s stop", L2TP_INIT_SCRIPT);
@@ -386,6 +380,7 @@ l2tp_server_stop(te_l2tp_server *l2tp)
             kill(l2tp_pid, SIGTERM);
             l2tp_pid = 0;
         }
+    }
 
     return 0;
 };
@@ -880,7 +875,7 @@ l2tp_lns_option_add(unsigned int gid, const char *oid, const char *value,
     }
     l2tp_option = (te_l2tp_option *)calloc(1, sizeof(te_l2tp_option));
     if (l2tp_option == NULL);
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     l2tp_option->name = strdup(optname);
     switch (option_type)
     {
@@ -1132,15 +1127,14 @@ te_bool
 te_l2tp_ip_compare(char *range, char *ip)
 {
     char    *decimal; /**< For holding the IP numbers*/
-    char     buffer[L2TP_IP_CMP_LENGTH];
-    int     *array;
+    char     buffer[strlen(range)]; /**< It will consist of three ip addresses and
+                                              look like
+                                              X.X.X.X-Y.Y.Y.Y-Z.Z.Z.Z */
+    int      array[12]; /**< Array for holding decimal numbers of buffer */
 
+    const int limit = 8; /**< The border to which the array is processed */
     int i = 0;
-    int limit =  sizeof( array ) / sizeof( array[0]) - 4; /**< Limiting
-                                                               element of the
-                                                               array to work
-                                                               with */
-    sprintf(buffer, "%s-%s", range ,ip);
+    TE_SPRINTF(buffer, "%s-%s", range, ip);
     decimal = strtok(buffer, ".-");
     while (decimal != NULL)
     {
@@ -1148,13 +1142,18 @@ te_l2tp_ip_compare(char *range, char *ip)
         decimal = strtok(NULL, ".-");
         i++;
     }
+    /* The following loop swaps the elements in array
+     * which corresponds to Y.Y.Y.Y-Z.Z.Z.Z in buffer */
     for (i = limit / 2; i < limit; i++)
     {
         array[i] = array[i] ^ array[i + 4];
         array[i + 4] = array[i] ^ array[i + 4];
         array[i] = array[i] ^ array[i + 4];
     }
-
+    /* The resulting array contains the verifiable
+     * address in the middle (from 4th to 7th element),
+     * so the following loop change checks
+     * address's belonging to the range */
     for (i = 0; i < limit; i++)
     {
         if (array[i] > array[i+4])
@@ -1183,7 +1182,7 @@ te_l2tp_check_accessory(te_l2tp_server *l2tp, char *cip)
         SLIST_FOREACH(option, &section->l2tp_option, list)
         {
             if (strcmp(option->name, "ip range") == 0 &&
-                    te_l2tp_ip_compare(option->value, cip))
+                te_l2tp_ip_compare(option->value, cip))
                 return 0;
         }
     }
@@ -1215,7 +1214,7 @@ te_l2tp_clients_add(te_l2tp_server *l2tp)
                 && strstr(tmp->ifa_name, "ppp") != NULL)
             {
                 inet_ntop(AF_INET, &((struct sockaddr_in *)
-                          tmp->ifa_ifu.ifu_dstaddr)->sin_addr,
+                                  tmp->ifa_ifu.ifu_dstaddr)->sin_addr,
                           cip, INET_ADDRSTRLEN);
                 client = (te_l2tp_connected *)calloc(1, sizeof(te_l2tp_connected));
                 if (client == NULL)
@@ -1269,7 +1268,7 @@ l2tp_lns_connected_list(unsigned int gid, const char *oid,
         *list = str.ptr;
         return 0;
     }
-    return TE_RC(TE_TA_UNIX, TE_ENOENT); 
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
 }
 
 
@@ -1289,10 +1288,10 @@ static rcf_pch_cfg_object node_l2tp_port =
 
 static rcf_pch_cfg_object node_l2tp_lns_ip_range =
         { "ip_range", 0, NULL, NULL,
-           (rcf_ch_cfg_get)l2tp_lns_option_get,
-           (rcf_ch_cfg_set)l2tp_lns_option_set,
-           (rcf_ch_cfg_add)l2tp_lns_option_add,
-           (rcf_ch_cfg_del)l2tp_lns_option_del, NULL, NULL, &node_l2tp };
+          (rcf_ch_cfg_get)l2tp_lns_option_get,
+          (rcf_ch_cfg_set)l2tp_lns_option_set,
+          (rcf_ch_cfg_add)l2tp_lns_option_add,
+          (rcf_ch_cfg_del)l2tp_lns_option_del, NULL, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_lac_range =
         { "lac_range", 0, NULL, &node_l2tp_lns_ip_range,
