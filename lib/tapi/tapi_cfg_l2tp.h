@@ -43,33 +43,33 @@
 
 /** Authentication type */
 enum l2tp_auth_prot {
-    L2TP_AUTH_PROT_CHAP      = 0,     /**< CHAP authentication */
-    L2TP_AUTH_PROT_PAP       = 1,     /**< PAP authentication */
-    L2TP_AUTH_PROT_REST_AUTH = 2      /**< Remote peer authentication */
+    L2TP_AUTH_PROT_CHAP,         /**< CHAP authentication */
+    L2TP_AUTH_PROT_PAP,          /**< PAP authentication */
+    L2TP_AUTH_PROT_REST_AUTH     /**< Remote peer authentication */
 };
 
 /** The law defining the type of the ip range */
 enum l2tp_policy {
-    L2TP_POLICY_DENY  = 0,    /**< For ipv4 addresses which must be denied*/
-    L2TP_POLICY_ALLOW = 1     /**< For ipv4 addresses which must be allowed */
+    L2TP_POLICY_DENY,     /**< For ipv4 addresses which must be denied*/
+    L2TP_POLICY_ALLOW     /**< For ipv4 addresses which must be allowed */
 };
 
 /** Type of the request for the auth_type */
 enum l2tp_auth_policy {
-    L2TP_AUTH_POLICY_REFUSE  = 0,    /**< Refuse CHAP|PAP|REST_AUTH */
-    L2TP_AUTH_POLICY_REQUIRE = 1     /**< Require CHAP|PAP|REST_AUTH */
+    L2TP_AUTH_POLICY_REFUSE,    /**< Refuse CHAP|PAP|REST_AUTH */
+    L2TP_AUTH_POLICY_REQUIRE    /**< Require CHAP|PAP|REST_AUTH */
 };
 
 /** Subset to which the certain ip range addresses belongs */
 enum l2tp_iprange_class {
-    L2TP_IP_RANGE_CLASS_IP  = 0,    /**< ip range*/
-    L2TP_IP_RANGE_CLASS_LAC = 1     /**< lac */
+    L2TP_IP_RANGE_CLASS_IP,    /**< ip range*/
+    L2TP_IP_RANGE_CLASS_LAC    /**< lac */
 };
 
 enum l2tp_bit {
-    L2TP_BIT_HIDDEN = 0,    /**< hidden bit option */
-    L2TP_BIT_LENGTH = 1,    /**< flow bits option */
-    L2TP_BIT_FLOW   = 2,    /**< hidden bit option */
+    L2TP_BIT_HIDDEN,    /**< hidden bit option */
+    L2TP_BIT_LENGTH,    /**< flow bits option */
+    L2TP_BIT_FLOW  ,    /**< hidden bit option */
 } l2tp_bit;
 
 /** Structure for the IP-address pool */
@@ -123,7 +123,7 @@ tapi_cfg_l2tp_ip_set(const char *ta, const char *lns,
 
 extern te_errno
 tapi_cfg_l2tp_ip_get(const char *ta, const char *lns,
-                     struct sockaddr_in *local);
+                     struct sockaddr_in *local_ip);
 
 /**
  * Add ip range to the configuration.
@@ -131,7 +131,7 @@ tapi_cfg_l2tp_ip_get(const char *ta, const char *lns,
  * @param ta            Test Agent
  * @param lns           The name of the section to modify
  * @param iprange       IP address pool
- * @param law           The class of the added ip range
+ * @param kind          The class of the added ip range
                         ALLOW|BAN
  *
  * @return Status code
@@ -147,8 +147,8 @@ tapi_cfg_l2tp_lns_range_add(const char *ta, const char *lns,
  *
  * @param ta            Test Agent
  * @param lns           The name of the section to modify
- * @param iprange    IP address pool
- * @param law           The class of the removed ip range
+ * @param iprange       IP address pool
+ * @param kind          The class of the removed ip range
                         ALLOW|BAN
  *
  * @return Status code
@@ -170,7 +170,7 @@ tapi_cfg_l2tp_lns_range_del(const char *ta, const char *lns,
 
 extern te_errno
 tapi_cfg_l2tp_lns_connected_get(const char *ta, const char *lns,
-                                struct sockaddr_in ***connected, size_t *num);
+                                struct sockaddr_in ***connected);
 
 /**
  * Set the bit parameter's value for the specified LNS.
@@ -199,7 +199,7 @@ tapi_cfg_l2tp_lns_bit_set(const char *ta, const char *lns,
  */
 extern te_errno
 tapi_cfg_l2tp_lns_bit_get(const char *ta, const char *lns,
-                          const char *bit_name, bool *selector);
+                          enum l2tp_bit *bit_name, bool *selector);
 
 /**
  * Set the instance to yes or no for "/authentication/refuse|require".
@@ -207,13 +207,13 @@ tapi_cfg_l2tp_lns_bit_get(const char *ta, const char *lns,
  * @param ta          Test Agent
  * @param lns         The name of the section
  * @param param       Desired authentication
- * @param instance    true(yes) or false(no)
+ * @param value       true(yes) or false(no)
  *
  * @return Status code
  */
 extern te_errno
 tapi_cfg_l2tp_lns_set_auth(const char *ta, const char *lns,
-                           enum l2tp_auth_prot param, bool ins_name);
+                           enum l2tp_auth_prot param, bool value);
 /**
 * Get the instance name "/authentication/refuse|require".
 *
@@ -227,7 +227,7 @@ tapi_cfg_l2tp_lns_set_auth(const char *ta, const char *lns,
 */
 extern te_errno
 tapi_cfg_l2tp_lns_get_auth(const char *ta, const char *lns,
-                           enum l2tp_auth_prot param, char *instance);
+                           enum l2tp_auth_prot param, bool *instance);
 
 /**
  * Add chap|pap secret.
@@ -391,3 +391,4 @@ tapi_cfg_l2tp_lns_pppopt_add(const char *ta, const char *lns,
 extern te_errno
 tapi_cfg_l2tp_lns_pppopt_del(const char *ta, const char *lns,
                              const char *pparam);
+
