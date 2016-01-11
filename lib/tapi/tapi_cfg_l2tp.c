@@ -16,6 +16,9 @@
 
 #define TE_CFG_TA_L2TP_SERVER "/agent:%s/l2tp:"
 
+/** Max length of the instance /ip_range: */
+#define L2TP_IP_RANGE_INST 35
+
 /* All descriptions are in tapi_cfg_l2tp.h */
 
 te_errno
@@ -61,7 +64,7 @@ tapi_cfg_l2tp_lns_range_add(const char *ta, const char *lns,
                             enum l2tp_iprange_class kind)
 {
     cfg_handle  handle;
-    char        buf[35] = {"\0"};
+    char        buf[L2TP_IP_RANGE_INST] = {};
     char       *end = strdup(inet_ntoa(iprange->end->sin_addr));
     TE_SPRINTF(buf, "%s%s-%s",
                iprange->type == L2TP_POLICY_ALLOW ?
@@ -92,7 +95,7 @@ tapi_cfg_l2tp_lns_range_del(const char *ta, const char *lns,
                             const l2tp_ipv4_range *iprange,
                             enum l2tp_iprange_class kind)
 {
-    char        buf[35] = {"\0"};
+    char        buf[L2TP_IP_RANGE_INST] = {};
     char       *end = strdup(inet_ntoa(iprange->end->sin_addr));
     TE_SPRINTF(buf, "%s%s-%s",
                iprange->type == L2TP_POLICY_ALLOW ?
