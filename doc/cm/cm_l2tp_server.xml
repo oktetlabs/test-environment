@@ -84,14 +84,16 @@
         access="read_write" type="none"/>
 
     <!-- Whether refuse the authentication.
-         Name: yes, no -->
+         Name: empty
+         Value: 0 (no) or 1 (yes) -->
     <object oid="/agent/l2tp/lns/auth/refuse" 
-        access="read_write" type="none"/>
+        access="read_write" type="integer"/>
 
     <!-- Whether require the authentication.
-         Name: yes, no -->
+         Name: empty 
+         Value: 0 (no) or 1 (yes) -->
     <object oid="/agent/l2tp/lns/auth/require" 
-        access="read_write" type="none"/>
+        access="read_write" type="integer"/>
 
     <!-- Client name for the authentication secrets.
          Name: any 
