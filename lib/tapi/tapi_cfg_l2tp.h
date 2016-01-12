@@ -202,32 +202,32 @@ tapi_cfg_l2tp_lns_bit_get(const char *ta, const char *lns,
                           enum l2tp_bit *bit_name, bool *selector);
 
 /**
- * Set the instance to yes or no for "/authentication/refuse|require".
+ * Set the instance value to 1 or 0 for "/auth/refuse|require".
  *
  * @param ta          Test Agent
  * @param lns         The name of the section
  * @param param       Desired authentication
- * @param value       true(yes) or false(no)
+ * @param value       true(1) or false(0)
  *
  * @return Status code
  */
 extern te_errno
 tapi_cfg_l2tp_lns_set_auth(const char *ta, const char *lns,
-                           enum l2tp_auth_prot param, bool value);
+                           l2tp_auth param, bool value);
 /**
-* Get the instance name "/authentication/refuse|require".
+* Get the instance value "/auth/refuse|require".
 *
 * @param ta          Test Agent
 * @param lns         The name of the section
 * @param param       Desired authentication
-* @param instance    Returned pointer to the authentication parameter,
-                     like "yes" or "no"
+* @param value       Returned pointer to the authentication parameter,
+                     like "true" or "false"
 *
 * @return Status code
 */
 extern te_errno
 tapi_cfg_l2tp_lns_get_auth(const char *ta, const char *lns,
-                           enum l2tp_auth_prot param, bool *instance);
+                           l2tp_auth param, bool *value);
 
 /**
  * Add chap|pap secret.
@@ -240,8 +240,8 @@ tapi_cfg_l2tp_lns_get_auth(const char *ta, const char *lns,
  */
 
 extern te_errno
-        tapi_cfg_l2tp_lns_secret_add(const char *ta, const char *lns,
-                                     const ppp_secret *new_secret);
+tapi_cfg_l2tp_lns_secret_add(const char *ta, const char *lns,
+                             const ppp_secret *new_secret);
 /**
  * Delete chap|pap secret.
  *
@@ -255,6 +255,58 @@ extern te_errno
 extern te_errno
 tapi_cfg_l2tp_lns_secret_delete(const char *ta, const char *lns,
                                 const ppp_secret *prev_secret);
+
+/**
+ * Set the instance value to 1 or 0 for "/use_challenge:".
+ *
+ * @param ta          Test Agent
+ * @param lns         The name of the section
+ * @param value       true(1) or false(0)
+ *
+ * @return Status code
+ */
+extern te_errno
+tapi_cfg_l2tp_lns_set_use_challenge(const char *ta, const char *lns,
+                                    bool value);
+
+/**
+ * Get the instance value "/use_challenge:".
+ *
+ * @param ta          Test Agent
+ * @param lns         The name of the section
+ * @param value       Returned pointer to the current value
+ *
+ * @return Status code
+ */
+extern te_errno
+tapi_cfg_l2tp_lns_get_use_challenge(const char *ta, const char *lns,
+                                    bool value);
+
+/**
+ * Set the instance value to 1 or 0 for "/unix_auth:".
+ *
+ * @param ta          Test Agent
+ * @param lns         The name of the section
+ * @param value       true(1) or false(0)
+ *
+ * @return Status code
+ */
+extern te_errno
+tapi_cfg_l2tp_lns_set_unix_auth(const char *ta, const char *lns,
+                                bool value);
+
+/**
+ * Get the instance value "/unix_auth:".
+ *
+ * @param ta          Test Agent
+ * @param lns         The name of the section
+ * @param value       Returned pointer to the current value
+ *
+ * @return Status code
+ */
+extern te_errno
+tapi_cfg_l2tp_lns_get_unix_auth(const char *ta, const char *lns,
+                                bool value);
 
 /**
  * Set MTU size
@@ -319,8 +371,8 @@ tapi_cfg_l2tp_lns_mru_get(const char *ta, const char *lns, int *value);
  */
 
 extern te_errno
-        tapi_cfg_l2tp_lns_lcp_echo_failure_set(const char *ta, const char *lns,
-                                               int value);
+tapi_cfg_l2tp_lns_lcp_echo_failure_set(const char *ta, const char *lns,
+                                       int value);
 
 /**
  * Get lcp-echo-failure.
