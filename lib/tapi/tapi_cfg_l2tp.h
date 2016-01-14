@@ -72,6 +72,13 @@ enum l2tp_bit {
     L2TP_BIT_FLOW  ,    /**< hidden bit option */
 } l2tp_bit;
 
+/** Part of the chap|pap secrets */
+enum l2tp_secret_part {
+    L2TP_SECRET_PART_SERVER,    /**< server name */
+    L2TP_SECRET_PART_SECRET,    /**< secret name itself */
+    L2TP_SECRET_PART_IPV4  ,    /**< ipv4 name */
+} l2tp_secret_part;
+
 /** Structure for the IP-address pool */
 typedef struct l2tp_ipv4_range {
     struct sockaddr_in *start;   /**< The left boundary of the pool */
@@ -86,7 +93,7 @@ typedef struct l2tp_ppp_secret {
     char                *server;   /**< Server name */
     char                *secret;   /**< Secret name */
     struct sockaddr_in   sipv4;    /**< IP address */
-} ppp_secret;
+} l2tp_ppp_secret;
 
 
 /** Structure for desired authentication */
@@ -164,6 +171,9 @@ tapi_cfg_l2tp_lns_range_del(const char *ta, const char *lns,
  * @param ta         Test Agent
  * @param lns        The name of the section
  * @param connected  The connected ip addresses
+ *                   As it is neccassary to return
+ *                   an array of pointers to sockaddr_in *,
+ *                   triple pointer is used
  *
  * @return Status code
  */
@@ -241,7 +251,7 @@ tapi_cfg_l2tp_lns_get_auth(const char *ta, const char *lns,
 
 extern te_errno
 tapi_cfg_l2tp_lns_secret_add(const char *ta, const char *lns,
-                             const ppp_secret *new_secret);
+                             const l2tp_ppp_secret *new_secret);
 /**
  * Delete chap|pap secret.
  *
@@ -254,7 +264,7 @@ tapi_cfg_l2tp_lns_secret_add(const char *ta, const char *lns,
 
 extern te_errno
 tapi_cfg_l2tp_lns_secret_delete(const char *ta, const char *lns,
-                                const ppp_secret *prev_secret);
+                                const l2tp_ppp_secret *prev_secret);
 
 /**
  * Set the instance value to 1 or 0 for "/use_challenge:".
