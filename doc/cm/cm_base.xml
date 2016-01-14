@@ -616,6 +616,16 @@
     <object oid="/agent/rpcserver/dead" 
             access="read_write" type="integer"/>
 
+    <!-- RPC server termination state. If it is set to 1, 
+         then RPC server process (or thread) was already terminated,
+         waitpid() (or pthread_join()) was already called (if required),
+         and the only thing remained is associated data structures to be
+         freed on TA.
+         Name: empty
+         Value: 0 (not terminated) or 1 (terminated) -->
+    <object oid="/agent/rpcserver/finished" 
+            access="read_write" type="integer"/>
+
     <!-- DNS server.
          Name:  empty    
          Limit: 1 -->
