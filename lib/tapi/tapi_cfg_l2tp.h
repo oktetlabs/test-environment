@@ -40,6 +40,7 @@
 #include <stdint.h>
 #include "conf_api.h"
 #include <netinet/in.h>
+#include "te_queue.h"
 
 /** Authentication type */
 enum l2tp_auth_prot {
@@ -102,6 +103,14 @@ typedef struct l2tp_auth {
     enum l2tp_auth_policy  type;     /**< REQUIRE|REFUSE */
 } l2tp_auth;
 
+typedef struct l2tp_range {
+    SLIST_ENTRY(l2tp_range)   list;
+    SLIST_HEAD(, l2tp_range)  l2tp_range;
+    char                     *range; /**< range itself */
+    char                     *local_ip;   /**< lns name */
+    char                     *lns;   /**< lns name */
+} l2tp_range;
+
 
 /**
  * Set a listen/local ip.
@@ -140,6 +149,7 @@ tapi_cfg_l2tp_ip_get(const char *ta, const char *lns,
  * @param iprange       IP address pool
  * @param kind          The class of the added ip range
                         ALLOW|BAN
+ * @param ranges        An array of l2tp's ranges
  *
  * @return Status code
  */
@@ -147,7 +157,7 @@ tapi_cfg_l2tp_ip_get(const char *ta, const char *lns,
 extern te_errno
 tapi_cfg_l2tp_lns_range_add(const char *ta, const char *lns,
                             const l2tp_ipv4_range *iprange,
-                            enum l2tp_iprange_class kind);
+                            enum l2tp_iprange_class kind, l2tp_range **ranges);
 
 /**
  * Delete specified ip range from the configuration.
@@ -158,12 +168,13 @@ tapi_cfg_l2tp_lns_range_add(const char *ta, const char *lns,
  * @param kind          The class of the removed ip range
                         ALLOW|BAN
  *
+ * @param ranges        An array of l2tp's ranges
  * @return Status code
  */
 extern te_errno
 tapi_cfg_l2tp_lns_range_del(const char *ta, const char *lns,
                             const l2tp_ipv4_range *iprange,
-                            enum l2tp_iprange_class kind);
+                            enum l2tp_iprange_class kind, l2tp_range **ranges);
 
 /**
  * Get the list of connected clients.
@@ -180,7 +191,8 @@ tapi_cfg_l2tp_lns_range_del(const char *ta, const char *lns,
 
 extern te_errno
 tapi_cfg_l2tp_lns_connected_get(const char *ta, const char *lns,
-                                struct sockaddr_in ***connected);
+                                struct sockaddr_in ***connected,
+                                l2tp_range **ranges);
 
 /**
  * Set the bit parameter's value for the specified LNS.
