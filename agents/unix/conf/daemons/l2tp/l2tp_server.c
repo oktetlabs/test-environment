@@ -132,6 +132,7 @@ l2tp_server_init(te_l2tp_server *l2tp)
 {
     ENTRY("%s()", __FUNCTION__);
     SLIST_INIT(&l2tp->section);
+    SLIST_INIT(&l2tp->client);
     l2tp->started = l2tp_is_running(l2tp);
     l2tp->changed = l2tp->started;
     l2tp->initialised = TRUE;
@@ -1173,7 +1174,6 @@ te_l2tp_ip_compare(char *range, char *ip)
 static te_errno
 te_l2tp_check_accessory(te_l2tp_server *l2tp, char *cip)
 {
-    te_l2tp_connected  *client;
     te_l2tp_option     *option;
     te_l2tp_section    *section;
 
@@ -1188,6 +1188,34 @@ te_l2tp_check_accessory(te_l2tp_server *l2tp, char *cip)
     }
     return -1;
 }
+
+/**
+ * Check the ip address is equal to any existing local ip
+ *
+ * @param local_ip   testing ip
+ * @param ranges     array of ip ranges
+ *
+ * @return TRUE if local_ip is equal to
+ *         local ip from ranges' array
+ *         otherwise it returns FALSE
+ */
+static te_bool
+l2tp_check_lns_ip(char *local_ip, te_l2tp_server *l2tp)
+{
+    te_l2tp_section  *section;
+    te_l2tp_option   *opt;
+
+    SLIST_FOREACH(section, &l2tp->section, list)
+    {
+        SLIST_FOREACH(opt, &section->l2tp_option, list)
+        {
+            if (strcmp(opt->name, "local ip") == 0 &&
+                strcmp(opt->value, local_ip) == 0)
+                return TRUE;
+        }
+    }
+    return FALSE;
+};
 
 /**
  * Add connected clients to the te_l2tp_server.
@@ -1211,7 +1239,8 @@ te_l2tp_clients_add(te_l2tp_server *l2tp)
         for (tmp; tmp != NULL; tmp = tmp->ifa_next)
         {
             if (tmp->ifa_addr && tmp->ifa_addr->sa_family == AF_INET
-                && strstr(tmp->ifa_name, "ppp") != NULL)
+                && l2tp_check_lns_ip(inet_ntoa(
+                   ((struct sockaddr_in *) tmp->ifa_addr)->sin_addr), l2tp))
             {
                 inet_ntop(AF_INET, &((struct sockaddr_in *)
                                   tmp->ifa_ifu.ifu_dstaddr)->sin_addr,
