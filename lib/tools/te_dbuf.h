@@ -79,13 +79,13 @@ typedef struct te_dbuf {
 /**
  * On-stack te_dbuf initializer.
  *
- * @param grow_factor   Buffer extra size in percentages.
+ * @param _grow_factor  Buffer extra size in percentages.
  */
-#define TE_DBUF_INIT(grow_factor) { \
-    .ptr = NULL,                    \
-    .size = 0,                      \
-    .len = 0,                       \
-    .grow_factor = grow_factor      \
+#define TE_DBUF_INIT(_grow_factor) { \
+    .ptr = NULL,                     \
+    .size = 0,                       \
+    .len = 0,                        \
+    .grow_factor = _grow_factor      \
 }
 
 /**
