@@ -123,7 +123,7 @@ extern void te_dbuf_free(te_dbuf *dbuf);
 
 
 /**
- * Prints the @p dbuf info and its data using RING function.
+ * Prints the @p dbuf info and its data using VERB function.
  * This function should be used for debugging purpose.
  *
  * @param dbuf      Dynamic buffer.
