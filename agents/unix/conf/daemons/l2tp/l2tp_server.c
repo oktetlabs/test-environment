@@ -643,11 +643,11 @@ l2tp_find_option(te_l2tp_server *l2tp, const char *section, const char *name)
 }
 
 /**
- * Find l2tp server option in options list
+ * Find l2tp server's client in options list
  *
  * @param l2tp          l2tp server structure
  * @param section       lns section where certain option is located
- * @param name          option name to look for
+ * @param name          client name to look for
  *
  * @return l2tp server option structure
  */
