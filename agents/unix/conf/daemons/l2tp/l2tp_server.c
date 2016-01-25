@@ -1,13 +1,9 @@
 #include <dirent.h>
 #include <te_shell_cmd.h>
-#include "logger_api.h"
-#include <regex.h>
 #include <ifaddrs.h>
 #include "conf_daemons.h"
 #include "te_queue.h"
 #include "te_string.h"
-#include "te_errno.h"
-#include "rcf_ch_api.h"
 
 /** L2TP global section name */
 #define L2TP_GLOBAL          "global"
@@ -50,7 +46,6 @@
 
 /** Default buffer size for the L2TP_SERVER_CONF + TA pid */
 #define L2TP_MAX_PID 24
-
 
 static char l2tp_conf[L2TP_MAX_PID];
 
@@ -111,12 +106,18 @@ typedef struct te_l2tp_connected {
 
 /** L2TP server configuration structure */
 typedef struct te_l2tp_server {
-    SLIST_HEAD(, te_l2tp_section)   section;       /**< Section of the L2TP server structure */
-    SLIST_HEAD(, te_l2tp_connected) client;        /**< Connected client to the L2TP server */
-    te_bool                         initialised;   /**< Structure initialised flag */
-    te_bool                         started;       /**< Admin status for pppoe server */
-    te_bool                         changed;       /**< Configuration changed flag, used to detect
-                                                       if L2TP-server restart is required */
+    SLIST_HEAD(, te_l2tp_section)   section;     /**< Section of the L2TP
+                                                      server structure */
+    SLIST_HEAD(, te_l2tp_connected) client;      /**< Connected client to
+                                                      the L2TP server */
+    te_bool                         initialised; /**< Structure initialised
+                                                      flag */
+    te_bool                         started;     /**< Admin status for
+                                                      pppoe server */
+    te_bool                         changed;     /**< Configuration changed flag,
+                                                      used to detect if
+                                                      L2TP-server restart
+                                                      is required */
 } te_l2tp_server;
 
 static te_bool
@@ -171,11 +172,10 @@ l2tp_secrets_recover(char *outname)
     FILE*    newfile;
     FILE*    oldfile;
     te_bool  fence;
+    int      counter = 0;
 
-    int counter = 0;
     fence = FALSE;
     inname = L2TP_SECRETS_DUMP;
-
     newfile = fopen(inname, "r+");
     oldfile = fopen(outname, "w+");
 
@@ -228,13 +228,12 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
 {
     FILE            *chap_secret_file;
     FILE            *pap_secret_file;
+    FILE            *l2tp_file;
+    FILE            *ppp_file = NULL;
     te_l2tp_option  *l2tp_option;
     te_l2tp_option  *ppp_option;
     te_l2tp_section *l2tp_section;
-
     char            *pppfilename = NULL;
-    FILE            *l2tp_file   = NULL;
-    FILE            *ppp_file    = NULL;
 
     ENTRY("%s()", __FUNCTION__);
     sprintf(l2tp_conf, L2TP_SERVER_CONF_BASIS ".%i", (int) getpid());
@@ -251,7 +250,13 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
 
     if (chap_secret_file == NULL)
     {
-        fclose(l2tp_file);
+        if (fclose(l2tp_file) != 0)
+        {
+            ERROR("%s(): fclose() failed: %s",
+                  __FUNCTION__, strerror(errno));
+
+            return  TE_OS_RC(TE_TA_UNIX, errno);
+        }
         ERROR("Failed to open '%s' file for writing: %s",
               L2TP_CHAP_SECRETS, strerror(errno));
         return TE_OS_RC(TE_TA_UNIX, errno);
@@ -259,8 +264,14 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
 
     if (pap_secret_file == NULL)
     {
-        fclose(l2tp_file);
-        fclose(chap_secret_file);
+        if (fclose(l2tp_file) != 0 ||
+            fclose(chap_secret_file) != 0)
+        {
+            ERROR("%s(): fclose() failed: %s",
+                  __FUNCTION__, strerror(errno));
+
+            return  TE_OS_RC(TE_TA_UNIX, errno);
+        }
         ERROR("Failed to open '%s' file for writing: %s",
               L2TP_PAP_SECRETS, strerror(errno));
         return TE_OS_RC(TE_TA_UNIX, errno);
@@ -300,9 +311,15 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
             ppp_file = fopen(pppfilename, "w");
             if (ppp_file == NULL)
             {
-                fclose(l2tp_file);
-                fclose(chap_secret_file);
-                fclose(pap_secret_file);
+                if (fclose(l2tp_file) != 0 ||
+                    fclose(chap_secret_file) != 0 ||
+                    fclose(pap_secret_file) != 0)
+                {
+                    ERROR("%s(): fclose() failed: %s",
+                          __FUNCTION__, strerror(errno));
+
+                    return  TE_OS_RC(TE_TA_UNIX, errno);
+                }
                 ERROR("Failed to open '%s' for writing: %s", ppp_file,
                       strerror(errno));
                 return TE_OS_RC(TE_TA_UNIX, errno);
@@ -344,7 +361,6 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
                         default:
                             break;
                     }
-
                 }
 
                 case L2TP_OPTION_TYPE_PPP:
@@ -383,7 +399,6 @@ static te_bool
 l2tp_is_running(te_l2tp_server *l2tp)
 {
     te_bool  is_running;
-    char    *gotpid;
     char     buf[L2TP_CMDLINE_LENGTH];
     FILE    *f;
 
@@ -506,7 +521,6 @@ l2tp_server_get(unsigned int gid, const char *oid, char *value)
 
     strcpy(value, l2tp_is_running(l2tp) ? "1" : "0");
     return 0;
-
 }
 
 /**
@@ -539,7 +553,7 @@ l2tp_server_set(unsigned int gid, const char *oid, const char *value)
 
 /**
  * Commit changes in L2TP server configuration.
- * (Re)star/stop L2TP server if required
+ * (Re)start/stop L2TP server if required
  *
  * @param gid           group identifier
  * @param oid           full identifier of the father instance
@@ -604,7 +618,6 @@ l2tp_section_find(te_l2tp_server *l2tp, const char *name)
  *
  * @param l2tp          l2tp server structure
  * @param section       lns section where certain option is located
- * @param type          the class of the options (L2TP|PPP)
  * @param name          option name to look for
  *
  * @return l2tp server option structure
@@ -630,6 +643,40 @@ l2tp_find_option(te_l2tp_server *l2tp, const char *section, const char *name)
 }
 
 /**
+ * Find l2tp server option in options list
+ *
+ * @param l2tp          l2tp server structure
+ * @param section       lns section where certain option is located
+ * @param name          option name to look for
+ *
+ * @return l2tp server option structure
+ */
+static te_l2tp_option *
+l2tp_find_client(te_l2tp_server *l2tp, const char *section,
+                 const char *name, enum l2tp_secret_prot type)
+{
+    te_l2tp_option  *client = NULL;
+    te_l2tp_section *sec = l2tp_section_find(l2tp, section);
+
+    if (strcmp(sec->secname, section) == 0)
+    {
+        for (client = SLIST_FIRST(&sec->l2tp_option);
+             client != NULL;
+             client = SLIST_NEXT(client, list))
+        {
+            if (strcmp(client->name, name) == 0
+                && client->secret != NULL
+                && client->secret->type == type)
+            {
+                break;
+            }
+        };
+    }
+
+    return client;
+}
+
+/**
  * Return secret by client's name
  * @param l2tp         L2TP server structure
  * @param cname        Name of the client
@@ -638,11 +685,12 @@ l2tp_find_option(te_l2tp_server *l2tp, const char *section, const char *name)
  * @return L2TP section structure
  */
 static te_l2tp_secret *
-l2tp_client_find(te_l2tp_section *l2tp, const char *cname,
+l2tp_find_secret(te_l2tp_section *l2tp, const char *cname,
                  enum l2tp_secret_prot type)
 {
+    te_l2tp_secret *l2tp_secret = NULL;
     te_l2tp_option *client;
-    te_l2tp_secret *l2tp_secret;
+
     for (client = SLIST_FIRST(&l2tp->l2tp_option);
          client != NULL; client = SLIST_NEXT(client, list))
     {
@@ -656,7 +704,7 @@ l2tp_client_find(te_l2tp_section *l2tp, const char *cname,
 }
 
 /**
- * Get callback for /agent/l2tp/listen or /agent/l2tp/port node.
+ * Get method for /agent/l2tp/listen or /agent/l2tp/port node.
  *
  * @param gid           group identifier
  * @param oid           full identifier of the father instance
@@ -685,7 +733,7 @@ l2tp_global_opt_get(unsigned gid, const char *oid, char *value,
 }
 
 /**
- * Set callback for /agent/l2tp/listen or /agent/l2tp/port node.
+ * Set method for /agent/l2tp/listen or /agent/l2tp/port nodes.
  *
  * @param gid           group identifier
  * @param oid           full identifier of the father instance
@@ -719,7 +767,7 @@ l2tp_global_opt_set(unsigned int gid, const char *oid, const char *value,
 
 
 /**
- * Add callback for /agent/l2tp/lns node.
+ * Method for adding a section to /agent/l2tp/lns.
  *
  * @param gid           group identifier
  * @param oid           full identifier of the father instance
@@ -759,7 +807,7 @@ l2tp_lns_section_add(unsigned int gid, const char *oid, const char *value,
 }
 
 /**
- * Delete callback from /agent/l2tp/lns node.
+ * Method for deleting a section from /agent/l2tp/lns.
  *
  * @param gid           group identifier
  * @param oid           full identifier of the father instance
@@ -792,7 +840,7 @@ l2tp_lns_section_del(unsigned int gid, const char *oid,
 }
 
 /**
- * List callback for /agent/l2tp/lns node.
+ * Method for obtaining the list of sections from /agent/l2tp/lns.
  *
  * @param gid           group identifier
  * @param oid           full identifier of the father instance
@@ -807,10 +855,9 @@ l2tp_lns_section_list(unsigned int gid, const char *oid,
 {
     te_l2tp_server  *l2tp = l2tp_server_find();
     te_l2tp_section *l2tp_section;
+    te_string        str = TE_STRING_INIT;
     uint32_t         list_size;
 
-
-    te_string str = TE_STRING_INIT;
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(l2tp_name);
@@ -825,15 +872,13 @@ l2tp_lns_section_list(unsigned int gid, const char *oid,
         te_string_append(&str, l2tp_section->secname);
     }
     *list = str.ptr;
-
     return 0;
 
 }
 
 /**
- * Get callback for /agent/l2tp/lns/ip_range|lac_range|bit|auth/refuse|require.
- *              or  /agent/l2tp/lns/pppopt/mtu|mru|lcp-echo-interval
- *              |lcp-echo-failure
+ * Get method for /agent/l2tp/lns/ip_range|lac_range|bit|auth/refuse|require.
+ * or /agent/l2tp/lns/pppopt/mtu|mru|lcp-echo-interval|lcp-echo-failure
  * @param gid           group identifier
  * @param oid           full identifier of the father instance
  * @param value         returned ip_range|bit value|
@@ -867,9 +912,9 @@ l2tp_lns_option_get(unsigned int gid, const char *oid, char *value,
 };
 
 /**
- * Set callback for /agent/l2tp/lns/ip_range|lac_range|bit|auth/refuse|require.
- *              or  /agent/l2tp/lns/pppopt/mtu|mru|lcp-echo-interval
- *                  |lcp-echo-failure.
+ * Set method for
+ * /agent/l2tp/lns/ip_range|lac_range|bit|auth/refuse|require.
+ * or /agent/l2tp/lns/pppopt/mtu|mru|lcp-echo-interval|lcp-echo-failure.
  *
  * @param gid           group identifier
  * @param oid           full identifier of the father instance
@@ -907,7 +952,6 @@ l2tp_lns_option_set(unsigned int gid, const char *oid, char *value,
         l2tp->changed = TRUE;
         return 0;
     }
-
     return TE_RC(TE_TA_UNIX,TE_ENOENT);
 };
 
@@ -916,8 +960,8 @@ l2tp_lns_option_set(unsigned int gid, const char *oid, char *value,
  *  @param l2tp     l2tp server structure
  *  @param value    pppoptfile's name
  *
- *  @return         0 if belong
-                    otherwise -1
+ *  @return TRUE if belong
+            otherwise FALSE
  */
 static te_bool
 check_pppoptfile(te_l2tp_server *l2tp, const char *value)
@@ -942,8 +986,9 @@ check_pppoptfile(te_l2tp_server *l2tp, const char *value)
 }
 
 /**
- * Add callback for /agent/l2tp/lns/ip_range|lac_range|bit|auth/refuse|require
- *               or /agent/l2tp/pppopt/option.
+ * Method for adding an option to
+ * /agent/l2tp/lns/ip_range|lac_range|bit|auth/refuse|require
+ * or /agent/l2tp/pppopt/option.
  *
  * @param gid           group identifier
  * @param oid           full identifier of the father instance
@@ -967,22 +1012,22 @@ l2tp_lns_option_add(unsigned int gid, const char *oid, const char *value,
                     const char *l2tp_name, const char *optname,
                     const char *secname, enum l2tp_option_type option_type)
 {
+    te_l2tp_option  *l2tp_option;
     te_l2tp_server  *l2tp = l2tp_server_find();
-
-    if (strcmp(optname, PPP_OPTIONS) == 0 && !check_pppoptfile(l2tp, value))
-    {
-        ERROR("Attempt to assign the same pppoptfile "
-              "for the different lns: %s", strerror(errno));
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    }
     te_l2tp_section *l2tp_section = l2tp_section_find(l2tp, secname);
-    if (l2tp_section == NULL)
-        return TE_RC(TE_TA_UNIX,  TE_ENOENT);
-    te_l2tp_option  *l2tp_option = NULL;
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(l2tp_name);
+
+    if (strcmp(optname, PPP_OPTIONS) == 0 && !check_pppoptfile(l2tp, value))
+    {
+        ERROR("Attempt to assign the same pppoptfile "
+              "for the different lnses: %s", strerror(errno));
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+    if (l2tp_section == NULL)
+        return TE_RC(TE_TA_UNIX,  TE_ENOENT);
 
     if ((l2tp_option = l2tp_find_option(l2tp, secname, optname)) != NULL)
     {
@@ -995,16 +1040,14 @@ l2tp_lns_option_add(unsigned int gid, const char *oid, const char *value,
     l2tp_option->name = strdup(optname);
     l2tp_option->type = option_type;
     l2tp_option->value = strdup(value);
-
     SLIST_INSERT_HEAD(&l2tp_section->l2tp_option, l2tp_option, list);
-
     l2tp->changed = TRUE;
-
     return 0;
 }
 
 /**
- * Delete callback for /agent/l2tp/lns/ip_range|lac_range|bit|auth/refuse|require.
+ * Method for deleting an option from
+ * /agent/l2tp/lns/ip_range|lac_range|bit|auth/refuse|require.
  *
  * @param gid           group identifier
  * @param oid           full identifier of the father instance
@@ -1031,13 +1074,16 @@ l2tp_lns_option_del(unsigned int gid, const char *oid,
     SLIST_REMOVE(&l2tp_section->l2tp_option, l2tp_option,
                  te_l2tp_option, list);
 
+    free(l2tp_option->name);
+    free(l2tp_option->value);
     free(l2tp_option);
     l2tp->changed = TRUE;
     return 0;
 }
 
 /**
- * Add callback for /agent/l2tp/lns/auth/client
+ * Method for adding a client to /agent/l2tp/lns/auth/client
+ *
  * @param gid           group identifier
  * @param oid           full identifier of the father instance
  * @param value         unused value of /agent/l2tp/lns/auth/client
@@ -1053,8 +1099,8 @@ l2tp_lns_client_add(unsigned int gid, const char *oid, char *value,
                     const char *l2tp_name, const char *cname,
                     enum l2tp_secret_prot type, const char *secname)
 {
-    te_l2tp_option *client;
-    te_l2tp_server *l2tp = l2tp_server_find();
+    te_l2tp_option  *client;
+    te_l2tp_server  *l2tp = l2tp_server_find();
     te_l2tp_section *section = l2tp_section_find(l2tp, secname);
 
     UNUSED(gid);
@@ -1084,7 +1130,8 @@ l2tp_lns_client_add(unsigned int gid, const char *oid, char *value,
 };
 
 /**
- * Delete callback for /agent/l2tp/lns/auth/client
+ * Method for deleting a client from /agent/l2tp/lns/auth/client
+ *
  * @param gid           group identifier
  * @param oid           full identifier of the father instance
  * @param l2tp_name     name of the l2tp instance is always empty
@@ -1099,27 +1146,31 @@ l2tp_lns_client_del(unsigned int gid, const char *oid,
                     const char *l2tp_name, const char *cname,
                     enum l2tp_secret_prot type, const char *secname)
 {
-    te_l2tp_option *client;
-    te_l2tp_server *l2tp = l2tp_server_find();
+    te_l2tp_option  *client;
+    te_l2tp_server  *l2tp = l2tp_server_find();
     te_l2tp_section *section = l2tp_section_find(l2tp, secname);
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(l2tp_name);
 
-    if ((client = l2tp_find_option(l2tp, secname, cname)) == NULL)
+    if ((client = l2tp_find_client(l2tp, secname, cname, type)) == NULL)
     {
         return TE_RC(TE_TA_UNIX,  TE_ENOENT);
     }
     SLIST_REMOVE(&section->l2tp_option, client, te_l2tp_option, list);
+    free(client->secret->secret);
+    free(client->secret->server);
+    free(client->secret->sipv4);
+    free(client->secret);
     free(client);
     l2tp->changed = TRUE;
-
     return 0;
 }
 
 /**
- * Get callback for /agent/l2tp/lns/auth/client/secret|ipv4|server
+ * Get method for /agent/l2tp/lns/auth/client/secret|ipv4|server
+ *
  * @param gid           group identifier
  * @param oid           full identifier of the father instance
  * @param value         client's secret|ipv4|server
@@ -1139,8 +1190,7 @@ l2tp_lns_secret_get(unsigned int gid, const char *oid, char *value,
 {
     te_l2tp_server  *l2tp = l2tp_server_find();
     te_l2tp_section *section = l2tp_section_find(l2tp, secname);
-    te_l2tp_secret  *secret = l2tp_client_find(section, cname, type);
-
+    te_l2tp_secret  *secret = l2tp_find_secret(section, cname, type);
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1148,7 +1198,7 @@ l2tp_lns_secret_get(unsigned int gid, const char *oid, char *value,
 
     if (secret == NULL)
     {
-        return TE_RC(TE_TA_UNIX,TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
     switch (field)
@@ -1163,15 +1213,15 @@ l2tp_lns_secret_get(unsigned int gid, const char *oid, char *value,
             strcpy(value, secret->sipv4);
             break;
         default:
-            break;
+            return TE_RC(TE_TA_UNIX, TE_ELIBBAD);
     }
 
     return 0;
-
 };
 
 /**
- * Set callback for /agent/l2tp/lns/auth/client/secret|ipv4|server
+ * Set method for /agent/l2tp/lns/auth/client/secret|ipv4|server
+ *
  * @param gid           group identifier
  * @param oid           full identifier of the father instance
  * @param value         client's secret|ipv4|server
@@ -1189,9 +1239,9 @@ l2tp_lns_secret_set(unsigned int gid, const char *oid, const char *value,
                     enum l2tp_secret_prot type, const char *secname,
                     enum l2tp_secret_field field)
 {
-    te_l2tp_server *l2tp = l2tp_server_find();
+    te_l2tp_server  *l2tp = l2tp_server_find();
     te_l2tp_section *section = l2tp_section_find(l2tp, secname);
-    te_l2tp_secret *secret = l2tp_client_find(section, cname, type);
+    te_l2tp_secret  *secret = l2tp_find_secret(section, cname, type);
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1218,7 +1268,7 @@ l2tp_lns_secret_set(unsigned int gid, const char *oid, const char *value,
         default:
             break;
     }
-    l2tp->changed;
+    l2tp->changed = TRUE;
     return 0;
 };
 
@@ -1233,40 +1283,31 @@ l2tp_lns_secret_set(unsigned int gid, const char *oid, const char *value,
 te_bool
 te_l2tp_ip_compare(char *range, char *ip)
 {
-    char    *decimal; /**< For holding the IP numbers*/
-    char     buffer[strlen(range)]; /**< It will consist of three ip addresses and
-                                              look like
-                                              X.X.X.X-Y.Y.Y.Y-Z.Z.Z.Z */
-    int      array[12]; /**< Array for holding decimal numbers of buffer */
+    struct sockaddr_in  start;
+    struct sockaddr_in  center;
+    struct sockaddr_in  end;
+    char               *temp_range;
+    char               *pch;
 
-    const int limit = 8; /**< The border to which the array is processed */
-    int i = 0;
-    TE_SPRINTF(buffer, "%s-%s", range, ip);
-    decimal = strtok(buffer, ".-");
-    while (decimal != NULL)
-    {
-        array[i] = atoi(decimal);
-        decimal = strtok(NULL, ".-");
-        i++;
-    }
-    /* The following loop swaps the elements in array
-     * which corresponds to Y.Y.Y.Y-Z.Z.Z.Z in buffer */
-    for (i = limit / 2; i < limit; i++)
-    {
-        array[i] = array[i] ^ array[i + 4];
-        array[i + 4] = array[i] ^ array[i + 4];
-        array[i] = array[i] ^ array[i + 4];
-    }
-    /* The resulting array contains the testing
-     * address in the middle (from 4th to 7th element),
-     * so the following loop change checks
-     * address's belonging to the range */
-    for (i = 0; i < limit; i++)
-    {
-        if (array[i] > array[i+4])
-            return FALSE;
-    }
-    return TRUE;
+    temp_range = strdup(range);
+    pch = strtok(temp_range, "-,");
+    inet_aton(ip, &center.sin_addr);
+
+    do {
+        inet_aton(pch, &start.sin_addr);
+        pch = strtok(NULL, "-,");
+        inet_aton(pch, &end.sin_addr);
+        pch = strtok(NULL, "-,");
+        if (ntohl(start.sin_addr.s_addr) < ntohl(center.sin_addr.s_addr)
+             && ntohl(center.sin_addr.s_addr) < ntohl(end.sin_addr.s_addr))
+        {
+            free(temp_range);
+            return TRUE;
+        }
+    } while (pch != NULL);
+
+    free(temp_range);
+    return FALSE;
 }
 
 /** Check address belong to any ip range
@@ -1274,8 +1315,8 @@ te_l2tp_ip_compare(char *range, char *ip)
  *  @param l2tp     l2tp server structure
  *  @param cip      address for checking
  *
- *  @return         0 if belong
-                    otherwise -1
+ *  @return         TRUE if belong
+                    otherwise FALSE
  */
 static te_bool
 te_l2tp_check_accessory(te_l2tp_server *l2tp, char *cip)
@@ -1332,7 +1373,8 @@ static te_errno
 te_l2tp_clients_add(te_l2tp_server *l2tp)
 {
     te_l2tp_connected *client;
-    struct ifaddrs    *tmp, *perm;
+    struct ifaddrs    *tmp;
+    struct ifaddrs    *perm;
     char               cip[INET6_ADDRSTRLEN];
 
     if (getifaddrs(&perm))
@@ -1351,7 +1393,8 @@ te_l2tp_clients_add(te_l2tp_server *l2tp)
                 inet_ntop(AF_INET, &((struct sockaddr_in *)
                                   tmp->ifa_ifu.ifu_dstaddr)->sin_addr,
                           cip, INET_ADDRSTRLEN);
-                client = (te_l2tp_connected *)calloc(1, sizeof(te_l2tp_connected));
+                client = (te_l2tp_connected *)
+                         calloc(1, sizeof(te_l2tp_connected));
                 if (client == NULL)
                     return TE_RC(TE_TA_UNIX, TE_ENOMEM);
                 else if (te_l2tp_check_accessory(l2tp, cip))
@@ -1368,7 +1411,8 @@ te_l2tp_clients_add(te_l2tp_server *l2tp)
 }
 
 /**
- * List callback for /agent/l2tp/lns/connected node.
+ * Method for obtaining the list of connected clients from
+ * /agent/l2tp/lns/connected.
  *
  * @param gid           group identifier
  * @param oid           full identifier of the father instance
@@ -1383,15 +1427,12 @@ l2tp_lns_connected_list(unsigned int gid, const char *oid,
 {
     te_l2tp_connected *l2tp_connected;
     uint32_t           list_size;
-
+    te_string          str = TE_STRING_INIT;
     te_l2tp_server    *l2tp = l2tp_server_find();
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(l2tp_name);
-
-    te_string str = TE_STRING_INIT;
-
 
     if (te_l2tp_clients_add(l2tp) == 0)
     {
@@ -1413,103 +1454,13 @@ l2tp_lns_connected_list(unsigned int gid, const char *oid,
 
 static rcf_pch_cfg_object node_l2tp;
 
-static rcf_pch_cfg_object node_l2tp_listen =
-        { "listen", 0, NULL, NULL,
-          (rcf_ch_cfg_get)l2tp_global_opt_get,
-          (rcf_ch_cfg_set)l2tp_global_opt_set,
-          NULL, NULL, NULL, NULL, &node_l2tp };
-
-static rcf_pch_cfg_object node_l2tp_port =
-        { "port", 0, NULL, &node_l2tp_listen,
-          (rcf_ch_cfg_get)l2tp_global_opt_get,
-          (rcf_ch_cfg_set)l2tp_global_opt_set,
-          NULL, NULL, NULL, NULL, &node_l2tp };
-
-static rcf_pch_cfg_object node_l2tp_lns_ip_range =
-        { "ip_range", 0, NULL, NULL,
-          (rcf_ch_cfg_get)l2tp_lns_option_get,
-          (rcf_ch_cfg_set)l2tp_lns_option_set,
+static rcf_pch_cfg_object node_l2tp_lns_pppoption =
+        { "option", 0, NULL, NULL, NULL, NULL,
           (rcf_ch_cfg_add)l2tp_lns_option_add,
           (rcf_ch_cfg_del)l2tp_lns_option_del, NULL, NULL, &node_l2tp };
-
-static rcf_pch_cfg_object node_l2tp_lns_lac_range =
-        { "lac_range", 0, NULL, &node_l2tp_lns_ip_range,
-          (rcf_ch_cfg_get)l2tp_lns_option_get,
-          (rcf_ch_cfg_set)l2tp_lns_option_set,
-          (rcf_ch_cfg_add)l2tp_lns_option_add,
-          (rcf_ch_cfg_del)l2tp_lns_option_del, NULL, NULL, &node_l2tp };
-
-static rcf_pch_cfg_object node_l2tp_connected =
-        { "connected", 0, NULL, &node_l2tp_lns_ip_range,
-          NULL, NULL, NULL, NULL,
-          (rcf_ch_cfg_list)l2tp_lns_connected_list,
-          NULL, &node_l2tp };
-
-static rcf_pch_cfg_object node_l2tp_lns_bit =
-        { "bit", 0, NULL, &node_l2tp_lns_lac_range,
-          (rcf_ch_cfg_get)l2tp_lns_option_get,
-          (rcf_ch_cfg_set)l2tp_lns_option_set,
-          (rcf_ch_cfg_add)l2tp_lns_option_add,
-          (rcf_ch_cfg_del)l2tp_lns_option_del, NULL, NULL, &node_l2tp };
-
-static rcf_pch_cfg_object node_l2tp_lns =
-        { "lns", 0, &node_l2tp_connected, &node_l2tp_port,
-          NULL, NULL,
-          (rcf_ch_cfg_add)l2tp_lns_section_add,
-          (rcf_ch_cfg_del)l2tp_lns_section_del,
-          (rcf_ch_cfg_list)l2tp_lns_section_list, NULL, &node_l2tp };
-
-static rcf_pch_cfg_object node_l2tp_lns_refuse =
-        { "refuse", 0, NULL, NULL,
-          (rcf_ch_cfg_get)l2tp_lns_option_get,
-          (rcf_ch_cfg_set)l2tp_lns_option_set,
-          (rcf_ch_cfg_add)l2tp_lns_option_add,
-          (rcf_ch_cfg_del)l2tp_lns_option_del, NULL, NULL, &node_l2tp };
-
-static rcf_pch_cfg_object node_l2tp_lns_require =
-        { "require", 0, NULL, NULL,
-          (rcf_ch_cfg_get)l2tp_lns_option_get,
-          (rcf_ch_cfg_set)l2tp_lns_option_set,
-          (rcf_ch_cfg_add)l2tp_lns_option_add,
-          (rcf_ch_cfg_del)l2tp_lns_option_del, NULL, NULL, &node_l2tp };
-
-
-static rcf_pch_cfg_object node_l2tp_lns_auth =
-        { "auth", 0, &node_l2tp_lns_require, &node_l2tp_lns_bit,
-          NULL, NULL, NULL, NULL, NULL, NULL, &node_l2tp };
-
-static rcf_pch_cfg_object node_l2tp_lns_unix_auth =
-        { "unix_auth", 0, NULL, &node_l2tp_lns_auth,
-          (rcf_ch_cfg_get)l2tp_lns_option_get,
-          (rcf_ch_cfg_set)l2tp_lns_option_set,
-          (rcf_ch_cfg_add)l2tp_lns_option_add,
-          (rcf_ch_cfg_del)l2tp_lns_option_del, NULL, NULL, &node_l2tp };
-
-static rcf_pch_cfg_object node_l2tp_lns_challenge =
-        { "challenge", 0, NULL, &node_l2tp_lns_unix_auth,
-          (rcf_ch_cfg_get)l2tp_lns_option_get,
-          (rcf_ch_cfg_set)l2tp_lns_option_set,
-          (rcf_ch_cfg_add)l2tp_lns_option_add,
-          (rcf_ch_cfg_del)l2tp_lns_option_del, NULL, NULL, &node_l2tp };
-
-static rcf_pch_cfg_object node_l2tp_lns_mtu =
-        { "mtu", 0, NULL, NULL,
-          (rcf_ch_cfg_get)l2tp_lns_option_get,
-          (rcf_ch_cfg_set)l2tp_lns_option_set,
-          NULL, NULL, NULL, NULL, &node_l2tp};
-
-static rcf_pch_cfg_object node_l2tp_lns_ppp =
-        { "pppopt", 0, &node_l2tp_lns_mtu, &node_l2tp_lns_challenge,
-          NULL, NULL, NULL, NULL, NULL, NULL, &node_l2tp };
-
-static rcf_pch_cfg_object node_l2tp_lns_mru =
-        { "mru", 0, NULL, &node_l2tp_lns_mtu,
-          (rcf_ch_cfg_get)l2tp_lns_option_get,
-          (rcf_ch_cfg_set)l2tp_lns_option_set,
-          NULL, NULL, NULL, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_einterval =
-        { "lcp-echo-interval", 0, NULL, &node_l2tp_lns_mru,
+        { "lcp-echo-interval", 0, NULL, &node_l2tp_lns_pppoption,
           (rcf_ch_cfg_get)l2tp_lns_option_get,
           (rcf_ch_cfg_set)l2tp_lns_option_set,
           NULL, NULL, NULL, NULL, &node_l2tp };
@@ -1520,9 +1471,33 @@ static rcf_pch_cfg_object node_l2tp_lns_efailure =
           (rcf_ch_cfg_set)l2tp_lns_option_set,
           NULL, NULL, NULL, NULL, &node_l2tp };
 
-static rcf_pch_cfg_object node_l2tp_lns_pppoption =
-        { "option", 0, NULL, &node_l2tp_lns_efailure,
-          NULL, NULL,
+static rcf_pch_cfg_object node_l2tp_lns_mru =
+        { "mru", 0, NULL, &node_l2tp_lns_efailure,
+          (rcf_ch_cfg_get)l2tp_lns_option_get,
+          (rcf_ch_cfg_set)l2tp_lns_option_set,
+          NULL, NULL, NULL, NULL, &node_l2tp };
+
+static rcf_pch_cfg_object node_l2tp_lns_mtu =
+        { "mtu", 0, NULL, &node_l2tp_lns_mru,
+          (rcf_ch_cfg_get)l2tp_lns_option_get,
+          (rcf_ch_cfg_set)l2tp_lns_option_set,
+          NULL, NULL, NULL, NULL, &node_l2tp};
+
+static rcf_pch_cfg_object node_l2tp_lns_ppp =
+        { "pppopt", 0, &node_l2tp_lns_mtu, NULL,
+          NULL, NULL, NULL, NULL, NULL, NULL, &node_l2tp };
+
+static rcf_pch_cfg_object node_l2tp_lns_unix_auth =
+        { "unix_auth", 0, NULL, &node_l2tp_lns_ppp,
+          (rcf_ch_cfg_get)l2tp_lns_option_get,
+          (rcf_ch_cfg_set)l2tp_lns_option_set,
+          (rcf_ch_cfg_add)l2tp_lns_option_add,
+          (rcf_ch_cfg_del)l2tp_lns_option_del, NULL, NULL, &node_l2tp };
+
+static rcf_pch_cfg_object node_l2tp_lns_challenge =
+        { "use_challenge", 0, NULL, &node_l2tp_lns_unix_auth,
+          (rcf_ch_cfg_get)l2tp_lns_option_get,
+          (rcf_ch_cfg_set)l2tp_lns_option_set,
           (rcf_ch_cfg_add)l2tp_lns_option_add,
           (rcf_ch_cfg_del)l2tp_lns_option_del, NULL, NULL, &node_l2tp };
 
@@ -1545,7 +1520,85 @@ static rcf_pch_cfg_object node_l2tp_lns_ssecret =
           NULL, NULL, NULL, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_sclient =
-        { "client", 0, &node_l2tp_lns_ssecret, &node_l2tp_lns_refuse,
+        { "client", 0, &node_l2tp_lns_ssecret, NULL,
           NULL, NULL,
           (rcf_ch_cfg_add)l2tp_lns_client_add,
           (rcf_ch_cfg_del)l2tp_lns_client_del, NULL, NULL, &node_l2tp };
+
+static rcf_pch_cfg_object node_l2tp_lns_refuse =
+        { "refuse", 0, NULL, &node_l2tp_lns_sclient,
+          (rcf_ch_cfg_get)l2tp_lns_option_get,
+          (rcf_ch_cfg_set)l2tp_lns_option_set,
+          (rcf_ch_cfg_add)l2tp_lns_option_add,
+          (rcf_ch_cfg_del)l2tp_lns_option_del, NULL, NULL, &node_l2tp };
+
+static rcf_pch_cfg_object node_l2tp_lns_require =
+        { "require", 0, NULL, &node_l2tp_lns_refuse,
+          (rcf_ch_cfg_get)l2tp_lns_option_get,
+          (rcf_ch_cfg_set)l2tp_lns_option_set,
+          (rcf_ch_cfg_add)l2tp_lns_option_add,
+          (rcf_ch_cfg_del)l2tp_lns_option_del, NULL, NULL, &node_l2tp };
+
+static rcf_pch_cfg_object node_l2tp_lns_auth =
+        { "auth", 0, &node_l2tp_lns_require, &node_l2tp_lns_challenge,
+          NULL, NULL, NULL, NULL, NULL, NULL, &node_l2tp };
+
+static rcf_pch_cfg_object node_l2tp_lns_bit =
+        { "bit", 0, NULL, &node_l2tp_lns_auth,
+          (rcf_ch_cfg_get)l2tp_lns_option_get,
+          (rcf_ch_cfg_set)l2tp_lns_option_set,
+          (rcf_ch_cfg_add)l2tp_lns_option_add,
+          (rcf_ch_cfg_del)l2tp_lns_option_del, NULL, NULL, &node_l2tp };
+
+static rcf_pch_cfg_object node_l2tp_lns_local_ip =
+        { "local_ip", 0, NULL, &node_l2tp_lns_bit,
+          (rcf_ch_cfg_get)l2tp_global_opt_get,
+          (rcf_ch_cfg_set)l2tp_global_opt_set,
+          NULL, NULL, NULL, NULL, &node_l2tp };
+
+static rcf_pch_cfg_object node_l2tp_connected =
+        { "connected", 0, NULL, &node_l2tp_lns_local_ip,
+          NULL, NULL, NULL, NULL,
+          (rcf_ch_cfg_list)l2tp_lns_connected_list,
+          NULL, &node_l2tp };
+
+static rcf_pch_cfg_object node_l2tp_lns_lac_range =
+        { "lac_range", 0, NULL, &node_l2tp_connected,
+          (rcf_ch_cfg_get)l2tp_lns_option_get,
+          (rcf_ch_cfg_set)l2tp_lns_option_set,
+          (rcf_ch_cfg_add)l2tp_lns_option_add,
+          (rcf_ch_cfg_del)l2tp_lns_option_del, NULL, NULL, &node_l2tp };
+
+static rcf_pch_cfg_object node_l2tp_lns_ip_range =
+        { "ip_range", 0, NULL, &node_l2tp_lns_lac_range,
+          (rcf_ch_cfg_get)l2tp_lns_option_get,
+          (rcf_ch_cfg_set)l2tp_lns_option_set,
+          (rcf_ch_cfg_add)l2tp_lns_option_add,
+          (rcf_ch_cfg_del)l2tp_lns_option_del, NULL, NULL, &node_l2tp };
+
+static rcf_pch_cfg_object node_l2tp_listen =
+        { "listen", 0, NULL, NULL,
+          (rcf_ch_cfg_get)l2tp_global_opt_get,
+          (rcf_ch_cfg_set)l2tp_global_opt_set,
+          NULL, NULL, NULL, NULL, &node_l2tp };
+
+static rcf_pch_cfg_object node_l2tp_port =
+        { "port", 0, NULL, &node_l2tp_listen,
+          (rcf_ch_cfg_get)l2tp_global_opt_get,
+          (rcf_ch_cfg_set)l2tp_global_opt_set,
+          NULL, NULL, NULL, NULL, &node_l2tp };
+
+static rcf_pch_cfg_object node_l2tp_lns =
+        { "lns", 0, &node_l2tp_lns_ip_range, &node_l2tp_port,
+          NULL, NULL,
+          (rcf_ch_cfg_add)l2tp_lns_section_add,
+          (rcf_ch_cfg_del)l2tp_lns_section_del,
+          (rcf_ch_cfg_list)l2tp_lns_section_list, NULL, &node_l2tp };
+
+
+static rcf_pch_cfg_object node_l2tp =
+        { "l2tp", 0, &node_l2tp_lns, NULL,
+          (rcf_ch_cfg_get)l2tp_server_get,
+          (rcf_ch_cfg_set)l2tp_server_set,
+          NULL, NULL, NULL,
+          (rcf_ch_cfg_commit)l2tp_server_commit};
