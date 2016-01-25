@@ -4,7 +4,7 @@
  * Definition of TAPI to configure L2TP.
  *
  *
- * Copyright (C) 2015 Test Environment authors (see file REST_AUTHORS
+ * Copyright (C) 2016 Test Environment authors (see file REST_AUTHORS
  * in the root directory of the distribution).
  *
  * This library is free software; you can redistribute it and/or
@@ -149,7 +149,6 @@ tapi_cfg_l2tp_ip_get(const char *ta, const char *lns,
  * @param iprange       IP address pool
  * @param kind          The class of the added ip range
                         ALLOW|BAN
- * @param ranges        An array of l2tp's ranges
  *
  * @return Status code
  */
@@ -157,7 +156,7 @@ tapi_cfg_l2tp_ip_get(const char *ta, const char *lns,
 extern te_errno
 tapi_cfg_l2tp_lns_range_add(const char *ta, const char *lns,
                             const l2tp_ipv4_range *iprange,
-                            enum l2tp_iprange_class kind, l2tp_range **ranges);
+                            enum l2tp_iprange_class kind);
 
 /**
  * Delete specified ip range from the configuration.
@@ -168,13 +167,12 @@ tapi_cfg_l2tp_lns_range_add(const char *ta, const char *lns,
  * @param kind          The class of the removed ip range
                         ALLOW|BAN
  *
- * @param ranges        An array of l2tp's ranges
  * @return Status code
  */
 extern te_errno
 tapi_cfg_l2tp_lns_range_del(const char *ta, const char *lns,
                             const l2tp_ipv4_range *iprange,
-                            enum l2tp_iprange_class kind, l2tp_range **ranges);
+                            enum l2tp_iprange_class kind);
 
 /**
  * Get the list of connected clients.
@@ -466,3 +464,4 @@ extern te_errno
 tapi_cfg_l2tp_lns_pppopt_del(const char *ta, const char *lns,
                              const char *pparam);
 
+#endif /* !__TE_TAPI_CFG_L2TP_H__ */
