@@ -3311,6 +3311,14 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
     {
         WRITE_STR("<a name=\"start\"> </a>\n");
 
+        /* trc_compromised.js may contain warning that night testing was
+         * broken */
+        WRITE_STR("<div width=\"100%\" id=\"CompromisedWarning\" "
+                  "style=\"background-color:red; font-size:x-large\">\n");
+        WRITE_STR("<script type=\"text/javascript\" "
+                  "src=\"trc_compromised.js\"></script>\n");
+        WRITE_STR("</div>\n");
+
         /* TRC tags */
         WRITE_STR("<b>Tags:</b>");
         TAILQ_FOREACH(tag, &gctx->tags, links)
