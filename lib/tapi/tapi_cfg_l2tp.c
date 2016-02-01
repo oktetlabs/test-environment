@@ -22,7 +22,9 @@
 /** Max length of the buffer for ip address */
 #define L2TP_IP_STRING_LENGTH 15
 
-/** Max length of the instance /ip_range: */
+/** Max length of the instance /ip_range:
+ *  e.g allow192.168.100.101-192.168.100.150
+ */
 #define L2TP_IP_RANGE_INST 36
 
 /** Max length of the secret instance  */
@@ -105,7 +107,7 @@ tapi_cfg_l2tp_lns_range_add(const char *ta, const char *lns,
 }
 
 
-static te_errno
+te_errno
 tapi_cfg_l2tp_lns_range_del(const char *ta, const char *lns,
                             const l2tp_ipv4_range *iprange,
                             enum l2tp_iprange_class kind)
@@ -116,6 +118,44 @@ tapi_cfg_l2tp_lns_range_del(const char *ta, const char *lns,
                                 "/lns:%s/%s_range:%s", ta,
                                 lns, kind == L2TP_IP_RANGE_CLASS_IP ?
                                 "ip" : "lac", range);
+}
+
+te_errno
+tapi_cfg_l2tp_lns_connected_get(const char *ta, const char *lns,
+                                struct sockaddr_in ***connected)
+{
+    unsigned int         ins_num;
+    unsigned int         i;
+    cfg_handle          *handle;
+    cfg_val_type         type = CVT_ADDRESS;
+    struct sockaddr_in **connected_mem;
+    int                  ret_val;
+
+    ret_val = cfg_find_pattern_fmt(&ins_num, &handle,
+                         TE_CFG_TA_L2TP_SERVER "/lns:%s/connected:*",
+                         ta, lns);
+    if (ret_val != 0)
+        return ret_val;
+    if (ins_num == 0)
+        return 0;
+
+    for (i = 0; i < ins_num; i++)
+    {
+        struct sockaddr_in *ip_client;
+
+        ret_val = cfg_get_instance(handle[i], &type, &ip_client);
+        if (ret_val != 0)
+            return ret_val;
+        connected_mem = (struct sockaddr_in **) realloc(*connected,
+                         (i+1) * sizeof(struct sockaddr_in *));
+        if (connected_mem != NULL)
+        {
+            connected_mem[i] = ip_client;
+            *connected = connected_mem;
+        }
+
+    }
+    return 0;
 }
 
 te_errno

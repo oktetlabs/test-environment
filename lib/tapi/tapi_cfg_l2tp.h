@@ -189,8 +189,7 @@ tapi_cfg_l2tp_lns_range_del(const char *ta, const char *lns,
 
 extern te_errno
 tapi_cfg_l2tp_lns_connected_get(const char *ta, const char *lns,
-                                struct sockaddr_in ***connected,
-                                l2tp_range **ranges);
+                                struct sockaddr_in ***connected);
 
 /**
  * Set the bit parameter's value for the specified LNS.
