@@ -3512,7 +3512,7 @@ trc_report_to_perl(trc_report_ctx *gctx, const char *filename)
             fprintf(f, "    '%s',\n", key_test->path);
         }
 
-        fprintf(f, "  ],\n", key->name);
+        fprintf(f, "  ],\n");
     }
     fprintf(f, ");\n");
 
