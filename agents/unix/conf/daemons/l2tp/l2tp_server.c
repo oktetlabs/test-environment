@@ -9,8 +9,11 @@
 /** Pattern to match strings like XXX.XXX.XXX.XXX
  *  where X - number from 0 to 9
  */
-#define L2TP_SEMI_IP_PATTERN "([0-9]{1,3})\.([0-9]{1,3})\." \
-                             "([0-9]{1,3})\.([0-9]{1,3})"
+#define L2TP_RANGE_PATTERN "^(([0-9]{1,3}\\.){3}[0-9]{1,3})" \
+                           "(-(([0-9]{1,3}\\.){3}[0-9]{1,3}))?(,|$)"
+
+/* Number of groups of the L2TP_RANGE_PATTERN regexp */
+#define L2TP_REGEX_GROUPS 7
 
 /** L2TP global section name */
 #define L2TP_GLOBAL            "global"
@@ -52,10 +55,13 @@
 #define L2TP_CMDLINE_LENGTH   1024
 
 /** Default size for the pid storage*/
-#define L2TP_MAX_PID_LENGTH 5
+#define L2TP_MAX_PID_VALUE_LENGTH 16
 
 /**< pid of xl2tpd */
 static int l2tp_pid = -1;
+
+/**< the returning value for the regcomp */
+static int regex_retval = -1;
 
 /** Authentication type */
 enum l2tp_secret_prot {
@@ -170,25 +176,30 @@ l2tp_server_find()
  * @return Status code
  */
 static te_errno
-l2tp_secrets_recover(char *secretfname)
+l2tp_secrets_recover(char *secret_fname)
 {
-    char    *backupfname;
-    char    *directory = "/etc/ppp";
-    char    *secprefix = "sec";
+    char    *backup_fname = "/etc/ppp/secretsXXXXXX";;
     char     line [256];
     FILE*    secrets_file;
     FILE*    backup_file;
+    int      backup_fd;
 
-    backupfname = tempnam(directory, secprefix);
+    backup_fd = mkstemp(backup_fname);
 
-    secrets_file = fopen(secretfname, "r");
+    if (backup_fd == -1)
+    {
+        ERROR("mkstemp failed: %s", strerror(errno));
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    secrets_file = fopen(secret_fname, "r");
     if(secrets_file == NULL)
     {
         ERROR("Failed to open file: %s", strerror(errno));
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
-    backup_file = fopen(backupfname, "w");
+    backup_file = fdopen(backup_fd, "w");
     if( backup_file == NULL)
     {
         if (fclose(backup_file) != 0)
@@ -226,10 +237,10 @@ l2tp_secrets_recover(char *secretfname)
         return  TE_OS_RC(TE_TA_UNIX, errno);
     }
 
-    if (rename(backupfname, secretfname) != 0)
+    if (rename(backup_fname, secret_fname) != 0)
     {
         ERROR("Failed to rename %s to %s: %s",
-              backupfname, secretfname, strerror(errno));
+              backup_fname, secret_fname, strerror(errno));
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
@@ -254,13 +265,20 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
     te_l2tp_option  *ppp_option;
     te_l2tp_section *l2tp_section;
     char            *pppfilename = NULL;
-    char            *l2tp_conf = malloc(strlen(L2TP_SERVER_CONF_BASIS
-                                               + L2TP_MAX_PID_LENGTH));
+    char            *l2tp_conf = malloc(strlen(L2TP_SERVER_CONF_BASIS)
+                                               + L2TP_MAX_PID_VALUE_LENGTH);
+    int              l2tp_fd;
 
     ENTRY("%s()", __FUNCTION__);
-    TE_SPRINTF(l2tp_conf, L2TP_SERVER_CONF_BASIS ".%i", (int) getpid());
+    TE_SPRINTF(l2tp_conf, L2TP_SERVER_CONF_BASIS ".%i", getpid());
+    l2tp_fd = open(l2tp_conf, O_CREAT|O_EXCL);
+    if (l2tp_fd == -1)
+    {
+        ERROR("open() is unsuccessful: %s", strerror(errno));
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
 
-    l2tp_file = fopen(l2tp_conf, "w");
+    l2tp_file = fdopen(l2tp_fd, "w");
     if (l2tp_file == NULL)
     {
         ERROR("Failed to open '%s' file for writing: %s",
@@ -286,8 +304,14 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
     pap_secret_file = fopen(L2TP_PAP_SECRETS, "a+");
     if (pap_secret_file == NULL)
     {
-        if (fclose(l2tp_file) != 0 ||
-            fclose(chap_secret_file) != 0)
+        if (fclose(l2tp_file) != 0)
+        {
+            ERROR("%s(): fclose() failed: %s",
+                  __FUNCTION__, strerror(errno));
+
+            return  TE_OS_RC(TE_TA_UNIX, errno);
+        }
+        if (fclose(chap_secret_file) != 0)
         {
             ERROR("%s(): fclose() failed: %s",
                   __FUNCTION__, strerror(errno));
@@ -300,8 +324,8 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
     }
 
     /** Add a line to indicate the beginning of the secrets for L2TP tests */
-    fprintf(chap_secret_file, "\n%s", L2TP_FENCE);
-    fprintf(pap_secret_file, "\n%s", L2TP_FENCE);
+    fputs(L2TP_FENCE, chap_secret_file);
+    fputs(L2TP_FENCE, pap_secret_file);
 
     for (l2tp_section = SLIST_FIRST(&l2tp->section); l2tp_section != NULL;
          l2tp_section = SLIST_NEXT(l2tp_section, list))
@@ -333,9 +357,19 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
             ppp_file = fopen(pppfilename, "w");
             if (ppp_file == NULL)
             {
-                if (fclose(l2tp_file) != 0 ||
-                    fclose(chap_secret_file) != 0 ||
-                    fclose(pap_secret_file) != 0)
+                if (fclose(l2tp_file) != 0)
+                {
+                    ERROR("%s(): fclose() failed: %s",
+                          __FUNCTION__, strerror(errno));
+                    return  TE_OS_RC(TE_TA_UNIX, errno);
+                }
+                if (fclose(chap_secret_file) != 0)
+                {
+                    ERROR("%s(): fclose() failed: %s",
+                          __FUNCTION__, strerror(errno));
+                    return  TE_OS_RC(TE_TA_UNIX, errno);
+                }
+                if (fclose(pap_secret_file) != 0)
                 {
                     ERROR("%s(): fclose() failed: %s",
                           __FUNCTION__, strerror(errno));
@@ -398,15 +432,33 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
         }
     }
     /** Add a line to indicate the end of the secrets for L2TP tests */
-    fprintf(chap_secret_file, "%s", L2TP_FENCE);
-    fprintf(pap_secret_file, "%s", L2TP_FENCE);
+    fputs(L2TP_FENCE, chap_secret_file);
+    fputs(L2TP_FENCE, pap_secret_file);
 
-    if (fclose(l2tp_file) != 0 || fclose(ppp_file) != 0
-        || fclose(chap_secret_file) != 0 || fclose(pap_secret_file) != 0)
+    if (fclose(l2tp_file) != 0)
     {
         ERROR("%s(): fclose() failed: %s", __FUNCTION__, strerror(errno));
         return  TE_OS_RC(TE_TA_UNIX, errno);
     }
+
+    if (fclose(ppp_file) != 0)
+    {
+        ERROR("%s(): fclose() failed: %s", __FUNCTION__, strerror(errno));
+        return  TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    if (fclose(chap_secret_file) != 0)
+    {
+        ERROR("%s(): fclose() failed: %s", __FUNCTION__, strerror(errno));
+        return  TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    if (fclose(pap_secret_file) != 0)
+    {
+        ERROR("%s(): fclose() failed: %s", __FUNCTION__, strerror(errno));
+        return  TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
     return 0;
 }
 
@@ -426,25 +478,25 @@ l2tp_is_running(te_l2tp_server *l2tp)
 
     UNUSED(l2tp);
 
-    TE_SPRINTF(l2tp_ta_pidfile, "%s%i" , L2TP_TA_PIDFILE, (int) getpid());
+    TE_SPRINTF(l2tp_ta_pidfile, "%s%i" , L2TP_TA_PIDFILE, getpid());
 
     if ((f = fopen(L2TP_SERVER_PIDFILE, "r")) != NULL)
     {
-        if (fscanf(f, "%u", &l2tp_pid) == 0)
+        if (fscanf(f, "%u", &l2tp_pid) != 1)
         {
-            fclose(f);
-            assert(0);
+            ERROR("%s(): Failed to parse l2tp_pid", __FUNCTION__);
         }
+        fclose(f);
         kill(l2tp_pid, SIGTERM);
-        l2tp_pid = 0;
+        l2tp_pid = -1;
     }
     else if ((f = fopen(l2tp_ta_pidfile, "r")) != NULL)
     {
-        if (fscanf(f, "%u", &l2tp_pid) == 0)
+        if (fscanf(f, "%u", &l2tp_pid) != 1)
         {
-            fclose(f);
-            assert(0);
+            ERROR("%s(): Failed to parse l2tp_pid", __FUNCTION__);
         }
+        fclose(f);
     }
     is_running = l2tp_pid > 0;
 
@@ -463,8 +515,6 @@ l2tp_is_running(te_l2tp_server *l2tp)
 static te_errno
 l2tp_server_stop(te_l2tp_server *l2tp)
 {
-    char     stop[L2TP_CMDLINE_LENGTH];
-
     ENTRY("%s()", __FUNCTION__);
 
     if (l2tp_pid > 0)
@@ -476,17 +526,16 @@ l2tp_server_stop(te_l2tp_server *l2tp)
     {
         if (!access(L2TP_INIT_SCRIPT, X_OK))
         {
-            TE_SPRINTF(stop, "%s stop", L2TP_INIT_SCRIPT);
-            if (ta_system(stop) != 0)
+            if (ta_system(L2TP_INIT_SCRIPT "stop") != 0)
             {
-                ERROR("Command %s failed", stop);
+                ERROR("Command %s failed", L2TP_INIT_SCRIPT "stop");
                 return TE_RC(TE_TA_UNIX, TE_ESHCMD);
             }
         }
         else
         {
             kill(l2tp_pid, SIGTERM);
-            l2tp_pid = 0;
+            l2tp_pid = -1;
         }
     }
 
@@ -508,7 +557,7 @@ l2tp_server_start(te_l2tp_server *l2tp)
 {
     char     buf[L2TP_CMDLINE_LENGTH];
     te_errno res;
-    int      ta_pid = (int) getpid();
+    int      ta_pid = getpid();
 
     l2tp_server_stop(l2tp);
 
@@ -1300,42 +1349,6 @@ l2tp_lns_secret_set(unsigned int gid, const char *oid, const char *value,
     return 0;
 };
 
-static te_bool
-l2tp_check_range(char *range)
-{
-    regex_t  regex;
-    int      retval;
-    char    *temprange = strdup(range);
-    char    *pch = strtok(temprange, ",");
-
-    retval = regcomp(&regex, "^" L2TP_SEMI_IP_PATTERN
-            "($|-" L2TP_SEMI_IP_PATTERN ")$", REG_EXTENDED);
-
-    if (retval != 0)
-    {
-        regfree(&regex);
-        free(temprange);
-        ERROR("Could not compile regex: %s", strerror(errno));
-        return FALSE;
-    }
-
-    do {
-        retval = regexec(&regex, pch, 0, NULL, 0);
-        if (retval != 0)
-        {
-            free(temprange);
-            regfree(&regex);
-            return FALSE;
-        }
-        pch = strtok(NULL, ",");
-
-    } while (pch != NULL);
-
-
-    free(temprange);
-    regfree(&regex);
-    return TRUE;
-}
 
 /** Helper for te_l2tp_check_accessory function
  *
@@ -1343,7 +1356,7 @@ l2tp_check_range(char *range)
  *  @param ip       ip address for checking
  *
  *  @return         TRUE if ip belongs to range
- *                  Otherwise false
+ *                  Otherwise FALSE
  */
 te_bool
 te_l2tp_ip_compare(char *range, char *ip)
@@ -1351,61 +1364,77 @@ te_l2tp_ip_compare(char *range, char *ip)
     struct in_addr      start;
     struct in_addr      center;
     struct in_addr      end;
-    char               *temp_range;
-    char               *range_token;
-    char               *ip_token;
-    char               *end_range;
+    regex_t             regex;
+    regmatch_t          groups[L2TP_REGEX_GROUPS];
 
-    int                 ip_len = 15;
-
-    if (!l2tp_check_range(range))
-        return FALSE;
+    if (regex_retval == -1)
+    {
+        regex_retval = regcomp(&regex, L2TP_RANGE_PATTERN, REG_EXTENDED);
+        if (regex_retval != 0)
+        {
+            regfree(&regex);
+            regex_retval = -1;
+            ERROR("Could not compile regex: %s", strerror(errno));
+            return FALSE;
+        }
+    }
 
     if (inet_aton(ip, &center) == 0)
+    {
+        ERROR("Invalid input: %s", strerror(errno));
         return FALSE;
+    }
 
-    temp_range = strdup(range);
-    range_token = strtok_r(temp_range, ",", &end_range);
-    do {
-        char *end_hyphen;
-        if (strlen(range_token) <= ip_len)
+    while (TRUE)
+    {
+        char buf_ip[15];
+        regex_retval = regexec(&regex, range, L2TP_REGEX_GROUPS, groups, 0);
+        if (regex_retval != 0)
         {
-            if (inet_aton(range_token, &start) == 0)
-            {
-                free(temp_range);
-                return FALSE;
-            }
-            else if (ntohl(start.s_addr) == ntohl(center.s_addr))
-            {
-                free(temp_range);
-                return TRUE;
-            }
+            ERROR("No matches: %s", strerror(errno));
+            return FALSE;
         }
-        else
+
+        if (groups[4].rm_eo != -1 && groups[4].rm_so != -1)
         {
-            ip_token = strtok_r(range_token, "-", &end_hyphen);
-            if (inet_aton(ip_token, &start) == 0)
+            TE_SPRINTF(buf_ip, "%.*s", (groups[1].rm_eo - groups[1].rm_so),
+                    range + groups[1].rm_so);
+            if (inet_aton(buf_ip, &start) == 0)
             {
-                free(temp_range);
                 return FALSE;
             }
-            ip_token = strtok_r(NULL, "-", &end_hyphen);
-            if (inet_aton(ip_token, &end) == 0)
+            TE_SPRINTF(buf_ip, "%.*s", (groups[4].rm_eo - groups[4].rm_so),
+                    range + groups[4].rm_so);
+            if (inet_aton(buf_ip, &end) == 0)
             {
-                free(temp_range);
                 return FALSE;
             }
             if (ntohl(start.s_addr) <= ntohl(center.s_addr)
                 && ntohl(center.s_addr) <= ntohl(end.s_addr))
             {
-                free(temp_range);
                 return TRUE;
             }
         }
-    } while ((range_token = strtok_r(NULL, ",", &end_range)) != NULL);
+        else if (groups[1].rm_eo != -1 && groups[1].rm_so != -1)
+        {
+            TE_SPRINTF(buf_ip, "%.*s", (groups[1].rm_eo - groups[1].rm_so),
+                    range + groups[1].rm_so);
+            if (inet_aton(buf_ip, &start) == 0)
+            {
+                return FALSE;
+            }
+            else if (ntohl(start.s_addr) == ntohl(center.s_addr))
+            {
+                return TRUE;
+            }
+        }
+        if (groups[6].rm_eo != -1 && groups[6].rm_so != -1)
+        {
+            range = range + groups[6].rm_eo;
+        }
+    }
 
-    free(temp_range);
-    return FALSE;
+    return TRUE;
 }
 
 /** Check address belong to any ip range
@@ -1700,73 +1729,3 @@ static rcf_pch_cfg_object node_l2tp =
           (rcf_ch_cfg_set)l2tp_server_set,
           NULL, NULL, NULL,
           (rcf_ch_cfg_commit)l2tp_server_commit};
-
-/**
- * Grab method for l2tp server resource
- *
- * @param name  dummy name of l2tp server
- *
- * @return status code
- */
-te_errno
-l2tp_grab(const char *name)
-{
-    te_l2tp_server *l2tp = l2tp_server_find();
-    const char     *l2tp_paths[] = {L2TP_SERVER_EXEC};
-    te_errno        retval = 0;
-
-    UNUSED(name);
-
-    INFO("%s()", __FUNCTION__);
-
-    if (access(L2TP_SERVER_EXEC, X_OK) != 0)
-    {
-        ERROR("No L2TP server executable was not found");
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    }
-
-    if ((retval = rcf_pch_add_node("/agent", &node_l2tp)) != 0)
-    {
-        return retval;
-    }
-
-    if ((retval = l2tp_server_stop(l2tp)) != 0)
-    {
-        ERROR("Failed to stop L2TP server");
-        rcf_pch_del_node(&node_l2tp);
-        return retval;
-    }
-
-    l2tp->started = FALSE;
-
-    return 0;
-}
-
-/**
- * Release method for l2tp server resource
- *
- * @param name  dummy name of l2tp server
- *
- * @return status code
- */
-te_errno
-l2tp_release(const char *name)
-{
-    te_l2tp_server *l2tp = l2tp_server_find();
-    te_errno        retval;
-
-    UNUSED(name);
-
-    INFO("%s()", __FUNCTION__);
-
-    if ((retval = rcf_pch_del_node(&node_l2tp)) != 0)
-        return retval;
-
-    if ((retval = l2tp_server_stop(l2tp)) != 0)
-    {
-        ERROR("Failed to stop l2tp server");
-        return retval;
-    }
-
-    return 0;
-}
