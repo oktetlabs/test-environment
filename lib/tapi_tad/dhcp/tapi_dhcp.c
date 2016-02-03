@@ -728,6 +728,9 @@ dhcpv4_message_insert_option(struct dhcp_message *dhcp_msg,
 void
 dhcpv4_message_destroy(struct dhcp_message *dhcp_msg)
 {
+    if (dhcp_msg == NULL)
+        return;
+
     dhcp_options_destroy(dhcp_msg->opts);
     free(dhcp_msg);
 }
