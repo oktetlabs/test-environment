@@ -1,0 +1,83 @@
+<html>
+<head>
+  <title>Night testing results</title>
+  <script type="text/javascript">
+    function twoDigits(n)
+    {
+        if (n < 10)
+        {
+            return "0" + n;
+        }
+        else
+        {
+            return "" + n;
+        }
+    }
+
+    function dateToStr(d)
+    {
+        return twoDigits(d.getDate()) + '.' +
+               twoDigits(d.getMonth() + 1) + '.' +
+               d.getFullYear();
+    }
+
+    function fillDates()
+    {
+        var start_obj = document.getElementById("start_date");
+        var end_obj = document.getElementById("end_date");
+        var cur_time = new Date();
+
+        end_obj.value = dateToStr(cur_time);
+        cur_time.setMonth(cur_time.getMonth() - 1);
+        start_obj.value = dateToStr(cur_time);
+    }
+  </script>
+</head>
+<body onload="fillDates()">
+  <form action="process_form.pl" method="post" target="_blank">
+    <table>
+      <tr>
+        <td>Start date:</td>
+        <td><input type="text" name="start_date" id="start_date"></td>
+        <td>Format: dd.mm.yyyy</td>
+      </tr>
+      <tr>
+        <td>End date:</td>
+        <td><input type="text" name="end_date" id="end_date"></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>Test(s):</td>
+        <td><textarea rows="5" cols="100" name="tests">sockapi-ts/sockopts/bindtodevice_dstunreach</textarea></td>
+        <td style="white-space: nowrap">Example:<br>sockapi-ts/sockopts/bindtodevice_dstunreach:create_vlan=TRUE,bind_to_vlan=TRUE</td>
+      </tr>
+      <tr>
+        <td>Tag filter:</td>
+        <td><input style="width: 100%;" type="text" name="tag_expr"></td>
+        <td>Example: ool_loop==3&amp;ool_epoll==1</td>
+      </tr>
+      <tr>
+        <td>Cache to use:</td>
+        <td>
+          <!-- CACHES_LIST -->
+          <input type="radio" name="cache" value="none">None<br>
+       </td>
+      </tr>
+      <tr>
+        <td>Log source(s):</td>
+        <td>
+          <textarea rows="5" cols="100" name="log_sources" id="log_sources"></textarea>
+        </td>
+      </tr>
+      <tr>
+        <td>Broken sessions:</td>
+        <td>
+          <input type="checkbox" name="include_compromised"
+                 value="1">Include
+        </td>
+      </tr>
+    </table>
+    <input type="submit" value="Generate report" style="width:20em; height:2em; ">
+  </form>
+</body>
+</html>

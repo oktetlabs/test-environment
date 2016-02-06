@@ -1,0 +1,162 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use Date::Manip;
+
+# Next comment is special, it will be changed to
+# correct "use lib" when deploying.
+
+#USE_LIB
+use night_logs_cgi_aux::aux_funcs;
+
+my $date_from = new Date::Manip::Date;
+my $date_to = new Date::Manip::Date;
+my $date_inc = new Date::Manip::Delta;
+
+my $log_path;
+my $cache_dir;
+my $cache_id;
+
+$date_to->parse("now");
+$date_inc->parse("- 2 years");
+$date_from = $date_inc->calc($date_to);
+
+sub add_spaces
+{
+    my $str = $_[0];
+    my $len = $_[1];
+
+    my $diff = $len - length($str);
+
+    if ($diff < 0)
+    {
+        $str .= " ";
+    }
+    else
+    {
+        $str .= (" " x $diff);
+    }
+
+    return $str;
+}
+
+foreach my $arg (@ARGV)
+{
+    if ($arg =~ m/^--from=(.*)$/ || $arg =~ m/^-f(.*)$/)
+    {
+        $date_from->parse($1);
+    }
+    elsif ($arg =~ m/^--to=(.*)$/ || $arg =~ m/^-t(.*)$/)
+    {
+        $date_to->parse($1);
+    }
+    elsif ($arg =~ m/^--log-path=(.+)$/ || $arg =~ m/^-l(.+)$/)
+    {
+        my $tmp = $1;
+
+        if (!($tmp =~ /^http[s]?:\/\//))
+        {
+            $tmp = "https://oktetlabs.ru/~tester-l5/night-testing/".$tmp;
+        }
+        $log_path = $tmp;
+        if (!($log_path =~ /\/\s*$/))
+        {
+            $log_path .= "/";
+        }
+    }
+    elsif ($arg =~ m/^--cache-dir=(.+)$/ || $arg =~ m/^-c(.+)$/)
+    {
+        my $tmp = $1;
+
+        `mkdir -p $tmp`;
+        $cache_dir = `readlink -f $tmp`;
+        if ($? != 0)
+        {
+            die "Failed to get full path of cache folder";
+        }
+        $cache_dir =~ s/\s*$//;
+        if (!($cache_dir =~ /\/\s*$/))
+        {
+            $cache_dir .= "/";
+        }
+    }
+    elsif ($arg =~ m/^--cache-id=(.+)$/ || $arg =~ m/^-i(.+)$/)
+    {
+        $cache_id = $1;
+    }
+
+}
+
+if (!defined($log_path))
+{
+    print "Log path must be specified\n";
+    exit(1);
+}
+if (!defined($cache_dir))
+{
+    print "Cache folder must be specified\n";
+    exit(1);
+}
+if (!defined($cache_id))
+{
+    print "Cache ID must be specified\n";
+    exit(1);
+}
+
+my $date_a;
+my $date_b;
+my $caches_path = get_caches_path();
+my @caches = load_caches_list();
+
+$date_inc->parse("+ 1 day");
+$date_a = $date_from;
+$date_b = $date_inc->calc($date_a);
+
+$date_inc->parse("+ 2 day");
+
+while ($date_a->cmp($date_to) < 0)
+{
+    my $date_a_str = $date_a->printf("%Y.%m.%d");
+    my $date_b_str = $date_b->printf("%Y.%m.%d");
+
+    print "Caching results from $date_a_str to $date_b_str\n";
+
+    `$caches_path/get_nlogs_results -f$date_a_str -t$date_b_str --log-path=$log_path --update-cache=$cache_dir`;
+
+    $date_a = $date_inc->calc($date_a);
+    $date_b = $date_inc->calc($date_b);
+    if ($date_b->cmp($date_to) > 0)
+    {
+        $date_b = $date_to;
+    }
+}
+
+my $cache_found = 0;
+foreach my $cache (@caches)
+{
+    if ($cache->{"id"} eq $cache_id)
+    {
+        $cache_found = 1;
+        $cache->{"cache_path"} = $cache_dir;
+        $cache->{"logs_source"} = $log_path;
+    }
+}
+
+if ($cache_found == 0)
+{
+    push(@caches, { "id" => $cache_id, "cache_path" => $cache_dir,
+                    "logs_source" => $log_path });
+}
+
+open(my $fh, '>', "$caches_path/caches_list_tmp") or
+      die "Failed to open caches_list_tmp";
+foreach my $cache (@caches)
+{
+    print $fh add_spaces($cache->{"id"}, 50).
+              add_spaces($cache->{"logs_source"}, 100).
+              add_spaces($cache->{"cache_path"}, 100)."\n";
+}
+close($fh);
+
+`mv $caches_path/caches_list_tmp $caches_path/caches_list`

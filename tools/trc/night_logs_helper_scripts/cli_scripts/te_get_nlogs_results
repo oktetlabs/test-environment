@@ -1,0 +1,1339 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use Date::Manip;
+use File::Temp qw/ tempfile /;
+use IPC::Open2;
+use File::Basename;
+use Data::Dumper;
+use English;
+use Time::HiRes qw( time gettimeofday tv_interval );
+use Storable qw/nstore retrieve/;
+
+
+my @tmp_files = ();
+my $date_from;
+my $date_to;
+my $last_log_date = new Date::Manip::Date;
+my @log_paths;
+my $verbose = 0;
+my $night_results_fn = "night_results.html";
+my $tag_expr;
+my $use_remote_path = 1;
+my $include_compromised = 0;
+my $update_cache_path;
+my $cached_logs_path;
+my $benchmarks = 0;
+
+my $tester_logs_dir = "testdir";
+my $default_cache_path = "/home/izbitsky/cached_v5_tot/";
+my $loaded_logs = {};
+my $one_xml_log_parsed = 0;
+
+my %night_results = (
+  tests => {},
+);
+
+my %tests_filter = ();
+
+my %timestamps = (
+    download => 0,
+    unpack => 0,
+    process => 0,
+    fsize => 0,
+    );
+
+my $global_start = [gettimeofday];
+my $start = 0;
+my $end = 0;
+
+sub get_timestamp
+{
+    use POSIX qw(strftime);
+    my $cur_time = strftime "%a %b %e %H:%M:%S %Y", localtime;
+
+    return if ($benchmarks == 0);
+
+    # print sprintf("%s: %s %s\n", $cur_time, $_[0], $_[1]);
+
+    if ($_[1] =~ 'start') 
+    {
+        $start = [gettimeofday];
+    }
+    else
+    {
+        $end = [gettimeofday];
+    }
+
+    $timestamps{$_[0]} += tv_interval($start);
+
+    printf("Exectution time=%.2f =? (down=%.2f + unpack=%.2f + process=%.2f = %.2f) ; downloaded=%d\n",
+           tv_interval($global_start),
+           $timestamps{'download'},
+           $timestamps{'unpack'},
+           $timestamps{'process'}, 
+           $timestamps{'download'} + $timestamps{'unpack'} + $timestamps{'process'},
+           $timestamps{'fsize'}
+        );
+}
+
+sub escape_str
+{
+    my $str = $_[0];
+    $str =~ s/([\\"\$])/\\$1/g;
+    return $str;
+}
+
+sub system_call
+{
+    my $cmd = $_[0];
+
+    return system("trap \"kill -s 10 ".$PID."\" SIGINT ; ".$cmd);
+}
+
+sub download_log
+{
+    my $file_to_load = $_[0];
+    my $file_to_save = $_[1];
+
+    if ($file_to_load =~ m/https:\/\//)
+    {
+        return system_call("curl -L -s -u : --negotiate ".
+                           $file_to_load." -f".
+                           " -o ".$file_to_save);
+    }
+    else
+    {
+        return system_call("scp -q ".$file_to_load.
+                           " ".$file_to_save);
+    }
+}
+
+sub is_log_compromised
+{
+    my $path = $_[0];
+
+    $path =~ s/[^\/]*$//;
+    $path = $path."trc_compromised.js";
+
+    if ($path =~ m/^(.*):/) # Protocol name, i.e. download from
+    # remote location
+    {
+        (undef, $tmp_files[$#tmp_files + 1]) = tempfile("log-XXXX");
+
+        system_call("curl -L -s -u : --negotiate ".
+                    $path." -f".
+                    " -o ".$tmp_files[$#tmp_files]);
+        if ((-s $tmp_files[$#tmp_files]) > 0)
+        {
+            return 1;
+        }
+    }
+    else
+    {
+        if ( -e $path && (-s $path) > 0)
+        {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+sub download_prepare_log
+{
+    my $file_to_load = $_[0];
+    my $is_compromised = 0;
+
+    if ($verbose)
+    {
+        print "Download/Prepare $file_to_load\n";
+    }
+
+    my $log_name;
+    my $file_name = "";
+
+    $file_to_load =~ /.*\/([^\/]*)[\/]?\s*$/;
+    $log_name = $1;
+    $file_to_load =~ s/\s*$//;
+
+    if ($file_to_load =~ m/\/$/)
+    {
+        $file_to_load = $file_to_load."trc-log.bz2";
+    }
+
+    $is_compromised = is_log_compromised($file_to_load);
+    if ($is_compromised > 0 && $include_compromised == 0)
+    {
+        return (-1, $is_compromised);
+    }
+
+    (undef, $tmp_files[$#tmp_files + 1]) = tempfile("log-XXXX");
+    if ($file_to_load =~ m/^(.*):/) # Protocol name, i.e. download from
+    # remote location
+    {
+        my $rc = 0;
+
+        get_timestamp('download', 'start');
+        $rc = download_log($file_to_load, $tmp_files[$#tmp_files]);
+
+        if ($rc != 0)
+        {
+            warn "Failed to fetch XML log";
+            return (-1, 0);
+        }
+
+        get_timestamp('download', 'end');
+
+        $timestamps{'fsize'} += (stat $tmp_files[$#tmp_files])[7];
+        $file_name = $tmp_files[$#tmp_files];
+    }
+    else
+    {
+        $file_name = $file_to_load;
+    }
+
+    get_timestamp('unpack', 'start');
+
+    (undef, $tmp_files[$#tmp_files + 1]) = tempfile("log-XXXX");
+    system_call("cp ".escape_str($file_name)." ".$tmp_files[$#tmp_files]);
+    $file_name = $tmp_files[$#tmp_files];
+
+    if ($file_to_load =~ m/^(.*)[.]bz2\s*$/)
+    {
+        (undef, $tmp_files[$#tmp_files + 1]) = tempfile("log-XXXX");
+        system_call("bzcat ".$file_name." > ".
+                    $tmp_files[$#tmp_files]);
+        $file_name = $tmp_files[$#tmp_files];
+    }
+
+    get_timestamp('unpack', 'end');
+
+    return (0, $is_compromised);
+}
+
+sub free_tmp_files
+{
+    system("rm -f ".join(" ", @tmp_files));
+    @tmp_files = ();
+}
+
+sub compare_str_hashes
+{
+    my $hash1 = $_[0];
+    my $hash2 = $_[1];
+
+    for my $key (keys %$hash1)
+    {
+        return 0 if (defined($hash1->{$key}) != defined($hash2->{$key}) ||
+                     $hash1->{$key} ne $hash2->{$key});
+    }
+
+    for my $key (keys %$hash2)
+    {
+        return 0 if (defined($hash1->{$key}) != defined($hash2->{$key}) ||
+                     $hash1->{$key} ne $hash2->{$key});
+    }
+
+    return 1;
+}
+
+sub compare_str_arrays
+{
+    my $i = 0;
+    my $arr1 = $_[0];
+    my $arr2 = $_[1];
+
+    return 0 if (scalar(@$arr1) != scalar(@$arr2));
+
+    for ($i = 0; $i < scalar(@$arr1); $i++)
+    {
+        return 0 if ($arr1->[$i] ne $arr2->[$i]);
+    }
+
+    return 1;
+}
+
+sub match_test_paths
+{
+    my $path1 = $_[0];
+    my $path2 = $_[1];
+
+    my $path_reg = qr/$path1/;
+    if ($path2 =~ /^[\/]?${path_reg}[\/]?$/)
+    {
+        return 1;
+    }
+
+    return 0;
+}
+
+sub match_params
+{
+    my $iter_params = $_[0];
+    my $filter_params = $_[1];
+
+    foreach my $name (keys %$filter_params)
+    {
+        return 0 if (!defined($iter_params->{$name}) ||
+                     $iter_params->{$name} ne $filter_params->{$name});
+    }
+
+    return 1;
+}
+
+sub match_iter_params
+{
+    my $cur_path = $_[0];
+    my $params = $_[1];
+    my $matched = 0;
+
+    foreach my $test_path (keys %tests_filter)
+    {
+        next if (match_test_paths($test_path, $cur_path) == 0);
+        foreach my $filter_params (@{$tests_filter{$test_path}})
+        {
+            if (match_params($params,
+                             $filter_params))
+            {
+                $matched = 1;
+            }
+        }
+        $matched = 1 if (scalar(@{$tests_filter{$test_path}}) == 0);
+    }
+    $matched = 1 if (scalar(keys %tests_filter) == 0);
+
+    return $matched;
+}
+
+sub test_add_iter
+{
+    my $test = $_[0];
+    my $cur_iter = $_[1];
+    my $iter_found = 0;
+
+    foreach my $iter (@{$test->{"iters"}})
+    {
+        if (compare_str_hashes($iter->{"params"},
+                               $cur_iter->{"params"}))
+        {
+            $iter_found = 1;
+
+            foreach my $cur_result (@{$cur_iter->{"results"}})
+            {
+                my $result_found = 0;
+
+                foreach my $result (@{$iter->{"results"}})
+                {
+                    if ($result->{"result"} eq
+                          $cur_result->{"result"} &&
+                        $result->{"err"} eq
+                          $cur_result->{"err"} &&
+                        compare_str_arrays(
+                          $result->{"verdicts"},
+                          $cur_result->{"verdicts"}))
+                    {
+                        $result_found = 1;
+
+                        foreach my $cur_log (@{$cur_result->{"logs"}})
+                        {
+                            my $log_found = 0;
+
+                            for (my $i = 0;
+                                 $i < scalar(@{$result->{"logs"}}); $i++)
+                            {
+                                if ($result->{"logs"}->[$i]->{"log"} eq
+                                      $cur_log->{"log"})
+                                {
+                                    $result->{"logs"}->[$i] = $cur_log;
+                                    $log_found = 1;
+                                    last;
+                                }
+                            }
+
+                            if ($log_found == 0)
+                            {
+                                push(@{$result->{"logs"}}, $cur_log)
+                            }
+                        }
+
+                        last;
+                    }
+                }
+
+                if ($result_found == 0)
+                {
+                    push(@{$iter->{"results"}},
+                         $cur_result);
+                }
+            }
+
+            last;
+        }
+    }
+
+    if ($iter_found == 0)
+    {
+        push(@{$test->{"iters"}},
+             $cur_iter);
+    }
+}
+
+sub night_results_add_iter
+{
+    my $cur_path_str = $_[0];
+    my $cur_iter = $_[1];
+    my $matched = 0;
+
+    $matched = match_iter_params($cur_path_str, $cur_iter->{"params"});
+    return if (!$matched);
+
+    if (!$night_results{"tests"}->{$cur_path_str})
+    {
+        my $test_descr = { iters => [ $cur_iter ] };
+
+        $night_results{"tests"}->{$cur_path_str} = $test_descr;
+    }
+    else
+    {
+        test_add_iter($night_results{"tests"}->{$cur_path_str},
+                      $cur_iter);
+    }
+}
+
+# We must reference HTML logs in https://oktetlans/~tester-l5/,
+# not in local file system.
+sub fix_html_log_path
+{
+    my $log_path = $_[0];
+
+    if ($log_path =~ s/\/home\/([^\/]*)\/$tester_logs_dir/~$1/)
+    {
+        $log_path = "https://oktetlabs.ru/".$log_path;
+    }
+
+    return $log_path;
+}
+
+# Caching already evaluated tags to speed up
+# tag filtering
+my %tags_eval_cache = ();
+
+sub match_tags
+{
+    my $tags = $_[0];
+    my $tag_expr = $_[1];
+    my $comp = "";
+    my $rc = 0;
+    my %tag_names = ();
+    my $tag_name;
+    my $saved_tags;
+
+    if (!defined($tag_expr) || length($tag_expr) == 0)
+    {
+        return 1;
+    }
+
+    if (defined($tags_eval_cache{$tags}))
+    {
+        return $tags_eval_cache{$tags};
+    }
+
+    $saved_tags = $tags;
+    $tags =~ s/^\s*//;
+    while ($tags =~ /^([^\s]+)\s*/)
+    {
+        my $tag = $1;
+
+        $tag =~ s/[.-]/_/g;
+        $tag =~ s/:/=/;
+
+        $tag_name = $tag;
+        $tag_name =~ s/=.*$//;
+        $tag_names{$tag_name} = 1;
+
+        if (!($tag =~ /=/))
+        {
+            $tag = $tag."=1";
+        }
+
+        $comp = $comp."\$$tag;\n ";
+
+        $tags =~ s/^([^\s]+)\s*//;
+    }
+
+    foreach $tag_name (keys %tag_names)
+    {
+        $comp = "my \$$tag_name;\n".$comp;
+    }
+
+    $comp = $comp."\nif ($tag_expr) { \$rc = 1; } ".
+            "else { \$rc = 0; }\n";
+
+    eval($comp);
+
+    $tags_eval_cache{$saved_tags} = $rc;
+    if ($rc == 0)
+    {
+        return 0;
+    }
+    else
+    {
+        return 1;
+    }
+}
+
+sub parse_xml_log
+{
+    my $download_path = $_[0];
+    my $log = $_[1];
+    my $is_compromised = $_[2];
+    my @cur_path;
+    my $cur_path_str = "";
+    my $cur_iter;
+    my $cur_tags;
+    my $cur_ts;
+    my $skip_test = 0;
+    my $fixed_log_path = fix_html_log_path($download_path);
+
+    my $date_parser = new Date::Manip::Date;
+    my $first_date = 1;
+
+    if ($verbose)
+    {
+        print "Processing XML log from $download_path\n";
+    }
+
+    get_timestamp('process', 'start');
+
+    open FILE, $log or return -1;
+
+    while (<FILE>)
+    {
+        my $line = $_;
+        my $rc;
+
+        if ($line =~ /<msg.* user="TRC tags".*>(.*?)<\/msg>/)
+        {
+            my $tags = $1;
+
+            $cur_tags = $tags;
+            if (defined($tag_expr))
+            {
+                if (match_tags($tags, $tag_expr) == 0)
+                {
+                    if ($verbose)
+                    {
+                        print "Skipping XML log\n";
+                    }
+                    last;
+                }
+            }
+        }
+        elsif ($line =~ /<start-ts>(.*)<\/start-ts>/)
+        {
+            $cur_ts = $1;
+        }
+        elsif ($line =~ /<pkg.*name="([^\s]*?)".*>/)
+        {
+            push(@cur_path, $1);
+        }
+        elsif ($line =~ /<test.*name="([^\s]*?)".*result="([^\s]*?)".*err="(.*?)">/)
+        {
+            my $tin = "0";
+            my $result = $2;
+            my $err = $3;
+            my $found = 0;
+
+            push(@cur_path, $1);
+            $cur_path_str = join("/", @cur_path);
+
+            foreach my $test_path (keys %tests_filter)
+            {
+                if (match_test_paths($test_path, $cur_path_str))
+                {
+                    $found = 1;
+                    last;
+                }
+            }
+            $found = 1 if (scalar(keys %tests_filter) == 0);
+
+            if (!$found)
+            {
+                $skip_test = 1;
+            }
+            else
+            {
+                my $date = "";
+                my $timestamp;
+
+                $skip_test = 0;
+                if ($line =~ /<test.*tin="([0-9]*)".*>/)
+                {
+                    $tin = $1;
+                }
+
+                if ($fixed_log_path =~
+                            /.*([0-9]{2}[.][0-9]{2}[.][0-9]{2}).*/)
+                {
+                    $date = $1." ".$cur_ts;
+                }
+
+                $date_parser->parse_format("%y\\.%m\\.%d %H\\:%M\\:%S",
+                                           $date);
+                $timestamp = $date_parser->printf("%s") + 0;
+
+                if ($first_date == 1 && $date_parser->cmp($last_log_date) > 0)
+                {
+                    $last_log_date->parse($date_parser->printf("%Y.%m.%d"));
+                }
+                $first_date = 0;
+
+                $cur_iter = { results => [ { 
+                                  result => $result, err => $err,
+                                  verdicts => [],
+                                  logs => [ {
+                                    log => $fixed_log_path.
+                                           "/html/node_".$tin.".html",
+                                    tags => $cur_tags,
+                                    date => $date,
+                                    timestamp => $timestamp,
+                                    compromised => $is_compromised } ]
+                              } ],
+                              params => {} };
+            }
+        }
+        elsif (!$skip_test &&
+               $line =~ /<param.*name="([^\s]*)".*value="(.*)".*>/)
+        {
+            $cur_iter->{"params"}->{$1} = $2;
+        }
+        elsif (!$skip_test &&
+               $line =~ /<verdict>(.*)<\/verdict>/)
+        {
+            push (@{$cur_iter->{results}->[0]->{"verdicts"}}, $1);
+        }
+        elsif ($line =~ /<\/pkg>/ || $line =~ /<\/test>/)
+        {
+            pop @cur_path;
+
+            if (!$skip_test && $line =~ /<\/test>/)
+            {
+                night_results_add_iter($cur_path_str, $cur_iter);
+            }
+        }
+    }
+
+    close FILE;
+
+    $one_xml_log_parsed = 1;
+    get_timestamp('process', 'end');
+}
+
+sub process_logs
+{
+    my $start_date = $_[0];
+    my $end_date = $_[1];
+    my $log_path = $_[2];
+    my @cur_logs = ();
+    my $s;
+    my $folder_name;
+
+    if ($log_path =~ /^(.*)([0-9]{2}[.][0-9]{2}-.*)$/)
+    {
+        @cur_logs = ( $2 );
+        $log_path = $1;
+    }
+    else
+    {
+        if ($log_path =~ /^[^\/]*:/)
+        {
+            @cur_logs = `curl -L -s -u : --negotiate $log_path`;
+        }
+        else
+        {
+            @cur_logs = `ls -F --format=single-column $log_path`;
+        }
+    }
+
+    foreach $s (@cur_logs)
+    {
+        if ($s =~ /src="\/icons\/folder.gif".*<a.*href="(.*)"/ ||
+            $s =~ /([0-9]{2}[.][0-9]{2}-.*$)/ ||
+            $s =~ /^([0-9]{2}[.][0-9]{2}[\/]?)\s*$/ ||
+            $s =~ /^(session_[0-9]{2}[.][0-9]{2}[.][0-9]{2}[\/]?)$/)
+        {
+            my $log_date = new Date::Manip::Date;
+
+            $folder_name = $1;
+            if ($folder_name =~
+                 /([0-9]{2}[.][0-9]{2}-)/)
+            {
+#                $log_date->parse_format("%y\\.%m\\.%d\\-%H\\.%M", $1);
+
+#                if ($log_date->cmp($start_date) >= 0 &&
+#                    $log_date->cmp($end_date) <= 0)
+#                {
+                my $download_path = $log_path."/".$folder_name;
+                my $is_compromised;
+                my $rc;
+
+                if ($folder_name =~ /([0-9]{2}[.][0-9]{2}[.][0-9]{2})/)
+                {
+                    my $date_str = $1;
+
+                    $log_date->parse_format("%y\\.%m\\.%d", $date_str);
+                    next if $log_date->cmp($end_date) > 0;
+                    $log_date->parse_format("%y\\.%m\\.%d",
+                                            "$date_str 23:59:59");
+                    next if $log_date->cmp($start_date) < 0;
+                }
+
+                next if (defined($loaded_logs->{$download_path}));
+
+                print "downloading from $download_path \n";
+                ($rc, $is_compromised) =
+                          download_prepare_log($download_path);
+                if ($rc != 0)
+                {
+                    if ($is_compromised)
+                    {
+                        print "Skipped because of ".
+                              "compromised log\n";
+                    }
+                    else
+                    {
+                        print "Failed to retrieve log\n";
+                        $loaded_logs->{$download_path} = 2;
+                    }
+                }
+                else
+                {
+                    my $xml_log_fn = $tmp_files[$#tmp_files];
+
+                    $loaded_logs->{$download_path} = 1;
+                    parse_xml_log($download_path, $xml_log_fn,
+                                  $is_compromised);
+                    free_tmp_files();
+                }
+#                }
+            }
+            else
+            {
+                if ($folder_name =~ /([0-9]{2}[.][0-9]{2})/)
+                {
+                    $log_date->parse_format("%y\\.%m\\.%d", $1.".01");
+                    next if $log_date->cmp($end_date) > 0;
+                    $log_date->parse($log_date->printf("last day of %B %Y\n"));
+                    next if $log_date->cmp($start_date) < 0;
+                }
+                if ($folder_name =~ /(session_[0-9]{2}[.][0-9]{2}[.][0-9]{2})/)
+                {
+                    $log_date->parse_format("%y\\.%m\\.%d", $1);
+                    next if $log_date->cmp($end_date) > 0;
+                    next if $log_date->cmp($start_date) < 0;
+                }
+                if (!($folder_name =~ /(\.\.\/)/))
+                {
+                    process_logs($start_date, $end_date,
+                                 $log_path."/".$folder_name);
+                }
+            }
+        }
+    }
+}
+
+foreach my $arg (@ARGV)
+{
+    if ($arg =~ m/^--verbose$/ || $arg =~ m/^-v$/)
+
+    {
+        $verbose = 1;
+    }
+    elsif ($arg =~ m/^--from=(.*)$/ || $arg =~ m/^-f(.*)$/)
+    {
+        $date_from = new Date::Manip::Date;
+        $date_from->parse($1);
+    }
+    elsif ($arg =~ m/^--to=(.*)$/ || $arg =~ m/^-t(.*)$/)
+    {
+        $date_to = new Date::Manip::Date;
+        $date_to->parse($1);
+    }
+    elsif ($arg =~ m/^--include-compromised$/)
+
+    {
+        $include_compromised = 1;
+    }
+    elsif ($arg =~ m/^--update-cache=(.*)$/)
+
+    {
+        $update_cache_path = $1."/";
+    }
+    elsif ($arg =~ m/^--cached-logs=(.*)$/)
+    {
+        $cached_logs_path = $1."/";
+    }
+    elsif ($arg =~ m/^--default-cache$/)
+    {
+        $cached_logs_path = $default_cache_path;
+    }
+    elsif ($arg =~ m/^--local-logs=(.*)$/ || $arg =~ m/^--local-logs$/)
+    {
+        my $tmp = $1;
+
+        $use_remote_path = 0;
+
+        if (defined($tmp) && length($tmp) > 0)
+        {
+            if (!($tmp =~ /^file:\/\//))
+            {
+                $tmp = "/home/tester-l5/$tester_logs_dir/night-testing/".$tmp;
+            }
+            else
+            {
+                $tmp =~ s/^file://;
+            }
+
+            push(@log_paths, $tmp);
+        }
+    }
+    elsif ($arg =~ m/^--log-path=(.*)$/ || $arg =~ m/^-l(.*)$/)
+    {
+        my $tmp = $1;
+
+        $use_remote_path = 1;
+
+        if (defined($tmp) && length($tmp) > 0)
+        {
+            if (!($tmp =~ /^http[s]?:\/\//))
+            {
+                $tmp = "https://oktetlabs.ru/~tester-l5/night-testing/".$tmp;
+            }
+            push(@log_paths, $tmp);
+        }
+    }
+    elsif ($arg =~ m/^--out-file=(.*)$/)
+    {
+        $night_results_fn = $1;
+    }
+    elsif ($arg =~ m/^--test=(.*)$/)
+    {
+        my $def = $1;
+        my $path;
+
+        if ($def =~ m/(.*?):(.*)/)
+        {
+            my $params;
+            my $params_hash = {};
+
+            $path = $1;
+            $params = $2;
+
+            $tests_filter{$path} = [] if (!$tests_filter{$path});
+
+            $params = $params.",";
+            while ($params =~ /^(.+?)=(.+?),/)
+            {
+                my $p_name = $1;
+                my $p_value = $2;
+
+                $params_hash->{$p_name} = $p_value;
+                $params =~ s/^(.+?)=(.+?),//;
+            }
+
+            push(@{$tests_filter{$path}}, $params_hash);
+        }
+        else
+        {
+            $path = $def;
+            $tests_filter{$path} = [] if (!$tests_filter{$path});
+        }
+    }
+    elsif ($arg =~ m/^--tag-expr=(.*)$/)
+    {
+        $tag_expr = $1;
+        $tag_expr =~ s/[.-]/_/g;
+        $tag_expr =~ s/([^a-zA-Z_0-9])([a-zA-Z])/$1\$$2/g;
+        $tag_expr =~ s/^([a-zA-Z])/\$$1/g;
+        $tag_expr =~ s/&/ && /g;
+        $tag_expr =~ s/\|/ || /g;
+    }
+    elsif ($arg =~ m/^--benchmarks$/)
+    {
+        $benchmarks = 1;
+    }
+    elsif ($arg =~ m/^--help$/ || $arg =~ m/^-h$/)
+    {
+        print "Getting all test results from night testing logs\n".
+              "--from=, -f              From which date to load\n".
+              "--to=, -t                To which date to load\n".
+              "--log-path=, -l          From where to load logs\n".
+              "--local-logs[=]          Get logs from tester-l5 home\n".
+              "--cached-logs[=]         Get logs from Perl cache\n".
+              "--update-cache=          Update cached results\n".
+              "--out-file=              Where to save testing results\n".
+              "--test=                  Test path (may be with parameters)\n".
+              "--tag-expr=              Tag expression (to filter logs)\n".
+              "--include-compromised    Include results from broken night logs\n".
+              "--benchmarks             Collect data on script performance\n".
+              "--verbose, -v            Log performed operations\n".
+              "--help, -h               Display this message\n";
+        exit(0);
+    }
+}
+
+if (scalar(@log_paths) == 0)
+{
+    if ($use_remote_path == 0)
+    {
+        push(@log_paths,
+             "/home/tester-l5/$tester_logs_dir/".
+             "night-testing/Linux-v5_tot/");
+    }
+    else
+    {
+        push(@log_paths,
+             "https://oktetlabs.ru/~tester-l5/".
+             "night-testing/Linux-v5_tot/");
+    }
+}
+
+sub cleanup
+{ 
+    free_tmp_files; 
+}
+
+sub filter_cached_results
+{
+    my %filtered_tests = ();
+    my $to_timestamp = $date_to->printf("%s") + 0;
+    my $from_timestamp = $date_from->printf("%s") + 0;
+
+    foreach my $test (keys %{$night_results{"tests"}})
+    {
+        my @filtered_iters = ();
+
+        foreach my $iter (@{$night_results{"tests"}->{$test}->{"iters"}})
+        {
+            my @filtered_results = ();
+
+            next if (match_iter_params($test, $iter->{"params"}) == 0);
+            foreach my $result (@{$iter->{"results"}})
+            {
+                my @filtered_logs = ();
+
+                foreach my $log (@{$result->{"logs"}})
+                {
+                    next if ($to_timestamp < $log->{"timestamp"});
+                    next if ($from_timestamp > $log->{"timestamp"});
+                    next if ($include_compromised == 0 &&
+                             defined($log->{"compromised"}) &&
+                             $log->{"compromised"} > 0);
+                    next if match_tags($log->{"tags"}, $tag_expr) == 0;
+
+                    push(@filtered_logs, $log);
+                }
+
+                if (scalar(@filtered_logs) > 0)
+                {
+                    my $filtered_result = $result;
+
+                    $filtered_result->{"logs"} = \@filtered_logs;
+                    push(@filtered_results, $filtered_result);
+                }
+            }
+
+            if (scalar(@filtered_results) > 0)
+            {
+                my $filtered_iter = $iter;
+
+                $filtered_iter->{"results"} = \@filtered_results;
+                push(@filtered_iters, $filtered_iter);
+            }
+        }
+
+        if (scalar(@filtered_iters) > 0)
+        {
+            my $filtered_test = $night_results{"tests"}->{$test};
+
+            $filtered_test->{"iters"} = \@filtered_iters;
+            $filtered_tests{$test} = $filtered_test;
+        }
+    }
+    
+    $night_results{"tests"} = \%filtered_tests;
+}
+
+$SIG{USR1} = $SIG{INT} =  sub { print "Interrupted!\n"; cleanup; exit 1; };
+
+print "Processing night testing logs...\n";
+
+if (defined($update_cache_path) &&
+    length($update_cache_path) > 0)
+{
+    my $loaded_logs_fn = $update_cache_path."/"."loaded_logs";
+    if (-e $loaded_logs_fn)
+    {
+        $loaded_logs = retrieve($loaded_logs_fn);
+    }
+
+    if (!defined($date_from))
+    {
+        my $cache_last_log_date_f = $update_cache_path."/last_log_date";
+        if (-e $cache_last_log_date_f)
+        {
+            $date_from = new Date::Manip::Date;
+            $date_from->parse(`cat $cache_last_log_date_f`);
+            print "Using ".$date_from->printf("%Y.%m.%d").
+                  " as start date\n";
+        }
+    }
+
+    if (!defined($date_to))
+    {
+        $date_to = new Date::Manip::Date;
+        $date_to->parse("today");
+        print "Using ".$date_to->printf("%Y.%m.%d").
+              " as end date\n";
+    }
+}
+
+if (defined($date_from))
+{
+    $last_log_date->parse($date_from->printf("%Y.%m.%d"));
+}
+else
+{
+    $last_log_date->parse("1970.01.01");
+}
+
+
+if (defined($cached_logs_path) && length($cached_logs_path) > 0)
+{
+    my @cache_files = `ls -1 $cached_logs_path`;
+    my $loaded_logs_fn = $cached_logs_path."/"."loaded_logs";
+    if (-e $loaded_logs_fn)
+    {
+        $loaded_logs = retrieve($loaded_logs_fn);
+    }
+
+    get_timestamp('process', 'start');
+
+    foreach my $cache_file (@cache_files)
+    {
+        my $full_cache_path = $cached_logs_path."/".$cache_file;
+
+        $cache_file =~ s/\s*$//;
+        $cache_file =~ s/^\s*//;
+        $cache_file =~ s/[.]/\//g;
+
+        foreach my $path (keys %tests_filter)
+        {
+            if ($path =~ /^[\/]?${cache_file}[\/]?$/)
+            {
+                $night_results{"tests"}->{$path} =
+                        retrieve($full_cache_path);
+            }
+        }
+    }
+
+    filter_cached_results();
+
+    get_timestamp('process', 'end');
+
+    $date_from = new Date::Manip::Date;
+    $date_from->parse(`cat $cached_logs_path/last_log_date`);
+}
+
+if (defined($date_from) && defined($date_to) &&
+    $date_from->cmp($date_to) <= 0)
+{
+    foreach my $path (@log_paths)
+    {
+        get_timestamp('process', 'start');
+        process_logs($date_from, $date_to, $path);
+        get_timestamp('process', 'end');
+    }
+}
+
+if (defined($update_cache_path) &&
+    length($update_cache_path) > 0)
+{
+    if ($one_xml_log_parsed == 0)
+    {
+        nstore($loaded_logs, $update_cache_path."/loaded_logs");
+        print "Cache is up to date\n";
+        exit(0);
+    }
+
+    foreach my $test (keys %{$night_results{"tests"}})
+    {
+        my $test_cache_path;
+
+        $test_cache_path = $test;
+        $test_cache_path =~ s/^\///;
+        $test_cache_path =~ s/\/$//;
+        $test_cache_path =~ s/\//./g;
+        $test_cache_path = $update_cache_path.$test_cache_path;
+
+        if (-e $test_cache_path)
+        {
+            my $test_cache;
+            my $tmp_cache = $test_cache_path.".tmp";
+
+            print "Updating existing cache for $test...\n";
+
+            $test_cache = retrieve($test_cache_path);
+
+            foreach my $iter (@{$night_results{"tests"}->{$test}->{"iters"}})
+            {
+                test_add_iter($test_cache, $iter);
+            }
+
+            nstore($test_cache, $tmp_cache) or
+                die "Failed to store updated cache for $test";
+            `mv $tmp_cache $test_cache_path`;
+        }
+        else
+        {
+            print "Caching results for $test...\n";
+            nstore($night_results{"tests"}->{$test}, $test_cache_path) or
+                die "Failed to store cache for $test";
+        }
+    }
+
+    my $cache_last_log_date_f = $update_cache_path."/last_log_date";
+    my $last_log_date_str = $last_log_date->printf("%Y.%m.%d");
+    `echo $last_log_date_str >$cache_last_log_date_f`;
+
+    nstore($loaded_logs, $update_cache_path."/loaded_logs");
+
+    exit(0);
+}
+
+open FILE, ">", $night_results_fn or return -1;
+
+print FILE "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\">\n";
+print FILE "<html>\n";
+
+print FILE "<head>\n";
+print FILE "<meta http-equiv=\"content-type\" ".
+            "content=\"text/html; charset=utf-8\">\n";
+print FILE "<title>Results from night testing logs</title>";
+print FILE "<style type=\"text/css\">\n";
+print FILE ".test_name { font-weight: bold;}\n";
+
+print FILE <<EOT;
+    #TestLog {
+        position: absolute;
+        visibility: hidden;
+        font-size: small;
+        overflow: auto;
+        width: 75%;
+        height: 80%;
+        left: 120px;
+        top: 100px;
+        background-color: #ffffe0;
+        border: 1px solid #000000;
+        padding: 10px;
+    }
+    #close {
+        float: right;
+    }
+EOT
+
+print FILE "</style>\n";
+
+print FILE <<EOT;
+<script type="text/javascript">
+    function centerStats(obj,pos)
+    {
+        var scrolled_x, scrolled_y;
+        if (self.pageYOffset)
+        {
+            scrolled_x = self.pageXOffset;
+            scrolled_y = self.pageYOffset;
+        }
+        else if (document.documentElement &&
+                 document.documentElement.scrollTop)
+        {
+            scrolled_x = document.documentElement.scrollLeft;
+            scrolled_y = document.documentElement.scrollTop;
+        }
+        else if (document.body)
+        {
+            scrolled_x = document.body.scrollLeft;
+            scrolled_y = document.body.scrollTop;
+        }
+
+        var center_x, center_y;
+        if (self.innerHeight)
+        {
+            center_x = self.innerWidth;
+            center_y = self.innerHeight;
+        }
+        else if (document.documentElement &&
+                 document.documentElement.clientHeight)
+        {
+            center_x = document.documentElement.clientWidth;
+            center_y = document.documentElement.clientHeight;
+        }
+        else if (document.body)
+        {
+            center_x = document.body.clientWidth;
+            center_y = document.body.clientHeight;
+        }
+
+        if (pos == 'right')
+            var leftOffset = scrolled_x +
+                             (center_x - obj.offsetWidth) - 20;
+        else
+            var leftOffset = scrolled_x +
+                             (center_x - obj.offsetWidth) / 2;
+
+        var topOffset = scrolled_y +
+                        (center_y - obj.offsetHeight) / 2;
+
+        obj.style.top = topOffset + 'px';
+        obj.style.left = leftOffset + 'px';
+    }
+
+    function hideObject(obj_name)
+    {
+        var obj = document.getElementById(obj_name);
+        if (typeof obj == 'undefined')
+            alert('Failed to get object ' + obj_name);
+
+        obj.style.visibility = "hidden";
+        document.prev_tip = '';
+    }
+
+    function hidePopups()
+    {
+        hideObject('TestLog');
+    }
+
+    function doNothing(ev)
+    {
+        ev = ev ? ev : window.event;
+        ev.cancelBubble = true;
+        if (ev.stopPropagation)
+        {
+            ev.stopPropagation();
+        }
+    }
+
+    function showLog(name, url, event)
+    {
+        hidePopups();
+        var obj = document.getElementById('TestLog');
+        var innerHTML = '';
+        innerHTML += '<span id="close"> ' +
+                     '<a href="javascript:hidePopups();"' +
+                     'style="text-decoration: none">' +
+                     '<strong>[x]</strong></a></span>';
+        innerHTML += '<div align="center"><b>Test: ' + name + '</b></div>';
+        innerHTML += '<iframe name="Log" src="' + url + '" ' +
+                     'style="width:100%; height:96%"/>';
+        obj.innerHTML = innerHTML;
+        centerStats(obj, 'right');
+        obj.style.visibility = "visible";
+        if (event)
+            doNothing(event);
+        return false;
+    }
+</script>
+EOT
+
+print FILE "</head>\n";
+
+print FILE "<body>\n";
+
+print FILE <<EOT;
+    <div id="TestLog" onClick="doNothing(event);" onScroll="doNothing(event);">
+      <span id="close"><a href="javascript:hidePopups()" style="text-decoration: none"><strong>[x]</strong></a></span>
+      <p>Tests Log</p><br/>
+    </div>
+EOT
+
+print FILE "<table border=1 cellpadding=4 cellspacing=3 ".
+           "style=\"font-size:small;\">\n";
+foreach my $test (keys %{$night_results{"tests"}})
+{
+    print FILE "<tr>\n<td colspan=\"3\" class=\"test_name\">".
+               $test."</td>\n</tr>\n";
+
+    foreach my $iter (@{$night_results{"tests"}->{$test}->{"iters"}})
+    {
+        print FILE "<tr>\n<td>".$test."</td>\n";
+
+        print FILE "<td>\n";
+        foreach my $param (keys %{$iter->{"params"}})
+        {
+            my $param_val = $iter->{"params"}->{$param};
+            my @val_strs = $param_val =~ m[.{1,100}]g;
+            print FILE $param."=".join("<br>", @val_strs)."<br>\n";
+        }
+        print FILE "</td>\n";
+
+        print FILE "<td>\n";
+        print FILE "<table border=1 cellpadding=4 cellspacing=3 ".
+                   "style=\"font-size:small;\">\n";
+        foreach my $result (@{$iter->{"results"}})
+        {
+            print FILE "<tr>\n";
+
+            print FILE "<td>\n";
+            if (defined($result->{"err"}) && length($result->{"err"}) > 0)
+            {
+                print FILE $result->{"err"}."<br>\n";
+            }
+            print FILE $result->{"result"}."<br>\n";
+            if (scalar(@{$result->{"verdicts"}}) > 0)
+            {
+                print FILE "<br>\n";
+                foreach my $verdict (@{$result->{"verdicts"}})
+                {
+                    print FILE $verdict."<br>\n";
+                }
+            }
+            print FILE "</td>\n";
+
+            print FILE "<td>\n";
+            for (my $i = 0; $i < scalar(@{$result->{"logs"}}); $i++)
+            {
+                print FILE "<a href=\"".$result->{"logs"}->[$i]->{"log"}."\" ".
+                           "onClick=\"showLog('$test', '".
+                           $result->{"logs"}->[$i]->{"log"}."', event); ".
+                           "return false;\" title=\"".
+                           $result->{"logs"}->[$i]->{"date"}.": ".
+                           $result->{"logs"}->[$i]->{"tags"}."\"".
+                           ">[".($i + 1)."]</a>";
+                if ($i < scalar(@{$result->{"logs"}}) - 1)
+                {
+                    print FILE ", \n";
+                }
+            }
+            print FILE "</td>\n";
+
+            print FILE "</tr>\n";
+        }
+        print FILE "</table>\n";
+        print FILE "</td>\n";
+
+        print FILE "</tr>";
+    }
+}
+print FILE "</table>\n";
+
+print FILE "<p>Command used to generate this report:".
+           join(" ", $0, @ARGV)."</p>\n";
+
+print FILE "</body>\n";
+
+print FILE "</html>\n";
+close FILE;
+
+

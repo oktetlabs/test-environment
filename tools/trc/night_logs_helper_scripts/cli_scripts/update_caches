@@ -1,0 +1,24 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+# Next comment is special, it will be changed to
+# correct "use lib" when deploying.
+
+#USE_LIB
+use night_logs_cgi_aux::aux_funcs;
+
+my @caches = load_caches_list();
+my $caches_path = get_caches_path();
+
+foreach my $cache (@caches)
+{
+  my $cmd_str = "$caches_path/get_nlogs_results --update-cache=".
+                $cache->{"cache_path"}." --include-compromised ".
+                " --log-path=".$cache->{"logs_source"}." 2>&1 ".
+                " >$caches_path/".$cache->{"id"}."_update.log";
+
+  print "$cmd_str\n";
+  system("cd /tmp/; $cmd_str");
+}
