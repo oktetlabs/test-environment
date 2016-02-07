@@ -49,7 +49,7 @@ sub split_str
     return grep(/[^\s]+/, split(/(\r\n|\n|\r)/, $str));
 }
 
-my $caches_path = get_caches_path();
+my $cli_path = get_cli_path();
 
 my $start_date = $cgi->param('start_date');
 my $end_date = $cgi->param('end_date');
@@ -61,7 +61,7 @@ my $log_sources = $cgi->param('log_sources');
 my @tests_list = split_str($tests);
 my @logs_list = split_str($log_sources);
 
-my $command_str = "$caches_path/get_nlogs_results";
+my $command_str = "$cli_path/te_get_nlogs_results";
 
 my $report_fn;
 

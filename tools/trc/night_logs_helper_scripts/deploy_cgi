@@ -1,0 +1,88 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use File::Spec;
+
+my $cgi_path = "/usr/lib/cgi-bin/local/socktest/";
+my $cli_path = "/home/tester-l5/night_logs_caches/";
+
+foreach my $arg (@ARGV)
+{
+    if ($arg =~ m/^--cgi-path=(.+)$/)
+    {
+        $cgi_path = File::Spec->rel2abs($1)."/";
+    }
+    elsif ($arg =~ m/^--cli-path=(.+)$/)
+    {
+        $cli_path = File::Spec->rel2abs($1)."/";
+    }
+    elsif ($arg =~ m/^--help$/)
+    {
+        print "Deploying CGI scripts\n".
+              "--cgi_path=             Where to place CGI scripts\n".
+              "--cli_path=             Where auxiliary scripts will be stored\n";
+
+        exit(0);
+    }
+}
+
+if (system("mkdir -p $cli_path") != 0 ||
+    system("mkdir -p $cgi_path") != 0)
+{
+    die "Specified paths are not accessible";
+}
+
+sub escape_path
+{
+    my $path = $_[0];
+
+    $path =~ s/\//\\\//g;
+    return $path;
+}
+
+sub fix_scripts
+{
+    my $path = $_[0];
+
+    if (system("find $path -type f | xargs -n1 -I{} ".
+               "sed -i 's/#USE_LIB/use lib \"".
+               escape_path($cli_path)."\"/g' {}") != 0)
+    {
+        die "Failed to replace #USE_LIB in $path";
+    }
+
+    if (system("find $path -type f | xargs -n1 -I{} ".
+               "sed -i 's/CLI_PATH/\"".
+               escape_path($cli_path)."\"/g' {}") != 0)
+    {
+        die "Failed to replace CLI_PATH in $path";
+    }
+}
+
+my $rc;
+
+$rc = system("cp ./cgi_scripts/* $cgi_path/");
+if ($rc != 0)
+{
+    die "Failed to copy CGI scripts to $cgi_path";
+}
+
+$rc = system("cd ./cli_scripts; cp -r night_logs_cgi_aux add_new_cache ".
+             "te_get_nlogs_results update_caches $cli_path/");
+if ($rc != 0)
+{
+    die "Failed to copy cli scripts to $cli_path";
+}
+
+fix_scripts($cgi_path);
+fix_scripts($cli_path);
+
+if (system("chown tester-l5:www-data -R $cli_path") != 0 ||
+    system("chown tester-l5:www-data -R $cgi_path") != 0 ||
+    system("chmod o-rwx -R $cli_path") != 0 ||
+    system("chmod o-rwx -R $cgi_path") != 0)
+{
+    die "Failed to change ownership and permissions";
+}
+

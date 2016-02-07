@@ -106,7 +106,7 @@ if (!defined($cache_id))
 
 my $date_a;
 my $date_b;
-my $caches_path = get_caches_path();
+my $cli_path = get_cli_path();
 my @caches = load_caches_list();
 
 $date_inc->parse("+ 1 day");
@@ -122,7 +122,7 @@ while ($date_a->cmp($date_to) < 0)
 
     print "Caching results from $date_a_str to $date_b_str\n";
 
-    `$caches_path/get_nlogs_results -f$date_a_str -t$date_b_str --log-path=$log_path --update-cache=$cache_dir`;
+    `$cli_path/te_get_nlogs_results -f$date_a_str -t$date_b_str --log-path=$log_path --update-cache=$cache_dir`;
 
     $date_a = $date_inc->calc($date_a);
     $date_b = $date_inc->calc($date_b);
@@ -149,7 +149,7 @@ if ($cache_found == 0)
                     "logs_source" => $log_path });
 }
 
-open(my $fh, '>', "$caches_path/caches_list_tmp") or
+open(my $fh, '>', "$cli_path/caches_list_tmp") or
       die "Failed to open caches_list_tmp";
 foreach my $cache (@caches)
 {
@@ -159,4 +159,4 @@ foreach my $cache (@caches)
 }
 close($fh);
 
-`mv $caches_path/caches_list_tmp $caches_path/caches_list`
+`mv $cli_path/caches_list_tmp $cli_path/caches_list`

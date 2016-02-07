@@ -10,14 +10,14 @@ use warnings;
 use night_logs_cgi_aux::aux_funcs;
 
 my @caches = load_caches_list();
-my $caches_path = get_caches_path();
+my $cli_path = get_cli_path();
 
 foreach my $cache (@caches)
 {
-  my $cmd_str = "$caches_path/get_nlogs_results --update-cache=".
+  my $cmd_str = "$cli_path/te_get_nlogs_results --update-cache=".
                 $cache->{"cache_path"}." --include-compromised ".
                 " --log-path=".$cache->{"logs_source"}." 2>&1 ".
-                " >$caches_path/".$cache->{"id"}."_update.log";
+                " >$cli_path/".$cache->{"id"}."_update.log";
 
   print "$cmd_str\n";
   system("cd /tmp/; $cmd_str");
