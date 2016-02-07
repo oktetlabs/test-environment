@@ -3,6 +3,7 @@
 use strict;
 use warnings;
 use File::Spec;
+use File::Basename;
 
 my $cgi_path = "/usr/lib/cgi-bin/local/socktest/";
 my $cli_path = "/home/tester-l5/night_logs_caches/";
@@ -41,48 +42,54 @@ sub escape_path
     return $path;
 }
 
-sub fix_scripts
+sub fix_script
 {
-    my $path = $_[0];
+    my $script = $_[0];
 
-    if (system("find $path -type f | xargs -n1 -I{} ".
-               "sed -i 's/#USE_LIB/use lib \"".
-               escape_path($cli_path)."\"/g' {}") != 0)
+    if (system("sed -i 's/#USE_LIB/use lib \"".
+               escape_path($cli_path)."\";/g' $script") != 0)
     {
-        die "Failed to replace #USE_LIB in $path";
+        die "Failed to replace #USE_LIB in $script";
     }
 
-    if (system("find $path -type f | xargs -n1 -I{} ".
-               "sed -i 's/CLI_PATH/\"".
-               escape_path($cli_path)."\"/g' {}") != 0)
+    if (system("sed -i 's/CLI_PATH/\"".
+               escape_path($cli_path)."\"/g' $script") != 0)
     {
-        die "Failed to replace CLI_PATH in $path";
+        die "Failed to replace CLI_PATH in $script";
     }
 }
+
+my %files = ( "$cgi_path" => [ "./cgi_scripts/form.html",
+                               "./cgi_scripts/index.pl",
+                               "./cgi_scripts/process_form.pl" ],
+              "$cli_path" => [ "./cli_scripts/add_new_cache",
+                               "./cli_scripts/te_get_nlogs_results",
+                               "./cli_scripts/update_caches" ],
+              "$cli_path/night_logs_cgi_aux/" =>
+                  [ "./cli_scripts/night_logs_cgi_aux/aux_funcs.pm" ] );
 
 my $rc;
 
-$rc = system("cp ./cgi_scripts/* $cgi_path/");
-if ($rc != 0)
+foreach my $path (keys %files)
 {
-    die "Failed to copy CGI scripts to $cgi_path";
+    if (system("mkdir -p $path") != 0 ||
+        system("chown tester-l5:www-data $path") != 0 ||
+        system("chmod 0750 $path") != 0)
+    {
+        die "Failed to set up $path";
+    }
+
+    foreach my $file (@{$files{$path}})
+    {
+        if (system("cp $file $path/") != 0 ||
+            system("chown tester-l5:www-data $path/".basename($file)) != 0 ||
+            system("chmod 0750 $path/".basename($file)) != 0)
+        {
+            die "Failed to install $file to $path";
+        }
+
+        fix_script($path."/".basename($file));
+    }
 }
 
-$rc = system("cd ./cli_scripts; cp -r night_logs_cgi_aux add_new_cache ".
-             "te_get_nlogs_results update_caches $cli_path/");
-if ($rc != 0)
-{
-    die "Failed to copy cli scripts to $cli_path";
-}
-
-fix_scripts($cgi_path);
-fix_scripts($cli_path);
-
-if (system("chown tester-l5:www-data -R $cli_path") != 0 ||
-    system("chown tester-l5:www-data -R $cgi_path") != 0 ||
-    system("chmod o-rwx -R $cli_path") != 0 ||
-    system("chmod o-rwx -R $cgi_path") != 0)
-{
-    die "Failed to change ownership and permissions";
-}
-
+exit(0);
