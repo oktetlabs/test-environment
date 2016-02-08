@@ -770,11 +770,13 @@ foreach my $arg (@ARGV)
     {
         $date_from = new Date::Manip::Date;
         $date_from->parse($1);
+        $date_from->set("time", [0, 0, 0]);
     }
     elsif ($arg =~ m/^--to=(.*)$/ || $arg =~ m/^-t(.*)$/)
     {
         $date_to = new Date::Manip::Date;
         $date_to->parse($1);
+        $date_to->set("time", [23, 59, 59]);
     }
     elsif ($arg =~ m/^--include-compromised$/)
 
@@ -1010,7 +1012,7 @@ if (defined($update_cache_path) &&
     if (!defined($date_to))
     {
         $date_to = new Date::Manip::Date;
-        $date_to->parse("today");
+        $date_to->parse("today 23:59:59");
         print "Using ".$date_to->printf("%Y.%m.%d").
               " as end date\n";
     }
