@@ -48,6 +48,20 @@ my $global_start = [gettimeofday];
 my $start = 0;
 my $end = 0;
 
+# List of compromised logs stored in results cache
+my %compromised_logs = ();
+
+sub log_in_compromised
+{
+    my $log = $_[0];
+
+    $log =~ s/\/html\/.*$/\//;
+    $log =~ s/[\/]+/\//g;
+    $log =~ s/^(.*):\//$1:\/\//;
+
+    return defined($compromised_logs{$log});
+}
+
 sub get_timestamp
 {
     use POSIX qw(strftime);
@@ -929,8 +943,9 @@ sub filter_cached_results
                     next if ($to_timestamp < $log->{"timestamp"});
                     next if ($from_timestamp > $log->{"timestamp"});
                     next if ($include_compromised == 0 &&
-                             defined($log->{"compromised"}) &&
-                             $log->{"compromised"} > 0);
+                             ((defined($log->{"compromised"}) &&
+                               $log->{"compromised"} > 0) ||
+                               log_in_compromised($log->{"log"})));
                     next if match_tags($log->{"tags"}, $tag_expr) == 0;
 
                     push(@filtered_logs, $log);
@@ -1017,6 +1032,21 @@ if (defined($cached_logs_path) && length($cached_logs_path) > 0)
     if (-e $loaded_logs_fn)
     {
         $loaded_logs = retrieve($loaded_logs_fn);
+    }
+
+    if (-e $cached_logs_path."/compromised_logs")
+    {
+        my @compr_logs = `cat $cached_logs_path/compromised_logs`;
+
+        foreach my $compr_log (@compr_logs)
+        {
+            $compr_log =~ s/\s*$//;
+            $compr_log =~ s/^\s*//;
+            if (length($compr_log) > 0)
+            {
+                $compromised_logs{$compr_log} = 1;
+            }
+        }
     }
 
     get_timestamp('process', 'start');

@@ -1,0 +1,122 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use Date::Manip;
+
+# Next comment is special, it will be changed to
+# correct "use lib" when deploying.
+
+#USE_LIB
+use night_logs_cgi_aux::aux_funcs;
+
+my $log;
+my $note;
+my @caches = load_caches_list();
+my %compromised_logs = ();
+my $undo = 0;
+
+umask 0027;
+
+foreach my $arg (@ARGV)
+{
+    if ($arg =~ m/^--undo$/ || $arg =~ m/^-u$/)
+    {
+        $undo = 1;
+    }
+    elsif ($arg =~ m/^--log=(.+)$/ || $arg =~ m/^-l(.+)$/)
+    {
+        $log = $1;
+        $log =~ s/\s*$//;
+        $log =~ s/[\/]+/\//g;
+        $log =~ s/^(.*):\//$1:\/\//;
+        if (!($log =~ /\/$/))
+        {
+            $log .= "/";
+        }
+    }
+    elsif ($arg =~ m/^--note=(.+)$/ || $arg =~ m/^-n(.+)$/)
+    {
+        $note = $1;
+    }
+    elsif ($arg =~ m/^--help$/ || $arg =~ m/^-h$/)
+    {
+        print "Mark night testing log as compromised\n".
+              "--log=, -l           Log address\n".
+              "--note=, -n          Why log is compromised\n".
+              "--undo, -u           Undo\n";
+    }
+}
+
+if (!defined($log))
+{
+    print "Log must be specified\n";
+    exit(1);
+}
+if (!defined($note) && $undo == 0)
+{
+    print "Note must be specified\n";
+    exit(1);
+}
+
+if ($undo == 0)
+{
+    $compromised_logs{$log} = 1;
+}
+
+foreach my $cache (@caches)
+{
+    if ($log =~ $cache->{"logs_source"})
+    {
+        my $compr_list_path =
+                $cache->{"cache_path"}."/compromised_logs";
+        if (-e $compr_list_path)
+        {
+            my @compr_list = `cat $compr_list_path`;
+
+            foreach my $compr_log (@compr_list)
+            {
+                $compr_log =~ s/^\s*//;
+                $compr_log =~ s/\s*$//;
+                if (length($compr_log) > 0)
+                {
+                    $compromised_logs{$compr_log} = 1;
+                }
+            }
+        }
+
+        if ($undo == 1)
+        {
+            $compromised_logs{$log} = 0;
+        }
+
+        open my $fh, '>', $cache->{"cache_path"}."/compromised_logs_tmp" or
+            die "Failed to open file";
+        foreach my $compr_log (keys %compromised_logs)
+        {
+            if ($compromised_logs{$compr_log} == 1)
+            {
+                print $fh "$compr_log\n";
+            }
+        }
+        close($fh);
+        if (system("mv ".$cache->{"cache_path"}."/compromised_logs_tmp ".
+                   $compr_list_path) != 0)
+        {
+            die "Failed to update compromised_logs";
+        }
+    }
+}
+
+$log =~ s/^.*night-testing/\/home\/tester-l5\/private_html\/night-testing/;
+if ($undo == 0)
+{
+    open my $fh, ">", $log."/trc_compromised.js" or
+        die "Failed to open trc_compromised.js";
+    print $fh "document.write(\"".$note."\");\n";
+    close($fh);
+}
+else
+{
+    unlink $log."/trc_compromised.js";
+}

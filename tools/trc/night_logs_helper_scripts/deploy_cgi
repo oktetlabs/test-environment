@@ -64,6 +64,7 @@ my %files = ( "$cgi_path" => [ "./cgi_scripts/form.html",
                                "./cgi_scripts/process_form.pl" ],
               "$cli_path" => [ "./cli_scripts/add_new_cache",
                                "./cli_scripts/te_get_nlogs_results",
+                               "./cli_scripts/compromise_log",
                                "./cli_scripts/update_caches" ],
               "$cli_path/night_logs_cgi_aux/" =>
                   [ "./cli_scripts/night_logs_cgi_aux/aux_funcs.pm" ] );
