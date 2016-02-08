@@ -12,6 +12,8 @@ use night_logs_cgi_aux::aux_funcs;
 my @caches = load_caches_list();
 my $cli_path = get_cli_path();
 
+umask 0027;
+
 foreach my $cache (@caches)
 {
   my $cmd_str = "$cli_path/te_get_nlogs_results --update-cache=".

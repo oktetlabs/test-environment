@@ -11,6 +11,7 @@ use English;
 use Time::HiRes qw( time gettimeofday tv_interval );
 use Storable qw/nstore retrieve/;
 
+umask 0027;
 
 my @tmp_files = ();
 my $date_from;

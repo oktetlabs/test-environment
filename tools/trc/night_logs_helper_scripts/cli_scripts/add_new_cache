@@ -18,6 +18,8 @@ my $log_path;
 my $cache_dir;
 my $cache_id;
 
+umask 0027;
+
 $date_to->parse("now");
 $date_inc->parse("- 2 years");
 $date_from = $date_inc->calc($date_to);
