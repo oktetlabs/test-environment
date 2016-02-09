@@ -71,6 +71,12 @@ foreach my $arg (@ARGV)
     {
         my $tmp = $1;
 
+        if (-e $tmp)
+        {
+            print "Error: $tmp already exists!\n";
+            exit(1);
+        }
+
         `mkdir -p $tmp`;
         $cache_dir = `readlink -f $tmp`;
         if ($? != 0)
@@ -86,6 +92,16 @@ foreach my $arg (@ARGV)
     elsif ($arg =~ m/^--cache-id=(.+)$/ || $arg =~ m/^-i(.+)$/)
     {
         $cache_id = $1;
+    }
+    elsif ($arg =~ m/^--help$/ || $arg =~ m/^-h$/)
+    {
+        print "Adding a new logs cache\n".
+              "--from=, -f              From which date to cache logs\n".
+              "--log-path=, -l          Path to logs to be cached\n".
+              "--cache-dir=, -c         Where to save cache files\n".
+              "--cache-id=, -i          New cache ID\n";
+
+        exit(0);
     }
 
 }
