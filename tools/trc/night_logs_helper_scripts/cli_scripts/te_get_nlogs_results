@@ -1035,6 +1035,65 @@ sub filter_cached_results
     $night_results{"tests"} = \%filtered_tests;
 }
 
+#Remove duplicates from tags list
+my %fixed_tags_cache = ();
+sub fix_tags
+{
+    my $tags = $_[0];
+    my %tags_hash = ();
+    my %tags_noval = ();
+    my $tags_fixed = "";
+    my $saved_tags = $tags;
+
+    if (defined($fixed_tags_cache{$tags}))
+    {
+        return $fixed_tags_cache{$tags};
+    }
+
+    $tags =~ s/^\s*//;
+    while ($tags =~ /^([^\s]+)\s*/)
+    {
+        my $tag = $1;
+
+        if ($tag =~ /(.+):(.+)/)
+        {
+            my $tag_name;
+            my $tag_value;
+
+            $tag_name = $1;
+            $tag_value = $2;
+
+            $tags_hash{$tag_name} = $tag_value;
+        }
+        else
+        {
+            $tags_hash{$tag} = 1;
+            $tags_noval{$tag} = 1;
+        }
+
+        $tags =~ s/^([^\s]+)\s*//;
+    }
+
+    foreach my $tag (sort(keys %tags_hash))
+    {
+        if (length($tags_fixed) > 0)
+        {
+            $tags_fixed .= " ";
+        }
+        if (defined($tags_noval{$tag}))
+        {
+            $tags_fixed .= $tag;
+        }
+        else
+        {
+            $tags_fixed .= $tag.":".$tags_hash{$tag};
+        }
+    }
+
+    $fixed_tags_cache{$saved_tags} = $tags_fixed;
+    return $tags_fixed;
+}
+
 $SIG{USR1} = $SIG{INT} =  sub { print "Interrupted!\n"; cleanup; exit 1; };
 
 print "Processing night testing logs...\n";
@@ -1401,7 +1460,7 @@ foreach my $test (keys %{$night_results{"tests"}})
                            $result->{"logs"}->[$i]->{"log"}."', event); ".
                            "return false;\" title=\"".
                            $result->{"logs"}->[$i]->{"date"}.": ".
-                           $result->{"logs"}->[$i]->{"tags"}."\"".
+                           fix_tags($result->{"logs"}->[$i]->{"tags"})."\"".
                            ">[".($i + 1)."]</a>";
                 if ($i < scalar(@{$result->{"logs"}}) - 1)
                 {
