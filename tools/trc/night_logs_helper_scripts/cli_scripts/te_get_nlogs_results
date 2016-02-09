@@ -301,21 +301,45 @@ sub match_params
 sub match_iter_params
 {
     my $cur_path = $_[0];
-    my $params = $_[1];
+    my $iter = $_[1];
     my $matched = 0;
 
     foreach my $test_path (keys %tests_filter)
     {
         next if (match_test_paths($test_path, $cur_path) == 0);
-        foreach my $filter_params (@{$tests_filter{$test_path}})
+
+        if (defined($tests_filter{$test_path}->{"hash"}))
         {
-            if (match_params($params,
-                             $filter_params))
+            if (defined($iter->{"hashes"}) &&
+                scalar(keys %{$iter->{"hashes"}}) > 0)
+            {
+                foreach my $hash (keys %{$iter->{"hashes"}})
+                {
+                    if ($tests_filter{$test_path}->{"hash"} eq $hash)
+                    {
+                        $matched = 1;
+                        last;
+                    }
+                }
+            }
+            else
             {
                 $matched = 1;
             }
         }
-        $matched = 1 if (scalar(@{$tests_filter{$test_path}}) == 0);
+        else
+        {
+            foreach my $filter_params (@{$tests_filter{$test_path}->{"params"}})
+            {
+                if (match_params($iter->{"params"},
+                                 $filter_params))
+                {
+                    $matched = 1;
+                }
+            }
+            $matched = 1
+                  if (scalar(@{$tests_filter{$test_path}->{"params"}}) == 0);
+        }
     }
     $matched = 1 if (scalar(keys %tests_filter) == 0);
 
@@ -334,6 +358,14 @@ sub test_add_iter
                                $cur_iter->{"params"}))
         {
             $iter_found = 1;
+            if (defined($cur_iter->{"hashes"}))
+            {
+                foreach my $hash (keys %{$cur_iter->{"hashes"}})
+                {
+                    $iter->{"hashes"}->{$hash} =
+                                  $cur_iter->{"hashes"}->{$hash};
+                }
+            }
 
             foreach my $cur_result (@{$cur_iter->{"results"}})
             {
@@ -401,7 +433,7 @@ sub night_results_add_iter
     my $cur_iter = $_[1];
     my $matched = 0;
 
-    $matched = match_iter_params($cur_path_str, $cur_iter->{"params"});
+    $matched = match_iter_params($cur_path_str, $cur_iter);
     return if (!$matched);
 
     if (!$night_results{"tests"}->{$cur_path_str})
@@ -582,11 +614,17 @@ sub parse_xml_log
             {
                 my $date = "";
                 my $timestamp;
+                my %hashes = ();
 
                 $skip_test = 0;
                 if ($line =~ /<test.*tin="([0-9]*)".*>/)
                 {
                     $tin = $1;
+                }
+
+                if ($line =~ /<test.*hash="([^\s]*)".*>/)
+                {
+                    $hashes{$1} = 1;
                 }
 
                 if ($fixed_log_path =~
@@ -616,6 +654,7 @@ sub parse_xml_log
                                     timestamp => $timestamp,
                                     compromised => $is_compromised } ]
                               } ],
+                              hashes => \%hashes,
                               params => {} };
             }
         }
@@ -839,8 +878,18 @@ foreach my $arg (@ARGV)
     {
         my $def = $1;
         my $path;
+        my $hash;
 
-        if ($def =~ m/(.*?):(.*)/)
+        if ($def =~ m/(.*?)%(.*)/)
+        {
+            $path = $1;
+            $hash = $2;
+
+            $tests_filter{$path} = {};
+            $tests_filter{$path}->{"params"} = [];
+            $tests_filter{$path}->{"hash"} = $hash;
+        }
+        elsif ($def =~ m/(.*?):(.*)/)
         {
             my $params;
             my $params_hash = {};
@@ -848,7 +897,8 @@ foreach my $arg (@ARGV)
             $path = $1;
             $params = $2;
 
-            $tests_filter{$path} = [] if (!$tests_filter{$path});
+            $tests_filter{$path} = {};
+            $tests_filter{$path}->{"params"} = [];
 
             $params = $params.",";
             while ($params =~ /^(.+?)=(.+?),/)
@@ -860,12 +910,13 @@ foreach my $arg (@ARGV)
                 $params =~ s/^(.+?)=(.+?),//;
             }
 
-            push(@{$tests_filter{$path}}, $params_hash);
+            push(@{$tests_filter{$path}->{"params"}}, $params_hash);
         }
         else
         {
             $path = $def;
-            $tests_filter{$path} = [] if (!$tests_filter{$path});
+            $tests_filter{$path} = {};
+            $tests_filter{$path}->{"params"} = [];
         }
     }
     elsif ($arg =~ m/^--tag-expr=(.*)$/)
@@ -936,7 +987,7 @@ sub filter_cached_results
         {
             my @filtered_results = ();
 
-            next if (match_iter_params($test, $iter->{"params"}) == 0);
+            next if (match_iter_params($test, $iter) == 0);
             foreach my $result (@{$iter->{"results"}})
             {
                 my @filtered_logs = ();
@@ -1303,11 +1354,19 @@ foreach my $test (keys %{$night_results{"tests"}})
         print FILE "<tr>\n<td>".$test."</td>\n";
 
         print FILE "<td>\n";
-        foreach my $param (keys %{$iter->{"params"}})
+        foreach my $param (sort(keys %{$iter->{"params"}}))
         {
             my $param_val = $iter->{"params"}->{$param};
             my @val_strs = $param_val =~ m[.{1,100}]g;
             print FILE $param."=".join("<br>", @val_strs)."<br>\n";
+        }
+        print FILE "\n<br>Hash: ";
+        if (defined($iter->{"hashes"}))
+        {
+            foreach my $hash (sort(keys %{$iter->{"hashes"}}))
+            {
+                print FILE $hash."<br>\n";
+            }
         }
         print FILE "</td>\n";
 
