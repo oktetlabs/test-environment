@@ -1831,15 +1831,15 @@ l2tp_lns_client_del(unsigned int gid, const char *oid,
     {
         return TE_RC(TE_TA_UNIX,  TE_ENOENT);
     }
-    
+
     SLIST_REMOVE(&section->l2tp_option, client, te_l2tp_option, list);
     l2tp->changed = TRUE;
-    
+
     free(client->secret->secret);
     free(client->secret->sipv4);
     free(client->secret->sipv4);
     free(client);
-    
+
     return 0;
 }
 
