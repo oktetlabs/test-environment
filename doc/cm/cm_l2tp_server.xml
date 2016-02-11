@@ -113,7 +113,7 @@
          Name: any
                "*" indicates that any secret is allowed -->
     <object oid="/agent/l2tp/lns/auth/client/secret" 
-        access="read_write" type="string"/>    
+        access="read_write" type="none"/>    
 
     <!-- IPv4 for the authentication secrets.
          Name: IPv4 in human notation (with dots) 
