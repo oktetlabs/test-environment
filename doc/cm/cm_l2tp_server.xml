@@ -50,13 +50,15 @@
          which will(not) be assigned to the clients 
          Name: allow<START>-<END> for allowed ip_ranges 
                deny<START>-<END> for denied ip_ranges-->
-    <object oid="/agent/l2tp/lns/ip_range" >
+    <object oid="/agent/l2tp/lns/ip_range"
+        access="read_create" type="none"/>
 
     <!-- This object stores the ranges of LAC's ipv4 addresses
          which can(can't) establish the connection with LNS
          Name: allow<START>-<END> for allowed lac_ranges 
                deny<START>-<END> for denied lac_ranges-->
-    <object oid="/agent/l2tp/lns/lac_range" >
+    <object oid="/agent/l2tp/lns/lac_range" 
+        access="read_create" type="none"/>
 
     <!-- This identifier describes the connected
          clients to LNS
@@ -73,9 +75,9 @@
 
     <!-- The L2TP additional bits.
          Name: hidden, length, flow 
-         Value: 0 (no) or 1 (yes)-->
+         Value: no or yes-->
     <object oid="/agent/l2tp/lns/bit" 
-        access="read_write" type="integer"/>
+        access="read_write" type="string"/>
 
     <!-- Authentication methods.
          Name: chap, pap or authentication for
@@ -85,15 +87,15 @@
 
     <!-- Whether refuse the authentication.
          Name: empty
-         Value: 0 (no) or 1 (yes) -->
+         Value: no or yes-->
     <object oid="/agent/l2tp/lns/auth/refuse" 
-        access="read_write" type="integer"/>
+        access="read_write" type="string"/>
 
     <!-- Whether require the authentication.
          Name: empty 
-         Value: 0 (no) or 1 (yes) -->
+         Value: no or yes-->
     <object oid="/agent/l2tp/lns/auth/require" 
-        access="read_write" type="integer"/>
+        access="read_write" type="string"/>
 
     <!-- Client name for the authentication secrets.
          Name: any 
@@ -121,15 +123,15 @@
 
     <!-- Use challenge authentication to authenticate peer.
          Name: empty
-         Value: 0 (no) or 1 (yes) -->
+         Value: no or yes -->
     <object oid="/agent/l2tp/lns/use_challenge" 
-        access="read_write" type="integer"/>
+        access="read_write" type="string"/>
 
     <!-- Use /etc/passwd for remote peer ppp authentication.
          Name: empty
-         Value: 0 (no) or 1 (yes) -->
+         Value: no or yes -->
     <object oid="/agent/l2tp/lns/unix_auth" 
-        access="read_write" type="integer"/>
+        access="read_write" type="string"/>
 
     <!-- Root object for the pppd configuration parameters
          Name: empty -->
@@ -162,7 +164,7 @@
     <!-- Addtitional options to pppd
          Name: as example: nodeflate, noproxyarp, lock.
                Other options can be found in man pppd -->
-    <object oid="/agent/l2tp/pppopt/option" 
+    <object oid="/agent/l2tp/lns/pppopt/option" 
         access="read_create" type="none"/>
 
 </backup>
