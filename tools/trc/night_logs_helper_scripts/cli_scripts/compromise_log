@@ -30,6 +30,7 @@ foreach my $arg (@ARGV)
         $log =~ s/\s*$//;
         $log =~ s/[\/]+/\//g;
         $log =~ s/^(.*):\//$1:\/\//;
+        $log =~ s/\\!/!/g;
         if (!($log =~ /\/$/))
         {
             $log .= "/";
