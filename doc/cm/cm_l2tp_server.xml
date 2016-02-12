@@ -28,7 +28,7 @@
     <!-- A root object for the L2TP server
          Name: none -->
     <object oid="/agent/l2tp/" 
-        access="read_write" type="none"/>
+        access="read_write" type="integer"/>
 
     <!-- The IP address of the interface on which 
          the daemon listens
@@ -48,17 +48,17 @@
 
     <!-- This object stores the ranges of ipv4 addresses
          which will(not) be assigned to the clients 
-         Name: allow<START>-<END> for allowed ip_ranges 
-               deny<START>-<END> for denied ip_ranges-->
+         Name: <START>-<END> 
+         Value allow or deny -->
     <object oid="/agent/l2tp/lns/ip_range"
-        access="read_create" type="none"/>
+        access="read_create" type="string"/>
 
     <!-- This object stores the ranges of LAC's ipv4 addresses
          which can(can't) establish the connection with LNS
-         Name: allow<START>-<END> for allowed lac_ranges 
-               deny<START>-<END> for denied lac_ranges-->
+         Name: <START>-<END> 
+         Value allow or deny -->
     <object oid="/agent/l2tp/lns/lac_range" 
-        access="read_create" type="none"/>
+        access="read_create" type="string"/>
 
     <!-- This identifier describes the connected
          clients to LNS
