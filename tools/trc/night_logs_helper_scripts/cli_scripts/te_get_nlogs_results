@@ -9,7 +9,8 @@ use File::Basename;
 use Data::Dumper;
 use English;
 use Time::HiRes qw( time gettimeofday tv_interval );
-use Storable qw/nstore retrieve/;
+use Storable qw/nstore retrieve dclone/;
+use POSIX;
 
 umask 0027;
 
@@ -212,14 +213,23 @@ sub download_prepare_log
     get_timestamp('unpack', 'start');
 
     (undef, $tmp_files[$#tmp_files + 1]) = tempfile("log-XXXX");
-    system_call("cp ".escape_str($file_name)." ".$tmp_files[$#tmp_files]);
+    if (system_call("cp ".escape_str($file_name)." ".
+                    $tmp_files[$#tmp_files]) != 0)
+    {
+        warn "Failed to copy XML log";
+        return (-1, 0);
+    }
     $file_name = $tmp_files[$#tmp_files];
 
     if ($file_to_load =~ m/^(.*)[.]bz2\s*$/)
     {
         (undef, $tmp_files[$#tmp_files + 1]) = tempfile("log-XXXX");
-        system_call("bzcat ".$file_name." > ".
-                    $tmp_files[$#tmp_files]);
+        if (system_call("bzcat ".$file_name." > ".
+                        $tmp_files[$#tmp_files]) != 0)
+        {
+            warn "Failed to unzip XML log";
+            return (-1, 0);
+        }
         $file_name = $tmp_files[$#tmp_files];
     }
 
@@ -346,84 +356,82 @@ sub match_iter_params
     return $matched;
 }
 
+sub hash2str
+{
+    my $hash = $_[0];
+    my $str = "";
+
+    foreach my $key (sort(keys %{$hash}))
+    {
+        $str .= $key." => ".$hash->{$key}."; ";
+    }
+
+    return $str;
+}
+
 sub test_add_iter
 {
     my $test = $_[0];
     my $cur_iter = $_[1];
     my $iter_found = 0;
 
-    foreach my $iter (@{$test->{"iters"}})
+    my $iter_key;
+
+    $iter_key = hash2str($cur_iter->{"params"});
+
+    if (!defined($test->{"iters"}->{$iter_key}))
     {
-        if (compare_str_hashes($iter->{"params"},
-                               $cur_iter->{"params"}))
-        {
-            $iter_found = 1;
-            if (defined($cur_iter->{"hashes"}))
-            {
-                foreach my $hash (keys %{$cur_iter->{"hashes"}})
-                {
-                    $iter->{"hashes"}->{$hash} =
-                                  $cur_iter->{"hashes"}->{$hash};
-                }
-            }
-
-            foreach my $cur_result (@{$cur_iter->{"results"}})
-            {
-                my $result_found = 0;
-
-                foreach my $result (@{$iter->{"results"}})
-                {
-                    if ($result->{"result"} eq
-                          $cur_result->{"result"} &&
-                        $result->{"err"} eq
-                          $cur_result->{"err"} &&
-                        compare_str_arrays(
-                          $result->{"verdicts"},
-                          $cur_result->{"verdicts"}))
-                    {
-                        $result_found = 1;
-
-                        foreach my $cur_log (@{$cur_result->{"logs"}})
-                        {
-                            my $log_found = 0;
-
-                            for (my $i = 0;
-                                 $i < scalar(@{$result->{"logs"}}); $i++)
-                            {
-                                if ($result->{"logs"}->[$i]->{"log"} eq
-                                      $cur_log->{"log"})
-                                {
-                                    $result->{"logs"}->[$i] = $cur_log;
-                                    $log_found = 1;
-                                    last;
-                                }
-                            }
-
-                            if ($log_found == 0)
-                            {
-                                push(@{$result->{"logs"}}, $cur_log)
-                            }
-                        }
-
-                        last;
-                    }
-                }
-
-                if ($result_found == 0)
-                {
-                    push(@{$iter->{"results"}},
-                         $cur_result);
-                }
-            }
-
-            last;
-        }
+        $test->{"iters"}->{$iter_key} = dclone($cur_iter);
     }
-
-    if ($iter_found == 0)
+    else
     {
-        push(@{$test->{"iters"}},
-             $cur_iter);
+        my $iter = $test->{"iters"}->{$iter_key};
+
+        if (defined($cur_iter->{"hashes"}))
+        {
+            foreach my $hash (keys %{$cur_iter->{"hashes"}})
+            {
+                $iter->{"hashes"}->{$hash} =
+                              $cur_iter->{"hashes"}->{$hash};
+            }
+        }
+
+        foreach my $cur_result (@{$cur_iter->{"results"}})
+        {
+            my $result_found = 0;
+
+            foreach my $result (@{$iter->{"results"}})
+            {
+                if ($result->{"result"} eq
+                      $cur_result->{"result"} &&
+                    $result->{"err"} eq
+                      $cur_result->{"err"} &&
+                    compare_str_arrays(
+                      $result->{"verdicts"},
+                      $cur_result->{"verdicts"}))
+                {
+                    $result_found = 1;
+
+                    if ($cur_result == $result)
+                    {
+                        die "Result duplication encountered which ".
+                            "can lead to infinite loop\n";
+                    }
+                    foreach my $cur_log (@{$cur_result->{"logs"}})
+                    {
+                        push(@{$result->{"logs"}}, $cur_log)
+                    }
+
+                    last;
+                }
+            }
+
+            if ($result_found == 0)
+            {
+                push(@{$iter->{"results"}},
+                     dclone($cur_result));
+            }
+        }
     }
 }
 
@@ -438,7 +446,8 @@ sub night_results_add_iter
 
     if (!$night_results{"tests"}->{$cur_path_str})
     {
-        my $test_descr = { iters => [ $cur_iter ] };
+        my $test_descr = { iters =>
+            { hash2str($cur_iter->{"params"}) => dclone($cur_iter) } };
 
         $night_results{"tests"}->{$cur_path_str} = $test_descr;
     }
@@ -447,6 +456,22 @@ sub night_results_add_iter
         test_add_iter($night_results{"tests"}->{$cur_path_str},
                       $cur_iter);
     }
+}
+
+sub remove_extra_slashes
+{
+    my $str = $_[0];
+
+    $str =~ s/^\s*//;
+    $str =~ s/\s*$//;
+    $str =~ s/\/+/\//g;
+
+    if ($str =~ /([^[:space:]]*):\/(.*)$/)
+    {
+        $str = $1."://".$2;
+    }
+
+    return $str;
 }
 
 # We must reference HTML logs in https://oktetlans/~tester-l5/,
@@ -556,10 +581,14 @@ sub parse_xml_log
 
     open FILE, $log or return -1;
 
+    my $k = 0;
+
     while (<FILE>)
     {
         my $line = $_;
         my $rc;
+
+        $k++;
 
         if ($line =~ /<msg.* user="TRC tags".*>(.*?)<\/msg>/)
         {
@@ -586,15 +615,25 @@ sub parse_xml_log
         {
             push(@cur_path, $1);
         }
-        elsif ($line =~ /<test.*name="([^\s]*?)".*result="([^\s]*?)".*err="(.*?)">/)
+        elsif ($line =~ /<test\s+.*name="([^\s]*?)".*/)
         {
             my $tin = "0";
-            my $result = $2;
-            my $err = $3;
+            my $result = "";
+            my $err = "";
             my $found = 0;
 
             push(@cur_path, $1);
             $cur_path_str = join("/", @cur_path);
+
+            if ($line =~ /\s+result="([^\s]*?)"/)
+            {
+                $result = $1;
+            }
+
+            if ($line =~ /\s+err="(.*?)"/)
+            {
+                $err = $1;
+            }
 
             foreach my $test_path (keys %tests_filter)
             {
@@ -647,8 +686,9 @@ sub parse_xml_log
                                   result => $result, err => $err,
                                   verdicts => [],
                                   logs => [ {
-                                    log => $fixed_log_path.
-                                           "/html/node_".$tin.".html",
+                                    log => remove_extra_slashes(
+                                              $fixed_log_path.
+                                              "/html/node_".$tin.".html"),
                                     tags => $cur_tags,
                                     date => $date,
                                     timestamp => $timestamp,
@@ -661,12 +701,18 @@ sub parse_xml_log
         elsif (!$skip_test &&
                $line =~ /<param.*name="([^\s]*)".*value="(.*)".*>/)
         {
-            $cur_iter->{"params"}->{$1} = $2;
+            if (defined($cur_iter))
+            {
+                $cur_iter->{"params"}->{$1} = $2;
+            }
         }
         elsif (!$skip_test &&
                $line =~ /<verdict>(.*)<\/verdict>/)
         {
-            push (@{$cur_iter->{results}->[0]->{"verdicts"}}, $1);
+            if (defined($cur_iter))
+            {
+                push (@{$cur_iter->{results}->[0]->{"verdicts"}}, $1);
+            }
         }
         elsif ($line =~ /<\/pkg>/ || $line =~ /<\/test>/)
         {
@@ -674,7 +720,11 @@ sub parse_xml_log
 
             if (!$skip_test && $line =~ /<\/test>/)
             {
-                night_results_add_iter($cur_path_str, $cur_iter);
+                if (defined($cur_iter))
+                {
+                    night_results_add_iter($cur_path_str, $cur_iter);
+                    $cur_iter = undef;
+                }
             }
         }
     }
@@ -729,7 +779,8 @@ sub process_logs
 #                if ($log_date->cmp($start_date) >= 0 &&
 #                    $log_date->cmp($end_date) <= 0)
 #                {
-                my $download_path = $log_path."/".$folder_name;
+                my $download_path =
+                      remove_extra_slashes($log_path."/".$folder_name);
                 my $is_compromised;
                 my $rc;
 
@@ -973,66 +1024,224 @@ sub cleanup
     free_tmp_files; 
 }
 
-sub filter_cached_results
+sub filter_test_iters
 {
-    my %filtered_tests = ();
+    my $test_path = $_[0];
+    my $test = $_[1];
     my $to_timestamp = $date_to->printf("%s") + 0;
     my $from_timestamp = $date_from->printf("%s") + 0;
+    my $filtered_iters = {};
+    my $iter;
 
-    foreach my $test (keys %{$night_results{"tests"}})
+    if (!defined($test))
     {
-        my @filtered_iters = ();
+        return undef;
+    }
 
-        foreach my $iter (@{$night_results{"tests"}->{$test}->{"iters"}})
+    while ((undef, $iter) = each %{$test->{"iters"}})
+    {
+        my @filtered_results = ();
+
+        next if (match_iter_params($test_path, $iter) == 0);
+        foreach my $result (@{$iter->{"results"}})
         {
-            my @filtered_results = ();
+            my @filtered_logs = ();
 
-            next if (match_iter_params($test, $iter) == 0);
-            foreach my $result (@{$iter->{"results"}})
+            foreach my $log (@{$result->{"logs"}})
             {
-                my @filtered_logs = ();
+                next if ($to_timestamp < $log->{"timestamp"});
+                next if ($from_timestamp > $log->{"timestamp"});
+                next if ($include_compromised == 0 &&
+                         ((defined($log->{"compromised"}) &&
+                           $log->{"compromised"} > 0) ||
+                           log_in_compromised($log->{"log"})));
+                next if match_tags($log->{"tags"}, $tag_expr) == 0;
 
-                foreach my $log (@{$result->{"logs"}})
-                {
-                    next if ($to_timestamp < $log->{"timestamp"});
-                    next if ($from_timestamp > $log->{"timestamp"});
-                    next if ($include_compromised == 0 &&
-                             ((defined($log->{"compromised"}) &&
-                               $log->{"compromised"} > 0) ||
-                               log_in_compromised($log->{"log"})));
-                    next if match_tags($log->{"tags"}, $tag_expr) == 0;
-
-                    push(@filtered_logs, $log);
-                }
-
-                if (scalar(@filtered_logs) > 0)
-                {
-                    my $filtered_result = $result;
-
-                    $filtered_result->{"logs"} = \@filtered_logs;
-                    push(@filtered_results, $filtered_result);
-                }
+                push(@filtered_logs, $log);
             }
 
-            if (scalar(@filtered_results) > 0)
+            if (scalar(@filtered_logs) > 0)
             {
-                my $filtered_iter = $iter;
+                my $filtered_result = $result;
 
-                $filtered_iter->{"results"} = \@filtered_results;
-                push(@filtered_iters, $filtered_iter);
+                $filtered_result->{"logs"} = \@filtered_logs;
+                push(@filtered_results, $filtered_result);
             }
         }
 
-        if (scalar(@filtered_iters) > 0)
+        if (scalar(@filtered_results) > 0)
         {
-            my $filtered_test = $night_results{"tests"}->{$test};
+            my $filtered_iter = $iter;
 
-            $filtered_test->{"iters"} = \@filtered_iters;
-            $filtered_tests{$test} = $filtered_test;
+            $filtered_iter->{"results"} = \@filtered_results;
+            $filtered_iters->{hash2str($filtered_iter->{"params"})} =
+                                                          $filtered_iter;
         }
     }
-    
-    $night_results{"tests"} = \%filtered_tests;
+
+    if (scalar(keys %{$filtered_iters}) > 0)
+    {
+        $test->{"iters"} = $filtered_iters;
+        return $test;
+    }
+
+    return undef;
+}
+
+my $secs_in_month = 60 * 60 * 24 * 30;
+
+my $first_loaded_cache_index;
+
+sub test_path2file_name
+{
+    my $test_path = $_[0];
+    my $file_name;
+
+    $file_name = $test_path;
+    $file_name =~ s/^\///;
+    $file_name =~ s/\/$//;
+    $file_name =~ s/\//./g;
+
+    return $file_name;
+}
+
+sub load_test_cache
+{
+    my $test_path = $_[0];
+    my $test_cache_path = $_[1];
+    my $filter_iters = $_[2];
+    my $test_cache;
+    my $file_name;
+
+    my $timestamp_start = $date_from->printf("%s") + 0;
+    my $timestamp_end = $date_to->printf("%s") + 0;
+
+    $timestamp_start = floor($timestamp_start / $secs_in_month);
+    $timestamp_end = floor($timestamp_end / $secs_in_month);
+
+    $first_loaded_cache_index = $timestamp_start;
+
+    $file_name = test_path2file_name($test_path);
+
+    for (my $i = $timestamp_start; $i <= $timestamp_end; $i++)
+    {
+        my $file_path;
+
+        $file_path = $test_cache_path."/$i/$file_name";
+        if (-e $file_path)
+        {
+            my $tmp = retrieve($file_path);
+            if ($filter_iters > 0)
+            {
+                $tmp = filter_test_iters($test_path, $tmp);
+            }
+            if (!defined($test_cache))
+            {
+                $test_cache = $tmp;
+            }
+            elsif (defined($tmp))
+            {
+                my $iter;
+
+                while ((undef, $iter) = each %{$tmp->{"iters"}})
+                {
+                    test_add_iter($test_cache, $iter);
+                }
+            }
+        }
+    }
+
+    return $test_cache;
+}
+
+sub stored_caches_add_iter_result
+{
+    my $caches = $_[0];
+    my $cache_index = $_[1];
+    my $iter = $_[2];
+    my $result = $_[3];
+
+    my $iter_copy = {};
+
+    $iter_copy->{"params"} = $iter->{"params"};
+    $iter_copy->{"hashes"} = $iter->{"hashes"};
+    $iter_copy->{"results"} = [ $result ];
+
+    if (!defined($caches->{$cache_index}))
+    {
+        $caches->{$cache_index} = { iters =>
+            { hash2str($iter_copy->{"params"}) =>
+                                      dclone($iter_copy) } };
+    }
+    else
+    {
+        test_add_iter($caches->{$cache_index}, $iter_copy);
+    }
+}
+
+sub store_test_cache
+{
+    my $test_cache = $_[0];
+    my $test_path = $_[1];
+    my $path = $_[2];
+    my %caches = ();
+    my $iter;
+    my $file_name;
+
+    while ((undef, $iter) = each %{$test_cache->{"iters"}})
+    {
+        foreach my $result (@{$iter->{"results"}})
+        {
+            my $result_copy;
+            my $prev_index;
+            my $cur_index;
+
+            $result_copy = dclone($result);
+            $result_copy->{"logs"} = [];
+
+            for (my $i = 0; $i < scalar(@{$result->{"logs"}}); $i++)
+            {
+                my $log = $result->{"logs"}->[$i];
+                
+                $cur_index = floor($log->{"timestamp"} / $secs_in_month);
+
+                if (defined($prev_index) && $prev_index != $cur_index)
+                {
+                    stored_caches_add_iter_result(\%caches, $prev_index,
+                                                  $iter, $result_copy);
+
+                    $result_copy = dclone($result);
+                    $result_copy->{"logs"} = [];
+                }
+
+                push(@{$result_copy->{"logs"}}, $log);
+                $prev_index = $cur_index;
+            }
+
+            if (scalar(@{$result_copy->{"logs"}}) > 0)
+            {
+                stored_caches_add_iter_result(\%caches, $cur_index,
+                                              $iter, $result_copy);
+            }
+        }
+    }
+
+    $file_name = test_path2file_name($test_path);
+
+    foreach my $cache_index (sort {$a <=> $b} (keys %caches))
+    {
+        if (defined($first_loaded_cache_index) &&
+            $cache_index < $first_loaded_cache_index)
+        {
+            print "WARNING: Writing into cache which was ".
+                  "too early to be loaded\n";
+        }
+        `mkdir -p $path/$cache_index/`;
+        nstore($caches{$cache_index},
+               $path."/$cache_index/$file_name.tmp") or
+             die "Failed to save test cache in file";
+        `mv $path/$cache_index/$file_name.tmp $path/$cache_index/$file_name`;
+    }
 }
 
 #Remove duplicates from tags list
@@ -1162,29 +1371,19 @@ if (defined($cached_logs_path) && length($cached_logs_path) > 0)
         }
     }
 
-    get_timestamp('process', 'start');
-
-    foreach my $cache_file (@cache_files)
+    foreach my $path (keys %tests_filter)
     {
-        my $full_cache_path = $cached_logs_path."/".$cache_file;
+        my $test_cache;
+        my $secs;
 
-        $cache_file =~ s/\s*$//;
-        $cache_file =~ s/^\s*//;
-        $cache_file =~ s/[.]/\//g;
-
-        foreach my $path (keys %tests_filter)
+        $test_cache = load_test_cache($path,
+                                      $cached_logs_path,
+                                      1);
+        if (defined($test_cache))
         {
-            if ($path =~ /^[\/]?${cache_file}[\/]?$/)
-            {
-                $night_results{"tests"}->{$path} =
-                        retrieve($full_cache_path);
-            }
+            $night_results{"tests"}->{$path} = $test_cache;
         }
     }
-
-    filter_cached_results();
-
-    get_timestamp('process', 'end');
 
     $date_from = new Date::Manip::Date;
     $date_from->parse(`cat $cached_logs_path/last_log_date`);
@@ -1213,37 +1412,28 @@ if (defined($update_cache_path) &&
 
     foreach my $test (keys %{$night_results{"tests"}})
     {
-        my $test_cache_path;
+        my $test_cache;
 
-        $test_cache_path = $test;
-        $test_cache_path =~ s/^\///;
-        $test_cache_path =~ s/\/$//;
-        $test_cache_path =~ s/\//./g;
-        $test_cache_path = $update_cache_path.$test_cache_path;
-
-        if (-e $test_cache_path)
+        $test_cache = load_test_cache($test, $update_cache_path, 0);
+        if (defined($test_cache))
         {
-            my $test_cache;
-            my $tmp_cache = $test_cache_path.".tmp";
+            my $iter;
 
             print "Updating existing cache for $test...\n";
-
-            $test_cache = retrieve($test_cache_path);
-
-            foreach my $iter (@{$night_results{"tests"}->{$test}->{"iters"}})
+            while ((undef, $iter) =
+                    each %{$night_results{"tests"}->{$test}->{"iters"}})
             {
                 test_add_iter($test_cache, $iter);
             }
 
-            nstore($test_cache, $tmp_cache) or
-                die "Failed to store updated cache for $test";
-            `mv $tmp_cache $test_cache_path`;
+            store_test_cache($test_cache, $test, $update_cache_path);
         }
         else
         {
             print "Caching results for $test...\n";
-            nstore($night_results{"tests"}->{$test}, $test_cache_path) or
-                die "Failed to store cache for $test";
+            store_test_cache($night_results{"tests"}->{$test},
+                             $test,
+                             $update_cache_path);
         }
     }
 
@@ -1405,10 +1595,13 @@ print FILE "<table border=1 cellpadding=4 cellspacing=3 ".
            "style=\"font-size:small;\">\n";
 foreach my $test (keys %{$night_results{"tests"}})
 {
+    my $iter;
+
     print FILE "<tr>\n<td colspan=\"3\" class=\"test_name\">".
                $test."</td>\n</tr>\n";
 
-    foreach my $iter (@{$night_results{"tests"}->{$test}->{"iters"}})
+    while ((undef, $iter) = each
+              %{$night_results{"tests"}->{$test}->{"iters"}})
     {
         print FILE "<tr>\n<td>".$test."</td>\n";
 
