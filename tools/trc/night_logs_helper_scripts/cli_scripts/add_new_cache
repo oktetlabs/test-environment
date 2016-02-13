@@ -133,7 +133,7 @@ $date_b = $date_inc->calc($date_a);
 
 $date_inc->parse("+ 2 day");
 
-while ($date_a->cmp($date_to) < 0)
+while ($date_a->cmp($date_to) <= 0)
 {
     my $date_a_str = $date_a->printf("%Y.%m.%d");
     my $date_b_str = $date_b->printf("%Y.%m.%d");
