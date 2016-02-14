@@ -1658,25 +1658,19 @@ l2tp_lns_local_ip_set(unsigned int gid, const char *oid, char *value,
 };
 
 /**
- * Method for adding a range to /agent/l2tp/lns/ip_range|lac_range
+ * Add method routine for ranges
  *
- * @param gid                  group identifier
- * @param oid                  full identifier of the father instance
- * @param value                allow or deny
- * @param l2pt_name            name of the l2tp instance is always empty
  * @param lns_name             name of the lns instance
- * @param range                name of the ../ip_range|lac_range instances
- *                             to add
+ * @param option_name          name of the option
+ * @param range                ip range
  *                             like "192.168.37.38-192.168.37.40"
  *
  * @return status code
  */
 static te_errno
-l2tp_lns_range_add(unsigned int gid, const char *oid, const char *value,
-                    const char *l2tp_name, const char *lns_name,
-                    const char *range)
+l2tp_lns_range_add_routine(const char *lns_name, const char *option_name,
+                           const char *range)
 {
-    char                 optname[L2TP_MAX_OPTNAME_LENGTH];
     char                 buf_ip[L2TP_IP_ADDR_LEN];
     char                *hyphen;
 
@@ -1685,25 +1679,19 @@ l2tp_lns_range_add(unsigned int gid, const char *oid, const char *value,
     te_l2tp_server      *l2tp = l2tp_server_find();
     te_l2tp_section     *l2tp_section = l2tp_find_section(l2tp, lns_name);
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(l2tp_name);
 
-    TE_SPRINTF(optname, "%s%s", strcmp(value, "deny") ? "no " : "",
-               strstr(oid, "/ip_range") != NULL ? "ip range" : "lac range");
-
-    if ((l2tp_option = l2tp_find_option(l2tp, lns_name, optname)) == NULL)
+    if ((l2tp_option = l2tp_find_option(l2tp, lns_name, option_name)) == NULL)
     {
         l2tp_option = (te_l2tp_option *)calloc(1, sizeof(te_l2tp_option));
         if (l2tp_option == NULL)
             return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        l2tp_option->name = strdup(optname);
+        l2tp_option->name = strdup(option_name);
         l2tp_option->value = NULL;
         l2tp_option->type = L2TP_OPTION_TYPE_L2TP;
         SLIST_INSERT_HEAD(&l2tp_section->l2tp_option, l2tp_option, list);
     }
 
-    if ((l2tp_range = l2tp_find_range(l2tp, lns_name, optname, range)) != NULL)
+    if ((l2tp_range = l2tp_find_range(l2tp, lns_name, option_name, range)) != NULL)
     {
         return TE_RC(TE_TA_UNIX,  TE_EEXIST);
     }
@@ -1757,47 +1745,94 @@ l2tp_lns_range_add(unsigned int gid, const char *oid, const char *value,
 }
 
 /**
- * Method for deleting an option from /agent/l2tp/lns/ip_range|lac_range
+ * Method for addding an option to /agent/l2tp/lns/ip_range
  *
  * @param gid                  group identifier
  * @param oid                  full identifier of the father instance
  * @param l2pt_name            name of the l2tp instance is always empty
  * @param lns_name             name of the lns instance
- * @param range                name of the ../ip_range|lac_range instances
- *                             to delete
+ * @param range                name of the ../ip_range instances
+ *                             to add
  *                             like "192.168.37.38-192.168.37.40"
  *
  * @return status code
  */
 static te_errno
-l2tp_lns_range_del(unsigned int gid, const char *oid,
-                   const char *l2tp_name, const char *lns_name,
-                   const char *range)
+l2tp_lns_ip_range_add(unsigned int gid, const char *oid, const char *value,
+                      const char *l2tp_name, const char *lns_name,
+                      const char *range)
 {
-    char                 optname[L2TP_MAX_OPTNAME_LENGTH];
-    te_l2tp_ipv4_range  *l2tp_range;
-    te_l2tp_option      *l2tp_option;
-    te_l2tp_server      *l2tp = l2tp_server_find();
+    char    optname[L2TP_MAX_OPTNAME_LENGTH];
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(l2tp_name);
 
-    TE_SPRINTF(optname, "%s", strstr(oid, "/ip_range") != NULL ?
-                              "ip range" : "lac range");
+    TE_SPRINTF(optname, "%sip range", strcmp(value, "deny") == 0 ? "no " : "");
 
-    if ((l2tp_option = l2tp_find_option(l2tp, lns_name, optname)) == NULL)
+    return l2tp_lns_range_add_routine(lns_name, optname, range);
+}
+
+/**
+ * Method for addding an option to /agent/l2tp/lns/lac_range
+ *
+ * @param gid                  group identifier
+ * @param oid                  full identifier of the father instance
+ * @param l2pt_name            name of the l2tp instance is always empty
+ * @param lns_name             name of the lns instance
+ * @param range                name of the ../lac_range instances
+ *                             to add
+ *                             like "192.168.37.38-192.168.37.40"
+ *
+ * @return status code
+ */
+static te_errno
+l2tp_lns_lac_range_add(unsigned int gid, const char *oid, const char *value,
+                       const char *l2tp_name, const char *lns_name,
+                       const char *range)
+{
+    char    optname[L2TP_MAX_OPTNAME_LENGTH];
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(l2tp_name);
+
+    TE_SPRINTF(optname, "%slac range", strcmp(value, "deny") == 0 ? "no " : "");
+
+    return l2tp_lns_range_add_routine(lns_name, optname, range);
+}
+
+/**
+ * Delete method routine
+ *
+ * @param lns_name             name of the lns instance
+ * @paran option_name          option name
+ * @param range                range to delete
+ *                             like "192.168.37.38-192.168.37.40"
+ *
+ * @return status code
+ */
+static te_errno
+l2tp_lns_range_del_routine(const char *lns_name, const char *option_name,
+                           const char *range)
+{
+    char                 opt_buf[L2TP_MAX_OPTNAME_LENGTH];
+    te_l2tp_ipv4_range  *l2tp_range;
+    te_l2tp_option      *l2tp_option;
+    te_l2tp_server      *l2tp = l2tp_server_find();
+
+
+    if ((l2tp_option = l2tp_find_option(l2tp, lns_name, option_name)) == NULL)
     {
-        TE_SPRINTF(optname, "no %s", strstr(oid, "/ip_range") != NULL ?
-                                     "ip range" : "lac range");
+        TE_SPRINTF(opt_buf, "no %s", option_name);
 
-        if ((l2tp_option = l2tp_find_option(l2tp, lns_name, optname)) == NULL)
+        if ((l2tp_option = l2tp_find_option(l2tp, lns_name, opt_buf)) == NULL)
         {
             return TE_RC(TE_TA_UNIX,  TE_ENOENT);
         }
     }
 
-    if ((l2tp_range = l2tp_find_range(l2tp, lns_name, optname, range)) == NULL)
+    if ((l2tp_range = l2tp_find_range(l2tp, lns_name, opt_buf, range)) == NULL)
     {
         return TE_RC(TE_TA_UNIX,  TE_ENOENT);
     }
@@ -1810,6 +1845,56 @@ l2tp_lns_range_del(unsigned int gid, const char *oid,
 
     l2tp->changed = TRUE;
     return 0;
+}
+
+/**
+ * Method for deleting an option from /agent/l2tp/lns/ip_range
+ *
+ * @param gid                  group identifier
+ * @param oid                  full identifier of the father instance
+ * @param l2pt_name            name of the l2tp instance is always empty
+ * @param lns_name             name of the lns instance
+ * @param range                name of the ../ip_range instances
+ *                             to delete
+ *                             like "192.168.37.38-192.168.37.40"
+ *
+ * @return status code
+ */
+static te_errno
+l2tp_lns_ip_range_del(unsigned int gid, const char *oid,
+                      const char *l2tp_name, const char *lns_name,
+                      const char *range)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(l2tp_name);
+
+    return l2tp_lns_range_del_routine(lns_name, "ip range", range);
+}
+
+/**
+ * Method for deleting an option from /agent/l2tp/lns/lac_range
+ *
+ * @param gid                  group identifier
+ * @param oid                  full identifier of the father instance
+ * @param l2pt_name            name of the l2tp instance is always empty
+ * @param lns_name             name of the lns instance
+ * @param range                name of the ../lac_range instances
+ *                             to delete
+ *                             like "192.168.37.38-192.168.37.40"
+ *
+ * @return status code
+ */
+static te_errno
+l2tp_lns_lac_range_del(unsigned int gid, const char *oid,
+                       const char *l2tp_name, const char *lns_name,
+                       const char *range)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(l2tp_name);
+
+    return l2tp_lns_range_del_routine(lns_name, "lac range", range);
 }
 
 /**
@@ -2002,6 +2087,36 @@ l2tp_lns_client_del(unsigned int gid, const char *oid,
     return 0;
 }
 
+/**
+ * Set secret routine
+ *
+ * @param lns_name      name of the lns instance
+ * @param auth_type     name of the lns auth instance
+ * @param client_name   client name of the lns instance
+ * @param secret_part   name of the modifying instance
+ *
+ * @return status code
+ */
+static te_errno
+l2tp_lns_secret_set_routine(const char *lns_name, const char *auth_type,
+                            const char *client_name, const char *secret)
+{
+    te_l2tp_option       *client;
+    te_l2tp_server       *l2tp = l2tp_server_find();
+
+    enum l2tp_secret_prot type = strcmp(auth_type, "chap") == 0 ?
+                                        L2TP_SECRET_PROT_CHAP : L2TP_SECRET_PROT_PAP;
+    if ((client = l2tp_find_client(l2tp, lns_name, client_name, type)) == NULL)
+    {
+        return TE_RC(TE_TA_UNIX,  TE_ENOENT);
+    }
+
+    free(client->secret->secret);
+    client->secret->secret = strdup(secret);
+
+    return 0;
+
+}
 
 /**
  * Set method for /agent/l2tp/lns/auth/client/secret
@@ -2019,30 +2134,17 @@ l2tp_lns_client_del(unsigned int gid, const char *oid,
  */
 static te_errno
 l2tp_lns_secret_set_sec(unsigned int gid, const char *oid, const char *value,
-                    const char *l2tp_name, const char *lns_name,
-                    const char *auth_type, const char *client_name,
-                    const char *secret)
+                        const char *l2tp_name, const char *lns_name,
+                        const char *auth_type, const char *client_name,
+                        const char *secret)
 {
-    te_l2tp_option       *client;
-    te_l2tp_server       *l2tp = l2tp_server_find();
-
-    enum l2tp_secret_prot type = strcmp(auth_type, "chap") == 0 ?
-                                 L2TP_SECRET_PROT_CHAP : L2TP_SECRET_PROT_PAP;
 
     UNUSED(oid);
     UNUSED(gid);
     UNUSED(value);
     UNUSED(l2tp_name);
 
-    if ((client = l2tp_find_client(l2tp, lns_name, client_name, type)) == NULL)
-    {
-        return TE_RC(TE_TA_UNIX,  TE_ENOENT);
-    }
-
-    free(client->secret->secret);
-    client->secret->secret = strdup(secret);
-
-    return 0;
+    return l2tp_lns_secret_set_routine(lns_name, auth_type, client_name, secret);
 }
 
 /**
@@ -2061,30 +2163,16 @@ l2tp_lns_secret_set_sec(unsigned int gid, const char *oid, const char *value,
  */
 static te_errno
 l2tp_lns_secret_set_serv(unsigned int gid, const char *oid, const char *value,
-        const char *l2tp_name, const char *lns_name,
-        const char *auth_type, const char *client_name,
-        const char *server)
+                         const char *l2tp_name, const char *lns_name,
+                         const char *auth_type, const char *client_name,
+                         const char *server)
 {
-    te_l2tp_option       *client;
-    te_l2tp_server       *l2tp = l2tp_server_find();
-
-    enum l2tp_secret_prot type = strcmp(auth_type, "chap") == 0 ?
-            L2TP_SECRET_PROT_CHAP : L2TP_SECRET_PROT_PAP;
-
     UNUSED(oid);
     UNUSED(gid);
     UNUSED(value);
     UNUSED(l2tp_name);
 
-    if ((client = l2tp_find_client(l2tp, lns_name, client_name, type)) == NULL)
-    {
-        return TE_RC(TE_TA_UNIX,  TE_ENOENT);
-    }
-
-    free(client->secret->server);
-    client->secret->server = strdup(server);
-
-    return 0;
+    return l2tp_lns_secret_set_routine(lns_name, auth_type, client_name, server);
 }
 
 /**
@@ -2107,26 +2195,12 @@ l2tp_lns_secret_set_ipv4(unsigned int gid, const char *oid, const char *value,
                          const char *auth_type, const char *client_name,
                          const char *ipv4)
 {
-    te_l2tp_option       *client;
-    te_l2tp_server       *l2tp = l2tp_server_find();
-
-    enum l2tp_secret_prot type = strcmp(auth_type, "chap") == 0 ?
-            L2TP_SECRET_PROT_CHAP : L2TP_SECRET_PROT_PAP;
-
     UNUSED(oid);
     UNUSED(gid);
     UNUSED(value);
     UNUSED(l2tp_name);
 
-    if ((client = l2tp_find_client(l2tp, lns_name, client_name, type)) == NULL)
-    {
-        return TE_RC(TE_TA_UNIX,  TE_ENOENT);
-    }
-
-    free(client->secret->sipv4);
-    client->secret->server = strdup(ipv4);
-
-    return 0;
+    return l2tp_lns_secret_set_routine(lns_name, auth_type, client_name, ipv4);
 }
 
 
@@ -2402,14 +2476,14 @@ static rcf_pch_cfg_object node_l2tp_connected =
 static rcf_pch_cfg_object node_l2tp_lns_lac_range =
         { "lac_range", 0, NULL, &node_l2tp_connected,
           NULL, NULL,
-          (rcf_ch_cfg_add)l2tp_lns_range_add,
-          (rcf_ch_cfg_del)l2tp_lns_range_del, NULL, NULL, &node_l2tp };
+          (rcf_ch_cfg_add)l2tp_lns_lac_range_add,
+          (rcf_ch_cfg_del)l2tp_lns_lac_range_del, NULL, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_ip_range =
         { "ip_range", 0, NULL, &node_l2tp_lns_lac_range,
           NULL, NULL,
-          (rcf_ch_cfg_add)l2tp_lns_range_add,
-          (rcf_ch_cfg_del)l2tp_lns_range_del, NULL, NULL, &node_l2tp };
+          (rcf_ch_cfg_add)l2tp_lns_ip_range_add,
+          (rcf_ch_cfg_del)l2tp_lns_ip_range_del, NULL, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_listen =
         { "listen", 0, NULL, NULL,
