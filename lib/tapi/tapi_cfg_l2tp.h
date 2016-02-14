@@ -73,18 +73,11 @@ enum l2tp_bit {
     L2TP_BIT_FLOW  ,    /**< hidden bit option */
 } l2tp_bit;
 
-/** Part of the chap|pap secrets */
-enum l2tp_secret_part {
-    L2TP_SECRET_PART_SERVER,    /**< server name */
-    L2TP_SECRET_PART_SECRET,    /**< secret name itself */
-    L2TP_SECRET_PART_IPV4  ,    /**< ipv4 name */
-} l2tp_secret_part;
-
 /** Structure for the IP-address pool */
 typedef struct l2tp_ipv4_range {
     struct sockaddr_in *start;   /**< The left boundary of the pool */
     struct sockaddr_in *end;     /**< The right boundary of the pool */
-    enum l2tp_policy   type;    /**< Above pool can be allowed or denied */
+    enum l2tp_policy    type;    /**< Above pool can be allowed or denied */
 } l2tp_ipv4_range;
 
 /** CHAP|PAP secret structure */
@@ -111,13 +104,34 @@ typedef struct l2tp_range {
     char                     *lns;   /**< lns name */
 } l2tp_range;
 
+/**
+ * Set a l2tp server status.
+ *
+ * @param ta            Test Agent
+ * @param status        1/0
+ *
+ * @return Status code
+ */
+extern te_errno
+tapi_cfg_l2tp_server_set(const char *ta, int status);
+
+/**
+ * Get a l2tp server status.
+ *
+ * @param ta            Test Agent
+ * @param status        Returned value
+ *
+ * @return Status code
+ */
+extern te_errno
+tapi_cfg_l2tp_server_get(const char *ta, int *status);
 
 /**
  * Set a listen/local ip.
  *
  * @param ta            Test Agent
  * @param lns           If NULL the global listen ip will be set,
-                        otherwise it will set local ip to the specified lns
+ otherwise it will set local ip to the specified lns
  * @param local         New IP address
  *
  * @return Status code
@@ -131,7 +145,7 @@ tapi_cfg_l2tp_ip_set(const char *ta, const char *lns,
  *
  * @param ta            Test Agent
  * @param is_lnc        If NULL the global listen ip will be got,
-                        otherwise it will got local ip to the specified lns
+ otherwise it will got local ip to the specified lns
  * @param local         Returned pointer to the current local ip
  *
  * @return Status code
@@ -148,7 +162,7 @@ tapi_cfg_l2tp_ip_get(const char *ta, const char *lns,
  * @param lns           The name of the section to modify
  * @param iprange       IP address pool
  * @param kind          The class of the added ip range
-                        ALLOW|BAN
+ IP|LAC
  *
  * @return Status code
  */
@@ -165,7 +179,7 @@ tapi_cfg_l2tp_lns_range_add(const char *ta, const char *lns,
  * @param lns           The name of the section to modify
  * @param iprange       IP address pool
  * @param kind          The class of the removed ip range
-                        ALLOW|BAN
+ IP|LAC
  *
  * @return Status code
  */
@@ -198,7 +212,7 @@ tapi_cfg_l2tp_lns_connected_get(const char *ta, const char *lns,
  * @param lns       The name of the section
  * @param bit       Desired bit option to change
  * @param selector  If true the bit_name value will be "yes"
-                    otherwise "no"
+ otherwise "no"
  *
  * @return Status code
  */
@@ -234,16 +248,16 @@ extern te_errno
 tapi_cfg_l2tp_lns_set_auth(const char *ta, const char *lns,
                            l2tp_auth param, bool value);
 /**
-* Get the instance value "/auth/refuse|require".
-*
-* @param ta          Test Agent
-* @param lns         The name of the section
-* @param param       Desired authentication
-* @param value       Returned pointer to the authentication parameter,
-                     like "true" or "false"
-*
-* @return Status code
-*/
+ * Get the instance value "/auth/refuse|require".
+ *
+ * @param ta          Test Agent
+ * @param lns         The name of the section
+ * @param param       Desired authentication
+ * @param value       Returned pointer to the authentication parameter,
+ like "true" or "false"
+ *
+ * @return Status code
+ */
 extern te_errno
 tapi_cfg_l2tp_lns_get_auth(const char *ta, const char *lns,
                            l2tp_auth param, bool *value);
