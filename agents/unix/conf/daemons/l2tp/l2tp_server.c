@@ -1,5 +1,4 @@
 #include <dirent.h>
-#include <te_shell_cmd.h>
 #include <ifaddrs.h>
 #include "conf_daemons.h"
 #include "te_queue.h"
@@ -2510,7 +2509,7 @@ static rcf_pch_cfg_object node_l2tp =
           (rcf_ch_cfg_get)l2tp_server_get,
           (rcf_ch_cfg_set)l2tp_server_set,
           NULL, NULL, NULL,
-          (rcf_ch_cfg_commit)l2tp_server_commit };
+          (rcf_ch_cfg_commit)l2tp_server_commit, NULL };
 
 /**
  * Grab method for l2tp server resource
