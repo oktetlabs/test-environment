@@ -1234,7 +1234,7 @@ static const char * const trc_html_doc_start =
 "            doNothing(event);\n"
 "        return false;\n"
 "    }\n"
-#endif
+"\n"
 "    function getIterHistoryURL(test_path, hash)\n"
 "    {\n"
 "        return 'https://oktetlabs.ru/socktest/index.pl?tests=' +\n"
@@ -1242,6 +1242,7 @@ static const char * const trc_html_doc_start =
 "                '&log_path=' +\n"
 "                encodeURIComponent(document.location.href);\n"
 "    }\n"
+#endif
 "  </script>\n"
 #endif
 "</head>\n"
@@ -1550,8 +1551,10 @@ static const char * const trc_test_log_url =
 ">[log]</a>";
 #endif
 
+#ifdef TRC_USE_LOG_URLS
 static const char * const trc_test_exp_got_row_tin_ref =
 "        <a name=\"tin_%d\"> </a>\n";
+#endif
 
 static const char * const trc_test_exp_got_row_start =
 "    <tr>\n"
@@ -1559,8 +1562,8 @@ static const char * const trc_test_exp_got_row_start =
 "        %s<b><a %s%s%s href=\"#OBJECTIVE%s\">%s</a></b>\n"
 #if TRC_USE_LOG_URLS
 "        %s\n"
-#endif
 "        %s\n"
+#endif
 "      </td>\n"
 "      <td valign=top>";
 
@@ -2533,8 +2536,8 @@ trc_report_exp_got_to_html(FILE             *f,
     do {
         if (trc_report_test_iter_entry_output(test, iter_entry, flags))
         {
-            char *iter_history_url = NULL;
 #if TRC_USE_LOG_URLS
+            char *iter_history_url = NULL;
             char *test_url = NULL;
             if ((iter_entry != NULL) && (iter_entry->tin >= 0) &&
                 (ctx->html_logs_path != NULL))
@@ -2550,6 +2553,14 @@ trc_report_exp_got_to_html(FILE             *f,
                                       ctx->html_logs_path,
                                       iter_entry->tin);
 #endif
+            }
+
+            if (iter_entry != NULL && iter_entry->hash != NULL &&
+                strlen(iter_entry->hash) > 0)
+            {
+                iter_history_url = te_sprintf(trc_test_iter_history_href,
+                                              iter_entry->hash,
+                                              test_path, iter_entry->hash); 
             }
 #endif
 
@@ -2574,14 +2585,6 @@ trc_report_exp_got_to_html(FILE             *f,
                 }
             }
             assert(iter_data != NULL);
-
-            if (iter_entry != NULL && iter_entry->hash != NULL &&
-                strlen(iter_entry->hash) > 0)
-            {
-                iter_history_url = te_sprintf(trc_test_iter_history_href,
-                                              iter_entry->hash,
-                                              test_path, iter_entry->hash); 
-            }
 
             tin_ref[0] = '\0';
             id_tin_id[0] = '\0';
@@ -2613,7 +2616,7 @@ trc_report_exp_got_to_html(FILE             *f,
                     escaped_path, test->name, PRINT_STR(test_url),
                     PRINT_STR(iter_history_url));
 #else
-                    escaped_path, test->name, PRINT_STR(iter_history_url));
+                    escaped_path, test->name);
 #endif
             *anchor = FALSE;
 
@@ -2622,9 +2625,9 @@ trc_report_exp_got_to_html(FILE             *f,
             {
                 free(test_url);
             }
-#endif
             if (iter_history_url != NULL)
                 free(iter_history_url);
+#endif
 
 #if TRC_USE_PARAMS_SPOILERS
             if (!TAILQ_EMPTY(&iter->args.head))
