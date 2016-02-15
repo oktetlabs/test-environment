@@ -16,11 +16,16 @@ umask 0027;
 
 foreach my $cache (@caches)
 {
-  my $cmd_str = "$cli_path/te_get_nlogs_results --update-cache=".
-                $cache->{"cache_path"}." --include-compromised ".
-                " --log-path=".$cache->{"logs_source"}." 2>&1 ".
-                " >$cli_path/".$cache->{"id"}."_update.log";
+    my $rc;
+    my $cmd_str = "$cli_path/te_get_nlogs_results --update-cache=".
+                  $cache->{"cache_path"}." --include-compromised ".
+                  " --log-path=".$cache->{"logs_source"}." 2>&1 ".
+                  " >$cli_path/".$cache->{"id"}."_update.log";
 
-  print "$cmd_str\n";
-  system("cd /tmp/; $cmd_str");
+    print "$cmd_str\n";
+    $rc = system("cd /tmp/; $cmd_str");
+    if ($rc != 0)
+    {
+        print "Updating cache failed\n";
+    }
 }
