@@ -1235,6 +1235,13 @@ static const char * const trc_html_doc_start =
 "        return false;\n"
 "    }\n"
 #endif
+"    function getIterHistoryURL(test_path, hash)\n"
+"    {\n"
+"        return 'https://oktetlabs.ru/socktest/index.pl?tests=' +\n"
+"                encodeURIComponent(test_path + '%%' + hash) +\n"
+"                '&log_path=' +\n"
+"                encodeURIComponent(document.location.href);\n"
+"    }\n"
 "  </script>\n"
 #endif
 "</head>\n"
@@ -1553,8 +1560,14 @@ static const char * const trc_test_exp_got_row_start =
 #if TRC_USE_LOG_URLS
 "        %s\n"
 #endif
+"        %s\n"
 "      </td>\n"
 "      <td valign=top>";
+
+static const char * const trc_test_iter_history_href =
+"<a href=\"%s\" "
+"onmouseover=\"this.href = getIterHistoryURL('%s', '%s'); "
+"this.target='_blank';\">[history]</a>";
 
 #if TRC_USE_PARAMS_SPOILERS
 static const char * const trc_test_exp_got_row_params_start =
@@ -2520,6 +2533,7 @@ trc_report_exp_got_to_html(FILE             *f,
     do {
         if (trc_report_test_iter_entry_output(test, iter_entry, flags))
         {
+            char *iter_history_url = NULL;
 #if TRC_USE_LOG_URLS
             char *test_url = NULL;
             if ((iter_entry != NULL) && (iter_entry->tin >= 0) &&
@@ -2561,6 +2575,14 @@ trc_report_exp_got_to_html(FILE             *f,
             }
             assert(iter_data != NULL);
 
+            if (iter_entry != NULL && iter_entry->hash != NULL &&
+                strlen(iter_entry->hash) > 0)
+            {
+                iter_history_url = te_sprintf(trc_test_iter_history_href,
+                                              iter_entry->hash,
+                                              test_path, iter_entry->hash); 
+            }
+
             tin_ref[0] = '\0';
             id_tin_id[0] = '\0';
             tin_id[0] = '\0';
@@ -2588,9 +2610,10 @@ trc_report_exp_got_to_html(FILE             *f,
                     PRINT_STR(level_str),
                     PRINT_STR3(anchor, "name=\"", test_path, "\" "),
 #if TRC_USE_LOG_URLS
-                    escaped_path, test->name, PRINT_STR(test_url));
+                    escaped_path, test->name, PRINT_STR(test_url),
+                    PRINT_STR(iter_history_url));
 #else
-                    escaped_path, test->name);
+                    escaped_path, test->name, PRINT_STR(iter_history_url));
 #endif
             *anchor = FALSE;
 
@@ -2600,6 +2623,8 @@ trc_report_exp_got_to_html(FILE             *f,
                 free(test_url);
             }
 #endif
+            if (iter_history_url != NULL)
+                free(iter_history_url);
 
 #if TRC_USE_PARAMS_SPOILERS
             if (!TAILQ_EMPTY(&iter->args.head))
