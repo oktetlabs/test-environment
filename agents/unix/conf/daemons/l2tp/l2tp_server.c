@@ -60,6 +60,13 @@
 /** pid of xl2tpd */
 static int l2tp_pid = -1;
 
+/** The class of the options */
+enum l2tp_value_type {
+    L2TP_VALUE_TYPE_INT,       /**< integer type */
+    L2TP_VALUE_TYPE_STRING,    /**< string type */
+    L2TP_VALUE_TYPE_ADDRESS,   /**< address type */
+};
+
 /** Authentication type */
 enum l2tp_secret_prot {
     L2TP_SECRET_PROT_CHAP,    /**< CHAP authentication */
@@ -629,7 +636,7 @@ l2tp_server_start(te_l2tp_server *l2tp)
 
     TE_SPRINTF(buf, "%s -D -c %s%i -p %s%i", L2TP_SERVER_EXEC,
                L2TP_SERVER_CONF_BASIS, ta_pid, L2TP_TA_PIDFILE, ta_pid);
-    if ((l2tp_pid = te_shell_cmd(buf, (uid_t) - 1, NULL, NULL, NULL)) < 0)
+    if ((l2tp_pid = te_shell_cmd(buf, (uid_t) - 1, NULL, NULL, NULL) < 0))
     {
         ERROR("Command %s failed", buf);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
@@ -877,7 +884,7 @@ l2tp_find_range(te_l2tp_server *l2tp, const char *section,
  */
 static te_errno
 l2tp_lns_opt_get_routine(char *value, const char *option_name,
-                         const char *lns_name)
+                         const char *lns_name, enum l2tp_value_type type)
 {
     te_l2tp_server *l2tp = l2tp_server_find();
     te_l2tp_option *option = NULL;
@@ -887,8 +894,22 @@ l2tp_lns_opt_get_routine(char *value, const char *option_name,
 
     if (option == NULL)
     {
-	*value = '\0';
-	return 0;
+        switch (type)
+        {
+            case L2TP_VALUE_TYPE_INT:
+                strcpy(value, "-1");
+
+            case L2TP_VALUE_TYPE_ADDRESS:
+                strcpy(value, "0.0.0.0");
+
+            case L2TP_VALUE_TYPE_STRING:
+                strcpy(value, "nope");
+
+            default:
+                return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+        return 0;
+
     }
     strcpy(value, option->value);
 
@@ -984,9 +1005,8 @@ l2tp_global_listen_get(unsigned gid, const char *oid, char *value,
     UNUSED(oid);
     UNUSED(l2tp_name);
 
-    INFO("GET LISTEN: %s", oid);
-
-    return l2tp_lns_opt_get_routine(value, "listen", L2TP_GLOBAL);
+    return l2tp_lns_opt_get_routine(value, "listen",
+            L2TP_GLOBAL, L2TP_VALUE_TYPE_ADDRESS);
 }
 
 /**
@@ -1030,7 +1050,8 @@ l2tp_global_port_get(unsigned gid, const char *oid, char *value,
     UNUSED(oid);
     UNUSED(l2tp_name);
 
-    return l2tp_lns_opt_get_routine(value, "port", L2TP_GLOBAL);
+    return l2tp_lns_opt_get_routine(value, "port",
+            L2TP_GLOBAL, L2TP_VALUE_TYPE_INT);
 }
 
 /**
@@ -1186,7 +1207,8 @@ l2tp_lns_opt_get_mtu(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(l2tp_name);
 
-    return  l2tp_lns_opt_get_routine(value, "mtu", lns_name);
+    return  l2tp_lns_opt_get_routine(value, "mtu",
+            lns_name, L2TP_VALUE_TYPE_INT);
 };
 
 /**
@@ -1233,7 +1255,8 @@ l2tp_lns_opt_get_mru(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(l2tp_name);
 
-    return  l2tp_lns_opt_get_routine(value, "mru", lns_name);
+    return  l2tp_lns_opt_get_routine(value, "mru",
+            lns_name, L2TP_VALUE_TYPE_INT);
 };
 
 /**
@@ -1280,7 +1303,8 @@ l2tp_lns_opt_get_lei(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(l2tp_name);
 
-    return l2tp_lns_opt_get_routine(value, "lcp-echo-interval", lns_name);
+    return l2tp_lns_opt_get_routine(value, "lcp-echo-interval",
+            lns_name, L2TP_VALUE_TYPE_INT);
 };
 
 /**
@@ -1327,7 +1351,8 @@ l2tp_lns_opt_get_lef(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(l2tp_name);
 
-    return l2tp_lns_opt_get_routine(value, "lcp-echo-failure", lns_name);
+    return l2tp_lns_opt_get_routine(value, "lcp-echo-failure",
+            lns_name, L2TP_VALUE_TYPE_INT);
 };
 
 /**
@@ -1374,7 +1399,8 @@ l2tp_lns_opt_get_challenge(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(l2tp_name);
 
-    return l2tp_lns_opt_get_routine(value, "challenge", lns_name);
+    return l2tp_lns_opt_get_routine(value, "challenge",
+            lns_name, L2TP_VALUE_TYPE_STRING);
 };
 
 /**
@@ -1421,7 +1447,8 @@ l2tp_lns_opt_get_uauth(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(l2tp_name);
 
-    return l2tp_lns_opt_get_routine(value, "unix authentication", lns_name);
+    return l2tp_lns_opt_get_routine(value, "unix authentication",
+            lns_name, L2TP_VALUE_TYPE_STRING);
 };
 
 /**
@@ -1469,7 +1496,8 @@ l2tp_lns_bit_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
     UNUSED(l2tp_name);
 
-    return l2tp_lns_opt_get_routine(value, bit_name, lns_name);
+    return l2tp_lns_opt_get_routine(value, bit_name,
+            lns_name, L2TP_VALUE_TYPE_STRING);
 };
 
 /**
@@ -1523,7 +1551,8 @@ l2tp_lns_require_get(unsigned int gid, const char *oid, char *value,
 
     TE_SPRINTF(optname, "require %s", auth_type);
 
-    return l2tp_lns_opt_get_routine(value, optname, lns_name);
+    return l2tp_lns_opt_get_routine(value, optname,
+            lns_name, L2TP_VALUE_TYPE_STRING);
 
 }
 
@@ -1581,7 +1610,8 @@ l2tp_lns_refuse_get(unsigned int gid, const char *oid, char *value,
 
     TE_SPRINTF(optname, "refuse %s", auth_type);
 
-    return l2tp_lns_opt_get_routine(value, optname, lns_name);
+    return l2tp_lns_opt_get_routine(value, optname,
+            lns_name, L2TP_VALUE_TYPE_STRING);
 
 }
 
@@ -1634,7 +1664,8 @@ l2tp_lns_local_ip_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
     UNUSED(l2tp_name);
 
-    return l2tp_lns_opt_get_routine(value, "local ip", lns_name);
+    return l2tp_lns_opt_get_routine(value, "local ip",
+            lns_name, L2TP_VALUE_TYPE_ADDRESS);
 };
 
 /**
