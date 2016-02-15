@@ -51,7 +51,7 @@
 #define L2TP_MAX_PID_VALUE_LENGTH 16
 
 /** Default buffer size for the option name storage */
-#define L2TP_MAX_OPTNAME_LENGTH 20
+#define L2TP_MAX_OPTNAME_LENGTH 40
 
 /** Max length of the IP address in human dot notation */
 #define L2TP_IP_ADDR_LEN 15
@@ -530,7 +530,7 @@ static te_bool
 l2tp_is_running(te_l2tp_server *l2tp)
 {
     te_bool  is_running;
-    char     l2tp_ta_pidfile[L2TP_MAX_PID_VALUE_LENGTH];
+    char     l2tp_ta_pidfile[L2TP_MAX_OPTNAME_LENGTH];
     FILE    *f;
 
     UNUSED(l2tp);
@@ -714,7 +714,7 @@ l2tp_server_commit(unsigned int gid, const char *oid)
         return res;
     }
 
-    if (!l2tp->started)
+    if (l2tp->started)
     {
         if ((res = l2tp_server_start(l2tp)) != 0)
         {
@@ -736,7 +736,7 @@ l2tp_server_commit(unsigned int gid, const char *oid)
 static te_l2tp_section *
 l2tp_find_section(te_l2tp_server *l2tp, const char *name)
 {
-    te_l2tp_section *l2tp_section;
+    te_l2tp_section *l2tp_section = NULL;
 
     for (l2tp_section = SLIST_FIRST(&l2tp->section);
          l2tp_section != NULL;
@@ -764,7 +764,7 @@ l2tp_find_option(te_l2tp_server *l2tp, const char *section, const char *name)
     te_l2tp_option  *opt = NULL;
     te_l2tp_section *sec = l2tp_find_section(l2tp, section);
 
-    if (strcmp(sec->secname, section) == 0)
+    if (sec != NULL && strcmp(sec->secname, section) == 0)
     {
         for (opt = SLIST_FIRST(&sec->l2tp_option);
              opt != NULL;
@@ -794,7 +794,7 @@ l2tp_find_client(te_l2tp_server *l2tp, const char *section,
     te_l2tp_option  *client = NULL;
     te_l2tp_section *sec = l2tp_find_section(l2tp, section);
 
-    if (strcmp(sec->secname, section) == 0)
+    if (sec != NULL && strcmp(sec->secname, section) == 0)
     {
         for (client = SLIST_FIRST(&sec->l2tp_option);
              client != NULL;
@@ -831,7 +831,7 @@ l2tp_find_range(te_l2tp_server *l2tp, const char *section,
     te_l2tp_option      *option = NULL;
     te_l2tp_section     *sec = l2tp_find_section(l2tp, section);
 
-    if (strcmp(sec->secname, section) == 0)
+    if (sec != NULL && strcmp(sec->secname, section) == 0)
     {
         for (option = SLIST_FIRST(&sec->l2tp_option);
              option != NULL;
@@ -882,11 +882,13 @@ l2tp_lns_opt_get_routine(char *value, const char *option_name,
     te_l2tp_server *l2tp = l2tp_server_find();
     te_l2tp_option *option = NULL;
 
+    INFO("Looking for %s:%s", lns_name, option_name);
     option = l2tp_find_option(l2tp, lns_name, option_name);
 
     if (option == NULL)
     {
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+	*value = '\0';
+	return 0;
     }
     strcpy(value, option->value);
 
@@ -981,6 +983,8 @@ l2tp_global_listen_get(unsigned gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(l2tp_name);
+
+    INFO("GET LISTEN: %s", oid);
 
     return l2tp_lns_opt_get_routine(value, "listen", L2TP_GLOBAL);
 }
