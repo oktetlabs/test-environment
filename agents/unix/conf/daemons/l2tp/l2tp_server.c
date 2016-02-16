@@ -898,17 +898,19 @@ l2tp_lns_opt_get_routine(char *value, const char *option_name,
         {
             case L2TP_VALUE_TYPE_INT:
                 strcpy(value, "-1");
+		return 0;
 
             case L2TP_VALUE_TYPE_ADDRESS:
                 strcpy(value, "0.0.0.0");
+		return 0;
 
             case L2TP_VALUE_TYPE_STRING:
                 strcpy(value, "nope");
+		return 0;
 
-            default:
-                return TE_RC(TE_TA_UNIX, TE_ENOENT);
+	    default:
+		return TE_RC(TE_TA_UNIX, TE_ENOENT);
         }
-        return 0;
 
     }
     strcpy(value, option->value);
