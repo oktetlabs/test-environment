@@ -49,6 +49,15 @@ sub split_str
     return grep(/[^\s]+/, split(/(\r\n|\n|\r)/, $str));
 }
 
+sub escape_param
+{
+    my $param = $_[0];
+
+    $param =~ s/"/\\"/g;
+
+    return $param;
+}
+
 my $cli_path = get_cli_path();
 
 my $start_date = $cgi->param('start_date');
@@ -79,7 +88,7 @@ if (defined($end_date))
 
 foreach my $test (@tests_list)
 {
-    $command_str .= " --test=$test";
+    $command_str .= " --test=\"".escape_param($test)."\"";
 }
 
 foreach my $log (@logs_list)

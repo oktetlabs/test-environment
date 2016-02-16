@@ -1235,10 +1235,10 @@ static const char * const trc_html_doc_start =
 "        return false;\n"
 "    }\n"
 "\n"
-"    function getIterHistoryURL(test_path, hash)\n"
+"    function getIterHistoryURL(test_path, params)\n"
 "    {\n"
 "        return 'https://oktetlabs.ru/socktest/index.pl?tests=' +\n"
-"                encodeURIComponent(test_path + '%%' + hash) +\n"
+"                encodeURIComponent(test_path + ':' + params) +\n"
 "                '&log_path=' +\n"
 "                encodeURIComponent(document.location.href);\n"
 "    }\n"
@@ -2558,9 +2558,52 @@ trc_report_exp_got_to_html(FILE             *f,
             if (iter_entry != NULL && iter_entry->hash != NULL &&
                 strlen(iter_entry->hash) > 0)
             {
+                te_string     params = TE_STRING_INIT;
+                unsigned int  i;
+
+                for (i = 0; i < iter_entry->args_n; i++)
+                {
+                    te_bool         escape_comma = FALSE;
+                    unsigned int    j;
+                    
+                    if (iter_entry->args[i].variable)
+                        continue;
+
+                    te_string_append(&params,
+                                     "%s=",
+                                     iter_entry->args[i].name);
+
+                    if (strchr(iter_entry->args[i].value, ',') != NULL)
+                        escape_comma = TRUE;
+
+                    if (escape_comma)
+                        te_string_append(&params, "[");
+                    for (j = 0; j < strlen(iter_entry->args[i].value);
+                         j++)
+                    {
+                        char c = iter_entry->args[i].value[j];
+
+                        if (escape_comma)
+                        {
+                            if (c == '[' || c == ']')
+                                te_string_append(&params, "\\\\");
+                        }
+                        if (c == '\'' || c == '\\')
+                            te_string_append(&params, "\\");
+
+                        te_string_append(&params, "%c", c);
+                    }
+                    if (escape_comma)
+                        te_string_append(&params, "]");
+
+                    if (i < iter_entry->args_n - 1)
+                        te_string_append(&params, ",");
+                }
+
                 iter_history_url = te_sprintf(trc_test_iter_history_href,
                                               iter_entry->hash,
-                                              test_path, iter_entry->hash); 
+                                              test_path, params.ptr); 
+                te_string_free(&params);
             }
 #endif
 

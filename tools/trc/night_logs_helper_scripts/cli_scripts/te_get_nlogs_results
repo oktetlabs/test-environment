@@ -952,13 +952,17 @@ foreach my $arg (@ARGV)
             $tests_filter{$path}->{"params"} = [];
 
             $params = $params.",";
-            while ($params =~ /^(.+?)=(.+?),/)
+            while ($params =~ /^([^,]+?)=\[(.+?)\],/ ||
+                   $params =~ /^([^,]+?)=(.+?),/)
             {
                 my $p_name = $1;
                 my $p_value = $2;
 
+                $params =~ s/^$p_name=\[?$p_value\]?,//;
+                $p_value =~ s/\\([\[\]])/$1/g;
+                $p_value =~ s/'/&apos;/g;
+
                 $params_hash->{$p_name} = $p_value;
-                $params =~ s/^(.+?)=(.+?),//;
             }
 
             push(@{$tests_filter{$path}->{"params"}}, $params_hash);
