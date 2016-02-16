@@ -79,11 +79,11 @@ $end_date = fix_date($end_date);
 
 if (defined($start_date))
 {
-    $command_str .= " -f$start_date";
+    $command_str .= " --from=\"$start_date\"";
 }
 if (defined($end_date))
 {
-    $command_str .= " -t$end_date";
+    $command_str .= " --to=\"$end_date\"";
 }
 
 foreach my $test (@tests_list)
