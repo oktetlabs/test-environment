@@ -300,7 +300,7 @@ tapi_cfg_l2tp_lns_secret_delete(const char *ta, const char *lns,
  */
 extern te_errno
 tapi_cfg_l2tp_lns_set_use_challenge(const char *ta, const char *lns,
-                                    bool value);
+                                    char *value);
 
 /**
  * Get the instance value "/use_challenge:".
@@ -313,7 +313,7 @@ tapi_cfg_l2tp_lns_set_use_challenge(const char *ta, const char *lns,
  */
 extern te_errno
 tapi_cfg_l2tp_lns_get_use_challenge(const char *ta, const char *lns,
-                                    bool value);
+                                    char *value);
 
 /**
  * Set the instance value to 1 or 0 for "/unix_auth:".
@@ -326,7 +326,7 @@ tapi_cfg_l2tp_lns_get_use_challenge(const char *ta, const char *lns,
  */
 extern te_errno
 tapi_cfg_l2tp_lns_set_unix_auth(const char *ta, const char *lns,
-                                bool value);
+                                char *value);
 
 /**
  * Get the instance value "/unix_auth:".
@@ -339,7 +339,7 @@ tapi_cfg_l2tp_lns_set_unix_auth(const char *ta, const char *lns,
  */
 extern te_errno
 tapi_cfg_l2tp_lns_get_unix_auth(const char *ta, const char *lns,
-                                bool value);
+                                char *value);
 
 /**
  * Set MTU size
