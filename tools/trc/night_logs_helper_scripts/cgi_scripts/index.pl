@@ -59,8 +59,15 @@ foreach my $cache (@caches)
 $caches_html .= "<input type=\"radio\" name=\"cache\" ".
                 "value=\"none\">None<br>";
 
-if (!defined($tests))
+if (defined($tests))
 {
+    # Link to history from TRC report - go 3 month back
+    $form_str =~ s/<!-- MONTHS_BACK -->/3/;
+}
+else
+{
+    # Go one month back by default
+    $form_str =~ s/<!-- MONTHS_BACK -->/1/;
     $tests = "sockapi-ts/sockopts/bindtodevice_dstunreach";
 }
 
