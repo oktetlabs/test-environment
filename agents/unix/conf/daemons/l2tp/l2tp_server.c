@@ -60,6 +60,13 @@
 /** pid of xl2tpd */
 static int l2tp_pid = -1;
 
+/** The class of the secret */
+enum l2tp_secret_type {
+    L2TP_SECRET_TYPE_SEC,    /**< secret type */
+    L2TP_SECRET_TYPE_SERV,   /**< server type */
+    L2TP_SECRET_TYPE_IPV4,   /**< ipv4 type */
+};
+
 /** The class of the options */
 enum l2tp_value_type {
     L2TP_VALUE_TYPE_INT,       /**< integer type */
@@ -898,18 +905,18 @@ l2tp_lns_opt_get_routine(char *value, const char *option_name,
         {
             case L2TP_VALUE_TYPE_INT:
                 strcpy(value, "-1");
-		return 0;
+                return 0;
 
             case L2TP_VALUE_TYPE_ADDRESS:
                 strcpy(value, "0.0.0.0");
-		return 0;
+                return 0;
 
             case L2TP_VALUE_TYPE_STRING:
-                strcpy(value, "nope");
-		return 0;
+                strcpy(value, "");
+                return 0;
 
-	    default:
-		return TE_RC(TE_TA_UNIX, TE_ENOENT);
+            default:
+                return TE_RC(TE_TA_UNIX, TE_ENOENT);
         }
 
     }
@@ -1298,7 +1305,7 @@ l2tp_lns_opt_set_mru(unsigned int gid, const char *oid, char *value,
  */
 static te_errno
 l2tp_lns_opt_get_lei(unsigned int gid, const char *oid, char *value,
-        const char *l2tp_name, const char *lns_name)
+                     const char *l2tp_name, const char *lns_name)
 {
 
     UNUSED(oid);
@@ -1478,32 +1485,7 @@ l2tp_lns_opt_set_uauth(unsigned int gid, const char *oid, char *value,
 };
 
 /**
- * Get method for /agent/l2tp/lns/bit
- *
- * @param gid           group identifier
- * @param oid           full identifier of the father instance
- * @param value         returned value
- * @param l2tp_name     name of the l2tp instance is always empty
- * @param lns_name      name of the lns instance
- * @param bit_name      bit instance name
- *
- * @return status code
- */
-static te_errno
-l2tp_lns_bit_get(unsigned int gid, const char *oid, char *value,
-                 const char *l2tp_name, const char *lns_name,
-                 const char *bit_name)
-{
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(l2tp_name);
-
-    return l2tp_lns_opt_get_routine(value, bit_name,
-            lns_name, L2TP_VALUE_TYPE_STRING);
-};
-
-/**
- * Set method for /agent/l2tp/lns/bit
+ * Add method for /agent/l2tp/lns/bit
  *
  * @param gid           group identifier
  * @param oid           full identifier of the father instance
@@ -1515,18 +1497,77 @@ l2tp_lns_bit_get(unsigned int gid, const char *oid, char *value,
  * @return status code
  */
 static te_errno
-l2tp_lns_bit_set(unsigned int gid, const char *oid, char *value,
+l2tp_lns_bit_add(unsigned int gid, const char *oid, const char *value,
                  const char *l2tp_name, const char *lns_name,
                  const char *bit_name)
 {
+    te_l2tp_server  *l2tp = l2tp_server_find();
+    te_l2tp_section *l2tp_section = l2tp_find_section(l2tp, lns_name);
+    te_l2tp_option  *l2tp_option  = l2tp_find_option(l2tp, lns_name, bit_name);
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+    UNUSED(l2tp_name);
+
+    if (l2tp_option != NULL)
+    {
+        return TE_RC(TE_TA_UNIX,  TE_EEXIST);
+    }
+
+    l2tp_option = (te_l2tp_option *)calloc(1, sizeof(te_l2tp_option));
+    if (l2tp_option != NULL)
+    {
+        l2tp_option->name = strdup(bit_name);
+        l2tp_option->value = strdup(value);
+    }
+    else
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    SLIST_INSERT_HEAD(&l2tp_section->l2tp_option, l2tp_option, list);
+    l2tp->changed = TRUE;
+
+    return 0;
+}
+
+/**
+ * Delete method for /agent/l2tp/lns/bit
+ *
+ * @param gid           group identifier
+ * @param oid           full identifier of the father instance
+ * @param l2tp_name     name of the l2tp instance is always empty
+ * @param lns_name      name of the lns instance
+ * @param bit_name      bit instance name
+ *
+ * @return status code
+ */
+static te_errno
+l2tp_lns_bit_del(unsigned int gid, const char *oid,
+                 const char *l2tp_name, const char *lns_name,
+                 const char *bit_name)
+{
+    te_l2tp_server  *l2tp = l2tp_server_find();
+    te_l2tp_section *l2tp_section = l2tp_find_section(l2tp, lns_name);
+    te_l2tp_option  *l2tp_option = l2tp_find_option(l2tp, lns_name, bit_name);
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(l2tp_name);
 
-    return l2tp_lns_opt_set_routine(lns_name, bit_name, value,
-                                    L2TP_OPTION_TYPE_L2TP);
-};
+    if (l2tp_section == NULL)
+    {
+        return TE_RC(TE_TA_UNIX,  TE_ENOENT);
+    }
+
+    SLIST_REMOVE(&l2tp_section->l2tp_option, l2tp_option,
+                 te_l2tp_option, list);
+
+    free(l2tp_option->name);
+    free(l2tp_option->value);
+    free(l2tp_option);
+    l2tp->changed = TRUE;
+    return 0;
+}
 
 /**
  * Get method for /agent/l2tp/lns/auth/require
@@ -1572,8 +1613,8 @@ l2tp_lns_require_get(unsigned int gid, const char *oid, char *value,
  */
 static te_errno
 l2tp_lns_require_set(unsigned int gid, const char *oid, char *value,
-                  const char *l2tp_name, const char *lns_name,
-                  const char *auth_type)
+                     const char *l2tp_name, const char *lns_name,
+                     const char *auth_type)
 {
     char             optname[L2TP_MAX_OPTNAME_LENGTH];
 
@@ -2123,8 +2164,20 @@ l2tp_lns_client_del(unsigned int gid, const char *oid,
     return 0;
 }
 
+static te_errno
+l2tp_lns_auth_add(unsigned int gid, const char *oid, const char *value,
+                  const char *l2tp_name)
+{
+    UNUSED(oid);
+    UNUSED(gid);
+    UNUSED(value);
+    UNUSED(l2tp_name);
+
+    return 0;
+};
+
 /**
- * Set secret routine
+ * Get secret routine
  *
  * @param lns_name      name of the lns instance
  * @param auth_type     name of the lns auth instance
@@ -2134,8 +2187,145 @@ l2tp_lns_client_del(unsigned int gid, const char *oid,
  * @return status code
  */
 static te_errno
+l2tp_lns_secret_get_routine(const char *lns_name, const char *auth_type,
+                            const char *client_name, const char *secret,
+                            enum l2tp_secret_type secret_type)
+{
+    te_l2tp_option       *client;
+    te_l2tp_server       *l2tp = l2tp_server_find();
+
+    enum l2tp_secret_prot type = strcmp(auth_type, "chap") == 0 ?
+            L2TP_SECRET_PROT_CHAP : L2TP_SECRET_PROT_PAP;
+
+    if ((client = l2tp_find_client(l2tp, lns_name, client_name, type)) == NULL)
+    {
+        return TE_RC(TE_TA_UNIX,  TE_ENOENT);
+    }
+
+    switch (secret_type)
+    {
+        case L2TP_SECRET_TYPE_SEC:
+        {
+            strcpy(secret, client->secret->secret);
+            return 0;
+        }
+
+        case L2TP_SECRET_TYPE_IPV4:
+        {
+            strcpy(secret, client->secret->sipv4);
+            return 0;
+        }
+
+        case L2TP_SECRET_TYPE_SERV:
+        {
+            strcpy(secret, client->secret->server);
+            return 0;
+        }
+
+        default:
+        {
+            ERROR("Error in secret getting");
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+    }
+}
+
+/**
+ * Get method for /agent/l2tp/lns/auth/client/secret
+ *
+ * @param gid           group identifier
+ * @param oid           full identifier of the father instance
+ * @param secret        secret to get
+ * @param l2tp_name     name of the /client: instance
+ * @param lns_name      name of the lns instance
+ * @param auth_type     name of the lns auth instance
+ * @param client_name   client name of the lns instance
+ *
+ * @return status code
+ */
+static te_errno
+l2tp_lns_secret_get_sec(unsigned int gid, const char *oid, char *secret,
+                        const char *l2tp_name, const char *lns_name,
+                        const char *auth_type, const char *client_name)
+{
+
+    UNUSED(oid);
+    UNUSED(gid);
+    UNUSED(l2tp_name);
+
+    return l2tp_lns_secret_get_routine(lns_name, auth_type,
+            client_name, secret, L2TP_SECRET_TYPE_SEC);
+}
+
+/**
+ * Get method for /agent/l2tp/lns/auth/client/secret
+ *
+ * @param gid           group identifier
+ * @param oid           full identifier of the father instance
+ * @param server        server to get
+ * @param l2tp_name     name of the /client: instance
+ * @param lns_name      name of the lns instance
+ * @param auth_type     name of the lns auth instance
+ * @param client_name   client name of the lns instance
+ *
+ * @return status code
+ */
+static te_errno
+l2tp_lns_secret_get_serv(unsigned int gid, const char *oid, char *serv,
+        const char *l2tp_name, const char *lns_name,
+        const char *auth_type, const char *client_name)
+{
+
+    UNUSED(oid);
+    UNUSED(gid);
+    UNUSED(l2tp_name);
+
+    return l2tp_lns_secret_get_routine(lns_name, auth_type,
+            client_name, serv, L2TP_SECRET_TYPE_SEC);
+}
+
+/**
+ * Get method for /agent/l2tp/lns/auth/client/secret
+ *
+ * @param gid           group identifier
+ * @param oid           full identifier of the father instance
+ * @param ipv4          ipv4 to get
+ * @param l2tp_name     name of the /client: instance
+ * @param lns_name      name of the lns instance
+ * @param auth_type     name of the lns auth instance
+ * @param client_name   client name of the lns instance
+ *
+ * @return status code
+ */
+static te_errno
+l2tp_lns_secret_get_ipv4(unsigned int gid, const char *oid, char *ipv4,
+        const char *l2tp_name, const char *lns_name,
+        const char *auth_type, const char *client_name)
+{
+
+    UNUSED(oid);
+    UNUSED(gid);
+    UNUSED(l2tp_name);
+
+    return l2tp_lns_secret_get_routine(lns_name, auth_type,
+            client_name, ipv4, L2TP_SECRET_TYPE_SEC);
+}
+
+/**
+ * Set secret routine
+ *
+ * @param lns_name      name of the lns instance
+ * @param auth_type     name of the lns auth instance
+ * @param client_name   client name of the lns instance
+ * @param secret_part   secret to set
+ * @param secret_type   type of the modifying secret
+ *
+ * @return status code
+ */
+static te_errno
 l2tp_lns_secret_set_routine(const char *lns_name, const char *auth_type,
-                            const char *client_name, const char *secret)
+                            const char *client_name, const char *secret_part,
+                            enum l2tp_secret_type secret_type)
 {
     te_l2tp_option       *client;
     te_l2tp_server       *l2tp = l2tp_server_find();
@@ -2147,10 +2337,36 @@ l2tp_lns_secret_set_routine(const char *lns_name, const char *auth_type,
         return TE_RC(TE_TA_UNIX,  TE_ENOENT);
     }
 
-    free(client->secret->secret);
-    client->secret->secret = strdup(secret);
+    switch (secret_type)
+    {
+        case L2TP_SECRET_TYPE_SEC:
+        {
+            free(client->secret->secret);
+            client->secret->secret = strdup(secret_part);
+            return 0;
+        }
 
-    return 0;
+        case L2TP_SECRET_TYPE_IPV4:
+        {
+            free(client->secret->sipv4);
+            client->secret->sipv4 = strdup(secret_part);
+            return 0;
+        }
+
+
+        case L2TP_SECRET_TYPE_SERV:
+        {
+            free(client->secret->server);
+            client->secret->server = strdup(secret_part);
+            return 0;
+        }
+
+        default:
+        {
+            ERROR("Error in secret setting");
+            return TE_RC(TE_TA_UNIX,  TE_ENOENT);
+        }
+    }
 
 }
 
@@ -2159,28 +2375,26 @@ l2tp_lns_secret_set_routine(const char *lns_name, const char *auth_type,
  *
  * @param gid           group identifier
  * @param oid           full identifier of the father instance
- * @param value         unused value
+ * @param secret        secret to set
  * @param l2tp_name     name of the /client: instance
  * @param lns_name      name of the lns instance
  * @param auth_type     name of the lns auth instance
  * @param client_name   client name of the lns instance
- * @param secret_part   name of the modifying instance
  *
  * @return status code
  */
 static te_errno
-l2tp_lns_secret_set_sec(unsigned int gid, const char *oid, const char *value,
+l2tp_lns_secret_set_sec(unsigned int gid, const char *oid, char *secret,
                         const char *l2tp_name, const char *lns_name,
-                        const char *auth_type, const char *client_name,
-                        const char *secret)
+                        const char *auth_type, const char *client_name)
 {
 
     UNUSED(oid);
     UNUSED(gid);
-    UNUSED(value);
     UNUSED(l2tp_name);
 
-    return l2tp_lns_secret_set_routine(lns_name, auth_type, client_name, secret);
+    return l2tp_lns_secret_set_routine(lns_name, auth_type,
+            client_name, secret, L2TP_SECRET_TYPE_SEC);
 }
 
 /**
@@ -2188,27 +2402,25 @@ l2tp_lns_secret_set_sec(unsigned int gid, const char *oid, const char *value,
  *
  * @param gid           group identifier
  * @param oid           full identifier of the father instance
- * @param value         unused value
+ * @param server        server to set
  * @param l2tp_name     name of the /client: instance
  * @param lns_name      name of the lns instance
  * @param auth_type     name of the lns auth instance
  * @param client_name   client name of the lns instance
- * @param secret_part   name of the modifying instance
  *
  * @return status code
  */
 static te_errno
-l2tp_lns_secret_set_serv(unsigned int gid, const char *oid, const char *value,
+l2tp_lns_secret_set_serv(unsigned int gid, const char *oid, const char *server,
                          const char *l2tp_name, const char *lns_name,
-                         const char *auth_type, const char *client_name,
-                         const char *server)
+                         const char *auth_type, const char *client_name)
 {
     UNUSED(oid);
     UNUSED(gid);
-    UNUSED(value);
     UNUSED(l2tp_name);
 
-    return l2tp_lns_secret_set_routine(lns_name, auth_type, client_name, server);
+    return l2tp_lns_secret_set_routine(lns_name, auth_type,
+            client_name, server, L2TP_SECRET_TYPE_SERV);
 }
 
 /**
@@ -2216,27 +2428,25 @@ l2tp_lns_secret_set_serv(unsigned int gid, const char *oid, const char *value,
  *
  * @param gid           group identifier
  * @param oid           full identifier of the father instance
- * @param value         unused value
+ * @param ipv4          ipv4 to set
  * @param l2tp_name     name of the /client: instance
  * @param lns_name      name of the lns instance
  * @param auth_type     name of the lns auth instance
  * @param client_name   client name of the lns instance
- * @param ipv4          name of the modifying instance
  *
  * @return status code
  */
 static te_errno
-l2tp_lns_secret_set_ipv4(unsigned int gid, const char *oid, const char *value,
+l2tp_lns_secret_set_ipv4(unsigned int gid, const char *oid, const char *ipv4,
                          const char *l2tp_name, const char *lns_name,
-                         const char *auth_type, const char *client_name,
-                         const char *ipv4)
+                         const char *auth_type, const char *client_name)
 {
     UNUSED(oid);
     UNUSED(gid);
-    UNUSED(value);
     UNUSED(l2tp_name);
 
-    return l2tp_lns_secret_set_routine(lns_name, auth_type, client_name, ipv4);
+    return l2tp_lns_secret_set_routine(lns_name, auth_type,
+            client_name, ipv4, L2TP_SECRET_TYPE_IPV4);
 }
 
 
@@ -2453,19 +2663,19 @@ static rcf_pch_cfg_object node_l2tp_lns_challenge =
 
 static rcf_pch_cfg_object node_l2tp_lns_sserver =
         { "server",  0, NULL, NULL,
-          NULL,
+          (rcf_ch_cfg_get)l2tp_lns_secret_get_serv,
           (rcf_ch_cfg_set)l2tp_lns_secret_set_serv,
           NULL, NULL, NULL, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_sipv4 =
         { "ipv4",  0, NULL, &node_l2tp_lns_sserver,
-          NULL,
+          (rcf_ch_cfg_get)l2tp_lns_secret_get_ipv4,
           (rcf_ch_cfg_set)l2tp_lns_secret_set_ipv4,
           NULL, NULL, NULL, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_ssecret =
         { "secret",  0, NULL, &node_l2tp_lns_sipv4,
-          NULL,
+          (rcf_ch_cfg_get)l2tp_lns_secret_get_sec,
           (rcf_ch_cfg_set)l2tp_lns_secret_set_sec,
           NULL, NULL, NULL, NULL, &node_l2tp };
 
@@ -2489,13 +2699,16 @@ static rcf_pch_cfg_object node_l2tp_lns_require =
 
 static rcf_pch_cfg_object node_l2tp_lns_auth =
         { "auth", 0, &node_l2tp_lns_require, &node_l2tp_lns_challenge,
-          NULL, NULL, NULL, NULL, NULL, NULL, &node_l2tp };
+          NULL, NULL,
+          (rcf_ch_cfg_add)l2tp_lns_auth_add,
+          NULL, NULL, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_bit =
         { "bit", 0, NULL, &node_l2tp_lns_auth,
-          (rcf_ch_cfg_get)l2tp_lns_bit_get,
-          (rcf_ch_cfg_set)l2tp_lns_bit_set,
-          NULL, NULL, NULL, NULL, &node_l2tp };
+          NULL, NULL,
+          (rcf_ch_cfg_add)l2tp_lns_bit_add,
+          (rcf_ch_cfg_del)l2tp_lns_bit_del,
+          NULL, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_local_ip =
         { "local_ip", 0, NULL, &node_l2tp_lns_bit,
@@ -2513,13 +2726,15 @@ static rcf_pch_cfg_object node_l2tp_lns_lac_range =
         { "lac_range", 0, NULL, &node_l2tp_connected,
           NULL, NULL,
           (rcf_ch_cfg_add)l2tp_lns_lac_range_add,
-          (rcf_ch_cfg_del)l2tp_lns_lac_range_del, NULL, NULL, &node_l2tp };
+          (rcf_ch_cfg_del)l2tp_lns_lac_range_del,
+          NULL, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_ip_range =
         { "ip_range", 0, NULL, &node_l2tp_lns_lac_range,
           NULL, NULL,
           (rcf_ch_cfg_add)l2tp_lns_ip_range_add,
-          (rcf_ch_cfg_del)l2tp_lns_ip_range_del, NULL, NULL, &node_l2tp };
+          (rcf_ch_cfg_del)l2tp_lns_ip_range_del,
+          NULL, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_listen =
         { "listen", 0, NULL, NULL,
