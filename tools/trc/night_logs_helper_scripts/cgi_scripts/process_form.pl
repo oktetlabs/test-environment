@@ -130,6 +130,11 @@ if ($cgi->param('include_err_only'))
     $command_str .= " --with-err-only";
 }
 
+if ($cgi->param('include_err_iters_only'))
+{
+    $command_str .= " --iters-with-err-only";
+}
+
 (undef, $report_fn) = tempfile("/tmp/report-XXXX");
 
 if (defined($report_fn) && length($report_fn) > 0)

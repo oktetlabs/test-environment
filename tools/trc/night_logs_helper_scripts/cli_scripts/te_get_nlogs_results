@@ -28,6 +28,7 @@ my $update_cache_path;
 my $cached_logs_path;
 my $benchmarks = 0;
 my $with_err_only = 0;
+my $iters_with_err_only = 0;
 
 my $tester_logs_dir = "testdir";
 my $default_cache_path = "/home/izbitsky/cached_v5_tot/";
@@ -885,6 +886,11 @@ foreach my $arg (@ARGV)
     {
         $with_err_only = 1;
     }
+    elsif ($arg =~ m/^--iters-with-err-only$/)
+
+    {
+        $iters_with_err_only = 1;
+    }
     elsif ($arg =~ m/^--update-cache=(.*)$/)
 
     {
@@ -1013,6 +1019,7 @@ foreach my $arg (@ARGV)
               "--tag-expr=              Tag expression (to filter logs)\n".
               "--include-compromised    Include results from broken night logs\n".
               "--with-err-only          Show only results with some error\n".
+              "--iters-with-err-only    Show only iterations having some erroneous results\n".
               "--benchmarks             Collect data on script performance\n".
               "--verbose, -v            Log performed operations\n".
               "--help, -h               Display this message\n";
@@ -1624,6 +1631,25 @@ foreach my $test (keys %{$night_results{"tests"}})
     while ((undef, $iter) = each
               %{$night_results{"tests"}->{$test}->{"iters"}})
     {
+        if ($iters_with_err_only > 0)
+        {
+            my $err_encountered = 0;
+
+            foreach my $result (@{$iter->{"results"}})
+            {
+                if (defined($result->{"err"}) && length($result->{"err"}) > 0)
+                {
+                    $err_encountered = 1;
+                    last;
+                }
+            }
+
+            if ($err_encountered == 0)
+            {
+                next;
+            }
+        }
+
         print FILE "<tr>\n<td>".$test."</td>\n";
 
         print FILE "<td>\n";
