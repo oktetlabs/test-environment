@@ -39,7 +39,7 @@
       <tr>
         <td>Start date:</td>
         <td><input type="text" name="start_date" id="start_date"></td>
-        <td>Format: dd.mm.yyyy</td>
+        <td>Format: dd.mm.yyyy (or -4m, -5d, etc)</td>
       </tr>
       <tr>
         <td>End date:</td>
@@ -66,6 +66,13 @@
         <td>Log source(s):</td>
         <td>
           <textarea rows="5" cols="100" name="log_sources" id="log_sources"></textarea>
+        </td>
+      </tr>
+      <tr>
+        <td>Results filter:</td>
+        <td>
+          <input type="checkbox" name="include_err_only"
+                 value="1">Include only results with error (such as unexpected result)
         </td>
       </tr>
       <tr>

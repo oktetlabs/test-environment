@@ -125,6 +125,11 @@ if ($cgi->param('include_compromised'))
     $command_str .= " --include-compromised";
 }
 
+if ($cgi->param('include_err_only'))
+{
+    $command_str .= " --with-err-only";
+}
+
 (undef, $report_fn) = tempfile("/tmp/report-XXXX");
 
 if (defined($report_fn) && length($report_fn) > 0)

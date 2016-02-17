@@ -27,6 +27,7 @@ my $include_compromised = 0;
 my $update_cache_path;
 my $cached_logs_path;
 my $benchmarks = 0;
+my $with_err_only = 0;
 
 my $tester_logs_dir = "testdir";
 my $default_cache_path = "/home/izbitsky/cached_v5_tot/";
@@ -635,6 +636,12 @@ sub parse_xml_log
                 $err = $1;
             }
 
+            if ($with_err_only > 0 && length($err) == 0)
+            {
+                $skip_test = 1;
+                next;
+            }
+
             foreach my $test_path (keys %tests_filter)
             {
                 if (match_test_paths($test_path, $cur_path_str))
@@ -873,6 +880,11 @@ foreach my $arg (@ARGV)
     {
         $include_compromised = 1;
     }
+    elsif ($arg =~ m/^--with-err-only$/)
+
+    {
+        $with_err_only = 1;
+    }
     elsif ($arg =~ m/^--update-cache=(.*)$/)
 
     {
@@ -1000,6 +1012,7 @@ foreach my $arg (@ARGV)
               "--test=                  Test path (may be with parameters)\n".
               "--tag-expr=              Tag expression (to filter logs)\n".
               "--include-compromised    Include results from broken night logs\n".
+              "--with-err-only          Show only results with some error\n".
               "--benchmarks             Collect data on script performance\n".
               "--verbose, -v            Log performed operations\n".
               "--help, -h               Display this message\n";
@@ -1050,6 +1063,10 @@ sub filter_test_iters
         foreach my $result (@{$iter->{"results"}})
         {
             my @filtered_logs = ();
+
+            next if ($with_err_only > 0 &&
+                     (!defined($result->{"err"}) ||
+                       length($result->{"err"}) == 0));
 
             foreach my $log (@{$result->{"logs"}})
             {
@@ -1631,13 +1648,29 @@ foreach my $test (keys %{$night_results{"tests"}})
                    "style=\"font-size:small;\">\n";
         foreach my $result (@{$iter->{"results"}})
         {
-            print FILE "<tr>\n";
+            my $err_present = 0;
 
-            print FILE "<td>\n";
             if (defined($result->{"err"}) && length($result->{"err"}) > 0)
             {
-                print FILE $result->{"err"}."<br>\n";
+                $err_present = 1;
             }
+
+            if ($err_present > 0 && $with_err_only == 0)
+            {
+                print FILE "<tr style=\"background-color:#ffdfdf\">\n";
+            }
+            else
+            {
+                print FILE "<tr>\n";
+            }
+            
+            print FILE "<td>\n";
+
+            if ($err_present > 0)
+            {
+                print FILE "<b>Error:</b> ".$result->{"err"}."<br>\n";
+            }
+
             print FILE $result->{"result"}."<br>\n";
             if (scalar(@{$result->{"verdicts"}}) > 0)
             {
