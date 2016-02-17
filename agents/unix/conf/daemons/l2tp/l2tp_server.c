@@ -1565,6 +1565,22 @@ l2tp_lns_opt_set_uauth(unsigned int gid, const char *oid, char *value,
                                     L2TP_OPTION_TYPE_L2TP);
 };
 
+static te_errno
+l2tp_lns_bit_get(unsigned int gid, const char *oid, char *value,
+        const char *l2tp_name, const char *lns_name, const char *bit_name)
+{
+    char             buf_bit[L2TP_MAX_OPTNAME_LENGTH];
+
+    UNUSED(oid);
+    UNUSED(gid);
+    UNUSED(l2tp_name);
+
+    TE_SPRINTF(buf_bit, "%s bit", bit_name);
+
+    return l2tp_lns_opt_get_routine(value, buf_bit,
+            lns_name, L2TP_VALUE_TYPE_INT);
+};
+
 /**
  * Add method for /agent/l2tp/lns/bit
  *
@@ -2011,6 +2027,127 @@ l2tp_lns_lac_range_add(unsigned int gid, const char *oid, const char *value,
     return l2tp_lns_range_add_routine(lns_name, optname, range);
 }
 
+static te_errno
+l2tp_lns_range_get_routine(char *value, const char *option_name,
+                           const char *lns_name, const char *range)
+{
+    te_l2tp_server *l2tp = l2tp_server_find();
+    te_l2tp_ipv4_range *l2tp_range = NULL;
+    char buf_range[2*L2TP_IP_ADDR_LEN + 1];
+
+    l2tp_range = l2tp_find_range(l2tp, lns_name, option_name, range);
+
+    if (range == NULL)
+    {
+        strcpy(value, "");
+    }
+    TE_SPRINTF(buf_range, "%s-%s", l2tp_range->start, l2tp_range->end);
+    strcpy(value, buf_range);
+
+    return 0;
+}
+
+static te_errno
+l2tp_lns_ip_range_get(unsigned int gid, const char *oid, char *value,
+                      const char *l2tp_name, const char *lns_name,
+                      const char *range)
+{
+    UNUSED(oid);
+    UNUSED(gid);
+    UNUSED(l2tp_name);
+
+    return l2tp_lns_range_get_routine(value, "ip range", lns_name, range);
+}
+
+static te_errno
+l2tp_lns_lac_range_get(unsigned int gid, const char *oid, char *value,
+        const char *l2tp_name, const char *lns_name,
+        const char *range)
+{
+
+    UNUSED(oid);
+    UNUSED(gid);
+    UNUSED(l2tp_name);
+
+    return l2tp_lns_range_get_routine(value, "lac range", lns_name, range);
+}
+
+
+static char *
+l2tp_lns_range_list_routine(const char *lns_name, const char *option_name)
+{
+    te_l2tp_server       *l2tp = l2tp_server_find();
+    te_l2tp_section      *l2tp_section = l2tp_find_section(l2tp, lns_name);
+    te_l2tp_option       *l2tp_option = l2tp_find_option(l2tp, lns_name, option_name);
+    te_l2tp_ipv4_range   *l2tp_range;
+
+    te_string        str = TE_STRING_INIT;
+
+    if (strcmp(l2tp_section->secname, L2TP_GLOBAL) != 0)
+    {
+        SLIST_FOREACH(l2tp_range, &l2tp_option->l2tp_range, list)
+        {
+            te_string_append(&str, "%s-%s ", l2tp_range->start,
+                    l2tp_range->end);
+        }
+    }
+
+    return str.ptr;
+}
+
+/**
+ * Method for addding an option to /agent/l2tp/lns/lac_range
+ *
+ * @param gid                  group identifier
+ * @param oid                  full identifier of the father instance
+ * @param l2pt_name            name of the l2tp instance is always empty
+ * @param lns_name             name of the lns instance
+ * @param range                name of the ../lac_range instances
+ *                             to add
+ *                             like "192.168.37.38-192.168.37.40"
+ *
+ * @return status code
+ */
+static te_errno
+l2tp_lns_lac_range_list(unsigned int gid, const char *oid,
+                        char **list, const char *l2tp_name,
+                        const char *lns_name)
+{
+    uint32_t  list_size;
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(l2tp_name);
+
+    list_size = L2TP_SERVER_LIST_SIZE;
+    if ((*list = (char *)calloc(1, list_size)) == NULL)
+    {
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    *list = l2tp_lns_range_list_routine(lns_name, "lac range");
+    return 0;
+}
+
+static te_errno
+l2tp_lns_ip_range_list(unsigned int gid, const char *oid,
+                       char **list, const char *l2tp_name,
+                       const char *lns_name)
+{
+    uint32_t  list_size;
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(l2tp_name);
+
+    list_size = L2TP_SERVER_LIST_SIZE;
+    if ((*list = (char *)calloc(1, list_size)) == NULL)
+    {
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    *list = l2tp_lns_range_list_routine(lns_name, "ip range");
+    return 0;
+}
+
 /**
  * Delete method routine
  *
@@ -2293,6 +2430,38 @@ l2tp_lns_client_del(unsigned int gid, const char *oid,
     free(client->secret->sipv4);
     free(client);
 
+    return 0;
+}
+
+static te_errno
+l2tp_lns_client_list(unsigned int gid, const char *oid,
+                    char **list, const char *l2tp_name, const char *lns_name)
+{
+    te_l2tp_server  *l2tp = l2tp_server_find();
+    te_l2tp_section *l2tp_section = l2tp_find_section(l2tp, lns_name);
+    te_l2tp_option  *l2tp_client;
+
+    te_string        str = TE_STRING_INIT;
+    uint32_t         list_size;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(l2tp_name);
+
+    list_size = L2TP_SERVER_LIST_SIZE;
+    if ((*list = (char *)calloc(1, list_size)) == NULL)
+    {
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+    SLIST_FOREACH(l2tp_client, &l2tp_section->l2tp_option, list)
+    {
+        if ((strcmp(l2tp_section->secname, L2TP_GLOBAL) != 0) &&
+                l2tp_client->secret != NULL)
+        {
+            te_string_append(&str, "%s ",l2tp_client->name);
+        }
+    }
+    *list = str.ptr;
     return 0;
 }
 
@@ -2884,7 +3053,8 @@ static rcf_pch_cfg_object node_l2tp_lns_sclient =
         { "client", 0, &node_l2tp_lns_ssecret, NULL,
           NULL, NULL,
           (rcf_ch_cfg_add)l2tp_lns_client_add,
-          (rcf_ch_cfg_del)l2tp_lns_client_del, NULL, NULL, &node_l2tp };
+          (rcf_ch_cfg_del)l2tp_lns_client_del,
+          (rcf_ch_cfg_list)l2tp_lns_client_list, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_refuse =
         { "refuse", 0, NULL, &node_l2tp_lns_sclient,
@@ -2907,7 +3077,7 @@ static rcf_pch_cfg_object node_l2tp_lns_auth =
 
 static rcf_pch_cfg_object node_l2tp_lns_bit =
         { "bit", 0, NULL, &node_l2tp_lns_auth,
-          NULL, NULL,
+          (rcf_ch_cfg_get)l2tp_lns_bit_get, NULL,
           (rcf_ch_cfg_add)l2tp_lns_bit_add,
           (rcf_ch_cfg_del)l2tp_lns_bit_del,
           (rcf_ch_cfg_list)l2tp_lns_bit_list, NULL, &node_l2tp };
@@ -2926,17 +3096,17 @@ static rcf_pch_cfg_object node_l2tp_connected =
 
 static rcf_pch_cfg_object node_l2tp_lns_lac_range =
         { "lac_range", 0, NULL, &node_l2tp_connected,
-          NULL, NULL,
+          (rcf_ch_cfg_get)l2tp_lns_lac_range_get, NULL,
           (rcf_ch_cfg_add)l2tp_lns_lac_range_add,
           (rcf_ch_cfg_del)l2tp_lns_lac_range_del,
-          NULL, NULL, &node_l2tp };
+          (rcf_ch_cfg_list)l2tp_lns_lac_range_list, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_ip_range =
         { "ip_range", 0, NULL, &node_l2tp_lns_lac_range,
-          NULL, NULL,
+          (rcf_ch_cfg_get)l2tp_lns_ip_range_get, NULL,
           (rcf_ch_cfg_add)l2tp_lns_ip_range_add,
           (rcf_ch_cfg_del)l2tp_lns_ip_range_del,
-          NULL, NULL, &node_l2tp };
+          (rcf_ch_cfg_list)l2tp_lns_ip_range_list, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_listen =
         { "listen", 0, NULL, NULL,
