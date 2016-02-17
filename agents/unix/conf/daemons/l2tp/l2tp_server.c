@@ -80,7 +80,7 @@ enum l2tp_value_type {
 /** Authentication type */
 enum l2tp_secret_prot {
     L2TP_SECRET_PROT_CHAP,    /**< CHAP authentication */
-    L2TP_SECRET_PROT_PAP      /**< PAP authentication */
+    L2TP_SECRET_PROT_PAP,      /**< PAP authentication */
 };
 
 /** The class of the options */
@@ -123,6 +123,9 @@ typedef struct te_l2tp_section {
     SLIST_ENTRY(te_l2tp_section)  list;
     SLIST_HEAD(, te_l2tp_option)  l2tp_option;   /**< Options of the section */
     char                         *secname;       /**< Section name */
+    te_bool                       chap;
+    te_bool                       pap;
+    te_bool                       auth;
 
 } te_l2tp_section;
 
@@ -148,7 +151,7 @@ typedef struct te_l2tp_server {
 } te_l2tp_server;
 
 static te_bool
-        l2tp_is_running(te_l2tp_server *l2tp);
+l2tp_is_running(te_l2tp_server *l2tp);
 
 /** Static L2TP server structure */
 static te_l2tp_server l2tp_server;
@@ -1022,7 +1025,12 @@ l2tp_lns_section_add(unsigned int gid, const char *oid, const char *value,
 
     l2tp_section = (te_l2tp_section *)calloc(1, sizeof(te_l2tp_section));
     if (l2tp_section != NULL)
+    {
         l2tp_section->secname = strdup(lns_name);
+        l2tp_section->chap = FALSE;
+        l2tp_section->auth = FALSE;
+        l2tp_section->chap = FALSE;
+    }
     else
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     SLIST_INSERT_HEAD(&l2tp->section, l2tp_section, list);
@@ -1661,20 +1669,19 @@ l2tp_lns_bit_del(unsigned int gid, const char *oid,
 static te_errno
 l2tp_lns_bit_list(unsigned int gid, const char *oid,
                   char **list, const char *l2tp_name,
-                  const char *lns_name, const char *bit_name)
+                  const char *lns_name)
 {
     te_l2tp_server  *l2tp = l2tp_server_find();
     te_l2tp_section *l2tp_section = l2tp_find_section(l2tp, lns_name);
     te_l2tp_option  *l2tp_option;
     te_string        str = TE_STRING_INIT;
     char             buf_bit[L2TP_MAX_OPTNAME_LENGTH];
+    char            *bit_pointer;
     uint32_t         list_size;
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(l2tp_name);
-
-    TE_SPRINTF(buf_bit, "%s bit", bit_name);
 
     list_size = L2TP_SECRETS_LENGTH;
     if ((*list = (char *)calloc(1, list_size)) == NULL)
@@ -1684,8 +1691,12 @@ l2tp_lns_bit_list(unsigned int gid, const char *oid,
 
     SLIST_FOREACH(l2tp_option, &l2tp_section->l2tp_option, list)
     {
-        if (strcmp(l2tp_option->name, buf_bit) != 0)
-            te_string_append(&str, "%s ", bit_name);
+        if ((bit_pointer = strstr(l2tp_option->name, "bit")) != NULL)
+        {
+            memcpy(buf_bit, l2tp_option->name,
+                    strlen(l2tp_option->name) - strlen(bit_pointer));
+            te_string_append(&str, "%s ", buf_bit);
+        }
     }
 
     *list = str.ptr;
@@ -2285,32 +2296,38 @@ l2tp_lns_client_del(unsigned int gid, const char *oid,
     return 0;
 }
 
-static const char *auth[L2TP_AUTH_TYPES];
-
 static te_errno
 l2tp_lns_auth_add(unsigned int gid, const char *oid, const char *value,
                   const char *l2tp_name, const char *lns_name,
                   const char *auth_name)
 {
-    int i;
+    te_l2tp_server   *l2tp = l2tp_server_find();
+    te_l2tp_section  *l2tp_section = l2tp_find_section(l2tp, lns_name);
 
     UNUSED(oid);
     UNUSED(gid);
     UNUSED(value);
-    UNUSED(lns_name);
     UNUSED(l2tp_name);
 
-    for (i = 0; i < L2TP_AUTH_TYPES; i++)
+    if ((strcmp(auth_name, "chap") == 0) && l2tp_section->chap == FALSE)
     {
-        if (auth[i] == NULL)
-        {
-            auth[i] = auth_name;
-            break;
-        }
-        else if (strcmp(auth_name, auth[i]) == 0)
-        {
-            return TE_RC(TE_TA_UNIX,  TE_EEXIST);
-        }
+        l2tp_section->chap = TRUE;
+        return 0;
+    }
+    else if ((strcmp(auth_name, "pap") == 0) && l2tp_section->pap == TRUE)
+    {
+        l2tp_section->pap = TRUE;
+        return 0;
+    }
+    else if ((strcmp(auth_name, "authentication") == 0) &&
+            l2tp_section->auth == TRUE)
+    {
+        l2tp_section->auth = TRUE;
+        return 0;
+    }
+    else
+    {
+        return TE_RC(TE_TA_UNIX,  TE_EEXIST);
     }
 
     return 0;
@@ -2318,11 +2335,13 @@ l2tp_lns_auth_add(unsigned int gid, const char *oid, const char *value,
 
 static te_errno
 l2tp_lns_auth_list(unsigned int gid, const char *oid,
-                   char **list, const char *l2tp_name)
+                   char **list, const char *l2tp_name, const char *lns_name)
 {
+    te_l2tp_server   *l2tp = l2tp_server_find();
+    te_l2tp_section  *l2tp_section = l2tp_find_section(l2tp, lns_name);
+
     te_string        str = TE_STRING_INIT;
     uint32_t         list_size;
-    int              i;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -2334,13 +2353,19 @@ l2tp_lns_auth_list(unsigned int gid, const char *oid,
     {
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
-    for (i = 0; i < L2TP_AUTH_TYPES; i++)
+    if (l2tp_section->chap == TRUE)
     {
-        if (auth[i] != NULL)
-        {
-            te_string_append(&str, "%s ", auth[i]);
-        }
+        te_string_append(&str, "%s ", "chap");
     }
+    if (l2tp_section->pap == TRUE)
+    {
+        te_string_append(&str, "%s ", "pap");
+    }
+    if (l2tp_section->auth == TRUE)
+    {
+        te_string_append(&str, "%s ", "authentication");
+    }
+
     *list = str.ptr;
     return 0;
 }
