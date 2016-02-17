@@ -2031,18 +2031,24 @@ static te_errno
 l2tp_lns_range_get_routine(char *value, const char *option_name,
                            const char *lns_name, const char *range)
 {
-    te_l2tp_server *l2tp = l2tp_server_find();
-    te_l2tp_ipv4_range *l2tp_range = NULL;
-    char buf_range[2*L2TP_IP_ADDR_LEN + 1];
+    te_l2tp_server     *l2tp = l2tp_server_find();
+    te_l2tp_ipv4_range *l2tp_range = l2tp_find_range(l2tp, lns_name, option_name, range);
 
-    l2tp_range = l2tp_find_range(l2tp, lns_name, option_name, range);
+    char buf_opt[L2TP_MAX_OPTNAME_LENGTH];
 
-    if (range == NULL)
+    if (l2tp_range != NULL)
     {
-        strcpy(value, "");
+        strcpy(value, "allow");
+        return 0;
     }
-    TE_SPRINTF(buf_range, "%s-%s", l2tp_range->start, l2tp_range->end);
-    strcpy(value, buf_range);
+    TE_SPRINTF(buf_opt, "no %s", option_name);
+    l2tp_range = l2tp_find_range(l2tp, lns_name, buf_opt, range);
+    if (l2tp_range != NULL)
+    {
+        strcpy(value, "deny");
+        return 0;
+    }
+    strcpy(value, "");
 
     return 0;
 }
@@ -2083,12 +2089,15 @@ l2tp_lns_range_list_routine(const char *lns_name, const char *option_name)
 
     te_string        str = TE_STRING_INIT;
 
-    if (strcmp(l2tp_section->secname, L2TP_GLOBAL) != 0)
+    if (l2tp_section != NULL && l2tp_option != NULL)
     {
-        SLIST_FOREACH(l2tp_range, &l2tp_option->l2tp_range, list)
+        if (strcmp(l2tp_section->secname, L2TP_GLOBAL) != 0)
         {
-            te_string_append(&str, "%s-%s ", l2tp_range->start,
-                    l2tp_range->end);
+            SLIST_FOREACH(l2tp_range, &l2tp_option->l2tp_range, list)
+            {
+                te_string_append(&str, "%s-%s ", l2tp_range->start,
+                        l2tp_range->end);
+            }
         }
     }
 
@@ -2372,7 +2381,7 @@ l2tp_lns_client_add(unsigned int gid, const char *oid, const char *value,
     client = (te_l2tp_option *)calloc(1, sizeof(te_l2tp_option));
     if (client == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
+    client->type = L2TP_OPTION_TYPE_SECRET;
     client->name = strdup(client_name);
     client->secret = (te_l2tp_secret *)malloc(sizeof(te_l2tp_secret));
     if (client->secret == NULL)
