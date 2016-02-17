@@ -36,7 +36,6 @@
 #include <sys/socket.h>
 #endif
 
-#include <stdbool.h>
 #include <stdint.h>
 #include "conf_api.h"
 #include <netinet/in.h>
@@ -218,7 +217,7 @@ tapi_cfg_l2tp_lns_connected_get(const char *ta, const char *lns,
  */
 extern te_errno
 tapi_cfg_l2tp_lns_bit_set(const char *ta, const char *lns,
-                          enum l2tp_bit bit, bool selector);
+                          enum l2tp_bit bit, const char *selector);
 
 /**
  * Get the bit parameter's value for the specified LNS.
@@ -232,10 +231,10 @@ tapi_cfg_l2tp_lns_bit_set(const char *ta, const char *lns,
  */
 extern te_errno
 tapi_cfg_l2tp_lns_bit_get(const char *ta, const char *lns,
-                          enum l2tp_bit *bit_name, bool *selector);
+                          enum l2tp_bit *bit_name, char *selector);
 
 /**
- * Set the instance value to 1 or 0 for "/auth/refuse|require".
+ * Set the instance value to yes or no for "/auth/refuse|require".
  *
  * @param ta          Test Agent
  * @param lns         The name of the section
@@ -246,7 +245,7 @@ tapi_cfg_l2tp_lns_bit_get(const char *ta, const char *lns,
  */
 extern te_errno
 tapi_cfg_l2tp_lns_set_auth(const char *ta, const char *lns,
-                           l2tp_auth param, bool value);
+                           l2tp_auth param, const char *value);
 /**
  * Get the instance value "/auth/refuse|require".
  *
@@ -260,7 +259,7 @@ tapi_cfg_l2tp_lns_set_auth(const char *ta, const char *lns,
  */
 extern te_errno
 tapi_cfg_l2tp_lns_get_auth(const char *ta, const char *lns,
-                           l2tp_auth param, bool *value);
+                           l2tp_auth param, char *value);
 
 /**
  * Add chap|pap secret.
@@ -290,11 +289,11 @@ tapi_cfg_l2tp_lns_secret_delete(const char *ta, const char *lns,
                                 const l2tp_ppp_secret *prev_secret);
 
 /**
- * Set the instance value to 1 or 0 for "/use_challenge:".
+ * Set the instance value to yes or no for "/use_challenge:".
  *
  * @param ta          Test Agent
  * @param lns         The name of the section
- * @param value       true(1) or false(0)
+ * @param value       yes or no
  *
  * @return Status code
  */
@@ -316,7 +315,7 @@ tapi_cfg_l2tp_lns_get_use_challenge(const char *ta, const char *lns,
                                     char *value);
 
 /**
- * Set the instance value to 1 or 0 for "/unix_auth:".
+ * Set the instance value to yes or no for "/unix_auth:".
  *
  * @param ta          Test Agent
  * @param lns         The name of the section
