@@ -56,6 +56,9 @@
 /** Max length of the IP address in human dot notation */
 #define L2TP_IP_ADDR_LEN 15
 
+/** Size of string's array for secret protocols */
+#define L2TP_AUTH_TYPES 3
+
 
 /** pid of xl2tpd */
 static int l2tp_pid = -1;
@@ -63,28 +66,28 @@ static int l2tp_pid = -1;
 /** The class of the secret */
 enum l2tp_secret_type {
     L2TP_SECRET_TYPE_SEC,    /**< secret type */
-            L2TP_SECRET_TYPE_SERV,   /**< server type */
-            L2TP_SECRET_TYPE_IPV4,   /**< ipv4 type */
+    L2TP_SECRET_TYPE_SERV,   /**< server type */
+    L2TP_SECRET_TYPE_IPV4,   /**< ipv4 type */
 };
 
 /** The class of the options */
 enum l2tp_value_type {
     L2TP_VALUE_TYPE_INT,       /**< integer type */
-            L2TP_VALUE_TYPE_STRING,    /**< string type */
-            L2TP_VALUE_TYPE_ADDRESS,   /**< address type */
+    L2TP_VALUE_TYPE_STRING,    /**< string type */
+    L2TP_VALUE_TYPE_ADDRESS,   /**< address type */
 };
 
 /** Authentication type */
 enum l2tp_secret_prot {
     L2TP_SECRET_PROT_CHAP,    /**< CHAP authentication */
-            L2TP_SECRET_PROT_PAP      /**< PAP authentication */
+    L2TP_SECRET_PROT_PAP      /**< PAP authentication */
 };
 
 /** The class of the options */
 enum l2tp_option_type {
     L2TP_OPTION_TYPE_PPP,    /**< PPP options class */
-            L2TP_OPTION_TYPE_L2TP,   /**< L2TP options class */
-            L2TP_OPTION_TYPE_SECRET, /**< SECRET options */
+    L2TP_OPTION_TYPE_L2TP,   /**< L2TP options class */
+    L2TP_OPTION_TYPE_SECRET, /**< SECRET options */
 };
 
 /** IP range structure */
@@ -1211,7 +1214,8 @@ l2tp_lns_section_list(unsigned int gid, const char *oid,
     }
     SLIST_FOREACH(l2tp_section, &l2tp->section, list)
     {
-        te_string_append(&str, "%s ",l2tp_section->secname);
+        if (strcmp(l2tp_section->secname, L2TP_GLOBAL) != 0)
+            te_string_append(&str, "%s ",l2tp_section->secname);
     }
     *list = str.ptr;
     return 0;
@@ -1641,6 +1645,50 @@ l2tp_lns_bit_del(unsigned int gid, const char *oid,
     free(l2tp_option->value);
     free(l2tp_option);
     l2tp->changed = TRUE;
+    return 0;
+}
+
+/**
+ * Method for obtaining the list of sections from /agent/l2tp/lns/bit.
+ *
+ * @param gid           group identifier
+ * @param oid           full identifier of the father instance
+ * @param list          location of the lns sections list
+ * @param l2tp_name     name of the l2tp instance is always empty
+
+ * @return status code
+ */
+static te_errno
+l2tp_lns_bit_list(unsigned int gid, const char *oid,
+                  char **list, const char *l2tp_name,
+                  const char *lns_name, const char *bit_name)
+{
+    te_l2tp_server  *l2tp = l2tp_server_find();
+    te_l2tp_section *l2tp_section = l2tp_find_section(l2tp, lns_name);
+    te_l2tp_option  *l2tp_option;
+    te_string        str = TE_STRING_INIT;
+    char             buf_bit[L2TP_MAX_OPTNAME_LENGTH];
+    uint32_t         list_size;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(l2tp_name);
+
+    TE_SPRINTF(buf_bit, "%s bit", bit_name);
+
+    list_size = L2TP_SECRETS_LENGTH;
+    if ((*list = (char *)calloc(1, list_size)) == NULL)
+    {
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    SLIST_FOREACH(l2tp_option, &l2tp_section->l2tp_option, list)
+    {
+        if (strcmp(l2tp_option->name, buf_bit) != 0)
+            te_string_append(&str, "%s ", bit_name);
+    }
+
+    *list = str.ptr;
     return 0;
 }
 
@@ -2237,17 +2285,65 @@ l2tp_lns_client_del(unsigned int gid, const char *oid,
     return 0;
 }
 
+static const char *auth[L2TP_AUTH_TYPES];
+
 static te_errno
 l2tp_lns_auth_add(unsigned int gid, const char *oid, const char *value,
-                  const char *l2tp_name)
+                  const char *l2tp_name, const char *lns_name,
+                  const char *auth_name)
 {
+    int i;
+
     UNUSED(oid);
     UNUSED(gid);
     UNUSED(value);
+    UNUSED(lns_name);
     UNUSED(l2tp_name);
+
+    for (i = 0; i < L2TP_AUTH_TYPES; i++)
+    {
+        if (auth[i] == NULL)
+        {
+            auth[i] = auth_name;
+            break;
+        }
+        else if (strcmp(auth_name, auth[i]) == 0)
+        {
+            return TE_RC(TE_TA_UNIX,  TE_EEXIST);
+        }
+    }
 
     return 0;
 };
+
+static te_errno
+l2tp_lns_auth_list(unsigned int gid, const char *oid,
+                   char **list, const char *l2tp_name)
+{
+    te_string        str = TE_STRING_INIT;
+    uint32_t         list_size;
+    int              i;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(l2tp_name);
+
+    list_size = L2TP_SECRETS_LENGTH;
+
+    if ((*list = (char *)calloc(1, list_size)) == NULL)
+    {
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+    for (i = 0; i < L2TP_AUTH_TYPES; i++)
+    {
+        if (auth[i] != NULL)
+        {
+            te_string_append(&str, "%s ", auth[i]);
+        }
+    }
+    *list = str.ptr;
+    return 0;
+}
 
 /**
  * Get secret routine
@@ -2781,14 +2877,15 @@ static rcf_pch_cfg_object node_l2tp_lns_auth =
         { "auth", 0, &node_l2tp_lns_require, &node_l2tp_lns_challenge,
           NULL, NULL,
           (rcf_ch_cfg_add)l2tp_lns_auth_add,
-          NULL, NULL, NULL, &node_l2tp };
+          NULL,
+          (rcf_ch_cfg_list)l2tp_lns_auth_list, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_bit =
         { "bit", 0, NULL, &node_l2tp_lns_auth,
           NULL, NULL,
           (rcf_ch_cfg_add)l2tp_lns_bit_add,
           (rcf_ch_cfg_del)l2tp_lns_bit_del,
-          NULL, NULL, &node_l2tp };
+          (rcf_ch_cfg_list)l2tp_lns_bit_list, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_local_ip =
         { "local_ip", 0, NULL, &node_l2tp_lns_bit,
