@@ -92,6 +92,21 @@
 #include "netconf.h"
 
 
+/**
+ * The Netlink can create or remove the ip route with table id more than 255,
+ * but can't get such route.
+ *
+ * The table id during reading will be written down in a field @b rtm_table
+ * in structure @b rtmsg. This field has type @b unsigned @b char. It can be
+ * seen in the file (line @c 186):
+ * https://github.com/torvalds/linux/blob/v4.0/include/uapi/linux/rtnetlink.h
+ *
+ * If the table id exceeds @c 255, then the constant @c RT_TABLE_COMPAT will be
+ * returned instead of the id. It can be seen in the file:
+ * https://github.com/torvalds/linux/blob/v4.0/net/ipv4/fib_semantics.c#L1007
+ */
+#define NETLINK_LIMIT_TABLE_ID 0x100
+
 /** Max length of temporary buffer for list functions */
 #define BUF_MAXLENGTH (4096)
 
@@ -314,6 +329,13 @@ ta_unix_conf_route_change(ta_cfg_obj_action_e  action,
     {
         ERROR("%s(): Invalid value for 'rt_info' argument",
               __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    if (rt_info->table >= NETLINK_LIMIT_TABLE_ID)
+    {
+        ERROR("%s(): Invalid value for table id (1 <= %d <= %d)",
+              __FUNCTION__, rt_info->table, NETLINK_LIMIT_TABLE_ID - 1);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
