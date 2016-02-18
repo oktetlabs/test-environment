@@ -135,7 +135,25 @@ sockaddr_from_str(const char *value, void *arg, const void *options)
 static int
 sockaddr_compare(const void *a, const void *b)
 {
-    return memcmp(a, b, sizeof(struct sockaddr)) == 0;
+    const struct sockaddr *sa_a = a;
+    const struct sockaddr *sa_b = b;
+    if (sa_a->sa_family != sa_b->sa_family)
+        return 0;
+
+    switch (sa_a->sa_family)
+    {
+        case AF_INET:
+            return memcmp(&SIN(sa_a)->sin_addr, &SIN(sa_b)->sin_addr,
+                          sizeof(struct in_addr)) == 0;
+
+        case AF_INET6:
+            return memcmp(&SIN6(sa_a)->sin6_addr, &SIN6(sa_b)->sin6_addr,
+                          sizeof(struct in6_addr)) == 0;
+    }
+
+    ERROR("%s:%d: Unknown address family (%d)",
+          __FUNCTION__, __LINE__, sa_a->sa_family);
+    return 0;
 }
 
 
