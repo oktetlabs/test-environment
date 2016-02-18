@@ -155,8 +155,10 @@ te_errno tapi_cfg_add_rule(const char *ta, int addr_family,
     {
         ERROR("%s: Failed to add rule node '/agent:%s/rule:%s' (%r)",
               __FUNCTION__, ta, name, rc);
+        free(name);
         return rc;
     }
+    free(name);
 
     rc = cfg_synchronize_fmt(TRUE, "/agent:%s/rule:*", ta);
     if (rc != 0)
