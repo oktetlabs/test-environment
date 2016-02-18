@@ -180,11 +180,13 @@ static uint8_t ip_opt_router_alert[] = {0x94, 0x04, 0x00, 0x00};
 
 /* See the description in tapi_igmp.h */
 te_errno
-tapi_igmp_add_ip4_pdu(asn_value **tmpl_or_ptrn,
-                      asn_value **pdu,
-                      te_bool     is_pattern,
-                      in_addr_t   dst_addr,
-                      in_addr_t   src_addr)
+tapi_igmp_add_ip4_pdu_gen(asn_value **tmpl_or_ptrn,
+                        asn_value **pdu,
+                        te_bool     is_pattern,
+                        in_addr_t   dst_addr,
+                        in_addr_t   src_addr,
+                        int         ttl,
+                        int         tos)
 {
     te_errno       rc     = 0;
     asn_value     *ip4_pdu;
@@ -201,9 +203,7 @@ tapi_igmp_add_ip4_pdu(asn_value **tmpl_or_ptrn,
     /* Add IPv4 layer header to PDU template/pattern */
     rc = tapi_ip4_add_pdu(tmpl_or_ptrn, &ip4_pdu, is_pattern,
                           src_addr, dst_addr,
-                          IPPROTO_IGMP,
-                          TAPI_IGMP_IP4_TTL_DEFAULT,
-                          TAPI_IGMP_IP4_TOS_DEFAULT);
+                          IPPROTO_IGMP, ttl, tos);
     if (rc != 0)
         return rc;
 
@@ -224,12 +224,28 @@ tapi_igmp_add_ip4_pdu(asn_value **tmpl_or_ptrn,
 
 /* See the description in tapi_igmp.h */
 te_errno
-tapi_igmp_add_ip4_eth_pdu(asn_value **tmpl_or_ptrn,
+tapi_igmp_add_ip4_pdu(asn_value **tmpl_or_ptrn,
+                      asn_value **pdu,
+                      te_bool     is_pattern,
+                      in_addr_t   dst_addr,
+                      in_addr_t   src_addr)
+{
+    return tapi_igmp_add_ip4_pdu_gen(tmpl_or_ptrn,
+                    pdu, is_pattern, dst_addr, src_addr,
+                    TAPI_IGMP_IP4_TTL_DEFAULT,
+                    TAPI_IGMP_IP4_TOS_DEFAULT);
+}
+
+/* See the description in tapi_igmp.h */
+te_errno
+tapi_igmp_add_ip4_eth_pdu_gen(asn_value **tmpl_or_ptrn,
                           asn_value **pdu,
                           te_bool     is_pattern,
                           in_addr_t   dst_addr,
                           in_addr_t   src_addr,
-                          uint8_t    *eth_src)
+                          uint8_t    *eth_src,
+                          int           ttl,
+                          int           tos)
 {
     te_errno       rc     = 0;
     const uint16_t ip_eth = ETHERTYPE_IP;
@@ -249,9 +265,7 @@ tapi_igmp_add_ip4_eth_pdu(asn_value **tmpl_or_ptrn,
     /* Add IPv4 layer header to PDU template/pattern */
     rc = tapi_ip4_add_pdu(tmpl_or_ptrn, &ip4_pdu, is_pattern,
                           src_addr, dst_addr,
-                          IPPROTO_IGMP,
-                          TAPI_IGMP_IP4_TTL_DEFAULT,
-                          TAPI_IGMP_IP4_TOS_DEFAULT);
+                          IPPROTO_IGMP, ttl, tos);
     if (rc != 0)
         return rc;
 
@@ -288,6 +302,21 @@ tapi_igmp_add_ip4_eth_pdu(asn_value **tmpl_or_ptrn,
         return rc;
 
     return rc;
+}
+
+/* See the description in tapi_igmp.h */
+te_errno
+tapi_igmp_add_ip4_eth_pdu(asn_value **tmpl_or_ptrn,
+                          asn_value **pdu,
+                          te_bool     is_pattern,
+                          in_addr_t   dst_addr,
+                          in_addr_t   src_addr,
+                          uint8_t    *eth_src)
+{
+    return tapi_igmp_add_ip4_eth_pdu_gen(tmpl_or_ptrn, pdu, is_pattern,
+                          dst_addr, src_addr, eth_src,
+                          TAPI_IGMP_IP4_TTL_DEFAULT,
+                          TAPI_IGMP_IP4_TOS_DEFAULT);
 }
 
 /* See the description in tapi_igmp.h */

@@ -224,13 +224,35 @@ extern te_errno tapi_igmp_ip4_eth_csap_create(const char    *ta_name,
  *
  * @return              Status code.
  */
-extern te_errno
-tapi_igmp_add_ip4_pdu(asn_value **tmpl_or_ptrn,
+extern te_errno tapi_igmp_add_ip4_pdu(asn_value **tmpl_or_ptrn,
                       asn_value **pdu,
                       te_bool     is_pattern,
                       in_addr_t   dst_addr,
                       in_addr_t   src_addr);
 
+/**
+ * Add IPv4 layer to PDU, used for ppp connections
+ *
+ * @param tmpl_or_ptrn  Location of ASN.1 value with traffic template or
+ *                      pattern
+ * @param pdu           Location for ASN.1 value pointer with added PDU
+ * @param is_pattern    Is the first argument template or pattern
+ * @param dst_addr      IPv4 layer Destination Multicast address (also used
+ *                      for generating Ethernet multicast address)
+ * @param src_addr      IPv4 layer Source Address field or INADDR_ANY to
+ *                      keep unspecified.
+ * @param ttl           IP TTL
+ * @param tos           IP ToS
+ *
+ * @return              Status code.
+ */
+extern te_errno tapi_igmp_add_ip4_pdu_gen(asn_value **tmpl_or_ptrn,
+                        asn_value **pdu,
+                        te_bool     is_pattern,
+                        in_addr_t   dst_addr,
+                        in_addr_t   src_addr,
+                        int         ttl,
+                        int         tos);
 
 /**
  * Add IPv4.Eth layers to PDU
@@ -245,19 +267,50 @@ tapi_igmp_add_ip4_pdu(asn_value **tmpl_or_ptrn,
  *                      keep unspecified.
  * @param eth_src       Ethernet layer Source Address field or NULL to keep
  *                      unspecified.
+ * @param tos           IP ToS field
  *
  * @note  Destination address Ethernet layers is calculated from
  *        @p dst_address value.
  *
  * @return              Status code.
  */
-extern te_errno
-tapi_igmp_add_ip4_eth_pdu(asn_value **tmpl_or_ptrn,
+extern te_errno tapi_igmp_add_ip4_eth_pdu(asn_value **tmpl_or_ptrn,
                           asn_value **pdu,
                           te_bool     is_pattern,
                           in_addr_t   dst_addr,
                           in_addr_t   src_addr,
                           uint8_t    *eth_src);
+
+/**
+ * Add IPv4.Eth layers to PDU,
+ *
+ * @param tmpl_or_ptrn  Location of ASN.1 value with traffic template or
+ *                      pattern
+ * @param pdu           Location for ASN.1 value pointer with added PDU
+ * @param is_pattern    Is the first argument template or pattern
+ * @param dst_addr      IPv4 layer Destination Multicast address (also used
+ *                      for generating Ethernet multicast address)
+ * @param src_addr      IPv4 layer Source Address field or INADDR_ANY to
+ *                      keep unspecified.
+ * @param eth_src       Ethernet layer Source Address field or NULL to keep
+ *                      unspecified.
+ * @param ttl           IP TTL field
+ * @param tos           IP ToS field
+ *
+ * @note  Destination address Ethernet layers is calculated from
+ *        @p dst_address value.
+ *
+ * @return              Status code.
+ */
+extern te_errno tapi_igmp_add_ip4_eth_pdu_gen(
+                            asn_value **tmpl_or_ptrn,
+                            asn_value **pdu,
+                            te_bool     is_pattern,
+                            in_addr_t   dst_addr,
+                            in_addr_t   src_addr,
+                            uint8_t    *eth_src,
+                            int         ttl,
+                            int         tos);
 
 /**
  * Send IGMPv1 report message
