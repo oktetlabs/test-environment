@@ -151,7 +151,7 @@ trunk_create(aggregation *aggr)
 {
     FILE *f;
 
-    if (ta_system("sudo /sbin/modprobe bonding max_bonds=0") != 0)
+    if (ta_system("/sbin/modprobe bonding max_bonds=0") != 0)
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
 
     /* Get a name for the new bond device */
@@ -400,7 +400,7 @@ team_list(aggregation *aggr, char **member_list)
     FILE *f;
 
     TE_SPRINTF(buf,
-               "sudo /usr/bin/teamnl %s ports | sed s/[0-9]*:\\ *// "
+               "/usr/bin/teamnl %s ports | sed s/[0-9]*:\\ *// "
                "| sed s/:.*// | awk \'{print}\' ORS=\'\'",
                aggr->ifname);
     f = popen(buf, "r");
