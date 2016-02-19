@@ -1389,7 +1389,7 @@ ta_sigchld_handler(void)
             oldest = dead; /* Oldest entry is always the last */
             if ((pid == dead->pid) && dead->valid)
             {
-                WARN("Removing obsoleted entry with the same pid = %d, "
+                RING("Removing obsoleted entry with the same pid = %d, "
                      "status = 0x%x from the list of dead children.", 
                      dead->pid, dead->status);
                 SLIST_REMOVE(&ta_children_dead_list, dead,
