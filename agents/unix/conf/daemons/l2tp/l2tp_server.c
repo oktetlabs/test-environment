@@ -382,7 +382,7 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
                 {
                     pppfilename = l2tp_option->value;
                 }
-                else if (strstr(l2tp_option->name, "range") != NULL)
+                if (strstr(l2tp_option->name, "range") != NULL)
                 {
                     for (l2tp_range = SLIST_FIRST(&l2tp_option->l2tp_range);
                          l2tp_range != NULL;
@@ -415,7 +415,7 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
             }
         }
 
-        if (pppfilename != NULL)
+        if (pppfilename != NULL && strcmp(l2tp_section->secname, L2TP_GLOBAL) != 0)
         {
             ppp_file = fopen(pppfilename, "w");
             if (ppp_file == NULL)
@@ -441,7 +441,7 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
                 }
                 ERROR("Failed to open '%s' for writing: %s", ppp_file,
                       strerror(errno));
-                return TE_OS_RC(TE_TA_UNIX, errno);
+                    return TE_OS_RC(TE_TA_UNIX, errno);
             }
         }
 
@@ -474,6 +474,7 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
                     }
                     if (temp != NULL)
                     {
+
                         fprintf(temp, "%s %s %s %s\n",
                                 ppp_option->name,
                                 ppp_option->secret->server,
@@ -484,8 +485,11 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
                 }
                 case L2TP_OPTION_TYPE_PPP:
                 {
-                    fprintf(ppp_file, "%s %s\n",
+                    if (ppp_option->secret == NULL)
+                    {
+                        fprintf(ppp_file, "%s %s\n",
                             ppp_option->name, ppp_option->value);
+                    }
                     break;
                 }
 
@@ -555,6 +559,8 @@ l2tp_is_running(te_l2tp_server *l2tp)
     UNUSED(l2tp);
 
     TE_SPRINTF(l2tp_ta_pidfile, "%s%i" , L2TP_TA_PIDFILE, getpid());
+
+    RING("I AM IN RUNNING");    
 
     if ((f = fopen(L2TP_SERVER_PIDFILE, "r")) != NULL)
     {
@@ -696,12 +702,16 @@ l2tp_server_set(unsigned int gid, const char *oid, const char *value)
     UNUSED(oid);
 
     ENTRY("%s()", __FUNCTION__);
+    
+    if (strcmp(value, "0") == 0)
+        l2tp_release("l2tp");
 
     l2tp->started = (strcmp(value, "1") == 0);
     if (l2tp->started != l2tp_is_running(l2tp));
     {
         l2tp->changed = TRUE;
     }
+
 
     return 0;
 };
@@ -1578,7 +1588,7 @@ l2tp_lns_bit_get(unsigned int gid, const char *oid, char *value,
     TE_SPRINTF(buf_bit, "%s bit", bit_name);
 
     return l2tp_lns_opt_get_routine(value, buf_bit,
-            lns_name, L2TP_VALUE_TYPE_INT);
+                    lns_name, L2TP_VALUE_TYPE_INT);
 };
 
 /**
@@ -1609,7 +1619,6 @@ l2tp_lns_bit_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(l2tp_name);
 
     TE_SPRINTF(buf_bit, "%s bit", bit_name);
-    ERROR("bit name %s", buf_bit);
     l2tp_option = l2tp_find_option(l2tp, lns_name, bit_name);
 
     if (l2tp_option != NULL)
@@ -1707,11 +1716,14 @@ l2tp_lns_bit_list(unsigned int gid, const char *oid,
 
     SLIST_FOREACH(l2tp_option, &l2tp_section->l2tp_option, list)
     {
-        if ((bit_pointer = strstr(l2tp_option->name, "bit")) != NULL)
+        if (bit_pointer = strcmp(l2tp_option->name, "hidden bit") == 0)
         {
-            memcpy(buf_bit, l2tp_option->name,
-                    strlen(l2tp_option->name) - strlen(bit_pointer));
-            te_string_append(&str, "%s ", buf_bit);
+            te_string_append(&str, "hidden ");
+        }
+        else if (strcmp(l2tp_option->name, "length bit") == 0)
+        {
+            
+            te_string_append(&str, "length ");
         }
     }
 
@@ -2032,7 +2044,8 @@ l2tp_lns_range_get_routine(char *value, const char *option_name,
                            const char *lns_name, const char *range)
 {
     te_l2tp_server     *l2tp = l2tp_server_find();
-    te_l2tp_ipv4_range *l2tp_range = l2tp_find_range(l2tp, lns_name, option_name, range);
+    te_l2tp_ipv4_range *l2tp_range = l2tp_find_range(l2tp, lns_name, 
+                                     option_name, range);
 
     char buf_opt[L2TP_MAX_OPTNAME_LENGTH];
 
@@ -2096,7 +2109,7 @@ l2tp_lns_range_list_routine(const char *lns_name, const char *option_name)
             SLIST_FOREACH(l2tp_range, &l2tp_option->l2tp_range, list)
             {
                 te_string_append(&str, "%s-%s ", l2tp_range->start,
-                        l2tp_range->end);
+                                 l2tp_range->end);
             }
         }
     }
@@ -2573,7 +2586,7 @@ l2tp_lns_secret_get_routine(const char *lns_name, const char *auth_type,
     {
         return TE_RC(TE_TA_UNIX,  TE_ENOENT);
     }
-
+    RING("%s %s %s", client->secret->secret, client->secret->sipv4, client->secret->server);
     switch (secret_type)
     {
         case L2TP_SECRET_TYPE_SEC:
@@ -2653,7 +2666,7 @@ l2tp_lns_secret_get_serv(unsigned int gid, const char *oid, char *serv,
     UNUSED(l2tp_name);
 
     return l2tp_lns_secret_get_routine(lns_name, auth_type,
-                                       client_name, serv, L2TP_SECRET_TYPE_SEC);
+                                       client_name, serv, L2TP_SECRET_TYPE_SERV);
 }
 
 /**
@@ -2680,7 +2693,7 @@ l2tp_lns_secret_get_ipv4(unsigned int gid, const char *oid, char *ipv4,
     UNUSED(l2tp_name);
 
     return l2tp_lns_secret_get_routine(lns_name, auth_type,
-                                       client_name, ipv4, L2TP_SECRET_TYPE_SEC);
+                                       client_name, ipv4, L2TP_SECRET_TYPE_IPV4);
 }
 
 /**
@@ -3022,7 +3035,6 @@ static rcf_pch_cfg_object node_l2tp_lns_ppp_debug =
           (rcf_ch_cfg_get)l2tp_lns_opt_get_debug,
           (rcf_ch_cfg_set)l2tp_lns_opt_set_debug,
           NULL, NULL, NULL, NULL, &node_l2tp };
-
 
 static rcf_pch_cfg_object node_l2tp_lns_ppp =
         { "pppopt", 0, &node_l2tp_lns_mtu, &node_l2tp_lns_ppp_debug,
