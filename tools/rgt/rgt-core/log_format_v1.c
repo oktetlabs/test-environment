@@ -142,7 +142,7 @@ static struct debug_msg {
 /**
  * Extracts the next log message from a raw log file version 1.
  * The format of raw log file version 1 can be found in
- * OKT-HLD-0000095-TE_TS.
+ * OKTL-0000593.
  *
  * @param  msg        Storage for log message to be extracted.
  * @param  fd         File descriptor of the raw log file.

@@ -84,7 +84,7 @@ rgt_process_tester_control_message(log_msg *msg)
      * Determine type of message:
      * All control messages start from "%d %d " character sequence,
      * then message type is followed.
-     * For more information see OKT-HLD-0000095-TE_TS.
+     * For more information see OKTL-0000593.
      */
     if ((node_type = NT_TEST,
          strncmp(fmt_str, CNTR_MSG_TEST,
