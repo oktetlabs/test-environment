@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<history>
+  <register>
+    <object oid="/agent/upnp_cp" access="read_only" type="string"/>
+    <object oid="/agent/upnp_cp/enable" access="read_write" type="integer"/>
+    <object oid="/agent/upnp_cp/target" access="read_write" type="string"/>
+    <object oid="/agent/upnp_cp/iface" access="read_write" type="string"/>
+  </register>
+
+  <register>
+    <object oid="/rpcserver_sid"
+            access="read_create" type="integer" volatile="true"/>
+  </register>
+
+  <register>
+    <object oid="/agent/rpcserver" access="read_create" type="string"/>
+    <object oid="/agent/rpcserver/finished" access="read_write" type="integer"/>
+    <object oid="/agent/rpcserver/dead" access="read_write" type="integer"/>
+  </register>
+
+  <add>
+    <instance oid="/agent:Agt_A/rpcserver:upnp_cp_proxy"/>
+  </add>
+</history>

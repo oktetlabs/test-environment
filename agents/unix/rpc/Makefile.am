@@ -2,19 +2,25 @@
 ACLOCAL_AMFLAGS = -I $(TE_M4)
 
 AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/include $(TE_CPPFLAGS) \
-              -I$(srcdir)/.. $(TE_CPPFLAGS_VAR)
+              -I$(srcdir)/.. -I$(srcdir)/upnp $(TE_CPPFLAGS_VAR)
 
 AM_CFLAGS = -fno-strict-aliasing $(TE_CFLAGS) $(TE_CFLAGS_VAR)
 
 noinst_HEADERS = tarpc_server.h
-        
+
 noinst_LIBRARIES=libtarpc.a
 
 libtarpc_a_SOURCES=
 
 if CFG_RCF_RPC
 
-libtarpc_a_SOURCES += tarpc_server.c 
+libtarpc_a_SOURCES += tarpc_server.c
+
+if CFG_UPNP_CP_SUPPORT
+noinst_HEADERS += upnp/tarpc_upnp_cp.h
+libtarpc_a_SOURCES += upnp/tarpc_upnp_cp.c
+endif
+
 libtarpc_a_LIBADD=rpc_unsupported.o
 
 BUILT_SOURCES = rpc_unsupported.c rpc_supported.h

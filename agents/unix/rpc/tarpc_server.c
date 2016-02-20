@@ -3,7 +3,7 @@
  *
  * RPC routines implementation
  *
- * Copyright (C) 2004 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2004-2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -86,6 +86,7 @@
 #include "te_tools.h"
 
 #include "unix_internal.h"
+
 
 #ifndef MSG_MORE
 #define MSG_MORE 0
@@ -10442,5 +10443,26 @@ sleep_and_print()
 TARPC_FUNC(vfork_pipe_exec, {}, 
 {
     MAKE_CALL(out->retval = func_ptr(in));
+}
+)
+
+/*-------------- upnp_cp_connect() -------------------------*/
+TARPC_FUNC(upnp_cp_connect, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in));
+}
+)
+
+/*-------------- upnp_cp_disconnect() -------------------------*/
+TARPC_FUNC(upnp_cp_disconnect, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in));
+}
+)
+
+/*-------------- upnp_cp_action() -------------------------*/
+TARPC_FUNC(upnp_cp_action, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
 }
 )

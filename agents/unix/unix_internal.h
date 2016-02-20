@@ -4,7 +4,7 @@
  * Unix TA definitions
  *
  *
- * Copyright (C) 2004 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2004-2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -210,10 +210,14 @@ extern te_errno ta_bond_get_slaves(const char *ifname,
 
 /** Test Agent name */
 extern const char *ta_name;
-/** Test Agent executable name */ 
+/** Test Agent executable name */
 extern const char *ta_execname;
-/** Test Agent data and binaries location */ 
+/** Test Agent data and binaries location */
 extern char ta_dir[RCF_MAX_PATH];
+#ifdef WITH_UPNP_CP
+/** UPnP Control Point pathname for the UNIX socket. */
+extern const char * const ta_upnp_cp_unix_socket;
+#endif /* WITH_UPNP_CP */
 
 /**
  * Open FTP connection for reading/writing the file.

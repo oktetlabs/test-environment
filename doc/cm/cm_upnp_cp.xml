@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<backup>
+
+    <!--
+        This configuration model is intended for describing of configuration
+        related to UPnP Control Points on Agents
+    -->
+
+    <!--
+        Copyright (C) 2016 Test Environment authors (see file AUTHORS
+        in the root directory of the distribution).
+
+        Test Environment is free software; you can redistribute it
+        and/or modify it under the terms of the GNU General Public
+        License as published by the Free Software Foundation; either
+        version 2 of the License, or (at your option) any later
+        version.
+
+        Test Environment is distributed in the hope that it will be
+        useful, but WITHOUT ANY WARRANTY; without even the implied
+        warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+        PURPOSE. See the GNU General Public License for more details.
+
+        You should have received a copy of the GNU General Public
+        License along with this program; if not, write to the Free
+        Software Foundation, Inc., 59 Temple Place, Suite 330,
+        Boston, MA  02111-1307  USA
+
+        Author: Ivan Melnikov E-mail: Ivan.Melnikov@oktetlabs.ru
+    -->
+
+    <!-- Objects registered by Configurator itself -->
+
+    <!-- Root object for the UPnP Control Point process
+         Name: empty -->
+    <object oid="/agent/upnp_cp" access="read_only" type="string"/>
+
+    <!-- Enable the UPnP Control Point
+         Name:  empty
+         Value: 0 (disabled) or 1 (enabled) -->
+    <object oid="/agent/upnp_cp/enable" access="read_write" type="integer"/>
+
+    <!-- Search Target for UPnP devices and/or services
+         Name:  empty
+         Value: a search target string; for example, "ssdp:all" -->
+    <object oid="/agent/upnp_cp/target" access="read_write" type="string"/>
+
+    <!-- Network interface which be used by UPnP Control Point to interact
+         with UPnP devices
+         Name:  empty
+         Value: a network interface -->
+    <object oid="/agent/upnp_cp/iface" access="read_write" type="string"/>
+
+</backup>

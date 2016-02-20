@@ -4,7 +4,7 @@
  * Definition of RPC structures and functions
  *
  *
- * Copyright (C) 2004 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2004-2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -5216,6 +5216,27 @@ struct tarpc_execve_gen_in {
 
 typedef struct tarpc_int_retval_out tarpc_execve_gen_out;
 
+/** UPnP Control Point. Create connection arguments. */
+typedef struct tarpc_void_in tarpc_upnp_cp_connect_in;
+typedef struct tarpc_int_retval_out tarpc_upnp_cp_connect_out;
+
+/** UPnP Control Point. Destroy connection arguments. */
+typedef struct tarpc_void_in tarpc_upnp_cp_disconnect_in;
+typedef struct tarpc_int_retval_out tarpc_upnp_cp_disconnect_out;
+
+/** UPnP Control Point. Request/reply routine arguments. */
+struct tarpc_upnp_cp_action_in {
+    struct tarpc_in_arg common;
+
+    uint8_t             buf<>;      /**< Buffer with request data */
+};
+struct tarpc_upnp_cp_action_out {
+    struct tarpc_out_arg  common;
+
+    uint8_t             buf<>;      /**< Buffer with response data */
+    tarpc_int           retval;     /**< Status code */
+};
+
 program tarpc
 {
     version ver0
@@ -5552,5 +5573,9 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(socket_listen_close)
 
         RPC_DEF(vfork_pipe_exec)
+
+        RPC_DEF(upnp_cp_connect)
+        RPC_DEF(upnp_cp_disconnect)
+        RPC_DEF(upnp_cp_action)
     } = 1;
 } = 1;

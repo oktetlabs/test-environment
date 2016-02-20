@@ -4,7 +4,7 @@
  * Unix Test Agent implementation.
  *
  *
- * Copyright (C) 2004 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2004-2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -137,8 +137,16 @@ const char *ta_execname = ta_execname_storage;
 
 /** Test Agent name */
 const char *ta_name = "(unix)";
-/** Test Agent data and binaries location */ 
+/** Test Agent data and binaries location */
 char ta_dir[RCF_MAX_PATH];
+
+#ifdef WITH_UPNP_CP
+/* UPnP Control Point pathname for the UNIX socket. */
+# define UPNP_CP_UNIX_SOCKET_BASENAME   "upnp_cp_unix_socket"
+static char ta_upnp_cp_unix_socket_storage[RCF_MAX_VAL];
+/* A simple protection to avoid changing the value from outside. */
+const char * const ta_upnp_cp_unix_socket = ta_upnp_cp_unix_socket_storage;
+#endif /* WITH_UPNP_CP */
 
 #if __linux__
 const char *ta_tmp_path = "/tmp/";
@@ -2175,6 +2183,11 @@ main(int argc, char **argv)
         ta_dir[0] = 0;
     else
         *(tmp + 1) = 0;
+
+#ifdef WITH_UPNP_CP
+    TE_SPRINTF(ta_upnp_cp_unix_socket_storage, "%s%s", ta_dir,
+               UPNP_CP_UNIX_SOCKET_BASENAME);
+#endif /* WITH_UPNP_CP */
 
     memset(&sigact, 0, sizeof(sigact));
 #ifdef SA_RESTART

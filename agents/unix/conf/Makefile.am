@@ -6,7 +6,10 @@ AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/include $(TE_CPPFLAGS) \
               -I$(srcdir)/route -I$(srcdir)/rule -I$(srcdir)/daemons -I. \
               @EXTRA_CPPFLAGS@ $(TE_CPPFLAGS_VAR)
 
-AM_CFLAGS = -fno-strict-aliasing $(TE_CFLAGS) $(TE_CFLAGS_VAR)
+AM_CFLAGS = -fno-strict-aliasing $(TE_CFLAGS) $(TE_CFLAGS_VAR) \
+            $(GLIB_CFLAGS) $(LIBXML_CFLAGS) $(LIBSOUP_CFLAGS) \
+            $(GSSDP_CFLAGS) $(GUPNP_CFLAGS) $(GUPNPAV_CFLAGS) \
+            $(JANSSON_CFLAGS)
 
 AM_YFLAGS = -d
 
@@ -76,6 +79,13 @@ endif
 
 if CFG_SERIALPARSE_SUPPORT
 libconf_a_SOURCES += util/conf_serial_parser.c
+endif
+
+if CFG_UPNP_CP_SUPPORT
+noinst_HEADERS += util/conf_upnp_cp.h
+noinst_HEADERS += util/te_upnp_cp.h
+libconf_a_SOURCES += util/conf_upnp_cp.c
+libconf_a_SOURCES += util/te_upnp_cp.c
 endif
 
 if CFG_SFPTPD_SUPPORT

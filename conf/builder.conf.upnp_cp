@@ -1,0 +1,19 @@
+
+TE_TOOLS([rgt trc tce])
+
+TE_APP_PARMS([rcf], [--enable-ltdl-install], [], [], [], [])
+TE_APP_PARMS([tester], [--with-trc])
+
+TE_PLATFORM([], [], [-D_GNU_SOURCE], [], [],
+            [tools logic_expr ipc bsapi loggerten rpcxdr rpc_types \
+             rcfapi conf_oid confapi tapi comm_net_engine rcfunix \
+             loggerta comm_net_agent rcfpch asn ndn tad rcfrpc \
+             tapi_rpc trc netconf \
+             tapi_upnp])
+
+TE_LIB_PARMS([tad], [], [],
+             [--with-dhcp], [], [], [])
+
+TE_TA_TYPE([linux], [], [unix],
+           [--with-rcf-rpc --with-upnp_cp],
+           [], [], [], [comm_net_agent asn ndn])
