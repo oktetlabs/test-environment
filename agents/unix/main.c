@@ -165,7 +165,7 @@ static struct sigaction sigaction_pipe;
 
 
 /** Length of pre-allocated list for dead children records. */
-#define TA_CHILDREN_DEAD_MAX 1024
+#define TA_CHILDREN_DEAD_MAX 128
 
 /** Head of the list with children statuses. */
 static ta_children_dead ta_children_dead_heap[TA_CHILDREN_DEAD_MAX];
@@ -1389,7 +1389,7 @@ ta_sigchld_handler(void)
             oldest = dead; /* Oldest entry is always the last */
             if ((pid == dead->pid) && dead->valid)
             {
-                RING("Removing obsoleted entry with the same pid = %d, "
+                INFO("Removing obsoleted entry with the same pid = %d, "
                      "status = 0x%x from the list of dead children.", 
                      dead->pid, dead->status);
                 SLIST_REMOVE(&ta_children_dead_list, dead,
