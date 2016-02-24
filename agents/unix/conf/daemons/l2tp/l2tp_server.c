@@ -560,8 +560,7 @@ l2tp_is_running(te_l2tp_server *l2tp)
 
     TE_SPRINTF(l2tp_ta_pidfile, "%s%i" , L2TP_TA_PIDFILE, getpid());
 
-    RING("I AM IN RUNNING");    
-
+    RING("%s", l2tp_ta_pidfile);
     if ((f = fopen(L2TP_SERVER_PIDFILE, "r")) != NULL)
     {
         if (fscanf(f, "%u", &l2tp_pid) != 1)
@@ -572,17 +571,22 @@ l2tp_is_running(te_l2tp_server *l2tp)
         kill(l2tp_pid, SIGTERM);
         l2tp_pid = -1;
     }
-    else if ((f = fopen(l2tp_ta_pidfile, "r")) != NULL)
+    if ((f = fopen(l2tp_ta_pidfile, "r")) != NULL)
     {
+	RING("%s is openning");
         if (fscanf(f, "%u", &l2tp_pid) != 1)
         {
             ERROR("%s(): Failed to parse l2tp_pid", __FUNCTION__);
         }
         fclose(f);
     }
+    else
+    {
+	RING("l2tp_ta_pidfile doesn't open");
+    }
     is_running = l2tp_pid > 0;
 
-    INFO("L2TP server is%s running", (is_running) ? "" : " not");
+    RING("L2TP server is%s running with pid %d", (is_running) ? "" : " not", l2tp_pid);
     return is_running;
 }
 
@@ -702,10 +706,13 @@ l2tp_server_set(unsigned int gid, const char *oid, const char *value)
     UNUSED(oid);
 
     ENTRY("%s()", __FUNCTION__);
-    
-    if (strcmp(value, "0") == 0)
-        l2tp_release("l2tp");
 
+    if (strcmp(value, "0") == 0)
+    {
+	RING("l2tp pid %d", l2tp_pid);
+        //l2tp_server_stop(l2tp);
+	//return 0;
+    }
     l2tp->started = (strcmp(value, "1") == 0);
     if (l2tp->started != l2tp_is_running(l2tp));
     {
