@@ -573,16 +573,11 @@ l2tp_is_running(te_l2tp_server *l2tp)
     }
     if ((f = fopen(l2tp_ta_pidfile, "r")) != NULL)
     {
-	RING("%s is openning");
         if (fscanf(f, "%u", &l2tp_pid) != 1)
         {
             ERROR("%s(): Failed to parse l2tp_pid", __FUNCTION__);
         }
         fclose(f);
-    }
-    else
-    {
-	RING("l2tp_ta_pidfile doesn't open");
     }
     is_running = l2tp_pid > 0;
 
@@ -1667,7 +1662,11 @@ l2tp_lns_bit_del(unsigned int gid, const char *oid,
 {
     te_l2tp_server  *l2tp = l2tp_server_find();
     te_l2tp_section *l2tp_section = l2tp_find_section(l2tp, lns_name);
-    te_l2tp_option  *l2tp_option = l2tp_find_option(l2tp, lns_name, bit_name);
+    char buf_opt[L2TP_MAX_OPTNAME_LENGTH];
+    te_l2tp_option  *l2tp_option;
+
+    TE_SPRINTF(buf_opt, "%s bit", bit_name);
+    l2tp_option = l2tp_find_option(l2tp, lns_name, buf_opt);
 
     UNUSED(gid);
     UNUSED(oid);
@@ -2206,6 +2205,10 @@ l2tp_lns_range_del_routine(const char *lns_name, const char *option_name,
             return TE_RC(TE_TA_UNIX,  TE_ENOENT);
         }
     }
+    else
+    {
+        TE_SPRINTF(opt_buf, "%s", option_name);
+    }
 
     if ((l2tp_range = l2tp_find_range(l2tp, lns_name, opt_buf, range)) == NULL)
     {
@@ -2446,6 +2449,8 @@ l2tp_lns_client_del(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(l2tp_name);
 
+    RING("lns %s, client name %s, auth %s", lns_name, client_name, auth_type);
+
     if ((client = l2tp_find_client(l2tp, lns_name, client_name, type)) == NULL)
     {
         return TE_RC(TE_TA_UNIX,  TE_ENOENT);
@@ -2512,15 +2517,51 @@ l2tp_lns_auth_add(unsigned int gid, const char *oid, const char *value,
         l2tp_section->chap = TRUE;
         return 0;
     }
-    else if ((strcmp(auth_name, "pap") == 0) && l2tp_section->pap == TRUE)
+    else if ((strcmp(auth_name, "pap") == 0) && l2tp_section->pap == FALSE)
     {
         l2tp_section->pap = TRUE;
         return 0;
     }
     else if ((strcmp(auth_name, "authentication") == 0) &&
-            l2tp_section->auth == TRUE)
+            l2tp_section->auth == FALSE)
     {
         l2tp_section->auth = TRUE;
+        return 0;
+    }
+    else
+    {
+        return TE_RC(TE_TA_UNIX,  TE_EEXIST);
+    }
+
+    return 0;
+};
+
+static te_errno
+l2tp_lns_auth_del(unsigned int gid, const char *oid, const char *value,
+        const char *l2tp_name, const char *lns_name,
+        const char *auth_name)
+{
+    te_l2tp_server   *l2tp = l2tp_server_find();
+    te_l2tp_section  *l2tp_section = l2tp_find_section(l2tp, lns_name);
+
+    UNUSED(oid);
+    UNUSED(gid);
+    UNUSED(value);
+    UNUSED(l2tp_name);
+
+    if (strcmp(auth_name, "chap") == 0)
+    {
+        l2tp_section->chap = FALSE;
+        return 0;
+    }
+    else if (strcmp(auth_name, "pap") == 0)
+    {
+        l2tp_section->pap = FALSE;
+        return 0;
+    }
+    else if (strcmp(auth_name, "authentication") == 0)
+    {
+        l2tp_section->auth = FALSE;
         return 0;
     }
     else
@@ -3100,7 +3141,7 @@ static rcf_pch_cfg_object node_l2tp_lns_auth =
         { "auth", 0, &node_l2tp_lns_require, &node_l2tp_lns_challenge,
           NULL, NULL,
           (rcf_ch_cfg_add)l2tp_lns_auth_add,
-          NULL,
+          (rcf_ch_cfg_del)l2tp_lns_auth_del,
           (rcf_ch_cfg_list)l2tp_lns_auth_list, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_bit =
