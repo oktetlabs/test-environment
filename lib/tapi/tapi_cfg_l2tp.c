@@ -45,6 +45,22 @@ tapi_cfg_l2tp_server_get(const char *ta, int *status)
 }
 
 te_errno
+tapi_cfg_l2tp_lns_add(const char *ta, const char *lns)
+{
+    cfg_handle           handle;
+    return cfg_add_instance_fmt(&handle, CFG_VAL(NONE, NULL),
+                                TE_CFG_TA_L2TP_SERVER "/lns:%s",
+                                ta, lns);
+}
+
+te_errno
+tapi_cfg_l2tp_lns_del(const char *ta, const char *lns)
+{
+    return cfg_del_instance_fmt(FALSE, TE_CFG_TA_L2TP_SERVER
+                                "/lns:%s", ta, lns);
+}
+
+te_errno
 tapi_cfg_l2tp_listen_ip_set(const char *ta, const char *lns,
                             struct sockaddr_in *local)
 {
@@ -195,9 +211,7 @@ tapi_cfg_l2tp_lns_bit_add(const char *ta, const char *lns,
     return cfg_add_instance_fmt(&handle, CFG_VAL(STRING, value),
                                 TE_CFG_TA_L2TP_SERVER "/lns:%s/bit:%s",
                                 ta, lns, bit == L2TP_BIT_HIDDEN ?
-                                "hidden" :
-                                bit == L2TP_BIT_LENGTH ?
-                                "length" : "flow");
+                                "hidden" : "length");
 }
 
 te_errno
@@ -299,13 +313,13 @@ tapi_cfg_l2tp_lns_secret_delete(const char *ta, const char *lns,
                                 const l2tp_ppp_secret *prev_secret)
 {
 
-    char       *prot = prev_secret->is_chap == L2TP_AUTH_PROT_CHAP ?
+    char    *prot = prev_secret->is_chap == L2TP_AUTH_PROT_CHAP ?
                        "chap" :
                        prev_secret->is_chap == L2TP_AUTH_PROT_PAP ?
                        "pap" : "authentication";
 
     return cfg_del_instance_fmt(FALSE, TE_CFG_TA_L2TP_SERVER
-                                "/lns:%s/auth:%s/client:%s/server:%s",
+                                "/lns:%s/auth:%s/client:%s",
                                 ta, lns, prot,
                                 prev_secret->client);
 }

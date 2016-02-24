@@ -69,7 +69,6 @@ enum l2tp_iprange_class {
 enum l2tp_bit {
     L2TP_BIT_HIDDEN,    /**< hidden bit option */
     L2TP_BIT_LENGTH,    /**< flow bits option */
-    L2TP_BIT_FLOW  ,    /**< hidden bit option */
 } l2tp_bit;
 
 /** Structure for the IP-address pool */
@@ -135,16 +134,42 @@ tapi_cfg_l2tp_server_get(const char *ta, int *status);
  *
  * @return Status code
  */
+
 extern te_errno
 tapi_cfg_l2tp_ip_set(const char *ta, const char *lns,
                      struct sockaddr_in *local);
+
+
+/**
+ * Add lns to the configuration.
+ *
+ * @param ta            Test Agent
+ * @param lns           The name of the section to add
+ *
+ * @return Status code
+ */
+
+extern te_errno
+tapi_cfg_l2tp_lns_add(const char *ta, const char *lns);
+
+/**
+ * Delete lns from the configuration.
+ *
+ * @param ta            Test Agent
+ * @param lns           The name of the section to delete
+ *
+ * @return Status code
+ */
+extern te_errno
+tapi_cfg_l2tp_lns_del(const char *ta, const char *lns);
+
 
 /**
  * Get a current listen/local ip.
  *
  * @param ta            Test Agent
  * @param is_lnc        If NULL the global listen ip will be got,
- otherwise it will got local ip to the specified lns
+                        otherwise it will got local ip to the specified lns
  * @param local         Returned pointer to the current local ip
  *
  * @return Status code
@@ -161,7 +186,7 @@ tapi_cfg_l2tp_ip_get(const char *ta, const char *lns,
  * @param lns           The name of the section to modify
  * @param iprange       IP address pool
  * @param kind          The class of the added ip range
- IP|LAC
+                        IP|LAC
  *
  * @return Status code
  */
@@ -253,7 +278,7 @@ tapi_cfg_l2tp_lns_set_auth(const char *ta, const char *lns,
  * @param lns         The name of the section
  * @param param       Desired authentication
  * @param value       Returned pointer to the authentication parameter,
- like "true" or "false"
+                      like "true" or "false"
  *
  * @return Status code
  */
