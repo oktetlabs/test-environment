@@ -204,7 +204,7 @@ tapi_cfg_l2tp_lns_connected_get(const char *ta, const char *lns,
 
 te_errno
 tapi_cfg_l2tp_lns_bit_add(const char *ta, const char *lns,
-                          enum l2tp_bit bit, char *value)
+                          enum l2tp_bit bit, const char *value)
 {
     cfg_handle handle;
 
@@ -229,31 +229,41 @@ te_errno
 tapi_cfg_l2tp_lns_add_auth(const char *ta, const char *lns,
                            l2tp_auth param, char value)
 {
-    cfg_handle handle;
-    return cfg_add_instance_fmt(&handle, CFG_VAL(STRING, value),
+    cfg_handle  handle;
+    int         ret_val1;
+    int         ret_val2;
+    char        *protocol = param.protocol == L2TP_AUTH_PROT_CHAP ?
+                    "chap" :
+                    param.protocol == L2TP_AUTH_PROT_PAP ?
+                    "pap" : "autrhentication";
+
+    ret_val1 = cfg_add_instance_fmt(&handle, CFG_VAL(STRING, value),
                                 TE_CFG_TA_L2TP_SERVER
-                                "/lns:%s/auth:%s/%s:", ta, lns,
-                                param.protocol == L2TP_AUTH_PROT_CHAP ?
-                                "chap" :
-                                param.protocol == L2TP_AUTH_PROT_PAP ?
-                                "pap" : "autrhentication",
-                                param.type == L2TP_AUTH_POLICY_REQUIRE ?
+                                "/lns:%s/auth:%s", ta, lns, protocol);
+    if (ret_val1 != 0)
+        return ret_val1;
+
+    ret_val2 = cfg_set_instance_fmt(CFG_VAL(STRING, value),
+                                TE_CFG_TA_L2TP_SERVER "/lns:%s/auth:%s/%s:", ta, lns,
+                                protocol, param.type == L2TP_AUTH_POLICY_REQUIRE ?
                                 "require" : "refuse");
+    if (ret_val2 != 0)
+        return ret_val2;
+
+    return 0;
 }
 
 te_errno
 tapi_cfg_l2tp_lns_del_auth(const char *ta, const char *lns,
-                           l2tp_auth param, char *value)
+                           l2tp_auth param)
 {
-    return cfg_get_instance_fmt((cfg_val_type *) CVT_STRING, value,
-                                TE_CFG_TA_L2TP_SERVER
-                                "/lns:%s/auth:%s/%s:", ta, lns,
+    return cfg_del_instance_fmt(FALSE, TE_CFG_TA_L2TP_SERVER
+                                "/lns:%s/auth:%s", ta, lns,
                                 param.protocol == L2TP_AUTH_PROT_CHAP ?
                                 "chap" :
                                 param.protocol == L2TP_AUTH_PROT_PAP ?
-                                "pap" : "authentication",
-                                param.type == L2TP_AUTH_POLICY_REQUIRE ?
-                                "require" : "refuse");
+                                "pap" : "authentication");
+
 }
 
 te_errno
@@ -281,27 +291,25 @@ tapi_cfg_l2tp_lns_secret_add(const char *ta, const char *lns,
         return ret_val1;
 
 
-    ret_val2 = cfg_set_instance_fmt(CFG_VAL(NONE, NULL),
+    ret_val2 = cfg_set_instance_fmt(CFG_VAL(STRING, new_secret->secret),
                                     TE_CFG_TA_L2TP_SERVER
-                                            "/lns:%s/auth:%s/client:%s/secret:%s",
+                                            "/lns:%s/auth:%s/client:%s/secret:",
                                     ta, lns, prot,
-                                    new_secret->client, new_secret->secret);
+                                    new_secret->client);
     if (ret_val2 != 0)
         return ret_val2;
 
-    ret_val3 = cfg_set_instance_fmt(CFG_VAL(NONE, NULL),
+    ret_val3 = cfg_set_instance_fmt(CFG_VAL(STRING, new_secret->server),
                                     TE_CFG_TA_L2TP_SERVER
                                             "/lns:%s/auth:%s/client:%s/server:%s",
-                                    ta, lns, prot, new_secret->client,
-                                    new_secret->server);
+                                    ta, lns, prot, new_secret->client);
     if (ret_val3 != 0)
         return ret_val3;
 
-    ret_val4 = cfg_set_instance_fmt(CFG_VAL(NONE, NULL),
+    ret_val4 = cfg_set_instance_fmt(CFG_VAL(ADDRESS, new_secret->sipv4),
                                     TE_CFG_TA_L2TP_SERVER
                                             "/lns:%s/auth:%s/client:%s/ipv4:%s",
-                                    ta, lns, prot, new_secret->client,
-                                    inet_ntoa(new_secret->sipv4.sin_addr));
+                                    ta, lns, prot, new_secret->client);
     if (ret_val4 != 0)
         return ret_val4;
 
@@ -326,7 +334,7 @@ tapi_cfg_l2tp_lns_secret_delete(const char *ta, const char *lns,
 
 te_errno
 tapi_cfg_l2tp_lns_set_use_challenge(const char *ta, const char *lns,
-                                    char value)
+                                    char *value)
 {
     return cfg_set_instance_fmt(CFG_VAL(STRING, value),
                                 TE_CFG_TA_L2TP_SERVER "/lns:%s/use_challenge:",

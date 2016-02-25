@@ -141,30 +141,6 @@ tapi_cfg_l2tp_ip_set(const char *ta, const char *lns,
 
 
 /**
- * Add lns to the configuration.
- *
- * @param ta            Test Agent
- * @param lns           The name of the section to add
- *
- * @return Status code
- */
-
-extern te_errno
-tapi_cfg_l2tp_lns_add(const char *ta, const char *lns);
-
-/**
- * Delete lns from the configuration.
- *
- * @param ta            Test Agent
- * @param lns           The name of the section to delete
- *
- * @return Status code
- */
-extern te_errno
-tapi_cfg_l2tp_lns_del(const char *ta, const char *lns);
-
-
-/**
  * Get a current listen/local ip.
  *
  * @param ta            Test Agent
@@ -230,19 +206,18 @@ tapi_cfg_l2tp_lns_connected_get(const char *ta, const char *lns,
                                 struct sockaddr_in ***connected);
 
 /**
- * Set the bit parameter's value for the specified LNS.
+ * Add a bit option value for the specified LNS.
  *
  * @param ta        Test Agent
  * @param lns       The name of the section
  * @param bit       Desired bit option to change
- * @param selector  If true the bit_name value will be "yes"
- otherwise "no"
+ * @param selector  "yes" or "no"
  *
  * @return Status code
  */
 extern te_errno
-tapi_cfg_l2tp_lns_bit_set(const char *ta, const char *lns,
-                          enum l2tp_bit bit, const char *selector);
+tapi_cfg_l2tp_lns_bit_add(const char *ta, const char *lns,
+                          enum l2tp_bit bit, const char *value);
 
 /**
  * Get the bit parameter's value for the specified LNS.
@@ -283,8 +258,8 @@ tapi_cfg_l2tp_lns_set_auth(const char *ta, const char *lns,
  * @return Status code
  */
 extern te_errno
-tapi_cfg_l2tp_lns_get_auth(const char *ta, const char *lns,
-                           l2tp_auth param, char *value);
+tapi_cfg_l2tp_lns_del_auth(const char *ta, const char *lns,
+                           l2tp_auth param);
 
 /**
  * Add chap|pap secret.
