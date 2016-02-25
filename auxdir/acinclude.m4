@@ -6286,3 +6286,26 @@ AC_DEFUN([AC_FIXED_LIBTOOL_RANLIB],[
     AC_FIXED_LIBTOOL
     AC_FIXED_RANLIB
 ])
+
+# TE_SETUP_AR
+# ----------------
+# In some GNU/Linux distributions (e.g. Debian with binutils 2.25-6 and above)
+# people started to compile 'ar' binary with --enable-deterministic-archives
+# (binutils project). That, however, in combination with autotools 1.8 and
+# above (last checked 1.14) working default AR{_,}FLAGS=cru causes warnings
+# on such installations:
+# ar: `u' modifier ignored since `D' is the default (see `U')
+#
+# The 'u' option (at least with GNU binutils) did small optimization
+# during repeated builds because it instructed 'ar' to not
+# open/close unchanged *.o files and to rather read their contents
+# from old archive file.  However, its removal should not cause a
+# big performance hit for usual workflows.
+#
+# https://sourceware.org/git/?p=binutils.git;a=commit;h=b14e3e42
+# https://wiki.debian.org/ReproducibleBuilds/TimestampsInStaticLibraries
+# http://bazaar.launchpad.net/~doko/binutils/pkg-2.25-debian/revision/184
+AC_DEFUN([TE_SETUP_AR],[
+    AC_SUBST([ARFLAGS], [${ARFLAGS:-cr}])
+    AC_SUBST([AR_FLAGS], [${AR_FLAGS:-cr}])
+])
