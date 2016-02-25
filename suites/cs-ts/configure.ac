@@ -8,6 +8,7 @@ AC_CONFIG_SRCDIR([Doxyfile])
 AC_CONFIG_AUX_DIR([../../auxdir])
 
 AM_INIT_AUTOMAKE([1.8.5 -Wall foreign])
+TE_SETUP_AR
 
 AC_CANONICAL_HOST
 AC_SUBST([host])

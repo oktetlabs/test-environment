@@ -7,6 +7,7 @@ AC_INIT([millicom],[0.02],[Konstantin.Abramenko@oktetlabs.ru])
 
 AC_CONFIG_AUX_DIR([../../auxdir])
 AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
+TE_SETUP_AR
 
 AC_CONFIG_SRCDIR([millicom.c])
 AC_CONFIG_HEADERS([config.h])
