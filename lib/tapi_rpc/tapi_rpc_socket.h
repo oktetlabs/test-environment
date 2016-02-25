@@ -339,6 +339,7 @@ typedef struct rpc_msghdr {
                                              the array */
     rpc_msg_flags_mode msg_flags_mode;  /**< determine how to process
                                              field msg_flags */
+    rpc_send_recv_flags in_msg_flags;   /**< msg_flags value passed in */
 } rpc_msghdr;
 
 struct rpc_mmsghdr {

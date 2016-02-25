@@ -91,7 +91,10 @@ tapi_rpc_msghdr_msg_flags_init_check(te_bool enable)
 do {                                                                \
     if (rpc_msghdr_msg_flags_init_check_enabled &&                  \
         ((_msg)->msg_flags_mode & RPC_MSG_FLAGS_NO_SET) == 0)       \
+    {                                                               \
         (_msg_set)->msg_flags = tapi_send_recv_flags_rand();        \
+        (_msg_set)->in_msg_flags = (_msg_set)->msg_flags;           \
+    }                                                               \
 } while (0)
 
 int
@@ -879,21 +882,28 @@ msghdr_rpc2tarpc(const rpc_msghdr *rpc_msg, tarpc_msghdr *tarpc_msg)
 }
 
 /**
- * Check field @b msg_flags value is zero, skip this check if flag
+ * Check field @b msg_flags value is correct, skip this check if flag
  * @c RPC_MSG_FLAGS_NO_CHECK is set into field @b msg_flags_mode.
  *
  * @param msg   Returned msghdr structure
+ * @param ok    Was the recvmsg() call sucessful?
  */
 static void
-msghdr_check_msg_flags(rpc_msghdr *msg)
+msghdr_check_msg_flags(rpc_msghdr *msg, te_bool ok)
 {
     if (msg == NULL || !rpc_msghdr_msg_flags_init_check_enabled ||
         (msg->msg_flags_mode & RPC_MSG_FLAGS_NO_CHECK) != 0)
         return;
 
-    if (msg->msg_flags != 0)
+    if (ok && msg->msg_flags != 0)
     {
-        TEST_VERDICT("Non-zero msg_flags value was returned: %s",
+        RING_VERDICT("Non-zero msg_flags value was returned: %s",
+                     send_recv_flags_rpc2str(msg->msg_flags));
+    }
+    else if (!ok && msg->in_msg_flags != msg->msg_flags)
+    {
+        RING_VERDICT("msg_flags field have changed its value: %s -> %s",
+                     send_recv_flags_rpc2str(msg->in_msg_flags),
                      send_recv_flags_rpc2str(msg->msg_flags));
     }
 }
@@ -1105,6 +1115,7 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
         }
 
         msg->msg_flags = (rpc_send_recv_flags)rpc_msg.msg_flags;
+        msg->in_msg_flags = (rpc_send_recv_flags)rpc_msg.in_msg_flags;
 
         snprintf(str_buf, sizeof(str_buf),
                  "msg_name: %p, msg_namelen: %" TE_PRINTF_SOCKLEN_T "d, "
@@ -1121,8 +1132,9 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
                  s, msg, str_buf, send_recv_flags_rpc2str(flags),
                  (long)out.retval);
 
-    if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT && out.retval > 0)
-        msghdr_check_msg_flags(msg);
+    if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT)
+        msghdr_check_msg_flags(msg, out.retval >= 0);
+
     RETVAL_INT(recvmsg, out.retval);
 }
 
@@ -2335,6 +2347,7 @@ rpc_recvmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
             }
 
             msg->msg_flags = (rpc_send_recv_flags)rpc_msg->msg_flags;
+            msg->in_msg_flags = (rpc_send_recv_flags)rpc_msg->in_msg_flags;
 
             snprintf(str_buf + strlen(str_buf),
                      sizeof(str_buf) - strlen(str_buf),
@@ -2367,8 +2380,8 @@ rpc_recvmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
     if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT &&
         mmsg != NULL && out.mmsg.mmsg_val != NULL && out.retval >= 0)
     {
-        for (j = 0; j < out.mmsg.mmsg_len && (int)j < out.retval; j++)
-            msghdr_check_msg_flags(&mmsg[j].msg_hdr);
+        for (j = 0; j < out.mmsg.mmsg_len; j++)
+            msghdr_check_msg_flags(&mmsg[j].msg_hdr, (int)j < out.retval);
     }
 
     RETVAL_INT(recvmmsg_alt, out.retval);

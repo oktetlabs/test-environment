@@ -1277,6 +1277,7 @@ struct tarpc_msghdr {
     struct tarpc_cmsghdr msg_control<>;  /**< Control info array */
     tarpc_size_t         msg_controllen; /**< Control data buffer length */
     tarpc_int            msg_flags;      /**< Flags on received message */
+    tarpc_int            in_msg_flags;   /**< Original msg_flags value */
 };
 
 struct tarpc_sendmsg_in {
