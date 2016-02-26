@@ -56,15 +56,15 @@
 /** Max length of the IP address in human dot notation */
 #define L2TP_IP_ADDR_LEN 15
 
-/** Max length of pppoptfile option */
-#define L2TP_PPPOPTFILE_NAME_LEN 28
+/** Size of string's array for secret protocols */
+#define L2TP_AUTH_TYPES 3
 
 
 /** pid of xl2tpd */
 static int l2tp_pid = -1;
 
-/** pppoptfile value storage*/
-static char pppfilename[L2TP_PPPOPTFILE_NAME_LEN];
+/** pppoptfile value storage */
+static char *pppfilename;
 
 /** The class of the secret */
 enum l2tp_secret_type {
@@ -201,11 +201,12 @@ static te_errno
 l2tp_secrets_recover(char *secret_fname)
 {
     char     backup_fname[] = "/etc/ppp/secretsXXXXXX";
-    char     line[L2TP_SECRETS_LENGTH];
+    char     line [L2TP_SECRETS_LENGTH];
     FILE*    secrets_file;
 
     FILE*    backup_file;
     int      backup_fd;
+    te_bool  fence_flag = FALSE;
 
     backup_fd = mkstemp(backup_fname);
 
@@ -238,7 +239,11 @@ l2tp_secrets_recover(char *secret_fname)
 
     while( fgets(line, sizeof(line), secrets_file) != NULL )
     {
-        if ((strcmp(line, L2TP_FENCE) != 0))
+        if (strcmp(line, L2TP_FENCE) == 0)
+        {
+            fence_flag ^= TRUE;
+        }
+        else if ((strcmp(line, L2TP_FENCE) != 0) && fence_flag == FALSE)
         {
             fputs(line, backup_file);
         }
@@ -268,6 +273,7 @@ l2tp_secrets_recover(char *secret_fname)
     }
 
     return 0;
+
 }
 
 /**
@@ -290,15 +296,15 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
     te_l2tp_option      *l2tp_option;
     te_l2tp_option      *ppp_option;
     te_l2tp_section     *l2tp_section;
-    te_string            range_str = TE_STRING_INIT;
     char                 chap_backup_fname[] = "/etc/ppp/chap-secretsXXXXXX";
     char                 pap_backup_fname[] = "/etc/ppp/pap-secretsXXXXXX";
     char                 l2tp_conf[sizeof(L2TP_SERVER_CONF_BASIS)
                                    + L2TP_MAX_PID_VALUE_LENGTH];
+    char                 secret_line[L2TP_SECRETS_LENGTH];
+    te_string            str = TE_STRING_INIT;
     int                  chap_bfd;
     int                  pap_bfd;
     int                  l2tp_fd;
-    char                 secret_line[L2TP_SECRETS_LENGTH];
 
     ENTRY("%s()", __FUNCTION__);
     TE_SPRINTF(l2tp_conf, L2TP_SERVER_CONF_BASIS ".%i", getpid());
@@ -349,13 +355,6 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
 
             return  TE_OS_RC(TE_TA_UNIX, errno);
         }
-        if (fclose(original_chap) != 0)
-        {
-            ERROR("%s(): fclose() failed: %s",
-                    __FUNCTION__, strerror(errno));
-
-            return  TE_OS_RC(TE_TA_UNIX, errno);
-        }
         ERROR("Failed to open '%s' file for writing: %s",
               L2TP_CHAP_SECRETS, strerror(errno));
         return TE_OS_RC(TE_TA_UNIX, errno);
@@ -401,6 +400,7 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
         ERROR("mkstemp failed: %s", strerror(errno));
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
+
     pap_backup_file = fdopen(pap_bfd, "a+");
     if (pap_backup_file == NULL)
     {
@@ -462,7 +462,7 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
             {
                 if (strcmp(l2tp_option->name, PPP_OPTIONS) == 0)
                 {
-                    strcpy(pppfilename, l2tp_option->value);
+                    pppfilename = strdup(l2tp_option->value);
                 }
                 if (strstr(l2tp_option->name, "range") != NULL)
                 {
@@ -472,13 +472,13 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
                     {
                         if (l2tp_range->end == NULL)
                         {
-                            te_string_append(&range_str, "%s%s", l2tp_range->start,
+                            te_string_append(&str, "%s%s", l2tp_range->start,
                                              l2tp_range->list.sle_next !=
                                              NULL ? "," : "");
                         }
                         else
                         {
-                            te_string_append(&range_str, "%s-%s%s",
+                            te_string_append(&str, "%s-%s%s",
                                              l2tp_range->start,
                                              l2tp_range->end,
                                              l2tp_range->list.sle_next !=
@@ -487,7 +487,7 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
                     }
 
                     fprintf(l2tp_file, "%s = %s\n", l2tp_option->name,
-                            range_str.ptr);
+                            str.ptr);
                 }
                 else
                 {
@@ -497,7 +497,7 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
             }
         }
 
-        if (strlen(pppfilename) != 0 && strcmp(l2tp_section->secname, L2TP_GLOBAL) != 0)
+        if (pppfilename != NULL && strcmp(l2tp_section->secname, L2TP_GLOBAL) != 0)
         {
             ppp_file = fopen(pppfilename, "w");
             if (ppp_file == NULL)
@@ -701,9 +701,6 @@ l2tp_server_stop(te_l2tp_server *l2tp)
         }
     }
 
-    l2tp_secrets_recover(L2TP_CHAP_SECRETS);
-    l2tp_secrets_recover(L2TP_PAP_SECRETS);
-
     return 0;
 };
 
@@ -842,6 +839,7 @@ l2tp_server_commit(unsigned int gid, const char *oid)
 static te_l2tp_section *
 l2tp_find_section(te_l2tp_server *l2tp, const char *name)
 {
+    l2tp = l2tp_server_find();
     te_l2tp_section *l2tp_section = NULL;
 
     for (l2tp_section = SLIST_FIRST(&l2tp->section);
@@ -943,7 +941,7 @@ l2tp_find_range(te_l2tp_server *l2tp, const char *section,
              option != NULL;
              option = SLIST_NEXT(option, list))
         {
-            if (strcmp(option->name, opt_name) == 0)
+            if (option != NULL && strcmp(option->name, opt_name) == 0)
             {
                 char buf_range[2*L2TP_IP_ADDR_LEN + 1];
 
@@ -988,9 +986,9 @@ l2tp_lns_opt_get_routine(char *value, const char *option_name,
     te_l2tp_server *l2tp = l2tp_server_find();
     te_l2tp_option *option = NULL;
 
-    INFO("Looking for %s:%s", lns_name, option_name);
-    option = l2tp_find_option(l2tp, lns_name, option_name);
+    RING("Looking for %s:%s", lns_name, option_name);
 
+    option = l2tp_find_option(l2tp, lns_name, option_name);
     if (option == NULL)
     {
         switch (type)
@@ -1026,13 +1024,6 @@ l2tp_lns_opt_get_routine(char *value, const char *option_name,
     return 0;
 }
 
-/**
- * Create a file which contains pppd configuration parameters
- *
- * @param pppfile_opt   structure that will contain the value and option
- *
- * @return status code
- */
 static te_errno
 l2tp_pppopt_alloc(te_l2tp_option **pppfile_opt)
 {
@@ -1070,7 +1061,6 @@ static te_errno
 l2tp_lns_section_del(unsigned int gid, const char *oid,
                      const char *l2tp_name, const char *lns_name)
 {
-    te_l2tp_option  *opt = NULL;
     te_l2tp_server  *l2tp = l2tp_server_find();
     te_l2tp_section *l2tp_section = l2tp_find_section(l2tp, lns_name);
 
@@ -1083,22 +1073,11 @@ l2tp_lns_section_del(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX,  TE_ENOENT);
     }
 
-    for (opt = SLIST_FIRST(&l2tp_section->l2tp_option);
-         opt != NULL;
-         opt = SLIST_NEXT(opt, list))
-    {
-        SLIST_REMOVE(&l2tp_section->l2tp_option, opt, te_l2tp_option, list);
-        free(opt->name);
-        free(opt->value);
-        free(opt);
-    };
-
     SLIST_REMOVE(&l2tp->section, l2tp_section, te_l2tp_section, list);
-
+    RING("l2tp_section name is %s", l2tp_section->secname);
     free(l2tp_section->secname);
     free(l2tp_section);
     l2tp->changed = TRUE;
-
     return 0;
 }
 
@@ -1209,9 +1188,16 @@ static te_errno
 l2tp_global_listen_get(unsigned gid, const char *oid, char *value,
                        const char *l2tp_name)
 {
+    te_l2tp_server *l2tp = l2tp_server_find();
+
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(l2tp_name);
+
+    if (l2tp_find_section(l2tp, L2TP_GLOBAL) == NULL)
+    {
+        l2tp_lns_section_add(0, NULL, NULL, NULL, L2TP_GLOBAL);
+    }
 
     return l2tp_lns_opt_get_routine(value, "listen-addr",
                                     L2TP_GLOBAL, L2TP_VALUE_TYPE_ADDRESS);
@@ -1231,16 +1217,9 @@ static te_errno
 l2tp_global_listen_set(unsigned int gid, const char *oid, const char *value,
                        const char *l2tp_name)
 {
-    te_l2tp_server *l2tp = l2tp_server_find();
-
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(l2tp_name);
-
-    if (l2tp_find_section(l2tp, L2TP_GLOBAL) == NULL)
-    {
-        l2tp_lns_section_add(0, NULL, NULL, NULL, L2TP_GLOBAL);
-    }
 
     return l2tp_lns_opt_set_routine(L2TP_GLOBAL, "listen-addr", value,
                                     L2TP_OPTION_TYPE_L2TP);
@@ -2137,16 +2116,6 @@ l2tp_lns_lac_range_add(unsigned int gid, const char *oid, const char *value,
     return l2tp_lns_range_add_routine(lns_name, optname, range);
 }
 
-/**
- * Get range routine
- *
- * @param value         returned value
- * @param option_name   "ip range" or "lac range"
- * @param lns_name      name of LNS
- * @param range         necessary range
- *
- * @return status code
- */
 static te_errno
 l2tp_lns_range_get_routine(char *value, const char *option_name,
                            const char *lns_name, const char *range)
@@ -2174,18 +2143,6 @@ l2tp_lns_range_get_routine(char *value, const char *option_name,
     return 0;
 }
 
-/**
- * Get method for /agent/l2tp/lns/lac_range
- *
- * @param gid           group identifier
- * @param oid           full identifier of the father instance
- * @param value         returned value (allow or deny)
- * @param l2tp_name     name of the l2tp instance is always empty
- * @param lns_name      name of the lns instance
- * @param range         necessary range
- *
- * @return status code
- */
 static te_errno
 l2tp_lns_ip_range_get(unsigned int gid, const char *oid, char *value,
                       const char *l2tp_name, const char *lns_name,
@@ -2198,22 +2155,10 @@ l2tp_lns_ip_range_get(unsigned int gid, const char *oid, char *value,
     return l2tp_lns_range_get_routine(value, "ip range", lns_name, range);
 }
 
-/**
- * Set method for /agent/l2tp/lns/lac_range
- *
- * @param gid           group identifier
- * @param oid           full identifier of the father instance
- * @param value         value to set
- * @param l2tp_name     name of the l2tp instance is always empty
- * @param lns_name      name of the lns instance
- * @param range         necessary range
- *
- * @return status code
- */
 static te_errno
 l2tp_lns_lac_range_get(unsigned int gid, const char *oid, char *value,
-                       const char *l2tp_name, const char *lns_name,
-                       const char *range)
+        const char *l2tp_name, const char *lns_name,
+        const char *range)
 {
 
     UNUSED(oid);
@@ -2229,8 +2174,7 @@ l2tp_lns_range_list_routine(const char *lns_name, const char *option_name)
 {
     te_l2tp_server       *l2tp = l2tp_server_find();
     te_l2tp_section      *l2tp_section = l2tp_find_section(l2tp, lns_name);
-    te_l2tp_option       *l2tp_option =
-                          l2tp_find_option(l2tp, lns_name, option_name);
+    te_l2tp_option       *l2tp_option = l2tp_find_option(l2tp, lns_name, option_name);
     te_l2tp_ipv4_range   *l2tp_range;
 
     te_string        str = TE_STRING_INIT;
@@ -2251,15 +2195,16 @@ l2tp_lns_range_list_routine(const char *lns_name, const char *option_name)
 }
 
 /**
- * Method for obtaining the list of connected clients from
- * /agent/l2tp/lns/lac_range.
+ * Method for addding an option to /agent/l2tp/lns/lac_range
  *
- * @param gid           group identifier
- * @param oid           full identifier of the father instance
- * @param list          location of the lac ranges
- * @param l2tp_name     name of the l2tp instance is always empty
- * @param lns_name      name of LNS
-
+ * @param gid                  group identifier
+ * @param oid                  full identifier of the father instance
+ * @param l2pt_name            name of the l2tp instance is always empty
+ * @param lns_name             name of the lns instance
+ * @param range                name of the ../lac_range instances
+ *                             to add
+ *                             like "192.168.37.38-192.168.37.40"
+ *
  * @return status code
  */
 static te_errno
@@ -2268,7 +2213,6 @@ l2tp_lns_lac_range_list(unsigned int gid, const char *oid,
                         const char *lns_name)
 {
     uint32_t  list_size;
-
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(l2tp_name);
@@ -2283,25 +2227,12 @@ l2tp_lns_lac_range_list(unsigned int gid, const char *oid,
     return 0;
 }
 
-/**
- * Method for obtaining the list of connected clients from
- * /agent/l2tp/lns/ip_range.
- *
- * @param gid           group identifier
- * @param oid           full identifier of the father instance
- * @param list          location of the ip ranges
- * @param l2tp_name     name of the l2tp instance is always empty
- * @param lns_name      name of LNS
-
- * @return status code
- */
 static te_errno
 l2tp_lns_ip_range_list(unsigned int gid, const char *oid,
                        char **list, const char *l2tp_name,
                        const char *lns_name)
 {
     uint32_t  list_size;
-
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(l2tp_name);
@@ -2503,6 +2434,7 @@ l2tp_lns_pppopt_del(unsigned int gid, const char *oid,
     free(l2tp_option->name);
     free(l2tp_option->value);
     free(l2tp_option);
+    l2tp_option = NULL;
     l2tp->changed = TRUE;
     return 0;
 }
@@ -2602,23 +2534,12 @@ l2tp_lns_client_del(unsigned int gid, const char *oid,
     free(client->secret->server);
     free(client->secret->sipv4);
     free(client->secret);
+
     free(client);
 
     return 0;
 }
 
-/**
- * Method for obtaining the list of connected clients from
- * /agent/l2tp/lns/auth/client.
- *
- * @param gid           group identifier
- * @param oid           full identifier of the father instance
- * @param list          location of the connected clients
- * @param l2tp_name     name of the l2tp instance is always empty
- * @param lns_name      name of LNS
-
- * @return status code
- */
 static te_errno
 l2tp_lns_client_list(unsigned int gid, const char *oid,
                     char **list, const char *l2tp_name, const char *lns_name)
@@ -2651,18 +2572,6 @@ l2tp_lns_client_list(unsigned int gid, const char *oid,
     return 0;
 }
 
-/**
- * Method for adding an auth type to /agent/l2tp/lns/auth
- *
- * @param gid           group identifier
- * @param oid           full identifier of the father instance
- * @param value         unused value
- * @param l2tp_name     name of the /client: instance
- * @param lns_name      name of the lns instance
- * @param auth_name     name of the lns auth instance
- *
- * @return status code
- */
 static te_errno
 l2tp_lns_auth_add(unsigned int gid, const char *oid, const char *value,
                   const char *l2tp_name, const char *lns_name,
@@ -2700,20 +2609,9 @@ l2tp_lns_auth_add(unsigned int gid, const char *oid, const char *value,
     return 0;
 };
 
-/**
- * Method for deleting an auth type to /agent/l2tp/lns/auth
- *
- * @param gid           group identifier
- * @param oid           full identifier of the father instance
- * @param l2tp_name     name of the /client: instance
- * @param lns_name      name of the lns instance
- * @param auth_name     name of the lns auth instance
- *
- * @return status code
- */
 static te_errno
 l2tp_lns_auth_del(unsigned int gid, const char *oid, const char *l2tp_name, const char *lns_name,
-                  const char *auth_name)
+        const char *auth_name)
 {
     te_l2tp_server   *l2tp = l2tp_server_find();
     te_l2tp_section  *l2tp_section = l2tp_find_section(l2tp, lns_name);
@@ -2745,17 +2643,6 @@ l2tp_lns_auth_del(unsigned int gid, const char *oid, const char *l2tp_name, cons
     return 0;
 };
 
-/**
- * Method for obtaining the list of auth types from /agent/l2tp/lns/auth
- *
- * @param gid           group identifier
- * @param oid           full identifier of the father instance
- * @param list          location of the connected clients
- * @param l2tp_name     name of the l2tp instance is always empty
- * @param lns_name      name of LNS
-
- * @return status code
- */
 static te_errno
 l2tp_lns_auth_list(unsigned int gid, const char *oid,
                    char **list, const char *l2tp_name, const char *lns_name)
@@ -2805,7 +2692,7 @@ l2tp_lns_auth_list(unsigned int gid, const char *oid,
  */
 static te_errno
 l2tp_lns_secret_get_routine(const char *lns_name, const char *auth_type,
-                            const char *client_name, const char *secret,
+                            const char *client_name, char *secret,
                             enum l2tp_secret_type secret_type)
 {
     te_l2tp_option       *client;
@@ -2871,7 +2758,7 @@ l2tp_lns_secret_get_sec(unsigned int gid, const char *oid, char *secret,
     UNUSED(l2tp_name);
 
     return l2tp_lns_secret_get_routine(lns_name, auth_type,
-                               client_name, secret, L2TP_SECRET_TYPE_SEC);
+                                       client_name, secret, L2TP_SECRET_TYPE_SEC);
 }
 
 /**
@@ -2898,7 +2785,7 @@ l2tp_lns_secret_get_serv(unsigned int gid, const char *oid, char *serv,
     UNUSED(l2tp_name);
 
     return l2tp_lns_secret_get_routine(lns_name, auth_type,
-                               client_name, serv, L2TP_SECRET_TYPE_SERV);
+                                       client_name, serv, L2TP_SECRET_TYPE_SERV);
 }
 
 /**
@@ -2925,7 +2812,7 @@ l2tp_lns_secret_get_ipv4(unsigned int gid, const char *oid, char *ipv4,
     UNUSED(l2tp_name);
 
     return l2tp_lns_secret_get_routine(lns_name, auth_type,
-                               client_name, ipv4, L2TP_SECRET_TYPE_IPV4);
+                                       client_name, ipv4, L2TP_SECRET_TYPE_IPV4);
 }
 
 /**
@@ -3438,10 +3325,10 @@ l2tp_grab(const char *name)
 te_errno
 l2tp_release(const char *name)
 {
-    char            l2tp_conf[sizeof(L2TP_SERVER_CONF_BASIS)
-                              + L2TP_MAX_PID_VALUE_LENGTH];
     te_l2tp_server *l2tp = l2tp_server_find();
     te_errno        retval;
+    char            l2tp_conf[sizeof(L2TP_SERVER_CONF_BASIS)
+                    + L2TP_MAX_PID_VALUE_LENGTH];
 
     UNUSED(name);
 
@@ -3455,12 +3342,14 @@ l2tp_release(const char *name)
         ERROR("Failed to stop l2tp server");
         return retval;
     }
+
     RING("filename %s", pppfilename);
     if (remove(pppfilename) != 0)
     {
         ERROR("remove %s failed", pppfilename);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
+    free(pppfilename);
 
     TE_SPRINTF(l2tp_conf, L2TP_SERVER_CONF_BASIS ".%i", getpid());
 
@@ -3469,6 +3358,16 @@ l2tp_release(const char *name)
         ERROR("remove %s failed", l2tp_conf);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
-
+    RING("ready to recover");
+    if (l2tp_secrets_recover(L2TP_CHAP_SECRETS) != 0)
+    {
+        ERROR("recover L2TP_CHAP_SECRETS failed");
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+    if (l2tp_secrets_recover(L2TP_PAP_SECRETS)!= 0)
+    {
+        ERROR("recover L2TP_PAP_SECRETS failed");
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
     return 0;
 }
