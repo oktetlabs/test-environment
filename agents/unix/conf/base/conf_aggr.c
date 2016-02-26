@@ -397,21 +397,51 @@ team_del(aggregation *aggr, const char *ifname)
 static te_errno
 team_list(aggregation *aggr, char **member_list)
 {
-    FILE *f;
+    int         out_fd = -1;
+    pid_t       cmd_pid;
+    FILE       *f = NULL;
+    te_errno    rc = 0;
+    int         status;
 
     TE_SPRINTF(buf,
                "/usr/bin/teamnl %s ports | sed s/[0-9]*:\\ *// "
                "| sed s/:.*// | awk \'{print}\' ORS=\'\'",
                aggr->ifname);
-    f = popen(buf, "r");
+
+    cmd_pid = te_shell_cmd(buf, -1, NULL, &out_fd, NULL);
+    if (cmd_pid < 0)
+    {
+        ERROR("%s(): getting list of teaming interfaces failed",
+              __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+    if ((f = fdopen(out_fd, "r")) == NULL)
+    {
+        ERROR("Failed to obtain file pointer for shell command output");
+        rc = TE_OS_RC(TE_TA_UNIX, te_rc_os2te(errno));
+        goto cleanup;
+    }
+
     memset(buf, 0, sizeof(buf));
     fread(buf, sizeof(buf), 1, f);
-    (void)pclose(f);
 
     if ((*member_list = strdup(buf)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
-    return 0;
+cleanup:
+    if (f != NULL)
+        fclose(f);
+    close(out_fd);
+
+    ta_waitpid(cmd_pid, &status, 0);
+    if (status != 0)
+    {
+        ERROR("%s(): Non-zero status of teamnl: %d",
+              __FUNCTION__, status);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+
+    return rc;
 }
 
 
