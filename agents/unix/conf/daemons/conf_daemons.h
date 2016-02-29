@@ -107,34 +107,35 @@ get_ds_name(const char *oid)
 {
     return
 #if defined __linux__
-         (strstr(oid, "radvd") != NULL) ? "radvd" :       
-         (strstr(oid, "dhcpserver") != NULL) ? "dhcpd" :       
-         (strstr(oid, "pppoeserver") != NULL) ? "pppoe-server" :       
-         (strstr(oid, "dnsserver") != NULL) ? "named" :        
-         (strstr(oid, "todudpserver") != NULL) ? "daytime-udp" :  
-         (strstr(oid, "tftpserver") != NULL) ? "tftp" :        
-         (strstr(oid, "ftpserver") != NULL) ? get_ftp_daemon_name() :       
-         (strstr(oid, "telnetd") != NULL) ? "telnet" :         
+        (strstr(oid, "radvd") != NULL) ? "radvd" :
+         (strstr(oid, "dhcpserver") != NULL) ? "dhcpd" :
+         (strstr(oid, "pppoeserver") != NULL) ? "pppoe-server" :
+         (strstr(oid, "dnsserver") != NULL) ? "named" :
+         (strstr(oid, "todudpserver") != NULL) ? "daytime-udp" :
+         (strstr(oid, "tftpserver") != NULL) ? "tftp" :
+         (strstr(oid, "ftpserver") != NULL) ? get_ftp_daemon_name() :
+         (strstr(oid, "telnetd") != NULL) ? "telnet" :
          (strstr(oid, "rshd") != NULL) ? "rsh" :
-         (strstr(oid, "echoserver") != NULL) ? "echo" : oid;
+         (strstr(oid, "echoserver") != NULL) ? "echo" :
+         (strstr(oid, "l2tp") != NULL) ? "l2tp" : oid;
 #elif defined __sun__
-         (strstr(oid, "dhcpserver") != NULL) ? "svc:/network/dhcp-server:default" :       
-         (strstr(oid, "dnsserver") != NULL) ? "svc:/network/dns/server:default" :        
-         (strstr(oid, "todudpserver") != NULL) ? "daytime-udp" :  
-         (strstr(oid, "tftpserver") != NULL) ? "tftp" :        
-         (strstr(oid, "ftpserver") != NULL) ? get_ftp_daemon_name() :       
-         (strstr(oid, "telnetd") != NULL) ? "svc:/network/telnet:default" :         
+        (strstr(oid, "dhcpserver") != NULL) ? "svc:/network/dhcp-server:default" :
+         (strstr(oid, "dnsserver") != NULL) ? "svc:/network/dns/server:default" :
+         (strstr(oid, "todudpserver") != NULL) ? "daytime-udp" :
+         (strstr(oid, "tftpserver") != NULL) ? "tftp" :
+         (strstr(oid, "ftpserver") != NULL) ? get_ftp_daemon_name() :
+         (strstr(oid, "telnetd") != NULL) ? "svc:/network/telnet:default" :
          (strstr(oid, "rshd") != NULL) ? "svc:/network/shell:default" :
          (strstr(oid, "echoserver") != NULL) ? "echo" : oid;
 #endif
-}         
+}
 
 /** Check, if the file exists and accessible */
 static inline int
 file_exists(char *file)
 {
     struct stat st;
-    
+
     return stat(file, &st) == 0;
 }
 
@@ -152,8 +153,8 @@ file_exists(char *file)
 /** Suffix for temporary files */
 #define TE_TMP_FILE_SUFFIX  ".tmpf"
 
-/** 
- * Create backup for the daemon/service configuration file. 
+/**
+ * Create backup for the daemon/service configuration file.
  *
  * @param dir           configuration file directory
  * @param name          configuration file basename
@@ -163,9 +164,9 @@ file_exists(char *file)
  */
 extern int ds_create_backup(const char *dir, const char *name, int *index);
 
-/** 
- * Restore initial state of the service. 
- * 
+/**
+ * Restore initial state of the service.
+ *
  * @param index         service index
  */
 extern void ds_restore_backup(int index);
@@ -173,7 +174,7 @@ extern void ds_restore_backup(int index);
 /** Restore initial state of all services */
 extern void ds_restore_backups();
 
-/** 
+/**
  * Get configuration file name for the daemon/service.
  *
  * @param index index returned by the ds_create_backup
@@ -182,7 +183,7 @@ extern void ds_restore_backups();
  */
 extern const char *ds_config(int index);
 
-/** 
+/**
  * Get name of the configuration file name backup for the daemon/service.
  *
  * @param index index returned by the ds_create_backup
@@ -191,7 +192,7 @@ extern const char *ds_config(int index);
  */
 extern const char *ds_backup(int index);
 
-/** 
+/**
  * Check, if the daemon/service configuration file was changed.
  *
  * @param index index returned by the ds_create_backup
@@ -212,7 +213,7 @@ extern te_bool ds_config_changed(int index);
  */
 extern int ds_lookup(const char *dir, const char *name);
 
-/** 
+/**
  * Notify backup manager that the configuration file was touched.
  *
  * @param index         daemon/service index
@@ -259,14 +260,14 @@ extern te_errno daemon_get(unsigned int gid, const char *oid, char *value);
  *
  * @param gid   unused
  * @param oid   daemon name
- * @param value new value 
+ * @param value new value
  *
  * @return Status code
  */
 extern te_errno daemon_set(unsigned int gid, const char *oid,
-                           const char *value);
+        const char *value);
 
-/** 
+/**
  * Check, if daemon/service is running (enabled).
  *
  * @param daemon    daemon/service name
@@ -277,12 +278,12 @@ static inline te_bool
 daemon_running(const char *daemon)
 {
     char enable[2];
-    
+
     if (daemon_get(0, daemon, enable) != 0)
         return 0;
-        
-    return enable[0] == '1';        
-}    
+
+    return enable[0] == '1';
+}
 
 /**
  * Find the first existing file in the list.
@@ -294,10 +295,10 @@ daemon_running(const char *daemon)
  * @return Index of the found file or -1
  */
 extern int find_file(unsigned int n, const char * const *files,
-                     te_bool exec);
+        te_bool exec);
 
-/* 
- * Grab/release functions for daemons/services - see rcfpch/rcf_pch.h 
+/*
+ * Grab/release functions for daemons/services - see rcfpch/rcf_pch.h
  * for details and prototypes.
  */
 extern te_errno radvd_grab(const char *name);
@@ -341,6 +342,9 @@ extern te_errno radiusserver_release(const char *name);
 
 extern te_errno vtund_grab(const char *name);
 extern te_errno vtund_release(const char *name);
+
+extern te_errno l2tp_grab(const char *name);
+extern te_errno l2tp_release(const char *name);
 
 /**
  * Add slapd node to the configuration tree.
