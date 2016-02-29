@@ -381,9 +381,9 @@ parse_device_properties(const json_t *jarray, tapi_upnp_device_info *device)
  * @param[in]  jarray       JSON array contains UPnP devices.
  * @param[out] devices      Devices context list.
  *
- * @return Extracted devices number or @c -1 in case of failure.
+ * @return Status code. On success, @c 0.
  */
-static ssize_t
+static te_errno
 parse_devices(const json_t *jarray, tapi_upnp_devices *devices)
 {
     int     rc = 0;
@@ -394,7 +394,7 @@ parse_devices(const json_t *jarray, tapi_upnp_devices *devices)
     if (jarray == NULL || !json_is_array(jarray))
     {
         ERROR("Invalid input data. JSON array was expected");
-        return -1;
+        return TE_EINVAL;
     }
     if (!SLIST_EMPTY(devices))
         VERB("Devices list is not empty");
@@ -405,20 +405,18 @@ parse_devices(const json_t *jarray, tapi_upnp_devices *devices)
         if (device == NULL)
         {
             ERROR("Cannot allocate memory");
-            rc = -1;
-            break;
+            return TE_ENOMEM;
         }
         rc = parse_device_properties(json_array_get(jarray, i), device);
         if (rc != 0)
         {
             ERROR("Fail to extract properties");
             free(device);
-            rc = -1;
-            break;
+            return rc;
         }
         SLIST_INSERT_HEAD(devices, device, next);
     }
-    return (rc != 0 ? rc : num_devices);
+    return 0;
 }
 
 /* See description in tapi_upnp_device_info.h. */
@@ -432,7 +430,7 @@ tapi_upnp_get_device_property(const tapi_upnp_device_info *device,
 }
 
 /* See description in tapi_upnp_device_info.h. */
-ssize_t
+te_errno
 tapi_upnp_get_device_info(rcf_rpc_server    *rpcs,
                           const char        *name,
                           tapi_upnp_devices *devices)
@@ -444,8 +442,7 @@ tapi_upnp_get_device_info(rcf_rpc_server    *rpcs,
     char        *reply = NULL;
     size_t       reply_len = 0;
     te_upnp_cp_request_type reply_type;
-    int          rc;
-    ssize_t      num_devices = 0;
+    te_errno     rc = 0;
 
     if (name == NULL)
         name = "";
@@ -455,24 +452,21 @@ tapi_upnp_get_device_info(rcf_rpc_server    *rpcs,
     if (jrequest == NULL)
     {
         ERROR("json_pack fails");
-        return -1;
+        return TE_ENOMEM;
     }
     request = json_dumps(jrequest, JSON_ENCODING_FLAGS);
     if (request == NULL)
     {
         ERROR("json_dumps fails");
-        rc = -1;
-        goto get_device_info_cleanup;
+        json_decref(jrequest);
+        return TE_ENOMEM;
     }
 
     /* Send request. */
     rc = rpc_upnp_cp_action(rpcs, request, strlen(request) + 1,
                             (void **)&reply, &reply_len);
     if (rc != 0)
-    {
-        rc = -1;
         goto get_device_info_cleanup;
-    }
 
     /* Parse reply. */
     jreply = json_loads(reply, 0, &error);
@@ -480,25 +474,25 @@ tapi_upnp_get_device_info(rcf_rpc_server    *rpcs,
     {
         ERROR("json_loads fails with massage: \"%s\", position: %u",
               error.text, error.position);
-        rc = -1;
+        rc = TE_EINVAL;
         goto get_device_info_cleanup;
     }
     if (!json_is_integer(json_array_get(jreply, 0)))
     {
         ERROR("Invalid reply type. JSON integer was expected");
-        rc = -1;
+        rc = TE_EINVAL;
         goto get_device_info_cleanup;
     }
     reply_type = json_integer_value(json_array_get(jreply, 0));
     if (reply_type != UPNP_CP_REQUEST_DEVICE)
     {
         ERROR("Unexpected reply type");
-        rc = -1;
+        rc = TE_EINVAL;
         goto get_device_info_cleanup;
     }
 
-    num_devices = parse_devices(json_array_get(jreply, 1), devices);
-    if (num_devices == -1)
+    rc = parse_devices(json_array_get(jreply, 1), devices);
+    if (rc != 0)
     {
         ERROR("parse_devices fails");
         tapi_upnp_free_device_info(devices);
@@ -509,7 +503,7 @@ get_device_info_cleanup:
     free(request);
     json_decref(jreply);
     json_decref(jrequest);
-    return (rc != 0 ? rc : num_devices);
+    return rc;
 }
 
 /* See description in tapi_upnp_device_info.h. */

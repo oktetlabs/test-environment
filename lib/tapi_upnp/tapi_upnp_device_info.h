@@ -267,19 +267,19 @@ tapi_upnp_get_device_presentation_url(const tapi_upnp_device_info *device)
 /**
  * Retrieve information about a UPnP device.
  * The posted @p devices should be empty, otherwise the new devices will be
- * appended to the it and there is no garantee that the list will contain no
- * duplicates.
+ * appended to the it and there is no garantee that the list will contains
+ * no duplicates.
  *
  * @param[in]    rpcs       RPC server handle.
  * @param[in]    name       Device name. Can be @c NULL or zero-length
  *                          string to get the all found devices.
  * @param[inout] devices    Devices context list.
  *
- * @return Discovered devices number or @c -1 in case of failure.
+ * @return Status code. On success, @c 0.
  */
-extern ssize_t tapi_upnp_get_device_info(rcf_rpc_server    *rpcs,
-                                         const char        *name,
-                                         tapi_upnp_devices *devices);
+extern te_errno tapi_upnp_get_device_info(rcf_rpc_server    *rpcs,
+                                          const char        *name,
+                                          tapi_upnp_devices *devices);
 
 /**
  * Empty the list of UPnP devices (free allocated memory).
