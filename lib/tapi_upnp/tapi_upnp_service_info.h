@@ -438,8 +438,8 @@ te_errno tapi_upnp_set_argument_value(tapi_upnp_argument *argument,
 /**
  * Retrieve information about available UPnP services.
  * The posted @p services should be empty, otherwise the new services will
- * be appended to the it and there is no garantee that the list will contain
- * no duplicates.
+ * be appended to the it and there is no garantee that the list will
+ * contains no duplicates.
  *
  * @param[in]    rpcs         RPC server handle.
  * @param[in]    device       The device which provides the service, can be
@@ -447,12 +447,13 @@ te_errno tapi_upnp_set_argument_value(tapi_upnp_argument *argument,
  * @param[in]    service_id   Service ID string or @c NULL.
  * @param[inout] services     Service context list.
  *
- * @return Discovered services number or @c -1 in case of failure.
+ * @return Status code. On success, @c 0.
  */
-extern ssize_t tapi_upnp_get_service_info(rcf_rpc_server        *rpcs,
-                                          tapi_upnp_device_info *device,
-                                          const char            *service_id,
-                                          tapi_upnp_services    *services);
+extern te_errno tapi_upnp_get_service_info(
+                                        rcf_rpc_server        *rpcs,
+                                        tapi_upnp_device_info *device,
+                                        const char            *service_id,
+                                        tapi_upnp_services    *services);
 
 /**
  * Empty the list of UPnP services (free allocated memory).

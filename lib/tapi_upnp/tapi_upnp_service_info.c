@@ -970,23 +970,23 @@ parse_service_actions(const json_t *jobject,
  * @param[in]  jarray       JSON array contains UPnP services.
  * @param[out] services     Services context list.
  *
- * @return Extracted services number or @c -1 in case of failure.
+ * @return Status code. On success, @c 0.
  */
-static ssize_t
+static te_errno
 parse_services(const json_t *jarray, tapi_upnp_services *services)
 {
-    json_t *jobject;
-    json_t *jitem;
-    int     rc = 0;
-    ssize_t num_services;
-    ssize_t i;
+    json_t  *jobject;
+    json_t  *jitem;
+    te_errno rc = 0;
+    ssize_t  num_services;
+    ssize_t  i;
     tapi_upnp_service_info *service = NULL;
     tapi_upnp_service_info *tmp = NULL;
 
     if (jarray == NULL || !json_is_array(jarray))
     {
         ERROR("Invalid input data. JSON array was expected");
-        return -1;
+        return TE_EINVAL;
     }
     if (!SLIST_EMPTY(services))
         VERB("Services list is not empty");
@@ -998,14 +998,14 @@ parse_services(const json_t *jarray, tapi_upnp_services *services)
         {
             ERROR("Invalid input data. JSON object was expected");
             service = NULL;
-            rc = -1;
+            rc = TE_EINVAL;
             break;
         }
         service = calloc(1, sizeof(*service));
         if (service == NULL)
         {
             ERROR("Cannot allocate memory");
-            rc = -1;
+            rc = TE_ENOMEM;
             break;
         }
         jitem = json_object_get(jobject, "Parameters");
@@ -1013,7 +1013,6 @@ parse_services(const json_t *jarray, tapi_upnp_services *services)
         if (rc != 0)
         {
             ERROR("Fail to extract properties");
-            rc = -1;
             break;
         }
         jitem = json_object_get(jobject, "StateVariables");
@@ -1021,7 +1020,6 @@ parse_services(const json_t *jarray, tapi_upnp_services *services)
         if (rc != 0)
         {
             ERROR("Fail to extract state variables");
-            rc = -1;
             break;
         }
         jitem = json_object_get(jobject, "Actions");
@@ -1029,7 +1027,6 @@ parse_services(const json_t *jarray, tapi_upnp_services *services)
         if (rc != 0)
         {
             ERROR("Fail to extract actions");
-            rc = -1;
             break;
         }
         SLIST_INSERT_HEAD(services, service, next);
@@ -1044,7 +1041,7 @@ parse_services(const json_t *jarray, tapi_upnp_services *services)
             free(service);
         }
     }
-    return (rc != 0 ? rc : num_services);
+    return rc;
 }
 
 /**
@@ -1187,7 +1184,7 @@ tapi_upnp_get_service_property_string(const tapi_upnp_service_info *service,
 }
 
 /* See description in tapi_upnp_service_info.h. */
-ssize_t
+te_errno
 tapi_upnp_get_service_info(rcf_rpc_server        *rpcs,
                            tapi_upnp_device_info *device,
                            const char            *service_id,
@@ -1200,9 +1197,8 @@ tapi_upnp_get_service_info(rcf_rpc_server        *rpcs,
     char        *reply = NULL;
     size_t       reply_len = 0;
     te_upnp_cp_request_type reply_type;
-    int          rc;
     const char  *device_udn;
-    ssize_t      num_services = 0;
+    te_errno     rc;
 
     if (service_id == NULL)
         service_id = "";
@@ -1217,24 +1213,21 @@ tapi_upnp_get_service_info(rcf_rpc_server        *rpcs,
     if (jrequest == NULL)
     {
         ERROR("json_pack fails");
-        return -1;
+        return TE_ENOMEM;
     }
     request = json_dumps(jrequest, JSON_ENCODING_FLAGS);
     if (request == NULL)
     {
         ERROR("json_dumps fails");
-        rc = -1;
-        goto get_service_info_cleanup;
+        json_decref(jrequest);
+        return TE_ENOMEM;
     }
 
     /* Send request. */
     rc = rpc_upnp_cp_action(rpcs, request, strlen(request) + 1,
                             (void **)&reply, &reply_len);
     if (rc != 0)
-    {
-        rc = -1;
         goto get_service_info_cleanup;
-    }
 
     /* Parse reply. */
     jreply = json_loads(reply, 0, &error);
@@ -1242,25 +1235,25 @@ tapi_upnp_get_service_info(rcf_rpc_server        *rpcs,
     {
         ERROR("json_loads fails with massage: \"%s\", position: %u",
               error.text, error.position);
-        rc = -1;
+        rc = TE_EINVAL;
         goto get_service_info_cleanup;
     }
     if (!json_is_integer(json_array_get(jreply, 0)))
     {
         ERROR("Invalid reply type. JSON integer was expected");
-        rc = -1;
+        rc = TE_EINVAL;
         goto get_service_info_cleanup;
     }
     reply_type = json_integer_value(json_array_get(jreply, 0));
     if (reply_type != UPNP_CP_REQUEST_SERVICE)
     {
         ERROR("Unexpected reply type");
-        rc = -1;
+        rc = TE_EINVAL;
         goto get_service_info_cleanup;
     }
 
-    num_services = parse_services(json_array_get(jreply, 1), services);
-    if (num_services == -1)
+    rc = parse_services(json_array_get(jreply, 1), services);
+    if (rc != 0)
     {
         ERROR("parse_services fails");
         tapi_upnp_free_service_info(services);
@@ -1271,7 +1264,7 @@ get_service_info_cleanup:
     free(request);
     json_decref(jreply);
     json_decref(jrequest);
-    return (rc != 0 ? rc : num_services);
+    return rc;
 }
 
 /* See description in tapi_upnp_service_info.h. */
