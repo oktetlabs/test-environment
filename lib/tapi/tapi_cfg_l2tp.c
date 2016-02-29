@@ -306,7 +306,7 @@ tapi_cfg_l2tp_lns_secret_add(const char *ta, const char *lns,
     if (ret_val3 != 0)
         return ret_val3;
 
-    ret_val4 = cfg_set_instance_fmt(CFG_VAL(ADDRESS, new_secret->sipv4),
+    ret_val4 = cfg_set_instance_fmt(CFG_VAL(ADDRESS, &new_secret->sipv4),
                                     TE_CFG_TA_L2TP_SERVER
                                             "/lns:%s/auth:%s/client:%s/ipv4:%s",
                                     ta, lns, prot, new_secret->client);
