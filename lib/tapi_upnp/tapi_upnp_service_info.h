@@ -479,7 +479,7 @@ extern te_errno tapi_upnp_invoke_action(
                                     tapi_upnp_action             *action);
 
 /**
- * Print UPnP services context using VERB function.
+ * Print UPnP services context using RING function.
  * This function should be used for debugging purpose.
  *
  * @param services      Services context list.

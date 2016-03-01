@@ -1501,7 +1501,7 @@ tapi_upnp_print_service_info(const tapi_upnp_services *services)
 
     if (SLIST_EMPTY(services))
     {
-        VERB("List of services is empty");
+        RING("List of services is empty");
         return;
     }
 
@@ -1548,6 +1548,6 @@ tapi_upnp_print_service_info(const tapi_upnp_services *services)
     }
     te_string_append(&dump, "---\n");
     te_string_append(&dump, "Total number of services: %u\n", num_services);
-    VERB(dump.ptr);
+    RING(dump.ptr);
     te_string_free(&dump);
 }

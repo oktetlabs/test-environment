@@ -289,7 +289,7 @@ extern te_errno tapi_upnp_get_device_info(rcf_rpc_server    *rpcs,
 extern void tapi_upnp_free_device_info(tapi_upnp_devices *devices);
 
 /**
- * Print UPnP devices context using VERB function.
+ * Print UPnP devices context using RING function.
  * This function should be used for debugging purpose.
  *
  * @param devices    Devices context list.

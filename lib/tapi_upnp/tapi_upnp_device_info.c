@@ -535,7 +535,7 @@ tapi_upnp_print_device_info(const tapi_upnp_devices *devices)
 
     if (SLIST_EMPTY(devices))
     {
-        VERB("List of devices is empty");
+        RING("List of devices is empty");
         return;
     }
 
@@ -551,6 +551,6 @@ tapi_upnp_print_device_info(const tapi_upnp_devices *devices)
     }
     te_string_append(&dump, "---\n");
     te_string_append(&dump, "Total number of devices: %u\n", num_devices);
-    VERB(dump.ptr);
+    RING(dump.ptr);
     te_string_free(&dump);
 }
