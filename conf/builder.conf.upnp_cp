@@ -8,7 +8,7 @@ TE_PLATFORM([], [], [-D_GNU_SOURCE], [], [],
             [tools logic_expr ipc bsapi loggerten rpcxdr rpc_types \
              rcfapi conf_oid confapi tapi comm_net_engine rcfunix \
              loggerta comm_net_agent rcfpch asn ndn tad rcfrpc \
-             tapi_rpc trc netconf \
+             tapi_rpc trc netconf tapi_env \
              tapi_upnp])
 
 TE_LIB_PARMS([tad], [], [],

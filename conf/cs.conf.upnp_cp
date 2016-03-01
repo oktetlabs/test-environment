@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <history>
+  <!-- UPnP objects -->
   <register>
     <object oid="/agent/upnp_cp" access="read_only" type="string"/>
     <object oid="/agent/upnp_cp/enable" access="read_write" type="integer"/>
@@ -7,6 +8,7 @@
     <object oid="/agent/upnp_cp/iface" access="read_write" type="string"/>
   </register>
 
+  <!-- Other (auxiliary) objects -->
   <register>
     <object oid="/rpcserver_sid"
             access="read_create" type="integer" volatile="true"/>
@@ -18,7 +20,56 @@
     <object oid="/agent/rpcserver/dead" access="read_write" type="integer"/>
   </register>
 
+  <register>
+    <object oid="/agent/interface" access="read_only" type="none" >
+      <depends oid="/agent/rsrc"/>
+      <depends oid="/agent/interface/vlans" scope="object"/>
+    </object>
+    <object oid="/agent/interface/index"
+            access="read_only" type="integer"/>
+    <object oid="/agent/interface/net_addr"
+            access="read_create" type="integer">
+      <depends oid="/agent/interface/link_addr"/>
+    </object>
+  </register>
+
+  <register>
+    <object oid="/net" access="read_create" type="none"/>
+    <object oid="/net/type" access="read_create" type="integer"/>
+    <object oid="/net/ip4_subnet" access="read_create" type="address"/>
+    <object oid="/prefix" access="read_create" type="integer"/>
+    <object oid="/net/node" access="read_create" type="string"/>
+    <object oid="/net/node/type" access="read_create" type="integer"/>
+    <object oid="/net/node/ip4_address" access="read_create" type="address"/>
+  </register>
+
+  <register>
+    <object oid="/net_pool" access="read_create" type="none"/>
+    <object oid="/net_pool/entry" access="read_create" type="integer"/>
+    <object oid="/net_pool/entry/prefix" access="read_write" type="integer"/>
+    <object oid="/net_pool/entry/n_entries" access="read_write" type="integer"/>
+    <object oid="/net_pool/entry/pool" access="read_write" type="none"/>
+    <object oid="/net_pool/entry/pool/entry" access="read_create" type="integer"/>
+  </register>
+
+  <!-- Instances -->
   <add>
-    <instance oid="/agent:Agt_A/rpcserver:upnp_cp_proxy"/>
+    <instance oid="/agent:Agt_A/rsrc:eth1" value="/agent:Agt_A/interface:eth1"/>
   </add>
+
+  <add>
+    <instance oid="/net:net1"/>
+    <instance oid="/net:net1/node:A" value="/agent:Agt_A/interface:eth1"/>
+    <instance oid="/net:net1/node:A/type:" value="1"/>
+  </add>
+
+  <add>
+    <instance oid="/net_pool:ip4"/>
+    <instance oid="/net_pool:ip4/entry:192.168.1.0" value="0"/>
+  </add>
+
+  <set>
+    <instance oid="/net_pool:ip4/entry:192.168.1.0/prefix:" value="24"/>
+  </set>
+
 </history>
