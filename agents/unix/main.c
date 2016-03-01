@@ -1863,7 +1863,11 @@ ta_bond_get_slaves(const char *ifname, char slvs[][IFNAMSIZ],
     char   path[64];
     char  *line = NULL;
     size_t len = 0;
-    char buf[256];
+    char   buf[256];
+    int    out_fd = -1;
+    pid_t  cmd_pid = -1;
+    int    rc = 0;
+    int    status;
 
     memset(path, 0, sizeof(path));
     memset(buf, 0, sizeof(path));
@@ -1879,7 +1883,20 @@ ta_bond_get_slaves(const char *ifname, char slvs[][IFNAMSIZ],
                "sudo /usr/bin/teamnl %s ports | "
                "sed s/[0-9]*:\\ */Slave\\ Interface:\\ / "
                "| sed 's/\\([0-9]\\):.*/\\1/'", ifname);
-        proc_bond = popen(buf, "r");
+        cmd_pid = te_shell_cmd(buf, -1, NULL, &out_fd, NULL);
+        if (cmd_pid < 0)
+        {
+            ERROR("%s(): getting list of teaming interfaces failed",
+                  __FUNCTION__);
+            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        }
+        if ((proc_bond = fdopen(out_fd, "r")) == NULL)
+        {
+            ERROR("Failed to obtain file pointer for shell "
+                  "command output");
+            rc = TE_OS_RC(TE_TA_UNIX, te_rc_os2te(errno));
+            goto cleanup;
+        }
     }
     if (proc_bond == NULL)
     {
@@ -1907,15 +1924,32 @@ ta_bond_get_slaves(const char *ifname, char slvs[][IFNAMSIZ],
         if (strlen(ifname) > IFNAMSIZ)
         {
             ERROR("%s(): interface name is too long", __FUNCTION__);
-            return TE_RC(TE_TA_UNIX, TE_ENAMETOOLONG);
+            rc = TE_RC(TE_TA_UNIX, TE_ENAMETOOLONG);
+            goto cleanup;
         }
         strcpy(slvs[i], ifname);
         i++;
     }
+
+cleanup:
     free(line);
-    *slaves_num = i;
     fclose(proc_bond);
-    return 0;
+    close(out_fd);
+
+    if (cmd_pid >= 0)
+    {
+        ta_waitpid(cmd_pid, &status, 0);
+        if (status != 0)
+        {
+            ERROR("%s(): Non-zero status of teamnl: %d",
+                  __FUNCTION__, status);
+            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        }
+    }
+
+    if (rc == 0)
+        *slaves_num = i;
+    return rc;
 }
 
 /**
