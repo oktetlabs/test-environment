@@ -623,17 +623,32 @@
          freed on TA.
          Name: empty
          Value: 0 (not terminated) or 1 (terminated) -->
-    <object oid="/agent/rpcserver/finished" 
+    <object oid="/agent/rpcserver/finished"
             access="read_write" type="integer"/>
 
     <!-- DNS server.
-         Name:  empty    
+         Name:  empty
          Limit: 1 -->
     <object oid="/agent/dns" access="read_create" type="address"/>
 
+    <!-- The kernel variable which is responsible for source validation.
+         (/proc/sys/net/ipv4/conf/all/rp_filter)
+         Name: empty
+         Value:
+            0 - No source validation;
+            1 - Strict mode as defined in RFC3704 Strict Reverse Path
+                Each incoming packet is tested against the FIB and if the
+                interface is not the best reverse path the packet check will
+                fail.
+                By default failed packets are discarded.
+            2 - Loose mode as defined in RFC3704 Loose Reverse Path
+                Each incoming packet's source address is also tested against
+                the FIB and if the source address is not reachable via any
+                interface the packet check will fail. -->
+    <object oid="/agent/rp_filter_all" access="read_write" type="integer"/>
 
-    <!-- IP-tables Linux firewall; for details see 'man iptables' 
-         Name:  empty    
+    <!-- IP-tables Linux firewall; for details see 'man iptables'
+         Name:  empty
          Limit: 1 -->
     <object oid="/agent/iptables"
             access="read_create" type="none"/>

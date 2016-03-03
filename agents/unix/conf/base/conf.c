@@ -545,6 +545,9 @@ static te_errno rp_filter_get(unsigned int, const char *, char *,
 static te_errno rp_filter_set(unsigned int, const char *, const char *,
                               const char *);
 
+static te_errno rp_filter_all_get(unsigned int, const char *, char *);
+static te_errno rp_filter_all_set(unsigned int, const char *, const char *);
+
 static te_errno promisc_get(unsigned int, const char *, char *,
                             const char *);
 static te_errno promisc_set(unsigned int, const char *, const char *,
@@ -750,6 +753,10 @@ RCF_PCH_CFG_NODE_RO(node_dns, "dns",
                     NULL, &node_dir,
                     (rcf_ch_cfg_list)nameserver_get);
 
+RCF_PCH_CFG_NODE_RW(node_rp_filter_all, "rp_filter_all",
+                    NULL, &node_dns,
+                    rp_filter_all_get, rp_filter_all_set);
+
 RCF_PCH_CFG_NODE_RO(node_neigh_state, "state",
                     NULL, NULL,
                     (rcf_ch_cfg_list)neigh_state_get);
@@ -827,7 +834,7 @@ RCF_PCH_CFG_NODE_RO(node_ifindex, "index", NULL, &node_iface_ip6_accept_ra,
                     ifindex_get);
 
 RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
-                            &node_ifindex, &node_dns,
+                            &node_ifindex, &node_rp_filter_all,
                             NULL, NULL, interface_list, NULL);
 
 RCF_PCH_CFG_NODE_RW(node_ip4_fw, "ip4_fw", NULL, &node_interface,
@@ -5534,6 +5541,36 @@ rp_filter_set(unsigned int gid, const char *oid, const char *value,
 #endif
 
     return 0;
+}
+
+/**
+ * Get RPF filtering value for interface "all"
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         value location
+ *
+ * @return              Status code
+ */
+static te_errno
+rp_filter_all_get(unsigned int gid, const char *oid, char *value)
+{
+    return rp_filter_get(gid, oid, value, "all");
+}
+
+/**
+ * Set RPF filtering value for interface "all"
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         new value pointer
+ *
+ * @return              Status code
+ */
+static te_errno
+rp_filter_all_set(unsigned int gid, const char *oid, const char *value)
+{
+    return rp_filter_set(gid, oid, value, "all");
 }
 
 /**
