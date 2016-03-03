@@ -56,40 +56,42 @@
 /** Max length of the IP address in human dot notation */
 #define L2TP_IP_ADDR_LEN 15
 
-/** Authentication types number */
-#define L2TP_AUTH_TYPES 2
-
 
 /** pid of xl2tpd */
 static int l2tp_pid = -1;
 
-/** pppoptfile value storage */
-static char *pppfilename;
-
 /** The class of the secret */
 enum l2tp_secret_type {
     L2TP_SECRET_TYPE_SEC,    /**< secret type */
-            L2TP_SECRET_TYPE_SERV,   /**< server type */
-            L2TP_SECRET_TYPE_IPV4,   /**< ipv4 type */
+    L2TP_SECRET_TYPE_SERV,   /**< server type */
+    L2TP_SECRET_TYPE_IPV4,   /**< ipv4 type */
 };
 
 /** The class of the options */
 enum l2tp_value_type {
     L2TP_VALUE_TYPE_INT,       /**< integer type */
-            L2TP_VALUE_TYPE_STRING,    /**< string type */
-            L2TP_VALUE_TYPE_ADDRESS,   /**< address type */
+    L2TP_VALUE_TYPE_STRING,    /**< string type */
+    L2TP_VALUE_TYPE_ADDRESS,   /**< address type */
 };
 
 /** Authentication type */
 enum l2tp_secret_prot {
     L2TP_SECRET_PROT_CHAP,    /**< CHAP authentication */
-            L2TP_SECRET_PROT_PAP,      /**< PAP authentication */
+    L2TP_SECRET_PROT_PAP,     /**< PAP authentication */
+    L2TP_SECRET_PROT_NTYPES   /**< Authentication types number */
+};
+
+/** Type of the request for the l2tp_secret_prot */
+enum l2tp_auth_policy {
+    L2TP_AUTH_POLICY_DUMMY,     /**< Indicate that no policy was added */
+    L2TP_AUTH_POLICY_REFUSE,    /**< Refuse CHAP|PAP */
+    L2TP_AUTH_POLICY_REQUIRE    /**< Require CHAP|PAP */
 };
 
 /** The class of the options */
 enum l2tp_option_type {
     L2TP_OPTION_TYPE_PPP,    /**< PPP options class */
-            L2TP_OPTION_TYPE_L2TP,   /**< L2TP options class */
+    L2TP_OPTION_TYPE_L2TP,   /**< L2TP options class */
 };
 
 /** IP range structure */
@@ -123,8 +125,8 @@ typedef struct te_l2tp_option {
 typedef struct te_l2tp_opt_auth {
     SLIST_ENTRY(te_l2tp_opt_auth)    list;
     SLIST_HEAD(, te_l2tp_secret)     secret;     /**< CHAP|PAP secret */
-    char                            *name;       /**< refuse or require */
-    char                            *value;      /**< yes or no */
+    enum l2tp_auth_policy            name;       /**< refuse or require secrets */
+    te_bool                          value;      /**< TRUE(yes) or FALSE(no) */
 
 } te_l2tp_opt_auth;
 
@@ -132,10 +134,10 @@ typedef struct te_l2tp_opt_auth {
 typedef struct te_l2tp_section {
     SLIST_ENTRY(te_l2tp_section)  list;
     SLIST_HEAD(, te_l2tp_option)  l2tp_option; /**< Options of the section */
-    te_l2tp_opt_auth              l2tp_opt_auth[L2TP_AUTH_TYPES]; /** Array
-                                                                of CHAP|PAP
-                                                                authentication
-                                                                options*/
+    te_l2tp_opt_auth              l2tp_opt_auth[L2TP_SECRET_PROT_NTYPES];
+                                             /**< Array of CHAP|PAP
+                                                 authentication
+                                                 options */
 
     char                         *secname;   /**< Section name */
 
@@ -164,7 +166,7 @@ typedef struct te_l2tp_server {
 } te_l2tp_server;
 
 static te_bool
-        l2tp_is_running(te_l2tp_server *l2tp);
+l2tp_is_running(te_l2tp_server *l2tp);
 
 /** Static L2TP server structure */
 static te_l2tp_server l2tp_server;
@@ -251,9 +253,9 @@ l2tp_secrets_recover(char *secret_fname)
     {
         if (strcmp(line, L2TP_FENCE) == 0)
         {
-            fence_flag ^= TRUE;
+            fence_flag = !fence_flag;
         }
-        else if ((strcmp(line, L2TP_FENCE) != 0) && fence_flag == FALSE)
+        else if (!fence_flag)
         {
             fputs(line, backup_file);
         }
@@ -287,6 +289,134 @@ l2tp_secrets_recover(char *secret_fname)
 }
 
 /**
+ * Save options to configuration file
+ *
+ * @param l2tp_file     configuration file
+ * @param l2tp_section  lns section
+ *
+ */
+static void
+l2tp_server_save_opt(FILE *l2tp_file, te_l2tp_section *l2tp_section, char **pppfilename)
+{
+    te_l2tp_option      *l2tp_option;
+    te_l2tp_ipv4_range  *l2tp_range;
+    te_string            str = TE_STRING_INIT;
+
+    for (l2tp_option = SLIST_FIRST(&l2tp_section->l2tp_option);
+             l2tp_option != NULL; l2tp_option = SLIST_NEXT(l2tp_option, list))
+    {
+        if (l2tp_option->type == L2TP_OPTION_TYPE_L2TP)
+        {
+            if (strcmp(l2tp_option->name, PPP_OPTIONS) == 0)
+            {
+                *pppfilename = strdup(l2tp_option->value);
+            }
+            if (strstr(l2tp_option->name, "range") != NULL)
+            {
+                for (l2tp_range = SLIST_FIRST(&l2tp_option->l2tp_range);
+                         l2tp_range != NULL;
+                         l2tp_range = SLIST_NEXT(l2tp_range, list))
+                {
+                    if (l2tp_range->end == NULL)
+                    {
+                        te_string_append(&str, "%s%s", l2tp_range->start,
+                                             l2tp_range->list.sle_next !=
+                                             NULL ? "," : "");
+                    }
+                    else
+                    {
+                        te_string_append(&str, "%s-%s%s",
+                                             l2tp_range->start,
+                                             l2tp_range->end,
+                                             l2tp_range->list.sle_next !=
+                                             NULL ? "," : "");
+                    }
+                }
+
+                    fprintf(l2tp_file, "%s = %s\n", l2tp_option->name,
+                            str.ptr);
+            }
+            else
+            {
+                fprintf(l2tp_file, "%s = %s\n", l2tp_option->name,
+                        l2tp_option->value);
+            }
+        }
+    }
+}
+
+/**
+ * Save secrets
+ *
+ * @param l2tp_file        configuration file
+ * @param chap_backup_file File for chap secrets' storage
+ * @param chap_backup_file File for pap secrets' storage
+ * @param l2tp_section     lns section
+ *
+ */
+static void
+l2tp_server_save_secrets(FILE *l2tp_file,
+                         FILE *chap_backup_file,
+                         FILE *pap_backup_file,
+                         te_l2tp_section *l2tp_section)
+{
+    te_l2tp_opt_auth      *l2tp_opt_auth;
+    te_l2tp_secret        *l2tp_secret;
+
+    enum l2tp_secret_prot  iterator;
+    for (iterator = L2TP_SECRET_PROT_CHAP;
+         iterator < L2TP_SECRET_PROT_NTYPES; iterator++)
+    {
+        l2tp_opt_auth = &l2tp_section->l2tp_opt_auth[iterator];
+        FILE *temp = NULL;
+        if (l2tp_opt_auth != NULL && l2tp_opt_auth->name != L2TP_AUTH_POLICY_DUMMY)
+        {
+            fprintf(l2tp_file, "%s %s = %s\n",
+                    l2tp_opt_auth->name == L2TP_AUTH_POLICY_REQUIRE ?
+                    "require" : "refuse",
+                    iterator == L2TP_SECRET_PROT_CHAP ? "chap" : "pap",
+                    l2tp_opt_auth->value == TRUE ? "yes" : "no");
+        }
+        else
+        {
+            continue;
+        }
+
+        switch (iterator)
+        {
+            case L2TP_SECRET_PROT_CHAP:
+            {
+                temp = chap_backup_file;
+                break;
+            }
+
+            case L2TP_SECRET_PROT_PAP:
+            {
+                temp = pap_backup_file;
+                break;
+            }
+
+            default:
+                temp = NULL;
+                break;
+        }
+
+        for (l2tp_secret = SLIST_FIRST(&l2tp_opt_auth->secret);
+             l2tp_secret != NULL; l2tp_secret = SLIST_NEXT(l2tp_secret, list))
+        {
+            if (temp != NULL)
+            {
+                fprintf(temp, "%s %s %s %s\n",
+                        l2tp_secret->name,
+                        l2tp_secret->server,
+                        l2tp_secret->secret,
+                        l2tp_secret->sipv4);
+            }
+        }
+    }
+}
+
+/**
  * Prepare configuration file for L2TP server
  *
  * @param l2tp    l2tp server structure
@@ -302,17 +432,13 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
     FILE                *original_pap;
     FILE                *l2tp_file;
     FILE                *ppp_file = NULL;
-    te_l2tp_ipv4_range  *l2tp_range;
-    te_l2tp_secret      *l2tp_secret;
-    te_l2tp_opt_auth    *l2tp_opt_auth;
-    te_l2tp_option      *l2tp_option;
     te_l2tp_option      *ppp_option;
     te_l2tp_section     *l2tp_section;
     char                 chap_backup_fname[] = "/etc/ppp/chap-secretsXXXXXX";
     char                 pap_backup_fname[] = "/etc/ppp/pap-secretsXXXXXX";
     char                 l2tp_conf[sizeof(L2TP_SERVER_CONF_BASIS)
-            + L2TP_MAX_PID_VALUE_LENGTH];
-    te_string            str = TE_STRING_INIT;
+                         + L2TP_MAX_PID_VALUE_LENGTH];
+    char                *pppfilename = NULL;
     char                 secret_line[L2TP_SECRETS_LENGTH];
     int                  chap_bfd;
     int                  pap_bfd;
@@ -463,104 +589,17 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
          l2tp_section = SLIST_NEXT(l2tp_section, list))
     {
         if (strcmp(l2tp_section->secname, L2TP_GLOBAL) == 0)
-            fprintf(l2tp_file, "[%s]\n", l2tp_section->secname);
+            fputs("[global]\n", l2tp_file);
         else
             fprintf(l2tp_file, "[lns %s]\n", l2tp_section->secname);
 
-        for (l2tp_option = SLIST_FIRST(&l2tp_section->l2tp_option);
-             l2tp_option != NULL; l2tp_option = SLIST_NEXT(l2tp_option, list))
-        {
-            if (l2tp_option->type == L2TP_OPTION_TYPE_L2TP)
-            {
-                if (strcmp(l2tp_option->name, PPP_OPTIONS) == 0)
-                {
-                    pppfilename = strdup(l2tp_option->value);
-                }
-                if (strstr(l2tp_option->name, "range") != NULL)
-                {
-                    for (l2tp_range = SLIST_FIRST(&l2tp_option->l2tp_range);
-                         l2tp_range != NULL;
-                         l2tp_range = SLIST_NEXT(l2tp_range, list))
-                    {
-                        if (l2tp_range->end == NULL)
-                        {
-                            te_string_append(&str, "%s%s", l2tp_range->start,
-                                    l2tp_range->list.sle_next !=
-                                            NULL ? "," : "");
-                        }
-                        else
-                        {
-                            te_string_append(&str, "%s-%s%s",
-                                    l2tp_range->start,
-                                    l2tp_range->end,
-                                    l2tp_range->list.sle_next !=
-                                            NULL ? "," : "");
-                        }
-                    }
+        l2tp_server_save_opt(l2tp_file, l2tp_section, &pppfilename);
 
-                    fprintf(l2tp_file, "%s = %s\n", l2tp_option->name,
-                            str.ptr);
-                }
-                else
-                {
-                    fprintf(l2tp_file, "%s = %s\n", l2tp_option->name,
-                            l2tp_option->value);
-                }
-            }
-        }
-        enum l2tp_secret_prot iterator;
-        for (iterator = L2TP_SECRET_PROT_CHAP; iterator < L2TP_AUTH_TYPES; iterator++)
-        {
-            l2tp_opt_auth = &l2tp_section->l2tp_opt_auth[iterator];
-            FILE *temp = NULL;
-            if (l2tp_opt_auth != NULL && l2tp_opt_auth->name != NULL)
-            {
-                fprintf(l2tp_file, "%s %s = %s\n", l2tp_opt_auth->name,
-                        iterator == L2TP_SECRET_PROT_CHAP ? "chap" : "pap",
-                        l2tp_opt_auth->value);
-            }
-            else
-            {
-                continue;
-            }
+        l2tp_server_save_secrets(l2tp_file, chap_backup_file,
+                                 pap_backup_file, l2tp_section);
 
-            switch (iterator)
-            {
-                case L2TP_SECRET_PROT_CHAP:
-                {
-                    temp = chap_backup_file;
-                    break;
-                }
-
-                case L2TP_SECRET_PROT_PAP:
-                {
-                    temp = pap_backup_file;
-                    break;
-                }
-
-                default:
-                    temp = NULL;
-                    break;
-            }
-
-            for (l2tp_secret = SLIST_FIRST(&l2tp_opt_auth->secret);
-                 l2tp_secret != NULL; l2tp_secret = SLIST_NEXT(l2tp_secret, list))
-            {
-                if (temp != NULL)
-                {
-                    fprintf(temp, "%s %s %s %s\n",
-                            l2tp_secret->name,
-                            l2tp_secret->server,
-                            l2tp_secret->secret,
-                            l2tp_secret->sipv4);
-                }
-            }
-        }
-        /** Add a line to indicate the end of the secrets for L2TP tests */
-        fputs("\n" L2TP_FENCE, chap_backup_file);
-        fputs("\n" L2TP_FENCE, pap_backup_file);
-
-        if (pppfilename != NULL && strcmp(l2tp_section->secname, L2TP_GLOBAL) != 0)
+        if (pppfilename != NULL &&
+            strcmp(l2tp_section->secname, L2TP_GLOBAL) != 0)
         {
             ppp_file = fopen(pppfilename, "w");
             if (ppp_file == NULL)
@@ -588,19 +627,24 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
                         strerror(errno));
                 return TE_OS_RC(TE_TA_UNIX, errno);
             }
+            free(pppfilename);
         }
 
         for (ppp_option = SLIST_FIRST(&l2tp_section->l2tp_option);
              ppp_option != NULL;
              ppp_option = SLIST_NEXT(ppp_option, list))
         {
-            if (ppp_option->type == L2TP_OPTION_TYPE_L2TP)
+            if (ppp_option->type == L2TP_OPTION_TYPE_PPP)
             {
                 fprintf(ppp_file, "%s %s\n",
                         ppp_option->name, ppp_option->value);
             }
         }
     }
+
+    /** Add a line to indicate the end of the secrets for L2TP tests */
+    fputs("\n" L2TP_FENCE, chap_backup_file);
+    fputs("\n" L2TP_FENCE, pap_backup_file);
 
     if (fclose(l2tp_file) != 0)
     {
@@ -749,7 +793,7 @@ l2tp_server_start(te_l2tp_server *l2tp)
 
     TE_SPRINTF(buf, "%s -D -c %s.%i -p %s%i", L2TP_SERVER_EXEC,
             L2TP_SERVER_CONF_BASIS, ta_pid, L2TP_TA_PIDFILE, ta_pid);
-    if ((l2tp_pid = te_shell_cmd(buf, (uid_t) - 1, NULL, NULL, NULL) < 0))
+    if ((l2tp_pid = te_shell_cmd(buf, (uid_t) -1, NULL, NULL, NULL) < 0))
     {
         ERROR("Command %s failed", buf);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
@@ -1821,18 +1865,18 @@ l2tp_lns_bit_list(unsigned int gid, const char *oid,
 
 static te_errno
 l2tp_lns_policy_get_routine(te_l2tp_section *section,
-        enum l2tp_secret_prot type, const char *policy,
+        enum l2tp_secret_prot type, enum l2tp_auth_policy policy,
         char *value)
 {
     te_l2tp_opt_auth      *opt_auth = &section->l2tp_opt_auth[type];
 
-    if (strcmp(opt_auth->name, policy) != 0)
+    if (opt_auth->name != policy)
     {
         strcpy(value, "");
     }
-    else if  (opt_auth->value != NULL)
+    else
     {
-        strcpy(value, opt_auth->value);
+        strcpy(value, opt_auth->value == TRUE ? "yes" : "no");
     }
 
     return 0;
@@ -1840,17 +1884,13 @@ l2tp_lns_policy_get_routine(te_l2tp_section *section,
 
 static te_errno
 l2tp_lns_policy_set_routine(te_l2tp_section *section,
-        enum l2tp_secret_prot type, const char *policy,
-        char *value)
+        enum l2tp_secret_prot type, enum l2tp_auth_policy policy,
+        te_bool value)
 {
     te_l2tp_opt_auth      *opt_auth = &section->l2tp_opt_auth[type];
 
-    free(opt_auth->name);
-
-    if (opt_auth->value != NULL)
-        free(opt_auth->value);
-    opt_auth->name = strdup(policy);
-    opt_auth->value = strdup(value);
+    opt_auth->name = policy;
+    opt_auth->value = value;
 
     return 0;
 }
@@ -1880,7 +1920,8 @@ l2tp_lns_require_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
     UNUSED(l2tp_name);
 
-    return l2tp_lns_policy_get_routine(section, type, "require", value);
+    return l2tp_lns_policy_get_routine(section, type,
+                                       L2TP_AUTH_POLICY_REQUIRE, value);
 }
 
 /**
@@ -1910,7 +1951,9 @@ l2tp_lns_require_set(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(l2tp_name);
 
-    return l2tp_lns_policy_set_routine(section, type, "require", value);
+    return l2tp_lns_policy_set_routine(section, type, L2TP_AUTH_POLICY_REQUIRE,
+                                       strcmp(value, "yes") == 0 ?
+                                       TRUE : FALSE);
 }
 
 /**
@@ -1938,7 +1981,7 @@ l2tp_lns_refuse_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
     UNUSED(l2tp_name);
 
-    return l2tp_lns_policy_get_routine(section, type, "refuse", value);
+    return l2tp_lns_policy_get_routine(section, type, L2TP_AUTH_POLICY_REFUSE, value);
 
 }
 
@@ -1968,7 +2011,10 @@ l2tp_lns_refuse_set(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(l2tp_name);
 
-    return l2tp_lns_policy_set_routine(section, type, "refuse", value);
+    return l2tp_lns_policy_set_routine(section, type,
+                                       L2TP_AUTH_POLICY_REFUSE,
+                                       strcmp(value, "yes") == 0 ?
+                                       TRUE : FALSE);
 }
 
 /**
@@ -2669,7 +2715,7 @@ l2tp_lns_client_list(unsigned int gid, const char *oid,
     }
     SLIST_FOREACH(l2tp_client, &opt_auth->secret, list)
     {
-        te_string_append(&str, "%s ",l2tp_client->name);
+        te_string_append(&str, "%s ", l2tp_client->name);
     }
     *list = str.ptr;
     return 0;
@@ -2702,15 +2748,13 @@ l2tp_lns_auth_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
     UNUSED(value);
     UNUSED(l2tp_name);
-    if (opt_auth->name == NULL)
-    {
-        opt_auth->name = strdup("");
-        return 0;
-    }
-    else
+    if (opt_auth->name != L2TP_AUTH_POLICY_DUMMY)
     {
         return TE_RC(TE_TA_UNIX,  TE_EEXIST);
     }
+    opt_auth->value = TRUE;
+
+    return 0;
 };
 
 /**
@@ -2738,16 +2782,9 @@ l2tp_lns_auth_del(unsigned int gid, const char *oid, const char *l2tp_name,
     UNUSED(gid);
     UNUSED(l2tp_name);
 
-    if (opt_auth->name != NULL)
+    if (opt_auth->name != L2TP_AUTH_POLICY_DUMMY)
     {
-        free(opt_auth->name);
-        opt_auth->name = NULL;
-    }
-
-    if (opt_auth->value != NULL)
-    {
-        free(opt_auth->value);
-        opt_auth->value = NULL;
+        opt_auth->name = L2TP_AUTH_POLICY_DUMMY;
     }
 
     return 0;
@@ -2786,13 +2823,14 @@ l2tp_lns_auth_list(unsigned int gid, const char *oid,
     {
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
-    for (type_iter = L2TP_SECRET_PROT_CHAP; type_iter < L2TP_AUTH_TYPES; type_iter++)
+    for (type_iter = L2TP_SECRET_PROT_CHAP;
+         type_iter < L2TP_SECRET_PROT_NTYPES; type_iter++)
     {
         l2tp_opt_auth = &l2tp_section->l2tp_opt_auth[type_iter];
-        if (l2tp_opt_auth->name != NULL)
+        if (l2tp_opt_auth->value == TRUE)
         {
             te_string_append(&str, "%s ", type_iter == L2TP_SECRET_PROT_CHAP
-                    ? "chap" : "pap");
+                                          ? "chap" : "pap");
         }
     }
     *list = str.ptr;
@@ -3242,158 +3280,158 @@ static rcf_pch_cfg_object node_l2tp;
 
 static rcf_pch_cfg_object node_l2tp_lns_pppoption =
         { "option", 0, NULL, NULL, NULL, NULL,
-                (rcf_ch_cfg_add)l2tp_lns_pppopt_add,
-                (rcf_ch_cfg_del)l2tp_lns_pppopt_del, NULL, NULL, &node_l2tp };
+          (rcf_ch_cfg_add)l2tp_lns_pppopt_add,
+          (rcf_ch_cfg_del)l2tp_lns_pppopt_del, NULL, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_einterval =
         { "lcp-echo-interval", 0, NULL, &node_l2tp_lns_pppoption,
-                (rcf_ch_cfg_get)l2tp_lns_opt_get_lei,
-                (rcf_ch_cfg_set)l2tp_lns_opt_set_lei,
-                NULL, NULL, NULL, NULL, &node_l2tp };
+          (rcf_ch_cfg_get)l2tp_lns_opt_get_lei,
+          (rcf_ch_cfg_set)l2tp_lns_opt_set_lei,
+          NULL, NULL, NULL, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_efailure =
         { "lcp-echo-failure", 0, NULL, &node_l2tp_lns_einterval,
-                (rcf_ch_cfg_get)l2tp_lns_opt_get_lef,
-                (rcf_ch_cfg_set)l2tp_lns_opt_set_lef,
-                NULL, NULL, NULL, NULL, &node_l2tp };
+          (rcf_ch_cfg_get)l2tp_lns_opt_get_lef,
+          (rcf_ch_cfg_set)l2tp_lns_opt_set_lef,
+          NULL, NULL, NULL, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_mru =
         { "mru", 0, NULL, &node_l2tp_lns_efailure,
-                (rcf_ch_cfg_get)l2tp_lns_opt_get_mru,
-                (rcf_ch_cfg_set)l2tp_lns_opt_set_mru,
-                NULL, NULL, NULL, NULL, &node_l2tp };
+          (rcf_ch_cfg_get)l2tp_lns_opt_get_mru,
+          (rcf_ch_cfg_set)l2tp_lns_opt_set_mru,
+          NULL, NULL, NULL, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_mtu =
         { "mtu", 0, NULL, &node_l2tp_lns_mru,
-                (rcf_ch_cfg_get)l2tp_lns_opt_get_mtu,
-                (rcf_ch_cfg_set)l2tp_lns_opt_set_mtu,
-                NULL, NULL, NULL, NULL, &node_l2tp};
+          (rcf_ch_cfg_get)l2tp_lns_opt_get_mtu,
+          (rcf_ch_cfg_set)l2tp_lns_opt_set_mtu,
+          NULL, NULL, NULL, NULL, &node_l2tp};
 
 static rcf_pch_cfg_object node_l2tp_lns_ppp_debug =
         { "ppp_debug", 0, NULL, NULL,
-                (rcf_ch_cfg_get)l2tp_lns_opt_get_debug,
-                (rcf_ch_cfg_set)l2tp_lns_opt_set_debug,
-                NULL, NULL, NULL, NULL, &node_l2tp };
+          (rcf_ch_cfg_get)l2tp_lns_opt_get_debug,
+          (rcf_ch_cfg_set)l2tp_lns_opt_set_debug,
+          NULL, NULL, NULL, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_ppp =
         { "pppopt", 0, &node_l2tp_lns_mtu, &node_l2tp_lns_ppp_debug,
-                NULL, NULL, NULL, NULL, NULL, NULL, &node_l2tp };
+          NULL, NULL, NULL, NULL, NULL, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_unix_auth =
         { "unix_auth", 0, NULL, &node_l2tp_lns_ppp,
-                (rcf_ch_cfg_get)l2tp_lns_opt_get_uauth,
-                (rcf_ch_cfg_set)l2tp_lns_opt_set_uauth,
-                NULL, NULL, NULL, NULL, &node_l2tp };
+          (rcf_ch_cfg_get)l2tp_lns_opt_get_uauth,
+          (rcf_ch_cfg_set)l2tp_lns_opt_set_uauth,
+          NULL, NULL, NULL, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_challenge =
         { "use_challenge", 0, NULL, &node_l2tp_lns_unix_auth,
-                (rcf_ch_cfg_get)l2tp_lns_opt_get_challenge,
-                (rcf_ch_cfg_set)l2tp_lns_opt_set_challenge,
-                NULL, NULL, NULL, NULL, &node_l2tp };
+          (rcf_ch_cfg_get)l2tp_lns_opt_get_challenge,
+          (rcf_ch_cfg_set)l2tp_lns_opt_set_challenge,
+          NULL, NULL, NULL, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_sserver =
         { "server",  0, NULL, NULL,
-                (rcf_ch_cfg_get)l2tp_lns_secret_get_serv,
-                (rcf_ch_cfg_set)l2tp_lns_secret_set_serv,
-                NULL, NULL, NULL, NULL, &node_l2tp };
+          (rcf_ch_cfg_get)l2tp_lns_secret_get_serv,
+          (rcf_ch_cfg_set)l2tp_lns_secret_set_serv,
+          NULL, NULL, NULL, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_sipv4 =
         { "ipv4",  0, NULL, &node_l2tp_lns_sserver,
-                (rcf_ch_cfg_get)l2tp_lns_secret_get_ipv4,
-                (rcf_ch_cfg_set)l2tp_lns_secret_set_ipv4,
-                NULL, NULL, NULL, NULL, &node_l2tp };
+          (rcf_ch_cfg_get)l2tp_lns_secret_get_ipv4,
+          (rcf_ch_cfg_set)l2tp_lns_secret_set_ipv4,
+          NULL, NULL, NULL, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_ssecret =
         { "secret",  0, NULL, &node_l2tp_lns_sipv4,
-                (rcf_ch_cfg_get)l2tp_lns_secret_get_sec,
-                (rcf_ch_cfg_set)l2tp_lns_secret_set_sec,
-                NULL, NULL, NULL, NULL, &node_l2tp };
+          (rcf_ch_cfg_get)l2tp_lns_secret_get_sec,
+          (rcf_ch_cfg_set)l2tp_lns_secret_set_sec,
+          NULL, NULL, NULL, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_sclient =
         { "client", 0, &node_l2tp_lns_ssecret, NULL,
-                NULL, NULL,
-                (rcf_ch_cfg_add)l2tp_lns_client_add,
-                (rcf_ch_cfg_del)l2tp_lns_client_del,
-                (rcf_ch_cfg_list)l2tp_lns_client_list, NULL, &node_l2tp };
+          NULL, NULL,
+          (rcf_ch_cfg_add)l2tp_lns_client_add,
+          (rcf_ch_cfg_del)l2tp_lns_client_del,
+          (rcf_ch_cfg_list)l2tp_lns_client_list, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_refuse =
         { "refuse", 0, NULL, &node_l2tp_lns_sclient,
-                (rcf_ch_cfg_get)l2tp_lns_refuse_get,
-                (rcf_ch_cfg_set)l2tp_lns_refuse_set,
-                NULL, NULL, NULL, NULL, &node_l2tp };
+          (rcf_ch_cfg_get)l2tp_lns_refuse_get,
+          (rcf_ch_cfg_set)l2tp_lns_refuse_set,
+          NULL, NULL, NULL, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_require =
         { "require", 0, NULL, &node_l2tp_lns_refuse,
-                (rcf_ch_cfg_get)l2tp_lns_require_get,
-                (rcf_ch_cfg_set)l2tp_lns_require_set,
-                NULL, NULL, NULL, NULL, &node_l2tp };
+          (rcf_ch_cfg_get)l2tp_lns_require_get,
+          (rcf_ch_cfg_set)l2tp_lns_require_set,
+          NULL, NULL, NULL, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_auth =
         { "auth", 0, &node_l2tp_lns_require, &node_l2tp_lns_challenge,
-                NULL, NULL,
-                (rcf_ch_cfg_add)l2tp_lns_auth_add,
-                (rcf_ch_cfg_del)l2tp_lns_auth_del,
-                (rcf_ch_cfg_list)l2tp_lns_auth_list, NULL, &node_l2tp };
+          NULL, NULL,
+          (rcf_ch_cfg_add)l2tp_lns_auth_add,
+          (rcf_ch_cfg_del)l2tp_lns_auth_del,
+          (rcf_ch_cfg_list)l2tp_lns_auth_list, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_bit =
         { "bit", 0, NULL, &node_l2tp_lns_auth,
-                (rcf_ch_cfg_get)l2tp_lns_bit_get, NULL,
-                (rcf_ch_cfg_add)l2tp_lns_bit_add,
-                (rcf_ch_cfg_del)l2tp_lns_bit_del,
-                (rcf_ch_cfg_list)l2tp_lns_bit_list, NULL, &node_l2tp };
+          (rcf_ch_cfg_get)l2tp_lns_bit_get, NULL,
+          (rcf_ch_cfg_add)l2tp_lns_bit_add,
+          (rcf_ch_cfg_del)l2tp_lns_bit_del,
+          (rcf_ch_cfg_list)l2tp_lns_bit_list, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_local_ip =
         { "local_ip", 0, NULL, &node_l2tp_lns_bit,
-                (rcf_ch_cfg_get)l2tp_lns_local_ip_get,
-                (rcf_ch_cfg_set)l2tp_lns_local_ip_set,
-                NULL, NULL, NULL, NULL, &node_l2tp };
+          (rcf_ch_cfg_get)l2tp_lns_local_ip_get,
+          (rcf_ch_cfg_set)l2tp_lns_local_ip_set,
+          NULL, NULL, NULL, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_connected =
         { "connected", 0, NULL, &node_l2tp_lns_local_ip,
-                NULL, NULL, NULL, NULL,
-                (rcf_ch_cfg_list)l2tp_lns_connected_list,
-                NULL, &node_l2tp };
+          NULL, NULL, NULL, NULL,
+          (rcf_ch_cfg_list)l2tp_lns_connected_list,
+          NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_lac_range =
         { "lac_range", 0, NULL, &node_l2tp_connected,
-                (rcf_ch_cfg_get)l2tp_lns_lac_range_get, NULL,
-                (rcf_ch_cfg_add)l2tp_lns_lac_range_add,
-                (rcf_ch_cfg_del)l2tp_lns_lac_range_del,
-                (rcf_ch_cfg_list)l2tp_lns_lac_range_list, NULL, &node_l2tp };
+          (rcf_ch_cfg_get)l2tp_lns_lac_range_get, NULL,
+          (rcf_ch_cfg_add)l2tp_lns_lac_range_add,
+          (rcf_ch_cfg_del)l2tp_lns_lac_range_del,
+          (rcf_ch_cfg_list)l2tp_lns_lac_range_list, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns_ip_range =
         { "ip_range", 0, NULL, &node_l2tp_lns_lac_range,
-                (rcf_ch_cfg_get)l2tp_lns_ip_range_get, NULL,
-                (rcf_ch_cfg_add)l2tp_lns_ip_range_add,
-                (rcf_ch_cfg_del)l2tp_lns_ip_range_del,
-                (rcf_ch_cfg_list)l2tp_lns_ip_range_list, NULL, &node_l2tp };
+          (rcf_ch_cfg_get)l2tp_lns_ip_range_get, NULL,
+          (rcf_ch_cfg_add)l2tp_lns_ip_range_add,
+          (rcf_ch_cfg_del)l2tp_lns_ip_range_del,
+          (rcf_ch_cfg_list)l2tp_lns_ip_range_list, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_listen =
         { "listen", 0, NULL, NULL,
-                (rcf_ch_cfg_get)l2tp_global_listen_get,
-                (rcf_ch_cfg_set)l2tp_global_listen_set,
-                NULL, NULL, NULL, NULL, &node_l2tp };
+          (rcf_ch_cfg_get)l2tp_global_listen_get,
+          (rcf_ch_cfg_set)l2tp_global_listen_set,
+          NULL, NULL, NULL, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_port =
         { "port", 0, NULL, &node_l2tp_listen,
-                (rcf_ch_cfg_get)l2tp_global_port_get,
-                (rcf_ch_cfg_set)l2tp_global_port_set,
-                NULL, NULL, NULL, NULL, &node_l2tp };
+          (rcf_ch_cfg_get)l2tp_global_port_get,
+          (rcf_ch_cfg_set)l2tp_global_port_set,
+          NULL, NULL, NULL, NULL, &node_l2tp };
 
 static rcf_pch_cfg_object node_l2tp_lns =
         { "lns", 0, &node_l2tp_lns_ip_range, &node_l2tp_port,
-                NULL, NULL,
-                (rcf_ch_cfg_add)l2tp_lns_section_add,
-                (rcf_ch_cfg_del)l2tp_lns_section_del,
-                (rcf_ch_cfg_list)l2tp_lns_section_list, NULL, &node_l2tp };
+          NULL, NULL,
+          (rcf_ch_cfg_add)l2tp_lns_section_add,
+          (rcf_ch_cfg_del)l2tp_lns_section_del,
+          (rcf_ch_cfg_list)l2tp_lns_section_list, NULL, &node_l2tp };
 
 
 static rcf_pch_cfg_object node_l2tp =
         { "l2tp", 0, &node_l2tp_lns, NULL,
-                (rcf_ch_cfg_get)l2tp_server_get,
-                (rcf_ch_cfg_set)l2tp_server_set,
-                NULL, NULL, NULL,
-                (rcf_ch_cfg_commit)l2tp_server_commit, NULL };
+          (rcf_ch_cfg_get)l2tp_server_get,
+          (rcf_ch_cfg_set)l2tp_server_set,
+          NULL, NULL, NULL,
+          (rcf_ch_cfg_commit)l2tp_server_commit, NULL };
 
 /**
  * Grab method for l2tp server resource
@@ -3436,6 +3474,42 @@ l2tp_grab(const char *name)
 }
 
 /**
+ * Remove temporary ppp config files
+ *
+ * @return status code
+ */
+static te_errno
+l2tp_remove_pppfile()
+{
+    DIR            *dir;
+    struct dirent  *tmpdir;
+    char            pppfilename[L2TP_MAX_OPTNAME_LENGTH];
+    char           *template = "te.options.xl2tpd";
+
+    if ((dir = opendir("/tmp/")) != NULL)
+    {
+        while ((tmpdir = readdir(dir)) != 0)
+        {
+            if (strstr(tmpdir->d_name, template) != NULL)
+            {
+                TE_SPRINTF(pppfilename, "/tmp/%s", tmpdir->d_name);
+                if (remove(pppfilename) != 0)
+                {
+                    ERROR("remove %s failed", tmpdir->d_name);
+                    return TE_RC(TE_TA_UNIX, errno);
+                }
+            }
+        }
+    }
+    else
+    {
+        ERROR("open /tmp/ dir failed: %s", strerror(errno));
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+    return 0;
+}
+
+/**
  * Release method for l2tp server resource
  *
  * @param name  dummy name of l2tp server
@@ -3448,7 +3522,7 @@ l2tp_release(const char *name)
     te_l2tp_server *l2tp = l2tp_server_find();
     te_errno        retval;
     char            l2tp_conf[sizeof(L2TP_SERVER_CONF_BASIS)
-            + L2TP_MAX_PID_VALUE_LENGTH];
+                    + L2TP_MAX_PID_VALUE_LENGTH];
 
     UNUSED(name);
 
@@ -3462,13 +3536,12 @@ l2tp_release(const char *name)
         ERROR("Failed to stop l2tp server");
         return retval;
     }
-    if (remove(pppfilename) != 0)
-    {
-        ERROR("remove %s failed", pppfilename);
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-    }
-    free(pppfilename);
 
+    if ((retval = l2tp_remove_pppfile() != 0))
+    {
+        ERROR("Failed to remove ppp options files");
+        return retval;
+    }
     TE_SPRINTF(l2tp_conf, L2TP_SERVER_CONF_BASIS ".%i", getpid());
 
     if (remove(l2tp_conf) != 0)
