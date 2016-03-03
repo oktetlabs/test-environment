@@ -26,7 +26,6 @@
  */
 #define L2TP_IP_RANGE_INST 31
 
-
 /* All descriptions are in tapi_cfg_l2tp.h */
 
 te_errno
@@ -61,37 +60,31 @@ tapi_cfg_l2tp_lns_del(const char *ta, const char *lns)
 }
 
 te_errno
-tapi_cfg_l2tp_listen_ip_set(const char *ta, const char *lns,
-                            struct sockaddr_in *local)
+tapi_cfg_l2tp_listen_ip_set(const char *ta, struct sockaddr_in *local)
 {
-    UNUSED(lns);
     return cfg_set_instance_fmt(CFG_VAL(ADDRESS, local),
                                 TE_CFG_TA_L2TP_SERVER "/listen:", ta);
 }
 
 
 te_errno
-tapi_cfg_l2tp_listen_ip_get(const char *ta, const char *lns,
-                            struct sockaddr_in *local)
+tapi_cfg_l2tp_listen_ip_get(const char *ta, struct sockaddr_in *local)
 {
-    UNUSED(lns);
     return cfg_get_instance_fmt((cfg_val_type *) CVT_ADDRESS, local,
                                 TE_CFG_TA_L2TP_SERVER "/listen:", ta);
 }
 
 te_errno
-tapi_cfg_l2tp_port_set(const char *ta, const char *lns, int port)
+tapi_cfg_l2tp_port_set(const char *ta, int port)
 {
-    UNUSED(lns);
     return cfg_set_instance_fmt(CFG_VAL(INTEGER, port),
                                 TE_CFG_TA_L2TP_SERVER "/listen:", ta);
 }
 
 
 te_errno
-tapi_cfg_l2tp_port_get(const char *ta, const char *lns, int *port)
+tapi_cfg_l2tp_port_get(const char *ta, int *port)
 {
-    UNUSED(lns);
     return cfg_get_instance_fmt((cfg_val_type *) CVT_INTEGER, port,
                                 TE_CFG_TA_L2TP_SERVER "/listen:", ta);
 }
@@ -126,12 +119,12 @@ tapi_cfg_l2tp_tunnel_ip_get(const char *ta, const char *lns,
 static char *
 l2tp_get_range(const l2tp_ipv4_range *iprange)
 {
-    char    *range = malloc(L2TP_IP_RANGE_INST);
+    char     range[L2TP_IP_RANGE_INST];
     char     end[L2TP_IP_STRING_LENGTH];
 
-    strcpy(end, inet_ntoa(iprange->end->sin_addr));
+    strncpy(end, inet_ntoa(iprange->end->sin_addr), sizeof(end));
     TE_SPRINTF(range, "%s-%s", inet_ntoa(iprange->start->sin_addr), end);
-    return range;
+    return strdup(range);
 }
 
 te_errno
@@ -204,11 +197,11 @@ tapi_cfg_l2tp_lns_connected_get(const char *ta, const char *lns,
 
 te_errno
 tapi_cfg_l2tp_lns_bit_add(const char *ta, const char *lns,
-                          enum l2tp_bit bit, const char *value)
+                          enum l2tp_bit bit, te_bool value)
 {
     cfg_handle handle;
 
-    return cfg_add_instance_fmt(&handle, CFG_VAL(STRING, value),
+    return cfg_add_instance_fmt(&handle, CFG_VAL(INTEGER, value),
                                 TE_CFG_TA_L2TP_SERVER "/lns:%s/bit:%s",
                                 ta, lns, bit == L2TP_BIT_HIDDEN ?
                                 "hidden" : "length");
@@ -227,7 +220,7 @@ tapi_cfg_l2tp_lns_bit_del(const char *ta, const char *lns,
 
 te_errno
 tapi_cfg_l2tp_lns_add_auth(const char *ta, const char *lns,
-                           l2tp_auth param, char value)
+                           l2tp_auth param, te_bool value)
 {
     cfg_handle  handle;
     int         ret_val1;
@@ -237,13 +230,13 @@ tapi_cfg_l2tp_lns_add_auth(const char *ta, const char *lns,
                     param.protocol == L2TP_AUTH_PROT_PAP ?
                     "pap" : "autrhentication";
 
-    ret_val1 = cfg_add_instance_fmt(&handle, CFG_VAL(STRING, value),
-                                TE_CFG_TA_L2TP_SERVER
-                                "/lns:%s/auth:%s", ta, lns, protocol);
+    ret_val1 = cfg_add_instance_fmt(&handle, CFG_VAL(NONE, NULL),
+                                    TE_CFG_TA_L2TP_SERVER
+                                    "/lns:%s/auth:%s", ta, lns, protocol);
     if (ret_val1 != 0)
         return ret_val1;
 
-    ret_val2 = cfg_set_instance_fmt(CFG_VAL(STRING, value),
+    ret_val2 = cfg_set_instance_fmt(CFG_VAL(INTEGER, value),
                                 TE_CFG_TA_L2TP_SERVER "/lns:%s/auth:%s/%s:", ta, lns,
                                 protocol, param.type == L2TP_AUTH_POLICY_REQUIRE ?
                                 "require" : "refuse");
@@ -334,36 +327,37 @@ tapi_cfg_l2tp_lns_secret_delete(const char *ta, const char *lns,
 
 te_errno
 tapi_cfg_l2tp_lns_set_use_challenge(const char *ta, const char *lns,
-                                    char *value)
+                                    te_bool value)
 {
-    return cfg_set_instance_fmt(CFG_VAL(STRING, value),
+    return cfg_set_instance_fmt(CFG_VAL(INTEGER, value),
                                 TE_CFG_TA_L2TP_SERVER "/lns:%s/use_challenge:",
                                 ta, lns);
 }
 
 te_errno
 tapi_cfg_l2tp_lns_get_use_challenge(const char *ta, const char *lns,
-                                    char *value)
+                                    te_bool *value)
 {
-    return cfg_get_instance_fmt((cfg_val_type *) CVT_STRING, value,
+
+    return cfg_get_instance_fmt((cfg_val_type *) CVT_INTEGER, value,
                                 TE_CFG_TA_L2TP_SERVER "/lns:%s/use_challenge:",
                                 ta, lns);
 }
 
 te_errno
 tapi_cfg_l2tp_lns_set_unix_auth(const char *ta, const char *lns,
-                                char *value)
+                                te_bool value)
 {
-    return cfg_set_instance_fmt(CFG_VAL(STRING, value),
+    return cfg_set_instance_fmt(CFG_VAL(INTEGER, value),
                                 TE_CFG_TA_L2TP_SERVER "/lns:%s/unix_auth:",
                                 ta, lns);
 }
 
 te_errno
 tapi_cfg_l2tp_lns_get_unix_auth(const char *ta, const char *lns,
-                                char *value)
+                                te_bool *value)
 {
-    return cfg_get_instance_fmt((cfg_val_type *) CVT_STRING, value,
+    return cfg_get_instance_fmt((cfg_val_type *) CVT_INTEGER, value,
                                 TE_CFG_TA_L2TP_SERVER "/lns:%s/unix_auth:",
                                 ta, lns);
 }
@@ -372,7 +366,7 @@ te_errno
 tapi_cfg_l2tp_lns_mtu_set(const char *ta, const char *lns, int value)
 {
     return cfg_set_instance_fmt(CFG_VAL(INTEGER, value),
-                                TE_CFG_TA_L2TP_SERVER "/lns:%s/pppopt:%s/mtu:",
+                                TE_CFG_TA_L2TP_SERVER "/lns:%s/pppopt:/mtu:",
                                 ta, lns);
 }
 
@@ -380,7 +374,7 @@ te_errno
 tapi_cfg_l2tp_lns_mtu_get(const char *ta, const char *lns, int *value)
 {
     return cfg_get_instance_fmt((cfg_val_type *) CVT_INTEGER, value,
-                                TE_CFG_TA_L2TP_SERVER "/lns:%s/pppopt:%s/mtu:",
+                                TE_CFG_TA_L2TP_SERVER "/lns:%s/pppopt:/mtu:",
                                 ta, lns);
 }
 
@@ -388,7 +382,7 @@ te_errno
 tapi_cfg_l2tp_lns_mru_set(const char *ta, const char *lns, int value)
 {
     return cfg_set_instance_fmt(CFG_VAL(INTEGER, value),
-                                TE_CFG_TA_L2TP_SERVER "/lns:%s/pppopt:%s/mru:",
+                                TE_CFG_TA_L2TP_SERVER "/lns:%s/pppopt:/mru:",
                                 ta, lns);
 }
 
@@ -396,7 +390,7 @@ te_errno
 tapi_cfg_l2tp_lns_mru_get(const char *ta, const char *lns, int *value)
 {
     return cfg_get_instance_fmt((cfg_val_type *) CVT_INTEGER, value,
-                                TE_CFG_TA_L2TP_SERVER "/lns:%s/pppopt:%s/mru:",
+                                TE_CFG_TA_L2TP_SERVER "/lns:%s/pppopt:/mru:",
                                 ta, lns);
 }
 
@@ -405,7 +399,7 @@ tapi_cfg_l2tp_lns_lcp_echo_failure_set(const char *ta, const char *lns,
                                        int value) {
     return cfg_set_instance_fmt(CFG_VAL(INTEGER, value),
                                 TE_CFG_TA_L2TP_SERVER
-                                "/lns:%s/pppopt:%s/lcp-echo-failure:",
+                                "/lns:%s/pppopt:/lcp-echo-failure:",
                                 ta, lns);
 }
 
@@ -415,7 +409,7 @@ tapi_cfg_l2tp_lns_lcp_echo_failure_get(const char *ta, const char *lns,
 {
         return cfg_get_instance_fmt((cfg_val_type *) CVT_INTEGER, value,
                                 TE_CFG_TA_L2TP_SERVER
-                                "/lns:%s/pppopt:%s/lcp-echo-failure:",
+                                "/lns:%s/pppopt:/lcp-echo-failure:",
                                 ta, lns);
 }
 
@@ -425,7 +419,7 @@ tapi_cfg_l2tp_lns_lcp_echo_interval_set(const char *ta, const char *lns,
 {
     return cfg_set_instance_fmt(CFG_VAL(INTEGER, value),
                                 TE_CFG_TA_L2TP_SERVER
-                                "/lns:%s/pppopt:%s/lcp-echo-interval:",
+                                "/lns:%s/pppopt:/lcp-echo-interval:",
                                 ta, lns);
 }
 
@@ -435,7 +429,7 @@ tapi_cfg_l2tp_lns_lcp_echo_interval_get(const char *ta, const char *lns,
 {
         return cfg_get_instance_fmt((cfg_val_type *) CVT_INTEGER, value,
                                 TE_CFG_TA_L2TP_SERVER
-                                "/lns:%s/pppopt:%s/lcp-echo-interval:",
+                                "/lns:%s/pppopt:/lcp-echo-interval:",
                                 ta, lns);
 }
 
@@ -446,7 +440,7 @@ tapi_cfg_l2tp_lns_pppopt_add(const char *ta, const char *lns,
     cfg_handle  handle;
 
     return cfg_add_instance_fmt(&handle, CFG_VAL(NONE, NULL),
-                                TE_CFG_TA_L2TP_SERVER "/pppopt/option:%s",
+                                TE_CFG_TA_L2TP_SERVER "/lns:%s/pppopt:/option:%s",
                                 ta, lns, pparam);
 }
 
@@ -455,6 +449,6 @@ tapi_cfg_l2tp_lns_pppopt_del(const char *ta, const char *lns,
                              const char *pparam)
 {
     return cfg_del_instance_fmt(FALSE, TE_CFG_TA_L2TP_SERVER
-                                "/pppopt/option:%s",
+                                "/lns:%s/pppopt:/option:%s",
                                 ta, lns, pparam);
 }

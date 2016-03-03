@@ -94,14 +94,6 @@ typedef struct l2tp_auth {
     enum l2tp_auth_policy  type;     /**< REQUIRE|REFUSE */
 } l2tp_auth;
 
-typedef struct l2tp_range {
-    SLIST_ENTRY(l2tp_range)   list;
-    SLIST_HEAD(, l2tp_range)  l2tp_range;
-    char                     *range; /**< range itself */
-    char                     *local_ip;   /**< lns name */
-    char                     *lns;   /**< lns name */
-} l2tp_range;
-
 /**
  * Set a l2tp server status.
  *
@@ -124,36 +116,107 @@ tapi_cfg_l2tp_server_set(const char *ta, int status);
 extern te_errno
 tapi_cfg_l2tp_server_get(const char *ta, int *status);
 
+
 /**
- * Set a listen/local ip.
+ * Add an lns
+ *
+ * @param ta        Test Agent
+ * @param lns       lns name to add
+ *
+ * @return Status code
+ */
+extern te_errno
+tapi_cfg_l2tp_lns_add(const char *ta, const char *lns);
+
+/**
+ * Delete an lns
+ *
+ * @param ta        Test Agent
+ * @param lns       lns name to delete
+ *
+ * @return Status code
+ */
+extern te_errno
+tapi_cfg_l2tp_lns_add(const char *ta, const char *lns);
+
+/**
+ * Get a tunnel ip.
  *
  * @param ta            Test Agent
- * @param lns           If NULL the global listen ip will be set,
- otherwise it will set local ip to the specified lns
- * @param local         New IP address
+ * @param lns           lns name
+ * @param local         Returned pointer to the current tunnel ip
  *
  * @return Status code
  */
 
 extern te_errno
-tapi_cfg_l2tp_ip_set(const char *ta, const char *lns,
-                     struct sockaddr_in *local);
+tapi_cfg_l2tp_tunnel_ip_get(const char *ta, const char *lns,
+                            struct sockaddr_in *local);
 
 
 /**
- * Get a current listen/local ip.
+ * Set a tunnel ip.
  *
  * @param ta            Test Agent
- * @param is_lnc        If NULL the global listen ip will be got,
-                        otherwise it will got local ip to the specified lns
- * @param local         Returned pointer to the current local ip
+ * @param local         tunnel ip to set
  *
  * @return Status code
  */
 
 extern te_errno
-tapi_cfg_l2tp_ip_get(const char *ta, const char *lns,
-                     struct sockaddr_in *local_ip);
+tapi_cfg_l2tp_tunnel_ip_set(const char *ta, const char *lns,
+                            struct sockaddr_in *local_ip);
+
+/**
+ * Get a global listen ip.
+ *
+ * @param ta            Test Agent
+ * @param local         Returned pointer to the listen ip
+ *
+ * @return Status code
+ */
+
+extern te_errno
+tapi_cfg_l2tp_listen_ip_get(const char *ta, struct sockaddr_in *local);
+
+
+/**
+ * Set a global port.
+ *
+ * @param ta            Test Agent
+ * @param local         port to set
+ *
+ * @return Status code
+ */
+
+extern te_errno
+tapi_cfg_l2tp_port_set(const char *ta, int port);
+
+/**
+ * Get a global port.
+ *
+ * @param ta            Test Agent
+ * @param local         Returned pointer to the port
+ *
+ * @return Status code
+ */
+
+extern te_errno
+tapi_cfg_l2tp_port_get(const char *ta, int *port);
+
+
+/**
+ * Set a global listen ip.
+ *
+ * @param ta            Test Agent
+ * @param lns           lns name
+ * @param local         listen ip to set
+ *
+ * @return Status code
+ */
+
+extern te_errno
+tapi_cfg_l2tp_listen_ip_set(const char *ta, struct sockaddr_in *local_ip);
 
 /**
  * Add ip range to the configuration.
@@ -179,7 +242,7 @@ tapi_cfg_l2tp_lns_range_add(const char *ta, const char *lns,
  * @param lns           The name of the section to modify
  * @param iprange       IP address pool
  * @param kind          The class of the removed ip range
- IP|LAC
+                        IP|LAC
  *
  * @return Status code
  */
@@ -211,13 +274,13 @@ tapi_cfg_l2tp_lns_connected_get(const char *ta, const char *lns,
  * @param ta        Test Agent
  * @param lns       The name of the section
  * @param bit       Desired bit option to change
- * @param selector  "yes" or "no"
+ * @param value     TRUE or FALSE
  *
  * @return Status code
  */
 extern te_errno
 tapi_cfg_l2tp_lns_bit_add(const char *ta, const char *lns,
-                          enum l2tp_bit bit, const char *value);
+                          enum l2tp_bit bit, te_bool value);
 
 /**
  * Get the bit parameter's value for the specified LNS.
@@ -239,13 +302,13 @@ tapi_cfg_l2tp_lns_bit_get(const char *ta, const char *lns,
  * @param ta          Test Agent
  * @param lns         The name of the section
  * @param param       Desired authentication
- * @param value       true(1) or false(0)
+ * @param value       TRUE(1) or FALSE(0)
  *
  * @return Status code
  */
 extern te_errno
-tapi_cfg_l2tp_lns_set_auth(const char *ta, const char *lns,
-                           l2tp_auth param, const char *value);
+tapi_cfg_l2tp_lns_add_auth(const char *ta, const char *lns,
+                           l2tp_auth param, te_bool value);
 /**
  * Get the instance value "/auth/refuse|require".
  *
@@ -293,13 +356,13 @@ tapi_cfg_l2tp_lns_secret_delete(const char *ta, const char *lns,
  *
  * @param ta          Test Agent
  * @param lns         The name of the section
- * @param value       yes or no
+ * @param value       TRUE or FALSE
  *
  * @return Status code
  */
 extern te_errno
 tapi_cfg_l2tp_lns_set_use_challenge(const char *ta, const char *lns,
-                                    char *value);
+                                    te_bool value);
 
 /**
  * Get the instance value "/use_challenge:".
@@ -312,20 +375,20 @@ tapi_cfg_l2tp_lns_set_use_challenge(const char *ta, const char *lns,
  */
 extern te_errno
 tapi_cfg_l2tp_lns_get_use_challenge(const char *ta, const char *lns,
-                                    char *value);
+                                    te_bool *value);
 
 /**
  * Set the instance value to yes or no for "/unix_auth:".
  *
  * @param ta          Test Agent
  * @param lns         The name of the section
- * @param value       true(1) or false(0)
+ * @param value       TRUE(1) or FALSE(0)
  *
  * @return Status code
  */
 extern te_errno
 tapi_cfg_l2tp_lns_set_unix_auth(const char *ta, const char *lns,
-                                char *value);
+                                te_bool value);
 
 /**
  * Get the instance value "/unix_auth:".
@@ -338,7 +401,7 @@ tapi_cfg_l2tp_lns_set_unix_auth(const char *ta, const char *lns,
  */
 extern te_errno
 tapi_cfg_l2tp_lns_get_unix_auth(const char *ta, const char *lns,
-                                char *value);
+                                te_bool *value);
 
 /**
  * Set MTU size
