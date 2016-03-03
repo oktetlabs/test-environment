@@ -185,18 +185,40 @@ copy_or_rename(const char *config, char *backup)
 {
     FILE *f;
     char *s;
-    int   rc;
+    int   rc = 0;
     int   my_pid = getpid();
-    
+    int   out_fd = -1;
+    pid_t cmd_pid;
+    int         status;
     TE_SPRINTF(buf, "ls %s* 2>/dev/null", backup);
-    if ((f = popen(buf, "r")) == NULL)
+    cmd_pid = te_shell_cmd(buf, -1, NULL, &out_fd, NULL);
+    if (cmd_pid < 0)
     {
-        rc = errno;
-        ERROR("popen(%s) failed with errno %d", buf, rc);
-        return TE_OS_RC(TE_TA_UNIX, rc);
+        ERROR("%s(): 'ls %s' failed",
+              __FUNCTION__, backup);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
-    s = fgets(buf, sizeof(buf), f);
-    (void)pclose(f);
+    if ((f = fdopen(out_fd, "r")) == NULL)
+    {
+        ERROR("Failed to obtain file pointer for shell command output");
+        rc = TE_OS_RC(TE_TA_UNIX, te_rc_os2te(errno));
+    }
+    if (rc == 0)
+    {
+        s = fgets(buf, sizeof(buf), f);
+        (void)pclose(f);
+    }
+    close(out_fd);
+
+    ta_waitpid(cmd_pid, &status, 0);
+    if (status != 0 && status != ENOENT << 8)
+    {
+        ERROR("%s(): Non-zero status of 'ls %s': %d",
+              __FUNCTION__, backup, status);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+    if (rc != 0)
+        return rc;
 
     if (s == NULL)
     {
