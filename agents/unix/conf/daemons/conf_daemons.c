@@ -3017,29 +3017,57 @@ ds_vncserver_del(unsigned int gid, const char *oid, const char *number)
 static te_errno
 ds_vncserver_list(unsigned int gid, const char *oid, char **list)
 {
-    FILE *f = popen("ls /tmp/.vnc/*.pid 2>/dev/null", "r");
+    FILE *f;
     char  line[128];
     char *s = buf;
+    int   out_fd = -1;
+    pid_t cmd_pid;
+    int   status;
+    int   rc = 0;
 
     UNUSED(gid);
     UNUSED(oid);
-    
-    buf[0] = 0;
-    while (fgets(line, sizeof(line), f) != NULL)
-    {
-        char *tmp;
-        int   n;
 
-        if ((tmp  = strstr(line, ":")) == NULL || (n = atoi(tmp + 1)) == 0)
-            continue;
-        
-        s += sprintf(s, "%u ", n);
+    cmd_pid = te_shell_cmd("ls /tmp/.vnc/*.pid 2>/dev/null", -1, NULL,
+                           &out_fd, NULL);
+    if (cmd_pid < 0)
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    if ((f = fdopen(out_fd, "r")) == NULL)
+    {
+        ERROR("Failed to obtain file pointer for shell command output");
+        rc = TE_OS_RC(TE_TA_UNIX, te_rc_os2te(errno));
+        close(out_fd);
     }
-    pclose(f);
-    
+    else
+    {
+        buf[0] = 0;
+        while (fgets(line, sizeof(line), f) != NULL)
+        {
+            char *tmp;
+            int   n;
+
+            if ((tmp  = strstr(line, ":")) == NULL ||
+                (n = atoi(tmp + 1)) == 0)
+                continue;
+
+            s += sprintf(s, "%u ", n);
+        }
+        fclose(f);
+    }
+
+    ta_waitpid(cmd_pid, &status, 0);
+    if (status != 0)
+    {
+        ERROR("%s(): Non-zero status of 'ls /tmp/.vnc/*.pid 2>/dev/null'"
+              ": %d", __FUNCTION__, status);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+    if (rc != 0)
+        return rc;
+
     if ((*list = strdup(buf)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    
+
     return 0;
 }
 
