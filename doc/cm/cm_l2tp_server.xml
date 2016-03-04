@@ -62,10 +62,9 @@
 
     <!-- This identifier describes the connected
          clients to LNS
-         Name: IPv4 address from ip_range in 
-               human notation (with dots)-->
+         Name: empty-->
     <object oid="/agent/l2tp/lns/connected" 
-        access="read_only" type="none"/>
+        access="read_only" type="address"/>
 
     <!-- This identifier describes the local
          ipv4 address of the L2TP server
@@ -77,13 +76,19 @@
          Name: hidden, length, flow 
          Value: no or yes-->
     <object oid="/agent/l2tp/lns/bit" 
+        access="read_create" type="string"/>
+
+    <!-- The L2TP additional bits.
+         Name: empty
+         Value: no or yes-->
+    <object oid="/agent/l2tp/lns/ppp_debug" 
         access="read_write" type="string"/>
 
     <!-- Authentication methods.
          Name: chap, pap or authentication for
          the remote peer to authenticate itself. -->
     <object oid="/agent/l2tp/lns/auth" 
-        access="read_write" type="none"/>
+        access="read_create" type="none"/>
 
     <!-- Whether refuse the authentication.
          Name: empty
