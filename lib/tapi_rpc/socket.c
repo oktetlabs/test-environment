@@ -2182,7 +2182,7 @@ rpc_recvmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
                  unsigned int vlen, rpc_send_recv_flags flags,
                  struct tarpc_timespec *timeout)
 {
-    char                  str_buf[1024];
+    char                   str_buf[4096] = {0};
     tarpc_recvmmsg_alt_in  in;
     tarpc_recvmmsg_alt_out out;
 
