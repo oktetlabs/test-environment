@@ -270,6 +270,16 @@ extern pid_t ta_waitpid(pid_t pid, int *status, int options);
 extern int ta_system(const char *cmd);
 
 /**
+ * popen('r') analogue, with slightly modified parameters.
+ */
+extern te_errno ta_popen_r(const char *cmd, pid_t *cmd_pid, FILE **f);
+
+/**
+ * Perform cleanup actions for ta_popen_r() function.
+ */
+extern te_errno ta_pclose_r(pid_t cmd_pid, FILE *f);
+
+/**
  * Kill a child process.
  *
  * @param pid PID of the child to be killed

@@ -187,37 +187,13 @@ copy_or_rename(const char *config, char *backup)
     char *s;
     int   rc = 0;
     int   my_pid = getpid();
-    int   out_fd = -1;
     pid_t cmd_pid;
-    int         status;
-    TE_SPRINTF(buf, "ls %s* 2>/dev/null", backup);
-    cmd_pid = te_shell_cmd(buf, -1, NULL, &out_fd, NULL);
-    if (cmd_pid < 0)
-    {
-        ERROR("%s(): 'ls %s' failed",
-              __FUNCTION__, backup);
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-    }
-    if ((f = fdopen(out_fd, "r")) == NULL)
-    {
-        ERROR("Failed to obtain file pointer for shell command output");
-        rc = TE_OS_RC(TE_TA_UNIX, te_rc_os2te(errno));
-    }
-    if (rc == 0)
-    {
-        s = fgets(buf, sizeof(buf), f);
-        (void)pclose(f);
-    }
-    close(out_fd);
 
-    ta_waitpid(cmd_pid, &status, 0);
-    if (status != 0 && status != ENOENT << 8)
-    {
-        ERROR("%s(): Non-zero status of 'ls %s': %d",
-              __FUNCTION__, backup, status);
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-    }
-    if (rc != 0)
+    TE_SPRINTF(buf, "ls %s* 2>/dev/null", backup);
+    if ((rc = ta_popen_r(buf, &cmd_pid, &f)) < 0)
+        return rc;
+    s = fgets(buf, sizeof(buf), f);
+    if ((rc = ta_pclose_r(cmd_pid, f)) < 0)
         return rc;
 
     if (s == NULL)
@@ -3020,49 +2996,30 @@ ds_vncserver_list(unsigned int gid, const char *oid, char **list)
     FILE *f;
     char  line[128];
     char *s = buf;
-    int   out_fd = -1;
     pid_t cmd_pid;
-    int   status;
     int   rc = 0;
 
     UNUSED(gid);
     UNUSED(oid);
 
-    cmd_pid = te_shell_cmd("ls /tmp/.vnc/*.pid 2>/dev/null", -1, NULL,
-                           &out_fd, NULL);
-    if (cmd_pid < 0)
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-    if ((f = fdopen(out_fd, "r")) == NULL)
-    {
-        ERROR("Failed to obtain file pointer for shell command output");
-        rc = TE_OS_RC(TE_TA_UNIX, te_rc_os2te(errno));
-        close(out_fd);
-    }
-    else
-    {
-        buf[0] = 0;
-        while (fgets(line, sizeof(line), f) != NULL)
-        {
-            char *tmp;
-            int   n;
+    if ((rc = ta_popen_r("ls /tmp/.vnc/*.pid 2>/dev/null",
+                         &cmd_pid, &f)) < 0)
+        return rc;
 
-            if ((tmp  = strstr(line, ":")) == NULL ||
-                (n = atoi(tmp + 1)) == 0)
-                continue;
+    buf[0] = 0;
+    while (fgets(line, sizeof(line), f) != NULL)
+    {
+        char *tmp;
+        int   n;
 
-            s += sprintf(s, "%u ", n);
-        }
-        fclose(f);
+        if ((tmp  = strstr(line, ":")) == NULL ||
+            (n = atoi(tmp + 1)) == 0)
+            continue;
+
+        s += sprintf(s, "%u ", n);
     }
 
-    ta_waitpid(cmd_pid, &status, 0);
-    if (status != 0)
-    {
-        ERROR("%s(): Non-zero status of 'ls /tmp/.vnc/*.pid 2>/dev/null'"
-              ": %d", __FUNCTION__, status);
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-    }
-    if (rc != 0)
+    if ((rc = ta_pclose_r(cmd_pid, f)) < 0)
         return rc;
 
     if ((*list = strdup(buf)) == NULL)
@@ -3165,10 +3122,14 @@ vncserver_release(const char *name)
 static uint32_t
 sshd_exists(char *port)
 {
-    FILE *f = popen(PS_ALL_PID_ARGS " | grep 'sshd -p' | grep -v grep",
-                    "r");
+    FILE *f;
     char  line[128];
     int   len = strlen(port);
+    pid_t cmd_pid;
+
+    if (ta_popen_r(PS_ALL_PID_ARGS " | grep 'sshd -p' | "
+                   "grep -v grep", &cmd_pid, &f) < 0)
+        return 0;
 
     buf[0] = 0;
     while (fgets(line, sizeof(line), f) != NULL)
@@ -3177,15 +3138,15 @@ sshd_exists(char *port)
 
         tmp = strstr(tmp, "-p") + 2;
         while (*++tmp == ' ');
-        
+
         if (strncmp(tmp, port, len) == 0 && !isdigit(*(tmp + len)))
         {
-            pclose(f);
-            return atoi(line);
+            int rc = ta_pclose_r(cmd_pid, f);
+            return (rc < 0 ) ? 0 : atoi(line);
         }
     }
-    
-    pclose(f);
+
+    ta_pclose_r(cmd_pid, f);
 
     return 0;
 }
@@ -3278,14 +3239,19 @@ ds_sshd_del(unsigned int gid, const char *oid, const char *port)
 static te_errno
 ds_sshd_list(unsigned int gid, const char *oid, char **list)
 {
-    FILE *f = popen(PS_ALL_ARGS " | grep 'sshd -p' | grep -v grep",
-                    "r");
+    FILE *f;
     char  line[128];
     char *s = buf;
+    pid_t cmd_pid;
+    int   rc = 0;
 
     UNUSED(gid);
     UNUSED(oid);
-    
+
+    if ((rc = ta_popen_r(PS_ALL_ARGS " | grep 'sshd -p' | grep -v grep",
+                         &cmd_pid, &f)) < 0)
+        return rc;
+
     buf[0] = 0;
     while (fgets(line, sizeof(line), f) != NULL)
     {
@@ -3293,15 +3259,16 @@ ds_sshd_list(unsigned int gid, const char *oid, char **list)
 
         tmp = strstr(tmp, "-p") + 2;
         while (*++tmp == ' ');
-        
+
         s += sprintf(s, "%u ", atoi(tmp));
     }
-    
-    pclose(f);
+
+    if ((rc = ta_pclose_r(cmd_pid, f)) < 0)
+        return rc;
 
     if ((*list = strdup(buf)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    
+
     return 0;
 }
 
@@ -3321,11 +3288,15 @@ RCF_PCH_CFG_NODE_COLLECTION(node_ds_sshd, "sshd",
 static uint32_t
 xvfb_exists(char *number)
 {
-    FILE *f = popen(PS_ALL_PID_ARGS
-                    " | grep -w 'Xvfb' | grep -v grep", "r");
+    FILE *f;
     char  line[1024];
     int   len = strlen(number);
-    
+    pid_t cmd_pid;
+
+    if (ta_popen_r(PS_ALL_PID_ARGS " | grep -w 'Xvfb' | grep -v grep",
+                   &cmd_pid, &f) < 0)
+        return 0;
+
     buf[0] = 0;
     while (fgets(line, sizeof(line), f) != NULL)
     {
@@ -3336,20 +3307,20 @@ xvfb_exists(char *number)
             ERROR("xvfb_exists: ps returned %s", line);
             break;
         }
-        
+
         if ((tmp  = strstr(tmp, ":")) == NULL)
             continue;
-        
+
         tmp++;
-        
+
         if (strncmp(tmp, number, len) == 0 && !isdigit(*(tmp + len)))
         {
-            pclose(f);
-            return atoi(line);
+            int rc = ta_pclose_r(cmd_pid, f);
+            return (rc < 0 ) ? 0 : atoi(line);
         }
     }
-    
-    pclose(f);
+
+    ta_pclose_r(cmd_pid, f);
 
     return 0;
 }
@@ -3453,19 +3424,25 @@ ds_xvfb_del(unsigned int gid, const char *oid, const char *number)
 static te_errno
 ds_xvfb_list(unsigned int gid, const char *oid, char **list)
 {
-    FILE *f = popen(PS_ALL_ARGS " | grep -w 'Xvfb' | grep -v grep", "r");
+    FILE *f;
     char  line[1024];
     char *s = buf;
+    pid_t cmd_pid;
+    int   rc = 0;
 
     UNUSED(gid);
     UNUSED(oid);
-    
+
+    if ((rc = ta_popen_r(PS_ALL_ARGS " | grep -w 'Xvfb' | grep -v grep",
+                         &cmd_pid, &f)) < 0)
+        return rc;
+
     buf[0] = 0;
     while (fgets(line, sizeof(line), f) != NULL)
     {
         char *tmp = strstr(line, "Xvfb");
         int   n;
-        
+
         if (tmp == NULL)
         {
             WARN("xvfb_list: ps returned %s", line);
@@ -3474,15 +3451,16 @@ ds_xvfb_list(unsigned int gid, const char *oid, char **list)
 
         if ((tmp  = strstr(tmp, ":")) == NULL || (n = atoi(tmp + 1)) == 0)
             continue;
-        
+
         s += sprintf(s, "%u ", n);
     }
-    
-    pclose(f);
-    
+
+    if ((rc = ta_pclose_r(cmd_pid, f)) < 0)
+        return rc;
+
     if ((*list = strdup(buf)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    
+
     return 0;
 }
 

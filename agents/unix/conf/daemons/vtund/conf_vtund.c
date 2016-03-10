@@ -546,20 +546,26 @@ vtund_server_stop(vtund_server *server)
     FILE   *f;
     char    line[128];
     pid_t   pid;
+    pid_t   cmd_pid;
+    int     rc = 0;
 
     snprintf(buf, sizeof(buf),
              PS_ALL_PID_ARGS " | grep 'vtund\\[s\\]' | grep '%s' | "
              "grep -v grep",
              server->port);
 
-    f = popen(buf, "r");
+    if ((rc = ta_popen_r(buf, &cmd_pid, &f)) < 0)
+        return rc;
+
     if (fgets(line, sizeof(line), f) == NULL)
     {
         pclose(f);
         ERROR("Failed to find VTund server '%s' PID", server->port);
         return TE_RC(TE_TA_UNIX, TE_EFAULT);
     }
-    pclose(f);
+
+    if ((rc = ta_pclose_r(cmd_pid, f)) < 0)
+        return rc;
 
     pid = atoi(line);
     if (kill(pid, SIGTERM) != 0)
@@ -912,15 +918,21 @@ vtund_client_stop(vtund_client *client)
     char    line[128];
     char   *found;
     pid_t   pid;
+    pid_t   cmd_pid;
+    int     rc = 0;
 
     snprintf(buf, sizeof(buf),
              PS_ALL_PID_ARGS " | grep 'vtund\\[c\\]' | grep '%s' | "
              "grep -v grep",
              client->name);
 
-    f = popen(buf, "r");
+    if ((rc = ta_popen_r(buf, &cmd_pid, &f)) < 0)
+        return rc;
+
     found = fgets(line, sizeof(line), f);
-    pclose(f);
+
+    if ((rc = ta_pclose_r(cmd_pid, f)) < 0)
+        return rc;
 
     if (found == NULL)
     {

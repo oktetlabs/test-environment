@@ -1694,6 +1694,53 @@ ta_system(const char *cmd)
     return status;
 }
 
+te_errno
+ta_popen_r(const char *cmd, pid_t *cmd_pid, FILE **f)
+{
+    int   out_fd = -1;
+    int   status;
+    int   rc = 0;
+
+    *cmd_pid = te_shell_cmd(cmd, -1, NULL, &out_fd, NULL);
+    if (*cmd_pid < 0)
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    if ((*f = fdopen(out_fd, "r")) == NULL)
+    {
+        ERROR("Failed to obtain file pointer for shell command output");
+        rc = TE_OS_RC(TE_TA_UNIX, te_rc_os2te(errno));
+        close(out_fd);
+
+        ta_waitpid(*cmd_pid, &status, 0);
+        if (!WIFEXITED(status))
+        {
+            ERROR("%s(): '%s' was not terminated normally: %d",
+                  __FUNCTION__, cmd, status);
+            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        }
+    }
+
+    return rc;
+}
+
+te_errno
+ta_pclose_r(pid_t cmd_pid, FILE *f)
+{
+    int rc = 0;
+    int status;
+
+    if (fclose(f) < 0)
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+
+    ta_waitpid(cmd_pid, &status, 0);
+    if (!WIFEXITED(status))
+    {
+        ERROR("%s(): proccess with pid %d was not terminated normally: %d",
+              __FUNCTION__, cmd_pid, status);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+    return rc;
+}
+
 /* See description in unix_internal.h */
 int
 ta_kill_death(pid_t pid)
