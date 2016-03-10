@@ -1530,6 +1530,8 @@ run_verify_cfg_backup(tester_ctx *ctx, tester_track_conf track_conf)
         {
             ctx->backup_ok = TRUE;
         }
+        if (track_conf == TESTER_TRACK_CONF_NOHISTORY)
+            cfg_synchronize("/:", TRUE);
     }
 }
 
