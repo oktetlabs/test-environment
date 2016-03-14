@@ -347,12 +347,12 @@ struct rpc_mmsghdr {
     unsigned int      msg_len;  /* Number of received bytes for header */
 };
 
-/** Generate a random value in range 0-RPC_MSG_UNKNOWN for @b msg_flags
+/** Generate a random value in range [0, RPC_MSG_UNKNOWN) for @b msg_flags
  * initialization. */
 static inline int
 tapi_send_recv_flags_rand(void)
 {
-    return rand_range(0, RPC_MSG_UNKNOWN);
+    return rand_range(0, RPC_MSG_UNKNOWN - 1);
 }
 
 /**
