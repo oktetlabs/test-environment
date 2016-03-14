@@ -10123,6 +10123,7 @@ TARPC_FUNC(recvmmsg_alt,
                 INIT_CHECKED_ARG((char *)(msg->msg_control), rlen, len);
             }
             msg->msg_flags = send_recv_flags_rpc2h(rpc_msg->msg_flags);
+            rpc_msg->in_msg_flags = send_recv_flags_h2rpc(msg->msg_flags);
 
             /*
              * msg_name, msg_iov, msg_iovlen and msg_control MUST NOT be
