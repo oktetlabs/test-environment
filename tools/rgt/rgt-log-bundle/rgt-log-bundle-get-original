@@ -1,0 +1,77 @@
+#!/usr/bin/perl
+
+use warnings;
+use strict;
+use File::Temp qw/ tempdir /;
+use Cwd qw/ abs_path /;
+
+my $raw_log_path;
+my $bundle_path;
+
+foreach my $arg(@ARGV)
+{
+    if ($arg =~ m/^--output=([^[:space:]]+)/)
+    {
+        $raw_log_path = abs_path($1);   
+    }
+    elsif ($arg =~ m/^--bundle=([^[:space:]]+)/)
+    {
+        $bundle_path = abs_path($1);
+    }
+    else
+    {
+        print "Obtaining original raw log from fragmented log bundle\n".
+              "  --bundle=                  Raw log bundle path\n".
+              "  --output=                  Restored original log path\n";
+        exit(0);
+    }
+}
+
+if (!defined($raw_log_path) || !defined($bundle_path))
+{
+    print STDERR "Not all required arguments specified\n";
+    exit(1);
+}
+
+my $bundle_tmpdir;
+my $rc;
+
+sub cleanup
+{
+    if (defined($bundle_tmpdir))
+    {
+        system("rm -r \"${bundle_tmpdir}\"");
+    }
+}
+
+sub err_cleanup
+{
+    my $msg = $_[0];
+
+    print STDERR "$msg\n";
+    cleanup();
+    exit(1);
+}
+
+$bundle_tmpdir = tempdir("/tmp/extracted_raw_log_XXXX");
+
+chdir "$bundle_tmpdir" or
+    die "Failed to cd to $bundle_tmpdir";
+
+$rc = system("pixz -x <$bundle_path | tar x");
+if ($rc != 0)
+{
+    err_cleanup("Failed to unpack $bundle_path");
+}
+
+$rc = system("rgt-log-recover ".
+             "--split-log=$bundle_tmpdir ".
+             "--output=$raw_log_path");
+if ($rc != 0)
+{
+    err_cleanup("Failed to recover original ".
+                "raw log from $bundle_path");
+}
+
+cleanup();
+exit(0);

@@ -138,6 +138,18 @@ typedef struct rgt_gen_ctx {
                                   Make sense only in STATE_MEM_... */
 
     void           *user_data; /**< User-specific data pointer */
+
+    te_bool         single_node_match;    /**< Output HTML page only
+                                               for specified log node */
+    const char     *match_tin;            /**< TIN of log node */
+    uint32_t        match_depth;          /**< Depth of log node */
+    uint32_t        match_seq;            /**< Sequential number of
+                                               log node */
+    te_bool         page_selector_set;    /**< Output page selector
+                                               allowing to select page
+                                               of large HTML log */
+    uint32_t        cur_page;             /**< Current page number */
+    uint32_t        pages_count;          /**< Total pages count */
 } rgt_gen_ctx_t;
 
 
@@ -148,8 +160,14 @@ extern size_t      xml2fmt_tmpls_num;
 /* Additional format-specific options table */
 extern struct poptOption rgt_options_table[];
 
+
+/* Print "usage" how to and exit */
+extern void usage(poptContext optCon, int exitcode,
+                  char *error, char *addl);
+
 /* Process additional format-specific options */
-extern void rgt_process_cmdline(poptContext con, int val);
+extern void rgt_process_cmdline(rgt_gen_ctx_t *ctx,
+                                poptContext con, int val);
 
 /* Template for formatter programs without specific options */
 #define RGT_PROCESS_CMDLINE_DUMMY() \
@@ -157,8 +175,10 @@ extern void rgt_process_cmdline(poptContext con, int val);
         POPT_TABLEEND                                   \
     };                                                  \
                                                         \
-    void rgt_process_cmdline(poptContext con, int val)  \
+    void rgt_process_cmdline(rgt_gen_ctx_t *ctx,        \
+                             poptContext con, int val)  \
     {                                                   \
+        UNUSED(ctx);                                    \
         UNUSED(con);                                    \
         UNUSED(val);                                    \
     }

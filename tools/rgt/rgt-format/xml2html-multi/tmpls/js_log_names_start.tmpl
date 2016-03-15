@@ -10,7 +10,12 @@ var levels_changed = 0;
 var levels_updated = 0;
 */
 
-var entities = new Array();
+var entities = window.top.entities;
 var user_names;
+
+if (typeof entities == 'undefined')
+{
+    entities = new Array();
+}
 
 user_names = new Array();

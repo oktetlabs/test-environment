@@ -280,6 +280,9 @@ rgt_tmpls_output(FILE *out_fd, rgt_tmpl_t *tmpl, const rgt_attrs_t *attrs)
     int   i;
     char *buf;
 
+    if (out_fd == NULL)
+        return 0;
+
     for (i = 0; i < tmpl->n_blocks; i++)
     {
         if (tmpl->blocks[i].type == RGT_BLK_TYPE_CSTR)

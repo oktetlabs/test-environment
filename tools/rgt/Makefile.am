@@ -24,7 +24,7 @@
 #
 
 SUBDIRS = lib rgt-cfg rgt-core rgt-format rgt-idx rgt-dump rgt-xml-merge \
-          rgt-pdml2xml .
+          rgt-pdml2xml rgt-log-bundle .
 
 ACLOCAL_AMFLAGS = -I @TE_M4@
 

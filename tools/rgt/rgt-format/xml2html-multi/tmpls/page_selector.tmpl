@@ -1,0 +1,99 @@
+<script>
+function changePage_@@%s:selector_name@@(page)
+{
+    var input_page =
+        document.getElementById("cur_page_@@%s:selector_name@@").value;
+    var page_num;
+    var fname;
+    var show_all = false;
+
+    if (typeof page == 'undefined')
+    {
+        page_num = input_page - 1;
+    }
+    else if (page == "first")
+    {
+        page_num = 0;
+    }
+    else if (page == "last")
+    {
+        page_num = @@%d:pages_count@@ - 1;
+    }
+    else if (page == "all")
+    {
+        show_all = true;
+    }
+    else
+    {
+        page_num = @@%d:cur_page@@ - 1 + page;
+    }
+
+    if (!show_all && (page_num < 0 || page_num >= @@%d:pages_count@@))
+        return;
+
+    fname = "@@%s:fname@@";
+    fname = fname.replace(/_p[0-9]+/, "");
+
+    if (show_all)
+    {
+        fname = fname.replace(/[.]html$/, "_all.html");
+        window.open(fname, "_self");
+    }
+    else if (page_num == 0)
+    {
+        window.open(fname + "#page_selector_@@%s:selector_name@@",
+                    "_self");
+    }
+    else
+    {
+        fname = fname.replace(/[.]html$/, 
+                              "_p" + (page_num + 1) + ".html#" +
+                              "page_selector_@@%s:selector_name@@");
+        window.open(fname, "_self");
+    }
+}
+
+function keyCheck_@@%s:selector_name@@(event)
+{
+    var key = event.which || event.keyCode
+    if (key == 13)
+    {
+        changePage_@@%s:selector_name@@();
+    }
+}
+</script>
+
+<a id="page_selector_@@%s:selector_name@@"></a>
+Page @@%d:cur_page@@ of @@%d:pages_count@@<br>
+<table>
+  <tr>
+    <td>
+      <input type="button" value="First page"
+             onClick="changePage_@@%s:selector_name@@('first')">
+    </td>
+    <td>
+      <input type="button" value="Previous page"
+             onClick="changePage_@@%s:selector_name@@(-1)">
+    </td>
+    <td>
+      <input type="button" value="Next page"
+             onClick="changePage_@@%s:selector_name@@(1)">
+    </td>
+    <td>
+      <input type="button" value="Last page"
+             onClick="changePage_@@%s:selector_name@@('last')">
+    </td>
+    <td>
+      <input type="button" value="Go to page:"
+             onClick="changePage_@@%s:selector_name@@()">
+      <input type="text" name="cur_page_@@%s:selector_name@@"
+             id="cur_page_@@%s:selector_name@@"
+             onKeyDown="keyCheck_@@%s:selector_name@@(event)"
+             value="@@%d:cur_page@@" size="4">
+    </td>
+    <td>
+      <input type="button" value="All in one page"
+             onClick="changePage_@@%s:selector_name@@('all')">
+    </td>
+  </tr>
+</table>

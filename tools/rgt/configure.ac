@@ -207,6 +207,7 @@ AC_CONFIG_FILES([Makefile
                  rgt-dump/Makefile
                  rgt-xml-merge/Makefile
                  rgt-pdml2xml/Makefile
+                 rgt-log-bundle/Makefile
 ])
 #                 rgt-raw2xml/Makefile
 #                 rgt-raw2xml/include/Makefile

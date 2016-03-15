@@ -83,4 +83,5 @@ dist_pkgdata_DATA = \
     log_packet_proto_start.tmpl\
     log_packet_proto_end.tmpl\
     log_packet_field_start.tmpl\
-    log_packet_field_data.tmpl
+    log_packet_field_data.tmpl\
+    page_selector.tmpl

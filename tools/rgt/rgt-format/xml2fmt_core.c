@@ -871,7 +871,7 @@ rgt_parse_file(rgt_gen_ctx_t *gen_ctx)
  * @se Frees popt Context (specified in optCon) and 
  * exits with specified code.
  */
-static void
+void
 usage(poptContext optCon, int exitcode, char *error, char *addl)
 {
     poptSetOtherOptionHelp(optCon, 
@@ -965,7 +965,7 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
             exit(0);
         }
         else
-            rgt_process_cmdline(optCon, rc);
+            rgt_process_cmdline(ctx, optCon, rc);
     }
 
     if (rc < -1)
@@ -1057,6 +1057,8 @@ main(int argc, char **argv)
     rgt_tmpls_free(xml2fmt_tmpls, xml2fmt_tmpls_num);
 
     g_array_free(gen_ctx.depth_info, TRUE);
+
+    free(gen_ctx.match_tin);
 
     return rc;
 }

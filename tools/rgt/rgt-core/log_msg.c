@@ -58,7 +58,7 @@ rgt_process_tester_control_message(log_msg *msg)
     int          node_id;
     int          parent_id;
     msg_arg     *arg;
-    node_info_t *node;
+    node_info_t *node = NULL;
     node_type_t  node_type;
     int          err_code = ESUCCESS;
     const char  *fmt_str = msg->fmt_str;
@@ -198,7 +198,8 @@ rgt_process_tester_control_message(log_msg *msg)
 
     free_log_msg(msg);
 
-    if (rgt_ctx.op_mode == RGT_OP_MODE_LIVE)
+    if (rgt_ctx.op_mode == RGT_OP_MODE_LIVE ||
+        rgt_ctx.op_mode == RGT_OP_MODE_INDEX)
         ctrl_msg_proc[evt_type][node->type](node, NULL);
 
     return ESUCCESS;
@@ -208,7 +209,8 @@ rgt_process_tester_control_message(log_msg *msg)
 void
 rgt_process_regular_message(log_msg *msg)
 {
-    if (rgt_ctx.op_mode == RGT_OP_MODE_LIVE)
+    if (rgt_ctx.op_mode == RGT_OP_MODE_LIVE ||
+        rgt_ctx.op_mode == RGT_OP_MODE_INDEX)
     {
         /* 
          * We should only check if there is at least one node 
@@ -375,6 +377,9 @@ create_node_by_msg(log_msg *msg, node_type_t type,
         return NULL;
     }
     memset(node, 0, sizeof(*node));
+
+    node->parent_id = parent_id;
+    node->node_id = node_id;
 
     memcpy(node->start_ts, msg->timestamp, sizeof(node->start_ts));
     node->type = type;

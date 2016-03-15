@@ -158,6 +158,7 @@ extern jmp_buf rgt_mainjmp;
 typedef enum rgt_op_mode {
     RGT_OP_MODE_LIVE      = 0, /**< Live operation mode */
     RGT_OP_MODE_POSTPONED = 1, /**< Postponed operation mode */
+    RGT_OP_MODE_INDEX     = 2, /**< Index operation mode */
     RGT_OP_MODE_DEFAULT   = RGT_OP_MODE_POSTPONED /**< Default operation
                                                        mode */
 } rgt_op_mode_t;
@@ -165,6 +166,7 @@ typedef enum rgt_op_mode {
 /* Two modes of operation in string representation */
 #define RGT_OP_MODE_LIVE_STR      "live"
 #define RGT_OP_MODE_POSTPONED_STR "postponed"
+#define RGT_OP_MODE_INDEX_STR     "index"
 
 /* Define default mode of operation */
 #define RGT_OP_MODE_DEFAULT_STR RGT_OP_MODE_POSTPONED_STR
@@ -190,6 +192,8 @@ typedef struct rgt_gen_ctx {
     FILE          *rawlog_fd; /**< Raw log file pointer */
     long           rawlog_size; /**< Size of Raw log file,
                                      has sense only in postponed mode */
+    long           rawlog_fpos; /**< Position in raw log file on
+                                     reading the current message */
     const char    *out_fname; /**< Output file name */
     FILE          *out_fd; /**< Output file pointer */
 

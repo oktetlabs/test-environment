@@ -179,7 +179,7 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
      * Get offset of the log message from the beginning of the RLF.
      * It is used in the case of an error occurs.
      */
-    cur_msg_offset = ftell(fd);
+    ctx->rawlog_fpos = cur_msg_offset = ftell(fd);
 
     /* 
      * Read version of log message.

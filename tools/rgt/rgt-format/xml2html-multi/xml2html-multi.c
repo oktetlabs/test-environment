@@ -68,8 +68,9 @@ typedef struct depth_ctx_user {
                    on the particular depth */
     FILE *dir_fd; /**< File descriptor of the node currently being processed
                        on the particular depth */
-    char *name;
-    te_bool is_test;
+    char *name;   /**< Value of name XML attribute */
+    char *fname;  /**< File name of HTML log */
+    te_bool is_test; /**< Is this test iteration? */
     char *log_level; /**< Log level value in string representation */
 
     GHashTable *depth_log_names; /**< Hash table for log names for 
@@ -120,11 +121,18 @@ struct poptOption rgt_options_table[] = {
       "URL of directory for shared files (images etc.)", NULL },
     { "docs-url", 'd', POPT_ARG_STRING, NULL, 'd',
       "URL of directory for test descriptions", NULL },
+    { "single-node", 'n', POPT_ARG_STRING, NULL, 'n',
+      "Output only specified node.", NULL },
+    { "page-selector", 'p', POPT_ARG_STRING, NULL, 'p',
+      "Show page selector.", NULL },
+    { "index-only", 'x', POPT_ARG_NONE, NULL, 'x',
+      "Output only index pages.", NULL },
+
     POPT_TABLEEND
 };
 
 /* Process format-specific options */
-void rgt_process_cmdline(poptContext con, int val)
+void rgt_process_cmdline(rgt_gen_ctx_t *ctx, poptContext con, int val)
 {
     size_t len;
 
@@ -148,6 +156,49 @@ void rgt_process_cmdline(poptContext con, int val)
                     "a directory (or trailing '/' is missing)");
         }
     }
+    else if (val == 'n')
+    {
+        char *match_exp;
+        
+        if ((match_exp = poptGetOptArg(con)) == NULL)
+            usage(con, 1, "Specify node matching expression", NULL);
+
+        if (strchr(match_exp, '_') == NULL)
+        {
+            ctx->match_tin = match_exp;
+        }
+        else
+        {
+            sscanf(match_exp, "%u_%u",
+                   &ctx->match_depth,
+                   &ctx->match_seq);
+            free(match_exp);
+        }
+        ctx->single_node_match = TRUE;
+    }
+    else if (val == 'x')
+    {
+        ctx->single_node_match = TRUE;
+        ctx->match_depth = 0;
+        ctx->match_seq = 0;
+    }
+    else if (val == 'p')
+    {
+        const char *page_selector;
+        
+        if ((page_selector = poptGetOptArg(con)) == NULL)
+            usage(con, 1, "Specify page selector", NULL);
+
+        ctx->page_selector_set = TRUE;
+        if (strcmp(page_selector, "all") == 0)
+        {
+            ctx->cur_page = 0;
+            ctx->pages_count = 0;
+        }
+        else
+            sscanf(page_selector, "%u/%u",
+                   &ctx->cur_page, &ctx->pages_count);
+    }
 }
 
 /* Add common global template parameters */
@@ -155,6 +206,43 @@ void rgt_tmpls_attrs_add_globals(rgt_attrs_t *attrs)
 {
     rgt_tmpls_attrs_add_fstr(attrs, "shared_url", shared_url);
     rgt_tmpls_attrs_add_fstr(attrs, "docs_url", docs_url);
+}
+
+/**
+ * Check whether a given log node (HTML log file) should be output.
+ *
+ * @param ctx     RGT context
+ * @param tin     TIN of test iteration represented by this node
+ * @param depth   Node depth in log tree
+ * @param seq     Node sequential number (in then list of chidren of its
+ *                parent)
+ *
+ * return TRUE if node should be output, FALSE otherwise.
+ */
+static inline te_bool
+match_node(rgt_gen_ctx_t *ctx, const char *tin,
+           uint32_t depth, uint32_t seq)
+{
+    if (ctx->single_node_match)
+    {
+#if RGT_HTML_USE_TIN_NAMES
+        if (tin != NULL)
+        {
+            if (ctx->match_tin == NULL ||
+                strcmp(ctx->match_tin, tin) != 0)
+                return FALSE;
+        }
+        else
+#endif
+        {
+            if (ctx->match_tin != NULL ||
+                ctx->match_depth != depth ||
+                ctx->match_seq != seq)
+                return FALSE;
+        }
+    }
+
+    return TRUE;
 }
 
 RGT_DEF_FUNC(proc_document_start)
@@ -244,20 +332,40 @@ RGT_DEF_FUNC(proc_document_start)
     depth_user->is_test = FALSE;
     depth_user->name = strdup("SUITE");
 
-    if ((depth_user->fd = fopen("node_1_0.html", "w")) == NULL)
-    {
-        exit(1);
-    }
-
     lf_start(ctx, depth_ctx, NULL, NULL, NULL);
 
-    attrs = rgt_tmpls_attrs_new(NULL);
-    rgt_tmpls_attrs_add_globals(attrs);
-    rgt_tmpls_attrs_add_fstr(attrs, "reporter", "TE start-up");
-    rgt_tmpls_attrs_add_uint32(attrs, "depth", ctx->depth);
-    rgt_tmpls_attrs_add_uint32(attrs, "seq", depth_ctx->seq);
-    rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[DOC_START], attrs);
-    rgt_tmpls_attrs_free(attrs);
+    if (match_node(ctx, NULL, 1, 0))
+    {
+        char fname[255];
+
+        if (ctx->page_selector_set &&
+            (ctx->cur_page > 1 || ctx->cur_page == 0))
+        {
+            if (ctx->cur_page == 0)
+                snprintf(fname, sizeof(fname),
+                         "node_1_0_all.html");
+            else
+                snprintf(fname, sizeof(fname),
+                         "node_1_0_p%u.html", ctx->cur_page);
+        }
+        else
+            snprintf(fname, sizeof(fname), "%s",
+                     "node_1_0.html");
+
+        if ((depth_user->fname = strdup(fname)) == NULL ||
+            (depth_user->fd = fopen(depth_user->fname, "w")) == NULL)
+            exit(1);
+
+        attrs = rgt_tmpls_attrs_new(NULL);
+        rgt_tmpls_attrs_add_globals(attrs);
+        rgt_tmpls_attrs_add_fstr(attrs, "reporter", "TE start-up");
+        rgt_tmpls_attrs_add_uint32(attrs, "depth", ctx->depth);
+        rgt_tmpls_attrs_add_uint32(attrs, "seq", depth_ctx->seq);
+        rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[DOC_START], attrs);
+        rgt_tmpls_attrs_free(attrs);
+    }
+    else
+        depth_user->fd = NULL;
 
     if ((gen_user->js_fd = fopen("nodes_tree.js", "w")) == NULL)
     {
@@ -445,9 +553,14 @@ RGT_DEF_FUNC(proc_document_end)
 
     RGT_FUNC_UNUSED_PRMS();
 
-    fclose(js_fd);
-    rgt_tmpls_output(fd, &xml2fmt_tmpls[DOC_END], NULL);
-    fclose(fd);
+    if (js_fd != NULL)
+        fclose(js_fd);
+
+    if (fd != NULL)
+    {
+        rgt_tmpls_output(fd, &xml2fmt_tmpls[DOC_END], NULL);
+        fclose(fd);
+    }
 
     /* Output the list of log names for root node */
     output_log_names(&(depth_user->depth_log_names),
@@ -560,6 +673,7 @@ lf_end(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx)
         fclose(depth_user->dir_fd);
     }
 }
+
 /**
  * Function for processing start of control node event.
  * 
@@ -583,7 +697,9 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     const char       *hash = rgt_tmpls_xml_attrs_get(xml_attrs, "hash");
     const char       *node_class;
     char              fname[255];
+    char              page_str[255] = "";
     rgt_attrs_t      *attrs;
+    te_bool           matched = TRUE;
 
     assert(ctx->depth >= 2);
 
@@ -595,7 +711,8 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     
     depth_user->is_test = strcmp(node_type, "Test") == 0;
 
-    if (err != NULL && err[0] != '\0')
+    if ((err != NULL && err[0] != '\0') ||
+        strcasecmp(result, "INCOMPLETE") == 0)
         node_class = NODE_CLASS_ERR;
     else
         node_class = NODE_CLASS_STD;
@@ -604,26 +721,45 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
                                     rgt_depth_ctx_t, (ctx->depth - 2));
     prev_depth_user = prev_depth_ctx->user_data;
 
+    if (ctx->page_selector_set)
+    {
+        if (ctx->cur_page == 0)
+            snprintf(page_str, sizeof(page_str), "_all");
+        else if (ctx->cur_page > 1)
+            snprintf(page_str, sizeof(page_str), "_p%u", ctx->cur_page);
+    }
+
 #if RGT_HTML_USE_TIN_NAMES
     if (tin != NULL)
     {
-        snprintf(fname, sizeof(fname), "node_%s.html", tin);
+        snprintf(fname, sizeof(fname), "node_%s%s.html", tin, page_str);
     }
     else
 #endif
     {
-        snprintf(fname, sizeof(fname), "node_%d_%d.html",
-                 ctx->depth, depth_ctx->seq);
-    }
-
-    if ((depth_user->fd = fopen(fname, "w")) == NULL)
-    {
-        fprintf(stderr, "Cannot create %s file: %s\n",
-                fname, strerror(errno));
-        exit(1);
+        snprintf(fname, sizeof(fname), "node_%d_%d%s.html",
+                 ctx->depth, depth_ctx->seq, page_str);
     }
 
     depth_user->name = strdup(name);
+
+    matched = match_node(ctx, tin, ctx->depth, depth_ctx->seq);
+
+    if (matched)
+    {
+        if ((depth_user->fname = strdup(fname)) == NULL ||
+            (depth_user->fd = fopen(depth_user->fname, "w")) == NULL)
+        {
+            fprintf(stderr, "Cannot create %s file: %s\n",
+                    fname, strerror(errno));
+            exit(1);
+        }
+   
+    }
+    else
+        depth_user->fd = NULL;
+
+
     lf_start(ctx, depth_ctx, result, node_class, prev_depth_ctx);
 
     attrs = rgt_tmpls_attrs_new(xml_attrs);
@@ -700,8 +836,12 @@ control_node_end(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     output_log_names(&(depth_user->depth_log_names),
                      ctx->depth, depth_ctx->seq);
 
-    rgt_tmpls_output(fd, &xml2fmt_tmpls[DOC_END], NULL);
-    fclose(fd);
+    if (fd != NULL)
+    {
+        rgt_tmpls_output(fd, &xml2fmt_tmpls[DOC_END], NULL);
+        fclose(fd);
+        free(depth_user->fname);
+    }
 
     lf_end(ctx, depth_ctx);
 }
@@ -764,11 +904,15 @@ RGT_DEF_FUNC(proc_log_msg_start)
     /* Add information about entity/user name into users tree */
     add_log_user(gen_user, depth_user, entity, user);
 
-    attrs = rgt_tmpls_attrs_new(xml_attrs);
-    rgt_tmpls_attrs_add_uint32(attrs, "level_id",
-                               te_log_level_str2h(level));
-    rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[LOG_MSG_START], attrs);
-    rgt_tmpls_attrs_free(attrs);
+    if (depth_user->fd != NULL)
+    {
+        attrs = rgt_tmpls_attrs_new(xml_attrs);
+        rgt_tmpls_attrs_add_uint32(attrs, "level_id",
+                                   te_log_level_str2h(level));
+        rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[LOG_MSG_START],
+                         attrs);
+        rgt_tmpls_attrs_free(attrs);
+    }
 }
 
 RGT_DEF_FUNC(proc_log_msg_end)
@@ -778,11 +922,15 @@ RGT_DEF_FUNC(proc_log_msg_end)
 
     RGT_FUNC_UNUSED_PRMS();
 
-    attrs = rgt_tmpls_attrs_new(xml_attrs);
-    rgt_tmpls_attrs_add_fstr(attrs, "level", depth_user->log_level);
-    rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[LOG_MSG_END], attrs);
+    if (depth_user->fd != NULL)
+    {
+        attrs = rgt_tmpls_attrs_new(xml_attrs);
+        rgt_tmpls_attrs_add_fstr(attrs, "level", depth_user->log_level);
+        rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[LOG_MSG_END],
+                         attrs);
+        rgt_tmpls_attrs_free(attrs);
+    }
 
-    rgt_tmpls_attrs_free(attrs);
     free(depth_user->log_level);
 }
 
@@ -796,9 +944,13 @@ RGT_DEF_FUNC(proc_meta_param_start)
 
     RGT_FUNC_UNUSED_PRMS();
 
-    attrs = rgt_tmpls_attrs_new(xml_attrs);
-    rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[PARAM_START], attrs);
-    rgt_tmpls_attrs_free(attrs);
+    if (depth_user->fd != NULL)
+    {
+        attrs = rgt_tmpls_attrs_new(xml_attrs);
+        rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[PARAM_START],
+                         attrs);
+        rgt_tmpls_attrs_free(attrs);
+    }
 }
 
 RGT_DEF_DUMMY_FUNC(proc_meta_param_end)
@@ -810,12 +962,48 @@ RGT_DEF_FUNC(proc_logs_start)
 
     RGT_FUNC_UNUSED_PRMS();
 
-    attrs = rgt_tmpls_attrs_new(xml_attrs);
-    rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[LOGS_START], attrs);
-    rgt_tmpls_attrs_free(attrs);
+    if (depth_user->fd != NULL)
+    {
+        attrs = rgt_tmpls_attrs_new(xml_attrs);
+        rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[LOGS_START], attrs);
+        if (ctx->page_selector_set && ctx->cur_page >= 1)
+        {
+            rgt_tmpls_attrs_add_fstr(attrs, "selector_name", "top");
+            rgt_tmpls_attrs_add_fstr(attrs, "fname", depth_user->fname);
+            rgt_tmpls_attrs_add_uint32(attrs, "cur_page", ctx->cur_page);
+            rgt_tmpls_attrs_add_uint32(attrs, "pages_count",
+                                       ctx->pages_count);
+            rgt_tmpls_output(depth_user->fd,
+                             &xml2fmt_tmpls[PAGE_SELECTOR], attrs);
+        }
+        rgt_tmpls_attrs_free(attrs);
+    }
 }
 
-RGT_DEF_DUMMY_FUNC(proc_logs_end)
+RGT_DEF_FUNC(proc_logs_end)
+{
+    depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
+    rgt_attrs_t      *attrs;
+
+    RGT_FUNC_UNUSED_PRMS();
+
+    if (depth_user->fd != NULL)
+    {
+        attrs = rgt_tmpls_attrs_new(xml_attrs);
+        if (ctx->page_selector_set && ctx->cur_page >= 1)
+        {
+            rgt_tmpls_attrs_add_fstr(attrs, "selector_name", "bottom");
+            rgt_tmpls_attrs_add_fstr(attrs, "fname", depth_user->fname);
+            rgt_tmpls_attrs_add_uint32(attrs, "cur_page", ctx->cur_page);
+            rgt_tmpls_attrs_add_uint32(attrs, "pages_count",
+                                       ctx->pages_count);
+            rgt_tmpls_output(depth_user->fd,
+                             &xml2fmt_tmpls[PAGE_SELECTOR], attrs);
+        }
+        rgt_tmpls_attrs_free(attrs);
+    }
+}
+
 RGT_DEF_DUMMY_FUNC(proc_meta_start)
 RGT_DEF_DUMMY_FUNC(proc_meta_end)
 
@@ -826,7 +1014,9 @@ RGT_DEF_FUNC(name_)                                            \
                                                                \
     RGT_FUNC_UNUSED_PRMS();                                    \
                                                                \
-    rgt_tmpls_output(fd, &xml2fmt_tmpls[enum_const_], NULL);   \
+    if (fd != NULL)                                            \
+        rgt_tmpls_output(fd, &xml2fmt_tmpls[enum_const_],      \
+                         NULL);                                \
 }
 
 DEF_FUNC_WITHOUT_ATTRS(proc_meta_start_ts_start, META_START_TS_START)
@@ -848,11 +1038,14 @@ RGT_DEF_FUNC(proc_meta_page_start)
 
     RGT_FUNC_UNUSED_PRMS();
 
-    attrs = rgt_tmpls_attrs_new(xml_attrs);
-    rgt_tmpls_attrs_add_globals(attrs);
-    rgt_tmpls_output(depth_user->fd,
-                     &xml2fmt_tmpls[META_PAGE_START], attrs);
-    rgt_tmpls_attrs_free(attrs);
+    if (depth_user->fd != NULL)
+    {
+        attrs = rgt_tmpls_attrs_new(xml_attrs);
+        rgt_tmpls_attrs_add_globals(attrs);
+        rgt_tmpls_output(depth_user->fd,
+                         &xml2fmt_tmpls[META_PAGE_START], attrs);
+        rgt_tmpls_attrs_free(attrs);
+    }
 }
 
 RGT_DEF_FUNC(proc_meta_author_start)
@@ -871,13 +1064,16 @@ RGT_DEF_FUNC(proc_meta_author_start)
 
     *ptr = '\0';
 
-    attrs = rgt_tmpls_attrs_new(xml_attrs);
-    rgt_tmpls_attrs_add_fstr(attrs, "name", name);
+    if (depth_user->fd != NULL)
+    {
+        attrs = rgt_tmpls_attrs_new(xml_attrs);
+        rgt_tmpls_attrs_add_fstr(attrs, "name", name);
 
-    rgt_tmpls_output(depth_user->fd,
-                     &xml2fmt_tmpls[META_AUTHOR_START], attrs);
+        rgt_tmpls_output(depth_user->fd,
+                         &xml2fmt_tmpls[META_AUTHOR_START], attrs);
 
-    rgt_tmpls_attrs_free(attrs);
+        rgt_tmpls_attrs_free(attrs);
+    }
 
     free(name);
 }
@@ -908,9 +1104,12 @@ RGT_DEF_FUNC(name_)                                                   \
                                                                       \
     RGT_FUNC_UNUSED_PRMS();                                           \
                                                                       \
-    attrs = rgt_tmpls_attrs_new(xml_attrs);                           \
-    rgt_tmpls_output(fd, &xml2fmt_tmpls[enum_const_], attrs);         \
-    rgt_tmpls_attrs_free(attrs);                                      \
+    if (fd != NULL)                                                   \
+    {                                                                 \
+        attrs = rgt_tmpls_attrs_new(xml_attrs);                       \
+        rgt_tmpls_output(fd, &xml2fmt_tmpls[enum_const_], attrs);     \
+        rgt_tmpls_attrs_free(attrs);                                  \
+    }                                                                 \
 }
 
 DEF_FUNC_WITH_ATTRS(proc_log_msg_file_start, LOG_MSG_FILE_START)
@@ -928,6 +1127,9 @@ proc_chars(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
 
     UNUSED(ctx);
     TE_COMPILE_TIME_ASSERT(sizeof(rgt_xmlChar) == 1);
+
+    if (fd == NULL)
+        return;
 
 #if 0 && (defined WITH_LIBXML) && LIBXML_VERSION >= 20700
     /* Additional conversion currently not needed

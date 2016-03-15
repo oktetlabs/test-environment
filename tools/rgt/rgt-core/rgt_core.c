@@ -47,6 +47,7 @@
 #include "memory.h"
 #include "live_mode.h"
 #include "postponed_mode.h"
+#include "index_mode.h"
 
 /* 
  * Define PACKAGE, VERSION and TE_COPYRIGHT just for the case it's build 
@@ -148,7 +149,8 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
 
         { "mode", 'm', POPT_ARG_STRING, NULL, 'm',
           "Mode of operation, can be " 
-          RGT_OP_MODE_LIVE_STR " or " RGT_OP_MODE_POSTPONED_STR ". "
+          RGT_OP_MODE_LIVE_STR ", " RGT_OP_MODE_POSTPONED_STR
+          " or " RGT_OP_MODE_INDEX_STR ". "
           "By default " RGT_OP_MODE_DEFAULT_STR " mode is used.", "MODE" },
 
         { "no-cntrl-msg", '\0', POPT_ARG_NONE, NULL, 'n',
@@ -194,15 +196,24 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
                     (strcmp(ctx->op_mode_str,
                             RGT_OP_MODE_LIVE_STR) != 0 &&
                      strcmp(ctx->op_mode_str,
-                            RGT_OP_MODE_POSTPONED_STR) != 0))
+                            RGT_OP_MODE_POSTPONED_STR) != 0 &&
+                     strcmp(ctx->op_mode_str,
+                            RGT_OP_MODE_INDEX_STR) != 0))
                 {
                     usage(optCon, 1, "Specify mode of operation", 
-                          RGT_OP_MODE_LIVE_STR " or "
-                          RGT_OP_MODE_POSTPONED_STR);
+                          RGT_OP_MODE_LIVE_STR ", "
+                          RGT_OP_MODE_POSTPONED_STR " or "
+                          RGT_OP_MODE_INDEX_STR);
                 }
-                ctx->op_mode = 
-                    strcmp(ctx->op_mode_str, RGT_OP_MODE_LIVE_STR) == 0 ?
-                    RGT_OP_MODE_LIVE : RGT_OP_MODE_POSTPONED;
+
+                if (strcmp(ctx->op_mode_str, RGT_OP_MODE_LIVE_STR) == 0)
+                    ctx->op_mode = RGT_OP_MODE_LIVE;
+                else if (strcmp(ctx->op_mode_str,
+                                RGT_OP_MODE_POSTPONED_STR) == 0)
+                    ctx->op_mode = RGT_OP_MODE_POSTPONED;
+                else
+                    ctx->op_mode = RGT_OP_MODE_INDEX;
+
                 break;
         
             case 'v':
@@ -256,7 +267,8 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
         exit(1);
     }
 
-    if (ctx->op_mode == RGT_OP_MODE_POSTPONED)
+    if (ctx->op_mode == RGT_OP_MODE_POSTPONED ||
+        ctx->op_mode == RGT_OP_MODE_INDEX)
     {
         fseek(ctx->rawlog_fd, 0L, SEEK_END);
         ctx->rawlog_size = ftell(ctx->rawlog_fd);
@@ -295,6 +307,11 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
         case RGT_OP_MODE_POSTPONED:
             ctx->io_mode = RGT_IO_MODE_NBLK;
             postponed_mode_init(ctrl_msg_proc, &reg_msg_proc);
+            break;
+
+        case RGT_OP_MODE_INDEX:
+            ctx->io_mode = RGT_IO_MODE_NBLK;
+            index_mode_init(ctrl_msg_proc, &reg_msg_proc);
             break;
 
         default:

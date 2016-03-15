@@ -151,6 +151,8 @@ typedef struct node_descr {
 typedef struct node_info {
     node_type_t     type;        /**< Node type */
     node_descr_t    descr;       /**< Description of the node */
+    int             parent_id;   /**< ID of parent node */
+    int             node_id;     /**< ID of this node */
     param          *params;      /**< List of parameters */
     uint32_t        start_ts[2]; /**< Timestamp of a "node start" event */
     uint32_t        end_ts[2];   /**< Timestamp of a "node end" event */
