@@ -3047,8 +3047,10 @@ vncserver_grab(const char *name)
 
     ta_system("rm -rf /tmp/.vnc");
 
-    rc = te_shell_cmd("which vncserver", -1, NULL, NULL, NULL);
-    if (rc != 0)
+    rc = ta_system("which vncserver");
+    if (!WIFEXITED(rc))
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    else if (WEXITSTATUS(rc) != 0)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (mkdir("/tmp/.vnc", 0700) < 0)
