@@ -356,8 +356,9 @@ tapi_send_recv_flags_rand(void)
 }
 
 /**
- * Enable/disable @b rpc_msghdr.msg_flags flags value initialization and 
- * check inside RPCs.
+ * Enable/disable @b rpc_msghdr.msg_flags flags value initialization and
+ * check inside RPCs. The function can be used in the test body to control
+ * behavior. It does not require any rollback actions.
  *
  * @note By default the flags value is initialized and checked in all RPCs
  * where @b rpc_msg is used.
