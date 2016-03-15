@@ -49,7 +49,10 @@ sub err_cleanup
     my $msg = $_[0];
 
     print STDERR "$msg\n";
-    system("rm \"${bundle_path}\"");
+    if (defined($bundle_path))
+    {
+        system("rm \"${bundle_path}\"");
+    }
     cleanup();
     exit(1);
 }

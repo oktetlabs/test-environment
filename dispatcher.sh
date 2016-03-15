@@ -1226,6 +1226,11 @@ fi
 if test -n "${CONF_RGT}" ; then
     CONF_RGT="-c ${CONF_RGT}"
 fi
+
+if test -n "${TE_LOG_BUNDLE}" ; then
+    rgt-log-bundle-create --raw-log="${TE_LOG_RAW}" \
+        --bundle="${TE_LOG_BUNDLE}" >/dev/null
+fi
 if test -n "${RGT_LOG_TXT}" -o -n "${RGT_LOG_HTML_PLAIN}" ; then
     # Generate XML log do not taking into account control messages
     LOG_XML_PLAIN="log_plain.xml"
