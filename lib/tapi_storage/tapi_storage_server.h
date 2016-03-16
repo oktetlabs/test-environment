@@ -145,9 +145,12 @@ typedef struct tapi_storage_server_methods {
  * service independently on agent back-end.
  */
 struct tapi_storage_server {
+    rcf_rpc_server                    *rpcs;    /**< RPC server handle. */
     tapi_storage_service_type          type;    /**< Type of server. */
     const tapi_storage_server_methods *methods; /**< Methods to operate the
                                                      server. */
+    tapi_storage_auth_params           auth;    /**< Authorization
+                                                     parameters. */
     void                              *context; /**< Server context. */
 };
 
@@ -276,26 +279,35 @@ tapi_storage_server_get_share(tapi_storage_server  *server,
 
 /**
  * Initialize server handle.
- * Server should be released with @sa tapi_storage_server_fini when it is no
+ * Server should be released with @b tapi_storage_server_fini when it is no
  * longer needed.
  *
  * @param[in]  type         Back-end server type.
- * @param[in]  context      Back-end server scpecific context.
- * @param[in]  methods      Back-end server scpecific methods.
+ * @param[in]  rpcs         RPC server handle.
+ * @param[in]  methods      Back-end server specific methods.
+ * @param[in]  auth         Back-end server specific authorization
+ *                          parameters.
+ * @param[in]  context      Back-end server specific context.
  * @param[out] server       Server handle.
  *
  * @return Status code.
+ *
+ * @sa tapi_storage_server_fini
  */
 extern te_errno tapi_storage_server_init(
                                 tapi_storage_service_type          type,
-                                void                              *context,
+                                rcf_rpc_server                    *rpcs,
                                 const tapi_storage_server_methods *methods,
+                                tapi_storage_auth_params          *auth,
+                                void                              *context,
                                 tapi_storage_server               *server);
 
 /**
- * Release server that was initialized with @sa tapi_storage_server_init.
+ * Release server that was initialized with @b tapi_storage_server_init.
  *
  * @param server        Server handle.
+ *
+ * @sa tapi_storage_server_init
  *
  * @todo How to free context?
  */
