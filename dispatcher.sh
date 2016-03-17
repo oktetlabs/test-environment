@@ -77,6 +77,8 @@ Generic options:
 
   --live-log                    Run RGT in live mode
 
+  --log-dir=<dirname>           Directory where to save tmp_raw_log file
+                                (used if TE_LOG_RAW is not set directly)
   --log-html=<dirname>          Name of the directory with structured HTML logs
                                 to be generated (do not generate by default)
   --log-plain-html=<filename>   Name of the file with plain HTML logs
@@ -259,6 +261,15 @@ Generic options:
                                 By default: ${TE_SNIFF_LOG_PERIOD} msec.
  --sniff-log-conv-disable       Option to disable capture logs conversion
                                 and merge with the main log.
+
+Environment variables defining where raw log is stored:
+
+    TE_LOG_RAW          Where to save raw log file, by default tmp_raw_log
+                        in directory specified by --log-dir (if provided)
+                        or in the current directory.
+    TE_LOG_BUNDLE       Where to save raw log bundle (tarball compressed
+                        with pixz). If it is not set, raw log bundle is not
+                        created.
 
     The script exits with a status of zero if everything does smoothly and
     all tests, if any tests are run, give expected results. A status of two
