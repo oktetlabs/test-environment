@@ -190,9 +190,9 @@ typedef int (* f_fetch_log_msg)(struct log_msg **msg,
 typedef struct rgt_gen_ctx {
     const char    *rawlog_fname; /**< Raw log file name */
     FILE          *rawlog_fd; /**< Raw log file pointer */
-    long           rawlog_size; /**< Size of Raw log file,
+    off_t          rawlog_size; /**< Size of Raw log file,
                                      has sense only in postponed mode */
-    long           rawlog_fpos; /**< Position in raw log file on
+    off_t          rawlog_fpos; /**< Position in raw log file on
                                      reading the current message */
     const char    *out_fname; /**< Output file name */
     FILE          *out_fd; /**< Output file pointer */

@@ -270,9 +270,9 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
     if (ctx->op_mode == RGT_OP_MODE_POSTPONED ||
         ctx->op_mode == RGT_OP_MODE_INDEX)
     {
-        fseek(ctx->rawlog_fd, 0L, SEEK_END);
-        ctx->rawlog_size = ftell(ctx->rawlog_fd);
-        fseek(ctx->rawlog_fd, 0L, SEEK_SET);
+        fseeko(ctx->rawlog_fd, 0LL, SEEK_END);
+        ctx->rawlog_size = ftello(ctx->rawlog_fd);
+        fseeko(ctx->rawlog_fd, 0LL, SEEK_SET);
     }
 
     ctx->out_fd = stdout;
@@ -497,12 +497,12 @@ rgt_ctx_set_defaults(rgt_gen_ctx_t *ctx)
 static void
 rgt_update_progress_bar(rgt_gen_ctx_t *ctx)
 {
-    long offset;
+    off_t offset;
 
     if (ctx->op_mode != RGT_OP_MODE_POSTPONED || !ctx->verb)
         return;
 
-    offset = ftell(ctx->rawlog_fd);
+    offset = ftello(ctx->rawlog_fd);
     fprintf(stderr, "\r%ld%%",
             (long)(((long long)offset * 100L) / ctx->rawlog_size));
 }

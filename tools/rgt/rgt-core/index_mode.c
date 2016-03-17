@@ -50,7 +50,7 @@ static int index_process_branch_start(node_info_t *node, GQueue *verdicts);
 static int index_process_branch_end(node_info_t *node, GQueue *verdicts);
 static int index_process_regular_msg(log_msg *msg);
 
-static long int prev_rawlog_fpos;
+static off_t   prev_rawlog_fpos;
 static te_bool first_message;
 
 void
@@ -81,7 +81,8 @@ print_prev_length()
         first_message = FALSE;
     }
     if (prev_rawlog_fpos >= 0)
-        fprintf(rgt_ctx.out_fd, " %ld\n", rgt_ctx.rawlog_fpos - prev_rawlog_fpos);
+        fprintf(rgt_ctx.out_fd, " %lld\n",
+                (long long int)(rgt_ctx.rawlog_fpos - prev_rawlog_fpos));
     prev_rawlog_fpos = rgt_ctx.rawlog_fpos;
 }
 
@@ -89,9 +90,9 @@ static int
 print_node_start(node_info_t *node)
 {
     print_prev_length();
-    fprintf(rgt_ctx.out_fd, "%u.%.6u %ld %d %d START %u",
+    fprintf(rgt_ctx.out_fd, "%u.%.6u %lld %d %d START %u",
             node->start_ts[0], node->start_ts[1],
-            rgt_ctx.rawlog_fpos,
+            (long long int)rgt_ctx.rawlog_fpos,
             node->parent_id, node->node_id,
             node->descr.tin);
 
@@ -102,9 +103,9 @@ static int
 print_node_end(node_info_t *node)
 {
     print_prev_length();
-    fprintf(rgt_ctx.out_fd, "%u.%.6u %ld %d %d END -1",
+    fprintf(rgt_ctx.out_fd, "%u.%.6u %lld %d %d END -1",
             node->end_ts[0], node->end_ts[1],
-            rgt_ctx.rawlog_fpos,
+            (long long int)rgt_ctx.rawlog_fpos,
             node->parent_id, node->node_id);
 
     return 1;
@@ -180,9 +181,9 @@ index_process_regular_msg(log_msg *msg)
     UNUSED(msg);
 
     print_prev_length();
-    fprintf(rgt_ctx.out_fd, "%u.%.6u %ld %u -1 REGULAR %u",
+    fprintf(rgt_ctx.out_fd, "%u.%.6u %lld %u -1 REGULAR %u",
             msg->timestamp[0], msg->timestamp[1],
-            rgt_ctx.rawlog_fpos, msg->id,
+            (long long int)rgt_ctx.rawlog_fpos, msg->id,
             ((msg->flags & RGT_MSG_FLG_VERDICT) ? 1 : 0));
 
     return 1;

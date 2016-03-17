@@ -55,7 +55,7 @@ enum e_error_msg_index {
   * This variable is used for trace incorrect raw log file. It contains 
   * offset of the message is being processed from the start of RLF.
   */
-static long cur_msg_offset;
+static off_t cur_msg_offset;
 
 /** 
  * This variable contains error index that expresses possible error 
@@ -98,9 +98,10 @@ static struct debug_msg {
 #define PRINT_ERROR \
     do {                                                                  \
         fprintf(stderr, "Incorrect format of the log message started at " \
-                "%ld offset from the beginning\nof the raw log file:\n"   \
+                "%lld offset from the beginning\nof the raw log file:\n"  \
                 "%s\n",                                                   \
-                cur_msg_offset, dbg_msgs[cur_error_index].content);       \
+                (long long int)cur_msg_offset,                            \
+                dbg_msgs[cur_error_index].content);                       \
     } while (0)
 
 /** 
@@ -179,7 +180,7 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
      * Get offset of the log message from the beginning of the RLF.
      * It is used in the case of an error occurs.
      */
-    ctx->rawlog_fpos = cur_msg_offset = ftell(fd);
+    ctx->rawlog_fpos = cur_msg_offset = ftello(fd);
 
     /* 
      * Read version of log message.
