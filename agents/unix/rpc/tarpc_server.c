@@ -6146,160 +6146,12 @@ TARPC_FUNC(simple_receiver, {},
 }
 )
 
-#define MAX_PKT (1024 * 1024)
-
-/**
- * Simple receiver.
- *
- * @param in                input RPC argument
- *
- * @return number of received bytes or -1 in the case of failure
- */
-int
-simple_receiver(tarpc_simple_receiver_in *in,
-                tarpc_simple_receiver_out *out)
-{
-    api_func   select_func;
-    api_func   recv_func;
-    char           *buf;
-    fd_set          set;
-    int             rc;
-    ssize_t         len;
-    struct timeval  tv;
-
-    time_t          start;
-    time_t          now;
-
-    out->bytes = 0;
-
-    RING("%s() started", __FUNCTION__);
-
-    if (tarpc_find_func(in->common.use_libc, "select", &select_func) != 0 ||
-        tarpc_find_func(in->common.use_libc, "recv", &recv_func) != 0)
-    {
-        return -1;
-    }
-
-    if ((buf = malloc(MAX_PKT)) == NULL)
-    {
-        ERROR("Out of memory");
-        return -1;
-    }
-
-    for (start = now = time(NULL);
-         (in->time2run != 0) ?
-          ((unsigned int)(now - start) <= in->time2run) : TRUE;
-         now = time(NULL))
-    {
-        tv.tv_sec = 1;
-        tv.tv_usec = 0;
-        FD_ZERO(&set);
-        FD_SET(in->s, &set);
-
-        rc = select_func(in->s + 1, &set, NULL, NULL, &tv);
-        if (rc < 0)
-        {
-            ERROR("select() failed in simple_receiver(): errno %x", errno);
-            free(buf);
-            return -1;
-        }
-        else if (rc == 0)
-        {
-            if ((in->time2run != 0) || (out->bytes == 0))
-                continue;
-            else
-                break;
-        }
-        else if (!FD_ISSET(in->s, &set))
-        {
-            ERROR("select() waited for reading on the socket, "
-                  "returned %d, but the socket in not in set", rc);
-            free(buf);
-            return -1;
-        }
-
-        len = recv_func(in->s, buf, MAX_PKT, 0);
-        if (len < 0)
-        {
-            ERROR("recv() failed in simple_receiver(): errno %x", errno);
-            free(buf);
-            return -1;
-        }
-        if (len == 0)
-        {
-            RING("recv() returned 0 in simple_receiver() because of "
-                 "peer shutdown");
-            break;
-        }
-
-        if (out->bytes == 0)
-            RING("First %d bytes are received", len);
-        out->bytes += len;
-    }
-
-    free(buf);
-    RING("simple_receiver() stopped, received %llu bytes",
-         out->bytes);
-
-    return 0;
-}
-
-#undef MAX_PKT
-
 /*--------------wait_readable() --------------------------*/
 TARPC_FUNC(wait_readable, {},
 {
     MAKE_CALL(out->retval = func_ptr(in, out));
 }
 )
-
-/**
- * Wait until the socket becomes readable.
- *
- * @param in                input RPC argument
- *
- * @return number of received bytes or -1 in the case of failure
- */
-int
-wait_readable(tarpc_wait_readable_in *in,
-              tarpc_wait_readable_out *out)
-{
-    api_func        select_func;
-    fd_set          set;
-    int             rc;
-    struct timeval  tv;
-
-    UNUSED(out);
-
-    RING("%s() started", __FUNCTION__);
-
-    if (tarpc_find_func(in->common.use_libc, "select", &select_func) != 0)
-    {
-        return -1;
-    }
-
-    tv.tv_sec = in->timeout / 1000;
-    tv.tv_usec = (in->timeout % 1000) * 1000;
-    FD_ZERO(&set);
-    FD_SET(in->s, &set);
-
-    rc = select_func(in->s + 1, &set, NULL, NULL, &tv);
-    if (rc < 0)
-    {
-        ERROR("select() failed in wait_readable(): errno %x", errno);
-        return -1;
-    }
-    else if ((rc > 0) && (!FD_ISSET(in->s, &set)))
-    {
-        ERROR("select() waited for reading on the socket, "
-              "returned %d, but the socket in not in set", rc);
-        return -1;
-    }
-
-    return rc;
-}
-
-
 
 /*-------------- recv_verify() --------------------------*/
 TARPC_FUNC(recv_verify, {},
@@ -6456,6 +6308,14 @@ typedef int iomux_return_iterator;
 #define IOMUX_SELECT_WRITE \
     (POLLWRBAND | POLLWRNORM | POLLOUT | POLLERR)
 #define IOMUX_SELECT_EXCEPT (POLLPRI)
+
+static iomux_func
+get_default_iomux()
+{
+    char    *default_iomux = getenv("TE_RPC_DEFAULT_IOMUX");
+    return (default_iomux == NULL) ? FUNC_POLL :
+                str2iomux(default_iomux);
+}
 
 /** Resolve all functions used by particular iomux and store them into
  * iomux_funcs. */
@@ -6875,6 +6735,186 @@ iomux_close(iomux_func iomux, iomux_funcs *funcs, iomux_state *state)
     return 0;
 }
 
+#define MAX_PKT (1024 * 1024)
+
+/**
+ * Simple receiver.
+ *
+ * @param in                input RPC argument
+ *
+ * @return number of received bytes or -1 in the case of failure
+ */
+int
+simple_receiver(tarpc_simple_receiver_in *in,
+                tarpc_simple_receiver_out *out)
+{
+    iomux_funcs     iomux_f;
+    api_func        recv_func;
+    char           *buf;
+    int             rc;
+    ssize_t         len;
+    iomux_func      iomux = get_default_iomux();
+
+    time_t          start;
+    time_t          now;
+
+    iomux_state             iomux_st;
+    iomux_return            iomux_ret;
+
+    int                     fd = -1;
+    int                     events = 0;
+
+    out->bytes = 0;
+
+    RING("%s() started", __FUNCTION__);
+
+    if (iomux_find_func(in->common.use_libc, iomux, &iomux_f) != 0 ||
+        tarpc_find_func(in->common.use_libc, "recv", &recv_func) != 0)
+    {
+        ERROR("failed to resolve function(s)");
+        return -1;
+    }
+
+    if ((buf = malloc(MAX_PKT)) == NULL)
+    {
+        ERROR("Out of memory");
+        return -1;
+    }
+
+    /* Create iomux status and fill it with our fds. */
+    if ((rc = iomux_create_state(iomux, &iomux_f, &iomux_st)) != 0)
+        return rc;
+    if ((rc = iomux_add_fd(iomux, &iomux_f, &iomux_st,
+                           in->s, POLLIN)))
+    {
+        iomux_close(iomux, &iomux_f, &iomux_st);
+        return rc;
+    }
+
+    for (start = now = time(NULL);
+         (in->time2run != 0) ?
+          ((unsigned int)(now - start) <= in->time2run) : TRUE;
+         now = time(NULL))
+    {
+        rc = iomux_wait(iomux, &iomux_f, &iomux_st, &iomux_ret,
+                        1000);
+        if (rc < 0 || rc > 1)
+        {
+            if (rc < 0)
+                ERROR("%s() failed in %s(): errno %r",
+                      iomux2str(iomux), __FUNCTION__,
+                      TE_OS_RC(TE_TA_UNIX, errno));
+            else
+                ERROR("%s() returned more then one fd",
+                      iomux2str(iomux));
+            free(buf);
+            return -1;
+        }
+        else if (rc == 0)
+        {
+            if ((in->time2run != 0) || (out->bytes == 0))
+                continue;
+            else
+                break;
+        }
+
+        iomux_return_iterate(iomux, &iomux_st, &iomux_ret,
+                             IOMUX_RETURN_ITERATOR_START, &fd, &events);
+
+        if (fd != in->s || !(events & POLLIN))
+        {
+            ERROR("%s() returned strange event or socket",
+                  iomux2str(iomux));
+            free(buf);
+            return -1;
+        }
+
+        len = recv_func(in->s, buf, MAX_PKT, 0);
+        if (len < 0)
+        {
+            ERROR("recv() failed in %s(): errno %r",
+                  __FUNCTION__, TE_OS_RC(TE_TA_UNIX, errno));
+            free(buf);
+            return -1;
+        }
+        if (len == 0)
+        {
+            RING("recv() returned 0 in %s() because of "
+                 "peer shutdown", __FUNCTION__);
+            break;
+        }
+
+        if (out->bytes == 0)
+            RING("First %d bytes are received", len);
+        out->bytes += len;
+    }
+
+    free(buf);
+    RING("%s() stopped, received %llu bytes", __FUNCTION__, out->bytes);
+
+    return 0;
+}
+
+#undef MAX_PKT
+
+/**
+ * Wait until the socket becomes readable.
+ *
+ * @param in                input RPC argument
+ *
+ * @return number of received bytes or -1 in the case of failure
+ */
+int
+wait_readable(tarpc_wait_readable_in *in,
+              tarpc_wait_readable_out *out)
+{
+    iomux_funcs     iomux_f;
+    int             rc;
+    iomux_func      iomux = get_default_iomux();
+
+    iomux_state             iomux_st;
+    iomux_return            iomux_ret;
+
+    int                     fd = -1;
+    int                     events = 0;
+
+    UNUSED(out);
+
+    RING("%s() started", __FUNCTION__);
+
+    if (iomux_find_func(in->common.use_libc, iomux, &iomux_f) != 0)
+    {
+        return -1;
+    }
+
+    /* Create iomux status and fill it with our fds. */
+    if ((rc = iomux_create_state(iomux, &iomux_f, &iomux_st)) != 0)
+        return rc;
+    if ((rc = iomux_add_fd(iomux, &iomux_f, &iomux_st,
+                           in->s, POLLIN)))
+    {
+        iomux_close(iomux, &iomux_f, &iomux_st);
+        return rc;
+    }
+
+    rc = iomux_wait(iomux, &iomux_f, &iomux_st, &iomux_ret,
+                    in->timeout);
+    if (rc < 0)
+    {
+        ERROR("%s() failed in wait_readable(): errno %r",
+              iomux2str(iomux), TE_OS_RC(TE_TA_UNIX, errno));
+        return -1;
+    }
+    else if ((rc > 0) && (fd != in->s || !(events & POLLIN)))
+    {
+        ERROR("%s() waited for reading on the socket, "
+              "returned %d, but returned incorrect socket or event",
+              iomux2str(iomux), rc);
+        return -1;
+    }
+
+    return rc;
+}
 
 #define FLOODER_ECHOER_WAIT_FOR_RX_EMPTY        1
 #define FLOODER_BUF                             4096
@@ -8040,9 +8080,10 @@ TARPC_FUNC(socket_to_file, {},
 int
 socket_to_file(tarpc_socket_to_file_in *in)
 {
-    api_func select_func;
-    api_func write_func;
-    api_func read_func;
+    iomux_funcs iomux_f;
+    api_func    write_func;
+    api_func    read_func;
+    iomux_func  iomux = get_default_iomux();
 
     int      sock = in->sock;
     char    *path = in->path.path_val;
@@ -8055,12 +8096,13 @@ socket_to_file(tarpc_socket_to_file_in *in)
     size_t   total = 0;
     char     buffer[SOCK2FILE_BUF_LEN];
 
-    fd_set          rfds;
+    iomux_state             iomux_st;
+    iomux_return            iomux_ret;
 
     struct timeval  timeout;
     struct timeval  timestamp;
-    struct timeval  call_timeout;
-    te_bool         time2run_not_expired = TRUE;
+    int             iomux_timeout;
+    te_bool         time2run_expired = FALSE;
     te_bool         session_rx;
 
     path[in->path.path_len] = '\0';
@@ -8068,8 +8110,7 @@ socket_to_file(tarpc_socket_to_file_in *in)
     INFO("%s() called with: sock=%d, path=%s, timeout=%ld",
          __FUNCTION__, sock, path, time2run);
 
-    if ((tarpc_find_func(in->common.use_libc, "select",
-                         &select_func) != 0) ||
+    if ((iomux_find_func(in->common.use_libc, iomux, &iomux_f) != 0) ||
         (tarpc_find_func(in->common.use_libc, "read", &read_func) != 0) ||
         (tarpc_find_func(in->common.use_libc, "write", &write_func) != 0))
     {
@@ -8089,6 +8130,16 @@ socket_to_file(tarpc_socket_to_file_in *in)
     INFO("%s(): file '%s' opened with descriptor=%d", __FUNCTION__,
          path, file_d);
 
+    /* Create iomux status and fill it with our fds. */
+    if ((rc = iomux_create_state(iomux, &iomux_f, &iomux_st)) != 0)
+    {
+        rc = -1;
+        goto local_exit;
+    }
+    if ((rc = iomux_add_fd(iomux, &iomux_f, &iomux_st,
+                           sock, POLLIN)) != 0)
+        goto local_exit;
+
     if (gettimeofday(&timeout, NULL))
     {
         ERROR("%s(): gettimeofday(timeout) failed: %d",
@@ -8097,32 +8148,35 @@ socket_to_file(tarpc_socket_to_file_in *in)
         goto local_exit;
     }
     timeout.tv_sec += time2run;
-    call_timeout.tv_sec = time2run;
-    call_timeout.tv_usec = 0;
+    iomux_timeout = TE_SEC2MS(time2run);
 
     INFO("%s(): time2run=%ld, timeout timestamp=%ld.%06ld", __FUNCTION__,
          time2run, (long)timeout.tv_sec, (long)timeout.tv_usec);
 
     do {
+        int fd = -1;
+        int events = 0;
         session_rx = FALSE;
 
-        /* Prepare sets of file descriptors */
-        FD_ZERO(&rfds);
-        FD_SET(sock, &rfds);
-
-        rc = select_func(sock + 1, &rfds, NULL, NULL, &call_timeout);
+        rc = iomux_wait(iomux, &iomux_f, &iomux_st, &iomux_ret,
+                        iomux_timeout);
         if (rc < 0)
         {
-            ERROR("%s(): select() failed: %d", __FUNCTION__, errno);
+            ERROR("%s(): %s() failed: %d", __FUNCTION__, iomux2str(iomux),
+                  errno);
             break;
         }
-        VERB("%s(): select finishes for waiting of events", __FUNCTION__);
+        VERB("%s(): %s finishes for waiting of events", __FUNCTION__,
+             iomux2str(iomux));
+
+        iomux_return_iterate(iomux, &iomux_st, &iomux_ret,
+                             IOMUX_RETURN_ITERATOR_START, &fd, &events);
 
         /* Receive data from socket that are ready */
-        if (FD_ISSET(sock, &rfds))
+        if (events & POLLIN)
         {
-            VERB("%s(): select observes data for reading on the "
-                 "socket=%d", __FUNCTION__, sock);
+            VERB("%s(): %s observes data for reading on the "
+                 "socket=%d", __FUNCTION__, iomux2str(iomux), sock);
             received = read_func(sock, buffer, sizeof(buffer));
             VERB("%s(): read() retrieve %d bytes", __FUNCTION__, received);
             if (received < 0)
@@ -8158,7 +8212,7 @@ socket_to_file(tarpc_socket_to_file_in *in)
             }
         }
 
-        if (time2run_not_expired)
+        if (!time2run_expired)
         {
             if (gettimeofday(&timestamp, NULL))
             {
@@ -8167,52 +8221,39 @@ socket_to_file(tarpc_socket_to_file_in *in)
                 rc = -1;
                 break;
             }
-            call_timeout.tv_sec  = timeout.tv_sec  - timestamp.tv_sec;
-            call_timeout.tv_usec = timeout.tv_usec - timestamp.tv_usec;
-            if (call_timeout.tv_usec < 0)
+            iomux_timeout = TE_SEC2MS(timeout.tv_sec  - timestamp.tv_sec) +
+                TE_US2MS(timeout.tv_usec - timestamp.tv_usec);
+            if (iomux_timeout < 0)
             {
-                --(call_timeout.tv_sec);
-                call_timeout.tv_usec += 1000000;
-#ifdef DEBUG
-                if (call_timeout.tv_usec < 0)
-                {
-                    ERROR("Unexpected situation, assertion failed\n"
-                          "%s:%d", __FILE__, __LINE__);
-                }
-#endif
-            }
-            if (call_timeout.tv_sec < 0)
-            {
-                time2run_not_expired = FALSE;
+                time2run_expired = TRUE;
                 /* Just to make sure that we'll get all from buffers */
                 session_rx = TRUE;
                 INFO("%s(): time2run expired", __FUNCTION__);
             }
 #ifdef DEBUG
-            else if (call_timeout.tv_sec < time2run)
+            else if (iomux_timeout < TE_SEC2MS(time2run))
             {
-                VERB("%s(): timeout %ld.%06ld", __FUNCTION__,
-                     call_timeout.tv_sec, call_timeout.tv_usec);
+                VERB("%s(): timeout %d", __FUNCTION__, iomux_timeout);
                 time2run >>= 1;
             }
 #endif
         }
 
-        if (!time2run_not_expired)
+        if (time2run_expired)
         {
-            call_timeout.tv_sec = FLOODER_ECHOER_WAIT_FOR_RX_EMPTY;
-            call_timeout.tv_usec = 0;
+            iomux_timeout = TE_SEC2MS(FLOODER_ECHOER_WAIT_FOR_RX_EMPTY);
             VERB("%s(): Waiting for empty Rx queue, Rx=%d",
                  __FUNCTION__, session_rx);
         }
 
-    } while (time2run_not_expired || session_rx);
+    } while (!time2run_expired || session_rx);
 
 local_exit:
+    iomux_close(iomux, &iomux_f, &iomux_st);
     RING("Stop to get data from socket %d and put to file %s, %s, "
          "received %u", sock, path,
-         (!time2run_not_expired) ? "timeout expired" :
-                                   "unexpected failure",
+         (time2run_expired) ? "timeout expired" :
+                              "unexpected failure",
          total);
     INFO("%s(): %s", __FUNCTION__, (rc == 0) ? "OK" : "FAILED");
 
