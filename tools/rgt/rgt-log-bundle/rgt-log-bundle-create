@@ -106,7 +106,7 @@ print "Archiving fragmented raw log...\n";
 chdir "$bundle_tmpdir/fragments/" or
     die "Failed to cd to $bundle_tmpdir/fragments";
 
-$rc = system("tar -I\"pixz -9\" -cf $bundle_path *");
+$rc = system("tar -Ipixz -cf $bundle_path *");
 if ($rc != 0)
 {
     err_cleanup("Failed to create bundle");
