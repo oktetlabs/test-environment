@@ -27,6 +27,12 @@ while test -n "$1" ; do
     shift 1
 done
 
+bundle_tmpdir=$(mktemp -d "/tmp/raw_log_bundle_XXXXXX")
+if test $? -ne 0 ; then
+    echo "Failed to create temporary directory" >&2
+    exit 1
+fi
+
 cleanup()
 {
     if test -n "${bundle_tmpdir}" ; then
@@ -47,8 +53,6 @@ err_cleanup()
 if test \! \( -r "${raw_log_path}" \) ; then
     err_cleanup "Raw log file '${raw_log_path}' cannot be read"
 fi
-
-bundle_tmpdir=$(mktemp -d "/tmp/raw_log_bundle_XXXXXX")
 
 if [[ "${raw_log_path}" =~ [.]bz2$ ]] ; then
     echo "Extracting raw log..."

@@ -1,77 +1,82 @@
-#!/usr/bin/perl
+#!/bin/bash
 
-use warnings;
-use strict;
-use File::Temp qw/ tempdir /;
-use Cwd qw/ abs_path /;
-
-my $raw_log_path;
-my $bundle_path;
-
-foreach my $arg(@ARGV)
+usage()
 {
-    if ($arg =~ m/^--output=([^[:space:]]+)/)
-    {
-        $raw_log_path = abs_path($1);
-    }
-    elsif ($arg =~ m/^--bundle=([^[:space:]]+)/)
-    {
-        $bundle_path = abs_path($1);
-    }
-    else
-    {
-        print "Obtaining original raw log from fragmented log bundle\n".
-              "  --bundle=                  Raw log bundle path\n".
-              "  --output=                  Restored original log path\n";
-        exit(0);
-    }
+cat <<EOF
+Usage: rgt-log-bundle-get-original [<options>]
+  --bundle=PATH         Path to raw log bundle
+  --output=PATH         Where to save restored raw log
+
+EOF
 }
 
-if (!defined($raw_log_path) || !defined($bundle_path))
+raw_log_path=
+bundle_path=
+
+while test -n "$1" ; do
+    opt="$1"
+    case "${opt}" in
+        --help      )   usage ; exit 0 ;;
+        --output=*  )   raw_log_path="${opt#--output=}" ;;
+        --bundle=*  )   bundle_path="${opt#--bundle=}" ;;
+                   *)   echo "Unknown option: ${opt}" >&2;
+                        usage ;
+                        exit 1 ;;
+    esac
+
+    shift 1
+done
+
+bundle_tmpdir=$(mktemp -d "/tmp/raw_log_bundle_XXXXXX")
+if test $? -ne 0 ; then
+    echo "Failed to create temporary directory" >&2
+    exit 1
+fi
+
+cleanup()
 {
-    print STDERR "Not all required arguments specified\n";
-    exit(1);
+    if test -n "${bundle_tmpdir}" ; then
+        rm -r "${bundle_tmpdir}"
+    fi
 }
 
-my $bundle_tmpdir;
-my $rc;
-
-sub cleanup
+err_cleanup()
 {
-    if (defined($bundle_tmpdir))
-    {
-        system("rm -r \"${bundle_tmpdir}\"");
-    }
+    echo "$1" >&2
+    if test -n "${raw_log_path}" ; then
+        rm "${raw_log_path}"
+    fi
+    cleanup
+    exit 1
 }
 
-sub err_cleanup
-{
-    my $msg = $_[0];
+if test \! \( -r "${bundle_path}" \) ; then
+    err_cleanup "Cannot read raw log bundle from ${bundle_path}"
+fi
 
-    print STDERR "$msg\n";
-    cleanup();
-    exit(1);
-}
+if test -z "${raw_log_path}" ; then
+    err_cleanup "Raw log path is not specified"
+fi
 
-$bundle_tmpdir = tempdir("/tmp/extracted_raw_log_XXXX");
+#pushd "${bundle_tmpdir}" >/dev/null
+#if test $? -ne 0 ; then
+#    err_cleanup "pushd to '${bundle_tmpdir}' failed"
+#fi
 
-chdir "$bundle_tmpdir" or
-    die "Failed to cd to $bundle_tmpdir";
+pixz -x <"${bundle_path}" | tar x -C "${bundle_tmpdir}"
+if test $? -ne 0 ; then
+    err_cleanup "failed to unpack '${bundle_path}'"
+fi
 
-$rc = system("pixz -x <$bundle_path | tar x");
-if ($rc != 0)
-{
-    err_cleanup("Failed to unpack $bundle_path");
-}
+#popd >/dev/null
+#if test $? -ne 0 ; then
+#    err_cleanup "popd failed"
+#fi
 
-$rc = system("rgt-log-recover ".
-             "--split-log=$bundle_tmpdir ".
-             "--output=$raw_log_path");
-if ($rc != 0)
-{
-    err_cleanup("Failed to recover original ".
-                "raw log from $bundle_path");
-}
+rgt-log-recover --split-log="${bundle_tmpdir}" --output="${raw_log_path}"
+if test $? -ne 0 ; then
+    err_cleanup "Failed to recover original raw log from '${bundle_path}'"
+fi
 
-cleanup();
-exit(0);
+cleanup
+exit 0
