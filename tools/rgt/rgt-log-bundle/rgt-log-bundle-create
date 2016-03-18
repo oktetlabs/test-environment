@@ -1,131 +1,112 @@
-#!/usr/bin/perl
+#!/bin/bash
 
-use warnings;
-use strict;
-use File::Temp qw/ tempdir /;
-use Cwd qw/ abs_path /;
+raw_log_path="${PWD}/log.raw"
+bundle_path="${PWD}/raw_log_bundle.tpxz"
 
-my $raw_log_path = abs_path("log.raw");
-my $bundle_path = abs_path("fragmented_raw_log.tpxz");
-
-foreach my $arg(@ARGV)
+usage()
 {
-    if ($arg =~ m/^--raw-log=([^[:space:]]+)/)
-    {
-        $raw_log_path = abs_path($1);
-    }
-    elsif ($arg =~ m/^--bundle=([^[:space:]]+)/)
-    {
-        $bundle_path = abs_path($1);
-    }
-    else
-    {
-        print "Fragmenting and archiving raw log\n".
-              "  --raw-log=                 Raw log path\n".
-              "  --bundle=                  Resulting bundle path\n";
-        exit(0);
-    }
+cat <<EOF
+Usage: rgt-log-bundle-create [<options>]
+  --raw-log=PATH        Path to raw log
+  --bundle=PATH         Path to raw log bundle to be created
+
+EOF
 }
 
-if (!(-e $raw_log_path))
+while test -n "$1" ; do
+    opt="$1"
+    case "${opt}" in
+        --help      )   usage ; exit 0 ;;
+        --raw-log=* )   raw_log_path=$(readlink -f "${opt#--raw-log=}") ;;
+        --bundle=*  )   bundle_path=$(readlink -f "${opt#--bundle=}") ;;
+                   *)   echo "Unknown option: ${opt}" >&2;
+                        usage ;
+                        exit 1 ;;
+    esac
+
+    shift 1
+done
+
+cleanup()
 {
-    print STDERR "Raw log file '$raw_log_path' does not exist\n";
-    exit(1);
+    if test -n "${bundle_tmpdir}" ; then
+        rm -r "${bundle_tmpdir}"
+    fi
 }
 
-my $bundle_tmpdir;
-my $rc;
-
-sub cleanup
+err_cleanup()
 {
-    if (defined($bundle_tmpdir))
-    {
-        system("rm -r \"${bundle_tmpdir}\"");
-    }
+    echo "$1" >&2
+    if test -n "${bundle_path}" ; then
+        rm "${bundle_path}"
+    fi
+    cleanup
+    exit 1
 }
 
-sub err_cleanup
-{
-    my $msg = $_[0];
+if test \! \( -r "${raw_log_path}" \) ; then
+    err_cleanup "Raw log file '${raw_log_path}' cannot be read"
+fi
 
-    print STDERR "$msg\n";
-    if (defined($bundle_path))
-    {
-        system("rm \"${bundle_path}\"");
-    }
-    cleanup();
-    exit(1);
-}
+bundle_tmpdir=$(mktemp -d "/tmp/raw_log_bundle_XXXXXX")
 
-$bundle_tmpdir = tempdir("/tmp/raw_log_bundle_XXXX");
+if [[ "${raw_log_path}" =~ [.]bz2$ ]] ; then
+    echo "Extracting raw log..."
+    bunzip2 --keep "${raw_log_path}" -c >"${bundle_tmpdir}/raw_log"
+    if test $? -ne 0 ; then
+        err_cleanup "Failed to extract raw log file"
+    fi
+    raw_log_path="${bundle_tmpdir}/raw_log"
+fi
 
-if ($raw_log_path =~ /[.]bz2/)
-{
-    print "Extracting raw log...\n";
-    $rc = system("bunzip2 --keep $raw_log_path -c ".
-                 ">$bundle_tmpdir/raw_log");
-    if ($rc != 0)
-    {
-        err_cleanup("Failed to extract raw log file");
-    }
-    $raw_log_path = "$bundle_tmpdir/raw_log";
-}
+echo "Indexing raw log..."
+rgt-conv --mode=index "${raw_log_path}" "${bundle_tmpdir}/log_idx"
+if test $? -ne 0 ; then
+    err_cleanup "Failed to index raw log file"
+fi
 
-print "Indexing raw log...\n";
-$rc = system("rgt-conv --mode=index $raw_log_path $bundle_tmpdir/log_idx");
-if ($rc != 0)
-{
-    err_cleanup("Failed to index raw log file");
-}
+echo "Sorting raw log index according to record time..."
+export LC_NUMERIC=POSIX
+sort -n "${bundle_tmpdir}/log_idx" >"${bundle_tmpdir}/sorted_log_idx"
+if test $? -ne 0 ; then
+    err_cleanup "Failed to sort raw log index"
+fi
 
-print "Sorting raw log index according to record time...\n";
-$ENV{"LC_NUMERIC"} = "POSIX";
-$rc = system("sort -n $bundle_tmpdir/log_idx ".
-             ">$bundle_tmpdir/sorted_log_idx");
-if ($rc != 0)
-{
-    err_cleanup("Failed to sort raw log index");
-}
+echo "Fragmenting raw log..."
+mkdir -p "${bundle_tmpdir}/fragments"
+if test $? -ne 0 ; then
+    err_cleanup "Failed to create subdir in ${bundle_tmpdir}"
+fi
 
-print "Fragmenting raw log...\n";
-$rc = system("mkdir -p $bundle_tmpdir/fragments");
-if ($rc != 0)
-{
-    err_cleanup("Failed to create subfolder in $bundle_tmpdir");
-}
+rgt-log-split --raw-log="${raw_log_path}" \
+    --log-index="${bundle_tmpdir}/sorted_log_idx" \
+    --output-dir="${bundle_tmpdir}/fragments/"
+if test $? -ne 0 ; then
+    err_cleanup "rgt-log-split failed"
+fi
 
-$rc = system("rgt-log-split --raw-log=$raw_log_path ".
-             "--log-index=$bundle_tmpdir/sorted_log_idx ".
-             "--output-dir=$bundle_tmpdir/fragments");
-if ($rc != 0)
-{
-    err_cleanup("rgt-log-split failed");
-}
+echo "Archiving fragmented raw log..."
+cd "${bundle_tmpdir}/fragments/"
+if test $? -ne 0 ; then
+    err_cleanup "cd to /fragments/ subdir failed"
+fi
 
-print "Archiving fragmented raw log...\n";
-chdir "$bundle_tmpdir/fragments/" or
-    die "Failed to cd to $bundle_tmpdir/fragments";
+tar -Ite_pixz_wrapper -cf "${bundle_path}" *
+if test $? -ne 0 ; then
+    err_cleanup "Failed to create raw log bundle"
+fi
 
-$rc = system("tar -Ite_pixz_wrapper -cf $bundle_path *");
-if ($rc != 0)
-{
-    err_cleanup("Failed to create bundle");
-}
+echo "Checking whether original log can be recovered..."
+rgt-log-bundle-get-original --bundle="${bundle_path}" \
+    --output="${bundle_tmpdir}/recovered_raw_log"
+if test $? -ne 0 ; then
+    err_cleanup "Failed to recover original raw log"
+fi
 
-print "Checking whether original log can be recovered...\n";
-$rc = system("rgt-log-bundle-get-original --bundle=$bundle_path ".
-             "--output=$bundle_tmpdir/recovered_raw_log");
-if ($rc != 0)
-{
-    err_cleanup("Failed to recover original raw log");
-}
+diff "${raw_log_path}" "${bundle_tmpdir}/recovered_raw_log"
+if test $? -ne 0 ; then
+    err_cleanup "Recovered raw log differ from the original one"
+fi
 
-$rc = system("diff $raw_log_path ".
-             "$bundle_tmpdir/recovered_raw_log");
-if ($rc != 0)
-{
-    err_cleanup("Recovered raw log differ from the original one");
-}
-
-cleanup();
-exit(0);
+cleanup
+exit 0
