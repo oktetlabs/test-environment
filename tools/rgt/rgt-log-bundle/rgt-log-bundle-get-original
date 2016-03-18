@@ -58,20 +58,10 @@ if test -z "${raw_log_path}" ; then
     err_cleanup "Raw log path is not specified"
 fi
 
-#pushd "${bundle_tmpdir}" >/dev/null
-#if test $? -ne 0 ; then
-#    err_cleanup "pushd to '${bundle_tmpdir}' failed"
-#fi
-
 pixz -x <"${bundle_path}" | tar x -C "${bundle_tmpdir}"
 if test $? -ne 0 ; then
     err_cleanup "failed to unpack '${bundle_path}'"
 fi
-
-#popd >/dev/null
-#if test $? -ne 0 ; then
-#    err_cleanup "popd failed"
-#fi
 
 rgt-log-recover --split-log="${bundle_tmpdir}" --output="${raw_log_path}"
 if test $? -ne 0 ; then
