@@ -56,7 +56,7 @@ prog_name=`basename $0`
 usage () {
     cat <<EOF
 Usage: $prog_name [OPTION...] [<Raw Log file> [<Output file>]]
-  Processes Raw Log file specified with -o option according to user filters 
+  Processes Raw Log file specified with -o option according to user filters
   passed with -c option. Result file is output in specified file or stdout.
 
   OPTIONS:
@@ -101,7 +101,7 @@ check_op_mode () {
        ( [ "$1" != "live" ] && [ "$1" != "postponed" ] &&
          [ "$1" != "index" ] ) ; then
         usage
-        echo "Specify mode of operation: live or postponed"
+        echo "Specify mode of operation: live, postponed or index"
         { (exit 1); exit 1; }
     fi
 }

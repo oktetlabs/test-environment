@@ -1,4 +1,4 @@
-/** @file 
+/** @file
  * @brief Test Environment: Index mode specific routines.
  *
  * Interface for creating an index for raw log with information about
@@ -36,8 +36,16 @@
 extern "C" {
 #endif
 
+/**
+ * Set callback pointers to refer functions implementing index mode of
+ * operation.
+ *
+ * @param ctrl_proc       Table of callbacks for processing control
+ *                        log messages
+ * @param reg_proc        Callback for processing regular message
+ */
 void
-index_mode_init(f_process_ctrl_log_msg ctrl_proc[CTRL_EVT_LAST][NT_LAST], 
+index_mode_init(f_process_ctrl_log_msg ctrl_proc[CTRL_EVT_LAST][NT_LAST],
                 f_process_reg_log_msg  *reg_proc);
 
 #ifdef __cplusplus

@@ -50,11 +50,14 @@ static int index_process_branch_start(node_info_t *node, GQueue *verdicts);
 static int index_process_branch_end(node_info_t *node, GQueue *verdicts);
 static int index_process_regular_msg(log_msg *msg);
 
+/** Offset of the previous message in raw log */
 static off_t   prev_rawlog_fpos;
+/** Is the first message in raw log being processed? */
 static te_bool first_message;
 
+/* See the description in index_mode.h */
 void
-index_mode_init(f_process_ctrl_log_msg ctrl_proc[CTRL_EVT_LAST][NT_LAST], 
+index_mode_init(f_process_ctrl_log_msg ctrl_proc[CTRL_EVT_LAST][NT_LAST],
                f_process_reg_log_msg  *reg_proc)
 {
     ctrl_proc[CTRL_EVT_START][NT_SESSION] = index_process_sess_start;
@@ -71,6 +74,7 @@ index_mode_init(f_process_ctrl_log_msg ctrl_proc[CTRL_EVT_LAST][NT_LAST],
     first_message = TRUE;
 }
 
+/** Print the length of previous message, finishing its description  */
 static void
 print_prev_length()
 {
@@ -86,6 +90,7 @@ print_prev_length()
     prev_rawlog_fpos = rgt_ctx.rawlog_fpos;
 }
 
+/** Process control message starting a new log node */
 static int
 print_node_start(node_info_t *node)
 {
@@ -99,6 +104,7 @@ print_node_start(node_info_t *node)
     return 1;
 }
 
+/** Process control message for log node termination */
 static int
 print_node_end(node_info_t *node)
 {
@@ -111,6 +117,7 @@ print_node_end(node_info_t *node)
     return 1;
 }
 
+/** Process "test started" control message */
 static int
 index_process_test_start(node_info_t *node, GQueue *verdicts)
 {
@@ -119,6 +126,7 @@ index_process_test_start(node_info_t *node, GQueue *verdicts)
     return print_node_start(node);
 }
 
+/** Process "test finished" control message */
 static int
 index_process_test_end(node_info_t *node, GQueue *verdicts)
 {
@@ -127,6 +135,7 @@ index_process_test_end(node_info_t *node, GQueue *verdicts)
     return print_node_end(node);
 }
 
+/** Process "package started" control message */
 static int
 index_process_pkg_start(node_info_t *node, GQueue *verdicts)
 {
@@ -135,6 +144,7 @@ index_process_pkg_start(node_info_t *node, GQueue *verdicts)
     return print_node_start(node);
 }
 
+/** Process "package finished" control message */
 static int
 index_process_pkg_end(node_info_t *node, GQueue *verdicts)
 {
@@ -143,6 +153,7 @@ index_process_pkg_end(node_info_t *node, GQueue *verdicts)
     return print_node_end(node);
 }
 
+/** Process "session started" control message */
 static int
 index_process_sess_start(node_info_t *node, GQueue *verdicts)
 {
@@ -151,6 +162,7 @@ index_process_sess_start(node_info_t *node, GQueue *verdicts)
     return print_node_start(node);
 }
 
+/** Process "session finished" control message */
 static int
 index_process_sess_end(node_info_t *node, GQueue *verdicts)
 {
@@ -159,22 +171,29 @@ index_process_sess_end(node_info_t *node, GQueue *verdicts)
     return print_node_end(node);
 }
 
+/** Process "branch start" event */
 static int
 index_process_branch_start(node_info_t *node, GQueue *verdicts)
 {
+    UNUSED(node);
     UNUSED(verdicts);
 
-    return print_node_start(node);
+    /* Do nothing - this is "generation event", not raw log message */
+    return 0;
 }
 
+/** Process "branch end" event */
 static int
 index_process_branch_end(node_info_t *node, GQueue *verdicts)
 {
+    UNUSED(node);
     UNUSED(verdicts);
 
-    return print_node_end(node);
+    /* Do nothing - this is "generation event", not raw log message */
+    return 0;
 }
 
+/** Process regular raw log message */
 static int
 index_process_regular_msg(log_msg *msg)
 {

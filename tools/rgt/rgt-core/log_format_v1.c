@@ -176,13 +176,13 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
 
     struct obstack *obstk;
 
-    /* 
+    /*
      * Get offset of the log message from the beginning of the RLF.
      * It is used in the case of an error occurs.
      */
     ctx->rawlog_fpos = cur_msg_offset = ftello(fd);
 
-    /* 
+    /*
      * Read version of log message.
      * Just ignore (TODO: more useful processing below)
      */

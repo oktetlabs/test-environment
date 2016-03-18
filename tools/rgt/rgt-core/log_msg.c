@@ -212,8 +212,8 @@ rgt_process_regular_message(log_msg *msg)
     if (rgt_ctx.op_mode == RGT_OP_MODE_LIVE ||
         rgt_ctx.op_mode == RGT_OP_MODE_INDEX)
     {
-        /* 
-         * We should only check if there is at least one node 
+        /*
+         * We should only check if there is at least one node
          * message is linked with
          */
         if (flow_tree_filter_message(msg) == NFMODE_INCLUDE)

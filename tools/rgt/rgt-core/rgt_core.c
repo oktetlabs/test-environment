@@ -49,8 +49,8 @@
 #include "postponed_mode.h"
 #include "index_mode.h"
 
-/* 
- * Define PACKAGE, VERSION and TE_COPYRIGHT just for the case it's build 
+/*
+ * Define PACKAGE, VERSION and TE_COPYRIGHT just for the case it's build
  * with an ugly method.
  */
 #ifndef PACKAGE
@@ -148,7 +148,7 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
 #endif /* WITH_LOG_FILTER */
 
         { "mode", 'm', POPT_ARG_STRING, NULL, 'm',
-          "Mode of operation, can be " 
+          "Mode of operation, can be "
           RGT_OP_MODE_LIVE_STR ", " RGT_OP_MODE_POSTPONED_STR
           " or " RGT_OP_MODE_INDEX_STR ". "
           "By default " RGT_OP_MODE_DEFAULT_STR " mode is used.", "MODE" },
@@ -200,7 +200,7 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
                      strcmp(ctx->op_mode_str,
                             RGT_OP_MODE_INDEX_STR) != 0))
                 {
-                    usage(optCon, 1, "Specify mode of operation", 
+                    usage(optCon, 1, "Specify mode of operation",
                           RGT_OP_MODE_LIVE_STR ", "
                           RGT_OP_MODE_POSTPONED_STR " or "
                           RGT_OP_MODE_INDEX_STR);
@@ -215,9 +215,9 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
                     ctx->op_mode = RGT_OP_MODE_INDEX;
 
                 break;
-        
+
             case 'v':
-                printf("Package %s: rgt-core version %s\n%s\n", 
+                printf("Package %s: rgt-core version %s\n%s\n",
                        PACKAGE, VERSION, TE_COPYRIGHT);
                 poptFreeContext(optCon);
                 exit(0);
