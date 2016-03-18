@@ -12,7 +12,7 @@ foreach my $arg(@ARGV)
 {
     if ($arg =~ m/^--raw-log=([^[:space:]]+)/)
     {
-        $raw_log_path = abs_path($1);   
+        $raw_log_path = abs_path($1);
     }
     elsif ($arg =~ m/^--bundle=([^[:space:]]+)/)
     {

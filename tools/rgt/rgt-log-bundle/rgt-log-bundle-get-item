@@ -16,7 +16,7 @@ foreach my $arg (@ARGV)
 {
     if ($arg =~ m/^--bundle=([^[:space:]]+)/)
     {
-        $bundle_path = $1;   
+        $bundle_path = $1;
     }
     elsif ($arg =~ m/^--req-path=([^[:space:]]+)/)
     {

@@ -64,7 +64,7 @@ file2file(FILE *out_f, FILE *in_f,
             fwrite(buf, 1, bytes_read, out_f);
             length -= bytes_read;
         }
-        
+
         if (feof(in_f))
             break;
     }

@@ -46,7 +46,7 @@ function changePage_@@%s:selector_name@@(page)
     }
     else
     {
-        fname = fname.replace(/[.]html$/, 
+        fname = fname.replace(/[.]html$/,
                               "_p" + (page_num + 1) + ".html#" +
                               "page_selector_@@%s:selector_name@@");
         window.open(fname, "_self");

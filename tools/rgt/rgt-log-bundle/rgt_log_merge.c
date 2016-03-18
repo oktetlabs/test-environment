@@ -1,4 +1,4 @@
-/** @file 
+/** @file
  * @brief Test Environment: implementation of merging fragments into raw log.
  *
  * Copyright (C) 2016 Test Environment authors (see file AUTHORS in the
@@ -158,16 +158,16 @@ process_cmd_line_opts(int argc, char **argv)
 
     /* Option Table */
     struct poptOption optionsTable[] = {
-        { "split-log", 's', POPT_ARG_STRING, NULL, 's', 
+        { "split-log", 's', POPT_ARG_STRING, NULL, 's',
           "Path to split raw log.", NULL },
 
-        { "filter", 'f', POPT_ARG_STRING, NULL, 'f', 
+        { "filter", 'f', POPT_ARG_STRING, NULL, 'f',
           "Either 'TIN' or 'depth_seq'", NULL },
 
-        { "page", 'p', POPT_ARG_STRING, NULL, 'p', 
+        { "page", 'p', POPT_ARG_STRING, NULL, 'p',
           "Either page number or 'all' to merge all pages at once", NULL },
 
-        { "output", 'o', POPT_ARG_STRING, NULL, 'o', 
+        { "output", 'o', POPT_ARG_STRING, NULL, 'o',
           "Where to save merged raw log.", NULL },
 
         POPT_AUTOHELP
@@ -205,7 +205,7 @@ process_cmd_line_opts(int argc, char **argv)
         else if (rc == 'p')
         {
             char *page = poptGetOptArg(optCon);
-        
+
             if (page == NULL)
                 usage(optCon, 1, "--page value is not specified", NULL);
 

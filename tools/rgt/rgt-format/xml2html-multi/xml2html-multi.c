@@ -159,7 +159,7 @@ void rgt_process_cmdline(rgt_gen_ctx_t *ctx, poptContext con, int val)
     else if (val == 'n')
     {
         char *match_exp;
-        
+
         if ((match_exp = poptGetOptArg(con)) == NULL)
             usage(con, 1, "Specify node matching expression", NULL);
 
@@ -185,7 +185,7 @@ void rgt_process_cmdline(rgt_gen_ctx_t *ctx, poptContext con, int val)
     else if (val == 'p')
     {
         const char *page_selector;
-        
+
         if ((page_selector = poptGetOptArg(con)) == NULL)
             usage(con, 1, "Specify page selector", NULL);
 
@@ -754,7 +754,7 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
                     fname, strerror(errno));
             exit(1);
         }
-   
+
     }
     else
         depth_user->fd = NULL;

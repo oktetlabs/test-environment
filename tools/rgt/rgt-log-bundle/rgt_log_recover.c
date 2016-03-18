@@ -1,4 +1,4 @@
-/** @file 
+/** @file
  * @brief Test Environment: recovering raw log from its fragments.
  *
  * This program recovers original raw log from fragments produced by
@@ -62,10 +62,10 @@ process_cmd_line_opts(int argc, char **argv)
 
     /* Option Table */
     struct poptOption optionsTable[] = {
-        { "split-log", 's', POPT_ARG_STRING, NULL, 's', 
+        { "split-log", 's', POPT_ARG_STRING, NULL, 's',
           "Path to split raw log.", NULL },
 
-        { "output", 'o', POPT_ARG_STRING, NULL, 'o', 
+        { "output", 'o', POPT_ARG_STRING, NULL, 'o',
           "Output file.", NULL },
 
         POPT_AUTOHELP
@@ -106,7 +106,7 @@ process_cmd_line_opts(int argc, char **argv)
 int
 main(int argc, char **argv)
 {
-    FILE       *f_recover; 
+    FILE       *f_recover;
     FILE       *f_result;
     FILE       *f_frag;
     char        s[256];

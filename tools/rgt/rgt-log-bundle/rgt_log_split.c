@@ -1,4 +1,4 @@
-/** @file 
+/** @file
  * @brief Test Environment: implementation of raw log fragmentation.
  *
  * Copyright (C) 2016 Test Environment authors (see file AUTHORS in the
@@ -528,13 +528,13 @@ process_cmd_line_opts(int argc, char **argv)
 
     /* Option Table */
     struct poptOption optionsTable[] = {
-        { "raw-log", 'r', POPT_ARG_STRING, NULL, 'r', 
+        { "raw-log", 'r', POPT_ARG_STRING, NULL, 'r',
           "Path to raw log.", NULL },
 
-        { "log-index", 'i', POPT_ARG_STRING, NULL, 'i', 
+        { "log-index", 'i', POPT_ARG_STRING, NULL, 'i',
           "Path to raw log index file.", NULL },
 
-        { "output-dir", 'o', POPT_ARG_STRING, NULL, 'o', 
+        { "output-dir", 'o', POPT_ARG_STRING, NULL, 'o',
           "Output directory.", NULL },
 
         POPT_AUTOHELP
