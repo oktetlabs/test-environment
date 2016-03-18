@@ -30,6 +30,15 @@
 #ifndef __TAPI_LOCAL_FILE_H__
 #define __TAPI_LOCAL_FILE_H__
 
+#include "te_config.h"
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
+#include "te_defs.h"
+#include "te_stdint.h"
+
 
 #ifdef __cplusplus
 extern "C" {
