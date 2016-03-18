@@ -32,7 +32,7 @@ AM_CFLAGS = @TE_CFLAGS@ $(TE_CFLAGS_VAR)
 
 bin_PROGRAMS = rgt-log-split rgt-log-merge rgt-log-recover
 
-RGT_LOG_ARCHIVE_COMMON_SRC = rgt_log_bundle_common.h
+RGT_LOG_ARCHIVE_COMMON_SRC = rgt_log_bundle_common.h rgt_log_bundle_common.c
 RGT_LOG_ARCHIVE_COMMON_LIB = $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/liblogger_file.a \
                            $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtools.a \
                            -lpopt
