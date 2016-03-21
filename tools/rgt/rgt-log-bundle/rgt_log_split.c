@@ -77,8 +77,10 @@ typedef struct node_info {
                                                    fragment */
 } node_info;
 
-node_info      *nodes_info = NULL;
-unsigned int    nodes_count = 0;
+/** Array of log node descriptions */
+static node_info      *nodes_info = NULL;
+/** Number of elements in the array of log node descriptions */
+static unsigned int    nodes_count = 0;
 
 /**
  * Get processing information stored for a given log node id.
@@ -87,7 +89,7 @@ unsigned int    nodes_count = 0;
  *
  * @return Pointer to node_info structure
  */
-node_info *
+static node_info *
 get_node_info(int node_id)
 {
     if (node_id < 0)
@@ -131,7 +133,7 @@ get_node_info(int node_id)
  */
 
 /** Last frament file name to which new data was added */
-char cur_block_frag_name[256] = "";
+static char cur_block_frag_name[256] = "";
 
 /*
  * We wait while a block of consecutive log messages written
@@ -144,19 +146,19 @@ char cur_block_frag_name[256] = "";
  * Offset in raw log of the current block of consecutive log messages
  * written to the same log fragment file.
  */
-off_t cur_block_offset = -1;
+static off_t cur_block_offset = -1;
 /**
  * Length of the current block of consecutive chuncks
  * written to the same log fragment file.
  */
-off_t cur_block_length = 0;
+static off_t cur_block_length = 0;
 /**
  * Offset in log fragment file of the current block of consecutive
  * log messages written to the same log fragment file.
  */
-off_t cur_block_frag_offset = -1;
+static off_t cur_block_frag_offset = -1;
 /** Offset of the last processed message in raw log */
-off_t last_msg_offset = -1;
+static off_t last_msg_offset = -1;
 
 /**
  * Append a new log message to appropriate log fragment file.
@@ -172,7 +174,7 @@ off_t last_msg_offset = -1;
  *
  * @return 0 on success, -1 on failure
  */
-int
+static int
 append_to_frag(int node_id, fragment_type frag_type,
                FILE *f_raw_log,
                long long int offset, long long int length,
@@ -223,9 +225,7 @@ append_to_frag(int node_id, fragment_type frag_type,
     if (f_frag == NULL)
     {
         fprintf(stderr, "Failed to open %s\n", frag_path.ptr);
-        te_string_free(&frag_name);
-        te_string_free(&frag_path);
-        return -1;
+        exit(1);
     }
 
     if (cur_block_offset < 0)
@@ -247,11 +247,16 @@ append_to_frag(int node_id, fragment_type frag_type,
             }
             else
             {
-                fprintf(f_recover, "%llu %llu %s %llu\n",
-                        (long long unsigned int)cur_block_offset,
-                        (long long unsigned int)cur_block_length,
-                        cur_block_frag_name,
-                        (long long unsigned int)cur_block_frag_offset);
+                if (fprintf(f_recover, "%llu %llu %s %llu\n",
+                            (long long unsigned int)cur_block_offset,
+                            (long long unsigned int)cur_block_length,
+                            cur_block_frag_name,
+                            (long long unsigned int)
+                                  cur_block_frag_offset) < 0)
+                {
+                    ERROR("%s\n", "fprintf() failed");
+                    exit(1);
+                }
 
                 cur_block_offset = offset;
                 cur_block_length = length;
@@ -283,7 +288,7 @@ append_to_frag(int node_id, fragment_type frag_type,
  *
  * @return 0 on success, -1 on failure
  */
-int
+static int
 split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
               const char *output_path)
 {
@@ -313,7 +318,7 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
         {
             fprintf(stderr, "Wrong record in raw log index at line %ld",
                     line);
-            return -1;
+            exit(1);
         }
         if (rc < 8)
         {
@@ -408,11 +413,15 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
 
     if (cur_block_offset >= 0)
     {
-        fprintf(f_recover, "%llu %llu %s %llu\n",
-                (long long unsigned int)cur_block_offset,
-                (long long unsigned int)cur_block_length,
-                cur_block_frag_name,
-                (long long unsigned int)cur_block_frag_offset);
+        if (fprintf(f_recover, "%llu %llu %s %llu\n",
+                    (long long unsigned int)cur_block_offset,
+                    (long long unsigned int)cur_block_length,
+                    cur_block_frag_name,
+                    (long long unsigned int)cur_block_frag_offset) < 0)
+        {
+            ERROR("%s\n", "fprintf() failed");
+            exit(1);
+        }
     }
 
     return 0;
@@ -425,7 +434,7 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
  *
  * @return Length of file
  */
-off_t
+static off_t
 file_length(FILE *f)
 {
     off_t cur_pos;
@@ -452,7 +461,7 @@ file_length(FILE *f)
  *
  * @return 0 on success, -1 on failure
  */
-int
+static int
 print_frags_list(const char *output_path, FILE *f_raw_gist,
                  FILE *f_frags_list, int node_id,
                  unsigned int depth, unsigned int seq)
@@ -466,16 +475,25 @@ print_frags_list(const char *output_path, FILE *f_raw_gist,
 
     te_string_append(&path, "%s/%d_frag_start", output_path, node_id);
     f_frag = fopen(path.ptr, "r");
+    if (f_frag == NULL)
+    {
+        fprintf(stderr, "Failed to open '%s' for reading\n", path.ptr);
+        exit(1);
+    }
     te_string_free(&path);
     frag_len = file_length(f_frag);
     file2file(f_raw_gist, f_frag, -1, -1, frag_len);
     fclose(f_frag);
 
-    fprintf(f_frags_list, "%d_frag_start %u %u %u %llu %llu %llu\n",
-            node_id, nodes_info[node_id].tin, depth, seq,
-            (long long unsigned int)frag_len,
-            (long long unsigned int)nodes_info[node_id].start_len,
-            nodes_info[node_id].inner_frags_cnt);
+    if (fprintf(f_frags_list, "%d_frag_start %u %u %u %llu %llu %llu\n",
+                node_id, nodes_info[node_id].tin, depth, seq,
+                (long long unsigned int)frag_len,
+                (long long unsigned int)nodes_info[node_id].start_len,
+                nodes_info[node_id].inner_frags_cnt) < 0)
+    {
+        ERROR("%s\n", "fprintf() failed");
+        exit(1);
+    }
 
     for (i = node_id + 1; i < nodes_count; i++)
     {
@@ -489,6 +507,11 @@ print_frags_list(const char *output_path, FILE *f_raw_gist,
 
     te_string_append(&path, "%s/%d_frag_end", output_path, node_id);
     f_frag = fopen(path.ptr, "r");
+    if (f_frag == NULL && errno != ENOENT)
+    {
+        fprintf(stderr, "Failed to open '%s' for reading\n", path.ptr);
+        exit(1);
+    }
     te_string_free(&path);
     if (f_frag != NULL)
     {
@@ -496,9 +519,13 @@ print_frags_list(const char *output_path, FILE *f_raw_gist,
         file2file(f_raw_gist, f_frag, -1, -1, frag_len);
         fclose(f_frag);
 
-        fprintf(f_frags_list, "%d_frag_end %u %u %u %llu\n",
-                node_id, nodes_info[node_id].tin, depth, seq,
-                (long long unsigned int)frag_len);
+        if (fprintf(f_frags_list, "%d_frag_end %u %u %u %llu\n",
+                    node_id, nodes_info[node_id].tin, depth, seq,
+                    (long long unsigned int)frag_len) < 0)
+        {
+            ERROR("%s\n", "fprintf() failed");
+            exit(1);
+        }
     }
 
     return 0;
@@ -577,32 +604,57 @@ process_cmd_line_opts(int argc, char **argv)
 int
 main(int argc, char **argv)
 {
-    FILE *f_raw_log;
-    FILE *f_index;
-    FILE *f_recover;
-    FILE *f_frags_list;
-    FILE *f_raw_gist;
+    FILE *f_raw_log = NULL;
+    FILE *f_index = NULL;
+    FILE *f_recover = NULL;
+    FILE *f_frags_list = NULL;
+    FILE *f_raw_gist = NULL;
 
     te_string path_aux = TE_STRING_INIT;
 
     process_cmd_line_opts(argc, argv);
 
     f_raw_log = fopen(raw_log_path, "r");
+    if (f_raw_log == NULL)
+    {
+        fprintf(stderr, "Failed to open '%s' for reading\n", raw_log_path);
+        exit(1);
+    }
     f_index = fopen(index_path, "r");
+    if (f_index == NULL)
+    {
+        fprintf(stderr, "Failed to open '%s' for reading\n", index_path);
+        exit(1);
+    }
 
     te_string_append(&path_aux, "%s/recover_list",
                      output_path);
     f_recover = fopen(path_aux.ptr, "w");
+    if (f_recover == NULL)
+    {
+        fprintf(stderr, "Failed to open '%s' for writing\n", path_aux.ptr);
+        exit(1);
+    }
     te_string_free(&path_aux);
 
     split_raw_log(f_raw_log, f_index, f_recover, output_path);
 
     te_string_append(&path_aux, "%s/frags_list", output_path);
     f_frags_list = fopen(path_aux.ptr, "w");
+    if (f_frags_list == NULL)
+    {
+        fprintf(stderr, "Failed to open '%s' for writing\n", path_aux.ptr);
+        exit(1);
+    }
     te_string_free(&path_aux);
 
     te_string_append(&path_aux, "%s/log_gist.raw", output_path);
     f_raw_gist = fopen(path_aux.ptr, "w");
+    if (f_raw_gist == NULL)
+    {
+        fprintf(stderr, "Failed to open '%s' for writing\n", path_aux.ptr);
+        exit(1);
+    }
     te_string_free(&path_aux);
 
     print_frags_list(output_path, f_raw_gist, f_frags_list, 0, 1, 0);

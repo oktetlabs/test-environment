@@ -128,9 +128,19 @@ main(int argc, char **argv)
      */
     te_string_append(&path, "%s/recover_list", split_log_path);
     f_recover = fopen(path.ptr, "r");
+    if (f_recover == NULL)
+    {
+        fprintf(stderr, "Failed to open '%s' for reading\n", path.ptr);
+        exit(1);
+    }
     te_string_free(&path);
 
     f_result = fopen(output_path, "w");
+    if (f_result == NULL)
+    {
+        fprintf(stderr, "Failed to open '%s' for writing\n", output_path);
+        exit(1);
+    }
 
     while (!feof(f_recover))
     {
@@ -144,6 +154,11 @@ main(int argc, char **argv)
 
         te_string_append(&path, "%s/%s", split_log_path, frag_name);
         f_frag = fopen(path.ptr, "r");
+        if (f_frag == NULL)
+        {
+            fprintf(stderr, "Failed to open '%s' for reading\n", path.ptr);
+            exit(1);
+        }
         te_string_free(&path);
         file2file(f_result, f_frag, raw_offset, frag_offset, raw_length);
         fclose(f_frag);

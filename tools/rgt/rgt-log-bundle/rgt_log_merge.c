@@ -37,15 +37,15 @@
 DEFINE_LGR_ENTITY("RGT LOG MERGE");
 
 /** Whether to search log node to be merged by TIN or by depth/seq */
-int use_tin = 0;
+static int use_tin = 0;
 /** TIN of log node to be merged */
-unsigned int filter_tin = (unsigned int)-1;
+static unsigned int filter_tin = (unsigned int)-1;
 /** Depth of log node to be merged */
-int filter_depth = 0;
+static int filter_depth = 0;
 /** Sequential number of log node to be merged */
-int filter_seq = 0;
+static int filter_seq = 0;
 /** Number of inner fragment file to be merged */
-long long int filter_frag_num = 0;
+static long long int filter_frag_num = 0;
 
 /**
  * Merge inner log fragments into "raw gist log" consisting
@@ -60,7 +60,7 @@ long long int filter_frag_num = 0;
  *
  * @return 0 on success, -1 on failure
  */
-int
+static int
 merge(const char *split_log_path,
       FILE *f_raw_gist, FILE *f_frags_list, FILE *f_result)
 {
@@ -80,6 +80,8 @@ merge(const char *split_log_path,
     int seq;
 
     off_t raw_fp;
+
+    assert(f_raw_gist != NULL && f_frags_list != NULL && f_result != NULL);
 
     while (!feof(f_frags_list))
     {
@@ -119,7 +121,7 @@ merge(const char *split_log_path,
                 {
                     fprintf(stderr, "Failed to open %s for reading\n",
                             frag_path);
-                    return -1;
+                    exit(1);
                 }
                 fseeko(f, 0LLU, SEEK_END);
                 frag_len = ftello(f);
@@ -252,15 +254,25 @@ main(int argc, char **argv)
 
     snprintf(buf, sizeof(buf), "%s/log_gist.raw", split_log_path);
     f_raw_gist = fopen(buf, "r");
+    if (f_raw_gist == NULL)
+    {
+        fprintf(stderr, "Failed to open '%s' for reading\n", buf);
+        exit(1);
+    }
 
     snprintf(buf, sizeof(buf), "%s/frags_list", split_log_path);
     f_frags_list = fopen(buf, "r");
+    if (f_frags_list == NULL)
+    {
+        fprintf(stderr, "Failed to open '%s' for reading\n", buf);
+        exit(1);
+    }
 
     f_result = fopen(output_path, "w");
     if (f_result == NULL)
     {
         fprintf(stderr, "Failed to open %s for writing\n", output_path);
-        return 1;
+        exit(1);
     }
 
     merge(split_log_path, f_raw_gist, f_frags_list, f_result);

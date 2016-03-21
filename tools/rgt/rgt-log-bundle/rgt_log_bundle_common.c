@@ -46,6 +46,7 @@ file2file(FILE *out_f, FILE *in_f,
 #define BUF_SIZE  4096
     char   buf[BUF_SIZE];
     size_t bytes_read;
+    size_t bytes_written;
 
     if (out_offset >= 0)
         fseeko(out_f, out_offset, SEEK_SET);
@@ -56,10 +57,21 @@ file2file(FILE *out_f, FILE *in_f,
     {
         bytes_read = (length > BUF_SIZE ? BUF_SIZE : length);
         bytes_read = fread(buf, 1, bytes_read, in_f);
+        if (bytes_read < 0)
+        {
+            fprintf(stderr, "%s\n", "fread() failed");
+            exit(1);
+        }
 
         if (bytes_read > 0)
         {
-            fwrite(buf, 1, bytes_read, out_f);
+            bytes_written = fwrite(buf, 1, bytes_read, out_f);
+            if (bytes_written != bytes_read)
+            {
+                fprintf(stderr, "fwrite() returned %ld instead of %ld\n",
+                        (long int)bytes_written, (long int)bytes_read);
+                exit(1);
+            }
             length -= bytes_read;
         }
 
