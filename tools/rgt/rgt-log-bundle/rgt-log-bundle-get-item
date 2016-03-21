@@ -146,7 +146,7 @@ elif [[ "${req_path}" =~ node_[^/]*[.]html$ ]] ; then
 
     if [[ "${node}" =~ _p([0-9]+)$ ]] ; then
         cur_page="${BASH_REMATCH[1]}"
-        node="${node%%_p+(0-9)}"
+        node="${node%%_p+([0-9])}"
     fi
     if [[ "${node}" =~ _all$ ]] ; then
         all_pages=1
