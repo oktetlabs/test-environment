@@ -4099,7 +4099,9 @@ enum iomux_func {
     FUNC_POLL = 3,
     FUNC_PPOLL = 4,
     FUNC_EPOLL = 5,
-    FUNC_EPOLL_PWAIT = 6
+    FUNC_EPOLL_PWAIT = 6,
+    /** Value 7 is reserved */
+    FUNC_DEFAULT_IOMUX = 8
 };
 
 

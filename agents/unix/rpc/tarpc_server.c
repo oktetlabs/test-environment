@@ -6320,11 +6320,14 @@ get_default_iomux()
 /** Resolve all functions used by particular iomux and store them into
  * iomux_funcs. */
 static inline int
-iomux_find_func(te_bool use_libc, iomux_func iomux, iomux_funcs *funcs)
+iomux_find_func(te_bool use_libc, iomux_func *iomux, iomux_funcs *funcs)
 {
     int rc = 0;
 
-    switch (iomux)
+    if (*iomux == FUNC_DEFAULT_IOMUX)
+        *iomux = get_default_iomux();
+
+    switch (*iomux)
     {
         case FUNC_SELECT:
             rc = tarpc_find_func(use_libc, "select", &funcs->select);
@@ -6343,7 +6346,7 @@ iomux_find_func(te_bool use_libc, iomux_func iomux, iomux_funcs *funcs)
 #if HAVE_STRUCT_EPOLL_EVENT
         case FUNC_EPOLL:
         case FUNC_EPOLL_PWAIT:
-            if (iomux == FUNC_EPOLL)
+            if (*iomux == FUNC_EPOLL)
                 rc = tarpc_find_func(use_libc, "epoll_wait",
                                      &funcs->epoll.wait);
             else
@@ -6402,6 +6405,11 @@ iomux_create_state(iomux_func iomux, iomux_funcs *funcs,
             state->epoll = funcs->epoll.create(IOMUX_MAX_POLLED_FDS);
             return (state->epoll >= 0) ? 0 : -1;
 #endif
+        case FUNC_DEFAULT_IOMUX:
+            ERROR("%s() function can't be used with default iomux",
+                  __FUNCTION__);
+            return -1;
+
     }
     return 0;
 }
@@ -6489,6 +6497,14 @@ do {                                                              \
             return funcs->epoll.ctl(state->epoll, EPOLL_CTL_ADD, fd, &ev);
         }
 #endif
+        case FUNC_DEFAULT_IOMUX:
+            ERROR("%s() function can't be used with default iomux",
+                  __FUNCTION__);
+            return -1;
+
+        default:
+            ERROR("Incorrect value of iomux function");
+            return -1;
     }
 
 #undef IOMUX_CHECK_LIMIT
@@ -6535,6 +6551,15 @@ iomux_mod_fd(iomux_func iomux, iomux_funcs *funcs, iomux_state *state,
             break;
         }
 #endif
+        case FUNC_DEFAULT_IOMUX:
+            ERROR("%s() function can't be used with default iomux",
+                  __FUNCTION__);
+            return -1;
+
+        default:
+            ERROR("Incorrect value of iomux function");
+            return -1;
+
     }
     return 0;
 }
@@ -6768,7 +6793,7 @@ simple_receiver(tarpc_simple_receiver_in *in,
 
     RING("%s() started", __FUNCTION__);
 
-    if (iomux_find_func(in->common.use_libc, iomux, &iomux_f) != 0 ||
+    if (iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0 ||
         tarpc_find_func(in->common.use_libc, "recv", &recv_func) != 0)
     {
         ERROR("failed to resolve function(s)");
@@ -6882,7 +6907,7 @@ wait_readable(tarpc_wait_readable_in *in,
 
     RING("%s() started", __FUNCTION__);
 
-    if (iomux_find_func(in->common.use_libc, iomux, &iomux_f) != 0)
+    if (iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0)
     {
         return -1;
     }
@@ -6986,7 +7011,7 @@ flooder(tarpc_flooder_in *in)
     memset(rcv_buf, 0x0, FLOODER_BUF);
     memset(snd_buf, 'X', FLOODER_BUF);
 
-    if ((iomux_find_func(in->common.use_libc, iomux, &iomux_f) != 0)    ||
+    if ((iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0)    ||
         (tarpc_find_func(in->common.use_libc, "recv", &recv_func) != 0) ||
         (tarpc_find_func(in->common.use_libc, "send", &send_func) != 0) ||
         (tarpc_find_func(in->common.use_libc, "ioctl", &ioctl_func) != 0))
@@ -7295,7 +7320,7 @@ echoer(tarpc_echoer_in *in)
 
     TAILQ_INIT(&buffs);
 
-    if ((iomux_find_func(in->common.use_libc, iomux, &iomux_f) != 0)    ||
+    if ((iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0)    ||
         (tarpc_find_func(in->common.use_libc, "read", &read_func) != 0) ||
         (tarpc_find_func(in->common.use_libc, "write", &write_func) != 0))
     {
@@ -7528,6 +7553,7 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
     api_func        send_func;
     iomux_funcs     iomux_f;
     char           *buf;
+    iomux_func      iomux = in->iomux;
 
     int size = rand_range(in->size_min, in->size_max);
     int delay = rand_range(in->delay_min, in->delay_max);
@@ -7557,19 +7583,19 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
     if (tarpc_find_func(in->common.use_libc, "send", &send_func) != 0 ||
         (pattern_gen_func =
                 rcf_ch_symbol_addr(in->fname.fname_val, TRUE)) == NULL ||
-        iomux_find_func(in->common.use_libc, in->iomux, &iomux_f) != 0)
+        iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0)
         return -1;
 
-    if ((rc = iomux_create_state(in->iomux, &iomux_f, &iomux_st)) != 0)
+    if ((rc = iomux_create_state(iomux, &iomux_f, &iomux_st)) != 0)
     {
-        iomux_close(in->iomux, &iomux_f, &iomux_st);
+        iomux_close(iomux, &iomux_f, &iomux_st);
         return rc;
     }
 
-    if ((rc = iomux_add_fd(in->iomux, &iomux_f, &iomux_st,
+    if ((rc = iomux_add_fd(iomux, &iomux_f, &iomux_st,
                            in->s, POLLOUT)) != 0)
     {
-        iomux_close(in->iomux, &iomux_f, &iomux_st);
+        iomux_close(iomux, &iomux_f, &iomux_st);
         return rc;
     }
 
@@ -7581,7 +7607,7 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
 
 #define PTRN_SEND_ERROR \
     do {                                             \
-        iomux_close(in->iomux, &iomux_f, &iomux_st); \
+        iomux_close(iomux, &iomux_f, &iomux_st); \
         free(buf);                                   \
         return -1;                                   \
     } while (0)
@@ -7617,7 +7643,7 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
         if (iomux_timeout <= 0)
             break;
 
-        rc = iomux_wait(in->iomux, &iomux_f, &iomux_st, &iomux_ret,
+        rc = iomux_wait(iomux, &iomux_f, &iomux_st, &iomux_ret,
                         iomux_timeout);
 
         if (rc < 0)
@@ -7625,32 +7651,32 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
             if (errno == EINTR)
                 continue;
             ERROR("%s(): %s wait failed: %d", __FUNCTION__,
-                  iomux2str(in->iomux), errno);
+                  iomux2str(iomux), errno);
             PTRN_SEND_ERROR;
         }
         else if (rc > 1)
         {
             ERROR("%s(): %s wait returned more then one fd", __FUNCTION__,
-                  iomux2str(in->iomux));
+                  iomux2str(iomux));
             PTRN_SEND_ERROR;
         }
         else if (rc == 0)
             break;
 
         itr = IOMUX_RETURN_ITERATOR_START;
-        itr = iomux_return_iterate(in->iomux, &iomux_st, &iomux_ret,
+        itr = iomux_return_iterate(iomux, &iomux_st, &iomux_ret,
                                    itr, &fd, &events);
         if (fd != in->s)
         {
             ERROR("%s(): %s wait returned incorrect fd %d instead of %d",
-                  __FUNCTION__, iomux2str(in->iomux), fd, in->s);
+                  __FUNCTION__, iomux2str(iomux), fd, in->s);
             PTRN_SEND_ERROR;
         }
 
         if (!(events & POLLOUT))
         {
             ERROR("%s(): %s wait successeed but the socket is "
-                  "not writable", __FUNCTION__, iomux2str(in->iomux));
+                  "not writable", __FUNCTION__, iomux2str(iomux));
             PTRN_SEND_ERROR;
         }
 
@@ -7679,7 +7705,7 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
     RING("pattern_sender() stopped, sent %llu bytes",
          out->bytes);
 
-    iomux_close(in->iomux, &iomux_f, &iomux_st);
+    iomux_close(iomux, &iomux_f, &iomux_st);
     free(buf);
 
     /* Clean up errno */
@@ -7715,6 +7741,7 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
     iomux_funcs     iomux_f;
     char           *buf;
     char           *check_buf;
+    iomux_func      iomux = in->iomux;
 
     int fd = -1;
     int events = 0;
@@ -7735,19 +7762,19 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
     if (tarpc_find_func(in->common.use_libc, "recv", &recv_func) != 0 ||
         (pattern_gen_func =
                 rcf_ch_symbol_addr(in->fname.fname_val, TRUE)) == NULL ||
-        iomux_find_func(in->common.use_libc, in->iomux, &iomux_f) != 0)
+        iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0)
         return -1;
 
-    if ((rc = iomux_create_state(in->iomux, &iomux_f, &iomux_st)) != 0)
+    if ((rc = iomux_create_state(iomux, &iomux_f, &iomux_st)) != 0)
     {
-        iomux_close(in->iomux, &iomux_f, &iomux_st);
+        iomux_close(iomux, &iomux_f, &iomux_st);
         return rc;
     }
 
-    if ((rc = iomux_add_fd(in->iomux, &iomux_f, &iomux_st,
+    if ((rc = iomux_add_fd(iomux, &iomux_f, &iomux_st,
                            in->s, POLLIN)) != 0)
     {
-        iomux_close(in->iomux, &iomux_f, &iomux_st);
+        iomux_close(iomux, &iomux_f, &iomux_st);
         return rc;
     }
 
@@ -7759,10 +7786,10 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
     }
 
 #define PTRN_RECV_ERROR \
-    do {                                             \
-        iomux_close(in->iomux, &iomux_f, &iomux_st); \
-        free(buf);                                   \
-        return -1;                                   \
+    do {                                         \
+        iomux_close(iomux, &iomux_f, &iomux_st); \
+        free(buf);                               \
+        return -1;                               \
     } while (0)
 
 #define MSEC_DIFF \
@@ -7779,7 +7806,7 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
         if (iomux_timeout <= 0)
             break;
 
-        rc = iomux_wait(in->iomux, &iomux_f, &iomux_st, &iomux_ret,
+        rc = iomux_wait(iomux, &iomux_f, &iomux_st, &iomux_ret,
                         iomux_timeout);
 
         if (rc < 0)
@@ -7787,32 +7814,32 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
             if (errno == EINTR)
                 continue;
             ERROR("%s(): %s wait failed: %d", __FUNCTION__,
-                  iomux2str(in->iomux), errno);
+                  iomux2str(iomux), errno);
             PTRN_RECV_ERROR;
         }
         else if (rc > 1)
         {
             ERROR("%s(): %s wait returned more then one fd", __FUNCTION__,
-                  iomux2str(in->iomux));
+                  iomux2str(iomux));
             PTRN_RECV_ERROR;
         }
         else if (rc == 0)
             break;
 
         itr = IOMUX_RETURN_ITERATOR_START;
-        itr = iomux_return_iterate(in->iomux, &iomux_st, &iomux_ret,
+        itr = iomux_return_iterate(iomux, &iomux_st, &iomux_ret,
                                    itr, &fd, &events);
         if (fd != in->s)
         {
             ERROR("%s(): %s wait returned incorrect fd %d instead of %d",
-                  __FUNCTION__, iomux2str(in->iomux), fd, in->s);
+                  __FUNCTION__, iomux2str(iomux), fd, in->s);
             PTRN_RECV_ERROR;
         }
 
         if (!(events & POLLIN))
         {
             ERROR("%s(): %s wait successeed but the socket is "
-                  "not writable", __FUNCTION__, iomux2str(in->iomux));
+                  "not writable", __FUNCTION__, iomux2str(iomux));
             PTRN_RECV_ERROR;
         }
 
@@ -7842,7 +7869,7 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
             {
                 ERROR("%s(): received data doesn't match a pattern",
                       __FUNCTION__);
-                iomux_close(in->iomux, &iomux_f, &iomux_st);
+                iomux_close(iomux, &iomux_f, &iomux_st);
                 free(buf);
                 return -2; 
             }
@@ -7856,7 +7883,7 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
     RING("pattern_receiver() stopped, received %llu bytes",
          out->bytes);
 
-    iomux_close(in->iomux, &iomux_f, &iomux_st);
+    iomux_close(iomux, &iomux_f, &iomux_st);
     free(buf);
 
     /* Clean up errno */
@@ -8110,7 +8137,7 @@ socket_to_file(tarpc_socket_to_file_in *in)
     INFO("%s() called with: sock=%d, path=%s, timeout=%ld",
          __FUNCTION__, sock, path, time2run);
 
-    if ((iomux_find_func(in->common.use_libc, iomux, &iomux_f) != 0) ||
+    if ((iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0) ||
         (tarpc_find_func(in->common.use_libc, "read", &read_func) != 0) ||
         (tarpc_find_func(in->common.use_libc, "write", &write_func) != 0))
     {
@@ -8308,6 +8335,7 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
     api_func        ioctl_func;
     api_func        send_func;
     iomux_funcs     iomux_f;
+    iomux_func      iomux = in->iomux;
     size_t          max_len = 4096;
     uint8_t        *buf = NULL;
     uint64_t        total = 0;
@@ -8315,7 +8343,6 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
     iomux_state     iomux_st;
 
     out->bytes = 0;
-    iomux_state_init_invalid(in->iomux, &iomux_st);
 
     buf = calloc(1, max_len);
     if (buf == NULL)
@@ -8342,13 +8369,14 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
         goto overfill_buffers_exit;
     }
 
-    if (iomux_find_func(in->common.use_libc, in->iomux, &iomux_f) != 0)
+    if (iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0)
     {
         ERROR("%s(): Failed to resolve iomux %s function(s)",
-              __FUNCTION__, iomux2str(in->iomux));
+              __FUNCTION__, iomux2str(iomux));
         ret = -1;
         goto overfill_buffers_exit;
     }
+    iomux_state_init_invalid(iomux, &iomux_st);
 
 #ifdef __sun__
     /* SunOS has MSG_DONTWAIT flag, but does not support it for send */
@@ -8368,12 +8396,12 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
 #endif
 
     /* Create iomux status and fill it with out fd. */
-    if ((ret = iomux_create_state(in->iomux, &iomux_f, &iomux_st)) != 0 ||
-        (ret = iomux_add_fd(in->iomux, &iomux_f, &iomux_st,
+    if ((ret = iomux_create_state(iomux, &iomux_f, &iomux_st)) != 0 ||
+        (ret = iomux_add_fd(iomux, &iomux_f, &iomux_st,
                            in->sock, POLLOUT)) != 0)
     {
         ERROR("%s(): failed to set up iomux %s state", __FUNCTION__,
-              iomux2str(in->iomux));
+              iomux2str(iomux));
         goto overfill_buffers_exit;
     }
 
@@ -8382,7 +8410,7 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
      * can be considered as not writable.
      */
     do {
-        ret = iomux_wait(in->iomux, &iomux_f, &iomux_st, NULL, 1000);
+        ret = iomux_wait(iomux, &iomux_f, &iomux_st, NULL, 1000);
         if (ret < 0)
         {
             if (errno == EINTR)
@@ -8430,7 +8458,7 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
     } while (unchanged != 4);
 
 overfill_buffers_exit:
-    iomux_close(in->iomux, &iomux_f, &iomux_st);
+    iomux_close(iomux, &iomux_f, &iomux_st);
 
 #ifdef __sun__
     if (!in->is_nonblocking)
@@ -8467,6 +8495,7 @@ iomux_splice(tarpc_iomux_splice_in *in,
     int                     ret = 0;
     api_func                splice_func;
     iomux_funcs             iomux_f;
+    iomux_func              iomux = in->iomux;
     iomux_state             iomux_st;
     iomux_state             iomux_st_rd;
     iomux_return            iomux_ret;
@@ -8485,9 +8514,6 @@ iomux_splice(tarpc_iomux_splice_in *in,
     }
     end.tv_sec += (time_t)(in->time2run);
 
-    iomux_state_init_invalid(in->iomux, &iomux_st);
-    iomux_state_init_invalid(in->iomux, &iomux_st_rd);
-
     if (tarpc_find_func(in->common.use_libc, "splice", &splice_func) != 0)
     {
         ERROR("%s(): Failed to resolve splice() function", __FUNCTION__);
@@ -8495,48 +8521,50 @@ iomux_splice(tarpc_iomux_splice_in *in,
         goto iomux_splice_exit;
     }
 
-    if (iomux_find_func(in->common.use_libc, in->iomux, &iomux_f) != 0)
+    if (iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0)
     {
         ERROR("%s(): Failed to resolve iomux %s function(s)",
-              __FUNCTION__, iomux2str(in->iomux));
+              __FUNCTION__, iomux2str(iomux));
         ret = -1;
         goto iomux_splice_exit;
     }
+    iomux_state_init_invalid(iomux, &iomux_st);
+    iomux_state_init_invalid(iomux, &iomux_st_rd);
 
     /* Create iomux status and fill it with in and out fds. */
-    if ((ret = iomux_create_state(in->iomux, &iomux_f, &iomux_st)) != 0 ||
-        (ret = iomux_add_fd(in->iomux, &iomux_f, &iomux_st,
+    if ((ret = iomux_create_state(iomux, &iomux_f, &iomux_st)) != 0 ||
+        (ret = iomux_add_fd(iomux, &iomux_f, &iomux_st,
                            in->fd_in, POLLIN)) != 0 ||
-        (ret = iomux_add_fd(in->iomux, &iomux_f, &iomux_st,
+        (ret = iomux_add_fd(iomux, &iomux_f, &iomux_st,
                            in->fd_out, POLLOUT)) != 0)
     {
         ERROR("%s(): failed to set up iomux %s state", __FUNCTION__,
-              iomux2str(in->iomux));
+              iomux2str(iomux));
         goto iomux_splice_exit;
     }
     /* Create iomux status and fill it with in fd. */
-    if ((ret = iomux_create_state(in->iomux, &iomux_f,
+    if ((ret = iomux_create_state(iomux, &iomux_f,
                                   &iomux_st_rd)) != 0 ||
-        (ret = iomux_add_fd(in->iomux, &iomux_f, &iomux_st_rd,
+        (ret = iomux_add_fd(iomux, &iomux_f, &iomux_st_rd,
                             in->fd_in, POLLIN)) != 0)
     {
         ERROR("%s(): failed to set up iomux %s state", __FUNCTION__,
-              iomux2str(in->iomux));
+              iomux2str(iomux));
         goto iomux_splice_exit;
     }
 
     do {
         if (out_ev)
-            ret = iomux_wait(in->iomux, &iomux_f, &iomux_st_rd, NULL, 1000);
+            ret = iomux_wait(iomux, &iomux_f, &iomux_st_rd, NULL, 1000);
         else
-            ret = iomux_wait(in->iomux, &iomux_f, &iomux_st, &iomux_ret,
+            ret = iomux_wait(iomux, &iomux_f, &iomux_st, &iomux_ret,
                              1000);
         if (ret < 0)
         {
             if (errno == EINTR)
                 continue; /* probably, SIGCHLD */
             out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);
-            ERROR("%s(): %s() failed", __FUNCTION__, iomux2str(in->iomux));
+            ERROR("%s(): %s() failed", __FUNCTION__, iomux2str(iomux));
             break;
         }
 
@@ -8551,7 +8579,7 @@ iomux_splice(tarpc_iomux_splice_in *in,
         if (ret == 1 && !out_ev)
         {
             itr = IOMUX_RETURN_ITERATOR_START;
-            itr = iomux_return_iterate(in->iomux, &iomux_st, &iomux_ret,
+            itr = iomux_return_iterate(iomux, &iomux_st, &iomux_ret,
                                        itr, &fd, &events);
             if (!(events & POLLOUT))
             {
@@ -8583,7 +8611,7 @@ iomux_splice(tarpc_iomux_splice_in *in,
     } while (end.tv_sec > now.tv_sec);
 
 iomux_splice_exit:
-    iomux_close(in->iomux, &iomux_f, &iomux_st);
+    iomux_close(iomux, &iomux_f, &iomux_st);
 
     return (ret > 0) ? 0 : ret;
 }
@@ -8698,6 +8726,7 @@ multiple_iomux(tarpc_multiple_iomux_in *in,
                tarpc_multiple_iomux_out *out)
 {
     iomux_funcs     iomux_f;
+    iomux_func      iomux = in->iomux;
     iomux_state     iomux_st;
     int             ret;
     int             events;
@@ -8707,27 +8736,27 @@ multiple_iomux(tarpc_multiple_iomux_in *in,
     struct timeval  tv_start;
     struct timeval  tv_finish;
 
-    if (iomux_find_func(in->common.use_libc, in->iomux, &iomux_f) != 0)
+    if (iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0)
     {
         ERROR("%s(): Failed to resolve iomux %s function(s)",
-              __FUNCTION__, iomux2str(in->iomux));
+              __FUNCTION__, iomux2str(iomux));
         return -1;
     }
 
-    if ((ret = iomux_create_state(in->iomux, &iomux_f, &iomux_st)) != 0)
+    if ((ret = iomux_create_state(iomux, &iomux_f, &iomux_st)) != 0)
     {
         ERROR("%s(): failed to set up iomux %s state", __FUNCTION__,
-              iomux2str(in->iomux));
+              iomux2str(iomux));
         return -1;
     }
 
     events = poll_event_rpc2h(in->events);
 
-    if ((ret = iomux_add_fd(in->iomux, &iomux_f, &iomux_st,
+    if ((ret = iomux_add_fd(iomux, &iomux_f, &iomux_st,
                             in->fd, events)) != 0)
     {
         ERROR("%s(): failed to set up iomux %s state", __FUNCTION__,
-              iomux2str(in->iomux));
+              iomux2str(iomux));
         goto multiple_iomux_exit;
     }
 
@@ -8736,7 +8765,7 @@ multiple_iomux(tarpc_multiple_iomux_in *in,
 
     for (i = 0; i < in->count || in->count == -1; i++)
     {
-        ret = iomux_wait(in->iomux, &iomux_f, &iomux_st, NULL, 0);
+        ret = iomux_wait(iomux, &iomux_f, &iomux_st, NULL, 0);
         if (ret == 0)
             zero_ret++;
         else if (ret < 0)
@@ -8768,7 +8797,7 @@ multiple_iomux(tarpc_multiple_iomux_in *in,
 
 multiple_iomux_exit:
 
-    iomux_close(in->iomux, &iomux_f, &iomux_st);
+    iomux_close(iomux, &iomux_f, &iomux_st);
 
     if (saved_errno != 0)
         errno = saved_errno;

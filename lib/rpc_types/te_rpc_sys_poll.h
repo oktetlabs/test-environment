@@ -120,6 +120,8 @@ iomux2str(iomux_func iomux)
             return "epoll";
         case FUNC_EPOLL_PWAIT:
             return "epoll_pwait";
+        case FUNC_DEFAULT_IOMUX:
+            return "default iomux";
         default:
             return "<unknown>";
     }
