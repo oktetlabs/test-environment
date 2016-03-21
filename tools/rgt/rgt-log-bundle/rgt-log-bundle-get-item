@@ -1,305 +1,242 @@
-#!/usr/bin/perl
+#!/bin/bash
 
-use warnings;
-use strict;
-use File::Temp qw/ tempdir /;
-use Cwd qw/ abs_path /;
-use File::Basename;
+bundle_path=
+req_path=
+shared_url=
+docs_url=
 
-my $bundle_path;
-my $req_path;
-my $shared_url = "";
-my $docs_url = "";
-my $add_opts = "";
-
-foreach my $arg (@ARGV)
+usage()
 {
-    if ($arg =~ m/^--bundle=([^[:space:]]+)/)
-    {
-        $bundle_path = $1;
-    }
-    elsif ($arg =~ m/^--req-path=([^[:space:]]+)/)
-    {
-        $req_path = $1;
-    }
-    elsif ($arg =~ m/^--shared-url=([^[:space:]]*)/)
-    {
-        $shared_url = $1;
-    }
-    elsif ($arg =~ m/^--docs-url=([^[:space:]]*)/)
-    {
-        $docs_url = $1;
-    }
+cat <<EOF
+Usage: rgt-log-bundle-get-item [<options>]
+  --bundle=PATH        Raw log bundle path
+  --req-path=PATH      Path to HTML log to be obtained
+  --shared-url=URL     URL of directory for shared files (images etc.)
+  --docs-url=URL       URL of directory for test descriptions
+
+EOF
+}
+
+while test -n "$1" ; do
+    opt="$1"
+    case "${opt}" in
+        --help         )   usage ; exit 0 ;;
+        --bundle=*     )   bundle_path="${opt#--bundle=}" ;;
+        --req-path=*   )   req_path="${opt#--req-path=}" ;;
+        --shared-url=* )   shared_url="${opt#--shared-url=}" ;;
+        --docs-url=*   )   docs_url="${opt#--docs-url=}" ;;
+
+                      *)   echo "Unknown option: ${opt}" >&2;
+                           usage ;
+                           exit 1 ;;
+    esac
+
+    shift 1
+done
+
+if test -z "${bundle_path}" -o -z "${req_path}" ; then
+    echo "Not all the required arguments were specified" >&2
+    exit 1
+fi
+
+bundle_tmpdir=$(mktemp -d "/tmp/raw_log_bundle_XXXXXX")
+if test $? -ne 0 ; then
+    echo "Failed to create temporary directory" >&2
+    exit 1
+fi
+
+cleanup()
+{
+    if test -n "${bundle_tmpdir}" ; then
+        rm -r "${bundle_tmpdir}"
+    fi
+}
+
+err_cleanup()
+{
+    echo "$1" >&2
+    cleanup
+    exit 1
+}
+
+mkdir -p "${bundle_tmpdir}/fragments"
+if test $? -ne 0 ; then
+    err_cleanup "Failed to create subdir in ${bundle_tmpdir}"
+fi
+
+if [[ "${req_path}" =~ log_gist[.]raw$ ]] ; then
+    pixz -x log_gist.raw <"${bundle_path}" | tar -x -O >"${req_path}"
+    if test $? -ne 0 ; then
+        err_cleanup "Failed to extract log_gist.raw"
+    fi
+
+elif [[ "${req_path}" =~ log[.]raw$ ]] ; then
+
+    rgt-log-bundle-get-original --bundle="${bundle_path}" \
+        --output="${req_path}"
+    if test $? -ne 0 ; then
+        err_cleanup "Failed to recover original raw log"
+    fi
+
+elif [[ "${req_path}" =~ log[.]txt$ ]] ; then
+
+    rgt-log-bundle-get-original --bundle="${bundle_path}" \
+        --output="${bundle_tmpdir}/recovered_log.raw"
+    if test $? -ne 0 ; then
+        err_cleanup "Failed to recover original raw log"
+    fi
+
+    rgt-conv --no-cntrl-msg --incomplete-log \
+        -f "${bundle_tmpdir}/recovered_log.raw" \
+        -o "${bundle_tmpdir}/recovered_log.xml"
+    if test $? -ne 0 ; then
+        err_cleanup "Failed to obtain XML log"
+    fi
+
+    rgt-xml2text -f "${bundle_tmpdir}/recovered_log.xml" \
+        -o "${req_path}"
+    if test $? -ne 0 ; then
+        err_cleanup "Failed to obtain TXT log"
+    fi
+
+elif [[ "${req_path}" =~ /html[/]?$ ||
+        "${req_path}" =~ ^html[/]?$ ]] ; then
+
+    pixz -x log_gist.raw <"${bundle_path}" | tar x -C \
+        "${bundle_tmpdir}/fragments/"
+    if test $? -ne 0 ; then
+        err_cleanup "Failed to extract log_gist.raw"
+    fi
+
+    rgt-conv --incomplete-log "${bundle_tmpdir}/fragments/log_gist.raw" \
+        "${bundle_tmpdir}/log_gist.xml"
+    if test $? -ne 0 ; then
+        err_cleanup "Failed to obtain log_gist.xml"
+    fi
+
+    rgt-xml2html-multi --index-only --shared-url="${shared_url}" \
+        --docs-url="${docs_url}" \
+        "${bundle_tmpdir}/log_gist.xml" "${req_path}"
+    if test $? -ne 0 ; then
+        err_cleanup "Failed to obtain html log tree"
+    fi
+
+elif [[ "${req_path}" =~ node_[^/]*[.]html$ ]] ; then
+
+    cur_page=1
+    all_pages=0
+    pages_count=0
+    merge_frag_num=0
+    frags_str=
+
+    shopt -s extglob
+
+    node="${req_path##*/}"
+    node="${node#node_}"
+    node="${node%.html}"
+
+    if [[ "${node}" =~ ^([0-9]+)_([0-9]+) ]] ; then
+        filter_depth="${BASH_REMATCH[1]}"
+        filter_seq="${BASH_REMATCH[2]}"
+    elif [[ "${node}" =~ ^([0-9]+) ]] ; then
+        filter_tin="${BASH_REMATCH[1]}"
     else
-    {
-        print "Obtaining HTML log from fragmented raw log bundle\n".
-              "  --bundle=        Raw log bundle path\n".
-              "  --req-path=      Path to HTML log\n".
-              "  --shared-url=    URL of directory for shared files (images etc.)\n".
-              "  --docs-url=      URL of directory for test descriptions\n";
-        exit(0);
-    }
-}
+        err_cleanup "Cannot obtain \"${req_path}\""
+    fi
 
-if (!defined($bundle_path) || !defined($req_path))
-{
-    print STDERR "Not all required arguments specified\n";
-    exit(1);
-}
+    if [[ "${node}" =~ _p([0-9]+)$ ]] ; then
+        cur_page="${BASH_REMATCH[1]}"
+        node="${node%%_p+(0-9)}"
+    fi
+    if [[ "${node}" =~ _all$ ]] ; then
+        all_pages=1
+        node="${node%_all}"
+    fi
 
-if (length($shared_url) > 0)
-{
-    $add_opts = $add_opts." --shared-url=$shared_url";
-}
-if (length($docs_url) > 0)
-{
-    $add_opts = $add_opts." --docs-url=$docs_url";
-}
+    pixz -x log_gist.raw frags_list <"${bundle_path}" |\
+        tar x -C "${bundle_tmpdir}/fragments/"
+    if test $? -ne 0 ; then
+        err_cleanup "Failed to extract log_gist.raw and frags_list"
+    fi
 
-if (!($req_path =~ /html[\/]?$/) && !($req_path =~ /log[.]txt$/)
-    && !($req_path =~ /log[.]raw$/) && !($req_path =~ /log_gist[.]raw$/))
-{
-    print STDERR "Failed to get file $req_path";
-    exit(1);
-}
+    while read frag_name frag_tin frag_depth frag_seq \
+          frag_len frag_start_len frag_pages_cnt || \
+          [[ -n "${frag_name}" ]] ; do
 
-my $bundle_tmpdir;
-my $rc;
+        if test -n "${frag_pages_cnt}" ; then
 
-sub cleanup
-{
-    if (defined($bundle_tmpdir))
-    {
-        system("rm -r \"${bundle_tmpdir}\"");
-    }
-}
+            if test \( -n "${filter_tin}" \
+                       -a x"${filter_tin}" = x"${frag_tin}" \) -o \
+                    \( -n "${filter_depth}" \
+                       -a x"${filter_depth}" = x"${frag_depth}" \
+                       -a -n "${filter_seq}" \
+                       -a x"${filter_seq}" = x"${frag_seq}" \) ; then
 
-sub err_cleanup
-{
-    my $msg = $_[0];
+                pages_count="${frag_pages_cnt}"
 
-    print STDERR "$msg\n";
-    cleanup();
-    exit(1);
-}
-
-$bundle_tmpdir = tempdir("/tmp/extracted_raw_log_XXXX");
-
-$rc = system("mkdir -p $bundle_tmpdir/fragments");
-if ($rc != 0)
-{
-    err_cleanup("Failed to create subfolder in $bundle_tmpdir");
-}
-
-if ($req_path =~ /log_gist[.]raw$/)
-{
-    $rc = system("pixz -x log_gist.raw <$bundle_path ".
-                 "| tar x -O >\"$req_path\"");
-    if ($rc != 0)
-    {
-        err_cleanup("Failed to extract log_gist.raw");
-    }
-}
-elsif ($req_path =~ /log[.]raw$/)
-{
-    $rc = system("rgt-log-bundle-get-original --bundle=$bundle_path ".
-                 "--output=\"$req_path\"");
-    if ($rc != 0)
-    {
-        err_cleanup("Failed to recover original raw log");
-    }
-}
-elsif ($req_path =~ /log[.]txt$/)
-{
-    $rc = system("rgt-log-bundle-get-original --bundle=$bundle_path ".
-                 "--output=$bundle_tmpdir/recovered_raw_log");
-    if ($rc != 0)
-    {
-        err_cleanup("Failed to recover original raw log");
-    }
-
-    $rc = system("rgt-conv --no-cntrl-msg --incomplete-log ".
-                 "-f $bundle_tmpdir/recovered_raw_log ".
-                 "-o $bundle_tmpdir/recovered_log.xml");
-    if ($rc != 0)
-    {
-        err_cleanup("Failed to obtain XML log");
-    }
-
-    $rc = system("rgt-xml2text ".
-                 "-f $bundle_tmpdir/recovered_log.xml ".
-                 "-o $req_path");
-    if ($rc != 0)
-    {
-        err_cleanup("Failed to obtain TXT log");
-    }
-}
-elsif ($req_path =~ /[\/]html[\/]?$/ ||
-       $req_path =~ /^html[\/]?$/)
-{
-    $rc = system("pixz -x log_gist.raw <$bundle_path ".
-                 "| tar x -C $bundle_tmpdir/fragments/");
-    if ($rc != 0)
-    {
-        err_cleanup("Failed to extract log_gist.raw");
-    }
-
-    $rc = system("rgt-conv --incomplete-log ".
-                 "$bundle_tmpdir/fragments/log_gist.raw ".
-                 "$bundle_tmpdir/log_gist.xml");
-    if ($rc != 0)
-    {
-        err_cleanup("Failed to obtain XML log");
-    }
-
-    $rc = system("rgt-xml2html-multi --index-only $add_opts ".
-                 "$bundle_tmpdir/log_gist.xml $req_path");
-    if ($rc != 0)
-    {
-        err_cleanup("Failed to obtain html log tree");
-    }
-}
-else
-{
-    my $node;
-    my $filter_tin;
-    my $filter_depth;
-    my $filter_seq;
-    my $tin;
-    my $depth;
-    my $seq;
-    my $name;
-    my $cmd;
-    my $dir_path;
-
-    my @frags_list = ();
-    my @frag_names = ();
-    my $frags_str = "";
-    my $cur_page = 1;
-    my $all_pages = 0;
-    my $pages_count = 0;
-    my $merge_frag_num = 0;
-
-    $node = $req_path;
-    $node =~ s/.*\///g;
-    $node =~ s/^node_//;
-    $node =~ s/[.]html$//;
-
-    if ($node =~ /^([0-9]+)_([0-9]+)/)
-    {
-        $filter_depth = $1;
-        $filter_seq = $2;
-    }
-    elsif ($node =~ /^([0-9]+)/)
-    {
-        $filter_tin = $1;
-    }
-
-    if ($node =~ /_p([0-9]+)/)
-    {
-        $cur_page = $1;
-        $node =~ s/_p[0-9]+//;
-    }
-    if ($node =~ /_all$/)
-    {
-        $all_pages = 1;
-        $node =~ s/_all$//;
-    }
-
-    $rc = system("pixz -x log_gist.raw frags_list <$bundle_path ".
-                 "| tar x -C $bundle_tmpdir/fragments/");
-    if ($rc != 0)
-    {
-        err_cleanup("Failed to extract log_gist.raw and frags_list");
-    }
-
-    @frags_list = `cat $bundle_tmpdir/fragments/frags_list`;
-    foreach my $str (@frags_list)
-    {
-        my @fields = split /\s+/, $str;
-        if (scalar(@fields) == 7)
-        {
-            if ((defined($filter_tin) && $filter_tin eq $fields[1]) ||
-                (defined($filter_depth) && $filter_depth eq $fields[2] &&
-                 defined($filter_seq) && $filter_seq eq $fields[3]))
-            {
-                $pages_count = $fields[6];
-                if ($pages_count > 0)
-                {
-                    my $frag_name = $fields[0];
-
-                    $frag_name =~ s/_start/_inner/;
-
-                    if ($all_pages > 0)
-                    {
-                        for (my $i = 0; $i < $pages_count; $i++)
-                        {
-                            $frags_str = $frags_str." ".$frag_name."_".$i;
-                        }
-                    }
+                if test ${pages_count} -gt 0 ; then
+                    frag_name="${frag_name/%_start/_inner}"
+                    if test ${all_pages} -gt 0 ; then
+                        for ((i = 0 ; i < pages_count ; i++)) ; do
+                            frags_str="${frags_str} ${frag_name}_$i"
+                        done
                     else
-                    {
-                        $frags_str = $frag_name."_".($cur_page - 1);
-                    }
-                }
-                last;
-            }
-        }
-    }
+                        frags_str="${frag_name}_$(($cur_page - 1))"
+                    fi
+                fi
 
-    if (length($frags_str) > 0)
-    {
-        $rc = system("pixz -x $frags_str  <$bundle_path ".
-                     "| tar x -C $bundle_tmpdir/fragments/");
-        if ($rc != 0)
-        {
-            err_cleanup("Failed to extract log fragments");
-        }
-    }
+                break
+            fi
+        fi
 
-    if ($all_pages > 0)
-    {
-        $merge_frag_num = "all";
-    }
+    done <"${bundle_tmpdir}/fragments/frags_list"
+
+    if test -n "${frags_str}" ; then
+        pixz -x ${frags_str} <"${bundle_path}" |\
+            tar x -C "${bundle_tmpdir}/fragments/"
+        if test $? -ne 0 ; then
+            err_cleanup "Failed to extract log fragments"
+        fi
+    fi
+
+    if test ${all_pages} -gt 0 ; then
+        merge_frag_num=all
     else
-    {
-        $merge_frag_num = $cur_page - 1;
-    }
+        merge_frag_num=$((cur_page - 1))
+    fi
 
-    $rc = system("rgt-log-merge --split-log=$bundle_tmpdir/fragments ".
-                 "--filter=$node --page=$merge_frag_num ".
-                 "--output=$bundle_tmpdir/log_merge.raw");
-    if ($rc != 0)
-    {
-        err_cleanup("Failed to merge log fragments");
-    }
+    rgt-log-merge --split-log="${bundle_tmpdir}/fragments/" \
+        --filter="${node}" --page="${merge_frag_num}" \
+        --output="${bundle_tmpdir}/log_merge.raw"
+    if test $? -ne 0 ; then
+        err_cleanup "Failed to merge log fragments"
+    fi
 
-    $rc = system("rgt-conv --incomplete-log ".
-                 "$bundle_tmpdir/log_merge.raw ".
-                 "$bundle_tmpdir/log_merge.xml");
-    if ($rc != 0)
-    {
-        err_cleanup("Failed to obtain XML log");
-    }
+    rgt-conv --incomplete-log "${bundle_tmpdir}/log_merge.raw" \
+        "${bundle_tmpdir}/log_merge.xml"
+    if test $? -ne 0 ; then
+        err_cleanup "Failed to obtain merged XML log"
+    fi
 
-    $cmd = "rgt-xml2html-multi --single-node=$node $add_opts";
-    if ($all_pages > 0)
-    {
-        $cmd = $cmd." --page-selector=all";
-    }
-    elsif ($pages_count > 1)
-    {
-        $cmd = $cmd." --page-selector=$cur_page/$pages_count";
-    }
-    (undef, $dir_path, undef) = fileparse($req_path);
-    $cmd = $cmd." $bundle_tmpdir/log_merge.xml $dir_path";
+    page_selector=
+    if test ${all_pages} -gt 0 ; then
+        page_selector="--page-selector=all"
+    elif test ${pages_count} -gt 1 ; then
+        page_selector="--page-selector=${cur_page}/${pages_count}"
+    fi
+    dir_path=$(dirname "${req_path}")
 
-    $rc = system($cmd);
-    if ($rc != 0)
-    {
-        err_cleanup("Failed to obtain HTML log");
-    }
-}
+    rgt-xml2html-multi --single-node="${node}" \
+        --shared-url="${shared_url}" \
+        --docs-url="${docs_url}" ${page_selector} \
+        "${bundle_tmpdir}/log_merge.xml" "${dir_path}"
+    if test $? -ne 0 ; then
+        err_cleanup "Failed to obtain HTML log"
+    fi
 
-cleanup();
-exit(0);
+else
+    err_cleanup "Unknown target type in \"${req_path}\""
+fi
+
+cleanup
+exit 0

@@ -94,12 +94,12 @@ typedef struct log_msg_name {
  * If this value is NULL, all of the files are copied
  * to report output directory.
  */
-const char *shared_url = NULL;
+char *shared_url = NULL;
 
 /*
  * Base URL for doxygen-generated documentation for tests
  */
-const char *docs_url = NULL;
+char *docs_url = NULL;
 
 /* Forward declaration */
 static depth_ctx_user_t *alloc_depth_user_data(uint32_t depth);
@@ -145,6 +145,11 @@ void rgt_process_cmdline(rgt_gen_ctx_t *ctx, poptContext con, int val)
             fprintf(stderr, "Warning: URL for shared files is not "
                     "a directory (or trailing '/' is missing)");
         }
+        else if (len == 0)
+        {
+            free(shared_url);
+            shared_url = NULL;
+        }
     }
     else if (val == 'd')
     {
@@ -154,6 +159,11 @@ void rgt_process_cmdline(rgt_gen_ctx_t *ctx, poptContext con, int val)
         {
             fprintf(stderr, "Warning: URL for test descriptions is not "
                     "a directory (or trailing '/' is missing)");
+        }
+        else if (len == 0)
+        {
+            free(docs_url);
+            docs_url = NULL;
         }
     }
     else if (val == 'n')
