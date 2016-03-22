@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export TMPDIR="${TMPDIR:-/tmp}"
+
 raw_log_path="${PWD}/log.raw"
 bundle_path="${PWD}/raw_log_bundle.tpxz"
 
@@ -27,7 +29,7 @@ while test -n "$1" ; do
     shift 1
 done
 
-bundle_tmpdir=$(mktemp -d "/tmp/raw_log_bundle_XXXXXX")
+bundle_tmpdir=$(mktemp -d "${TMPDIR}/raw_log_bundle_XXXXXX")
 if test $? -ne 0 ; then
     echo "Failed to create temporary directory" >&2
     exit 1
@@ -90,14 +92,20 @@ if test $? -ne 0 ; then
 fi
 
 echo "Archiving fragmented raw log..."
-cd "${bundle_tmpdir}/fragments/"
+pushd "${bundle_tmpdir}/fragments/" >/dev/null
 if test $? -ne 0 ; then
-    err_cleanup "cd to /fragments/ subdir failed"
+    err_cleanup "pushd to /fragments/ subdir failed"
 fi
 
 tar -Ite_pixz_wrapper -cf "${bundle_path}" *
 if test $? -ne 0 ; then
+    popd >/dev/null
     err_cleanup "Failed to create raw log bundle"
+fi
+
+popd >/dev/null
+if test $? -ne 0 ; then
+    err_cleanup "popd failed"
 fi
 
 echo "Checking whether original log can be recovered..."

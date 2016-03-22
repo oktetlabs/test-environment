@@ -47,8 +47,8 @@ rgt_log_recover_SOURCES = rgt_log_recover.c $(RGT_LOG_ARCHIVE_COMMON_SRC)
 rgt_log_recover_LDADD = $(RGT_LOG_ARCHIVE_COMMON_LIB)
 
 bin_SCRIPTS = rgt-log-bundle-create rgt-log-bundle-get-original \
-              rgt-log-bundle-get-item te_pixz_wrapper
+              rgt-log-bundle-get-item te_pixz_wrapper te_repack_raw_logs
 
 CLEANFILES = rgt-log-split rgt-log-merge rgt-log-recover \
              rgt-log-bundle-create rgt-log-bundle-get-original \
-             rgt-log-bundle-get-item te_pixz_wrapper
+             rgt-log-bundle-get-item te_pixz_wrapper te_repack_raw_logs

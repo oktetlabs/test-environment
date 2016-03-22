@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export TMPDIR="${TMPDIR:-/tmp}"
+
 usage()
 {
 cat <<EOF
@@ -27,7 +29,7 @@ while test -n "$1" ; do
     shift 1
 done
 
-bundle_tmpdir=$(mktemp -d "/tmp/raw_log_bundle_XXXXXX")
+bundle_tmpdir=$(mktemp -d "${TMPDIR}/raw_log_bundle_XXXXXX")
 if test $? -ne 0 ; then
     echo "Failed to create temporary directory" >&2
     exit 1

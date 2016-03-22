@@ -1,0 +1,130 @@
+#!/bin/bash
+
+export TMPDIR="${TMPDIR:-/tmp}"
+
+set -e
+
+if test x"$*" = x -o x"$1" = x"--help" -o x"$1" = x"-h" ; then
+    cat <<EOF
+Repacking existing raw logs in specified directories and their subdirs:
+log.raw.bz2 -> raw_log_bundle.tpxz
+Usage: repack_raw_logs dir_path1 [dir_path2 dir_path3 ... dir_pathN]
+Environment variables:
+    TMPDIR          Directory for temporary files (/tmp/ if not set)
+    PATH            Should include path to TE scripts and tools
+EOF
+    exit 0
+fi
+
+raw_from_bz2=
+raw_from_bundle=
+
+# Remove temporary files created by check_bundle()
+check_bundle_cleanup()
+{
+    if test -n "${raw_from_bz2}" ; then
+        rm "${raw_from_bz2}" || \
+            echo "Failed to remove ${raw_from_bz2}" 2>&1
+    fi
+    if test -n "${raw_from_bundle}" ; then
+        rm "${raw_from_bundle}" || \
+            echo "Failed to remove ${raw_from_bundle}" 2>&1
+    fi
+}
+
+# Check that existing raw_log_bundle.tpxz matches existing
+# log.raw.bz2, i.e. the same raw log can be extracted from both
+# of them and therefore log.raw.bz2 can be safely removed
+check_bundle()
+{
+    log_dir=$1
+
+    raw_from_bz2=$(mktemp "${TMPDIR}/raw_log_XXXXXX") && rc=0 || rc=1
+    if test $rc -ne 0 ; then
+        echo "Failed to create temporary file" 2>&1
+        check_bundle_cleanup
+        return 1
+    fi
+    raw_from_bundle=$(mktemp "${TMPDIR}/raw_log_XXXXXX") && rc=0 || rc=1
+    if test $rc -ne 0 ; then
+        echo "Failed to create temporary file" 2>&1
+        check_bundle_cleanup
+        return 1
+    fi
+
+    bunzip2 --keep "${log_dir}/log.raw.bz2" -c >"${raw_from_bz2}" \
+        && rc=0 || rc=1
+    if test $rc -ne 0 ; then
+        echo "Failed to unpack raw log from bz2 archive" 2>&1
+        check_bundle_cleanup
+        return 1
+    fi
+
+
+    rgt-log-bundle-get-original --bundle="${log_dir}/raw_log_bundle.tpxz" \
+        --output="${raw_from_bundle}" && rc=0 || rc=1
+    if test $rc -ne 0 ; then
+        echo "Failed to recover original raw log from bundle" 2>&1
+        check_bundle_cleanup
+        return 1
+    fi
+
+    diff "${raw_from_bz2}" "${raw_from_bundle}" && rc=0 || rc=1
+    if test $rc -ne 0 ; then
+        echo "Exising bundle is broken" 2>&1
+        check_bundle_cleanup
+        return 1
+    fi
+
+    check_bundle_cleanup
+    return 0
+}
+
+# Repack found log.raw.bz2 files into raw_log_bundle.tpxz files
+process_raw_logs()
+{
+    while read file_name || [[ -n "${file_name}" ]] ; do
+        echo "Repacking '${file_name}'..."
+        log_dir=$(dirname "${file_name}") && rc=0 || rc=1
+        if test $rc -ne 0 ; then
+            echo "REPACK ERROR: Failed to " \
+                 "determine directory of '${file_name}'" 2>&1
+        else
+            if test -f "${log_dir}/raw_log_bundle.tpxz" ; then
+                echo "Raw log bundle already exists"
+
+                check_bundle "${log_dir}" && rc=0 || rc=1
+                if test $rc -ne 0 ; then
+                    echo "REPACK ERROR: existing bundle does " \
+                         "not match existing log.raw.bz2" 2>&1
+                else
+                    rm "${file_name}" && rc=0 || rc=1
+                    if test $rc -ne 0 ; then
+                        echo "REPACK ERROR: Failed " \
+                             "to delete '${file_name}'" 2>&1
+                    fi
+                fi
+            else
+                rgt-log-bundle-create --raw-log="${file_name}" \
+                    --bundle="${log_dir}/raw_log_bundle.tpxz" && rc=0 || rc=1
+                if test $rc -ne 0 ; then
+                    echo "REPACK ERROR: Failed to repack '${file_name}'" 2>&1
+                else
+                    # rgt-log-bundle-create returns success
+                    # only after checking that original raw log
+                    # can be recovered from bundle and is exactly the same
+                    # as raw log unpacked from log.raw.bz2, so there is
+                    # no point to redo this check here
+
+                    rm "${file_name}" && rc=0 || rc=1
+                    if test $rc -ne 0 ; then
+                        echo "REPACK ERROR: Failed to " \
+                             "delete '${file_name}'" 2>&1
+                    fi
+                fi
+            fi
+        fi
+    done
+}
+
+find -L $@ -name "log.raw.bz2" | process_raw_logs
