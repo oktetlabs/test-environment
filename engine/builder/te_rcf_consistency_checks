@@ -66,7 +66,7 @@ generate() {
     echo -n "rcf_consistency_checks;sha512sum;"
     rpc_files |
         sed '/^\s*$/d' |
-        sort -u |
+        LC_COLLATE=C sort -u |
         xargs cat |
         sha512sum |
         awk '{print $1}'
