@@ -897,14 +897,16 @@ msghdr_check_msg_flags(rpc_msghdr *msg, te_bool ok)
 
     if (ok && msg->msg_flags != 0)
     {
-        RING_VERDICT("Non-zero msg_flags value was returned: %s",
-                     send_recv_flags_rpc2str(msg->msg_flags));
+        ERROR("Returned flags value: %s",
+              send_recv_flags_rpc2str(msg->msg_flags));
+        RING_VERDICT("Non-zero msg_flags value was returned");
     }
     else if (!ok && msg->in_msg_flags != msg->msg_flags)
     {
-        RING_VERDICT("msg_flags field have changed its value: %s -> %s",
-                     send_recv_flags_rpc2str(msg->in_msg_flags),
-                     send_recv_flags_rpc2str(msg->msg_flags));
+        ERROR("Returned -> expected flags value: %s -> %s",
+              send_recv_flags_rpc2str(msg->msg_flags),
+              send_recv_flags_rpc2str(msg->in_msg_flags));
+        RING_VERDICT("msg_flags field have changed its value");
     }
 }
 
