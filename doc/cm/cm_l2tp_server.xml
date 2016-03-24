@@ -112,19 +112,19 @@
          Name: any 
                "*" indicates that any server is allowed -->
     <object oid="/agent/l2tp/lns/auth/client/server" 
-        access="read_write" type="none"/>    
+        access="read_write" type="string"/>    
 
     <!-- Secret for the authentication secrets.
          Name: any
                "*" indicates that any secret is allowed -->
     <object oid="/agent/l2tp/lns/auth/client/secret" 
-        access="read_write" type="none"/>    
+        access="read_write" type="string"/>    
 
     <!-- IPv4 for the authentication secrets.
          Name: IPv4 in human notation (with dots) 
                "*" indicates that any IP address is allowed -->
     <object oid="/agent/l2tp/lns/auth/client/ipv4" 
-        access="read_write" type="none"/>          
+        access="read_write" type="string"/>          
 
     <!-- Use challenge authentication to authenticate peer.
          Name: empty
