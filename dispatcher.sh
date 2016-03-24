@@ -1239,6 +1239,7 @@ if test -n "${CONF_RGT}" ; then
 fi
 
 if test -n "${TE_LOG_BUNDLE}" ; then
+    export TMPDIR="${TE_TMP}"
     rgt-log-bundle-create --raw-log="${TE_LOG_RAW}" \
         --bundle="${TE_LOG_BUNDLE}" >/dev/null
 fi
