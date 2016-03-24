@@ -2295,105 +2295,101 @@ TARPC_FUNC(getpeername,
 
 /*-------------- fd_set constructor ----------------------------*/
 
-bool_t
-_fd_set_new_1_svc(tarpc_fd_set_new_in *in, tarpc_fd_set_new_out *out,
-                  struct svc_req *rqstp)
+void
+fd_set_new(tarpc_fd_set_new_out *out)
 {
-    fd_set *set;
-
-    UNUSED(rqstp);
-    UNUSED(in);
-
-    memset(out, 0, sizeof(*out));
-
-    errno = 0;
-    if ((set = (fd_set *)calloc(1, sizeof(fd_set))) == NULL)
-    {
-        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
-    else
-    {
-        out->retval = rcf_pch_mem_alloc(set);
-        out->common._errno = RPC_ERRNO;
-    }
-
-    return TRUE;
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_FD_SET, {
+        fd_set *ptr = calloc(1, sizeof(fd_set));
+        out->retval = RCF_PCH_MEM_INDEX_ALLOC(ptr, ns);
+    });
 }
+
+TARPC_FUNC(fd_set_new, {},
+{
+    MAKE_CALL(fd_set_new(out));
+})
 
 /*-------------- fd_set destructor ----------------------------*/
 
-bool_t
-_fd_set_delete_1_svc(tarpc_fd_set_delete_in *in,
-                     tarpc_fd_set_delete_out *out,
-                     struct svc_req *rqstp)
+te_errno
+fd_set_delete(tarpc_fd_set_delete_in *in,
+              tarpc_fd_set_delete_out *out)
 {
-    UNUSED(rqstp);
-
-    memset(out, 0, sizeof(*out));
-
-    errno = 0;
-    free(IN_FDSET);
-    rcf_pch_mem_free(in->set);
-    out->common._errno = RPC_ERRNO;
-
-    return TRUE;
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_FD_SET, {
+        free(IN_FDSET_NS(ns));
+        return RCF_PCH_MEM_INDEX_FREE(in->set, ns);
+    });
+    return out->common._errno;
 }
+
+TARPC_FUNC(fd_set_delete, {},
+{
+    te_errno rc;
+    MAKE_CALL(rc = fd_set_delete(in, out));
+    if (out->common._errno == 0)
+        out->common._errno = rc;
+})
 
 /*-------------- FD_ZERO --------------------------------*/
 
-bool_t
-_do_fd_zero_1_svc(tarpc_do_fd_zero_in *in, tarpc_do_fd_zero_out *out,
-                  struct svc_req *rqstp)
+void
+do_fd_zero(tarpc_do_fd_zero_in *in)
 {
-    UNUSED(rqstp);
-
-    memset(out, 0, sizeof(*out));
-
-    FD_ZERO(IN_FDSET);
-    return TRUE;
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_FD_SET, {
+        FD_ZERO(IN_FDSET_NS(ns));
+    });
 }
+
+TARPC_FUNC(do_fd_zero, {},
+{
+    MAKE_CALL(do_fd_zero(in));
+})
 
 /*-------------- FD_SET --------------------------------*/
 
-bool_t
-_do_fd_set_1_svc(tarpc_do_fd_set_in *in, tarpc_do_fd_set_out *out,
-                 struct svc_req *rqstp)
+void
+do_fd_set(tarpc_do_fd_set_in *in)
 {
-    UNUSED(rqstp);
-
-    memset(out, 0, sizeof(*out));
-
-    FD_SET(in->fd, IN_FDSET);
-    return TRUE;
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_FD_SET, {
+        FD_SET(in->fd, IN_FDSET_NS(ns));
+    });
 }
+
+TARPC_FUNC(do_fd_set, {},
+{
+    MAKE_CALL(do_fd_set(in));
+})
 
 /*-------------- FD_CLR --------------------------------*/
 
-bool_t
-_do_fd_clr_1_svc(tarpc_do_fd_clr_in *in, tarpc_do_fd_clr_out *out,
-                 struct svc_req *rqstp)
+void
+do_fd_clr(tarpc_do_fd_clr_in *in)
 {
-    UNUSED(rqstp);
-
-    memset(out, 0, sizeof(*out));
-
-    FD_CLR(in->fd, IN_FDSET);
-    return TRUE;
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_FD_SET, {
+        FD_CLR(in->fd, IN_FDSET_NS(ns));
+    });
 }
+
+TARPC_FUNC(do_fd_clr, {},
+{
+    MAKE_CALL(do_fd_clr(in));
+})
 
 /*-------------- FD_ISSET --------------------------------*/
 
-bool_t
-_do_fd_isset_1_svc(tarpc_do_fd_isset_in *in, tarpc_do_fd_isset_out *out,
-                   struct svc_req *rqstp)
+void
+do_fd_isset(tarpc_do_fd_isset_in *in,
+            tarpc_do_fd_isset_out *out)
 {
-    UNUSED(rqstp);
-
-    memset(out, 0, sizeof(*out));
-
-    out->retval = FD_ISSET(in->fd, IN_FDSET);
-    return TRUE;
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_FD_SET, {
+        out->retval = FD_ISSET(in->fd, IN_FDSET_NS(ns));
+    });
 }
+
+TARPC_FUNC(do_fd_isset, {},
+{
+    MAKE_CALL(do_fd_isset(in, out));
+})
 
 /*-------------- select() --------------------------------*/
 
@@ -2402,29 +2398,29 @@ TARPC_FUNC(select,
     COPY_ARG(timeout);
 },
 {
-    struct timeval tv;
-
-    if (out->timeout.timeout_len > 0)
-        TARPC_CHECK_RC(timeval_rpc2h(out->timeout.timeout_val, &tv));
-
-    if (out->common._errno != 0)
-    {
-        out->retval = -1;
-    }
-    else
-    {
-        MAKE_CALL(out->retval = func(in->n,
-                      (fd_set *)rcf_pch_mem_get(in->readfds),
-                      (fd_set *)rcf_pch_mem_get(in->writefds),
-                      (fd_set *)rcf_pch_mem_get(in->exceptfds),
-                      out->timeout.timeout_len == 0 ? NULL :
-                      &tv));
+    out->retval = -1;
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_FD_SET, {
+        struct timeval tv;
 
         if (out->timeout.timeout_len > 0)
-            TARPC_CHECK_RC(timeval_h2rpc(&tv, out->timeout.timeout_val));
-        if (TE_RC_GET_ERROR(out->common._errno) == TE_EH2RPC)
-            out->retval = -1;
-    }
+            TARPC_CHECK_RC(timeval_rpc2h(out->timeout.timeout_val, &tv));
+
+        if (out->common._errno == 0)
+        {
+            fd_set *rfds = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->readfds, ns);
+            fd_set *wfds = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->writefds, ns);
+            fd_set *efds = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->exceptfds, ns);
+
+            MAKE_CALL(out->retval = func(in->n, rfds, wfds, efds,
+                            out->timeout.timeout_len == 0 ? NULL : &tv));
+
+            if (out->timeout.timeout_len > 0)
+                TARPC_CHECK_RC(timeval_h2rpc(
+                        &tv, out->timeout.timeout_val));
+            if (TE_RC_GET_ERROR(out->common._errno) == TE_EH2RPC)
+                out->retval = -1;
+        }
+    });
 }
 )
 
@@ -3753,44 +3749,49 @@ TARPC_FUNC(pselect,
     COPY_ARG(timeout);
 },
 {
-    struct timespec tv;
+    out->retval = -1;
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_FD_SET, {
+        struct timespec tv;
 
-    if (out->timeout.timeout_len > 0)
-    {
-        tv.tv_sec = out->timeout.timeout_val[0].tv_sec;
-        tv.tv_nsec = out->timeout.timeout_val[0].tv_nsec;
-    }
+        if (out->timeout.timeout_len > 0)
+        {
+            tv.tv_sec = out->timeout.timeout_val[0].tv_sec;
+            tv.tv_nsec = out->timeout.timeout_val[0].tv_nsec;
+        }
+        if (out->common._errno == 0)
+        {
+            fd_set *rfds = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->readfds, ns);
+            fd_set *wfds = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->writefds, ns);
+            fd_set *efds = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->exceptfds, ns);
+            sigset_t *sigmask = rcf_pch_mem_get(in->sigmask);
+            /*
+             * The pointer may be a NULL and, therefore, contain
+             * uninitialized data, but we want to check that the data are
+             * unchanged even in this case.
+             */
+            INIT_CHECKED_ARG(sigmask, sizeof(sigset_t), 0);
 
-    /*
-     * The pointer may be a NULL and, therefore, contain uninitialized
-     * data, but we want to check that the data are unchanged even in
-     * this case.
-     */
-    INIT_CHECKED_ARG((char *)rcf_pch_mem_get(in->sigmask),
-                     sizeof(sigset_t), 0);
+            MAKE_CALL(out->retval = func(in->n, rfds, wfds, efds,
+                            out->timeout.timeout_len == 0 ? NULL : &tv,
+                            sigmask));
 
-    MAKE_CALL(out->retval = func(in->n,
-                                 (fd_set *)rcf_pch_mem_get(in->readfds),
-                                 (fd_set *)rcf_pch_mem_get(in->writefds),
-                                 (fd_set *)rcf_pch_mem_get(in->exceptfds),
-                                 out->timeout.timeout_len == 0 ? NULL : &tv,
-                                 rcf_pch_mem_get(in->sigmask)));
-
-    if (out->timeout.timeout_len > 0)
-    {
-        out->timeout.timeout_val[0].tv_sec = tv.tv_sec;
-        out->timeout.timeout_val[0].tv_nsec = tv.tv_nsec;
-    }
+            if (out->timeout.timeout_len > 0)
+            {
+                out->timeout.timeout_val[0].tv_sec = tv.tv_sec;
+                out->timeout.timeout_val[0].tv_nsec = tv.tv_nsec;
+            }
+        }
 
 #ifdef __linux__
-    if (out->retval >= 0 && out->common.errno_changed &&
-        out->common._errno == RPC_ENOSYS)
-    {
-        WARN("pselect() returned non-negative value, but changed "
-             "errno to ENOSYS");
-        out->common.errno_changed = 0;
-    }
+        if (out->retval >= 0 && out->common.errno_changed &&
+            out->common._errno == RPC_ENOSYS)
+        {
+            WARN("pselect() returned non-negative value, but changed "
+                 "errno to ENOSYS");
+            out->common.errno_changed = 0;
+        }
 #endif
+    });
 }
 )
 

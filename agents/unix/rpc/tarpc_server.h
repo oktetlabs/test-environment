@@ -209,6 +209,14 @@
 /** Extract fdset from in argument */
 #define IN_FDSET        ((fd_set *)(rcf_pch_mem_get(in->set)))
 
+/**
+ * Extract fdset with namespace from @b in argument
+ *
+ * @param _ns       Namespace id
+ */
+#define IN_FDSET_NS(_ns)                                        \
+    ((fd_set *)(RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->set, (_ns))))
+
 /** Extract AIO control block from in argument */
 #define IN_AIOCB        ((struct aiocb *)(rcf_pch_mem_get(in->cb)))
 
