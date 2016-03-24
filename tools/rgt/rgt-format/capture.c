@@ -54,6 +54,10 @@ RGT_DEF_FUNC(proc_log_packet_start)
     else
         fd = (FILE *)(*((void **)(depth_ctx->user_data)));
 
+    /* 
+     * fd == NULL when we do not want to fill the file,
+     * so it should be simply ignored.
+     */
     if (fd == NULL)
         return;
 
@@ -80,6 +84,10 @@ RGT_DEF_FUNC(proc_log_packet_proto_start)
     else
         fd = (FILE *)(*((void **)(depth_ctx->user_data)));
 
+    /* 
+     * fd == NULL when we do not want to fill the file,
+     * so it should be simply ignored.
+     */
     if (fd == NULL)
         return;
 
@@ -115,6 +123,10 @@ RGT_DEF_FUNC(proc_log_packet_field_start)
     else
         fd = (FILE *)(*((void **)(depth_ctx->user_data)));
 
+    /* 
+     * fd == NULL when we do not want to fill the file,
+     * so it should be simply ignored.
+     */
     if (fd == NULL)
         return;
 

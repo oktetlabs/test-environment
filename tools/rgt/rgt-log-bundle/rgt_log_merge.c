@@ -203,7 +203,7 @@ process_cmd_line_opts(int argc, char **argv)
             {
                 sscanf(filter, "%u", &filter_tin);
                 use_tin = 1;
-            } 
+            }
 
             free(filter);
         }
