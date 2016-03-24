@@ -44,7 +44,8 @@ libtapi_rpc_la_SOURCES= \
     power_sw.c \
     dlfcn.c \
     pipe.c \
-    dirent.c
+    dirent.c \
+    tapi_rpc_internal.c
 
 
 install-exec-hook:

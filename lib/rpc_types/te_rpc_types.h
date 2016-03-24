@@ -94,4 +94,80 @@ typedef struct rpc_ptr_off {
  */
 #define TAPI_RPC_BUF_RAND       256
 
+/**
+ * An identifier corresponding to memory address
+ *
+ * @note    It is related to the definition of the pointer type @b tarpc_ptr in
+ *          include/tarpc.x.m4
+ */
+typedef uint32_t rpc_ptr_id_index;
+
+/** An identifier corresponding to namespace of memory pointers group */
+typedef uint32_t rpc_ptr_id_namespace;
+
+/** Invalid namespace */
+#define RPC_PTR_ID_NS_INVALID       0xFFFFFFFF
+
+/** The count of bits for namespace value in a pointer id */
+#define RPC_PTR_ID_NS_BITCOUNT      8
+
+/** The amount of bits for index in @b ids in a pointer id */
+#define RPC_PTR_ID_INDEX_BITCOUNT   (           \
+        sizeof(rpc_ptr_id_index) * CHAR_BIT -   \
+        RPC_PTR_ID_NS_BITCOUNT                  \
+    )
+
+/** Maximum index value in @b ids in a pointer id */
+#define RPC_PTR_ID_INDEX_LIMIT      (1 << RPC_PTR_ID_INDEX_BITCOUNT)
+
+/** Mask of ids in a pointer id */
+#define RPC_PTR_ID_INDEX_MASK       (RPC_PTR_ID_INDEX_LIMIT - 1)
+
+/**
+ * Create a composite identifier
+ *
+ * @param _ns       Index in the @b namespaces array
+ * @param _index    Index in the @b ids array
+ *
+ * @return          Pointer id
+ *
+ * @note            @c 0 is equivalent to @c NULL for @b rpc_ptr and @c 1 is
+ *                  added to support this.
+ */
+#define RPC_PTR_ID_MAKE(_ns, _index) (          \
+        ((_ns) << RPC_PTR_ID_INDEX_BITCOUNT) +  \
+        ((_index) & RPC_PTR_ID_INDEX_MASK) +    \
+        1                                       \
+    )
+
+/**
+ * @defgroup rpc_type_ns Kinds of namespaces for using in RPC
+ * @{
+ */
+
+#define RPC_TYPE_NS_GENERIC    ""
+#define RPC_TYPE_NS_FD_SET     "fd_set"
+
+/**
+ * @}
+ */
+
+/**
+ * Extract index of @b ids array item from the identifier @p _id
+ *
+ * @param _id       Pointer id
+ *
+ * @return          index of @b ids array item
+ */
+#define RPC_PTR_ID_GET_INDEX(_id) (((_id) - 1) & RPC_PTR_ID_INDEX_MASK)
+
+/**
+ * Extract index of @b namespaces array item from the identifier @p _id
+ *
+ * @param _id       Pointer id
+ *
+ * @return          index of @b namespaces array item
+ */
+#define RPC_PTR_ID_GET_NS(_id) (((_id) - 1) >> RPC_PTR_ID_INDEX_BITCOUNT)
+
 #endif /* !__TE_RPC_TYPES_H__ */

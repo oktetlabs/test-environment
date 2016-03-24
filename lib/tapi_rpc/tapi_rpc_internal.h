@@ -4,7 +4,7 @@
  * Internal definitions
  *
  *
- * Copyright (C) 2005 Test Environment authors (see file AUTHORS in
+ * Copyright (C) 2005-2016 Test Environment authors (see file AUTHORS in
  * the root directory of the distribution).
  *
  * This library is free software; you can redistribute it and/or
@@ -25,6 +25,7 @@
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+ * @author Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>
  *
  * $Id$
  */
@@ -306,5 +307,56 @@ do {                                                                    \
 
 /** Follow pointer if not NULL; otherwise return 0 */
 #define PTR_VAL(_param) ((_param == NULL) ? 0 : *(_param))
+
+/**
+ * Generic format string of @b rpc_ptr pointers
+ *
+ * @note It is used with @b RPC_PTR_VAL.
+ */
+#define RPC_PTR_FMT "%s(%#x)"
+
+/**
+ * Description of the pointer @p _val fields according to the generic format
+ * string
+ *
+ * @param _val      pointer value
+ *
+ * @note It is used with @b RPC_PTR_FMT.
+ */
+#define RPC_PTR_VAL(_val)                                   \
+    tapi_rpc_namespace_get(rpcs, (_val)), (unsigned)(_val)
+
+/**
+ * Wrapper for @b tapi_rpc_namespace_check() with details for error messages
+ */
+#define TAPI_RPC_NAMESPACE_CHECK(_rpcs, _ptr, _ns)      \
+    tapi_rpc_namespace_check(                           \
+        (_rpcs), (_ptr), (_ns), __FUNCTION__, __LINE__)
+
+/**
+ * Check membership of pointer in the namespace @b ns.
+ *
+ * @param rpcs      RPC server handle
+ * @param ptr       Pointer ID
+ * @param ns        Namespace as string
+ * @param function  Name of function (for more detailed error messages)
+ * @param line      Line in file (for more detailed error messages)
+ *
+ * @return          Status code
+ */
+extern te_errno tapi_rpc_namespace_check(
+        rcf_rpc_server *rpcs, rpc_ptr ptr, const char *ns,
+        const char *function, int line);
+
+/**
+ * Get namespace as string according to a pointer id.
+ *
+ * @param rpcs      RPC server handle
+ * @param ptr       Pointer ID
+ *
+ * @return          Namespace as string or @c NULL for invalid namespace
+ */
+extern const char *tapi_rpc_namespace_get(
+        rcf_rpc_server *rpcs, rpc_ptr ptr);
 
 #endif /* !__TE_TAPI_RPC_INTERNAL_H__ */

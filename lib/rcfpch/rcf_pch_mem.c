@@ -1,9 +1,9 @@
-/** @file 
+/** @file
  * @brief RCF Portable Command Handler
  *
- * Memory mapping library. 
+ * Memory mapping library.
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
+ * Copyright (C) 2003-2016 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
  *
  * This library is free software; you can redistribute it and/or
@@ -22,11 +22,14 @@
  * MA  02111-1307  USA
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
+ * @author Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>
  *
  * $Id$
  */
 
 #include "te_config.h"
+
+#define TE_LGR_USER "rcfpch"
 
 #include <stdio.h>
 
@@ -43,178 +46,485 @@
 #include "ta_common.h"
 #include "rcf_pch_mem.h"
 #include "te_rpc_types.h"
-#include "te_rpc_types.h"
 
 #include "logger_api.h"
 
-/** Chunk of reallocation of identifiers array */
-#define IDS_CHUNK   128
+/** The initial size of an array */
+#define INITIAL_SIZE_OF_ARRAY       128
 
-static void *lock = NULL;
-
-static void   **ids;            /**< Array of identifiers       */
-static uint32_t ids_len;        /**< Current array length       */
-static uint32_t used;           /**< Number of used identifiers */
+/** The multiplier of an array size */
+#define MULTIPLIER_OF_ARRAY_SIZE    2
 
 /**
- * Assign the identifier to memory.
- *
- * @param mem       location of real memory address (in)
- *
- * @return Memory identifier or 0 in the case of failure
+ * Wrapper to call @b reallocate_memory to increase the number of available
+ * elements in @b ids
  */
-rcf_pch_mem_id 
-rcf_pch_mem_alloc(void *mem)
+#define IDS_REALLOCATE()                        \
+    reallocate_memory(sizeof(id_node),          \
+                      RPC_PTR_ID_INDEX_LIMIT,   \
+                      (void *)&ids, &ids_len)
+
+/** Maximum index value in @b namespaces in a pointer id */
+#define RPC_PTR_ID_NS_LIMIT         (1 << RPC_PTR_ID_NS_BITCOUNT)
+
+/**
+ * Wrapper to call @b reallocate_memory to increase the number of available
+ * elements in @b namespaces
+ */
+#define NAMESPACES_REALLOCATE()                             \
+    reallocate_memory(sizeof(char *),                       \
+                      RPC_PTR_ID_NS_LIMIT,                  \
+                      (void *)&namespaces, &namespaces_len)
+
+/** Attributes of id structure (memory pointer) */
+typedef struct {
+    rpc_ptr_id_namespace    ns;     /**< Memory pointer namespace */
+    void                   *memory; /**< Memory pointer */
+    te_bool                 used;   /**< If the node is used */
+} id_node;
+
+/** Synchronization object */
+static void *lock = NULL;
+
+/** Array of identifiers */
+static id_node *ids = NULL;
+
+/** Current array @ids length */
+static size_t ids_len = 0;
+
+/** Number of used identifiers */
+static size_t ids_used = 0;
+
+/**
+ * The index from which to start looking for the next free element in
+ * @p ids
+ */
+static rpc_ptr_id_index next_free = 0;
+
+/** Array of namespaces */
+static char **namespaces = NULL;
+
+/** Current array @b namespaces length */
+static size_t namespaces_len = 0;
+
+/**
+ * Compare @p node with given values @p ns and @p memory
+ *
+ * @param [in] node     Compared node
+ * @param [in] ns       Namespace
+ * @param [in] memory   Memory pointer
+ *
+ * @return @c TRUE in case of equality and @c FALSE in other cases
+ */
+static te_bool
+id_nodes_equal(const id_node *node, const rpc_ptr_id_namespace ns,
+               const void *memory)
 {
-    rcf_pch_mem_id id = 0;
-
-    if (mem == NULL)
-        return 0;
-
-    if (lock == NULL)
-        lock = thread_mutex_create();
-        
-    thread_mutex_lock(lock);
-    
-    if (ids_len == used)
-    {
-        void **tmp = NULL;
-        
-        if (ids_len + IDS_CHUNK >= RPC_UNKNOWN_ADDR)
-        {
-            fprintf(stderr, "Too many memory addresses have id now!");
-            thread_mutex_unlock(lock);
-            return 0;
-        }
-
-        tmp = realloc(ids, (ids_len + IDS_CHUNK) * sizeof(void *));
-
-        if (tmp == NULL)
-        {
-            fprintf(stderr, "Out of memory!");
-            thread_mutex_unlock(lock);
-            return 0;
-        }
-            
-        memset(tmp + ids_len, 0, IDS_CHUNK * sizeof(void *));
-        
-        ids = tmp;
-        id = ids_len;
-        ids_len += IDS_CHUNK;
-    }
-    
-    for (; ids[id] != NULL && id < ids_len; id++);
-    
-    assert(id < ids_len);
-    ids[id] = mem;
-    used++;
-
-    thread_mutex_unlock(lock);
-
-    return id + 1;
+    return node->ns == ns && node->memory == memory;
 }
 
 /**
- * Mark the memory identifier as "unused".
+ * Allocate a new chunk of memory
  *
- * @param id       memory identifier returned by rcf_pch_mem_alloc
- */     
-void 
-rcf_pch_mem_free(rcf_pch_mem_id id)
+ * @param [in]    item_size     Size of one element of the @b array
+ * @param [in]    limit         Limit maximum number of elements in the
+ *                              @b array
+ * @param [inout] array         Pointer to an array for reallocate memory
+ * @param [inout] array_len     Number of elements in the @b array
+ *
+ * @return Status code
+ */
+static te_errno
+reallocate_memory(size_t item_size, size_t limit,
+                  void **array, size_t *array_len)
+{
+    void           *tmp         = NULL;
+    const size_t    current     = *array_len;
+    const size_t    required    = (current == 0)
+            ? INITIAL_SIZE_OF_ARRAY : (current * MULTIPLIER_OF_ARRAY_SIZE);
+
+    if (required > limit)
+    {
+        ERROR("Elements limit is reached");
+        return TE_RC(TE_RCF_PCH, TE_ENOMEM);
+    }
+
+    tmp = realloc(*array, required * item_size);
+
+    if (tmp == NULL)
+    {
+        ERROR("Out of memory!");
+        return TE_RC(TE_RCF_PCH, TE_ENOMEM);
+    }
+
+    memset(tmp + current * item_size, 0, (required - current) * item_size);
+
+    *array = tmp;
+    *array_len = required;
+    return 0;
+}
+
+/**
+ * Find the first unused element
+ *
+ * @return Index of unused element or
+ *         @b next_free (if all elements are used)
+ */
+static rpc_ptr_id_index
+search_id_index()
+{
+    rpc_ptr_id_index i;
+    for (i = next_free; i < ids_len; i++)
+    {
+        if (!ids[i].used)
+            return i;
+    }
+    for (i = 0; i < next_free; i++)
+    {
+        if (!ids[i].used)
+            return i;
+    }
+    return next_free;
+}
+
+/**
+ * Acquire a @p index of free node
+ *
+ * @param [out] index   Returned @p index of the free @b id_node in the
+ *                      @b ids
+ *
+ * @return Status code
+ */
+static te_errno
+take_index(rpc_ptr_id_index *index)
+{
+    te_errno            rc;
+    rpc_ptr_id_index    id_index;
+
+    if (ids_used < ids_len)
+        id_index = search_id_index();
+    else
+    {
+        id_index = ids_len;
+        rc = IDS_REALLOCATE();
+        if (rc != 0)
+            return rc;
+    }
+
+    if (ids[id_index].used)
+        return TE_RC(TE_RCF_PCH, TE_EFAIL);
+
+    *index = id_index;
+    next_free = (id_index + 1) % ids_len;
+    return 0;
+}
+
+/**
+ * Release a @p index of used node
+ *
+ * @param index     @p index of the used @b id_node in the @b ids
+ *
+ * @return Status code
+ */
+static te_errno
+give_index(rpc_ptr_id_index index)
+{
+    if (ids[index].memory  == NULL ||
+        ids[index].ns      == RPC_PTR_ID_NS_INVALID ||
+        !ids[index].used)
+        return TE_RC(TE_RCF_PCH, TE_EINVAL);
+
+    ids[index].memory   = NULL;
+    ids[index].ns       = RPC_PTR_ID_NS_INVALID;
+    ids[index].used     = FALSE;
+    ids_used--;
+
+    return 0;
+}
+
+/**
+ * Determine a namespace id by the string of namespace without
+ * synchronization
+ *
+ * @param [in]  ns_string   Namespace as string
+ * @param [out] ns_id       Namespace id
+ *
+ * @return Status code
+ */
+static te_errno
+ns_get_index(const char *ns_string, rpc_ptr_id_namespace *ns_id)
+{
+    rpc_ptr_id_namespace    i = 0;
+    te_errno                rc;
+
+    if (namespaces != NULL)
+    {
+        for (; i < namespaces_len && namespaces[i] != NULL; i++)
+        {
+            if (strcmp(namespaces[i], ns_string) == 0)
+            {
+                *ns_id = i;
+                return 0;
+            }
+        }
+    }
+    if (namespaces == NULL || i == namespaces_len)
+    {
+        rc = NAMESPACES_REALLOCATE();
+        if (rc != 0)
+            return rc;
+    }
+
+    namespaces[i] = strdup(ns_string);
+    if (namespaces[i] == NULL)
+    {
+        ERROR("Not enough memory! (%d, '%s')", i, ns_string);
+        return TE_RC(TE_RCF_PCH, TE_ENOMEM);
+    }
+
+    *ns_id = i;
+    return 0;
+}
+
+/* See description in rcf_pch_mem.h */
+void
+rcf_pch_mem_init()
 {
     if (lock == NULL)
         lock = thread_mutex_create();
-        
+}
+
+/* See description in rcf_pch_mem.h */
+rpc_ptr
+rcf_pch_mem_index_alloc(void *mem, rpc_ptr_id_namespace ns,
+                        const char *caller_func, int caller_line)
+{
+    te_errno            rc;
+    rpc_ptr_id_index    index;
+
+    if (mem == NULL)
+    {
+        VERB("%s:%d: Don't try to allocate the null pointer",
+             caller_func, caller_line);
+        return 0;
+    }
+
+    thread_mutex_lock(lock);
+
+    rc = take_index(&index);
+    if (rc != 0)
+    {
+        ERROR("%s:%d: Taking index fails (rc=%r)",
+              caller_func, caller_line, rc);
+        errno = TE_RC_GET_ERROR(rc);
+        thread_mutex_unlock(lock);
+        return 0;
+    }
+
+    assert(index < ids_len);
+    ids[index].memory   = mem;
+    ids[index].ns       = ns;
+    ids[index].used     = TRUE;
+    ids_used++;
+
+    thread_mutex_unlock(lock);
+    return RPC_PTR_ID_MAKE(ns, index);
+}
+
+/* See description in rcf_pch_mem.h */
+te_errno
+rcf_pch_mem_index_free(rpc_ptr id, rpc_ptr_id_namespace ns,
+                       const char *caller_func, int caller_line)
+{
+    rpc_ptr_id_index    index;
+    te_errno            rc;
+
+    if (id == 0)
+    {
+        VERB("%s:%d: Don't try to find id with 0 value",
+             caller_func, caller_line);
+        return 0;
+    }
+
+    if (RPC_PTR_ID_GET_NS(id) != ns)
+    {
+        ERROR("%s:%d: Incorrect namespace %d != %d (id = %d)",
+              caller_func, caller_line, RPC_PTR_ID_GET_NS(id), ns, id);
+        return TE_RC(TE_RCF_PCH, TE_EINVAL);
+    }
+
     thread_mutex_lock(lock);
 
     /* Convert id to array index */
-    if (id > 0 && (id--, id < ids_len) && ids[id] != NULL)
+    index = RPC_PTR_ID_GET_INDEX(id);
+    if (index < ids_len && ids[index].memory != NULL && ids[index].ns == ns)
+        rc = give_index(index);
+    else
     {
-        ids[id] = NULL;
-        used--;
+        if (ids[index].memory == NULL &&
+                ids[index].ns == RPC_PTR_ID_NS_INVALID &&
+                !ids[index].used)
+        {
+            ERROR("%s:%d: Possible double free or corruption "
+                  "(id=%d, ns=%d)",
+                  caller_func, caller_line, id, ns);
+        }
+        else
+        {
+            ERROR("%s:%d: Incorrect namespace for the memory id "
+                  "(%p, %d != %d)",
+                  caller_func, caller_line, ids[index].memory,
+                  ids[index].ns, ns);
+        }
+        rc = TE_RC(TE_RCF_PCH, TE_EINVAL);
     }
 
     thread_mutex_unlock(lock);
+    return rc;
 }
 
-/**
- * Mark the memory identifier corresponding to memory address as "unused".
- *
- * @param mem   memory address
- */     
-void 
-rcf_pch_mem_free_mem(void *mem)
+/* See description in rcf_pch_mem.h */
+te_errno
+rcf_pch_mem_index_free_mem(void *mem, rpc_ptr_id_namespace ns,
+                           const char *caller_func, int caller_line)
 {
-    rcf_pch_mem_id id;
-    
-    if (lock == NULL)
-        lock = thread_mutex_create();
-        
+    rpc_ptr_id_index    index = 0;
+    te_errno            rc;
+
+    if (mem == NULL)
+    {
+        VERB("%s:%d: Don't try to find the null pointer",
+             caller_func, caller_line);
+        return 0;
+    }
+
     thread_mutex_lock(lock);
 
-    for (id = 0; id < ids_len && ids[id] != mem; id++);
-    
-    if (id < ids_len)
+    while (index < ids_len && !id_nodes_equal(&ids[index], ns, mem))
+        index++;
+
+    if (index < ids_len)
+        rc = give_index(index);
+    else
     {
-        ids[id] = NULL;
-        used--;
+        ERROR("%s:%d: The memory pointer isn't found (%p, %d)",
+              caller_func, caller_line, mem, ns);
+        rc = TE_RC(TE_RCF_PCH, TE_ENOENT);
     }
 
     thread_mutex_unlock(lock);
+    return rc;
 }
 
-/**
- * Obtain address of the real memory by its identifier.
- *
- * @param id       memory identifier returned by rcf_pch_mem_alloc
- *
- * @return Memory address or NULL
- */
-char *
-rcf_pch_mem_get(rcf_pch_mem_id id)
+/* See description in rcf_pch_mem.h */
+void *
+rcf_pch_mem_index_mem_to_ptr(rpc_ptr id, rpc_ptr_id_namespace ns,
+                             const char *caller_func, int caller_line)
 {
-    void *m = NULL;
+    rpc_ptr_id_index    index;
+    void               *memory = NULL;
 
-    if (lock == NULL)
-        lock = thread_mutex_create();
-        
+    if (id == 0)
+        return NULL;
+
+    if (RPC_PTR_ID_GET_NS(id) != ns)
+    {
+        ERROR("%s:%d: Incorrect namespace %d != %d (id = %d)",
+              caller_func, caller_line, RPC_PTR_ID_GET_NS(id), ns, id);
+        return NULL;
+    }
+
     thread_mutex_lock(lock);
 
-    if (id > 0 && (id--, id < ids_len)) 
-        m = ids[id];
+    /* Convert id to array index */
+    index = RPC_PTR_ID_GET_INDEX(id);
+    if (index < ids_len && ids[index].ns == ns)
+        memory = ids[index].memory;
+    else
+    {
+        if (ids[index].memory == NULL &&
+                ids[index].ns == RPC_PTR_ID_NS_INVALID &&
+                !ids[index].used)
+        {
+            ERROR("%s:%d: Incorrect access to released object "
+                  "(%d, %d)",
+                  caller_func, caller_line, id, ns);
+        }
+        else
+        {
+            ERROR("%s:%d: Incorrect namespace for the memory id "
+                  "(%p, %d != %d)",
+                  caller_func, caller_line, ids[index].memory,
+                  ids[index].ns, ns);
+        }
+    }
 
     thread_mutex_unlock(lock);
-
-    return m;
+    return memory;
 }
 
-/**
- * Find memory identifier by memory address.
- *
- * @param mem   memory address
- *
- * @return memory identifier or 0
- */     
-rcf_pch_mem_id 
-rcf_pch_mem_get_id(void *mem)
+/* See description in rcf_pch_mem.h */
+rpc_ptr
+rcf_pch_mem_index_ptr_to_mem(void *mem, rpc_ptr_id_namespace ns,
+                             const char *caller_func, int caller_line)
 {
-    rcf_pch_mem_id id;
+    rpc_ptr             id = 0;
+    rpc_ptr_id_index    index = 0;
 
     if (mem == NULL)
         return 0;
-    if (lock == NULL)
-        lock = thread_mutex_create();
-        
+
     thread_mutex_lock(lock);
 
-    for (id = 0; id < ids_len && ids[id] != mem; id++);
-    
-    if (id < ids_len)
-        id++;
+    while (index < ids_len && !id_nodes_equal(&ids[index], ns, mem))
+        index++;
+
+    if (index < ids_len)
+        id = RPC_PTR_ID_MAKE(ns, index);
     else
-        id = 0;
+    {
+        ERROR("%s:%d: The memory pointer isn't found (%p, %d)",
+              caller_func, caller_line, mem, ns);
+    }
 
     thread_mutex_unlock(lock);
-
     return id;
+}
+
+/* See description in rcf_pch_mem.h */
+rpc_ptr_id_namespace
+rcf_pch_mem_ns_generic()
+{
+    static rpc_ptr_id_namespace ns = RPC_PTR_ID_NS_INVALID;
+    if (RCF_PCH_MEM_NS_CREATE_IF_NEEDED(&ns, RPC_TYPE_NS_GENERIC) != 0)
+        return RPC_PTR_ID_NS_INVALID;
+    return ns;
+}
+
+/* See description in rcf_pch_mem.h */
+te_errno
+rcf_pch_mem_ns_get_index(const char *ns_string, rpc_ptr_id_namespace *ns_id)
+{
+    te_errno rc;
+    thread_mutex_lock(lock);
+    rc = ns_get_index(ns_string, ns_id);
+    thread_mutex_unlock(lock);
+    return rc;
+}
+
+/* See description in rcf_pch_mem.h */
+te_errno
+rcf_pch_mem_ns_get_string(
+        rpc_ptr_id_namespace ns_id, const char **ns_string)
+{
+    if (ns_id >= namespaces_len || namespaces == NULL ||
+            namespaces[ns_id] == NULL)
+    {
+        ERROR("Invalid namespace index (%d < %d)",
+              ns_id, namespaces_len);
+        return TE_RC(TE_RCF_PCH, TE_EINVAL);
+    }
+
+    *ns_string = namespaces[ns_id];
+    return 0;
 }

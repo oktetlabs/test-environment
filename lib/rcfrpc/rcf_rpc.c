@@ -4,7 +4,7 @@
  * RCF RPC implementation.
  *
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
+ * Copyright (C) 2003-2016 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
  *
  * This library is free software; you can redistribute it and/or
@@ -24,6 +24,7 @@
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
+ * @author Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>
  *
  * $Id$
  */
@@ -198,32 +199,34 @@ rcf_rpc_server_get(const char *ta, const char *name,
 
     if ((rc1 = rpc_server_sem_init(rpcs)) != 0)
     {
+        rcf_rpc_namespace_free_cache(rpcs);
         free(rpcs);
         return rc1;
     }
 
-#define RETERR(rc, msg...) \
-    do {                                \
-        free(rpcs);                     \
-        free(val0);                     \
-        ERROR(msg);                     \
-        return TE_RC(TE_RCF_API, rc);   \
+#define RETERR(rc, msg...)                  \
+    do {                                    \
+        rcf_rpc_namespace_free_cache(rpcs); \
+        free(rpcs);                         \
+        free(val0);                         \
+        ERROR(msg);                         \
+        return TE_RC(TE_RCF_API, rc);       \
     } while (0)
-        
+
     if (rc == 0 && (flags & RCF_RPC_SERVER_GET_REUSE))
     {
-#ifdef RCF_RPC_CHECK_USABILITY    
+#ifdef RCF_RPC_CHECK_USABILITY
         /* Check that it is not dead */
         tarpc_getpid_in  in;
         tarpc_getpid_out out;
-        
+
         memset(&in, 0, sizeof(in));
         memset(&out, 0, sizeof(out));
 
         in.common.op = RCF_RPC_CALL_WAIT;
-        in.common.use_libc = FASLE;
- 
-        if ((rc = rcf_ta_call_rpc(ta, sid, name, 1000, "getpid", 
+        in.common.use_libc = FALSE;
+
+        if ((rc = rcf_ta_call_rpc(ta, sid, name, 1000, "getpid",
                                   &in, &out)) != 0)
         {
             if ((flags & RCF_RPC_SERVER_GET_EXISTING))
@@ -300,8 +303,11 @@ rcf_rpc_server_get(const char *ta, const char *name,
     if (p_handle != NULL)
         *p_handle = rpcs;
     else
+    {
+        rcf_rpc_namespace_free_cache(rpcs);
         free(rpcs);
-    
+    }
+
     free(val0);
 
     return 0;
@@ -541,13 +547,14 @@ rcf_rpc_server_destroy(rcf_rpc_server *rpcs)
         if (pthread_mutex_unlock(&rpcs->lock) != 0)
             ERROR("pthread_mutex_unlock() failed");
 #endif
-        
+
         return rc;
     }
 
+    rcf_rpc_namespace_free_cache(rpcs);
     free(rpcs->nv_lib);
     free(rpcs);
-    
+
     VERB("RPC server is destroyed successfully");
 
     return 0;
@@ -1071,4 +1078,49 @@ rcf_rpc_server_vfork_in_thread(vfork_thread_data *data,
     rc = rcf_rpc_server_get(data->rpcs->ta, data->name, data->rpcs->name,
                             RCF_RPC_SERVER_GET_REGISTER, p_new);
     return rc;
+}
+
+/* See description in rcf_rpc.h */
+void
+rcf_rpc_namespace_free_cache(rcf_rpc_server *rpcs)
+{
+    rpc_ptr_id_namespace id;
+
+    if (rpcs == NULL || rpcs->namespaces == NULL)
+        return;
+
+    for (id = 0; id < rpcs->namespaces_len; id++)
+        free(rpcs->namespaces[id]);
+    free(rpcs->namespaces);
+
+    rpcs->namespaces = NULL;
+    rpcs->namespaces_len = 0;
+}
+
+/* See description in rcf_rpc.h */
+te_errno
+rcf_rpc_namespace_id2str(rcf_rpc_server *rpcs, rpc_ptr_id_namespace id,
+                         char **str)
+{
+    tarpc_namespace_id2str_in   in  = {.id = id};
+    tarpc_namespace_id2str_out  out = {.common._errno = 0};
+
+    if (rpcs == NULL)
+        return TE_RC(TE_RCF_RPC, TE_EINVAL);
+
+    if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
+        rpcs->timeout = rpcs->def_timeout;
+
+    rcf_ta_call_rpc(rpcs->ta, rpcs->sid, rpcs->name,
+                    rpcs->timeout, "namespace_id2str", &in, &out);
+
+    RING("RPC (%s, %s): namespace_id2str(%d) -> %s[%d], %r",
+         rpcs->ta, rpcs->name, id,
+         out.str.str_val, out.str.str_len, out.common._errno);
+
+    if (out.common._errno != 0)
+        *str = NULL;
+    else
+        *str = strndup(out.str.str_val, out.str.str_len);
+    return out.common._errno;
 }

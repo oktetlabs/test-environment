@@ -798,15 +798,15 @@ bool_t
 _sigreceived_1_svc(tarpc_sigreceived_in *in, tarpc_sigreceived_out *out,
                    struct svc_req *rqstp)
 {
-    static rcf_pch_mem_id id = 0;
+    static rpc_ptr ptr = 0;
 
     UNUSED(in);
     UNUSED(rqstp);
     memset(out, 0, sizeof(*out));
 
-    if (id == 0)
-        id = rcf_pch_mem_alloc(&rpcs_received_signals);
-    out->set = id;
+    if (ptr == 0)
+        ptr = rcf_pch_mem_alloc(&rpcs_received_signals);
+    out->set = ptr;
 
     return TRUE;
 }
@@ -10516,3 +10516,39 @@ TARPC_FUNC(vfork_pipe_exec, {},
     MAKE_CALL(out->retval = func_ptr(in));
 }
 )
+
+/*------------ namespace_id2str() -----------------------*/
+
+void
+namespace_id2str(tarpc_namespace_id2str_in *in,
+                 tarpc_namespace_id2str_out *out)
+{
+    te_errno rc;
+    const char *buf = NULL;
+    rc = rcf_pch_mem_ns_get_string(in->id, &buf);
+    if (rc != 0)
+        out->common._errno = rc;
+    else if (buf == NULL)
+        out->common._errno = TE_RC(TE_RPC, TE_ENOENT);
+    else
+    {
+        const int str_len = strlen(buf);
+        out->str.str_val = malloc(str_len);
+        if (out->str.str_val == NULL)
+            out->common._errno = TE_RC(TE_RPC, TE_ENOMEM);
+        else
+        {
+            out->str.str_len = str_len;
+            memcpy(out->str.str_val, buf, str_len);
+        }
+    }
+}
+
+TARPC_FUNC(namespace_id2str,
+{
+    /* Only blocking operation is supported for @b namespace_id2str */
+    in->common.op = RCF_RPC_CALL_WAIT;
+},
+{
+    MAKE_CALL(func_ptr(in, out));
+})
