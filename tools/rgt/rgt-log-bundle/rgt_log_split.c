@@ -32,6 +32,8 @@
 
 #include <popt.h>
 
+#include <inttypes.h>
+
 #include "te_config.h"
 #include "te_defs.h"
 #include "logger_api.h"
@@ -48,6 +50,20 @@ typedef enum fragment_type {
     FRAG_END,     /**< Terminating fragment of log/package/session/test */
 } fragment_type;
 
+/**
+ * We put regular messages belonging to log node N into files
+ * N_frag_inner_0
+ * N_frag_inner_1
+ * ...
+ * N_frag_inner_m
+ *
+ * We append regular log messages to N_frag_inner_0 until its
+ * size exceeds MAX_FRAG_SIZE, and after that we start filling
+ * N_frag_inner_1, and so on until there is no regular
+ * messages left. When there are multiple N_frag_inner_* files,
+ * HTML log will be multipaged and each page will be generated from
+ * one of these files.
+ */
 #define MAX_FRAG_SIZE 1000000
 
 /**
@@ -63,10 +79,10 @@ typedef struct node_info {
                                                    for which terminating
                                                    fragment has not been
                                                    encountered yet*/
-    long long unsigned int inner_frags_cnt;   /**< Number of inner
+    uint64_t               inner_frags_cnt;   /**< Number of inner
                                                    fragments related to
                                                    this node */
-    long long unsigned int cur_file_num;      /**< Current inner fragment
+    uint64_t               cur_file_num;      /**< Current inner fragment
                                                    file number */
     off_t                  cur_file_size;     /**< Current inner fragment
                                                    file size */
@@ -133,7 +149,7 @@ get_node_info(int node_id)
  */
 
 /** Last frament file name to which new data was added */
-static char cur_block_frag_name[256] = "";
+static char cur_block_frag_name[DEF_STR_LEN] = "";
 
 /*
  * We wait while a block of consecutive log messages written
@@ -177,7 +193,7 @@ static off_t last_msg_offset = -1;
 static int
 append_to_frag(int node_id, fragment_type frag_type,
                FILE *f_raw_log,
-               long long int offset, long long int length,
+               int64_t offset, int64_t length,
                FILE *f_recover,
                const char *output_path)
 {
@@ -209,7 +225,7 @@ append_to_frag(int node_id, fragment_type frag_type,
             else
                 node_descr->cur_file_size += length;
 
-            te_string_append(&frag_name, "inner_%llu",
+            te_string_append(&frag_name, "inner_%" PRIu64,
                              node_descr->cur_file_num);
             break;
         }
@@ -294,8 +310,8 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
 {
     int           parent_id;
     int           node_id;
-    long long int offset;
-    long long int length;
+    int64_t       offset;
+    int64_t       length;
     unsigned int  tin_or_verdict;
     unsigned int  timestamp[2];
     long int      line = 0;
@@ -303,14 +319,14 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
 
     fragment_type frag_type;
 
-    char  str[256];
-    char  msg_type[256];
+    char  str[DEF_STR_LEN];
+    char  msg_type[DEF_STR_LEN];
     int   rc;
 
     while (!feof(f_index))
     {
         fgets(str, sizeof(str), f_index);
-        rc = sscanf(str, "%u.%u %lld %d %d %s %u %lld",
+        rc = sscanf(str, "%u.%u %" PRId64 " %d %d %s %u %" PRId64,
                     &timestamp[0], &timestamp[1],
                     &offset, &parent_id, &node_id,
                     msg_type, &tin_or_verdict, &length);
@@ -485,7 +501,8 @@ print_frags_list(const char *output_path, FILE *f_raw_gist,
     file2file(f_raw_gist, f_frag, -1, -1, frag_len);
     fclose(f_frag);
 
-    if (fprintf(f_frags_list, "%d_frag_start %u %u %u %llu %llu %llu\n",
+    if (fprintf(f_frags_list,
+                "%d_frag_start %u %u %u %llu %llu %" PRIu64 "\n",
                 node_id, nodes_info[node_id].tin, depth, seq,
                 (long long unsigned int)frag_len,
                 (long long unsigned int)nodes_info[node_id].start_len,

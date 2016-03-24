@@ -45,6 +45,12 @@ extern "C" {
 #include "logger_api.h"
 
 /**
+ * Generic string length used for strings containing
+ * raw log fragment file names and strings from index files
+*/
+#define DEF_STR_LEN 512
+
+/**
  * Copy data from one file to another.
  *
  * @param out_f       Destination file pointer

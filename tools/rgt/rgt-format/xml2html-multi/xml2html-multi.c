@@ -45,6 +45,11 @@
 
 #define RGT_HTML_USE_TIN_NAMES 1
 
+/* Root log node depth in the tree of log nodes */
+#define ROOT_NODE_DEPTH   1
+/* Root log node sequential number */
+#define ROOT_NODE_SEQ     0
+
 /* Max attribute length in one line */
 int  rgt_max_attribute_length = 98;
 /* A tag to separate lines */
@@ -344,7 +349,7 @@ RGT_DEF_FUNC(proc_document_start)
 
     lf_start(ctx, depth_ctx, NULL, NULL, NULL);
 
-    if (match_node(ctx, NULL, 1, 0))
+    if (match_node(ctx, NULL, ROOT_NODE_DEPTH, ROOT_NODE_SEQ))
     {
         char fname[255];
 

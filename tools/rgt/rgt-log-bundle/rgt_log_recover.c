@@ -34,6 +34,8 @@
 
 #include <popt.h>
 
+#include <inttypes.h>
+
 #include "te_config.h"
 #include "te_defs.h"
 #include "logger_api.h"
@@ -109,13 +111,13 @@ main(int argc, char **argv)
     FILE       *f_recover;
     FILE       *f_result;
     FILE       *f_frag;
-    char        s[256];
+    char        s[DEF_STR_LEN];
     te_string   path = TE_STRING_INIT;
 
-    char                    frag_name[256];
-    long long unsigned int  raw_offset;
-    long long unsigned int  raw_length;
-    long long unsigned int  frag_offset;
+    char      frag_name[DEF_STR_LEN];
+    uint64_t  raw_offset;
+    uint64_t  raw_length;
+    uint64_t  frag_offset;
 
     process_cmd_line_opts(argc, argv);
 
@@ -147,7 +149,7 @@ main(int argc, char **argv)
         if (fgets(s, sizeof(s), f_recover) == NULL)
             break;
 
-        if (sscanf(s, "%llu %llu %s %llu",
+        if (sscanf(s, "%" PRIu64 " %" PRIu64 " %s %" PRIu64,
                    &raw_offset, &raw_length,
                    frag_name, &frag_offset) <= 0)
             break;

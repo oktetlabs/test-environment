@@ -28,10 +28,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include "te_config.h"
 #include "te_defs.h"
 #include "logger_api.h"
+#include "te_string.h"
 #include "rgt_log_bundle_common.h"
 
 DEFINE_LGR_ENTITY("RGT LOG MERGE");
@@ -45,7 +47,7 @@ static int filter_depth = 0;
 /** Sequential number of log node to be merged */
 static int filter_seq = 0;
 /** Number of inner fragment file to be merged */
-static long long int filter_frag_num = 0;
+static int64_t filter_frag_num = 0;
 
 /**
  * Merge inner log fragments into "raw gist log" consisting
@@ -64,17 +66,17 @@ static int
 merge(const char *split_log_path,
       FILE *f_raw_gist, FILE *f_frags_list, FILE *f_result)
 {
-    char s[256];
-    char frag_name[256];
-    char frag_path[256];
+    char s[DEF_STR_LEN];
+    char frag_name[DEF_STR_LEN];
+    char frag_path[DEF_STR_LEN];
     char *name_suff;
 
-    long long unsigned int cum_length = 0;
+    uint64_t cum_length = 0;
+    uint64_t length;
+    uint64_t start_len;
+    uint64_t frags_cnt;
+    uint64_t i;
 
-    long long unsigned int length;
-    long long unsigned int start_len;
-    long long unsigned int frags_cnt;
-    long long unsigned int i;
     unsigned int tin;
     int depth;
     int seq;
@@ -87,7 +89,7 @@ merge(const char *split_log_path,
     {
         if (fgets(s, sizeof(s), f_frags_list) == NULL)
             break;
-        if (sscanf(s, "%s %u %d %d %llu %llu %llu",
+        if (sscanf(s, "%s %u %d %d %" PRIu64 " %" PRIu64 " %" PRIu64,
                    frag_name, &tin, &depth, &seq,
                    &length, &start_len, &frags_cnt) <= 0)
             break;
@@ -114,7 +116,8 @@ merge(const char *split_log_path,
                 if (filter_frag_num >= 0)
                     i = filter_frag_num;
 
-                snprintf(frag_path, sizeof(frag_path), "%s/%s_inner_%llu",
+                snprintf(frag_path, sizeof(frag_path),
+                         "%s/%s_inner_%" PRIu64,
                          split_log_path, frag_name, i);
                 f = fopen(frag_path, "r");
                 if (f == NULL)
@@ -248,25 +251,27 @@ main(int argc, char **argv)
     FILE *f_frags_list;
     FILE *f_result;
 
-    char buf[1024];
+    te_string path = TE_STRING_INIT;
 
     process_cmd_line_opts(argc, argv);
 
-    snprintf(buf, sizeof(buf), "%s/log_gist.raw", split_log_path);
-    f_raw_gist = fopen(buf, "r");
+    te_string_append(&path, "%s/log_gist.raw", split_log_path);
+    f_raw_gist = fopen(path.ptr, "r");
     if (f_raw_gist == NULL)
     {
-        fprintf(stderr, "Failed to open '%s' for reading\n", buf);
+        fprintf(stderr, "Failed to open '%s' for reading\n", path.ptr);
         exit(1);
     }
+    te_string_free(&path);
 
-    snprintf(buf, sizeof(buf), "%s/frags_list", split_log_path);
-    f_frags_list = fopen(buf, "r");
+    te_string_append(&path, "%s/frags_list", split_log_path);
+    f_frags_list = fopen(path.ptr, "r");
     if (f_frags_list == NULL)
     {
-        fprintf(stderr, "Failed to open '%s' for reading\n", buf);
+        fprintf(stderr, "Failed to open '%s' for reading\n", path.ptr);
         exit(1);
     }
+    te_string_free(&path);
 
     f_result = fopen(output_path, "w");
     if (f_result == NULL)
