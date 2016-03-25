@@ -75,10 +75,8 @@ typedef struct node_info {
     te_bool                opened;            /**< TRUE if we have not yet
                                                    encountered terminating
                                                    fragment */
-    long unsigned int      open_chld_cnt;     /**< Number of child nodes
-                                                   for which terminating
-                                                   fragment has not been
-                                                   encountered yet*/
+    te_bool                is_test;           /**< Whether this node
+                                                   represents test */
     uint64_t               inner_frags_cnt;   /**< Number of inner
                                                    fragments related to
                                                    this node */
@@ -132,7 +130,7 @@ get_node_info(int node_id)
         {
             nodes_info[i].parent = -1;
             nodes_info[i].opened = FALSE;
-            nodes_info[i].open_chld_cnt = 0;
+            nodes_info[i].is_test = FALSE;
             nodes_info[i].inner_frags_cnt = 0;
             nodes_info[i].cur_file_num = 0;
             nodes_info[i].cur_file_size = 0;
@@ -140,6 +138,47 @@ get_node_info(int node_id)
     }
 
     return &nodes_info[node_id];
+}
+
+/**
+ * In this array current sequential number for each depth
+ * is stored.
+ */
+static unsigned int *depth_seq = NULL;
+/**
+ * Number of elements for which memory is allocated in
+ * depth_seq array.
+ */
+static unsigned int  depth_levels = 0;
+
+/**
+ * Check that depth_seq array is big enough to contain sequential number
+ * for a given depth; if it is not, reallocate it.
+ *
+ * @param depth     Required depth level
+ */
+static void
+depth_levels_up_to_depth(unsigned int depth)
+{
+    unsigned int i = depth_levels;
+
+    while (depth_levels <= depth)
+    {
+        void *p;
+
+        depth_levels = (depth_levels + 1) * 2;
+        p = realloc(depth_seq, depth_levels * sizeof(unsigned int));
+        if (p == NULL)
+        {
+            fprintf(stderr, "%s\n",
+                    "Not enough memory for depth_seq array");
+            exit(1);
+        }
+        depth_seq = (unsigned int *)p;
+    }
+
+    for ( ; i < depth_levels; i++)
+        depth_seq[i] = 0;
 }
 
 /*
@@ -321,22 +360,25 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
 
     char  str[DEF_STR_LEN];
     char  msg_type[DEF_STR_LEN];
+    char  node_type[DEF_STR_LEN];
     int   rc;
+
+    unsigned int last_ended_test_id = 0;
 
     while (!feof(f_index))
     {
         fgets(str, sizeof(str), f_index);
-        rc = sscanf(str, "%u.%u %" PRId64 " %d %d %s %u %" PRId64,
+        rc = sscanf(str, "%u.%u %" PRId64 " %d %d %s %u %s %" PRId64,
                     &timestamp[0], &timestamp[1],
                     &offset, &parent_id, &node_id,
-                    msg_type, &tin_or_verdict, &length);
-        if (rc < 7)
+                    msg_type, &tin_or_verdict, node_type, &length);
+        if (rc < 8)
         {
             fprintf(stderr, "Wrong record in raw log index at line %ld",
                     line);
             exit(1);
         }
-        if (rc < 8)
+        if (rc < 9)
         {
             raw_fp = ftello(f_raw_log);
             fseeko(f_raw_log, 0LL, SEEK_END);
@@ -350,21 +392,18 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
         else if (strcmp(msg_type, "END") == 0)
         {
             node_info *node_descr;
-            node_info *parent_node_descr;
 
             frag_type = FRAG_END;
 
             node_descr = get_node_info(node_id);
             node_descr->opened = FALSE;
 
-            parent_node_descr = get_node_info(node_descr->parent);
-            if (parent_node_descr != node_descr)
-                parent_node_descr->open_chld_cnt--;
+            if (node_descr->is_test)
+                last_ended_test_id = node_id;
         }
         else
         {
             node_info *node_descr;
-            node_info *parent_node_descr;
 
             frag_type = FRAG_START;
 
@@ -375,9 +414,9 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
             node_descr->start_len = length;
 
             node_descr->parent = parent_id;
-            parent_node_descr = get_node_info(parent_id);
-            if (parent_node_descr != node_descr)
-                parent_node_descr->open_chld_cnt++;
+
+            if (strcmp(node_type, "TEST") == 0)
+                node_descr->is_test = TRUE;
         }
 
         if (frag_type == FRAG_INNER)
@@ -396,25 +435,35 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
             else
             {
                 long unsigned int j;
+                te_bool           non_root_opened_found = FALSE;
                 te_bool           matching_frag_found = FALSE;
 
                 for (j = 0; j < nodes_count; j++)
                 {
-                    if (nodes_info[j].opened &&
-                        nodes_info[j].open_chld_cnt == 0)
+                    if (nodes_info[j].opened)
                     {
-                        append_to_frag(j, frag_type, f_raw_log,
-                                       offset, length,
-                                       f_recover, output_path);
-                        matching_frag_found = TRUE;
+                        if (j > 0)
+                            non_root_opened_found = TRUE;
+                        if (nodes_info[j].is_test)
+                        {
+                            append_to_frag(j, frag_type, f_raw_log,
+                                           offset, length,
+                                           f_recover, output_path);
+                            matching_frag_found = TRUE;
+                        }
                     }
                 }
 
                 if (!matching_frag_found)
                 {
-                    fprintf(stderr, "%s\n", "Matching fragment not found "
-                            "for message with undefined log id");
-                    exit(1);
+                    if (non_root_opened_found)
+                        append_to_frag(last_ended_test_id, frag_type,
+                                       f_raw_log, offset, length,
+                                       f_recover, output_path);
+                    else
+                        append_to_frag(/* log root node */ 0, frag_type,
+                                       f_raw_log, offset, length,
+                                       f_recover, output_path);
                 }
             }
         }
@@ -483,11 +532,12 @@ print_frags_list(const char *output_path, FILE *f_raw_gist,
                  unsigned int depth, unsigned int seq)
 {
     unsigned int i;
-    unsigned int child_seq = 0;
 
     FILE      *f_frag;
     te_string  path = TE_STRING_INIT;
     off_t      frag_len;
+
+    depth_levels_up_to_depth(depth);
 
     te_string_append(&path, "%s/%d_frag_start", output_path, node_id);
     f_frag = fopen(path.ptr, "r");
@@ -517,8 +567,8 @@ print_frags_list(const char *output_path, FILE *f_raw_gist,
         if (nodes_info[i].parent == node_id)
         {
             print_frags_list(output_path, f_raw_gist, f_frags_list, i,
-                             depth + 1, child_seq);
-            child_seq++;
+                             depth + 1, depth_seq[depth]);
+            depth_seq[depth]++;
         }
     }
 

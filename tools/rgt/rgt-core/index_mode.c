@@ -80,7 +80,7 @@ print_prev_length()
 {
     if (first_message)
     {
-        fprintf(rgt_ctx.out_fd, "0.0 0 0 0 FIRST %u",
+        fprintf(rgt_ctx.out_fd, "0.0 0 0 0 FIRST %u ROOT",
                 TE_TIN_INVALID);
         first_message = FALSE;
     }
@@ -95,11 +95,11 @@ static int
 print_node_start(node_info_t *node)
 {
     print_prev_length();
-    fprintf(rgt_ctx.out_fd, "%u.%.6u %lld %d %d START %u",
+    fprintf(rgt_ctx.out_fd, "%u.%.6u %lld %d %d START %u %s",
             node->start_ts[0], node->start_ts[1],
             (long long int)rgt_ctx.rawlog_fpos,
             node->parent_id, node->node_id,
-            node->descr.tin);
+            node->descr.tin, node_type2str(node->type));
 
     return 1;
 }
@@ -109,10 +109,11 @@ static int
 print_node_end(node_info_t *node)
 {
     print_prev_length();
-    fprintf(rgt_ctx.out_fd, "%u.%.6u %lld %d %d END -1",
+    fprintf(rgt_ctx.out_fd, "%u.%.6u %lld %d %d END -1 %s",
             node->end_ts[0], node->end_ts[1],
             (long long int)rgt_ctx.rawlog_fpos,
-            node->parent_id, node->node_id);
+            node->parent_id, node->node_id,
+            node_type2str(node->type));
 
     return 1;
 }
@@ -200,7 +201,7 @@ index_process_regular_msg(log_msg *msg)
     UNUSED(msg);
 
     print_prev_length();
-    fprintf(rgt_ctx.out_fd, "%u.%.6u %lld %u -1 REGULAR %u",
+    fprintf(rgt_ctx.out_fd, "%u.%.6u %lld %u -1 REGULAR %u UNDEF",
             msg->timestamp[0], msg->timestamp[1],
             (long long int)rgt_ctx.rawlog_fpos, msg->id,
             ((msg->flags & RGT_MSG_FLG_VERDICT) ? 1 : 0));
