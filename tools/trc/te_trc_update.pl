@@ -104,27 +104,36 @@ sub download_prepare_log
         }
         else
         {
-            $rc = download_log($file_to_load."log.xml.bz2",
+            $rc = download_log($file_to_load."log_gist.raw",
                                $tmp_files[$#tmp_files]);
-
             if ($rc != 0)
             {
-                print "Failed to fetch XML log. Downloading RAW log.\n";
-                $rc = download_log($file_to_load."log.raw.bz2",
+                $rc = download_log($file_to_load."log.xml.bz2",
                                    $tmp_files[$#tmp_files]);
 
                 if ($rc != 0)
                 {
-                    die "Failed to fetch RAW log";
+                    print "Failed to fetch XML log. Downloading RAW log.\n";
+                    $rc = download_log($file_to_load."log.raw.bz2",
+                                       $tmp_files[$#tmp_files]);
+
+                    if ($rc != 0)
+                    {
+                        die "Failed to fetch RAW log";
+                    }
+                    else
+                    {
+                        $initial_name = "log.raw.bz2";
+                    }
                 }
                 else
                 {
-                    $initial_name = "log.raw.bz2";
+                    $initial_name = "log.xml.bz2";
                 }
             }
             else
             {
-                $initial_name = "log.xml.bz2";
+                $initial_name = "log_gist.raw";
             }
         }
 
