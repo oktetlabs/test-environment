@@ -10520,7 +10520,7 @@ TARPC_FUNC(vfork_pipe_exec, {},
 
 /*------------ namespace_id2str() -----------------------*/
 
-void
+te_errno
 namespace_id2str(tarpc_namespace_id2str_in *in,
                  tarpc_namespace_id2str_out *out)
 {
@@ -10528,21 +10528,18 @@ namespace_id2str(tarpc_namespace_id2str_in *in,
     const char *buf = NULL;
     rc = rcf_pch_mem_ns_get_string(in->id, &buf);
     if (rc != 0)
-        out->common._errno = rc;
-    else if (buf == NULL)
-        out->common._errno = TE_RC(TE_RPC, TE_ENOENT);
-    else
-    {
-        const int str_len = strlen(buf);
-        out->str.str_val = malloc(str_len);
-        if (out->str.str_val == NULL)
-            out->common._errno = TE_RC(TE_RPC, TE_ENOMEM);
-        else
-        {
-            out->str.str_len = str_len;
-            memcpy(out->str.str_val, buf, str_len);
-        }
-    }
+        return rc;
+    if (buf == NULL)
+        return TE_RC(TE_RPC, TE_ENOENT);
+
+    const int str_len = strlen(buf);
+    out->str.str_val = malloc(str_len);
+    if (out->str.str_val == NULL)
+        return TE_RC(TE_RPC, TE_ENOMEM);
+
+    out->str.str_len = str_len;
+    memcpy(out->str.str_val, buf, str_len);
+    return 0;
 }
 
 TARPC_FUNC(namespace_id2str,
@@ -10551,5 +10548,5 @@ TARPC_FUNC(namespace_id2str,
     in->common.op = RCF_RPC_CALL_WAIT;
 },
 {
-    MAKE_CALL(func_ptr(in, out));
+    MAKE_CALL(out->retval = func_ptr(in, out));
 })

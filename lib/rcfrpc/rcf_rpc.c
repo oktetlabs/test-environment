@@ -1103,7 +1103,7 @@ rcf_rpc_namespace_id2str(rcf_rpc_server *rpcs, rpc_ptr_id_namespace id,
                          char **str)
 {
     tarpc_namespace_id2str_in   in  = {.id = id};
-    tarpc_namespace_id2str_out  out = {.common._errno = 0};
+    tarpc_namespace_id2str_out  out = {.retval = 0};
 
     if (rpcs == NULL)
         return TE_RC(TE_RCF_RPC, TE_EINVAL);
@@ -1116,11 +1116,12 @@ rcf_rpc_namespace_id2str(rcf_rpc_server *rpcs, rpc_ptr_id_namespace id,
 
     RING("RPC (%s, %s): namespace_id2str(%d) -> %s[%d], %r",
          rpcs->ta, rpcs->name, id,
-         out.str.str_val, out.str.str_len, out.common._errno);
+         out.str.str_val, out.str.str_len, out.retval);
 
-    if (out.common._errno != 0)
+    if (out.str.str_val == NULL || out.str.str_len == 0)
         *str = NULL;
     else
         *str = strndup(out.str.str_val, out.str.str_len);
-    return out.common._errno;
+
+    return out.retval;
 }

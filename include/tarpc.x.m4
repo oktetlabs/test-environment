@@ -5228,6 +5228,7 @@ struct tarpc_namespace_id2str_in {
 struct tarpc_namespace_id2str_out {
     struct tarpc_out_arg    common;
     char                    str<>;
+    tarpc_int               retval;
 };
 
 program tarpc
