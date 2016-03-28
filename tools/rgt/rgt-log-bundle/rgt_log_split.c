@@ -351,7 +351,7 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
     int           node_id;
     int64_t       offset;
     int64_t       length;
-    unsigned int  tin_or_verdict;
+    unsigned int  tin_or_start_frag;
     unsigned int  timestamp[2];
     long int      line = 0;
     off_t         raw_fp;
@@ -371,7 +371,7 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
         rc = sscanf(str, "%u.%u %" PRId64 " %d %d %s %u %s %" PRId64,
                     &timestamp[0], &timestamp[1],
                     &offset, &parent_id, &node_id,
-                    msg_type, &tin_or_verdict, node_type, &length);
+                    msg_type, &tin_or_start_frag, node_type, &length);
         if (rc < 8)
         {
             fprintf(stderr, "Wrong record in raw log index at line %ld",
@@ -410,7 +410,7 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
             node_descr = get_node_info(node_id);
             node_descr->opened = TRUE;
 
-            node_descr->tin = tin_or_verdict;
+            node_descr->tin = tin_or_start_frag;
             node_descr->start_len = length;
 
             node_descr->parent = parent_id;
@@ -426,11 +426,6 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
                 append_to_frag(parent_id, frag_type, f_raw_log,
                                offset, length,
                                f_recover, output_path);
-
-                if (tin_or_verdict)
-                    append_to_frag(parent_id, FRAG_START, f_raw_log,
-                                   offset, length,
-                                   f_recover, output_path);
             }
             else
             {
@@ -466,6 +461,12 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
                                        f_recover, output_path);
                 }
             }
+
+            if (tin_or_start_frag)
+                append_to_frag(parent_id, FRAG_START, f_raw_log,
+                               offset, length,
+                               f_recover, output_path);
+
         }
         else
         {
