@@ -8,6 +8,8 @@
 #
 # $Id: $
 
+. `dirname \`which $0\``/guess.sh
+
 RUN_DIR="${PWD}"
 : ${OUTPUT_HTML:=false}
 : ${HTML_OPTION:=true}
