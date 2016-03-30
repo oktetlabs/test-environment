@@ -10,6 +10,16 @@ void initialize_log_msg_pool();
 void destroy_log_msg_pool();
 log_msg *alloc_log_msg();
 void free_log_msg(log_msg *);
+
+/** Initialize obstack for log_msg_ptr structures */
+extern void initialize_log_msg_ptr_pool(void);
+/** Destroy obstack for log_msg_ptr structures */
+extern void destroy_log_msg_ptr_pool(void);
+/** Allocate memory for log_msg_ptr structure */
+extern log_msg_ptr *alloc_log_msg_ptr(void);
+/** Release memory occupied by log_msg_ptr structure */
+extern void free_log_msg_ptr(log_msg_ptr *);
+
 void initialize_node_info_pool();
 void destroy_node_info_pool();
 node_info_t *alloc_node_info();

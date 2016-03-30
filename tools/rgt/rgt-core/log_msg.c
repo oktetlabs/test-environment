@@ -911,3 +911,35 @@ rgt_expand_log_msg(log_msg *msg)
 
     return;
 }
+
+/* See description in the log_msg.h */
+log_msg_ptr *
+log_msg_ref(log_msg *msg)
+{
+    log_msg_ptr *ptr;
+
+    ptr = alloc_log_msg_ptr();
+
+    ptr->offset = rgt_ctx.rawlog_fpos;
+    ptr->timestamp[0] = msg->timestamp[0];
+    ptr->timestamp[1] = msg->timestamp[1];
+
+    return ptr;
+}
+
+/* See description in the log_msg.h */
+log_msg *
+log_msg_read(log_msg_ptr *msg_ptr)
+{
+    log_msg *msg = NULL;
+
+    fseeko(rgt_ctx.rawlog_fd, msg_ptr->offset, SEEK_SET);
+    if (rgt_ctx.fetch_log_msg(&msg, &rgt_ctx) == 0)
+    {
+        FMT_TRACE("Failed to reload log message from %lld",
+                  (long long int)msg_ptr->offset);
+        THROW_EXCEPTION;
+    }
+
+    return msg;
+}

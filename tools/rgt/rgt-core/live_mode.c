@@ -49,8 +49,6 @@ static int live_process_branch_start(node_info_t *node, GQueue *verdicts);
 static int live_process_branch_end(node_info_t *node, GQueue *verdicts);
 static int live_process_regular_msg(log_msg *msg);
 
-static void rgt_expand_regular_log_msg(log_msg *msg);
-
 void
 live_mode_init(f_process_ctrl_log_msg ctrl_proc[CTRL_EVT_LAST][NT_LAST], 
                f_process_reg_log_msg  *reg_proc)

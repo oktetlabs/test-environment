@@ -5,13 +5,19 @@
 #include "memory.h"
 
 /** 
- * Pointer to an abstack that is used for allocation log_msg data
+ * Pointer to an obstack that is used for allocation of log_msg data
  * structure.
  */
 static struct obstack *log_msg_obstk = NULL;
 
 /**
- * Pointer to an abstack that is used for allocation node_info data
+ * Pointer to an obstack that is used for allocation of
+ * log_msg_ptr data structures.
+ */
+static struct obstack *log_msg_ptr_obstk = NULL;
+
+/**
+ * Pointer to an obstack that is used for allocation of node_info data
  * structure.
  */
 static struct obstack *node_info_obstk = NULL;
@@ -145,4 +151,47 @@ void *
 node_info_obstack_copy0(const void *address, int size)
 {
     return obstack_copy0(node_info_obstk, address, size);
+}
+
+/* See the description in memory.h */
+void
+initialize_log_msg_ptr_pool(void)
+{
+    if (log_msg_ptr_obstk == NULL &&
+        ((log_msg_ptr_obstk = obstack_initialize()) == NULL))
+    {
+        THROW_EXCEPTION;
+    }
+}
+
+/* See the description in memory.h */
+void
+destroy_log_msg_ptr_pool(void)
+{
+    if (log_msg_ptr_obstk != NULL)
+    {
+        obstack_destroy(log_msg_ptr_obstk);
+        log_msg_ptr_obstk = NULL;
+    }
+}
+
+/* See the description in memory.h */
+log_msg_ptr *
+alloc_log_msg_ptr(void)
+{
+    log_msg_ptr *msg_ptr;
+
+    msg_ptr = (log_msg_ptr *)obstack_alloc(log_msg_ptr_obstk,
+                                           sizeof(log_msg_ptr));
+    memset(msg_ptr, 0, sizeof(*msg_ptr));
+
+    return msg_ptr;
+}
+
+/* See the description in memory.h */
+void
+free_log_msg_ptr(log_msg_ptr *msg_ptr)
+{
+    if (msg_ptr != NULL)
+        obstack_free(log_msg_ptr_obstk, msg_ptr);
 }

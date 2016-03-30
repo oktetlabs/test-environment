@@ -334,10 +334,15 @@ print_params(node_info_t *node)
 static void
 process_verdict_cb(gpointer data, gpointer user_data)
 {
+    log_msg_ptr *msg_ptr = (log_msg_ptr *)data;
+    log_msg     *msg = NULL;
+
     UNUSED(user_data);
 
     fputs("<verdict>", rgt_ctx.out_fd);
-    output_regular_log_msg((log_msg *)data);
+    msg = log_msg_read(msg_ptr);
+    output_regular_log_msg(msg);
+    free_log_msg(msg);
     fputs("</verdict>\n", rgt_ctx.out_fd);
 }
 

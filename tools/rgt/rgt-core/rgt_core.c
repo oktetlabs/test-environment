@@ -341,6 +341,7 @@ static void free_resources(int signo)
     rgt_filter_destroy();
     destroy_node_info_pool();
     destroy_log_msg_pool();
+    destroy_log_msg_ptr_pool();
     fclose(rgt_ctx.rawlog_fd);
     fclose(rgt_ctx.out_fd);
 
@@ -396,6 +397,7 @@ main(int argc, char **argv)
     flow_tree_init();
     initialize_node_info_pool();
     initialize_log_msg_pool();
+    initialize_log_msg_ptr_pool();
 
     if (setjmp(rgt_mainjmp) == 0)
     {

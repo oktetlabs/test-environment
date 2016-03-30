@@ -297,7 +297,20 @@ typedef struct log_msg {
     char         *txt_msg;      /**< Processed fmt_str + args */
 } log_msg;
 
-
+/**
+ * Structure that is stored in the tree of log nodes instead of
+ * log_msg structure for each regular log message. It is used to
+ * reduce memory consumption: full log message is loaded to memory
+ * from file only when we need to process it, and memory is released
+ * as soon as we end with it.
+ */
+typedef struct log_msg_ptr {
+  off_t       offset;         /**< At which offset in raw log file
+                                   we can find message referenced
+                                   by this structure */
+  uint32_t    timestamp[2];   /**< Timestamp of referenced log
+                                   message */
+} log_msg_ptr;
 
 #ifdef __cplusplus
 }

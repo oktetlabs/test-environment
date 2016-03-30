@@ -704,9 +704,9 @@ flow_tree_filter_message(log_msg *msg)
 }
 
 static void
-attach_msg_to_queue(GQueue *queue, GList **cache, log_msg *msg)
+attach_msg_to_queue(GQueue *queue, GList **cache, log_msg_ptr *msg)
 {
-    log_msg *tail_msg = g_queue_peek_tail(queue);
+    log_msg_ptr *tail_msg = g_queue_peek_tail(queue);
 
     if (tail_msg != NULL && 
         TIMESTAMP_CMP(msg->timestamp, tail_msg->timestamp) >= 0)
@@ -728,19 +728,19 @@ attach_msg_to_queue(GQueue *queue, GList **cache, log_msg *msg)
          */
         if (*cache != NULL)
         {
-            GList   *after_cache_elem;
-            log_msg *after_cache_msg;
+            GList       *after_cache_elem;
+            log_msg_ptr *after_cache_msg;
 
 #ifdef RGT_PROF_STAT
             msg_use_cache++;
 #endif
 
-            tail_msg = (log_msg *)((*cache)->data);
+            tail_msg = (log_msg_ptr *)((*cache)->data);
 
             if (TIMESTAMP_CMP(msg->timestamp, tail_msg->timestamp) >= 0 &&
                 (after_cache_elem = g_list_next(*cache)) != NULL &&
                 (after_cache_msg = 
-                    (log_msg *)after_cache_elem->data) != NULL)
+                    (log_msg_ptr *)after_cache_elem->data) != NULL)
             {
                 /*
                  * The message we want to put into the queue should go 
@@ -791,7 +791,7 @@ attach_msg_to_queue(GQueue *queue, GList **cache, log_msg *msg)
                      * less than tail's timestamp.
                      */
                     while (TIMESTAMP_CMP(msg->timestamp,
-                        ((log_msg *)queue_elem->data)->timestamp) > 0)
+                        ((log_msg_ptr *)queue_elem->data)->timestamp) > 0)
                     {
                         queue_elem = g_list_next(queue_elem);
                     }
@@ -820,7 +820,7 @@ attach_msg_to_queue(GQueue *queue, GList **cache, log_msg *msg)
 
                 while (queue_elem != NULL &&
                     TIMESTAMP_CMP(msg->timestamp,
-                       ((log_msg *)queue_elem->data)->timestamp) < 0)
+                       ((log_msg_ptr *)queue_elem->data)->timestamp) < 0)
                 {
                     queue_elem = g_list_previous(queue_elem);
                 }
@@ -861,7 +861,7 @@ attach_msg_to_queue(GQueue *queue, GList **cache, log_msg *msg)
 }
 
 int
-flow_tree_attach_from_node(node_t *node, log_msg *msg)
+flow_tree_attach_from_node(node_t *node, log_msg_ptr *msg)
 {
     uint32_t *ts = msg->timestamp;
 
@@ -926,7 +926,8 @@ flow_tree_attach_from_node(node_t *node, log_msg *msg)
         if (cur_node == NULL)
         {
             /* message came before starting any branch of the session */
-            attach_msg_to_queue(node->msg_att, &(node->msg_att_cache), msg);
+            attach_msg_to_queue(node->msg_att, &(node->msg_att_cache),
+                                msg);
         }
 
         return 0;
@@ -952,6 +953,8 @@ flow_tree_attach_message(log_msg *msg)
     node_t **p_cur_node;
     node_t  *cur_node;
 
+    log_msg_ptr *msg_ptr = log_msg_ref(msg);
+
     assert(msg->flags != 0);
 
     if (msg->id == TE_LOG_ID_UNDEFINED)
@@ -960,7 +963,8 @@ flow_tree_attach_message(log_msg *msg)
         /* FIXME: may be something was actually wrong here */
         /* assert((msg->flags & RGT_MSG_FLG_VERDICT) == 0); */
 
-        flow_tree_attach_from_node(root, msg);
+        free_log_msg(msg);
+        flow_tree_attach_from_node(root, msg_ptr);
         return;
     }
 
@@ -986,7 +990,7 @@ flow_tree_attach_message(log_msg *msg)
     cur_node = *p_cur_node;
 
     if ((msg->flags & RGT_MSG_FLG_NORMAL) != 0)
-        flow_tree_attach_from_node(cur_node, msg);
+        flow_tree_attach_from_node(cur_node, msg_ptr);
 
     /* Check if we are processing Test Control message */
     if ((msg->flags & RGT_MSG_FLG_VERDICT) != 0)
@@ -1007,7 +1011,11 @@ flow_tree_attach_message(log_msg *msg)
                                     strlen(msg->txt_msg + idlen));
 
             if ((msg->flags & RGT_MSG_FLG_NORMAL) == 0)
+            {
                 free_log_msg(msg);
+                free_log_msg_ptr(msg_ptr);
+                msg_ptr = NULL;
+            }
         }
         else
         {
@@ -1015,16 +1023,25 @@ flow_tree_attach_message(log_msg *msg)
             if (cur_node->verdicts == NULL)
                 cur_node->verdicts = g_queue_new();
 
-            g_queue_push_tail(cur_node->verdicts, msg);
+            g_queue_push_tail(cur_node->verdicts, msg_ptr);
         }
     }
+
+    if (msg_ptr != NULL)
+        free_log_msg(msg);
 }
 
 static void
 wrapper_process_regular_msg(gpointer data, gpointer user_data)
 {
+    log_msg_ptr *msg_ptr = (log_msg_ptr *)data;
+    log_msg     *msg = NULL;
+
     UNUSED(user_data);
-    reg_msg_proc((log_msg *)data);
+
+    msg = log_msg_read(msg_ptr);
+    reg_msg_proc(msg);
+    free_log_msg(msg);
 }
 
 /**
@@ -1166,8 +1183,8 @@ timestamp_cmp(gconstpointer a, gconstpointer b, gpointer user_data)
 #ifdef RGT_PROF_STAT
     timestamp_cmp_cnt++;
 #endif
-    return TIMESTAMP_CMP((((log_msg *)a)->timestamp),
-                         (((log_msg *)b)->timestamp));
+    return TIMESTAMP_CMP((((log_msg_ptr *)a)->timestamp),
+                         (((log_msg_ptr *)b)->timestamp));
 }
 
 
