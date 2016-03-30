@@ -1,0 +1,43 @@
+#! /usr/bin/awk -f
+
+# This script extracts comments from a `package.xml' file and converts them
+# to the form suitable for Doxygen processing
+
+function process(str)
+{
+    if (sub(/-->.*/, " ", str))
+        in_dox_comment = 0;
+    else
+        in_dox_comment = 1;
+    if (str ~ /[[:space:]]*@page/)
+    {
+        if (was_comment)
+            print "*/";
+        printf "/** ";
+        was_comment = 1;
+    }
+    print str;
+    return;
+}
+
+in_dox_comment && /^[[:space:]]*\*/ { sub(/^[[:space:]]*\*/, ""); }
+
+/<!---/ {   n = split($0, arr, /<!---/);
+            if (in_dox_comment)
+                process(arr[1]);
+            in_dox_comment = 1;
+            for (i = 2; i <= n; i++)
+                process(arr[i]);
+            next;
+        }
+
+in_dox_comment && /-->/ {   sub(/-->.*/, "");
+                            if ($0) print;
+                            in_dox_comment = 0;
+                            next;
+                        }
+
+in_dox_comment { print $0; next }
+
+END { if (was_comment) print "*/"; }
+
