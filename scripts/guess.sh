@@ -12,9 +12,9 @@ popd >/dev/null
 
 if test -z "${CONFIG_SUB}" ; then
     if test -e "${TE_BASE}/auxdir/config.sub" ; then
-        CONFIG_SUB="${TE_BASE}/auxdir/config.sub"
+        export CONFIG_SUB="${TE_BASE}/auxdir/config.sub"
     else    
-        CONFIG_SUB=`find /usr/share/automake* -name config.sub | tail -n 1`
+        export CONFIG_SUB=`find /usr/share/automake* -name config.sub | tail -n 1`
     fi    
 fi
 
@@ -24,9 +24,9 @@ fi
 
 if test -z "${TE_LOG_RAW}" ; then
     if test -e tmp_raw_log ; then
-        TE_LOG_RAW="$(pwd -P)/tmp_raw_log"
+        export TE_LOG_RAW="$(pwd -P)/tmp_raw_log"
     elif test -e "${MYDIR}/tmp_raw_log" ; then
-        TE_LOG_RAW="${MYDIR}/tmp_raw_log"
+        export TE_LOG_RAW="${MYDIR}/tmp_raw_log"
     fi
 fi
 if test -z "${TE_INSTALL}" ; then
