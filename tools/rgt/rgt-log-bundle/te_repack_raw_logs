@@ -10,6 +10,11 @@ usage()
 Repacking existing raw logs in specified directories and their subdirs:
 log.raw.bz2 -> raw_log_bundle.tpxz
 Usage: repack_raw_logs [options] dir_path1 [dir_path2 dir_path3 ... dir_pathN]
+
+Options:
+    --repack-existing=[yes|no]      Repack existing bundles
+    --remove-original=[yes|no]      Remove original raw log after creating
+                                    bundle
 Environment variables:
     TMPDIR          Directory for temporary files (/tmp/ if not set)
     PATH            Should include path to TE scripts and tools
