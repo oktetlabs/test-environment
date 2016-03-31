@@ -66,10 +66,18 @@ if test $? -ne 0 ; then
     err_cleanup "Failed to create subdir in ${bundle_tmpdir}"
 fi
 
-if [[ "${req_path}" =~ log_gist[.]raw$ ]] ; then
-    pixz -x log_gist.raw <"${bundle_path}" | tar -x -O >"${req_path}"
+if [[ "${req_path}" =~ log.raw.bz2$ ]] ; then
+
+    rgt-log-bundle-get-original --bundle="${bundle_path}" \
+        --output="${bundle_tmpdir}/log.raw"
     if test $? -ne 0 ; then
-        err_cleanup "Failed to extract log_gist.raw"
+        err_cleanup "Failed to recover original raw log"
+    fi
+
+    bzip2 -k --stdout "${bundle_tmpdir}/log.raw" >"${req_path}"
+    if test $? -ne 0 ; then
+        rm "${req_path}"
+        err_cleanup "Failed to compress original raw log"
     fi
 
 elif [[ "${req_path}" =~ log[.]raw$ ]] ; then
@@ -78,6 +86,12 @@ elif [[ "${req_path}" =~ log[.]raw$ ]] ; then
         --output="${req_path}"
     if test $? -ne 0 ; then
         err_cleanup "Failed to recover original raw log"
+    fi
+
+elif [[ "${req_path}" =~ log_gist[.]raw$ ]] ; then
+    pixz -x log_gist.raw <"${bundle_path}" | tar -x -O >"${req_path}"
+    if test $? -ne 0 ; then
+        err_cleanup "Failed to extract log_gist.raw"
     fi
 
 elif [[ "${req_path}" =~ log[.]txt$ ]] ; then
