@@ -71,6 +71,9 @@ check_bundle()
 {
     log_dir=$1
 
+    raw_from_bz2=
+    raw_from_bundle=
+
     raw_from_bz2=$(mktemp "${TMPDIR}/raw_log_XXXXXX") && rc=0 || rc=1
     if test $rc -ne 0 ; then
         echo "Failed to create temporary file" 2>&1
