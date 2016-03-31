@@ -28,8 +28,8 @@ while test -n "$1" ; do
     case "$1" in
         --help ) usage ; exit 0 ;;
         -h )     usage ; exit 0 ;;
-        --repack-existing=* ) repack_existing="${1#--repack-existing}" ;;
-        --remove-original=* ) remove_original="${1#--remove-original}" ;;
+        --repack-existing=* ) repack_existing="${1#--repack-existing=}" ;;
+        --remove-original=* ) remove_original="${1#--remove-original=}" ;;
         *) break ;;
     esac
     shift 1
