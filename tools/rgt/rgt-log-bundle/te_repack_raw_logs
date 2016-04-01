@@ -146,6 +146,13 @@ process_raw_logs()
                                  "to delete '${file_name}'" 2>&1
                         fi
                     fi
+
+                    chmod o-rwx "${log_dir}/raw_log_bundle.tpxz" && \
+                          rc=0 || rc=1
+                    if test $rc -ne 0 ; then
+                        echo "REPACK ERROR: Failed to change permissions " \
+                             "for '${log_dir}/raw_log_bundle.tpxz'" 2>&1
+                    fi
                 fi
             else
                 rgt-log-bundle-create --raw-log="${file_name}" \
@@ -165,6 +172,13 @@ process_raw_logs()
                             echo "REPACK ERROR: Failed to " \
                                  "delete '${file_name}'" 2>&1
                         fi
+                    fi
+
+                    chmod o-rwx "${log_dir}/raw_log_bundle.tpxz" && \
+                          rc=0 || rc=1
+                    if test $rc -ne 0 ; then
+                        echo "REPACK ERROR: Failed to change permissions " \
+                             "for '${log_dir}/raw_log_bundle.tpxz'" 2>&1
                     fi
                 fi
             fi
