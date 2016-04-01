@@ -324,12 +324,12 @@ extern void cfg_db_destroy(void);
  * Check if the object identifier (possibly wildcard) matches some
  * volatile object on the Test Agent.
  *
- * @param oid_s         object identifier in string representation
- * @param ta            location for TA name pointer
+ * @param [in] oid_in       object identifier in string representation
+ * @param [out]oid_out      the found object identifier in string
  *
  * @return TRUE (match) or FALSE (does not match)
  */
-extern te_bool cfg_oid_match_volatile(const char *oid_s, char **ta);
+extern te_bool cfg_oid_match_volatile(const char *oid_s, char **oid_out);
 
 /** Delay for configuration changes accomodation */
 uint32_t cfg_conf_delay;

@@ -379,18 +379,15 @@ parse_config(const char *file, te_bool restore)
 static int
 cfg_sync_agt_volatile(cfg_msg *msg, const char *inst_name)
 {
-    char *ta;
-    char  oid[CFG_OID_MAX];
+    char *oid;
 
-    if (!cfg_oid_match_volatile(inst_name, &ta))
+    if (!cfg_oid_match_volatile(inst_name, &oid))
         return 0;
 
     CFG_CHECK_NO_LOCAL_SEQ_RC("sync_agt_volatile", msg);
 
-    TE_SPRINTF(oid, CFG_TA_PREFIX"%s", ta);
-    free(ta);
-
     msg->rc = cfg_ta_sync(oid, TRUE);
+    free(oid);
     return msg->rc;
 }
 

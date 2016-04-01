@@ -1926,78 +1926,105 @@ pattern_match(char *pattern, char *str)
     return 0;
 }
 
-/** Check if the object or its sons matching oid are volatile */
-static te_bool
-oid_match_volatile(cfg_object *obj, const cfg_inst_subid *subids,
-                   int subids_num)
+/**
+ * Walking by the object path @p oid, find the last volatile or
+ * the first wildcard node and return its index
+ *
+ * @param oid   object identifier
+ *
+ * @return      Index of volatile or wildcard node or @c -1 in other cases
+ */
+static int
+oid_find_volatile(cfg_oid *oid)
 {
-    cfg_object *tmp;
+    int             index;
+    int             last_index = -1;
+    cfg_object     *obj = &cfg_obj_root;
+    cfg_inst_subid *subids = (cfg_inst_subid *)(oid->ids);
 
-    if (obj->vol)
-        return TRUE;
-
-    if (subids_num == 0)
-        return FALSE;
-
-    for (tmp = obj->son; tmp != NULL; tmp = tmp->brother)
+    for (index = 1; index < oid->len; index++)
     {
-        if ((strcmp(subids[0].subid, "*") == 0 ||
-             strcmp(subids[0].subid, tmp->subid) == 0) &&
-            oid_match_volatile(tmp, subids + 1, subids_num - 1))
-        {
-            return TRUE;
-        }
-    }
+        if (strcmp(subids[index].subid, "*") == 0)
+            return index;
 
-    return FALSE;
+        for (obj = obj->son; obj != NULL; obj = obj->brother)
+        {
+            if (strcmp(obj->subid, subids[index].subid) == 0)
+                break;
+        }
+        if (obj == NULL)
+        {
+            char *oid_s = cfg_convert_oid(oid);
+            ERROR("%s(): No object with '%s' subid, oid: '%s'",
+                  __FUNCTION__, subids[index].subid, oid_s);
+            free(oid_s);
+            return -1;
+        }
+
+        if (obj->vol)
+            last_index = index;
+    }
+    return last_index;
 }
 
-/**
- * Check if the object identifier (possibly wildcard) matches some
- * volatile object on the Test Agent.
- *
- * @param oid_s         object identifier in string representation
- * @param ta            location for TA name pointer
- *
- * @return TRUE (match) or FALSE (does not match)
- */
+/* See the description in conf_db.h */
 te_bool
-cfg_oid_match_volatile(const char *oid_s, char **ta)
+cfg_oid_match_volatile(const char *oid_in, char **oid_out)
 {
-    cfg_oid *oid = cfg_convert_oid_str(oid_s);
+    cfg_oid        *oid;
+    te_bool         match = FALSE;
+    cfg_inst_subid *subids;
 
+    if (strcmp(oid_in, "*:*") == 0)
+    {
+        if (oid_out == NULL)
+            return TRUE;
+
+        *oid_out = strdup(CFG_TA_PREFIX "*");
+        if (*oid_out == NULL)
+        {
+            ERROR("%s(): strdup(%s) failed, oid: '%s'",
+                  __FUNCTION__, CFG_TA_PREFIX "*", oid_in);
+            return FALSE;
+        }
+        return TRUE;
+    }
+
+    oid = cfg_convert_oid_str(oid_in);
     if (oid == NULL)
     {
-        ERROR("Incorrect OID %s is passed to %s", oid_s,
+        ERROR("Incorrect OID %s is passed to %s", oid_in,
               __FUNCTION__);
         return FALSE;
     }
 
-    cfg_inst_subid *subids = (cfg_inst_subid *)(oid->ids);
-
-    te_bool match = FALSE;
-
-    if (strcmp(oid_s, "*:*") == 0)
+    subids = (cfg_inst_subid *)(oid->ids);
+    if (oid->inst && (oid->len > 1) &&
+        (strcmp(subids[1].subid, "agent") == 0))
     {
-        if (ta != NULL && (*ta = strdup("*")) == NULL)
-            return FALSE;
+        const int n = oid_find_volatile(oid);
+        if (n <= 0)
+            match = FALSE;
+        else if (oid_out == NULL)
+            match = TRUE;
+        else
+        {
+            const uint8_t len = oid->len;
 
-        return TRUE;
+            oid->len = n + 1;
+            *oid_out = cfg_convert_oid(oid);
+            oid->len = len;
+
+            match = (*oid_out != NULL);
+            if (!match)
+            {
+                ERROR("%s(): cfg_convert_oid(%d) failed, oid: '%s'",
+                      __FUNCTION__, n + 1, oid_in);
+            }
+        }
     }
 
-    if (oid == NULL)
-        return FALSE;
-
-    if (!oid->inst)
-        return FALSE;
-
-    match = (oid->len > 1) && (strcmp(subids[1].subid, "agent") == 0) &&
-            oid_match_volatile(&cfg_obj_root, subids + 1, oid->len - 1) &&
-            ((ta != NULL && (*ta = strdup(subids[1].name)) != NULL) ||
-              ta == NULL);
-
     cfg_free_oid(oid);
-
     return match;
 }
 
