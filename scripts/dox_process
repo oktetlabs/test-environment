@@ -21,7 +21,7 @@ EOF
 header > $PACKAGE_FILE
 body=""
 
-for i in $(grep -r "@ingroup.*$SUITE_NAME" */*.dox | sed "s/:.*//"); do
+for i in $(grep --files-with-matches "@ingroup.*$SUITE_NAME" */*.dox); do
     group_name=$(cat $i | grep "@defgroup" | sed "s/@defgroup\s*\(\S*\).*/\1/")
 
     echo "- @ref $group_name"
