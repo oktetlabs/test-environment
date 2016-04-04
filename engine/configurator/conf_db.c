@@ -1954,10 +1954,11 @@ oid_find_volatile(cfg_oid *oid)
         }
         if (obj == NULL)
         {
-            char *oid_s = cfg_convert_oid(oid);
-            ERROR("%s(): No object with '%s' subid, oid: '%s'",
-                  __FUNCTION__, subids[index].subid, oid_s);
-            free(oid_s);
+            /*
+             * A test is allowed to check for non-existing nodes.
+             * In this case no volatile synchronization is needed,
+             * but it's not actually an error condition.
+             */
             return -1;
         }
 
