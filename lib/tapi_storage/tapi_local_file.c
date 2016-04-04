@@ -1,7 +1,7 @@
 /** @file
  * @brief Test API to local file routines
  *
- * Functions for convinient work with the files on the engine and TA.
+ * Functions for convenient work with the files on the engine and TA.
  *
  * Copyright (C) 2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -29,7 +29,7 @@
 
 #define TE_LGR_USER     "TAPI Local File"
 
-#include "te_config.h"
+#include "tapi_local_file.h"
 
 #ifdef HAVE_ASSERT_H
 #include <assert.h>
@@ -37,8 +37,6 @@
 #ifdef HAVE_STRING_H
 #include <string.h>
 #endif
-
-#include "tapi_local_file.h"
 
 
 /* See description in tapi_local_file.h. */

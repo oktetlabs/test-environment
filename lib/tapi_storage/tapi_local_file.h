@@ -1,7 +1,7 @@
 /** @file
  * @brief Test API to local file routines
  *
- * Functions for convinient work with the files on the engine and TA.
+ * Functions for convenient work with the files on the engine and TA.
  *
  * Copyright (C) 2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
