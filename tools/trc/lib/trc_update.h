@@ -313,6 +313,14 @@ extern void trc_update_tag_logs_free(trc_update_tag_logs *tag_logs);
 extern void trc_update_tags_logs_free(trc_update_tags_logs *tags_logs);
 
 /**
+ * Remove from a queue of tags those having no logs attached.
+ *
+ * @param tags_logs     Queue pointer
+ */
+extern void trc_update_tags_logs_remove_empty(
+                                trc_update_tags_logs *tags_logs);
+
+/**
  * Initialize TRC Update test iteration data.
  *
  * @param data      Data to be initialized.

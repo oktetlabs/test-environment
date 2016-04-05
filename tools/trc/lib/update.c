@@ -66,7 +66,7 @@ do {                                \
 void
 trc_update_init_test_iter_data(trc_update_test_iter_data *data)
 {
-    memset(data, sizeof(*data), 0);
+    memset(data, 0, sizeof(*data));
     SLIST_INIT(&data->new_results);
     SLIST_INIT(&data->df_results);
     SLIST_INIT(&data->all_wilds);
@@ -382,7 +382,7 @@ trc_update_set_user_attr(void *data, te_bool is_iter)
 void
 trc_update_init_ctx(trc_update_ctx *ctx_p)
 {
-    memset(ctx_p, 0, sizeof(ctx_p));
+    memset(ctx_p, 0, sizeof(*ctx_p));
     TAILQ_INIT(&ctx_p->test_names);
     TAILQ_INIT(&ctx_p->tags_logs);
     TAILQ_INIT(&ctx_p->diff_logs);
@@ -412,7 +412,7 @@ trc_update_free_ctx(trc_update_ctx *ctx)
 void
 tag_logs_init(trc_update_tag_logs *tag_logs)
 {
-    memset(tag_logs, 0, sizeof(tag_logs));
+    memset(tag_logs, 0, sizeof(*tag_logs));
     TAILQ_INIT(&tag_logs->logs);
 }
 
@@ -442,6 +442,27 @@ trc_update_tags_logs_free(trc_update_tags_logs *tags_logs)
         TAILQ_REMOVE(tags_logs, tl, links);
         trc_update_tag_logs_free(tl);
         free(tl);
+    }
+}
+
+/* See the description in trc_update.h */
+void
+trc_update_tags_logs_remove_empty(trc_update_tags_logs *tags_logs)
+{
+    trc_update_tag_logs     *tl = NULL;
+    trc_update_tag_logs     *tl_tmp = NULL;
+
+    if (tags_logs == NULL)
+        return;
+
+    TAILQ_FOREACH_SAFE(tl, tags_logs, links, tl_tmp)
+    {
+        if (TAILQ_EMPTY(&tl->logs))
+        {
+            TAILQ_REMOVE(tags_logs, tl, links);
+            trc_update_tag_logs_free(tl);
+            free(tl);
+        }
     }
 }
 

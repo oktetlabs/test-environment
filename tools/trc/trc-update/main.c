@@ -1046,6 +1046,9 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
         goto exit;
     }
 
+    trc_update_tags_logs_remove_empty(&ctx.tags_logs);
+    trc_update_tags_logs_remove_empty(&ctx.diff_logs);
+
     result = EXIT_SUCCESS;
 
 exit:
