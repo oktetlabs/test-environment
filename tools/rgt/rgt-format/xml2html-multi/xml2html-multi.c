@@ -574,12 +574,13 @@ RGT_DEF_FUNC(proc_document_end)
     if (fd != NULL)
     {
         rgt_tmpls_output(fd, &xml2fmt_tmpls[DOC_END], NULL);
+
+        /* Output the list of log names for root node */
+        output_log_names(&(depth_user->depth_log_names),
+                         ctx->depth, depth_ctx->seq);
+
         fclose(fd);
     }
-
-    /* Output the list of log names for root node */
-    output_log_names(&(depth_user->depth_log_names),
-                     ctx->depth, depth_ctx->seq);
 
     /* Output the list of accumulated log names */
     output_log_names(&(gen_user->log_names), 0, 0);
@@ -848,11 +849,11 @@ control_node_end(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     UNUSED(xml_attrs);
     UNUSED(node_type);
 
-    output_log_names(&(depth_user->depth_log_names),
-                     ctx->depth, depth_ctx->seq);
-
     if (fd != NULL)
     {
+        output_log_names(&(depth_user->depth_log_names),
+                         ctx->depth, depth_ctx->seq);
+
         rgt_tmpls_output(fd, &xml2fmt_tmpls[DOC_END], NULL);
         fclose(fd);
         free(depth_user->fname);
