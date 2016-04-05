@@ -62,7 +62,7 @@ sub download_log
 
     if ($file_to_load =~ m/https:\/\//)
     {
-        return system("curl -s -u : --negotiate ".
+        return system("curl -s -u : --negotiate -L ".
                       $file_to_load." -f".
                       " -o ".$file_to_save);
     }
