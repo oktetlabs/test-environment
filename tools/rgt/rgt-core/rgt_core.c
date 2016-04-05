@@ -161,6 +161,9 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
           "Do not shout on truncated log report, but complete it "
           "automatically.", NULL },
 
+        { "tmpdir", 't', POPT_ARG_STRING, NULL, 't',
+          "Temporary directory for message queues offloading.", "PATH" },
+
         { NULL, 'V', POPT_ARG_NONE, NULL, 'V',
           "Verbose trace.", NULL },
           
@@ -190,6 +193,14 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
                 }
                 break;
 #endif /* WITH_LOG_FILTER */
+
+            case 't':
+                if ((ctx->tmp_dir = poptGetOptArg(optCon)) == NULL)
+                {
+                    usage(optCon, 1, "Specify temporary directory path",
+                          NULL);
+                }
+                break;
 
             case 'm':
                 if ((ctx->op_mode_str = poptGetOptArg(optCon)) == NULL ||
@@ -341,7 +352,6 @@ static void free_resources(int signo)
     rgt_filter_destroy();
     destroy_node_info_pool();
     destroy_log_msg_pool();
-    destroy_log_msg_ptr_pool();
     fclose(rgt_ctx.rawlog_fd);
     fclose(rgt_ctx.out_fd);
 
@@ -349,6 +359,8 @@ static void free_resources(int signo)
     {
         unlink(rgt_ctx.out_fname);
     }
+
+    free(rgt_ctx.tmp_dir);
 
     /* Exit 0 in the case of CTRL^C or normal completion */
     exit(!signo);
@@ -397,7 +409,6 @@ main(int argc, char **argv)
     flow_tree_init();
     initialize_node_info_pool();
     initialize_log_msg_pool();
-    initialize_log_msg_ptr_pool();
 
     if (setjmp(rgt_mainjmp) == 0)
     {
@@ -489,6 +500,7 @@ rgt_ctx_set_defaults(rgt_gen_ctx_t *ctx)
     ctx->proc_cntrl_msg = TRUE;
     ctx->proc_incomplete = FALSE;
     ctx->verb = FALSE;
+    ctx->tmp_dir = NULL;
 }
 
 /**

@@ -50,17 +50,21 @@ static int logs_closed = 1;
 struct obstack *log_obstk = NULL;
 
 static int postponed_process_test_start(node_info_t *node,
-                                        GQueue *verdicts);
-static int postponed_process_test_end(node_info_t *node, GQueue *verdicts);
-static int postponed_process_pkg_start(node_info_t *node, GQueue *verdicts);
-static int postponed_process_pkg_end(node_info_t *node, GQueue *verdicts);
+                                        msg_queue *verdicts);
+static int postponed_process_test_end(node_info_t *node,
+                                      msg_queue *verdicts);
+static int postponed_process_pkg_start(node_info_t *node,
+                                       msg_queue *verdicts);
+static int postponed_process_pkg_end(node_info_t *node,
+                                     msg_queue *verdicts);
 static int postponed_process_sess_start(node_info_t *node,
-                                        GQueue *verdicts);
-static int postponed_process_sess_end(node_info_t *node, GQueue *verdicts);
+                                        msg_queue *verdicts);
+static int postponed_process_sess_end(node_info_t *node,
+                                      msg_queue *verdicts);
 static int postponed_process_branch_start(node_info_t *node,
-                                          GQueue *verdicts);
+                                          msg_queue *verdicts);
 static int postponed_process_branch_end(node_info_t *node,
-                                        GQueue *verdicts);
+                                        msg_queue *verdicts);
 static int postponed_process_regular_msg(log_msg *msg);
 
 static void output_regular_log_msg(log_msg *msg);
@@ -348,7 +352,7 @@ process_verdict_cb(gpointer data, gpointer user_data)
 
 static inline int
 postponed_process_start_event(node_info_t *node, const char *node_name,
-                              GQueue *verdicts)
+                              msg_queue *verdicts)
 {
     if (!logs_closed)
     {
@@ -441,10 +445,10 @@ postponed_process_start_event(node_info_t *node, const char *node_name,
         fputs("</authors>\n", rgt_ctx.out_fd);
     }
 
-    if (verdicts != NULL)
+    if (!msg_queue_is_empty(verdicts))
     {
         fputs("<verdicts>", rgt_ctx.out_fd);
-        g_queue_foreach(verdicts, process_verdict_cb, NULL);
+        msg_queue_foreach(verdicts, process_verdict_cb, NULL);
         fputs("</verdicts>\n", rgt_ctx.out_fd);
     }
 
@@ -457,7 +461,7 @@ postponed_process_start_event(node_info_t *node, const char *node_name,
 
 static inline int
 postponed_process_end_event(node_info_t *node, const char *node_name,
-                            GQueue *verdicts)
+                            msg_queue *verdicts)
 {
     UNUSED(node);
     UNUSED(verdicts);
@@ -474,43 +478,43 @@ postponed_process_end_event(node_info_t *node, const char *node_name,
 }
 
 static int
-postponed_process_test_start(node_info_t *node, GQueue *verdicts)
+postponed_process_test_start(node_info_t *node, msg_queue *verdicts)
 {
     return postponed_process_start_event(node, "test", verdicts);
 }
 
 static int
-postponed_process_test_end(node_info_t *node, GQueue *verdicts)
+postponed_process_test_end(node_info_t *node, msg_queue *verdicts)
 {
     return postponed_process_end_event(node, "test", verdicts);
 }
 
 static int
-postponed_process_pkg_start(node_info_t *node, GQueue *verdicts)
+postponed_process_pkg_start(node_info_t *node, msg_queue *verdicts)
 {
     return postponed_process_start_event(node, "pkg", verdicts);
 }
 
 static int
-postponed_process_pkg_end(node_info_t *node, GQueue *verdicts)
+postponed_process_pkg_end(node_info_t *node, msg_queue *verdicts)
 {
     return postponed_process_end_event(node, "pkg", verdicts);
 }
 
 static int
-postponed_process_sess_start(node_info_t *node, GQueue *verdicts)
+postponed_process_sess_start(node_info_t *node, msg_queue *verdicts)
 {
     return postponed_process_start_event(node, "session", verdicts);
 }
 
 static int
-postponed_process_sess_end(node_info_t *node, GQueue *verdicts)
+postponed_process_sess_end(node_info_t *node, msg_queue *verdicts)
 {
     return postponed_process_end_event(node, "session", verdicts);
 }
 
 static int
-postponed_process_branch_start(node_info_t *node, GQueue *verdicts)
+postponed_process_branch_start(node_info_t *node, msg_queue *verdicts)
 {
     UNUSED(node);
     UNUSED(verdicts);
@@ -526,7 +530,7 @@ postponed_process_branch_start(node_info_t *node, GQueue *verdicts)
 }
 
 static int
-postponed_process_branch_end(node_info_t *node, GQueue *verdicts)
+postponed_process_branch_end(node_info_t *node, msg_queue *verdicts)
 {
     UNUSED(node);
     UNUSED(verdicts);

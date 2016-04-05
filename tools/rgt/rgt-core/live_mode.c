@@ -39,14 +39,15 @@
 
 #include "te_errno.h"
 
-static int live_process_test_start(node_info_t *node, GQueue *verdicts);
-static int live_process_test_end(node_info_t *node, GQueue *verdicts);
-static int live_process_pkg_start(node_info_t *node, GQueue *verdicts);
-static int live_process_pkg_end(node_info_t *node, GQueue *verdicts);
-static int live_process_sess_start(node_info_t *node, GQueue *verdicts);
-static int live_process_sess_end(node_info_t *node, GQueue *verdicts);
-static int live_process_branch_start(node_info_t *node, GQueue *verdicts);
-static int live_process_branch_end(node_info_t *node, GQueue *verdicts);
+static int live_process_test_start(node_info_t *node, msg_queue *verdicts);
+static int live_process_test_end(node_info_t *node, msg_queue *verdicts);
+static int live_process_pkg_start(node_info_t *node, msg_queue *verdicts);
+static int live_process_pkg_end(node_info_t *node, msg_queue *verdicts);
+static int live_process_sess_start(node_info_t *node, msg_queue *verdicts);
+static int live_process_sess_end(node_info_t *node, msg_queue *verdicts);
+static int live_process_branch_start(node_info_t *node,
+                                     msg_queue *verdicts);
+static int live_process_branch_end(node_info_t *node, msg_queue *verdicts);
 static int live_process_regular_msg(log_msg *msg);
 
 void
@@ -115,7 +116,7 @@ print_params(param *prms)
 
 static inline int
 live_process_start_event(node_info_t *node, const char *node_name,
-                         GQueue *verdicts)
+                         msg_queue *verdicts)
 {
     UNUSED(verdicts);
 
@@ -142,7 +143,7 @@ live_process_start_event(node_info_t *node, const char *node_name,
 
 static inline int
 live_process_end_event(node_info_t *node, const char *node_name,
-                       GQueue *verdicts)
+                       msg_queue *verdicts)
 {
     const char *result;
     
@@ -178,43 +179,43 @@ live_process_end_event(node_info_t *node, const char *node_name,
 }
 
 static int
-live_process_test_start(node_info_t *node, GQueue *verdicts)
+live_process_test_start(node_info_t *node, msg_queue *verdicts)
 {
     return live_process_start_event(node, "test", verdicts);
 }
 
 static int
-live_process_test_end(node_info_t *node, GQueue *verdicts)
+live_process_test_end(node_info_t *node, msg_queue *verdicts)
 {
     return live_process_end_event(node, "Test", verdicts);
 }
 
 static int
-live_process_pkg_start(node_info_t *node, GQueue *verdicts)
+live_process_pkg_start(node_info_t *node, msg_queue *verdicts)
 {
     return live_process_start_event(node, "package", verdicts);
 }
 
 static int
-live_process_pkg_end(node_info_t *node, GQueue *verdicts)
+live_process_pkg_end(node_info_t *node, msg_queue *verdicts)
 {
     return live_process_end_event(node, "Package", verdicts);
 }
 
 static int
-live_process_sess_start(node_info_t *node, GQueue *verdicts)
+live_process_sess_start(node_info_t *node, msg_queue *verdicts)
 {
     return live_process_start_event(node, "session", verdicts);
 }
 
 static int
-live_process_sess_end(node_info_t *node, GQueue *verdicts)
+live_process_sess_end(node_info_t *node, msg_queue *verdicts)
 {
     return live_process_end_event(node, "Session", verdicts);
 }
 
 static int
-live_process_branch_end(node_info_t *node, GQueue *verdicts)
+live_process_branch_end(node_info_t *node, msg_queue *verdicts)
 {
     UNUSED(node);
     UNUSED(verdicts);
@@ -222,7 +223,7 @@ live_process_branch_end(node_info_t *node, GQueue *verdicts)
 }
 
 static int
-live_process_branch_start(node_info_t *node, GQueue *verdicts)
+live_process_branch_start(node_info_t *node, msg_queue *verdicts)
 {
     UNUSED(node);
     UNUSED(verdicts);

@@ -38,14 +38,49 @@
 #include <glib.h>
 #include <obstack.h>
 
+#include <limits.h>
+
+#ifndef PATH_MAX
+#define PATH_MAX 1024
+#endif
+
 #include "flow_tree.h"
 #include "log_msg.h"
 #include "filter.h"
 #include "log_format.h"
 #include "memory.h"
 
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+
 /* Define to 1 to enable rgt duration filter */
 #define TE_RGT_USE_DURATION_FILTER 0
+
+/**
+ * Timestamp used the last time for message pointers offloading
+ * into files (i.e. all the message pointers having timestamp no
+ * greater than it were offloaded into files).
+ */
+static uint32_t last_offload_ts[2];
+
+/*
+ * Number of seconds (as measured by log messages timestamps) to
+ * wait before repeating offloading of old message pointers to files
+ * to reduce memory consumption.
+ */
+#define OFFLOAD_TIMEOUT    5
+
+/*
+ * All the message pointers having timestamp no greater than
+ * last_offload_ts + OFFLOAD_INTERVAL seconds should be offloaded to files
+ * when we repeat offloading. OFFLOAD_INTERVAL shoud be less than
+ * OFFLOAD_TIMEOUT.
+ */
+#define OFFLOAD_INTERVAL   3
 
 #ifdef RGT_PROF_STAT
 /** Counter for the number of messages added into the queue tail. */
@@ -81,6 +116,11 @@ static unsigned long timestamp_cmp_cnt;
 /* Forward declaration */
 struct node_t;
 
+/**
+ * Queue of message pointer queues which still have some entries not
+ * offloaded into files.
+ */
+static GQueue *offload_queue = NULL;
 
 /**
  * Status of the session branch
@@ -122,18 +162,12 @@ typedef struct node_t {
     uint32_t            start_ts[2]; /**< Node start timestamp */
     uint32_t            end_ts[2];   /**< Node end timestamp */
 
-    GQueue *msg_att;        /**< Messages attachement for the node */
-    GQueue *msg_after_att;  /**< Messages that are followed by the node */
-    
-    GList *msg_att_cache; /**< A slot in "msg_att" queue after which the
-                               next message could be added with high
-                               probability */
-    GList *msg_after_att_cache; /**< A slot in "msg_after_att" queue after 
-                                     which the next message could be added
-                                     with high probability */
-
-    GQueue *verdicts;      /**< The queue of verdict messages generated
-                                for this node */
+    msg_queue     msg_att;       /**< The queue of pointers to messages
+                                      attached to the node */
+    msg_queue     msg_after_att; /**< The queue of pointers to messages
+                                      following the node */
+    msg_queue     verdicts;      /**< The queue of verdict message
+                                      pointers */
 
     int n_branches;        /**< Number of branches under the node */
     int n_active_branches; /**< Number of active branches */
@@ -179,6 +213,44 @@ static GHashTable *close_set;
 static node_t *root = NULL;
 
 /**
+ * Initialize queue of message pointers.
+ *
+ * @param q     Queue of message pointers.
+ */
+static void
+msg_queue_init(msg_queue *q)
+{
+    q->queue = g_queue_new();
+    assert(q->queue != NULL);
+    q->cache = NULL;
+    q->offloaded = FALSE;
+    memcpy(q->offload_ts, zero_timestamp, sizeof(q->offload_ts));
+}
+
+/**
+ * Destroy queue of message pointers.
+ *
+ * @param q     Queue of message pointers.
+ */
+static void
+msg_queue_destroy(msg_queue *q)
+{
+    log_msg_ptr *msg_ptr;
+
+    if (q->queue != NULL)
+    {
+        while ((msg_ptr = g_queue_pop_head(q->queue)) != NULL)
+        {
+            free_log_msg_ptr(msg_ptr);
+        }
+    }
+    g_queue_free(q->queue);
+    q->queue = NULL;
+    q->cache = NULL;
+    memcpy(q->offload_ts, zero_timestamp, sizeof(q->offload_ts));
+}
+
+/**
  * Initialize flow tree library:
  * Initializes obstack data structure, two hashes for set of nodes 
  * ("new" set and "close" set) and creates root session node.
@@ -200,15 +272,11 @@ flow_tree_init()
     root->self = root;
     root->fmode = DEF_FILTER_MODE;
     root->name = "";
-    root->msg_att = g_queue_new();
-    root->msg_after_att = g_queue_new();
-    root->msg_att_cache = NULL;
-    root->msg_after_att_cache = NULL;
-    root->verdicts = NULL;
+    msg_queue_init(&root->msg_att);
+    msg_queue_init(&root->msg_after_att);
+    msg_queue_init(&root->verdicts);
     root->user_data = NULL;
     
-    assert(root->msg_att != NULL && root->msg_after_att != NULL);
-
     memcpy(root->start_ts, zero_timestamp, sizeof(root->start_ts));
     memcpy(root->end_ts, max_timestamp, sizeof(root->end_ts));
 
@@ -217,6 +285,9 @@ flow_tree_init()
 
     g_hash_table_insert(new_set, &root->id, &root->self);
     FILL_BRANCH_INFO(root);
+
+    offload_queue = g_queue_new();
+    assert(offload_queue != NULL);
 }
 
 /**
@@ -234,15 +305,9 @@ flow_tree_free_attachments(node_t *cur_node)
     if (cur_node == NULL)
         return;
 
-    if (cur_node->msg_att != NULL)
-    {
-        g_queue_free(cur_node->msg_att);
-    }
-
-    if (cur_node->msg_after_att != NULL)
-    {
-        g_queue_free(cur_node->msg_after_att);
-    }
+    msg_queue_destroy(&cur_node->msg_att);
+    msg_queue_destroy(&cur_node->msg_after_att);
+    msg_queue_destroy(&cur_node->verdicts);
 
     if (cur_node->type != NT_TEST)
     {
@@ -283,6 +348,12 @@ flow_tree_destroy()
     obstack_destroy(obstk);
 
     root = NULL;
+
+    if (offload_queue != NULL)
+    {
+        g_queue_free(offload_queue);
+        offload_queue = NULL;
+    }
 }
 
 /**
@@ -329,12 +400,9 @@ flow_tree_add_node(node_id_t parent_id, node_id_t node_id,
     cur_node->type = new_node_type;
     cur_node->user_data = user_data;
 
-    cur_node->msg_att = g_queue_new();
-    cur_node->msg_after_att = g_queue_new();
-    assert(cur_node->msg_att != NULL && cur_node->msg_after_att != NULL);
-    cur_node->msg_att_cache = NULL;
-    cur_node->msg_after_att_cache = NULL;
-    cur_node->verdicts = NULL;
+    msg_queue_init(&cur_node->msg_att);
+    msg_queue_init(&cur_node->msg_after_att);
+    msg_queue_init(&cur_node->verdicts);
 
     memcpy(cur_node->start_ts, timestamp, sizeof(cur_node->start_ts));
     memcpy(cur_node->end_ts, max_timestamp, sizeof(cur_node->end_ts));
@@ -703,8 +771,9 @@ flow_tree_filter_message(log_msg *msg)
     return closed_tree_get_mode(root, msg->timestamp);
 }
 
+/** Attach message pointer to GQueue */
 static void
-attach_msg_to_queue(GQueue *queue, GList **cache, log_msg_ptr *msg)
+attach_msg_to_gqueue(GQueue *queue, GList **cache, log_msg_ptr *msg)
 {
     log_msg_ptr *tail_msg = g_queue_peek_tail(queue);
 
@@ -860,6 +929,320 @@ attach_msg_to_queue(GQueue *queue, GList **cache, log_msg_ptr *msg)
     }
 }
 
+/**
+ * Offload to the file corresponging to a given queue all the message
+ * pointers whose timestamp is no greater than end_ts.
+ *
+ * @param q       Queue of message pointers
+ * @param end_ts  Finishing timestamp
+ */
+static void
+msg_queue_offload(msg_queue *q, uint32_t *end_ts)
+{
+    FILE *f;
+    char  path[PATH_MAX];
+
+    log_msg_ptr *msg_ptr;
+
+    if (rgt_ctx.tmp_dir == NULL)
+        return;
+
+    if (TIMESTAMP_CMP(q->offload_ts, end_ts) >= 0)
+        return;
+
+    snprintf(path, sizeof(path), "%s/%p", rgt_ctx.tmp_dir, q);
+    f = fopen(path, "a");
+    if (f == NULL)
+    {
+        fprintf(stderr, "Failed to open %s\n", path);
+        THROW_EXCEPTION;
+    }
+
+    while ((msg_ptr = g_queue_peek_head(q->queue)) != NULL)
+    {
+        if (TIMESTAMP_CMP(msg_ptr->timestamp, end_ts) > 0)
+            break;
+
+        if (fwrite(msg_ptr, 1,
+                   sizeof(log_msg_ptr), f) != sizeof(log_msg_ptr))
+        {
+            fprintf(stderr, "Failed to write log_msg_ptr to %s\n", path);
+            THROW_EXCEPTION;
+        }
+
+        q->offload_ts[0] = msg_ptr->timestamp[0];
+        q->offload_ts[1] = msg_ptr->timestamp[1];
+
+        g_queue_pop_head(q->queue);
+        free_log_msg_ptr(msg_ptr);
+        q->offloaded = TRUE;
+    }
+
+    q->cache = NULL;
+
+    fclose(f);
+}
+
+/**
+ * Reload from the file corresponging to a given queue all the message
+ * pointers whose timestamp is no less than start_ts.
+ *
+ * @param q         Queue of message pointers
+ * @param start_ts  Starting timestamp
+ */
+static void
+msg_queue_reload(msg_queue *q, uint32_t *start_ts)
+{
+    FILE *f;
+    char  path[PATH_MAX];
+
+    off_t file_len;
+    off_t n_recs;
+    off_t req_start;
+    off_t req_end;
+    off_t req_middle;
+    off_t truncate_length = -1;
+
+    size_t rc;
+
+    log_msg_ptr   msg_ptr;
+    log_msg_ptr  *msg_ptr_new = NULL;
+    GList        *insert_after_elem = NULL;
+
+    if (rgt_ctx.tmp_dir == NULL)
+        return;
+
+    snprintf(path, sizeof(path), "%s/%p", rgt_ctx.tmp_dir, q);
+    f = fopen(path, "r");
+    if (f == NULL)
+    {
+        if (errno == ENOENT)
+            return;
+        fprintf(stderr, "Failed to open %s\n", path);
+        THROW_EXCEPTION;
+    }
+
+    fseeko(f, 0LL, SEEK_END);
+    file_len = ftello(f);
+
+    if (file_len == 0)
+    {
+        fclose(f);
+        return;
+    }
+
+    n_recs = file_len / sizeof(log_msg_ptr);
+
+    req_start = 0;
+    req_end = n_recs - 1;
+    if (req_end < 0)
+        req_end = 0;
+
+    fseeko(f, 0LL, SEEK_SET);
+    if (fread(&msg_ptr, 1, sizeof(msg_ptr), f) != sizeof(msg_ptr))
+    {
+        fprintf(stderr, "Failed to read the first record from %s\n", path);
+        THROW_EXCEPTION;
+    }
+
+    if (start_ts != NULL &&
+        TIMESTAMP_CMP(msg_ptr.timestamp, start_ts) < 0)
+    {
+        while (req_end - req_start > 1)
+        {
+            req_middle = (req_start + req_end) / 2;
+
+            fseeko(f, req_middle * sizeof(msg_ptr), SEEK_SET);
+            if (fread(&msg_ptr, 1, sizeof(msg_ptr), f) != sizeof(msg_ptr))
+            {
+                fprintf(stderr, "Failed to read record %llu from %s\n",
+                        (long long unsigned)req_middle, path);
+                THROW_EXCEPTION;
+            }
+
+            if (TIMESTAMP_CMP(msg_ptr.timestamp, start_ts) >= 0)
+                req_end = req_middle;
+            else
+                req_start = req_middle;
+        }
+    }
+
+    fseeko(f, req_start * sizeof(msg_ptr), SEEK_SET);
+    while (!feof(f))
+    {
+        msg_ptr_new = alloc_log_msg_ptr();
+        rc = fread(msg_ptr_new, 1, sizeof(log_msg_ptr), f);
+        if (rc <= 0 && feof(f))
+        {
+            free_log_msg_ptr(msg_ptr_new);
+            break;
+        }
+        else if (rc != sizeof(log_msg_ptr))
+        {
+
+            fprintf(stderr, "Failed to read full record from %s\n", path);
+            free_log_msg_ptr(msg_ptr_new);
+            THROW_EXCEPTION;
+        }
+
+        if (start_ts == NULL ||
+            TIMESTAMP_CMP(msg_ptr_new->timestamp, start_ts) >= 0)
+        {
+            if (truncate_length < 0)
+            {
+                truncate_length = ftello(f) - sizeof(log_msg_ptr);
+                q->offload_ts[0] = msg_ptr_new->timestamp[0];
+                q->offload_ts[1] = msg_ptr_new->timestamp[1];
+            }
+
+            if (insert_after_elem == NULL)
+            {
+                g_queue_push_head(q->queue, msg_ptr_new);
+                insert_after_elem = g_queue_peek_head_link(q->queue);
+            }
+            else
+            {
+                g_queue_insert_after(q->queue, insert_after_elem,
+                                     msg_ptr_new);
+                insert_after_elem = g_list_next(insert_after_elem);
+            }
+        }
+        else
+        {
+            free_log_msg_ptr(msg_ptr_new);
+            if (truncate_length >= 0)
+            {
+                fprintf(stderr, "%s\n",
+                        "Out-of-order message encountered "
+                        "in offloaded queue");
+                THROW_EXCEPTION;
+            }
+        }
+    }
+
+    fclose(f);
+
+    if (truncate_length == 0)
+        q->offloaded = FALSE;
+
+    if (truncate_length >= 0 &&
+        truncate(path, truncate_length) < 0)
+    {
+        fprintf(stderr, "Failed to truncate %s\n", path);
+        THROW_EXCEPTION;
+    }
+}
+
+/* See description in the rgt_common.h */
+void
+msg_queue_foreach(msg_queue *q, GFunc cb, void *user_data)
+{
+    FILE *f;
+    char  path[PATH_MAX];
+
+    log_msg_ptr   msg_ptr;
+    size_t        rc;
+
+    if (q == NULL)
+        return;
+
+    if (rgt_ctx.tmp_dir != NULL)
+    {
+        snprintf(path, sizeof(path), "%s/%p", rgt_ctx.tmp_dir, q);
+        f = fopen(path, "r");
+        if (f == NULL)
+        {
+            if (errno != ENOENT)
+            {
+                fprintf(stderr, "Failed to open %s\n", path);
+                THROW_EXCEPTION;
+            }
+        }
+        else
+        {
+            while (!feof(f))
+            {
+                rc = fread(&msg_ptr, 1, sizeof(log_msg_ptr), f);
+                if (rc <= 0 && feof(f))
+                    break;
+                else if (rc != sizeof(log_msg_ptr))
+                {
+
+                    fprintf(stderr, "Failed to read full record from %s\n", path);
+                    THROW_EXCEPTION;
+                }
+                cb(&msg_ptr, user_data);
+            }
+
+        }
+    }
+
+    if (q->queue != NULL)
+        g_queue_foreach(q->queue, cb, user_data);
+}
+
+/* See description in the rgt_common.h */
+te_bool
+msg_queue_is_empty(msg_queue *q)
+{
+    if (q == NULL || q->queue == NULL)
+        return TRUE;
+    else
+        return !(q->offloaded) && g_queue_is_empty(q->queue);
+}
+
+/**
+ * Attach message pointer to a queue.
+ *
+ * @param q       Queue of message pointers
+ * @param msg     Message pointer to be attached
+ */
+static void
+msg_queue_attach(msg_queue *q, log_msg_ptr *msg)
+{
+    static te_bool  first_msg = TRUE;
+
+    if (first_msg)
+    {
+        first_msg = FALSE;
+        last_offload_ts[0] = msg->timestamp[0];
+        last_offload_ts[1] = msg->timestamp[1];
+    }
+    else if (TIMESTAMP_CMP(msg->timestamp, last_offload_ts) > 0)
+    {
+        uint32_t diff_ts[2];
+
+        TIMESTAMP_SUB(diff_ts, msg->timestamp, last_offload_ts);
+        if (diff_ts[0] >= OFFLOAD_TIMEOUT)
+        {
+            GList *elem;
+            GList *next_elem;
+
+            last_offload_ts[0] += OFFLOAD_INTERVAL;
+
+            for (elem = g_queue_peek_head_link(offload_queue); elem != NULL;
+                 elem = next_elem)
+            {
+                msg_queue *queue = (msg_queue *)elem->data;
+
+                msg_queue_offload(queue, last_offload_ts);
+
+                next_elem = g_list_next(elem);
+                if (g_queue_is_empty(queue->queue))
+                    g_queue_delete_link(offload_queue, elem);
+            }
+        }
+    }
+
+    if (g_queue_is_empty(q->queue))
+        g_queue_push_tail(offload_queue, q);
+
+    if (TIMESTAMP_CMP(msg->timestamp, q->offload_ts) < 0)
+        msg_queue_reload(q, msg->timestamp);
+
+    attach_msg_to_gqueue(q->queue, &(q->cache), msg);
+}
+
 int
 flow_tree_attach_from_node(node_t *node, log_msg_ptr *msg)
 {
@@ -874,16 +1257,14 @@ flow_tree_attach_from_node(node_t *node, log_msg_ptr *msg)
     if (TIMESTAMP_CMP(ts, node->end_ts) > 0)
     {
         /* Append message to the "after" list of messages */
-        attach_msg_to_queue(node->msg_after_att, 
-                            &node->msg_after_att_cache, msg);
+        msg_queue_attach(&node->msg_after_att, msg);
         return 0;
     }
 
     if (node->type == NT_TEST)
     {
         /* Attach message to the node */
-        attach_msg_to_queue(node->msg_att,
-                            &(node->msg_att_cache), msg);
+        msg_queue_attach(&node->msg_att, msg);
         return 0;
     }
     else
@@ -926,8 +1307,7 @@ flow_tree_attach_from_node(node_t *node, log_msg_ptr *msg)
         if (cur_node == NULL)
         {
             /* message came before starting any branch of the session */
-            attach_msg_to_queue(node->msg_att, &(node->msg_att_cache),
-                                msg);
+            msg_queue_attach(&node->msg_att, msg);
         }
 
         return 0;
@@ -953,8 +1333,6 @@ flow_tree_attach_message(log_msg *msg)
     node_t **p_cur_node;
     node_t  *cur_node;
 
-    log_msg_ptr *msg_ptr = log_msg_ref(msg);
-
     assert(msg->flags != 0);
 
     if (msg->id == TE_LOG_ID_UNDEFINED)
@@ -963,8 +1341,9 @@ flow_tree_attach_message(log_msg *msg)
         /* FIXME: may be something was actually wrong here */
         /* assert((msg->flags & RGT_MSG_FLG_VERDICT) == 0); */
 
+        flow_tree_attach_from_node(root, log_msg_ref(msg));
         free_log_msg(msg);
-        flow_tree_attach_from_node(root, msg_ptr);
+        msg = NULL;
         return;
     }
 
@@ -990,7 +1369,7 @@ flow_tree_attach_message(log_msg *msg)
     cur_node = *p_cur_node;
 
     if ((msg->flags & RGT_MSG_FLG_NORMAL) != 0)
-        flow_tree_attach_from_node(cur_node, msg_ptr);
+        flow_tree_attach_from_node(cur_node, log_msg_ref(msg));
 
     /* Check if we are processing Test Control message */
     if ((msg->flags & RGT_MSG_FLG_VERDICT) != 0)
@@ -1013,21 +1392,16 @@ flow_tree_attach_message(log_msg *msg)
             if ((msg->flags & RGT_MSG_FLG_NORMAL) == 0)
             {
                 free_log_msg(msg);
-                free_log_msg_ptr(msg_ptr);
-                msg_ptr = NULL;
+                msg = NULL;
             }
         }
         else
         {
-            /* Append message to the list of test verdicts */
-            if (cur_node->verdicts == NULL)
-                cur_node->verdicts = g_queue_new();
-
-            g_queue_push_tail(cur_node->verdicts, msg_ptr);
+            msg_queue_attach(&cur_node->verdicts, log_msg_ref(msg));
         }
     }
 
-    if (msg_ptr != NULL)
+    if (msg != NULL)
         free_log_msg(msg);
 }
 
@@ -1071,12 +1445,11 @@ flow_tree_wander(node_t *cur_node)
 #endif
         {
             ctrl_msg_proc[CTRL_EVT_START][cur_node->type](
-                cur_node->user_data, cur_node->verdicts);
+                cur_node->user_data, &cur_node->verdicts);
         
             /* Output messages that belongs to the node */
-            if (cur_node->msg_att != NULL)
-                g_queue_foreach(cur_node->msg_att,
-                                wrapper_process_regular_msg, NULL);
+            msg_queue_foreach(&cur_node->msg_att,
+                              wrapper_process_regular_msg, NULL);
         }
     }
 
@@ -1092,7 +1465,7 @@ flow_tree_wander(node_t *cur_node)
                 cur_node->user_data != NULL)
             {
                 ctrl_msg_proc[CTRL_EVT_START][NT_BRANCH](
-                    cur_node->user_data, cur_node->verdicts);
+                    cur_node->user_data, &cur_node->verdicts);
             }
             
             flow_tree_wander(cur_node->branches[i].first_el);
@@ -1102,24 +1475,24 @@ flow_tree_wander(node_t *cur_node)
                 cur_node->user_data != NULL)
             {
                 ctrl_msg_proc[CTRL_EVT_END][NT_BRANCH](
-                    cur_node->user_data, cur_node->verdicts);
+                    cur_node->user_data, &cur_node->verdicts);
             }
         }
     }
 
-    if (cur_node->fmode == NFMODE_INCLUDE && cur_node->user_data != NULL &&
+    if (cur_node->fmode == NFMODE_INCLUDE &&
+        cur_node->user_data != NULL &&
         duration_filter_res == NFMODE_INCLUDE)
     {
         ctrl_msg_proc[CTRL_EVT_END][cur_node->type](
-            cur_node->user_data, cur_node->verdicts);
+            cur_node->user_data, &cur_node->verdicts);
     }
 
     /* Output messages that were after the node */
-    if (cur_node->msg_after_att != NULL && 
-        cur_node->parent->fmode == NFMODE_INCLUDE)
+    if (cur_node->parent->fmode == NFMODE_INCLUDE)
     {
-        g_queue_foreach(cur_node->msg_after_att, 
-                        wrapper_process_regular_msg, NULL);
+        msg_queue_foreach(&cur_node->msg_after_att,
+                          wrapper_process_regular_msg, NULL);
     }
 
     flow_tree_wander(cur_node->next);
@@ -1156,8 +1529,9 @@ flow_tree_trace()
 #endif
 
     /* Output messages that belongs to the root node */
-    if (root->msg_att != NULL && root->fmode == NFMODE_INCLUDE)
-        g_queue_foreach(root->msg_att, wrapper_process_regular_msg, NULL);
+    if (root->fmode == NFMODE_INCLUDE)
+        msg_queue_foreach(&root->msg_att,
+                          wrapper_process_regular_msg, NULL);
 
     /* Usually n_branches of the root session is equlas to 1 */
     if (root->n_branches > 0)
@@ -1167,11 +1541,10 @@ flow_tree_trace()
     }
 
     /* Output messages that were after the root node */
-    if (root->msg_after_att != NULL && 
-        root->fmode == NFMODE_INCLUDE)
+    if (root->fmode == NFMODE_INCLUDE)
     {
-        g_queue_foreach(root->msg_after_att, 
-                        wrapper_process_regular_msg, NULL);
+        msg_queue_foreach(&root->msg_after_att,
+                          wrapper_process_regular_msg, NULL);
     }
 }
 

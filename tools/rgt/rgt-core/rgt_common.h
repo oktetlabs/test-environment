@@ -69,6 +69,8 @@ extern "C" {
 
 #include <stdio.h>
 
+#include <glib.h>
+
 /* For byte order conversions */
 #ifdef HAVE_NETINET_IN_H
 # include <netinet/in.h>
@@ -199,6 +201,9 @@ typedef struct rgt_gen_ctx {
 
     const char    *fltr_fname; /**< TCL filter file name */
 
+    char          *tmp_dir; /**< Temporary directory used for offloading
+                                 of message pointers into files */
+
     rgt_op_mode_t  op_mode; /**< Rgt operation mode */
     const char    *op_mode_str; /**< Rgt operation mode in string 
                                      representation */
@@ -311,6 +316,42 @@ typedef struct log_msg_ptr {
   uint32_t    timestamp[2];   /**< Timestamp of referenced log
                                    message */
 } log_msg_ptr;
+
+/**
+ * Structure storing a queue of regular log message pointers.
+ */
+typedef struct msg_queue {
+    GQueue   *queue;            /**< Queue of message pointers
+                                     stored in memory */
+    GList    *cache;            /**< A slot in queue after which
+                                     the next message pointer
+                                     could be added with high probability */
+
+    te_bool   offloaded;        /**< Whether some message pointers
+                                     are offloaded to a file */
+    uint32_t  offload_ts[2];    /**< Timestamp of the most recent
+                                     message pointer offloaded to
+                                     a file*/
+} msg_queue;
+
+/**
+ * Iterate over message pouinters queue, starting with entries offloaded
+ * to a file.
+ *
+ * @param q           Queue of message pointers
+ * @param cb          Callback to be called for each queue entry
+ * @param user_data   Pointer to be passed to callback
+ */
+extern void msg_queue_foreach(msg_queue *q, GFunc cb, void *user_data);
+
+/**
+ * Check whether message pointers queue is empty.
+ *
+ * @param q     Queue of message pointers
+ *
+ * @return TRUE if queue is empty, FALSE otherwise.
+ */
+extern te_bool msg_queue_is_empty(msg_queue *q);
 
 #ifdef __cplusplus
 }

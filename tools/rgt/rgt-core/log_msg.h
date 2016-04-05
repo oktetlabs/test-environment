@@ -166,7 +166,8 @@ typedef struct node_info {
  * @param verdicts  The queue of verdicts for this node;
  *                  queue keeps pointers to "log_msg" structures.
  */
-typedef int (* f_process_ctrl_log_msg)(node_info_t *node, GQueue *verdicts);
+typedef int (* f_process_ctrl_log_msg)(node_info_t *node,
+                                       msg_queue *verdicts);
 
 /* Type of callback function used for processing regular messages */
 typedef int (* f_process_reg_log_msg)(log_msg *);
