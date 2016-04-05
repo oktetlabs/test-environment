@@ -438,7 +438,12 @@ rcf_pch_mem_index_mem_to_ptr(rpc_ptr id, rpc_ptr_id_namespace ns,
 
     /* Convert id to array index */
     index = RPC_PTR_ID_GET_INDEX(id);
-    if (index < ids_len && ids[index].ns == ns)
+    if (index >= ids_len)
+    {
+        ERROR("%s:%d: The rpc pointer isn't found (%d, %d)",
+              caller_func, caller_line, id, ns);
+    }
+    else if (ids[index].ns == ns)
         memory = ids[index].memory;
     else
     {
