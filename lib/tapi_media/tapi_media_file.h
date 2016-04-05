@@ -1,7 +1,7 @@
 /** @file
  * @brief Test API to media file routines
  *
- * Functions for convinient work with the media files on local storage.
+ * Functions for convenient work with the media files on local storage.
  *
  *
  * Copyright (C) 2016 Test Environment authors (see file AUTHORS
@@ -31,6 +31,7 @@
 #ifndef __TAPI_MEDIA_FILE_H__
 #define __TAPI_MEDIA_FILE_H__
 
+#include "te_errno.h"
 #include "tapi_local_file.h"
 
 
@@ -61,13 +62,17 @@ typedef struct tapi_media_file {
  *
  * @return Title of media file.
  */
-extern const char *tapi_media_file_get_metadata_title(
-                                const tapi_media_file_metadata *metadata);
+static inline const char *
+tapi_media_file_get_metadata_title(
+                            const tapi_media_file_metadata *metadata)
+{
+    return metadata->title;
+}
 
 /**
  * Convert local file to media file and extract it metadata from /local/fs
  * configugator tree. Media file with it resources should be released with
- * @b tapi_media_file_release when it is no longer needed.
+ * @p tapi_media_file_release when it is no longer needed.
  *
  * @param[in]  local_file   Local file
  * @param[out] media_file   Media file.
@@ -77,17 +82,17 @@ extern const char *tapi_media_file_get_metadata_title(
  * @sa tapi_media_file_release
  */
 extern te_errno tapi_media_file_get_from_local(
-                                        const tapi_local_file *local_file,
-                                        tapi_media_file       *media_file);
+                                        const tapi_local_file  *local_file,
+                                        tapi_media_file       **media_file);
 
 /**
- * Release media file that was got with @b tapi_media_file_get_from_local.
+ * Release media file that was got with @p tapi_media_file_get_from_local.
  *
  * @param media_file    Media file.
  *
  * @sa tapi_media_file_get_from_local
  */
-extern void tapi_media_file_release(tapi_media_file *media_file);
+extern void tapi_media_file_free(tapi_media_file *media_file);
 
 #ifdef __cplusplus
 } /* extern "C" */
