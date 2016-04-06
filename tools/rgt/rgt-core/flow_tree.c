@@ -944,6 +944,9 @@ msg_queue_offload(msg_queue *q, uint32_t *end_ts)
 
     log_msg_ptr *msg_ptr;
 
+    if (q->queue == NULL || g_queue_is_empty(q->queue))
+        return;
+
     if (rgt_ctx.tmp_dir == NULL)
         return;
 
@@ -1008,6 +1011,9 @@ msg_queue_reload(msg_queue *q, uint32_t *start_ts)
     log_msg_ptr   msg_ptr;
     log_msg_ptr  *msg_ptr_new = NULL;
     GList        *insert_after_elem = NULL;
+
+    if (!q->offloaded)
+        return;
 
     if (rgt_ctx.tmp_dir == NULL)
         return;

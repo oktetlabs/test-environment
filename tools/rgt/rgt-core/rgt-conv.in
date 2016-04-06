@@ -84,6 +84,12 @@ EOF
   
   -o FILE, --output=FILE   Result file name. If it is not specified then the
                            result is output in stdout.
+
+  --no-queue-offload       Do not offload queues of messages to files
+                           (can result in more RAM consumption but faster
+                            speed of processing). Alternatively, you can set
+                           RGT_NO_QUEUE_OFFLOAD environment variables to
+                           "yes" to achieve the same effect.
   
   -v, --version            Display version information.
   
@@ -230,6 +236,9 @@ do
         out_file=$2
         shift
         ;;
+    --no-queue-offload)
+        export RGT_NO_QUEUE_OFFLOAD=yes
+        ;;
     --output*)
         if echo $1 | grep '=' >/dev/null ; then
             out_file=`echo $1 | sed 's/^--output=//'`
@@ -294,28 +303,35 @@ if [ -z "$out_file" ]; then
     out_file="&1"
 fi
 
-export TMPDIR="${TMPDIR:-/tmp}"
-tmpdir=$(mktemp -d "${TMPDIR}/rgt_core_XXXXXX")
-result=$?
-
-tmpdir_cleanup()
-{
-    rm -rf "${tmpdir}"
-}
-
-if test $result -eq 0 ; then
-
-    trap tmpdir_cleanup SIGINT
-
-    # Process raw log file with filter
-    eval "$bindir/rgt-core -m $op_mode " \
-         "--tmpdir=\"${tmpdir}\" $extra_flags $rlf_file >$out_file"
+if test x"${RGT_NO_QUEUE_OFFLOAD}" != x"yes" ; then
+    export TMPDIR="${TMPDIR:-/tmp}"
+    tmpdir=$(mktemp -d "${TMPDIR}/rgt_core_XXXXXX")
     result=$?
 
-    tmpdir_cleanup
+    tmpdir_cleanup()
+    {
+        rm -rf "${tmpdir}"
+    }
 
-    test $result -eq 0 || rm -f $out_file
+    if test $result -eq 0 ; then
+
+        trap tmpdir_cleanup SIGINT
+
+        # Process raw log file with filter
+        eval "$bindir/rgt-core -m $op_mode " \
+             "--tmpdir=\"${tmpdir}\" $extra_flags $rlf_file >$out_file"
+        result=$?
+
+        tmpdir_cleanup
+    fi
+else
+    # Process raw log file with filter
+    eval "$bindir/rgt-core -m $op_mode " \
+         "$extra_flags $rlf_file >$out_file"
+    result=$?
 fi
+
+test $result -eq 0 || rm -f $out_file
 
 exit $result
 

@@ -2,6 +2,10 @@
 
 export TMPDIR="${TMPDIR:-/tmp}"
 
+# log_gist.raw files contain huge number of small queues,
+# so it is better not to offload them to files.
+export RGT_NO_QUEUE_OFFLOAD=yes
+
 bundle_path=
 req_path=
 shared_url=
