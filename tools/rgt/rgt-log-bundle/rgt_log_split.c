@@ -67,6 +67,12 @@ typedef enum fragment_type {
 #define MAX_FRAG_SIZE 1000000
 
 /**
+ * Maximum number of verdicts per test (only up to this
+ * number of verdicts will be included in log_gist.raw).
+ */
+#define MAX_VERDICTS_NUM 100
+
+/**
  * Processing information for a given log node
  * (log root node/package/session/test)
  */
@@ -88,6 +94,9 @@ typedef struct node_info {
     unsigned int           tin;               /**< node TIN */
     off_t                  start_len;         /**< Length of start control
                                                    message in starting
+                                                   fragment */
+    unsigned int           verdicts_num;      /**< Number of verdicts
+                                                   included in the start
                                                    fragment */
 } node_info;
 
@@ -134,6 +143,7 @@ get_node_info(int node_id)
             nodes_info[i].inner_frags_cnt = 0;
             nodes_info[i].cur_file_num = 0;
             nodes_info[i].cur_file_size = 0;
+            nodes_info[i].verdicts_num = 0;
         }
     }
 
@@ -463,10 +473,18 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
             }
 
             if (tin_or_start_frag)
-                append_to_frag(parent_id, FRAG_START, f_raw_log,
-                               offset, length,
-                               f_recover, output_path);
+            {
+                node_info *node_descr;
 
+                node_descr = get_node_info(parent_id);
+                if (node_descr->verdicts_num < MAX_VERDICTS_NUM)
+                {
+                    append_to_frag(parent_id, FRAG_START, f_raw_log,
+                                   offset, length,
+                                   f_recover, output_path);
+                    node_descr->verdicts_num++;
+                }
+            }
         }
         else
         {
