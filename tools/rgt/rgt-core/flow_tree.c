@@ -75,10 +75,16 @@ static uint32_t last_offload_ts[2];
 #define OFFLOAD_TIMEOUT    5
 
 /*
+ * Number of new messages which should be processed before we
+ * repeat offloading old message pointers to files.
+ */
+#define OFFLOAD_MSG_NUM    1000
+
+/*
  * All the message pointers having timestamp no greater than
- * last_offload_ts + OFFLOAD_INTERVAL seconds should be offloaded to files
- * when we repeat offloading. OFFLOAD_INTERVAL shoud be less than
- * OFFLOAD_TIMEOUT.
+ * current message timestamp - OFFLOAD_INTERVAL seconds should
+ * be offloaded to files when we repeat offloading.
+ * It should be less than OFFLOAD_TIMEOUT.
  */
 #define OFFLOAD_INTERVAL   3
 
@@ -1208,6 +1214,10 @@ msg_queue_attach(msg_queue *q, log_msg_ptr *msg)
 {
     static te_bool  first_msg = TRUE;
 
+    static uint64_t msg_counter = 0;
+
+    msg_counter++;
+
     if (first_msg)
     {
         first_msg = FALSE;
@@ -1219,12 +1229,19 @@ msg_queue_attach(msg_queue *q, log_msg_ptr *msg)
         uint32_t diff_ts[2];
 
         TIMESTAMP_SUB(diff_ts, msg->timestamp, last_offload_ts);
-        if (diff_ts[0] >= OFFLOAD_TIMEOUT)
+        if (diff_ts[0] >= OFFLOAD_TIMEOUT && msg_counter >= OFFLOAD_MSG_NUM)
         {
             GList *elem;
             GList *next_elem;
 
-            last_offload_ts[0] += OFFLOAD_INTERVAL;
+            msg_counter = 0;
+
+            last_offload_ts[0] = msg->timestamp[0];
+            last_offload_ts[1] = msg->timestamp[1];
+            if (last_offload_ts[0] >= OFFLOAD_INTERVAL)
+                last_offload_ts[0] -= OFFLOAD_INTERVAL;
+            else
+                last_offload_ts[0] = 0;
 
             for (elem = g_queue_peek_head_link(offload_queue); elem != NULL;
                  elem = next_elem)
