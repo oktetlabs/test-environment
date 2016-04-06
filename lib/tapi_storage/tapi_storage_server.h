@@ -27,15 +27,27 @@
  *
  * $Id$
  */
+
 #ifndef __TAPI_STORAGE_SERVER_H__
 #define __TAPI_STORAGE_SERVER_H__
 
 #include "tapi_storage_common.h"
+#include "rcf_rpc.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
+/** On-stack tapi_storage_server structure initializer. */
+#define TAPI_STORAGE_SERVER_INIT { \
+    .type = TAPI_STORAGE_SERVICE_UNSPECIFIED,   \
+    .rpcs = NULL,                               \
+    .methods = NULL,                            \
+    .auth = { 0 },                              \
+    .context = NULL                             \
+}
 
 /**
  * Forward declaration of generic server structure.
@@ -145,8 +157,8 @@ typedef struct tapi_storage_server_methods {
  * service independently on agent back-end.
  */
 struct tapi_storage_server {
-    rcf_rpc_server                    *rpcs;    /**< RPC server handle. */
     tapi_storage_service_type          type;    /**< Type of server. */
+    rcf_rpc_server                    *rpcs;    /**< RPC server handle. */
     const tapi_storage_server_methods *methods; /**< Methods to operate the
                                                      server. */
     tapi_storage_auth_params           auth;    /**< Authorization
@@ -157,7 +169,7 @@ struct tapi_storage_server {
 
 /**
  * Enable a storage server.
- * Server should be disabled with @b tapi_storage_server_disable when it is
+ * Server should be disabled with @p tapi_storage_server_disable when it is
  * no longer needed.
  *
  * @param server        Server handle.
@@ -175,7 +187,7 @@ tapi_storage_server_enable(tapi_storage_server *server)
 
 /**
  * Disable a storage server that was enabled with
- * @b tapi_storage_server_enable.
+ * @p tapi_storage_server_enable.
  *
  * @param server        Server handle.
  *
@@ -218,7 +230,7 @@ static inline te_errno
 tapi_storage_server_add_storage(tapi_storage_server *server,
                                 const char          *storage_name)
 {
-    return (server->methods->add != NULL
+    return (server->methods->add_storage != NULL
             ? server->methods->add_storage(server, storage_name)
             : TE_EOPNOTSUPP);
 }
@@ -279,7 +291,7 @@ tapi_storage_server_get_share(tapi_storage_server  *server,
 
 /**
  * Initialize server handle.
- * Server should be released with @b tapi_storage_server_fini when it is no
+ * Server should be released with @p tapi_storage_server_fini when it is no
  * longer needed.
  *
  * @param[in]  type         Back-end server type.
@@ -303,13 +315,11 @@ extern te_errno tapi_storage_server_init(
                                 tapi_storage_server               *server);
 
 /**
- * Release server that was initialized with @b tapi_storage_server_init.
+ * Release server that was initialized with @p tapi_storage_server_init.
  *
  * @param server        Server handle.
  *
  * @sa tapi_storage_server_init
- *
- * @todo How to free context?
  */
 extern void tapi_storage_server_fini(tapi_storage_server *server);
 
