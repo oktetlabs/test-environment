@@ -31,6 +31,13 @@
 #ifndef __TAPI_STORAGE_COMMON_H__
 #define __TAPI_STORAGE_COMMON_H__
 
+#include "te_errno.h"
+#include "te_stdint.h"
+
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -43,28 +50,31 @@ typedef enum tapi_storage_service_type {
     TAPI_STORAGE_SERVICE_FTP,       /**< FTP service. */
     TAPI_STORAGE_SERVICE_SAMBA,     /**< Samba service. */
     TAPI_STORAGE_SERVICE_DLNA,      /**< DLNA service. */
+
+    TAPI_STORAGE_SERVICE_UNSPECIFIED    /**< Unspecified service, marks it
+                                             as uninitialized. */
 } tapi_storage_service_type;
 
 /**
  * Authorization parameters of service.
  */
 typedef struct tapi_storage_auth_params {
-    struct sockaddr_storage *server_addr,   /**< IP address of server. */
-    uint16_t                 port,          /**< Service port. */
-    const char              *user,          /**< User name to log in. */
-    const char              *password,      /**< User password. */
+    struct sockaddr_storage *server_addr;   /**< IP address of server. */
+    uint16_t                 port;          /**< Service port. */
+    char                    *user;          /**< User name to log in. */
+    char                    *password;      /**< User password. */
 } tapi_storage_auth_params;
 
 
 /**
  * Set up service authorization parameters. @p auth_params should be
- * released with @b tapi_storage_auth_params_fini when it is no longer
+ * released with @p tapi_storage_auth_params_fini when it is no longer
  * needed.
  *
- * @param[in]  server_addr  The server address.
+ * @param[in]  server_addr  The server address, may be @c NULL.
  * @param[in]  port         The server port.
- * @param[in]  user         User name for access.
- * @param[in]  password     Password.
+ * @param[in]  user         User name for access, may be @c NULL.
+ * @param[in]  password     Password, may be @c NULL.
  * @param[out] auth_params  Authorization parameters.
  *
  * @return Status code.
@@ -80,7 +90,7 @@ extern te_errno tapi_storage_auth_params_init(
 
 /**
  * Release service authorization parameters that was initialized with
- * @b tapi_storage_auth_params_init.
+ * @p tapi_storage_auth_params_init.
  *
  * @param auth_params   Authorization parameters.
  *
