@@ -88,8 +88,8 @@ EOF
   --no-queue-offload       Do not offload queues of messages to files
                            (can result in more RAM consumption but faster
                             speed of processing). Alternatively, you can set
-                           RGT_NO_QUEUE_OFFLOAD environment variables to
-                           "yes" to achieve the same effect.
+                           RGT_DISABLE_QUEUE_OFFLOADING environment variable
+                           to "yes" to achieve the same effect.
   
   -v, --version            Display version information.
   
@@ -237,7 +237,7 @@ do
         shift
         ;;
     --no-queue-offload)
-        export RGT_NO_QUEUE_OFFLOAD=yes
+        export RGT_DISABLE_QUEUE_OFFLOADING=yes
         ;;
     --output*)
         if echo $1 | grep '=' >/dev/null ; then
@@ -303,7 +303,7 @@ if [ -z "$out_file" ]; then
     out_file="&1"
 fi
 
-if test x"${RGT_NO_QUEUE_OFFLOAD}" != x"yes" ; then
+if test x"${RGT_DISABLE_QUEUE_OFFLOADING}" != x"yes" ; then
     export TMPDIR="${TMPDIR:-/tmp}"
     tmpdir=$(mktemp -d "${TMPDIR}/rgt_core_XXXXXX")
     result=$?
