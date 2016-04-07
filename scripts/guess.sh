@@ -46,6 +46,8 @@ fi
 
 if test -d "conf" ; then
     export CONFDIR="$(pwd -P)/conf"
+elif test -d "../conf" ; then
+    export CONFDIR="$(pwd -P)/../conf"
 elif test -d "${MYDIR}/conf" ; then
     export CONFDIR="${MYDIR}/conf"
 elif test -d "${MYDIR}/../conf" ; then
