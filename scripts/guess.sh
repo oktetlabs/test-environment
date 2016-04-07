@@ -32,6 +32,8 @@ fi
 if test -z "${TE_INSTALL}" ; then
     if test -d "inst" ; then
         TE_INSTALL="$(pwd -P)/inst"
+    elif test -d "build/inst" ; then
+        TE_INSTALL="$(pwd -P)/build/inst"
     elif test -d "${MYDIR}/inst" ; then
         TE_INSTALL="${MYDIR}/inst"
     elif test -d "${MYDIR}/build/inst" ; then
