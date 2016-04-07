@@ -1185,6 +1185,7 @@ msg_queue_foreach(msg_queue *q, GFunc cb, void *user_data)
                 cb(&msg_ptr, user_data);
             }
 
+            fclose(f);
         }
     }
 
