@@ -4,6 +4,7 @@
  * Functions for convenient work with the file system mapped on configurator
  * tree.
  *
+ *
  * Copyright (C) 2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *

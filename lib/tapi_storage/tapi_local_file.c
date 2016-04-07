@@ -3,6 +3,7 @@
  *
  * Functions for convenient work with the files on the engine and TA.
  *
+ *
  * Copyright (C) 2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
