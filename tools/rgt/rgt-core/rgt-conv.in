@@ -136,20 +136,29 @@ version_info () {
 }
 
 #
+# Find a tmp directory, set TMPDIR to its path
+#
+get_tmp_dir_path () {
+    TMPDIR="${TE_TMP}"
+    if test x"${TMPDIR}" = x ; then
+        for t in /tmp /var/tmp ${PWD}; do
+            if ! [ -d $t ] || ! [ -w $t ] ; then
+                continue;
+            fi
+            TMPDIR=$t
+            break;
+        done
+    fi
+}
+
+#
 # Generates unique temp file name and creates it.
 # The name of the file is placed in variable with name given 
 # in the first argument.
 #
 get_tmp_file_name () {
-    # find a tmp directory
-    TMPDIR=""
-    for t in /tmp /var/tmp ${PWD}; do
-        if ! [ -d $t ] || ! [ -w $t ] ; then
-            continue;
-        fi
-        TMPDIR=$t
-        break;
-    done
+
+    get_tmp_dir_path
     
     # choose tmp file name
     tmp=""
@@ -304,7 +313,7 @@ if [ -z "$out_file" ]; then
 fi
 
 if test x"${RGT_DISABLE_QUEUE_OFFLOADING}" != x"yes" ; then
-    export TMPDIR="${TMPDIR:-/tmp}"
+    get_tmp_dir_path
     tmpdir=$(mktemp -d "${TMPDIR}/rgt_core_XXXXXX")
     result=$?
 
