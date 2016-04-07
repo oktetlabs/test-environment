@@ -30,10 +30,10 @@
 
 #include "rgt_common.h"
 
-#ifdef FLOW_TREE_LIBRARY_DEBUG
+#include <stdlib.h>
 #include <stdio.h>
-
-#endif /* FLOW_TREE_LIBRARY_DEBUG */
+#include <errno.h>
+#include <string.h>
 
 #include <glib.h>
 #include <obstack.h>
@@ -963,7 +963,8 @@ msg_queue_offload(msg_queue *q, uint32_t *end_ts)
     f = fopen(path, "a");
     if (f == NULL)
     {
-        fprintf(stderr, "Failed to open %s\n", path);
+        fprintf(stderr, "Failed to open %s for appending: errno %d (%s)\n",
+                path, errno, strerror(errno));
         THROW_EXCEPTION;
     }
 
@@ -1030,7 +1031,8 @@ msg_queue_reload(msg_queue *q, uint32_t *start_ts)
     {
         if (errno == ENOENT)
             return;
-        fprintf(stderr, "Failed to open %s\n", path);
+        fprintf(stderr, "Failed to open %s for reading: errno %d (%s)\n",
+                path, errno, strerror(errno));
         THROW_EXCEPTION;
     }
 
@@ -1166,7 +1168,9 @@ msg_queue_foreach(msg_queue *q, GFunc cb, void *user_data)
         {
             if (errno != ENOENT)
             {
-                fprintf(stderr, "Failed to open %s\n", path);
+                fprintf(stderr,
+                        "Failed to open %s for reading: errno %d (%s)\n",
+                        path, errno, strerror(errno));
                 THROW_EXCEPTION;
             }
         }
