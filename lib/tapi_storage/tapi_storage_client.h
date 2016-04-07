@@ -31,13 +31,24 @@
 #ifndef __TAPI_STORAGE_CLIENT_H__
 #define __TAPI_STORAGE_CLIENT_H__
 
-#include "tapi_local_file.h"
 #include "tapi_storage_common.h"
+#include "tapi_local_fs.h"
+#include "rcf_rpc.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
+/** On-stack tapi_storage_client structure initializer. */
+#define TAPI_STORAGE_CLIENT_INIT { \
+    .type = TAPI_STORAGE_SERVICE_UNSPECIFIED,   \
+    .rpcs = NULL,                               \
+    .methods = NULL,                            \
+    .auth = { 0 },                              \
+    .context = NULL                             \
+}
 
 /**
  * Forward declaration of generic client structure.
@@ -113,9 +124,9 @@ typedef te_errno (* tapi_storage_client_method_cd)(
  * @param remote_file   Remote file name or @c NULL to use the same.
  * @param recursive     Perform recursive copying if @c TRUE and specified
  *                      local file is directory.
- * @param force         Force to replace existent content by the same. On
- *                      default (if @c FALSE) the existent contend will not
- *                      be rewriten by the same (lazy behaviour).
+ * @param force         Force to replace existent content by the same. If
+ *                      @c FALSE the existent content will not be rewriten
+ *                      by the same (lazy behaviour).
  *
  * @return Status code.
  */
@@ -207,8 +218,8 @@ typedef struct tapi_storage_client_methods {
  * independently on back-end service.
  */
 struct tapi_storage_client {
-    rcf_rpc_server                    *rpcs;    /**< RPC server handle. */
     tapi_storage_service_type          type;    /**< Type of client. */
+    rcf_rpc_server                    *rpcs;    /**< RPC server handle. */
     const tapi_storage_client_methods *methods; /**< Methods to operate the
                                                      client. */
     tapi_storage_auth_params           auth;    /**< Authorization
@@ -305,9 +316,9 @@ tapi_storage_client_cd(tapi_storage_client *client,
  * @param remote_file   Remote file name or @c NULL to use the same.
  * @param recursive     Perform recursive copying if @c TRUE and specified
  *                      local file is directory.
- * @param force         Force to replace existent content by the same. On
- *                      default (if @c FALSE) the existent contend will not
- *                      be rewriten by the same (lazy behaviour).
+ * @param force         Force to replace existent content by the same. If
+ *                      @c FALSE the existent content will not be rewriten
+ *                      by the same (lazy behaviour).
  *
  * @return Status code.
  */
@@ -380,11 +391,10 @@ tapi_storage_client_rm(tapi_storage_client *client,
  */
 static inline te_errno
 tapi_storage_client_mkdir(tapi_storage_client *client,
-                          const char          *directory_name,
-                          te_bool              recursive)
+                          const char          *directory_name)
 {
     return (client->methods->mkdir != NULL
-            ? client->methods->mkdir(client, directory_name, recursive)
+            ? client->methods->mkdir(client, directory_name)
             : TE_EOPNOTSUPP);
 }
 
@@ -409,7 +419,7 @@ tapi_storage_client_rmdir(tapi_storage_client *client,
 
 /**
  * Initialize client handle.
- * Client should be released with @b tapi_storage_client_fini when it is no
+ * Client should be released with @p tapi_storage_client_fini when it is no
  * longer needed.
  *
  * @param[in]  type         Back-end client type.
@@ -433,15 +443,13 @@ extern te_errno tapi_storage_client_init(
                                 tapi_storage_client               *client);
 
 /**
- * Release client that was initialized with @b tapi_storage_client_init.
+ * Release client that was initialized with @p tapi_storage_client_init.
  *
  * @param client        Client handle.
  *
  * @return Status code.
  *
  * @sa tapi_storage_client_init
- *
- * @todo How to free context?
  */
 extern void tapi_storage_client_fini(tapi_storage_client *client);
 
