@@ -308,21 +308,22 @@ if test x"${RGT_DISABLE_QUEUE_OFFLOADING}" != x"yes" ; then
     tmpdir=$(mktemp -d "${TMPDIR}/rgt_core_XXXXXX")
     result=$?
 
-    tmpdir_cleanup()
+    sigint_cleanup()
     {
         rm -rf "${tmpdir}"
+        exit 1
     }
 
     if test $result -eq 0 ; then
 
-        trap tmpdir_cleanup SIGINT
+        trap sigint_cleanup SIGINT
 
         # Process raw log file with filter
         eval "$bindir/rgt-core -m $op_mode " \
              "--tmpdir=\"${tmpdir}\" $extra_flags $rlf_file >$out_file"
         result=$?
 
-        tmpdir_cleanup
+        rm -rf "${tmpdir}"
     fi
 else
     # Process raw log file with filter
