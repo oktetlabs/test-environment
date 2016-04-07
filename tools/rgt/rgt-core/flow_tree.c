@@ -1029,8 +1029,6 @@ msg_queue_reload(msg_queue *q, uint32_t *start_ts)
     f = fopen(path, "r");
     if (f == NULL)
     {
-        if (errno == ENOENT)
-            return;
         fprintf(stderr, "Failed to open %s for reading: errno %d (%s)\n",
                 path, errno, strerror(errno));
         THROW_EXCEPTION;
@@ -1160,19 +1158,16 @@ msg_queue_foreach(msg_queue *q, GFunc cb, void *user_data)
     if (q == NULL)
         return;
 
-    if (rgt_ctx.tmp_dir != NULL)
+    if (rgt_ctx.tmp_dir != NULL && q->offloaded)
     {
         snprintf(path, sizeof(path), "%s/%p", rgt_ctx.tmp_dir, q);
         f = fopen(path, "r");
         if (f == NULL)
         {
-            if (errno != ENOENT)
-            {
-                fprintf(stderr,
-                        "Failed to open %s for reading: errno %d (%s)\n",
-                        path, errno, strerror(errno));
-                THROW_EXCEPTION;
-            }
+            fprintf(stderr,
+                    "Failed to open %s for reading: errno %d (%s)\n",
+                    path, errno, strerror(errno));
+            THROW_EXCEPTION;
         }
         else
         {
