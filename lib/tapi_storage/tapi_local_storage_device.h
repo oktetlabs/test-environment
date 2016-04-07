@@ -1,7 +1,7 @@
 /** @file
  * @brief Test API to storage device routines
  *
- * Functions for convinient work with storage device.
+ * Functions for convenient work with storage device.
  *
  *
  * Copyright (C) 2016 Test Environment authors (see file AUTHORS
@@ -30,6 +30,9 @@
 
 #ifndef __TAPI_LOCAL_STORAGE_DEVICE_H__
 #define __TAPI_LOCAL_STORAGE_DEVICE_H__
+
+#include "te_errno.h"
+#include "te_queue.h"
 
 
 #ifdef __cplusplus
@@ -81,13 +84,16 @@ typedef enum tapi_local_storage_device_type {
  * Device properties and methods to operate.
  */
 struct tapi_local_storage_device {
-    tapi_local_storage_device_type type;
-    const char *name;
-    const char *vendor;
-    const char *product;
-    const char *serial;
-    const char *partition;
-    tapi_local_storage_device_methods methods;
+    tapi_local_storage_device_type type;    /**< Type of storage device. */
+    const char *name;           /**< Name of storage in configurator. */
+    const char *vid;            /**< Disk Vendor ID. */
+    const char *pid;            /**< Disk Product ID. */
+    const char *serial;         /**< Disk Serial Number. */
+    const char *product_name;   /**< Disk Product Name. */
+    const char *manufacturer;   /**< Disk Manufacturer. */
+    const char *partition;      /**< Disk partition under test. */
+    tapi_local_storage_device_methods methods;  /**< Methods to operate the
+                                                     device. */
 };
 
 /**
@@ -107,17 +113,72 @@ typedef struct tapi_local_storage_device_list
 
 
 /**
- * Get a certain device info from configurator.
+ * Set methods to operate the @p device. @p device should be pre-initialized
+ * with, for example, @p tapi_local_storage_device_get
  *
- * @param[in]  ta       Test agent name.
+ * @param device        Device context.
+ * @param methods       Methods to operate the device.
+ *
+ * @sa tapi_local_storage_device_get
+ */
+static inline void
+tapi_local_storage_device_set_methods(
+                                tapi_local_storage_device         *device,
+                                tapi_local_storage_device_methods *methods)
+{
+    device->methods = *methods;
+}
+
+
+/**
+ * Get all devices from configurator and read them properties.
+ * List of @p devices should be released with
+ * @p tapi_local_storage_device_list_free when it is no longer needed.
+ *
+ * @param[out] devices          Devices list.
+ *
+ * @return Status code.
+ *
+ * @sa tapi_local_storage_device_list_free
+ */
+extern te_errno tapi_local_storage_device_list_get(
+                                tapi_local_storage_device_list *devices);
+
+/**
+ * Release devices list that was obtained with
+ * @p tapi_local_storage_device_list_get.
+ *
+ * @param devices       Devices list.
+ *
+ * @sa tapi_local_storage_device_list_get
+ */
+extern void tapi_local_storage_device_list_free(
+                                tapi_local_storage_device_list *devices);
+
+/**
+ * Get a certain device info from configurator. @p device should be released
+ * with @p tapi_local_storage_device_free when it is no longer needed.
+ *
  * @param[in]  name     Device name to find.
  * @param[out] device   Device context.
  *
  * @return Status code.
+ *
+ * @sa tapi_local_storage_device_free
  */
 extern te_errno tapi_local_storage_device_get(
-                                        const char                *ta,
-                                        const char                *name,
+                                        const char                 *name,
+                                        tapi_local_storage_device **device);
+
+/**
+ * Release device context that was obtained with
+ * @p tapi_local_storage_device_get.
+ *
+ * @param device        Device context.
+ *
+ * @sa tapi_local_storage_device_get
+ */
+extern void tapi_local_storage_device_free(
                                         tapi_local_storage_device *device);
 
 #ifdef __cplusplus
