@@ -136,16 +136,17 @@ version_info () {
 }
 
 #
-# Find a tmp directory, set TMPDIR to its path
+# Find a tmp directory, set TMP_DIR to its path
 #
 get_tmp_dir_path () {
-    TMPDIR="${TE_TMP}"
-    if test x"${TMPDIR}" = x ; then
+    TMP_DIR="${TE_TMP:-${TMPDIR}}"
+    if test x"${TMP_DIR}" = x -o ! -d "${TMP_DIR}" ; then
+        TMP_DIR=
         for t in /tmp /var/tmp ${PWD}; do
             if ! [ -d $t ] || ! [ -w $t ] ; then
                 continue;
             fi
-            TMPDIR=$t
+            TMP_DIR=$t
             break;
         done
     fi
@@ -163,11 +164,11 @@ get_tmp_file_name () {
     # choose tmp file name
     tmp=""
     {
-        tmp=`(umask 077 && mktemp -q "$TMPDIR/$prog_name.XXXXXX") 2>/dev/null` &&
+        tmp=`(umask 077 && mktemp -q "$TMP_DIR/$prog_name.XXXXXX") 2>/dev/null` &&
         test -n "$tmp" && test -f "$tmp"
     } ||
     {
-        tmp="$TMPDIR/$prog_name.$$-$RANDOM"
+        tmp="$TMP_DIR/$prog_name.$$-$RANDOM"
         (umask 077 && touch $tmp)
     } ||
     {
@@ -314,7 +315,7 @@ fi
 
 if test x"${RGT_DISABLE_QUEUE_OFFLOADING}" != x"yes" ; then
     get_tmp_dir_path
-    tmpdir=$(mktemp -d "${TMPDIR}/rgt_core_XXXXXX")
+    tmpdir=$(mktemp -d "${TMP_DIR}/rgt_core_XXXXXX")
     result=$?
 
     sigint_cleanup()
