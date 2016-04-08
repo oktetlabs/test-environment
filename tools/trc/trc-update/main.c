@@ -65,7 +65,15 @@
 #include <perl.h>
 #endif
 
+#if HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
 
 DEFINE_LGR_ENTITY("TRC UPD");
 
@@ -1407,27 +1415,28 @@ func_args_match(const void *iter_ptr,
     trc_test_iter             *iter = (trc_test_iter *)iter_ptr;
     trc_test_iter_arg         *arg;
 
-#ifdef HAVE_LIBPERL
-    SV  *val;
-#endif
-    
     te_string   te_str;
     int         i = 0;
-    int         rc = 0;
 
-    tqh_strings     arg_names;
-    tqh_strings     common_args;
-    tqe_string     *arg_name;
-
-    TAILQ_INIT(&arg_names);
-    TAILQ_INIT(&common_args);
+#ifndef HAVE_LIBPERL
+    UNUSED(filter_mode);
+#endif
 
     assert(iter != NULL);
 
     if (perl_expr != NULL || perl_script != NULL)
     {
 #ifdef HAVE_LIBPERL
+        int             rc = 0;
+        SV             *val;
+        tqh_strings     arg_names;
+        tqh_strings     common_args;
+        tqe_string     *arg_name;
+
         dTHX;
+
+        TAILQ_INIT(&arg_names);
+        TAILQ_INIT(&common_args);
 
         hv_clear(olds);
         sv_setpv(test_path, iter->parent->path);
@@ -1581,11 +1590,14 @@ int
 main(int argc, char **argv, char **envp)
 {
     int     result = EXIT_FAILURE;
-    char   *perl_embed_params[] = { "", "-e", "0" };
 
 #ifdef HAVE_LIBPERL
+    char   *perl_embed_params[] = { "", "-e", "0" };
+
     PERL_SYS_INIT3(&argc, &argv, &envp);
 #else
+    UNUSED(envp);
+
     fprintf(stderr, "WARNING: libperl is missed. You cannot use "
             "--matching-expr and --matching-perl.\n");
 #endif
