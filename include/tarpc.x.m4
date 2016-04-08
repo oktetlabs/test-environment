@@ -5231,6 +5231,19 @@ struct tarpc_namespace_id2str_out {
     tarpc_int               retval;
 };
 
+/* get_rw_ability() */
+struct tarpc_get_rw_ability_in {
+    struct tarpc_in_arg     common;
+    tarpc_int               sock;
+    tarpc_int               timeout;
+    tarpc_bool              check_rd;
+};
+
+struct tarpc_get_rw_ability_out {
+    struct tarpc_out_arg    common;
+    tarpc_int               retval;
+};
+
 program tarpc
 {
     version ver0
@@ -5569,5 +5582,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(vfork_pipe_exec)
 
         RPC_DEF(namespace_id2str)
+
+        RPC_DEF(get_rw_ability)
     } = 1;
 } = 1;

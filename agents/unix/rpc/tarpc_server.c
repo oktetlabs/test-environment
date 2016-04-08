@@ -10550,3 +10550,38 @@ TARPC_FUNC(namespace_id2str,
 {
     MAKE_CALL(out->retval = func_ptr(in, out));
 })
+
+/*------------ get_rw_ability() -----------------------*/
+int
+get_rw_ability(tarpc_get_rw_ability_in *in)
+{
+    iomux_funcs iomux_f;
+    iomux_func  iomux = get_default_iomux();
+    iomux_state iomux_st;
+
+    int rc;
+
+    if (iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0)
+    {
+        ERROR("failed to resolve iomux function");
+        return -1;
+    }
+
+    /* Create iomux status and fill it with our fds. */
+    if ((rc = iomux_create_state(iomux, &iomux_f, &iomux_st)) != 0)
+        return rc;
+    if ((rc = iomux_add_fd(iomux, &iomux_f, &iomux_st,
+                           in->sock,
+                           in->check_rd ? POLLIN : POLLOUT)) != 0)
+    {
+        iomux_close(iomux, &iomux_f, &iomux_st);
+        return rc;
+    }
+
+    return iomux_wait(iomux, &iomux_f, &iomux_st, NULL, in->timeout);
+}
+
+TARPC_FUNC(get_rw_ability, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in));
+})

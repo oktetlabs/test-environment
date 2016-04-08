@@ -78,8 +78,8 @@ extern "C" {
  *
  * @return status code
  */
-extern int tapi_rpc_get_rw_ability(te_bool *answer, rcf_rpc_server *rpcs,
-                                   int s, int timeout, char *type);
+extern int rpc_get_rw_ability(te_bool *answer, rcf_rpc_server *rpcs,
+                              int s, int timeout, char *type);
 
 /**
  * Check data exchange on the pipe.

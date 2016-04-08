@@ -348,10 +348,10 @@
  * gets back just after the checking
  */
 #define GET_READABILITY(answer_, rpcs_, sockd_, timeout_) \
-    do {                                                                 \
-        if (tapi_rpc_get_rw_ability(&(answer_), rpcs_, sockd_, timeout_, \
-                                    "READ") != 0)                        \
-            TEST_STOP;                                                   \
+    do {                                                            \
+        if (rpc_get_rw_ability(&(answer_), rpcs_, sockd_, timeout_, \
+                               "READ") != 0)                        \
+            TEST_STOP;                                              \
     } while (0)
 
 /**
@@ -367,10 +367,10 @@
  * gets back just after the checking
  */
 #define GET_WRITABILITY(answer_, rpcs_, sockd_, timeout_) \
-    do {                                                                  \
-        if (tapi_rpc_get_rw_ability(&(answer_), rpcs_, sockd_, timeout_,  \
-                                    "WRITE") != 0)                        \
-            TEST_STOP;                                                    \
+    do {                                                             \
+        if (rpc_get_rw_ability(&(answer_), rpcs_, sockd_, timeout_,  \
+                               "WRITE") != 0)                        \
+            TEST_STOP;                                               \
     } while (0)
 
 /**
