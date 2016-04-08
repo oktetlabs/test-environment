@@ -357,7 +357,13 @@ rcf_pch_mem_index_free(rpc_ptr id, rpc_ptr_id_namespace ns,
 
     /* Convert id to array index */
     index = RPC_PTR_ID_GET_INDEX(id);
-    if (index < ids_len && ids[index].memory != NULL && ids[index].ns == ns)
+    if (index >= ids_len)
+    {
+        ERROR("%s:%d: The rpc pointer isn't found (%d, %d)",
+              caller_func, caller_line, id, ns);
+        rc = TE_RC(TE_RCF_PCH, TE_EINVAL);
+    }
+    else if (ids[index].memory != NULL && ids[index].ns == ns)
         rc = give_index(index);
     else
     {
