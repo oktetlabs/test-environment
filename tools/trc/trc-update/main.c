@@ -384,7 +384,7 @@ static te_errno
 get_opts_from_file(char *fname)
 {
     FILE        *f = fopen(fname, "r");
-    long int     max_opt_len = 100000;
+    off_t        opts_len = 0;
     char        *s;
     int          argc;
     char       **argv;
@@ -396,14 +396,18 @@ get_opts_from_file(char *fname)
         return -1;
     }
 
-    s = TE_ALLOC(sizeof(*s) * max_opt_len);
+    fseeko(f, 0LL, SEEK_END);
+    opts_len = ftell(f) + 1 /* for '\0' */;
+    fseeko(f, 0LL, SEEK_SET);
+
+    s = TE_ALLOC(sizeof(*s) * opts_len);
     if (s == NULL)
     {
         printf("%s(): memory allocation failed\n", __FUNCTION__);
         return -1;
     }
 
-    fgets(s, max_opt_len, f);
+    fgets(s, opts_len, f);
     if (poptParseArgvString(s, &argc, (const char ***)&argv) != 0)
     {
         printf("%s(): failed to parse additional options from %s\n",
