@@ -100,7 +100,8 @@ static inline void te_dbuf_reset(te_dbuf *dbuf)
 
 /**
  * Append additional data to the dynamic buffer. Allocate/reallocate the
- * memory for the buffer if needed.
+ * memory for the buffer if needed. @p dbuf should be released with
+ * @p te_dbuf_free when it is no longer needed.
  *
  * @param dbuf          Dynamic buffer.
  * @param data          Data to append to the buffer pointed by @p dbuf.
@@ -109,15 +110,19 @@ static inline void te_dbuf_reset(te_dbuf *dbuf)
  * @param data_len      Length of the data.
  *
  * @return Status code.
+ *
+ * @sa te_dbuf_free
  */
 extern te_errno te_dbuf_append(te_dbuf    *dbuf,
                                const void *data,
                                size_t      data_len);
 
 /**
- * Free dynamic buffer.
+ * Free dynamic buffer that was allocated with @p te_dbuf_append.
  *
  * @param dbuf          Dynamic buffer.
+ *
+ * @sa te_dbuf_append
  */
 extern void te_dbuf_free(te_dbuf *dbuf);
 
