@@ -67,6 +67,19 @@ typedef struct te_string {
 extern te_errno te_string_append(te_string *str, const char *fmt, ...);
 
 /**
+ * Append to the string results of the @b vsnprintf.
+ *
+ * @param str           Dynamic string
+ * @param fmt           Format string
+ * @param ap            List of arguments
+ *
+ * @return Status code.
+ */
+extern te_errno te_string_append_va(te_string  *str,
+                                    const char *fmt,
+                                    va_list     ap);
+
+/**
  * Cut from the string specified number of characters.
  *
  * @param str           Dynamic string

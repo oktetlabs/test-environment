@@ -52,10 +52,21 @@ te_string_free(te_string *str)
 te_errno
 te_string_append(te_string *str, const char *fmt, ...)
 {
+    va_list  ap;
+    te_errno rc;
+
+    va_start(ap, fmt);
+    rc = te_string_append_va(str, fmt, ap);
+    va_end(ap);
+    return rc;
+}
+
+te_errno
+te_string_append_va(te_string *str, const char *fmt, va_list ap)
+{
     char       *s;
     size_t      rest;
     int         printed;
-    va_list     ap;
     te_bool     again;
 
     if (str->ptr == NULL)
@@ -75,10 +86,8 @@ te_string_append(te_string *str, const char *fmt, ...)
     do  {
         s = str->ptr + str->len;
 
-        va_start(ap, fmt);
         printed = vsnprintf(s, rest, fmt, ap);
         assert(printed >= 0);
-        va_end(ap);
 
         if ((size_t)printed >= rest)
         {
