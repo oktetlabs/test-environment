@@ -69,6 +69,33 @@ te_dbuf_append(te_dbuf *dbuf, const void *data, size_t data_len)
 }
 
 /* See description in te_dbuf.h. */
+te_errno
+te_dbuf_expand(te_dbuf *dbuf, size_t n)
+{
+    size_t   new_size;
+    uint8_t *new_ptr;
+
+    if ((dbuf->ptr == NULL && dbuf->size != 0) || dbuf->len > dbuf->size)
+    {
+        ERROR("Broken dynamic buffer");
+        return TE_EINVAL;
+    }
+    new_size = dbuf->size + n;
+    new_ptr = realloc(dbuf->ptr, new_size);
+    if (new_ptr != NULL)
+    {
+        dbuf->ptr = new_ptr;
+        dbuf->size = new_size;
+    }
+    else
+    {
+        ERROR("Memory reallocation failure");
+        return TE_ENOMEM;
+    }
+    return 0;
+}
+
+/* See description in te_dbuf.h. */
 void
 te_dbuf_free(te_dbuf *dbuf)
 {
