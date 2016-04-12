@@ -59,10 +59,10 @@ typedef enum tapi_storage_service_type {
  * Authorization parameters of service.
  */
 typedef struct tapi_storage_auth_params {
-    struct sockaddr_storage *server_addr;   /**< IP address of server. */
-    uint16_t                 port;          /**< Service port. */
-    char                    *user;          /**< User name to log in. */
-    char                    *password;      /**< User password. */
+    struct sockaddr *server_addr;   /**< IP address of server. */
+    uint16_t         port;          /**< Service port. */
+    char            *user;          /**< User name to log in. */
+    char            *password;      /**< User password. */
 } tapi_storage_auth_params;
 
 
@@ -82,7 +82,7 @@ typedef struct tapi_storage_auth_params {
  * @sa tapi_storage_auth_params_fini
  */
 extern te_errno tapi_storage_auth_params_init(
-                                struct sockaddr_storage  *server_addr,
+                                const struct sockaddr    *server_addr,
                                 uint16_t                  port,
                                 const char               *user,
                                 const char               *password,
