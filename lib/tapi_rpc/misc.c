@@ -1741,6 +1741,10 @@ rpc_get_rw_ability(te_bool *answer, rcf_rpc_server *rpcs,
     in.timeout = timeout;
     in.check_rd = (type[0] == 'R') ? TRUE : FALSE;
 
+    if ((timeout > 0) && (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT))
+    {
+        rpcs->timeout = TE_SEC2MS(TAPI_RPC_TIMEOUT_EXTRA_SEC) + timeout;
+    }
     rcf_rpc_call(rpcs, "get_rw_ability", &in, &out);
 
     *answer = (out.retval == 1);
