@@ -10578,7 +10578,10 @@ get_rw_ability(tarpc_get_rw_ability_in *in)
         return rc;
     }
 
-    return iomux_wait(iomux, &iomux_f, &iomux_st, NULL, in->timeout);
+    rc = iomux_wait(iomux, &iomux_f, &iomux_st, NULL, in->timeout);
+
+    iomux_close(iomux, &iomux_f, &iomux_st);
+    return rc;
 }
 
 TARPC_FUNC(get_rw_ability, {},
