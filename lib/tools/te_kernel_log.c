@@ -618,6 +618,7 @@ te_serial_parser(serial_parser_t *parser)
     time_t  last_alive = 0;
     te_bool rcf;
     char    user[TE_SERIAL_MAX_NAME + 1];
+    char   *puser;
 
 #define MAYBE_DO_LOG \
 do {                                                            \
@@ -671,7 +672,13 @@ do {                                                            \
 
     interval = parser->interval;
     rcf = parser->rcf;
-    strncpy(user, parser->c_name, sizeof(user));
+
+    /*
+     * Extract the console name from serial console name
+     * (e.g. conserver:port:user:console) as "log user name".
+     */
+    puser = strrchr(parser->c_name, ':');
+    strncpy(user, puser != NULL ? puser + 1 : parser->c_name, sizeof(user));
 
     if (strncmp(parser->c_name, NETCONSOLE_PREF,
                 strlen(NETCONSOLE_PREF)) == 0)
