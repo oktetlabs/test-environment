@@ -139,6 +139,9 @@ extern void *rcf_pch_mem_index_mem_to_ptr(
 #define RCF_PCH_MEM_INDEX_MEM_TO_PTR(_id, _ns)                          \
     rcf_pch_mem_index_mem_to_ptr((_id), (_ns), __FUNCTION__, __LINE__)
 
+/** Alias for macro @b RCF_PCH_MEM_INDEX_MEM_TO_PTR. */
+#define RPC_PTR_ID_TO_MEM RCF_PCH_MEM_INDEX_MEM_TO_PTR
+
 /** Wrapper for @b RCF_PCH_MEM_INDEX_MEM_TO_PTR() with generic @b ns */
 #define rcf_pch_mem_get(_id)                                        \
     RCF_PCH_MEM_INDEX_MEM_TO_PTR((_id), rcf_pch_mem_ns_generic())
@@ -162,6 +165,10 @@ extern rpc_ptr rcf_pch_mem_index_ptr_to_mem(
  */
 #define RCF_PCH_MEM_INDEX_PTR_TO_MEM(_mem, _ns)                         \
     rcf_pch_mem_index_ptr_to_mem((_mem), (_ns), __FUNCTION__, __LINE__)
+
+
+/** Alias for macro @b RCF_PCH_MEM_INDEX_PTR_TO_MEM. */
+#define RPC_PTR_MEM_TO_ID RCF_PCH_MEM_INDEX_PTR_TO_MEM
 
 /** Wrapper for @b RCF_PCH_MEM_INDEX_PTR_TO_MEM() with generic @b ns */
 #define rcf_pch_mem_get_id(_mem)                                    \
