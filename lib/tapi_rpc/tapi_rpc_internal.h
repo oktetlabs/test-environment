@@ -334,6 +334,16 @@ do {                                                                    \
         (_rpcs), (_ptr), (_ns), __FUNCTION__, __LINE__)
 
 /**
+ * Wrapper for @b tapi_rpc_namespace_check() - jumps to @b cleanup in case
+ * of RPC pointer namespace check fail.
+ */
+#define TAPI_RPC_NAMESPACE_CHECK_JUMP(_rpcs, _ptr, _ns) \
+do {                                                    \
+    if (TAPI_RPC_NAMESPACE_CHECK(_rpcs, _ptr, _ns))     \
+        TAPI_JMP_DO(TE_EFAIL);                          \
+} while (0)
+
+/**
  * Check membership of pointer in the namespace @b ns.
  *
  * @param rpcs      RPC server handle
