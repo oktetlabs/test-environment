@@ -4239,55 +4239,6 @@ args_comb_to_wildcard(te_bool *args_comb,
 }
 
 /**
- * Set in_wildcard member of TRC Update iteration data
- * structure attached to iteration in TRC DB for each
- * iteration matching to any wildcard from a given group.
- *
- * @param db_uid            TRC DB User ID
- * @param test              Test
- * @param args_comb         Combination of arguments (can be
- *                          treated as wildcard with all arguments
- *                          without values)
- * @param cur_comb_wilds    Wildcards with a given combination
- *                          of arguments
- *
- * @return Status code
- */
-static te_errno
-mark_iters_in_wildcards(unsigned int db_uid,
-                        trc_test *test,
-                        trc_update_args_group  *args_group,
-                        trc_update_args_groups *cur_comb_wilds)
-{
-    trc_test_iter               *iter;
-    trc_update_test_iter_data   *iter_data;
-    trc_update_args_group       *p_group;
-
-    TAILQ_FOREACH(iter, &test->iters.head, links)
-    {
-        iter_data = trc_db_iter_get_user_data(iter, db_uid);
-        if (iter_data == NULL)
-            continue;
-
-        if (test_iter_args_match(args_group->args, iter_data->args_n,
-                                 iter_data->args, TRUE) != ITER_NO_MATCH)
-        {
-            SLIST_FOREACH(p_group, cur_comb_wilds, links)
-                if (test_iter_args_match(p_group->args,
-                                         iter_data->args_n,
-                                         iter_data->args,
-                                         TRUE) != ITER_NO_MATCH)
-                    break;
-
-            if (p_group != NULL)
-                iter_data->in_wildcard = TRUE;
-        }
-    }
-
-    return 0;
-}
-
-/**
  * Specify in a given wildcard values for all the arguments
  * having only one possible value in all the iterations
  * descibed by this wildcard.
@@ -4398,6 +4349,7 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
 
     te_bool allow_intersect = !!(flags & TRC_UPDATE_INTERSEC_WILDS);
     te_bool new_iter_added;
+    te_bool iter_remained;
 
     memset(&cur_comb_wilds, 0, sizeof(cur_comb_wilds));
     SLIST_INIT(&cur_comb_wilds);
@@ -4414,6 +4366,7 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
         {
             iter_data1 = trc_db_iter_get_user_data(iter1, db_uid);
             if (iter_data1 == NULL ||
+                iter_data1->results_id != results_id ||
                 (!allow_intersect && iter_data1->in_wildcard))
                 continue;
 
@@ -4421,93 +4374,75 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
                                      iter_data1->args, TRUE) !=
                                                         ITER_NO_MATCH)
             {
-                p_group = NULL;
-#if 0
-                /** TODO: check whether code is useless */
-                SLIST_FOREACH(p_group, &cur_comb_wilds, links)
-                    if (test_iter_args_match(p_group->args,
-                                             iter_data1->args_n,
-                                             iter_data1->args,
-                                             TRUE) != ITER_NO_MATCH)
-                        break;
-#endif
-                if (p_group != NULL)
-                    continue;
-                else if (iter_data1->results_id == results_id)
+                new_group = TE_ALLOC(sizeof(*new_group));
+                new_group->args = TE_ALLOC(sizeof(trc_test_iter_args));
+                TAILQ_INIT(&new_group->args->head);
+
+                args_comb_to_wildcard(args_in_wild, args_count,
+                                      iter_data1->args,
+                                      new_group);
+
+                new_iter_added = FALSE;
+                TAILQ_FOREACH(iter2, &test->iters.head, links)
                 {
-                    new_group = TE_ALLOC(sizeof(*new_group));
-                    new_group->args = TE_ALLOC(sizeof(trc_test_iter_args));
-                    TAILQ_INIT(&new_group->args->head);
-
-                    args_comb_to_wildcard(args_in_wild, args_count,
-                                          iter_data1->args,
-                                          new_group);
-
-                    new_iter_added = FALSE;
-                    TAILQ_FOREACH(iter2, &test->iters.head, links)
-                    {
-                        iter_data2 =
-                            trc_db_iter_get_user_data(iter2, db_uid);
-                        if (iter_data2 == NULL)
-                            continue;
-
-                        if (test_iter_args_match(new_group->args,
-                                                 iter_data2->args_n,
-                                                 iter_data2->args,
-                                                 TRUE) != ITER_NO_MATCH)
-                        {
-                            if ((!allow_intersect &&
-                                 iter_data2->in_wildcard) ||
-                                iter_data2->results_id != results_id)
-                                break;
-
-                            if (!iter_data2->in_wildcard)
-                                new_iter_added = TRUE;
-                        }
-                    }
-
-                    if (iter2 != NULL || !new_iter_added)
-                    {
-                        trc_free_test_iter_args(new_group->args);
-                        free(new_group);
+                    iter_data2 =
+                        trc_db_iter_get_user_data(iter2, db_uid);
+                    if (iter_data2 == NULL)
                         continue;
-                    }
 
-                    TAILQ_FOREACH(iter2, &test->iters.head, links)
+                    if (test_iter_args_match(new_group->args,
+                                             iter_data2->args_n,
+                                             iter_data2->args,
+                                             TRUE) != ITER_NO_MATCH)
                     {
-                        iter_data2 =
-                            trc_db_iter_get_user_data(iter2, db_uid);
-                        if (iter_data2 == NULL)
-                            continue;
+                        if ((!allow_intersect &&
+                             iter_data2->in_wildcard) ||
+                            iter_data2->results_id != results_id)
+                            break;
 
-                        if (test_iter_args_match(new_group->args,
-                                                 iter_data2->args_n,
-                                                 iter_data2->args,
-                                                 TRUE) != ITER_NO_MATCH) 
-                        {
-                            iter_data2->in_wildcard = TRUE;
-                        }
+                        if (!iter_data2->in_wildcard)
+                            new_iter_added = TRUE;
                     }
-
-                    new_group->exp_results =
-                        trc_exp_results_dup((struct trc_exp_results *)
-                                            &iter1->exp_results);
-                    new_group->exp_default =
-                        trc_exp_result_dup((struct trc_exp_result *)
-                                           iter1->exp_default);
-                    new_group->group_id = args_group->group_id;
-
-                    SLIST_INSERT_HEAD(&cur_comb_wilds, new_group,
-                                      links);
                 }
+
+                if (iter2 != NULL || !new_iter_added)
+                {
+                    trc_free_test_iter_args(new_group->args);
+                    free(new_group);
+                    continue;
+                }
+
+                TAILQ_FOREACH(iter2, &test->iters.head, links)
+                {
+                    iter_data2 =
+                        trc_db_iter_get_user_data(iter2, db_uid);
+                    if (iter_data2 == NULL)
+                        continue;
+
+                    if (test_iter_args_match(new_group->args,
+                                             iter_data2->args_n,
+                                             iter_data2->args,
+                                             TRUE) != ITER_NO_MATCH) 
+                    {
+                        iter_data2->in_wildcard = TRUE;
+                    }
+                }
+
+                new_group->exp_results =
+                    trc_exp_results_dup((struct trc_exp_results *)
+                                        &iter1->exp_results);
+                new_group->exp_default =
+                    trc_exp_result_dup((struct trc_exp_result *)
+                                       iter1->exp_default);
+                new_group->group_id = args_group->group_id;
+
+                SLIST_INSERT_HEAD(&cur_comb_wilds, new_group,
+                                  links);
             }
         }
 
         if (!SLIST_EMPTY(&cur_comb_wilds))
         {
-            mark_iters_in_wildcards(db_uid, test, args_group,
-                                    &cur_comb_wilds);
-
             while ((p_group =
                         SLIST_FIRST(&cur_comb_wilds)) != NULL)
             {
@@ -4517,6 +4452,22 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
                     trc_update_extend_wild(db_uid, test, p_group);
             }
         }
+
+        iter_remained = FALSE;
+        TAILQ_FOREACH(iter1, &test->iters.head, links)
+        {
+            iter_data1 = trc_db_iter_get_user_data(iter1, db_uid);
+            if (iter_data1 != NULL &&
+                iter_data1->results_id == results_id &&
+                !iter_data1->in_wildcard)
+            {
+                iter_remained = TRUE;
+                break;
+            }
+        }
+        if (!iter_remained)
+            break;
+
     } while (get_next_args_comb(args_in_wild, args_count,
                                 &args_wild_count) == 0);
 
