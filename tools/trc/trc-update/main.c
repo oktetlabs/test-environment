@@ -90,7 +90,7 @@ enum {
                                          rules to be applied */
     TRC_UPDATE_OPT_RULES_SAVE,      /**< Where to save generated updating
                                          rules */
-    TRC_UPDATE_OPT_RULES_ALL,       /**< Generate updating rules for old
+    TRC_UPDATE_OPT_RULES_ALL,       /**< Generate updating rules for all
                                          iterations in TRC (including
                                          those for which there is no
                                          conflicting results in logs) */
@@ -441,7 +441,7 @@ get_opts_from_file(char *fname)
 /**
  * Process command line options and parameters specified in argv.
  * The procedure contains "Option table" that should be updated 
- * if so me new options are going to be added.
+ * if some new options are going to be added.
  *
  * @param argc          Number of elements in array "argv".
  * @param argv          Array of strings that represents all command line
