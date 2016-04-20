@@ -219,10 +219,6 @@ foreach (@ARGV)
         $rc = system("te-trc-update --help");
         exit ($rc >> 8);
     }
-    elsif ($_ =~ m/^--tags-by-logs$/)
-    {
-        # do nothing
-    }
     elsif ($_ =~ m/^--conf-tester=(.*)$/)
     {
         $conf_tester = " --conf-tester=\"".escape_str($1)."\"";
@@ -311,6 +307,7 @@ foreach (@ARGV)
     {
         my $opt_str = $_;
         if ($opt_str =~ m/^--log-wilds$/ ||
+            $opt_str =~ m/^--log-wilds-unexp$/ ||
             $opt_str =~ m/^--print-paths$/)
         {
             $no_extract_paths = 1;

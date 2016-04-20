@@ -37,12 +37,211 @@
 #include "tq_string.h"
 #include "te_trc.h"
 #include "trc_db.h"
+#include "trc_report.h"
 
 /* TODO: possibly missing some headers */
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+enum trc_update_log_parse_flags {
+    TRC_UPDATE_TAGS_BY_LOGS = (1LLU << 0),  /**< If tag expression for
+                                                 log is not specified,
+                                                 derive it from its file
+                                                 name */
+    TRC_UPDATE_FAKE_LOG     = (1LLU << 1),  /**< Parse log of fake
+                                                 Tester run */
+    TRC_UPDATE_MERGE_LOG    = (1LLU << 2),  /**< Merge iterations from
+                                                 log into TRC DB
+                                                 performing TRC
+                                                 update */
+    TRC_UPDATE_RULES_ALL    = (1LLU << 3),  /**< Generate updating rules
+                                                 for all possible results
+                                                 (not only those for
+                                                 which there are new
+                                                 results in logs) */
+    TRC_UPDATE_USE_RULE_IDS = (1LLU << 4),  /**< Insert updating rule
+                                                 ID in user_attr
+                                                 attribute of test
+                                                 iterations in
+                                                 generated TRC
+                                                 to simplify applying
+                                                 of edited rules */
+    TRC_UPDATE_NO_GEN_WILDS = (1LLU << 5),  /**< Do not replace test
+                                                 iterations with
+                                                 wildcards in
+                                                 generated TRC */
+    TRC_UPDATE_LOG_WILDS    = (1LLU << 6),  /**< Generate wildcards for
+                                                 results from logs, not
+                                                 from TRC DB */
+    TRC_UPDATE_LOG_WILDS_UNEXP
+                            = (1LLU << 7),  /**< Generate wildcards for
+                                                 unexpected results from
+                                                 logs only */
+    TRC_UPDATE_COPY_OLD     = (1LLU << 8),  /**< Copy results from
+                                                 current TRC DB in <new>
+                                                 section of updating
+                                                 rule */
+    TRC_UPDATE_COPY_CONFLS  = (1LLU << 9),  /**< Copy conflicting results
+                                                 from logs in <news>
+                                                 section of updating
+                                                 rule */
+    TRC_UPDATE_COPY_OLD_FIRST
+                            = (1LLU << 10), /**< If both COPY_CONFLS and
+                                                 COPY_OLD are specified,
+                                                 copy expected results
+                                                 from current TRC DB in
+                                                 <new> section of
+                                                 updating rule; if there
+                                                 is no such results -
+                                                 copy conlficting
+                                                 results from logs to
+                                                 the same place */
+    TRC_UPDATE_CONFLS_ALL   = (1LLU << 11), /**< Treat all results from
+                                                 logs as unexpected
+                                                 ones */
+    TRC_UPDATE_COPY_BOTH    = (1LLU << 12), /**< If both COPY_CONFLS and
+                                                 COPY_BOTH are specified,
+                                                 copy both results from
+                                                 existing TRC and
+                                                 conflicting results from
+                                                 logs in <new> section
+                                                 of updating rule. If
+                                                 COPY_OLD_FIRST
+                                                 is specified too, copy
+                                                 results from existing
+                                                 TRC firstly, otherwise
+                                                 firstly copy results
+                                                 from logs */
+    TRC_UPDATE_TAGS_STR     = (1LLU << 13), /**< Do not change string
+                                                 representation of
+                                                 tags */
+    TRC_UPDATE_GEN_APPLY    = (1LLU << 14), /**< Apply updating rules
+                                                 after generating
+                                                 them */
+    TRC_UPDATE_RULES_CONFL  = (1LLU << 15), /**< If applying of a rule
+                                                 leads to replacing
+                                                 some alredy existing
+                                                 expected results with
+                                                 different ones,
+                                                 do not replace them
+                                                 but treat results
+                                                 from '<new>' section
+                                                 of rule as conflicting
+                                                 results from logs */
+    TRC_UPDATE_RRESULTS    = (1LLU << 16),  /**< Generate updating
+                                                 rules of type @c
+                                                 TRC_UPDATE_RRESULTS */
+    TRC_UPDATE_RRESULT     = (1LLU << 17),  /**< Generate updating
+                                                 rules of type @c
+                                                 TRC_UPDATE_RRESULT */
+    TRC_UPDATE_RRENTRY     = (1LLU << 18),  /**< Generate updating
+                                                 rules of type @c
+                                                 TRC_UPDATE_RRENTRY */
+    TRC_UPDATE_RVERDICT    = (1LLU << 19),  /**< Generate updating
+                                                 rules of type @c
+                                                 TRC_UPDATE_RVERDICT */
+    TRC_UPDATE_PRINT_PATHS = (1LLU << 19),  /**< Output test paths
+                                                 encountered in logs
+                                                 and exit */
+    TRC_UPDATE_NO_PE       = (1LLU << 21),  /**< Do not take into
+                                                 consideration prologues
+                                                 and epilogues */
+    TRC_UPDATE_RULE_UPD_ONLY
+                           = (1LLU << 22),  /**< Save only tests for
+                                                 which iterations at
+                                                 least one rule was
+                                                 applied */
+    TRC_UPDATE_SKIPPED     = (1LLU << 23),  /**< Show skipped unexpected
+                                                 results */
+    TRC_UPDATE_NO_SKIP_ONLY
+                           = (1LLU << 24),  /**< Do not create rules with
+                                                 <conflicts/> containing
+                                                 skipped only results */
+    TRC_UPDATE_NO_EXP_ONLY = (1LLU << 25),  /**< Do not create rules with
+                                                 <conflicts/> containing
+                                                 expected only results
+                                                 if CONFLS_ALL is turned
+                                                 on */
+    TRC_UPDATE_SELF_CONFL  = (1LLU << 26),  /**< Get conflicting results
+                                                 from expected results of
+                                                 an iteration found with
+                                                 help of matching
+                                                 function */
+    TRC_UPDATE_GEN_TAGS    = (1LLU << 27),  /**< Generate tags for
+                                                 logs */
+    TRC_UPDATE_EXT_WILDS   = (1LLU << 28),  /**< Specify a value for
+                                                 each argument in
+                                                 wildcard where it is
+                                                 possible for a given
+                                                 wildcard */
+    TRC_UPDATE_SIMPL_TAGS  = (1LLU << 29),  /**< Simplify tag
+                                                 expressions in lists
+                                                 of unexpected results
+                                                 from logs */
+    TRC_UPDATE_DIFF        = (1LLU << 30),  /**< Show results from the
+                                                 second group of logs
+                                                 which were not
+                                                 presented in the first
+                                                 group of logs */
+    TRC_UPDATE_DIFF_NO_TAGS
+                           = (1LLU << 31),  /**< Show results from the
+                                                 second group of logs
+                                                 which were not
+                                                 presented in the first
+                                                 group of logs -
+                                                 not taking into account
+                                                 tag expressions */
+    TRC_UPDATE_INTERSEC_WILDS
+                           = (1LLU << 32),  /**< It's allowed for
+                                                 iteration to have more
+                                                 than one wildcard
+                                                 describing it */
+    TRC_UPDATE_NO_GEN_FSS  = (1LLU << 33),  /**< Do not try to
+                                                 find out subsets
+                                                 corresponding to
+                                                 every possible
+                                                 iteration record, do
+                                                 not use algorithms
+                                                 based on it */
+    TRC_UPDATE_FSS_UNLIM   = (1LLU << 34),  /**< Do not resrict amount
+                                                 of time used to
+                                                 find out subsets for
+                                                 every possible
+                                                 iteration record */
+    TRC_UPDATE_NO_R_FAIL   = (1LLU << 35),  /**< Do not consider
+                                                 results of kind
+                                                 "FAILED without
+                                                  verdicts" */
+    TRC_UPDATE_NO_INCOMPL  = (1LLU << 36),  /**< Do not consider
+                                                 INCOMPLETE
+                                                 results */
+    TRC_UPDATE_NO_INT_ERR  = (1LLU << 37),  /**< Do not consider
+                                                 results with
+                                                 internal error */
+    TRC_UPDATE_MATCH_LOGS  = (1LLU << 38),  /**< Use user
+                                                 matching
+                                                 function to filter
+                                                 iterations from
+                                                 testing logs */
+    TRC_UPDATE_FILT_LOG    = (1LLU << 39),  /**< Log to be used
+                                                 for filtering out
+                                                 iterations not
+                                                 appearing in it */
+    TRC_UPDATE_RULE_ARGS   = (1LLU << 40),  /**< Generate <args>
+                                                 tags for generated
+                                                 rules */
+    TRC_UPDATE_TAGS_GATHER = (1LLU << 41),  /**< Gather tags from
+                                                 logs and print
+                                                 them */
+};
+
+/** All rule type flags */
+#define TRC_UPDATE_RTYPES \
+    (TRC_UPDATE_RRESULTS | TRC_UPDATE_RRESULT | \
+     TRC_UPDATE_RRENTRY | TRC_UPDATE_RVERDICT)
+
 
 /** Group of logs with the same tag expression */
 typedef struct trc_update_tag_logs {
@@ -57,44 +256,6 @@ typedef struct trc_update_tag_logs {
 /** Queue of groups of logs */
 typedef TAILQ_HEAD(trc_update_tags_logs,
                    trc_update_tag_logs) trc_update_tags_logs;
-
-/** Context of TRC Update tool */
-typedef struct trc_update_ctx {
-    uint64_t                 flags;           /**< Flags */
-    te_trc_db               *db;              /**< TRC DB */
-    unsigned int             db_uid;          /**< TRC DB user ID */
-    tqh_strings              test_names;      /**< Test paths */
-    tqh_strings              tags_list;       /**< List of tags for
-                                                   automatical determining
-                                                   of tag expression for
-                                                   a log */
-    trc_update_tags_logs     tags_logs;       /**< Queue of logs grouped by
-                                                   tag expressions */
-    trc_update_tags_logs     diff_logs;       /**< Another queue of logs to
-                                                   be compared with the
-                                                   first one */
-    char                    *fake_log;        /**< Tester fake run XML log
-                                                   path */
-    char                    *fake_filt_log;   /**< Tester fake run XML log
-                                                   path (this log is used
-                                                   for filtering out
-                                                   iterations not matching
-                                                   some reqs) */
-    char                    *rules_load_from; /**< Path to file with
-                                                   updating rules to
-                                                   apply */
-    char                    *rules_save_to;   /**< Path to file where
-                                                   generated updating
-                                                   rules should be saved */
-    char                    *cmd;             /**< Command used to run
-                                                   TRC Update Tool */
-                                                
-    func_args_match_ptr      func_args_match; /**< Function to match
-                                                   iterations in TRC with
-                                                   iterations from logs */
-    char                    *tags_gather_to;  /**< Where to save gathered
-                                                   tags */
-} trc_update_ctx;
 
 /** Entry of list of wildcards used in updating rules */
 typedef struct trc_update_wilds_list_entry {
@@ -111,15 +272,15 @@ typedef SLIST_HEAD(trc_update_wilds_list, trc_update_wilds_list_entry)
 
 /** TRC updating rule types */
 typedef enum trc_update_rtype {
-    TRC_UPDATE_RRESULTS,    /**< Applicable to all iteration
-                                 results as a whole */
-    TRC_UPDATE_RRESULT,     /**< Applicable to content of single
-                                 <results> tags */
-    TRC_UPDATE_RRENTRY,     /**< Applicable to content of single
-                                 <result> tags */
-    TRC_UPDATE_RVERDICT,    /**< Applicable to content of single
-                                 <verdict> tags */
-    TRC_UPDATE_UNKNOWN,     /**< Unknown */
+    TRC_UPDATE_RULE_RESULTS,    /**< Applicable to all iteration
+                                     results as a whole */
+    TRC_UPDATE_RULE_RESULT,     /**< Applicable to content of single
+                                     <results> tags */
+    TRC_UPDATE_RULE_ENTRY,     /**< Applicable to content of single
+                                    <result> tags */
+    TRC_UPDATE_RULE_VERDICT,    /**< Applicable to content of single
+                                     <verdict> tags */
+    TRC_UPDATE_RULE_UNKNOWN,    /**< Unknown */
 } trc_update_rtype;
 
 /** TRC updating rule */
@@ -276,6 +437,67 @@ struct trc_update_args_group {
                                         matching wildcard */
     int               group_id;    /**< Group ID */
 };
+
+/** Context of TRC Update tool */
+typedef struct trc_update_ctx {
+    uint64_t                 flags;           /**< Flags */
+    te_trc_db               *db;              /**< TRC DB */
+    unsigned int             db_uid;          /**< TRC DB user ID */
+    tqh_strings              test_names;      /**< Test paths */
+    tqh_strings              tags_gen_list;   /**< List of tags for
+                                                   automatical determining
+                                                   of tag expression for
+                                                   a log */
+    tqh_strings              tags;            /**< Tags from currently
+                                                   processed logs */
+    tqh_strings              collected_tags;  /**< Full list of tags
+                                                   appeared in processed
+                                                   logs */
+    trc_update_tags_logs     tags_logs;       /**< Queue of logs grouped by
+                                                   tag expressions */
+    trc_update_tags_logs     diff_logs;       /**< Another queue of logs to
+                                                   be compared with the
+                                                   first one */
+    char                    *fake_log;        /**< Tester fake run XML log
+                                                   path */
+    char                    *fake_filt_log;   /**< Tester fake run XML log
+                                                   path (this log is used
+                                                   for filtering out
+                                                   iterations not matching
+                                                   some reqs) */
+    char                    *rules_load_from; /**< Path to file with
+                                                   updating rules to
+                                                   apply */
+    char                    *rules_save_to;   /**< Path to file where
+                                                   generated updating
+                                                   rules should be saved */
+    char                    *cmd;             /**< Command used to run
+                                                   TRC Update Tool */
+                                                
+    func_args_match_ptr      func_args_match; /**< Function to match
+                                                   iterations in TRC with
+                                                   iterations from logs */
+    char                    *tags_gather_to;  /**< Where to save gathered
+                                                   tags */
+    char                    *logs_dump;       /**< Path to logs dump */
+
+    logic_expr                 *merge_expr; /**< Tag expression with
+                                                 which new results
+                                                 should be merged into
+                                                 existing database */
+    char                       *merge_str;  /**< String representation
+                                                 of tag expression */
+
+    trc_update_tests_groups  updated_tests; /**< Groups of tests to be
+                                                 updated */
+    trc_update_rules         global_rules;  /**< Updating rules which
+                                                 can be applied to any
+                                                 iteration of any test */
+
+    int                 cur_lnum;   /**< Number of currently parsed
+                                         log */
+
+} trc_update_ctx;
 
 /**
  * Initialize TRC Update tool context.
@@ -548,6 +770,21 @@ extern te_bool trc_update_is_to_save(void *data, te_bool is_iter);
  * @return String representing value or NULL
  */
 extern char *trc_update_set_user_attr(void *data, te_bool is_iter);
+
+/**
+ * Process test iteration.
+ *
+ * @param ctx         TRC Update context
+ * @param db_walker   TRC DB walker
+ * @param iter        Test iteration
+ * @param entry       Iteration result
+ *
+ * @return Status code
+ */
+extern te_errno trc_update_process_iter(trc_update_ctx *ctx,
+                                        te_trc_db_walker *db_walker,
+                                        trc_test_iter *iter,
+                                        trc_report_test_iter_entry *entry);
 
 /**
  * Process TE log file with obtained results of fake tester run.

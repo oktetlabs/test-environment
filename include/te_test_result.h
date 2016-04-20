@@ -138,6 +138,14 @@ te_test_result_init(te_test_result *result)
     TAILQ_INIT(&result->verdicts);
 }
 
+/** Free resources allocated for test result verdict */
+static inline void
+te_test_result_free_verdict(te_test_verdict *verdict)
+{
+    free(verdict->str);
+    free(verdict);
+}
+
 /** Free resourses allocated for test result verdicts. */
 static inline void
 te_test_result_free_verdicts(te_test_result *result)
@@ -147,8 +155,7 @@ te_test_result_free_verdicts(te_test_result *result)
     while ((v = TAILQ_FIRST(&result->verdicts)) != NULL)
     {
         TAILQ_REMOVE(&result->verdicts, v, links);
-        free(v->str);
-        free(v);
+        te_test_result_free_verdict(v);
     }
 }
 

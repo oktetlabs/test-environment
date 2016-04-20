@@ -556,6 +556,15 @@ extern void trc_exp_results_free(trc_exp_results *results);
  */
 extern void trc_db_test_delete_wilds(trc_test *test);
 
+/**
+ * Set TRC DB walker current position to a given test.
+ *
+ * @param walker      TRC DB walker
+ * @param test        Test
+ */
+extern void trc_db_walker_go_to_test(te_trc_db_walker *walker,
+                                     trc_test *test);
+
 extern trc_test *trc_db_walker_get_test(const te_trc_db_walker *walker);
 extern trc_test_iter *trc_db_walker_get_iter(
                           const te_trc_db_walker *walker);

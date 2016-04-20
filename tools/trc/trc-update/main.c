@@ -143,8 +143,8 @@ enum {
                                          type @c TRC_UPDATE_RVERDICT */
     TRC_UPDATE_OPT_RULE_ARGS,       /**< Generate <args> tags for generated
                                          rules */
-    TRC_UPDATE_OPT_PATHS,           /**< Print paths of all test scripts
-                                         encountered in logs */
+    TRC_UPDATE_OPT_PRINT_PATHS,     /**< Print paths of tests encountered
+                                         in logs and exit */
     TRC_UPDATE_OPT_PE,              /**< Take into consideration prologues
                                          and epilogues */
     TRC_UPDATE_OPT_RULE_UPD_ONLY,   /**< Save only tests for which
@@ -177,6 +177,8 @@ enum {
     TRC_UPDATE_OPT_TAGS_GATHER,     /**< Gather all the different tags
                                          from the specified logs and
                                          printf them */
+    TRC_UPDATE_OPT_TAGS_BY_LOGS,    /**< If --tag is not specified,
+                                         derive it from log file name */
     TRC_UPDATE_OPT_EXT_WILDS,       /**< Extend generated wildcards:
                                          specify values for all the
                                          arguments having only
@@ -196,6 +198,10 @@ enum {
                                          in the first group of logs -
                                          not taking into account tag
                                          expressions */
+    TRC_UPDATE_OPT_LOGS_DUMP,       /**< Path to file with logs dump
+                                         (file in binary format containing
+                                         information about tests results
+                                         gathered from several logs)*/
     TRC_UPDATE_OPT_NO_GEN_FSS,      /**< Do not try to find out all subsets
                                          of iterations corresponding to
                                          every possible iteration record,
@@ -486,10 +492,12 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
           "Specify path to a program matching old iterations from TRC "
           "with new ones", NULL },
 
+#if 0
         { "match-logs", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_MATCH_LOGS,
           "Use matching expression or script to filter iterations from "
           "testing logs", NULL },
+#endif
 
         { "rules", 'r', POPT_ARG_STRING, NULL, TRC_UPDATE_OPT_RULES,
           "Specify updating rules file in XML format", NULL },
@@ -540,10 +548,12 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
           TRC_UPDATE_OPT_CONFLS_ALL,
           "Treat all results from logs as unexpected ones", NULL },
 
+#if 0
         { "self-confl", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_SELF_CONFL,
           "Get conflictiong results from expected results of an iteration "
           "found with help of matching function", NULL },
+#endif
 
         { "no-exp-only", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_NO_EXP_ONLY,
@@ -606,6 +616,10 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
           "Simplify tag expressions in lists of unexpected results "
           "from logs", NULL },
 
+        { "tags-by-logs", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_TAGS_BY_LOGS,
+          "Derive tags expressions for logs from their file names", NULL },
+
         { "no-use-ids", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_NO_USE_IDS,
           "Do not use \"id\" attribute of rules and \"user_attr\" "
@@ -658,6 +672,7 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
           NULL, TRC_UPDATE_OPT_FAKE_LOG,
           "Specify log file of fake Tester run in XML format", NULL },
 
+#if 0
         { "fake-filter-log", '\0',
           POPT_ARG_STRING | POPT_ARGFLAG_DOC_HIDDEN,
           NULL, TRC_UPDATE_OPT_FAKE_FILT_LOG,
@@ -677,6 +692,7 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
           "this option which was not met in the logs specified "
           "before this option - not taking into account tag expressions",
           NULL },
+#endif
 
         { "no-gen-fss", '\0', POPT_ARG_NONE | POPT_ARGFLAG_DOC_HIDDEN, NULL,
           TRC_UPDATE_OPT_NO_GEN_FSS,
@@ -696,7 +712,7 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
           NULL },
 
         { "print-paths", '\0', POPT_ARG_NONE, NULL,
-          TRC_UPDATE_OPT_PATHS,
+          TRC_UPDATE_OPT_PRINT_PATHS,
           "Print paths of all test scripts encountered in logs "
           "and terminate", NULL },
 
@@ -716,6 +732,10 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
           TRC_UPDATE_OPT_FROM_FILE,
           "Specify a file with additional options", NULL },
 
+        { "logs-dump", '\0', POPT_ARG_STRING, NULL,
+          TRC_UPDATE_OPT_LOGS_DUMP,
+          "Specify a file with logs dump", NULL },
+
         { "version", '\0', POPT_ARG_NONE, NULL, TRC_UPDATE_OPT_VERSION, 
           "Display version information.", NULL },
 
@@ -731,7 +751,7 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
         switch (opt)
         {
             case TRC_UPDATE_OPT_PE:
-                ctx.flags &= ~TRC_LOG_PARSE_NO_PE;
+                ctx.flags &= ~TRC_UPDATE_NO_PE;
                 break;
 
             case TRC_UPDATE_OPT_TEST_NAME:
@@ -757,10 +777,19 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
                 break;
 
             case TRC_UPDATE_OPT_LOG:
+
+                tqe_str = malloc(sizeof(tqe_string));
+                tqe_str->v = poptGetOptArg(optCon);
+
                 if (TAILQ_EMPTY(in_diff ? &ctx.diff_logs :
                                                 &ctx.tags_logs))
                 {
-                    tag_logs = add_new_tag_logs(strdup("UNSPEC"), in_diff);
+                    const char *def_tags = "UNSPEC";
+
+                    if (ctx.flags & TRC_UPDATE_TAGS_BY_LOGS)
+                        def_tags = tqe_str->v;
+
+                    tag_logs = add_new_tag_logs(strdup(def_tags), in_diff);
                     if (tag_logs == NULL)
                         goto exit;
                 }
@@ -768,9 +797,6 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
                     tag_logs = TAILQ_LAST(in_diff ?
                                             &ctx.diff_logs : &ctx.tags_logs,
                                           trc_update_tags_logs);
-
-                tqe_str = malloc(sizeof(tqe_string));
-                tqe_str->v = poptGetOptArg(optCon);
 
                 TAILQ_INSERT_TAIL(&tag_logs->logs, tqe_str, links);
 
@@ -780,12 +806,12 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
 
             case TRC_UPDATE_OPT_DIFF:
                 in_diff = TRUE;
-                ctx.flags |= TRC_LOG_PARSE_DIFF;
+                ctx.flags |= TRC_UPDATE_DIFF;
                 break;
 
             case TRC_UPDATE_OPT_DIFF_NO_TAGS:
                 in_diff = TRUE;
-                ctx.flags |= TRC_LOG_PARSE_DIFF_NO_TAGS;
+                ctx.flags |= TRC_UPDATE_DIFF_NO_TAGS;
                 break;
 
             case TRC_UPDATE_OPT_NO_GEN_FSS:
@@ -793,11 +819,11 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
                 break;
 
             case TRC_UPDATE_OPT_GEN_FSS:
-                ctx.flags &= ~TRC_LOG_PARSE_NO_GEN_FSS;
+                ctx.flags &= ~TRC_UPDATE_NO_GEN_FSS;
                 break;
 
             case TRC_UPDATE_OPT_FSS_UNLIM:
-                ctx.flags |= TRC_LOG_PARSE_FSS_UNLIM;
+                ctx.flags |= TRC_UPDATE_FSS_UNLIM;
                 break;
 
             case TRC_UPDATE_OPT_FAKE_LOG:
@@ -808,8 +834,8 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
                 ctx.fake_filt_log = poptGetOptArg(optCon);
                 break;
 
-            case TRC_UPDATE_OPT_PATHS:
-                ctx.flags |= TRC_LOG_PARSE_PATHS;
+            case TRC_UPDATE_OPT_PRINT_PATHS:
+                ctx.flags |= TRC_UPDATE_PRINT_PATHS;
                 break;
 
             case TRC_UPDATE_OPT_MATCHING_EXPR:
@@ -825,32 +851,36 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
                 break;
 
             case TRC_UPDATE_OPT_MATCH_LOGS:
-                ctx.flags |= TRC_LOG_PARSE_MATCH_LOGS;
+                ctx.flags |= TRC_UPDATE_MATCH_LOGS;
                 break;
 
             case TRC_UPDATE_OPT_TAGS_LIST:
                 s = poptGetOptArg(optCon);
-                tq_strings_free(&ctx.tags_list, free);
-                parse_tags_list(s, &ctx.tags_list);
+                tq_strings_free(&ctx.tags_gen_list, free);
+                parse_tags_list(s, &ctx.tags_gen_list);
                 free(s);
-                ctx.flags |= TRC_LOG_PARSE_GEN_TAGS;
+                ctx.flags |= TRC_UPDATE_GEN_TAGS;
                 break;
 
             case TRC_UPDATE_OPT_TAGS_LIST_FILE:
                 s = poptGetOptArg(optCon);
-                tq_strings_free(&ctx.tags_list, free);
-                get_tags_list_from_file(s, &ctx.tags_list);
+                tq_strings_free(&ctx.tags_gen_list, free);
+                get_tags_list_from_file(s, &ctx.tags_gen_list);
                 free(s);
-                ctx.flags |= TRC_LOG_PARSE_GEN_TAGS;
+                ctx.flags |= TRC_UPDATE_GEN_TAGS;
                 break;
 
             case TRC_UPDATE_OPT_TAGS_GATHER:
-                ctx.flags |= TRC_LOG_PARSE_TAGS_GATHER;
+                ctx.flags |= TRC_UPDATE_TAGS_GATHER;
                 ctx.tags_gather_to = poptGetOptArg(optCon);
                 break;
 
             case TRC_UPDATE_OPT_SIMPL_TAGS:
-                ctx.flags |= TRC_LOG_PARSE_SIMPL_TAGS;
+                ctx.flags |= TRC_UPDATE_SIMPL_TAGS;
+                break;
+
+            case TRC_UPDATE_OPT_TAGS_BY_LOGS:
+                ctx.flags |= TRC_UPDATE_TAGS_BY_LOGS;
                 break;
 
             case TRC_UPDATE_OPT_RULES:
@@ -863,34 +893,34 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
 
             case TRC_UPDATE_OPT_FILL_NEW:
                 s = poptGetOptArg(optCon);
-                ctx.flags &= ~(TRC_LOG_PARSE_COPY_CONFLS |
-                               TRC_LOG_PARSE_COPY_OLD |
-                               TRC_LOG_PARSE_COPY_BOTH |
-                               TRC_LOG_PARSE_COPY_OLD_FIRST);
+                ctx.flags &= ~(TRC_UPDATE_COPY_CONFLS |
+                               TRC_UPDATE_COPY_OLD |
+                               TRC_UPDATE_COPY_BOTH |
+                               TRC_UPDATE_COPY_OLD_FIRST);
 
                 if (strcmp(s, "o") == 0 || strcmp(s, "old") == 0)
-                    ctx.flags |= TRC_LOG_PARSE_COPY_OLD;
+                    ctx.flags |= TRC_UPDATE_COPY_OLD;
                 else if (strcmp(s, "c") == 0 ||
                          strcmp(s, "conflicts") == 0)
-                    ctx.flags |= TRC_LOG_PARSE_COPY_CONFLS;
+                    ctx.flags |= TRC_UPDATE_COPY_CONFLS;
                 else if (strcmp(s, "o/c") == 0 || strcmp(s, "o,c") == 0 ||
                          strcmp(s, "old/conflicts") == 0 ||
                          strcmp(s, "old,conflicts") == 0)
                 {
-                    ctx.flags |= TRC_LOG_PARSE_COPY_OLD |
-                                 TRC_LOG_PARSE_COPY_CONFLS |
-                                 TRC_LOG_PARSE_COPY_OLD_FIRST;
+                    ctx.flags |= TRC_UPDATE_COPY_OLD |
+                                 TRC_UPDATE_COPY_CONFLS |
+                                 TRC_UPDATE_COPY_OLD_FIRST;
                     if (strchr(s, ',') != 0)
-                        ctx.flags |= TRC_LOG_PARSE_COPY_BOTH;
+                        ctx.flags |= TRC_UPDATE_COPY_BOTH;
                 }
                 else if (strcmp(s, "c/o") == 0 || strcmp(s, "c,o") == 0 ||
                          strcmp(s, "conflicts/old") == 0 ||
                          strcmp(s, "conflicts,old") == 0)
                 {
-                    ctx.flags |= TRC_LOG_PARSE_COPY_OLD |
-                                 TRC_LOG_PARSE_COPY_CONFLS; 
+                    ctx.flags |= TRC_UPDATE_COPY_OLD |
+                                 TRC_UPDATE_COPY_CONFLS; 
                     if (strchr(s, ',') != 0)
-                        ctx.flags |= TRC_LOG_PARSE_COPY_BOTH;
+                        ctx.flags |= TRC_UPDATE_COPY_BOTH;
                 }
                 else if (s[0] != '\0')
                 {
@@ -904,71 +934,71 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
                 break;
 
             case TRC_UPDATE_OPT_RULES_ALL:
-                ctx.flags |= TRC_LOG_PARSE_RULES_ALL;
+                ctx.flags |= TRC_UPDATE_RULES_ALL;
                 break;
 
             case TRC_UPDATE_OPT_RRESULTS:
-                rtype_flags |= TRC_LOG_PARSE_RRESULTS;
+                rtype_flags |= TRC_UPDATE_RRESULTS;
                 break;
 
             case TRC_UPDATE_OPT_RRESULT:
-                rtype_flags |= TRC_LOG_PARSE_RRESULT;
+                rtype_flags |= TRC_UPDATE_RRESULT;
                 break;
 
             case TRC_UPDATE_OPT_RRENTRY:
-                rtype_flags |= TRC_LOG_PARSE_RRENTRY;
+                rtype_flags |= TRC_UPDATE_RRENTRY;
                 break;
 
             case TRC_UPDATE_OPT_RVERDICT:
-                rtype_flags |= TRC_LOG_PARSE_RVERDICT;
+                rtype_flags |= TRC_UPDATE_RVERDICT;
                 break;
 
             case TRC_UPDATE_OPT_RULE_ARGS:
-                ctx.flags |= TRC_LOG_PARSE_RULE_ARGS;
+                ctx.flags |= TRC_UPDATE_RULE_ARGS;
                 break;
 
             case TRC_UPDATE_OPT_RULES_CONFL:
-                ctx.flags |= TRC_LOG_PARSE_RULES_CONFL;
+                ctx.flags |= TRC_UPDATE_RULES_CONFL;
                 break;
 
             case TRC_UPDATE_OPT_CONFLS_ALL:
-                ctx.flags |= TRC_LOG_PARSE_CONFLS_ALL;
+                ctx.flags |= TRC_UPDATE_CONFLS_ALL;
                 break;
 
             case TRC_UPDATE_OPT_SELF_CONFL:
-                ctx.flags |= TRC_LOG_PARSE_SELF_CONFL;
+                ctx.flags |= TRC_UPDATE_SELF_CONFL;
                 break;
 
             case TRC_UPDATE_OPT_GEN_APPLY:
-                ctx.flags |= TRC_LOG_PARSE_GEN_APPLY;
+                ctx.flags |= TRC_UPDATE_GEN_APPLY;
                 break;
 
             case TRC_UPDATE_OPT_RULE_UPD_ONLY:
-                ctx.flags |= TRC_LOG_PARSE_RULE_UPD_ONLY;
+                ctx.flags |= TRC_UPDATE_RULE_UPD_ONLY;
                 break;
 
             case TRC_UPDATE_OPT_SKIPPED:
-                ctx.flags |= TRC_LOG_PARSE_SKIPPED;
+                ctx.flags |= TRC_UPDATE_SKIPPED;
                 break;
 
             case TRC_UPDATE_OPT_NO_SKIP_ONLY:
-                ctx.flags |= TRC_LOG_PARSE_NO_SKIP_ONLY;
+                ctx.flags |= TRC_UPDATE_NO_SKIP_ONLY;
                 break;
 
             case TRC_UPDATE_OPT_NO_EXP_ONLY:
-                ctx.flags |= TRC_LOG_PARSE_NO_EXP_ONLY;
+                ctx.flags |= TRC_UPDATE_NO_EXP_ONLY;
                 break;
 
             case TRC_UPDATE_OPT_NO_R_FAIL:
-                ctx.flags |= TRC_LOG_PARSE_NO_R_FAIL;
+                ctx.flags |= TRC_UPDATE_NO_R_FAIL;
                 break;
 
             case TRC_UPDATE_OPT_NO_INCOMPL:
-                ctx.flags |= TRC_LOG_PARSE_NO_INCOMPL;
+                ctx.flags |= TRC_UPDATE_NO_INCOMPL;
                 break;
 
             case TRC_UPDATE_OPT_NO_INT_ERR:
-                ctx.flags |= TRC_LOG_PARSE_NO_INT_ERR;
+                ctx.flags |= TRC_UPDATE_NO_INT_ERR;
                 break;
 
             case TRC_UPDATE_OPT_NO_USE_IDS:
@@ -980,24 +1010,24 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
                 break;
 
             case TRC_UPDATE_OPT_NO_WILDS:
-                ctx.flags |= TRC_LOG_PARSE_NO_GEN_WILDS;
+                ctx.flags |= TRC_UPDATE_NO_GEN_WILDS;
                 break;
 
             case TRC_UPDATE_OPT_EXT_WILDS:
-                ctx.flags |= TRC_LOG_PARSE_EXT_WILDS;
+                ctx.flags |= TRC_UPDATE_EXT_WILDS;
                 break;
 
             case TRC_UPDATE_OPT_LOG_WILDS:
-                ctx.flags |= TRC_LOG_PARSE_LOG_WILDS;
+                ctx.flags |= TRC_UPDATE_LOG_WILDS;
                 break;
 
             case TRC_UPDATE_OPT_LOG_WILDS_UNEXP:
-                ctx.flags |= TRC_LOG_PARSE_LOG_WILDS |
-                             TRC_LOG_PARSE_LOG_WILDS_UNEXP;
+                ctx.flags |= TRC_UPDATE_LOG_WILDS |
+                             TRC_UPDATE_LOG_WILDS_UNEXP;
                 break;
 
             case TRC_UPDATE_OPT_TAGS_STR:
-                ctx.flags |= TRC_LOG_PARSE_TAGS_STR;
+                ctx.flags |= TRC_UPDATE_TAGS_STR;
                 break;
 
             case TRC_UPDATE_OPT_CMD:
@@ -1019,6 +1049,11 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
                     goto exit;
                 break;
 
+            case TRC_UPDATE_OPT_LOGS_DUMP:
+                ctx.logs_dump = poptGetOptArg(optCon);
+                log_specified = TRUE;
+                break;
+
             case TRC_UPDATE_OPT_VERSION:
                 printf("Test Environment: %s\n\n%s\n", PACKAGE_STRING,
                        TE_COPYRIGHT);
@@ -1034,16 +1069,16 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
     {
         if (!no_use_ids && (log_specified ||
             ((ctx.flags &
-              (TRC_LOG_PARSE_RULES_CONFL | TRC_LOG_PARSE_SELF_CONFL)) &&
-             !(ctx.flags & TRC_LOG_PARSE_GEN_APPLY) &&
+              (TRC_UPDATE_RULES_CONFL | TRC_UPDATE_SELF_CONFL)) &&
+             !(ctx.flags & TRC_UPDATE_GEN_APPLY) &&
              ctx.rules_save_to != NULL)))
-            ctx.flags |= TRC_LOG_PARSE_USE_RULE_IDS;
+            ctx.flags |= TRC_UPDATE_USE_RULE_IDS;
 
         if (!log_specified && ctx.rules_load_from == NULL)
-            ctx.flags |= TRC_LOG_PARSE_RULES_ALL;
+            ctx.flags |= TRC_UPDATE_RULES_ALL;
 
         if (rtype_flags != 0)
-            ctx.flags = (ctx.flags & ~TRC_LOG_PARSE_RTYPES) | rtype_flags;
+            ctx.flags = (ctx.flags & ~TRC_UPDATE_RTYPES) | rtype_flags;
     }
 
     if (opt != -1)
@@ -1605,9 +1640,9 @@ main(int argc, char **argv, char **envp)
     TAILQ_INIT(&args_registered);
     trc_update_init_ctx(&ctx);
 
-    ctx.flags |= TRC_LOG_PARSE_COPY_OLD | TRC_LOG_PARSE_COPY_OLD_FIRST |
-                 TRC_LOG_PARSE_RRESULTS | TRC_LOG_PARSE_NO_PE |
-                 TRC_LOG_PARSE_NO_GEN_FSS;
+    ctx.flags |= TRC_UPDATE_COPY_OLD | TRC_UPDATE_COPY_OLD_FIRST |
+                 TRC_UPDATE_RRESULTS | TRC_UPDATE_NO_PE |
+                 TRC_UPDATE_NO_GEN_FSS;
 
     if (trc_update_process_cmd_line_opts(argc, argv, TRUE) != EXIT_SUCCESS)
         goto exit;
@@ -1662,7 +1697,7 @@ main(int argc, char **argv, char **envp)
         goto exit;
     }
 
-    if (!(ctx.flags & TRC_LOG_PARSE_PATHS))
+    if (!(ctx.flags & TRC_UPDATE_PRINT_PATHS))
     {
         if (trc_save_to == NULL)
             trc_save_to = "tmp_trc_db.xml";
@@ -1673,7 +1708,7 @@ main(int argc, char **argv, char **envp)
                         TRC_SAVE_NO_VOID_XINCL |
                         (set_pos_attr ? TRC_SAVE_POS_ATTR : 0),
                         ctx.db_uid, &trc_update_is_to_save,
-                        (ctx.flags & TRC_LOG_PARSE_USE_RULE_IDS) ?
+                        (ctx.flags & TRC_UPDATE_USE_RULE_IDS) ?
                                 &trc_update_set_user_attr : NULL,
                         ctx.cmd) != 0)
         {

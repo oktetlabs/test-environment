@@ -249,6 +249,17 @@ trc_db_test_params_hash(unsigned int n_args, trc_report_argument *args)
     return hash_str;
 }
 
+/* See the description in trc_db.h */
+void
+trc_db_walker_go_to_test(te_trc_db_walker *walker, trc_test *test)
+{
+    walker->test = test;
+    walker->iter = test->parent;
+    walker->is_iter = FALSE;
+    walker->unknown = 0;
+    walker->motion = TRC_DB_WALKER_SON;
+}
+
 /* See the description in te_trc.h */
 te_bool
 trc_db_walker_step_test(te_trc_db_walker *walker, const char *test_name,
