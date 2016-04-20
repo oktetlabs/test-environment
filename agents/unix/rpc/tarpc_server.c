@@ -8108,10 +8108,12 @@ TARPC_FUNC(socket_to_file, {},
 int
 socket_to_file(tarpc_socket_to_file_in *in)
 {
-    iomux_funcs iomux_f;
-    api_func    write_func;
-    api_func    read_func;
-    iomux_func  iomux = get_default_iomux();
+    iomux_funcs  iomux_f;
+    api_func     write_func;
+    api_func     read_func;
+    api_func     close_func;
+    api_func_ptr open_func;
+    iomux_func   iomux = get_default_iomux();
 
     int      sock = in->sock;
     char    *path = in->path.path_val;
@@ -8140,14 +8142,17 @@ socket_to_file(tarpc_socket_to_file_in *in)
 
     if ((iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0) ||
         (tarpc_find_func(in->common.use_libc, "read", &read_func) != 0) ||
-        (tarpc_find_func(in->common.use_libc, "write", &write_func) != 0))
+        (tarpc_find_func(in->common.use_libc, "write", &write_func) != 0) ||
+        (tarpc_find_func(in->common.use_libc, "close", &close_func) != 0) ||
+        (tarpc_find_func(in->common.use_libc, "open",
+                         (api_func *)&open_func) != 0))
     {
         ERROR("Failed to resolve functions addresses");
         rc = -1;
         goto local_exit;
     }
 
-    file_d = open(path, O_CREAT | O_RDWR, S_IRWXU | S_IRWXG | S_IRWXO);
+    file_d = open_func(path, O_CREAT | O_RDWR, S_IRWXU | S_IRWXG | S_IRWXO);
     if (file_d < 0)
     {
         ERROR("%s(): open(%s, O_CREAT, S_IRWXU | S_IRWXG | S_IRWXO) "
@@ -8219,7 +8224,7 @@ socket_to_file(tarpc_socket_to_file_in *in)
 
                 total += received;
                 VERB("%s(): write retrieved data to file", __FUNCTION__);
-                written = write(file_d, buffer, received);
+                written = write_func(file_d, buffer, received);
                 VERB("%s(): %d bytes are written to file",
                      __FUNCTION__, written);
                 if (written < 0)
@@ -8286,7 +8291,7 @@ local_exit:
     INFO("%s(): %s", __FUNCTION__, (rc == 0) ? "OK" : "FAILED");
 
     if (file_d != -1)
-        close(file_d);
+        close_func(file_d);
 
     /* Clean up errno */
     if (rc == 0)
