@@ -241,6 +241,21 @@ rcf_pch_mem_ns_create_if_needed(
         (_ns_id), (_ns_str), __FUNCTION__, __LINE__)
 
 /**
+ * Wrapper for @b rcf_pch_mem_ns_create_if_needed() with details for error
+ * messages. The macro sets @b errno and calls @b return value @c _rc
+ * (may be unspecified for void return) in case of fail.
+ */
+#define RCF_PCH_MEM_NS_CREATE_IF_NEEDED_RETURN(_ns_id, _ns_str, _rc) \
+do {                                                                    \
+    if (rcf_pch_mem_ns_create_if_needed((_ns_id), (_ns_str),            \
+                                        __FUNCTION__, __LINE__) != 0)   \
+    {                                                                   \
+        errno = ENOENT;                                                 \
+        return _rc;                                                     \
+    }                                                                   \
+} while (0)
+
+/**
  * Performs @p _actions with a defined namespace
  *
  * @param [in] _ns_id       Variable name for namespace id
