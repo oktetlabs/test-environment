@@ -5917,6 +5917,7 @@ trc_update_process_logs(trc_update_ctx *gctx)
     FILE                       *tags_file = NULL;
     tqe_string                 *tqe_p = NULL;
 
+    memset(&ctx, 0, sizeof(ctx));
     trc_update_init_parse_ctx(&ctx, gctx);
 
     if (gctx->flags & TRC_UPDATE_TAGS_GATHER)
