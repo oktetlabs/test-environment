@@ -60,7 +60,7 @@ tapi_media_file_get_from_local(const tapi_local_file  *local_file,
         return TE_RC(TE_TAPI, TE_ENOMEM);
     }
     rc = tapi_local_fs_get_file_metadata(media->file.pathname, "title",
-                                         &media->metadata.title);
+                                         (char **)&media->metadata.title);
     if (rc == 0)
         *media_file = media;
     else
@@ -75,7 +75,7 @@ tapi_media_file_free(tapi_media_file *media_file)
     if (media_file != NULL)
     {
         /* Discard const specifier by explicit type casting. */
-        free((char *)media_file->file.pathname);
+        tapi_local_file_free_entry(&media_file->file);
         free((char *)media_file->metadata.title);
         free(media_file);
     }
