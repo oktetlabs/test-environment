@@ -66,3 +66,10 @@ tapi_local_file_cmp(const tapi_local_file *file1,
               strcmp(file1->pathname, file2->pathname) == 0) ||
              (file1->pathname == NULL && file2->pathname == NULL)));
 }
+
+/* See description in tapi_local_file.h. */
+void
+tapi_local_file_free_entry(tapi_local_file *file)
+{
+    free((char *)file->pathname);
+}

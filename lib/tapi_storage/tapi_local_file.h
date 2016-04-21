@@ -131,6 +131,25 @@ extern const char *tapi_local_file_get_name(const tapi_local_file *file);
 extern te_bool tapi_local_file_cmp(const tapi_local_file *file1,
                                    const tapi_local_file *file2);
 
+/**
+ * Free an entry of local file.
+ *
+ * @param file      File.
+ */
+extern void tapi_local_file_free_entry(tapi_local_file *file);
+
+/**
+ * Free a local file.
+ *
+ * @param file      File.
+ */
+static inline void
+tapi_local_file_free(tapi_local_file *file)
+{
+    tapi_local_file_free_entry(file);
+    free(file);
+}
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
