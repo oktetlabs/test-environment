@@ -16,7 +16,6 @@ in_header && /[[:space:]]*@author/ {
     author = $0;
     next;
 }
-in_header && /[[:space:]]\*[ \t\n]*$/ { next; }
 in_header && /\*\// { in_header = 0; header_finished = 1; next; }
 in_header { print; next; }
 
