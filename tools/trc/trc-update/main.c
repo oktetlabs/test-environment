@@ -1439,8 +1439,8 @@ perl_prepare()
  * @param filter_mode   Whether to use this function for filtering
  *                      out instead of matching?
  *
- * @return ITER_NO_MATCH if not matching, ITER_WILD_MATCH if
- *         matching.
+ * @return ITER_NO_MATCH if not matching, ITER_EXACT_MATCH or
+ *         ITER_WILD_MATCH if matching.
  */
 static int
 func_args_match(const void *iter_ptr,

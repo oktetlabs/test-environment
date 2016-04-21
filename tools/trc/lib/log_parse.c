@@ -1056,6 +1056,7 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                 }
 
                 if (test->type == TRC_TEST_SCRIPT &&
+                    (app_ctx->flags & TRC_UPDATE_FAKE_LOG) &&
                     !(app_ctx->flags & TRC_UPDATE_PRINT_PATHS))
                     func_ptr = app_ctx->func_args_match;
             }

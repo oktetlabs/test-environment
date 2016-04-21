@@ -5815,17 +5815,7 @@ trc_update_process_iter(trc_update_ctx *ctx,
     upd_iter_data->counter = ctx->cur_lnum;
 
     if ((ctx->flags & (TRC_UPDATE_MERGE_LOG | TRC_UPDATE_LOG_WILDS)))
-    {
-        /* Is this condition required? */
-        if (iter->parent->type != TRC_TEST_SCRIPT ||
-            ctx->func_args_match == NULL ||
-            ctx->func_args_match(iter, upd_iter_data->args_n,
-                                 upd_iter_data->args,
-                                 TRUE) != ITER_NO_MATCH)
-        {
-            return trc_update_merge_result(ctx, iter, &entry->result);
-        }
-    }
+        return trc_update_merge_result(ctx, iter, &entry->result);
 
     return rc;
 }
