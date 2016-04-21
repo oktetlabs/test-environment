@@ -46,6 +46,8 @@
 #include "conf_api.h"
 
 
+/* Format string for storage content in Configuration tree. */
+#define TE_CFG_STORAGE_CONTENT_DIR_FMT  "/local:/env:STORAGE_CONTENT_DIR"
 /* Format string for local file system entry in Configuration tree. */
 #define TE_CFG_LOCAL_FS_FMT   "/local:/fs:"
 /* Subid of directory item in Configurator tree. */
@@ -384,4 +386,40 @@ tapi_local_fs_get_file_metadata(const char  *pathname,
         ERROR("Failed to get metadata \"%s\": %s",
               metaname, te_rc_err2str(rc));
     return rc;
+}
+
+/* See description in tapi_local_fs.h. */
+char *
+tapi_local_fs_get_file_real_pathname(const tapi_local_file *file,
+                                     const char            *mapping_pfx)
+{
+    te_errno    rc = 0;
+    char       *content_dir = NULL;
+    char       *real_path;
+    const char *sep;
+
+    if (mapping_pfx == NULL)
+    {
+        /* Read STORAGE_CONTENT_DIR from the Configurator. */
+        rc = cfg_get_instance_fmt(NULL, &content_dir,
+                                  TE_CFG_STORAGE_CONTENT_DIR_FMT);
+        if (rc != 0)
+        {
+            ERROR("Failed to get value of " TE_CFG_STORAGE_CONTENT_DIR_FMT);
+            return NULL;
+        }
+        mapping_pfx = content_dir;
+    }
+    sep = (mapping_pfx[strlen(mapping_pfx) - 1] == '/' ||
+           file->pathname[0] == '/' ? "" : "/");
+    real_path = TE_ALLOC(strlen(mapping_pfx) + strlen(sep) +
+                         strlen(file->pathname) + 1);
+    if (real_path != NULL)
+    {
+        strcpy(real_path, mapping_pfx);
+        strcat(real_path, sep);
+        strcat(real_path, file->pathname);
+    }
+    free(content_dir);
+    return real_path;
 }

@@ -218,6 +218,23 @@ extern te_errno tapi_local_fs_get_file_metadata(const char  *pathname,
                                                 const char  *metaname,
                                                 char       **metadata);
 
+/**
+ * Get real pathname of local file i.e. pathname mapped on real file system.
+ * Returned value should be freed with @b free when it is no longer needed.
+ *
+ * @param file          Local file.
+ * @param mapping_pfx   Prefix for @p file->pathname to map it on real file
+ *                      system, i.e. it is real root directory for local
+ *                      file. If @c NULL then configurator parameter
+ *                      env:STORAGE_CONTENT_DIR value will be used instead
+ *                      of @p mapping_pfx.
+ *
+ * @return Real pathname, or @c NULL in case of error.
+ */
+extern char *tapi_local_fs_get_file_real_pathname(
+                                        const tapi_local_file *file,
+                                        const char            *mapping_pfx);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
