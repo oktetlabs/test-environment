@@ -672,7 +672,6 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
           NULL, TRC_UPDATE_OPT_FAKE_LOG,
           "Specify log file of fake Tester run in XML format", NULL },
 
-#if 0
         { "fake-filter-log", '\0',
           POPT_ARG_STRING | POPT_ARGFLAG_DOC_HIDDEN,
           NULL, TRC_UPDATE_OPT_FAKE_FILT_LOG,
@@ -680,6 +679,7 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
           "(to be used for filtering out some iterations)",
           NULL },
 
+#if 0
         { "diff", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_DIFF,
           "Consider all the results from the logs specified after "

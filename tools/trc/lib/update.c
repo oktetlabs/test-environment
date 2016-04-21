@@ -2076,6 +2076,9 @@ trc_update_merge_result(trc_update_ctx *ctx,
 
     upd_iter_data = trc_db_iter_get_user_data(iter, ctx->db_uid);
 
+    if (ctx->fake_filt_log != NULL && !upd_iter_data->filtered)
+        return 0;
+
     p = (trc_exp_result *) trc_db_iter_get_exp_result(iter, &ctx->tags);
     if (p != NULL)
         is_expected =
@@ -5765,6 +5768,7 @@ trc_update_process_iter(trc_update_ctx *ctx,
 
     if (upd_iter_data == NULL)
     {
+        assert(!(ctx->flags & TRC_UPDATE_FILT_LOG));
         to_save = TRUE;
 
         /* Attach iteration data to TRC database */
@@ -5805,19 +5809,22 @@ trc_update_process_iter(trc_update_ctx *ctx,
         entry->args_n = 0;
         entry->args_max = 0;
     }
+    else if (ctx->flags & TRC_UPDATE_FILT_LOG)
+        upd_iter_data->filtered = TRUE;
 
     upd_iter_data->counter = ctx->cur_lnum;
 
-    /* Is this condition required? */
-    if (iter->parent->type != TRC_TEST_SCRIPT ||
-        ctx->func_args_match == NULL ||
-        ctx->func_args_match(iter, upd_iter_data->args_n,
-                             upd_iter_data->args,
-                             TRUE) != ITER_NO_MATCH)
+    if ((ctx->flags & (TRC_UPDATE_MERGE_LOG | TRC_UPDATE_LOG_WILDS)))
     {
-        if ((ctx->flags & (TRC_UPDATE_MERGE_LOG | TRC_UPDATE_LOG_WILDS)) &&
-            !(ctx->flags & TRC_UPDATE_FAKE_LOG))
+        /* Is this condition required? */
+        if (iter->parent->type != TRC_TEST_SCRIPT ||
+            ctx->func_args_match == NULL ||
+            ctx->func_args_match(iter, upd_iter_data->args_n,
+                                 upd_iter_data->args,
+                                 TRUE) != ITER_NO_MATCH)
+        {
             return trc_update_merge_result(ctx, iter, &entry->result);
+        }
     }
 
     return rc;
@@ -5982,9 +5989,29 @@ trc_update_process_logs(trc_update_ctx *gctx)
         if (gctx->flags & TRC_UPDATE_TAGS_GATHER)
             CHECK_F_RC(trc_update_collect_tags(gctx));
 
-        if (gctx->flags & TRC_UPDATE_SKIPPED)
+        if ((gctx->flags & TRC_UPDATE_SKIPPED) &&
+            !(gctx->flags & TRC_UPDATE_FILT_LOG))
             trc_update_add_skipped(gctx);
-   
+
+        if (ctx.log == gctx->fake_log)
+        {
+            if (gctx->fake_filt_log != NULL)
+            {
+                /*
+                 * Parse fake filter log just after fake log
+                 * to mark some iterations as filtered.
+                 */
+                ctx.log = gctx->fake_filt_log;
+                trc_update_ctx_set_log_flags(gctx, TRC_UPDATE_FILT_LOG);
+                free(ctx.stack_info);
+                ctx.stack_info = NULL;
+                ctx.stack_pos = 0;
+                ctx.stack_size = 0;
+
+                continue;
+            }
+        }
+  
         trc_update_init_parse_ctx(&ctx, gctx);
 
         get_next_log(&tqe_str, &tl, gctx, &ctx);
