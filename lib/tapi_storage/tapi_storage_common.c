@@ -104,3 +104,12 @@ tapi_storage_auth_params_fini(tapi_storage_auth_params *auth_params)
     auth_params->user = NULL;
     auth_params->password = NULL;
 }
+
+/* See description in tapi_storage_common.h. */
+te_errno
+tapi_storage_auth_params_copy(tapi_storage_auth_params *to,
+                              const tapi_storage_auth_params *from)
+{
+    return tapi_storage_auth_params_init(from->server_addr, from->port,
+                                         from->user, from->password, to);
+}

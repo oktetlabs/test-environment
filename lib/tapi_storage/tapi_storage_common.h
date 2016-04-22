@@ -99,6 +99,21 @@ extern te_errno tapi_storage_auth_params_init(
 extern void tapi_storage_auth_params_fini(
                                 tapi_storage_auth_params *auth_params);
 
+/**
+ * Make a deep copy of authorization parameters. Actually this function
+ * performs initialization of @p to with @p from's parameters.
+ *
+ * @param to        Auth params to copy to.
+ * @param from      Auth params to copy from.
+ *
+ * @return Status code.
+ *
+ * @sa tapi_storage_auth_params_init
+ */
+extern te_errno tapi_storage_auth_params_copy(
+                                tapi_storage_auth_params *to,
+                                const tapi_storage_auth_params *from);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
