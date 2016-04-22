@@ -137,16 +137,13 @@ if CFG_UNIX_DAEMONS_VTUND
 libconf_a_SOURCES += daemons/vtund/conf_vtund.c
 endif
 
+endif
+
 if CFG_UNIX_AGGR
 libconf_a_SOURCES += base/conf_aggr.c 
 endif
 
-AM_CPPFLAGS += @EXTRA_CPPFLAGS@
-
-
 if ISCSI_TARGET_USE
 libconf_a_DEPENDENCIES = \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libiscsi_initiator_conf.a
-endif
-
 endif
