@@ -9,6 +9,7 @@ AC_CONFIG_AUX_DIR([../../auxdir])
 AC_CONFIG_MACRO_DIR([../../auxdir])
 
 AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
+TE_SETUP_AR
 
 dnl Checks for programs.
 AC_PROG_CC

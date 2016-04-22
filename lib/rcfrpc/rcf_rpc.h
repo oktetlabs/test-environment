@@ -5,7 +5,7 @@
  * and to set/get RPC server context parameters.
  *
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
+ * Copyright (C) 2003-2016 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
  *
  * This library is free software; you can redistribute it and/or
@@ -26,6 +26,7 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
+ * @author Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>
  *
  * $Id$
  */
@@ -48,6 +49,7 @@
 #include "logger_api.h"
 #include "rcf_common.h"
 #include "rcf_rpc_defs.h"
+#include "te_rpc_types.h"
 #include "conf_api.h"
 
 #include "tarpc.h"
@@ -147,6 +149,9 @@ typedef struct rcf_rpc_server {
                                      state of non-blocking RPC */
     te_bool         silent;     /**< Perform next RPC call without
                                      logging */
+
+    char          **namespaces;     /**< Namespaces array */
+    size_t          namespaces_len; /**< Amount of elements in @p namespaces */
 } rcf_rpc_server;
 
 
@@ -557,6 +562,25 @@ extern te_bool rcf_rpc_server_has_children(rcf_rpc_server *rpcs);
                           _name, rc);                                  \
         }                                                              \
     } while (0)
+
+/**
+ * Free namespace cache
+ *
+ * @param [in]  rpcs    RPC server
+ */
+extern void rcf_rpc_namespace_free_cache(rcf_rpc_server *rpcs);
+
+/**
+ * Convert namespace id to its name.
+ *
+ * @param [in]  rpcs    RPC server
+ * @param [in]  id      namespace id
+ * @param [out] str     namespace as string
+ *
+ * @return              Status code
+ */
+extern te_errno rcf_rpc_namespace_id2str(
+        rcf_rpc_server *rpcs, rpc_ptr_id_namespace id, char **str);
 
 /**@} <!-- END te_lib_rcfrpc --> */
 

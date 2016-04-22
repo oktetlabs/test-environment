@@ -369,14 +369,14 @@ typedef enum rpc_send_recv_flags {
     RPC_MSG_CONFIRM    = 0x1000, /**< Tell the link layer that forward
                                       progress happened */
     RPC_MSG_EOR        = 0x2000, /**< Terminates a record */
-    RPC_MSG_PARTIAL    = 0x8000, /**< Don't fail if the message is
+    RPC_MSG_PARTIAL    = 0x4000, /**< Don't fail if the message is
                                       trancated; indicates trancated message
                                       on output*/
-    RPC_MSG_WAITFORONE = 0x10000, /**< recvmmsg(): block until 1+ packets
-                                       avail */
-    RPC_MSG_WARM       = 0x20000, /**<  do 'fake' sends to keep the send 
-                                        path warm (onload specific) */
-    RPC_MSG_UNKNOWN    = 0x40000  /**< Incorrect flag */
+    RPC_MSG_WAITFORONE = 0x8000, /**< recvmmsg(): block until 1+ packets
+                                      avail */
+    RPC_MSG_WARM       = 0x10000, /**< Do 'fake' sends to keep the send
+                                       path warm (onload specific) */
+    RPC_MSG_UNKNOWN    = 0x20000  /**< Incorrect flag */
 } rpc_send_recv_flags;
 
 /** Bitmask of all possible receive flags  */

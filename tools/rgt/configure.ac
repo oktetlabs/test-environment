@@ -12,6 +12,7 @@ AC_CONFIG_AUX_DIR([../../auxdir])
 AC_CONFIG_MACRO_DIR([../../auxdir])
 
 AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
+TE_SETUP_AR
 
 # Checks for programs.
 AC_PROG_CC
@@ -206,6 +207,7 @@ AC_CONFIG_FILES([Makefile
                  rgt-dump/Makefile
                  rgt-xml-merge/Makefile
                  rgt-pdml2xml/Makefile
+                 rgt-log-bundle/Makefile
 ])
 #                 rgt-raw2xml/Makefile
 #                 rgt-raw2xml/include/Makefile

@@ -5,6 +5,7 @@ AC_CONFIG_SRCDIR([rcftest.c])
 AC_CONFIG_AUX_DIR([../../auxdir])
 
 AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
+TE_SETUP_AR
 
 AC_CANONICAL_HOST
 # Checks for programs.

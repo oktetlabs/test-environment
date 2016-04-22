@@ -1730,26 +1730,30 @@ rpc_create_child_process_socket(const char *method,
  * @return status code
  */
 int
-tapi_rpc_get_rw_ability(te_bool *answer, rcf_rpc_server *rpcs,
-                        int s, int timeout, char *type)
+rpc_get_rw_ability(te_bool *answer, rcf_rpc_server *rpcs,
+                   int s, int timeout, char *type)
 {
-    struct rpc_pollfd   fds[1];
-    int             rc = -1;
-    int             result = -1;
+    struct tarpc_get_rw_ability_in  in;
+    struct tarpc_get_rw_ability_out out;
+    int                             rc;
 
-    fds[0].fd = s;
-    if (type[0] == 'R')
-        fds[0].events = RPC_POLLIN;
-    else
-        fds[0].events = RPC_POLLOUT;
-    fds[0].revents = 0;
-        
-    rc = rpc_poll(rpcs, fds, 1, timeout);
+    in.sock = s;
+    in.timeout = timeout;
+    in.check_rd = (type[0] == 'R') ? TRUE : FALSE;
 
-    *answer = (rc == 1);
-    result = 0;
+    if ((timeout > 0) && (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT))
+    {
+        rpcs->timeout = TE_SEC2MS(TAPI_RPC_TIMEOUT_EXTRA_SEC) + timeout;
+    }
+    rcf_rpc_call(rpcs, "get_rw_ability", &in, &out);
 
-    return result;
+    *answer = (out.retval == 1);
+    rc = (out.retval > 0) ? 0 : out.retval;
+
+    CHECK_RETVAL_VAR(rpc_get_rw_ability, rc, (rc < 0), -1);
+    TAPI_RPC_LOG(rpcs, rpc_get_rw_ability, "%d %d %s", "%d", s, timeout,
+                 type, out.retval);
+    RETVAL_INT(rpc_find_func, rc);
 }
 
 

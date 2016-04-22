@@ -11,6 +11,7 @@ use English;
 use Time::HiRes qw( time gettimeofday tv_interval );
 use Storable qw/nstore retrieve dclone/;
 use POSIX;
+use HTML::Entities;
 
 umask 0027;
 
@@ -29,6 +30,7 @@ my $cached_logs_path;
 my $benchmarks = 0;
 my $with_err_only = 0;
 my $iters_with_err_only = 0;
+my $print_binary_report = 0;
 
 my $tester_logs_dir = "testdir";
 my $default_cache_path = "/home/izbitsky/cached_v5_tot/";
@@ -1001,6 +1003,10 @@ foreach my $arg (@ARGV)
         $tag_expr =~ s/&/ && /g;
         $tag_expr =~ s/\|/ || /g;
     }
+    elsif ($arg =~ m/^--binary-report$/)
+    {
+        $print_binary_report = 1;
+    }
     elsif ($arg =~ m/^--benchmarks$/)
     {
         $benchmarks = 1;
@@ -1474,273 +1480,376 @@ if (defined($update_cache_path) &&
     exit(0);
 }
 
-open FILE, ">", $night_results_fn or return -1;
-
-print FILE "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\">\n";
-print FILE "<html>\n";
-
-print FILE "<head>\n";
-print FILE "<meta http-equiv=\"content-type\" ".
-            "content=\"text/html; charset=utf-8\">\n";
-print FILE "<title>Results from night testing logs</title>";
-print FILE "<style type=\"text/css\">\n";
-print FILE ".test_name { font-weight: bold;}\n";
-
-print FILE <<EOT;
-    #TestLog {
-        position: absolute;
-        visibility: hidden;
-        font-size: small;
-        overflow: auto;
-        width: 75%;
-        height: 80%;
-        left: 120px;
-        top: 100px;
-        background-color: #ffffe0;
-        border: 1px solid #000000;
-        padding: 10px;
-    }
-    #close {
-        float: right;
-    }
-EOT
-
-print FILE "</style>\n";
-
-print FILE <<EOT;
-<script type="text/javascript">
-    function centerStats(obj,pos)
-    {
-        var scrolled_x, scrolled_y;
-        if (self.pageYOffset)
-        {
-            scrolled_x = self.pageXOffset;
-            scrolled_y = self.pageYOffset;
-        }
-        else if (document.documentElement &&
-                 document.documentElement.scrollTop)
-        {
-            scrolled_x = document.documentElement.scrollLeft;
-            scrolled_y = document.documentElement.scrollTop;
-        }
-        else if (document.body)
-        {
-            scrolled_x = document.body.scrollLeft;
-            scrolled_y = document.body.scrollTop;
-        }
-
-        var center_x, center_y;
-        if (self.innerHeight)
-        {
-            center_x = self.innerWidth;
-            center_y = self.innerHeight;
-        }
-        else if (document.documentElement &&
-                 document.documentElement.clientHeight)
-        {
-            center_x = document.documentElement.clientWidth;
-            center_y = document.documentElement.clientHeight;
-        }
-        else if (document.body)
-        {
-            center_x = document.body.clientWidth;
-            center_y = document.body.clientHeight;
-        }
-
-        if (pos == 'right')
-            var leftOffset = scrolled_x +
-                             (center_x - obj.offsetWidth) - 20;
-        else
-            var leftOffset = scrolled_x +
-                             (center_x - obj.offsetWidth) / 2;
-
-        var topOffset = scrolled_y +
-                        (center_y - obj.offsetHeight) / 2;
-
-        obj.style.top = topOffset + 'px';
-        obj.style.left = leftOffset + 'px';
-    }
-
-    function hideObject(obj_name)
-    {
-        var obj = document.getElementById(obj_name);
-        if (typeof obj == 'undefined')
-            alert('Failed to get object ' + obj_name);
-
-        obj.style.visibility = "hidden";
-        document.prev_tip = '';
-    }
-
-    function hidePopups()
-    {
-        hideObject('TestLog');
-    }
-
-    function doNothing(ev)
-    {
-        ev = ev ? ev : window.event;
-        ev.cancelBubble = true;
-        if (ev.stopPropagation)
-        {
-            ev.stopPropagation();
-        }
-    }
-
-    function showLog(name, url, event)
-    {
-        hidePopups();
-        var obj = document.getElementById('TestLog');
-        var innerHTML = '';
-        innerHTML += '<span id="close"> ' +
-                     '<a href="javascript:hidePopups();"' +
-                     'style="text-decoration: none">' +
-                     '<strong>[x]</strong></a></span>';
-        innerHTML += '<div align="center"><b>Test: ' + name + '</b></div>';
-        innerHTML += '<iframe name="Log" src="' + url + '" ' +
-                     'style="width:100%; height:96%"/>';
-        obj.innerHTML = innerHTML;
-        centerStats(obj, 'right');
-        obj.style.visibility = "visible";
-        if (event)
-            doNothing(event);
-        return false;
-    }
-</script>
-EOT
-
-print FILE "</head>\n";
-
-print FILE "<body>\n";
-
-print FILE <<EOT;
-    <div id="TestLog" onClick="doNothing(event);" onScroll="doNothing(event);">
-      <span id="close"><a href="javascript:hidePopups()" style="text-decoration: none"><strong>[x]</strong></a></span>
-      <p>Tests Log</p><br/>
-    </div>
-EOT
-
-print FILE "<table border=1 cellpadding=4 cellspacing=3 ".
-           "style=\"font-size:small;\">\n";
-foreach my $test (keys %{$night_results{"tests"}})
+sub print_html_report
 {
-    my $iter;
+    my $fh = $_[0];
 
-    print FILE "<tr>\n<td colspan=\"3\" class=\"test_name\">".
-               $test."</td>\n</tr>\n";
+    print $fh "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\">\n";
+    print $fh "<html>\n";
 
-    while ((undef, $iter) = each
-              %{$night_results{"tests"}->{$test}->{"iters"}})
-    {
-        if ($iters_with_err_only > 0)
+    print $fh "<head>\n";
+    print $fh "<meta http-equiv=\"content-type\" ".
+                "content=\"text/html; charset=utf-8\">\n";
+    print $fh "<title>Results from night testing logs</title>";
+    print $fh "<style type=\"text/css\">\n";
+    print $fh ".test_name { font-weight: bold;}\n";
+
+    print $fh <<EOT;
+        #TestLog {
+            position: absolute;
+            visibility: hidden;
+            font-size: small;
+            overflow: auto;
+            width: 75%;
+            height: 80%;
+            left: 120px;
+            top: 100px;
+            background-color: #ffffe0;
+            border: 1px solid #000000;
+            padding: 10px;
+        }
+        #close {
+            float: right;
+        }
+EOT
+
+    print $fh "</style>\n";
+
+    print $fh <<EOT;
+    <script type="text/javascript">
+        function centerStats(obj,pos)
         {
-            my $err_encountered = 0;
+            var scrolled_x, scrolled_y;
+            if (self.pageYOffset)
+            {
+                scrolled_x = self.pageXOffset;
+                scrolled_y = self.pageYOffset;
+            }
+            else if (document.documentElement &&
+                     document.documentElement.scrollTop)
+            {
+                scrolled_x = document.documentElement.scrollLeft;
+                scrolled_y = document.documentElement.scrollTop;
+            }
+            else if (document.body)
+            {
+                scrolled_x = document.body.scrollLeft;
+                scrolled_y = document.body.scrollTop;
+            }
 
+            var center_x, center_y;
+            if (self.innerHeight)
+            {
+                center_x = self.innerWidth;
+                center_y = self.innerHeight;
+            }
+            else if (document.documentElement &&
+                     document.documentElement.clientHeight)
+            {
+                center_x = document.documentElement.clientWidth;
+                center_y = document.documentElement.clientHeight;
+            }
+            else if (document.body)
+            {
+                center_x = document.body.clientWidth;
+                center_y = document.body.clientHeight;
+            }
+
+            if (pos == 'right')
+                var leftOffset = scrolled_x +
+                                 (center_x - obj.offsetWidth) - 20;
+            else
+                var leftOffset = scrolled_x +
+                                 (center_x - obj.offsetWidth) / 2;
+
+            var topOffset = scrolled_y +
+                            (center_y - obj.offsetHeight) / 2;
+
+            obj.style.top = topOffset + 'px';
+            obj.style.left = leftOffset + 'px';
+        }
+
+        function hideObject(obj_name)
+        {
+            var obj = document.getElementById(obj_name);
+            if (typeof obj == 'undefined')
+                alert('Failed to get object ' + obj_name);
+
+            obj.style.visibility = "hidden";
+            document.prev_tip = '';
+        }
+
+        function hidePopups()
+        {
+            hideObject('TestLog');
+        }
+
+        function doNothing(ev)
+        {
+            ev = ev ? ev : window.event;
+            ev.cancelBubble = true;
+            if (ev.stopPropagation)
+            {
+                ev.stopPropagation();
+            }
+        }
+
+        function showLog(name, url, event)
+        {
+            hidePopups();
+            var obj = document.getElementById('TestLog');
+            var innerHTML = '';
+            innerHTML += '<span id="close"> ' +
+                         '<a href="javascript:hidePopups();"' +
+                         'style="text-decoration: none">' +
+                         '<strong>[x]</strong></a></span>';
+            innerHTML += '<div align="center"><b>Test: ' + name + '</b></div>';
+            innerHTML += '<iframe name="Log" src="' + url + '" ' +
+                         'style="width:100%; height:96%"/>';
+            obj.innerHTML = innerHTML;
+            centerStats(obj, 'right');
+            obj.style.visibility = "visible";
+            if (event)
+                doNothing(event);
+            return false;
+        }
+    </script>
+EOT
+
+    print $fh "</head>\n";
+
+    print $fh "<body>\n";
+
+    print $fh <<EOT;
+        <div id="TestLog" onClick="doNothing(event);" onScroll="doNothing(event);">
+          <span id="close"><a href="javascript:hidePopups()" style="text-decoration: none"><strong>[x]</strong></a></span>
+          <p>Tests Log</p><br/>
+        </div>
+EOT
+
+    print $fh "<table border=1 cellpadding=4 cellspacing=3 ".
+               "style=\"font-size:small;\">\n";
+    foreach my $test (keys %{$night_results{"tests"}})
+    {
+        my $iter;
+
+        print $fh "<tr>\n<td colspan=\"3\" class=\"test_name\">".
+                   $test."</td>\n</tr>\n";
+
+        while ((undef, $iter) = each
+                  %{$night_results{"tests"}->{$test}->{"iters"}})
+        {
+            if ($iters_with_err_only > 0)
+            {
+                my $err_encountered = 0;
+
+                foreach my $result (@{$iter->{"results"}})
+                {
+                    if (defined($result->{"err"}) && length($result->{"err"}) > 0)
+                    {
+                        $err_encountered = 1;
+                        last;
+                    }
+                }
+
+                if ($err_encountered == 0)
+                {
+                    next;
+                }
+            }
+
+            print $fh "<tr>\n<td>".$test."</td>\n";
+
+            print $fh "<td>\n";
+            foreach my $param (sort(keys %{$iter->{"params"}}))
+            {
+                my $param_val = $iter->{"params"}->{$param};
+                my @val_strs = $param_val =~ m[.{1,100}]g;
+                print $fh $param."=".join("<br>", @val_strs)."<br>\n";
+            }
+            print $fh "\n<br>Hash: ";
+            if (defined($iter->{"hashes"}))
+            {
+                foreach my $hash (sort(keys %{$iter->{"hashes"}}))
+                {
+                    print $fh $hash."<br>\n";
+                }
+            }
+            print $fh "</td>\n";
+
+            print $fh "<td>\n";
+            print $fh "<table border=1 cellpadding=4 cellspacing=3 ".
+                       "style=\"font-size:small;\">\n";
             foreach my $result (@{$iter->{"results"}})
             {
+                my $err_present = 0;
+
                 if (defined($result->{"err"}) && length($result->{"err"}) > 0)
                 {
-                    $err_encountered = 1;
-                    last;
+                    $err_present = 1;
                 }
-            }
 
-            if ($err_encountered == 0)
-            {
-                next;
+                if ($err_present > 0 && $with_err_only == 0)
+                {
+                    print $fh "<tr style=\"background-color:#ffdfdf\">\n";
+                }
+                else
+                {
+                    print $fh "<tr>\n";
+                }
+                
+                print $fh "<td>\n";
+
+                if ($err_present > 0)
+                {
+                    print $fh "<b>Error:</b> ".$result->{"err"}."<br>\n";
+                }
+
+                print $fh $result->{"result"}."<br>\n";
+                if (scalar(@{$result->{"verdicts"}}) > 0)
+                {
+                    print $fh "<br>\n";
+                    foreach my $verdict (@{$result->{"verdicts"}})
+                    {
+                        print $fh $verdict."<br>\n";
+                    }
+                }
+                print $fh "</td>\n";
+
+                print $fh "<td>\n";
+                for (my $i = 0; $i < scalar(@{$result->{"logs"}}); $i++)
+                {
+                    print $fh "<a href=\"".$result->{"logs"}->[$i]->{"log"}."\" ".
+                               "onClick=\"showLog('$test', '".
+                               $result->{"logs"}->[$i]->{"log"}."', event); ".
+                               "return false;\" title=\"".
+                               $result->{"logs"}->[$i]->{"date"}.": ".
+                               fix_tags($result->{"logs"}->[$i]->{"tags"})."\"".
+                               ">[".($i + 1)."]</a>";
+                    if ($i < scalar(@{$result->{"logs"}}) - 1)
+                    {
+                        print $fh ", \n";
+                    }
+                }
+                print $fh "</td>\n";
+
+                print $fh "</tr>\n";
             }
+            print $fh "</table>\n";
+            print $fh "</td>\n";
+
+            print $fh "</tr>";
         }
+    }
+    print $fh "</table>\n";
 
-        print FILE "<tr>\n<td>".$test."</td>\n";
+    print $fh "<p>Command used to generate this report:".
+              join(" ", $0, @ARGV)."</p>\n";
 
-        print FILE "<td>\n";
-        foreach my $param (sort(keys %{$iter->{"params"}}))
+    print $fh "</body>\n";
+
+    print $fh "</html>\n";
+}
+
+sub print_binary_string
+{
+    my $fh = $_[0];
+    my $str = $_[1];
+    
+    # 32-bit length followed by ASCII string
+    print $fh pack("V/A*", decode_entities($str));
+}
+
+sub print_binary_tag
+{
+    my $fh = $_[0];
+    my $tag_id = $_[1];
+
+    print $fh pack("V", $tag_id);
+}
+
+sub print_binary_report
+{
+    my $fh = $_[0];
+
+    my $test_tag_id = 1;
+    my $iter_tag_id = 2;
+    my $params_tag_id = 3;
+    my $results_tag_id = 4;
+    my $err_tag_id = 5;
+    my $status_tag_id = 6;
+    my $verdicts_tag_id = 7;
+    my $logs_tag_id = 8;
+
+    binmode($fh);
+
+    foreach my $test (keys %{$night_results{"tests"}})
+    {
+        my $iter;
+
+        print_binary_tag($fh, $test_tag_id);
+        print_binary_string($fh, $test);
+        print $fh pack("V", 
+                       scalar(keys %{$night_results{"tests"}->
+                                            {$test}->{"iters"}}));
+
+        while ((undef, $iter) = each
+                  %{$night_results{"tests"}->{$test}->{"iters"}})
         {
-            my $param_val = $iter->{"params"}->{$param};
-            my @val_strs = $param_val =~ m[.{1,100}]g;
-            print FILE $param."=".join("<br>", @val_strs)."<br>\n";
-        }
-        print FILE "\n<br>Hash: ";
-        if (defined($iter->{"hashes"}))
-        {
-            foreach my $hash (sort(keys %{$iter->{"hashes"}}))
-            {
-                print FILE $hash."<br>\n";
-            }
-        }
-        print FILE "</td>\n";
+            print_binary_tag($fh, $iter_tag_id);
 
-        print FILE "<td>\n";
-        print FILE "<table border=1 cellpadding=4 cellspacing=3 ".
-                   "style=\"font-size:small;\">\n";
-        foreach my $result (@{$iter->{"results"}})
-        {
-            my $err_present = 0;
-
-            if (defined($result->{"err"}) && length($result->{"err"}) > 0)
+            print_binary_tag($fh, $params_tag_id);
+            print $fh pack("V", scalar(keys %{$iter->{"params"}}));
+            foreach my $param (sort(keys %{$iter->{"params"}}))
             {
-                $err_present = 1;
+                my $value = $iter->{"params"}->{$param};
+
+                print_binary_string($fh, $param);
+                print_binary_string($fh, $value);
             }
 
-            if ($err_present > 0 && $with_err_only == 0)
+            print_binary_tag($fh, $results_tag_id);
+            print $fh pack("V", scalar(@{$iter->{"results"}}));
+            foreach my $result (@{$iter->{"results"}})
             {
-                print FILE "<tr style=\"background-color:#ffdfdf\">\n";
-            }
-            else
-            {
-                print FILE "<tr>\n";
-            }
-            
-            print FILE "<td>\n";
+                if (defined($result->{"err"}) &&
+                    length($result->{"err"}) > 0)
+                {
+                    print_binary_tag($fh, $err_tag_id);
+                    print_binary_string($fh, $result->{"err"});
+                }
 
-            if ($err_present > 0)
-            {
-                print FILE "<b>Error:</b> ".$result->{"err"}."<br>\n";
-            }
+                print_binary_tag($fh, $status_tag_id);
+                print_binary_string($fh, $result->{"result"});
 
-            print FILE $result->{"result"}."<br>\n";
-            if (scalar(@{$result->{"verdicts"}}) > 0)
-            {
-                print FILE "<br>\n";
+                print_binary_tag($fh, $verdicts_tag_id);
+                print $fh pack("V", scalar(@{$result->{"verdicts"}}));
                 foreach my $verdict (@{$result->{"verdicts"}})
                 {
-                    print FILE $verdict."<br>\n";
+                    print_binary_string($fh, $verdict);
                 }
-            }
-            print FILE "</td>\n";
 
-            print FILE "<td>\n";
-            for (my $i = 0; $i < scalar(@{$result->{"logs"}}); $i++)
-            {
-                print FILE "<a href=\"".$result->{"logs"}->[$i]->{"log"}."\" ".
-                           "onClick=\"showLog('$test', '".
-                           $result->{"logs"}->[$i]->{"log"}."', event); ".
-                           "return false;\" title=\"".
-                           $result->{"logs"}->[$i]->{"date"}.": ".
-                           fix_tags($result->{"logs"}->[$i]->{"tags"})."\"".
-                           ">[".($i + 1)."]</a>";
-                if ($i < scalar(@{$result->{"logs"}}) - 1)
+                print_binary_tag($fh, $logs_tag_id);
+                print $fh pack("V", scalar(@{$result->{"logs"}}));
+                foreach my $log (@{$result->{"logs"}})
                 {
-                    print FILE ", \n";
+                    print_binary_string($fh, $log->{"log"});
+                    print_binary_string($fh, $log->{"date"});
+                    print_binary_string($fh, $log->{"tags"});
                 }
             }
-            print FILE "</td>\n";
 
-            print FILE "</tr>\n";
         }
-        print FILE "</table>\n";
-        print FILE "</td>\n";
-
-        print FILE "</tr>";
     }
 }
-print FILE "</table>\n";
 
-print FILE "<p>Command used to generate this report:".
-           join(" ", $0, @ARGV)."</p>\n";
-
-print FILE "</body>\n";
-
-print FILE "</html>\n";
-close FILE;
-
-
+open my $fh, ">", $night_results_fn or return -1;
+if ($print_binary_report > 0)
+{
+    print_binary_report($fh);
+}
+else
+{
+    print_html_report($fh);
+}
+close $fh;

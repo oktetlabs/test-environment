@@ -62,7 +62,7 @@ sub download_log
 
     if ($file_to_load =~ m/https:\/\//)
     {
-        return system("curl -s -u : --negotiate ".
+        return system("curl -s -u : --negotiate -L ".
                       $file_to_load." -f".
                       " -o ".$file_to_save);
     }
@@ -104,27 +104,36 @@ sub download_prepare_log
         }
         else
         {
-            $rc = download_log($file_to_load."log.xml.bz2",
+            $rc = download_log($file_to_load."log_gist.raw",
                                $tmp_files[$#tmp_files]);
-
             if ($rc != 0)
             {
-                print "Failed to fetch XML log. Downloading RAW log.\n";
-                $rc = download_log($file_to_load."log.raw.bz2",
+                $rc = download_log($file_to_load."log.xml.bz2",
                                    $tmp_files[$#tmp_files]);
 
                 if ($rc != 0)
                 {
-                    die "Failed to fetch RAW log";
+                    print "Failed to fetch XML log. Downloading RAW log.\n";
+                    $rc = download_log($file_to_load."log.raw.bz2",
+                                       $tmp_files[$#tmp_files]);
+
+                    if ($rc != 0)
+                    {
+                        die "Failed to fetch RAW log";
+                    }
+                    else
+                    {
+                        $initial_name = "log.raw.bz2";
+                    }
                 }
                 else
                 {
-                    $initial_name = "log.raw.bz2";
+                    $initial_name = "log.xml.bz2";
                 }
             }
             else
             {
-                $initial_name = "log.xml.bz2";
+                $initial_name = "log_gist.raw";
             }
         }
 
@@ -209,10 +218,6 @@ foreach (@ARGV)
        
         $rc = system("te-trc-update --help");
         exit ($rc >> 8);
-    }
-    elsif ($_ =~ m/^--tags-by-logs$/)
-    {
-        # do nothing
     }
     elsif ($_ =~ m/^--conf-tester=(.*)$/)
     {
@@ -302,6 +307,7 @@ foreach (@ARGV)
     {
         my $opt_str = $_;
         if ($opt_str =~ m/^--log-wilds$/ ||
+            $opt_str =~ m/^--log-wilds-unexp$/ ||
             $opt_str =~ m/^--print-paths$/)
         {
             $no_extract_paths = 1;

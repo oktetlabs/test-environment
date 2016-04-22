@@ -104,6 +104,8 @@ rcf_pch_rpc_server(const char *name)
         STOP("Failed to initialize RPC server");
 #endif
 
+    rcf_pch_mem_init();
+
     while (TRUE)
     {
         const char *reply = "OK";

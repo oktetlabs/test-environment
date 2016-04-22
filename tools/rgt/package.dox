@@ -71,8 +71,120 @@ details on the file format.
 If you click on a test on the left frame corresponding log will open on the
 right one.
 
-@b{Log Filter} button allows you to filter the logs on particular page. This
-may not work well in certain browsers.
+<b>Log Filter</b> button allows you to filter the logs on particular page.
+This may not work well in certain browsers.
+
+@section rgt_log_bundle Using raw log bundle
+
+Night testing can produce raw logs of large size (hundreds of megabytes or
+even gigabytes). Typically we want to view HTML log for just one iteration
+at a time, not for all the iterations simultaneously. However if we use
+log processing scheme described above, we have to process full raw log 
+and it can take significant amount of time for large file.
+
+To allow processing of just part of raw log related to selected test
+iteration, a method of splitting raw log into fragments and archiving
+(using @b pixz) these fragments into “raw log bundle” was introduced.
+With such raw log bundle, when we need to produce HTML log for a
+single test iteration, we can extract from the bundle only log
+fragments related to a given iteration, concatenate them into
+shortened raw log and process it with @prog{rgt-conv} and
+@prog{rgt-xml2html-multi}.
+
+RGT contains the following scripts to work with such raw log bundles:
+
+@b 1. @prog{rgt-log-bundle-create}
+
+@code
+rgt-log-bundle-create --raw-log=log.raw[.bz2] \
+    --bundle=raw_log_bundle.tpxz
+@endcode
+
+This creates raw log bundle @path{raw_log_bundle.tpxz} from specified raw log
+(possibly archived with bzip2).
+
+@b 2. @prog{rgt-log-bundle-get-original}
+
+@code
+rgt-log-bundle-get-original --bundle=raw_log_bundle.tpxz --output=log.raw
+@endcode
+
+This recovers original raw log used to create @path{raw_log_bundle.tpxz}
+with @prog{rgt-log-bundle-create}.
+
+@b 3. @prog{rgt-log-bundle-get-item}
+
+This script is used to obtain requested text or HTML logs from raw log
+bundle. 
+
+@prog{rgt-log-bundle-get-item} is expected to be used in "Error 404"
+web server handler so that when you select another node in log tree (or
+move to another page of big HTML log) it automatically calls
+@prog{rgt-log-bundle-get-item} to obtain requested file and redirects
+to it.
+
+The script can be used in following ways:
+
+@b 3.1.
+@code
+rgt-log-bundle-get-item --bundle=raw_log_bundle.tpxz \
+    --req-path=some_dir/log.txt
+@endcode
+
+This produces log in text format.
+
+@b 3.2.
+@code
+rgt-log-bundle-get-item --bundle=raw_log_bundle.tpxz \
+    --req-path=some_dir/html/
+@endcode
+
+This will produce index files for HTML logs (such as index.html, files
+containing information about HTML logs tree, etc).
+
+@b 3.3.
+@code
+rgt-log-bundle-get-item --bundle=raw_log_bundle.tpxz \
+    --req-path=some_dir/html/node_43.html
+@endcode
+
+This will produce not only index files but also HTML log for a test
+iteration with TIN=43 (node_43.html).
+
+@b 3.4.
+@code
+rgt-log-bundle-get-item --bundle=raw_log_bundle.tpxz \
+    --req-path=some_dir/html/node_1_0.html
+@endcode
+
+This will produce not only index files but also HTML log for a log node
+with depth = 1 and seq = 0 (node_1_0.html, root log node). We use
+addressing by depth/seq (depth in log nodes tree and sequential number
+in the list of children of node's parent) for log nodes which do not
+have TIN (such as packages and sessions).
+
+@b 3.5. If HTML log is big (i.e. raw log from which it is produced has size
+of more than about 1Mb), it is by default split into pages and only the
+first page is produced by (3.3) and (3.4). In this case next pages can
+be obtained by calling @prog{rgt-log-bundle-get-item} again with
+<b>--req-path=.../[node_name]_pN.html</b> (where N is page number > 1). For
+example,
+
+@code
+rgt-log-bundle-get-item --bundle=raw_log_bundle.tpxz \
+    --req-path=some_dir/html/node_43_p2.html
+@endcode
+
+Also it is possible to request full HTML log in the single file by running
+
+@code
+rgt-log-bundle-get-item --bundle=raw_log_bundle.tpxz \
+    --req-path=some_dir/html/node_43_all.html
+@endcode
+
+Also rgt-log-bundle-get-item has optional @b --shared-url and
+@b --docs-url arguments which are passed to rgt-xml2html-multi
+(see its documentation or help for their meaning).
 
 @}<!-- END rgt -->
 */

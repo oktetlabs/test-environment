@@ -1,0 +1,124 @@
+#!/bin/bash
+
+export TMPDIR="${TMPDIR:-/tmp}"
+
+raw_log_path="${PWD}/log.raw"
+bundle_path="${PWD}/raw_log_bundle.tpxz"
+
+usage()
+{
+cat <<EOF
+Usage: rgt-log-bundle-create [<options>]
+  --raw-log=PATH        Path to raw log
+  --bundle=PATH         Path to raw log bundle to be created
+
+EOF
+}
+
+while test -n "$1" ; do
+    opt="$1"
+    case "${opt}" in
+        --help      )   usage ; exit 0 ;;
+        --raw-log=* )   raw_log_path=$(readlink -f "${opt#--raw-log=}") ;;
+        --bundle=*  )   bundle_path=$(readlink -f "${opt#--bundle=}") ;;
+                   *)   echo "Unknown option: ${opt}" >&2;
+                        usage ;
+                        exit 1 ;;
+    esac
+
+    shift 1
+done
+
+bundle_tmpdir=$(mktemp -d "${TMPDIR}/raw_log_bundle_XXXXXX")
+if test $? -ne 0 ; then
+    echo "Failed to create temporary directory" >&2
+    exit 1
+fi
+
+cleanup()
+{
+    if test -n "${bundle_tmpdir}" ; then
+        rm -r "${bundle_tmpdir}"
+    fi
+}
+
+err_cleanup()
+{
+    echo "$1" >&2
+    if test -n "${bundle_path}" ; then
+        rm "${bundle_path}"
+    fi
+    cleanup
+    exit 1
+}
+
+if test \! \( -r "${raw_log_path}" \) ; then
+    err_cleanup "Raw log file '${raw_log_path}' cannot be read"
+fi
+
+if [[ "${raw_log_path}" =~ [.]bz2$ ]] ; then
+    echo "Extracting raw log..."
+    bunzip2 --keep "${raw_log_path}" -c >"${bundle_tmpdir}/raw_log"
+    if test $? -ne 0 ; then
+        err_cleanup "Failed to extract raw log file"
+    fi
+    raw_log_path="${bundle_tmpdir}/raw_log"
+fi
+
+echo "Indexing raw log..."
+rgt-conv --mode=index "${raw_log_path}" "${bundle_tmpdir}/log_idx"
+if test $? -ne 0 ; then
+    err_cleanup "Failed to index raw log file"
+fi
+
+echo "Sorting raw log index according to record time..."
+export LC_NUMERIC=POSIX
+sort -n "${bundle_tmpdir}/log_idx" >"${bundle_tmpdir}/sorted_log_idx"
+if test $? -ne 0 ; then
+    err_cleanup "Failed to sort raw log index"
+fi
+
+echo "Fragmenting raw log..."
+mkdir -p "${bundle_tmpdir}/fragments"
+if test $? -ne 0 ; then
+    err_cleanup "Failed to create subdir in ${bundle_tmpdir}"
+fi
+
+rgt-log-split --raw-log="${raw_log_path}" \
+    --log-index="${bundle_tmpdir}/sorted_log_idx" \
+    --output-dir="${bundle_tmpdir}/fragments/"
+if test $? -ne 0 ; then
+    err_cleanup "rgt-log-split failed"
+fi
+
+echo "Archiving fragmented raw log..."
+pushd "${bundle_tmpdir}/fragments/" >/dev/null
+if test $? -ne 0 ; then
+    err_cleanup "pushd to /fragments/ subdir failed"
+fi
+
+tar -Ite_pixz_wrapper -cf "${bundle_path}" *
+if test $? -ne 0 ; then
+    popd >/dev/null
+    err_cleanup "Failed to create raw log bundle"
+fi
+
+popd >/dev/null
+if test $? -ne 0 ; then
+    err_cleanup "popd failed"
+fi
+
+echo "Checking whether original log can be recovered..."
+rgt-log-bundle-get-original --bundle="${bundle_path}" \
+    --output="${bundle_tmpdir}/recovered_raw_log"
+if test $? -ne 0 ; then
+    err_cleanup "Failed to recover original raw log"
+fi
+
+diff "${raw_log_path}" "${bundle_tmpdir}/recovered_raw_log"
+if test $? -ne 0 ; then
+    err_cleanup "Recovered raw log differ from the original one"
+fi
+
+cleanup
+exit 0

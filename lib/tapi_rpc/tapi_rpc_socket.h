@@ -339,6 +339,7 @@ typedef struct rpc_msghdr {
                                              the array */
     rpc_msg_flags_mode msg_flags_mode;  /**< determine how to process
                                              field msg_flags */
+    rpc_send_recv_flags in_msg_flags;   /**< msg_flags value passed in */
 } rpc_msghdr;
 
 struct rpc_mmsghdr {
@@ -346,17 +347,18 @@ struct rpc_mmsghdr {
     unsigned int      msg_len;  /* Number of received bytes for header */
 };
 
-/** Generate a random value in range 0-RPC_MSG_UNKNOWN for @b msg_flags
+/** Generate a random value in range [0, RPC_MSG_UNKNOWN) for @b msg_flags
  * initialization. */
 static inline int
 tapi_send_recv_flags_rand(void)
 {
-    return rand_range(0, RPC_MSG_UNKNOWN);
+    return rand_range(0, RPC_MSG_UNKNOWN - 1);
 }
 
 /**
- * Enable/disable @b rpc_msghdr.msg_flags flags value initialization and 
- * check inside RPCs.
+ * Enable/disable @b rpc_msghdr.msg_flags flags value initialization and
+ * check inside RPCs. The function can be used in the test body to control
+ * behavior. It does not require any rollback actions.
  *
  * @note By default the flags value is initialized and checked in all RPCs
  * where @b rpc_msg is used.

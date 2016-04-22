@@ -51,12 +51,6 @@ enum e_error_msg_index {
     RLF_V1_RLM_UNKNOWN_LOGLEVEL  = 8,  /**< Unknown log level value */
 };
 
-/**
-  * This variable is used for trace incorrect raw log file. It contains 
-  * offset of the message is being processed from the start of RLF.
-  */
-static long cur_msg_offset;
-
 /** 
  * This variable contains error index that expresses possible error 
  * of the operation to be performed.
@@ -98,9 +92,10 @@ static struct debug_msg {
 #define PRINT_ERROR \
     do {                                                                  \
         fprintf(stderr, "Incorrect format of the log message started at " \
-                "%ld offset from the beginning\nof the raw log file:\n"   \
+                "%lld offset from the beginning\nof the raw log file:\n"  \
                 "%s\n",                                                   \
-                cur_msg_offset, dbg_msgs[cur_error_index].content);       \
+                (long long int)ctx->rawlog_fpos,                          \
+                dbg_msgs[cur_error_index].content);                       \
     } while (0)
 
 /** 
@@ -142,7 +137,7 @@ static struct debug_msg {
 /**
  * Extracts the next log message from a raw log file version 1.
  * The format of raw log file version 1 can be found in
- * OKT-HLD-0000095-TE_TS.
+ * OKTL-0000593.
  *
  * @param  msg        Storage for log message to be extracted.
  * @param  fd         File descriptor of the raw log file.
@@ -175,13 +170,13 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
 
     struct obstack *obstk;
 
-    /* 
+    /*
      * Get offset of the log message from the beginning of the RLF.
      * It is used in the case of an error occurs.
      */
-    cur_msg_offset = ftell(fd);
+    ctx->rawlog_fpos = ftello(fd);
 
-    /* 
+    /*
      * Read version of log message.
      * Just ignore (TODO: more useful processing below)
      */

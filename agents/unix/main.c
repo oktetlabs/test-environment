@@ -173,7 +173,7 @@ static struct sigaction sigaction_pipe;
 
 
 /** Length of pre-allocated list for dead children records. */
-#define TA_CHILDREN_DEAD_MAX 1024
+#define TA_CHILDREN_DEAD_MAX 128
 
 /** Head of the list with children statuses. */
 static ta_children_dead ta_children_dead_heap[TA_CHILDREN_DEAD_MAX];
@@ -1397,7 +1397,7 @@ ta_sigchld_handler(void)
             oldest = dead; /* Oldest entry is always the last */
             if ((pid == dead->pid) && dead->valid)
             {
-                RING("Removing obsoleted entry with the same pid = %d, "
+                WARN("Removing obsoleted entry with the same pid = %d, "
                      "status = 0x%x from the list of dead children.", 
                      dead->pid, dead->status);
                 SLIST_REMOVE(&ta_children_dead_list, dead,
@@ -1702,6 +1702,53 @@ ta_system(const char *cmd)
     return status;
 }
 
+te_errno
+ta_popen_r(const char *cmd, pid_t *cmd_pid, FILE **f)
+{
+    int   out_fd = -1;
+    int   status;
+    int   rc = 0;
+
+    *cmd_pid = te_shell_cmd(cmd, -1, NULL, &out_fd, NULL);
+    if (*cmd_pid < 0)
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    if ((*f = fdopen(out_fd, "r")) == NULL)
+    {
+        ERROR("Failed to obtain file pointer for shell command output");
+        rc = TE_OS_RC(TE_TA_UNIX, te_rc_os2te(errno));
+        close(out_fd);
+
+        ta_waitpid(*cmd_pid, &status, 0);
+        if (!WIFEXITED(status))
+        {
+            ERROR("%s(): '%s' was not terminated normally: %d",
+                  __FUNCTION__, cmd, status);
+            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        }
+    }
+
+    return rc;
+}
+
+te_errno
+ta_pclose_r(pid_t cmd_pid, FILE *f)
+{
+    int rc = 0;
+    int status;
+
+    if (fclose(f) < 0)
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+
+    ta_waitpid(cmd_pid, &status, 0);
+    if (!WIFEXITED(status))
+    {
+        ERROR("%s(): proccess with pid %d was not terminated normally: %d",
+              __FUNCTION__, cmd_pid, status);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+    return rc;
+}
+
 /* See description in unix_internal.h */
 int
 ta_kill_death(pid_t pid)
@@ -1871,7 +1918,11 @@ ta_bond_get_slaves(const char *ifname, char slvs[][IFNAMSIZ],
     char   path[64];
     char  *line = NULL;
     size_t len = 0;
-    char buf[256];
+    char   buf[256];
+    int    out_fd = -1;
+    pid_t  cmd_pid = -1;
+    int    rc = 0;
+    int    status;
 
     memset(path, 0, sizeof(path));
     memset(buf, 0, sizeof(path));
@@ -1887,7 +1938,20 @@ ta_bond_get_slaves(const char *ifname, char slvs[][IFNAMSIZ],
                "sudo /usr/bin/teamnl %s ports | "
                "sed s/[0-9]*:\\ */Slave\\ Interface:\\ / "
                "| sed 's/\\([0-9]\\):.*/\\1/'", ifname);
-        proc_bond = popen(buf, "r");
+        cmd_pid = te_shell_cmd(buf, -1, NULL, &out_fd, NULL);
+        if (cmd_pid < 0)
+        {
+            ERROR("%s(): getting list of teaming interfaces failed",
+                  __FUNCTION__);
+            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        }
+        if ((proc_bond = fdopen(out_fd, "r")) == NULL)
+        {
+            ERROR("Failed to obtain file pointer for shell "
+                  "command output");
+            rc = TE_OS_RC(TE_TA_UNIX, te_rc_os2te(errno));
+            goto cleanup;
+        }
     }
     if (proc_bond == NULL)
     {
@@ -1915,15 +1979,32 @@ ta_bond_get_slaves(const char *ifname, char slvs[][IFNAMSIZ],
         if (strlen(ifname) > IFNAMSIZ)
         {
             ERROR("%s(): interface name is too long", __FUNCTION__);
-            return TE_RC(TE_TA_UNIX, TE_ENAMETOOLONG);
+            rc = TE_RC(TE_TA_UNIX, TE_ENAMETOOLONG);
+            goto cleanup;
         }
         strcpy(slvs[i], ifname);
         i++;
     }
+
+cleanup:
     free(line);
-    *slaves_num = i;
     fclose(proc_bond);
-    return 0;
+    close(out_fd);
+
+    if (cmd_pid >= 0)
+    {
+        ta_waitpid(cmd_pid, &status, 0);
+        if (status != 0)
+        {
+            ERROR("%s(): Non-zero status of teamnl: %d",
+                  __FUNCTION__, status);
+            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        }
+    }
+
+    if (rc == 0)
+        *slaves_num = i;
+    return rc;
 }
 
 /**

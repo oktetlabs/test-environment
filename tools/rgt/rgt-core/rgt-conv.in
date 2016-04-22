@@ -56,12 +56,13 @@ prog_name=`basename $0`
 usage () {
     cat <<EOF
 Usage: $prog_name [OPTION...] [<Raw Log file> [<Output file>]]
-  Processes Raw Log file specified with -o option according to user filters 
+  Processes Raw Log file specified with -o option according to user filters
   passed with -c option. Result file is output in specified file or stdout.
 
   OPTIONS:
   -m MODE, --mode=MODE     Specify mode of RGT operation.
-                           It can be live or postponed (postponed by default).
+                           It can be live, postponed or index
+                           (postponed by default).
 
   --no-cntrl-msg           Process Tester control messages as ordinary.
 
@@ -83,6 +84,12 @@ EOF
   
   -o FILE, --output=FILE   Result file name. If it is not specified then the
                            result is output in stdout.
+
+  --no-queue-offload       Do not offload queues of messages to files
+                           (can result in more RAM consumption but faster
+                            speed of processing). Alternatively, you can set
+                           RGT_DISABLE_QUEUE_OFFLOADING environment variable
+                           to "yes" to achieve the same effect.
   
   -v, --version            Display version information.
   
@@ -92,13 +99,15 @@ EOF
 }
 
 #
-# Checks if operation mode is valid (should be one of "live" or "postponed")
+# Checks if operation mode is valid (should be one of "live", "postponed"
+# or "index")
 #
 check_op_mode () {
     if [ -z "$1" ] || \
-       ( [ "$1" != "live" ] && [ "$op_mode" != "postponed" ] ) ; then
+       ( [ "$1" != "live" ] && [ "$1" != "postponed" ] &&
+         [ "$1" != "index" ] ) ; then
         usage
-        echo "Specify mode of operation: live or postponed"
+        echo "Specify mode of operation: live, postponed or index"
         { (exit 1); exit 1; }
     fi
 }
@@ -127,29 +136,39 @@ version_info () {
 }
 
 #
+# Find a tmp directory, set TMP_DIR to its path
+#
+get_tmp_dir_path () {
+    TMP_DIR="${TE_TMP:-${TMPDIR}}"
+    if test x"${TMP_DIR}" = x -o ! -d "${TMP_DIR}" ; then
+        TMP_DIR=
+        for t in /tmp /var/tmp ${PWD}; do
+            if ! [ -d $t ] || ! [ -w $t ] ; then
+                continue;
+            fi
+            TMP_DIR=$t
+            break;
+        done
+    fi
+}
+
+#
 # Generates unique temp file name and creates it.
 # The name of the file is placed in variable with name given 
 # in the first argument.
 #
 get_tmp_file_name () {
-    # find a tmp directory
-    TMPDIR=""
-    for t in /tmp /var/tmp ${PWD}; do
-        if ! [ -d $t ] || ! [ -w $t ] ; then
-            continue;
-        fi
-        TMPDIR=$t
-        break;
-    done
+
+    get_tmp_dir_path
     
     # choose tmp file name
     tmp=""
     {
-        tmp=`(umask 077 && mktemp -q "$TMPDIR/$prog_name.XXXXXX") 2>/dev/null` &&
+        tmp=`(umask 077 && mktemp -q "$TMP_DIR/$prog_name.XXXXXX") 2>/dev/null` &&
         test -n "$tmp" && test -f "$tmp"
     } ||
     {
-        tmp="$TMPDIR/$prog_name.$$-$RANDOM"
+        tmp="$TMP_DIR/$prog_name.$$-$RANDOM"
         (umask 077 && touch $tmp)
     } ||
     {
@@ -227,6 +246,9 @@ do
         out_file=$2
         shift
         ;;
+    --no-queue-offload)
+        export RGT_DISABLE_QUEUE_OFFLOADING=yes
+        ;;
     --output*)
         if echo $1 | grep '=' >/dev/null ; then
             out_file=`echo $1 | sed 's/^--output=//'`
@@ -291,9 +313,34 @@ if [ -z "$out_file" ]; then
     out_file="&1"
 fi
 
-# Process raw log file with filter
-eval "$bindir/rgt-core -m $op_mode $extra_flags $rlf_file >$out_file"
-result=$?
+if test x"${RGT_DISABLE_QUEUE_OFFLOADING}" != x"yes" ; then
+    get_tmp_dir_path
+    tmpdir=$(mktemp -d "${TMP_DIR}/rgt_core_XXXXXX")
+    result=$?
+
+    sigint_cleanup()
+    {
+        rm -rf "${tmpdir}"
+        exit 1
+    }
+
+    if test $result -eq 0 ; then
+
+        trap sigint_cleanup SIGINT
+
+        # Process raw log file with filter
+        eval "$bindir/rgt-core -m $op_mode " \
+             "--tmpdir=\"${tmpdir}\" $extra_flags $rlf_file >$out_file"
+        result=$?
+
+        rm -rf "${tmpdir}"
+    fi
+else
+    # Process raw log file with filter
+    eval "$bindir/rgt-core -m $op_mode " \
+         "$extra_flags $rlf_file >$out_file"
+    result=$?
+fi
 
 test $result -eq 0 || rm -f $out_file
 

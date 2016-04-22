@@ -47,9 +47,10 @@
 #include "memory.h"
 #include "live_mode.h"
 #include "postponed_mode.h"
+#include "index_mode.h"
 
-/* 
- * Define PACKAGE, VERSION and TE_COPYRIGHT just for the case it's build 
+/*
+ * Define PACKAGE, VERSION and TE_COPYRIGHT just for the case it's build
  * with an ugly method.
  */
 #ifndef PACKAGE
@@ -147,8 +148,9 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
 #endif /* WITH_LOG_FILTER */
 
         { "mode", 'm', POPT_ARG_STRING, NULL, 'm',
-          "Mode of operation, can be " 
-          RGT_OP_MODE_LIVE_STR " or " RGT_OP_MODE_POSTPONED_STR ". "
+          "Mode of operation, can be "
+          RGT_OP_MODE_LIVE_STR ", " RGT_OP_MODE_POSTPONED_STR
+          " or " RGT_OP_MODE_INDEX_STR ". "
           "By default " RGT_OP_MODE_DEFAULT_STR " mode is used.", "MODE" },
 
         { "no-cntrl-msg", '\0', POPT_ARG_NONE, NULL, 'n',
@@ -158,6 +160,9 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
         { "incomplete-log", '\0', POPT_ARG_NONE, NULL, 'i',
           "Do not shout on truncated log report, but complete it "
           "automatically.", NULL },
+
+        { "tmpdir", 't', POPT_ARG_STRING, NULL, 't',
+          "Temporary directory for message queues offloading.", "PATH" },
 
         { NULL, 'V', POPT_ARG_NONE, NULL, 'V',
           "Verbose trace.", NULL },
@@ -189,24 +194,41 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
                 break;
 #endif /* WITH_LOG_FILTER */
 
+            case 't':
+                if ((ctx->tmp_dir = poptGetOptArg(optCon)) == NULL)
+                {
+                    usage(optCon, 1, "Specify temporary directory path",
+                          NULL);
+                }
+                break;
+
             case 'm':
                 if ((ctx->op_mode_str = poptGetOptArg(optCon)) == NULL ||
                     (strcmp(ctx->op_mode_str,
                             RGT_OP_MODE_LIVE_STR) != 0 &&
                      strcmp(ctx->op_mode_str,
-                            RGT_OP_MODE_POSTPONED_STR) != 0))
+                            RGT_OP_MODE_POSTPONED_STR) != 0 &&
+                     strcmp(ctx->op_mode_str,
+                            RGT_OP_MODE_INDEX_STR) != 0))
                 {
-                    usage(optCon, 1, "Specify mode of operation", 
-                          RGT_OP_MODE_LIVE_STR " or "
-                          RGT_OP_MODE_POSTPONED_STR);
+                    usage(optCon, 1, "Specify mode of operation",
+                          RGT_OP_MODE_LIVE_STR ", "
+                          RGT_OP_MODE_POSTPONED_STR " or "
+                          RGT_OP_MODE_INDEX_STR);
                 }
-                ctx->op_mode = 
-                    strcmp(ctx->op_mode_str, RGT_OP_MODE_LIVE_STR) == 0 ?
-                    RGT_OP_MODE_LIVE : RGT_OP_MODE_POSTPONED;
+
+                if (strcmp(ctx->op_mode_str, RGT_OP_MODE_LIVE_STR) == 0)
+                    ctx->op_mode = RGT_OP_MODE_LIVE;
+                else if (strcmp(ctx->op_mode_str,
+                                RGT_OP_MODE_POSTPONED_STR) == 0)
+                    ctx->op_mode = RGT_OP_MODE_POSTPONED;
+                else
+                    ctx->op_mode = RGT_OP_MODE_INDEX;
+
                 break;
-        
+
             case 'v':
-                printf("Package %s: rgt-core version %s\n%s\n", 
+                printf("Package %s: rgt-core version %s\n%s\n",
                        PACKAGE, VERSION, TE_COPYRIGHT);
                 poptFreeContext(optCon);
                 exit(0);
@@ -256,11 +278,12 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
         exit(1);
     }
 
-    if (ctx->op_mode == RGT_OP_MODE_POSTPONED)
+    if (ctx->op_mode == RGT_OP_MODE_POSTPONED ||
+        ctx->op_mode == RGT_OP_MODE_INDEX)
     {
-        fseek(ctx->rawlog_fd, 0L, SEEK_END);
-        ctx->rawlog_size = ftell(ctx->rawlog_fd);
-        fseek(ctx->rawlog_fd, 0L, SEEK_SET);
+        fseeko(ctx->rawlog_fd, 0LL, SEEK_END);
+        ctx->rawlog_size = ftello(ctx->rawlog_fd);
+        fseeko(ctx->rawlog_fd, 0LL, SEEK_SET);
     }
 
     ctx->out_fd = stdout;
@@ -297,6 +320,11 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
             postponed_mode_init(ctrl_msg_proc, &reg_msg_proc);
             break;
 
+        case RGT_OP_MODE_INDEX:
+            ctx->io_mode = RGT_IO_MODE_NBLK;
+            index_mode_init(ctrl_msg_proc, &reg_msg_proc);
+            break;
+
         default:
             assert(0);
     }
@@ -331,6 +359,8 @@ static void free_resources(int signo)
     {
         unlink(rgt_ctx.out_fname);
     }
+
+    free(rgt_ctx.tmp_dir);
 
     /* Exit 0 in the case of CTRL^C or normal completion */
     exit(!signo);
@@ -470,6 +500,7 @@ rgt_ctx_set_defaults(rgt_gen_ctx_t *ctx)
     ctx->proc_cntrl_msg = TRUE;
     ctx->proc_incomplete = FALSE;
     ctx->verb = FALSE;
+    ctx->tmp_dir = NULL;
 }
 
 /**
@@ -480,12 +511,12 @@ rgt_ctx_set_defaults(rgt_gen_ctx_t *ctx)
 static void
 rgt_update_progress_bar(rgt_gen_ctx_t *ctx)
 {
-    long offset;
+    off_t offset;
 
     if (ctx->op_mode != RGT_OP_MODE_POSTPONED || !ctx->verb)
         return;
 
-    offset = ftell(ctx->rawlog_fd);
+    offset = ftello(ctx->rawlog_fd);
     fprintf(stderr, "\r%ld%%",
             (long)(((long long)offset * 100L) / ctx->rawlog_size));
 }

@@ -150,9 +150,50 @@ tapi_cfg_if_rp_filter_set(rcf_rpc_server *rpcs, const char *ifname,
     return rc;
 }
 
+/* See description in tapi_proc.h */
+te_errno
+tapi_cfg_if_all_rp_filter_get(rcf_rpc_server *rpcs, int *rp_filter)
+{
+    cfg_val_type  val_type = CVT_INTEGER;
+    te_errno      rc;
+
+    rc = cfg_get_instance_fmt(&val_type, rp_filter,
+                              "/agent:%s/rp_filter_all:",
+                              rpcs->ta);
+    if (rc != 0)
+        ERROR("Failed to get rp_filter value for interface 'all'");
+    return rc;
+}
+
+/* See description in tapi_proc.h */
+te_errno
+tapi_cfg_if_all_rp_filter_set(rcf_rpc_server *rpcs,
+                           int rp_filter, int *old_value)
+{
+    te_errno rc;
+
+    if (old_value != NULL)
+    {
+        rc = tapi_cfg_if_all_rp_filter_get(rpcs, old_value);
+        if (rc != 0)
+        {
+            ERROR("Failed to get old rp_filter value for interface 'all'");
+            return rc;
+        }
+    }
+
+    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, rp_filter),
+                              "/agent:%s/rp_filter_all:",
+                              rpcs->ta);
+    if (rc != 0)
+        ERROR("Failed to set rp_filter value for interface 'all'");
+
+    return rc;
+}
+
 /**
  * Macros to define similar functions to get and set system values in /proc
- * 
+ *
  * @param _name     Field name to be used in functions name.
  * @param _path     Path in configurator tree, it should include '%s'
  *                  modifier for agent name.

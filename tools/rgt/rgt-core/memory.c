@@ -5,13 +5,13 @@
 #include "memory.h"
 
 /** 
- * Pointer to an abstack that is used for allocation log_msg data
+ * Pointer to an obstack that is used for allocation of log_msg data
  * structure.
  */
 static struct obstack *log_msg_obstk = NULL;
 
 /**
- * Pointer to an abstack that is used for allocation node_info data
+ * Pointer to an obstack that is used for allocation of node_info data
  * structure.
  */
 static struct obstack *node_info_obstk = NULL;
@@ -145,4 +145,27 @@ void *
 node_info_obstack_copy0(const void *address, int size)
 {
     return obstack_copy0(node_info_obstk, address, size);
+}
+
+/* See the description in memory.h */
+log_msg_ptr *
+alloc_log_msg_ptr(void)
+{
+    log_msg_ptr *msg_ptr;
+
+    msg_ptr = (log_msg_ptr *)calloc(1, sizeof(log_msg_ptr));
+    if (msg_ptr == NULL)
+    {
+        fprintf(stderr, "%s\n", "Out of memory");
+        THROW_EXCEPTION;
+    }
+
+    return msg_ptr;
+}
+
+/* See the description in memory.h */
+void
+free_log_msg_ptr(log_msg_ptr *msg_ptr)
+{
+    free(msg_ptr);
 }

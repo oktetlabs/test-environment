@@ -121,6 +121,29 @@ extern te_errno tapi_cfg_if_rp_filter_set(rcf_rpc_server *rpcs,
                                           int rp_filter, int *old_value);
 
 /**
+ * Get RPF filtering value of TA interface @c "all".
+ *
+ * @param rpcs      RPC server
+ * @param rp_filter location for RPF filtering value
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_if_all_rp_filter_get(rcf_rpc_server *rpcs,
+                                              int *rp_filter);
+
+/**
+ * Set RPF filtering value of TA interface @c "all".
+ *
+ * @param rpcs      RPC server
+ * @param rp_filter New RPF filtering value
+ * @param old_value Location for previous RPF filtering value or @c NULL
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_if_all_rp_filter_set(
+        rcf_rpc_server *rpcs, int rp_filter, int *old_value);
+
+/**
  * Set a new tcp_keepalive_time value.
  *
  * @param rpcs      RPC server

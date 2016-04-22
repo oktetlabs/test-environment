@@ -31,6 +31,7 @@ AC_INIT([test_environment],[0.9],[Elena.Vengerova@oktetlabs.ru])
 AC_CONFIG_AUX_DIR([auxdir])
 
 AM_INIT_AUTOMAKE([1.9.1 foreign -Wall dist-bzip2 tar-pax])
+TE_SETUP_AR
 
 AC_PROG_INSTALL
 

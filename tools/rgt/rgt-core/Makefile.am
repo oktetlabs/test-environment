@@ -41,6 +41,7 @@ rgt_core_SOURCES = filter.c filter.h \
                    memory.c memory.h \
                    live_mode.c live_mode.h \
                    postponed_mode.c postponed_mode.h \
+                   index_mode.c index_mode.h \
                    rgt_core.c rgt_common.h
 
 rgt_core_LDADD = @GLIB_LIBS@ -lpopt @TCL_LIB_SPEC@ -lm -ldl

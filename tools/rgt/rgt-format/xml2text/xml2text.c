@@ -58,7 +58,8 @@ struct poptOption rgt_options_table[] = {
     POPT_TABLEEND
 };
 
-void rgt_process_cmdline(poptContext con, int val) {
+void rgt_process_cmdline(rgt_gen_ctx_t *ctx, poptContext con, int val) {
+    UNUSED(ctx);
     UNUSED(con);
     UNUSED(val);
 }

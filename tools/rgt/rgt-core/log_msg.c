@@ -58,7 +58,7 @@ rgt_process_tester_control_message(log_msg *msg)
     int          node_id;
     int          parent_id;
     msg_arg     *arg;
-    node_info_t *node;
+    node_info_t *node = NULL;
     node_type_t  node_type;
     int          err_code = ESUCCESS;
     const char  *fmt_str = msg->fmt_str;
@@ -84,7 +84,7 @@ rgt_process_tester_control_message(log_msg *msg)
      * Determine type of message:
      * All control messages start from "%d %d " character sequence,
      * then message type is followed.
-     * For more information see OKT-HLD-0000095-TE_TS.
+     * For more information see OKTL-0000593.
      */
     if ((node_type = NT_TEST,
          strncmp(fmt_str, CNTR_MSG_TEST,
@@ -198,7 +198,8 @@ rgt_process_tester_control_message(log_msg *msg)
 
     free_log_msg(msg);
 
-    if (rgt_ctx.op_mode == RGT_OP_MODE_LIVE)
+    if (rgt_ctx.op_mode == RGT_OP_MODE_LIVE ||
+        rgt_ctx.op_mode == RGT_OP_MODE_INDEX)
         ctrl_msg_proc[evt_type][node->type](node, NULL);
 
     return ESUCCESS;
@@ -208,10 +209,11 @@ rgt_process_tester_control_message(log_msg *msg)
 void
 rgt_process_regular_message(log_msg *msg)
 {
-    if (rgt_ctx.op_mode == RGT_OP_MODE_LIVE)
+    if (rgt_ctx.op_mode == RGT_OP_MODE_LIVE ||
+        rgt_ctx.op_mode == RGT_OP_MODE_INDEX)
     {
-        /* 
-         * We should only check if there is at least one node 
+        /*
+         * We should only check if there is at least one node
          * message is linked with
          */
         if (flow_tree_filter_message(msg) == NFMODE_INCLUDE)
@@ -375,6 +377,9 @@ create_node_by_msg(log_msg *msg, node_type_t type,
         return NULL;
     }
     memset(node, 0, sizeof(*node));
+
+    node->parent_id = parent_id;
+    node->node_id = node_id;
 
     memcpy(node->start_ts, msg->timestamp, sizeof(node->start_ts));
     node->type = type;
@@ -905,4 +910,36 @@ rgt_expand_log_msg(log_msg *msg)
     *(msg->txt_msg + str_len + 1 - i) = '\0';
 
     return;
+}
+
+/* See description in the log_msg.h */
+log_msg_ptr *
+log_msg_ref(log_msg *msg)
+{
+    log_msg_ptr *ptr;
+
+    ptr = alloc_log_msg_ptr();
+
+    ptr->offset = rgt_ctx.rawlog_fpos;
+    ptr->timestamp[0] = msg->timestamp[0];
+    ptr->timestamp[1] = msg->timestamp[1];
+
+    return ptr;
+}
+
+/* See description in the log_msg.h */
+log_msg *
+log_msg_read(log_msg_ptr *msg_ptr)
+{
+    log_msg *msg = NULL;
+
+    fseeko(rgt_ctx.rawlog_fd, msg_ptr->offset, SEEK_SET);
+    if (rgt_ctx.fetch_log_msg(&msg, &rgt_ctx) == 0)
+    {
+        FMT_TRACE("Failed to reload log message from %lld",
+                  (long long int)msg_ptr->offset);
+        THROW_EXCEPTION;
+    }
+
+    return msg;
 }

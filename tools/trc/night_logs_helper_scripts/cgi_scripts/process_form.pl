@@ -135,6 +135,11 @@ if ($cgi->param('include_err_iters_only'))
     $command_str .= " --iters-with-err-only";
 }
 
+if ($cgi->param('binary_report'))
+{
+    $command_str .= " --binary-report";
+}
+
 (undef, $report_fn) = tempfile("/tmp/report-XXXX");
 
 if (defined($report_fn) && length($report_fn) > 0)

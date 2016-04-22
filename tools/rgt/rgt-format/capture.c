@@ -54,6 +54,13 @@ RGT_DEF_FUNC(proc_log_packet_start)
     else
         fd = (FILE *)(*((void **)(depth_ctx->user_data)));
 
+    /* 
+     * fd == NULL when we do not want to fill the file,
+     * so it should be simply ignored.
+     */
+    if (fd == NULL)
+        return;
+
     RGT_GET_TMPL_IDX(LOG_PACKET_START, "log_packet_start");
 
     packet_num++;
@@ -76,6 +83,13 @@ RGT_DEF_FUNC(proc_log_packet_proto_start)
         fd = (FILE *)(*((void **)(ctx->user_data)));
     else
         fd = (FILE *)(*((void **)(depth_ctx->user_data)));
+
+    /* 
+     * fd == NULL when we do not want to fill the file,
+     * so it should be simply ignored.
+     */
+    if (fd == NULL)
+        return;
 
     RGT_GET_TMPL_IDX(LOG_PACKET_PROTO_START, "log_packet_proto_start");
 
@@ -108,6 +122,13 @@ RGT_DEF_FUNC(proc_log_packet_field_start)
         fd = (FILE *)(*((void **)(ctx->user_data)));
     else
         fd = (FILE *)(*((void **)(depth_ctx->user_data)));
+
+    /* 
+     * fd == NULL when we do not want to fill the file,
+     * so it should be simply ignored.
+     */
+    if (fd == NULL)
+        return;
 
     RGT_GET_TMPL_IDX(LOG_PACKET_FIELD_START, "log_packet_field_start");
     RGT_GET_TMPL_IDX(LOG_PACKET_FIELD_DATA, "log_packet_field_data");

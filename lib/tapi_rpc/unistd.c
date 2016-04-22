@@ -768,7 +768,16 @@ rpc_fd_set_new(rcf_rpc_server *rpcs)
 
     rcf_rpc_call(rpcs, "fd_set_new", &in, &out);
 
-    TAPI_RPC_LOG(rpcs, fd_set_new, "", "0x%x", (unsigned)out.retval);
+    if (rpcs->op == RCF_RPC_WAIT)
+        TAPI_RPC_LOG(rpcs, fd_set_new, "", "0x%x", out.retval);
+    else
+    {
+        if (TAPI_RPC_NAMESPACE_CHECK(rpcs, out.retval, RPC_TYPE_NS_FD_SET))
+            RETVAL_RPC_PTR(fd_set_new, RPC_NULL);
+
+        TAPI_RPC_LOG(rpcs, fd_set_new, "", RPC_PTR_FMT,
+                     RPC_PTR_VAL(out.retval));
+    }
     RETVAL_RPC_PTR(fd_set_new, out.retval);
 }
 
@@ -788,11 +797,14 @@ rpc_fd_set_delete(rcf_rpc_server *rpcs, rpc_fd_set_p set)
         RETVAL_VOID(fd_set_delete);
     }
 
+    if (TAPI_RPC_NAMESPACE_CHECK(rpcs, set, RPC_TYPE_NS_FD_SET))
+        RETVAL_VOID(fd_set_delete);
     in.set = (tarpc_fd_set)set;
 
     rcf_rpc_call(rpcs, "fd_set_delete", &in, &out);
 
-    TAPI_RPC_LOG(rpcs, fd_set_delete, "0x%x", "", (unsigned)set);
+    TAPI_RPC_LOG(rpcs, fd_set_delete, RPC_PTR_FMT, "",
+                 RPC_PTR_VAL(set));
     RETVAL_VOID(fd_set_delete);
 }
 
@@ -811,11 +823,14 @@ rpc_do_fd_zero(rcf_rpc_server *rpcs, rpc_fd_set_p set)
         RETVAL_VOID(do_fd_zero);
     }
 
+    if (TAPI_RPC_NAMESPACE_CHECK(rpcs, set, RPC_TYPE_NS_FD_SET))
+        RETVAL_VOID(do_fd_zero);
     in.set = (tarpc_fd_set)set;
 
     rcf_rpc_call(rpcs, "do_fd_zero", &in, &out);
 
-    TAPI_RPC_LOG(rpcs, do_fd_zero, "0x%x", "", (unsigned)set);
+    TAPI_RPC_LOG(rpcs, do_fd_zero, RPC_PTR_FMT, "",
+                 RPC_PTR_VAL(set));
     RETVAL_VOID(do_fd_zero);
 }
 
@@ -834,12 +849,15 @@ rpc_do_fd_set(rcf_rpc_server *rpcs, int fd, rpc_fd_set_p set)
         RETVAL_VOID(do_fd_set);
     }
 
+    if (TAPI_RPC_NAMESPACE_CHECK(rpcs, set, RPC_TYPE_NS_FD_SET))
+        RETVAL_VOID(do_fd_set);
     in.set = (tarpc_fd_set)set;
     in.fd = fd;
 
     rcf_rpc_call(rpcs, "do_fd_set", &in, &out);
 
-    TAPI_RPC_LOG(rpcs, do_fd_set, "%d, 0x%x", "", fd, (unsigned)set);
+    TAPI_RPC_LOG(rpcs, do_fd_set, "%d, " RPC_PTR_FMT, "",
+                 fd, RPC_PTR_VAL(set));
     RETVAL_VOID(do_fd_set);
 }
 
@@ -858,12 +876,15 @@ rpc_do_fd_clr(rcf_rpc_server *rpcs, int fd, rpc_fd_set_p set)
         RETVAL_VOID(do_fd_clr);
     }
 
+    if (TAPI_RPC_NAMESPACE_CHECK(rpcs, set, RPC_TYPE_NS_FD_SET))
+        RETVAL_VOID(do_fd_clr);
     in.set = (tarpc_fd_set)set;
     in.fd = fd;
 
     rcf_rpc_call(rpcs, "do_fd_clr", &in, &out);
 
-    TAPI_RPC_LOG(rpcs, do_fd_clr, "%d, 0x%x", "", fd, (unsigned)set);
+    TAPI_RPC_LOG(rpcs, do_fd_clr, "%d, " RPC_PTR_FMT, "",
+                 fd, RPC_PTR_VAL(set));
     RETVAL_VOID(do_fd_clr);
 }
 
@@ -881,7 +902,8 @@ rpc_do_fd_isset(rcf_rpc_server *rpcs, int fd, rpc_fd_set_p set)
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(do_fd_isset, -1);
     }
-
+    if (TAPI_RPC_NAMESPACE_CHECK(rpcs, set, RPC_TYPE_NS_FD_SET))
+        RETVAL_INT(do_fd_isset, 0);
     in.set = (tarpc_fd_set)set;
     in.fd = fd;
 
@@ -889,8 +911,8 @@ rpc_do_fd_isset(rcf_rpc_server *rpcs, int fd, rpc_fd_set_p set)
 
     CHECK_RETVAL_VAR(do_fd_isset, out.retval,
                      (out.retval != 0 && out.retval != 1), -1);
-    TAPI_RPC_LOG(rpcs, do_fd_isset, "%d, 0x%x", "%d",
-                 fd, (unsigned)set, out.retval);
+    TAPI_RPC_LOG(rpcs, do_fd_isset, "%d, " RPC_PTR_FMT, "%d",
+                 fd, RPC_PTR_VAL(set), out.retval);
     RETVAL_INT(do_fd_isset, out.retval);
 }
 
@@ -914,6 +936,13 @@ rpc_select(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(select, -1);
     }
+
+    if (TAPI_RPC_NAMESPACE_CHECK(rpcs, readfds, RPC_TYPE_NS_FD_SET))
+        RETVAL_INT(select, -1);
+    if (TAPI_RPC_NAMESPACE_CHECK(rpcs, writefds, RPC_TYPE_NS_FD_SET))
+        RETVAL_INT(select, -1);
+    if (TAPI_RPC_NAMESPACE_CHECK(rpcs, exceptfds, RPC_TYPE_NS_FD_SET))
+        RETVAL_INT(select, -1);
 
     in.n = n;
     in.readfds = (tarpc_fd_set)readfds;
@@ -948,9 +977,10 @@ rpc_select(rcf_rpc_server *rpcs,
     }
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(select, out.retval);
-    TAPI_RPC_LOG(rpcs, select, "%d, 0x%x, 0x%x, 0x%x, %s (%s)", "%d",
-                 n, (unsigned)readfds, (unsigned)writefds,
-                 (unsigned)exceptfds, tarpc_timeval2str(timeout_in_ptr),
+    TAPI_RPC_LOG(rpcs, select, "%d, " RPC_PTR_FMT ", " RPC_PTR_FMT ", "
+                 RPC_PTR_FMT ", %s (%s)", "%d",
+                 n, RPC_PTR_VAL(readfds), RPC_PTR_VAL(writefds),
+                 RPC_PTR_VAL(exceptfds), tarpc_timeval2str(timeout_in_ptr),
                  tarpc_timeval2str(timeout), out.retval);
     RETVAL_INT(select, out.retval);
 }
@@ -972,6 +1002,13 @@ rpc_pselect(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(pselect, -1);
     }
+
+    if (TAPI_RPC_NAMESPACE_CHECK(rpcs, readfds, RPC_TYPE_NS_FD_SET))
+        RETVAL_INT(pselect, -1);
+    if (TAPI_RPC_NAMESPACE_CHECK(rpcs, writefds, RPC_TYPE_NS_FD_SET))
+        RETVAL_INT(pselect, -1);
+    if (TAPI_RPC_NAMESPACE_CHECK(rpcs, exceptfds, RPC_TYPE_NS_FD_SET))
+        RETVAL_INT(pselect, -1);
 
     in.n = n;
     in.readfds = (tarpc_fd_set)readfds;
@@ -1002,9 +1039,10 @@ rpc_pselect(rcf_rpc_server *rpcs,
     }
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(pselect, out.retval);
-    TAPI_RPC_LOG(rpcs, pselect, "%d, 0x%x, 0x%x, 0x%x, %s, 0x%x", "%d",
-                 n, (unsigned)readfds, (unsigned)writefds,
-                 (unsigned)exceptfds, tarpc_timespec2str(timeout),
+    TAPI_RPC_LOG(rpcs, pselect, "%d, " RPC_PTR_FMT ", " RPC_PTR_FMT ", "
+                 RPC_PTR_FMT ", %s, 0x%x", "%d",
+                 n, RPC_PTR_VAL(readfds), RPC_PTR_VAL(writefds),
+                 RPC_PTR_VAL(exceptfds), tarpc_timespec2str(timeout),
                  (unsigned)sigmask, out.retval);
     RETVAL_INT(pselect, out.retval);
 }

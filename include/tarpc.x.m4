@@ -1277,6 +1277,7 @@ struct tarpc_msghdr {
     struct tarpc_cmsghdr msg_control<>;  /**< Control info array */
     tarpc_size_t         msg_controllen; /**< Control data buffer length */
     tarpc_int            msg_flags;      /**< Flags on received message */
+    tarpc_int            in_msg_flags;   /**< Original msg_flags value */
 };
 
 struct tarpc_sendmsg_in {
@@ -4098,7 +4099,9 @@ enum iomux_func {
     FUNC_POLL = 3,
     FUNC_PPOLL = 4,
     FUNC_EPOLL = 5,
-    FUNC_EPOLL_PWAIT = 6
+    FUNC_EPOLL_PWAIT = 6,
+    /** Value 7 is reserved */
+    FUNC_DEFAULT_IOMUX = 8
 };
 
 
@@ -5216,6 +5219,31 @@ struct tarpc_execve_gen_in {
 
 typedef struct tarpc_int_retval_out tarpc_execve_gen_out;
 
+/* namespace_id2str() */
+struct tarpc_namespace_id2str_in {
+    struct tarpc_in_arg     common;
+    tarpc_ptr               id;
+};
+
+struct tarpc_namespace_id2str_out {
+    struct tarpc_out_arg    common;
+    char                    str<>;
+    tarpc_int               retval;
+};
+
+/* get_rw_ability() */
+struct tarpc_get_rw_ability_in {
+    struct tarpc_in_arg     common;
+    tarpc_int               sock;
+    tarpc_int               timeout;
+    tarpc_bool              check_rd;
+};
+
+struct tarpc_get_rw_ability_out {
+    struct tarpc_out_arg    common;
+    tarpc_int               retval;
+};
+
 /** UPnP Control Point. Create connection arguments. */
 typedef struct tarpc_void_in tarpc_upnp_cp_connect_in;
 typedef struct tarpc_int_retval_out tarpc_upnp_cp_connect_out;
@@ -5236,6 +5264,7 @@ struct tarpc_upnp_cp_action_out {
     uint8_t             buf<>;      /**< Buffer with response data */
     tarpc_int           retval;     /**< Status code */
 };
+
 
 program tarpc
 {
@@ -5573,6 +5602,10 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(socket_listen_close)
 
         RPC_DEF(vfork_pipe_exec)
+
+        RPC_DEF(namespace_id2str)
+
+        RPC_DEF(get_rw_ability)
 
         RPC_DEF(upnp_cp_connect)
         RPC_DEF(upnp_cp_disconnect)

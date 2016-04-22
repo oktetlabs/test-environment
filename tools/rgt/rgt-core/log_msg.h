@@ -151,6 +151,8 @@ typedef struct node_descr {
 typedef struct node_info {
     node_type_t     type;        /**< Node type */
     node_descr_t    descr;       /**< Description of the node */
+    int             parent_id;   /**< ID of parent node */
+    int             node_id;     /**< ID of this node */
     param          *params;      /**< List of parameters */
     uint32_t        start_ts[2]; /**< Timestamp of a "node start" event */
     uint32_t        end_ts[2];   /**< Timestamp of a "node end" event */
@@ -164,7 +166,8 @@ typedef struct node_info {
  * @param verdicts  The queue of verdicts for this node;
  *                  queue keeps pointers to "log_msg" structures.
  */
-typedef int (* f_process_ctrl_log_msg)(node_info_t *node, GQueue *verdicts);
+typedef int (* f_process_ctrl_log_msg)(node_info_t *node,
+                                       msg_queue *verdicts);
 
 /* Type of callback function used for processing regular messages */
 typedef int (* f_process_reg_log_msg)(log_msg *);
@@ -286,6 +289,25 @@ extern void free_log_msg(log_msg *msg);
  */
 extern void rgt_expand_log_msg(log_msg *msg);
 
+/**
+ * Create log_msg_ptr structure pointing to the last log message
+ * read from the raw log file.
+ *
+ * @param msg         Log message
+ *
+ * @return Pointer to log_msg_ptr structure
+ */
+extern log_msg_ptr *log_msg_ref(log_msg *msg);
+
+/**
+ * Allocate new log_msg structure and read its contents from raw
+ * log offset specified in a given log_msg_ptr.
+ *
+ * @param ptr        log_msg_ptr structure containing raw log offset
+ *
+ * @return Pointer to log_msg structure
+ */
+extern log_msg *log_msg_read(log_msg_ptr *ptr);
 
 #ifdef __cplusplus
 }

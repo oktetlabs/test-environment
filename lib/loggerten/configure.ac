@@ -12,6 +12,7 @@ AC_CONFIG_MACRO_DIR([../../auxdir])
 AC_C_INLINE
 
 AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
+TE_SETUP_AR
 
 # Checks for programs.
 AC_PROG_CC

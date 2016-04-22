@@ -4,7 +4,7 @@
  * Functions for convinient work with the files on the engine and TA.
  *
  *
- * Copyright (C) 2004 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2004-2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * This library is free software; you can redistribute it and/or
@@ -42,6 +42,10 @@
 #include "te_stdint.h"
 #include "rcf_common.h"
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * Generate unique basename for file.

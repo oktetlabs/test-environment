@@ -54,28 +54,33 @@ static char buf[256];
 static uint32_t
 slapd_exists(char *port)
 {
-    FILE *f = popen(PS_ALL_PID_ARGS " | grep 'slapd ' | grep -v grep", "r");
+    FILE *f;
     char  line[128];
     int   len = strlen(port);
+    pid_t cmd_pid;
+
+    if (ta_popen_r(PS_ALL_PID_ARGS " | grep 'slapd ' | grep -v grep",
+                   &cmd_pid, &f) < 0)
+        return 0;
 
     buf[0] = 0;
     while (fgets(line, sizeof(line), f) != NULL)
     {
         char *tmp = strstr(line, "ldap://0.0.0.0:");
-        
+
         if (tmp == NULL)
             continue;
-            
+
         tmp += strlen("ldap://0.0.0.0:");
 
         if (strncmp(tmp, port, len) == 0 && !isdigit(*(tmp + len)))
         {
-            pclose(f);
-            return atoi(line);
+            int rc = ta_pclose_r(cmd_pid, f);
+            return (rc < 0 ) ? 0 : atoi(line);
         }
     }
 
-    pclose(f);
+    ta_pclose_r(cmd_pid, f);
 
     return 0;
 }
@@ -191,36 +196,39 @@ ds_slapd_del(unsigned int gid, const char *oid, const char *port)
 static te_errno
 ds_slapd_list(unsigned int gid, const char *oid, char **list)
 {
-    FILE *f = popen(PS_ALL_ARGS " | grep 'slapd ' | grep -v grep", "r");
+    FILE *f;
     char  line[128];
     char *s = buf;
+    pid_t cmd_pid;
+    int   rc = 0;
 
     UNUSED(gid);
     UNUSED(oid);
 
-    /* Do not continue if popen fails */
-    if (f == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    if ((rc = ta_popen_r(PS_ALL_ARGS " | grep 'slapd ' | grep -v grep",
+                         &cmd_pid, &f)) < 0)
+        return rc;
 
     buf[0] = 0;
     while (fgets(line, sizeof(line), f) != NULL)
     {
         char *tmp = strstr(line, "slapd");
-        
+
         /* Skip wrong list entry */
         if ((tmp = strstr(tmp, ":")) != NULL)
             tmp += 2;
         else continue;
-        
+
         s += sprintf(s, "%u ", atoi(tmp));
-        
+
     }
-    
-    pclose(f);
+
+    if ((rc = ta_pclose_r(cmd_pid, f)) < 0)
+        return rc;
 
     if ((*list = strdup(buf)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    
+
     return 0;
 }
 

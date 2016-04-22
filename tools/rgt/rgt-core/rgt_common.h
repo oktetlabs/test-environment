@@ -69,6 +69,8 @@ extern "C" {
 
 #include <stdio.h>
 
+#include <glib.h>
+
 /* For byte order conversions */
 #ifdef HAVE_NETINET_IN_H
 # include <netinet/in.h>
@@ -158,6 +160,7 @@ extern jmp_buf rgt_mainjmp;
 typedef enum rgt_op_mode {
     RGT_OP_MODE_LIVE      = 0, /**< Live operation mode */
     RGT_OP_MODE_POSTPONED = 1, /**< Postponed operation mode */
+    RGT_OP_MODE_INDEX     = 2, /**< Index operation mode */
     RGT_OP_MODE_DEFAULT   = RGT_OP_MODE_POSTPONED /**< Default operation
                                                        mode */
 } rgt_op_mode_t;
@@ -165,6 +168,7 @@ typedef enum rgt_op_mode {
 /* Two modes of operation in string representation */
 #define RGT_OP_MODE_LIVE_STR      "live"
 #define RGT_OP_MODE_POSTPONED_STR "postponed"
+#define RGT_OP_MODE_INDEX_STR     "index"
 
 /* Define default mode of operation */
 #define RGT_OP_MODE_DEFAULT_STR RGT_OP_MODE_POSTPONED_STR
@@ -188,12 +192,17 @@ typedef int (* f_fetch_log_msg)(struct log_msg **msg,
 typedef struct rgt_gen_ctx {
     const char    *rawlog_fname; /**< Raw log file name */
     FILE          *rawlog_fd; /**< Raw log file pointer */
-    long           rawlog_size; /**< Size of Raw log file,
+    off_t          rawlog_size; /**< Size of Raw log file,
                                      has sense only in postponed mode */
+    off_t          rawlog_fpos; /**< Position in raw log file on
+                                     reading the current message */
     const char    *out_fname; /**< Output file name */
     FILE          *out_fd; /**< Output file pointer */
 
     const char    *fltr_fname; /**< TCL filter file name */
+
+    char          *tmp_dir; /**< Temporary directory used for offloading
+                                 of message pointers into files */
 
     rgt_op_mode_t  op_mode; /**< Rgt operation mode */
     const char    *op_mode_str; /**< Rgt operation mode in string 
@@ -293,7 +302,56 @@ typedef struct log_msg {
     char         *txt_msg;      /**< Processed fmt_str + args */
 } log_msg;
 
+/**
+ * Structure that is stored in the tree of log nodes instead of
+ * log_msg structure for each regular log message. It is used to
+ * reduce memory consumption: full log message is loaded to memory
+ * from file only when we need to process it, and memory is released
+ * as soon as we end with it.
+ */
+typedef struct log_msg_ptr {
+  off_t       offset;         /**< At which offset in raw log file
+                                   we can find message referenced
+                                   by this structure */
+  uint32_t    timestamp[2];   /**< Timestamp of referenced log
+                                   message */
+} log_msg_ptr;
 
+/**
+ * Structure storing a queue of regular log message pointers.
+ */
+typedef struct msg_queue {
+    GQueue   *queue;            /**< Queue of message pointers
+                                     stored in memory */
+    GList    *cache;            /**< A slot in queue after which
+                                     the next message pointer
+                                     could be added with high probability */
+
+    te_bool   offloaded;        /**< Whether some message pointers
+                                     are offloaded to a file */
+    uint32_t  offload_ts[2];    /**< Timestamp of the most recent
+                                     message pointer offloaded to
+                                     a file*/
+} msg_queue;
+
+/**
+ * Iterate over message pouinters queue, starting with entries offloaded
+ * to a file.
+ *
+ * @param q           Queue of message pointers
+ * @param cb          Callback to be called for each queue entry
+ * @param user_data   Pointer to be passed to callback
+ */
+extern void msg_queue_foreach(msg_queue *q, GFunc cb, void *user_data);
+
+/**
+ * Check whether message pointers queue is empty.
+ *
+ * @param q     Queue of message pointers
+ *
+ * @return TRUE if queue is empty, FALSE otherwise.
+ */
+extern te_bool msg_queue_is_empty(msg_queue *q);
 
 #ifdef __cplusplus
 }

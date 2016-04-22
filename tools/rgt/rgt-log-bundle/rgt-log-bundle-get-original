@@ -1,0 +1,74 @@
+#!/bin/bash
+
+export TMPDIR="${TMPDIR:-/tmp}"
+
+usage()
+{
+cat <<EOF
+Usage: rgt-log-bundle-get-original [<options>]
+  --bundle=PATH         Path to raw log bundle
+  --output=PATH         Where to save restored raw log
+
+EOF
+}
+
+raw_log_path=
+bundle_path=
+
+while test -n "$1" ; do
+    opt="$1"
+    case "${opt}" in
+        --help      )   usage ; exit 0 ;;
+        --output=*  )   raw_log_path="${opt#--output=}" ;;
+        --bundle=*  )   bundle_path="${opt#--bundle=}" ;;
+                   *)   echo "Unknown option: ${opt}" >&2;
+                        usage ;
+                        exit 1 ;;
+    esac
+
+    shift 1
+done
+
+bundle_tmpdir=$(mktemp -d "${TMPDIR}/raw_log_bundle_XXXXXX")
+if test $? -ne 0 ; then
+    echo "Failed to create temporary directory" >&2
+    exit 1
+fi
+
+cleanup()
+{
+    if test -n "${bundle_tmpdir}" ; then
+        rm -r "${bundle_tmpdir}"
+    fi
+}
+
+err_cleanup()
+{
+    echo "$1" >&2
+    if test -n "${raw_log_path}" ; then
+        rm "${raw_log_path}"
+    fi
+    cleanup
+    exit 1
+}
+
+if test \! \( -r "${bundle_path}" \) ; then
+    err_cleanup "Cannot read raw log bundle from ${bundle_path}"
+fi
+
+if test -z "${raw_log_path}" ; then
+    err_cleanup "Raw log path is not specified"
+fi
+
+pixz -x <"${bundle_path}" | tar x -C "${bundle_tmpdir}"
+if test $? -ne 0 ; then
+    err_cleanup "failed to unpack '${bundle_path}'"
+fi
+
+rgt-log-recover --split-log="${bundle_tmpdir}" --output="${raw_log_path}"
+if test $? -ne 0 ; then
+    err_cleanup "Failed to recover original raw log from '${bundle_path}'"
+fi
+
+cleanup
+exit 0
