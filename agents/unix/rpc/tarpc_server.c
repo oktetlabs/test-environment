@@ -7111,8 +7111,12 @@ flooder(tarpc_flooder_in *in)
             if (!time2run_expired && (events & POLLOUT))
             {
                 sent = send_func(fd, snd_buf, bulkszs, 0);
-                if ((sent < 0) && (errno != EINTR) &&
-                    (errno != EAGAIN) && (errno != EWOULDBLOCK))
+                if ((sent < 0) && (errno == EPERM))
+                    /* Don't stop on EPERM, but report it */
+                    ERROR("%s(): send(%d) failed: %d",
+                          __FUNCTION__, fd, errno);
+                else if ((sent < 0) && (errno != EINTR) &&
+                         (errno != EAGAIN) && (errno != EWOULDBLOCK))
                 {
                     ERROR("%s(): send(%d) failed: %d",
                           __FUNCTION__, fd, errno);
