@@ -15,6 +15,7 @@
 
 import os
 import sys
+import argparse
 import xml.etree.ElementTree as et
 
 
@@ -24,21 +25,23 @@ FILE_NAME = "cs.conf.local_fs"
 DEFAULT_SUBTREE = "/local/fs"
 
 
-if (len(sys.argv) < 2 or len(sys.argv) > 3):
-    print("""Example to use: {0} <path> [<cs_subtree_prefix>]
-Parameters:
- 1st - path to the files, will be used as content directory environment;
- 2nd - subtree prefix (optional, by default it is "local/fs").
-""".format(os.path.basename(sys.argv[0])))
-    exit()
+# Parse for command-line options and arguments
+parser = argparse.ArgumentParser()
+parser.add_argument("path",
+                    help = "path to the files, will be used as content"
+                           " directory environment")
+parser.add_argument("cfg_subtree",
+                    nargs='?',
+                    default = DEFAULT_SUBTREE,
+                    help = "configurator subtree prefix (optional, by default"
+                           " it is \"{0}\"".format(DEFAULT_SUBTREE))
+args = parser.parse_args()
 
-# 1st argument
-root_path = os.path.normpath(sys.argv[1])
-# 2nd argument
-if len(sys.argv) < 3:
-    subtree_pfx = os.path.normpath(DEFAULT_SUBTREE)
-else:
-    subtree_pfx = os.path.normpath(sys.argv[2])
+
+# Path to the files
+root_path = os.path.normpath(args.path)
+# Configurator subtree prefix
+subtree_pfx = os.path.normpath(args.cfg_subtree)
 # Make subtree instance prefix, i.e. transform local/fs to local:/fs:
 subtree_inst_pfx = '/' + ':/'.join(filter(None, subtree_pfx.split('/')))+':'
 
@@ -55,8 +58,8 @@ reg = et.SubElement(root, 'register')
 root.append(et.Comment("Instances of local fs files and directories"))
 add_inst = et.SubElement(root, 'add')
 
-root.append(et.Comment("Directory where the files are placed on real "
-                       "(physical) file system"))
+root.append(et.Comment("Directory where the files are placed on real"
+                       " (physical) file system"))
 add_dir = et.SubElement(root, 'add')
 
 
