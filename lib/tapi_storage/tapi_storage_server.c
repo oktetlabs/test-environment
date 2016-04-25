@@ -54,9 +54,8 @@ tapi_storage_server_init(tapi_storage_service_type          type,
     server->type = type;
     server->rpcs = rpcs;
     server->methods = methods;
-    server->auth = *auth;
     server->context = context;
-    return 0;
+    return tapi_storage_auth_params_copy(&server->auth, auth);
 }
 
 /* See description in tapi_storage_server.h. */
@@ -66,6 +65,6 @@ tapi_storage_server_fini(tapi_storage_server *server)
     server->type = TAPI_STORAGE_SERVICE_UNSPECIFIED;
     server->rpcs = NULL;
     server->methods = NULL;
-    memset(&server->auth, 0, sizeof(server->auth));
     server->context = NULL;
+    tapi_storage_auth_params_fini(&server->auth);
 }
