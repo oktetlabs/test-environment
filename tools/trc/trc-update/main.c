@@ -116,8 +116,6 @@ enum {
                                          script */
     TRC_UPDATE_OPT_MATCHING_OTH,    /**< Path to iteration matching
                                          program */
-    TRC_UPDATE_OPT_MATCH_LOGS,      /**< Match iterations from testing logs
-                                         (not from fake log as usual) */
     TRC_UPDATE_OPT_TRC_SAVE,        /**< Path to file where resulting TRC
                                          should be saved */
     TRC_UPDATE_OPT_TAGS_STR,        /**< Do not change string
@@ -163,10 +161,6 @@ enum {
     TRC_UPDATE_OPT_NO_INCOMPL,      /**< Do not consider INCOMPLETE results */
     TRC_UPDATE_OPT_NO_INT_ERR,      /**< Do not consider results with internal
                                          error */
-    TRC_UPDATE_OPT_SELF_CONFL,      /**< Get conflicting results
-                                         from expected results of
-                                         an iteration found with
-                                         help of matching function */
     TRC_UPDATE_OPT_TAGS_LIST,       /**< Specify list of tags to be
                                          used for automatical generation
                                          of tag expression for a log */
@@ -190,14 +184,6 @@ enum {
                                          logs */
     TRC_UPDATE_OPT_FROM_FILE,       /**< Load additional options from a
                                          file */
-    TRC_UPDATE_OPT_DIFF,            /**< Show results from the second group
-                                         of logs which were not presented
-                                         in the first group of logs */
-    TRC_UPDATE_OPT_DIFF_NO_TAGS,    /**< Show results from the second group
-                                         of logs which were not presented
-                                         in the first group of logs -
-                                         not taking into account tag
-                                         expressions */
     TRC_UPDATE_OPT_LOGS_DUMP,       /**< Path to file with logs dump
                                          (file in binary format containing
                                          information about tests results
@@ -267,14 +253,12 @@ static te_bool         set_pos_attr = TRUE;
  * Add new group of logs.
  *
  * @param tags_str  Tag expression
- * @param in_diff   Whether log is to be added to
- *                  the group of logs to be compared
  *
  * @return
  *      Pointer to structure describing group of logs or NULL
  */
 static trc_update_tag_logs *
-add_new_tag_logs(char *tags_str, te_bool in_diff)
+add_new_tag_logs(char *tags_str)
 {
     trc_update_tag_logs     *tag_logs;
 
@@ -297,10 +281,7 @@ add_new_tag_logs(char *tags_str, te_bool in_diff)
         return NULL;
     }
 
-    if (in_diff)
-        TAILQ_INSERT_TAIL(&ctx.diff_logs, tag_logs, links);
-    else
-        TAILQ_INSERT_TAIL(&ctx.tags_logs, tag_logs, links);
+    TAILQ_INSERT_TAIL(&ctx.tags_logs, tag_logs, links);
 
     return tag_logs;
 }
@@ -459,7 +440,6 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
     int             rc;
 
     static trc_update_tag_logs     *tag_logs;
-    static te_bool                  in_diff = FALSE;
     tqe_string                     *tqe_str;
 
     char           *s;
@@ -491,13 +471,6 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
           TRC_UPDATE_OPT_MATCHING_OTH,
           "Specify path to a program matching old iterations from TRC "
           "with new ones", NULL },
-
-#if 0
-        { "match-logs", '\0', POPT_ARG_NONE, NULL,
-          TRC_UPDATE_OPT_MATCH_LOGS,
-          "Use matching expression or script to filter iterations from "
-          "testing logs", NULL },
-#endif
 
         { "rules", 'r', POPT_ARG_STRING, NULL, TRC_UPDATE_OPT_RULES,
           "Specify updating rules file in XML format", NULL },
@@ -547,13 +520,6 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
         { "confls-all", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_CONFLS_ALL,
           "Treat all results from logs as unexpected ones", NULL },
-
-#if 0
-        { "self-confl", '\0', POPT_ARG_NONE, NULL,
-          TRC_UPDATE_OPT_SELF_CONFL,
-          "Get conflictiong results from expected results of an iteration "
-          "found with help of matching function", NULL },
-#endif
 
         { "no-exp-only", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_NO_EXP_ONLY,
@@ -679,21 +645,6 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
           "(to be used for filtering out some iterations)",
           NULL },
 
-#if 0
-        { "diff", '\0', POPT_ARG_NONE, NULL,
-          TRC_UPDATE_OPT_DIFF,
-          "Consider all the results from the logs specified after "
-          "this option which was not met in the logs specified "
-          "before this option", NULL },
-
-        { "diff-no-tags", '\0', POPT_ARG_NONE, NULL,
-          TRC_UPDATE_OPT_DIFF_NO_TAGS,
-          "Consider all the results from the logs specified after "
-          "this option which was not met in the logs specified "
-          "before this option - not taking into account tag expressions",
-          NULL },
-#endif
-
         { "no-gen-fss", '\0', POPT_ARG_NONE | POPT_ARGFLAG_DOC_HIDDEN, NULL,
           TRC_UPDATE_OPT_NO_GEN_FSS,
           "Obsolete",
@@ -770,8 +721,7 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
                 break;
 
             case TRC_UPDATE_OPT_TAGS:
-                tag_logs = add_new_tag_logs(poptGetOptArg(optCon),
-                                            in_diff);
+                tag_logs = add_new_tag_logs(poptGetOptArg(optCon));
                 if (tag_logs == NULL)
                     goto exit;
                 break;
@@ -781,37 +731,25 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
                 tqe_str = malloc(sizeof(tqe_string));
                 tqe_str->v = poptGetOptArg(optCon);
 
-                if (TAILQ_EMPTY(in_diff ? &ctx.diff_logs :
-                                                &ctx.tags_logs))
+                if (TAILQ_EMPTY(&ctx.tags_logs))
                 {
                     const char *def_tags = "UNSPEC";
 
                     if (ctx.flags & TRC_UPDATE_TAGS_BY_LOGS)
                         def_tags = tqe_str->v;
 
-                    tag_logs = add_new_tag_logs(strdup(def_tags), in_diff);
+                    tag_logs = add_new_tag_logs(strdup(def_tags));
                     if (tag_logs == NULL)
                         goto exit;
                 }
                 else
-                    tag_logs = TAILQ_LAST(in_diff ?
-                                            &ctx.diff_logs : &ctx.tags_logs,
+                    tag_logs = TAILQ_LAST(&ctx.tags_logs,
                                           trc_update_tags_logs);
 
                 TAILQ_INSERT_TAIL(&tag_logs->logs, tqe_str, links);
 
                 log_specified = TRUE;
 
-                break;
-
-            case TRC_UPDATE_OPT_DIFF:
-                in_diff = TRUE;
-                ctx.flags |= TRC_UPDATE_DIFF;
-                break;
-
-            case TRC_UPDATE_OPT_DIFF_NO_TAGS:
-                in_diff = TRUE;
-                ctx.flags |= TRC_UPDATE_DIFF_NO_TAGS;
                 break;
 
             case TRC_UPDATE_OPT_NO_GEN_FSS:
@@ -848,10 +786,6 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
 
             case TRC_UPDATE_OPT_MATCHING_OTH:
                 oth_prog = poptGetOptArg(optCon);
-                break;
-
-            case TRC_UPDATE_OPT_MATCH_LOGS:
-                ctx.flags |= TRC_UPDATE_MATCH_LOGS;
                 break;
 
             case TRC_UPDATE_OPT_TAGS_LIST:
@@ -965,10 +899,6 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
                 ctx.flags |= TRC_UPDATE_CONFLS_ALL;
                 break;
 
-            case TRC_UPDATE_OPT_SELF_CONFL:
-                ctx.flags |= TRC_UPDATE_SELF_CONFL;
-                break;
-
             case TRC_UPDATE_OPT_GEN_APPLY:
                 ctx.flags |= TRC_UPDATE_GEN_APPLY;
                 break;
@@ -1068,8 +998,7 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
     if (main_call)
     {
         if (!no_use_ids && (log_specified ||
-            ((ctx.flags &
-              (TRC_UPDATE_RULES_CONFL | TRC_UPDATE_SELF_CONFL)) &&
+            ((ctx.flags & TRC_UPDATE_RULES_CONFL) &&
              !(ctx.flags & TRC_UPDATE_GEN_APPLY) &&
              ctx.rules_save_to != NULL)))
             ctx.flags |= TRC_UPDATE_USE_RULE_IDS;
@@ -1094,7 +1023,6 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
     }
 
     trc_update_tags_logs_remove_empty(&ctx.tags_logs);
-    trc_update_tags_logs_remove_empty(&ctx.diff_logs);
 
     result = EXIT_SUCCESS;
 

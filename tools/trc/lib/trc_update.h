@@ -164,11 +164,6 @@ enum trc_update_log_parse_flags {
                                                  expected only results
                                                  if CONFLS_ALL is turned
                                                  on */
-    TRC_UPDATE_SELF_CONFL  = (1LLU << 26),  /**< Get conflicting results
-                                                 from expected results of
-                                                 an iteration found with
-                                                 help of matching
-                                                 function */
     TRC_UPDATE_GEN_TAGS    = (1LLU << 27),  /**< Generate tags for
                                                  logs */
     TRC_UPDATE_EXT_WILDS   = (1LLU << 28),  /**< Specify a value for
@@ -180,19 +175,6 @@ enum trc_update_log_parse_flags {
                                                  expressions in lists
                                                  of unexpected results
                                                  from logs */
-    TRC_UPDATE_DIFF        = (1LLU << 30),  /**< Show results from the
-                                                 second group of logs
-                                                 which were not
-                                                 presented in the first
-                                                 group of logs */
-    TRC_UPDATE_DIFF_NO_TAGS
-                           = (1LLU << 31),  /**< Show results from the
-                                                 second group of logs
-                                                 which were not
-                                                 presented in the first
-                                                 group of logs -
-                                                 not taking into account
-                                                 tag expressions */
     TRC_UPDATE_INTERSEC_WILDS
                            = (1LLU << 32),  /**< It's allowed for
                                                  iteration to have more
@@ -220,11 +202,6 @@ enum trc_update_log_parse_flags {
     TRC_UPDATE_NO_INT_ERR  = (1LLU << 37),  /**< Do not consider
                                                  results with
                                                  internal error */
-    TRC_UPDATE_MATCH_LOGS  = (1LLU << 38),  /**< Use user
-                                                 matching
-                                                 function to filter
-                                                 iterations from
-                                                 testing logs */
     TRC_UPDATE_FILT_LOG    = (1LLU << 39),  /**< Log to be used
                                                  for filtering out
                                                  iterations not
@@ -455,9 +432,6 @@ typedef struct trc_update_ctx {
                                                    logs */
     trc_update_tags_logs     tags_logs;       /**< Queue of logs grouped by
                                                    tag expressions */
-    trc_update_tags_logs     diff_logs;       /**< Another queue of logs to
-                                                   be compared with the
-                                                   first one */
     char                    *fake_log;        /**< Tester fake run XML log
                                                    path */
     char                    *fake_filt_log;   /**< Tester fake run XML log
