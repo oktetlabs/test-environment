@@ -149,10 +149,14 @@ print <<EOT;
           }
       }
     </script>
+    <style>
+      td { text-align: center; padding: 1px }
+      th { background-color:#DDDDDD; }
+    </style>
   </head>
   <body onload="setAutoReload()">
     <b>${last_session} ${cur_time}</b>
-    <table border="1">
+    <table>
       <tr><th>Session</th><th>Status</th><th>Statistics</th></tr>
 EOT
 
@@ -164,15 +168,15 @@ foreach my $log (@last_logs)
     my $total_iters = 0;
     my $exp_iters = 0;
     my $unexp_iters = 0;
-    my $color = "rgb(100,255,100)";
+    my $color = "#aaddaa";
     my $status = "OK";
+    my $link_path = "";
 
     $log =~ s/\s*$//;
 
     if (-r "${log}/trc-stats.txt")
     {
         my @trc_stats;
-        my $link_path = "";
 
         @trc_stats = `cat "${log}/trc-stats.txt"`;
 
@@ -211,31 +215,44 @@ foreach my $log (@last_logs)
 
     if (($status eq "OK" &&
          $unexp_iters > $total_iters * 0.2) ||
+        $status eq "RUNNING" ||
         $status eq "STOPPED")
     {
-        $color = "yellow";
+        $color = "#ddddaa";
     }
     
     if (($status eq "OK" && $unexp_iters > $total_iters * 0.8) ||
         ($status ne "OK" && $status ne "RUNNING" && $status ne "STOPPED") ||
          $log_txt =~ /Driver unload failure/)
     {
-        $color = "rgb(255, 100, 100)";
+        $color = "#f08080";
     }
 
     $log_name = $log;
     $log_name =~ s/^.*session_[^\/]*\///;
 
+    $link_path = $log;
+    $link_path =~ s/\/home\/tester-l5\/private_html\///;
+    $log_name = "<a href=\"https://oktetlabs.ru/~tester-l5/".
+                "$link_path\">".$log_name."</a>";
+
     print "<tr style=\"background-color:$color\"><td>${log_name}</td>".
           "<td>${log_txt}</td><td>${stat_txt}</td></tr>\n";
 }
 
-my $autoreload_checked = "";
+my $autoreload_checked = "checked";
 my $cgi = CGI->new;
 
-if ($cgi->param('autoreload_enabled'))
+if (defined($cgi->param('autoreload_enabled')))
 {
-    $autoreload_checked = "checked";
+    if ($cgi->param('autoreload_enabled'))
+    {
+        $autoreload_checked = "checked";
+    }
+    else
+    {
+        $autoreload_checked = "";
+    }
 }
 
 print <<EOT;
