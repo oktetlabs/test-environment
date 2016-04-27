@@ -134,6 +134,30 @@ xmlNodeNext(xmlNodePtr node)
     return xmlNodeSkipExtra(node->next);
 }
 
+/**
+ * Get the value of the attribute @b "cond"
+ *
+ * @param node      XML node
+ *
+ * @return @c FALSE in case attribute @b cond exists and it equals
+ *         @b "false" or empty line. @c TRUE in other cases.
+ */
+static te_bool
+xmlNodeCond(xmlNodePtr node)
+{
+    te_bool result = TRUE;
+    char *cond = xmlGetProp_exp(node, (xmlChar *)"cond");
+
+    if (cond == NULL)
+        return TRUE;
+
+    if (strcmp(cond, "false") == 0 || strcmp(cond, "") == 0)
+        result = FALSE;
+    xmlFree((xmlChar *)cond);
+
+    return result;
+}
+
 #define RETERR(_rc, _str...)    \
     do {                        \
         int _err = _rc;         \
@@ -164,17 +188,10 @@ cfg_dh_process_add(xmlNodePtr node)
     xmlChar     *val_s = NULL;
 
     while (node != NULL &&
-           xmlStrcmp(node->name , (const xmlChar *)"instance") == 0)
+           xmlStrcmp(node->name, (const xmlChar *)"instance") == 0)
     {
-        char   *attr = xmlGetProp_exp(node, (xmlChar *)"cond");
-
-        if (attr != NULL)
-        {
-            /* in case add condition is specified */
-            if (strcmp(attr, "false") == 0 || strcmp(attr, "") == 0)
-                goto next;
-            xmlFree((xmlChar *)attr);
-        }
+        if (!xmlNodeCond(node))
+            goto next;
 
         if ((oid = (xmlChar *)xmlGetProp_exp(node,
                    (const xmlChar *)"oid")) == NULL)
@@ -264,10 +281,13 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
         xmlChar   *val_s = NULL;
         char      *attr = NULL;
 
-        if (xmlStrcmp(cmd->name , (const xmlChar *)"include") == 0)
+        if (!xmlNodeCond(cmd))
             continue;
 
-        if (xmlStrcmp(cmd->name , (const xmlChar *)"history") == 0)
+        if (xmlStrcmp(cmd->name, (const xmlChar *)"include") == 0)
+            continue;
+
+        if (xmlStrcmp(cmd->name, (const xmlChar *)"history") == 0)
         {
             rc = cfg_dh_process_file(cmd, postsync);
             if (rc != 0)
