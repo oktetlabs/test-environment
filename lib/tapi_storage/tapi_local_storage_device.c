@@ -81,17 +81,14 @@ get_device_type(const char *type_name, tapi_local_storage_device_type *type)
 static inline void
 free_device_context(tapi_local_storage_device *device)
 {
-    if (device != NULL)
-    {
-        /* Discard const specifier by explicit type casting. */
-        free((char *)device->name);
-        free((char *)device->vid);
-        free((char *)device->pid);
-        free((char *)device->serial);
-        free((char *)device->product_name);
-        free((char *)device->manufacturer);
-        free((char *)device->partition);
-    }
+    /* Discard const specifier by explicit type casting. */
+    free((char *)device->name);
+    free((char *)device->vid);
+    free((char *)device->pid);
+    free((char *)device->serial);
+    free((char *)device->product_name);
+    free((char *)device->manufacturer);
+    free((char *)device->partition);
 }
 
 /**
@@ -185,8 +182,11 @@ tapi_local_storage_device_get(const char                 *name,
 void
 tapi_local_storage_device_free(tapi_local_storage_device *device)
 {
-    free_device_context(device);
-    free(device);
+    if (device != NULL)
+    {
+        free_device_context(device);
+        free(device);
+    }
 }
 
 /* See description in tapi_local_storage_device.h. */
