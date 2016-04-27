@@ -319,7 +319,7 @@ parse_config(const char *file, te_bool restore)
         return TE_RC(TE_CS, TE_EINVAL);
     }
 
-    VERB("Do XInclude sunstitutions in the document");
+    VERB("Do XInclude substitutions in the document");
     subst = xmlXIncludeProcess(doc);
     if (subst < 0)
     {
