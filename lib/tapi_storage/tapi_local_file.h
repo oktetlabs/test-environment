@@ -143,12 +143,7 @@ extern void tapi_local_file_free_entry(tapi_local_file *file);
  *
  * @param file      File.
  */
-static inline void
-tapi_local_file_free(tapi_local_file *file)
-{
-    tapi_local_file_free_entry(file);
-    free(file);
-}
+extern void tapi_local_file_free(tapi_local_file *file);
 
 #ifdef __cplusplus
 } /* extern "C" */

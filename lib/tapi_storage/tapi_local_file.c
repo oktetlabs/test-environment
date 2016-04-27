@@ -73,3 +73,14 @@ tapi_local_file_free_entry(tapi_local_file *file)
 {
     free((char *)file->pathname);
 }
+
+/* See description in tapi_local_file.h. */
+void
+tapi_local_file_free(tapi_local_file *file)
+{
+    if (file != NULL)
+    {
+        tapi_local_file_free_entry(file);
+        free(file);
+    }
+}
