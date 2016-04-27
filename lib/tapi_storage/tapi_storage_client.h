@@ -122,20 +122,13 @@ typedef te_errno (* tapi_storage_client_method_cd)(
  * @param client        Client handle.
  * @param local_file    Local file name.
  * @param remote_file   Remote file name or @c NULL to use the same.
- * @param recursive     Perform recursive copying if @c TRUE and specified
- *                      local file is directory.
- * @param force         Force to replace existent content by the same. If
- *                      @c FALSE the existent content will not be rewriten
- *                      by the same (lazy behaviour).
  *
  * @return Status code.
  */
 typedef te_errno (* tapi_storage_client_method_put)(
                                         tapi_storage_client *client,
                                         const char          *local_file,
-                                        const char          *remote_file,
-                                        te_bool              recursive,
-                                        te_bool              force);
+                                        const char          *remote_file);
 
 /**
  * Get a file from remote storage.
@@ -143,16 +136,13 @@ typedef te_errno (* tapi_storage_client_method_put)(
  * @param client        Client handle.
  * @param remote_file   Remote file name.
  * @param local_file    Local file name or @c NULL to use the same.
- * @param recursive     Perform recursive copying if @c TRUE and specified
- *                      remote file is directory.
  *
  * @return Status code.
  */
 typedef te_errno (* tapi_storage_client_method_get)(
                                         tapi_storage_client *client,
                                         const char          *remote_file,
-                                        const char          *local_file,
-                                        te_bool              recursive);
+                                        const char          *local_file);
 
 /**
  * Remove a file(s) from the current working directory on the remote
@@ -314,24 +304,16 @@ tapi_storage_client_cd(tapi_storage_client *client,
  * @param client        Client handle.
  * @param local_file    Local file name.
  * @param remote_file   Remote file name or @c NULL to use the same.
- * @param recursive     Perform recursive copying if @c TRUE and specified
- *                      local file is directory.
- * @param force         Force to replace existent content by the same. If
- *                      @c FALSE the existent content will not be rewriten
- *                      by the same (lazy behaviour).
  *
  * @return Status code.
  */
 static inline te_errno
 tapi_storage_client_put(tapi_storage_client *client,
                         const char          *local_file,
-                        const char          *remote_file,
-                        te_bool              recursive,
-                        te_bool              force)
+                        const char          *remote_file)
 {
     return (client->methods->put != NULL
-            ? client->methods->put(client, local_file, remote_file,
-                                   recursive, force)
+            ? client->methods->put(client, local_file, remote_file)
             : TE_EOPNOTSUPP);
 }
 
@@ -341,20 +323,16 @@ tapi_storage_client_put(tapi_storage_client *client,
  * @param client        Client handle.
  * @param remote_file   Remote file name.
  * @param local_file    Local file name or @c NULL to use the same.
- * @param recursive     Perform recursive copying if @c TRUE and specified
- *                      remote file is directory.
  *
  * @return Status code.
  */
 static inline te_errno
 tapi_storage_client_get(tapi_storage_client *client,
                         const char          *remote_file,
-                        const char          *local_file,
-                        te_bool              recursive)
+                        const char          *local_file)
 {
     return (client->methods->get != NULL
-            ? client->methods->get(client, remote_file, local_file,
-                                   recursive)
+            ? client->methods->get(client, remote_file, local_file)
             : TE_EOPNOTSUPP);
 }
 
@@ -427,7 +405,9 @@ tapi_storage_client_rmdir(tapi_storage_client *client,
  * @param[in]  methods      Back-end client scpecific methods.
  * @param[in]  auth         Back-end client specific authorization
  *                          parameters.
- * @param[in]  context      Back-end client specific context.
+ * @param[in]  context      Back-end client specific context. Don't free
+ *                          the @p context before finishing work with
+                            @p client.
  * @param[out] client       Client handle.
  *
  * @return Status code.
@@ -452,6 +432,48 @@ extern te_errno tapi_storage_client_init(
  * @sa tapi_storage_client_init
  */
 extern void tapi_storage_client_fini(tapi_storage_client *client);
+
+/**
+ * Copy local files to the storage server location. Can be used for
+ * recursive copying of directories.
+ *
+ * @param client        Client handle.
+ * @param local_file    Local file name.
+ * @param remote_file   Remote file name or @c NULL to use the same.
+ * @param recursive     It has effect only if @p local_file is directory.
+ *                      If @c FALSE then only files from mentioned directory
+ *                      will be copied. If @c TRUE then additionally the
+ *                      all files from subdirectories will be copied.
+ * @param force         Force to replace existent content by the same. If
+ *                      @c FALSE the existent content will not be rewriten
+ *                      by the same (lazy behaviour).
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_storage_client_mput(tapi_storage_client   *client,
+                                         const tapi_local_file *local_file,
+                                         const char            *remote_file,
+                                         te_bool                recursive,
+                                         te_bool                force);
+
+/**
+ * Copy files from the storage server to local location. Can be used for
+ * recursive copying of directories.
+ *
+ * @param client        Client handle.
+ * @param remote_file   Remote file name.
+ * @param local_file    Local file name or @c NULL to use the same.
+ * @param recursive     It has effect only if @p remote_file is directory.
+ *                      If @c FALSE then only files from mentioned directory
+ *                      will be copied. If @c TRUE then additionally the
+ *                      all files from subdirectories will be copied.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_storage_client_mget(tapi_storage_client *client,
+                                         const char          *remote_file,
+                                         const char          *local_file,
+                                         te_bool              recursive);
 
 #ifdef __cplusplus
 } /* extern "C" */
