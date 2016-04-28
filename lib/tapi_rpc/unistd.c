@@ -57,6 +57,7 @@
 #include "tapi_rpc_unistd.h"
 #include "tapi_rpc_misc.h"
 #include "te_printf.h"
+#include "te_bufs.h"
 
 
 /** @name String buffers for snprintf() operations */
@@ -2902,7 +2903,31 @@ rpc_execve_gen(rcf_rpc_server *rpcs, const char *filename,
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(execve_gen, out.retval);
     TAPI_RPC_LOG(rpcs, execve_gen, "", "%d", out.retval);
-    
+
     rcf_rpc_free_result(&out, (xdrproc_t)xdr_tarpc_execve_gen_out);
     return out.retval;
+}
+
+/* See description in the tapi_rpc_unistd.h */
+void
+rpc_make_iov(rpc_iovec *iov, size_t iovcnt, size_t min, size_t max)
+{
+    size_t i;
+
+    for (i = 0; i < iovcnt; i++)
+    {
+        iov[i].iov_base = te_make_buf(min, max, &iov[i].iov_rlen);
+        iov[i].iov_len = iov[i].iov_rlen;
+    }
+}
+
+/* See description in the tapi_rpc_unistd.h */
+void
+rpc_release_iov(rpc_iovec *iov, size_t iovcnt)
+{
+    size_t i;
+
+    for (i = 0; i < iovcnt; i++)
+        free(iov[i].iov_base);
+    memset(iov, 0, sizeof(iov) * iovcnt);
 }

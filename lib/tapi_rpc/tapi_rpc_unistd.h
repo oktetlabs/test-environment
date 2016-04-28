@@ -1224,6 +1224,25 @@ extern int rpc_rm_ta_libs(rcf_rpc_server *rpcs, char *path);
 extern int rpc_execve_gen(rcf_rpc_server *rpcs, const char *filename,
                           char *const argv[], char *const envp[]);
 
+/**
+ * Allocate buffers for @p iov vectors and set length fields.
+ *
+ * @param iov       Iov vectors array.
+ * @param iovcnt    Vectors number.
+ * @param min       Minimum buffer length.
+ * @param max       Maximum buffer length.
+ */
+extern void rpc_make_iov(rpc_iovec *iov, size_t iovcnt, size_t min,
+                         size_t max);
+
+/**
+ * Free buffers of @p iov vector.
+ *
+ * @param iov       Iov vectors array.
+ * @param iovcnt    Vectors number.
+ */
+extern void rpc_release_iov(rpc_iovec *iov, size_t iovcnt);
+
 /**@} <!-- END te_lib_rpc_unistd --> */
 
 #ifdef __cplusplus
