@@ -92,8 +92,9 @@ struct tapi_local_storage_device {
     const char *product_name;   /**< Disk Product Name. */
     const char *manufacturer;   /**< Disk Manufacturer. */
     const char *partition;      /**< Disk partition under test. */
-    tapi_local_storage_device_methods methods;  /**< Methods to operate the
-                                                     device. */
+
+    /** Methods to operate the device. */
+    const tapi_local_storage_device_methods *methods;
 };
 
 /**
@@ -123,10 +124,10 @@ typedef struct tapi_local_storage_device_list
  */
 static inline void
 tapi_local_storage_device_set_methods(
-                                tapi_local_storage_device         *device,
-                                tapi_local_storage_device_methods *methods)
+                        tapi_local_storage_device               *device,
+                        const tapi_local_storage_device_methods *methods)
 {
-    device->methods = *methods;
+    device->methods = methods;
 }
 
 
