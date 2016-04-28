@@ -112,5 +112,6 @@ te_string_cut(te_string *str, size_t len)
         len = str->len;
     assert(str->len >= len);
     str->len -= len;
-    str->ptr[str->len] = '\0';
+    if (str->ptr != NULL)
+        str->ptr[str->len] = '\0';
 }
