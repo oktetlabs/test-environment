@@ -2929,5 +2929,5 @@ rpc_release_iov(rpc_iovec *iov, size_t iovcnt)
 
     for (i = 0; i < iovcnt; i++)
         free(iov[i].iov_base);
-    memset(iov, 0, sizeof(iov) * iovcnt);
+    memset(iov, 0, sizeof(*iov) * iovcnt);
 }
