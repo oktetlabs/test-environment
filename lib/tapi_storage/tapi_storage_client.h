@@ -50,7 +50,7 @@ extern "C" {
     .context = NULL                             \
 }
 
-/**
+/*
  * Forward declaration of generic client structure.
  */
 struct tapi_storage_client;

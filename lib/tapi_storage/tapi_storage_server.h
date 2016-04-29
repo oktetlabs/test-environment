@@ -49,7 +49,7 @@ extern "C" {
     .context = NULL                             \
 }
 
-/**
+/*
  * Forward declaration of generic server structure.
  */
 struct tapi_storage_server;
