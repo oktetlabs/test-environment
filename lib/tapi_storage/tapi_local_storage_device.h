@@ -39,7 +39,7 @@
 extern "C" {
 #endif
 
-/**
+/*
  * Forward declaration of generic device structure.
  */
 struct tapi_local_storage_device;
@@ -52,7 +52,7 @@ typedef struct tapi_local_storage_device tapi_local_storage_device;
  *
  * @return Status code.
  */
-typedef te_errno (* tapi_local_storage_device_insert)(
+typedef te_errno (* tapi_local_storage_device_method_insert)(
                                         tapi_local_storage_device *device);
 
 /**
@@ -62,15 +62,15 @@ typedef te_errno (* tapi_local_storage_device_insert)(
  *
  * @return Status code.
  */
-typedef te_errno (* tapi_local_storage_device_eject)(
+typedef te_errno (* tapi_local_storage_device_method_eject)(
                                         tapi_local_storage_device *device);
 
 /**
  * Methods to operate with device.
  */
 typedef struct tapi_local_storage_device_methods {
-    tapi_local_storage_device_insert insert;
-    tapi_local_storage_device_eject  eject;
+    tapi_local_storage_device_method_insert insert;
+    tapi_local_storage_device_method_eject  eject;
 } tapi_local_storage_device_methods;
 
 /**
@@ -130,6 +130,33 @@ tapi_local_storage_device_set_methods(
     device->methods = methods;
 }
 
+/**
+ * Insert device.
+ *
+ * @param device        Device handle.
+ *
+ * @return Status code.
+ */
+static inline te_errno
+tapi_local_storage_device_insert(tapi_local_storage_device *device)
+{
+    return (device->methods != NULL && device->methods->insert != NULL
+            ? device->methods->insert(device) : TE_EOPNOTSUPP);
+}
+
+/**
+ * Eject device.
+ *
+ * @param device        Device handle.
+ *
+ * @return Status code.
+ */
+static inline te_errno
+tapi_local_storage_device_eject(tapi_local_storage_device *device)
+{
+    return (device->methods != NULL && device->methods->eject != NULL
+            ? device->methods->eject(device) : TE_EOPNOTSUPP);
+}
 
 /**
  * Get all devices from configurator and read them properties.
