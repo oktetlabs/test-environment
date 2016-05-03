@@ -13,7 +13,13 @@ use Storable qw/nstore retrieve dclone/;
 use POSIX;
 use HTML::Entities;
 
-umask 0027;
+# Next comment is special, it will be changed to
+# correct "use lib" when deploying.
+
+#USE_LIB
+use night_logs_cgi_aux::aux_funcs;
+
+umask 0017;
 
 my @tmp_files = ();
 my $date_from;
@@ -368,6 +374,26 @@ sub hash2str
     foreach my $key (sort(keys %{$hash}))
     {
         $str .= $key." => ".$hash->{$key}."; ";
+    }
+
+    return $str;
+}
+
+sub result2str
+{
+    my $result = $_[0];
+    my $str;
+
+    if (defined($result->{"err"}) && length($result->{"err"}) > 0)
+    {
+        $str = "err => ".$result->{"err"}."; ";
+    }
+    $str .= $result->{"result"}."; ";
+    $str .= "VERDICTS: ";
+
+    foreach my $verdict (@{$result->{"verdicts"}})
+    {
+        $str .= $verdict."; ";
     }
 
     return $str;
@@ -1054,6 +1080,36 @@ sub cleanup
     free_tmp_files; 
 }
 
+my $compromised_iters;
+
+sub iter_is_compromised
+{
+    my $iter_key = $_[0];
+    my $result_str = $_[1];
+    my $log = $_[2];
+
+    if (!defined($compromised_iters))
+    {
+        $compromised_iters = get_compromised($cached_logs_path);
+        if (!defined($compromised_iters))
+        {
+            return 0;
+        }
+    }
+
+    if (defined($compromised_iters->{"iters"}) &&
+        defined($compromised_iters->{"iters"}->{$iter_key}) &&
+        defined($compromised_iters->{"iters"}->
+                        {$iter_key}->{$result_str}) &&
+        defined($compromised_iters->{"iters"}->
+                {$iter_key}->{$result_str}->{$log->{"log"}}))
+    {
+        return 1;
+    }
+
+    return 0;
+}
+
 sub filter_test_iters
 {
     my $test_path = $_[0];
@@ -1062,13 +1118,14 @@ sub filter_test_iters
     my $from_timestamp = $date_from->printf("%s") + 0;
     my $filtered_iters = {};
     my $iter;
+    my $iter_key;
 
     if (!defined($test))
     {
         return undef;
     }
 
-    while ((undef, $iter) = each %{$test->{"iters"}})
+    while (($iter_key, $iter) = each %{$test->{"iters"}})
     {
         my @filtered_results = ();
 
@@ -1076,6 +1133,9 @@ sub filter_test_iters
         foreach my $result (@{$iter->{"results"}})
         {
             my @filtered_logs = ();
+            my $result_str;
+
+            $result_str = result2str($result);
 
             next if ($with_err_only > 0 &&
                      (!defined($result->{"err"}) ||
@@ -1089,6 +1149,8 @@ sub filter_test_iters
                          ((defined($log->{"compromised"}) &&
                            $log->{"compromised"} > 0) ||
                            log_in_compromised($log->{"log"})));
+                next if ($include_compromised == 0 &&
+                         iter_is_compromised($iter_key, $result_str, $log));
                 next if match_tags($log->{"tags"}, $tag_expr) == 0;
 
                 push(@filtered_logs, $log);
@@ -1480,6 +1542,72 @@ if (defined($update_cache_path) &&
     exit(0);
 }
 
+sub js_param_escape
+{
+    my $str = $_[0];
+
+    $str =~ s/&/&amp;/g;
+    $str =~ s/'/\\'/g;
+    return $str;
+}
+
+sub logs2html
+{
+    my $fh = $_[0];
+    my $test = $_[1];
+    my $iter_key = $_[2];
+    my $result_str = $_[3];
+    my $logs = $_[4];
+    my $compromised = $_[5];
+
+    my $logs_str = "";
+    my $compromise_arg;
+    my $compromise_str;
+
+    if ($compromised > 0)
+    {
+        $compromise_arg = 0;
+        $compromise_str = "Uncompromise"
+    }
+    else
+    {
+        $compromise_arg = 1;
+        $compromise_str = "Compromise"
+    }
+
+    for (my $i = 0; $i < scalar(@{$logs}); $i++)
+    {
+        if (length($logs_str) > 0)
+        {
+            $logs_str .= ",";
+        }
+        $logs_str .= $logs->[$i]->{"log"};
+
+        print $fh "<a href=\"".$logs->[$i]->{"log"}."\" ".
+                   "onClick=\"showLog('$test', '".
+                   $logs->[$i]->{"log"}."', event); ".
+                   "return false;\" title=\"".
+                   $logs->[$i]->{"date"}.": ".
+                   fix_tags($logs->[$i]->{"tags"})."\"".
+                   ">[".($i + 1)."]</a>";
+        if ($i < scalar(@{$logs}) - 1)
+        {
+            print $fh ", \n";
+        }
+    }
+#    Temporary disabled.
+#
+#    print $fh "<br>\n<input type=\"button\" value=\"$compromise_str\" ".
+#              "onClick=\"compromiseIter(this, '".
+#              js_param_escape($cached_logs_path)."', ".
+#              "'".js_param_escape(${iter_key})."', ".
+#              "'".js_param_escape($result_str)."', ".
+#              "'".js_param_escape(${logs_str})."', $compromise_arg);\">";
+}
+
+my $err_result_color = "#ffdfdf";
+my $compromised_iter_color = "#ff7777";
+
 sub print_html_report
 {
     my $fh = $_[0];
@@ -1613,6 +1741,43 @@ EOT
                 doNothing(event);
             return false;
         }
+
+        function compromiseIter(button, cache_path, iter,
+                                result, logs, compromise)
+        {
+            var xhr = new XMLHttpRequest();
+            var params;
+            var parent_bg_color;
+
+            params = "cache_path=" + encodeURIComponent(cache_path) +
+                     "&iter=" + encodeURIComponent(iter) +
+                     "&result=" + encodeURIComponent(result) +
+                     "&logs=" + encodeURIComponent(logs) +
+                     "&compromise=" + compromise;
+
+            xhr.open("POST", "/socktest/compromise.pl", false);
+            xhr.setRequestHeader("Content-type",
+                                 "application/x-www-form-urlencoded");
+            xhr.send(params);
+
+            if (compromise > 0)
+            {
+                compromise = 0;
+                button.value = "Uncompromise";
+                parent_bg_color = "$compromised_iter_color";
+            }
+            else
+            {
+                compromise = 1;
+                button.value = "Compromise";
+                parent_bg_color = "";
+            }
+
+            button.onclick = function() {
+                                compromiseIter(button, cache_path, iter,
+                                               result, logs, compromise); };
+            button.parentElement.style.backgroundColor = parent_bg_color;
+        }
     </script>
 EOT
 
@@ -1631,12 +1796,13 @@ EOT
                "style=\"font-size:small;\">\n";
     foreach my $test (keys %{$night_results{"tests"}})
     {
+        my $iter_key;
         my $iter;
 
         print $fh "<tr>\n<td colspan=\"3\" class=\"test_name\">".
                    $test."</td>\n</tr>\n";
 
-        while ((undef, $iter) = each
+        while (($iter_key, $iter) = each
                   %{$night_results{"tests"}->{$test}->{"iters"}})
         {
             if ($iters_with_err_only > 0)
@@ -1691,7 +1857,8 @@ EOT
 
                 if ($err_present > 0 && $with_err_only == 0)
                 {
-                    print $fh "<tr style=\"background-color:#ffdfdf\">\n";
+                    print $fh "<tr style=\"background-color:".
+                              "$err_result_color\">\n";
                 }
                 else
                 {
@@ -1717,20 +1884,41 @@ EOT
                 print $fh "</td>\n";
 
                 print $fh "<td>\n";
-                for (my $i = 0; $i < scalar(@{$result->{"logs"}}); $i++)
+
+                my @compromised_logs = ();
+                my @good_logs = ();
+                my $result_str = result2str($result);
+
+                foreach my $log (@{$result->{"logs"}})
                 {
-                    print $fh "<a href=\"".$result->{"logs"}->[$i]->{"log"}."\" ".
-                               "onClick=\"showLog('$test', '".
-                               $result->{"logs"}->[$i]->{"log"}."', event); ".
-                               "return false;\" title=\"".
-                               $result->{"logs"}->[$i]->{"date"}.": ".
-                               fix_tags($result->{"logs"}->[$i]->{"tags"})."\"".
-                               ">[".($i + 1)."]</a>";
-                    if ($i < scalar(@{$result->{"logs"}}) - 1)
+                    if (iter_is_compromised($iter_key, $result_str, $log))
                     {
-                        print $fh ", \n";
+                        push(@compromised_logs, $log);
+                    }
+                    else
+                    {
+                        push(@good_logs, $log);
                     }
                 }
+
+                print $fh "<table>\n";
+                if (scalar(@good_logs) > 0)
+                {
+                    print $fh "<tr><td>\n";
+                    logs2html($fh, $test, $iter_key, $result_str,
+                              \@good_logs, 0);
+                    print $fh "</tr></td>\n";
+                }
+                if (scalar(@compromised_logs) > 0)
+                {
+                    print $fh "<tr style=\"background-color:".
+                              "$compromised_iter_color;\"><td>\n";
+                    logs2html($fh, $test, $iter_key, $result_str,
+                              \@compromised_logs, 1);
+                    print $fh "</tr></td>\n";
+                }
+                print $fh "</table>\n";
+
                 print $fh "</td>\n";
 
                 print $fh "</tr>\n";

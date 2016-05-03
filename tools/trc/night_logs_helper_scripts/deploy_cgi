@@ -62,6 +62,7 @@ sub fix_script
 my %files = ( "$cgi_path" => [ "./cgi_scripts/form.html",
                                "./cgi_scripts/index.pl",
                                "./cgi_scripts/process_form.pl",
+                               "./cgi_scripts/compromise.pl",
                                "./cgi_scripts/night_status.pl" ],
               "$cli_path" => [ "./cli_scripts/add_new_cache",
                                "./cli_scripts/te_get_nlogs_results",
