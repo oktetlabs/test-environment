@@ -7,6 +7,8 @@ use File::Basename;
 
 my $cgi_path = "/usr/lib/cgi-bin/local/socktest/";
 my $cli_path = "/home/tester-l5/night_logs_caches/";
+my $user = "tester-l5";
+my $group = "www-data";
 
 foreach my $arg (@ARGV)
 {
@@ -17,6 +19,14 @@ foreach my $arg (@ARGV)
     elsif ($arg =~ m/^--cli-path=(.+)$/)
     {
         $cli_path = File::Spec->rel2abs($1)."/";
+    }
+    elsif ($arg =~ m/^--user=(.+)$/)
+    {
+        $user = $1;
+    }
+    elsif ($arg =~ m/^--group=(.+)$/)
+    {
+        $group = $1;
     }
     elsif ($arg =~ m/^--help$/)
     {
@@ -76,7 +86,7 @@ my $rc;
 foreach my $path (keys %files)
 {
     if (system("mkdir -p $path") != 0 ||
-        system("chown tester-l5:www-data $path") != 0 ||
+        system("chown $user:$group $path") != 0 ||
         system("chmod 0750 $path") != 0)
     {
         die "Failed to set up $path";
@@ -85,7 +95,7 @@ foreach my $path (keys %files)
     foreach my $file (@{$files{$path}})
     {
         if (system("cp $file $path/") != 0 ||
-            system("chown tester-l5:www-data $path/".basename($file)) != 0 ||
+            system("chown $user:$group $path/".basename($file)) != 0 ||
             system("chmod 0750 $path/".basename($file)) != 0)
         {
             die "Failed to install $file to $path";
