@@ -880,6 +880,11 @@ sub process_logs
     }
 }
 
+$date_from = new Date::Manip::Date;
+$date_from->parse("2000.01.01");
+$date_to = new Date::Manip::Date;
+$date_to->parse("2100.01.01");
+
 foreach my $arg (@ARGV)
 {
     if ($arg =~ m/^--verbose$/ || $arg =~ m/^-v$/)
