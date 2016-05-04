@@ -18,6 +18,8 @@ my $log_path;
 my $cache_dir;
 my $cache_id;
 
+my $xml_log_def_name = "trc-log.bz2";
+
 umask 0027;
 
 $date_to->parse("now");
@@ -66,6 +68,10 @@ foreach my $arg (@ARGV)
         {
             $log_path .= "/";
         }
+    }
+    elsif ($arg =~ m/^--def-log-name=(.+)$/)
+    {
+        $xml_log_def_name = $1;
     }
     elsif ($arg =~ m/^--cache-dir=(.+)$/ || $arg =~ m/^-c(.+)$/)
     {
@@ -140,7 +146,9 @@ while ($date_a->cmp($date_to) <= 0)
 
     print "Caching results from $date_a_str to $date_b_str\n";
 
-    `$cli_path/te_get_nlogs_results -f$date_a_str -t$date_b_str --log-path=$log_path --update-cache=$cache_dir`;
+    system("$cli_path/te_get_nlogs_results -f$date_a_str -t$date_b_str ".
+           "--log-path=$log_path --update-cache=$cache_dir ".
+           "--def-log-name=$xml_log_def_name --include-compromised");
 
     $date_a = $date_inc->calc($date_a);
     $date_b = $date_inc->calc($date_b);

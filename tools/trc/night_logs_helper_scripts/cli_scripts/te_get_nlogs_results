@@ -43,6 +43,8 @@ my $default_cache_path = "/home/izbitsky/cached_v5_tot/";
 my $loaded_logs = {};
 my $one_xml_log_parsed = 0;
 
+my $xml_log_def_name = "trc-log.bz2";
+
 my %night_results = (
   tests => {},
 );
@@ -186,7 +188,7 @@ sub download_prepare_log
 
     if ($file_to_load =~ m/\/$/)
     {
-        $file_to_load = $file_to_load."trc-log.bz2";
+        $file_to_load = $file_to_load."$xml_log_def_name";
     }
 
     $is_compromised = is_log_compromised($file_to_load);
@@ -206,7 +208,7 @@ sub download_prepare_log
 
         if ($rc != 0)
         {
-            warn "Failed to fetch XML log";
+            warn "Failed to fetch XML log from $file_to_load";
             return (-1, 0);
         }
 
@@ -235,6 +237,17 @@ sub download_prepare_log
     {
         (undef, $tmp_files[$#tmp_files + 1]) = tempfile("log-XXXX");
         if (system_call("bzcat ".$file_name." > ".
+                        $tmp_files[$#tmp_files]) != 0)
+        {
+            warn "Failed to unzip XML log";
+            return (-1, 0);
+        }
+        $file_name = $tmp_files[$#tmp_files];
+    }
+    if ($file_to_load =~ m/^(.*)[.]xz\s*$/)
+    {
+        (undef, $tmp_files[$#tmp_files + 1]) = tempfile("log-XXXX");
+        if (system_call("xz --decompress --keep --stdout ".$file_name." > ".
                         $tmp_files[$#tmp_files]) != 0)
         {
             warn "Failed to unzip XML log";
@@ -778,108 +791,90 @@ sub process_logs
     my $log_path = $_[2];
     my @cur_logs = ();
     my $s;
-    my $folder_name;
+    my $file_name;
 
-    if ($log_path =~ /^(.*)([0-9]{2}[.][0-9]{2}-.*)$/)
+    if ($log_path =~ /^[^\/]*:/)
     {
-        @cur_logs = ( $2 );
-        $log_path = $1;
+        @cur_logs = `curl -L -s -u : --negotiate $log_path`;
     }
     else
     {
-        if ($log_path =~ /^[^\/]*:/)
+        @cur_logs = `ls -F --format=single-column $log_path`;
+    }
+
+    foreach $s (@cur_logs)
+    {
+        if ($s =~ /run[.]log[.]txt/)
         {
-            @cur_logs = `curl -L -s -u : --negotiate $log_path`;
-        }
-        else
-        {
-            @cur_logs = `ls -F --format=single-column $log_path`;
+            my $download_path = remove_extra_slashes("${log_path}/");
+            my $is_compromised;
+            my $rc;
+
+            if (defined($loaded_logs->{$download_path}))
+            {
+                return;
+            }
+
+            print "downloading from $download_path \n";
+            ($rc, $is_compromised) =
+                      download_prepare_log($download_path);
+            if ($rc != 0)
+            {
+                if ($is_compromised)
+                {
+                    print "Skipped because of ".
+                          "compromised log\n";
+                }
+                else
+                {
+                    print "Failed to retrieve log\n";
+                    $loaded_logs->{$download_path} = 2;
+                }
+            }
+            else
+            {
+                my $xml_log_fn = $tmp_files[$#tmp_files];
+
+                $loaded_logs->{$download_path} = 1;
+                parse_xml_log($download_path, $xml_log_fn,
+                              $is_compromised);
+                free_tmp_files();
+            }
+
+            return;
         }
     }
 
     foreach $s (@cur_logs)
     {
-        if ($s =~ /src="\/icons\/folder.gif".*<a.*href="(.*)"/ ||
-            $s =~ /([0-9]{2}[.][0-9]{2}-.*$)/ ||
-            $s =~ /^([0-9]{2}[.][0-9]{2}[\/]?)\s*$/ ||
-            $s =~ /^(session_[0-9]{2}[.][0-9]{2}[.][0-9]{2}[\/]?)$/)
+        if ($s =~ /src="\/icons\/folder.gif".*<a.*href="(.*)"/)
         {
             my $log_date = new Date::Manip::Date;
 
-            $folder_name = $1;
-            if ($folder_name =~
-                 /([0-9]{2}[.][0-9]{2}-)/)
+            $file_name = $1;
+
+            if ($file_name =~ /([0-9]{2}[.][0-9]{2}[.][0-9]{2})/)
             {
-#                $log_date->parse_format("%y\\.%m\\.%d\\-%H\\.%M", $1);
+                my $date_str = $1;
 
-#                if ($log_date->cmp($start_date) >= 0 &&
-#                    $log_date->cmp($end_date) <= 0)
-#                {
-                my $download_path =
-                      remove_extra_slashes($log_path."/".$folder_name);
-                my $is_compromised;
-                my $rc;
-
-                if ($folder_name =~ /([0-9]{2}[.][0-9]{2}[.][0-9]{2})/)
-                {
-                    my $date_str = $1;
-
-                    $log_date->parse_format("%y\\.%m\\.%d", $date_str);
-                    next if $log_date->cmp($end_date) > 0;
-                    $log_date->parse_format("%y\\.%m\\.%d",
-                                            "$date_str 23:59:59");
-                    next if $log_date->cmp($start_date) < 0;
-                }
-
-                next if (defined($loaded_logs->{$download_path}));
-
-                print "downloading from $download_path \n";
-                ($rc, $is_compromised) =
-                          download_prepare_log($download_path);
-                if ($rc != 0)
-                {
-                    if ($is_compromised)
-                    {
-                        print "Skipped because of ".
-                              "compromised log\n";
-                    }
-                    else
-                    {
-                        print "Failed to retrieve log\n";
-                        $loaded_logs->{$download_path} = 2;
-                    }
-                }
-                else
-                {
-                    my $xml_log_fn = $tmp_files[$#tmp_files];
-
-                    $loaded_logs->{$download_path} = 1;
-                    parse_xml_log($download_path, $xml_log_fn,
-                                  $is_compromised);
-                    free_tmp_files();
-                }
-#                }
+                $log_date->parse_format("%y\\.%m\\.%d", $date_str);
+                next if $log_date->cmp($end_date) > 0;
+                $log_date->parse_format("%y\\.%m\\.%d",
+                                        "$date_str 23:59:59");
+                next if $log_date->cmp($start_date) < 0;
             }
-            else
+            elsif ($file_name =~ /([0-9]{2}[.][0-9]{2})[\/]*\s*$/)
             {
-                if ($folder_name =~ /([0-9]{2}[.][0-9]{2})/)
-                {
-                    $log_date->parse_format("%y\\.%m\\.%d", $1.".01");
-                    next if $log_date->cmp($end_date) > 0;
-                    $log_date->parse($log_date->printf("last day of %B %Y\n"));
-                    next if $log_date->cmp($start_date) < 0;
-                }
-                if ($folder_name =~ /(session_[0-9]{2}[.][0-9]{2}[.][0-9]{2})/)
-                {
-                    $log_date->parse_format("%y\\.%m\\.%d", $1);
-                    next if $log_date->cmp($end_date) > 0;
-                    next if $log_date->cmp($start_date) < 0;
-                }
-                if (!($folder_name =~ /(\.\.\/)/))
-                {
-                    process_logs($start_date, $end_date,
-                                 $log_path."/".$folder_name);
-                }
+                $log_date->parse_format("%y\\.%m\\.%d", $1.".01");
+                next if $log_date->cmp($end_date) > 0;
+                $log_date->parse($log_date->printf("last day of %B %Y\n"));
+                next if $log_date->cmp($start_date) < 0;
+            }
+
+            if (!($file_name =~ /(\.\.\/)/))
+            {
+                process_logs($start_date, $end_date,
+                             $log_path."/".$file_name);
             }
         }
     }
@@ -1036,6 +1031,10 @@ foreach my $arg (@ARGV)
     elsif ($arg =~ m/^--benchmarks$/)
     {
         $benchmarks = 1;
+    }
+    elsif ($arg =~ m/^--def-log-name=(.+)$/)
+    {
+        $xml_log_def_name = $1;
     }
     elsif ($arg =~ m/^--help$/ || $arg =~ m/^-h$/)
     {
