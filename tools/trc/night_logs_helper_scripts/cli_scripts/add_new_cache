@@ -18,6 +18,7 @@ my $log_path;
 my $cache_dir;
 my $cache_id;
 my $days_at_once = 2;
+my $verb_log = "./add_new_cache_vlog";
 
 my $xml_log_def_name = "trc-log.bz2";
 
@@ -78,6 +79,10 @@ foreach my $arg (@ARGV)
     {
         $days_at_once = $1 + 0;
     }
+    elsif ($arg =~ m/^--verbose-log=(.+)$/)
+    {
+        $verb_log = $1;
+    }
     elsif ($arg =~ m/^--cache-dir=(.+)$/ || $arg =~ m/^-c(.+)$/)
     {
         my $tmp = $1;
@@ -111,6 +116,7 @@ foreach my $arg (@ARGV)
               "--log-path=, -l          Path to logs to be cached\n".
               "--cache-dir=, -c         Where to save cache files\n".
               "--cache-id=, -i          New cache ID\n".
+              "--verbose-log=           Where to save verbose log\n".
               "--days-at-once=          Number of days to be processed\n".
               "                         in a single step\n".
               "--def-log-name=          Filename of XML log\n".
@@ -148,6 +154,8 @@ $date_b = $date_inc->calc($date_a);
 
 $date_inc->parse("+ ${days_at_once} day");
 
+system("rm ${verb_log}");
+
 while ($date_a->cmp($date_to) <= 0)
 {
     my $date_a_str = $date_a->printf("%Y.%m.%d");
@@ -157,7 +165,7 @@ while ($date_a->cmp($date_to) <= 0)
 
     system("$cli_path/te_get_nlogs_results -f$date_a_str -t$date_b_str ".
            "--log-path=$log_path --update-cache=$cache_dir ".
-           "--def-log-name=$xml_log_def_name --include-compromised");
+           "--def-log-name=$xml_log_def_name --include-compromised >>${verb_log}");
 
     $date_a = $date_inc->calc($date_a);
     $date_b = $date_inc->calc($date_b);
