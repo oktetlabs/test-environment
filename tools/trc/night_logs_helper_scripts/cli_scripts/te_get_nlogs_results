@@ -1052,6 +1052,8 @@ foreach my $arg (@ARGV)
               "--with-err-only          Show only results with some error\n".
               "--iters-with-err-only    Show only iterations having some erroneous results\n".
               "--benchmarks             Collect data on script performance\n".
+              "--def-log-name=          Filename of XML log\n".
+              "                         (trc-log.bz2 by default)\n".
               "--verbose, -v            Log performed operations\n".
               "--help, -h               Display this message\n";
         exit(0);

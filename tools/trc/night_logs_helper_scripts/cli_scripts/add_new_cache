@@ -17,6 +17,7 @@ my $date_inc = new Date::Manip::Delta;
 my $log_path;
 my $cache_dir;
 my $cache_id;
+my $days_at_once = 2;
 
 my $xml_log_def_name = "trc-log.bz2";
 
@@ -73,6 +74,10 @@ foreach my $arg (@ARGV)
     {
         $xml_log_def_name = $1;
     }
+    elsif ($arg =~ m/^--days-at-once=(.+)$/)
+    {
+        $days_at_once = $1 + 0;
+    }
     elsif ($arg =~ m/^--cache-dir=(.+)$/ || $arg =~ m/^-c(.+)$/)
     {
         my $tmp = $1;
@@ -105,7 +110,11 @@ foreach my $arg (@ARGV)
               "--from=, -f              From which date to cache logs\n".
               "--log-path=, -l          Path to logs to be cached\n".
               "--cache-dir=, -c         Where to save cache files\n".
-              "--cache-id=, -i          New cache ID\n";
+              "--cache-id=, -i          New cache ID\n".
+              "--days-at-once=          Number of days to be processed\n".
+              "                         in a single step\n".
+              "--def-log-name=          Filename of XML log\n".
+              "                         (trc-log.bz2 by default)\n";
 
         exit(0);
     }
@@ -133,11 +142,11 @@ my $date_b;
 my $cli_path = get_cli_path();
 my @caches = load_caches_list();
 
-$date_inc->parse("+ 1 day");
+$date_inc->parse("+ ".($days_at_once - 1)." day");
 $date_a = $date_from;
 $date_b = $date_inc->calc($date_a);
 
-$date_inc->parse("+ 2 day");
+$date_inc->parse("+ ${days_at_once} day");
 
 while ($date_a->cmp($date_to) <= 0)
 {
