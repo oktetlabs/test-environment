@@ -127,6 +127,7 @@
         <xs:complexType>
             <xs:attribute name="oid" type="xs:string" use="required"/>
             <xs:attribute name="value" type="xs:string"/>
+            <xs:attribute name="cond" type="xs:string"/>
         </xs:complexType>
     </xs:element>
 
@@ -140,6 +141,7 @@
             <xs:sequence>
                 <xs:element ref="object" maxOccurs="unbounded"/>
             </xs:sequence>
+            <xs:attribute name="cond" type="xs:string"/>
         </xs:complexType>
     </xs:element>
 
@@ -155,6 +157,7 @@
             <xs:sequence>
                 <xs:element ref="instance" maxOccurs="unbounded"/>
             </xs:sequence>
+            <xs:attribute name="cond" type="xs:string"/>
         </xs:complexType>
     </xs:element>
 
@@ -170,6 +173,7 @@
             <xs:sequence>
                 <xs:element ref="instance" maxOccurs="unbounded"/>
             </xs:sequence>
+            <xs:attribute name="cond" type="xs:string"/>
         </xs:complexType>
     </xs:element>
 
@@ -184,6 +188,7 @@
             <xs:sequence>
                 <xs:element ref="instance" maxOccurs="unbounded"/>
             </xs:sequence>
+            <xs:attribute name="cond" type="xs:string"/>
         </xs:complexType>
     </xs:element>
 
@@ -195,6 +200,7 @@
         </xs:annotation>
         <xs:complexType>
             <xs:attribute name="ta" type="xs:string" use="required"/>
+            <xs:attribute name="cond" type="xs:string"/>
         </xs:complexType>
     </xs:element>
 
@@ -206,6 +212,7 @@
                 <xs:element ref="instance" maxOccurs="unbounded"
                                            minOccurs="0"/>
             </xs:sequence>
+            <xs:attribute name="cond" type="xs:string"/>
         </xs:complexType>
     </xs:element>
 
@@ -221,6 +228,7 @@
                     <xs:element ref="history"/>
                 </xs:choice>
             </xs:sequence>
+            <xs:attribute name="cond" type="xs:string"/>
         </xs:complexType>
     </xs:element>
 
