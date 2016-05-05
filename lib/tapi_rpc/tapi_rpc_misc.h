@@ -448,6 +448,32 @@ extern ssize_t rpc_socket_to_file(rcf_rpc_server *handle,
                                   long timeout);
 
 /**
+ * Copy data between one file descriptor and another. If @p in_fd is a
+ * file which supports mmap(2)-like operations then it is recommended to
+ * use @p rpc_sendfile cause it is more efficient.
+ *
+ * @param rpcs          RPC server handle.
+ * @param out_fd        File descriptor opened for writing. Can be a socket.
+ * @param in_fd         File descriptor opened for reading. Can be a socket.
+ * @param timeout       Number of milliseconds that function should block
+ *                      waiting for @b in_fd to become ready to read the
+ *                      next portion of data while all requested data will
+ *                      not be read.
+ * @param count         Number of bytes to copy between the file
+ *                      descriptors. If @c 0 then all available data should
+ *                      be copied, i.e. while @c EOF will not be gotten.
+ *
+ * @return If the transfer was successful, the number of copied bytes is
+ *         returned. On error, @c -1 is returned, and errno is set
+ *         appropriately.
+ */
+extern int64_t rpc_copy_fd2fd(rcf_rpc_server *rpcs,
+                              int             out_fd,
+                              int             in_fd,
+                              int             timeout,
+                              uint64_t        count);
+
+/**
  * Open FTP connection for reading/writing the file.
  * Control connection should be closed via ftp_close.
  *

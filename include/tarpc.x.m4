@@ -5265,6 +5265,31 @@ struct tarpc_upnp_cp_action_out {
     tarpc_int           retval;     /**< Status code */
 };
 
+/* copy_fd2fd function arguments. */
+struct tarpc_copy_fd2fd_in {
+    struct tarpc_in_arg common;
+
+    int             out_fd;     /**< File descriptor opened for writing.
+                                     Can be a socket */
+    int             in_fd;      /**< File descriptor opened for reading.
+                                     Can be a socket */
+    int             timeout;    /**< Number of milliseconds that function
+                                     should block waiting for @b in_fd to
+                                     become ready to read the next portion
+                                     of data while all requested data will
+                                     not be read */
+    uint64_t        count;      /**< Number of bytes to copy between the
+                                     file descriptors. If @c 0 then all
+                                     available data should be copied, i.e.
+                                     while @c EOF will not be gotten */
+};
+struct tarpc_copy_fd2fd_out {
+    struct tarpc_out_arg  common;
+
+    int64_t         retval;     /**< Number of bytes written to @b out_fd,
+                                     or @c -1 on error. */
+};
+
 
 program tarpc
 {
@@ -5610,5 +5635,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(upnp_cp_connect)
         RPC_DEF(upnp_cp_disconnect)
         RPC_DEF(upnp_cp_action)
+
+        RPC_DEF(copy_fd2fd)
     } = 1;
 } = 1;
