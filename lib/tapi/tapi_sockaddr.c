@@ -54,6 +54,7 @@
 
 #include "te_errno.h"
 #include "te_stdint.h"
+#include "te_alloc.h"
 #include "logger_api.h"
 #include "conf_api.h"
 
