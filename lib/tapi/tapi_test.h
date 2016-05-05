@@ -932,6 +932,15 @@ test_sleep_scale(void)
  */
 #define USLEEP(_to_sleep)   te_usleep(test_sleep_scale() * (_to_sleep))
 
+/** Wait for network action to complete. Typically, send() on one side
+ * and wait before non-blocing recv() on another side. */
+#define TAPI_WAIT_NETWORK \
+    do {                                                            \
+        int msec = 500;                                             \
+        RING("Wait for network action: sleep for %d msec", msec);   \
+        usleep(test_sleep_scale() * 1000 * msec);                   \
+    } while (0)
+
 /**@} <!-- END te_ts_tapi_test_misc --> */
  
 /**@} <!-- END te_ts_tapi_test --> */
