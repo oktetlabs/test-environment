@@ -55,15 +55,11 @@ tapi_storage_auth_params_init(const struct sockaddr    *server_addr,
         /* Server address. */
         if (server_addr != NULL)
         {
-            auth_params->server_addr =
-                TE_ALLOC(sizeof(struct sockaddr_storage));
-            if (auth_params->server_addr == NULL)
-            {
-                rc = TE_RC(TE_TAPI, TE_ENOMEM);
+            /* Save address. */
+            rc = tapi_sockaddr_clone2(server_addr,
+                                      &auth_params->server_addr);
+            if (rc != 0)
                 break;
-            }
-            tapi_sockaddr_clone_exact(server_addr,
-                                      SS(auth_params->server_addr));
             /* Save the port. */
             te_sockaddr_set_port(auth_params->server_addr, htons(port));
         }
