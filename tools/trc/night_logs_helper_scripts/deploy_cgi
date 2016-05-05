@@ -7,6 +7,7 @@ use File::Basename;
 
 my $cgi_path = "/usr/lib/cgi-bin/local/socktest/";
 my $cli_path = "/home/tester-l5/night_logs_caches/";
+my $def_test = "sockapi-ts/sockopts/bindtodevice_dstunreach";
 my $user = "tester-l5";
 my $group = "www-data";
 
@@ -28,11 +29,18 @@ foreach my $arg (@ARGV)
     {
         $group = $1;
     }
+    elsif ($arg =~ m/^--def-test=(.+)$/)
+    {
+        $def_test = $1;
+    }
     elsif ($arg =~ m/^--help$/)
     {
         print "Deploying CGI scripts\n".
               "--cgi_path=             Where to place CGI scripts\n".
-              "--cli_path=             Where auxiliary scripts will be stored\n";
+              "--cli_path=             Where auxiliary scripts will be stored\n".
+              "--user=                 Name of user owning scripts\n".
+              "--group=                Name of group owning scripts\n".
+              "--def-test=             Default test provided as an example\n";
 
         exit(0);
     }
@@ -66,6 +74,12 @@ sub fix_script
                escape_path($cli_path)."\"/g' $script") != 0)
     {
         die "Failed to replace CLI_PATH in $script";
+    }
+
+    if (system("sed -i 's/DEF_TEST/".escape_path(${def_test}).
+               "/g' $script") != 0)
+    {
+        die "Failed to replace DEF_TEST in $script";
     }
 }
 
