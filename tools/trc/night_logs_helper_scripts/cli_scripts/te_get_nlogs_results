@@ -43,7 +43,7 @@ my $default_cache_path = "/home/izbitsky/cached_v5_tot/";
 my $loaded_logs = {};
 my $one_xml_log_parsed = 0;
 
-my $xml_log_def_name = "trc-log.bz2";
+my $xml_log_def_name = "DEF_XML_LOG";
 
 my %night_results = (
   tests => {},

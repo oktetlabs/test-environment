@@ -8,6 +8,7 @@ use File::Basename;
 my $cgi_path = "/usr/lib/cgi-bin/local/socktest/";
 my $cli_path = "/home/tester-l5/night_logs_caches/";
 my $def_test = "sockapi-ts/sockopts/bindtodevice_dstunreach";
+my $def_xml_log = "trc-log.bz2";
 my $user = "tester-l5";
 my $group = "www-data";
 
@@ -33,6 +34,10 @@ foreach my $arg (@ARGV)
     {
         $def_test = $1;
     }
+    elsif ($arg =~ m/^--def-xml-log=(.+)$/)
+    {
+        $def_xml_log = $1;
+    }
     elsif ($arg =~ m/^--help$/)
     {
         print "Deploying CGI scripts\n".
@@ -40,7 +45,8 @@ foreach my $arg (@ARGV)
               "--cli_path=             Where auxiliary scripts will be stored\n".
               "--user=                 Name of user owning scripts\n".
               "--group=                Name of group owning scripts\n".
-              "--def-test=             Default test provided as an example\n";
+              "--def-test=             Default test provided as an example\n".
+              "--def-xml-log=          Default xml log filename\n";
 
         exit(0);
     }
@@ -77,6 +83,12 @@ sub fix_script
     }
 
     if (system("sed -i 's/DEF_TEST/".escape_path(${def_test}).
+               "/g' $script") != 0)
+    {
+        die "Failed to replace DEF_TEST in $script";
+    }
+
+    if (system("sed -i 's/DEF_XML_LOG/".escape_path(${def_xml_log}).
                "/g' $script") != 0)
     {
         die "Failed to replace DEF_TEST in $script";
