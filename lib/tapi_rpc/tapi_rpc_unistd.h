@@ -341,6 +341,20 @@ extern int rpc_iovec_cmp(size_t v1len, const struct rpc_iovec *v1,
                          size_t v2cnt);
 
 /**
+ * Strictly compare two iov vectors. Buffers length and data have to be
+ * equal.
+ *
+ * @note The function jumps to @b cleanup with a verdict if buffers are
+ * different.
+ *
+ * @param iov1  The first iov vectors array.
+ * @param iov2  The second iov vectors array.
+ * @param len   Arrays length.
+ */
+extern void rpc_iovec_cmp_strict(rpc_iovec *iov1, rpc_iovec *iov2,
+                                 size_t iovcnt);
+
+/**
  * Attempt to write data to file with descriptor @b fd from the specified
  * vector of buffer.
  *

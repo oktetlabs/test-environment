@@ -56,6 +56,7 @@
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_unistd.h"
 #include "tapi_rpc_misc.h"
+#include "tapi_test.h"
 #include "te_printf.h"
 #include "te_bufs.h"
 
@@ -2930,4 +2931,25 @@ rpc_release_iov(rpc_iovec *iov, size_t iovcnt)
     for (i = 0; i < iovcnt; i++)
         free(iov[i].iov_base);
     memset(iov, 0, sizeof(*iov) * iovcnt);
+}
+
+/* See description in tapi_rpc_unistd.h */
+void
+rpc_iovec_cmp_strict(rpc_iovec *iov1, rpc_iovec *iov2, size_t iovcnt)
+{
+    size_t i;
+
+    for (i = 0; i < iovcnt; i++)
+    {
+        if (iov1[i].iov_len != iov2[i].iov_len)
+        {
+            ERROR("Wrong data length %"TE_PRINTF_SIZE_T"u instead of "
+                  "%"TE_PRINTF_SIZE_T"u", iov2[i].iov_len, iov1[i].iov_len);
+            TEST_VERDICT("One of buffers has incorrect length");
+        }
+
+        if (memcmp(iov2[i].iov_base, iov1[i].iov_base,
+                   iov1[i].iov_len) != 0)
+            TEST_VERDICT("One of buffers is corrupted");
+    }
 }
