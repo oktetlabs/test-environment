@@ -58,8 +58,13 @@ Generic options:
   --daemon[=<PID>]              Run/use TE engine daemons
   --shutdown[=<PID>]            Shut down TE engine daemons on exit
 
-  --conf-dir=<directory>        specify configuration file directory
+  --conf-dir=<directory>        specify configuration file directory,
+                                overrides previous value and --conf-dirs
                                 (\${TE_BASE}/conf or . by default)
+  --conf-dirs=<directories>     specify list of configuration file directories
+                                separated by colon (top priority first,
+                                may be specified many times, appends to
+                                --conf-dir)
 
     In configuration files options below <filename> is full name of the
     configuration file or name of the file in the configuration directory.
@@ -331,8 +336,9 @@ BUILD_TA_FOR=
 # Whether Test Suite should be built
 BUILD_TS=yes
 
-# Configuration directory
-CONF_DIR=
+# Configuration directories
+CONF_DIRS=
+CONF_DIRS_DEFAULT=false
 
 # Directory for raw log file
 TE_LOG_DIR="${TE_RUN_DIR}"
@@ -381,6 +387,15 @@ RGT_LOG_HTML=
 TE_TESTER_SCRIPTS=
 export TE_TA_LIST_FILE=ta.list
 
+resolve_conf_file_path()
+{
+    local file="$1"
+
+    test "${file:0:1}" = "/" && echo "${file}" && return 0
+
+    PATH="${CONF_DIRS}" type -p "${file}" || echo "${file}"
+}
+
 process_script_opt()
 {
     script_req="${1#--$2=}"
@@ -393,9 +408,7 @@ process_script_opt()
             script_opts="$script_opts $i"
         fi
     done
-    if test "${script_file:0:1}" != "/" ; then 
-        script_file="${CONF_DIR}/${script_file}"
-    fi
+    script_file="$(resolve_conf_file_path "${script_file}")"
 }
 
 run_script()
@@ -432,9 +445,7 @@ process_opts()
             --opts=* )
                 EXT_OPTS_PROCESSED=yes
                 OPTS="${1#--opts=}"
-                if test "${OPTS:0:1}" != "/" ; then 
-                    OPTS="${CONF_DIR}/${OPTS}"
-                fi
+                OPTS="$(resolve_conf_file_path "${OPTS}")"
                 if test -f ${OPTS} ; then
                     process_opts $(cat ${OPTS} | grep -v '^#')
                     # Don't want to see the option after expansion
@@ -492,7 +503,11 @@ process_opts()
             --no-run) RCF= ; CS= ; TESTER= ; LOGGER= ;;
             --no-autotool) TE_NO_AUTOTOOL=yes ;;
             
-            --conf-dir=*) CONF_DIR="${1#--conf-dir=}" ;;
+            --conf-dir=*) CONF_DIRS="${1#--conf-dir=}" ;;
+            --conf-dirs=*)
+                # Do not append to default CONF_DIRS
+                ${CONF_DIRS_DEFAULT} && CONF_DIRS= && CONF_DIRS_DEFAULT=false
+                CONF_DIRS="${CONF_DIRS}${CONF_DIRS:+:}${1#--conf-dirs=}" ;;
             
             --conf-builder=*) CONF_BUILDER_SET=1; CONF_BUILDER="${1#--conf-builder=}" ;;
             --conf-logger=*) CONF_LOGGER_SET=1; CONF_LOGGER="${1#--conf-logger=}" ;;
@@ -556,9 +571,7 @@ process_opts()
             --trc-log=*) TRC_LOG="${1#--trc-log=}" ;;
             --trc-db=*) 
                 TRC_DB="${1#--trc-db=}"
-                if test "${TRC_DB:0:1}" != "/" ; then 
-                    TRC_DB="${CONF_DIR}/${TRC_DB}"
-                fi
+                TRC_DB="$(resolve_conf_file_path "${TRC_DB}")"
                 TRC_OPTS="${TRC_OPTS} --db=${TRC_DB}"
                 TESTER_OPTS="${TESTER_OPTS} --trc-db=${TRC_DB}"
                 ;;
@@ -568,9 +581,7 @@ process_opts()
                 ;;
             --trc-key2html=*) 
                 TRC_KEY2HTML="${1#--trc-key2html=}"
-                if test "${TRC_KEY2HTML:0:1}" != "/" ; then 
-                    TRC_KEY2HTML="${CONF_DIR}/${TRC_KEY2HTML}"
-                fi
+                TRC_KEY2HTML="$(resolve_conf_file_path "${TRC_KEY2HTML}")"
                 TRC_OPTS="${TRC_OPTS} --key2html=${TRC_KEY2HTML}"
                 ;;
             --trc-tag=*)
@@ -664,7 +675,7 @@ sniffer_make_conf()
     agt=
     str=
 
-    TE_SNIFF_CSCONF="${CONF_DIR}/cs.conf.sniffer"
+    TE_SNIFF_CSCONF="${CONF_DIRS%%:*}/cs.conf.sniffer"
 
     echo "<?xml version=\"1.0\"?>" > "${TE_SNIFF_CSCONF}"
     if test ! -w "${TE_SNIFF_CSCONF}" ; then
@@ -766,12 +777,13 @@ if test -z "${TE_BASE}" ; then
     fi
 fi
 
-if test -z "$CONF_DIR" ; then
+if test -z "$CONF_DIRS" ; then
     if test -n "${TE_BASE}" ; then
-        CONF_DIR="${TE_BASE}/conf"
+        CONF_DIRS="${TE_BASE}/conf"
     else
-        CONF_DIR="${PWD}"
+        CONF_DIRS="${PWD}"
     fi
+    CONF_DIRS_DEFAULT=true
 fi
 
 # Include collection of functions
@@ -804,8 +816,8 @@ for i in BUILDER LOGGER TESTER CS RCF RGT NUT ; do
     CONF_FILES="${CONF_FILES:-$CONF_FILES_DFLT}"
     CONF_FILES_POST=
     for CONF_FILE in $CONF_FILES ; do
-        if test -n "${CONF_FILE}" -a "${CONF_FILE:0:1}" != "/" ; then
-            eval CONF_FILE_$i=\"${CONF_DIR}/${CONF_FILE}\"
+        if test -n "${CONF_FILE}" ; then
+            eval CONF_FILE_$i=\"$(resolve_conf_file_path "${CONF_FILE}")\"
             CONF_FILE="$(eval echo '$CONF_FILE_'$i)"
             if test ! -f ${CONF_FILE} ; then
                 # Conf file does not exist at specified path.
