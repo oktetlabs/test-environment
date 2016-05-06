@@ -561,6 +561,7 @@ proto_rpc2str(rpc_socket_proto proto)
         RPC2STR(IPPROTO_ICMPV6);
         RPC2STR(IPPROTO_UDP);
         RPC2STR(IPPROTO_TCP);
+        RPC2STR(IPPROTO_RAW);
         RPC2STR(PROTO_UNKNOWN);
         case RPC_PROTO_DEF: return "0";
         default:            return "<PROTO_FATAL_ERROR>";
@@ -578,6 +579,7 @@ proto_rpc2h(rpc_socket_proto proto)
         RPC2H_CHECK(IPPROTO_ICMPV6);
         RPC2H_CHECK(IPPROTO_UDP);
         RPC2H_CHECK(IPPROTO_TCP);
+        RPC2H_CHECK(IPPROTO_RAW);
         case RPC_PROTO_DEF: return 0;
         default:
             WARN("%s is converted to IPPROTO_MAX(%u)",
@@ -597,6 +599,7 @@ proto_h2rpc(int proto)
         H2RPC_CHECK(IPPROTO_ICMPV6);
         H2RPC_CHECK(IPPROTO_UDP);
         H2RPC_CHECK(IPPROTO_TCP);
+        H2RPC_CHECK(IPPROTO_RAW);
         default: return RPC_PROTO_UNKNOWN;
     } 
 }
