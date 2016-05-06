@@ -250,10 +250,13 @@ rpc_stream_connection(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
         result = EXIT_FAILURE;
         goto cleanup;
     }
-    
+
+    srvr->op = RCF_RPC_CALL;
+    rpc_accept(srvr, srvr_sock, NULL, NULL);
+
     rpc_connect(clnt, clnt_sock, srvr_addr);
     accepted_sock = rpc_accept(srvr, srvr_sock, NULL, NULL);
-    
+
 cleanup:
     /*
      * We should close server socket anyway because we've already had a
