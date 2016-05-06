@@ -2562,3 +2562,22 @@ rpc_setsockopt_check_int(rcf_rpc_server *rpcs,
 
     return rc;
 }
+
+/* See description in the tapi_rpc_socket.h */
+void
+tapi_rpc_provoke_arp_resolution(struct rcf_rpc_server *rpcs,
+                                const struct sockaddr *addr)
+{
+    char buf[1] = {0};
+    int sock;
+
+    sock = rpc_socket(rpcs, rpc_socket_domain_by_addr(addr),
+                      RPC_SOCK_RAW, RPC_IPPROTO_RAW);
+
+    /* Send invalid 0-length IP datagram which will be dropped by any host
+     * in the network; in this way, we minimize side-effect of this
+     * function.
+     */
+    rpc_sendto(rpcs, sock, buf, sizeof(buf), 0, addr);
+    rpc_close(rpcs, sock);
+}

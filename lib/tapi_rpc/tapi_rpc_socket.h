@@ -1077,6 +1077,18 @@ extern int rpc_socket_connect_close(rcf_rpc_server *rpcs,
 extern int rpc_socket_listen_close(rcf_rpc_server *rpcs,
                                    const struct sockaddr *addr,
                                    uint32_t time2run);
+
+/**
+ * Send empty IP packet to @p addr to provoke ARP procedure.
+ *
+ * @note The function jumps to @b cleanup in case of fail.
+ *
+ * @param rpcs  RPC server handle.
+ * @param addr  Destination address.
+ */
+extern void tapi_rpc_provoke_arp_resolution(rcf_rpc_server *rpcs,
+                                            const struct sockaddr *addr);
+
 /**@} <!-- END te_lib_rpc_socket --> */
 
 #ifdef __cplusplus
