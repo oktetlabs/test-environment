@@ -646,9 +646,9 @@ tad_send_free_packets(tad_pkts *pkts, unsigned int num)
 static te_errno
 tad_send_by_template_unit(csap_p csap, tad_send_tmpl_unit_data *tu_data)
 {
-    te_errno    rc;
-    tad_pkts   *pkts;
-    int         i;
+    te_errno        rc;
+    tad_pkts       *pkts;
+    unsigned int    i;
 
 #if 1 /* FIXME: More part of this processing to prepare stage */
     tad_special_send_pkt_cb  send_cb = NULL;
