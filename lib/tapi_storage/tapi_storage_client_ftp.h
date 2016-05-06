@@ -32,7 +32,6 @@
 #define __TAPI_STORAGE_CLIENT_FTP_H__
 
 
-#include "rcf_rpc.h"
 #include "tapi_storage_client.h"
 
 
@@ -45,13 +44,15 @@ extern "C" {
  * FTP client specific context
  */
 typedef struct tapi_storage_client_ftp_context {
-    /** @todo FTP client specific context, i.e. sockets etc */
+    int control_socket;             /**< Socket of control connection. */
+    int data_socket;                /**< Socket of data connection. */
+    struct sockaddr_storage addr;   /**< Data connection server address. */
 } tapi_storage_client_ftp_context;
 
 
 /**
  * Pre initialized methods to operate the FTP client. It should be passed
- * to @b tapi_storage_client_init to initialize the service.
+ * to @p tapi_storage_client_init to initialize the service.
  *
  * @sa tapi_storage_client_init
  */
@@ -60,22 +61,20 @@ extern tapi_storage_client_methods tapi_storage_client_ftp_methods;
 
 /**
  * Initialize FTP client context. Context should be released with
- * @b tapi_storage_client_ftp_context_fini when it is no longer needed.
+ * @p tapi_storage_client_ftp_context_fini when it is no longer needed.
  *
  * @param[out] context      FTP client context handle.
  *
  * @return Status code.
  *
  * @sa tapi_storage_client_ftp_context_fini
- *
- * @todo It is need an input initialization parameters.
  */
 extern te_errno tapi_storage_client_ftp_context_init(
                                 tapi_storage_client_ftp_context *context);
 
 /**
  * Release FTP client context that was initialized with
- * @b tapi_storage_client_ftp_context_init.
+ * @p tapi_storage_client_ftp_context_init.
  *
  * @param context       FTP client context handle.
  *
@@ -86,14 +85,18 @@ extern void tapi_storage_client_ftp_context_fini(
 
 /**
  * Initialize FTP client handle.
- * Client should be released with @b tapi_storage_client_ftp_fini when it is
+ * Client should be released with @p tapi_storage_client_ftp_fini when it is
  * no longer needed.
  *
  * @param[in]  rpcs         RPC server handle.
- * @param[in]  methods      Back-end client scpecific methods.
+ * @param[in]  methods      Back-end client scpecific methods. If @c NULL
+ *                          then default methods will be used. Default
+ *                          methods is defined in tapi_storage_client_ftp.c.
  * @param[in]  auth         Back-end client specific authorization
  *                          parameters.
- * @param[in]  context      Back-end client scpecific context.
+ * @param[in]  context      Back-end client scpecific context. Don't free
+ *                          the @p context before finishing work with
+                            @p client.
  * @param[out] client       FTP client handle.
  *
  * @return Status code.
@@ -109,7 +112,7 @@ extern te_errno tapi_storage_client_ftp_init(
 
 /**
  * Release FTP client that was initialized with
- * @b tapi_storage_client_ftp_init.
+ * @p tapi_storage_client_ftp_init.
  *
  * @param client        FTP client handle.
  *
