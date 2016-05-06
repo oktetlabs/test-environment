@@ -6,7 +6,8 @@ use Data::Dumper;
 
 package night_logs_cgi_aux::aux_funcs;
 use base 'Exporter';
-our @EXPORT = qw(load_caches_list get_cli_path
+our @EXPORT = qw(load_caches_list get_cli_path lock_caches unlock_caches
+                 get_caches_list_path
                  get_compromised compromise_iter uncompromise_iter);
 
 sub get_cli_path
@@ -16,10 +17,15 @@ sub get_cli_path
     return $cli_path;
 }
 
+sub get_caches_list_path
+{
+    return CLI_PATH."/caches_list";
+}
+
 sub load_caches_list
 {
-    my $caches_dir = get_cli_path();
-    my @caches_list = `cat $caches_dir/caches_list`;
+    my $caches_list_fn = get_caches_list_path();
+    my @caches_list = `cat ${caches_list_fn}`;
     my @caches = ();
 
     foreach my $cache (@caches_list)
@@ -31,6 +37,24 @@ sub load_caches_list
     }
 
     return @caches;
+}
+
+sub lock_caches
+{
+    my $caches_list_fn = get_caches_list_path();
+
+    open my $fh, '<', "${caches_list_fn}" or
+                      die "Failed to open ${caches_list_fn}";
+    flock($fh, Fcntl::LOCK_EX);
+
+    return $fh;
+}
+
+sub unlock_caches
+{
+    my $fh = $_[0];
+
+    flock($fh, Fcntl::LOCK_UN);
 }
 
 sub get_cache_by_id

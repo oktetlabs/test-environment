@@ -256,6 +256,13 @@ sub download_prepare_log
         $file_name = $tmp_files[$#tmp_files];
     }
 
+    if (system_call("tail ${file_name} | ".
+                    "grep '</proteos:log_report>' >/dev/null") != 0)
+    {
+        print STDERR "Termination check failed\n";
+        return (-1, 0);
+    }
+
     get_timestamp('unpack', 'end');
 
     return (0, $is_compromised);
@@ -810,7 +817,8 @@ sub process_logs
             my $is_compromised;
             my $rc;
 
-            if (defined($loaded_logs->{$download_path}))
+            if (defined($loaded_logs->{$download_path}) &&
+                $loaded_logs->{$download_path} == 1)
             {
                 return;
             }
@@ -1487,7 +1495,8 @@ if (defined($cached_logs_path) && length($cached_logs_path) > 0)
 }
 
 if (defined($date_from) && defined($date_to) &&
-    $date_from->cmp($date_to) <= 0)
+    $date_from->cmp($date_to) <= 0 &&
+    !(defined($cached_logs_path) && !defined($update_cache_path)))
 {
     foreach my $path (@log_paths)
     {
@@ -1534,8 +1543,14 @@ if (defined($update_cache_path) &&
         }
     }
 
+    my $date_inc = new Date::Manip::Delta;
+    my $last_log_date_fixed;
     my $cache_last_log_date_f = $update_cache_path."/last_log_date";
-    my $last_log_date_str = $last_log_date->printf("%Y.%m.%d");
+    my $last_log_date_str;
+
+    $date_inc->parse("- 2 day");
+    $last_log_date_fixed = $date_inc->calc($last_log_date);
+    $last_log_date_str = $last_log_date_fixed->printf("%Y.%m.%d");
     `echo $last_log_date_str >$cache_last_log_date_f`;
 
     nstore($loaded_logs, $update_cache_path."/loaded_logs");

@@ -4,6 +4,8 @@ use strict;
 use warnings;
 use Date::Manip;
 
+use Fcntl qw/:flock/;
+
 # Next comment is special, it will be changed to
 # correct "use lib" when deploying.
 
@@ -145,7 +147,9 @@ if (!defined($cache_id))
 
 my $date_a;
 my $date_b;
+my $caches_list_path = get_caches_list_path();
 my $cli_path = get_cli_path();
+my $fh_lock = lock_caches();
 my @caches = load_caches_list();
 
 $date_inc->parse("+ ".($days_at_once - 1)." day");
@@ -192,8 +196,8 @@ if ($cache_found == 0)
                     "logs_source" => $log_path });
 }
 
-open(my $fh, '>', "$cli_path/caches_list_tmp") or
-      die "Failed to open caches_list_tmp";
+open(my $fh, '>', "${caches_list_path}") or
+      die "Failed to open ${caches_list_path}";
 foreach my $cache (@caches)
 {
     print $fh add_spaces($cache->{"id"}, 50).
@@ -202,4 +206,4 @@ foreach my $cache (@caches)
 }
 close($fh);
 
-`mv $cli_path/caches_list_tmp $cli_path/caches_list`
+unlock_caches($fh_lock);
