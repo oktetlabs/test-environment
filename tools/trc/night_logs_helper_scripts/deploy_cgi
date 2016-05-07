@@ -9,6 +9,7 @@ my $cgi_path = "/usr/lib/cgi-bin/local/socktest/";
 my $cli_path = "/home/tester-l5/night_logs_caches/";
 my $def_test = "sockapi-ts/sockopts/bindtodevice_dstunreach";
 my $def_xml_log = "trc-log.bz2";
+my $def_group_logs_by_tags = "";
 my $user = "tester-l5";
 my $group = "www-data";
 
@@ -38,15 +39,21 @@ foreach my $arg (@ARGV)
     {
         $def_xml_log = $1;
     }
+    elsif ($arg =~ m/^--def-logs-by-tags$/)
+    {
+        $def_group_logs_by_tags = "checked";
+    }
     elsif ($arg =~ m/^--help$/)
     {
-        print "Deploying CGI scripts\n".
-              "--cgi_path=             Where to place CGI scripts\n".
-              "--cli_path=             Where auxiliary scripts will be stored\n".
-              "--user=                 Name of user owning scripts\n".
-              "--group=                Name of group owning scripts\n".
-              "--def-test=             Default test provided as an example\n".
-              "--def-xml-log=          Default xml log filename\n";
+        print
+          "Deploying CGI scripts\n".
+          "--cgi_path=          Where to place CGI scripts\n".
+          "--cli_path=          Where auxiliary scripts will be stored\n".
+          "--user=              Name of user owning scripts\n".
+          "--group=             Name of group owning scripts\n".
+          "--def-test=          Default test provided as an example\n".
+          "--def-xml-log=       Default xml log filename\n".
+          "--def-logs-by-tags   Group logs by tags by default\n";
 
         exit(0);
     }
@@ -91,7 +98,14 @@ sub fix_script
     if (system("sed -i 's/DEF_XML_LOG/".escape_path(${def_xml_log}).
                "/g' $script") != 0)
     {
-        die "Failed to replace DEF_TEST in $script";
+        die "Failed to replace DEF_XML_LOG in $script";
+    }
+
+    if (system("sed -i 's/DEF_GROUP_LOGS_BY_TAGS/".
+               escape_path(${def_group_logs_by_tags}).
+               "/g' $script") != 0)
+    {
+        die "Failed to replace DEF_GROUP_LOGS_BY_TAGS in $script";
     }
 }
 

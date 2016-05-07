@@ -37,6 +37,7 @@ my $benchmarks = 0;
 my $with_err_only = 0;
 my $iters_with_err_only = 0;
 my $print_binary_report = 0;
+my $group_logs_by_tags = 0;
 
 my $tester_logs_dir = "testdir";
 my $default_cache_path = "/home/izbitsky/cached_v5_tot/";
@@ -1032,6 +1033,10 @@ foreach my $arg (@ARGV)
         $tag_expr =~ s/&/ && /g;
         $tag_expr =~ s/\|/ || /g;
     }
+    elsif ($arg =~ m/^--group-logs-by-tags$/)
+    {
+        $group_logs_by_tags = 1;
+    }
     elsif ($arg =~ m/^--binary-report$/)
     {
         $print_binary_report = 1;
@@ -1062,6 +1067,7 @@ foreach my $arg (@ARGV)
               "--benchmarks             Collect data on script performance\n".
               "--def-log-name=          Filename of XML log\n".
               "                         (trc-log.bz2 by default)\n".
+              "--group-logs-by-tags     Group logs by tags in HTML report\n".
               "--verbose, -v            Log performed operations\n".
               "--help, -h               Display this message\n";
         exit(0);
@@ -1567,6 +1573,78 @@ sub js_param_escape
     return $str;
 }
 
+sub tags2str
+{
+    my $tags = $_[0];
+
+    return join(' ', sort(split(/\s+/, $tags)));
+}
+
+sub logs_group2html
+{
+    my $fh = $_[0];
+    my $test = $_[1];
+    my $logs = $_[2];
+
+    for (my $i = 0; $i < scalar(@{$logs}); $i++)
+    {
+        print $fh "<a href=\"".$logs->[$i]->{"log"}."\" ".
+                   "onClick=\"showLog('$test', '".
+                   $logs->[$i]->{"log"}."', event); ".
+                   "return false;\" title=\"".
+                   $logs->[$i]->{"date"}.": ".
+                   fix_tags($logs->[$i]->{"tags"})."\"".
+                   ">[".($i + 1)."]</a>";
+        if ($i < scalar(@{$logs}) - 1)
+        {
+            print $fh ", \n";
+        }
+    }
+}
+
+sub logs2html_aux
+{
+    my $fh = $_[0];
+    my $test = $_[1];
+    my $logs = $_[2];
+
+    my $tags_str;
+    my %logs_hash = ();
+
+    if ($group_logs_by_tags > 0)
+    {
+        foreach my $log (@{$logs})
+        {
+            $tags_str = tags2str(fix_tags($log->{"tags"}));
+
+            if (!defined($logs_hash{$tags_str}))
+            {
+                $logs_hash{$tags_str} = [ $log ];
+            }
+            else
+            {
+                push(@{$logs_hash{$tags_str}}, $log);
+            }
+        }
+
+        print $fh "<table border=\"1\">\n";
+        foreach $tags_str (sort(keys %logs_hash))
+        {
+            #my $tags_from_log = $logs_hash{$tags_str}->[0]->{"tags"};
+
+            print $fh "<tr><td>${tags_str}</td></tr>\n";
+            print $fh "<tr><td>\n";
+            logs_group2html($fh, $test, $logs_hash{$tags_str});
+            print $fh "</td></tr>\n";
+        }
+        print $fh "</table>\n";
+    }
+    else
+    {
+        logs_group2html($fh, $test, $logs);
+    }
+}
+
 sub logs2html
 {
     my $fh = $_[0];
@@ -1591,27 +1669,17 @@ sub logs2html
         $compromise_str = "Compromise"
     }
 
-    for (my $i = 0; $i < scalar(@{$logs}); $i++)
-    {
-        if (length($logs_str) > 0)
-        {
-            $logs_str .= ",";
-        }
-        $logs_str .= $logs->[$i]->{"log"};
+    logs2html_aux($fh, $test, $logs);
 
-        print $fh "<a href=\"".$logs->[$i]->{"log"}."\" ".
-                   "onClick=\"showLog('$test', '".
-                   $logs->[$i]->{"log"}."', event); ".
-                   "return false;\" title=\"".
-                   $logs->[$i]->{"date"}.": ".
-                   fix_tags($logs->[$i]->{"tags"})."\"".
-                   ">[".($i + 1)."]</a>";
-        if ($i < scalar(@{$logs}) - 1)
-        {
-            print $fh ", \n";
-        }
-    }
 #    Temporary disabled.
+#    for (my $i = 0; $i < scalar(@{$logs}); $i++)
+#    {
+#        if (length($logs_str) > 0)
+#        {
+#            $logs_str .= ",";
+#        }
+#        $logs_str .= $logs->[$i]->{"log"};
+#    }
 #
 #    print $fh "<br>\n<input type=\"button\" value=\"$compromise_str\" ".
 #              "onClick=\"compromiseIter(this, '".
@@ -1637,6 +1705,7 @@ sub print_html_report
     print $fh "<title>Results from night testing logs</title>";
     print $fh "<style type=\"text/css\">\n";
     print $fh ".test_name { font-weight: bold;}\n";
+    print $fh "td { vertical-align: top; }\n";
 
     print $fh <<EOT;
         #TestLog {

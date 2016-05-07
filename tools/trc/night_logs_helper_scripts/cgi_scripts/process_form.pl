@@ -135,6 +135,11 @@ if ($cgi->param('include_err_iters_only'))
     $command_str .= " --iters-with-err-only";
 }
 
+if ($cgi->param('group_logs_by_tags'))
+{
+    $command_str .= " --group-logs-by-tags";
+}
+
 if ($cgi->param('binary_report'))
 {
     $command_str .= " --binary-report";
