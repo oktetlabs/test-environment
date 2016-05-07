@@ -1632,10 +1632,10 @@ sub logs2html_aux
         {
             #my $tags_from_log = $logs_hash{$tags_str}->[0]->{"tags"};
 
-            print $fh "<tr><td>${tags_str}</td></tr>\n";
-            print $fh "<tr><td>\n";
+            print $fh "<tr><td>${tags_str}</td>\n";
+            print $fh "<td>\n";
             logs_group2html($fh, $test, $logs_hash{$tags_str});
-            print $fh "</td></tr>\n";
+            print $fh "</td>\n</tr>\n";
         }
         print $fh "</table>\n";
     }
