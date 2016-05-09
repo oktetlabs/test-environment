@@ -1237,7 +1237,7 @@ static const char * const trc_html_doc_start =
 "\n"
 "    function getIterHistoryURL(test_path, params)\n"
 "    {\n"
-"        return 'https://oktetlabs.ru/socktest/index.pl?tests=' +\n"
+"        return '%s/index.pl?tests=' +\n"
 "                encodeURIComponent(test_path + ':' + params) +\n"
 "                '&log_path=' +\n"
 "                encodeURIComponent(document.location.href);\n"
@@ -3350,6 +3350,11 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
     te_errno    rc = 0;
     tqe_string *tag;
     te_string   title_string = TE_STRING_INIT;
+    const char *night_logs_history = NULL;
+
+    night_logs_history = getenv("TE_NIGHT_LOGS_HISTORY");
+    if (night_logs_history == NULL)
+        night_logs_history = "https://oktetlabs.ru/socktest";
 
     f = fopen(filename, "w");
     if (f == NULL)
@@ -3372,7 +3377,8 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
         }
     }
     fprintf(f, trc_html_doc_start,
-            (title != NULL) ? title : title_string.ptr);
+            ((title != NULL) ? title : title_string.ptr),
+            night_logs_history);
     if (title != NULL)
         fprintf(f, "<h1 align=center>%s</h1>\n", title);
     if (gctx->db->version != NULL)
