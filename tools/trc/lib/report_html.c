@@ -1238,7 +1238,7 @@ static const char * const trc_html_doc_start =
 "    function getIterHistoryURL(test_path, params)\n"
 "    {\n"
 "        return '%s/index.pl?tests=' +\n"
-"                encodeURIComponent(test_path + ':' + params) +\n"
+"                encodeURIComponent(test_path + params) +\n"
 "                '&log_path=' +\n"
 "                encodeURIComponent(document.location.href);\n"
 "    }\n"
@@ -2488,6 +2488,30 @@ cleanup:
 }
 
 /**
+ * Check whether parameter name or value contain symbols
+ * which do not allow to reference test iteration by its parameters in
+ * night logs history.
+ *
+ * @param s     Parameter name or value
+ *
+ * @return TRUE if name or value contain forbidden symbol, FALSE otherwise.
+ */
+static te_bool
+check_forbidden_symbols(const char *s)
+{
+    unsigned int i;
+
+    for (i = 0; i < strlen(s); i++)
+    {
+        if (s[i] == '\r' || s[i] == '\n' || s[i] == ' ' ||
+            s[i] == '\t')
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+/**
  * Output test iteration expected/obtained results to HTML report.
  *
  * @param f             File stream to write to
@@ -2560,44 +2584,63 @@ trc_report_exp_got_to_html(FILE             *f,
             {
                 te_string     params = TE_STRING_INIT;
                 unsigned int  i;
+                te_bool       use_hash = FALSE;
 
                 for (i = 0; i < iter_entry->args_n; i++)
                 {
-                    te_bool         escape_comma = FALSE;
-                    unsigned int    j;
-                    
-                    if (iter_entry->args[i].variable)
-                        continue;
-
-                    te_string_append(&params,
-                                     "%s=",
-                                     iter_entry->args[i].name);
-
-                    if (strchr(iter_entry->args[i].value, ',') != NULL)
-                        escape_comma = TRUE;
-
-                    if (escape_comma)
-                        te_string_append(&params, "[");
-                    for (j = 0; j < strlen(iter_entry->args[i].value);
-                         j++)
+                    if (check_forbidden_symbols(iter_entry->args[i].name) ||
+                        check_forbidden_symbols(iter_entry->args[i].value))
                     {
-                        char c = iter_entry->args[i].value[j];
+                        use_hash = TRUE;
+                        break;
+                    }
+                }
+
+                if (use_hash)
+                {
+                    te_string_append(&params, "%%%s", iter_entry->hash);
+                }
+                else
+                {
+                    te_string_append(&params, "%s", ":");
+                    for (i = 0; i < iter_entry->args_n; i++)
+                    {
+                        te_bool         escape_comma = FALSE;
+                        unsigned int    j;
+                        
+                        if (iter_entry->args[i].variable)
+                            continue;
+
+                        te_string_append(&params,
+                                         "%s=",
+                                         iter_entry->args[i].name);
+
+                        if (strchr(iter_entry->args[i].value, ',') != NULL)
+                            escape_comma = TRUE;
 
                         if (escape_comma)
+                            te_string_append(&params, "[");
+                        for (j = 0; j < strlen(iter_entry->args[i].value);
+                             j++)
                         {
-                            if (c == '[' || c == ']')
-                                te_string_append(&params, "\\\\");
+                            char c = iter_entry->args[i].value[j];
+
+                            if (escape_comma)
+                            {
+                                if (c == '[' || c == ']')
+                                    te_string_append(&params, "\\\\");
+                            }
+                            if (c == '\'' || c == '\\')
+                                te_string_append(&params, "\\");
+
+                            te_string_append(&params, "%c", c);
                         }
-                        if (c == '\'' || c == '\\')
-                            te_string_append(&params, "\\");
+                        if (escape_comma)
+                            te_string_append(&params, "]");
 
-                        te_string_append(&params, "%c", c);
+                        if (i < iter_entry->args_n - 1)
+                            te_string_append(&params, ",");
                     }
-                    if (escape_comma)
-                        te_string_append(&params, "]");
-
-                    if (i < iter_entry->args_n - 1)
-                        te_string_append(&params, ",");
                 }
 
                 iter_history_url = te_sprintf(trc_test_iter_history_href,
