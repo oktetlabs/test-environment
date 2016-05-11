@@ -3397,7 +3397,7 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
 
     night_logs_history = getenv("TE_NIGHT_LOGS_HISTORY");
     if (night_logs_history == NULL)
-        night_logs_history = "https://oktetlabs.ru/prj/sf/sapi-ts";
+        night_logs_history = "https://oktetlabs.ru/prj/sf/sapi-ts/history";
 
     f = fopen(filename, "w");
     if (f == NULL)

@@ -5,7 +5,7 @@ use warnings;
 use File::Spec;
 use File::Basename;
 
-my $cgi_path = "/usr/lib/cgi-bin/local/socktest/";
+my $cgi_path = "/usr/lib/cgi-bin/local/socktest/history/";
 my $cli_path = "/home/tester-l5/night_logs_caches/";
 my $def_test = "sockapi-ts/sockopts/bindtodevice_dstunreach";
 my $def_xml_log = "trc-log.bz2";
