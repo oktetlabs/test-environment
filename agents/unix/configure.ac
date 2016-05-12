@@ -403,6 +403,9 @@ AC_CHECK_HEADERS([sys/klog.h])
 AC_CHECK_HEADERS([linux/if_vlan.h])
 AC_CHECK_HEADERS([dirent.h])
 AC_CHECK_HEADERS([sys/statvfs.h])
+AC_CHECK_HEADERS([sys/queue.h])
+AC_CHECK_HEADERS([inttypes.h])
+AC_CHECK_HEADERS([search.h])
 
 dnl
 dnl Terminal devices
@@ -514,6 +517,19 @@ EXTRA_LDADD=
 
 AC_PROG_LEX
 AC_PROG_YACC
+
+AC_ARG_ENABLE([pci],
+              AS_HELP_STRING([--enable-pci],
+                             [enable PCI support (default is NO)]),
+              [ac_cv_enable_pci=$enableval], [ac_cv_enable_pci=no])
+AC_CACHE_CHECK([whether to enable PCI],
+               [ac_cv_enable_pci], [ac_cv_enable_pci=no])
+if test x"$ac_cv_enable_pci" != xno
+then
+    AC_DEFINE([ENABLE_PCI_SUPPORT], [], [Whether to enable PCI support])
+fi
+AM_CONDITIONAL([CFG_PCI], test x"$ac_cv_enable_pci" != xno)
+
 
 AC_ARG_ENABLE([wifi],
               AS_HELP_STRING([--enable-wifi],
