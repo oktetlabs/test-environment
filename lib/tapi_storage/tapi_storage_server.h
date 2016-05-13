@@ -32,6 +32,8 @@
 #define __TAPI_STORAGE_SERVER_H__
 
 #include "tapi_storage_common.h"
+#include "tapi_storage_share.h"
+#include "tapi_local_storage_device.h"
 #include "rcf_rpc.h"
 
 
@@ -104,40 +106,54 @@ typedef te_errno (* tapi_storage_server_method_add_storage)(
  * Add a directory to storage share.
  *
  * @param server        Server handle.
- * @param directory     Directory pathname to be shared.
+ * @param storage       Storage device can be represented by name, mount
+ *                      point, etc. depends on server implementation.
+ *                      May be @c NULL.
+ * @param path          Directory pathname on the @p storage to be shared if
+ *                      storage is not @c NULL, or full path if storage is
+ *                      @c NULL. May be @c NULL if it is required to add all
+ *                      storage data to share.
  *
  * @return Status code.
  */
 typedef te_errno (* tapi_storage_server_method_add_share)(
-                                       tapi_storage_server *server,
-                                       const char          *directory);
+                                        tapi_storage_server *server,
+                                        const char          *storage,
+                                        const char          *path);
 
 /**
  * Delete directory from storage sharing.
  *
- * @param server    Server handle.
- * @param directory Directory pathname to be removed from the sharing list.
+ * @param server        Server handle.
+ * @param storage       Storage device can be represented by name, mount
+ *                      point, etc. depends on server implementation.
+ *                      May be @c NULL.
+ * @param path          Directory pathname on the @p storage to be removed
+ *                      from the sharing list if storage is not @c NULL, or
+ *                      full path if storage is @c NULL. May be @c NULL if
+ *                      trere are all storage data is shared.
  *
  * @return Status code.
  */
 typedef te_errno (* tapi_storage_server_method_del_share)(
-                                       tapi_storage_server *server,
-                                       const char          *directory);
+                                        tapi_storage_server *server,
+                                        const char          *storage,
+                                        const char          *path);
 
 /**
- * Get shared directories list. @p directories allocated by this function
- * and should be freed by user when it is no longer needed.
+ * Get shared directories list. @p share should be freed by user with
+ * @p tapi_storage_share_list_free when it is no longer needed.
  *
  * @param[in]  server       Server handle.
- * @param[out] directories  Allocated array with directories list.
- * @param[out] len          Array length.
+ * @param[out] share        List of shared directories.
  *
  * @return Status code.
+ *
+ * @sa tapi_storage_share_list_free
  */
 typedef te_errno (* tapi_storage_server_method_get_share)(
-                                       tapi_storage_server  *server,
-                                       const char          **directories,
-                                       size_t               *len);
+                                       tapi_storage_server     *server,
+                                       tapi_storage_share_list *share);
 
 /**
  * Methods to operate the server.
@@ -181,7 +197,7 @@ struct tapi_storage_server {
 static inline te_errno
 tapi_storage_server_enable(tapi_storage_server *server)
 {
-    return (server->methods->enable != NULL
+    return (server->methods != NULL && server->methods->enable != NULL
             ? server->methods->enable(server) : TE_EOPNOTSUPP);
 }
 
@@ -198,7 +214,7 @@ tapi_storage_server_enable(tapi_storage_server *server)
 static inline te_errno
 tapi_storage_server_disable(tapi_storage_server *server)
 {
-    return (server->methods->disable != NULL
+    return (server->methods != NULL && server->methods->disable != NULL
             ? server->methods->disable(server) : TE_EOPNOTSUPP);
 }
 
@@ -212,7 +228,7 @@ tapi_storage_server_disable(tapi_storage_server *server)
 static inline te_bool
 tapi_storage_server_is_enabled(tapi_storage_server *server)
 {
-    return (server->methods->is_enabled != NULL
+    return (server->methods != NULL && server->methods->is_enabled != NULL
             ? server->methods->is_enabled(server) : TE_EOPNOTSUPP);
 }
 
@@ -230,7 +246,7 @@ static inline te_errno
 tapi_storage_server_add_storage(tapi_storage_server *server,
                                 const char          *storage_name)
 {
-    return (server->methods->add_storage != NULL
+    return (server->methods != NULL && server->methods->add_storage != NULL
             ? server->methods->add_storage(server, storage_name)
             : TE_EOPNOTSUPP);
 }
@@ -239,53 +255,67 @@ tapi_storage_server_add_storage(tapi_storage_server *server,
  * Add a directory to storage share.
  *
  * @param server        Server handle.
- * @param directory     Directory pathname to be shared.
+ * @param storage       Storage device can be represented by name, mount
+ *                      point, etc. depends on server implementation.
+ *                      May be @c NULL.
+ * @param path          Directory pathname on the @p storage to be shared if
+ *                      storage is not @c NULL, or full path if storage is
+ *                      @c NULL. May be @c NULL if it is required to add all
+ *                      storage data to share.
  *
  * @return Status code.
  */
 static inline te_errno
 tapi_storage_server_add_share(tapi_storage_server *server,
-                              const char          *directory)
+                              const char          *storage,
+                              const char          *path)
 {
-    return (server->methods->add_share != NULL
-            ? server->methods->add_share(server, directory)
+    return (server->methods != NULL && server->methods->add_share != NULL
+            ? server->methods->add_share(server, storage, path)
             : TE_EOPNOTSUPP);
 }
 
 /**
  * Delete directory from storage sharing.
  *
- * @param server    Server handle.
- * @param directory Directory pathname to be removed from the sharing list.
+ * @param server        Server handle.
+ * @param storage       Storage device can be represented by name, mount
+ *                      point, etc. depends on server implementation.
+ *                      May be @c NULL.
+ * @param path          Directory pathname on the @p storage to be removed
+ *                      from the sharing list if storage is not @c NULL, or
+ *                      full path if storage is @c NULL. May be @c NULL if
+ *                      trere are all storage data is shared.
  *
  * @return Status code.
  */
 static inline te_errno
 tapi_storage_server_del_share(tapi_storage_server *server,
-                              const char          *directory)
+                              const char          *storage,
+                              const char          *path)
 {
-    return (server->methods->del_share != NULL
-            ? server->methods->del_share(server, directory)
+    return (server->methods != NULL && server->methods->del_share != NULL
+            ? server->methods->del_share(server, storage, path)
             : TE_EOPNOTSUPP);
 }
 
 /**
- * Get shared directories list. @p directories allocated by this function
- * and should be freed by user when it is no longer needed.
+ * Get shared directories list. @p share should be freed by user with
+ * @p tapi_storage_share_list_free when it is no longer needed.
  *
  * @param[in]  server       Server handle.
- * @param[out] directories  Allocated array with directories list.
- * @param[out] len          Array length.
+ * @param[out] share        List of shared directories.
  *
  * @return Status code.
+ *
+ * @sa tapi_storage_share_list_free
  */
 static inline te_errno
-tapi_storage_server_get_share(tapi_storage_server  *server,
-                              const char          **directories,
-                              size_t               *len)
+tapi_storage_server_get_share(tapi_storage_server     *server,
+                              tapi_storage_share_list *share)
 {
-    return (server->methods->get_share != NULL
-            ? server->methods->get_share(server, directories, len)
+    return (server->methods != NULL && server->methods->get_share != NULL
+            ? server->methods->get_share(server, share)
             : TE_EOPNOTSUPP);
 }
 
