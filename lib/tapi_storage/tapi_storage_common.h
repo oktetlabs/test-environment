@@ -43,6 +43,14 @@
 extern "C" {
 #endif
 
+/** On-stack tapi_storage_auth_params structure initializer. */
+#define TAPI_STORAGE_AUTH_INIT { \
+    .server_addr = NULL,            \
+    .port = 0,                      \
+    .user = NULL,                   \
+    .password = NULL                \
+}
+
 /**
  * Back-end service type.
  */
