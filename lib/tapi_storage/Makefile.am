@@ -18,7 +18,8 @@ include_HEADERS= \
 	tapi_storage_client.h \
 	tapi_storage_server.h \
 	tapi_storage_client_ftp.h \
-	tapi_storage.h
+	tapi_storage.h \
+	tapi_storage_share.h
 
 libtapi_storage_la_SOURCES= \
 	tapi_local_file.c \
@@ -28,7 +29,8 @@ libtapi_storage_la_SOURCES= \
 	tapi_storage_client.c \
 	tapi_storage_server.c \
 	tapi_storage_client_ftp.c \
-	tapi_storage.c
+	tapi_storage.c \
+	tapi_storage_share.c
 
 
 install-exec-hook:
