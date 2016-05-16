@@ -120,7 +120,7 @@ static te_bool
 id_nodes_equal(const id_node *node, const rpc_ptr_id_namespace ns,
                const void *memory)
 {
-    return node->ns == ns && node->memory == memory;
+    return node->used && node->ns == ns && node->memory == memory;
 }
 
 /**
@@ -363,7 +363,8 @@ rcf_pch_mem_index_free(rpc_ptr id, rpc_ptr_id_namespace ns,
               caller_func, caller_line, id, ns);
         rc = TE_RC(TE_RCF_PCH, TE_EINVAL);
     }
-    else if (ids[index].memory != NULL && ids[index].ns == ns)
+    else if (ids[index].used && ids[index].memory != NULL &&
+             ids[index].ns == ns)
         rc = give_index(index);
     else
     {
@@ -449,7 +450,7 @@ rcf_pch_mem_index_mem_to_ptr(rpc_ptr id, rpc_ptr_id_namespace ns,
         ERROR("%s:%d: The rpc pointer isn't found (%d, %d)",
               caller_func, caller_line, id, ns);
     }
-    else if (ids[index].ns == ns)
+    else if (ids[index].used && ids[index].ns == ns)
         memory = ids[index].memory;
     else
     {
