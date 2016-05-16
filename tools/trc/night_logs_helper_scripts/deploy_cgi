@@ -12,6 +12,7 @@ my $def_xml_log = "trc-log.bz2";
 my $def_group_logs_by_tags = "";
 my $user = "tester-l5";
 my $group = "www-data";
+my $install_night_status = 1;
 
 foreach my $arg (@ARGV)
 {
@@ -43,6 +44,10 @@ foreach my $arg (@ARGV)
     {
         $def_group_logs_by_tags = "checked";
     }
+    elsif ($arg =~ m/^--no-night-status$/)
+    {
+        $install_night_status = 0;
+    }
     elsif ($arg =~ m/^--help$/)
     {
         print
@@ -53,7 +58,8 @@ foreach my $arg (@ARGV)
           "--group=             Name of group owning scripts\n".
           "--def-test=          Default test provided as an example\n".
           "--def-xml-log=       Default xml log filename\n".
-          "--def-logs-by-tags   Group logs by tags by default\n";
+          "--def-logs-by-tags   Group logs by tags by default\n".
+          "--no-night-status    Do not install night_status.pl script\n";
 
         exit(0);
     }
@@ -112,8 +118,7 @@ sub fix_script
 my %files = ( "$cgi_path" => [ "./cgi_scripts/form.html",
                                "./cgi_scripts/index.pl",
                                "./cgi_scripts/process_form.pl",
-                               "./cgi_scripts/compromise.pl",
-                               "./cgi_scripts/night_status.pl" ],
+                               "./cgi_scripts/compromise.pl" ],
               "$cli_path" => [ "./cli_scripts/add_new_cache",
                                "./cli_scripts/te_get_nlogs_results",
                                "./cli_scripts/compromise_log",
@@ -122,6 +127,11 @@ my %files = ( "$cgi_path" => [ "./cgi_scripts/form.html",
                   [ "./cli_scripts/night_logs_cgi_aux/aux_funcs.pm" ] );
 
 my $rc;
+
+if ($install_night_status > 0)
+{
+    push(@{$files{$cgi_path}}, "./cgi_scripts/night_status.pl");
+}
 
 foreach my $path (keys %files)
 {
