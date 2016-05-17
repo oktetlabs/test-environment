@@ -42,22 +42,46 @@
 
 /* See description in tapi_storage.h. */
 te_errno
-tapi_storage_bootstrap(tapi_storage_client *client)
+tapi_storage_bootstrap(tapi_storage_client *client,
+                       const char          *root,
+                       te_bool              remove_root)
 {
-    te_errno con_rc;
-    te_errno rc = 0;
+    const char *root_dir = (root != NULL ? root : "/");
+    te_errno    con_rc;
+    te_errno    rc = 0;
 
     con_rc = tapi_storage_client_connect(client);
-    if (con_rc != 0)
+    if (con_rc != 0 || TE_RC_GET_ERROR(con_rc) != TE_ECONNREFUSED)
         return con_rc;
-    rc = tapi_storage_client_rm(client, "/", TRUE);
-    con_rc = tapi_storage_client_disconnect(client);
+    if (root == NULL || remove_root)
+        rc = tapi_storage_client_rm(client, root_dir, TRUE);
+    else
+    {
+        tapi_local_file_list  files;
+        tapi_local_file_le   *f;
+        tapi_local_file      *file;
+
+        rc = tapi_storage_client_ls(client, root_dir, &files);
+        if (rc == 0)
+        {
+            TAPI_LOCAL_FS_FOREACH(f, &files, file)
+            {
+                rc = tapi_storage_client_rm(client, file->pathname, TRUE);
+                if (rc != 0)
+                    break;
+            }
+            tapi_local_fs_list_free(&files);
+        }
+    }
+    if (con_rc == 0)
+        con_rc = tapi_storage_client_disconnect(client);
     return (rc != 0 ? rc : con_rc);
 }
 
 /* See description in tapi_storage.h. */
 te_errno
-tapi_storage_setup(tapi_storage_client *client)
+tapi_storage_setup(tapi_storage_client *client,
+                   const char          *root)
 {
     te_errno        con_rc;
     te_errno        rc = 0;
@@ -85,9 +109,10 @@ tapi_storage_setup(tapi_storage_client *client)
 
     /* Copy content to remote storage. */
     con_rc = tapi_storage_client_connect(client);
-    if (con_rc != 0)
+    if (con_rc != 0 || TE_RC_GET_ERROR(con_rc) != TE_ECONNREFUSED)
         return con_rc;
-    rc = tapi_storage_client_mput(client, &root_dir, NULL, TRUE, !lazy);
-    con_rc = tapi_storage_client_disconnect(client);
+    rc = tapi_storage_client_mput(client, &root_dir, root, TRUE, !lazy);
+    if (con_rc == 0)
+        con_rc = tapi_storage_client_disconnect(client);
     return (rc != 0 ? rc : con_rc);
 }

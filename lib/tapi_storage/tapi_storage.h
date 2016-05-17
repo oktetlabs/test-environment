@@ -42,10 +42,15 @@ extern "C" {
  * Clean up the storage from content.
  *
  * @param client        Storage client handle.
+ * @param root          Root directory to bootstrap. May be @c NULL to use
+ *                      default '/'.
+ * @param remove_root   Enable delete a root directory as well (if @c TRUE).
  *
  * @return Status code.
  */
-extern te_errno tapi_storage_bootstrap(tapi_storage_client *client);
+extern te_errno tapi_storage_bootstrap(tapi_storage_client *client,
+                                       const char          *root,
+                                       te_bool              remove_root);
 
 /**
  * Remove all existent content from remote storage and fill by another one.
@@ -54,10 +59,13 @@ extern te_errno tapi_storage_bootstrap(tapi_storage_client *client);
  * applied only to dissimilar files of source and remote storages.
  *
  * @param client        Storage client handle.
+ * @param root          Root directory to setup. Will be created if needed.
+ *                      May be @c NULL to use default '/'.
  *
  * @return Status code.
  */
-extern te_errno tapi_storage_setup(tapi_storage_client *client);
+extern te_errno tapi_storage_setup(tapi_storage_client *client,
+                                   const char          *root);
 
 #ifdef __cplusplus
 } /* extern "C" */
