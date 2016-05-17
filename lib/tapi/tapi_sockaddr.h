@@ -42,6 +42,41 @@ extern "C" {
 #endif
 
 /**
+ * Possible address types.
+ */
+typedef enum {
+    TAPI_ADDRESS_SPECIFIC = 0,       /**< A specific IP address. */
+    TAPI_ADDRESS_SPECIFIC_ZERO_PORT, /**< A specific IP address with zero
+                                          port. */
+    TAPI_ADDRESS_WILDCARD,           /**< @c INADDR_ANY. */
+    TAPI_ADDRESS_WILDCARD_ZERO_PORT, /**< @c INADDR_ANY and zero port. */
+    TAPI_ADDRESS_NULL                /**< @c NULL. */
+} tapi_address_type;
+
+/**
+ * Address types list, can be passed to macro @b TEST_GET_ENUM_PARAM.
+ */
+#define TAPI_ADDRESS_TYPE  \
+    { "specific",           TAPI_ADDRESS_SPECIFIC }, \
+    { "specific_zero_port", TAPI_ADDRESS_SPECIFIC_ZERO_PORT }, \
+    { "wildcard",           TAPI_ADDRESS_WILDCARD }, \
+    { "wildcard_zero_port", TAPI_ADDRESS_WILDCARD_ZERO_PORT }, \
+    { "null",               TAPI_ADDRESS_NULL }
+
+/**
+ * Get address type and allocate required address.
+ *
+ * @param _base_addr Pointer to the base address.
+ * @param _type_arg  Variable to get address type.
+ * @param _res_addr  Ponter to save the requested address.
+ */
+#define TEST_GET_TYPED_ADDR(_base_addr, _type_arg, _res_addr) \
+do {                                                                \
+    TEST_GET_ENUM_PARAM(_type_arg, TAPI_ADDRESS_TYPE);              \
+    _res_addr = tapi_sockaddr_clone_typed(_base_addr, _type_arg);   \
+} while (0)
+
+/**
  * Retrieve unused in system port in host order.
  *
  * @param pco       RPC server to check that port is free
@@ -109,6 +144,19 @@ tapi_sockaddr_clone_exact(const struct sockaddr *src,
 {
     memcpy(dst, src, te_sockaddr_get_size(src));
 }
+
+/**
+ * Get address of the specified type based on @p addr. New address instance
+ * is allocated from the heap.
+ *
+ * @param addr  Base address - port is copied from it.
+ * @param type  Required address type.
+ *
+ * @return Pointer to the address of the specified type.
+ */
+extern struct sockaddr *tapi_sockaddr_clone_typed(
+                                                const struct sockaddr *addr,
+                                                tapi_address_type type);
 
 #ifdef __cplusplus
 } /* extern "C" */

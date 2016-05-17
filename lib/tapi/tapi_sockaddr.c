@@ -54,11 +54,13 @@
 
 #include "te_errno.h"
 #include "te_stdint.h"
+#include "te_alloc.h"
 #include "logger_api.h"
 #include "conf_api.h"
 
 #include "tapi_sockaddr.h"
 #include "tapi_rpc_socket.h"
+#include "tapi_test_log.h"
 
 
 /* See description in tapi_sockaddr.h */
@@ -187,4 +189,34 @@ tapi_allocate_port_htons(rcf_rpc_server *pco, uint16_t *p_port)
     *p_port = htons(port);
 
     return 0;
+}
+
+/* See description in tapi_sockaddr.h */
+struct sockaddr *
+tapi_sockaddr_clone_typed(const struct sockaddr *addr,
+                          tapi_address_type type)
+{
+    struct sockaddr_storage *res_addr = NULL;
+
+    if (type == TAPI_ADDRESS_NULL)
+        return NULL;
+
+    res_addr = TE_ALLOC(sizeof(*res_addr));
+    if (res_addr == NULL)
+        TEST_STOP;
+
+    tapi_sockaddr_clone_exact(addr, res_addr);
+
+    if (type == TAPI_ADDRESS_WILDCARD ||
+        type == TAPI_ADDRESS_WILDCARD_ZERO_PORT)
+        te_sockaddr_set_wildcard(SA(res_addr));
+
+    if (type == TAPI_ADDRESS_SPECIFIC_ZERO_PORT ||
+        type == TAPI_ADDRESS_WILDCARD_ZERO_PORT)
+    {
+        uint16_t *port = te_sockaddr_get_port_ptr(SA(res_addr));
+        *port = 0;
+    }
+
+    return SA(res_addr);
 }
