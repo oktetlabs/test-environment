@@ -1104,24 +1104,33 @@ rcf_rpc_namespace_id2str(rcf_rpc_server *rpcs, rpc_ptr_id_namespace id,
 {
     tarpc_namespace_id2str_in   in  = {.id = id};
     tarpc_namespace_id2str_out  out = {.retval = 0};
+    te_errno rc;
 
     if (rpcs == NULL)
-        return TE_RC(TE_RCF_RPC, TE_EINVAL);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
 
     if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
         rpcs->timeout = rpcs->def_timeout;
 
-    rcf_ta_call_rpc(rpcs->ta, rpcs->sid, rpcs->name,
-                    rpcs->timeout, "namespace_id2str", &in, &out);
+    rc = rcf_ta_call_rpc(rpcs->ta, rpcs->sid, rpcs->name,
+                         rpcs->timeout, "namespace_id2str", &in, &out);
 
-    RING("RPC (%s, %s): namespace_id2str(%d) -> %s[%d], %r",
+    RING("RPC (%s, %s): namespace_id2str(%d) -> %s[%d], %r, rc %r",
          rpcs->ta, rpcs->name, id,
-         out.str.str_val, out.str.str_len, out.retval);
+         out.str.str_val, out.str.str_len, out.retval, rc);
+
+    if (rc != 0)
+        return rc;
+    if (out.retval != 0)
+        return out.retval;
 
     if (out.str.str_val == NULL || out.str.str_len == 0)
-        *str = NULL;
-    else
-        *str = strndup(out.str.str_val, out.str.str_len);
+    {
+        ERROR("Empty string is returned as RPC pointer namespace");
+        return TE_RC(TE_RCF_API, TE_EINVAL);
+    }
 
-    return out.retval;
+    *str = strndup(out.str.str_val, out.str.str_len);
+
+    return 0;
 }
