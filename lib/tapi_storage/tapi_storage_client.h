@@ -228,8 +228,11 @@ struct tapi_storage_client {
 static inline te_errno
 tapi_storage_client_connect(tapi_storage_client *client)
 {
-    return (client->methods->open != NULL ? client->methods->open(client)
-                                          : TE_EOPNOTSUPP);
+    if (client->methods == NULL ||
+        client->methods->open == NULL)
+        return TE_EOPNOTSUPP;
+
+    return client->methods->open(client);
 }
 
 /**
@@ -242,8 +245,11 @@ tapi_storage_client_connect(tapi_storage_client *client)
 static inline te_errno
 tapi_storage_client_disconnect(tapi_storage_client *client)
 {
-    return (client->methods->close != NULL ? client->methods->close(client)
-                                           : TE_EOPNOTSUPP);
+    if (client->methods == NULL ||
+        client->methods->close == NULL)
+        return TE_EOPNOTSUPP;
+
+    return client->methods->close(client);
 }
 
 /**
@@ -258,8 +264,11 @@ static inline te_errno
 tapi_storage_client_pwd(tapi_storage_client *client,
                         tapi_local_file     *directory)
 {
-    return (client->methods->pwd != NULL
-            ? client->methods->pwd(client, directory) : TE_EOPNOTSUPP);
+    if (client->methods == NULL ||
+        client->methods->pwd == NULL)
+        return TE_EOPNOTSUPP;
+
+    return client->methods->pwd(client, directory);
 }
 
 /**
@@ -276,8 +285,11 @@ tapi_storage_client_ls(tapi_storage_client  *client,
                        const char           *path,
                        tapi_local_file_list *files)
 {
-    return (client->methods->ls != NULL
-            ? client->methods->ls(client, path, files) : TE_EOPNOTSUPP);
+    if (client->methods == NULL ||
+        client->methods->ls == NULL)
+        return TE_EOPNOTSUPP;
+
+    return client->methods->ls(client, path, files);
 }
 
 /**
@@ -292,9 +304,11 @@ static inline te_errno
 tapi_storage_client_cd(tapi_storage_client *client,
                        const char          *remote_directory)
 {
-    return (client->methods->cd != NULL
-            ? client->methods->cd(client, remote_directory)
-            : TE_EOPNOTSUPP);
+    if (client->methods == NULL ||
+        client->methods->cd == NULL)
+        return TE_EOPNOTSUPP;
+
+    return client->methods->cd(client, remote_directory);
 }
 
 
@@ -312,9 +326,11 @@ tapi_storage_client_put(tapi_storage_client *client,
                         const char          *local_file,
                         const char          *remote_file)
 {
-    return (client->methods->put != NULL
-            ? client->methods->put(client, local_file, remote_file)
-            : TE_EOPNOTSUPP);
+    if (client->methods == NULL ||
+        client->methods->put == NULL)
+        return TE_EOPNOTSUPP;
+
+    return client->methods->put(client, local_file, remote_file);
 }
 
 /**
@@ -331,9 +347,11 @@ tapi_storage_client_get(tapi_storage_client *client,
                         const char          *remote_file,
                         const char          *local_file)
 {
-    return (client->methods->get != NULL
-            ? client->methods->get(client, remote_file, local_file)
-            : TE_EOPNOTSUPP);
+    if (client->methods == NULL ||
+        client->methods->get == NULL)
+        return TE_EOPNOTSUPP;
+
+    return client->methods->get(client, remote_file, local_file);
 }
 
 /**
@@ -352,9 +370,11 @@ tapi_storage_client_rm(tapi_storage_client *client,
                        const char          *filename,
                        te_bool              recursive)
 {
-    return (client->methods->rm != NULL
-            ? client->methods->rm(client, filename, recursive)
-            : TE_EOPNOTSUPP);
+    if (client->methods == NULL ||
+        client->methods->rm == NULL)
+        return TE_EOPNOTSUPP;
+
+    return client->methods->rm(client, filename, recursive);
 }
 
 /**
@@ -371,9 +391,11 @@ static inline te_errno
 tapi_storage_client_mkdir(tapi_storage_client *client,
                           const char          *directory_name)
 {
-    return (client->methods->mkdir != NULL
-            ? client->methods->mkdir(client, directory_name)
-            : TE_EOPNOTSUPP);
+    if (client->methods == NULL ||
+        client->methods->mkdir == NULL)
+        return TE_EOPNOTSUPP;
+
+    return client->methods->mkdir(client, directory_name);
 }
 
 /**
@@ -389,9 +411,11 @@ static inline te_errno
 tapi_storage_client_rmdir(tapi_storage_client *client,
                           const char          *directory_name)
 {
-    return (client->methods->rmdir != NULL
-            ? client->methods->rmdir(client, directory_name)
-            : TE_EOPNOTSUPP);
+    if (client->methods == NULL ||
+        client->methods->rmdir == NULL)
+        return TE_EOPNOTSUPP;
+
+    return client->methods->rmdir(client, directory_name);
 }
 
 
