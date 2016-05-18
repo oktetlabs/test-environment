@@ -307,7 +307,7 @@ typedef STAILQ_HEAD(cfg_handle_tqh, cfg_handle_tqe) cfg_handle_tqh;
 /** Network entry */
 typedef struct tapi_env_net {
     SLIST_ENTRY(tapi_env_net)   links;  /**< Links of the networks list */
-    
+
     char               *name;       /**< Name of the net */
 
     tapi_env_type       type;       /**< Type of the net */
@@ -372,7 +372,7 @@ typedef struct tapi_env_if {
     struct if_nameindex if_info;/**< Interface info */
     struct if_nameindex br_info;/**< XEN bridge info */
     struct if_nameindex ph_info;/**< XEN physical interface info */
-    
+
     te_bool ip4_unicast_used;   /**< Is IPv4 address assigned to
                                      the host in this net used? */
     te_bool ip6_unicast_used;   /**< Is IPv6 address assigned to
@@ -422,7 +422,7 @@ typedef struct tapi_env_addr {
 
     rpc_socket_addr_family  family;     /**< Address family */
     tapi_env_addr_type      type;       /**< Address type */
-    
+
     socklen_t               addrlen;    /**< Length of assigned address */
     struct sockaddr        *addr;       /**< Assigned address */
     struct sockaddr_storage addr_st;    /**< Address storage */
@@ -634,7 +634,7 @@ extern te_errno tapi_env_get_net_host_addr(const tapi_env          *env,
                                            tapi_cfg_net_assigned   *assigned,
                                            struct sockaddr        **addr,
                                            socklen_t               *addrlen);
-                                    
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
