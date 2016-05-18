@@ -7,3 +7,4 @@ include/te_config_internal.h.in
 package.h.in
 auxdir/ar-lib
 auxdir/test-driver
+tags
