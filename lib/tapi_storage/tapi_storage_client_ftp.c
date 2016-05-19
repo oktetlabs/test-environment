@@ -346,6 +346,7 @@ static void
 flush_socket_receive_buffer(rcf_rpc_server *rpcs, int fd)
 {
     char tmp_buf[256];
+    int  retrieved;
     struct rpc_pollfd fds = {
         .fd = fd,
         .events = RPC_POLLIN,
@@ -356,7 +357,9 @@ flush_socket_receive_buffer(rcf_rpc_server *rpcs, int fd)
     while ((fds.revents & RPC_POLLIN) != 0)
     {
         VERB("flush data of socket %d", fd);
-        rpc_read(rpcs, fd, tmp_buf, sizeof(tmp_buf));
+        retrieved = rpc_read(rpcs, fd, tmp_buf, sizeof(tmp_buf));
+        if (retrieved == 0)
+            break;      /* EOF, or RPC_POLLHUP. */
         fds.revents = 0;
         rpc_poll(rpcs, &fds, 1, 0);
     }
