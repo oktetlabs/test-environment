@@ -40,6 +40,13 @@ extern "C" {
 #endif
 
 
+/** On-stack tapi_storage_client_ftp_context structure initializer. */
+#define TAPI_STORAGE_CLIENT_FTP_CONTEXT_INIT { \
+    .control_socket = -1,                       \
+    .data_socket = -1,                          \
+    .addr = { 0 },                              \
+}
+
 /**
  * FTP client specific context
  */
