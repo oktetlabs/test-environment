@@ -190,7 +190,7 @@
 #define SYS_sendmmsg __NR_sendmmsg
 #else
 #if __GNUC__
-#if __x86_64__ || __powerpc64__ 
+#if __x86_64__ || __powerpc64__
 #define SYS_sendmmsg 307
 #elif __powerpc__
 #define SYS_sendmmsg 349
@@ -230,7 +230,7 @@
         if (rc_ != 0 && out->common._errno == 0)    \
             out->common._errno = rc_;               \
     } while (FALSE)
-        
+
 
 /**
  * @name Some generic prototypes of RPC calls
@@ -365,7 +365,7 @@ shut_how_rpc2h(rpc_shut_how how)
  *
  * @return status code
  */
-extern int tarpc_find_func(te_bool use_libc, const char *name, 
+extern int tarpc_find_func(te_bool use_libc, const char *name,
                            api_func *func);
 
 /** Structure for checking of variable-length arguments safety */

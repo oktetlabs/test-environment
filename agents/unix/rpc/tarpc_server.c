@@ -383,7 +383,7 @@ handler2name(void *handler)
 
     return tmp;
 }
- 
+
 /*-------------- setlibname() -----------------------------*/
 
 bool_t
@@ -842,7 +842,7 @@ TARPC_FUNC(execve, {},
 
 /**
  * Convert iovec array to NULL terminated array
- * 
+ *
  * @param list_ptr  List of arguments for INIT_CHECKED_ARG macros
  * @param iov       iovec array
  * @param arr       Location for NULL terminated array
@@ -1647,7 +1647,7 @@ TARPC_FUNC(struct_dirent_props, {},
 /*-------------- opendir() --------------------------------*/
 TARPC_FUNC(opendir, {},
 {
-    MAKE_CALL(out->mem_ptr = 
+    MAKE_CALL(out->mem_ptr =
         rcf_pch_mem_alloc(func_ptr_ret_ptr((in->path.path_len == 0) ? NULL :
                                             in->path.path_val)));
 }
@@ -1985,7 +1985,7 @@ _write_and_close_1_svc(tarpc_write_and_close_in *in,
     else
     {
         out->retval = write_func(in->fd, in->buf.buf_val, in->len);
-        
+
         if (out->retval >= 0)
         {
             rc = close_func(in->fd);
@@ -3709,7 +3709,7 @@ TARPC_FUNC(getsockopt,
                         opt_ip_pktoptions_val = NULL;
             out->optval.optval_val[0].option_value_u.opt_ip_pktoptions.
                         opt_ip_pktoptions_len = 0;
-            
+
             if (out->retval >= 0)
                 tarpc_getsockopt(in, out, out->raw_optval.raw_optval_val,
                                  out->raw_optlen.raw_optlen_val == NULL ?
@@ -4541,7 +4541,7 @@ msghdr_free(struct msghdr *msg)
                 send_recv_flags_rpc2h((tarpc_msg_)->msg_flags);         \
         INIT_CHECKED_ARG((char *)(msg_), sizeof(*(msg_)), 0);           \
     } while (0)
- 
+
 TARPC_FUNC(sendmsg,
 {
     if (in->msg.msg_val != NULL &&
@@ -4614,7 +4614,7 @@ TARPC_FUNC(recvmsg,
         struct tarpc_msghdr *rpc_msg = out->msg.msg_val;
 
         PREPARE_ADDR(name, rpc_msg->msg_name, rpc_msg->msg_namelen);
-        
+
         if (rpc_msg->msg_namelen <=
                 (tarpc_socklen_t)sizeof(struct sockaddr_storage))
             msg.msg_name = name;
@@ -5431,7 +5431,7 @@ TARPC_FUNC(chroot, {},
     char *ta_dir_path = NULL;
     char *ta_execname_path = NULL;
     char *port_path = getenv("TE_RPC_PORT");
-    
+
     chroot_path = realpath(in->path.path_val, NULL);
     ta_dir_path = realpath(ta_dir, NULL);
     ta_execname_path = realpath(ta_execname, NULL);
@@ -5477,7 +5477,7 @@ TARPC_FUNC(chroot, {},
          * Change paths used by TE so that they will be
          * inside a new root.
          */
-    
+
         strcpy(ta_dir, ta_dir_path + strlen(chroot_path));
         strcpy((char *)ta_execname,
                ta_execname_path + strlen(chroot_path));
@@ -5579,7 +5579,7 @@ copy_ta_libs(char *path)
     char    path_to_chmod[RCF_MAX_PATH];
     char    str[MAX_CMD];
     char    cmd[MAX_CMD];
-    char   *begin_path = 0; 
+    char   *begin_path = 0;
     te_bool was_cut = FALSE;
     char   *s;
     FILE   *f;
@@ -5718,7 +5718,7 @@ TARPC_FUNC(copy_ta_libs, {},
  * Remove libraries copied by copy_ta_libs().
  *
  * @param path From where to remove.
- * 
+ *
  * @return 0 on success or -1
  */
 int
@@ -6467,7 +6467,7 @@ do {                                                              \
         return -1;                                                \
     }                                                             \
 } while(0)
-    
+
 
     switch (iomux)
     {
@@ -7884,7 +7884,7 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
                       __FUNCTION__);
                 iomux_close(iomux, &iomux_f, &iomux_st);
                 free(buf);
-                return -2; 
+                return -2;
             }
         }
 
@@ -10529,7 +10529,7 @@ sleep_and_print()
     return 0;
 }
 
-TARPC_FUNC(vfork_pipe_exec, {}, 
+TARPC_FUNC(vfork_pipe_exec, {},
 {
     MAKE_CALL(out->retval = func_ptr(in));
 }
