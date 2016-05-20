@@ -36,8 +36,8 @@ extern "C" {
 #endif
 
 /**
- * Declaration of te_log_buf type, which is defined 
- * in the implementation, so user can allocate and operate only 
+ * Declaration of te_log_buf type, which is defined
+ * in the implementation, so user can allocate and operate only
  * with pointer to this data structure.
  */
 struct te_log_buf;
@@ -49,10 +49,10 @@ typedef struct te_log_buf te_log_buf;
 /**
  * Allocates a buffer to be used for accumulating log message.
  * Mainly used in tapi_snmp itself.
- * 
+ *
  * @return Pointer to the buffer.
  *
- * @note the caller does not have to check the returned 
+ * @note the caller does not have to check the returned
  * value against NULL, the function blocks the caller until it
  * gets available buffer.
  *
@@ -69,7 +69,7 @@ extern te_log_buf *te_log_buf_alloc();
  *
  * @return The number of characters appended
  *
- * @note This is NOT thread safe function, so you are not allowed 
+ * @note This is NOT thread safe function, so you are not allowed
  * to append the same buffer from different threads simultaneously.
  */
 extern int te_log_buf_append(te_log_buf *buf, const char *fmt, ...);

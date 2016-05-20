@@ -107,7 +107,7 @@ te_log_buf_alloc()
 
         return &te_log_bufs[id];
     }
-    
+
     for (i = 0; i < LOG_BUF_NUM; i++)
     {
         if (!te_log_bufs[i].used)
@@ -134,11 +134,11 @@ te_log_buf_alloc()
             te_log_buf_last_freed = -1;
             te_log_bufs[id].used = TRUE;
             pthread_mutex_unlock(&te_log_buf_mutex);
-            
+
             return &te_log_bufs[id];
         }
         pthread_mutex_unlock(&te_log_buf_mutex);
-        
+
         RING("Waiting for a tapi log buffer");
         sleep(1);
     } while (TRUE);
@@ -192,7 +192,7 @@ te_log_buf_free(te_log_buf *buf)
     pthread_mutex_lock(&te_log_buf_mutex);
     buf->used = FALSE;
     buf->cur_len = 0;
-    te_log_buf_last_freed = 
+    te_log_buf_last_freed =
         (buf - te_log_bufs) / sizeof(te_log_bufs[0]);
     pthread_mutex_unlock(&te_log_buf_mutex);
 }
