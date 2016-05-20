@@ -87,6 +87,11 @@ tapi_cfg_net_get_node_rsrc_type(cfg_net_node_t *node)
     {
         node->rsrc_type = NET_NODE_RSRC_TYPE_INTERFACE;
     }
+    else if (strcmp(obj_oid,
+                    "/agent/hardware/pci/vendor/device/instance") == 0)
+    {
+        node->rsrc_type = NET_NODE_RSRC_TYPE_PCI_FN;
+    }
 
     free(inst_oid);
 
@@ -718,6 +723,13 @@ tapi_cfg_net_make_node_rsrc_name(enum net_node_rsrc_type rsrc_type,
              * interface name which is used before.
              */
             return strdup(CFG_OID_GET_INST_NAME(oid, 2));
+
+        case NET_NODE_RSRC_TYPE_PCI_FN:
+            asprintf(&rsrc_name, "pci_fn:%s:%s:%s",
+                     CFG_OID_GET_INST_NAME(oid, 4),
+                     CFG_OID_GET_INST_NAME(oid, 5),
+                     CFG_OID_GET_INST_NAME(oid, 6));
+            return rsrc_name;
 
         case NET_NODE_RSRC_TYPE_UNKNOWN:
         default:
