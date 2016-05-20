@@ -1566,7 +1566,19 @@ prepare_interfaces(tapi_env_ifs *ifs, cfg_nets_t *cfg_nets)
 
         if (strcmp(p->name, "lo") != 0)
         {
-            rc = prepare_interfaces_net(p, cfg_nets);
+            cfg_net_node_t *node;
+
+            node = &cfg_nets->nets[p->net->i_net].nodes[p->i_node];
+            switch (tapi_cfg_net_get_node_rsrc_type(node))
+            {
+                case NET_NODE_RSRC_TYPE_INTERFACE:
+                    rc = prepare_interfaces_net(p, cfg_nets);
+                    break;
+
+                default:
+                    rc = TE_EINVAL;
+                    break;
+            }
         }
         else
         {
