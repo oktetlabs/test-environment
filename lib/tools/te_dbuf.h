@@ -71,8 +71,7 @@ typedef struct te_dbuf {
     uint8_t *ptr;       /**< Pointer to the buffer. */
     size_t   size;      /**< Size of the buffer. */
     size_t   len;       /**< Length of actual data. */
-    const uint8_t grow_factor;
-                        /**< Buffer extra size in percentages. I.e.
+    uint8_t  grow_factor;   /**< Buffer extra size in percentages. I.e.
                              size = required_size * (1+grow_factor/100.). */
 } te_dbuf;
 
