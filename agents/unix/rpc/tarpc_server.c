@@ -1095,12 +1095,6 @@ TARPC_FUNC(bind, {},
 
 /*------------- rpc_check_port_is_free() ----------------*/
 
-TARPC_FUNC(check_port_is_free, {},
-{
-    MAKE_CALL(out->retval = func(in->port));
-}
-)
-
 /* Simple socket() and bind() are used instead of tarpc_find_func() to
  * resolve them from the current library.  It is done by purpose: all that
  * things happen at early stage of test, and we do not want to affect the
@@ -1147,6 +1141,12 @@ check_port_is_free(uint16_t port)
 
     return TRUE;
 }
+
+TARPC_FUNC(check_port_is_free, {},
+{
+    MAKE_CALL(out->retval = func(in->port));
+}
+)
 
 /*-------------- connect() ------------------------------*/
 
@@ -1221,14 +1221,6 @@ TARPC_FUNC(accept4,
 )
 
 /*-------------- socket_connect_close() -----------------------*/
-TARPC_FUNC(socket_connect_close, {},
-{
-    PREPARE_ADDR(serv_addr, in->addr, 0);
-    MAKE_CALL(out->retval = func_ptr(serv_addr, serv_addrlen,
-                                     in->time2run));
-}
-)
-
 int
 socket_connect_close(const struct sockaddr *addr,
                      socklen_t addrlen, uint32_t time2run)
@@ -1262,8 +1254,7 @@ socket_connect_close(const struct sockaddr *addr,
     return 0;
 }
 
-/*-------------- socket_listen_close() -----------------------*/
-TARPC_FUNC(socket_listen_close, {},
+TARPC_FUNC(socket_connect_close, {},
 {
     PREPARE_ADDR(serv_addr, in->addr, 0);
     MAKE_CALL(out->retval = func_ptr(serv_addr, serv_addrlen,
@@ -1271,6 +1262,7 @@ TARPC_FUNC(socket_listen_close, {},
 }
 )
 
+/*-------------- socket_listen_close() -----------------------*/
 int
 socket_listen_close(const struct sockaddr *addr,
                     socklen_t addrlen, uint32_t time2run)
@@ -1315,6 +1307,14 @@ socket_listen_close(const struct sockaddr *addr,
     }
     return 0;
 }
+
+TARPC_FUNC(socket_listen_close, {},
+{
+    PREPARE_ADDR(serv_addr, in->addr, 0);
+    MAKE_CALL(out->retval = func_ptr(serv_addr, serv_addrlen,
+                                     in->time2run));
+}
+)
 
 /*-------------- recvfrom() ------------------------------*/
 
@@ -1998,13 +1998,6 @@ _write_and_close_1_svc(tarpc_write_and_close_in *in,
 }
 
 /*-------------- readbuf() ------------------------------*/
-
-TARPC_FUNC(readbuf, {},
-{
-    MAKE_CALL(out->retval = func_ptr(in));
-}
-)
-
 ssize_t
 readbuf(tarpc_readbuf_in *in)
 {
@@ -2020,14 +2013,13 @@ readbuf(tarpc_readbuf_in *in)
                      in->len);
 }
 
-/*-------------- recvbuf() ------------------------------*/
-
-TARPC_FUNC(recvbuf, {},
+TARPC_FUNC(readbuf, {},
 {
     MAKE_CALL(out->retval = func_ptr(in));
 }
 )
 
+/*-------------- recvbuf() ------------------------------*/
 ssize_t
 recvbuf(tarpc_recvbuf_in *in)
 {
@@ -2043,14 +2035,13 @@ recvbuf(tarpc_recvbuf_in *in)
                      in->len, in->flags);
 }
 
-/*-------------- writebuf() ------------------------------*/
-
-TARPC_FUNC(writebuf, {},
+TARPC_FUNC(recvbuf, {},
 {
     MAKE_CALL(out->retval = func_ptr(in));
 }
 )
 
+/*-------------- writebuf() ------------------------------*/
 ssize_t
 writebuf(tarpc_writebuf_in *in)
 {
@@ -2066,14 +2057,13 @@ writebuf(tarpc_writebuf_in *in)
                       in->len);
 }
 
-/*-------------- sendbuf() ------------------------------*/
-
-TARPC_FUNC(sendbuf, {},
+TARPC_FUNC(writebuf, {},
 {
     MAKE_CALL(out->retval = func_ptr(in));
 }
 )
 
+/*-------------- sendbuf() ------------------------------*/
 ssize_t
 sendbuf(tarpc_sendbuf_in *in)
 {
@@ -2088,13 +2078,13 @@ sendbuf(tarpc_sendbuf_in *in)
                      in->len, send_recv_flags_rpc2h(in->flags));
 }
 
-/*------------ send_msg_more() --------------------------*/
-TARPC_FUNC(send_msg_more, {},
+TARPC_FUNC(sendbuf, {},
 {
     MAKE_CALL(out->retval = func_ptr(in));
 }
 )
 
+/*------------ send_msg_more() --------------------------*/
 ssize_t
 send_msg_more(tarpc_send_msg_more_in *in)
 {
@@ -2119,13 +2109,13 @@ send_msg_more(tarpc_send_msg_more_in *in)
     return res1 + res2;
 }
 
-/*------------ send_one_byte_many() --------------------------*/
-TARPC_FUNC(send_one_byte_many, {},
+TARPC_FUNC(send_msg_more, {},
 {
     MAKE_CALL(out->retval = func_ptr(in));
 }
 )
 
+/*------------ send_one_byte_many() --------------------------*/
 ssize_t
 send_one_byte_many(tarpc_send_one_byte_many_in *in)
 {
@@ -2147,6 +2137,12 @@ send_one_byte_many(tarpc_send_one_byte_many_in *in)
     } while (rc > 0 && (sent += rc));
     return sent;
 }
+
+TARPC_FUNC(send_one_byte_many, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in));
+}
+)
 
 /*-------------- readv() ------------------------------*/
 
@@ -6040,198 +6036,6 @@ TARPC_FUNC(cwmp_conn_req, {}, { MAKE_CALL(func_ptr(in, out)); })
 TARPC_FUNC(cwmp_acse_start, {}, { MAKE_CALL(func_ptr(in, out)); })
 
 
-/*-------------- simple_sender() -------------------------*/
-TARPC_FUNC(simple_sender, {},
-{
-    MAKE_CALL(out->retval = func_ptr(in, out));
-}
-)
-
-/**
- * Simple sender.
- *
- * @param in                input RPC argument
- *
- * @return number of sent bytes or -1 in the case of failure
- */
-int
-simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
-{
-    int         errno_save = errno;
-    api_func    send_func;
-    char       *buf;
-
-    int size = rand_range(in->size_min, in->size_max);
-    int delay = rand_range(in->delay_min, in->delay_max);
-
-    time_t start;
-    time_t now;
-
-#ifdef TA_DEBUG
-    uint64_t control = 0;
-#endif
-
-    out->bytes = 0;
-
-    RING("%s() started", __FUNCTION__);
-
-    if (in->size_min > in->size_max || in->delay_min > in->delay_max)
-    {
-        ERROR("Incorrect size or delay parameters");
-        return -1;
-    }
-
-    if (tarpc_find_func(in->common.use_libc, "send", &send_func) != 0)
-        return -1;
-
-    if ((buf = malloc(in->size_max)) == NULL)
-    {
-        ERROR("Out of memory");
-        return -1;
-    }
-
-    memset(buf, 'A', in->size_max);
-
-    for (start = now = time(NULL);
-         (unsigned int)(now - start) <= in->time2run;
-         now = time(NULL))
-    {
-        int len;
-
-        if (!in->size_rnd_once)
-            size = rand_range(in->size_min, in->size_max);
-
-        if (!in->delay_rnd_once)
-            delay = rand_range(in->delay_min, in->delay_max);
-
-        if (TE_US2SEC(delay) > (int)(in->time2run) - (now - start) + 1)
-            break;
-
-        usleep(delay);
-
-        len = send_func(in->s, buf, size, 0);
-
-        if (len < 0)
-        {
-            if (!in->ignore_err)
-            {
-                ERROR("send() failed in simple_sender(): errno %s(%x)",
-                      strerror(errno), errno);
-                free(buf);
-                return -1;
-            }
-            else
-            {
-                len = errno = 0;
-                continue;
-            }
-        }
-        out->bytes += len;
-    }
-
-    RING("simple_sender() stopped, sent %llu bytes",
-         out->bytes);
-
-    free(buf);
-
-    /* Clean up errno */
-    errno = errno_save;
-
-    return 0;
-}
-
-/*--------------simple_receiver() --------------------------*/
-TARPC_FUNC(simple_receiver, {},
-{
-    MAKE_CALL(out->retval = func_ptr(in, out));
-}
-)
-
-/*--------------wait_readable() --------------------------*/
-TARPC_FUNC(wait_readable, {},
-{
-    MAKE_CALL(out->retval = func_ptr(in, out));
-}
-)
-
-/*-------------- recv_verify() --------------------------*/
-TARPC_FUNC(recv_verify, {},
-{
-    MAKE_CALL(out->retval = func_ptr(in, out));
-}
-)
-
-#define RCV_VF_BUF (1024)
-
-/**
- * Simple receiver.
- *
- * @param in                input RPC argument
- *
- * @return number of received bytes or -1 in the case of failure
- */
-int
-recv_verify(tarpc_recv_verify_in *in, tarpc_recv_verify_out *out)
-{
-    api_func   recv_func;
-    char           *rcv_buf;
-    char           *pattern_buf;
-    int             rc;
-
-    out->retval = 0;
-
-    RING("%s() started", __FUNCTION__);
-
-    if (tarpc_find_func(in->common.use_libc, "recv", &recv_func) != 0)
-    {
-        return -1;
-    }
-
-    if ((rcv_buf = malloc(RCV_VF_BUF)) == NULL)
-    {
-        ERROR("Out of memory");
-        return -1;
-    }
-
-    while (1)
-    {
-        rc = recv_func(in->s, rcv_buf, RCV_VF_BUF, MSG_DONTWAIT);
-        if (rc < 0)
-        {
-            if (errno == EAGAIN)
-            {
-                errno = 0;
-                RING("recv() returned -1(EGAIN) in recv_verify(), "
-                     "no more data just now");
-                break;
-            }
-            else
-            {
-                ERROR("recv() failed in recv_verify(): errno %x", errno);
-                free(rcv_buf);
-                out->retval = -1;
-                return -1;
-            }
-        }
-        if (rc == 0)
-        {
-            RING("recv() returned 0 in recv_verify() because of "
-                 "peer shutdown");
-            break;
-        }
-
-        /* TODO: check data here, set reval to -2 if not matched. */
-        UNUSED(pattern_buf);
-        out->retval += rc;
-    }
-
-    free(rcv_buf);
-    RING("recv_verify() stopped, received %d bytes", out->retval);
-
-    return 0;
-}
-
-#undef RCV_VF_BUF
 
 /*-------------- generic iomux functions --------------------------*/
 
@@ -6761,6 +6565,107 @@ iomux_close(iomux_func iomux, iomux_funcs *funcs, iomux_state *state)
     return 0;
 }
 
+/*-------------- simple_sender() -------------------------*/
+/**
+ * Simple sender.
+ *
+ * @param in                input RPC argument
+ *
+ * @return number of sent bytes or -1 in the case of failure
+ */
+int
+simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
+{
+    int         errno_save = errno;
+    api_func    send_func;
+    char       *buf;
+
+    int size = rand_range(in->size_min, in->size_max);
+    int delay = rand_range(in->delay_min, in->delay_max);
+
+    time_t start;
+    time_t now;
+
+#ifdef TA_DEBUG
+    uint64_t control = 0;
+#endif
+
+    out->bytes = 0;
+
+    RING("%s() started", __FUNCTION__);
+
+    if (in->size_min > in->size_max || in->delay_min > in->delay_max)
+    {
+        ERROR("Incorrect size or delay parameters");
+        return -1;
+    }
+
+    if (tarpc_find_func(in->common.use_libc, "send", &send_func) != 0)
+        return -1;
+
+    if ((buf = malloc(in->size_max)) == NULL)
+    {
+        ERROR("Out of memory");
+        return -1;
+    }
+
+    memset(buf, 'A', in->size_max);
+
+    for (start = now = time(NULL);
+         (unsigned int)(now - start) <= in->time2run;
+         now = time(NULL))
+    {
+        int len;
+
+        if (!in->size_rnd_once)
+            size = rand_range(in->size_min, in->size_max);
+
+        if (!in->delay_rnd_once)
+            delay = rand_range(in->delay_min, in->delay_max);
+
+        if (TE_US2SEC(delay) > (int)(in->time2run) - (now - start) + 1)
+            break;
+
+        usleep(delay);
+
+        len = send_func(in->s, buf, size, 0);
+
+        if (len < 0)
+        {
+            if (!in->ignore_err)
+            {
+                ERROR("send() failed in simple_sender(): errno %s(%x)",
+                      strerror(errno), errno);
+                free(buf);
+                return -1;
+            }
+            else
+            {
+                len = errno = 0;
+                continue;
+            }
+        }
+        out->bytes += len;
+    }
+
+    RING("simple_sender() stopped, sent %llu bytes",
+         out->bytes);
+
+    free(buf);
+
+    /* Clean up errno */
+    errno = errno_save;
+
+    return 0;
+}
+
+TARPC_FUNC(simple_sender, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+/*--------------simple_receiver() --------------------------*/
 #define MAX_PKT (1024 * 1024)
 
 /**
@@ -6883,6 +6788,13 @@ simple_receiver(tarpc_simple_receiver_in *in,
 
 #undef MAX_PKT
 
+TARPC_FUNC(simple_receiver, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+/*--------------wait_readable() --------------------------*/
 /**
  * Wait until the socket becomes readable.
  *
@@ -6942,17 +6854,95 @@ wait_readable(tarpc_wait_readable_in *in,
     return rc;
 }
 
+TARPC_FUNC(wait_readable, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+/*-------------- recv_verify() --------------------------*/
+#define RCV_VF_BUF (1024)
+
+/**
+ * Simple receiver.
+ *
+ * @param in                input RPC argument
+ *
+ * @return number of received bytes or -1 in the case of failure
+ */
+int
+recv_verify(tarpc_recv_verify_in *in, tarpc_recv_verify_out *out)
+{
+    api_func   recv_func;
+    char           *rcv_buf;
+    char           *pattern_buf;
+    int             rc;
+
+    out->retval = 0;
+
+    RING("%s() started", __FUNCTION__);
+
+    if (tarpc_find_func(in->common.use_libc, "recv", &recv_func) != 0)
+    {
+        return -1;
+    }
+
+    if ((rcv_buf = malloc(RCV_VF_BUF)) == NULL)
+    {
+        ERROR("Out of memory");
+        return -1;
+    }
+
+    while (1)
+    {
+        rc = recv_func(in->s, rcv_buf, RCV_VF_BUF, MSG_DONTWAIT);
+        if (rc < 0)
+        {
+            if (errno == EAGAIN)
+            {
+                errno = 0;
+                RING("recv() returned -1(EGAIN) in recv_verify(), "
+                     "no more data just now");
+                break;
+            }
+            else
+            {
+                ERROR("recv() failed in recv_verify(): errno %x", errno);
+                free(rcv_buf);
+                out->retval = -1;
+                return -1;
+            }
+        }
+        if (rc == 0)
+        {
+            RING("recv() returned 0 in recv_verify() because of "
+                 "peer shutdown");
+            break;
+        }
+
+        /* TODO: check data here, set reval to -2 if not matched. */
+        UNUSED(pattern_buf);
+        out->retval += rc;
+    }
+
+    free(rcv_buf);
+    RING("recv_verify() stopped, received %d bytes", out->retval);
+
+    return 0;
+}
+
+#undef RCV_VF_BUF
+
+TARPC_FUNC(recv_verify, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+/*-------------- flooder() --------------------------*/
 #define FLOODER_ECHOER_WAIT_FOR_RX_EMPTY        1
 #define FLOODER_BUF                             4096
 
-/*-------------- flooder() --------------------------*/
-TARPC_FUNC(flooder, {},
-{
-    MAKE_CALL(out->retval = func_ptr(in));
-    COPY_ARG(tx_stat);
-    COPY_ARG(rx_stat);
-}
-)
 /**
  * Routine which receives data from specified set of sockets and sends data
  * to specified set of sockets with maximum speed using I/O multiplexing.
@@ -7250,6 +7240,14 @@ flooder(tarpc_flooder_in *in)
     return 0;
 }
 
+TARPC_FUNC(flooder, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in));
+    COPY_ARG(tx_stat);
+    COPY_ARG(rx_stat);
+}
+)
+
 /*-------------- echoer() --------------------------*/
 
 typedef struct buffer {
@@ -7259,14 +7257,6 @@ typedef struct buffer {
 } buffer;
 
 typedef TAILQ_HEAD(buffers, buffer) buffers;
-
-TARPC_FUNC(echoer, {},
-{
-    MAKE_CALL(out->retval = func_ptr(in));
-    COPY_ARG(tx_stat);
-    COPY_ARG(rx_stat);
-}
-)
 
 /**
  * Routine to free buffers queue.
@@ -7490,13 +7480,15 @@ echoer(tarpc_echoer_in *in)
     return 0;
 }
 
-/*-------------- pattern_sender() --------------------------*/
-TARPC_FUNC(pattern_sender, {},
+TARPC_FUNC(echoer, {},
 {
-    MAKE_CALL(out->retval = func_ptr(in, out));
+    MAKE_CALL(out->retval = func_ptr(in));
+    COPY_ARG(tx_stat);
+    COPY_ARG(rx_stat);
 }
 )
 
+/*-------------- pattern_sender() --------------------------*/
 /* Count of numbers in a sequence (should not be greater that 65280). */
 #define SEQUENCE_NUM 10000
 /* Period of a sequence */
@@ -7727,13 +7719,13 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
     return 0;
 }
 
-/*-------------- pattern_receiver() --------------------------*/
-TARPC_FUNC(pattern_receiver, {},
+TARPC_FUNC(pattern_sender, {},
 {
     MAKE_CALL(out->retval = func_ptr(in, out));
 }
 )
 
+/*-------------- pattern_receiver() --------------------------*/
 /**
  * Pattern receiver.
  *
@@ -7905,6 +7897,12 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
     return 0;
 #undef MAX_PKT
 }
+
+TARPC_FUNC(pattern_receiver, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
 
 /*-------------- sendfile() ------------------------------*/
 
@@ -8104,12 +8102,6 @@ TARPC_FUNC(splice,
 
 /*-------------- socket_to_file() ------------------------------*/
 #define SOCK2FILE_BUF_LEN  4096
-
-TARPC_FUNC(socket_to_file, {},
-{
-   MAKE_CALL(out->retval = func_ptr(in));
-}
-)
 
 /**
  * Routine which receives data from socket and write data
@@ -8314,6 +8306,12 @@ local_exit:
     return rc;
 }
 
+TARPC_FUNC(socket_to_file, {},
+{
+   MAKE_CALL(out->retval = func_ptr(in));
+}
+)
+
 /*-------------- ftp_open() ------------------------------*/
 
 TARPC_FUNC(ftp_open, {},
@@ -8337,12 +8335,6 @@ TARPC_FUNC(ftp_close, {},
 )
 
 /*-------------- overfill_buffers() -----------------------------*/
-TARPC_FUNC(overfill_buffers,{},
-{
-    MAKE_CALL(out->retval = func_ptr(in, out));
-}
-)
-
 int
 overfill_buffers(tarpc_overfill_buffers_in *in,
                  tarpc_overfill_buffers_out *out)
@@ -8499,13 +8491,13 @@ overfill_buffers_exit:
     return ret;
 }
 
-/*-------------- iomux_splice() -----------------------------*/
-TARPC_FUNC(iomux_splice,{},
+TARPC_FUNC(overfill_buffers,{},
 {
     MAKE_CALL(out->retval = func_ptr(in, out));
 }
 )
 
+/*-------------- iomux_splice() -----------------------------*/
 int
 iomux_splice(tarpc_iomux_splice_in *in,
              tarpc_iomux_splice_out *out)
@@ -8634,13 +8626,13 @@ iomux_splice_exit:
     return (ret > 0) ? 0 : ret;
 }
 
-/*-------------- overfill_fd() -----------------------------*/
-TARPC_FUNC(overfill_fd,{},
+TARPC_FUNC(iomux_splice,{},
 {
     MAKE_CALL(out->retval = func_ptr(in, out));
 }
 )
 
+/*-------------- overfill_fd() -----------------------------*/
 int
 overfill_fd(tarpc_overfill_fd_in *in,
               tarpc_overfill_fd_out *out)
@@ -8732,13 +8724,13 @@ overfill_fd_exit:
     return ret;
 }
 
-/*-------------- multiple_iomux() ----------------------*/
-TARPC_FUNC(multiple_iomux,{},
+TARPC_FUNC(overfill_fd,{},
 {
     MAKE_CALL(out->retval = func_ptr(in, out));
 }
 )
 
+/*-------------- multiple_iomux() ----------------------*/
 int
 multiple_iomux(tarpc_multiple_iomux_in *in,
                tarpc_multiple_iomux_out *out)
@@ -8825,6 +8817,12 @@ multiple_iomux_exit:
 
     return 0;
 }
+
+TARPC_FUNC(multiple_iomux,{},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
 
 #ifdef LIO_READ
 
@@ -9145,12 +9143,6 @@ _get_addr_by_id_1_svc(tarpc_get_addr_by_id_in  *in,
 }
 
 /*------------ raw2integer ---------------------------*/
-TARPC_FUNC(raw2integer, {},
-{
-    MAKE_CALL(out->retval = func_ptr(in, out));
-}
-)
-
 /**
  * Convert raw data to integer.
  *
@@ -9230,13 +9222,13 @@ raw2integer(tarpc_raw2integer_in *in,
     return 0;
 }
 
-/*------------ integer2raw ---------------------------*/
-TARPC_FUNC(integer2raw, {},
+TARPC_FUNC(raw2integer, {},
 {
     MAKE_CALL(out->retval = func_ptr(in, out));
 }
 )
 
+/*------------ integer2raw ---------------------------*/
 /**
  * Convert integer value to raw representation.
  *
@@ -9309,6 +9301,12 @@ integer2raw(tarpc_integer2raw_in *in,
     return 0;
 }
 
+TARPC_FUNC(integer2raw, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
 /*-------------- memalign() ------------------------------*/
 
 TARPC_FUNC(memalign, {},
@@ -9337,13 +9335,6 @@ TARPC_FUNC(memcmp, {},
 )
 
 /*-------------------------- Fill buffer ----------------------------*/
-TARPC_FUNC(set_buf, {},
-{
-    MAKE_CALL(func_ptr(in->src_buf.src_buf_val, in->dst_buf, in->dst_off,
-                       in->src_buf.src_buf_len));
-}
-)
-
 void
 set_buf(const char *src_buf,
         tarpc_ptr dst_buf_base, size_t dst_offset, size_t len)
@@ -9356,19 +9347,14 @@ set_buf(const char *src_buf,
         errno = EFAULT;
 }
 
-/*-------------------------- Read buffer ----------------------------*/
-TARPC_FUNC(get_buf, {},
+TARPC_FUNC(set_buf, {},
 {
-    size_t len = in->len;
-
-    MAKE_CALL(func(in->src_buf, in->src_off,
-                   &out->dst_buf.dst_buf_val,
-                   &len));
-
-    out->dst_buf.dst_buf_len = len;
+    MAKE_CALL(func_ptr(in->src_buf.src_buf_val, in->dst_buf, in->dst_off,
+                       in->src_buf.src_buf_len));
 }
 )
 
+/*-------------------------- Read buffer ----------------------------*/
 void
 get_buf(tarpc_ptr src_buf_base, size_t src_offset,
         char **dst_buf, size_t *len)
@@ -9402,13 +9388,19 @@ get_buf(tarpc_ptr src_buf_base, size_t src_offset,
     }
 }
 
-/*---------------------- Fill buffer by the pattern ----------------------*/
-TARPC_FUNC(set_buf_pattern, {},
+TARPC_FUNC(get_buf, {},
 {
-    MAKE_CALL(func(in->pattern, in->dst_buf, in->dst_off, in->len));
+    size_t len = in->len;
+
+    MAKE_CALL(func(in->src_buf, in->src_off,
+                   &out->dst_buf.dst_buf_val,
+                   &len));
+
+    out->dst_buf.dst_buf_len = len;
 }
 )
 
+/*---------------------- Fill buffer by the pattern ----------------------*/
 void
 set_buf_pattern(int pattern,
                 tarpc_ptr dst_buf_base, size_t dst_offset, size_t len)
@@ -9431,6 +9423,12 @@ set_buf_pattern(int pattern,
         errno = EFAULT;
 
 }
+
+TARPC_FUNC(set_buf_pattern, {},
+{
+    MAKE_CALL(func(in->pattern, in->dst_buf, in->dst_off, in->len));
+}
+)
 
 /*-------------- setrlimit() ------------------------------*/
 
@@ -9835,13 +9833,6 @@ TARPC_FUNC(mcast_source_join_leave, {},
 })
 
 /*-------------- dlopen() --------------------------*/
-TARPC_FUNC(ta_dlopen, {},
-{
-    MAKE_CALL(out->retval =
-                        (tarpc_dlhandle)((uintptr_t)func_ptr_ret_ptr(in)));
-}
-)
-
 /**
  * Loads the dynamic labrary file.
  *
@@ -9868,14 +9859,14 @@ ta_dlopen(tarpc_ta_dlopen_in *in)
     return dlopen_func(in->filename, dlopen_flags_rpc2h(in->flag));
 }
 
-/*-------------- dlsym() --------------------------*/
-TARPC_FUNC(ta_dlsym, {},
+TARPC_FUNC(ta_dlopen, {},
 {
     MAKE_CALL(out->retval =
-                    (tarpc_dlsymaddr)((uintptr_t)func_ptr_ret_ptr(in)));
+                        (tarpc_dlhandle)((uintptr_t)func_ptr_ret_ptr(in)));
 }
 )
 
+/*-------------- dlsym() --------------------------*/
 /**
  * Returns the address where a certain symbol from dynamic labrary
  * is loaded into memory.
@@ -9903,13 +9894,14 @@ ta_dlsym(tarpc_ta_dlsym_in *in)
     return dlsym_func((void *)((uintptr_t)in->handle), in->symbol);
 }
 
-/*-------------- dlsym_call() --------------------------*/
-TARPC_FUNC(ta_dlsym_call, {},
+TARPC_FUNC(ta_dlsym, {},
 {
-    MAKE_CALL(out->retval = func_ptr(in));
+    MAKE_CALL(out->retval =
+                    (tarpc_dlsymaddr)((uintptr_t)func_ptr_ret_ptr(in)));
 }
 )
 
+/*-------------- dlsym_call() --------------------------*/
 /**
  * Calls a certain symbol from dynamic library as a function with
  * no arguments and returns its return code.
@@ -9950,13 +9942,13 @@ ta_dlsym_call(tarpc_ta_dlsym_call_in *in)
     return (*func)();
 }
 
-/*-------------- dlerror() --------------------------*/
-TARPC_FUNC(ta_dlerror, {},
+TARPC_FUNC(ta_dlsym_call, {},
 {
-    MAKE_CALL(out->retval = func_ptr_ret_ptr(in));
+    MAKE_CALL(out->retval = func_ptr(in));
 }
 )
 
+/*-------------- dlerror() --------------------------*/
 /**
  * Returns a human readable string describing the most recent error
  * that occured from dlopen(), dlsym() or dlclose().
@@ -9978,13 +9970,13 @@ ta_dlerror(tarpc_ta_dlerror_in *in)
     return (char *)dlerror_func();
 }
 
-/*-------------- dlclose() --------------------------*/
-TARPC_FUNC(ta_dlclose, {},
+TARPC_FUNC(ta_dlerror, {},
 {
-    MAKE_CALL(out->retval = func_ptr(in));
+    MAKE_CALL(out->retval = func_ptr_ret_ptr(in));
 }
 )
 
+/*-------------- dlclose() --------------------------*/
 /**
  * Decrements the reference count on the dynamic library handle.
  * If the reference count drops to zero and no other loaded libraries
@@ -10008,6 +10000,12 @@ ta_dlclose(tarpc_ta_dlclose_in *in)
 
     return dlclose_func((void *)((uintptr_t)in->handle));
 }
+
+TARPC_FUNC(ta_dlclose, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in));
+}
+)
 
 
 #ifdef NO_DL
