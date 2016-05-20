@@ -208,13 +208,18 @@
     "227 Entering Passive Mode (h1,h2,h3,h4,p1,p2)"
 
 
-/* Buffer to accumulate request message (control connection). */
-static te_string cmdbuf_w = TE_STRING_INIT;
-/* Buffer to accumulate reply message (control connection). */
-static te_dbuf cmdbuf_r = TE_DBUF_INIT(0);
-/* Buffer to accumulate received data (data connection). */
-static te_dbuf databuf_r = TE_DBUF_INIT(0);
-
+/* FTP client specific context. */
+struct tapi_storage_client_ftp_context {
+    int control_socket;             /* Socket of control connection. */
+    int data_socket;                /* Socket of data connection. */
+    struct sockaddr_storage addr;   /* Data connection server address. */
+    te_string cmdbuf_w;             /* Buffer to accumulate request message
+                                       (control connection). */
+    te_dbuf cmdbuf_r;               /* Buffer to accumulate reply message
+                                       (control connection). */
+    te_dbuf databuf_r;              /* Buffer to accumulate received data
+                                       (data connection). */
+};
 
 
 /**
@@ -415,13 +420,14 @@ send_control_msg_va(tapi_storage_client *client,
                     va_list              ap)
 {
     tapi_storage_client_ftp_context *ftp_context = client->context;
-    te_errno rc;
+    te_string *cmdbuf_w = &ftp_context->cmdbuf_w;
+    te_errno   rc;
 
-    cmdbuf_w.len = 0;
-    rc = te_string_append_va(&cmdbuf_w, fmt, ap);
+    cmdbuf_w->len = 0;
+    rc = te_string_append_va(cmdbuf_w, fmt, ap);
     if (rc != 0)
         return rc;
-    rc = send_request(client->rpcs, ftp_context->control_socket, &cmdbuf_w);
+    rc = send_request(client->rpcs, ftp_context->control_socket, cmdbuf_w);
     return rc;
 }
 
@@ -460,13 +466,14 @@ static te_errno
 read_control_msg(tapi_storage_client *client)
 {
     tapi_storage_client_ftp_context *ftp_context = client->context;
-    te_errno rc;
+    te_dbuf  *cmdbuf_r = &ftp_context->cmdbuf_r;
+    te_errno  rc;
 
-    rc = read_reply(client->rpcs, ftp_context->control_socket, &cmdbuf_r);
+    rc = read_reply(client->rpcs, ftp_context->control_socket, cmdbuf_r);
     if (rc != 0)
         return rc;
     /* Check the reply code. */
-    rc = check_reply_code_for_error((const char *)cmdbuf_r.ptr);
+    rc = check_reply_code_for_error((const char *)cmdbuf_r->ptr);
     return rc;
 }
 
@@ -486,8 +493,11 @@ read_control_msg(tapi_storage_client *client)
 static te_errno
 send_command(tapi_storage_client *client, const char *fmt, ...)
 {
-    va_list  ap;
-    te_errno rc;
+    tapi_storage_client_ftp_context *ftp_context = client->context;
+    te_string *cmdbuf_w = &ftp_context->cmdbuf_w;
+    te_dbuf   *cmdbuf_r = &ftp_context->cmdbuf_r;
+    va_list    ap;
+    te_errno   rc;
 
     va_start(ap, fmt);
     rc = send_control_msg_va(client, fmt, ap);
@@ -500,7 +510,7 @@ send_command(tapi_storage_client *client, const char *fmt, ...)
         ERROR("Failed to execute command:\n"
               "command: %s"
               "reply: %s",
-              cmdbuf_w.ptr, cmdbuf_r.ptr);
+              cmdbuf_w->ptr, cmdbuf_r->ptr);
     }
     return rc;
 }
@@ -516,6 +526,7 @@ static te_errno
 open_data_connection(tapi_storage_client *client)
 {
     tapi_storage_client_ftp_context *ftp_context = client->context;
+    te_dbuf   *cmdbuf_r = &ftp_context->cmdbuf_r;
     te_errno   rc;
     char      *str;
     in_addr_t  addr;
@@ -537,16 +548,17 @@ open_data_connection(tapi_storage_client *client)
     rc = send_command(client, FTP_CMD_PASSIVE_FMT);
     if (rc != 0)
         return rc;
-    if (get_reply_code((const char *)cmdbuf_r.ptr) !=
+    if (get_reply_code((const char *)cmdbuf_r->ptr) !=
                                             FTP_RC_ENTERING_PASSIVE_MODE)
     {
         return TE_EPROTO;
     }
-    if ((str = strchr((const char *)cmdbuf_r.ptr, '(')) == NULL)
+    str = strchr((const char *)cmdbuf_r->ptr, '(');
+    if (str == NULL)
     {
         ERROR("Broken response of entering passive mode: \"%s\". Expected"
               " message format is \"" PASSIVE_MODE_REPLY_TEMPLATE "\"",
-              (const char *)cmdbuf_r.ptr);
+              (const char *)cmdbuf_r->ptr);
         return TE_EBADMSG;
     }
     /* Here we assume that FTP server provides correct answer */
@@ -568,7 +580,7 @@ open_data_connection(tapi_storage_client *client)
             ERROR("Incorrect response of entering passive mode: \"%s\"."   \
                   " Expected message format is \""                         \
                   PASSIVE_MODE_REPLY_TEMPLATE "\"",                        \
-                  (const char *)cmdbuf_r.ptr);                             \
+                  (const char *)cmdbuf_r->ptr);                            \
             return TE_EBADMSG;                                             \
         }                                                                  \
     } while (0)
@@ -637,6 +649,8 @@ static te_errno
 read_data(tapi_storage_client *client)
 {
     tapi_storage_client_ftp_context *ftp_context = client->context;
+    te_dbuf *cmdbuf_r = &ftp_context->cmdbuf_r;
+    te_dbuf *databuf_r = &ftp_context->databuf_r;
     enum { FD_CONTROL, FD_DATA };
     struct rpc_pollfd fds[] = {
         [FD_CONTROL] = {
@@ -650,21 +664,22 @@ read_data(tapi_storage_client *client)
             .revents = 0
         }
     };
-    int num_revents;
+    int      num_revents;
     te_errno rc = 0;
-    int timeout = 5000;     /* Init value of timeout. */
+    int      timeout = 5000;    /* Init value of timeout. */
 
-    te_dbuf_reset(&cmdbuf_r);
-    te_dbuf_reset(&databuf_r);
+    te_dbuf_reset(cmdbuf_r);
+    te_dbuf_reset(databuf_r);
     num_revents = rpc_poll(client->rpcs, fds, TE_ARRAY_LEN(fds), timeout);
     while (num_revents > 0)
     {
         if ((fds[FD_CONTROL].revents & RPC_POLLIN) != 0)
         {
-            rc = read_chunk(client->rpcs, fds[FD_CONTROL].fd, &cmdbuf_r);
+            rc = read_chunk(client->rpcs, fds[FD_CONTROL].fd, cmdbuf_r);
             if (rc != 0)
                 return rc;
-            if (cmdbuf_r.ptr[cmdbuf_r.len - 1] == '\n')
+
+            if (cmdbuf_r->ptr[cmdbuf_r->len - 1] == '\n')
             {
                 /* Control message is fully received. */
                 fds[FD_CONTROL].fd = -1;
@@ -675,7 +690,7 @@ read_data(tapi_storage_client *client)
         }
         if ((fds[FD_DATA].revents & RPC_POLLIN) != 0)
         {
-            rc = read_chunk(client->rpcs, fds[FD_DATA].fd, &databuf_r);
+            rc = read_chunk(client->rpcs, fds[FD_DATA].fd, databuf_r);
             if (rc == TE_ENODATA)
             {
                 fds[FD_DATA].fd = -1;
@@ -684,16 +699,17 @@ read_data(tapi_storage_client *client)
             }
             if (rc != 0)
                 return rc;
+
             fds[FD_DATA].revents = 0;
         }
         num_revents = rpc_poll(client->rpcs, fds, TE_ARRAY_LEN(fds),
                                timeout);
     }
 
-    rc = terminate_received_message(&cmdbuf_r);
+    rc = terminate_received_message(cmdbuf_r);
     if (rc != 0)
         return rc;
-    rc = terminate_received_message(&databuf_r);
+    rc = terminate_received_message(databuf_r);
     return rc;
 }
 
@@ -708,6 +724,7 @@ static te_errno
 ftp_open(tapi_storage_client *client)
 {
     tapi_storage_client_ftp_context *ftp_context = client->context;
+    te_dbuf *cmdbuf_r = &ftp_context->cmdbuf_r;
     const struct sockaddr *addr =
         (const struct sockaddr *)client->auth.server_addr;
     te_errno rc = 0;
@@ -736,7 +753,7 @@ ftp_open(tapi_storage_client *client)
     rc = read_control_msg(client);
     if (rc != 0)
     {
-        ERROR("Failed to establish control connection: %s", cmdbuf_r.ptr);
+        ERROR("Failed to establish control connection: %s", cmdbuf_r->ptr);
         RPC_CLOSE(client->rpcs, ftp_context->control_socket);
         return TE_RC(TE_TAPI, rc);
     }
@@ -804,6 +821,8 @@ ftp_close(tapi_storage_client *client)
 static te_errno
 ftp_pwd(tapi_storage_client *client, tapi_local_file *directory)
 {
+    tapi_storage_client_ftp_context *ftp_context = client->context;
+    te_dbuf  *cmdbuf_r = &ftp_context->cmdbuf_r;
     te_errno  rc;
     char     *path_begin;
     char     *path_end;
@@ -813,7 +832,7 @@ ftp_pwd(tapi_storage_client *client, tapi_local_file *directory)
     rc = send_command(client, FTP_CMD_PWD_FMT);
     if (rc != 0)
         return TE_RC(TE_TAPI, rc);
-    if (get_reply_code((const char *)cmdbuf_r.ptr) !=
+    if (get_reply_code((const char *)cmdbuf_r->ptr) !=
                                                 FTP_RC_PATHNAME_CREATED)
         return TE_RC(TE_TAPI, TE_EPROTO);
 
@@ -828,12 +847,12 @@ ftp_pwd(tapi_storage_client *client, tapi_local_file *directory)
      * PWD
      * 257 "/usr/dm/foo""bar"
      */
-    path_begin = strchr((const char *)cmdbuf_r.ptr, '"');
-    path_end = strrchr((const char *)cmdbuf_r.ptr, '"');
+    path_begin = strchr((const char *)cmdbuf_r->ptr, '"');
+    path_end = strrchr((const char *)cmdbuf_r->ptr, '"');
     path_len = path_end - path_begin;
     if (path_begin == NULL || path_end == NULL || path_len < 1)
     {
-        ERROR("Invalid ftp reply message: %s", cmdbuf_r.ptr);
+        ERROR("Invalid ftp reply message: %s", cmdbuf_r->ptr);
         return TE_RC(TE_TAPI, TE_EBADMSG);
     }
     /* Save pathname. */
@@ -1135,6 +1154,9 @@ get_fileinfo_from_parent(tapi_storage_client *client,
                          const char          *pathname,
                          tapi_local_file     *file)
 {
+    tapi_storage_client_ftp_context *ftp_context = client->context;
+    te_dbuf  *cmdbuf_r = &ftp_context->cmdbuf_r;
+    te_dbuf  *databuf_r = &ftp_context->databuf_r;
     te_errno  con_rc;
     te_errno  rc = 0;
     char     *parent_path;
@@ -1166,11 +1188,11 @@ get_fileinfo_from_parent(tapi_storage_client *client,
          * Check the reply code of control message that was received
          * by @p read_data function.
          */
-        rc = check_reply_code_for_error((const char *)cmdbuf_r.ptr);
+        rc = check_reply_code_for_error((const char *)cmdbuf_r->ptr);
         if (rc != 0)
             break;
         /* Retrieve info about our file. */
-        rc = extract_fileinfo((char *)databuf_r.ptr, parent_path, filename,
+        rc = extract_fileinfo((char *)databuf_r->ptr, parent_path, filename,
                               file);
     } while (0);
     free(parent_path);
@@ -1194,8 +1216,11 @@ ftp_ls_directory(tapi_storage_client  *client,
                  const char           *path,
                  tapi_local_file_list *files)
 {
-    te_errno con_rc;
-    te_errno rc = 0;
+    tapi_storage_client_ftp_context *ftp_context = client->context;
+    te_dbuf  *cmdbuf_r = &ftp_context->cmdbuf_r;
+    te_dbuf  *databuf_r = &ftp_context->databuf_r;
+    te_errno  con_rc;
+    te_errno  rc = 0;
 
     con_rc = open_data_connection(client);
     if (con_rc != 0)
@@ -1211,11 +1236,11 @@ ftp_ls_directory(tapi_storage_client  *client,
          * Check the reply code of control message that was received
          * by @p read_data function.
          */
-        rc = check_reply_code_for_error((const char *)cmdbuf_r.ptr);
+        rc = check_reply_code_for_error((const char *)cmdbuf_r->ptr);
         if (rc != 0)
             break;
         /* Retrieve data. */
-        rc = extract_list_of_files((char *)databuf_r.ptr, path, files);
+        rc = extract_list_of_files((char *)databuf_r->ptr, path, files);
     } while (0);
     con_rc = close_data_connection(client);
     return (rc != 0 ? rc : con_rc);
@@ -1301,6 +1326,7 @@ ftp_put(tapi_storage_client *client,
         const char          *remote_file)
 {
     tapi_storage_client_ftp_context *ftp_context = client->context;
+    te_dbuf    *cmdbuf_r = &ftp_context->cmdbuf_r;
     te_errno    con_rc;
     te_errno    rc = 0;
     const char *dst = (remote_file == NULL ? local_file : remote_file);
@@ -1344,7 +1370,7 @@ ftp_put(tapi_storage_client *client,
     {
         rc = read_control_msg(client);
         if (rc != 0)
-            ERROR("Failed to send a file: %s", cmdbuf_r.ptr);
+            ERROR("Failed to send a file: %s", cmdbuf_r->ptr);
     }
     return TE_RC(TE_TAPI, (rc != 0 ? rc : con_rc));
 }
@@ -1364,6 +1390,7 @@ ftp_get(tapi_storage_client *client,
         const char          *local_file)
 {
     tapi_storage_client_ftp_context *ftp_context = client->context;
+    te_dbuf    *cmdbuf_r = &ftp_context->cmdbuf_r;
     te_errno    con_rc;
     te_errno    rc = 0;
     const char *dst = (local_file == NULL ? remote_file : local_file);
@@ -1402,7 +1429,7 @@ ftp_get(tapi_storage_client *client,
     {
         rc = read_control_msg(client);
         if (rc != 0)
-            ERROR("Failed to get a file: %s", cmdbuf_r.ptr);
+            ERROR("Failed to get a file: %s", cmdbuf_r->ptr);
     }
     return TE_RC(TE_TAPI, (rc != 0 ? rc : con_rc));
 }
@@ -1628,10 +1655,23 @@ tapi_storage_client_methods tapi_storage_client_ftp_methods = {
 /* See description in tapi_storage_client_ftp.h. */
 te_errno
 tapi_storage_client_ftp_context_init(
-                                tapi_storage_client_ftp_context *context)
+                                tapi_storage_client_ftp_context **context)
 {
-    context->control_socket = -1;
-    context->data_socket = -1;
+    tapi_storage_client_ftp_context *ftp_context;
+
+    ftp_context = TE_ALLOC(sizeof(*ftp_context));
+    if (ftp_context == NULL)
+        return TE_RC(TE_TAPI, TE_ENOMEM);
+
+    ftp_context->control_socket = -1;
+    ftp_context->data_socket = -1;
+    ftp_context->addr = (struct sockaddr_storage){ 0 };
+    ftp_context->cmdbuf_w = (te_string)TE_STRING_INIT;
+    ftp_context->cmdbuf_r = (te_dbuf)TE_DBUF_INIT(0);
+    ftp_context->databuf_r = (te_dbuf)TE_DBUF_INIT(0);
+
+    *context = ftp_context;
+
     return 0;
 }
 
@@ -1640,8 +1680,13 @@ void
 tapi_storage_client_ftp_context_fini(
                                 tapi_storage_client_ftp_context *context)
 {
-    context->control_socket = -1;
-    context->data_socket = -1;
+    if (context != NULL)
+    {
+        te_string_free(&context->cmdbuf_w);
+        te_dbuf_free(&context->cmdbuf_r);
+        te_dbuf_free(&context->databuf_r);
+        free(context);
+    }
 }
 
 /* See description in tapi_storage_client_ftp.h. */
@@ -1674,7 +1719,4 @@ tapi_storage_client_ftp_fini(tapi_storage_client *client)
     client->methods = NULL;
     client->context = NULL;
     tapi_storage_auth_params_fini(&client->auth);
-    te_string_free(&cmdbuf_w);
-    te_dbuf_free(&cmdbuf_r);
-    te_dbuf_free(&databuf_r);
 }

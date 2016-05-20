@@ -40,21 +40,10 @@ extern "C" {
 #endif
 
 
-/** On-stack tapi_storage_client_ftp_context structure initializer. */
-#define TAPI_STORAGE_CLIENT_FTP_CONTEXT_INIT { \
-    .control_socket = -1,                       \
-    .data_socket = -1,                          \
-    .addr = { 0 },                              \
-}
-
-/**
- * FTP client specific context
- */
-typedef struct tapi_storage_client_ftp_context {
-    int control_socket;             /**< Socket of control connection. */
-    int data_socket;                /**< Socket of data connection. */
-    struct sockaddr_storage addr;   /**< Data connection server address. */
-} tapi_storage_client_ftp_context;
+/* Forward declaration of FTP client specific context structure. */
+struct tapi_storage_client_ftp_context;
+typedef struct tapi_storage_client_ftp_context
+    tapi_storage_client_ftp_context;
 
 
 /**
@@ -77,7 +66,7 @@ extern tapi_storage_client_methods tapi_storage_client_ftp_methods;
  * @sa tapi_storage_client_ftp_context_fini
  */
 extern te_errno tapi_storage_client_ftp_context_init(
-                                tapi_storage_client_ftp_context *context);
+                                tapi_storage_client_ftp_context **context);
 
 /**
  * Release FTP client context that was initialized with
