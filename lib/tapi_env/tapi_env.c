@@ -1356,6 +1356,24 @@ add_address(tapi_env_addr *env_addr, cfg_nets_t *cfg_nets,
     return rc;
 }
 
+/**
+ * Get network interface (specified using Configurator OID @p oid)
+ * index.
+ */
+static te_errno
+get_interface_index(const char *oid, unsigned int *if_index)
+{
+    te_errno        rc;
+    cfg_val_type    val_type = CVT_INTEGER;
+
+    rc = cfg_get_instance_fmt(&val_type, if_index, "%s/index:", oid);
+    if (rc != 0)
+        ERROR("Failed to get interface index of the %s via "
+              "Configurator: %r", oid, rc);
+
+    return rc;
+}
+
 
 /**
  * Prepare required interfaces data in accordance with bound
@@ -1509,13 +1527,9 @@ cleanup0:
             free(ta);
         }
 
-        val_type = CVT_INTEGER;
-        rc = cfg_get_instance_fmt(&val_type, &(p->if_info.if_index),
-                                  "%s/index:", oid);
+        rc = get_interface_index(oid, &(p->if_info.if_index));
         if (rc != 0)
         {
-            ERROR("Failed to get interface index of the %s via "
-                  "Configurator: %r", oid, rc);
             free(oid);
             return rc;
         }
