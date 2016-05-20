@@ -1199,32 +1199,36 @@ tapi_cfg_net_assign_ip(unsigned int af, cfg_net_t *net,
                 break;
             }
 
-            /* Get interface OID */
-            type = CVT_STRING;
-            rc = cfg_get_instance(net->nodes[i].handle, &type,
-                                  &str);
-            if (rc != 0)
+            if (tapi_cfg_net_get_node_rsrc_type(&net->nodes[i]) ==
+                NET_NODE_RSRC_TYPE_INTERFACE)
             {
-                ERROR("Failed to get Configurator instance by handle "
-                      "0x%x: %r", net->nodes[i].handle, rc);
-                free(addr);
-                break;
-            }
+                /* Get interface OID */
+                type = CVT_STRING;
+                rc = cfg_get_instance(net->nodes[i].handle, &type,
+                                      &str);
+                if (rc != 0)
+                {
+                    ERROR("Failed to get Configurator instance by handle "
+                          "0x%x: %r", net->nodes[i].handle, rc);
+                    free(addr);
+                    break;
+                }
 
-            rc = tapi_cfg_base_add_net_addr(str, addr, net_pfx, TRUE,
-                                            &addr_hndl);
-            if (TE_RC_GET_ERROR(rc) == TE_EEXIST)
-            {
-                /* Address already assigned - continue */
-                rc = 0;
-            }
-            else if (rc != 0)
-            {
+                rc = tapi_cfg_base_add_net_addr(str, addr, net_pfx, TRUE,
+                                                &addr_hndl);
+                if (TE_RC_GET_ERROR(rc) == TE_EEXIST)
+                {
+                    /* Address already assigned - continue */
+                    rc = 0;
+                }
+                else if (rc != 0)
+                {
+                    free(str);
+                    free(addr);
+                    break;
+                }
                 free(str);
-                free(addr);
-                break;
             }
-            free(str);
 
             rc = cfg_add_instance_child_fmt(NULL, CVT_ADDRESS, addr,
                                             net->nodes[i].handle,
