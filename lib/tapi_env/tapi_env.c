@@ -1374,6 +1374,175 @@ get_interface_index(const char *oid, unsigned int *if_index)
     return rc;
 }
 
+/**
+ * Prepare network interface data in accordance with bound network
+ * configuration.
+ *
+ * @param iface         Environment interface to fill in
+ * @param cfg_nets      Bound network configuration
+ *
+ * @return Status code.
+ */
+static te_errno
+prepare_interfaces_net(tapi_env_if *iface, const cfg_nets_t *cfg_nets)
+{
+    te_errno        rc;
+    cfg_val_type    val_type;
+    char           *oid = NULL;
+
+    /* Get name of the interface from network node value */
+    rc = node_value_get_ith_inst_name(
+             cfg_nets->nets[iface->net->i_net].nodes[iface->i_node].handle,
+             2, &iface->if_info.if_name);
+    if (rc != 0)
+    {
+        ERROR("Failed to get interface name");
+        return rc;
+    }
+
+    val_type = CVT_STRING;
+    rc = cfg_get_instance(cfg_nets->nets[iface->net->i_net].
+                              nodes[iface->i_node].handle,
+                          &val_type, &oid);
+    if (rc != 0)
+    {
+        ERROR("Failed to get OID of the network node");
+        return rc;
+    }
+    else /** XEN-specific part */
+    {
+        char const  xen[]    = "xen:/";
+        char const  bridge[] = "/bridge:";
+        char       *xen_oid  = malloc(strlen(oid) +
+                                      strlen(xen) +
+                                      strlen(bridge) + 1);
+        char const *slash    = strrchr(oid, '/');
+
+        if (slash == NULL)
+        {
+            rc = TE_EFAIL;
+            goto cleanup0;
+        }
+
+        memcpy(xen_oid, oid, ++slash - oid);
+        xen_oid[slash - oid] = '\0';
+        strcat(xen_oid, xen);
+        strcat(xen_oid, slash);
+        val_type = CVT_STRING;
+
+        if ((rc = cfg_get_instance_fmt(&val_type,
+                                       &iface->ph_info.if_name,
+                                       xen_oid)) != 0)
+        {
+            if (rc != TE_RC(TE_CS, TE_ENOENT))
+            {
+                ERROR("Failed to get '%s' OID value", xen_oid);
+                goto cleanup0;
+            }
+
+            iface->ph_info.if_name = strdup("");
+        }
+
+        strcat(xen_oid, bridge);
+        val_type = CVT_STRING;
+
+        if ((rc = cfg_get_instance_fmt(&val_type,
+                                       &iface->br_info.if_name,
+                                       xen_oid)) != 0)
+        {
+            if (rc != TE_RC(TE_CS, TE_ENOENT))
+            {
+                ERROR("Failed to get '%s' OID value", xen_oid);
+                goto cleanup0;
+            }
+
+            iface->br_info.if_name = strdup("");
+        }
+
+        rc = 0;
+cleanup0:
+        free(xen_oid);
+
+        if (rc != 0)
+            goto cleanup;
+    }
+
+    rc = get_interface_index(oid, &(iface->if_info.if_index));
+    if (rc != 0)
+        goto cleanup;
+
+cleanup:
+    free(oid);
+    return rc;
+}
+
+/**
+ * Prepare loopback interface data in accordance with bound network
+ * configuration.
+ *
+ * @param iface         Environment interface to fill in
+ * @param cfg_nets      Bound network configuration
+ *
+ * @return Status code.
+ */
+static te_errno
+prepare_interfaces_loopback(tapi_env_if *iface, const cfg_nets_t *cfg_nets)
+{
+    te_errno        rc;
+    const char     *oid_fmt = "/agent:%s/interface:%s";
+    char           *ta;
+    char           *oid = NULL;
+
+    /* Get name of the test agent */
+    rc = node_value_get_ith_inst_name(
+             cfg_nets->nets[iface->net->i_net].nodes[iface->i_node].handle,
+             1, &ta);
+    if (rc != 0)
+    {
+        ERROR("Failed to get test agent name");
+        return rc;
+    }
+
+    if (cfg_find_fmt(NULL, oid_fmt, ta, "lo") == 0)
+    {
+        iface->if_info.if_name = strdup("lo");
+    }
+    else if (cfg_find_fmt(NULL, oid_fmt, ta, "lo0") == 0)
+    {
+        iface->if_info.if_name = strdup("lo0");
+    }
+    /* FIXME: Dirty hack for Windows */
+    else if (cfg_find_fmt(NULL, oid_fmt, ta, "intf1") == 0)
+    {
+        iface->if_info.if_name = strdup("intf1");
+    }
+    else
+    {
+        ERROR("Unable to get loopback interface");
+        return TE_ESRCH;
+    }
+    if (iface->if_info.if_name == NULL)
+    {
+        ERROR("strdup() failed");
+        return te_rc_os2te(errno);
+    }
+
+    oid = malloc(strlen(oid_fmt) - 2 + strlen(ta) -
+                 2 + strlen(iface->if_info.if_name) + 1);
+    if (oid == NULL)
+    {
+        ERROR("malloc() failed");
+        return TE_ENOMEM;
+    }
+    sprintf(oid, oid_fmt, ta, iface->if_info.if_name);
+
+    rc = get_interface_index(oid, &(iface->if_info.if_index));
+
+    free(oid);
+    free(ta);
+
+    return rc;
+}
 
 /**
  * Prepare required interfaces data in accordance with bound
@@ -1387,158 +1556,26 @@ get_interface_index(const char *oid, unsigned int *if_index)
 static te_errno
 prepare_interfaces(tapi_env_ifs *ifs, cfg_nets_t *cfg_nets)
 {
-    te_errno        rc;
+    te_errno        rc = 0;
     tapi_env_if    *p;
-    cfg_val_type    val_type;
-    char           *oid = NULL;
 
-    for (p = ifs->cqh_first; p != (void *)ifs; p = p->links.cqe_next)
+    for (p = ifs->cqh_first; p != (void *)ifs && rc == 0; p = p->links.cqe_next)
     {
         if (p->name == NULL)
             continue;
 
         if (strcmp(p->name, "lo") != 0)
         {
-            /* Get name of the interface from network node value */
-            rc = node_value_get_ith_inst_name(
-                     cfg_nets->nets[p->net->i_net].nodes[p->i_node].handle,
-                     2, &p->if_info.if_name);
-            if (rc != 0)
-            {
-                ERROR("Failed to get interface name");
-                return rc;
-            }
-
-            val_type = CVT_STRING;
-            rc = cfg_get_instance(cfg_nets->nets[p->net->i_net].
-                                      nodes[p->i_node].handle,
-                                  &val_type, &oid);
-            if (rc != 0)
-            {
-                ERROR("Failed to get OID of the network node");
-                return rc;
-            }
-            else /** XEN-specific part */
-            {
-                char const  xen[]    = "xen:/";
-                char const  bridge[] = "/bridge:";
-                char       *xen_oid  = malloc(strlen(oid) +
-                                              strlen(xen) +
-                                              strlen(bridge) + 1);
-                char const *slash    = strrchr(oid, '/');
-
-                if (slash == NULL)
-                {
-                    rc = TE_EFAIL;
-                    goto cleanup0;
-                }
-
-                memcpy(xen_oid, oid, ++slash - oid);
-                xen_oid[slash - oid] = '\0';
-                strcat(xen_oid, xen);
-                strcat(xen_oid, slash);
-                val_type = CVT_STRING;
-
-                if ((rc = cfg_get_instance_fmt(&val_type,
-                                               &p->ph_info.if_name,
-                                               xen_oid)) != 0)
-                {
-                    if (rc != TE_RC(TE_CS, TE_ENOENT))
-                    {
-                        ERROR("Failed to get '%s' OID value", xen_oid);
-                        goto cleanup0;
-                    }
-
-                    p->ph_info.if_name = strdup("");
-                }
-
-                strcat(xen_oid, bridge);
-                val_type = CVT_STRING;
-
-                if ((rc = cfg_get_instance_fmt(&val_type,
-                                               &p->br_info.if_name,
-                                               xen_oid)) != 0)
-                {
-                    if (rc != TE_RC(TE_CS, TE_ENOENT))
-                    {
-                        ERROR("Failed to get '%s' OID value", xen_oid);
-                        goto cleanup0;
-                    }
-
-                    p->br_info.if_name = strdup("");
-                }
-
-                rc = 0;
-cleanup0:
-                free(xen_oid);
-
-                if (rc != 0)
-                    return rc;
-            }
+            rc = prepare_interfaces_net(p, cfg_nets);
         }
         else
         {
-            const char *oid_fmt = "/agent:%s/interface:%s";
-            char       *ta;
-
-            /* Get name of the test agent */
-            rc = node_value_get_ith_inst_name(
-                     cfg_nets->nets[p->net->i_net].nodes[p->i_node].handle,
-                     1, &ta);
-            if (rc != 0)
-            {
-                ERROR("Failed to get test agent name");
-                return rc;
-            }
-
-            if (cfg_find_fmt(NULL, oid_fmt, ta, "lo") == 0)
-            {
-                p->if_info.if_name = strdup("lo");
-            }
-            else if (cfg_find_fmt(NULL, oid_fmt, ta, "lo0") == 0)
-            {
-                p->if_info.if_name = strdup("lo0");
-            }
-            /* FIXME: Dirty hack for Windows */
-            else if (cfg_find_fmt(NULL, oid_fmt, ta, "intf1") == 0)
-            {
-                p->if_info.if_name = strdup("intf1");
-            }
-            else
-            {
-                ERROR("Unable to get loopback interface");
-                return TE_ESRCH;
-            }
-            if (p->if_info.if_name == NULL)
-            {
-                ERROR("strdup() failed");
-                return te_rc_os2te(errno);
-            }
-
-            oid = malloc(strlen(oid_fmt) - 2 + strlen(ta) -
-                         2 + strlen(p->if_info.if_name) + 1);
-            if (oid == NULL)
-            {
-                ERROR("malloc() failed");
-                return TE_ENOMEM;
-            }
-            sprintf(oid, oid_fmt, ta, p->if_info.if_name);
-            
-            free(ta);
+            rc = prepare_interfaces_loopback(p, cfg_nets);
         }
 
-        rc = get_interface_index(oid, &(p->if_info.if_index));
-        if (rc != 0)
-        {
-            free(oid);
-            return rc;
-        }
-
-        free(oid);
-        oid = NULL;
     }
 
-    return 0;
+    return rc;
 }
 
 
