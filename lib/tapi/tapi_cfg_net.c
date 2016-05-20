@@ -862,6 +862,10 @@ tapi_cfg_net_all_up(te_bool force)
             cfg_val_type    type;
             char           *oid = NULL;
 
+            if (tapi_cfg_net_get_node_rsrc_type(&net->nodes[j]) !=
+                NET_NODE_RSRC_TYPE_INTERFACE)
+                continue;
+
             type = CVT_STRING;
             rc = cfg_get_instance(net->nodes[j].handle, &type, &oid);
             if (rc != 0)
@@ -879,6 +883,9 @@ tapi_cfg_net_all_up(te_bool force)
     {
         cfg_val_type    type;
         int             status;
+
+        if (nodes[k] == NULL)
+            continue; /* Not an interface */
 
         type = CVT_INTEGER;
         rc = cfg_get_instance_fmt(&type, &status, "%s/status:", nodes[k]);
@@ -916,7 +923,7 @@ tapi_cfg_net_all_up(te_bool force)
     for (k = 0; k < n_nodes; k++)
     {
         if (nodes[k] == NULL)
-            continue; /* The interface was already up */
+            continue; /* Not an interface or the interface was already up */
         rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
                                   "%s/status:", nodes[k]);
         if (rc != 0)
