@@ -372,6 +372,9 @@ typedef struct tapi_env_if {
 
     unsigned int    i_node;     /**< Index of the associated node */
 
+    enum net_node_rsrc_type rsrc_type;  /**< Type of the associated
+                                             network node resource */
+
     struct if_nameindex if_info;/**< Interface info */
     struct if_nameindex br_info;/**< XEN bridge info */
     struct if_nameindex ph_info;/**< XEN physical interface info */

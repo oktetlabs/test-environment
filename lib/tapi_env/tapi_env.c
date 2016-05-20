@@ -1545,6 +1545,65 @@ prepare_interfaces_loopback(tapi_env_if *iface, const cfg_nets_t *cfg_nets)
 }
 
 /**
+ * Prepare PCI function virtual interface data in accordance with bound
+ * network configuration.
+ *
+ * @param iface         Environment interface to fill in
+ * @param node          Bound network configuration node
+ *
+ * @return Status code.
+ */
+static te_errno
+prepare_interfaces_pci_fn(tapi_env_if *iface, cfg_net_node_t *node)
+{
+    te_errno        rc;
+    cfg_val_type    val_type;
+    char           *oid = NULL;
+    char           *pci_oid = NULL;
+
+    if (iface->ps == NULL)
+    {
+        ERROR("PCI function interface '%s' must belong to some process",
+              iface->name);
+        return TE_EINVAL;
+    }
+
+    val_type = CVT_STRING;
+    rc = cfg_get_instance(node->handle, &val_type, &oid);
+    if (rc != 0)
+    {
+        ERROR("Failed to get OID of the network node");
+        return rc;
+    }
+
+    val_type = CVT_STRING;
+    rc = cfg_get_instance_fmt(&val_type, &pci_oid, "%s", oid);
+    if (rc != 0)
+    {
+        ERROR("Failed to get PCI resource OID value '%s': %r", oid, rc);
+        free(oid);
+        return rc;
+    }
+
+    free(oid);
+
+    rc = cfg_get_ith_inst_name(pci_oid, 4, &(iface->if_info.if_name));
+    if (rc != 0)
+    {
+        ERROR("Failed to get 4th instance name of the OID '%s': %r",
+              pci_oid, rc);
+        free(pci_oid);
+        return rc;
+    }
+
+    free(pci_oid);
+
+    iface->if_info.if_index = iface->ps->next_vif_index++;
+
+    return 0;
+}
+
+/**
  * Prepare required interfaces data in accordance with bound
  * network configuration.
  *
@@ -1569,10 +1628,15 @@ prepare_interfaces(tapi_env_ifs *ifs, cfg_nets_t *cfg_nets)
             cfg_net_node_t *node;
 
             node = &cfg_nets->nets[p->net->i_net].nodes[p->i_node];
-            switch (tapi_cfg_net_get_node_rsrc_type(node))
+            p->rsrc_type = tapi_cfg_net_get_node_rsrc_type(node);
+            switch (p->rsrc_type)
             {
                 case NET_NODE_RSRC_TYPE_INTERFACE:
                     rc = prepare_interfaces_net(p, cfg_nets);
+                    break;
+
+                case NET_NODE_RSRC_TYPE_PCI_FN:
+                    rc = prepare_interfaces_pci_fn(p, node);
                     break;
 
                 default:
