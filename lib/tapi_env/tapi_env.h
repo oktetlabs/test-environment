@@ -367,8 +367,11 @@ typedef struct tapi_env_if {
     tapi_env_net   *net;        /**< Net the interface belongs to */
     tapi_env_host  *host;       /**< Host the interface is belongs to */
 
+    CIRCLEQ_ENTRY(tapi_env_if)  ps_links;   /**< Links in the process list */
+    struct tapi_env_process    *ps; /**< Process the interface belongs to */
+
     unsigned int    i_node;     /**< Index of the associated node */
-    
+
     struct if_nameindex if_info;/**< Interface info */
     struct if_nameindex br_info;/**< XEN bridge info */
     struct if_nameindex ph_info;/**< XEN physical interface info */
@@ -394,6 +397,9 @@ typedef struct tapi_env_process {
     SLIST_ENTRY(tapi_env_process)   links;  /**< Links */
 
     tapi_env_pcos pcos; /**< Tail queue of PCOs in process */
+    tapi_env_ifs  ifs;  /**< List of interfaces */
+
+    unsigned int next_vif_index;    /**< Next virtual interface index */
 } tapi_env_process;
 
 
