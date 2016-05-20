@@ -2270,3 +2270,32 @@ tapi_env_get_net_host_addr(const tapi_env          *env,
 
     return 0;
 }
+
+/* See description in tapi_env.h */
+const tapi_env_pco *
+tapi_env_rpcs2pco(const tapi_env *env, const rcf_rpc_server *rpcs)
+{
+    const tapi_env_host    *host;
+    const tapi_env_process *proc;
+    const tapi_env_pco     *pco;
+
+    if (env == NULL || rpcs == NULL)
+    {
+        ERROR("%s(): Invalid arguments", __FUNCTION__);
+        return NULL;
+    }
+
+    SLIST_FOREACH(host, &env->hosts, links)
+    {
+        SLIST_FOREACH(proc, &host->processes, links)
+        {
+            STAILQ_FOREACH(pco, &proc->pcos, links)
+            {
+                if (pco->rpcs == rpcs)
+                    return pco;
+            }
+        }
+    }
+
+    return NULL;
+}

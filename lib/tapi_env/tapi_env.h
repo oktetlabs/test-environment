@@ -644,6 +644,12 @@ extern te_errno tapi_env_get_net_host_addr(const tapi_env          *env,
                                            struct sockaddr        **addr,
                                            socklen_t               *addrlen);
 
+/**
+ * Find PCO by RPC server handle.
+ */
+extern const tapi_env_pco *tapi_env_rpcs2pco(const tapi_env       *env,
+                                             const rcf_rpc_server *rpcs);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
