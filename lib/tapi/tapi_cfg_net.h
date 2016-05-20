@@ -51,10 +51,17 @@ enum net_node_type {
     NET_NODE_TYPE_NUT = 1,      /**< Node is a NUT */
 };
 
+/** All possible node types of /net/node resources */
+enum net_node_rsrc_type {
+    NET_NODE_RSRC_TYPE_UNKNOWN = 0, /**< Unknown type of the resource */
+    NET_NODE_RSRC_TYPE_INTERFACE,   /**< Network interface */
+};
+
 /** Node description structure */
 typedef struct cfg_net_node_t {
-    cfg_handle          handle; /**< Cfg instance handle */
-    enum net_node_type  type;   /**< Node type */
+    cfg_handle              handle;     /**< Cfg instance handle */
+    enum net_node_type      type;       /**< Node type */
+    enum net_node_rsrc_type rsrc_type;  /**< Node resource type */
 } cfg_net_node_t;
 
 /** Net description structure */
@@ -70,6 +77,14 @@ typedef struct cfg_nets_t {
     cfg_net_t      *nets;       /**< Array with nets */
 } cfg_nets_t;
 
+/**
+ * Get type of the network node resource.
+ *
+ * Returns cached value if it is already known and tries to fill in
+ * cache otherwise.
+ */
+extern enum net_node_rsrc_type tapi_cfg_net_get_node_rsrc_type(
+                                   cfg_net_node_t *node);
 
 /**
  * Get configuration of the net.
