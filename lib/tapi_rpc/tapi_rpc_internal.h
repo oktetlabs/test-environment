@@ -45,7 +45,7 @@
 #include "tapi_sockaddr.h"
 #include "te_rpc_types.h"
 
-/* 
+/*
  * It is mandatory to include signal.h before tarpc.h, since tarpc.h
  * defines _kill as a number.
  */
@@ -75,8 +75,8 @@ do {                                                                    \
     rpcs->silent = FALSE;                                               \
 } while (0)
 
-/** 
- * Free memory, check RPC error, jump in the case of RPC error or if 
+/**
+ * Free memory, check RPC error, jump in the case of RPC error or if
  * _res is TRUE, set jump condition to default value.
  */
 #define TAPI_RPC_OUT(_func, _res) \
@@ -277,8 +277,8 @@ do {                                                                    \
         return;                                                     \
     } while(0)
 
-/** 
- * Return wait_status with check. 
+/**
+ * Return wait_status with check.
  */
 #define RETVAL_WAIT_STATUS(_func, _retval) \
     do {                                                            \
@@ -291,8 +291,8 @@ do {                                                                    \
         return __retval;                                            \
     } while(0)
 
-/** 
- * Return int value and check it and wait_status. 
+/**
+ * Return int value and check it and wait_status.
  */
 #define RETVAL_INT_CHECK_WAIT_STATUS(_func, _retval, _status) \
     do {                                                            \
