@@ -77,7 +77,7 @@ do {                                                                    \
 
 /**
  * Free memory, check RPC error, jump in the case of RPC error or if
- * _res is TRUE, set jump condition to default value.
+ * @a _res is @c TRUE, set jump condition to default value.
  */
 #define TAPI_RPC_OUT(_func, _res) \
     do {                                                                \
@@ -102,12 +102,13 @@ do {                                                                    \
     } while (0)
 
 /**
- * If RPC call status is OK, check condition and set specified variable
- * to _error_val and RPC server errno to TE_ECORRUPTED, if it is true.
- * If RPC call status is not OK, variable is set to -1 and RPC server
- * errno is not updated.
+ * If RPC call status is OK, check condition @a _cond and set specified
+ * variable @a _var to @a _error_val and RPC server errno to #TE_ECORRUPTED,
+ * if it is true.
+ * If RPC call status is not OK, variable @a _var is set to @a _error_val
+ * and RPC server errno is not updated.
  *
- * The function assumes to have RPC server handle as 'rpcs' variable in
+ * The function assumes to have RPC server handle as @b rpcs variable in
  * the context.
  *
  * @param _func         function name
@@ -152,13 +153,13 @@ do {                                                                    \
     } while (0)
 
 /**
- * If RPC call status is OK, check that variable with function return
- * value is greater or equal to minus one and set specified variable
- * to -1 and RPC server errno to TE_ECORRUPTED, if it is not true.
- * If RPC call status is not OK, variable is set to -1 and RPC server
- * errno is not updated.
+ * If RPC call status is OK, check that variable @a _var with function
+ * return value is greater or equal to @c -1 and set specified variable
+ * to @c -1 and RPC server errno to #TE_ECORRUPTED, if it is not true.
+ * If RPC call status is not OK, variable @a _var is set to @c -1 and
+ * RPC server errno is not updated.
  *
- * The function assumes to have RPC server handle as 'rpcs' variable in
+ * The function assumes to have RPC server handle as @b rpcs variable in
  * the context.
  *
  * @param _func     function name
@@ -168,12 +169,13 @@ do {                                                                    \
     CHECK_RETVAL_VAR(_func, _var, ((_var) < -1), -1)
 
 /**
- * If RPC call status is OK, check that variable with function return
- * value is zero or minus one and set specified variable to -1 and RPC
- * server errno to TE_ECORRUPTED, if it is not true.  If RPC call status is
- * not OK, variable is set to -1 and RPC server errno is not updated.
+ * If RPC call status is OK, check that variable @a _var with function
+ * return value is @c 0 or @c -1 and set specified variable to @c -1 and
+ * RPC server errno to #TE_ECORRUPTED, if it is not true.
+ * If RPC call status is not OK, variable @a _var is set to @c -1 and
+ * RPC server errno is not updated.
  *
- * The function assumes to have RPC server handle as 'rpcs' variable in
+ * The function assumes to have RPC server handle as @b rpcs variable in
  * the context.
  *
  * @param _func     function
@@ -183,12 +185,13 @@ do {                                                                    \
     CHECK_RETVAL_VAR(_func, _var, (((_var) != 0) && ((_var) != -1)), -1)
 
 /**
- * If RPC call status is OK, check that variable with function return
- * value is TRUE or FALSE and set specified variable to FALSE and RPC
- * server errno to TE_ECORRUPTED, if it is not true.  If RPC call status is
- * not OK, variable is set to FALSE and RPC server errno is not updated.
+ * If RPC call status is OK, check that variable @a _var with function
+ * return value is @c TRUE or @c FALSE and set specified variable to
+ * @c FALSE and RPC server errno to #TE_ECORRUPTED, if it is not true.
+ * If RPC call status is not OK, variable @a _var is set to @c FALSE and
+ * RPC server errno is not updated.
  *
- * The function assumes to have RPC server handle as 'rpcs' variable in
+ * The function assumes to have RPC server handle as @b rpcs variable in
  * the context.
  *
  * @param _func     function
@@ -220,7 +223,7 @@ do {                                                                    \
     } while (0)
 
 
-/** Return with check (for functions returning value >= -1) */
+/** Return with check (for functions returning value >= @c -1) */
 #define RETVAL_INT(_func, _retval) \
     do {                                                            \
         int __retval = (_retval);                                   \
@@ -230,7 +233,7 @@ do {                                                                    \
         return __retval;                                            \
     } while (0)
 
-/** Return with check (for functions returning int64_t value >= -1) */
+/** Return with check (for functions returning int64_t value >= @c -1) */
 #define RETVAL_INT64(_func, _retval) \
     do {                                                            \
         int64_t __retval = (_retval);                               \
@@ -305,7 +308,7 @@ do {                                                                    \
         return __retval;                                            \
     } while(0)
 
-/** Follow pointer if not NULL; otherwise return 0 */
+/** Follow pointer if not @c NULL; otherwise return @c 0 */
 #define PTR_VAL(_param) ((_param == NULL) ? 0 : *(_param))
 
 /**
@@ -344,7 +347,7 @@ do {                                                    \
 } while (0)
 
 /**
- * Check membership of pointer in the namespace @b ns.
+ * Check membership of pointer in the namespace @a ns.
  *
  * @param rpcs      RPC server handle
  * @param ptr       Pointer ID
