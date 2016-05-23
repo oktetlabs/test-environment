@@ -9,3 +9,5 @@ auxdir/ar-lib
 auxdir/test-driver
 TAGS
 tags
+doc/generated
+doxygen.warn
