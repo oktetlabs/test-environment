@@ -249,6 +249,25 @@ do {                                                                    \
 
 /**
  * If RPC call status is OK, check that variable @a _var with function
+ * return value is @c 0 or negative and set specified variable to @c -1 and
+ * RPC server errno to #TE_ECORRUPTED, if it is not true.
+ * If RPC call status is not OK, variable @a _var is set to @c -1 and
+ * RPC server errno is not updated.
+ *
+ * Error logging is requested if error is not expected and finally @a _var
+ * is negative.
+ *
+ * The function assumes to have RPC server handle as @b rpcs variable in
+ * the context.
+ *
+ * @param _func     function
+ * @param _var      variable with return value
+ */
+#define CHECK_RETVAL_VAR_IS_ZERO_OR_NEGATIVE(_func, _var) \
+    CHECK_RETVAL_VAR_ERR_COND(_func, _var, ((_var) > 0), -1, ((_var) < 0))
+
+/**
+ * If RPC call status is OK, check that variable @a _var with function
  * return value is @c TRUE or @c FALSE and set specified variable to
  * @c FALSE and RPC server errno to #TE_ECORRUPTED, if it is not true.
  * If RPC call status is not OK, variable @a _var is set to @c FALSE and
