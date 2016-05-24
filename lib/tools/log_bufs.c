@@ -196,3 +196,14 @@ te_log_buf_free(te_log_buf *buf)
         (buf - te_log_bufs) / sizeof(te_log_bufs[0]);
     pthread_mutex_unlock(&te_log_buf_mutex);
 }
+
+const char *
+te_args2log_buf(te_log_buf *buf, int argc, const char **argv)
+{
+    int     i;
+
+    for (i = 0; i < argc; ++i)
+        te_log_buf_append(buf, "%s\"%s\"", i == 0 ? "" : ", ", argv[i]);
+
+    return te_log_buf_get(buf);
+}

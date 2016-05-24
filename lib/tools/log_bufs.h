@@ -92,6 +92,19 @@ extern const char *te_log_buf_get(te_log_buf *buf);
  */
 extern void te_log_buf_free(te_log_buf *buf);
 
+/**
+ * Put @a argc/@a argv arguments enclosed in double quotes and separated
+ * by comma to log buffer.
+ *
+ * @param buf   Pointer to the buffer allocated with @b te_log_buf_alloc()
+ * @param argc  Number of arguments
+ * @param argv  Array with arguments
+ *
+ * @return @b te_log_buf_get() return value after addition
+ */
+extern const char *te_args2log_buf(te_log_buf *buf,
+                                   int argc, const char **argv);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
