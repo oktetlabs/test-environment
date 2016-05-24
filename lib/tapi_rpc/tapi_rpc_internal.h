@@ -122,7 +122,19 @@ do {                                                                    \
  */
 #define CHECK_RETVAL_VAR_ERR_COND(_func, _var, _cond, _error_val, _err_cond) \
     do {                                                            \
-        if (RPC_IS_CALL_OK(rpcs))                                   \
+        if (!RPC_IS_CALL_OK(rpcs))                                  \
+        {                                                           \
+            (_var) = (_error_val);                                  \
+            rpcs->err_log = TRUE;                                   \
+        }                                                           \
+        else if (RPC_ERRNO(rpcs) == RPC_ERPCNOTSUPP)                \
+        {                                                           \
+            RING("Function %s() is not supported",  #_func);        \
+            (_var) = (_error_val);                                  \
+            if (rpcs->iut_err_jump)                                 \
+                rpcs->err_log = TRUE;                               \
+        }                                                           \
+        else                                                        \
         {                                                           \
             if (_cond)                                              \
             {                                                       \
@@ -140,22 +152,12 @@ do {                                                                    \
                 rpcs->_errno = TE_RC(TE_TAPI, TE_ECORRUPTED);       \
                 (_var) = (_error_val);                              \
             }                                                       \
-            else if (RPC_ERRNO(rpcs) == RPC_ERPCNOTSUPP)            \
-            {                                                       \
-                RING("Function %s() is not supported",  #_func);    \
-                (_var) = (_error_val);                              \
-            }                                                       \
             /*                                                      \
              * Recalculate _err_cond to pick up _var changes made   \
              * above.                                               \
              */                                                     \
             if (rpcs->iut_err_jump && (_err_cond))                  \
                 rpcs->err_log = TRUE;                               \
-        }                                                           \
-        else                                                        \
-        {                                                           \
-            (_var) = (_error_val);                                  \
-            rpcs->err_log = TRUE;                                   \
         }                                                           \
     } while (0)
 
