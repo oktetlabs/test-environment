@@ -9,14 +9,17 @@
 #  1st  path to the files, will be used as content directory environment;
 #  2nd  subtree prefix (optional, by default it is "/local/fs").
 
+# Note. pymediainfo package is required to extract metadata.
+#       See https://pypi.python.org/pypi/pymediainfo
+
 # @TODO
 # 1. Escaping of illegal characters (when configurator will support escaping).
-# 2. Extract metadata of files.
 
 import os
 import sys
 import argparse
 import xml.etree.ElementTree as et
+from pymediainfo import MediaInfo
 
 
 # Name of file where document will be saved
@@ -99,14 +102,31 @@ def add_dir_instance(path):
     add_instance_to_xml(add_inst, dir_inst)
     return dir_inst
 
+
+# Add to xml document a file metadata
+def get_title(media_info, pathname):
+    for track in media_info.tracks:
+        if track.track_type == 'General':
+            if track.title:
+                return track.title
+            elif track.track_name:
+                return track.track_name
+    # Title not found, return a basename of file without path and extension
+    return os.path.splitext(os.path.basename(pathname))[0]
+
+
 # Add to xml document a file instance
 def add_file_instance(dir_inst, path, filename):
     pathname = os.path.join(path, filename)
     prop = dir_inst + "/file:" + filename + "/property:"
+    meta = dir_inst + "/file:" + filename + "/metadata:"
     info = os.stat(pathname)
     add_instance_to_xml(add_inst, dir_inst + "/file:" + filename)
     add_instance_to_xml(add_inst, prop + "size", str(info.st_size))
     add_instance_to_xml(add_inst, prop + "date", str(int(info.st_ctime)))
+    media_info = MediaInfo.parse(os.path.join(pathname))
+    add_instance_to_xml(add_inst, meta + "title",
+        get_title(media_info, pathname))
 
 
 # Add to xml document the root object
