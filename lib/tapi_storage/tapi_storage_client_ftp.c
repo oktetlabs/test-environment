@@ -457,10 +457,14 @@ send_control_msg(tapi_storage_client *client, const char *fmt, ...)
 
 /**
  * Read reply from ftp server over control connection and check it on error.
+ * This function overwrites the control connection read buffer. If you have
+ * unread data in it use @b get_control_msg function instead.
  *
  * @param client        Client handle.
  *
  * @return Status code.
+ *
+ * @sa get_control_msg
  */
 static te_errno
 read_control_msg(tapi_storage_client *client)
@@ -475,6 +479,48 @@ read_control_msg(tapi_storage_client *client)
     /* Check the reply code. */
     rc = check_reply_code_for_error((const char *)cmdbuf_r->ptr);
     return rc;
+}
+
+/**
+ * Get a next reply from the control connection read buffer cause it is
+ * possible that during last read operation there are several messages was
+ * got. If the message in buffer is not found, then the next read operation
+ * is initiated, i.e. in this case it works as @b read_control_msg.
+ *
+ * @param client        Client handle.
+ *
+ * @return Status code.
+ *
+ * @sa read_control_msg
+ */
+static te_errno
+get_control_msg(tapi_storage_client *client)
+{
+    tapi_storage_client_ftp_context *ftp_context = client->context;
+    te_dbuf  *cmdbuf_r = &ftp_context->cmdbuf_r;
+    char     *next_msg = NULL;
+    te_errno  rc;
+
+    /* Search for the not read (next) message. */
+    next_msg = (char *)cmdbuf_r->ptr;
+    while (*next_msg++ != '\n')
+        ;   /* nop */
+    if (*next_msg != '\0')
+    {
+        /* There is the next message in the buffer. */
+        VERB("%s:%d: There is unread message in the buffer: %s",
+             __FUNCTION__, __LINE__, next_msg);
+        strcpy((char *)cmdbuf_r->ptr, next_msg);
+    }
+    else
+    {
+        rc = read_reply(client->rpcs, ftp_context->control_socket,
+                        cmdbuf_r);
+        if (rc != 0)
+            return rc;
+    }
+    /* Check the reply code. */
+    return check_reply_code_for_error((const char *)cmdbuf_r->ptr);
 }
 
 /**
@@ -1368,7 +1414,7 @@ ftp_put(tapi_storage_client *client,
     rpc_close(client->rpcs, fd);
     if (rc == 0)
     {
-        rc = read_control_msg(client);
+        rc = get_control_msg(client);
         if (rc != 0)
             ERROR("Failed to send a file: %s", cmdbuf_r->ptr);
     }
@@ -1427,7 +1473,7 @@ ftp_get(tapi_storage_client *client,
     con_rc = close_data_connection(client);
     if (rc == 0)
     {
-        rc = read_control_msg(client);
+        rc = get_control_msg(client);
         if (rc != 0)
             ERROR("Failed to get a file: %s", cmdbuf_r->ptr);
     }
