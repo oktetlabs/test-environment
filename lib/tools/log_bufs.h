@@ -105,6 +105,29 @@ extern void te_log_buf_free(te_log_buf *buf);
 extern const char *te_args2log_buf(te_log_buf *buf,
                                    int argc, const char **argv);
 
+
+/** Mapping of the bit number to string */
+struct te_log_buf_bit2str {
+    unsigned int    bit;
+    const char     *str;
+};
+
+/**
+ * Append bit mask converted to string to log buffer.
+ *
+ * Pipe '|' is used as a separator.
+ *
+ * @param buf       Pointer to the buffer
+ * @param bit_mask  Bit mask
+ * @param map       Bit to string map terminated by the element with #NULL
+ *                  string
+ *
+ * @return te_log_buf_get() value.
+ */
+extern const char *te_bit_mask2log_buf(te_log_buf *buf,
+                                       unsigned long long bit_mask,
+                                       const struct te_log_buf_bit2str *map);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

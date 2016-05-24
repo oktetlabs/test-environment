@@ -49,6 +49,7 @@
 
 #include "te_defs.h"
 #include "logger_api.h"
+#include "log_bufs.h"
 
 
 /** The number of characters in a sinle log buffer. */
@@ -195,6 +196,33 @@ te_log_buf_free(te_log_buf *buf)
     te_log_buf_last_freed =
         (buf - te_log_bufs) / sizeof(te_log_bufs[0]);
     pthread_mutex_unlock(&te_log_buf_mutex);
+}
+
+const char *
+te_bit_mask2log_buf(te_log_buf *buf, unsigned long long bit_mask,
+                    const struct te_log_buf_bit2str *map)
+{
+    unsigned int        i;
+    unsigned long long  mask;
+    te_bool             added = FALSE;
+
+    VALIDATE_LOG_BUF(buf);
+
+    for (i = 0; map[i].str != NULL; ++i)
+    {
+        mask = (1ull << map[i].bit);
+        if ((bit_mask & mask) != 0)
+        {
+            te_log_buf_append(buf, "%s%s", added ? "|" : "", map[i].str);
+            added = TRUE;
+            bit_mask &= ~mask;
+        }
+    }
+
+    if (bit_mask != 0)
+        te_log_buf_append(buf, "%s%#llx", added ? "|" : "", bit_mask);
+
+    return te_log_buf_get(buf);
 }
 
 const char *
