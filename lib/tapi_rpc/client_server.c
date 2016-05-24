@@ -251,8 +251,11 @@ rpc_stream_connection(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
         goto cleanup;
     }
 
-    srvr->op = RCF_RPC_CALL;
-    rpc_accept(srvr, srvr_sock, NULL, NULL);
+    if (srvr != clnt)
+    {
+        srvr->op = RCF_RPC_CALL;
+        rpc_accept(srvr, srvr_sock, NULL, NULL);
+    }
 
     rpc_connect(clnt, clnt_sock, srvr_addr);
     accepted_sock = rpc_accept(srvr, srvr_sock, NULL, NULL);
