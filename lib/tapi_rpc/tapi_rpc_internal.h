@@ -66,12 +66,43 @@
 #define TAPI_RPC_LOG(rpcs, func, in_format, out_format, _x...) \
 do {                                                                    \
     if (!rpcs->silent)                                                  \
+    {                                                                   \
+        if (RPC_IS_CALL_OK(rpcs))                                       \
+        {                                                               \
+            /*                                                          \
+             * Preserve err_log set before and, may be, upgrade in the  \
+             * case of retval independent error indications.            \
+             */                                                         \
+            if (RPC_ERRNO(rpcs) == RPC_ERPCNOTSUPP)                     \
+            {                                                           \
+                RING("Function %s() is not supported",  #func);         \
+                if (rpcs->iut_err_jump)                                 \
+                    rpcs->err_log = TRUE;                               \
+            }                                                           \
+            else if (rpcs->errno_change_check &&                        \
+                     out.common.errno_changed)                          \
+            {                                                           \
+                ERROR("Function %s() returned correct value, but "      \
+                      "changed errno to %s", #func,                     \
+                      errno_rpc2str(RPC_ERRNO(rpcs)));                  \
+                rpcs->_errno = TE_RC(TE_TAPI, TE_ECORRUPTED);           \
+                if (rpcs->iut_err_jump)                                 \
+                    rpcs->err_log = TRUE;                               \
+            }                                                           \
+        }                                                               \
+        else                                                            \
+        {                                                               \
+            /* Log error regardless RPC error expectations */           \
+            rpcs->err_log = TRUE;                                       \
+        }                                                               \
         LOG_MSG(rpcs->err_log ? TE_LL_ERROR : TE_LL_RING,               \
                 "RPC (%s,%s)%s%s: " #func "(" in_format ") -> "         \
                 out_format " (%s)",                                     \
                 rpcs->ta, rpcs->name, rpcop2str(rpcs->last_op),         \
                 (rpcs->last_use_libc || rpcs->use_libc) ? " libc" : "", \
                 _x, errno_rpc2str(RPC_ERRNO(rpcs)));                    \
+        rpcs->err_log = FALSE;                                          \
+    }                                                                   \
     rpcs->silent = FALSE;                                               \
 } while (0)
 
@@ -108,8 +139,8 @@ do {                                                                    \
  * If RPC call status is not OK, variable @a _var is set to @a _error_val
  * and RPC server errno is not updated.
  *
- * Error logging is requested if RPC call status is not OK or error
- * is not expected and @a _err_cond condition is @c TRUE.
+ * Error logging is requested if error is not expected and @a _err_cond
+ * condition is @c TRUE.
  *
  * The function assumes to have RPC server handle as @b rpcs variable in
  * the context.
@@ -125,14 +156,10 @@ do {                                                                    \
         if (!RPC_IS_CALL_OK(rpcs))                                  \
         {                                                           \
             (_var) = (_error_val);                                  \
-            rpcs->err_log = TRUE;                                   \
         }                                                           \
         else if (RPC_ERRNO(rpcs) == RPC_ERPCNOTSUPP)                \
         {                                                           \
-            RING("Function %s() is not supported",  #_func);        \
             (_var) = (_error_val);                                  \
-            if (rpcs->iut_err_jump)                                 \
-                rpcs->err_log = TRUE;                               \
         }                                                           \
         else                                                        \
         {                                                           \
@@ -143,14 +170,13 @@ do {                                                                    \
                 rpcs->_errno = TE_RC(TE_TAPI, TE_ECORRUPTED);       \
                 (_var) = (_error_val);                              \
             }                                                       \
-            else if (rpcs->errno_change_check && !(_err_cond) &&    \
-                     out.common.errno_changed)                      \
+            else if (out.common.errno_changed)                      \
             {                                                       \
-                ERROR("Function %s() returned correct value, but "  \
-                      "changed errno to %s", #_func,                \
-                      errno_rpc2str(RPC_ERRNO(rpcs)));              \
-                rpcs->_errno = TE_RC(TE_TAPI, TE_ECORRUPTED);       \
-                (_var) = (_error_val);                              \
+                if (_err_cond)                                      \
+                    /* errno change is expected */                  \
+                    out.common.errno_changed = FALSE;               \
+                else                                                \
+                    (_var) = (_error_val);                          \
             }                                                       \
             /*                                                      \
              * Recalculate _err_cond to pick up _var changes made   \
@@ -168,8 +194,8 @@ do {                                                                    \
  * If RPC call status is not OK, variable @a _var is set to @a _error_val
  * and RPC server errno is not updated.
  *
- * Error logging is requested if RPC call status is not OK or error
- * is not expected and finally @a _var is equal to @a __error_val.
+ * Error logging is requested if error is not expected and finally @a _var
+ * is equal to @a __error_val.
  *
  * The function assumes to have RPC server handle as @b rpcs variable in
  * the context.
@@ -190,8 +216,8 @@ do {                                                                    \
  * If RPC call status is not OK, variable @a _var is set to @c -1 and
  * RPC server errno is not updated.
  *
- * Error logging is requested if RPC call status is not OK or error
- * is not expected and finally @a _var is equal to @c -1.
+ * Error logging is requested if error is not expected and finally @a _var
+ * is equal to @c -1.
  *
  * The function assumes to have RPC server handle as @b rpcs variable in
  * the context.
@@ -209,8 +235,8 @@ do {                                                                    \
  * If RPC call status is not OK, variable @a _var is set to @c -1 and
  * RPC server errno is not updated.
  *
- * Error logging is requested if RPC call status is not OK or error
- * is not expected and finally @a _var is equal to @c -1.
+ * Error logging is requested if error is not expected and finally @a _var
+ * is equal to @c -1.
  *
  * The function assumes to have RPC server handle as @b rpcs variable in
  * the context.
@@ -228,8 +254,8 @@ do {                                                                    \
  * If RPC call status is not OK, variable @a _var is set to @c FALSE and
  * RPC server errno is not updated.
  *
- * Error logging is requested if RPC call status is not OK or error
- * is not expected and finally @a _var is equal to @c FALSE.
+ * Error logging is requested if error is not expected and finally @a _var
+ * is equal to @c FALSE.
  *
  * The function assumes to have RPC server handle as @b rpcs variable in
  * the context.
