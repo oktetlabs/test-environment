@@ -108,6 +108,9 @@ do {                                                                    \
  * If RPC call status is not OK, variable @a _var is set to @a _error_val
  * and RPC server errno is not updated.
  *
+ * Error logging is requested if RPC call status is not OK or error
+ * is not expected and @a _err_cond condition is @c TRUE.
+ *
  * The function assumes to have RPC server handle as @b rpcs variable in
  * the context.
  *
@@ -115,8 +118,9 @@ do {                                                                    \
  * @param _var          variable with return value
  * @param _cond         condition to be checked, if RPC call status is OK
  * @param _error_val    value to be assigned in the case of error
+ * @param _err_cond     error logging condition, if RPC call status is OK
  */
-#define CHECK_RETVAL_VAR(_func, _var, _cond, _error_val) \
+#define CHECK_RETVAL_VAR_ERR_COND(_func, _var, _cond, _error_val, _err_cond) \
     do {                                                            \
         if (RPC_IS_CALL_OK(rpcs))                                   \
         {                                                           \
@@ -127,8 +131,7 @@ do {                                                                    \
                 rpcs->_errno = TE_RC(TE_TAPI, TE_ECORRUPTED);       \
                 (_var) = (_error_val);                              \
             }                                                       \
-            else if (rpcs->errno_change_check &&                    \
-                     (_var) != (_error_val) &&                      \
+            else if (rpcs->errno_change_check && !(_err_cond) &&    \
                      out.common.errno_changed)                      \
             {                                                       \
                 ERROR("Function %s() returned correct value, but "  \
@@ -142,7 +145,11 @@ do {                                                                    \
                 RING("Function %s() is not supported",  #_func);    \
                 (_var) = (_error_val);                              \
             }                                                       \
-            if ((_var) == (_error_val) && rpcs->iut_err_jump)       \
+            /*                                                      \
+             * Recalculate _err_cond to pick up _var changes made   \
+             * above.                                               \
+             */                                                     \
+            if (rpcs->iut_err_jump && (_err_cond))                  \
                 rpcs->err_log = TRUE;                               \
         }                                                           \
         else                                                        \
@@ -153,11 +160,36 @@ do {                                                                    \
     } while (0)
 
 /**
+ * If RPC call status is OK, check condition @a _cond and set specified
+ * variable @a _var to @a _error_val and RPC server errno to #TE_ECORRUPTED,
+ * if it is true.
+ * If RPC call status is not OK, variable @a _var is set to @a _error_val
+ * and RPC server errno is not updated.
+ *
+ * Error logging is requested if RPC call status is not OK or error
+ * is not expected and finally @a _var is equal to @a __error_val.
+ *
+ * The function assumes to have RPC server handle as @b rpcs variable in
+ * the context.
+ *
+ * @param _func         function name
+ * @param _var          variable with return value
+ * @param _cond         condition to be checked, if RPC call status is OK
+ * @param _error_val    value to be assigned in the case of error
+ */
+#define CHECK_RETVAL_VAR(_func, _var, _cond, _error_val) \
+    CHECK_RETVAL_VAR_ERR_COND(_func, _var, _cond,_error_val,    \
+                              ((_var) == (_error_val)))
+
+/**
  * If RPC call status is OK, check that variable @a _var with function
  * return value is greater or equal to @c -1 and set specified variable
  * to @c -1 and RPC server errno to #TE_ECORRUPTED, if it is not true.
  * If RPC call status is not OK, variable @a _var is set to @c -1 and
  * RPC server errno is not updated.
+ *
+ * Error logging is requested if RPC call status is not OK or error
+ * is not expected and finally @a _var is equal to @c -1.
  *
  * The function assumes to have RPC server handle as @b rpcs variable in
  * the context.
@@ -175,6 +207,9 @@ do {                                                                    \
  * If RPC call status is not OK, variable @a _var is set to @c -1 and
  * RPC server errno is not updated.
  *
+ * Error logging is requested if RPC call status is not OK or error
+ * is not expected and finally @a _var is equal to @c -1.
+ *
  * The function assumes to have RPC server handle as @b rpcs variable in
  * the context.
  *
@@ -190,6 +225,9 @@ do {                                                                    \
  * @c FALSE and RPC server errno to #TE_ECORRUPTED, if it is not true.
  * If RPC call status is not OK, variable @a _var is set to @c FALSE and
  * RPC server errno is not updated.
+ *
+ * Error logging is requested if RPC call status is not OK or error
+ * is not expected and finally @a _var is equal to @c FALSE.
  *
  * The function assumes to have RPC server handle as @b rpcs variable in
  * the context.
