@@ -51,8 +51,9 @@ tapi_storage_bootstrap(tapi_storage_client *client,
     te_errno    rc = 0;
 
     con_rc = tapi_storage_client_connect(client);
-    if (con_rc != 0 && TE_RC_GET_ERROR(con_rc) != TE_ECONNREFUSED)
+    if (con_rc != 0 && TE_RC_GET_ERROR(con_rc) != TE_EISCONN)
         return con_rc;
+
     if (root == NULL || remove_root)
         rc = tapi_storage_client_rm(client, root_dir, TRUE);
     else
@@ -73,8 +74,12 @@ tapi_storage_bootstrap(tapi_storage_client *client,
             tapi_local_fs_list_free(&files);
         }
     }
+
     if (con_rc == 0)
         con_rc = tapi_storage_client_disconnect(client);
+    else
+        con_rc = 0;
+
     return (rc != 0 ? rc : con_rc);
 }
 
