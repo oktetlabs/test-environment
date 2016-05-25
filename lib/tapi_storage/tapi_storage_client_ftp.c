@@ -1405,9 +1405,16 @@ ftp_put(tapi_storage_client *client,
         if (rc != 0)
             break;
         do {
+            RPC_AWAIT_IUT_ERROR(client->rpcs);
             sent = rpc_sendfile(client->rpcs, ftp_context->data_socket, fd,
                                 NULL, file_size, FALSE);
-            file_size -= sent;
+            if (sent >= 0)
+                file_size -= sent;
+            else
+            {
+                rc = RPC_ERRNO(client->rpcs);
+                break;
+            }
         } while (file_size > 0);
     } while (0);
     con_rc = close_data_connection(client);
