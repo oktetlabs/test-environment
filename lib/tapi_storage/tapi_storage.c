@@ -83,23 +83,25 @@ te_errno
 tapi_storage_setup(tapi_storage_client *client,
                    const char          *root)
 {
-    te_errno        con_rc;
-    te_errno        rc = 0;
-    cfg_val_type    type = CVT_INTEGER;
-    int             lazy;
-    tapi_local_file root_dir = {
+    te_errno         con_rc;
+    te_errno         rc = 0;
+    int              lazy;
+    const char      *strlazy = NULL;
+    tapi_local_file  root_dir = {
         .type = TAPI_FILE_TYPE_DIRECTORY,
         .pathname = "/",
         .property = { 0 }
     };
 
     /* Read STORAGE_UPLOAD_LAZY from the Configurator. */
-    rc = cfg_get_instance_fmt(&type, &lazy, TE_CFG_STORAGE_UPLOAD_LAZY_FMT);
+    rc = cfg_get_instance_fmt(NULL, &strlazy, TE_CFG_STORAGE_UPLOAD_LAZY_FMT);
     if (rc != 0)
     {
         ERROR("Failed to get value of " TE_CFG_STORAGE_UPLOAD_LAZY_FMT);
         return rc;
     }
+    lazy = atoi(strlazy);
+    free(strlazy);
     if (lazy != 0 && lazy != 1)
     {
         ERROR("Invalid value of " TE_CFG_STORAGE_UPLOAD_LAZY_FMT ". "
