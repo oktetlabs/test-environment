@@ -918,6 +918,7 @@ ftp_pwd(tapi_storage_client *client, tapi_local_file *directory)
  * drwxr-xr-x    7 0        0              160 Apr 13 11:06 dir1
  * drwxr-xr-x    3 0        0               50 Apr 10 2005  dir2
  * -rw-r--r--    1 0        0                6 Apr  8 16:42 file1
+ * drwxrwx---    4 0        1             8192 Jan  1  1970 dir3
  *
  * @param[in]  line     Line of LIST command result to parse.
  * @param[out] file     Local files to save parsed data in. Note this
@@ -960,17 +961,18 @@ parse_ftp_list_line(char *line, tapi_local_file *file)
     char         *ls_fields[FTPLF_TOTAL];
     size_t        i;
 
-    /* Skip possible leading spaces. */
-    while(isspace(*line))
-        line++;
     for (i = FTPLF_MODE; i < FTPLF_TIME_YEAR; i++)
     {
+        /* Skip leading spaces. */
+        while(isspace(*line))
+            line++;
+        /* Save field pointer. */
         ls_fields[i] = line;
         while(*line != '\0' && !isspace(*line))
             line++;
-        while(isspace(*line))
-            line++;
-        line[-1] = '\0';
+        if (*line == '\0')
+            return TE_ENODATA;
+        *line++ = '\0';
     }
     /*
      * Time/year field is a special case because of the following filename
