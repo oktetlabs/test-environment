@@ -43,6 +43,12 @@ extern "C" {
 
 
 /**
+ * Local file system root pathname representation in Configurator
+ */
+#define TAPI_LOCAL_FS_ROOT  ""
+
+
+/**
  * Files list entry.
  */
 typedef struct tapi_local_file_le {
@@ -177,7 +183,7 @@ tapi_local_fs_ls_root(tapi_local_file_list *files)
     te_errno tapi_local_fs_ls(const char           *pathname,
                               tapi_local_file_list *files);
 
-    return tapi_local_fs_ls("", files);
+    return tapi_local_fs_ls(TAPI_LOCAL_FS_ROOT, files);
 }
 
 
