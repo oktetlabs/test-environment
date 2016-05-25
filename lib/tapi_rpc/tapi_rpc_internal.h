@@ -170,7 +170,8 @@ do {                                                                    \
                 rpcs->_errno = TE_RC(TE_TAPI, TE_ECORRUPTED);       \
                 (_var) = (_error_val);                              \
             }                                                       \
-            else if (out.common.errno_changed)                      \
+            else if (rpcs->errno_change_check &&                    \
+                     out.common.errno_changed)                      \
             {                                                       \
                 if (_err_cond)                                      \
                     /* errno change is expected */                  \
