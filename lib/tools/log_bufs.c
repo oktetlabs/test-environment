@@ -59,11 +59,11 @@
 
 
 /** Internal presentation of log buffer. */
-typedef struct te_log_buf {
+struct te_log_buf {
     te_bool used; /**< Whether this buffer is already in use */
     char    ptr[LOG_BUF_LEN]; /**< Buffer data */
     size_t  cur_len; /**< The number of bytes currently used in buffer */
-} te_log_buf;
+};
 
 /** Statically allocated pool of log buffers. */
 static te_log_buf te_log_bufs[LOG_BUF_NUM];
