@@ -5224,9 +5224,8 @@ TARPC_FUNC(getaddrinfo, {},
     INIT_CHECKED_ARG(in->service.service_val,
                      in->service.service_len, 0);
     /* I do not understand, which function is found by usual way */
-    func = (api_func)getaddrinfo;
-    MAKE_CALL(out->retval = func_ptr(in->node.node_val,
-                                     in->service.service_val, info, &res));
+    MAKE_CALL(out->retval = getaddrinfo(in->node.node_val,
+                                        in->service.service_val, info, &res));
     /* GLIBC getaddrinfo clean up errno on success */
     out->common.errno_changed = FALSE;
     if (out->retval != 0 && res != NULL)
@@ -5278,8 +5277,7 @@ TARPC_FUNC(getaddrinfo, {},
 /*-------------- freeaddrinfo() -----------------------------*/
 TARPC_FUNC(freeaddrinfo, {},
 {
-    func = (api_func)freeaddrinfo;
-    MAKE_CALL(func_ptr(rcf_pch_mem_get(in->mem_ptr)));
+    MAKE_CALL(freeaddrinfo(rcf_pch_mem_get(in->mem_ptr)));
     rcf_pch_mem_free(in->mem_ptr);
 }
 )
@@ -5412,8 +5410,7 @@ TARPC_FUNC(system, {},
     int             st;
     rpc_wait_status r_st;
 
-    func = (api_func)ta_system;
-    MAKE_CALL(st = func_ptr(in->cmd.cmd_val));
+    MAKE_CALL(st = ta_system(in->cmd.cmd_val));
     r_st = wait_status_h2rpc(st);
     out->status_flag = r_st.flag;
     out->status_value = r_st.value;
@@ -6013,7 +6010,7 @@ TARPC_FUNC(setuid, {}, { MAKE_CALL(out->retval = func(in->uid)); })
 TARPC_FUNC(seteuid, {}, { MAKE_CALL(out->retval = func(in->uid)); })
 
 
-
+#ifdef WITH_TR069_SUPPORT
 /*-------------- cwmp_op_call() -------------------*/
 TARPC_FUNC(cwmp_op_call, {},
 {
@@ -6035,6 +6032,7 @@ TARPC_FUNC(cwmp_conn_req, {}, { MAKE_CALL(func_ptr(in, out)); })
 /*-------------- cwmp_acse_start() -------------------*/
 TARPC_FUNC(cwmp_acse_start, {}, { MAKE_CALL(func_ptr(in, out)); })
 
+#endif
 
 
 /*-------------- generic iomux functions --------------------------*/
