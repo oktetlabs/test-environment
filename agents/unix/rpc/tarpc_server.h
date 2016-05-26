@@ -245,8 +245,12 @@
  * warnings with function type casts we define a number of
  * prototypes that can be used in casting generic function
  * pointer to your function type.
+ *
+ * @deprecated Use type-safe RPC instead whenever possible
+ * @sa TARPC_FUNC_DYNAMIC_SAFE(), TARPC_FUNC_STATIC_SAFE()
  */
 
+/**@{*/
 /**
  * Type of RPC call function where
  * - the first argument is of integer type;
@@ -297,26 +301,6 @@ typedef void *(*api_func_void_ret_ptr)();
  * .
  */
 typedef int64_t (*api_func_ret_int64)(int param,...);
-
-/** @} */
-
-/**
- * @name RPC call reference name depending on RPC function prototype
- * The third argument of TARPC_FUNC() macro defines context in which
- * function call is made. That call can be done via @p func variable
- * defined in the macro context, but the type of @p func variable is
- * api_func, which may not match with RPC function prototype.
- * In order to avoid compilation warning associated with incorrect
- * function type you can use the following names instead of @p func -
- * they are just casted versions of @p func variable:
- * - func_ptr          (#api_func_ptr)
- * - func_void         (#api_func_void)
- * - func_ret_ptr      (#api_func_ret_ptr)
- * - func_ptr_ret_ptr  (#api_func_ptr_ret_ptr)
- * - func_void_ret_ptr (#api_func_void_ret_ptr)
- * - func_ret_int64    (#api_func_ret_int64)
- */
-
 
 /** @} */
 
@@ -574,16 +558,106 @@ typedef struct rpc_call_data {
  */
 extern void tarpc_generic_service(rpc_call_data *call);
 
-/**
- * Macro to define RPC function content.
+#define TARPC_FUNC_DECL_UNSAFE(_func)                                   \
+    const api_func func = _call->func;                                  \
+    const api_func_ptr func_ptr = (api_func_ptr)func;                   \
+    const api_func_void func_void =  (api_func_void)func;               \
+    const api_func_ret_ptr func_ret_ptr = (api_func_ret_ptr)func;       \
+    const api_func_ptr_ret_ptr func_ptr_ret_ptr =                       \
+    (api_func_ptr_ret_ptr)func;                                         \
+                                                                        \
+    const api_func_void_ret_ptr func_void_ret_ptr =                     \
+    (api_func_void_ret_ptr)func;                                        \
+    const api_func_ret_int64 func_ret_int64 = (api_func_ret_int64)func;
+
+#define TARPC_FUNC_DECL_SAFE(_func)                                     \
+    __typeof(_func) * const func = (__typeof(_func) *)_call->func;      \
+    __typeof(_func) * const func_ptr = func;                            \
+    __typeof(_func) * const func_void =  func;                          \
+    __typeof(_func) * const func_ret_ptr = func;                        \
+    __typeof(_func) * const func_ptr_ret_ptr = func;                    \
+    __typeof(_func) * const func_void_ret_ptr = func;                   \
+    __typeof(_func) * const func_ret_int64 = func;
+
+#define TARPC_FUNC_DECL_STANDALONE(_func)
+
+#define TARPC_FUNC_INIT_DYNAMIC(_func) NULL
+#define TARPC_FUNC_INIT_STATIC(_func) ((api_func)(_func))
+#define TARPC_FUNC_INIT_STANDALONE(_func) (abort)
+
+#define TARPC_FUNC_UNUSED_UNSAFE                                        \
+    UNUSED(func_ptr);                                                   \
+    UNUSED(func_void);                                                  \
+    UNUSED(func_ret_ptr);                                               \
+    UNUSED(func_ptr_ret_ptr);                                           \
+    UNUSED(func_void_ret_ptr);                                          \
+    UNUSED(func_ret_int64);                                             \
+
+#define TARPC_FUNC_UNUSED_SAFE TARPC_FUNC_UNUSED_UNSAFE
+#define TARPC_FUNC_UNUSED_STANDALONE
+
+/** @name RPC wrapper definitions.
  *
+ * There is now a family of macros which vary in how the target symbol
+ * lookup is done and whether the call is type-checked against the symbol
+ * prototype:
+ * - TARPC_FUNC_DYNAMIC_UNSAFE(): retains the behaviour of earlier
+ * TARPC_FUNC(). Symbol lookup is done purely at runtime, and the type of
+ * the function is not checked
+ * - TARPC_FUNC_DYNAMIC_SAFE(): Symbol lookup is done dynamically, but the
+ * type of the function is checked by the compiler according to the
+ * prototype.
+ * - TARPC_FUNC_STATIC_SAFE(): Symbol lookup is done statically by the
+ * compiler and the function type is checked
+ * - TARPC_FUNC_STANDALONE(): There is no targer symbol, so there's no no
+ * symbol lookup and nothing to check.
+ *
+ * The use of `_SAFE` macros is only possible if it's enabled at
+ * compile-time and the compiler supports `__typeof` (it is enabled by
+ * default).
+ *
+ * The implicit macros are also provided: TARPC_FUNC() and
+ * TARPC_FUNC_STATIC() which will use either typesafe or type-generic
+ * interface, depending on whether typesafe RPCs are enabled.
+ *
+ * The flowchart to select the right macro is as follows:
+ * - If any other concers do not apply, always use TARPC_FUNC().
+ * - If the target symbol is an inline function, use TARPC_FUNC_STATIC().
+ * - If the target symbol is a static function, use TARPC_FUNC_STATIC().
+ * - If the prototype of the function cannot be made known at compile time,
+ *   or if the prototype may vary, use TARPC_FUNC_DYNAMIC_UNSAFE(). In
+ *   general, such situtation should be avoided.
+ * - If the target symbol is actually a function-like macro,
+ *   use TARPC_FUNC_STANDALONE(), because even TARPC_FUNC_STATIC() would
+ *   attempt to take the address of the function. However, if the target
+ *   symbol is a constant-like macro which aliases another function, then
+ *   TARPC_FUNC_STATIC() would work (but *not* dynamic TARPC_FUNC())
+ * - If the RPC wrapper is short and simple enough to do all the work by
+ *   itself, TARPC_FUNC_STANDALONE() should be used. But it is recommended
+ *   to keep RPC wrappers really short, and abstract all non-trivial code
+ *   into separate functions
+ * - If the RPC wrapper does something non-trivial, use
+ *   TARPC_FUNC_STANDALONE(). A common example is when the target symbol has
+ *   different name from the name of the RPC function. TARPC_FUNC() cannot
+ *   handle such cases. However, such usage should in general be discouraged.
+ */
+
+/**@{*/
+
+/**
+ * Internal support macro to define RPC function content.
+ *
+ * @param _safe       Whether to use type-safe or type-generic definitions
+ * @param _static     Whether to use compile-time or run-time symbol
+ *                    resolution
  * @param _func       RPC function name
  * @param _copy_args  block of code that can be used for
  *                    copying input argument values into output
  *                    (this is usually done for IN/OUT arguments)
  * @param _actions    RPC function body
+ * @private
  */
-#define TARPC_FUNC(_func, _copy_args, _actions)                         \
+#define TARPC_FUNC_COMMON(_safe, _static, _func, _copy_args, _actions)  \
                                                                         \
     static rpc_wrapper_func _func##_wrapper;                            \
                                                                         \
@@ -592,27 +666,13 @@ extern void tarpc_generic_service(rpc_call_data *call);
     {                                                                   \
         tarpc_##_func##_in  * const in  = _call->in;                    \
         tarpc_##_func##_out * const out = _call->out;                   \
-        const api_func func = _call->func;                              \
-        const api_func_ptr func_ptr = (api_func_ptr)func;               \
-        const api_func_void func_void =  (api_func_void)func;           \
-        const api_func_ret_ptr func_ret_ptr = (api_func_ret_ptr)func;   \
-        const api_func_ptr_ret_ptr func_ptr_ret_ptr =                   \
-                                   (api_func_ptr_ret_ptr)func;          \
-                                                                        \
-        const api_func_void_ret_ptr func_void_ret_ptr =                 \
-                                   (api_func_void_ret_ptr)func;         \
-        const api_func_ret_int64 func_ret_int64 = (api_func_ret_int64)func; \
+        TARPC_FUNC_DECL_##_safe(_func)                                  \
                                                                         \
         checked_arg_list *arglist = &(_call->checked_args);             \
                                                                         \
         UNUSED(in);                                                     \
         UNUSED(out);                                                    \
-        UNUSED(func_ptr);                                               \
-        UNUSED(func_void);                                              \
-        UNUSED(func_ret_ptr);                                           \
-        UNUSED(func_ptr_ret_ptr);                                       \
-        UNUSED(func_void_ret_ptr);                                      \
-        UNUSED(func_ret_int64);                                         \
+        TARPC_FUNC_UNUSED_##_safe                                       \
         UNUSED(arglist);                                                \
                                                                         \
         { _actions }                                                    \
@@ -635,7 +695,8 @@ extern void tarpc_generic_service(rpc_call_data *call);
     }                                                                   \
                                                                         \
     bool_t                                                              \
-    _##_func##_1_svc(tarpc_##_func##_in *_in, tarpc_##_func##_out *_out, \
+    _##_func##_1_svc(tarpc_##_func##_in *_in,                           \
+                     tarpc_##_func##_out *_out,                         \
                      struct svc_req *_rqstp)                            \
     {                                                                   \
         static const rpc_func_info _info = {                            \
@@ -653,7 +714,7 @@ extern void tarpc_generic_service(rpc_call_data *call);
             .info = &_info,                                             \
             .in = _in,                                                  \
             .out = _out,                                                \
-            .func = NULL,                                               \
+            .func = TARPC_FUNC_INIT_##_static(_func),                   \
             .checked_args = STAILQ_HEAD_INITIALIZER(_call.checked_args) \
         };                                                              \
         UNUSED(_rqstp);                                                 \
@@ -662,8 +723,163 @@ extern void tarpc_generic_service(rpc_call_data *call);
         return TRUE;                                                    \
     }
 
+/**
+ * Macro to define RPC wrapper.
+ *
+ * This macro uses dynamic run-time symbol lookup and provides
+ * type-generic thunks to the underlying function:
+ * - `func`              (#api_func)
+ * - `func_ptr`          (#api_func_ptr)
+ * - `func_void`         (#api_func_void)
+ * - `func_ret_ptr`      (#api_func_ret_ptr)
+ * - `func_ptr_ret_ptr`  (#api_func_ptr_ret_ptr)
+ * - `func_void_ret_ptr` (#api_func_void_ret_ptr)
+ * - `func_ret_int64`    (#api_func_ret_int64)
+ * .
+ * @param _func       RPC function name
+ * @param _copy_args  block of code that can be used for
+ *                    copying input argument values into output
+ *                    (this is usually done for IN/OUT arguments)
+ * @param _actions    RPC function body
+ *
+ * @note Use this macro only if the prototype of the underlying function
+ * is not known at compile-time, in other cases use plain TARPC_FUNC()
+ */
+#define TARPC_FUNC_DYNAMIC_UNSAFE(_func, _copy_args, _actions) \
+    TARPC_FUNC_COMMON(UNSAFE, DYNAMIC, _func,                  \
+                      _copy_args, _actions)
 
+/**
+ * Macro to define RPC wrapper.
+ *
+ * It is analogous to TARPC_FUNC_STATIC_UNSAFE(), but it uses
+ * static (i.e. compile-time) symbol lookup, so the symbol must be
+ * declared at the point of use of this macro.
+ *
+ * @param _func       RPC function name
+ * @param _copy_args  block of code that can be used for
+ *                    copying input argument values into output
+ *                    (this is usually done for IN/OUT arguments)
+ * @param _actions    RPC function body
+ *
+ * @deprecated *Never ever* use this macro. It is provided only to
+ * support static symbol resolution for compilers that lack `__typeof`
+ * keyword support.
+ */
 
+#define TARPC_FUNC_STATIC_UNSAFE(_func, _copy_args, _actions)  \
+    TARPC_FUNC_COMMON(UNSAFE, STATIC, _func,                   \
+                      _copy_args, _actions)
+
+#ifdef ENABLE_TYPESAFE_RPC
+
+/**
+ * Macro to define RPC wrapper.
+ * This macro is analogous to TARPC_FUNC_DYNAMIC_UNSAFE(), but it
+ * provides type-safe thunks (e.g. `func`) to the underlying function.
+ * The function implementation is looked up at run-time, but its prototype
+ * must be declared at the point where the macro used.
+ * For compatibility, the whole list of thunks is provided
+ * (see TARPC_FUNC_DYNAMIC_UNSAFE()), but they all have the same type as `func`.
+ *
+ * @param _func       RPC function name
+ * @param _copy_args  block of code that can be used for
+ *                    copying input argument values into output
+ *                    (this is usually done for IN/OUT arguments)
+ * @param _actions    RPC function body
+ */
+#define TARPC_FUNC_DYNAMIC_SAFE(_func, _copy_args, _actions)   \
+    TARPC_FUNC_COMMON(SAFE, DYNAMIC, _func,                    \
+                      _copy_args, _actions)
+
+/**
+ * Macro to define RPC wrapper.
+ * This macro is analogous to TARPC_FUNC_DYNAMIC_SAFE(), but it
+ * uses compile-type symbol resolution, so both the function prototype
+ * must be known and the function itself must be linked to the agent.
+ *
+ * @param _func       RPC function name
+ * @param _copy_args  block of code that can be used for
+ *                    copying input argument values into output
+ *                    (this is usually done for IN/OUT arguments)
+ * @param _actions    RPC function body
+ */
+
+#define TARPC_FUNC_STATIC_SAFE(_func, _copy_args, _actions)    \
+    TARPC_FUNC_COMMON(SAFE, STATIC, _func,                     \
+                      _copy_args, _actions)
+
+/**
+ * Macro to define RPC wrapper.
+ * This macro is equivalent to either TARPC_FUNC_STATIC_SAFE() or
+ * TARPC_FUNC_STATIC_UNSAFE() depending on whether type-safe RPC support
+ * is enabled (which is the default)
+ *
+ * @param _func       RPC function name
+ * @param _copy_args  block of code that can be used for
+ *                    copying input argument values into output
+ *                    (this is usually done for IN/OUT arguments)
+ * @param _actions    RPC function body
+ */
+#define TARPC_FUNC_STATIC(_func, _copy_args, _actions)  \
+    TARPC_FUNC_STATIC_SAFE(_func, _copy_args, _actions)
+
+/**
+ * Macro to define RPC wrapper.
+ * This macro is equivalent to either TARPC_FUNC_DYNAMIC_SAFE() or
+ * TARPC_FUNC_DYNAMIC_UNSAFE() depending on whether type-safe RPC support
+ * is enabled (which is the default)
+ *
+ * @param _func       RPC function name
+ * @param _copy_args  block of code that can be used for
+ *                    copying input argument values into output
+ *                    (this is usually done for IN/OUT arguments)
+ * @param _actions    RPC function body
+ * @note Always use this macro if there is no special considerations
+ */
+#ifdef DEFAULT_STATIC_RPC_LOOKUP
+#define TARPC_FUNC(_func, _copy_args, _actions)             \
+    TARPC_FUNC_STATIC_SAFE(_func, _copy_args, _actions)
+#else
+#define TARPC_FUNC(_func, _copy_args, _actions)             \
+    TARPC_FUNC_DYNAMIC_SAFE(_func, _copy_args, _actions)
+#endif
+
+#else
+#define TARPC_FUNC_STATIC(_func, _copy_args, _actions)      \
+    TARPC_FUNC_STATIC_UNSAFE(_func, _copy_args, _actions)
+
+#ifdef DEFAULT_STATIC_RPC_LOOKUP
+#define TARPC_FUNC(_func, _copy_args, _actions)             \
+    TARPC_FUNC_STATIC_UNSAFE(_func, _copy_args, _actions)
+#else
+#define TARPC_FUNC(_func, _copy_args, _actions)             \
+    TARPC_FUNC_DYNAMIC_UNSAFE(_func, _copy_args, _actions)
+#endif
+
+#endif /* ENABLE_TYPESAFE_RPC */
+
+/**
+ * Macro to define RPC wrapper.
+ * This is a special version for wrappers that do all the work themselves,
+ * having no underlying ordinary function.
+ * Therefore, `func` and its keen are *not* available in this macro.
+ *
+ * @param _func       RPC function name
+ * @param _copy_args  block of code that can be used for
+ *                    copying input argument values into output
+ *                    (this is usually done for IN/OUT arguments)
+ * @param _actions    RPC function body
+ * @note It is only recommended to use this macro for short custom
+ * functions, where making a separate C functions would be too verbose
+ * (cf. `inline` C functions)
+ */
+
+#define TARPC_FUNC_STANDALONE(_func, _copy_args, _actions) \
+    TARPC_FUNC_COMMON(STANDALONE, STANDALONE, _func,       \
+                      _copy_args, _actions)
+
+/**@}*/
 
 typedef void (*sighandler_t)(int);
 

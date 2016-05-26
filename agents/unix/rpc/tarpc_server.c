@@ -530,12 +530,15 @@ tarpc_generic_service(rpc_call_data *call)
 
     memset(call->out, 0, call->info->out_size);
 
-    rc = tarpc_find_func(in_common->use_libc, call->info->funcname,
-                         &call->func);
-    if (rc != 0)
+    if (call->func == NULL)
     {
-        out_common->_errno = rc;
-        return;
+        rc = tarpc_find_func(in_common->use_libc, call->info->funcname,
+                             &call->func);
+        if (rc != 0)
+        {
+            out_common->_errno = rc;
+            return;
+        }
     }
 
     if (call->info->copy(call->in, call->out))
@@ -1176,7 +1179,7 @@ TARPC_FUNC(getpid, {}, { MAKE_CALL(out->retval = func_void()); })
 /*-------------- pthread_self() --------------------------*/
 TARPC_FUNC(pthread_self, {},
 {
-    MAKE_CALL(out->retval = (tarpc_pthread_t)((pthread_t (*)())func)());
+    MAKE_CALL(out->retval = (tarpc_pthread_t)func());
 }
 )
 
@@ -3020,10 +3023,10 @@ TARPC_FUNC(waitpid, {},
 {
     int             st;
     rpc_wait_status r_st;
-    api_func        real_func = func;
+    pid_t (*real_func)(pid_t pid, int *status, int options) = func;
 
     if (!(in->options & RPC_WSYSTEM))
-        real_func = (api_func)ta_waitpid;
+        real_func = ta_waitpid;
     MAKE_CALL(out->pid = real_func(in->pid, &st,
                                    waitpid_opts_rpc2h(in->options)));
     r_st = wait_status_h2rpc(st);
@@ -8177,7 +8180,8 @@ typedef off_t   ta_off64_t;
 typedef uint64_t ta_off64_t;
 #endif
 
-TARPC_FUNC(sendfile,
+/* FIXME: sort off the correct prototype */
+TARPC_FUNC_DYNAMIC_UNSAFE(sendfile,
 {
     COPY_ARG(offset);
 },
@@ -9303,9 +9307,9 @@ TARPC_FUNC(aio_suspend, {},
     INIT_CHECKED_ARG((void *)cb, sizeof(void *) * in->cb.cb_len,
                      sizeof(void *) * in->cb.cb_len);
 
-    MAKE_CALL(out->retval = func_ptr(cb, in->n,
-                                     in->timeout.timeout_len == 0 ? NULL
-                                                                  : &tv));
+    MAKE_CALL(out->retval = func_ptr((const struct aiocb * const *)cb, in->n,
+                                     in->timeout.timeout_len == 0 ?
+                                     NULL : &tv));
     free(cb);
 
     finish:
@@ -9572,7 +9576,8 @@ TARPC_FUNC(integer2raw, {},
 
 /*-------------- memalign() ------------------------------*/
 
-TARPC_FUNC(memalign, {},
+/* FIXME: provide prototype (proper header inclusion?) */
+TARPC_FUNC_DYNAMIC_UNSAFE(memalign, {},
 {
     void *buf;
 
@@ -9741,7 +9746,8 @@ TARPC_FUNC(sysconf, {},
 
 #if defined WITH_POWER_SW
 /*------------ power_sw() -----------------------------------*/
-TARPC_FUNC(power_sw, {},
+/* FIXME: provide proper prototype */
+TARPC_FUNC_DYNAMIC_UNSAFE(power_sw, {},
 {
     MAKE_CALL(out->retval = func(in->type, in->dev, in->mask, in->cmd));
 }
