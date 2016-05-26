@@ -3,7 +3,7 @@
  *
  * RPC routines implementation
  *
- * Copyright (C) 2004 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2004-2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -22,6 +22,7 @@
  * MA  02111-1307  USA
  *
  *
+ * @author Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
  * $Id$
@@ -382,6 +383,272 @@ handler2name(void *handler)
     }
 
     return tmp;
+}
+
+void
+tarpc_init_checked_arg(checked_arg_list *list, uint8_t *real_arg,
+                       size_t len, size_t len_visible, const char *name)
+{
+    checked_arg *arg;
+
+    if (real_arg == NULL || len <= len_visible)
+        return;
+
+    if ((arg = calloc(1, sizeof(*arg))) == NULL)
+    {
+        ERROR("Out of memory");
+        return;
+    }
+
+    if ((arg->pristine = malloc(len - len_visible)) == NULL)
+    {
+        ERROR("Out of memory");
+        free(arg);
+        return;
+    }
+    memcpy(arg->pristine, real_arg + len_visible, len - len_visible);
+    arg->real_arg = real_arg;
+    arg->len = len;
+    arg->len_visible = len_visible;
+    arg->name = name;
+    STAILQ_INSERT_TAIL(list, arg, next);
+}
+
+te_errno
+tarpc_check_args(checked_arg_list *list)
+{
+    te_errno rc = 0;
+    checked_arg *cur;
+
+    for (cur = STAILQ_FIRST(list); cur != NULL; cur = STAILQ_FIRST(list))
+    {
+        if (memcmp(cur->real_arg + cur->len_visible, cur->pristine,
+                   cur->len - cur->len_visible) != 0)
+        {
+            ERROR("Argument %s:\nVisible length is "
+                  "%"TE_PRINTF_SIZE_T"u.\nPristine is:%Tm"
+                  "Current is:%Tm + %Tm",
+                  cur->name,
+                  (unsigned long)cur->len_visible,
+                  cur->pristine, cur->len - cur->len_visible,
+                  cur->real_arg, cur->len_visible,
+                  cur->real_arg + cur->len_visible,
+                  cur->len - cur->len_visible);
+            rc = TE_RC(TE_TA_UNIX, TE_ECORRUPTED);
+        }
+        free(cur->pristine);
+        STAILQ_REMOVE_HEAD(list, next);
+        free(cur);
+    }
+
+    return rc;
+}
+
+static void
+wait_start(uint64_t msec_start)
+{
+    struct timeval t;
+
+    uint64_t msec_now;
+
+    gettimeofday(&t, NULL);
+    msec_now = ((uint64_t)(t.tv_sec)) * 1000ULL +
+    (t.tv_usec) / 1000;
+
+    if (msec_start > msec_now)
+    {
+        RING("Sleep %u microseconds before call",
+             (unsigned)TE_MS2US(msec_start - msec_now));
+        usleep(TE_MS2US(msec_start - msec_now));
+    }
+    else if (msec_start != 0)
+        WARN("Start time is gone");
+}
+
+void tarpc_before_call(struct rpc_call_data *call, const char *id)
+{
+    tarpc_in_arg *in_common = (tarpc_in_arg *)((uint8_t *)call->in +
+                                               call->info->in_common_offset);
+
+    call->saved_errno = errno;
+    wait_start(in_common->start);
+    VERB("Calling: %s" , id);
+    gettimeofday(&call->call_start, NULL);
+}
+
+void tarpc_after_call(struct rpc_call_data *call)
+{
+    tarpc_out_arg *out_common =
+        (tarpc_out_arg *)((uint8_t *)call->out +
+                          call->info->out_common_offset);
+    struct timeval finish;
+    int rc;
+
+    out_common->errno_changed = (call->saved_errno != errno);
+    out_common->_errno = RPC_ERRNO;
+    gettimeofday(&finish, NULL);
+    out_common->duration =
+        TE_SEC2US(finish.tv_sec - call->call_start.tv_sec) +
+        finish.tv_usec - call->call_start.tv_usec;
+    rc = tarpc_check_args(&call->checked_args);
+    if (out_common->_errno == 0 && rc != 0)
+        out_common->_errno = rc;
+}
+
+static void *
+tarpc_generic_service_thread(void *arg)
+{
+    rpc_call_data *call = arg;
+
+    logfork_register_user(call->info->funcname);
+
+    VERB("Entry thread %s", call->info->funcname);
+
+    if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL) != 0)
+        ERROR("Failed to set thread cancel type for the non-blocking call "
+              "thread: %r", RPC_ERRNO);
+
+    sigprocmask(SIG_SETMASK, &(call->mask), NULL);
+
+    call->info->wrapper(call);
+
+    call->done = TRUE;
+
+    aux_threads_del();
+    return arg;
+}
+
+void
+tarpc_generic_service(rpc_call_data *call)
+{
+    int rc;
+    tarpc_in_arg *in_common = (tarpc_in_arg *)((uint8_t *)call->in +
+                                               call->info->in_common_offset);
+    tarpc_out_arg *out_common = (tarpc_out_arg *)((uint8_t *)call->out +
+                                                  call->info->
+                                                  out_common_offset);
+
+    memset(call->out, 0, call->info->out_size);
+
+    rc = tarpc_find_func(in_common->use_libc, call->info->funcname,
+                         &call->func);
+    if (rc != 0)
+    {
+        out_common->_errno = rc;
+        return;
+    }
+
+    if (call->info->copy(call->in, call->out))
+        return;
+
+    switch (in_common->op)
+    {
+        case RCF_RPC_CALL_WAIT:
+        {
+            VERB("%s(): CALL-WAIT", call->info->funcname);
+
+            call->info->wrapper(call);
+
+            break;
+        }
+        case RCF_RPC_CALL:
+        {
+            rpc_call_data *copy_call;
+            pthread_t tid;
+
+            VERB("%s(): CALL", call->info->funcname);
+
+            if ((copy_call = calloc(1, sizeof(*copy_call) +
+                                    call->info->in_size +
+                                    call->info->out_size)) == NULL)
+            {
+                out_common->_errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+                break;
+            }
+
+            *copy_call = *call;
+            sigprocmask(SIG_SETMASK, NULL, &(copy_call->mask));
+            copy_call->in = (uint8_t *)copy_call + sizeof(*copy_call);
+            copy_call->out = (uint8_t *)copy_call->in +
+                             copy_call->info->in_size;
+            memcpy(copy_call->in, call->in, call->info->in_size);
+            memcpy(copy_call->out, call->out, call->info->out_size);
+
+            if (pthread_create(&tid, NULL, tarpc_generic_service_thread,
+                               copy_call) != 0)
+            {
+                free(copy_call);
+                out_common->_errno = TE_OS_RC(TE_TA_UNIX, errno);
+                break;
+            }
+            aux_threads_add(tid);
+
+            /*
+             * Preset 'in' and 'out' with zeros to avoid any
+             * resource deallocations by the caller.
+             * 'out' is preset with zeros above, but may be
+             * modified in '_copy_args'.
+             */
+            memset(call->in,  0, call->info->in_size);
+            memset(call->out, 0, call->info->out_size);
+
+            out_common->tid = (tarpc_pthread_t)tid;
+            out_common->done = rcf_pch_mem_alloc(&copy_call->done);
+
+            break;
+        }
+        case RCF_RPC_WAIT:
+        {
+            rpc_call_data *copy_call;
+            pthread_t     tid =  (pthread_t)in_common->tid;
+            enum xdr_op   op;
+
+            VERB("%s(): WAIT", call->info->funcname);
+
+            /*
+             * If WAIT is called, all resources are deallocated
+             * in any case.
+             */
+            rcf_pch_mem_free(in_common->done);
+
+            if (tid == (pthread_t)(long)NULL)
+            {
+                ERROR("No thread with ID %llu to wait",
+                      (unsigned long long int)in_common->tid);
+                out_common->_errno = TE_RC(TE_TA_UNIX, TE_ENOENT);
+                break;
+            }
+            if (pthread_join(tid, (void **)&copy_call) != 0)
+            {
+                ERROR("pthread_join() failed");
+                out_common->_errno = TE_OS_RC(TE_TA_UNIX, errno);
+                break;
+            }
+            if (copy_call == NULL)
+            {
+                ERROR("pthread_join() returned invalid thread "
+                      "return value");
+                out_common->_errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
+                break;
+            }
+
+            /* Free locations copied in 'out' by _copy_args' */
+            op = XDR_FREE;
+            if (!call->info->xdr_out((XDR *)&op, call->out))
+                ERROR("xdr_tarpc_%s_out() failed", call->info->funcname);
+
+            /* Copy output prepared in the thread */
+            memcpy(call->out, copy_call->out, call->info->out_size);
+            free(copy_call);
+
+            break;
+        }
+
+        default:
+            ERROR("Unknown RPC operation");
+            out_common->_errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
+            break;
+    }
 }
 
 /*-------------- setlibname() -----------------------------*/
@@ -848,7 +1115,7 @@ TARPC_FUNC(execve, {},
  * @param arr       Location for NULL terminated array
  */
 static void
-unistd_iov_to_arr_null(checked_arg **list_ptr, struct tarpc_iovec *iov,
+unistd_iov_to_arr_null(checked_arg_list *arglist, struct tarpc_iovec *iov,
                        size_t len, char *arr[])
 {
     size_t i;
@@ -885,9 +1152,9 @@ TARPC_FUNC(execve_gen, {},
     char *argv[in->argv.argv_len];
     char *envp[in->envp.envp_len];
 
-    unistd_iov_to_arr_null(list_ptr, in->argv.argv_val,
+    unistd_iov_to_arr_null(arglist, in->argv.argv_val,
                            in->argv.argv_len, argv);
-    unistd_iov_to_arr_null(list_ptr, in->envp.envp_val,
+    unistd_iov_to_arr_null(arglist, in->envp.envp_val,
                            in->envp.envp_len, envp);
 
     /* Wait until main thread sends answer to non-blocking RPC call */
@@ -2753,11 +3020,12 @@ TARPC_FUNC(waitpid, {},
 {
     int             st;
     rpc_wait_status r_st;
+    api_func        real_func = func;
 
     if (!(in->options & RPC_WSYSTEM))
-        func = (api_func)ta_waitpid;
-    MAKE_CALL(out->pid = func(in->pid, &st,
-                              waitpid_opts_rpc2h(in->options)));
+        real_func = (api_func)ta_waitpid;
+    MAKE_CALL(out->pid = real_func(in->pid, &st,
+                                   waitpid_opts_rpc2h(in->options)));
     r_st = wait_status_h2rpc(st);
     out->status_flag = r_st.flag;
     out->status_value = r_st.value;
@@ -3859,7 +4127,7 @@ typedef union ioctl_param {
 
 static void
 tarpc_ioctl_pre(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
-                ioctl_param *req, checked_arg **list_ptr)
+                ioctl_param *req, checked_arg_list *arglist)
 {
     size_t  reqlen;
 
@@ -4320,7 +4588,7 @@ TARPC_FUNC(ioctl,
     {
         memset(&req_local, 0, sizeof(req_local));
         req_ptr = &req_local;
-        tarpc_ioctl_pre(in, out, req_ptr, list_ptr);
+        tarpc_ioctl_pre(in, out, req_ptr, arglist);
         if (out->common._errno != 0)
             goto finish;
     }
@@ -6027,7 +6295,6 @@ TARPC_FUNC(cwmp_op_check, {},
 
 /*-------------- cwmp_conn_req() -------------------*/
 TARPC_FUNC(cwmp_conn_req, {}, { MAKE_CALL(func_ptr(in, out)); })
-
 
 /*-------------- cwmp_acse_start() -------------------*/
 TARPC_FUNC(cwmp_acse_start, {}, { MAKE_CALL(func_ptr(in, out)); })
@@ -7919,6 +8186,7 @@ TARPC_FUNC(sendfile,
     {
         do {
             int         rc;
+            api_func    real_func = func;
             api_func    func64;
             ta_off64_t  offset = 0;
             const char *real_func_name = "sendfile64";
@@ -7926,7 +8194,7 @@ TARPC_FUNC(sendfile,
             if ((rc = tarpc_find_func(in->common.use_libc,
                                       real_func_name, &func64)) == 0)
             {
-                func = func64;
+                real_func = func64;
             }
             else if (sizeof(off_t) == 8)
             {
@@ -7943,7 +8211,7 @@ TARPC_FUNC(sendfile,
                 break;
             }
 
-            assert(func != NULL);
+            assert(real_func != NULL);
 
             if (out->offset.offset_len > 0)
                 offset = *out->offset.offset_val;
@@ -7953,9 +8221,9 @@ TARPC_FUNC(sendfile,
                  (long long)offset, in->count);
 
             MAKE_CALL(out->retval =
-                func(in->out_fd, in->in_fd,
-                     out->offset.offset_len == 0 ? NULL : &offset,
-                     in->count));
+                      real_func(in->out_fd, in->in_fd,
+                                out->offset.offset_len == 0 ? NULL : &offset,
+                                in->count));
 
             VERB("%s() returns %d, errno=%d, offset=%lld",
                  real_func_name, out->retval, errno, (long long)offset);
@@ -9105,8 +9373,6 @@ TARPC_FUNC(malloc, {},
 {
     void *buf;
 
-    UNUSED(list_ptr);
-
     buf = func_ret_ptr(in->size);
 
     if (buf == NULL)
@@ -9119,7 +9385,6 @@ TARPC_FUNC(malloc, {},
 /*--------------------------- free ---------------------------------*/
 TARPC_FUNC(free, {},
 {
-    UNUSED(list_ptr);
     UNUSED(out);
     func_ptr(rcf_pch_mem_get(in->buf));
     rcf_pch_mem_free(in->buf);
@@ -9310,8 +9575,6 @@ TARPC_FUNC(integer2raw, {},
 TARPC_FUNC(memalign, {},
 {
     void *buf;
-
-    UNUSED(list_ptr);
 
     buf = func_ret_ptr(in->alignment, in->size);
 
@@ -10004,7 +10267,6 @@ TARPC_FUNC(ta_dlclose, {},
     MAKE_CALL(out->retval = func_ptr(in));
 }
 )
-
 
 #ifdef NO_DL
 taprc_dlhandle

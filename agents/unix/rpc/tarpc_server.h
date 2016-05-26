@@ -3,7 +3,7 @@
  *
  * Definitions necessary for RPC implementation
  *
- * Copyright (C) 2004 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2004-2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -22,6 +22,7 @@
  * MA  02111-1307  USA
  *
  *
+ * @author Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
  * $Id$
@@ -152,8 +153,13 @@
 #include <sys/syscall.h>
 #endif
 
+#ifdef HAVE_SYS_QUEUE_H
+#include <sys/queue.h>
+#endif
+
 #define TE_ERRNO_LOG_UNKNOWN_OS_ERRNO
 
+#include <stddef.h>
 #include "te_stdint.h"
 #include "te_defs.h"
 #include "te_errno.h"
@@ -302,39 +308,15 @@ typedef int64_t (*api_func_ret_int64)(int param,...);
  * api_func, which may not match with RPC function prototype.
  * In order to avoid compilation warning associated with incorrect
  * function type you can use the following names instead of @p func -
- * they are just casted versions of @p func variable.
+ * they are just casted versions of @p func variable:
+ * - func_ptr          (#api_func_ptr)
+ * - func_void         (#api_func_void)
+ * - func_ret_ptr      (#api_func_ret_ptr)
+ * - func_ptr_ret_ptr  (#api_func_ptr_ret_ptr)
+ * - func_void_ret_ptr (#api_func_void_ret_ptr)
+ * - func_ret_int64    (#api_func_ret_int64)
  */
 
-/**
- * RPC function call reference name to use when RPC call matches
- * @ref api_func_ptr prototype
- */
-#define func_ptr                ((api_func_ptr)func)
-/**
- * RPC function call reference name to use when RPC call matches
- * @ref api_func_void prototype
- */
-#define func_void               ((api_func_void)func)
-/**
- * RPC function call reference name to use when RPC call matches
- * @ref api_func_ret_ptr prototype
- */
-#define func_ret_ptr            ((api_func_ret_ptr)func)
-/**
- * RPC function call reference name to use when RPC call matches
- * @ref api_func_ptr_ret_ptr prototype
- */
-#define func_ptr_ret_ptr        ((api_func_ptr_ret_ptr)func)
-/**
- * RPC function call reference name to use when RPC call matches
- * @ref api_func_void_ret_ptr prototype
- */
-#define func_void_ret_ptr       ((api_func_void_ret_ptr)func)
-/**
- * RPC function call reference name to use when RPC call matches
- * @ref api_func_ret_int64 prototype
- */
-#define func_ret_int64          ((api_func_ret_int64)func)
 
 /** @} */
 
@@ -370,90 +352,36 @@ extern int tarpc_find_func(te_bool use_libc, const char *name,
 
 /** Structure for checking of variable-length arguments safety */
 typedef struct checked_arg {
-    struct checked_arg *next; /**< Next checked argument in the list */
+    STAILQ_ENTRY(checked_arg) next; /**< Next checked argument in the list */
 
     uint8_t    *real_arg;     /**< Pointer to real buffer */
-    void       *control;      /**< Pointer to control buffer */
-    int         len;          /**< Whole length of the buffer */
-    int         len_visible;  /**< Length passed to the function
+    uint8_t    *pristine;     /**< Pointer to pristine buffer */
+    size_t      len;          /**< Whole length of the buffer */
+    size_t      len_visible;  /**< Length passed to the function
                                    under test */
-    char       *name;         /**< Argument name to be displayed
+    const char *name;         /**< Argument name to be displayed
                                    in error message */
 } checked_arg;
 
+/** List of checked argguments */
+typedef STAILQ_HEAD(checked_arg_list, checked_arg) checked_arg_list;
+
 /** Initialise the checked argument and add it into the list */
-static inline void
-init_checked_arg_gen(checked_arg **list, uint8_t *real_arg,
-                     int len, int len_visible, char *name)
-{
-    checked_arg *arg;
+extern void tarpc_init_checked_arg(checked_arg_list *list, uint8_t *real_arg,
+                                   size_t len, size_t len_visible,
+                                   const char *name);
 
-    if (real_arg == NULL || len <= len_visible)
-        return;
 
-    if ((arg = calloc(1, sizeof(*arg))) == NULL)
-    {
-        ERROR("Out of memory");
-        return;
-    }
+#define INIT_CHECKED_ARG_GEN(_list, _real_arg, _len, _len_visible)  \
+    tarpc_init_checked_arg(_list, (uint8_t *)(_real_arg), _len,     \
+                           _len_visible,  #_real_arg)
 
-    if ((arg->control = malloc(len - len_visible)) == NULL)
-    {
-        ERROR("Out of memory");
-        free(arg);
-        return;
-    }
-    memcpy(arg->control, real_arg + len_visible, len - len_visible);
-    arg->real_arg = real_arg;
-    arg->len = len;
-    arg->len_visible = len_visible;
-    arg->name = name;
-    arg->next = *list;
-    *list = arg;
-}
+#define INIT_CHECKED_ARG(_real_arg, _len, _len_visible)             \
+    INIT_CHECKED_ARG_GEN(arglist, _real_arg, _len, _len_visible)
 
-#define INIT_CHECKED_ARG(_real_arg, _len, _len_visible) \
-    init_checked_arg_gen(list_ptr, (uint8_t *)(_real_arg), _len, \
-                         _len_visible,  #_real_arg)
-
-static inline void
-init_checked_arg(checked_arg **list, uint8_t *real_arg,
-                 int len, int len_visible)
-{
-    return init_checked_arg_gen(list, real_arg, len, len_visible,
-                                "unnamed");
-}
 
 /** Verify that arguments are not corrupted */
-static inline int
-check_args(checked_arg *list)
-{
-    int rc = 0;
-
-    checked_arg *cur, *next;
-
-    for (cur = list; cur != NULL; cur = next)
-    {
-        next = cur->next;
-        if (memcmp(cur->real_arg + cur->len_visible, cur->control,
-                   cur->len - cur->len_visible) != 0)
-        {
-            ERROR("Argument %s:\nVisible length is %u.\nControl is:%Tm"
-                  "Current is:%Tm + %Tm",
-                  cur->name,
-                  cur->len_visible, cur->control,
-                  cur->len - cur->len_visible,
-                  cur->real_arg, cur->len_visible,
-                  cur->real_arg + cur->len_visible,
-                  cur->len - cur->len_visible);
-            rc = TE_RC(TE_TA_UNIX, TE_ECORRUPTED);
-        }
-        free(cur->control);
-        free(cur);
-    }
-
-    return rc;
-}
+extern te_errno tarpc_check_args(checked_arg_list *list);
 
 /**
  * Convert address and register it in the list of checked arguments.
@@ -463,51 +391,62 @@ check_args(checked_arg *list)
  * @param _wlen         Visible len (all beyond this len should remain
  *                      unchanged after function call).
  * @param _is_local     Whether local variable or dynamically allocated
- *                      memory should be used to store converted value
+ *                      memory should be used to store converted value.
+ *                      This *must* be a literal TRUE or FALSE
  * @param _do_register  If @c TRUE, register argument in the list
  *                      to be checked after function call.
+ *                      This *must* be a literal TRUE or FALSE
  */
-#define PREPARE_ADDR_GEN(_name, _value, _wlen, _is_local, \
-                         _do_register) \
-    te_errno                _name ## _rc;                           \
+#define PREPARE_ADDR_GEN(_name, _value, _wlen, _is_local,           \
+                         _do_register)                              \
     struct sockaddr_storage _name ## _st;   /* Storage */           \
     socklen_t               _name ## len = 0;                       \
     struct sockaddr        *_name = NULL;                           \
-    struct sockaddr        *_name ## _dup = NULL;                   \
+    PREPARE_ADDR_GEN_IS_LOCAL_DEFS_##_is_local(_name)               \
                                                                     \
     if (!(_value.flags & TARPC_SA_RAW &&                            \
           _value.raw.raw_len > sizeof(struct sockaddr_storage)))    \
     {                                                               \
-        _name ## _rc = sockaddr_rpc2h(&(_value), SA(&_name ## _st), \
-                                      sizeof(_name ## _st),         \
-                                      &_name, &_name ## len);       \
-        if (_name ## _rc != 0)                                      \
+        te_errno __rc = sockaddr_rpc2h(&(_value), SA(&_name ## _st),\
+                                       sizeof(_name ## _st),        \
+                                       &_name, &_name ## len);      \
+        if (__rc != 0)                                              \
         {                                                           \
-             out->common._errno = _name ## _rc;                     \
+            out->common._errno = __rc;                              \
         }                                                           \
         else                                                        \
         {                                                           \
-            if (!_is_local)                                         \
-            {                                                       \
-                if (_name != NULL)                                  \
-                {                                                   \
-                    _name ## _dup = calloc(1, _name ## len);        \
-                    if (_name ## _dup == NULL)                      \
-                        out->common._errno = TE_ENOMEM;             \
-                    else                                            \
-                        memcpy(_name ## _dup, _name, _name ## len); \
-                }                                                   \
+            PREPARE_ADDR_GEN_IS_LOCAL_COPY_##_is_local(_name);      \
                                                                     \
-                if (_do_register)                                   \
-                INIT_CHECKED_ARG((char *)_name ## _dup,             \
-                                 _name ## len,                      \
-                                 _wlen);                            \
-            }                                                       \
-            else if (_do_register)                                  \
-                INIT_CHECKED_ARG((char *)_name, _name ## len,       \
-                                 _wlen);                            \
+            PREPARE_ADDR_GEN_DO_REGISTER_##_do_register(            \
+                PREPARE_ADDR_GEN_IS_LOCAL_VAR_##_is_local(_name),   \
+                _name ## len, _wlen);                               \
         }                                                           \
     }
+
+#define PREPARE_ADDR_GEN_IS_LOCAL_DEFS_TRUE(_name)
+#define PREPARE_ADDR_GEN_IS_LOCAL_DEFS_FALSE(_name)     \
+    struct sockaddr        *_name ## _dup = NULL;       \
+
+#define PREPARE_ADDR_GEN_IS_LOCAL_VAR_TRUE(_name) _name
+#define PREPARE_ADDR_GEN_IS_LOCAL_VAR_FALSE(_name) _name ## _dup
+
+#define PREPARE_ADDR_GEN_IS_LOCAL_COPY_FALSE(_name)                 \
+    if (_name != NULL)                                              \
+    {                                                               \
+        _name ## _dup = calloc(1, _name ## len);                    \
+        if (_name ## _dup == NULL)                                  \
+            out->common._errno = TE_ENOMEM;                         \
+        else                                                        \
+            memcpy(_name ## _dup, _name, _name ## len);             \
+    }
+#define PREPARE_ADDR_GEN_IS_LOCAL_COPY_TRUE(_name)
+
+#define PREPARE_ADDR_GEN_DO_REGISTER_TRUE(_name, _len, _wlen)   \
+    INIT_CHECKED_ARG(_name, _len, _wlen);
+
+#define PREPARE_ADDR_GEN_DO_REGISTER_FALSE(_name, _len, _wlen)
+
 
 /**
  * Convert address and register it in the list of checked arguments.
@@ -517,7 +456,7 @@ check_args(checked_arg *list)
  * @param _wlen     Visible len (all beyond this len should remain
  *                  unchanged after function call.
  */
-#define PREPARE_ADDR(_name, _value, _wlen) \
+#define PREPARE_ADDR(_name, _value, _wlen)              \
     PREPARE_ADDR_GEN(_name, _value, _wlen, TRUE, TRUE)
 
 /**
@@ -538,78 +477,102 @@ check_args(checked_arg *list)
         memset(&in->_a, 0, sizeof(in->_a)); \
     } while (0)
 
-/**
- * Find function by its name with check.
- * out variable is assumed in the context.
- */
-#define FIND_FUNC(_lib, _name, _func) \
-    do {                                                 \
-        int rc = tarpc_find_func(_lib, _name, &(_func)); \
-                                                         \
-        if (rc != 0)                                     \
-        {                                                \
-             out->common._errno = rc;                    \
-             return TRUE;                                \
-        }                                                \
-    } while (0)
-
-/** Wait time specified in the input argument. */
-#define WAIT_START(msec_start)                                  \
-    do {                                                        \
-        struct timeval t;                                       \
-                                                                \
-        uint64_t msec_now;                                      \
-                                                                \
-        gettimeofday(&t, NULL);                                 \
-        msec_now = ((uint64_t)(t.tv_sec)) * 1000ULL +           \
-                   (t.tv_usec) / 1000;                          \
-                                                                \
-        if (msec_start > msec_now)                              \
-        {                                                       \
-            RING("Sleep %u microseconds before call",           \
-                 (unsigned)TE_MS2US(msec_start - msec_now));    \
-            usleep(TE_MS2US(msec_start - msec_now));            \
-        }                                                       \
-        else if (msec_start != 0)                               \
-            WARN("Start time is gone");                         \
-    } while (0)
+struct rpc_call_data;
 
 /**
- * Declare and initialise time variables; execute the code and store
- * duration and errno in the output argument.
+ * Do some preparations before passing an call to a real function:
+ * - probably wait for a specific deadline
+ * - record a starting timestamp
+ * - save errno
+ * - do logging
+ *
+ * @note This function is normally only called from inside MAKE_CALL()
+ * @sa tarpc_after_call()
  */
-#define MAKE_CALL(x)                                             \
-    do {                                                         \
-        struct timeval t_start;                                  \
-        struct timeval t_finish;                                 \
-        int            _rc;                                      \
-        int            _errno_save = errno;                      \
-                                                                 \
-        WAIT_START(in->common.start);                            \
-        VERB("Calling: %s" , #x);                                \
-        gettimeofday(&t_start, NULL);                            \
-        x;                                                       \
-        out->common.errno_changed = (_errno_save != errno);      \
-        out->common._errno = RPC_ERRNO;                          \
-        gettimeofday(&t_finish, NULL);                           \
-        out->common.duration =                                   \
-            TE_SEC2US(t_finish.tv_sec - t_start.tv_sec) +        \
-            t_finish.tv_usec - t_start.tv_usec;                  \
-        _rc = check_args(*list_ptr);                             \
-        if (out->common._errno == 0 && _rc != 0)                 \
-            out->common._errno = _rc;                            \
+extern void tarpc_before_call(struct rpc_call_data *call, const char *id);
+
+/**
+ * Do some postprocessing after the real RPC work is done:
+ * - record errno status
+ * - record call duration
+ * - check the registered checked args validity
+ *
+ * @note This function is normally only called from inside MAKE_CALL()
+ * @sa tarpc_before_call()
+ */
+extern void tarpc_after_call(struct rpc_call_data *call);
+
+/**
+ * Execute code wrapped into tarpc_before_call()/tarpc_after_call()
+ */
+#define MAKE_CALL(_code)                                            \
+    do {                                                            \
+        tarpc_before_call(_call, #_code);                           \
+        _code;                                                      \
+        tarpc_after_call(_call);                                    \
     } while (0)
 
 /**
- * Set asynchronous thread cancel type for the non-blocking call thread.
+ * Type of functions implementing an RPC wrapper around real code
+ * @note This is a function type, not a function pointer
  */
-static inline void
-thread_setcanceltype(void)
-{
-    if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL) != 0)
-        ERROR("Failed to set thread cancel type for the non-blocking call "
-              "thread: %r", RPC_ERRNO);
-}
+typedef void rpc_wrapper_func(struct rpc_call_data *call);
+
+/**
+ * Type of functions doing input-to-output copying for RPC calls.
+ * @note This is a function type, not a function pointer
+ */
+typedef te_bool rpc_copy_func(void *in, void *out);
+
+/**
+ * Generic XDR resource-freeing routine pointer
+ */
+typedef bool_t (*rpc_generic_xdr_out)(XDR *, void *out);
+
+/** Description of a RPC routine implementation */
+typedef struct rpc_func_info {
+    const char *funcname;        /**< Name of the function */
+    rpc_wrapper_func *wrapper;   /**< RPC wrapper */
+    rpc_copy_func *copy;         /**< Argument copying routing */
+    rpc_generic_xdr_out xdr_out; /**< XDR resource deallocator */
+    size_t in_size;              /**< Size of input arguments structure */
+    size_t out_size;             /**< Size of output arguments structure */
+    size_t in_common_offset;     /**< Offset of #tarpc_in_arg within the
+                                  *   input structure (usually 0)
+                                  */
+    size_t out_common_offset;    /**< Offset of #tarpc_in_arg within the
+                                  *   input structure (usually 0)
+                                  */
+} rpc_func_info;
+
+/** RPC call activation details */
+typedef struct rpc_call_data {
+    const rpc_func_info *info; /**< RPC routine description */
+    api_func func;             /**< Actual function to call */
+    void *in;                  /**< Input data */
+    void *out;                 /**< Output data */
+    sigset_t mask;             /**< Saved signal mask
+                                * @note Only used for async calls
+                                */
+    checked_arg_list checked_args; /**< List of checked arguments */
+    te_bool done;              /**< Completion status
+                                * @note Only used for async calls
+                                */
+    struct timeval call_start; /**< Timestamp when the actual code is
+                                * called (used by MAKE_CALL())
+                                */
+    int saved_errno;           /**< Saved errno (used by MAKE_CALL()) */
+} rpc_call_data;
+
+
+/**
+ * Generic RPC handler.
+ * It does all preparations, most imporant
+ * - copy arguments
+ * - set up an asynchronous call context if needed
+ * and then calls the real code
+ */
+extern void tarpc_generic_service(rpc_call_data *call);
 
 /**
  * Macro to define RPC function content.
@@ -620,175 +583,87 @@ thread_setcanceltype(void)
  *                    (this is usually done for IN/OUT arguments)
  * @param _actions    RPC function body
  */
-#define TARPC_FUNC(_func, _copy_args, _actions)                     \
-                                                                    \
-typedef struct _func##_arg {                                        \
-    api_func            func;                                       \
-    tarpc_##_func##_in  in;                                         \
-    tarpc_##_func##_out out;                                        \
-    sigset_t            mask;                                       \
-    te_bool             done;                                       \
-} _func##_arg;                                                      \
-                                                                    \
-static void *                                                       \
-_func##_proc(void *arg)                                             \
-{                                                                   \
-    _func##_arg            *data = (_func##_arg *)arg;              \
-    api_func                func = data->func;                      \
-                                                                    \
-    tarpc_##_func##_in     *in = &(data->in);                       \
-    tarpc_##_func##_out    *out = &(data->out);                     \
-                                                                    \
-    checked_arg            *list = NULL;                            \
-    checked_arg           **list_ptr = &list;                       \
-                                                                    \
-    UNUSED(list_ptr); /* Possibly unused */                         \
-    UNUSED(func); /* Possibly unused */                             \
-                                                                    \
-    logfork_register_user(#_func);                                  \
-                                                                    \
-    VERB("Entry thread %s", #_func);                                \
-                                                                    \
-    thread_setcanceltype();                                         \
-    sigprocmask(SIG_SETMASK, &(data->mask), NULL);                  \
-                                                                    \
-    { _actions }                                                    \
-                                                                    \
-    data->done = TRUE;                                              \
-                                                                    \
-    aux_threads_del();                                              \
-    return arg;                                                     \
-}                                                                   \
-                                                                    \
-bool_t                                                              \
-_##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,  \
-                 struct svc_req *rqstp)                             \
-{                                                                   \
-    api_func        func;                                           \
-    _func##_arg    *arg;                                            \
-                                                                    \
-    UNUSED(rqstp);                                                  \
-                                                                    \
-    memset(out, 0, sizeof(*out));                                   \
-                                                                    \
-    VERB("PID=%d TID=%d: Entry %s",                                 \
-         (int)getpid(), (int)pthread_self(), #_func);               \
-                                                                    \
-    FIND_FUNC(in->common.use_libc, #_func, func);                   \
-                                                                    \
-    { _copy_args }                                                  \
-                                                                    \
-    switch (in->common.op)                                          \
-    {                                                               \
-        case RCF_RPC_CALL_WAIT:                                     \
-        {                                                           \
-            checked_arg    *list = NULL;                            \
-            checked_arg   **list_ptr = &list;                       \
-                                                                    \
-            UNUSED(list_ptr); /* Possibly unused */                 \
-                                                                    \
-            VERB("%s(): CALL-WAIT", #_func);                        \
-                                                                    \
-            { _actions  }                                           \
-                                                                    \
-            break;                                                  \
-        }                                                           \
-                                                                    \
-        case RCF_RPC_CALL:                                          \
-        {                                                           \
-            pthread_t _tid;                                         \
-                                                                    \
-            VERB("%s(): CALL", #_func);                             \
-                                                                    \
-            if ((arg = calloc(1, sizeof(*arg))) == NULL)            \
-            {                                                       \
-                out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);  \
-                break;                                              \
-            }                                                       \
-                                                                    \
-            arg->in   = *in;                                        \
-            arg->out  = *out;                                       \
-            arg->func = func;                                       \
-            sigprocmask(SIG_SETMASK, NULL, &(arg->mask));           \
-            arg->done = FALSE;                                      \
-                                                                    \
-            if (pthread_create(&_tid, NULL, _func##_proc, arg) != 0)\
-            {                                                       \
-                free(arg);                                          \
-                out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);   \
-                break;                                              \
-            }                                                       \
-            aux_threads_add(_tid);                                  \
-                                                                    \
-            /*                                                      \
-             * Preset 'in' and 'out' with zeros to avoid any        \
-             * resource deallocations by the caller.                \
-             * 'out' is preset with zeros above, but may be         \
-             * modified in '_copy_args'.                            \
-             */                                                     \
-            memset(in,  0, sizeof(*in));                            \
-            memset(out, 0, sizeof(*out));                           \
-                                                                    \
-            out->common.tid = (tarpc_pthread_t)_tid;                \
-            out->common.done = rcf_pch_mem_alloc(&arg->done);       \
-                                                                    \
-            break;                                                  \
-        }                                                           \
-                                                                    \
-        case RCF_RPC_WAIT:                                          \
-        {                                                           \
-            pthread_t   _tid =                                      \
-                (pthread_t) in->common.tid;                         \
-            enum xdr_op op;                                         \
-                                                                    \
-            VERB("%s(): WAIT", #_func);                             \
-                                                                    \
-            /*                                                      \
-             * If WAIT is called, all resources are deallocated     \
-             * in any case.                                         \
-             */                                                     \
-            rcf_pch_mem_free(in->common.done);                      \
-                                                                    \
-            if (_tid == (pthread_t)(long)NULL)                      \
-            {                                                       \
-                ERROR("No thread with ID %llu to wait",             \
-                      (unsigned long long int)in->common.tid);      \
-                out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOENT);  \
-                break;                                              \
-            }                                                       \
-            if (pthread_join(_tid, (void **)&(arg)) != 0)           \
-            {                                                       \
-                ERROR("pthread_join() failed");                     \
-                out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);   \
-                break;                                              \
-            }                                                       \
-            if (arg == NULL)                                        \
-            {                                                       \
-                ERROR("pthread_join() returned invalid thread "     \
-                      "return value");                              \
-                out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);  \
-                break;                                              \
-            }                                                       \
-                                                                    \
-            /* Free locations copied in 'out' by _copy_args' */     \
-            op = XDR_FREE;                                          \
-            if (!xdr_tarpc_##_func##_out((XDR *)&op, out))          \
-                ERROR("xdr_tarpc_" #_func "_out() failed");         \
-                                                                    \
-            /* Copy output prepared in the thread */                \
-            *out = arg->out;                                        \
-            free(arg);                                              \
-                                                                    \
-            break;                                                  \
-        }                                                           \
-                                                                    \
-        default:                                                    \
-            ERROR("Unknown RPC operation");                         \
-            out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);      \
-            break;                                                  \
-    }                                                               \
-    return TRUE;                                                    \
-}
+#define TARPC_FUNC(_func, _copy_args, _actions)                         \
+                                                                        \
+    static rpc_wrapper_func _func##_wrapper;                            \
+                                                                        \
+    static void                                                         \
+    _func##_wrapper(rpc_call_data *_call)                               \
+    {                                                                   \
+        tarpc_##_func##_in  * const in  = _call->in;                    \
+        tarpc_##_func##_out * const out = _call->out;                   \
+        const api_func func = _call->func;                              \
+        const api_func_ptr func_ptr = (api_func_ptr)func;               \
+        const api_func_void func_void =  (api_func_void)func;           \
+        const api_func_ret_ptr func_ret_ptr = (api_func_ret_ptr)func;   \
+        const api_func_ptr_ret_ptr func_ptr_ret_ptr =                   \
+                                   (api_func_ptr_ret_ptr)func;          \
+                                                                        \
+        const api_func_void_ret_ptr func_void_ret_ptr =                 \
+                                   (api_func_void_ret_ptr)func;         \
+        const api_func_ret_int64 func_ret_int64 = (api_func_ret_int64)func; \
+                                                                        \
+        checked_arg_list *arglist = &(_call->checked_args);             \
+                                                                        \
+        UNUSED(in);                                                     \
+        UNUSED(out);                                                    \
+        UNUSED(func_ptr);                                               \
+        UNUSED(func_void);                                              \
+        UNUSED(func_ret_ptr);                                           \
+        UNUSED(func_ptr_ret_ptr);                                       \
+        UNUSED(func_void_ret_ptr);                                      \
+        UNUSED(func_ret_int64);                                         \
+        UNUSED(arglist);                                                \
+                                                                        \
+        { _actions }                                                    \
+    }                                                                   \
+                                                                        \
+    static rpc_copy_func _func##_docopy;                                \
+                                                                        \
+    static te_bool                                                      \
+    _func##_docopy(void *_in, void *_out)                               \
+    {                                                                   \
+        tarpc_##_func##_in  * const in  = _in;                          \
+        tarpc_##_func##_out * const out = _out;                         \
+                                                                        \
+        UNUSED(in);                                                     \
+        UNUSED(out);                                                    \
+                                                                        \
+        { _copy_args }                                                  \
+                                                                        \
+        return FALSE;                                                   \
+    }                                                                   \
+                                                                        \
+    bool_t                                                              \
+    _##_func##_1_svc(tarpc_##_func##_in *_in, tarpc_##_func##_out *_out, \
+                     struct svc_req *_rqstp)                            \
+    {                                                                   \
+        static const rpc_func_info _info = {                            \
+            .funcname = #_func,                                         \
+            .wrapper = _func##_wrapper,                                 \
+            .copy = _func##_docopy,                                     \
+            .xdr_out = (rpc_generic_xdr_out)xdr_tarpc_##_func##_out,    \
+            .in_size = sizeof(*_in),                                    \
+            .in_common_offset = offsetof(tarpc_##_func##_in, common),   \
+            .out_size = sizeof(*_out),                                  \
+            .out_common_offset = offsetof(tarpc_##_func##_out, common)  \
+        };                                                              \
+                                                                        \
+        rpc_call_data _call = {                                         \
+            .info = &_info,                                             \
+            .in = _in,                                                  \
+            .out = _out,                                                \
+            .func = NULL,                                               \
+            .checked_args = STAILQ_HEAD_INITIALIZER(_call.checked_args) \
+        };                                                              \
+        UNUSED(_rqstp);                                                 \
+                                                                        \
+        tarpc_generic_service(&_call);                                  \
+        return TRUE;                                                    \
+    }
+
+
+
 
 typedef void (*sighandler_t)(int);
 
