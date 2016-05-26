@@ -158,6 +158,17 @@ extern struct sockaddr *tapi_sockaddr_clone_typed(
                                                 const struct sockaddr *addr,
                                                 tapi_address_type type);
 
+/**
+ * Allocate a free port and set it to @p addr.
+ *
+ * @param rpcs      RPC server handle.
+ * @param addr      Address to set the new port.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_allocate_set_port(rcf_rpc_server *rpcs,
+                                       const struct sockaddr *addr);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

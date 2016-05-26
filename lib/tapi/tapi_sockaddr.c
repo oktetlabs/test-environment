@@ -220,3 +220,23 @@ tapi_sockaddr_clone_typed(const struct sockaddr *addr,
 
     return SA(res_addr);
 }
+
+/* See description in tapi_sockaddr.h */
+te_errno
+tapi_allocate_set_port(rcf_rpc_server *rpcs, const struct sockaddr *addr)
+{
+    uint16_t *port_ptr;
+    te_errno rc;
+
+    if ((port_ptr = te_sockaddr_get_port_ptr(addr)) == NULL)
+    {
+        ERROR("Failed to get pointer to port");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    rc = tapi_allocate_port_htons(rpcs, port_ptr);
+    if (rc != 0)
+        ERROR("Failed to allocate a free port: %r", rc);
+
+    return rc;
+}
