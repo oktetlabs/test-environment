@@ -583,7 +583,7 @@ extern void tarpc_generic_service(rpc_call_data *call);
 
 #define TARPC_FUNC_INIT_DYNAMIC(_func) NULL
 #define TARPC_FUNC_INIT_STATIC(_func) ((api_func)(_func))
-#define TARPC_FUNC_INIT_STANDALONE(_func) (abort)
+#define TARPC_FUNC_INIT_STANDALONE(_func) ((api_func)(abort))
 
 #define TARPC_FUNC_UNUSED_UNSAFE                                        \
     UNUSED(func_ptr);                                                   \
