@@ -116,10 +116,15 @@ tapi_storage_setup(tapi_storage_client *client,
 
     /* Copy content to remote storage. */
     con_rc = tapi_storage_client_connect(client);
-    if (con_rc != 0 || TE_RC_GET_ERROR(con_rc) != TE_ECONNREFUSED)
+    if (con_rc != 0 && TE_RC_GET_ERROR(con_rc) != TE_EISCONN)
         return con_rc;
+
     rc = tapi_storage_client_mput(client, &root_dir, root, TRUE, !lazy);
+
     if (con_rc == 0)
         con_rc = tapi_storage_client_disconnect(client);
+    else
+        con_rc = 0;
+
     return (rc != 0 ? rc : con_rc);
 }
