@@ -169,6 +169,25 @@ extern struct sockaddr *tapi_sockaddr_clone_typed(
 extern te_errno tapi_allocate_set_port(rcf_rpc_server *rpcs,
                                        const struct sockaddr *addr);
 
+/**
+ * Compair the content of two 'struct sockaddr' structures.
+ *
+ * @param addr1     The first address
+ * @param addr2     The second address
+ *
+ * @return The comparison result:
+ * @retval 0        equal
+ * @retval -1       not equal
+ * @retval -2       comparison of addresses of unsupported family
+ */
+static inline int
+tapi_sockaddr_cmp(const struct sockaddr *addr1,
+                  const struct sockaddr *addr2)
+{
+    return te_sockaddrcmp(addr1, te_sockaddr_get_size(addr1),
+                          addr2, te_sockaddr_get_size(addr2));
+}
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
