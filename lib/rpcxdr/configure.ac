@@ -45,6 +45,8 @@ for i in $with_rpcdefs ; do
     TMP=`basename $i`
     if test ! -e $i -a -e ${srcdir}/$TMP ; then
         i=${srcdir}/$TMP ;
+    elif test `dirname $i` = "." && test -e ${TE_BASE}/include/$i; then
+        i=${TE_BASE}/include/$i;
     fi
     RPCDEFS="$RPCDEFS $i"
     RPCDEFS_DIST_FILES="$RPCDEFS_DIST_FILES $TMP"
