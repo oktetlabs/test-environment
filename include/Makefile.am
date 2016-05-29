@@ -65,7 +65,7 @@ te_headers = \
 
 include_HEADERS = te_config_internal.h $(te_headers)
 
-EXTRA_DIST=tarpc.x.m4 rpc_unsupported.m4
+EXTRA_DIST=tarpc.x.m4 dpdk.x.m4 rpc_unsupported.m4
 
 if WINDOWS
 
