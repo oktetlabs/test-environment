@@ -871,6 +871,20 @@ if test "x$with_aggr" != "x" ; then
     EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_AGGREGATION"
 fi
 
+AC_ARG_WITH([dpdk],
+            AS_HELP_STRING([--with-dpdk],
+                           [specify location of the DPDK RTE SDK bulid]),
+            [ac_cv_with_dpdk=$withval],
+            [ac_cv_with_dpdk=])
+
+if test "x$ac_cv_with_dpdk" != "x"; then
+    # Add DPDK library just before system libraries
+    DPDK_LIBS="$(find "${ac_cv_with_dpdk}/lib" \( -name librte_*.a -or -name libethdev.a \) -printf '%p ')"
+    LIBS="-L${ac_cv_with_dpdk}/lib -Wl,-whole-archive ${DPDK_LIBS} -Wl,-no-whole-archive ${LIBS}"
+fi
+
+AC_SUBST([DPDK_LIBS])
+
 #
 # On PowerPC function descriptors are used which are
 # placed in data section like variables, not in

@@ -69,6 +69,8 @@ endif
 
 SYMTBL_LIBS+=@CURL_LIB@
 
+SYMTBL_LIBS+=@DPDK_LIBS@
+
 # Changing variables in the 'Makefile' will be found using
 # the dependence on the 'Makefile'
 ta_DEPENDENCIES = @TE_DEPENDENCIES@ $(SYMTBL_LIBS) symtbl.o \
