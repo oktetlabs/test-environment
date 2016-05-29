@@ -121,6 +121,7 @@ awk --posix "
     if (\$$var_num == \"\") next ;                      \
     if (\$$var_num == \"__i686.get_pc_thunk.bx\") next; \
     if (\$$var_num == \"__i686.get_pc_thunk.cx\") next; \
+    if (\$$type_num == \"W\") next ;                    \
     if (match(\$$var_num, \"@\") != 0) next;            \
     if (\$$type_num != \"$type_val\")                   \
         printf(\"extern int %s;\n\", \$$var_num) ;      \
@@ -156,6 +157,7 @@ awk --posix "
     if (\$$var_num == \"__i686.get_pc_thunk.bx\") next;         \
     if (\$$var_num == \"__i686.get_pc_thunk.cx\") next;         \
     if (match(\$$var_num, \"@\") != 0) next;                    \
+    if (\$$type_num == \"W\") next ;                            \
     if (\$$type_num != \"$type_val\")                           \
         printf(\"    { \\\"%s\\\", 0, &%s },\\n\",              \
                \$$var_num, \$$var_num);                         \
