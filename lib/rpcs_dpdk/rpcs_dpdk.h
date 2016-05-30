@@ -29,5 +29,16 @@
 #ifndef __TE_LIB_RPCS_DPDK_H__
 #define __TE_LIB_RPCS_DPDK_H__
 
+#include "te_rpc_errno.h"
+
+/**
+ * Translate negative errno from host to RPC.
+ */
+static inline void
+neg_errno_h2rpc(int *retval)
+{
+    if (*retval < 0)
+        *retval = -errno_h2rpc(-*retval);
+}
 
 #endif /* __TE_LIB_RPCS_DPDK_H__ */

@@ -5,6 +5,8 @@ AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) $(TE_CPPFLAGS_VAR)
 AM_CFLAGS = @TE_CFLAGS@ $(TE_CFLAGS_VAR)
 AM_LDFLAGS = -L$(DESTDIR)/$(libdir)
 
+noinst_HEADERS = \
+	rpcc_dpdk.h
 
 include_HEADERS = \
 	tapi_rpc_rte.h
