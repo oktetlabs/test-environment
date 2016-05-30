@@ -353,6 +353,7 @@ typedef enum {
     TE_TRC,             /**< Testing Results Comparator library */
     TE_ACSE,            /**< ACS Emulator */
     TE_TA_ACSE,         /**< TA interface to ACS Emulator */
+    TE_RPCS,            /**< RPC server internal errors */
 } te_module;                             
 /*@}*/
 
@@ -442,6 +443,7 @@ te_rc_mod2str(te_errno err)
         MOD2STR(TRC);
         MOD2STR(ACSE);
         MOD2STR(TA_ACSE);
+        MOD2STR(RPCS);
         case TE_MODULE_NONE: return "";
         default:
             /* Fix warning "case value ‘0’ not in enumerated type" */
