@@ -35,6 +35,9 @@
 extern "C" {
 #endif
 
+/** Negative errno with RPC sanity failure indication */
+#define RETVAL_ECORRUPTED (-TE_RC(TE_TAPI, TE_ECORRUPTED))
+
 /**
  * Generic format string for negative errno logging.
  *
