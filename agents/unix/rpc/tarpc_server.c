@@ -77,6 +77,9 @@
 #ifdef HAVE_DIRENT_H
 #include <dirent.h>
 #endif
+#ifdef WITH_TELEPHONY
+#include "telephony.h"
+#endif
 
 #ifdef HAVE_LINUX_NET_TSTAMP_H
 #include <linux/net_tstamp.h>

@@ -29,32 +29,12 @@
 
 #define TE_LGR_USER     "Telephony"
 
-#include "te_config.h"
-#include "config.h"
-
-#include <stdio.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <sys/fcntl.h>
-#include <sys/ioctl.h>
-#include <math.h>
-#include <unistd.h>
-#include <string.h>
-
-#include "dahdi_user.h"
-#include "logger_api.h"
-#include "te_errno.h"
-
-#define BLOCKSIZE       360     /**< Size of block for reading from channel */
-#define SAMPLE_RATE     8000.0  /**< Sample rate */
-#define SILENCE_TONE    10000.0 /**< Max goertzel result for silence */
-#define GET_PHONE       10000    /**< Bytes to wait dialtone */
-#define DAHDI_DEV_LEN   40      /**< Length of dahdi channel device name */
-
+#include "telephony.h"
 
 /** Frequncies array */
 double freqs[] = {
-    200.0, 300.0, 330.0, 350.0, 400.0, 413.0, 420.0, 425.0, 438.0, 440.0, 450.0, 660.0, 700.0, 800.0, 1000.0
+    200.0, 300.0, 330.0, 350.0, 400.0, 413.0, 420.0,
+    425.0, 438.0, 440.0, 450.0, 660.0, 700.0, 800.0, 1000.0
 };
 
 /**
@@ -66,7 +46,6 @@ double freqs[] = {
  *
  * @return @b freq DFT component of @b seq
  */
-
 static double
 telephony_goertzel(short *buf, int len, double freq)
 {
@@ -116,7 +95,8 @@ telephony_open_channel(int port)
     if (ioctl(chan, DAHDI_SETLINEAR, &param) < 0)
     {
         close(chan);
-        ERROR("setting linear mode failed: errno %d (%s)", errno, strerror(errno));
+        ERROR("setting linear mode failed: errno %d (%s)",
+                errno, strerror(errno));
         return -1;
     }
 
@@ -124,7 +104,8 @@ telephony_open_channel(int port)
     if (ioctl(chan, DAHDI_GET_BUFINFO, &bi) < 0)
     {
         close(chan);
-        ERROR("getting buffer information failed: errno %d (%s)", errno, strerror(errno));
+        ERROR("getting buffer information failed: errno %d (%s)",
+                errno, strerror(errno));
         return -1;
     }
 
@@ -135,7 +116,8 @@ telephony_open_channel(int port)
     if (ioctl(chan, DAHDI_SET_BUFINFO, &bi) < 0)
     {
         close(chan);
-        ERROR("setting buffer information failed: errno %d (%s)", errno, strerror(errno));
+        ERROR("setting buffer information failed: errno %d (%s)",
+                errno, strerror(errno));
         return -1;
     }
 
@@ -154,7 +136,8 @@ telephony_close_channel(int chan)
 {
     if (close(chan) < 0)
     {
-        ERROR("close() on channel failed: errno %d (%s)", errno, strerror(errno));
+        ERROR("close() on channel failed: errno %d (%s)",
+                errno, strerror(errno));
         return -1;
     }
 
