@@ -650,6 +650,25 @@ extern te_errno tapi_env_get_net_host_addr(const tapi_env          *env,
 extern const tapi_env_pco *tapi_env_rpcs2pco(const tapi_env       *env,
                                              const rcf_rpc_server *rpcs);
 
+/**
+ * Allocate and add a number of addresses to the specified interface.
+ *
+ * @param rpcs          RPC server handle.
+ * @param net           Network addresses pool.
+ * @param af            Address family.
+ * @param iface         Interface handle.
+ * @param addr_num      Addresses number to be added.
+ *
+ * @return Address pointers array or @c NULL in case of fail.
+ *
+ * @note The function does not roll back configuration changes in case of
+ *       fail - the test execution should be aborted.
+ */
+extern struct sockaddr **tapi_env_add_addresses(rcf_rpc_server *rpcs,
+                                           tapi_env_net *net, int af,
+                                           const struct if_nameindex *iface,
+                                           int addr_num);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

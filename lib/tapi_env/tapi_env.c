@@ -59,6 +59,7 @@
 #include "tapi_cfg_ip6.h"
 #include "tapi_rpc.h"
 #include "tapi_sockaddr.h"
+#include "te_alloc.h"
 
 
 
@@ -2296,6 +2297,54 @@ tapi_env_rpcs2pco(const tapi_env *env, const rcf_rpc_server *rpcs)
             }
         }
     }
+
+    return NULL;
+}
+
+/* See description in tapi_env.h */
+struct sockaddr **
+tapi_env_add_addresses(rcf_rpc_server *rpcs, tapi_env_net *net, int af,
+                       const struct if_nameindex *iface, int addr_num)
+{
+    struct sockaddr **addr_list;
+    struct sockaddr **addr;
+    unsigned int prefix;
+    int rc = 0;
+    int i = 0;
+
+    addr_list = TE_ALLOC(addr_num * sizeof(addr_list));
+    if (addr_list == NULL)
+        return NULL;
+
+    prefix = af == AF_INET ? net->ip4pfx : net->ip6pfx;
+
+#define TMP_CHECK_RC(_action) \
+    do {                                            \
+        rc = (_action);                             \
+        if (rc != 0)                                \
+            break;                                  \
+    } while (0)
+
+    for (i = 0; i < addr_num; i++)
+    {
+        addr = addr_list + i;
+
+        TMP_CHECK_RC(tapi_env_allocate_addr(net, af, addr, NULL));
+        TMP_CHECK_RC(tapi_allocate_set_port(rpcs, *addr));
+        TMP_CHECK_RC(
+            tapi_cfg_base_if_add_net_addr(rpcs->ta, iface->if_name,
+                                          *addr, prefix, FALSE, NULL));
+    }
+
+    if (rc == 0)
+        return addr_list;
+
+    addr_num = i;
+    for (i = 0; i < addr_num; i++)
+        free(addr_list[i]);
+    free(addr_list);
+
+#undef TMP_CHECK_RC
 
     return NULL;
 }
