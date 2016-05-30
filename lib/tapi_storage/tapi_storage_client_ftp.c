@@ -241,6 +241,19 @@ terminate_received_message(te_dbuf *buf)
 }
 
 /**
+ * Flush receive buffer.
+ *
+ * @param buf       Buffer to flush.
+ */
+static void
+flush_received_message(te_dbuf *buf)
+{
+    te_dbuf_reset(buf);
+    te_dbuf_append(buf, "", 1);
+    te_dbuf_reset(buf);
+}
+
+/**
  * Write data to the socket (send a request).
  *
  * @param rpcs      RPC server handle.
@@ -277,7 +290,7 @@ read_reply(rcf_rpc_server *rpcs, int fd, te_dbuf *reply)
                                of free space of receive buffer. */
     te_errno rc = 0;
 
-    te_dbuf_reset(reply);
+    flush_received_message(reply);
     do {
         /* Prepare the buffer to save the message. */
         size_to_read = reply->size - reply->len;
