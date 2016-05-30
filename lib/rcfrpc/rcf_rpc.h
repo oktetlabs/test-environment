@@ -149,6 +149,9 @@ typedef struct rcf_rpc_server {
                                      state of non-blocking RPC */
     te_bool         silent;     /**< Perform next RPC call without
                                      logging */
+    te_bool         silent_default; /**< Turn on/off RPC calls logging, can
+                                         be used to change the behavior for
+                                         a few calls. */
 
     char          **namespaces;     /**< Namespaces array */
     size_t          namespaces_len; /**< Amount of elements in @p namespaces */

@@ -103,7 +103,7 @@ do {                                                                    \
                 _x, errno_rpc2str(RPC_ERRNO(rpcs)));                    \
         rpcs->err_log = FALSE;                                          \
     }                                                                   \
-    rpcs->silent = FALSE;                                               \
+    rpcs->silent = rpcs->silent_default;                                \
 } while (0)
 
 /**
