@@ -235,7 +235,8 @@ dnl       additional compiler flags
 dnl       additional linker flags
 dnl       list of external libraries names 
 dnl               (names of directories in ${TE_BASE}/lib)
-dnl       
+dnl       flag to force local agent build (local or remote)
+dnl
 define([TE_TA_TYPE],
 [
 [
@@ -267,6 +268,7 @@ declare "TE_BS_TA_$1_CPPFLAGS"="$5"
 declare "TE_BS_TA_$1_CFLAGS"="$6"
 declare "TE_BS_TA_$1_LDFLAGS"="$7"
 declare "TE_BS_TA_$1_LIBS"="$8"
+declare "TE_BS_TA_$1_LOCAL_BUILD"="$9"
 [
 if test -z "$2" ; then
     PLATFORM=${TE_HOST};

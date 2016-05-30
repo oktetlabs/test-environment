@@ -125,6 +125,7 @@ Generic options:
   --build-ta-missing            Build only new Test Agents.
   --build-ta-all                Force build all Test Agents.
   --build-ta-for=<hostname>     Rebuild agent (and all the libraries) used for <hostname>.
+  --profile-build=<logfile>     Gather timings for the build process into <logfile>
 
   --no-rcf-cc-simple            Do not execute simple RCF consistency checks.
 
@@ -311,6 +312,7 @@ CS_OPTS=
 # Building options
 BUILDER_OPTS=
 BUILD_MAKEFLAGS=
+PROFILE_BUILD=
 
 LIVE_LOG=
 
@@ -627,6 +629,17 @@ process_opts()
             --build=*) 
                 BUILDER_OPTS="${BUILDER_OPTS} --path=${1#--build=}"
                 BUILDER=
+                ;;
+
+            --profile-build=*)
+                PROFILE_BUILD=te_profile_build
+                PROFILE_BUILD_LOGFILE="${1#--profile-build=}"
+                case $PROFILE_BUILD_LOGFILE in
+                    [^/]*)
+                        PROFILE_BUILD_LOGFILE="$PWD/$PROFILE_BUILD_LOGFILE"
+                        ;;
+                esac
+                echo "=== Profile for $(uname -a) at $(date)" >$PROFILE_BUILD_LOGFILE
                 ;;
 
             --no-rcf-cc-simple) RCF_CONSISTENCY_CHECKS_SIMPLE= ;;
@@ -954,6 +967,16 @@ fi
 
 # Build Test Environment
 
+if test -n "$PROFILE_BUILD"; then
+function te_profile_build ()
+{
+    echo "-- $*" >>$PROFILE_BUILD_LOGFILE
+    # A separate tool must be used here, not the shell built-in,
+    # because the latter does not support writing to a dedicated log file
+    /usr/bin/time -o $PROFILE_BUILD_LOGFILE -a "$@"
+}
+fi
+
 export TE_EXT_LIBS_FILE="${TE_BUILD}/te_ext_libs_files"
 TE_BUILD_LOG="${TE_RUN_DIR}/build.log"
 if test -n "$BUILDER" ; then
@@ -967,21 +990,21 @@ if test -n "$BUILDER" ; then
         else
             echo "Calling aclocal/autoconf/automake in ${PWD}"
         fi
-        aclocal -I "${TE_BASE}/auxdir" || exit_with_log
-        autoconf || exit_with_log
-        automake --add-missing || exit_with_log
+        $PROFILE_BUILD aclocal -I "${TE_BASE}/auxdir" || exit_with_log
+        $PROFILE_BUILD autoconf || exit_with_log
+        $PROFILE_BUILD automake --add-missing || exit_with_log
     fi
     popd >/dev/null
     # FINAL ${TE_BASE}/configure --prefix=${TE_INSTALL} --with-config=${CONF_BUILDER} 2>&1 | te_builder_log
     if test -n "${QUIET}" ; then
-        "${TE_BASE}/configure" -q --prefix="${TE_INSTALL}" \
+        $PROFILE_BUILD "${TE_BASE}/configure" -q --prefix="${TE_INSTALL}" \
             --with-config="${CONF_BUILDER}" >"${TE_BUILD_LOG}" || \
             exit_with_log
-        make install >>"${TE_BUILD_LOG}" || exit_with_log
+        $PROFILE_BUILD make install >>"${TE_BUILD_LOG}" || exit_with_log
     else
-        "${TE_BASE}/configure" -q --prefix="${TE_INSTALL}" \
+        $PROFILE_BUILD "${TE_BASE}/configure" -q --prefix="${TE_INSTALL}" \
             --with-config="${CONF_BUILDER}" || exit_with_log
-        make install || exit_with_log
+        $PROFILE_BUILD make install || exit_with_log
     fi
 fi
 
@@ -989,20 +1012,20 @@ if test -n "$BUILD_TA" -o -n "$BUILD_TA_FOR" ; then
     export BUILD_TA=$BUILD_TA
     export BUILD_TA_FOR=$BUILD_TA_FOR
     if test -n "${QUIET}" ; then
-        te_cross_build "${TE_INSTALL}" >>"${TE_BUILD_LOG}" || exit_with_log
+        $PROFILE_BUILD te_cross_build "${TE_INSTALL}" >>"${TE_BUILD_LOG}" || exit_with_log
     else
-        te_cross_build "${TE_INSTALL}" || exit_with_log
+        $PROFILE_BUILD te_cross_build "${TE_INSTALL}" || exit_with_log
     fi
 fi
 
 if test -n "${QUIET}" ; then
-    te_builder_opts --quiet="${TE_BUILD_LOG}" $BUILDER_OPTS || exit_with_log
+    $PROFILE_BUILD te_builder_opts --quiet="${TE_BUILD_LOG}" $BUILDER_OPTS || exit_with_log
 else
-    te_builder_opts $BUILDER_OPTS || exit_with_log
+    $PROFILE_BUILD te_builder_opts $BUILDER_OPTS || exit_with_log
 fi
 
 if test "$RCF_CONSISTENCY_CHECKS_SIMPLE" = "yes" ; then
-    if "$TE_BASE/engine/builder/te_rcf_consistency_checks" --check ; then
+    if $PROFILE_BUILD "$TE_BASE/engine/builder/te_rcf_consistency_checks" --check ; then
         echo "Simple RCF consistency check succeeded" >&2
     else
         echo "Simple RCF consistency check failed" >&2
@@ -1030,7 +1053,7 @@ export TE_SNIFF_LOG_DIR
 cd "${TE_RUN_DIR}"
 
 if test -n "${SUITE_SOURCES}" -a -n "${BUILD_TS}" ; then
-    te_build_suite `basename ${SUITE_SOURCES}` $SUITE_SOURCES || exit_with_log
+    $PROFILE_BUILD te_build_suite `basename ${SUITE_SOURCES}` $SUITE_SOURCES || exit_with_log
 fi
 
 if test -n "${CONF_NUT_SET}" ; then
@@ -1047,10 +1070,10 @@ fi
 
 if test -n "${CONF_NUT_SET}" -a -n "${BUILD_NUTS}" ; then
     if test -z "${QUIET}" ; then
-        te_build_nuts "${CONF_NUT}" || exit_with_log
+        $PROFILE_BUILD te_build_nuts "${CONF_NUT}" || exit_with_log
     else
         TE_BUILD_NUTS_LOG="${TE_RUN_DIR}/build_nuts.log"
-        te_build_nuts "${CONF_NUT}" >"${TE_BUILD_NUTS_LOG}" || exit_with_log
+        $PROFILE_BUILD te_build_nuts "${CONF_NUT}" >"${TE_BUILD_NUTS_LOG}" || exit_with_log
     fi
 fi    
 

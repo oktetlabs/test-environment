@@ -1102,7 +1102,7 @@ _siginfo_received_1_svc(tarpc_siginfo_received_in *in,
 }
 
 /*-------------- execve() ---------------------------------*/
-TARPC_FUNC(execve, {},
+TARPC_FUNC_STANDALONE(execve, {},
 {
     /* Wait until main thread sends answer to non-blocking RPC call */
     sleep(1);
@@ -2573,9 +2573,9 @@ fd_set_new(tarpc_fd_set_new_out *out)
     });
 }
 
-TARPC_FUNC(fd_set_new, {},
+TARPC_FUNC_STATIC(fd_set_new, {},
 {
-    MAKE_CALL(fd_set_new(out));
+    MAKE_CALL(func(out));
 })
 
 /*-------------- fd_set destructor ----------------------------*/
@@ -2591,10 +2591,10 @@ fd_set_delete(tarpc_fd_set_delete_in *in,
     return out->common._errno;
 }
 
-TARPC_FUNC(fd_set_delete, {},
+TARPC_FUNC_STATIC(fd_set_delete, {},
 {
     te_errno rc;
-    MAKE_CALL(rc = fd_set_delete(in, out));
+    MAKE_CALL(rc = func(in, out));
     if (out->common._errno == 0)
         out->common._errno = rc;
 })
@@ -2609,9 +2609,9 @@ do_fd_zero(tarpc_do_fd_zero_in *in)
     });
 }
 
-TARPC_FUNC(do_fd_zero, {},
+TARPC_FUNC_STATIC(do_fd_zero, {},
 {
-    MAKE_CALL(do_fd_zero(in));
+    MAKE_CALL(func(in));
 })
 
 /*-------------- FD_SET --------------------------------*/
@@ -2624,9 +2624,9 @@ do_fd_set(tarpc_do_fd_set_in *in)
     });
 }
 
-TARPC_FUNC(do_fd_set, {},
+TARPC_FUNC_STATIC(do_fd_set, {},
 {
-    MAKE_CALL(do_fd_set(in));
+    MAKE_CALL(func(in));
 })
 
 /*-------------- FD_CLR --------------------------------*/
@@ -2639,9 +2639,9 @@ do_fd_clr(tarpc_do_fd_clr_in *in)
     });
 }
 
-TARPC_FUNC(do_fd_clr, {},
+TARPC_FUNC_STATIC(do_fd_clr, {},
 {
-    MAKE_CALL(do_fd_clr(in));
+    MAKE_CALL(func(in));
 })
 
 /*-------------- FD_ISSET --------------------------------*/
@@ -2655,9 +2655,9 @@ do_fd_isset(tarpc_do_fd_isset_in *in,
     });
 }
 
-TARPC_FUNC(do_fd_isset, {},
+TARPC_FUNC_STATIC(do_fd_isset, {},
 {
-    MAKE_CALL(do_fd_isset(in, out));
+    MAKE_CALL(func(in, out));
 })
 
 /*-------------- select() --------------------------------*/
@@ -2956,8 +2956,7 @@ TARPC_FUNC(kill, {},
 
 TARPC_FUNC(pthread_kill, {},
 {
-    MAKE_CALL(out->retval = ((int (*)(pthread_t, int))func)
-                                (in->tid, signum_rpc2h(in->signum)));
+    MAKE_CALL(out->retval = func(in->tid, signum_rpc2h(in->signum)));
 }
 )
 
@@ -5467,7 +5466,8 @@ ai_h2rpc(struct addrinfo *ai, struct tarpc_ai *ai_rpc)
     return 0;
 }
 
-TARPC_FUNC(getaddrinfo, {},
+/* I do not understand, which function may be found by dynamic lookup */
+TARPC_FUNC_STATIC(getaddrinfo, {},
 {
     struct addrinfo  hints;
     struct addrinfo *info = NULL;
@@ -5497,9 +5497,8 @@ TARPC_FUNC(getaddrinfo, {},
     INIT_CHECKED_ARG(in->node.node_val, in->node.node_len, 0);
     INIT_CHECKED_ARG(in->service.service_val,
                      in->service.service_len, 0);
-    /* I do not understand, which function is found by usual way */
-    MAKE_CALL(out->retval = getaddrinfo(in->node.node_val,
-                                        in->service.service_val, info, &res));
+    MAKE_CALL(out->retval = func(in->node.node_val,
+                                 in->service.service_val, info, &res));
     /* GLIBC getaddrinfo clean up errno on success */
     out->common.errno_changed = FALSE;
     if (out->retval != 0 && res != NULL)
@@ -5549,9 +5548,10 @@ TARPC_FUNC(getaddrinfo, {},
 )
 
 /*-------------- freeaddrinfo() -----------------------------*/
-TARPC_FUNC(freeaddrinfo, {},
+/* I do not understand, which function may be found by dynamic lookup */
+TARPC_FUNC_STATIC(freeaddrinfo, {},
 {
-    MAKE_CALL(freeaddrinfo(rcf_pch_mem_get(in->mem_ptr)));
+    MAKE_CALL(func(rcf_pch_mem_get(in->mem_ptr)));
     rcf_pch_mem_free(in->mem_ptr);
 }
 )
@@ -5679,7 +5679,7 @@ TARPC_FUNC(te_shell_cmd, {},
 )
 
 /*-------------- system() ----------------------------------*/
-TARPC_FUNC(system, {},
+TARPC_FUNC_STANDALONE(system, {},
 {
     int             st;
     rpc_wait_status r_st;
