@@ -132,6 +132,28 @@ aux_threads_add(pthread_t tid)
 }
 
 /* See description in unix_internal.h */
+pthread_t
+aux_threads_get(void)
+{
+    pthread_t tid = 0;
+    threads_list *thread;
+    pthread_t self = pthread_self();
+
+    THREADS_LOCK;
+    SLIST_FOREACH(thread, &threads_list_h, ent_l)
+    {
+        if (thread->parent == self)
+            break;
+    }
+
+    if (thread != NULL)
+        tid = thread->child;
+    THREADS_UNLOCK;
+
+    return tid;
+}
+
+/* See description in unix_internal.h */
 void
 aux_threads_del(void)
 {

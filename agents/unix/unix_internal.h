@@ -333,6 +333,13 @@ extern te_errno aux_threads_cleanup(void);
 extern void aux_threads_add(pthread_t tid);
 
 /**
+ * Get thread identifier which is used for non-blocking RPC call.
+ *
+ * @return thread identifier or @c NULL
+ */
+extern pthread_t aux_threads_get(void);
+
+/**
  * Remove thread identifier which is used for non-blocking RPC call from the
  * context.
  */
