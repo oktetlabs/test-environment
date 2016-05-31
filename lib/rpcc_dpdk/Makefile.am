@@ -9,11 +9,13 @@ noinst_HEADERS = \
 	rpcc_dpdk.h
 
 include_HEADERS = \
+	tapi_rpc_rte_eal.h \
 	tapi_rpc_rte.h
 
 lib_LTLIBRARIES = librpcc_dpdk.la
 
 librpcc_dpdk_la_SOURCES = \
+	eal.c
 
 
 install-exec-hook:
