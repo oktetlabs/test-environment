@@ -162,3 +162,56 @@ cleanup:
 
     return rc;
 }
+
+static te_bool
+tarpc_rte_proc_type_t_valid(enum tarpc_rte_proc_type_t val)
+{
+    return val == TARPC_RTE_PROC_AUTO ||
+           val == TARPC_RTE_PROC_PRIMARY ||
+           val == TARPC_RTE_PROC_SECONDARY;
+}
+
+const char *
+tarpc_rte_proc_type_t2str(enum tarpc_rte_proc_type_t val)
+{
+    switch (val)
+    {
+        case TARPC_RTE_PROC_AUTO:
+            return "auto";
+        case TARPC_RTE_PROC_PRIMARY:
+            return "primary";
+        case TARPC_RTE_PROC_SECONDARY:
+            return "secondary";
+        case TARPC_RTE_PROC_INVALID:
+            return "invalid";
+        case TARPC_RTE_PROC__UNKNOWN:
+            return "<UNKNOWN>";
+        default:
+            return "<GARBAGE>";
+    }
+}
+
+enum tarpc_rte_proc_type_t
+rpc_rte_eal_process_type(rcf_rpc_server *rpcs)
+{
+    tarpc_rte_eal_process_type_in   in;
+    tarpc_rte_eal_process_type_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    rcf_rpc_call(rpcs, "rte_eal_process_type", &in, &out);
+
+    CHECK_RETVAL_VAR(rte_eal_process_type, out.retval,
+                     !tarpc_rte_proc_type_t_valid(out.retval) &&
+                     out.retval != TARPC_RTE_PROC_INVALID,
+                     TARPC_RTE_PROC__UNKNOWN);
+
+    TAPI_RPC_LOG(rpcs, rte_eal_process_type, "", "%s",
+                 tarpc_rte_proc_type_t2str(out.retval));
+
+    TAPI_RPC_OUT(rte_eal_process_type,
+                 !tarpc_rte_proc_type_t_valid(out.retval));
+
+    return out.retval;
+}

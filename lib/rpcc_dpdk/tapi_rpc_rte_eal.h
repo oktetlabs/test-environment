@@ -65,6 +65,19 @@ extern int rpc_rte_eal_init(rcf_rpc_server *rpcs,
 extern te_errno tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
                                   int argc, char **argv);
 
+
+/** Map RTE EAL process type to string. */
+extern const char *tarpc_rte_proc_type_t2str(enum tarpc_rte_proc_type_t val);
+
+/**
+ * rte_eal_process_type() RPC.
+ *
+ * If error is not expected using #RPC_AWAIT_IUT_ERROR(), the function
+ * jumps out in the case of unknown process type returned.
+ */
+extern enum tarpc_rte_proc_type_t
+    rpc_rte_eal_process_type(rcf_rpc_server *rpcs);
+
 /**@} <!-- END te_lib_rpc_rte_eal --> */
 
 #ifdef __cplusplus

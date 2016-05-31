@@ -44,10 +44,31 @@ struct tarpc_rte_eal_init_in {
 typedef struct tarpc_int_retval_out tarpc_rte_eal_init_out;
 
 
+/** enum rte_proc_type_t */
+enum tarpc_rte_proc_type_t {
+    TARPC_RTE_PROC_AUTO,
+    TARPC_RTE_PROC_PRIMARY,
+    TARPC_RTE_PROC_SECONDARY,
+    TARPC_RTE_PROC_INVALID,
+
+    TARPC_RTE_PROC__UNKNOWN
+};
+
+/** rte_eal_process_type() */
+struct tarpc_rte_eal_process_type_in {
+    struct tarpc_in_arg         common;
+};
+
+struct tarpc_rte_eal_process_type_out {
+    struct tarpc_out_arg        common;
+    enum tarpc_rte_proc_type_t  retval;
+};
+
 program dpdk
 {
     version ver0
     {
         RPC_DEF(rte_eal_init)
+        RPC_DEF(rte_eal_process_type)
     } = 1;
 } = 2;

@@ -76,3 +76,33 @@ TARPC_FUNC(rte_eal_init, {},
 done:
     ;
 })
+
+TARPC_FUNC(rte_eal_process_type, {},
+{
+    enum rte_proc_type_t retval;
+
+    MAKE_CALL(retval = func());
+
+    switch (retval)
+    {
+        case RTE_PROC_AUTO:
+            out->retval = TARPC_RTE_PROC_AUTO;
+            break;
+
+        case RTE_PROC_PRIMARY:
+            out->retval = TARPC_RTE_PROC_PRIMARY;
+            break;
+
+        case RTE_PROC_SECONDARY:
+            out->retval = TARPC_RTE_PROC_SECONDARY;
+            break;
+
+        case RTE_PROC_INVALID:
+            out->retval = TARPC_RTE_PROC_INVALID;
+            break;
+
+        default:
+            out->retval = TARPC_RTE_PROC__UNKNOWN;
+            break;
+    }
+})
