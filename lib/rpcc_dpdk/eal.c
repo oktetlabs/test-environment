@@ -29,6 +29,7 @@
 #include "te_config.h"
 
 #include "log_bufs.h"
+#include "tapi_env.h"
 #include "tapi_rpc_internal.h"
 
 #include "tarpc.h"
@@ -73,4 +74,75 @@ rpc_rte_eal_init(rcf_rpc_server *rpcs,
     te_log_buf_free(tlbp);
 
     RETVAL_INT(rte_eal_init, out.retval);
+}
+
+/**
+ * Append a new argument to the argv array.
+ *
+ * Argument string is allocated and should be freed.
+ */
+static void
+append_arg(int *argc_p, char ***argv_p, const char *fmt, ...)
+{
+    int         argc = *argc_p;
+    char      **argv = *argv_p;
+    va_list     ap;
+
+    argv = realloc(argv, (argc + 1) * sizeof(*argv));
+
+    va_start(ap, fmt);
+    vasprintf(&(argv[argc]), fmt, ap);
+    va_end(ap);
+
+    *argc_p = argc + 1;
+    *argv_p = argv;
+}
+
+te_errno
+tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
+                  int argc, char **argv)
+{
+    const tapi_env_pco     *pco;
+    char                  **my_argv;
+    int                     my_argc;
+    const tapi_env_ifs     *ps_ifs;
+    const tapi_env_if      *p;
+    int                     ret;
+    int                     i;
+
+    if (env == NULL || rpcs == NULL)
+        return TE_EINVAL;
+
+    pco = tapi_env_rpcs2pco(env, rpcs);
+    if (pco == NULL)
+        return TE_EINVAL;
+
+    /* Reserve space for argumnets provided by caller */
+    my_argv = calloc(argc, sizeof(*my_argv));
+    my_argc = 0;
+
+    /* Use RPC server name as a program name */
+    append_arg(&my_argc, &my_argv, "%s", rpcs->name);
+
+     /* Specify PCI whitelist or virtual device information */
+    ps_ifs = &pco->process->ifs;
+    for (p = ps_ifs->cqh_first; p != (void *)ps_ifs; p = p->ps_links.cqe_next)
+    {
+        if (p->rsrc_type == NET_NODE_RSRC_TYPE_PCI_FN)
+        {
+            append_arg(&my_argc, &my_argv, "--pci-whitelist=%s",
+                       p->if_info.if_name);
+        }
+    }
+
+    /* Append arguments provided by caller */
+    memcpy(&my_argv[my_argc], argv, argc * sizeof(*my_argv));
+
+    ret = rpc_rte_eal_init(rpcs, my_argc + argc, my_argv);
+
+    for (i = 0; i < my_argc; ++i)
+        free(my_argv[i]);
+    free(my_argv);
+
+    return (ret == 0) ? 0 : TE_EFAULT;
 }

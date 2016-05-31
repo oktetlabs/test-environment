@@ -52,6 +52,19 @@ extern "C" {
 extern int rpc_rte_eal_init(rcf_rpc_server *rpcs,
                             int argc, char **argv);
 
+/**
+ * Initialize EAL library in accordance with environment binding.
+ *
+ * @param env       Environment binding
+ * @param rpcs      RPC server handle
+ * @param argc      Number of additional EAL arguments
+ * @param argv      Additional EAL arguments
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
+                                  int argc, char **argv);
+
 /**@} <!-- END te_lib_rpc_rte_eal --> */
 
 #ifdef __cplusplus
