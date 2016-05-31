@@ -249,3 +249,19 @@ tapi_local_storage_device_list_free(
         free(dev);
     }
 }
+
+/* See description in tapi_local_storage_device.h. */
+te_errno
+tapi_local_storage_device_init(const char                *name,
+                               tapi_local_storage_device *device)
+{
+    return get_device_context(name, device);
+}
+
+/* See description in tapi_local_storage_device.h. */
+void
+tapi_local_storage_device_fini(tapi_local_storage_device *device)
+{
+    if (device != NULL)
+        free_device_context(device);
+}

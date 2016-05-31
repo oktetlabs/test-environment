@@ -209,6 +209,33 @@ extern te_errno tapi_local_storage_device_get(
 extern void tapi_local_storage_device_free(
                                         tapi_local_storage_device *device);
 
+/**
+ * Initialize a device by information obtained from configurator. @p device
+ * should be released with @p tapi_local_storage_device_fini when it is no
+ * longer needed.
+ *
+ * @param name          Device name to find.
+ * @param device        Device context.
+ *
+ * @return Status code.
+ *
+ * @sa tapi_local_storage_device_fini
+ */
+extern te_errno tapi_local_storage_device_init(
+                                        const char                *name,
+                                        tapi_local_storage_device *device);
+
+/**
+ * Release device context which was initialized with
+ * @p tapi_local_storage_device_init.
+ *
+ * @param device        Device context.
+ *
+ * @sa tapi_local_storage_device_init
+ */
+extern void tapi_local_storage_device_fini(
+                                        tapi_local_storage_device *device);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
