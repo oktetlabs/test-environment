@@ -1393,3 +1393,24 @@ rcf_pch_rpc_server_argv(int argc, char **argv)
 
     rcf_pch_rpc_server(argv[0]);
 }
+
+/* See description in rcf_pch_internal.h */
+rpcserver *
+rcf_pch_rpcserver_first(void)
+{
+    return list;
+}
+
+/* See description in rcf_pch_internal.h */
+rpcserver *
+rcf_pch_rpcserver_next(rpcserver *rpcs)
+{
+    return rpcs == NULL ? NULL : rpcs->next;
+}
+
+/* See description in rcf_pch_internal.h */
+const char *
+rcf_pch_rpcserver_get_name(const rpcserver *rpcs)
+{
+    return rpcs->name;
+}

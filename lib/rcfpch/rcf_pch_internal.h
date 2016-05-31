@@ -151,6 +151,31 @@ extern char *strdup(const char *s);
 extern long long int strtoll(const char *nptr, char **endptr, int base);
 #endif
 
+/**
+ * Get the first element of RPC server list.
+ *
+ * @return  the first RPC server from list of RPC servers
+ */
+extern struct rpcserver *rcf_pch_rpcserver_first(void);
+
+/**
+ * Get the next element of RPC server list from current RPC server.
+ *
+ * @param rpcs  current RPC server
+ *
+ * @return      the next RPC server from current RPC server or @c NULL
+ */
+extern struct rpcserver *rcf_pch_rpcserver_next(struct rpcserver *rpcs);
+
+/**
+ * Get the name of RPC server.
+ *
+ * @param rpcs  RPC server
+ *
+ * @return      the name of RPC server
+ */
+extern const char *rcf_pch_rpcserver_get_name(const struct rpcserver *rpcs);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
