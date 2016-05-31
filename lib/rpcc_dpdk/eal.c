@@ -102,6 +102,7 @@ te_errno
 tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
                   int argc, char **argv)
 {
+    te_errno                rc;
     const tapi_env_pco     *pco;
     char                  **my_argv;
     int                     my_argc;
@@ -109,6 +110,8 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
     const tapi_env_if      *p;
     int                     ret;
     int                     i;
+    cfg_val_type            val_type;
+    int                     mem_channels;
 
     if (env == NULL || rpcs == NULL)
         return TE_EINVAL;
@@ -135,14 +138,27 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
         }
     }
 
+    /* Add memory channels information */
+    val_type = CVT_INTEGER;
+    rc = cfg_get_instance_fmt(&val_type, &mem_channels,
+                              "/local:%s/mem_channels:", rpcs->ta);
+    if (rc != 0)
+        goto cleanup;
+
+    append_arg(&my_argc, &my_argv, "-n");
+    append_arg(&my_argc, &my_argv, "%d", mem_channels);
+
+
     /* Append arguments provided by caller */
     memcpy(&my_argv[my_argc], argv, argc * sizeof(*my_argv));
 
     ret = rpc_rte_eal_init(rpcs, my_argc + argc, my_argv);
+    rc = (ret == 0) ? 0 : TE_EFAULT;
 
+cleanup:
     for (i = 0; i < my_argc; ++i)
         free(my_argv[i]);
     free(my_argv);
 
-    return (ret == 0) ? 0 : TE_EFAULT;
+    return rc;
 }
