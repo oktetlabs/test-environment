@@ -56,7 +56,7 @@ TARPC_FUNC(rte_pktmbuf_pool_create, {},
 
 TARPC_FUNC_STATIC(rte_pktmbuf_alloc, {},
 {
-    struct rte_mempool *mp;
+    struct rte_mempool *mp = NULL;
     struct rte_mbuf *m;
 
     RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MEMPOOL, {
@@ -73,7 +73,7 @@ TARPC_FUNC_STATIC(rte_pktmbuf_alloc, {},
 
 TARPC_FUNC_STATIC(rte_pktmbuf_free, {},
 {
-    struct rte_mbuf *m;
+    struct rte_mbuf *m = NULL;
 
     RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
         m = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->m, ns);
@@ -89,7 +89,7 @@ TARPC_FUNC_STATIC(rte_pktmbuf_free, {},
 
 TARPC_FUNC_STANDALONE(rte_pktmbuf_append_data, {},
 {
-    struct rte_mbuf *m;
+    struct rte_mbuf *m = NULL;
     uint8_t *dst;
     te_errno err = 0;
 
