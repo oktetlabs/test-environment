@@ -323,6 +323,13 @@ shut_how_rpc2h(rpc_shut_how how)
 
 
 /**
+ * Get the loading status of dynamic library.
+ *
+ * @return @c TRUE if dynamic library loaded
+ */
+extern te_bool tarpc_dynamic_library_loaded(void);
+
+/**
  * Find the function by its name.
  *
  * @param use_libc  use the preset library or libc?

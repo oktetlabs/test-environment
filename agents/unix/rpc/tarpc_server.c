@@ -207,6 +207,13 @@ tarpc_setlibname(const char *libname)
     return 0;
 }
 
+/* See the description in tarpc_server.h */
+te_bool
+tarpc_dynamic_library_loaded(void)
+{
+    return dynamic_library_set && dynamic_library_handle != NULL;
+}
+
 /**
  * Find the function by its name.
  *
@@ -221,6 +228,7 @@ tarpc_find_func(te_bool use_libc, const char *name, api_func *func)
 {
     te_errno    rc;
     void       *handle;
+    char       *tarpc_dl_name;
 
     *func = NULL;
 
@@ -231,8 +239,9 @@ tarpc_find_func(te_bool use_libc, const char *name, api_func *func)
         return 0;
     }
 
-    if (!dynamic_library_set &&
-        (rc = tarpc_setlibname(getenv("TARPC_DL_NAME"))) != 0)
+    tarpc_dl_name = getenv("TARPC_DL_NAME");
+    if (!dynamic_library_set && tarpc_dl_name != NULL &&
+        (rc = tarpc_setlibname(tarpc_dl_name)) != 0)
     {
         /* Error is always logged from tarpc_setlibname() */
         return rc;
@@ -245,7 +254,7 @@ tarpc_find_func(te_bool use_libc, const char *name, api_func *func)
     errno = 0;
 #endif
 
-    if (use_libc)
+    if (use_libc || !tarpc_dynamic_library_loaded())
     {
         static void *libc_handle = NULL;
         static te_bool dlopen_null = FALSE;
