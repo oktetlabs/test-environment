@@ -340,6 +340,24 @@ extern void aux_threads_add(pthread_t tid);
 extern pthread_t aux_threads_get(void);
 
 /**
+ * Sleep the pending timeout and return error in case
+ * non-blocking call is executed.
+ *
+ * @param _timeout  Timeout of pending (in milliseconds)
+ *
+ * @return @b TE_RC(@c TE_TA_UNIX, @c TE_EPENDING) if non-blocking call
+ *         is executed
+ */
+#define RPCSERVER_PLUGIN_AWAIT_RPC_CALL(_timeout)   \
+    do {                                            \
+        if (aux_threads_get() != 0)                 \
+        {                                           \
+            usleep((_timeout) * 1000);              \
+            return TE_RC(TE_TA_UNIX, TE_EPENDING);  \
+        }                                           \
+    } while (0)
+
+/**
  * Remove thread identifier which is used for non-blocking RPC call from the
  * context.
  */

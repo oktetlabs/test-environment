@@ -330,6 +330,24 @@ shut_how_rpc2h(rpc_shut_how how)
 extern te_bool tarpc_dynamic_library_loaded(void);
 
 /**
+ * Sleep the pending timeout and return error in case
+ * dynamic library is not loaded.
+ *
+ * @param _timeout  Timeout of pending (in milliseconds)
+ *
+ * @return @b TE_RC(@c TE_TA_UNIX, @c TE_EPENDING) if dynamic library
+ *         is not loaded
+ */
+#define RPCSERVER_PLUGIN_AWAIT_DYNAMIC_LIBRARY(_timeout)    \
+    do {                                                    \
+        if (!tarpc_dynamic_library_loaded())                \
+        {                                                   \
+            usleep((_timeout) * 1000);                      \
+            return TE_RC(TE_TA_UNIX, TE_EPENDING);          \
+        }                                                   \
+    } while (0)
+
+/**
  * Find the function by its name.
  *
  * @param use_libc  use the preset library or libc?
