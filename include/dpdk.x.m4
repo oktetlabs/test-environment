@@ -114,7 +114,7 @@ struct tarpc_rte_pktmbuf_append_data_in {
     struct tarpc_in_arg     common;
     tarpc_rte_mbuf          m;
     uint8_t                 buf<>;
-}
+};
 
 typedef struct tarpc_int_retval_out tarpc_rte_pktmbuf_append_data_out;
 
