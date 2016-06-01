@@ -77,6 +77,14 @@ extern rpc_rte_mempool_p rpc_rte_pktmbuf_pool_create(rcf_rpc_server *rpcs,
 extern rpc_rte_mbuf_p rpc_rte_pktmbuf_alloc(rcf_rpc_server *rpcs,
                                             rpc_rte_mempool_p mp);
 
+/**
+ * @b rte_pktmbuf_free() RPC
+ *
+ * @param m               RTE mbuf pointer
+ */
+extern void rpc_rte_pktmbuf_free(rcf_rpc_server *rpcs,
+                                 rpc_rte_mbuf_p m);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf --> */
 
 #ifdef __cplusplus
