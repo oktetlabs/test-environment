@@ -1,8 +1,8 @@
 /** @file
- * @brief RPC for DPDK
+ * @brief RPC for DPDK MBUF
  *
- * Definitions necessary for RPC implementation
- *
+ * RPC routines implementation to call DPDK (rte_mbuf_* and rte_pktmbuf_*)
+ * functions
  *
  * Copyright (C) 2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -22,25 +22,34 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- *
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+ * @author Ivan Malov <Ivan.Malov@oktetlabs.ru>
  */
 
-#ifndef __TE_LIB_RPCS_DPDK_H__
-#define __TE_LIB_RPCS_DPDK_H__
+#define TE_LGR_USER     "RPC DPDK MBUF"
 
-#include "te_rpc_errno.h"
+#include "te_config.h"
+#ifdef HAVE_PACKAGE_H
+#include "package.h"
+#endif
 
-#define RPC_TYPE_NS_RTE_MEMPOOL "rte_mempool"
+#include "rte_config.h"
+#include "rte_mbuf.h"
 
-/**
- * Translate negative errno from host to RPC.
- */
-static inline void
-neg_errno_h2rpc(int *retval)
+#include "logger_api.h"
+
+#include "unix_internal.h"
+#include "tarpc_server.h"
+#include "rpcs_dpdk.h"
+
+TARPC_FUNC(rte_pktmbuf_pool_create, {},
 {
-    if (*retval < 0)
-        *retval = -errno_h2rpc(-*retval);
-}
+    struct rte_mempool *mp;
 
-#endif /* __TE_LIB_RPCS_DPDK_H__ */
+    MAKE_CALL(mp = func(in->name, in->n, in->cache_size, in->priv_size,
+                        in->data_room_size, in->socket_id));
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MEMPOOL, {
+        out->retval = RCF_PCH_MEM_INDEX_ALLOC(mp, ns);
+    });
+}
+)

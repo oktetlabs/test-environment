@@ -29,11 +29,13 @@
 #ifndef __TE_TAPI_RPC_RTE_H__
 #define __TE_TAPI_RPC_RTE_H__
 
+#include "te_rpc_types.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+typedef rpc_ptr rpc_rte_mempool_p;
 
 #ifdef __cplusplus
 } /* extern "C" */

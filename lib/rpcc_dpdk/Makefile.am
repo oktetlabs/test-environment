@@ -10,11 +10,13 @@ noinst_HEADERS = \
 
 include_HEADERS = \
 	tapi_rpc_rte_eal.h \
+	tapi_rpc_rte_mbuf.h \
 	tapi_rpc_rte.h
 
 lib_LTLIBRARIES = librpcc_dpdk.la
 
 librpcc_dpdk_la_SOURCES = \
+	mbuf.c \
 	eal.c
 
 

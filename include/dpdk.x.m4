@@ -29,6 +29,9 @@
  * defined there.
  */
 
+/** Handle of the 'rte_mempool' or 0 */
+typedef tarpc_ptr    tarpc_rte_mempool;
+
 /* Just to make two-dimensional array of strings */
 struct tarpc_string {
     string  str<>;
@@ -64,11 +67,29 @@ struct tarpc_rte_eal_process_type_out {
     enum tarpc_rte_proc_type_t  retval;
 };
 
+/** rte_pktmbuf_pool_create() */
+struct tarpc_rte_pktmbuf_pool_create_in {
+    struct tarpc_in_arg     common;
+    string                  name<>;
+    uint32_t                n;
+    uint32_t                cache_size;
+    uint16_t                priv_size;
+    uint16_t                data_room_size;
+    tarpc_int               socket_id;
+};
+
+struct tarpc_rte_pktmbuf_pool_create_out {
+    struct tarpc_out_arg    common;
+    tarpc_rte_mempool       retval;
+};
+
 program dpdk
 {
     version ver0
     {
         RPC_DEF(rte_eal_init)
         RPC_DEF(rte_eal_process_type)
+
+        RPC_DEF(rte_pktmbuf_pool_create)
     } = 1;
 } = 2;
