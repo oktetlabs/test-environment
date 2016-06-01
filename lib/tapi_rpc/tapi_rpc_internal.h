@@ -415,6 +415,19 @@ do {                                                                    \
         return __retval;                                            \
     } while(0)
 
+/**
+ * Return with check (to be used in functions where @c NULL is not
+ * considered as an error value)
+ */
+#define RETVAL_RPC_PTR_OR_NULL(_func, _retval) \
+    do {                                                            \
+        rpc_ptr __retval = (_retval);                               \
+                                                                    \
+        TAPI_RPC_OUT(_func, __retval == RPC_UNKNOWN_ADDR);          \
+                                                                    \
+        return __retval;                                            \
+    } while (0)
+
 /** Follow pointer if not @c NULL; otherwise return @c 0 */
 #define PTR_VAL(_param) ((_param == NULL) ? 0 : *(_param))
 
