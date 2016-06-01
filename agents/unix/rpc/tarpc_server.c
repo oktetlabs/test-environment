@@ -232,13 +232,6 @@ tarpc_find_func(te_bool use_libc, const char *name, api_func *func)
 
     *func = NULL;
 
-    /* FIXME */
-    if (strcmp(name, "getpid") == 0)
-    {
-        *func = (void *)getpid;
-        return 0;
-    }
-
     tarpc_dl_name = getenv("TARPC_DL_NAME");
     if (!dynamic_library_set && tarpc_dl_name != NULL &&
         (rc = tarpc_setlibname(tarpc_dl_name)) != 0)
