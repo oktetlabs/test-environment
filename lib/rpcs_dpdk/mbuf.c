@@ -53,3 +53,20 @@ TARPC_FUNC(rte_pktmbuf_pool_create, {},
     });
 }
 )
+
+TARPC_FUNC_STATIC(rte_pktmbuf_alloc, {},
+{
+    struct rte_mempool *mp;
+    struct rte_mbuf *m;
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MEMPOOL, {
+        mp = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->mp, ns);
+    });
+
+    MAKE_CALL(m = func(mp));
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+        out->retval = RCF_PCH_MEM_INDEX_ALLOC(m, ns);
+    });
+}
+)

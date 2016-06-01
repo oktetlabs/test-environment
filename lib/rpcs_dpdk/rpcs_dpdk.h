@@ -32,6 +32,7 @@
 #include "te_rpc_errno.h"
 
 #define RPC_TYPE_NS_RTE_MEMPOOL "rte_mempool"
+#define RPC_TYPE_NS_RTE_MBUF    "rte_mbuf"
 
 /**
  * Translate negative errno from host to RPC.

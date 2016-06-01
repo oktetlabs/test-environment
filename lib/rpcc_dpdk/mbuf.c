@@ -67,3 +67,25 @@ rpc_rte_pktmbuf_pool_create(rcf_rpc_server *rpcs,
 
     RETVAL_RPC_PTR(rte_pktmbuf_pool_create, out.retval);
 }
+
+rpc_rte_mbuf_p
+rpc_rte_pktmbuf_alloc(rcf_rpc_server *rpcs,
+                      rpc_rte_mempool_p mp)
+{
+    tarpc_rte_pktmbuf_alloc_in  in;
+    tarpc_rte_pktmbuf_alloc_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.mp = (tarpc_rte_mempool)mp;
+
+    rcf_rpc_call(rpcs, "rte_pktmbuf_alloc", &in, &out);
+
+    CHECK_RETVAL_VAR_RPC_PTR(rte_pktmbuf_alloc, out.retval);
+
+    TAPI_RPC_LOG(rpcs, rte_pktmbuf_alloc, RPC_PTR_FMT, RPC_PTR_FMT,
+                 RPC_PTR_VAL(in.mp), RPC_PTR_VAL(out.retval));
+
+    RETVAL_RPC_PTR(rte_pktmbuf_alloc, out.retval);
+}

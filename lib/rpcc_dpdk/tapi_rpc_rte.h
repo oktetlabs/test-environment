@@ -36,6 +36,7 @@ extern "C" {
 #endif
 
 typedef rpc_ptr rpc_rte_mempool_p;
+typedef rpc_ptr rpc_rte_mbuf_p;
 
 #ifdef __cplusplus
 } /* extern "C" */

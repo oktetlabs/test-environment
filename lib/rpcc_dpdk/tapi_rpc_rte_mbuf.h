@@ -67,6 +67,16 @@ extern rpc_rte_mempool_p rpc_rte_pktmbuf_pool_create(rcf_rpc_server *rpcs,
                                                      uint16_t data_room_size,
                                                      int socket_id);
 
+/**
+ * @b rte_pktmbuf_alloc() RPC
+ *
+ * @param mp              RTE mempool pointer
+ *
+ * @return RTE mbuf pointer on success; jumps out when pointer is @c NULL
+ */
+extern rpc_rte_mbuf_p rpc_rte_pktmbuf_alloc(rcf_rpc_server *rpcs,
+                                            rpc_rte_mempool_p mp);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf --> */
 
 #ifdef __cplusplus

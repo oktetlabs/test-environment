@@ -32,6 +32,9 @@
 /** Handle of the 'rte_mempool' or 0 */
 typedef tarpc_ptr    tarpc_rte_mempool;
 
+/** Handle of the 'rte_mbuf' or 0 */
+typedef tarpc_ptr    tarpc_rte_mbuf;
+
 /* Just to make two-dimensional array of strings */
 struct tarpc_string {
     string  str<>;
@@ -67,6 +70,11 @@ struct tarpc_rte_eal_process_type_out {
     enum tarpc_rte_proc_type_t  retval;
 };
 
+struct tarpc_mbuf_retval_out {
+    struct tarpc_out_arg    common;
+    tarpc_rte_mbuf          retval;
+};
+
 /** rte_pktmbuf_pool_create() */
 struct tarpc_rte_pktmbuf_pool_create_in {
     struct tarpc_in_arg     common;
@@ -83,6 +91,14 @@ struct tarpc_rte_pktmbuf_pool_create_out {
     tarpc_rte_mempool       retval;
 };
 
+/** rte_pktmbuf_alloc() */
+struct tarpc_rte_pktmbuf_alloc_in {
+    struct tarpc_in_arg     common;
+    tarpc_rte_mempool       mp;
+};
+
+typedef struct tarpc_mbuf_retval_out tarpc_rte_pktmbuf_alloc_out;
+
 program dpdk
 {
     version ver0
@@ -91,5 +107,6 @@ program dpdk
         RPC_DEF(rte_eal_process_type)
 
         RPC_DEF(rte_pktmbuf_pool_create)
+        RPC_DEF(rte_pktmbuf_alloc)
     } = 1;
 } = 2;
