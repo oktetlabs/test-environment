@@ -31,6 +31,7 @@
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_rte.h"
 #include "tapi_mem.h"
+#include "rpcc_dpdk.h"
 
 #include "tarpc.h"
 
