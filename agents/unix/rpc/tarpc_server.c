@@ -2669,29 +2669,33 @@ TARPC_FUNC(select,
     COPY_ARG(timeout);
 },
 {
+    fd_set *rfds;
+    fd_set *wfds;
+    fd_set *efds;
+    struct timeval tv;
+    static rpc_ptr_id_namespace ns = RPC_PTR_ID_NS_INVALID;
+
     out->retval = -1;
-    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_FD_SET, {
-        struct timeval tv;
+    RCF_PCH_MEM_NS_CREATE_IF_NEEDED_RETURN(&ns, RPC_TYPE_NS_FD_SET, );
 
-        if (out->timeout.timeout_len > 0)
-            TARPC_CHECK_RC(timeval_rpc2h(out->timeout.timeout_val, &tv));
+    if (out->timeout.timeout_len > 0)
+        TARPC_CHECK_RC(timeval_rpc2h(out->timeout.timeout_val, &tv));
 
-        if (out->common._errno == 0)
-        {
-            fd_set *rfds = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->readfds, ns);
-            fd_set *wfds = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->writefds, ns);
-            fd_set *efds = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->exceptfds, ns);
+    if (out->common._errno != 0)
+        return;
 
-            MAKE_CALL(out->retval = func(in->n, rfds, wfds, efds,
-                            out->timeout.timeout_len == 0 ? NULL : &tv));
+    RCF_PCH_MEM_INDEX_TO_PTR_RPC(rfds, in->readfds, ns, );
+    RCF_PCH_MEM_INDEX_TO_PTR_RPC(wfds, in->writefds, ns, );
+    RCF_PCH_MEM_INDEX_TO_PTR_RPC(efds, in->exceptfds, ns, );
 
-            if (out->timeout.timeout_len > 0)
-                TARPC_CHECK_RC(timeval_h2rpc(
-                        &tv, out->timeout.timeout_val));
-            if (TE_RC_GET_ERROR(out->common._errno) == TE_EH2RPC)
-                out->retval = -1;
-        }
-    });
+    MAKE_CALL(out->retval = func(in->n, rfds, wfds, efds,
+                    out->timeout.timeout_len == 0 ? NULL : &tv));
+
+    if (out->timeout.timeout_len > 0)
+        TARPC_CHECK_RC(timeval_h2rpc(
+                &tv, out->timeout.timeout_val));
+    if (TE_RC_GET_ERROR(out->common._errno) == TE_EH2RPC)
+        out->retval = -1;
 }
 )
 
