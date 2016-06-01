@@ -147,6 +147,34 @@ extern void *rcf_pch_mem_index_mem_to_ptr(
     RCF_PCH_MEM_INDEX_MEM_TO_PTR((_id), rcf_pch_mem_ns_generic())
 
 /**
+ * Wrapper for @b rcf_pch_mem_index_mem_to_ptr() with details for error
+ * messages. The macro sets @b _errno inside the variable @b out and
+ * calls @b return value @b _rc (may be unspecified for void return)
+ * in case of fail.
+ *
+ * @note This macro can be called in a context where there is
+ * the variable @b out->common._errno.
+ *
+ * @note This macro cannot be called in the macro @b MAKE_CALL. That macro
+ * resets the variable @b out->common._errno at the end.
+ */
+#define RCF_PCH_MEM_INDEX_TO_PTR_RPC(_mem, _id, _ns, _rc)       \
+do {                                                            \
+    if ((_id) == 0)                                             \
+        (_mem) = NULL;                                          \
+    else                                                        \
+    {                                                           \
+        (_mem) = rcf_pch_mem_index_mem_to_ptr(                  \
+                    (_id), (_ns), __FUNCTION__, __LINE__);      \
+        if ((_mem) == NULL)                                     \
+        {                                                       \
+            out->common._errno = TE_RC(TE_RCF_PCH, TE_EFAULT);  \
+            return _rc;                                         \
+        }                                                       \
+    }                                                           \
+} while (0)
+
+/**
  * Find memory identifier by memory address and namespace.
  *
  * @param [in] mem          Memory address
