@@ -308,6 +308,17 @@ do {                                                                    \
     CHECK_RETVAL_VAR(_func, _var, (((_var) != FALSE) && ((_var) != TRUE)), \
                      FALSE)
 
+/**
+ * Auxiliary check with false condition required for RPC logging with
+ * a correct log level in case when return value is an RPC pointer;
+ * it should be used in functions which @a normally don't return @c NULL
+ *
+ * @param _func     function
+ * @param _var      variable with return value
+ */
+#define CHECK_RETVAL_VAR_RPC_PTR(_func, _var) \
+    CHECK_RETVAL_VAR(_func, _var, ((_var) == RPC_UNKNOWN_ADDR), RPC_NULL)
+
 
 /** Return with check (for functions returning zero value) */
 #define RETVAL_ZERO_INT(_func, _retval) \
