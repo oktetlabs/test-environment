@@ -86,3 +86,39 @@ TARPC_FUNC_STATIC(rte_pktmbuf_free, {},
     });
 }
 )
+
+TARPC_FUNC_STANDALONE(rte_pktmbuf_append_data, {},
+{
+    struct rte_mbuf *m;
+    uint8_t *dst;
+    te_errno err = 0;
+
+    if ((in->buf.buf_len != 0) && (in->buf.buf_val == NULL))
+    {
+        ERROR("Incorrect input data");
+        err =  TE_RC(TE_RPCS, TE_EINVAL);
+        goto finish;
+    }
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+        m = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->m, ns);
+    });
+
+    MAKE_CALL(dst = (uint8_t *)rte_pktmbuf_append(m, in->buf.buf_len));
+
+    if (dst == NULL)
+    {
+        ERROR("Not enough tailroom space in the last segment of the mbuf");
+        err = TE_RC(TE_RPCS, TE_ENOSPC);
+        goto finish;
+    }
+
+    memcpy(dst, in->buf.buf_val, in->buf.buf_len);
+
+finish:
+    if (err != 0)
+        out->common._errno = err;
+
+    out->retval = -err;
+}
+)

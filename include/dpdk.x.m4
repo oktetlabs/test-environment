@@ -109,6 +109,15 @@ typedef struct tarpc_mbuf_in tarpc_rte_pktmbuf_free_in;
 
 typedef struct tarpc_void_out tarpc_rte_pktmbuf_free_out;
 
+/** rte_pktmbuf_append_data() */
+struct tarpc_rte_pktmbuf_append_data_in {
+    struct tarpc_in_arg     common;
+    tarpc_rte_mbuf          m;
+    uint8_t                 buf<>;
+}
+
+typedef struct tarpc_int_retval_out tarpc_rte_pktmbuf_append_data_out;
+
 program dpdk
 {
     version ver0
@@ -119,5 +128,6 @@ program dpdk
         RPC_DEF(rte_pktmbuf_pool_create)
         RPC_DEF(rte_pktmbuf_alloc)
         RPC_DEF(rte_pktmbuf_free)
+        RPC_DEF(rte_pktmbuf_append_data)
     } = 1;
 } = 2;
