@@ -151,6 +151,25 @@ extern char *strdup(const char *s);
 extern long long int strtoll(const char *nptr, char **endptr, int base);
 #endif
 
+/** Data corresponding to one RPC server */
+struct rpcserver;
+
+/** Data corresponding to one RPC server plugin */
+struct rpcserver_plugin;
+
+/** Function definition which helps to call the RPC functions */
+typedef int (*rcf_pch_rpc_call)(
+        struct rpcserver *rpcs, char *name, void *in, void *out);
+
+/**
+ * Find the RPC server with specified @p name.
+ *
+ * @param name  The name of RPC server
+ *
+ * @return  RPC server handle or @c NULL
+ */
+extern struct rpcserver *rcf_pch_find_rpcserver(const char *name);
+
 /**
  * Get the first element of RPC server list.
  *
@@ -175,6 +194,17 @@ extern struct rpcserver *rcf_pch_rpcserver_next(struct rpcserver *rpcs);
  * @return      the name of RPC server
  */
 extern const char *rcf_pch_rpcserver_get_name(const struct rpcserver *rpcs);
+
+/**
+ * Add the node rpcserver_plugin in configuration tree,
+ * initialize the mutex and the RPC call.
+ *
+ * @param rcf_pch_lock  Lock for protect RPC servers and plugins list
+ * @param rcf_pch_call  Function which helps to call the RPC functions
+ */
+extern void rcf_pch_rpcserver_plugin_init(
+        pthread_mutex_t *rcf_pch_lock,
+        rcf_pch_rpc_call rcf_pch_call);
 
 #ifdef __cplusplus
 } /* extern "C" */
