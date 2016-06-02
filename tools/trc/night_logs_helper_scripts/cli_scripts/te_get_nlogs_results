@@ -1348,6 +1348,7 @@ sub store_test_cache
                   "too early to be loaded\n";
         }
         `mkdir -p $path/$cache_index/`;
+        `chmod g+x $path/$cache_index/`;
         nstore($caches{$cache_index},
                $path."/$cache_index/$file_name.tmp") or
              die "Failed to save test cache in file";
