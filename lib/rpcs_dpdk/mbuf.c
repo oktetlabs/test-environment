@@ -122,3 +122,70 @@ finish:
     out->retval = -err;
 }
 )
+
+TARPC_FUNC_STANDALONE(rte_pktmbuf_read_data,
+{
+    COPY_ARG(buf);
+},
+{
+    struct rte_mbuf *m = NULL;
+    te_errno err = 0;
+    ssize_t bytes_read = 0;
+    size_t cur_offset = in->offset;
+
+    if (in->buf.buf_val == NULL)
+    {
+        ERROR("Incorrect buffer");
+        err =  TE_RC(TE_RPCS, TE_EINVAL);
+        goto finish;
+    }
+
+    if (in->len > in->buf.buf_len)
+    {
+        ERROR("Not enough room in the specified buffer");
+        err = TE_RC(TE_RPCS, TE_ENOSPC);
+        goto finish;
+    }
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+        m = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->m, ns);
+    });
+
+    if (m == NULL)
+    {
+        ERROR("NULL mbuf pointer isn't valid for 'read' operation");
+        err = TE_RC(TE_RPCS, TE_EINVAL);
+        goto finish;
+    }
+
+    do {
+        if (cur_offset < m->data_len)
+        {
+            size_t bytes_to_copy = MIN(m->data_len - cur_offset,
+                                       (in->len - bytes_read));
+
+            memcpy(out->buf.buf_val + bytes_read,
+                   rte_pktmbuf_mtod_offset(m, uint8_t *, cur_offset),
+                   bytes_to_copy);
+
+            bytes_read += bytes_to_copy;
+            cur_offset = 0;
+        }
+        else
+        {
+            cur_offset -= m->data_len;
+        }
+    } while ((in->len - bytes_read) != 0 && (m = m->next) != NULL);
+
+finish:
+    if (err != 0)
+    {
+        out->common._errno = err;
+        out->retval = -err;
+    }
+    else
+    {
+        out->retval = bytes_read;
+    }
+}
+)

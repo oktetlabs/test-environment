@@ -146,3 +146,46 @@ rpc_rte_pktmbuf_append_data(rcf_rpc_server *rpcs,
     RETVAL_ZERO_INT(rte_pktmbuf_append_data, out.retval);
 }
 
+int
+rpc_rte_pktmbuf_read_data(rcf_rpc_server *rpcs,
+                          rpc_rte_mbuf_p m, size_t offset, size_t count,
+                          uint8_t *buf, size_t rbuflen)
+{
+    tarpc_rte_pktmbuf_read_data_in  in;
+    tarpc_rte_pktmbuf_read_data_out out;
+    uint8_t *buf_copy;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if ((buf == NULL) || (count > rbuflen))
+    {
+        rpcs->_errno = TE_RC(TE_TAPI, TE_EINVAL);
+        RETVAL_INT(rte_pktmbuf_read_data, -rpcs->_errno);
+    }
+
+    buf_copy = tapi_memdup(buf, rbuflen * sizeof(uint8_t));
+
+    in.m = (tarpc_rte_mbuf)m;
+    in.offset = offset;
+    in.len = count;
+    in.buf.buf_len = rbuflen;
+    in.buf.buf_val = buf_copy;
+
+    rcf_rpc_call(rpcs, "rte_pktmbuf_read_data", &in, &out);
+
+    free(in.buf.buf_val);
+
+    CHECK_RETVAL_VAR(rte_pktmbuf_read_data, out.retval,
+                     out.retval < 0 || (size_t)out.retval > count,
+                     -out.common._errno);
+
+    if (RPC_IS_CALL_OK(rpcs) && out.buf.buf_val != NULL)
+        memcpy(buf, out.buf.buf_val, out.buf.buf_len);
+
+    TAPI_RPC_LOG(rpcs, rte_pktmbuf_read_data,
+                 RPC_PTR_FMT ", %u, %u, %u", NEG_ERRNO_FMT, RPC_PTR_VAL(in.m),
+                 in.offset, in.len, in.buf.buf_len, NEG_ERRNO_ARGS(out.retval));
+
+    RETVAL_INT(rte_pktmbuf_read_data, out.retval);
+}

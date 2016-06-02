@@ -98,6 +98,22 @@ extern int rpc_rte_pktmbuf_append_data(rcf_rpc_server *rpcs,
                                        rpc_rte_mbuf_p m, uint8_t *buf,
                                        size_t len);
 
+/**
+ * Read data from an mbuf with a particular offset
+ *
+ * @param m               RTE mbuf pointer
+ * @param offset          Offset into mbuf data
+ * @param count           Amount of data to be read (bytes)
+ * @param buf             Pointer to a buffer for data to be read in
+ * @param rbuflen         Buffer length
+ *
+ * @return Amount of data actually read (bytes); jumps out on error
+ */
+extern int rpc_rte_pktmbuf_read_data(rcf_rpc_server *rpcs,
+                                     rpc_rte_mbuf_p m, size_t offset,
+                                     size_t count, uint8_t *buf,
+                                     size_t rbuflen);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf --> */
 
 #ifdef __cplusplus

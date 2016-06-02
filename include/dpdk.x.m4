@@ -118,6 +118,21 @@ struct tarpc_rte_pktmbuf_append_data_in {
 
 typedef struct tarpc_int_retval_out tarpc_rte_pktmbuf_append_data_out;
 
+/** rte_pktmbuf_read_data() */
+struct tarpc_rte_pktmbuf_read_data_in {
+    struct tarpc_in_arg     common;
+    tarpc_rte_mbuf          m;
+    tarpc_size_t            offset;
+    tarpc_size_t            len;
+    uint8_t                 buf<>;
+};
+
+struct tarpc_rte_pktmbuf_read_data_out {
+    struct tarpc_out_arg    common;
+    tarpc_ssize_t           retval;
+    uint8_t                 buf<>;
+};
+
 program dpdk
 {
     version ver0
@@ -129,5 +144,6 @@ program dpdk
         RPC_DEF(rte_pktmbuf_alloc)
         RPC_DEF(rte_pktmbuf_free)
         RPC_DEF(rte_pktmbuf_append_data)
+        RPC_DEF(rte_pktmbuf_read_data)
     } = 1;
 } = 2;
