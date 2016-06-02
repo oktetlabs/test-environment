@@ -672,6 +672,19 @@ rcf_pch_rpc_shutdown(void)
     rpc_buf = NULL;
 }
 
+/* See the description in rcf_pch_internal.h */
+rpcserver *
+rcf_pch_find_rpcserver(const char *name)
+{
+    rpcserver *rpcs;
+    for (rpcs = list; rpcs != NULL; rpcs = rpcs->next)
+    {
+        if (strcmp(rpcs->name, name) == 0)
+            return rpcs;
+    }
+    return NULL;
+}
+
 /**
  * Get RPC server state.
  *
@@ -692,10 +705,8 @@ rpcserver_dead_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
 
     pthread_mutex_lock(&lock);
-    for (rpcs = list;
-         rpcs != NULL && strcmp(rpcs->name, name) != 0;
-         rpcs = rpcs->next);
 
+    rpcs = rcf_pch_find_rpcserver(name);
     if (rpcs == NULL)
     {
         pthread_mutex_unlock(&lock);
@@ -737,10 +748,8 @@ rpcserver_dead_set(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_RCF_PCH, TE_EINVAL);
 
     pthread_mutex_lock(&lock);
-    for (rpcs = list;
-         rpcs != NULL && strcmp(rpcs->name, name) != 0;
-         rpcs = rpcs->next);
 
+    rpcs = rcf_pch_find_rpcserver(name);
     if (rpcs == NULL)
     {
         pthread_mutex_unlock(&lock);
@@ -784,10 +793,8 @@ rpcserver_finished_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
 
     pthread_mutex_lock(&lock);
-    for (rpcs = list;
-         rpcs != NULL && strcmp(rpcs->name, name) != 0;
-         rpcs = rpcs->next);
 
+    rpcs = rcf_pch_find_rpcserver(name);
     if (rpcs == NULL)
     {
         pthread_mutex_unlock(&lock);
@@ -829,10 +836,8 @@ rpcserver_finished_set(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_RCF_PCH, TE_EINVAL);
 
     pthread_mutex_lock(&lock);
-    for (rpcs = list;
-         rpcs != NULL && strcmp(rpcs->name, name) != 0;
-         rpcs = rpcs->next);
 
+    rpcs = rcf_pch_find_rpcserver(name);
     if (rpcs == NULL)
     {
         pthread_mutex_unlock(&lock);
@@ -856,6 +861,7 @@ rpcserver_finished_set(unsigned int gid, const char *oid, char *value,
     return 0;
 }
 
+
 /**
  * Get RPC server value (father name).
  *
@@ -876,10 +882,8 @@ rpcserver_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
 
     pthread_mutex_lock(&lock);
-    for (rpcs = list;
-         rpcs != NULL && strcmp(rpcs->name, name) != 0;
-         rpcs = rpcs->next);
 
+    rpcs = rcf_pch_find_rpcserver(name);
     if (rpcs == NULL)
     {
         pthread_mutex_unlock(&lock);
@@ -914,10 +918,8 @@ rpcserver_set(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
 
     pthread_mutex_lock(&lock);
-    for (rpcs = list;
-         rpcs != NULL && strcmp(rpcs->name, name) != 0;
-         rpcs = rpcs->next);
 
+    rpcs = rcf_pch_find_rpcserver(name);
     if (rpcs == NULL)
     {
         pthread_mutex_unlock(&lock);
@@ -1323,10 +1325,8 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
 
     /* Look for the RPC server */
     pthread_mutex_lock(&lock);
-    for (rpcs = list;
-         rpcs != NULL && strcmp(rpcs->name, server) != 0;
-         rpcs = rpcs->next);
 
+    rpcs = rcf_pch_find_rpcserver(server);
     if (rpcs == NULL)
     {
         ERROR("Failed to find RPC server %s", server);

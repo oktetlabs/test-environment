@@ -151,6 +151,18 @@ extern char *strdup(const char *s);
 extern long long int strtoll(const char *nptr, char **endptr, int base);
 #endif
 
+/** Data corresponding to one RPC server */
+struct rpcserver;
+
+/**
+ * Find the RPC server with specified @p name.
+ *
+ * @param name  The name of RPC server
+ *
+ * @return  RPC server handle or @c NULL
+ */
+extern struct rpcserver *rcf_pch_find_rpcserver(const char *name);
+
 /**
  * Get the first element of RPC server list.
  *
