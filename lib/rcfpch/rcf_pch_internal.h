@@ -206,6 +206,22 @@ extern void rcf_pch_rpcserver_plugin_init(
         pthread_mutex_t *rcf_pch_lock,
         rcf_pch_rpc_call rcf_pch_call);
 
+/**
+ * Find the RPC server plugin corresponding to RPC server @p rcps and
+ * enable it.
+ *
+ * @param rpcs      RPC server
+ */
+extern void rcf_pch_rpcserver_plugin_enable(struct rpcserver *rpcs);
+
+/**
+ * Find the RPC server plugin corresponding to RPC server @p rcps and
+ * disable it.
+ *
+ * @param rpcs      RPC server
+ */
+extern void rcf_pch_rpcserver_plugin_disable(struct rpcserver *rpcs);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

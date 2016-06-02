@@ -1118,6 +1118,8 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     rpcs->next = list;
     list = rpcs;
 
+    rcf_pch_rpcserver_plugin_enable(rpcs);
+
     pthread_mutex_unlock(&lock);
 
     return 0;
@@ -1165,6 +1167,8 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
         ERROR("Cannot delete RPC server '%s' with threads", name);
         return TE_RC(TE_RCF_PCH, TE_EPERM);
     }
+
+    rcf_pch_rpcserver_plugin_disable(rpcs);
 
     if (prev != NULL)
         prev->next = rpcs->next;

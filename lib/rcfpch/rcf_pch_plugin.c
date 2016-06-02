@@ -469,6 +469,56 @@ call_rpcserver_plugin_disable(
 }
 
 /**
+ * Update the RPC server plugin inside RPC servers contexts.
+ *
+ * @param plugin    RPC server plugin handle
+ *
+ * @return Status code
+ */
+static te_errno
+rpcserver_plugin_update(struct rpcserver_plugin *plugin)
+{
+    /* Function definition for enable/disable RPC server plugin */
+    typedef te_errno (*call_plugin_update)(
+            struct rpcserver *rpcs, struct rpcserver_plugin *plugin);
+
+    const call_plugin_update plugin_update = plugin->enable ?
+                call_rpcserver_plugin_enable :
+                call_rpcserver_plugin_disable;
+
+    te_errno            rc = 0;
+    struct rpcserver   *rpcs;
+
+    if (plugin->name[0] != '\0')
+    {
+        rpcs = rcf_pch_find_rpcserver(plugin->name);
+        if (rpcs != NULL)
+            rc = plugin_update(rpcs, plugin);
+    }
+    else
+    {
+        rpcs = rcf_pch_rpcserver_first();
+        for (; rpcs != NULL; rpcs = rcf_pch_rpcserver_next(rpcs))
+        {
+            if (find_rpcserver_plugin(
+                        rcf_pch_rpcserver_get_name(rpcs)) != NULL)
+                continue;
+
+            rc = plugin_update(rpcs, plugin);
+            if (rc != 0)
+                break;
+        }
+    }
+    if (rpcs != NULL && rc != 0)
+    {
+        ERROR("Failed to update plugin '%s' on rpcserver '%s': %r",
+              plugin->name, rcf_pch_rpcserver_get_name(rpcs), rc);
+    }
+
+    return rc;
+}
+
+/**
  * Set the field @b enable of specified RPC server plugin.
  *
  * @param gid       Group identifier (unused)
@@ -504,10 +554,40 @@ rpcserver_plugin_enable_set(unsigned int gid, const char *oid, char *value,
     else if (plugin->enable != enable)
     {
         plugin->enable = enable;
+
+        rc = rpcserver_plugin_update(plugin);
     }
 
     pthread_mutex_unlock(lock);
     return rc;
+}
+
+/* See description in rcf_pch_internal.h */
+void
+rcf_pch_rpcserver_plugin_enable(struct rpcserver *rpcs)
+{
+    rpcserver_plugin *plugin;
+    plugin = find_rpcserver_plugin(
+                rcf_pch_rpcserver_get_name(rpcs));
+    if (plugin == NULL)
+        plugin = find_rpcserver_plugin("");
+
+    if (plugin != NULL && plugin->enable)
+        call_rpcserver_plugin_enable(rpcs, plugin);
+}
+
+/* See description in rcf_pch_internal.h */
+void
+rcf_pch_rpcserver_plugin_disable(struct rpcserver *rpcs)
+{
+    rpcserver_plugin *plugin;
+    plugin = find_rpcserver_plugin(
+                rcf_pch_rpcserver_get_name(rpcs));
+    if (plugin == NULL)
+        plugin = find_rpcserver_plugin("");
+
+    if (plugin != NULL && plugin->enable)
+        call_rpcserver_plugin_disable(rpcs, plugin);
 }
 
 /* See description in rcf_pch_internal.h */
