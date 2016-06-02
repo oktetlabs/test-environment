@@ -541,3 +541,20 @@ rpc_rte_eth_dev_configure(rcf_rpc_server *rpcs,
 
     RETVAL_INT(rte_eth_dev_configure, out.retval);
 }
+
+void
+rpc_rte_eth_dev_close(rcf_rpc_server *rpcs, uint8_t port_id)
+{
+    tarpc_rte_eth_dev_close_in   in;
+    tarpc_rte_eth_dev_close_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_close", &in, &out);
+
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_close, "%hhu", "", in.port_id);
+    RETVAL_VOID(rte_eth_dev_close);
+}

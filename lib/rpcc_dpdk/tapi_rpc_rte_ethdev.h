@@ -82,6 +82,11 @@ extern int tapi_rpc_rte_eth_dev_configure_def(rcf_rpc_server *rpcs,
                                               uint16_t nb_rx_queue,
                                               uint16_t nb_tx_queue);
 
+/**
+ * @b rte_eth_dev_close() RPC.
+ */
+extern void rpc_rte_eth_dev_close(rcf_rpc_server *rpcs, uint8_t port_id);
+
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 
 #ifdef __cplusplus

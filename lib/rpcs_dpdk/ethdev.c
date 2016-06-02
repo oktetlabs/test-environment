@@ -476,3 +476,8 @@ TARPC_FUNC(rte_eth_dev_configure, {},
 done:
     ;
 })
+
+TARPC_FUNC(rte_eth_dev_close, {},
+{
+    MAKE_CALL(func(in->port_id));
+})
