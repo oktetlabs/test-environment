@@ -192,6 +192,16 @@ extern int rpc_rte_pktmbuf_alloc_bulk(rcf_rpc_server *rpcs,
 extern int rpc_rte_pktmbuf_chain(rcf_rpc_server *rpcs,
                                  rpc_rte_mbuf_p head, rpc_rte_mbuf_p tail);
 
+/**
+ * @b rte_pktmbuf_get_nb_segs() RPC
+ *
+ * @param m               RTE mbuf pointer
+ *
+ * @return The number of segments in the mbuf chain
+ */
+extern uint8_t rpc_rte_pktmbuf_get_nb_segs(rcf_rpc_server *rpcs,
+                                           rpc_rte_mbuf_p m);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf --> */
 
 #ifdef __cplusplus

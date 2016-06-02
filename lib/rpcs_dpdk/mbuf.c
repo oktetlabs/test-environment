@@ -328,3 +328,14 @@ TARPC_FUNC_STATIC(rte_pktmbuf_chain, {},
     out->retval = -err;
 }
 )
+
+TARPC_FUNC_STANDALONE(rte_pktmbuf_get_nb_segs, {},
+{
+    struct rte_mbuf *m = NULL;
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+        m = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->m, ns);
+        out->retval = m->nb_segs;
+    });
+}
+)

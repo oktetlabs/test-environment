@@ -186,6 +186,14 @@ struct tarpc_rte_pktmbuf_chain_in {
 
 typedef struct tarpc_int_retval_out tarpc_rte_pktmbuf_chain_out;
 
+/** rte_pktmbuf_get_nb_segs() */
+typedef struct tarpc_mbuf_in tarpc_rte_pktmbuf_get_nb_segs_in;
+
+struct tarpc_rte_pktmbuf_get_nb_segs_out {
+    struct tarpc_out_arg    common;
+    uint8_t                 retval;
+};
+
 program dpdk
 {
     version ver0
@@ -204,5 +212,6 @@ program dpdk
         RPC_DEF(rte_pktmbuf_get_pkt_len)
         RPC_DEF(rte_pktmbuf_alloc_bulk)
         RPC_DEF(rte_pktmbuf_chain)
+        RPC_DEF(rte_pktmbuf_get_nb_segs)
     } = 1;
 } = 2;
