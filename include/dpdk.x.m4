@@ -133,6 +133,15 @@ struct tarpc_rte_pktmbuf_read_data_out {
     uint8_t                 buf<>;
 };
 
+/** rte_pktmbuf_clone() */
+struct tarpc_rte_pktmbuf_clone_in {
+    struct tarpc_in_arg     common;
+    tarpc_rte_mbuf          m;
+    tarpc_rte_mempool       mp;
+};
+
+typedef struct tarpc_mbuf_retval_out tarpc_rte_pktmbuf_clone_out;
+
 program dpdk
 {
     version ver0
@@ -145,5 +154,6 @@ program dpdk
         RPC_DEF(rte_pktmbuf_free)
         RPC_DEF(rte_pktmbuf_append_data)
         RPC_DEF(rte_pktmbuf_read_data)
+        RPC_DEF(rte_pktmbuf_clone)
     } = 1;
 } = 2;

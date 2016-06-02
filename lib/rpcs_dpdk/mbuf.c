@@ -178,3 +178,25 @@ finish:
     out->retval = (err != 0) ? -err : bytes_read;
 }
 )
+
+TARPC_FUNC_STATIC(rte_pktmbuf_clone, {},
+{
+    struct rte_mempool *mp = NULL;
+    struct rte_mbuf *m_orig = NULL;
+    struct rte_mbuf *m_copy;
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MEMPOOL, {
+        mp = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->mp, ns);
+    });
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+        m_orig = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->m, ns);
+    });
+
+    MAKE_CALL(m_copy = func(m_orig, mp));
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+        out->retval = RCF_PCH_MEM_INDEX_ALLOC(m_copy, ns);
+    });
+}
+)

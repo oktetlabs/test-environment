@@ -114,6 +114,18 @@ extern int rpc_rte_pktmbuf_read_data(rcf_rpc_server *rpcs,
                                      size_t count, uint8_t *buf,
                                      size_t rbuflen);
 
+/**
+ * @b rte_pktmbuf_clone() RPC
+ *
+ * @param m               RTE mbuf pointer
+ * @param mp              RTE mempool pointer
+ *
+ * @return RTE mbuf pointer on success; jumps out when pointer is @c NULL
+ */
+extern rpc_rte_mbuf_p rpc_rte_pktmbuf_clone(rcf_rpc_server *rpcs,
+                                            rpc_rte_mbuf_p m,
+                                            rpc_rte_mempool_p mp);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf --> */
 
 #ifdef __cplusplus
