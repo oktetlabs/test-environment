@@ -202,6 +202,16 @@ extern int rpc_rte_pktmbuf_chain(rcf_rpc_server *rpcs,
 extern uint8_t rpc_rte_pktmbuf_get_nb_segs(rcf_rpc_server *rpcs,
                                            rpc_rte_mbuf_p m);
 
+/**
+ * @b rte_pktmbuf_get_port() RPC
+ *
+ * @param m               RTE mbuf pointer
+ *
+ * @return Input port
+ */
+extern uint8_t rpc_rte_pktmbuf_get_port(rcf_rpc_server *rpcs,
+                                        rpc_rte_mbuf_p m);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf --> */
 
 #ifdef __cplusplus
