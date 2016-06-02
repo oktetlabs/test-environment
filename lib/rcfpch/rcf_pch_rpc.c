@@ -613,6 +613,7 @@ rcf_pch_rpc_init(const char *tmp_path)
     }
 
     rcf_pch_add_node("/agent", &node_rpcserver);
+    rcf_pch_rpcserver_plugin_init(&lock, call);
 }
 
 /**

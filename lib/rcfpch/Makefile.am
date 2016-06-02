@@ -27,13 +27,14 @@ install-exec-hook:
         fi
 
 EXTRA_DIST=rcf_pch.c rcf_pch_rpc.c rcf_pch_file.c rcf_pch_conf.c \
-           rcf_pch_var.c rcf_pch_ta_cfg.c rcf_pch_rpc_server.c
+           rcf_pch_var.c rcf_pch_ta_cfg.c rcf_pch_rpc_server.c \
+           rcf_pch_plugin.c
 
 else
 
 librcfpch_a_SOURCES=rcf_pch.c rcf_pch_rpc.c rcf_pch_mem.c \
                     rcf_pch_file.c rcf_pch_conf.c rcf_pch_var.c \
-                    rcf_pch_ta_cfg.c rpc_transport.c 
+                    rcf_pch_ta_cfg.c rpc_transport.c rcf_pch_plugin.c
 
 librcf_sniffers_dummy_a_SOURCES=rcf_sniffers_dummy.c
 
