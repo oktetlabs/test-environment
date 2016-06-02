@@ -19,6 +19,7 @@ lib_LTLIBRARIES = librpcc_dpdk.la
 librpcc_dpdk_la_SOURCES = \
 	mbuf.c \
 	ethdev.c \
+	tapi_ethdev.c \
 	eal.c
 
 

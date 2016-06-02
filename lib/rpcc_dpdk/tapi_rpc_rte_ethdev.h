@@ -64,6 +64,24 @@ extern int rpc_rte_eth_dev_configure(rcf_rpc_server *rpcs,
                                      uint16_t nb_tx_queue,
                                      const struct tarpc_rte_eth_conf *eth_conf);
 
+/**
+ * Fill in eth_conf with default settings.
+ *
+ * The function may call rte_eth_dev_info_get() to obtain device
+ * facilities.
+ */
+extern struct tarpc_rte_eth_conf *
+    tapi_rpc_rte_eth_make_eth_conf(rcf_rpc_server *rpcs, uint8_t port_id,
+                                   struct tarpc_rte_eth_conf *eth_conf);
+
+/**
+ * Do rte_eth_dev_configure() RPC with default eth_conf.
+ */
+extern int tapi_rpc_rte_eth_dev_configure_def(rcf_rpc_server *rpcs,
+                                              uint8_t port_id,
+                                              uint16_t nb_rx_queue,
+                                              uint16_t nb_tx_queue);
+
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 
 #ifdef __cplusplus
