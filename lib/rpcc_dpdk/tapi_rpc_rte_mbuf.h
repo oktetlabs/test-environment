@@ -139,6 +139,16 @@ extern int rpc_rte_pktmbuf_prepend_data(rcf_rpc_server *rpcs,
                                         rpc_rte_mbuf_p m, uint8_t *buf,
                                         size_t len);
 
+/**
+ * Get pointer to the next mbuf segment in an mbuf chain
+ *
+ * @param m               RTE mbuf pointer
+ *
+ * @return RTE mbuf pointer; doesn't jump out when pointer is @c NULL
+ */
+extern rpc_rte_mbuf_p rpc_rte_pktmbuf_get_next(rcf_rpc_server *rpcs,
+                                               rpc_rte_mbuf_p m);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf --> */
 
 #ifdef __cplusplus

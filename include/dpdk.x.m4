@@ -151,6 +151,11 @@ struct tarpc_rte_pktmbuf_prepend_data_in {
 
 typedef struct tarpc_int_retval_out tarpc_rte_pktmbuf_prepend_data_out;
 
+/** rte_pktmbuf_get_next() */
+typedef struct tarpc_mbuf_in tarpc_rte_pktmbuf_get_next_in;
+
+typedef struct tarpc_mbuf_retval_out tarpc_rte_pktmbuf_get_next_out;
+
 program dpdk
 {
     version ver0
@@ -165,5 +170,6 @@ program dpdk
         RPC_DEF(rte_pktmbuf_read_data)
         RPC_DEF(rte_pktmbuf_clone)
         RPC_DEF(rte_pktmbuf_prepend_data)
+        RPC_DEF(rte_pktmbuf_get_next)
     } = 1;
 } = 2;
