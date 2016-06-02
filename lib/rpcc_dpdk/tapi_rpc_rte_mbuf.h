@@ -126,6 +126,19 @@ extern rpc_rte_mbuf_p rpc_rte_pktmbuf_clone(rcf_rpc_server *rpcs,
                                             rpc_rte_mbuf_p m,
                                             rpc_rte_mempool_p mp);
 
+/**
+ * Prepend data to an mbuf
+ *
+ * @param m               RTE mbuf pointer
+ * @param buf             Pointer to a buffer containing data
+ * @param len             Buffer length
+ *
+ * @return @c 0 on success; jumps out in case of failure
+ */
+extern int rpc_rte_pktmbuf_prepend_data(rcf_rpc_server *rpcs,
+                                        rpc_rte_mbuf_p m, uint8_t *buf,
+                                        size_t len);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf --> */
 
 #ifdef __cplusplus

@@ -213,3 +213,37 @@ rpc_rte_pktmbuf_clone(rcf_rpc_server *rpcs,
 
     RETVAL_RPC_PTR(rte_pktmbuf_clone, out.retval);
 }
+
+int
+rpc_rte_pktmbuf_prepend_data(rcf_rpc_server *rpcs,
+                             rpc_rte_mbuf_p m, uint8_t *buf, size_t len)
+{
+    tarpc_rte_pktmbuf_prepend_data_in   in;
+    tarpc_rte_pktmbuf_prepend_data_out  out;
+    uint8_t *buf_copy;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if ((len != 0) && (buf == NULL))
+        RETVAL_ZERO_INT(rte_pktmbuf_prepend_data,
+                        -TE_RC(TE_TAPI, TE_EINVAL));
+
+    buf_copy = tapi_memdup(buf, len * sizeof(*buf_copy));
+
+    in.m = (tarpc_rte_mbuf)m;
+    in.buf.buf_val = buf_copy;
+    in.buf.buf_len = len;
+
+    rcf_rpc_call(rpcs, "rte_pktmbuf_prepend_data", &in, &out);
+
+    free(in.buf.buf_val);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_pktmbuf_prepend_data, out.retval);
+
+    TAPI_RPC_LOG(rpcs, rte_pktmbuf_prepend_data, RPC_PTR_FMT ", %u",
+                 NEG_ERRNO_FMT, RPC_PTR_VAL(in.m), in.buf.buf_len,
+                 NEG_ERRNO_ARGS(out.retval));
+
+    RETVAL_ZERO_INT(rte_pktmbuf_prepend_data, out.retval);
+}
