@@ -202,6 +202,163 @@ struct tarpc_rte_pktmbuf_get_port_out {
     uint8_t                 retval;
 };
 
+
+/*
+ * rte_eth_dev API
+ */
+
+struct tarpc_rte_eth_dev_port_id_in {
+    struct tarpc_in_arg             common;
+    uint8_t                         port_id;
+};
+
+
+/** Link speeds */
+enum tarpc_eth_link_speeds {
+    TARPC_RTE_ETH_LINK_SPEED_FIXED = 0,
+    TARPC_RTE_ETH_LINK_SPEED_10M_HD,
+    TARPC_RTE_ETH_LINK_SPEED_10M,
+    TARPC_RTE_ETH_LINK_SPEED_100M_HD,
+    TARPC_RTE_ETH_LINK_SPEED_100M,
+    TARPC_RTE_ETH_LINK_SPEED_1G,
+    TARPC_RTE_ETH_LINK_SPEED_2_5G,
+    TARPC_RTE_ETH_LINK_SPEED_5G,
+    TARPC_RTE_ETH_LINK_SPEED_10G,
+    TARPC_RTE_ETH_LINK_SPEED_20G,
+    TARPC_RTE_ETH_LINK_SPEED_25G,
+    TARPC_RTE_ETH_LINK_SPEED_40G,
+    TARPC_RTE_ETH_LINK_SPEED_50G,
+    TARPC_RTE_ETH_LINK_SPEED_56G,
+    TARPC_RTE_ETH_LINK_SPEED_100G,
+
+    TARPC_RTE_ETH_LINK_SPEED__UNKNOWN
+};
+
+/** RX offload capabilities of a device */
+enum tarpc_dev_rx_offload_bits {
+    TARPC_RTE_DEV_RX_OFFLOAD_VLAN_STRIP_BIT = 0,
+    TARPC_RTE_DEV_RX_OFFLOAD_IPV4_CKSUM_BIT,
+    TARPC_RTE_DEV_RX_OFFLOAD_UDP_CKSUM_BIT,
+    TARPC_RTE_DEV_RX_OFFLOAD_TCP_CKSUM_BIT,
+    TARPC_RTE_DEV_RX_OFFLOAD_TCP_LRO_BIT,
+    TARPC_RTE_DEV_RX_OFFLOAD_QINQ_STRIP_BIT,
+    TARPC_RTE_DEV_RX_OFFLOAD_OUTER_IPV4_CKSUM_BIT,
+
+    TARPC_RTE_DEV_RX_OFFLOAD__UNKNOWN_BIT
+};
+
+/** TX offload capabilities of a device */
+enum tarpc_dev_tx_offload_bits {
+    TARPC_RTE_DEV_TX_OFFLOAD_VLAN_INSERT_BIT = 0,
+    TARPC_RTE_DEV_TX_OFFLOAD_IPV4_CKSUM_BIT,
+    TARPC_RTE_DEV_TX_OFFLOAD_UDP_CKSUM_BIT,
+    TARPC_RTE_DEV_TX_OFFLOAD_TCP_CKSUM_BIT,
+    TARPC_RTE_DEV_TX_OFFLOAD_SCTP_CKSUM_BIT,
+    TARPC_RTE_DEV_TX_OFFLOAD_TCP_TSO_BIT,
+    TARPC_RTE_DEV_TX_OFFLOAD_UDP_TSO_BIT,
+    TARPC_RTE_DEV_TX_OFFLOAD_OUTER_IPV4_CKSUM_BIT,
+    TARPC_RTE_DEV_TX_OFFLOAD_QINQ_INSERT_BIT,
+
+    TARPC_RTE_DEV_TX_OFFLOAD__UNKNOWN_BIT
+};
+
+/** Flow types */
+enum tarpc_rte_eth_flow_types {
+    TARPC_RTE_ETH_FLOW_IPV4 = 0,
+    TARPC_RTE_ETH_FLOW_FRAG_IPV4,
+    TARPC_RTE_ETH_FLOW_NONFRAG_IPV4_TCP,
+    TARPC_RTE_ETH_FLOW_NONFRAG_IPV4_UDP,
+    TARPC_RTE_ETH_FLOW_NONFRAG_IPV4_SCTP,
+    TARPC_RTE_ETH_FLOW_NONFRAG_IPV4_OTHER,
+    TARPC_RTE_ETH_FLOW_IPV6,
+    TARPC_RTE_ETH_FLOW_FRAG_IPV6,
+    TARPC_RTE_ETH_FLOW_NONFRAG_IPV6_TCP,
+    TARPC_RTE_ETH_FLOW_NONFRAG_IPV6_UDP,
+    TARPC_RTE_ETH_FLOW_NONFRAG_IPV6_SCTP,
+    TARPC_RTE_ETH_FLOW_NONFRAG_IPV6_OTHER,
+    TARPC_RTE_ETH_FLOW_L2_PAYLOAD,
+    TARPC_RTE_ETH_FLOW_IPV6_EX,
+    TARPC_RTE_ETH_FLOW_IPV6_TCP_EX,
+    TARPC_RTE_ETH_FLOW_IPV6_UDP_EX,
+
+    TARPC_RTE_ETH_FLOW__UNKNOWN
+};
+
+/** Transmit queue flags */
+enum tarpc_rte_eth_txq_flags {
+    TARPC_RTE_ETH_TXQ_FLAGS_NOMULTSEGS_BIT = 0,
+    TARPC_RTE_ETH_TXQ_FLAGS_NOREFCOUNT_BIT,
+    TARPC_RTE_ETH_TXQ_FLAGS_NOMULTMEMP_BIT,
+    TARPC_RTE_ETH_TXQ_FLAGS_NOVLANOFFL_BIT,
+    TARPC_RTE_ETH_TXQ_FLAGS_NOXSUMSCTP_BIT,
+    TARPC_RTE_ETH_TXQ_FLAGS_NOXSUMUDP_BIT,
+    TARPC_RTE_ETH_TXQ_FLAGS_NOXSUMTCP_BIT,
+
+    TARPC_RTE_ETH_TXQ_FLAGS__UNKNOWN_BIT
+};
+
+struct tarpc_rte_eth_thresh {
+    uint8_t                         pthresh;
+    uint8_t                         hthresh;
+    uint8_t                         wthresh;
+};
+
+struct tarpc_rte_eth_rxconf {
+    struct tarpc_rte_eth_thresh     rx_thresh;
+    uint16_t                        rx_free_thresh;
+    uint8_t                         rx_drop_en;
+    uint8_t                         rx_deferred_start;
+};
+
+struct tarpc_rte_eth_txconf {
+    struct tarpc_rte_eth_thresh     tx_thresh;
+    uint16_t                        tx_rs_thresh;
+    uint16_t                        tx_free_thresh;
+    uint32_t                        txq_flags;
+    uint8_t                         tx_deferred_start;
+};
+
+struct tarpc_rte_eth_desc_lim {
+    uint16_t                        nb_max;
+    uint16_t                        nb_min;
+    uint16_t                        nb_align;
+};
+
+struct tarpc_rte_eth_dev_info {
+    string                          driver_name<>;
+    unsigned int                    if_index;
+    uint32_t                        min_rx_bufsize;
+    uint32_t                        max_rx_pktlen;
+    uint16_t                        max_rx_queues;
+    uint16_t                        max_tx_queues;
+    uint32_t                        max_mac_addrs;
+    uint32_t                        max_hash_mac_addrs;
+    uint16_t                        max_vfs;
+    uint16_t                        max_vmdq_pools;
+    uint32_t                        rx_offload_capa;
+    uint32_t                        tx_offload_capa;
+    uint16_t                        reta_size;
+    uint8_t                         hash_key_size;
+    uint64_t                        flow_type_rss_offloads;
+    struct tarpc_rte_eth_rxconf     default_rxconf;
+    struct tarpc_rte_eth_txconf     default_txconf;
+    uint16_t                        vmdq_queue_base;
+    uint16_t                        vmdq_queue_num;
+    uint16_t                        vmdq_pool_base;
+    struct tarpc_rte_eth_desc_lim   rx_desc_lim;
+    struct tarpc_rte_eth_desc_lim   tx_desc_lim;
+    uint32_t                        speed_capa;
+};
+
+/** rte_eth_dev_info_get() */
+typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_dev_info_get_in;
+
+struct tarpc_rte_eth_dev_info_get_out {
+    struct tarpc_out_arg            common;
+    struct tarpc_rte_eth_dev_info   dev_info;
+};
+
+
 program dpdk
 {
     version ver0
@@ -222,5 +379,7 @@ program dpdk
         RPC_DEF(rte_pktmbuf_chain)
         RPC_DEF(rte_pktmbuf_get_nb_segs)
         RPC_DEF(rte_pktmbuf_get_port)
+
+        RPC_DEF(rte_eth_dev_info_get)
     } = 1;
 } = 2;
