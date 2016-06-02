@@ -31,6 +31,111 @@
 #include "ta_common.h"
 #include "rpc_transport.h"
 
+#include "te_errno.h"
+#include "te_sleep.h"
+
+/** Keepalive time for connection with TA */
+#define RPC_TRANSPORT_RECV_TIMEOUT 0xFFFFF
+
+/** Data corresponding to the active RPC server plugin */
+typedef struct rpcserver_plugin_context {
+    int     pid;    /**< Process ID */
+    int     tid;    /**< Thread ID */
+    te_bool enable; /**< Status of enabling of the plugin */
+    te_bool installed; /**< Status of installation of the plugin */
+
+    void       *context; /**< Plugin context */
+
+    /** Callback for creating the context and initializing the plugin */
+    te_errno  (*install  )(void **context);
+
+    /** Callback for action of RPC server plugin */
+    te_errno  (*action   )(void  *context);
+
+    /** Callback for deinitializing the plugin and removing the context */
+    te_errno  (*uninstall)(void **context);
+
+    /** Timeout to detect that connection with TA is broken */
+    struct timeval timeout;
+} rpcserver_plugin_context;
+
+/** The data of current RPC server plugin */
+static rpcserver_plugin_context plugin = {
+    .enable = FALSE
+};
+
+/**
+ * Detect if connection with TA is broken.
+ *
+ * @return @c TRUE in case connection with TA is broken
+ */
+static te_bool
+plugin_timeout(void)
+{
+    static struct timeval now;
+    gettimeofday(&now, NULL);
+    return TIMEVAL_SUB(plugin.timeout, now) < 0;
+}
+
+/**
+ * Restart the timeout to detect that connection with TA is broken.
+ */
+static void
+plugin_time_restart(void)
+{
+    gettimeofday(&plugin.timeout, NULL);
+    plugin.timeout.tv_sec += RPC_TRANSPORT_RECV_TIMEOUT;
+}
+
+/**
+ * Execute actions related with the RPC server plugin.
+ */
+static void
+plugin_action(void)
+{
+    te_errno rc;
+    const int pid = getpid();
+    const int tid = thread_self();
+
+    if (plugin.pid != pid || plugin.tid != tid)
+    {
+        ERROR("RPC server plugin disabled "
+              "(Unexpected pid=%d, tid=%d, expected %d/%d)",
+              pid, tid, plugin.pid, plugin.tid);
+        plugin.enable = FALSE;
+        return;
+    }
+
+    if (!plugin.installed)
+    {
+        assert(plugin.install != NULL);
+        rc = plugin.install(&plugin.context);
+        if (TE_RC_GET_ERROR(rc) == TE_EPENDING)
+            return;
+
+        if (rc != 0)
+        {
+            ERROR("Failed to install RPC server plugin: %r",
+                  rc);
+            plugin.enable = FALSE;
+            return;
+        }
+        plugin.installed = TRUE;
+    }
+
+    assert(plugin.action != NULL);
+    if ((rc = plugin.action(plugin.context)) != 0)
+    {
+        if (TE_RC_GET_ERROR(rc) == TE_EPENDING)
+            return;
+
+        ERROR("RPC server plugin disabled "
+              "(Action fail with exit code: %r)",
+              rc);
+        plugin.enable = FALSE;
+    }
+}
+
 #ifdef HAVE_SIGNAL_H
 static void
 sig_handler(int s)
@@ -116,10 +221,27 @@ rcf_pch_rpc_server(const char *name)
         rpc_info *info = NULL;          /* RPC information */
         te_bool   result = FALSE;       /* "rc" attribute */
         size_t    len = RCF_RPC_HUGE_BUF_LEN;
+        te_errno  rc;
 
         strcpy(rpc_name, "Unknown");
-        
-        if (rpc_transport_recv(handle, buf, &len, 0xFFFFF) != 0)
+
+        if (!plugin.enable)
+        {
+            rc = rpc_transport_recv(
+                        handle, buf, &len, RPC_TRANSPORT_RECV_TIMEOUT);
+        }
+        else
+        {
+            rc = rpc_transport_recv(handle, buf, &len, 0);
+            if (TE_RC_GET_ERROR(rc) != TE_ETIMEDOUT)
+                plugin_time_restart();
+            else if (!plugin_timeout())
+            {
+                plugin_action();
+                continue;
+            }
+        }
+        if (rc != 0)
             STOP("Connection with TA is broken!");
             
         if (strcmp((char *)buf, "FIN") == 0)
