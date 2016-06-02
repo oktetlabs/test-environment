@@ -32,6 +32,7 @@
 #include "rcf_rpc.h"
 #include "te_rpc_types.h"
 #include "tapi_rpc_rte.h"
+#include "log_bufs.h"
 
 
 #ifdef __cplusplus
@@ -158,6 +159,27 @@ extern rpc_rte_mbuf_p rpc_rte_pktmbuf_get_next(rcf_rpc_server *rpcs,
  */
 extern uint32_t rpc_rte_pktmbuf_get_pkt_len(rcf_rpc_server *rpcs,
                                             rpc_rte_mbuf_p m);
+
+/**
+ * Auxiliary function for logging mbuf pointers;
+ * it should be used by RPCs in @b TAPI_RPC_LOG() statements
+ */
+const char *rpc_rte_mbufs2str(te_log_buf *tlbp, const rpc_rte_mbuf_p *mbufs,
+                              unsigned int count, rcf_rpc_server *rpcs);
+
+/**
+ * @b rte_pktmbuf_alloc_bulk() RPC
+ *
+ * @param mp              RTE mempool pointer
+ * @param bulk            Pointer for the resulting array of pointers
+ * @param count           The number of mbufs to allocate
+ *
+ * @return @c 0 on success; jumps out in case of failure
+ */
+extern int rpc_rte_pktmbuf_alloc_bulk(rcf_rpc_server *rpcs,
+                                      rpc_rte_mempool_p mp,
+                                      rpc_rte_mbuf_p *bulk,
+                                      unsigned int count);
 
 /**@} <!-- END te_lib_rpc_rte_mbuf --> */
 

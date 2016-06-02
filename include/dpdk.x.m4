@@ -164,6 +164,19 @@ struct tarpc_rte_pktmbuf_get_pkt_len_out {
     uint32_t                retval;
 };
 
+/** rte_pktmbuf_alloc_bulk() */
+struct tarpc_rte_pktmbuf_alloc_bulk_in {
+    struct tarpc_in_arg     common;
+    tarpc_rte_mempool       mp;
+    tarpc_uint              count;
+};
+
+struct tarpc_rte_pktmbuf_alloc_bulk_out {
+    struct tarpc_out_arg    common;
+    tarpc_rte_mbuf          bulk<>;
+    tarpc_int               retval;
+};
+
 program dpdk
 {
     version ver0
@@ -180,5 +193,6 @@ program dpdk
         RPC_DEF(rte_pktmbuf_prepend_data)
         RPC_DEF(rte_pktmbuf_get_next)
         RPC_DEF(rte_pktmbuf_get_pkt_len)
+        RPC_DEF(rte_pktmbuf_alloc_bulk)
     } = 1;
 } = 2;

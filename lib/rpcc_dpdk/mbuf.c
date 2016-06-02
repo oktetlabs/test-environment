@@ -31,6 +31,7 @@
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_rte.h"
 #include "tapi_mem.h"
+#include "log_bufs.h"
 #include "rpcc_dpdk.h"
 
 #include "tarpc.h"
@@ -293,4 +294,62 @@ rpc_rte_pktmbuf_get_pkt_len(rcf_rpc_server *rpcs,
     TAPI_RPC_OUT(rte_pktmbuf_get_pkt_len, out.retval == UINT32_MAX);
 
     return (out.retval);
+}
+
+const char *
+rpc_rte_mbufs2str(te_log_buf *tlbp,
+                  const rpc_rte_mbuf_p *mbufs, unsigned int count,
+                  rcf_rpc_server *rpcs)
+{
+    unsigned int i;
+
+    te_log_buf_append(tlbp, "{ ");
+
+    if (count == 0)
+        te_log_buf_append(tlbp, "(empty)");
+    else
+        te_log_buf_append(tlbp, RPC_PTR_FMT, RPC_PTR_VAL(mbufs[0]));
+
+    for (i = 1; i < count; ++i)
+    {
+        te_log_buf_append(tlbp, ", " RPC_PTR_FMT, RPC_PTR_VAL(mbufs[i]));
+    }
+
+    te_log_buf_append(tlbp, " }");
+
+    return te_log_buf_get(tlbp);
+}
+
+int
+rpc_rte_pktmbuf_alloc_bulk(rcf_rpc_server *rpcs,
+                           rpc_rte_mempool_p mp, rpc_rte_mbuf_p *bulk,
+                           unsigned int count)
+{
+    tarpc_rte_pktmbuf_alloc_bulk_in     in;
+    tarpc_rte_pktmbuf_alloc_bulk_out    out;
+    te_log_buf *tlbp;
+    unsigned int i;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.mp = (tarpc_rte_mempool)mp;
+    in.count = count;
+
+    rcf_rpc_call(rpcs, "rte_pktmbuf_alloc_bulk", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_pktmbuf_alloc_bulk, out.retval);
+
+    if (out.retval == 0)
+        for (i = 0; i < count; ++i)
+            bulk[i] = out.bulk.bulk_val[i];
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_pktmbuf_alloc_bulk, RPC_PTR_FMT ", %u",
+                 NEG_ERRNO_FMT ", %s", RPC_PTR_VAL(in.mp), in.count,
+                 NEG_ERRNO_ARGS(out.retval),
+                 rpc_rte_mbufs2str(tlbp, bulk, count, rpcs));
+    te_log_buf_free(tlbp);
+
+    RETVAL_ZERO_INT(rte_pktmbuf_alloc_bulk, out.retval);
 }

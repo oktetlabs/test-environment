@@ -40,6 +40,7 @@
 #include "unix_internal.h"
 #include "tarpc_server.h"
 #include "rpcs_dpdk.h"
+#include "te_errno.h"
 
 TARPC_FUNC(rte_pktmbuf_pool_create, {},
 {
@@ -253,5 +254,58 @@ TARPC_FUNC_STANDALONE(rte_pktmbuf_get_pkt_len, {},
         m = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->m, ns);
         out->retval = m->pkt_len;
     });
+}
+)
+
+TARPC_FUNC_STANDALONE(rte_pktmbuf_alloc_bulk, {},
+{
+    struct rte_mempool *mp = NULL;
+    struct rte_mbuf **mbufs;
+    tarpc_rte_mbuf *bulk;
+    unsigned int i;
+    te_errno err;
+
+    mbufs = calloc(in->count, sizeof(*mbufs));
+    if (mbufs == NULL)
+    {
+        ERROR("Failed to allocate an array for mbuf pointers storage");
+        err = TE_RC(TE_RPCS, TE_ENOMEM);
+        goto finish;
+    }
+
+    bulk = calloc(in->count, sizeof(*bulk));
+    if (bulk == NULL)
+    {
+        ERROR("Failed to allocate an array of RPC mbuf pointers");
+        err = TE_RC(TE_RPCS, TE_ENOMEM);
+        goto finish;
+    }
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MEMPOOL, {
+        mp = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->mp, ns);
+    });
+
+    MAKE_CALL(err = rte_pktmbuf_alloc_bulk(mp, mbufs, in->count));
+
+    neg_errno_h2rpc(&err);
+    if (err != 0)
+    {
+        free(bulk);
+        goto finish;
+    }
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+        for (i = 0; i < in->count; ++i)
+            bulk[i] = RCF_PCH_MEM_INDEX_ALLOC(mbufs[i], ns);
+    });
+
+    out->bulk.bulk_val = bulk;
+    out->bulk.bulk_len = in->count;
+
+finish:
+    if (mbufs != NULL)
+        free(mbufs);
+
+    out->retval = -err;
 }
 )
