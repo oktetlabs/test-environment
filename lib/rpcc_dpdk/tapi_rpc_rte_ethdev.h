@@ -52,6 +52,18 @@ extern void rpc_rte_eth_dev_info_get(rcf_rpc_server *rpcs,
                                      uint8_t port_id,
                                      struct tarpc_rte_eth_dev_info *dev_info);
 
+/**
+ * rte_eth_dev_configure() RPC.
+ *
+ * If failure is not expected, the function jumps out in the case of
+ * negative return value.
+ */
+extern int rpc_rte_eth_dev_configure(rcf_rpc_server *rpcs,
+                                     uint8_t port_id,
+                                     uint16_t nb_rx_queue,
+                                     uint16_t nb_tx_queue,
+                                     const struct tarpc_rte_eth_conf *eth_conf);
+
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 
 #ifdef __cplusplus

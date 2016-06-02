@@ -359,6 +359,102 @@ struct tarpc_rte_eth_dev_info_get_out {
 };
 
 
+enum tarpc_rte_eth_rx_mq_mode {
+    TARPC_ETH_MQ_RX_NONE = 0,
+    TARPC_ETH_MQ_RX_RSS,
+    TARPC_ETH_MQ_RX_DCB,
+    TARPC_ETH_MQ_RX_DCB_RSS,
+    TARPC_ETH_MQ_RX_VMDQ_ONLY,
+    TARPC_ETH_MQ_RX_VMDQ_RSS,
+    TARPC_ETH_MQ_RX_VMDQ_DCB,
+    TARPC_ETH_MQ_RX_VMDQ_DCB_RSS,
+
+    TARPC_ETH_MQ_RX__UNKNOWN
+};
+
+enum tarpc_rte_eth_rxmode_flags {
+    TARPC_RTE_ETH_RXMODE_HEADER_SPLIT_BIT = 0,
+    TARPC_RTE_ETH_RXMODE_HW_IP_CHECKSUM_BIT,
+    TARPC_RTE_ETH_RXMODE_HW_VLAN_FILTER_BIT,
+    TARPC_RTE_ETH_RXMODE_HW_VLAN_STRIP_BIT,
+    TARPC_RTE_ETH_RXMODE_HW_VLAN_EXTEND_BIT,
+    TARPC_RTE_ETH_RXMODE_JUMBO_FRAME_BIT,
+    TARPC_RTE_ETH_RXMODE_HW_STRIP_CRC_BIT,
+    TARPC_RTE_ETH_RXMODE_ENABLE_SCATTER_BIT,
+    TARPC_RTE_ETH_RXMODE_ENABLE_LRO_BIT
+};
+
+struct tarpc_rte_eth_rxmode {
+    enum tarpc_rte_eth_rx_mq_mode       mq_mode;
+    uint32_t                            max_rx_pkt_len;
+    uint16_t                            split_hdr_size;
+    uint16_t                            flags;
+};
+
+enum tarpc_rte_eth_tx_mq_mode {
+    TARPC_ETH_MQ_TX_NONE = 0,
+    TARPC_ETH_MQ_TX_DCB,
+    TARPC_ETH_MQ_TX_VMDQ_DCB,
+    TARPC_ETH_MQ_TX_VMDQ_ONLY,
+
+    TARPC_ETH_MQ_TX__UNKNOWN
+};
+
+enum tarpc_rte_eth_txmode_flags {
+    TARPC_RTE_ETH_TXMODE_HW_VLAN_REJECT_TAGGED_BIT = 0,
+    TARPC_RTE_ETH_TXMODE_HW_VLAN_REJECT_UNTAGGED_BIT,
+    TARPC_RTE_ETH_TXMODE_HW_VLAN_INSERT_PVID_BIT
+};
+
+struct tarpc_rte_eth_txmode {
+    enum tarpc_rte_eth_tx_mq_mode       mq_mode;
+    uint16_t                            pvid;
+    uint8_t                             flags;
+};
+
+struct tarpc_rte_eth_rss_conf {
+    uint8_t                             rss_key<>;
+    uint8_t                             rss_key_len;
+    uint64_t                            rss_hf;
+};
+
+struct tarpc_rte_eth_rx_adv_conf {
+    struct tarpc_rte_eth_rss_conf       rss_conf;
+    /* vmdq_dcb_conf */
+    /* dcb_rx_conf */
+    /* vmdq_rx_conf */
+};
+
+struct tarpc_rte_intr_conf {
+    uint16_t                            lsc;
+    uint16_t                            rxq;
+};
+
+struct tarpc_rte_eth_conf {
+    uint16_t                            link_speeds;
+    struct tarpc_rte_eth_rxmode         rxmode;
+    struct tarpc_rte_eth_txmode         txmode;
+    uint32_t                            lpbk_mode;
+    struct tarpc_rte_eth_rx_adv_conf    rx_adv_conf;
+    /* tx_adv_conf */
+    uint32_t                            dcb_capability_en;
+    /* fdir_conf */
+    struct tarpc_rte_intr_conf          intr_conf;
+};
+
+
+/** rte_eth_dev_configure() */
+struct tarpc_rte_eth_dev_configure_in {
+    struct tarpc_in_arg         common;
+    uint8_t                     port_id;
+    uint16_t                    nb_rx_queue;
+    uint16_t                    nb_tx_queue;
+    struct tarpc_rte_eth_conf   eth_conf<>;
+};
+
+typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_configure_out;
+
+
 program dpdk
 {
     version ver0
@@ -381,5 +477,6 @@ program dpdk
         RPC_DEF(rte_pktmbuf_get_port)
 
         RPC_DEF(rte_eth_dev_info_get)
+        RPC_DEF(rte_eth_dev_configure)
     } = 1;
 } = 2;

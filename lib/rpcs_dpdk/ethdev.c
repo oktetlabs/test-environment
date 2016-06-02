@@ -41,6 +41,10 @@
 #include "rpcs_dpdk.h"
 
 
+#define CASE_TARPC2RTE(_rte) \
+    case TARPC_##_rte: *rte = (_rte); break
+
+
 static uint32_t
 tarpc_rte_rx_offloads2rpc(uint32_t rte)
 {
@@ -276,4 +280,199 @@ TARPC_FUNC(rte_eth_dev_info_get, {},
                                &out->dev_info.tx_desc_lim);
     out->dev_info.speed_capa =
         tarpc_rte_eth_link_speeds2rpc(dev_info.speed_capa);
+})
+
+
+static te_bool
+tarpc_eth_link_speeds2rte(uint32_t rpc, uint32_t *rte)
+{
+    /* TODO Do real mapping */
+    *rte = rpc;
+    return 1;
+}
+
+static int
+tarpc_eth_rx_mq_mode2rte(const enum tarpc_rte_eth_rx_mq_mode rpc,
+                         enum rte_eth_rx_mq_mode *rte)
+{
+    switch (rpc) {
+        CASE_TARPC2RTE(ETH_MQ_RX_NONE);
+        CASE_TARPC2RTE(ETH_MQ_RX_RSS);
+        CASE_TARPC2RTE(ETH_MQ_RX_DCB);
+        CASE_TARPC2RTE(ETH_MQ_RX_DCB_RSS);
+        CASE_TARPC2RTE(ETH_MQ_RX_VMDQ_ONLY);
+        CASE_TARPC2RTE(ETH_MQ_RX_VMDQ_RSS);
+        CASE_TARPC2RTE(ETH_MQ_RX_VMDQ_DCB);
+        CASE_TARPC2RTE(ETH_MQ_RX_VMDQ_DCB_RSS);
+        default:
+            return 0;
+    }
+    return 1;
+}
+
+static int
+tarpc_eth_rxmode_flags2rte(uint16_t rxmode_flags,
+                           struct rte_eth_rxmode *rxmode)
+{
+#define TARPC_RTE_ETH_RXMODE_BIT2MEMBER(_bit, _member) \
+    do {                                                            \
+        uint16_t flag = (1 << TARPC_RTE_ETH_RXMODE_##_bit##_BIT);   \
+                                                                    \
+        if (rxmode_flags & flag)                                    \
+        {                                                           \
+            rxmode_flags &= ~flag;                                  \
+            rxmode->_member = 1;                                    \
+        }                                                           \
+    } while (0)
+    TARPC_RTE_ETH_RXMODE_BIT2MEMBER(HEADER_SPLIT, header_split);
+    TARPC_RTE_ETH_RXMODE_BIT2MEMBER(HW_IP_CHECKSUM, hw_ip_checksum);
+    TARPC_RTE_ETH_RXMODE_BIT2MEMBER(HW_VLAN_FILTER, hw_vlan_filter);
+    TARPC_RTE_ETH_RXMODE_BIT2MEMBER(HW_VLAN_STRIP, hw_vlan_strip);
+    TARPC_RTE_ETH_RXMODE_BIT2MEMBER(HW_VLAN_EXTEND, hw_vlan_extend);
+    TARPC_RTE_ETH_RXMODE_BIT2MEMBER(JUMBO_FRAME, jumbo_frame);
+    TARPC_RTE_ETH_RXMODE_BIT2MEMBER(HW_STRIP_CRC, hw_strip_crc);
+    TARPC_RTE_ETH_RXMODE_BIT2MEMBER(ENABLE_SCATTER, enable_scatter);
+    TARPC_RTE_ETH_RXMODE_BIT2MEMBER(ENABLE_LRO, enable_lro);
+#undef TARPC_RTE_ETH_RXMODE_BIT2MEMBER
+    return (rxmode_flags == 0);
+}
+
+static int
+tarpc_eth_rxmode2rte(const struct tarpc_rte_eth_rxmode *rpc,
+                     struct rte_eth_rxmode *rte)
+{
+    int ret = 1;
+
+    ret &= tarpc_eth_rx_mq_mode2rte(rpc->mq_mode, &rte->mq_mode);
+    rte->max_rx_pkt_len = rpc->max_rx_pkt_len;
+    rte->split_hdr_size = rpc->split_hdr_size;
+    ret &= tarpc_eth_rxmode_flags2rte(rpc->flags, rte);
+    return ret;
+}
+
+static int
+tarpc_eth_tx_mq_mode2rte(const enum tarpc_rte_eth_tx_mq_mode rpc,
+                         enum rte_eth_tx_mq_mode *rte)
+{
+    switch (rpc) {
+        CASE_TARPC2RTE(ETH_MQ_TX_NONE);
+        CASE_TARPC2RTE(ETH_MQ_TX_DCB);
+        CASE_TARPC2RTE(ETH_MQ_TX_VMDQ_DCB);
+        CASE_TARPC2RTE(ETH_MQ_TX_VMDQ_ONLY);
+        default:
+            return 0;
+    }
+    return 1;
+}
+
+static int
+tarpc_eth_txmode_flags2rte(uint16_t txmode_flags,
+                           struct rte_eth_txmode *txmode)
+{
+#define TARPC_RTE_ETH_TXMODE_BIT2MEMBER(_bit, _member) \
+    do {                                                            \
+        uint16_t flag = (1 << TARPC_RTE_ETH_TXMODE_##_bit##_BIT);   \
+                                                                    \
+        if (txmode_flags & flag)                                    \
+        {                                                           \
+            txmode_flags &= ~flag;                                  \
+            txmode->_member = 1;                                    \
+        }                                                           \
+    } while (0)
+    TARPC_RTE_ETH_TXMODE_BIT2MEMBER(HW_VLAN_REJECT_TAGGED,
+                                    hw_vlan_reject_tagged);
+    TARPC_RTE_ETH_TXMODE_BIT2MEMBER(HW_VLAN_REJECT_UNTAGGED,
+                                    hw_vlan_reject_untagged);
+    TARPC_RTE_ETH_TXMODE_BIT2MEMBER(HW_VLAN_INSERT_PVID,
+                                    hw_vlan_insert_pvid);
+#undef TARPC_RTE_ETH_TXMODE_BIT2MEMBER
+    return (txmode_flags == 0);
+}
+
+static int
+tarpc_eth_txmode2rte(const struct tarpc_rte_eth_txmode *rpc,
+                     struct rte_eth_txmode *rte)
+{
+    int ret = 1;
+
+    ret &= tarpc_eth_tx_mq_mode2rte(rpc->mq_mode, &rte->mq_mode);
+    rte->pvid = rpc->pvid;
+    ret &= tarpc_eth_txmode_flags2rte(rpc->flags, rte);
+    return ret;
+}
+
+static int
+tarpc_eth_rss_conf2rte(const struct tarpc_rte_eth_rss_conf *rpc,
+                       struct rte_eth_rss_conf *rte)
+{
+    int ret = 1;
+
+    /* TODO Ideally it should be validated that it is not changed */
+    rte->rss_key = rpc->rss_key.rss_key_val;
+    rte->rss_key_len = rpc->rss_key_len;
+    /* TODO Do real mapping */
+    rte->rss_hf = rpc->rss_hf;
+    return ret;
+}
+
+static int
+tarpc_eth_rx_adv_conf2rte(const struct tarpc_rte_eth_rx_adv_conf *rpc,
+                          struct rte_eth_conf *rte)
+{
+    int ret = 1;
+
+    ret &= tarpc_eth_rss_conf2rte(&rpc->rss_conf, &rte->rx_adv_conf.rss_conf);
+    return ret;
+}
+
+static int
+tarpc_intr_conf2rte(const struct tarpc_rte_intr_conf *rpc,
+                    struct rte_intr_conf *rte)
+{
+    rte->lsc = rpc->lsc;
+    rte->rxq = rpc->rxq;
+    return 1;
+}
+
+static int
+tarpc_eth_conf2rte(const struct tarpc_rte_eth_conf *rpc,
+                   struct rte_eth_conf *rte)
+{
+    int ret = 1;
+
+    memset(rte, 0, sizeof(*rte));
+
+    ret &= tarpc_eth_link_speeds2rte(rpc->link_speeds, &rte->link_speeds);
+    ret &= tarpc_eth_rxmode2rte(&rpc->rxmode, &rte->rxmode);
+    ret &= tarpc_eth_txmode2rte(&rpc->txmode, &rte->txmode);
+    rte->lpbk_mode = rpc->lpbk_mode;
+    ret &= tarpc_eth_rx_adv_conf2rte(&rpc->rx_adv_conf, rte);
+    rte->dcb_capability_en = rpc->dcb_capability_en;
+    ret &= tarpc_intr_conf2rte(&rpc->intr_conf, &rte->intr_conf);
+
+    return ret;
+}
+
+TARPC_FUNC(rte_eth_dev_configure, {},
+{
+    struct rte_eth_conf eth_conf;
+    struct rte_eth_conf *eth_conf_p = &eth_conf;
+
+    if (in->eth_conf.eth_conf_len == 0)
+    {
+        eth_conf_p = NULL;
+    }
+    else if (!tarpc_eth_conf2rte(in->eth_conf.eth_conf_val, &eth_conf))
+    {
+        out->common._errno = TE_RC(TE_RPCS, TE_EINVAL);
+        out->retval = -out->common._errno;
+        goto done;
+    }
+
+    MAKE_CALL(out->retval = func(in->port_id, in->nb_rx_queue,
+                                 in->nb_tx_queue, eth_conf_p));
+    neg_errno_h2rpc(&out->retval);
+
+done:
+    ;
 })

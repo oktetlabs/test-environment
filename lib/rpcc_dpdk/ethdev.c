@@ -280,3 +280,264 @@ rpc_rte_eth_dev_info_get(rcf_rpc_server *rpcs, uint8_t port_id,
 
     RETVAL_VOID(rte_eth_dev_info_get);
 }
+
+
+static const char *
+te_log_buf_append_octet_string(te_log_buf *tlbp,
+                               const uint8_t *buf, size_t len)
+{
+    size_t i;
+
+    for (i = 0; i < len; ++i)
+        te_log_buf_append(tlbp, "%.2x", buf[i]);
+
+    return te_log_buf_get(tlbp);
+}
+
+static const char *
+tarpc_rte_eth_rx_mq_mode2str(te_log_buf *tlbp,
+                             enum tarpc_rte_eth_rx_mq_mode mq_mode)
+{
+    const char *mode;
+
+    switch (mq_mode)
+    {
+        case TARPC_ETH_MQ_RX_NONE:
+            mode = "NONE";
+            break;
+        case TARPC_ETH_MQ_RX_RSS:
+            mode = "RSS";
+            break;
+        case TARPC_ETH_MQ_RX_DCB:
+            mode = "DCB";
+            break;
+        case TARPC_ETH_MQ_RX_DCB_RSS:
+            mode = "DBC+RSS";
+            break;
+        case TARPC_ETH_MQ_RX_VMDQ_ONLY:
+            mode = "VMDQ";
+            break;
+        case TARPC_ETH_MQ_RX_VMDQ_RSS:
+            mode = "VMDQ+RSS";
+            break;
+        case TARPC_ETH_MQ_RX_VMDQ_DCB:
+            mode = "VMDQ+DCB";
+            break;
+        case TARPC_ETH_MQ_RX_VMDQ_DCB_RSS:
+            mode = "VMDQ+DCB+RSS";
+            break;
+        default:
+            mode = "<UNKNOWN>";
+            break;
+    }
+    te_log_buf_append(tlbp, "mq_mode=%s", mode);
+
+    return te_log_buf_get(tlbp);
+}
+
+static const char *
+tarpc_rte_eth_rxmode_flags2str(te_log_buf *tlbp, uint16_t flags)
+{
+    const struct te_log_buf_bit2str rxmode_flags2str[] = {
+#define TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(_bit) \
+        { TARPC_RTE_ETH_RXMODE_##_bit##_BIT, #_bit }
+        TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(HEADER_SPLIT),
+        TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(HW_IP_CHECKSUM),
+        TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(HW_VLAN_FILTER),
+        TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(HW_VLAN_STRIP),
+        TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(HW_VLAN_EXTEND),
+        TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(JUMBO_FRAME),
+        TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(HW_STRIP_CRC),
+        TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(ENABLE_SCATTER),
+        TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(ENABLE_LRO),
+#undef TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR
+        { 0, NULL }
+    };
+
+    return te_bit_mask2log_buf(tlbp, flags, rxmode_flags2str);
+}
+
+static const char *
+tarpc_rte_eth_rxmode2str(te_log_buf *tlbp,
+                         const struct tarpc_rte_eth_rxmode *rxconf)
+{
+    te_log_buf_append(tlbp, "{ ");
+
+    tarpc_rte_eth_rx_mq_mode2str(tlbp, rxconf->mq_mode);
+    te_log_buf_append(tlbp, ", max_rx_pkt_len=%u", rxconf->max_rx_pkt_len);
+    te_log_buf_append(tlbp, ", split_hdr_size=%u, flags=",
+                      rxconf->split_hdr_size);
+    tarpc_rte_eth_rxmode_flags2str(tlbp, rxconf->flags);
+
+    te_log_buf_append(tlbp, " }");
+    return te_log_buf_get(tlbp);
+}
+
+static const char *
+tarpc_rte_eth_tx_mq_mode2str(te_log_buf *tlbp,
+                             enum tarpc_rte_eth_tx_mq_mode mq_mode)
+{
+    const char *mode;
+
+    switch (mq_mode)
+    {
+        case TARPC_ETH_MQ_TX_NONE:
+            mode = "NONE";
+            break;
+        case TARPC_ETH_MQ_TX_DCB:
+            mode = "DCB";
+            break;
+        case TARPC_ETH_MQ_TX_VMDQ_DCB:
+            mode = "VMDQ_DCB";
+            break;
+        case TARPC_ETH_MQ_TX_VMDQ_ONLY:
+            mode = "VMDQ_ONLY";
+            break;
+        default:
+            mode = "<UNKNOWN>";
+            break;
+    }
+    te_log_buf_append(tlbp, "mq_mode=%s", mode);
+
+    return te_log_buf_get(tlbp);
+}
+
+static const char *
+tarpc_rte_eth_txmode_flags2str(te_log_buf *tlbp, uint16_t flags)
+{
+    const struct te_log_buf_bit2str txmode_flags2str[] = {
+#define TARPC_RTE_DEV_TXMODE_FLAG_BIT2STR(_bit) \
+        { TARPC_RTE_ETH_TXMODE_##_bit##_BIT, #_bit }
+        TARPC_RTE_DEV_TXMODE_FLAG_BIT2STR(HW_VLAN_REJECT_TAGGED),
+        TARPC_RTE_DEV_TXMODE_FLAG_BIT2STR(HW_VLAN_REJECT_UNTAGGED),
+        TARPC_RTE_DEV_TXMODE_FLAG_BIT2STR(HW_VLAN_INSERT_PVID),
+#undef TARPC_RTE_DEV_TXMODE_FLAG_BIT2STR
+        { 0, NULL }
+    };
+
+    return te_bit_mask2log_buf(tlbp, flags, txmode_flags2str);
+}
+
+static const char *
+tarpc_rte_eth_txmode2str(te_log_buf *tlbp,
+                         const struct tarpc_rte_eth_txmode *txconf)
+{
+    te_log_buf_append(tlbp, "{ ");
+
+    tarpc_rte_eth_tx_mq_mode2str(tlbp, txconf->mq_mode);
+    te_log_buf_append(tlbp, ", pvid=%u, flags=", txconf->pvid);
+    tarpc_rte_eth_txmode_flags2str(tlbp, txconf->flags);
+
+    te_log_buf_append(tlbp, " }");
+    return te_log_buf_get(tlbp);
+}
+
+static const char *
+tarpc_rte_eth_rss_conf2str(te_log_buf *tlbp,
+                           const struct tarpc_rte_eth_rss_conf *rss_conf)
+{
+    te_log_buf_append(tlbp, "{");
+
+    te_log_buf_append(tlbp, "rss_key=");
+    te_log_buf_append_octet_string(tlbp,
+                                   rss_conf->rss_key.rss_key_val,
+                                   rss_conf->rss_key.rss_key_len);
+    te_log_buf_append(tlbp, ", rss_key_len=%u",
+                     (unsigned long long)rss_conf->rss_key_len);
+    te_log_buf_append(tlbp, ", rss_hf=%#llx",
+                     (unsigned long long)rss_conf->rss_hf);
+
+    te_log_buf_append(tlbp, "}");
+    return te_log_buf_get(tlbp);
+}
+
+static const char *
+taprc_rte_eth_rx_adv_conf2str(te_log_buf *tlbp,
+    const struct tarpc_rte_eth_rx_adv_conf *rx_conf_adv)
+{
+    te_log_buf_append(tlbp, "{ rss_conf=");
+
+    tarpc_rte_eth_rss_conf2str(tlbp, &rx_conf_adv->rss_conf);
+
+    te_log_buf_append(tlbp, " }");
+    return te_log_buf_get(tlbp);
+}
+
+
+static const char *
+tarpc_rte_intr_conf2str(te_log_buf *tlbp,
+                        const struct tarpc_rte_intr_conf *intr_conf)
+{
+    te_log_buf_append(tlbp, "{ lsc=%u, rxq=%u }",
+                      intr_conf->lsc, intr_conf->rxq);
+
+    return te_log_buf_get(tlbp);
+}
+
+
+static const char *
+tarpc_rte_eth_conf2str(te_log_buf *tlbp,
+                       const struct tarpc_rte_eth_conf *eth_conf)
+{
+    if (eth_conf == NULL)
+    {
+        te_log_buf_append(tlbp, "(null)");
+        return te_log_buf_get(tlbp);
+    }
+
+    te_log_buf_append(tlbp, "{ ");
+
+    te_log_buf_append(tlbp, "link_speeds=%#x, rxmode=", eth_conf->link_speeds);
+    tarpc_rte_eth_rxmode2str(tlbp, &eth_conf->rxmode);
+    te_log_buf_append(tlbp, ", txmode=");
+    tarpc_rte_eth_txmode2str(tlbp, &eth_conf->txmode);
+    te_log_buf_append(tlbp, ", lbpk_mode=%#x, rx_conf_adv=",
+                      eth_conf->lpbk_mode);
+    taprc_rte_eth_rx_adv_conf2str(tlbp, &eth_conf->rx_adv_conf);
+    te_log_buf_append(tlbp, ", dcb_cap_en=%u, intr_conf=",
+                      eth_conf->dcb_capability_en);
+    tarpc_rte_intr_conf2str(tlbp, &eth_conf->intr_conf);
+
+    te_log_buf_append(tlbp, " }");
+    return te_log_buf_get(tlbp);
+}
+
+int
+rpc_rte_eth_dev_configure(rcf_rpc_server *rpcs,
+                          uint8_t port_id,
+                          uint16_t nb_rx_queue,
+                          uint16_t nb_tx_queue,
+                          const struct tarpc_rte_eth_conf *eth_conf)
+{
+    tarpc_rte_eth_dev_configure_in      in;
+    tarpc_rte_eth_dev_configure_out     out;
+    te_log_buf                         *tlbp;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+    in.nb_rx_queue = nb_rx_queue;
+    in.nb_tx_queue = nb_tx_queue;
+    if (eth_conf != NULL)
+    {
+        in.eth_conf.eth_conf_val = tapi_memdup(eth_conf, sizeof(*eth_conf));
+        in.eth_conf.eth_conf_len = 1;
+    }
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_configure", &in, &out);
+
+    free(in.eth_conf.eth_conf_val);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_configure, out.retval);
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_configure, "%u, %u, %u, %s",
+                 NEG_ERRNO_FMT,
+                 in.port_id, in.nb_rx_queue, in.nb_tx_queue,
+                 tarpc_rte_eth_conf2str(tlbp, eth_conf),
+                 NEG_ERRNO_ARGS(out.retval));
+    te_log_buf_free(tlbp);
+
+    RETVAL_INT(rte_eth_dev_configure, out.retval);
+}
