@@ -481,3 +481,9 @@ TARPC_FUNC(rte_eth_dev_close, {},
 {
     MAKE_CALL(func(in->port_id));
 })
+
+TARPC_FUNC(rte_eth_dev_start, {},
+{
+    MAKE_CALL(out->retval = func(in->port_id));
+    neg_errno_h2rpc(&out->retval);
+})
