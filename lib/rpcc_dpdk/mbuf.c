@@ -353,3 +353,27 @@ rpc_rte_pktmbuf_alloc_bulk(rcf_rpc_server *rpcs,
 
     RETVAL_ZERO_INT(rte_pktmbuf_alloc_bulk, out.retval);
 }
+
+int
+rpc_rte_pktmbuf_chain(rcf_rpc_server *rpcs,
+                      rpc_rte_mbuf_p head, rpc_rte_mbuf_p tail)
+{
+    tarpc_rte_pktmbuf_chain_in  in;
+    tarpc_rte_pktmbuf_chain_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.head = (tarpc_rte_mbuf)head;
+    in.tail = (tarpc_rte_mbuf)tail;
+
+    rcf_rpc_call(rpcs, "rte_pktmbuf_chain", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_pktmbuf_chain, out.retval);
+
+    TAPI_RPC_LOG(rpcs, rte_pktmbuf_chain, RPC_PTR_FMT ", " RPC_PTR_FMT,
+                 NEG_ERRNO_FMT, RPC_PTR_VAL(in.head), RPC_PTR_VAL(in.tail),
+                 NEG_ERRNO_ARGS(out.retval));
+
+    RETVAL_INT(rte_pktmbuf_chain, out.retval);
+}

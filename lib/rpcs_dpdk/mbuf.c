@@ -309,3 +309,22 @@ finish:
     out->retval = -err;
 }
 )
+
+TARPC_FUNC_STATIC(rte_pktmbuf_chain, {},
+{
+    struct rte_mbuf *head = NULL;
+    struct rte_mbuf *tail = NULL;
+    te_errno err;
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+        head = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->head, ns);
+        tail = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->tail, ns);
+    });
+
+    MAKE_CALL(err = func(head, tail));
+
+    neg_errno_h2rpc(&err);
+
+    out->retval = -err;
+}
+)

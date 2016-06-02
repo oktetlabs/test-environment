@@ -181,6 +181,17 @@ extern int rpc_rte_pktmbuf_alloc_bulk(rcf_rpc_server *rpcs,
                                       rpc_rte_mbuf_p *bulk,
                                       unsigned int count);
 
+/**
+ * @b rte_pktmbuf_chain() RPC
+ *
+ * @param head            RTE mbuf pointer (head)
+ * @param tail            RTE mbuf pointer (tail)
+ *
+ * @return @c 0 on success; doesn't jump out in case of error (i.e., -EOVERFLOW)
+ */
+extern int rpc_rte_pktmbuf_chain(rcf_rpc_server *rpcs,
+                                 rpc_rte_mbuf_p head, rpc_rte_mbuf_p tail);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf --> */
 
 #ifdef __cplusplus
