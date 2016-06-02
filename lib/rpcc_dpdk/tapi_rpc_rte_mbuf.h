@@ -149,6 +149,16 @@ extern int rpc_rte_pktmbuf_prepend_data(rcf_rpc_server *rpcs,
 extern rpc_rte_mbuf_p rpc_rte_pktmbuf_get_next(rcf_rpc_server *rpcs,
                                                rpc_rte_mbuf_p m);
 
+/**
+ * Get packet length
+ *
+ * @param m               RTE mbuf pointer
+ *
+ * @return Packet length (bytes)
+ */
+extern uint32_t rpc_rte_pktmbuf_get_pkt_len(rcf_rpc_server *rpcs,
+                                            rpc_rte_mbuf_p m);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf --> */
 
 #ifdef __cplusplus
