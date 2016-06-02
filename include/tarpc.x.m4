@@ -5244,6 +5244,20 @@ struct tarpc_get_rw_ability_out {
     tarpc_int               retval;
 };
 
+/* rpcserver_plugin_enable() */
+struct tarpc_rpcserver_plugin_enable_in {
+    struct tarpc_in_arg     common;
+    string                  install<>;
+    string                  action<>;
+    string                  uninstall<>;
+};
+
+typedef struct tarpc_int_retval_out tarpc_rpcserver_plugin_enable_out;
+
+/* rpcserver_plugin_disable() */
+typedef struct tarpc_void_in tarpc_rpcserver_plugin_disable_in;
+typedef struct tarpc_int_retval_out tarpc_rpcserver_plugin_disable_out;
+
 program tarpc
 {
     version ver0
@@ -5584,5 +5598,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(namespace_id2str)
 
         RPC_DEF(get_rw_ability)
+
+        RPC_DEF(rpcserver_plugin_enable)
+        RPC_DEF(rpcserver_plugin_disable)
     } = 1;
 } = 1;

@@ -385,6 +385,90 @@ rpcserver_plugin_enable_get(unsigned int gid, const char *oid, char *value,
 }
 
 /**
+ * Enable the RPC server plugin inside the RPC server context.
+ *
+ * @param rpcs      RPC server handle
+ * @param plugin    RPC server plugin handle
+ *
+ * @return Status code
+ */
+static te_errno
+call_rpcserver_plugin_enable(
+        struct rpcserver *rpcs, struct rpcserver_plugin *plugin)
+{
+    te_errno rc;
+
+    tarpc_rpcserver_plugin_enable_in  in;
+    tarpc_rpcserver_plugin_enable_out out;
+
+    RING("Enable the plugin '%s' on RPC server '%s'",
+         plugin->name, rcf_pch_rpcserver_get_name(rpcs));
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    in.common.op = RCF_RPC_CALL_WAIT;
+
+    in.install   = plugin->install;
+    in.action    = plugin->action;
+    in.uninstall = plugin->uninstall;
+
+    rc = call(rpcs, "rpcserver_plugin_enable", &in, &out);
+    if (rc != 0)
+        return rc;
+
+    if (out.retval != 0)
+    {
+        ERROR("RPC rpcserver_plugin_enable() failed "
+              "on the server '%s' with plugin '%s': %r",
+              rcf_pch_rpcserver_get_name(rpcs),
+              plugin->name, out.common._errno);
+        return (out.common._errno != 0) ?
+                   out.common._errno : TE_RC(TE_RCF_PCH, TE_ECORRUPTED);
+    }
+    return 0;
+}
+
+/**
+ * Disable the RPC server plugin inside the RPC server context.
+ *
+ * @param rpcs      RPC server handle
+ * @param plugin    RPC server plugin handle
+ *
+ * @return Status code
+ */
+static te_errno
+call_rpcserver_plugin_disable(
+        struct rpcserver *rpcs, struct rpcserver_plugin *plugin)
+{
+    te_errno rc;
+
+    tarpc_rpcserver_plugin_disable_in  in;
+    tarpc_rpcserver_plugin_disable_out out;
+
+    RING("Disable the plugin '%s' on RPC server '%s'",
+         plugin->name, rcf_pch_rpcserver_get_name(rpcs));
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    in.common.op = RCF_RPC_CALL_WAIT;
+
+    rc = call(rpcs, "rpcserver_plugin_disable", &in, &out);
+    if (rc != 0)
+        return rc;
+
+    if (out.retval != 0)
+    {
+        ERROR("RPC rpcserver_plugin_disable() failed "
+              "on the server '%s' with plugin '%s': %r",
+              rcf_pch_rpcserver_get_name(rpcs),
+              plugin->name, out.common._errno);
+        return (out.common._errno != 0) ?
+                   out.common._errno : TE_RC(TE_RCF_PCH, TE_ECORRUPTED);
+    }
+    return 0;
+}
+
+/**
  * Set the field @b enable of specified RPC server plugin.
  *
  * @param gid       Group identifier (unused)

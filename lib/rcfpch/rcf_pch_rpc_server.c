@@ -123,7 +123,9 @@ plugin_action(void)
         plugin.installed = TRUE;
     }
 
-    assert(plugin.action != NULL);
+    if (plugin.action == NULL)
+        return;
+
     if ((rc = plugin.action(plugin.context)) != 0)
     {
         if (TE_RC_GET_ERROR(rc) == TE_EPENDING)
@@ -134,6 +136,86 @@ plugin_action(void)
               rc);
         plugin.enable = FALSE;
     }
+}
+
+/* See description in rcf_pch.h */
+te_errno
+rpcserver_plugin_enable(
+        const char *install, const char *action, const char *uninstall)
+{
+    te_errno rc = rpcserver_plugin_disable();
+
+    if (rc != 0)
+        return rc;
+
+/**
+ * Find a callback for the plugin or fail with error if it is impossible
+ *
+ * @param _name     The field name of callback
+ *
+ * @note    Function name can be empty string or @c NULL
+ * @note    If function is not found, then return status code @c ENOENT
+ */
+#define SET_CALLBACK_OR_FAIL(_name)                                     \
+    do {                                                                \
+        if (_name == NULL || _name[0] == '\0')                          \
+            plugin._name = NULL;                                        \
+        else                                                            \
+        {                                                               \
+            plugin._name = rcf_ch_symbol_addr(_name, TRUE);             \
+            if (plugin._name == NULL)                                   \
+            {                                                           \
+                ERROR("Failed to enable the RPC server plugin. "        \
+                      "Can not find the " #_name " callback \"%s\" "    \
+                      "for plugin.", _name);                            \
+                plugin.action = NULL;                                   \
+                plugin.install = NULL;                                  \
+                plugin.uninstall = NULL;                                \
+                return TE_RC(TE_RCF_API, TE_ENOENT);                    \
+            }                                                           \
+        }                                                               \
+    } while (0)
+
+    SET_CALLBACK_OR_FAIL(install);
+    SET_CALLBACK_OR_FAIL(action);
+    SET_CALLBACK_OR_FAIL(uninstall);
+
+#undef SET_CALLBACK_OR_FAIL
+
+    if (plugin.install == NULL && plugin.action == NULL &&
+            plugin.uninstall == NULL)
+    {
+        ERROR("Failed to enable the RPC server plugin. "
+              "The plugin must have at least one callback.");
+        return TE_RC(TE_RCF_API, TE_EFAULT);
+    }
+
+    plugin.enable = TRUE;
+    plugin.installed = plugin.install == NULL;
+    plugin.pid = getpid();
+    plugin.tid = thread_self();
+
+    plugin_time_restart();
+
+    return 0;
+}
+
+/* See description in rcf_pch.h */
+te_errno
+rpcserver_plugin_disable(void)
+{
+    te_errno rc = 0;
+
+    if (plugin.enable && plugin.installed && plugin.uninstall != NULL)
+        rc = plugin.uninstall(&plugin.context);
+
+    plugin.enable    = FALSE;
+    plugin.installed = FALSE;
+    plugin.install   = NULL;
+    plugin.action    = NULL;
+    plugin.uninstall = NULL;
+
+    return rc;
 }
 
 #ifdef HAVE_SIGNAL_H

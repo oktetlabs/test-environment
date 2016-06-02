@@ -10878,3 +10878,21 @@ TARPC_FUNC(get_rw_ability, {},
 {
     MAKE_CALL(out->retval = func_ptr(in));
 })
+
+/*------------ rpcserver_plugin_enable() -----------------------*/
+
+TARPC_FUNC(rpcserver_plugin_enable, {},
+{
+    MAKE_CALL(out->retval = func_ptr(
+               in->install,
+               in->action,
+               in->uninstall));
+})
+
+/*------------ rpcserver_plugin_disable() -----------------------*/
+
+TARPC_FUNC(rpcserver_plugin_disable, {},
+{
+    MAKE_CALL(out->retval = func_ptr());
+})
+

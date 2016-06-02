@@ -305,6 +305,28 @@ extern void *rcf_pch_rpc_server(const char *name);
 extern void rcf_pch_rpc_server_argv(int argc, char **argv);
 
 /**
+ * Find all callbacks and enable the RPC server plugin.
+ *
+ * @param install   Function name for install plugin or empty string or
+ *                  @c NULL
+ * @param action    Function name for plugin action or empty string or
+ *                  @c NULL
+ * @param uninstall Function name for uninstall plugin or empty string or
+ *                  @c NULL
+ *
+ * @return Status code
+ */
+extern te_errno rpcserver_plugin_enable(
+        const char *install, const char *action, const char *uninstall);
+
+/**
+ * Disable the RPC server plugin.
+ *
+ * @return Status code
+ */
+extern te_errno rpcserver_plugin_disable(void);
+
+/**
  * Add subtree into the configuration tree.
  *
  * @param father        OID of father
