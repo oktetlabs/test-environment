@@ -116,9 +116,6 @@ TARPC_FUNC_STANDALONE(rte_pktmbuf_append_data, {},
     memcpy(dst, in->buf.buf_val, in->buf.buf_len);
 
 finish:
-    if (err != 0)
-        out->common._errno = err;
-
     out->retval = -err;
 }
 )
@@ -178,14 +175,6 @@ TARPC_FUNC_STANDALONE(rte_pktmbuf_read_data,
     } while ((in->len - bytes_read) != 0 && (m = m->next) != NULL);
 
 finish:
-    if (err != 0)
-    {
-        out->common._errno = err;
-        out->retval = -err;
-    }
-    else
-    {
-        out->retval = bytes_read;
-    }
+    out->retval = (err != 0) ? -err : bytes_read;
 }
 )
