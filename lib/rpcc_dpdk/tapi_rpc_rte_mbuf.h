@@ -212,6 +212,15 @@ extern uint8_t rpc_rte_pktmbuf_get_nb_segs(rcf_rpc_server *rpcs,
 extern uint8_t rpc_rte_pktmbuf_get_port(rcf_rpc_server *rpcs,
                                         rpc_rte_mbuf_p m);
 
+/**
+ * @b rte_pktmbuf_set_port() RPC
+ *
+ * @param m               RTE mbuf pointer
+ * @param port            Port number to set
+ */
+extern void rpc_rte_pktmbuf_set_port(rcf_rpc_server *rpcs,
+                                     rpc_rte_mbuf_p m, uint8_t port);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf --> */
 
 #ifdef __cplusplus
