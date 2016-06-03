@@ -128,7 +128,7 @@ rpc_rte_pktmbuf_append_data(rcf_rpc_server *rpcs,
         RETVAL_ZERO_INT(rte_pktmbuf_append_data, -1);
     }
 
-    buf_copy = tapi_memdup(buf, len * sizeof(*buf_copy));
+    buf_copy = tapi_memdup(buf, len);
 
     in.m = (tarpc_rte_mbuf)m;
     in.buf.buf_val = buf_copy;
@@ -165,7 +165,7 @@ rpc_rte_pktmbuf_read_data(rcf_rpc_server *rpcs,
         RETVAL_INT(rte_pktmbuf_read_data, -rpcs->_errno);
     }
 
-    buf_copy = tapi_memdup(buf, rbuflen * sizeof(*buf_copy));
+    buf_copy = tapi_memdup(buf, rbuflen);
 
     in.m = (tarpc_rte_mbuf)m;
     in.offset = offset;
@@ -230,7 +230,7 @@ rpc_rte_pktmbuf_prepend_data(rcf_rpc_server *rpcs,
         RETVAL_ZERO_INT(rte_pktmbuf_prepend_data,
                         -TE_RC(TE_TAPI, TE_EINVAL));
 
-    buf_copy = tapi_memdup(buf, len * sizeof(*buf_copy));
+    buf_copy = tapi_memdup(buf, len);
 
     in.m = (tarpc_rte_mbuf)m;
     in.buf.buf_val = buf_copy;
