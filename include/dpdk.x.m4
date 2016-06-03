@@ -211,6 +211,14 @@ struct tarpc_rte_pktmbuf_set_port_in {
 
 typedef struct tarpc_void_out tarpc_rte_pktmbuf_set_port_out;
 
+/** rte_pktmbuf_get_data_len() */
+typedef struct tarpc_mbuf_in tarpc_rte_pktmbuf_get_data_len_in;
+
+struct tarpc_rte_pktmbuf_get_data_len_out {
+    struct tarpc_out_arg    common;
+    uint16_t                retval;
+};
+
 
 /*
  * rte_eth_dev API
@@ -494,6 +502,7 @@ program dpdk
         RPC_DEF(rte_pktmbuf_get_nb_segs)
         RPC_DEF(rte_pktmbuf_get_port)
         RPC_DEF(rte_pktmbuf_set_port)
+        RPC_DEF(rte_pktmbuf_get_data_len)
 
         RPC_DEF(rte_eth_dev_info_get)
         RPC_DEF(rte_eth_dev_configure)

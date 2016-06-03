@@ -444,3 +444,27 @@ rpc_rte_pktmbuf_set_port(rcf_rpc_server *rpcs,
 
     RETVAL_VOID(rte_pktmbuf_set_port);
 }
+
+uint16_t
+rpc_rte_pktmbuf_get_data_len(rcf_rpc_server *rpcs,
+                             rpc_rte_mbuf_p m)
+{
+    tarpc_rte_pktmbuf_get_data_len_in   in;
+    tarpc_rte_pktmbuf_get_data_len_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.m = (tarpc_rte_mbuf)m;
+
+    rcf_rpc_call(rpcs, "rte_pktmbuf_get_data_len", &in, &out);
+
+    CHECK_RETVAL_VAR(rte_pktmbuf_get_data_len, out.retval, FALSE, UINT16_MAX);
+
+    TAPI_RPC_LOG(rpcs, rte_pktmbuf_get_data_len, RPC_PTR_FMT, "%hu",
+                 RPC_PTR_VAL(in.m), out.retval);
+
+    TAPI_RPC_OUT(rte_pktmbuf_get_data_len, out.retval == UINT16_MAX);
+
+    return (out.retval);
+}

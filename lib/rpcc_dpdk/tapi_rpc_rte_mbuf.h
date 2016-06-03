@@ -221,6 +221,16 @@ extern uint8_t rpc_rte_pktmbuf_get_port(rcf_rpc_server *rpcs,
 extern void rpc_rte_pktmbuf_set_port(rcf_rpc_server *rpcs,
                                      rpc_rte_mbuf_p m, uint8_t port);
 
+/**
+ * Get mbuf segment data length
+ *
+ * @param m               RTE mbuf pointer
+ *
+ * @return Data length (bytes)
+ */
+extern uint16_t rpc_rte_pktmbuf_get_data_len(rcf_rpc_server *rpcs,
+                                             rpc_rte_mbuf_p m);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf --> */
 
 #ifdef __cplusplus
