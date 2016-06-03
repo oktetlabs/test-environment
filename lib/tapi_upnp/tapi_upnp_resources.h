@@ -51,8 +51,8 @@ typedef struct tapi_upnp_resources_uri_node {
 } tapi_upnp_resources_uri_node;
 
 /** Head of the UPnP media resources list. */
-typedef SLIST_HEAD(tapi_upnp_media_uri, tapi_upnp_resources_uri_node)
-    tapi_upnp_media_uri;
+SLIST_HEAD(tapi_upnp_media_uri, tapi_upnp_resources_uri_node);
+typedef struct tapi_upnp_media_uri tapi_upnp_media_uri;
 
 
 /**

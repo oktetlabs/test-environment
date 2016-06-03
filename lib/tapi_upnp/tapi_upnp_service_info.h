@@ -55,8 +55,9 @@ typedef struct tapi_upnp_state_variable {
 } tapi_upnp_state_variable;
 
 /** Head of the UPnP state variables list for particular service. */
-typedef SLIST_HEAD(tapi_upnp_state_variables, tapi_upnp_state_variable)
-    tapi_upnp_state_variables;
+SLIST_HEAD(tapi_upnp_state_variables, tapi_upnp_state_variable);
+typedef struct tapi_upnp_state_variables tapi_upnp_state_variables;
+
 
 /* Argument. */
 /**
@@ -77,8 +78,9 @@ typedef struct tapi_upnp_argument {
 } tapi_upnp_argument;
 
 /** Head of the UPnP arguments list for particular service action. */
-typedef SLIST_HEAD(tapi_upnp_action_arguments, tapi_upnp_argument)
-    tapi_upnp_action_arguments;
+SLIST_HEAD(tapi_upnp_action_arguments, tapi_upnp_argument);
+typedef struct tapi_upnp_action_arguments tapi_upnp_action_arguments;
+
 
 /* Action. */
 /** UPnP action. */
@@ -89,8 +91,9 @@ typedef struct tapi_upnp_action {
 } tapi_upnp_action;
 
 /** Head of the UPnP actions list for particular service. */
-typedef SLIST_HEAD(tapi_upnp_actions, tapi_upnp_action)
-    tapi_upnp_actions;
+SLIST_HEAD(tapi_upnp_actions, tapi_upnp_action);
+typedef struct tapi_upnp_actions tapi_upnp_actions;
+
 
 /* Service Info. */
 /** UPnP service information. */
@@ -102,8 +105,8 @@ typedef struct tapi_upnp_service_info {
 } tapi_upnp_service_info;
 
 /** Head of the UPnP services list. */
-typedef SLIST_HEAD(tapi_upnp_services, tapi_upnp_service_info)
-    tapi_upnp_services;
+SLIST_HEAD(tapi_upnp_services, tapi_upnp_service_info);
+typedef struct tapi_upnp_services tapi_upnp_services;
 
 
 /* State variable properties. */

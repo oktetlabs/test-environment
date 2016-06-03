@@ -47,8 +47,8 @@ typedef struct tapi_upnp_device_info {
 } tapi_upnp_device_info;
 
 /** Head of the UPnP devices list. */
-typedef SLIST_HEAD(tapi_upnp_devices, tapi_upnp_device_info)
-    tapi_upnp_devices;
+SLIST_HEAD(tapi_upnp_devices, tapi_upnp_device_info);
+typedef struct tapi_upnp_devices tapi_upnp_devices;
 
 
 /* Device properties. */
