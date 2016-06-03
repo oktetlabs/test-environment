@@ -55,6 +55,20 @@ typedef struct te_string {
 /** On-stack te_string initializer */
 #define TE_STRING_INIT  { NULL, 0, 0 }
 
+
+/**
+ * Reset dynamic string (mark its empty).
+ *
+ * @param str           Dynamic string.
+ */
+static inline void
+te_string_reset(te_string *str)
+{
+    str->len = 0;
+    *str->ptr = '\0';
+}
+
+
 /**
  * Append to the string results of the sprintf(fmt, ...);
  *
