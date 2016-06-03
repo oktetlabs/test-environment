@@ -122,6 +122,12 @@ static const char *
 tarpc_rte_eth_rxconf2str(te_log_buf *tlbp,
                          const struct tarpc_rte_eth_rxconf *rxconf)
 {
+    if (rxconf == NULL)
+    {
+        te_log_buf_append(tlbp, "(null)");
+        return te_log_buf_get(tlbp);
+    }
+
     te_log_buf_append(tlbp, "{ rx_thresh=");
     tarpc_rte_eth_thresh2str(tlbp, &rxconf->rx_thresh);
     te_log_buf_append(tlbp, ", rx_free_thresh=%u, rx_drop_en=%u, "
@@ -155,6 +161,12 @@ static const char *
 tarpc_rte_eth_txconf2str(te_log_buf *tlbp,
                          const struct tarpc_rte_eth_txconf *txconf)
 {
+    if (txconf == NULL)
+    {
+        te_log_buf_append(tlbp, "(null)");
+        return te_log_buf_get(tlbp);
+    }
+
     te_log_buf_append(tlbp, "{ tx_thresh=");
     tarpc_rte_eth_thresh2str(tlbp, &txconf->tx_thresh);
     te_log_buf_append(tlbp, ", tx_rs_thresh=%u, tx_free_thresh=%u",
