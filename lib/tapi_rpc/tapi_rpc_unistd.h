@@ -47,6 +47,8 @@
 
 #include "tapi_jmp.h"
 
+#include "te_string.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -1225,6 +1227,36 @@ extern int rpc_execve_gen(rcf_rpc_server *rpcs, const char *filename,
                           char *const argv[], char *const envp[]);
 
 /**@} <!-- END te_lib_rpc_unistd --> */
+
+
+/**
+ * Read a data from file descriptor to the @b te_string buffer.
+ * Note, it rewrites a current data in the buffer.
+ *
+ * @param rpcs          RPC server handle.
+ * @param fd            File descriptor.
+ * @param testr         @b te_string buffer to collect the data read from
+ *                      file descriptor.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_rpc_read_fd_to_te_string(rcf_rpc_server *rpcs,
+                                              int             fd,
+                                              te_string      *testr);
+
+/**
+ * Append a read from file descriptor data to the @b te_string buffer.
+ *
+ * @param rpcs          RPC server handle.
+ * @param fd            File descriptor.
+ * @param testr         @b te_string buffer to collect the data read from
+ *                      file descriptor.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_rpc_append_fd_to_te_string(rcf_rpc_server *rpcs,
+                                                int             fd,
+                                                te_string      *testr);
 
 #ifdef __cplusplus
 } /* extern "C" */
