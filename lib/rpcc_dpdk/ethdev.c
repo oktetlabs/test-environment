@@ -1097,3 +1097,49 @@ rpc_rte_eth_dev_set_vlan_ether_type(rcf_rpc_server *rpcs, uint8_t port_id,
 
     RETVAL_ZERO_INT(rte_eth_dev_set_vlan_ether_type, out.retval);
 }
+
+static const char *
+tarpc_rte_eth_vlan_offload_mask2str(te_log_buf *tlbp, uint16_t offload_mask)
+{
+    const struct te_log_buf_bit2str vlan_offload_mask2str[] = {
+#define TARPC_RTE_DEV_VLAN_OFFLOAD_FLAG_BIT2STR(_bit) \
+        { TARPC_ETH_VLAN_##_bit##_OFFLOAD_BIT, #_bit }
+        TARPC_RTE_DEV_VLAN_OFFLOAD_FLAG_BIT2STR(STRIP),
+        TARPC_RTE_DEV_VLAN_OFFLOAD_FLAG_BIT2STR(FILTER),
+        TARPC_RTE_DEV_VLAN_OFFLOAD_FLAG_BIT2STR(EXTEND),
+#undef TARPC_RTE_DEV_VLAN_OFFLOAD_FLAG_BIT2STR
+        { 0, NULL }
+    };
+
+    return te_bit_mask2log_buf(tlbp, offload_mask, vlan_offload_mask2str);
+}
+
+int
+rpc_rte_eth_dev_set_vlan_offload(rcf_rpc_server *rpcs, uint8_t port_id,
+                                 tarpc_int offload_mask)
+{
+    tarpc_rte_eth_dev_set_vlan_offload_in   in;
+    tarpc_rte_eth_dev_set_vlan_offload_out  out;
+    te_log_buf                             *tlbp;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+    in.offload_mask = offload_mask;
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_set_vlan_offload", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_set_vlan_offload,
+                                          out.retval);
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_set_vlan_offload,
+                 "%hhu, %s", NEG_ERRNO_FMT,
+                 in.port_id,
+                 tarpc_rte_eth_vlan_offload_mask2str(tlbp, in.offload_mask),
+                 NEG_ERRNO_ARGS(out.retval));
+    te_log_buf_free(tlbp);
+
+    RETVAL_ZERO_INT(rte_eth_dev_set_vlan_offload, out.retval);
+}
