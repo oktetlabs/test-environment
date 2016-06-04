@@ -681,6 +681,15 @@ struct tarpc_rte_eth_rx_descriptor_done_in {
 
 typedef struct tarpc_int_retval_out tarpc_rte_eth_rx_descriptor_done_out;
 
+/** rte_eth_rx_queue_count() */
+struct tarpc_rte_eth_rx_queue_count_in {
+    struct tarpc_in_arg     common;
+    uint8_t                 port_id;
+    uint16_t                queue_id;
+};
+
+typedef struct tarpc_int_retval_out tarpc_rte_eth_rx_queue_count_out;
+
 program dpdk
 {
     version ver0
@@ -730,5 +739,6 @@ program dpdk
         RPC_DEF(rte_eth_dev_get_vlan_offload)
         RPC_DEF(rte_eth_dev_set_vlan_pvid)
         RPC_DEF(rte_eth_rx_descriptor_done)
+        RPC_DEF(rte_eth_rx_queue_count)
     } = 1;
 } = 2;

@@ -1244,3 +1244,30 @@ rpc_rte_eth_rx_descriptor_done(rcf_rpc_server *rpcs, uint8_t port_id,
 
     RETVAL_INT(rte_eth_rx_descriptor_done, out.retval);
 }
+
+int
+rpc_rte_eth_rx_queue_count(rcf_rpc_server *rpcs, uint8_t port_id,
+                           uint16_t queue_id)
+{
+    tarpc_rte_eth_rx_queue_count_in   in;
+    tarpc_rte_eth_rx_queue_count_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+    in.queue_id = queue_id;
+
+    rcf_rpc_call(rpcs, "rte_eth_rx_queue_count", &in, &out);
+
+    /* Number of descriptors is 16bit */
+    CHECK_RETVAL_VAR_ERR_COND(rte_eth_rx_queue_count, out.retval,
+                              (out.retval > UINT16_MAX), RETVAL_ECORRUPTED,
+                              (out.retval < 0));
+
+    TAPI_RPC_LOG(rpcs, rte_eth_rx_queue_count,
+                 "%hhu, %hu", NEG_ERRNO_FMT,
+                 in.port_id, in.queue_id, NEG_ERRNO_ARGS(out.retval));
+
+    RETVAL_INT(rte_eth_rx_queue_count, out.retval);
+}
