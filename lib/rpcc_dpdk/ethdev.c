@@ -798,3 +798,24 @@ rpc_rte_eth_dev_set_link_up(rcf_rpc_server *rpcs, uint8_t port_id)
                  in.port_id, NEG_ERRNO_ARGS(out.retval));
     RETVAL_ZERO_INT(rte_eth_dev_set_link_up, out.retval);
 }
+
+int
+rpc_rte_eth_dev_set_link_down(rcf_rpc_server *rpcs, uint8_t port_id)
+{
+    tarpc_rte_eth_dev_set_link_down_in   in;
+    tarpc_rte_eth_dev_set_link_down_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_set_link_down", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_set_link_down,
+                                          out.retval);
+
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_set_link_down, "%hhu", NEG_ERRNO_FMT,
+                 in.port_id, NEG_ERRNO_ARGS(out.retval));
+    RETVAL_ZERO_INT(rte_eth_dev_set_link_down, out.retval);
+}

@@ -157,6 +157,15 @@ extern uint16_t rpc_rte_eth_rx_burst(rcf_rpc_server *rpcs, uint8_t  port_id,
  */
 extern int rpc_rte_eth_dev_set_link_up(rcf_rpc_server *rpcs, uint8_t port_id);
 
+/**
+ * @b rte_eth_dev_set_link_down() RPC.
+ *
+ * If failure is not expected, the function jumps out in the case of
+ * non-zero return value.
+ */
+extern int rpc_rte_eth_dev_set_link_down(rcf_rpc_server *rpcs,
+                                         uint8_t port_id);
+
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 
 #ifdef __cplusplus

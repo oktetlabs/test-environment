@@ -542,6 +542,11 @@ typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_dev_set_link_up_in;
 
 typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_set_link_up_out;
 
+/** rte_eth_dev_set_link_down() */
+typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_dev_set_link_down_in;
+
+typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_set_link_down_out;
+
 program dpdk
 {
     version ver0
@@ -575,5 +580,6 @@ program dpdk
         RPC_DEF(rte_eth_tx_burst)
         RPC_DEF(rte_eth_rx_burst)
         RPC_DEF(rte_eth_dev_set_link_up)
+        RPC_DEF(rte_eth_dev_set_link_down)
     } = 1;
 } = 2;
