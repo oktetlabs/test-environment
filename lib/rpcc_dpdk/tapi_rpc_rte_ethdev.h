@@ -100,6 +100,19 @@ extern int rpc_rte_eth_dev_start(rcf_rpc_server *rpcs, uint8_t port_id);
  */
 extern void rpc_rte_eth_dev_stop(rcf_rpc_server *rpcs, uint8_t port_id);
 
+/**
+ * @b rte_eth_tx_queue_setup() RPC.
+ *
+ * If failure is not expected, the function jumps out in the case of
+ * non-zero return value.
+ */
+extern int rpc_rte_eth_tx_queue_setup(rcf_rpc_server *rpcs,
+                                      uint8_t port_id,
+                                      uint16_t tx_queue_id,
+                                      uint16_t nb_tx_desc,
+                                      unsigned int socket_id,
+                                      struct tarpc_rte_eth_txconf *tx_conf);
+
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 
 #ifdef __cplusplus

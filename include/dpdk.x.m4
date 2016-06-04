@@ -486,6 +486,19 @@ typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_dev_stop_in;
 
 typedef struct tarpc_void_out tarpc_rte_eth_dev_stop_out;
 
+/** rte_eth_tx_queue_setup() */
+struct tarpc_rte_eth_tx_queue_setup_in {
+    struct tarpc_in_arg         common;
+    uint8_t                     port_id;
+    uint16_t                    tx_queue_id;
+    uint16_t                    nb_tx_desc;
+    tarpc_int                   socket_id;
+    struct tarpc_rte_eth_txconf tx_conf<>;
+};
+
+typedef struct tarpc_int_retval_out tarpc_rte_eth_tx_queue_setup_out;
+
+
 program dpdk
 {
     version ver0
@@ -514,5 +527,6 @@ program dpdk
         RPC_DEF(rte_eth_dev_close)
         RPC_DEF(rte_eth_dev_start)
         RPC_DEF(rte_eth_dev_stop)
+        RPC_DEF(rte_eth_tx_queue_setup)
     } = 1;
 } = 2;

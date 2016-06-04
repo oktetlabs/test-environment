@@ -492,3 +492,86 @@ TARPC_FUNC(rte_eth_dev_stop, {},
 {
     MAKE_CALL(func(in->port_id));
 })
+
+static int
+tarpc_eth_thresh2rte(const struct tarpc_rte_eth_thresh *rpc,
+                     struct rte_eth_thresh *rte)
+{
+    memset(rte, 0, sizeof(*rte));
+
+    rte->pthresh = rpc->pthresh;
+    rte->hthresh = rpc->hthresh;
+    rte->wthresh = rpc->wthresh;
+
+    return 1;
+}
+
+static int
+tarpc_eth_txq_flags2rte(uint32_t rpc, uint32_t *rte)
+{
+    *rte = 0;
+
+#define RPC_DEV_TXQ_FLAG2STR(_bit) \
+    do {                                                            \
+        uint32_t flag = (1 << TARPC_RTE_ETH_TXQ_FLAGS_##_bit##_BIT);\
+                                                                    \
+        if (rpc & flag)                                             \
+        {                                                           \
+            rpc &= ~flag;                                           \
+            *rte |= ETH_TXQ_FLAGS_##_bit;                           \
+        }                                                           \
+    } while (0)
+    RPC_DEV_TXQ_FLAG2STR(NOMULTSEGS);
+    RPC_DEV_TXQ_FLAG2STR(NOREFCOUNT);
+    RPC_DEV_TXQ_FLAG2STR(NOMULTMEMP);
+    RPC_DEV_TXQ_FLAG2STR(NOVLANOFFL);
+    RPC_DEV_TXQ_FLAG2STR(NOXSUMSCTP);
+    RPC_DEV_TXQ_FLAG2STR(NOXSUMUDP);
+    RPC_DEV_TXQ_FLAG2STR(NOXSUMTCP);
+#undef RPC_DEV_TXQ_FLAG2STR
+
+    return (rpc == 0);
+}
+
+static int
+tarpc_eth_txconf2rte(const struct tarpc_rte_eth_txconf *rpc,
+                     struct rte_eth_txconf *rte)
+{
+    int ret = 1;
+
+    memset(rte, 0, sizeof(*rte));
+
+    ret &= tarpc_eth_thresh2rte(&rpc->tx_thresh, &rte->tx_thresh);
+    rte->tx_rs_thresh = rpc->tx_rs_thresh;
+    rte->tx_free_thresh = rpc->tx_free_thresh;
+    ret &= tarpc_eth_txq_flags2rte(rpc->txq_flags, &rte->txq_flags);
+    rte->tx_deferred_start = rpc->tx_deferred_start;
+
+    return ret;
+}
+
+TARPC_FUNC(rte_eth_tx_queue_setup, {},
+{
+    struct rte_eth_txconf eth_txconf;
+    struct rte_eth_txconf *eth_txconf_p = &eth_txconf;
+
+    if (in->tx_conf.tx_conf_len == 0)
+    {
+        eth_txconf_p = NULL;
+    }
+    else if (!tarpc_eth_txconf2rte(in->tx_conf.tx_conf_val, &eth_txconf))
+    {
+        out->retval = -TE_RC(TE_RPCS, TE_EINVAL);
+        goto done;
+    }
+
+    MAKE_CALL(out->retval = func(in->port_id,
+                                 in->tx_queue_id,
+                                 in->nb_tx_desc,
+                                 in->socket_id,
+                                 eth_txconf_p));
+    neg_errno_h2rpc(&out->retval);
+
+done:
+    ;
+})
