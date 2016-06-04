@@ -266,6 +266,14 @@ extern int rpc_rte_eth_dev_set_vlan_ether_type(rcf_rpc_server *rpcs,
 extern int rpc_rte_eth_dev_set_vlan_offload(rcf_rpc_server *rpcs, uint8_t port_id,
                                             tarpc_int offload_mask);
 
+/**
+ * @b rte_eth_dev_get_vlan_offload() RPC.
+ *
+ * If failure is not expected, the function jumps out in the case of
+ * negative return value or invalid mask.
+ */
+extern int rpc_rte_eth_dev_get_vlan_offload(rcf_rpc_server *rpcs, uint8_t port_id);
+
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 
 #ifdef __cplusplus

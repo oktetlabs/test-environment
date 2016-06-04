@@ -1143,3 +1143,50 @@ rpc_rte_eth_dev_set_vlan_offload(rcf_rpc_server *rpcs, uint8_t port_id,
 
     RETVAL_ZERO_INT(rte_eth_dev_set_vlan_offload, out.retval);
 }
+
+static uint16_t
+tarpc_rte_eth_vlan_offload_mask_valid(uint16_t offload_mask)
+{
+#define CHECK_TARPC_RTE_ETH_VLAN_OFFLOAD_BIT(_bit) \
+    do {                                                            \
+        uint16_t flag = (1 << TARPC_ETH_VLAN_##_bit##_OFFLOAD_BIT); \
+        offload_mask &= ~flag;                                      \
+    } while (0)
+    CHECK_TARPC_RTE_ETH_VLAN_OFFLOAD_BIT(STRIP);
+    CHECK_TARPC_RTE_ETH_VLAN_OFFLOAD_BIT(FILTER);
+    CHECK_TARPC_RTE_ETH_VLAN_OFFLOAD_BIT(EXTEND);
+#undef CHECK_TARPC_RTE_ETH_VLAN_OFFLOAD_BIT
+    return offload_mask;
+}
+
+int
+rpc_rte_eth_dev_get_vlan_offload(rcf_rpc_server *rpcs, uint8_t port_id)
+{
+    tarpc_rte_eth_dev_get_vlan_offload_in   in;
+    tarpc_rte_eth_dev_get_vlan_offload_out  out;
+    te_log_buf                             *tlbp;
+    int                                     check_mask;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_get_vlan_offload", &in, &out);
+
+    check_mask = tarpc_rte_eth_vlan_offload_mask_valid(out.retval);
+
+    CHECK_RETVAL_VAR_ERR_COND(rte_eth_dev_get_vlan_offload, out.retval,
+                              out.retval >= 0 && check_mask != 0,
+                              RETVAL_ECORRUPTED, out.retval < 0);
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_get_vlan_offload,
+                 "%hhu", "%s",
+                 in.port_id,
+                 (out.retval < 0) ? neg_errno_rpc2str(out.retval) :
+                     tarpc_rte_eth_vlan_offload_mask2str(tlbp, out.retval));
+    te_log_buf_free(tlbp);
+
+    RETVAL_INT(rte_eth_dev_get_vlan_offload, out.retval);
+}

@@ -821,3 +821,43 @@ TARPC_FUNC(rte_eth_dev_set_vlan_offload, {},
 done:
     ;
 })
+
+static int
+rte_eth_vlan_offload_mask2tarpc(int rte, uint16_t *rpc)
+{
+#define RTE_ETH_VLAN_OFFLOAD_BIT2TARPC_BIT(_bit) \
+    do {                                                            \
+        uint16_t flag = ETH_VLAN_##_bit##_OFFLOAD;                  \
+                                                                    \
+        if (rte & flag)                                             \
+        {                                                           \
+            rte &= ~flag;                                           \
+            *rpc |= (1 << TARPC_ETH_VLAN_##_bit##_OFFLOAD_BIT);     \
+        }                                                           \
+    } while (0)
+    RTE_ETH_VLAN_OFFLOAD_BIT2TARPC_BIT(STRIP);
+    RTE_ETH_VLAN_OFFLOAD_BIT2TARPC_BIT(FILTER);
+    RTE_ETH_VLAN_OFFLOAD_BIT2TARPC_BIT(EXTEND);
+#undef RTE_ETH_VLAN_OFFLOAD_BIT2TARPC_BIT
+    return (rte == 0);
+}
+
+TARPC_FUNC(rte_eth_dev_get_vlan_offload, {},
+{
+    uint16_t mask = 0;
+
+    MAKE_CALL(out->retval = func(in->port_id));
+
+    if (out->retval < 0)
+    {
+        neg_errno_h2rpc(&out->retval);
+    }
+    else if (!rte_eth_vlan_offload_mask2tarpc(out->retval, &mask))
+    {
+        out->retval = -TE_RC(TE_RPCS, TE_EINVAL);
+    }
+    else
+    {
+        out->retval = mask;
+    }
+})

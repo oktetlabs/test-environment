@@ -656,6 +656,11 @@ struct tarpc_rte_eth_dev_set_vlan_offload_in {
 
 typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_set_vlan_offload_out;
 
+/** rte_eth_dev_get_vlan_offload() */
+typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_dev_get_vlan_offload_in;
+
+typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_get_vlan_offload_out;
+
 program dpdk
 {
     version ver0
@@ -702,5 +707,6 @@ program dpdk
         RPC_DEF(rte_eth_dev_set_vlan_strip_on_queue)
         RPC_DEF(rte_eth_dev_set_vlan_ether_type)
         RPC_DEF(rte_eth_dev_set_vlan_offload)
+        RPC_DEF(rte_eth_dev_get_vlan_offload)
     } = 1;
 } = 2;
