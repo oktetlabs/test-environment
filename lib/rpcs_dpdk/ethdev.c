@@ -714,3 +714,19 @@ TARPC_FUNC(rte_eth_allmulticast_get, {},
 {
     MAKE_CALL(out->retval = func(in->port_id));
 })
+
+TARPC_FUNC(rte_eth_dev_get_mtu,{},
+{
+    uint16_t mtu;
+    te_bool is_mtu_null;
+
+    is_mtu_null = (in->mtu.mtu_len == 0);
+
+    MAKE_CALL(out->retval = rte_eth_dev_get_mtu(
+        in->port_id, is_mtu_null ? NULL : &mtu));
+    neg_errno_h2rpc(&out->retval);
+
+    if (!is_mtu_null)
+        out->mtu = mtu;
+
+})

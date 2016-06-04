@@ -937,3 +937,31 @@ rpc_rte_eth_allmulticast_get(rcf_rpc_server *rpcs, uint8_t port_id)
 
     return out.retval;
 }
+
+int
+rpc_rte_eth_dev_get_mtu(rcf_rpc_server *rpcs, uint8_t port_id, uint16_t *mtu)
+{
+    tarpc_rte_eth_dev_get_mtu_in   in;
+    tarpc_rte_eth_dev_get_mtu_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+    if (mtu != NULL)
+        in.mtu.mtu_len = 1;
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_get_mtu", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_get_mtu,
+                                          out.retval);
+
+    if (RPC_IS_CALL_OK(rpcs))
+        *mtu = out.mtu;
+
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_get_mtu, "%hhu, %p", NEG_ERRNO_FMT,
+                 " mtu=%u", mtu, port_id,
+                 NEG_ERRNO_ARGS(out.retval), out.mtu);
+
+    RETVAL_ZERO_INT(rte_eth_dev_get_mtu, out.retval);
+}

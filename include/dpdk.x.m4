@@ -577,6 +577,20 @@ typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_allmulticast_get_in;
 
 typedef struct tarpc_int_retval_out tarpc_rte_eth_allmulticast_get_out;
 
+/** rte_eth_dev_get_mtu() */
+struct tarpc_rte_eth_dev_get_mtu_in {
+    struct tarpc_in_arg  common;
+    uint8_t              port_id;
+    uint16_t             mtu<>;
+
+};
+
+struct tarpc_rte_eth_dev_get_mtu_out {
+    struct tarpc_out_arg  common;
+    tarpc_int             retval;
+    uint16_t              mtu;
+};
+
 program dpdk
 {
     version ver0
@@ -617,5 +631,6 @@ program dpdk
         RPC_DEF(rte_eth_allmulticast_enable)
         RPC_DEF(rte_eth_allmulticast_disable)
         RPC_DEF(rte_eth_allmulticast_get)
+        RPC_DEF(rte_eth_dev_get_mtu)
     } = 1;
 } = 2;
