@@ -575,3 +575,51 @@ TARPC_FUNC(rte_eth_tx_queue_setup, {},
 done:
     ;
 })
+
+static int
+tarpc_eth_rxconf2rte(const struct tarpc_rte_eth_rxconf *rpc,
+                     struct rte_eth_rxconf *rte)
+{
+    int ret = 1;
+
+    memset(rte, 0, sizeof(*rte));
+
+    ret &= tarpc_eth_thresh2rte(&rpc->rx_thresh, &rte->rx_thresh);
+    rte->rx_free_thresh = rpc->rx_free_thresh;
+    rte->rx_drop_en = rpc->rx_drop_en;
+    rte->rx_deferred_start = rpc->rx_deferred_start;
+
+    return ret;
+}
+
+TARPC_FUNC(rte_eth_rx_queue_setup, {},
+{
+    struct rte_mempool *mp = NULL;
+    struct rte_eth_rxconf eth_rxconf;
+    struct rte_eth_rxconf *eth_rxconf_p = &eth_rxconf;
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MEMPOOL, {
+        mp = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->mp, ns);
+    });
+
+    if (in->rx_conf.rx_conf_len == 0)
+    {
+        eth_rxconf_p = NULL;
+    }
+    else if (!tarpc_eth_rxconf2rte(in->rx_conf.rx_conf_val, &eth_rxconf))
+    {
+        out->retval = -TE_RC(TE_RPCS, TE_EINVAL);
+        goto done;
+    }
+
+    MAKE_CALL(out->retval = func(in->port_id,
+                                 in->rx_queue_id,
+                                 in->nb_rx_desc,
+                                 in->socket_id,
+                                 eth_rxconf_p,
+                                 mp));
+    neg_errno_h2rpc(&out->retval);
+
+done:
+    ;
+})
