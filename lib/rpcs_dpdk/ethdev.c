@@ -672,3 +672,9 @@ TARPC_FUNC_STATIC(rte_eth_rx_burst, {},
             out->rx_pkts.rx_pkts_val[i] = RCF_PCH_MEM_INDEX_ALLOC(rx_pkts[i], ns);
     });
 })
+
+TARPC_FUNC(rte_eth_dev_set_link_up, {},
+{
+    MAKE_CALL(out->retval = func(in->port_id));
+    neg_errno_h2rpc(&out->retval);
+})

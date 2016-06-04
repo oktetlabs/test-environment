@@ -537,6 +537,11 @@ struct tarpc_rte_eth_rx_burst_out {
     tarpc_rte_mbuf          rx_pkts<>;
 };
 
+/** rte_eth_dev_set_link_up() */
+typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_dev_set_link_up_in;
+
+typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_set_link_up_out;
+
 program dpdk
 {
     version ver0
@@ -569,5 +574,6 @@ program dpdk
         RPC_DEF(rte_eth_rx_queue_setup)
         RPC_DEF(rte_eth_tx_burst)
         RPC_DEF(rte_eth_rx_burst)
+        RPC_DEF(rte_eth_dev_set_link_up)
     } = 1;
 } = 2;

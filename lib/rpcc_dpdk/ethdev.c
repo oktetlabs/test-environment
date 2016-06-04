@@ -778,3 +778,23 @@ rpc_rte_eth_rx_burst(rcf_rpc_server *rpcs,
 
     return out.rx_pkts.rx_pkts_len;
 }
+
+int
+rpc_rte_eth_dev_set_link_up(rcf_rpc_server *rpcs, uint8_t port_id)
+{
+    tarpc_rte_eth_dev_set_link_up_in   in;
+    tarpc_rte_eth_dev_set_link_up_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_set_link_up", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_set_link_up, out.retval);
+
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_set_link_up, "%hhu", NEG_ERRNO_FMT,
+                 in.port_id, NEG_ERRNO_ARGS(out.retval));
+    RETVAL_ZERO_INT(rte_eth_dev_set_link_up, out.retval);
+}
