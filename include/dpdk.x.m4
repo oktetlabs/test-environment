@@ -725,6 +725,25 @@ typedef struct tarpc_rte_eth_dev_port_id_queue_id_in tarpc_rte_eth_dev_tx_queue_
 
 typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_tx_queue_stop_out;
 
+/** The double brackets are needed. The reason for the disappearance
+ *  of the first pair of brackets is not known yet.
+ */
+struct tarpc_ether_addr {
+    uint8_t    addr_bytes[[6]];
+};
+
+/** rte_eth_macaddr_get() */
+struct tarpc_rte_eth_macaddr_get_in {
+    struct tarpc_in_arg      common;
+    uint8_t                  port_id;
+    struct tarpc_ether_addr  mac_addr<>;
+};
+
+struct tarpc_rte_eth_macaddr_get_out {
+    struct tarpc_out_arg     common;
+    struct tarpc_ether_addr  mac_addr<>;
+};
+
 program dpdk
 {
     version ver0
@@ -781,5 +800,6 @@ program dpdk
         RPC_DEF(rte_eth_dev_rx_queue_stop)
         RPC_DEF(rte_eth_dev_tx_queue_start)
         RPC_DEF(rte_eth_dev_tx_queue_stop)
+        RPC_DEF(rte_eth_macaddr_get)
     } = 1;
 } = 2;

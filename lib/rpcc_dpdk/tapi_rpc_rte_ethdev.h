@@ -357,6 +357,12 @@ extern int rpc_rte_eth_dev_tx_queue_stop(rcf_rpc_server *rpcs,
                                          uint8_t port_id,
                                          uint16_t queue_id);
 
+/**
+ * @b rte_eth_macaddr_get() RPC
+ */
+extern void rpc_rte_eth_macaddr_get(rcf_rpc_server *rpcs, uint8_t port_id,
+                                    struct tarpc_ether_addr *mac_addr);
+
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 
 #ifdef __cplusplus

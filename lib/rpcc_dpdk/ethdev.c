@@ -1404,3 +1404,34 @@ rpc_rte_eth_dev_tx_queue_stop(rcf_rpc_server *rpcs, uint8_t port_id,
                  in.port_id, in.queue_id, NEG_ERRNO_ARGS(out.retval));
     RETVAL_ZERO_INT(rte_eth_dev_tx_queue_stop, out.retval);
 }
+
+void
+rpc_rte_eth_macaddr_get(rcf_rpc_server *rpcs, uint8_t port_id,
+                        struct tarpc_ether_addr *mac_addr)
+{
+    tarpc_rte_eth_macaddr_get_in   in;
+    tarpc_rte_eth_macaddr_get_out  out;
+    te_log_buf                    *tlbp;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+
+    if (mac_addr != NULL)
+        in.mac_addr.mac_addr_len = 1;
+
+    rcf_rpc_call(rpcs, "rte_eth_macaddr_get", &in, &out);
+
+    if (RPC_IS_CALL_OK(rpcs) && out.mac_addr.mac_addr_len != 0)
+        memcpy(mac_addr->addr_bytes, out.mac_addr.mac_addr_val[0].addr_bytes,
+               sizeof(out.mac_addr.mac_addr_val[0].addr_bytes));
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_eth_macaddr_get, "%hhu, %p", "%s",
+                 mac_addr, in.port_id, te_ether_addr2log_buf(
+                    tlbp, (uint8_t *)&out.mac_addr.mac_addr_val[0].addr_bytes));
+    te_log_buf_free(tlbp);
+
+    RETVAL_VOID(rte_eth_macaddr_get);
+}
