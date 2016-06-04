@@ -235,3 +235,17 @@ te_args2log_buf(te_log_buf *buf, int argc, const char **argv)
 
     return te_log_buf_get(buf);
 }
+
+const char *
+te_ether_addr2log_buf(te_log_buf *buf, const uint8_t *mac_addr)
+{
+    if (mac_addr == NULL)
+        te_log_buf_append(buf, "<NULL>");
+    else
+        te_log_buf_append(buf, "%02x:%02x:%02x:%02x:%02x:%02x",
+                          mac_addr[0], mac_addr[1],
+                          mac_addr[2], mac_addr[3],
+                          mac_addr[4], mac_addr[5]);
+
+    return te_log_buf_get(buf);
+}

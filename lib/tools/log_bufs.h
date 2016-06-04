@@ -35,6 +35,8 @@
 extern "C" {
 #endif
 
+#include <inttypes.h>
+
 /**
  * Declaration of te_log_buf type, which is defined
  * in the implementation, so user can allocate and operate only
@@ -127,6 +129,17 @@ struct te_log_buf_bit2str {
 extern const char *te_bit_mask2log_buf(te_log_buf *buf,
                                        unsigned long long bit_mask,
                                        const struct te_log_buf_bit2str *map);
+
+/**
+ * Put ether address to log buffer.
+ *
+ * @param buf   Pointer to the buffer allocated with @b te_log_buf_alloc()
+ * @param argc  Pointer to the ether address
+ *
+ * @return @b te_log_buf_get() return value after addition
+ */
+extern const char *te_ether_addr2log_buf(te_log_buf *buf,
+                                         const uint8_t * mac_addr);
 
 #ifdef __cplusplus
 } /* extern "C" */
