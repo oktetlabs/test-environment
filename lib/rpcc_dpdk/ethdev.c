@@ -590,3 +590,20 @@ rpc_rte_eth_dev_start(rcf_rpc_server *rpcs, uint8_t port_id)
                  in.port_id, NEG_ERRNO_ARGS(out.retval));
     RETVAL_ZERO_INT(rte_eth_dev_start, out.retval);
 }
+
+void
+rpc_rte_eth_dev_stop(rcf_rpc_server *rpcs, uint8_t port_id)
+{
+    tarpc_rte_eth_dev_stop_in   in;
+    tarpc_rte_eth_dev_stop_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_stop", &in, &out);
+
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_stop, "%hhu", "", in.port_id);
+    RETVAL_VOID(rte_eth_dev_stop);
+}
