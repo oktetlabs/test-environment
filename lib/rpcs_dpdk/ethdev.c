@@ -840,6 +840,11 @@ TARPC_FUNC_STATIC(rte_eth_rx_queue_count, {},
     neg_errno_h2rpc(&out->retval);
 })
 
+TARPC_FUNC(rte_eth_dev_socket_id, {},
+{
+    MAKE_CALL(out->retval = func(in->port_id));
+})
+
 static int
 rte_eth_vlan_offload_mask2tarpc(int rte, uint16_t *rpc)
 {
