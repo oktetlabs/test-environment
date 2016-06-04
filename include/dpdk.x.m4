@@ -572,6 +572,11 @@ typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_allmulticast_disable_i
 
 typedef struct tarpc_void_out tarpc_rte_eth_allmulticast_disable_out;
 
+/** rte_eth_allmulticast_get() */
+typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_allmulticast_get_in;
+
+typedef struct tarpc_int_retval_out tarpc_rte_eth_allmulticast_get_out;
+
 program dpdk
 {
     version ver0
@@ -611,5 +616,6 @@ program dpdk
         RPC_DEF(rte_eth_promiscuous_get)
         RPC_DEF(rte_eth_allmulticast_enable)
         RPC_DEF(rte_eth_allmulticast_disable)
+        RPC_DEF(rte_eth_allmulticast_get)
     } = 1;
 } = 2;

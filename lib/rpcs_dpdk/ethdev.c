@@ -709,3 +709,8 @@ TARPC_FUNC(rte_eth_allmulticast_disable, {},
 {
     MAKE_CALL(func(in->port_id));
 })
+
+TARPC_FUNC(rte_eth_allmulticast_get, {},
+{
+    MAKE_CALL(out->retval = func(in->port_id));
+})
