@@ -688,7 +688,7 @@ sniffer_make_conf()
     agt=
     str=
 
-    TE_SNIFF_CSCONF="${CONF_DIRS%%:*}/cs.conf.sniffer"
+    TE_SNIFF_CSCONF="${TE_TMP}/cs.conf.sniffer"
 
     echo "<?xml version=\"1.0\"?>" > "${TE_SNIFF_CSCONF}"
     if test ! -w "${TE_SNIFF_CSCONF}" ; then
@@ -806,12 +806,6 @@ fi
 cmd_line_opts="$@"
 cmd_line_opts_all=
 process_opts "$@"
-
-sniffer_make_conf
-retval=$?
-if [ $retval -eq 1 ] ; then
-    exit 1
-fi
 
 
 if test -z "$TE_BASE" -a -n "$BUILDER" ; then
@@ -950,6 +944,12 @@ if test -z "$(which te_log_init 2>/dev/null)" ; then
     fi
     #Export path to logging and building scripts, which are not installed yet
     export PATH="$PATH:${TE_BASE}/engine/logger:${TE_BASE}/engine/builder"
+fi
+
+sniffer_make_conf
+retval=$?
+if [ $retval -eq 1 ] ; then
+    exit 1
 fi
 
 . ${TE_BASE}/common_vars.sh
