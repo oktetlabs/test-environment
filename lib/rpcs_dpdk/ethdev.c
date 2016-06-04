@@ -684,3 +684,8 @@ TARPC_FUNC(rte_eth_dev_set_link_down, {},
     MAKE_CALL(out->retval = func(in->port_id));
     neg_errno_h2rpc(&out->retval);
 })
+
+TARPC_FUNC(rte_eth_promiscuous_enable, {},
+{
+    MAKE_CALL(func(in->port_id));
+})
