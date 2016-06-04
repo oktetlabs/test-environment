@@ -246,6 +246,17 @@ extern int rpc_rte_eth_dev_set_vlan_strip_on_queue(rcf_rpc_server *rpcs,
                                                    uint16_t rx_queue_id,
                                                    int on);
 
+/**
+ * @b rte_eth_dev_set_vlan_ether_type() RPC.
+ *
+ * If failure is not expected, the function jumps out in the case of
+ * non-zero return value or vlan type is unknown.
+ */
+extern int rpc_rte_eth_dev_set_vlan_ether_type(rcf_rpc_server *rpcs,
+                                               uint8_t port_id,
+                                               enum tarpc_rte_vlan_type vlan_type,
+                                               uint16_t tag_type);
+
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 
 #ifdef __cplusplus

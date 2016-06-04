@@ -749,3 +749,35 @@ TARPC_FUNC(rte_eth_dev_set_vlan_strip_on_queue, {},
     MAKE_CALL(out->retval = func(in->port_id, in->rx_queue_id, in->on));
     neg_errno_h2rpc(&out->retval);
 })
+
+static int
+tarpc_vlan_type2rte(const enum tarpc_rte_vlan_type rpc,
+                    enum rte_vlan_type *rte)
+{
+    switch (rpc) {
+        CASE_TARPC2RTE(ETH_VLAN_TYPE_UNKNOWN);
+        CASE_TARPC2RTE(ETH_VLAN_TYPE_INNER);
+        CASE_TARPC2RTE(ETH_VLAN_TYPE_OUTER);
+        CASE_TARPC2RTE(ETH_VLAN_TYPE_MAX);
+        default:
+            return 0;
+    }
+    return 1;
+}
+
+TARPC_FUNC(rte_eth_dev_set_vlan_ether_type, {},
+{
+    enum rte_vlan_type vlan_type;
+
+    if (!tarpc_vlan_type2rte(in->vlan_type, &vlan_type))
+    {
+        out->retval = -TE_RC(TE_RPCS, TE_EINVAL);
+        goto done;
+    }
+
+    MAKE_CALL(out->retval = func(in->port_id, vlan_type, in->tag_type));
+    neg_errno_h2rpc(&out->retval);
+
+done:
+    ;
+})

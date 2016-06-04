@@ -620,6 +620,25 @@ struct tarpc_rte_eth_dev_set_vlan_strip_on_queue_in {
 
 typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_set_vlan_strip_on_queue_out;
 
+enum tarpc_rte_vlan_type {
+    TARPC_ETH_VLAN_TYPE_UNKNOWN = 0,
+    TARPC_ETH_VLAN_TYPE_INNER,
+    TARPC_ETH_VLAN_TYPE_OUTER,
+    TARPC_ETH_VLAN_TYPE_MAX,
+
+    ARPC_ETH_VLAN_TYPE__UNKNOWN
+};
+
+/** rte_eth_dev_set_vlan_ether_type() */
+struct tarpc_rte_eth_dev_set_vlan_ether_type_in {
+    struct tarpc_in_arg       common;
+    uint8_t                   port_id;
+    enum tarpc_rte_vlan_type  vlan_type;
+    uint16_t                  tag_type;
+};
+
+typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_set_vlan_ether_type_out;
+
 program dpdk
 {
     version ver0
@@ -664,5 +683,6 @@ program dpdk
         RPC_DEF(rte_eth_dev_set_mtu)
         RPC_DEF(rte_eth_dev_vlan_filter)
         RPC_DEF(rte_eth_dev_set_vlan_strip_on_queue)
+        RPC_DEF(rte_eth_dev_set_vlan_ether_type)
     } = 1;
 } = 2;

@@ -1042,3 +1042,58 @@ rpc_rte_eth_dev_set_vlan_strip_on_queue(rcf_rpc_server *rpcs, uint8_t port_id,
 
     RETVAL_ZERO_INT(rte_eth_dev_set_vlan_strip_on_queue, out.retval);
 }
+
+static const char *
+tarpc_rte_vlan_type2str(enum tarpc_rte_vlan_type vlan_type)
+{
+    const char *type;
+
+    switch (vlan_type)
+    {
+        case TARPC_ETH_VLAN_TYPE_UNKNOWN:
+            type = "UNKNOWN";
+            break;
+        case TARPC_ETH_VLAN_TYPE_INNER:
+            type = "INNER";
+            break;
+        case TARPC_ETH_VLAN_TYPE_OUTER:
+            type = "OUTER";
+            break;
+        case TARPC_ETH_VLAN_TYPE_MAX:
+            type = "MAX";
+            break;
+        default:
+            type = "<UNKNOWN>";
+            break;
+    }
+
+    return type;
+}
+
+int
+rpc_rte_eth_dev_set_vlan_ether_type(rcf_rpc_server *rpcs, uint8_t port_id,
+                                    enum tarpc_rte_vlan_type vlan_type,
+                                    uint16_t tag_type)
+{
+    tarpc_rte_eth_dev_set_vlan_ether_type_in   in;
+    tarpc_rte_eth_dev_set_vlan_ether_type_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+    in.vlan_type = vlan_type;
+    in.tag_type = tag_type;
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_set_vlan_ether_type", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_set_vlan_strip_on_queue,
+                                          out.retval);
+
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_set_vlan_ether_type,
+                 "%hhu, %s, %hu", NEG_ERRNO_FMT,
+                 in.port_id, tarpc_rte_vlan_type2str(in.vlan_type),
+                 in.tag_type, NEG_ERRNO_ARGS(out.retval));
+
+    RETVAL_ZERO_INT(rte_eth_dev_set_vlan_ether_type, out.retval);
+}
