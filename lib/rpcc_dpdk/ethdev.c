@@ -965,3 +965,26 @@ rpc_rte_eth_dev_get_mtu(rcf_rpc_server *rpcs, uint8_t port_id, uint16_t *mtu)
 
     RETVAL_ZERO_INT(rte_eth_dev_get_mtu, out.retval);
 }
+
+int
+rpc_rte_eth_dev_set_mtu(rcf_rpc_server *rpcs, uint8_t port_id,
+                        uint16_t mtu)
+{
+    tarpc_rte_eth_dev_set_mtu_in   in;
+    tarpc_rte_eth_dev_set_mtu_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+    in.mtu = mtu;
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_set_mtu", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_set_mtu,
+                                          out.retval);
+
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_set_mtu, "%hhu, %hu", NEG_ERRNO_FMT,
+                 in.port_id, in.mtu, NEG_ERRNO_ARGS(out.retval));
+    RETVAL_ZERO_INT(rte_eth_dev_set_mtu, out.retval);
+}

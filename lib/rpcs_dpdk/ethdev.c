@@ -730,3 +730,9 @@ TARPC_FUNC(rte_eth_dev_get_mtu,{},
         out->mtu = mtu;
 
 })
+
+TARPC_FUNC(rte_eth_dev_set_mtu, {},
+{
+    MAKE_CALL(out->retval = func(in->port_id, in->mtu));
+    neg_errno_h2rpc(&out->retval);
+})

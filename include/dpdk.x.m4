@@ -591,6 +591,15 @@ struct tarpc_rte_eth_dev_get_mtu_out {
     uint16_t              mtu;
 };
 
+/** rte_eth_dev_set_mtu() */
+struct tarpc_rte_eth_dev_set_mtu_in {
+    struct tarpc_in_arg  common;
+    uint8_t              port_id;
+    uint16_t             mtu;
+};
+
+typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_set_mtu_out;
+
 program dpdk
 {
     version ver0
@@ -632,5 +641,6 @@ program dpdk
         RPC_DEF(rte_eth_allmulticast_disable)
         RPC_DEF(rte_eth_allmulticast_get)
         RPC_DEF(rte_eth_dev_get_mtu)
+        RPC_DEF(rte_eth_dev_set_mtu)
     } = 1;
 } = 2;
