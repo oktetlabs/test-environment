@@ -988,3 +988,30 @@ rpc_rte_eth_dev_set_mtu(rcf_rpc_server *rpcs, uint8_t port_id,
                  in.port_id, in.mtu, NEG_ERRNO_ARGS(out.retval));
     RETVAL_ZERO_INT(rte_eth_dev_set_mtu, out.retval);
 }
+
+int
+rpc_rte_eth_dev_vlan_filter(rcf_rpc_server *rpcs, uint8_t port_id,
+                            uint16_t vlan_id, int on)
+{
+    tarpc_rte_eth_dev_vlan_filter_in   in;
+    tarpc_rte_eth_dev_vlan_filter_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+    in.vlan_id = vlan_id;
+    in.on = on;
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_vlan_filter", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_vlan_filter,
+                                         out.retval);
+
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_vlan_filter,
+                 "%hhu, %hu, %d", NEG_ERRNO_FMT,
+                 in.port_id, in.vlan_id, in.on,
+                 NEG_ERRNO_ARGS(out.retval));
+
+    RETVAL_ZERO_INT(rte_eth_dev_vlan_filter, out.retval);
+}
