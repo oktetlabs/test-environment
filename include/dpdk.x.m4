@@ -229,6 +229,11 @@ struct tarpc_rte_eth_dev_port_id_in {
     uint8_t                         port_id;
 };
 
+struct tarpc_rte_eth_dev_port_id_queue_id_in {
+    struct tarpc_in_arg             common;
+    uint8_t                         port_id;
+    uint16_t                        queue_id;
+};
 
 /** Link speeds */
 enum tarpc_eth_link_speeds {
@@ -700,6 +705,11 @@ typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_dev_is_valid_port_in;
 
 typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_is_valid_port_out;
 
+/** rte_eth_dev_rx_queue_start() */
+typedef struct tarpc_rte_eth_dev_port_id_queue_id_in tarpc_rte_eth_dev_rx_queue_start_in;
+
+typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_rx_queue_start_out;
+
 program dpdk
 {
     version ver0
@@ -752,5 +762,6 @@ program dpdk
         RPC_DEF(rte_eth_rx_queue_count)
         RPC_DEF(rte_eth_dev_socket_id)
         RPC_DEF(rte_eth_dev_is_valid_port)
+        RPC_DEF(rte_eth_dev_rx_queue_start)
     } = 1;
 } = 2;

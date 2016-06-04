@@ -1312,3 +1312,26 @@ rpc_rte_eth_dev_is_valid_port(rcf_rpc_server *rpcs, uint8_t port_id)
                  in.port_id, out.retval);
     RETVAL_INT(rte_eth_dev_is_valid_port, out.retval);
 }
+
+int
+rpc_rte_eth_dev_rx_queue_start(rcf_rpc_server *rpcs, uint8_t port_id,
+                               uint16_t queue_id)
+{
+    tarpc_rte_eth_dev_rx_queue_start_in   in;
+    tarpc_rte_eth_dev_rx_queue_start_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+    in.queue_id = queue_id;
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_rx_queue_start", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_rx_queue_start,
+                                          out.retval);
+
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_rx_queue_start, "%hhu, %hu", NEG_ERRNO_FMT,
+                 in.port_id, in.queue_id, NEG_ERRNO_ARGS(out.retval));
+    RETVAL_ZERO_INT(rte_eth_dev_rx_queue_start, out.retval);
+}
