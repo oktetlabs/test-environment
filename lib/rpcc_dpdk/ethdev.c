@@ -878,3 +878,20 @@ rpc_rte_eth_promiscuous_get(rcf_rpc_server *rpcs, uint8_t port_id)
 
     return out.retval;
 }
+
+void
+rpc_rte_eth_allmulticast_enable(rcf_rpc_server *rpcs, uint8_t port_id)
+{
+    tarpc_rte_eth_allmulticast_enable_in   in;
+    tarpc_rte_eth_allmulticast_enable_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+
+    rcf_rpc_call(rpcs, "rte_eth_allmulticast_enable", &in, &out);
+
+    TAPI_RPC_LOG(rpcs, rte_eth_allmulticast_enable, "%hhu", "", in.port_id);
+    RETVAL_VOID(rte_eth_allmulticast_enable);
+}
