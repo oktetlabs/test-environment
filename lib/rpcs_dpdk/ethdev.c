@@ -652,3 +652,23 @@ TARPC_FUNC_STATIC(rte_eth_tx_burst, {},
             RCF_PCH_MEM_INDEX_FREE(in->tx_pkts.tx_pkts_val[i], ns);
     });
 })
+
+TARPC_FUNC_STATIC(rte_eth_rx_burst, {},
+{
+    struct rte_mbuf **rx_pkts;
+    uint16_t i;
+
+    rx_pkts = (struct rte_mbuf **)calloc(in->nb_pkts, sizeof(*rx_pkts));
+
+    MAKE_CALL(out->rx_pkts.rx_pkts_len = func(in->port_id,
+                                              in->queue_id,
+                                              rx_pkts,
+                                              in->nb_pkts));
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+        out->rx_pkts.rx_pkts_val = calloc(out->rx_pkts.rx_pkts_len,
+                                          sizeof(tarpc_rte_mbuf));
+        for (i = 0; i < MIN(in->nb_pkts, out->rx_pkts.rx_pkts_len); i++)
+            out->rx_pkts.rx_pkts_val[i] = RCF_PCH_MEM_INDEX_ALLOC(rx_pkts[i], ns);
+    });
+})

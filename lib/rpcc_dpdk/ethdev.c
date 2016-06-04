@@ -737,3 +737,44 @@ rpc_rte_eth_tx_burst(rcf_rpc_server *rpcs,
 
     return out.retval;
 }
+
+uint16_t
+rpc_rte_eth_rx_burst(rcf_rpc_server *rpcs,
+                     uint8_t  port_id,
+                     uint16_t queue_id,
+                     rpc_rte_mbuf_p *rx_pkts,
+                     uint16_t nb_pkts)
+{
+    tarpc_rte_eth_rx_burst_in     in;
+    tarpc_rte_eth_rx_burst_out    out;
+    te_log_buf                   *tlbp;
+    uint8_t                       i;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+    in.queue_id = queue_id;
+    in.nb_pkts = nb_pkts;
+
+    rcf_rpc_call(rpcs, "rte_eth_rx_burst", &in, &out);
+
+    CHECK_RETVAL_VAR_ERR_COND(rte_eth_rx_burst, out.rx_pkts.rx_pkts_len,
+                              out.rx_pkts.rx_pkts_len > in.nb_pkts,
+                              out.rx_pkts.rx_pkts_len,
+                              out.rx_pkts.rx_pkts_len > in.nb_pkts);
+
+    for (i = 0; i < MIN(nb_pkts, out.rx_pkts.rx_pkts_len); i++)
+        rx_pkts[i] = (rpc_rte_mbuf_p)out.rx_pkts.rx_pkts_val[i];
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_eth_rx_burst, "%hhu, %hu, %hu", "%hu %s",
+                 in.port_id, in.queue_id, in.nb_pkts, out.rx_pkts.rx_pkts_len,
+                 rpc_rte_mbufs2str(tlbp, rx_pkts, out.rx_pkts.rx_pkts_len,
+                                   rpcs));
+    te_log_buf_free(tlbp);
+
+    TAPI_RPC_OUT(rte_eth_rx_burst, out.rx_pkts.rx_pkts_len > in.nb_pkts);
+
+    return out.rx_pkts.rx_pkts_len;
+}

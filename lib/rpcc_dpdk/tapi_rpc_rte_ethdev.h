@@ -138,6 +138,17 @@ extern uint16_t rpc_rte_eth_tx_burst(rcf_rpc_server *rpcs, uint8_t  port_id,
                                      rpc_rte_mbuf_p *tx_pkts,
                                      uint16_t nb_pkts);
 
+/**
+ * @b rte_eth_rx_burst() RPC.
+ *
+ * The function jumps out in the case of the actual number of received packets
+ * more than @p nb_pkts.
+ */
+extern uint16_t rpc_rte_eth_rx_burst(rcf_rpc_server *rpcs, uint8_t  port_id,
+                                     uint16_t queue_id,
+                                     rpc_rte_mbuf_p *rx_pkts,
+                                     uint16_t nb_pkts);
+
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 
 #ifdef __cplusplus
