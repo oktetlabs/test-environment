@@ -895,3 +895,20 @@ rpc_rte_eth_allmulticast_enable(rcf_rpc_server *rpcs, uint8_t port_id)
     TAPI_RPC_LOG(rpcs, rte_eth_allmulticast_enable, "%hhu", "", in.port_id);
     RETVAL_VOID(rte_eth_allmulticast_enable);
 }
+
+void
+rpc_rte_eth_allmulticast_disable(rcf_rpc_server *rpcs, int8_t port_id)
+{
+    tarpc_rte_eth_allmulticast_disable_in   in;
+    tarpc_rte_eth_allmulticast_disable_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+
+    rcf_rpc_call(rpcs, "rte_eth_allmulticast_disable", &in, &out);
+
+    TAPI_RPC_LOG(rpcs, rte_eth_allmulticast_disable, "%hhu", "", in.port_id);
+    RETVAL_VOID(rte_eth_allmulticast_disable);
+}
