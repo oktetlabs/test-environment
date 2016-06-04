@@ -695,6 +695,11 @@ typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_dev_socket_id_in;
 
 typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_socket_id_out;
 
+/** rte_eth_dev_is_valid_port() */
+typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_dev_is_valid_port_in;
+
+typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_is_valid_port_out;
+
 program dpdk
 {
     version ver0
@@ -746,5 +751,6 @@ program dpdk
         RPC_DEF(rte_eth_rx_descriptor_done)
         RPC_DEF(rte_eth_rx_queue_count)
         RPC_DEF(rte_eth_dev_socket_id)
+        RPC_DEF(rte_eth_dev_is_valid_port)
     } = 1;
 } = 2;

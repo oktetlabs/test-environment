@@ -309,6 +309,14 @@ extern int rpc_rte_eth_rx_queue_count(rcf_rpc_server *rpcs, uint8_t port_id,
  */
 extern int rpc_rte_eth_dev_socket_id(rcf_rpc_server *rpcs, uint8_t port_id);
 
+/**
+ * @b rte_eth_dev_socket_id() RPC
+ *
+ * If failure is not expected, the function jumps out in the case of
+ * return value is not equal to 0 or 1.
+ */
+extern int rpc_rte_eth_dev_socket_id(rcf_rpc_server *rpcs, uint8_t port_id);
+
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 
 #ifdef __cplusplus

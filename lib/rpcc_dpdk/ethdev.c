@@ -1291,3 +1291,24 @@ rpc_rte_eth_dev_socket_id(rcf_rpc_server *rpcs, uint8_t port_id)
                  in.port_id, out.retval);
     RETVAL_INT(rte_eth_dev_socket_id, out.retval);
 }
+
+int
+rpc_rte_eth_dev_is_valid_port(rcf_rpc_server *rpcs, uint8_t port_id)
+{
+    tarpc_rte_eth_dev_is_valid_port_in   in;
+    tarpc_rte_eth_dev_is_valid_port_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_is_valid_port", &in, &out);
+
+    CHECK_RETVAL_VAR(rte_eth_dev_is_valid_port, out.retval, ((out.retval != 1)
+                     && (out.retval != 0)), -1);
+
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_is_valid_port, "%hhu", "%d",
+                 in.port_id, out.retval);
+    RETVAL_INT(rte_eth_dev_is_valid_port, out.retval);
+}
