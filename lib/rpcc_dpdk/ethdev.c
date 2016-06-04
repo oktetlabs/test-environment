@@ -1190,3 +1190,29 @@ rpc_rte_eth_dev_get_vlan_offload(rcf_rpc_server *rpcs, uint8_t port_id)
 
     RETVAL_INT(rte_eth_dev_get_vlan_offload, out.retval);
 }
+
+int
+rpc_rte_eth_dev_set_vlan_pvid(rcf_rpc_server *rpcs, uint8_t port_id,
+                              uint16_t pvid, int on)
+{
+    tarpc_rte_eth_dev_set_vlan_pvid_in   in;
+    tarpc_rte_eth_dev_set_vlan_pvid_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+    in.pvid = pvid;
+    in.on = on;
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_set_vlan_pvid", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_set_vlan_pvid,
+                                          out.retval);
+
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_set_vlan_pvid,
+                 "%hhu, %hu, %d", NEG_ERRNO_FMT,
+                 in.port_id, in.pvid, in.on, NEG_ERRNO_ARGS(out.retval));
+
+    RETVAL_ZERO_INT(rte_eth_dev_set_vlan_pvid, out.retval);
+}

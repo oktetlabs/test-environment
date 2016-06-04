@@ -822,6 +822,12 @@ done:
     ;
 })
 
+TARPC_FUNC(rte_eth_dev_set_vlan_pvid, {},
+{
+    MAKE_CALL(out->retval = func(in->port_id, in->pvid, in->on));
+    neg_errno_h2rpc(&out->retval);
+})
+
 static int
 rte_eth_vlan_offload_mask2tarpc(int rte, uint16_t *rpc)
 {

@@ -661,6 +661,16 @@ typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_dev_get_vlan_offload_i
 
 typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_get_vlan_offload_out;
 
+/** rte_eth_dev_set_vlan_pvid() */
+struct tarpc_rte_eth_dev_set_vlan_pvid_in {
+    struct tarpc_in_arg     common;
+    uint8_t                 port_id;
+    uint16_t                pvid;
+    tarpc_int               on;
+};
+
+typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_set_vlan_pvid_out;
+
 program dpdk
 {
     version ver0
@@ -708,5 +718,6 @@ program dpdk
         RPC_DEF(rte_eth_dev_set_vlan_ether_type)
         RPC_DEF(rte_eth_dev_set_vlan_offload)
         RPC_DEF(rte_eth_dev_get_vlan_offload)
+        RPC_DEF(rte_eth_dev_set_vlan_pvid)
     } = 1;
 } = 2;
