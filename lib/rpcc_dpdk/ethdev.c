@@ -1015,3 +1015,30 @@ rpc_rte_eth_dev_vlan_filter(rcf_rpc_server *rpcs, uint8_t port_id,
 
     RETVAL_ZERO_INT(rte_eth_dev_vlan_filter, out.retval);
 }
+
+int
+rpc_rte_eth_dev_set_vlan_strip_on_queue(rcf_rpc_server *rpcs, uint8_t port_id,
+                                        uint16_t rx_queue_id, int on)
+{
+    tarpc_rte_eth_dev_set_vlan_strip_on_queue_in   in;
+    tarpc_rte_eth_dev_set_vlan_strip_on_queue_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+    in.rx_queue_id = rx_queue_id;
+    in.on = on;
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_set_vlan_strip_on_queue", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_set_vlan_strip_on_queue,
+                                          out.retval);
+
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_set_vlan_strip_on_queue,
+                 "%hhu, %hu, %d", NEG_ERRNO_FMT,
+                 in.port_id, in.rx_queue_id, in.on,
+                 NEG_ERRNO_ARGS(out.retval));
+
+    RETVAL_ZERO_INT(rte_eth_dev_set_vlan_strip_on_queue, out.retval);
+}
