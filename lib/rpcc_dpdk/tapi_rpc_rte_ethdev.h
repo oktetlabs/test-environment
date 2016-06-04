@@ -178,6 +178,14 @@ extern void rpc_rte_eth_promiscuous_enable(rcf_rpc_server *rpcs,
 extern void rpc_rte_eth_promiscuous_disable(rcf_rpc_server *rpcs,
                                             uint8_t port_id);
 
+/**
+ * @b rte_eth_promiscuous_get() RPC
+ *
+ * If failure is not expected, the function jumps out in the case of
+ * negative return value.
+ */
+extern int rpc_rte_eth_promiscuous_get(rcf_rpc_server *rpcs, uint8_t port_id);
+
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 
 #ifdef __cplusplus
