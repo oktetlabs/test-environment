@@ -689,3 +689,8 @@ TARPC_FUNC(rte_eth_promiscuous_enable, {},
 {
     MAKE_CALL(func(in->port_id));
 })
+
+TARPC_FUNC(rte_eth_promiscuous_disable, {},
+{
+    MAKE_CALL(func(in->port_id));
+})

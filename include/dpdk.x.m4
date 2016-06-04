@@ -552,6 +552,11 @@ typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_promiscuous_enable_in;
 
 typedef struct tarpc_void_out tarpc_rte_eth_promiscuous_enable_out;
 
+/** rte_eth_promiscuous_disable() */
+typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_promiscuous_disable_in;
+
+typedef struct tarpc_void_out tarpc_rte_eth_promiscuous_disable_out;
+
 program dpdk
 {
     version ver0
@@ -587,5 +592,6 @@ program dpdk
         RPC_DEF(rte_eth_dev_set_link_up)
         RPC_DEF(rte_eth_dev_set_link_down)
         RPC_DEF(rte_eth_promiscuous_enable)
+        RPC_DEF(rte_eth_promiscuous_disable)
     } = 1;
 } = 2;
