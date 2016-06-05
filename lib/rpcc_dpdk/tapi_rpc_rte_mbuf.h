@@ -292,6 +292,16 @@ extern int rpc_rte_pktmbuf_set_flags(rcf_rpc_server *rpcs,
                                      rpc_rte_mbuf_p m,
                                      uint64_t ol_flags);
 
+/**
+ * Get a pointer to mempool within which the particular mbuf has been allocated
+ *
+ * @param m               RTE mbuf pointer
+ *
+ * @return RTE mempool pointer on success; jumps out when pointer is @c NULL
+ */
+extern rpc_rte_mempool_p rpc_rte_pktmbuf_get_pool(rcf_rpc_server *rpcs,
+                                                  rpc_rte_mbuf_p m);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf --> */
 
 #ifdef __cplusplus

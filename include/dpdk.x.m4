@@ -311,6 +311,14 @@ struct tarpc_rte_pktmbuf_set_flags_in {
 
 typedef struct tarpc_int_retval_out tarpc_rte_pktmbuf_set_flags_out;
 
+/** rte_pktmbuf_get_pool() */
+typedef struct tarpc_mbuf_in tarpc_rte_pktmbuf_get_pool_in;
+
+struct tarpc_rte_pktmbuf_get_pool_out {
+    struct tarpc_out_arg    common;
+    tarpc_rte_mempool       retval;
+};
+
 
 /*
  * rte_eth_dev API
@@ -864,6 +872,7 @@ program dpdk
         RPC_DEF(rte_pktmbuf_set_vlan_tci_outer)
         RPC_DEF(rte_pktmbuf_get_flags)
         RPC_DEF(rte_pktmbuf_set_flags)
+        RPC_DEF(rte_pktmbuf_get_pool)
 
         RPC_DEF(rte_eth_dev_info_get)
         RPC_DEF(rte_eth_dev_configure)

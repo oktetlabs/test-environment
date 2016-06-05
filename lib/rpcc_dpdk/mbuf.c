@@ -662,3 +662,26 @@ rpc_rte_pktmbuf_set_flags(rcf_rpc_server *rpcs,
 
     RETVAL_ZERO_INT(rte_pktmbuf_set_flags, out.retval);
 }
+
+rpc_rte_mempool_p
+rpc_rte_pktmbuf_get_pool(rcf_rpc_server *rpcs,
+                         rpc_rte_mbuf_p m)
+{
+    tarpc_rte_pktmbuf_get_pool_in   in;
+    tarpc_rte_pktmbuf_get_pool_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.m = (tarpc_rte_mbuf)m;
+
+    rcf_rpc_call(rpcs, "rte_pktmbuf_get_pool", &in, &out);
+
+    CHECK_RETVAL_VAR_RPC_PTR(rte_pktmbuf_get_pool, out.retval);
+
+    TAPI_RPC_LOG(rpcs, rte_pktmbuf_get_pool,
+                 RPC_PTR_FMT, RPC_PTR_FMT,
+                 RPC_PTR_VAL(in.m), RPC_PTR_VAL(out.retval));
+
+    RETVAL_RPC_PTR(rte_pktmbuf_get_pool, out.retval);
+}
