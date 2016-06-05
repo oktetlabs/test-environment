@@ -312,6 +312,16 @@ extern rpc_rte_mempool_p rpc_rte_pktmbuf_get_pool(rcf_rpc_server *rpcs,
 extern uint16_t rpc_rte_pktmbuf_headroom(rcf_rpc_server *rpcs,
                                          rpc_rte_mbuf_p m);
 
+/**
+ * Get the tailroom length in the particular mbuf
+ *
+ * @param m               RTE mbuf pointer
+ *
+ * @return Tailroom length; jumps out in case of invalid value (i.e. UINT16_MAX)
+ */
+extern uint16_t rpc_rte_pktmbuf_tailroom(rcf_rpc_server *rpcs,
+                                         rpc_rte_mbuf_p m);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf --> */
 
 #ifdef __cplusplus
