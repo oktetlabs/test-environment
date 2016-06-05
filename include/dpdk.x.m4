@@ -204,7 +204,7 @@ struct tarpc_rte_pktmbuf_get_port_out {
 
 /** rte_pktmbuf_set_port() */
 struct tarpc_rte_pktmbuf_set_port_in {
-    struct tarpc_out_arg    common;
+    struct tarpc_in_arg     common;
     tarpc_rte_mbuf          m;
     uint8_t                 port;
 };
@@ -229,7 +229,7 @@ struct tarpc_rte_pktmbuf_get_vlan_tci_out {
 
 /** rte_pktmbuf_set_vlan_tci() */
 struct tarpc_rte_pktmbuf_set_vlan_tci_in {
-    struct tarpc_out_arg    common;
+    struct tarpc_in_arg     common;
     tarpc_rte_mbuf          m;
     uint16_t                vlan_tci;
 };
@@ -246,7 +246,7 @@ struct tarpc_rte_pktmbuf_get_vlan_tci_outer_out {
 
 /** rte_pktmbuf_set_vlan_tci_outer() */
 struct tarpc_rte_pktmbuf_set_vlan_tci_outer_in {
-    struct tarpc_out_arg    common;
+    struct tarpc_in_arg     common;
     tarpc_rte_mbuf          m;
     uint16_t                vlan_tci_outer;
 };
