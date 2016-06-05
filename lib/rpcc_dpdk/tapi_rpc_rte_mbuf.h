@@ -302,6 +302,16 @@ extern int rpc_rte_pktmbuf_set_flags(rcf_rpc_server *rpcs,
 extern rpc_rte_mempool_p rpc_rte_pktmbuf_get_pool(rcf_rpc_server *rpcs,
                                                   rpc_rte_mbuf_p m);
 
+/**
+ * Get the headroom length in the particular mbuf
+ *
+ * @param m               RTE mbuf pointer
+ *
+ * @return Headroom length; jumps out in case of invalid value (i.e. UINT16_MAX)
+ */
+extern uint16_t rpc_rte_pktmbuf_headroom(rcf_rpc_server *rpcs,
+                                         rpc_rte_mbuf_p m);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf --> */
 
 #ifdef __cplusplus

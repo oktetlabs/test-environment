@@ -574,3 +574,15 @@ TARPC_FUNC_STANDALONE(rte_pktmbuf_get_pool, {},
     });
 }
 )
+
+TARPC_FUNC_STATIC(rte_pktmbuf_headroom, {},
+{
+    struct rte_mbuf *m = NULL;
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+        m = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->m, ns);
+    });
+
+    MAKE_CALL(out->retval = func(m));
+}
+)
