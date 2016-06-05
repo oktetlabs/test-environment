@@ -280,6 +280,18 @@ extern void rpc_rte_pktmbuf_set_vlan_tci_outer(rcf_rpc_server *rpcs,
 extern uint64_t rpc_rte_pktmbuf_get_flags(rcf_rpc_server *rpcs,
                                           rpc_rte_mbuf_p m);
 
+/**
+ * Set mbuf offload flags
+ *
+ * @param m               RTE mbuf pointer
+ * @param ol_flags        Offload flags bitmask to be set
+ *
+ * @return @c 0 on success; jumps out if some flags cannot be set (i.e. -EINVAL)
+ */
+extern int rpc_rte_pktmbuf_set_flags(rcf_rpc_server *rpcs,
+                                     rpc_rte_mbuf_p m,
+                                     uint64_t ol_flags);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf --> */
 
 #ifdef __cplusplus

@@ -633,3 +633,32 @@ rpc_rte_pktmbuf_get_flags(rcf_rpc_server *rpcs,
 
     return (out.retval);
 }
+
+int
+rpc_rte_pktmbuf_set_flags(rcf_rpc_server *rpcs,
+                          rpc_rte_mbuf_p m, uint64_t ol_flags)
+{
+    tarpc_rte_pktmbuf_set_flags_in  in;
+    tarpc_rte_pktmbuf_set_flags_out out;
+    te_log_buf *tlbp;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.m = (tarpc_rte_mbuf)m;
+    in.ol_flags = ol_flags;
+
+    rcf_rpc_call(rpcs, "rte_pktmbuf_set_flags", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_pktmbuf_set_flags, out.retval);
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_pktmbuf_set_flags,
+                 RPC_PTR_FMT ", %s", NEG_ERRNO_FMT,
+                 RPC_PTR_VAL(in.m),
+                 tarpc_rte_pktmbuf_ol_flags2str(tlbp, in.ol_flags),
+                 NEG_ERRNO_ARGS(out.retval));
+    te_log_buf_free(tlbp);
+
+    RETVAL_ZERO_INT(rte_pktmbuf_set_flags, out.retval);
+}
