@@ -538,3 +538,24 @@ rpc_rte_pktmbuf_get_vlan_tci_outer(rcf_rpc_server *rpcs,
 
     return (out.retval);
 }
+
+void
+rpc_rte_pktmbuf_set_vlan_tci_outer(rcf_rpc_server *rpcs,
+                                   rpc_rte_mbuf_p m, uint16_t vlan_tci_outer)
+{
+    tarpc_rte_pktmbuf_set_vlan_tci_outer_in     in;
+    tarpc_rte_pktmbuf_set_vlan_tci_outer_out    out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.m = (tarpc_rte_mbuf)m;
+    in.vlan_tci_outer = vlan_tci_outer;
+
+    rcf_rpc_call(rpcs, "rte_pktmbuf_set_vlan_tci_outer", &in, &out);
+
+    TAPI_RPC_LOG(rpcs, rte_pktmbuf_set_vlan_tci_outer, RPC_PTR_FMT ", %hu", "",
+                 RPC_PTR_VAL(in.m), in.vlan_tci_outer);
+
+    RETVAL_VOID(rte_pktmbuf_set_vlan_tci_outer);
+}

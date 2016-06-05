@@ -260,6 +260,16 @@ extern void rpc_rte_pktmbuf_set_vlan_tci(rcf_rpc_server *rpcs,
 extern uint16_t rpc_rte_pktmbuf_get_vlan_tci_outer(rcf_rpc_server *rpcs,
                                                    rpc_rte_mbuf_p m);
 
+/**
+ * Set VLAN TCI (outer)
+ *
+ * @param m               RTE mbuf pointer
+ * @param vlan_tci_outer  VLAN TCI (outer)
+ */
+extern void rpc_rte_pktmbuf_set_vlan_tci_outer(rcf_rpc_server *rpcs,
+                                               rpc_rte_mbuf_p m,
+                                               uint16_t vlan_tci_outer);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf --> */
 
 #ifdef __cplusplus

@@ -244,6 +244,15 @@ struct tarpc_rte_pktmbuf_get_vlan_tci_outer_out {
     uint16_t                retval;
 };
 
+/** rte_pktmbuf_set_vlan_tci_outer() */
+struct tarpc_rte_pktmbuf_set_vlan_tci_outer_in {
+    struct tarpc_out_arg    common;
+    tarpc_rte_mbuf          m;
+    uint16_t                vlan_tci_outer;
+};
+
+typedef struct tarpc_void_out tarpc_rte_pktmbuf_set_vlan_tci_outer_out;
+
 
 /*
  * rte_eth_dev API
@@ -794,6 +803,7 @@ program dpdk
         RPC_DEF(rte_pktmbuf_get_vlan_tci)
         RPC_DEF(rte_pktmbuf_set_vlan_tci)
         RPC_DEF(rte_pktmbuf_get_vlan_tci_outer)
+        RPC_DEF(rte_pktmbuf_set_vlan_tci_outer)
 
         RPC_DEF(rte_eth_dev_info_get)
         RPC_DEF(rte_eth_dev_configure)
