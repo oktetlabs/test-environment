@@ -80,6 +80,47 @@ struct tarpc_mbuf_retval_out {
     tarpc_rte_mbuf          retval;
 };
 
+/** Packet Offload Flags */
+enum tarpc_pktmbuf_ol_flags {
+    TARPC_PKT_RX_VLAN_PKT = 0,
+    TARPC_PKT_RX_RSS_HASH,
+    TARPC_PKT_RX_FDIR,
+    TARPC_PKT_RX_L4_CKSUM_BAD,
+    TARPC_PKT_RX_IP_CKSUM_BAD,
+    TARPC_PKT_RX_EIP_CKSUM_BAD,
+    TARPC_PKT_RX_OVERSIZE,
+    TARPC_PKT_RX_HBUF_OVERFLOW,
+    TARPC_PKT_RX_RECIP_ERR,
+    TARPC_PKT_RX_MAC_ERR,
+    TARPC_PKT_RX_IEEE1588_PTP,
+    TARPC_PKT_RX_IEEE1588_TMST,
+    TARPC_PKT_RX_FDIR_ID,
+    TARPC_PKT_RX_FDIR_FLX,
+    TARPC_PKT_RX_QINQ_PKT,
+
+    TARPC_PKT_TX_QINQ_PKT = 32,
+    TARPC_PKT_TX_TCP_SEG,
+    TARPC_PKT_TX_IEEE1588_TMST,
+    TARPC_PKT_TX_L4_NO_CKSUM,
+    TARPC_PKT_TX_TCP_CKSUM,
+    TARPC_PKT_TX_SCTP_CKSUM,
+    TARPC_PKT_TX_UDP_CKSUM,
+    TARPC_PKT_TX_L4_MASK,
+    TARPC_PKT_TX_IP_CKSUM,
+    TARPC_PKT_TX_IPV4,
+    TARPC_PKT_TX_IPV6,
+    TARPC_PKT_TX_VLAN_PKT,
+    TARPC_PKT_TX_OUTER_IP_CKSUM,
+    TARPC_PKT_TX_OUTER_IPV4,
+    TARPC_PKT_TX_OUTER_IPV6,
+
+    TARPC_IND_ATTACHED_MBUF = 61,
+
+    TARPC_CTRL_MBUF_FLAG = 62,
+
+    TARPC_PKT__UNKNOWN = 63
+};
+
 /** rte_pktmbuf_pool_create() */
 struct tarpc_rte_pktmbuf_pool_create_in {
     struct tarpc_in_arg     common;
@@ -252,6 +293,14 @@ struct tarpc_rte_pktmbuf_set_vlan_tci_outer_in {
 };
 
 typedef struct tarpc_void_out tarpc_rte_pktmbuf_set_vlan_tci_outer_out;
+
+/** rte_pktmbuf_get_flags() */
+typedef struct tarpc_mbuf_in tarpc_rte_pktmbuf_get_flags_in;
+
+struct tarpc_rte_pktmbuf_get_flags_out {
+    struct tarpc_out_arg    common;
+    uint64_t                retval;
+};
 
 
 /*
@@ -804,6 +853,7 @@ program dpdk
         RPC_DEF(rte_pktmbuf_set_vlan_tci)
         RPC_DEF(rte_pktmbuf_get_vlan_tci_outer)
         RPC_DEF(rte_pktmbuf_set_vlan_tci_outer)
+        RPC_DEF(rte_pktmbuf_get_flags)
 
         RPC_DEF(rte_eth_dev_info_get)
         RPC_DEF(rte_eth_dev_configure)

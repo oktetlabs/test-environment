@@ -42,6 +42,64 @@
 #include "rpcs_dpdk.h"
 #include "te_errno.h"
 
+static uint64_t
+tarpc_rte_pktmbuf_ol_flags2rpc(uint64_t rte)
+{
+    uint64_t    rpc = 0;
+
+#define RTE_PKTMBUF_OL_FLAGS2RPC(_bit) \
+    do {                                                            \
+        uint64_t flag = _bit;                                       \
+                                                                    \
+        if (rte & flag)                                             \
+        {                                                           \
+            rte &= ~flag;                                           \
+            rpc |= (1UL << TARPC_##_bit);                           \
+        }                                                           \
+    } while (0)
+
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_VLAN_PKT);
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_RSS_HASH);
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_FDIR);
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_L4_CKSUM_BAD);
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_IP_CKSUM_BAD);
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_EIP_CKSUM_BAD);
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_OVERSIZE);
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_HBUF_OVERFLOW);
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_RECIP_ERR);
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_MAC_ERR);
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_IEEE1588_PTP);
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_IEEE1588_TMST);
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_FDIR_ID);
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_FDIR_FLX);
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_QINQ_PKT);
+
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_TX_QINQ_PKT);
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_TX_IEEE1588_TMST);
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_TX_L4_NO_CKSUM);
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_TX_TCP_CKSUM);
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_TX_SCTP_CKSUM);
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_TX_UDP_CKSUM);
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_TX_L4_MASK);
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_TX_IP_CKSUM);
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_TX_IPV4);
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_TX_IPV6);
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_TX_VLAN_PKT);
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_TX_OUTER_IP_CKSUM);
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_TX_OUTER_IPV4);
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_TX_OUTER_IPV6);
+
+    RTE_PKTMBUF_OL_FLAGS2RPC(IND_ATTACHED_MBUF);
+
+    RTE_PKTMBUF_OL_FLAGS2RPC(CTRL_MBUF_FLAG);
+#undef RTE_PKTMBUF_OL_FLAGS2RPC
+
+    if (rte != 0)
+        rpc = (1UL << TARPC_PKT__UNKNOWN);
+
+    return rpc;
+}
+
 TARPC_FUNC(rte_pktmbuf_pool_create, {},
 {
     struct rte_mempool *mp;
@@ -413,6 +471,17 @@ TARPC_FUNC_STANDALONE(rte_pktmbuf_set_vlan_tci_outer, {},
     RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
         m = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->m, ns);
         m->vlan_tci_outer = in->vlan_tci_outer;
+    });
+}
+)
+
+TARPC_FUNC_STANDALONE(rte_pktmbuf_get_flags, {},
+{
+    struct rte_mbuf *m;
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+        m = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->m, ns);
+        out->retval = tarpc_rte_pktmbuf_ol_flags2rpc(m->ol_flags);
     });
 }
 )

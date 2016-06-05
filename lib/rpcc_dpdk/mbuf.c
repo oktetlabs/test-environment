@@ -37,6 +37,52 @@
 #include "tarpc.h"
 
 
+static const char *
+tarpc_rte_pktmbuf_ol_flags2str(te_log_buf *tlbp, uint64_t ol_flags)
+{
+    const struct te_log_buf_bit2str ol_flags2str[] = {
+#define TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(_bit) \
+        { TARPC_PKT_##_bit, #_bit }
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_VLAN_PKT),
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_RSS_HASH),
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_FDIR),
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_L4_CKSUM_BAD),
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_IP_CKSUM_BAD),
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_EIP_CKSUM_BAD),
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_OVERSIZE),
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_HBUF_OVERFLOW),
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_RECIP_ERR),
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_MAC_ERR),
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_IEEE1588_PTP),
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_IEEE1588_TMST),
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_FDIR_ID),
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_FDIR_FLX),
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_QINQ_PKT),
+
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(TX_QINQ_PKT),
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(TX_TCP_SEG),
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(TX_IEEE1588_TMST),
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(TX_L4_NO_CKSUM),
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(TX_TCP_CKSUM),
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(TX_SCTP_CKSUM),
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(TX_UDP_CKSUM),
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(TX_L4_MASK),
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(TX_IP_CKSUM),
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(TX_IPV4),
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(TX_IPV6),
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(TX_VLAN_PKT),
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(TX_OUTER_IP_CKSUM),
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(TX_OUTER_IPV4),
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(TX_OUTER_IPV6),
+#undef TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR
+        { TARPC_IND_ATTACHED_MBUF, "IND_ATTACHED_MBUF" },
+        { TARPC_CTRL_MBUF_FLAG, "CTRL_MBUF_FLAG" },
+        { 0, NULL }
+    };
+
+    return te_bit_mask2log_buf(tlbp, ol_flags, ol_flags2str);
+}
+
 rpc_rte_mempool_p
 rpc_rte_pktmbuf_pool_create(rcf_rpc_server *rpcs,
                             const char *name, uint32_t n, uint32_t cache_size,
@@ -558,4 +604,32 @@ rpc_rte_pktmbuf_set_vlan_tci_outer(rcf_rpc_server *rpcs,
                  RPC_PTR_VAL(in.m), in.vlan_tci_outer);
 
     RETVAL_VOID(rte_pktmbuf_set_vlan_tci_outer);
+}
+
+uint64_t
+rpc_rte_pktmbuf_get_flags(rcf_rpc_server *rpcs,
+                          rpc_rte_mbuf_p m)
+{
+    tarpc_rte_pktmbuf_get_flags_in  in;
+    tarpc_rte_pktmbuf_get_flags_out out;
+    te_log_buf *tlbp;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.m = (tarpc_rte_mbuf)m;
+
+    rcf_rpc_call(rpcs, "rte_pktmbuf_get_flags", &in, &out);
+
+    CHECK_RETVAL_VAR(rte_pktmbuf_get_flags, out.retval, FALSE, UINT64_MAX);
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_pktmbuf_get_flags, RPC_PTR_FMT,
+                 "%s", RPC_PTR_VAL(in.m),
+                 tarpc_rte_pktmbuf_ol_flags2str(tlbp, out.retval));
+    te_log_buf_free(tlbp);
+
+    TAPI_RPC_OUT(rte_pktmbuf_get_flags, out.retval == UINT64_MAX);
+
+    return (out.retval);
 }
