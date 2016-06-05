@@ -334,6 +334,17 @@ extern int rpc_rte_pktmbuf_trim(rcf_rpc_server *rpcs,
                                 rpc_rte_mbuf_p m,
                                 uint16_t len);
 
+/**
+ * @b rte_pktmbuf_adj() RPC
+ *
+ * @param m               RTE mbuf pointer
+ * @param len             Amount of bytes to be removed at the beginning of mbuf
+ *
+ * @return The new @c data_off on success; jumps out on error (i.e., UINT16_MAX)
+ */
+extern uint16_t rpc_rte_pktmbuf_adj(rcf_rpc_server *rpcs,
+                                    rpc_rte_mbuf_p m, uint16_t len);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf --> */
 
 #ifdef __cplusplus
