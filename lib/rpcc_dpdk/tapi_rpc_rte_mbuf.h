@@ -322,6 +322,18 @@ extern uint16_t rpc_rte_pktmbuf_headroom(rcf_rpc_server *rpcs,
 extern uint16_t rpc_rte_pktmbuf_tailroom(rcf_rpc_server *rpcs,
                                          rpc_rte_mbuf_p m);
 
+/**
+ * @b rte_pktmbuf_trim() RPC
+ *
+ * @param m               RTE mbuf pointer
+ * @param len             Amount of bytes to be trimmed
+ *
+ * @return @c 0 on success; jumps out in case of failure
+ */
+extern int rpc_rte_pktmbuf_trim(rcf_rpc_server *rpcs,
+                                rpc_rte_mbuf_p m,
+                                uint16_t len);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf --> */
 
 #ifdef __cplusplus

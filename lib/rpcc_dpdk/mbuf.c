@@ -733,3 +733,27 @@ rpc_rte_pktmbuf_tailroom(rcf_rpc_server *rpcs,
 
     return (out.retval);
 }
+
+int
+rpc_rte_pktmbuf_trim(rcf_rpc_server *rpcs,
+                     rpc_rte_mbuf_p m,
+                     uint16_t len)
+{
+    tarpc_rte_pktmbuf_trim_in   in;
+    tarpc_rte_pktmbuf_trim_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.m = (tarpc_rte_mbuf)m;
+    in.len = len;
+
+    rcf_rpc_call(rpcs, "rte_pktmbuf_trim", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(rte_pktmbuf_trim, out.retval);
+
+    TAPI_RPC_LOG(rpcs, rte_pktmbuf_trim, RPC_PTR_FMT ", %hu", "%d",
+                 RPC_PTR_VAL(in.m), in.len, out.retval);
+
+    RETVAL_ZERO_INT(rte_pktmbuf_trim, out.retval);
+}
