@@ -231,6 +231,16 @@ extern void rpc_rte_pktmbuf_set_port(rcf_rpc_server *rpcs,
 extern uint16_t rpc_rte_pktmbuf_get_data_len(rcf_rpc_server *rpcs,
                                              rpc_rte_mbuf_p m);
 
+/**
+ * Get VLAN TCI
+ *
+ * @param m               RTE mbuf pointer
+ *
+ * @return VLAN TCI
+ */
+extern uint16_t rpc_rte_pktmbuf_get_vlan_tci(rcf_rpc_server *rpcs,
+                                             rpc_rte_mbuf_p m);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf --> */
 
 #ifdef __cplusplus

@@ -468,3 +468,27 @@ rpc_rte_pktmbuf_get_data_len(rcf_rpc_server *rpcs,
 
     return (out.retval);
 }
+
+uint16_t
+rpc_rte_pktmbuf_get_vlan_tci(rcf_rpc_server *rpcs,
+                             rpc_rte_mbuf_p m)
+{
+    tarpc_rte_pktmbuf_get_vlan_tci_in   in;
+    tarpc_rte_pktmbuf_get_vlan_tci_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.m = (tarpc_rte_mbuf)m;
+
+    rcf_rpc_call(rpcs, "rte_pktmbuf_get_vlan_tci", &in, &out);
+
+    CHECK_RETVAL_VAR(rte_pktmbuf_get_vlan_tci, out.retval, FALSE, UINT16_MAX);
+
+    TAPI_RPC_LOG(rpcs, rte_pktmbuf_get_vlan_tci, RPC_PTR_FMT, "%hu",
+                 RPC_PTR_VAL(in.m), out.retval);
+
+    TAPI_RPC_OUT(rte_pktmbuf_get_vlan_tci, out.retval == UINT16_MAX);
+
+    return (out.retval);
+}
