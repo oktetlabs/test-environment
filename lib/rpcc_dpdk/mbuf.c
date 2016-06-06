@@ -421,7 +421,7 @@ rpc_rte_pktmbuf_chain(rcf_rpc_server *rpcs,
                  NEG_ERRNO_FMT, RPC_PTR_VAL(in.head), RPC_PTR_VAL(in.tail),
                  NEG_ERRNO_ARGS(out.retval));
 
-    RETVAL_INT(rte_pktmbuf_chain, out.retval);
+    RETVAL_ZERO_INT(rte_pktmbuf_chain, out.retval);
 }
 
 uint8_t
