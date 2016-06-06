@@ -1206,8 +1206,9 @@ TARPC_FUNC(gettimeofday,
     struct timeval  tv;
     struct timezone tz;
 
-    if (out->tv.tv_len != 0)
-        TARPC_CHECK_RC(timeval_rpc2h(out->tv.tv_val, &tv));
+    TARPC_ENSURE_NOT_NULL(tv);
+
+    TARPC_CHECK_RC(timeval_rpc2h(out->tv.tv_val, &tv));
     if (out->tz.tz_len != 0)
         TARPC_CHECK_RC(timezone_rpc2h(out->tz.tz_val, &tz));
 
@@ -1217,11 +1218,10 @@ TARPC_FUNC(gettimeofday,
     }
     else
     {
-        MAKE_CALL(out->retval = func_ptr(out->tv.tv_len == 0 ? NULL : &tv,
+        MAKE_CALL(out->retval = func_ptr(&tv,
                                          out->tz.tz_len == 0 ? NULL : &tz));
 
-        if (out->tv.tv_len != 0)
-            TARPC_CHECK_RC(timeval_h2rpc(&tv, out->tv.tv_val));
+        TARPC_CHECK_RC(timeval_h2rpc(&tv, out->tv.tv_val));
         if (out->tz.tz_len != 0)
             TARPC_CHECK_RC(timezone_h2rpc(&tz, out->tz.tz_val));
         if (TE_RC_GET_ERROR(out->common._errno) == TE_EH2RPC)
@@ -1811,46 +1811,46 @@ TARPC_FUNC(te_fstat64, {},
 /*-------------- link() --------------------------------*/
 TARPC_FUNC(link, {},
 {
-    MAKE_CALL(out->retval = func_ptr((in->path1.path1_len == 0) ? NULL :
-                                      in->path1.path1_val,
-                                     (in->path2.path2_len == 0) ? NULL :
-                                      in->path2.path2_val));
+    TARPC_ENSURE_NOT_NULL(path1);
+    TARPC_ENSURE_NOT_NULL(path2);
+    MAKE_CALL(out->retval = func_ptr(in->path1.path1_val,
+                                     in->path2.path2_val));
 }
 )
 
 /*-------------- symlink() --------------------------------*/
 TARPC_FUNC(symlink, {},
 {
-    MAKE_CALL(out->retval = func_ptr((in->path1.path1_len == 0) ? NULL :
-                                      in->path1.path1_val,
-                                     (in->path2.path2_len == 0) ? NULL :
-                                      in->path2.path2_val));
+    TARPC_ENSURE_NOT_NULL(path1);
+    TARPC_ENSURE_NOT_NULL(path2);
+    MAKE_CALL(out->retval = func_ptr(in->path1.path1_val,
+                                     in->path2.path2_val));
 }
 )
 
 /*-------------- unlink() --------------------------------*/
 TARPC_FUNC(unlink, {},
 {
-    MAKE_CALL(out->retval = func_ptr((in->path.path_len == 0) ? NULL :
-                                      in->path.path_val));
+    TARPC_ENSURE_NOT_NULL(path);
+    MAKE_CALL(out->retval = func_ptr(in->path.path_val));
 }
 )
 
 /*-------------- rename() --------------------------------*/
 TARPC_FUNC(rename, {},
 {
-    MAKE_CALL(out->retval = func_ptr((in->path_old.path_old_len == 0) ?
-                                      NULL : in->path_old.path_old_val,
-                                     (in->path_new.path_new_len == 0) ?
-                                      NULL : in->path_new.path_new_val));
+    TARPC_ENSURE_NOT_NULL(path_old);
+    TARPC_ENSURE_NOT_NULL(path_new);
+    MAKE_CALL(out->retval = func_ptr(in->path_old.path_old_val,
+                                     in->path_new.path_new_val));
 }
 )
 
 /*-------------- mkdir() --------------------------------*/
 TARPC_FUNC(mkdir, {},
 {
-    MAKE_CALL(out->retval = func_ptr((in->path.path_len == 0) ?
-                                      NULL : in->path.path_val,
+    TARPC_ENSURE_NOT_NULL(path);
+    MAKE_CALL(out->retval = func_ptr(in->path.path_val,
                                      file_mode_flags_rpc2h(in->mode)));
 }
 )
@@ -1858,8 +1858,8 @@ TARPC_FUNC(mkdir, {},
 /*-------------- rmdir() --------------------------------*/
 TARPC_FUNC(rmdir, {},
 {
-    MAKE_CALL(out->retval = func_ptr((in->path.path_len == 0) ? NULL :
-                                      in->path.path_val));
+    TARPC_ENSURE_NOT_NULL(path);
+    MAKE_CALL(out->retval = func_ptr(in->path.path_val));
 }
 )
 
@@ -1882,8 +1882,8 @@ TARPC_FUNC(statvfs, {},
 {
     struct statvfs stat;
 
-    MAKE_CALL(out->retval = func_ptr((in->path.path_len == 0) ?
-                                     NULL : in->path.path_val, &stat));
+    TARPC_ENSURE_NOT_NULL(path);
+    MAKE_CALL(out->retval = func_ptr(in->path.path_val, &stat));
 
     out->buf.f_bsize = stat.f_bsize;
     out->buf.f_blocks = stat.f_blocks;
@@ -1922,9 +1922,9 @@ TARPC_FUNC(struct_dirent_props, {},
 /*-------------- opendir() --------------------------------*/
 TARPC_FUNC(opendir, {},
 {
+    TARPC_ENSURE_NOT_NULL(path);
     MAKE_CALL(out->mem_ptr =
-        rcf_pch_mem_alloc(func_ptr_ret_ptr((in->path.path_len == 0) ? NULL :
-                                            in->path.path_val)));
+        rcf_pch_mem_alloc(func_ptr_ret_ptr(in->path.path_val)));
 }
 )
 
@@ -5605,8 +5605,8 @@ TARPC_FUNC(socketpair,
 /*-------------- open() --------------------------------*/
 TARPC_FUNC(open, {},
 {
-    MAKE_CALL(out->fd = func_ptr((in->path.path_len == 0) ? NULL :
-                                     in->path.path_val,
+    TARPC_ENSURE_NOT_NULL(path);
+    MAKE_CALL(out->fd = func_ptr(in->path.path_val,
                                  fcntl_flags_rpc2h(in->flags),
                                  file_mode_flags_rpc2h(in->mode)));
 }
@@ -5616,8 +5616,8 @@ TARPC_FUNC(open, {},
 /*-------------- open64() --------------------------------*/
 TARPC_FUNC(open64, {},
 {
-    MAKE_CALL(out->fd = func_ptr((in->path.path_len == 0) ? NULL :
-                                     in->path.path_val,
+    TARPC_ENSURE_NOT_NULL(path);
+    MAKE_CALL(out->fd = func_ptr(in->path.path_val,
                                  fcntl_flags_rpc2h(in->flags),
                                  file_mode_flags_rpc2h(in->mode)));
 }

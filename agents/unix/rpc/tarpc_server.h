@@ -911,6 +911,23 @@ extern void tarpc_generic_service(rpc_call_data *call);
 
 /**@}*/
 
+/**
+ * Check that a RPC input parameter @p _inname is not NULL.
+ * Intended to be used before MAKE_CALL() for system functions that
+ * are declared `nonnull`.
+ * @note This macro should be called from inside TARPC_FUNC() or similiar
+ * macro
+ */
+#define TARPC_ENSURE_NOT_NULL(_inname)                          \
+    do {                                                        \
+        if (in->_inname._inname##_len == 0)                     \
+        {                                                       \
+            ERROR("Argument %s cannot be NULL", #_inname);      \
+            out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);  \
+            return;                                             \
+        }                                                       \
+    } while(0)
+
 typedef void (*sighandler_t)(int);
 
 #endif /* __TARPC_SERVER_H__ */
