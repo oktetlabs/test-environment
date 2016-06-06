@@ -664,7 +664,12 @@ extern void tarpc_generic_service(rpc_call_data *call);
  * - If the RPC wrapper does something non-trivial, use
  *   TARPC_FUNC_STANDALONE(). A common example is when the target symbol has
  *   different name from the name of the RPC function. TARPC_FUNC() cannot
- *   handle such cases. However, such usage should in general be discouraged.
+ *   handle such cases. However, such usage should in general be
+ *   discouraged.
+ *
+ * @note If an RPC implementation code defined by any of those macros may
+ * safely call `return` with no argument if it wishes to terminate
+ * processing early (i.e. in case of an error).
  */
 
 /**@{*/
