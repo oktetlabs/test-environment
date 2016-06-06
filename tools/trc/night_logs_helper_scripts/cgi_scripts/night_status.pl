@@ -94,6 +94,16 @@ sub find_link
     return "";
 }
 
+sub get_ts_name {
+    my ($file) = @_;
+    open my $fh, '<', "$file";
+    while (<$fh>) {
+        return "zf-ts"   if /Zetaferno DIRECT API/;
+        return "zf shim" if /Zetaferno Socket Shim/;
+    }
+    return "sapi-ts";
+}
+
 $cmd = "ls -lt ${logs_path} ".
        "| grep '\\ssession_[0-9]*[.][0-9]*[.][0-9]*\$' | head -n1";
 
@@ -157,7 +167,7 @@ print <<EOT;
   <body onload="setAutoReload()">
     <b>${last_session} ${cur_time}</b>
     <table>
-      <tr><th>Session</th><th>Status</th><th>Statistics</th></tr>
+      <tr><th>Tags</th><th>Session</th><th>Status</th><th>Statistics</th></tr>
 EOT
 
 foreach my $log (@last_logs)
@@ -171,8 +181,10 @@ foreach my $log (@last_logs)
     my $color = "#aaddaa";
     my $status = "OK";
     my $link_path = "";
+    my $tag_name;
 
     $log =~ s/\s*$//;
+    $tag_name = get_ts_name("$log/progress.log");
 
     if (-r "${log}/trc-stats.txt")
     {
@@ -236,8 +248,9 @@ foreach my $log (@last_logs)
     $log_name = "<a href=\"https://oktetlabs.ru/~tester-l5/".
                 "$link_path\">".$log_name."</a>";
 
-    print "<tr style=\"background-color:$color\"><td>${log_name}</td>".
-          "<td>${log_txt}</td><td>${stat_txt}</td></tr>\n";
+    print "<tr style=\"background-color:$color\"><td>${tag_name}</td>".
+          "<td>${log_name}</td><td>${log_txt}</td>".
+          "<td>${stat_txt}</td></tr>\n";
 }
 
 my $autoreload_checked = "checked";
