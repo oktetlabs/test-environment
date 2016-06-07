@@ -31,63 +31,31 @@
 #define TE_LGR_USER     "TAPI UPnP"
 
 #include "te_config.h"
-#if HAVE_CONFIG_H
-#include "config.h"
+
+#if HAVE_STDLIB_H
+#include <stdlib.h>
 #endif
-#if HAVE_STRING_H
-#include <string.h>
-#endif
-#include "logger_api.h"
+
 #include "tapi_upnp.h"
 
+#include "te_concat.h"
 
-/**
- * Concatenate two strings. User should care about freeing memory allocated
- * for output string.
- *
- * @param first     First string to concatenate.
- * @param seconf    Second string to concatenate.
- *
- * @return Concatenated string, or @c NULL on error.
- */
-static char *
-string_concat(const char *first, const char *second)
-{
-    char  *str;
-    size_t len1;
-
-    if (first == NULL || second == NULL)
-    {
-        ERROR("input strings must not be NULL");
-        return NULL;
-    }
-    len1 = strlen(first);
-    str = malloc(len1 + strlen(second) + 1);
-    if (str == NULL)
-    {
-        ERROR("%s:%d: cannot allocate memory", __FUNCTION__, __LINE__);
-        return NULL;
-    }
-    strcpy(str, first);
-    strcpy(&str[len1], second);
-    return str;
-}
 
 
 /* See description in tapi_upnp.h. */
 char *
 tapi_upnp_get_st_uuid(const char *uuid)
 {
-    return string_concat("uuid:", uuid);
+    return te_concat("uuid:", uuid);
 }
 
 /* See description in tapi_upnp.h. */
 char *
 tapi_upnp_get_st_device_type(const char *domain, const char *device_type)
 {
-    char *urn = string_concat("urn:", domain);
-    char *device = string_concat(":device:", device_type);
-    char *st = string_concat(urn, device);
+    char *urn = te_concat("urn:", domain);
+    char *device = te_concat(":device:", device_type);
+    char *st = te_concat(urn, device);
 
     free(urn);
     free(device);
@@ -98,9 +66,9 @@ tapi_upnp_get_st_device_type(const char *domain, const char *device_type)
 char *
 tapi_upnp_get_st_service_type(const char *domain, const char *service_type)
 {
-    char *urn = string_concat("urn:", domain);
-    char *service = string_concat(":service:", service_type);
-    char *st = string_concat(urn, service);
+    char *urn = te_concat("urn:", domain);
+    char *service = te_concat(":service:", service_type);
+    char *st = te_concat(urn, service);
 
     free(urn);
     free(service);
