@@ -38,6 +38,10 @@
 /** Search for root devices only. */
 #define TAPI_UPNP_ST_ALL_ROOT_DEVICES "upnp:rootdevice"
 
+/** Search for Content Directory service only. */
+#define TAPI_UPNP_ST_CONTENT_DIRECTORY \
+    "urn:upnp-org:serviceId:ContentDirectory"
+
 
 #ifdef __cplusplus
 extern "C" {
