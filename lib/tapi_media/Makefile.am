@@ -11,10 +11,14 @@ AM_LDFLAGS = @TE_LDFLAGS@
 lib_LTLIBRARIES=libtapi_media.la
 
 include_HEADERS= \
-	tapi_media_file.h
+	tapi_media_file.h \
+	tapi_media_player.h \
+	tapi_media_player_mplayer.h
 
 libtapi_media_la_SOURCES= \
-	tapi_media_file.c
+	tapi_media_file.c \
+	tapi_media_player.c \
+	tapi_media_player_mplayer.c
 
 install-exec-hook:
 	touch -c -r libtapi_media.la $(DESTDIR)/$(libdir)/libtapi_media.*

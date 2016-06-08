@@ -28,13 +28,15 @@
  * $Id$
  */
 
-#ifndef __TAPI_MEDIA_PLAYER_H__
-#define __TAPI_MEDIA_PLAYER_H__
+#ifndef __TAPI_MEDIA_PLAYER_MPLAYER_H__
+#define __TAPI_MEDIA_PLAYER_MPLAYER_H__
+
+#include "tapi_media_player.h"
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 
 /**
  * Initialize media player access point hooks.
@@ -46,4 +48,4 @@ extern void tapi_media_player_mplayer_init(tapi_media_player *player);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-#endif /* __TAPI_MEDIA_PLAYER_H__ */
+#endif /* __TAPI_MEDIA_PLAYER_MPLAYER_H__ */
