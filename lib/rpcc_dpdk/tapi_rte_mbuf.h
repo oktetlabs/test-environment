@@ -57,16 +57,19 @@ extern rpc_rte_mbuf_p tapi_rte_mk_mbuf_eth(rcf_rpc_server *rpcs,
                                            const uint8_t *payload, size_t len);
 
 /**
- * Read the whole mbuf (chain) data into buffer allocated internally and
- * pass the number of bytes read to the user-specified variable
+ * Read the whole mbuf (chain) data (starting at a given offset)
+ * into the buffer allocated internally and pass the number of bytes read
+ * to the user-specified variable
  *
  * @param m               RTE mbuf pointer
+ * @param offset          Offset into mbuf data
  * @param bytes_read      Amount of bytes read
  *
  * @return Pointer to a buffer containing data read from mbuf (chain)
  */
 extern uint8_t *tapi_rte_get_mbuf_data(rcf_rpc_server *rpcs,
-                                       rpc_rte_mbuf_p m, size_t *bytes_read);
+                                       rpc_rte_mbuf_p m, size_t offset,
+                                       size_t *bytes_read);
 
 #ifdef __cplusplus
 } /* extern "C" */

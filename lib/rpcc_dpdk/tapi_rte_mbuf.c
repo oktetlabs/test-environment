@@ -71,17 +71,18 @@ tapi_rte_mk_mbuf_eth(rcf_rpc_server *rpcs,
 
 uint8_t *
 tapi_rte_get_mbuf_data(rcf_rpc_server *rpcs,
-                       rpc_rte_mbuf_p m, size_t *bytes_read)
+                       rpc_rte_mbuf_p m, size_t offset, size_t *bytes_read)
 {
     uint32_t pkt_len;
     uint8_t *data_buf;
 
     pkt_len = rpc_rte_pktmbuf_get_pkt_len(rpcs, m);
 
-    data_buf = tapi_calloc(1, pkt_len);
+    data_buf = tapi_calloc(1, pkt_len - offset);
 
-    *bytes_read = (size_t)rpc_rte_pktmbuf_read_data(rpcs, m, 0, pkt_len,
-                                                    data_buf, pkt_len);
+    *bytes_read = (size_t)rpc_rte_pktmbuf_read_data(rpcs,
+                                                    m, offset, pkt_len - offset,
+                                                    data_buf, pkt_len - offset);
 
     return (data_buf);
 }
