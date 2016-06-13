@@ -39,15 +39,16 @@ extern "C" {
 
 /**
  * Prepare an RTE mbuf with Ethernet frame containing particular data
+ * (if buffer to contain the frame data is NULL, then random data will be put)
  *
  * @param mp              RTE mempool pointer
- * @param dst_addr        DST Ethernet address
- * @param src_addr        SRC Ethernet address
- * @param ether_type      Ethernet type value
- * @param payload         Frame data
+ * @param dst_addr        Destination Ethernet address (network byte order)
+ * @param src_addr        Source Ethernet address (network byte order)
+ * @param ether_type      Ethernet type value (host byte order)
+ * @param payload         Data to be encapsulated into the frame or @c NULL
  * @param len             Data length
  *
- * @return RTE mbuf pointer on success; @c 0 RPC pointer on failure
+ * @return RTE mbuf pointer on success; jumps out on failure
  */
 extern rpc_rte_mbuf_p tapi_rte_mk_mbuf_eth(rcf_rpc_server *rpcs,
                                            rpc_rte_mempool_p mp,

@@ -162,6 +162,7 @@ print <<EOT;
     <style>
       td { text-align: center; padding: 1px }
       th { background-color:#DDDDDD; }
+      span.stat { font-family: monospace; white-space: pre; }
     </style>
   </head>
   <body onload="setAutoReload()">
@@ -207,7 +208,9 @@ foreach my $log (@last_logs)
         
         $unexp_iters = $total_iters - $exp_iters;
 
-        $stat_txt = "Run ${total_iters}, unexpected ${unexp_iters}";
+        $stat_txt = sprintf "Run <span class=\"stat\">%5d</span>, " .
+            "unexpected <span class=\"stat\">%4d</span>",
+            $total_iters, $unexp_iters;
         $link_path = find_link($log);
         if (length($link_path) > 0)
         {
