@@ -57,7 +57,7 @@ tapi_rte_mk_mbuf_eth(rcf_rpc_server *rpcs,
     memcpy(eh->ether_dhost, dst_addr, sizeof(eh->ether_dhost));
     memcpy(eh->ether_shost, src_addr, sizeof(eh->ether_shost));
 
-    eh->ether_type = ether_type;
+    eh->ether_type = htons(ether_type);
 
     if (payload != NULL)
         memcpy(frame + sizeof(*eh), payload, len);
