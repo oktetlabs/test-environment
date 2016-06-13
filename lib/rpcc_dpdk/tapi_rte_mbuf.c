@@ -66,6 +66,8 @@ tapi_rte_mk_mbuf_eth(rcf_rpc_server *rpcs,
 
     (void)rpc_rte_pktmbuf_append_data(rpcs, m, frame, sizeof(*eh) + len);
 
+    free(frame);
+
     return (m);
 }
 
