@@ -107,7 +107,7 @@ tarpc_rte_pktmbuf_ol_flags2rte(uint64_t rpc, uint64_t *rte)
 
 #define RTE_PKTMBUF_OL_FLAGS2RTE(_bit) \
     do {                                                            \
-        uint64_t flag = TARPC_##_bit;                               \
+        uint64_t flag = (1UL << TARPC_##_bit);                      \
                                                                     \
         if (rpc & flag)                                             \
         {                                                           \
