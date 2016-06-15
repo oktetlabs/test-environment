@@ -41,8 +41,11 @@
 #if HAVE_STRING_H
 #include <string.h>
 #endif
+
 #include <libgupnp-av/gupnp-av.h>
 #include "tapi_upnp_content_directory.h"
+
+#include "te_string.h"
 
 
 /**
@@ -54,14 +57,26 @@ typedef struct {
 } on_didl_param_t;
 
 /**
- * Aggregator of data to post them to the @b cd_handler callbacks for
- * search new children.
+ * Opaque data to post them to the @b cd_handler callbacks for
+ * search a certain children.
  */
 typedef struct {
-    rcf_rpc_server         *rpcs;
-    tapi_upnp_service_info *service;
-    te_errno                error;
-} search_target_service_t;
+    rcf_rpc_server              *rpcs;      /**< RPC server handle. */
+    tapi_upnp_service_info      *service;   /**< UPnP service context. */
+    char                        *path;      /**< Path to search in. */
+    tapi_upnp_cd_container_node *root_cont; /**< New root container. */
+    te_errno                     error;     /**< Error code. */
+} search_children_opaque_t;
+
+/**
+ * Opaque data to post them to the @b cd_handler callbacks for printing
+ * a Content Directory context.
+ */
+typedef struct {
+    te_string *buf;
+    size_t     align;
+    te_errno   error;
+} print_children_opaque_t;
 
 /**
  * Specifies a browse option BrowseFlag to be used for browsing the
@@ -369,19 +384,57 @@ remove_container(tapi_upnp_cd_container_node *container, void *user_data)
  * It is used as @b presearch handler in @sa tapi_upnp_cd_get_tree.
  *
  * @param container     Container context.
- * @param user_data     Unused additional parameter.
+ * @param user_data     Opaque data of @b search_children_opaque_t type.
  */
 static void
-search_new_children(tapi_upnp_cd_container_node *container, void *user_data)
+search_children(tapi_upnp_cd_container_node *container, void *user_data)
 {
-    search_target_service_t *sts = (search_target_service_t *)user_data;
+    search_children_opaque_t *sco = (search_children_opaque_t *)user_data;
+    tapi_upnp_cd_container_node *child, *tmp_child;
+    char *path = sco->path;
 
-    if (sts->error != 0)
+    if (sco->error != 0)
         return;
 
-    if (container->data.type == TAPI_UPNP_CD_OBJECT_CONTAINER)
-        sts->error = tapi_upnp_cd_get_children(sts->rpcs, sts->service,
-                                               container);
+    if (container->data.type != TAPI_UPNP_CD_OBJECT_CONTAINER)
+        return;
+
+    sco->error = tapi_upnp_cd_get_children(sco->rpcs, sco->service,
+                                           container);
+
+    if (path == NULL || sco->error != 0)
+        return;
+
+    /* Skip a leading '/' in path. */
+    while (*path == '/')
+        path++;
+    /* Update path for next children search. */
+    sco->path = strchr(path, '/');
+    if (sco->path != NULL)
+    {
+        /* Terminate a current path to get a part of path. */
+        *sco->path = '\0';
+        sco->path++;
+    }
+    if (*path == '\0')
+        return;
+
+    /* Delete children which is not matched to path. */
+    SLIST_FOREACH_SAFE(child, &container->children, next, tmp_child)
+    {
+        if (strcmp(child->data.base.title, path) == 0)
+        {
+            sco->root_cont = child;
+            continue;
+        }
+
+        SLIST_REMOVE(&container->children, child,
+                     tapi_upnp_cd_container_node, next);
+        free_cd_container(&child->data);
+        free(child);
+    }
+    if (SLIST_EMPTY(&container->children))
+        sco->error = TE_ENODATA;
 }
 
 /**
@@ -945,6 +998,59 @@ parse_children(const char *data, tapi_upnp_cd_container_node *container)
     return rc;
 }
 
+/**
+ * Print a Content Directory context.
+ *
+ * @param container     Container context.
+ * @param user_data     Opaque data of @b print_children_opaque_t type.
+ */
+static void
+pre_print_cd(tapi_upnp_cd_container_node *container, void *user_data)
+{
+    print_children_opaque_t *opaque = (print_children_opaque_t *)user_data;
+    size_t i;
+
+    if (opaque->error != 0)
+        return;
+
+    opaque->align++;
+    for (i = 0; i < opaque->align; i++)
+    {
+        opaque->error = te_string_append(opaque->buf, " ");
+        if (opaque->error != 0)
+            return;
+    }
+    opaque->error = te_string_append(opaque->buf, "%s [\n",
+                                     container->data.base.title);
+}
+
+/**
+ * Post print a Content Directory context.
+ *
+ * @param container     Container context.
+ * @param user_data     Opaque data of @b print_children_opaque_t type.
+ */
+static void
+post_print_cd(tapi_upnp_cd_container_node *container, void *user_data)
+{
+    print_children_opaque_t *opaque = (print_children_opaque_t *)user_data;
+    size_t i;
+    UNUSED(container);
+
+    if (opaque->error != 0)
+        return;
+
+    for (i = 0; i < opaque->align; i++)
+    {
+        opaque->error = te_string_append(opaque->buf, " ");
+        if (opaque->error != 0)
+            return;
+    }
+    opaque->align--;
+    opaque->error = te_string_append(opaque->buf, "],\n");
+}
+
+
 /* See description in tapi_upnp_content_directory.h. */
 te_errno
 tapi_upnp_cd_get_root(rcf_rpc_server               *rpcs,
@@ -1009,22 +1115,65 @@ tapi_upnp_cd_get_children(rcf_rpc_server               *rpcs,
 te_errno
 tapi_upnp_cd_get_tree(rcf_rpc_server               *rpcs,
                       const tapi_upnp_service_info *service,
+                      const char                   *path_filter,
                       tapi_upnp_cd_container_node  *container)
 {
     te_errno rc;
-    search_target_service_t sts = {
+    tapi_upnp_cd_container_node tmp_cont = {};
+    search_children_opaque_t sco = {
         .rpcs = rpcs,
         .service = service,
+        .path = NULL,
+        .root_cont = &tmp_cont,
         .error = 0
     };
+    char *path = NULL;
 
-    rc = tapi_upnp_cd_get_root(rpcs, service, container);
+    if (path_filter != NULL)
+    {
+        path = strdup(path_filter);
+        if (path == NULL)
+        {
+            ERROR("%s:%d: Failed to duplicate a string",
+                  __FUNCTION__, __LINE__);
+            return TE_RC(TE_TAPI, TE_ENOMEM);
+        }
+    }
+
+    rc = tapi_upnp_cd_get_root(rpcs, service, &tmp_cont);
     if (rc != 0)
+    {
+        free(path);
         return rc;
+    }
 
-    tapi_upnp_cd_tree_dfs(container, search_new_children, NULL, &sts);
+    sco.path = path;
+    tapi_upnp_cd_tree_dfs(&tmp_cont, search_children, NULL, &sco);
 
-    return sts.error;
+    free(path);
+
+    if (sco.error != 0)
+        tapi_upnp_cd_remove_container(&tmp_cont);
+    else
+    {
+        tapi_upnp_cd_remove_container(container);
+        *container = *sco.root_cont;
+        if (sco.root_cont != &tmp_cont)
+        {
+            tapi_upnp_cd_container_node *child;
+
+            /* Tree root should be moved. */
+            SLIST_REMOVE(&sco.root_cont->parent->children, sco.root_cont,
+                         tapi_upnp_cd_container_node, next);
+            tapi_upnp_cd_remove_container(&tmp_cont);
+            /* Update parent for new root and for it children. */
+            container->parent = NULL;
+            SLIST_FOREACH(child, &container->children, next)
+                child->parent = container;
+        }
+    }
+
+    return sco.error;
 }
 
 /* See description in tapi_upnp_content_directory.h. */
@@ -1073,4 +1222,29 @@ tapi_upnp_cd_remove_tree(tapi_upnp_cd_container_node *root)
         root = root->parent;
 
     tapi_upnp_cd_remove_container(root);
+}
+
+/* See description in tapi_upnp_content_directory.h. */
+void
+tapi_upnp_print_content_directory(
+                            const tapi_upnp_cd_container_node *container)
+{
+    te_string dump = TE_STRING_INIT;
+    print_children_opaque_t opaque = {
+        .buf = &dump,
+        .align = 0,
+        .error = 0
+    };
+
+    if (container == NULL)
+    {
+        RING("Content Directory is (null)");
+        return;
+    }
+
+    te_string_append(&dump, "Content Directory:\n");
+    tapi_upnp_cd_tree_dfs(container, pre_print_cd, post_print_cd, &opaque);
+
+    RING(dump.ptr);
+    te_string_free(&dump);
 }

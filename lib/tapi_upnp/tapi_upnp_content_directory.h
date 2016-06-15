@@ -233,17 +233,29 @@ extern te_errno tapi_upnp_cd_get_children(
                                 tapi_upnp_cd_container_node  *container);
 
 /**
- * Retrieve full tree structure and data of Content Directory.
+ * Retrieve tree structure and data of Content Directory which placement is
+ * matched to @p path_filter, for example, Video/Folders. This function
+ * releases @p container before retrieve a new data. Note, @p container
+ * should be released with either @b tapi_upnp_cd_remove_container or
+ * @b tapi_upnp_cd_remove_tree when it is no longer needed.
  *
- * @param[in]    rpcs       RPC server handle.
- * @param[in]    service    ContentDirectory service context.
- * @param[inout] container  Container to put data to.
+ * @param[in]    rpcs           RPC server handle.
+ * @param[in]    service        ContentDirectory service context.
+ * @param[in]    path_filter    Root path to retrieve data from. May be
+                                @c NULL or empty string to retrieve all
+                                content.
+ * @param[inout] container      Container to put data to.
  *
- * @return Status code. On success, @c 0.
+ * @return Status code. On success, @c 0, on error @p container will be not
+ *         changed.
+ *
+ * @retval TE_ENODATA   There are no data which is satisfied to
+ *                      @p path_filter.
  */
 extern te_errno tapi_upnp_cd_get_tree(
                                 rcf_rpc_server               *rpcs,
                                 const tapi_upnp_service_info *service,
+                                const char                   *path_filter,
                                 tapi_upnp_cd_container_node  *container);
 
 /**
@@ -266,6 +278,15 @@ extern void tapi_upnp_cd_remove_container(
  * @sa tapi_upnp_cd_remove_container
  */
 extern void tapi_upnp_cd_remove_tree(tapi_upnp_cd_container_node *root);
+
+/**
+ * Print UPnP Content Directory context using RING function.
+ * This function should be used for debugging purpose.
+ *
+ * @param container     Container context.
+ */
+extern void tapi_upnp_print_content_directory(
+                            const tapi_upnp_cd_container_node *container);
 
 #ifdef __cplusplus
 } /* extern "C" */
