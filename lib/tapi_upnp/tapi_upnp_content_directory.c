@@ -95,6 +95,21 @@ static const char *browse_flag_string[] = {
     [BROWSE_FLAG_DIRECT_CHILDREN] = "BrowseDirectChildren"
 };
 
+/* Resource MIME-type mapping. */
+typedef struct resource_type_mapping {
+      const char                 *mime;     /* MIME-type string prefix. */
+      tapi_upnp_cd_resource_type  type;     /* Resource type. */
+} resource_type_mapping;
+
+/* Map of MIME-type string prefixes to resource type. */
+static resource_type_mapping resource_type[] =
+{
+    { "audio/", TAPI_UPNP_CD_RESOURCE_AUDIO },
+    { "image/", TAPI_UPNP_CD_RESOURCE_IMAGE },
+    { "video/", TAPI_UPNP_CD_RESOURCE_VIDEO }
+};
+
+
 /**
  * Initialise the GLib type system.
  * Warning: it is require to call this function before calling
@@ -446,8 +461,6 @@ search_children(tapi_upnp_cd_container_node *container, void *user_data)
  * @param base          Common part for item and container.
  *
  * @return Status code. On success, @c 0.
- *
- * @todo Find and determine a particular resource type.
  */
 static te_errno
 extract_base_class_data(GUPnPDIDLLiteObject *upnp_object,
@@ -527,6 +540,7 @@ extract_base_class_data(GUPnPDIDLLiteObject *upnp_object,
     for (l = resources; l; l = l->next)
     {
         GUPnPDIDLLiteResource      *resource;
+        GUPnPProtocolInfo          *protocol_info;
         tapi_upnp_cd_resource_node *res_node;
 
         res_node = calloc(1, sizeof(*res_node));
@@ -541,8 +555,7 @@ extract_base_class_data(GUPnPDIDLLiteObject *upnp_object,
         resource_string[2].value = &res_node->res.import_uri;
 
         resource = (GUPnPDIDLLiteResource *)l->data;
-        res_node->res.type = TAPI_UPNP_CD_RESOURCE_OTHER;   /**< @todo
-                                * Determine a particular resource type. */
+
 #ifdef LIBGUPNP_VER_0_12
         /* Now it is available only in unstable version libgupnp. */
         res_node->res.update_count =
@@ -582,12 +595,12 @@ extract_base_class_data(GUPnPDIDLLiteObject *upnp_object,
                 }
             }
         }
-        /**
-         * @todo perhaps gupnp_protocol_info_to_string will be better than
-         * gupnp_protocol_info_get_protocol
-         */
-        tmp_str = gupnp_protocol_info_get_protocol(
-                    gupnp_didl_lite_resource_get_protocol_info(resource));
+
+        /* Extract a data from protocol info. */
+        protocol_info =
+            gupnp_didl_lite_resource_get_protocol_info(resource);
+
+        tmp_str = gupnp_protocol_info_to_string(protocol_info);
         if (tmp_str != NULL)
         {
             res_node->res.protocol_info = strdup(tmp_str);
@@ -598,6 +611,22 @@ extract_base_class_data(GUPnPDIDLLiteObject *upnp_object,
                 goto extract_base_class_data_cleanup;
             }
         }
+
+        /* Get resource type. */
+        tmp_str = gupnp_protocol_info_get_mime_type(protocol_info);
+
+        res_node->res.type = TAPI_UPNP_CD_RESOURCE_OTHER;
+        for (i = 0; i < TE_ARRAY_LEN(resource_type); i++)
+        {
+            if (strncmp(resource_type[i].mime, tmp_str,
+                        strlen(resource_type[i].mime)) == 0)
+            {
+                res_node->res.type = resource_type[i].type;
+                break;
+            }
+        }
+
+        /* Add resource to the list. */
         SLIST_INSERT_HEAD(&base->resources, res_node, next);
     }
 
