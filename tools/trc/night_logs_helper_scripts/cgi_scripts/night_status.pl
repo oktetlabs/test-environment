@@ -180,12 +180,17 @@ foreach my $log (@last_logs)
     my $exp_iters = 0;
     my $unexp_iters = 0;
     my $color = "#aaddaa";
+    my $color_suite = "#aaddaa";
     my $status = "OK";
     my $link_path = "";
     my $tag_name;
 
     $log =~ s/\s*$//;
     $tag_name = get_ts_name("$log/progress.log");
+    if ($tag_name ne "sapi-ts")
+    {
+        $color_suite = "#ddddaa";
+    }
 
     if (-r "${log}/trc-stats.txt")
     {
@@ -251,7 +256,8 @@ foreach my $log (@last_logs)
     $log_name = "<a href=\"https://oktetlabs.ru/~tester-l5/".
                 "$link_path\">".$log_name."</a>";
 
-    print "<tr style=\"background-color:$color\"><td>${tag_name}</td>".
+    print "<tr style=\"background-color:$color\">".
+          "<td style=\"background-color:$color_suite\">${tag_name}</td>".
           "<td>${log_name}</td><td>${log_txt}</td>".
           "<td>${stat_txt}</td></tr>\n";
 }
