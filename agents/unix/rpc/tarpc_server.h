@@ -486,6 +486,17 @@ extern te_errno tarpc_check_args(checked_arg_list *list);
         memset(&in->_a, 0, sizeof(in->_a)); \
     } while (0)
 
+#define COPY_ARG_NOTNULL(_a)                                    \
+    do {                                                        \
+        if (in->_a._a##_len == 0)                               \
+        {                                                       \
+            ERROR("Argument %s cannot be NULL", #_a);           \
+            out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);  \
+            return TRUE;                                        \
+        }                                                       \
+        COPY_ARG(_a);                                           \
+    } while (0)
+
 struct rpc_call_data;
 
 /**

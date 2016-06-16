@@ -1199,14 +1199,12 @@ TARPC_FUNC(access, {},
 /*-------------- gettimeofday() --------------------------------*/
 TARPC_FUNC(gettimeofday,
 {
-    COPY_ARG(tv);
+    COPY_ARG_NOTNULL(tv);
     COPY_ARG(tz);
 },
 {
     struct timeval  tv;
     struct timezone tz;
-
-    TARPC_ENSURE_NOT_NULL(tv);
 
     TARPC_CHECK_RC(timeval_rpc2h(out->tv.tv_val, &tv));
     if (out->tz.tz_len != 0)
