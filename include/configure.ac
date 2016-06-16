@@ -354,7 +354,7 @@ AC_ARG_ENABLE([static-rpc-lookup],
               [ac_cv_enable_static_rpc_lookup=$enableval],
               [ac_cv_enable_static_rpc_lookup=no])
 AC_CACHE_CHECK([whether to use compile-time RPC symbol lookup by default],
-               [ac_cv_enable_static_rpc_lookup], [ac_cv_enable_static_rpc_lookup=yes])
+               [ac_cv_enable_static_rpc_lookup], [ac_cv_enable_static_rpc_lookup=no])
 if test x"$ac_cv_enable_static_rpc_lookup" != xno
 then
     AC_DEFINE([DEFAULT_STATIC_RPC_LOOKUP], [], [Whether to use static RPC symbol lookup by default])
