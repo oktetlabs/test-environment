@@ -428,7 +428,7 @@ tapi_storage_client_rmdir(tapi_storage_client *client,
  * @param[in]  rpcs         RPC server handle.
  * @param[in]  methods      Back-end client scpecific methods.
  * @param[in]  auth         Back-end client specific authorization
- *                          parameters.
+ *                          parameters. May be @c NULL.
  * @param[in]  context      Back-end client specific context. Don't free
  *                          the @p context before finishing work with
                             @p client.

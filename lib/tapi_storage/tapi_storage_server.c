@@ -46,16 +46,21 @@ tapi_storage_server_init(tapi_storage_service_type          type,
                          void                              *context,
                          tapi_storage_server               *server)
 {
-    assert(server != NULL);
+    te_errno rc = 0;
 
-    if (auth == NULL)
-        return TE_RC(TE_TAPI, TE_EINVAL);
+    assert(server != NULL);
 
     server->type = type;
     server->rpcs = rpcs;
     server->methods = methods;
     server->context = context;
-    return tapi_storage_auth_params_copy(&server->auth, auth);
+
+    if (auth == NULL)
+        server->auth = (tapi_storage_auth_params)TAPI_STORAGE_AUTH_INIT;
+    else
+        rc = tapi_storage_auth_params_copy(&server->auth, auth);
+
+    return rc;
 }
 
 /* See description in tapi_storage_server.h. */

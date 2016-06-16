@@ -1765,17 +1765,22 @@ tapi_storage_client_ftp_init(rcf_rpc_server                    *rpcs,
                              tapi_storage_client_ftp_context   *context,
                              tapi_storage_client               *client)
 {
-    assert(client != NULL);
+    te_errno rc = 0;
 
-    if (auth == NULL)
-        return TE_RC(TE_TAPI, TE_EINVAL);
+    assert(client != NULL);
 
     client->type = TAPI_STORAGE_SERVICE_FTP;
     client->rpcs = rpcs;
     client->methods = (methods == NULL ? &tapi_storage_client_ftp_methods
                                        : methods);
     client->context = context;
-    return tapi_storage_auth_params_copy(&client->auth, auth);
+
+    if (auth == NULL)
+        client->auth = (tapi_storage_auth_params)TAPI_STORAGE_AUTH_INIT;
+    else
+        rc = tapi_storage_auth_params_copy(&client->auth, auth);
+
+    return rc;
 }
 
 /* See description in tapi_storage_client_ftp.h. */

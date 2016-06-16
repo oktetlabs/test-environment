@@ -328,7 +328,7 @@ tapi_storage_server_get_share(tapi_storage_server     *server,
  * @param[in]  rpcs         RPC server handle.
  * @param[in]  methods      Back-end server specific methods.
  * @param[in]  auth         Back-end server specific authorization
- *                          parameters.
+ *                          parameters. May be @c NULL.
  * @param[in]  context      Back-end server specific context. Don't free
  *                          the @p context before finishing work with
                             @p server.

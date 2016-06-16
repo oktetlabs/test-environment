@@ -89,7 +89,7 @@ extern void tapi_storage_client_ftp_context_fini(
  *                          then default methods will be used. Default
  *                          methods is defined in tapi_storage_client_ftp.c.
  * @param[in]  auth         Back-end client specific authorization
- *                          parameters.
+ *                          parameters. May be @c NULL.
  * @param[in]  context      Back-end client scpecific context. Don't free
  *                          the @p context before finishing work with
                             @p client.
