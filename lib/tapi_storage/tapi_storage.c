@@ -91,7 +91,7 @@ tapi_storage_setup(tapi_storage_client *client,
     te_errno         con_rc;
     te_errno         rc = 0;
     int              lazy;
-    const char      *strlazy = NULL;
+    char            *strlazy = NULL;
     tapi_local_file  root_dir = {
         .type = TAPI_FILE_TYPE_DIRECTORY,
         .pathname = "/",
