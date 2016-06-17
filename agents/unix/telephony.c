@@ -82,8 +82,6 @@ telephony_open_channel(int port)
 
     snprintf(dahdi_dev, DAHDI_DEV_LEN, "/dev/dahdi/chan/001/00%d", port);
 
-    ERROR("FOOBAR dahdi '%s'", dahdi_dev);
-
     if ((chan = open(dahdi_dev, O_RDWR)) < 0)
     {
         ERROR("open() failed: errno %d (%s)", errno, strerror(errno));
