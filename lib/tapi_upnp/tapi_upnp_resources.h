@@ -77,6 +77,14 @@ extern te_errno tapi_upnp_resources_get_media_uri(
  */
 extern void tapi_upnp_resources_free_media_uri(tapi_upnp_media_uri *media);
 
+/**
+ * Print UPnP Content Directory object resource context using RING function.
+ * This function should be used for debugging purpose.
+ *
+ * @param res           Content Directory object resource.
+ */
+extern void tapi_upnp_print_resource_info(const tapi_upnp_cd_resource *res);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

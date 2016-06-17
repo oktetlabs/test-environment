@@ -124,3 +124,48 @@ tapi_upnp_resources_free_media_uri(tapi_upnp_media_uri *media)
         free(m);
     }
 }
+
+/* See description in tapi_upnp_resources.h. */
+void
+tapi_upnp_print_resource_info(const tapi_upnp_cd_resource *res)
+{
+    static const char *res_type_name[] =
+    {
+        [TAPI_UPNP_CD_RESOURCE_AUDIO] = "audio",
+        [TAPI_UPNP_CD_RESOURCE_IMAGE] = "image",
+        [TAPI_UPNP_CD_RESOURCE_VIDEO] = "video",
+        [TAPI_UPNP_CD_RESOURCE_OTHER] = "unknown/other"
+    };
+
+    RING("Content Directory object resource:\n"
+         " type: %s (%d)\n"
+         " protection: %s\n"
+         " uri: %s\n"
+         " import_uri: %s\n"
+         " protocol_info: %s\n"
+         " size: %ld\n"
+         " size64: %lld\n"
+         " duration: %ld\n"
+         " bitrate: %d\n"
+         " sample_freq: %d\n"
+         " bits_per_sample: %d\n"
+         " audio_channels: %d\n"
+         " width: %d\n"
+         " height: %d\n"
+         " color_depth: %d",
+         res_type_name[res->type], res->type,
+         res->protection,
+         res->uri,
+         res->import_uri,
+         res->protocol_info,
+         res->size,
+         res->size64,
+         res->duration,
+         res->bitrate,
+         res->sample_freq,
+         res->bits_per_sample,
+         res->audio_channels,
+         res->width,
+         res->height,
+         res->color_depth);
+}
