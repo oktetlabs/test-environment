@@ -288,6 +288,18 @@ extern void tapi_upnp_cd_remove_tree(tapi_upnp_cd_container_node *root);
 extern void tapi_upnp_print_content_directory(
                             const tapi_upnp_cd_container_node *container);
 
+/**
+ * Get a number of UPnP Content Directory objects.
+ *
+ * @param container     Container context.
+ * @param type          Content Directory object type.
+ *
+ * @return Number of UPnP Content Directory objects.
+ */
+extern size_t tapi_upnp_cd_get_objects_count(
+                            const tapi_upnp_cd_container_node *container,
+                            tapi_upnp_cd_object_type           type);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

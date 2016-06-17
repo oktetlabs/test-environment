@@ -79,6 +79,15 @@ typedef struct {
 } print_children_opaque_t;
 
 /**
+ * Opaque data to post them to the @b cd_handler callbacks to count a
+ * number of Content Directory objects.
+ */
+typedef struct {
+    tapi_upnp_cd_object_type type;  /**< Content Directory object type. */
+    size_t                   num;   /**< Number of items. */
+} count_objects_opaque_t;
+
+/**
  * Specifies a browse option BrowseFlag to be used for browsing the
  * ContentDirectory service.
  */
@@ -1079,6 +1088,21 @@ post_print_cd(tapi_upnp_cd_container_node *container, void *user_data)
     opaque->error = te_string_append(opaque->buf, "],\n");
 }
 
+/**
+ * Count a number of Content Directory objects.
+ *
+ * @param container     Container context.
+ * @param user_data     Opaque data of @b count_objects_opaque_t type.
+ */
+static void
+count_objects(tapi_upnp_cd_container_node *container, void *user_data)
+{
+    count_objects_opaque_t *opaque = user_data;
+
+    if (container->data.type == opaque->type)
+        opaque->num++;
+}
+
 
 /* See description in tapi_upnp_content_directory.h. */
 te_errno
@@ -1276,4 +1300,23 @@ tapi_upnp_print_content_directory(
 
     RING(dump.ptr);
     te_string_free(&dump);
+}
+
+/* See description in tapi_upnp_content_directory.h. */
+size_t
+tapi_upnp_cd_get_objects_count(
+                            const tapi_upnp_cd_container_node *container,
+                            tapi_upnp_cd_object_type           type)
+{
+    count_objects_opaque_t opaque = {
+        .type = type,
+        .num = 0,
+    };
+
+    if (container == NULL)
+        return 0;
+
+    tapi_upnp_cd_tree_dfs(container, count_objects, NULL, &opaque);
+
+    return opaque.num;
 }
