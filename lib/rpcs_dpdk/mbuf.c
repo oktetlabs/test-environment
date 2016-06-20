@@ -241,7 +241,7 @@ finish:
 
 TARPC_FUNC_STANDALONE(rte_pktmbuf_read_data,
 {
-    COPY_ARG(buf);
+    COPY_ARG_NOTNULL(buf);
 },
 {
     struct rte_mbuf *m = NULL;
@@ -249,14 +249,14 @@ TARPC_FUNC_STANDALONE(rte_pktmbuf_read_data,
     ssize_t bytes_read = 0;
     size_t cur_offset = in->offset;
 
-    if (in->buf.buf_val == NULL)
+    if (out->buf.buf_val == NULL)
     {
         ERROR("Incorrect buffer");
         err =  TE_RC(TE_RPCS, TE_EINVAL);
         goto finish;
     }
 
-    if (in->len > in->buf.buf_len)
+    if (in->len > out->buf.buf_len)
     {
         ERROR("Not enough room in the specified buffer");
         err = TE_RC(TE_RPCS, TE_ENOSPC);
