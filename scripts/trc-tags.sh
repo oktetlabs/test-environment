@@ -89,6 +89,9 @@ if test "x$(echo ${tags} | grep [.]el5[.])" != "x" -o \
         "x$(echo ${tags} | grep '[.]el5\>')" != "x" ; then
     tags="${tags} el:5";
 fi
+if test $(${ssh} uname -a | grep -c "Ubuntu") -ne 0 ; then
+    tags="${tags} ubu";
+fi
 if test "x$(echo ${tags} | grep powerpc64)" != "x" || \
    test "x$(echo ${tags} | grep ppc64)" != "x"; then
     tags="${tags} ppc64";
