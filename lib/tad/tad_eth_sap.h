@@ -44,6 +44,14 @@
 extern "C" {
 #endif
 
+/** Auxiliary structure to represent VLAN tag */
+struct tad_vlan_tag {
+    uint16_t vlan_tpid; /**< Tag protocol ID (network byte order) */
+    uint16_t vlan_tci;  /**< VLAN TCI (network byte order) */
+};
+
+/** Length of VLAN tag */
+#define TAD_VLAN_TAG_LEN 4
 
 /** Maximum length of the Ethernet interface (service provider) name */
 #define TAD_ETH_SAP_IFNAME_SIZE 256

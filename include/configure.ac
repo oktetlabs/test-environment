@@ -129,6 +129,8 @@ inet/mib2.h \
 inet/nd.h \
 inttypes.h \
 limits.h \
+linux/if_ether.h \
+linux/if_packet.h \
 linux/net_tstamp.h \
 linux/udp.h \
 math.h \
