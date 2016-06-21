@@ -398,6 +398,9 @@ extern te_errno tad_common_write_read_cb(csap_p csap, unsigned int timeout,
  * @param fromlen       On input length of the buffer for peer address,
  *                      on output length of the peer address
  * @param pkt_len       Location for received packet length
+ * @param msg_flags     Location for flags returned by recvmsg() or @c NULL
+ * @param cmsg_buf      Buffer to put ancillary data (or @c NULL)
+ * @param cmsg_len      Ancillary data buffer length, in/out (or @c NULL)
  *
  * @return Status code.
  */
@@ -407,7 +410,9 @@ extern te_errno tad_common_read_cb_sock(csap_p csap, int sock,
                                         tad_pkt *pkt,
                                         struct sockaddr *from,
                                         socklen_t *fromlen,
-                                        size_t *pkt_len);
+                                        size_t *pkt_len,
+                                        int *msg_flags, void *cmsg_buf,
+                                        size_t *cmsg_buf_len);
 
 /**
  * Create detached thread.

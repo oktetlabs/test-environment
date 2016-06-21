@@ -443,7 +443,8 @@ tad_socket_read_cb(csap_p csap, unsigned int timeout,
     else 
     {
         return tad_common_read_cb_sock(csap, spec_data->socket, 0,
-                                       timeout, pkt, NULL, NULL, pkt_len);
+                                       timeout, pkt, NULL, NULL, pkt_len,
+                                       NULL, NULL, NULL);
     }
 }
 

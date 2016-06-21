@@ -191,7 +191,7 @@ tad_ip4_read_cb(csap_p csap, unsigned int timeout,
     te_errno            rc;
 
     rc = tad_common_read_cb_sock(csap, spec_data->socket, 0, timeout,
-                                 pkt, NULL, NULL, pkt_len);
+                                 pkt, NULL, NULL, pkt_len, NULL, NULL, NULL);
 
     return rc;
 }

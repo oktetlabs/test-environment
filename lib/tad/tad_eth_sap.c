@@ -882,7 +882,8 @@ tad_eth_sap_recv(tad_eth_sap *sap, unsigned int timeout,
 
 #ifdef USE_PF_PACKET
     rc = tad_common_read_cb_sock(sap->csap, data->in, MSG_TRUNC, timeout,
-                                 pkt, SA(&from), &fromlen, pkt_len);
+                                 pkt, SA(&from), &fromlen, pkt_len,
+                                 NULL, NULL, NULL);
     if (rc != 0)
         return rc;
 
