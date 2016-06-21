@@ -296,6 +296,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
     strcpy(rpcs->ta, ta);
     strcpy(rpcs->name, name);
     rpcs->iut_err_jump = TRUE;
+    rpcs->err_jump = TRUE;
     rpcs->op = RCF_RPC_CALL_WAIT;
     rpcs->def_timeout = RCF_RPC_DEFAULT_TIMEOUT;
     rpcs->timeout = RCF_RPC_UNSPEC_TIMEOUT;

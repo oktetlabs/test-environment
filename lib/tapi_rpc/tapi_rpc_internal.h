@@ -118,12 +118,18 @@ do {                                                                    \
                                 (xdrproc_t)xdr_tarpc_##_func##_out);    \
             if (!RPC_IS_CALL_OK(rpcs))                                  \
             {                                                           \
-                rpcs->iut_err_jump = TRUE;                              \
+                if (rpcs->err_jump)                                     \
+                {                                                       \
+                    rpcs->iut_err_jump = TRUE;                          \
+                    TAPI_JMP_DO(TE_EFAIL);                              \
+                }                                                       \
+            }                                                           \
+            else if ((_res) && rpcs->iut_err_jump)                      \
+            {                                                           \
                 TAPI_JMP_DO(TE_EFAIL);                                  \
             }                                                           \
-            if ((_res) && rpcs->iut_err_jump)                           \
-                TAPI_JMP_DO(TE_EFAIL);                                  \
             rpcs->iut_err_jump = TRUE;                                  \
+            rpcs->err_jump = TRUE;                                      \
         }                                                               \
         else                                                            \
         {                                                               \

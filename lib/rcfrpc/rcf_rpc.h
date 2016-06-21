@@ -79,7 +79,23 @@
 
 /** Roll back RPC_AWAIT_IUT_ERROR effect */
 #define RPC_DONT_AWAIT_IUT_ERROR(_rpcs) \
-    (_rpcs)->iut_err_jump = TRUE
+    do {                                \
+        (_rpcs)->iut_err_jump = TRUE;   \
+        /* It does not make sense to    \
+         * await only non-IUT error */  \
+        (_rpcs)->err_jump = TRUE;       \
+    } while (0)
+
+/** Do not jump from the TAPI RPC library call in the case of any error */
+#define RPC_AWAIT_ERROR(_rpcs) \
+    do {                                \
+        (_rpcs)->iut_err_jump = FALSE;  \
+        (_rpcs)->err_jump = FALSE;      \
+    } while (0)
+
+/** Roll back RPC_AWAIT_ERROR effect */
+#define RPC_DONT_AWAIT_ERROR(_rpcs) \
+    RPC_DONT_AWAIT_IUT_ERROR(_rpcs)
 
 /** Are we awaiting an error? */
 #define RPC_AWAITING_ERROR(_rpcs)       (!(_rpcs)->iut_err_jump)
@@ -111,8 +127,24 @@ typedef struct rcf_rpc_server {
     uint32_t    timeout;        /**< Next RPC call timeout in milliseconds
                                      (after call it's automatically reset
                                      to def_timeout) */
-    te_bool     iut_err_jump;   /**< Jump in the case of IUT error
-                                     (true by default) */
+
+    /*
+     * TODO: err_jump and iut_err_jump should be replaced with a single
+     * enum variable having three values: DONT_AWAIT_ERRORS,
+     * AWAIT_IUT_ERRORS, AWAIT_ANY_ERRORS. Legacy code exists which
+     * accesses iut_err_jump directly instead of using macros,
+     * it should be fixed then.
+     */
+    te_bool     err_jump;       /**< Jump if RPC call failed (this may occur
+                                     if the function called via this RPC
+                                     returned error, or for other reasons
+                                     such as segfault or timeout; true by
+                                     default) */
+    te_bool     iut_err_jump;   /**< Jump if RPC call failed because
+                                     function called via this RPC returned
+                                     error (true by default; overrides
+                                     err_jump) */
+
     te_bool     err_log;        /**< Log error with ERROR log level */
     te_bool     timed_out;      /**< Timeout was received from this
                                      RPC server - it is unusable
