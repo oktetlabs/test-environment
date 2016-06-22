@@ -906,6 +906,7 @@ tad_eth_sap_parse_ancillary_data(int msg_flags, tad_pkt *pkt, size_t *pkt_len,
 
         aux = (struct tpacket_auxdata *)CMSG_DATA(cmsg);
 
+#ifdef TP_STATUS_VLAN_VALID
         /*
          * When binaries compiled with newer headers are run on older kernels
          * one needs to check (aux->tp_vlan_tci == 0) and then check out the
@@ -914,6 +915,10 @@ tad_eth_sap_parse_ancillary_data(int msg_flags, tad_pkt *pkt, size_t *pkt_len,
          */
         if ((aux->tp_vlan_tci == 0) &&
             ((aux->tp_status & TP_STATUS_VLAN_VALID) == 0))
+#else
+        /* This is not 100% correct check, but it's the only solution */
+        if (aux->tp_vlan_tci == 0)
+#endif
             continue;
 
         cur_seg = CIRCLEQ_FIRST(&pkt->segs);
