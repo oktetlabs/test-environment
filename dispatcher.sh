@@ -1246,7 +1246,7 @@ if test -z ${TE_SNIFF_LOG_CONV_DISABLE} ; then
         xlogs[${idx}]=${plog/%.pcap/.xml}
         # Conversion from pcap to TE XML
         if type tshark >/dev/null 2> /dev/null ; then
-            tshark -r ${plog} -T pdml 2> /dev/null | rgt-pdml2xml - ${xlogs[idx]}
+            tshark -r ${plog} -T pdml $TE_SNIFF_TSHARK_OPTS 2> /dev/null | rgt-pdml2xml - ${xlogs[idx]}
         else
             myecho ""
             myecho "--->>> NOTE: tshark is missing, so sniffer logs won't be merged with the report"

@@ -169,7 +169,7 @@ if $SNIFF_LOGS_INCLUDED ; then
         xlog=${plog/%.pcap/.xml}
         # Actual conversion from pcap to TE XML
         rm -f "${xlog}"
-        tshark -r "${plog}" -T pdml | rgt-pdml2xml - "${xlog}"
+        tshark -r "${plog}" -T pdml $TE_SNIFF_TSHARK_OPTS | rgt-pdml2xml - "${xlog}"
         if test -e "${xlog}" ; then
             sniff_logs="${sniff_logs} ${xlog}"
         else
