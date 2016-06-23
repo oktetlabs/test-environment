@@ -44,6 +44,23 @@
 extern "C" {
 #endif
 
+struct tapi_pseudo_header_ip {
+    in_addr_t src_addr;
+    in_addr_t dst_addr;
+    uint8_t _pad0;
+    uint8_t next_hdr;
+    uint16_t data_len;
+};
+
+struct tapi_pseudo_header_ip6 {
+    struct in6_addr src_addr;
+    struct in6_addr dst_addr;
+    uint32_t data_len;
+    uint16_t _pad0;
+    uint8_t _pad1;
+    uint8_t next_hdr;
+};
+
 /**
  * Auxiliary function to calculate checksums
  *
@@ -53,6 +70,28 @@ extern "C" {
  * @return Checksum value
  */
 extern uint16_t tapi_calc_cksum(unsigned short *ptr, size_t nbytes);
+
+/**
+ * Auxiliary function to calculate checksums for L4 datagrams (UDP, TCP)
+ * using a so-called pseudo-header in accordance with principles of checksum
+ * calculation defined by RFC 793 (in case of underlying IPv4 network)
+ * and RFC 2460 (i.e., it takes into account pseudo-header composition
+ * peculiarities brought by IPv6) but without taking into account any possible
+ * IPv6 routing headers (i.e., it uses IPv6 DST address from the main header)
+ *
+ * @param ip_dst_addr     Destination IPv4/6 address
+ * @param ip_src_addr     Source IPv4/6 address
+ * @param next_hdr        L4 protocol ID (i.e., IPPROTO_UDP)
+ * @param datagram        Buffer containing L4 header and L4 payload
+ * @param datagram_len    Buffer length
+ *
+ * @return Checksum value; jumps out on error
+ */
+extern uint16_t tapi_calc_l4_cksum(const struct sockaddr *ip_dst_addr,
+                                   const struct sockaddr *ip_src_addr,
+                                   const uint8_t next_hdr,
+                                   const uint8_t *datagram,
+                                   const size_t datagram_len);
 
 /**
  * Prepare an RTE mbuf with Ethernet frame containing particular data
@@ -98,6 +137,28 @@ extern rpc_rte_mbuf_p tapi_rte_mk_mbuf_ip(rcf_rpc_server *rpcs,
                                           const uint8_t next_hdr,
                                           const uint8_t *payload,
                                           const size_t payload_len);
+
+/**
+ * Prepare an RTE mbuf with an Ethernet frame containing UDP packet
+ *
+ * @param mp              RTE mempool pointer
+ * @param eth_dst_addr    Destination Ethernet address (network byte order)
+ * @param eth_src_addr    Source Ethernet address (network byte order)
+ * @param udp_dst_addr    Destination IPv4/6 address and port
+ * @param udp_src_addr    Source IPv4/6 address and port
+ * @param payload         Data to be encapsulated into UDP packet or @c NULL
+ * @param len             Payload length
+ *
+ * @return RTE mbuf pointer on success; jumps out on failure
+ */
+extern rpc_rte_mbuf_p tapi_rte_mk_mbuf_udp(rcf_rpc_server *rpcs,
+                                           rpc_rte_mempool_p mp,
+                                           const uint8_t *eth_dst_addr,
+                                           const uint8_t *eth_src_addr,
+                                           const struct sockaddr *udp_dst_addr,
+                                           const struct sockaddr *udp_src_addr,
+                                           const uint8_t *payload,
+                                           const size_t payload_len);
 
 /**
  * Read the whole mbuf (chain) data (starting at a given offset)

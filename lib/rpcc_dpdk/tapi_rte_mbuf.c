@@ -37,6 +37,10 @@
 #include <netinet/ip6.h>
 #endif
 
+#if HAVE_NETINET_UDP_H
+#include <netinet/udp.h>
+#endif
+
 #if HAVE_ARPA_INET_H
 #include <arpa/inet.h>
 #endif
@@ -47,6 +51,7 @@
 #include "te_bufs.h"
 #include "te_defs.h"
 #include "tapi_test_log.h"
+#include "te_sockaddr.h"
 
 static void
 tapi_perform_sockaddr_sanity_checks(const struct sockaddr *ip_dst_addr,
@@ -87,6 +92,68 @@ tapi_calc_cksum(unsigned short *ptr, size_t nbytes)
     answer = (short)~sum;
 
     return answer;
+}
+
+uint16_t tapi_calc_l4_cksum(const struct sockaddr *ip_dst_addr,
+                            const struct sockaddr *ip_src_addr,
+                            const uint8_t next_hdr,
+                            const uint8_t *datagram, const size_t datagram_len)
+{
+    uint8_t *pseudo_packet;
+    size_t pseudo_packet_len;
+    uint16_t cksum;
+
+    if (datagram == NULL)
+        TEST_FAIL("Incorrect datagram buffer");
+
+    tapi_perform_sockaddr_sanity_checks(ip_dst_addr, ip_src_addr, datagram_len);
+
+    pseudo_packet_len = ((ip_dst_addr->sa_family == AF_INET) ?
+                         sizeof(struct tapi_pseudo_header_ip) :
+                         sizeof(struct tapi_pseudo_header_ip6)) + datagram_len;
+
+    pseudo_packet = tapi_calloc(1, pseudo_packet_len);
+
+    if (ip_dst_addr->sa_family == AF_INET)
+    {
+        struct tapi_pseudo_header_ip *pseudo_ih;
+
+        pseudo_ih = (struct tapi_pseudo_header_ip *)pseudo_packet;
+
+        pseudo_ih->src_addr = CONST_SIN(ip_src_addr)->sin_addr.s_addr;
+        pseudo_ih->dst_addr = CONST_SIN(ip_dst_addr)->sin_addr.s_addr;
+        pseudo_ih->next_hdr = next_hdr;
+        pseudo_ih->data_len = htons(datagram_len);
+    }
+    else
+    {
+        struct tapi_pseudo_header_ip6 *pseudo_i6h;
+
+        pseudo_i6h = (struct tapi_pseudo_header_ip6 *)pseudo_packet;
+
+        memcpy(&pseudo_i6h->src_addr, &CONST_SIN6(ip_src_addr)->sin6_addr,
+               sizeof(struct in6_addr));
+
+        memcpy(&pseudo_i6h->dst_addr, &CONST_SIN6(ip_dst_addr)->sin6_addr,
+               sizeof(struct in6_addr));
+
+        pseudo_i6h->data_len = htonl(datagram_len);
+        pseudo_i6h->next_hdr = next_hdr;
+    }
+
+    memcpy(pseudo_packet + (pseudo_packet_len - datagram_len),
+           datagram, datagram_len);
+
+    /*
+     * We don't care about 16-bit word padding here and rely on
+     * tapi_calc_cksum() behaviour which keeps an eye on it by default
+     */
+
+    cksum = tapi_calc_cksum((unsigned short *)pseudo_packet, pseudo_packet_len);
+
+    free(pseudo_packet);
+
+    return (cksum == 0) ? 0xffff : cksum;
 }
 
 rpc_rte_mbuf_p
@@ -187,6 +254,48 @@ tapi_rte_mk_mbuf_ip(rcf_rpc_server *rpcs,
                              packet, header_len + payload_len);
 
     free(packet);
+
+    return (m);
+}
+
+rpc_rte_mbuf_p
+tapi_rte_mk_mbuf_udp(rcf_rpc_server *rpcs,
+                     rpc_rte_mempool_p mp,
+                     const uint8_t *eth_dst_addr, const uint8_t *eth_src_addr,
+                     const struct sockaddr *udp_dst_addr,
+                     const struct sockaddr *udp_src_addr,
+                     const uint8_t *payload, const size_t payload_len)
+{
+    uint8_t *datagram;
+    struct udphdr *uh;
+    rpc_rte_mbuf_p m;
+    size_t header_len = sizeof(*uh);
+
+    tapi_perform_sockaddr_sanity_checks(udp_dst_addr, udp_src_addr,
+                                        payload_len + header_len);
+
+    datagram = tapi_calloc(1, header_len + payload_len);
+    uh = (struct udphdr *)datagram;
+
+    uh->dest = te_sockaddr_get_port(udp_dst_addr);
+
+    uh->source = te_sockaddr_get_port(udp_src_addr);
+
+    uh->len = htons(header_len + payload_len);
+
+    if (payload != NULL)
+        memcpy(datagram + header_len, payload, payload_len);
+    else
+        te_fill_buf(datagram + header_len, payload_len);
+
+    uh->check = tapi_calc_l4_cksum(udp_dst_addr, udp_src_addr, IPPROTO_UDP,
+                                   datagram, header_len + payload_len);
+
+    m = tapi_rte_mk_mbuf_ip(rpcs, mp, eth_dst_addr, eth_src_addr,
+                            udp_dst_addr, udp_src_addr, IPPROTO_UDP,
+                            datagram, header_len + payload_len);
+
+    free(datagram);
 
     return (m);
 }
