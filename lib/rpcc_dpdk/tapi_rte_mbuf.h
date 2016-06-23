@@ -29,13 +29,30 @@
 #ifndef __TE_TAPI_RTE_MBUF_H__
 #define __TE_TAPI_RTE_MBUF_H__
 
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+
 #include "rcf_rpc.h"
 #include "te_rpc_types.h"
 #include "tapi_rpc_rte.h"
 
+#define TAPI_IPV6_VERSION 0x60
+#define TAPI_IPV6_VERSION_MASK 0xf0
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * Auxiliary function to calculate checksums
+ *
+ * @param ptr             Pointer to a buffer containing data
+ * @param nbytes          Buffer length
+ *
+ * @return Checksum value
+ */
+extern uint16_t tapi_calc_cksum(unsigned short *ptr, size_t nbytes);
 
 /**
  * Prepare an RTE mbuf with Ethernet frame containing particular data
@@ -56,6 +73,31 @@ extern rpc_rte_mbuf_p tapi_rte_mk_mbuf_eth(rcf_rpc_server *rpcs,
                                            const uint8_t *src_addr,
                                            const uint16_t ether_type,
                                            const uint8_t *payload, size_t len);
+
+/**
+ * Prepare an RTE mbuf with an Ethernet frame containing IP packet
+ * (if buffer to contain IP payload is NULL, then random data will be put)
+ *
+ * @param mp              RTE mempool pointer
+ * @param eth_dst_addr    Destination Ethernet address (network byte order)
+ * @param eth_src_addr    Source Ethernet address (network byte order)
+ * @param ip_dst_addr     Destination IPv4/6 address
+ * @param ip_src_addr     Source IPv4/6 address
+ * @param next_hdr        L4 protocol ID (i.e., IPPROTO_UDP)
+ * @param payload         Data to be encapsulated into IP packet or @c NULL
+ * @param len             Payload length
+ *
+ * @return RTE mbuf pointer on success; jumps out on failure
+ */
+extern rpc_rte_mbuf_p tapi_rte_mk_mbuf_ip(rcf_rpc_server *rpcs,
+                                          rpc_rte_mempool_p mp,
+                                          const uint8_t *eth_dst_addr,
+                                          const uint8_t *eth_src_addr,
+                                          const struct sockaddr *ip_dst_addr,
+                                          const struct sockaddr *ip_src_addr,
+                                          const uint8_t next_hdr,
+                                          const uint8_t *payload,
+                                          const size_t payload_len);
 
 /**
  * Read the whole mbuf (chain) data (starting at a given offset)

@@ -32,10 +32,62 @@
 #include <net/ethernet.h>
 #endif
 
+#if HAVE_NETINET_IP_H
+#include <netinet/ip.h>
+#include <netinet/ip6.h>
+#endif
+
+#if HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
+
 #include "tapi_rte_mbuf.h"
 #include "tapi_rpc_rte_mbuf.h"
 #include "tapi_mem.h"
 #include "te_bufs.h"
+#include "te_defs.h"
+#include "tapi_test_log.h"
+
+static void
+tapi_perform_sockaddr_sanity_checks(const struct sockaddr *ip_dst_addr,
+                                    const struct sockaddr *ip_src_addr,
+                                    size_t payload_len)
+{
+    if (ip_dst_addr->sa_family != ip_src_addr->sa_family)
+        TEST_FAIL("DST and SRC sockaddr families don't match");
+
+    /* We assume that we are given either AF_INET sockaddr or AF_INET6 one */
+    if (payload_len > (IP_MAXPACKET - ((ip_dst_addr->sa_family == AF_INET) ?
+                                       sizeof(struct iphdr) : 0)))
+        TEST_FAIL("The payload length of above permissible");
+}
+
+uint16_t
+tapi_calc_cksum(unsigned short *ptr, size_t nbytes)
+{
+    register long sum = 0;
+    uint16_t oddbyte;
+    register short answer;
+
+    while (nbytes > 1)
+    {
+        sum += *ptr++;
+        nbytes -= 2;
+    }
+
+    if (nbytes == 1)
+    {
+        oddbyte = 0;
+        *((u_char *)&oddbyte) = *(u_char *)ptr;
+        sum += oddbyte;
+    }
+
+    sum = (sum >> 16) + (sum & 0xffff);
+    sum = sum + (sum >> 16);
+    answer = (short)~sum;
+
+    return answer;
+}
 
 rpc_rte_mbuf_p
 tapi_rte_mk_mbuf_eth(rcf_rpc_server *rpcs,
@@ -67,6 +119,74 @@ tapi_rte_mk_mbuf_eth(rcf_rpc_server *rpcs,
     (void)rpc_rte_pktmbuf_append_data(rpcs, m, frame, sizeof(*eh) + len);
 
     free(frame);
+
+    return (m);
+}
+
+rpc_rte_mbuf_p
+tapi_rte_mk_mbuf_ip(rcf_rpc_server *rpcs,
+                    rpc_rte_mempool_p mp,
+                    const uint8_t *eth_dst_addr, const uint8_t *eth_src_addr,
+                    const struct sockaddr *ip_dst_addr,
+                    const struct sockaddr *ip_src_addr,
+                    const uint8_t next_hdr,
+                    const uint8_t *payload, const size_t payload_len)
+{
+    uint8_t *packet;
+    size_t header_len;
+    rpc_rte_mbuf_p m;
+
+    tapi_perform_sockaddr_sanity_checks(ip_dst_addr, ip_src_addr, payload_len);
+
+    header_len = (ip_dst_addr->sa_family == AF_INET) ?
+                 sizeof(struct iphdr) : sizeof(struct ip6_hdr);
+
+    packet = tapi_calloc(1, header_len + payload_len);
+
+    if (ip_dst_addr->sa_family == AF_INET)
+    {
+        struct iphdr *ih = (struct iphdr *)packet;
+
+        ih->version = IPVERSION;
+        ih->ihl = sizeof(*ih) >> 2;
+        ih->tos = IPTOS_CLASS_CS0;
+        ih->id = htons(rand());
+        ih->frag_off = (next_hdr == IPPROTO_TCP) ? htons(IP_DF) : 0;
+        ih->ttl = MAXTTL;
+        ih->protocol = next_hdr;
+        ih->daddr = CONST_SIN(ip_dst_addr)->sin_addr.s_addr;
+        ih->saddr = CONST_SIN(ip_src_addr)->sin_addr.s_addr;
+        ih->tot_len = htons(sizeof(*ih) + payload_len);
+        ih->check = tapi_calc_cksum((unsigned short *)ih, sizeof(*ih));
+    }
+    else
+    {
+        struct ip6_hdr *i6h = (struct ip6_hdr *)packet;
+
+        i6h->ip6_vfc &= ~TAPI_IPV6_VERSION_MASK;
+        i6h->ip6_vfc |= TAPI_IPV6_VERSION;
+        i6h->ip6_plen = htons(payload_len);
+        i6h->ip6_nxt = next_hdr;
+        i6h->ip6_hlim = MAXTTL;
+
+        memcpy(&i6h->ip6_dst, &CONST_SIN6(ip_dst_addr)->sin6_addr,
+               sizeof(struct in6_addr));
+
+        memcpy(&i6h->ip6_src, &CONST_SIN6(ip_src_addr)->sin6_addr,
+               sizeof(struct in6_addr));
+    }
+
+    if (payload != NULL)
+        memcpy(packet + header_len, payload, payload_len);
+    else
+        te_fill_buf(packet + header_len, payload_len);
+
+    m = tapi_rte_mk_mbuf_eth(rpcs, mp, eth_dst_addr, eth_src_addr,
+                             (ip_dst_addr->sa_family == AF_INET) ?
+                             ETHERTYPE_IP : ETHERTYPE_IPV6,
+                             packet, header_len + payload_len);
+
+    free(packet);
 
     return (m);
 }
