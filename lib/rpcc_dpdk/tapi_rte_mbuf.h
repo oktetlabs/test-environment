@@ -33,6 +33,10 @@
 #include <sys/socket.h>
 #endif
 
+#if HAVE_NETINET_TCP_H
+#include <netinet/tcp.h>
+#endif
+
 #include "rcf_rpc.h"
 #include "te_rpc_types.h"
 #include "tapi_rpc_rte.h"
@@ -157,6 +161,44 @@ extern rpc_rte_mbuf_p tapi_rte_mk_mbuf_udp(rcf_rpc_server *rpcs,
                                            const uint8_t *eth_src_addr,
                                            const struct sockaddr *udp_dst_addr,
                                            const struct sockaddr *udp_src_addr,
+                                           const uint8_t *payload,
+                                           const size_t payload_len);
+
+/**
+ * Prepare an RTE mbuf with an Ethernet frame containing TCP packet
+ * (if TCP options are to be added, one should include them as a part of
+ *  @p payload and set correct data offset [TCP header length +
+ *  + options length] @p th_off)
+ *
+ * @param mp              RTE mempool pointer
+ * @param eth_dst_addr    Destination Ethernet address (network byte order)
+ * @param eth_src_addr    Source Ethernet address (network byte order)
+ * @param tcp_dst_addr    Destination IPv4/6 address and port
+ * @param tcp_src_addr    Source IPv4/6 address and port
+ * @param th_seq          TX data seq. number (network byte order) or @c 0
+ * @param th_ack          RX data ack. seq. number (network byte order) or @c 0
+ * @param th_off          Data offset (includes options length, if any) or @c 0
+ *                        (measured in 32-bit words)
+ * @param th_flags        TCP flags or @c 0
+ * @param th_win          RX flow control window (network byte order) or @c 0
+ * @param th_urp          Urgent pointer (network byte order) or @c 0
+ * @param payload         Data to be encapsulated into TCP packet or @c NULL
+ * @param len             Payload length (should include options length, if any)
+ *
+ * @return RTE mbuf pointer on success; jumps out on failure
+ */
+extern rpc_rte_mbuf_p tapi_rte_mk_mbuf_tcp(rcf_rpc_server *rpcs,
+                                           rpc_rte_mempool_p mp,
+                                           const uint8_t *eth_dst_addr,
+                                           const uint8_t *eth_src_addr,
+                                           const struct sockaddr *tcp_dst_addr,
+                                           const struct sockaddr *tcp_src_addr,
+                                           const tcp_seq th_seq,
+                                           const tcp_seq th_ack,
+                                           const uint8_t th_off,
+                                           const uint8_t th_flags,
+                                           const uint16_t th_win,
+                                           const uint16_t th_urp,
                                            const uint8_t *payload,
                                            const size_t payload_len);
 

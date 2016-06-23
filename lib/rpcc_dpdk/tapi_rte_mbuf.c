@@ -300,6 +300,56 @@ tapi_rte_mk_mbuf_udp(rcf_rpc_server *rpcs,
     return (m);
 }
 
+rpc_rte_mbuf_p
+tapi_rte_mk_mbuf_tcp(rcf_rpc_server *rpcs,
+                     rpc_rte_mempool_p mp,
+                     const uint8_t *eth_dst_addr, const uint8_t *eth_src_addr,
+                     const struct sockaddr *tcp_dst_addr,
+                     const struct sockaddr *tcp_src_addr,
+                     const tcp_seq th_seq, const tcp_seq th_ack,
+                     const uint8_t th_off, const uint8_t th_flags,
+                     const uint16_t th_win, const uint16_t th_urp,
+                     const uint8_t *payload, const size_t payload_len)
+{
+    uint8_t *datagram;
+    struct tcphdr *th;
+    rpc_rte_mbuf_p m;
+    size_t header_len = sizeof(*th);
+
+    tapi_perform_sockaddr_sanity_checks(tcp_dst_addr, tcp_src_addr,
+                                        payload_len + header_len);
+
+    datagram = tapi_calloc(1, header_len + payload_len);
+
+    th = (struct tcphdr *)datagram;
+
+    th->th_dport = te_sockaddr_get_port(tcp_dst_addr);
+    th->th_sport = te_sockaddr_get_port(tcp_src_addr);
+    th->th_seq = th_seq;
+    th->th_ack = th_ack;
+    th->th_off = ((th_off == 0) || (payload == NULL)) ?
+                 header_len / sizeof(uint32_t) : th_off;
+    th->th_flags = th_flags;
+    th->th_win = th_win;
+    th->th_urp = th_urp;
+
+    if (payload != NULL)
+        memcpy(datagram + header_len, payload, payload_len);
+    else
+        te_fill_buf(datagram + header_len, payload_len);
+
+    th->check = tapi_calc_l4_cksum(tcp_dst_addr, tcp_src_addr, IPPROTO_TCP,
+                                   datagram, header_len + payload_len);
+
+    m = tapi_rte_mk_mbuf_ip(rpcs, mp, eth_dst_addr, eth_src_addr,
+                            tcp_dst_addr, tcp_src_addr, IPPROTO_TCP,
+                            datagram, header_len + payload_len);
+
+    free(datagram);
+
+    return (m);
+}
+
 uint8_t *
 tapi_rte_get_mbuf_data(rcf_rpc_server *rpcs,
                        rpc_rte_mbuf_p m, size_t offset, size_t *bytes_read)
