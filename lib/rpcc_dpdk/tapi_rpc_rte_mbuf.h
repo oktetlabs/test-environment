@@ -345,6 +345,16 @@ extern int rpc_rte_pktmbuf_trim(rcf_rpc_server *rpcs,
 extern uint16_t rpc_rte_pktmbuf_adj(rcf_rpc_server *rpcs,
                                     rpc_rte_mbuf_p m, uint16_t len);
 
+/**
+ * Get packet type flags
+ *
+ * @param m               RTE mbuf pointer
+ * @param p_type          Pointer to a structure to be filled with the info
+ */
+extern void rpc_rte_pktmbuf_get_packet_type(rcf_rpc_server *rpcs,
+                                            rpc_rte_mbuf_p m,
+                                  struct tarpc_rte_pktmbuf_packet_type *p_type);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf --> */
 
 #ifdef __cplusplus

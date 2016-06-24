@@ -121,6 +121,84 @@ enum tarpc_pktmbuf_ol_flags {
     TARPC_PKT__UNKNOWN = 63
 };
 
+enum tarpc_pktmbuf_l2_types {
+    TARPC_RTE_PTYPE_L2_UNKNOWN = 0,
+    TARPC_RTE_PTYPE_L2_ETHER,
+    TARPC_RTE_PTYPE_L2_ETHER_TIMESYNC,
+    TARPC_RTE_PTYPE_L2_ETHER_ARP,
+    TARPC_RTE_PTYPE_L2_ETHER_LLDP,
+
+    TARPC_RTE_PTYPE_L2__UNKNOWN
+};
+
+enum tarpc_pktmbuf_l3_types {
+    TARPC_RTE_PTYPE_L3_UNKNOWN = 0,
+    TARPC_RTE_PTYPE_L3_IPV4,
+    TARPC_RTE_PTYPE_L3_IPV4_EXT,
+    TARPC_RTE_PTYPE_L3_IPV6,
+    TARPC_RTE_PTYPE_L3_IPV4_EXT_UNKNOWN,
+    TARPC_RTE_PTYPE_L3_IPV6_EXT,
+    TARPC_RTE_PTYPE_L3_IPV6_EXT_UNKNOWN,
+
+    TARPC_RTE_PTYPE_L3__UNKNOWN
+};
+
+enum tarpc_pktmbuf_l4_types {
+    TARPC_RTE_PTYPE_L4_UNKNOWN = 0,
+    TARPC_RTE_PTYPE_L4_TCP,
+    TARPC_RTE_PTYPE_L4_UDP,
+    TARPC_RTE_PTYPE_L4_FRAG,
+    TARPC_RTE_PTYPE_L4_SCTP,
+    TARPC_RTE_PTYPE_L4_ICMP,
+    TARPC_RTE_PTYPE_L4_NONFRAG,
+
+    TARPC_RTE_PTYPE_L4__UNKNOWN
+};
+
+enum tarpc_pktmbuf_tunnel_types {
+    TARPC_RTE_PTYPE_TUNNEL_UNKNOWN = 0,
+    TARPC_RTE_PTYPE_TUNNEL_IP,
+    TARPC_RTE_PTYPE_TUNNEL_GRE,
+    TARPC_RTE_PTYPE_TUNNEL_VXLAN,
+    TARPC_RTE_PTYPE_TUNNEL_NVGRE,
+    TARPC_RTE_PTYPE_TUNNEL_GENEVE,
+    TARPC_RTE_PTYPE_TUNNEL_GRENAT,
+
+    TARPC_RTE_PTYPE_TUNNEL__UNKNOWN
+};
+
+enum tarpc_pktmbuf_inner_l2_types {
+    TARPC_RTE_PTYPE_INNER_L2_UNKNOWN = 0,
+    TARPC_RTE_PTYPE_INNER_L2_ETHER,
+    TARPC_RTE_PTYPE_INNER_L2_ETHER_VLAN,
+
+    TARPC_RTE_PTYPE_INNER_L2__UNKNOWN
+};
+
+enum tarpc_pktmbuf_inner_l3_types {
+    TARPC_RTE_PTYPE_INNER_L3_UNKNOWN = 0,
+    TARPC_RTE_PTYPE_INNER_L3_IPV4,
+    TARPC_RTE_PTYPE_INNER_L3_IPV4_EXT,
+    TARPC_RTE_PTYPE_INNER_L3_IPV6,
+    TARPC_RTE_PTYPE_INNER_L3_IPV4_EXT_UNKNOWN,
+    TARPC_RTE_PTYPE_INNER_L3_IPV6_EXT,
+    TARPC_RTE_PTYPE_INNER_L3_IPV6_EXT_UNKNOWN,
+
+    TARPC_RTE_PTYPE_INNER_L3__UNKNOWN
+};
+
+enum tarpc_pktmbuf_inner_l4_types {
+    TARPC_RTE_PTYPE_INNER_L4_UNKNOWN = 0,
+    TARPC_RTE_PTYPE_INNER_L4_TCP,
+    TARPC_RTE_PTYPE_INNER_L4_UDP,
+    TARPC_RTE_PTYPE_INNER_L4_FRAG,
+    TARPC_RTE_PTYPE_INNER_L4_SCTP,
+    TARPC_RTE_PTYPE_INNER_L4_ICMP,
+    TARPC_RTE_PTYPE_INNER_L4_NONFRAG,
+
+    TARPC_RTE_PTYPE_INNER_L4__UNKNOWN
+};
+
 /** rte_pktmbuf_pool_create() */
 struct tarpc_rte_pktmbuf_pool_create_in {
     struct tarpc_in_arg     common;
@@ -354,6 +432,24 @@ struct tarpc_rte_pktmbuf_adj_in {
 struct tarpc_rte_pktmbuf_adj_out {
     struct tarpc_out_arg    common;
     uint16_t                retval;
+};
+
+struct tarpc_rte_pktmbuf_packet_type {
+    uint8_t l2_type;
+    uint8_t l3_type;
+    uint8_t l4_type;
+    uint8_t tun_type;
+    uint8_t inner_l2_type;
+    uint8_t inner_l3_type;
+    uint8_t inner_l4_type;
+};
+
+/** rte_pktmbuf_get_packet_type() */
+typedef struct tarpc_mbuf_in tarpc_rte_pktmbuf_get_packet_type_in;
+
+struct tarpc_rte_pktmbuf_get_packet_type_out {
+    struct tarpc_out_arg                    common;
+    struct tarpc_rte_pktmbuf_packet_type    p_type;
 };
 
 
@@ -914,6 +1010,7 @@ program dpdk
         RPC_DEF(rte_pktmbuf_tailroom)
         RPC_DEF(rte_pktmbuf_trim)
         RPC_DEF(rte_pktmbuf_adj)
+        RPC_DEF(rte_pktmbuf_get_packet_type)
 
         RPC_DEF(rte_eth_dev_info_get)
         RPC_DEF(rte_eth_dev_configure)
