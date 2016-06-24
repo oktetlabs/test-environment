@@ -386,6 +386,15 @@ extern void rpc_rte_pktmbuf_get_tx_offload(rcf_rpc_server *rpcs,
                                            rpc_rte_mbuf_p m,
                                struct tarpc_rte_pktmbuf_tx_offload *tx_offload);
 
+/** Set parameters needed by TX offload to work
+ *
+ * @param m               RTE mbuf pointer
+ * @param tx_offload      Pointer to a structure containing info to be populated
+ */
+extern void rpc_rte_pktmbuf_set_tx_offload(rcf_rpc_server *rpcs,
+                                           rpc_rte_mbuf_p m,
+                         const struct tarpc_rte_pktmbuf_tx_offload *tx_offload);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf --> */
 
 #ifdef __cplusplus

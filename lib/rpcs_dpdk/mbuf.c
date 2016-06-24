@@ -967,3 +967,19 @@ TARPC_FUNC_STANDALONE(rte_pktmbuf_get_tx_offload, {},
     });
 }
 )
+
+TARPC_FUNC_STANDALONE(rte_pktmbuf_set_tx_offload, {},
+{
+    struct rte_mbuf *m;
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+        m = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->m, ns);
+        m->l2_len = in->tx_offload.l2_len;
+        m->l3_len = in->tx_offload.l3_len;
+        m->l4_len = in->tx_offload.l4_len;
+        m->tso_segsz = in->tx_offload.tso_segsz;
+        m->outer_l3_len = in->tx_offload.outer_l3_len;
+        m->outer_l2_len = in->tx_offload.outer_l2_len;
+    });
+}
+)

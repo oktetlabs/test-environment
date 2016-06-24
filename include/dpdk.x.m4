@@ -486,6 +486,15 @@ struct tarpc_rte_pktmbuf_get_tx_offload_out {
     struct tarpc_rte_pktmbuf_tx_offload     tx_offload;
 };
 
+/** rte_pktmbuf_set_tx_offload() */
+struct tarpc_rte_pktmbuf_set_tx_offload_in {
+    struct tarpc_in_arg                     common;
+    tarpc_rte_mbuf                          m;
+    struct tarpc_rte_pktmbuf_tx_offload     tx_offload;
+};
+
+typedef struct tarpc_void_out tarpc_rte_pktmbuf_set_tx_offload_out;
+
 
 /*
  * rte_eth_dev API
@@ -1048,6 +1057,7 @@ program dpdk
         RPC_DEF(rte_pktmbuf_set_packet_type)
         RPC_DEF(rte_pktmbuf_get_rss_hash)
         RPC_DEF(rte_pktmbuf_get_tx_offload)
+        RPC_DEF(rte_pktmbuf_set_tx_offload)
 
         RPC_DEF(rte_eth_dev_info_get)
         RPC_DEF(rte_eth_dev_configure)

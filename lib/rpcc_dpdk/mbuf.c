@@ -1081,3 +1081,32 @@ rpc_rte_pktmbuf_get_tx_offload(rcf_rpc_server *rpcs,
 
     RETVAL_VOID(rte_pktmbuf_get_tx_offload);
 }
+
+void
+rpc_rte_pktmbuf_set_tx_offload(rcf_rpc_server *rpcs,
+                               rpc_rte_mbuf_p m,
+                          const struct tarpc_rte_pktmbuf_tx_offload *tx_offload)
+{
+    tarpc_rte_pktmbuf_set_tx_offload_in     in;
+    tarpc_rte_pktmbuf_set_tx_offload_out    out;
+    te_log_buf *tlbp;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (tx_offload == NULL)
+        TEST_FAIL("Invalid %s() tx_offload argument", __func__);
+
+    in.m = (tarpc_rte_mbuf)m;
+    in.tx_offload = *tx_offload;
+
+    rcf_rpc_call(rpcs, "rte_pktmbuf_set_tx_offload", &in, &out);
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_pktmbuf_set_tx_offload,
+                 RPC_PTR_FMT ", tx_offload = %s", "", RPC_PTR_VAL(in.m),
+                 tarpc_rte_pktmbuf_tx_offload2str(tlbp, &in.tx_offload));
+    te_log_buf_free(tlbp);
+
+    RETVAL_VOID(rte_pktmbuf_set_tx_offload);
+}
