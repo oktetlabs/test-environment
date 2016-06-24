@@ -355,6 +355,18 @@ extern void rpc_rte_pktmbuf_get_packet_type(rcf_rpc_server *rpcs,
                                             rpc_rte_mbuf_p m,
                                   struct tarpc_rte_pktmbuf_packet_type *p_type);
 
+/**
+ * Set packet type flags
+ *
+ * @param m               RTE mbuf pointer
+ * @param p_type          Pointer to a structure containing info to be populated
+ *
+ * @return @c 0 on success; jumps out if some types cannot be set (i.e. -EINVAL)
+ */
+extern int rpc_rte_pktmbuf_set_packet_type(rcf_rpc_server *rpcs,
+                                           rpc_rte_mbuf_p m,
+                            const struct tarpc_rte_pktmbuf_packet_type *p_type);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf --> */
 
 #ifdef __cplusplus

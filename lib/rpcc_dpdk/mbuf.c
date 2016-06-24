@@ -974,3 +974,36 @@ rpc_rte_pktmbuf_get_packet_type(rcf_rpc_server *rpcs,
 
     RETVAL_VOID(rte_pktmbuf_get_packet_type);
 }
+
+int
+rpc_rte_pktmbuf_set_packet_type(rcf_rpc_server *rpcs,
+                                rpc_rte_mbuf_p m,
+                             const struct tarpc_rte_pktmbuf_packet_type *p_type)
+{
+    tarpc_rte_pktmbuf_set_packet_type_in    in;
+    tarpc_rte_pktmbuf_set_packet_type_out   out;
+    te_log_buf *tlbp;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (p_type == NULL)
+        TEST_FAIL("Invalid %s() p_type argument", __func__);
+
+    in.m = (tarpc_rte_mbuf)m;
+    in.p_type = *p_type;
+
+    rcf_rpc_call(rpcs, "rte_pktmbuf_set_packet_type", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_pktmbuf_set_packet_type,
+                                          out.retval);
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_pktmbuf_set_packet_type,
+                 RPC_PTR_FMT ", %s", NEG_ERRNO_FMT, RPC_PTR_VAL(in.m),
+                 tarpc_rte_pktmbuf_packet_type2str(tlbp, &in.p_type),
+                 NEG_ERRNO_ARGS(out.retval));
+    te_log_buf_free(tlbp);
+
+    RETVAL_ZERO_INT(rte_pktmbuf_set_packet_type, out.retval);
+}

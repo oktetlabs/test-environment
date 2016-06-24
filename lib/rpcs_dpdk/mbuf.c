@@ -307,6 +307,145 @@ tarpc_rte_pktmbuf_packet_type2rpc(struct rte_mbuf *m,
 #undef RTE_PKTMBUF_INNER_L4_PTYPE2RPC
 }
 
+static int
+tarpc_rte_pktmbuf_packet_type2rte(struct tarpc_rte_pktmbuf_packet_type *p_type,
+                                  uint32_t *packet_type)
+{
+    uint32_t rte_tmp = 0;
+
+#define RTE_PKTMBUF_L2_PTYPE2RTE(_bit) \
+    case TARPC_RTE_PTYPE_L2_##_bit:                                    \
+        rte_tmp |= RTE_PTYPE_L2_##_bit;                                \
+        break
+
+#define RTE_PKTMBUF_L3_PTYPE2RTE(_bit) \
+    case TARPC_RTE_PTYPE_L3_##_bit:                                    \
+        rte_tmp |= RTE_PTYPE_L3_##_bit;                                \
+        break
+
+#define RTE_PKTMBUF_L4_PTYPE2RTE(_bit) \
+    case TARPC_RTE_PTYPE_L4_##_bit:                                    \
+        rte_tmp |= RTE_PTYPE_L4_##_bit;                                \
+        break
+
+#define RTE_PKTMBUF_TUNNEL_PTYPE2RTE(_bit) \
+    case TARPC_RTE_PTYPE_TUNNEL_##_bit:                                \
+        rte_tmp |= RTE_PTYPE_TUNNEL_##_bit;                            \
+        break
+
+#define RTE_PKTMBUF_INNER_L2_PTYPE2RTE(_bit) \
+    case TARPC_RTE_PTYPE_INNER_L2_##_bit:                              \
+        rte_tmp |= RTE_PTYPE_INNER_L2_##_bit;                          \
+        break
+
+#define RTE_PKTMBUF_INNER_L3_PTYPE2RTE(_bit) \
+    case TARPC_RTE_PTYPE_INNER_L3_##_bit:                              \
+        rte_tmp |= RTE_PTYPE_INNER_L3_##_bit;                          \
+        break
+
+#define RTE_PKTMBUF_INNER_L4_PTYPE2RTE(_bit) \
+    case TARPC_RTE_PTYPE_INNER_L4_##_bit:                              \
+        rte_tmp |= RTE_PTYPE_INNER_L4_##_bit;                          \
+        break
+
+    switch (p_type->l2_type) {
+        case TARPC_RTE_PTYPE_L2_UNKNOWN:
+            break;
+        RTE_PKTMBUF_L2_PTYPE2RTE(ETHER);
+        RTE_PKTMBUF_L2_PTYPE2RTE(ETHER_TIMESYNC);
+        RTE_PKTMBUF_L2_PTYPE2RTE(ETHER_ARP);
+        RTE_PKTMBUF_L2_PTYPE2RTE(ETHER_LLDP);
+        default:
+            return (0);
+    }
+
+    switch (p_type->l3_type) {
+        case TARPC_RTE_PTYPE_L3_UNKNOWN:
+            break;
+        RTE_PKTMBUF_L3_PTYPE2RTE(IPV4);
+        RTE_PKTMBUF_L3_PTYPE2RTE(IPV4_EXT);
+        RTE_PKTMBUF_L3_PTYPE2RTE(IPV6);
+        RTE_PKTMBUF_L3_PTYPE2RTE(IPV4_EXT_UNKNOWN);
+        RTE_PKTMBUF_L3_PTYPE2RTE(IPV6_EXT);
+        RTE_PKTMBUF_L3_PTYPE2RTE(IPV6_EXT_UNKNOWN);
+        default:
+            return (0);
+    }
+
+    switch (p_type->l4_type) {
+        case TARPC_RTE_PTYPE_L4_UNKNOWN:
+            break;
+        RTE_PKTMBUF_L4_PTYPE2RTE(TCP);
+        RTE_PKTMBUF_L4_PTYPE2RTE(UDP);
+        RTE_PKTMBUF_L4_PTYPE2RTE(FRAG);
+        RTE_PKTMBUF_L4_PTYPE2RTE(SCTP);
+        RTE_PKTMBUF_L4_PTYPE2RTE(ICMP);
+        RTE_PKTMBUF_L4_PTYPE2RTE(NONFRAG);
+        default:
+            return (0);
+    }
+
+    switch (p_type->tun_type) {
+        case TARPC_RTE_PTYPE_TUNNEL_UNKNOWN:
+            break;
+        RTE_PKTMBUF_TUNNEL_PTYPE2RTE(IP);
+        RTE_PKTMBUF_TUNNEL_PTYPE2RTE(GRE);
+        RTE_PKTMBUF_TUNNEL_PTYPE2RTE(VXLAN);
+        RTE_PKTMBUF_TUNNEL_PTYPE2RTE(NVGRE);
+        RTE_PKTMBUF_TUNNEL_PTYPE2RTE(GENEVE);
+        RTE_PKTMBUF_TUNNEL_PTYPE2RTE(GRENAT);
+        default:
+            return (0);
+    }
+
+    switch (p_type->inner_l2_type) {
+        case TARPC_RTE_PTYPE_INNER_L2_UNKNOWN:
+            break;
+        RTE_PKTMBUF_INNER_L2_PTYPE2RTE(ETHER);
+        RTE_PKTMBUF_INNER_L2_PTYPE2RTE(ETHER_VLAN);
+        default:
+            return (0);
+    }
+
+    switch (p_type->inner_l3_type) {
+        case TARPC_RTE_PTYPE_INNER_L3_UNKNOWN:
+            break;
+        RTE_PKTMBUF_INNER_L3_PTYPE2RTE(IPV4);
+        RTE_PKTMBUF_INNER_L3_PTYPE2RTE(IPV4_EXT);
+        RTE_PKTMBUF_INNER_L3_PTYPE2RTE(IPV6);
+        RTE_PKTMBUF_INNER_L3_PTYPE2RTE(IPV4_EXT_UNKNOWN);
+        RTE_PKTMBUF_INNER_L3_PTYPE2RTE(IPV6_EXT);
+        RTE_PKTMBUF_INNER_L3_PTYPE2RTE(IPV6_EXT_UNKNOWN);
+        default:
+            return (0);
+    }
+
+    switch (p_type->inner_l4_type) {
+        case TARPC_RTE_PTYPE_INNER_L4_UNKNOWN:
+            break;
+        RTE_PKTMBUF_INNER_L4_PTYPE2RTE(TCP);
+        RTE_PKTMBUF_INNER_L4_PTYPE2RTE(UDP);
+        RTE_PKTMBUF_INNER_L4_PTYPE2RTE(FRAG);
+        RTE_PKTMBUF_INNER_L4_PTYPE2RTE(SCTP);
+        RTE_PKTMBUF_INNER_L4_PTYPE2RTE(ICMP);
+        RTE_PKTMBUF_INNER_L4_PTYPE2RTE(NONFRAG);
+        default:
+            return (0);
+    }
+
+#undef RTE_PKTMBUF_L2_PTYPE2RTE
+#undef RTE_PKTMBUF_L3_PTYPE2RTE
+#undef RTE_PKTMBUF_L4_PTYPE2RTE
+#undef RTE_PKTMBUF_TUNNEL_PTYPE2RTE
+#undef RTE_PKTMBUF_INNER_L2_PTYPE2RTE
+#undef RTE_PKTMBUF_INNER_L3_PTYPE2RTE
+#undef RTE_PKTMBUF_INNER_L4_PTYPE2RTE
+
+    *packet_type = rte_tmp;
+
+    return (1);
+}
+
 TARPC_FUNC(rte_pktmbuf_pool_create, {},
 {
     struct rte_mempool *mp;
@@ -787,3 +926,17 @@ TARPC_FUNC_STANDALONE(rte_pktmbuf_get_packet_type, {},
 }
 )
 
+TARPC_FUNC_STANDALONE(rte_pktmbuf_set_packet_type, {},
+{
+    struct rte_mbuf *m = NULL;
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+        m = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->m, ns);
+    });
+
+    if (tarpc_rte_pktmbuf_packet_type2rte(&in->p_type, &m->packet_type))
+        out->retval = 0;
+    else
+        out->retval = -TE_RC(TE_RPCS, TE_EINVAL);
+}
+)
