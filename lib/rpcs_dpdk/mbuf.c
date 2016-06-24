@@ -940,3 +940,14 @@ TARPC_FUNC_STANDALONE(rte_pktmbuf_set_packet_type, {},
         out->retval = -TE_RC(TE_RPCS, TE_EINVAL);
 }
 )
+
+TARPC_FUNC_STANDALONE(rte_pktmbuf_get_rss_hash, {},
+{
+    struct rte_mbuf *m;
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+        m = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->m, ns);
+        out->retval = m->hash.rss;
+    });
+}
+)

@@ -461,6 +461,14 @@ struct tarpc_rte_pktmbuf_set_packet_type_in {
 
 typedef struct tarpc_int_retval_out tarpc_rte_pktmbuf_set_packet_type_out;
 
+/** rte_pktmbuf_get_rss_hash() */
+typedef struct tarpc_mbuf_in tarpc_rte_pktmbuf_get_rss_hash_in;
+
+struct tarpc_rte_pktmbuf_get_rss_hash_out {
+    struct tarpc_out_arg    common;
+    uint32_t                retval;
+};
+
 
 /*
  * rte_eth_dev API
@@ -1021,6 +1029,7 @@ program dpdk
         RPC_DEF(rte_pktmbuf_adj)
         RPC_DEF(rte_pktmbuf_get_packet_type)
         RPC_DEF(rte_pktmbuf_set_packet_type)
+        RPC_DEF(rte_pktmbuf_get_rss_hash)
 
         RPC_DEF(rte_eth_dev_info_get)
         RPC_DEF(rte_eth_dev_configure)

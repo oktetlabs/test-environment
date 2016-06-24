@@ -367,6 +367,16 @@ extern int rpc_rte_pktmbuf_set_packet_type(rcf_rpc_server *rpcs,
                                            rpc_rte_mbuf_p m,
                             const struct tarpc_rte_pktmbuf_packet_type *p_type);
 
+/**
+ * Get RSS hash
+ *
+ * @param m               RTE mbuf pointer
+ *
+ * @return RSS hash for the particular mbuf
+ */
+extern uint32_t rpc_rte_pktmbuf_get_rss_hash(rcf_rpc_server *rpcs,
+                                             rpc_rte_mbuf_p m);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf --> */
 
 #ifdef __cplusplus
