@@ -377,6 +377,15 @@ extern int rpc_rte_pktmbuf_set_packet_type(rcf_rpc_server *rpcs,
 extern uint32_t rpc_rte_pktmbuf_get_rss_hash(rcf_rpc_server *rpcs,
                                              rpc_rte_mbuf_p m);
 
+/** Get parameters needed by TX offload to work
+ *
+ * @param m               RTE mbuf pointer
+ * @param tx_offload      Pointer to structure to be filled with the info
+ */
+extern void rpc_rte_pktmbuf_get_tx_offload(rcf_rpc_server *rpcs,
+                                           rpc_rte_mbuf_p m,
+                               struct tarpc_rte_pktmbuf_tx_offload *tx_offload);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf --> */
 
 #ifdef __cplusplus

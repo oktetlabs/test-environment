@@ -245,6 +245,23 @@ tarpc_rte_pktmbuf_packet_type2str(te_log_buf *tlbp,
     return te_log_buf_get(tlbp);
 }
 
+static const char *
+tarpc_rte_pktmbuf_tx_offload2str(te_log_buf *tlbp,
+                                 struct tarpc_rte_pktmbuf_tx_offload *tx_offload)
+{
+    te_log_buf_append(tlbp, "{ ");
+
+    te_log_buf_append(tlbp, "l2_len = %hu, l3_len = %hu, l4_len = %hu, "
+                      "tso_segsz = %hu, outer_l3_len = %hu, outer_l2_len = %hu",
+                      tx_offload->l2_len, tx_offload->l3_len,
+                      tx_offload->l4_len, tx_offload->tso_segsz,
+                      tx_offload->outer_l3_len, tx_offload->outer_l2_len);
+
+    te_log_buf_append(tlbp, " }");
+
+    return te_log_buf_get(tlbp);
+}
+
 rpc_rte_mempool_p
 rpc_rte_pktmbuf_pool_create(rcf_rpc_server *rpcs,
                             const char *name, uint32_t n, uint32_t cache_size,
@@ -1033,4 +1050,34 @@ rpc_rte_pktmbuf_get_rss_hash(rcf_rpc_server *rpcs,
     TAPI_RPC_OUT(rte_pktmbuf_get_rss_hash, out.retval == UINT32_MAX);
 
     return (out.retval);
+}
+
+void
+rpc_rte_pktmbuf_get_tx_offload(rcf_rpc_server *rpcs,
+                               rpc_rte_mbuf_p m,
+                               struct tarpc_rte_pktmbuf_tx_offload *tx_offload)
+{
+    tarpc_rte_pktmbuf_get_tx_offload_in     in;
+    tarpc_rte_pktmbuf_get_tx_offload_out    out;
+    te_log_buf *tlbp;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (tx_offload == NULL)
+        TEST_FAIL("Invalid %s() tx_offload argument", __func__);
+
+    in.m = (tarpc_rte_mbuf)m;
+
+    rcf_rpc_call(rpcs, "rte_pktmbuf_get_tx_offload", &in, &out);
+
+    *tx_offload = out.tx_offload;
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_pktmbuf_get_tx_offload, RPC_PTR_FMT,
+                 "tx_offload = %s", RPC_PTR_VAL(in.m),
+                 tarpc_rte_pktmbuf_tx_offload2str(tlbp, tx_offload));
+    te_log_buf_free(tlbp);
+
+    RETVAL_VOID(rte_pktmbuf_get_tx_offload);
 }
