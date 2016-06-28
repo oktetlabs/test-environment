@@ -199,6 +199,14 @@ extern te_errno tapi_media_player_get_errors(tapi_media_player *player);
  */
 extern te_bool tapi_media_player_check_errors(tapi_media_player *player);
 
+/**
+ * Print a number of errors sorted by type which were occured during media
+ * playback using RING function.
+ *
+ * @param player    Player access point.
+ */
+extern void tapi_media_player_log_errors(const tapi_media_player *player);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

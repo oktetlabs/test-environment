@@ -168,3 +168,25 @@ tapi_media_player_check_errors(tapi_media_player *player)
 
     return num_errors > 0;
 }
+
+/* See description in tapi_media_player.h. */
+void
+tapi_media_player_log_errors(const tapi_media_player *player)
+{
+    static const char *error_name[] =
+    {
+        [TAPI_MP_ERROR_NOT_FOUND] = "Media stream not found",
+        [TAPI_MP_ERROR_EXHAUSTED_CACHE] = "Cache is exhausted",
+        [TAPI_MP_ERROR_NO_RESPONSE] = "No response",
+        [TAPI_MP_ERROR_BROKEN] = "Connection is broken",
+    };
+    te_string          dump = TE_STRING_INIT;
+    size_t             i;
+
+    te_string_append(&dump, "Found errors:\n");
+    for (i = 0; i < TE_ARRAY_LEN(error_name); i++)
+        te_string_append(&dump, "%s: %u errors\n",
+                         error_name[i], player->errors[i]);
+    RING(dump.ptr);
+    te_string_free(&dump);
+}
