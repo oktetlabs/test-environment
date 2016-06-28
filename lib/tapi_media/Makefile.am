@@ -13,12 +13,14 @@ lib_LTLIBRARIES=libtapi_media.la
 include_HEADERS= \
 	tapi_media_file.h \
 	tapi_media_player.h \
-	tapi_media_player_mplayer.h
+	tapi_media_player_mplayer.h \
+	tapi_media_dlna.h
 
 libtapi_media_la_SOURCES= \
 	tapi_media_file.c \
 	tapi_media_player.c \
-	tapi_media_player_mplayer.c
+	tapi_media_player_mplayer.c \
+	tapi_media_dlna.c
 
 install-exec-hook:
 	touch -c -r libtapi_media.la $(DESTDIR)/$(libdir)/libtapi_media.*

@@ -1,7 +1,7 @@
 /** @file
  * @brief Test API to DLNA media routines
  *
- * Functions for convinient work with the DLNA files on remote storage.
+ * Functions for convenient work with the DLNA files on remote storage.
  *
  *
  * Copyright (C) 2016 Test Environment authors (see file AUTHORS
@@ -41,7 +41,7 @@ extern "C" {
 
 
 /**
- * Compare DLNA file with media local file.
+ * Compare DLNA file with media local file by type, title, dirname and size.
  *
  * @param dlna_file     Remote DLNA file.
  * @param local_file    Local media file.
@@ -50,9 +50,8 @@ extern "C" {
  *         are equal.
  */
 extern te_bool tapi_media_dlna_cmp_with_local(
-                                const tapi_upnp_cd_container *dlna_file,
-                                const tapi_media_file        *local_file);
-
+                            const tapi_upnp_cd_container_node *dlna_file,
+                            const tapi_media_file             *local_file);
 
 #ifdef __cplusplus
 } /* extern "C" */
