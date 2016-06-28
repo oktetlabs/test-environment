@@ -98,10 +98,10 @@ sub get_ts_name {
     my ($file) = @_;
     open my $fh, '<', "$file";
     while (<$fh>) {
-        return "zf-ts"   if /Zetaferno DIRECT API/;
+        return "ZF"   if /Zetaferno DIRECT API/;
         return "zf shim" if /Zetaferno Socket Shim/;
     }
-    return "sapi-ts";
+    return "onload";
 }
 
 $cmd = "ls -lt ${logs_path} ".
@@ -168,28 +168,35 @@ print <<EOT;
   <body onload="setAutoReload()">
     <b>${last_session} ${cur_time}</b>
     <table>
-      <tr><th>Tags</th><th>Session</th><th>Status</th><th>Statistics</th></tr>
+      <tr><th>Tags</th><th>Session</th><th>Driver load</th><th>Status</th>.
+            <th>Driver unload</th><th>Run</th><th>Unexpected</th></tr>
 EOT
 
 foreach my $log (@last_logs)
 {
     my $log_name;
     my $log_txt;
-    my $stat_txt = "";
+    my $driver_load;
+    my $driver_unload;
+    my $run_stat_txt = "";
+    my $unex_stat_txt = "";
     my $total_iters = 0;
     my $exp_iters = 0;
     my $unexp_iters = 0;
+    # Backgroud colour for status
     my $color = "#aaddaa";
-    my $color_suite = "#aaddaa";
-    my $status = "OK";
+    # Foreground colour for suite
+    my $color_suite = "#000000";
+    my $status;
     my $link_path = "";
     my $tag_name;
+    my $suite_name;
 
     $log =~ s/\s*$//;
     $tag_name = get_ts_name("$log/progress.log");
-    if ($tag_name ne "sapi-ts")
+    if ($tag_name ne "onload")
     {
-        $color_suite = "#ddddaa";
+        $color_suite = "#0000ff";
     }
 
     if (-r "${log}/trc-stats.txt")
@@ -210,27 +217,45 @@ foreach my $log (@last_logs)
                 $exp_iters += 0 + $1;
             }
         }
-        
+
         $unexp_iters = $total_iters - $exp_iters;
 
-        $stat_txt = sprintf "Run <span class=\"stat\">%5d</span>, " .
-            "unexpected <span class=\"stat\">%4d</span>",
-            $total_iters, $unexp_iters;
-        $link_path = find_link($log);
-        if (length($link_path) > 0)
-        {
-            $link_path =~ s/\/home\/tester-l5\/private_html\///;
-            $stat_txt = "<a href=\"https://oktetlabs.ru/~tester-l5/".
-                        "$link_path\">".$stat_txt."</a>";
-        }
+        $run_stat_txt = sprintf "<span class=\"stat\">%5d</span>",
+            $total_iters;
+        $unex_stat_txt = sprintf "<span class=\"stat\">%4d</span>",
+            $unexp_iters;
     }
 
     $log_txt = `cat ${log}/progress.log`;
-    $log_txt =~ s/\n/; /g;
+    $log_txt =~ s/\n/;/g;
 
-    if ($log_txt =~ /Socket tester: ([^;]*)/)
+    ($suite_name, $driver_load, $status, $driver_unload) = split /;/,
+    $log_txt;
+    if ($driver_load =~ /Driver loaded/ )
     {
-        $status = $1;
+        $driver_load = "OK";
+    }
+    elsif ($driver_load =~ /Driver reused/ )
+    {
+        $driver_load = "REUSE";
+    }
+    else
+    {
+        $driver_load = "--";
+        $status = "NOT STARTED";
+    }
+
+    if ($driver_unload =~ /Driver unload failer/ )
+    {
+        $driver_unload = "FAILURE";
+    }
+    elsif ($driver_unload =~ /Driver unload success/ )
+    {
+        $driver_unload = "OK";
+    }
+    else
+    {
+        $driver_unload = "--";
     }
 
     if (($status eq "OK" &&
@@ -240,7 +265,7 @@ foreach my $log (@last_logs)
     {
         $color = "#ddddaa";
     }
-    
+
     if (($status eq "OK" && $unexp_iters > $total_iters * 0.8) ||
         ($status ne "OK" && $status ne "RUNNING" && $status ne "STOPPED") ||
          $log_txt =~ /Driver unload failure/)
@@ -257,9 +282,12 @@ foreach my $log (@last_logs)
                 "$link_path\">".$log_name."</a>";
 
     print "<tr style=\"background-color:$color\">".
-          "<td style=\"background-color:$color_suite\">${tag_name}</td>".
-          "<td>${log_name}</td><td>${log_txt}</td>".
-          "<td>${stat_txt}</td></tr>\n";
+          "<td style=\"background-color:#FFFFFF;".
+          "color:$color_suite\">${tag_name}</td>".
+          "<td>${log_name}</td><td>${driver_load}</td>".
+          "<td>${status}</td><td>${driver_unload}</td>".
+          "<td>${run_stat_txt}</td>".
+          "<td>${unex_stat_txt}</td></tr>\n";
 }
 
 my $autoreload_checked = "checked";
