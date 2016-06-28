@@ -60,6 +60,37 @@
 #define SUBID_FILE_METADATA "/metadata:"
 
 
+/**
+ * User data to pass to @b dump_local_fs as opaque @p user_data
+ */
+typedef struct dump_local_fs_opaque {
+    te_string *dump;    /**< Buffer to string. */
+    size_t     num;     /**< Number of files. */
+} dump_local_fs_opaque;
+
+
+/**
+ * Dump file info to string buffer.
+ *
+ * @param file          Local file context.
+ * @param user_data     Opaque user data which represented by structure
+ *                      @b dump_local_fs_opaque.
+ *
+ * @return Status code.
+ */
+static te_errno
+dump_local_fs(tapi_local_file *file, void *user_data)
+{
+    dump_local_fs_opaque *opaque = user_data;
+
+    if (file->type != TAPI_FILE_TYPE_FILE)
+        return 0;
+
+    opaque->num++;
+    return te_string_append(opaque->dump, " file: %s, size: %llu, tv: %u\n",
+                            file->pathname, file->property.size,
+                            file->property.date.tv_sec);
+}
 
 /**
  * Make pathname (concatenate name with path).
@@ -422,4 +453,21 @@ tapi_local_fs_get_file_real_pathname(const tapi_local_file *file,
     }
     free(content_dir);
     return real_path;
+}
+
+/* See description in tapi_local_fs.h. */
+void
+tapi_local_fs_ls_print(const char *pathname)
+{
+    te_string            dump = TE_STRING_INIT;
+    dump_local_fs_opaque opaque = {
+        .dump = &dump,
+        .num = 0
+    };
+
+    te_string_append(&dump, "Local fs dump:\n");
+    TAPI_LOCAL_FS_FOREACH_RECURSIVE(pathname, dump_local_fs, &opaque);
+    te_string_append(&dump, "Total number of files: %u\n", opaque.num);
+    RING(dump.ptr);
+    te_string_free(&dump);
 }

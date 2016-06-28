@@ -241,6 +241,14 @@ extern char *tapi_local_fs_get_file_real_pathname(
                                         const tapi_local_file *file,
                                         const char            *mapping_pfx);
 
+/**
+ * Print a local file system files info using RING function starting from
+ * the @p pathname. This function should be used for debugging purpose.
+ *
+ * @param pathname      Path to start traverse from.
+ */
+extern void tapi_local_fs_ls_print(const char *pathname);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
