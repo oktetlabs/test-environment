@@ -258,7 +258,7 @@ foreach my $log (@last_logs)
         $driver_unload = "--";
     }
 
-    if (($status eq "OK" &&
+    if (($status eq "DONE" &&
          $unexp_iters > $total_iters * 0.2) ||
         $status eq "RUNNING" ||
         $status eq "STOPPED")
@@ -266,8 +266,8 @@ foreach my $log (@last_logs)
         $color = "#ddddaa";
     }
 
-    if (($status eq "OK" && $unexp_iters > $total_iters * 0.8) ||
-        ($status ne "OK" && $status ne "RUNNING" && $status ne "STOPPED") ||
+    if (($status eq "DONE" && $unexp_iters > $total_iters * 0.8) ||
+        ($status ne "DONE" && $status ne "RUNNING" && $status ne "STOPPED") ||
          $log_txt =~ /Driver unload failure/)
     {
         $color = "#f08080";
