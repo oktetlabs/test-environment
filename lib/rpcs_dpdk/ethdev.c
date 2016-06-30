@@ -875,33 +875,23 @@ TARPC_FUNC(rte_eth_dev_tx_queue_stop, {},
     neg_errno_h2rpc(&out->retval);
 })
 
-TARPC_FUNC(rte_eth_macaddr_get, {},
+TARPC_FUNC(rte_eth_macaddr_get,
+{
+    COPY_ARG(mac_addr);
+},
 {
     struct ether_addr mac_addr;
     struct ether_addr *mac_addr_p = &mac_addr;
 
-    if (in->mac_addr.mac_addr_len == 0)
+    if (out->mac_addr.mac_addr_len == 0)
         mac_addr_p = NULL;
 
     MAKE_CALL(func(in->port_id, mac_addr_p));
 
     if (mac_addr_p != NULL)
-    {
-        out->mac_addr.mac_addr_val = malloc(sizeof(struct tarpc_ether_addr));
-
-        if (out->mac_addr.mac_addr_val != NULL)
-        {
-            out->mac_addr.mac_addr_len = 1;
-            memcpy(out->mac_addr.mac_addr_val[0].addr_bytes,
-                   mac_addr_p->addr_bytes,
-                   sizeof(out->mac_addr.mac_addr_val[0].addr_bytes));
-        }
-        else
-        {
-            out->mac_addr.mac_addr_len = 0;
-            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
-        }
-    }
+        memcpy(out->mac_addr.mac_addr_val[0].addr_bytes,
+               mac_addr_p->addr_bytes,
+               sizeof(out->mac_addr.mac_addr_val[0].addr_bytes));
 })
 
 static int

@@ -1419,7 +1419,10 @@ rpc_rte_eth_macaddr_get(rcf_rpc_server *rpcs, uint8_t port_id,
     in.port_id = port_id;
 
     if (mac_addr != NULL)
+    {
         in.mac_addr.mac_addr_len = 1;
+        in.mac_addr.mac_addr_val = tapi_memdup(mac_addr, sizeof(*mac_addr));
+    }
 
     rcf_rpc_call(rpcs, "rte_eth_macaddr_get", &in, &out);
 
