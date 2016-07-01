@@ -98,7 +98,7 @@ sub get_ts_name {
     my ($file) = @_;
     open my $fh, '<', "$file";
     while (<$fh>) {
-        return "ZF"   if /Zetaferno DIRECT API/;
+        return "zf"   if /Zetaferno DIRECT API/;
         return "zf shim" if /Zetaferno Socket Shim/;
     }
     return "onload";
