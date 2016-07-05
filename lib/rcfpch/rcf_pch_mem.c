@@ -108,6 +108,12 @@ static char **namespaces = NULL;
 static size_t namespaces_len = 0;
 
 /**
+ * Enable the unsafe method of rpc pointers reallocation. Unsafe method
+ * allows to use identical rpc pointers for identical memory pointers.
+ */
+static te_bool te_rpc_ptr_unsafe = FALSE;
+
+/**
  * Compare @p node with given values @p ns and @p memory
  *
  * @param [in] node     Compared node
@@ -190,16 +196,30 @@ search_id_index()
 /**
  * Acquire a @p index of free node
  *
+ * @param [in]  mem     Location of real memory address
  * @param [out] index   Returned @p index of the free @b id_node in the
  *                      @b ids
  *
  * @return Status code
  */
 static te_errno
-take_index(rpc_ptr_id_index *index)
+take_index(void *mem, rpc_ptr_id_index *index)
 {
     te_errno            rc;
     rpc_ptr_id_index    id_index;
+
+    if (te_rpc_ptr_unsafe)
+    {
+        for (id_index = 0; id_index < ids_len; id_index++)
+        {
+            if (ids[id_index].memory == mem)
+            {
+                *index = id_index;
+                return ids[id_index].used ?
+                            TE_RC(TE_RCF_PCH, TE_EEXIST) : 0;
+            }
+        }
+    }
 
     if (ids_used < ids_len)
         id_index = search_id_index();
@@ -229,12 +249,9 @@ take_index(rpc_ptr_id_index *index)
 static te_errno
 give_index(rpc_ptr_id_index index)
 {
-    if (ids[index].memory  == NULL ||
-        ids[index].ns      == RPC_PTR_ID_NS_INVALID ||
-        !ids[index].used)
+    if (!ids[index].used || ids[index].ns == RPC_PTR_ID_NS_INVALID)
         return TE_RC(TE_RCF_PCH, TE_EINVAL);
 
-    ids[index].memory   = NULL;
     ids[index].ns       = RPC_PTR_ID_NS_INVALID;
     ids[index].used     = FALSE;
     ids_used--;
@@ -290,6 +307,9 @@ ns_get_index(const char *ns_string, rpc_ptr_id_namespace *ns_id)
 void
 rcf_pch_mem_init()
 {
+    char *value = getenv("TE_RPC_PTR_UNSAFE");
+    te_rpc_ptr_unsafe = (value != NULL && strcmp(value, "1") == 0);
+
     if (lock == NULL)
         lock = thread_mutex_create();
 }
@@ -300,7 +320,7 @@ rcf_pch_mem_index_alloc(void *mem, rpc_ptr_id_namespace ns,
                         const char *caller_func, int caller_line)
 {
     te_errno            rc;
-    rpc_ptr_id_index    index;
+    rpc_ptr_id_index    index = 0;
 
     if (mem == NULL)
     {
@@ -311,14 +331,23 @@ rcf_pch_mem_index_alloc(void *mem, rpc_ptr_id_namespace ns,
 
     thread_mutex_lock(lock);
 
-    rc = take_index(&index);
-    if (rc != 0)
+    rc = take_index(mem, &index);
+    switch (rc)
     {
-        ERROR("%s:%d: Taking index fails (rc=%r)",
-              caller_func, caller_line, rc);
-        errno = TE_RC_GET_ERROR(rc);
-        thread_mutex_unlock(lock);
-        return 0;
+        case 0:
+            break;
+
+        case TE_RC(TE_RCF_PCH, TE_EEXIST):
+            WARN("%s:%d: Index already allocated (ptr=%d)",
+                  caller_func, caller_line, index);
+            break;
+
+        default:
+            ERROR("%s:%d: Taking index fails (rc=%r)",
+                  caller_func, caller_line, rc);
+            errno = TE_RC_GET_ERROR(rc);
+            thread_mutex_unlock(lock);
+            return 0;
     }
 
     assert(index < ids_len);
@@ -368,9 +397,7 @@ rcf_pch_mem_index_free(rpc_ptr id, rpc_ptr_id_namespace ns,
         rc = give_index(index);
     else
     {
-        if (ids[index].memory == NULL &&
-                ids[index].ns == RPC_PTR_ID_NS_INVALID &&
-                !ids[index].used)
+        if (!ids[index].used && ids[index].ns == RPC_PTR_ID_NS_INVALID)
         {
             ERROR("%s:%d: Possible double free or corruption "
                   "(id=%d, ns=%d)",
@@ -454,9 +481,7 @@ rcf_pch_mem_index_mem_to_ptr(rpc_ptr id, rpc_ptr_id_namespace ns,
         memory = ids[index].memory;
     else
     {
-        if (ids[index].memory == NULL &&
-                ids[index].ns == RPC_PTR_ID_NS_INVALID &&
-                !ids[index].used)
+        if (!ids[index].used && ids[index].ns == RPC_PTR_ID_NS_INVALID)
         {
             ERROR("%s:%d: Incorrect access to released object "
                   "(%d, %d)",
