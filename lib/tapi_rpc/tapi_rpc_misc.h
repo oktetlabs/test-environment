@@ -847,6 +847,16 @@ extern void tapi_set_if_mtu_smart(rcf_rpc_server *rpcs,
 extern te_bool tapi_interface_is_vlan(rcf_rpc_server *rpcs,
                                       const struct if_nameindex *interface);
 
+/**
+ * Release the RPC pointer with specified namespace without any system call
+ *
+ * @param rpcs          RPC server handle
+ * @param ptr           RPC pointer
+ * @param ns_string     Namespace as string for @p ptr
+ */
+extern void rpc_release_rpc_ptr(
+        rcf_rpc_server *rpcs, rpc_ptr ptr, char *ns_string);
+
 /**@} <!-- END te_lib_rpc_misc --> */
 
 #ifdef __cplusplus

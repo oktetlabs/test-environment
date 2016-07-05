@@ -5231,6 +5231,15 @@ struct tarpc_namespace_id2str_out {
     tarpc_int               retval;
 };
 
+/* release_rpc_ptr() */
+struct tarpc_release_rpc_ptr_in {
+    struct tarpc_in_arg     common;
+    tarpc_ptr               ptr;
+    string                  ns_string<>;
+};
+
+typedef struct tarpc_void_out tarpc_release_rpc_ptr_out;
+
 /* get_rw_ability() */
 struct tarpc_get_rw_ability_in {
     struct tarpc_in_arg     common;
@@ -5596,6 +5605,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(vfork_pipe_exec)
 
         RPC_DEF(namespace_id2str)
+        RPC_DEF(release_rpc_ptr)
 
         RPC_DEF(get_rw_ability)
 

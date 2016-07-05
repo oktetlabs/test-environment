@@ -10839,6 +10839,16 @@ TARPC_FUNC(namespace_id2str,
     MAKE_CALL(out->retval = func_ptr(in, out));
 })
 
+/*------------ release_rpc_ptr() -----------------------*/
+
+TARPC_FUNC_STANDALONE(release_rpc_ptr, {},
+{
+    MAKE_CALL(
+        RPC_PCH_MEM_WITH_NAMESPACE(ns, in->ns_string, {
+            RCF_PCH_MEM_INDEX_FREE(in->ptr, ns);
+    }));
+})
+
 /*------------ get_rw_ability() -----------------------*/
 int
 get_rw_ability(tarpc_get_rw_ability_in *in)
