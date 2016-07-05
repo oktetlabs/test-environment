@@ -197,7 +197,8 @@ tapi_rte_mk_mbuf_ip(rcf_rpc_server *rpcs,
                     const struct sockaddr *ip_dst_addr,
                     const struct sockaddr *ip_src_addr,
                     const uint8_t next_hdr,
-                    const uint8_t *payload, const size_t payload_len)
+                    const uint8_t *payload, const size_t payload_len,
+                    const int cksum_opt)
 {
     uint8_t *packet;
     size_t header_len;
@@ -224,7 +225,12 @@ tapi_rte_mk_mbuf_ip(rcf_rpc_server *rpcs,
         ih->daddr = CONST_SIN(ip_dst_addr)->sin_addr.s_addr;
         ih->saddr = CONST_SIN(ip_src_addr)->sin_addr.s_addr;
         ih->tot_len = htons(sizeof(*ih) + payload_len);
-        ih->check = tapi_calc_cksum((unsigned short *)ih, sizeof(*ih));
+
+        if ((cksum_opt & TAPI_RTE_MBUF_CKSUM_GOOD_L3) != 0)
+            ih->check = tapi_calc_cksum((unsigned short *)ih, sizeof(*ih));
+        else if ((cksum_opt & TAPI_RTE_MBUF_CKSUM_RAND_L3) != 0)
+            while (ih->check == 0)
+                ih->check = rand();
     }
     else
     {
@@ -264,7 +270,8 @@ tapi_rte_mk_mbuf_udp(rcf_rpc_server *rpcs,
                      const uint8_t *eth_dst_addr, const uint8_t *eth_src_addr,
                      const struct sockaddr *udp_dst_addr,
                      const struct sockaddr *udp_src_addr,
-                     const uint8_t *payload, const size_t payload_len)
+                     const uint8_t *payload, const size_t payload_len,
+                     const int cksum_opt)
 {
     uint8_t *datagram;
     struct udphdr *uh;
@@ -288,12 +295,17 @@ tapi_rte_mk_mbuf_udp(rcf_rpc_server *rpcs,
     else
         te_fill_buf(datagram + header_len, payload_len);
 
-    uh->check = tapi_calc_l4_cksum(udp_dst_addr, udp_src_addr, IPPROTO_UDP,
-                                   datagram, header_len + payload_len);
+    if ((cksum_opt & TAPI_RTE_MBUF_CKSUM_GOOD_L4) != 0)
+        uh->check = tapi_calc_l4_cksum(udp_dst_addr, udp_src_addr,
+                                       IPPROTO_UDP, datagram,
+                                       header_len + payload_len);
+    else if ((cksum_opt & TAPI_RTE_MBUF_CKSUM_RAND_L4) != 0)
+        while (uh->check == 0)
+            uh->check = rand();
 
     m = tapi_rte_mk_mbuf_ip(rpcs, mp, eth_dst_addr, eth_src_addr,
                             udp_dst_addr, udp_src_addr, IPPROTO_UDP,
-                            datagram, header_len + payload_len);
+                            datagram, header_len + payload_len, cksum_opt);
 
     free(datagram);
 
@@ -309,7 +321,8 @@ tapi_rte_mk_mbuf_tcp(rcf_rpc_server *rpcs,
                      const tcp_seq th_seq, const tcp_seq th_ack,
                      const uint8_t th_off, const uint8_t th_flags,
                      const uint16_t th_win, const uint16_t th_urp,
-                     const uint8_t *payload, const size_t payload_len)
+                     const uint8_t *payload, const size_t payload_len,
+                     const int cksum_opt)
 {
     uint8_t *datagram;
     struct tcphdr *th;
@@ -338,12 +351,17 @@ tapi_rte_mk_mbuf_tcp(rcf_rpc_server *rpcs,
     else
         te_fill_buf(datagram + header_len, payload_len);
 
-    th->check = tapi_calc_l4_cksum(tcp_dst_addr, tcp_src_addr, IPPROTO_TCP,
-                                   datagram, header_len + payload_len);
+    if ((cksum_opt & TAPI_RTE_MBUF_CKSUM_GOOD_L4) != 0)
+        th->check = tapi_calc_l4_cksum(tcp_dst_addr, tcp_src_addr,
+                                       IPPROTO_UDP, datagram,
+                                       header_len + payload_len);
+    else if ((cksum_opt & TAPI_RTE_MBUF_CKSUM_RAND_L4) != 0)
+        while (th->check == 0)
+            th->check = rand();
 
     m = tapi_rte_mk_mbuf_ip(rpcs, mp, eth_dst_addr, eth_src_addr,
                             tcp_dst_addr, tcp_src_addr, IPPROTO_TCP,
-                            datagram, header_len + payload_len);
+                            datagram, header_len + payload_len, cksum_opt);
 
     free(datagram);
 

@@ -65,6 +65,66 @@ struct tapi_pseudo_header_ip6 {
     uint8_t next_hdr;
 };
 
+/** RTE mbuf SW checksum preparation modes */
+enum tapi_rte_mbuf_cksum_mode {
+    /**
+     * Fill in checksum with invalid random non-zero value
+     * (default behaviour, 0 may be used instead)
+     */
+    TAPI_RTE_MBUF_CKSUM_RAND = 0,
+    /** Calculate and put correct checksum */
+    TAPI_RTE_MBUF_CKSUM_GOOD,
+    /** Fill in checksum with 0 */
+    TAPI_RTE_MBUF_CKSUM_ZERO,
+
+    /** The number of checksum modes */
+    TAPI_RTE_MBUF_CKSUM_MODES
+};
+
+/** Bits space for checksum control */
+#define TAPI_RTE_MBUF_CKSUM_BITS 2
+
+/** Layer3 (IP4) checksum bits offset */
+#define TAPI_RTE_MBUF_CKSUM_L3_OFF 0
+
+/** Layer4 (TCP / UDP / ICMP) checksum bits offset */
+#define TAPI_RTE_MBUF_CKSUM_L4_OFF (TAPI_RTE_MBUF_CKSUM_BITS)
+
+/** RTE mbuf SW checksum preparation choices */
+enum tapi_rte_mbuf_cksum {
+    TAPI_RTE_MBUF_CKSUM_ZERO_L3 = (TAPI_RTE_MBUF_CKSUM_L3_OFF <<
+                                   TAPI_RTE_MBUF_CKSUM_ZERO),
+    TAPI_RTE_MBUF_CKSUM_ZERO_L4 = (TAPI_RTE_MBUF_CKSUM_L4_OFF <<
+                                   TAPI_RTE_MBUF_CKSUM_ZERO),
+    TAPI_RTE_MBUF_CKSUM_GOOD_L3 = (TAPI_RTE_MBUF_CKSUM_L3_OFF <<
+                                   TAPI_RTE_MBUF_CKSUM_GOOD),
+    TAPI_RTE_MBUF_CKSUM_GOOD_L4 = (TAPI_RTE_MBUF_CKSUM_L4_OFF <<
+                                   TAPI_RTE_MBUF_CKSUM_GOOD),
+    TAPI_RTE_MBUF_CKSUM_RAND_L3 = (TAPI_RTE_MBUF_CKSUM_L3_OFF <<
+                                   TAPI_RTE_MBUF_CKSUM_RAND),
+    TAPI_RTE_MBUF_CKSUM_RAND_L4 = (TAPI_RTE_MBUF_CKSUM_L4_OFF <<
+                                   TAPI_RTE_MBUF_CKSUM_RAND),
+
+    TAPI_RTE_MBUF_CKSUM_ZERO_ALL        = (TAPI_RTE_MBUF_CKSUM_ZERO_L3 |
+                                           TAPI_RTE_MBUF_CKSUM_ZERO_L4),
+    TAPI_RTE_MBUF_CKSUM_ZERO_L3_GOOD_L4 = (TAPI_RTE_MBUF_CKSUM_ZERO_L3 |
+                                           TAPI_RTE_MBUF_CKSUM_GOOD_L4),
+    TAPI_RTE_MBUF_CKSUM_GOOD_L3_ZERO_L4 = (TAPI_RTE_MBUF_CKSUM_GOOD_L3 |
+                                           TAPI_RTE_MBUF_CKSUM_ZERO_L4),
+    TAPI_RTE_MBUF_CKSUM_GOOD_ALL        = (TAPI_RTE_MBUF_CKSUM_GOOD_L3 |
+                                           TAPI_RTE_MBUF_CKSUM_GOOD_L4),
+    TAPI_RTE_MBUF_CKSUM_RAND_L3_GOOD_L4 = (TAPI_RTE_MBUF_CKSUM_RAND_L3 |
+                                           TAPI_RTE_MBUF_CKSUM_GOOD_L4),
+    TAPI_RTE_MBUF_CKSUM_GOOD_L3_RAND_L4 = (TAPI_RTE_MBUF_CKSUM_GOOD_L3 |
+                                           TAPI_RTE_MBUF_CKSUM_RAND_L4),
+    TAPI_RTE_MBUF_CKSUM_RAND_ALL        = (TAPI_RTE_MBUF_CKSUM_RAND_L3 |
+                                           TAPI_RTE_MBUF_CKSUM_RAND_L4),
+    TAPI_RTE_MBUF_CKSUM_ZERO_L3_RAND_L4 = (TAPI_RTE_MBUF_CKSUM_ZERO_L3 |
+                                           TAPI_RTE_MBUF_CKSUM_RAND_L4),
+    TAPI_RTE_MBUF_CKSUM_RAND_L3_ZERO_L4 = (TAPI_RTE_MBUF_CKSUM_RAND_L3 |
+                                           TAPI_RTE_MBUF_CKSUM_ZERO_L4)
+};
+
 /**
  * Auxiliary function to calculate checksums
  *
@@ -121,14 +181,16 @@ extern rpc_rte_mbuf_p tapi_rte_mk_mbuf_eth(rcf_rpc_server *rpcs,
  * Prepare an RTE mbuf with an Ethernet frame containing IP packet
  * (if buffer to contain IP payload is NULL, then random data will be put)
  *
- * @param mp              RTE mempool pointer
- * @param eth_dst_addr    Destination Ethernet address (network byte order)
- * @param eth_src_addr    Source Ethernet address (network byte order)
- * @param ip_dst_addr     Destination IPv4/6 address
- * @param ip_src_addr     Source IPv4/6 address
- * @param next_hdr        L4 protocol ID (i.e., IPPROTO_UDP)
- * @param payload         Data to be encapsulated into IP packet or @c NULL
- * @param len             Payload length
+ * @param mp                  RTE mempool pointer
+ * @param eth_dst_addr        Destination Ethernet address (network byte order)
+ * @param eth_src_addr        Source Ethernet address (network byte order)
+ * @param ip_dst_addr         Destination IPv4/6 address
+ * @param ip_src_addr         Source IPv4/6 address
+ * @param next_hdr            L4 protocol ID (i.e., IPPROTO_UDP)
+ * @param payload             Data to be encapsulated into IP packet or @c NULL
+ * @param payload_len         Payload length
+ * @param cksum_opt           SW checksum preparation choice; possible values
+ *                            are those from @b tapi_rte_mbuf_cksum enum
  *
  * @return RTE mbuf pointer on success; jumps out on failure
  */
@@ -140,18 +202,21 @@ extern rpc_rte_mbuf_p tapi_rte_mk_mbuf_ip(rcf_rpc_server *rpcs,
                                           const struct sockaddr *ip_src_addr,
                                           const uint8_t next_hdr,
                                           const uint8_t *payload,
-                                          const size_t payload_len);
+                                          const size_t payload_len,
+                                          const int cksum_opt);
 
 /**
  * Prepare an RTE mbuf with an Ethernet frame containing UDP packet
  *
- * @param mp              RTE mempool pointer
- * @param eth_dst_addr    Destination Ethernet address (network byte order)
- * @param eth_src_addr    Source Ethernet address (network byte order)
- * @param udp_dst_addr    Destination IPv4/6 address and port
- * @param udp_src_addr    Source IPv4/6 address and port
- * @param payload         Data to be encapsulated into UDP packet or @c NULL
- * @param len             Payload length
+ * @param mp                  RTE mempool pointer
+ * @param eth_dst_addr        Destination Ethernet address (network byte order)
+ * @param eth_src_addr        Source Ethernet address (network byte order)
+ * @param udp_dst_addr        Destination IPv4/6 address and port
+ * @param udp_src_addr        Source IPv4/6 address and port
+ * @param payload             Data to be encapsulated into UDP packet or @c NULL
+ * @param payload_len         Payload length
+ * @param cksum_opt           SW checksum preparation choice; possible values
+ *                            are those from @b tapi_rte_mbuf_cksum enum
  *
  * @return RTE mbuf pointer on success; jumps out on failure
  */
@@ -162,7 +227,8 @@ extern rpc_rte_mbuf_p tapi_rte_mk_mbuf_udp(rcf_rpc_server *rpcs,
                                            const struct sockaddr *udp_dst_addr,
                                            const struct sockaddr *udp_src_addr,
                                            const uint8_t *payload,
-                                           const size_t payload_len);
+                                           const size_t payload_len,
+                                           const int cksum_opt);
 
 /**
  * Prepare an RTE mbuf with an Ethernet frame containing TCP packet
@@ -170,20 +236,22 @@ extern rpc_rte_mbuf_p tapi_rte_mk_mbuf_udp(rcf_rpc_server *rpcs,
  *  @p payload and set correct data offset [TCP header length +
  *  + options length] @p th_off)
  *
- * @param mp              RTE mempool pointer
- * @param eth_dst_addr    Destination Ethernet address (network byte order)
- * @param eth_src_addr    Source Ethernet address (network byte order)
- * @param tcp_dst_addr    Destination IPv4/6 address and port
- * @param tcp_src_addr    Source IPv4/6 address and port
- * @param th_seq          TX data seq. number (network byte order) or @c 0
- * @param th_ack          RX data ack. seq. number (network byte order) or @c 0
- * @param th_off          Data offset (includes options length, if any) or @c 0
- *                        (measured in 32-bit words)
- * @param th_flags        TCP flags or @c 0
- * @param th_win          RX flow control window (network byte order) or @c 0
- * @param th_urp          Urgent pointer (network byte order) or @c 0
- * @param payload         Data to be encapsulated into TCP packet or @c NULL
- * @param len             Payload length (should include options length, if any)
+ * @param mp                  RTE mempool pointer
+ * @param eth_dst_addr        Destination Ethernet address (network byte order)
+ * @param eth_src_addr        Source Ethernet address (network byte order)
+ * @param tcp_dst_addr        Destination IPv4/6 address and port
+ * @param tcp_src_addr        Source IPv4/6 address and port
+ * @param th_seq              TX data seq. number (network byte order) or @c 0
+ * @param th_ack              RX data seq. number (network byte order) or @c 0
+ * @param th_off              Data offset (includes options length) or @c 0
+ *                            (measured in 32-bit words)
+ * @param th_flags            TCP flags or @c 0
+ * @param th_win              RX flow control window (network byte order) or @c 0
+ * @param th_urp              Urgent pointer (network byte order) or @c 0
+ * @param payload             Data to be encapsulated into TCP packet or @c NULL
+ * @param payload_len         Payload length (should include options length)
+ * @param cksum_opt           SW checksum preparation choice; possible values
+ *                            are those from @b tapi_rte_mbuf_cksum enum
  *
  * @return RTE mbuf pointer on success; jumps out on failure
  */
@@ -200,7 +268,8 @@ extern rpc_rte_mbuf_p tapi_rte_mk_mbuf_tcp(rcf_rpc_server *rpcs,
                                            const uint16_t th_win,
                                            const uint16_t th_urp,
                                            const uint8_t *payload,
-                                           const size_t payload_len);
+                                           const size_t payload_len,
+                                           const int cksum_opt);
 
 /**
  * Read the whole mbuf (chain) data (starting at a given offset)
