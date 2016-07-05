@@ -19,8 +19,8 @@ in_header && /[[:space:]]*@author/ {
 in_header && /\*\// { in_header = 0; header_finished = 1; next; }
 in_header { print; next; }
 
-/\/\*-/ { sub(/^.*\/\*-/, ""); sub(/^/, " -#"); sub(/-#-/, "  -#");
-    in_dox_comment = 1; 
+/\/\*-/ { sub(/^.*\/\*-/, ""); sub(/^/, " -#"); while(sub(/-#-/, "  -#"));
+    in_dox_comment = 1;
     was_comment = 1;
     printf " *";
 }
