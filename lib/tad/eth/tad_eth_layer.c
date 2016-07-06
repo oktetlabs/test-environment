@@ -56,13 +56,6 @@
 /** 802.1Q Tag Protocol Type (IEEE Std 802.1Q-2003 9.3.1) */
 #define TAD_802_1Q_TAG_TYPE     0x8100
 
-#define PRINT(fmt_...) \
-    do {                        \
-        fprintf(stderr, fmt_);  \
-        fputc('\n', stderr);    \
-        fflush(stderr);         \
-    } while (0)
-
 /**
  * Ethernet layer specific data
  */
