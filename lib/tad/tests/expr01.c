@@ -1,17 +1,17 @@
 #include <stdio.h>
 #include "tad.h"
 
-int 
+int
 main(int argc, char *argv[])
 {
     tad_int_expr_t *expression = NULL;
     int syms = 0;
     int rc;
     int64_t res;
-    tad_template_arg_t args[2] = 
+    tad_template_arg_t args[2] =
     {
-        {ARG_INT, 4, 10}, 
-        {ARG_INT, 4, 15}, 
+        {ARG_INT, 4, 10},
+        {ARG_INT, 4, 15},
     };
 
     uint8_t b[] = {0, 1, 2, 3};
@@ -25,7 +25,7 @@ main(int argc, char *argv[])
 
     printf ("rc %x, syms %d, expr %p\n", rc, syms, expression);
     if (rc == 0 && expression != NULL)
-    { 
+    {
         printf ("type: %d, d_len %d\n", expression->n_type, expression->d_len);
         switch (expression->n_type)
         {
@@ -41,7 +41,7 @@ main(int argc, char *argv[])
 
         rc = tad_int_expr_calculate(expression, args, &res);
         printf ("rc: %x, result: %lld, %llx\n", rc, res, res);
-    } 
+    }
     tad_int_expr_free(expression);
 
     res = 0x233445;
@@ -51,5 +51,5 @@ main(int argc, char *argv[])
     rc = tad_int_expr_calculate(expression, args, &res);
     printf ("rc: %x, result: %016llx\n", rc, res);
 
-    return 0; 
+    return 0;
 }

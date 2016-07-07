@@ -28,7 +28,7 @@
  */
 
 #ifndef __TE_TAD_SOCKET_IMPL_H__
-#define __TE_TAD_SOCKET_IMPL_H__ 
+#define __TE_TAD_SOCKET_IMPL_H__
 
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -64,7 +64,7 @@ typedef struct tad_socket_rw_data {
     struct in_addr   local_addr;
     struct in_addr   remote_addr;
     unsigned short   local_port;    /**< Local UDP port */
-    unsigned short   remote_port;   /**< Remote UDP port */ 
+    unsigned short   remote_port;   /**< Remote UDP port */
 
 } tad_socket_rw_data;
 
@@ -73,30 +73,30 @@ typedef struct tad_socket_rw_data {
  * Callback for init 'socket' CSAP layer if single in stack.
  *
  * The function complies with csap_rw_init_cb_t prototype.
- */ 
+ */
 extern te_errno tad_socket_rw_init_cb(csap_p csap);
 
 /**
  * Callback for destroy 'socket' CSAP layer if single in stack.
  *
  * The function complies with csap_rw_destroy_cb_t prototype.
- */ 
+ */
 extern te_errno tad_socket_rw_destroy_cb(csap_p csap);
 
 
 /**
- * Callback for read data from media of Socket CSAP. 
+ * Callback for read data from media of Socket CSAP.
  *
  * The function complies with csap_read_cb_t prototype.
- */ 
+ */
 extern te_errno tad_socket_read_cb(csap_p csap, unsigned int timeout,
                                    tad_pkt *pkt, size_t *pkt_len);
 
 /**
- * Callback for write data to media of Socket CSAP. 
+ * Callback for write data to media of Socket CSAP.
  *
  * The function complies with csap_write_cb_t prototype.
- */ 
+ */
 extern te_errno tad_socket_write_cb(csap_p csap, const tad_pkt *pkt);
 
 
@@ -105,29 +105,29 @@ extern te_errno tad_socket_write_cb(csap_p csap, const tad_pkt *pkt);
  * parameters and possibilities.
  *
  * The function complies with csap_layer_confirm_pdu_cb_t prototype.
- */ 
+ */
 extern te_errno tad_socket_confirm_tmpl_cb(csap_p         csap,
                                            unsigned int   layer,
                                            asn_value     *layer_pdu,
-                                           void         **p_opaque); 
+                                           void         **p_opaque);
 
 /**
  * Callback for generate binary data to be sent to media.
  *
  * The function complies with csap_layer_generate_pkts_cb_t prototype.
- */ 
+ */
 extern te_errno tad_socket_gen_bin_cb(csap_p                csap,
                                       unsigned int          layer,
                                       const asn_value      *tmpl_pdu,
                                       void                 *opaque,
                                       const tad_tmpl_arg_t *args,
-                                      size_t                arg_num, 
+                                      size_t                arg_num,
                                       tad_pkts             *sdus,
                                       tad_pkts             *pdus);
 
 
 /**
- * Callback for parse received packet and match it with pattern. 
+ * Callback for parse received packet and match it with pattern.
  *
  * The function complies with csap_layer_match_bin_cb_t prototype.
  */

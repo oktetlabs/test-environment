@@ -27,7 +27,7 @@
  * $Id$
  */
 
-#define TE_LGR_USER     "TAD TCP/IP misc" 
+#define TE_LGR_USER     "TAD TCP/IP misc"
 
 #include "te_config.h"
 #if HAVE_CONFIG_H
@@ -55,16 +55,16 @@
 #endif
 
 #include "tad_eth_impl.h"
-#include "logger_ta_fast.h" 
+#include "logger_ta_fast.h"
 
 
 /**
  * Method to iterate huge number of TCP PUSH messages, using
- * one correctly generated frame with such message. 
+ * one correctly generated frame with such message.
  *
  * Prototype complies to function type tad_special_send_pkt_cb .
  *
- * User param should be string of format 
+ * User param should be string of format
  * "<quantity of pkts>:<wanted throughput in byte per second>"
  */
 
@@ -133,7 +133,7 @@ tad_tcpip_flood(csap_p csap, const char  *usr_param, tad_pkts *pkts)
          * Set send buffer size.
          * TODO: reasonable size of send buffer to be investigated.
          */
-        buf_size = 0x100000; 
+        buf_size = 0x100000;
         if (setsockopt(out_socket, SOL_SOCKET, SO_SNDBUF,
                        &buf_size, sizeof(buf_size)) < 0)
         {
@@ -142,7 +142,7 @@ tad_tcpip_flood(csap_p csap, const char  *usr_param, tad_pkts *pkts)
             return rc;
         }
 
-        /* 
+        /*
          * Bind PF_PACKET socket:
          *  - sll_protocol: 0 - do not receive any packets
          *  - sll_hatype. sll_pkttype, sll_halen, sll_addr are not used for
@@ -190,15 +190,15 @@ tad_tcpip_flood(csap_p csap, const char  *usr_param, tad_pkts *pkts)
 
     /* shift over IP header: */
     p += hdr_seg->data_len;
-    hdr_seg = hdr_seg->links.cqe_next; 
+    hdr_seg = hdr_seg->links.cqe_next;
 
-    RING("%s(): frame begin %p, ETH and IP headers: %d", 
+    RING("%s(): frame begin %p, ETH and IP headers: %d",
          __FUNCTION__, flat_frame, (p - flat_frame));
     /* shift in TCP header to our places: */
     seq_place    = (uint32_t *)(p + TCP_SEQ_OFFSET);
     chksum_place = (uint16_t *)(p + TCP_CHKSUM_OFFSET);
 
-    RING("%s(): seq_place %p, chksum place  %p", 
+    RING("%s(): seq_place %p, chksum place  %p",
          __FUNCTION__, seq_place, chksum_place);
 
 
@@ -221,7 +221,7 @@ tad_tcpip_flood(csap_p csap, const char  *usr_param, tad_pkts *pkts)
     gettimeofday(&tv_start, NULL);
 
     while ((--number_of_packets) > 0)
-    { 
+    {
 
         new_seq += tcp_payload_size;
 
@@ -258,7 +258,7 @@ once_more:
                 case ENOBUFS:
                 case EAGAIN:
                 {
-                    /* 
+                    /*
                      * It seems that 5 microseconds is enough
                      * to hope that buffers will be cleared and
                      * does not fall down performance.
@@ -267,8 +267,8 @@ once_more:
                     fd_set wr_set;
                     FD_ZERO(&wr_set);
                     FD_SET(out_socket, &wr_set);
-                    F_RING("try once more: %d errno, %d pkt rest", 
-                           errno, number_of_packets); 
+                    F_RING("try once more: %d errno, %d pkt rest",
+                           errno, number_of_packets);
 #if 1
                     select(out_socket + 1, NULL, &wr_set, NULL,
                            &clr_delay);
@@ -289,12 +289,12 @@ once_more:
     gettimeofday(&tv_end, NULL);
 
     {
-        uint64_t mcs_interval = (tv_end.tv_sec - tv_start.tv_sec) 
+        uint64_t mcs_interval = (tv_end.tv_sec - tv_start.tv_sec)
                                 * 1000000;
         mcs_interval += tv_end.tv_usec;
         mcs_interval -= tv_start.tv_usec;
 
-        frames_per_sec *= 1000000; 
+        frames_per_sec *= 1000000;
         frames_per_sec /= mcs_interval;
 
         RING("%s finished rc %r, time %d mcs, speed %d frames/sec",
@@ -306,4 +306,4 @@ once_more:
 }
 
 /* HAVE_NETPACKET_PACKET_H && HAVE_SYS_IOCTL_H && HAVE_NETINET_IN_H */
-#endif 
+#endif

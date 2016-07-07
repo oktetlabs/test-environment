@@ -2,7 +2,7 @@
  * @brief TAD CSAP Instance
  *
  * Traffic Application Domain Command Handler.
- * Declarations of CSAP instance types and functions, used in common and 
+ * Declarations of CSAP instance types and functions, used in common and
  * protocol-specific modules implemnting TAD.
  *
  * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
@@ -29,7 +29,7 @@
  */
 
 #ifndef __TE_TAD_CSAP_INST_H__
-#define __TE_TAD_CSAP_INST_H__ 
+#define __TE_TAD_CSAP_INST_H__
 
 #ifndef PACKAGE_VERSION
 #include "config.h"
@@ -52,7 +52,7 @@
 #include "te_errno.h"
 #include "te_queue.h"
 #include "logger_api.h"
-#include "asn_usr.h" 
+#include "asn_usr.h"
 #include "tad_common.h"
 
 #include "tad_types.h"
@@ -64,8 +64,8 @@
 
 
 /**
- * Locks access to CSAP shared flags and data. 
- * If already locked, wait until unlocked. 
+ * Locks access to CSAP shared flags and data.
+ * If already locked, wait until unlocked.
  *
  * @param csap_inst_   CSAP instance
  */
@@ -79,7 +79,7 @@
     } while (0)
 
 /**
- * Try to lock access to CSAP shared flags and data. 
+ * Try to lock access to CSAP shared flags and data.
  *
  * @param csap_inst_   CSAP instance
  * @param rc_          Variable for return code
@@ -93,7 +93,7 @@
     } while (0)
 
 /**
- * Unlocks access to CSAP shared flags and data. 
+ * Unlocks access to CSAP shared flags and data.
  *
  * @param csap_inst_   CSAP instance
  */
@@ -114,11 +114,11 @@ struct csap_spt_type_t;
 /**
  * Collection of common protocol layer attributes of CSAP.
  */
-typedef struct csap_layer_t { 
+typedef struct csap_layer_t {
     char               *proto;      /**< Protocol layer text label */
     te_tad_protocols_t  proto_tag;  /**< Protocol layer int tag */
 
-    void        *specific_data;     /**< Protocol-specific data */ 
+    void        *specific_data;     /**< Protocol-specific data */
     asn_value   *nds;               /**< ASN.1 value with CSAP
                                          specification layer PDU */
 
@@ -130,7 +130,7 @@ typedef struct csap_layer_t {
                                          (This field is used for
                                           traffic templates only) */
 
-    struct csap_spt_type_t *proto_support; /**< Protocol layer 
+    struct csap_spt_type_t *proto_support; /**< Protocol layer
                                                 support descriptor */
 } csap_layer_t;
 
@@ -178,7 +178,7 @@ typedef struct csap_instance {
     void           *rw_data;    /**< Private data of read/write layer */
 
     unsigned int    stop_latency_timeout;   /**< Maximum timeout for read
-                                                 operations in 
+                                                 operations in
                                                  microseconds (it affects
                                                  latency of stop/destroy
                                                  operations) */
@@ -187,8 +187,8 @@ typedef struct csap_instance {
     struct timeval  wait_for;   /**< Zero or moment of timeout
                                      current CSAP operation */
     struct timeval  first_pkt;  /**< Moment of first good packet
-                                     processed: matched or sent */ 
-    struct timeval  last_pkt;   /**< Moment of last good packet 
+                                     processed: matched or sent */
+    struct timeval  last_pkt;   /**< Moment of last good packet
                                      processed: matched or sent */
 
     pthread_cond_t  event;      /**< Event condition */
@@ -219,47 +219,47 @@ extern "C" {
 
 
 /**
- * Create a new CSAP. 
+ * Create a new CSAP.
  * This method does not perform any actions related to CSAP functionality,
- * neither processing of CSAP init parameters, nor initialyzing some 
+ * neither processing of CSAP init parameters, nor initialyzing some
  * communication media units (for example, sockets, etc.).
  * It only allocates memory for csap_instance sturture, set fields
  * 'id', 'depth' and 'proto' in it and allocates memory for 'layer_data'.
- * 
+ *
  * @param type          Type of CSAP: dot-separated sequence of textual
  *                      layer labels
  * @param csap          Location for CSAP structure pointer
  *
  * @return Status code.
- */ 
+ */
 extern te_errno csap_create(const char *type, csap_p *csap);
 
 /**
  * Destroy CSAP.
  *
- * Before call this DB method, all protocol-specific data in 
- * 'layer-data' and underground media resources should be freed. 
- * This method will free all non-NULL pointers in 'layer-data', but 
- * does not know nothing about what structures are pointed by them, 
- * therefore if there are some more pointers in that structures, 
- * memory may be lost. 
+ * Before call this DB method, all protocol-specific data in
+ * 'layer-data' and underground media resources should be freed.
+ * This method will free all non-NULL pointers in 'layer-data', but
+ * does not know nothing about what structures are pointed by them,
+ * therefore if there are some more pointers in that structures,
+ * memory may be lost.
  *
  * @param csap_id       Identifier of CSAP to be destroyed
  *
  * @return Status code.
- */ 
+ */
 extern te_errno csap_destroy(csap_handle_t csap_id);
 
 /**
  * Find CSAP by its identifier.
  *
- * @param csap_id       Identifier of CSAP 
+ * @param csap_id       Identifier of CSAP
  *
  * @return Pointer to structure with internal CSAP information or NULL
- *         if not found. 
+ *         if not found.
  *
  * Change data in this structure if you really know what it means!
- */ 
+ */
 extern csap_p csap_find(csap_handle_t csap_id);
 
 /**
@@ -350,7 +350,7 @@ extern te_errno csap_timedwait(csap_p csap, unsigned int state_bits,
  * Get CSAP read/write layer number.
  *
  * @param csap          CSAP instance
- * 
+ *
  * @return Number of CSAP read/write layer.
  */
 static inline unsigned int

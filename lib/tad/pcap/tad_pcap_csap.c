@@ -2,7 +2,7 @@
  * @brief TAD PCAP
  *
  * Traffic Application Domain Command Handler.
- * Ethernet with Lib PCAP filtering CSAP support description structures. 
+ * Ethernet with Lib PCAP filtering CSAP support description structures.
  *
  * Copyright (C) 2005 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -42,7 +42,7 @@
 #include "tad_pcap_impl.h"
 
 
-static csap_spt_type_t pcap_csap_spt = 
+static csap_spt_type_t pcap_csap_spt =
 {
     .proto               = "pcap",
     .unregister_cb       = NULL,
@@ -71,7 +71,7 @@ static csap_spt_type_t pcap_csap_spt =
     .prepare_send_cb     = NULL,
     .write_cb            = NULL,
     .shutdown_send_cb    = NULL,
-    
+
     .prepare_recv_cb     = tad_pcap_prepare_recv,
     .read_cb             = tad_pcap_read_cb,
     .shutdown_recv_cb    = tad_pcap_shutdown_recv,
@@ -85,9 +85,9 @@ static csap_spt_type_t pcap_csap_spt =
  * Command Handler.
  *
  * @return Status code
- */ 
+ */
 te_errno
 csap_support_pcap_register(void)
-{ 
+{
     return csap_spt_add(&pcap_csap_spt);
 }

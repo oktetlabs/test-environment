@@ -1,5 +1,5 @@
 /** @file
- * @brief TAD Ethernet Service Access Point 
+ * @brief TAD Ethernet Service Access Point
  *
  * Declaration of Traffic Application Domain interface to Ethernet.
  *
@@ -81,7 +81,7 @@ typedef struct tad_eth_sap {
  *
  * @param ifname        Name of the interface/service
  * @param sap           Location for SAP description structure
- * 
+ *
  * @return Status code.
  *
  * @sa tad_eth_sap_send_open(), tad_eth_sap_recv_open(),

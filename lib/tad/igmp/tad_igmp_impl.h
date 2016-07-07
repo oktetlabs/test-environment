@@ -28,7 +28,7 @@
  */
 
 #ifndef __TE_TAD_IGMP_IMPL_H__
-#define __TE_TAD_IGMP_IMPL_H__ 
+#define __TE_TAD_IGMP_IMPL_H__
 
 #include "te_errno.h"
 

@@ -28,7 +28,7 @@
  */
 
 #ifndef __TE_TAD_CLI_IMPL_H__
-#define __TE_TAD_CLI_IMPL_H__ 
+#define __TE_TAD_CLI_IMPL_H__
 
 #include <stdio.h>
 #ifdef STDC_HEADERS
@@ -72,7 +72,7 @@
 #endif
 
 #include "te_errno.h"
-#include "asn_usr.h" 
+#include "asn_usr.h"
 #include "ndn_cli.h"
 #include "tad_csap_inst.h"
 #include "tad_csap_support.h"
@@ -137,7 +137,7 @@ typedef struct cli_csap_prompts {
     cli_csap_prompt cmd; /**< Command prompt */
 } cli_csap_prompts_t;
 
-/* 
+/*
  * CLI CSAP specific data
  */
 struct cli_csap_specific_data;
@@ -197,31 +197,31 @@ typedef struct cli_csap_specific_data
     struct exp_case prompts[CLI_MAX_PROMPTS];
 
     int   read_timeout; /**< Number of second to wait for data                */
-    
+
 } cli_csap_specific_data_t;
 
 
 /**
- * Callback for read data from media of CLI CSAP. 
+ * Callback for read data from media of CLI CSAP.
  *
  * The function complies with csap_read_cb_t prototype.
- */ 
+ */
 extern te_errno tad_cli_read_cb(csap_p csap, unsigned int timeout,
                                 tad_pkt *pkt, size_t *pkt_len);
 
 /**
- * Callback for write data to media of CLI CSAP. 
+ * Callback for write data to media of CLI CSAP.
  *
  * The function complies with csap_write_cb_t prototype.
- */ 
+ */
 extern te_errno tad_cli_write_cb(csap_p csap, const tad_pkt *pkt);
 
 /**
  * Callback for write data to media of CLI CSAP and read
- * data from media just after write, to get answer to sent request. 
+ * data from media just after write, to get answer to sent request.
  *
  * The function complies with csap_write_read_cb_t prototype.
- */ 
+ */
 extern te_errno tad_cli_write_read_cb(csap_p csap, unsigned int timeout,
                                       const tad_pkt *w_pkt,
                                       tad_pkt *r_pkt, size_t *r_pkt_len);
@@ -231,21 +231,21 @@ extern te_errno tad_cli_write_read_cb(csap_p csap, unsigned int timeout,
  * Callback for init 'file' CSAP layer.
  *
  * The function complies with csap_rw_init_cb_t prototype.
- */ 
+ */
 extern te_errno tad_cli_rw_init_cb(csap_p csap);
 
 /**
  * Callback for destroy 'file' CSAP layer.
  *
  * The function complies with csap_rw_destroy_cb_t prototype.
- */ 
+ */
 extern te_errno tad_cli_rw_destroy_cb(csap_p csap);
 
 /**
  * Callback for generate binary data to be sent to media.
  *
  * The function complies with csap_layer_generate_pkts_cb_t prototype.
- */ 
+ */
 extern te_errno tad_cli_gen_bin_cb(csap_p                csap,
                                    unsigned int          layer,
                                    const asn_value      *tmpl_pdu,
@@ -256,7 +256,7 @@ extern te_errno tad_cli_gen_bin_cb(csap_p                csap,
                                    tad_pkts             *pdus);
 
 /**
- * Callback for parse received packet and match it with pattern. 
+ * Callback for parse received packet and match it with pattern.
  *
  * The function complies with csap_layer_match_bin_cb_t prototype.
  */
@@ -269,15 +269,15 @@ extern te_errno tad_cli_match_bin_cb(csap_p          csap,
                         tad_pkt         *sdu);
 
 /**
- * Callback for generating pattern to filter 
- * just one response to the packet which will be sent by this CSAP 
- * according to this template. 
+ * Callback for generating pattern to filter
+ * just one response to the packet which will be sent by this CSAP
+ * according to this template.
  *
  * The function complies with csap_layer_gen_pattern_cb_t prototype.
  */
 extern te_errno tad_cli_gen_pattern_cb(csap_p            csap,
                                        unsigned int      layer,
-                                       const asn_value  *tmpl_pdu, 
+                                       const asn_value  *tmpl_pdu,
                                        asn_value       **pattern_pdu);
 
 
@@ -286,7 +286,7 @@ extern te_errno tad_cli_gen_pattern_cb(csap_p            csap,
  *
  * @param cli_csap_specific_data_p poiner to structure
  *
- */ 
+ */
 extern void free_cli_csap_data(cli_csap_specific_data_p spec_data);
 
 #ifdef __cplusplus

@@ -54,10 +54,10 @@
 /**
  * CSAP protocol layer support DB entry
  */
-typedef struct csap_spt_entry { 
+typedef struct csap_spt_entry {
     STAILQ_ENTRY(csap_spt_entry) links;  /**< List links */
 
-    csap_spt_type_p   spt_data; /**< Pointer to support descriptor */ 
+    csap_spt_type_p   spt_data; /**< Pointer to support descriptor */
 
 } csap_spt_entry;
 
@@ -77,11 +77,11 @@ csap_spt_init(void)
 /**
  * Add structure for CSAP support for respective protocol.
  *
- * @param spt_descr     CSAP layer support structure. 
+ * @param spt_descr     CSAP layer support structure.
  *
- * @return Zero on success, otherwise error code. 
+ * @return Zero on success, otherwise error code.
  *
- * @todo check for uniqueness of protocol labels. 
+ * @todo check for uniqueness of protocol labels.
  */
 te_errno
 csap_spt_add(csap_spt_type_p spt_descr)
@@ -92,7 +92,7 @@ csap_spt_add(csap_spt_type_p spt_descr)
         return TE_EINVAL;
 
     new_spt_entry = malloc(sizeof(*new_spt_entry));
-    if (new_spt_entry == NULL) 
+    if (new_spt_entry == NULL)
         return TE_ENOMEM;
 
     new_spt_entry->spt_data = spt_descr;
@@ -104,7 +104,7 @@ csap_spt_add(csap_spt_type_p spt_descr)
 }
 
 /* See the description in tad_csap_support.h */
-csap_spt_type_p 
+csap_spt_type_p
 csap_spt_find(const char *proto)
 {
     csap_spt_entry   *spt_entry;
@@ -112,14 +112,14 @@ csap_spt_find(const char *proto)
     VERB("%s(): asked proto %s", __FUNCTION__, proto);
 
     STAILQ_FOREACH(spt_entry, &csap_spt_root, links)
-    { 
+    {
         assert(spt_entry->spt_data != NULL);
         VERB("%s(): test proto %s", __FUNCTION__,
              spt_entry->spt_data->proto);
 
         if (strcmp(spt_entry->spt_data->proto, proto) == 0)
             return spt_entry->spt_data;
-    } 
+    }
     return NULL;
 }
 

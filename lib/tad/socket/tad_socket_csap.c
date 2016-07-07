@@ -2,7 +2,7 @@
  * @brief TAD Socket
  *
  * Traffic Application Domain Command Handler.
- * Socket CSAP support description structures. 
+ * Socket CSAP support description structures.
  *
  * Copyright (C) 2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -70,7 +70,7 @@ static csap_spt_type_t socket_csap_spt =
     .prepare_send_cb     = NULL,
     .write_cb            = tad_socket_write_cb,
     .shutdown_send_cb    = NULL,
-    
+
     .prepare_recv_cb     = NULL,
     .read_cb             = tad_socket_read_cb,
     .shutdown_recv_cb    = NULL,
@@ -84,9 +84,9 @@ static csap_spt_type_t socket_csap_spt =
  * Command Handler.
  *
  * @return Status code.
- */ 
+ */
 te_errno
 csap_support_socket_register(void)
-{ 
+{
     return csap_spt_add(&socket_csap_spt);
 }

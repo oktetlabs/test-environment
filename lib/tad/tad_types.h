@@ -71,7 +71,7 @@ typedef enum {
 
 
 /**
- * Type of node in arithmetical expression presentation tree 
+ * Type of node in arithmetical expression presentation tree
  */
 typedef enum {
     TAD_EXPR_CONSTANT = 0, /**< Constant value */
@@ -91,15 +91,15 @@ typedef struct tad_int_expr_t tad_int_expr_t;
 
 /**
  * Struct for arithmetic (and boolean?) expressions in traffic operations
- * Expression is constructed with for arithmetical operations from 
+ * Expression is constructed with for arithmetical operations from
  * constants and "variables", which are references to iterated artuments.
  */
-struct tad_int_expr_t { 
+struct tad_int_expr_t {
     tad_expr_node_type  n_type; /**< node type */
-    size_t              d_len;  /**< length of data: 
+    size_t              d_len;  /**< length of data:
                                      - for node with operation is length
-                                       of array with operands. 
-                                     - for constant node is 'sizeof' 
+                                       of array with operands.
+                                     - for constant node is 'sizeof'
                                        integer variable, may be 4 or 8.  */
     union {
         int32_t val_i32;        /**< int 32 value */
@@ -148,9 +148,9 @@ typedef struct {
 
 /*
  * Template argument iteration enums and structures
- */ 
+ */
 
-/** 
+/**
  * Type of iteration argument
  */
 typedef enum {
@@ -162,7 +162,7 @@ typedef enum {
 /**
  * Template argument value plain C presentation
  */
-struct tad_tmpl_arg_t { 
+struct tad_tmpl_arg_t {
     tad_tmpl_arg_type_t type;  /**< Type of argument */
 
     size_t       length;       /**< Length of argument data */
@@ -178,12 +178,12 @@ struct tad_tmpl_arg_t {
  */
 typedef enum {
     TAD_TMPL_ITER_INT_SEQ,   /**< explicit sequence of int values */
-    TAD_TMPL_ITER_INT_ASSOC, /**< explicit sequence of int values, 
+    TAD_TMPL_ITER_INT_ASSOC, /**< explicit sequence of int values,
                                     not iterated separately, but associated
                                     with previour iterator */
     TAD_TMPL_ITER_STR_SEQ,   /**< explicit sequence of string values */
     TAD_TMPL_ITER_FOR,       /**< simple for - arithmetical progression */
-} tad_tmpl_iter_type_t;   
+} tad_tmpl_iter_type_t;
 
 
 /** Default value of begin of 'simple-for' iterator */
@@ -199,12 +199,12 @@ typedef struct {
     union {
         struct {
             size_t length;     /**< Length of sequence */
-            int    last_index; /**< Index of last value, -1 means none */ 
+            int    last_index; /**< Index of last value, -1 means none */
             int   *ints;       /**< Array with sequence */
         } int_seq;             /**< Explicit integer sequence */
         struct {
             size_t length;     /**< Length of sequence */
-            int    last_index; /**< Index of last value, -1 means none */ 
+            int    last_index; /**< Index of last value, -1 means none */
             char **strings;    /**< Array with sequence */
         } str_seq;             /**< Explicit string sequence */
         struct {
@@ -216,8 +216,8 @@ typedef struct {
 } tad_tmpl_iter_spec_t;
 
 
-          
-/** 
+
+/**
  * Type of payload specification in traffic template.
  */
 typedef enum {
@@ -236,9 +236,9 @@ typedef enum {
  *
  * @param csap_id       Identifier of CSAP
  * @param layer         Numeric index of layer in CSAP type to be processed.
- * @param tmpl          ASN value with template. 
+ * @param tmpl          ASN value with template.
  *                      function should replace that field (which it should
- *                      generate) with #plain (in headers) or #bytes 
+ *                      generate) with #plain (in headers) or #bytes
  *                      (in payload) choice (IN/OUT)
  *
  * @return zero on success or error code.
@@ -248,8 +248,8 @@ typedef int (*tad_user_generate_method)(int csap_id, int layer,
 
 
 /**
- * Preprocessed payload specification, ready for iteration 
- * and binary generating. 
+ * Preprocessed payload specification, ready for iteration
+ * and binary generating.
  */
 typedef struct {
     tad_payload_type type;      /**< Type of payload spec */
@@ -258,7 +258,7 @@ typedef struct {
         struct {
             size_t   length;    /**< Payload length */
             uint8_t *data;      /**< Byte array */
-        } plain;                
+        } plain;
 
         struct {
             size_t   length;    /**< Value/mask length */
@@ -272,7 +272,7 @@ typedef struct {
             tad_data_unit_t     offset;
             tad_data_unit_t     length;
             tad_stream_callback func;
-        } stream; 
+        } stream;
 
         tad_user_generate_method func;
     };

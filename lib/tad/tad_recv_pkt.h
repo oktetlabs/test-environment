@@ -29,10 +29,10 @@
  */
 
 #ifndef __TE_TAD_RECV_PKT_H__
-#define __TE_TAD_RECV_PKT_H__ 
+#define __TE_TAD_RECV_PKT_H__
 
 #include "te_queue.h"
-#include "asn_usr.h" 
+#include "asn_usr.h"
 #include "tad_pkt.h"
 #include "tad_types.h"
 
@@ -52,7 +52,7 @@ typedef struct tad_recv_pkt_layer {
 } tad_recv_pkt_layer;
 
 /**
- * Element in queue of received packets. 
+ * Element in queue of received packets.
  */
 typedef struct tad_recv_pkt {
     TAILQ_ENTRY(tad_recv_pkt)   links;  /**< List links */

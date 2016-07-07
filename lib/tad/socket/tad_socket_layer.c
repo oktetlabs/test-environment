@@ -49,7 +49,7 @@ te_errno
 tad_socket_confirm_tmpl_cb(csap_p csap, unsigned int layer,
                            asn_value *layer_pdu, void **p_opaque)
 {
-    tad_socket_rw_data *spec_data = csap_get_rw_data(csap); 
+    tad_socket_rw_data *spec_data = csap_get_rw_data(csap);
 
     UNUSED(layer);
     UNUSED(layer_pdu);
@@ -70,7 +70,7 @@ tad_socket_confirm_tmpl_cb(csap_p csap, unsigned int layer,
 te_errno
 tad_socket_gen_bin_cb(csap_p csap, unsigned int layer,
                       const asn_value *tmpl_pdu, void *opaque,
-                      const tad_tmpl_arg_t *args, size_t arg_num, 
+                      const tad_tmpl_arg_t *args, size_t arg_num,
                       tad_pkts *sdus, tad_pkts *pdus)
 {
     UNUSED(csap);
@@ -96,7 +96,7 @@ tad_socket_match_bin_cb(csap_p           csap,
                         tad_pkt         *pdu,
                         tad_pkt         *sdu)
 {
-    tad_socket_rw_data *spec_data = csap_get_rw_data(csap); 
+    tad_socket_rw_data *spec_data = csap_get_rw_data(csap);
     te_errno            rc = 0;
     asn_value          *nds = NULL;
 
@@ -105,7 +105,7 @@ tad_socket_match_bin_cb(csap_p           csap,
 
     assert(csap_get_rw_layer(csap) == layer);
 
-    ENTRY(CSAP_LOG_FMT "type is %d", CSAP_LOG_ARGS(csap), 
+    ENTRY(CSAP_LOG_FMT "type is %d", CSAP_LOG_ARGS(csap),
           spec_data->data_tag);
 
     if ((csap->state & CSAP_STATE_RESULTS) &&
@@ -157,47 +157,47 @@ tad_socket_match_bin_cb(csap_p           csap,
 
         if (spec_data->wait_length > 0)
         {
-            int defect = spec_data->wait_length - 
+            int defect = spec_data->wait_length -
                          (spec_data->stored_length + pkt->len);
 
             if (spec_data->stored_buffer == NULL)
                 spec_data->stored_buffer =
                     malloc(spec_data->wait_length);
 
-            if (defect > 0) 
+            if (defect > 0)
             {
                 rc = TE_ETADLESSDATA;
                 INFO("%s(CSAP %d): less data, "
                      "wait %d, stored %d, get %d",
-                     __FUNCTION__, csap->id, 
+                     __FUNCTION__, csap->id,
                       spec_data->wait_length,
                       spec_data->stored_length,
                       pkt->len);
 
-                memcpy(spec_data->stored_buffer + 
-                       spec_data->stored_length, 
-                       pkt->data, pkt->len); 
-                spec_data->stored_length += pkt->len; 
+                memcpy(spec_data->stored_buffer +
+                       spec_data->stored_length,
+                       pkt->data, pkt->len);
+                spec_data->stored_length += pkt->len;
                 goto cleanup;
             }
             else if (defect == 0)
             {
                 INFO("%s(CSAP %d): got last data, "
                      "wait %d, stored %d, get %d",
-                     __FUNCTION__, csap->id, 
+                     __FUNCTION__, csap->id,
                       spec_data->wait_length,
                       spec_data->stored_length,
                       pkt->len);
-                memcpy(spec_data->stored_buffer + 
-                           spec_data->stored_length, 
-                       pkt->data, pkt->len); 
+                memcpy(spec_data->stored_buffer +
+                           spec_data->stored_length,
+                       pkt->data, pkt->len);
                 pld_data = spec_data->stored_buffer;
                 pld_len = spec_data->wait_length;
             }
-            else 
+            else
             {
                 ERROR("read data more then asked: "
-                      "want %d, stored %d, last get %d", 
+                      "want %d, stored %d, last get %d",
                       spec_data->wait_length,
                       spec_data->stored_length,
                       pkt->len);

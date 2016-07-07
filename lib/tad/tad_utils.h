@@ -248,7 +248,7 @@ extern int tad_data_unit_convert_by_label(const asn_value *pdu_val,
  * @param[in]  tag_value    ASN tag value of field, tag class is
  *                          assumed to be PRIVATE
  * @param[out] location     location for converted structure, should not
- *                          contain any 'data staff' - i.e. should be 
+ *                          contain any 'data staff' - i.e. should be
  *                          correctly filled or zeroed
  *
  * @return zero on success or error code.

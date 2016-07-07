@@ -48,16 +48,16 @@
 te_errno
 tad_snmp_gen_bin_cb(csap_p csap, unsigned int layer,
                     const asn_value *tmpl_pdu, void *opaque,
-                    const tad_tmpl_arg_t *args, size_t arg_num, 
+                    const tad_tmpl_arg_t *args, size_t arg_num,
                     tad_pkts *sdus, tad_pkts *pdus)
 {
-    int rc; 
+    int rc;
     int operation;
     int ucd_snmp_op;
     int num_var_bind;
     int i;
 
-    size_t operation_len = sizeof(int); 
+    size_t operation_len = sizeof(int);
 
     struct snmp_pdu *pdu;
     const asn_value *var_bind_list;
@@ -72,7 +72,7 @@ tad_snmp_gen_bin_cb(csap_p csap, unsigned int layer,
     rc = asn_read_value_field(tmpl_pdu, &operation, &operation_len, "type");
     if (rc != 0)
     {
-        ERROR("%s(CSAP %d) read operation type failed %r", 
+        ERROR("%s(CSAP %d) read operation type failed %r",
               __FUNCTION__, csap->id, rc);
         return rc;
     }
@@ -84,25 +84,25 @@ tad_snmp_gen_bin_cb(csap_p csap, unsigned int layer,
         case NDN_SNMP_MSG_GETNEXT: ucd_snmp_op = SNMP_MSG_GETNEXT; break;
         case NDN_SNMP_MSG_GETBULK: ucd_snmp_op = SNMP_MSG_GETBULK; break;
         case NDN_SNMP_MSG_SET:     ucd_snmp_op = SNMP_MSG_SET;     break;
-        case NDN_SNMP_MSG_TRAP1:   ucd_snmp_op = SNMP_MSG_TRAP;    break; 
+        case NDN_SNMP_MSG_TRAP1:   ucd_snmp_op = SNMP_MSG_TRAP;    break;
         case NDN_SNMP_MSG_TRAP2:   ucd_snmp_op = SNMP_MSG_TRAP2;   break;
         case NDN_SNMP_MSG_INFORM:  ucd_snmp_op = SNMP_MSG_INFORM;  break;
-        default: 
+        default:
             return TE_ETADWRONGNDS;
-    } 
+    }
     pdu = snmp_pdu_create(ucd_snmp_op);
     VERB("%s, snmp pdu created 0x%x", __FUNCTION__, pdu);
 
 
-    if (operation == NDN_SNMP_MSG_GETBULK) 
+    if (operation == NDN_SNMP_MSG_GETBULK)
     {
         int repeats;
         size_t r_len = sizeof(repeats);
 
         rc = asn_read_value_field(tmpl_pdu, &repeats, &r_len, "repeats");
-        if (rc != 0) 
+        if (rc != 0)
             pdu->max_repetitions = SNMP_CSAP_DEF_REPEATS;
-        else 
+        else
             pdu->max_repetitions = repeats;
 #ifdef SNMPDEBUG
         printf ("GETBULK on TA, repeats: %d\n", pdu->max_repetitions);
@@ -114,12 +114,12 @@ tad_snmp_gen_bin_cb(csap_p csap, unsigned int layer,
                             "variable-bindings");
     if (rc != 0)
     {
-        ERROR("%s(): get subvalue 'variable-bindings' list failed %r", 
+        ERROR("%s(): get subvalue 'variable-bindings' list failed %r",
               __FUNCTION__, rc);
         return rc;
     }
 
-    num_var_bind = asn_get_length(var_bind_list, ""); 
+    num_var_bind = asn_get_length(var_bind_list, "");
 
     for (i = 0; i < num_var_bind; i++)
     {
@@ -127,7 +127,7 @@ tad_snmp_gen_bin_cb(csap_p csap, unsigned int layer,
         oid        oid[MAX_OID_LEN];
         size_t     oid_len = MAX_OID_LEN;
 
-        if ((rc = asn_get_indexed(var_bind_list, &var_bind, i, NULL)) != 0) 
+        if ((rc = asn_get_indexed(var_bind_list, &var_bind, i, NULL)) != 0)
         {
             ERROR("Cannot get VarBind %d from PDU, rc %r", i, rc);
             break;
@@ -139,7 +139,7 @@ tad_snmp_gen_bin_cb(csap_p csap, unsigned int layer,
 
         switch (operation)
         {
-            case NDN_SNMP_MSG_GET:     
+            case NDN_SNMP_MSG_GET:
             case NDN_SNMP_MSG_GETNEXT:
             case NDN_SNMP_MSG_GETBULK:
                 if (snmp_add_null_var(pdu, oid, oid_len) == NULL)
@@ -149,8 +149,8 @@ tad_snmp_gen_bin_cb(csap_p csap, unsigned int layer,
                 }
                 break;
 
-            case NDN_SNMP_MSG_SET:   
-            case NDN_SNMP_MSG_TRAP1: 
+            case NDN_SNMP_MSG_SET:
+            case NDN_SNMP_MSG_TRAP1:
             case NDN_SNMP_MSG_TRAP2:
             case NDN_SNMP_MSG_INFORM:
             {
@@ -163,7 +163,7 @@ tad_snmp_gen_bin_cb(csap_p csap, unsigned int layer,
                 rc = asn_get_subvalue(var_bind, &value, "value");
                 if (rc != 0)
                     break;
-                
+
                 rc = asn_get_choice_value(value, &value, NULL, NULL);
                 if (rc != 0)
                     break;
@@ -178,19 +178,19 @@ tad_snmp_gen_bin_cb(csap_p csap, unsigned int layer,
 
                 rc = asn_read_value_field(value, buffer, &d_len, "");
                 if (rc != 0)
-                    break; 
+                    break;
 
                 val_name = asn_get_name(value);
                 if (val_name == NULL)
-                { 
+                {
                     rc = TE_EASNGENERAL;
                     break;
-                } 
-                snmp_pdu_add_variable(pdu, oid, oid_len, 
+                }
+                snmp_pdu_add_variable(pdu, oid, oid_len,
                                       snmp_asn_syntaxes[asn_get_tag(value)],
                                       buffer, d_len);
             }
-        } 
+        }
         if (rc != 0)
             break;
     }
@@ -220,7 +220,7 @@ tad_snmp_match_bin_cb(csap_p           csap,
                       tad_recv_pkt    *meta_pkt,
                       tad_pkt         *pdu,
                       tad_pkt         *sdu)
-{ 
+{
     struct snmp_pdu        *my_pdu;
     struct variable_list   *vars;
     asn_value              *snmp_msg = NULL;
@@ -260,7 +260,7 @@ tad_snmp_match_bin_cb(csap_p           csap,
         return 0;
     }
 
-    VERB("%s, layer %d, my_pdu 0x%x, my_pdu command: <%d>", 
+    VERB("%s, layer %d, my_pdu 0x%x, my_pdu command: <%d>",
          __FUNCTION__, layer, my_pdu, my_pdu->command);
 
     switch (my_pdu->command)
@@ -331,7 +331,7 @@ tad_snmp_match_bin_cb(csap_p           csap,
 
     CHECK_INT_FIELD("request-id", my_pdu->reqid);
     CHECK_INT_FIELD("err-status", my_pdu->errstat);
-    CHECK_INT_FIELD("err-index", my_pdu->errindex); 
+    CHECK_INT_FIELD("err-index", my_pdu->errindex);
 
     if (my_pdu->errstat || my_pdu->errindex)
         RING("in %s, errstat %d, errindex %d",
@@ -340,8 +340,8 @@ tad_snmp_match_bin_cb(csap_p           csap,
     if (type == NDN_SNMP_MSG_TRAP1)
     {
         CHECK_FIELD("enterprise", my_pdu->enterprise, my_pdu->enterprise_length);
-        CHECK_INT_FIELD("gen-trap", my_pdu->trap_type); 
-        CHECK_INT_FIELD("spec-trap", my_pdu->specific_type); 
+        CHECK_INT_FIELD("gen-trap", my_pdu->trap_type);
+        CHECK_INT_FIELD("spec-trap", my_pdu->specific_type);
         CHECK_FIELD("agent-addr", my_pdu->agent_addr, sizeof(my_pdu->agent_addr));
     }
 
@@ -368,12 +368,12 @@ tad_snmp_match_bin_cb(csap_p           csap,
             break;
         }
 
-        pat_vb_num = asn_get_length(pat_vb_list, ""); 
+        pat_vb_num = asn_get_length(pat_vb_list, "");
         VERB("%s: number of varbinds in pattern %d",
              __FUNCTION__, pat_vb_num);
 
         for (i = 0; i < pat_vb_num; i++)
-        { 
+        {
             asn_value *pat_var_bind;
             const asn_value *pat_vb_value;
             const oid       *pat_oid;
@@ -386,7 +386,7 @@ tad_snmp_match_bin_cb(csap_p           csap,
             {
                 WARN("SNMP match: get of var bind pattern fails %r", rc);
                 break;
-            } 
+            }
 
             rc = asn_get_field_data(pat_var_bind, &pat_oid,
                                     "name.#plain");
@@ -397,15 +397,15 @@ tad_snmp_match_bin_cb(csap_p           csap,
                 rc = 0;
                 continue;
             }
-            pat_oid_len = asn_get_length(pat_var_bind, "name.#plain"); 
+            pat_oid_len = asn_get_length(pat_var_bind, "name.#plain");
 
             for (vars = my_pdu->variables;
                  vars != NULL;
                  vars = vars->next_variable)
             {
-                VERB("try to match varbind of type %d", 
+                VERB("try to match varbind of type %d",
                      vars->type);
-                if (pat_oid_len == vars->name_length && 
+                if (pat_oid_len == vars->name_length &&
                     memcmp(pat_oid, vars->name,
                            pat_oid_len * sizeof(oid)) == 0)
                     break;
@@ -438,7 +438,7 @@ tad_snmp_match_bin_cb(csap_p           csap,
             else if (rc != 0)
                 break;
 
-            pat_value_syntax = asn_get_syntax(pat_vb_value, ""); 
+            pat_value_syntax = asn_get_syntax(pat_vb_value, "");
 
             rc = asn_get_field_data(pat_vb_value, &pat_vb_val_data, "");
             if (rc != 0)
@@ -452,10 +452,10 @@ tad_snmp_match_bin_cb(csap_p           csap,
 
             switch (vars->type)
             {
-                case ASN_INTEGER:   
-                case ASN_COUNTER:  
-                case ASN_UNSIGNED:  
-                case ASN_TIMETICKS: 
+                case ASN_INTEGER:
+                case ASN_COUNTER:
+                case ASN_UNSIGNED:
+                case ASN_TIMETICKS:
                     if (pat_value_syntax != INTEGER &&
                         pat_value_syntax != ENUMERATED)
                     {
@@ -463,16 +463,16 @@ tad_snmp_match_bin_cb(csap_p           csap,
                         rc = TE_ETADNOTMATCH;
                         break;
                     }
-                    VERB("SNMP VB match, got int val %d, pat %d", 
+                    VERB("SNMP VB match, got int val %d, pat %d",
                          *(vars->val.integer), *((int *)pat_vb_val_data));
-                    if (*((int *)pat_vb_val_data) != 
+                    if (*((int *)pat_vb_val_data) !=
                         *(vars->val.integer))
                         rc = TE_ETADNOTMATCH;
                     break;
 
-                case ASN_IPADDRESS: 
-                case ASN_OCTET_STR: 
-                case ASN_OBJECT_ID: 
+                case ASN_IPADDRESS:
+                case ASN_OCTET_STR:
+                case ASN_OBJECT_ID:
                     if (vars->type == ASN_OBJECT_ID)
                     {
                         if (pat_value_syntax != OID)
@@ -486,26 +486,26 @@ tad_snmp_match_bin_cb(csap_p           csap,
                     {
                         RING("SNMP VB match, got octet str syntax, rc %r",
                              rc);
-                    } 
-                    else 
+                    }
+                    else
                     {
                         size_t vb_data_len;
 
                         vb_data_len = asn_get_length(pat_vb_value, "");
 
                         if (pat_value_syntax == OID)
-                            vb_data_len *= 4; 
+                            vb_data_len *= 4;
 
                         if (vb_data_len != vars->val_len)
                         {
                             RING("SNMP VB match, length not match"
-                                 "got len %d, pat len %d", 
+                                 "got len %d, pat len %d",
                                  vars->val_len, vb_data_len);
                             rc = TE_ETADNOTMATCH;
                             break;
                         }
 
-                        if (memcmp(pat_vb_val_data, vars->val.string, 
+                        if (memcmp(pat_vb_val_data, vars->val.string,
                                    vb_data_len) != 0)
                         {
 #if 0
@@ -542,7 +542,7 @@ tad_snmp_match_bin_cb(csap_p           csap,
          vars = vars->next_variable)
     {
         asn_value  *var_bind = NULL;
-        char        os_choice[100]; 
+        char        os_choice[100];
 
         VERB("%s(): BEGIN of LOOP rc %r", __FUNCTION__, rc);
 
@@ -552,7 +552,7 @@ tad_snmp_match_bin_cb(csap_p           csap,
             rc = TE_RC(TE_TAD_CSAP, TE_ENOMEM);
             break;
         }
-        asn_write_value_field(var_bind, vars->name, vars->name_length, 
+        asn_write_value_field(var_bind, vars->name, vars->name_length,
                               "name.#plain");
 
         if (0)
@@ -569,51 +569,51 @@ tad_snmp_match_bin_cb(csap_p           csap,
         strcpy (os_choice, "value.#plain.");
         switch (vars->type)
         {
-            case ASN_INTEGER:   
+            case ASN_INTEGER:
                 strcat(os_choice, "#simple.#integer-value");
                 break;
-            case ASN_OCTET_STR: 
+            case ASN_OCTET_STR:
                 strcat(os_choice, "#simple.#string-value");
                 break;
-            case ASN_OBJECT_ID: 
+            case ASN_OBJECT_ID:
                 strcat(os_choice, "#simple.#objectID-value");
                 break;
 
-            case ASN_IPADDRESS: 
+            case ASN_IPADDRESS:
                 strcat(os_choice, "#application-wide.#ipAddress-value");
                 break;
-            case ASN_COUNTER:  
+            case ASN_COUNTER:
                 strcat(os_choice, "#application-wide.#counter-value");
                 break;
-            case ASN_UNSIGNED:  
+            case ASN_UNSIGNED:
                 strcat(os_choice, "#application-wide.#unsigned-value");
                 break;
-            case ASN_TIMETICKS: 
+            case ASN_TIMETICKS:
                 strcat(os_choice, "#application-wide.#timeticks-value");
                 break;
 #if 0
-            case ASN_OCTET_STR: 
+            case ASN_OCTET_STR:
                 strcat(os_choice, "#application-wide.#arbitrary-value");
                 break;
-#ifdef OPAQUE_SPECIAL_TYPES 
-            case ASN_OPAQUE_U64: 
+#ifdef OPAQUE_SPECIAL_TYPES
+            case ASN_OPAQUE_U64:
 #else
             case ASN_OCTET_STR:
 #endif
-                                
+
                 strcat(os_choice, "#application-wide.#big-counter-value");
                 break;
-            case ASN_UNSIGNED:  
+            case ASN_UNSIGNED:
                 strcat(os_choice, "#application-wide.#unsigned-value");
                 break;
 #endif
-            case SNMP_NOSUCHOBJECT: 
+            case SNMP_NOSUCHOBJECT:
                 strcpy(os_choice, "noSuchObject"); /* overwrite "value..." */
                 break;
-            case SNMP_NOSUCHINSTANCE: 
+            case SNMP_NOSUCHINSTANCE:
                 strcpy(os_choice, "noSuchInstance"); /* overwrite "value..." */
                 break;
-            case SNMP_ENDOFMIBVIEW: 
+            case SNMP_ENDOFMIBVIEW:
                 strcpy(os_choice, "endOfMibView"); /* overwrite "value..." */
                 break;
             default:
@@ -632,7 +632,7 @@ tad_snmp_match_bin_cb(csap_p           csap,
                                        vars->val_len :
                                        vars->val_len / sizeof(oid),
                                    os_choice);
-        
+
         VERB("%s():  varbind value write: %r", __FUNCTION__, rc);
         if (rc != 0)
             break;
@@ -661,13 +661,13 @@ tad_snmp_match_bin_cb(csap_p           csap,
 /* See description in tad_snmp_impl.h */
 te_errno
 tad_snmp_gen_pattern_cb(csap_p csap, unsigned int layer,
-                        const asn_value *tmpl_pdu, 
+                        const asn_value *tmpl_pdu,
                         asn_value **ptrn_pdu)
-{ 
+{
     UNUSED(tmpl_pdu);
 
     VERB("%s callback, CSAP # %d, layer %d",
-         __FUNCTION__, csap->id, layer); 
+         __FUNCTION__, csap->id, layer);
 
     assert(ptrn_pdu != NULL);
     if ((*ptrn_pdu = asn_init_value(ndn_snmp_message)) == NULL)
@@ -696,7 +696,7 @@ tad_snmp_inform_response(csap_p csap, const char *usr_param,
 {
     struct snmp_pdu     *pdu = (struct snmp_pdu *)pkt;
     struct snmp_pdu     *reply;
-    
+
     UNUSED(usr_param);
 
     if (pkt_len < sizeof(struct snmp_pdu))

@@ -101,8 +101,8 @@
 #define TAD_WRITE_RETRIES           (128)
 
 /**
- * Default timeout for waiting write possibility. This macro should 
- * be used only for initialization of 'struct timeval' variables. 
+ * Default timeout for waiting write possibility. This macro should
+ * be used only for initialization of 'struct timeval' variables.
  */
 #define TAD_WRITE_TIMEOUT_DEFAULT   { 1, 0 }
 
@@ -129,7 +129,7 @@ typedef struct tad_eth_sap_data {
 } tad_eth_sap_data;
 
 #ifdef __CYGWIN__
-void 
+void
 check_win_tso_behaviour_and_modify_frame(const char *pkt,
                                          uint32_t len);
 #endif
@@ -163,7 +163,7 @@ close_socket(int *sock)
 #else
 /**
  * Struct to pass to pcap_dispatch() as the last parameter
- */ 
+ */
 typedef struct pkt_len_pkt {
     tad_pkt *pkt;     /**< Frame to be sent */
     size_t  *pkt_len; /**< Location for real packet length */
@@ -176,8 +176,8 @@ typedef struct pkt_len_pkt {
  *  @param header  Location of pcap_pkthdr
  *  @param packet  Location of the first packet
  *
- */ 
-static void 
+ */
+static void
 pkt_handl(u_char *ptr, const struct pcap_pkthdr *header,
           const u_char *packet)
 {
@@ -187,7 +187,7 @@ pkt_handl(u_char *ptr, const struct pcap_pkthdr *header,
 
     if (header->len != pktlen)
         WARN("Frame has been truncated");
-    
+
 #ifdef __CYGWIN__
     check_win_tso_behaviour_and_modify_frame(packet, header->len);
 #endif
@@ -243,7 +243,7 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
 #endif
     te_errno            rc;
 
-    if (ifname == NULL || sap == NULL) 
+    if (ifname == NULL || sap == NULL)
     {
         ERROR("%s(): Invalid arguments", __FUNCTION__);
 #ifdef USE_PF_PACKET
@@ -298,7 +298,7 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
           {
             sscanf(ifname, "ef%d", &efindex);
             ef_type = 1;
-          } 
+          }
           else
           {
             sscanf(ifname, "ef%d.%d", &efindex, &vlan);
@@ -316,7 +316,7 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
             if (ef_type == 2)
             {
                 /* Have already made filename above */
-            } 
+            }
             else
             {
                 if (ef_type == 1)
@@ -410,7 +410,7 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
 #else
     data->in = data->out = NULL;
 #endif
-    
+
 #ifndef __CYGWIN__
     strcpy(sap->name, ifname);
 #endif
@@ -442,7 +442,7 @@ tad_eth_sap_send_open(tad_eth_sap *sap, unsigned int mode)
 #endif
 
 #ifdef USE_PF_PACKET
-    /* 
+    /*
      * Create PF_PACKET socket:
      *  - type: SOCK_RAW - full control over Ethernet header
      *  - protocol: 0 - do not receive any packets
@@ -460,7 +460,7 @@ tad_eth_sap_send_open(tad_eth_sap *sap, unsigned int mode)
      * Set send buffer size.
      * TODO: reasonable size of send buffer to be investigated.
      */
-    buf_size = 0x100000; 
+    buf_size = 0x100000;
     if (setsockopt(data->out, SOL_SOCKET, SO_SNDBUF,
                    &buf_size, sizeof(buf_size)) < 0)
     {
@@ -469,7 +469,7 @@ tad_eth_sap_send_open(tad_eth_sap *sap, unsigned int mode)
         goto error_exit;
     }
 
-    /* 
+    /*
      * Bind PF_PACKET socket:
      *  - sll_protocol: 0 - do not receive any packets
      *  - sll_hatype. sll_pkttype, sll_halen, sll_addr are not used for
@@ -487,7 +487,7 @@ tad_eth_sap_send_open(tad_eth_sap *sap, unsigned int mode)
         goto error_exit;
     }
 #else
-    /* 
+    /*
      *  Obtain a packet capture descriptor
      */
     if ((data->out = pcap_open_live(sap->name, TAD_ETH_SAP_SNAP_LEN,
@@ -536,7 +536,7 @@ tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt)
     unsigned char      *packet_data = NULL, *cur_data = NULL;
     int                 seg;
 #endif
-    
+
     assert(sap != NULL);
     data = sap->data;
     assert(data != NULL);
@@ -603,8 +603,8 @@ tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt)
          retries++)
     {
 #ifndef __CYGWIN__
-        struct timeval timeout = TAD_WRITE_TIMEOUT_DEFAULT; 
-    
+        struct timeval timeout = TAD_WRITE_TIMEOUT_DEFAULT;
+
         FD_ZERO(&write_set);
         FD_SET(fd, &write_set);
 
@@ -627,7 +627,7 @@ tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt)
             {
                 case TE_ENOBUFS:
                 {
-                    /* 
+                    /*
                      * It seems that 0..127 microseconds is enough
                      * to hope that buffers will be cleared and
                      * does not fall down performance.
@@ -639,11 +639,11 @@ tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt)
                 }
 
                 default:
-                    ERROR("%s(CSAP %d): internal error %r, socket %d", 
+                    ERROR("%s(CSAP %d): internal error %r, socket %d",
                           __FUNCTION__, sap->csap->id, rc, fd);
                     return rc;
             }
-        } 
+        }
 #else /* !__CYGWIN */
         if (0 == pcap_sendpacket(data->out, packet_data, pkt->segs_len))
         {
@@ -667,8 +667,8 @@ tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt)
         return TE_RC(TE_TAD_CSAP, TE_ENOBUFS);
     }
 
-    F_VERB("CSAP #%d, system write return %d", 
-            sap->csap->id, ret_val); 
+    F_VERB("CSAP #%d, system write return %d",
+            sap->csap->id, ret_val);
 
     if (ret_val < 0)
         return TE_OS_RC(TE_TAD_CSAP, errno);
@@ -682,10 +682,10 @@ tad_eth_sap_send_close(tad_eth_sap *sap)
 {
     tad_eth_sap_data   *data;
     fd_set              write_set;
-    struct timeval      timeout = TAD_WRITE_TIMEOUT_DEFAULT; 
+    struct timeval      timeout = TAD_WRITE_TIMEOUT_DEFAULT;
     int                 ret_val;
     int                 fd;
-    
+
     assert(sap != NULL);
     data = sap->data;
     assert(data != NULL);
@@ -767,7 +767,7 @@ tad_eth_sap_recv_open(tad_eth_sap *sap, unsigned int mode)
 #endif
 
 #ifdef USE_PF_PACKET
-    /* 
+    /*
      * Create PF_PACKET socket:
      *  - type: SOCK_RAW - full control over Ethernet header
      *  - protocol: 0 - receive nothing before bind to interface
@@ -793,7 +793,7 @@ tad_eth_sap_recv_open(tad_eth_sap *sap, unsigned int mode)
      * Set receive buffer size.
      * TODO: reasonable size of receive buffer to be investigated.
      */
-    buf_size = 0x100000; 
+    buf_size = 0x100000;
     if (setsockopt(data->in, SOL_SOCKET, SO_RCVBUF,
                    &buf_size, sizeof(buf_size)) < 0)
     {
@@ -815,12 +815,12 @@ tad_eth_sap_recv_open(tad_eth_sap *sap, unsigned int mode)
         {
             rc = TE_OS_RC(TE_TAD_PF_PACKET, errno);
             ERROR("%s(): setsockopt: PACKET_ADD_MEMBERSHIP failed: %r",
-                  __FUNCTION__, rc); 
+                  __FUNCTION__, rc);
             goto error_exit;
         }
     }
 
-    /* 
+    /*
      * Bind PF_PACKET socket:
      *  - sll_protocol: ETH_P_ALL - receive everything
      *  - sll_hatype. sll_pkttype, sll_halen, sll_addr are not used for
@@ -1094,7 +1094,7 @@ tad_eth_sap_recv(tad_eth_sap *sap, unsigned int timeout,
                tv.tv_usec);
         return TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
     }
-    
+
     return 0;
 #endif
 }
@@ -1104,7 +1104,7 @@ te_errno
 tad_eth_sap_recv_close(tad_eth_sap *sap)
 {
     tad_eth_sap_data *data;
-    
+
     assert(sap != NULL);
     data = sap->data;
     assert(data != NULL);
@@ -1183,7 +1183,7 @@ inline int
 get_ip_total_len(const char *pkt, uint16_t **field)
 {
     char *t = pkt;
-    
+
     if (!IS_VLAN_FRAME(t))
     {
         t += 12;
@@ -1192,33 +1192,33 @@ get_ip_total_len(const char *pkt, uint16_t **field)
     {
         t += 16;
     }
-    
+
     *field = (uint16_t *) t;
     if (**field == PROTO_TYPE_IP)
     {
         *field += 2;
         return 0;
-    } 
+    }
     return -1;
 }
 
 /**
  * Detects Windows TSO behaviour when the total length field of the
- * IP header is set to zero for the packets which are expcted to be 
+ * IP header is set to zero for the packets which are expcted to be
  * segmentated. Sets the field to a meaningful value.
- * 
+ *
  *  @param  pkt Location of the packet
  *  @param  len The actual packet length
  * */
 
-void 
+void
 check_win_tso_behaviour_and_modify_frame(const char *pkt, uint32_t len)
 {
     uint16_t*   ip_tot_len;
-    
-    if ((get_ip_total_len(pkt, &ip_tot_len) == 0) && (*ip_tot_len == 0)) 
+
+    if ((get_ip_total_len(pkt, &ip_tot_len) == 0) && (*ip_tot_len == 0))
     {
-        *ip_tot_len = IS_VLAN_FRAME(pkt) ? ntohs(len - ETH_VLAN_HDR) : 
+        *ip_tot_len = IS_VLAN_FRAME(pkt) ? ntohs(len - ETH_VLAN_HDR) :
                                           ntohs(len - ETH_STD_HDR);
     }
 }

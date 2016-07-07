@@ -2,27 +2,27 @@
 
 #include "tad_ch_impl.h"
 
-int 
+int
 main()
 {
     int id, id2;
     csap_p cp;
 
-    csap_id_init(); 
-    id = csap_create("first.low"); 
+    csap_id_init();
+    id = csap_create("first.low");
     if (id == 0)
     {
         fprintf (stderr, "CSAP was not created!\n");
         return 1;
     }
     printf("first csap id: %d\n", id);
-    id = csap_create("second.low"); 
+    id = csap_create("second.low");
     printf("second csap id: %d\n", id);
-    id2 = csap_create("third.low"); 
+    id2 = csap_create("third.low");
     printf("third csap id: %d\n", id2);
 
     cp = csap_find(id);
-    printf ("ID: %d, up proto: %s, low proto: %s, depth: %d\n", 
+    printf ("ID: %d, up proto: %s, low proto: %s, depth: %d\n",
             cp->id, cp->proto[0], cp->proto[1], cp->depth);
     csap_destroy (id);
     cp = csap_find(id);
@@ -41,7 +41,7 @@ main()
     id2 = csap_create("some.low");
 
 /* This test checks implementation specific hint only! */
-    if (id2 != id) 
+    if (id2 != id)
     {
         fprintf (stderr, "WARNING: wrong numeration of CSAPs\n");
     }

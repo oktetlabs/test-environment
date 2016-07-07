@@ -77,7 +77,7 @@
 /**
  * iSCSI layer read/write data
  */
-typedef struct tad_iscsi_rw_data { 
+typedef struct tad_iscsi_rw_data {
     int     socket;
 } tad_iscsi_rw_data;
 
@@ -88,7 +88,7 @@ tad_iscsi_rw_init_cb(csap_p csap)
 {
     te_errno            rc;
     int32_t             int32_val;
-    tad_iscsi_rw_data  *rw_data; 
+    tad_iscsi_rw_data  *rw_data;
 
 
     rw_data = calloc(1, sizeof(*rw_data));
@@ -100,7 +100,7 @@ tad_iscsi_rw_init_cb(csap_p csap)
     if ((rc = asn_read_int32(csap->layers[csap_get_rw_layer(csap)].nds,
                              &int32_val, "socket")) != 0)
     {
-        ERROR("%s(): asn_read_int32() failed for 'socket': %r", 
+        ERROR("%s(): asn_read_int32() failed for 'socket': %r",
               __FUNCTION__, rc);
         return TE_RC(TE_TAD_CSAP, rc);
     }
@@ -113,13 +113,13 @@ tad_iscsi_rw_init_cb(csap_p csap)
 te_errno
 tad_iscsi_rw_destroy_cb(csap_p csap)
 {
-    tad_iscsi_rw_data *rw_data; 
+    tad_iscsi_rw_data *rw_data;
 
-    rw_data = csap_get_rw_data(csap); 
+    rw_data = csap_get_rw_data(csap);
     if (rw_data == NULL)
         return 0;
 
-    csap_set_rw_data(csap, NULL); 
+    csap_set_rw_data(csap, NULL);
 
     close(rw_data->socket);
 
@@ -196,20 +196,20 @@ tad_iscsi_read_cb(csap_p csap, unsigned int timeout,
         FD_ZERO(&rset);
         FD_SET(fd, &rset);
 
-        ret = select(fd + 1, &rset, NULL, NULL, &tv); 
+        ret = select(fd + 1, &rset, NULL, NULL, &tv);
 
-        INFO("%s(CSAP %d): select on fd %d ret %d", 
+        INFO("%s(CSAP %d): select on fd %d ret %d",
              __FUNCTION__, csap->id, fd, ret);
 
         if (ret > 0)
         {
             ret = read(fd, seg->data_ptr, len);
-            INFO("%s(CSAP %d): read ret %d", 
+            INFO("%s(CSAP %d): read ret %d",
                  __FUNCTION__, csap->id, ret);
 
             if (ret == 0)
             {
-                INFO(CSAP_LOG_FMT "Peer closed connection", 
+                INFO(CSAP_LOG_FMT "Peer closed connection",
                      CSAP_LOG_ARGS(csap));
                 return TE_RC(TE_TAD_CSAP, TE_ETADENDOFDATA);
             }
@@ -221,7 +221,7 @@ tad_iscsi_read_cb(csap_p csap, unsigned int timeout,
             else
             {
                 rc = te_rc_os2te(errno);
-                WARN("%s(CSAP %d) error %r on read", __FUNCTION__, 
+                WARN("%s(CSAP %d) error %r on read", __FUNCTION__,
                      csap->id, rc);
                 return TE_RC(TE_TAD_CSAP, rc);
             }
@@ -277,13 +277,13 @@ tad_iscsi_write_cb(csap_p csap, const tad_pkt *pkt)
     tad_iscsi_dump_iscsi_pdu(buf, ISCSI_DUMP_SEND);
 
     switch (layer_data->send_mode)
-    { 
+    {
         case ISCSI_SEND_USUAL:
             do {
                 sent = send(fd, buf + total, buf_len - total, MSG_DONTWAIT);
                 if (sent < 0)
                 {
-                    rc = te_rc_os2te(errno); 
+                    rc = te_rc_os2te(errno);
                     if (rc == TE_EAGAIN)
                     {
                         struct timeval tv = {3, 0};
@@ -300,17 +300,17 @@ tad_iscsi_write_cb(csap_p csap, const tad_pkt *pkt)
                     }
                     else
                         break;
-                } 
+                }
                 else
-                { 
+                {
                     total += sent;
-                } 
+                }
             } while (total != buf_len);
             break;
 
         case ISCSI_SEND_LAST:
             if ((rc = tad_tcp_push_fin(fd, buf, buf_len)) == 0)
-            { 
+            {
                 layer_data->send_mode = ISCSI_SEND_INVALID;
                 sent = buf_len;
             }
@@ -327,10 +327,10 @@ tad_iscsi_write_cb(csap_p csap, const tad_pkt *pkt)
     if (rc != 0)
     {
         WARN("%s(CSAP %u) error %r on read", __FUNCTION__, csap->id, rc);
-    } 
+    }
     else
     {
-        INFO("%s(CSAP %u) written %d bytes to fd %d", 
+        INFO("%s(CSAP %u) written %d bytes to fd %d",
              __FUNCTION__, csap->id, (int)total, fd);
     }
 

@@ -86,9 +86,9 @@ csap_id_init(void)
 #if SIMPLE_CSAP_IDS
     csap_id_start = CSAP_INVALID_HANDLE + 1;
 #else
-    /* 
+    /*
      * Sometimes there was necessity to 'almost unique' CSAP IDs on
-     * all TA 
+     * all TA
      */
     unsigned int    seed;
     unsigned int    i;
@@ -103,7 +103,7 @@ csap_id_init(void)
         csap_id_start = random();
     } while (csap_id_start == CSAP_INVALID_HANDLE);
 
-    INFO("Initialized with seed %u, start position is %u", 
+    INFO("Initialized with seed %u, start position is %u",
          seed, csap_id_start);
 #endif
 }
@@ -113,7 +113,7 @@ void
 csap_id_destroy(void)
 {
     csap_id_entry  *entry;
-    
+
     while ((entry = SLIST_FIRST(&csap_id_db)) != NULL)
     {
         WARN("Destroy CSAP IDs database entry: ID=%u PTR=%p",
@@ -140,7 +140,7 @@ csap_id_new(void *ptr)
     }
 
     for (curr = SLIST_FIRST(&csap_id_db), prev = NULL,
-             new_id = csap_id_start; 
+             new_id = csap_id_start;
          (curr != NULL) && (new_id >= curr->id);
          prev = curr, curr = SLIST_NEXT(curr, links))
     {

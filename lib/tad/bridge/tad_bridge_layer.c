@@ -60,7 +60,7 @@ te_errno
 tad_bridge_confirm_tmpl_cb(csap_p csap, unsigned int layer,
                            asn_value *layer_pdu, void **p_opaque)
 {
-    int    rc = 0; 
+    int    rc = 0;
     char   buffer[8]; /* maximum length of field in Config BPDU*/
 
     UNUSED(csap);
@@ -107,7 +107,7 @@ tad_bridge_confirm_tmpl_cb(csap_p csap, unsigned int layer,
         VERB("bridge confirm, get choice failed %x\n", rc);
         return rc;
     }
-    if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL || 
+    if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL ||
         strcmp(buffer, "cfg") == 0)
     {
         rc = 0;
@@ -123,7 +123,7 @@ tad_bridge_confirm_tmpl_cb(csap_p csap, unsigned int layer,
         CHECK_FIELD("content.#cfg.forward-delay", buffer, 2);
     }
     VERB("bridge confirm return, %x\n", rc);
-    
+
 #undef CHECK_FIELD
     return rc;
 }
@@ -142,13 +142,13 @@ tad_bridge_confirm_ptrn_cb(csap_p csap, unsigned int layer,
     VERB("Noting to do with RX CSAP\n");
 
     return 0;
-} 
+}
 
 
-/* Return integer, respective to first two bytes in passed array, 
+/* Return integer, respective to first two bytes in passed array,
    bytes are read in network byte order, returned result in the host byte order
 */
-static inline uint16_t 
+static inline uint16_t
 array2_to_int(uint8_t *a)
 {
     uint16_t retval = (((uint16_t)(a[0])) << 8) + ((uint16_t)(a[1]));
@@ -158,7 +158,7 @@ array2_to_int(uint8_t *a)
 te_errno
 tad_bridge_gen_bin_cb(csap_p csap, unsigned int layer,
                       const asn_value *tmpl_pdu, void *opaque,
-                      const tad_tmpl_arg_t *args, size_t arg_num, 
+                      const tad_tmpl_arg_t *args, size_t arg_num,
                       tad_pkts *sdus, tad_pkts *pdus)
 {
     int rc;
@@ -167,14 +167,14 @@ tad_bridge_gen_bin_cb(csap_p csap, unsigned int layer,
     uint8_t *data;
     uint8_t *p;
 
-    ndn_stp_bpdu_t bridge_pdu; 
+    ndn_stp_bpdu_t bridge_pdu;
 
 
     UNUSED(csap);
     UNUSED(layer);
     UNUSED(opaque);
-    UNUSED(args); 
-    UNUSED(arg_num); 
+    UNUSED(args);
+    UNUSED(arg_num);
     UNUSED(sdus);
     UNUSED(pdus);
 
@@ -184,19 +184,19 @@ tad_bridge_gen_bin_cb(csap_p csap, unsigned int layer,
 
     F_VERB("ndn_bpdu_asn_to_plain return %r", rc);
 
-    if (rc) 
+    if (rc)
         return rc;
 
     if ((data = malloc(frame_size)) == NULL)
     {
         return TE_ENOMEM; /* can't allocate memory for frame data */
     }
-    
+
     /* filling with zeroes */
-    memset(data, 0, frame_size); 
+    memset(data, 0, frame_size);
     p = data;
 
-    /* fill LLC */ 
+    /* fill LLC */
 
     *p++ = LLC_BPDU_DSAP_SSAP;
     *p++ = LLC_BPDU_DSAP_SSAP;
@@ -204,7 +204,7 @@ tad_bridge_gen_bin_cb(csap_p csap, unsigned int layer,
 
     /* BPDU itself */
     *(uint16_t *)p = (uint16_t)0;
-    p += 2; 
+    p += 2;
     *p++ = bridge_pdu.version;
     *p++ = bridge_pdu.bpdu_type;
     if (bridge_pdu.bpdu_type == STP_BPDU_CFG_TYPE)
@@ -236,14 +236,14 @@ tad_bridge_gen_bin_cb(csap_p csap, unsigned int layer,
         *(uint16_t *)p = htons(bridge_pdu.cfg.fwd_delay);
         p += 2;
         VERB(   "BDPU frame to be sent:\n rpc %d, port_id 0x%x,"
-                " root_id/prio 0x%x; bridge_id/prio: 0x%x", 
+                " root_id/prio 0x%x; bridge_id/prio: 0x%x",
                 bridge_pdu.cfg.root_path_cost,
                 bridge_pdu.cfg.port_id,
                 (int)array2_to_int(bridge_pdu.cfg.root_id),
                 (int)array2_to_int(bridge_pdu.cfg.bridge_id)
                );
 
-    } 
+    }
 
 #if 0
     pkts->data = data;
@@ -269,7 +269,7 @@ tad_bridge_match_bin_cb(csap_p csap,
     uint8_t *data;
     int      f_len;
     asn_value *bridge_pdu = NULL;
-   
+
     UNUSED(csap);
     UNUSED(layer);
     UNUSED(ptrn_pdu);
@@ -277,9 +277,9 @@ tad_bridge_match_bin_cb(csap_p csap,
     UNUSED(meta_pkt);
     UNUSED(pdu);
     UNUSED(sdu);
- 
+
 #if 0
-    data = pkt->data; 
+    data = pkt->data;
 
     /* TODO: check LLC header */
 
@@ -293,7 +293,7 @@ tad_bridge_match_bin_cb(csap_p csap,
 
     f_len = 0;
 
-    /* match of BPDUs should not be very fast, convert from ASN pattern 
+    /* match of BPDUs should not be very fast, convert from ASN pattern
      * to data_unit structure just in match callback. */
 
 #define MATCH_FIELD(len_, label_) \
@@ -308,19 +308,19 @@ tad_bridge_match_bin_cb(csap_p csap,
         }                                                               \
     } while (0)
 
-        
+
     MATCH_FIELD(2, "proto-id");
-    MATCH_FIELD(1, "version-id"); 
-    MATCH_FIELD(1, "bpdu-type"); 
-    MATCH_FIELD(1, "content.#cfg.flags"); 
-    MATCH_FIELD(8, "content.#cfg.root-id"); 
-    MATCH_FIELD(4, "content.#cfg.root-path-cost"); 
-    MATCH_FIELD(8, "content.#cfg.bridge-id"); 
-    MATCH_FIELD(2, "content.#cfg.port-id"); 
-    MATCH_FIELD(2, "content.#cfg.message-age"); 
-    MATCH_FIELD(2, "content.#cfg.max-age"); 
-    MATCH_FIELD(2, "content.#cfg.hello-time"); 
-    MATCH_FIELD(2, "content.#cfg.forward-delay"); 
+    MATCH_FIELD(1, "version-id");
+    MATCH_FIELD(1, "bpdu-type");
+    MATCH_FIELD(1, "content.#cfg.flags");
+    MATCH_FIELD(8, "content.#cfg.root-id");
+    MATCH_FIELD(4, "content.#cfg.root-path-cost");
+    MATCH_FIELD(8, "content.#cfg.bridge-id");
+    MATCH_FIELD(2, "content.#cfg.port-id");
+    MATCH_FIELD(2, "content.#cfg.message-age");
+    MATCH_FIELD(2, "content.#cfg.max-age");
+    MATCH_FIELD(2, "content.#cfg.hello-time");
+    MATCH_FIELD(2, "content.#cfg.forward-delay");
 
 #undef MATCH_FIELD
 
@@ -330,8 +330,8 @@ tad_bridge_match_bin_cb(csap_p csap,
         VERB("rc from asn_write_comp_val: %x", rc);
     }
 
-    asn_free_value(bridge_pdu); 
-    return rc; 
+    asn_free_value(bridge_pdu);
+    return rc;
 #else
     UNUSED(rc);
     UNUSED(data);

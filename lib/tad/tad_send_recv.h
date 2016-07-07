@@ -29,7 +29,7 @@
  */
 
 #ifndef __TE_TAD_SEND_RECV_H__
-#define __TE_TAD_SEND_RECV_H__ 
+#define __TE_TAD_SEND_RECV_H__
 
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -45,7 +45,7 @@
 #endif
 
 #include "te_defs.h"
-#include "asn_usr.h" 
+#include "asn_usr.h"
 #include "comm_agent.h"
 #include "logger_api.h"
 #include "rcf_ch_api.h"
@@ -143,18 +143,18 @@ tad_task_free(tad_task_context *task)
  * @return Status code.
  */
 extern te_errno tad_send_recv_generate_pattern(csap_p      csap,
-                                               asn_value  *template, 
+                                               asn_value  *template,
                                                asn_value **pattern);
 
 /**
- * Confirm traffic template or pattern PDUS set with CSAP settings and 
- * protocol defaults. 
+ * Confirm traffic template or pattern PDUS set with CSAP settings and
+ * protocol defaults.
  * This function changes passed ASN value, user have to ensure that changes
- * will be set in traffic template or pattern ASN value which will be used 
+ * will be set in traffic template or pattern ASN value which will be used
  * in next operation. This may be done by such ways:
  *
- * Pass pointer got by asn_get_descendent method, or write modified value 
- * into original NDS. 
+ * Pass pointer got by asn_get_descendent method, or write modified value
+ * into original NDS.
  *
  * @param csap    CSAP descriptor.
  * @param recv          Is receive flow or send flow.

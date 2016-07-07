@@ -1011,7 +1011,7 @@ tad_data_unit_from_bin(const uint8_t *data, size_t d_len,
         return TE_ENOMEM;
 
     location->du_type = TAD_DU_OCTS;
-    location->val_data.len = d_len; 
+    location->val_data.len = d_len;
     memcpy(location->val_data.oct_str, data, d_len);
 
     return 0;

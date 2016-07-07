@@ -2,7 +2,7 @@
  * @brief TAD ATM
  *
  * Traffic Application Domain Command Handler.
- * ATM CSAP support description structures. 
+ * ATM CSAP support description structures.
  *
  * Copyright (C) 2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -41,7 +41,7 @@
 #include "tad_atm_impl.h"
 
 
-static csap_spt_type_t atm_csap_spt = 
+static csap_spt_type_t atm_csap_spt =
 {
     .proto               = "atm",
     .unregister_cb       = NULL,
@@ -70,7 +70,7 @@ static csap_spt_type_t atm_csap_spt =
     .prepare_send_cb     = tad_atm_prepare_send,
     .write_cb            = tad_atm_write_cb,
     .shutdown_send_cb    = tad_atm_shutdown_send,
-    
+
     .prepare_recv_cb     = tad_atm_prepare_recv,
     .read_cb             = tad_atm_read_cb,
     .shutdown_recv_cb    = tad_atm_shutdown_recv,
@@ -79,7 +79,7 @@ static csap_spt_type_t atm_csap_spt =
 };
 
 
-static csap_spt_type_t aal5_csap_spt = 
+static csap_spt_type_t aal5_csap_spt =
 {
     .proto               = "aal5",
     .unregister_cb       = NULL,
@@ -111,10 +111,10 @@ static csap_spt_type_t aal5_csap_spt =
  * Command Handler.
  *
  * @return Status code.
- */ 
+ */
 te_errno
 csap_support_atm_register(void)
-{ 
+{
     te_errno    rc;
 
     rc = csap_spt_add(&aal5_csap_spt);

@@ -74,12 +74,12 @@ tad_poll_free(tad_poll_context *context)
 }
 
 /**
- * Start routine for Receiver thread. 
+ * Start routine for Receiver thread.
  *
- * @param arg           Start argument, should be pointer to 
+ * @param arg           Start argument, should be pointer to
  *                      TAD poll context
  *
- * @return NULL 
+ * @return NULL
  */
 static void *
 tad_poll_thread(void *arg)
@@ -129,7 +129,7 @@ tad_poll_thread(void *arg)
     }
 
 exit:
-    /* 
+    /*
      * Clean up handler assumes that lock is acquired, since it is
      * acquired when cleanup handler is called on cancellation from
      * pthread_cond_timedwait().
@@ -160,7 +160,7 @@ tad_poll_enqueue(csap_p csap, unsigned int timeout,
         free(context);
         return rc;
     }
-    
+
     context->csap = csap;
     context->timeout = timeout;
     /* Status to be returned on cancellation */

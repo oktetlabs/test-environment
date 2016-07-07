@@ -211,7 +211,7 @@ tad_atm_destroy_cb(csap_p csap, unsigned int layer)
 
 /* See description in tad_atm_impl.h */
 te_errno
-tad_atm_confirm_tmpl_cb(csap_p csap, unsigned int  layer, 
+tad_atm_confirm_tmpl_cb(csap_p csap, unsigned int  layer,
                         asn_value *layer_pdu, void **p_opaque)
 {
     te_errno                rc;
@@ -252,7 +252,7 @@ tad_atm_confirm_tmpl_cb(csap_p csap, unsigned int  layer,
 
 /* See description in tad_atm_impl.h */
 te_errno
-tad_atm_confirm_ptrn_cb(csap_p csap, unsigned int  layer, 
+tad_atm_confirm_ptrn_cb(csap_p csap, unsigned int  layer,
                         asn_value *layer_pdu, void **p_opaque)
 {
     te_errno                rc;
@@ -494,7 +494,7 @@ tad_atm_match_do_cb(csap_p           csap,
                CSAP_LOG_ARGS(csap), (unsigned)tad_pkt_len(pdu));
         return TE_RC(TE_TAD_CSAP, TE_ETADNOTMATCH);
     }
-  
+
     proto_data = csap_get_proto_spec_data(csap, layer);
 
     assert(proto_data != NULL);

@@ -28,7 +28,7 @@
  */
 
 #ifndef __TE_TAD_AGENT_CSAP_H__
-#define __TE_TAD_AGENT_CSAP_H__ 
+#define __TE_TAD_AGENT_CSAP_H__
 
 #include "te_errno.h"
 

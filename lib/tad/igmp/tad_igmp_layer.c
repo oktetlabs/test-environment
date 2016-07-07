@@ -181,7 +181,7 @@ tad_igmp_init_cb(csap_p csap, unsigned int layer)
     if (rc != 0)
         return rc;
 
-    return 0; 
+    return 0;
 }
 
 /* See description tad_igmp_impl.h */

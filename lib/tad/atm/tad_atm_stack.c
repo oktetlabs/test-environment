@@ -41,7 +41,7 @@
 #include "te_alloc.h"
 #include "logger_api.h"
 
-#include "ndn_atm.h" 
+#include "ndn_atm.h"
 #include "tad_eth_sap.h"
 #include "tad_atm_impl.h"
 
@@ -55,7 +55,7 @@ typedef struct tad_atm_rw_data {
 /* See description tad_atm_impl.h */
 te_errno
 tad_atm_prepare_send(csap_p csap)
-{ 
+{
     tad_atm_rw_data *spec_data = csap_get_rw_data(csap);
 
     assert(spec_data != NULL);
@@ -78,7 +78,7 @@ tad_atm_shutdown_send(csap_p csap)
 /* See description tad_atm_impl.h */
 te_errno
 tad_atm_prepare_recv(csap_p csap)
-{ 
+{
     tad_atm_rw_data *spec_data = csap_get_rw_data(csap);
 
     assert(spec_data != NULL);
@@ -114,7 +114,7 @@ tad_atm_read_cb(csap_p csap, unsigned int timeout,
 /* See description tad_atm_impl.h */
 te_errno
 tad_atm_write_cb(csap_p csap, const tad_pkt *pkt)
-{ 
+{
     tad_atm_rw_data *spec_data = csap_get_rw_data(csap);
 
     assert(spec_data != NULL);
@@ -127,22 +127,22 @@ tad_atm_write_cb(csap_p csap, const tad_pkt *pkt)
 te_errno
 tad_atm_rw_init_cb(csap_p csap)
 {
-    te_errno            rc; 
+    te_errno            rc;
     unsigned int        layer = csap_get_rw_layer(csap);
     char                device_id[TAD_ETH_SAP_IFNAME_SIZE];
     size_t              val_len;
-    tad_atm_rw_data    *spec_data; 
-    
+    tad_atm_rw_data    *spec_data;
+
 
     val_len = sizeof(device_id);
     rc = asn_read_value_field(csap->layers[layer].nds,
                               device_id, &val_len, "device-id");
-    if (rc != 0) 
+    if (rc != 0)
     {
         ERROR("device-id for ATM not found: %r", rc);
         return TE_RC(TE_TAD_CSAP, rc);
     }
-    
+
     spec_data = TE_ALLOC(sizeof(*spec_data));
     if (spec_data == NULL)
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
@@ -166,7 +166,7 @@ tad_atm_rw_init_cb(csap_p csap)
 te_errno
 tad_atm_rw_destroy_cb(csap_p csap)
 {
-    tad_atm_rw_data    *spec_data = csap_get_rw_data(csap); 
+    tad_atm_rw_data    *spec_data = csap_get_rw_data(csap);
     te_errno            rc;
 
     if (spec_data == NULL)
@@ -174,11 +174,11 @@ tad_atm_rw_destroy_cb(csap_p csap)
         WARN("Not ATM CSAP %d special data found!", csap->id);
         return 0;
     }
-    csap_set_rw_data(csap, NULL); 
+    csap_set_rw_data(csap, NULL);
 
     rc = tad_eth_sap_detach(&spec_data->sap);
 
-    free(spec_data);   
+    free(spec_data);
 
     return rc;
 }

@@ -87,7 +87,7 @@ static const tad_bps_pkt_frag tad_pppoe_bps_hdr[] =
 };
 
 /* item "length" index in array above */
-const int bps_def_pppoe_length_idx = 4; 
+const int bps_def_pppoe_length_idx = 4;
 
 /* See description tad_ppp_impl.h */
 te_errno
@@ -232,11 +232,11 @@ static te_errno
 tad_pppoe_gen_bin_cb_per_pdu(tad_pkt *pdu, void *opaque)
 {
     tad_pppoe_gen_bin_cb_per_pdu_data    *data = opaque;
-    
+
     tad_pkt_seg    *seg = tad_pkt_first_seg(pdu);
     size_t          pdu_len = tad_pkt_len(pdu);
 
-    VERB("%s(): pdu len %d, first seg len %d", __FUNCTION__, 
+    VERB("%s(): pdu len %d, first seg len %d", __FUNCTION__,
          (int)pdu_len, (int)seg->data_len);
 
     assert(data->def->descr[bps_def_pppoe_length_idx].tag ==
@@ -244,7 +244,7 @@ tad_pppoe_gen_bin_cb_per_pdu(tad_pkt *pdu, void *opaque)
     assert(seg->data_ptr != NULL);
 
     /* Copy header template to packet */
-    
+
     memcpy(seg->data_ptr, data->hdr, seg->data_len);
 
     if (data->pkt->dus[bps_def_pppoe_length_idx].du_type == TAD_DU_UNDEF)

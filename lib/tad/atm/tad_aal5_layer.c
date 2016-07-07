@@ -88,15 +88,15 @@ static uint8_t  tad_all5_pad[ATM_PAYLOAD_LEN - 1] = { 0, };
 
 
 /**
- * Calculate product of a(x) by x^k in 
- * the residue-class ring of polynomials by modulo G(x) 
+ * Calculate product of a(x) by x^k in
+ * the residue-class ring of polynomials by modulo G(x)
  *
- * G(x) = x^32 + x^26 + x^23 + x^22 + x^16 + x^12 + x^11 + x^10 + 
+ * G(x) = x^32 + x^26 + x^23 + x^22 + x^16 + x^12 + x^11 + x^10 +
  *             + x^8  + x^7  + x^5  + x^4  + x^2  + x    + 1
  *
- * Note, that bitwise XOR is åddition for polynomials over Z_2 field. 
+ * Note, that bitwise XOR is åddition for polynomials over Z_2 field.
  *
- * @param a     Bitmask, representing coefficients of polynomial over 
+ * @param a     Bitmask, representing coefficients of polynomial over
  *              Z_2 field with degree, less then 32.
  * @param k     Degree of monome, with which product should be obtained.
  *
@@ -114,7 +114,7 @@ product_in_ring_to_power(uint32_t a, int k)
         r = a << 1;
         if (a & 0x80000000)
             a = r ^ g_defect;
-        else 
+        else
             a = r;
     }
 
@@ -123,17 +123,17 @@ product_in_ring_to_power(uint32_t a, int k)
 
 /* See description in tad_atm_impl.h */
 uint32_t
-calculate_crc32(uint32_t previous_value, 
+calculate_crc32(uint32_t previous_value,
                 uint8_t *next_pkt,
                 size_t   next_len)
-{ 
+{
     uint32_t result = previous_value;
 
-    if (next_pkt == NULL) 
+    if (next_pkt == NULL)
         return 0;
 
     for (result = previous_value; next_len > 0; next_pkt++, next_len--)
-        result = product_in_ring_to_power(result, 8) ^ 
+        result = product_in_ring_to_power(result, 8) ^
                  product_in_ring_to_power(next_pkt[0], 32);
 
     return result;
@@ -194,7 +194,7 @@ tad_aal5_destroy_cb(csap_p csap, unsigned int layer)
 
 /* See description in tad_atm_impl.h */
 te_errno
-tad_aal5_confirm_tmpl_cb(csap_p csap, unsigned int  layer, 
+tad_aal5_confirm_tmpl_cb(csap_p csap, unsigned int  layer,
                          asn_value *layer_pdu, void **p_opaque)
 {
     te_errno                    rc;
@@ -224,7 +224,7 @@ tad_aal5_confirm_tmpl_cb(csap_p csap, unsigned int  layer,
 
 /* See description in tad_atm_impl.h */
 te_errno
-tad_aal5_confirm_ptrn_cb(csap_p csap, unsigned int  layer, 
+tad_aal5_confirm_ptrn_cb(csap_p csap, unsigned int  layer,
                          asn_value *layer_pdu, void **p_opaque)
 {
     te_errno                    rc;
@@ -326,7 +326,7 @@ tad_aal5_prepare_pdus(tad_pkt *pkt, void *opaque)
 
     assert(tad_pkt_len(pkt) % ATM_PAYLOAD_LEN == 0);
 
-    /* 
+    /*
      * Copy template of the trailer
      */
     assert(trailer->data_len == AAL5_TRAILER_LEN);
