@@ -953,7 +953,7 @@ tapi_flow_gen_base_ptrn(asn_value *rcv_ptrn, asn_value **base_ptrn_p)
     int        addr_len;
     int        num;
     int        i;
-    uint8_t    buf[4096];
+    char       buf[4096];
 
     RING("%s() started", __FUNCTION__);
 
