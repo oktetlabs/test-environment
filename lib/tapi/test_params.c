@@ -39,6 +39,15 @@
 #if HAVE_CTYPE_H
 #include <ctype.h>
 #endif
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#if HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
 
 #include "te_defs.h"
 #include "te_param.h"
