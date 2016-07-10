@@ -125,17 +125,19 @@ tad_ip4_rw_init_cb(csap_p csap)
     spec_data->sa_op.sll_ifindex = if_nametoindex(ifname);
     spec_data->sa_op.sll_protocol = htons(ETH_P_IP);
 
-    spec_data->sa_op.sll_halen = ETHER_ADDR_LEN;
+    len = ETHER_ADDR_LEN;
     rc = asn_read_value_field(csap->layers[csap_get_rw_layer(csap)].nds,
-                              spec_data->sa_op.sll_addr,
-                              &spec_data->sa_op.sll_halen,
-                              "remote-hwaddr");
+                              spec_data->sa_op.sll_addr, &len, "remote-hwaddr");
     if (rc != 0)
     {
         if (rc != TE_EASNINCOMPLVAL)
             return TE_RC(TE_TAD_CSAP, rc);
 
         spec_data->sa_op.sll_halen = 0;
+    }
+    else
+    {
+        spec_data->sa_op.sll_halen = len;
     }
 
     spec_data->socket = socket(PF_PACKET, SOCK_DGRAM, htons(ETH_P_IP));
