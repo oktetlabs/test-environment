@@ -1570,7 +1570,8 @@ fill_dhcp6_options(void *buf, const asn_value *options)
             n_oro = asn_get_length(opt_body, "");
             for (j = 0; j < n_oro; j++)
             {
-                if ((rc = asn_get_indexed(opt_body, &sub_opt, j, "")) != 0)
+                if ((rc = asn_get_indexed(opt_body, (asn_value **)&sub_opt,
+                                          j, "")) != 0)
                     break;
 
                 READ_FIELD_VALUE(sub_opt, uint16, "opcode");
@@ -1634,7 +1635,8 @@ fill_dhcp6_options(void *buf, const asn_value *options)
             n_oro = asn_get_length(opt_body, "");
             for (j = 0; j < n_oro; j++)
             {
-                if ((rc = asn_get_indexed(opt_body, &sub_opt, j, "")) != 0)
+                if ((rc = asn_get_indexed(opt_body, (asn_value **)&sub_opt,
+                                          j, "")) != 0)
                     break;
 
                 READ_FIELD_VALUE(sub_opt, uint16, "class-data-len");
@@ -1656,8 +1658,8 @@ fill_dhcp6_options(void *buf, const asn_value *options)
             n_oro = asn_get_length(sub_opt, "");
             for (j = 0; j < n_oro; j++)
             {
-                if ((rc = asn_get_indexed(sub_opt,
-                                          &sub_sub_opt, j, "")) != 0)
+                if ((rc = asn_get_indexed(sub_opt, (asn_value **)&sub_sub_opt,
+                                          j, "")) != 0)
                     break;
 
                 READ_FIELD_VALUE(sub_sub_opt, uint16, "class-data-len");
