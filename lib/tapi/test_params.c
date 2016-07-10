@@ -417,7 +417,7 @@ tapi_asn_param_value_parse(char              *pwd,
             if (strstr(pwd, "link_addr") != NULL ||
                 address_val->sa_family == AF_LOCAL)
             {
-                addr_octets = address_val->sa_data;
+                addr_octets = (uint8_t *)(address_val->sa_data);
 
                 snprintf(
                         ns, BUFLEN,
