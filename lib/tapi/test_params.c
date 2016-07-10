@@ -400,8 +400,8 @@ tapi_asn_param_value_parse(char              *pwd,
             pwd_offset += add;
 
         rc = cfg_get_instance_fmt(NULL,
-                                  (void*)((type == ndn_base_octets) ?
-                                  &address_val : &int_val),
+                                  (type == ndn_base_octets) ?
+                                  (void *)&address_val : (void *)&int_val,
                                   "%s", pwd);
         pwd[pwd_offset] = '\0';
         if (rc != 0)
