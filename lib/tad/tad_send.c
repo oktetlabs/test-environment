@@ -56,7 +56,6 @@
 #include "logger_ta_fast.h"
 #include "comm_agent.h"
 #include "rcf_ch_api.h"
-#include "rcf_pch.h"
 #include "ndn.h"
 
 #include "tad_csap_inst.h"
