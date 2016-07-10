@@ -3507,7 +3507,7 @@ cleanup:
 
 /* See description in asn_usr.h */
 int
-asn_insert_value_extended_path(const asn_value *root_node,
+asn_insert_value_extended_path(asn_value *root_node,
                                const char *ext_path,
                                asn_value *value,
                                int *index)
