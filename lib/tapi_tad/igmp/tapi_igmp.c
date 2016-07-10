@@ -192,6 +192,8 @@ tapi_igmp_add_ip4_pdu_gen(asn_value **tmpl_or_ptrn,
     asn_value     *ip4_pdu;
     int            dont_frag = 1;
 
+    UNUSED(pdu);
+
     if (dst_addr == htonl(INADDR_ANY))
         dst_addr = TAPI_MCAST_ADDR_ALL_HOSTS;
 
@@ -253,6 +255,8 @@ tapi_igmp_add_ip4_eth_pdu_gen(asn_value **tmpl_or_ptrn,
     asn_value     *ip4_pdu = NULL;
     asn_value     *eth_pdu = NULL;
     int            dont_frag = 1;
+
+    UNUSED(pdu);
 
     if (dst_addr == htonl(INADDR_ANY))
         dst_addr = TAPI_MCAST_ADDR_ALL_HOSTS;
