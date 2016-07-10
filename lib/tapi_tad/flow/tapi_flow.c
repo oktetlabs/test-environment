@@ -1440,7 +1440,6 @@ te_errno
 tapi_flow_check_all(tapi_flow_t *flow, const char *traffic_prefix)
 {
     tapi_flow_traffic  *traffic;
-    char               *name = NULL;
     int                 rcv_matched;
     int                 rcv_base;
     int                 errors = 0;
