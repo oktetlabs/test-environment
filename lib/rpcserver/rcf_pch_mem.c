@@ -27,9 +27,11 @@
  * $Id$
  */
 
-#include "te_config.h"
-
 #define TE_LGR_USER "rcfpch"
+
+#include "rpc_server.h"
+
+#if defined(ENABLE_RPC_MEM)
 
 #include <stdio.h>
 
@@ -565,3 +567,5 @@ rcf_pch_mem_ns_get_string(
     *ns_string = namespaces[ns_id];
     return 0;
 }
+
+#endif /* ENABLE_RPC_MEM */

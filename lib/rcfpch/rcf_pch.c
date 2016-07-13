@@ -53,6 +53,9 @@
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
+#if defined(HAVE_PTHREAD_H) && defined(HAVE_PTHREAD_ATFORK)
+#include <pthread.h>
+#endif
 
 #include "rcf_pch_internal.h"
 #undef SEND_ANSWER
@@ -63,6 +66,8 @@
 #include "rcf_common.h"
 #include "rcf_internal.h"
 #include "comm_agent.h"
+
+#include "agentlib.h"
 #include "rcf_pch.h"
 #include "rcf_ch_api.h"
 #include "logger_ta.h"
@@ -404,6 +409,34 @@ transmit_log(struct rcf_comm_connection *conn, char *cbuf,
     return rc;
 }
 
+/** Detach from the Test Engine after fork() */
+static void 
+rcf_pch_detach(void)
+{
+    rcf_comm_agent_close(&conn);
+    rcf_pch_rpc_atfork();
+}
+
+static void *pch_vfork_saved_conn;
+
+/** Detach from the Test Engine before vfork() */
+static void 
+rcf_pch_detach_vfork(void)
+{
+    pch_vfork_saved_conn = conn;
+    conn = NULL;
+}
+
+/** Attach to the Test Engine after vfork() in the parent process */
+static void 
+rcf_pch_attach_vfork(void)
+{
+    /* Close connection created after vfork() but before exec(). */
+    rcf_comm_agent_close(&conn);
+    conn = pch_vfork_saved_conn;
+}
+
+
 /**
  * Start Portable Command Handler.
  *
@@ -495,6 +528,12 @@ rcf_pch_run(const char *confstr, const char *info)
     {
         goto communication_problem;
     }
+
+#if defined(HAVE_PTHREAD_ATFORK)
+    pthread_atfork(NULL, NULL, rcf_pch_detach);
+#endif
+    register_vfork_hook(rcf_pch_detach_vfork, rcf_pch_attach_vfork,
+                        rcf_pch_detach);
 
     while (TRUE)
     {
@@ -1285,27 +1324,3 @@ exit:
 #undef SEND_ANSWER
 }
 
-/** Detach from the Test Engine after fork() */
-void 
-rcf_pch_detach(void)
-{
-    rcf_comm_agent_close(&conn);
-    rcf_pch_rpc_atfork();
-}
-
-/** Detach from the Test Engine before vfork() */
-void 
-rcf_pch_detach_vfork(void **saved_conn)
-{
-    *saved_conn = conn;
-    conn = NULL;
-}
-
-/** Attach to the Test Engine after vfork() in the parent process */
-void 
-rcf_pch_attach_vfork(void *saved_conn)
-{
-    /* Close connection created after vfork() but before exec(). */
-    rcf_comm_agent_close(&conn);
-    conn = saved_conn;
-}

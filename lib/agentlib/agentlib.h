@@ -198,4 +198,56 @@ extern const char *rcf_ch_symbol_name(const void *addr);
 /**@} <!-- END rcf_ch_addr --> */
 
 
+/**
+ * This function is an equivalent for pthread_atfork(), but it sets up
+ * hooks to be called _explicitly_ around vfork() via run_vhook_hooks().
+ *
+ * @param prepare   A hook to run before vfork()
+ * @param child     A hook to run after vfork() in the child process
+ * @param parent    A hook to run after vfork() in the parent process
+ *
+ * @note @p child and @p parent hooks need to obey all restrictions imposed
+ * by vfork()
+ */
+extern te_errno register_vfork_hook(void (*prepare)(void),
+                                    void (*child)(void),
+                                    void (*parent)(void));
+
+/** Phases for running vfork hooks, as by run_vfork_hooks() */
+enum vfork_hook_phase {
+    VFORK_HOOK_PHASE_PREPARE, /**< Before vfork() */
+    VFORK_HOOK_PHASE_CHILD,   /**< After vfork() in child */
+    VFORK_HOOK_PHASE_PARENT,  /**< After vfork() in parent */
+    VFORK_HOOK_N_PHASES,      /**< Total number of phases */
+};
+
+/**
+ * Run hooks registered by register_vfork_hook()
+ *
+ * @param phase   Hook phase (see #vfork_hook_phase)
+ * @note This function is merely a convenience routine, it does not
+ * in itself have anything to do with vfork(), so it's totally the caller's
+ * responsibility to call it at appropriate places.
+ * The typical scenario would look like this:
+ * ~~~~~~~~~~
+ * run_vfork_hook(VFORK_HOOK_PHASE_PREPARE);
+ * child = vfork();
+ * if (child == -1)
+ * {
+ *    run_vfork_hook(VFORK_HOOK_PHASE_PARENT);
+ *    ....
+ *    return error;
+ * }
+ * if (child == 0)
+ * {
+ *    run_vfork_hook(VFORK_HOOK_PHASE_CHILD);
+ *    ....
+ *    _exit(0);
+ * }
+ * run_vfork_hook(VFORK_HOOK_PHASE_PARENT);
+ * ~~~~~~~~~~
+ */
+extern void run_vfork_hooks(enum vfork_hook_phase phase);
+
+
 #endif /* __TE_AGENTLIB_H__ */

@@ -1383,21 +1383,6 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
 #undef RETERR
 }
 
-#include "rcf_pch_rpc_server.c"
-
-/**
- * Wrapper to call rcf_pch_rpc_server via "ta exec func" mechanism.
- *
- * @param argc    should be 1
- * @param argv    should contain pointer to RPC server name
- */
-void
-rcf_pch_rpc_server_argv(int argc, char **argv)
-{
-    UNUSED(argc);
-
-    rcf_pch_rpc_server(argv[0]);
-}
 
 /* See description in rcf_pch_internal.h */
 rpcserver *

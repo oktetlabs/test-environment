@@ -30,12 +30,7 @@
 
 #define TE_LGR_USER     "RPC"
 
-#include "te_config.h"
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#include "tarpc_server.h"
+#include "rpc_server.h"
 
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
@@ -86,7 +81,7 @@
 #include "te_queue.h"
 #include "te_tools.h"
 
-#include "unix_internal.h"
+#include "agentlib.h"
 
 #ifndef MSG_MORE
 #define MSG_MORE 0
@@ -95,6 +90,12 @@
 #ifdef LIO_READ
 void *dummy = aio_read;
 #endif
+
+/* FIXME: The following are defined inside Agent */
+extern const char *ta_name;
+extern const char *ta_execname;
+extern char ta_dir[RCF_MAX_PATH];
+
 
 /** User environment */
 extern char **environ;
@@ -387,284 +388,6 @@ handler2name(void *handler)
     return tmp;
 }
 
-void
-tarpc_init_checked_arg(checked_arg_list *list, uint8_t *real_arg,
-                       size_t len, size_t len_visible, const char *name)
-{
-    checked_arg *arg;
-
-    if (real_arg == NULL || len <= len_visible)
-        return;
-
-    if ((arg = calloc(1, sizeof(*arg))) == NULL)
-    {
-        ERROR("Out of memory");
-        return;
-    }
-
-    if ((arg->pristine = malloc(len - len_visible)) == NULL)
-    {
-        ERROR("Out of memory");
-        free(arg);
-        return;
-    }
-    memcpy(arg->pristine, real_arg + len_visible, len - len_visible);
-    arg->real_arg = real_arg;
-    arg->len = len;
-    arg->len_visible = len_visible;
-    arg->name = name;
-    STAILQ_INSERT_TAIL(list, arg, next);
-}
-
-te_errno
-tarpc_check_args(checked_arg_list *list)
-{
-    te_errno rc = 0;
-    checked_arg *cur;
-
-    for (cur = STAILQ_FIRST(list); cur != NULL; cur = STAILQ_FIRST(list))
-    {
-        if (memcmp(cur->real_arg + cur->len_visible, cur->pristine,
-                   cur->len - cur->len_visible) != 0)
-        {
-            ERROR("Argument %s:\nVisible length is "
-                  "%"TE_PRINTF_SIZE_T"u.\nPristine is:%Tm"
-                  "Current is:%Tm + %Tm",
-                  cur->name,
-                  (unsigned long)cur->len_visible,
-                  cur->pristine, cur->len - cur->len_visible,
-                  cur->real_arg, cur->len_visible,
-                  cur->real_arg + cur->len_visible,
-                  cur->len - cur->len_visible);
-            rc = TE_RC(TE_TA_UNIX, TE_ECORRUPTED);
-        }
-        free(cur->pristine);
-        STAILQ_REMOVE_HEAD(list, next);
-        free(cur);
-    }
-
-    return rc;
-}
-
-static void
-wait_start(uint64_t msec_start)
-{
-    struct timeval t;
-
-    uint64_t msec_now;
-
-    gettimeofday(&t, NULL);
-    msec_now = ((uint64_t)(t.tv_sec)) * 1000ULL +
-    (t.tv_usec) / 1000;
-
-    if (msec_start > msec_now)
-    {
-        RING("Sleep %u microseconds before call",
-             (unsigned)TE_MS2US(msec_start - msec_now));
-        usleep(TE_MS2US(msec_start - msec_now));
-    }
-    else if (msec_start != 0)
-        WARN("Start time is gone");
-}
-
-void tarpc_before_call(struct rpc_call_data *call, const char *id)
-{
-    tarpc_in_arg *in_common = (tarpc_in_arg *)((uint8_t *)call->in +
-                                               call->info->in_common_offset);
-
-    call->saved_errno = errno;
-    wait_start(in_common->start);
-    VERB("Calling: %s" , id);
-    gettimeofday(&call->call_start, NULL);
-}
-
-void tarpc_after_call(struct rpc_call_data *call)
-{
-    tarpc_out_arg *out_common =
-        (tarpc_out_arg *)((uint8_t *)call->out +
-                          call->info->out_common_offset);
-    struct timeval finish;
-    int rc;
-
-    out_common->errno_changed = (call->saved_errno != errno);
-    out_common->_errno = RPC_ERRNO;
-    gettimeofday(&finish, NULL);
-    out_common->duration =
-        TE_SEC2US(finish.tv_sec - call->call_start.tv_sec) +
-        finish.tv_usec - call->call_start.tv_usec;
-    rc = tarpc_check_args(&call->checked_args);
-    if (out_common->_errno == 0 && rc != 0)
-        out_common->_errno = rc;
-}
-
-void tarpc_call_unsupported(const char *name, void *out,
-                            size_t outsize, size_t common_offset)
-{
-    tarpc_out_arg *out_common =
-       (tarpc_out_arg *)((uint8_t *)out + common_offset);
-    memset((uint8_t *)out, 0, outsize);
-    out_common->_errno = RPC_ERPCNOTSUPP;
-    RING("Unsupported RPC '%s' has been called", name);
-}
-
-static void *
-tarpc_generic_service_thread(void *arg)
-{
-    rpc_call_data *call = arg;
-
-    logfork_register_user(call->info->funcname);
-
-    VERB("Entry thread %s", call->info->funcname);
-
-    if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL) != 0)
-        ERROR("Failed to set thread cancel type for the non-blocking call "
-              "thread: %r", RPC_ERRNO);
-
-    sigprocmask(SIG_SETMASK, &(call->mask), NULL);
-
-    call->info->wrapper(call);
-
-    call->done = TRUE;
-
-    aux_threads_del();
-    return arg;
-}
-
-void
-tarpc_generic_service(rpc_call_data *call)
-{
-    int rc;
-    tarpc_in_arg *in_common = (tarpc_in_arg *)((uint8_t *)call->in +
-                                               call->info->in_common_offset);
-    tarpc_out_arg *out_common = (tarpc_out_arg *)((uint8_t *)call->out +
-                                                  call->info->
-                                                  out_common_offset);
-
-    memset(call->out, 0, call->info->out_size);
-
-    if (call->func == NULL)
-    {
-        rc = tarpc_find_func(in_common->use_libc, call->info->funcname,
-                             &call->func);
-        if (rc != 0)
-        {
-            out_common->_errno = rc;
-            return;
-        }
-    }
-
-    if (call->info->copy(call->in, call->out))
-        return;
-
-    switch (in_common->op)
-    {
-        case RCF_RPC_CALL_WAIT:
-        {
-            VERB("%s(): CALL-WAIT", call->info->funcname);
-
-            call->info->wrapper(call);
-
-            break;
-        }
-        case RCF_RPC_CALL:
-        {
-            rpc_call_data *copy_call;
-            pthread_t tid;
-
-            VERB("%s(): CALL", call->info->funcname);
-
-            if ((copy_call = calloc(1, sizeof(*copy_call) +
-                                    call->info->in_size +
-                                    call->info->out_size)) == NULL)
-            {
-                out_common->_errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-                break;
-            }
-
-            *copy_call = *call;
-            sigprocmask(SIG_SETMASK, NULL, &(copy_call->mask));
-            copy_call->in = (uint8_t *)copy_call + sizeof(*copy_call);
-            copy_call->out = (uint8_t *)copy_call->in +
-                             copy_call->info->in_size;
-            memcpy(copy_call->in, call->in, call->info->in_size);
-            memcpy(copy_call->out, call->out, call->info->out_size);
-
-            if (pthread_create(&tid, NULL, tarpc_generic_service_thread,
-                               copy_call) != 0)
-            {
-                free(copy_call);
-                out_common->_errno = TE_OS_RC(TE_TA_UNIX, errno);
-                break;
-            }
-            aux_threads_add(tid);
-
-            /*
-             * Preset 'in' and 'out' with zeros to avoid any
-             * resource deallocations by the caller.
-             * 'out' is preset with zeros above, but may be
-             * modified in '_copy_args'.
-             */
-            memset(call->in,  0, call->info->in_size);
-            memset(call->out, 0, call->info->out_size);
-
-            out_common->tid = (tarpc_pthread_t)tid;
-            out_common->done = rcf_pch_mem_alloc(&copy_call->done);
-
-            break;
-        }
-        case RCF_RPC_WAIT:
-        {
-            rpc_call_data *copy_call;
-            pthread_t     tid =  (pthread_t)in_common->tid;
-            enum xdr_op   op;
-
-            VERB("%s(): WAIT", call->info->funcname);
-
-            /*
-             * If WAIT is called, all resources are deallocated
-             * in any case.
-             */
-            rcf_pch_mem_free(in_common->done);
-
-            if (tid == (pthread_t)(long)NULL)
-            {
-                ERROR("No thread with ID %llu to wait",
-                      (unsigned long long int)in_common->tid);
-                out_common->_errno = TE_RC(TE_TA_UNIX, TE_ENOENT);
-                break;
-            }
-            if (pthread_join(tid, (void **)&copy_call) != 0)
-            {
-                ERROR("pthread_join() failed");
-                out_common->_errno = TE_OS_RC(TE_TA_UNIX, errno);
-                break;
-            }
-            if (copy_call == NULL)
-            {
-                ERROR("pthread_join() returned invalid thread "
-                      "return value");
-                out_common->_errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
-                break;
-            }
-
-            /* Free locations copied in 'out' by _copy_args' */
-            op = XDR_FREE;
-            if (!call->info->xdr_out((XDR *)&op, call->out))
-                ERROR("xdr_tarpc_%s_out() failed", call->info->funcname);
-
-            /* Copy output prepared in the thread */
-            memcpy(call->out, copy_call->out, call->info->out_size);
-            free(copy_call);
-
-            break;
-        }
-
-        default:
-            ERROR("Unknown RPC operation");
-            out_common->_errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
-            break;
-    }
-}
 
 /*-------------- setlibname() -----------------------------*/
 
@@ -953,7 +676,6 @@ _create_process_1_svc(tarpc_create_process_in *in,
 
         if (in->flags & RCF_RPC_SERVER_GET_EXEC)
             ta_rpc_execve(in->name.name_val);
-        rcf_pch_detach();
         rcf_pch_rpc_server(in->name.name_val);
         exit(EXIT_FAILURE);
     }
@@ -971,7 +693,6 @@ _vfork_1_svc(tarpc_vfork_in *in,
     struct timeval  t_finish;
     api_func_void   func;
     int             rc;
-    void            *saved_conn;
 
     UNUSED(rqstp);
     memset(out, 0, sizeof(*out));
@@ -985,7 +706,7 @@ _vfork_1_svc(tarpc_vfork_in *in,
         return TRUE;
     }
 
-    rcf_pch_detach_vfork(&saved_conn);
+    run_vfork_hooks(VFORK_HOOK_PHASE_PREPARE);
     gettimeofday(&t_start, NULL);
     out->pid = func();
     gettimeofday(&t_finish, NULL);
@@ -994,8 +715,8 @@ _vfork_1_svc(tarpc_vfork_in *in,
 
     if (out->pid == -1)
     {
-        rcf_pch_attach_vfork(saved_conn);
         out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);
+        run_vfork_hooks(VFORK_HOOK_PHASE_PARENT);
         return TRUE;
     }
 
@@ -1008,14 +729,14 @@ _vfork_1_svc(tarpc_vfork_in *in,
          */
         setpgid(getpid(), getpid());
 
-        rcf_pch_detach();
+        run_vfork_hooks(VFORK_HOOK_PHASE_CHILD);
         rcf_pch_rpc_server(in->name.name_val);
         exit(EXIT_FAILURE);
     }
     else
     {
         usleep(in->time_to_wait * 1000);
-        rcf_pch_attach_vfork(saved_conn);
+        run_vfork_hooks(VFORK_HOOK_PHASE_PARENT);
     }
 
     return TRUE;
@@ -3055,6 +2776,75 @@ TARPC_FUNC(ta_kill_death, {},
     MAKE_CALL(out->retval = func(in->pid));
 }
 )
+
+sigset_t rpcs_received_signals;
+
+/* See description in unix_internal.h */
+void
+signal_registrar(int signum)
+{
+    sigaddset(&rpcs_received_signals, signum);
+}
+
+/* Lastly received signal information */
+tarpc_siginfo_t last_siginfo;
+
+/* See description in unix_internal.h */
+void
+signal_registrar_siginfo(int signum, siginfo_t *siginfo, void *context)
+{
+#define COPY_SI_FIELD(_field) \
+    last_siginfo.sig_ ## _field = siginfo->si_ ## _field
+
+    UNUSED(context);
+
+    sigaddset(&rpcs_received_signals, signum);
+    memset(&last_siginfo, 0, sizeof(last_siginfo));
+
+    COPY_SI_FIELD(signo);
+    COPY_SI_FIELD(errno);
+    COPY_SI_FIELD(code);
+#ifdef HAVE_SIGINFO_T_SI_TRAPNO
+    COPY_SI_FIELD(trapno);
+#endif
+    COPY_SI_FIELD(pid);
+    COPY_SI_FIELD(uid);
+    COPY_SI_FIELD(status);
+#ifdef HAVE_SIGINFO_T_SI_UTIME
+    COPY_SI_FIELD(utime);
+#endif
+#ifdef HAVE_SIGINFO_T_SI_STIME
+    COPY_SI_FIELD(stime);
+#endif
+
+    /** 
+     * FIXME: si_value, si_ptr and si_addr fields are not
+     * supported yet
+     */
+
+#ifdef HAVE_SIGINFO_T_SI_INT
+    COPY_SI_FIELD(int);
+#endif
+#ifdef HAVE_SIGINFO_T_SI_OVERRUN
+    COPY_SI_FIELD(overrun);
+#endif
+#ifdef HAVE_SIGINFO_T_SI_TIMERID
+    COPY_SI_FIELD(timerid);
+#endif
+#ifdef HAVE_SIGINFO_T_SI_BAND
+    COPY_SI_FIELD(band);
+#endif
+#ifdef HAVE_SIGINFO_T_SI_FD
+    COPY_SI_FIELD(fd);
+#endif
+
+#ifdef HAVE_SIGINFO_T_SI_ADDR_LSB
+    COPY_SI_FIELD(addr_lsb);
+#endif
+
+#undef COPY_SI_FIELD
+}
+
 
 /*-------------- signal() --------------------------------*/
 

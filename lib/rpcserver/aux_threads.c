@@ -41,7 +41,7 @@
 #include "te_defs.h"
 #include "te_errno.h"
 #include "logger_api.h"
-#include "unix_internal.h"
+#include "rpc_server.h"
 
 /** Pthread mutex is necessary since a few threads can use the common
  * resources. */

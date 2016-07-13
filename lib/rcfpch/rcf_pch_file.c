@@ -62,6 +62,7 @@
 #include "te_defs.h"
 #include "te_stdint.h"
 #include "comm_agent.h"
+#include "agentlib.h"
 #include "rcf_pch.h"
 
 

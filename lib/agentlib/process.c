@@ -63,6 +63,7 @@
 
 #include "te_defs.h"
 #include "te_errno.h"
+#include "te_alloc.h"
 #include "te_shell_cmd.h"
 #include "te_sleep.h"
 #include "logger_api.h"
@@ -542,3 +543,44 @@ ta_process_mgmt_init(void)
 
     return rc;
 }
+
+typedef struct vfork_hook {
+    SLIST_ENTRY(vfork_hook) next;    /**< next hook */
+    void (*hook[VFORK_HOOK_N_PHASES])(void);
+} vfork_hook;
+
+static SLIST_HEAD(, vfork_hook) vfork_hook_list;
+
+/* See description in agentlib.h */
+te_errno
+register_vfork_hook(void (*prepare)(void), void (*child)(void),
+                    void (*parent)(void))
+{
+    vfork_hook *new_hook = TE_ALLOC(sizeof(*new_hook));
+
+    if (new_hook == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    
+    new_hook->hook[VFORK_HOOK_PHASE_PREPARE] = prepare;
+    new_hook->hook[VFORK_HOOK_PHASE_CHILD]   = child;
+    new_hook->hook[VFORK_HOOK_PHASE_PARENT]  = parent;
+    
+    SLIST_INSERT_HEAD(&vfork_hook_list, new_hook, next);
+
+    return 0;
+}
+
+void
+run_vfork_hooks(enum vfork_hook_phase phase)
+{
+    const vfork_hook *hook;
+
+    assert(phase >= VFORK_HOOK_PHASE_PREPARE && phase < VFORK_HOOK_N_PHASES);
+
+    SLIST_FOREACH(hook, &vfork_hook_list, next)
+    {
+        if (hook->hook[phase] != NULL)
+            hook->hook[phase]();
+    }
+}
+

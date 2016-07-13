@@ -31,6 +31,9 @@
 #ifndef __TARPC_SERVER_H__
 #define __TARPC_SERVER_H__
 
+#include "te_config.h"
+#include "rpc_server_config.h"
+
 #ifdef HAVE_STDIO_H
 #include <stdio.h>
 #endif
@@ -165,10 +168,13 @@
 #include "te_errno.h"
 #include "logger_api.h"
 #include "logfork.h"
-#include "rcf_ch_api.h"
-#include "rcf_pch.h"
+#include "rcf_common.h"
+#if defined(ENABLE_RPC_MEM)
+#include "rcf_pch_mem.h"
+#endif
 #include "rcf_rpc_defs.h"
 #include "te_rpc_types.h"
+#include "rpc_xdr.h"
 #include "tarpc.h"
 
 /** System call number of recvmmsg function */
@@ -943,5 +949,113 @@ extern void tarpc_generic_service(rpc_call_data *call);
     } while(0)
 
 typedef void (*sighandler_t)(int);
+
+/**
+ * Initialize context for aux threads which are used to make non-blocking
+ * RPC call.
+ */
+extern te_errno aux_threads_init(void);
+
+/**
+ * Cleanup the aux threads context.
+ */
+extern te_errno aux_threads_cleanup(void);
+
+/**
+ * Save thread identifier which is used for non-blocking RPC call.
+ */
+extern void aux_threads_add(pthread_t tid);
+
+/**
+ * Get thread identifier which is used for non-blocking RPC call.
+ *
+ * @return thread identifier or @c NULL
+ */
+extern pthread_t aux_threads_get(void);
+
+/**
+ * Remove thread identifier which is used for non-blocking RPC call from the
+ * context.
+ */
+extern void aux_threads_del(void);
+
+/**
+ * Sleep the pending timeout and return error in case
+ * non-blocking call is executed.
+ *
+ * @param _timeout  Timeout of pending (in milliseconds)
+ *
+ * @return @b TE_RC(@c TE_TA_UNIX, @c TE_EPENDING) if non-blocking call
+ *         is executed
+ */
+#define RPCSERVER_PLUGIN_AWAIT_RPC_CALL(_timeout)   \
+    do {                                            \
+        if (aux_threads_get() != 0)                 \
+        {                                           \
+            usleep((_timeout) * 1000);              \
+            return TE_RC(TE_TA_UNIX, TE_EPENDING);  \
+        }                                           \
+    } while (0)
+
+/**
+ * Entry function for RPC server. 
+ *
+ * @param name    RPC server name
+ *
+ * @return NULL
+ */
+extern void *rcf_pch_rpc_server(const char *name);
+
+/**
+ * Wrapper to call rcf_pch_rpc_server via "ta exec func" mechanism. 
+ *
+ * @param argc    should be 1
+ * @param argv    should contain pointer to RPC server name
+ */
+extern void rcf_pch_rpc_server_argv(int argc, char **argv);
+
+/**
+ * Find all callbacks and enable the RPC server plugin.
+ *
+ * @param install   Function name for install plugin or empty string or
+ *                  @c NULL
+ * @param action    Function name for plugin action or empty string or
+ *                  @c NULL
+ * @param uninstall Function name for uninstall plugin or empty string or
+ *                  @c NULL
+ *
+ * @return Status code
+ */
+extern te_errno rpcserver_plugin_enable(
+        const char *install, const char *action, const char *uninstall);
+
+/**
+ * Disable the RPC server plugin.
+ *
+ * @return Status code
+ */
+extern te_errno rpcserver_plugin_disable(void);
+
+/**
+ * Special signal handler which registers signals.
+ * 
+ * @param signum    received signal
+ */
+extern void signal_registrar(int signum);
+
+/**
+ * Special signal handler which registers signals and also
+ * saves signal information.
+ * 
+ * @param signum    received signal
+ * @param siginfo   pointer to siginfo_t structure
+ * @param context   pointer to user context
+ */
+extern void signal_registrar_siginfo(int signum, siginfo_t *siginfo,
+                                     void *context);
+
+extern sigset_t rpcs_received_signals;
+extern tarpc_siginfo_t last_siginfo;
+
 
 #endif /* __TARPC_SERVER_H__ */

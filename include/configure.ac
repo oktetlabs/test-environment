@@ -324,45 +324,6 @@ fi
 
 AC_SUBST(TE_EXT_LIBS_FILE)
 
-dnl This actually is only relevant for the agent side, but
-dnl the choice of RPC support macros must be consistent across the core
-dnl agent code and all additional RPC libraries.
-dnl Once RPC server-side implementation is abstracted into a library,
-dnl this will be moved here
-AC_ARG_ENABLE([typesafe-rpc],
-              AS_HELP_STRING([--disable-typesafe-rpc],
-                             [disable type-safe RPC implementation (default is ENABLE)]),
-              [ac_cv_enable_typesafe_rpc=$enableval], [ac_cv_enable_typesafe_rpc=yes])
-AC_CACHE_CHECK([whether to enable type-safe RPCs],
-               [ac_cv_enable_typesafe_rpc], [ac_cv_enable_typesafe_rpc=yes])
-
-if test x"$ac_cv_enable_typesafe_rpc" != xno
-then
-dnl
-dnl Check that the compiler supports GCC __typeof extension
-dnl
-    AC_COMPILE_IFELSE([AC_LANG_SOURCE(
-                       [[int testfunc(void *ptr);
-                         int testfunc2(void *ptr);
-                         __typeof(testfunc) *funcptr = testfunc2;
-                     ]])],
-                     [AC_DEFINE([ENABLE_TYPESAFE_RPC], [], [Whether to enable type-safe RPCs])],
-                     [AC_MSG_ERROR([__typeof is not supported])])
-fi
-
-AC_ARG_ENABLE([static-rpc-lookup],
-              AS_HELP_STRING([--enable-static-rpc-lookup],
-                             [use compile-time symbol resolution by default, not run-time (default is run-time)]),
-              [ac_cv_enable_static_rpc_lookup=$enableval],
-              [ac_cv_enable_static_rpc_lookup=no])
-AC_CACHE_CHECK([whether to use compile-time RPC symbol lookup by default],
-               [ac_cv_enable_static_rpc_lookup], [ac_cv_enable_static_rpc_lookup=no])
-if test x"$ac_cv_enable_static_rpc_lookup" != xno
-then
-    AC_DEFINE([DEFAULT_STATIC_RPC_LOOKUP], [], [Whether to use static RPC symbol lookup by default])
-fi
-
-
 AM_CONDITIONAL(WINDOWS, test x$host != x${host%windows})
 
 AC_CONFIG_FILES([Makefile])

@@ -62,44 +62,10 @@ AC_CHECK_TYPES([struct rtentry, struct ortentry], [], [],
                 #include <net/route.h>])
 
 dnl
-dnl Check for 'struct ip_mreqn'
-dnl
-AC_CHECK_TYPES([struct ip_mreqn], [], [],
-               [#include <netinet/in.h>])
-dnl
 dnl Check for 'struct ip_opts'
 dnl
 AC_CHECK_TYPES([struct ip_opts], [], [],
                [#include <netinet/in.h>])
-
-dnl
-dnl Check for 'struct group_req'
-dnl
-AC_CHECK_TYPES([struct group_req], [], [],
-               [#include <netinet/in.h>])
-
-dnl
-dnl Check for 'struct tcp_info'
-dnl
-AC_CHECK_TYPES([struct tcp_info], [], [],
-               [#include <netinet/tcp.h>])
-
-dnl
-dnl Check for 'tcpi_rcv_rtt' member in 'struct tcp_info'.
-dnl
-AC_CHECK_MEMBERS([struct tcp_info.tcpi_rcv_rtt], [], [],
-                 [#include <netinet/in.h>])
-
-dnl
-dnl Check for 'ipv6mr_interface' member in 'struct ipv6_mreq'.
-dnl
-AC_CHECK_MEMBERS([struct ipv6_mreq.ipv6mr_interface], [], [],
-                 [#include <netinet/in.h>])
-dnl
-dnl Check for 'ipv6mr_ifindex' member in 'struct ipv6_mreq'.
-dnl
-AC_CHECK_MEMBERS([struct ipv6_mreq.ipv6mr_ifindex], [], [],
-                 [#include <netinet/in.h>])
 
 dnl
 dnl Check for 'struct lifreq'
@@ -149,108 +115,6 @@ AC_CHECK_MEMBERS([struct arpreq.arp_dev], [], [],
                  [#include <net/if_arp.h>])
 
 dnl
-dnl Check for 'sa_restorer' member in 'struct sigaction'.
-dnl
-AC_CHECK_MEMBERS([struct sigaction.sa_restorer], [], [],
-                 [#include <signal.h>])
-
-dnl
-dnl Check for 'si_trapno' member in 'siginfo_t'.
-dnl
-AC_CHECK_MEMBERS([siginfo_t.si_trapno], [], [],
-                 [#include <signal.h>])
-
-dnl
-dnl Check for 'si_addr_lsb' member in 'siginfo_t'.
-dnl
-AC_CHECK_MEMBERS([siginfo_t.si_addr_lsb], [], [],
-                 [#include <signal.h>])
-
-dnl
-dnl Check for 'si_utime' member in 'siginfo_t'.
-dnl
-AC_CHECK_MEMBERS([siginfo_t.si_utime], [], [],
-                 [#include <signal.h>])
-
-dnl
-dnl Check for 'si_stime' member in 'siginfo_t'.
-dnl
-AC_CHECK_MEMBERS([siginfo_t.si_stime], [], [],
-                 [#include <signal.h>])
-
-dnl
-dnl Check for 'si_int' member in 'siginfo_t'.
-dnl
-AC_CHECK_MEMBERS([siginfo_t.si_int], [], [],
-                 [#include <signal.h>])
-
-dnl
-dnl Check for 'si_ptr' member in 'siginfo_t'.
-dnl
-AC_CHECK_MEMBERS([siginfo_t.si_ptr], [], [],
-                 [#include <signal.h>])
-
-dnl
-dnl Check for 'si_overrun' member in 'siginfo_t'.
-dnl
-AC_CHECK_MEMBERS([siginfo_t.si_overrun], [], [],
-                 [#include <signal.h>])
-
-dnl
-dnl Check for 'si_band' member in 'siginfo_t'.
-dnl
-AC_CHECK_MEMBERS([siginfo_t.si_band], [], [],
-                 [#include <signal.h>])
-
-dnl
-dnl Check for 'si_timerid' member in 'siginfo_t'.
-dnl
-AC_CHECK_MEMBERS([siginfo_t.si_timerid], [], [],
-                 [#include <signal.h>])
-
-dnl
-dnl Check for 'si_fd' member in 'siginfo_t'.
-dnl
-AC_CHECK_MEMBERS([siginfo_t.si_fd], [], [],
-                 [#include <signal.h>])
-
-dnl
-dnl Check for 'si_ptr' member in 'siginfo_t'.
-dnl
-AC_CHECK_MEMBERS([siginfo_t.si_ptr], [], [],
-                 [#include <signal.h>])
-
-dnl
-dnl Check for 'arp_dev' member in 'struct arpreq'.
-dnl
-AC_CHECK_MEMBERS([struct arpreq.arp_dev], [], [],
-                 [#include <net/if_arp.h>])
-
-dnl
-dnl Check for 'sival_int' member in 'union sigval'.
-dnl
-AC_CHECK_MEMBERS([union sigval.sival_int], [], [],
-                 [#include <signal.h>])
-
-dnl
-dnl Check for 'sigval_int' member in 'union sigval'.
-dnl
-AC_CHECK_MEMBERS([union sigval.sigval_int], [], [],
-                 [#include <signal.h>])
-
-dnl
-dnl Check for 'sival_ptr' member in 'union sigval'.
-dnl
-AC_CHECK_MEMBERS([union sigval.sival_ptr], [], [],
-                 [#include <signal.h>])
-
-dnl
-dnl Check for 'sigval_ptr' member in 'union sigval'.
-dnl
-AC_CHECK_MEMBERS([union sigval.sigval_ptr], [], [],
-                 [#include <signal.h>])
-
-dnl
 dnl Check for 'd_type' member in 'struct dirent'.
 dnl
 AC_CHECK_MEMBERS([struct dirent.d_type], [], [],
@@ -270,13 +134,6 @@ dnl Check for 'd_namelen' member in 'struct dirent'.
 dnl
 AC_CHECK_MEMBERS([struct dirent.d_namelen], [], [],
                  [#include <dirent.h>])
-
-dnl
-dnl Check for 'pw_gecos' member in 'struct passwd'.
-dnl
-AC_CHECK_MEMBERS([struct passwd.pw_gecos], [], [],
-                 [#include <pwd.h>])
-
 
 dnl
 dnl Berkley Socket API is provided by:
@@ -431,48 +288,6 @@ AC_CHECK_FUNC([aio_read], [],
     AC_SEARCH_LIBS([aio_read], [rt], [],
         AC_CHECK_LIB([nsl], [aio_read], [LIBS="-lnsl -lrt ${LIBS}"],
              AC_MSG_WARN([Asynchronous I/O not supported]), [-lrt])))
-
-if test -n "$with_rcf_rpc" ; then
-    dnl
-    dnl FreeBSD 4.x has no svc_exit().
-    dnl NetBSD has no svcunix_create().
-    dnl
-    AC_CHECK_FUNCS([svcunix_create svc_exit])
-
-    dnl
-    dnl Find library with SunRPC XDR functions.
-    dnl -lnsl on Solaris2 (SunOS 5.11);
-    dnl
-    AC_SEARCH_LIBS([xdr_bytes], [rpc nsl], [],
-                   AC_MSG_ERROR([No RPC library found]))
-
-    AH_TEMPLATE([xdr_uint8_t], [RPC XDR for unsigned 8bit width type])
-    AC_CHECK_FUNC([xdr_uint8_t], [],
-        [AC_CHECK_FUNC([xdr_u_int8_t],
-            [AC_DEFINE([xdr_uint8_t], [xdr_u_int8_t])],
-            [AC_CHECK_FUNC([xdr_u_char],
-                [AC_DEFINE([xdr_uint8_t], [xdr_u_char])],
-                [AC_MSG_ERROR([There is no xdr_uint8_t or xdr_u_int8_t!])]
-             )])])
-
-    AH_TEMPLATE([xdr_uint16_t], [RPC XDR for unsigned 8bit width type])
-    AC_CHECK_FUNC([xdr_uint16_t], [],
-        [AC_CHECK_FUNC([xdr_u_int16_t],
-            [AC_DEFINE([xdr_uint16_t], [xdr_u_int16_t])],
-            [AC_MSG_ERROR([There is no xdr_uint16_t or xdr_u_int16_t!])])])
-
-    AH_TEMPLATE([xdr_uint32_t], [RPC XDR for unsigned 32bit width type])
-    AC_CHECK_FUNC([xdr_uint32_t], [],
-        [AC_CHECK_FUNC([xdr_u_int32_t],
-            [AC_DEFINE([xdr_uint32_t], [xdr_u_int32_t])],
-            [AC_MSG_ERROR([There is no xdr_uint32_t or xdr_u_int32_t!])])])
-
-    AH_TEMPLATE([xdr_uint64_t], [RPC XDR for unsigned 64bit width type])
-    AC_CHECK_FUNC([xdr_uint64_t], [],
-        [AC_CHECK_FUNC([xdr_u_int64_t],
-            [AC_DEFINE([xdr_uint64_t], [xdr_u_int64_t])],
-            [AC_MSG_ERROR([There is no xdr_uint64_t or xdr_u_int64_t!])])])
-fi
 
 export PKG_CONFIG_PATH="$DESTDIR/$prefix/../$TE_PLATFORM/lib/pkgconfig/"
 PKG_CHECK_MODULES(TAD, te-$with_tad)
@@ -877,7 +692,7 @@ AC_SUBST([TE_BUILD])
 
 dnl end of "conf" staff
 
-AC_CONFIG_FILES([Makefile rpc/Makefile conf/Makefile])
+AC_CONFIG_FILES([Makefile conf/Makefile])
 
 TE_APP_RESTORE
 

@@ -184,24 +184,6 @@ extern const char *ta_execname;
 extern char ta_dir[RCF_MAX_PATH];
 
 /**
- * Special signal handler which registers signals.
- * 
- * @param signum    received signal
- */
-extern void signal_registrar(int signum);
-
-/**
- * Special signal handler which registers signals and also
- * saves signal information.
- * 
- * @param signum    received signal
- * @param siginfo   pointer to siginfo_t structure
- * @param context   pointer to user context
- */
-extern void signal_registrar_siginfo(int signum, siginfo_t *siginfo,
-                                     void *context);
-
-/**
  * Get status of the interface (FALSE - down or TRUE - up).
  *
  * @param ifname        name of the interface (like "eth0")
@@ -227,53 +209,6 @@ extern te_errno ta_interface_status_set(const char *ifname, te_bool status);
 /* Sockets to be used by various parts of configurator */
 extern int cfg_socket;
 extern int cfg6_socket;
-
-/**
- * Initialize context for aux threads which are used to make non-blocking
- * RPC call.
- */
-extern te_errno aux_threads_init(void);
-
-/**
- * Cleanup the aux threads context.
- */
-extern te_errno aux_threads_cleanup(void);
-
-/**
- * Save thread identifier which is used for non-blocking RPC call.
- */
-extern void aux_threads_add(pthread_t tid);
-
-/**
- * Get thread identifier which is used for non-blocking RPC call.
- *
- * @return thread identifier or @c NULL
- */
-extern pthread_t aux_threads_get(void);
-
-/**
- * Sleep the pending timeout and return error in case
- * non-blocking call is executed.
- *
- * @param _timeout  Timeout of pending (in milliseconds)
- *
- * @return @b TE_RC(@c TE_TA_UNIX, @c TE_EPENDING) if non-blocking call
- *         is executed
- */
-#define RPCSERVER_PLUGIN_AWAIT_RPC_CALL(_timeout)   \
-    do {                                            \
-        if (aux_threads_get() != 0)                 \
-        {                                           \
-            usleep((_timeout) * 1000);              \
-            return TE_RC(TE_TA_UNIX, TE_EPENDING);  \
-        }                                           \
-    } while (0)
-
-/**
- * Remove thread identifier which is used for non-blocking RPC call from the
- * context.
- */
-extern void aux_threads_del(void);
 
 /** TR-069 stuff */
 

@@ -1,4 +1,4 @@
-SUBDIRS=rpc conf
+SUBDIRS=conf
 
 ACLOCAL_AMFLAGS = -I $(TE_M4)
 
@@ -35,7 +35,7 @@ noinst_HEADERS = unix_internal.h
 
 taexec_PROGRAMS = ta
 
-ta_SOURCES = main.c log_remote.c aux_threads.c
+ta_SOURCES = main.c log_remote.c
 if GENERATE_SYMTBL
 nodist_ta_SOURCES = symtbl.c
 # symtbl.c should _not_ build declared as BUILT_SOURCES,
@@ -44,7 +44,7 @@ nodist_ta_SOURCES = symtbl.c
 # ! BUILT_SOURCES = $(nodist_ta_SOURCES)
 endif
 
-ta_LDADD = conf/libconf.a rpc/libtarpc.a -lrcfpch \
+ta_LDADD = conf/libconf.a -lrpcserver -lrcfpch \
            -l$(TAD) $(TE_LDADD) \
            -lrpcxdrta -lrpc_types -lloggerta -lrpctransport \
 		   -ltools -lagentlib \
@@ -54,9 +54,10 @@ ta_LDADD = conf/libconf.a rpc/libtarpc.a -lrcfpch \
 SYMTBL_OBJECTS = main.o log_remote.o
 SYMTBL_LIBS = $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtools.a \
               $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librcfpch.a \
+			  $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librpcserver.a \
 			  $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libagentlib.a \
               $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/lib$(TAD).a \
-              conf/libconf.a rpc/libtarpc.a
+              conf/libconf.a
 
 if ISCSI_TARGET_USE
 SYMTBL_LIBS+=\
