@@ -33,8 +33,8 @@
 #endif
 
 #ifdef WINDOWS
-/* 
- * It's not possible to define it in config.h and include it explicitly 
+/*
+ * It's not possible to define it in config.h and include it explicitly
  * because a lot of shit like HAVE_UNISTD_H is defined there automatically.
  */
 #define x_int32_arg_t long
@@ -85,11 +85,11 @@ rpc_info *
 rpc_find_info(const char *name)
 {
     int i;
-    
+
     for (i = 0; tarpc_functions[i].name != NULL; i++)
         if (strcmp(name, tarpc_functions[i].name) == 0)
             return tarpc_functions + i;
-        
+
     return NULL;
 }
 
@@ -107,24 +107,24 @@ rpc_find_info(const char *name)
  * @retval TE_ESUNRPC   Buffer is too small or another encoding error
  *                      ocurred
  */
-int 
+int
 rpc_xdr_encode_call(const char *name, void *buf, size_t *buflen, void *objp)
 {
     XDR xdrs;
-    
+
     rpc_info *info;
     uint32_t  len;
 
     if ((info = rpc_find_info(name)) == NULL)
         return TE_RC(TE_RCF_RPC, TE_ENOENT);
-    
+
     len = strlen(name) + 1;
-    
-#ifdef RPC_XML    
-    xdrxml_create(&xdrs, buf, *buflen, rpc_xml_call, 
+
+#ifdef RPC_XML
+    xdrxml_create(&xdrs, buf, *buflen, rpc_xml_call,
                   TRUE, name, XDR_ENCODE);
     /* Put header */
-#else    
+#else
     /* Encode routine name */
     xdrmem_create(&xdrs, buf, *buflen, XDR_ENCODE);
     xdrs.x_ops->x_putint32(&xdrs, (x_int32_arg_t *)&len);
@@ -134,14 +134,14 @@ rpc_xdr_encode_call(const char *name, void *buf, size_t *buflen, void *objp)
     /* Encode argument */
     if (!info->in(&xdrs, objp))
         return TE_RC(TE_RCF_RPC, TE_ESUNRPC);
-    
-#ifdef RPC_XML    
+
+#ifdef RPC_XML
     xdrxml_free(&xdrs);
     *buflen = strlen(buf) + 1;
 #else
     *buflen = xdrs.x_ops->x_getpostn(&xdrs);
-#endif    
-    
+#endif
+
     return 0;
 }
 
@@ -156,32 +156,32 @@ rpc_xdr_encode_call(const char *name, void *buf, size_t *buflen, void *objp)
  * @return Status code (if rc attribute of result is FALSE, an error should
  *         be returned)
  */
-int 
+int
 rpc_xdr_decode_result(const char *name, void *buf, size_t buflen,
                       void *objp)
 {
     XDR xdrs;
-    
+
     x_int32_arg_t   rc;
-    
+
     rpc_info *info;
 
-#ifdef RPC_XML    
-    xdrxml_create(&xdrs, buf, buflen, rpc_xml_result, 
+#ifdef RPC_XML
+    xdrxml_create(&xdrs, buf, buflen, rpc_xml_result,
                   TRUE, name, XDR_DECODE);
     /* Decode  - how can we get the routine name? */
-#else    
+#else
     /* Decode rc */
     xdrmem_create(&xdrs, buf, buflen, XDR_DECODE);
     xdrs.x_ops->x_getint32(&xdrs, &rc);
-    
+
     if (rc == 0)
         return TE_RC(TE_RCF_RPC, TE_ESUNRPC);
 #endif
 
     if ((info = rpc_find_info(name)) == NULL)
         return TE_RC(TE_RCF_RPC, TE_ENOENT);
-    
+
     /* Decode argument */
     if (!info->out(&xdrs, objp))
         return TE_RC(TE_RCF_RPC, TE_ESUNRPC);
@@ -190,8 +190,8 @@ rpc_xdr_decode_result(const char *name, void *buf, size_t buflen,
     xdrxml_free(&xdrs);
     if (rc == FALSE)
         return TE_RC(TE_RCF_RPC, TE_ESUNRPC);
-#endif    
-   
+#endif
+
     return 0;
 }
 
@@ -201,7 +201,7 @@ rpc_xdr_decode_result(const char *name, void *buf, size_t buflen,
  * @param func  XDR function
  * @param objp  C structure pointer
  */
-void 
+void
 rpc_xdr_free(rpc_func func, void *objp)
 {
     XDR xdrs;
@@ -220,20 +220,20 @@ rpc_xdr_free(rpc_func func, void *objp)
  * @param buf      buffer with encoded data
  * @param buflen   length of the data
  * @param name     RPC name location
- * @param objp_p   location for C structure for input parameters to be 
+ * @param objp_p   location for C structure for input parameters to be
  *                 allocated and filled
  *
  * @return Status code
  */
-int 
+int
 rpc_xdr_decode_call(void *buf, size_t buflen, char *name, void **objp_p)
 {
     XDR xdrs;
-    
+
     void     *objp;
     rpc_info *info;
 
-#ifdef RPC_XML    
+#ifdef RPC_XML
     char     *tmp;
     int       n;
 
@@ -246,9 +246,9 @@ rpc_xdr_decode_call(void *buf, size_t buflen, char *name, void **objp_p)
     }
     memcpy(name, buf + XML_CALL_PREFIX_LEN, n);
     name[n] = 0;
-#else   
+#else
     uint32_t len = 0;
-    
+
     /* Decode routine name */
 #define BYTE(i) (unsigned int)(((char *)buf)[i])
     xdrmem_create(&xdrs, buf, buflen, XDR_DECODE);
@@ -258,17 +258,17 @@ rpc_xdr_decode_call(void *buf, size_t buflen, char *name, void **objp_p)
 
     if ((info = rpc_find_info(name)) == NULL)
     {
-        printf("%s %d: Cannot find info for %s\n", 
+        printf("%s %d: Cannot find info for %s\n",
                __FUNCTION__, __LINE__, name);
         return TE_RC(TE_RCF_RPC, TE_ENOENT);
     }
-    
+
     /* Allocate memory for the argument */
     if ((objp = calloc(1, info->in_len)) == NULL)
     {
         return TE_RC(TE_RCF_RPC, TE_ENOMEM);
     }
-   
+
     /* Encode argument */
     if (!info->in(&xdrs, objp))
     {
@@ -277,10 +277,10 @@ rpc_xdr_decode_call(void *buf, size_t buflen, char *name, void **objp_p)
     }
 #ifdef RPC_XML
     xdrxml_free(&xdrs);
-#endif    
-    
+#endif
+
     *objp_p = objp;
-    
+
     return 0;
 }
 
@@ -290,7 +290,7 @@ rpc_xdr_decode_call(void *buf, size_t buflen, char *name, void **objp_p)
  * @param name          RPC name
  * @param buf           buffer for encoded data
  * @param buflen        length of the buf (IN) / length of the data (OUT)
- * @param rc            value returned by RPC 
+ * @param rc            value returned by RPC
  * @param objp          output parameters structure, for example
  *                      pointer to structure tarpc_bind_out
  *
@@ -298,42 +298,42 @@ rpc_xdr_decode_call(void *buf, size_t buflen, char *name, void **objp_p)
  * @retval TE_ESUNRPC   Buffer is too small or another encoding error
  *                      ocurred
  */
-int 
-rpc_xdr_encode_result(char *name, te_bool rc, 
+int
+rpc_xdr_encode_result(char *name, te_bool rc,
                       void *buf, size_t *buflen, void *objp)
 {
     XDR xdrs;
-    
+
     rpc_info *info;
 
     if ((info = rpc_find_info(name)) == NULL)
     {
-        printf("%s %d: Cannot find info for %s\n", 
+        printf("%s %d: Cannot find info for %s\n",
                __FUNCTION__, __LINE__, name);
         rc = FALSE;
     }
-    
+
 #ifdef RPC_XML
-    xdrxml_create(&xdrs, buf, *buflen, rpc_xml_result, 
+    xdrxml_create(&xdrs, buf, *buflen, rpc_xml_result,
                   rc, name, XDR_ENCODE);
-#else    
+#else
     xdrmem_create(&xdrs, buf, *buflen, XDR_ENCODE);
     /* Encode return code */
     {
         x_int32_arg_t   rc_int32 = rc;
-        
+
         xdrs.x_ops->x_putint32(&xdrs, &rc_int32);
-    }    
-#endif    
+    }
+#endif
     /* Encode argument */
     if (rc && !info->out(&xdrs, objp))
         return TE_RC(TE_RCF_RPC, TE_ESUNRPC);
 
-#ifdef RPC_XML    
+#ifdef RPC_XML
     *buflen = strlen(buf) + 1;
     xdrxml_free(&xdrs);
 #else
     *buflen = xdrs.x_ops->x_getpostn(&xdrs);
-#endif    
+#endif
     return 0;
-}                      
+}

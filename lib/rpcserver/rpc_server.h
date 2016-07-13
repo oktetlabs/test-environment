@@ -998,7 +998,7 @@ extern void aux_threads_del(void);
     } while (0)
 
 /**
- * Entry function for RPC server. 
+ * Entry function for RPC server.
  *
  * @param name    RPC server name
  *
@@ -1007,7 +1007,7 @@ extern void aux_threads_del(void);
 extern void *rcf_pch_rpc_server(const char *name);
 
 /**
- * Wrapper to call rcf_pch_rpc_server via "ta exec func" mechanism. 
+ * Wrapper to call rcf_pch_rpc_server via "ta exec func" mechanism.
  *
  * @param argc    should be 1
  * @param argv    should contain pointer to RPC server name
@@ -1038,7 +1038,7 @@ extern te_errno rpcserver_plugin_disable(void);
 
 /**
  * Special signal handler which registers signals.
- * 
+ *
  * @param signum    received signal
  */
 extern void signal_registrar(int signum);
@@ -1046,7 +1046,7 @@ extern void signal_registrar(int signum);
 /**
  * Special signal handler which registers signals and also
  * saves signal information.
- * 
+ *
  * @param signum    received signal
  * @param siginfo   pointer to siginfo_t structure
  * @param context   pointer to user context

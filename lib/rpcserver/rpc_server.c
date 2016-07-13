@@ -1,4 +1,4 @@
-/** @file 
+/** @file
  * @brief RCF Portable Command Handler
  *
  * RCF RPC server entry point. The file is included to another one
@@ -513,7 +513,7 @@ sig_handler(int s)
 #endif
 
 /**
- * Entry function for RPC server. 
+ * Entry function for RPC server.
  *
  * @param name   RPC server name
  *
@@ -526,13 +526,13 @@ rcf_pch_rpc_server(const char *name)
     uint8_t             *buf = NULL;
     int                  pid = getpid();
     int                  tid = thread_self();
-    
+
 #define STOP(msg...)    \
     do {                \
         ERROR(msg);     \
         goto cleanup;   \
     } while (0)
-    
+
 #ifdef HAVE_SIGNAL_H
     signal(SIGTERM, sig_handler);
 #endif
@@ -550,11 +550,11 @@ rcf_pch_rpc_server(const char *name)
                 name);
         fflush(stderr);
     }
-    
+
 #ifdef HAVE_PTHREAD_H
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 #endif
-    
+
     if (rpc_transport_connect_ta(name, &handle) != 0)
         return NULL;
 
@@ -569,7 +569,7 @@ rcf_pch_rpc_server(const char *name)
     RING("RPC server '%s' (%u-bit) (re-)started (PID %d, TID %u)",
          name, (unsigned)(sizeof(void *) << 3),
          (int)pid, (unsigned)tid);
-#endif             
+#endif
 
 #ifdef __unix__
     if (rcf_rpc_server_init() != 0)
@@ -581,7 +581,7 @@ rcf_pch_rpc_server(const char *name)
     while (TRUE)
     {
         const char *reply = "OK";
-        char      rpc_name[RCF_RPC_MAX_NAME];        
+        char      rpc_name[RCF_RPC_MAX_NAME];
                                         /* RPC name, i.e. "bind" */
         void     *in = NULL;            /* Input parameter C structure */
         void     *out = NULL;           /* Output parameter C structure */
@@ -614,7 +614,7 @@ rcf_pch_rpc_server(const char *name)
 #endif
         if (rc != 0)
             STOP("Connection with TA is broken!");
-            
+
         if (strcmp((char *)buf, "FIN") == 0)
         {
 #ifdef __unix__
@@ -630,7 +630,7 @@ rcf_pch_rpc_server(const char *name)
 
             goto cleanup;
         }
-        
+
         if (rpc_xdr_decode_call(buf, len, rpc_name, &in) != 0)
         {
             ERROR("Decoding of RPC %s call failed", rpc_name);
@@ -639,33 +639,33 @@ rcf_pch_rpc_server(const char *name)
 
         info = rpc_find_info(rpc_name);
         assert(info != NULL);
-        
+
         if ((out = calloc(1, info->out_len)) == NULL)
         {
             ERROR("Memory allocation failure");
             goto result;
         }
-        
+
         result = (info->rpc)(in, out, NULL);
-        
+
     result: /* Send an answer */
-        
+
         if (in != NULL && info != NULL)
             rpc_xdr_free(info->in, in);
         free(in);
-            
+
         len = RCF_RPC_HUGE_BUF_LEN;
-        if (rpc_xdr_encode_result(rpc_name, result, (char *)buf, 
+        if (rpc_xdr_encode_result(rpc_name, result, (char *)buf,
                                   &len, out) != 0)
         {
             STOP("Fatal error: encoding of RPC %s output "
                  "parameters failed", rpc_name);
         }
-            
+
         if (info != NULL)
             rpc_xdr_free(info->out, out);
         free(out);
-        
+
         if (rpc_transport_send(handle, buf, len) != 0)
             STOP("Sending data failed in main RPC server loop");
     }
@@ -674,8 +674,8 @@ cleanup:
     logfork_delete_user(pid, tid);
     rpc_transport_close(handle);
     free(buf);
-    
-#undef STOP    
+
+#undef STOP
 
     return NULL;
 }

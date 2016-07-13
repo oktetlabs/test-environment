@@ -37,8 +37,8 @@ extern "C" {
 /** Usual RPC buffer length */
 #define RCF_RPC_BUF_LEN          2048
 
-/** 
- * Huge RPC buffer length - if encode fails with this buffer length, 
+/**
+ * Huge RPC buffer length - if encode fails with this buffer length,
  * it's assumed that error is not related to lack of space.
  */
 #define RCF_RPC_HUGE_BUF_LEN     (20 * 1024 * 1024)
@@ -86,16 +86,16 @@ extern rpc_info *rpc_find_info(const char *name);
  * @retval TE_ESUNRPC   Buffer is too small or another encoding error
  *                      ocurred
  */
-extern int rpc_xdr_encode_call(const char *name, void *buf, size_t *buflen, 
+extern int rpc_xdr_encode_call(const char *name, void *buf, size_t *buflen,
                                void *objp);
-                               
+
 /**
  * Encode RPC result.
  *
  * @param name          RPC name
  * @param buf           buffer for encoded data
  * @param buflen        length of the buf (IN) / length of the (OUT)
- * @param rc            value returned by RPC 
+ * @param rc            value returned by RPC
  * @param objp          output parameters structure, for example
  *                      pointer to structure tarpc_bind_out
  *
@@ -103,7 +103,7 @@ extern int rpc_xdr_encode_call(const char *name, void *buf, size_t *buflen,
  * @retval TE_ESUNRPC   Buffer is too small or another encoding error
  *                      ocurred
  */
-extern int rpc_xdr_encode_result(char *name, te_bool rc, 
+extern int rpc_xdr_encode_result(char *name, te_bool rc,
                                  void *buf, size_t *buflen, void *objp);
 
 
@@ -124,7 +124,7 @@ extern int rpc_xdr_decode_call(void *buf, size_t buflen,
 /**
  * Decode RPC result.
  *
- * @param name    RPC name 
+ * @param name    RPC name
  * @param buf     buffer with encoded data
  * @param buflen  length of the data
  * @param objp    C structure for input parameters to be filled
@@ -132,7 +132,7 @@ extern int rpc_xdr_decode_call(void *buf, size_t buflen,
  * @return Status code (if rc attribute of result is FALSE, an error should
  *         be returned)
  */
-extern int rpc_xdr_decode_result(const char *name, void *buf, 
+extern int rpc_xdr_decode_result(const char *name, void *buf,
                                  size_t buflen, void *objp);
 
 /**

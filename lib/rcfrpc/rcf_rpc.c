@@ -91,22 +91,22 @@ rpc_server_sem_init(rcf_rpc_server *rpcs)
 {
 #ifdef HAVE_PTHREAD_H
     pthread_mutexattr_t attr;
-    
+
     pthread_mutexattr_init(&attr);
     if (pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE_NP) != 0 ||
         pthread_mutex_init(&rpcs->lock, &attr) != 0)
     {
         ERROR("Cannot initialize mutex for RPC server");
-        return TE_OS_RC(TE_RCF_API, errno); 
+        return TE_OS_RC(TE_RCF_API, errno);
     }
 #endif
-    
+
     return 0;
 }
 
 
 /* See description in rcf_rpc.h */
-te_errno 
+te_errno
 rcf_rpc_server_get(const char *ta, const char *name,
                    const char *father, int flags,
                    rcf_rpc_server **p_handle)
@@ -114,12 +114,12 @@ rcf_rpc_server_get(const char *ta, const char *name,
     int   sid;
     char *val0 = NULL;
     int   rc, rc1;
-    
+
     rcf_rpc_server *rpcs = NULL;
     cfg_handle      handle = CFG_HANDLE_INVALID;
     char            val[RCF_RPC_NAME_LEN];
     char            str_register[RCF_RPC_NAME_LEN] = "register_";
-    
+
     /* Validate parameters */
     if (ta == NULL || name == NULL ||
         strlen(name) >= RCF_RPC_NAME_LEN - strlen("forkexec_register_") ||
@@ -127,7 +127,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
         strcmp_start("forkexec_", name) == 0 ||
         strcmp_start("register_", name) == 0 ||
         ((flags & (RCF_RPC_SERVER_GET_EXISTING |
-           RCF_RPC_SERVER_GET_REUSE)) && father != NULL) || 
+           RCF_RPC_SERVER_GET_REUSE)) && father != NULL) ||
         ((flags & (RCF_RPC_SERVER_GET_THREAD |
                    RCF_RPC_SERVER_GET_REGISTER)) && father == NULL) ||
         ((flags & RCF_RPC_SERVER_GET_REGISTER) &&
@@ -150,8 +150,8 @@ rcf_rpc_server_get(const char *ta, const char *name,
 
     if (rc != 0 && (flags & RCF_RPC_SERVER_GET_EXISTING))
         return TE_RC(TE_RCF_API, TE_ENOENT);
-    
-    if (cfg_get_instance_fmt(NULL, &sid, 
+
+    if (cfg_get_instance_fmt(NULL, &sid,
                              "/rpcserver_sid:%s:%s",
                              ta, name) != 0)
     {
@@ -161,19 +161,19 @@ rcf_rpc_server_get(const char *ta, const char *name,
             ERROR("Cannot allocate RCF SID");
             return rc1;
         }
-            
+
         if ((rc1 = cfg_add_instance_fmt(&handle, CFG_VAL(INTEGER, sid),
-                                        "/rpcserver_sid:%s:%s", 
+                                        "/rpcserver_sid:%s:%s",
                                         ta, name)) != 0)
         {
             ERROR("Failed to specify SID for the RPC server %s", name);
             return rc1;
         }
-    }        
-        
+    }
+
     /* FIXME: thread support to be done */
-    if (father != NULL && 
-        cfg_get_instance_fmt(NULL, NULL, "/agent:%s/rpcserver:%s", 
+    if (father != NULL &&
+        cfg_get_instance_fmt(NULL, NULL, "/agent:%s/rpcserver:%s",
                              ta, father) != 0)
     {
         ERROR("Cannot find father %s to create server %s",
@@ -282,15 +282,15 @@ rcf_rpc_server_get(const char *ta, const char *name,
     }
     else if (rc != 0)
     {
-        if ((rc = cfg_add_instance_fmt(&handle, CVT_STRING, val, 
-                                       "/agent:%s/rpcserver:%s", 
+        if ((rc = cfg_add_instance_fmt(&handle, CVT_STRING, val,
+                                       "/agent:%s/rpcserver:%s",
                                        ta, name)) != 0)
         {
             RETERR(rc, "Cannot add RPC server instance");
         }
     }
-        
-#undef RETERR    
+
+#undef RETERR
 
     /* Create RPC server structure and fill it */
     strcpy(rpcs->ta, ta);
@@ -440,7 +440,7 @@ rcf_rpc_server_mark_deleted_threads(rcf_rpc_server *rpcs)
             if (servers[i] != my_handle)
             {
                 rc = cfg_set_instance_fmt(
-                                     CFG_VAL(INTEGER, 1), 
+                                     CFG_VAL(INTEGER, 1),
                                      "/agent:%s/rpcserver:%s/finished:",
                                      rpcs->ta, name);
                 if (rc != 0)
@@ -478,12 +478,12 @@ rcf_rpc_server_mark_deleted_threads(rcf_rpc_server *rpcs)
 }
 
 /* See description in rcf_rpc.h */
-te_errno 
+te_errno
 rcf_rpc_server_exec(rcf_rpc_server *rpcs)
 {
     tarpc_execve_in  in;
     tarpc_execve_out out;
-    
+
     te_errno  rc;
 
     if (rpcs == NULL)
@@ -501,7 +501,7 @@ rcf_rpc_server_exec(rcf_rpc_server *rpcs)
     in.common.use_libc = FALSE;
 
     rpcs->op = RCF_RPC_CALL_WAIT;
-    rc = rcf_ta_call_rpc(rpcs->ta, rpcs->sid, rpcs->name, 0xFFFFFFFF, 
+    rc = rcf_ta_call_rpc(rpcs->ta, rpcs->sid, rpcs->name, 0xFFFFFFFF,
                          "execve", &in, &out);
 
 #ifdef HAVE_PTHREAD_H
@@ -523,16 +523,16 @@ rcf_rpc_server_exec(rcf_rpc_server *rpcs)
 }
 
 /* See description in rcf_rpc.h */
-te_errno 
+te_errno
 rcf_rpc_server_destroy(rcf_rpc_server *rpcs)
 {
     int rc;
-    
+
     if (rpcs == NULL)
         return 0;
-    
+
     VERB("Destroy RPC server %s", rpcs->name);
-    
+
 #ifdef HAVE_PTHREAD_H
     if (pthread_mutex_lock(&rpcs->lock) != 0)
         ERROR("%s(): pthread_mutex_lock() failed", __FUNCTION__);
@@ -563,12 +563,12 @@ rcf_rpc_server_destroy(rcf_rpc_server *rpcs)
 
 /* See description in rcf_rpc.h */
 void
-rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc, 
+rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
              void *in_arg, void *out_arg)
 {
     tarpc_in_arg  *in = (tarpc_in_arg *)in_arg;
     tarpc_out_arg *out = (tarpc_out_arg *)out_arg;
-    
+
     te_bool     op_is_done;
     te_bool     is_alive;
 
@@ -577,26 +577,26 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
         ERROR("Invalid RPC server handle is passed to rcf_rpc_call()");
         return;
     }
-        
+
     if (in_arg == NULL || out_arg == NULL || proc == NULL)
     {
         rpcs->_errno = TE_RC(TE_RCF_API, TE_EINVAL);
         return;
     }
-    
+
     op_is_done = (strcmp(proc, "rpc_is_op_done") == 0);
     is_alive = (strcmp(proc, "rpc_is_alive") == 0);
 
     VERB("Calling RPC %s", proc);
-        
+
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&rpcs->lock);
-#endif    
+#endif
     rpcs->_errno = 0;
     rpcs->err_log = FALSE;
     if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
         rpcs->timeout = rpcs->def_timeout;
-    
+
     if (rpcs->op == RCF_RPC_CALL || rpcs->op == RCF_RPC_CALL_WAIT)
     {
         if (rpcs->tid0 != 0)
@@ -605,7 +605,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
             rpcs->timed_out = TRUE;
 #ifdef HAVE_PTHREAD_H
             pthread_mutex_unlock(&rpcs->lock);
-#endif            
+#endif
             return;
         }
     }
@@ -618,22 +618,22 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
             rpcs->timed_out = TRUE;
 #ifdef HAVE_PTHREAD_H
             pthread_mutex_unlock(&rpcs->lock);
-#endif            
+#endif
             return;
         }
         else if (strcmp(rpcs->proc, proc) != 0 && !op_is_done)
         {
-            ERROR("Try to wait RPC %s instead called RPC %s", 
+            ERROR("Try to wait RPC %s instead called RPC %s",
                   proc, rpcs->proc);
             rpcs->_errno = TE_RC(TE_RCF_API, TE_EPERM);
             rpcs->timed_out = TRUE;
 #ifdef HAVE_PTHREAD_H
             pthread_mutex_unlock(&rpcs->lock);
-#endif            
+#endif
             return;
         }
     }
-    
+
     in->start = rpcs->start;
     in->op = rpcs->op;
     in->tid = rpcs->tid0;
@@ -644,9 +644,9 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
     rpcs->last_use_libc = rpcs->use_libc_once;
 
     if (!op_is_done && !is_alive)
-        strcpy(rpcs->proc, proc); 
+        strcpy(rpcs->proc, proc);
 
-    rpcs->_errno = rcf_ta_call_rpc(rpcs->ta, rpcs->sid, rpcs->name, 
+    rpcs->_errno = rcf_ta_call_rpc(rpcs->ta, rpcs->sid, rpcs->name,
                                    rpcs->timeout, proc, in, out);
 
     if (rpcs->op != RCF_RPC_CALL)
@@ -659,10 +659,10 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
     {
         rpcs->timed_out = TRUE;
     }
-    
+
     if (rpcs->_errno == 0)
     {
-        rpcs->duration = out->duration; 
+        rpcs->duration = out->duration;
         rpcs->_errno = out->_errno;
         rpcs->timed_out = FALSE;
         if (rpcs->op == RCF_RPC_CALL)
@@ -685,7 +685,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
 
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&rpcs->lock);
-#endif    
+#endif
 }
 
 /* See description in rcf_rpc.h */
@@ -705,7 +705,7 @@ rcf_rpc_server_is_op_done(rcf_rpc_server *rpcs, te_bool *done)
 
     rpcs->op = RCF_RPC_IS_DONE;
     rcf_rpc_call(rpcs, "rpc_is_op_done", &in, &out);
-    
+
     if (rpcs->_errno != 0)
     {
         ERROR("Failed to call rpc_is_op_done() on the RPC server %s",
@@ -736,7 +736,7 @@ rcf_rpc_server_is_alive(rcf_rpc_server *rpcs)
     rpcs->op = RCF_RPC_IS_DONE;
     rcf_rpc_call(rpcs, "rpc_is_alive", &in, &out);
     rpcs->op = old_op;
-    
+
     if (rpcs->_errno != 0)
     {
         ERROR("Failed to call rpc_is_alive() on the RPC server %s",
@@ -790,13 +790,13 @@ rcf_rpc_setlibname(rcf_rpc_server *rpcs, const char *libname)
 }
 
 extern int rcf_send_recv_msg(rcf_msg *send_buf, size_t send_size,
-                             rcf_msg *recv_buf, size_t *recv_size, 
+                             rcf_msg *recv_buf, size_t *recv_size,
                              rcf_msg **p_answer);
 
 /**
  * Call SUN RPC on the TA.
  *
- * @param ta_name       Test Agent name                 
+ * @param ta_name       Test Agent name
  * @param session       TA session or 0
  * @param rpcserver     Name of the RPC server
  * @param timeout       RPC timeout in milliseconds or 0 (unlimited)
@@ -806,15 +806,15 @@ extern int rcf_send_recv_msg(rcf_msg *send_buf, size_t send_size,
  *
  * @return Status code
  */
-te_errno 
-rcf_ta_call_rpc(const char *ta_name, int session, 
+te_errno
+rcf_ta_call_rpc(const char *ta_name, int session,
                 const char *rpcserver, int timeout,
                 const char *rpc_name, void *in, void *out)
 {
-/** Length of RPC data inside the message */     
+/** Length of RPC data inside the message */
 #define INSIDE_LEN \
     (sizeof(((rcf_msg *)0)->file) + sizeof(((rcf_msg *)0)->value))
-    
+
 /** Length of message part before RPC data */
 #define PREFIX_LEN  \
     (sizeof(rcf_msg) - INSIDE_LEN)
@@ -825,21 +825,21 @@ rcf_ta_call_rpc(const char *ta_name, int session,
     int      rc;
     size_t   anslen = sizeof(msg_buf);
     size_t   len;
-    
-    if (ta_name == NULL || strlen(ta_name) >= RCF_MAX_NAME || 
-        rpcserver == NULL || rpc_name == NULL || 
+
+    if (ta_name == NULL || strlen(ta_name) >= RCF_MAX_NAME ||
+        rpcserver == NULL || rpc_name == NULL ||
         in == NULL || out == NULL)
     {
         return TE_RC(TE_RCF_API, TE_EINVAL);
     }
-    
+
     if (strlen(rpc_name) >= RCF_RPC_MAX_NAME)
     {
-        ERROR("Too long RPC name: %s - change RCF_RPC_MAX_NAME constant", 
+        ERROR("Too long RPC name: %s - change RCF_RPC_MAX_NAME constant",
               rpc_name);
         return TE_RC(TE_RCF_API, TE_EINVAL);
     }
-    
+
     len = RCF_RPC_BUF_LEN;
     if ((rc = rpc_xdr_encode_call(rpc_name, msg->file, &len, in)) != 0)
     {
@@ -848,7 +848,7 @@ rcf_ta_call_rpc(const char *ta_name, int session,
             ERROR("Unknown RPC %s", rpc_name);
             return rc;
         }
-        
+
         /* Try to allocate more memory */
         len = RCF_RPC_HUGE_BUF_LEN;
         anslen = PREFIX_LEN + RCF_RPC_HUGE_BUF_LEN;
@@ -863,7 +863,7 @@ rcf_ta_call_rpc(const char *ta_name, int session,
             return rc;
         }
     }
-    
+
     memset(msg, 0, PREFIX_LEN);
     msg->opcode = RCFOP_RPC;
     msg->sid = session;
@@ -874,35 +874,35 @@ rcf_ta_call_rpc(const char *ta_name, int session,
     msg->data_len = len - INSIDE_LEN;
 
     rc = rcf_send_recv_msg(msg, PREFIX_LEN + len, msg, &anslen, &ans);
-                           
+
     if (ans != NULL)
     {
         if ((char *)msg != msg_buf)
             free(msg);
-            
+
         msg = ans;
     }
-    
+
     if (rc != 0 || (rc = msg->error) != 0)
     {
        if ((char *)msg != msg_buf)
             free(msg);
         return rc;
     }
-    
+
     rc = rpc_xdr_decode_result(rpc_name, msg->file, msg->intparm, out);
-    
+
     if (rc != 0)
         ERROR("Decoding of RPC %s output parameters failed: error %r",
               rpc_name, rc);
-        
+
     if ((char *)msg != msg_buf)
         free(msg);
-        
-    return rc;        
-    
-#undef INSIDE_LEN    
-#undef PREFIX_LEN    
+
+    return rc;
+
+#undef INSIDE_LEN
+#undef PREFIX_LEN
 }
 
 /* See description in rcf_rpc.h */
@@ -911,23 +911,23 @@ rcf_rpc_server_has_children(rcf_rpc_server *rpcs)
 {
     unsigned int num, i;
     cfg_handle  *servers;
-    
+
     if (rpcs == NULL)
         return FALSE;
-    
+
     if (cfg_find_pattern_fmt(&num, &servers, "/agent:%s/rpcserver:*",
                              rpcs->ta) != 0)
     {
         return FALSE;
     }
-    
+
     for (i = 0; i < num; i++)
     {
         char *name;
-        
+
         if (cfg_get_instance(servers[i], NULL, &name) != 0)
             continue;
-            
+
         if (strcmp_start("thread_", name) == 0 &&
             strcmp(name + strlen("thread_"), rpcs->name) == 0)
         {
@@ -936,15 +936,15 @@ rcf_rpc_server_has_children(rcf_rpc_server *rpcs)
             return TRUE;
         }
         free(name);
-    }              
-    
+    }
+
     free(servers);
-    return FALSE;    
+    return FALSE;
 }
 
 /* See description in rcf_rpc.h */
-te_errno 
-rcf_rpc_server_create_process(rcf_rpc_server *rpcs, 
+te_errno
+rcf_rpc_server_create_process(rcf_rpc_server *rpcs,
                               const char *name, int flags,
                               rcf_rpc_server **p_new)
 {
@@ -957,53 +957,53 @@ rcf_rpc_server_create_process(rcf_rpc_server *rpcs,
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     in.common.op = RCF_RPC_CALL_WAIT;
     in.common.use_libc = FALSE;
     in.name.name_len = strlen(name) + 1;
     in.name.name_val = strdup(name);
     in.flags = flags;
-    
+
     if ((rc = rcf_ta_call_rpc(rpcs->ta, rpcs->sid, rpcs->name,
                               1000, "create_process", &in, &out)) != 0)
-    { 
+    {
         free(in.name.name_val);
         return rc;
     }
-    
+
     free(in.name.name_val);
-        
+
     if (out.pid < 0)
     {
-        ERROR("RPC create_process() failed on the server %s with errno %r", 
+        ERROR("RPC create_process() failed on the server %s with errno %r",
               rpcs->name, out.common._errno);
         return (out.common._errno != 0) ?
                    out.common._errno : TE_RC(TE_RCF_API, TE_ECORRUPTED);
     }
-    
-    /* 
-     * Flag RCF_RPC_SERVER_EXEC is passed just for proper value setting 
+
+    /*
+     * Flag RCF_RPC_SERVER_EXEC is passed just for proper value setting
      * of RPC server node in configuration tree.
      */
     rc = rcf_rpc_server_get(rpcs->ta, name, rpcs->name,
                             RCF_RPC_SERVER_GET_REGISTER |
                             (flags & RCF_RPC_SERVER_GET_EXEC), p_new);
-    
+
     if (rc != 0)
     {
-        ERROR("Failed to register created RPC server %s on TA: %r", rc, 
+        ERROR("Failed to register created RPC server %s on TA: %r", rc,
               name);
-              
+
         if (rcf_ta_kill_task(rpcs->ta, 0, out.pid) != 0)
             ERROR("Failed to kill created RPC server");
     }
-    
+
     return rc;
-}                           
+}
 
 /* See description in rcf_rpc.h */
 te_errno
-rcf_rpc_server_vfork(rcf_rpc_server *rpcs, 
+rcf_rpc_server_vfork(rcf_rpc_server *rpcs,
                      const char *name,
                      uint32_t time_to_wait,
                      pid_t *pid, uint32_t *elapsed_time)
@@ -1026,10 +1026,10 @@ rcf_rpc_server_vfork(rcf_rpc_server *rpcs,
     in.name.name_len = strlen(name) + 1;
     in.name.name_val = strdup(name);
     in.time_to_wait = time_to_wait;
-    
+
     rc = rcf_ta_call_rpc(rpcs->ta, rpcs->sid, rpcs->name,
                          rpcs->timeout, "vfork", &in, &out);
-    
+
     free(in.name.name_val);
 
     if (pid != NULL)
@@ -1041,7 +1041,7 @@ rcf_rpc_server_vfork(rcf_rpc_server *rpcs,
          rpcs->ta, rpcs->name, name, time_to_wait, out.pid,
          out.elapsed_time);
     return rc;
-} 
+}
 
 /**
  * Entry function for a thread with rcf_rpc_server_vfork() called.
