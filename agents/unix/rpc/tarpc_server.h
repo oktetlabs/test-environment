@@ -585,6 +585,9 @@ typedef struct rpc_call_data {
 } rpc_call_data;
 
 
+extern void tarpc_call_unsupported(const char *name, void *out,
+                                   size_t outsize, size_t common_offset);
+
 /**
  * Generic RPC handler.
  * It does all preparations, most imporant

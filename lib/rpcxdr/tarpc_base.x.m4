@@ -5271,11 +5271,6 @@ program tarpc
 {
     version ver0
     {
-changequote([,])
-define([cnt], 1)
-define([counter], [cnt[]define([cnt],incr(cnt))])
-define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
-
         RPC_DEF(rpc_find_func)
         RPC_DEF(rpc_is_op_done)
         RPC_DEF(rpc_is_alive)

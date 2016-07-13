@@ -86,9 +86,9 @@ rpc_find_info(const char *name)
 {
     int i;
     
-    for (i = 0; rpc_functions[i].name != NULL; i++)
-        if (strcmp(name, rpc_functions[i].name) == 0)
-            return rpc_functions + i;
+    for (i = 0; tarpc_functions[i].name != NULL; i++)
+        if (strcmp(name, tarpc_functions[i].name) == 0)
+            return tarpc_functions + i;
         
     return NULL;
 }

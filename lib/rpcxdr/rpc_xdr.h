@@ -50,7 +50,7 @@ typedef te_bool (*rpc_func)(void *xdrs,...);
 
 /** Information about the RPC function */
 typedef struct {
-    char    *name;    /**< Name of RPC function, i.g. "bind" */
+    const char *name; /**< Name of RPC function, i.g. "bind" */
     rpc_func rpc;     /**< Address of the RPC function */
     rpc_func in;      /**< Address of input argument encoder/decoder */
     int      in_len;  /**< Size of the input argument structure */
@@ -58,8 +58,10 @@ typedef struct {
     int      out_len; /**< Size of the output argument structure */
 } rpc_info;
 
-/** RPC functions table; generated automatically */
-extern rpc_info rpc_functions[];
+/** RPC functions table; generated automatically
+ *  @note This will be soon moved to another library
+ */
+extern rpc_info tarpc_functions[];
 
 /**
  * Find information corresponding to RPC function by its name.

@@ -15,6 +15,7 @@ TE_SETUP_AR
 # Checks for programs.
 AC_PROG_CC
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
+AM_PROG_CC_C_O
 
 # Fixing libraries search paths in libtool - they are wrong when
 # cross-compiling for different bitness takes place

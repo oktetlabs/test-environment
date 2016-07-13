@@ -500,6 +500,16 @@ void tarpc_after_call(struct rpc_call_data *call)
         out_common->_errno = rc;
 }
 
+void tarpc_call_unsupported(const char *name, void *out,
+                            size_t outsize, size_t common_offset)
+{
+    tarpc_out_arg *out_common =
+       (tarpc_out_arg *)((uint8_t *)out + common_offset);
+    memset((uint8_t *)out, 0, outsize);
+    out_common->_errno = RPC_ERPCNOTSUPP;
+    RING("Unsupported RPC '%s' has been called", name);
+}
+
 static void *
 tarpc_generic_service_thread(void *arg)
 {
