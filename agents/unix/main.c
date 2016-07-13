@@ -194,8 +194,8 @@ kill_tasks(void)
             rc = kill(-tasks[i], SIGTERM);
             if (!(rc == -1 && errno == ESRCH))
             {
-                PRINT("Sent SIGTERM to PID=%ld - rc=%d, errno=%d",
-                      (long)-tasks[i], rc, (rc == 0) ? 0 : errno);
+                LOG_PRINT("Sent SIGTERM to PID=%ld - rc=%d, errno=%d",
+                          (long)-tasks[i], rc, (rc == 0) ? 0 : errno);
             }
             else 
                 tasks[i] = 0;
@@ -207,8 +207,8 @@ kill_tasks(void)
         if (tasks[i] != 0)
         {
             rc = kill(-tasks[i], SIGKILL);
-            PRINT("Sent SIGKILL to PID=%ld - rc=%d, errno=%d",
-                  (long)-tasks[i], rc, (rc == 0) ? 0 : errno);
+            LOG_PRINT("Sent SIGKILL to PID=%ld - rc=%d, errno=%d",
+                      (long)-tasks[i], rc, (rc == 0) ? 0 : errno);
         }
     }
     free(tasks);
@@ -229,8 +229,10 @@ rcf_ch_lock()
     int rc = pthread_mutex_lock(&ta_lock);
 
     if (rc != 0)
-        PRINT("%s(): pthread_mutex_lock() failed - rc=%d, errno=%d",
-              __FUNCTION__, rc, errno);
+    {
+        LOG_PRINT("%s(): pthread_mutex_lock() failed - rc=%d, errno=%d",
+                  __FUNCTION__, rc, errno);
+    }
 }
 
 /* See description in rcf_ch_api.h */
@@ -247,14 +249,16 @@ rcf_ch_unlock()
     }
     else if (rc != EBUSY)
     {
-        PRINT("%s(): pthread_mutex_trylock() failed - rc=%d, errno=%d",
-              __FUNCTION__, rc, errno);
+        LOG_PRINT("%s(): pthread_mutex_trylock() failed - rc=%d, errno=%d",
+                  __FUNCTION__, rc, errno);
     }
 
     rc = pthread_mutex_unlock(&ta_lock);
     if (rc != 0)
-        PRINT("%s(): pthread_mutex_unlock() failed - rc=%d, errno=%d",
-              __FUNCTION__, rc, errno);
+    {
+        LOG_PRINT("%s(): pthread_mutex_unlock() failed - rc=%d, errno=%d",
+                  __FUNCTION__, rc, errno);
+    }
 }
 
 /* See description in rcf_ch_api.h */
@@ -1623,7 +1627,7 @@ main(int argc, char **argv)
     rc = ta_process_mgmt_init();
     if (rc != 0)
     {
-        PRINT("Cannot initialize process management: %d", rc);
+        LOG_PRINT("Cannot initialize process management: %d", rc);
         return rc;
     }
 
@@ -1636,7 +1640,7 @@ main(int argc, char **argv)
         
         if (func == NULL)
         {
-            PRINT("Cannot resolve address of the function %s", argv[2]);
+            LOG_PRINT("Cannot resolve address of the function %s", argv[2]);
             return 1;
         }
         func(argc - 3, argv + 3);

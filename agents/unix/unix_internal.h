@@ -176,11 +176,6 @@ ifname_without_vlan(const char *ifname)
 }
 #endif  /* __linux__ or __sun__ */
 
-#define PRINT(msg...)                                   \
-    do {                                                \
-        printf(msg); printf("\n"); fflush(stdout);      \
-    } while (0)
-
 /** Test Agent name */
 extern const char *ta_name;
 /** Test Agent executable name */ 

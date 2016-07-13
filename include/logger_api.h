@@ -281,4 +281,16 @@
 
 /**@} <!-- END logger_api --> */
 
+
+/**
+ * Print a message to stdout ending a line and flushing the output
+ * @note This macro is intended only for emergency logging when
+ * a normal logger is not available
+ */
+#define LOG_PRINT(_fmt, ...)                                            \
+    do {                                                                \
+        printf(_fmt "\n", __VA_ARGS__); fflush(stdout);                 \
+    } while (0)
+
+
 #endif /* !__TE_LOGGER_API_H__ */

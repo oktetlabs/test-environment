@@ -102,14 +102,6 @@ static HANDLE lpipe;
 /** Overlapped structure used with lpipe */
 static OVERLAPPED lov;
 
-#define PRINT(msg...) \
-    do {                \
-        printf(msg);    \
-        printf("\n");   \
-        fflush(stdout); \
-    } while (0)
-
-
 /**
  * Initialize RPC transport.
  */

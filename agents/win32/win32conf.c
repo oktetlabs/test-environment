@@ -59,11 +59,6 @@ extern char *ta_name;
 /* Auxiliary buffer */
 static char  buf[2048 * 32] = {0, };
 
-#define PRINT(msg...) \
-    do {                                                \
-       printf(msg); printf("\n"); fflush(stdout);       \
-    } while (0)
-
 /** Route is direct "local interface" in terms of RFC 1354 */
 #define FORW_TYPE_LOCAL  3
 

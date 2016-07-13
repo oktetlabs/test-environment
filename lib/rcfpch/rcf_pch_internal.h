@@ -42,10 +42,6 @@
 #include "rcf_ch_api.h"
 #include "logger_api.h"
 
-
-#define PRINT(msg...) \
-    do { printf(msg); printf("\n"); fflush(stdout); } while (0)
-
 /** Size of the log data sent in one request */
 #define RCF_PCH_LOG_BULK        8192
 

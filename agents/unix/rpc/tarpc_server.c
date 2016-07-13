@@ -914,7 +914,7 @@ ta_rpc_execve(const char *name)
     if (rc != 0)
     {
         rc = errno;
-        PRINT("No execve function: errno=%d", rc);
+        LOG_PRINT("No execve function: errno=%d", rc);
         exit(1);
     }
 
@@ -922,7 +922,7 @@ ta_rpc_execve(const char *name)
     if (rc != 0)
     {
         rc = errno;
-        PRINT("execve() failed: errno=%d", rc);
+        LOG_PRINT("execve() failed: errno=%d", rc);
     }
 
 }

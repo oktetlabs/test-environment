@@ -522,7 +522,7 @@ rcf_pch_run(const char *confstr, const char *info)
             {
                 old_cmd[128] = 0;
 
-                PRINT("Failed to allocate enough memory for command <%s>",
+                LOG_PRINT("Failed to allocate enough memory for command <%s>",
                       old_cmd);
                 
                 free(old_cmd);
@@ -536,7 +536,7 @@ rcf_pch_run(const char *confstr, const char *info)
             if ((rc = rcf_comm_agent_wait(conn, cmd + received, 
                                           &tmp, NULL)) != 0)
             {
-                PRINT("Failed to read binary attachment for command <%s>",
+                LOG_PRINT("Failed to read binary attachment for command <%s>",
                       cmd);
                 goto communication_problem;
             }
@@ -1255,14 +1255,14 @@ rcf_pch_run(const char *confstr, const char *info)
 
 communication_problem:
     ERROR("Fatal communication error %r", rc);
-    PRINT("Fatal communication error %s", te_rc_err2str(rc));
+    LOG_PRINT("Fatal communication error %s", te_rc_err2str(rc));
 
 exit:
     rc2 = rcf_ch_tad_shutdown();
     if (rc2 != 0)
     {
         ERROR("Traffic Application Domain shutdown failed: %r", rc2);
-        PRINT("Traffic Application Domain shutdown failed: %s",
+        LOG_PRINT("Traffic Application Domain shutdown failed: %s",
               te_rc_err2str(rc2));
         TE_RC_UPDATE(rc, rc2);
     }
@@ -1277,7 +1277,7 @@ exit:
     free(cmd);
 
     VERB("Exiting");
-    PRINT("Exiting");
+    LOG_PRINT("Exiting: %d", rc);
 
     return rc;
 

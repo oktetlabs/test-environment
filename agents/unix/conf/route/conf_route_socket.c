@@ -440,7 +440,7 @@ route_log(const char *title, const struct rt_msghdr *rtm)
         }
     }
 
-    PRINT("%s\n"
+    LOG_PRINT("%s\n"
          "len=%u ver=%u type=%s index=%u pid=%ld seq=%d errno=%d use=%d\n"
          "addrs=%s\nflags=%s\ninits=%s\nlocks=%s\n"
          "mtu=%u hops=%u expire=%u recvpipe=%u sendpipe=%u\n"
