@@ -304,38 +304,6 @@ extern int rcf_ch_vwrite(struct rcf_comm_connection *handle,
                          rcf_var_type_t type, const char *var, ...);
 /**@} <!-- END rcf_ch_var --> */
 
-/** @defgroup rcf_ch_addr Command Handler: Symbol name and address resolver support
- * @ingroup rcf_ch
- * @{
- */
-
-/**
- * This function may be used by Portable Commands Handler to resolve
- * name of the variable or function to its address if rcf_ch_vread,
- * rcf_ch_vwrite or rcf_ch_call function returns -1. In this case
- * default command processing is performed by caller: it is assumed that
- * variable or function are in TA address space and variable is
- * unsigned 32 bit integer.
- *
- * @param name          symbol name
- * @param is_func       if TRUE, function name is required
- *
- * @return symbol address or NULL
- */
-extern void *rcf_ch_symbol_addr(const char *name, te_bool is_func);
-
-/**
- * This function may be used by Portable Commands Handler to symbol address
- * to its name.
- *
- * @param addr          symbol address
- *
- * @return symbol name or NULL
- */
-extern char *rcf_ch_symbol_name(const void *addr);
-
-/**@} <!-- END rcf_ch_addr --> */
-
 /** @defgroup rcf_ch_file Command Handler: File maniputation support
  * @ingroup rcf_ch
  * @{

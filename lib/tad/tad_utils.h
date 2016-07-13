@@ -52,6 +52,7 @@
 #include "asn_usr.h"
 #include "tad_common.h"
 #include "rcf_ch_api.h"
+#include "agentlib.h"
 #include "tad_csap_inst.h"
 #include "tad_csap_support.h"
 

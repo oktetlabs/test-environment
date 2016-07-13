@@ -45,6 +45,7 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <sys/socket.h>
+#include <poll.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -65,6 +66,10 @@
 
 #ifdef __linux__
 #include <elf.h>
+#endif
+
+#if defined(HAVE_AIO_H)
+#include <aio.h>
 #endif
 
 #include "te_stdint.h"
@@ -107,9 +112,6 @@
 /** User environment */
 extern char **environ;
 
-extern void *rcf_ch_symbol_addr_auto(const char *name, te_bool is_func);
-extern char *rcf_ch_symbol_name_auto(const void *addr);
-
 /** Logger entity name */
 DEFINE_LGR_ENTITY("(unix)");
 
@@ -137,6 +139,39 @@ const char *ta_tmp_path = "/usr/tmp/";
 /** Test Agent vsyscall page entrance */
 const void *vsyscall_enter = NULL;
 #endif
+
+#if defined(ENABLE_GENERATED_SYMTBL)
+extern rcf_symbol_entry generated_table[];
+#endif
+
+static rcf_symbol_entry essential_symbols[] = {
+   {.name = "socket",       .addr = (void *)socket,       .is_func = TRUE},
+   {.name = "bind",         .addr = (void *)bind,         .is_func = TRUE},
+   {.name = "select",       .addr = (void *)select,       .is_func = TRUE},
+   {.name = "connect",      .addr = (void *)connect,      .is_func = TRUE},
+   {.name = "listen",       .addr = (void *)listen,       .is_func = TRUE},
+   {.name = "accept",       .addr = (void *)accept,       .is_func = TRUE},
+   {.name = "send",         .addr = (void *)send,         .is_func = TRUE},
+   {.name = "sendto",       .addr = (void *)sendto,       .is_func = TRUE},
+   {.name = "recv",         .addr = (void *)recv,         .is_func = TRUE},
+   {.name = "read",         .addr = (void *)read,         .is_func = TRUE},
+   {.name = "write",        .addr = (void *)write,        .is_func = TRUE},
+   {.name = "close",        .addr = (void *)close,        .is_func = TRUE},
+   {.name = "waitpid",      .addr = (void *)waitpid,      .is_func = TRUE},
+   {.name = "te_shell_cmd", .addr = (void *)te_shell_cmd, .is_func = TRUE},
+   {.name = "getsockname",  .addr = (void *)getsockname,  .is_func = TRUE},
+   {.name = "poll",         .addr = (void *)poll,         .is_func = TRUE},
+#if defined (HAVE_AIO_H)
+   {.name = "aio_read",     .addr = (void *)aio_read,     .is_func = TRUE},
+   {.name = "aio_error",    .addr = (void *)aio_error,    .is_func = TRUE},
+   {.name = "aio_return",   .addr = (void *)aio_return,   .is_func = TRUE},
+   {.name = "aio_write",    .addr = (void *)aio_write,    .is_func = TRUE},
+   {.name = "aio_suspend",  .addr = (void *)aio_suspend,  .is_func = TRUE},
+   {.name = "aio_cancel",   .addr = (void *)aio_cancel,   .is_func = TRUE},
+   {.name = "lio_listio",   .addr = (void *)lio_listio,   .is_func = TRUE},
+#endif
+   {.name = NULL, .addr = NULL}
+};
 
 /** Tasks to be killed during TA shutdown */
 static unsigned int     tasks_len = 0;
@@ -351,21 +386,6 @@ rcf_ch_vwrite(struct rcf_comm_connection *handle,
     /* Standard handler is OK */
     return -1;
 }
-
-/* See description in rcf_ch_api.h */
-void *
-rcf_ch_symbol_addr(const char *name, te_bool is_func)
-{
-    return rcf_ch_symbol_addr_auto(name, is_func);
-}
-
-/* See description in rcf_ch_api.h */
-char *
-rcf_ch_symbol_name(const void *addr)
-{
-    return rcf_ch_symbol_name_auto(addr);
-}
-
 
 /* See description in rcf_ch_api.h */
 int
@@ -1594,6 +1614,11 @@ main(int argc, char **argv)
         ta_dir[0] = 0;
     else
         *(tmp + 1) = 0;
+
+    rcf_ch_register_symbol_table(essential_symbols);
+#if defined(ENABLE_GENERATED_SYMTBL)
+    rcf_ch_register_symbol_table(generated_table);
+#endif
 
     memset(&sigact, 0, sizeof(sigact));
 #ifdef SA_RESTART

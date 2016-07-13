@@ -23,8 +23,6 @@ AC_PROG_RANLIB
 
 AC_CANONICAL_HOST
 
-AC_CHECK_TOOL(NM, nm)
-
 TE_APP_SET
 
 CPPFLAGS=${CPPFLAGS}" "${TE_CPPFLAGS_VAR}
@@ -858,25 +856,21 @@ fi
 
 AC_SUBST([DPDK_LIBS])
 
-#
-# On PowerPC function descriptors are used which are
-# placed in data section like variables, not in
-# text one - so we cannot distinguish functions
-# and variables with --format=bsd in nm output
-#
-# Please note that the following code is a replace for
-# "${host:0:9}", but this expression is BASH specific
-# and won't work for DASH, which is why we do this
-# in not elegant, but portable way.
-#
-host_prefix=`echo $host | sed -e 's/\(.........\).*/\1/'`
-if test "x$host_prefix" = "xpowerpc64" || \
-   test "x$host_prefix" = "xpowerpc"; then
-    NM_FORMAT=sysv
-else
-    NM_FORMAT=bsd
+AC_ARG_ENABLE([generate-symtbl],
+              AS_HELP_STRING([--disable-generate-symtbl],
+                             [disable symbol table generation (default is YES)]),
+              [ac_cv_enable_generate_symtbl=$enableval], [ac_cv_enable_generate_symtbl=yes])
+AC_CACHE_CHECK([whether to enable symbol table generation],
+               [ac_cv_enable_generate_symtbl], [ac_cv_enable_generate_symtbl=yes])
+if test x"$ac_cv_enable_generate_symtbl" != xno
+then
+    AC_DEFINE([ENABLE_GENERATED_SYMTBL], [], [Whether to use generated symbol tables])
+    AC_CHECK_TARGET_TOOL(NM, [nm --format=sysv],
+                         [AC_MSG_ERROR([No SysV-compatible 'nm' tool found])])
+    
 fi
-AC_SUBST([NM_FORMAT])
+AM_CONDITIONAL([GENERATE_SYMTBL], test x"$ac_cv_enable_generate_symtbl" != xno)
+
 
 AC_SUBST([TE_BASE])
 AC_SUBST([TE_BUILD])

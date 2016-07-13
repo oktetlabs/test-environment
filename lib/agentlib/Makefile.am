@@ -5,11 +5,11 @@ AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) $(TE_CPPFLAGS_VAR)
 AM_CFLAGS = @TE_CFLAGS@ $(TE_CFLAGS_VAR)
 AM_LDFLAGS = @TE_LDFLAGS@
 
-include_HEADERS=agentlib.h agentlib_config.h telephony.h dahdi_user.h
+include_HEADERS=agentlib.h agentlib_config.h agentlib_defs.h telephony.h dahdi_user.h
 
 lib_LIBRARIES=libagentlib.a
 
-libagentlib_a_SOURCES=process.c ftp.c net.c telephony.c power_sw.c
+libagentlib_a_SOURCES=process.c ftp.c net.c telephony.c power_sw.c symbols.c
 
 install-exec-hook:
 	touch -c -r libagentlib.a $(DESTDIR)/$(libdir)/libagentlib.*

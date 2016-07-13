@@ -33,7 +33,10 @@
 
 #include "te_config.h"
 #include "te_errno.h"
+#include "te_defs.h"
 #include "agentlib_config.h"
+
+#include "agentlib_defs.h"
 
 #if HAVE_NET_IF_H
 #include <net/if.h>
@@ -144,12 +147,55 @@ extern int ta_kill_death(pid_t pid);
  * @param type      power switch device type tty/parport
  * @param dev       power switch device name
  * @param mask      power lines bitmask
- * @param cmd       power switch command turn ON, turn OFF or restart
+\ * @param cmd       power switch command turn ON, turn OFF or restart
  *
  * @return          0, otherwise -1
  */
 extern int power_sw(int type, const char *dev, int mask, int cmd);
 #endif
+
+/** @defgroup rcf_ch_addr Command Handler: Symbol name and address resolver support
+ * @ingroup rcf_ch
+ * @{
+ */
+
+/**
+ * Register symbol table
+ *
+ * @param entries  An array of symbol entries, the last element must have
+ *                 NULL name
+ * @note The @p entries must point to a static memory, as it is not copied
+ *       by the function
+ */
+extern te_errno rcf_ch_register_symbol_table(
+    const rcf_symbol_entry *entries);
+
+/**
+ * This function may be used by Portable Commands Handler to resolve
+ * name of the variable or function to its address if rcf_ch_vread,
+ * rcf_ch_vwrite or rcf_ch_call function returns -1. In this case
+ * default command processing is performed by caller: it is assumed that
+ * variable or function are in TA address space and variable is
+ * unsigned 32 bit integer.
+ *
+ * @param name          symbol name
+ * @param is_func       if TRUE, function name is required
+ *
+ * @return symbol address or NULL
+ */
+extern void *rcf_ch_symbol_addr(const char *name, te_bool is_func);
+
+/**
+ * This function may be used by Portable Commands Handler to symbol address
+ * to its name.
+ *
+ * @param addr          symbol address
+ *
+ * @return symbol name or NULL
+ */
+extern const char *rcf_ch_symbol_name(const void *addr);
+
+/**@} <!-- END rcf_ch_addr --> */
 
 
 #endif /* __TE_AGENTLIB_H__ */

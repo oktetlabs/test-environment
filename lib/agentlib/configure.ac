@@ -66,6 +66,17 @@ dnl
    AC_CHECK_HEADERS([linux/ppdev.h])
 fi
 
+AC_ARG_ENABLE([dlfcn-lookup],
+              AS_HELP_STRING([--enable-dlfcn-lookup],
+                             [enable symbol lookup via dlsym() in addition to explicit symbol tables (disabled by default)]),
+              [ac_cv_enable_dlfcn_lookup=$enableval],
+              [ac_cv_enable_dlfcn_lookup=no])
+AC_CACHE_CHECK([whether to enable dlsym() symbol lookup],
+               [ac_cv_enable_dlfcn_lookup], [ac_cv_enable_dlfcn_lookup=no])
+if test x"$ac_cv_enable_dlfcn_lookup" != xno; then
+     AC_CHECK_FUNC([dladdr])
+     AC_DEFINE([ENABLE_DLFCN_LOOKUP], [], [Whether to enable dlsym()-based lookup])
+fi
 
 AC_CONFIG_HEADERS([agentlib_config.h])
 
