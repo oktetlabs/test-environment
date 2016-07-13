@@ -42,7 +42,9 @@ NF != 7 { next }
     gsub(/[[:space:]]+/, "", $3);
     gsub(/[[:space:]]+/, "", $4);
 
-    if ($1 ~ /[^[:alnum:]_]/) next
+    # Special hack is needed for DPDK symbols
+    if ($1 ~ /[^[:alnum:]_]/ || $1 ~ /^per_lcore__/) next
+
     if ($3 == "T" || ($3 == "D" && $4 == "FUNC"))
     {
         SYMBOLS[$1] = "TRUE";
