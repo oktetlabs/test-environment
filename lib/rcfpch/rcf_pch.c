@@ -121,6 +121,36 @@ rcf_pch_init_id(const char *port)
         fprintf(stderr, "RCF session identifier is too long.");
 }
 
+/** See description in rcf_pch_internal.h */
+void
+write_str_in_quotes(char *dst, const char *src, size_t len)
+{
+    char   *p = dst;
+    size_t  i;
+
+    *p++ = ' ';
+    *p++ = '\"';
+    for (i = 0; (*src != '\0') && (i < len); ++i)
+    {
+        /* Encode '\n' also */
+        if (*src == '\n')
+        {
+            *p++ ='\\';
+            *p++ = 'n';
+            src++;
+            continue;
+        }
+
+        if (*src == '\"' || *src == '\\')
+        {
+            *p++ = '\\';
+        }
+        *p++ = *src++;
+    }
+    *p++ = '\"';
+    *p = '\0';
+}
+
 /**
  * Parse the string stripping off quoting and escape symbols.
  * Parsed string is placed instead of old one. Pointer to next token

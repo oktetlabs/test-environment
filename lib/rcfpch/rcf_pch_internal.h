@@ -106,35 +106,7 @@ extern "C" {
  * @param src     string to be written to
  * @param len     maximum number of symbols to be copied
  */
-static inline void
-write_str_in_quotes(char *dst, const char *src, size_t len)
-{
-    char   *p = dst;
-    size_t  i;
-
-    *p++ = ' ';
-    *p++ = '\"';
-    for (i = 0; (*src != '\0') && (i < len); ++i)
-    {
-        /* Encode '\n' also */
-        if (*src == '\n')
-        {
-            *p++ ='\\';
-            *p++ = 'n';
-            src++;
-            continue;
-        }
-
-        if (*src == '\"' || *src == '\\')
-        {
-            *p++ = '\\';
-        }
-        *p++ = *src++;
-    }
-    *p++ = '\"';
-    *p = '\0';
-}
-
+extern void write_str_in_quotes(char *dst, const char *src, size_t len);
 
 /*
  * When ANSI C compiler mode is enabled, the following functions are
