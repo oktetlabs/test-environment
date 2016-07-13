@@ -1001,11 +1001,8 @@ typedef struct tarpc_rte_eth_dev_port_id_queue_id_in tarpc_rte_eth_dev_tx_queue_
 
 typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_tx_queue_stop_out;
 
-/** The double brackets are needed. The reason for the disappearance
- *  of the first pair of brackets is not known yet.
- */
 struct tarpc_ether_addr {
-    uint8_t    addr_bytes[[6]];
+    uint8_t    addr_bytes[6];
 };
 
 /** rte_eth_macaddr_get() */
