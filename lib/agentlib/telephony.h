@@ -31,7 +31,7 @@
 #define _TELEPHONY_H
 
 #include "te_config.h"
-#include "config.h"
+#include "agentlib_config.h"
 
 #include <stdio.h>
 #include <errno.h>

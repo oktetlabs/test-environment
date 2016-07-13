@@ -32,7 +32,10 @@
 #define TE_LGR_USER     "Power switch"
 
 #include "te_config.h"
-#include "config.h"
+#include "agentlib_config.h"
+
+#if defined (ENABLE_POWER_SW) 
+
 #include "logger_api.h"
 #include "te_errno.h"
 
@@ -394,3 +397,5 @@ power_sw(int type, const char *dev, int mask, int cmd)
 
     return 0;
 }
+
+#endif /* ENABLE_POWER_SW */

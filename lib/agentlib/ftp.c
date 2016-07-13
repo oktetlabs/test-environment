@@ -4,7 +4,7 @@
  * Routines for FTP testing.
  *
  *
- * Copyright (C) 2004 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2004-2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -17,7 +17,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public 
+ * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
@@ -29,9 +29,9 @@
 
 #define TE_LGR_USER     "FTP"
 
-#include "te_config.h"
-#include "config.h"
+#include "agentlib_config.h"
 
+#if defined(ENABLE_FTP)
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -53,7 +53,7 @@
 #include "te_defs.h"
 #include "te_errno.h"
 #include "logger_api.h"
-#include "unix_internal.h"
+#include "agentlib.h"
 
 
 #define FTP_TEST_LOGIN_MAX      32
@@ -122,7 +122,7 @@ read_all(int s, char *buf, int n)
 
 /**
  * Parse the URI provided to ftp_open,
- * URI should comply to following format: 
+ * URI should comply to following format:
  *     ftp://[user[:password]@]server[:port]/directory/file
  *
  * If user is empty, anonymous is used. If password is empty, empty
@@ -131,7 +131,7 @@ read_all(int s, char *buf, int n)
  * @param uri      URI string
  * @param srv      location for server
  * @param user     location for user (should be at least FTP_TEST_LOGIN_MAX
- * @param passwd   location for password (should be at least 
+ * @param passwd   location for password (should be at least
  *                 FTP_TEST_PASSWD_MAX)
  * @param pathname location for target pathname (should be at least
  *                 FTP_TEST_PATHNAME_MAX)
@@ -147,19 +147,19 @@ parse_ftp_uri(const char *uri, struct sockaddr *srv,
     char *tmp1;
     char *server;
     int   len;
-    
+
     struct sockaddr_in *addr = (struct sockaddr_in *)srv;
-    
+
     if (uri == NULL || srv == NULL || user == NULL || passwd == NULL ||
         pathname == NULL)
     {
         return -1;
     }
-    
+
     if (strncmp(s, FTP_URI, strlen(FTP_URI)) != 0)
         return -1;
     s += strlen(FTP_URI);
-    
+
     /* Parse user info */
     tmp = strchr(s, '@');
     if (tmp != NULL)
@@ -169,8 +169,8 @@ parse_ftp_uri(const char *uri, struct sockaddr *srv,
         if (tmp1 != NULL && tmp1 < tmp)
         {
             len = tmp1 - s;
-            
-            if (len >= FTP_TEST_LOGIN_MAX || 
+
+            if (len >= FTP_TEST_LOGIN_MAX ||
                 (tmp - tmp1) > FTP_TEST_PASSWD_MAX)
             {
                 return -1;
@@ -198,16 +198,16 @@ parse_ftp_uri(const char *uri, struct sockaddr *srv,
         strcpy(user, "anonymous");
         *passwd = 0;
     }
-    
+
     if ((server = strdup(s)) == NULL)
         return -1;
-        
+
     memset(addr, 0, sizeof(*addr));
     addr->sin_family = AF_INET;
     if ((tmp = strchr(server, ':')) != NULL)
     {
         long int n;
-        
+
         *tmp++ = 0;
         n = strtol(tmp, &tmp1, 10);
         if (tmp1 == NULL || *tmp1 != '/' || n == 0 || n > 0xFFFF)
@@ -237,8 +237,8 @@ parse_ftp_uri(const char *uri, struct sockaddr *srv,
     if (*server != 0)
     {
         struct hostent *hostinfo;
-        
-        if ((hostinfo = gethostbyname(server)) == NULL) 
+
+        if ((hostinfo = gethostbyname(server)) == NULL)
         {
             free(server);
             return -1;
@@ -248,7 +248,7 @@ parse_ftp_uri(const char *uri, struct sockaddr *srv,
     }
     else
         addr->sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-        
+
     free(server);
     return 0;
 }
@@ -269,7 +269,7 @@ ftp_open(const char *uri, int flags, int passive, int offset, int *sock)
     struct sockaddr_in addr1;
     socklen_t          addr1_len = sizeof(addr1);
     uint8_t            inaddr[4] = {0,0,0,0};
-    
+
     char user[FTP_TEST_LOGIN_MAX];
     char passwd[FTP_TEST_PASSWD_MAX];
     char file[FTP_TEST_PATHNAME_MAX];
@@ -321,7 +321,7 @@ ftp_open(const char *uri, int flags, int passive, int offset, int *sock)
             RET_ERR("Invalid answer, see above");           \
         }                                                   \
     } while (0)
-    
+
 #define CMD(_cmd...) \
     do {               \
         PUT_CMD(_cmd); \
@@ -358,17 +358,17 @@ ftp_open(const char *uri, int flags, int passive, int offset, int *sock)
         memcpy(inaddr, &addr1.sin_addr, sizeof(inaddr));
         memset(&addr1, 0, sizeof(addr1));
         addr1.sin_family = AF_INET;
-        
+
         active_listening = socket(AF_INET, SOCK_STREAM, 0);
         if (active_listening < 0)
             RET_ERR("socket() to listen to failed: errno %d", errno);
-        
+
         if (bind(active_listening, SA(&addr1), sizeof(addr1)) != 0)
             RET_ERR("bind() failed; errno %d", errno);
-        
+
         if (listen(active_listening, 1) < 0)
             RET_ERR("listen() failed; errno %d", errno);
-        
+
         if (getsockname(active_listening, SA(&addr1), &addr1_len) != 0)
             RET_ERR("getsockname() failed; errno %d", errno);
     }
@@ -387,7 +387,7 @@ ftp_open(const char *uri, int flags, int passive, int offset, int *sock)
         CMD("PORT %d,%d,%d,%d,%d,%d\r\n",
             inaddr[0], inaddr[1], inaddr[2], inaddr[3],
             ntohs(addr1.sin_port) / 0x100, ntohs(addr1.sin_port) % 0x100);
-    
+
     if ((str = strchr(buf, '(')) == NULL)
     {
         addr.sin_port = htons(FTP_DATA_PORT);
@@ -396,7 +396,7 @@ ftp_open(const char *uri, int flags, int passive, int offset, int *sock)
     {
         uint8_t *a = (uint8_t *)&(addr.sin_addr);
         int      i;
-        
+
         /* Here we assume that FTP server provides correct answer */
         for (i = 0, str++; i < 4; str = strchr(str, ',') + 1, i++)
             *a++ = atoi(str);
@@ -406,14 +406,14 @@ ftp_open(const char *uri, int flags, int passive, int offset, int *sock)
     }
 
     CMD("TYPE I\r\n");
-    
+
     CMD("REST %d\r\n", offset);
-    
+
     if (flags == O_RDONLY)
         PUT_CMD("RETR %s\r\n", file);
     else
         PUT_CMD("STOR %s\r\n", file);
-    
+
     if (passive)
     {
         VERB("Connecting to data port");
@@ -424,7 +424,7 @@ ftp_open(const char *uri, int flags, int passive, int offset, int *sock)
         if (connect(data_socket, SA(&addr), sizeof(addr)) != 0)
             RET_ERR("connect() for data connection failed; errno %d",
                     errno);
-        VERB("Data connection is established");                     
+        VERB("Data connection is established");
         READ_ANS;
     }
     else
@@ -434,7 +434,7 @@ ftp_open(const char *uri, int flags, int passive, int offset, int *sock)
         VERB("Accepting data connection");
         if ((data_socket = accept(active_listening, NULL, NULL)) < 0)
             RET_ERR("accept() failed; errno %d", errno);
-        VERB("Data connection is established");                     
+        VERB("Data connection is established");
 
         if (close(active_listening) != 0)
             RET_ERR("close() of active listening socket failed: "
@@ -455,12 +455,12 @@ ftp_open(const char *uri, int flags, int passive, int offset, int *sock)
 
 #undef CMD
 #undef READ_ANS
-#undef PUT_CMD    
-#undef RET_ERR    
+#undef PUT_CMD
+#undef RET_ERR
 }
 
 /* See description in unix_internal.h */
-int 
+int
 ftp_close(int control_socket)
 {
     char   *cmd = "QUIT\r\n";
@@ -483,7 +483,7 @@ ftp_close(int control_socket)
     }
     if (read_all(control_socket, buf, sizeof(buf)) < 0)
     {
-        ERROR("%s: read after QUIT failed; buf = %s, errno %d", 
+        ERROR("%s: read after QUIT failed; buf = %s, errno %d",
               __FUNCTION__, buf, errno);
         close(control_socket);
         return -1;
@@ -554,7 +554,7 @@ read_test(void *arg)
             {
                 return (void *)0;
             }
-                
+
             len += l;
         }
 
@@ -582,12 +582,12 @@ write_test(void *arg_void)
     int  len = 0;
 
     struct timeval  start, now, timeout;
-    
+
     test_proc_arg *arg = (test_proc_arg *)arg_void;
 
 
     memset(buf, '1', sizeof(buf));
-    
+
     gettimeofday(&start, NULL);
     while (len < arg->size)
     {
@@ -645,7 +645,7 @@ write_test(void *arg_void)
             len += l;
         }
     }
-    
+
     return (void *)0;
 }
 
@@ -657,36 +657,36 @@ ftp_test(char *uri_get, char *uri_put, int size)
 {
     int si = -1;
     int so = -1;
-    
+
     pthread_t ti;
     pthread_t to;
-    
+
     int rc1 = 0;
     int rc2 = 0;
 
     VERB("Get: %s Put: %s size %d\n", uri_get, uri_put,
                size);
-    
-    signal(SIGINT, sigint_handler); 
-    
-    if (uri_get != NULL && *uri_get != 0 && 
+
+    signal(SIGINT, sigint_handler);
+
+    if (uri_get != NULL && *uri_get != 0 &&
         (si = ftp_open(uri_get, O_RDONLY, 1, 0, NULL)) < 0)
     {
         ERROR("Failed to open URI %s to read from", uri_get);
         return TE_EIO;
     }
 
-    if (uri_put != NULL && *uri_put != 0 && 
+    if (uri_put != NULL && *uri_put != 0 &&
         (so = ftp_open(uri_put, O_WRONLY, 1, 0, NULL)) < 0)
     {
         ERROR("Failed to open URI %s to write to", uri_put);
         close(si);
         return TE_EIO;
     }
-    
+
     VERB("Open OK\n");
 
-    if (si >= 0 && pthread_create(&ti, NULL, read_test, 
+    if (si >= 0 && pthread_create(&ti, NULL, read_test,
                                   (void *)(long)si) < 0)
     {
         int rc = errno;
@@ -695,14 +695,14 @@ ftp_test(char *uri_get, char *uri_put, int size)
         close(si);
         if (so >= 0)
             close(so);
-            
+
         return rc;
     }
-    
+
     if (so >= 0)
     {
         test_proc_arg arg;
-        
+
         arg.s = so;
         arg.size = size;
         if (pthread_create(&to, NULL, write_test, (void *)&arg) < 0)
@@ -721,7 +721,7 @@ ftp_test(char *uri_get, char *uri_put, int size)
     }
 
     VERB("Waiting for finish of the transmission\n");
-    
+
     if (si >= 0)
     {
         pthread_join(ti, (void **)&rc1);
@@ -729,7 +729,7 @@ ftp_test(char *uri_get, char *uri_put, int size)
         if (rc1 != 0)
             ERROR("Read test failed %X", rc1);
     }
-        
+
     if (so >= 0)
     {
         pthread_join(to, (void **)&rc2);
@@ -737,9 +737,10 @@ ftp_test(char *uri_get, char *uri_put, int size)
         if (rc2 != 0)
             ERROR("Write test failed %X", rc2);
     }
-    
+
     VERB("Results: %X %X\n", rc1, rc2);
-        
+
     return (rc1 != 0) ? rc1 : rc2;
 }
 
+#endif /* ENABLE_FTP */

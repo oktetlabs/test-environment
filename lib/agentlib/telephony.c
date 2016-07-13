@@ -31,6 +31,8 @@
 
 #include "telephony.h"
 
+#if defined (ENABLE_TELEPHONY)
+
 /** Frequncies array */
 double freqs[] = {
     200.0, 300.0, 330.0, 350.0, 400.0, 413.0, 420.0,
@@ -329,3 +331,4 @@ telephony_call_wait(int chan, int timeout)
    return 0;
 }
 
+#endif /* ENABLE_TELEPHONY */

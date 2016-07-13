@@ -4,7 +4,7 @@
  * Unix TA definitions
  *
  *
- * Copyright (C) 2004 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2004-2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -57,6 +57,8 @@
 #include "te_sockaddr.h"
 #include "rcf_pch.h"
 
+#include "agentlib.h"
+
 /** Fast conversion of the network mask to prefix */
 #define MASK2PREFIX(mask, prefix)            \
     switch (mask)                            \
@@ -97,6 +99,7 @@
          /* Error indication */              \
         default: prefix = 33; break;         \
     }
+
 
 
 #if defined(__linux__)
@@ -173,40 +176,10 @@ ifname_without_vlan(const char *ifname)
 }
 #endif  /* __linux__ or __sun__ */
 
-/**
- * Get parent device name of VLAN interface.
- * If passed interface is not VLAN, method sets 'parent' to empty string
- * and return success.
- *
- * @param ifname        interface name
- * @param parent        location of parent interface name,
- *                      IF_NAMESIZE buffer length(OUT)
- *
- * @return status
- */
-extern te_errno ta_vlan_get_parent(const char *ifname, char *parent);
-
-/**
- * Get slaves devices names for bonding interface.
- * If passed interface is not bonding, method sets 'slaves_num' to zero
- * and return success.
- *
- * @param ifname        interface name
- * @param slvs          location of slaves interfaces names
- * @param slaves_num    Number of slaves interfaces
- *
- * @return status
- */
-extern te_errno ta_bond_get_slaves(const char *ifname,
-                                   char slvs[][IFNAMSIZ],
-                                   int *slaves_num);
-
-
-#define PRINT(msg...) \
+#define PRINT(msg...)                                   \
     do {                                                \
-       printf(msg); printf("\n"); fflush(stdout);       \
+        printf(msg); printf("\n"); fflush(stdout);      \
     } while (0)
-
 
 /** Test Agent name */
 extern const char *ta_name;
@@ -214,30 +187,6 @@ extern const char *ta_name;
 extern const char *ta_execname;
 /** Test Agent data and binaries location */ 
 extern char ta_dir[RCF_MAX_PATH];
-
-/**
- * Open FTP connection for reading/writing the file.
- *
- * @param uri           FTP uri: ftp://user:password@server/directory/file
- * @param flags         O_RDONLY or O_WRONLY
- * @param passive       if 1, passive mode
- * @param offset        file offset
- * @param sock          pointer on socket
- *
- * @return file descriptor, which may be used for reading/writing data
- */
-extern int ftp_open(const char *uri, int flags, int passive,
-                    int offset, int *sock);
-
-/**
- * Close FTP control connection.
- *
- * @param control_socket socket to close
- *
- * @retval 0 success
- * @retval -1 failure
- */
-extern int ftp_close(int control_socket);
 
 /**
  * Special signal handler which registers signals.
@@ -256,38 +205,6 @@ extern void signal_registrar(int signum);
  */
 extern void signal_registrar_siginfo(int signum, siginfo_t *siginfo,
                                      void *context);
-
-/**
- * waitpid() analogue, with the same parameters/return value.
- * Only WNOHANG option is supported for now.
- * Process groups are not supported for now.
- */
-extern pid_t ta_waitpid(pid_t pid, int *status, int options);
-
-/**
- * system() analogue, with the same parameters/return value.
- */
-extern int ta_system(const char *cmd);
-
-/**
- * popen('r') analogue, with slightly modified parameters.
- */
-extern te_errno ta_popen_r(const char *cmd, pid_t *cmd_pid, FILE **f);
-
-/**
- * Perform cleanup actions for ta_popen_r() function.
- */
-extern te_errno ta_pclose_r(pid_t cmd_pid, FILE *f);
-
-/**
- * Kill a child process.
- *
- * @param pid PID of the child to be killed
- *
- * @retval 0 child was exited or killed successfully
- * @retval -1 there is no such child.
- */
-extern int ta_kill_death(pid_t pid);
 
 /**
  * Get status of the interface (FALSE - down or TRUE - up).

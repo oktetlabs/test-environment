@@ -20,44 +20,27 @@ EXTRA_DIST=symtbl_funcs
 
 taexecdir=$(prefix)/@with_name@
 
-noinst_HEADERS = unix_internal.h dahdi_user.h
+noinst_HEADERS = unix_internal.h
 
 taexec_PROGRAMS = ta
 
-ta_extra_sources =
-if WITH_TELEPHONY
-ta_extra_sources += telephony.c
-endif
-
-if WITH_POWER_SW
-ta_extra_sources += power_sw.c
-endif
-
-ta_SOURCES = main.c ftp_routines.c log_remote.c aux_threads.c \
-             $(ta_extra_sources)
+ta_SOURCES = main.c log_remote.c aux_threads.c
 
 ta_LDADD = symtbl.o conf/libconf.a rpc/libtarpc.a -lrcfpch \
            -l$(TAD) $(TE_LDADD) \
            -lrpcxdrta -lrpc_types -lloggerta -lrpctransport -lrcfpch \
-		   -ltools \
+		   -ltools -lagentlib \
            $(EXTRA_LDADD) \
            -lconf_oid
 
 CLEANFILES = symtbl.c
 
-SYMTBL_OBJECTS = main.o ftp_routines.o log_remote.o
+SYMTBL_OBJECTS = main.o log_remote.o
 SYMTBL_LIBS = $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtools.a \
               $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librcfpch.a \
+			  $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libagentlib.a \
               $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/lib$(TAD).a \
               conf/libconf.a rpc/libtarpc.a
-
-if WITH_TELEPHONY
-SYMTBL_OBJECTS += telephony.o
-endif
-
-if WITH_POWER_SW
-SYMTBL_OBJECTS += power_sw.o
-endif
 
 if ISCSI_TARGET_USE
 SYMTBL_LIBS+=\

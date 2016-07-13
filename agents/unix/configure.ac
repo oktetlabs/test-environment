@@ -55,33 +55,6 @@ fi
 AH_TEMPLATE([TE_AGT_PLATFORM],[TA platform])
 AC_DEFINE_UNQUOTED([TE_AGT_PLATFORM], ["${TE_PLATFORM}"], [])
 
-# Include telephony support by default
-AC_ARG_WITH([telephony],
-            [AS_HELP_STRING([--with-telephony],
-              [Enable support DAHDI interface via RPC calls. \
-Default - disabled.])],
-            [],
-            [with_telephony=no])
-
-AM_CONDITIONAL(WITH_TELEPHONY, test "x$with_telephony" = "xyes")
-if test "x$with_telephony" = "xyes"; then
-    TE_CPPFLAGS="$TE_CPPFLAGS -DWITH_TELEPHONY"
-fi
-
-# Include power switch support by default
-AC_ARG_WITH([power_sw],
-            [AS_HELP_STRING([--without-power_sw],
-              [Disable support for power switch via RPC calls. \
-Default - enabled.])],
-            [if test "x${withval}" = "xyes"; then
-                 with_power_sw=yes;
-             fi], [with_power_sw=yes])
-
-AM_CONDITIONAL(WITH_POWER_SW, test "x$with_power_sw" = "xyes")
-if test "x$with_power_sw" = "xyes"; then
-    TE_CPPFLAGS="$TE_CPPFLAGS -DWITH_POWER_SW"
-fi
-
 dnl #######################################################################
 dnl Newer BSD systems don't have a compatible rtentry - use ortentry
 dnl #######################################################################

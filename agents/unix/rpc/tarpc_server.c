@@ -77,9 +77,6 @@
 #ifdef HAVE_DIRENT_H
 #include <dirent.h>
 #endif
-#ifdef WITH_TELEPHONY
-#include "telephony.h"
-#endif
 
 #ifdef HAVE_LINUX_NET_TSTAMP_H
 #include <linux/net_tstamp.h>
@@ -1248,7 +1245,7 @@ TARPC_FUNC(gethostname,
 }
 )
 
-#if defined WITH_TELEPHONY
+#if defined(ENABLE_TELEPHONY)
 /*-------------- telephony_check_dial_tone() -----------------------*/
 
 TARPC_FUNC(telephony_open_channel, {},
@@ -1304,7 +1301,7 @@ TARPC_FUNC(telephony_call_wait, {},
     MAKE_CALL(out->retval = func(in->chan, in->timeout));
 }
 )
-#endif /* WITH_TELEPHONY */
+#endif /* ENABLE_TELEPHONY */
 
 
 /*-------------- socket() ------------------------------*/
@@ -9761,10 +9758,10 @@ TARPC_FUNC(sysconf, {},
 }
 )
 
-#if defined WITH_POWER_SW
+#if defined(ENABLE_POWER_SW)
 /*------------ power_sw() -----------------------------------*/
 /* FIXME: provide proper prototype */
-TARPC_FUNC_DYNAMIC_UNSAFE(power_sw, {},
+TARPC_FUNC(power_sw, {},
 {
     MAKE_CALL(out->retval = func(in->type, in->dev, in->mask, in->cmd));
 }
