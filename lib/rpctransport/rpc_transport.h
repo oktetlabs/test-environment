@@ -1,10 +1,10 @@
-/** @file 
+/** @file
  * @brief RCF RPC
  *
- * Different transports which can be used for interaction between 
- * RPC server and TA. 
+ * Different transports which can be used for interaction between
+ * RPC server and TA.
  *
- * Copyright (C) 2006 Test Environment authors (see file AUTHORS in the
+ * Copyright (C) 2006-2016 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
  *
  * This library is free software; you can redistribute it and/or
@@ -30,15 +30,6 @@
 #ifndef __RPC_TRANSPORT_H__
 #define __RPC_TRANSPORT_H__
 
-/** TCP-based transport */
-#define RPC_TRANSPORT_TCP       1
-
-/** AF_UNIX-based transport */
-#define RPC_TRANSPORT_UNIX      2
-
-/** Windows named pipes */
-#define RPC_TRANSPORT_WINPIPE   3
-
 typedef int rpc_transport_handle;
 
 /**
@@ -52,9 +43,9 @@ extern te_errno rpc_transport_init(const char *tmp_path);
 /**
  * Shutdown RPC transport.
  */
-extern void rpc_transport_shutdown();
+extern void rpc_transport_shutdown(void);
 
-/** 
+/**
  * Await connection from RPC server.
  *
  * @param name          name of the RPC server
@@ -62,10 +53,11 @@ extern void rpc_transport_shutdown();
  *
  * @return Status code.
  */
-extern te_errno rpc_transport_connect_rpcserver(const char *name, 
-                                            rpc_transport_handle *p_handle);
+extern te_errno rpc_transport_connect_rpcserver(
+    const char *name,
+    rpc_transport_handle *p_handle);
 
-/** 
+/**
  * Connect from RPC server to Test Agent
  *
  * @param name  name of the RPC server
@@ -73,20 +65,20 @@ extern te_errno rpc_transport_connect_rpcserver(const char *name,
  *
  * @return Status code.
  */
-extern te_errno rpc_transport_connect_ta(const char *name, 
+extern te_errno rpc_transport_connect_ta(const char *name,
                                          rpc_transport_handle *p_handle);
 
-/** 
+/**
  * Break the connection.
  *
- * @param handle      connection handle 
+ * @param handle      connection handle
  */
 extern void rpc_transport_close(rpc_transport_handle handle);
 
 /**
  * Reset set of descriptors to wait.
  */
-extern void rpc_transport_read_set_init();
+extern void rpc_transport_read_set_init(void);
 
 /**
  * Add the handle to the read set.
@@ -113,7 +105,7 @@ extern te_bool rpc_transport_read_set_wait(int timeout);
  */
 extern te_bool rpc_transport_is_readable(rpc_transport_handle handle);
 
-/** 
+/**
  * Receive message with specified timeout.
  *
  * @param handle   connection handle
@@ -126,11 +118,11 @@ extern te_bool rpc_transport_is_readable(rpc_transport_handle handle);
  * @retval TE_ECONNRESET        Connection is broken
  * @retval TE_ENOMEM            Message is too long
  */
-extern te_errno rpc_transport_recv(rpc_transport_handle handle, 
-                                   uint8_t *buf, size_t *p_len, 
+extern te_errno rpc_transport_recv(rpc_transport_handle handle,
+                                   uint8_t *buf, size_t *p_len,
                                    int timeout);
 
-/** 
+/**
  * Send message.
  *
  * @param handle   connection handle
@@ -140,7 +132,7 @@ extern te_errno rpc_transport_recv(rpc_transport_handle handle,
  * @return Status code.
  * @retval TE_ECONNRESET        Connection is broken
  */
-extern te_errno rpc_transport_send(rpc_transport_handle handle, 
+extern te_errno rpc_transport_send(rpc_transport_handle handle,
                                    const uint8_t *buf, size_t len);
 
 #endif /* !__RPC_TRANSPORT_H__ */
