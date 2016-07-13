@@ -40,8 +40,7 @@
 
 #include "logger_api.h"
 
-#include "unix_internal.h"
-#include "tarpc_server.h"
+#include "rpc_server.h"
 #include "rpcs_dpdk.h"
 
 
