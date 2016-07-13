@@ -44,7 +44,9 @@ if test -z "${TE_INSTALL}" ; then
     fi
 fi
 
-if test -d "conf" ; then
+if test -n $CONFDIR; then
+    export CONFDIR
+elif test -d "conf" ; then
     export CONFDIR="$(pwd -P)/conf"
 elif test -d "../conf" ; then
     export CONFDIR="$(pwd -P)/../conf"
