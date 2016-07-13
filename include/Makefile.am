@@ -67,6 +67,9 @@ include_HEADERS = te_config_internal.h $(te_headers)
 
 EXTRA_DIST=tarpc.x.m4 dpdk.x.m4 rpc_unsupported.m4
 
+rpcgendir = $(datadir)/rpcgen
+dist_rpcgen_DATA = rpcconv.m4
+
 if WINDOWS
 
 include_HEADERS+=te_win_sizeof.h

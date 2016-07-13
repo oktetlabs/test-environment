@@ -1,9 +1,7 @@
-#! /bin/bash
-#
 # RPC support
-# Substitute RPC2H and H2RPC by proper code
-#     
-# Copyright (C) 2006 Test Environment authors (see file AUTHORS in
+# Common constructions to be used in Makefile.am's related to RPCs
+#
+# Copyright (C) 2016 Test Environment authors (see file AUTHORS in
 # the root directory of the distribution).
 #
 # Test Environment is free software; you can redistribute it and/or
@@ -22,18 +20,16 @@
 # MA  02111-1307  USA
 #
 #
-# Author: Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
+# Author: Artem Andreev <Artem.Andreev@oktetlabs.ru>
 #
 # $Id:  $
 #
 
-cat $1 | awk --posix '\
-/RPC2H_CHECK/ { name=substr($1, 13, length($1) - 14); \
-  printf("#ifdef %s\n        case RPC_%s: return %s;\n#endif\n", 
-  name, name, name); next } ; \
-/H2RPC_CHECK/ { name=substr($1, 13, length($1) - 14); \
-  printf("#ifdef %s\n        case %s: return RPC_%s;\n#endif\n", 
-  name, name, name); next } ; \
-{ print $0; }' > $2 
+SUFFIXES = .x.m4 .x .c.rpch
 
-exit 0
+RPCCONV_M4 = $(DESTDIR)/$(datadir)/rpcgen/rpcconv.m4
+
+.c.rpch.c:
+	m4 -D__SOURCE__=$< -P $(RPCCONV_M4) $< >$@
+
+RPCGEN_EXTRA_PREREQS = $(RPCCONV_M4)

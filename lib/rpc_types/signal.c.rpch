@@ -363,7 +363,7 @@ si_code_h2rpc(rpc_signum s, int si)
 {
     switch (si)
     {
-        H2RPC_CHECK(SI_ASYNCNL = 1);
+        H2RPC_CHECK(SI_ASYNCNL);
         H2RPC_CHECK(SI_TKILL);
         H2RPC_CHECK(SI_SIGIO);
         H2RPC_CHECK(SI_ASYNCIO);
