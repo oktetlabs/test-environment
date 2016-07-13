@@ -34,6 +34,9 @@
 extern "C" {
 #endif
 
+#include "te_errno.h"
+#include "tarpc.h"
+
 /** Usual RPC buffer length */
 #define RCF_RPC_BUF_LEN          2048
 
@@ -103,7 +106,7 @@ extern int rpc_xdr_encode_call(const char *name, void *buf, size_t *buflen,
  * @retval TE_ESUNRPC   Buffer is too small or another encoding error
  *                      ocurred
  */
-extern int rpc_xdr_encode_result(char *name, te_bool rc,
+extern int rpc_xdr_encode_result(const char *name, te_bool rc,
                                  void *buf, size_t *buflen, void *objp);
 
 
@@ -134,6 +137,37 @@ extern int rpc_xdr_decode_call(void *buf, size_t buflen,
  */
 extern int rpc_xdr_decode_result(const char *name, void *buf,
                                  size_t buflen, void *objp);
+
+
+/**
+ * Decode only the common part of the RPC call
+ *
+ * @param buf     buffer with encoded data
+ * @param buflen  length of the data
+ * @param name    RPC name location (length >= RCF_RPC_MAX_NAME)
+ * @param common  Decode common input parameters
+ * @note Unlike rpc_xdr_decode_call(), this is a pointer to memory
+ * provided by the caller, not allocated by the function
+ *
+ * @return Status code
+ */
+extern te_errno rpc_xdr_inspect_call(const void *buf, size_t buflen,
+                                     char *name, struct tarpc_in_arg *common);
+
+/**
+ * Decode only the common part of the RPC result.
+ *
+ * @param buf     buffer with encoded data
+ * @param buflen  length of the data
+ * @param common  Decode common output parameters
+ *
+ * @return Status code (if rc attribute of result is FALSE, an error should
+ *         be returned)
+ */
+extern te_errno rpc_xdr_inspect_result(const void *buf, size_t buflen,
+                                       struct tarpc_out_arg *common);
+
+
 
 /**
  * Free RPC C structure.

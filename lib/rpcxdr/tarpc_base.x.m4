@@ -100,12 +100,7 @@ typedef uint32_t tarpc_ethtool_command;
 struct tarpc_in_arg {
     tarpc_op        op;         /**< RPC operation */
     uint64_t        start;
-    tarpc_pthread_t tid;        /**< Thread identifier (for checking and 
-                                     waiting) */
-    tarpc_ptr       done;       /**< Pointer to the boolean variable in
-                                     TA context to be set when function
-                                     which is called using non-blocking
-                                     RPC call finishes */
+    uint64_t        jobid;        /**< Job identifier (for async calls) */
     tarpc_bool      use_libc;   /**< Use libc instead of preset lib */
 };
 
@@ -123,17 +118,15 @@ struct tarpc_out_arg {
 
     uint32_t    duration;   /**< Duration of the called routine
                                  execution (in microseconds) */
-    tarpc_pthread_t tid;    /**< Identifier of the thread which 
-                                 performs possibly blocking operation,
-                                 but caller does not want to block.
-                                 It should be passed as input when
-                                 RPC client want to check status or
-                                 wait for finish of the initiated
-                                 operation. */
-    tarpc_ptr   done;       /**< Pointer to the boolean variable in
-                                 TA context to be set when function
-                                 which is called using non-blocking
-                                 RPC call finishes */
+    uint64_t    jobid;    /**< Identifier of an asynchronous operation.
+                               It should be passed as input when
+                               RPC client want to check status or
+                               wait for finish of the initiated
+                               operation. */
+    tarpc_bool  unsolicited; /**< Set to TRUE for RPC responses that are
+                                  not paired to RPC requests.
+                                  Currently only used for rpc_is_op_done
+                                  notifications */
 };
 
 
@@ -445,7 +438,13 @@ struct tarpc_rpc_find_func_out {
 /* rpc_is_op_done() */
 
 typedef struct tarpc_void_in  tarpc_rpc_is_op_done_in;
-typedef struct tarpc_void_out tarpc_rpc_is_op_done_out;
+struct tarpc_rpc_is_op_done_out {
+    struct tarpc_out_arg common;
+
+    tarpc_bool done;
+};
+
+
 
 /* rpc_is_alive() */
 

@@ -145,6 +145,26 @@ rpc_xdr_encode_call(const char *name, void *buf, size_t *buflen, void *objp)
     return 0;
 }
 
+static te_errno
+decode_result_start(XDR *xdrp, const void *buf, size_t buflen)
+{
+    x_int32_arg_t   rc;
+#ifdef RPC_XML
+    xdrxml_create(xdrp, (void *)buf, buflen, rpc_xml_result,
+                  TRUE, name, XDR_DECODE);
+    /* Decode  - how can we get the routine name? */
+    rc = xdrxml_return_code(xdrp);
+#else
+    /* Decode rc */
+    xdrmem_create(xdrp, (void *)buf, buflen, XDR_DECODE);
+    xdrp->x_ops->x_getint32(xdrp, &rc);
+#endif
+
+    if (rc == 0)
+        return TE_RC(TE_RCF_RPC, TE_ESUNRPC);
+    return 0;
+}
+
 /**
  * Decode RPC result.
  *
@@ -160,24 +180,13 @@ int
 rpc_xdr_decode_result(const char *name, void *buf, size_t buflen,
                       void *objp)
 {
+    te_errno rc;
     XDR xdrs;
-
-    x_int32_arg_t   rc;
-
     rpc_info *info;
 
-#ifdef RPC_XML
-    xdrxml_create(&xdrs, buf, buflen, rpc_xml_result,
-                  TRUE, name, XDR_DECODE);
-    /* Decode  - how can we get the routine name? */
-#else
-    /* Decode rc */
-    xdrmem_create(&xdrs, buf, buflen, XDR_DECODE);
-    xdrs.x_ops->x_getint32(&xdrs, &rc);
-
-    if (rc == 0)
-        return TE_RC(TE_RCF_RPC, TE_ESUNRPC);
-#endif
+    rc = decode_result_start(&xdrs, buf, buflen);
+    if (rc != 0)
+        return rc;
 
     if ((info = rpc_find_info(name)) == NULL)
         return TE_RC(TE_RCF_RPC, TE_ENOENT);
@@ -185,11 +194,9 @@ rpc_xdr_decode_result(const char *name, void *buf, size_t buflen,
     /* Decode argument */
     if (!info->out(&xdrs, objp))
         return TE_RC(TE_RCF_RPC, TE_ESUNRPC);
+
 #ifdef RPC_XML
-    rc = xdrxml_return_code(&xdrs);
     xdrxml_free(&xdrs);
-    if (rc == FALSE)
-        return TE_RC(TE_RCF_RPC, TE_ESUNRPC);
 #endif
 
     return 0;
@@ -213,6 +220,36 @@ rpc_xdr_free(rpc_func func, void *objp)
 #define XML_CALL_PREFIX         "<call name=\""
 #define XML_CALL_PREFIX_LEN     strlen(XML_CALL_PREFIX)
 
+static te_errno
+decode_call_start(XDR *xdrp, char *name, const void *buf, size_t buflen)
+{
+#ifdef RPC_XML
+    char     *tmp;
+    int       n;
+
+    xdrxml_create(xdrp, (void *)buf, buflen, rpc_xml_call, TRUE,
+                  name, XDR_DECODE);
+    if (strncmp(XML_CALL_PREFIX, buf, XML_CALL_PREFIX_LEN) != 0 ||
+        (tmp = strchr(buf + XML_CALL_PREFIX_LEN, '"')) == NULL ||
+        (n = (tmp - buf) - XML_CALL_PREFIX_LEN) >= RCF_RPC_MAX_NAME)
+    {
+        return TE_RC(TE_RCF_RPC, TE_ESUNRPC);
+    }
+    memcpy(name, buf + XML_CALL_PREFIX_LEN, n);
+    name[n] = 0;
+#else
+    x_int32_arg_t len = 0;
+
+    /* Decode routine name */
+    xdrmem_create(xdrp, (void *)buf, buflen, XDR_DECODE);
+    if (!xdrp->x_ops->x_getint32(xdrp, &len))
+        return TE_RC(TE_RCF_RPC, TE_ESUNRPC);
+    if (!xdrp->x_ops->x_getbytes(xdrp, name, len))
+        return TE_RC(TE_RCF_RPC, TE_ESUNRPC);
+#endif
+    return 0;
+}
+
 
 /**
  * Decode RPC call.
@@ -229,32 +266,14 @@ int
 rpc_xdr_decode_call(void *buf, size_t buflen, char *name, void **objp_p)
 {
     XDR xdrs;
+    te_errno rc;
 
     void     *objp;
     rpc_info *info;
 
-#ifdef RPC_XML
-    char     *tmp;
-    int       n;
-
-    xdrxml_create(&xdrs, buf, buflen, rpc_xml_call, TRUE, name, XDR_DECODE);
-    if (strncmp(XML_CALL_PREFIX, buf, XML_CALL_PREFIX_LEN) != 0 ||
-        (tmp = strchr(buf + XML_CALL_PREFIX_LEN, '"')) == NULL ||
-        (n = (tmp - buf) - XML_CALL_PREFIX_LEN) >= RCF_RPC_MAX_NAME)
-    {
-        return TE_ESUNRPC;
-    }
-    memcpy(name, buf + XML_CALL_PREFIX_LEN, n);
-    name[n] = 0;
-#else
-    uint32_t len = 0;
-
-    /* Decode routine name */
-#define BYTE(i) (unsigned int)(((char *)buf)[i])
-    xdrmem_create(&xdrs, buf, buflen, XDR_DECODE);
-    xdrs.x_ops->x_getint32(&xdrs, (x_int32_arg_t *)&len);
-    xdrs.x_ops->x_getbytes(&xdrs, name, len);
-#endif
+    rc = decode_call_start(&xdrs, name, buf, buflen);
+    if (rc != 0)
+        return rc;
 
     if ((info = rpc_find_info(name)) == NULL)
     {
@@ -299,7 +318,7 @@ rpc_xdr_decode_call(void *buf, size_t buflen, char *name, void **objp_p)
  *                      ocurred
  */
 int
-rpc_xdr_encode_result(char *name, te_bool rc,
+rpc_xdr_encode_result(const char *name, te_bool rc,
                       void *buf, size_t *buflen, void *objp)
 {
     XDR xdrs;
@@ -336,4 +355,46 @@ rpc_xdr_encode_result(char *name, te_bool rc,
     *buflen = xdrs.x_ops->x_getpostn(&xdrs);
 #endif
     return 0;
+}
+
+te_errno
+rpc_xdr_inspect_call(const void *buf, size_t buflen, char *name,
+                     struct tarpc_in_arg *common)
+{
+    XDR xdrs;
+    te_errno rc = 0;
+
+    rc = decode_call_start(&xdrs, name, buf, buflen);
+    if (rc != 0)
+        return rc;
+
+    if (!xdr_tarpc_in_arg(&xdrs, common))
+        return TE_RC(TE_RCF_RPC, TE_ESUNRPC);
+
+#ifdef RPC_XML
+    xdrxml_free(&xdrs);
+#endif
+
+    return rc;
+}
+
+te_errno
+rpc_xdr_inspect_result(const void *buf, size_t buflen,
+                       struct tarpc_out_arg *common)
+{
+    XDR xdrs;
+    te_errno rc = 0;
+
+    rc = decode_result_start(&xdrs, buf, buflen);
+    if (rc != 0)
+        return rc;
+
+    if (!xdr_tarpc_out_arg(&xdrs, common))
+        return TE_RC(TE_RCF_RPC, TE_ESUNRPC);
+
+#ifdef RPC_XML
+    xdrxml_free(&xdrs);
+#endif
+
+    return rc;
 }

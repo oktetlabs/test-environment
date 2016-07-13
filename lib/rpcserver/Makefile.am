@@ -9,7 +9,7 @@ include_HEADERS = rpc_server.h rcf_pch_mem.h rpc_server_config.h
 
 lib_LTLIBRARIES=librpcserver.la
 
-librpcserver_la_SOURCES=rpc_server.c rcf_pch_mem.c aux_threads.c tarpc_imp.c
+librpcserver_la_SOURCES=rpc_server.c rcf_pch_mem.c tarpc_imp.c
 
 install-exec-hook:
 	touch -c -r librpcserver.la $(DESTDIR)/$(libdir)/librpcserver.*

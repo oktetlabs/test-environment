@@ -171,14 +171,9 @@ typedef struct rcf_rpc_server {
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_t lock;       /**< lock mutex */
 #endif
-    tarpc_pthread_t tid0;       /**< Identifier of thread performing
-                                     non-blocking operations */
+    uint64_t        jobid0;       /**< Identifier of a deferred operation */
     char            proc[RCF_MAX_NAME];
                                 /**< Last called function */
-    uint32_t        is_done_ptr;
-                                /**< Pointer to the variable in
-                                     RPC server context to check
-                                     state of non-blocking RPC */
     te_bool         silent;     /**< Perform next RPC call without
                                      logging */
     te_bool         silent_default; /**< Turn on/off RPC calls logging, can
@@ -546,7 +541,6 @@ rpcop2str(rcf_rpc_op op)
     switch (op)
     {
         case RCF_RPC_CALL:      return " call";
-        case RCF_RPC_IS_DONE:   return " is done";
         case RCF_RPC_WAIT:      return " wait";
         case RCF_RPC_CALL_WAIT: return "";
         default:                assert(FALSE);

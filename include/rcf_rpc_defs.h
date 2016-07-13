@@ -35,8 +35,6 @@
 /** Operations for RPC */
 typedef enum {
     RCF_RPC_CALL,       /**< Call non-blocking RPC (if supported) */
-    RCF_RPC_IS_DONE,    /**< Check whether non-blocking RPC is done
-                             (to be used from rcf_rpc_is_op_done() only) */
     RCF_RPC_WAIT,       /**< Wait until non-blocking RPC is finished */
     RCF_RPC_CALL_WAIT   /**< Call blocking RPC */
 } rcf_rpc_op;

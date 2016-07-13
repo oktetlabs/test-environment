@@ -442,32 +442,6 @@ _rpc_is_alive_1_svc(tarpc_rpc_is_alive_in  *in,
     return TRUE;
 }
 
-/*-------------- rpc_is_op_done() -----------------------------*/
-
-bool_t
-_rpc_is_op_done_1_svc(tarpc_rpc_is_op_done_in  *in,
-                      tarpc_rpc_is_op_done_out *out,
-                      struct svc_req           *rqstp)
-{
-    te_bool *is_done = (te_bool *)rcf_pch_mem_get(in->common.done);
-
-    UNUSED(rqstp);
-
-    memset(out, 0, sizeof(*out));
-
-    if ((is_done != NULL) && (in->common.op == RCF_RPC_IS_DONE))
-    {
-        out->common._errno = 0;
-        out->common.done = (*is_done) ? in->common.done : 0;
-    }
-    else
-    {
-        out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-
-    return TRUE;
-}
-
 /*-------------- sizeof() -------------------------------*/
 #define MAX_TYPE_NAME_SIZE 30
 typedef struct {

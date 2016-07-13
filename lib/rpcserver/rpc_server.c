@@ -35,6 +35,7 @@
 
 #include "te_errno.h"
 #include "te_sleep.h"
+#include "te_alloc.h"
 
 void
 tarpc_init_checked_arg(checked_arg_list *list, uint8_t *real_arg,
@@ -156,27 +157,101 @@ void tarpc_call_unsupported(const char *name, void *out,
     RING("Unsupported RPC '%s' has been called", name);
 }
 
-static void *
-tarpc_generic_service_thread(void *arg)
+typedef struct deferred_call {
+    TAILQ_ENTRY(deferred_call) next;
+    uintptr_t      jobid;
+    rpc_call_data *call;
+} deferred_call;
+
+static TAILQ_HEAD(, deferred_call) deferred_calls =
+    TAILQ_HEAD_INITIALIZER(deferred_calls);
+
+te_errno
+tarpc_defer_call(uintptr_t jobid, rpc_call_data *call)
 {
-    rpc_call_data *call = arg;
+    deferred_call *defer = TE_ALLOC(sizeof(*defer));
 
-    logfork_register_user(call->info->funcname);
+    if (defer == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
-    VERB("Entry thread %s", call->info->funcname);
+    defer->jobid = jobid;
+    defer->call  = call;
+    TAILQ_INSERT_TAIL(&deferred_calls, defer, next);
 
-    if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL) != 0)
-        ERROR("Failed to set thread cancel type for the non-blocking call "
-              "thread: %r", RPC_ERRNO);
+    return 0;
+}
 
-    sigprocmask(SIG_SETMASK, &(call->mask), NULL);
+te_bool
+tarpc_has_deferred_calls(void)
+{
+    return !TAILQ_EMPTY(&deferred_calls);
+}
 
-    call->info->wrapper(call);
+static rpc_call_data *
+tarpc_find_deferred(uintptr_t jobid, te_bool complete)
+{
+    rpc_call_data *call;
+    deferred_call *defer = NULL;
 
-    call->done = TRUE;
+    TAILQ_FOREACH(defer, &deferred_calls, next)
+    {
+        if (defer->jobid == jobid)
+            break;
+    }
+    if (defer == NULL)
+        return NULL;
 
-    aux_threads_del();
-    return arg;
+    call = defer->call;
+    if (complete)
+    {
+        if (!defer->call->done)
+            defer->call->info->wrapper(defer->call);
+
+        TAILQ_REMOVE(&deferred_calls, defer, next);
+        free(defer);
+    }
+    return call;
+}
+
+static void
+tarpc_run_deferred(rpc_transport_handle handle)
+{
+    deferred_call *defer = NULL;
+    tarpc_rpc_is_op_done_out result;
+    char enc_result[RCF_MAX_VAL];
+    size_t enc_len;
+    te_errno rc;
+
+    TAILQ_FOREACH(defer, &deferred_calls, next)
+    {
+        if (!defer->call->done)
+        {
+            defer->call->info->wrapper(defer->call);
+            defer->call->done = TRUE;
+
+            enc_len = sizeof(enc_result);
+            memset(&result, 0, sizeof(result));
+            result.common.jobid = defer->jobid;
+            result.common.unsolicited = TRUE;
+            result.done = TRUE;
+
+            rc = rpc_xdr_encode_result("rpc_is_op_done", TRUE,
+                                       enc_result, &enc_len,
+                                       &result);
+            if (rc != 0)
+            {
+                ERROR("Cannot encode rpc_op_is_done result: %r", rc);
+            }
+            else
+            {
+                rc = rpc_transport_send(handle, (uint8_t *)enc_result, enc_len);
+                if (rc != 0)
+                {
+                    ERROR("Cannot send async call notification: %r", rc);
+                }
+            }
+        }
+    }
 }
 
 void
@@ -218,7 +293,6 @@ tarpc_generic_service(rpc_call_data *call)
         case RCF_RPC_CALL:
         {
             rpc_call_data *copy_call;
-            pthread_t tid;
 
             VERB("%s(): CALL", call->info->funcname);
 
@@ -231,21 +305,18 @@ tarpc_generic_service(rpc_call_data *call)
             }
 
             *copy_call = *call;
-            sigprocmask(SIG_SETMASK, NULL, &(copy_call->mask));
             copy_call->in = (uint8_t *)copy_call + sizeof(*copy_call);
             copy_call->out = (uint8_t *)copy_call->in +
                              copy_call->info->in_size;
             memcpy(copy_call->in, call->in, call->info->in_size);
             memcpy(copy_call->out, call->out, call->info->out_size);
 
-            if (pthread_create(&tid, NULL, tarpc_generic_service_thread,
-                               copy_call) != 0)
+            if ((rc = tarpc_defer_call((uintptr_t)copy_call, copy_call)) != 0)
             {
                 free(copy_call);
-                out_common->_errno = TE_OS_RC(TE_TA_UNIX, errno);
+                out_common->_errno = rc;
                 break;
             }
-            aux_threads_add(tid);
 
             /*
              * Preset 'in' and 'out' with zeros to avoid any
@@ -256,43 +327,24 @@ tarpc_generic_service(rpc_call_data *call)
             memset(call->in,  0, call->info->in_size);
             memset(call->out, 0, call->info->out_size);
 
-            out_common->tid = (tarpc_pthread_t)tid;
-            out_common->done = rcf_pch_mem_alloc(&copy_call->done);
+            out_common->jobid = (uintptr_t)copy_call;
 
             break;
         }
         case RCF_RPC_WAIT:
         {
             rpc_call_data *copy_call;
-            pthread_t     tid =  (pthread_t)in_common->tid;
             enum xdr_op   op;
 
             VERB("%s(): WAIT", call->info->funcname);
 
-            /*
-             * If WAIT is called, all resources are deallocated
-             * in any case.
-             */
-            rcf_pch_mem_free(in_common->done);
+            copy_call = tarpc_find_deferred(in_common->jobid, TRUE);
 
-            if (tid == (pthread_t)(long)NULL)
-            {
-                ERROR("No thread with ID %llu to wait",
-                      (unsigned long long int)in_common->tid);
-                out_common->_errno = TE_RC(TE_TA_UNIX, TE_ENOENT);
-                break;
-            }
-            if (pthread_join(tid, (void **)&copy_call) != 0)
-            {
-                ERROR("pthread_join() failed");
-                out_common->_errno = TE_OS_RC(TE_TA_UNIX, errno);
-                break;
-            }
             if (copy_call == NULL)
             {
-                ERROR("pthread_join() returned invalid thread "
-                      "return value");
-                out_common->_errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
+                ERROR("No call with ID %llu to wait",
+                      (unsigned long long int)in_common->jobid);
+                out_common->_errno = TE_RC(TE_TA_UNIX, TE_ENOENT);
                 break;
             }
 
@@ -668,6 +720,8 @@ rcf_pch_rpc_server(const char *name)
 
         if (rpc_transport_send(handle, buf, len) != 0)
             STOP("Sending data failed in main RPC server loop");
+
+        tarpc_run_deferred(handle);
     }
 
 cleanup:

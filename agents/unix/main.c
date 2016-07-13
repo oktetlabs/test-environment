@@ -1412,14 +1412,14 @@ thread_mutex_unlock(void *mutex)
 int
 rcf_rpc_server_init(void)
 {
-    return aux_threads_init();
+    return 0;
 }
 
 /* See description in ta_common.h */
 int
 rcf_rpc_server_finalize(void)
 {
-    return aux_threads_cleanup();
+    return 0;
 }
 
 #ifdef RCF_RPC

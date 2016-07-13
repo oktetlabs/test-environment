@@ -100,6 +100,8 @@ typedef struct rpcserver {
                                 terminated, waitpid() (pthread_join())
                                 was already  called (if required) */
     time_t    sent;        /**< Time of the last request sending */
+    te_bool   async_call;  /**< True if async call in progress */
+    uint64_t  last_jobid;  /**< Last async call job id */
 } rpcserver;
 
 static rpcserver *list;        /**< List of all RPC servers */
@@ -448,6 +450,38 @@ rpc_error(rpcserver *rpcs, int rc)
     RCF_CH_UNLOCK;
 }
 
+static void
+send_response(const rpcserver *rpcs, struct rcf_comm_connection *conn,
+              const void *buf, size_t len)
+{
+    /* Send response */
+    if (strcmp_start("<?xml", buf) == 0)
+    {
+        /* Worst case is when all characters need quoting + header */
+        char *tmp = malloc(2 * len + RCF_MAX_VAL);
+        char *s = tmp;
+
+        s += sprintf(s, "SID %d 0 ", rpcs->last_sid);
+        write_str_in_quotes(s, buf, len);
+        RCF_CH_LOCK;
+        rcf_comm_agent_reply(conn, tmp, strlen(tmp) + 1);
+        RCF_CH_UNLOCK;
+        free(tmp);
+    }
+    else
+    {
+        /* Send as binary attachment */
+        char s[64];
+
+        snprintf(s, sizeof(s), "SID %d 0 attach %zu",
+                 rpcs->last_sid, len);
+        RCF_CH_LOCK;
+        rcf_comm_agent_reply(conn, s, strlen(s) + 1);
+        rcf_comm_agent_reply(conn, buf, len);
+        RCF_CH_UNLOCK;
+    }
+}
+
 /**
  * Entry point for the thread forwarding answers from RPC servers
  * to RCF. The thread should not release memory allocated for
@@ -465,6 +499,7 @@ dispatch(void *arg)
         size_t     len;
         te_errno   rc;
         uint32_t   pass_time = 0;
+        tarpc_out_arg common_arg;
 
         rpc_transport_read_set_init();
 
@@ -487,30 +522,32 @@ dispatch(void *arg)
         now = time(NULL);
         for (rpcs = list; rpcs != NULL; rpcs = rpcs->next)
         {
-            if (rpcs->dead || rpcs->sent == 0)
+            if (rpcs->dead || (rpcs->sent == 0 && !rpcs->async_call))
                 continue;
 
-            /* Report when time goes back */
-            if (now - rpcs->sent < 0)
+            if (rpcs->sent != 0)
             {
-                WARN("Time goes back! Send request time = %d, "
-                     "'Now' time = %d", rpcs->sent, now);
-                sleep(1);
-                now = time(NULL);
-                continue;
-            }
-            else
-                pass_time = (uint32_t)(now - rpcs->sent);
+                /* Report when time goes back */
+                if (now - rpcs->sent < 0)
+                {
+                    WARN("Time goes back! Send request time = %d, "
+                         "'Now' time = %d", rpcs->sent, now);
+                    sleep(1);
+                    now = time(NULL);
+                    continue;
+                }
+                else
+                    pass_time = (uint32_t)(now - rpcs->sent);
 
-            if (rpcs->sent > 0 &&
-                (pass_time > rpcs->timeout ||
-                 (rpcs->timeout == 0xFFFFFFFF && now - rpcs->sent > 5)))
-            {
-                ERROR("Timeout on server %s (timeout=%ds)",
-                      rpcs->name, rpcs->timeout);
-                rpcs->dead = TRUE;
-                rpc_error(rpcs, TE_ERPCTIMEOUT);
-                continue;
+                if ((pass_time > rpcs->timeout ||
+                     (rpcs->timeout == 0xFFFFFFFF && now - rpcs->sent > 5)))
+                {
+                    ERROR("Timeout on server %s (timeout=%ds)",
+                          rpcs->name, rpcs->timeout);
+                    rpcs->dead = TRUE;
+                    rpc_error(rpcs, TE_ERPCTIMEOUT);
+                    continue;
+                }
             }
 
             len = RCF_RPC_HUGE_BUF_LEN;
@@ -525,32 +562,29 @@ dispatch(void *arg)
                 continue;
             }
 
-            /* Send response */
-            if (len < RCF_MAX_VAL &&
-                strcmp_start("<?xml", (char *)rpc_buf) == 0)
+            rc = rpc_xdr_inspect_result(rpc_buf, len, &common_arg);
+            if (rc != 0)
             {
-                /* Send as string */
-                char *s0 = (char *)rpc_buf + RCF_MAX_VAL;
-                char *s = s;
-
-                s += sprintf(s, "SID %d 0 ", rpcs->last_sid);
-                write_str_in_quotes(s, (char *)rpc_buf, len);
-                RCF_CH_LOCK;
-                rcf_comm_agent_reply(conn_saved, s0, strlen(s0) + 1);
-                RCF_CH_UNLOCK;
+                ERROR("Cannot inspect RPC result: %r");
+                rpc_error(rpcs, TE_RC_GET_ERROR(rc));
+                continue;
             }
-            else
+
+            if (rpcs->async_call)
             {
-                /* Send as binary attachment */
-                char s[64];
-
-                snprintf(s, sizeof(s), "SID %d 0 attach %u",
-                         rpcs->last_sid, (unsigned)len);
-                RCF_CH_LOCK;
-                rcf_comm_agent_reply(conn_saved, s, strlen(s) + 1);
-                rcf_comm_agent_reply(conn_saved, rpc_buf, len);
-                RCF_CH_UNLOCK;
+                if (rpcs->last_jobid != 0 &&
+                    common_arg.jobid == rpcs->last_jobid)
+                    rpcs->async_call = FALSE;
+                else
+                    rpcs->last_jobid = common_arg.jobid;
             }
+
+            if (common_arg.unsolicited)
+            {
+                continue;
+            }
+
+            send_response(rpcs, conn_saved, rpc_buf, len);
 
             if (rpcs->timeout == 0xFFFFFFFF) /* execve() */
             {
@@ -1313,6 +1347,9 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
     int        n;
     te_errno   rc;
 
+    char         rpc_name[RCF_MAX_NAME];
+    tarpc_in_arg common_arg;
+
     conn_saved = conn;
 
 #define RETERR(_rc) \
@@ -1330,6 +1367,14 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
 
     /* Look for the RPC server */
     pthread_mutex_lock(&lock);
+
+    rc = rpc_xdr_inspect_call(data, len, rpc_name, &common_arg);
+    if (rc != 0)
+    {
+        ERROR("Cannot decode RPC call for RPC server %s: %r", server, rc);
+        pthread_mutex_unlock(&lock);
+        RETERR(rc);
+    }
 
     rpcs = rcf_pch_find_rpcserver(server);
     if (rpcs == NULL)
@@ -1368,6 +1413,40 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
 
     if (rc != 0)
         return rc;
+
+    if (strcmp(rpc_name, "rpc_is_op_done") == 0)
+    {
+        tarpc_rpc_is_op_done_out result;
+        char enc_result[RCF_MAX_VAL];
+        size_t enc_len = sizeof(enc_result);
+
+        memset(&result, 0, sizeof(result));
+        if (common_arg.op != RCF_RPC_CALL_WAIT)
+            result.common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
+        else if (common_arg.jobid != rpcs->last_jobid)
+            result.common._errno = TE_RC(TE_TA_UNIX, TE_ESRCH);
+
+        result.common.jobid = rpcs->last_jobid;
+        result.done = !rpcs->async_call;
+
+        rc = rpc_xdr_encode_result(rpc_name, TRUE, enc_result, &enc_len,
+                                   &result);
+        if (rc != 0)
+        {
+            ERROR("Cannot encode rpc_op_is_done result");
+            RETERR(rc);
+        }
+
+        send_response(rpcs, conn, enc_result, enc_len);
+        rpcs->timeout = rpcs->sent = rpcs->last_sid = 0;
+
+        return 0;
+    }
+    else if (common_arg.op == RCF_RPC_CALL)
+    {
+        rpcs->async_call = TRUE;
+        rpcs->last_jobid = 0;
+    }
 
     /* Send encoded data to server */
     if (rpc_transport_send(rpcs->handle, (uint8_t *)data,

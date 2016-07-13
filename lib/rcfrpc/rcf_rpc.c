@@ -597,9 +597,10 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
     if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
         rpcs->timeout = rpcs->def_timeout;
 
-    if (rpcs->op == RCF_RPC_CALL || rpcs->op == RCF_RPC_CALL_WAIT)
+    if (!op_is_done && (rpcs->op == RCF_RPC_CALL ||
+                        rpcs->op == RCF_RPC_CALL_WAIT))
     {
-        if (rpcs->tid0 != 0)
+        if (rpcs->jobid0 != 0)
         {
             rpcs->_errno = TE_RC(TE_RCF_API, TE_EBUSY);
             rpcs->timed_out = TRUE;
@@ -611,7 +612,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
     }
     else if (!is_alive)
     {
-        if (rpcs->tid0 == 0)
+        if (rpcs->jobid0 == 0)
         {
             ERROR("Try to wait not called RPC");
             rpcs->_errno = TE_RC(TE_RCF_API, TE_EALREADY);
@@ -636,8 +637,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
 
     in->start = rpcs->start;
     in->op = rpcs->op;
-    in->tid = rpcs->tid0;
-    in->done = rpcs->is_done_ptr;
+    in->jobid = rpcs->jobid0;
     in->use_libc = rpcs->use_libc || rpcs->use_libc_once;
 
     rpcs->last_op = rpcs->op;
@@ -667,19 +667,13 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
         rpcs->timed_out = FALSE;
         if (rpcs->op == RCF_RPC_CALL)
         {
-            rpcs->tid0 = out->tid;
-            rpcs->is_done_ptr = out->done;
+            rpcs->jobid0 = out->jobid;
             rpcs->op = RCF_RPC_WAIT;
         }
         else if (rpcs->op == RCF_RPC_WAIT)
         {
-            rpcs->tid0 = 0;
-            rpcs->is_done_ptr = 0;
+            rpcs->jobid0 = 0;
             rpcs->op = RCF_RPC_CALL_WAIT;
-        }
-        else if (rpcs->op == RCF_RPC_IS_DONE)
-        {
-            rpcs->op = RCF_RPC_WAIT;
         }
     }
 
@@ -701,19 +695,17 @@ rcf_rpc_server_is_op_done(rcf_rpc_server *rpcs, te_bool *done)
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
 
-    in.common.done = rpcs->is_done_ptr;
-
-    rpcs->op = RCF_RPC_IS_DONE;
+    rpcs->op = RCF_RPC_CALL_WAIT;
     rcf_rpc_call(rpcs, "rpc_is_op_done", &in, &out);
 
     if (rpcs->_errno != 0)
     {
-        ERROR("Failed to call rpc_is_op_done() on the RPC server %s",
-              rpcs->name);
+        ERROR("Failed to call rpc_is_op_done() on the RPC server %s: %r",
+              rpcs->name, rpcs->_errno);
         return rpcs->_errno;
     }
 
-    *done = (out.common.done != 0);
+    *done = (out.done != 0);
 
     return 0;
 }
@@ -733,7 +725,7 @@ rcf_rpc_server_is_alive(rcf_rpc_server *rpcs)
     memset(&out, 0, sizeof(out));
 
     old_op = rpcs->op;
-    rpcs->op = RCF_RPC_IS_DONE;
+    rpcs->op = RCF_RPC_CALL_WAIT;
     rcf_rpc_call(rpcs, "rpc_is_alive", &in, &out);
     rpcs->op = old_op;
 

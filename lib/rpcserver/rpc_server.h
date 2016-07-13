@@ -577,9 +577,6 @@ typedef struct rpc_call_data {
     api_func func;             /**< Actual function to call */
     void *in;                  /**< Input data */
     void *out;                 /**< Output data */
-    sigset_t mask;             /**< Saved signal mask
-                                * @note Only used for async calls
-                                */
     checked_arg_list checked_args; /**< List of checked arguments */
     te_bool done;              /**< Completion status
                                 * @note Only used for async calls
@@ -593,6 +590,10 @@ typedef struct rpc_call_data {
 
 extern void tarpc_call_unsupported(const char *name, void *out,
                                    size_t outsize, size_t common_offset);
+
+extern te_errno tarpc_defer_call(uintptr_t jobid, rpc_call_data *call);
+
+extern te_bool tarpc_has_deferred_calls(void);
 
 /**
  * Generic RPC handler.
@@ -951,35 +952,6 @@ extern void tarpc_generic_service(rpc_call_data *call);
 typedef void (*sighandler_t)(int);
 
 /**
- * Initialize context for aux threads which are used to make non-blocking
- * RPC call.
- */
-extern te_errno aux_threads_init(void);
-
-/**
- * Cleanup the aux threads context.
- */
-extern te_errno aux_threads_cleanup(void);
-
-/**
- * Save thread identifier which is used for non-blocking RPC call.
- */
-extern void aux_threads_add(pthread_t tid);
-
-/**
- * Get thread identifier which is used for non-blocking RPC call.
- *
- * @return thread identifier or @c NULL
- */
-extern pthread_t aux_threads_get(void);
-
-/**
- * Remove thread identifier which is used for non-blocking RPC call from the
- * context.
- */
-extern void aux_threads_del(void);
-
-/**
  * Sleep the pending timeout and return error in case
  * non-blocking call is executed.
  *
@@ -990,7 +962,7 @@ extern void aux_threads_del(void);
  */
 #define RPCSERVER_PLUGIN_AWAIT_RPC_CALL(_timeout)   \
     do {                                            \
-        if (aux_threads_get() != 0)                 \
+        if (tarpc_has_deferred_calls())             \
         {                                           \
             usleep((_timeout) * 1000);              \
             return TE_RC(TE_TA_UNIX, TE_EPENDING);  \
