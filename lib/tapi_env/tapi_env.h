@@ -47,6 +47,7 @@
 #include "conf_api.h"
 #include "tapi_cfg_net.h"
 #include "tapi_rpc.h"
+#include "tapi_sniffer.h"
 
 
 /**
@@ -383,6 +384,9 @@ typedef struct tapi_env_if {
                                      the host in this net used? */
     te_bool ip6_unicast_used;   /**< Is IPv6 address assigned to
                                      the host in this net used? */
+
+    tapi_sniffer_id    *sniffer_id;    /**< ID of the sniffer created by
+                                            request via TE_ENV_SNIFF_ON */
 
 } tapi_env_if;
 

@@ -93,6 +93,8 @@ static te_errno prepare_interfaces(tapi_env_ifs *ifs,
                                    cfg_nets_t   *cfg_nets);
 static te_errno prepare_pcos(tapi_env_hosts *hosts);
 
+static te_errno prepare_sniffers(tapi_env *env);
+
 static te_errno add_address(tapi_env_addr         *env_addr,
                             cfg_nets_t            *cfg_nets,
                             const struct sockaddr *addr);
@@ -305,6 +307,13 @@ tapi_env_get(const char *cfg, tapi_env *env)
         return rc;
     }
 
+    rc = prepare_sniffers(env);
+    if (rc != 0)
+    {
+        ERROR("Failed to prepare sniffers");
+        return rc;
+    }
+
     return 0;
 }
 
@@ -467,6 +476,8 @@ tapi_env_free(tapi_env *env)
     while ((iface = env->ifs.cqh_first) != (void *)&env->ifs)
     {
         CIRCLEQ_REMOVE(&env->ifs, iface, links);
+        if (iface->sniffer_id != NULL)
+            (void)tapi_sniffer_del(iface->sniffer_id);
         free(iface->if_info.if_name);
         free(iface->br_info.if_name);
         free(iface->ph_info.if_name);
@@ -2347,4 +2358,40 @@ tapi_env_add_addresses(rcf_rpc_server *rpcs, tapi_env_net *net, int af,
 #undef TMP_CHECK_RC
 
     return NULL;
+}
+
+
+/**
+ * Create sniffers requested via environment.
+ */
+static te_errno
+prepare_sniffers(tapi_env *env)
+{
+    const char         *sniff_on = getenv("TE_ENV_SNIFF_ON");
+    tapi_env_if        *p;
+    te_errno            rc = 0;
+    char                buf[16];
+
+    if (sniff_on == NULL)
+        return 0;
+
+    for (p = env->ifs.cqh_first;
+         p != (void *)(&env->ifs) && rc == 0;
+         p = p->links.cqe_next)
+    {
+        if (p->rsrc_type != NET_NODE_RSRC_TYPE_INTERFACE)
+            continue;
+
+        snprintf(buf, sizeof(buf), ":%s:", p->name);
+        if (strcasecmp(sniff_on, "all") == 0 || strstr(sniff_on, buf) != NULL)
+        {
+            p->sniffer_id =
+                tapi_sniffer_add(p->host->ta, p->if_info.if_name, p->name,
+                                 NULL, FALSE);
+            if (p->sniffer_id == NULL)
+                rc = TE_RC(TE_TAPI, TE_EFAULT);
+        }
+    }
+
+    return rc;
 }
