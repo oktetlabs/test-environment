@@ -9,7 +9,7 @@ AC_CONFIG_SRCDIR([rpc_transport.h])
 AC_CONFIG_AUX_DIR([../../auxdir])
 AC_CONFIG_MACRO_DIR([../../auxdir])
 
-AM_INIT_AUTOMAKE([1.11.6 foreign -Wall])
+AM_INIT_AUTOMAKE([1.9.6 foreign -Wall])
 TE_SETUP_AR
 
 # Checks for programs.
