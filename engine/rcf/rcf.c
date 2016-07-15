@@ -566,7 +566,7 @@ parse_config_ta(xmlNodePtr ta_node)
                 ERROR("No value attribute in <arg>");
                 return TE_RC(TE_RCF, TE_EFMT);
             }
-            ERROR("task.argv[%d]=%s", ta_task->argc, attr);
+            INFO("task.argv[%d]=%s", ta_task->argc, attr);
             ta_task->argv[ta_task->argc++] = attr;
         }
         ta_task->next = agent->initial_tasks;
