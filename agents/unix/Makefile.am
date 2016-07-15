@@ -90,7 +90,7 @@ if GENERATE_SYMTBL
 CLEANFILES = symtbl.c
 
 symtbl.c: $(SYMTBL_OBJECTS) $(SYMTBL_LIBS) @TE_DEPENDENCIES@
-	$(NM) $^ | \
+	$(NM) --format=sysv $^ | \
 	awk --posix -vTABLE_NAME=generated_table -f $(srcdir)/../../engine/builder/te_generate_symtbl >$@
 endif
 
