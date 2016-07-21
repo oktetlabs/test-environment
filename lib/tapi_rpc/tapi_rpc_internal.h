@@ -54,6 +54,7 @@
 #endif
 #include "tarpc.h"
 #include "tapi_jmp.h"
+#include "tapi_test_run_status.h"
 
 
 /** Extra time in seconds to be added to time2run before RPC timeout */
@@ -127,6 +128,16 @@ do {                                                                    \
             else if ((_res) && rpcs->iut_err_jump)                      \
             {                                                           \
                 TAPI_JMP_DO(TE_EFAIL);                                  \
+            }                                                           \
+            else if (tapi_test_run_status_get() !=                      \
+                                            TE_TEST_RUN_STATUS_OK)      \
+            {                                                           \
+                if (!tapi_jmp_stack_is_empty())                         \
+                {                                                       \
+                    ERROR("Jumping because a test execution error "     \
+                          "occured earlier");                           \
+                    TAPI_JMP_DO(TE_EFAIL);                              \
+                }                                                       \
             }                                                           \
             rpcs->iut_err_jump = TRUE;                                  \
             rpcs->err_jump = TRUE;                                      \

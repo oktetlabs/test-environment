@@ -52,6 +52,7 @@
 #include "te_errno.h"
 #include "logger_api.h"
 #include "tapi_jmp.h"
+#include "tapi_test_run_status.h"
 
 
 /** List of jump points */
@@ -247,6 +248,7 @@ tapi_jmp_do(int val, const char *file, unsigned int lineno)
     {
         ERROR("%s(): Invalid return value %d for jump to do",
               __FUNCTION__, val);
+        tapi_test_run_status_set(TE_TEST_RUN_STATUS_FAIL);
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
     else if (val == 0)
@@ -258,6 +260,7 @@ tapi_jmp_do(int val, const char *file, unsigned int lineno)
     if (ctx == NULL)
     {
         ERROR("%s(): No context", __FUNCTION__);
+        tapi_test_run_status_set(TE_TEST_RUN_STATUS_FAIL);
         return TE_RC(TE_TAPI, TE_ENOMEM);
     }
     tapi_jmp_ctx_free_garbage(ctx);
@@ -265,6 +268,7 @@ tapi_jmp_do(int val, const char *file, unsigned int lineno)
     if ((p = SLIST_FIRST(&ctx->stack)) == NULL)
     {
         ERROR("%s(): Jumps stack is empty", __FUNCTION__);
+        tapi_test_run_status_set(TE_TEST_RUN_STATUS_FAIL);
         return TE_RC(TE_TAPI, TE_ENOENT);
     }
     SLIST_REMOVE(&ctx->stack, p, tapi_jmp_point, links);
