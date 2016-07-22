@@ -44,70 +44,116 @@ work_dir/
 When you get TE in source code form you need to build TE before
 it can be used for testing.
 
-@subsection te_deps Test Environment Dependencies
+To build any of components TE Engine or TA it is necessary to install
+development toolchain. You can use these packages on Debian derivatives:
+- @lib_name{build-essential} - this package provokes the installation of
+  the following packages:
+    - @lib_name{g++},
+    - @lib_name{gcc},
+    - @lib_name{libc-dev},
+    - @lib_name{make};
+- @lib_name{pkg-config}.
 
-Test Environment depends on a set of 3-rd party libraries and packages.
+Same for Debian derivatives in one line:
 
-For building TE components from sources you need:
-- @prog{autoconf} version 2.61 or higher;
-- @prog{automake} 1.9.6 (note: 1.10.* does not work).
-.
+<pre class="fragment">
+apt-get install build-essential pkg-config
+</pre>
 
-For @ref te_engine build and run (in square brackets - debian package names):
-- @lib_name{libxml2-devel} at least 2.6.x (2.6.10)
-  [@lib_name{libxml2} @lib_name{libxml2-dev}];
-- @lib_name{glib2-devel} (@lib_name{glib-2.0} package we use 2.4.8)
-  [@lib_name{libglib2-dev}];
-- @lib_name{popt-devel} (@lib_name{libpopt-dev} on Debian)
-  [@lib_name{libpopt-dev}];
-- @lib_name{libreadline} (for @ref te_engine_tester interactive)
-  [@lib_name{libreadline-common}, @lib_name{libreadline-dev},
-  @lib_name{libreadline-5}];
-- @prog{tcl} (and @lib_name{tcl-devel}, if applicable, e.g. on Fedora Core 2)
-  [@lib_name{tcl}, @lib_name{tcl-dev}];
-- @lib_name{libxslt} (we use 1.1.6)
-  [@lib_name{libxslt1-dev}, @lib_name{libxslt-1.1}];
-- @lib_name{libexpat} [@lib_name{libexpat1}, @lib_name{libexpat1-dev}];
-- @lib_name{flex} >= 2.5.31-31 from sourceforge; @lib_name{flex} 2.5.4a
-  from gnu.org will not work [@lib_name{flex}];
-- @prog{gawk} (@prog{mawk} will not work) [@lib_name{gawk}];
-- any @lib_name{curses} library (@lib_name{ncurses} will work) with
-  development files [@lib_name{ncurses}, @lib_name{ncurses-dev}];
-- @lib_name{perl-Time-HiRes} package on Redhat/Fedora is very usefull
-  (it allows to avoid mixture in log because of unprecise timestamps in
-  messages logged by @ref te_engine_dispatcher (via logging script));
-- @lib_name{libgss0} (>=0.0.18) [@lib_name{libgss0}];
-- Wireless tools - development files [@lib_name{libiw-dev}];
-- PPPoE [@lib_name{pppoe}] [@lib_name{pppoeconf}];
-- @lib_name{curl} libraries [not from debian, should be taken from storage];
-- @lib_name{libusb}, @lib_name{libusb-dev};
+@subsection te_deps Test Environment Engine dependencies
+
+Test Environment Engine depends on a set of 3-rd party libraries and packages:
+
+- @lib_name{autoconf} - at least 2.61;
+- @lib_name{automake} - at least 1.9;
+- @lib_name{bison};
+- @lib_name{curl};
+- @lib_name{file};
+- @lib_name{flex} - at least 2.5.31;
+- @lib_name{gawk};
+- @lib_name{libexpat1};
+- @lib_name{libexpat1-dev};
+- @lib_name{libglib2.0-dev};
+- @lib_name{libncurses5};
+- @lib_name{libncurses5-dev};
+- @lib_name{libpam0g};
 - @lib_name{libpam0g-dev};
-- @lib_name{libperl-dev};
-- @lib_name{bison}.
+- @lib_name{libpcap0.8-dev};
+- @lib_name{libpopt-dev};
+- @lib_name{libreadline5} - at least 5.0;
+- @lib_name{libreadline-dev} - at least 5.0;
+- @lib_name{libssl-dev};
+- @lib_name{libusb-1.0-0};
+- @lib_name{libusb-1.0-0-dev};
+- @lib_name{libxml2};
+- @lib_name{libxml2-dev} - at least 2.6.10;
+- @lib_name{libxslt1.1};
+- @lib_name{libxslt1-dev} - at least 1.1.6;
+- @lib_name{ssh};
+- @lib_name{tcl-dev};
+- @lib_name{wget}.
 .
 
-@ref te_agents_unix :
+Same for Debian derivatives in one line:
 
-- @lib_name{expect} and @lib_name{expect-dev} (for TAD CLI only)
-  [@lib_name{expect}, @lib_name{expect-dev}];
-- @lib_name{flex} >= 2.5.31 from sourceforge;
-  @lib_name{flex} 2.5.4a from gnu.org does not work;
-- @lib_name{libexpat};
-- @lib_name{libpcap0.8-dev} (for TAD PCAP only) [@lib_name{libpcap0.8-dev}];
-- @lib_name{libpam} (0.76-22) (not required but suggested)
-  [@lib_name{libpam}].
+<pre class="fragment">
+apt-get install autoconf automake bison curl file flex gawk libexpat1 libexpat1-dev libglib2.0-dev libncurses5 libncurses5-dev libpam0g libpam0g-dev libpcap0.8-dev libpopt-dev libreadline5 libreadline-dev libssl-dev libusb-1.0-0 libusb-1.0-0-dev libxml2 libxml2-dev libxslt1.1 libxslt1-dev ssh tcl-dev wget
+</pre>
+
+Or easy way, you can install meta package @b oktetlabs-te-dev from
+OKTET Labs repository.
+
+Optional libraries and packages:
+
+- @lib_name{perl-Time-HiRes} - package on Redhat/Fedora is very usefull
+  (it allows to avoid mixture in log because of unprecise timestamps in
+  messages logged by Dispatcher (via logging script)).
 .
 
-@ref te_agents_win :
+@subsection ta_build_deps Test Agent build dependencies
 
-- @lib_name{cygwin}, cross-toolchain;
-- @lib_name{libpcap} (crosscompiled for @lib_name{cygwin}).
-  Should be put into standard @path{include/lib} paths of
-  @lib_name{cygwin} cross-compiler - required for TAD library.
-  @lib_name{Winpcap} runtime has to be installed on Windows host.
+Default Test Agent build depends on a set of 3-rd party libraries and packages:
 
-Of course, @prog{gcc}, @prog{make}, @prog{sed} and other standard development
-tools are required to build sources.
+- @lib_name{bison};
+- @lib_name{file};
+- @lib_name{flex} - at least 2.5.31;
+- @lib_name{gawk};
+- @lib_name{libpcap0.8-dev};
+- @lib_name{libpopt-dev};
+- ssh server, in Debian derivatives it is @lib_name{openssh-server};
+- @lib_name{wget}.
+.
+
+Same for Debian derivatives in one line:
+
+<pre class="fragment">
+apt-get install bison file flex gawk libpcap0.8-dev libpopt-dev openssh_server wget
+</pre>
+
+Optional libraries and packages:
+
+- @lib_name{libsnmp-dev} - for SNMP support.
+.
+
+@subsection ta_run_deps Test Agent run dependencies
+
+Default Test Agent run depends on a set of 3-rd party libraries and packages:
+
+- @lib_name{file};
+- @lib_name{gawk};
+- ssh server, in Debian derivatives it is @lib_name{openssh-server}.
+.
+
+Same for Debian derivatives in one line:
+
+<pre class="fragment">
+apt-get install file gawk openssh_server
+</pre>
+
+Optional libraries and packages:
+
+- @lib_name{libsnmp} - for SNMP support.
+.
 
 @subsection te_build_config Build configuration
 
