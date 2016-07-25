@@ -163,11 +163,11 @@ typedef struct deferred_call {
     rpc_call_data *call;
 } deferred_call;
 
-static TAILQ_HEAD(, deferred_call) deferred_calls =
-    TAILQ_HEAD_INITIALIZER(deferred_calls);
+TAILQ_HEAD(deferred_call_list, deferred_call);
 
 te_errno
-tarpc_defer_call(uintptr_t jobid, rpc_call_data *call)
+tarpc_defer_call(deferred_call_list *list,
+                 uintptr_t jobid, rpc_call_data *call)
 {
     deferred_call *defer = TE_ALLOC(sizeof(*defer));
 
@@ -176,24 +176,25 @@ tarpc_defer_call(uintptr_t jobid, rpc_call_data *call)
 
     defer->jobid = jobid;
     defer->call  = call;
-    TAILQ_INSERT_TAIL(&deferred_calls, defer, next);
+    TAILQ_INSERT_TAIL(list, defer, next);
 
     return 0;
 }
 
 te_bool
-tarpc_has_deferred_calls(void)
+tarpc_has_deferred_calls(const deferred_call_list *list)
 {
-    return !TAILQ_EMPTY(&deferred_calls);
+    return !TAILQ_EMPTY(list);
 }
 
 static rpc_call_data *
-tarpc_find_deferred(uintptr_t jobid, te_bool complete)
+tarpc_find_deferred(deferred_call_list *list,
+                    uintptr_t jobid, te_bool complete)
 {
     rpc_call_data *call;
     deferred_call *defer = NULL;
 
-    TAILQ_FOREACH(defer, &deferred_calls, next)
+    TAILQ_FOREACH(defer, list, next)
     {
         if (defer->jobid == jobid)
             break;
@@ -207,14 +208,14 @@ tarpc_find_deferred(uintptr_t jobid, te_bool complete)
         if (!defer->call->done)
             defer->call->info->wrapper(defer->call);
 
-        TAILQ_REMOVE(&deferred_calls, defer, next);
+        TAILQ_REMOVE(list, defer, next);
         free(defer);
     }
     return call;
 }
 
 static void
-tarpc_run_deferred(rpc_transport_handle handle)
+tarpc_run_deferred(deferred_call_list *list, rpc_transport_handle handle)
 {
     deferred_call *defer = NULL;
     tarpc_rpc_is_op_done_out result;
@@ -222,7 +223,7 @@ tarpc_run_deferred(rpc_transport_handle handle)
     size_t enc_len;
     te_errno rc;
 
-    TAILQ_FOREACH(defer, &deferred_calls, next)
+    TAILQ_FOREACH(defer, list, next)
     {
         if (!defer->call->done)
         {
@@ -255,7 +256,7 @@ tarpc_run_deferred(rpc_transport_handle handle)
 }
 
 void
-tarpc_generic_service(rpc_call_data *call)
+tarpc_generic_service(deferred_call_list *async_list, rpc_call_data *call)
 {
     int rc;
     tarpc_in_arg *in_common = (tarpc_in_arg *)((uint8_t *)call->in +
@@ -311,7 +312,8 @@ tarpc_generic_service(rpc_call_data *call)
             memcpy(copy_call->in, call->in, call->info->in_size);
             memcpy(copy_call->out, call->out, call->info->out_size);
 
-            if ((rc = tarpc_defer_call((uintptr_t)copy_call, copy_call)) != 0)
+            if ((rc = tarpc_defer_call(async_list, (uintptr_t)copy_call,
+                                       copy_call)) != 0)
             {
                 free(copy_call);
                 out_common->_errno = rc;
@@ -338,7 +340,8 @@ tarpc_generic_service(rpc_call_data *call)
 
             VERB("%s(): WAIT", call->info->funcname);
 
-            copy_call = tarpc_find_deferred(in_common->jobid, TRUE);
+            copy_call = tarpc_find_deferred(async_list, in_common->jobid,
+                                            TRUE);
 
             if (copy_call == NULL)
             {
@@ -384,7 +387,7 @@ typedef struct rpcserver_plugin_context {
     te_errno  (*install  )(void **context);
 
     /** Callback for action of RPC server plugin */
-    te_errno  (*action   )(void  *context);
+    te_errno  (*action   )(deferred_call_list *async_list, void *context);
 
     /** Callback for deinitializing the plugin and removing the context */
     te_errno  (*uninstall)(void **context);
@@ -425,7 +428,7 @@ plugin_time_restart(void)
  * Execute actions related with the RPC server plugin.
  */
 static void
-plugin_action(void)
+plugin_action(deferred_call_list *call_list)
 {
     te_errno rc;
     const int pid = getpid();
@@ -460,7 +463,7 @@ plugin_action(void)
     if (plugin.action == NULL)
         return;
 
-    if ((rc = plugin.action(plugin.context)) != 0)
+    if ((rc = plugin.action(call_list, plugin.context)) != 0)
     {
         if (TE_RC_GET_ERROR(rc) == TE_EPENDING)
             return;
@@ -578,6 +581,18 @@ rcf_pch_rpc_server(const char *name)
     uint8_t             *buf = NULL;
     int                  pid = getpid();
     int                  tid = thread_self();
+    deferred_call_list   deferred_calls =
+        TAILQ_HEAD_INITIALIZER(deferred_calls);
+    /* We do not really need any of svcreq stuff, but
+     * we need to pass the local deferred_calls pointer
+     * to underlying RPC implementations
+     */
+    struct SVCXPRT       pseudo_xprt = {
+        .xp_p1 = (void *)&deferred_calls
+    };
+    struct svc_req       pseudo_req = {
+        .rq_xprt = &pseudo_xprt
+    };
 
 #define STOP(msg...)    \
     do {                \
@@ -659,7 +674,7 @@ rcf_pch_rpc_server(const char *name)
                 plugin_time_restart();
             else if (!plugin_timeout())
             {
-                plugin_action();
+                plugin_action(&deferred_calls);
                 continue;
             }
         }
@@ -698,7 +713,7 @@ rcf_pch_rpc_server(const char *name)
             goto result;
         }
 
-        result = (info->rpc)(in, out, NULL);
+        result = (info->rpc)(in, out, &pseudo_req);
 
     result: /* Send an answer */
 
@@ -721,7 +736,7 @@ rcf_pch_rpc_server(const char *name)
         if (rpc_transport_send(handle, buf, len) != 0)
             STOP("Sending data failed in main RPC server loop");
 
-        tarpc_run_deferred(handle);
+        tarpc_run_deferred(&deferred_calls, handle);
     }
 
 cleanup:

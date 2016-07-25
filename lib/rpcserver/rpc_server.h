@@ -591,9 +591,16 @@ typedef struct rpc_call_data {
 extern void tarpc_call_unsupported(const char *name, void *out,
                                    size_t outsize, size_t common_offset);
 
-extern te_errno tarpc_defer_call(uintptr_t jobid, rpc_call_data *call);
 
-extern te_bool tarpc_has_deferred_calls(void);
+/**
+ * Opaque structure to hold the list of asynchronous RPC calls
+ */
+typedef struct deferred_call_list deferred_call_list;
+
+extern te_errno tarpc_defer_call(deferred_call_list *list,
+                                 uintptr_t jobid, rpc_call_data *call);
+
+extern te_bool tarpc_has_deferred_calls(const deferred_call_list *list);
 
 /**
  * Generic RPC handler.
@@ -602,7 +609,8 @@ extern te_bool tarpc_has_deferred_calls(void);
  * - set up an asynchronous call context if needed
  * and then calls the real code
  */
-extern void tarpc_generic_service(rpc_call_data *call);
+extern void tarpc_generic_service(deferred_call_list *list,
+                                  rpc_call_data *call);
 
 #define TARPC_FUNC_DECL_UNSAFE(_func)                                   \
     const api_func func = _call->func;                                  \
@@ -768,9 +776,8 @@ extern void tarpc_generic_service(rpc_call_data *call);
             .func = TARPC_FUNC_INIT_##_static(_func),                   \
             .checked_args = STAILQ_HEAD_INITIALIZER(_call.checked_args) \
         };                                                              \
-        UNUSED(_rqstp);                                                 \
                                                                         \
-        tarpc_generic_service(&_call);                                  \
+        tarpc_generic_service((void *)_rqstp->rq_xprt->xp_p1, &_call);  \
         return TRUE;                                                    \
     }
 
@@ -955,18 +962,19 @@ typedef void (*sighandler_t)(int);
  * Sleep the pending timeout and return error in case
  * non-blocking call is executed.
  *
+ * @param _list     List of asynchronous RPCs
  * @param _timeout  Timeout of pending (in milliseconds)
  *
  * @return @b TE_RC(@c TE_TA_UNIX, @c TE_EPENDING) if non-blocking call
  *         is executed
  */
-#define RPCSERVER_PLUGIN_AWAIT_RPC_CALL(_timeout)   \
-    do {                                            \
-        if (tarpc_has_deferred_calls())             \
-        {                                           \
-            usleep((_timeout) * 1000);              \
-            return TE_RC(TE_TA_UNIX, TE_EPENDING);  \
-        }                                           \
+#define RPCSERVER_PLUGIN_AWAIT_RPC_CALL(_list, _timeout)    \
+    do {                                                    \
+        if (tarpc_has_deferred_calls(_list))                \
+        {                                                   \
+            usleep((_timeout) * 1000);                      \
+            return TE_RC(TE_TA_UNIX, TE_EPENDING);          \
+        }                                                   \
     } while (0)
 
 /**
