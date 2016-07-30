@@ -210,29 +210,4 @@ extern te_errno ta_interface_status_set(const char *ifname, te_bool status);
 extern int cfg_socket;
 extern int cfg6_socket;
 
-/** TR-069 stuff */
-
-#ifdef WITH_TR069_SUPPORT
-
-#include "tarpc.h"
-
-/** Executive routines for mapping of the CPE CWMP RPC methods
- * (defined in conf/base/conf_acse.c, used from rpc/tarpc_server.c)
- */
-
-
-extern int cwmp_op_call(tarpc_cwmp_op_call_in *in,
-                        tarpc_cwmp_op_call_out *out);
-
-extern int cwmp_op_check(tarpc_cwmp_op_check_in *in,
-                         tarpc_cwmp_op_check_out *out);
-
-extern int cwmp_conn_req(tarpc_cwmp_conn_req_in *in,
-                         tarpc_cwmp_conn_req_out *out);
-
-extern int cwmp_acse_start(tarpc_cwmp_acse_start_in *in,
-                           tarpc_cwmp_acse_start_out *out);
-
-#endif /* WITH_TR069_SUPPORT */
-
 #endif /* __TE_TA_UNIX_INTERNAL_H__ */

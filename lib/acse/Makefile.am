@@ -17,7 +17,7 @@ noinst_LTLIBRARIES = libgsoap_cwmp.la
 
 # bin_PROGRAMS = acse_cli
 
-include_HEADERS = acse_epc.h cwmp_data.h acse_user.h cwmp_utils.h
+include_HEADERS = acse_epc.h cwmp_data.h acse_user.h cwmp_utils.h acse_rpc.h
 
 noinst_HEADERS = cli_utils.h
 

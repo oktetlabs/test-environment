@@ -407,6 +407,10 @@ AC_CHECK_FUNC([xdr_uint64_t], [],
             [AC_DEFINE([xdr_uint64_t], [xdr_u_int64_t])],
             [AC_MSG_ERROR([There is no xdr_uint64_t or xdr_u_int64_t!])])])
 
+AS_IF([test x"$with_tr069" != xno],
+      [AC_DEFINE([WITH_TR069_SUPPORT], [], \
+      [Whether to enable TR-069 support])])
+
 AC_CONFIG_HEADER([rpc_server_config.h])
 
 AC_SUBST([EXTRA_CPPFLAGS])
