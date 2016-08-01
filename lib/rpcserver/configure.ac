@@ -407,6 +407,14 @@ AC_CHECK_FUNC([xdr_uint64_t], [],
             [AC_DEFINE([xdr_uint64_t], [xdr_u_int64_t])],
             [AC_MSG_ERROR([There is no xdr_uint64_t or xdr_u_int64_t!])])])
 
+AC_ARG_WITH([tr069],
+            AS_HELP_STRING([--with-tr069],
+                           [enable TR-069 support (default is NO)]),
+            [],
+            [with_tr069=no])
+
+AM_CONDITIONAL(CFG_TR069, test x"$with_tr069" != xno)
+
 AS_IF([test x"$with_tr069" != xno],
       [AC_DEFINE([WITH_TR069_SUPPORT], [], \
       [Whether to enable TR-069 support])])
