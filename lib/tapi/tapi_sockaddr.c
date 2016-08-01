@@ -62,6 +62,17 @@
 #include "tapi_rpc_socket.h"
 #include "tapi_test_log.h"
 
+/**
+ * The minimum available port number
+ * Ports below may be used by standard services
+ */
+#define MIN_AVAILABLE_PORT  20000
+
+/**
+ * The maximum available port number
+ * Ports above can be used when the linux allocates a dynamic port
+ */
+#define MAX_AVAILABLE_PORT  30000
 
 /* See description in tapi_sockaddr.h */
 te_errno
@@ -92,10 +103,11 @@ tapi_allocate_port(struct rcf_rpc_server *pco, uint16_t *p_port)
         ERROR("Wrong value %d is got from /volatile:/sockaddr_port:", port);
         return TE_EINVAL;
     }
-    if ((port < 20000) || (port >= 30000))
+    if ((port < MIN_AVAILABLE_PORT) || (port >= MAX_AVAILABLE_PORT))
     {
         /* Random numbers generator should be initialized earlier */
-        port = 20000 + rand_range(0, 10000);
+        port = MIN_AVAILABLE_PORT +
+                rand_range(0, MAX_AVAILABLE_PORT - MIN_AVAILABLE_PORT);
     }
     else
     {
@@ -105,7 +117,7 @@ tapi_allocate_port(struct rcf_rpc_server *pco, uint16_t *p_port)
     /* Check that port is free */
     if (pco != NULL)
     {
-        int port_max = 30000;
+        int port_max = MAX_AVAILABLE_PORT;
         int port_base = port;
         while (!rpc_check_port_is_free(pco, port))
         {
@@ -113,9 +125,10 @@ tapi_allocate_port(struct rcf_rpc_server *pco, uint16_t *p_port)
             if (port >= port_max)
             {
                 port_max = port_base;
-                if (port_max == 20000)
+                if (port_max == MIN_AVAILABLE_PORT)
                     break;
-                port = 20000 + rand_range(0, port_max - 20000);
+                port = MIN_AVAILABLE_PORT +
+                        rand_range(0, port_max - MIN_AVAILABLE_PORT);
                 port_base = port;
             }
         }
