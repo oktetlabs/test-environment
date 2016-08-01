@@ -105,11 +105,19 @@ tapi_allocate_port(struct rcf_rpc_server *pco, uint16_t *p_port)
     /* Check that port is free */
     if (pco != NULL)
     {
+        int port_max = 30000;
+        int port_base = port;
         while (!rpc_check_port_is_free(pco, port))
         {
             port++;
-            if (port >= 30000)
-                port = 20000 + rand_range(0, 10000);
+            if (port >= port_max)
+            {
+                port_max = port_base;
+                if (port_max == 20000)
+                    break;
+                port = 20000 + rand_range(0, port_max - 20000);
+                port_base = port;
+            }
         }
     }
 
