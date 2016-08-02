@@ -90,13 +90,18 @@ build_platform() {
     local p=$1
     local mode=$2
 
+    local sbd=${TE_BUILD}
+    if test -f "${p}.sbd"; then
+        sbd=$(cat "${p}.sbd")
+    fi
+
     mkdir -p "platforms/${p}"
     fs_sanity_check "${p}" "platforms/${p}"
     if test "$mode" = "all" -o \
-        ! -f platforms/${p}/include/Makefile ; then
+        ! -f ${sbd}/platforms/${p}/include/Makefile ; then
         ${TE_BASE}/engine/builder/te_configure_package INCLUDE include \
-            "${p}_include" "platforms/${p}/include" "$p" "${TE_BASE}/include" \
-            "$PREFIX" || exit 1
+            "${p}_include" "${sbd}/platforms/${p}/include" \
+            "$p" "${TE_BASE}/include" "$PREFIX" || exit 1
     fi
 
     local libs=
@@ -110,10 +115,10 @@ build_platform() {
             PKGSRC=${TE_BASE}/lib/$package ;
         fi
         if test "$mode" = "all" -o \
-            ! -f platforms/${p}/lib/$package/Makefile ; then
+            ! -f ${sbd}/platforms/${p}/lib/$package/Makefile ; then
             ${TE_BASE}/engine/builder/te_configure_package LIB "$package" \
-                "${p}_$package" "platforms/${p}/lib/$package" "$p" "$PKGSRC" \
-                "$PREFIX" || exit 1
+                "${p}_$package" "${sbd}/platforms/${p}/lib/$package" \
+                "$p" "$PKGSRC" "$PREFIX" || exit 1
             libs="$libs $package"
         fi
     done
@@ -124,7 +129,7 @@ build_platform() {
 # Code "echo=echo" was added, for bug fixing of a look "X--tag=CC: command not found"
 # See https://lists.gnu.org/archive/html/bug-libtool/2008-04/msg00011.html
         te_eval_or_ssh "${p}" "
-            pushd ${TE_BUILD}/platforms/${p}/lib/$package >/dev/null
+            pushd ${sbd}/platforms/${p}/lib/$package >/dev/null
             echo=echo \\
             TE_CFLAGS_VAR='${!TE_CFLAGS_NAME}' \\
             TE_CPPFLAGS_VAR='${!TE_CPPFLAGS_NAME}' \\
@@ -156,6 +161,12 @@ build_agent() {
     local pplatform="TE_BS_TA_${package}_PLATFORM"
     PLATFORM="${!pplatform}"
     if test "$PLATFORM" = "${TE_HOST}" ; then return 0 ; fi ;
+
+    local sbd=${TE_BUILD}
+    if test -f "${PLATFORM}.sbd"; then
+        sbd=$(cat "${PLATFORM}.sbd")
+    fi
+
     local ppkgsrc="TE_BS_TA_${package}_SOURCES"
     PKGSRC="${!ppkgsrc}"
     if test -z "$PKGSRC" ; then
@@ -167,26 +178,28 @@ build_agent() {
     mkdir -p "agents/$package"
     fs_sanity_check "${PLATFORM}" "agents/$package"
 
-    ${TE_BASE}/engine/builder/te_rcf_consistency_checks \
-        --extfiles-del "agents/$package/"
-    echo "$TE_RCF_CONSISTENCY_CHECKS_EXT_FILES" |
+    te_eval_or_ssh "${PLATFORM}" "
+        mkdir -p \"${sbd}/agents/$package\"
         ${TE_BASE}/engine/builder/te_rcf_consistency_checks \
-            --extfiles-add "agents/$package/"
+            --extfiles-del \"${sbd}/agents/$package/\"
+        echo \"$TE_RCF_CONSISTENCY_CHECKS_EXT_FILES\" |
+            ${TE_BASE}/engine/builder/te_rcf_consistency_checks \
+                --extfiles-add \"${sbd}/agents/$package/\"
+    "
 
     ${TE_BASE}/engine/builder/te_configure_package TA "$package" "$package" \
-        "$package" "$PLATFORM" "$PKGSRC" "$PREFIX" || exit 1
+        "${sbd}/agents/$package" "$PLATFORM" "$PKGSRC" "$PREFIX" || exit 1
 
     local TE_CFLAGS_NAME="${package}_CFLAGS_VAR"
     local TE_CPPFLAGS_NAME="${package}_CPPFLAGS_VAR"
 # Code "echo=echo" was added, for bug fixing of a look "X--tag=CC: command not found"
 # See https://lists.gnu.org/archive/html/bug-libtool/2008-04/msg00011.html
     te_eval_or_ssh "${PLATFORM}" "
-        cd agents/$package
+        cd ${sbd}/agents/$package || exit 1
         echo=echo \\
         TE_CFLAGS_VAR='${!TE_CFLAGS_NAME}' \\
         TE_CPPFLAGS_VAR='${!TE_CPPFLAGS_NAME}' \\
         make ${BUILD_MAKEFLAGS} install || exit 1
-        cd ../..
     "
     res=$?; if test "$res" -ne "0" ; then exit $res; fi
 }
@@ -218,6 +231,69 @@ print_without_timestamps() {
         sed -u 's/^[^ ]* [^ ]* [^ ]* //'
 }
 
+# Acquire shadow build directory on agent and TE host.
+acquire_shadow_build_directory() {
+    # get or create new name of shadow build directory
+    if test ! -f "${p}.sbd"; then
+        te_eval_or_ssh "${p}" "mktemp -d -u" >"${p}.sbd"
+    fi
+    local sbd=$(cat "${p}.sbd")
+
+    # recreate SBD on TE host
+    test -d "${sbd}" && rm -rf "${sbd}"
+    mkdir -p "${sbd}" || exit 1
+
+    # make sure that the SBD on TE host and on agent host are different directories
+    local temp_file="$(mktemp "${sbd}/XXXXXXXX")"
+    te_eval_or_ssh "${p}" "test -f '$temp_file'"
+    if test "$?" -eq "0"; then
+        rm -f "${p}.sbd"
+        rm -rf "${sbd}"
+        return # this is normal situation, build without SBD
+    fi
+    rm -f "$temp_file"
+
+    # distribute files from TE_BUILD to the SBD on both hosts
+    te_eval_or_ssh "${p}" "
+        test -d '${sbd}' && rm -rf '${sbd}'
+        mkdir -p '${sbd}/platforms/${p}' || exit 1
+        mkdir -p '${sbd}/agents/${p}' || exit 1
+    "
+    res=$?; if test "$res" -ne "0" ; then exit $res; fi
+    for type in platforms agents; do
+        mkdir -p "${sbd}/${type}/${p}" || exit 1
+        test -d "${type}/${p}" || continue
+        cp -rp "${type}/${p}" "${sbd}/${type}"
+        tar -C "${type}/${p}" -czf - . |
+            te_eval_or_ssh "${p}" "
+                tar -C '${sbd}/${type}/${p}' -xzf -
+            "
+        res=$?; if test "$res" -ne "0" ; then exit $res; fi
+    done
+}
+
+# Release shadow build directory on agent and TE host.
+release_shadow_build_directory() {
+    if test ! -f "${p}.sbd"; then
+        return
+    fi
+    local sbd=$(cat "${p}.sbd")
+
+    # remove files from the SBD on TE host
+    rm -rf "${sbd}" || exit 1
+
+    # cleanup TE_BUILD
+    rm -rf "platforms/${p}"
+    rm -rf "agents/${p}"
+
+    # return files from the SBD on agent host
+    te_eval_or_ssh "${p}" "
+        tar -C '${sbd}' -czf - platforms/${p} agents/${p}
+        rm -rf '${sbd}' >/dev/null
+    " | tar -xzf -
+    res=$?; if test "$res" -ne "0" ; then exit $res; fi
+}
+
 build_platform_and_agent() {
     local p=$1
     local mode=$2
@@ -238,10 +314,12 @@ build_platform_and_agent() {
             local pplatform="TE_BS_TA_${p}_PLATFORM"
             declare "${!pplatform}_SSH"=""
         fi
+        acquire_shadow_build_directory
         build_platform "$p" "$mode" || mode=all
         if test "$AGENT_EXIST" = "yes" ; then
             build_agent "$p" "$mode"
         fi
+        release_shadow_build_directory
     ) 2> >( add_timestamps stderr >$p.2.log ) \
       1> >( add_timestamps stdout >$p.1.log ) &
     PIDS[$!]="$p"
