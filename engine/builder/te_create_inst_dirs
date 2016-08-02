@@ -34,6 +34,9 @@ pushd $1 >/dev/null
 PREFIX=`pwd`
 popd >/dev/null
 
+SCRIPT_DIR=`dirname $0`
+. ${SCRIPT_DIR}/te_functions
+
 if test -n "${TE_BUILD}" ; then
     cd ${TE_BUILD}
 fi
