@@ -184,7 +184,11 @@ tarpc_defer_call(deferred_call_list *list,
 te_bool
 tarpc_has_deferred_calls(const deferred_call_list *list)
 {
-    return !TAILQ_EMPTY(list);
+    deferred_call *defer = NULL;
+    TAILQ_FOREACH(defer, list, next)
+        if (!defer->call->done)
+            return TRUE;
+    return FALSE;
 }
 
 static rpc_call_data *
