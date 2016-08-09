@@ -45,12 +45,12 @@ NF != 7 { next }
     # Special hack is needed for DPDK symbols
     if ($1 ~ /[^[:alnum:]_]/ || $1 ~ /^per_lcore__/) next
 
-    if ($3 == "T" || ($3 == "D" && $4 == "FUNC"))
+    if ($3 == "T" || (($3 == "D" || $3 == "B") && $4 == "FUNC"))
     {
         SYMBOLS[$1] = "TRUE";
         printf "extern void %s(void);\n", $1
     }
-    else if ($3 == "D" && $4 != "FUNC")
+    else if (($3 == "D" || $3 == "B") && $4 != "FUNC")
     {
         SYMBOLS[$1] = "FALSE";
         printf "extern int %s;\n", $1
