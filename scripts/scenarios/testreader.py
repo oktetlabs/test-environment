@@ -78,9 +78,13 @@ class TestItem(object):
         self.test.objective = ' '.join(self._extract_objective(filename))
 
     def cut(self):
-        delattr(self.test, 'objective')
-        delattr(self.test, 'steps')
-        delattr(self.test, 'params')
+        def safe_delattr(obj, field):
+            if hasattr(obj, field):
+                delattr(obj, field)
+
+        safe_delattr(self.test, 'objective')
+        safe_delattr(self.test, 'steps')
+        safe_delattr(self.test, 'params')
         location = list(self.get_location())
         self.test.ref = '-'.join(location[1:])
 
