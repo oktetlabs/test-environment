@@ -79,7 +79,23 @@
 
 /** Roll back RPC_AWAIT_IUT_ERROR effect */
 #define RPC_DONT_AWAIT_IUT_ERROR(_rpcs) \
-    (_rpcs)->iut_err_jump = TRUE
+    do {                                \
+        (_rpcs)->iut_err_jump = TRUE;   \
+        /* It does not make sense to    \
+         * await only non-IUT error */  \
+        (_rpcs)->err_jump = TRUE;       \
+    } while (0)
+
+/** Do not jump from the TAPI RPC library call in the case of any error */
+#define RPC_AWAIT_ERROR(_rpcs) \
+    do {                                \
+        (_rpcs)->iut_err_jump = FALSE;  \
+        (_rpcs)->err_jump = FALSE;      \
+    } while (0)
+
+/** Roll back RPC_AWAIT_ERROR effect */
+#define RPC_DONT_AWAIT_ERROR(_rpcs) \
+    RPC_DONT_AWAIT_IUT_ERROR(_rpcs)
 
 /** Are we awaiting an error? */
 #define RPC_AWAITING_ERROR(_rpcs)       (!(_rpcs)->iut_err_jump)
@@ -101,18 +117,34 @@ typedef struct rcf_rpc_server {
     /* Configuration parameters */
     rcf_rpc_op  op;             /**< Instruction for RPC call */
     rcf_rpc_op  last_op;        /**< op value in the last call */
-    uint64_t    start;          /**< Time when RPC should be called on 
+    uint64_t    start;          /**< Time when RPC should be called on
                                      the server (in milliseconds since
                                      Epoch; 0 if it should be called
                                      immediately) */
 
-    uint32_t    def_timeout;    /**< Default RPC call timeout in 
+    uint32_t    def_timeout;    /**< Default RPC call timeout in
                                      milliseconds */
     uint32_t    timeout;        /**< Next RPC call timeout in milliseconds
                                      (after call it's automatically reset
                                      to def_timeout) */
-    te_bool     iut_err_jump;   /**< Jump in the case of IUT error
-                                     (true by default) */
+
+    /*
+     * TODO: err_jump and iut_err_jump should be replaced with a single
+     * enum variable having three values: DONT_AWAIT_ERRORS,
+     * AWAIT_IUT_ERRORS, AWAIT_ANY_ERRORS. Legacy code exists which
+     * accesses iut_err_jump directly instead of using macros,
+     * it should be fixed then.
+     */
+    te_bool     err_jump;       /**< Jump if RPC call failed (this may occur
+                                     if the function called via this RPC
+                                     returned error, or for other reasons
+                                     such as segfault or timeout; true by
+                                     default) */
+    te_bool     iut_err_jump;   /**< Jump if RPC call failed because
+                                     function called via this RPC returned
+                                     error (true by default; overrides
+                                     err_jump) */
+
     te_bool     err_log;        /**< Log error with ERROR log level */
     te_bool     timed_out;      /**< Timeout was received from this
                                      RPC server - it is unusable
@@ -135,20 +167,18 @@ typedef struct rcf_rpc_server {
     /* Returned read-only fields with status of the last operation */
     uint64_t        duration;   /**< Call Duration in microseconds */
     int             _errno;     /**< error number */
-    
+
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_t lock;       /**< lock mutex */
-#endif    
-    tarpc_pthread_t tid0;       /**< Identifier of thread performing
-                                     non-blocking operations */
+#endif
+    uint64_t        jobid0;       /**< Identifier of a deferred operation */
     char            proc[RCF_MAX_NAME];
                                 /**< Last called function */
-    uint32_t        is_done_ptr;
-                                /**< Pointer to the variable in
-                                     RPC server context to check
-                                     state of non-blocking RPC */
     te_bool         silent;     /**< Perform next RPC call without
                                      logging */
+    te_bool         silent_default; /**< Turn on/off RPC calls logging, can
+                                         be used to change the behavior for
+                                         a few calls. */
 
     char          **namespaces;     /**< Namespaces array */
     size_t          namespaces_len; /**< Amount of elements in @p namespaces */
@@ -174,7 +204,7 @@ rcp_rpc_default_timeout(void)
 
     value = getenv(var_name);
     if (value == NULL || *value == '\0')
-        return def_val; 
+        return def_val;
 
     timeo = strtoul(value, (char **)&end, 10);
     if (*end != '\0' || timeo >= UINT_MAX)
@@ -214,12 +244,12 @@ extern te_errno rcf_rpc_server_get(const char *ta, const char *name,
  *
  * @return Status code
  */
-static inline te_errno 
-rcf_rpc_server_create(const char *ta, const char *name, 
+static inline te_errno
+rcf_rpc_server_create(const char *ta, const char *name,
                       rcf_rpc_server **p_handle)
 {
     return rcf_rpc_server_get(ta, name, NULL, 0, p_handle);
-}                      
+}
 
 /**
  * Create thread in the process with RPC server.
@@ -230,16 +260,16 @@ rcf_rpc_server_create(const char *ta, const char *name,
  *
  * @return Status code
  */
-static inline te_errno 
+static inline te_errno
 rcf_rpc_server_thread_create(rcf_rpc_server *rpcs, const char *name,
                              rcf_rpc_server **p_new)
 {
     if (rpcs == NULL)
         return TE_RC(TE_RCF_API, TE_EINVAL);
 
-    return rcf_rpc_server_get(rpcs->ta, name, rpcs->name, 
+    return rcf_rpc_server_get(rpcs->ta, name, rpcs->name,
                               RCF_RPC_SERVER_GET_THREAD, p_new);
-}                             
+}
 
 /**
  * Fork RPC server.
@@ -250,7 +280,7 @@ rcf_rpc_server_thread_create(rcf_rpc_server *rpcs, const char *name,
  *
  * @return Status code
  */
-static inline te_errno 
+static inline te_errno
 rcf_rpc_server_fork(rcf_rpc_server *rpcs, const char *name,
                     rcf_rpc_server **p_new)
 {
@@ -258,7 +288,7 @@ rcf_rpc_server_fork(rcf_rpc_server *rpcs, const char *name,
         return TE_RC(TE_RCF_API, TE_EINVAL);
 
     return rcf_rpc_server_get(rpcs->ta, name, rpcs->name, 0, p_new);
-}          
+}
 
 /**
  * Fork-and-exec RPC server.
@@ -269,7 +299,7 @@ rcf_rpc_server_fork(rcf_rpc_server *rpcs, const char *name,
  *
  * @return Status code
  */
-static inline te_errno 
+static inline te_errno
 rcf_rpc_server_fork_exec(rcf_rpc_server *rpcs, const char *name,
                          rcf_rpc_server **p_new)
 {
@@ -278,7 +308,7 @@ rcf_rpc_server_fork_exec(rcf_rpc_server *rpcs, const char *name,
 
     return rcf_rpc_server_get(rpcs->ta, name, rpcs->name,
                               RCF_RPC_SERVER_GET_EXEC, p_new);
-}          
+}
 
 /**
  * Fork RPC server with non-default conditions.
@@ -291,7 +321,7 @@ rcf_rpc_server_fork_exec(rcf_rpc_server *rpcs, const char *name,
  *
  * @return Status code
  */
-extern te_errno rcf_rpc_server_create_process(rcf_rpc_server *rpcs, 
+extern te_errno rcf_rpc_server_create_process(rcf_rpc_server *rpcs,
                                               const char *name,
                                               int flags,
                                               rcf_rpc_server **p_new);
@@ -309,7 +339,7 @@ extern te_errno rcf_rpc_server_create_process(rcf_rpc_server *rpcs,
  *
  * @return Status code
  */
-extern te_errno rcf_rpc_server_vfork(rcf_rpc_server *rpcs, 
+extern te_errno rcf_rpc_server_vfork(rcf_rpc_server *rpcs,
                                      const char *name,
                                      uint32_t time_to_wait,
                                      pid_t *pid,
@@ -362,7 +392,7 @@ extern te_errno rcf_rpc_server_exec(rcf_rpc_server *rpcs);
  *
  * @return Status code
  */
-extern te_errno rcf_rpc_setlibname(rcf_rpc_server *rpcs, 
+extern te_errno rcf_rpc_setlibname(rcf_rpc_server *rpcs,
                                    const char *libname);
 
 /**
@@ -372,15 +402,15 @@ extern te_errno rcf_rpc_setlibname(rcf_rpc_server *rpcs,
  *
  * @return Status code
  */
-static inline te_errno 
+static inline te_errno
 rcf_rpc_server_restart(rcf_rpc_server *rpcs)
 {
     rcf_rpc_server *new_rpcs;
     int             rc;
-    
+
     if (rpcs == NULL)
         return TE_RC(TE_RCF_API, TE_EINVAL);
-    
+
     rc = rcf_rpc_server_get(rpcs->ta, rpcs->name, NULL, 0, &new_rpcs);
     if (rc == 0)
     {
@@ -395,8 +425,8 @@ rcf_rpc_server_restart(rcf_rpc_server *rpcs)
             free(lib);
         }
     }
-     
-    return rc;       
+
+    return rc;
 }
 
 /**
@@ -412,7 +442,7 @@ rcf_rpc_server_restart(rcf_rpc_server *rpcs)
 extern te_errno rcf_rpc_servers_restart_all(void);
 
 /**
- * Destroy RPC server. The caller should assume the RPC server non-existent 
+ * Destroy RPC server. The caller should assume the RPC server non-existent
  * even if the function returned non-zero.
  *
  * @param rpcs          RPC server handle
@@ -431,10 +461,10 @@ extern te_errno rcf_rpc_server_destroy(rcf_rpc_server *rpcs);
 static inline te_errno
 rcf_rpc_server_dead(rcf_rpc_server *rpcs)
 {
-    return cfg_set_instance_fmt(CFG_VAL(INTEGER, 1), 
-                                "/agent:%s/rpcserver:%s/dead:", 
+    return cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
+                                "/agent:%s/rpcserver:%s/dead:",
                                 rpcs->ta, rpcs->name);
-} 
+}
 
 /**
  * Mark RPC server as finished (i.e. it was terminated and
@@ -448,8 +478,8 @@ rcf_rpc_server_dead(rcf_rpc_server *rpcs)
 static inline te_errno
 rcf_rpc_server_finished(rcf_rpc_server *rpcs)
 {
-    return cfg_set_instance_fmt(CFG_VAL(INTEGER, 1), 
-                                "/agent:%s/rpcserver:%s/finished:", 
+    return cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
+                                "/agent:%s/rpcserver:%s/finished:",
                                 rpcs->ta, rpcs->name);
 }
 
@@ -511,7 +541,6 @@ rpcop2str(rcf_rpc_op op)
     switch (op)
     {
         case RCF_RPC_CALL:      return " call";
-        case RCF_RPC_IS_DONE:   return " is done";
         case RCF_RPC_WAIT:      return " wait";
         case RCF_RPC_CALL_WAIT: return "";
         default:                assert(FALSE);

@@ -29,7 +29,7 @@
  */
 
 #ifndef __TE_TAD_SEND_H__
-#define __TE_TAD_SEND_H__ 
+#define __TE_TAD_SEND_H__
 
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -37,7 +37,7 @@
 
 #include "te_stdint.h"
 #include "te_errno.h"
-#include "asn_usr.h" 
+#include "asn_usr.h"
 #include "comm_agent.h"
 
 #include "tad_types.h"
@@ -125,12 +125,12 @@ extern te_errno tad_send_release(csap_p csap, tad_send_context *context);
 
 
 /**
- * Start routine for Sender thread. 
+ * Start routine for Sender thread.
  *
- * @param arg           Start argument, should be pointer to 
+ * @param arg           Start argument, should be pointer to
  *                      CSAP structure
  *
- * @return NULL 
+ * @return NULL
  */
 extern void *tad_send_thread(void *arg);
 
@@ -142,7 +142,7 @@ extern void *tad_send_thread(void *arg);
  *                      preprocessed (all iteration and function calls
  *                      performed)
  * @param args          array with template iteration parameter values,
- *                      may be used to prepare binary data, 
+ *                      may be used to prepare binary data,
  *                      references to interation parameter values may
  *                      be set in ASN traffic template PDUs
  * @param arg_num       length of array above
@@ -151,11 +151,11 @@ extern void *tad_send_thread(void *arg);
  * @param pld_data      payload data read from original NDS
  * @param pkts_per_layer    array with packets per generated layer (OUT)
  *
- * @return zero on success, otherwise error code.  
+ * @return zero on success, otherwise error code.
  */
-extern te_errno tad_send_prepare_bin(csap_p csap, asn_value *nds, 
-                                     const struct tad_tmpl_arg_t *args, 
-                                     size_t arg_num, 
+extern te_errno tad_send_prepare_bin(csap_p csap, asn_value *nds,
+                                     const struct tad_tmpl_arg_t *args,
+                                     size_t arg_num,
                                      tad_payload_spec_t *pld_data,
                                      void **layer_opaque,
                                      tad_pkts *pkts_per_layer);
@@ -163,7 +163,7 @@ extern te_errno tad_send_prepare_bin(csap_p csap, asn_value *nds,
 
 
 /**
- * Type for reference to user function for some magic processing 
+ * Type for reference to user function for some magic processing
  * with matched pkt
  *
  * @param csap          CSAP descriptor structure.

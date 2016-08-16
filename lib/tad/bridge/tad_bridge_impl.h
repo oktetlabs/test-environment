@@ -28,11 +28,11 @@
  */
 
 #ifndef __TE_TAD_BRIDGE_IMPL_H__
-#define __TE_TAD_BRIDGE_IMPL_H__ 
+#define __TE_TAD_BRIDGE_IMPL_H__
 
 #include "te_errno.h"
 
-#include "asn_usr.h" 
+#include "asn_usr.h"
 #include "ndn_bridge.h"
 #include "logger_api.h"
 
@@ -45,13 +45,13 @@
 extern "C" {
 #endif
 
-/* 
+/*
  * Ethernet CSAP specific data
  */
 struct bridge_csap_specific_data;
 typedef struct bridge_csap_specific_data *bridge_csap_specific_data_p;
 
-typedef struct bridge_csap_specific_data { 
+typedef struct bridge_csap_specific_data {
 
 } bridge_csap_specific_data_t;
 
@@ -60,7 +60,7 @@ typedef struct bridge_csap_specific_data {
  * Callback for init 'bridge' CSAP layer over 'eth' in stack.
  *
  * The function complies with csap_layer_init_cb_t prototype.
- */ 
+ */
 extern te_errno tad_bridge_eth_init_cb(csap_p           csap,
                                        unsigned int     layer,
                                        const asn_value *csap_nds);
@@ -69,7 +69,7 @@ extern te_errno tad_bridge_eth_init_cb(csap_p           csap,
  * Callback for destroy 'bridge' CSAP layer over 'eth' in stack.
  *
  * The function complies with csap_layer_destroy_cb_t prototype.
- */ 
+ */
 extern te_errno tad_bridge_eth_destroy_cb(csap_p       csap,
                                           unsigned int layer);
 
@@ -78,28 +78,28 @@ extern te_errno tad_bridge_eth_destroy_cb(csap_p       csap,
  * possibilities.
  *
  * The function complies with csap_layer_confirm_pdu_cb_t prototype.
- */ 
+ */
 extern te_errno tad_bridge_confirm_tmpl_cb(csap_p         csap,
                                            unsigned int   layer,
                                            asn_value     *layer_pdu,
-                                           void         **p_opaque); 
+                                           void         **p_opaque);
 
 /**
  * Callback for confirm pattern PDU with ehternet CSAP parameters and
  * possibilities.
  *
  * The function complies with csap_layer_confirm_pdu_cb_t prototype.
- */ 
+ */
 extern te_errno tad_bridge_confirm_ptrn_cb(csap_p         csap,
                                            unsigned int   layer,
                                            asn_value     *layer_pdu,
-                                           void         **p_opaque); 
+                                           void         **p_opaque);
 
 /**
  * Callback for generate binary data to be sent to media.
  *
  * The function complies with csap_layer_generate_pkts_cb_t prototype.
- */ 
+ */
 extern te_errno tad_bridge_gen_bin_cb(csap_p                csap,
                                       unsigned int          layer,
                                       const asn_value      *tmpl_pdu,
@@ -111,7 +111,7 @@ extern te_errno tad_bridge_gen_bin_cb(csap_p                csap,
 
 
 /**
- * Callback for parse received packet and match it with pattern. 
+ * Callback for parse received packet and match it with pattern.
  *
  * The function complies with csap_layer_match_bin_cb_t prototype.
  */
@@ -124,15 +124,15 @@ extern te_errno tad_bridge_match_bin_cb(csap_p           csap,
                         tad_pkt         *sdu);
 
 /**
- * Callback for generating pattern to filter 
- * just one response to the packet which will be sent by this CSAP 
- * according to this template. 
+ * Callback for generating pattern to filter
+ * just one response to the packet which will be sent by this CSAP
+ * according to this template.
  *
  * The function complies with csap_layer_gen_pattern_cb_t prototype.
  */
 extern te_errno tad_bridge_gen_pattern_cb(csap_p            csap,
                                           unsigned int      layer,
-                                          const asn_value  *tmpl_pdu, 
+                                          const asn_value  *tmpl_pdu,
                                           asn_value       **ptrn_pdu);
 
 
@@ -140,9 +140,9 @@ extern te_errno tad_bridge_gen_pattern_cb(csap_p            csap,
  * Free all memory allocated by eth csap specific data.
  *
  * @param csap_data     Poiner to structure
- * @param is_complete   If not 0 the final free() will be called 
+ * @param is_complete   If not 0 the final free() will be called
  *                      on passed pointer
- */ 
+ */
 extern void free_bridge_csap_data(bridge_csap_specific_data_p spec_data,
                                   char is_colmplete);
 

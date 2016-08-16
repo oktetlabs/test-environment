@@ -159,7 +159,7 @@ void
 tad_pkt_append_seg(tad_pkt *pkt, tad_pkt_seg *seg)
 {
     CIRCLEQ_INSERT_TAIL(&pkt->segs, seg, links);
-    pkt->n_segs++; 
+    pkt->n_segs++;
     pkt->segs_len += seg->data_len;
     F_VERB("%s(): pkt=%p n_segs=%u segs_len=%u", __FUNCTION__,
            pkt, pkt->n_segs, (unsigned)pkt->segs_len);
@@ -170,7 +170,7 @@ void
 tad_pkt_prepend_seg(tad_pkt *pkt, tad_pkt_seg *seg)
 {
     CIRCLEQ_INSERT_HEAD(&pkt->segs, seg, links);
-    pkt->n_segs++; 
+    pkt->n_segs++;
     pkt->segs_len += seg->data_len;
     F_VERB("%s(): pkt=%p n_segs=%u segs_len=%u", __FUNCTION__,
            pkt, pkt->n_segs, (unsigned)pkt->segs_len);
@@ -182,7 +182,7 @@ tad_pkt_insert_after_seg(tad_pkt *pkt, tad_pkt_seg *seg,
                          tad_pkt_seg *new_seg)
 {
     CIRCLEQ_INSERT_AFTER(&pkt->segs, seg, new_seg, links);
-    pkt->n_segs++; 
+    pkt->n_segs++;
     pkt->segs_len += new_seg->data_len;
     F_VERB("%s(): pkt=%p n_segs=%u segs_len=%u", __FUNCTION__,
            pkt, pkt->n_segs, (unsigned)pkt->segs_len);
@@ -266,7 +266,7 @@ tad_pkt_cleanup_segs(tad_pkt *pkt)
 
     F_ENTRY("pkt=%p", pkt);
 
-    /* 
+    /*
      * Clean up each segment of the list in reverse direction.
      * Don't care about integrity of the total packet data length.
      */
@@ -286,7 +286,7 @@ tad_pkt_free_segs(tad_pkt *pkt)
 {
     tad_pkt_seg    *p;
 
-    /* 
+    /*
      * Free each segment of the list in reverse direction.
      * Don't care about list integrity.
      */
@@ -357,7 +357,7 @@ tad_pkt_segs_to_iov_cb(const tad_pkt *pkt, tad_pkt_seg *seg,
                        unsigned int seg_num, void *opaque)
 {
     struct iovec   *iov = opaque;
-    
+
     UNUSED(pkt);
     assert(iov != NULL);
 
@@ -401,7 +401,7 @@ tad_cleanup_pkts(tad_pkts *pkts)
 
     F_ENTRY("pkts=%p", pkts);
 
-    /* 
+    /*
      * Clean up each packet of the list in reverse direction.
      */
     TAD_PKT_FOR_EACH_PKT_REV(&pkts->pkts, p)
@@ -416,7 +416,7 @@ tad_free_pkts(tad_pkts *pkts)
 {
     tad_pkt    *p;
 
-    /* 
+    /*
      * Free each packet of the list in reverse direction.
      * Don't care about list integrity.
      */
@@ -583,7 +583,7 @@ tad_pkts_alloc(tad_pkts *pkts, unsigned int n_pkts, unsigned int n_segs,
     unsigned int    i, j;
 
     assert(n_pkts > 0);
-    mem = malloc(n_pkts * (sizeof(tad_pkt) + 
+    mem = malloc(n_pkts * (sizeof(tad_pkt) +
                            n_segs * (sizeof(tad_pkt_seg) +
                                      first_seg_len)));
     if (mem == NULL)
@@ -694,7 +694,7 @@ tad_pkt_enumerate(tad_pkts *pkts, tad_pkt_enum_cb func, void *opaque)
 }
 
 
-/** 
+/**
  * Structure to pass the first segment enumeration data as one pointer.
  */
 typedef struct tad_pkts_enumerate_first_segs_cb_data {
@@ -705,7 +705,7 @@ typedef struct tad_pkts_enumerate_first_segs_cb_data {
 /**
  * Wrapper of user callback function to transparently interrupt segments
  * enumeration on the first one.
- * 
+ *
  * This function complies with tad_pkt_seg_enum_cb prototype.
  *
  * @return Status code.
@@ -745,7 +745,7 @@ tad_pkts_enumerate_first_segs_pkt_cb(tad_pkt *pkt, void *opaque)
 }
 
 /* See description in tad_pkt.h */
-te_errno 
+te_errno
 tad_pkts_enumerate_first_segs(tad_pkts *pkts, tad_pkt_seg_enum_cb  func,
                               void *opaque)
 {
@@ -806,7 +806,7 @@ static te_errno
 tad_pkt_fragment_cb(tad_pkt *pkt, void *opaque)
 {
     tad_pkt_fragment_cb_data   *data = (tad_pkt_fragment_cb_data *)opaque;
-    
+
     size_t          dst_rest = data->frag_data_len;
     tad_pkt_seg    *dst_seg = tad_pkt_first_seg(pkt);
     size_t          dst_seg_len;
@@ -844,7 +844,7 @@ tad_pkt_fragment_cb(tad_pkt *pkt, void *opaque)
                    __FUNCTION__, data->src_data, (unsigned)data->src_len);
         }
 
-        /* 
+        /*
          * Destination segment length can't be large than total
          * fragments length or source segment length
          */
@@ -935,7 +935,7 @@ tad_pkt_fragment(tad_pkt *pkt, size_t frag_data_len,
 }
 
 
-/** 
+/**
  * Data to get segments which overlap with interested fragment
  * of the packet.
  */
@@ -980,7 +980,7 @@ tad_pkt_get_frag_cb(const tad_pkt *pkt, tad_pkt_seg *seg,
             off = 0;
         if (len > seg->data_len)
             len = seg->data_len;
-        
+
         dst_seg = tad_pkt_alloc_seg(ptr + off, len, NULL);
         if (dst_seg == NULL)
             return TE_RC(TE_TAD_PKT, TE_ENOMEM);
@@ -991,9 +991,9 @@ tad_pkt_get_frag_cb(const tad_pkt *pkt, tad_pkt_seg *seg,
     }
     data->seg_off = next_seg_off;
 
-    F_EXIT();    
+    F_EXIT();
 
-    /* 
+    /*
      * TODO: May be it is usefull to interrupt iteration here,
      * if we went after the interested fragment.
      */
@@ -1241,7 +1241,7 @@ tad_pkt_match_mask(const tad_pkt *pkt, size_t len, const uint8_t *mask,
         {
             F_VERB("d: %x & m: %x ?= v: %x & m: %x", *d, *m, *v, *m);
             if ((*d & *m) != (*v & *m))
-            { 
+            {
                 return TE_ETADNOTMATCH;
             }
         }
@@ -1278,7 +1278,7 @@ tad_pkt_realloc_segs(tad_pkt *pkt, size_t new_len)
     tad_pkt_seg *seg;
 
     assert(pkt != NULL);
-    /* 
+    /*
      * @todo We should make start allocation: do not call
      * tad_pkt_alloc_seg(), but do the real realloc instead.
      */

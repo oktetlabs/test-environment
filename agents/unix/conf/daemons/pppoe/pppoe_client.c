@@ -458,7 +458,6 @@ pppoe_mac_addr_set(unsigned int gid, const char *oid, const char *value,
     uint8_t       mac[ETHER_ADDR_LEN];
     pppoe_client *clnt;
     te_errno      rc;
-    int i;
 
     UNUSED(oid);
     UNUSED(gid);

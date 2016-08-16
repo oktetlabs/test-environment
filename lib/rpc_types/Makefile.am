@@ -4,6 +4,7 @@ ACLOCAL_AMFLAGS = -I @TE_M4@
 AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) $(TE_CPPFLAGS_VAR)
 AM_CFLAGS = @TE_CFLAGS@ $(TE_CFLAGS_VAR)
 
+include $(top_srcdir)/../../auxdir/rpcgen.am
 
 include_HEADERS = \
 	te_rpc_types.h \
@@ -26,15 +27,16 @@ include_HEADERS = \
 	te_rpc_sys_wait.h \
 	te_rpc_wsa.h \
 	te_rpc_sysconf.h \
-        te_rpc_dlfcn.h \
-        te_rpc_dirent.h
+	te_rpc_dlfcn.h \
+	te_rpc_dirent.h
 
 if WINDOWS
 
 lib_LIBRARIES=librpc_types.a
 
 librpc_types_a_CFLAGS=-DTE_DUMMY $(AM_CFLAGS)
-librpc_types_a_SOURCES=defs.c wsa.c sys_socket.c fcntl.c
+librpc_types_a_SOURCES=defs.c wsa.c.rpch sys_socket.c.rpch fcntl.c.rpch
+EXTRA_librpc_types_a_DEPENDENCIES = $(RPCGEN_EXTRA_PREREQS)
 
 librpc_types.a: $(librpc_types_a_SOURCES) 
 	TE_INSTALL=$(DESTDIR)/$(prefix)/.. \
@@ -48,48 +50,46 @@ install-exec-hook:
         fi
 
 EXTRA_DIST=\
-	aio.c \
-	fcntl.c \
-	netdb.c \
-	net_if_arp.c \
-	net_if.c \
-	signal.c \
-	sys_poll.c \
-	sys_epoll.c \
-	sys_resource.c \
-	sys_stat.c \
-	sys_wait.c \
-	sysconf_name.c
+	aio.c.rpch \
+	fcntl.c.rpch \
+	netdb.c.rpch \
+	net_if_arp.c.rpch \
+	net_if.c.rpch \
+	signal.c.rpch \
+	sys_poll.c.rpch \
+	sys_epoll.c.rpch \
+	sys_resource.c.rpch \
+	sys_stat.c.rpch \
+	sys_wait.c.rpch \
+	sysconf_name.c.rpch
 
 else
 
 lib_LTLIBRARIES=librpc_types.la
 
-librpc_types_la_SOURCES = defs.c 
+librpc_types_la_SOURCES = defs.c \
+	sys_socket.c.rpch \
+	aio.c.rpch \
+	fcntl.c.rpch \
+	netdb.c.rpch \
+	net_if_arp.c.rpch \
+	net_if.c.rpch \
+	linux_net_tstamp.c.rpch \
+	signal.c.rpch \
+	sys_poll.c.rpch \
+	sys_epoll.c.rpch \
+	sys_resource.c.rpch \
+	sys_systeminfo.c.rpch \
+	sys_stat.c.rpch \
+	sys_wait.c.rpch \
+	wsa.c.rpch \
+	sysconf_name.c.rpch \
+	dlfcn.c.rpch \
+	dirent.c.rpch
 
-nodist_librpc_types_la_SOURCES = \
-	sys_socket_conv.c \
-	aio_conv.c \
-	fcntl_conv.c \
-	netdb_conv.c \
-	net_if_arp_conv.c \
-	net_if_conv.c \
-	linux_net_tstamp_conv.c \
-	signal_conv.c \
-	sys_poll_conv.c \
-	sys_epoll_conv.c \
-	sys_resource_conv.c \
-	sys_systeminfo_conv.c \
-	sys_stat_conv.c \
-	sys_wait_conv.c \
-	wsa_conv.c \
-	sysconf_name_conv.c \
-        dlfcn_conv.c \
-        dirent.c
+EXTRA_librpc_types_la_DEPENDENCIES = $(RPCGEN_EXTRA_PREREQS)
 
-CLEANFILES=$(nodist_librpc_types_la_SOURCES)
-
-EXTRA_DIST=\
+BUILT_SOURCES=\
 	sys_socket.c \
 	aio.c \
 	fcntl.c \
@@ -106,10 +106,10 @@ EXTRA_DIST=\
 	sys_wait.c \
 	wsa.c \
 	sysconf_name.c \
-    dlfcn.c
+	dlfcn.c \
+	dirent.c
 
-%_conv.c: %.c
-	$(srcdir)/../../engine/builder/te_rpc_conv $^ $@
+CLEANFILES = $(BUILT_SOURCES)
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \

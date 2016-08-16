@@ -35,7 +35,6 @@
 #include <string.h>
 #endif
 
-#include "te_queue.h"
 #include "logger_api.h"
 
 #include "te_string.h"
@@ -64,10 +63,11 @@ te_string_append(te_string *str, const char *fmt, ...)
 te_errno
 te_string_append_va(te_string *str, const char *fmt, va_list ap)
 {
-    char       *s;
-    size_t      rest;
-    int         printed;
-    te_bool     again;
+    char    *s;
+    size_t   rest;
+    int      printed;
+    te_bool  again;
+    va_list  ap_start;
 
     if (str->ptr == NULL)
     {
@@ -86,7 +86,9 @@ te_string_append_va(te_string *str, const char *fmt, va_list ap)
     do  {
         s = str->ptr + str->len;
 
-        printed = vsnprintf(s, rest, fmt, ap);
+        va_copy(ap_start, ap);
+        printed = vsnprintf(s, rest, fmt, ap_start);
+        va_end(ap_start);
         assert(printed >= 0);
 
         if ((size_t)printed >= rest)
@@ -121,5 +123,6 @@ te_string_cut(te_string *str, size_t len)
         len = str->len;
     assert(str->len >= len);
     str->len -= len;
-    str->ptr[str->len] = '\0';
+    if (str->ptr != NULL)
+        str->ptr[str->len] = '\0';
 }

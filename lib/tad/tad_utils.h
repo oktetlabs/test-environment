@@ -52,6 +52,7 @@
 #include "asn_usr.h"
 #include "tad_common.h"
 #include "rcf_ch_api.h"
+#include "agentlib.h"
 #include "tad_csap_inst.h"
 #include "tad_csap_support.h"
 
@@ -248,7 +249,7 @@ extern int tad_data_unit_convert_by_label(const asn_value *pdu_val,
  * @param[in]  tag_value    ASN tag value of field, tag class is
  *                          assumed to be PRIVATE
  * @param[out] location     location for converted structure, should not
- *                          contain any 'data staff' - i.e. should be 
+ *                          contain any 'data staff' - i.e. should be
  *                          correctly filled or zeroed
  *
  * @return zero on success or error code.
@@ -398,6 +399,9 @@ extern te_errno tad_common_write_read_cb(csap_p csap, unsigned int timeout,
  * @param fromlen       On input length of the buffer for peer address,
  *                      on output length of the peer address
  * @param pkt_len       Location for received packet length
+ * @param msg_flags     Location for flags returned by recvmsg() or @c NULL
+ * @param cmsg_buf      Buffer to put ancillary data (or @c NULL)
+ * @param cmsg_len      Ancillary data buffer length, in/out (or @c NULL)
  *
  * @return Status code.
  */
@@ -407,7 +411,9 @@ extern te_errno tad_common_read_cb_sock(csap_p csap, int sock,
                                         tad_pkt *pkt,
                                         struct sockaddr *from,
                                         socklen_t *fromlen,
-                                        size_t *pkt_len);
+                                        size_t *pkt_len,
+                                        int *msg_flags, void *cmsg_buf,
+                                        size_t *cmsg_buf_len);
 
 /**
  * Create detached thread.

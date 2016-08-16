@@ -13,7 +13,13 @@ use Storable qw/nstore retrieve dclone/;
 use POSIX;
 use HTML::Entities;
 
-umask 0027;
+# Next comment is special, it will be changed to
+# correct "use lib" when deploying.
+
+#USE_LIB
+use night_logs_cgi_aux::aux_funcs;
+
+umask 0017;
 
 my @tmp_files = ();
 my $date_from;
@@ -31,11 +37,14 @@ my $benchmarks = 0;
 my $with_err_only = 0;
 my $iters_with_err_only = 0;
 my $print_binary_report = 0;
+my $group_logs_by_tags = 0;
 
 my $tester_logs_dir = "testdir";
 my $default_cache_path = "/home/izbitsky/cached_v5_tot/";
 my $loaded_logs = {};
 my $one_xml_log_parsed = 0;
+
+my $xml_log_def_name = "DEF_XML_LOG";
 
 my %night_results = (
   tests => {},
@@ -180,7 +189,7 @@ sub download_prepare_log
 
     if ($file_to_load =~ m/\/$/)
     {
-        $file_to_load = $file_to_load."trc-log.bz2";
+        $file_to_load = $file_to_load."$xml_log_def_name";
     }
 
     $is_compromised = is_log_compromised($file_to_load);
@@ -200,7 +209,7 @@ sub download_prepare_log
 
         if ($rc != 0)
         {
-            warn "Failed to fetch XML log";
+            warn "Failed to fetch XML log from $file_to_load";
             return (-1, 0);
         }
 
@@ -235,6 +244,24 @@ sub download_prepare_log
             return (-1, 0);
         }
         $file_name = $tmp_files[$#tmp_files];
+    }
+    if ($file_to_load =~ m/^(.*)[.]xz\s*$/)
+    {
+        (undef, $tmp_files[$#tmp_files + 1]) = tempfile("log-XXXX");
+        if (system_call("xz --decompress --keep --stdout ".$file_name." > ".
+                        $tmp_files[$#tmp_files]) != 0)
+        {
+            warn "Failed to unzip XML log";
+            return (-1, 0);
+        }
+        $file_name = $tmp_files[$#tmp_files];
+    }
+
+    if (system_call("tail ${file_name} | ".
+                    "grep '</proteos:log_report>' >/dev/null") != 0)
+    {
+        print STDERR "Termination check failed\n";
+        return (-1, 0);
     }
 
     get_timestamp('unpack', 'end');
@@ -368,6 +395,26 @@ sub hash2str
     foreach my $key (sort(keys %{$hash}))
     {
         $str .= $key." => ".$hash->{$key}."; ";
+    }
+
+    return $str;
+}
+
+sub result2str
+{
+    my $result = $_[0];
+    my $str;
+
+    if (defined($result->{"err"}) && length($result->{"err"}) > 0)
+    {
+        $str = "err => ".$result->{"err"}."; ";
+    }
+    $str .= $result->{"result"}."; ";
+    $str .= "VERDICTS: ";
+
+    foreach my $verdict (@{$result->{"verdicts"}})
+    {
+        $str .= $verdict."; ";
     }
 
     return $str;
@@ -752,108 +799,91 @@ sub process_logs
     my $log_path = $_[2];
     my @cur_logs = ();
     my $s;
-    my $folder_name;
+    my $file_name;
 
-    if ($log_path =~ /^(.*)([0-9]{2}[.][0-9]{2}-.*)$/)
+    if ($log_path =~ /^[^\/]*:/)
     {
-        @cur_logs = ( $2 );
-        $log_path = $1;
+        @cur_logs = `curl -L -s -u : --negotiate $log_path`;
     }
     else
     {
-        if ($log_path =~ /^[^\/]*:/)
+        @cur_logs = `ls -F --format=single-column $log_path`;
+    }
+
+    foreach $s (@cur_logs)
+    {
+        if ($s =~ /run[.]log[.]txt/)
         {
-            @cur_logs = `curl -L -s -u : --negotiate $log_path`;
-        }
-        else
-        {
-            @cur_logs = `ls -F --format=single-column $log_path`;
+            my $download_path = remove_extra_slashes("${log_path}/");
+            my $is_compromised;
+            my $rc;
+
+            if (defined($loaded_logs->{$download_path}) &&
+                $loaded_logs->{$download_path} == 1)
+            {
+                return;
+            }
+
+            print "downloading from $download_path \n";
+            ($rc, $is_compromised) =
+                      download_prepare_log($download_path);
+            if ($rc != 0)
+            {
+                if ($is_compromised)
+                {
+                    print "Skipped because of ".
+                          "compromised log\n";
+                }
+                else
+                {
+                    print "Failed to retrieve log\n";
+                    $loaded_logs->{$download_path} = 2;
+                }
+            }
+            else
+            {
+                my $xml_log_fn = $tmp_files[$#tmp_files];
+
+                $loaded_logs->{$download_path} = 1;
+                parse_xml_log($download_path, $xml_log_fn,
+                              $is_compromised);
+                free_tmp_files();
+            }
+
+            return;
         }
     }
 
     foreach $s (@cur_logs)
     {
-        if ($s =~ /src="\/icons\/folder.gif".*<a.*href="(.*)"/ ||
-            $s =~ /([0-9]{2}[.][0-9]{2}-.*$)/ ||
-            $s =~ /^([0-9]{2}[.][0-9]{2}[\/]?)\s*$/ ||
-            $s =~ /^(session_[0-9]{2}[.][0-9]{2}[.][0-9]{2}[\/]?)$/)
+        if ($s =~ /src="\/icons\/folder.gif".*<a.*href="(.*)"/)
         {
             my $log_date = new Date::Manip::Date;
 
-            $folder_name = $1;
-            if ($folder_name =~
-                 /([0-9]{2}[.][0-9]{2}-)/)
+            $file_name = $1;
+
+            if ($file_name =~ /([0-9]{2}[.][0-9]{2}[.][0-9]{2})/)
             {
-#                $log_date->parse_format("%y\\.%m\\.%d\\-%H\\.%M", $1);
+                my $date_str = $1;
 
-#                if ($log_date->cmp($start_date) >= 0 &&
-#                    $log_date->cmp($end_date) <= 0)
-#                {
-                my $download_path =
-                      remove_extra_slashes($log_path."/".$folder_name);
-                my $is_compromised;
-                my $rc;
-
-                if ($folder_name =~ /([0-9]{2}[.][0-9]{2}[.][0-9]{2})/)
-                {
-                    my $date_str = $1;
-
-                    $log_date->parse_format("%y\\.%m\\.%d", $date_str);
-                    next if $log_date->cmp($end_date) > 0;
-                    $log_date->parse_format("%y\\.%m\\.%d",
-                                            "$date_str 23:59:59");
-                    next if $log_date->cmp($start_date) < 0;
-                }
-
-                next if (defined($loaded_logs->{$download_path}));
-
-                print "downloading from $download_path \n";
-                ($rc, $is_compromised) =
-                          download_prepare_log($download_path);
-                if ($rc != 0)
-                {
-                    if ($is_compromised)
-                    {
-                        print "Skipped because of ".
-                              "compromised log\n";
-                    }
-                    else
-                    {
-                        print "Failed to retrieve log\n";
-                        $loaded_logs->{$download_path} = 2;
-                    }
-                }
-                else
-                {
-                    my $xml_log_fn = $tmp_files[$#tmp_files];
-
-                    $loaded_logs->{$download_path} = 1;
-                    parse_xml_log($download_path, $xml_log_fn,
-                                  $is_compromised);
-                    free_tmp_files();
-                }
-#                }
+                $log_date->parse_format("%y\\.%m\\.%d", $date_str);
+                next if $log_date->cmp($end_date) > 0;
+                $log_date->parse_format("%y\\.%m\\.%d",
+                                        "$date_str 23:59:59");
+                next if $log_date->cmp($start_date) < 0;
             }
-            else
+            elsif ($file_name =~ /([0-9]{2}[.][0-9]{2})[\/]*\s*$/)
             {
-                if ($folder_name =~ /([0-9]{2}[.][0-9]{2})/)
-                {
-                    $log_date->parse_format("%y\\.%m\\.%d", $1.".01");
-                    next if $log_date->cmp($end_date) > 0;
-                    $log_date->parse($log_date->printf("last day of %B %Y\n"));
-                    next if $log_date->cmp($start_date) < 0;
-                }
-                if ($folder_name =~ /(session_[0-9]{2}[.][0-9]{2}[.][0-9]{2})/)
-                {
-                    $log_date->parse_format("%y\\.%m\\.%d", $1);
-                    next if $log_date->cmp($end_date) > 0;
-                    next if $log_date->cmp($start_date) < 0;
-                }
-                if (!($folder_name =~ /(\.\.\/)/))
-                {
-                    process_logs($start_date, $end_date,
-                                 $log_path."/".$folder_name);
-                }
+                $log_date->parse_format("%y\\.%m\\.%d", $1.".01");
+                next if $log_date->cmp($end_date) > 0;
+                $log_date->parse($log_date->printf("last day of %B %Y\n"));
+                next if $log_date->cmp($start_date) < 0;
+            }
+
+            if (!($file_name =~ /(\.\.\/)/))
+            {
+                process_logs($start_date, $end_date,
+                             $log_path."/".$file_name);
             }
         }
     }
@@ -1003,6 +1033,10 @@ foreach my $arg (@ARGV)
         $tag_expr =~ s/&/ && /g;
         $tag_expr =~ s/\|/ || /g;
     }
+    elsif ($arg =~ m/^--group-logs-by-tags$/)
+    {
+        $group_logs_by_tags = 1;
+    }
     elsif ($arg =~ m/^--binary-report$/)
     {
         $print_binary_report = 1;
@@ -1010,6 +1044,10 @@ foreach my $arg (@ARGV)
     elsif ($arg =~ m/^--benchmarks$/)
     {
         $benchmarks = 1;
+    }
+    elsif ($arg =~ m/^--def-log-name=(.+)$/)
+    {
+        $xml_log_def_name = $1;
     }
     elsif ($arg =~ m/^--help$/ || $arg =~ m/^-h$/)
     {
@@ -1027,6 +1065,9 @@ foreach my $arg (@ARGV)
               "--with-err-only          Show only results with some error\n".
               "--iters-with-err-only    Show only iterations having some erroneous results\n".
               "--benchmarks             Collect data on script performance\n".
+              "--def-log-name=          Filename of XML log\n".
+              "                         (trc-log.bz2 by default)\n".
+              "--group-logs-by-tags     Group logs by tags in HTML report\n".
               "--verbose, -v            Log performed operations\n".
               "--help, -h               Display this message\n";
         exit(0);
@@ -1054,6 +1095,36 @@ sub cleanup
     free_tmp_files; 
 }
 
+my $compromised_iters;
+
+sub iter_is_compromised
+{
+    my $iter_key = $_[0];
+    my $result_str = $_[1];
+    my $log = $_[2];
+
+    if (!defined($compromised_iters))
+    {
+        $compromised_iters = get_compromised($cached_logs_path);
+        if (!defined($compromised_iters))
+        {
+            return 0;
+        }
+    }
+
+    if (defined($compromised_iters->{"iters"}) &&
+        defined($compromised_iters->{"iters"}->{$iter_key}) &&
+        defined($compromised_iters->{"iters"}->
+                        {$iter_key}->{$result_str}) &&
+        defined($compromised_iters->{"iters"}->
+                {$iter_key}->{$result_str}->{$log->{"log"}}))
+    {
+        return 1;
+    }
+
+    return 0;
+}
+
 sub filter_test_iters
 {
     my $test_path = $_[0];
@@ -1062,13 +1133,14 @@ sub filter_test_iters
     my $from_timestamp = $date_from->printf("%s") + 0;
     my $filtered_iters = {};
     my $iter;
+    my $iter_key;
 
     if (!defined($test))
     {
         return undef;
     }
 
-    while ((undef, $iter) = each %{$test->{"iters"}})
+    while (($iter_key, $iter) = each %{$test->{"iters"}})
     {
         my @filtered_results = ();
 
@@ -1076,6 +1148,9 @@ sub filter_test_iters
         foreach my $result (@{$iter->{"results"}})
         {
             my @filtered_logs = ();
+            my $result_str;
+
+            $result_str = result2str($result);
 
             next if ($with_err_only > 0 &&
                      (!defined($result->{"err"}) ||
@@ -1089,6 +1164,8 @@ sub filter_test_iters
                          ((defined($log->{"compromised"}) &&
                            $log->{"compromised"} > 0) ||
                            log_in_compromised($log->{"log"})));
+                next if ($include_compromised == 0 &&
+                         iter_is_compromised($iter_key, $result_str, $log));
                 next if match_tags($log->{"tags"}, $tag_expr) == 0;
 
                 push(@filtered_logs, $log);
@@ -1271,6 +1348,7 @@ sub store_test_cache
                   "too early to be loaded\n";
         }
         `mkdir -p $path/$cache_index/`;
+        `chmod g+x $path/$cache_index/`;
         nstore($caches{$cache_index},
                $path."/$cache_index/$file_name.tmp") or
              die "Failed to save test cache in file";
@@ -1424,7 +1502,8 @@ if (defined($cached_logs_path) && length($cached_logs_path) > 0)
 }
 
 if (defined($date_from) && defined($date_to) &&
-    $date_from->cmp($date_to) <= 0)
+    $date_from->cmp($date_to) <= 0 &&
+    !(defined($cached_logs_path) && !defined($update_cache_path)))
 {
     foreach my $path (@log_paths)
     {
@@ -1471,14 +1550,148 @@ if (defined($update_cache_path) &&
         }
     }
 
+    my $date_inc = new Date::Manip::Delta;
+    my $last_log_date_fixed;
     my $cache_last_log_date_f = $update_cache_path."/last_log_date";
-    my $last_log_date_str = $last_log_date->printf("%Y.%m.%d");
+    my $last_log_date_str;
+
+    $date_inc->parse("- 2 day");
+    $last_log_date_fixed = $date_inc->calc($last_log_date);
+    $last_log_date_str = $last_log_date_fixed->printf("%Y.%m.%d");
     `echo $last_log_date_str >$cache_last_log_date_f`;
 
     nstore($loaded_logs, $update_cache_path."/loaded_logs");
 
     exit(0);
 }
+
+sub js_param_escape
+{
+    my $str = $_[0];
+
+    $str =~ s/&/&amp;/g;
+    $str =~ s/'/\\'/g;
+    return $str;
+}
+
+sub tags2str
+{
+    my $tags = $_[0];
+
+    return join(' ', sort(split(/\s+/, $tags)));
+}
+
+sub logs_group2html
+{
+    my $fh = $_[0];
+    my $test = $_[1];
+    my $logs = $_[2];
+
+    for (my $i = 0; $i < scalar(@{$logs}); $i++)
+    {
+        print $fh "<a href=\"".$logs->[$i]->{"log"}."\" ".
+                   "onClick=\"showLog('$test', '".
+                   $logs->[$i]->{"log"}."', event); ".
+                   "return false;\" title=\"".
+                   $logs->[$i]->{"date"}.": ".
+                   fix_tags($logs->[$i]->{"tags"})."\"".
+                   ">[".($i + 1)."]</a>";
+        if ($i < scalar(@{$logs}) - 1)
+        {
+            print $fh ", \n";
+        }
+    }
+}
+
+sub logs2html_aux
+{
+    my $fh = $_[0];
+    my $test = $_[1];
+    my $logs = $_[2];
+
+    my $tags_str;
+    my %logs_hash = ();
+
+    if ($group_logs_by_tags > 0)
+    {
+        foreach my $log (@{$logs})
+        {
+            $tags_str = tags2str(fix_tags($log->{"tags"}));
+
+            if (!defined($logs_hash{$tags_str}))
+            {
+                $logs_hash{$tags_str} = [ $log ];
+            }
+            else
+            {
+                push(@{$logs_hash{$tags_str}}, $log);
+            }
+        }
+
+        print $fh "<table border=\"1\">\n";
+        foreach $tags_str (sort(keys %logs_hash))
+        {
+            #my $tags_from_log = $logs_hash{$tags_str}->[0]->{"tags"};
+
+            print $fh "<tr><td>${tags_str}</td>\n";
+            print $fh "<td>\n";
+            logs_group2html($fh, $test, $logs_hash{$tags_str});
+            print $fh "</td>\n</tr>\n";
+        }
+        print $fh "</table>\n";
+    }
+    else
+    {
+        logs_group2html($fh, $test, $logs);
+    }
+}
+
+sub logs2html
+{
+    my $fh = $_[0];
+    my $test = $_[1];
+    my $iter_key = $_[2];
+    my $result_str = $_[3];
+    my $logs = $_[4];
+    my $compromised = $_[5];
+
+    my $logs_str = "";
+    my $compromise_arg;
+    my $compromise_str;
+
+    if ($compromised > 0)
+    {
+        $compromise_arg = 0;
+        $compromise_str = "Uncompromise"
+    }
+    else
+    {
+        $compromise_arg = 1;
+        $compromise_str = "Compromise"
+    }
+
+    logs2html_aux($fh, $test, $logs);
+
+#    Temporary disabled.
+#    for (my $i = 0; $i < scalar(@{$logs}); $i++)
+#    {
+#        if (length($logs_str) > 0)
+#        {
+#            $logs_str .= ",";
+#        }
+#        $logs_str .= $logs->[$i]->{"log"};
+#    }
+#
+#    print $fh "<br>\n<input type=\"button\" value=\"$compromise_str\" ".
+#              "onClick=\"compromiseIter(this, '".
+#              js_param_escape($cached_logs_path)."', ".
+#              "'".js_param_escape(${iter_key})."', ".
+#              "'".js_param_escape($result_str)."', ".
+#              "'".js_param_escape(${logs_str})."', $compromise_arg);\">";
+}
+
+my $err_result_color = "#ffdfdf";
+my $compromised_iter_color = "#ff7777";
 
 sub print_html_report
 {
@@ -1493,6 +1706,7 @@ sub print_html_report
     print $fh "<title>Results from night testing logs</title>";
     print $fh "<style type=\"text/css\">\n";
     print $fh ".test_name { font-weight: bold;}\n";
+    print $fh "td { vertical-align: top; }\n";
 
     print $fh <<EOT;
         #TestLog {
@@ -1613,6 +1827,43 @@ EOT
                 doNothing(event);
             return false;
         }
+
+        function compromiseIter(button, cache_path, iter,
+                                result, logs, compromise)
+        {
+            var xhr = new XMLHttpRequest();
+            var params;
+            var parent_bg_color;
+
+            params = "cache_path=" + encodeURIComponent(cache_path) +
+                     "&iter=" + encodeURIComponent(iter) +
+                     "&result=" + encodeURIComponent(result) +
+                     "&logs=" + encodeURIComponent(logs) +
+                     "&compromise=" + compromise;
+
+            xhr.open("POST", "/socktest/compromise.pl", false);
+            xhr.setRequestHeader("Content-type",
+                                 "application/x-www-form-urlencoded");
+            xhr.send(params);
+
+            if (compromise > 0)
+            {
+                compromise = 0;
+                button.value = "Uncompromise";
+                parent_bg_color = "$compromised_iter_color";
+            }
+            else
+            {
+                compromise = 1;
+                button.value = "Compromise";
+                parent_bg_color = "";
+            }
+
+            button.onclick = function() {
+                                compromiseIter(button, cache_path, iter,
+                                               result, logs, compromise); };
+            button.parentElement.style.backgroundColor = parent_bg_color;
+        }
     </script>
 EOT
 
@@ -1631,12 +1882,13 @@ EOT
                "style=\"font-size:small;\">\n";
     foreach my $test (keys %{$night_results{"tests"}})
     {
+        my $iter_key;
         my $iter;
 
         print $fh "<tr>\n<td colspan=\"3\" class=\"test_name\">".
                    $test."</td>\n</tr>\n";
 
-        while ((undef, $iter) = each
+        while (($iter_key, $iter) = each
                   %{$night_results{"tests"}->{$test}->{"iters"}})
         {
             if ($iters_with_err_only > 0)
@@ -1691,7 +1943,8 @@ EOT
 
                 if ($err_present > 0 && $with_err_only == 0)
                 {
-                    print $fh "<tr style=\"background-color:#ffdfdf\">\n";
+                    print $fh "<tr style=\"background-color:".
+                              "$err_result_color\">\n";
                 }
                 else
                 {
@@ -1717,20 +1970,41 @@ EOT
                 print $fh "</td>\n";
 
                 print $fh "<td>\n";
-                for (my $i = 0; $i < scalar(@{$result->{"logs"}}); $i++)
+
+                my @compromised_logs = ();
+                my @good_logs = ();
+                my $result_str = result2str($result);
+
+                foreach my $log (@{$result->{"logs"}})
                 {
-                    print $fh "<a href=\"".$result->{"logs"}->[$i]->{"log"}."\" ".
-                               "onClick=\"showLog('$test', '".
-                               $result->{"logs"}->[$i]->{"log"}."', event); ".
-                               "return false;\" title=\"".
-                               $result->{"logs"}->[$i]->{"date"}.": ".
-                               fix_tags($result->{"logs"}->[$i]->{"tags"})."\"".
-                               ">[".($i + 1)."]</a>";
-                    if ($i < scalar(@{$result->{"logs"}}) - 1)
+                    if (iter_is_compromised($iter_key, $result_str, $log))
                     {
-                        print $fh ", \n";
+                        push(@compromised_logs, $log);
+                    }
+                    else
+                    {
+                        push(@good_logs, $log);
                     }
                 }
+
+                print $fh "<table>\n";
+                if (scalar(@good_logs) > 0)
+                {
+                    print $fh "<tr><td>\n";
+                    logs2html($fh, $test, $iter_key, $result_str,
+                              \@good_logs, 0);
+                    print $fh "</tr></td>\n";
+                }
+                if (scalar(@compromised_logs) > 0)
+                {
+                    print $fh "<tr style=\"background-color:".
+                              "$compromised_iter_color;\"><td>\n";
+                    logs2html($fh, $test, $iter_key, $result_str,
+                              \@compromised_logs, 1);
+                    print $fh "</tr></td>\n";
+                }
+                print $fh "</table>\n";
+
                 print $fh "</td>\n";
 
                 print $fh "</tr>\n";

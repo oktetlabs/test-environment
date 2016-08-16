@@ -114,6 +114,7 @@ create_process(void)
     if (p != NULL)
     {
         STAILQ_INIT(&p->pcos);
+        CIRCLEQ_INIT(&p->ifs);
         if (curr_host_if == NULL)
             curr_host_if = create_host_if();
         if (curr_host_if != NULL && curr_host_if->host != NULL)
@@ -293,13 +294,19 @@ host_item:
     ;
 
 process:
-    OBRACE pcos EBRACE
+    OBRACE process_items EBRACE
     {
         if (curr_proc == NULL)
             (void)create_process();
         else
             curr_proc = NULL;
     }
+    ;
+
+process_items:
+    pcos
+    |
+    pcos COMMA interface
     ;
 
 pcos:
@@ -367,7 +374,19 @@ interface:
 
         if (curr_host_if != NULL)
         {
+            if (curr_host_if->name != NULL &&
+                strcmp(curr_host_if->name, name) != 0)
+            {
+                ERROR("Interface name conflict: '%s' vs '%s'",
+                      curr_host_if->name, name);
+            }
+            free(curr_host_if->name);
             curr_host_if->name = name;
+
+            curr_host_if->ps = curr_proc;
+            if (curr_proc != NULL)
+                CIRCLEQ_INSERT_TAIL(&curr_proc->ifs, curr_host_if, ps_links);
+
             name = NULL;
         }
         free(name);

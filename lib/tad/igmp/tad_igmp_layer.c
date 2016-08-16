@@ -55,8 +55,6 @@
 #include "tad_igmp_impl.h"
 
 
-static unsigned char mac_mcast[] = { 0x01, 0x00, 0x5E, 0x00, 0x00, 0x00 };
-
 #define TE_TAD_IGMP_MAXLEN 1500
 
 /**
@@ -181,7 +179,7 @@ tad_igmp_init_cb(csap_p csap, unsigned int layer)
     if (rc != 0)
         return rc;
 
-    return 0; 
+    return 0;
 }
 
 /* See description tad_igmp_impl.h */

@@ -90,7 +90,7 @@ typedef struct dlpi_data {
     unsigned int  unit;    /**< Unit number */
     int           fd;      /**< STREAM device file descriptor */
     dl_info_ack_t dl_info; /**< DLPI stream info */
-    char         *buf;     /**< buffer to use in send/recv operations */ 
+    char         *buf;     /**< buffer to use in send/recv operations */
     char         *rcv_ptr; /**< pointer to the already received data */
     size_t        rcv_len; /**< length of already received data */
     int           promisc_flags;  /**< bytes for various promisc modes */
@@ -421,7 +421,7 @@ dlpi_ack(int fd, char *resp, int resp_len)
                 case DL_SYSERR:
                     rc = TE_OS_RC(TE_TAD_DLPI,
                                   dlp->error_ack.dl_unix_errno);
-                    ERROR("getmsg(%s), %r", 
+                    ERROR("getmsg(%s), %r",
                           dlprim(dlp->dl_primitive), rc);
                     break;
                 default:
@@ -511,7 +511,7 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
     dlpi->dl_info = *((dl_info_ack_t *)req);
 
     /* FIXME */
-    VERB("B: Set close_possible FALSE on init"); 
+    VERB("B: Set close_possible FALSE on init");
     dlpi->close_possible = FALSE;
 
     /*
@@ -697,7 +697,7 @@ dlpi_sap_close(tad_eth_sap *sap)
         dlpi->close_possible = FALSE;
         return 0;
     }
-        
+
     ERROR("No sending/receiving processes on CSAP, cannot stop.");
     return TE_RC(TE_TAD_DLPI, TE_EBADF);
 }
@@ -837,7 +837,7 @@ tad_eth_sap_recv_open(tad_eth_sap *sap,
 
     /* Enable promiscuous DL_PROMISC_SAP if we'd like to receive
      * anything except incoming unicast with "our" dst */
-    if (mode & (TAD_ETH_RECV_OUT | TAD_ETH_RECV_OTHER | 
+    if (mode & (TAD_ETH_RECV_OUT | TAD_ETH_RECV_OTHER |
                 TAD_ETH_RECV_MCAST))
     {
         memset(&dlp, 0, sizeof(dlp));
@@ -858,7 +858,7 @@ tad_eth_sap_recv_open(tad_eth_sap *sap,
         dlpi->promisc_flags |= 1 << DL_PROMISC_SAP;
     }
 
-    if (mode & (TAD_ETH_RECV_OUT | TAD_ETH_RECV_OTHER) && 
+    if (mode & (TAD_ETH_RECV_OUT | TAD_ETH_RECV_OTHER) &&
         !(mode & TAD_ETH_RECV_NO_PROMISC))
     {
         /*
@@ -874,7 +874,7 @@ tad_eth_sap_recv_open(tad_eth_sap *sap,
             ERROR("Attempt to set DL_PROMISC_PHYS failed");
             return rc;
         }
-        
+
         memset(&dlp, 0, sizeof(dlp));
         rc = dlpi_ack(dlpi->fd, (char *)&dlp, DL_OK_ACK_SIZE);
         if (rc != 0)
@@ -1001,7 +1001,7 @@ tad_eth_sap_recv(tad_eth_sap *sap, unsigned int timeout,
         struct sb_hdr  *sb_header = (struct sb_hdr *)dlpi->rcv_ptr;
 
         assert(sb_header != NULL);
-        rc = dlpi_recv_buf_to_pkt(dlpi->rcv_ptr + sizeof(*sb_header), 
+        rc = dlpi_recv_buf_to_pkt(dlpi->rcv_ptr + sizeof(*sb_header),
                                   sb_header->sbh_msglen, pkt);
         if (rc != 0)
             return rc;

@@ -49,6 +49,7 @@
 
 #include "te_defs.h"
 #include "logger_api.h"
+#include "log_bufs.h"
 
 
 /** The number of characters in a sinle log buffer. */
@@ -58,11 +59,11 @@
 
 
 /** Internal presentation of log buffer. */
-typedef struct te_log_buf {
+struct te_log_buf {
     te_bool used; /**< Whether this buffer is already in use */
     char    ptr[LOG_BUF_LEN]; /**< Buffer data */
     size_t  cur_len; /**< The number of bytes currently used in buffer */
-} te_log_buf;
+};
 
 /** Statically allocated pool of log buffers. */
 static te_log_buf te_log_bufs[LOG_BUF_NUM];
@@ -107,7 +108,7 @@ te_log_buf_alloc()
 
         return &te_log_bufs[id];
     }
-    
+
     for (i = 0; i < LOG_BUF_NUM; i++)
     {
         if (!te_log_bufs[i].used)
@@ -134,11 +135,11 @@ te_log_buf_alloc()
             te_log_buf_last_freed = -1;
             te_log_bufs[id].used = TRUE;
             pthread_mutex_unlock(&te_log_buf_mutex);
-            
+
             return &te_log_bufs[id];
         }
         pthread_mutex_unlock(&te_log_buf_mutex);
-        
+
         RING("Waiting for a tapi log buffer");
         sleep(1);
     } while (TRUE);
@@ -192,7 +193,59 @@ te_log_buf_free(te_log_buf *buf)
     pthread_mutex_lock(&te_log_buf_mutex);
     buf->used = FALSE;
     buf->cur_len = 0;
-    te_log_buf_last_freed = 
+    te_log_buf_last_freed =
         (buf - te_log_bufs) / sizeof(te_log_bufs[0]);
     pthread_mutex_unlock(&te_log_buf_mutex);
+}
+
+const char *
+te_bit_mask2log_buf(te_log_buf *buf, unsigned long long bit_mask,
+                    const struct te_log_buf_bit2str *map)
+{
+    unsigned int        i;
+    unsigned long long  mask;
+    te_bool             added = FALSE;
+
+    VALIDATE_LOG_BUF(buf);
+
+    for (i = 0; map[i].str != NULL; ++i)
+    {
+        mask = (1ull << map[i].bit);
+        if ((bit_mask & mask) != 0)
+        {
+            te_log_buf_append(buf, "%s%s", added ? "|" : "", map[i].str);
+            added = TRUE;
+            bit_mask &= ~mask;
+        }
+    }
+
+    if (bit_mask != 0)
+        te_log_buf_append(buf, "%s%#llx", added ? "|" : "", bit_mask);
+
+    return te_log_buf_get(buf);
+}
+
+const char *
+te_args2log_buf(te_log_buf *buf, int argc, const char **argv)
+{
+    int     i;
+
+    for (i = 0; i < argc; ++i)
+        te_log_buf_append(buf, "%s\"%s\"", i == 0 ? "" : ", ", argv[i]);
+
+    return te_log_buf_get(buf);
+}
+
+const char *
+te_ether_addr2log_buf(te_log_buf *buf, const uint8_t *mac_addr)
+{
+    if (mac_addr == NULL)
+        te_log_buf_append(buf, "<NULL>");
+    else
+        te_log_buf_append(buf, "%02x:%02x:%02x:%02x:%02x:%02x",
+                          mac_addr[0], mac_addr[1],
+                          mac_addr[2], mac_addr[3],
+                          mac_addr[4], mac_addr[5]);
+
+    return te_log_buf_get(buf);
 }

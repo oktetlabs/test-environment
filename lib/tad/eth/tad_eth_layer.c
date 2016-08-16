@@ -56,13 +56,6 @@
 /** 802.1Q Tag Protocol Type (IEEE Std 802.1Q-2003 9.3.1) */
 #define TAD_802_1Q_TAG_TYPE     0x8100
 
-#define PRINT(fmt_...) \
-    do {                        \
-        fprintf(stderr, fmt_);  \
-        fputc('\n', stderr);    \
-        fflush(stderr);         \
-    } while (0)
-
 /**
  * Ethernet layer specific data
  */
@@ -190,7 +183,7 @@ static const tad_bps_pkt_frag tad_802_2_llc_bps_hdr[] =
     /* By default, command (not response) (LSB of the second byte) */
     { "c-r",  1, BPS_FLD_CONST_DEF(NDN_TAG_LLC_SSAP_CR, 0),
       TAD_DU_I32, FALSE },
-    /* 
+    /*
      * Minimum length of the Control is 8bit. We have to get it from
      * the received packet in any case to understand the real length of
      * this field.
@@ -830,7 +823,7 @@ tad_eth_frame_check(tad_pkt *pkt, void *opaque)
          /* FIXME: 4 is length of TPID+TCI. */
         tag_hdr_len = (data->tmpl_data->tagged == TE_BOOL3_TRUE) ? 4 : 0;
 
-        /* 
+        /*
          * Length/type is located either just after addresses or
          * after 802.1Q tag header.
          */
@@ -838,7 +831,7 @@ tad_eth_frame_check(tad_pkt *pkt, void *opaque)
 
         assert(seg->data_len >= len_type_off + ETHER_TYPE_LEN);
 
-        /* 
+        /*
          * Length does not include header of IEEE Std 802.3 frame and
          * IEEE Std 802.1Q tag.
          * FIXME: What about E-RIF?
@@ -863,7 +856,7 @@ tad_eth_frame_check(tad_pkt *pkt, void *opaque)
 te_errno
 tad_eth_gen_bin_cb(csap_p csap, unsigned int layer,
                    const asn_value *tmpl_pdu, void *opaque,
-                   const tad_tmpl_arg_t *args, size_t arg_num, 
+                   const tad_tmpl_arg_t *args, size_t arg_num,
                    tad_pkts *sdus, tad_pkts *pdus)
 {
     tad_eth_proto_data         *proto_data;
@@ -1039,7 +1032,7 @@ tad_eth_gen_bin_cb(csap_p csap, unsigned int layer,
 
     /* Move all SDUs to PDUs */
     tad_pkts_move(pdus, sdus);
-    /* 
+    /*
      * Add header segment to each PDU. All segments refer to the same
      * memory. Free function is set for segment of the first packet only.
      */
@@ -1295,7 +1288,7 @@ tad_eth_match_do_cb(csap_p           csap,
                CSAP_LOG_ARGS(csap));
         return TE_RC(TE_TAD_CSAP, TE_ETADNOTMATCH);
     }
-  
+
     proto_data = csap_get_proto_spec_data(csap, layer);
 
     assert(proto_data != NULL);
@@ -1359,7 +1352,7 @@ tad_eth_match_do_cb(csap_p           csap,
     }
 
     assert(pkt_data->len_type.dus[0].du_type == TAD_DU_I32);
-    /* 
+    /*
      * If Length/Type is greater or equal to 1536 (0x0600), the frame is
      * Ethernet2.
      */

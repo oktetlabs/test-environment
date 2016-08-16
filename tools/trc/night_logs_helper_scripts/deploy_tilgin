@@ -1,0 +1,6 @@
+#!/bin/bash
+
+./deploy_cgi --cgi-path=/usr/lib/cgi-bin/local/prj/tilgin/platform-ts/history/ \
+--cli-path=/home/tester-tilgin/night_logs_caches/ --user=tester-tilgin \
+--def-test="platform-ts/connections/create_ip6dynamic" \
+--def-xml-log="log.xml.xz" --no-night-status --def-logs-by-tags "$@"

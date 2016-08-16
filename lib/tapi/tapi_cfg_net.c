@@ -60,6 +60,43 @@
 #include "tapi_cfg_base.h"
 #include "tapi_cfg_net.h"
 
+/* See description in tapi_cfg_net.h */
+enum net_node_rsrc_type
+tapi_cfg_net_get_node_rsrc_type(cfg_net_node_t *node)
+{
+    te_errno        rc;
+    cfg_val_type    type;
+    char           *inst_oid = NULL;
+    char            obj_oid[CFG_OID_MAX];
+
+    if (node->rsrc_type != NET_NODE_RSRC_TYPE_UNKNOWN)
+        return node->rsrc_type;
+
+    type = CVT_STRING;
+    rc = cfg_get_instance(node->handle, &type, &inst_oid);
+    if (rc != 0)
+    {
+        ERROR("Failed to get Configurator instance by handle "
+              "0x%x: %r", node->handle, rc);
+        return rc;
+    }
+
+    cfg_oid_inst2obj(inst_oid, obj_oid);
+
+    if (strcmp(obj_oid, "/agent/interface") == 0)
+    {
+        node->rsrc_type = NET_NODE_RSRC_TYPE_INTERFACE;
+    }
+    else if (strcmp(obj_oid,
+                    "/agent/hardware/pci/vendor/device/instance") == 0)
+    {
+        node->rsrc_type = NET_NODE_RSRC_TYPE_PCI_FN;
+    }
+
+    free(inst_oid);
+
+    return node->rsrc_type;
+}
 
 /* See description in tapi_cfg_net.h */
 te_errno
@@ -669,6 +706,36 @@ tapi_cfg_net_get_switch_port(const char *ta_node, unsigned int *p_port)
     return 0;
 }
 
+/**
+ * Generate unique resource name.
+ */
+static char *
+tapi_cfg_net_make_node_rsrc_name(enum net_node_rsrc_type rsrc_type,
+                                 const cfg_oid *oid)
+{
+    char *rsrc_name;
+
+    switch (rsrc_type)
+    {
+        case NET_NODE_RSRC_TYPE_INTERFACE:
+            /*
+             * Make it it makes sense to add 'if:' prefix, but keep just
+             * interface name which is used before.
+             */
+            return strdup(CFG_OID_GET_INST_NAME(oid, 2));
+
+        case NET_NODE_RSRC_TYPE_PCI_FN:
+            asprintf(&rsrc_name, "pci_fn:%s:%s:%s",
+                     CFG_OID_GET_INST_NAME(oid, 4),
+                     CFG_OID_GET_INST_NAME(oid, 5),
+                     CFG_OID_GET_INST_NAME(oid, 6));
+            return rsrc_name;
+
+        case NET_NODE_RSRC_TYPE_UNKNOWN:
+        default:
+            return NULL;
+    }
+}
 
 /* See description in tapi_cfg_net.h */
 te_errno
@@ -695,6 +762,7 @@ tapi_cfg_net_reserve_all(void)
             cfg_val_type    type;
             char           *oid_str;
             cfg_oid        *oid;
+            char           *rsrc_name;
 
             type = CVT_STRING;
             rc = cfg_get_instance(net->nodes[j].handle, &type, &oid_str);
@@ -726,16 +794,22 @@ tapi_cfg_net_reserve_all(void)
                 continue;
             }
 
-            rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, oid_str),
-                                      "/agent:%s/rsrc:%s",
-                                      CFG_OID_GET_INST_NAME(oid, 1),
-                                      CFG_OID_GET_INST_NAME(oid, 2));
-            if (rc != 0)
+            rsrc_name = tapi_cfg_net_make_node_rsrc_name(
+                            tapi_cfg_net_get_node_rsrc_type(&net->nodes[j]),
+                            oid);
+            if (rsrc_name != NULL)
             {
-                ERROR("Failed to reserve resource '%s': %r", oid_str, rc);
-                cfg_free_oid(oid);
-                free(oid_str);
-                break;
+                rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, oid_str),
+                                          "/agent:%s/rsrc:%s",
+                                          CFG_OID_GET_INST_NAME(oid, 1),
+                                          rsrc_name);
+                if (rc != 0)
+                {
+                    ERROR("Failed to reserve resource '%s': %r", oid_str, rc);
+                    cfg_free_oid(oid);
+                    free(oid_str);
+                    break;
+                }
             }
             cfg_free_oid(oid);
             free(oid_str);
@@ -788,6 +862,10 @@ tapi_cfg_net_all_up(te_bool force)
             cfg_val_type    type;
             char           *oid = NULL;
 
+            if (tapi_cfg_net_get_node_rsrc_type(&net->nodes[j]) !=
+                NET_NODE_RSRC_TYPE_INTERFACE)
+                continue;
+
             type = CVT_STRING;
             rc = cfg_get_instance(net->nodes[j].handle, &type, &oid);
             if (rc != 0)
@@ -805,6 +883,9 @@ tapi_cfg_net_all_up(te_bool force)
     {
         cfg_val_type    type;
         int             status;
+
+        if (nodes[k] == NULL)
+            continue; /* Not an interface */
 
         type = CVT_INTEGER;
         rc = cfg_get_instance_fmt(&type, &status, "%s/status:", nodes[k]);
@@ -842,7 +923,7 @@ tapi_cfg_net_all_up(te_bool force)
     for (k = 0; k < n_nodes; k++)
     {
         if (nodes[k] == NULL)
-            continue; /* The interface was already up */
+            continue; /* Not an interface or the interface was already up */
         rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
                                   "%s/status:", nodes[k]);
         if (rc != 0)
@@ -1118,32 +1199,36 @@ tapi_cfg_net_assign_ip(unsigned int af, cfg_net_t *net,
                 break;
             }
 
-            /* Get interface OID */
-            type = CVT_STRING;
-            rc = cfg_get_instance(net->nodes[i].handle, &type,
-                                  &str);
-            if (rc != 0)
+            if (tapi_cfg_net_get_node_rsrc_type(&net->nodes[i]) ==
+                NET_NODE_RSRC_TYPE_INTERFACE)
             {
-                ERROR("Failed to get Configurator instance by handle "
-                      "0x%x: %r", net->nodes[i].handle, rc);
-                free(addr);
-                break;
-            }
+                /* Get interface OID */
+                type = CVT_STRING;
+                rc = cfg_get_instance(net->nodes[i].handle, &type,
+                                      &str);
+                if (rc != 0)
+                {
+                    ERROR("Failed to get Configurator instance by handle "
+                          "0x%x: %r", net->nodes[i].handle, rc);
+                    free(addr);
+                    break;
+                }
 
-            rc = tapi_cfg_base_add_net_addr(str, addr, net_pfx, TRUE,
-                                            &addr_hndl);
-            if (TE_RC_GET_ERROR(rc) == TE_EEXIST)
-            {
-                /* Address already assigned - continue */
-                rc = 0;
-            }
-            else if (rc != 0)
-            {
+                rc = tapi_cfg_base_add_net_addr(str, addr, net_pfx, TRUE,
+                                                &addr_hndl);
+                if (TE_RC_GET_ERROR(rc) == TE_EEXIST)
+                {
+                    /* Address already assigned - continue */
+                    rc = 0;
+                }
+                else if (rc != 0)
+                {
+                    free(str);
+                    free(addr);
+                    break;
+                }
                 free(str);
-                free(addr);
-                break;
             }
-            free(str);
 
             rc = cfg_add_instance_child_fmt(NULL, CVT_ADDRESS, addr,
                                             net->nodes[i].handle,

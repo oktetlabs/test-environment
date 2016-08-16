@@ -34,6 +34,9 @@ pushd $1 >/dev/null
 PREFIX=`pwd`
 popd >/dev/null
 
+SCRIPT_DIR=`dirname $0`
+. ${SCRIPT_DIR}/te_functions
+
 if test -n "${TE_BUILD}" ; then
     cd ${TE_BUILD}
 fi
@@ -47,27 +50,34 @@ for p in ${2:-${TE_BS_PLATFORMS}} ; do
     dir=${p}_EXT_LIBS_DIR
 
     mkdir -p $PREFIX/$p
-    # Skip download if agent platform directory exists at install path
-    # and at build path.
-    [ -d "$PREFIX/$p/lib" -a \
-      -d "${TE_BUILD}/platforms/$p/lib" ] && continue
-
-    if [ "${TE_EXT_LIBS}" ] ; then
-        mkdir -p "${TE_BUILD}/platforms/$p/lib"
-        mkdir -p "${TE_BUILD}/platforms/$p/include"
-        pushd "${TE_BUILD}/platforms/$p/" >/dev/null
-        for i in ${!libs} ; do
-            rm -rf $i.tgz
-            wget ${TE_EXT_LIBS}/${!dir}/$i.tgz
-            if [ $? -eq 0 ] ; then
-                echo "./$p/$i.tgz \\" >>${TE_EXT_LIBS_FILE}
-                tar -tzf $i.tgz | xargs -n1 -P0 bash -c \
-                    "echo \"./$p/\$0 \\\\\" >>${TE_EXT_LIBS_FILE}"
-                tar xzf $i.tgz
-            fi
-        done
-        popd >/dev/null
+    if test ! -f "${TE_BUILD}/${p}.sbd"; then
+        sbd="${TE_BUILD}"
+    else
+        sbd=$(cat "${TE_BUILD}/${p}.sbd")
     fi
+    te_eval_or_ssh "${p}" "
+        # Skip download if agent platform directory exists at install path
+        # and at build path.
+        [ -d \"$PREFIX/$p/lib\" -a \
+          -d \"${sbd}/platforms/$p/lib\" ] && continue
+
+        if [ \"${TE_EXT_LIBS}\" ] ; then
+            mkdir -p \"${sbd}/platforms/$p/lib\"
+            mkdir -p \"${sbd}/platforms/$p/include\"
+            pushd \"${sbd}/platforms/$p/\" >/dev/null
+            for i in ${!libs} ; do
+                rm -rf \$i.tgz
+                wget ${TE_EXT_LIBS}/${!dir}/\$i.tgz
+                if [ \$? -eq 0 ] ; then
+                    echo \"./$p/\$i.tgz \\\\\" >>${TE_EXT_LIBS_FILE}
+                    tar -tzf \$i.tgz |
+                        sed 's:\(.*\):./$p/\1 \\\\:' >>${TE_EXT_LIBS_FILE}
+                    tar xzf \$i.tgz
+                fi
+            done
+            popd >/dev/null
+        fi
+    "
 done
 
 mkdir -p $PREFIX/agents

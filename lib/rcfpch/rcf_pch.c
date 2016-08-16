@@ -53,6 +53,9 @@
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
+#if defined(HAVE_PTHREAD_H) && defined(HAVE_PTHREAD_ATFORK)
+#include <pthread.h>
+#endif
 
 #include "rcf_pch_internal.h"
 #undef SEND_ANSWER
@@ -63,6 +66,8 @@
 #include "rcf_common.h"
 #include "rcf_internal.h"
 #include "comm_agent.h"
+
+#include "agentlib.h"
 #include "rcf_pch.h"
 #include "rcf_ch_api.h"
 #include "logger_ta.h"
@@ -114,6 +119,36 @@ rcf_pch_init_id(const char *port)
     res = snprintf(rcf_pch_id, RCF_PCH_MAX_ID_LEN, "%u_%s", getuid(), port);
     if (res > RCF_PCH_MAX_ID_LEN)
         fprintf(stderr, "RCF session identifier is too long.");
+}
+
+/** See description in rcf_pch_internal.h */
+void
+write_str_in_quotes(char *dst, const char *src, size_t len)
+{
+    char   *p = dst;
+    size_t  i;
+
+    *p++ = ' ';
+    *p++ = '\"';
+    for (i = 0; (*src != '\0') && (i < len); ++i)
+    {
+        /* Encode '\n' also */
+        if (*src == '\n')
+        {
+            *p++ ='\\';
+            *p++ = 'n';
+            src++;
+            continue;
+        }
+
+        if (*src == '\"' || *src == '\\')
+        {
+            *p++ = '\\';
+        }
+        *p++ = *src++;
+    }
+    *p++ = '\"';
+    *p = '\0';
 }
 
 /**
@@ -404,6 +439,34 @@ transmit_log(struct rcf_comm_connection *conn, char *cbuf,
     return rc;
 }
 
+/** Detach from the Test Engine after fork() */
+static void 
+rcf_pch_detach(void)
+{
+    rcf_comm_agent_close(&conn);
+    rcf_pch_rpc_atfork();
+}
+
+static void *pch_vfork_saved_conn;
+
+/** Detach from the Test Engine before vfork() */
+static void 
+rcf_pch_detach_vfork(void)
+{
+    pch_vfork_saved_conn = conn;
+    conn = NULL;
+}
+
+/** Attach to the Test Engine after vfork() in the parent process */
+static void 
+rcf_pch_attach_vfork(void)
+{
+    /* Close connection created after vfork() but before exec(). */
+    rcf_comm_agent_close(&conn);
+    conn = pch_vfork_saved_conn;
+}
+
+
 /**
  * Start Portable Command Handler.
  *
@@ -496,6 +559,12 @@ rcf_pch_run(const char *confstr, const char *info)
         goto communication_problem;
     }
 
+#if defined(HAVE_PTHREAD_ATFORK)
+    pthread_atfork(NULL, NULL, rcf_pch_detach);
+#endif
+    register_vfork_hook(rcf_pch_detach_vfork, rcf_pch_attach_vfork,
+                        rcf_pch_detach);
+
     while (TRUE)
     {
         size_t   len = cmd_buf_len;
@@ -522,7 +591,7 @@ rcf_pch_run(const char *confstr, const char *info)
             {
                 old_cmd[128] = 0;
 
-                PRINT("Failed to allocate enough memory for command <%s>",
+                LOG_PRINT("Failed to allocate enough memory for command <%s>",
                       old_cmd);
                 
                 free(old_cmd);
@@ -536,7 +605,7 @@ rcf_pch_run(const char *confstr, const char *info)
             if ((rc = rcf_comm_agent_wait(conn, cmd + received, 
                                           &tmp, NULL)) != 0)
             {
-                PRINT("Failed to read binary attachment for command <%s>",
+                LOG_PRINT("Failed to read binary attachment for command <%s>",
                       cmd);
                 goto communication_problem;
             }
@@ -1255,14 +1324,14 @@ rcf_pch_run(const char *confstr, const char *info)
 
 communication_problem:
     ERROR("Fatal communication error %r", rc);
-    PRINT("Fatal communication error %s", te_rc_err2str(rc));
+    LOG_PRINT("Fatal communication error %s", te_rc_err2str(rc));
 
 exit:
     rc2 = rcf_ch_tad_shutdown();
     if (rc2 != 0)
     {
         ERROR("Traffic Application Domain shutdown failed: %r", rc2);
-        PRINT("Traffic Application Domain shutdown failed: %s",
+        LOG_PRINT("Traffic Application Domain shutdown failed: %s",
               te_rc_err2str(rc2));
         TE_RC_UPDATE(rc, rc2);
     }
@@ -1277,7 +1346,7 @@ exit:
     free(cmd);
 
     VERB("Exiting");
-    PRINT("Exiting");
+    LOG_PRINT("Exiting: %d", rc);
 
     return rc;
 
@@ -1285,27 +1354,3 @@ exit:
 #undef SEND_ANSWER
 }
 
-/** Detach from the Test Engine after fork() */
-void 
-rcf_pch_detach(void)
-{
-    rcf_comm_agent_close(&conn);
-    rcf_pch_rpc_atfork();
-}
-
-/** Detach from the Test Engine before vfork() */
-void 
-rcf_pch_detach_vfork(void **saved_conn)
-{
-    *saved_conn = conn;
-    conn = NULL;
-}
-
-/** Attach to the Test Engine after vfork() in the parent process */
-void 
-rcf_pch_attach_vfork(void *saved_conn)
-{
-    /* Close connection created after vfork() but before exec(). */
-    rcf_comm_agent_close(&conn);
-    conn = saved_conn;
-}

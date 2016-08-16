@@ -2,7 +2,7 @@
  * @brief TAD Frame
  *
  * Traffic Application Domain Command Handler.
- * Frame layer support description structures. 
+ * Frame layer support description structures.
  *
  * Copyright (C) 2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -41,7 +41,7 @@
 #include "tad_frame_impl.h"
 
 
-static csap_spt_type_t frame_csap_spt = 
+static csap_spt_type_t frame_csap_spt =
 {
     .proto               = "frame",
     .unregister_cb       = NULL,
@@ -73,9 +73,9 @@ static csap_spt_type_t frame_csap_spt =
  * Command Handler.
  *
  * @return Status code.
- */ 
+ */
 te_errno
 csap_support_frame_register(void)
-{ 
+{
     return csap_spt_add(&frame_csap_spt);
 }

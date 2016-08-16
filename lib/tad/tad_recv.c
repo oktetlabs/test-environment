@@ -2,7 +2,7 @@
  * @brief TAD Receiver
  *
  * Traffic Application Domain Command Handler.
- * Receive module. 
+ * Receive module.
  *
  * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -48,8 +48,7 @@
 #include "logger_api.h"
 #include "logger_ta_fast.h"
 #include "rcf_ch_api.h"
-#include "rcf_pch.h"
-#include "ndn.h" 
+#include "ndn.h"
 
 #include "tad_csap_inst.h"
 #include "tad_csap_support.h"
@@ -83,7 +82,7 @@ tad_recv_preprocess_pdus(csap_p csap, const asn_value *ptrn_unit,
     if (data->layer_opaque == NULL)
         return TE_RC(TE_TAD_CH, TE_ENOMEM);
 
-    /* 
+    /*
      * Get sequence of PDUs and preprocess by protocol-specific
      * callbacks
      */
@@ -103,7 +102,7 @@ tad_recv_preprocess_pdus(csap_p csap, const asn_value *ptrn_unit,
 
     /* FIXME: Remove type cast */
     rc = tad_confirm_pdus(csap, TRUE, (asn_value *)nds_pdus,
-                          data->layer_opaque); 
+                          data->layer_opaque);
     if (rc != 0)
     {
         ERROR(CSAP_LOG_FMT "Confirmation of PDUs to send failed: %r",
@@ -137,7 +136,7 @@ tad_recv_preprocess_payload(csap_p csap, const asn_value *ptrn_unit,
      * representation.
      */
     rc = asn_get_child_value(ptrn_unit, &nds_payload,
-                             PRIVATE, NDN_PU_PAYLOAD); 
+                             PRIVATE, NDN_PU_PAYLOAD);
     if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
         VERB(CSAP_LOG_FMT "No payload in pattern unit",
@@ -159,7 +158,7 @@ tad_recv_preprocess_payload(csap_p csap, const asn_value *ptrn_unit,
         ERROR(CSAP_LOG_FMT "Failed to preprocess payload specification: "
               "%r", CSAP_LOG_ARGS(csap), rc);
         return rc;
-    } 
+    }
 
     return 0;
 }
@@ -178,7 +177,7 @@ tad_recv_preprocess_action(const asn_value *nds_action,
 {
     const asn_value *action_ch_val;
     asn_tag_class    t_class;
-    asn_tag_value    t_val; 
+    asn_tag_value    t_val;
     te_errno         rc;
 
     assert(nds_action != NULL);
@@ -186,7 +185,7 @@ tad_recv_preprocess_action(const asn_value *nds_action,
 
     rc = asn_get_choice_value(nds_action, (asn_value **)&action_ch_val,
                               &t_class, &t_val);
-    VERB("%s(): get action choice rc %r, class %d, tag %d", 
+    VERB("%s(): get action choice rc %r, class %d, tag %d",
          __FUNCTION__, rc, (int)t_class, (int)t_val);
     if (rc != 0)
         return rc;
@@ -195,11 +194,11 @@ tad_recv_preprocess_action(const asn_value *nds_action,
 
     switch (t_val)
     {
-        case NDN_ACT_BREAK: 
-        case NDN_ACT_NO_REPORT: 
+        case NDN_ACT_BREAK:
+        case NDN_ACT_NO_REPORT:
             break;
 
-        case NDN_ACT_FUNCTION: 
+        case NDN_ACT_FUNCTION:
         {
             char    buffer[200] = {0,};
             size_t  buf_len = sizeof(buffer);
@@ -226,7 +225,7 @@ tad_recv_preprocess_action(const asn_value *nds_action,
             if (data->function.func == NULL)
             {
                 ERROR("No funcion named '%s' found", buffer);
-                rc = TE_ENOENT; 
+                rc = TE_ENOENT;
             }
             break;
         }
@@ -261,7 +260,7 @@ tad_recv_preprocess_action(const asn_value *nds_action,
             {
                 data->fwd_pld.csap_id = target_csap_id;
             }
-            break; 
+            break;
         }
 
         default:
@@ -308,7 +307,7 @@ tad_recv_preprocess_actions(csap_p csap, const asn_value *ptrn_unit,
         return rc;
     }
 
-    tmp = asn_get_length(nds_actions, ""); 
+    tmp = asn_get_length(nds_actions, "");
     if (tmp < 0)
     {
         ERROR(CSAP_LOG_FMT "Failed to get length of actions "
@@ -328,7 +327,7 @@ tad_recv_preprocess_actions(csap_p csap, const asn_value *ptrn_unit,
         return TE_RC(TE_TAD_CH, TE_ENOMEM);
 
     for (i = 0; i < data->n_actions; ++i)
-    { 
+    {
         const asn_value *nds_action;
 
         /* FIXME: Avoid type cast */
@@ -538,7 +537,7 @@ tad_recv_init_context(tad_recv_context *context)
 
 /* See description in tad_recv.h */
 te_errno
-tad_recv_prepare(csap_p csap, asn_value *pattern, unsigned int num, 
+tad_recv_prepare(csap_p csap, asn_value *pattern, unsigned int num,
                  unsigned int timeout, rcf_comm_connection *rcfc,
                  const char *answer_pfx, size_t pfx_len)
 {
@@ -556,7 +555,7 @@ tad_recv_prepare(csap_p csap, asn_value *pattern, unsigned int num,
     my_ctx->match_pkts = my_ctx->got_pkts = 0;
 
     if (timeout == TAD_TIMEOUT_INF)
-    { 
+    {
         memset(&csap->wait_for, 0, sizeof(struct timeval));
     }
     else
@@ -674,15 +673,15 @@ tad_recv_do_action(csap_p csap, tad_action_spec *action_spec,
 
     switch (action_spec->type)
     {
-        case NDN_ACT_BREAK: 
+        case NDN_ACT_BREAK:
             csap->state |= CSAP_STATE_COMPLETE;
             break;
 
-        case NDN_ACT_NO_REPORT: 
+        case NDN_ACT_NO_REPORT:
             /* do nothing: processed on higher layers. */
             break;
 
-        case NDN_ACT_FUNCTION: 
+        case NDN_ACT_FUNCTION:
             if (tad_pkts_get_num(low_pkts) == 1)
             {
                 uint8_t    *raw_pkt = NULL;
@@ -713,7 +712,7 @@ tad_recv_do_action(csap_p csap, tad_action_spec *action_spec,
             else
             {
                 WARN("Unsupported number %u of the lowest layer "
-                     "packets in 'function' action", 
+                     "packets in 'function' action",
                      tad_pkts_get_num(low_pkts));
                 /* Don't want to stop receiver */
             }
@@ -752,8 +751,8 @@ tad_recv_do_action(csap_p csap, tad_action_spec *action_spec,
                          action_spec->fwd_pld.csap_id);
                     /* Don't want to stop receiver */
                 }
-            } 
-            break; 
+            }
+            break;
         }
 
         default:
@@ -784,7 +783,7 @@ tad_recv_do_actions(csap_p csap, unsigned int n_actions,
     unsigned int    i;
 
     for (i = 0; i < n_actions; ++i)
-    { 
+    {
         rc = tad_recv_do_action(csap, action_specs + i,
                                 low_pkts, payload);
         if (rc != 0)
@@ -878,12 +877,12 @@ tad_recv_match_with_unit(csap_p csap, tad_recv_ptrn_unit_data *unit_data,
 
     /* Match layer by layer */
     do {
-        csap_spt_type_p  csap_spt_descr; 
-        const asn_value *layer_pdu = NULL; 
+        csap_spt_type_p  csap_spt_descr;
+        const asn_value *layer_pdu = NULL;
 
         sprintf(label + sizeof("pdus") - 1, ".%d.#%s",
                 layer, csap->layers[layer].proto);
-        rc = asn_get_descendent(pattern_unit, (asn_value **)&layer_pdu, 
+        rc = asn_get_descendent(pattern_unit, (asn_value **)&layer_pdu,
                                 label);
         if (rc != 0)
         {
@@ -899,7 +898,7 @@ tad_recv_match_with_unit(csap_p csap, tad_recv_ptrn_unit_data *unit_data,
                   tad_pkts_first_pkt(&meta_pkt->layers[layer - 1].pkts);
         assert(sdu != NULL);
 
-        rc = csap_spt_descr->match_do_cb(csap, layer, layer_pdu, 
+        rc = csap_spt_descr->match_do_cb(csap, layer, layer_pdu,
                                          unit_data->layer_opaque[layer],
                                          meta_pkt, pdu, sdu);
         VERB("match cb 0x%x for layer %u sdu_len=%u returned %r",
@@ -920,8 +919,8 @@ tad_recv_match_with_unit(csap_p csap, tad_recv_ptrn_unit_data *unit_data,
     }
 
     /* Do action, if it presents. */
-    if (rc == 0 && unit_data->n_actions > 0) 
-    { 
+    if (rc == 0 && unit_data->n_actions > 0)
+    {
         rc = tad_recv_do_actions(csap, unit_data->n_actions,
                                  unit_data->actions,
                                  &meta_pkt->layers[csap->depth - 1].pkts,
@@ -930,7 +929,7 @@ tad_recv_match_with_unit(csap_p csap, tad_recv_ptrn_unit_data *unit_data,
         VERB("%s(): do_actions: %r", __FUNCTION__, rc);
     }
 
-    return rc; 
+    return rc;
 }
 
 /**
@@ -976,19 +975,19 @@ tad_recv_match(csap_p csap, tad_recv_pattern_data *ptrn_data,
                 assert(no_report != NULL);
                 *no_report = ptrn_data->units[unit].no_report;
             case TE_ETADLESSDATA:
-                F_VERB(CSAP_LOG_FMT "Match packet with unit #%u - %r", 
+                F_VERB(CSAP_LOG_FMT "Match packet with unit #%u - %r",
                        CSAP_LOG_ARGS(csap), unit, rc);
                 /* Meta-packet with received data is owned */
                 return rc;
 
             case TE_ETADNOTMATCH:
-                F_VERB(CSAP_LOG_FMT "Match packet with unit #%u - %r", 
+                F_VERB(CSAP_LOG_FMT "Match packet with unit #%u - %r",
                        CSAP_LOG_ARGS(csap), unit, rc);
                 /* Nothing is owned by match routine */
                 tad_recv_pkt_cleanup_upper(csap, meta_pkt);
                 continue;
 
-            default: 
+            default:
                 ERROR(CSAP_LOG_FMT "Match with pattern unit #%u failed: "
                       "%r", CSAP_LOG_ARGS(csap), unit, rc);
                 break;
@@ -1018,7 +1017,7 @@ tad_recv_pkt_enqueue(csap_p csap, tad_recv_pkts *pkts, tad_recv_pkt *pkt)
     if ((ret = pthread_cond_broadcast(&csap->event)) != 0)
     {
         te_errno rc = TE_OS_RC(TE_TAD_CH, ret);
-        
+
         assert(rc != 0);
         ERROR(CSAP_LOG_FMT "Failed to broadcast CSAP event - received "
               "packet: %r - ignore", CSAP_LOG_ARGS(csap), rc);
@@ -1089,8 +1088,8 @@ tad_recv_thread(void *arg)
             goto exit;
     }
 
-    /* 
-     * Allocate Receiver packet to avoid extra memory allocation on 
+    /*
+     * Allocate Receiver packet to avoid extra memory allocation on
      * failed match path.
      */
     if ((meta_pkt = tad_recv_pkt_alloc(csap)) == NULL)
@@ -1170,7 +1169,7 @@ tad_recv_thread(void *arg)
         assert(pkt != NULL);
 
         /* Read one packet from media */
-        rc = read_cb(csap, timeout, pkt, &read_len); 
+        rc = read_cb(csap, timeout, pkt, &read_len);
         gettimeofday(&meta_pkt->ts, NULL);
         F_VERB(CSAP_LOG_FMT "read callback returned len=%u: %r",
                CSAP_LOG_ARGS(csap), (unsigned)read_len, rc);
@@ -1211,7 +1210,7 @@ tad_recv_thread(void *arg)
             /* Receiver meta packet is owned by match */
             meta_pkt = NULL;
 
-            /* 
+            /*
              * Packet can match, if more data is available. Therefore,
              * don't want to stop because of timeout, at least continue
              * to poll with zero timeout.
@@ -1234,12 +1233,12 @@ tad_recv_thread(void *arg)
         context->match_pkts++;
 
         if ((csap->state & CSAP_STATE_RESULTS) && !no_report)
-        { 
+        {
             F_VERB(CSAP_LOG_FMT "put packet into the queue",
                    CSAP_LOG_ARGS(csap));
             tad_recv_pkt_enqueue(csap, &context->packets, meta_pkt);
             meta_pkt = NULL;
-        } 
+        }
         else
         {
             no_report = FALSE;
@@ -1252,7 +1251,7 @@ tad_recv_thread(void *arg)
         {
             assert(context->match_pkts == context->wait_pkts);
             INFO(CSAP_LOG_FMT "received all packets",
-                 CSAP_LOG_ARGS(csap)); 
+                 CSAP_LOG_ARGS(csap));
             assert(rc == 0);
             break;
         }
@@ -1261,7 +1260,7 @@ tad_recv_thread(void *arg)
 exit:
     context->status = rc;
 
-    /* 
+    /*
      * Shutdown receiver and release resources allocated during pattern
      * preprocessing.
      */
@@ -1273,13 +1272,13 @@ exit:
     INFO(CSAP_LOG_FMT "receive process finished, %u packets match: %r",
          CSAP_LOG_ARGS(csap), context->match_pkts, context->status);
 
-    /* 
+    /*
      * Log exit before DONE command on the CSAP, since it can be
      * destroyed just after the command.
      */
     F_EXIT(CSAP_LOG_FMT, CSAP_LOG_ARGS(csap));
 
-    /* 
+    /*
      * Notify that operation has been finished. CSAP can't be used
      * in this context after the command, since it can already be
      * destroyed.
@@ -1308,12 +1307,12 @@ exit:
  * @return Status code.
  */
 static te_errno
-tad_recv_report_packet(const asn_value *packet, rcf_comm_connection *rcfc, 
-                       const char *answer_buffer, size_t ans_len) 
+tad_recv_report_packet(const asn_value *packet, rcf_comm_connection *rcfc,
+                       const char *answer_buffer, size_t ans_len)
 {
-/* 
+/*
  * It is an upper estimation for "attach" and decimal presentation
- * of attach length.  
+ * of attach length.
  */
 #define EXTRA_BUF_SPACE     20
 
@@ -1354,7 +1353,7 @@ tad_recv_report_packet(const asn_value *packet, rcf_comm_connection *rcfc,
               __FUNCTION__, (unsigned)(attach_len - 1), attach_rlen);
         free(buffer);
         return TE_EFAULT;
-    } 
+    }
 
     RCF_CH_SAFE_LOCK;
     rc = rcf_comm_agent_reply(rcfc, buffer, cmd_len + attach_len);
@@ -1457,7 +1456,7 @@ tad_recv_get_packets(csap_p csap, tad_task_context *task, te_bool wait,
                 rc = csap_get_proto_support(csap, layer)->match_post_cb(
                          csap, layer, pkt->layers + layer);
                 if (rc != 0)
-                    ERROR("match_post_cb: CSAP %d, layer %d, %r", 
+                    ERROR("match_post_cb: CSAP %d, layer %d, %r",
                             csap->id, layer, rc);
             }
 
@@ -1481,7 +1480,7 @@ tad_recv_get_packets(csap_p csap, tad_task_context *task, te_bool wait,
             }
             else
             {
-                rc = asn_write_value_field(pkt->nds, payload, payload_len, 
+                rc = asn_write_value_field(pkt->nds, payload, payload_len,
                                            "payload.#bytes");
                 if (rc != 0)
                 {
@@ -1555,14 +1554,14 @@ tad_recv_op(csap_p csap, tad_recv_op_context *op_context)
             rc = csap_wait(csap, CSAP_STATE_DONE);
         }
 
-        /* 
+        /*
          * Nobody can modify got_pkts at the time and match_pkts can
          * grow only, so do calculations without lock.
          */
         got = recv_context->match_pkts - recv_context->got_pkts;
     }
 
-    /* 
+    /*
      * Nobody can modify got_pkts at the time and match_pkts can
      * grow only, so do increment and assert without lock.
      */
@@ -1578,7 +1577,7 @@ tad_recv_op(csap_p csap, tad_recv_op_context *op_context)
 
         (void)csap_command(csap, TAD_OP_IDLE);
 
-        /* 
+        /*
          * In the case of wait/stop requests total number of matched
          * packets should be reported.
          */
@@ -1598,7 +1597,7 @@ tad_recv_op(csap_p csap, tad_recv_op_context *op_context)
     INFO(CSAP_LOG_FMT "Traffic receive op %u finished: rc=%r, got=%u",
          CSAP_LOG_ARGS(csap), op_context->op, rc, got);
 
-    /* 
+    /*
      * We have no more chance to report an error (logged of course),
      * just ignore it.
      */
@@ -1625,10 +1624,10 @@ tad_recv_op_free(tad_recv_op_context *context)
  * Start routine for stop/wait/get receive operation.
  * It forwards received packets to test.
  *
- * @param arg           Start argument, should be pointer to 
+ * @param arg           Start argument, should be pointer to
  *                      CSAP structure
  *
- * @return NULL 
+ * @return NULL
  */
 static void *
 tad_recv_op_thread(void *arg)
@@ -1662,7 +1661,7 @@ tad_recv_op_thread(void *arg)
         if ((ret = pthread_cond_broadcast(&csap->event)) != 0)
         {
             te_errno rc = TE_OS_RC(TE_TAD_CH, ret);
-            
+
             assert(rc != 0);
             ERROR(CSAP_LOG_FMT "Failed to broadcast CSAP event on "
                   "reference decrement: %r - ignore",
@@ -1670,7 +1669,7 @@ tad_recv_op_thread(void *arg)
         }
     }
 
-    /* 
+    /*
      * Log exit under CSAP lock, since CSAP can be destroyed just after
      * unlocking.
      */
@@ -1728,7 +1727,7 @@ tad_recv_op_enqueue(csap_p csap, tad_traffic_op_t op,
         }
     }
 
-    /* 
+    /*
      * Do not unlock CSAP before send of ACK, since unlocking allows
      * thread to process request and it can be finished very fast
      * (final reply is sent and task context freed).
@@ -1745,7 +1744,7 @@ tad_recv_op_enqueue(csap_p csap, tad_traffic_op_t op,
         CSAP_UNLOCK(csap);
         if (rc != 0)
         {
-            /* 
+            /*
              * In general, nothing can help, error has already been
              * logged. Operation is enqueue and it will try to send
              * final answer at the end of processing, so do not forward

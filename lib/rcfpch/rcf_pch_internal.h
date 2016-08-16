@@ -42,10 +42,6 @@
 #include "rcf_ch_api.h"
 #include "logger_api.h"
 
-
-#define PRINT(msg...) \
-    do { printf(msg); printf("\n"); fflush(stdout); } while (0)
-
 /** Size of the log data sent in one request */
 #define RCF_PCH_LOG_BULK        8192
 
@@ -110,35 +106,7 @@ extern "C" {
  * @param src     string to be written to
  * @param len     maximum number of symbols to be copied
  */
-static inline void
-write_str_in_quotes(char *dst, const char *src, size_t len)
-{
-    char   *p = dst;
-    size_t  i;
-
-    *p++ = ' ';
-    *p++ = '\"';
-    for (i = 0; (*src != '\0') && (i < len); ++i)
-    {
-        /* Encode '\n' also */
-        if (*src == '\n')
-        {
-            *p++ ='\\';
-            *p++ = 'n';
-            src++;
-            continue;
-        }
-
-        if (*src == '\"' || *src == '\\')
-        {
-            *p++ = '\\';
-        }
-        *p++ = *src++;
-    }
-    *p++ = '\"';
-    *p = '\0';
-}
-
+extern void write_str_in_quotes(char *dst, const char *src, size_t len);
 
 /*
  * When ANSI C compiler mode is enabled, the following functions are
@@ -150,6 +118,77 @@ write_str_in_quotes(char *dst, const char *src, size_t len)
 extern char *strdup(const char *s);
 extern long long int strtoll(const char *nptr, char **endptr, int base);
 #endif
+
+/** Data corresponding to one RPC server */
+struct rpcserver;
+
+/** Data corresponding to one RPC server plugin */
+struct rpcserver_plugin;
+
+/** Function definition which helps to call the RPC functions */
+typedef int (*rcf_pch_rpc_call)(
+        struct rpcserver *rpcs, char *name, void *in, void *out);
+
+/**
+ * Find the RPC server with specified @p name.
+ *
+ * @param name  The name of RPC server
+ *
+ * @return  RPC server handle or @c NULL
+ */
+extern struct rpcserver *rcf_pch_find_rpcserver(const char *name);
+
+/**
+ * Get the first element of RPC server list.
+ *
+ * @return  the first RPC server from list of RPC servers
+ */
+extern struct rpcserver *rcf_pch_rpcserver_first(void);
+
+/**
+ * Get the next element of RPC server list from current RPC server.
+ *
+ * @param rpcs  current RPC server
+ *
+ * @return      the next RPC server from current RPC server or @c NULL
+ */
+extern struct rpcserver *rcf_pch_rpcserver_next(struct rpcserver *rpcs);
+
+/**
+ * Get the name of RPC server.
+ *
+ * @param rpcs  RPC server
+ *
+ * @return      the name of RPC server
+ */
+extern const char *rcf_pch_rpcserver_get_name(const struct rpcserver *rpcs);
+
+/**
+ * Add the node rpcserver_plugin in configuration tree,
+ * initialize the mutex and the RPC call.
+ *
+ * @param rcf_pch_lock  Lock for protect RPC servers and plugins list
+ * @param rcf_pch_call  Function which helps to call the RPC functions
+ */
+extern void rcf_pch_rpcserver_plugin_init(
+        pthread_mutex_t *rcf_pch_lock,
+        rcf_pch_rpc_call rcf_pch_call);
+
+/**
+ * Find the RPC server plugin corresponding to RPC server @p rcps and
+ * enable it.
+ *
+ * @param rpcs      RPC server
+ */
+extern void rcf_pch_rpcserver_plugin_enable(struct rpcserver *rpcs);
+
+/**
+ * Find the RPC server plugin corresponding to RPC server @p rcps and
+ * disable it.
+ *
+ * @param rpcs      RPC server
+ */
+extern void rcf_pch_rpcserver_plugin_disable(struct rpcserver *rpcs);
 
 #ifdef __cplusplus
 } /* extern "C" */

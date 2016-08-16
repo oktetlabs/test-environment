@@ -10,8 +10,8 @@
 #define __USE_UNIX98
 #endif
 
-#include "te_config.h" 
-#include "config.h" 
+#include "te_config.h"
+#include "config.h"
 
 #define TE_LGR_USER "TE Forw/SendQ"
 
@@ -46,25 +46,25 @@ typedef enum {
     TADF_SYNC_MSG_TYPE_EXIT,        /**< Terminates the sending thread */
 } tadf_sync_msg_t;
 
-/** 
+/**
  * Sendq list. It contains pointers to all send queues. When somebody
  * wants to create a new sendq, we choose first free place
- * (sendq_list[place] == NULL) in the sendq_list and put pointer to the 
- * created sendq there. 
+ * (sendq_list[place] == NULL) in the sendq_list and put pointer to the
+ * created sendq there.
  */
 static sendq_t         *sendq_list[TADF_SENDQ_LIST_SIZE_MAX];
 
 /** As the sendq_list is a shared resource there should be a mutex lock */
 static pthread_mutex_t  sendq_list_lock;
 
-/** 
+/**
  * The macro determines what time is later
  */
 #define MAX_TV(ts1, ts2) \
     ((timeval_compare(ts1, ts2) == 1) ? ts1 : ts2)
 
 /**
- * Inserts the entry to the send queue due to it's send_time 
+ * Inserts the entry to the send queue due to it's send_time
  *
  * @param queue     The queue to insert entry in.
  * @param entry     Pointer to the filled entry which should be inserter.
@@ -72,16 +72,16 @@ static pthread_mutex_t  sendq_list_lock;
  * @return          0 - if the function ends correctly
  *                  ENOBUFS - if the buffer is full
  */
-static inline int 
+static inline int
 tadf_sendq_entry_insert(sendq_t *queue, sendq_entry_t *entry)
 {
     sendq_entry_t *current;
-    
+
     pthread_mutex_lock(&queue->sendq_lock);
     current = queue->head;
-    
+
     VERB("SendQ %d (csap %d), Adding a packet: sendq size = %d, "
-         "sendq max size = %d", 
+         "sendq max size = %d",
          queue->id, queue->csap->id,
          queue->queue_size, queue->queue_size_max);
     /* if the sendq is full then we simply exit */
@@ -90,12 +90,12 @@ tadf_sendq_entry_insert(sendq_t *queue, sendq_entry_t *entry)
         pthread_mutex_unlock(&queue->sendq_lock);
         return TE_RC(TE_TA_EXT, TE_ENOBUFS);
     }
-    
+
     entry->next = NULL;
     entry->prev = NULL;
-    
+
     queue->queue_size++;
-    
+
     /* The sendq is empty */
     if (current == NULL)
     {
@@ -112,8 +112,8 @@ tadf_sendq_entry_insert(sendq_t *queue, sendq_entry_t *entry)
         goto finish;
     }
     current = current->next;
-    
-    while ((current != NULL) && 
+
+    while ((current != NULL) &&
            (timeval_compare(entry->send_time, current->send_time) == -1))
         current = current->next;
 
@@ -122,7 +122,7 @@ tadf_sendq_entry_insert(sendq_t *queue, sendq_entry_t *entry)
         entry->prev = queue->tail;
         queue->tail->next = entry;
         queue->tail = entry;
-    } 
+    }
     else
     {
         (current->prev)->next = entry;
@@ -139,16 +139,16 @@ finish:
 /**
  * Removes given entry from the send queue.
  *
- * @param queue     The send queue to remove entry from 
- * @param entry     The entry to remove from the queue 
+ * @param queue     The send queue to remove entry from
+ * @param entry     The entry to remove from the queue
  *
  * @return          0 - if the pointer was not NULL
  *                  TE_EWRONGPTR - otherwise
  */
-static inline int 
+static inline int
 tadf_sendq_entry_remove(sendq_t *queue, sendq_entry_t  *entry)
 {
-    
+
     pthread_mutex_lock(&queue->sendq_lock);
 
     if ((entry == NULL) || (entry->pkt == NULL))
@@ -157,7 +157,7 @@ tadf_sendq_entry_remove(sendq_t *queue, sendq_entry_t  *entry)
         pthread_mutex_unlock(&queue->sendq_lock);
         return TE_RC(TE_TA_EXT, TE_EWRONGPTR);
     }
-    
+
     if (entry->prev != NULL)
         (entry->prev)->next = entry->next;
     else
@@ -166,7 +166,7 @@ tadf_sendq_entry_remove(sendq_t *queue, sendq_entry_t  *entry)
         (entry->next)->prev = entry->prev;
     else
         queue->tail = entry->prev;
- 
+
     queue->queue_size--;
     free(entry->pkt);
     free(entry);
@@ -190,7 +190,7 @@ tadf_sendq_entry_remove(sendq_t *queue, sendq_entry_t  *entry)
  *                        is found
  *                    TE_EINVAL - if there was no such entry
  */
-static inline int 
+static inline int
 tadf_sendq_entry_find(sendq_t *queue,
                       sendq_entry_t **entry,
                       struct timeval *send_time)
@@ -224,7 +224,7 @@ tadf_sendq_entry_find(sendq_t *queue,
  * 3) sending thread of the send queue
  * 4) sync pipe
  *
- * @param queue       Location for pointer to the initalised queue 
+ * @param queue       Location for pointer to the initalised queue
  *                    structure (OUT)
  * @param csap        Pointer to the descriptor of destination CSAP
  * @param bandwidth   Required Send Queue bandwidth
@@ -233,13 +233,13 @@ tadf_sendq_entry_find(sendq_t *queue,
  * @return             0 - if the function ends correctly
  *                    errno - otherwise
  */
-int 
+int
 tadf_sendq_init(sendq_t **queue, csap_p csap, int bandwidth, int size_max)
 {
     sendq_t *sendq = NULL;
     int      rc;
     static   pthread_mutex_t lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
-    
+
     sendq = calloc(1, sizeof(sendq_t));
 
     if (sendq == NULL)
@@ -252,12 +252,12 @@ tadf_sendq_init(sendq_t **queue, csap_p csap, int bandwidth, int size_max)
     sendq->queue_size_max = size_max;
     sendq->queue_size = 0;
     sendq->queue_bandwidth = bandwidth;
-    
+
     sendq->sendq_lock = lock;
-    
-    /* 
-     * Sync channel init, sendq_sync_sockets[0] - for writing, 
-     * sendq_sync_sockets[1] 
+
+    /*
+     * Sync channel init, sendq_sync_sockets[0] - for writing,
+     * sendq_sync_sockets[1]
      */
     rc = socketpair(AF_LOCAL, SOCK_STREAM, 0, sendq->sendq_sync_sockets);
     if (rc != 0)
@@ -267,7 +267,7 @@ tadf_sendq_init(sendq_t **queue, csap_p csap, int bandwidth, int size_max)
     }
 
     /* Sending thread creation */
-    rc = pthread_create(&sendq->send_thread, NULL, 
+    rc = pthread_create(&sendq->send_thread, NULL,
                         &tadf_sendq_send_thread_main, sendq);
     if (rc != 0)
     {
@@ -285,22 +285,22 @@ error:
 
 /**
  * This function destroyes the send queue and all related objects.
- * 
+ *
  * @param sendq        The send queue to be destroyed.
  *
  * @return              0 - if the function ends correctly
  *                     errno - otherwise
  */
-int 
+int
 tadf_sendq_free(sendq_t *sendq)
 {
     int      rc = -1;
     void    *thread_rc = NULL;
     uint8_t  msg_type = TADF_SYNC_MSG_TYPE_EXIT;
-    
+
     sendq_entry_t *current = sendq->head;
     sendq_entry_t *next;
-    
+
     rc = write(sendq->sendq_sync_sockets[0], &msg_type, sizeof(msg_type));
     if (rc == -1)
     {
@@ -311,14 +311,14 @@ tadf_sendq_free(sendq_t *sendq)
     pthread_join(sendq->send_thread, &thread_rc);
     if (thread_rc == NULL)
         ERROR("The send thread of the send queue failed to exit correctly");
-    
+
     /* Closing the socket connection */
     if (close(sendq->sendq_sync_sockets[0]) < 0)
         ERROR("Failed to close socket connection  of the send queue");
 
     if (close(sendq->sendq_sync_sockets[1]) < 0)
         ERROR("Failed to close socket connection  of the send queue");
-    
+
     /* Removing the sendq entries */
     while (current != NULL)
     {
@@ -326,7 +326,7 @@ tadf_sendq_free(sendq_t *sendq)
         tadf_sendq_entry_remove(sendq, current);
         current = next;
     }
-    
+
     /* Destroing the mutex lock */
     if (pthread_mutex_destroy(&sendq->sendq_lock) != 0)
         ERROR("Failed to destroy mutex lock in the send queue");
@@ -348,7 +348,7 @@ tadf_sendq_free(sendq_t *sendq)
  * @return                0 - if the packet was inserted correctly
  *                       errno - otherwise
  */
-int 
+int
 tadf_sendq_put_pkt(sendq_t *queue,
                    const uint8_t *pkt,
                    const size_t pkt_len,
@@ -385,16 +385,16 @@ tadf_sendq_put_pkt(sendq_t *queue,
         goto error;
     }
 
-    /* 
+    /*
      * If we inserter the packet to the top of the send queue, the function
-     * informs  sending thread via send queue sync pipe. 
+     * informs  sending thread via send queue sync pipe.
      */
     if (entry->next == NULL)
     {
         pthread_mutex_unlock(&queue->sendq_lock);
-        rc = write(queue->sendq_sync_sockets[0], &msg_type, 
+        rc = write(queue->sendq_sync_sockets[0], &msg_type,
                    sizeof(msg_type));
-        VERB("Sending sync message to the main sending thread, rc = %d", 
+        VERB("Sending sync message to the main sending thread, rc = %d",
              rc);
         if (rc < 0)
         {
@@ -405,7 +405,7 @@ tadf_sendq_put_pkt(sendq_t *queue,
     }
     pthread_mutex_unlock(&queue->sendq_lock);
     return 0;
-error: 
+error:
     free(entry->pkt);
     free(entry);
     return TE_RC(TE_TA_EXT, rc);
@@ -414,7 +414,7 @@ error:
 /**
  * Gets the parameter of the send queue due to parameter name.
  *
- * @param sendq_id        The ID of the queue the parameter of which 
+ * @param sendq_id        The ID of the queue the parameter of which
  *                        should be
  *                        outputed.
  * @param param_spec      The name of the parameter in human-readable form.
@@ -455,15 +455,15 @@ tadf_sendq_get_param(int sendq_id,
  * Sets the parameter of the send queue due to parameter name and
  * new value.
  *
- * @param sendq_id        The ID of the queue the parameter of which 
+ * @param sendq_id        The ID of the queue the parameter of which
  *                        should be changed.
  * @param param_spec      The name of the parameter in human-readable form.
- * @param value           New value of the parameter.* 
- * 
+ * @param value           New value of the parameter.*
+ *
  * @return                0 - if the function ends correctly
  *                        TE_EINVAL - if there is no such parameter
  */
-int 
+int
 tadf_sendq_set_param(int sendq_id,
                      const char *param_spec, int value)
 {
@@ -486,7 +486,7 @@ tadf_sendq_set_param(int sendq_id,
     }
     else if (strncmp("bandwidth", param_spec, strlen("bandwidth")) == 0)
     {
-        VERB("Bandwidth of the sendq with ID %d changed to %d", 
+        VERB("Bandwidth of the sendq with ID %d changed to %d",
              sendq_id, value);
         queue->queue_bandwidth = value;
     } else
@@ -500,7 +500,7 @@ tadf_sendq_set_param(int sendq_id,
 }
 
 /** Fake function to free segment data - does nothing */
-static void 
+static void
 tadf_seg_free_fake(void *ptr, size_t len)
 {
     UNUSED(ptr);
@@ -508,13 +508,13 @@ tadf_seg_free_fake(void *ptr, size_t len)
 }
 
 /** Fake function to free segment control - does nothing */
-static void 
+static void
 tadf_pkt_ctrl_free_fake(void *ptr)
 {
     UNUSED(ptr);
 }
 
-/** 
+/**
  * Send a packet from the queue tail.
  *
  * @param sendq         queue to send packet from
@@ -526,18 +526,18 @@ tadf_send_pkt(sendq_t *sendq)
 {
      tad_pkt     pkt;
      tad_pkt_seg seg;
-     
+
      memset(&pkt, 0, sizeof(pkt));
      pkt.my_free = tadf_pkt_ctrl_free_fake;
      tad_pkt_init_segs(&pkt);
-     
+
      memset(&seg, 0, sizeof(seg));
      seg.my_free = tadf_pkt_ctrl_free_fake;
-     tad_pkt_init_seg_data(&seg, sendq->tail->pkt, 
+     tad_pkt_init_seg_data(&seg, sendq->tail->pkt,
                            sendq->tail->pkt_len, tadf_seg_free_fake);
 
      tad_pkt_append_seg(&pkt, &seg);
-     
+
      return sendq->csap->layers[csap_get_rw_layer(sendq->csap)].
                 proto_support->write_cb(sendq->csap, &pkt);
 }
@@ -582,7 +582,7 @@ tadf_sendq_send_thread_main(void *queue)
                  sendq->id, sendq->csap->id);
             /*
              * We should check, if we can send packets now due to
-             * the bandwidth parameter 
+             * the bandwidth parameter
              */
             if (timeval_compare(sendq->bandwidth_ts, curr_time) > 0)
             {
@@ -654,11 +654,11 @@ tadf_sendq_send_thread_main(void *queue)
                     return NULL;
                 }
                 F_VERB("SendQ %d (csap %d), csap write cb return %d "
-                       "for pkt with len %d", 
+                       "for pkt with len %d",
                        sendq->id, sendq->csap->id,
                        rc, tail->pkt_len);
                 F_VERB("SendQ %d (csap %d), Packet sent: %d, %d , "
-                       "sendq size = %d\n", 
+                       "sendq size = %d\n",
                        sendq->id, sendq->csap->id,
                        tail->send_time.tv_sec, tail->send_time.tv_usec,
                        sendq->queue_size);
@@ -787,7 +787,7 @@ tadf_sendq_list_create(void)
  * @param bandwidth   Required Send Queue bandwidth
  * @param size_max    Required Send Queue buffer size
  *
- * @return          ID of the created sendq if the function ends correctly, 
+ * @return          ID of the created sendq if the function ends correctly,
  *                  or -1 on error
  */
 int
@@ -796,7 +796,7 @@ tadf_sendq_create(csap_handle_t csap_id, int bandwidth, int size_max)
     int      sendq_id = 0;
     int      rc;
     sendq_t *sendq;
-    
+
     csap_p   csap = csap_find(csap_id);
 
     if (csap == NULL)
@@ -822,7 +822,7 @@ tadf_sendq_create(csap_handle_t csap_id, int bandwidth, int size_max)
     while (sendq_id < TADF_SENDQ_LIST_SIZE_MAX &&
            sendq_list[sendq_id] != NULL)
         sendq_id++;
-    
+
     if (sendq_id == TADF_SENDQ_LIST_SIZE_MAX)
         return -1;
 
@@ -834,7 +834,7 @@ tadf_sendq_create(csap_handle_t csap_id, int bandwidth, int size_max)
         ERROR("Failed to init sendq, rc %X", rc);
         return -1;
     }
-    
+
     sendq_list[sendq_id] = sendq;
     sendq->id = sendq_id;
     pthread_mutex_unlock(&sendq_list_lock);
@@ -876,7 +876,7 @@ int
 tadf_sendq_destroy(int sendq_id)
 {
     sendq_t *sendq;
-    
+
     pthread_mutex_lock(&sendq_list_lock);
     /* Find sendq due to the sendq_id */
     sendq = tadf_sendq_find(sendq_id);
@@ -886,16 +886,16 @@ tadf_sendq_destroy(int sendq_id)
         pthread_mutex_unlock(&sendq_list_lock);
         return TE_RC(TE_TA_EXT, TE_EINVAL);
     }
-    
+
     /* Removing sendq related objects */
     tadf_sendq_free(sendq);
-    
-    /* 
+
+    /*
      * Sendq_list[sendq_id] should be set to NULL, that means that now that
-     * id is free for use 
+     * id is free for use
      */
     sendq_list[sendq_id] = NULL;
-    
+
     pthread_mutex_unlock(&sendq_list_lock);
     return 0;
 }
@@ -911,15 +911,15 @@ int
 tadf_sendq_list_destroy(void)
 {
     int rc;
-    
+
     if ((rc = tadf_sendq_list_clear()) != 0)
     {
         WARN("Failed to destroy sendq list");
         return TE_RC(TE_TA_EXT, rc);
     }
-    
+
     pthread_mutex_destroy(&sendq_list_lock);
-    
+
     return 0;
 }
 
@@ -934,7 +934,7 @@ tadf_sendq_list_clear(void)
 {
     int i;
     int rc;
-    
+
     for (i = 0; i < TADF_SENDQ_LIST_SIZE_MAX; i++)
     {
         if (sendq_list[i] != NULL)

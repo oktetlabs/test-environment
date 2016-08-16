@@ -35,7 +35,7 @@
 #endif
 
 #if HAVE_UNISTD_H
-#include <unistd.h> 
+#include <unistd.h>
 #endif
 
 #include <string.h>
@@ -45,12 +45,11 @@
 #include "logger_ta_fast.h"
 #include "comm_agent.h"
 #include "rcf_ch_api.h"
-#include "rcf_pch.h"
 #include "te_defs.h"
 
 #ifndef TAD_DUMMY
 
-#include "ndn.h" 
+#include "ndn.h"
 
 #include "tad_types.h"
 #include "csap_id.h"
@@ -109,7 +108,7 @@ rcf_ch_tad_init(void)
      * unsed, by shutdown routine.
      */
     tad_is_initialized = TRUE;
-    
+
 #ifdef TAD_DUMMY
 
     return TE_RC(TE_TAD_CH, TE_ENOSYS);
@@ -137,7 +136,7 @@ rcf_ch_tad_init(void)
 #ifdef WITH_ETH
     extern te_errno csap_support_eth_register(void);
     CHECK_RC(csap_support_eth_register());
-#endif 
+#endif
 #ifdef WITH_ARP
     extern te_errno csap_support_arp_register(void);
     CHECK_RC(csap_support_arp_register());
@@ -190,7 +189,7 @@ rcf_ch_tad_init(void)
 #undef CHECK_RC
 
     return 0;
-    
+
 #endif /* !TAD_DUMMY */
 }
 
@@ -206,7 +205,7 @@ rcf_ch_tad_shutdown(void)
     /* The function continues shutdown even in the case of failures */
     tad_is_initialized = FALSE;
 
-#ifndef TAD_DUMMY 
+#ifndef TAD_DUMMY
     tad_agent_csap_fini();
     csap_spt_destroy();
     csap_id_destroy();
@@ -215,18 +214,18 @@ rcf_ch_tad_shutdown(void)
     return rc;
 }
 
-#ifndef TAD_DUMMY 
+#ifndef TAD_DUMMY
 
 /**
  * Safe compare two strings. Almost equivalent to standard "strcmp", but
- * correct work if one or both arguments are NULL. 
- * If both arguments are empty strings or NULL (in any combination), they 
- * are considered as equal and zero is returned. 
+ * correct work if one or both arguments are NULL.
+ * If both arguments are empty strings or NULL (in any combination), they
+ * are considered as equal and zero is returned.
  *
  * @param l        first string
  * @param r        second string
  *
- * @return same value as strcmp. 
+ * @return same value as strcmp.
  */
 static inline int
 strcmp_imp(const char *l, const char *r)
@@ -235,9 +234,9 @@ strcmp_imp(const char *l, const char *r)
     {
         if ((r == NULL) || (*r == '\0'))
             return 0;
-        else 
+        else
             return -1;
-    } 
+    }
     if (r == NULL)
     {
         if (*l == '\0')
@@ -258,7 +257,7 @@ rcf_ch_csap_create(struct rcf_comm_connection *rcfc,
                    const uint8_t *ba, size_t cmdlen,
                    const char *stack, const char *params)
 {
-#ifdef TAD_DUMMY 
+#ifdef TAD_DUMMY
     UNUSED(rcfc);
     UNUSED(cbuf);
     UNUSED(buflen);
@@ -270,10 +269,10 @@ rcf_ch_csap_create(struct rcf_comm_connection *rcfc,
     return -1;
 #else
     csap_p           new_csap;
-    csap_handle_t    new_csap_id; 
+    csap_handle_t    new_csap_id;
     unsigned int     layer;
-    int              syms; 
-    te_errno         rc; 
+    int              syms;
+    te_errno         rc;
     const asn_value *csap_layers;
     csap_spt_type_p  csap_spt_descr;
     int32_t          i32_tmp;
@@ -356,7 +355,7 @@ rcf_ch_csap_create(struct rcf_comm_connection *rcfc,
     assert(csap_layers != NULL);
 
     /*
-     * Get CSAP specification parameters for each layer 
+     * Get CSAP specification parameters for each layer
      */
     for (layer = 0; layer < new_csap->depth; ++layer)
     {
@@ -400,7 +399,7 @@ rcf_ch_csap_create(struct rcf_comm_connection *rcfc,
     }
 
     /*
-     * Initialize CSAP layers from lower to upper 
+     * Initialize CSAP layers from lower to upper
      */
     for (layer = new_csap->depth; layer-- > 0; )
     {
@@ -419,19 +418,19 @@ rcf_ch_csap_create(struct rcf_comm_connection *rcfc,
 exit:
     if (rc == 0)
     {
-        SEND_ANSWER("0 %u", new_csap_id); 
+        SEND_ANSWER("0 %u", new_csap_id);
     }
     else
     {
-        (void)csap_destroy(new_csap_id); 
+        (void)csap_destroy(new_csap_id);
         SEND_ANSWER("%u", TE_RC(TE_TAD_CH, rc));
     }
-    return 0; 
+    return 0;
 #endif
 }
 
 
-#ifndef TAD_DUMMY 
+#ifndef TAD_DUMMY
 /**
  * Wait for exclusive use of the CSAP.
  *
@@ -468,12 +467,12 @@ te_errno
 tad_csap_destroy(csap_handle_t csap_id)
 {
     csap_p          csap;
-    csap_spt_type_p csap_spt_descr; 
+    csap_spt_type_p csap_spt_descr;
 
     unsigned int layer;
-    te_errno     rc; 
+    te_errno     rc;
 
-    VERB("%s: CSAP %u\n", __FUNCTION__, csap_id); 
+    VERB("%s: CSAP %u\n", __FUNCTION__, csap_id);
 
     if ((csap = csap_find(csap_id)) == NULL)
     {
@@ -486,7 +485,7 @@ tad_csap_destroy(csap_handle_t csap_id)
     {
         return rc;
     }
-    
+
     if (~csap->state & CSAP_STATE_IDLE)
     {
         rc = csap_wait(csap, CSAP_STATE_DONE);
@@ -500,7 +499,7 @@ tad_csap_destroy(csap_handle_t csap_id)
         }
     }
 
-    /* 
+    /*
      * If we get exclude use after destroy command, it is guaranteed
      * that noone will start to use it again.
      */
@@ -513,7 +512,7 @@ tad_csap_destroy(csap_handle_t csap_id)
          */
         return rc;
     }
-    
+
     /* CSAP should be either IDLE or DONE */
     assert(csap->state & (CSAP_STATE_IDLE | CSAP_STATE_DONE));
 
@@ -554,7 +553,7 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *rcfc,
                     char *cbuf, size_t buflen, size_t answer_plen,
                     csap_handle_t csap_id)
 {
-#ifdef TAD_DUMMY 
+#ifdef TAD_DUMMY
     UNUSED(rcfc);
     UNUSED(cbuf);
     UNUSED(buflen);
@@ -582,7 +581,7 @@ rcf_ch_trsend_start(struct rcf_comm_connection *rcfc,
                     const uint8_t *ba, size_t cmdlen,
                     csap_handle_t csap_id, te_bool postponed)
 {
-#ifdef TAD_DUMMY 
+#ifdef TAD_DUMMY
     UNUSED(rcfc);
     UNUSED(cbuf);
     UNUSED(buflen);
@@ -596,7 +595,7 @@ rcf_ch_trsend_start(struct rcf_comm_connection *rcfc,
 #else
     int            rc;
     int            syms;
-    asn_value     *nds; 
+    asn_value     *nds;
     csap_p         csap;
 
 
@@ -639,7 +638,7 @@ rcf_ch_trsend_start(struct rcf_comm_connection *rcfc,
         (void)csap_command(csap, TAD_OP_IDLE);
         SEND_ANSWER("%u", TE_RC(TE_TAD_CH, rc));
         return 0;
-    } 
+    }
 
     CSAP_LOCK(csap);
 
@@ -658,7 +657,7 @@ rcf_ch_trsend_start(struct rcf_comm_connection *rcfc,
         SEND_ANSWER("%u", rc);
         return 0;
     }
-    
+
     rc = tad_pthread_create(NULL, tad_send_thread, csap);
     if (rc != 0)
     {
@@ -679,7 +678,7 @@ rcf_ch_trsend_stop(struct rcf_comm_connection *rcfc,
                    char *cbuf, size_t buflen, size_t answer_plen,
                    csap_handle_t csap_id)
 {
-#ifdef TAD_DUMMY 
+#ifdef TAD_DUMMY
     UNUSED(rcfc);
     UNUSED(cbuf);
     UNUSED(buflen);
@@ -694,7 +693,7 @@ rcf_ch_trsend_stop(struct rcf_comm_connection *rcfc,
 
     VERB("trsend_stop CSAP %u", csap_id);
 
-    TAD_CHECK_INIT; 
+    TAD_CHECK_INIT;
 
     if ((csap = csap_find(csap_id)) == NULL)
     {
@@ -744,17 +743,17 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *rcfc,
                     unsigned int num, unsigned int timeout,
                     unsigned int flags)
 {
-#ifndef TAD_DUMMY 
+#ifndef TAD_DUMMY
     csap_p      csap;
     te_errno    rc;
     int         syms;
-    asn_value  *nds = NULL; 
+    asn_value  *nds = NULL;
 #endif
 
     INFO("%s: csap %u, num %u, timeout %u ms, flags=%x", __FUNCTION__,
          csap_id, num, timeout, flags);
 
-#ifdef TAD_DUMMY 
+#ifdef TAD_DUMMY
     UNUSED(rcfc);
     UNUSED(cbuf);
     UNUSED(buflen);
@@ -771,7 +770,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *rcfc,
 
     UNUSED(cmdlen);
 
-    TAD_CHECK_INIT; 
+    TAD_CHECK_INIT;
 
     if ((csap = csap_find(csap_id)) == NULL)
     {
@@ -799,15 +798,15 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *rcfc,
     rc = asn_parse_value_text((const char *)ba, ndn_traffic_pattern,
                               &nds, &syms);
     if (rc != 0)
-    { 
+    {
         ERROR(CSAP_LOG_FMT "Parse error in attached NDS on symbol %d: %r",
               CSAP_LOG_ARGS(csap), syms, rc);
         (void)csap_command(csap, TAD_OP_IDLE);
         SEND_ANSWER("%u", TE_RC(TE_TAD_CH, rc));
         return 0;
-    } 
+    }
 
-    
+
     CSAP_LOCK(csap);
 
     if (flags & RCF_CH_TRRECV_PACKETS)
@@ -844,7 +843,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *rcfc,
 }
 
 
-#ifndef TAD_DUMMY 
+#ifndef TAD_DUMMY
 /**
  * Generic implementation of trrecv_stop/wait/get.
  *
@@ -853,7 +852,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *rcfc,
  * @param answer_plen   Answer prefix length
  * @param csap_id       CSAP ID
  * @param op            Operation (stop/wait/get)
- * 
+ *
  * @return Status code.
  */
 static te_errno
@@ -900,7 +899,7 @@ rcf_ch_trrecv_stop(rcf_comm_connection *rcfc,
                    char *cbuf, size_t buflen, size_t answer_plen,
                    csap_handle_t csap_id)
 {
-#ifdef TAD_DUMMY 
+#ifdef TAD_DUMMY
     UNUSED(rcfc);
     UNUSED(cbuf);
     UNUSED(buflen);
@@ -920,7 +919,7 @@ rcf_ch_trrecv_wait(struct rcf_comm_connection *rcfc,
                    char *cbuf, size_t buflen, size_t answer_plen,
                    csap_handle_t csap_id)
 {
-#ifdef TAD_DUMMY 
+#ifdef TAD_DUMMY
     UNUSED(rcfc);
     UNUSED(cbuf);
     UNUSED(buflen);
@@ -928,7 +927,7 @@ rcf_ch_trrecv_wait(struct rcf_comm_connection *rcfc,
     UNUSED(csap_id);
 
     VERB("%s: CSAP %u", __FUNCTION__, csap_id);
-    
+
     return -1;
 #else
     return tad_trrecv_op(rcfc, cbuf, buflen, answer_plen, csap_id,
@@ -942,7 +941,7 @@ rcf_ch_trrecv_get(struct rcf_comm_connection *rcfc,
                   char *cbuf, size_t buflen, size_t answer_plen,
                   csap_handle_t csap_id)
 {
-#ifdef TAD_DUMMY 
+#ifdef TAD_DUMMY
     UNUSED(rcfc);
     UNUSED(cbuf);
     UNUSED(buflen);
@@ -963,19 +962,19 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *rcfc,
                    char *cbuf, size_t buflen, size_t answer_plen,
                    const uint8_t *ba, size_t cmdlen, csap_handle_t csap_id,
                    unsigned int timeout, unsigned int flags)
-{ 
-#ifndef TAD_DUMMY 
+{
+#ifndef TAD_DUMMY
     csap_p      csap;
     te_errno    rc;
     int         syms;
-    asn_value  *tmpl = NULL; 
+    asn_value  *tmpl = NULL;
     asn_value  *ptrn = NULL;
 #endif
 
     INFO("%s: csap %u, timeout %u ms, flags=%x", __FUNCTION__,
          csap_id, timeout, flags);
 
-#ifdef TAD_DUMMY 
+#ifdef TAD_DUMMY
     UNUSED(rcfc);
     UNUSED(cbuf);
     UNUSED(buflen);
@@ -988,7 +987,7 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *rcfc,
 
     UNUSED(cmdlen);
 
-    TAD_CHECK_INIT; 
+    TAD_CHECK_INIT;
 
     if ((csap = csap_find(csap_id)) == NULL)
     {
@@ -1016,13 +1015,13 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *rcfc,
     rc = asn_parse_value_text((const char *)ba, ndn_traffic_template,
                               &tmpl, &syms);
     if (rc != 0)
-    { 
+    {
         ERROR(CSAP_LOG_FMT "Parse error in attached NDS on symbol %d: %r",
               CSAP_LOG_ARGS(csap), syms, rc);
         (void)csap_command(csap, TAD_OP_IDLE);
         SEND_ANSWER("%u", TE_RC(TE_TAD_CH, rc));
         return 0;
-    } 
+    }
 
     CSAP_LOCK(csap);
 
@@ -1080,7 +1079,7 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *rcfc,
         (void)tad_send_release(csap, csap_get_send_context(csap));
         goto exit;
     }
-    /* 
+    /*
      * Don't care about Receiver context any more, since 'trrecv_wait'
      * operation is responsible for destruction. However, now it is
      * necessary to care about stop of 'trrecv_wait' operation.
@@ -1105,8 +1104,8 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *rcfc,
         (void)csap_command(csap, TAD_OP_SEND_DONE);
     }
 
-    /* 
-     * Emulated 'trrecv_wait' is responsible for send of answer and 
+    /*
+     * Emulated 'trrecv_wait' is responsible for send of answer and
      * transition to IDLE state.
      */
     return 0;
@@ -1124,7 +1123,7 @@ rcf_ch_trpoll(struct rcf_comm_connection *rcfc,
               char *cbuf, size_t buflen, size_t answer_plen,
               csap_handle_t csap_id, unsigned int timeout)
 {
-#ifdef TAD_DUMMY 
+#ifdef TAD_DUMMY
     UNUSED(rcfc);
     UNUSED(cbuf);
     UNUSED(buflen);
@@ -1137,7 +1136,7 @@ rcf_ch_trpoll(struct rcf_comm_connection *rcfc,
     csap_p      csap;
     te_errno    rc;
 
-    TAD_CHECK_INIT; 
+    TAD_CHECK_INIT;
 
     /*
      * Answers are send with 0 in poll ID, since no request to be
@@ -1192,7 +1191,7 @@ rcf_ch_trpoll_cancel(struct rcf_comm_connection *rcfc,
                      char *cbuf, size_t buflen, size_t answer_plen,
                      csap_handle_t csap_id, unsigned int poll_id)
 {
-#ifdef TAD_DUMMY 
+#ifdef TAD_DUMMY
     UNUSED(rcfc);
     UNUSED(cbuf);
     UNUSED(buflen);
@@ -1207,7 +1206,7 @@ rcf_ch_trpoll_cancel(struct rcf_comm_connection *rcfc,
     te_errno            rc = TE_ENOENT;
     int                 ret;
 
-    TAD_CHECK_INIT; 
+    TAD_CHECK_INIT;
 
     if ((csap = csap_find(csap_id)) == NULL)
     {
@@ -1293,7 +1292,7 @@ rcf_ch_csap_param(struct rcf_comm_connection *rcfc,
         else
             status = CSAP_BUSY;
 
-        F_VERB("CSAP get_param, state 0x%x, status %d\n", 
+        F_VERB("CSAP get_param, state 0x%x, status %d\n",
                csap->state, (int)status);
         CSAP_UNLOCK(csap);
 
@@ -1302,17 +1301,17 @@ rcf_ch_csap_param(struct rcf_comm_connection *rcfc,
     else if (strcmp(param, CSAP_PARAM_FIRST_PACKET_TIME) == 0)
     {
         VERB("CSAP get_param, get first pkt, %u.%u\n",
-                                (uint32_t)csap->first_pkt.tv_sec, 
+                                (uint32_t)csap->first_pkt.tv_sec,
                                 (uint32_t)csap->first_pkt.tv_usec);
-        SEND_ANSWER("0 %u.%u",  (uint32_t)csap->first_pkt.tv_sec, 
+        SEND_ANSWER("0 %u.%u",  (uint32_t)csap->first_pkt.tv_sec,
                                 (uint32_t)csap->first_pkt.tv_usec);
     }
     else if (strcmp(param, CSAP_PARAM_LAST_PACKET_TIME) == 0)
     {
         VERB("CSAP get_param, get last pkt, %u.%u\n",
-                                (uint32_t)csap->last_pkt.tv_sec, 
+                                (uint32_t)csap->last_pkt.tv_sec,
                                 (uint32_t)csap->last_pkt.tv_usec);
-        SEND_ANSWER("0 %u.%u",  (uint32_t)csap->last_pkt.tv_sec, 
+        SEND_ANSWER("0 %u.%u",  (uint32_t)csap->last_pkt.tv_sec,
                                 (uint32_t)csap->last_pkt.tv_usec);
     }
     else if ((get_param_cb =

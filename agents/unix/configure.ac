@@ -23,8 +23,6 @@ AC_PROG_RANLIB
 
 AC_CANONICAL_HOST
 
-AC_CHECK_TOOL(NM, nm)
-
 TE_APP_SET
 
 CPPFLAGS=${CPPFLAGS}" "${TE_CPPFLAGS_VAR}
@@ -56,33 +54,6 @@ fi
 AH_TEMPLATE([TE_AGT_PLATFORM],[TA platform])
 AC_DEFINE_UNQUOTED([TE_AGT_PLATFORM], ["${TE_PLATFORM}"], [])
 
-# Include telephony support by default
-AC_ARG_WITH([telephony],
-            [AS_HELP_STRING([--with-telephony],
-              [Enable support DAHDI interface via RPC calls. \
-Default - disabled.])],
-            [],
-            [with_telephony=no])
-
-AM_CONDITIONAL(WITH_TELEPHONY, test "x$with_telephony" = "xyes")
-if test "x$with_telephony" = "xyes"; then
-    TE_CPPFLAGS="$TE_CPPFLAGS -DWITH_TELEPHONY"
-fi
-
-# Include power switch support by default
-AC_ARG_WITH([power_sw],
-            [AS_HELP_STRING([--without-power_sw],
-              [Disable support for power switch via RPC calls. \
-Default - enabled.])],
-            [if test "x${withval}" = "xyes"; then
-                 with_power_sw=yes;
-             fi], [with_power_sw=yes])
-
-AM_CONDITIONAL(WITH_POWER_SW, test "x$with_power_sw" = "xyes")
-if test "x$with_power_sw" = "xyes"; then
-    TE_CPPFLAGS="$TE_CPPFLAGS -DWITH_POWER_SW"
-fi
-
 dnl #######################################################################
 dnl Newer BSD systems don't have a compatible rtentry - use ortentry
 dnl #######################################################################
@@ -92,44 +63,10 @@ AC_CHECK_TYPES([struct rtentry, struct ortentry], [], [],
                 #include <net/route.h>])
 
 dnl
-dnl Check for 'struct ip_mreqn'
-dnl
-AC_CHECK_TYPES([struct ip_mreqn], [], [],
-               [#include <netinet/in.h>])
-dnl
 dnl Check for 'struct ip_opts'
 dnl
 AC_CHECK_TYPES([struct ip_opts], [], [],
                [#include <netinet/in.h>])
-
-dnl
-dnl Check for 'struct group_req'
-dnl
-AC_CHECK_TYPES([struct group_req], [], [],
-               [#include <netinet/in.h>])
-
-dnl
-dnl Check for 'struct tcp_info'
-dnl
-AC_CHECK_TYPES([struct tcp_info], [], [],
-               [#include <netinet/tcp.h>])
-
-dnl
-dnl Check for 'tcpi_rcv_rtt' member in 'struct tcp_info'.
-dnl
-AC_CHECK_MEMBERS([struct tcp_info.tcpi_rcv_rtt], [], [],
-                 [#include <netinet/in.h>])
-
-dnl
-dnl Check for 'ipv6mr_interface' member in 'struct ipv6_mreq'.
-dnl
-AC_CHECK_MEMBERS([struct ipv6_mreq.ipv6mr_interface], [], [],
-                 [#include <netinet/in.h>])
-dnl
-dnl Check for 'ipv6mr_ifindex' member in 'struct ipv6_mreq'.
-dnl
-AC_CHECK_MEMBERS([struct ipv6_mreq.ipv6mr_ifindex], [], [],
-                 [#include <netinet/in.h>])
 
 dnl
 dnl Check for 'struct lifreq'
@@ -179,108 +116,6 @@ AC_CHECK_MEMBERS([struct arpreq.arp_dev], [], [],
                  [#include <net/if_arp.h>])
 
 dnl
-dnl Check for 'sa_restorer' member in 'struct sigaction'.
-dnl
-AC_CHECK_MEMBERS([struct sigaction.sa_restorer], [], [],
-                 [#include <signal.h>])
-
-dnl
-dnl Check for 'si_trapno' member in 'siginfo_t'.
-dnl
-AC_CHECK_MEMBERS([siginfo_t.si_trapno], [], [],
-                 [#include <signal.h>])
-
-dnl
-dnl Check for 'si_addr_lsb' member in 'siginfo_t'.
-dnl
-AC_CHECK_MEMBERS([siginfo_t.si_addr_lsb], [], [],
-                 [#include <signal.h>])
-
-dnl
-dnl Check for 'si_utime' member in 'siginfo_t'.
-dnl
-AC_CHECK_MEMBERS([siginfo_t.si_utime], [], [],
-                 [#include <signal.h>])
-
-dnl
-dnl Check for 'si_stime' member in 'siginfo_t'.
-dnl
-AC_CHECK_MEMBERS([siginfo_t.si_stime], [], [],
-                 [#include <signal.h>])
-
-dnl
-dnl Check for 'si_int' member in 'siginfo_t'.
-dnl
-AC_CHECK_MEMBERS([siginfo_t.si_int], [], [],
-                 [#include <signal.h>])
-
-dnl
-dnl Check for 'si_ptr' member in 'siginfo_t'.
-dnl
-AC_CHECK_MEMBERS([siginfo_t.si_ptr], [], [],
-                 [#include <signal.h>])
-
-dnl
-dnl Check for 'si_overrun' member in 'siginfo_t'.
-dnl
-AC_CHECK_MEMBERS([siginfo_t.si_overrun], [], [],
-                 [#include <signal.h>])
-
-dnl
-dnl Check for 'si_band' member in 'siginfo_t'.
-dnl
-AC_CHECK_MEMBERS([siginfo_t.si_band], [], [],
-                 [#include <signal.h>])
-
-dnl
-dnl Check for 'si_timerid' member in 'siginfo_t'.
-dnl
-AC_CHECK_MEMBERS([siginfo_t.si_timerid], [], [],
-                 [#include <signal.h>])
-
-dnl
-dnl Check for 'si_fd' member in 'siginfo_t'.
-dnl
-AC_CHECK_MEMBERS([siginfo_t.si_fd], [], [],
-                 [#include <signal.h>])
-
-dnl
-dnl Check for 'si_ptr' member in 'siginfo_t'.
-dnl
-AC_CHECK_MEMBERS([siginfo_t.si_ptr], [], [],
-                 [#include <signal.h>])
-
-dnl
-dnl Check for 'arp_dev' member in 'struct arpreq'.
-dnl
-AC_CHECK_MEMBERS([struct arpreq.arp_dev], [], [],
-                 [#include <net/if_arp.h>])
-
-dnl
-dnl Check for 'sival_int' member in 'union sigval'.
-dnl
-AC_CHECK_MEMBERS([union sigval.sival_int], [], [],
-                 [#include <signal.h>])
-
-dnl
-dnl Check for 'sigval_int' member in 'union sigval'.
-dnl
-AC_CHECK_MEMBERS([union sigval.sigval_int], [], [],
-                 [#include <signal.h>])
-
-dnl
-dnl Check for 'sival_ptr' member in 'union sigval'.
-dnl
-AC_CHECK_MEMBERS([union sigval.sival_ptr], [], [],
-                 [#include <signal.h>])
-
-dnl
-dnl Check for 'sigval_ptr' member in 'union sigval'.
-dnl
-AC_CHECK_MEMBERS([union sigval.sigval_ptr], [], [],
-                 [#include <signal.h>])
-
-dnl
 dnl Check for 'd_type' member in 'struct dirent'.
 dnl
 AC_CHECK_MEMBERS([struct dirent.d_type], [], [],
@@ -300,13 +135,6 @@ dnl Check for 'd_namelen' member in 'struct dirent'.
 dnl
 AC_CHECK_MEMBERS([struct dirent.d_namelen], [], [],
                  [#include <dirent.h>])
-
-dnl
-dnl Check for 'pw_gecos' member in 'struct passwd'.
-dnl
-AC_CHECK_MEMBERS([struct passwd.pw_gecos], [], [],
-                 [#include <pwd.h>])
-
 
 dnl
 dnl Berkley Socket API is provided by:
@@ -404,6 +232,9 @@ AC_CHECK_HEADERS([sys/klog.h])
 AC_CHECK_HEADERS([linux/if_vlan.h])
 AC_CHECK_HEADERS([dirent.h])
 AC_CHECK_HEADERS([sys/statvfs.h])
+AC_CHECK_HEADERS([sys/queue.h])
+AC_CHECK_HEADERS([inttypes.h])
+AC_CHECK_HEADERS([search.h])
 
 dnl
 dnl Terminal devices
@@ -459,48 +290,6 @@ AC_CHECK_FUNC([aio_read], [],
         AC_CHECK_LIB([nsl], [aio_read], [LIBS="-lnsl -lrt ${LIBS}"],
              AC_MSG_WARN([Asynchronous I/O not supported]), [-lrt])))
 
-if test -n "$with_rcf_rpc" ; then
-    dnl
-    dnl FreeBSD 4.x has no svc_exit().
-    dnl NetBSD has no svcunix_create().
-    dnl
-    AC_CHECK_FUNCS([svcunix_create svc_exit])
-
-    dnl
-    dnl Find library with SunRPC XDR functions.
-    dnl -lnsl on Solaris2 (SunOS 5.11);
-    dnl
-    AC_SEARCH_LIBS([xdr_bytes], [rpc nsl], [],
-                   AC_MSG_ERROR([No RPC library found]))
-
-    AH_TEMPLATE([xdr_uint8_t], [RPC XDR for unsigned 8bit width type])
-    AC_CHECK_FUNC([xdr_uint8_t], [],
-        [AC_CHECK_FUNC([xdr_u_int8_t],
-            [AC_DEFINE([xdr_uint8_t], [xdr_u_int8_t])],
-            [AC_CHECK_FUNC([xdr_u_char],
-                [AC_DEFINE([xdr_uint8_t], [xdr_u_char])],
-                [AC_MSG_ERROR([There is no xdr_uint8_t or xdr_u_int8_t!])]
-             )])])
-
-    AH_TEMPLATE([xdr_uint16_t], [RPC XDR for unsigned 8bit width type])
-    AC_CHECK_FUNC([xdr_uint16_t], [],
-        [AC_CHECK_FUNC([xdr_u_int16_t],
-            [AC_DEFINE([xdr_uint16_t], [xdr_u_int16_t])],
-            [AC_MSG_ERROR([There is no xdr_uint16_t or xdr_u_int16_t!])])])
-
-    AH_TEMPLATE([xdr_uint32_t], [RPC XDR for unsigned 32bit width type])
-    AC_CHECK_FUNC([xdr_uint32_t], [],
-        [AC_CHECK_FUNC([xdr_u_int32_t],
-            [AC_DEFINE([xdr_uint32_t], [xdr_u_int32_t])],
-            [AC_MSG_ERROR([There is no xdr_uint32_t or xdr_u_int32_t!])])])
-
-    AH_TEMPLATE([xdr_uint64_t], [RPC XDR for unsigned 64bit width type])
-    AC_CHECK_FUNC([xdr_uint64_t], [],
-        [AC_CHECK_FUNC([xdr_u_int64_t],
-            [AC_DEFINE([xdr_uint64_t], [xdr_u_int64_t])],
-            [AC_MSG_ERROR([There is no xdr_uint64_t or xdr_u_int64_t!])])])
-fi
-
 export PKG_CONFIG_PATH="$DESTDIR/$prefix/../$TE_PLATFORM/lib/pkgconfig/"
 PKG_CHECK_MODULES(TAD, te-$with_tad)
 TAD_LIBS=`${TE_BASE}/engine/builder/static_libs_check.pl "${TAD_LIBS}"`
@@ -515,6 +304,19 @@ EXTRA_LDADD=
 
 AC_PROG_LEX
 AC_PROG_YACC
+
+AC_ARG_ENABLE([pci],
+              AS_HELP_STRING([--enable-pci],
+                             [enable PCI support (default is NO)]),
+              [ac_cv_enable_pci=$enableval], [ac_cv_enable_pci=no])
+AC_CACHE_CHECK([whether to enable PCI],
+               [ac_cv_enable_pci], [ac_cv_enable_pci=no])
+if test x"$ac_cv_enable_pci" != xno
+then
+    AC_DEFINE([ENABLE_PCI_SUPPORT], [], [Whether to enable PCI support])
+fi
+AM_CONDITIONAL([CFG_PCI], test x"$ac_cv_enable_pci" != xno)
+
 
 AC_ARG_ENABLE([wifi],
               AS_HELP_STRING([--enable-wifi],
@@ -927,32 +729,42 @@ if test "x$with_aggr" != "x" ; then
     EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_AGGREGATION"
 fi
 
-#
-# On PowerPC function descriptors are used which are
-# placed in data section like variables, not in
-# text one - so we cannot distinguish functions
-# and variables with --format=bsd in nm output
-#
-# Please note that the following code is a replace for
-# "${host:0:9}", but this expression is BASH specific
-# and won't work for DASH, which is why we do this
-# in not elegant, but portable way.
-#
-host_prefix=`echo $host | sed -e 's/\(.........\).*/\1/'`
-if test "x$host_prefix" = "xpowerpc64" || \
-   test "x$host_prefix" = "xpowerpc"; then
-    NM_FORMAT=sysv
-else
-    NM_FORMAT=bsd
+AC_ARG_WITH([dpdk],
+            AS_HELP_STRING([--with-dpdk],
+                           [specify location of the DPDK RTE SDK bulid]),
+            [ac_cv_with_dpdk=$withval],
+            [ac_cv_with_dpdk=])
+
+if test "x$ac_cv_with_dpdk" != "x"; then
+    # Add DPDK library just before system libraries
+    DPDK_LIBS="$(find "${ac_cv_with_dpdk}/lib" \( -name librte_*.a -or -name libethdev.a \) -printf '%p ')"
+    LIBS="-L${ac_cv_with_dpdk}/lib -Wl,-whole-archive ${DPDK_LIBS} -Wl,-no-whole-archive ${LIBS}"
 fi
-AC_SUBST([NM_FORMAT])
+
+AC_SUBST([DPDK_LIBS])
+
+AC_ARG_ENABLE([generate-symtbl],
+              AS_HELP_STRING([--disable-generate-symtbl],
+                             [disable symbol table generation (default is YES)]),
+              [ac_cv_enable_generate_symtbl=$enableval], [ac_cv_enable_generate_symtbl=yes])
+AC_CACHE_CHECK([whether to enable symbol table generation],
+               [ac_cv_enable_generate_symtbl], [ac_cv_enable_generate_symtbl=yes])
+if test x"$ac_cv_enable_generate_symtbl" != xno
+then
+    AC_DEFINE([ENABLE_GENERATED_SYMTBL], [], [Whether to use generated symbol tables])
+    AC_CHECK_TARGET_TOOL(NM, [nm --format=sysv],
+                         [AC_MSG_ERROR([No SysV-compatible 'nm' tool found])])
+    
+fi
+AM_CONDITIONAL([GENERATE_SYMTBL], test x"$ac_cv_enable_generate_symtbl" != xno)
+
 
 AC_SUBST([TE_BASE])
 AC_SUBST([TE_BUILD])
 
 dnl end of "conf" staff
 
-AC_CONFIG_FILES([Makefile rpc/Makefile conf/Makefile])
+AC_CONFIG_FILES([Makefile conf/Makefile])
 
 TE_APP_RESTORE
 

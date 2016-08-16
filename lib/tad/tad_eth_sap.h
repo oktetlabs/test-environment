@@ -1,5 +1,5 @@
 /** @file
- * @brief TAD Ethernet Service Access Point 
+ * @brief TAD Ethernet Service Access Point
  *
  * Declaration of Traffic Application Domain interface to Ethernet.
  *
@@ -44,6 +44,14 @@
 extern "C" {
 #endif
 
+/** Auxiliary structure to represent VLAN tag */
+struct tad_vlan_tag {
+    uint16_t vlan_tpid; /**< Tag protocol ID (network byte order) */
+    uint16_t vlan_tci;  /**< VLAN TCI (network byte order) */
+};
+
+/** Length of VLAN tag */
+#define TAD_VLAN_TAG_LEN 4
 
 /** Maximum length of the Ethernet interface (service provider) name */
 #define TAD_ETH_SAP_IFNAME_SIZE 256
@@ -73,7 +81,7 @@ typedef struct tad_eth_sap {
  *
  * @param ifname        Name of the interface/service
  * @param sap           Location for SAP description structure
- * 
+ *
  * @return Status code.
  *
  * @sa tad_eth_sap_send_open(), tad_eth_sap_recv_open(),

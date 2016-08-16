@@ -39,6 +39,15 @@
 #if HAVE_CTYPE_H
 #include <ctype.h>
 #endif
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#if HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
 
 #include "te_defs.h"
 #include "te_param.h"
@@ -391,8 +400,8 @@ tapi_asn_param_value_parse(char              *pwd,
             pwd_offset += add;
 
         rc = cfg_get_instance_fmt(NULL,
-                                  (void*)((type == ndn_base_octets) ?
-                                  &address_val : &int_val),
+                                  (type == ndn_base_octets) ?
+                                  (void *)&address_val : (void *)&int_val,
                                   "%s", pwd);
         pwd[pwd_offset] = '\0';
         if (rc != 0)
@@ -408,7 +417,7 @@ tapi_asn_param_value_parse(char              *pwd,
             if (strstr(pwd, "link_addr") != NULL ||
                 address_val->sa_family == AF_LOCAL)
             {
-                addr_octets = address_val->sa_data;
+                addr_octets = (uint8_t *)(address_val->sa_data);
 
                 snprintf(
                         ns, BUFLEN,

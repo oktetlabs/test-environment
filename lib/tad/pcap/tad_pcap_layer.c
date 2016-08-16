@@ -209,7 +209,7 @@ tad_pcap_release_ptrn_cb(csap_p csap, unsigned int layer, void *opaque)
 
     UNUSED(opaque);
 
-    layer_data = csap_get_proto_spec_data(csap, layer); 
+    layer_data = csap_get_proto_spec_data(csap, layer);
 
     for (bpf_id = 1; bpf_id <= layer_data->bpf_count; bpf_id++)
     {

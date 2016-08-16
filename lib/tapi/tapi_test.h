@@ -52,6 +52,7 @@
 #include "logger_ten.h"
 #include "tapi_jmp.h"
 #include "tapi_test_log.h"
+#include "tapi_test_run_status.h"
 #include "asn_impl.h"
 #include "asn_usr.h"
 
@@ -130,6 +131,8 @@ extern "C" {
     int         result = EXIT_FAILURE;                              \
     TEST_START_VARS                                                 \
                                                                     \
+    assert(tapi_test_run_status_get() == TE_TEST_RUN_STATUS_OK);    \
+                                                                    \
     /* 'rc' may be unused in the test */                            \
     UNUSED(rc);                                                     \
                                                                     \
@@ -182,6 +185,13 @@ extern "C" {
 #define TEST_END \
 cleanup_specific:                                                   \
     TEST_END_SPECIFIC;                                              \
+    if (result == EXIT_SUCCESS &&                                   \
+        tapi_test_run_status_get() != TE_TEST_RUN_STATUS_OK)        \
+    {                                                               \
+        ERROR("Exiting with failure because of critical error "     \
+              "during test execution");                             \
+        result = EXIT_FAILURE;                                      \
+    }                                                               \
     return result
 
 /**
@@ -931,6 +941,15 @@ test_sleep_scale(void)
  * @param _to_sleep     number of seconds to sleep is scale is 1
  */
 #define USLEEP(_to_sleep)   te_usleep(test_sleep_scale() * (_to_sleep))
+
+/** Wait for network action to complete. Typically, send() on one side
+ * and wait before non-blocing recv() on another side. */
+#define TAPI_WAIT_NETWORK \
+    do {                                                            \
+        int msec = 500;                                             \
+        RING("Wait for network action: sleep for %d msec", msec);   \
+        usleep(test_sleep_scale() * 1000 * msec);                   \
+    } while (0)
 
 /**@} <!-- END te_ts_tapi_test_misc --> */
  

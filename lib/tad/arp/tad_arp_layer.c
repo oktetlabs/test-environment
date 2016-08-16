@@ -145,7 +145,7 @@ tad_arp_destroy_cb(csap_p csap, unsigned int layer)
 
 /* See description in tad_arp_impl.h */
 te_errno
-tad_arp_confirm_tmpl_cb(csap_p csap, unsigned int layer, 
+tad_arp_confirm_tmpl_cb(csap_p csap, unsigned int layer,
                         asn_value *layer_pdu, void **p_opaque)
 {
     te_errno                rc;
@@ -183,7 +183,7 @@ tad_arp_confirm_tmpl_cb(csap_p csap, unsigned int layer,
 
 /* See description in tad_arp_impl.h */
 te_errno
-tad_arp_confirm_ptrn_cb(csap_p csap, unsigned int layer, 
+tad_arp_confirm_ptrn_cb(csap_p csap, unsigned int layer,
                         asn_value *layer_pdu, void **p_opaque)
 {
     te_errno                rc;
@@ -292,7 +292,7 @@ tad_arp_gen_bin_cb(csap_p                csap,
 
     /* Move all SDUs to PDUs */
     tad_pkts_move(pdus, sdus);
-    /* 
+    /*
      * Add header segment to each PDU. All segments refer to the same
      * memory. Free function is set for segment of the first packet only.
      */
@@ -398,7 +398,7 @@ tad_arp_match_do_cb(csap_p           csap,
         return TE_RC(TE_TAD_CSAP, TE_ETADNOTMATCH);
     }
 #endif
-  
+
     proto_data = csap_get_proto_spec_data(csap, layer);
 
     assert(proto_data != NULL);

@@ -1,0 +1,16 @@
+syntax: glob
+Makefile.in
+aclocal.m4
+autom4te.cache
+config.h.in
+configure
+include/te_config_internal.h.in
+lib/agentlib/agentlib_config.h.in
+package.h.in
+auxdir/ar-lib
+auxdir/test-driver
+TAGS
+tags
+doc/generated
+doxygen.warn
+*~

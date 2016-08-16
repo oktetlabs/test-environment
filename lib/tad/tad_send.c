@@ -2,7 +2,7 @@
  * @brief TAD Sender
  *
  * Traffic Application Domain Command Handler.
- * Transmit module. 
+ * Transmit module.
  *
  * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -36,7 +36,7 @@
 
 #include <stdio.h>
 #if HAVE_UNISTD_H
-#include <unistd.h> 
+#include <unistd.h>
 #endif
 #if HAVE_STRING_H
 #include <string.h>
@@ -48,7 +48,7 @@
 #include <pthread.h>
 #endif
 #if HAVE_NETINET_IN_H
-#include <netinet/in.h> 
+#include <netinet/in.h>
 #endif
 
 #include "te_tools.h"
@@ -56,8 +56,7 @@
 #include "logger_ta_fast.h"
 #include "comm_agent.h"
 #include "rcf_ch_api.h"
-#include "rcf_pch.h"
-#include "ndn.h" 
+#include "ndn.h"
 
 #include "tad_csap_inst.h"
 #include "tad_csap_support.h"
@@ -66,7 +65,7 @@
 
 
 /* buffer for send answer */
-#define RBUF 100 
+#define RBUF 100
 
 
 /**
@@ -92,7 +91,7 @@ tad_send_preprocess_pdus(csap_p csap, const asn_value *tmpl_unit,
     if (data->layer_opaque == NULL)
         return TE_RC(TE_TAD_CH, TE_ENOMEM);
 
-    /* 
+    /*
      * Get sequence of PDUs and preprocess by protocol-specific
      * callbacks
      */
@@ -112,7 +111,7 @@ tad_send_preprocess_pdus(csap_p csap, const asn_value *tmpl_unit,
 
     /* FIXME: Remove type cast */
     rc = tad_confirm_pdus(csap, FALSE, (asn_value *)nds_pdus,
-                          data->layer_opaque); 
+                          data->layer_opaque);
     if (rc != 0)
     {
         ERROR(CSAP_LOG_FMT "Confirmation of PDUs to send failed: %r",
@@ -146,7 +145,7 @@ tad_send_preprocess_payload(csap_p csap, const asn_value *tmpl_unit,
      * representation.
      */
     rc = asn_get_child_value(tmpl_unit, &nds_payload,
-                             PRIVATE, NDN_TMPL_PAYLOAD); 
+                             PRIVATE, NDN_TMPL_PAYLOAD);
     if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
         VERB(CSAP_LOG_FMT "No payload in template unit",
@@ -168,7 +167,7 @@ tad_send_preprocess_payload(csap_p csap, const asn_value *tmpl_unit,
         ERROR(CSAP_LOG_FMT "Failed to preprocess payload specification: "
               "%r", CSAP_LOG_ARGS(csap), rc);
         return rc;
-    } 
+    }
     if (data->pld_spec.type == TAD_PLD_MASK)
     {
         ERROR(CSAP_LOG_FMT "Payload cannot be specified using mask",
@@ -200,7 +199,7 @@ tad_send_preprocess_args(csap_p csap, const asn_value *tmpl_unit,
 
     rc = asn_get_descendent(tmpl_unit, (asn_value **)&arg_sets, "arg-sets");
 
-    if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL) 
+    if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
         VERB(CSAP_LOG_FMT "No arguments in template unit",
              CSAP_LOG_ARGS(csap));
@@ -213,8 +212,8 @@ tad_send_preprocess_args(csap_p csap, const asn_value *tmpl_unit,
         return rc;
     }
 
-    len = asn_get_length(arg_sets, ""); 
-    if (len <= 0) 
+    len = asn_get_length(arg_sets, "");
+    if (len <= 0)
     {
         ERROR(CSAP_LOG_FMT "Set of argument is specified but empty or "
               "incorrect", CSAP_LOG_ARGS(csap));
@@ -235,7 +234,7 @@ tad_send_preprocess_args(csap_p csap, const asn_value *tmpl_unit,
               CSAP_LOG_ARGS(csap), rc);
         return rc;
     }
-    
+
     rc = tad_init_tmpl_args(data->arg_specs, data->arg_num,
                             data->arg_iterated);
     if (rc != 0)
@@ -354,7 +353,7 @@ tad_send_preprocess_template(csap_p csap, asn_value *template,
 
     data->nds = template;
 
-    /* 
+    /*
      * Current traffic template NDS support only one template unit
      * to send.
      */
@@ -520,7 +519,7 @@ tad_send_delay()
         if (sent == 0)
         {
             gettimeofday(&npt, NULL);
-            F_VERB("check start send moment: %u.%u", 
+            F_VERB("check start send moment: %u.%u",
                     npt.tv_sec, npt.tv_usec);
         }
         else if (delay > 0)
@@ -529,10 +528,10 @@ tad_send_delay()
             struct timeval cm;
 
             gettimeofday(&cm, NULL);
-            F_VERB("calc of delay, current moment: %u.%u", 
+            F_VERB("calc of delay, current moment: %u.%u",
                     cm.tv_sec, cm.tv_usec);
 
-            /* calculate moment until we should wait before next 
+            /* calculate moment until we should wait before next
              * get log */
             npt.tv_sec  += delay / 1000;
             npt.tv_usec += delay * 1000;
@@ -542,10 +541,10 @@ tad_send_delay()
                 npt.tv_usec -= 1000000;
                 npt.tv_sec ++;
             }
-            F_VERB("wait for next send moment: %u.%u", 
+            F_VERB("wait for next send moment: %u.%u",
                     npt.tv_sec, npt.tv_usec);
 
-            /* calculate delay of waiting we should wait before 
+            /* calculate delay of waiting we should wait before
              * next get log */
             if (npt.tv_sec >= cm.tv_sec)
                 tv_delay.tv_sec  = npt.tv_sec  - cm.tv_sec;
@@ -556,11 +555,11 @@ tad_send_delay()
             {
                 tv_delay.tv_usec = (npt.tv_usec + 1000000) - cm.tv_usec;
                 tv_delay.tv_sec--;
-            } 
+            }
 
-            F_VERB("calculated delay: %u.%u", 
+            F_VERB("calculated delay: %u.%u",
                     tv_delay.tv_sec, tv_delay.tv_usec);
-            select(0, NULL, NULL, NULL, &tv_delay); 
+            select(0, NULL, NULL, NULL, &tv_delay);
         }
 }
 #endif
@@ -590,16 +589,16 @@ tad_send_cb(tad_pkt *pkt, void *opaque)
         return rc;
     }
     /* Written successfull */
-    
+
     gettimeofday(&csap->last_pkt, NULL);
     if (csap->sender.sent_pkts == 0)
         csap->first_pkt = csap->last_pkt;
 
     csap->sender.sent_pkts++;
-    
+
     F_VERB(CSAP_LOG_FMT "write callback OK, sent %u packets",
            CSAP_LOG_ARGS(csap), csap->sender.sent_pkts);
-    
+
     /* Continue packets enumeration */
     return 0;
 }
@@ -646,9 +645,9 @@ tad_send_free_packets(tad_pkts *pkts, unsigned int num)
 static te_errno
 tad_send_by_template_unit(csap_p csap, tad_send_tmpl_unit_data *tu_data)
 {
-    te_errno    rc;
-    tad_pkts   *pkts;
-    int         i;
+    te_errno        rc;
+    tad_pkts       *pkts;
+    unsigned int    i;
 
 #if 1 /* FIXME: More part of this processing to prepare stage */
     tad_special_send_pkt_cb  send_cb = NULL;
@@ -678,17 +677,17 @@ tad_send_by_template_unit(csap_p csap, tad_send_tmpl_unit_data *tu_data)
             send_cb_userdata++;
         }
 
-        /* FIXME: Correct error processing here */ 
+        /* FIXME: Correct error processing here */
         send_cb = rcf_ch_symbol_addr(send_cb_name, 1);
         if (send_cb == NULL)
             ERROR("Not send method '%s' found, send via usual callback",
                   send_cb_name);
     }
-    else 
+    else
 #endif
         rc = 0;
 
-    do { 
+    do {
 
         /* Check CSAP state */
         if (csap->state & CSAP_STATE_STOP)
@@ -700,9 +699,9 @@ tad_send_by_template_unit(csap_p csap, tad_send_tmpl_unit_data *tu_data)
         }
 
         /* Generate packets to be send */
-        rc = tad_send_prepare_bin(csap, tu_data->nds, 
+        rc = tad_send_prepare_bin(csap, tu_data->nds,
                                   tu_data->arg_iterated,
-                                  tu_data->arg_num, 
+                                  tu_data->arg_num,
                                   &tu_data->pld_spec,
                                   tu_data->layer_opaque,
                                   pkts);
@@ -731,7 +730,7 @@ tad_send_by_template_unit(csap_p csap, tad_send_tmpl_unit_data *tu_data)
         tad_send_free_packets(pkts, csap->depth + 1);
 
     } while (rc == 0 &&
-             tad_iterate_tmpl_args(tu_data->arg_specs, 
+             tad_iterate_tmpl_args(tu_data->arg_specs,
                                    tu_data->arg_num,
                                    tu_data->arg_iterated) > 0);
 
@@ -779,11 +778,11 @@ tad_send_by_template(csap_p csap,
 }
 
 /* See description in tad_send.h */
-void * 
+void *
 tad_send_thread(void *arg)
 {
     csap_p              csap = arg;
-    tad_send_context   *context; 
+    tad_send_context   *context;
     te_errno            rc;
 
     assert(csap != NULL);
@@ -812,7 +811,7 @@ tad_send_thread(void *arg)
         rc = tad_task_reply(&context->task, "0 0");
         tad_task_free(&context->task);
     }
-    /* 
+    /*
      * May be if TE proto reply is failed, it's better not to start at
      * all, but let's try.
      */
@@ -859,9 +858,9 @@ tad_send_thread(void *arg)
         if (context->status != 0)
             rc = tad_task_reply(&context->task,
                                 "%u", context->status);
-        else 
+        else
             rc = tad_task_reply(&context->task,
-                                "0 %u", context->sent_pkts); 
+                                "0 %u", context->sent_pkts);
         tad_task_free(&context->task);
 
         /* We can do nothing helpfull, if reply failed, just remember it */
@@ -869,13 +868,13 @@ tad_send_thread(void *arg)
     }
     else
     {
-        /* 
+        /*
          * Send operation was started in background, we have to preserve
          * the state and status of the operation to be reported on stop.
          */
     }
 
-    /* 
+    /*
      * Log under the lock, since CSAP can be destroyed when lock is
      * released.
      */
@@ -889,14 +888,14 @@ tad_send_thread(void *arg)
 
 /**
  * Callback for default payload memset, prototype complies to
- * type 'tad_pkt_seg_enum_cb'. 
+ * type 'tad_pkt_seg_enum_cb'.
  */
 static te_errno
 tad_send_payload_default_fill(const tad_pkt *pkt,
                               tad_pkt_seg   *seg,
                               unsigned int   seg_num,
                               void          *opaque)
-{ 
+{
     UNUSED(pkt);
     UNUSED(seg_num);
     UNUSED(opaque);
@@ -907,17 +906,17 @@ tad_send_payload_default_fill(const tad_pkt *pkt,
 
 /* See the description in tad_send.h */
 te_errno
-tad_send_prepare_bin(csap_p csap, asn_value *nds, 
+tad_send_prepare_bin(csap_p csap, asn_value *nds,
                      const tad_tmpl_arg_t *args, size_t arg_num,
                      tad_payload_spec_t *pld_data, void **layer_opaque,
                      tad_pkts *pkts_per_layer)
-{ 
+{
     tad_pkts   *pdus = pkts_per_layer + csap->depth;
     tad_pkts   *sdus;
 
     unsigned int    layer = 0;
     te_errno        rc = 0;
-    const asn_value *layer_pdu = NULL; 
+    const asn_value *layer_pdu = NULL;
     char  label[32];
 
     tad_pkts_init(pdus);
@@ -935,7 +934,7 @@ tad_send_prepare_bin(csap_p csap, asn_value *nds,
             break;
 
         case TAD_PLD_FUNCTION:
-        { 
+        {
             size_t d_len = asn_get_length(nds, "payload.#bytes");
             void  *data = malloc(d_len);
 
@@ -947,7 +946,7 @@ tad_send_prepare_bin(csap_p csap, asn_value *nds,
             }
 
             rc = pld_data->func(csap->id, -1 /* payload */,
-                                nds); 
+                                nds);
             if (rc != 0)
             {
                 ERROR(CSAP_LOG_FMT "Function to generate payload "
@@ -964,29 +963,29 @@ tad_send_prepare_bin(csap_p csap, asn_value *nds,
             rc = tad_pkts_add_new_seg(pdus, TRUE, data, d_len,
                                       tad_pkt_seg_data_free);
             break;
-        } 
-        case TAD_PLD_BYTES: 
+        }
+        case TAD_PLD_BYTES:
             rc = tad_pkts_add_new_seg(pdus, TRUE,
                                       pld_data->plain.data,
                                       pld_data->plain.length,
                                       NULL);
             break;
-        
+
         case TAD_PLD_LENGTH:
             rc = tad_pkts_add_new_seg(pdus, TRUE, NULL,
                                       pld_data->plain.length, NULL);
             if (rc != 0)
                 break;
-            /* 
+            /*
              * We know here that payloads are the first segments in
              * packets - since they are single yet, we start from
-             * payload. 
+             * payload.
              */
             rc = tad_pkts_enumerate_first_segs(pdus,
                      tad_send_payload_default_fill, NULL);
             break;
 
-        case TAD_PLD_STREAM: 
+        case TAD_PLD_STREAM:
         {
             uint32_t offset;
             uint32_t length;
@@ -1022,7 +1021,7 @@ tad_send_prepare_bin(csap_p csap, asn_value *nds,
                 break;
             }
 #if 0 /* FIXME */
-            rc = pld_data->stream.func(offset, length, 
+            rc = pld_data->stream.func(offset, length,
                                        up_packets->data);
 #endif
             break;
@@ -1032,7 +1031,7 @@ tad_send_prepare_bin(csap_p csap, asn_value *nds,
             rc = TE_RC(TE_TAD_CH, TE_EOPNOTSUPP);
             break;
         /* TODO: processing of other choices should be inserted here. */
-    } 
+    }
 
     if (rc != 0)
     {
@@ -1042,7 +1041,7 @@ tad_send_prepare_bin(csap_p csap, asn_value *nds,
 
     /* All layers should be passed in any case to initialize pdus */
     for (layer = 0; layer < csap->depth; layer++)
-    { 
+    {
         sdus = pdus;
         pdus--;
         tad_pkts_init(pdus);
@@ -1061,8 +1060,8 @@ tad_send_prepare_bin(csap_p csap, asn_value *nds,
         {
             rc = csap_get_proto_support(csap, layer)->generate_pkts_cb(
                      csap, layer, layer_pdu, layer_opaque[layer],
-                     args, arg_num, sdus, pdus); 
-            if (rc != 0) 
+                     args, arg_num, sdus, pdus);
+            if (rc != 0)
             {
                 ERROR(CSAP_LOG_FMT "Generate binary data on layer %u "
                       "(%s) failed: %r", CSAP_LOG_ARGS(csap), layer,
@@ -1078,9 +1077,9 @@ tad_send_prepare_bin(csap_p csap, asn_value *nds,
 /**
  * Description see in tad_utils.h
  */
-int 
-tad_iterate_tmpl_args(tad_tmpl_iter_spec_t *arg_specs, 
-                      size_t arg_specs_num, 
+int
+tad_iterate_tmpl_args(tad_tmpl_iter_spec_t *arg_specs,
+                      size_t arg_specs_num,
                       tad_tmpl_arg_t *arg_iterated)
 {
     int     dep = arg_specs_num - 1;
@@ -1094,28 +1093,28 @@ tad_iterate_tmpl_args(tad_tmpl_iter_spec_t *arg_specs,
     if (arg_iterated == NULL)
         return -1;
 
-    for (arg_spec_p = arg_specs + dep; 
-         dep >= 0 && !performed; 
+    for (arg_spec_p = arg_specs + dep;
+         dep >= 0 && !performed;
          dep--, arg_spec_p--)
     {
         switch(arg_spec_p->type)
         {
             case TAD_TMPL_ITER_FOR:
                 if (arg_iterated[dep].arg_int < arg_spec_p->simple_for.end)
-                { 
-                    arg_iterated[dep].arg_int += 
+                {
+                    arg_iterated[dep].arg_int +=
                         arg_spec_p->simple_for.step;
                     performed = TRUE;
                 }
                 else
                 {
-                    arg_iterated[dep].arg_int = 
+                    arg_iterated[dep].arg_int =
                         arg_spec_p->simple_for.begin;
                     /* formally, it's unnecessary here, but algorithm
                        is more clear with this operator. */
                 }
-                VERB("for, value %d, dep %d, performed %d", 
-                     arg_iterated[dep].arg_int, dep, (int)performed); 
+                VERB("for, value %d, dep %d, performed %d",
+                     arg_iterated[dep].arg_int, dep, (int)performed);
                 break;
 
             case TAD_TMPL_ITER_INT_ASSOC:
@@ -1123,7 +1122,7 @@ tad_iterate_tmpl_args(tad_tmpl_iter_spec_t *arg_specs,
                 {
                     int new_index = arg_spec_p->int_seq.last_index + 1;
 
-                    if ((size_t)new_index == arg_spec_p->int_seq.length) 
+                    if ((size_t)new_index == arg_spec_p->int_seq.length)
                         new_index = 0;
                     else if (arg_spec_p->type == TAD_TMPL_ITER_INT_SEQ)
                         performed = TRUE;
@@ -1131,9 +1130,9 @@ tad_iterate_tmpl_args(tad_tmpl_iter_spec_t *arg_specs,
                     arg_iterated[dep].arg_int =
                         arg_spec_p->int_seq.ints[new_index];
 
-                    VERB("ints, index %d, value %d, dep %d, performed %d", 
+                    VERB("ints, index %d, value %d, dep %d, performed %d",
                          new_index, arg_iterated[dep].arg_int,
-                         dep, (int)performed); 
+                         dep, (int)performed);
 
                     arg_spec_p->int_seq.last_index = new_index;
                 }
@@ -1152,11 +1151,11 @@ tad_iterate_tmpl_args(tad_tmpl_iter_spec_t *arg_specs,
 /**
  * Description see in tad_utils.h
  */
-int 
-tad_get_tmpl_arg_specs(const asn_value *arg_set, 
+int
+tad_get_tmpl_arg_specs(const asn_value *arg_set,
                        tad_tmpl_iter_spec_t *arg_specs, size_t arg_num)
 {
-    unsigned i; 
+    unsigned i;
     int      rc = 0;
     int32_t  arg_param = 0;
     size_t   enum_len;
@@ -1165,18 +1164,18 @@ tad_get_tmpl_arg_specs(const asn_value *arg_set,
     asn_tag_class t_class;
 
     if (arg_set == NULL || arg_specs == NULL)
-        return -1; 
+        return -1;
 
     for (i = 0; i < arg_num; i++)
-    { 
+    {
         const asn_value *arg_val;
         const asn_value *arg_spec_elem;
 
         rc = asn_get_indexed(arg_set, (asn_value **)&arg_spec_elem,
                              i, NULL);
-        if (rc) 
+        if (rc)
         {
-            WARN("%s(): asn_get_indexed(%d) failed %r", 
+            WARN("%s(): asn_get_indexed(%d) failed %r",
                  __FUNCTION__, i, rc);
             break;
         }
@@ -1185,7 +1184,7 @@ tad_get_tmpl_arg_specs(const asn_value *arg_set,
                                   &t_class, &t_val);
         if (rc)
         {
-            WARN("%s(): asn_get_choice_value failed %r", 
+            WARN("%s(): asn_get_choice_value failed %r",
                  __FUNCTION__, rc);
             break;
         }
@@ -1197,7 +1196,7 @@ tad_get_tmpl_arg_specs(const asn_value *arg_set,
         {
             case NDN_ITER_INTS:
             case NDN_ITER_INTS_ASSOC:
-                arg_specs[i].type = ((t_val == NDN_ITER_INTS) ? 
+                arg_specs[i].type = ((t_val == NDN_ITER_INTS) ?
                         TAD_TMPL_ITER_INT_SEQ : TAD_TMPL_ITER_INT_ASSOC);
                 enum_len = arg_specs[i].int_seq.length =
                                                 asn_get_length(arg_val, "");
@@ -1227,14 +1226,14 @@ tad_get_tmpl_arg_specs(const asn_value *arg_set,
             case NDN_ITER_FOR:
                 arg_specs[i].type = TAD_TMPL_ITER_FOR;
                 rc = asn_read_int32(arg_val, &arg_param, "begin");
-                arg_specs[i].simple_for.begin = ((rc == 0) ? arg_param : 
+                arg_specs[i].simple_for.begin = ((rc == 0) ? arg_param :
                                             TAD_ARG_SIMPLE_FOR_BEGIN_DEF);
 
                 VERB("simple-for, begin %d", arg_specs[i].simple_for.begin);
 
                 rc = asn_read_int32(arg_val, &arg_param, "step");
                 arg_specs[i].simple_for.step = ((rc == 0) ? arg_param :
-                                            TAD_ARG_SIMPLE_FOR_STEP_DEF); 
+                                            TAD_ARG_SIMPLE_FOR_STEP_DEF);
                 VERB("simple-for, step %d", arg_specs[i].simple_for.step);
 
                 rc = asn_read_int32(arg_val, &arg_param, "end");
@@ -1254,13 +1253,13 @@ tad_get_tmpl_arg_specs(const asn_value *arg_set,
     }
     return rc;
 }
-            
+
 
 
 /**
  * Description see in tad_utils.h
  */
-int 
+int
 tad_init_tmpl_args(tad_tmpl_iter_spec_t *arg_specs, size_t arg_specs_num,
                    tad_tmpl_arg_t *arg_iterated)
 {
@@ -1275,7 +1274,7 @@ tad_init_tmpl_args(tad_tmpl_iter_spec_t *arg_specs, size_t arg_specs_num,
     memset(arg_iterated, 0, arg_specs_num * sizeof(tad_tmpl_arg_t));
 
     for (i = 0; i < arg_specs_num; i++)
-    { 
+    {
         switch (arg_specs[i].type)
         {
             case TAD_TMPL_ITER_INT_SEQ:
@@ -1286,7 +1285,7 @@ tad_init_tmpl_args(tad_tmpl_iter_spec_t *arg_specs, size_t arg_specs_num,
                 break;
 
             case TAD_TMPL_ITER_FOR:
-                arg_iterated[i].arg_int = arg_specs[i].simple_for.begin; 
+                arg_iterated[i].arg_int = arg_specs[i].simple_for.begin;
                 arg_iterated[i].type = TAD_TMPL_ARG_INT;
                 break;
 

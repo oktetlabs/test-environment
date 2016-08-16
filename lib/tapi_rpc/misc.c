@@ -2243,3 +2243,23 @@ tapi_interface_is_vlan(rcf_rpc_server *rpcs,
 
     return FALSE;
 }
+
+/* See description in tapi_rpc_misc.h */
+void
+rpc_release_rpc_ptr(rcf_rpc_server *rpcs, rpc_ptr ptr, char *ns_string)
+{
+    tarpc_release_rpc_ptr_in  in;
+    tarpc_release_rpc_ptr_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    TAPI_RPC_NAMESPACE_CHECK_JUMP(rpcs, ptr, ns_string);
+    in.ptr = ptr;
+    in.ns_string = ns_string;
+
+    rcf_rpc_call(rpcs, "release_rpc_ptr", &in, &out);
+
+    TAPI_RPC_LOG(rpcs, release_rpc_ptr, RPC_PTR_FMT, "", RPC_PTR_VAL(ptr));
+    RETVAL_VOID(release_rpc_ptr);
+}

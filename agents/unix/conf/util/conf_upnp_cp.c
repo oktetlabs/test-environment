@@ -81,7 +81,7 @@ upnp_cp_start_process(void)
     const char *argv[] = {
         "te_upnp_cp",
         upnp_cp_conf.target,
-        ta_upnp_cp_unix_socket,
+        upnp_cp_unix_socket_name,
         upnp_cp_conf.iface,
         NULL
     };

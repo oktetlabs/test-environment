@@ -13,7 +13,7 @@
 #include <pthread.h>
 #endif
 #ifdef HAVE_SYS_TIME_H
-#include <sys/time.h> /* For 'struct timeval' */ 
+#include <sys/time.h> /* For 'struct timeval' */
 #endif
 #include "tad_csap_inst.h"
 
@@ -31,8 +31,8 @@
  * Calculates the sum of timevals, ts1 + ts2.
  *
  * @param res     The result timeval.
- * @param ts1     Time stamp to be reduced 
- * @param ts2     On which value to reduce 
+ * @param ts1     Time stamp to be reduced
+ * @param ts2     On which value to reduce
  */
 #define ADD_TV(res, ts1, ts2)                                       \
     do {                                                            \
@@ -46,8 +46,8 @@
  * Calculates substraction of timevals, ts1 - ts2.
  *
  * @param res     The result timeval.
- * @param ts1     Time stamp to be reduced 
- * @param ts2     On which value to reduce 
+ * @param ts1     Time stamp to be reduced
+ * @param ts2     On which value to reduce
  */
 #define SUB_TV(res, ts1, ts2)                                       \
     do {                                                            \
@@ -68,7 +68,7 @@ typedef struct sendq_entry_s {
 } sendq_entry_t;
 
 /**
- * Send queue structure. Packets from the tail of the queue should 
+ * Send queue structure. Packets from the tail of the queue should
  * be sent first
  */
 typedef struct sendq_s {
@@ -78,10 +78,10 @@ typedef struct sendq_s {
     int             id;   /**< Unique send queue identifier */
 
     pthread_t       send_thread; /**< sending thread id */
-    
+
     csap_p          csap;        /**< csap used by this sendq to send data */
     pthread_mutex_t sendq_lock;  /**< mutex lock for the shared data       */
-   
+
     int             sendq_sync_sockets[2]; /**< pipe for sync of threads */
 
     int             queue_size_max;  /**< queue max size     */
@@ -135,10 +135,10 @@ extern sendq_t *tadf_sendq_find(int sendq_id);
  * @param bandwidth   Required Send Queue bandwidth
  * @param size_max    Required Send Queue buffer size
  *
- * @return          ID of the created sendq if the function ends correctly, 
+ * @return          ID of the created sendq if the function ends correctly,
  *                  or -1 on error
  */
-extern int tadf_sendq_create(csap_handle_t csap_id, 
+extern int tadf_sendq_create(csap_handle_t csap_id,
                              int bandwidth, int size_max);
 
 /**
@@ -156,11 +156,11 @@ extern int tadf_sendq_destroy(int sendq_id);
  * Sets the parameter of the send queue due to parameter name and
  * new value.
  *
- * @param sendq_id        The ID of the queue the parameter of which 
+ * @param sendq_id        The ID of the queue the parameter of which
  *                        should be changed.
  * @param param_spec      The name of the parameter in human-readable form.
- * @param value           New value of the parameter.* 
- * 
+ * @param value           New value of the parameter.*
+ *
  * @return                0 - if the function ends correctly
  *                        TE_EINVAL - if there is no such parameter
  */
@@ -170,7 +170,7 @@ extern int tadf_sendq_set_param(int sendq_id,
 /**
  * Gets the parameter of the send queue due to parameter name.
  *
- * @param sendq_id        The ID of the queue the parameter of which 
+ * @param sendq_id        The ID of the queue the parameter of which
  *                        should be
  *                        outputed.
  * @param param_spec      The name of the parameter in human-readable form.
@@ -190,7 +190,7 @@ extern int tadf_sendq_get_param(int sendq_id,
  * 3) sending thread of the send queue
  * 4) sync pipe
  *
- * @param queue       Location for pointer to the initalised queue 
+ * @param queue       Location for pointer to the initalised queue
  *                    structure (OUT)
  * @param csap        Pointer to the descriptor of destination CSAP
  * @param bandwidth   Required Send Queue bandwidth
@@ -204,7 +204,7 @@ extern int tadf_sendq_init(sendq_t **queue, csap_p csap,
 
 /**
  * This function destroyes the send queue and all related objects.
- * 
+ *
  * @param sendq        The send queue to be destroyed.
  *
  * @return              0 - if the function ends correctly

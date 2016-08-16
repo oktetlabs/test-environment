@@ -68,7 +68,7 @@ else
 {
     # Go one month back by default
     $form_str =~ s/<!-- MONTHS_BACK -->/1/;
-    $tests = "sockapi-ts/sockopts/bindtodevice_dstunreach";
+    $tests = "DEF_TEST";
 }
 
 $form_str =~ s/\s*<!-- TESTS -->\s*/$tests/;

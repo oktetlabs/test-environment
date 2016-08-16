@@ -4,6 +4,8 @@ use strict;
 use warnings;
 use Date::Manip;
 
+use Fcntl qw/:flock/;
+
 # Next comment is special, it will be changed to
 # correct "use lib" when deploying.
 
@@ -17,6 +19,10 @@ my $date_inc = new Date::Manip::Delta;
 my $log_path;
 my $cache_dir;
 my $cache_id;
+my $days_at_once = 2;
+my $verb_log = "./add_new_cache_vlog";
+
+my $xml_log_def_name = "trc-log.bz2";
 
 umask 0027;
 
@@ -67,6 +73,18 @@ foreach my $arg (@ARGV)
             $log_path .= "/";
         }
     }
+    elsif ($arg =~ m/^--def-log-name=(.+)$/)
+    {
+        $xml_log_def_name = $1;
+    }
+    elsif ($arg =~ m/^--days-at-once=(.+)$/)
+    {
+        $days_at_once = $1 + 0;
+    }
+    elsif ($arg =~ m/^--verbose-log=(.+)$/)
+    {
+        $verb_log = $1;
+    }
     elsif ($arg =~ m/^--cache-dir=(.+)$/ || $arg =~ m/^-c(.+)$/)
     {
         my $tmp = $1;
@@ -99,7 +117,12 @@ foreach my $arg (@ARGV)
               "--from=, -f              From which date to cache logs\n".
               "--log-path=, -l          Path to logs to be cached\n".
               "--cache-dir=, -c         Where to save cache files\n".
-              "--cache-id=, -i          New cache ID\n";
+              "--cache-id=, -i          New cache ID\n".
+              "--verbose-log=           Where to save verbose log\n".
+              "--days-at-once=          Number of days to be processed\n".
+              "                         in a single step\n".
+              "--def-log-name=          Filename of XML log\n".
+              "                         (trc-log.bz2 by default)\n";
 
         exit(0);
     }
@@ -124,14 +147,18 @@ if (!defined($cache_id))
 
 my $date_a;
 my $date_b;
+my $caches_list_path = get_caches_list_path();
 my $cli_path = get_cli_path();
+my $fh_lock = lock_caches();
 my @caches = load_caches_list();
 
-$date_inc->parse("+ 1 day");
+$date_inc->parse("+ ".($days_at_once - 1)." day");
 $date_a = $date_from;
 $date_b = $date_inc->calc($date_a);
 
-$date_inc->parse("+ 2 day");
+$date_inc->parse("+ ${days_at_once} day");
+
+system("rm ${verb_log}");
 
 while ($date_a->cmp($date_to) <= 0)
 {
@@ -140,7 +167,9 @@ while ($date_a->cmp($date_to) <= 0)
 
     print "Caching results from $date_a_str to $date_b_str\n";
 
-    `$cli_path/te_get_nlogs_results -f$date_a_str -t$date_b_str --log-path=$log_path --update-cache=$cache_dir`;
+    system("$cli_path/te_get_nlogs_results -f$date_a_str -t$date_b_str ".
+           "--log-path=$log_path --update-cache=$cache_dir ".
+           "--def-log-name=$xml_log_def_name --include-compromised >>${verb_log}");
 
     $date_a = $date_inc->calc($date_a);
     $date_b = $date_inc->calc($date_b);
@@ -167,8 +196,8 @@ if ($cache_found == 0)
                     "logs_source" => $log_path });
 }
 
-open(my $fh, '>', "$cli_path/caches_list_tmp") or
-      die "Failed to open caches_list_tmp";
+open(my $fh, '>', "${caches_list_path}") or
+      die "Failed to open ${caches_list_path}";
 foreach my $cache (@caches)
 {
     print $fh add_spaces($cache->{"id"}, 50).
@@ -177,4 +206,4 @@ foreach my $cache (@caches)
 }
 close($fh);
 
-`mv $cli_path/caches_list_tmp $cli_path/caches_list`
+unlock_caches($fh_lock);

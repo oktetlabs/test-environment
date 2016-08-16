@@ -50,6 +50,9 @@
 #if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
+#if HAVE_TIME_H
+#include <time.h>
+#endif
 
 #include "ipc_internal.h"
 

@@ -284,6 +284,10 @@ netconf_handle nh = NETCONF_HANDLE_INVALID;
 extern te_errno ta_unix_conf_aggr_init();
 #endif
 
+#ifdef ENABLE_PCI_SUPPORT
+extern te_errno ta_unix_conf_pci_init();
+#endif
+
 #ifdef WITH_SNIFFERS
 extern te_errno ta_unix_conf_sniffer_init();
 extern te_errno ta_unix_conf_sniffer_cleanup();
@@ -860,6 +864,8 @@ RCF_PCH_CFG_NODE_COLLECTION(node_user, "user",
                             user_add, user_del,
                             user_list, NULL);
 
+RCF_PCH_CFG_NODE_NA(node_hardware, "hardware", NULL, &node_user);
+
 /* XEN stuff tree */
 RCF_PCH_CFG_NODE_RW(node_dom_u_migrate_kind, "kind",
                     NULL, NULL,
@@ -967,9 +973,8 @@ RCF_PCH_CFG_NODE_RW(node_subpath, "subpath",
                     &xen_subpath_get, &xen_subpath_set);
 
 RCF_PCH_CFG_NODE_RW(node_xen, "xen",
-                    &node_subpath, &node_user,
+                    &node_subpath, &node_hardware,
                     &xen_path_get, &xen_path_set);
-
 
 #define MAX_VLANS 0xfff
 static int vlans_buffer[MAX_VLANS];
@@ -1163,6 +1168,10 @@ rcf_ch_conf_init()
 #endif
 #ifdef ENABLE_WIFI_SUPPORT
         if (ta_unix_conf_wifi_init() != 0)
+            goto fail;
+#endif
+#ifdef ENABLE_PCI_SUPPORT
+        if (ta_unix_conf_pci_init() != 0)
             goto fail;
 #endif
 #ifdef ENABLE_VCM_SUPPORT

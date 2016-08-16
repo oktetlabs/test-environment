@@ -28,7 +28,7 @@
  */
 
 #ifndef __TE_TAD_DHCP_IMPL_H__
-#define __TE_TAD_DHCP_IMPL_H__ 
+#define __TE_TAD_DHCP_IMPL_H__
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,7 +42,7 @@
 #include "te_defs.h"
 #include "te_errno.h"
 
-#include "asn_usr.h" 
+#include "asn_usr.h"
 #include "ndn.h"
 #include "ndn_dhcp.h"
 
@@ -139,7 +139,7 @@ extern te_errno tad_dhcp_confirm_tmpl_cb(csap_p         csap,
  * arameters and possibilities.
  *
  * The function complies with csap_layer_confirm_pdu_cb_t prototype.
- */ 
+ */
 extern te_errno tad_dhcp_confirm_ptrn_cb(csap_p         csap,
                                          unsigned int   layer,
                                          asn_value     *layer_pdu,

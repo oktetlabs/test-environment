@@ -74,6 +74,7 @@
 
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
+#include <libxml/xinclude.h>
 
 #include <dlfcn.h>
 
@@ -388,6 +389,232 @@ resolve_ta_methods(ta *agent, char *libname)
 }
 
 /**
+ * Check if attribute value contains @c "yes"
+ *
+ * @param node              XML node
+ * @param attribute_name    XML attribute name
+ *
+ * @return  @c FALSE if attribute absents in @p node,
+ *          @c TRUE  if attribute value equals @c "yes",
+ *          @c FALSE in other cases.
+ */
+static te_bool
+attribute_contains_yes(xmlNodePtr node, const char *attribute_name)
+{
+    te_bool     value;
+    char       *attr;
+
+    attr = xmlGetProp_exp(node, (const xmlChar *)attribute_name);
+    if (attr == NULL)
+        return FALSE;
+
+    value = (strcmp(attr, "yes") == 0);
+    free(attr);
+    return value;
+}
+
+/**
+ * Parse "ta" configuration node
+ *
+ * @param rcf_node  XML configuration node with name "ta"
+ *
+ * @return          Status code
+ */
+static te_errno
+parse_config_ta(xmlNodePtr ta_node)
+{
+    xmlNodePtr          arg;
+    xmlNodePtr          task;
+    char               *attr;
+    ta                 *agent;
+    ta_initial_task    *ta_task = NULL;
+    size_t              agent_name_len;
+
+    if (attribute_contains_yes(ta_node, "disabled"))
+        return 0;
+
+    if ((agent = (ta *)calloc(1, sizeof(ta))) == NULL)
+    {
+        ERROR("calloc failed: %d", errno);
+        return TE_RC(TE_RCF, TE_ENOMEM);
+    }
+
+    agent->next = agents;
+    agents = agent;
+    agent->flags = TA_DEAD;
+
+    attr = xmlGetProp_exp(ta_node, (const xmlChar *)"name");
+    if (attr == NULL)
+    {
+        ERROR("No name attribute in <ta>");
+        return TE_RC(TE_RCF, TE_EFMT);
+    }
+    agent->name = attr;
+
+    agent_name_len = strlen(agent->name);
+    if (names_len + agent_name_len + 1 > sizeof(names))
+    {
+        ERROR("FATAL ERROR: Too many Test Agents - "
+              "increase memory constants");
+        return TE_RC(TE_RCF, TE_EFAIL);
+    }
+    memcpy(&names[names_len], agent->name, agent_name_len);
+    names[names_len + agent_name_len] = '\0';
+    names_len += agent_name_len + 1;
+
+    attr = xmlGetProp_exp(ta_node, (const xmlChar *)"type");
+    if (attr == NULL)
+    {
+        ERROR("No type attribute in <ta name=\"%s\">", agent->name);
+        return TE_RC(TE_RCF, TE_EFMT);
+    }
+    agent->type = attr;
+
+    attr = xmlGetProp_exp(ta_node, (const xmlChar *)"rcflib");
+    if (attr == NULL)
+    {
+        ERROR("No rcflib attribute in <ta name=\"%s\">", agent->name);
+        return TE_RC(TE_RCF, TE_EFMT);
+    }
+    if (resolve_ta_methods(agent, attr) != 0)
+    {
+        free(attr);
+        return TE_RC(TE_RCF, TE_EFAIL);
+    }
+    free(attr);
+
+    agent->enable_synch_time =
+            attribute_contains_yes(ta_node, "synch_time");
+
+    attr = xmlGetProp_exp(ta_node, (const xmlChar *)"confstr");
+    if (attr != NULL)
+        agent->conf = attr;
+    else
+        agent->conf = strdup("");
+
+    if (attribute_contains_yes(ta_node, "rebootable"))
+        agent->flags |= TA_REBOOTABLE;
+
+    attr = xmlGetProp_exp(ta_node, (const xmlChar *)"cold_reboot");
+    if (attr != NULL)
+    {
+        char *param;
+
+        if ((param = strchr(attr, ':')) == NULL)
+            free(attr);
+        else
+        {
+            agent->cold_reboot_ta = attr;
+            *param = '\0';
+            agent->cold_reboot_param = param + 1;
+        }
+    }
+
+    /* TA is already running under gdb */
+    if (attribute_contains_yes(ta_node, "fake"))
+        agent->flags |= TA_FAKE;
+
+    for (task = ta_node->xmlChildrenNode; task != NULL; task = task->next)
+    {
+        char *condition;
+
+        if (xmlStrcmp(task->name, (const xmlChar *)"thread") != 0 &&
+            xmlStrcmp(task->name, (const xmlChar *)"task") != 0 &&
+            xmlStrcmp(task->name, (const xmlChar *)"function") != 0)
+            continue;
+
+        condition = xmlGetProp_exp(task, (const xmlChar *)"when");
+        if (condition != NULL)
+        {
+            if (*condition == '\0')
+            {
+                free(condition);
+                continue;
+            }
+            free(condition);
+        }
+
+        ta_task = malloc(sizeof(*ta_task));
+        if (ta_task == NULL)
+        {
+            ERROR("malloc failed: %d", errno);
+            return TE_RC(TE_RCF, TE_EFAIL);
+        }
+        ta_task->mode =
+            (xmlStrcmp(task->name , (const xmlChar *)"thread") == 0 ?
+             RCF_THREAD :
+             (xmlStrcmp(task->name , (const xmlChar *)"function") == 0 ?
+              RCF_FUNC : RCF_PROCESS));
+
+        attr = xmlGetProp_exp(task, (const xmlChar *)"name");
+        if (attr == NULL)
+        {
+            INFO("No name attribute in <task>/<thread>");
+            return TE_RC(TE_RCF, TE_EFMT);
+        }
+        ta_task->entry = attr;
+
+        ta_task->argc = 0;
+        ta_task->argv = malloc(sizeof(*ta_task->argv) * RCF_MAX_PARAMS);
+        for (arg = task->xmlChildrenNode; arg != NULL; arg = arg->next)
+        {
+            if (xmlStrcmp(arg->name, (const xmlChar *)"arg") != 0)
+                continue;
+            attr = xmlGetProp_exp(arg, (const xmlChar *)"value");
+            if (attr == NULL)
+            {
+                ERROR("No value attribute in <arg>");
+                return TE_RC(TE_RCF, TE_EFMT);
+            }
+            INFO("task.argv[%d]=%s", ta_task->argc, attr);
+            ta_task->argv[ta_task->argc++] = attr;
+        }
+        ta_task->next = agent->initial_tasks;
+        agent->initial_tasks = ta_task;
+    }
+
+    agent->sent.prev = agent->sent.next = &(agent->sent);
+    agent->pending.prev = agent->pending.next = &(agent->pending);
+    agent->waiting.prev = agent->waiting.next = &(agent->waiting);
+
+    agent->sid = RCF_SID_UNUSED;
+
+    ta_num++;
+    return 0;
+}
+
+/**
+ * Parse children of "rcf" configuration node
+ *
+ * @param rcf_node  XML configuration node with name "rcf"
+ *
+ * @return          Status code
+ */
+static te_errno
+parse_config_rcf(xmlNodePtr rcf_node)
+{
+    te_errno    rc = 0;
+    xmlNodePtr  cur = rcf_node->xmlChildrenNode;
+    for (; cur != NULL && rc == 0; cur = cur->next)
+    {
+        if (xmlStrcmp(cur->name , (const xmlChar *)"ta") == 0)
+            rc = parse_config_ta(cur);
+        else if (xmlStrcmp(cur->name , (const xmlChar *)"rcf") == 0)
+            rc = parse_config_rcf(cur);
+        else if ((xmlStrcmp(cur->name, (const xmlChar *)"text") == 0) ||
+                 (xmlStrcmp(cur->name, (const xmlChar *)"include") == 0) ||
+                 (xmlStrcmp(cur->name, (const xmlChar *)"comment") == 0))
+            continue;
+        else
+        {
+            ERROR("Unknown node name \"%s\"", cur->name);
+            rc = TE_RC(TE_RCF, TE_EFMT);
+        }
+    }
+    return rc;
+}
+
+/**
  * Parse configuration file and initializes list of Test Agents.
  *
  * @param filename      full name of the configuration file
@@ -397,14 +624,10 @@ resolve_ta_methods(ta *agent, char *libname)
 static int
 parse_config(const char *filename)
 {
-    char *name_ptr = names;
-    ta   *agent;
-    ta_initial_task *ta_task = NULL;
-
-    xmlDocPtr  doc;
-    xmlNodePtr cur;
-    xmlNodePtr task;
-    xmlNodePtr arg;
+    int         rc = -1;
+    int         subst;
+    xmlDocPtr   doc;
+    xmlNodePtr  root;
 
     if ((doc = xmlParseFile(filename)) == NULL)
     {
@@ -413,214 +636,51 @@ parse_config(const char *filename)
         return -1;
     }
 
-    if ((cur = xmlDocGetRootElement(doc)) == NULL)
+    VERB("Do XInclude substitutions in the document");
+    subst = xmlXIncludeProcess(doc);
+    if (subst < 0)
     {
-        ERROR("Empty configuration file");
-        xmlFreeDoc(doc);
+#if HAVE_XMLERROR
+        xmlError *err = xmlGetLastError();
+
+        ERROR("XInclude processing failed: %s", err->message);
+#else
+        ERROR("XInclude processing failed");
+#endif
         xmlCleanupParser();
         return -1;
     }
+    VERB("XInclude made %d substitutions", subst);
 
-    if (xmlStrcmp(cur->name, (const xmlChar *)"rcf") != 0)
-        goto bad_format;
-
-    for (cur = cur->xmlChildrenNode; cur != NULL; cur = cur->next)
+    root = xmlDocGetRootElement(doc);
+    if (root == NULL)
+        ERROR("Empty configuration file");
+    else
     {
-        char *attr;
+        te_errno result = TE_RC(TE_RCF, TE_EFMT);
+        if (xmlStrcmp(root->name, (const xmlChar *)"rcf") == 0)
+            result = parse_config_rcf(root);
 
-        if (xmlStrcmp(cur->name , (const xmlChar *)"ta") != 0)
-            continue;
-
-        attr = xmlGetProp_exp(cur, (const xmlChar *)"disabled");
-        if (attr != NULL)
+        switch (TE_RC_GET_ERROR(result))
         {
-            if (strcmp(attr, "yes") == 0)
-            {
-                free(attr);
-                continue;
-            }
-            free(attr);
+            case 0:
+                rc = 0;
+                break;
+
+            case TE_EFMT:
+                ERROR("Wrong configuration file format");
+                free_ta_list();
+                break;
+
+            default:
+                free_ta_list();
+                break;
         }
-
-        if ((agent = (ta *)calloc(1, sizeof(ta))) == NULL)
-            return -1;
-
-        agent->next = agents;
-        agents = agent;
-        agent->flags = TA_DEAD;
-
-        if ((attr = xmlGetProp_exp(cur, (const xmlChar *)"name")) != NULL)
-        {
-            agent->name = attr;
-        }
-        else
-            goto bad_format;
-
-        strcpy(name_ptr, agent->name);
-        if (names_len + strlen(agent->name) + 1 > sizeof(names))
-        {
-            ERROR("FATAL ERROR: Too many Test Agents - "
-                  "increase memory constants");
-            goto error;
-        }
-        name_ptr += strlen(agent->name) + 1;
-        names_len += strlen(agent->name) + 1;
-
-        if ((attr = xmlGetProp_exp(cur, (const xmlChar *)"type")) != NULL)
-        {
-            agent->type = attr;
-        }
-        else
-            goto bad_format;
-
-
-        if ((attr = xmlGetProp_exp(cur, (const xmlChar *)"rcflib")) != NULL)
-        {
-            if (resolve_ta_methods(agent, (char *)attr) != 0)
-            {
-                free(attr);
-                goto error;
-            }
-            free(attr);
-        }
-        else
-            goto bad_format;
-
-        if ((attr = xmlGetProp_exp(cur, (const xmlChar *)"synch_time")) 
-            != NULL)
-        {
-            agent->enable_synch_time = (strcmp(attr, "yes") == 0);
-            free(attr);
-        }
-        else
-            agent->enable_synch_time = FALSE;
-
-        if ((attr = xmlGetProp_exp(cur, (const xmlChar *)"confstr")) 
-            != NULL)
-        {
-            agent->conf = attr;
-        }
-        else
-            agent->conf = strdup("");
-
-        if ((attr = xmlGetProp_exp(cur, (const xmlChar *)"rebootable")) 
-            != NULL)
-        {
-            if (strcmp(attr, "yes") == 0)
-                agent->flags |= TA_REBOOTABLE;
-           free(attr);
-        }
-
-        if ((attr = xmlGetProp_exp(cur, (const xmlChar *)"cold_reboot"))
-            != NULL)
-        {
-            char *param;
-
-            if ((param = strchr(attr, ':')) != 0)
-            {
-                agent->cold_reboot_ta = attr;
-                *param = '\0';
-                agent->cold_reboot_param = param + 1;
-            }
-            else
-                free(attr);
-        }
-
-        if ((attr = xmlGetProp_exp(cur, (const xmlChar *)"fake")) != NULL)
-        {
-            if (strcmp(attr, "yes") == 0)
-            {
-                /* TA is already running under gdb */
-                agent->flags |= TA_FAKE;
-            }
-            free(attr);
-        }
-
-        for (task = cur->xmlChildrenNode; task != NULL; task = task->next)
-        {
-            char *condition;
-
-            if (xmlStrcmp(task->name, (const xmlChar *)"thread") != 0 &&
-                xmlStrcmp(task->name, (const xmlChar *)"task") != 0 &&
-                xmlStrcmp(task->name, (const xmlChar *)"function") != 0)
-                continue;
-
-            condition = xmlGetProp_exp(task, (const xmlChar *)"when");
-            if (condition != NULL)
-            {
-                if (*condition == '\0')
-                {
-                    free(condition);
-                    continue;
-                }
-                free(condition);
-            }
-
-            ta_task = malloc(sizeof(*ta_task));
-            if (ta_task == NULL)
-            {
-                ERROR("malloc failed: %d", errno);
-                goto error;
-            }
-            ta_task->mode = 
-                (xmlStrcmp(task->name , (const xmlChar *)"thread") == 0 ?
-                 RCF_THREAD : 
-                 (xmlStrcmp(task->name , (const xmlChar *)"function") == 0 ?
-                  RCF_FUNC : RCF_PROCESS));
-            
-            if ((attr = xmlGetProp_exp(task, (const xmlChar *)"name")) 
-                != NULL)
-            {
-                ta_task->entry = attr;
-            }
-            else
-            {
-                INFO("No name attribute in <task>/<thread>");
-                goto bad_format;
-            }
-
-            ta_task->argc = 0;
-            ta_task->argv = malloc(sizeof(*ta_task->argv) * RCF_MAX_PARAMS);
-            for (arg = task->xmlChildrenNode; arg != NULL; arg = arg->next)
-            {
-                if (xmlStrcmp(arg->name, (const xmlChar *)"arg") != 0)
-                    continue;
-                if ((attr = xmlGetProp_exp(arg, (const xmlChar *)"value")) 
-                    != NULL)
-                {
-                    ta_task->argv[ta_task->argc++] = attr;
-                }
-                else
-                {
-                    ERROR("No value attribute in <arg>");
-                    goto bad_format;
-                }
-            }
-            ta_task->next = agent->initial_tasks;
-            agent->initial_tasks = ta_task;
-        }
-
-        agent->sent.prev = agent->sent.next = &(agent->sent);
-        agent->pending.prev = agent->pending.next = &(agent->pending);
-        agent->waiting.prev = agent->waiting.next = &(agent->waiting);
-
-        agent->sid = RCF_SID_UNUSED;
-
-        ta_num++;
     }
+
     xmlFreeDoc(doc);
     xmlCleanupParser();
-    return 0;
-
-bad_format:
-    ERROR("Wrong configuration file format");
-
-error:
-    xmlFreeDoc(doc);
-    xmlCleanupParser();
-    free_ta_list();
-
-    return -1;
+    return rc;
 }
 
 

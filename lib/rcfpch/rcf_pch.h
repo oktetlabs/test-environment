@@ -42,7 +42,6 @@
 
 #include "rcf_internal.h"
 #include "rcf_ch_api.h"
-#include "rcf_pch_mem.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -70,23 +69,6 @@ extern "C" {
  * @return Status code
  */
 extern int rcf_pch_run(const char *confstr, const char *info);
-
-/** Detach from the Test Engine after fork() */
-extern void rcf_pch_detach(void);
-
-/**
- * Detach from the Test Engine before vfork().
- *
- * @param saved_conn    Where to save a connection handle
- */
-extern void rcf_pch_detach_vfork(void **saved_conn);
-
-/**
- * Attach to the Test Engine after vfork() in the parent process.
- *
- * @param saved_conn    Connection handle to be restored
- */
-extern void rcf_pch_attach_vfork(void *saved_conn);
 
 /**
  * Get the rcf session identifier.
@@ -288,21 +270,31 @@ extern void rcf_pch_rpc_shutdown(void);
  */
 
 /**
- * Entry function for RPC server. 
+ * Find all callbacks and enable the RPC server plugin.
  *
- * @param name    RPC server name
+ * @param install   Function name for install plugin or empty string or
+ *                  @c NULL
+ * @param action    Function name for plugin action or empty string or
+ *                  @c NULL
+ * @param uninstall Function name for uninstall plugin or empty string or
+ *                  @c NULL
  *
- * @return NULL
+ * @return Status code
  */
-extern void *rcf_pch_rpc_server(const char *name);
+extern te_errno rpcserver_plugin_enable(
+        const char *install, const char *action, const char *uninstall);
 
 /**
- * Wrapper to call rcf_pch_rpc_server via "ta exec func" mechanism. 
+ * Disable the RPC server plugin.
  *
- * @param argc    should be 1
- * @param argv    should contain pointer to RPC server name
+ * @return Status code
  */
-extern void rcf_pch_rpc_server_argv(int argc, char **argv);
+extern te_errno rpcserver_plugin_disable(void);
+
+/** @addtogroup rcf_pch
+ * @{
+ */
+
 
 /**
  * Add subtree into the configuration tree.

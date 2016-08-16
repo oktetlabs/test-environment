@@ -61,6 +61,31 @@ autotool()
     AUTOTOOL_DONE=yes
 }
 
+# Synchronize the shadow build directory before and after recursive update makefiles
+sync_and_recursive_update_makefiles() {
+    if test ! -f "$TE_BUILD/$PLATFORM.sbd"; then
+        recursive_update_makefiles "$1"
+    else
+        # remove old files in the shadow build directory on the TE host
+        find -mindepth 1 -delete
+
+        # copy current files from agent to TE host
+        te_eval_or_ssh "${PLATFORM}" "
+            cd '$PWD' || exit 1; tar -czf - .
+        " | tar -xzf -
+
+        recursive_update_makefiles "$1"
+
+        # copy new files from TE host to agent
+        tar -czf - . |
+        te_eval_or_ssh "${PLATFORM}" "
+            cd '$PWD' || exit 1
+            find -mindepth 1 -delete
+            tar -xzf -
+        "
+    fi
+}
+
 # Call configure and make
 configure_package()
 {
@@ -120,12 +145,15 @@ if test "$KIND" = TOOL ; then
     cd tools
 fi
 
-mkdir -p $PKGBUILDDIR ;
-cd $PKGBUILDDIR ;
+if test -f "$TE_BUILD/$PLATFORM.sbd"; then
+    te_eval_or_ssh "${PLATFORM}" "mkdir -p $PKGBUILDDIR" || exit 1
+fi
+mkdir -p $PKGBUILDDIR || exit 1
+cd $PKGBUILDDIR || exit 1
 
 # If the file 'Makefile' exists and its update was successful (auto start
 # autotools on the local machine), then we run 'make'
-if test -e Makefile && recursive_update_makefiles '.' ; then
+if test -e Makefile && sync_and_recursive_update_makefiles '.' ; then
 # Code "echo=echo" was added, for bug fixing of a look "X--tag=CC: command not found"
 # See https://lists.gnu.org/archive/html/bug-libtool/2008-04/msg00011.html
     te_eval_or_ssh "${PLATFORM}" "
@@ -148,6 +176,16 @@ ADD_CPPFLAGS="`eval echo '$'${PLATFORM}'_CPPFLAGS'` `eval echo '$TE_BS_'${KIND}'
 ADD_CFLAGS="`eval echo '$'${PLATFORM}'_CFLAGS'` `eval echo '$TE_BS_'${KIND}'_'${PKGNAME}'_CFLAGS'`"
 ADD_LDFLAGS="`eval echo '$'${PLATFORM}'_LDFLAGS'` `eval echo '$TE_BS_'${KIND}'_'${PKGNAME}'_LDFLAGS'`"
 
+# if the shadow build directory exists then add this directory into CFLAGS, CPPFLAGS and LDFLAGS
+if test ! -f "$TE_BUILD/$PLATFORM.sbd"; then
+    sbd=$TE_BUILD
+else
+    sbd=$(cat "$TE_BUILD/$PLATFORM.sbd")
+    ADD_CPPFLAGS="$ADD_CPPFLAGS -I${sbd}/platforms/${PLATFORM}/include"
+    ADD_CFLAGS="$ADD_CPPFLAGS -I${sbd}/platforms/${PLATFORM}/include"
+    ADD_LDFLAGS="$ADD_LDFLAGS -L${sbd}/platforms/${PLATFORM}/lib"
+fi
+
 PACKAGE_CC="`eval echo '$'${PLATFORM}'_CC'`"
 if test "$PACKAGE_CC" ; then
     PARMS="$PARMS CC=$PACKAGE_CC"
@@ -168,8 +206,8 @@ PARMS="$PARMS --build=`gcc -dumpmachine` \
        TE_PATH=\"$TE_PATH\" \
        TE_INSTALL=\"$TE_INSTALL\" \
        TE_PLATFORM=\"$PLATFORM\" \
-       TE_EXT_LIBS_PATH=\"${TE_BUILD}/platforms/${PLATFORM}/lib\" \
-       TE_PLATFORM_PATH=\"${TE_BUILD}/platforms/${PLATFORM}/\""
+       TE_EXT_LIBS_PATH=\"${sbd}/platforms/${PLATFORM}/lib\" \
+       TE_PLATFORM_PATH=\"${sbd}/platforms/${PLATFORM}/\""
 
 if test "x${KIND}" = "xINCLUDE" ; then
     ${SCRIPT_DIR}/te_create_inst_dirs ${DESTDIR}/${PREFIX}/.. ${PLATFORM}
@@ -179,7 +217,7 @@ configure_package
 
 # If the file 'Makefile' could not create or update fails,
 # then we try to perform 'autotool'
-if test $? -ne 0 || ! recursive_update_makefiles '.' ; then
+if test $? -ne 0 || ! sync_and_recursive_update_makefiles '.' ; then
     if test x${TE_NO_AUTOTOOL} != "xyes" ; then
         autotool
         configure_package

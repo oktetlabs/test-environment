@@ -61,7 +61,7 @@ wsa_func_handles_discover()
                       &bytes_returned, NULL, NULL) == SOCKET_ERROR)     \
         {                                                               \
             int _errno = GetLastError();                                \
-            PRINT("Cannot retrieve %s pointer via WSAIoctl();"          \
+            LOG_PRINT("Cannot retrieve %s pointer via WSAIoctl();"      \
                  " errno %d", #_func, _errno);                          \
         }                                                               \
     } while (0)
@@ -3106,7 +3106,7 @@ static LRESULT CALLBACK
 message_callback(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     if (uMsg > WM_USER)
-        PRINT("Unexpected message %d is received", uMsg - WM_USER);
+        LOG_PRINT("Unexpected message %d is received", uMsg - WM_USER);
 
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }

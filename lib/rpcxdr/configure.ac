@@ -15,6 +15,7 @@ TE_SETUP_AR
 # Checks for programs.
 AC_PROG_CC
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
+AM_PROG_CC_C_O
 
 # Fixing libraries search paths in libtool - they are wrong when
 # cross-compiling for different bitness takes place
@@ -45,6 +46,8 @@ for i in $with_rpcdefs ; do
     TMP=`basename $i`
     if test ! -e $i -a -e ${srcdir}/$TMP ; then
         i=${srcdir}/$TMP ;
+    elif test `dirname $i` = "." && test -e ${TE_BASE}/include/$i; then
+        i=${TE_BASE}/include/$i;
     fi
     RPCDEFS="$RPCDEFS $i"
     RPCDEFS_DIST_FILES="$RPCDEFS_DIST_FILES $TMP"

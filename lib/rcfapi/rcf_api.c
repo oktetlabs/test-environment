@@ -851,7 +851,7 @@ sync_ta(char const *ta)
     ipc_client        *cfgl_ipc_client = NULL;
     char               cfgl_msg_buf[4096];
     cfg_sync_msg      *msg;
-    unsigned int       len;
+    size_t             len;
     te_errno           rc;
 
     static pthread_mutex_t cfgl_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -875,7 +875,6 @@ sync_ta(char const *ta)
     msg->subtree = TRUE;
 
     strcat(cfgl_msg_buf, ta);
-    len = strlen(cfgl_msg_buf);
     strcpy(msg->oid, "/agent:");
     strcat(msg->oid, ta);
     msg->len = sizeof(cfg_sync_msg) + strlen(msg->oid);

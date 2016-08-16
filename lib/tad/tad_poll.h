@@ -28,7 +28,7 @@
  */
 
 #ifndef __TE_TAD_POLL_H__
-#define __TE_TAD_POLL_H__ 
+#define __TE_TAD_POLL_H__
 
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>

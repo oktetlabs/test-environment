@@ -118,7 +118,7 @@ tad_frame_gen_bin_cb(csap_p                csap,
 
 /* See description in tad_frame_impl.h */
 te_errno
-tad_frame_confirm_ptrn_cb(csap_p csap, unsigned int  layer, 
+tad_frame_confirm_ptrn_cb(csap_p csap, unsigned int  layer,
                           asn_value *layer_pdu, void **p_opaque)
 {
     tad_frame_ptrn_data    *ptrn_data;

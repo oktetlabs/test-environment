@@ -85,7 +85,7 @@ extern void tad_pkt_seg_data_free(void *ptr, size_t len);
 /**
  * Prototype of the function to free packet representation control
  * blocks (segment, packet).
- * 
+ *
  * @param ptr       Pointer to control block to be freed
  */
 typedef void (*tad_pkt_ctrl_free)(void *ptr);
@@ -151,7 +151,7 @@ typedef CIRCLEQ_HEAD(tad_pkt_segs, tad_pkt_seg) tad_pkt_segs;
 
 /**
  * TAD packet control block.
- * 
+ *
  * Circular queue is used to have possibility to insert element in head
  * and tail and to traverse packets in both directions.
  */
@@ -379,7 +379,7 @@ extern void tad_pkt_insert_after_seg(tad_pkt *pkt, tad_pkt_seg *seg,
  *
  * If buffer provided by caller is not sufficient, the buffer is filled
  * in and TE_ESMALLBUF is returned.
- * 
+ *
  * @return Status code.
  */
 extern te_errno tad_pkt_flatten_copy(tad_pkt *pkt,
@@ -554,7 +554,7 @@ extern void tad_pkts_del_one(tad_pkts *pkts, tad_pkt *pkt);
 /**
  * Move packets from one list to other.
  *
- * @param dst       Destination list with packets 
+ * @param dst       Destination list with packets
  * @param src       Source list with packets
  */
 extern void tad_pkts_move(tad_pkts *dst, tad_pkts *src);

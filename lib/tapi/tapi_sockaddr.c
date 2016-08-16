@@ -60,7 +60,19 @@
 
 #include "tapi_sockaddr.h"
 #include "tapi_rpc_socket.h"
+#include "tapi_test_log.h"
 
+/**
+ * The minimum available port number
+ * Ports below may be used by standard services
+ */
+#define MIN_AVAILABLE_PORT  20000
+
+/**
+ * The maximum available port number
+ * Ports above can be used when the linux allocates a dynamic port
+ */
+#define MAX_AVAILABLE_PORT  30000
 
 /* See description in tapi_sockaddr.h */
 te_errno
@@ -91,10 +103,11 @@ tapi_allocate_port(struct rcf_rpc_server *pco, uint16_t *p_port)
         ERROR("Wrong value %d is got from /volatile:/sockaddr_port:", port);
         return TE_EINVAL;
     }
-    if ((port < 20000) || (port >= 30000))
+    if ((port < MIN_AVAILABLE_PORT) || (port >= MAX_AVAILABLE_PORT))
     {
         /* Random numbers generator should be initialized earlier */
-        port = 20000 + rand_range(0, 10000);
+        port = MIN_AVAILABLE_PORT +
+                rand_range(0, MAX_AVAILABLE_PORT - MIN_AVAILABLE_PORT);
     }
     else
     {
@@ -104,11 +117,20 @@ tapi_allocate_port(struct rcf_rpc_server *pco, uint16_t *p_port)
     /* Check that port is free */
     if (pco != NULL)
     {
+        int port_max = MAX_AVAILABLE_PORT;
+        int port_base = port;
         while (!rpc_check_port_is_free(pco, port))
         {
             port++;
-            if (port >= 30000)
-                port = 20000 + rand_range(0, 10000);
+            if (port >= port_max)
+            {
+                port_max = port_base;
+                if (port_max == MIN_AVAILABLE_PORT)
+                    break;
+                port = MIN_AVAILABLE_PORT +
+                        rand_range(0, port_max - MIN_AVAILABLE_PORT);
+                port_base = port;
+            }
         }
     }
 
@@ -188,6 +210,56 @@ tapi_allocate_port_htons(rcf_rpc_server *pco, uint16_t *p_port)
     *p_port = htons(port);
 
     return 0;
+}
+
+/* See description in tapi_sockaddr.h */
+struct sockaddr *
+tapi_sockaddr_clone_typed(const struct sockaddr *addr,
+                          tapi_address_type type)
+{
+    struct sockaddr_storage *res_addr = NULL;
+
+    if (type == TAPI_ADDRESS_NULL)
+        return NULL;
+
+    res_addr = TE_ALLOC(sizeof(*res_addr));
+    if (res_addr == NULL)
+        TEST_STOP;
+
+    tapi_sockaddr_clone_exact(addr, res_addr);
+
+    if (type == TAPI_ADDRESS_WILDCARD ||
+        type == TAPI_ADDRESS_WILDCARD_ZERO_PORT)
+        te_sockaddr_set_wildcard(SA(res_addr));
+
+    if (type == TAPI_ADDRESS_SPECIFIC_ZERO_PORT ||
+        type == TAPI_ADDRESS_WILDCARD_ZERO_PORT)
+    {
+        uint16_t *port = te_sockaddr_get_port_ptr(SA(res_addr));
+        *port = 0;
+    }
+
+    return SA(res_addr);
+}
+
+/* See description in tapi_sockaddr.h */
+te_errno
+tapi_allocate_set_port(rcf_rpc_server *rpcs, const struct sockaddr *addr)
+{
+    uint16_t *port_ptr;
+    te_errno rc;
+
+    if ((port_ptr = te_sockaddr_get_port_ptr(addr)) == NULL)
+    {
+        ERROR("Failed to get pointer to port");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    rc = tapi_allocate_port_htons(rpcs, port_ptr);
+    if (rc != 0)
+        ERROR("Failed to allocate a free port: %r", rc);
+
+    return rc;
 }
 
 /* See description in tapi_sockaddr.h */

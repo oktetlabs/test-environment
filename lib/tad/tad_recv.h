@@ -29,7 +29,7 @@
  */
 
 #ifndef __TE_TAD_RECV_H__
-#define __TE_TAD_RECV_H__ 
+#define __TE_TAD_RECV_H__
 
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -39,7 +39,7 @@
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_queue.h"
-#include "asn_usr.h" 
+#include "asn_usr.h"
 #include "comm_agent.h"
 
 #include "tad_types.h"
@@ -53,7 +53,7 @@ extern "C" {
 
 
 /**
- * Type for reference to user function for some magic processing 
+ * Type for reference to user function for some magic processing
  * with matched pkt
  *
  * @param csap          CSAP descriptor structure.
@@ -64,8 +64,8 @@ extern "C" {
  * @return Status code.
  */
 typedef te_errno (*tad_processing_pkt_method)(csap_p         csap,
-                                              const char    *usr_param, 
-                                              const uint8_t *pkt, 
+                                              const char    *usr_param,
+                                              const uint8_t *pkt,
                                               size_t         pkt_len);
 
 /**
@@ -106,7 +106,7 @@ typedef struct tad_action_spec {
  * Per-pattern unit data of the TAD Receiver.
  */
 typedef struct tad_recv_ptrn_unit_data {
-    asn_value          *nds;            /**< ASN.1 value with traffic 
+    asn_value          *nds;            /**< ASN.1 value with traffic
                                              pattern unit */
     tad_payload_spec_t  pld_spec;
 
@@ -197,12 +197,12 @@ extern te_errno tad_recv_prepare(csap_p                csap,
 extern te_errno tad_recv_release(csap_p csap, tad_recv_context *context);
 
 /**
- * Start routine for Receiver thread. 
+ * Start routine for Receiver thread.
  *
- * @param arg           Start argument, should be pointer to 
+ * @param arg           Start argument, should be pointer to
  *                      CSAP structure
  *
- * @return NULL 
+ * @return NULL
  */
 extern void *tad_recv_thread(void *arg);
 

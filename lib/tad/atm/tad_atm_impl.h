@@ -28,7 +28,7 @@
  */
 
 #ifndef __TE_TAD_ATM_IMPL_H__
-#define __TE_TAD_ATM_IMPL_H__ 
+#define __TE_TAD_ATM_IMPL_H__
 
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -42,7 +42,7 @@
 #include "tad_csap_inst.h"
 
 
-/** 
+/**
  * ATM cell control data specified by upper layers.
  *
  * Pointer to this structure may be attached to ATM cell packets
@@ -60,19 +60,19 @@ typedef struct tad_atm_cell_ctrl_data {
  * Callback for init 'atm' CSAP layer if single in stack.
  *
  * The function complies with csap_rw_init_cb_t prototype.
- */ 
+ */
 extern te_errno tad_atm_rw_init_cb(csap_p csap);
 
 /**
  * Callback for destroy 'atm' CSAP layer if single in stack.
  *
  * The function complies with csap_rw_destroy_cb_t prototype.
- */ 
+ */
 extern te_errno tad_atm_rw_destroy_cb(csap_p csap);
 
 
 /**
- * Open transmit socket for ATM CSAP. 
+ * Open transmit socket for ATM CSAP.
  *
  * The function complies with csap_low_resource_cb_t prototype.
  */
@@ -86,10 +86,10 @@ extern te_errno tad_atm_prepare_send(csap_p csap);
 extern te_errno tad_atm_shutdown_send(csap_p csap);
 
 /**
- * Callback for write data to media of ATM CSAP. 
+ * Callback for write data to media of ATM CSAP.
  *
  * The function complies with csap_write_cb_t prototype.
- */ 
+ */
 extern te_errno tad_atm_write_cb(csap_p csap, const tad_pkt *pkt);
 
 /**
@@ -107,10 +107,10 @@ extern te_errno tad_atm_prepare_recv(csap_p csap);
 extern te_errno tad_atm_shutdown_recv(csap_p csap);
 
 /**
- * Callback for read data from media of ATM CSAP. 
+ * Callback for read data from media of ATM CSAP.
  *
  * The function complies with csap_read_cb_t prototype.
- */ 
+ */
 extern te_errno tad_atm_read_cb(csap_p csap, unsigned int timeout,
                                 tad_pkt *pkt, size_t *pkt_len);
 
@@ -137,9 +137,9 @@ extern te_errno tad_atm_destroy_cb(csap_p csap, unsigned int layer);
  * The function complies with csap_layer_confirm_pdu_cb_t prototype.
  */
 extern te_errno tad_atm_confirm_tmpl_cb(csap_p         csap,
-                                        unsigned int   layer, 
+                                        unsigned int   layer,
                                         asn_value     *layer_pdu,
-                                        void         **p_opaque); 
+                                        void         **p_opaque);
 
 /**
  * Callback for confirm pattern PDU with ATM CSAP parameters and
@@ -148,9 +148,9 @@ extern te_errno tad_atm_confirm_tmpl_cb(csap_p         csap,
  * The function complies with csap_layer_confirm_pdu_cb_t prototype.
  */
 extern te_errno tad_atm_confirm_ptrn_cb(csap_p         csap,
-                                        unsigned int   layer, 
+                                        unsigned int   layer,
                                         asn_value     *layer_pdu,
-                                        void         **p_opaque); 
+                                        void         **p_opaque);
 
 /**
  * Callback to release PDU with ATM layer private data.
@@ -185,7 +185,7 @@ extern te_errno tad_atm_match_post_cb(csap_p              csap,
                                       tad_recv_pkt_layer *meta_pkt_layer);
 
 /**
- * Callback for parse received packet and match it with pattern. 
+ * Callback for parse received packet and match it with pattern.
  *
  * The function complies with csap_layer_match_do_cb_t prototype.
  */
@@ -220,9 +220,9 @@ extern te_errno tad_aal5_destroy_cb(csap_p csap, unsigned int layer);
  * The function complies with csap_layer_confirm_pdu_cb_t prototype.
  */
 extern te_errno tad_aal5_confirm_tmpl_cb(csap_p         csap,
-                                         unsigned int   layer, 
+                                         unsigned int   layer,
                                          asn_value     *layer_pdu,
-                                         void         **p_opaque); 
+                                         void         **p_opaque);
 
 /**
  * Callback for confirm pattern PDU with ATM CSAP parameters and
@@ -231,9 +231,9 @@ extern te_errno tad_aal5_confirm_tmpl_cb(csap_p         csap,
  * The function complies with csap_layer_confirm_pdu_cb_t prototype.
  */
 extern te_errno tad_aal5_confirm_ptrn_cb(csap_p         csap,
-                                         unsigned int   layer, 
+                                         unsigned int   layer,
                                          asn_value     *layer_pdu,
-                                         void         **p_opaque); 
+                                         void         **p_opaque);
 
 /**
  * Callback for generate binary data to be sent to media.
@@ -269,7 +269,7 @@ enum {
 
 /**
  * Calculate CRC32 hash value for new portion of data,
- * using ready value for previous data. 
+ * using ready value for previous data.
  * If there are no previous data, pass 0xffffffff as 'previous_value'.
  *
  * @param previous_value        Ready CRC32 value for previous data block.
@@ -278,7 +278,7 @@ enum {
  *
  * @return updated CRC32 value or zero if NULL pointer passed.
  */
-extern uint32_t calculate_crc32(uint32_t previous_value, 
+extern uint32_t calculate_crc32(uint32_t previous_value,
                                 uint8_t *next_pkt,
                                 size_t   next_len);
 

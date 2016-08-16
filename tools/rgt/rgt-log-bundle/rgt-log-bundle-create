@@ -65,6 +65,16 @@ if [[ "${raw_log_path}" =~ [.]bz2$ ]] ; then
     raw_log_path="${bundle_tmpdir}/raw_log"
 fi
 
+if [[ "${raw_log_path}" =~ [.]xz$ ]] ; then
+    echo "Extracting raw log..."
+    xz --decompress --keep --stdout "${raw_log_path}" \
+          >"${bundle_tmpdir}/raw_log"
+    if test $? -ne 0 ; then
+        err_cleanup "Failed to extract raw log file"
+    fi
+    raw_log_path="${bundle_tmpdir}/raw_log"
+fi
+
 echo "Indexing raw log..."
 rgt-conv --mode=index "${raw_log_path}" "${bundle_tmpdir}/log_idx"
 if test $? -ne 0 ; then

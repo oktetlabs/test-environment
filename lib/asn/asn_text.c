@@ -1854,10 +1854,10 @@ te_errno
 asn_parse_dvalue_in_file(const char *filename, const asn_type *type,
                          asn_value **parsed_value, int *syms_parsed)
 {
-    size_t flen = 0; /* Initialize to make GCC happy */
-    char *buf;
-    int   fd;
-    int   read_sz;
+    size_t      flen = 0; /* Initialize to make GCC happy */
+    char       *buf;
+    int         fd;
+    ssize_t     read_sz;
 
     te_errno rc;
 
@@ -1875,6 +1875,12 @@ asn_parse_dvalue_in_file(const char *filename, const asn_type *type,
 
     read_sz = read(fd, buf, flen + 1);
     close(fd);
+
+    if (read_sz != (ssize_t)flen)
+    {
+        ERROR("Cannot read everything from file: %s", strerror(errno));
+        return TE_EIO;
+    }
 
     rc = asn_parse_value_text(buf, type, parsed_value, syms_parsed);
 

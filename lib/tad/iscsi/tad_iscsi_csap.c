@@ -2,7 +2,7 @@
  * @brief TAD iSCSI
  *
  * Traffic Application Domain Command Handler.
- * iSCSI CSAP support description structures. 
+ * iSCSI CSAP support description structures.
  *
  * Copyright (C) 2005-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -41,7 +41,7 @@
 #include "tad_iscsi_impl.h"
 
 
-static csap_spt_type_t iscsi_csap_spt = 
+static csap_spt_type_t iscsi_csap_spt =
 {
     .proto               = "iscsi",
     .unregister_cb       = NULL,
@@ -70,7 +70,7 @@ static csap_spt_type_t iscsi_csap_spt =
     .prepare_send_cb     = NULL,
     .write_cb            = tad_iscsi_write_cb,
     .shutdown_send_cb    = NULL,
-    
+
     .prepare_recv_cb     = NULL,
     .read_cb             = tad_iscsi_read_cb,
     .shutdown_recv_cb    = NULL,
@@ -84,9 +84,9 @@ static csap_spt_type_t iscsi_csap_spt =
  * TAD Command Handler.
  *
  * @return Status code
- */ 
+ */
 te_errno
 csap_support_iscsi_register(void)
-{ 
+{
     return csap_spt_add(&iscsi_csap_spt);
 }

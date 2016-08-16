@@ -30,6 +30,9 @@ TE_LIB_SET
 
 AC_CONFIG_HEADER(package.h)
 
+AC_CHECK_HEADERS([pthread.h])
+AC_CHECK_FUNCS([pthread_atfork])
+
 AC_ARG_WITH([sniffers],
             AS_HELP_STRING([--with-sniffers],
                            [enable sniffers (default is NO)]),

@@ -58,8 +58,13 @@ Generic options:
   --daemon[=<PID>]              Run/use TE engine daemons
   --shutdown[=<PID>]            Shut down TE engine daemons on exit
 
-  --conf-dir=<directory>        specify configuration file directory
+  --conf-dir=<directory>        specify configuration file directory,
+                                overrides previous value and --conf-dirs
                                 (\${TE_BASE}/conf or . by default)
+  --conf-dirs=<directories>     specify list of configuration file directories
+                                separated by colon (top priority first,
+                                may be specified many times, appends to
+                                --conf-dir)
 
     In configuration files options below <filename> is full name of the
     configuration file or name of the file in the configuration directory.
@@ -120,6 +125,7 @@ Generic options:
   --build-ta-missing            Build only new Test Agents.
   --build-ta-all                Force build all Test Agents.
   --build-ta-for=<hostname>     Rebuild agent (and all the libraries) used for <hostname>.
+  --profile-build=<logfile>     Gather timings for the build process into <logfile>
 
   --no-rcf-cc-simple            Do not execute simple RCF consistency checks.
 
@@ -306,6 +312,7 @@ CS_OPTS=
 # Building options
 BUILDER_OPTS=
 BUILD_MAKEFLAGS=
+PROFILE_BUILD=
 
 LIVE_LOG=
 
@@ -331,8 +338,9 @@ BUILD_TA_FOR=
 # Whether Test Suite should be built
 BUILD_TS=yes
 
-# Configuration directory
-CONF_DIR=
+# Configuration directories
+CONF_DIRS=
+CONF_DIRS_DEFAULT=false
 
 # Directory for raw log file
 TE_LOG_DIR="${TE_RUN_DIR}"
@@ -381,6 +389,15 @@ RGT_LOG_HTML=
 TE_TESTER_SCRIPTS=
 export TE_TA_LIST_FILE=ta.list
 
+resolve_conf_file_path()
+{
+    local file="$1"
+
+    test "${file:0:1}" = "/" && echo "${file}" && return 0
+
+    PATH="${CONF_DIRS}" type -p "${file}" || echo "${file}"
+}
+
 process_script_opt()
 {
     script_req="${1#--$2=}"
@@ -393,9 +410,7 @@ process_script_opt()
             script_opts="$script_opts $i"
         fi
     done
-    if test "${script_file:0:1}" != "/" ; then 
-        script_file="${CONF_DIR}/${script_file}"
-    fi
+    script_file="$(resolve_conf_file_path "${script_file}")"
 }
 
 run_script()
@@ -432,9 +447,7 @@ process_opts()
             --opts=* )
                 EXT_OPTS_PROCESSED=yes
                 OPTS="${1#--opts=}"
-                if test "${OPTS:0:1}" != "/" ; then 
-                    OPTS="${CONF_DIR}/${OPTS}"
-                fi
+                OPTS="$(resolve_conf_file_path "${OPTS}")"
                 if test -f ${OPTS} ; then
                     process_opts $(cat ${OPTS} | grep -v '^#')
                     # Don't want to see the option after expansion
@@ -492,7 +505,11 @@ process_opts()
             --no-run) RCF= ; CS= ; TESTER= ; LOGGER= ;;
             --no-autotool) TE_NO_AUTOTOOL=yes ;;
             
-            --conf-dir=*) CONF_DIR="${1#--conf-dir=}" ;;
+            --conf-dir=*) CONF_DIRS="${1#--conf-dir=}" ;;
+            --conf-dirs=*)
+                # Do not append to default CONF_DIRS
+                ${CONF_DIRS_DEFAULT} && CONF_DIRS= && CONF_DIRS_DEFAULT=false
+                CONF_DIRS="${CONF_DIRS}${CONF_DIRS:+:}${1#--conf-dirs=}" ;;
             
             --conf-builder=*) CONF_BUILDER_SET=1; CONF_BUILDER="${1#--conf-builder=}" ;;
             --conf-logger=*) CONF_LOGGER_SET=1; CONF_LOGGER="${1#--conf-logger=}" ;;
@@ -556,9 +573,7 @@ process_opts()
             --trc-log=*) TRC_LOG="${1#--trc-log=}" ;;
             --trc-db=*) 
                 TRC_DB="${1#--trc-db=}"
-                if test "${TRC_DB:0:1}" != "/" ; then 
-                    TRC_DB="${CONF_DIR}/${TRC_DB}"
-                fi
+                TRC_DB="$(resolve_conf_file_path "${TRC_DB}")"
                 TRC_OPTS="${TRC_OPTS} --db=${TRC_DB}"
                 TESTER_OPTS="${TESTER_OPTS} --trc-db=${TRC_DB}"
                 ;;
@@ -568,9 +583,7 @@ process_opts()
                 ;;
             --trc-key2html=*) 
                 TRC_KEY2HTML="${1#--trc-key2html=}"
-                if test "${TRC_KEY2HTML:0:1}" != "/" ; then 
-                    TRC_KEY2HTML="${CONF_DIR}/${TRC_KEY2HTML}"
-                fi
+                TRC_KEY2HTML="$(resolve_conf_file_path "${TRC_KEY2HTML}")"
                 TRC_OPTS="${TRC_OPTS} --key2html=${TRC_KEY2HTML}"
                 ;;
             --trc-tag=*)
@@ -616,6 +629,17 @@ process_opts()
             --build=*) 
                 BUILDER_OPTS="${BUILDER_OPTS} --path=${1#--build=}"
                 BUILDER=
+                ;;
+
+            --profile-build=*)
+                PROFILE_BUILD=te_profile_build
+                PROFILE_BUILD_LOGFILE="${1#--profile-build=}"
+                case $PROFILE_BUILD_LOGFILE in
+                    [^/]*)
+                        PROFILE_BUILD_LOGFILE="$PWD/$PROFILE_BUILD_LOGFILE"
+                        ;;
+                esac
+                echo "=== Profile for $(uname -a) at $(date)" >$PROFILE_BUILD_LOGFILE
                 ;;
 
             --no-rcf-cc-simple) RCF_CONSISTENCY_CHECKS_SIMPLE= ;;
@@ -664,7 +688,7 @@ sniffer_make_conf()
     agt=
     str=
 
-    TE_SNIFF_CSCONF="${CONF_DIR}/cs.conf.sniffer"
+    TE_SNIFF_CSCONF="${TE_TMP}/cs.conf.sniffer"
 
     echo "<?xml version=\"1.0\"?>" > "${TE_SNIFF_CSCONF}"
     if test ! -w "${TE_SNIFF_CSCONF}" ; then
@@ -766,12 +790,13 @@ if test -z "${TE_BASE}" ; then
     fi
 fi
 
-if test -z "$CONF_DIR" ; then
+if test -z "$CONF_DIRS" ; then
     if test -n "${TE_BASE}" ; then
-        CONF_DIR="${TE_BASE}/conf"
+        CONF_DIRS="${TE_BASE}/conf"
     else
-        CONF_DIR="${PWD}"
+        CONF_DIRS="${PWD}"
     fi
+    CONF_DIRS_DEFAULT=true
 fi
 
 # Include collection of functions
@@ -781,12 +806,6 @@ fi
 cmd_line_opts="$@"
 cmd_line_opts_all=
 process_opts "$@"
-
-sniffer_make_conf
-retval=$?
-if [ $retval -eq 1 ] ; then
-    exit 1
-fi
 
 
 if test -z "$TE_BASE" -a -n "$BUILDER" ; then
@@ -804,8 +823,8 @@ for i in BUILDER LOGGER TESTER CS RCF RGT NUT ; do
     CONF_FILES="${CONF_FILES:-$CONF_FILES_DFLT}"
     CONF_FILES_POST=
     for CONF_FILE in $CONF_FILES ; do
-        if test -n "${CONF_FILE}" -a "${CONF_FILE:0:1}" != "/" ; then
-            eval CONF_FILE_$i=\"${CONF_DIR}/${CONF_FILE}\"
+        if test -n "${CONF_FILE}" ; then
+            eval CONF_FILE_$i=\"$(resolve_conf_file_path "${CONF_FILE}")\"
             CONF_FILE="$(eval echo '$CONF_FILE_'$i)"
             if test ! -f ${CONF_FILE} ; then
                 # Conf file does not exist at specified path.
@@ -927,6 +946,12 @@ if test -z "$(which te_log_init 2>/dev/null)" ; then
     export PATH="$PATH:${TE_BASE}/engine/logger:${TE_BASE}/engine/builder"
 fi
 
+sniffer_make_conf
+retval=$?
+if [ $retval -eq 1 ] ; then
+    exit 1
+fi
+
 . ${TE_BASE}/common_vars.sh
 
 # Intitialize log
@@ -942,6 +967,16 @@ fi
 
 # Build Test Environment
 
+if test -n "$PROFILE_BUILD"; then
+function te_profile_build ()
+{
+    echo "-- $*" >>$PROFILE_BUILD_LOGFILE
+    # A separate tool must be used here, not the shell built-in,
+    # because the latter does not support writing to a dedicated log file
+    /usr/bin/time -o $PROFILE_BUILD_LOGFILE -a "$@"
+}
+fi
+
 export TE_EXT_LIBS_FILE="${TE_BUILD}/te_ext_libs_files"
 TE_BUILD_LOG="${TE_RUN_DIR}/build.log"
 if test -n "$BUILDER" ; then
@@ -955,21 +990,21 @@ if test -n "$BUILDER" ; then
         else
             echo "Calling aclocal/autoconf/automake in ${PWD}"
         fi
-        aclocal -I "${TE_BASE}/auxdir" || exit_with_log
-        autoconf || exit_with_log
-        automake --add-missing || exit_with_log
+        $PROFILE_BUILD aclocal -I "${TE_BASE}/auxdir" || exit_with_log
+        $PROFILE_BUILD autoconf || exit_with_log
+        $PROFILE_BUILD automake --add-missing || exit_with_log
     fi
     popd >/dev/null
     # FINAL ${TE_BASE}/configure --prefix=${TE_INSTALL} --with-config=${CONF_BUILDER} 2>&1 | te_builder_log
     if test -n "${QUIET}" ; then
-        "${TE_BASE}/configure" -q --prefix="${TE_INSTALL}" \
+        $PROFILE_BUILD "${TE_BASE}/configure" -q --prefix="${TE_INSTALL}" \
             --with-config="${CONF_BUILDER}" >"${TE_BUILD_LOG}" || \
             exit_with_log
-        make install >>"${TE_BUILD_LOG}" || exit_with_log
+        $PROFILE_BUILD make install >>"${TE_BUILD_LOG}" || exit_with_log
     else
-        "${TE_BASE}/configure" -q --prefix="${TE_INSTALL}" \
+        $PROFILE_BUILD "${TE_BASE}/configure" -q --prefix="${TE_INSTALL}" \
             --with-config="${CONF_BUILDER}" || exit_with_log
-        make install || exit_with_log
+        $PROFILE_BUILD make install || exit_with_log
     fi
 fi
 
@@ -977,20 +1012,20 @@ if test -n "$BUILD_TA" -o -n "$BUILD_TA_FOR" ; then
     export BUILD_TA=$BUILD_TA
     export BUILD_TA_FOR=$BUILD_TA_FOR
     if test -n "${QUIET}" ; then
-        te_cross_build "${TE_INSTALL}" >>"${TE_BUILD_LOG}" || exit_with_log
+        $PROFILE_BUILD te_cross_build "${TE_INSTALL}" >>"${TE_BUILD_LOG}" || exit_with_log
     else
-        te_cross_build "${TE_INSTALL}" || exit_with_log
+        $PROFILE_BUILD te_cross_build "${TE_INSTALL}" || exit_with_log
     fi
 fi
 
 if test -n "${QUIET}" ; then
-    te_builder_opts --quiet="${TE_BUILD_LOG}" $BUILDER_OPTS || exit_with_log
+    $PROFILE_BUILD te_builder_opts --quiet="${TE_BUILD_LOG}" $BUILDER_OPTS || exit_with_log
 else
-    te_builder_opts $BUILDER_OPTS || exit_with_log
+    $PROFILE_BUILD te_builder_opts $BUILDER_OPTS || exit_with_log
 fi
 
 if test "$RCF_CONSISTENCY_CHECKS_SIMPLE" = "yes" ; then
-    if "$TE_BASE/engine/builder/te_rcf_consistency_checks" --check ; then
+    if $PROFILE_BUILD "$TE_BASE/engine/builder/te_rcf_consistency_checks" --check ; then
         echo "Simple RCF consistency check succeeded" >&2
     else
         echo "Simple RCF consistency check failed" >&2
@@ -1018,7 +1053,7 @@ export TE_SNIFF_LOG_DIR
 cd "${TE_RUN_DIR}"
 
 if test -n "${SUITE_SOURCES}" -a -n "${BUILD_TS}" ; then
-    te_build_suite `basename ${SUITE_SOURCES}` $SUITE_SOURCES || exit_with_log
+    $PROFILE_BUILD te_build_suite `basename ${SUITE_SOURCES}` $SUITE_SOURCES || exit_with_log
 fi
 
 if test -n "${CONF_NUT_SET}" ; then
@@ -1035,10 +1070,10 @@ fi
 
 if test -n "${CONF_NUT_SET}" -a -n "${BUILD_NUTS}" ; then
     if test -z "${QUIET}" ; then
-        te_build_nuts "${CONF_NUT}" || exit_with_log
+        $PROFILE_BUILD te_build_nuts "${CONF_NUT}" || exit_with_log
     else
         TE_BUILD_NUTS_LOG="${TE_RUN_DIR}/build_nuts.log"
-        te_build_nuts "${CONF_NUT}" >"${TE_BUILD_NUTS_LOG}" || exit_with_log
+        $PROFILE_BUILD te_build_nuts "${CONF_NUT}" >"${TE_BUILD_NUTS_LOG}" || exit_with_log
     fi
 fi    
 
@@ -1211,7 +1246,7 @@ if test -z ${TE_SNIFF_LOG_CONV_DISABLE} ; then
         xlogs[${idx}]=${plog/%.pcap/.xml}
         # Conversion from pcap to TE XML
         if type tshark >/dev/null 2> /dev/null ; then
-            tshark -r ${plog} -T pdml 2> /dev/null | rgt-pdml2xml - ${xlogs[idx]}
+            tshark -r ${plog} -T pdml $TE_SNIFF_TSHARK_OPTS 2> /dev/null | rgt-pdml2xml - ${xlogs[idx]}
         else
             myecho ""
             myecho "--->>> NOTE: tshark is missing, so sniffer logs won't be merged with the report"

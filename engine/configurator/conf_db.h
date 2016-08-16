@@ -162,10 +162,11 @@ cfg_get_ta_name(const char *oid, char *ta)
     return TRUE;
 }
 
-#define CFG_INST_HANDLE_VALID(_handle) \
-    (CFG_INST_HANDLE_TO_INDEX(_handle) < (uint32_t)cfg_all_inst_size && \
-     cfg_all_inst[CFG_INST_HANDLE_TO_INDEX(_handle)] != NULL &&         \
-     cfg_all_inst[CFG_INST_HANDLE_TO_INDEX(_handle)]->handle == _handle)
+#define CFG_INST_HANDLE_VALID(_handle) (                                \
+    (_handle) != CFG_HANDLE_INVALID &&                                  \
+    CFG_INST_HANDLE_TO_INDEX(_handle) < (uint32_t)cfg_all_inst_size &&  \
+    cfg_all_inst[CFG_INST_HANDLE_TO_INDEX(_handle)] != NULL &&          \
+    cfg_all_inst[CFG_INST_HANDLE_TO_INDEX(_handle)]->handle == _handle)
 
 #define CFG_GET_INST(_handle) \
     (CFG_INST_HANDLE_VALID(_handle) ? \

@@ -11,7 +11,7 @@
 #include "te_config.h"
 
 #ifdef HAVE_SYS_TIME_H
-#include <sys/time.h> /* For 'struct timeval' */ 
+#include <sys/time.h> /* For 'struct timeval' */
 #endif
 
 #ifdef HAVE_STDLIB_H
@@ -56,14 +56,14 @@ typedef struct forw_task_descr_t {
     sendq_t        *sendq;           /**< Associated Send Queue */
 
     int             reordered_pkts;  /**< Counter of reordered packets */
-    struct timeval  reorder_low;     /**< Low margin of current reorder 
+    struct timeval  reorder_low;     /**< Low margin of current reorder
                                           interval */
     struct timeval  reorder_up;      /**< High margin of current reorder
                                           interval */
 } forw_task_descr_t;
 
 
-#define HASH_SIZE 97 
+#define HASH_SIZE 97
 
 static forw_task_descr_t *ftasks_hash_table[HASH_SIZE] = {0, };
 
@@ -74,7 +74,7 @@ static forw_task_descr_t *ftasks_hash_table[HASH_SIZE] = {0, };
  *
  * @return hash value
  */
-static inline int 
+static inline int
 ftask_hash(const char *forw_name)
 {
     int i;
@@ -95,7 +95,7 @@ ftask_hash(const char *forw_name)
  *
  * @return zero on success or error code.
  */
-static inline int 
+static inline int
 ftask_hash_insert(forw_task_descr_t *ftask)
 {
     int hash_index;
@@ -106,7 +106,7 @@ ftask_hash_insert(forw_task_descr_t *ftask)
     hash_index = ftask_hash(ftask->spec.id);
 
     if (ftasks_hash_table[hash_index] == NULL)
-    { 
+    {
         ftasks_hash_table[hash_index] = ftask;
         ftask->next = NULL;
     }
@@ -115,19 +115,19 @@ ftask_hash_insert(forw_task_descr_t *ftask)
         forw_task_descr_t *ft_p, *prev = NULL;
         int                cmp_result = 1;
 
-        for (ft_p = ftasks_hash_table[hash_index]; 
-             ft_p != NULL && 
+        for (ft_p = ftasks_hash_table[hash_index];
+             ft_p != NULL &&
                ((cmp_result = strcmp(ftask->spec.id, ft_p->spec.id)) > 0);
              prev = ft_p, ft_p = ft_p->next);
 
-        if (ft_p != NULL && cmp_result == 0) 
+        if (ft_p != NULL && cmp_result == 0)
         {
-            WARN("%s: Forw task with name %s is in hash", 
+            WARN("%s: Forw task with name %s is in hash",
                  __FUNCTION__, ft_p->spec.id);
             return TE_EEXIST;
         }
 
-        if (prev == NULL) 
+        if (prev == NULL)
             ftasks_hash_table[hash_index] = ftask;
         else
             prev->next = ftask;
@@ -152,14 +152,14 @@ ftask_hash_find(const char *forw_name)
     int cmp_result = 1;
 
     forw_task_descr_t *ft_p;
-    
+
     if (forw_name == NULL)
         return NULL;
 
-    hash_value = ftask_hash(forw_name); 
+    hash_value = ftask_hash(forw_name);
 
     for (ft_p = ftasks_hash_table[hash_value];
-         ft_p != NULL && 
+         ft_p != NULL &&
                  ((cmp_result = strcmp(forw_name, ft_p->spec.id)) < 0);
          ft_p = ft_p->next);
 
@@ -179,7 +179,7 @@ ftask_hash_find(const char *forw_name)
 static inline int
 ftask_hash_remove(forw_task_descr_t *ftask_p)
 {
-    forw_task_descr_t *ft_p, *prev; 
+    forw_task_descr_t *ft_p, *prev;
 
     int hash_value;
 
@@ -191,12 +191,12 @@ ftask_hash_remove(forw_task_descr_t *ftask_p)
     if (hash_value < 0 || hash_value >= HASH_SIZE)
         return TE_EFAULT;
 
-    for (ft_p = ftasks_hash_table[hash_value], prev = NULL; 
+    for (ft_p = ftasks_hash_table[hash_value], prev = NULL;
          ft_p != NULL;
          prev = ft_p, ft_p = ft_p->next)
     {
         if (ft_p == ftask_p)
-        { 
+        {
             if (prev == NULL)
                 ftasks_hash_table[hash_value] = ft_p->next;
             else
@@ -315,7 +315,7 @@ tadf_add_forw_task(const char *forw_asn_spec, int sendq_id)
 }
 
 /* See description in forwader.h */
-int 
+int
 tadf_del_forw_task(const char *forw_name)
 {
     forw_task_descr_t   *ftask_descr;
@@ -323,7 +323,7 @@ tadf_del_forw_task(const char *forw_name)
     if (forw_name == NULL)
         return TE_RC(TE_TA_EXT, TE_EWRONGPTR);
 
-    ftask_descr = ftask_hash_find(forw_name); 
+    ftask_descr = ftask_hash_find(forw_name);
 
     if (ftask_descr == NULL)
     {
@@ -337,22 +337,22 @@ tadf_del_forw_task(const char *forw_name)
 
     free(ftask_descr);
 
-    INFO("%s: forw task '%s' successfully deleted", 
+    INFO("%s: forw task '%s' successfully deleted",
          __FUNCTION__, forw_name);
 
     return 0;
 }
 
 /* See description in forwader.h */
-int 
-tadf_forw_task_set_param(const char *forw_name, 
+int
+tadf_forw_task_set_param(const char *forw_name,
                          const char *param_spec, int value)
 {
     int rc = 0;
 
     forw_task_descr_t   *ftask_descr;
 
-    do { 
+    do {
         if (forw_name == NULL || param_spec == NULL)
         {
             ERROR("%s: Invalid input parameter", __FUNCTION__);
@@ -360,7 +360,7 @@ tadf_forw_task_set_param(const char *forw_name,
             break;
         }
 
-        ftask_descr = ftask_hash_find(forw_name); 
+        ftask_descr = ftask_hash_find(forw_name);
 
         if (ftask_descr == NULL)
         {
@@ -369,16 +369,16 @@ tadf_forw_task_set_param(const char *forw_name,
             break;
         }
 
-        VERB("%s: task %s, param spec %s, value %d", 
+        VERB("%s: task %s, param spec %s, value %d",
              __FUNCTION__, forw_name, param_spec, value);
 
-        rc = asn_write_value_field(ftask_descr->asn_forw_action, 
+        rc = asn_write_value_field(ftask_descr->asn_forw_action,
                                    &value, sizeof(value), param_spec);
         if (rc)
         {
             ERROR("%s: ASN write failed with rc %r", __FUNCTION__, rc);
             break;
-        } 
+        }
 
         if (strncmp(param_spec, "drop", strlen("drop")) == 0)
         {
@@ -412,8 +412,8 @@ tadf_forw_task_set_param(const char *forw_name,
                 case FORW_DELAY_DISABLED:
                     ftask_descr->spec.delay.type = FORW_DELAY_CONSTANT;
                     /* fall through */
-                case FORW_DELAY_CONSTANT: 
-                    ftask_descr->spec.delay.min = 
+                case FORW_DELAY_CONSTANT:
+                    ftask_descr->spec.delay.min =
                         ftask_descr->spec.delay.max = value;
                     VERB("Setting delay to constant %d mcs", value);
                     break;
@@ -434,7 +434,7 @@ tadf_forw_task_set_param(const char *forw_name,
                 case FORW_DELAY_RAND_DISCR:
                     WARN("Set param for discrete delay unsupported");
                     rc = TE_EOPNOTSUPP;
-                    break; 
+                    break;
             }
             break;
         }
@@ -446,30 +446,30 @@ tadf_forw_task_set_param(const char *forw_name,
         {
             if (strstr(param_spec, "type") != NULL)
             {
-                VERB("%s: ftask %s, set reorder type to %d", 
+                VERB("%s: ftask %s, set reorder type to %d",
                      __FUNCTION__, ftask_descr->spec.id, value);
 
                 if (ftask_descr->spec.reorder.type == FORW_REORDER_DISABLED &&
-                    ftask_descr->spec.reorder.timeout == 0 && 
+                    ftask_descr->spec.reorder.timeout == 0 &&
                     ftask_descr->spec.reorder.r_size  == 0)
                 {
                     ftask_descr->spec.reorder.timeout = 1;
-                    ftask_descr->spec.reorder.r_size  = 1; 
+                    ftask_descr->spec.reorder.r_size  = 1;
                     VERB("%s: ftask %s, set reorder timeout and size "
-                         "to defaults", 
+                         "to defaults",
                          __FUNCTION__, ftask_descr->spec.id);
                 }
                 ftask_descr->spec.reorder.type = value;
             }
             else if (strstr(param_spec, "timeout") != NULL)
             {
-                VERB("%s: ftask %s, set reorder timeout to %d", 
+                VERB("%s: ftask %s, set reorder timeout to %d",
                      __FUNCTION__, ftask_descr->spec.id, value);
                 ftask_descr->spec.reorder.timeout = value;
             }
             else if (strstr(param_spec, "size") != NULL)
             {
-                VERB("%s: ftask %s, set reorder size to %d", 
+                VERB("%s: ftask %s, set reorder size to %d",
                      __FUNCTION__, ftask_descr->spec.id, value);
                 ftask_descr->spec.reorder.r_size = value;
             }
@@ -489,7 +489,7 @@ tadf_forw_task_set_param(const char *forw_name,
 
 
 /* See description in forwader.h */
-int 
+int
 tadf_forw_packet(csap_p csap_descr, const char *forw_name,
                  const uint8_t *pkt, size_t pkt_len)
 {
@@ -505,11 +505,11 @@ tadf_forw_packet(csap_p csap_descr, const char *forw_name,
     gettimeofday(&current_tv, NULL);
     send_tv = current_tv;
 
-    VERB("%s, name: '%s', data ptr %r, len %d, curr %u.%u", 
-           __FUNCTION__, forw_name, pkt, pkt_len, 
+    VERB("%s, name: '%s', data ptr %r, len %d, curr %u.%u",
+           __FUNCTION__, forw_name, pkt, pkt_len,
            current_tv.tv_sec, current_tv.tv_usec);
 
-    do { 
+    do {
         ftask_descr = ftask_hash_find(forw_name);
 
         if (ftask_descr == NULL)
@@ -519,31 +519,31 @@ tadf_forw_packet(csap_p csap_descr, const char *forw_name,
             break;
         }
 
-        switch (ftask_descr->spec.drop.type) 
+        switch (ftask_descr->spec.drop.type)
         {
             case FORW_DROP_RANDOM:
                 {
                     /*random value between 0 and 99 */
                     /* Drop rate 100 means drop everything */
                     int rand_val;
-                    
+
                     if (ftask_descr->spec.drop.rate == 0)
                         break;
 
                     if (ftask_descr->spec.drop.rate >= 100)
                     {
                         F_VERB("test drop pkt, rate %d",
-                               ftask_descr->spec.drop.rate); 
+                               ftask_descr->spec.drop.rate);
                         return 0;
                     }
-                    
+
                     rand_val = (random() % 100);
 
                     F_VERB("test drop pkt, rand %d, rate %d",
-                           rand_val, ftask_descr->spec.drop.rate); 
+                           rand_val, ftask_descr->spec.drop.rate);
 
                     if (rand_val < ftask_descr->spec.drop.rate)
-                        return 0; 
+                        return 0;
                 }
                 break;
             case FORW_DROP_PATTERN:
@@ -556,15 +556,15 @@ tadf_forw_packet(csap_p csap_descr, const char *forw_name,
                 break;
         }
         if (rc)
-            break; 
+            break;
 
         if (ftask_descr->spec.reorder.type != FORW_REORDER_DISABLED)
         {
-            F_VERB("Reorder specified, num %d, timeout %d mcs", 
-                   ftask_descr->spec.reorder.r_size, 
-                   ftask_descr->spec.reorder.timeout); 
+            F_VERB("Reorder specified, num %d, timeout %d mcs",
+                   ftask_descr->spec.reorder.r_size,
+                   ftask_descr->spec.reorder.timeout);
 
-            if (timeval_compare(ftask_descr->reorder_up, 
+            if (timeval_compare(ftask_descr->reorder_up,
                                 current_tv) < 0)
             {
                 ftask_descr->reorder_up = current_tv;
@@ -575,29 +575,29 @@ tadf_forw_packet(csap_p csap_descr, const char *forw_name,
                 F_VERB("reorder_up is later then current, left old");
 
             if (ftask_descr->reordered_pkts == 0)
-            { 
-                ftask_descr->reorder_low = ftask_descr->reorder_up; 
+            {
+                ftask_descr->reorder_low = ftask_descr->reorder_up;
                 ftask_descr->reorder_up = current_tv;
-                ftask_descr->reorder_up.tv_usec += 
-                    (ftask_descr->spec.reorder.timeout * 2) / 3; 
+                ftask_descr->reorder_up.tv_usec +=
+                    (ftask_descr->spec.reorder.timeout * 2) / 3;
 
                 F_VERB("Re-init reorder time limits; [%u.%u, %u.%u]",
-                       ftask_descr->reorder_low.tv_sec, 
-                       ftask_descr->reorder_low.tv_usec, 
-                       ftask_descr->reorder_up.tv_sec, 
-                       ftask_descr->reorder_up.tv_usec); 
-            } 
+                       ftask_descr->reorder_low.tv_sec,
+                       ftask_descr->reorder_low.tv_usec,
+                       ftask_descr->reorder_up.tv_sec,
+                       ftask_descr->reorder_up.tv_usec);
+            }
 
             switch (ftask_descr->spec.reorder.type)
             {
                 case FORW_REORDER_RANDOM:
                     {
                         int rand_val = random();
-                        int interval = ftask_descr->reorder_up.tv_sec - 
+                        int interval = ftask_descr->reorder_up.tv_sec -
                                        ftask_descr->reorder_low.tv_sec;
                         interval *= TV_RADIX;
-                        interval += ftask_descr->reorder_up.tv_usec - 
-                                    ftask_descr->reorder_low.tv_usec; 
+                        interval += ftask_descr->reorder_up.tv_usec -
+                                    ftask_descr->reorder_low.tv_usec;
 
                         rand_val %= interval;
                         send_tv.tv_usec += rand_val;
@@ -607,7 +607,7 @@ tadf_forw_packet(csap_p csap_descr, const char *forw_name,
 
                 case FORW_REORDER_REVERSED:
                     send_tv = ftask_descr->reorder_up;
-                    F_VERB("Reverse reorder, send at %d.%d ", 
+                    F_VERB("Reverse reorder, send at %d.%d ",
                            send_tv.tv_sec, send_tv.tv_usec);
 
                     if (ftask_descr->reorder_up.tv_usec > 0)
@@ -619,20 +619,20 @@ tadf_forw_packet(csap_p csap_descr, const char *forw_name,
                     break;
 
                 default:
-                    ERROR("Unexpected reorder type %d", 
+                    ERROR("Unexpected reorder type %d",
                           ftask_descr->spec.reorder.type);
                     rc = TE_EINVAL;
                     break;
             }
 
             ftask_descr->reordered_pkts++;
-            if (ftask_descr->reordered_pkts == 
+            if (ftask_descr->reordered_pkts ==
                 ftask_descr->spec.reorder.timeout)
             {
-                F_VERB("pktnum is reach limit %d, break to zero", 
+                F_VERB("pktnum is reach limit %d, break to zero",
                        ftask_descr->spec.reorder.timeout);
                 ftask_descr->reordered_pkts = 0;
-            } 
+            }
         }
 
         if (rc != 0)
@@ -658,7 +658,7 @@ tadf_forw_packet(csap_p csap_descr, const char *forw_name,
                 break;
             case FORW_DELAY_RAND_DISCR:
                 {
-                    int rand_val = (random() % 100); 
+                    int rand_val = (random() % 100);
                     int prev_threshold = 0;
 
                     unsigned i;
@@ -667,26 +667,26 @@ tadf_forw_packet(csap_p csap_descr, const char *forw_name,
 
                     ndn_delay_discr_pair_t *discr_pair_p;
 
-                    for (i = 0, discr_pair_p = ftask_descr->spec.delay.discr; 
-                         i < ftask_descr->spec.delay.n_pairs; 
+                    for (i = 0, discr_pair_p = ftask_descr->spec.delay.discr;
+                         i < ftask_descr->spec.delay.n_pairs;
                          i++, discr_pair_p++)
                     {
-                        if (prev_threshold <= rand_val && 
+                        if (prev_threshold <= rand_val &&
                             rand_val < prev_threshold + discr_pair_p->prob)
                         {
                             send_tv.tv_usec += discr_pair_p->delay;
-                            F_VERB("fall into %d interval, delay %d mcs", 
+                            F_VERB("fall into %d interval, delay %d mcs",
                                  i, discr_pair_p->delay);
                             break;
                         }
                         else
-                            prev_threshold += discr_pair_p->prob; 
+                            prev_threshold += discr_pair_p->prob;
                     }
                 }
                 NORM_TIMEVAL(send_tv);
-                break; 
+                break;
             default:
-                RING("Unexpected delay type %d", 
+                RING("Unexpected delay type %d",
                      ftask_descr->spec.delay.type);
                 break;
         }

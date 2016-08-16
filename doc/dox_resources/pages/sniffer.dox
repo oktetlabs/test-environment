@@ -243,6 +243,14 @@ If are you launch the sniffers by the command line options for an interfaces, sh
     }
 @endcode
 
+@subsection sniffer_env Environments
+Environment <b>TE_SNIFF_TSHARK_OPTS</b> can be used to pass arbitrary options to <b>tshark</b> utility. <b>tshark</b> is used for processing binary capture, so its options can influence to printed in logs data.
+
+For example, the following option can be used to print absolute TCP sequence and ACK numbers instead of relative (by default):
+@code
+   TE_SNIFF_TSHARK_OPTS="-o tcp.relative_sequence_numbers:FALSE"
+@endcode
+
 @subsection sniffer_logger_settings Logger settings
 Polling process and result capture logs location is configured by XML file. By default used
 <b>logger.conf</b> from the <b>conf/</b> directory, but config file path may be changed by <b>Dispatcher</b>

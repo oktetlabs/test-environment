@@ -46,7 +46,7 @@ extern void cli_container_get_prompt_params(const asn_value *cli_container,
 te_errno
 tad_cli_gen_bin_cb(csap_p csap, unsigned int layer,
                    const asn_value *tmpl_pdu, void *opaque,
-                   const tad_tmpl_arg_t *args, size_t arg_num, 
+                   const tad_tmpl_arg_t *args, size_t arg_num,
                    tad_pkts *sdus, tad_pkts *pdus)
 {
     cli_csap_specific_data_p cli_spec_data = csap_get_rw_data(csap);
@@ -89,7 +89,7 @@ tad_cli_gen_bin_cb(csap_p csap, unsigned int layer,
               (unsigned)read_len, msg_len);
     }
 
-    /* 
+    /*
      * Prepare prompt patterns for the ongoing command run
      * 1. Copy patters initialized on CSAP create;
      * 2. Overwrite patterns with values specified in PDU.
@@ -188,7 +188,7 @@ tad_cli_match_bin_cb(csap_p           csap,
 te_errno
 tad_cli_gen_pattern_cb(csap_p            csap,
                        unsigned int      layer,
-                       const asn_value  *tmpl_pdu, 
+                       const asn_value  *tmpl_pdu,
                        asn_value       **ptrn_pdu)
 {
     UNUSED(csap);

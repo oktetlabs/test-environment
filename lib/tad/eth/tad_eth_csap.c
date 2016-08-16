@@ -2,7 +2,7 @@
  * @brief TAD Ethernet
  *
  * Traffic Application Domain Command Handler.
- * Ethernet CSAP support description structures. 
+ * Ethernet CSAP support description structures.
  *
  * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -70,7 +70,7 @@ static csap_spt_type_t eth_csap_spt =
     .prepare_send_cb     = tad_eth_prepare_send,
     .write_cb            = tad_eth_write_cb,
     .shutdown_send_cb    = tad_eth_shutdown_send,
-    
+
     .prepare_recv_cb     = tad_eth_prepare_recv,
     .read_cb             = tad_eth_read_cb,
     .shutdown_recv_cb    = tad_eth_shutdown_recv,
@@ -84,9 +84,9 @@ static csap_spt_type_t eth_csap_spt =
  * Command Handler.
  *
  * @return Status code.
- */ 
+ */
 te_errno
 csap_support_eth_register(void)
-{ 
+{
     return csap_spt_add(&eth_csap_spt);
 }

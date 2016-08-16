@@ -72,7 +72,7 @@ for i in $* ; do
     /^INCLUDE/ { printf("#include <%s>\n", \
                  substr($1, 9, length($1) - 9)); next; } \
     { print $0; }' > ${j}.tmp2 ; 
-    $BUILDER/te_rpc_conv ${j}.tmp2 ${j}
+    m4 -D__SOURCE__=${i} -P $BUILDER/rpcconv.m4 ${j}.tmp2 >${j}
     rm ${j}.tmp* ; 
     indent $j ;
     mv $j tmpsrc

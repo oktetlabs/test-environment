@@ -744,7 +744,7 @@ te_errno asn_path_from_extended(asn_value *node, const char *ext_path,
  *
  * @return   Status code
  */
-int asn_insert_value_extended_path(const asn_value *root_node,
+int asn_insert_value_extended_path(asn_value *root_node,
                                    const char *ext_path,
                                    asn_value *value,
                                    int *index);

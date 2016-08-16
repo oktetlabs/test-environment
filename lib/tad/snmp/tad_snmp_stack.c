@@ -74,7 +74,7 @@
 #define WITHOUT_AES
 
 #ifdef SNMPDEBUG
-void 
+void
 print_oid(unsigned long * subids, size_t len)
 {
     unsigned int i;
@@ -84,7 +84,7 @@ print_oid(unsigned long * subids, size_t len)
 
     for (i = 0; i < len; i++)
         printf(".%lu", subids[i]);
-} 
+}
 #endif
 
 #ifndef RECEIVED_MESSAGE
@@ -96,14 +96,14 @@ print_oid(unsigned long * subids, size_t len)
 #endif
 
 
-void 
+void
 tad_snmp_free_pdu(void *ptr, size_t len)
 {
     struct snmp_pdu *pdu = (struct snmp_pdu *)ptr;
 
     UNUSED(len);
-    if (pdu == NULL) 
-        return; 
+    if (pdu == NULL)
+        return;
 
     snmp_free_pdu(pdu);
 }
@@ -115,13 +115,13 @@ snmp_csap_input(int                  op,
                 struct snmp_pdu     *pdu,
                 void                *magic)
 {
-    snmp_csap_specific_data_p   spec_data; 
+    snmp_csap_specific_data_p   spec_data;
 
     UNUSED(session);
     UNUSED(reqid);
 
     spec_data = (snmp_csap_specific_data_p) magic;
-    VERB("input callback, operation: %d", op); 
+    VERB("input callback, operation: %d", op);
 
     if (op == RECEIVED_MESSAGE)
     {
@@ -141,12 +141,12 @@ snmp_csap_input(int                  op,
         F_VERB("%s(): SNMP operation timed out", __FUNCTION__);
     }
 
-    return 1; 
+    return 1;
 }
 
 
 /**
- * Callback for release internal data after traffic processing. 
+ * Callback for release internal data after traffic processing.
  *
  * @param csap    pointer to CSAP descriptor structure
  *
@@ -155,7 +155,7 @@ snmp_csap_input(int                  op,
 te_errno
 tad_snmp_release_cb(csap_p csap)
 {
-    snmp_csap_specific_data_p spec_data = 
+    snmp_csap_specific_data_p spec_data =
         csap_get_proto_spec_data(csap, csap_get_rw_layer(csap));
 
     assert(spec_data->pdu == NULL);
@@ -167,21 +167,21 @@ tad_snmp_release_cb(csap_p csap)
 te_errno
 tad_snmp_read_cb(csap_p csap, unsigned int timeout,
                  tad_pkt *pkt, size_t *pkt_len)
-{ 
+{
     snmp_csap_specific_data_p   spec_data;
 
-    te_errno        rc; 
+    te_errno        rc;
     int             ret;
 
     int             n_fds = 0;
     int             block = 0;
     fd_set          fdset;
-    struct timeval  sel_timeout; 
+    struct timeval  sel_timeout;
 
     assert(pkt != NULL);
     assert(pkt_len != NULL);
 
-    spec_data = csap_get_proto_spec_data(csap, csap_get_rw_layer(csap)); 
+    spec_data = csap_get_proto_spec_data(csap, csap_get_rw_layer(csap));
 
     FD_ZERO(&fdset);
     TE_US2TV(timeout, &sel_timeout);
@@ -195,15 +195,15 @@ tad_snmp_read_cb(csap_p csap, unsigned int timeout,
         FD_SET(spec_data->sock, &fdset);
         n_fds = spec_data->sock + 1;
     }
-    
+
     assert(spec_data->pdu == NULL);
 
     ret = select(n_fds, &fdset, 0, 0, &sel_timeout);
     VERB("%s(): CSAP %d, after select, ret %d\n",
          __FUNCTION__, csap->id, ret);
 
-    if (ret > 0) 
-    { 
+    if (ret > 0)
+    {
         tad_pkt_seg *seg;
 
         seg = tad_pkt_first_seg(pkt);
@@ -217,11 +217,11 @@ tad_snmp_read_cb(csap_p csap, unsigned int timeout,
 
         /* snmp_csap_input() callback is called */
         snmp_read(&fdset);
-        
+
         if (spec_data->pdu != NULL)
         {
             tad_pkt_put_seg_data(pkt, seg, spec_data->pdu,
-                                 sizeof(*spec_data->pdu), 
+                                 sizeof(*spec_data->pdu),
                                  tad_snmp_free_pdu);
             spec_data->pdu = NULL;
             *pkt_len = sizeof(*spec_data->pdu);
@@ -231,7 +231,7 @@ tad_snmp_read_cb(csap_p csap, unsigned int timeout,
         {
             rc = TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
         }
-    } 
+    }
     else if (ret == 0)
     {
         rc = TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
@@ -241,7 +241,7 @@ tad_snmp_read_cb(csap_p csap, unsigned int timeout,
         rc = TE_OS_RC(TE_TAD_CSAP, errno);
         assert(rc != 0);
     }
-    
+
     return rc;
 }
 
@@ -254,7 +254,7 @@ tad_snmp_write_cb(csap_p csap, const tad_pkt *pkt)
 
     assert(pkt != NULL);
 
-    spec_data = csap_get_proto_spec_data(csap, csap_get_rw_layer(csap)); 
+    spec_data = csap_get_proto_spec_data(csap, csap_get_rw_layer(csap));
 
     if ((tad_pkt_seg_num(pkt) != 1) ||
         ((pdu = tad_pkt_first_seg(pkt)->data_ptr) == NULL) ||
@@ -282,7 +282,7 @@ tad_snmp_write_cb(csap_p csap, const tad_pkt *pkt)
         snmp_free_pdu(pdu);
         ERROR(CSAP_LOG_FMT "Send SNMP PDU failed", CSAP_LOG_ARGS(csap));
         return TE_RC(TE_TAD_CSAP, TE_EIO);
-    } 
+    }
 
     return 0;
 }
@@ -295,14 +295,14 @@ te_errno
 tad_snmp_rw_init_cb(csap_p csap)
 {
     int      rc;
-    char     community[COMMUNITY_MAX_LEN + 1]; 
-    char     snmp_agent[100]; 
+    char     community[COMMUNITY_MAX_LEN + 1];
+    char     snmp_agent[100];
     int      timeout;
     int      version;
     size_t   v_len;
 
-    struct snmp_session         csap_session; 
-    struct snmp_session        *ss = NULL; 
+    struct snmp_session         csap_session;
+    struct snmp_session        *ss = NULL;
 
     snmp_csap_specific_data_p   snmp_spec_data;
     const asn_value            *snmp_csap_spec =
@@ -327,10 +327,10 @@ tad_snmp_rw_init_cb(csap_p csap)
     snmp_sess_init(&csap_session);
 
     /* Timeout */
-    v_len = sizeof(timeout); 
+    v_len = sizeof(timeout);
     rc = asn_read_value_field(snmp_csap_spec, &timeout,
                               &v_len, "timeout.#plain");
-    if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL) 
+    if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
         timeout = SNMP_CSAP_DEF_TIMEOUT;
     else if (rc != 0)
     {
@@ -340,10 +340,10 @@ tad_snmp_rw_init_cb(csap_p csap)
     csap_session.timeout = timeout * 1000000L;
 
     /* Version */
-    v_len = sizeof(version); 
+    v_len = sizeof(version);
     rc = asn_read_value_field(snmp_csap_spec, &version,
                               &v_len, "version.#plain");
-    if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL) 
+    if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
         version = SNMP_CSAP_DEF_VERSION;
     else if (rc != 0)
     {
@@ -353,10 +353,10 @@ tad_snmp_rw_init_cb(csap_p csap)
     csap_session.version = version;
 
     /* Local port */
-    v_len = sizeof(csap_session.local_port); 
+    v_len = sizeof(csap_session.local_port);
     rc = asn_read_value_field(snmp_csap_spec, &csap_session.local_port,
                               &v_len, "local-port.#plain");
-    if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL) 
+    if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
         csap_session.local_port = SNMP_CSAP_DEF_LOCPORT;
     else if (rc != 0)
     {
@@ -365,19 +365,19 @@ tad_snmp_rw_init_cb(csap_p csap)
     }
 
     /* Remote port */
-    v_len = sizeof(csap_session.remote_port); 
+    v_len = sizeof(csap_session.remote_port);
     rc = asn_read_value_field(snmp_csap_spec, &csap_session.remote_port,
                               &v_len, "remote-port.#plain");
-    if (csap_session.local_port == SNMP_CSAP_DEF_LOCPORT) 
-    { 
-        if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL) 
+    if (csap_session.local_port == SNMP_CSAP_DEF_LOCPORT)
+    {
+        if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
             csap_session.remote_port = SNMP_CSAP_DEF_REMPORT;
         else if (rc != 0)
         {
             ERROR("%s: error reading 'remote-port': %r", __FUNCTION__, rc);
             return rc;
         }
-    } 
+    }
     else
     {
         csap_session.remote_port = 0;
@@ -392,11 +392,11 @@ tad_snmp_rw_init_cb(csap_p csap)
     v_len = sizeof(snmp_agent);
     rc = asn_read_value_field(snmp_csap_spec, snmp_agent,
                               &v_len, "snmp-agent.#plain");
-    if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL) 
+    if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
         if (csap_session.local_port == SNMP_CSAP_DEF_LOCPORT)
             strcpy(snmp_agent, SNMP_CSAP_DEF_AGENT);
-        else 
+        else
             snmp_agent[0] = '\0';
     }
     else if (rc != 0)
@@ -427,14 +427,14 @@ tad_snmp_rw_init_cb(csap_p csap)
               security_model_name);
         return TE_ENOENT;
     }
-   
+
     /* Community-based security model */
     if (security_model == NDN_SNMP_SEC_MODEL_V2C)
     {
         v_len = sizeof(community);
         rc = asn_read_value_field(snmp_csap_spec, community,
                                   &v_len, "security.#v2c.community");
-        if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL) 
+        if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
             strcpy(community, SNMP_CSAP_DEF_COMMUNITY);
         else if (rc != 0)
         {
@@ -499,7 +499,7 @@ tad_snmp_rw_init_cb(csap_p csap)
 
             /* Authentication parameters */
             v_len = sizeof(auth_proto);
-            rc = asn_read_value_field(snmp_csap_spec, &auth_proto, 
+            rc = asn_read_value_field(snmp_csap_spec, &auth_proto,
                                       &v_len,
                                       "security.#usm.auth-protocol");
             if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
@@ -515,7 +515,7 @@ tad_snmp_rw_init_cb(csap_p csap)
             {
                 case NDN_SNMP_AUTH_PROTO_DEFAULT:
                     csap_session.securityAuthProto = SNMP_DEFAULT_AUTH_PROTO;
-                    csap_session.securityAuthProtoLen = 
+                    csap_session.securityAuthProtoLen =
                         SNMP_DEFAULT_AUTH_PROTOLEN;
                     break;
 
@@ -551,7 +551,7 @@ tad_snmp_rw_init_cb(csap_p csap)
             }
 
             /* Key generation */
-            csap_session.securityAuthKeyLen = 
+            csap_session.securityAuthKeyLen =
                 sizeof(csap_session.securityAuthKey);
             if (generate_Ku(csap_session.securityAuthProto,
                             csap_session.securityAuthProtoLen,
@@ -561,7 +561,7 @@ tad_snmp_rw_init_cb(csap_p csap)
                     != SNMPERR_SUCCESS)
             {
                 ERROR("%s: failed to generate a key from authentication "
-                      "passphrase: %s", __FUNCTION__, 
+                      "passphrase: %s", __FUNCTION__,
                       snmp_api_errstring(snmp_errno));
                 return TE_ETADLOWER;
             }
@@ -574,7 +574,7 @@ tad_snmp_rw_init_cb(csap_p csap)
             /* Privacy parameters */
             v_len = sizeof(priv_proto);
             rc = asn_read_value_field(snmp_csap_spec, &priv_proto,
-                                      &v_len, 
+                                      &v_len,
                                       "security.#usm.priv-protocol");
             if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
                 priv_proto = NDN_SNMP_PRIV_PROTO_DEFAULT;
@@ -589,7 +589,7 @@ tad_snmp_rw_init_cb(csap_p csap)
             {
                 case NDN_SNMP_PRIV_PROTO_DEFAULT:
                     csap_session.securityPrivProto = SNMP_DEFAULT_PRIV_PROTO;
-                    csap_session.securityPrivProtoLen = 
+                    csap_session.securityPrivProtoLen =
                         SNMP_DEFAULT_PRIV_PROTOLEN;
                     break;
 
@@ -654,13 +654,13 @@ tad_snmp_rw_init_cb(csap_p csap)
         ERROR("%s: malloc failed", __FUNCTION__);
         return TE_ENOMEM;
     }
-    
+
     VERB("try to open SNMP session: \n");
     VERB("  version:    %d\n", csap_session.version);
     VERB("  rem-port:   %d\n", csap_session.remote_port);
     VERB("  loc-port:   %d\n", csap_session.local_port);
     VERB("  timeout:    %d\n", csap_session.timeout);
-    VERB("  peername:   %s\n", csap_session.peername ? 
+    VERB("  peername:   %s\n", csap_session.peername ?
                                csap_session.peername : "(null)" );
 #if COMMUNITY
     VERB("  community:  %s\n", csap_session.community);
@@ -672,15 +672,15 @@ tad_snmp_rw_init_cb(csap_p csap)
 
     do {
         char buf[32];
-        netsnmp_transport *transport = NULL; 
+        netsnmp_transport *transport = NULL;
 
-        snprintf(buf, sizeof(buf), "%s:%d", 
-                (csap_session.remote_port != 0 && strlen(snmp_agent) > 0) 
-                ? snmp_agent : "0.0.0.0", 
-                csap_session.remote_port != 0 
+        snprintf(buf, sizeof(buf), "%s:%d",
+                (csap_session.remote_port != 0 && strlen(snmp_agent) > 0)
+                ? snmp_agent : "0.0.0.0",
+                csap_session.remote_port != 0
                 ? csap_session.remote_port : csap_session.local_port);
 
-        transport = netsnmp_tdomain_transport(buf, 
+        transport = netsnmp_tdomain_transport(buf,
                                         !csap_session.remote_port, "udp");
         if (transport == NULL)
         {
@@ -702,7 +702,7 @@ tad_snmp_rw_init_cb(csap_p csap)
 
         free(snmp_spec_data);
         return TE_ETADLOWER;
-    }   
+    }
 #if 0
     VERB("in init, session: %x\n", ss);
 
@@ -727,7 +727,7 @@ tad_snmp_rw_init_cb(csap_p csap)
 
 
 /* See description in tad_snmp_impl.h */
-int 
+int
 tad_snmp_rw_destroy_cb(csap_p csap)
 {
     snmp_csap_specific_data_p spec_data = csap_get_rw_data(csap);

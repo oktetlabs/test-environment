@@ -104,7 +104,7 @@ tapi_eth_common_set(const char *ta, const char *ifname, const char *field,
 {
     te_errno rc;
 
-    if ((rc = cfg_set_instance_fmt(CVT_INTEGER, (void *)val,
+    if ((rc = cfg_set_instance_fmt(CVT_INTEGER, (void *)(long)val,
                                    TE_CFG_TA_ETH_FMT "/%s:", ta,
                                    ifname, field)) != 0)
         ERROR("Failed to set %s value: %r", field, rc);

@@ -68,7 +68,7 @@ else
 
 dnl
 dnl At first check headers used by other headers to be checked
-dnl 
+dnl
 
 AC_CHECK_HEADERS([sys/types.h sys/queue.h sys/param.h])
 
@@ -129,6 +129,8 @@ inet/mib2.h \
 inet/nd.h \
 inttypes.h \
 limits.h \
+linux/if_ether.h \
+linux/if_packet.h \
 linux/net_tstamp.h \
 linux/udp.h \
 math.h \
@@ -171,8 +173,8 @@ stdlib.h \
 string.h \
 strings.h \
 stropts.h \
-sys/cdefs.h \        
-sys/dlpi.h \        
+sys/cdefs.h \
+sys/dlpi.h \
 sys/errno.h \
 sys/ethernet.h \
 sys/filio.h \

@@ -1011,7 +1011,7 @@ tad_data_unit_from_bin(const uint8_t *data, size_t d_len,
         return TE_ENOMEM;
 
     location->du_type = TAD_DU_OCTS;
-    location->val_data.len = d_len; 
+    location->val_data.len = d_len;
     memcpy(location->val_data.oct_str, data, d_len);
 
     return 0;
@@ -1514,7 +1514,8 @@ te_errno
 tad_common_read_cb_sock(csap_p csap, int sock, unsigned int flags,
                         unsigned int timeout, tad_pkt *pkt,
                         struct sockaddr *from, socklen_t *fromlen,
-                        size_t *pkt_len)
+                        size_t *pkt_len, int *msg_flags, void *cmsg_buf,
+                        size_t *cmsg_buf_len)
 {
     struct pollfd       pfd = { sock, POLLIN, 0 };
     int                 ret_val;
@@ -1526,6 +1527,15 @@ tad_common_read_cb_sock(csap_p csap, int sock, unsigned int flags,
         ERROR(CSAP_LOG_FMT "Input socket is not open",
               CSAP_LOG_ARGS(csap));
         return TE_RC(TE_TAD_CSAP, TE_EIO);
+    }
+
+    if ((cmsg_buf == NULL) != (cmsg_buf_len == NULL))
+    {
+        ERROR(CSAP_LOG_FMT "If cmsg_buf is %s, then cmsg_buf_len should be %s "
+              "and vice versa", CSAP_LOG_ARGS(csap),
+              (cmsg_buf == NULL) ? "NULL" : "set",
+              (cmsg_buf_len == NULL) ? "set" : "NULL");
+        return TE_RC(TE_TAD_CSAP, TE_EINVAL);
     }
 
     ret_val = poll(&pfd, 1, TE_US2MS(timeout));
@@ -1579,6 +1589,12 @@ tad_common_read_cb_sock(csap_p csap, int sock, unsigned int flags,
         msg.msg_iov = iov;
         msg.msg_iovlen = iovlen;
 
+        if (cmsg_buf != NULL && cmsg_buf_len != NULL)
+        {
+            msg.msg_control = cmsg_buf;
+            msg.msg_controllen = *cmsg_buf_len;
+        }
+
         /* TODO: possibly MSG_TRUNC and other flags are required */
         flags |= MSG_TRUNC;
         r = recvmsg(sock, &msg, flags);
@@ -1595,6 +1611,9 @@ tad_common_read_cb_sock(csap_p csap, int sock, unsigned int flags,
         {
             return TE_RC(TE_TAD_CSAP, TE_ETADENDOFDATA);
         }
+
+        if (msg_flags != NULL)
+            *msg_flags = msg.msg_flags;
 
         if (fromlen != NULL)
             *fromlen = msg.msg_namelen;

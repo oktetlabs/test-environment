@@ -57,7 +57,7 @@
 #define MAX_CSAP_DEPTH 200
 
 
-/** 
+/**
  * Free memory allocatad for all common CSAP data.
  *
  * @param csap      Pointer to CSAP descriptor
@@ -70,8 +70,8 @@ csap_free(csap_p csap)
 
     VERB("%s(): csap %d, layers %u", __FUNCTION__,
          csap->id, csap->layers);
-    
-    free(csap->csap_type); 
+
+    free(csap->csap_type);
 
     if (csap->layers != NULL)
     {
@@ -86,7 +86,7 @@ csap_free(csap_p csap)
              */
         }
 
-        free(csap->layers); 
+        free(csap->layers);
     }
 
     free(csap);
@@ -99,8 +99,8 @@ csap_create(const char *type, csap_p *csap)
 {
     csap_p          new_csap;
     char           *csap_type;
-    unsigned int    depth; 
-    unsigned int    i; 
+    unsigned int    depth;
+    unsigned int    i;
     te_errno        rc;
     int             ret;
     char           *proto;
@@ -144,7 +144,7 @@ csap_create(const char *type, csap_p *csap)
     } while (0)
 
     if ((new_csap == NULL) || (csap_type == NULL))
-        CSAP_CREATE_ERROR(TE_ENOMEM, "%s(): no memory for new CSAP", 
+        CSAP_CREATE_ERROR(TE_ENOMEM, "%s(): no memory for new CSAP",
                           __FUNCTION__);
 
     new_csap->id = csap_id_new(new_csap);
@@ -155,34 +155,34 @@ csap_create(const char *type, csap_p *csap)
     if ((ret = pthread_cond_init(&new_csap->event, NULL)) != 0)
         CSAP_CREATE_ERROR(te_rc_os2te(ret),
                           "%s(): pthread_cond_init() failed: %d",
-                          __FUNCTION__, ret); 
+                          __FUNCTION__, ret);
     if ((ret = pthread_mutex_init(&new_csap->lock, NULL)) != 0)
         CSAP_CREATE_ERROR(te_rc_os2te(ret),
                           "%s(): pthread_mutex_init() failed: %d",
-                          __FUNCTION__, ret); 
+                          __FUNCTION__, ret);
 
     depth = 0;
     layer_protos[depth] = csap_type;
-    depth++; 
+    depth++;
 
     for (proto = strchr(csap_type, '.');
          proto != NULL && *proto != '\0';
-         proto = strchr(proto, '.')) 
+         proto = strchr(proto, '.'))
     {
         *proto = '\0';
         proto++;
         layer_protos[depth] = proto;
-        depth++; 
+        depth++;
         VERB("%s(): next_layer: %s\n", __FUNCTION__, proto);
     }
 
     new_csap->depth = depth;
 
-    /* Allocate memory for stack arrays */ 
+    /* Allocate memory for stack arrays */
     new_csap->layers = calloc(depth, sizeof(new_csap->layers[0]));
 
     if (new_csap->layers == NULL)
-        CSAP_CREATE_ERROR(TE_ENOMEM, "%s(): no memory for layers", 
+        CSAP_CREATE_ERROR(TE_ENOMEM, "%s(): no memory for layers",
                           __FUNCTION__);
 
     for (i = 0; i < depth; i++)
@@ -201,10 +201,10 @@ csap_create(const char *type, csap_p *csap)
              i, new_csap->layers[i].proto);
 
         if (new_csap->layers[i].proto_support == NULL)
-            CSAP_CREATE_ERROR(TE_EOPNOTSUPP, 
-                              "%s(): no support for proto '%s'", 
+            CSAP_CREATE_ERROR(TE_EOPNOTSUPP,
+                              "%s(): no support for proto '%s'",
                               __FUNCTION__, new_csap->layers[i].proto);
-    } 
+    }
 
     /* Ready for processing */
     rc = csap_command(new_csap, TAD_OP_IDLE);
@@ -368,7 +368,7 @@ csap_command_under_lock(csap_p csap, tad_traffic_op_t command)
             assert(FALSE);
             rc = TE_EINVAL;
     }
-    
+
     if (rc == 0)
     {
         /* We can change the state */

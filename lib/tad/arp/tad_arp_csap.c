@@ -2,7 +2,7 @@
  * @brief TAD ARP
  *
  * Traffic Application Domain Command Handler.
- * ARP CSAP support description structures. 
+ * ARP CSAP support description structures.
  *
  * Copyright (C) 2005-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -41,7 +41,7 @@
 #include "tad_arp_impl.h"
 
 
-static csap_spt_type_t arp_csap_spt = 
+static csap_spt_type_t arp_csap_spt =
 {
     .proto               = "arp",
     .unregister_cb       = NULL,
@@ -73,9 +73,9 @@ static csap_spt_type_t arp_csap_spt =
  * Command Handler.
  *
  * @return Status code.
- */ 
+ */
 te_errno
 csap_support_arp_register(void)
-{ 
+{
     return csap_spt_add(&arp_csap_spt);
 }

@@ -2,7 +2,7 @@
  * @brief TAD CLI
  *
  * Traffic Application Domain Command Handler.
- * CLI CSAP support description structures. 
+ * CLI CSAP support description structures.
  *
  * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -41,7 +41,7 @@
 #include "tad_cli_impl.h"
 
 
-static csap_spt_type_t cli_csap_spt = 
+static csap_spt_type_t cli_csap_spt =
 {
     .proto               = "cli",
     .unregister_cb       = NULL,
@@ -70,7 +70,7 @@ static csap_spt_type_t cli_csap_spt =
     .prepare_send_cb     = NULL,
     .write_cb            = tad_cli_write_cb,
     .shutdown_send_cb    = NULL,
-    
+
     .prepare_recv_cb     = NULL,
     .read_cb             = tad_cli_read_cb,
     .shutdown_recv_cb    = NULL,
@@ -83,9 +83,9 @@ static csap_spt_type_t cli_csap_spt =
  * Register CLI CSAP callbacks and support structures in TAD Command Handler.
  *
  * @return Status code
- */ 
+ */
 te_errno
 csap_support_cli_register(void)
-{ 
+{
     return csap_spt_add(&cli_csap_spt);
 }

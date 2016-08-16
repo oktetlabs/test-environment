@@ -47,6 +47,7 @@
 #include "conf_api.h"
 #include "tapi_cfg_net.h"
 #include "tapi_rpc.h"
+#include "tapi_sniffer.h"
 
 
 /**
@@ -307,7 +308,7 @@ typedef STAILQ_HEAD(cfg_handle_tqh, cfg_handle_tqe) cfg_handle_tqh;
 /** Network entry */
 typedef struct tapi_env_net {
     SLIST_ENTRY(tapi_env_net)   links;  /**< Links of the networks list */
-    
+
     char               *name;       /**< Name of the net */
 
     tapi_env_type       type;       /**< Type of the net */
@@ -367,16 +368,25 @@ typedef struct tapi_env_if {
     tapi_env_net   *net;        /**< Net the interface belongs to */
     tapi_env_host  *host;       /**< Host the interface is belongs to */
 
+    CIRCLEQ_ENTRY(tapi_env_if)  ps_links;   /**< Links in the process list */
+    struct tapi_env_process    *ps; /**< Process the interface belongs to */
+
     unsigned int    i_node;     /**< Index of the associated node */
-    
+
+    enum net_node_rsrc_type rsrc_type;  /**< Type of the associated
+                                             network node resource */
+
     struct if_nameindex if_info;/**< Interface info */
     struct if_nameindex br_info;/**< XEN bridge info */
     struct if_nameindex ph_info;/**< XEN physical interface info */
-    
+
     te_bool ip4_unicast_used;   /**< Is IPv4 address assigned to
                                      the host in this net used? */
     te_bool ip6_unicast_used;   /**< Is IPv6 address assigned to
                                      the host in this net used? */
+
+    tapi_sniffer_id    *sniffer_id;    /**< ID of the sniffer created by
+                                            request via TE_ENV_SNIFF_ON */
 
 } tapi_env_if;
 
@@ -394,6 +404,9 @@ typedef struct tapi_env_process {
     SLIST_ENTRY(tapi_env_process)   links;  /**< Links */
 
     tapi_env_pcos pcos; /**< Tail queue of PCOs in process */
+    tapi_env_ifs  ifs;  /**< List of interfaces */
+
+    unsigned int next_vif_index;    /**< Next virtual interface index */
 } tapi_env_process;
 
 
@@ -422,7 +435,7 @@ typedef struct tapi_env_addr {
 
     rpc_socket_addr_family  family;     /**< Address family */
     tapi_env_addr_type      type;       /**< Address type */
-    
+
     socklen_t               addrlen;    /**< Length of assigned address */
     struct sockaddr        *addr;       /**< Assigned address */
     struct sockaddr_storage addr_st;    /**< Address storage */
@@ -634,7 +647,32 @@ extern te_errno tapi_env_get_net_host_addr(const tapi_env          *env,
                                            tapi_cfg_net_assigned   *assigned,
                                            struct sockaddr        **addr,
                                            socklen_t               *addrlen);
-                                    
+
+/**
+ * Find PCO by RPC server handle.
+ */
+extern const tapi_env_pco *tapi_env_rpcs2pco(const tapi_env       *env,
+                                             const rcf_rpc_server *rpcs);
+
+/**
+ * Allocate and add a number of addresses to the specified interface.
+ *
+ * @param rpcs          RPC server handle.
+ * @param net           Network addresses pool.
+ * @param af            Address family.
+ * @param iface         Interface handle.
+ * @param addr_num      Addresses number to be added.
+ *
+ * @return Address pointers array or @c NULL in case of fail.
+ *
+ * @note The function does not roll back configuration changes in case of
+ *       fail - the test execution should be aborted.
+ */
+extern struct sockaddr **tapi_env_add_addresses(rcf_rpc_server *rpcs,
+                                           tapi_env_net *net, int af,
+                                           const struct if_nameindex *iface,
+                                           int addr_num);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

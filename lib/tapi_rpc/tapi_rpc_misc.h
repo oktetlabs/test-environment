@@ -25,7 +25,7 @@
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
- * $Id$
+ * $Id: tapi_rpc_misc.h,v 94b3e14a5ce4 2015/09/24 09:58:33 Andrey $
  */
 
 #ifndef __TE_TAPI_RPC_MISC_H__
@@ -518,7 +518,7 @@ extern int rpc_overfill_buffers_gen(rcf_rpc_server *rpcs, int sock,
 static inline int
 rpc_overfill_buffers(rcf_rpc_server *rpcs, int sock, uint64_t *sent)
 {
-    return rpc_overfill_buffers_gen(rpcs, sock, sent, FUNC_POLL);
+    return rpc_overfill_buffers_gen(rpcs, sock, sent, FUNC_DEFAULT_IOMUX);
 }
 
 /**
@@ -872,6 +872,16 @@ extern void tapi_set_if_mtu_smart(rcf_rpc_server *rpcs,
  */
 extern te_bool tapi_interface_is_vlan(rcf_rpc_server *rpcs,
                                       const struct if_nameindex *interface);
+
+/**
+ * Release the RPC pointer with specified namespace without any system call
+ *
+ * @param rpcs          RPC server handle
+ * @param ptr           RPC pointer
+ * @param ns_string     Namespace as string for @p ptr
+ */
+extern void rpc_release_rpc_ptr(
+        rcf_rpc_server *rpcs, rpc_ptr ptr, char *ns_string);
 
 /**@} <!-- END te_lib_rpc_misc --> */
 

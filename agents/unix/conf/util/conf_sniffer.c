@@ -1849,7 +1849,7 @@ ta_unix_conf_sniffer_cleanup(void)
     remove(snif_sets.path);    
     if ((strcmp(snif_sets.path, snif_sets.ta_path) != 0) &&
         remove(snif_sets.ta_path) != 0)
-        PRINT("Couldn't remove the agent-specific folder: %s",
+        ERROR("Couldn't remove the agent-specific folder: %s",
               snif_sets.ta_path);
 
     return 0;

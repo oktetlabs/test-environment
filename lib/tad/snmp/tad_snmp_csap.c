@@ -2,7 +2,7 @@
  * @brief TAD SNMP
  *
  * Traffic Application Domain Command Handler.
- * SNMP protocol implementaion, CSAP support description structures. 
+ * SNMP protocol implementaion, CSAP support description structures.
  *
  * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -44,7 +44,7 @@
 static void tad_snmp_unregister_cb(void);
 
 
-static csap_spt_type_t snmp_csap_spt = 
+static csap_spt_type_t snmp_csap_spt =
 {
     .proto               = "snmp",
     .unregister_cb       = tad_snmp_unregister_cb,
@@ -73,7 +73,7 @@ static csap_spt_type_t snmp_csap_spt =
     .prepare_send_cb     = NULL,
     .write_cb            = tad_snmp_write_cb,
     .shutdown_send_cb    = tad_snmp_release_cb,
-    
+
     .prepare_recv_cb     = NULL,
     .read_cb             = tad_snmp_read_cb,
     .shutdown_recv_cb    = tad_snmp_release_cb,
@@ -92,14 +92,14 @@ tad_snmp_unregister_cb(void)
 }
 
 /**
- * Register 'snmp' CSAP callbacks and support structures in TAD 
+ * Register 'snmp' CSAP callbacks and support structures in TAD
  * Command Handler.
  *
  * @return Status code
- */ 
+ */
 te_errno
 csap_support_snmp_register(void)
-{ 
+{
     init_snmp("__snmpapp__");
 
     return csap_spt_add(&snmp_csap_spt);

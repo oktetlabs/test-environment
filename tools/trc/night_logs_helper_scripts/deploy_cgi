@@ -5,8 +5,14 @@ use warnings;
 use File::Spec;
 use File::Basename;
 
-my $cgi_path = "/usr/lib/cgi-bin/local/socktest/";
+my $cgi_path = "/usr/lib/cgi-bin/local/prj/sf/sapi-ts/history/";
 my $cli_path = "/home/tester-l5/night_logs_caches/";
+my $def_test = "sockapi-ts/sockopts/bindtodevice_dstunreach";
+my $def_xml_log = "trc-log.bz2";
+my $def_group_logs_by_tags = "";
+my $user = "tester-l5";
+my $group = "www-data";
+my $install_night_status = 1;
 
 foreach my $arg (@ARGV)
 {
@@ -18,11 +24,42 @@ foreach my $arg (@ARGV)
     {
         $cli_path = File::Spec->rel2abs($1)."/";
     }
+    elsif ($arg =~ m/^--user=(.+)$/)
+    {
+        $user = $1;
+    }
+    elsif ($arg =~ m/^--group=(.+)$/)
+    {
+        $group = $1;
+    }
+    elsif ($arg =~ m/^--def-test=(.+)$/)
+    {
+        $def_test = $1;
+    }
+    elsif ($arg =~ m/^--def-xml-log=(.+)$/)
+    {
+        $def_xml_log = $1;
+    }
+    elsif ($arg =~ m/^--def-logs-by-tags$/)
+    {
+        $def_group_logs_by_tags = "checked";
+    }
+    elsif ($arg =~ m/^--no-night-status$/)
+    {
+        $install_night_status = 0;
+    }
     elsif ($arg =~ m/^--help$/)
     {
-        print "Deploying CGI scripts\n".
-              "--cgi_path=             Where to place CGI scripts\n".
-              "--cli_path=             Where auxiliary scripts will be stored\n";
+        print
+          "Deploying CGI scripts\n".
+          "--cgi_path=          Where to place CGI scripts\n".
+          "--cli_path=          Where auxiliary scripts will be stored\n".
+          "--user=              Name of user owning scripts\n".
+          "--group=             Name of group owning scripts\n".
+          "--def-test=          Default test provided as an example\n".
+          "--def-xml-log=       Default xml log filename\n".
+          "--def-logs-by-tags   Group logs by tags by default\n".
+          "--no-night-status    Do not install night_status.pl script\n";
 
         exit(0);
     }
@@ -57,11 +94,31 @@ sub fix_script
     {
         die "Failed to replace CLI_PATH in $script";
     }
+
+    if (system("sed -i 's/DEF_TEST/".escape_path(${def_test}).
+               "/g' $script") != 0)
+    {
+        die "Failed to replace DEF_TEST in $script";
+    }
+
+    if (system("sed -i 's/DEF_XML_LOG/".escape_path(${def_xml_log}).
+               "/g' $script") != 0)
+    {
+        die "Failed to replace DEF_XML_LOG in $script";
+    }
+
+    if (system("sed -i 's/DEF_GROUP_LOGS_BY_TAGS/".
+               escape_path(${def_group_logs_by_tags}).
+               "/g' $script") != 0)
+    {
+        die "Failed to replace DEF_GROUP_LOGS_BY_TAGS in $script";
+    }
 }
 
 my %files = ( "$cgi_path" => [ "./cgi_scripts/form.html",
                                "./cgi_scripts/index.pl",
-                               "./cgi_scripts/process_form.pl" ],
+                               "./cgi_scripts/process_form.pl",
+                               "./cgi_scripts/compromise.pl" ],
               "$cli_path" => [ "./cli_scripts/add_new_cache",
                                "./cli_scripts/te_get_nlogs_results",
                                "./cli_scripts/compromise_log",
@@ -71,10 +128,15 @@ my %files = ( "$cgi_path" => [ "./cgi_scripts/form.html",
 
 my $rc;
 
+if ($install_night_status > 0)
+{
+    push(@{$files{$cgi_path}}, "./cgi_scripts/night_status.pl");
+}
+
 foreach my $path (keys %files)
 {
     if (system("mkdir -p $path") != 0 ||
-        system("chown tester-l5:www-data $path") != 0 ||
+        system("chown $user:$group $path") != 0 ||
         system("chmod 0750 $path") != 0)
     {
         die "Failed to set up $path";
@@ -83,7 +145,7 @@ foreach my $path (keys %files)
     foreach my $file (@{$files{$path}})
     {
         if (system("cp $file $path/") != 0 ||
-            system("chown tester-l5:www-data $path/".basename($file)) != 0 ||
+            system("chown $user:$group $path/".basename($file)) != 0 ||
             system("chmod 0750 $path/".basename($file)) != 0)
         {
             die "Failed to install $file to $path";

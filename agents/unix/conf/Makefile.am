@@ -56,6 +56,10 @@ libconf_a_SOURCES += conf_iscsi_target.c
 
 endif
 
+if CFG_PCI
+libconf_a_SOURCES += base/conf_pci.c
+endif
+
 if CFG_VCM
 libconf_a_SOURCES += base/conf_vcm.c 
 endif
@@ -148,6 +152,7 @@ libconf_a_SOURCES += daemons/vtund/conf_vtund.c
 endif
 
 endif
+
 
 if CFG_UNIX_AGGR
 libconf_a_SOURCES += base/conf_aggr.c 

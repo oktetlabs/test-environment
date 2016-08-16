@@ -2,7 +2,7 @@
  * @brief TAD PPP
  *
  * Traffic Application Domain Command Handler.
- * PPP CSAP support description structures. 
+ * PPP CSAP support description structures.
  *
  * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).

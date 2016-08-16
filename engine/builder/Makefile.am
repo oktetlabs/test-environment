@@ -27,14 +27,10 @@ dist_mybin_SCRIPTS = \
     te_cross_build \
     te_cross_make \
     te_generate_symtbl \
-    te_generate_rpctbl \
-    te_rpc_supported \
-    te_rpc_unsupported \
     te_build_suite \
     te_build_win_platform \
     te_build_win_lib \
     te_build_win_app \
-    te_rpc_conv \
     te_tests_info.sh \
     te_struct_layout \
     te_functions \
@@ -48,5 +44,4 @@ dist_bin_SCRIPTS = \
 
 EXTRA_DIST = builder.m4
 
-mydatadir=$(datadir)/@PACKAGE_NAME@
-dist_mydata_DATA = nut.m4
+dist_pkgdata_DATA = nut.m4

@@ -59,6 +59,7 @@
 #include "tapi_cfg_ip6.h"
 #include "tapi_rpc.h"
 #include "tapi_sockaddr.h"
+#include "te_alloc.h"
 
 
 
@@ -91,6 +92,8 @@ static te_errno prepare_addresses(tapi_env_addrs *addrs,
 static te_errno prepare_interfaces(tapi_env_ifs *ifs,
                                    cfg_nets_t   *cfg_nets);
 static te_errno prepare_pcos(tapi_env_hosts *hosts);
+
+static te_errno prepare_sniffers(tapi_env *env);
 
 static te_errno add_address(tapi_env_addr         *env_addr,
                             cfg_nets_t            *cfg_nets,
@@ -304,6 +307,13 @@ tapi_env_get(const char *cfg, tapi_env *env)
         return rc;
     }
 
+    rc = prepare_sniffers(env);
+    if (rc != 0)
+    {
+        ERROR("Failed to prepare sniffers");
+        return rc;
+    }
+
     return 0;
 }
 
@@ -466,6 +476,8 @@ tapi_env_free(tapi_env *env)
     while ((iface = env->ifs.cqh_first) != (void *)&env->ifs)
     {
         CIRCLEQ_REMOVE(&env->ifs, iface, links);
+        if (iface->sniffer_id != NULL)
+            (void)tapi_sniffer_del(iface->sniffer_id);
         free(iface->if_info.if_name);
         free(iface->br_info.if_name);
         free(iface->ph_info.if_name);
@@ -1356,6 +1368,252 @@ add_address(tapi_env_addr *env_addr, cfg_nets_t *cfg_nets,
     return rc;
 }
 
+/**
+ * Get network interface (specified using Configurator OID @p oid)
+ * index.
+ */
+static te_errno
+get_interface_index(const char *oid, unsigned int *if_index)
+{
+    te_errno        rc;
+    cfg_val_type    val_type = CVT_INTEGER;
+
+    rc = cfg_get_instance_fmt(&val_type, if_index, "%s/index:", oid);
+    if (rc != 0)
+        ERROR("Failed to get interface index of the %s via "
+              "Configurator: %r", oid, rc);
+
+    return rc;
+}
+
+/**
+ * Prepare network interface data in accordance with bound network
+ * configuration.
+ *
+ * @param iface         Environment interface to fill in
+ * @param cfg_nets      Bound network configuration
+ *
+ * @return Status code.
+ */
+static te_errno
+prepare_interfaces_net(tapi_env_if *iface, const cfg_nets_t *cfg_nets)
+{
+    te_errno        rc;
+    cfg_val_type    val_type;
+    char           *oid = NULL;
+
+    /* Get name of the interface from network node value */
+    rc = node_value_get_ith_inst_name(
+             cfg_nets->nets[iface->net->i_net].nodes[iface->i_node].handle,
+             2, &iface->if_info.if_name);
+    if (rc != 0)
+    {
+        ERROR("Failed to get interface name");
+        return rc;
+    }
+
+    val_type = CVT_STRING;
+    rc = cfg_get_instance(cfg_nets->nets[iface->net->i_net].
+                              nodes[iface->i_node].handle,
+                          &val_type, &oid);
+    if (rc != 0)
+    {
+        ERROR("Failed to get OID of the network node");
+        return rc;
+    }
+    else /** XEN-specific part */
+    {
+        char const  xen[]    = "xen:/";
+        char const  bridge[] = "/bridge:";
+        char       *xen_oid  = malloc(strlen(oid) +
+                                      strlen(xen) +
+                                      strlen(bridge) + 1);
+        char const *slash    = strrchr(oid, '/');
+
+        if (slash == NULL)
+        {
+            rc = TE_EFAIL;
+            goto cleanup0;
+        }
+
+        memcpy(xen_oid, oid, ++slash - oid);
+        xen_oid[slash - oid] = '\0';
+        strcat(xen_oid, xen);
+        strcat(xen_oid, slash);
+        val_type = CVT_STRING;
+
+        if ((rc = cfg_get_instance_fmt(&val_type,
+                                       &iface->ph_info.if_name,
+                                       xen_oid)) != 0)
+        {
+            if (rc != TE_RC(TE_CS, TE_ENOENT))
+            {
+                ERROR("Failed to get '%s' OID value", xen_oid);
+                goto cleanup0;
+            }
+
+            iface->ph_info.if_name = strdup("");
+        }
+
+        strcat(xen_oid, bridge);
+        val_type = CVT_STRING;
+
+        if ((rc = cfg_get_instance_fmt(&val_type,
+                                       &iface->br_info.if_name,
+                                       xen_oid)) != 0)
+        {
+            if (rc != TE_RC(TE_CS, TE_ENOENT))
+            {
+                ERROR("Failed to get '%s' OID value", xen_oid);
+                goto cleanup0;
+            }
+
+            iface->br_info.if_name = strdup("");
+        }
+
+        rc = 0;
+cleanup0:
+        free(xen_oid);
+
+        if (rc != 0)
+            goto cleanup;
+    }
+
+    rc = get_interface_index(oid, &(iface->if_info.if_index));
+    if (rc != 0)
+        goto cleanup;
+
+cleanup:
+    free(oid);
+    return rc;
+}
+
+/**
+ * Prepare loopback interface data in accordance with bound network
+ * configuration.
+ *
+ * @param iface         Environment interface to fill in
+ * @param cfg_nets      Bound network configuration
+ *
+ * @return Status code.
+ */
+static te_errno
+prepare_interfaces_loopback(tapi_env_if *iface, const cfg_nets_t *cfg_nets)
+{
+    te_errno        rc;
+    const char     *oid_fmt = "/agent:%s/interface:%s";
+    char           *ta;
+    char           *oid = NULL;
+
+    /* Get name of the test agent */
+    rc = node_value_get_ith_inst_name(
+             cfg_nets->nets[iface->net->i_net].nodes[iface->i_node].handle,
+             1, &ta);
+    if (rc != 0)
+    {
+        ERROR("Failed to get test agent name");
+        return rc;
+    }
+
+    if (cfg_find_fmt(NULL, oid_fmt, ta, "lo") == 0)
+    {
+        iface->if_info.if_name = strdup("lo");
+    }
+    else if (cfg_find_fmt(NULL, oid_fmt, ta, "lo0") == 0)
+    {
+        iface->if_info.if_name = strdup("lo0");
+    }
+    /* FIXME: Dirty hack for Windows */
+    else if (cfg_find_fmt(NULL, oid_fmt, ta, "intf1") == 0)
+    {
+        iface->if_info.if_name = strdup("intf1");
+    }
+    else
+    {
+        ERROR("Unable to get loopback interface");
+        return TE_ESRCH;
+    }
+    if (iface->if_info.if_name == NULL)
+    {
+        ERROR("strdup() failed");
+        return te_rc_os2te(errno);
+    }
+
+    oid = malloc(strlen(oid_fmt) - 2 + strlen(ta) -
+                 2 + strlen(iface->if_info.if_name) + 1);
+    if (oid == NULL)
+    {
+        ERROR("malloc() failed");
+        return TE_ENOMEM;
+    }
+    sprintf(oid, oid_fmt, ta, iface->if_info.if_name);
+
+    rc = get_interface_index(oid, &(iface->if_info.if_index));
+
+    free(oid);
+    free(ta);
+
+    return rc;
+}
+
+/**
+ * Prepare PCI function virtual interface data in accordance with bound
+ * network configuration.
+ *
+ * @param iface         Environment interface to fill in
+ * @param node          Bound network configuration node
+ *
+ * @return Status code.
+ */
+static te_errno
+prepare_interfaces_pci_fn(tapi_env_if *iface, cfg_net_node_t *node)
+{
+    te_errno        rc;
+    cfg_val_type    val_type;
+    char           *oid = NULL;
+    char           *pci_oid = NULL;
+
+    if (iface->ps == NULL)
+    {
+        ERROR("PCI function interface '%s' must belong to some process",
+              iface->name);
+        return TE_EINVAL;
+    }
+
+    val_type = CVT_STRING;
+    rc = cfg_get_instance(node->handle, &val_type, &oid);
+    if (rc != 0)
+    {
+        ERROR("Failed to get OID of the network node");
+        return rc;
+    }
+
+    val_type = CVT_STRING;
+    rc = cfg_get_instance_fmt(&val_type, &pci_oid, "%s", oid);
+    if (rc != 0)
+    {
+        ERROR("Failed to get PCI resource OID value '%s': %r", oid, rc);
+        free(oid);
+        return rc;
+    }
+
+    free(oid);
+
+    rc = cfg_get_ith_inst_name(pci_oid, 4, &(iface->if_info.if_name));
+    if (rc != 0)
+    {
+        ERROR("Failed to get 4th instance name of the OID '%s': %r",
+              pci_oid, rc);
+        free(pci_oid);
+        return rc;
+    }
+
+    free(pci_oid);
+
+    iface->if_info.if_index = iface->ps->next_vif_index++;
+
+    return 0;
+}
 
 /**
  * Prepare required interfaces data in accordance with bound
@@ -1369,162 +1627,43 @@ add_address(tapi_env_addr *env_addr, cfg_nets_t *cfg_nets,
 static te_errno
 prepare_interfaces(tapi_env_ifs *ifs, cfg_nets_t *cfg_nets)
 {
-    te_errno        rc;
+    te_errno        rc = 0;
     tapi_env_if    *p;
-    cfg_val_type    val_type;
-    char           *oid = NULL;
 
-    for (p = ifs->cqh_first; p != (void *)ifs; p = p->links.cqe_next)
+    for (p = ifs->cqh_first; p != (void *)ifs && rc == 0; p = p->links.cqe_next)
     {
         if (p->name == NULL)
             continue;
 
         if (strcmp(p->name, "lo") != 0)
         {
-            /* Get name of the interface from network node value */
-            rc = node_value_get_ith_inst_name(
-                     cfg_nets->nets[p->net->i_net].nodes[p->i_node].handle,
-                     2, &p->if_info.if_name);
-            if (rc != 0)
+            cfg_net_node_t *node;
+
+            node = &cfg_nets->nets[p->net->i_net].nodes[p->i_node];
+            p->rsrc_type = tapi_cfg_net_get_node_rsrc_type(node);
+            switch (p->rsrc_type)
             {
-                ERROR("Failed to get interface name");
-                return rc;
-            }
+                case NET_NODE_RSRC_TYPE_INTERFACE:
+                    rc = prepare_interfaces_net(p, cfg_nets);
+                    break;
 
-            val_type = CVT_STRING;
-            rc = cfg_get_instance(cfg_nets->nets[p->net->i_net].
-                                      nodes[p->i_node].handle,
-                                  &val_type, &oid);
-            if (rc != 0)
-            {
-                ERROR("Failed to get OID of the network node");
-                return rc;
-            }
-            else /** XEN-specific part */
-            {
-                char const  xen[]    = "xen:/";
-                char const  bridge[] = "/bridge:";
-                char       *xen_oid  = malloc(strlen(oid) +
-                                              strlen(xen) +
-                                              strlen(bridge) + 1);
-                char const *slash    = strrchr(oid, '/');
+                case NET_NODE_RSRC_TYPE_PCI_FN:
+                    rc = prepare_interfaces_pci_fn(p, node);
+                    break;
 
-                if (slash == NULL)
-                {
-                    rc = TE_EFAIL;
-                    goto cleanup0;
-                }
-
-                memcpy(xen_oid, oid, ++slash - oid);
-                xen_oid[slash - oid] = '\0';
-                strcat(xen_oid, xen);
-                strcat(xen_oid, slash);
-                val_type = CVT_STRING;
-
-                if ((rc = cfg_get_instance_fmt(&val_type,
-                                               &p->ph_info.if_name,
-                                               xen_oid)) != 0)
-                {
-                    if (rc != TE_RC(TE_CS, TE_ENOENT))
-                    {
-                        ERROR("Failed to get '%s' OID value", xen_oid);
-                        goto cleanup0;
-                    }
-
-                    p->ph_info.if_name = strdup("");
-                }
-
-                strcat(xen_oid, bridge);
-                val_type = CVT_STRING;
-
-                if ((rc = cfg_get_instance_fmt(&val_type,
-                                               &p->br_info.if_name,
-                                               xen_oid)) != 0)
-                {
-                    if (rc != TE_RC(TE_CS, TE_ENOENT))
-                    {
-                        ERROR("Failed to get '%s' OID value", xen_oid);
-                        goto cleanup0;
-                    }
-
-                    p->br_info.if_name = strdup("");
-                }
-
-                rc = 0;
-cleanup0:
-                free(xen_oid);
-
-                if (rc != 0)
-                    return rc;
+                default:
+                    rc = TE_EINVAL;
+                    break;
             }
         }
         else
         {
-            const char *oid_fmt = "/agent:%s/interface:%s";
-            char       *ta;
-
-            /* Get name of the test agent */
-            rc = node_value_get_ith_inst_name(
-                     cfg_nets->nets[p->net->i_net].nodes[p->i_node].handle,
-                     1, &ta);
-            if (rc != 0)
-            {
-                ERROR("Failed to get test agent name");
-                return rc;
-            }
-
-            if (cfg_find_fmt(NULL, oid_fmt, ta, "lo") == 0)
-            {
-                p->if_info.if_name = strdup("lo");
-            }
-            else if (cfg_find_fmt(NULL, oid_fmt, ta, "lo0") == 0)
-            {
-                p->if_info.if_name = strdup("lo0");
-            }
-            /* FIXME: Dirty hack for Windows */
-            else if (cfg_find_fmt(NULL, oid_fmt, ta, "intf1") == 0)
-            {
-                p->if_info.if_name = strdup("intf1");
-            }
-            else
-            {
-                ERROR("Unable to get loopback interface");
-                return TE_ESRCH;
-            }
-            if (p->if_info.if_name == NULL)
-            {
-                ERROR("strdup() failed");
-                return te_rc_os2te(errno);
-            }
-
-            oid = malloc(strlen(oid_fmt) - 2 + strlen(ta) -
-                         2 + strlen(p->if_info.if_name) + 1);
-            if (oid == NULL)
-            {
-                ERROR("malloc() failed");
-                return TE_ENOMEM;
-            }
-            sprintf(oid, oid_fmt, ta, p->if_info.if_name);
-            
-            free(ta);
+            rc = prepare_interfaces_loopback(p, cfg_nets);
         }
 
-        val_type = CVT_INTEGER;
-        rc = cfg_get_instance_fmt(&val_type, &(p->if_info.if_index),
-                                  "%s/index:", oid);
-        if (rc != 0)
-        {
-            ERROR("Failed to get interface index of the %s via "
-                  "Configurator: %r", oid, rc);
-            free(oid);
-            return rc;
-        }
-
-        free(oid);
-        oid = NULL;
     }
 
-    return 0;
+    return rc;
 }
 
 
@@ -2142,4 +2281,117 @@ tapi_env_get_net_host_addr(const tapi_env          *env,
         *addrlen = te_sockaddr_get_size(*addr);
 
     return 0;
+}
+
+/* See description in tapi_env.h */
+const tapi_env_pco *
+tapi_env_rpcs2pco(const tapi_env *env, const rcf_rpc_server *rpcs)
+{
+    const tapi_env_host    *host;
+    const tapi_env_process *proc;
+    const tapi_env_pco     *pco;
+
+    if (env == NULL || rpcs == NULL)
+    {
+        ERROR("%s(): Invalid arguments", __FUNCTION__);
+        return NULL;
+    }
+
+    SLIST_FOREACH(host, &env->hosts, links)
+    {
+        SLIST_FOREACH(proc, &host->processes, links)
+        {
+            STAILQ_FOREACH(pco, &proc->pcos, links)
+            {
+                if (pco->rpcs == rpcs)
+                    return pco;
+            }
+        }
+    }
+
+    return NULL;
+}
+
+/* See description in tapi_env.h */
+struct sockaddr **
+tapi_env_add_addresses(rcf_rpc_server *rpcs, tapi_env_net *net, int af,
+                       const struct if_nameindex *iface, int addr_num)
+{
+    struct sockaddr **addr_list;
+    struct sockaddr **addr;
+    unsigned int prefix;
+    int rc = 0;
+    int i = 0;
+
+    addr_list = TE_ALLOC(addr_num * sizeof(addr_list));
+    if (addr_list == NULL)
+        return NULL;
+
+    prefix = af == AF_INET ? net->ip4pfx : net->ip6pfx;
+
+#define TMP_CHECK_RC(_action) \
+    do {                                            \
+        rc = (_action);                             \
+        if (rc != 0)                                \
+            break;                                  \
+    } while (0)
+
+    for (i = 0; i < addr_num; i++)
+    {
+        addr = addr_list + i;
+
+        TMP_CHECK_RC(tapi_env_allocate_addr(net, af, addr, NULL));
+        TMP_CHECK_RC(tapi_allocate_set_port(rpcs, *addr));
+        TMP_CHECK_RC(
+            tapi_cfg_base_if_add_net_addr(rpcs->ta, iface->if_name,
+                                          *addr, prefix, FALSE, NULL));
+    }
+
+    if (rc == 0)
+        return addr_list;
+
+    addr_num = i;
+    for (i = 0; i < addr_num; i++)
+        free(addr_list[i]);
+    free(addr_list);
+
+#undef TMP_CHECK_RC
+
+    return NULL;
+}
+
+
+/**
+ * Create sniffers requested via environment.
+ */
+static te_errno
+prepare_sniffers(tapi_env *env)
+{
+    const char         *sniff_on = getenv("TE_ENV_SNIFF_ON");
+    tapi_env_if        *p;
+    te_errno            rc = 0;
+    char                buf[16];
+
+    if (sniff_on == NULL)
+        return 0;
+
+    for (p = env->ifs.cqh_first;
+         p != (void *)(&env->ifs) && rc == 0;
+         p = p->links.cqe_next)
+    {
+        if (p->rsrc_type != NET_NODE_RSRC_TYPE_INTERFACE)
+            continue;
+
+        snprintf(buf, sizeof(buf), ":%s:", p->name);
+        if (strcasecmp(sniff_on, "all") == 0 || strstr(sniff_on, buf) != NULL)
+        {
+            p->sniffer_id =
+                tapi_sniffer_add(p->host->ta, p->if_info.if_name, p->name,
+                                 NULL, FALSE);
+            if (p->sniffer_id == NULL)
+                rc = TE_RC(TE_TAPI, TE_EFAULT);
+        }
+    }
+
+    return rc;
 }

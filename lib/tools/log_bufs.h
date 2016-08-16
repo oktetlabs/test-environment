@@ -35,9 +35,11 @@
 extern "C" {
 #endif
 
+#include <inttypes.h>
+
 /**
- * Declaration of te_log_buf type, which is defined 
- * in the implementation, so user can allocate and operate only 
+ * Declaration of te_log_buf type, which is defined
+ * in the implementation, so user can allocate and operate only
  * with pointer to this data structure.
  */
 struct te_log_buf;
@@ -49,10 +51,10 @@ typedef struct te_log_buf te_log_buf;
 /**
  * Allocates a buffer to be used for accumulating log message.
  * Mainly used in tapi_snmp itself.
- * 
+ *
  * @return Pointer to the buffer.
  *
- * @note the caller does not have to check the returned 
+ * @note the caller does not have to check the returned
  * value against NULL, the function blocks the caller until it
  * gets available buffer.
  *
@@ -69,7 +71,7 @@ extern te_log_buf *te_log_buf_alloc();
  *
  * @return The number of characters appended
  *
- * @note This is NOT thread safe function, so you are not allowed 
+ * @note This is NOT thread safe function, so you are not allowed
  * to append the same buffer from different threads simultaneously.
  */
 extern int te_log_buf_append(te_log_buf *buf, const char *fmt, ...);
@@ -91,6 +93,53 @@ extern const char *te_log_buf_get(te_log_buf *buf);
  * @note This is thread safe function
  */
 extern void te_log_buf_free(te_log_buf *buf);
+
+/**
+ * Put @a argc/@a argv arguments enclosed in double quotes and separated
+ * by comma to log buffer.
+ *
+ * @param buf   Pointer to the buffer allocated with @b te_log_buf_alloc()
+ * @param argc  Number of arguments
+ * @param argv  Array with arguments
+ *
+ * @return @b te_log_buf_get() return value after addition
+ */
+extern const char *te_args2log_buf(te_log_buf *buf,
+                                   int argc, const char **argv);
+
+
+/** Mapping of the bit number to string */
+struct te_log_buf_bit2str {
+    unsigned int    bit;
+    const char     *str;
+};
+
+/**
+ * Append bit mask converted to string to log buffer.
+ *
+ * Pipe '|' is used as a separator.
+ *
+ * @param buf       Pointer to the buffer
+ * @param bit_mask  Bit mask
+ * @param map       Bit to string map terminated by the element with #NULL
+ *                  string
+ *
+ * @return te_log_buf_get() value.
+ */
+extern const char *te_bit_mask2log_buf(te_log_buf *buf,
+                                       unsigned long long bit_mask,
+                                       const struct te_log_buf_bit2str *map);
+
+/**
+ * Put ether address to log buffer.
+ *
+ * @param buf   Pointer to the buffer allocated with @b te_log_buf_alloc()
+ * @param argc  Pointer to the ether address
+ *
+ * @return @b te_log_buf_get() return value after addition
+ */
+extern const char *te_ether_addr2log_buf(te_log_buf *buf,
+                                         const uint8_t * mac_addr);
 
 #ifdef __cplusplus
 } /* extern "C" */

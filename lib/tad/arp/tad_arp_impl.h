@@ -28,7 +28,7 @@
  */
 
 #ifndef __TE_TAD_ARP_IMPL_H__
-#define __TE_TAD_ARP_IMPL_H__ 
+#define __TE_TAD_ARP_IMPL_H__
 
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -63,9 +63,9 @@ extern te_errno tad_arp_destroy_cb(csap_p csap, unsigned int layer);
  * The function complies with csap_layer_confirm_pdu_cb_t prototype.
  */
 extern te_errno tad_arp_confirm_tmpl_cb(csap_p         csap,
-                                        unsigned int   layer, 
+                                        unsigned int   layer,
                                         asn_value     *layer_pdu,
-                                        void         **p_opaque); 
+                                        void         **p_opaque);
 
 /**
  * Callback for confirm pattern PDU with ARP CSAP parameters and
@@ -74,9 +74,9 @@ extern te_errno tad_arp_confirm_tmpl_cb(csap_p         csap,
  * The function complies with csap_layer_confirm_pdu_cb_t prototype.
  */
 extern te_errno tad_arp_confirm_ptrn_cb(csap_p         csap,
-                                        unsigned int   layer, 
+                                        unsigned int   layer,
                                         asn_value     *layer_pdu,
-                                        void         **p_opaque); 
+                                        void         **p_opaque);
 
 /**
  * Callback for generate binary data to be sent to media.
@@ -102,7 +102,7 @@ extern te_errno tad_arp_match_post_cb(csap_p              csap,
                                       tad_recv_pkt_layer *meta_pkt_layer);
 
 /**
- * Callback for parse received packet and match it with pattern. 
+ * Callback for parse received packet and match it with pattern.
  *
  * The function complies with csap_layer_match_do_cb_t prototype.
  */

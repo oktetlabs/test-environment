@@ -45,6 +45,7 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <sys/socket.h>
+#include <poll.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -67,6 +68,10 @@
 #include <elf.h>
 #endif
 
+#if defined(HAVE_AIO_H)
+#include <aio.h>
+#endif
+
 #include "te_stdint.h"
 #include "te_defs.h"
 #include "te_errno.h"
@@ -82,6 +87,7 @@
 #include "te_sleep.h"
 
 #include "unix_internal.h"
+#include "rpc_server.h"
 #include "tarpc.h"
 #include "te_rpc_errno.h"
 #include "te_rpc_signal.h"
@@ -104,24 +110,8 @@
         return _rc;                                                     \
     } while (FALSE)
 
-static sem_t sigchld_sem;
-
 /** User environment */
 extern char **environ;
-
-/** Status of exited child. */
-typedef struct ta_children_dead {
-    SLIST_ENTRY(ta_children_dead) links;    /**< dead children linek list */
-
-    pid_t                       pid;        /**< PID of the child */
-    int                         status;     /**< status of the child */
-    struct timeval              timestamp;  /**< when child finished */
-    te_bool                     valid;      /**< is this entry valid? */
-} ta_children_dead;
-
-
-extern void *rcf_ch_symbol_addr_auto(const char *name, te_bool is_func);
-extern char *rcf_ch_symbol_name_auto(const void *addr);
 
 /** Logger entity name */
 DEFINE_LGR_ENTITY("(unix)");
@@ -141,11 +131,8 @@ const char *ta_name = "(unix)";
 char ta_dir[RCF_MAX_PATH];
 
 #ifdef WITH_UPNP_CP
-/* UPnP Control Point pathname for the UNIX socket. */
+/* Basename of the UPnP Control Point pathname for the UNIX socket. */
 # define UPNP_CP_UNIX_SOCKET_BASENAME   "upnp_cp_unix_socket"
-static char ta_upnp_cp_unix_socket_storage[RCF_MAX_VAL];
-/* A simple protection to avoid changing the value from outside. */
-const char * const ta_upnp_cp_unix_socket = ta_upnp_cp_unix_socket_storage;
 #endif /* WITH_UPNP_CP */
 
 #if __linux__
@@ -159,6 +146,39 @@ const char *ta_tmp_path = "/usr/tmp/";
 const void *vsyscall_enter = NULL;
 #endif
 
+#if defined(ENABLE_GENERATED_SYMTBL)
+extern rcf_symbol_entry generated_table[];
+#endif
+
+static rcf_symbol_entry essential_symbols[] = {
+   {.name = "socket",       .addr = (void *)socket,       .is_func = TRUE},
+   {.name = "bind",         .addr = (void *)bind,         .is_func = TRUE},
+   {.name = "select",       .addr = (void *)select,       .is_func = TRUE},
+   {.name = "connect",      .addr = (void *)connect,      .is_func = TRUE},
+   {.name = "listen",       .addr = (void *)listen,       .is_func = TRUE},
+   {.name = "accept",       .addr = (void *)accept,       .is_func = TRUE},
+   {.name = "send",         .addr = (void *)send,         .is_func = TRUE},
+   {.name = "sendto",       .addr = (void *)sendto,       .is_func = TRUE},
+   {.name = "recv",         .addr = (void *)recv,         .is_func = TRUE},
+   {.name = "read",         .addr = (void *)read,         .is_func = TRUE},
+   {.name = "write",        .addr = (void *)write,        .is_func = TRUE},
+   {.name = "close",        .addr = (void *)close,        .is_func = TRUE},
+   {.name = "waitpid",      .addr = (void *)waitpid,      .is_func = TRUE},
+   {.name = "te_shell_cmd", .addr = (void *)te_shell_cmd, .is_func = TRUE},
+   {.name = "getsockname",  .addr = (void *)getsockname,  .is_func = TRUE},
+   {.name = "poll",         .addr = (void *)poll,         .is_func = TRUE},
+#if defined (HAVE_AIO_H)
+   {.name = "aio_read",     .addr = (void *)aio_read,     .is_func = TRUE},
+   {.name = "aio_error",    .addr = (void *)aio_error,    .is_func = TRUE},
+   {.name = "aio_return",   .addr = (void *)aio_return,   .is_func = TRUE},
+   {.name = "aio_write",    .addr = (void *)aio_write,    .is_func = TRUE},
+   {.name = "aio_suspend",  .addr = (void *)aio_suspend,  .is_func = TRUE},
+   {.name = "aio_cancel",   .addr = (void *)aio_cancel,   .is_func = TRUE},
+   {.name = "lio_listio",   .addr = (void *)lio_listio,   .is_func = TRUE},
+#endif
+   {.name = NULL, .addr = NULL}
+};
+
 /** Tasks to be killed during TA shutdown */
 static unsigned int     tasks_len = 0;
 static unsigned int     tasks_index = 0;
@@ -170,42 +190,6 @@ static pthread_mutex_t ta_lock = PTHREAD_MUTEX_INITIALIZER;
 static struct sigaction sigaction_int;
 /** Default SIGPIPE action */
 static struct sigaction sigaction_pipe;
-
-
-/** Length of pre-allocated list for dead children records. */
-#define TA_CHILDREN_DEAD_MAX 128
-
-/** Head of the list with children statuses. */
-static ta_children_dead ta_children_dead_heap[TA_CHILDREN_DEAD_MAX];
-
-/** Is the heap initialized? */
-static te_bool ta_children_dead_heap_inited = FALSE;
-
-/** Head of empty entries list */
-SLIST_HEAD(, ta_children_dead) ta_children_dead_pool;
-
-/** Head of dead children list */
-SLIST_HEAD(, ta_children_dead) ta_children_dead_list;
-
-
-/** Initialize ta_children_dead heap. */
-static void
-ta_children_dead_heap_init(void)
-{
-    int i;
-
-    SLIST_INIT(&ta_children_dead_pool);
-    SLIST_INIT(&ta_children_dead_list);
-
-    for (i = 0; i < TA_CHILDREN_DEAD_MAX; i++)
-    {
-        ta_children_dead *dead = &ta_children_dead_heap[i];
-        memset(dead, 0, sizeof(ta_children_dead));
-        SLIST_INSERT_HEAD(&ta_children_dead_pool, dead, links);
-        dead->valid = FALSE;
-    }
-    ta_children_dead_heap_inited = TRUE;
-}
 
 /** Add the task pid into the list */
 static void
@@ -251,8 +235,8 @@ kill_tasks(void)
             rc = kill(-tasks[i], SIGTERM);
             if (!(rc == -1 && errno == ESRCH))
             {
-                PRINT("Sent SIGTERM to PID=%ld - rc=%d, errno=%d",
-                      (long)-tasks[i], rc, (rc == 0) ? 0 : errno);
+                LOG_PRINT("Sent SIGTERM to PID=%ld - rc=%d, errno=%d",
+                          (long)-tasks[i], rc, (rc == 0) ? 0 : errno);
             }
             else 
                 tasks[i] = 0;
@@ -264,8 +248,8 @@ kill_tasks(void)
         if (tasks[i] != 0)
         {
             rc = kill(-tasks[i], SIGKILL);
-            PRINT("Sent SIGKILL to PID=%ld - rc=%d, errno=%d",
-                  (long)-tasks[i], rc, (rc == 0) ? 0 : errno);
+            LOG_PRINT("Sent SIGKILL to PID=%ld - rc=%d, errno=%d",
+                      (long)-tasks[i], rc, (rc == 0) ? 0 : errno);
         }
     }
     free(tasks);
@@ -286,8 +270,10 @@ rcf_ch_lock()
     int rc = pthread_mutex_lock(&ta_lock);
 
     if (rc != 0)
-        PRINT("%s(): pthread_mutex_lock() failed - rc=%d, errno=%d",
-              __FUNCTION__, rc, errno);
+    {
+        LOG_PRINT("%s(): pthread_mutex_lock() failed - rc=%d, errno=%d",
+                  __FUNCTION__, rc, errno);
+    }
 }
 
 /* See description in rcf_ch_api.h */
@@ -304,14 +290,16 @@ rcf_ch_unlock()
     }
     else if (rc != EBUSY)
     {
-        PRINT("%s(): pthread_mutex_trylock() failed - rc=%d, errno=%d",
-              __FUNCTION__, rc, errno);
+        LOG_PRINT("%s(): pthread_mutex_trylock() failed - rc=%d, errno=%d",
+                  __FUNCTION__, rc, errno);
     }
 
     rc = pthread_mutex_unlock(&ta_lock);
     if (rc != 0)
-        PRINT("%s(): pthread_mutex_unlock() failed - rc=%d, errno=%d",
-              __FUNCTION__, rc, errno);
+    {
+        LOG_PRINT("%s(): pthread_mutex_unlock() failed - rc=%d, errno=%d",
+                  __FUNCTION__, rc, errno);
+    }
 }
 
 /* See description in rcf_ch_api.h */
@@ -404,21 +392,6 @@ rcf_ch_vwrite(struct rcf_comm_connection *handle,
     /* Standard handler is OK */
     return -1;
 }
-
-/* See description in rcf_ch_api.h */
-void *
-rcf_ch_symbol_addr(const char *name, te_bool is_func)
-{
-    return rcf_ch_symbol_addr_auto(name, is_func);
-}
-
-/* See description in rcf_ch_api.h */
-char *
-rcf_ch_symbol_name(const void *addr)
-{
-    return rcf_ch_symbol_name_auto(addr);
-}
-
 
 /* See description in rcf_ch_api.h */
 int
@@ -593,7 +566,6 @@ rcf_ch_start_process(pid_t *pid,
 #if !defined (__QNX__)
         if ((*pid = fork()) == 0)
         {
-            rcf_pch_detach();
             /* Set the process group to allow killing all children */
             setpgid(getpid(), getpid());
             logfork_register_user(rtn);
@@ -694,7 +666,6 @@ rcf_ch_start_process(pid_t *pid,
 
         if ((*pid = fork()) == 0)
         {
-            rcf_pch_detach();
             /* Set the process group to allow killing all children */
             setpgid(getpid(), getpid());
             logfork_register_user(rtn);
@@ -1293,249 +1264,6 @@ ta_sigpipe_handler(void)
     ((_le).tv_sec < (_ge).tv_sec ||                               \
      ((_le).tv_sec == (_ge).tv_sec && (_le).tv_usec < (_ge).tv_usec))
 
-/** Is logger available in signal handler? */
-static inline te_bool
-is_logger_available(void)
-{
-    ta_log_lock_key key;
-
-    if (ta_log_trylock(&key) != 0)
-        return FALSE;
-
-    (void)ta_log_unlock(&key);
-    return TRUE;
-}
-
-/**
- * Logs death of a child. This function SHOULD be called after waitpid() to
- * log exist status.
- *
- * @param pid       pid of the dead child
- * @param status    status of the death child
- */
-static void
-log_child_death(int pid, int status)
-{
-    if (WIFEXITED(status))
-    {
-        INFO("Child process with PID %d exited with value %d", 
-             pid, WEXITSTATUS(status));
-    }
-    else if (WIFSIGNALED(status))
-    {
-        if (WTERMSIG(status) == SIGTERM)
-            RING("Child process with PID %d was terminated", pid);
-        else
-        {
-            WARN("Child process with PID %d is killed "
-                 "by the signal %d", pid, WTERMSIG(status));
-        }
-    }
-#ifdef WCOREDUMP
-    else if (WCOREDUMP(status))
-        ERROR("Child process with PID %d core dumped", pid);
-#endif
-    else
-    {
-        WARN("Child process with PID %d exited due to unknown reason", 
-             pid);
-    }
-}
-
-/**
- * Wait for a child and log its exit status information.
- *
- * @note It is declared as non-static to be visible in TA symbol table.
- */
-/* static, see above */ void
-ta_sigchld_handler(void)
-{
-    int     status;
-    int     pid;
-    int     get = 0;
-    te_bool logger = is_logger_available();
-    int     saved_errno = errno;
-
-    /*
-     * we can't wait for the semaphore in signal handler,
-     * so we exit and the moment the sema is released the handler
-     * should be called by responsible context
-     */
-    if (sem_trywait(&sigchld_sem) < 0)
-    {
-        errno = saved_errno;
-        return;
-    }
-
-    if (!ta_children_dead_heap_inited)
-        ta_children_dead_heap_init();
-
-    /* 
-     * Some system may loose SIGCHLD, so we should catch all uncatched
-     * children. From other side, if a system does not loose SIGCHLD,
-     * it may be that all children were catched by previous call of this
-     * handler.
-     */
-    while ((pid = waitpid(-1, &status, WNOHANG)) > 0)
-    {
-        ta_children_dead *dead = NULL;
-        ta_children_dead *oldest = NULL;
-
-        errno = saved_errno;
-        get++;
-        if (get > 1 && logger)
-            WARN("Get %d children from on SIGCHLD handler call", get);
-
-        for (dead = SLIST_FIRST(&ta_children_dead_list);
-             dead != NULL; dead = SLIST_NEXT(dead, links))
-        {
-            /*
-             * if we have a valid dead child with same pid, it means it's
-             * dead for ages and must be replaced by his younger dead 
-             * brother
-             */
-            oldest = dead; /* Oldest entry is always the last */
-            if ((pid == dead->pid) && dead->valid)
-            {
-                WARN("Removing obsoleted entry with the same pid = %d, "
-                     "status = 0x%x from the list of dead children.", 
-                     dead->pid, dead->status);
-                SLIST_REMOVE(&ta_children_dead_list, dead,
-                             ta_children_dead, links);
-                break;
-            }
-        }
-
-        if (dead == NULL)
-        {
-            /*
-             * Entry with specified pid is not found.
-             * Allocate new entry from pool
-             */
-            dead = SLIST_FIRST(&ta_children_dead_pool);
-            if (dead != NULL)
-            {
-                SLIST_REMOVE(&ta_children_dead_pool, dead,
-                             ta_children_dead, links);
-            }
-        }
-
-        if (dead == NULL)
-        {
-            /*
-             * Pool is already empty. Free the oldest entry in the list.
-             */
-            dead = oldest;
-            INFO("Removing oldest entry with pid = %d, status = 0x%x "
-                 "from the list of dead children.", 
-                 dead->pid, dead->status);
-            SLIST_REMOVE(&ta_children_dead_list, dead,
-                         ta_children_dead, links);
-        }
-
-        dead->pid = pid;
-        dead->status = status;
-        dead->valid = TRUE;
-        gettimeofday(&dead->timestamp, NULL);
-        SLIST_INSERT_HEAD(&ta_children_dead_list, dead, links);
-
-        /* Now try to log status of the child */
-        if (logger)
-            log_child_death(pid, status);
-    }
-
-    if (logger && get == 0)
-    {
-        /* 
-         * Linux behaviour:
-         * - if the process has children, but none of them is zombie, 
-         *   we will get 0.
-         * - if there is no children at all, we will get -1 with ECHILD. 
-         */
-        if (pid == 0 || errno == ECHILD)
-        {
-            INFO("No child was available in SIGCHILD handler");
-            errno = saved_errno;
-        }
-        else
-        {
-            ERROR("waitpid() failed with errno %d", errno);
-        }
-    }
-    else
-        errno = saved_errno;
-
-    sem_post(&sigchld_sem);
-}
-
-sigset_t rpcs_received_signals;
-
-/* See description in unix_internal.h */
-void
-signal_registrar(int signum)
-{
-    sigaddset(&rpcs_received_signals, signum);
-}
-
-/* Lastly received signal information */
-tarpc_siginfo_t last_siginfo;
-
-/* See description in unix_internal.h */
-void
-signal_registrar_siginfo(int signum, siginfo_t *siginfo, void *context)
-{
-#define COPY_SI_FIELD(_field) \
-    last_siginfo.sig_ ## _field = siginfo->si_ ## _field
-
-    UNUSED(context);
-
-    sigaddset(&rpcs_received_signals, signum);
-    memset(&last_siginfo, 0, sizeof(last_siginfo));
-
-    COPY_SI_FIELD(signo);
-    COPY_SI_FIELD(errno);
-    COPY_SI_FIELD(code);
-#ifdef HAVE_SIGINFO_T_SI_TRAPNO
-    COPY_SI_FIELD(trapno);
-#endif
-    COPY_SI_FIELD(pid);
-    COPY_SI_FIELD(uid);
-    COPY_SI_FIELD(status);
-#ifdef HAVE_SIGINFO_T_SI_UTIME
-    COPY_SI_FIELD(utime);
-#endif
-#ifdef HAVE_SIGINFO_T_SI_STIME
-    COPY_SI_FIELD(stime);
-#endif
-
-    /** 
-     * FIXME: si_value, si_ptr and si_addr fields are not
-     * supported yet
-     */
-
-#ifdef HAVE_SIGINFO_T_SI_INT
-    COPY_SI_FIELD(int);
-#endif
-#ifdef HAVE_SIGINFO_T_SI_OVERRUN
-    COPY_SI_FIELD(overrun);
-#endif
-#ifdef HAVE_SIGINFO_T_SI_TIMERID
-    COPY_SI_FIELD(timerid);
-#endif
-#ifdef HAVE_SIGINFO_T_SI_BAND
-    COPY_SI_FIELD(band);
-#endif
-#ifdef HAVE_SIGINFO_T_SI_FD
-    COPY_SI_FIELD(fd);
-#endif
-
-#ifdef HAVE_SIGINFO_T_SI_ADDR_LSB
-    COPY_SI_FIELD(addr_lsb);
-#endif
-
-#undef COPY_SI_FIELD
-}
-
 /*
  * TCE support
  */
@@ -1558,453 +1286,11 @@ init_tce_subsystem(void)
         rcf_ch_symbol_addr("tce_obtain_principal_connect", TRUE);
 }
 
-/**
- * Find an entry about dead child and remove it from the list.
- * This function is to be called from waitpid.
- * It should be called with lock held.
- *
- * @param pid    pid of process to find or -1 to find any pid
- * @param status status of the process to return
- *
- * @return TRUE is a child was found, FALSE overwise.
- */
-static te_bool
-find_dead_child(pid_t pid, int *status)
-{
-    ta_children_dead *dead = NULL;
-
-    if (!ta_children_dead_heap_inited)
-        ta_children_dead_heap_init();
-
-    sem_wait(&sigchld_sem);
-    for (dead = SLIST_FIRST(&ta_children_dead_list);
-         dead != NULL; dead = SLIST_NEXT(dead, links))
-    {
-        if (dead->pid == pid || pid == -1)
-        {
-            SLIST_REMOVE(&ta_children_dead_list, dead,
-                         ta_children_dead, links);
-            SLIST_INSERT_HEAD(&ta_children_dead_pool, dead, links);
-
-            *status = dead->status;
-            dead->valid = FALSE;
-            break;
-        }
-
-        /* Note, we should not ever get here */
-        if (!dead->valid)
-        {
-            WARN("%s: invalid pid in the list", __FUNCTION__);
-            dead = NULL;
-            break;
-        }
-    }
-
-    sem_post(&sigchld_sem);
-    /* call handler to find out if we have any unhandled signals
-     * when sem is locked */
-    ta_sigchld_handler();
-
-    return dead != NULL;
-}
-
-/* See description in unix_internal.h */
-/* FIXME: Possible use after free in the function */
-pid_t
-ta_waitpid(pid_t pid, int *p_status, int options)
-{
-    int     rc;
-    int     status;
-    int     saved_errno = errno;
-
-    if (pid < -1 || pid == 0)
-    {
-        ERROR("%s: process groups are not supported.", __FUNCTION__);
-        errno = EINVAL;
-        return -1;
-    }
-
-    if (options & ~WNOHANG)
-    {
-        ERROR("%s: only WNOHANG option is supported.", __FUNCTION__);
-        errno = EINVAL;
-        return -1;
-    }
-
-    /* Start race: who'll get the status, our waitpid() or SIGCHILD?
-     * We are ready to handle both cases! */
-    status = 0;
-#ifndef SA_RESTART
-    /*
-     * If SA_RESTART is not defined, waitpid() will not be resumed and
-     * it will fail with 'EINTR' errno. This will happen any time we
-     * receive a signal about child termination (any we registered for
-     * handling of this signal).
-     */
-    do {
-#endif
-        rc = waitpid(pid, &status, options);
-#ifndef SA_RESTART
-    } while ((rc < 0) && (errno == EINTR));
-#endif
-
-    if (rc > 0)
-    {
-        /* We've got the real status */
-        int old_status;
-        log_child_death(pid, status);
-
-        /* If we already have a status from the same pid, remove it. */
-        find_dead_child(pid, &old_status);
-
-        if (p_status != NULL)
-            *p_status = status;
-        return rc;
-    }
-    else if (rc < 0)
-    {
-        if (errno == EINTR)
-            return rc;
-
-        assert(errno == ECHILD);
-        errno = saved_errno;
-        /* The child is probably dead, get the status from the list */
-
-        if (find_dead_child(pid, &status))
-        {
-            if (p_status != NULL)
-                *p_status = status;
-            return pid;
-        }
-        /* No such child */
-        errno = ECHILD;
-        return -1;
-    }
-
-    /* rc == 0 */
-    assert(options & WNOHANG);
-    return 0;
-
-}
-
-/* See description in unix_internal.h */
-int
-ta_system(const char *cmd)
-{
-    pid_t   pid = te_shell_cmd(cmd, -1, NULL, NULL, NULL);
-    int     status = -1;
-
-    if (pid <= 0)
-        return -1;
-
-    ta_waitpid(pid, &status, 0);
-
-    return status;
-}
-
-te_errno
-ta_popen_r(const char *cmd, pid_t *cmd_pid, FILE **f)
-{
-    int   out_fd = -1;
-    int   status;
-    int   rc = 0;
-
-    *cmd_pid = te_shell_cmd(cmd, -1, NULL, &out_fd, NULL);
-    if (*cmd_pid < 0)
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-    if ((*f = fdopen(out_fd, "r")) == NULL)
-    {
-        ERROR("Failed to obtain file pointer for shell command output");
-        rc = TE_OS_RC(TE_TA_UNIX, te_rc_os2te(errno));
-        close(out_fd);
-
-        ta_waitpid(*cmd_pid, &status, 0);
-        if (!WIFEXITED(status))
-        {
-            ERROR("%s(): '%s' was not terminated normally: %d",
-                  __FUNCTION__, cmd, status);
-            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-        }
-    }
-
-    return rc;
-}
-
-te_errno
-ta_pclose_r(pid_t cmd_pid, FILE *f)
-{
-    int rc = 0;
-    int status;
-
-    if (fclose(f) < 0)
-        rc = TE_OS_RC(TE_TA_UNIX, errno);
-
-    ta_waitpid(cmd_pid, &status, 0);
-    if (!WIFEXITED(status))
-    {
-        ERROR("%s(): proccess with pid %d was not terminated normally: %d",
-              __FUNCTION__, cmd_pid, status);
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-    }
-    return rc;
-}
-
-/* See description in unix_internal.h */
-int
-ta_kill_death(pid_t pid)
-{
-    int rc;
-    int saved_errno = errno;
-
-    if (ta_waitpid(pid, NULL, WNOHANG) == pid)
-        return 0;
-    rc = kill(-pid, SIGTERM);
-    if (rc != 0 && errno != ESRCH)
-        return -1;
-    errno = saved_errno;
-
-    /* Wait for termination. */
-    te_msleep(500);
-
-    /* Check if the process exited. If kill failed, waitpid can't fail */
-    if (ta_waitpid(pid, NULL, WNOHANG) == pid)
-        return 0;
-    else if (rc != 0)
-        return -1;
-
-    /* Wait for termination. */
-    te_msleep(500);
-    kill(-pid, SIGKILL);
-    ta_waitpid(pid, NULL, 0);
-    return 0;
-}
-
 /** Print environment to the console */
 int
 env(void)
 {
     return ta_system("env");
-}
-
-/* See description in unix_internal.h */
-te_errno
-ta_vlan_get_parent(const char *ifname, char *parent)
-{
-    te_errno rc = 0;
-    char     f_buf[200];
-
-    *parent = '\0';
-#if defined __linux__
-    {
-        FILE *proc_vlans = fopen("/proc/net/vlan/config", "r");
-
-        if (proc_vlans == NULL)
-        {
-            if (errno == ENOENT)
-            {
-                VERB("%s: no proc vlan file ", __FUNCTION__);
-                return 0; /* no vlan support module loaded, no parent */
-            }
-
-            ERROR("%s(): Failed to open /proc/net/vlan/config %s",
-                  __FUNCTION__, strerror(errno));
-            return TE_OS_RC(TE_TA_UNIX, errno);
-        }
-        while (fgets(f_buf, sizeof(f_buf), proc_vlans) != NULL)
-        {
-            char *delim;
-            size_t space_ofs;
-            char *s = f_buf;
-            char *p = parent;
-
-            /*
-             * While paring VLAN record we should take into account
-             * the format of /proc/net/vlan/config file:
-             * <VLAN if name> | <VLAN ID> | <Parent if name>
-             * Please note that <VLAN if name> field may be quite long
-             * and as the result there can be NO space between
-             * <VLAN if name>  value and '|' delimeter. Also we should
-             * take into account that '|' character is allowed for
-             * interface name value.
-             *
-             * Extract <VLAN if name> value first.
-             */
-            delim = strstr(s, "| ");
-            if (delim == NULL)
-                continue;
-            
-            *delim++ = '\0';
-            /* Trim interface name (remove spaces before '|' delimeter) */
-            space_ofs = strcspn(s, " \t\n\r");
-            s[space_ofs] = 0;
-
-            if (strcmp(s, ifname) != 0)
-                continue;
-
-            s = delim;
-            /* Find next delimiter (we do not need VLAN ID field) */
-            s = strstr(s, "| ");
-            if (s == NULL)
-                continue;
-
-            s++;
-            while (isspace(*s)) s++;
-
-            while (!isspace(*s))
-                *p++ = *s++;
-            *p = '\0';
-            break;
-        }
-        fclose(proc_vlans);
-    }
-#elif defined __sun__
-    {
-        int   out_fd = -1;
-        FILE *out = NULL;
-        int   status;
-        char  cmd[80];
-        pid_t dladm_cmd_pid;
-       
-        snprintf(cmd, sizeof(cmd),
-                 "LANG=POSIX /usr/sbin/dladm show-link -p -o OVER %s",
-                 ifname);
-        dladm_cmd_pid = te_shell_cmd(cmd, -1, NULL, &out_fd, NULL);
-        VERB("%s(<%s>): cmd pid %d, out fd %d",
-             __FUNCTION__, ifname, (int)dladm_cmd_pid, out_fd);
-        if (dladm_cmd_pid < 0)
-        {
-            ERROR("%s(): start of dladm failed", __FUNCTION__);
-            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-        }
-
-        if ((out = fdopen(out_fd, "r")) == NULL)
-        {
-            ERROR("Failed to obtain file pointer for shell command output");
-            rc = TE_OS_RC(TE_TA_UNIX, errno);
-            goto cleanup;
-        }
-        if (fgets(f_buf, sizeof(f_buf), out) != NULL)
-        {
-            size_t len = strlen(f_buf);
-
-            /* Cut trailing new line character */
-            if (len != 0 && f_buf[len - 1] == '\n')
-                f_buf[len - 1] = '\0';
-            snprintf(parent, IFNAMSIZ, "%s", f_buf);
-        }
-cleanup:
-        if (out != NULL)
-            fclose(out);
-        close(out_fd);
-
-        ta_waitpid(dladm_cmd_pid, &status, 0);
-        if (status != 0)
-        {
-            ERROR("%s(): Non-zero status of dladm: %d",
-                  __FUNCTION__, status);
-            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-        }
-    }
-#endif
-    return rc;
-}
-
-/* See description in unix_internal.h */
-te_errno
-ta_bond_get_slaves(const char *ifname, char slvs[][IFNAMSIZ],
-                   int *slaves_num)
-{
-    int    i = 0;
-    char   path[64];
-    char  *line = NULL;
-    size_t len = 0;
-    char   buf[256];
-    int    out_fd = -1;
-    pid_t  cmd_pid = -1;
-    int    rc = 0;
-    int    status;
-
-    memset(path, 0, sizeof(path));
-    memset(buf, 0, sizeof(path));
-    snprintf(path, sizeof(path), "/proc/net/bonding/%s", ifname);
-
-    FILE *proc_bond = fopen(path, "r");
-    if (proc_bond == NULL && errno == ENOENT)
-    {
-        /* Set here path for logging purpose */
-        memset(buf, 0, sizeof(path));
-        snprintf(path, sizeof(path), "/usr/bin/teamnl %s ports", ifname);
-        TE_SPRINTF(buf,
-               "sudo /usr/bin/teamnl %s ports | "
-               "sed s/[0-9]*:\\ */Slave\\ Interface:\\ / "
-               "| sed 's/\\([0-9]\\):.*/\\1/'", ifname);
-        cmd_pid = te_shell_cmd(buf, -1, NULL, &out_fd, NULL);
-        if (cmd_pid < 0)
-        {
-            ERROR("%s(): getting list of teaming interfaces failed",
-                  __FUNCTION__);
-            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-        }
-        if ((proc_bond = fdopen(out_fd, "r")) == NULL)
-        {
-            ERROR("Failed to obtain file pointer for shell "
-                  "command output");
-            rc = TE_OS_RC(TE_TA_UNIX, te_rc_os2te(errno));
-            goto cleanup;
-        }
-    }
-    if (proc_bond == NULL)
-    {
-        if (errno == ENOENT)
-        {
-            VERB("%s: no proc bond file and no team", __FUNCTION__);
-            *slaves_num = 0;
-            return 0; /* no bond support module loaded, no slaves */
-        }
-
-        ERROR("%s(): Failed to read %s %s",
-              __FUNCTION__, path, strerror(errno));
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    }
-
-    while (i < *slaves_num && getline(&line, &len, proc_bond) != -1)
-    {
-        char *ifname = strstr(line, "Slave Interface");
-        if (ifname == NULL)
-            continue;
-        ifname = strstr(line, ": ") + 2;
-        if (ifname == NULL)
-            continue;
-        ifname[strlen(ifname) - 1] = '\0';
-        if (strlen(ifname) > IFNAMSIZ)
-        {
-            ERROR("%s(): interface name is too long", __FUNCTION__);
-            rc = TE_RC(TE_TA_UNIX, TE_ENAMETOOLONG);
-            goto cleanup;
-        }
-        strcpy(slvs[i], ifname);
-        i++;
-    }
-
-cleanup:
-    free(line);
-    fclose(proc_bond);
-    close(out_fd);
-
-    if (cmd_pid >= 0)
-    {
-        ta_waitpid(cmd_pid, &status, 0);
-        if (status != 0)
-        {
-            ERROR("%s(): Non-zero status of teamnl: %d",
-                  __FUNCTION__, status);
-            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-        }
-    }
-
-    if (rc == 0)
-        *slaves_num = i;
-    return rc;
 }
 
 /**
@@ -2131,14 +1417,14 @@ thread_mutex_unlock(void *mutex)
 int
 rcf_rpc_server_init(void)
 {
-    return aux_threads_init();
+    return 0;
 }
 
 /* See description in ta_common.h */
 int
 rcf_rpc_server_finalize(void)
 {
-    return aux_threads_cleanup();
+    return 0;
 }
 
 #ifdef RCF_RPC
@@ -2266,9 +1552,14 @@ main(int argc, char **argv)
         *(tmp + 1) = 0;
 
 #ifdef WITH_UPNP_CP
-    TE_SPRINTF(ta_upnp_cp_unix_socket_storage, "%s%s", ta_dir,
+    TE_SPRINTF(upnp_cp_unix_socket_name, "%s%s", ta_dir,
                UPNP_CP_UNIX_SOCKET_BASENAME);
 #endif /* WITH_UPNP_CP */
+
+    rcf_ch_register_symbol_table(essential_symbols);
+#if defined(ENABLE_GENERATED_SYMTBL)
+    rcf_ch_register_symbol_table(generated_table);
+#endif
 
     memset(&sigact, 0, sizeof(sigact));
 #ifdef SA_RESTART
@@ -2299,19 +1590,12 @@ main(int argc, char **argv)
         ERROR("Cannot set SIGPIPE action: %r");
     }
 
-    if (sem_init(&sigchld_sem, 0, 1) < 0)
+    rc = ta_process_mgmt_init();
+    if (rc != 0)
     {
-        rc = te_rc_os2te(errno);
-        ERROR("Can't initialize sigchld sem: %r");
+        LOG_PRINT("Cannot initialize process management: %d", rc);
+        return rc;
     }
-    /* FIXME: Is it used by RPC */
-    sigact.sa_handler = (void *)ta_sigchld_handler;
-    if (sigaction(SIGCHLD, &sigact, NULL) != 0)
-    {
-        rc = te_rc_os2te(errno);
-        ERROR("Cannot set SIGCHLD action: %r");
-    }
-    pthread_atfork(NULL, NULL, ta_children_dead_heap_init);
 
     /* FIXME */
     sigemptyset(&rpcs_received_signals);
@@ -2322,7 +1606,7 @@ main(int argc, char **argv)
         
         if (func == NULL)
         {
-            PRINT("Cannot resolve address of the function %s", argv[2]);
+            LOG_PRINT("Cannot resolve address of the function %s", argv[2]);
             return 1;
         }
         func(argc - 3, argv + 3);

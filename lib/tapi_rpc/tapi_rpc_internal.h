@@ -45,7 +45,7 @@
 #include "tapi_sockaddr.h"
 #include "te_rpc_types.h"
 
-/* 
+/*
  * It is mandatory to include signal.h before tarpc.h, since tarpc.h
  * defines _kill as a number.
  */
@@ -54,6 +54,7 @@
 #endif
 #include "tarpc.h"
 #include "tapi_jmp.h"
+#include "tapi_test_run_status.h"
 
 
 /** Extra time in seconds to be added to time2run before RPC timeout */
@@ -66,18 +67,49 @@
 #define TAPI_RPC_LOG(rpcs, func, in_format, out_format, _x...) \
 do {                                                                    \
     if (!rpcs->silent)                                                  \
+    {                                                                   \
+        if (RPC_IS_CALL_OK(rpcs))                                       \
+        {                                                               \
+            /*                                                          \
+             * Preserve err_log set before and, may be, upgrade in the  \
+             * case of retval independent error indications.            \
+             */                                                         \
+            if (RPC_ERRNO(rpcs) == RPC_ERPCNOTSUPP)                     \
+            {                                                           \
+                RING("Function %s() is not supported",  #func);         \
+                if (rpcs->iut_err_jump)                                 \
+                    rpcs->err_log = TRUE;                               \
+            }                                                           \
+            else if (rpcs->errno_change_check &&                        \
+                     out.common.errno_changed)                          \
+            {                                                           \
+                ERROR("Function %s() returned correct value, but "      \
+                      "changed errno to %s", #func,                     \
+                      errno_rpc2str(RPC_ERRNO(rpcs)));                  \
+                rpcs->_errno = TE_RC(TE_TAPI, TE_ECORRUPTED);           \
+                if (rpcs->iut_err_jump)                                 \
+                    rpcs->err_log = TRUE;                               \
+            }                                                           \
+        }                                                               \
+        else                                                            \
+        {                                                               \
+            /* Log error regardless RPC error expectations */           \
+            rpcs->err_log = TRUE;                                       \
+        }                                                               \
         LOG_MSG(rpcs->err_log ? TE_LL_ERROR : TE_LL_RING,               \
                 "RPC (%s,%s)%s%s: " #func "(" in_format ") -> "         \
                 out_format " (%s)",                                     \
                 rpcs->ta, rpcs->name, rpcop2str(rpcs->last_op),         \
                 (rpcs->last_use_libc || rpcs->use_libc) ? " libc" : "", \
                 _x, errno_rpc2str(RPC_ERRNO(rpcs)));                    \
-    rpcs->silent = FALSE;                                               \
+        rpcs->err_log = FALSE;                                          \
+    }                                                                   \
+    rpcs->silent = rpcs->silent_default;                                \
 } while (0)
 
-/** 
- * Free memory, check RPC error, jump in the case of RPC error or if 
- * _res is TRUE, set jump condition to default value.
+/**
+ * Free memory, check RPC error, jump in the case of RPC error or if
+ * @a _res is @c TRUE, set jump condition to default value.
  */
 #define TAPI_RPC_OUT(_func, _res) \
     do {                                                                \
@@ -87,12 +119,28 @@ do {                                                                    \
                                 (xdrproc_t)xdr_tarpc_##_func##_out);    \
             if (!RPC_IS_CALL_OK(rpcs))                                  \
             {                                                           \
-                rpcs->iut_err_jump = TRUE;                              \
+                if (rpcs->err_jump)                                     \
+                {                                                       \
+                    rpcs->iut_err_jump = TRUE;                          \
+                    TAPI_JMP_DO(TE_EFAIL);                              \
+                }                                                       \
+            }                                                           \
+            else if ((_res) && rpcs->iut_err_jump)                      \
+            {                                                           \
                 TAPI_JMP_DO(TE_EFAIL);                                  \
             }                                                           \
-            if ((_res) && rpcs->iut_err_jump)                           \
-                TAPI_JMP_DO(TE_EFAIL);                                  \
+            else if (tapi_test_run_status_get() !=                      \
+                                            TE_TEST_RUN_STATUS_OK)      \
+            {                                                           \
+                if (!tapi_jmp_stack_is_empty())                         \
+                {                                                       \
+                    ERROR("Jumping because a test execution error "     \
+                          "occured earlier");                           \
+                    TAPI_JMP_DO(TE_EFAIL);                              \
+                }                                                       \
+            }                                                           \
             rpcs->iut_err_jump = TRUE;                                  \
+            rpcs->err_jump = TRUE;                                      \
         }                                                               \
         else                                                            \
         {                                                               \
@@ -102,22 +150,35 @@ do {                                                                    \
     } while (0)
 
 /**
- * If RPC call status is OK, check condition and set specified variable
- * to _error_val and RPC server errno to TE_ECORRUPTED, if it is true.
- * If RPC call status is not OK, variable is set to -1 and RPC server
- * errno is not updated.
+ * If RPC call status is OK, check condition @a _cond and set specified
+ * variable @a _var to @a _error_val and RPC server errno to #TE_ECORRUPTED,
+ * if it is true.
+ * If RPC call status is not OK, variable @a _var is set to @a _error_val
+ * and RPC server errno is not updated.
  *
- * The function assumes to have RPC server handle as 'rpcs' variable in
+ * Error logging is requested if error is not expected and @a _err_cond
+ * condition is @c TRUE.
+ *
+ * The function assumes to have RPC server handle as @b rpcs variable in
  * the context.
  *
  * @param _func         function name
  * @param _var          variable with return value
  * @param _cond         condition to be checked, if RPC call status is OK
  * @param _error_val    value to be assigned in the case of error
+ * @param _err_cond     error logging condition, if RPC call status is OK
  */
-#define CHECK_RETVAL_VAR(_func, _var, _cond, _error_val) \
+#define CHECK_RETVAL_VAR_ERR_COND(_func, _var, _cond, _error_val, _err_cond) \
     do {                                                            \
-        if (RPC_IS_CALL_OK(rpcs))                                   \
+        if (!RPC_IS_CALL_OK(rpcs))                                  \
+        {                                                           \
+            (_var) = (_error_val);                                  \
+        }                                                           \
+        else if (RPC_ERRNO(rpcs) == RPC_ERPCNOTSUPP)                \
+        {                                                           \
+            (_var) = (_error_val);                                  \
+        }                                                           \
+        else                                                        \
         {                                                           \
             if (_cond)                                              \
             {                                                       \
@@ -127,38 +188,56 @@ do {                                                                    \
                 (_var) = (_error_val);                              \
             }                                                       \
             else if (rpcs->errno_change_check &&                    \
-                     (_var) != (_error_val) &&                      \
                      out.common.errno_changed)                      \
             {                                                       \
-                ERROR("Function %s() returned correct value, but "  \
-                      "changed errno to %s", #_func,                \
-                      errno_rpc2str(RPC_ERRNO(rpcs)));              \
-                rpcs->_errno = TE_RC(TE_TAPI, TE_ECORRUPTED);       \
-                (_var) = (_error_val);                              \
+                if (_err_cond)                                      \
+                    /* errno change is expected */                  \
+                    out.common.errno_changed = FALSE;               \
+                else                                                \
+                    (_var) = (_error_val);                          \
             }                                                       \
-            else if (RPC_ERRNO(rpcs) == RPC_ERPCNOTSUPP)            \
-            {                                                       \
-                RING("Function %s() is not supported",  #_func);    \
-                (_var) = (_error_val);                              \
-            }                                                       \
-            if ((_var) == (_error_val) && rpcs->iut_err_jump)       \
+            /*                                                      \
+             * Recalculate _err_cond to pick up _var changes made   \
+             * above.                                               \
+             */                                                     \
+            if (rpcs->iut_err_jump && (_err_cond))                  \
                 rpcs->err_log = TRUE;                               \
-        }                                                           \
-        else                                                        \
-        {                                                           \
-            (_var) = (_error_val);                                  \
-            rpcs->err_log = TRUE;                                   \
         }                                                           \
     } while (0)
 
 /**
- * If RPC call status is OK, check that variable with function return
- * value is greater or equal to minus one and set specified variable
- * to -1 and RPC server errno to TE_ECORRUPTED, if it is not true.
- * If RPC call status is not OK, variable is set to -1 and RPC server
- * errno is not updated.
+ * If RPC call status is OK, check condition @a _cond and set specified
+ * variable @a _var to @a _error_val and RPC server errno to #TE_ECORRUPTED,
+ * if it is true.
+ * If RPC call status is not OK, variable @a _var is set to @a _error_val
+ * and RPC server errno is not updated.
  *
- * The function assumes to have RPC server handle as 'rpcs' variable in
+ * Error logging is requested if error is not expected and finally @a _var
+ * is equal to @a __error_val.
+ *
+ * The function assumes to have RPC server handle as @b rpcs variable in
+ * the context.
+ *
+ * @param _func         function name
+ * @param _var          variable with return value
+ * @param _cond         condition to be checked, if RPC call status is OK
+ * @param _error_val    value to be assigned in the case of error
+ */
+#define CHECK_RETVAL_VAR(_func, _var, _cond, _error_val) \
+    CHECK_RETVAL_VAR_ERR_COND(_func, _var, _cond,_error_val,    \
+                              ((_var) == (_error_val)))
+
+/**
+ * If RPC call status is OK, check that variable @a _var with function
+ * return value is greater or equal to @c -1 and set specified variable
+ * to @c -1 and RPC server errno to #TE_ECORRUPTED, if it is not true.
+ * If RPC call status is not OK, variable @a _var is set to @c -1 and
+ * RPC server errno is not updated.
+ *
+ * Error logging is requested if error is not expected and finally @a _var
+ * is equal to @c -1.
+ *
+ * The function assumes to have RPC server handle as @b rpcs variable in
  * the context.
  *
  * @param _func     function name
@@ -168,12 +247,16 @@ do {                                                                    \
     CHECK_RETVAL_VAR(_func, _var, ((_var) < -1), -1)
 
 /**
- * If RPC call status is OK, check that variable with function return
- * value is zero or minus one and set specified variable to -1 and RPC
- * server errno to TE_ECORRUPTED, if it is not true.  If RPC call status is
- * not OK, variable is set to -1 and RPC server errno is not updated.
+ * If RPC call status is OK, check that variable @a _var with function
+ * return value is @c 0 or @c -1 and set specified variable to @c -1 and
+ * RPC server errno to #TE_ECORRUPTED, if it is not true.
+ * If RPC call status is not OK, variable @a _var is set to @c -1 and
+ * RPC server errno is not updated.
  *
- * The function assumes to have RPC server handle as 'rpcs' variable in
+ * Error logging is requested if error is not expected and finally @a _var
+ * is equal to @c -1.
+ *
+ * The function assumes to have RPC server handle as @b rpcs variable in
  * the context.
  *
  * @param _func     function
@@ -183,12 +266,56 @@ do {                                                                    \
     CHECK_RETVAL_VAR(_func, _var, (((_var) != 0) && ((_var) != -1)), -1)
 
 /**
- * If RPC call status is OK, check that variable with function return
- * value is TRUE or FALSE and set specified variable to FALSE and RPC
- * server errno to TE_ECORRUPTED, if it is not true.  If RPC call status is
- * not OK, variable is set to FALSE and RPC server errno is not updated.
+ * If RPC call status is OK, check that variable @a _var with function
+ * return value is @c 0 or negative and set specified variable to @c -1 and
+ * RPC server errno to #TE_ECORRUPTED, if it is not true.
+ * If RPC call status is not OK, variable @a _var is set to @c -1 and
+ * RPC server errno is not updated.
  *
- * The function assumes to have RPC server handle as 'rpcs' variable in
+ * Error logging is requested if error is not expected and finally @a _var
+ * is negative.
+ *
+ * The function assumes to have RPC server handle as @b rpcs variable in
+ * the context.
+ *
+ * @param _func     function
+ * @param _var      variable with return value
+ */
+#define CHECK_RETVAL_VAR_IS_ZERO_OR_NEGATIVE(_func, _var) \
+    CHECK_RETVAL_VAR_ERR_COND(_func, _var, ((_var) > 0), -1, ((_var) < 0))
+
+/**
+ * If RPC call status is OK, check that variable @a _var with function
+ * return value is @c 0 or negative errno and set specified variable
+ * to @c -TE_RC(TE_TAPI, TE_ECORRUPTED) and RPC server errno to
+ * #TE_ECORRUPTED, if it is not true.
+ * If RPC call status is not OK, variable @a _var is set to
+ * @c -TE_RC(TE_TAPI, TE_ECORRUPTED) and RPC server errno is not updated.
+ *
+ * Error logging is requested if error is not expected and finally @a _var
+ * is negative.
+ *
+ * The function assumes to have RPC server handle as @b rpcs variable in
+ * the context.
+ *
+ * @param _func     function
+ * @param _var      variable with return value
+ */
+#define CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(_func, _var) \
+    CHECK_RETVAL_VAR_ERR_COND(_func, _var, ((_var) > 0), \
+                              -TE_RC(TE_TAPI, TE_ECORRUPTED), ((_var) < 0))
+
+/**
+ * If RPC call status is OK, check that variable @a _var with function
+ * return value is @c TRUE or @c FALSE and set specified variable to
+ * @c FALSE and RPC server errno to #TE_ECORRUPTED, if it is not true.
+ * If RPC call status is not OK, variable @a _var is set to @c FALSE and
+ * RPC server errno is not updated.
+ *
+ * Error logging is requested if error is not expected and finally @a _var
+ * is equal to @c FALSE.
+ *
+ * The function assumes to have RPC server handle as @b rpcs variable in
  * the context.
  *
  * @param _func     function
@@ -197,6 +324,17 @@ do {                                                                    \
 #define CHECK_RETVAL_VAR_IS_BOOL(_func, _var) \
     CHECK_RETVAL_VAR(_func, _var, (((_var) != FALSE) && ((_var) != TRUE)), \
                      FALSE)
+
+/**
+ * Auxiliary check with false condition required for RPC logging with
+ * a correct log level in case when return value is an RPC pointer;
+ * it should be used in functions which @a normally don't return @c NULL
+ *
+ * @param _func     function
+ * @param _var      variable with return value
+ */
+#define CHECK_RETVAL_VAR_RPC_PTR(_func, _var) \
+    CHECK_RETVAL_VAR(_func, _var, ((_var) == RPC_UNKNOWN_ADDR), RPC_NULL)
 
 
 /** Return with check (for functions returning zero value) */
@@ -220,7 +358,7 @@ do {                                                                    \
     } while (0)
 
 
-/** Return with check (for functions returning value >= -1) */
+/** Return with check (for functions returning value >= @c -1) */
 #define RETVAL_INT(_func, _retval) \
     do {                                                            \
         int __retval = (_retval);                                   \
@@ -230,7 +368,7 @@ do {                                                                    \
         return __retval;                                            \
     } while (0)
 
-/** Return with check (for functions returning int64_t value >= -1) */
+/** Return with check (for functions returning int64_t value >= @c -1) */
 #define RETVAL_INT64(_func, _retval) \
     do {                                                            \
         int64_t __retval = (_retval);                               \
@@ -277,8 +415,8 @@ do {                                                                    \
         return;                                                     \
     } while(0)
 
-/** 
- * Return wait_status with check. 
+/**
+ * Return wait_status with check.
  */
 #define RETVAL_WAIT_STATUS(_func, _retval) \
     do {                                                            \
@@ -291,8 +429,8 @@ do {                                                                    \
         return __retval;                                            \
     } while(0)
 
-/** 
- * Return int value and check it and wait_status. 
+/**
+ * Return int value and check it and wait_status.
  */
 #define RETVAL_INT_CHECK_WAIT_STATUS(_func, _retval, _status) \
     do {                                                            \
@@ -305,7 +443,20 @@ do {                                                                    \
         return __retval;                                            \
     } while(0)
 
-/** Follow pointer if not NULL; otherwise return 0 */
+/**
+ * Return with check (to be used in functions where @c NULL is not
+ * considered as an error value)
+ */
+#define RETVAL_RPC_PTR_OR_NULL(_func, _retval) \
+    do {                                                            \
+        rpc_ptr __retval = (_retval);                               \
+                                                                    \
+        TAPI_RPC_OUT(_func, __retval == RPC_UNKNOWN_ADDR);          \
+                                                                    \
+        return __retval;                                            \
+    } while (0)
+
+/** Follow pointer if not @c NULL; otherwise return @c 0 */
 #define PTR_VAL(_param) ((_param == NULL) ? 0 : *(_param))
 
 /**
@@ -344,7 +495,7 @@ do {                                                    \
 } while (0)
 
 /**
- * Check membership of pointer in the namespace @b ns.
+ * Check membership of pointer in the namespace @a ns.
  *
  * @param rpcs      RPC server handle
  * @param ptr       Pointer ID

@@ -2,7 +2,7 @@
  * @brief TAD DHCP
  *
  * Traffic Application Domain Command Handler.
- * DHCP CSAP support description structures. 
+ * DHCP CSAP support description structures.
  *
  * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).

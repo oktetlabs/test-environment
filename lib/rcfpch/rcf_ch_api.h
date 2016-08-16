@@ -67,7 +67,7 @@ extern "C" {
  * @path{${TE_BASE}/agents/[agent type]} directory.
  *
  * @ingroup te_agents
- * @{ 
+ * @{
  */
 
 /*
@@ -147,7 +147,7 @@ extern void rcf_ch_unlock();
 
 /** @defgroup rcf_ch_reboot Command Handler: Reboot and shutdown support
  * @ingroup rcf_ch
- * @{ 
+ * @{
  */
 
 /**
@@ -253,7 +253,7 @@ extern int rcf_ch_configure(struct rcf_comm_connection *handle,
 
 /** @defgroup rcf_ch_var Command Handler: Variables support
  * @ingroup rcf_ch
- * @{ 
+ * @{
  */
 
 /**
@@ -304,41 +304,9 @@ extern int rcf_ch_vwrite(struct rcf_comm_connection *handle,
                          rcf_var_type_t type, const char *var, ...);
 /**@} <!-- END rcf_ch_var --> */
 
-/** @defgroup rcf_ch_addr Command Handler: Symbol name and address resolver support
- * @ingroup rcf_ch
- * @{ 
- */
-
-/**
- * This function may be used by Portable Commands Handler to resolve
- * name of the variable or function to its address if rcf_ch_vread,
- * rcf_ch_vwrite or rcf_ch_call function returns -1. In this case
- * default command processing is performed by caller: it is assumed that
- * variable or function are in TA address space and variable is
- * unsigned 32 bit integer.
- *
- * @param name          symbol name
- * @param is_func       if TRUE, function name is required
- *
- * @return symbol address or NULL
- */
-extern void *rcf_ch_symbol_addr(const char *name, te_bool is_func);
-
-/**
- * This function may be used by Portable Commands Handler to symbol address
- * to its name.
- *
- * @param addr          symbol address
- *
- * @return symbol name or NULL
- */
-extern char *rcf_ch_symbol_name(const void *addr);
-
-/**@} <!-- END rcf_ch_addr --> */
-
 /** @defgroup rcf_ch_file Command Handler: File maniputation support
  * @ingroup rcf_ch
- * @{ 
+ * @{
  */
 
 /**
@@ -378,7 +346,7 @@ extern int rcf_ch_file(struct rcf_comm_connection *handle,
  * so Test Agent code located under @path{agents/[agent type]} should
  * not care about this interface.
  * @ingroup rcf_ch
- * @{ 
+ * @{
  */
 
 /**
@@ -531,7 +499,7 @@ extern int rcf_ch_trsend_stop(struct rcf_comm_connection *handle,
 /** Traffic receive mode flags */
 typedef enum rcf_ch_trrecv_flags {
     RCF_CH_TRRECV_PACKETS = 1,           /**< Receive and report packets */
-    RCF_CH_TRRECV_PACKETS_NO_PAYLOAD = 2,/**< Do not report packets 
+    RCF_CH_TRRECV_PACKETS_NO_PAYLOAD = 2,/**< Do not report packets
                                              payload */
 } rcf_ch_trrecv_flags;
 
@@ -565,8 +533,8 @@ typedef enum rcf_ch_trrecv_flags {
  */
 extern int rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
                                char *cbuf, size_t buflen,
-                               size_t answer_plen, const uint8_t *ba, 
-                               size_t cmdlen, csap_handle_t csap, 
+                               size_t answer_plen, const uint8_t *ba,
+                               size_t cmdlen, csap_handle_t csap,
                                unsigned int num, unsigned int timeout,
                                unsigned int flags);
 
@@ -721,7 +689,7 @@ extern int rcf_ch_trpoll_cancel(struct rcf_comm_connection *handle,
 
 /** @defgroup rcf_ch_func Command Handler: Function call support
  * @ingroup rcf_ch
- * @{ 
+ * @{
  */
 
 /**
@@ -839,7 +807,7 @@ extern int rcf_ch_kill_thread(unsigned int tid);
  * A set of functions exported by a Test Agent to support interface
  * of Command Handler for Test Agent configuration.
  * @ingroup rcf_ch
- * @{ 
+ * @{
  */
 
 /**
@@ -981,7 +949,7 @@ typedef struct rcf_pch_cfg_object {
           NULL, NULL, NULL, NULL, NULL, NULL, NULL }
 
 /**
- * Define non-accessible configuration tree node with commit 
+ * Define non-accessible configuration tree node with commit
  * capability.
  *
  * @param _name     node name (rcf_pch_cfg_object)
@@ -1048,7 +1016,7 @@ typedef struct rcf_pch_cfg_object {
 
 /**
  * Define node collection.
- * 
+ *
  * @param _name     node name (rcf_pch_cfg_object)
  * @param _subid    subidentifier name (const char *)
  * @param _son      pointer to the first son node
@@ -1066,6 +1034,25 @@ typedef struct rcf_pch_cfg_object {
           NULL, NULL,                                               \
           (rcf_ch_cfg_add)_f_add, (rcf_ch_cfg_del)_f_del,           \
           (rcf_ch_cfg_list)_f_list, _f_commit, NULL }
+
+/**
+ * Define read-only node collection.
+ *
+ * @param _name     node name (rcf_pch_cfg_object)
+ * @param _subid    subidentifier name (const char *)
+ * @param _son      pointer to the first son node
+ * @param _brother  pointer to the next brother node
+ * @param _f_get    add accessor
+ * @param _f_list   list accessor
+ */
+#define RCF_PCH_CFG_NODE_RO_COLLECTION(_name, _subid, _son, _brother, \
+                                       _f_get, _f_list)               \
+    static rcf_pch_cfg_object _name =                                 \
+        { _subid, 0, _son, _brother,                                  \
+          (rcf_ch_cfg_get)_f_get, NULL,                               \
+          NULL, NULL,                                                 \
+          (rcf_ch_cfg_list)_f_list, NULL, NULL }
+
 
 /* @} */
 

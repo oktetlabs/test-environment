@@ -929,7 +929,9 @@ iptables_cmd_get(unsigned int  gid, const char *oid,
 {
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(ifname);
     UNUSED(dummy);
+    UNUSED(table);
     UNUSED(chain);
 
     *value = '\0';

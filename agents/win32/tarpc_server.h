@@ -100,11 +100,6 @@ getenv_reliable(const char *name)
 /** Unspecified error code */
 #define ERROR_UNSPEC    0xFFFFFF
 
-#define PRINT(msg...) \
-    do {                                                \
-       printf(msg); printf("\n"); fflush(stdout);       \
-    } while (0)
-
 /** Check return code and update the errno */
 #define TARPC_CHECK_RC(expr_) \
     do {                                            \

@@ -2,7 +2,7 @@
  * @brief TAD Bridge/STP
  *
  * Traffic Application Domain Command Handler.
- * Ethernet Bridge/STP CSAP support description structures. 
+ * Ethernet Bridge/STP CSAP support description structures.
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -41,7 +41,7 @@
 #include "tad_bridge_impl.h"
 
 
-static csap_spt_type_t bridge_csap_spt = 
+static csap_spt_type_t bridge_csap_spt =
 {
     .proto               = "bridge",
     .unregister_cb       = NULL,
@@ -73,9 +73,9 @@ static csap_spt_type_t bridge_csap_spt =
  * Command Handler.
  *
  * @return Status code.
- */ 
+ */
 te_errno
 csap_support_bridge_register(void)
-{ 
+{
     return csap_spt_add(&bridge_csap_spt);
 }

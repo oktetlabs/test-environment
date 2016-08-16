@@ -513,8 +513,11 @@ add_or_set(cfg_instance *inst, te_bool *has_deps)
         return 0;
 
     /* Entry may appear after addition of previous ones */
-    if (inst->handle == CFG_HANDLE_INVALID)
+    if (!CFG_INST_HANDLE_VALID(inst->handle))
+    {
+        inst->handle = CFG_HANDLE_INVALID;
         cfg_db_find(inst->oid, &inst->handle);
+    }
 
     if (inst->handle != CFG_HANDLE_INVALID)
     {
