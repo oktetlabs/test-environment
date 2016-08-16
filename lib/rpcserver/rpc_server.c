@@ -310,6 +310,7 @@ tarpc_generic_service(deferred_call_list *async_list, rpc_call_data *call)
             }
 
             *copy_call = *call;
+            assert(STAILQ_EMPTY(&call->checked_args));
             STAILQ_INIT(&copy_call->checked_args);
             copy_call->in = (uint8_t *)copy_call + sizeof(*copy_call);
             copy_call->out = (uint8_t *)copy_call->in +
