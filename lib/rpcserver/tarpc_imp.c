@@ -8346,10 +8346,9 @@ local_exit:
     if (file_d != -1)
         close_func(file_d);
 
-    /* Clean up errno */
     if (rc == 0)
     {
-        errno = 0;
+        /* Probably, we should restore the errno to the original */
         rc = total;
     }
     return rc;
