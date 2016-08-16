@@ -688,6 +688,7 @@ rcf_rpc_server_is_op_done(rcf_rpc_server *rpcs, te_bool *done)
 {
     tarpc_rpc_is_op_done_in  in;
     tarpc_rpc_is_op_done_out out;
+    rcf_rpc_op               old_op;
 
     if (rpcs == NULL || done == NULL)
         return TE_RC(TE_RCF, TE_EINVAL);
@@ -695,8 +696,10 @@ rcf_rpc_server_is_op_done(rcf_rpc_server *rpcs, te_bool *done)
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
 
+    old_op = rpcs->op;
     rpcs->op = RCF_RPC_CALL_WAIT;
     rcf_rpc_call(rpcs, "rpc_is_op_done", &in, &out);
+    rpcs->op = old_op;
 
     if (rpcs->_errno != 0)
     {
@@ -747,6 +750,7 @@ rcf_rpc_setlibname(rcf_rpc_server *rpcs, const char *libname)
 {
     tarpc_setlibname_in  in;
     tarpc_setlibname_out out;
+    rcf_rpc_op           old_op;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -760,8 +764,10 @@ rcf_rpc_setlibname(rcf_rpc_server *rpcs, const char *libname)
     in.libname.libname_len = (libname == NULL) ? 0 : (strlen(libname) + 1);
     in.libname.libname_val = (char *)libname;
 
+    old_op = rpcs->op;
     rpcs->op = RCF_RPC_CALL_WAIT;
     rcf_rpc_call(rpcs, "setlibname", &in, &out);
+    rpcs->op = old_op;
 
     if (!RPC_IS_CALL_OK(rpcs))
         out.retval = -1;
@@ -1105,6 +1111,7 @@ rcf_rpc_namespace_id2str(rcf_rpc_server *rpcs, rpc_ptr_id_namespace id,
     if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
         rpcs->timeout = rpcs->def_timeout;
 
+    in.common.op = RCF_RPC_CALL_WAIT;
     rc = rcf_ta_call_rpc(rpcs->ta, rpcs->sid, rpcs->name,
                          rpcs->timeout, "namespace_id2str", &in, &out);
 

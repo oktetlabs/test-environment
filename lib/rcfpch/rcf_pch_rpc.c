@@ -102,6 +102,9 @@ typedef struct rpcserver {
     time_t    sent;        /**< Time of the last request sending */
     te_bool   async_call;  /**< True if async call in progress */
     uint64_t  last_jobid;  /**< Last async call job id */
+
+    rcf_rpc_op  last_rpc_op; /** Operation type of last rpc call **/
+    char        last_rpc_name[RCF_MAX_NAME]; /** Name of last rpc call **/
 } rpcserver;
 
 static rpcserver *list;        /**< List of all RPC servers */
@@ -152,6 +155,59 @@ static struct rcf_comm_connection *conn_saved;
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 /**
+ * Check a possibility of the current rpc call based on the previous rpc
+ * call.
+ *
+ * @param rpcs      RPC server structure
+ * @param op        The operation type for rpc call
+ * @param rpc_name  The name of rpc function
+ *
+ * @return @c TRUE if the current rpc call is valid
+ */
+static te_bool
+check_rpc_call(rpcserver *rpcs, rcf_rpc_op op, const char *rpc_name)
+{
+    if (rpcs->last_rpc_op != RCF_RPC_CALL)
+    {
+        if (op != RCF_RPC_WAIT)
+            return TRUE;
+
+        if (strncmp(rpcs->last_rpc_name, rpc_name, RCF_MAX_NAME) == 0)
+        {
+            ERROR("RPC server %s cannot wait the function \"%s\", "
+                  "the previous rpc call has wrong name \"%s\" "
+                  "(previous op=%d)",
+                  rpcs->name, rpc_name, rpcs->last_rpc_name,
+                  rpcs->last_rpc_op);
+        }
+        else
+        {
+            ERROR("RPC server %s cannot wait the function \"%s\", "
+                  "the previous rpc call has wrong op %d (expect %d)",
+                  rpcs->name, rpc_name, rpcs->last_rpc_op, RCF_RPC_CALL);
+        }
+        return FALSE;
+    }
+
+    if (op == RCF_RPC_WAIT)
+    {
+        if (strncmp(rpcs->last_rpc_name, rpc_name, RCF_MAX_NAME) == 0)
+            return TRUE;
+
+        ERROR("RPC server %s is busy with another function (%s) "
+              "and cannot call the function \"%s\"",
+              rpcs->name, rpcs->last_rpc_name, rpc_name);
+        return FALSE;
+    }
+
+    ERROR("RPC server %s is busy "
+          "(the async call \"%s\" is not completed) "
+          "and cannot call the function \"%s\"",
+          rpcs->name, rpcs->last_rpc_name, rpc_name);
+    return FALSE;
+}
+
+/**
  * Call RPC on the specified RPC server.
  *
  * @param rpcs  RPC server structure
@@ -168,13 +224,27 @@ call(rpcserver *rpcs, char *name, void *in, void *out)
     size_t  len = sizeof(buf);
     int     rc;
 
-    ((tarpc_in_arg *)in)->use_libc = 0;
+    tarpc_in_arg *in_arg = (tarpc_in_arg *)in;
+
+    in_arg->use_libc = 0;
 
     if (rpcs->sent > 0)
     {
         ERROR("RPC server %s is busy", rpcs->name);
         return TE_RC(TE_RCF_PCH, TE_EBUSY);
     }
+
+    if (!check_rpc_call(rpcs, in_arg->op, name))
+    {
+        /* Bug 8924: wrong call does not stop the execution, just logs
+         * the error message. This behaviour allows to collect statistics
+         * about rpc calls.
+         */
+        if (FALSE)
+            return TE_RC(TE_RCF_PCH, TE_EBUSY);
+    }
+    rpcs->last_rpc_op = in_arg->op;
+    strncpy(rpcs->last_rpc_name, name, RCF_MAX_NAME);
 
     if ((rc = rpc_xdr_encode_call(name, buf, &len, in)) != 0)
     {
@@ -1082,6 +1152,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     strcpy(rpcs->name, new_name);
     strcpy(rpcs->value, value);
     rpcs->father = father;
+    rpcs->last_rpc_op = RCF_RPC_CALL_WAIT;
 
     if (registration)
         goto connect;
@@ -1398,6 +1469,22 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
         pthread_mutex_unlock(&lock);
         RETERR(TE_EBUSY);
     }
+
+    if (!check_rpc_call(rpcs, common_arg.op, rpc_name))
+    {
+        /* Bug 8924: wrong call does not stop the execution, just logs
+         * the error message. This behaviour allows to collect statistics
+         * about rpc calls.
+         */
+        if (FALSE)
+        {
+            pthread_mutex_unlock(&lock);
+            RETERR(TE_EBUSY);
+        }
+    }
+    rpcs->last_rpc_op = common_arg.op;
+    strncpy(rpcs->last_rpc_name, rpc_name, RCF_MAX_NAME);
+
     rpcs->sent = time(NULL);
     rpcs->last_sid = sid;
     rpcs->timeout = timeout == 0xFFFFFFFF ? timeout : timeout / 1000;

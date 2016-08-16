@@ -2,7 +2,7 @@ import yaml
 import copy
 
 def _list(cls):
-    return lambda data: [cls(x) for x in data]
+    return lambda data: [cls(x) for x in data] if data else []
 
 class ScenarioObject(object):
     def __init__(self, data, fields):
