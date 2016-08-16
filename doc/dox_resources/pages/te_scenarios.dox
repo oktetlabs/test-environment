@@ -1,0 +1,220 @@
+/**
+
+@defgroup te_scenarios The format of test suite scenarios
+@ingroup te_ts
+@{
+
+@section te_scenarios_introduction Introduction
+
+This document describes the format of test suite scenarios and the script,
+which helps to work with it.
+The document format of test suite scenarios is written on \b yaml language.
+The script @prog{scenarios.py} is designed to automate some actions with
+test suite scenarios. The script can manage the test suite scenarios:
+create review requests with test scenario on ReviewBoard and
+generate templates of tests.
+
+@section te_scenarios_specification Elements descriptions for test scenarios
+
+  - The root element is a dictionary with:
+    - mandatory field:
+      - \b groups - contains the list of \b group elements.
+  - The element \b group is a dictionary with:
+    - mandatory fields:
+      - \b group - the group name (the full reference to the test contains
+                   this field);
+      - \b summary - the short group description (the test header contains
+                   this field);
+      - \b objective - the full group description.
+    - optional fields:
+      - \b sub - the list of \b sub elements;
+      - \b groups - the list of \b group elements;
+      - \b tests - the list of \b test elements.
+  - The element \b sub is similar to an element \b group. This element
+    contains same fields as element \b group. But \b sub is used for
+    logical division and it does not create subpackages, i.e. it does not
+    affect real packages structure.
+  - The element \b test is a dictionary with:
+    - mandatory fields:
+      - \b test - the test name (the test filename contains this field);
+      - \b summary - the short test description (the file header contains
+                     this field in the \b Doxygen command \b @@page).
+    - optional fields of unimplemented tests (these fields will be
+      automatically moved from the document to a template of test when
+      the test template is generated, i.e. these fields are absent in
+      the document for the implemented tests):
+      - \b objective - the full test description;
+      - \b params - the list of \b param elements;
+      - \b steps - the list of \b step elements (the test
+                   \b @@par \b Scenario contains this list).
+  - The element \b param is a dictionary with:
+    - mandatory fields:
+      - \b param - the parameter name;
+      - \b description - the parameter description.
+    - optional fields:
+      - \b type - the parameter type, e.g. "boolean";
+      - \b values - the list of \b value elements.
+  - The element \b value has two forms:
+    -# the string with the parameter value;
+    -# the dictionary with the single pair (the key contains the parameter
+       value, the value of this pair contains the parameter description).
+  - The element \b step has two forms:
+    -# the string with step description;
+    -# the dictionary with the single pair (the key contains the step
+       description, the value of this pair contains the list of \b step
+       elements).
+
+@section te_scenarios_examples Some examples of test suite scenarios
+
+The minimal test suite scenario:
+@code{.yaml}
+groups:
+  - group: new_ts
+    summary: Summary for new test suite
+    objective: Objective for new test suite
+@endcode
+
+The complex test suite scenario:
+@code{.yaml}
+groups:
+- group: example_ts
+  summary: Example test suite description
+  objective: Long description for example test suite
+  groups:
+  - group: first_part
+    summary: First part of test suite
+    objective: Several implemented tests and one unimplemented test.
+    sub:
+    - group: subgroup
+      summary: Test second feature
+      objective: Several implemented tests which test the second feature.
+      tests:
+      - test: second_1
+        summary: Test first part of second feature
+
+      - test: second_2
+        summary: Test second part of second feature
+
+    tests:
+    - test: first
+      summary: Test first feature
+
+    - test: third
+      summary: Test third feature
+      objective: This test should test third feature
+      params:
+      - param: alpha
+        description: alpha parameter
+        values:
+        - 1
+        - 25
+        - default: do not set (default alpha value is @c 16)
+      - param: beta
+        description: beta parameter
+      steps:
+      - Step can be any string.
+      - We can create step with substeps:
+          - substep is just the same step
+          - and also can have subparagraphs:
+            - first step on third level
+          - last step on second level
+@endcode
+
+@section te_scenarios_workflow Workflow with test suite scenarios
+
+-# Create a new test suite:
+  - Create the minimal scenario for new test suite.
+  - Create the new review request using the script:
+    <pre class="fragment">@prog{$TE_BASE/scripts/scenarios.py} @prog_option{--create} @prog_option{...}</pre>
+  - Push the file with full scenarios after review.
+
+  Examples:
+
+  - If we use the real file with test suite scenarios, e.g. OKTL-0000999-example_ts.yml.
+    <pre class="fragment">@prog{$TE_BASE/scripts/scenarios.py} @prog_option{--create} @prog_option{-s} OKTL-0000999-example_ts.yml @prog_option{-t} example-ts @prog_option{-a} "Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>" @prog_option{-r} example-ts</pre>
+    Where:
+    - <code>@prog_option{-s} OKTL-0000999-example_ts.yml</code>
+      -- the file which contains test suite scenarios;
+
+    - <code>@prog_option{-t} example-ts</code>
+      -- the relative or absolute test suite location;
+
+    - <code>@prog_option{-a} "Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>"</code>
+      -- the author for test templates in the created review request;
+
+    - <code>@prog_option{-r} example-ts</code>
+      -- the repository ID for the created review request.
+
+  - If we use the @prog{doclist} with some document ID.
+    <pre class="fragment">@prog{$TE_BASE/scripts/scenarios.py} @prog_option{-c} @prog_option{-d} 999 @prog_option{-t} example-ts @prog_option{-a} "Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>" @prog_option{-r} example-ts</pre>
+    Where:
+    - <code>@prog_option{-c}</code>
+      -- the short form of <code>@prog_option{\-\-create}</code>;
+
+    - <code>@prog_option{-d} 999</code>
+      -- the document ID when we use @prog{doclist}.
+
+-# Add a new test scenario:
+  - Post the current test suite scenarios on ReviewBoard using the script
+    (only for yourself, without any groups and only with you in reviewers)
+    and manually publish it:
+    <pre class="fragment">@prog{$TE_BASE/scripts/scenarios.py} @prog_option{--create} @prog_option{...}</pre>
+  - Add the new test scenario in the document of test suite scenarios.
+  - Update the published review request with the new test suite scenario.
+    <pre class="fragment">@prog{$TE_BASE/scripts/scenarios.py} @prog_option{--update} @prog_option{...}</pre>
+  - Add nececcary groups and users and publish the updated review request.
+  - Push the file with full scenarios after review.
+
+  Example:
+  - <pre class="fragment">@prog{$TE_BASE/scripts/scenarios.py} @prog_option{-c} @prog_option{-s} OKTL-0000999-example_ts.yml @prog_option{-t} example-ts @prog_option{-a} "Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>" @prog_option{-r} example-ts
+@prog{$TE_BASE/scripts/scenarios.py} @prog_option{-u} @prog_option{-s} OKTL-0000999-example_ts.yml @prog_option{-t} example-ts @prog_option{-a} "Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>" @prog_option{-r} 1111</pre>
+    Where:
+    - <code>@prog_option{-u}</code>
+      -- the short form of <code>@prog_option{\-\-update}</code>;
+
+    - <code>@prog_option{-r} 1111</code>
+      -- review request ID from the first command.
+
+-# Implement a new test:
+  - Create the .c template and update the file with test suite scenarios:
+    <pre class="fragment">@prog{$TE_BASE/scripts/scenarios.py} @prog_option{--implement} @prog_option{...}</pre>
+    After this command the scenario from test suite scenarios will be moved
+    to the newly created .c template.
+  - Push the file with test suite scenarios;
+  - Implement the new test and publish it on ReviewBoard.
+  - Push the test after review.
+
+  Example:
+  - The following command creates/updates the test file "third.c".
+    <pre class="fragment">@prog{$TE_BASE/scripts/scenarios.py} @prog_option{-i} @prog_option{-s} OKTL-0000999-example_ts.yml @prog_option{-t} example-ts @prog_option{-a} "Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>" @prog_option{--scenario-in-test} 10 @prog_option{-f} @prog_option{-r} example_ts.first_part.third</pre>
+    Where:
+    - <code>@prog_option{-i}</code>
+      -- the short form of <code>@prog_option{\-\-implement}</code>;
+
+    - <code>@prog_option{\-\-scenario-in-test} 10</code>
+      -- locate the scenario in a code and expand steps in the scenario up to 10 nesting levels;
+
+    - <code>@prog_option{-f}</code>
+      -- force rewrite if a test file already exists;
+
+    - <code>@prog_option{-r} example_ts.first_part.third</code>
+      -- the test name to implementation.
+
+-# Get the script documentation:
+  - The list of possible operation modes of the script can be displayed using this line:
+    <pre class="fragment">@prog{$TE_BASE/scripts/scenarios.py} @prog_option{--help}</pre>
+  - Each mode has the similar way to display the documentation:
+    <pre class="fragment">@prog{$TE_BASE/scripts/scenarios.py} @prog_option{--create} @prog_option{--help}</pre>
+
+@section te_scenarios_dependencies Dependencies of scenarios.py
+
+- python3
+- python3-requests
+- python3-yaml (>= 3.11)
+
+To install this packages on Debian derivatives you can run this line:
+<pre class="fragment">@prog{apt-get} install python3 python3-requests python3-yaml</pre>
+
+@} <!-- END te_scenarios -->
+
+ */
