@@ -14,13 +14,9 @@ from scenarios.testreader    import TestReader
 from scenarios.patch         import create_patch
 
 arguments = {
-    '--create': ('-c', {
+    '--postreview': ('-p', {
             'action': 'store_true',
-            'help': 'Create a review request of short list of scenarios',
-        }),
-    '--update': ('-u', {
-            'action': 'store_true',
-            'help': 'Update the review request of short list of scenarios',
+            'help': 'Create or update a review request of short list of scenarios',
         }),
     '--implement': ('-i', {
             'action': 'store_true',
@@ -52,9 +48,9 @@ arguments = {
             'dest': 'repository_id',
             'help': 'Review board repository ID or name',
         }),
-    '--review-id': ('-r', {
-            'dest': 'review_id',
-            'help': 'Review ID',
+    '--existing': ('-e', {
+            'dest': 'existing',
+            'help': 'Existing request ID to update',
         }),
     '--scenario-in-test': (None, {
             'dest': 'scenario_in_test', 'default': 0, 'type': int,
@@ -83,18 +79,20 @@ def add_argument(parent, argument, **opts):
         args = tuple([argument])
     parent.add_argument(*args, **kwargs)
 
-def create():
-    parser = argparse.ArgumentParser(description='Description.')
-    add_argument(parser, '--create',      required=True)
+def postreview():
+    parser = argparse.ArgumentParser(
+        description='Post a changeset to a Review Board server')
+    add_argument(parser, '--postreview', required=True)
     group = parser.add_mutually_exclusive_group(required=True)
     add_argument(group, '--document-id')
     add_argument(group, '--scenario')
-    add_argument(parser, '--test-suite',  required=True)
+    add_argument(parser, '--test-suite', required=True)
     add_argument(parser, '--author')
     add_argument(parser, '--scenario-in-test')
     group = parser.add_mutually_exclusive_group(required=True)
     add_argument(group, '--output')
     add_argument(group, '--repository')
+    add_argument(group, '--existing')
     args = parser.parse_args()
 
     if args.scenario:
@@ -110,35 +108,17 @@ def create():
     if args.output:
         open(args.output, 'w').write(patch)
         print('Patch saved in the file: ' + args.output)
-    else:
+    elif args.repository_id:
         rb = ReviewBoard()
         content = rb.create_review(args.repository_id)
         rb.update_diff(content.review_request.id, data=patch)
         print('Review request draft saved: ' + \
                 content.review_request.absolute_url)
         print('Please check and publish this draft.')
-
-def update():
-    parser = argparse.ArgumentParser(description='Description.')
-    add_argument(parser, '--update',     required=True)
-    add_argument(parser, '--scenario',   required=True)
-    add_argument(parser, '--test-suite', required=True)
-    add_argument(parser, '--author')
-    add_argument(parser, '--scenario-in-test')
-    group = parser.add_mutually_exclusive_group(required=True)
-    add_argument(group, '--output')
-    add_argument(group, '--review-id')
-    args = parser.parse_args()
-
-    patch = create_patch(args.test_suite, filename=args.scenario,
-                author=args.author, scenario_in_test=args.scenario_in_test)
-    if args.output:
-        open(args.output, 'w').write(patch)
-        print('Patch saved in the file: ' + args.output)
     else:
         rb = ReviewBoard()
-        content = rb.update_diff(args.review_id, data=patch)
-        content = rb.review(args.review_id)
+        content = rb.update_diff(args.existing, data=patch)
+        content = rb.review(args.existing)
         print('Review request draft updated: ' + \
                 content.review_request.absolute_url)
         print('Please check and publish this draft.')
@@ -192,11 +172,9 @@ def implement():
 
 parser = argparse.ArgumentParser(description='Description.')
 group = parser.add_mutually_exclusive_group(required=True)
-add_argument(group, '--create')
-add_argument(group, '--update')
+add_argument(group, '--postreview')
 add_argument(group, '--implement')
 args = parser.parse_args(sys.argv[1:2])
 
-if   args.create:    create()
-elif args.update:    update()
-elif args.implement: implement()
+if   args.postreview: postreview()
+elif args.implement:  implement()
