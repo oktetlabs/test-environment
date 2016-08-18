@@ -84,3 +84,16 @@ class ReviewBoard(object):
         content = json.loads(data, object_hook=_json_object_hook)
         assert content.stat == 'ok', data
         return content
+
+    def change_description(self, review_id, description, text_type='markdown'):
+        href = '%s/review-requests/%s/draft/' % (self.server_api, review_id)
+        r = requests.post(href, headers = {
+                "Authorization": "token " + self.api_token,
+            }, data={
+                "changedescription_text_type": text_type,
+                "changedescription": description,
+            })
+        data = r.content.decode('utf-8')
+        content = json.loads(data, object_hook=_json_object_hook)
+        assert content.stat == 'ok', data
+        return content

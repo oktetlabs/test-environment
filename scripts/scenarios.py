@@ -118,7 +118,13 @@ def postreview():
     else:
         rb = ReviewBoard()
         content = rb.update_diff(args.existing, data=patch)
+        revision = content.diff.revision
         content = rb.review(args.existing)
+        rb.change_description(args.existing,
+            "Link to the test scenario: [/r/%s/diff/1-%s/](%sdiff/1-%s/)" % (
+                args.existing, revision,
+                content.review_request.absolute_url, revision
+            ))
         print('Review request draft updated: ' + \
                 content.review_request.absolute_url)
         print('Please check and publish this draft.')
