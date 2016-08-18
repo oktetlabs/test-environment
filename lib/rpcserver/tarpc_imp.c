@@ -427,21 +427,6 @@ _rpc_find_func_1_svc(tarpc_rpc_find_func_in  *in,
     return TRUE;
 }
 
-/*-------------- rpc_is_alive() --------------------------------*/
-
-bool_t
-_rpc_is_alive_1_svc(tarpc_rpc_is_alive_in  *in,
-                    tarpc_rpc_is_alive_out *out,
-                    struct svc_req         *rqstp)
-{
-    UNUSED(rqstp);
-    UNUSED(in);
-
-    memset(out, 0, sizeof(*out));
-
-    return TRUE;
-}
-
 /*-------------- sizeof() -------------------------------*/
 #define MAX_TYPE_NAME_SIZE 30
 typedef struct {
