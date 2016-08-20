@@ -81,7 +81,7 @@ typedef struct tapi_upnp_cd_resource {
     const char *import_uri;
     const char *protocol_info;
     int64_t     size;
-    long        duration;
+    int64_t     duration;
     int         bitrate;
     int         sample_freq;
     int         bits_per_sample;
@@ -147,7 +147,7 @@ typedef struct tapi_upnp_cd_container {
             const char *ref_id;
 #ifdef LIBGUPNP_VER_0_12
             /* Now it is available only in unstable version libgupnp. */
-            long        lifetime;
+            int64_t     lifetime;
 #endif /* LIBGUPNP_VER_0_12 */
         } item;
     };
