@@ -80,8 +80,7 @@ typedef struct tapi_upnp_cd_resource {
     const char *uri;
     const char *import_uri;
     const char *protocol_info;
-    long        size;
-    int64_t     size64;
+    int64_t     size;
     long        duration;
     int         bitrate;
     int         sample_freq;

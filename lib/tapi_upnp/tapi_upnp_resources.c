@@ -143,8 +143,7 @@ tapi_upnp_print_resource_info(const tapi_upnp_cd_resource *res)
          " uri: %s\n"
          " import_uri: %s\n"
          " protocol_info: %s\n"
-         " size: %ld\n"
-         " size64: %lld\n"
+         " size: %lld\n"
          " duration: %ld\n"
          " bitrate: %d\n"
          " sample_freq: %d\n"
@@ -159,7 +158,6 @@ tapi_upnp_print_resource_info(const tapi_upnp_cd_resource *res)
          res->import_uri,
          res->protocol_info,
          res->size,
-         res->size64,
          res->duration,
          res->bitrate,
          res->sample_freq,

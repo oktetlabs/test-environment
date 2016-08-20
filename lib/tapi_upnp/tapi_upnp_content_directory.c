@@ -571,8 +571,7 @@ extract_base_class_data(GUPnPDIDLLiteObject *upnp_object,
             gupnp_didl_lite_resource_get_update_count(resource);
 #endif /* LIBGUPNP_VER_0_12 */
 
-        res_node->res.size = gupnp_didl_lite_resource_get_size(resource);
-        res_node->res.size64 =
+        res_node->res.size =
             gupnp_didl_lite_resource_get_size64(resource);
         res_node->res.duration =
             gupnp_didl_lite_resource_get_duration(resource);
