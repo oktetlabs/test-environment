@@ -43,6 +43,19 @@
 #endif /* UPNP_DEBUG */
 
 
+/**
+ * Disable extract a number of bytes used by all child items of the
+ * container cause gupnp_didl_lite_container_get_storage_used fails on
+ * minidlna server.
+ * Tested with libgupnp-av-1.0-dev/stable 0.12.6-1 and MiniDLNA 1.0.26
+ * See details in Bug 8831.
+ *
+ * @todo Remove this difinition when the bug will be resolved.
+ *       See https://bugzilla.gnome.org/show_bug.cgi?id=770174
+ */
+#define LIBGUPNP_DIDLLITE_CONTAINER_BUG
+
+
 #if 0
 /** Request Type in string representation. */
 /** Request for device. */

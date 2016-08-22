@@ -796,8 +796,11 @@ extract_container_data(GUPnPDIDLLiteContainer *upnp_container,
         gupnp_didl_lite_container_get_child_count(upnp_container);
     container->data.container.searchable =
         (te_bool)gupnp_didl_lite_container_get_searchable(upnp_container);
+
+#ifndef LIBGUPNP_DIDLLITE_CONTAINER_BUG
     container->data.container.storage_used =
         gupnp_didl_lite_container_get_storage_used(upnp_container);
+#endif /* !LIBGUPNP_DIDLLITE_CONTAINER_BUG */
 
     return rc;
 }

@@ -135,13 +135,15 @@ typedef struct tapi_upnp_cd_container {
     tapi_upnp_cd_object base;
     union {
         struct {
+            int      child_count;
+            te_bool  searchable;
+#ifndef LIBGUPNP_DIDLLITE_CONTAINER_BUG
+            int64_t  storage_used;
+#endif /* !LIBGUPNP_DIDLLITE_CONTAINER_BUG */
 #ifdef LIBGUPNP_VER_0_12
             uint32_t container_update_id;
             uint32_t total_deleted_child_count;
 #endif /* LIBGUPNP_VER_0_12 */
-            int64_t  storage_used;
-            int      child_count;
-            te_bool  searchable;
         } container;
         struct {
             const char *ref_id;
