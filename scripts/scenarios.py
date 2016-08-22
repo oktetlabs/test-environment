@@ -12,6 +12,7 @@ from scenarios.rb            import ReviewBoard
 from scenarios.testgenerator import TestGenerator
 from scenarios.testreader    import TestReader
 from scenarios.patch         import create_patch
+from scenarios.ts            import Packages
 
 arguments = {
     '--postreview': ('-p', {
@@ -21,6 +22,10 @@ arguments = {
     '--implement': ('-i', {
             'action': 'store_true',
             'help': 'Create an implementation template of new test',
+        }),
+    '--import-ts': (None, {
+            'action': 'store_true',
+            'help': 'Import implemented tests list to test scenarios document',
         }),
 
     '--author': ('-a', {
@@ -61,6 +66,10 @@ arguments = {
             'dest': 'scenario',
             'help': 'The name of file which contains '\
                     'the list of all scenarios',
+        }),
+    '--sorting': (None, {
+            'dest': 'sorting', 'default': False, 'action': 'store_true',
+            'help': 'Sort lists of groups and tests',
         }),
     '--test-suite': ('-t', {
             'dest': 'test_suite',
@@ -176,11 +185,31 @@ def implement():
         test.cut()
         open(args.scenario, 'w').write(reader.dump_full())
 
+def import_ts():
+    parser = argparse.ArgumentParser(
+        description='Import implemented tests list to test scenarios document.')
+    add_argument(parser, '--import-ts',  required=True)
+    add_argument(parser, '--scenario',   required=True)
+    add_argument(parser, '--test-suite', required=True)
+    add_argument(parser, '--sorting')
+    args = parser.parse_args()
+
+    r = TestReader()
+    packages = Packages(args.test_suite, sorting=args.sorting)
+    if os.path.exists(args.scenario):
+        r.load_file(args.scenario)
+        packages.merge(r.context)
+    else:
+        r.import_context(packages.context)
+    open(args.scenario, 'w').write(r.dump_full())
+
 parser = argparse.ArgumentParser(description='Description.')
 group = parser.add_mutually_exclusive_group(required=True)
 add_argument(group, '--postreview')
 add_argument(group, '--implement')
+add_argument(group, '--import-ts')
 args = parser.parse_args(sys.argv[1:2])
 
 if   args.postreview: postreview()
 elif args.implement:  implement()
+elif args.import_ts:  import_ts()
