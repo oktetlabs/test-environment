@@ -148,11 +148,22 @@ groups:
   - If we use the @prog{doclist} with some document ID.
     <pre class="fragment">@prog{$TE_BASE/scripts/scenarios.py} @prog_option{--post} @prog_option{-d} 999 @prog_option{-t} example-ts @prog_option{-a} "Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>" @prog_option{-r} example-ts</pre>
     Where:
-    - <code>@prog_option{--post}</code>
+    - <code>@prog_option{\-\-post}</code>
       -- the short form of <code>@prog_option{\-\-postreview}</code>;
 
     - <code>@prog_option{-d} 999</code>
       -- the document ID when we use @prog{doclist}.
+
+-# Import implemented tests list to an existing or new test scenarios document:
+  - <pre class="fragment">@prog{$TE_BASE/scripts/scenarios.py} @prog_option{--import-ts} @prog_option{--scenario} document.yaml @prog_option{...}</pre>
+    If the document.yaml exists, then the command adds entries in it,
+    otherwise the command creates the new document.
+
+  Examples:
+  - <pre class="fragment">@prog{$TE_BASE/scripts/scenarios.py} @prog_option{--import-ts} @prog_option{-s} example_ts.yml @prog_option{-t} example-ts @prog_option{--sorting}</pre>
+    Where:
+    - <code>@prog_option{\-\-sorting}</code>
+      -- the requirement to sort lists of groups and tests.
 
 -# Add a new test scenario:
   - Post the current test suite scenarios on ReviewBoard using the script
