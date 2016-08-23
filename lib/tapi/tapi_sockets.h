@@ -43,6 +43,7 @@
 #include "te_errno.h"
 #include "te_sockaddr.h"
 #include "te_rpc_types.h"
+#include "te_dbuf.h"
 #include "rcf_rpc.h"
 
 #ifdef __cplusplus
@@ -57,9 +58,23 @@ extern "C" {
  *
  * @return TCP socket state.
  */
-
 extern rpc_tcp_state tapi_get_tcp_sock_state(struct rcf_rpc_server *pco,
                                              int s);
+
+/**
+ * Read all the available data from a given socket and append it to
+ * a given te_dbuf.
+ *
+ * @param rpcs        RPC server handle.
+ * @param s           Socket.
+ * @param read_data   Where to save read data.
+ *
+ * @return Length of read data on success or negative value in case of
+ *         failure.
+ */
+extern ssize_t tapi_sock_read_data(rcf_rpc_server *rpcs, int s,
+                                   te_dbuf *read_data);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

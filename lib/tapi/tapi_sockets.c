@@ -62,7 +62,6 @@
 #include "tapi_sockets.h"
 
 /* See description in tapi_sockets.h */
-
 rpc_tcp_state
 tapi_get_tcp_sock_state(struct rcf_rpc_server *pco,
                         int s)
@@ -75,4 +74,42 @@ tapi_get_tcp_sock_state(struct rcf_rpc_server *pco,
                        RPC_TCP_INFO, &tcpi, NULL, NULL, 0);
 
     return tcpi.tcpi_state;
+}
+
+/* See description in tapi_sockets.h */
+ssize_t
+tapi_sock_read_data(rcf_rpc_server *rpcs,
+                    int s,
+                    te_dbuf *read_data)
+{
+#define READ_LEN  1024
+    int   rc;
+    char  data[READ_LEN];
+
+    ssize_t  total_len = 0;
+
+    while (TRUE)
+    {
+        RPC_AWAIT_ERROR(rpcs);
+        rc = rpc_recv(rpcs, s, data, READ_LEN,
+                      RPC_MSG_DONTWAIT);
+        if (rc < 0)
+        {
+            if (RPC_ERRNO(rpcs) != RPC_EAGAIN)
+            {
+                ERROR("recv() failed with unexpected errno %r",
+                      RPC_ERRNO(rpcs));
+                return -1;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        te_dbuf_append(read_data, data, rc);
+        total_len += rc;
+    }
+
+    return total_len;
 }
