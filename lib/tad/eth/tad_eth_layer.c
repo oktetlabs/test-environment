@@ -1082,7 +1082,24 @@ tad_eth_confirm_ptrn_cb(csap_p csap, unsigned int layer,
 
     if (ptrn_data->tagged != TE_BOOL3_FALSE)
     {
-        rc = tad_bps_nds_to_data_units(&proto_data->tci, NULL,
+        asn_tag_value       layer_pdu_asn_tag = NDN_TAG_ETH_UNTAGGED;
+        const asn_value    *layer_pdu_tagged = NULL;
+
+        rc = asn_get_child_value(layer_pdu, &layer_pdu_tagged,
+                                 PRIVATE, NDN_TAG_VLAN_TAGGED);
+        if (rc == 0)
+        {
+            rc = asn_get_choice_value(layer_pdu_tagged,
+                                      (asn_value **)&layer_pdu_tagged,
+                                      NULL, &layer_pdu_asn_tag);
+            if (rc != 0)
+                return rc;
+        }
+
+        rc = tad_bps_nds_to_data_units(&proto_data->tci,
+                                       (layer_pdu_asn_tag ==
+                                        NDN_TAG_VLAN_TAG_HEADER) ?
+                                       layer_pdu_tagged : NULL,
                                        &ptrn_data->tci);
         if (rc != 0)
             return rc;
