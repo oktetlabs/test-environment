@@ -150,7 +150,7 @@ extern int power_sw(int type, const char *dev, int mask, int cmd);
 #endif /* ENABLE_POWER_SW */
 
 #if defined(ENABLE_UPNP)
-#include "upnp_cp.h"
+#include "tarpc_upnp_cp.h"
 #endif /* ENABLE_UPNP */
 
 

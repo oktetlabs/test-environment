@@ -587,69 +587,29 @@ if test "$with_serialparse" = "yes" ; then
 fi
 
 
+dnl
 dnl UPnP Control Point
+dnl
 AC_ARG_WITH([upnp_cp],
             [AS_HELP_STRING([--with-upnp_cp],
                 [enable UPnP Control Point (disabled on default)])],
             [AS_CASE([$withval],
-                [yes], [upnp_cp=true],
-                [no] , [upnp_cp=false],
+                [yes], [ac_cv_with_upnp_cp=true],
+                [no] , [ac_cv_with_upnp_cp=false],
                 [AC_MSG_ERROR([invalid value $withval for --with-upnp_cp])])
             ],
-            [upnp_cp=false]
+            [ac_cv_with_upnp_cp=false]
 )
-AM_CONDITIONAL([CFG_UPNP_CP_SUPPORT], [test x$upnp_cp = xtrue])
-UPNP_STATIC_LIBS=
-UPNP_DYNAMIC_LIBS=
-AS_IF([test x$upnp_cp = xtrue],
+AM_CONDITIONAL([CFG_UPNP_CP_SUPPORT], [test x$ac_cv_with_upnp_cp = xtrue])
+UPNP_CP_LIBS=
+AS_IF([test x$ac_cv_with_upnp_cp = xtrue],
       [
         AC_DEFINE([WITH_UPNP_CP], [1],
                   ["Whether use or not UPnP Control Point."])
 
-        PKG_CHECK_MODULES([JANSSON], [jansson],
-            [UPNP_STATIC_LIBS="${UPNP_STATIC_LIBS} -ljansson"],
-            [AC_MSG_ERROR([jansson not found])]
-        )
-        PKG_CHECK_MODULES([GUPNPAV], [gupnp-av-1.0],
-            [UPNP_STATIC_LIBS="${UPNP_STATIC_LIBS} -lgupnp-av-1.0"],
-            [AC_MSG_ERROR([gupnp-av-1.0 not found])]
-        )
-        PKG_CHECK_MODULES([GUPNP], [gupnp-1.0],
-            [UPNP_STATIC_LIBS="${UPNP_STATIC_LIBS} -lgupnp-1.0"],
-            [AC_MSG_ERROR([gupnp-1.0 not found])]
-        )
-        PKG_CHECK_MODULES([GSSDP], [gssdp-1.0],
-            [UPNP_STATIC_LIBS="${UPNP_STATIC_LIBS} -lgssdp-1.0"],
-            [AC_MSG_ERROR([gssdp-1.0 not found])]
-        )
-        PKG_CHECK_MODULES([LIBSOUP], [libsoup-2.4],
-            [UPNP_STATIC_LIBS="${UPNP_STATIC_LIBS} -lsoup-2.4"],
-            [AC_MSG_ERROR([libsoup-2.4 not found])]
-        )
-
-        PKG_CHECK_MODULES([GLIB], [glib-2.0],
-            [UPNP_DYNAMIC_LIBS="${UPNP_DYNAMIC_LIBS} -lglib-2.0"],
-            [AC_MSG_ERROR([glib-2.0 not found])]
-        )
-        PKG_CHECK_MODULES([GIO], [gio-2.0],
-            [UPNP_DYNAMIC_LIBS="${UPNP_DYNAMIC_LIBS} -lgio-2.0"],
-            [AC_MSG_ERROR([gio-2.0 not found])]
-        )
-        PKG_CHECK_MODULES([GOBJECT], [gobject-2.0],
-            [UPNP_DYNAMIC_LIBS="${UPNP_DYNAMIC_LIBS} -lgobject-2.0"],
-            [AC_MSG_ERROR([gobject-2.0 not found])]
-        )
-        PKG_CHECK_MODULES([GMODULE], [gmodule-2.0],
-            [UPNP_DYNAMIC_LIBS="${UPNP_DYNAMIC_LIBS} -lgmodule-2.0"],
-            [AC_MSG_ERROR([gmodule-2.0 not found])]
-        )
-        PKG_CHECK_MODULES([UUID], [uuid],
-            [UPNP_DYNAMIC_LIBS="${UPNP_DYNAMIC_LIBS} -luuid"],
-            [AC_MSG_ERROR([uuid not found])]
-        )
-        PKG_CHECK_MODULES([LIBXML], [libxml-2.0],
-            [UPNP_DYNAMIC_LIBS="${UPNP_DYNAMIC_LIBS} -lxml2"],
-            [AC_MSG_ERROR([libxml-2.0 not found])]
+        PKG_CHECK_MODULES([LIBUPNP_CP], [te-upnp_cp],
+            [UPNP_CP_LIBS=${LIBUPNP_CP_LIBS}],
+            [AC_MSG_ERROR([te-upnp_cp not found])]
         )
       ]
 )
@@ -716,11 +676,9 @@ case "$host" in
                D_LIBS="${D_LIBS} $i"
            fi
        done
-       S_LIBS="${S_LIBS} ${UPNP_STATIC_LIBS}"
-       D_LIBS="${D_LIBS} ${UPNP_DYNAMIC_LIBS}"
        echo S_LIBS ${S_LIBS}
        echo D_LIBS ${D_LIBS}
-       LIBS="${S_LIBS} -Wl,-Bdynamic ${D_LIBS}" ;;
+       LIBS="${S_LIBS} -Wl,-Bdynamic ${D_LIBS} ${UPNP_CP_LIBS}" ;;
 esac
 
 AC_ARG_WITH([aggr], , [with_aggr=yes], [])

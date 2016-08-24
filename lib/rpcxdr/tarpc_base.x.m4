@@ -5266,26 +5266,6 @@ typedef struct tarpc_int_retval_out tarpc_rpcserver_plugin_enable_out;
 typedef struct tarpc_void_in tarpc_rpcserver_plugin_disable_in;
 typedef struct tarpc_int_retval_out tarpc_rpcserver_plugin_disable_out;
 
-/** UPnP Control Point. Create connection arguments. */
-typedef struct tarpc_void_in tarpc_upnp_cp_connect_in;
-typedef struct tarpc_int_retval_out tarpc_upnp_cp_connect_out;
-
-/** UPnP Control Point. Destroy connection arguments. */
-typedef struct tarpc_void_in tarpc_upnp_cp_disconnect_in;
-typedef struct tarpc_int_retval_out tarpc_upnp_cp_disconnect_out;
-
-/** UPnP Control Point. Request/reply routine arguments. */
-struct tarpc_upnp_cp_action_in {
-    struct tarpc_in_arg common;
-
-    uint8_t             buf<>;      /**< Buffer with request data */
-};
-struct tarpc_upnp_cp_action_out {
-    struct tarpc_out_arg  common;
-
-    uint8_t             buf<>;      /**< Buffer with response data */
-    tarpc_int           retval;     /**< Status code */
-};
 
 /* copy_fd2fd function arguments. */
 struct tarpc_copy_fd2fd_in {
@@ -5652,10 +5632,6 @@ program tarpc
 
         RPC_DEF(rpcserver_plugin_enable)
         RPC_DEF(rpcserver_plugin_disable)
-
-        RPC_DEF(upnp_cp_connect)
-        RPC_DEF(upnp_cp_disconnect)
-        RPC_DEF(upnp_cp_action)
 
         RPC_DEF(copy_fd2fd)
     } = 1;

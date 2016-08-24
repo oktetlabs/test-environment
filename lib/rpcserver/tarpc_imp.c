@@ -10675,26 +10675,6 @@ TARPC_FUNC(rpcserver_plugin_disable, {},
     MAKE_CALL(out->retval = func_ptr());
 })
 
-#if defined(ENABLE_UPNP)
-/*-------------- upnp_cp_connect() -------------------------*/
-TARPC_FUNC_STATIC(upnp_cp_connect, {},
-{
-    MAKE_CALL(out->retval = func_ptr(in));
-})
-
-/*-------------- upnp_cp_disconnect() -------------------------*/
-TARPC_FUNC_STATIC(upnp_cp_disconnect, {},
-{
-    MAKE_CALL(out->retval = func_ptr(in));
-})
-
-/*-------------- upnp_cp_action() -------------------------*/
-TARPC_FUNC_STATIC(upnp_cp_action, {},
-{
-    MAKE_CALL(out->retval = func_ptr(in, out));
-})
-#endif
-
 /*-------------- copy_fd2fd() ------------------------------*/
 /**
  * Copy data between one file descriptor and another.

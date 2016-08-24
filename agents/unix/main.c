@@ -94,6 +94,11 @@
 
 #include "te_kernel_log.h"
 
+#ifdef WITH_UPNP_CP
+# include "conf_upnp_cp.h"
+#endif /* WITH_UPNP_CP */
+
+
 /** Send answer to the TEN */
 #define SEND_ANSWER(_fmt...) \
     do {                                                                \
@@ -129,11 +134,6 @@ const char *ta_execname = ta_execname_storage;
 const char *ta_name = "(unix)";
 /** Test Agent data and binaries location */
 char ta_dir[RCF_MAX_PATH];
-
-#ifdef WITH_UPNP_CP
-/* Basename of the UPnP Control Point pathname for the UNIX socket. */
-# define UPNP_CP_UNIX_SOCKET_BASENAME   "upnp_cp_unix_socket"
-#endif /* WITH_UPNP_CP */
 
 #if __linux__
 const char *ta_tmp_path = "/tmp/";
@@ -1552,8 +1552,7 @@ main(int argc, char **argv)
         *(tmp + 1) = 0;
 
 #ifdef WITH_UPNP_CP
-    TE_SPRINTF(upnp_cp_unix_socket_name, "%s%s", ta_dir,
-               UPNP_CP_UNIX_SOCKET_BASENAME);
+    ta_unix_conf_upnp_cp_set_socket_name(ta_dir);
 #endif /* WITH_UPNP_CP */
 
     rcf_ch_register_symbol_table(essential_symbols);

@@ -33,25 +33,19 @@
 #endif
 
 #include "te_config.h"
-#include "agentlib_config.h"
-
-#if defined (ENABLE_UPNP)
+#include "upnp_cp_config.h"
 
 #include "te_defs.h"
+#include "rpc_server.h"
 #include "logger_api.h"
 #include "te_dbuf.h"
 #include "rcf_common.h"
-#include "upnp_cp.h"
 #include "te_upnp.h"
+#include "conf_upnp_cp.h"
 
 
 /** File descriptor for a UNIX socket (client side). */
 static int client = -1;
-
-/* Buffer contains the UPnP Control Point pathname for the UNIX socket. */
-static char upnp_cp_unix_socket_storage[RCF_MAX_VAL];
-/* A simple protection to avoid changing the value from outside. */
-const char * const upnp_cp_unix_socket_name = upnp_cp_unix_socket_storage;
 
 
 /**
@@ -138,8 +132,15 @@ get_reply(int fd, uint8_t **buf, size_t *size)
 }
 
 
-/* See definition in tarpc_upnp_cp.h. */
-int
+/**
+ * Create the UNIX socket and perform connection with UPnP Control Point.
+ *
+ * @param in    TA RPC parameter containing no input value.
+ *
+ * @return On success, @c 0. On error, @c -1, and errno is set
+ *         appropriately.
+ */
+static int
 upnp_cp_connect(tarpc_upnp_cp_connect_in *in)
 {
     UNUSED(in);
@@ -154,7 +155,7 @@ upnp_cp_connect(tarpc_upnp_cp_connect_in *in)
     }
     memset(&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, upnp_cp_unix_socket_name,
+    strncpy(addr.sun_path, ta_unix_conf_upnp_cp_get_socket_name(),
             sizeof(addr.sun_path) - 1);
     client = socket(AF_UNIX, SOCK_STREAM, 0);
     if (client == -1)
@@ -174,8 +175,16 @@ upnp_cp_connect(tarpc_upnp_cp_connect_in *in)
     return 0;
 }
 
-/* See definition in tarpc_upnp_cp.h. */
-int
+/**
+ * Perform disconnection from UPnP Control Point and destroy the UNIX
+ * socket.
+ *
+ * @param in    TA RPC parameter containing no input value.
+ *
+ * @return On success, @c 0. On error, @c -1, and errno is set
+ *         appropriately.
+ */
+static int
 upnp_cp_disconnect(tarpc_upnp_cp_disconnect_in *in)
 {
     UNUSED(in);
@@ -197,10 +206,17 @@ upnp_cp_disconnect(tarpc_upnp_cp_disconnect_in *in)
     return 0;
 }
 
-/* See definition in tarpc_upnp_cp.h. */
-int
-upnp_cp_action(tarpc_upnp_cp_action_in  *in,
-               tarpc_upnp_cp_action_out *out)
+/**
+ * Transmit a message from TEN to UPnP Control Point over UNIX socket and
+ * back.
+ *
+ * @param[in]  in       TA RPC parameter containing request.
+ * @param[out] out      TA RPC parameter containing reply.
+ *
+ * @return @c 0, on success, and @c -1, on error.
+ */
+static int
+upnp_cp_action(tarpc_upnp_cp_action_in *in, tarpc_upnp_cp_action_out *out)
 {
     int rc;
 #if UPNP_DEBUG > 1
@@ -233,7 +249,25 @@ upnp_cp_action(tarpc_upnp_cp_action_in  *in,
     VERB("OUT message [%u]: %s%s", out->buf.buf_len, msg_dbg,
          (out->buf.buf_len < sizeof(msg_dbg) ? "" : "\n..."));
 #endif /* UPNP_DEBUG */
-    return rc;
+
+    return 0;
 }
 
-#endif /* ENABLE_UPNP */
+
+/*-------------- upnp_cp_connect() -------------------------*/
+TARPC_FUNC_STATIC(upnp_cp_connect, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in));
+})
+
+/*-------------- upnp_cp_disconnect() ----------------------*/
+TARPC_FUNC_STATIC(upnp_cp_disconnect, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in));
+})
+
+/*-------------- upnp_cp_action() --------------------------*/
+TARPC_FUNC_STATIC(upnp_cp_action, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+})

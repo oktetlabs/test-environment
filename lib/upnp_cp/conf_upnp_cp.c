@@ -32,9 +32,7 @@
 #endif
 
 #include "te_config.h"
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
+
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -50,12 +48,13 @@
 #if HAVE_STRING_H
 #include <string.h>
 #endif
+
+#include "conf_upnp_cp.h"
 #include "te_defs.h"
-#include "te_errno.h"
 #include "logger_api.h"
 #include "rcf_common.h"
 #include "rcf_ch_api.h"
-#include "unix_internal.h"
+#include "rcf_pch.h"
 
 
 /** Structure for the common UPnP Control Point settings. */
@@ -81,7 +80,7 @@ upnp_cp_start_process(void)
     const char *argv[] = {
         "te_upnp_cp",
         upnp_cp_conf.target,
-        upnp_cp_unix_socket_name,
+        ta_unix_conf_upnp_cp_get_socket_name(),
         upnp_cp_conf.iface,
         NULL
     };
@@ -316,6 +315,14 @@ upnp_cp_get_enable(unsigned int gid, const char *oid, char *value)
     return get_boolean(oid, upnp_cp_conf.enable, value);
 }
 
+
+/* Basename of the UPnP Control Point pathname for the UNIX socket. */
+#define UPNP_CP_UNIX_SOCKET_BASENAME   "upnp_cp_unix_socket"
+
+/* Buffer contains the UPnP Control Point pathname for the UNIX socket. */
+static char upnp_cp_unix_socket_storage[RCF_MAX_VAL];
+
+
 /*
  * Test Agent /upnp_cp configuration subtree.
  */
@@ -350,4 +357,19 @@ ta_unix_conf_upnp_cp_release(void)
         upnp_cp_conf.enable = FALSE;
     }
     return rc;
+}
+
+/* See description in conf_upnp_cp.h. */
+void
+ta_unix_conf_upnp_cp_set_socket_name(const char *ta_path)
+{
+    TE_SPRINTF(upnp_cp_unix_socket_storage, "%s%s", ta_path,
+               UPNP_CP_UNIX_SOCKET_BASENAME);
+}
+
+/* See description in conf_upnp_cp.h. */
+const char *
+ta_unix_conf_upnp_cp_get_socket_name(void)
+{
+    return upnp_cp_unix_socket_storage;
 }
