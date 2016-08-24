@@ -31,11 +31,6 @@
 #ifndef __TE_AGENTLIB_H__
 #define __TE_AGENTLIB_H__
 
-#include "te_config.h"
-#include "te_errno.h"
-#include "te_defs.h"
-#include "agentlib_config.h"
-
 #include "agentlib_defs.h"
 
 #if HAVE_NET_IF_H
@@ -138,7 +133,7 @@ extern int ta_kill_death(pid_t pid);
 
 #if defined(ENABLE_TELEPHONY)
 #include "telephony.h"
-#endif
+#endif /* ENABLE_TELEPHONY */
 
 #if defined(ENABLE_POWER_SW)
 /**
@@ -152,7 +147,12 @@ extern int ta_kill_death(pid_t pid);
  * @return          0, otherwise -1
  */
 extern int power_sw(int type, const char *dev, int mask, int cmd);
-#endif
+#endif /* ENABLE_POWER_SW */
+
+#if defined(ENABLE_UPNP)
+#include "tarpc_upnp_cp.h"
+#endif /* ENABLE_UPNP */
+
 
 /** @defgroup rcf_ch_addr Command Handler: Symbol name and address resolver support
  * @ingroup rcf_ch

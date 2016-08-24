@@ -4,7 +4,7 @@
  * Unix Test Agent implementation.
  *
  *
- * Copyright (C) 2004 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2004-2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -94,6 +94,11 @@
 
 #include "te_kernel_log.h"
 
+#ifdef WITH_UPNP_CP
+# include "conf_upnp_cp.h"
+#endif /* WITH_UPNP_CP */
+
+
 /** Send answer to the TEN */
 #define SEND_ANSWER(_fmt...) \
     do {                                                                \
@@ -127,7 +132,7 @@ const char *ta_execname = ta_execname_storage;
 
 /** Test Agent name */
 const char *ta_name = "(unix)";
-/** Test Agent data and binaries location */ 
+/** Test Agent data and binaries location */
 char ta_dir[RCF_MAX_PATH];
 
 #if __linux__
@@ -1545,6 +1550,10 @@ main(int argc, char **argv)
         ta_dir[0] = 0;
     else
         *(tmp + 1) = 0;
+
+#ifdef WITH_UPNP_CP
+    ta_unix_conf_upnp_cp_set_socket_name(ta_dir);
+#endif /* WITH_UPNP_CP */
 
     rcf_ch_register_symbol_table(essential_symbols);
 #if defined(ENABLE_GENERATED_SYMTBL)

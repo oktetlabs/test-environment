@@ -1,0 +1,87 @@
+<?xml version="1.0"?>
+<package version="1.0">
+    <description>UPnP Control Point test</description>
+
+    <author mailto="Ivan.Melnikov@oktetlabs.ru"/>
+
+    <session track_conf="silent">
+
+        <arg name="env">
+            <value>{{{'pco_iut':IUT},if:'iut_if'}}</value>
+        </arg>
+
+        <prologue>
+            <script name="prologue"/>
+            <arg name="env"/>
+            <arg name="target">
+                <value>ssdp:all</value>
+            </arg>
+        </prologue>
+
+        <epilogue>
+            <script name="epilogue"/>
+            <arg name="env"/>
+        </epilogue>
+
+        <!-- Get devices test -->
+        <run>
+            <script name="get_devices"/>
+            <arg name="env"/>
+            <arg name="device">
+                <value>GUPnP Network Light</value>
+                <value>all</value>     <!-- All devices -->
+            </arg>
+        </run>
+
+        <!-- Get services test -->
+        <run>
+            <script name="get_services"/>
+            <arg name="env"/>
+            <arg name="device_name" list="services">
+                <value>GUPnP Network Light</value>
+                <value>twonky-on-irmo</value>
+                <value>twonky-on-irmo</value>
+                <value>twonky-on-irmo</value>
+                <value>all</value>     <!-- All devices -->
+            </arg>
+            <arg name="service_id" list="services">
+                <value>urn:upnp-org:serviceId:Dimming:1</value>
+                <value>urn:upnp-org:serviceId:ContentDirectory</value>
+                <value>urn:microsoft.com:serviceId:X_MS_MediaReceiverRegistrar</value>
+                <value>all</value>     <!-- All services -->
+                <value>all</value>     <!-- All services -->
+            </arg>
+        </run>
+
+        <!-- Invoke action -->
+        <run>
+            <script name="invoke_action"/>
+            <arg name="env"/>
+            <arg name="service_id">
+                <value>urn:upnp-org:serviceId:Dimming:1</value>
+            </arg>
+            <arg name="action_name" list="args">
+                <value>SetLoadLevelTarget</value>
+                <value>GetLoadLevelTarget</value>
+            </arg>
+            <arg name="in_arg_name" list="args">
+                <value>newLoadlevelTarget</value>
+                <value>INVALID</value>
+            </arg>
+            <arg name="in_arg_value" list="args">
+                <value>70</value>
+                <value>INVALID</value>
+            </arg>
+        </run>
+
+        <!-- Browse Content Directory tree -->
+        <run name="browse">
+            <script name="get_content"/>
+            <arg name="env"/>
+            <arg name="service_id">
+                <value>urn:upnp-org:serviceId:ContentDirectory</value>
+            </arg>
+        </run>
+
+    </session>
+</package>

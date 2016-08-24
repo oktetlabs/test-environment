@@ -131,6 +131,25 @@ extern int tapi_file_create_ta(const char *ta, const char *filename,
                                const char *fmt, ...);
 
 /**
+ * Create local file, copy it to TA, remove local file.
+ * The function does the same thing as tapi_file_create_ta(),
+ * but it creates local file with specified name instead of
+ * using automatically generated name. This is useful when
+ * you need to create files in a thread safe manner.
+ *
+ * @param ta            Test Agent name
+ * @param lfile         pathname of the local file
+ * @param rfile         pathname of the file on TA
+ * @param fmt           format string for the file content
+ *
+ * @return 0 (success) or -1 (failure)
+ */
+extern int tapi_file_create_ta_r(const char *ta,
+                                 const char *lfile,
+                                 const char *rfile,
+                                 const char *fmt, ...);
+
+/**
  * Read file content from the TA.
  *
  * @param ta            Test Agent name

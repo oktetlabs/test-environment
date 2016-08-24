@@ -188,6 +188,19 @@ tapi_sockaddr_cmp(const struct sockaddr *addr1,
                           addr2, te_sockaddr_get_size(addr2));
 }
 
+/**
+ * Allocate memory of @b sockaddr_storage size and copy @p src data to
+ * there. @p dst should be released with @p free(3) when it is no longer
+ * needed.
+ *
+ * @param[in]  src      Existing sockaddr.
+ * @param[out] dst      Copy of sockaddr.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_sockaddr_clone2(const struct sockaddr  *src,
+                                     struct sockaddr       **dst);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

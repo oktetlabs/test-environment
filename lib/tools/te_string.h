@@ -55,6 +55,20 @@ typedef struct te_string {
 /** On-stack te_string initializer */
 #define TE_STRING_INIT  { NULL, 0, 0 }
 
+
+/**
+ * Reset dynamic string (mark its empty).
+ *
+ * @param str           Dynamic string.
+ */
+static inline void
+te_string_reset(te_string *str)
+{
+    str->len = 0;
+    *str->ptr = '\0';
+}
+
+
 /**
  * Append to the string results of the sprintf(fmt, ...);
  *
@@ -65,6 +79,19 @@ typedef struct te_string {
  * @return Status code.
  */
 extern te_errno te_string_append(te_string *str, const char *fmt, ...);
+
+/**
+ * Append to the string results of the @b vsnprintf.
+ *
+ * @param str           Dynamic string
+ * @param fmt           Format string
+ * @param ap            List of arguments
+ *
+ * @return Status code.
+ */
+extern te_errno te_string_append_va(te_string  *str,
+                                    const char *fmt,
+                                    va_list     ap);
 
 /**
  * Cut from the string specified number of characters.

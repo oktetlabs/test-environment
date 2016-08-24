@@ -25,4 +25,3 @@ install-data-hook:
 	done
 
 all: install
-

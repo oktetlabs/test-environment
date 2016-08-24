@@ -68,6 +68,11 @@ if CFG_SNIFFERS_DUMMY
 ta_LDADD+= -lrcf_sniffers_dummy
 endif
 
+if CFG_UPNP_CP_SUPPORT
+ta_LDADD+= -lupnp_cp
+endif
+
+
 SYMTBL_LIBS+=@CURL_LIB@
 
 SYMTBL_LIBS+=@DPDK_LIBS@

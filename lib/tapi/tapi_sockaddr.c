@@ -261,3 +261,20 @@ tapi_allocate_set_port(rcf_rpc_server *rpcs, const struct sockaddr *addr)
 
     return rc;
 }
+
+/* See description in tapi_sockaddr.h */
+te_errno
+tapi_sockaddr_clone2(const struct sockaddr  *src,
+                     struct sockaddr       **dst)
+{
+    assert(dst != NULL);
+    if (src == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    *dst = TE_ALLOC(sizeof(struct sockaddr_storage));
+    if (*dst == NULL)
+        return TE_RC(TE_TAPI, TE_ENOMEM);
+
+    memcpy(*dst, src, te_sockaddr_get_size(src));
+    return 0;
+}

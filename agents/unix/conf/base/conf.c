@@ -4,7 +4,7 @@
  * Unix TA configuring support
  *
  *
- * Copyright (C) 2004-2006 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2004-2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -295,6 +295,10 @@ extern te_errno ta_unix_conf_sniffer_cleanup();
 
 extern te_errno ta_unix_conf_cmd_monitor_init(void);
 extern te_errno ta_unix_conf_cmd_monitor_cleanup(void);
+
+#ifdef WITH_UPNP_CP
+# include "conf_upnp_cp.h"
+#endif /* WITH_UPNP_CP */
 
 /**
  * Determine family of the address in string representation.
@@ -1231,6 +1235,14 @@ rcf_ch_conf_init()
 
         ta_unix_conf_cmd_monitor_init();
 
+#ifdef WITH_UPNP_CP
+        if (ta_unix_conf_upnp_cp_init() != 0)
+        {
+            ERROR("Failed to add UPnP Control Point configuration subtree");
+            goto fail;
+        }
+#endif /* WITH_UPNP_CP */
+
         init = TRUE;
 
     }
@@ -1279,6 +1291,10 @@ rcf_ch_conf_fini()
 #ifdef WITH_SFPTPD
     ta_unix_conf_sfptpd_release();
 #endif
+#ifdef WITH_UPNP_CP
+    ta_unix_conf_upnp_cp_release();
+#endif /* WITH_UPNP_CP */
+
     ta_unix_conf_cmd_monitor_cleanup();
     if (cfg_socket >= 0)
         (void)close(cfg_socket);

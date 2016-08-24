@@ -36,6 +36,7 @@
 #include "te_bufs.h"
 #include "te_alloc.h"
 #include "te_format.h"
+#include "te_concat.h"
 #ifndef WINDOWS
 #include "te_shell_cmd.h"
 #include "te_sleep.h"

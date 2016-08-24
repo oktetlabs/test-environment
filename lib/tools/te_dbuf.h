@@ -71,8 +71,7 @@ typedef struct te_dbuf {
     uint8_t *ptr;       /**< Pointer to the buffer. */
     size_t   size;      /**< Size of the buffer. */
     size_t   len;       /**< Length of actual data. */
-    const uint8_t grow_factor;
-                        /**< Buffer extra size in percentages. I.e.
+    uint8_t  grow_factor;   /**< Buffer extra size in percentages. I.e.
                              size = required_size * (1+grow_factor/100.). */
 } te_dbuf;
 
@@ -93,14 +92,16 @@ typedef struct te_dbuf {
  *
  * @param dbuf          Dynamic buffer.
  */
-static inline void te_dbuf_reset(te_dbuf *dbuf)
+static inline void
+te_dbuf_reset(te_dbuf *dbuf)
 {
     dbuf->len = 0;
 }
 
 /**
  * Append additional data to the dynamic buffer. Allocate/reallocate the
- * memory for the buffer if needed.
+ * memory for the buffer if needed. @p dbuf should be released with
+ * @p te_dbuf_free when it is no longer needed.
  *
  * @param dbuf          Dynamic buffer.
  * @param data          Data to append to the buffer pointed by @p dbuf.
@@ -109,15 +110,32 @@ static inline void te_dbuf_reset(te_dbuf *dbuf)
  * @param data_len      Length of the data.
  *
  * @return Status code.
+ *
+ * @sa te_dbuf_free
  */
 extern te_errno te_dbuf_append(te_dbuf    *dbuf,
                                const void *data,
                                size_t      data_len);
 
 /**
- * Free dynamic buffer.
+ * Increase the size of dynamic buffer on @p n bytes. It reallocates the
+ * te_dbuf container with new size. @p dbuf should be released with
+ * @p te_dbuf_free when it is no longer needed.
+ *
+ * @param dbuf      Dynamic buffer.
+ * @param n         Number of bytes to add to the buffer size to expand it.
+ *
+ * @return Status code.
+ */
+extern te_errno te_dbuf_expand(te_dbuf *dbuf, size_t n);
+
+/**
+ * Free dynamic buffer that was allocated with @p te_dbuf_append or
+ * @p te_dbuf_expand.
  *
  * @param dbuf          Dynamic buffer.
+ *
+ * @sa te_dbuf_append, te_dbuf_expand
  */
 extern void te_dbuf_free(te_dbuf *dbuf);
 

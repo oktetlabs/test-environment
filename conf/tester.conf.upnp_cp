@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<tester_cfg version="1.0">
+
+  <maintainer mailto="Ivan.Melnikov@oktetlabs.ru"/>
+
+  <description>UPnP Control Point tests</description>
+
+  <suite name="upnp_cp"/>
+
+  <run>
+    <package name="upnp_cp"/>
+  </run>
+
+</tester_cfg>

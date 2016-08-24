@@ -78,6 +78,18 @@ if test x"$ac_cv_enable_dlfcn_lookup" != xno; then
      AC_DEFINE([ENABLE_DLFCN_LOOKUP], [], [Whether to enable dlsym()-based lookup])
 fi
 
+AC_ARG_ENABLE([upnp],
+              AS_HELP_STRING([--enable-upnp],
+                             [enable upnp support (disabled by default)]),
+              [ac_cv_enable_upnp=$enableval],
+              [ac_cv_enable_upnp=no])
+AC_CACHE_CHECK([whether to enable upnp support],
+               [ac_cv_enable_upnp], [ac_cv_enable_upnp=no])
+if test x"$ac_cv_enable_upnp" != xno
+then
+    AC_DEFINE([ENABLE_UPNP], [], [Whether to enable upnp support])
+fi
+
 AC_CONFIG_HEADERS([agentlib_config.h])
 
 AC_CONFIG_FILES([Makefile])

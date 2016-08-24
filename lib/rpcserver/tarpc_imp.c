@@ -10378,3 +10378,123 @@ TARPC_FUNC_STATIC(send_flooder_iomux, {},
                                      in->duration, &out->packets,
                                      &out->errors));
 })
+
+/*-------------- copy_fd2fd() ------------------------------*/
+/**
+ * Copy data between one file descriptor and another.
+ *
+ * @param[in]  in       TA RPC input parameter.
+ * @param[out] out      TA RPC output parameter.
+ *
+ * @return If the transfer was successful, the number of copied bytes is
+ *         returned. On error, @c -1 is returned, and errno is set
+ *         appropriately.
+ */
+int64_t
+copy_fd2fd(tarpc_copy_fd2fd_in *in, tarpc_copy_fd2fd_out *out)
+{
+    /* Whether limited number of bytes to copy or not. */
+    const te_bool partial_copy = (in->count != 0);
+    api_func      write_func;
+    api_func      read_func;
+    iomux_funcs   iomux_f;
+    iomux_state   iomux_st;
+    iomux_return  iomux_ret;
+    iomux_func    iomux = get_default_iomux();
+    int           num_events;
+    int           events;
+    char          buf[4 * 1024];
+    uint64_t      remains = (partial_copy ? in->count : sizeof(buf));
+    size_t        count;
+    int           received;
+    int64_t       total = 0;
+    int           written;
+    int           rc;
+
+#define COPY_FD2FD_EXIT_WITH_ERROR() \
+    do {                                            \
+        iomux_close(iomux, &iomux_f, &iomux_st);    \
+        return -1;                                  \
+    } while (0)
+
+    if ((iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0) ||
+        (tarpc_find_func(in->common.use_libc, "read", &read_func) != 0) ||
+        (tarpc_find_func(in->common.use_libc, "write", &write_func) != 0))
+    {
+        ERROR("Failed to resolve functions addresses");
+        return -1;
+    }
+
+    /* Create iomux status and fill it with our fd. */
+    rc = iomux_create_state(iomux, &iomux_f, &iomux_st);
+    if (rc != 0)
+        return -1;
+    rc = iomux_add_fd(iomux, &iomux_f, &iomux_st, in->in_fd, POLLIN);
+    if (rc != 0)
+        COPY_FD2FD_EXIT_WITH_ERROR();
+
+    do {
+        int fd = -1;
+
+        num_events = iomux_wait(iomux, &iomux_f, &iomux_st, &iomux_ret,
+                                in->timeout);
+        if (num_events == -1)
+        {
+            ERROR("%s:%d: iomux_wait is failed: %r",
+                  __FUNCTION__, __LINE__, RPC_ERRNO);
+            COPY_FD2FD_EXIT_WITH_ERROR();
+        }
+        if (num_events == 0)
+        {
+            WARN("%s:%d: iomux_wait: timeout is expired",
+                 __FUNCTION__, __LINE__);
+            break;
+        }
+        events = 0;
+        iomux_return_iterate(iomux, &iomux_st, &iomux_ret,
+                             IOMUX_RETURN_ITERATOR_START, &fd, &events);
+
+        /* Receive data from socket that are ready */
+        if ((events & POLLIN) != 0)
+        {
+            /* Read routine. */
+            count = (remains < sizeof(buf) ? remains : sizeof(buf));
+            received = read_func(fd, buf, count);
+            if (received < 0)
+            {
+                ERROR("%s:%d: Failed to read: %r",
+                      __FUNCTION__, __LINE__, RPC_ERRNO);
+                COPY_FD2FD_EXIT_WITH_ERROR();
+            }
+            if (received == 0)  /* EOF */
+                break;
+            /* Write routine. */
+            do {
+                written = write_func(in->out_fd, buf, received);
+                if (written < 0)
+                {
+                    ERROR("%s:%d: Failed to write: %r",
+                          __FUNCTION__, __LINE__, RPC_ERRNO);
+                    COPY_FD2FD_EXIT_WITH_ERROR();
+                }
+                received -= written;
+            } while (received > 0);
+            total += written;
+            if (partial_copy)
+            {
+                remains -= written;
+                if (remains == 0)
+                    break;
+            }
+        }
+    } while ((events & POLLIN) != 0);
+
+    iomux_close(iomux, &iomux_f, &iomux_st);
+    return total;
+#undef COPY_FD2FD_EXIT_WITH_ERROR
+}
+
+TARPC_FUNC_STATIC(copy_fd2fd, {},
+{
+   MAKE_CALL(out->retval = func_ptr(in, out));
+})

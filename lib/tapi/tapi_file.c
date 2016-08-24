@@ -155,6 +155,51 @@ tapi_file_create(size_t len, char *buf, te_bool random)
 }
 
 /**
+ * Create local file, copy it to TA, remove local file.
+ *
+ * @param ta            Test Agent name
+ * @param lfile         Pathname of the local file
+ * @param rfile         Pathname of the file on TA
+ * @param fmt           Format string for the file content
+ * @param ap            Format string arguments
+ *
+ * @return 0 (success) or -1 (failure)
+ */
+static int 
+tapi_file_create_ta_gen(const char *ta,
+                        const char *lfile, 
+                        const char *rfile, 
+                        const char *fmt, va_list ap)
+{
+    FILE *f;
+    int   rc;
+
+    if ((f = fopen(lfile, "w")) == NULL)
+    {
+        ERROR("Cannot open file %s errno %d\n", lfile, errno);
+        return -1;
+    }
+
+    vfprintf(f, fmt, ap);
+    
+    if (fclose(f) < 0)
+    {
+        ERROR("fclose() failed: file %s errno=%d", lfile, errno);
+        unlink(lfile);
+        return -1;
+    }
+    if ((rc = rcf_ta_put_file(ta, 0, lfile, rfile)) != 0)
+    {
+        ERROR("Cannot put file %s on TA %s; errno %d", rfile, ta, rc);
+        unlink(lfile);
+        return -1;
+    }
+
+    unlink(lfile);
+    return 0;
+}
+
+/**
  * Create file in the specified directory on the TA.
  *
  * @param ta            Test Agent name
@@ -170,36 +215,31 @@ tapi_file_create_ta(const char *ta, const char *filename,
                     const char *fmt, ...)
 {
     char *pathname = tapi_file_generate_pathname();
-    FILE *f;
-    int   rc;
-
     va_list ap;
-
-    if ((f = fopen(pathname, "w")) == NULL)
-    {
-        ERROR("Cannot open file %s errno %d\n", pathname, errno);
-        return -1;
-    }
+    int rc;
 
     va_start(ap, fmt);
-    vfprintf(f, fmt, ap);
+    rc = tapi_file_create_ta_gen(ta, pathname, filename, fmt, ap);
     va_end(ap);
-    
-    if (fclose(f) < 0)
-    {
-        ERROR("fclose() failed: file %s errno=%d", pathname, errno);
-        unlink(pathname);
-        return -1;
-    }
-    if ((rc = rcf_ta_put_file(ta, 0, pathname, filename)) != 0)
-    {
-        ERROR("Cannot put file %s on TA %s; errno %d", filename, ta, rc);
-        unlink(pathname);
-        return -1;
-    }
 
-    unlink(pathname);
-    return 0;
+    return rc;
+}
+
+/* See description in tapi_file.h */
+int
+tapi_file_create_ta_r(const char *ta,
+                      const char *lfile,
+                      const char *rfile,
+                      const char *fmt, ...)
+{
+    va_list ap;
+    int rc;
+
+    va_start(ap, fmt);
+    rc = tapi_file_create_ta_gen(ta, lfile, rfile, fmt, ap);
+    va_end(ap);
+
+    return rc;
 }
 
 /*

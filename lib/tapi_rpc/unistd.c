@@ -2956,3 +2956,51 @@ rpc_iovec_cmp_strict(rpc_iovec *iov1, rpc_iovec *iov2, size_t iovcnt)
             TEST_VERDICT("One of buffers is corrupted");
     }
 }
+
+/* See description in the tapi_rpc_unistd.h */
+te_errno
+tapi_rpc_read_fd_to_te_string(rcf_rpc_server *rpcs,
+                              int             fd,
+                              te_string      *testr)
+{
+    assert(testr != NULL);
+
+    te_string_reset(testr);
+    return tapi_rpc_append_fd_to_te_string(rpcs, fd, testr);
+}
+
+/* See description in the tapi_rpc_unistd.h */
+te_errno
+tapi_rpc_append_fd_to_te_string(rcf_rpc_server *rpcs,
+                                int             fd,
+                                te_string      *testr)
+{
+    char     tmp_buf[1024];
+    int      received;
+    te_errno rc = 0;
+
+    assert(testr != NULL);
+
+    while (TRUE)
+    {
+        received = rpc_read(rpcs, fd, tmp_buf, sizeof(tmp_buf) - 1);
+
+        if (received == 0)  /* EOF */
+            break;
+
+        if (received < 0)
+        {
+            ERROR("%s:%d: Failed to read from fd(%d): %r",
+                  __FUNCTION__, __LINE__, fd, RPC_ERRNO(rpcs));
+            rc = RPC_ERRNO(rpcs);
+            break;
+        }
+
+        tmp_buf[received] = '\0';
+        rc = te_string_append(testr, "%s", tmp_buf);
+        if (rc != 0)
+            break;
+    };
+
+    return rc;
+}

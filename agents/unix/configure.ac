@@ -2,7 +2,7 @@ dnl                                               -*- Autoconf -*-
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.59])
-AC_INIT([ta-unix],[0.8],[Elena.Vengerova@oktetlabs.ru])
+AC_INIT([ta-unix],[0.9],[Elena.Vengerova@oktetlabs.ru])
 AC_CONFIG_SRCDIR([main.c])
 
 AC_CONFIG_AUX_DIR([../../auxdir])
@@ -27,6 +27,7 @@ TE_APP_SET
 
 CPPFLAGS=${CPPFLAGS}" "${TE_CPPFLAGS_VAR}
 CFLAGS=${CFLAGS}" "${TE_CFLAGS_VAR}
+DYNAMIC_LIBS=
 
 AC_ARG_WITH([name], , , [with_name=linux])
 
@@ -586,6 +587,34 @@ if test "$with_serialparse" = "yes" ; then
 fi
 
 
+dnl
+dnl UPnP Control Point
+dnl
+AC_ARG_WITH([upnp_cp],
+            [AS_HELP_STRING([--with-upnp_cp],
+                [enable UPnP Control Point (disabled on default)])],
+            [AS_CASE([$withval],
+                [yes], [ac_cv_with_upnp_cp=true],
+                [no] , [ac_cv_with_upnp_cp=false],
+                [AC_MSG_ERROR([invalid value $withval for --with-upnp_cp])])
+            ],
+            [ac_cv_with_upnp_cp=false]
+)
+AM_CONDITIONAL([CFG_UPNP_CP_SUPPORT], [test x$ac_cv_with_upnp_cp = xtrue])
+UPNP_CP_LIBS=
+AS_IF([test x$ac_cv_with_upnp_cp = xtrue],
+      [
+        AC_DEFINE([WITH_UPNP_CP], [1],
+                  ["Whether use or not UPnP Control Point."])
+
+        PKG_CHECK_MODULES([LIBUPNP_CP], [te-upnp_cp],
+            [UPNP_CP_LIBS=${LIBUPNP_CP_LIBS}],
+            [AC_MSG_ERROR([te-upnp_cp not found])]
+        )
+      ]
+)
+
+
 AC_ARG_WITH([sfptpd],
             AS_HELP_STRING([--with-sfptpd],
                            [enable sfptpd (default is NO)]),
@@ -625,10 +654,10 @@ if test "${with_static_libc}" = "no" ; then
 fi
 
 #if ! test "$cross_compiling" = "yes" ; then
-case "$host" in 
+case "$host" in
    sparc*linux*) TE_CPPFLAGS="$TE_CPPFLAGS -DNO_DL" ;;
    *uml*) LIBS="$LIBS -ldl";;
-   *) 
+   *)
        S_LIBS=
        D_LIBS=
        for i in $LIBS $TAD_LIBS ; do
@@ -647,8 +676,9 @@ case "$host" in
                D_LIBS="${D_LIBS} $i"
            fi
        done
-       echo D_LIBS ${D_LIBS} 
-       LIBS="${S_LIBS} -Wl,-Bdynamic ${D_LIBS}" ;;
+       echo S_LIBS ${S_LIBS}
+       echo D_LIBS ${D_LIBS}
+       LIBS="${S_LIBS} -Wl,-Bdynamic ${D_LIBS} ${UPNP_CP_LIBS}" ;;
 esac
 
 AC_ARG_WITH([aggr], , [with_aggr=yes], [])

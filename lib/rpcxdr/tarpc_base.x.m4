@@ -4,7 +4,7 @@
  * Definition of RPC structures and functions
  *
  *
- * Copyright (C) 2004 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2004-2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -5292,6 +5292,32 @@ struct tarpc_send_flooder_iomux_out {
     int      retval;
 };
 
+/* copy_fd2fd function arguments. */
+struct tarpc_copy_fd2fd_in {
+    struct tarpc_in_arg common;
+
+    int             out_fd;     /**< File descriptor opened for writing.
+                                     Can be a socket */
+    int             in_fd;      /**< File descriptor opened for reading.
+                                     Can be a socket */
+    int             timeout;    /**< Number of milliseconds that function
+                                     should block waiting for @b in_fd to
+                                     become ready to read the next portion
+                                     of data while all requested data will
+                                     not be read */
+    uint64_t        count;      /**< Number of bytes to copy between the
+                                     file descriptors. If @c 0 then all
+                                     available data should be copied, i.e.
+                                     while @c EOF will not be gotten */
+};
+struct tarpc_copy_fd2fd_out {
+    struct tarpc_out_arg  common;
+
+    int64_t         retval;     /**< Number of bytes written to @b out_fd,
+                                     or @c -1 on error. */
+};
+
+
 program tarpc
 {
     version ver0
@@ -5632,5 +5658,7 @@ program tarpc
         RPC_DEF(rpcserver_plugin_enable)
         RPC_DEF(rpcserver_plugin_disable)
         RPC_DEF(send_flooder_iomux)
+
+        RPC_DEF(copy_fd2fd)
     } = 1;
 } = 1;

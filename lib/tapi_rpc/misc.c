@@ -1322,6 +1322,27 @@ rpc_socket_to_file(rcf_rpc_server *rpcs, int sock,
     RETVAL_INT(socket_to_file, out.retval);
 }
 
+/* See description in tapi_rpc_misc.h */
+int64_t
+rpc_copy_fd2fd(rcf_rpc_server *rpcs, int out_fd, int in_fd, int timeout,
+               uint64_t count)
+{
+    struct tarpc_copy_fd2fd_in  in = {};
+    struct tarpc_copy_fd2fd_out out = {};
+
+    in.out_fd = out_fd;
+    in.in_fd = in_fd;
+    in.timeout = timeout;
+    in.count = count;
+
+    out.retval = -1;
+    rcf_rpc_call(rpcs, "copy_fd2fd", &in, &out);
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(copy_fd2fd, out.retval);
+    TAPI_RPC_LOG(rpcs, copy_fd2fd, "%d, %d, %d, %llu", "%lld",
+                 in.out_fd, in.in_fd, in.timeout, in.count, out.retval);
+    RETVAL_INT64(copy_fd2fd, out.retval);
+}
+
 int
 rpc_ftp_open(rcf_rpc_server *rpcs,
              char *uri, te_bool rdonly, te_bool passive, int offset,

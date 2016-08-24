@@ -155,6 +155,10 @@ typedef enum te_bool3 {
 #endif
 
 
+/** Cast to 'struct sockaddr_storage *' type. */
+#define SS(_p)          ((struct sockaddr_storage *)(_p))
+/** Cast to 'const struct sockaddr_storage *' type. */
+#define CONST_SS(_p)    ((const struct sockaddr_storage *)(_p))
 /** Cast to 'struct sockaddr *' type. */
 #define SA(_p)          ((struct sockaddr *)(_p))
 /** Cast to 'const struct sockaddr *' type. */
