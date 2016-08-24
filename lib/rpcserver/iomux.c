@@ -28,59 +28,7 @@
 
 #define TE_LGR_USER     "RPC iomux"
 
-#include "rpc_server.h"
-
-/*-------------- generic iomux functions --------------------------*/
-
-/* TODO: iomux_funcs should include iomux type, making arg list for all the
- * functions shorter. */
-typedef union iomux_funcs {
-    api_func        select;
-    api_func_ptr    poll;
-#if HAVE_STRUCT_EPOLL_EVENT
-    struct {
-        api_func    wait;
-        api_func    create;
-        api_func    ctl;
-        api_func    close;
-    } epoll;
-#endif
-} iomux_funcs;
-
-#define IOMUX_MAX_POLLED_FDS 64
-typedef union iomux_state {
-    struct {
-        int maxfds;
-        fd_set rfds, wfds, exfds;
-        int nfds;
-        int fds[IOMUX_MAX_POLLED_FDS];
-    } select;
-    struct {
-        int nfds;
-        struct pollfd fds[IOMUX_MAX_POLLED_FDS];
-    } poll;
-#if HAVE_STRUCT_EPOLL_EVENT
-    int epoll;
-#endif
-} iomux_state;
-
-typedef union iomux_return {
-    struct {
-        fd_set rfds, wfds, exfds;
-    } select;
-#if HAVE_STRUCT_EPOLL_EVENT
-    struct {
-        struct epoll_event events[IOMUX_MAX_POLLED_FDS];
-        int nevents;
-    } epoll;
-#endif
-} iomux_return;
-
-/** Iterator for iomux_return structure. */
-typedef int iomux_return_iterator;
-#define IOMUX_RETURN_ITERATOR_START 0
-#define IOMUX_RETURN_ITERATOR_END   -1
-
+#include "iomux.h"
 
 /**
  * To have these constants defined in Linux, specify
@@ -107,17 +55,8 @@ typedef int iomux_return_iterator;
     (POLLWRBAND | POLLWRNORM | POLLOUT | POLLERR)
 #define IOMUX_SELECT_EXCEPT (POLLPRI)
 
-static iomux_func
-get_default_iomux()
-{
-    char    *default_iomux = getenv("TE_RPC_DEFAULT_IOMUX");
-    return (default_iomux == NULL) ? FUNC_POLL :
-                str2iomux(default_iomux);
-}
-
-/** Resolve all functions used by particular iomux and store them into
- * iomux_funcs. */
-static inline int
+/* See description in iomux.h */
+int
 iomux_find_func(te_bool use_libc, iomux_func *iomux, iomux_funcs *funcs)
 {
     int rc = 0;
@@ -166,20 +105,8 @@ iomux_find_func(te_bool use_libc, iomux_func *iomux, iomux_funcs *funcs)
     return rc;
 }
 
-/** Initialize iomux_state so that it is safe to call iomux_close() */
-static inline void
-iomux_state_init_invalid(iomux_func iomux, iomux_state *state)
-{
-#if HAVE_STRUCT_EPOLL_EVENT
-    if (iomux == FUNC_EPOLL || iomux == FUNC_EPOLL_PWAIT)
-        state->epoll = -1;
-#endif
-}
-
-/** Initialize iomux_state with zero value. Possibly, we should pass
- * maximum number of fds and use that number instead of
- * IOMUX_MAX_POLLED_FDS. */
-static inline int
+/* See description in iomux.h */
+int
 iomux_create_state(iomux_func iomux, iomux_funcs *funcs,
                    iomux_state *state)
 {
@@ -243,11 +170,8 @@ iomux_select_set_state(iomux_state *state, int fd, int events,
         FD_CLR(fd, &state->select.exfds);
 }
 
-/** Add fd to the list of watched fds, with given events (in POLL-events).
- * For select, all fds are added to exception list.
- * For some iomuxes, the function will produce error when adding the same
- * fd twice, so iomux_mod_fd() should be used. */
-static inline int
+/* See description in iomux.h */
+int
 iomux_add_fd(iomux_func iomux, iomux_funcs *funcs, iomux_state *state,
              int fd, int events)
 {
@@ -310,8 +234,8 @@ do {                                                              \
     return 0;
 }
 
-/** Modify events for already-watched fds. */
-static inline int
+/* See description in iomux.h */
+int
 iomux_mod_fd(iomux_func iomux, iomux_funcs *funcs, iomux_state *state,
              int fd, int events)
 {
@@ -362,9 +286,8 @@ iomux_mod_fd(iomux_func iomux, iomux_funcs *funcs, iomux_state *state,
     return 0;
 }
 
-/* iomux_return may be null if user is not interested in the event list
- * (for example, when only one event is possible) */
-static inline int
+/* See description in iomux.h */
+int
 iomux_wait(iomux_func iomux, iomux_funcs *funcs, iomux_state *state,
            iomux_return *ret, int timeout)
 {
@@ -468,9 +391,8 @@ iomux_wait(iomux_func iomux, iomux_funcs *funcs, iomux_state *state,
     return rc;
 }
 
-/** Iterate through all iomux result and return fds and events.  See also
- * IOMUX_RETURN_ITERATOR_START and IOMUX_RETURN_ITERATOR_END. */
-static inline iomux_return_iterator
+/* See description in iomux.h */
+iomux_return_iterator
 iomux_return_iterate(iomux_func iomux, iomux_state *st, iomux_return *ret,
                      iomux_return_iterator it, int *p_fd, int *p_events)
 {
@@ -547,13 +469,58 @@ out:
     return it;
 }
 
-/** Close iomux state when necessary. */
-static inline int
+/* See description in iomux.h */
+int
 iomux_close(iomux_func iomux, iomux_funcs *funcs, iomux_state *state)
 {
 #if HAVE_STRUCT_EPOLL_EVENT
     if (iomux == FUNC_EPOLL || iomux == FUNC_EPOLL_PWAIT)
         return funcs->epoll.close(state->epoll);
 #endif
+    return 0;
+}
+
+/* See description in iomux.h */
+int
+iomux_fd_is_writable(int fd_exp, iomux_func iomux, iomux_state *iomux_st,
+                     iomux_return *iomux_ret, int rc, te_bool *writable)
+{
+    iomux_return_iterator itr;
+    int fd = -1;
+    int events = 0;
+
+    if (rc < 0)
+    {
+        ERROR("An error happened during iomux wait call");
+        return -1;
+    }
+    else if (rc == 0)
+    {
+        *writable = FALSE;
+        return 0;
+    }
+
+    itr = IOMUX_RETURN_ITERATOR_START;
+    itr = iomux_return_iterate(iomux, iomux_st, iomux_ret, itr, &fd,
+                               &events);
+    if (fd != fd_exp)
+    {
+        ERROR("%s(): %s wait returned incorrect fd %d instead of %d",
+              __FUNCTION__, iomux2str(iomux), fd, fd_exp);
+        return -1;
+    }
+
+    if ((events & POLLOUT) != 0)
+        *writable = TRUE;
+
+    itr = iomux_return_iterate(iomux, iomux_st, iomux_ret, itr, &fd,
+                               &events);
+    if (itr != IOMUX_RETURN_ITERATOR_END)
+    {
+        ERROR("%s(): %s wait returned an extra event for fd %d",
+              __FUNCTION__, iomux2str(iomux), fd);
+        return -1;
+    }
+
     return 0;
 }

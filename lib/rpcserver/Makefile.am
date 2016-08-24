@@ -5,11 +5,11 @@ AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/include $(TE_CPPFLAGS) \
 
 AM_CFLAGS = -fno-strict-aliasing $(TE_CFLAGS) $(TE_CFLAGS_VAR)
 
-include_HEADERS = rpc_server.h rcf_pch_mem.h rpc_server_config.h
+include_HEADERS = rpc_server.h rcf_pch_mem.h rpc_server_config.h iomux.h
 
 lib_LTLIBRARIES=librpcserver.la
 
-librpcserver_la_SOURCES=rpc_server.c rcf_pch_mem.c tarpc_imp.c
+librpcserver_la_SOURCES=rpc_server.c rcf_pch_mem.c tarpc_imp.c iomux.c
 
 install-exec-hook:
 	touch -c -r librpcserver.la $(DESTDIR)/$(libdir)/librpcserver.*

@@ -82,6 +82,7 @@
 #include "te_tools.h"
 
 #include "agentlib.h"
+#include "iomux.h"
 
 #ifndef MSG_MORE
 #define MSG_MORE 0
