@@ -180,6 +180,15 @@ union tarpc_sa_data switch (tarpc_socket_addr_family type) {
                                                              default */
 };
 
+enum tarpc_send_function {
+    TARPC_SEND_FUNC_WRITE = 1,
+    TARPC_SEND_FUNC_WRITEV,
+    TARPC_SEND_FUNC_SEND,
+    TARPC_SEND_FUNC_SENDTO,
+    TARPC_SEND_FUNC_SENDMSG,
+    TARPC_SEND_FUNC_MAX
+};
+
 /** Generic address */
 struct tarpc_sa {
     tarpc_flags         flags;          /**< Flags */
@@ -5266,6 +5275,23 @@ typedef struct tarpc_int_retval_out tarpc_rpcserver_plugin_enable_out;
 typedef struct tarpc_void_in tarpc_rpcserver_plugin_disable_in;
 typedef struct tarpc_int_retval_out tarpc_rpcserver_plugin_disable_out;
 
+struct tarpc_send_flooder_iomux_in {
+    struct tarpc_in_arg common;
+    tarpc_int           sock;
+    iomux_func          iomux;
+    tarpc_send_function send_func;
+    tarpc_bool          msg_dontwait;
+    uint32_t            packet_size;
+    tarpc_int           duration;
+};
+
+struct tarpc_send_flooder_iomux_out {
+    struct tarpc_out_arg    common;
+    uint64_t packets;
+    uint32_t errors;
+    int      retval;
+};
+
 program tarpc
 {
     version ver0
@@ -5605,5 +5631,6 @@ program tarpc
 
         RPC_DEF(rpcserver_plugin_enable)
         RPC_DEF(rpcserver_plugin_disable)
+        RPC_DEF(send_flooder_iomux)
     } = 1;
 } = 1;

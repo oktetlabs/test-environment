@@ -10132,3 +10132,249 @@ TARPC_FUNC(rpcserver_plugin_disable, {},
     MAKE_CALL(out->retval = func_ptr());
 })
 
+/*-------------------- send_flooder_iomux() --------------------------*/
+
+/* Maximum iov vectors number to be sent. */
+#define TARPC_SEND_IOMUX_FLOODER_MAX_IOVCNT 10
+
+/* Multiplexer timeout to get a socket writable, milliseconds. */
+#define TARPC_SEND_IOMUX_FLOODER_TIMEOUT 500
+
+/**
+ * Find pointer to a send function.
+ *
+ * @param use_libc      Use libc flag.
+ * @param send_func     Send function type.
+ * @param func          Pointer to the function.
+ *
+ * @return Status code.
+ */
+static te_errno
+tarpc_get_send_function(te_bool use_libc, tarpc_send_function send_func,
+                        api_func *func)
+{
+    int rc;
+
+    switch (send_func)
+    {
+        case TARPC_SEND_FUNC_WRITE:
+            rc = tarpc_find_func(use_libc, "write",
+                                 (api_func *)func);
+            break;
+
+        case TARPC_SEND_FUNC_WRITEV:
+            rc = tarpc_find_func(use_libc, "writev", (api_func *)func);
+            break;
+
+        case TARPC_SEND_FUNC_SEND:
+            rc = tarpc_find_func(use_libc, "send", (api_func *)func);
+            break;
+
+        case TARPC_SEND_FUNC_SENDTO:
+            rc = tarpc_find_func(use_libc, "sendto", (api_func *)func);
+            break;
+
+        case TARPC_SEND_FUNC_SENDMSG:
+            rc = tarpc_find_func(use_libc, "sendmsg", (api_func *)func);
+            break;
+
+        default:
+            ERROR("Invalid send function index: %d", send_func);
+            return  TE_RC(TE_TA_UNIX, EINVAL);
+    }
+
+    return rc;
+}
+
+/**
+ * Send packets during a period of time, call an iomux to check OUT
+ * event if send operation is failed.
+ *
+ * @param use_libc      Use libc flag.
+ * @param sock          Socket.
+ * @param iomux         Multiplexer function.
+ * @param send_func     Transmitting function.
+ * @param msg_dontwait  Use flag @b MSG_DONTWAIT.
+ * @param packet_size   Payload size to be sent by a single call, bytes.
+ * @param duration      How long transmit datagrams, milliseconds.
+ * @param packets       Sent packets (datagrams) number.
+ * @param errors        @c EAGAIN errors counter.
+ *
+ * @return @c 0 on success or @c -1 in the case of failure.
+ */
+static int
+send_flooder_iomux(te_bool use_libc, int sock, iomux_func iomux,
+                   tarpc_send_function send_func, te_bool msg_dontwait,
+                   int packet_size, int duration, uint64_t *packets,
+                   uint32_t *errors)
+{
+    api_func        func_send;
+    struct timeval  tv_start;
+    struct timeval  tv_now;
+    struct iovec   *iov = NULL;
+    void           *buf = NULL;
+    int             flags = msg_dontwait ? MSG_DONTWAIT : 0;
+    struct msghdr   msg;
+    iomux_funcs     iomux_f;
+    iomux_state     iomux_st;
+    iomux_return    iomux_ret;
+    uint64_t        i;
+    int             rc;
+    te_bool         writable;
+    int             back_errno = errno;
+    size_t iovcnt = rand_range(1, TARPC_SEND_IOMUX_FLOODER_MAX_IOVCNT);
+
+    if (tarpc_get_send_function(use_libc, send_func, &func_send) != 0 ||
+        iomux_find_func(use_libc, &iomux, &iomux_f) != 0)
+        return -1;
+
+    if ((rc = iomux_create_state(iomux, &iomux_f, &iomux_st)) != 0)
+    {
+        iomux_close(iomux, &iomux_f, &iomux_st);
+        return -1;
+    }
+
+    *packets = 0;
+    *errors = 0;
+
+    if ((rc = gettimeofday(&tv_start, NULL)) != 0)
+    {
+        ERROR("gettimeofday() failed, rc = %d, errno %r", rc, RPC_ERRNO);
+        iomux_close(iomux, &iomux_f, &iomux_st);
+        return -1;
+    }
+
+    if ((rc = iomux_add_fd(iomux, &iomux_f, &iomux_st, sock, POLLOUT)))
+    {
+        iomux_close(iomux, &iomux_f, &iomux_st);
+        return -1;
+    }
+
+    buf = TE_ALLOC(packet_size);
+
+    if (send_func == TARPC_SEND_FUNC_WRITEV ||
+        send_func == TARPC_SEND_FUNC_SENDMSG)
+    {
+        int offt = 0;
+
+        iov = TE_ALLOC(iovcnt * sizeof(*iov));
+
+        for (i = 0; i < iovcnt; i++)
+        {
+            if (i == iovcnt - 1)
+                iov[i].iov_len = packet_size - offt;
+            else
+                iov[i].iov_len = packet_size / iovcnt;
+            iov[i].iov_base = buf + offt;
+            offt += iov[i].iov_len;
+        }
+
+        if (send_func == TARPC_SEND_FUNC_SENDMSG)
+        {
+            memset(&msg, 0, sizeof(msg));
+            msg.msg_iov = iov;
+            msg.msg_iovlen = iovcnt;
+        }
+    }
+
+    for (i = 0;; i++)
+    {
+        switch (send_func)
+        {
+            case TARPC_SEND_FUNC_WRITE:
+                rc = func_send(sock, buf, packet_size);
+                break;
+
+            case TARPC_SEND_FUNC_WRITEV:
+                rc = func_send(sock, iov, iovcnt);
+                break;
+
+            case TARPC_SEND_FUNC_SEND:
+                rc = func_send(sock, buf, packet_size, flags);
+                break;
+
+            case TARPC_SEND_FUNC_SENDTO:
+                rc = func_send(sock, buf, packet_size, flags, NULL);
+                break;
+
+            case TARPC_SEND_FUNC_SENDMSG:
+                rc = func_send(sock, &msg, flags);
+                break;
+
+            default:
+                ERROR("Invalid send function index: %d", send_func);
+                return  TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+
+        if (rc == -1 && RPC_ERRNO == RPC_EAGAIN)
+        {
+            (*errors)++;
+            rc = iomux_wait(iomux, &iomux_f, &iomux_st, &iomux_ret, 0);
+            /* Check no OUT event. */
+            rc = iomux_fd_is_writable(sock, iomux, &iomux_st, &iomux_ret,
+                                      rc, &writable);
+            if (rc != 0)
+                break;
+            if (writable)
+            {
+                ERROR("Iomux call declares socket writable when a send "
+                      "call failed with EAGAIN");
+                rc = -1;
+                break;
+            }
+
+            rc = iomux_wait(iomux, &iomux_f, &iomux_st, &iomux_ret,
+                            TARPC_SEND_IOMUX_FLOODER_TIMEOUT);
+            /* Unblocked with OUT event. */
+            rc = iomux_fd_is_writable(sock, iomux, &iomux_st, &iomux_ret,
+                                      rc, &writable);
+            if (rc != 0)
+                break;
+            if (!writable)
+            {
+                ERROR("Iomux call declares socket unwritable after the "
+                      "timeout %d expiration ",
+                      TARPC_SEND_IOMUX_FLOODER_TIMEOUT);
+                rc = -1;
+                break;
+            }
+        }
+        else if (rc != packet_size)
+        {
+            ERROR("Send call #%llu returned unexpected value, rc = %d "
+                  "(%r)", i, rc, RPC_ERRNO);
+            break;
+        }
+
+        (*packets)++;
+
+        if ((rc = gettimeofday(&tv_now, NULL)) != 0)
+        {
+            ERROR("gettimeofday() failed, rc = %d, errno %r", rc,
+                  RPC_ERRNO);
+            rc = -1;
+            break;
+        }
+
+        if (duration < TIMEVAL_SUB(tv_now, tv_start) / 1000L)
+            break;
+    }
+
+    free(buf);
+    free(iov);
+    iomux_close(iomux, &iomux_f, &iomux_st);
+
+    if (back_errno != errno && errno == EAGAIN)
+        errno = back_errno;
+
+    return rc;
+}
+
+TARPC_FUNC_STATIC(send_flooder_iomux, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in->common.use_libc, in->sock,
+                                     in->iomux, in->send_func,
+                                     in->msg_dontwait, in->packet_size,
+                                     in->duration, &out->packets,
+                                     &out->errors));
+})

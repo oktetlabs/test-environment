@@ -392,6 +392,29 @@ extern int rpc_iomux_flooder(rcf_rpc_server *handle,
                              uint64_t *tx_stat, uint64_t *rx_stat);
 
 /**
+ * Send packets during a period of time, call an iomux to check OUT
+ * event if send operation is failed.
+ *
+ * @param rpcs          RPC server handle.
+ * @param sock          Socket.
+ * @param iomux         Multiplexer function.
+ * @param send_func     Transmitting function.
+ * @param msg_dontwait  Use flag @b MSG_DONTWAIT.
+ * @param packet_size   Payload size to be sent by a single call, bytes.
+ * @param duration      How long transmit datagrams, milliseconds.
+ * @param packets       Sent packets (datagrams) number.
+ * @param errors        @c EAGAIN errors counter.
+ *
+ * @return @c 0 on success or @c -1 in the case of failure.
+ */
+extern int rpc_send_flooder_iomux(rcf_rpc_server *rpcs, int sock,
+                                  iomux_func iomux,
+                                  tarpc_send_function send_func,
+                                  te_bool msg_dontwait, int packet_size,
+                                  int duration, uint64_t *packets,
+                                  uint32_t *errors);
+
+/**
  * Routine which receives data from specified set of
  * sockets using I/O multiplexing and sends them back
  * to the socket.

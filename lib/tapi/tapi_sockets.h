@@ -51,6 +51,19 @@ extern "C" {
 #endif
 
 /**
+ * Transmitting functions list.
+ */
+#define TAPI_SOCK_SEND_FUNC_LIST \
+    { "write", TARPC_SEND_FUNC_WRITE },      \
+    { "writev", TARPC_SEND_FUNC_WRITEV },    \
+    { "send", TARPC_SEND_FUNC_SEND },        \
+    { "sendto", TARPC_SEND_FUNC_SENDTO },    \
+    { "sendmsg", TARPC_SEND_FUNC_SENDMSG }
+
+#define TEST_GET_SOCK_SEND_FUNC(_var_name) \
+    TEST_GET_ENUM_PARAM(_var_name, TAPI_SOCK_SEND_FUNC_LIST)
+
+/**
  * Retrieve TCP state of a given socket.
  *
  * @param pco       RPC server handle
