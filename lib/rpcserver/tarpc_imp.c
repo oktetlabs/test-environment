@@ -82,6 +82,7 @@
 #include "te_tools.h"
 
 #include "agentlib.h"
+#include "iomux.h"
 
 #ifndef MSG_MORE
 #define MSG_MORE 0
@@ -424,21 +425,6 @@ _rpc_find_func_1_svc(tarpc_rpc_find_func_in  *in,
 
     out->find_result = tarpc_find_func(in->common.use_libc,
                                        in->func_name, &func);
-    return TRUE;
-}
-
-/*-------------- rpc_is_alive() --------------------------------*/
-
-bool_t
-_rpc_is_alive_1_svc(tarpc_rpc_is_alive_in  *in,
-                    tarpc_rpc_is_alive_out *out,
-                    struct svc_req         *rqstp)
-{
-    UNUSED(rqstp);
-    UNUSED(in);
-
-    memset(out, 0, sizeof(*out));
-
     return TRUE;
 }
 
@@ -6083,535 +6069,6 @@ TARPC_FUNC(cwmp_acse_start, {}, { MAKE_CALL(func_ptr(in, out)); })
 
 #endif
 
-
-/*-------------- generic iomux functions --------------------------*/
-
-/* TODO: iomux_funcs should include iomux type, making arg list for all the
- * functions shorter. */
-typedef union iomux_funcs {
-    api_func        select;
-    api_func_ptr    poll;
-#if HAVE_STRUCT_EPOLL_EVENT
-    struct {
-        api_func    wait;
-        api_func    create;
-        api_func    ctl;
-        api_func    close;
-    } epoll;
-#endif
-} iomux_funcs;
-
-#define IOMUX_MAX_POLLED_FDS 64
-typedef union iomux_state {
-    struct {
-        int maxfds;
-        fd_set rfds, wfds, exfds;
-        int nfds;
-        int fds[IOMUX_MAX_POLLED_FDS];
-    } select;
-    struct {
-        int nfds;
-        struct pollfd fds[IOMUX_MAX_POLLED_FDS];
-    } poll;
-#if HAVE_STRUCT_EPOLL_EVENT
-    int epoll;
-#endif
-} iomux_state;
-
-typedef union iomux_return {
-    struct {
-        fd_set rfds, wfds, exfds;
-    } select;
-#if HAVE_STRUCT_EPOLL_EVENT
-    struct {
-        struct epoll_event events[IOMUX_MAX_POLLED_FDS];
-        int nevents;
-    } epoll;
-#endif
-} iomux_return;
-
-/** Iterator for iomux_return structure. */
-typedef int iomux_return_iterator;
-#define IOMUX_RETURN_ITERATOR_START 0
-#define IOMUX_RETURN_ITERATOR_END   -1
-
-
-/**
- * To have these constants defined in Linux, specify
- * -D_GNU_SOURCE (or other related feature test macro) in
- * TE_PLATFORM macro in your builder.conf
- */
-#ifndef POLLRDNORM
-#define POLLRDNORM  0
-#endif
-#ifndef POLLWRNORM
-#define POLLWRNORM  0
-#endif
-#ifndef POLLRDBAND
-#define POLLRDBAND  0
-#endif
-#ifndef POLLWRBAND
-#define POLLWRBAND  0
-#endif
-
-/* Mapping to/from select and POLL*.  Copied from Linux kernel. */
-#define IOMUX_SELECT_READ \
-    (POLLRDNORM | POLLRDBAND | POLLIN | POLLHUP | POLLERR)
-#define IOMUX_SELECT_WRITE \
-    (POLLWRBAND | POLLWRNORM | POLLOUT | POLLERR)
-#define IOMUX_SELECT_EXCEPT (POLLPRI)
-
-static iomux_func
-get_default_iomux()
-{
-    char    *default_iomux = getenv("TE_RPC_DEFAULT_IOMUX");
-    return (default_iomux == NULL) ? FUNC_POLL :
-                str2iomux(default_iomux);
-}
-
-/** Resolve all functions used by particular iomux and store them into
- * iomux_funcs. */
-static inline int
-iomux_find_func(te_bool use_libc, iomux_func *iomux, iomux_funcs *funcs)
-{
-    int rc = 0;
-
-    if (*iomux == FUNC_DEFAULT_IOMUX)
-        *iomux = get_default_iomux();
-
-    switch (*iomux)
-    {
-        case FUNC_SELECT:
-            rc = tarpc_find_func(use_libc, "select", &funcs->select);
-            break;
-        case FUNC_PSELECT:
-            rc = tarpc_find_func(use_libc, "pselect", &funcs->select);
-            break;
-        case FUNC_POLL:
-            rc = tarpc_find_func(use_libc, "poll",
-                                 (api_func *)&funcs->poll);
-            break;
-        case FUNC_PPOLL:
-            rc = tarpc_find_func(use_libc, "ppoll",
-                                 (api_func *)&funcs->poll);
-            break;
-#if HAVE_STRUCT_EPOLL_EVENT
-        case FUNC_EPOLL:
-        case FUNC_EPOLL_PWAIT:
-            if (*iomux == FUNC_EPOLL)
-                rc = tarpc_find_func(use_libc, "epoll_wait",
-                                     &funcs->epoll.wait);
-            else
-                rc = tarpc_find_func(use_libc, "epoll_pwait",
-                                     &funcs->epoll.wait);
-            rc = rc ||
-                 tarpc_find_func(use_libc, "epoll_ctl",
-                                 &funcs->epoll.ctl)  ||
-                 tarpc_find_func(use_libc, "epoll_create",
-                                 &funcs->epoll.create);
-                 tarpc_find_func(use_libc, "close", &funcs->epoll.close);
-            break;
-#endif
-        default:
-            rc = -1;
-            errno = ENOENT;
-    }
-
-    return rc;
-}
-
-/** Initialize iomux_state so that it is safe to call iomux_close() */
-static inline void
-iomux_state_init_invalid(iomux_func iomux, iomux_state *state)
-{
-#if HAVE_STRUCT_EPOLL_EVENT
-    if (iomux == FUNC_EPOLL || iomux == FUNC_EPOLL_PWAIT)
-        state->epoll = -1;
-#endif
-}
-
-/** Initialize iomux_state with zero value. Possibly, we should pass
- * maximum number of fds and use that number instead of
- * IOMUX_MAX_POLLED_FDS. */
-static inline int
-iomux_create_state(iomux_func iomux, iomux_funcs *funcs,
-                   iomux_state *state)
-{
-    switch (iomux)
-    {
-        case FUNC_SELECT:
-        case FUNC_PSELECT:
-            FD_ZERO(&state->select.rfds);
-            FD_ZERO(&state->select.wfds);
-            FD_ZERO(&state->select.exfds);
-            state->select.maxfds = 0;
-            state->select.nfds = 0;
-            break;
-        case FUNC_POLL:
-        case FUNC_PPOLL:
-            state->poll.nfds = 0;
-            break;
-#if HAVE_STRUCT_EPOLL_EVENT
-        case FUNC_EPOLL:
-        case FUNC_EPOLL_PWAIT:
-            state->epoll = funcs->epoll.create(IOMUX_MAX_POLLED_FDS);
-            return (state->epoll >= 0) ? 0 : -1;
-#endif
-        case FUNC_DEFAULT_IOMUX:
-            ERROR("%s() function can't be used with default iomux",
-                  __FUNCTION__);
-            return -1;
-
-    }
-    return 0;
-}
-
-static inline void
-iomux_select_set_state(iomux_state *state, int fd, int events,
-                       te_bool do_clear)
-{
-    /* Hack: POLERR is present in both read and write. Do not set both if
-     * not really necessary */
-    if ((events & POLLERR))
-    {
-        if ((events & ((IOMUX_SELECT_READ | IOMUX_SELECT_WRITE) &
-                       ~POLLERR)) == 0)
-        {
-            events |= POLLIN;
-        }
-        events &= ~POLLERR;
-    }
-
-    /* Set and clear events */
-    if ((events & IOMUX_SELECT_READ))
-        FD_SET(fd, &state->select.rfds);
-    else if (do_clear)
-        FD_CLR(fd, &state->select.rfds);
-    if ((events & IOMUX_SELECT_WRITE))
-        FD_SET(fd, &state->select.wfds);
-    else if (do_clear)
-        FD_CLR(fd, &state->select.wfds);
-    if ((events & IOMUX_SELECT_EXCEPT))
-        FD_SET(fd, &state->select.exfds);
-    else if (do_clear)
-        FD_CLR(fd, &state->select.exfds);
-}
-
-/** Add fd to the list of watched fds, with given events (in POLL-events).
- * For select, all fds are added to exception list.
- * For some iomuxes, the function will produce error when adding the same
- * fd twice, so iomux_mod_fd() should be used. */
-static inline int
-iomux_add_fd(iomux_func iomux, iomux_funcs *funcs, iomux_state *state,
-             int fd, int events)
-{
-
-#define IOMUX_CHECK_LIMIT(_nfds)                                \
-do {                                                              \
-    if (_nfds >= IOMUX_MAX_POLLED_FDS)                            \
-    {                                                             \
-        ERROR("%s(): failed to add file descriptor to the list "  \
-              "for %s(), it has reached the limit %d",            \
-              __FUNCTION__, iomux2str(iomux),                     \
-              IOMUX_MAX_POLLED_FDS);                              \
-        errno = ENOSPC;                                           \
-        return -1;                                                \
-    }                                                             \
-} while(0)
-
-
-    switch (iomux)
-    {
-        case FUNC_SELECT:
-        case FUNC_PSELECT:
-            IOMUX_CHECK_LIMIT(state->select.nfds);
-            iomux_select_set_state(state, fd, events, FALSE);
-            state->select.maxfds = MAX(state->select.maxfds, fd);
-            state->select.fds[state->select.nfds] = fd;
-            state->select.nfds++;
-            break;
-
-        case FUNC_POLL:
-        case FUNC_PPOLL:
-            IOMUX_CHECK_LIMIT(state->poll.nfds);
-            state->poll.fds[state->poll.nfds].fd = fd;
-            state->poll.fds[state->poll.nfds].events = events;
-            state->poll.nfds++;
-            break;
-
-#if HAVE_STRUCT_EPOLL_EVENT
-        case FUNC_EPOLL:
-        case FUNC_EPOLL_PWAIT:
-        {
-            struct epoll_event ev;
-            ev.events = events;
-            ev.data.fd = fd;
-            return funcs->epoll.ctl(state->epoll, EPOLL_CTL_ADD, fd, &ev);
-        }
-#endif
-        case FUNC_DEFAULT_IOMUX:
-            ERROR("%s() function can't be used with default iomux",
-                  __FUNCTION__);
-            return -1;
-
-        default:
-            ERROR("Incorrect value of iomux function");
-            return -1;
-    }
-
-#undef IOMUX_CHECK_LIMIT
-
-    return 0;
-}
-
-/** Modify events for already-watched fds. */
-static inline int
-iomux_mod_fd(iomux_func iomux, iomux_funcs *funcs, iomux_state *state,
-             int fd, int events)
-{
-    switch (iomux)
-    {
-        case FUNC_SELECT:
-        case FUNC_PSELECT:
-            iomux_select_set_state(state, fd, events, TRUE);
-            return 0;
-
-        case FUNC_POLL:
-        case FUNC_PPOLL:
-        {
-            int i;
-
-            for (i = 0; i < state->poll.nfds; i++)
-            {
-                if (state->poll.fds[i].fd != fd)
-                    continue;
-                state->poll.fds[i].events = events;
-                return 0;
-            }
-            errno = ENOENT;
-            return -1;
-        }
-
-#if HAVE_STRUCT_EPOLL_EVENT
-        case FUNC_EPOLL:
-        case FUNC_EPOLL_PWAIT:
-        {
-            struct epoll_event ev;
-            ev.events = events;
-            ev.data.fd = fd;
-            return funcs->epoll.ctl(state->epoll, EPOLL_CTL_MOD, fd, &ev);
-            break;
-        }
-#endif
-        case FUNC_DEFAULT_IOMUX:
-            ERROR("%s() function can't be used with default iomux",
-                  __FUNCTION__);
-            return -1;
-
-        default:
-            ERROR("Incorrect value of iomux function");
-            return -1;
-
-    }
-    return 0;
-}
-
-/* iomux_return may be null if user is not interested in the event list
- * (for example, when only one event is possible) */
-static inline int
-iomux_wait(iomux_func iomux, iomux_funcs *funcs, iomux_state *state,
-           iomux_return *ret, int timeout)
-{
-    int rc;
-
-    INFO("%s: %s, timeout=%d", __FUNCTION__, iomux2str(iomux), timeout);
-    switch (iomux)
-    {
-        case FUNC_SELECT:
-        case FUNC_PSELECT:
-        {
-            iomux_return   sret;
-
-            if (ret == NULL)
-                ret = &sret;
-
-            memcpy(&ret->select.rfds, &state->select.rfds,
-                   sizeof(state->select.rfds));
-            memcpy(&ret->select.wfds, &state->select.wfds,
-                   sizeof(state->select.wfds));
-            memcpy(&ret->select.exfds, &state->select.exfds,
-                   sizeof(state->select.exfds));
-            if (iomux == FUNC_SELECT)
-            {
-                struct timeval tv;
-                tv.tv_sec = timeout / 1000UL;
-                tv.tv_usec = timeout % 1000UL;
-                rc = funcs->select(state->select.maxfds + 1,
-                                   &ret->select.rfds,
-                                   &ret->select.wfds,
-                                   &ret->select.exfds,
-                                   &tv);
-            }
-            else /* FUNC_PSELECT */
-            {
-                struct timespec ts;
-                ts.tv_sec = timeout / 1000UL;
-                ts.tv_nsec = (timeout % 1000UL) * 1000UL;
-                rc = funcs->select(state->select.maxfds + 1,
-                                   &ret->select.rfds,
-                                   &ret->select.wfds,
-                                   &ret->select.exfds,
-                                   &ts, NULL);
-            }
-#if 0
-            ERROR("got %d: %x %x %x", rc,
-                  ((int *)&ret->select.rfds)[0],
-                  ((int *)&ret->select.wfds)[0],
-                  ((int *)&ret->select.exfds)[0]
-                  );
-#endif
-            break;
-        }
-        case FUNC_POLL:
-            rc = funcs->poll(&state->poll.fds[0], state->poll.nfds,
-                             timeout);
-            break;
-
-        case FUNC_PPOLL:
-        {
-            struct timespec ts;
-            ts.tv_sec = timeout / 1000UL;
-            ts.tv_nsec = (timeout % 1000UL) * 1000UL;
-            rc = funcs->poll(&state->poll.fds[0], state->poll.nfds,
-                             &ts, NULL);
-            break;
-        }
-#if HAVE_STRUCT_EPOLL_EVENT
-        case FUNC_EPOLL:
-        case FUNC_EPOLL_PWAIT:
-        {
-            if (ret != NULL)
-            {
-                rc = (iomux == FUNC_EPOLL) ?
-                    funcs->epoll.wait(state->epoll, &ret->epoll.events[0],
-                                      IOMUX_MAX_POLLED_FDS, timeout) :
-                    funcs->epoll.wait(state->epoll, &ret->epoll.events[0],
-                                      IOMUX_MAX_POLLED_FDS, timeout, NULL);
-                ret->epoll.nevents = rc;
-            }
-            else
-            {
-                struct epoll_event ev[IOMUX_MAX_POLLED_FDS];
-                rc = (iomux == FUNC_EPOLL) ?
-                        funcs->epoll.wait(state->epoll, ev,
-                                          IOMUX_MAX_POLLED_FDS, timeout) :
-                        funcs->epoll.wait(state->epoll, ev,
-                                          IOMUX_MAX_POLLED_FDS, timeout,
-                                          NULL);
-            }
-            break;
-        }
-#endif
-
-        default:
-            errno = ENOENT;
-            rc = -1;
-    }
-    INFO("%s done: %s, rc=%d", __FUNCTION__, iomux2str(iomux), rc);
-
-    return rc;
-}
-
-/** Iterate through all iomux result and return fds and events.  See also
- * IOMUX_RETURN_ITERATOR_START and IOMUX_RETURN_ITERATOR_END. */
-static inline iomux_return_iterator
-iomux_return_iterate(iomux_func iomux, iomux_state *st, iomux_return *ret,
-                     iomux_return_iterator it, int *p_fd, int *p_events)
-{
-    INFO("%s: %s, it=%d", __FUNCTION__, iomux2str(iomux), it);
-    switch (iomux)
-    {
-        case FUNC_SELECT:
-        case FUNC_PSELECT:
-        {
-            int i;
-            int events = 0;
-
-            for (i = it; i < st->select.nfds; i++)
-            {
-                int fd = st->select.fds[i];
-
-                /* TODO It is incorrect, but everything works.
-                 * In any case, we can't do better: POLLHUP is reported as
-                 * part of rdset only... */
-                if (FD_ISSET(fd, &ret->select.rfds))
-                    events |= IOMUX_SELECT_READ;
-                if (FD_ISSET(fd, &ret->select.wfds))
-                    events |= IOMUX_SELECT_WRITE;
-                if (FD_ISSET(fd, &ret->select.exfds))
-                    events |= IOMUX_SELECT_EXCEPT;
-                if (events != 0)
-                {
-                    *p_fd = fd;
-                    *p_events = events;
-                    it = i + 1;
-                    goto out;
-                }
-            }
-            it = IOMUX_RETURN_ITERATOR_END;
-            break;
-        }
-
-        case FUNC_POLL:
-        case FUNC_PPOLL:
-        {
-            int i;
-
-            for (i = it; i < st->poll.nfds; i++)
-            {
-                if (st->poll.fds[i].revents == 0)
-                    continue;
-                *p_fd = st->poll.fds[i].fd;
-                *p_events = st->poll.fds[i].revents;
-                it = i + 1;
-                goto out;
-            }
-            it = IOMUX_RETURN_ITERATOR_END;
-            break;
-        }
-
-#if HAVE_STRUCT_EPOLL_EVENT
-        case FUNC_EPOLL:
-        case FUNC_EPOLL_PWAIT:
-            if (it >= ret->epoll.nevents)
-            {
-                it = IOMUX_RETURN_ITERATOR_END;
-                break;
-            }
-            *p_fd = ret->epoll.events[it].data.fd;
-            *p_events = ret->epoll.events[it].events;
-            it++;
-            break;
-#endif
-        default:
-            it = IOMUX_RETURN_ITERATOR_END;
-    }
-out:
-    INFO("%s done: %s, it=%d", __FUNCTION__, iomux2str(iomux), it);
-    return it;
-}
-
-/** Close iomux state when necessary. */
-static inline int
-iomux_close(iomux_func iomux, iomux_funcs *funcs, iomux_state *state)
-{
-#if HAVE_STRUCT_EPOLL_EVENT
-    if (iomux == FUNC_EPOLL || iomux == FUNC_EPOLL_PWAIT)
-        return funcs->epoll.close(state->epoll);
-#endif
-    return 0;
-}
-
 /*-------------- simple_sender() -------------------------*/
 /**
  * Simple sender.
@@ -10673,6 +10130,253 @@ TARPC_FUNC(rpcserver_plugin_enable, {},
 TARPC_FUNC(rpcserver_plugin_disable, {},
 {
     MAKE_CALL(out->retval = func_ptr());
+})
+
+/*-------------------- send_flooder_iomux() --------------------------*/
+
+/* Maximum iov vectors number to be sent. */
+#define TARPC_SEND_IOMUX_FLOODER_MAX_IOVCNT 10
+
+/* Multiplexer timeout to get a socket writable, milliseconds. */
+#define TARPC_SEND_IOMUX_FLOODER_TIMEOUT 500
+
+/**
+ * Find pointer to a send function.
+ *
+ * @param use_libc      Use libc flag.
+ * @param send_func     Send function type.
+ * @param func          Pointer to the function.
+ *
+ * @return Status code.
+ */
+static te_errno
+tarpc_get_send_function(te_bool use_libc, tarpc_send_function send_func,
+                        api_func *func)
+{
+    int rc;
+
+    switch (send_func)
+    {
+        case TARPC_SEND_FUNC_WRITE:
+            rc = tarpc_find_func(use_libc, "write",
+                                 (api_func *)func);
+            break;
+
+        case TARPC_SEND_FUNC_WRITEV:
+            rc = tarpc_find_func(use_libc, "writev", (api_func *)func);
+            break;
+
+        case TARPC_SEND_FUNC_SEND:
+            rc = tarpc_find_func(use_libc, "send", (api_func *)func);
+            break;
+
+        case TARPC_SEND_FUNC_SENDTO:
+            rc = tarpc_find_func(use_libc, "sendto", (api_func *)func);
+            break;
+
+        case TARPC_SEND_FUNC_SENDMSG:
+            rc = tarpc_find_func(use_libc, "sendmsg", (api_func *)func);
+            break;
+
+        default:
+            ERROR("Invalid send function index: %d", send_func);
+            return  TE_RC(TE_TA_UNIX, EINVAL);
+    }
+
+    return rc;
+}
+
+/**
+ * Send packets during a period of time, call an iomux to check OUT
+ * event if send operation is failed.
+ *
+ * @param use_libc      Use libc flag.
+ * @param sock          Socket.
+ * @param iomux         Multiplexer function.
+ * @param send_func     Transmitting function.
+ * @param msg_dontwait  Use flag @b MSG_DONTWAIT.
+ * @param packet_size   Payload size to be sent by a single call, bytes.
+ * @param duration      How long transmit datagrams, milliseconds.
+ * @param packets       Sent packets (datagrams) number.
+ * @param errors        @c EAGAIN errors counter.
+ *
+ * @return @c 0 on success or @c -1 in the case of failure.
+ */
+static int
+send_flooder_iomux(te_bool use_libc, int sock, iomux_func iomux,
+                   tarpc_send_function send_func, te_bool msg_dontwait,
+                   int packet_size, int duration, uint64_t *packets,
+                   uint32_t *errors)
+{
+    api_func        func_send;
+    struct timeval  tv_start;
+    struct timeval  tv_now;
+    struct iovec   *iov = NULL;
+    void           *buf = NULL;
+    int             flags = msg_dontwait ? MSG_DONTWAIT : 0;
+    struct msghdr   msg;
+    iomux_funcs     iomux_f;
+    iomux_state     iomux_st;
+    iomux_return    iomux_ret;
+    uint64_t        i;
+    int             rc;
+    te_bool         writable;
+    int             back_errno = errno;
+    size_t iovcnt = rand_range(1, TARPC_SEND_IOMUX_FLOODER_MAX_IOVCNT);
+
+    if (tarpc_get_send_function(use_libc, send_func, &func_send) != 0 ||
+        iomux_find_func(use_libc, &iomux, &iomux_f) != 0)
+        return -1;
+
+    if ((rc = iomux_create_state(iomux, &iomux_f, &iomux_st)) != 0)
+    {
+        iomux_close(iomux, &iomux_f, &iomux_st);
+        return -1;
+    }
+
+    *packets = 0;
+    *errors = 0;
+
+    if ((rc = gettimeofday(&tv_start, NULL)) != 0)
+    {
+        ERROR("gettimeofday() failed, rc = %d, errno %r", rc, RPC_ERRNO);
+        iomux_close(iomux, &iomux_f, &iomux_st);
+        return -1;
+    }
+
+    if ((rc = iomux_add_fd(iomux, &iomux_f, &iomux_st, sock, POLLOUT)))
+    {
+        iomux_close(iomux, &iomux_f, &iomux_st);
+        return -1;
+    }
+
+    buf = TE_ALLOC(packet_size);
+
+    if (send_func == TARPC_SEND_FUNC_WRITEV ||
+        send_func == TARPC_SEND_FUNC_SENDMSG)
+    {
+        int offt = 0;
+
+        iov = TE_ALLOC(iovcnt * sizeof(*iov));
+
+        for (i = 0; i < iovcnt; i++)
+        {
+            if (i == iovcnt - 1)
+                iov[i].iov_len = packet_size - offt;
+            else
+                iov[i].iov_len = packet_size / iovcnt;
+            iov[i].iov_base = buf + offt;
+            offt += iov[i].iov_len;
+        }
+
+        if (send_func == TARPC_SEND_FUNC_SENDMSG)
+        {
+            memset(&msg, 0, sizeof(msg));
+            msg.msg_iov = iov;
+            msg.msg_iovlen = iovcnt;
+        }
+    }
+
+    for (i = 0;; i++)
+    {
+        switch (send_func)
+        {
+            case TARPC_SEND_FUNC_WRITE:
+                rc = func_send(sock, buf, packet_size);
+                break;
+
+            case TARPC_SEND_FUNC_WRITEV:
+                rc = func_send(sock, iov, iovcnt);
+                break;
+
+            case TARPC_SEND_FUNC_SEND:
+                rc = func_send(sock, buf, packet_size, flags);
+                break;
+
+            case TARPC_SEND_FUNC_SENDTO:
+                rc = func_send(sock, buf, packet_size, flags, NULL);
+                break;
+
+            case TARPC_SEND_FUNC_SENDMSG:
+                rc = func_send(sock, &msg, flags);
+                break;
+
+            default:
+                ERROR("Invalid send function index: %d", send_func);
+                return  TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+
+        if (rc == -1 && RPC_ERRNO == RPC_EAGAIN)
+        {
+            (*errors)++;
+            rc = iomux_wait(iomux, &iomux_f, &iomux_st, &iomux_ret, 0);
+            /* Check no OUT event. */
+            rc = iomux_fd_is_writable(sock, iomux, &iomux_st, &iomux_ret,
+                                      rc, &writable);
+            if (rc != 0)
+                break;
+            if (writable)
+            {
+                ERROR("Iomux call declares socket writable when a send "
+                      "call failed with EAGAIN");
+                rc = -1;
+                break;
+            }
+
+            rc = iomux_wait(iomux, &iomux_f, &iomux_st, &iomux_ret,
+                            TARPC_SEND_IOMUX_FLOODER_TIMEOUT);
+            /* Unblocked with OUT event. */
+            rc = iomux_fd_is_writable(sock, iomux, &iomux_st, &iomux_ret,
+                                      rc, &writable);
+            if (rc != 0)
+                break;
+            if (!writable)
+            {
+                ERROR("Iomux call declares socket unwritable after the "
+                      "timeout %d expiration ",
+                      TARPC_SEND_IOMUX_FLOODER_TIMEOUT);
+                rc = -1;
+                break;
+            }
+        }
+        else if (rc != packet_size)
+        {
+            ERROR("Send call #%llu returned unexpected value, rc = %d "
+                  "(%r)", i, rc, RPC_ERRNO);
+            break;
+        }
+
+        (*packets)++;
+
+        if ((rc = gettimeofday(&tv_now, NULL)) != 0)
+        {
+            ERROR("gettimeofday() failed, rc = %d, errno %r", rc,
+                  RPC_ERRNO);
+            rc = -1;
+            break;
+        }
+
+        if (duration < TIMEVAL_SUB(tv_now, tv_start) / 1000L)
+            break;
+    }
+
+    free(buf);
+    free(iov);
+    iomux_close(iomux, &iomux_f, &iomux_st);
+
+    if (back_errno != errno && errno == EAGAIN)
+        errno = back_errno;
+
+    return rc;
+}
+
+TARPC_FUNC_STATIC(send_flooder_iomux, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in->common.use_libc, in->sock,
+                                     in->iomux, in->send_func,
+                                     in->msg_dontwait, in->packet_size,
+                                     in->duration, &out->packets,
+                                     &out->errors));
 })
 
 /*-------------- copy_fd2fd() ------------------------------*/

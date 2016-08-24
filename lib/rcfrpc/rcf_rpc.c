@@ -597,8 +597,9 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
     if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
         rpcs->timeout = rpcs->def_timeout;
 
-    if (!op_is_done && (rpcs->op == RCF_RPC_CALL ||
-                        rpcs->op == RCF_RPC_CALL_WAIT))
+    if (!op_is_done && !is_alive &&
+        (rpcs->op == RCF_RPC_CALL ||
+         rpcs->op == RCF_RPC_CALL_WAIT))
     {
         if (rpcs->jobid0 != 0)
         {
@@ -734,8 +735,8 @@ rcf_rpc_server_is_alive(rcf_rpc_server *rpcs)
 
     if (rpcs->_errno != 0)
     {
-        ERROR("Failed to call rpc_is_alive() on the RPC server %s",
-              rpcs->name);
+        ERROR("Failed to call rpc_is_alive() on the RPC server %s: %r",
+              rpcs->name, rpcs->_errno);
         return FALSE;
     }
     else

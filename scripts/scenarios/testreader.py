@@ -100,6 +100,11 @@ class TestReader(object):
     def load_file(self, fname):
         self.load_data(open(fname))
 
+    def import_context(self, context):
+        self.tests = {}
+        self.context = context
+        self._update_tests()
+
     def _iter_groups(self, groups, base=[]):
         for group in groups:
             current = base + [group]

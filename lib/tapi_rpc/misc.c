@@ -2263,3 +2263,46 @@ rpc_release_rpc_ptr(rcf_rpc_server *rpcs, rpc_ptr ptr, char *ns_string)
     TAPI_RPC_LOG(rpcs, release_rpc_ptr, RPC_PTR_FMT, "", RPC_PTR_VAL(ptr));
     RETVAL_VOID(release_rpc_ptr);
 }
+
+/* See the description in tapi_rpc_misc.h */
+int
+rpc_send_flooder_iomux(rcf_rpc_server *rpcs, int sock, iomux_func iomux,
+                       tarpc_send_function send_func,
+                       te_bool msg_dontwait, int packet_size,
+                       int duration, uint64_t *packets, uint32_t *errors)
+{
+    tarpc_send_flooder_iomux_in  in;
+    tarpc_send_flooder_iomux_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.sock = sock;
+    in.iomux = iomux;
+    in.send_func = send_func;
+    in.msg_dontwait = msg_dontwait;
+    in.packet_size = packet_size;
+    in.duration = duration;
+
+    rcf_rpc_call(rpcs, "send_flooder_iomux", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(send_flooder_iomux,
+                                          out.retval);
+
+    TAPI_RPC_LOG(rpcs, send_flooder_iomux, "sock = %d, iomux = %s, "
+                 "send_func = %d, msg_dontwait = %d, packet_size = %d, "
+                 "duration = %d, packets = %llu, "
+                 "errors = %lu", "%d", sock, iomux2str(iomux), send_func,
+                 msg_dontwait, packet_size, duration, out.packets,
+                 out.errors, out.retval);
+
+    if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT)
+    {
+        if (packets != NULL)
+            *packets = out.packets;
+        if (errors != NULL)
+            *errors = out.errors;
+    }
+
+    RETVAL_ZERO_INT(send_flooder_iomux, out.retval);
+}

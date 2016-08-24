@@ -282,6 +282,12 @@ AC_CHECK_MEMBERS([struct passwd.pw_gecos], [], [],
                  [#include <pwd.h>])
 
 dnl
+dnl Check for 'arp_dev' member in 'struct arpreq'.
+dnl
+AC_CHECK_MEMBERS([struct arpreq.arp_dev], [], [],
+                 [#include <net/if_arp.h>])
+
+dnl
 dnl Dynamic linker functions are provided by:
 dnl - -ldl in Linux;
 dnl - -lc in FreeBSD;

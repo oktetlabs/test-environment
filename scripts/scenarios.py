@@ -12,19 +12,20 @@ from scenarios.rb            import ReviewBoard
 from scenarios.testgenerator import TestGenerator
 from scenarios.testreader    import TestReader
 from scenarios.patch         import create_patch
+from scenarios.ts            import Packages
 
 arguments = {
-    '--create': ('-c', {
+    '--postreview': ('-p', {
             'action': 'store_true',
-            'help': 'Create a review request of short list of scenarios',
-        }),
-    '--update': ('-u', {
-            'action': 'store_true',
-            'help': 'Update the review request of short list of scenarios',
+            'help': 'Create or update a review request of short list of scenarios',
         }),
     '--implement': ('-i', {
             'action': 'store_true',
             'help': 'Create an implementation template of new test',
+        }),
+    '--import-ts': (None, {
+            'action': 'store_true',
+            'help': 'Import implemented tests list to test scenarios document',
         }),
 
     '--author': ('-a', {
@@ -52,9 +53,9 @@ arguments = {
             'dest': 'repository_id',
             'help': 'Review board repository ID or name',
         }),
-    '--review-id': ('-r', {
-            'dest': 'review_id',
-            'help': 'Review ID',
+    '--existing': ('-e', {
+            'dest': 'existing',
+            'help': 'Existing request ID to update',
         }),
     '--scenario-in-test': (None, {
             'dest': 'scenario_in_test', 'default': 0, 'type': int,
@@ -65,6 +66,10 @@ arguments = {
             'dest': 'scenario',
             'help': 'The name of file which contains '\
                     'the list of all scenarios',
+        }),
+    '--sorting': (None, {
+            'dest': 'sorting', 'default': False, 'action': 'store_true',
+            'help': 'Sort lists of groups and tests',
         }),
     '--test-suite': ('-t', {
             'dest': 'test_suite',
@@ -83,18 +88,20 @@ def add_argument(parent, argument, **opts):
         args = tuple([argument])
     parent.add_argument(*args, **kwargs)
 
-def create():
-    parser = argparse.ArgumentParser(description='Description.')
-    add_argument(parser, '--create',      required=True)
+def postreview():
+    parser = argparse.ArgumentParser(
+        description='Post a changeset to a Review Board server')
+    add_argument(parser, '--postreview', required=True)
     group = parser.add_mutually_exclusive_group(required=True)
     add_argument(group, '--document-id')
     add_argument(group, '--scenario')
-    add_argument(parser, '--test-suite',  required=True)
+    add_argument(parser, '--test-suite', required=True)
     add_argument(parser, '--author')
     add_argument(parser, '--scenario-in-test')
     group = parser.add_mutually_exclusive_group(required=True)
     add_argument(group, '--output')
     add_argument(group, '--repository')
+    add_argument(group, '--existing')
     args = parser.parse_args()
 
     if args.scenario:
@@ -110,35 +117,23 @@ def create():
     if args.output:
         open(args.output, 'w').write(patch)
         print('Patch saved in the file: ' + args.output)
-    else:
+    elif args.repository_id:
         rb = ReviewBoard()
         content = rb.create_review(args.repository_id)
         rb.update_diff(content.review_request.id, data=patch)
         print('Review request draft saved: ' + \
                 content.review_request.absolute_url)
         print('Please check and publish this draft.')
-
-def update():
-    parser = argparse.ArgumentParser(description='Description.')
-    add_argument(parser, '--update',     required=True)
-    add_argument(parser, '--scenario',   required=True)
-    add_argument(parser, '--test-suite', required=True)
-    add_argument(parser, '--author')
-    add_argument(parser, '--scenario-in-test')
-    group = parser.add_mutually_exclusive_group(required=True)
-    add_argument(group, '--output')
-    add_argument(group, '--review-id')
-    args = parser.parse_args()
-
-    patch = create_patch(args.test_suite, filename=args.scenario,
-                author=args.author, scenario_in_test=args.scenario_in_test)
-    if args.output:
-        open(args.output, 'w').write(patch)
-        print('Patch saved in the file: ' + args.output)
     else:
         rb = ReviewBoard()
-        content = rb.update_diff(args.review_id, data=patch)
-        content = rb.review(args.review_id)
+        content = rb.update_diff(args.existing, data=patch)
+        revision = content.diff.revision
+        content = rb.review(args.existing)
+        rb.change_description(args.existing,
+            "Link to the test scenario: [/r/%s/diff/1-%s/](%sdiff/1-%s/)" % (
+                args.existing, revision,
+                content.review_request.absolute_url, revision
+            ))
         print('Review request draft updated: ' + \
                 content.review_request.absolute_url)
         print('Please check and publish this draft.')
@@ -190,13 +185,31 @@ def implement():
         test.cut()
         open(args.scenario, 'w').write(reader.dump_full())
 
+def import_ts():
+    parser = argparse.ArgumentParser(
+        description='Import implemented tests list to test scenarios document.')
+    add_argument(parser, '--import-ts',  required=True)
+    add_argument(parser, '--scenario',   required=True)
+    add_argument(parser, '--test-suite', required=True)
+    add_argument(parser, '--sorting')
+    args = parser.parse_args()
+
+    r = TestReader()
+    packages = Packages(args.test_suite, sorting=args.sorting)
+    if os.path.exists(args.scenario):
+        r.load_file(args.scenario)
+        packages.merge(r.context)
+    else:
+        r.import_context(packages.context)
+    open(args.scenario, 'w').write(r.dump_full())
+
 parser = argparse.ArgumentParser(description='Description.')
 group = parser.add_mutually_exclusive_group(required=True)
-add_argument(group, '--create')
-add_argument(group, '--update')
+add_argument(group, '--postreview')
 add_argument(group, '--implement')
+add_argument(group, '--import-ts')
 args = parser.parse_args(sys.argv[1:2])
 
-if   args.create:    create()
-elif args.update:    update()
-elif args.implement: implement()
+if   args.postreview: postreview()
+elif args.implement:  implement()
+elif args.import_ts:  import_ts()

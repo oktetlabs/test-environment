@@ -1420,6 +1420,8 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
 
     char         rpc_name[RCF_MAX_NAME];
     tarpc_in_arg common_arg;
+    char enc_result[RCF_MAX_VAL];
+    size_t enc_len = sizeof(enc_result);
 
     conn_saved = conn;
 
@@ -1504,8 +1506,6 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
     if (strcmp(rpc_name, "rpc_is_op_done") == 0)
     {
         tarpc_rpc_is_op_done_out result;
-        char enc_result[RCF_MAX_VAL];
-        size_t enc_len = sizeof(enc_result);
 
         memset(&result, 0, sizeof(result));
         if (common_arg.op != RCF_RPC_CALL_WAIT)
@@ -1521,6 +1521,40 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
         if (rc != 0)
         {
             ERROR("Cannot encode rpc_op_is_done result");
+            RETERR(rc);
+        }
+
+        send_response(rpcs, conn, enc_result, enc_len);
+        rpcs->timeout = rpcs->sent = rpcs->last_sid = 0;
+
+        return 0;
+    }
+    else if (strcmp(rpc_name, "rpc_is_alive") == 0)
+    {
+        tarpc_rpc_is_alive_out result;
+
+        memset(&result, 0, sizeof(result));
+        if (common_arg.op != RCF_RPC_CALL_WAIT)
+            result.common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
+        else
+        {
+            if (kill(rpcs->pid, 0) != 0)
+            {
+                if (errno != ESRCH)
+                    result.common._errno = TE_OS_RC(TE_TA_UNIX, errno);
+                else
+                {
+                    rpcs->dead = TRUE;
+                    result.common._errno = TE_RC(TE_RCF_PCH, TE_ERPCDEAD);
+                }
+            }
+        }
+
+        rc = rpc_xdr_encode_result(rpc_name, TRUE, enc_result, &enc_len,
+                                   &result);
+        if (rc != 0)
+        {
+            ERROR("Cannot encode rpc_is_alive result");
             RETERR(rc);
         }
 
