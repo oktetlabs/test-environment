@@ -152,7 +152,14 @@ typedef struct tapi_igmp3_group_list_s {
                                                     Group Records array */
 } tapi_igmp3_group_list_t;
 
-
+/**
+ * Calculate MAC address corresponding to a given IPv4 multicast
+ * address.
+ *
+ * @param ip4_addr        IPv4 multicast address.
+ * @param eth_addr        Where to save corresponding MAC address.
+ */
+extern void tapi_ip4_to_mcast_mac(in_addr_t ip4_addr, uint8_t *eth_addr);
 
 /**
  * Add IGMP layer in CSAP specification.

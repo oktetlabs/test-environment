@@ -160,9 +160,9 @@ tapi_igmp2_add_pdu(asn_value          **tmpl_or_ptrn,
     return 0;
 }
 
-/* See header */
+/* See the description in tapi_igmp.h */
 void
-tapi_ip4_to_mac(in_addr_t ip4_addr, uint8_t *eth_addr)
+tapi_ip4_to_mcast_mac(in_addr_t ip4_addr, uint8_t *eth_addr)
 {
     uint8_t *ip_addr_p = (uint8_t *)&ip4_addr;
 
@@ -287,7 +287,7 @@ tapi_igmp_add_ip4_eth_pdu_gen(asn_value **tmpl_or_ptrn,
 
     /* Calculate MAC multicast address also */
     if (dst_addr != htonl(INADDR_ANY))
-        tapi_ip4_to_mac(dst_addr, eth_dst);
+        tapi_ip4_to_mcast_mac(dst_addr, eth_dst);
 
     /* Add Ethernet layer header to PDU template/pattern */
     rc = tapi_eth_add_pdu(tmpl_or_ptrn, &eth_pdu, is_pattern,
