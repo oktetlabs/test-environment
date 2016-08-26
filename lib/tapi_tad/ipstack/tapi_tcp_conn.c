@@ -366,22 +366,26 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
     return 0;
 }
 
-
 /**
- * Wait for new message in this connection while timeout expired.
+ * Wait for any packet in this connection until timeout is expired.
  *
- * @param conn_descr    pointer to TAPI connection descriptor
- * @param timeout       timeout in milliseconds
+ * @param [in]  conn_descr  Pointer to TAPI connection descriptor
+ * @param [in]  timeout     Timeout in milliseconds
+ * @param [out] duration    How much time in milliseconds it took to get the
+ *                          packet, @c NULL can be used to ignore.
  *
- * @return zero on success (one or more messages got), errno otherwise
+ * @return Zero is returned on success (one or more messages got),
+ *         otherwise - TE errno.
  */
-static inline int
-conn_wait_msg(tapi_tcp_connection_t *conn_descr, unsigned int timeout)
+static te_errno
+conn_wait_packet(tapi_tcp_connection_t *conn_descr, unsigned int timeout,
+                 unsigned int *duration)
 {
     te_errno        rc;
     unsigned int    num = 0;
-    tapi_tcp_pos_t  seq;
-
+    unsigned int    sub = 0;
+    struct timeval  tv1;
+    struct timeval  tv2;
 
     if (conn_descr == NULL)
     {
@@ -389,21 +393,9 @@ conn_wait_msg(tapi_tcp_connection_t *conn_descr, unsigned int timeout)
         return TE_EINVAL;
     }
 
-    seq = conn_descr->seq_got;
-
-    rc = rcf_ta_trrecv_get(conn_descr->agt, conn_descr->rcv_sid,
-                           conn_descr->rcv_csap,
-                           tcp_conn_pkt_handler, conn_descr, &num);
-    if (rc != 0)
+    gettimeofday(&tv1, NULL);
+    while (num == 0)
     {
-        ERROR("%s: rcf_ta_trrecv_get() failed", __FUNCTION__);
-        return rc;
-    }
-
-    INFO("received %d messages", num);
-    if (conn_descr->seq_got == seq)
-    {
-        sleep((timeout + 999) / 1000);
         rc = rcf_ta_trrecv_get(conn_descr->agt, conn_descr->rcv_sid,
                                conn_descr->rcv_csap,
                                tcp_conn_pkt_handler, conn_descr, &num);
@@ -413,11 +405,70 @@ conn_wait_msg(tapi_tcp_connection_t *conn_descr, unsigned int timeout)
             return rc;
         }
 
-        if (conn_descr->seq_got == seq)
+        gettimeofday(&tv2, NULL);
+        sub = TIMEVAL_SUB(tv2, tv1) / 1000;
+        if (sub >= timeout)
+            break;
+
+        if (num > 0)
+            break;
+
+        usleep(1000);
+    }
+
+    if (duration != NULL)
+        *duration = sub;
+
+    if (num == 0)
+        return TE_RC(TE_TAPI, TE_ETIMEDOUT);
+
+    return 0;
+}
+
+/**
+ * Wait for new message in this connection ignoring retransmits until
+ * timeout is expired.
+ *
+ * @param conn_descr    pointer to TAPI connection descriptor
+ * @param timeout       timeout in milliseconds
+ *
+ * @return zero on success (one or more messages got), TE errno otherwise.
+ */
+static te_errno
+conn_wait_msg(tapi_tcp_connection_t *conn_descr, unsigned int timeout)
+{
+    te_errno        rc;
+    tapi_tcp_pos_t  seq;
+    tapi_tcp_pos_t  last_len;
+    unsigned int    duration;
+
+    seq = conn_descr->seq_got;
+    last_len = conn_descr->last_len_got;
+
+    /* Poll for packets in the loop during the @p timeout, ignore
+     * retransmits. */
+    while (TRUE)
+    {
+        rc = conn_wait_packet(conn_descr, timeout, &duration);
+        if (rc != 0)
         {
-            ERROR("%s: no messages received", __FUNCTION__);
-            return TE_ETIMEDOUT;
+            ERROR("%s(): failed to get packet", __FUNCTION__);
+            return rc;
         }
+
+        /* If seq is zero - no packets has been received yet. */
+        if (seq == 0 || seq + last_len == conn_descr->seq_got)
+            break;
+
+        if (timeout <= duration)
+        {
+            ERROR("%s: no new messages received", __FUNCTION__);
+            return TE_RC(TE_TAPI, TE_ETIMEDOUT);
+        }
+        timeout -= duration;
+
+        WARN("A packet with unexpected sequence number has been "
+             "received, probably it is a retransmit - ignore it");
     }
 
     return 0;
@@ -1571,57 +1622,6 @@ tapi_tcp_conn_rcv_csap(tapi_tcp_handler_t handler)
     return conn_descr->rcv_csap;
 }
 
-
-/**
- * Wait for any packet in this connection until timeout is expired.
- *
- * @param conn_descr    Pointer to TAPI connection descriptor
- * @param timeout       Timeout in milliseconds
- *
- * @return Zero is returned on success (one or more messages got),
- *         otherwise - TE errno.
- */
-static inline int
-conn_wait_packet(tapi_tcp_connection_t *conn_descr, unsigned int timeout)
-{
-    te_errno        rc;
-    unsigned int    num = 0;
-    struct timeval  tv1;
-    struct timeval  tv2;
-
-    if (conn_descr == NULL)
-    {
-        ERROR("%s: connection descriptor is NULL", __FUNCTION__);
-        return TE_EINVAL;
-    }
-
-    gettimeofday(&tv1, NULL);
-    while (num == 0)
-    {
-        rc = rcf_ta_trrecv_get(conn_descr->agt, conn_descr->rcv_sid,
-                               conn_descr->rcv_csap,
-                               tcp_conn_pkt_handler, conn_descr, &num);
-        if (rc != 0)
-        {
-            ERROR("%s: rcf_ta_trrecv_get() failed", __FUNCTION__);
-            return rc;
-        }
-        if (num > 0)
-            break;
-
-        gettimeofday(&tv2, NULL);
-        if (TIMEVAL_SUB(tv2, tv1) / (unsigned int)1000 >= timeout)
-            break;
-
-        usleep(1000);
-    }
-
-    if (num == 0)
-        return TE_RC(TE_TAPI, TE_ETIMEDOUT);
-
-    return 0;
-}
-
 int
 tapi_tcp_wait_packet(tapi_tcp_handler_t handler, int timeout)
 {
@@ -1631,7 +1631,7 @@ tapi_tcp_wait_packet(tapi_tcp_handler_t handler, int timeout)
         return TE_RC(TE_TAPI, TE_EINVAL);
 
     /* It is simply wrapper for external use of static inline method. */
-    return conn_wait_packet(conn_descr, timeout);
+    return conn_wait_packet(conn_descr, timeout, NULL);
 }
 
 int
