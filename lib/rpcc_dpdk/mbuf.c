@@ -262,6 +262,30 @@ tarpc_rte_pktmbuf_tx_offload2str(te_log_buf *tlbp,
     return te_log_buf_get(tlbp);
 }
 
+static const char *
+tarpc_rte_pktmbuf_pattern2str(te_log_buf *tlbp, uint8_t nb_seg_groups,
+                              struct tarpc_pktmbuf_seg_group *seg_groups)
+{
+    uint8_t i;
+
+    te_log_buf_append(tlbp, "nb_seg_groups = %hhu {  ", nb_seg_groups);
+
+    if (seg_groups == NULL)
+    {
+        te_log_buf_append(tlbp, "NULL  ");
+    }
+    else
+    {
+        for (i = 0; i < nb_seg_groups; ++i)
+            te_log_buf_append(tlbp, "%hhu x %hu b  ",
+                              seg_groups[i].num, seg_groups[i].len);
+    }
+
+    te_log_buf_append(tlbp, "}");
+
+    return te_log_buf_get(tlbp);
+}
+
 rpc_rte_mempool_p
 rpc_rte_pktmbuf_pool_create(rcf_rpc_server *rpcs,
                             const char *name, uint32_t n, uint32_t cache_size,
@@ -1109,4 +1133,43 @@ rpc_rte_pktmbuf_set_tx_offload(rcf_rpc_server *rpcs,
     te_log_buf_free(tlbp);
 
     RETVAL_VOID(rte_pktmbuf_set_tx_offload);
+}
+
+int
+rpc_rte_pktmbuf_redist(rcf_rpc_server *rpcs,
+                       rpc_rte_mbuf_p *m,
+                       struct tarpc_pktmbuf_seg_group *seg_groups,
+                       uint8_t nb_seg_groups)
+{
+    tarpc_rte_pktmbuf_redist_in   in;
+    tarpc_rte_pktmbuf_redist_out  out;
+    te_log_buf *tlbp;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.m = (tarpc_rte_mbuf)(*m);
+    in.seg_groups.seg_groups_len = nb_seg_groups;
+    if (seg_groups != NULL)
+        in.seg_groups.seg_groups_val = tapi_memdup(seg_groups,
+                                                   nb_seg_groups *
+                                                   sizeof(*seg_groups));
+
+    rcf_rpc_call(rpcs, "rte_pktmbuf_redist", &in, &out);
+
+    CHECK_RETVAL_VAR(rte_pktmbuf_redist, out.retval,
+                     out.retval == 0, RETVAL_ECORRUPTED);
+
+    *m = out.m;
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_pktmbuf_redist, RPC_PTR_FMT ", %s", NEG_ERRNO_FMT
+                 " " RPC_PTR_FMT, RPC_PTR_VAL(in.m),
+                 tarpc_rte_pktmbuf_pattern2str(tlbp,
+                                               in.seg_groups.seg_groups_len,
+                                               in.seg_groups.seg_groups_val),
+                 NEG_ERRNO_ARGS(out.retval), RPC_PTR_VAL(out.m));
+    te_log_buf_free(tlbp);
+
+    RETVAL_INT(rte_pktmbuf_redist, out.retval);
 }

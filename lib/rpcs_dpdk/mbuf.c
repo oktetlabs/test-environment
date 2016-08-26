@@ -982,3 +982,220 @@ TARPC_FUNC_STANDALONE(rte_pktmbuf_set_tx_offload, {},
     });
 }
 )
+
+static unsigned int
+ta_count_max_segs_within_pattern(tarpc_rte_pktmbuf_redist_in *in, size_t len)
+{
+    unsigned int i;
+    unsigned int j;
+    unsigned int nb_segs = 0;
+
+    for (i = 0; i < in->seg_groups.seg_groups_len; ++i)
+    {
+        for (j = 0;
+             j < in->seg_groups.seg_groups_val[i].num;
+             ++j)
+        {
+            nb_segs++;
+
+            if (len <= in->seg_groups.seg_groups_val[i].len)
+                goto out;
+            else
+                len -= in->seg_groups.seg_groups_val[i].len;
+        }
+    }
+
+out:
+    return (nb_segs);
+}
+
+static int
+rte_pktmbuf_redist(tarpc_rte_pktmbuf_redist_in *in,
+                   tarpc_rte_pktmbuf_redist_out *out)
+{
+    size_t data_count;
+    unsigned int i, j, k;
+    unsigned int pattern_nb_segs = 0;
+    size_t pattern_sum_len = 0;
+    uint8_t nb_segs_new = 0;
+    struct rte_mbuf *m = NULL;
+    struct rte_mbuf *m_cur = NULL;
+    uint8_t *m_contig_data = NULL;
+    struct rte_mbuf **new_segs = NULL;
+    te_errno err = 0;
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+        m = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->m, ns);
+    });
+
+    /* Initialize out->m to the old pointer (for a possible roll-back) */
+    out->m = in->m;
+
+    /* Sanity checks */
+    if (m == NULL || m->pkt_len == 0 ||
+        in->seg_groups.seg_groups_len == 0 ||
+        in->seg_groups.seg_groups_val == NULL)
+    {
+        err = TE_RC(TE_RPCS, TE_EINVAL);
+        goto out;
+    }
+
+    /* Calculate the total figures for the pattern */
+    for (i = 0; i < in->seg_groups.seg_groups_len; ++i)
+    {
+        if (in->seg_groups.seg_groups_val[i].num == 0 ||
+            in->seg_groups.seg_groups_val[i].len == 0)
+        {
+            err = TE_RC(TE_RPCS, TE_EINVAL);
+            goto out;
+        }
+        pattern_nb_segs += in->seg_groups.seg_groups_val[i].num;
+        pattern_sum_len += in->seg_groups.seg_groups_val[i].num *
+                           in->seg_groups.seg_groups_val[i].len;
+    }
+
+    /* Determine the total number of segments in the new chain to be built */
+    data_count = 0;
+    while (data_count < m->pkt_len)
+    {
+        unsigned int nb_segs_to_add;
+        size_t len_to_add = (m->pkt_len - data_count);
+
+        if (pattern_sum_len > len_to_add)
+        {
+            nb_segs_to_add = ta_count_max_segs_within_pattern(in, len_to_add);
+            data_count += len_to_add;
+        }
+        else
+        {
+            nb_segs_to_add = pattern_nb_segs;
+            data_count += pattern_sum_len;
+        }
+
+        if ((nb_segs_new + nb_segs_to_add) >= (1 << (sizeof(m->nb_segs) * 8)))
+        {
+            err = TE_RC(TE_RPCS, TE_EOVERFLOW);
+            goto out;
+        }
+
+        nb_segs_new += nb_segs_to_add;
+    }
+
+    /* Allocate an array of mbuf pointers for the new chain to be built */
+    new_segs = malloc(nb_segs_new * sizeof(*new_segs));
+    if (new_segs == NULL)
+    {
+        err = TE_RC(TE_RPCS, TE_ENOMEM);
+        goto out;
+    }
+
+    /* Allocate mbuf segments for the new chain to be built */
+    err = rte_pktmbuf_alloc_bulk(m->pool, new_segs, nb_segs_new);
+
+    neg_errno_h2rpc(&err);
+    if (err != 0)
+        goto out;
+
+    /* Allocate a contiguous buffer to store the entire chain data */
+    m_contig_data = malloc(m->pkt_len);
+    if (m_contig_data == NULL)
+    {
+        err = TE_RC(TE_RPCS, TE_ENOMEM);
+        goto out;
+    }
+
+    /* Copy entire chain data into the contiguous buffer */
+    for (data_count = 0, m_cur = m; m_cur != NULL;
+         data_count += m_cur->data_len, m_cur = m_cur->next)
+        memcpy(m_contig_data + data_count,
+               rte_pktmbuf_mtod_offset(m_cur, uint8_t *, 0),
+               m_cur->data_len);
+
+    /* Distribute the packet data across the new mbuf segments */
+    k = 0;
+    data_count = 0;
+    while (data_count < m->pkt_len)
+    {
+        for (i = 0; (i < in->seg_groups.seg_groups_len) &&
+             (data_count < m->pkt_len); ++i)
+        {
+                for (j = 0;
+                     (j < in->seg_groups.seg_groups_val[i].num) &&
+                     (data_count < m->pkt_len);
+                     ++j)
+                {
+                    uint8_t *dst;
+                    uint16_t to_copy = MIN((m->pkt_len - data_count),
+                             in->seg_groups.seg_groups_val[i].len);
+
+                    m_cur = new_segs[k++];
+
+                    dst = (uint8_t *)rte_pktmbuf_append(m_cur, to_copy);
+                    if (dst == NULL)
+                    {
+                        err = TE_RC(TE_RPCS, TE_ENOSPC);
+                        goto out;
+                    }
+
+                    memcpy(dst, m_contig_data + data_count, to_copy);
+
+                    data_count += to_copy;
+                }
+        }
+    }
+
+    /* Produce a chain from the segments */
+    for (i = 1; i < nb_segs_new; ++i)
+    {
+        err = rte_pktmbuf_chain(new_segs[0], new_segs[i]);
+
+        neg_errno_h2rpc(&err);
+        if (err != 0)
+            goto out;
+    }
+
+#define RTE_PKTMBUF_COPY_FIELD(_field) new_segs[0]->_field = m->_field
+    RTE_PKTMBUF_COPY_FIELD(port);
+    RTE_PKTMBUF_COPY_FIELD(ol_flags);
+    RTE_PKTMBUF_COPY_FIELD(vlan_tci);
+    RTE_PKTMBUF_COPY_FIELD(hash);
+    RTE_PKTMBUF_COPY_FIELD(seqn);
+    RTE_PKTMBUF_COPY_FIELD(vlan_tci_outer);
+    RTE_PKTMBUF_COPY_FIELD(timesync);
+    RTE_PKTMBUF_COPY_FIELD(packet_type);
+    RTE_PKTMBUF_COPY_FIELD(tx_offload);
+#undef RTE_PKTMBUF_COPY_FIELD
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+        out->m = RCF_PCH_MEM_INDEX_ALLOC(new_segs[0], ns);
+    });
+
+out:
+    /* If no error occurred, get rid of the original chain */
+    if (err == 0)
+    {
+        rte_pktmbuf_free(m);
+        RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+            RCF_PCH_MEM_INDEX_FREE(in->m, ns);
+        });
+    }
+
+    free(m_contig_data);
+
+    if (new_segs != NULL)
+    {
+        if (err != 0)
+            for (i = 0; i < nb_segs_new; ++i)
+                rte_pktmbuf_free(new_segs[i]);
+
+        free(new_segs);
+    }
+
+    return (err != 0) ? (-err) : (nb_segs_new);
+}
+
+TARPC_FUNC_STATIC(rte_pktmbuf_redist, {},
+{
+    MAKE_CALL(out->retval = func(in, out));
+}
+)

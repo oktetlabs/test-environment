@@ -395,6 +395,23 @@ extern void rpc_rte_pktmbuf_set_tx_offload(rcf_rpc_server *rpcs,
                                            rpc_rte_mbuf_p m,
                          const struct tarpc_rte_pktmbuf_tx_offload *tx_offload);
 
+/**
+ * Redistribute a packet mbuf data across some given number of segments
+ * of variable length according to segmentation pattern provided by caller
+ * (an array of segment group definitions and the number of elements
+ *  in the array) to produce a new mbuf chain with a different RPC pointer
+ *
+ * @param m               RTE mbuf pointer (in / out)
+ * @param seg_groups      An array of segment group definitions
+ * @param nb_seg_groups   The number of segment group definitions
+ *
+ * @return The number of segments produced or a negative errno value
+ */
+extern int rpc_rte_pktmbuf_redist(rcf_rpc_server *rpcs,
+                                  rpc_rte_mbuf_p *m,
+                                  struct tarpc_pktmbuf_seg_group *seg_groups,
+                                  uint8_t nb_seg_groups);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf --> */
 
 #ifdef __cplusplus

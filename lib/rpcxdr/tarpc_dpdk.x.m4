@@ -495,6 +495,24 @@ struct tarpc_rte_pktmbuf_set_tx_offload_in {
 
 typedef struct tarpc_void_out tarpc_rte_pktmbuf_set_tx_offload_out;
 
+struct tarpc_pktmbuf_seg_group {
+    uint16_t len;  /**< Segment length */
+    uint8_t  num;  /**< Number of segments */
+};
+
+/** rte_pktmbuf_redist() */
+struct tarpc_rte_pktmbuf_redist_in {
+    struct tarpc_in_arg             common;
+    tarpc_rte_mbuf                  m;
+    struct tarpc_pktmbuf_seg_group  seg_groups<>;
+};
+
+struct tarpc_rte_pktmbuf_redist_out {
+    struct tarpc_out_arg            common;
+    tarpc_rte_mbuf                  m;
+    tarpc_int                       retval;
+};
+
 
 /*
  * rte_eth_dev API
@@ -1055,6 +1073,8 @@ program dpdk
         RPC_DEF(rte_pktmbuf_get_rss_hash)
         RPC_DEF(rte_pktmbuf_get_tx_offload)
         RPC_DEF(rte_pktmbuf_set_tx_offload)
+
+        RPC_DEF(rte_pktmbuf_redist)
 
         RPC_DEF(rte_eth_dev_info_get)
         RPC_DEF(rte_eth_dev_configure)
