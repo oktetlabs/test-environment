@@ -106,6 +106,8 @@ tapi_sock_read_data(rcf_rpc_server *rpcs,
                 break;
             }
         }
+        else if (rc == 0)
+            break;
 
         te_dbuf_append(read_data, data, rc);
         total_len += rc;
