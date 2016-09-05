@@ -596,6 +596,14 @@ extern te_errno rcf_ta_del_file(const char *ta_name, int session,
 extern te_errno rcf_tr_op_log(te_bool ring);
 
 /**
+ * Get traffic operations logging level.
+ *
+ * @return @c TRUE - log using RING level, @c FALSE - log using INFO level.
+ */
+extern te_bool rcf_tr_op_log_get(void);
+
+
+/**
  * This function creates CSAP (communication service access point) on the
  * Test Agent.
  *

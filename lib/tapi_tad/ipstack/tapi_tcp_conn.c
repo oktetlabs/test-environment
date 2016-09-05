@@ -386,12 +386,18 @@ conn_wait_packet(tapi_tcp_connection_t *conn_descr, unsigned int timeout,
     unsigned int    sub = 0;
     struct timeval  tv1;
     struct timeval  tv2;
+    te_bool tr_op_log = rcf_tr_op_log_get();
 
     if (conn_descr == NULL)
     {
         ERROR("%s: connection descriptor is NULL", __FUNCTION__);
         return TE_EINVAL;
     }
+
+    RING("Waiting for a packet on the CSAP %d (%s:%d) timeout is %u "
+         "milliseconds", conn_descr->rcv_csap, conn_descr->agt,
+         conn_descr->rcv_sid, timeout);
+    rcf_tr_op_log(FALSE);
 
     gettimeofday(&tv1, NULL);
     while (num == 0)
@@ -402,6 +408,7 @@ conn_wait_packet(tapi_tcp_connection_t *conn_descr, unsigned int timeout,
         if (rc != 0)
         {
             ERROR("%s: rcf_ta_trrecv_get() failed", __FUNCTION__);
+            rcf_tr_op_log(tr_op_log);
             return rc;
         }
 
@@ -415,6 +422,10 @@ conn_wait_packet(tapi_tcp_connection_t *conn_descr, unsigned int timeout,
 
         usleep(1000);
     }
+
+    rcf_tr_op_log(tr_op_log);
+    RING("The CSAP %d (%s:%d) got %u packets", conn_descr->rcv_csap,
+         conn_descr->agt, conn_descr->rcv_sid, num);
 
     if (duration != NULL)
         *duration = sub;

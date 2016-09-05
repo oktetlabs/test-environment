@@ -2206,6 +2206,13 @@ rcf_tr_op_log(te_bool ring)
     return 0;
 }
 
+/* See description in rcf_api.h */
+te_bool
+rcf_tr_op_log_get(void)
+{
+    return rcf_tr_op_ring;
+}
+
 /**
  * This function creates CSAP (communication service access point) on the
  * Test Agent.
