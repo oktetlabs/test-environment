@@ -61,7 +61,8 @@
 #include "tapi_sockaddr.h"
 #include "te_alloc.h"
 
-
+/* Alien link address location in the configurator tree. */
+#define CFG_ALIEN_LINK_ADDR "/volatile:/alien_link_addr:"
 
 /**
  * Function provided by FLEX.
@@ -1085,6 +1086,44 @@ prepare_unicast(unsigned int af, tapi_env_addr *env_addr,
 }
 
 /**
+ * Read alien link address value from the configurator, increase by @c 1 the
+ * last byte value for the next call.
+ *
+ * @param [out] addr  Pointer to the obtained address.
+ *
+ * @return Status code.
+ */
+static te_errno
+tapi_env_get_alien_link_addr(struct sockaddr *addr)
+{
+    struct sockaddr *tmp;
+    cfg_val_type     type = CVT_ADDRESS;
+    te_errno         rc;
+
+    rc = cfg_get_instance_fmt(&type, &tmp, CFG_ALIEN_LINK_ADDR);
+    if (rc != 0)
+    {
+        ERROR("Failed to get alien link address: %r", rc);
+        return rc;
+    }
+    memcpy(addr, tmp, sizeof(*addr));
+
+    /* Increase the last byte of the MAC address to get new value in the
+     * next request. */
+    tmp->sa_data[ETHER_ADDR_LEN - 1]++;
+
+    rc = cfg_set_instance_fmt(CFG_VAL(ADDRESS, tmp), CFG_ALIEN_LINK_ADDR);
+    free(tmp);
+    if (rc != 0)
+    {
+        ERROR("Failed to set alien link address: %r", rc);
+        return rc;
+    }
+
+    return 0;
+}
+
+/**
  * Prepare required addresses in accordance with bound network
  * configuration.
  *
@@ -1122,15 +1161,9 @@ prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
             env_addr->addr->sa_family = AF_LOCAL;
             if (env_addr->type == TAPI_ENV_ADDR_ALIEN)
             {
-                static uint8_t counter;
-
-                /* TODO - get it from Configurator */
-                env_addr->addr->sa_data[0] = 0x00;
-                env_addr->addr->sa_data[1] = 0x10;
-                env_addr->addr->sa_data[2] = 0x29;
-                env_addr->addr->sa_data[3] = 0x38;
-                env_addr->addr->sa_data[4] = 0x47;
-                env_addr->addr->sa_data[5] = 0x56 + counter++;
+                rc = tapi_env_get_alien_link_addr(env_addr->addr);
+                if (rc != 0)
+                    return rc;
             }
             else if (env_addr->type == TAPI_ENV_ADDR_UNICAST)
             {
