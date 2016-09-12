@@ -59,6 +59,7 @@
 #include "tad_send_recv.h"
 #include "tad_agent_csap.h"
 #include "tad_reply_rcf.h"
+#include "tad_api.h"
 
 
 #define SEND_ANSWER(_fmt...) \
@@ -247,28 +248,11 @@ strcmp_imp(const char *l, const char *r)
     return strcmp(l, r);
 }
 
-#endif /* TAD_DUMMY */
-
-/* See description in rcf_ch_api.h */
-int
-rcf_ch_csap_create(struct rcf_comm_connection *rcfc,
-                   char *cbuf, size_t buflen, size_t answer_plen,
-                   const uint8_t *ba, size_t cmdlen,
-                   const char *stack, const char *params)
+/* See the description in tad_api.h */
+te_errno
+tad_csap_create(const char *stack, const char *spec_str, csap_p *new_csap_p)
 {
-#ifdef TAD_DUMMY
-    UNUSED(rcfc);
-    UNUSED(cbuf);
-    UNUSED(buflen);
-    UNUSED(answer_plen);
-    UNUSED(ba);
-    UNUSED(cmdlen);
-
-    VERB("CSAP create: stack <%s> params <%s>\n", stack, params);
-    return -1;
-#else
     csap_p           new_csap;
-    csap_handle_t    new_csap_id;
     unsigned int     layer;
     int              syms;
     te_errno         rc;
@@ -276,31 +260,28 @@ rcf_ch_csap_create(struct rcf_comm_connection *rcfc,
     csap_spt_type_p  csap_spt_descr;
     int32_t          i32_tmp;
 
-    UNUSED(cmdlen);
-    UNUSED(params);
-
-
-    TAD_CHECK_INIT;
+    if (!tad_is_initialized)
+    {
+        rc = TE_ETADNOINIT;
+        goto fail_tad_no_init;
+    }
 
     rc = csap_create(stack, &new_csap);
     if (rc != 0)
     {
         ERROR("CSAP '%s' creation internal error %r", stack, rc);
-        SEND_ANSWER("%u", rc);
-        return 0;
+        goto fail_csap_create;
     }
-    new_csap_id = new_csap->id;
 
-    INFO("CSAP '%s' created, new id: %u", stack, new_csap_id);
+    INFO("CSAP '%s' created, new id: %u", stack, new_csap->id);
 
-    if (ba == NULL)
+    if (spec_str == NULL)
     {
         ERROR("Missing attached NDS with CSAP parameters");
         goto exit;
     }
 
-    rc = asn_parse_value_text((const char *)ba, ndn_csap_spec,
-                              &new_csap->nds, &syms);
+    rc = asn_parse_value_text(spec_str, ndn_csap_spec, &new_csap->nds, &syms);
     if (rc != 0)
     {
         ERROR("CSAP NDS parse error sym=%d: %r", syms, rc);
@@ -415,21 +396,16 @@ rcf_ch_csap_create(struct rcf_comm_connection *rcfc,
     }
 
 exit:
-    if (rc == 0)
-    {
-        SEND_ANSWER("0 %u", new_csap_id);
-    }
+    if (rc != 0)
+        (void)csap_destroy(new_csap->id);
     else
-    {
-        (void)csap_destroy(new_csap_id);
-        SEND_ANSWER("%u", TE_RC(TE_TAD_CH, rc));
-    }
-    return 0;
-#endif
+        *new_csap_p = new_csap;
+
+fail_csap_create:
+fail_tad_no_init:
+    return rc;
 }
 
-
-#ifndef TAD_DUMMY
 /**
  * Wait for exclusive use of the CSAP.
  *
@@ -544,7 +520,44 @@ tad_csap_destroy(csap_handle_t csap_id)
 
     return rc;
 }
+
+#endif /* ndef TAD_DUMMY */
+
+/* See description in rcf_ch_api.h */
+int
+rcf_ch_csap_create(struct rcf_comm_connection *rcfc,
+                   char *cbuf, size_t buflen, size_t answer_plen,
+                   const uint8_t *ba, size_t cmdlen,
+                   const char *stack, const char *params)
+{
+#ifdef TAD_DUMMY
+    UNUSED(rcfc);
+    UNUSED(cbuf);
+    UNUSED(buflen);
+    UNUSED(answer_plen);
+    UNUSED(ba);
+    UNUSED(cmdlen);
+
+    VERB("CSAP create: stack <%s> params <%s>\n", stack, params);
+    return -1;
+#else
+    te_errno    rc;
+    csap_p      new_csap;
+
+    UNUSED(cmdlen);
+    UNUSED(params);
+
+    TAD_CHECK_INIT;
+
+    rc = tad_csap_create(stack, (const char *)ba, &new_csap);
+    if (rc != 0)
+        SEND_ANSWER("%u", TE_RC(TE_TAD_CH, rc));
+    else
+        SEND_ANSWER("0 %u", new_csap->id);
+
+    return 0;
 #endif
+}
 
 /* See description in rcf_ch_api.h */
 int

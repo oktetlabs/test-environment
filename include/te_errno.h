@@ -281,6 +281,7 @@ typedef enum {
     TE_ETADCSAPDB,      /**< CSAP DB internal error */
     TE_ETADENDOFDATA,   /**< End of incoming data in CSAP */
     TE_ETADEXPRPARSE,   /**< Expression parse error */
+    TE_ETADNOINIT,      /**< TAD is not initialized */
 
 /*@}*/
 
@@ -682,6 +683,7 @@ te_rc_err2str(te_errno err)
         ERR2STR(ETADCSAPDB);      
         ERR2STR(ETADENDOFDATA);   
         ERR2STR(ETADEXPRPARSE);   
+        ERR2STR(ETADNOINIT);
 
         ERR2STR(EBACKUP);
         ERR2STR(EISROOT);  

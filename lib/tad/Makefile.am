@@ -8,6 +8,7 @@ AM_CPPFLAGS = -I$(top_srcdir) @TE_CPPFLAGS@ @TAD_CH_DEFS@ \
 AM_CFLAGS = @TE_CFLAGS@ $(TE_CFLAGS_VAR)
 
 include_HEADERS = \
+	tad_api.h \
 	tad_csap_inst.h \
 	tad_csap_support.h \
 	tad_types.h \
