@@ -1139,6 +1139,34 @@ struct tarpc_rte_eth_dev_rss_hash_conf_get_out {
     struct tarpc_rte_eth_rss_conf          rss_conf;
 };
 
+enum tarpc_rte_eth_fc_mode {
+    TARPC_RTE_FC_NONE,
+    TARPC_RTE_FC_RX_PAUSE,
+    TARPC_RTE_FC_TX_PAUSE,
+    TARPC_RTE_FC_FULL,
+
+    TARPC_RTE_FC__UNKNOWN
+};
+
+struct tarpc_rte_eth_fc_conf {
+    uint32_t                      high_water;
+    uint32_t                      low_water;
+    uint16_t                      pause_time;
+    uint16_t                      send_xon;
+    enum tarpc_rte_eth_fc_mode    mode;
+    uint8_t                       mac_ctrl_frame_fwd;
+    uint8_t                       autoneg;
+};
+
+/** rte_eth_dev_flow_ctrl_get() */
+typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_dev_flow_ctrl_get_in;
+
+struct tarpc_rte_eth_dev_flow_ctrl_get_out {
+    struct tarpc_out_arg                   common;
+    tarpc_int                              retval;
+    struct tarpc_rte_eth_fc_conf           fc_conf;
+};
+
 program dpdk
 {
     version ver0
@@ -1223,5 +1251,6 @@ program dpdk
         RPC_DEF(rte_eth_dev_detach)
         RPC_DEF(rte_eth_dev_rss_reta_query)
         RPC_DEF(rte_eth_dev_rss_hash_conf_get)
+        RPC_DEF(rte_eth_dev_flow_ctrl_get)
     } = 1;
 } = 2;

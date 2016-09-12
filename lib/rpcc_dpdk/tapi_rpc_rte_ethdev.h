@@ -462,6 +462,20 @@ extern int rpc_rte_eth_dev_rss_hash_conf_get(rcf_rpc_server *rpcs,
                                              uint8_t port_id,
                                              struct tarpc_rte_eth_rss_conf *rss_conf);
 
+/**
+ * @b rte_eth_dev_flow_ctrl_get() RPC.
+ *
+ * @param[in]  rpcs        RPC server handle
+ * @param[in]  port_id     Port number
+ * @param[out] fc_conf     The pointer to the structure of the flow control parameters.
+ *                         The memory must be allocated by the caller.
+ *
+ * If failure is not expected, the function jumps out in the case of non-zero
+ * or negative return value.
+ */
+extern int rpc_rte_eth_dev_flow_ctrl_get(rcf_rpc_server *rpcs, uint8_t port_id,
+                                         struct tarpc_rte_eth_fc_conf *fc_conf);
+
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 
 #ifdef __cplusplus

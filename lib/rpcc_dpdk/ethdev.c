@@ -1778,3 +1778,85 @@ rpc_rte_eth_dev_rss_hash_conf_get(rcf_rpc_server *rpcs, uint8_t port_id,
 
     RETVAL_ZERO_INT(rte_eth_dev_rss_hash_conf_get, out.retval);
 }
+
+static const char *
+tarpc_rte_eth_fc_mode2str(te_log_buf *tlbp,
+                          enum tarpc_rte_eth_fc_mode fc_mode)
+{
+    const char *mode;
+
+    switch (fc_mode)
+    {
+        case TARPC_RTE_FC_NONE:
+            mode = "NONE";
+            break;
+        case TARPC_RTE_FC_RX_PAUSE:
+            mode = "RX_PAUSE";
+            break;
+        case TARPC_RTE_FC_TX_PAUSE:
+            mode = "TX_PAUSE";
+            break;
+        case TARPC_RTE_FC_FULL:
+            mode = "FULL";
+            break;
+        default:
+            mode = "<UNKNOWN>";
+            break;
+    }
+
+    te_log_buf_append(tlbp, "mode=%s", mode);
+
+    return te_log_buf_get(tlbp);
+}
+
+static const char *
+tarpc_rte_eth_fc_conf2str(te_log_buf *tlbp,
+                          const struct tarpc_rte_eth_fc_conf *fc_conf)
+{
+    te_log_buf_append(tlbp, "{");
+
+    te_log_buf_append(tlbp, "high_water=%lu, low_water=%lu",
+                      ", pause_time=%hu, send_xon=%hu",
+                      fc_conf->high_water, fc_conf->low_water,
+                      fc_conf->pause_time, fc_conf->send_xon);
+
+    tarpc_rte_eth_fc_mode2str(tlbp, fc_conf->mode);
+
+    te_log_buf_append(tlbp, ", mac_ctrl_frame_fwd=%hhu, autoneg=%hhu",
+                      fc_conf->mac_ctrl_frame_fwd, fc_conf->autoneg);
+    te_log_buf_append(tlbp, "}");
+
+    return te_log_buf_get(tlbp);
+}
+
+int rpc_rte_eth_dev_flow_ctrl_get(rcf_rpc_server *rpcs, uint8_t port_id,
+                                  struct tarpc_rte_eth_fc_conf *fc_conf)
+{
+    tarpc_rte_eth_dev_flow_ctrl_get_in   in;
+    tarpc_rte_eth_dev_flow_ctrl_get_out  out;
+    te_log_buf                          *tlbp;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_flow_ctrl_get", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_flow_ctrl_get,
+                                          out.retval);
+
+    if (out.retval == 0)
+        *fc_conf = out.fc_conf;
+
+    tlbp = te_log_buf_alloc();
+
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_flow_ctrl_get,
+                 "%hhu, %p", NEG_ERRNO_FMT ", %s",
+                 in.port_id, fc_conf, NEG_ERRNO_ARGS(out.retval),
+                 (fc_conf == NULL) ? "<NULL>" :
+                 tarpc_rte_eth_fc_conf2str(tlbp, fc_conf));
+    te_log_buf_free(tlbp);
+
+    RETVAL_ZERO_INT(rte_eth_dev_flow_ctrl_get, out.retval);
+}

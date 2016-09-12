@@ -43,6 +43,8 @@
 #define CASE_TARPC2RTE(_rte) \
     case TARPC_##_rte: *rte = (_rte); break
 
+#define CASE_RTE2TARPC(_rte) \
+    case (_rte): *rpc = TARPC_##_rte; break
 
 static uint32_t
 tarpc_rte_rx_offloads2rpc(uint32_t rte)
@@ -1072,4 +1074,48 @@ TARPC_FUNC(rte_eth_dev_rss_hash_conf_get,{},
 
         out->rss_conf.rss_hf = rss_conf_p->rss_hf;
     }
+})
+
+static int
+tarpc_rte_eth_fc_mode2rpc(const enum rte_eth_rx_mq_mode rte,
+                          enum tarpc_rte_eth_fc_mode *rpc)
+{
+    switch (rte) {
+        CASE_RTE2TARPC(RTE_FC_NONE);
+        CASE_RTE2TARPC(RTE_FC_RX_PAUSE);
+        CASE_RTE2TARPC(RTE_FC_TX_PAUSE);
+        CASE_RTE2TARPC(RTE_FC_FULL);
+        default:
+            return 0;
+    }
+
+    return 1;
+}
+
+TARPC_FUNC(rte_eth_dev_flow_ctrl_get,{},
+{
+    struct rte_eth_fc_conf  fc_conf;
+    struct rte_eth_fc_conf *fc_conf_p;
+
+    fc_conf_p = &fc_conf;
+
+    MAKE_CALL(out->retval = func(in->port_id, fc_conf_p));
+    neg_errno_h2rpc(&out->retval);
+
+    if (out->retval == 0)
+    {
+        if (tarpc_rte_eth_fc_mode2rpc(fc_conf_p->mode,
+            &out->fc_conf.mode))
+            goto done;
+
+        out->fc_conf.high_water = fc_conf_p->high_water;
+        out->fc_conf.low_water = fc_conf_p->low_water;
+        out->fc_conf.pause_time = fc_conf_p->pause_time;
+        out->fc_conf.send_xon = fc_conf_p->send_xon;
+        out->fc_conf.mac_ctrl_frame_fwd = fc_conf_p->mac_ctrl_frame_fwd;
+        out->fc_conf.autoneg = fc_conf_p->autoneg;
+    }
+
+done:
+    ;
 })
