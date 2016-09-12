@@ -393,6 +393,11 @@ extern int rpc_rte_eth_tx_queue_info_get(rcf_rpc_server *rpcs, uint8_t port_id,
                                          uint16_t queue_id,
                                          struct tarpc_rte_eth_txq_info *qinfo);
 
+/**
+ * @b rte_eth_dev_count() RPC.
+ */
+extern uint8_t rpc_rte_eth_dev_count(rcf_rpc_server *rpcs);
+
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 
 #ifdef __cplusplus
