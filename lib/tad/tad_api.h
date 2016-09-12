@@ -78,6 +78,17 @@ extern te_errno tad_send_start_prepare(csap_p                   csap,
 extern te_errno tad_send_release(csap_p csap, tad_send_context *context);
 
 /**
+ * Run Sender.
+ *
+ * @param csap          CSAP instance
+ *
+ * @return Status code.
+ *
+ * @note It releases sender context in any case.
+ */
+extern te_errno tad_send_do(csap_p csap);
+
+/**
  * Prepare TAD Receiver to start matching traffic.
  *
  * @param csap          CSAP instance to match traffic

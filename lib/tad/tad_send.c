@@ -875,11 +875,10 @@ tad_send_by_template(csap_p csap,
     return rc;
 }
 
-/* See description in tad_send.h */
-void *
-tad_send_thread(void *arg)
+/* See description in tad_api.h */
+te_errno
+tad_send_do(csap_p csap)
 {
-    csap_p              csap = arg;
     tad_send_context   *context;
     tad_reply_context   reply_ctx;
     te_errno            rc;
@@ -987,6 +986,17 @@ tad_send_thread(void *arg)
     CSAP_UNLOCK(csap);
 
     tad_reply_cleanup(&reply_ctx);
+
+    return rc;
+}
+
+/* See description in tad_send.h */
+void *
+tad_send_thread(void *arg)
+{
+    csap_p  csap = arg;
+
+    (void)tad_send_do(csap);
 
     return NULL;
 }
