@@ -732,7 +732,7 @@ sniffer_check_capture_space(snif_id_l *snif, const char *fname,
     struct stat         st;
     int                 res;
     file_list_s        *f;
-    file_list_s        *flast;
+    file_list_s        *flast = NULL; /* Just to quieten GCC */
     int                 fd_n;
     unsigned            fnum;
 
