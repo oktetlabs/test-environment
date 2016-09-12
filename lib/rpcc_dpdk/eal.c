@@ -112,6 +112,7 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
     int                     i;
     cfg_val_type            val_type;
     int                     mem_channels;
+    int                     mem_amount = 0;
 
     if (env == NULL || rpcs == NULL)
         return TE_EINVAL;
@@ -148,6 +149,15 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
     append_arg(&my_argc, &my_argv, "-n");
     append_arg(&my_argc, &my_argv, "%d", mem_channels);
 
+    /* Set the amount of memory (in Megabytes) to be booked within hugetables */
+    val_type = CVT_INTEGER;
+    rc = cfg_get_instance_fmt(&val_type, &mem_amount,
+                              "/local:%s/dpdk:/mem_amount:", rpcs->ta);
+    if (rc == 0 && mem_amount > 0)
+    {
+        append_arg(&my_argc, &my_argv, "-m");
+        append_arg(&my_argc, &my_argv, "%d", mem_amount);
+    }
 
     /* Append arguments provided by caller */
     memcpy(&my_argv[my_argc], argv, argc * sizeof(*my_argv));
