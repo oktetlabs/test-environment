@@ -67,6 +67,16 @@ extern te_errno tad_send_start_prepare(csap_p                   csap,
                                        te_bool                  postponed,
                                        const tad_reply_context *reply_ctx);
 
+/**
+ * Release TAD Sender context.
+ *
+ * @param csap          CSAP instance
+ * @param context       TAD Sender context pointer
+ *
+ * @return Status code.
+ */
+extern te_errno tad_send_release(csap_p csap, tad_send_context *context);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

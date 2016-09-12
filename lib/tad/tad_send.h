@@ -119,16 +119,6 @@ extern te_errno tad_send_prepare(csap_p                     csap,
  */
 extern te_errno tad_send_stop(csap_p csap, unsigned int *sent_pkts);
 
-/**
- * Release TAD Sender context.
- *
- * @param csap          CSAP instance
- * @param context       TAD Sender context pointer
- *
- * @return Status code.
- */
-extern te_errno tad_send_release(csap_p csap, tad_send_context *context);
-
 
 /**
  * Start routine for Sender thread.

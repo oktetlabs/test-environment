@@ -483,7 +483,7 @@ tad_send_prepare(csap_p csap, asn_value *template,
     return 0;
 }
 
-/* See description in tad_send.h */
+/* See description in tad_api.h */
 te_errno
 tad_send_release(csap_p csap, tad_send_context *context)
 {
@@ -509,7 +509,7 @@ tad_send_release(csap_p csap, tad_send_context *context)
     return result;
 }
 
-/* See description in tad_send.h */
+/* See description in tad_api.h */
 te_errno
 tad_send_start_prepare(csap_p csap, const char *tmpl_str, te_bool postponed,
                        const tad_reply_context *reply_ctx)
