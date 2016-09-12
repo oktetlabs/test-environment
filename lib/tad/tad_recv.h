@@ -182,16 +182,6 @@ extern te_errno tad_recv_prepare(csap_p                     csap,
                                  const tad_reply_context   *reply_ctx);
 
 /**
- * Release TAD Receiver context.
- *
- * @param csap          CSAP instance
- * @param context       TAD Receiver context pointer
- *
- * @return Status code.
- */
-extern te_errno tad_recv_release(csap_p csap, tad_recv_context *context);
-
-/**
  * Start routine for Receiver thread.
  *
  * @param arg           Start argument, should be pointer to

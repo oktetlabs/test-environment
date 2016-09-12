@@ -690,7 +690,7 @@ tad_recv_shutdown(csap_p csap)
     return 0;
 }
 
-/* See description in tad_recv.h */
+/* See description in tad_api.h */
 te_errno
 tad_recv_release(csap_p csap, tad_recv_context *context)
 {

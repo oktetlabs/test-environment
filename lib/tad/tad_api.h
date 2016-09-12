@@ -96,6 +96,16 @@ extern te_errno tad_recv_start_prepare(csap_p                   csap,
                                        unsigned int             flags,
                                        const tad_reply_context *reply_ctx);
 
+/**
+ * Release TAD Receiver context.
+ *
+ * @param csap          CSAP instance
+ * @param context       TAD Receiver context pointer
+ *
+ * @return Status code.
+ */
+extern te_errno tad_recv_release(csap_p csap, tad_recv_context *context);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
