@@ -113,6 +113,7 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
     cfg_val_type            val_type;
     int                     mem_channels;
     int                     mem_amount = 0;
+    char                   *app_prefix = NULL;
 
     if (env == NULL || rpcs == NULL)
         return TE_EINVAL;
@@ -157,6 +158,18 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
     {
         append_arg(&my_argc, &my_argv, "-m");
         append_arg(&my_argc, &my_argv, "%d", mem_amount);
+    }
+
+    /* Specify DPDK app prefix */
+    val_type = CVT_STRING;
+    rc = cfg_get_instance_fmt(&val_type, &app_prefix,
+                              "/local:%s/dpdk:/app_prefix:", rpcs->ta);
+    if (rc == 0 && app_prefix != NULL)
+    {
+        append_arg(&my_argc, &my_argv, "--file-prefix");
+        append_arg(&my_argc, &my_argv, "%s_%s", app_prefix, rpcs->ta);
+
+        free(app_prefix);
     }
 
     /* Append arguments provided by caller */
