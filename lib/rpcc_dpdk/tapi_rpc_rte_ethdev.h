@@ -47,6 +47,8 @@ extern "C" {
 
 #define RPC_RTE_RETA_GROUP_SIZE 64
 
+#define RPC_RSS_HASH_KEY_LEN_DEF 40
+
 /**
  * rte_eth_dev_info() RPC.
  *
@@ -433,6 +435,21 @@ extern int rpc_rte_eth_dev_rss_reta_query(rcf_rpc_server *rpcs,
                                           uint8_t port_id,
                                           struct tarpc_rte_eth_rss_reta_entry64 *reta_conf,
                                           uint16_t reta_size);
+
+/**
+ * @b rte_eth_dev_rss_hash_conf_get() RPC.
+ *
+ * @param[in]  rpcs        RPC server handle
+ * @param[in]  port_id     Port number
+ * @param[out] rss_conf    A pointer to store the current RSS hash configuration.
+ *                         The memory must be allocated by the caller.
+ *
+ * If failure is not expected, the function jumps out in the case of non-zero
+ * or negative return value.
+ */
+extern int rpc_rte_eth_dev_rss_hash_conf_get(rcf_rpc_server *rpcs,
+                                             uint8_t port_id,
+                                             struct tarpc_rte_eth_rss_conf *rss_conf);
 
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 

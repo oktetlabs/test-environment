@@ -1120,6 +1120,15 @@ struct tarpc_rte_eth_dev_rss_reta_query_out {
     struct tarpc_rte_eth_rss_reta_entry64  reta_conf<>;
 };
 
+/** rte_eth_dev_rss_hash_conf_get() */
+typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_dev_rss_hash_conf_get_in;
+
+struct tarpc_rte_eth_dev_rss_hash_conf_get_out {
+    struct tarpc_out_arg                   common;
+    tarpc_int                              retval;
+    struct tarpc_rte_eth_rss_conf          rss_conf;
+};
+
 program dpdk
 {
     version ver0
@@ -1203,5 +1212,6 @@ program dpdk
         RPC_DEF(rte_eth_dev_count)
         RPC_DEF(rte_eth_dev_detach)
         RPC_DEF(rte_eth_dev_rss_reta_query)
+        RPC_DEF(rte_eth_dev_rss_hash_conf_get)
     } = 1;
 } = 2;

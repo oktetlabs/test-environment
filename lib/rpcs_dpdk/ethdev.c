@@ -1027,3 +1027,30 @@ TARPC_FUNC(rte_eth_dev_rss_reta_query,{},
                    sizeof(out->reta_conf.reta_conf_val[cur_group]));
     }
 })
+
+TARPC_FUNC(rte_eth_dev_rss_hash_conf_get,{},
+{
+    struct rte_eth_rss_conf  rss_conf;
+    struct rte_eth_rss_conf *rss_conf_p;
+
+    rss_conf_p = &rss_conf;
+    rss_conf_p->rss_key = malloc(RPC_RSS_HASH_KEY_LEN_DEF);
+
+    out->rss_conf.rss_key.rss_key_len = RPC_RSS_HASH_KEY_LEN_DEF;
+    out->rss_conf.rss_key.rss_key_val = malloc(
+        out->rss_conf.rss_key.rss_key_len);
+
+    MAKE_CALL(out->retval = func(in->port_id, rss_conf_p));
+    neg_errno_h2rpc(&out->retval);
+
+    if (out->retval == 0)
+    {
+        out->rss_conf.rss_key_len = rss_conf_p->rss_key_len;
+
+        memcpy(out->rss_conf.rss_key.rss_key_val,
+               rss_conf_p->rss_key,
+               out->rss_conf.rss_key.rss_key_len);
+
+        out->rss_conf.rss_hf = rss_conf_p->rss_hf;
+    }
+})

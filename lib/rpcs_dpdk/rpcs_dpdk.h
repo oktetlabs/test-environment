@@ -46,4 +46,6 @@ neg_errno_h2rpc(int *retval)
 
 #define RPC_RTE_ETH_NAME_MAX_LEN 32
 
+#define RPC_RSS_HASH_KEY_LEN_DEF 40
+
 #endif /* __TE_LIB_RPCS_DPDK_H__ */
