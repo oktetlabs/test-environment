@@ -350,7 +350,6 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
              strlen(tmp_inst_name) > 0;
              tmp_inst_name = tmp)
         {
-            int   len;
             int   rc = 0;
             char  tmp_parsed[CFG_OID_MAX];
             
@@ -366,8 +365,6 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
             {
                 continue;
             }
-
-            len = strlen(obj->sub_id) + strlen(tmp_inst_name) + 3;
 
             snprintf(tmp_parsed, CFG_OID_MAX, "%s/%s:%s", 
                      parsed == NULL ? "" : parsed,
@@ -465,14 +462,12 @@ create_wildcard_obj_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
 
     for ( ; obj != NULL; obj = obj->brother)
     {
-        int   len;
         int   rc = 0;
         char  tmp_parsed[CFG_OID_MAX];
 
         if (!all && strcmp(obj->sub_id, sub_id) != 0)
             continue;
 
-        len = strlen(obj->sub_id) + 2;
         sprintf(tmp_parsed, "%s/%s",
                 parsed == NULL ? "" : parsed, obj->sub_id);
 
