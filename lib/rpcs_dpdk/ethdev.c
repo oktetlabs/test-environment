@@ -1151,7 +1151,11 @@ TARPC_FUNC(rte_eth_dev_filter_supported,{},
 
     if (tarpc_rte_filter_type2rte(in->filter_type,
                                   &filter_type))
+    {
+        out->common._errno = TE_RC(TE_RPCS, TE_EINVAL);
+        out->retval = -out->common._errno;
         goto done;
+    }
 
     MAKE_CALL(out->retval = func(in->port_id, filter_type));
     neg_errno_h2rpc(&out->retval);
