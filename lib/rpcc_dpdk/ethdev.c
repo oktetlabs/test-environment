@@ -748,7 +748,6 @@ rpc_rte_eth_rx_burst(rcf_rpc_server *rpcs,
     tarpc_rte_eth_rx_burst_in     in;
     tarpc_rte_eth_rx_burst_out    out;
     te_log_buf                   *tlbp;
-    uint8_t                       i;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -764,8 +763,8 @@ rpc_rte_eth_rx_burst(rcf_rpc_server *rpcs,
                               out.rx_pkts.rx_pkts_len,
                               out.rx_pkts.rx_pkts_len > in.nb_pkts);
 
-    for (i = 0; i < MIN(nb_pkts, out.rx_pkts.rx_pkts_len); i++)
-        rx_pkts[i] = (rpc_rte_mbuf_p)out.rx_pkts.rx_pkts_val[i];
+    memcpy(rx_pkts, out.rx_pkts.rx_pkts_val,
+           MIN(nb_pkts, out.rx_pkts.rx_pkts_len) * sizeof(*rx_pkts));
 
     tlbp = te_log_buf_alloc();
     TAPI_RPC_LOG(rpcs, rte_eth_rx_burst, "%hhu, %hu, %hu", "%hu %s",
