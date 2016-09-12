@@ -1616,3 +1616,82 @@ rpc_rte_eth_dev_detach(rcf_rpc_server *rpcs, uint8_t port_id,
 
     RETVAL_ZERO_INT(rte_eth_dev_detach, out.retval);
 }
+
+static const char *
+tarpc_rte_reta_conf2str(te_log_buf *tlbp,
+                        const struct tarpc_rte_eth_rss_reta_entry64 *reta_conf,
+                        uint16_t reta_size)
+{
+    unsigned cur_group, cur_entry;
+
+    if (reta_conf == NULL)
+    {
+        te_log_buf_append(tlbp, "(null)");
+        return te_log_buf_get(tlbp);
+    }
+
+    te_log_buf_append(tlbp, "reta_conf={");
+
+    for (cur_group = 0; cur_group < reta_size / RPC_RTE_RETA_GROUP_SIZE; cur_group++)
+    {
+        te_log_buf_append(tlbp, " mask=%llu", reta_conf[cur_group].mask);
+        te_log_buf_append(tlbp, ", reta=");
+
+        for (cur_entry = 0; cur_entry < RPC_RTE_RETA_GROUP_SIZE; cur_entry++)
+            te_log_buf_append(tlbp, "%hu", reta_conf[cur_group].reta[cur_entry]);
+
+    }
+
+    te_log_buf_append(tlbp, " }");
+
+    return te_log_buf_get(tlbp);
+}
+
+int
+rpc_rte_eth_dev_rss_reta_query(rcf_rpc_server *rpcs, uint8_t port_id,
+                               struct tarpc_rte_eth_rss_reta_entry64 *reta_conf,
+                               uint16_t reta_size)
+{
+    tarpc_rte_eth_dev_rss_reta_query_in   in;
+    tarpc_rte_eth_dev_rss_reta_query_out  out;
+    te_log_buf                           *tlbp;
+    unsigned                              cur_group;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (reta_conf != NULL)
+    {
+        in.reta_conf.reta_conf_len = reta_size / RPC_RTE_RETA_GROUP_SIZE;
+        in.reta_conf.reta_conf_val = calloc(in.reta_conf.reta_conf_len,
+                                            sizeof(*reta_conf));
+        for (cur_group = 0; cur_group < in.reta_conf.reta_conf_len; cur_group++)
+            in.reta_conf.reta_conf_val[cur_group].mask = reta_conf[cur_group].mask;
+    }
+
+    in.port_id = port_id;
+    in.reta_size = reta_size;
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_rss_reta_query", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_rss_reta_query,
+                                          out.retval);
+
+    if (out.retval == 0)
+        for (cur_group = 0; cur_group < out.reta_conf.reta_conf_len; cur_group ++)
+            memcpy(&reta_conf[cur_group], &out.reta_conf.reta_conf_val[cur_group],
+                   sizeof(*reta_conf));
+
+    tlbp = te_log_buf_alloc();
+
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_rss_reta_query,
+                 "%hhu, %p, %hu", NEG_ERRNO_FMT ", %s",
+                 in.port_id, reta_conf, reta_size,
+                 NEG_ERRNO_ARGS(out.retval),
+                 tarpc_rte_reta_conf2str(tlbp,
+                     (out.reta_conf.reta_conf_len == 0) ? NULL :
+                      out.reta_conf.reta_conf_val, reta_size));
+    te_log_buf_free(tlbp);
+
+    RETVAL_ZERO_INT(rte_eth_dev_rss_reta_query, out.retval);
+}

@@ -45,6 +45,8 @@ extern "C" {
 
 #define RPC_RTE_ETH_NAME_MAX_LEN 32
 
+#define RPC_RTE_RETA_GROUP_SIZE 64
+
 /**
  * rte_eth_dev_info() RPC.
  *
@@ -413,6 +415,24 @@ extern uint8_t rpc_rte_eth_dev_count(rcf_rpc_server *rpcs);
  */
 extern int rpc_rte_eth_dev_detach(rcf_rpc_server *rpcs, uint8_t port_id,
                                   char *devname);
+
+/**
+ * @b rte_eth_dev_rss_reta_query() RPC.
+ *
+ * @param[in]  rpcs        RPC server handle
+ * @param[in]  port_id     Port number
+ * @param[in]  reta_size   Redirection table size.
+ * @param[out] reta_conf   A pointer to the array of rte_eth_rss_reta_entry64
+ *                         structures. The memory must be allocated by the
+ *                         caller.
+ *
+ * If failure is not expected, the function jumps out in the case of non-zero
+ * or negative return value.
+ */
+extern int rpc_rte_eth_dev_rss_reta_query(rcf_rpc_server *rpcs,
+                                          uint8_t port_id,
+                                          struct tarpc_rte_eth_rss_reta_entry64 *reta_conf,
+                                          uint16_t reta_size);
 
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 

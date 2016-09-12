@@ -1101,6 +1101,25 @@ struct tarpc_rte_eth_dev_detach_out {
     char                    devname<>;
 };
 
+struct tarpc_rte_eth_rss_reta_entry64 {
+    uint64_t    mask;
+    uint16_t    reta[64];
+};
+
+/** rte_eth_dev_rss_reta_query() */
+struct tarpc_rte_eth_dev_rss_reta_query_in {
+    struct tarpc_in_arg                    common;
+    uint8_t                                port_id;
+    uint16_t                               reta_size;
+    struct tarpc_rte_eth_rss_reta_entry64  reta_conf<>;
+};
+
+struct tarpc_rte_eth_dev_rss_reta_query_out {
+    struct tarpc_out_arg                   common;
+    tarpc_int                              retval;
+    struct tarpc_rte_eth_rss_reta_entry64  reta_conf<>;
+};
+
 program dpdk
 {
     version ver0
@@ -1183,5 +1202,6 @@ program dpdk
         RPC_DEF(rte_eth_tx_queue_info_get)
         RPC_DEF(rte_eth_dev_count)
         RPC_DEF(rte_eth_dev_detach)
+        RPC_DEF(rte_eth_dev_rss_reta_query)
     } = 1;
 } = 2;

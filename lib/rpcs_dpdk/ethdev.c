@@ -993,3 +993,37 @@ TARPC_FUNC(rte_eth_dev_detach,{},
     MAKE_CALL(out->retval = func(in->port_id, out->devname.devname_val));
     neg_errno_h2rpc(&out->retval);
 })
+
+TARPC_FUNC(rte_eth_dev_rss_reta_query,{},
+{
+    struct rte_eth_rss_reta_entry64 *reta_conf_p;
+    unsigned                         cur_group;
+
+    if (in->reta_conf.reta_conf_len == 0)
+        reta_conf_p = NULL;
+    else
+    {
+        reta_conf_p = calloc(in->reta_conf.reta_conf_len, sizeof(*reta_conf_p));
+
+        for (cur_group = 0; cur_group < in->reta_conf.reta_conf_len; cur_group++)
+        {
+            memset(&reta_conf_p[cur_group], 0, sizeof(*reta_conf_p));
+            reta_conf_p[cur_group].mask = in->reta_conf.reta_conf_val[cur_group].mask;
+        }
+    }
+
+    MAKE_CALL(out->retval = func(in->port_id, reta_conf_p, in->reta_size));
+    neg_errno_h2rpc(&out->retval);
+
+    if (reta_conf_p != NULL && out->retval == 0)
+    {
+        out->reta_conf.reta_conf_len = in->reta_conf.reta_conf_len;
+        out->reta_conf.reta_conf_val = calloc(out->reta_conf.reta_conf_len,
+                                              sizeof(*out->reta_conf.reta_conf_val));
+
+        for (cur_group = 0;  cur_group < out->reta_conf.reta_conf_len; cur_group++)
+            memcpy(&out->reta_conf.reta_conf_val[cur_group],
+                   &reta_conf_p[cur_group],
+                   sizeof(out->reta_conf.reta_conf_val[cur_group]));
+    }
+})
