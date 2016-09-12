@@ -182,7 +182,7 @@ if test ! -f "$TE_BUILD/$PLATFORM.sbd"; then
 else
     sbd=$(cat "$TE_BUILD/$PLATFORM.sbd")
     ADD_CPPFLAGS="$ADD_CPPFLAGS -I${sbd}/platforms/${PLATFORM}/include"
-    ADD_CFLAGS="$ADD_CPPFLAGS -I${sbd}/platforms/${PLATFORM}/include"
+    ADD_CFLAGS="$ADD_CFLAGS -I${sbd}/platforms/${PLATFORM}/include"
     ADD_LDFLAGS="$ADD_LDFLAGS -L${sbd}/platforms/${PLATFORM}/lib"
 fi
 
