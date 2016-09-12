@@ -64,6 +64,7 @@
 #include "logger_api.h"
 #include "logger_ta_fast.h"
 
+
 /**
  * Description see in tad_utils.h
  */

@@ -62,6 +62,10 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** Zero timeval */
+#define tad_tv_zero             ((struct timeval){ 0, 0 })
+
 /**
  * Convert text protocol label into integer tag.
  *

@@ -60,8 +60,6 @@
 #include "tad_agent_csap.h"
 
 
-static struct timeval tv_zero = {0,0};
-
 #define SEND_ANSWER(_fmt...) \
     do {                                                                   \
         te_errno _rc;                                                      \
@@ -645,8 +643,8 @@ rcf_ch_trsend_start(struct rcf_comm_connection *rcfc,
     if (postponed)
         csap->state |= CSAP_STATE_FOREGROUND;
 
-    csap->first_pkt = tv_zero;
-    csap->last_pkt  = tv_zero;
+    csap->first_pkt = tad_tv_zero;
+    csap->last_pkt  = tad_tv_zero;
 
     CSAP_UNLOCK(csap);
 
@@ -816,7 +814,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *rcfc,
             csap->state |= CSAP_STATE_PACKETS_NO_PAYLOAD;
     }
 
-    csap->first_pkt = csap->last_pkt = tv_zero;
+    csap->first_pkt = csap->last_pkt = tad_tv_zero;
 
     CSAP_UNLOCK(csap);
 
@@ -1032,8 +1030,8 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *rcfc,
             csap->state |= CSAP_STATE_PACKETS_NO_PAYLOAD;
     }
 
-    csap->first_pkt = tv_zero;
-    csap->last_pkt  = tv_zero;
+    csap->first_pkt = tad_tv_zero;
+    csap->last_pkt  = tad_tv_zero;
 
     CSAP_UNLOCK(csap);
 
