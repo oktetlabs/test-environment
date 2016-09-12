@@ -437,6 +437,17 @@ extern int rpc_rte_eth_dev_rss_reta_query(rcf_rpc_server *rpcs,
                                           uint16_t reta_size);
 
 /**
+ * @b rte_eth_dev_rss_reta_update() RPC.
+ *
+ * If failure is not expected, the function jumps out in the case of non-zero
+ * or negative return value.
+ */
+extern int rpc_rte_eth_dev_rss_reta_update(rcf_rpc_server *rpcs,
+                                           uint8_t port_id,
+                                           struct tarpc_rte_eth_rss_reta_entry64 *reta_conf,
+                                           uint16_t reta_size);
+
+/**
  * @b rte_eth_dev_rss_hash_conf_get() RPC.
  *
  * @param[in]  rpcs        RPC server handle

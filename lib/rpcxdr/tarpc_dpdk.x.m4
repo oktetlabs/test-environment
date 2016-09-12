@@ -1120,6 +1120,16 @@ struct tarpc_rte_eth_dev_rss_reta_query_out {
     struct tarpc_rte_eth_rss_reta_entry64  reta_conf<>;
 };
 
+/** rte_eth_dev_rss_reta_update() */
+struct tarpc_rte_eth_dev_rss_reta_update_in {
+    struct tarpc_in_arg                    common;
+    uint8_t                                port_id;
+    uint16_t                               reta_size;
+    struct tarpc_rte_eth_rss_reta_entry64  reta_conf<>;
+};
+
+typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_rss_reta_update_out;
+
 /** rte_eth_dev_rss_hash_conf_get() */
 typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_dev_rss_hash_conf_get_in;
 

@@ -1697,6 +1697,47 @@ rpc_rte_eth_dev_rss_reta_query(rcf_rpc_server *rpcs, uint8_t port_id,
 }
 
 int
+rpc_rte_eth_dev_rss_reta_update(rcf_rpc_server *rpcs, uint8_t port_id,
+                               struct tarpc_rte_eth_rss_reta_entry64 *reta_conf,
+                               uint16_t reta_size)
+{
+    tarpc_rte_eth_dev_rss_reta_update_in   in;
+    tarpc_rte_eth_dev_rss_reta_update_out  out;
+    te_log_buf                            *tlbp;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (reta_conf != NULL)
+    {
+        in.reta_conf.reta_conf_len = 1;
+        in.reta_conf.reta_conf_val = malloc(sizeof *reta_conf);
+        in.reta_conf.reta_conf_val->mask = reta_conf->mask;
+
+        memcpy(in.reta_conf.reta_conf_val, reta_conf, sizeof *reta_conf);
+    }
+
+    in.port_id = port_id;
+    in.reta_size = reta_size;
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_rss_reta_update", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_rss_reta_update,
+                                          out.retval);
+    tlbp = te_log_buf_alloc();
+
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_rss_reta_update, "%hhu, %s, %hu",
+                 NEG_ERRNO_FMT, in.port_id,
+                 tarpc_rte_reta_conf2str(tlbp,
+                     (in.reta_conf.reta_conf_len == 0) ? NULL :
+                     in.reta_conf.reta_conf_val, reta_size),
+                     NEG_ERRNO_ARGS(out.retval));
+    te_log_buf_free(tlbp);
+
+    RETVAL_ZERO_INT(rte_eth_dev_rss_reta_update, out.retval);
+}
+
+int
 rpc_rte_eth_dev_rss_hash_conf_get(rcf_rpc_server *rpcs, uint8_t port_id,
                                   struct tarpc_rte_eth_rss_conf *rss_conf)
 {
