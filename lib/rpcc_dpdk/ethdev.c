@@ -1472,3 +1472,54 @@ rpc_rte_eth_dev_default_mac_addr_set(rcf_rpc_server *rpcs, uint8_t port_id,
 
     RETVAL_ZERO_INT(rte_eth_dev_default_mac_addr_set, out.retval);
 }
+
+static const char *
+tarpc_rte_eth_rxq_info2str(te_log_buf *tlbp,
+                           const struct tarpc_rte_eth_rxq_info *qinfo,
+                           rcf_rpc_server *rpcs)
+{
+    te_log_buf_append(tlbp, "{ ");
+
+    te_log_buf_append(tlbp, "mp=", RPC_PTR_FMT, RPC_PTR_VAL(qinfo->mp));
+
+    te_log_buf_append(tlbp, ", conf=");
+    tarpc_rte_eth_rxconf2str(tlbp, &qinfo->conf);
+
+    te_log_buf_append(tlbp, ", scattered_rx=%hhu, nb_desc=%hu",
+                      qinfo->scattered_rx, qinfo->nb_desc);
+
+    te_log_buf_append(tlbp, " }");
+    return te_log_buf_get(tlbp);
+}
+
+int
+rpc_rte_eth_rx_queue_info_get(rcf_rpc_server *rpcs, uint8_t port_id,
+                              uint16_t queue_id,
+                              struct tarpc_rte_eth_rxq_info *qinfo)
+{
+    tarpc_rte_eth_rx_queue_info_get_in   in;
+    tarpc_rte_eth_rx_queue_info_get_out  out;
+    te_log_buf                          *tlbp;
+
+    if (qinfo == NULL)
+        TEST_FAIL("Invalid %s() qinfo argument", __func__);
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+    in.queue_id = queue_id;
+
+    rcf_rpc_call(rpcs, "rte_eth_rx_queue_info_get", &in, &out);
+
+    *qinfo = out.qinfo;
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_eth_rx_queue_info_get, "%hhu, %hu", "qinfo=%s, %s",
+                 in.port_id, in.queue_id,
+                 tarpc_rte_eth_rxq_info2str(tlbp, qinfo, rpcs),
+                 NEG_ERRNO_ARGS(out.retval));
+    te_log_buf_free(tlbp);
+
+    RETVAL_ZERO_INT(rte_eth_rx_queue_info_get, out.retval);
+}
