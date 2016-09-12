@@ -1130,8 +1130,8 @@ rcf_ch_trpoll(struct rcf_comm_connection *rcfc,
     if ((csap = csap_find(csap_id)) == NULL)
     {
         ERROR("%s: CSAP %u not exists", __FUNCTION__, csap_id);
-        SEND_ANSWER("%u 0", TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
-        return 0;
+        rc = TE_ETADCSAPNOTEX;
+        goto send_answer_no_csap;
     }
 
     if (csap->state == CSAP_STATE_IDLE)
@@ -1151,20 +1151,22 @@ rcf_ch_trpoll(struct rcf_comm_connection *rcfc,
     }
 
     if ((rc != TE_ETIMEDOUT) || (timeout == 0))
-    {
-        SEND_ANSWER("%u 0", TE_RC(TE_TAD_CH, rc));
-        return 0;
-    }
+        goto send_answer_bad_state;
 
     rc = tad_poll_enqueue(csap, timeout, rcfc, cbuf, answer_plen);
     if (rc != 0)
     {
         ERROR(CSAP_LOG_FMT "Failed to enqueue poll request: %r",
               CSAP_LOG_ARGS(csap));
-        SEND_ANSWER("%u 0", rc);
-        return 0;
+        goto send_answer_fail_enqueue;
     }
 
+    return 0;
+
+send_answer_fail_enqueue:
+send_answer_bad_state:
+send_answer_no_csap:
+    SEND_ANSWER("%u 0", TE_RC(TE_TAD_CH, rc));
     return 0;
 #endif
 }
