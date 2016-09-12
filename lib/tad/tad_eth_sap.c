@@ -853,6 +853,9 @@ tad_eth_sap_recv_open(tad_eth_sap *sap, unsigned int mode)
     }
 #endif
 
+    if (mode & TAD_ETH_RECV_KEEP_OPEN_SOCKET)
+        sap->csap->state |= CSAP_STATE_KEEP_OPEN_SOCKET;
+
     data->recv_mode = mode;
 #ifdef USE_PF_PACKET
     INFO("PF_PACKET socket %d opened and bound for receive", data->in);

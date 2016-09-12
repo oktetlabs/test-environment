@@ -142,6 +142,8 @@ enum {
                                          the send operation */
     CSAP_STATE_RECV       = 0x0004, /**< CSAP is receiving or idle after
                                          the receive operation */
+    CSAP_STATE_KEEP_OPEN_SOCKET = 0x0008, /**< Do not close socket after
+                                               receiving packets */
     CSAP_STATE_DONE       = 0x0010, /**< Processing has been finished */
     CSAP_STATE_SEND_DONE  = 0x0020, /**< Send has been finished */
     CSAP_STATE_RECV_DONE  = 0x0040, /**< Receive has been finished */
