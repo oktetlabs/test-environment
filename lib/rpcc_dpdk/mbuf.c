@@ -1173,3 +1173,29 @@ rpc_rte_pktmbuf_redist(rcf_rpc_server *rpcs,
 
     RETVAL_INT(rte_pktmbuf_redist, out.retval);
 }
+
+int
+rpc_rte_vlan_strip(rcf_rpc_server *rpcs,
+                   rpc_rte_mbuf_p m)
+{
+    tarpc_rte_pktmbuf_trim_in   in;
+    tarpc_rte_pktmbuf_trim_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.m = (tarpc_rte_mbuf)m;
+
+    rcf_rpc_call(rpcs, "rte_vlan_strip", &in, &out);
+
+    CHECK_RETVAL_VAR(rte_vlan_strip, out.retval, ((out.retval != -1)
+                     && (out.retval != 0)), -1);
+
+    TAPI_RPC_LOG(rpcs, rte_vlan_strip, RPC_PTR_FMT , "%d",
+                 RPC_PTR_VAL(in.m), out.retval);
+
+    TAPI_RPC_OUT(rte_vlan_strip, ((out.retval != -1)
+                 && (out.retval != 0)));
+
+    return out.retval;
+}

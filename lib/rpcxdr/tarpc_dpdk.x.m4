@@ -1076,6 +1076,14 @@ struct tarpc_rte_eth_tx_queue_info_get_out {
 
 };
 
+/** rte_vlan_strip() */
+struct tarpc_rte_vlan_strip_in {
+    struct tarpc_in_arg    common;
+    tarpc_rte_mbuf         m;
+};
+
+typedef struct tarpc_int_retval_out tarpc_rte_vlan_strip_out;
+
 program dpdk
 {
     version ver0
@@ -1116,6 +1124,8 @@ program dpdk
         RPC_DEF(rte_pktmbuf_set_tx_offload)
 
         RPC_DEF(rte_pktmbuf_redist)
+
+        RPC_DEF(rte_vlan_strip)
 
         RPC_DEF(rte_eth_dev_info_get)
         RPC_DEF(rte_eth_dev_configure)

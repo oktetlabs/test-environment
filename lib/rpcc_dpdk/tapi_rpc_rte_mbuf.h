@@ -412,6 +412,14 @@ extern int rpc_rte_pktmbuf_redist(rcf_rpc_server *rpcs,
                                   struct tarpc_pktmbuf_seg_group *seg_groups,
                                   uint8_t nb_seg_groups);
 
+/**
+ * @b rte_vlan_strip() RPC
+ *
+ * If failure is not expected, the function jumps out in the case of
+ * return value is not equal to 0 or -1.
+ */
+extern int rpc_rte_vlan_strip(rcf_rpc_server *rpcs, rpc_rte_mbuf_p m);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf --> */
 
 #ifdef __cplusplus

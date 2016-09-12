@@ -34,6 +34,7 @@
 
 #include "rte_config.h"
 #include "rte_mbuf.h"
+#include "rte_ether.h"
 
 #include "logger_api.h"
 
@@ -1197,5 +1198,17 @@ out:
 TARPC_FUNC_STATIC(rte_pktmbuf_redist, {},
 {
     MAKE_CALL(out->retval = func(in, out));
+}
+)
+
+TARPC_FUNC_STATIC(rte_vlan_strip, {},
+{
+    struct rte_mbuf *m = NULL;
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+        m = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->m, ns);
+    });
+
+    MAKE_CALL(out->retval = func(m));
 }
 )
