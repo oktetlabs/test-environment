@@ -351,6 +351,7 @@ name2handler(const char *name, void **handler)
 static char *
 handler2name(void *handler)
 {
+    const char *sym_name;
     char *tmp;
 
     if (handler == (void *)SIG_ERR)
@@ -361,8 +362,8 @@ handler2name(void *handler)
         tmp = strdup("SIG_IGN");
     else if (handler == NULL)
         tmp = strdup("NULL");
-    else if ((tmp = rcf_ch_symbol_name(handler)) != NULL)
-        tmp = strdup(tmp);
+    else if ((sym_name = rcf_ch_symbol_name(handler)) != NULL)
+        tmp = strdup(sym_name);
     else if ((tmp = calloc(1, 16)) != NULL)
     {
         /* FIXME */
