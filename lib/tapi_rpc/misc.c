@@ -1327,8 +1327,11 @@ int64_t
 rpc_copy_fd2fd(rcf_rpc_server *rpcs, int out_fd, int in_fd, int timeout,
                uint64_t count)
 {
-    struct tarpc_copy_fd2fd_in  in = {};
-    struct tarpc_copy_fd2fd_out out = {};
+    struct tarpc_copy_fd2fd_in  in;
+    struct tarpc_copy_fd2fd_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
 
     in.out_fd = out_fd;
     in.in_fd = in_fd;
