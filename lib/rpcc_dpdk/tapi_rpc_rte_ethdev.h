@@ -383,6 +383,16 @@ extern int rpc_rte_eth_rx_queue_info_get(rcf_rpc_server *rpcs, uint8_t port_id,
                                          uint16_t queue_id,
                                          struct tarpc_rte_eth_rxq_info *qinfo);
 
+/**
+ * @b rte_eth_tx_queue_info_get() RPC
+ *
+ * If failure is not expected, the function jumps out in the case of
+ * non-zero return value.
+ */
+extern int rpc_rte_eth_tx_queue_info_get(rcf_rpc_server *rpcs, uint8_t port_id,
+                                         uint16_t queue_id,
+                                         struct tarpc_rte_eth_txq_info *qinfo);
+
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 
 #ifdef __cplusplus

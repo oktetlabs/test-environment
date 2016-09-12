@@ -1042,7 +1042,39 @@ struct tarpc_rte_eth_dev_default_mac_addr_set_in {
     struct tarpc_ether_addr  mac_addr<>;
 };
 
+struct tarpc_rte_eth_rxq_info {
+    tarpc_rte_mempool             mp;
+    struct tarpc_rte_eth_rxconf   conf;
+    uint8_t                       scattered_rx;
+    uint16_t                      nb_desc;
+};
+
+/** rte_eth_rx_queue_info_get() */
+typedef struct tarpc_rte_eth_dev_port_id_queue_id_in tarpc_rte_eth_rx_queue_info_get_in;
+
+struct tarpc_rte_eth_rx_queue_info_get_out {
+    struct tarpc_out_arg          common;
+    struct tarpc_rte_eth_rxq_info qinfo;
+    tarpc_int                     retval;
+
+};
+
 typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_default_mac_addr_set_out;
+
+struct tarpc_rte_eth_txq_info {
+    struct tarpc_rte_eth_txconf   conf;
+    uint16_t                      nb_desc;
+};
+
+/** rte_eth_tx_queue_info_get() */
+typedef struct tarpc_rte_eth_dev_port_id_queue_id_in tarpc_rte_eth_tx_queue_info_get_in;
+
+struct tarpc_rte_eth_tx_queue_info_get_out {
+    struct tarpc_out_arg          common;
+    struct tarpc_rte_eth_txq_info qinfo;
+    tarpc_int                     retval;
+
+};
 
 program dpdk
 {
@@ -1120,5 +1152,7 @@ program dpdk
         RPC_DEF(rte_eth_dev_tx_queue_stop)
         RPC_DEF(rte_eth_macaddr_get)
         RPC_DEF(rte_eth_dev_default_mac_addr_set)
+        RPC_DEF(rte_eth_rx_queue_info_get)
+        RPC_DEF(rte_eth_tx_queue_info_get)
     } = 1;
 } = 2;

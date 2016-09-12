@@ -967,3 +967,16 @@ TARPC_FUNC(rte_eth_rx_queue_info_get, {},
     out->qinfo.scattered_rx = qinfo.scattered_rx;
     out->qinfo.nb_desc = qinfo.nb_desc;
 })
+
+TARPC_FUNC(rte_eth_tx_queue_info_get, {},
+{
+    struct rte_eth_txq_info qinfo;
+
+    MAKE_CALL(out->retval = func(in->port_id, in->queue_id, &qinfo));
+    neg_errno_h2rpc(&out->retval);
+
+    tarpc_rte_eth_txconf2rpc(&qinfo.conf,
+                             &out->qinfo.conf);
+
+    out->qinfo.nb_desc = qinfo.nb_desc;
+})
