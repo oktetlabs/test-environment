@@ -33,6 +33,7 @@
 
 #include "rte_config.h"
 #include "rte_ethdev.h"
+#include "rte_eth_ctrl.h"
 
 #include "logger_api.h"
 
@@ -1115,6 +1116,45 @@ TARPC_FUNC(rte_eth_dev_flow_ctrl_get,{},
         out->fc_conf.mac_ctrl_frame_fwd = fc_conf_p->mac_ctrl_frame_fwd;
         out->fc_conf.autoneg = fc_conf_p->autoneg;
     }
+
+done:
+    ;
+})
+
+
+static int
+tarpc_rte_filter_type2rte(const enum tarpc_rte_filter_type rpc,
+                          enum rte_filter_type *rte)
+{
+    switch (rpc) {
+        CASE_TARPC2RTE(RTE_ETH_FILTER_NONE);
+        CASE_TARPC2RTE(RTE_ETH_FILTER_MACVLAN);
+        CASE_TARPC2RTE(RTE_ETH_FILTER_ETHERTYPE);
+        CASE_TARPC2RTE(RTE_ETH_FILTER_FLEXIBLE);
+        CASE_TARPC2RTE(RTE_ETH_FILTER_SYN);
+        CASE_TARPC2RTE(RTE_ETH_FILTER_NTUPLE);
+        CASE_TARPC2RTE(RTE_ETH_FILTER_TUNNEL);
+        CASE_TARPC2RTE(RTE_ETH_FILTER_FDIR);
+        CASE_TARPC2RTE(RTE_ETH_FILTER_HASH);
+        CASE_TARPC2RTE(RTE_ETH_FILTER_L2_TUNNEL);
+        CASE_TARPC2RTE(RTE_ETH_FILTER_MAX);
+        default:
+            return 0;
+    }
+
+    return 1;
+}
+
+TARPC_FUNC(rte_eth_dev_filter_supported,{},
+{
+    enum rte_filter_type filter_type;
+
+    if (tarpc_rte_filter_type2rte(in->filter_type,
+                                  &filter_type))
+        goto done;
+
+    MAKE_CALL(out->retval = func(in->port_id, filter_type));
+    neg_errno_h2rpc(&out->retval);
 
 done:
     ;

@@ -476,6 +476,15 @@ extern int rpc_rte_eth_dev_rss_hash_conf_get(rcf_rpc_server *rpcs,
 extern int rpc_rte_eth_dev_flow_ctrl_get(rcf_rpc_server *rpcs, uint8_t port_id,
                                          struct tarpc_rte_eth_fc_conf *fc_conf);
 
+/**
+ * @b rte_eth_dev_filter_supported() RPC.
+ *
+ * If failure is not expected, the function jumps out in the case of non-zero
+ * or negative return value.
+ */
+extern int rpc_rte_eth_dev_filter_supported(rcf_rpc_server *rpcs, uint8_t port_id,
+                                            enum tarpc_rte_filter_type filter_type);
+
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 
 #ifdef __cplusplus

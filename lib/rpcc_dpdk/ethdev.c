@@ -1860,3 +1860,76 @@ int rpc_rte_eth_dev_flow_ctrl_get(rcf_rpc_server *rpcs, uint8_t port_id,
 
     RETVAL_ZERO_INT(rte_eth_dev_flow_ctrl_get, out.retval);
 }
+
+static const char *
+tarpc_rte_filter_type2str(enum tarpc_rte_filter_type filter_type)
+{
+    const char *type;
+
+    switch (filter_type)
+    {
+        case TARPC_RTE_ETH_FILTER_NONE:
+            type = "NONE";
+            break;
+        case TARPC_RTE_ETH_FILTER_MACVLAN:
+            type = "MACVLAN";
+            break;
+        case TARPC_RTE_ETH_FILTER_ETHERTYPE:
+            type = "ETHERTYPE";
+            break;
+        case TARPC_RTE_ETH_FILTER_FLEXIBLE:
+            type = "FLEXIBLE";
+            break;
+        case TARPC_RTE_ETH_FILTER_SYN:
+            type = "SYN";
+            break;
+        case TARPC_RTE_ETH_FILTER_NTUPLE:
+            type = "NTUPLE";
+            break;
+        case TARPC_RTE_ETH_FILTER_TUNNEL:
+            type = "TUNNEL";
+            break;
+        case TARPC_RTE_ETH_FILTER_FDIR:
+            type = "FDIR";
+            break;
+        case TARPC_RTE_ETH_FILTER_HASH:
+            type = "HASH";
+            break;
+        case TARPC_RTE_ETH_FILTER_L2_TUNNEL:
+            type = "L2_TUNNEL";
+            break;
+        case TARPC_RTE_ETH_FILTER_MAX:
+            type = "MAX";
+            break;
+        default:
+            type = "<UNKNOWN>";
+            break;
+    }
+
+    return type;
+}
+
+int rpc_rte_eth_dev_filter_supported(rcf_rpc_server *rpcs, uint8_t port_id,
+                                     enum tarpc_rte_filter_type filter_type)
+{
+    tarpc_rte_eth_dev_filter_supported_in   in;
+    tarpc_rte_eth_dev_filter_supported_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+    in.filter_type = filter_type;
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_filter_supported", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_filter_supported,
+                                          out.retval);
+
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_filter_supported,
+                 "%hhu, %s", NEG_ERRNO_FMT,
+                 in.port_id, tarpc_rte_filter_type2str(filter_type),
+                 NEG_ERRNO_ARGS(out.retval));
+
+    RETVAL_ZERO_INT(rte_eth_dev_filter_supported, out.retval);
+}

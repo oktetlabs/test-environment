@@ -1167,6 +1167,31 @@ struct tarpc_rte_eth_dev_flow_ctrl_get_out {
     struct tarpc_rte_eth_fc_conf           fc_conf;
 };
 
+enum tarpc_rte_filter_type {
+    TARPC_RTE_ETH_FILTER_NONE = 0,
+    TARPC_RTE_ETH_FILTER_MACVLAN,
+    TARPC_RTE_ETH_FILTER_ETHERTYPE,
+    TARPC_RTE_ETH_FILTER_FLEXIBLE,
+    TARPC_RTE_ETH_FILTER_SYN,
+    TARPC_RTE_ETH_FILTER_NTUPLE,
+    TARPC_RTE_ETH_FILTER_TUNNEL,
+    TARPC_RTE_ETH_FILTER_FDIR,
+    TARPC_RTE_ETH_FILTER_HASH,
+    TARPC_RTE_ETH_FILTER_L2_TUNNEL,
+    TARPC_RTE_ETH_FILTER_MAX,
+
+    TARPC_RTE_ETH_FILTER__UNKNOWN
+};
+
+/** rte_eth_dev_filter_supported() */
+struct tarpc_rte_eth_dev_filter_supported_in {
+    struct tarpc_in_arg         common;
+    uint8_t                     port_id;
+    enum tarpc_rte_filter_type  filter_type;
+};
+
+typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_filter_supported_out;
+
 program dpdk
 {
     version ver0
@@ -1252,5 +1277,6 @@ program dpdk
         RPC_DEF(rte_eth_dev_rss_reta_query)
         RPC_DEF(rte_eth_dev_rss_hash_conf_get)
         RPC_DEF(rte_eth_dev_flow_ctrl_get)
+        RPC_DEF(rte_eth_dev_filter_supported)
     } = 1;
 } = 2;
