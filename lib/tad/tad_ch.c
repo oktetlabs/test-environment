@@ -607,24 +607,20 @@ rcf_ch_trsend_start(struct rcf_comm_connection *rcfc,
     if ((csap = csap_find(csap_id)) == NULL)
     {
         WARN("CSAP %u does not exist", csap_id);
-        SEND_ANSWER("%u", TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
-        return 0;
+        rc = TE_ETADCSAPNOTEX;
+        goto send_answer_no_csap;
     }
 
     rc = csap_command(csap, TAD_OP_SEND);
     if (rc != 0)
-    {
-        SEND_ANSWER("%u", rc);
-        return 0;
-    }
+        goto send_answer_fail_command;
 
     if (ba == NULL)
     {
         ERROR(CSAP_LOG_FMT "No NDS attached to traffic send start "
               "command", CSAP_LOG_ARGS(csap));
-        (void)csap_command(csap, TAD_OP_IDLE);
-        SEND_ANSWER("%u", TE_RC(TE_TAD_CH, TE_ETADMISSNDS));
-        return 0;
+        rc = TE_ETADMISSNDS;
+        goto send_answer_no_ba;
     }
 
     rc = asn_parse_value_text((const char *)ba, ndn_traffic_template,
@@ -633,9 +629,7 @@ rcf_ch_trsend_start(struct rcf_comm_connection *rcfc,
     {
         ERROR(CSAP_LOG_FMT "Parse error in attached NDS on symbol %d: %r",
               CSAP_LOG_ARGS(csap), syms, rc);
-        (void)csap_command(csap, TAD_OP_IDLE);
-        SEND_ANSWER("%u", TE_RC(TE_TAD_CH, rc));
-        return 0;
+        goto send_answer_bad_ba;
     }
 
     CSAP_LOCK(csap);
@@ -650,21 +644,23 @@ rcf_ch_trsend_start(struct rcf_comm_connection *rcfc,
 
     rc = tad_send_prepare(csap, nds, rcfc, cbuf, answer_plen);
     if (rc != 0)
-    {
-        (void)csap_command(csap, TAD_OP_IDLE);
-        SEND_ANSWER("%u", rc);
-        return 0;
-    }
+        goto send_answer_fail_prepare;
 
     rc = tad_pthread_create(NULL, tad_send_thread, csap);
     if (rc != 0)
-    {
-        (void)tad_send_release(csap, csap_get_send_context(csap));
-        (void)csap_command(csap, TAD_OP_IDLE);
-        SEND_ANSWER("%u", rc);
-        return 0;
-    }
+        goto send_answer_fail_thread;
 
+    return 0;
+
+send_answer_fail_thread:
+    (void)tad_send_release(csap, csap_get_send_context(csap));
+send_answer_fail_prepare:
+send_answer_bad_ba:
+send_answer_no_ba:
+    (void)csap_command(csap, TAD_OP_IDLE);
+send_answer_fail_command:
+send_answer_no_csap:
+    SEND_ANSWER("%u", TE_RC(TE_TAD_CH, rc));
     return 0;
 #endif
 }
