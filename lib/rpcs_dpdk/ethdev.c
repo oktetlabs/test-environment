@@ -985,3 +985,11 @@ TARPC_FUNC(rte_eth_dev_count, {},
 {
     MAKE_CALL(out->retval = func());
 })
+
+TARPC_FUNC(rte_eth_dev_detach,{},
+{
+    out->devname.devname_val = malloc(RPC_RTE_ETH_NAME_MAX_LEN);
+
+    MAKE_CALL(out->retval = func(in->port_id, out->devname.devname_val));
+    neg_errno_h2rpc(&out->retval);
+})

@@ -44,4 +44,6 @@ neg_errno_h2rpc(int *retval)
         *retval = -errno_h2rpc(-*retval);
 }
 
+#define RPC_RTE_ETH_NAME_MAX_LEN 32
+
 #endif /* __TE_LIB_RPCS_DPDK_H__ */

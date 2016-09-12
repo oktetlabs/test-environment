@@ -43,6 +43,8 @@ extern "C" {
  * @{
  */
 
+#define RPC_RTE_ETH_NAME_MAX_LEN 32
+
 /**
  * rte_eth_dev_info() RPC.
  *
@@ -397,6 +399,20 @@ extern int rpc_rte_eth_tx_queue_info_get(rcf_rpc_server *rpcs, uint8_t port_id,
  * @b rte_eth_dev_count() RPC.
  */
 extern uint8_t rpc_rte_eth_dev_count(rcf_rpc_server *rpcs);
+
+/**
+ * @b rte_eth_dev_detach() RPC.
+ *
+ * @param[in]  rpcs        RPC server handle
+ * @param[in]  port_id     Port number
+ * @param[out] devname     A pointer to a device name actually detached.
+ *                         The memory must be allocated by the caller.
+ *
+ * If failure is not expected, the function jumps out in the case of
+ * non-zero or negative return value.
+ */
+extern int rpc_rte_eth_dev_detach(rcf_rpc_server *rpcs, uint8_t port_id,
+                                  char *devname);
 
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 
