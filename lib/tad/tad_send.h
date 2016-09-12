@@ -110,6 +110,16 @@ extern te_errno tad_send_prepare(csap_p                     csap,
                                  const tad_reply_context   *reply_ctx);
 
 /**
+ * Stop TAD Sender.
+ *
+ * @param csap          CSAP instance to stop generation traffic on
+ * @param sent_pkts     Location for the number of sent packets
+ *
+ * @return Status code.
+ */
+extern te_errno tad_send_stop(csap_p csap, unsigned int *sent_pkts);
+
+/**
  * Release TAD Sender context.
  *
  * @param csap          CSAP instance

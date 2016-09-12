@@ -509,6 +509,102 @@ tad_send_release(csap_p csap, tad_send_context *context)
     return result;
 }
 
+/* See description in tad_send.h */
+te_errno
+tad_send_start_prepare(csap_p csap, const char *tmpl_str, te_bool postponed,
+                       const tad_reply_context *reply_ctx)
+{
+    te_errno       rc;
+    int            syms;
+    asn_value     *nds;
+
+    F_ENTRY(CSAP_LOG_FMT ", postponed=%u", CSAP_LOG_ARGS(csap), postponed);
+
+    rc = csap_command(csap, TAD_OP_SEND);
+    if (rc != 0)
+        goto fail_csap_command;
+
+    if (tmpl_str == NULL)
+    {
+        ERROR(CSAP_LOG_FMT "No NDS attached to traffic send start "
+              "command", CSAP_LOG_ARGS(csap));
+        rc = TE_ETADMISSNDS;
+        goto fail_no_tmpl;
+    }
+
+    rc = asn_parse_value_text(tmpl_str, ndn_traffic_template,
+                              &nds, &syms);
+    if (rc != 0)
+    {
+        ERROR(CSAP_LOG_FMT "Parse error in attached NDS on symbol %d: %r",
+              CSAP_LOG_ARGS(csap), syms, rc);
+        goto fail_bad_tmpl;
+    }
+
+    CSAP_LOCK(csap);
+
+    if (postponed)
+        csap->state |= CSAP_STATE_FOREGROUND;
+
+    csap->first_pkt = tad_tv_zero;
+    csap->last_pkt  = tad_tv_zero;
+
+    CSAP_UNLOCK(csap);
+
+    rc = tad_send_prepare(csap, nds, reply_ctx);
+    if (rc != 0)
+        goto fail_send_prepare;
+
+    F_EXIT("OK");
+    return 0;
+
+fail_send_prepare:
+fail_bad_tmpl:
+fail_no_tmpl:
+    (void)csap_command(csap, TAD_OP_IDLE);
+fail_csap_command:
+    F_EXIT("%r", rc);
+    return rc;
+}
+
+/* See description in tad_send.h */
+te_errno
+tad_send_stop(csap_p csap, unsigned int *sent_pkts)
+{
+    te_errno    rc;
+    te_errno    status = 0;
+
+    F_ENTRY(CSAP_LOG_FMT, CSAP_LOG_ARGS(csap));
+
+    rc = csap_command(csap, TAD_OP_STOP);
+    if (rc != 0)
+        goto fail_csap_command;
+
+    if (csap->state & CSAP_STATE_SEND)
+    {
+        rc = csap_wait(csap, CSAP_STATE_DONE);
+        if (rc == 0)
+            status = csap_get_send_context(csap)->status;
+    }
+    else
+    {
+        rc = TE_RC(TE_TAD_CH, TE_ETADCSAPSTATE);
+    }
+
+    if ((rc == 0) && (~csap->state & CSAP_STATE_FOREGROUND))
+    {
+        rc = csap_command(csap, TAD_OP_IDLE);
+    }
+
+    TE_RC_UPDATE(rc, status);
+
+    *sent_pkts = csap_get_send_context(csap)->sent_pkts;
+
+fail_csap_command:
+    F_EXIT("%r", rc);
+    return rc;
+}
+
 
 #if 0
 static te_errno

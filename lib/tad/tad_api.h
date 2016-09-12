@@ -28,8 +28,10 @@
 #ifndef __TE_TAD_API__
 #define __TE_TAD_API__
 
+#include "te_defs.h"
 #include "te_errno.h"
 #include "tad_types.h"
+#include "tad_reply.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,6 +51,21 @@ extern te_errno tad_csap_create(const char *stack, const char *spec_str,
 
 /** Destroy CSAP */
 extern te_errno tad_csap_destroy(csap_p csap);
+
+/**
+ * Prepare TAD Sender to start traffic generation.
+ *
+ * @param csap          CSAP instance to generate traffic
+ * @param tmpl_str      Traffic template in string format
+ * @param postponed     "postponed" flag value
+ * @param reply_ctx     TAD async reply context
+ *
+ * @return Status code.
+ */
+extern te_errno tad_send_start_prepare(csap_p                   csap,
+                                       const char              *tmpl_str,
+                                       te_bool                  postponed,
+                                       const tad_reply_context *reply_ctx);
 
 #ifdef __cplusplus
 } /* extern "C" */
