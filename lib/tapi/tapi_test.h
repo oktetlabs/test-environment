@@ -808,6 +808,29 @@ typedef enum {
 #define TEST_GET_ETHDEV_STATE(var_name_) \
     TEST_GET_ENUM_PARAM(var_name_, ETHDEV_STATE_MAPPING_LIST)
 
+/** The list of values allowed for parameter of type 'tarpc_rte_filter_type' */
+#define FILTER_TYPE_MAPPING_LIST \
+            { "NONE", (int)TARPC_RTE_ETH_FILTER_NONE },            \
+            { "MACVLAN", (int)TARPC_RTE_ETH_FILTER_MACVLAN },      \
+            { "ETHERTYPE", (int)TARPC_RTE_ETH_FILTER_ETHERTYPE },  \
+            { "FLEXIBLE", (int)TARPC_RTE_ETH_FILTER_FLEXIBLE },    \
+            { "SYN", (int)TARPC_RTE_ETH_FILTER_SYN },              \
+            { "NTUPLE", (int)TARPC_RTE_ETH_FILTER_NTUPLE },        \
+            { "TUNNEL", (int)TARPC_RTE_ETH_FILTER_TUNNEL },        \
+            { "FDIR", (int)TARPC_RTE_ETH_FILTER_FDIR },            \
+            { "HASH", (int)TARPC_RTE_ETH_FILTER_HASH },            \
+            { "L2_TUNNEL", (int)TARPC_RTE_ETH_FILTER_L2_TUNNEL },  \
+            { "MAX", (int)TARPC_RTE_ETH_FILTER_MAX }
+
+/**
+ * Get the value of parameter of type 'tarpc_rte_filter_type'
+ *
+ * @param var_name_  Name of the variable used to get the value of
+ *                   "var_name_" parameter of type 'tarpc_rte_filter_type' (OUT)
+ */
+#define TEST_GET_FILTER_TYPE(var_name_) \
+    TEST_GET_ENUM_PARAM(var_name_, FILTER_TYPE_MAPPING_LIST)
+
 /** ID assigned by the Tester to the test instance */
 extern unsigned int te_test_id;
 
