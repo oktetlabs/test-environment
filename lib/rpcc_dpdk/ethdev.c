@@ -897,7 +897,7 @@ rpc_rte_eth_allmulticast_enable(rcf_rpc_server *rpcs, uint8_t port_id)
 }
 
 void
-rpc_rte_eth_allmulticast_disable(rcf_rpc_server *rpcs, int8_t port_id)
+rpc_rte_eth_allmulticast_disable(rcf_rpc_server *rpcs, uint8_t port_id)
 {
     tarpc_rte_eth_allmulticast_disable_in   in;
     tarpc_rte_eth_allmulticast_disable_out  out;
