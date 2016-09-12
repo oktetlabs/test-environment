@@ -860,25 +860,27 @@ tad_trrecv_op(rcf_comm_connection *rcfc,
     if ((csap = csap_find(csap_id)) == NULL)
     {
         WARN("%s: CSAP %u not exists", __FUNCTION__, csap_id);
-        SEND_ANSWER("%u 0", TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
-        return 0;
+        rc = TE_ETADCSAPNOTEX;
+        goto send_answer_no_csap;
     }
 
     rc = csap_command(csap, op);
     if (rc != 0)
-    {
-        SEND_ANSWER("%u 0", rc);
-        return 0;
-    }
+        goto send_answer_fail_command;
 
     rc = tad_recv_op_enqueue(csap, op, rcfc, cbuf, answer_plen);
     if (rc != 0)
     {
         /* Keep set flags, there is only one way now - destroy */
-        SEND_ANSWER("%u 0", rc);
-        return 0;
+        goto send_answer_fail_enqueue;
     }
 
+    return 0;
+
+send_answer_fail_enqueue:
+send_answer_fail_command:
+send_answer_no_csap:
+    SEND_ANSWER("%u 0", TE_RC(TE_TAD_CH, rc));
     return 0;
 }
 #endif
