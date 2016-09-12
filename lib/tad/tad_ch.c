@@ -982,24 +982,20 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *rcfc,
     if ((csap = csap_find(csap_id)) == NULL)
     {
         ERROR("%s: CSAP %u not exists", __FUNCTION__, csap_id);
-        SEND_ANSWER("%u", TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
-        return 0;
+        rc = TE_ETADCSAPNOTEX;
+        goto send_answer_no_csap;
     }
 
     rc = csap_command(csap, TAD_OP_SEND_RECV);
     if (rc != 0)
-    {
-        SEND_ANSWER("%u", rc);
-        return 0;
-    }
+        goto send_answer_fail_command;
 
     if (ba == NULL)
     {
         ERROR(CSAP_LOG_FMT "No NDS attached to traffic send/receive start "
               "command", CSAP_LOG_ARGS(csap));
-        (void)csap_command(csap, TAD_OP_IDLE);
-        SEND_ANSWER("%u", TE_RC(TE_TAD_CH, TE_ETADMISSNDS));
-        return 0;
+        rc = TE_ETADMISSNDS;
+        goto send_answer_no_ba;
     }
 
     rc = asn_parse_value_text((const char *)ba, ndn_traffic_template,
@@ -1008,9 +1004,7 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *rcfc,
     {
         ERROR(CSAP_LOG_FMT "Parse error in attached NDS on symbol %d: %r",
               CSAP_LOG_ARGS(csap), syms, rc);
-        (void)csap_command(csap, TAD_OP_IDLE);
-        SEND_ANSWER("%u", TE_RC(TE_TAD_CH, rc));
-        return 0;
+        goto send_answer_bad_ba;
     }
 
     CSAP_LOCK(csap);
@@ -1029,16 +1023,14 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *rcfc,
 
     rc = tad_send_prepare(csap, tmpl, rcfc, cbuf, answer_plen);
     if (rc != 0)
-    {
-        goto exit;
-    }
+        goto send_answer_fail_send_prepare;
+
     if (csap_get_send_context(csap)->tmpl_data.n_units != 1)
     {
-        rc = TE_RC(TE_TAD_CH, TE_ETADWRONGNDS);
         ERROR(CSAP_LOG_FMT "Invalid number of units in send/recv template",
               CSAP_LOG_ARGS(csap));
-        (void)tad_send_release(csap, csap_get_send_context(csap));
-        goto exit;
+        rc = TE_ETADWRONGNDS;
+        goto send_answer_bad_tmpl;
     }
 
     rc = tad_send_recv_generate_pattern(csap, tmpl, &ptrn);
@@ -1046,16 +1038,12 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *rcfc,
     {
         ERROR(CSAP_LOG_FMT "Failed to generate pattern by template: %r",
               CSAP_LOG_ARGS(csap), rc);
-        (void)tad_send_release(csap, csap_get_send_context(csap));
-        goto exit;
+        goto send_answer_bad_tmpl;
     }
 
     rc = tad_recv_prepare(csap, ptrn, 1, timeout, rcfc, cbuf, answer_plen);
     if (rc != 0)
-    {
-        (void)tad_send_release(csap, csap_get_send_context(csap));
-        goto exit;
-    }
+        goto send_answer_fail_recv_prepare;
 
     /*
      * Start threads in reverse order.
@@ -1064,11 +1052,8 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *rcfc,
     /* Emulate 'trrecv_wait' operation */
     rc = tad_recv_op_enqueue(csap, TAD_OP_WAIT, rcfc, cbuf, answer_plen);
     if (rc != 0)
-    {
-        (void)tad_recv_release(csap, csap_get_recv_context(csap));
-        (void)tad_send_release(csap, csap_get_send_context(csap));
-        goto exit;
-    }
+        goto send_answer_fail_wait;
+
     /*
      * Don't care about Receiver context any more, since 'trrecv_wait'
      * operation is responsible for destruction. However, now it is
@@ -1100,9 +1085,18 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *rcfc,
      */
     return 0;
 
-exit:
+send_answer_fail_wait:
+    (void)tad_recv_release(csap, csap_get_recv_context(csap));
+send_answer_fail_recv_prepare:
+send_answer_bad_tmpl:
+    (void)tad_send_release(csap, csap_get_send_context(csap));
+send_answer_fail_send_prepare:
+send_answer_bad_ba:
+send_answer_no_ba:
     (void)csap_command(csap, TAD_OP_IDLE);
-    SEND_ANSWER("%u", rc);
+send_answer_fail_command:
+send_answer_no_csap:
+    SEND_ANSWER("%u", TE_RC(TE_TAD_CH, rc));
     return 0;
 #endif
 }
