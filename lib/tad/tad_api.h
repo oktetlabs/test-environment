@@ -47,6 +47,9 @@ extern "C" {
 extern te_errno tad_csap_create(const char *stack, const char *spec_str,
                                 csap_p *new_csap_p);
 
+/** Destroy CSAP */
+extern te_errno tad_csap_destroy(csap_p csap);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

@@ -82,7 +82,7 @@ agent_csap_del(unsigned int gid, const char *oid, const char *csap)
         return TE_RC(TE_TAD_CH, TE_EDOM);
     }
 
-    return tad_csap_destroy(csap_id);
+    return tad_csap_destroy_by_id(csap_id);
 }
 
 

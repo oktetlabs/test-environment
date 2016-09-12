@@ -57,7 +57,7 @@ extern te_errno tad_agent_csap_fini(void);
  *
  * @return Status code.
  */
-extern te_errno tad_csap_destroy(csap_handle_t csap_id);
+extern te_errno tad_csap_destroy_by_id(csap_handle_t csap_id);
 
 #ifdef __cplusplus
 } /* extern "C" */

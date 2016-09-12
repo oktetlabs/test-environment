@@ -437,23 +437,16 @@ csap_wait_exclusive_use(csap_p csap)
     return rc;
 }
 
-/* See the description in tad_agent_csap.h */
+/* See the description in tad_api.h */
 te_errno
-tad_csap_destroy(csap_handle_t csap_id)
+tad_csap_destroy(csap_p csap)
 {
-    csap_p          csap;
     csap_spt_type_p csap_spt_descr;
 
     unsigned int layer;
     te_errno     rc;
 
-    VERB("%s: CSAP %u\n", __FUNCTION__, csap_id);
-
-    if ((csap = csap_find(csap_id)) == NULL)
-    {
-        WARN("%s: CSAP %u not exists", __FUNCTION__, csap_id);
-        return TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX);
-    }
+    VERB("%s: " CSAP_LOG_FMT, __FUNCTION__, CSAP_LOG_ARGS(csap));
 
     rc = csap_command(csap, TAD_OP_DESTROY);
     if (rc != 0)
@@ -516,9 +509,26 @@ tad_csap_destroy(csap_handle_t csap_id)
             }
         }
     }
-    csap_destroy(csap_id);
+    csap_destroy(csap->id);
 
     return rc;
+}
+
+/* See the description in tad_agent_csap.h */
+te_errno
+tad_csap_destroy_by_id(csap_handle_t csap_id)
+{
+    csap_p  csap;
+
+    VERB("%s: CSAP %u\n", __FUNCTION__, csap_id);
+
+    if ((csap = csap_find(csap_id)) == NULL)
+    {
+        WARN("%s: CSAP %u not exists", __FUNCTION__, csap_id);
+        return TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX);
+    }
+
+    return tad_csap_destroy(csap);
 }
 
 #endif /* ndef TAD_DUMMY */
@@ -579,7 +589,7 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *rcfc,
     VERB("%s(CSAP %u), answer prefix %s", __FUNCTION__, csap_id,  cbuf);
     cbuf[answer_plen] = '\0';
 
-    SEND_ANSWER("%u", tad_csap_destroy(csap_id));
+    SEND_ANSWER("%u", tad_csap_destroy_by_id(csap_id));
 
     return 0;
 #endif
