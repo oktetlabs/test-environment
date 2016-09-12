@@ -297,7 +297,8 @@ static int
 tarpc_eth_rx_mq_mode2rte(const enum tarpc_rte_eth_rx_mq_mode rpc,
                          enum rte_eth_rx_mq_mode *rte)
 {
-    switch (rpc) {
+    switch (rpc)
+    {
         CASE_TARPC2RTE(ETH_MQ_RX_NONE);
         CASE_TARPC2RTE(ETH_MQ_RX_RSS);
         CASE_TARPC2RTE(ETH_MQ_RX_DCB);
@@ -356,7 +357,8 @@ static int
 tarpc_eth_tx_mq_mode2rte(const enum tarpc_rte_eth_tx_mq_mode rpc,
                          enum rte_eth_tx_mq_mode *rte)
 {
-    switch (rpc) {
+    switch (rpc)
+    {
         CASE_TARPC2RTE(ETH_MQ_TX_NONE);
         CASE_TARPC2RTE(ETH_MQ_TX_DCB);
         CASE_TARPC2RTE(ETH_MQ_TX_VMDQ_DCB);
@@ -756,7 +758,8 @@ static int
 tarpc_vlan_type2rte(const enum tarpc_rte_vlan_type rpc,
                     enum rte_vlan_type *rte)
 {
-    switch (rpc) {
+    switch (rpc)
+    {
         CASE_TARPC2RTE(ETH_VLAN_TYPE_UNKNOWN);
         CASE_TARPC2RTE(ETH_VLAN_TYPE_INNER);
         CASE_TARPC2RTE(ETH_VLAN_TYPE_OUTER);
@@ -1081,7 +1084,8 @@ static int
 tarpc_rte_eth_fc_mode2rpc(const enum rte_eth_rx_mq_mode rte,
                           enum tarpc_rte_eth_fc_mode *rpc)
 {
-    switch (rte) {
+    switch (rte)
+    {
         CASE_RTE2TARPC(RTE_FC_NONE);
         CASE_RTE2TARPC(RTE_FC_RX_PAUSE);
         CASE_RTE2TARPC(RTE_FC_TX_PAUSE);
@@ -1126,7 +1130,8 @@ static int
 tarpc_rte_filter_type2rte(const enum tarpc_rte_filter_type rpc,
                           enum rte_filter_type *rte)
 {
-    switch (rpc) {
+    switch (rpc)
+    {
         CASE_TARPC2RTE(RTE_ETH_FILTER_NONE);
         CASE_TARPC2RTE(RTE_ETH_FILTER_MACVLAN);
         CASE_TARPC2RTE(RTE_ETH_FILTER_ETHERTYPE);
