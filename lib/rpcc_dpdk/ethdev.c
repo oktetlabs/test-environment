@@ -961,9 +961,9 @@ rpc_rte_eth_dev_get_mtu(rcf_rpc_server *rpcs, uint8_t port_id, uint16_t *mtu)
 
     if (RPC_IS_CALL_OK(rpcs))
         *mtu = out.mtu;
-
-    TAPI_RPC_LOG(rpcs, rte_eth_dev_get_mtu, "%hhu, %p", NEG_ERRNO_FMT,
-                 " mtu=%u", mtu, port_id,
+    RING("www %d", out.mtu);
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_get_mtu, "%hhu, %p",
+                 NEG_ERRNO_FMT " mtu=%hu", port_id, mtu,
                  NEG_ERRNO_ARGS(out.retval), out.mtu);
 
     RETVAL_ZERO_INT(rte_eth_dev_get_mtu, out.retval);

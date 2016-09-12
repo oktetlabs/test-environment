@@ -772,6 +772,41 @@ typedef enum sapi_buf_size {
 #define TEST_GET_BUFF_SIZE(var_name_) \
     TEST_GET_ENUM_PARAM(var_name_, BUF_SIZE_MAPPING_LIST)
 
+/** Ethernet device states */
+typedef enum {
+    TEST_ETHDEV_UNINITIALIZED,
+
+    TEST_ETHDEV_INITIALIZED,
+    TEST_ETHDEV_CONFIGURED,
+    TEST_ETHDEV_RX_SETUP_DONE,
+    TEST_ETHDEV_TX_SETUP_DONE,
+    TEST_ETHDEV_RXTX_SETUP_DONE,
+    TEST_ETHDEV_STARTED,
+    TEST_ETHDEV_STOPPED,
+    TEST_ETHDEV_CLOSED,
+    TEST_ETHDEV_DETACHED,
+} test_ethdev_state;
+
+/** The list of values allowed for parameter of type 'test_ethdev_state' */
+#define ETHDEV_STATE_MAPPING_LIST \
+            { "INITIALIZED", (int)TEST_ETHDEV_INITIALIZED },         \
+            { "CONFIGURED", (int)TEST_ETHDEV_CONFIGURED },           \
+            { "RX_SETUP_DONE", (int)TEST_ETHDEV_RX_SETUP_DONE },     \
+            { "TX_SETUP_DONE", (int)TEST_ETHDEV_TX_SETUP_DONE },     \
+            { "RXTX_SETUP_DONE", (int)TEST_ETHDEV_RXTX_SETUP_DONE }, \
+            { "STARTED", (int)TEST_ETHDEV_STARTED },                 \
+            { "STOPPED", (int)TEST_ETHDEV_STOPPED },                 \
+            { "CLOSED", (int)TEST_ETHDEV_CLOSED },                   \
+            { "DETACHED", (int)TEST_ETHDEV_DETACHED }
+
+/**
+ * Get the value of parameter of type 'test_ethdev_state'
+ *
+ * @param var_name_  Name of the variable used to get the value of
+ *                   "var_name_" parameter of type 'test_ethdev_state' (OUT)
+ */
+#define TEST_GET_ETHDEV_STATE(var_name_) \
+    TEST_GET_ENUM_PARAM(var_name_, ETHDEV_STATE_MAPPING_LIST)
 
 /** ID assigned by the Tester to the test instance */
 extern unsigned int te_test_id;
