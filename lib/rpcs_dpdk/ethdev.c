@@ -932,3 +932,20 @@ TARPC_FUNC(rte_eth_dev_get_vlan_offload, {},
         out->retval = mask;
     }
 })
+
+TARPC_FUNC(rte_eth_dev_default_mac_addr_set, {},
+{
+    struct ether_addr mac_addr;
+    struct ether_addr *mac_addr_p = &mac_addr;
+
+    if (in->mac_addr.mac_addr_len == 0)
+        mac_addr_p = NULL;
+    else
+        memcpy(mac_addr_p->addr_bytes, in->mac_addr.mac_addr_val[0].addr_bytes,
+               sizeof(mac_addr_p->addr_bytes));
+
+    MAKE_CALL(func(in->port_id, mac_addr_p));
+
+    neg_errno_h2rpc(&out->retval);
+
+})

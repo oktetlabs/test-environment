@@ -1035,6 +1035,15 @@ struct tarpc_rte_eth_macaddr_get_out {
     struct tarpc_ether_addr  mac_addr<>;
 };
 
+/** rte_eth_dev_default_mac_addr_set() */
+struct tarpc_rte_eth_dev_default_mac_addr_set_in {
+    struct tarpc_in_arg      common;
+    uint8_t                  port_id;
+    struct tarpc_ether_addr  mac_addr<>;
+};
+
+typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_default_mac_addr_set_out;
+
 program dpdk
 {
     version ver0
@@ -1110,5 +1119,6 @@ program dpdk
         RPC_DEF(rte_eth_dev_tx_queue_start)
         RPC_DEF(rte_eth_dev_tx_queue_stop)
         RPC_DEF(rte_eth_macaddr_get)
+        RPC_DEF(rte_eth_dev_default_mac_addr_set)
     } = 1;
 } = 2;

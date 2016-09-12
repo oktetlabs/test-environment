@@ -1438,3 +1438,37 @@ rpc_rte_eth_macaddr_get(rcf_rpc_server *rpcs, uint8_t port_id,
 
     RETVAL_VOID(rte_eth_macaddr_get);
 }
+
+int
+rpc_rte_eth_dev_default_mac_addr_set(rcf_rpc_server *rpcs, uint8_t port_id,
+                                     struct tarpc_ether_addr *mac_addr)
+{
+    tarpc_rte_eth_dev_default_mac_addr_set_in   in;
+    tarpc_rte_eth_dev_default_mac_addr_set_out  out;
+    te_log_buf                                 *tlbp;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+
+    if (mac_addr != NULL)
+    {
+        in.mac_addr.mac_addr_len = 1;
+        in.mac_addr.mac_addr_val = tapi_memdup(mac_addr, sizeof(*mac_addr));
+    }
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_default_mac_addr_set", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_default_mac_addr_set,
+                                          out.retval);
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_default_mac_addr_set, "%hhu, %s", NEG_ERRNO_FMT,
+                 in.port_id, te_ether_addr2log_buf(
+                    tlbp, (uint8_t *)&in.mac_addr.mac_addr_val[0].addr_bytes),
+                    NEG_ERRNO_ARGS(out.retval));
+    te_log_buf_free(tlbp);
+
+    RETVAL_ZERO_INT(rte_eth_dev_default_mac_addr_set, out.retval);
+}

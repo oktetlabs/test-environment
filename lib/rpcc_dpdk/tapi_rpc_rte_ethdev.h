@@ -315,7 +315,7 @@ extern int rpc_rte_eth_dev_socket_id(rcf_rpc_server *rpcs, uint8_t port_id);
  * If failure is not expected, the function jumps out in the case of
  * return value is not equal to 0 or 1.
  */
-extern int rpc_rte_eth_dev_socket_id(rcf_rpc_server *rpcs, uint8_t port_id);
+extern int rpc_rte_eth_dev_socket_id  (rcf_rpc_server *rpcs, uint8_t port_id);
 
 /**
  * @b rte_eth_dev_rx_queue_start() RPC
@@ -362,6 +362,16 @@ extern int rpc_rte_eth_dev_tx_queue_stop(rcf_rpc_server *rpcs,
  */
 extern void rpc_rte_eth_macaddr_get(rcf_rpc_server *rpcs, uint8_t port_id,
                                     struct tarpc_ether_addr *mac_addr);
+
+/**
+ * @b rte_eth_dev_default_mac_addr_set() RPC
+ *
+ * If failure is not expected, the function jumps out in the case of
+ * non-zero return value.
+ */
+extern int rpc_rte_eth_dev_default_mac_addr_set(rcf_rpc_server *rpcs,
+                                                uint8_t port_id,
+                                                struct tarpc_ether_addr *mac_addr);
 
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 
