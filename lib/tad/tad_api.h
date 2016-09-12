@@ -77,6 +77,25 @@ extern te_errno tad_send_start_prepare(csap_p                   csap,
  */
 extern te_errno tad_send_release(csap_p csap, tad_send_context *context);
 
+/**
+ * Prepare TAD Receiver to start matching traffic.
+ *
+ * @param csap          CSAP instance to match traffic
+ * @param ptrn_str      Traffic pattern in string representation
+ * @param num           Number of packets to wait for (0 - unlimited)
+ * @param timeout       Timeout in milliseconds
+ * @param flags         Receive mode flags bitmask
+ * @param reply_ctx     TAD async reply context
+ *
+ * @return Status code.
+ */
+extern te_errno tad_recv_start_prepare(csap_p                   csap,
+                                       const char              *ptrn_str,
+                                       unsigned int             num,
+                                       unsigned int             timeout,
+                                       unsigned int             flags,
+                                       const tad_reply_context *reply_ctx);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

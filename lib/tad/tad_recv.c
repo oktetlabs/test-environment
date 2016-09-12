@@ -604,6 +604,66 @@ tad_recv_prepare(csap_p csap, asn_value *pattern, unsigned int num,
     return 0;
 }
 
+/* See description in tad_api.h */
+te_errno
+tad_recv_start_prepare(csap_p csap, const char *ptrn_str,
+                       unsigned int num, unsigned int timeout,
+                       unsigned int flags, const tad_reply_context *reply_ctx)
+{
+    te_errno    rc;
+    int         syms;
+    asn_value  *nds = NULL;
+
+    F_ENTRY(CSAP_LOG_FMT ", num=%u, timeout=%u ms, flags=%x",
+            CSAP_LOG_ARGS(csap), num, timeout, flags);
+
+    rc = csap_command(csap, TAD_OP_RECV);
+    if (rc != 0)
+        goto fail_command;
+
+    if (ptrn_str == NULL)
+    {
+        ERROR(CSAP_LOG_FMT "No NDS attached to traffic receive start "
+              "command", CSAP_LOG_ARGS(csap));
+        rc = TE_ETADMISSNDS;
+        goto fail_no_ptrn;
+    }
+
+    rc = asn_parse_value_text(ptrn_str, ndn_traffic_pattern, &nds, &syms);
+    if (rc != 0)
+    {
+        ERROR(CSAP_LOG_FMT "Parse error in attached NDS on symbol %d: %r",
+              CSAP_LOG_ARGS(csap), syms, rc);
+        goto fail_bad_ptrn;
+    }
+
+    CSAP_LOCK(csap);
+
+    if (flags & RCF_CH_TRRECV_PACKETS)
+    {
+        csap->state |= CSAP_STATE_RESULTS;
+        if (flags & RCF_CH_TRRECV_PACKETS_NO_PAYLOAD)
+            csap->state |= CSAP_STATE_PACKETS_NO_PAYLOAD;
+    }
+
+    csap->first_pkt = csap->last_pkt = tad_tv_zero;
+
+    CSAP_UNLOCK(csap);
+
+    rc = tad_recv_prepare(csap, nds, num, timeout, reply_ctx);
+    if (rc != 0)
+        goto fail_prepare;
+
+    return 0;
+
+fail_prepare:
+fail_bad_ptrn:
+fail_no_ptrn:
+    (void)csap_command(csap, TAD_OP_IDLE);
+fail_command:
+    return 0;
+}
+
 /**
  * Shutdown receiver on the CSAP.
  *
