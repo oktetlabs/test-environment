@@ -1089,6 +1089,13 @@ rcf_pch_run(const char *confstr, const char *info)
                     }
                 }
 
+                if (strncmp(ptr, "read-one", strlen("read-one")) == 0)
+                {
+                    mode |= RCF_CH_TRRECV_ONE_PACKET;
+                    ptr += strlen("read-one");
+                    SKIP_SPACES(ptr);
+                }
+
                 if (*ptr != 0)
                     goto bad_protocol;
 

@@ -644,6 +644,8 @@ tad_recv_start_prepare(csap_p csap, const char *ptrn_str,
         csap->state |= CSAP_STATE_RESULTS;
         if (flags & RCF_CH_TRRECV_PACKETS_NO_PAYLOAD)
             csap->state |= CSAP_STATE_PACKETS_NO_PAYLOAD;
+        if (flags & RCF_CH_TRRECV_ONE_PACKET)
+            csap->state |= CSAP_STATE_RECV_READ_ONE;
     }
 
     csap->first_pkt = csap->last_pkt = tad_tv_zero;
@@ -1259,6 +1261,10 @@ tad_recv_do(csap_p csap)
                  CSAP_LOG_ARGS(csap));
             /* Nothing is owned by match routine */
             tad_recv_pkt_cleanup(csap, meta_pkt);
+
+            if (csap->state & CSAP_STATE_RECV_READ_ONE)
+                break;
+
             continue;
         }
         if (TE_RC_GET_ERROR(rc) == TE_ETADLESSDATA)
@@ -1275,6 +1281,10 @@ tad_recv_do(csap_p csap)
              * to poll with zero timeout.
              */
             stop_on_timeout = FALSE;
+
+            if (csap->state & CSAP_STATE_RECV_READ_ONE)
+                break;
+
             continue;
         }
         if (rc != 0) /* Unexpected match error */
@@ -1310,6 +1320,14 @@ tad_recv_do(csap_p csap)
         {
             assert(context->match_pkts == context->wait_pkts);
             INFO(CSAP_LOG_FMT "received all packets",
+                 CSAP_LOG_ARGS(csap));
+            assert(rc == 0);
+            break;
+        }
+
+        if (csap->state & CSAP_STATE_RECV_READ_ONE)
+        {
+            INFO(CSAP_LOG_FMT "read one packet",
                  CSAP_LOG_ARGS(csap));
             assert(rc == 0);
             break;

@@ -501,6 +501,7 @@ typedef enum rcf_ch_trrecv_flags {
     RCF_CH_TRRECV_PACKETS = 1,           /**< Receive and report packets */
     RCF_CH_TRRECV_PACKETS_NO_PAYLOAD = 2,/**< Do not report packets
                                              payload */
+    RCF_CH_TRRECV_ONE_PACKET = 4,        /**< Read only one packet */
 } rcf_ch_trrecv_flags;
 
 /**
