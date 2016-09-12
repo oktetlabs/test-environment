@@ -948,7 +948,10 @@ rpc_rte_eth_dev_get_mtu(rcf_rpc_server *rpcs, uint8_t port_id, uint16_t *mtu)
 
     in.port_id = port_id;
     if (mtu != NULL)
+    {
         in.mtu.mtu_len = 1;
+        in.mtu.mtu_val = malloc(sizeof(*mtu));
+    }
 
     rcf_rpc_call(rpcs, "rte_eth_dev_get_mtu", &in, &out);
 
