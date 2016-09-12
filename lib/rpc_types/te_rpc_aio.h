@@ -81,7 +81,8 @@ typedef enum rpc_aio_cancel_retval {
     RPC_AIO_CANCELED,
     RPC_AIO_NOTCANCELED,
     RPC_AIO_ALLDONE,
-    RPC_AIO_UNKNOWN
+    RPC_AIO_UNKNOWN,
+    RPC_AIO__MINUS_ONE = -1,
 } rpc_aio_cancel_retval; 
 
 /** Convert RPC aio_cancel return to string */
