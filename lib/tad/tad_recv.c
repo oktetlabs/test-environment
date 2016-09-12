@@ -1085,11 +1085,10 @@ tad_recv_pkt_enqueue(csap_p csap, tad_recv_pkts *pkts, tad_recv_pkt *pkt)
 }
 
 
-/* See description in tad_recv.h */
-void *
-tad_recv_thread(void *arg)
+/* See description in tad_api.h */
+te_errno
+tad_recv_do(csap_p csap)
 {
-    csap_p              csap = arg;
     tad_recv_context   *context;
     csap_read_cb_t      read_cb;
     te_bool             stop_on_timeout = FALSE;
@@ -1345,6 +1344,17 @@ exit:
      * we can do nothing helpfull here.
      */
     (void)csap_command(csap, TAD_OP_RECV_DONE);
+
+    return context->status;
+}
+
+/* See description in tad_recv.h */
+void *
+tad_recv_thread(void *arg)
+{
+    csap_p  csap = arg;
+
+    (void)tad_recv_do(csap);
 
     return NULL;
 }

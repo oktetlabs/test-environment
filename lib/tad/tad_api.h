@@ -117,6 +117,17 @@ extern te_errno tad_recv_start_prepare(csap_p                   csap,
  */
 extern te_errno tad_recv_release(csap_p csap, tad_recv_context *context);
 
+/**
+ * Run Receiver.
+ *
+ * @param csap          CSAP instance
+ *
+ * @return Status code.
+ *
+ * @note It releases receiver context in any case.
+ */
+extern te_errno tad_recv_do(csap_p csap);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
