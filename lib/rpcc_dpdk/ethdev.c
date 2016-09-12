@@ -1421,7 +1421,7 @@ rpc_rte_eth_macaddr_get(rcf_rpc_server *rpcs, uint8_t port_id,
     if (mac_addr != NULL)
     {
         in.mac_addr.mac_addr_len = 1;
-        in.mac_addr.mac_addr_val = tapi_memdup(mac_addr, sizeof(*mac_addr));
+        in.mac_addr.mac_addr_val = malloc(sizeof(*mac_addr));
     }
 
     rcf_rpc_call(rpcs, "rte_eth_macaddr_get", &in, &out);
@@ -1432,7 +1432,7 @@ rpc_rte_eth_macaddr_get(rcf_rpc_server *rpcs, uint8_t port_id,
 
     tlbp = te_log_buf_alloc();
     TAPI_RPC_LOG(rpcs, rte_eth_macaddr_get, "%hhu, %p", "%s",
-                 mac_addr, in.port_id, te_ether_addr2log_buf(
+                 in.port_id, mac_addr, te_ether_addr2log_buf(
                     tlbp, (uint8_t *)&out.mac_addr.mac_addr_val[0].addr_bytes));
     te_log_buf_free(tlbp);
 
