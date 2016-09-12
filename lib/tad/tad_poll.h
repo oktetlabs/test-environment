@@ -37,9 +37,9 @@
 
 #include "te_errno.h"
 #include "te_queue.h"
-#include "comm_agent.h"
 
 #include "tad_types.h"
+#include "tad_reply.h"
 #include "tad_send_recv.h"
 
 
@@ -52,7 +52,7 @@ extern "C" {
 typedef struct tad_poll_context {
     LIST_ENTRY(tad_poll_context)    links;  /**< List links */
 
-    tad_task_context    task;       /**< Task parameters */
+    tad_reply_context   reply_ctx;  /**< Reply context */
     csap_p              csap;       /**< CSAP instance */
     unsigned int        id;         /**< Poll request ID */
     unsigned int        timeout;    /**< Poll request timeout */
@@ -67,17 +67,13 @@ typedef struct tad_poll_context {
  *
  * @param csap          CSAP instance
  * @param timeout       Timeout in milliseconds
- * @param rcfc          RCF connection handle to be used for answers
- * @param answer_pfx    Test Protocol answer prefix
- * @param pfx_len       Length of the answer prefix
+ * @param reply_ctx     TAD async reply context
  *
  * @return Status code.
  */
-extern te_errno tad_poll_enqueue(csap_p                csap,
-                                 unsigned int          timeout,
-                                 rcf_comm_connection  *rcfc,
-                                 const char           *answer_pfx,
-                                 size_t                pfx_len);
+extern te_errno tad_poll_enqueue(csap_p                     csap,
+                                 unsigned int               timeout,
+                                 const tad_reply_context   *reply_ctx);
 
 
 #ifdef __cplusplus

@@ -4,7 +4,7 @@
  * Traffic Application Domain Command Handler.
  * Declarations of types and functions common for TAD Sender and Receiver.
  *
- * Copyright (C) 2005-2006 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2005-2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * This library is free software; you can redistribute it and/or
@@ -31,106 +31,15 @@
 #ifndef __TE_TAD_SEND_RECV_H__
 #define __TE_TAD_SEND_RECV_H__
 
-#if HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#if HAVE_STRING_H
-#include <string.h>
-#endif
-#if HAVE_STRINGS_H
-#include <strings.h>
-#endif
-#if HAVE_STDARG_H
-#include <stdarg.h>
-#endif
-
 #include "te_defs.h"
-#include "asn_usr.h"
-#include "comm_agent.h"
 #include "logger_api.h"
-#include "rcf_ch_api.h"
+#include "asn_usr.h"
 #include "tad_csap_inst.h"
-
-
-/* TODO: this constant should be placed to more appropriate header! */
-/**
- * Maximum length of the test protocol answer to be sent by TAD.
- */
-#define TAD_ANSWER_LEN  0x100
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-
-/** Traffic operation thread special data. */
-typedef struct tad_task_context {
-
-    rcf_comm_connection    *rcfc;       /**< RCF connection to answer */
-
-    char    answer_buf[TAD_ANSWER_LEN]; /**< Prefix for test-protocol
-                                             answer to the current
-                                             command */
-    size_t  prefix_len;                 /**< Length of the Test Protocol
-                                             answer prefix */
-} tad_task_context;
-
-/* See description in tad_send_recv.h */
-static inline te_errno
-tad_task_init(tad_task_context *task, rcf_comm_connection *rcfc,
-              const char *answer_pfx, size_t pfx_len)
-{
-    if (pfx_len >= sizeof(task->answer_buf))
-    {
-        ERROR("Too small buffer for Test Protocol command answer in TAD "
-              "task structure");
-        return TE_RC(TE_TAD_CH, TE_ESMALLBUF);
-    }
-
-    task->rcfc = rcfc;
-    task->prefix_len = pfx_len;
-    memcpy(task->answer_buf, answer_pfx, pfx_len);
-
-    return 0;
-}
-
-static inline te_errno
-tad_task_reply(tad_task_context *task, const char *fmt, ...)
-{
-    te_errno    rc;
-    va_list     ap;
-    int         buf_len = sizeof(task->answer_buf) - task->prefix_len;
-
-    va_start(ap, fmt);
-    if (vsnprintf(task->answer_buf + task->prefix_len, buf_len,
-                  fmt, ap) >= buf_len)
-    {
-        ERROR("TE protocol answer is truncated");
-        /* Try to continue */
-    }
-    INFO("Sending reply: '%s'", task->answer_buf);
-    RCF_CH_SAFE_LOCK;
-    rc = rcf_comm_agent_reply(task->rcfc, task->answer_buf,
-                              strlen(task->answer_buf) + 1);
-    RCF_CH_SAFE_UNLOCK;
-
-    return rc;
-}
-
-/**
- * Clean up TAD task parameters (to make sure that no more answers
- * are send in this task).
- *
- * @param task          TAD task structure
- */
-static inline void
-tad_task_free(tad_task_context *task)
-{
-    task->rcfc = NULL;
-    task->prefix_len = 0;
-    memset(task->answer_buf, 0, sizeof(task->answer_buf));
-}
 
 
 /**

@@ -38,10 +38,10 @@
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "asn_usr.h"
-#include "comm_agent.h"
 
 #include "tad_types.h"
 #include "tad_pkt.h"
+#include "tad_reply.h"
 #include "tad_send_recv.h"
 
 
@@ -80,7 +80,7 @@ typedef struct tad_send_template_data {
 
 /** TAD Sender context data. */
 typedef struct tad_send_context {
-    tad_task_context        task;
+    tad_reply_context       reply_ctx;
     tad_send_template_data  tmpl_data;
     te_errno                status;     /**< Status of the send operation
                                              to be returned on stop */
@@ -101,17 +101,13 @@ extern void tad_send_init_context(tad_send_context *context);
  * @param csap          CSAP instance to generate traffic
  * @param template      Traffic template (owned by the routine in any
  *                      case)
- * @param rcfc          RCF connection handle to be used for answers
- * @param answer_pfx    Test Protocol answer prefix
- * @param pfx_len       Length of the answer prefix
+ * @param reply_ctx     TAD async reply context
  *
  * @return Status code.
  */
-extern te_errno tad_send_prepare(csap_p                csap,
-                                 asn_value            *tmpl_unit,
-                                 rcf_comm_connection  *rcfc,
-                                 const char           *answer_pfx,
-                                 size_t                pfx_len);
+extern te_errno tad_send_prepare(csap_p                     csap,
+                                 asn_value                 *tmpl_unit,
+                                 const tad_reply_context   *reply_ctx);
 
 /**
  * Release TAD Sender context.

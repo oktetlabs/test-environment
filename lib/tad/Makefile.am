@@ -16,11 +16,13 @@ include_HEADERS = \
 	tad_send.h \
 	tad_recv.h \
 	tad_recv_pkt.h \
+	tad_reply.h \
 	tad_poll.h
 
 noinst_HEADERS = \
 	csap_id.h \
 	tad_agent_csap.h \
+	tad_reply_rcf.h \
 	tad_utils.h \
 	tad_eth_sap.h \
 	tad_bps.h
@@ -45,6 +47,7 @@ libtad_core_a_SOURCES = \
 	tad_recv_pkt.c \
 	tad_recv.c \
 	tad_bps.c \
+	tad_reply_rcf.c \
 	tad_poll.c
 endif 
 

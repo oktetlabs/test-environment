@@ -58,6 +58,7 @@
 #include "tad_utils.h"
 #include "tad_send_recv.h"
 #include "tad_agent_csap.h"
+#include "tad_reply_rcf.h"
 
 
 #define SEND_ANSWER(_fmt...) \
@@ -591,10 +592,11 @@ rcf_ch_trsend_start(struct rcf_comm_connection *rcfc,
          csap_id, postponed ? "postponed" : "");
     return -1;
 #else
-    int            rc;
-    int            syms;
-    asn_value     *nds;
-    csap_p         csap;
+    int                 rc;
+    int                 syms;
+    asn_value          *nds;
+    csap_p              csap;
+    tad_reply_context   reply_ctx;
 
 
     UNUSED(cmdlen);
@@ -642,7 +644,11 @@ rcf_ch_trsend_start(struct rcf_comm_connection *rcfc,
 
     CSAP_UNLOCK(csap);
 
-    rc = tad_send_prepare(csap, nds, rcfc, cbuf, answer_plen);
+    rc = tad_reply_rcf_init(&reply_ctx, rcfc, cbuf, answer_plen);
+    if (rc != 0)
+        goto send_answer_fail_reply_ctx_init;
+
+    rc = tad_send_prepare(csap, nds, &reply_ctx);
     if (rc != 0)
         goto send_answer_fail_prepare;
 
@@ -650,11 +656,16 @@ rcf_ch_trsend_start(struct rcf_comm_connection *rcfc,
     if (rc != 0)
         goto send_answer_fail_thread;
 
+    /* Send context has its own copy */
+    tad_reply_cleanup(&reply_ctx);
+
     return 0;
 
 send_answer_fail_thread:
     (void)tad_send_release(csap, csap_get_send_context(csap));
 send_answer_fail_prepare:
+    tad_reply_cleanup(&reply_ctx);
+send_answer_fail_reply_ctx_init:
 send_answer_bad_ba:
 send_answer_no_ba:
     (void)csap_command(csap, TAD_OP_IDLE);
@@ -738,10 +749,11 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *rcfc,
                     unsigned int flags)
 {
 #ifndef TAD_DUMMY
-    csap_p      csap;
-    te_errno    rc;
-    int         syms;
-    asn_value  *nds = NULL;
+    csap_p              csap;
+    te_errno            rc;
+    int                 syms;
+    asn_value          *nds = NULL;
+    tad_reply_context   reply_ctx;
 #endif
 
     INFO("%s: csap %u, num %u, timeout %u ms, flags=%x", __FUNCTION__,
@@ -808,8 +820,11 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *rcfc,
 
     CSAP_UNLOCK(csap);
 
+    rc = tad_reply_rcf_init(&reply_ctx, rcfc, cbuf, answer_plen);
+    if (rc != 0)
+        goto send_answer_fail_reply_ctx_init;
 
-    rc = tad_recv_prepare(csap, nds, num, timeout, rcfc, cbuf, answer_plen);
+    rc = tad_recv_prepare(csap, nds, num, timeout, &reply_ctx);
     if (rc != 0)
         goto send_answer_fail_prepare;
 
@@ -817,11 +832,16 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *rcfc,
     if (rc != 0)
         goto send_answer_fail_thread;
 
+    /* Receive context has its own copy */
+    tad_reply_cleanup(&reply_ctx);
+
     return 0;
 
 send_answer_fail_thread:
     (void)tad_recv_release(csap, csap_get_recv_context(csap));
 send_answer_fail_prepare:
+    tad_reply_cleanup(&reply_ctx);
+send_answer_fail_reply_ctx_init:
 send_answer_bad_ba:
 send_answer_no_ba:
     (void)csap_command(csap, TAD_OP_IDLE);
@@ -850,8 +870,9 @@ tad_trrecv_op(rcf_comm_connection *rcfc,
               char *cbuf, size_t buflen, size_t answer_plen,
               csap_handle_t csap_id, tad_traffic_op_t op)
 {
-    csap_p      csap;
-    te_errno    rc;
+    csap_p              csap;
+    te_errno            rc;
+    tad_reply_context   reply_ctx;
 
     VERB("%s: CSAP %u OP %u", __FUNCTION__, csap_id, op);
 
@@ -868,16 +889,25 @@ tad_trrecv_op(rcf_comm_connection *rcfc,
     if (rc != 0)
         goto send_answer_fail_command;
 
-    rc = tad_recv_op_enqueue(csap, op, rcfc, cbuf, answer_plen);
+    rc = tad_reply_rcf_init(&reply_ctx, rcfc, cbuf, answer_plen);
+    if (rc != 0)
+        goto send_answer_fail_reply_ctx_init;
+
+    rc = tad_recv_op_enqueue(csap, op, &reply_ctx);
     if (rc != 0)
     {
         /* Keep set flags, there is only one way now - destroy */
         goto send_answer_fail_enqueue;
     }
 
+    /* Receive operation context has its own copy */
+    tad_reply_cleanup(&reply_ctx);
+
     return 0;
 
 send_answer_fail_enqueue:
+    tad_reply_cleanup(&reply_ctx);
+send_answer_fail_reply_ctx_init:
 send_answer_fail_command:
 send_answer_no_csap:
     SEND_ANSWER("%u 0", TE_RC(TE_TAD_CH, rc));
@@ -956,11 +986,12 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *rcfc,
                    unsigned int timeout, unsigned int flags)
 {
 #ifndef TAD_DUMMY
-    csap_p      csap;
-    te_errno    rc;
-    int         syms;
-    asn_value  *tmpl = NULL;
-    asn_value  *ptrn = NULL;
+    csap_p              csap;
+    te_errno            rc;
+    int                 syms;
+    asn_value          *tmpl = NULL;
+    asn_value          *ptrn = NULL;
+    tad_reply_context   reply_ctx;
 #endif
 
     INFO("%s: csap %u, timeout %u ms, flags=%x", __FUNCTION__,
@@ -1023,7 +1054,11 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *rcfc,
 
     CSAP_UNLOCK(csap);
 
-    rc = tad_send_prepare(csap, tmpl, rcfc, cbuf, answer_plen);
+    rc = tad_reply_rcf_init(&reply_ctx, rcfc, cbuf, answer_plen);
+    if (rc != 0)
+        goto send_answer_fail_reply_ctx_init;
+
+    rc = tad_send_prepare(csap, tmpl, &reply_ctx);
     if (rc != 0)
         goto send_answer_fail_send_prepare;
 
@@ -1043,7 +1078,7 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *rcfc,
         goto send_answer_bad_tmpl;
     }
 
-    rc = tad_recv_prepare(csap, ptrn, 1, timeout, rcfc, cbuf, answer_plen);
+    rc = tad_recv_prepare(csap, ptrn, 1, timeout, &reply_ctx);
     if (rc != 0)
         goto send_answer_fail_recv_prepare;
 
@@ -1052,7 +1087,7 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *rcfc,
      */
 
     /* Emulate 'trrecv_wait' operation */
-    rc = tad_recv_op_enqueue(csap, TAD_OP_WAIT, rcfc, cbuf, answer_plen);
+    rc = tad_recv_op_enqueue(csap, TAD_OP_WAIT, &reply_ctx);
     if (rc != 0)
         goto send_answer_fail_wait;
 
@@ -1081,6 +1116,9 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *rcfc,
         (void)csap_command(csap, TAD_OP_SEND_DONE);
     }
 
+    /* Send/receive contexts have its own copies */
+    tad_reply_cleanup(&reply_ctx);
+
     /*
      * Emulated 'trrecv_wait' is responsible for send of answer and
      * transition to IDLE state.
@@ -1093,6 +1131,8 @@ send_answer_fail_recv_prepare:
 send_answer_bad_tmpl:
     (void)tad_send_release(csap, csap_get_send_context(csap));
 send_answer_fail_send_prepare:
+    tad_reply_cleanup(&reply_ctx);
+send_answer_fail_reply_ctx_init:
 send_answer_bad_ba:
 send_answer_no_ba:
     (void)csap_command(csap, TAD_OP_IDLE);
@@ -1119,8 +1159,9 @@ rcf_ch_trpoll(struct rcf_comm_connection *rcfc,
 
     return -1;
 #else
-    csap_p      csap;
-    te_errno    rc;
+    csap_p              csap;
+    te_errno            rc;
+    tad_reply_context   reply_ctx;
 
     TAD_CHECK_INIT;
 
@@ -1155,7 +1196,11 @@ rcf_ch_trpoll(struct rcf_comm_connection *rcfc,
     if ((rc != TE_ETIMEDOUT) || (timeout == 0))
         goto send_answer_bad_state;
 
-    rc = tad_poll_enqueue(csap, timeout, rcfc, cbuf, answer_plen);
+    rc = tad_reply_rcf_init(&reply_ctx, rcfc, cbuf, answer_plen);
+    if (rc != 0)
+        goto send_answer_fail_reply_ctx_init;
+
+    rc = tad_poll_enqueue(csap, timeout, &reply_ctx);
     if (rc != 0)
     {
         ERROR(CSAP_LOG_FMT "Failed to enqueue poll request: %r",
@@ -1163,9 +1208,14 @@ rcf_ch_trpoll(struct rcf_comm_connection *rcfc,
         goto send_answer_fail_enqueue;
     }
 
+    /* Poll context has its own copy */
+    tad_reply_cleanup(&reply_ctx);
+
     return 0;
 
 send_answer_fail_enqueue:
+    tad_reply_cleanup(&reply_ctx);
+send_answer_fail_reply_ctx_init:
 send_answer_bad_state:
 send_answer_no_csap:
     SEND_ANSWER("%u 0", TE_RC(TE_TAD_CH, rc));

@@ -44,7 +44,6 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
-#include "comm_agent.h"
 #include "logger_api.h"
 #include "logger_ta_fast.h"
 #include "rcf_ch_api.h"
@@ -524,6 +523,7 @@ static void
 tad_recv_release_context(csap_p csap, tad_recv_context *context)
 {
     tad_recv_free_pattern_data(csap, &context->ptrn_data);
+    tad_reply_cleanup(&context->reply_ctx);
 }
 
 
@@ -538,8 +538,7 @@ tad_recv_init_context(tad_recv_context *context)
 /* See description in tad_recv.h */
 te_errno
 tad_recv_prepare(csap_p csap, asn_value *pattern, unsigned int num,
-                 unsigned int timeout, rcf_comm_connection *rcfc,
-                 const char *answer_pfx, size_t pfx_len)
+                 unsigned int timeout, const tad_reply_context *reply_ctx)
 {
     tad_recv_context       *my_ctx = csap_get_recv_context(csap);
     te_errno                rc;
@@ -575,7 +574,7 @@ tad_recv_prepare(csap_p csap, asn_value *pattern, unsigned int num,
              csap->id, csap->wait_for.tv_sec, csap->wait_for.tv_usec);
     }
 
-    rc = tad_task_init(&my_ctx->task, rcfc, answer_pfx, pfx_len);
+    rc = tad_reply_clone(&my_ctx->reply_ctx, reply_ctx);
     if (rc != 0)
     {
         tad_recv_release_context(csap, my_ctx);
@@ -1060,7 +1059,7 @@ tad_recv_thread(void *arg)
          * (it can be send/receive only), there is no necessity to
          * send TE proto ACK, since it will be done by Sender.
          */
-        tad_task_free(&context->task);
+        tad_reply_cleanup(&context->reply_ctx);
 
         /* Start receiver only when send is done. */
         rc = csap_wait(csap, CSAP_STATE_SEND_DONE);
@@ -1082,8 +1081,8 @@ tad_recv_thread(void *arg)
          * When traffic receive start is executed stand alone (always
          * non-blocking mode), notify that operation is ready to start.
          */
-        rc = tad_task_reply(&context->task, "0 0");
-        tad_task_free(&context->task);
+        rc = tad_reply_pkts(&context->reply_ctx, 0, 0);
+        tad_reply_cleanup(&context->reply_ctx);
         if (rc != 0)
             goto exit;
     }
@@ -1297,76 +1296,6 @@ exit:
  */
 
 /**
- * Send received packet to the test via RCF.
- *
- * @param packet        ASN.1 value with received packets
- * @param rcfc          Handle of RCF connection
- * @param answer_buffer Buffer with begin of answer
- * @param ans_len       Index of first significant symbols in answer_buffer
- *
- * @return Status code.
- */
-static te_errno
-tad_recv_report_packet(const asn_value *packet, rcf_comm_connection *rcfc,
-                       const char *answer_buffer, size_t ans_len)
-{
-/*
- * It is an upper estimation for "attach" and decimal presentation
- * of attach length.
- */
-#define EXTRA_BUF_SPACE     20
-
-    te_errno    rc;
-    int         ret;
-    size_t      attach_len;
-    int         attach_rlen;
-    char       *buffer;
-    size_t      cmd_len;
-
-    assert(packet != NULL);
-
-    attach_len = asn_count_txt_len(packet, 0) + 1;
-    VERB("%s(): attach len %u", __FUNCTION__, (unsigned)attach_len);
-
-    buffer = calloc(1, ans_len + EXTRA_BUF_SPACE + attach_len);
-    if (buffer == NULL)
-        return TE_ENOMEM;
-
-    memcpy(buffer, answer_buffer, ans_len);
-    ret = snprintf(buffer + ans_len, EXTRA_BUF_SPACE, " attach %u",
-                   (unsigned)attach_len);
-    if (ret >= EXTRA_BUF_SPACE)
-    {
-        ERROR("%s(): Upper estimation on required buffer space is wrong",
-              __FUNCTION__);
-        free(buffer);
-        return TE_ESMALLBUF;
-    }
-    cmd_len = strlen(buffer) + 1;
-
-    if ((attach_rlen =
-         asn_sprint_value(packet, buffer + cmd_len, attach_len, 0))
-        != (int)(attach_len - 1))
-    {
-        ERROR("%s(): asn_sprint_value() returns unexpected number: "
-              "expected %u, got %d",
-              __FUNCTION__, (unsigned)(attach_len - 1), attach_rlen);
-        free(buffer);
-        return TE_EFAULT;
-    }
-
-    RCF_CH_SAFE_LOCK;
-    rc = rcf_comm_agent_reply(rcfc, buffer, cmd_len + attach_len);
-    RCF_CH_SAFE_UNLOCK;
-    free(buffer);
-
-    return rc;
-
-#undef EXTRA_BUF_SPACE
-}
-
-
-/**
  * Get packets from queue of received packets.
  *
  * @param csap          CSAP
@@ -1414,14 +1343,14 @@ tad_recv_get_packet(csap_p csap, te_bool wait, tad_recv_pkt **pkt)
  * Get matched packet from TAD receiver packets queue.
  *
  * @param csap      CSAP structure
- * @param task      TAD task context for reporting
+ * @param reply_ctx TAD reply context for reporting
  * @param wait      Wait for more packets or end of processing
  * @param got       Location for number of got packets
  *
  * @return Status code.
  */
 static te_errno
-tad_recv_get_packets(csap_p csap, tad_task_context *task, te_bool wait,
+tad_recv_get_packets(csap_p csap, tad_reply_context *reply_ctx, te_bool wait,
                      unsigned int *got)
 {
     te_errno        rc;
@@ -1492,8 +1421,7 @@ tad_recv_get_packets(csap_p csap, tad_task_context *task, te_bool wait,
             }
         }
 
-        rc = tad_recv_report_packet(pkt->nds, task->rcfc,
-                                    task->answer_buf, task->prefix_len);
+        rc = tad_reply_pkt(reply_ctx, pkt->nds);
         if (rc != 0)
         {
             /* TODO: Error processing here */
@@ -1540,7 +1468,7 @@ tad_recv_op(csap_p csap, tad_recv_op_context *op_context)
     if (csap->state & CSAP_STATE_RESULTS)
     {
         got = 0;
-        rc = tad_recv_get_packets(csap, &op_context->task,
+        rc = tad_recv_get_packets(csap, &op_context->reply_ctx,
                                   op_context->op != TAD_OP_GET,
                                   &got);
     }
@@ -1601,7 +1529,7 @@ tad_recv_op(csap_p csap, tad_recv_op_context *op_context)
      * We have no more chance to report an error (logged of course),
      * just ignore it.
      */
-    (void)tad_task_reply(&op_context->task, "%u %u", rc, got);
+    (void)tad_reply_pkts(&op_context->reply_ctx, rc, got);
 
     EXIT();
 }
@@ -1615,7 +1543,7 @@ tad_recv_op(csap_p csap, tad_recv_op_context *op_context)
 static void
 tad_recv_op_free(tad_recv_op_context *context)
 {
-    tad_task_free(&context->task);
+    tad_reply_cleanup(&context->reply_ctx);
     free(context);
 }
 
@@ -1684,8 +1612,7 @@ tad_recv_op_thread(void *arg)
 /* See description in tad_recv.h */
 te_errno
 tad_recv_op_enqueue(csap_p csap, tad_traffic_op_t op,
-                    rcf_comm_connection *rcfc,
-                    const char *answer_pfx, size_t pfx_len)
+                    const tad_reply_context *reply_ctx)
 {
     tad_recv_op_context    *context;
     int                     ret;
@@ -1696,7 +1623,7 @@ tad_recv_op_enqueue(csap_p csap, tad_traffic_op_t op,
     if (context == NULL)
         return TE_RC(TE_TAD_CH, TE_ENOMEM);
 
-    rc = tad_task_init(&context->task, rcfc, answer_pfx, pfx_len);
+    rc = tad_reply_clone(&context->reply_ctx, reply_ctx);
     if (rc != 0)
     {
         free(context);
@@ -1730,7 +1657,7 @@ tad_recv_op_enqueue(csap_p csap, tad_traffic_op_t op,
     /*
      * Do not unlock CSAP before send of ACK, since unlocking allows
      * thread to process request and it can be finished very fast
-     * (final reply is sent and task context freed).
+     * (final reply is sent and reply context freed).
      */
 
     if (rc == 0)
@@ -1739,8 +1666,7 @@ tad_recv_op_enqueue(csap_p csap, tad_traffic_op_t op,
          * Processing of traffic receive get/wait/stop/destroy has
          * enqueued, sent TE proto ACK.
          */
-        rc = tad_task_reply(&context->task,
-                            "%u", TE_RC(TE_TAD_CH, TE_EACK));
+        rc = tad_reply_status(&context->reply_ctx, TE_RC(TE_TAD_CH, TE_EACK));
         CSAP_UNLOCK(csap);
         if (rc != 0)
         {

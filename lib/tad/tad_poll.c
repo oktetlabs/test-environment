@@ -43,7 +43,6 @@
 
 #include "te_errno.h"
 #include "te_queue.h"
-#include "comm_agent.h"
 #include "logger_api.h"
 
 #include "tad_types.h"
@@ -62,9 +61,9 @@ static void
 tad_poll_free(tad_poll_context *context)
 {
     /* Ignore errors, nothing can help */
-    (void)tad_task_reply(&context->task, "%u %u",
+    (void)tad_reply_poll(&context->reply_ctx,
                          (unsigned)context->status, context->id);
-    tad_task_free(&context->task);
+    tad_reply_cleanup(&context->reply_ctx);
 
     LIST_REMOVE(context, links);
     CSAP_UNLOCK(context->csap);
@@ -143,8 +142,7 @@ exit:
 /* See the description in tad_poll.h */
 te_errno
 tad_poll_enqueue(csap_p csap, unsigned int timeout,
-                 rcf_comm_connection *rcfc,
-                 const char *answer_pfx, size_t pfx_len)
+                 const tad_reply_context *reply_ctx)
 {
     tad_poll_context   *context;
     te_errno            rc;
@@ -152,14 +150,14 @@ tad_poll_enqueue(csap_p csap, unsigned int timeout,
 
     context = malloc(sizeof(*context));
     if (context == NULL)
-        return TE_RC(TE_TAD_CH, TE_ENOMEM);
-
-    rc = tad_task_init(&context->task, rcfc, answer_pfx, pfx_len);
-    if (rc != 0)
     {
-        free(context);
-        return rc;
+        rc = TE_RC(TE_TAD_CH, TE_ENOMEM);
+        goto fail_context_alloc;
     }
+
+    rc = tad_reply_clone(&context->reply_ctx, reply_ctx);
+    if (rc != 0)
+        goto fail_reply_clone;
 
     context->csap = csap;
     context->timeout = timeout;
@@ -169,7 +167,7 @@ tad_poll_enqueue(csap_p csap, unsigned int timeout,
     {
         rc = TE_OS_RC(TE_TAD_CH, errno);
         ERROR("%s(): sem_init() failed: %r", __FUNCTION__, rc);
-        return rc;
+        goto fail_sem_init;
     }
 
     CSAP_LOCK(csap);
@@ -184,16 +182,14 @@ tad_poll_enqueue(csap_p csap, unsigned int timeout,
     if (ret != 0)
     {
         rc = te_rc_os2te(ret);
-
-        (void)sem_destroy(&context->sem);
-        free(context);
+        goto fail_pthread_create;
     }
     else
     {
         if (sem_wait(&context->sem) != 0)
             assert(FALSE);
 
-        rc = tad_task_reply(&context->task, "0 %u", context->id);
+        rc = tad_reply_poll(&context->reply_ctx, 0,  context->id);
         if (rc != 0)
         {
             /* Failed to send ID to the test, request can't be cancelled */
@@ -208,5 +204,16 @@ tad_poll_enqueue(csap_p csap, unsigned int timeout,
 
     CSAP_UNLOCK(csap);
 
+    return rc;
+
+fail_pthread_create:
+    LIST_REMOVE(context, links);
+    CSAP_UNLOCK(csap);
+    (void)sem_destroy(&context->sem);
+fail_sem_init:
+    tad_reply_cleanup(&context->reply_ctx);
+fail_reply_clone:
+    free(context);
+fail_context_alloc:
     return rc;
 }

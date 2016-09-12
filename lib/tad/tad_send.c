@@ -54,7 +54,6 @@
 #include "te_tools.h"
 #include "logger_api.h"
 #include "logger_ta_fast.h"
-#include "comm_agent.h"
 #include "rcf_ch_api.h"
 #include "ndn.h"
 
@@ -428,6 +427,7 @@ static void
 tad_send_free_context(csap_p csap, tad_send_context *context)
 {
     tad_send_free_template_data(csap, &context->tmpl_data);
+    tad_reply_cleanup(&context->reply_ctx);
 }
 
 
@@ -441,8 +441,7 @@ tad_send_init_context(tad_send_context *context)
 /* See description in tad_send.h */
 te_errno
 tad_send_prepare(csap_p csap, asn_value *template,
-                   rcf_comm_connection *rcfc,
-                   const char *answer_pfx, size_t pfx_len)
+                 const tad_reply_context *reply_ctx)
 {
     tad_send_context     *my_ctx = csap_get_send_context(csap);
     te_errno                rc;
@@ -453,9 +452,12 @@ tad_send_prepare(csap_p csap, asn_value *template,
 
     my_ctx->status = 0;
 
-    rc = tad_task_init(&my_ctx->task, rcfc, answer_pfx, pfx_len);
+    rc = tad_reply_clone(&my_ctx->reply_ctx, reply_ctx);
     if (rc != 0)
+    {
+        tad_send_free_context(csap, my_ctx);
         return rc;
+    }
 
     rc = tad_send_preprocess_template(csap, template,
                                       &my_ctx->tmpl_data);
@@ -783,6 +785,7 @@ tad_send_thread(void *arg)
 {
     csap_p              csap = arg;
     tad_send_context   *context;
+    tad_reply_context   reply_ctx;
     te_errno            rc;
 
     assert(csap != NULL);
@@ -790,6 +793,15 @@ tad_send_thread(void *arg)
 
     context = csap_get_send_context(csap);
     assert(context != NULL);
+
+    /* Clone reply context since we want to use it after send release */
+    rc = tad_reply_clone(&reply_ctx, &context->reply_ctx);
+    if (rc != 0)
+    {
+        (void)tad_reply_status(&context->reply_ctx, TE_RC(TE_TAD_CH, rc));
+        (void)tad_send_release(csap, context);
+        return rc;
+    }
 
     if (csap->state & CSAP_STATE_FOREGROUND)
     {
@@ -799,8 +811,7 @@ tad_send_thread(void *arg)
          * just send TE proto ACK to release the RCF session, since
          * we have gone to own thread.
          */
-        rc = tad_task_reply(&context->task,
-                            "%u", TE_RC(TE_TAD_CH, TE_EACK));
+        rc = tad_reply_status(&reply_ctx, TE_RC(TE_TAD_CH, TE_EACK));
     }
     else
     {
@@ -808,8 +819,8 @@ tad_send_thread(void *arg)
          * When traffic send start is executed in background
          * (non-blocking mode), notify that operation is ready to start.
          */
-        rc = tad_task_reply(&context->task, "0 0");
-        tad_task_free(&context->task);
+        rc = tad_reply_pkts(&reply_ctx, 0, 0);
+        tad_reply_cleanup(&reply_ctx);
     }
     /*
      * May be if TE proto reply is failed, it's better not to start at
@@ -856,12 +867,9 @@ tad_send_thread(void *arg)
     else if (csap->state & CSAP_STATE_FOREGROUND)
     {
         if (context->status != 0)
-            rc = tad_task_reply(&context->task,
-                                "%u", context->status);
+            rc = tad_reply_status(&reply_ctx, context->status);
         else
-            rc = tad_task_reply(&context->task,
-                                "0 %u", context->sent_pkts);
-        tad_task_free(&context->task);
+            rc = tad_reply_pkts(&reply_ctx, 0, context->sent_pkts);
 
         /* We can do nothing helpfull, if reply failed, just remember it */
         TE_RC_UPDATE(context->status, rc);
@@ -881,6 +889,8 @@ tad_send_thread(void *arg)
     F_EXIT(CSAP_LOG_FMT, CSAP_LOG_ARGS(csap));
 
     CSAP_UNLOCK(csap);
+
+    tad_reply_cleanup(&reply_ctx);
 
     return NULL;
 }

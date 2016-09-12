@@ -40,7 +40,6 @@
 #include "te_errno.h"
 #include "te_queue.h"
 #include "asn_usr.h"
-#include "comm_agent.h"
 
 #include "tad_types.h"
 #include "tad_recv_pkt.h"
@@ -134,7 +133,7 @@ typedef struct tad_recv_pattern_data {
 
 /** TAD Receiver context data. */
 typedef struct tad_recv_context {
-    tad_task_context            task;       /**< Task parameters */
+    tad_reply_context           reply_ctx;  /**< Reply context */
     tad_recv_pattern_data       ptrn_data;  /**< Pattern data */
 
     tad_recv_pkts   packets;    /**< Received packets */
@@ -152,8 +151,8 @@ typedef struct tad_recv_context {
 typedef struct tad_recv_op_context {
     TAILQ_ENTRY(tad_recv_op_context)    links;  /**< List links */
 
-    tad_task_context    task;   /**< Task parameters */
-    tad_traffic_op_t    op;     /**< Operation */
+    tad_reply_context   reply_ctx;  /**< Reply context */
+    tad_traffic_op_t    op;         /**< Operation */
 } tad_recv_op_context;
 
 
@@ -172,19 +171,15 @@ extern void tad_recv_init_context(tad_recv_context *context);
  *                      case)
  * @param num           Number of packets to wait for (0 - unlimited)
  * @param timeout       Timeout in milliseconds
- * @param rcfc          RCF connection handle to be used for answers
- * @param answer_pfx    Test Protocol answer prefix
- * @param pfx_len       Length of the answer prefix
+ * @param reply_ctx     TAD async reply context
  *
  * @return Status code.
  */
-extern te_errno tad_recv_prepare(csap_p                csap,
-                                 asn_value            *ptrn_unit,
-                                 unsigned int          num,
-                                 unsigned int          timeout,
-                                 rcf_comm_connection  *rcfc,
-                                 const char           *answer_pfx,
-                                 size_t                pfx_len);
+extern te_errno tad_recv_prepare(csap_p                     csap,
+                                 asn_value                 *ptrn_unit,
+                                 unsigned int               num,
+                                 unsigned int               timeout,
+                                 const tad_reply_context   *reply_ctx);
 
 /**
  * Release TAD Receiver context.
@@ -212,17 +207,13 @@ extern void *tad_recv_thread(void *arg);
  *
  * @param csap          CSAP
  * @param op            Operation (stop/wait/get)
- * @param rcfc          RCF communication handle
- * @param answer_pfx    RCF answer prefix
- * @param pfx_len       RCF answer prefix length
+ * @param reply_ctx     TAD async reply context
  *
  * @return Status code.
  */
-extern te_errno tad_recv_op_enqueue(csap_p                csap,
-                                    tad_traffic_op_t      op,
-                                    rcf_comm_connection  *rcfc,
-                                    const char           *answer_pfx,
-                                    size_t                pfx_len);
+extern te_errno tad_recv_op_enqueue(csap_p                   csap,
+                                    tad_traffic_op_t         op,
+                                    const tad_reply_context *reply_ctx);
 
 #ifdef __cplusplus
 } /* extern "C" */
