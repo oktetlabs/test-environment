@@ -66,6 +66,7 @@ typedef enum rpc_signum {
     RPC_SIGBUS,
     RPC_SIGTRAP,
     RPC_SIGUNKNOWN,
+    RPC_SIG_ZERO = 0,
 } rpc_signum;
 
 /** Convert RPC signal number to string */
