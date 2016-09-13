@@ -105,6 +105,7 @@ typedef enum {
     TE_PROTO_IP6,
     TE_PROTO_PPP,
     TE_PROTO_PPPOE,
+    TE_PROTO_RTE_MBUF,
 } te_tad_protocols_t;
 
 /**

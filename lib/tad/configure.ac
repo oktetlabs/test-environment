@@ -384,6 +384,17 @@ AC_ARG_WITH([socket],,
  fi
 ], [w_socket=false])
 
+AC_ARG_WITH([rte_mbuf],,
+[if test "${withval}" = yes; then
+   if [ test ! -z "${RTE_SDK_BIN}" ] && [ test -d "${RTE_SDK_BIN}" ]; then
+      proto_specific rte_mbuf;
+      AC_CONFIG_FILES([rte_mbuf/Makefile])
+   else
+      AC_MSG_ERROR([$RTE_SDK_BIN is not a valid directory path])
+   fi
+ fi
+], [w_rte_mbuf=false])
+
 if test $w_eth = true -o $w_atm = true ; then
    proto_specific llc;
    AC_CONFIG_FILES([llc/Makefile])
@@ -406,6 +417,7 @@ AC_SUBST([TAD_CH_DEFS])
 AC_SUBST([TA_TAD_LIBS])
 
 AM_CONDITIONAL(TAD_DUMMY, test -z "$TAD_LIBLIST")
+AM_CONDITIONAL(WITH_RTE_MBUF, test "$with_rte_mbuf" = "yes")
 
 if test x$w_snmp = xtrue; then 
     AC_MSG_CHECKING(for net-snmp library)

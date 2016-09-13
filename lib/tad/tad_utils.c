@@ -1396,6 +1396,11 @@ te_proto_from_str(const char *proto_txt)
                 return TE_PROTO_PPP;
             break;
 
+        case 'r':
+            if (strcmp(proto_txt + 1, "tembuf") == 0)
+                return TE_PROTO_RTE_MBUF;
+            break;
+
         case 's':
             if (strcmp(proto_txt + 1, "nmp") == 0)
                 return TE_PROTO_SNMP;
@@ -1487,6 +1492,9 @@ te_proto_to_str(te_tad_protocols_t proto)
 
          case TE_PROTO_PPPOE:
              return "pppoe";
+
+         case TE_PROTO_RTE_MBUF:
+             return "rtembuf";
 
     }
     return NULL;

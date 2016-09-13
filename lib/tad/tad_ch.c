@@ -183,6 +183,10 @@ rcf_ch_tad_init(void)
     extern te_errno csap_support_ppp_register(void);
     CHECK_RC(csap_support_ppp_register());
 #endif
+#ifdef WITH_RTE_MBUF
+    extern te_errno csap_support_rte_mbuf_register(void);
+    CHECK_RC(csap_support_rte_mbuf_register());
+#endif
 
     CHECK_RC(tad_agent_csap_init());
 

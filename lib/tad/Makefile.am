@@ -7,6 +7,16 @@ AM_CPPFLAGS = -I$(top_srcdir) @TE_CPPFLAGS@ @TAD_CH_DEFS@ \
               -I$(DESTDIR)/$(includedir) $(TE_CPPFLAGS_VAR)
 AM_CFLAGS = @TE_CFLAGS@ $(TE_CFLAGS_VAR)
 
+if WITH_RTE_MBUF
+AM_CPPFLAGS += -I${RTE_SDK_BIN}/include
+AM_CFLAGS += -I${RTE_SDK_BIN}/include
+RTE_MBUF_SAP_H = tad_rte_mbuf_sap.h
+RTE_MBUF_SAP_S = tad_rte_mbuf_sap.c
+else
+RTE_MBUF_SAP_H =
+RTE_MBUF_SAP_S =
+endif
+
 include_HEADERS = \
 	tad_api.h \
 	tad_csap_inst.h \
@@ -26,6 +36,7 @@ noinst_HEADERS = \
 	tad_reply_rcf.h \
 	tad_utils.h \
 	tad_eth_sap.h \
+	$(RTE_MBUF_SAP_H) \
 	tad_bps.h
 
 noinst_LIBRARIES = libtad_core.a
@@ -38,6 +49,7 @@ libtad_core_a_SOURCES = \
 	tad_pkt.c \
 	tad_eth_sap.c \
 	tad_eth_sap_dlpi.c \
+	$(RTE_MBUF_SAP_S) \
 	tad_utils.c \
 	tad_ch.c \
 	csap_id.c \

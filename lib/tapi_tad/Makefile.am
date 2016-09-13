@@ -75,6 +75,17 @@ else
 EXTRA_DIST += $(ETH_HDRS) $(ETH_SRCS)
 endif
 
+# RTE mbuf
+RTE_MBUF_HDRS = rte_mbuf/tapi_rte_mbuf.h
+RTE_MBUF_SRCS = rte_mbuf/tapi_rte_mbuf.c
+if WITH_RTE_MBUF
+AM_CPPFLAGS += -I$(srcdir)/rte_mbuf
+EXTRA_HEADERS += $(RTE_MBUF_HDRS)
+EXTRA_SOURCES += $(RTE_MBUF_SRCS)
+else
+EXTRA_DIST += $(RTE_MBUF_HDRS) $(RTE_MBUF_SRCS)
+endif
+
 # IPSTACK
 IPSTACK_HDRS = \
 	ipstack/tapi_ip4.h \
