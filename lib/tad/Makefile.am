@@ -28,13 +28,13 @@ include_HEADERS = \
 	tad_recv.h \
 	tad_recv_pkt.h \
 	tad_reply.h \
+	tad_utils.h \
 	tad_poll.h
 
 noinst_HEADERS = \
 	csap_id.h \
 	tad_agent_csap.h \
 	tad_reply_rcf.h \
-	tad_utils.h \
 	tad_eth_sap.h \
 	$(RTE_MBUF_SAP_H) \
 	tad_bps.h
