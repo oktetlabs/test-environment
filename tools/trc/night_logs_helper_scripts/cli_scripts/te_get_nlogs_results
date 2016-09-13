@@ -1030,6 +1030,7 @@ foreach my $arg (@ARGV)
         $tag_expr =~ s/[.-]/_/g;
         $tag_expr =~ s/([^a-zA-Z_0-9])([a-zA-Z])/$1\$$2/g;
         $tag_expr =~ s/^([a-zA-Z])/\$$1/g;
+        $tag_expr =~ s/!\$([_a-zA-Z0-9]+)/!defined(\$tag_names{'$1'})/g;
         $tag_expr =~ s/&/ && /g;
         $tag_expr =~ s/\|/ || /g;
     }
