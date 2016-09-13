@@ -33,6 +33,7 @@
 
 #define RPC_TYPE_NS_RTE_MEMPOOL "rte_mempool"
 #define RPC_TYPE_NS_RTE_MBUF    "rte_mbuf"
+#define RPC_TYPE_NS_RTE_RING    "rte_ring"
 
 /**
  * Translate negative errno from host to RPC.

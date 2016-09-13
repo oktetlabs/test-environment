@@ -23,6 +23,7 @@ lib_LIBRARIES = librpcs_dpdk.a
 librpcs_dpdk_a_SOURCES = \
 	mbuf.c \
 	ethdev.c \
+	ring.c \
 	eal.c
 
 

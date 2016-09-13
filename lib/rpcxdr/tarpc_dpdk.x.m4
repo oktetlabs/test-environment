@@ -35,6 +35,9 @@ typedef tarpc_ptr    tarpc_rte_mempool;
 /** Handle of the 'rte_mbuf' or 0 */
 typedef tarpc_ptr    tarpc_rte_mbuf;
 
+/** Handle of the 'rte_ring' or 0 */
+typedef tarpc_ptr    tarpc_rte_ring;
+
 /* Just to make two-dimensional array of strings */
 struct tarpc_string {
     string  str<>;
@@ -511,6 +514,33 @@ struct tarpc_rte_pktmbuf_redist_out {
     struct tarpc_out_arg            common;
     tarpc_rte_mbuf                  m;
     tarpc_int                       retval;
+};
+
+
+/*
+ * RTE ring API
+ */
+
+/** RTE ring flags */
+enum tarpc_rte_ring_flags {
+    TARPC_RTE_RING_F_SP_ENQ = 0,
+    TARPC_RTE_RING_F_SC_DEQ,
+
+    TARPC_RTE_RING_UNKNOWN
+};
+
+/** rte_ring_create() */
+struct tarpc_rte_ring_create_in {
+    struct tarpc_in_arg     common;
+    string                  name<>;
+    unsigned                count;
+    int                     socket_id;
+    unsigned                flags;
+};
+
+struct tarpc_rte_ring_create_out {
+    struct tarpc_out_arg    common;
+    tarpc_rte_ring          retval;
 };
 
 
@@ -1234,6 +1264,8 @@ program dpdk
         RPC_DEF(rte_pktmbuf_redist)
 
         RPC_DEF(rte_vlan_strip)
+
+        RPC_DEF(rte_ring_create)
 
         RPC_DEF(rte_eth_dev_info_get)
         RPC_DEF(rte_eth_dev_configure)
