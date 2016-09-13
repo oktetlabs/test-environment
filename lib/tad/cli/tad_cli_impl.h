@@ -30,6 +30,10 @@
 #ifndef __TE_TAD_CLI_IMPL_H__
 #define __TE_TAD_CLI_IMPL_H__
 
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdio.h>
 #ifdef STDC_HEADERS
 #include <stdlib.h>

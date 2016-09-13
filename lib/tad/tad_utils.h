@@ -30,10 +30,6 @@
 #ifndef __TE_TAD_UTILS_H__
 #define __TE_TAD_UTILS_H__
 
-#ifndef PACKAGE_VERSION
-#include "config.h"
-#endif
-
 #if HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif

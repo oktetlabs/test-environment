@@ -30,6 +30,10 @@
 #ifndef __TE_TAD_BPS_H__
 #define __TE_TAD_BPS_H__
 
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "te_stdint.h"
 #include "asn_usr.h"
 #include "tad_types.h"
