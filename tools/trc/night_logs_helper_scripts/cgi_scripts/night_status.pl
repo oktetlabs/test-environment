@@ -118,7 +118,9 @@ $last_session =~ s/\s*$//;
 
 $cur_time = localtime();
 
-@last_logs = `find ${logs_path}/${last_session} -mindepth 2 -maxdepth 2`;
+$cmd = "find ${logs_path}/${last_session} -mindepth 2 -maxdepth 2 ".
+       "| LC_ALL=C sort";
+@last_logs = `$cmd`;
 
 print "Content-type:text/html\r\n\r\n";
 print <<EOT;
