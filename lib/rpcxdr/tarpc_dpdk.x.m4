@@ -551,6 +551,15 @@ struct tarpc_rte_ring_free_in {
 
 typedef struct tarpc_void_out tarpc_rte_ring_free_out;
 
+/** rte_ring_enqueue_mbuf() */
+struct tarpc_rte_ring_enqueue_mbuf_in {
+    struct tarpc_in_arg     common;
+    tarpc_rte_ring          ring;
+    tarpc_rte_mbuf          m;
+};
+
+typedef struct tarpc_int_retval_out tarpc_rte_ring_enqueue_mbuf_out;
+
 
 /*
  * rte_eth_dev API
@@ -1275,6 +1284,7 @@ program dpdk
 
         RPC_DEF(rte_ring_create)
         RPC_DEF(rte_ring_free)
+        RPC_DEF(rte_ring_enqueue_mbuf)
 
         RPC_DEF(rte_eth_dev_info_get)
         RPC_DEF(rte_eth_dev_configure)

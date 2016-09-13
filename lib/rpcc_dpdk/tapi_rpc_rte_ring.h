@@ -71,6 +71,18 @@ extern rpc_rte_ring_p rpc_rte_ring_create(rcf_rpc_server *rpcs,
 extern void rpc_rte_ring_free(rcf_rpc_server *rpcs,
                               rpc_rte_ring_p  ring);
 
+/**
+ * Enqueue an mbuf to RTE ring
+ *
+ * @param ring            RTE ring pointer
+ * @param m               RTE mbuf pointer
+ *
+ * @return @c 0 on success; jumps out in case of failure
+ */
+extern int rte_ring_enqueue_mbuf(rcf_rpc_server *rpcs,
+                                 rpc_rte_ring_p  ring,
+                                 rpc_rte_mbuf_p  m);
+
 /**@} <!-- END te_lib_rpc_rte_ring --> */
 
 #ifdef __cplusplus

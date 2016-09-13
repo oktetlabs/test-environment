@@ -90,3 +90,25 @@ TARPC_FUNC_STATIC(rte_ring_free, {},
     });
 }
 )
+
+TARPC_FUNC_STANDALONE(rte_ring_enqueue_mbuf, {},
+{
+    struct rte_ring    *ring = NULL;
+    struct rte_mbuf    *m = NULL;
+    te_errno            err;
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_RING, {
+        ring = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->ring, ns);
+    });
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+        m = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->m, ns);
+    });
+
+    MAKE_CALL(err = rte_ring_enqueue(ring, (void *)m));
+
+    neg_errno_h2rpc(&err);
+
+    out->retval = -err;
+}
+)
