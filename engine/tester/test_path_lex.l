@@ -86,6 +86,7 @@ extern int test_path_str_pos;
 %option 8bit
 %option batch
 %option warn nodefault
+%option noinput
 %option nounput
 %option noyywrap
 %option bison-bridge bison-locations
