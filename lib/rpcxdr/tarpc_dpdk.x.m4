@@ -560,6 +560,14 @@ struct tarpc_rte_ring_enqueue_mbuf_in {
 
 typedef struct tarpc_int_retval_out tarpc_rte_ring_enqueue_mbuf_out;
 
+/** rte_ring_dequeue_mbuf() */
+struct tarpc_rte_ring_dequeue_mbuf_in {
+    struct tarpc_in_arg     common;
+    tarpc_rte_ring          ring;
+};
+
+typedef struct tarpc_mbuf_retval_out tarpc_rte_ring_dequeue_mbuf_out;
+
 
 /*
  * rte_eth_dev API
@@ -1285,6 +1293,7 @@ program dpdk
         RPC_DEF(rte_ring_create)
         RPC_DEF(rte_ring_free)
         RPC_DEF(rte_ring_enqueue_mbuf)
+        RPC_DEF(rte_ring_dequeue_mbuf)
 
         RPC_DEF(rte_eth_dev_info_get)
         RPC_DEF(rte_eth_dev_configure)

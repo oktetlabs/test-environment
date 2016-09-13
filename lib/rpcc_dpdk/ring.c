@@ -111,3 +111,25 @@ rpc_rte_ring_enqueue_mbuf(rcf_rpc_server *rpcs,
 
     RETVAL_ZERO_INT(rte_ring_enqueue_mbuf, out.retval);
 }
+
+rpc_rte_mbuf_p
+rpc_rte_ring_dequeue_mbuf(rcf_rpc_server *rpcs,
+                          rpc_rte_ring_p  ring)
+{
+    tarpc_rte_ring_dequeue_mbuf_in  in;
+    tarpc_rte_ring_dequeue_mbuf_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.ring = (tarpc_rte_ring)ring;
+
+    rcf_rpc_call(rpcs, "rte_ring_dequeue_mbuf", &in, &out);
+
+    CHECK_RETVAL_VAR_RPC_PTR(rte_ring_dequeue_mbuf, out.retval);
+
+    TAPI_RPC_LOG(rpcs, rte_ring_dequeue_mbuf, RPC_PTR_FMT, RPC_PTR_FMT,
+                 RPC_PTR_VAL(in.ring), RPC_PTR_VAL(out.retval));
+
+    RETVAL_RPC_PTR(rte_ring_dequeue_mbuf, out.retval);
+}

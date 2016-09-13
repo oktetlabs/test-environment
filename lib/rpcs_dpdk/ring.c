@@ -112,3 +112,20 @@ TARPC_FUNC_STANDALONE(rte_ring_enqueue_mbuf, {},
     out->retval = -err;
 }
 )
+
+TARPC_FUNC_STANDALONE(rte_ring_dequeue_mbuf, {},
+{
+    struct rte_ring    *ring = NULL;
+    struct rte_mbuf    *m = NULL;
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_RING, {
+        ring = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->ring, ns);
+    });
+
+    MAKE_CALL((void)rte_ring_dequeue(ring, (void **)&m));
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+        out->retval = RCF_PCH_MEM_INDEX_ALLOC(m, ns);
+    });
+}
+)

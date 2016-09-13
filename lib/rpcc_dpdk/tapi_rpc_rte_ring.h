@@ -83,6 +83,16 @@ extern int rte_ring_enqueue_mbuf(rcf_rpc_server *rpcs,
                                  rpc_rte_ring_p  ring,
                                  rpc_rte_mbuf_p  m);
 
+/**
+ * Dequeue an mbuf from RTE ring
+ *
+ * @param ring            RTE ring pointer
+ *
+ * @return RTE mbuf pointer; doesn't jump out when pointer is @c NULL
+ */
+extern rpc_rte_mbuf_p rte_ring_dequeue_mbuf(rcf_rpc_server *rpcs,
+                                            rpc_rte_ring_p  ring);
+
 /**@} <!-- END te_lib_rpc_rte_ring --> */
 
 #ifdef __cplusplus
