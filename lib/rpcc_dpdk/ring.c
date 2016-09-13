@@ -67,3 +67,22 @@ rpc_rte_ring_create(rcf_rpc_server *rpcs,
 
     RETVAL_RPC_PTR(rte_ring_create, out.retval);
 }
+
+void
+rpc_rte_ring_free(rcf_rpc_server *rpcs,
+                       rpc_rte_ring_p  ring)
+{
+    tarpc_rte_ring_free_in  in;
+    tarpc_rte_ring_free_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.ring = (tarpc_rte_ring)ring;
+
+    rcf_rpc_call(rpcs, "rte_ring_free", &in, &out);
+
+    TAPI_RPC_LOG(rpcs, rte_ring_free, RPC_PTR_FMT, "", RPC_PTR_VAL(in.ring));
+
+    RETVAL_VOID(rte_ring_free);
+}

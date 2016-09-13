@@ -74,3 +74,19 @@ out:
     ;
 }
 )
+
+TARPC_FUNC_STATIC(rte_ring_free, {},
+{
+    struct rte_ring    *ring = NULL;
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_RING, {
+        ring = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->ring, ns);
+    });
+
+    MAKE_CALL(func(ring));
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_RING, {
+        RCF_PCH_MEM_INDEX_FREE(in->ring, ns);
+    });
+}
+)

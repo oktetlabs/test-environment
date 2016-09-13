@@ -63,6 +63,14 @@ extern rpc_rte_ring_p rpc_rte_ring_create(rcf_rpc_server *rpcs,
                                           int             socket_id,
                                           unsigned        flags);
 
+/**
+ * @b rte_ring_free() RPC
+ *
+ * @param ring            RTE ring pointer
+ */
+extern void rpc_rte_ring_free(rcf_rpc_server *rpcs,
+                              rpc_rte_ring_p  ring);
+
 /**@} <!-- END te_lib_rpc_rte_ring --> */
 
 #ifdef __cplusplus

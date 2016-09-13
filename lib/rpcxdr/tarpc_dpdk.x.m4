@@ -543,6 +543,14 @@ struct tarpc_rte_ring_create_out {
     tarpc_rte_ring          retval;
 };
 
+/** rte_ring_free() */
+struct tarpc_rte_ring_free_in {
+    struct tarpc_in_arg     common;
+    tarpc_rte_ring          ring;
+};
+
+typedef struct tarpc_void_out tarpc_rte_ring_free_out;
+
 
 /*
  * rte_eth_dev API
@@ -1266,6 +1274,7 @@ program dpdk
         RPC_DEF(rte_vlan_strip)
 
         RPC_DEF(rte_ring_create)
+        RPC_DEF(rte_ring_free)
 
         RPC_DEF(rte_eth_dev_info_get)
         RPC_DEF(rte_eth_dev_configure)
