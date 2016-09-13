@@ -1428,17 +1428,8 @@ tad_recv_get_packet(csap_p csap, te_bool wait, tad_recv_pkt **pkt)
     return rc;
 }
 
-/**
- * Get matched packet from TAD receiver packets queue.
- *
- * @param csap      CSAP structure
- * @param reply_ctx TAD reply context for reporting
- * @param wait      Wait for more packets or end of processing
- * @param got       Location for number of got packets
- *
- * @return Status code.
- */
-static te_errno
+/* See description in tad_api.h */
+te_errno
 tad_recv_get_packets(csap_p csap, tad_reply_context *reply_ctx, te_bool wait,
                      unsigned int *got)
 {

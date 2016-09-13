@@ -177,18 +177,8 @@ tad_send_preprocess_payload(csap_p csap, const asn_value *tmpl_unit,
     return 0;
 }
 
-/**
- * Preprocess traffic template arguments.
- *
- * @param csap          CSAP instance
- * @param tmpl_unit     Traffic template unit
- * @param data          Location for template unit auxiluary data to be
- *                      prepared during preprocessing and used during
- *                      binary data generation
- *
- * @return Status code.
- */
-static te_errno
+/* See description in tad_api.h */
+te_errno
 tad_send_preprocess_args(csap_p csap, const asn_value *tmpl_unit,
                            tad_send_tmpl_unit_data *data)
 {

@@ -53,6 +53,21 @@ extern te_errno tad_csap_create(const char *stack, const char *spec_str,
 extern te_errno tad_csap_destroy(csap_p csap);
 
 /**
+ * Preprocess traffic template arguments.
+ *
+ * @param csap          CSAP instance
+ * @param tmpl_unit     Traffic template unit
+ * @param data          Location for template unit auxiluary data to be
+ *                      prepared during preprocessing and used during
+ *                      binary data generation
+ *
+ * @return Status code.
+ */
+extern te_errno tad_send_preprocess_args(csap_p                      csap,
+                                         const asn_value            *tmpl_unit,
+                                         tad_send_tmpl_unit_data    *data);
+
+/**
  * Prepare TAD Sender to start traffic generation.
  *
  * @param csap          CSAP instance to generate traffic
@@ -127,6 +142,21 @@ extern te_errno tad_recv_release(csap_p csap, tad_recv_context *context);
  * @note It releases receiver context in any case.
  */
 extern te_errno tad_recv_do(csap_p csap);
+
+/**
+ * Get matched packet from TAD receiver packets queue.
+ *
+ * @param csap      CSAP structure
+ * @param reply_ctx TAD reply context for reporting
+ * @param wait      Wait for more packets or end of processing
+ * @param got       Location for number of got packets
+ *
+ * @return Status code.
+ */
+extern te_errno tad_recv_get_packets(csap_p              csap,
+                                     tad_reply_context  *reply_ctx,
+                                     te_bool             wait,
+                                     unsigned int       *got);
 
 #ifdef __cplusplus
 } /* extern "C" */
