@@ -260,10 +260,14 @@ foreach my $log (@last_logs)
 
     if (($status eq "DONE" &&
          $unexp_iters > $total_iters * 0.2) ||
-        $status eq "RUNNING" ||
         $status eq "STOPPED")
     {
         $color = "#ddddaa";
+    }
+
+    if ($status eq "RUNNING")
+    {
+        $color = "#d3d3d3";
     }
 
     if (($status eq "DONE" && $unexp_iters > $total_iters * 0.8) ||
