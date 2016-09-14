@@ -8,6 +8,7 @@ my $logs_path = "/home/tester-l5/private_html/night-testing/logs/";
 my $links_path = "/home/tester-l5/private_html/night-testing/";
 my $last_session;
 my @last_logs;
+my @tested_branches;
 my $cmd;
 my $cur_time;
 
@@ -122,60 +123,27 @@ $cmd = "find ${logs_path}/${last_session} -mindepth 2 -maxdepth 2 ".
        "| LC_ALL=C sort";
 @last_logs = `$cmd`;
 
-print "Content-type:text/html\r\n\r\n";
+sub put_table_head {
+    my $branch = $_[0];
+    my $debug = $_[1];
 print <<EOT;
-<html>
-  <head>
-    <title>Night testing sessions status</title>
-    <script type="text/javascript">
-      var timeout = false;
-
-      function refreshPage()
-      {
-          if (timeout)
-          {
-              clearTimeout(timeout);
-              timeout = false;
-          }
-          if (document.getElementById("autoreload_cb").checked)
-          {
-              var cur_location = document.location.href;
-
-              cur_location = cur_location.replace(new RegExp(/[?].*/), "");
-              cur_location = cur_location + "?autoreload_enabled=1";
-              document.location.href = cur_location;
-          }
-      }
-
-      function setAutoReload()
-      {
-          if (timeout)
-          {
-              clearTimeout(timeout);
-              timeout = false;
-          }
-
-          if (document.getElementById("autoreload_cb").checked)
-          {
-              timeout = setTimeout("refreshPage()", 30000);
-          }
-      }
-    </script>
-    <style>
-      td { text-align: center; padding: 1px }
-      th { background-color:#DDDDDD; }
-      span.stat { font-family: monospace; white-space: pre; }
-    </style>
-  </head>
-  <body onload="setAutoReload()">
-    <b>${last_session} ${cur_time}</b>
-    <table>
-      <tr><th>Tags</th><th>Session</th><th>Driver load</th><th>Status</th>.
-            <th>Driver unload</th><th>Run</th><th>Unexpected</th></tr>
+      <b>${last_session} ${cur_time} Branch: $branch $debug</b>
+        <table>
+          <tr><th>Tags</th><th>Session</th><th>Driver load</th>.
+          <th>Status</th><th>Driver unload</th><th>Run</th>.
+          <th>Unexpected</th></tr>
 EOT
+}
 
-foreach my $log (@last_logs)
+sub put_table_end {
+print <<EOT;
+      </table>
+EOT
+}
+
+sub fill_table
 {
+    my $log = $_[0];
     my $log_name;
     my $log_txt;
     my $driver_load;
@@ -296,6 +264,88 @@ foreach my $log (@last_logs)
           "<td>${unex_stat_txt}</td></tr>\n";
 }
 
+sub fill_table_branch
+{
+    my $branch = $_[0];
+    foreach my $log_dir (@last_logs)
+    {
+        $log_dir =~ s/\n//g;
+        $cmd = "cat ${log_dir}/session.log | grep Branch ".
+               "| sed 's/Branch: //'";
+        my $curr_branch = `$cmd`;
+        $curr_branch =~ s/\n//g;
+        if ($branch ne $curr_branch)
+        {
+            next;
+        }
+        fill_table($log_dir);
+    }
+}
+
+$cmd = "cat ${logs_path}/${last_session}/*/*/session.log ".
+       "| grep Branch: | LC_ALL=C sort | uniq | sed 's/Branch: //'";
+@tested_branches = `$cmd`;
+
+print "Content-type:text/html\r\n\r\n";
+print <<EOT;
+<html>
+  <head>
+    <title>Night testing sessions status</title>
+    <script type="text/javascript">
+      var timeout = false;
+
+      function refreshPage()
+      {
+          if (timeout)
+          {
+              clearTimeout(timeout);
+              timeout = false;
+          }
+          if (document.getElementById("autoreload_cb").checked)
+          {
+              var cur_location = document.location.href;
+
+              cur_location = cur_location.replace(new RegExp(/[?].*/), "");
+              cur_location = cur_location + "?autoreload_enabled=1";
+              document.location.href = cur_location;
+          }
+      }
+
+      function setAutoReload()
+      {
+          if (timeout)
+          {
+              clearTimeout(timeout);
+              timeout = false;
+          }
+
+          if (document.getElementById("autoreload_cb").checked)
+          {
+              timeout = setTimeout("refreshPage()", 30000);
+          }
+      }
+    </script>
+    <style>
+      td { text-align: center; padding: 1px }
+      th { background-color:#DDDDDD; }
+      span.stat { font-family: monospace; white-space: pre; }
+    </style>
+  </head>
+  <body onload="setAutoReload()">
+EOT
+
+foreach my $branch_name (@tested_branches)
+{
+    $branch_name =~ s/\n//g;
+    $cmd = "grep -A 1 -h ".
+           "$branch_name ${logs_path}/${last_session}/*/*/session.log ".
+           "| grep DEBUG | head -n 1";
+    my $debug = `$cmd`;
+    put_table_head($branch_name, $debug);
+    fill_table_branch($branch_name);
+    put_table_end();
+}
+
 my $autoreload_checked = "checked";
 my $cgi = CGI->new;
 
@@ -312,7 +362,6 @@ if (defined($cgi->param('autoreload_enabled')))
 }
 
 print <<EOT;
-    </table>
     <input type="checkbox" id="autoreload_cb" onclick="setAutoReload()"
            ${autoreload_checked}>
       Refresh page every 30 seconds
