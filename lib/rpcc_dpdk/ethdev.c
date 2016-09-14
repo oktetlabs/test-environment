@@ -1861,8 +1861,8 @@ int rpc_rte_eth_dev_flow_ctrl_get(rcf_rpc_server *rpcs, uint8_t port_id,
     RETVAL_ZERO_INT(rte_eth_dev_flow_ctrl_get, out.retval);
 }
 
-static const char *
-tarpc_rte_filter_type2str(enum tarpc_rte_filter_type filter_type)
+const char *
+tapi_rpc_rte_filter_type2str(enum tarpc_rte_filter_type filter_type)
 {
     const char *type;
 
@@ -1928,7 +1928,7 @@ int rpc_rte_eth_dev_filter_supported(rcf_rpc_server *rpcs, uint8_t port_id,
 
     TAPI_RPC_LOG(rpcs, rte_eth_dev_filter_supported,
                  "%hhu, %s", NEG_ERRNO_FMT,
-                 in.port_id, tarpc_rte_filter_type2str(filter_type),
+                 in.port_id, tapi_rpc_rte_filter_type2str(filter_type),
                  NEG_ERRNO_ARGS(out.retval));
 
     RETVAL_ZERO_INT(rte_eth_dev_filter_supported, out.retval);
