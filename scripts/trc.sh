@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 TRC_HTML=
 TRC_OPTS=
