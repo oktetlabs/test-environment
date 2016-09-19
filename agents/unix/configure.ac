@@ -636,7 +636,7 @@ fi
 AC_SUBST([EXTRA_CPPFLAGS])
 AC_SUBST([EXTRA_LDADD])
 
-DYNAMIC_LIBS="-ldl -lpthread -lnsl -lsendfile -lsocket"
+DYNAMIC_LIBS="-ldl -lpthread -lnsl -lsendfile -lsocket -lm"
 if test x${PCAP_AVAIL} = "xyes" ; then
     DYNAMIC_LIBS="${DYNAMIC_LIBS} -lpcap"
 fi
@@ -650,7 +650,7 @@ AC_ARG_WITH([static_libc],
 if test "${with_static_libc}" = "no" ; then
     # If the library name is a part of the variable 'DYNAMIC_LIBS',
     # then dynamic version of this library will be used for linking.
-    DYNAMIC_LIBS="${DYNAMIC_LIBS} -lm -lutil -lrt"
+    DYNAMIC_LIBS="${DYNAMIC_LIBS} -lutil -lrt"
 fi
 
 #if ! test "$cross_compiling" = "yes" ; then
