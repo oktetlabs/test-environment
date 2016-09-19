@@ -390,7 +390,7 @@ AC_ARG_WITH([rte_mbuf],,
       proto_specific rte_mbuf;
       AC_CONFIG_FILES([rte_mbuf/Makefile])
    else
-      AC_MSG_ERROR([$RTE_SDK_BIN is not a valid directory path])
+      AC_MSG_ERROR([$RTE_SDK_BIN is not a valid RTE_SDK_BIN directory path])
    fi
  fi
 ], [w_rte_mbuf=false])
