@@ -1150,15 +1150,245 @@ trc_files_free(trc_files *files)
     }
 }
 
-/* See description in te_trc.h */
-te_errno
-trc_db_open(const char *location, te_trc_db **db)
+/**
+ * Read and parse XML document from a given location.
+ *
+ * @param location        Path to XML document.
+ * @param doc             Where to save parsed XML document.
+ *
+ * @return @c 0 on success or error code in case of failure.
+ */
+static te_errno
+trc_read_doc(const char *location, xmlDocPtr *doc)
 {
-    xmlParserCtxtPtr    parser;
-    xmlNodePtr          node;
 #if HAVE_XMLERROR
     xmlError           *err;
 #endif
+    xmlParserCtxtPtr    parser;
+
+    parser = xmlNewParserCtxt();
+    if (parser == NULL)
+    {
+        ERROR("xmlNewParserCtxt() failed");
+        return TE_ENOMEM;
+    }
+    if ((*doc = xmlCtxtReadFile(parser, location, NULL,
+                                XML_PARSE_NOBLANKS |
+                                XML_PARSE_XINCLUDE |
+                                XML_PARSE_NONET)) == NULL)
+    {
+#if HAVE_XMLERROR
+        err = xmlCtxtGetLastError(parser);
+        ERROR("Error occured during parsing configuration file:\n"
+              "    %s:%d\n    %s", location,
+              err->line, err->message);
+#else
+        ERROR("Error occured during parsing configuration file:\n"
+              "%s", location);
+#endif
+        xmlFreeParserCtxt(parser);
+        xmlCleanupParser();
+        return TE_RC(TE_TRC, TE_EFMT);
+    }
+
+    xmlFreeParserCtxt(parser);
+    xmlCleanupParser();
+    return 0;
+}
+
+/**
+ * Auxiliary function used by @b trc_xinclude_process() to
+ * recursively resolve xi:include references.
+ *
+ * @param parent_doc      XML document in which to insert
+ *                        included content.
+ * @param parent          XML node whose children to process.
+ * @param trc_dir         Path to folder where TRC DB XML files
+ *                        can be found.
+ *
+ * @return @c 0 on success or error code in case of failure.
+ */
+static te_errno
+trc_xinclude_process_do(xmlDocPtr parent_doc, xmlNodePtr parent,
+                        const char *trc_dir)
+{
+    xmlNodePtr  node;
+    xmlNodePtr  node_next;
+
+    xmlDocPtr   doc = NULL;
+    xmlNodePtr  include_root = NULL;
+    xmlNodePtr  included_node = NULL;
+    xmlNodePtr  include_start = NULL;
+    xmlNodePtr  include_end = NULL;
+
+    te_errno rc = 0;
+
+    for (node = parent->children; node != NULL; node = node_next)
+    {
+        node_next = node->next;
+
+        if (node->type != XML_XINCLUDE_START &&
+            node->type != XML_XINCLUDE_END &&
+            xmlStrcmp(node->name, CONST_CHAR2XML("include")) == 0)
+        {
+            const char *href;
+            char        full_path[PATH_MAX];
+
+            href = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("href")));
+
+            if (href == NULL)
+            {
+                ERROR("Failed to obtain href property value "
+                      "of xi:include");
+                return TE_RC(TE_TRC, TE_EINVAL);
+            }
+
+            if (href[0] == '/')
+                snprintf(full_path, PATH_MAX, "%s", href);
+            else
+                snprintf(full_path, PATH_MAX, "%s/%s", trc_dir, href);
+
+            rc = trc_read_doc(full_path, &doc);
+            if (rc != 0)
+                return rc;
+
+            include_start = xmlCopyNode(node, 1);
+            include_end = xmlCopyNode(node, 1);
+
+            if (include_start == NULL || include_end == NULL)
+            {
+                ERROR("Failed to clone xi:include node");
+                rc = TE_RC(TE_TRC, TE_EFAULT);
+                goto cleanup;
+            }
+
+            if (xmlAddPrevSibling(node, include_start) == NULL ||
+                xmlAddNextSibling(node, include_end) == NULL)
+            {
+                ERROR("Failed to add auxiliary nodes for xi:include node");
+                rc = TE_RC(TE_TRC, TE_EFAULT);
+                goto cleanup;
+            }
+
+            include_start->type = XML_XINCLUDE_START;
+            include_end->type = XML_XINCLUDE_END;
+
+            include_root = xmlDocGetRootElement(doc);
+            if (include_root == NULL)
+            {
+                ERROR("Empty XML document is found in the included file "
+                      "with expected testing results '%s'",
+                      full_path);
+                rc = TE_RC(TE_TRC, TE_EINVAL);
+                goto cleanup;
+            }
+
+            included_node = xmlDocCopyNode(include_root, parent_doc, 1);
+            if (included_node == NULL)
+            {
+                ERROR("Failed to copy root for '%s'", full_path);
+                rc = TE_RC(TE_TRC, TE_EFAULT);
+                goto cleanup;
+            }
+
+            if (xmlAddNextSibling(node, included_node) == NULL)
+            {
+                ERROR("Failed to include '%s'", full_path);
+                rc = TE_RC(TE_TRC, TE_EFAULT);
+                goto cleanup;
+            }
+
+            xmlFreeDoc(doc);
+            xmlUnlinkNode(node);
+            xmlFreeNode(node);
+            node_next = included_node;
+            doc = NULL;
+            include_start = NULL;
+            include_end = NULL;
+            included_node = NULL;
+        }
+        else
+        {
+            rc = trc_xinclude_process_do(parent_doc, node, trc_dir);
+            if (rc != 0)
+                return rc;
+        }
+    }
+
+cleanup:
+
+    if (included_node != NULL)
+    {
+        xmlUnlinkNode(included_node);
+        xmlFreeNode(included_node);
+    }
+
+    if (include_start != NULL)
+    {
+        xmlUnlinkNode(include_start);
+        xmlFreeNode(include_start);
+    }
+
+    if (include_end != NULL)
+    {
+        xmlUnlinkNode(include_end);
+        xmlFreeNode(include_end);
+    }
+
+    if (doc != NULL)
+        xmlFreeDoc(doc);
+
+    return rc;
+}
+
+/**
+ * Replace xi:include nodes with XML they reference. This function
+ * circumvents a bug in @b xmlXIncludeProcess() which do not save
+ * href property for lower level xi:include nodes found in included XML.
+ *
+ * @param doc       XML document pointer.
+ * @param location  Path to XML document.
+ *
+ * @return @c 0 on success, or error code in case of failure.
+ */
+static te_errno
+trc_xinclude_process(xmlDocPtr doc, const char *location)
+{
+    xmlNodePtr root;
+
+    char trc_dir[PATH_MAX];
+    int  i;
+
+    strncpy(trc_dir, location, PATH_MAX);
+    for (i = strlen(trc_dir); i >= 0; i--)
+    {
+        if (trc_dir[i] == '/')
+        {
+            trc_dir[i] = '\0';
+            break;
+        }
+    }
+    if (i < 0)
+    {
+        snprintf(trc_dir, PATH_MAX, "%s", ".");
+    }
+
+    root = xmlDocGetRootElement(doc);
+    if (root == NULL)
+    {
+        ERROR("%s: empty XML document of the DB with expected testing "
+              "results", __FUNCTION__);
+        return TE_RC(TE_TRC, TE_EINVAL);
+    }
+
+    return trc_xinclude_process_do(doc, root, trc_dir);
+}
+
+/* See description in te_trc.h */
+te_errno
+trc_db_open_ext(const char *location, te_trc_db **db, int flags)
+{
+    xmlNodePtr          node;
     te_errno            rc;
     trc_file           *file;
     int subst;
@@ -1179,43 +1409,32 @@ trc_db_open(const char *location, te_trc_db **db)
     if ((*db)->filename == NULL)
         return TE_ENOMEM;
 
-    parser = xmlNewParserCtxt();
-    if (parser == NULL)
-    {
-        ERROR("xmlNewParserCtxt() failed");
-        return TE_ENOMEM;
-    }
-    if (((*db)->xml_doc = xmlCtxtReadFile(parser, (*db)->filename, NULL,
-                                      XML_PARSE_NOBLANKS |
-                                      XML_PARSE_XINCLUDE |
-                                      XML_PARSE_NONET)) == NULL)
-    {
-#if HAVE_XMLERROR
-        err = xmlCtxtGetLastError(parser);
-        ERROR("Error occured during parsing configuration file:\n"
-              "    %s:%d\n    %s", (*db)->filename,
-              err->line, err->message);
-#else
-        ERROR("Error occured during parsing configuration file:\n"
-              "%s", (*db)->filename);
-#endif
-        xmlFreeParserCtxt(parser);
-        return TE_RC(TE_TRC, TE_EFMT);
-    }
+    rc = trc_read_doc((*db)->filename, &(*db)->xml_doc);
+    if (rc != 0)
+        return rc;
 
     //xmlDocFormatDump(stdout, (*db)->xml_doc, 1);
-    subst = xmlXIncludeProcess((*db)->xml_doc);
-    if (subst < 0)
+    if (flags & TRC_OPEN_FIX_XINCLUDE)
     {
+        rc = trc_xinclude_process((*db)->xml_doc, (*db)->filename);
+        if (rc != 0)
+            return rc;
+    }
+    else
+    {
+        subst = xmlXIncludeProcess((*db)->xml_doc);
+        if (subst < 0)
+        {
 #if HAVE_XMLERROR
-        xmlError *err = xmlGetLastError();
+            xmlError *err = xmlGetLastError();
 
-        ERROR("XInclude processing failed: %s", err->message);
+            ERROR("XInclude processing failed: %s", err->message);
 #else
-        ERROR("XInclude processing failed");
+            ERROR("XInclude processing failed");
 #endif
-        xmlCleanupParser();
-        return TE_EINVAL;
+            xmlCleanupParser();
+            return TE_EINVAL;
+        }
     }
 
     /* store current db pointer */
@@ -1284,10 +1503,14 @@ trc_db_open(const char *location, te_trc_db **db)
         }
     }
 
-    xmlFreeParserCtxt(parser);
-    xmlCleanupParser();
-
     return rc;
+}
+
+/* See description in te_trc.h */
+te_errno
+trc_db_open(const char *location, te_trc_db **db)
+{
+    return trc_db_open_ext(location, db, 0);
 }
 
 static te_errno trc_update_tests(trc_tests *tests, int flags,

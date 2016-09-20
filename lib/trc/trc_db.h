@@ -302,6 +302,15 @@ extern void trc_db_test_iter_res_cpy(trc_test_iter *dest,
  */
 void trc_db_test_iter_res_split(trc_test_iter *itr);
 
+/** TRC DB open options */
+typedef enum {
+    TRC_OPEN_FIX_XINCLUDE = 0x1,    /**< Use trc_xinclude_process()
+                                         instead of standard
+                                         xmlXIncludeProcess(). See
+                                         trc_xinclude_process()
+                                         description for more details. */
+} trc_open_flags;
+
 /** TRC DB saving options */
 typedef enum {
     TRC_SAVE_REMOVE_OLD    = 0x1,   /**< Remove XML representation and

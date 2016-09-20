@@ -138,13 +138,28 @@ extern te_errno trc_db_init(te_trc_db **p_trc_db);
  * Open TRC database.
  *
  * @param location      Location of the database
- * @param p_trc_db      Location for TRC database instance handle
+ * @param db            Location for TRC database instance handle
  *
  * @return Status code.
  *
  * @sa trc_db_save, trc_db_close
  */
-extern te_errno trc_db_open(const char *location, te_trc_db **p_trc_db);
+extern te_errno trc_db_open(const char *location, te_trc_db **db);
+
+/**
+ * Open TRC database.
+ *
+ * @param location      Location of the database
+ * @param db            Location for TRC database instance handle
+ * @param flags         Flags (see trc_open_flags).
+ *
+ * @return Status code.
+ *
+ * @sa trc_db_save, trc_db_close
+ */
+extern te_errno trc_db_open_ext(const char *location, te_trc_db **db,
+                                int flags);
+
 
 /**
  * Close TRC database.

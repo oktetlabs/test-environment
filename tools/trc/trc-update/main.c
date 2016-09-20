@@ -1597,7 +1597,7 @@ main(int argc, char **argv, char **envp)
         goto exit;
     }
 
-    if (trc_db_open(db_fn, &ctx.db) != 0)
+    if (trc_db_open_ext(db_fn, &ctx.db, TRC_OPEN_FIX_XINCLUDE) != 0)
     {
         ERROR("Failed to open TRC database '%s'", db_fn);
         goto exit;
