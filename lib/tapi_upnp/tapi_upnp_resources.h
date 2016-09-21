@@ -57,13 +57,16 @@ typedef struct tapi_upnp_media_uri tapi_upnp_media_uri;
 
 /**
  * Get URLs of existed media resources, which satisfy to particular resource
- * type.
+ * type. Note, @p media should be freed with
+ * @b tapi_upnp_resources_free_media_uri when it is no longer needed.
  *
  * @param[in]  container    Subtree of containers.
  * @param[in]  type         Resource type of media to find.
  * @param[out] media        Media URLs list to collect obtained data.
  *
  * @return Status code. On success, @c 0.
+ *
+ * @sa tapi_upnp_resources_free_media_uri
  */
 extern te_errno tapi_upnp_resources_get_media_uri(
                                     tapi_upnp_cd_container_node *container,
@@ -71,9 +74,12 @@ extern te_errno tapi_upnp_resources_get_media_uri(
                                     tapi_upnp_media_uri         *media);
 
 /**
- * Empty the list of media URLs (free allocated memory).
+ * Empty the list of media URLs (free allocated memory) which was obtained
+ * with @b tapi_upnp_resources_get_media_uri.
  *
  * @param media     Media URLs list.
+ *
+ * @sa tapi_upnp_resources_get_media_uri
  */
 extern void tapi_upnp_resources_free_media_uri(tapi_upnp_media_uri *media);
 

@@ -105,6 +105,7 @@ tapi_upnp_resources_get_media_uri(tapi_upnp_cd_container_node *container,
         .error = 0
     };
 
+    SLIST_INIT(media);
     tapi_upnp_cd_tree_dfs(container, NULL, search_media, &stm);
 
     return stm.error;
