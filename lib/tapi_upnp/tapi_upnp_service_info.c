@@ -988,8 +988,7 @@ parse_services(const json_t *jarray, tapi_upnp_services *services)
         ERROR("Invalid input data. JSON array was expected");
         return TE_EINVAL;
     }
-    if (!SLIST_EMPTY(services))
-        VERB("Services list is not empty");
+
     num_services = json_array_size(jarray);
     for (i = 0; i < num_services; i++)
     {
@@ -1252,6 +1251,7 @@ tapi_upnp_get_service_info(rcf_rpc_server        *rpcs,
         goto get_service_info_cleanup;
     }
 
+    SLIST_INIT(services);
     rc = parse_services(json_array_get(jreply, 1), services);
     if (rc != 0)
     {

@@ -439,18 +439,19 @@ te_errno tapi_upnp_set_argument_value(tapi_upnp_argument *argument,
 /* Services. */
 
 /**
- * Retrieve information about available UPnP services.
- * The posted @p services should be empty, otherwise the new services will
- * be appended to the it and there is no garantee that the list will
- * contains no duplicates.
+ * Retrieve an information about available UPnP services. Note, @p services
+ * should be freed with @b tapi_upnp_free_service_info when it is no longer
+ * needed.
  *
- * @param[in]    rpcs         RPC server handle.
- * @param[in]    device       The device which provides the service, can be
- *                            unspecified (@c NULL).
- * @param[in]    service_id   Service ID string or @c NULL.
- * @param[inout] services     Service context list.
+ * @param[in]  rpcs         RPC server handle.
+ * @param[in]  device       The device which provides the service, can be
+ *                          unspecified (@c NULL).
+ * @param[in]  service_id   Service ID string or @c NULL.
+ * @param[out] services     Service context list.
  *
  * @return Status code. On success, @c 0.
+ *
+ * @sa tapi_upnp_free_service_info
  */
 extern te_errno tapi_upnp_get_service_info(
                                         rcf_rpc_server        *rpcs,
@@ -459,9 +460,12 @@ extern te_errno tapi_upnp_get_service_info(
                                         tapi_upnp_services    *services);
 
 /**
- * Empty the list of UPnP services (free allocated memory).
+ * Empty the list of UPnP services (free allocated memory) which was
+ * obtained with @b tapi_upnp_get_service_info.
  *
  * @param services      List of services.
+ *
+ * @sa tapi_upnp_get_service_info
  */
 extern void tapi_upnp_free_service_info(tapi_upnp_services *services);
 
