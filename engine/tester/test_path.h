@@ -42,6 +42,12 @@
 extern "C" {
 #endif
 
+/**
+ * If "*" was used in command line to execute the same iteration
+ * multiple times, this will be set to TRUE.
+ */
+extern te_bool iterate_was_used;
+
 /** 
  * Types of test paths.
  *

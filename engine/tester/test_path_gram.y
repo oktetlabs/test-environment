@@ -64,6 +64,9 @@ const char *test_path_str;
 /** Current position in test path string */
 int test_path_str_pos;
 
+/* See description in test_path.h */
+te_bool iterate_was_used = FALSE;
+
 
 /**
  * Parser error reporting.
@@ -231,6 +234,7 @@ item_iter:
     {
         VERB("item_iter -> item_select ITERATE NUMBER");
         assert(item != NULL);
+        iterate_was_used = TRUE;
         item->iterate = $3;
         if (item->iterate <= 0)
         {

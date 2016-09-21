@@ -94,6 +94,12 @@
 /** ID assigned by the Tester to the test instance */
 extern unsigned int te_test_id;
 
+/**
+ * The last TIN used - this is used for TIN
+ * computation only if some iteration is run multiple times.
+ */
+static unsigned int current_tin = 0;
+
 #if 0
 #undef TE_LOG_LEVEL
 #define TE_LOG_LEVEL (TE_LL_WARN | TE_LL_ERROR | \
@@ -2743,8 +2749,26 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 
     ctx->current_result.id = tester_get_id();
 
-    tin = (ctx->flags & TESTER_INLOGUE || ri->type != RUN_ITEM_SCRIPT) ?
-              TE_TIN_INVALID : cfg_id_off;
+    if (!iterate_was_used)
+    {
+        tin = (ctx->flags & TESTER_INLOGUE || ri->type != RUN_ITEM_SCRIPT) ?
+                  TE_TIN_INVALID : cfg_id_off;
+    }
+    else
+    {
+        /* TODO: this is a temporary fix for bug 8448, it should be replaced
+         * with a better one. */
+        if (ctx->flags & TESTER_INLOGUE || ri->type != RUN_ITEM_SCRIPT)
+        {
+            tin = TE_TIN_INVALID;
+        }
+        else
+        {
+            current_tin++;
+            tin = current_tin;
+        }
+    }
+
     /* Test is considered here as run, if such event is logged */
     tester_term_out_start(ctx->flags, ri->type, run_item_name(ri), tin,
                           ctx->group_result.id, ctx->current_result.id);
@@ -2950,8 +2974,22 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
         }
 #endif
 
-        tin = (ctx->flags & TESTER_INLOGUE || ri->type != RUN_ITEM_SCRIPT) ?
-                  TE_TIN_INVALID : cfg_id_off;
+        if (!iterate_was_used)
+        {
+            tin = (ctx->flags & TESTER_INLOGUE ||
+                   ri->type != RUN_ITEM_SCRIPT) ?
+                      TE_TIN_INVALID : cfg_id_off;
+        }
+        else
+        {
+            /* TODO: this is a temporary fix for bug 8448, it should be
+             * replaced with a better one. */
+            if (ctx->flags & TESTER_INLOGUE || ri->type != RUN_ITEM_SCRIPT)
+                tin = TE_TIN_INVALID;
+            else
+                tin = current_tin;
+        }
+
         log_test_result(ctx->group_result.id, ctx->current_result.id,
                         ctx->current_result.result.status,
                         ctx->current_result.error);
