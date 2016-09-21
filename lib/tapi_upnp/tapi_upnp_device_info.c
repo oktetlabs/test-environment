@@ -396,8 +396,7 @@ parse_devices(const json_t *jarray, tapi_upnp_devices *devices)
         ERROR("Invalid input data. JSON array was expected");
         return TE_EINVAL;
     }
-    if (!SLIST_EMPTY(devices))
-        VERB("Devices list is not empty");
+
     num_devices = json_array_size(jarray);
     for (i = 0; i < num_devices; i++)
     {
@@ -491,6 +490,7 @@ tapi_upnp_get_device_info(rcf_rpc_server    *rpcs,
         goto get_device_info_cleanup;
     }
 
+    SLIST_INIT(devices);
     rc = parse_devices(json_array_get(jreply, 1), devices);
     if (rc != 0)
     {
