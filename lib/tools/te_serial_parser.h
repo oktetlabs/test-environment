@@ -118,7 +118,7 @@ extern te_errno ta_unix_serial_parser_cleanup(void);
 
 /**
  * Entry point to the parser thread
- * 
+ *
  * @param parser    Pointer to the parser config structure
  */
 extern int te_serial_parser(serial_parser_t *parser);

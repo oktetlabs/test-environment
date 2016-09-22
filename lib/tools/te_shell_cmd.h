@@ -53,20 +53,20 @@ extern "C" {
  * You MUST use uid parameter instead of "su - user -c", because su makes
  * one more fork, and you do not know how to kill this grandchild process.
  *
- * If you use this fuction from agent, this process SHOULD be catched by 
+ * If you use this fuction from agent, this process SHOULD be catched by
  * ta_waitpid() or killed by ta_kill_death().
  *
  * @param cmd    command to run in the shell
  * @param uid    user id to run the shell; use -1 for default
- * @param in_fd  location to store file descriptor of pipe to stdin of 
+ * @param in_fd  location to store file descriptor of pipe to stdin of
  *               the shell command; use NULL for standard stdin
  * @param out_fd location to store file descriptor of pipe to stdout of
  *               the shell command; use NULL for standard stdout
- * 
+ *
  * @return pid value, positive on success, negative on failure
  */
 static inline pid_t
-te_shell_cmd_inline(const char *cmd, uid_t uid, 
+te_shell_cmd_inline(const char *cmd, uid_t uid,
                     int *in_fd, int *out_fd, int *err_fd)
 {
     int   pid;

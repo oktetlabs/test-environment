@@ -70,15 +70,15 @@ enum iscsi_logout_responses {
     ISCSI_LOGOUT_RESPONSE_CLEANUP_FAILED = 0x03,
 };
 
-static inline int 
+static inline int
 iscsi_logout_resp_str2int(const char *resp)
 {
     if (strcmp(resp, "NO_CID") == 0)
         return ISCSI_LOGOUT_RESPONSE_NO_CID;
-    
+
     if (strcmp(resp, "CONN_RECOVERY_NOT_SUPPORTED") == 0)
         return ISCSI_LOGOUT_RESPONSE_CONN_RECOVERY_NOT_SUPPORTED;
-    
+
     if (strcmp(resp, "OK") == 0)
         return ISCSI_LOGOUT_RESPONSE_OK;
 
@@ -92,8 +92,8 @@ iscsi_logout_resp_str2int(const char *resp)
 #define USE_HEADERDIGEST              0x0010
 #define USE_DATADIGEST                0x0020
 #define GOT_ACTIVITY                  0x0040
-#define SEND_NO_REPLY_TO_NOP_PING     0x0080 
-#define SEND_NO_REPLY_TO_ASYNC_LOGOUT 0x0100 
+#define SEND_NO_REPLY_TO_NOP_PING     0x0080
+#define SEND_NO_REPLY_TO_ASYNC_LOGOUT 0x0100
 #define USE_REFLECT_XKEYS             0x0200
 #define CONN_LOGGED_OUT               0x0400
 #define NEED_TX_WAKEUP                0x0800
@@ -306,7 +306,7 @@ struct generic_pdu {
     /*-*/
     uint8_t   isid[6];
     /* reader: yes; writer: yes; */
-    uint16_t  tsih;  
+    uint16_t  tsih;
     /* reader: yes; writer: yes; */
     uint32_t  init_task_tag;
     uint16_t  CID;
@@ -364,7 +364,7 @@ struct iscsi_init_scsi_cmnd {
     uint32_t cmd_sn;
     uint32_t exp_stat_sn;
     uint8_t  cdb[16];
-    uint32_t header_digest; 
+    uint32_t header_digest;
 } __attribute__((packed));
 
 /** RFC 3720, Section 10.4 SCSI Response */
@@ -372,7 +372,7 @@ struct iscsi_init_scsi_cmnd {
 /* accessors: bhs_scsi_; */
 /* name: ISCSI_BHS_SCSI; */
 /* mostly_reserved: yes; */
-struct iscsi_targ_scsi_rsp {    
+struct iscsi_targ_scsi_rsp {
     uint8_t  opcode;
     uint8_t  flags;
     uint8_t  response;
@@ -393,7 +393,7 @@ struct iscsi_targ_scsi_rsp {
 
 /** RFC 3720, Section 10.5 Task Management Function Request */
 /* ignore: yes; */
-struct iscsi_init_task_mgt_command {    
+struct iscsi_init_task_mgt_command {
     uint8_t  opcode;
     uint8_t  function;
     /* reserved: yes; */
@@ -412,7 +412,7 @@ struct iscsi_init_task_mgt_command {
 
 /** RFC 3720, Section 10.6 Task Management Function Response */
 /* ignore: yes; */
-struct iscsi_targ_task_mgt_response {   
+struct iscsi_targ_task_mgt_response {
     uint8_t  opcode;
     uint8_t  flags;
     uint8_t  response;
@@ -455,7 +455,7 @@ struct iscsi_init_scsi_data_out {
 
 /** RFC 3720, Section 10.7 SCSI Data-in */
 /* ignore: yes; */
-struct iscsi_targ_scsi_data_in {    
+struct iscsi_targ_scsi_data_in {
     uint8_t  opcode;
     uint8_t  flags;
     /* reserved: yes; */
@@ -471,12 +471,12 @@ struct iscsi_targ_scsi_data_in {
     uint32_t data_sn;
     uint32_t offset;
     uint32_t resid;
-    uint32_t header_digest; 
+    uint32_t header_digest;
 } __attribute__((packed));
 
 /** RFC 3720, Section 10.8 Ready To Transfer (R2T) */
 /* ignore: yes; */
-struct iscsi_targ_r2t {     
+struct iscsi_targ_r2t {
     uint8_t  opcode;
     uint8_t  flags;
     /* reserved: yes; */
@@ -496,7 +496,7 @@ struct iscsi_targ_r2t {
 
 /** RFC 3720, Section 10.9 Asynchronous Message */
 /* ignore: yes; */
-struct iscsi_targ_async_msg {   
+struct iscsi_targ_async_msg {
     uint8_t  opcode;
     uint8_t  flags;
     /* reserved: yes; */
@@ -530,7 +530,7 @@ enum iscsi_targ_async_msg_events {
 
 /** RFC 3720, Section 10.10 Text Request */
 /* ignore: yes; */
-struct iscsi_init_text_cmnd {   
+struct iscsi_init_text_cmnd {
     uint8_t  opcode;
     uint8_t  flags;
     /* reserved: yes; */
@@ -550,7 +550,7 @@ struct iscsi_init_text_cmnd {
 
 /**< RFC 3720, Section 10.11 Text Response */
 /* ignore: yes; */
-struct iscsi_targ_text_rsp {    
+struct iscsi_targ_text_rsp {
     uint8_t  opcode;
     uint8_t  flags;
     /* reserved: yes; */
@@ -570,7 +570,7 @@ struct iscsi_targ_text_rsp {
 } __attribute__((packed));
 
 /** RFC 3720, Section 10.12 Login Request */
-struct iscsi_init_login_cmnd {  
+struct iscsi_init_login_cmnd {
     uint8_t  opcode;
     uint8_t  flags;
     uint8_t  version_max;
@@ -592,7 +592,7 @@ struct iscsi_init_login_cmnd {
 } __attribute__((packed));
 
 /** RFC 3720, Section 10.13 Login Response */
-struct iscsi_targ_login_rsp {   
+struct iscsi_targ_login_rsp {
     uint8_t  opcode;
     uint8_t  flags;
     uint8_t  version_max;
@@ -616,7 +616,7 @@ struct iscsi_targ_login_rsp {
 } __attribute__((packed));
 
 /** RFC 3720, Section 10.14 Logout Request */
-struct iscsi_init_logout_cmnd { 
+struct iscsi_init_logout_cmnd {
     uint8_t  opcode;
     uint8_t  reason;
     /* reserved: yes; */
@@ -637,7 +637,7 @@ struct iscsi_init_logout_cmnd {
 } __attribute__((packed));
 
 /** RFC 3720, Section 10.15 Logout Response */
-struct iscsi_targ_logout_rsp {  
+struct iscsi_targ_logout_rsp {
     uint8_t  opcode;
     uint8_t  flags;
     uint8_t  response;
@@ -661,7 +661,7 @@ struct iscsi_targ_logout_rsp {
 } __attribute__((packed));
 
 /** RFC 3720, Section 10.16 SNACK Request */
-struct iscsi_init_snack {   
+struct iscsi_init_snack {
     uint8_t  opcode;
     uint8_t  flags;
     uint16_t rsvd1;
@@ -678,7 +678,7 @@ struct iscsi_init_snack {
 } __attribute__((packed));
 
 /** RFC 3720, Section 10.17 Reject */
-struct iscsi_targ_rjt {     
+struct iscsi_targ_rjt {
     uint8_t  opcode;
     uint8_t  flags;
     uint8_t  reason;
@@ -696,7 +696,7 @@ struct iscsi_targ_rjt {
 } __attribute__((packed));
 
 /** RFC 3720, Section 10.18 NOP-Out */
-struct iscsi_init_nopout {  
+struct iscsi_init_nopout {
     uint8_t  opcode;
     uint8_t  flags;
     uint16_t rsvd1;
@@ -712,7 +712,7 @@ struct iscsi_init_nopout {
 } __attribute__((packed));
 
 /** RFC 3720, Section 10.19 NOP-In */
-struct iscsi_targ_nopin {   
+struct iscsi_targ_nopin {
     uint8_t  opcode;
     uint8_t  flags;
     uint16_t rsvd1;
@@ -781,7 +781,7 @@ struct scsi_fixed_sense_data
 #define SAM_STAT_TASK_ABORTED    0x40
 
 
-/** 
+/**
  * List of default parameters, used during initialization of
  * the target_data
  */
@@ -810,7 +810,7 @@ struct scsi_fixed_sense_data
 /**
  * Flags:
  * the following assumption holds:
- * if parameter of the local Initiator structure 
+ * if parameter of the local Initiator structure
  * was untouched than it should not be synchronized
  * with the Initiator. Than the Initiator uses the
  * default parameter and MAY NOT offer the parameter
@@ -833,7 +833,7 @@ struct scsi_fixed_sense_data
 #define OFFER_ERROR_RECOVERY_LEVEL              (1 << 13)
 
 
-/** 
+/**
  * Connection status (up, down or non-existant.
  * Note: it is essential that ISCSI_CONNECTION_DOWN == 0
  * and ISCSI_CONNECTION_UP == 1, or things will break.
@@ -843,7 +843,7 @@ typedef enum iscsi_connection_status
     ISCSI_CONNECTION_REMOVED = -1, /**< Connection is removed */
     ISCSI_CONNECTION_DOWN,         /**< Connection is down */
     ISCSI_CONNECTION_ESTABLISHING, /**< Connection is being established */
-    ISCSI_CONNECTION_WAITING_DEVICE, /**< Connection is up but 
+    ISCSI_CONNECTION_WAITING_DEVICE, /**< Connection is up but
                                       *  a corresponding SCSI device is not
                                       *  yet ready */
     ISCSI_CONNECTION_UP,           /**< Connection is up and ready */

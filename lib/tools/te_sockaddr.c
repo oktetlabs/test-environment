@@ -84,7 +84,7 @@ te_sockaddr_clear_port(struct sockaddr *addr)
         case AF_INET6:
             SIN6(addr)->sin6_port = 0;
             break;
-            
+
         default:
             ERROR("%s(): Address family %d is not supported, "
                   "operation has no effect", __FUNCTION__, addr->sa_family);
@@ -103,7 +103,7 @@ te_sockaddr_get_port_ptr(const struct sockaddr *addr)
 
         case AF_INET6:
             return &SIN6(addr)->sin6_port;
-            
+
         default:
             ERROR("%s(): Address family %d is not supported",
                   __FUNCTION__, addr->sa_family);
@@ -124,12 +124,12 @@ te_sockaddr_set_port(struct sockaddr *addr, uint16_t port)
         case AF_INET6:
             SIN6(addr)->sin6_port = port;
             break;
-            
+
         default:
             ERROR("%s(): Address family %d is not supported, "
                   "operation has no effect", __FUNCTION__, addr->sa_family);
             break;
-    }    
+    }
 }
 
 /* See the description in te_sockaddr.h */
@@ -145,13 +145,13 @@ te_sockaddr_get_netaddr(const struct sockaddr *addr)
         case AF_INET6:
             return &(SIN6(addr)->sin6_addr);
             break;
-            
+
         default:
             ERROR("%s(): Address family %d is not supported, "
                   "operation has no effect", __FUNCTION__, addr->sa_family);
             break;
     }
-    return NULL;    
+    return NULL;
 }
 
 /* See the description in te_sockaddr.h */
@@ -200,7 +200,7 @@ te_sockaddr_set_wildcard(struct sockaddr *addr)
                    sizeof(in6addr_any));
 #endif
             break;
-            
+
         default:
             ERROR("%s(): Address family %d is not supported, "
                   "operation has no effect", __FUNCTION__, addr->sa_family);
@@ -225,7 +225,7 @@ te_sockaddr_set_loopback(struct sockaddr *addr)
             memcpy(&(SIN6(addr)->sin6_addr), buf, sizeof(buf));
         }
             break;
-            
+
         default:
             ERROR("%s(): Address family %d is not supported, "
                   "operation has no effect", __FUNCTION__, addr->sa_family);
@@ -244,7 +244,7 @@ te_sockaddr_is_wildcard(const struct sockaddr *addr)
 
         case AF_INET6:
             return (IN6_IS_ADDR_UNSPECIFIED(&(SIN6(addr)->sin6_addr)));
-            
+
         default:
             ERROR("%s(): Address family %d is not supported, ",
                   "operation has no effect", __FUNCTION__, addr->sa_family);
@@ -303,7 +303,7 @@ te_sockaddr_get_size_by_af(int af)
 
         case AF_INET6:
             return sizeof(struct sockaddr_in6);
-            
+
         default:
             ERROR("%s(): Address family %d is not supported, "
                   "operation has no effect", __FUNCTION__, (int)af);
@@ -368,7 +368,7 @@ te_sockaddr_cleanup_to_prefix(struct sockaddr *addr, unsigned int prefix)
                 return TE_RC(TE_TAPI, TE_E2BIG);
             }
             SIN(addr)->sin_addr.s_addr =
-                htonl(ntohl(SIN(addr)->sin_addr.s_addr) & 
+                htonl(ntohl(SIN(addr)->sin_addr.s_addr) &
                       PREFIX2MASK(prefix));
             break;
 
@@ -561,10 +561,10 @@ te_sockaddrncmp(const struct sockaddr *a1, socklen_t a1len,
         case AF_INET6:
         {
             /*
-             * AF_INET6 address contains port, flowinfo, 
+             * AF_INET6 address contains port, flowinfo,
              * IPv6 address and scope_id
              */
-            
+
             /* Pass through: Not supported yet */
         }
 
@@ -587,7 +587,7 @@ te_sockaddr2str(const struct sockaddr *sa)
 #define N_BUFS 10
 
     static char  buf[N_BUFS][SOCKADDR2STR_ADDRSTRLEN];
-    static char  (*cur_buf)[SOCKADDR2STR_ADDRSTRLEN] = 
+    static char  (*cur_buf)[SOCKADDR2STR_ADDRSTRLEN] =
                                 (char (*)[SOCKADDR2STR_ADDRSTRLEN])buf[0];
 
     char       *ptr;
@@ -791,7 +791,7 @@ te_sockaddr_get_ipstr(const struct sockaddr *addr)
 #define N_BUFS 10
 
     static char addr_buf[N_BUFS][INET6_ADDRSTRLEN];
-    static char (*cur_buf)[INET6_ADDRSTRLEN] = 
+    static char (*cur_buf)[INET6_ADDRSTRLEN] =
                                 (char (*)[INET6_ADDRSTRLEN])addr_buf[0];
 
     char       *ptr;
@@ -806,9 +806,9 @@ te_sockaddr_get_ipstr(const struct sockaddr *addr)
         cur_buf++;
 
     ptr = *cur_buf;
-    
-    return inet_ntop(addr->sa_family, 
-                     te_sockaddr_get_netaddr(addr), ptr, 
+
+    return inet_ntop(addr->sa_family,
+                     te_sockaddr_get_netaddr(addr), ptr,
                      INET6_ADDRSTRLEN);
 }
 
@@ -841,7 +841,7 @@ te_sockaddr_ip4_to_ip6_mapped(struct sockaddr *addr)
 {
     uint32_t    ip4_addr;
     uint16_t    port;
-    
+
     if (addr->sa_family != AF_INET)
     {
         ERROR("Specified address is not IPv4 one");
@@ -850,7 +850,7 @@ te_sockaddr_ip4_to_ip6_mapped(struct sockaddr *addr)
 
     ip4_addr = (uint32_t)SIN(addr)->sin_addr.s_addr;
     port = (uint32_t)SIN(addr)->sin_port;
-    
+
     memset(addr, 0, sizeof(struct sockaddr_in6));
 
     SIN6(addr)->sin6_family = AF_INET6;

@@ -26,7 +26,7 @@
  *
  * $Id$
  */
- 
+
 #ifndef __TE_SIGMAP_H__
 #define __TE_SIGMAP_H__
 
@@ -36,9 +36,9 @@ extern "C" {
 
 /**
  * Map signal name to the number
- * 
+ *
  * @param name  Name of the signal
- * 
+ *
  * @return Signal number
  */
 extern int map_name_to_signo(const char *name);
@@ -46,9 +46,9 @@ extern int map_name_to_signo(const char *name);
 
 /**
  * Map signal number to the name
- * 
+ *
  * @param name  Number of the signal
- * 
+ *
  * @return Signal name or NULL
  */
 extern char * map_signo_to_name(int signo);

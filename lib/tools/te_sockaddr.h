@@ -174,7 +174,7 @@ extern void te_sockaddr_set_port(struct sockaddr *addr, uint16_t port);
 extern void *te_sockaddr_get_netaddr(const struct sockaddr *addr);
 
 /**
- * Returns pointer to the IP 4/6 address in human representation 
+ * Returns pointer to the IP 4/6 address in human representation
  * (without port).
  *
  * @param addr  address to be converted
@@ -195,7 +195,7 @@ extern const char * te_sockaddr_get_ipstr(const struct sockaddr *addr);
  * @param net_addr  Pointer to the network address to be set
  *
  * @return Result of the operation
- * 
+ *
  * @retval  0  on success
  * @retval -1  on failure
  */
@@ -239,7 +239,7 @@ extern void te_sockaddr_set_loopback(struct sockaddr *addr);
 extern te_bool te_sockaddr_is_wildcard(const struct sockaddr *addr);
 
 /**
- * Check if "network address" part of corresponding struct sockaddr is 
+ * Check if "network address" part of corresponding struct sockaddr is
  * multicast address
  *
  * @param addr Generic address struture
@@ -310,7 +310,7 @@ extern int te_sockaddrcmp(const struct sockaddr *a1, socklen_t a1len,
                           const struct sockaddr *a2, socklen_t a2len);
 
 /**
- * Compare the content of two 'struct sockaddr' structures till 
+ * Compare the content of two 'struct sockaddr' structures till
  * minimum of two lengths a1len and a2len.
  *
  * @param a1        the first address

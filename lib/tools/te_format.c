@@ -30,7 +30,7 @@
  */
 
 #include "te_config.h"
-  
+
 #include <stdio.h>
 #if HAVE_CTYPE_H
 #include <ctype.h>
@@ -69,10 +69,10 @@ index(const char *s, int c)
 {
     if (s == NULL)
         return NULL;
-        
+
     while (*s != c && *s != 0)
         s++;
-        
+
     return *s == 0 ? NULL : s;
 }
 #endif
@@ -85,11 +85,11 @@ index(const char *s, int c)
  * @param ap           Arguments for the format string
  *
  * @return             Error code
- */  
+ */
 static te_errno
 msg_va_output(struct te_log_out_params *param, const char *fmt, va_list ap)
 {
-    int ret; 
+    int ret;
 
     assert(param != NULL);
 
@@ -106,8 +106,8 @@ msg_va_output(struct te_log_out_params *param, const char *fmt, va_list ap)
         ret = vsnprintf((char *)(param->buf + param->offset),
                         param->buflen - param->offset, fmt, ap);
 
-        /* 
-         * If buffer is too small, expand it and write rest of 
+        /*
+         * If buffer is too small, expand it and write rest of
          * the message.
          */
         if (param->offset + ret >= param->buflen)
@@ -198,7 +198,7 @@ te_log_vprintf_old(struct te_log_out_params *param,
     char  modifier;
     char  tmp;
     int   i;
-    
+
     te_errno    rc;
     va_list     ap0;
 
@@ -209,7 +209,7 @@ te_log_vprintf_old(struct te_log_out_params *param,
     {
         return msg_output(param, "(null)");
     }
-        
+
     fmt_dup = strdup(fmt);
     if (fmt_dup == NULL)
     {
@@ -218,25 +218,25 @@ te_log_vprintf_old(struct te_log_out_params *param,
         param->buflen = 0;
         return TE_ENOMEM;
     }
-    
+
     va_copy(ap0, ap);
 
 /* FIXME: Incorrect macro definition */
 #define FLUSH(arg...) \
     if ((rc = msg_output(param, arg)) != 0)\
         return rc;
-    
+
 /* FIXME: Incorrect macro definition */
 #define VFLUSH(arg...) \
     if ((rc = msg_va_output(param, arg)) != 0)\
         return rc;
-    
+
     for (s = s0 = fmt_dup; *s != '\0'; s++)
     {
         if (*s != '%')
             continue;
-        
-        modifier = '\0'; 
+
+        modifier = '\0';
         spec_start = s++;
 
 /* FIXME: Incorrect macro definition
@@ -254,7 +254,7 @@ te_log_vprintf_old(struct te_log_out_params *param,
             while (isdigit(*s))
                 s++;
         }
-            
+
         /* Length modifiers parsing */
         switch (*s)
         {
@@ -281,7 +281,7 @@ case mod_:\
                     SPEC_CPY('2', TE_PRINTF_16);
                     SPEC_CPY('4', TE_PRINTF_32);
                     SPEC_CPY('8', TE_PRINTF_64);
-#undef SPEC_CPY                  
+#undef SPEC_CPY
                     default:
                     {
                         FLUSH(" unsupported length modifier: =%c ",
@@ -289,14 +289,14 @@ case mod_:\
                         free(fmt_dup);
                         return TE_EFMT;
                     }
-                }               
+                }
                 /* Save the symbol next to the specifier */
                 tmp = s[3];
                 /* Truncate the string before the specifier */
                 s[spec_size + 1] = '\0';
                 VFLUSH(s0, ap0);
                 s[3] = tmp;
-                /* Shift to next argument */ 
+                /* Shift to next argument */
                 if (modifier == '8')
                 {
                     (void)va_arg(ap, int64_t);
@@ -311,10 +311,10 @@ case mod_:\
                 /* Go to the symbol after the specifier */
                 s += 3;
                 s0 = s;
-                break;                    
+                break;
             }
             case 'l':
-            { 
+            {
                 modifier = 'l';
                 if (strcmp_start("ll", s) == 0)
                 {
@@ -350,7 +350,7 @@ case mod_:\
                 {
                     int             len;
                     const uint8_t  *base;
-                    
+
                     base = va_arg(ap, const uint8_t *);
                     len = va_arg(ap, int);
                     /* Our own argument is not for printf(), skip it */
@@ -363,7 +363,7 @@ case mod_:\
                         {
                             FLUSH("\n");
                         }
-                        else 
+                        else
                         {
                             FLUSH(" ");
                         }
@@ -375,7 +375,7 @@ case mod_:\
                     const char *filename;
                     char        buf[1024];
                     FILE       *fp;
-                    
+
                     filename = va_arg(ap, const char *);
                     /* Our own argument is not for printf(), skip it */
                     va_copy(ap0, ap);
@@ -387,9 +387,9 @@ case mod_:\
                     {
                         FLUSH("%s", buf);
                     }
-                    fclose(fp);                    
+                    fclose(fp);
                 }
-                
+
                 s++;
                 s0 = s +1;       /* Set pointers next to the specifier */
                 break;
@@ -433,7 +433,7 @@ case mod_:\
                 VFLUSH(s0, ap0);
                 arg_str = va_arg(ap, char *);
                 va_copy(ap0, ap);
-                
+
                 for (tmp = arg_str; *tmp != '\0'; tmp++)
                 {
                     if (*tmp == '%')
@@ -444,7 +444,7 @@ case mod_:\
                 fake_str = (char *)malloc(strlen(arg_str) +
                                           percent_count + 1);
                 for (i = 1, tmp = s00 = arg_str, fs00 = fake_str;
-                     *tmp != '\0'; tmp++)                    
+                     *tmp != '\0'; tmp++)
                 {
                     if (*tmp == '%')
                     {
@@ -467,7 +467,7 @@ case mod_:\
 #endif
                 break;
             }
-               
+
             case 'd':
             case 'i':
             case 'o':
@@ -500,7 +500,7 @@ case mod_:\
                 modifier = '\0';
                 break;
             }
-        }        
+        }
     }
     VFLUSH(s0, ap0);
     msg_end_process(param);

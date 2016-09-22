@@ -79,7 +79,7 @@ tq_strings_equal(const tqh_strings *s1, const tqh_strings *s2)
     for (p1 = TAILQ_FIRST(s1), p2 = TAILQ_FIRST(s2);
          p1 != NULL && p2 != NULL && strcmp(p1->v, p2->v) == 0;
          p1 = TAILQ_NEXT(p1, links), p2 = TAILQ_NEXT(p2, links));
-    
+
     return (p1 == NULL) && (p2 == NULL);
 }
 

@@ -99,7 +99,7 @@ extern te_errno te_string_append_va(te_string  *str,
  * @param str           Dynamic string
  * @param len           Number of characters to cut
  */
-extern void te_string_cut(te_string *str, size_t len); 
+extern void te_string_cut(te_string *str, size_t len);
 
 /**
  * Free dynamic string.

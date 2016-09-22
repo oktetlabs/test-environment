@@ -35,10 +35,10 @@
  *
  * @param to_sleep      number of seconds to sleep
  */
-static inline void 
+static inline void
 te_sleep(unsigned int to_sleep)
 {
-    RING("Sleeping %u seconds", to_sleep); 
+    RING("Sleeping %u seconds", to_sleep);
     (void)sleep(to_sleep);
 }
 
@@ -50,8 +50,8 @@ te_sleep(unsigned int to_sleep)
 static inline void
 te_msleep(unsigned int to_sleep)
 {
-    RING("Sleeping %u milliseconds", to_sleep); 
-    (void)usleep(to_sleep * 1000); 
+    RING("Sleeping %u milliseconds", to_sleep);
+    (void)usleep(to_sleep * 1000);
 }
 
 /**
@@ -62,14 +62,14 @@ te_msleep(unsigned int to_sleep)
 static inline void
 te_usleep(unsigned int to_sleep)
 {
-    RING("Sleeping %u microseconds", to_sleep); 
-    (void)usleep(to_sleep); 
+    RING("Sleeping %u microseconds", to_sleep);
+    (void)usleep(to_sleep);
 }
 
 /**
  * Substract tv1 to tv2 of type struct timeval.
  *
- * @param tv1   
+ * @param tv1
  * @param tv2
  *
  * @return Diff in microseconds

@@ -97,7 +97,7 @@ dump(const uint8_t *p, const uint8_t *q)
 
 /** Initial length of raw message buffer */
 #define TE_LOG_MSG_RAW_BUF_INIT     512
-/** 
+/**
  * Additional length to allocate for raw message buffer, if current
  * length is not sufficient.
  */
@@ -105,7 +105,7 @@ dump(const uint8_t *p, const uint8_t *q)
 
 /** Initial number of raw arguments the space allocate for */
 #define TE_LOG_MSG_RAW_ARGS_INIT    16
-/** 
+/**
  * Number of additional arguments the space allocate for, if current
  * space is not sufficient.
  */
@@ -116,7 +116,7 @@ dump(const uint8_t *p, const uint8_t *q)
  * Helper to call out->fmt when arguments should be specified by caller.
  *
  * @param out       Backend parameters
- * @param fmt       Part of format string, terminated by NUL, which 
+ * @param fmt       Part of format string, terminated by NUL, which
  *                  corresponds to arguments
  * @param ...       Arguments for format string
  */
@@ -204,7 +204,7 @@ static te_errno
 te_log_msg_fmt_args(te_log_msg_out *out, const char *fmt, va_list ap)
 {
     te_log_msg_raw_data   *data = (te_log_msg_raw_data *)out;
-    
+
     te_errno rc;
     int      ret;
 
@@ -215,8 +215,8 @@ te_log_msg_fmt_args(te_log_msg_out *out, const char *fmt, va_list ap)
 
     ret = vsnprintf((char *)data->ptr, data->end - data->ptr, fmt, ap);
 
-    /* 
-     * If buffer is too small, expand it and write rest of 
+    /*
+     * If buffer is too small, expand it and write rest of
      * the message.
      */
     while ((rc = ta_log_msg_raw_buf_check_len(data, ret + 1))
@@ -323,7 +323,7 @@ fprintf(stderr, "%s(): INT len=%d\n", __FUNCTION__, arg_len);
                     *((int32_t *)&(data->args[arg_i].u.i)) =
                         *(const int32_t *)arg_addr;
                     break;
-                
+
                 case sizeof(int64_t):
                     data->args[arg_i].u.i =
                         *(const int64_t *)arg_addr;
@@ -478,7 +478,7 @@ te_log_msg_raw_put_no_check(te_log_msg_raw_data *data,
             {
                 memcpy(data->ptr, buf, r);
                 data->ptr += r;
-                /* 
+                /*
                  * We have to track length here, since file can have
                  * more data, if we have decided to truncate it.
                  */
@@ -587,7 +587,7 @@ te_log_msg_raw_put_string(te_log_msg_raw_data *data, const char *str)
         str = "(null)";
 
     return te_log_msg_raw_put(data, TE_LOG_MSG_FMT_ARG_MEM,
-                              str, strlen(str), TRUE); 
+                              str, strlen(str), TRUE);
 }
 
 
@@ -617,7 +617,7 @@ te_log_vprintf(te_log_msg_out *out, const char *fmt, va_list ap)
     const char *spec_start;
     te_bool     fmt_needed = FALSE;
     va_list     ap_start;
-    
+
 
     if (fmt == NULL)
     {
@@ -639,7 +639,7 @@ te_log_vprintf(te_log_msg_out *out, const char *fmt, va_list ap)
     {
         fmt_dup = NULL;
     }
-    
+
 #define TE_LOG_VPRINTF_RAW_ARG(_type, _addr, _len) \
     do {                                                    \
         if (fmt_needed && out->fmt != NULL)                 \
@@ -665,8 +665,8 @@ te_log_vprintf(te_log_msg_out *out, const char *fmt, va_list ap)
         va_end(ap_start);                                   \
         va_copy(ap_start, ap);                              \
     } while (0)
-    
-           
+
+
     for (s = fmt_start = fmt_dup != NULL ? fmt_dup : (char *)fmt;
          *s != '\0'; s++)
     {
@@ -682,7 +682,7 @@ te_log_vprintf(te_log_msg_out *out, const char *fmt, va_list ap)
         /* Skip field width */
         while (isdigit(*s))
             s++;
-        
+
         if (*s == '.')
         {
             /* Skip precision */
@@ -690,7 +690,7 @@ te_log_vprintf(te_log_msg_out *out, const char *fmt, va_list ap)
             while (isdigit(*s))
                 s++;
         }
-            
+
         /* Length modifiers parsing */
         switch (*s)
         {
@@ -714,7 +714,7 @@ case mod_:\
                     SPEC_CPY('2', TE_PRINTF_16);
                     SPEC_CPY('4', TE_PRINTF_32);
                     SPEC_CPY('8', TE_PRINTF_64);
-#undef SPEC_CPY                  
+#undef SPEC_CPY
                     default:
                     {
                         TE_LOG_VPRINTF_FMT_FLUSH(
@@ -723,7 +723,7 @@ case mod_:\
                         free(fmt_dup);
                         return TE_EFMT;
                     }
-                }               
+                }
                 /* Save the symbol next to the specifier */
                 tmp = s[3];
                 /* Truncate the string before the specifier */
@@ -734,7 +734,7 @@ case mod_:\
 
                 /* Go to the symbol after the specifier */
                 s += 3;
-                break;                    
+                break;
 #endif
 
             case 'l':
@@ -763,7 +763,7 @@ case mod_:\
                 {
                     const uint8_t  *base;
                     unsigned int    len;
-                    
+
                     base = va_arg(ap, const uint8_t *);
                     len = va_arg(ap, unsigned int);
                     TE_LOG_VPRINTF_RAW_ARG(TE_LOG_MSG_FMT_ARG_MEM,
@@ -772,7 +772,7 @@ case mod_:\
                 else if (*s == 'f')
                 {
                     const char *filename = va_arg(ap, const char *);
-                    
+
                     TE_LOG_VPRINTF_RAW_ARG(TE_LOG_MSG_FMT_ARG_FILE,
                                            filename, 0);
                 }
@@ -794,7 +794,7 @@ case mod_:\
 
             case 's':
             {
-                /* 
+                /*
                  * String MUST be passed through TE raw log arguments
                  * to avoid any issues with conversion specifiers and
                  * any special symbols in it.
@@ -815,7 +815,7 @@ case mod_:\
 
             case 'c':
             {
-                /* 
+                /*
                  * String MUST be passed through TE raw log arguments
                  * to avoid any issues with conversion specifiers and
                  * any special symbols which may be created using %c.
@@ -848,7 +848,7 @@ case mod_:\
             case 'u':
             case 'x':
             case 'X':
-                /* 
+                /*
                  * Integer conversion specifiers are supported in TE raw
                  * log format, however, it is easier to process locally
                  * to avoid issues with difference of length modifiers
@@ -899,7 +899,7 @@ case mod_:\
             case 'G':
             case 'a':
             case 'A':
-                /* 
+                /*
                  * Float point conversion specifiers are not supported
                  * in TE raw log format, so process locally later, but
                  * move 'ap' in accordance with length modifier.

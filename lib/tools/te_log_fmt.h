@@ -65,7 +65,7 @@ typedef struct te_log_msg_out te_log_msg_out;
  * vprintf()-like mode.
  *
  * @param out       Backend parameters
- * @param fmt       Part of format string, terminated by NUL, which 
+ * @param fmt       Part of format string, terminated by NUL, which
  *                  corresponds to arguments pointed by @a ap
  * @param ap        Arguments for format string
  *

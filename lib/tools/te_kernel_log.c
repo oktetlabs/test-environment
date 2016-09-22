@@ -111,7 +111,7 @@ te_kernel_log_set_system_func(void *p)
 /**
  * Described in te_kernel_log.h
  */
-te_errno 
+te_errno
 te_get_host_addrs(const char *host_name, struct sockaddr_in *host_ipv4,
                   te_bool *ipv4_found, struct sockaddr_in6 *host_ipv6,
                   te_bool *ipv6_found)
@@ -344,7 +344,7 @@ open_conserver(const char *conserver)
         point = strchr(tmp, '.');
         if (point == NULL)
             is_ipv4 = FALSE;
-        
+
         if (is_ipv4)
             SIN(&srv_addr)->sin_family = AF_INET;
         else
@@ -488,7 +488,7 @@ open_conserver(const char *conserver)
 
 /**
  * Processing of the serial console output data
- * 
+ *
  * @param parser    Pointer to the parser config
  * @param buffer    Buffer with a data
  */
@@ -585,7 +585,7 @@ log_serial(void *ready, int argc, char *argv[])
 }
 
 /* See description in the te_serial_parser.h */
-int 
+int
 te_serial_parser(serial_parser_t *parser)
 {
     char           tmp[RCF_MAX_PATH + 16];
@@ -695,7 +695,7 @@ do {                                                            \
 
         pthread_mutex_unlock(&parser->mutex);
         poller.fd = socket(AF_INET, SOCK_DGRAM, 0);
-        if (poller.fd < 0 || 
+        if (poller.fd < 0 ||
             bind(poller.fd, (struct sockaddr *)&local_addr,
                  sizeof(local_addr)) < 0)
         {

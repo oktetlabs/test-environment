@@ -63,9 +63,9 @@ extern void te_fill_buf(void *buf, size_t len);
 extern void *te_make_buf(size_t min, size_t max, size_t *p_len);
 
 
-/** 
+/**
  * Create a buffer of specified size
- * 
+ *
  * @param len    Buffer length
  *
  * @return Pointer to allocated buffer.
@@ -78,9 +78,9 @@ te_make_buf_by_len(size_t len)
     return te_make_buf(len, len, &ret_len);
 }
 
-/** 
+/**
  * Create a buffer not shorter that specified length.
- * 
+ *
  * @param min       Minimum buffer length
  * @param p_len     Buffer length (OUT)
  *
@@ -94,11 +94,11 @@ te_make_buf_min(size_t min, size_t *p_len)
 
 /**
  * Allocate memory and fill it with the @p byte
- * 
+ *
  * @param num   Items number
  * @param size  Item instance size
  * @param byte  Byte to fill memory
- * 
+ *
  * @return Pointer to the memory block
  */
 static inline void *

@@ -53,7 +53,7 @@ extern void te_log_message_file(const char *file, unsigned int line,
                                 te_log_ts_sec sec, te_log_ts_usec usec,
                                 unsigned int level,
                                 const char *entity, const char *user,
-                                const char *fmt, va_list ap); 
+                                const char *fmt, va_list ap);
 
 #ifdef __cplusplus
 } /* extern "C" */
