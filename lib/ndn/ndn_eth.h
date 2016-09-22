@@ -1,7 +1,7 @@
 /** @file
  * @brief Proteos, TAD file protocol, NDN.
  *
- * Declarations of ASN.1 types for NDN for Ethernet protocol. 
+ * Declarations of ASN.1 types for NDN for Ethernet protocol.
  *
  * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -24,7 +24,7 @@
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
  * $Id$
- */ 
+ */
 
 #ifndef __TE_NDN_ETH_H__
 #define __TE_NDN_ETH_H__
@@ -44,7 +44,7 @@ extern "C" {
 typedef struct ndn_eth_header_plain {
 
     uint8_t  dst_addr[ETHER_ADDR_LEN];  /**< Destination MAC address */
-    uint8_t  src_addr[ETHER_ADDR_LEN];  /**< Source MAC address */ 
+    uint8_t  src_addr[ETHER_ADDR_LEN];  /**< Source MAC address */
 
     uint16_t len_type;      /**< Ethernet Length/Type */
     int      is_tagged;     /**< BOOL, flag - is frame tagged. */
@@ -88,27 +88,27 @@ typedef enum {
 } ndn_eth_tags_t;
 
 
-/** 
- * Convert Ethernet-Header ASN value to plain C structure. 
- * 
- * @param pkt           ASN value of type Ethernet Header or 
- *                      Generic-PDU with choice "eth". 
+/**
+ * Convert Ethernet-Header ASN value to plain C structure.
+ *
+ * @param pkt           ASN value of type Ethernet Header or
+ *                      Generic-PDU with choice "eth".
  * @param eth_header    location for converted structure (OUT).
  *
  * @return zero on success or error code.
- */ 
-extern int ndn_eth_packet_to_plain(const asn_value *pkt, 
+ */
+extern int ndn_eth_packet_to_plain(const asn_value *pkt,
                                    ndn_eth_header_plain *eth_header);
 
 
-/** 
- * Convert plain C structure to Ethernet-Header ASN value. 
- * 
- * @param eth_header    structure to be converted. 
+/**
+ * Convert plain C structure to Ethernet-Header ASN value.
+ *
+ * @param eth_header    structure to be converted.
  *
  * @return pointer to new ASN value object or NULL.
- */ 
-extern asn_value *ndn_eth_plain_to_packet(const ndn_eth_header_plain 
+ */
+extern asn_value *ndn_eth_plain_to_packet(const ndn_eth_header_plain
                                           *eth_header);
 
 
@@ -118,13 +118,13 @@ extern const asn_type * const ndn_vlan_tag_header;
 
 extern const asn_type * const ndn_eth_header;
 extern const asn_type * const ndn_eth_csap;
-extern const asn_type * const ndn_data_unit_eth_address;  
-extern const asn_type * const ndn_eth_address;  
+extern const asn_type * const ndn_data_unit_eth_address;
+extern const asn_type * const ndn_eth_address;
 
 extern asn_type ndn_eth_header_s;
 extern asn_type ndn_eth_csap_s;
-extern asn_type ndn_data_unit_eth_address_s;  
-extern asn_type ndn_eth_address_s;  
+extern asn_type ndn_data_unit_eth_address_s;
+extern asn_type ndn_eth_address_s;
 
 
 #ifdef __cplusplus
