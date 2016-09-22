@@ -112,7 +112,7 @@ te_expand_env_vars(const char *src, char **posargs, char **retval)
                 case '\0':
                     free(result);
                     *retval = NULL;
-                    return EINVAL; 
+                    return EINVAL;
                 case '{':
                     brace_level++;
                     break;
@@ -126,7 +126,7 @@ te_expand_env_vars(const char *src, char **posargs, char **retval)
         {
             free(result);
             *retval = NULL;
-            return ENOBUFS; 
+            return ENOBUFS;
         }
         memcpy(env_var_name, next, src - next - 1);
         env_var_name[src - next - 1] = '\0';
@@ -144,7 +144,7 @@ te_expand_env_vars(const char *src, char **posargs, char **retval)
         }
         if (isdigit(*env_var_name) && env_var_name[1] == '\0')
         {
-            env_var = (posargs == NULL ? NULL : 
+            env_var = (posargs == NULL ? NULL :
                        posargs[*env_var_name - '0']);
         }
         else
@@ -156,7 +156,7 @@ te_expand_env_vars(const char *src, char **posargs, char **retval)
             if ((*default_value == '+' && env_var != NULL) ||
                 (*default_value == '-' && env_var == NULL))
             {
-                int rc = te_expand_env_vars(default_value + 1, NULL, 
+                int rc = te_expand_env_vars(default_value + 1, NULL,
                                             &env_var);
 
                 if (rc != 0)
@@ -219,7 +219,7 @@ xmlGetProp_exp(xmlNodePtr node, const xmlChar *name)
         }
         else
         {
-            ERROR("Error substituting variables in %s '%s': %s", 
+            ERROR("Error substituting variables in %s '%s': %s",
                   name, value, strerror(rc));
             xmlFree(value);
             value = NULL;

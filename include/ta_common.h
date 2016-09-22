@@ -1,8 +1,8 @@
 /** @file
- * @brief TA Common Definitions 
+ * @brief TA Common Definitions
  *
  * Prototypes of functions to be implemented on all Test Agents.
- * 
+ *
  * Copyright (C) 2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
@@ -16,14 +16,14 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public 
+ * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
- * 
+ *
  * $Id$
  */
 
@@ -32,8 +32,8 @@
 
 #include "te_defs.h"
 
-/** 
- * Get OS identifier of the current thread. 
+/**
+ * Get OS identifier of the current thread.
  *
  * @return Thread identifier
  */
@@ -41,28 +41,28 @@ extern uint32_t thread_self(void);
 
 /*-- These mutexes should be used in forked processes rather than on TA --*/
 
-/** 
+/**
  * Create a mutex.
  *
  * @return Mutex handle
  */
 extern void *thread_mutex_create(void);
 
-/** 
+/**
  * Destroy a mutex.
  *
  * @param mutex     mutex handle
  */
 extern void thread_mutex_destroy(void *mutex);
 
-/** 
+/**
  * Lock the mutex.
  *
  * @param mutex     mutex handle
  */
 extern void thread_mutex_lock(void *mutex);
 
-/** 
+/**
  * Unlock the mutex.
  *
  * @param mutex     mutex handle
@@ -71,10 +71,10 @@ extern void thread_mutex_unlock(void *mutex);
 
 
 /**
- * Check that interface is locked for using of this TA 
+ * Check that interface is locked for using of this TA
  *
  * @param ifname        name of network interface
- * 
+ *
  * @retval 0      interface is not locked
  * @retval other  interface is locked
  */

@@ -24,7 +24,7 @@
  *
  * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
  *
- * $Id: 
+ * $Id:
  */
 
 #ifndef __TE_SNIFFERS_H__
@@ -37,7 +37,7 @@ typedef struct sniffer_id {
     int          ssn;       /**< Sniffer session sequence number. */
 
     unsigned long long    abs_offset;  /**< Absolute offset of the first byte
-                                            of the first packet in a packets 
+                                            of the first packet in a packets
                                             portion. */
 } sniffer_id;
 
@@ -51,7 +51,7 @@ typedef struct sniffer_id {
 
 /**
  * Initialization of a header for a marker packet.
- * 
+ *
  * @param _proto    Pointer to the allocated header location.
  * @param _msglen   Length of the user message for the packet.
  */
@@ -81,7 +81,7 @@ typedef struct te_pcap_pkthdr {
 
 /**
  * Safe copy of the time stamp
- * 
+ *
  * @param dest  32-bits struct of the time stamp
  * @param src   32/64-bits struct of the timestamp
  */

@@ -2,8 +2,8 @@
  * @brief Traffic Application Domain definitions
  *
  * Common RCF Traffic Application Domain definitions.
- * 
- * 
+ *
+ *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
@@ -167,7 +167,7 @@ enum tad_eth_recv_mode {
     TAD_ETH_RECV_OTHER = 0x08,  /**< To someone else */
     TAD_ETH_RECV_OUT   = 0x10,  /**< Outgoing of any type */
     /** Do not enter promiscuous mode even if TAD_ETH_RECV_OTHER is given */
-    TAD_ETH_RECV_NO_PROMISC = 0x100, 
+    TAD_ETH_RECV_NO_PROMISC = 0x100,
     /** Do not close socket after receiving packets */
     TAD_ETH_RECV_KEEP_OPEN_SOCKET = 0x200,
 };

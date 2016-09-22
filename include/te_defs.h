@@ -17,7 +17,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public 
+ * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
@@ -60,7 +60,7 @@
     "is NO\n"                                                             \
 "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR "     \
     "PURPOSE.\n"
-    
+
 
 #ifndef NULL
 #define NULL ((void *)0)
@@ -105,7 +105,7 @@ typedef enum te_bool3 {
  * Marks unused argument of the function in order to avoid compilation
  * warning.
  *
- * @param _x    unused argument 
+ * @param _x    unused argument
  */
 #ifndef UNUSED
 #define UNUSED(_x)      (void)(_x)
@@ -228,7 +228,7 @@ typedef enum te_bool3 {
  */
 #define TE_OFFSET_OF(_s, _f)    ((size_t)(&(((_s *)NULL)->_f)))
 
-/** 
+/**
  * Number of elements in array.
  *
  * @param _array    C name of an array
@@ -280,9 +280,9 @@ rand_range(int min, int max)
 #else
     /*
      * FIXME: Too simple code above is subject to replacement
-     * 
+     *
      *  As 'man 3 rand' tells:
-     *  
+     *
      * ------------------------------------------------------------
      * In  Numerical  Recipes in C: The Art of Scientific Computing
      * (William H. Press, Brian P. Flannery, Saul A. Teukolsky,
@@ -304,7 +304,7 @@ rand_range(int min, int max)
      * 'long long' and 'double' types at compile time basing on RAND_MAX
      * constant value and RAND_RANGE_FORCE_DOUBLE preprocessor symbol and
      * also taking care about avoiding any kind of possible overflow.
-     * 
+     *
      * If RAND_RANGE_FORCE_DOUBLE preprocessor symbol is defined it means
      * the implementation does not try to use 'long' or 'long long' types
      * for calculations implementation; it just uses 'double' type instead.
@@ -410,11 +410,11 @@ te_make_tmp_file(char *tmp_name)
                   __FUNCTION__);                                \
     } while (0)
 
-/** 
+/**
  * Check if a pointer is @c NULL. It's to avoid warnings in macroses.
- * 
+ *
  * @param ptr   A pointer
- * 
+ *
  * @return @c TRUE if @p ptr is not NULL
  */
 static inline te_bool

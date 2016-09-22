@@ -44,7 +44,7 @@ typedef unsigned char uchar;
 typedef unsigned short ushort;
 typedef unsigned int uint;
 typedef unsigned long ulong;
-INCLUDE(tcpioctl.h)    
+INCLUDE(tcpioctl.h)
 INCLUDE(stdio.h)
 INCLUDE(stdarg.h)
 INCLUDE(stdlib.h)
@@ -62,7 +62,7 @@ INCLUDE(limits.h)
 #define _WS2TCPIP_H
 #define _MSTCPIP_H
 
-/* Standard C headers */ 
+/* Standard C headers */
 #define _STDIO_H_
 #define _STDIO_H
 #define _STDARG_H

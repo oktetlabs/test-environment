@@ -17,7 +17,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public 
+ * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
@@ -77,8 +77,8 @@
  * Members of rcf_var_type_t enumeration are used as indexes for this
  * array.
  */
-static char *rcf_types[] = 
-    { "int8", "uint8", "int16", "uint16", "int32", "uint32", 
+static char *rcf_types[] =
+    { "int8", "uint8", "int16", "uint16", "int32", "uint32",
       "int64", "uint64", "string" };
 #endif
 
@@ -89,12 +89,12 @@ static char *rcf_types[] =
  * Members of rcf_var_type_t enumeration are used as indexes for this
  * array.
  */
-static int rcf_type_len[] = 
+static int rcf_type_len[] =
     { sizeof(int8_t), sizeof(uint8_t),
       sizeof(int16_t), sizeof(uint16_t),
       sizeof(int32_t), sizeof(uint32_t),
       sizeof(int64_t), sizeof(uint64_t), 0};
-      
+
 #endif
 
 #define RCF_MAX_TYPE_NAME       6

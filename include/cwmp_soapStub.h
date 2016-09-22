@@ -1134,7 +1134,7 @@ typedef struct SOAP_ENC__base64 SOAP_ENC__base64;
  *                                                                            *
 \******************************************************************************/
 
-extern int acse_cwmp_empty_post(struct soap*); 
+extern int acse_cwmp_empty_post(struct soap*);
 
 SOAP_FMAC5 int SOAP_FMAC6 __cwmp__GetRPCMethods(struct soap*, struct _cwmp__GetRPCMethods *cwmp__GetRPCMethods, struct _cwmp__GetRPCMethodsResponse *cwmp__GetRPCMethodsResponse);
 

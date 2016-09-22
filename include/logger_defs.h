@@ -5,8 +5,8 @@
  * Logger lib, TA side Logger lib.
  *
  * DO NOT include this file directly.
- * 
- * 
+ *
+ *
  * Copyright (C) 2004 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
@@ -20,7 +20,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public 
+ * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
@@ -72,7 +72,7 @@ const char *te_lgr_entity = name
 extern const char *te_lgr_entity;
 
 /*
- * Default value should be overriden by user in user' module before 
+ * Default value should be overriden by user in user' module before
  * inclusion of logger_api.h or like this:
  *     #undef   TE_LGR_ENTITY
  *     #define  TE_LGR_ENTITY <"SOMEENTITY">
@@ -86,7 +86,7 @@ extern const char *te_lgr_entity;
 #endif
 
 /*
- * Default value should be overriden by user in user' module before 
+ * Default value should be overriden by user in user' module before
  * inclusion of logger_api.h or like this:
  *     #undef   TE_LGR_USER
  *     #define  TE_LGR_USER <"SOMEUSER">
@@ -101,28 +101,28 @@ extern const char *te_lgr_entity;
  * 16-bit field is provided for TE_LOG_LEVEL masks
  */
 
-/** Any abnormal/unexpected situation (ERROR macro) */    
+/** Any abnormal/unexpected situation (ERROR macro) */
 #define TE_LL_ERROR         0x0001
 
-/** It's not error situation, but may be an error (WARN macro) */    
+/** It's not error situation, but may be an error (WARN macro) */
 #define TE_LL_WARN          0x0002
 
 /** Very important event in TE and tests (RING macro) */
 #define TE_LL_RING          0x0004
 
-/** Important events required for test debugging (INFO macro) */    
+/** Important events required for test debugging (INFO macro) */
 #define TE_LL_INFO          0x0008
 
-/** Verbose logging of entity internals (VERB macro) */    
+/** Verbose logging of entity internals (VERB macro) */
 #define TE_LL_VERB          0x0010
 
-/* 
- * Logging for function entry/exit point with function name 
+/*
+ * Logging for function entry/exit point with function name
  * and line number (for exit point only). (ENTRY,EXIT macros)
- */    
+ */
 #define TE_LL_ENTRY_EXIT    0x0020
 
-/** Events of network packet received (PACKET macro) */    
+/** Events of network packet received (PACKET macro) */
 #define TE_LL_PACKET        0x0040
 
 
@@ -137,15 +137,15 @@ extern const char *te_lgr_entity;
 /*@}*/
 
 /*
- * Override default level macros into the user' module for logging 
+ * Override default level macros into the user' module for logging
  * behaviour tunning at compilation time.
- * For example, into user' module the logging level can be modified 
+ * For example, into user' module the logging level can be modified
  * as follows:
  *
  *     #define TE_LOG_LEVEL   <level>
  *
- * Do NOT insert '#undef TE_LOG_LEVEL' before in order to see warning 
- * during build and do not forget about overriden system wide 
+ * Do NOT insert '#undef TE_LOG_LEVEL' before in order to see warning
+ * during build and do not forget about overriden system wide
  * TE_LOG_LEVEL.
  */
 #ifndef TE_LOG_LEVEL

@@ -1,7 +1,7 @@
 /** @file
  * @brief Test Environment
  *
- * RCF subsystem internal definitions (used by RCF API library, 
+ * RCF subsystem internal definitions (used by RCF API library,
  * RCF process and RCF PCH library).
  *
  *
@@ -25,7 +25,7 @@
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
- * 
+ *
  * $Id$
  */
 
@@ -50,7 +50,7 @@ extern "C" {
                       RCF_MAX_ID + TE_OVERHEAD)
 #else
 #define RCF_MAX_LEN  (4 * 1024)
-#endif 
+#endif
 
 /** Special SID for TA get log operation */
 #define RCF_TA_GET_LOG_SID      1
@@ -60,7 +60,7 @@ extern "C" {
                                          file is saved in lfile */
 #define INTERMEDIATE_ANSWER     2   /**< Packet is received on the TA, but
                                          traffic receiving continues */
-#define PARAMETERS_ARGV         4   /**< Routine parameters are passed in 
+#define PARAMETERS_ARGV         4   /**< Routine parameters are passed in
                                          argc/argv mode */
 /*@}*/
 
@@ -124,12 +124,12 @@ typedef struct rcf_msg {
     te_errno error;              /**< Error code (in the answer) */
     char     ta[RCF_MAX_NAME];   /**< Test Agent name */
     int      handle;             /**< CSAP handle or PID */
-    int      num;                /**< Number of sent/received packets 
+    int      num;                /**< Number of sent/received packets
                                       or process priority*/
     uint32_t timeout;            /**< Timeout value (RCFOP_TRSEND_RECV,
                                       RCFOP_TRRECV_START, RCFOP_TRPOLL,
                                       RCFOP_RPC) */
-    int      intparm;            /**< Integer parameter: 
+    int      intparm;            /**< Integer parameter:
                                        variable type;
                                        routine arguments passing mode;
                                        execute mode;
@@ -147,7 +147,7 @@ typedef struct rcf_msg {
                                      object identifier;
                                      stack identifier;
                                      RPC server name */
-                                 
+
     char  file[RCF_MAX_PATH];   /**< Local full file name */
     char  value[RCF_MAX_VAL];   /**< Value of the variable or object
                                      instance */
@@ -175,10 +175,10 @@ typedef struct rcf_params {
 #define QEL_INSERT(list, new) \
     (list)->next = ((new)->next = ((new)->prev = list)->next)->prev = (new)
 
-/** 
+/**
  * Delete element from list; note, that you need not know reference to
  * list to delete element from it
- */ 
+ */
 #define  QEL_DELETE(x)                                 \
     do {                                               \
         ((x)->prev->next =(x)->next)->prev =(x)->prev; \

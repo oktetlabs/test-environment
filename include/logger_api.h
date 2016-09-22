@@ -18,7 +18,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public 
+ * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
@@ -37,7 +37,7 @@
 /** @defgroup logger_api API: Logger
  * In order to use @ref logger_api you need to include
  * <A href="logger__api_8h.html">logger_api.h</A> file into your sources.
- * 
+ *
  * If you want to use short versions of @ref logger_api functions you need
  * to define TE_LGR_USER macro at the beginning of source file.
  *
@@ -72,7 +72,7 @@
  */
 #define TE_LOG(_level, _entity, _user, _fs...) \
     te_log_message(__FILE__, __LINE__, _level, _entity, _user, _fs)
-        
+
 
 /**
  * Log message of the specified level from the user.
@@ -233,7 +233,7 @@
  */
 #define ERROR(_fs...)               TE_LOG_ERROR(TE_LGR_USER, _fs)
 
-/** 
+/**
  * Logging situations some failed initialization of
  * the optional feature
  *

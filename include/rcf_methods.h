@@ -2,7 +2,7 @@
  * @brief RCF Engine - TA-specific library interface
  *
  * Definition of RCF TA-specific library interface.
- * 
+ *
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -24,7 +24,7 @@
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
- * 
+ *
  * $Id$
  */
 
@@ -37,7 +37,7 @@
 extern "C" {
 #endif
 
-    
+
 /** Handle returned by the "start" method and used to control the TA */
 typedef void *rcf_talib_handle;
 
@@ -81,7 +81,7 @@ typedef void *rcf_talib_handle;
  * @return Error code.
  */
 typedef te_errno (* rcf_talib_start)(const char       *ta_name,
-                                     const char       *ta_type, 
+                                     const char       *ta_type,
                                      const char       *conf_str,
                                      rcf_talib_handle *handle,
                                      unsigned int     *flags);
@@ -106,7 +106,7 @@ typedef te_errno (* rcf_talib_finish)(rcf_talib_handle  handle,
  * the NUT, which it serves.
  *
  * @param handle        TA handle
- * @param select_set    FD_SET to be updated with the TA connection file 
+ * @param select_set    FD_SET to be updated with the TA connection file
  *                      descriptor (for Test Agents supporting listening
  *                      mode) (IN/OUT)
  *
@@ -117,8 +117,8 @@ typedef te_errno (* rcf_talib_finish)(rcf_talib_handle  handle,
  *
  * @return Error code.
  */
-typedef te_errno (* rcf_talib_connect)(rcf_talib_handle  handle, 
-                                       fd_set           *select_set, 
+typedef te_errno (* rcf_talib_connect)(rcf_talib_handle  handle,
+                                       fd_set           *select_set,
                                        struct timeval   *select_tm);
 
 /**
@@ -130,9 +130,9 @@ typedef te_errno (* rcf_talib_connect)(rcf_talib_handle  handle,
  *
  * @return Error code.
  */
-typedef te_errno (* rcf_talib_transmit)(rcf_talib_handle handle, 
+typedef te_errno (* rcf_talib_transmit)(rcf_talib_handle handle,
                                         const void *data, size_t len);
- 
+
 /**
  * Check pending data on the Test Agent connection.
  *
@@ -143,7 +143,7 @@ typedef te_errno (* rcf_talib_transmit)(rcf_talib_handle handle,
 typedef te_bool (* rcf_talib_is_ready)(rcf_talib_handle handle);
 
 /**
- * Receive one command (possibly with attachment) from the Test Agent 
+ * Receive one command (possibly with attachment) from the Test Agent
  * or its part.
  *
  * @param handle        TA handle
@@ -151,7 +151,7 @@ typedef te_bool (* rcf_talib_is_ready)(rcf_talib_handle handle);
  * @param len           should be filled by the caller to length of the
  *                      buffer; is filled by the routine to length of
  *                      received data
- * @param pba           location for address of first byte after answer 
+ * @param pba           location for address of first byte after answer
  *                      end marker (is set only if binary attachment
  *                      presents)
  *
@@ -172,14 +172,14 @@ typedef te_bool (* rcf_talib_is_ready)(rcf_talib_handle handle);
  *
  * @retval other        OS errno
  */
-typedef te_errno (* rcf_talib_receive)(rcf_talib_handle handle, 
+typedef te_errno (* rcf_talib_receive)(rcf_talib_handle handle,
                                        char *buf, size_t *len, char **pba);
 
 /**
  * Close interactions with TA.
  *
  * @param handle        TA handle
- * @param select_set    FD_SET to be updated with the TA connection file 
+ * @param select_set    FD_SET to be updated with the TA connection file
  *                      descriptor (for Test Agents supporting listening
  *                      mode) (IN/OUT)
  *

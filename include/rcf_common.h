@@ -1,10 +1,10 @@
 /** @file
- * @brief RCF Common Definitions 
+ * @brief RCF Common Definitions
  *
  * Definitions common for all RCF modules.
  * DO NOT include directly from non-RCF sources.
  *
- * 
+ *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
@@ -18,14 +18,14 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public 
+ * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
- * 
+ *
  * $Id$
  */
 
@@ -33,7 +33,7 @@
 #define __TE_RCF_COMMON_H__
 
 
-/** 
+/**
  * Maximum length of the name of the Test Agent, TA type, variable, etc.
  * (including '\0').
  */
@@ -60,7 +60,7 @@
 #define RCF_FILE_FTP_PREFIX     "ftp/"
 
 
-/** 
+/**
  * Parameter and variable types.
  *
  * Corresponding integer values must start from 0 and be continuos,
@@ -70,7 +70,7 @@
 typedef enum {
     RCF_INT8 = 0,   /**< int8_t */
     RCF_UINT8,      /**< uint8_t */
-    RCF_INT16,      /**< int16_t */    
+    RCF_INT16,      /**< int16_t */
     RCF_UINT16,     /**< uint16_t */
     RCF_INT32,      /**< int32_t */
     RCF_UINT32,     /**< uint32_t */
@@ -80,10 +80,10 @@ typedef enum {
     RCF_TYPE_TOTAL  /**< total number of RCF types */
 } rcf_var_type_t;
 
-/** 
+/**
  * The ways a function may be called on TA
  */
-typedef enum rcf_execute_mode { 
+typedef enum rcf_execute_mode {
     RCF_FUNC = 1,  /**< Execute a function in the same context */
     RCF_THREAD,    /**< Execute a function in the TA thread */
     RCF_PROCESS    /**< Execute a function in the separate process */

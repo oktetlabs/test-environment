@@ -2,8 +2,8 @@
  * @brief Test Environment CWMP support
  *
  * Common definitions for CPE WAN Management Protocol (TR-069).
- * 
- * 
+ *
+ *
  * Copyright (C) 2010-2011 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
@@ -17,7 +17,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public 
+ * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
@@ -42,8 +42,8 @@ extern "C" {
 
 /*
  * Primitive SOAP type constants, copied here from acse_coapH.h
- * for convenient compile. 
- */ 
+ * for convenient compile.
+ */
 #ifndef SOAP_TYPE_int
 #define SOAP_TYPE_int (1)
 #endif
@@ -123,15 +123,15 @@ typedef struct  _cwmp__GetParameterValuesResponse
                     cwmp_get_parameter_values_response_t;
 typedef struct  _cwmp__GetParameterNames
                     cwmp_get_parameter_names_t;
-typedef struct  _cwmp__GetParameterNamesResponse 
+typedef struct  _cwmp__GetParameterNamesResponse
                     cwmp_get_parameter_names_response_t;
-typedef struct  _cwmp__SetParameterAttributes 
+typedef struct  _cwmp__SetParameterAttributes
                     cwmp_set_parameter_attributes_t;
-typedef struct  _cwmp__SetParameterAttributesResponse 
+typedef struct  _cwmp__SetParameterAttributesResponse
                     cwmp_set_parameter_attributes_response_t;
-typedef struct  _cwmp__GetParameterAttributes 
+typedef struct  _cwmp__GetParameterAttributes
                     cwmp_get_parameter_attributes_t;
-typedef struct  _cwmp__GetParameterAttributesResponse 
+typedef struct  _cwmp__GetParameterAttributesResponse
                     cwmp_get_parameter_attributes_response_t;
 typedef struct  _cwmp__AddObject  cwmp_add_object_t;
 typedef struct  _cwmp__AddObjectResponse  cwmp_add_object_response_t;
@@ -142,25 +142,25 @@ typedef struct  _cwmp__DownloadResponse  cwmp_download_response_t;
 typedef struct  _cwmp__Reboot  cwmp_reboot_t;
 typedef struct  _cwmp__RebootResponse  cwmp_reboot_response_t;
 typedef struct  _cwmp__GetQueuedTransfers  cwmp_get_queued_transfers_t;
-typedef struct  _cwmp__GetQueuedTransfersResponse 
+typedef struct  _cwmp__GetQueuedTransfersResponse
                     cwmp_get_queued_transfers_response_t;
 typedef struct  _cwmp__ScheduleInform  cwmp_schedule_inform_t;
-typedef struct  _cwmp__ScheduleInformResponse 
+typedef struct  _cwmp__ScheduleInformResponse
                     cwmp_schedule_inform_response_t;
 typedef struct  _cwmp__SetVouchers  cwmp_set_vouchers_t;
-typedef struct  _cwmp__SetVouchersResponse 
+typedef struct  _cwmp__SetVouchersResponse
                     cwmp_set_vouchers_response_t;
 typedef struct  _cwmp__GetOptions  cwmp_get_options_t;
-typedef struct  _cwmp__GetOptionsResponse 
+typedef struct  _cwmp__GetOptionsResponse
                     cwmp_get_options_response_t;
 typedef struct  _cwmp__Upload  cwmp_upload_t;
 typedef struct  _cwmp__UploadResponse  cwmp_upload_response_t;
 typedef struct  _cwmp__FactoryReset  cwmp_factory_reset_t;
-typedef struct  _cwmp__FactoryResetResponse 
+typedef struct  _cwmp__FactoryResetResponse
                     cwmp_factory_reset_response_t;
-typedef struct  _cwmp__GetAllQueuedTransfers 
+typedef struct  _cwmp__GetAllQueuedTransfers
                     cwmp_get_all_queued_transfers_t;
-typedef struct  _cwmp__GetAllQueuedTransfersResponse 
+typedef struct  _cwmp__GetAllQueuedTransfersResponse
                     cwmp_get_all_queued_transfers_response_t;
 typedef struct  _cwmp__Inform  cwmp_inform_t;
 typedef struct  _cwmp__InformResponse  cwmp_inform_response_t;
@@ -182,7 +182,7 @@ typedef struct  ParameterValueList  cwmp_parameter_value_list_t;
 typedef struct  ParameterInfoList  cwmp_parameter_info_list_t;
 typedef struct  ParameterNames  cwmp_parameter_names_t;
 typedef struct  AccessList  cwmp_access_list_t;
-typedef struct  SetParameterAttributesList 
+typedef struct  SetParameterAttributesList
                     cwmp_set_parameter_attributes_list_t;
 typedef struct  ParameterAttributeList  cwmp_parameter_attribute_list_t;
 typedef struct  TransferList  cwmp_transfer_list_t;
@@ -197,8 +197,8 @@ typedef struct  _cwmp__HoldRequests  cwmp_hold_requests_t;
 
 
 /**
- * This enumeration contains types of RPC calls, which 
- * could be called on CPE via CWMP, according with 
+ * This enumeration contains types of RPC calls, which
+ * could be called on CPE via CWMP, according with
  * Table 5 in [TR-069].
  */
 typedef enum {
@@ -224,8 +224,8 @@ typedef enum {
 } te_cwmp_rpc_cpe_t;
 
 /**
- * This enumeration contains types of RPC calls, which 
- * could be called on ACS via CWMP, according with 
+ * This enumeration contains types of RPC calls, which
+ * could be called on ACS via CWMP, according with
  * Table 5 in [TR-069].
  */
 typedef enum {
@@ -240,7 +240,7 @@ typedef enum {
 } te_cwmp_rpc_acs_t;
 
 /**
- * This enumeration contains types of Events, which 
+ * This enumeration contains types of Events, which
  * may occur in Inform from CPE to ACS, according with
  * Table 7 in [TR-069].
  */
@@ -268,20 +268,20 @@ typedef enum {
 /** State of Connection Request to CPE. */
 typedef enum acse_cr_state_t {
     CR_NONE = 1,       /**< No Conn.Req operation was inited */
-    CR_WAIT_AUTH = 2,  /**< Connection Request started, but waiting 
+    CR_WAIT_AUTH = 2,  /**< Connection Request started, but waiting
                             for successful authenticate. */
-    CR_DONE = 4,       /**< Connection Request was sent and gets 
-                            successful HTTP response. 
+    CR_DONE = 4,       /**< Connection Request was sent and gets
+                            successful HTTP response.
                             Swith back to CR_NONE after receive Inform
                             with EventCode  = @c CONNECTION REQUEST*/
-    CR_ERROR = 8,      /**< Connection Request was sent and gets 
-                            HTTP error. 
-                            Switch back to CR_NONE after read 
+    CR_ERROR = 8,      /**< Connection Request was sent and gets
+                            HTTP error.
+                            Switch back to CR_NONE after read
                             Conn.Req. status by EPC */
 } acse_cr_state_t;
-    
+
 /** CWMP Session states */
-typedef enum { 
+typedef enum {
     CWMP_NOP = 1,      /**< No any TCP activity: neither active
                             connection, nor listening for incoming ones.*/
     CWMP_LISTEN = 2,   /**< Listening for incoming HTTP connection.  */
@@ -290,14 +290,14 @@ typedef enum {
                             response with our WWW-Authenticate is sent.*/
     CWMP_SERVE = 8,    /**< CWMP session established, waiting for
                             incoming SOAP RPC requests from CPE.      */
-    CWMP_WAIT_RESPONSE = 16,/**< CWMP session established, SOAP RPC 
+    CWMP_WAIT_RESPONSE = 16,/**< CWMP session established, SOAP RPC
                             is sent to the CPE, waiting for response. */
     CWMP_PENDING = 32, /**< CWMP session established, waiting for
                             RPC to be sent on CPE, from EPC.          */
     CWMP_SEND_FILE = 64,/**< HTTP connection, sending reponse to GET,
                              received for particular ACS. */
     CWMP_CLOSE = 128,   /**< Session should be closed. */
-    CWMP_SUSPENDED = 256,/**<CWMP session established, but TCP connection 
+    CWMP_SUSPENDED = 256,/**<CWMP session established, but TCP connection
                              was terminated, waiting for new one. */
 } cwmp_sess_state_t;
 
@@ -319,7 +319,7 @@ typedef union {
         cwmp_set_vouchers_t              *set_vouchers;
         cwmp_get_options_t               *get_options;
         cwmp_fault_t                     *fault;
-    } cwmp_data_to_cpe_t; 
+    } cwmp_data_to_cpe_t;
 
 /**< Typed pointer to call-specific CWMP data from CPE to ACS. */
 typedef union {
@@ -346,7 +346,7 @@ typedef union {
         cwmp_get_all_queued_transfers_response_t
                                              *get_all_queued_transfers_r;
         cwmp_get_options_response_t          *get_options_r;
-    } cwmp_data_from_cpe_t; 
+    } cwmp_data_from_cpe_t;
 
 /**
  * Type for ACSE CWMP request identifier in queue.
@@ -414,7 +414,7 @@ cwmp_rpc_acs_string(te_cwmp_rpc_acs_t r)
         case CWMP_RPC_ACS_get_rpc_methods: return "GetRPCMethods";
         case CWMP_RPC_inform:           return "Inform";
         case CWMP_RPC_transfer_complete:return "TransferComplete";
-        case CWMP_RPC_autonomous_transfer_complete: 
+        case CWMP_RPC_autonomous_transfer_complete:
                                         return "AutonomousTransferComplete";
         case CWMP_RPC_request_download: return "RequestDownload";
         case CWMP_RPC_kicked:           return "Kicked";

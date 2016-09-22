@@ -633,7 +633,7 @@ struct {                                                                \
 }
 
 /*
- * Circular queue access methods 
+ * Circular queue access methods
  */
 #define CIRCLEQ_FIRST(head)             ((head)->cqh_first)
 #define CIRCLEQ_LAST(head)              ((head)->cqh_last)

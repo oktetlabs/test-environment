@@ -47,14 +47,14 @@ typedef int pid_t;
 
 #define inline
 #define __const
-#undef __stdcall 
+#undef __stdcall
 
 #define snprintf                _snprintf
 #define vsnprintf               _vsnprintf
 #define va_copy(_dest, _src)    _dest = _src;
 
 #define ETHER_ADDR_LEN  6
-#define ETHER_MIN_LEN   64 
+#define ETHER_MIN_LEN   64
 #define ETHER_CRC_LEN   4
 #define ETHERTYPE_IP            0x0800          /* IP */
 #define ETHERTYPE_ARP           0x0806          /* Address resolution */

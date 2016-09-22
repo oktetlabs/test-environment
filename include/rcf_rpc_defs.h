@@ -81,18 +81,18 @@ typedef enum {
 #ifdef __unix__
 /**
  * Initialize RPC server.
- * 
+ *
  * @note This feature is supported only for unix agent.
- * 
+ *
  * @return Status code
  */
 extern int rcf_rpc_server_init(void);
 
 /**
  * Finalize RPC server work.
- * 
+ *
  * @note This feature is supported only for unix agent.
- * 
+ *
  * @return Status code
  */
 extern int rcf_rpc_server_finalize(void);

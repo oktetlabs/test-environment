@@ -17,7 +17,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public 
+ * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
@@ -38,24 +38,24 @@ typedef struct rcf_comm_connection rcf_comm_connection;
 
 
 /**
- * Wait for incoming connection from the Test Engine side of the 
+ * Wait for incoming connection from the Test Engine side of the
  * Communication library.
  *
- * @param config_str    Configuration string, content depends on the 
+ * @param config_str    Configuration string, content depends on the
  *                      communication type (network, serial, etc)
- * @param p_rcc         Pointer to to pointer the rcf_comm_connection 
+ * @param p_rcc         Pointer to to pointer the rcf_comm_connection
  *                      structure to be filled, used as handler.
  *
  * @return Status code.
  * @retval 0            Success.
  * @retval other value  errno.
  */
-extern int rcf_comm_agent_init(const char *config_str, 
+extern int rcf_comm_agent_init(const char *config_str,
                                rcf_comm_connection **p_rcc);
 
 
 
-/** 
+/**
  * Wait for command from the Test Engine via Network Communication library.
  *
  * @param rcc           Handler received from rcf_comm_agent_init
@@ -64,7 +64,7 @@ extern int rcf_comm_agent_init(const char *config_str,
  *                      on entry - size of the buffer;
  *                      on return:
  *                      number of bytes really written if 0 returned
- *                      (success); unchanged if TE_ESMALLBUF returned; 
+ *                      (success); unchanged if TE_ESMALLBUF returned;
  *                      number of bytes in the message (with attachment) if
  *                      TE_EPENDING returned. (Note: If the function called
  *                      a number of times to receive one big message, a full
@@ -73,21 +73,21 @@ extern int rcf_comm_agent_init(const char *config_str,
  *                      number of bytes previously read by this function
  *                      will be returned.); undefined if other errno
  *                      returned.
- * @param pba           Address of the pointer that will hold on return 
- *                      address of the first byte of attachment (or NULL if 
- *                      no attachment attached to the command). If this 
+ * @param pba           Address of the pointer that will hold on return
+ *                      address of the first byte of attachment (or NULL if
+ *                      no attachment attached to the command). If this
  *                      function called more than once (to receive big
  *                      attachment) this pointer will be not touched.
  *
  * @return Status code.
- * @retval 0            Success (message received and written to the 
+ * @retval 0            Success (message received and written to the
  *                      buffer).
  * @retval TE_ESMALLBUF Buffer is too small for the message. The part of
  *                      the message is written to the buffer. Other part(s)
  *                      of the message can be read by the next calls to the
  *                      rcf_comm_agent_wait. The ETSMALLBUF will be returned
  *                      until last part of the message will be read.
- * @retval TE_EPENDING  Attachment is too big to fit into the buffer. Part 
+ * @retval TE_EPENDING  Attachment is too big to fit into the buffer. Part
  *                      of the message with attachment is written to the
  *                      buffer. Other part(s) can be read by the next calls
  *                      to the rcf_comm_engine_receive. The TE_EPENDING will
@@ -95,7 +95,7 @@ extern int rcf_comm_agent_init(const char *config_str,
  *                      read.
  * @retval other value  errno.
  */
-extern int rcf_comm_agent_wait(rcf_comm_connection *rcc, 
+extern int rcf_comm_agent_wait(rcf_comm_connection *rcc,
                                char *buffer, size_t *pbytes, void **pba);
 
 
@@ -113,10 +113,10 @@ extern int rcf_comm_agent_wait(rcf_comm_connection *rcc,
 extern int rcf_comm_agent_reply(rcf_comm_connection *rcc,
                                 const void *p_buffer, size_t length);
 
-/** 
+/**
  * Close connection.
  *
- * @param p_rcc   Pointer to variable with handler received from 
+ * @param p_rcc   Pointer to variable with handler received from
  *                rcf_comm_agent_init.
  *
  * @return Status code.

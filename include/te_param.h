@@ -17,7 +17,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public 
+ * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
@@ -25,7 +25,7 @@
  *
  * @author Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
  *
- * $Id: 
+ * $Id:
  */
 
 #ifndef __TE_PARAM_H__
@@ -74,7 +74,7 @@ static inline void te_var_name2env(const char *name, char *env, int env_size)
     char *dot;
 
     strcpy(var_name, name);
-    p = var_name + strlen(TEST_ARG_VAR_PREFIX); 
+    p = var_name + strlen(TEST_ARG_VAR_PREFIX);
 
     rc += snprintf(env, env_size,
                    TEST_ARG_ENV_PREFIX);
@@ -83,7 +83,7 @@ static inline void te_var_name2env(const char *name, char *env, int env_size)
         dot = strchr(p, '.');
         if (dot != NULL)
             *dot = '\0';
-        
+
         rc += snprintf(env + rc,
                        env_size - rc,
                        "%s", p);
