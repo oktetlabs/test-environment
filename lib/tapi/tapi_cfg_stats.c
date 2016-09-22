@@ -68,7 +68,7 @@
 
 
 /* See description in tapi_cfg_stats.h */
-te_errno 
+te_errno
 tapi_cfg_stats_if_stats_get(const char          *ta,
                             const char          *ifname,
                             tapi_cfg_if_stats   *stats)
@@ -88,12 +88,12 @@ tapi_cfg_stats_if_stats_get(const char          *ta,
 
     VERB("%s(): stats=%x", __FUNCTION__, stats);
 
-    /* 
+    /*
      * Synchronize configuration trees and get assigned interfaces
      */
 
     VERB("Try to sync stats");
-    
+
     rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s/stats:",
                              ta, ifname);
     if (rc != 0)
@@ -138,7 +138,7 @@ tapi_cfg_stats_if_stats_get(const char          *ta,
 
 
 /* See description in tapi_cfg_stats.h */
-te_errno 
+te_errno
 tapi_cfg_stats_net_stats_get(const char          *ta,
                              tapi_cfg_net_stats  *stats)
 {
@@ -154,12 +154,12 @@ tapi_cfg_stats_net_stats_get(const char          *ta,
 
     memset(stats, 0, sizeof(tapi_cfg_net_stats));
 
-    /* 
+    /*
      * Synchronize configuration trees and get assigned interfaces
      */
 
     VERB("Try to sync stats");
-    
+
     rc = cfg_synchronize_fmt(TRUE, "/agent:%s/stats:", ta);
     if (rc != 0)
         return rc;
@@ -258,13 +258,13 @@ tapi_cfg_stats_net_stats_get(const char          *ta,
 #define TAPI_CFG_IF_STATS_MAX_LINE_LEN     4096
 
 /* See description in tapi_cfg_stats.h */
-te_errno 
+te_errno
 tapi_cfg_stats_if_stats_print(const char          *ta,
                               const char          *ifname,
                               tapi_cfg_if_stats   *stats)
 {
     char *buf = (char *)malloc(TAPI_CFG_IF_STATS_MAX_LINE_LEN);
-    
+
     if (stats == NULL)
     {
         free(buf);
@@ -309,12 +309,12 @@ tapi_cfg_stats_if_stats_print(const char          *ta,
 #define TAPI_CFG_NET_STATS_MAX_LINE_LEN     4096
 
 /* See description in tapi_cfg_stats.h */
-te_errno 
+te_errno
 tapi_cfg_stats_net_stats_print(const char          *ta,
                                tapi_cfg_net_stats  *stats)
 {
     char *buf = (char *)malloc(TAPI_CFG_NET_STATS_MAX_LINE_LEN);
-    
+
     if (stats == NULL)
     {
         free(buf);

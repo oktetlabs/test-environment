@@ -39,9 +39,9 @@
 
 /* Configurator object subtrees */
 #define TE_SERIAL_PARSER "/agent:%s/parser:%s"
-#define TE_SERIAL_LOG   TE_SERIAL_PARSER "/logging:" 
-#define TE_SERIAL_EVENT TE_SERIAL_PARSER "/event:%s" 
-#define TE_SERIAL_PATT  TE_SERIAL_EVENT  "/pattern:%s" 
+#define TE_SERIAL_LOG   TE_SERIAL_PARSER "/logging:"
+#define TE_SERIAL_EVENT TE_SERIAL_PARSER "/event:%s"
+#define TE_SERIAL_PATT  TE_SERIAL_EVENT  "/pattern:%s"
 #define TE_TESTER_EVENT "/local:/tester:/event:%s"
 #define TE_TESTER_HANDL TE_TESTER_EVENT "/handler:%s"
 
@@ -117,7 +117,7 @@ tapi_serial_parser_add(tapi_parser_id *id)
 
     if (id->user == NULL)
         id->user = strdup(TE_SERIAL_PARSER_USER);
-    rc = cfg_set_instance_fmt(CVT_STRING, id->user, 
+    rc = cfg_set_instance_fmt(CVT_STRING, id->user,
                               TE_SERIAL_PARSER "/user:", id->ta, id->name);
     if (rc != 0)
     {

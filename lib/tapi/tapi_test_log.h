@@ -96,7 +96,7 @@ extern "C" {
 
 /**
  * The macro should be used to output per-iteration test objectives
- * 
+ *
  * @param fmt   Format string for the following arguments
  */
 #define TEST_OBJECTIVE(fmt...) \

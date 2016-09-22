@@ -83,7 +83,7 @@ static struct ipc_client *ipcc = NULL;
 /** Name of the Tester IPC server */
 static const char *ipcs_name;
 
-/** 
+/**
  * Storage for test verdict message.
  *
  * @note It should be used under lock only.
@@ -153,7 +153,7 @@ te_test_verdict(const char *fmt, ...)
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&lock);
 #endif
-    
+
     if (ipcc == NULL)
     {
         char    name[32];
@@ -181,7 +181,7 @@ te_test_verdict(const char *fmt, ...)
 #ifdef HAVE_PTHREAD_H
             pthread_mutex_unlock(&lock);
 #endif
-            ERROR("%s(): Failed to initialize IPC client: %r", 
+            ERROR("%s(): Failed to initialize IPC client: %r",
                   __FUNCTION__, rc);
             return;
         }

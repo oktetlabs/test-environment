@@ -69,7 +69,7 @@ tapi_reqs_modify(const char *reqs)
               __FUNCTION__, te_test_id, rc);
         return rc;
     }
-    
+
     if (old == NULL)
         len = 0;
     else

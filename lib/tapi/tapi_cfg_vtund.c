@@ -87,7 +87,7 @@ tapi_cfg_vtund_create_tunnel(const char            *ta_srv,
                               ta_clnt, ta_srv, ta_clnt);
     if (rc != 0)
         return rc;
-    
+
     rc = cfg_set_instance_fmt(CFG_VAL(ADDRESS, srv_addr),
                               "/agent:%s/vtund:/client:%s-%s/server:",
                               ta_clnt, ta_srv, ta_clnt);
@@ -114,14 +114,14 @@ tapi_cfg_vtund_create_tunnel(const char            *ta_srv,
 
     te_sleep(10);
 
-    /* 
+    /*
      * Synchronize configuration trees and get assigned interfaces
      */
-    
+
     rc = cfg_synchronize_fmt(TRUE, "/agent:%s", ta_srv);
     if (rc != 0)
         return rc;
-    
+
     val_type = CVT_STRING;
     rc = cfg_get_instance_fmt(&val_type, &str,
              "/agent:%s/vtund:/server:%u/session:%s-%s/interface:",
@@ -148,7 +148,7 @@ tapi_cfg_vtund_create_tunnel(const char            *ta_srv,
             return rc;
         }
     }
-    
+
     rc = cfg_find_fmt(&tmp, "/agent:%s/interface:%s", ta_srv, str);
     if (rc != 0)
     {
@@ -176,7 +176,7 @@ tapi_cfg_vtund_create_tunnel(const char            *ta_srv,
     rc = cfg_synchronize_fmt(TRUE, "/agent:%s", ta_clnt);
     if (rc != 0)
         return rc;
-    
+
     val_type = CVT_STRING;
     rc = cfg_get_instance_fmt(&val_type, &str,
              "/agent:%s/vtund:/client:%s-%s/interface:",
@@ -187,7 +187,7 @@ tapi_cfg_vtund_create_tunnel(const char            *ta_srv,
               "by the tunnel on client side: %r", rc);
         return rc;
     }
-    
+
     {
         char if_oid[100];
 
@@ -203,7 +203,7 @@ tapi_cfg_vtund_create_tunnel(const char            *ta_srv,
             return rc;
         }
     }
-    
+
     rc = cfg_find_fmt(&tmp, "/agent:%s/interface:%s", ta_clnt, str);
     if (rc != 0)
     {
@@ -223,7 +223,7 @@ tapi_cfg_vtund_create_tunnel(const char            *ta_srv,
     }
 
     free(str);
-    
+
     if (ta_clnt_if != NULL)
         *ta_clnt_if = tmp;
 

@@ -273,7 +273,7 @@ tapi_jmp_do(int val, const char *file, unsigned int lineno)
     }
     SLIST_REMOVE(&ctx->stack, p, tapi_jmp_point, links);
 
-    /* 
+    /*
      * We can't free point here, since 'env' should be used
      * in the function which never returns.
      */

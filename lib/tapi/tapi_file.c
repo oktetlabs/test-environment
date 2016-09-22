@@ -68,7 +68,7 @@
  * @return name (memory is allocated) of the file or
  *         NULL in the case of failure
  *
- * @note the function is not thread-safe 
+ * @note the function is not thread-safe
  */
 char *
 tapi_file_create_pattern(size_t len, char c)
@@ -76,18 +76,18 @@ tapi_file_create_pattern(size_t len, char c)
     char *pathname = strdup(tapi_file_generate_pathname());
     char  buf[1024];
     FILE *f;
-    
+
     if (pathname == NULL)
         return NULL;
-    
+
     if ((f = fopen(pathname, "w")) == NULL)
     {
         ERROR("Cannot open file %s errno %d\n", pathname, errno);
         return NULL;
     }
-    
+
     memset(buf, c, sizeof(buf));
-    
+
     while (len > 0)
     {
         int copy_len = ((unsigned int)len  > sizeof(buf)) ?
@@ -119,26 +119,26 @@ tapi_file_create_pattern(size_t len, char c)
  * @return name (memory is allocated) of the file or
  *         NULL in the case of failure
  *
- * @note The function is not thread-safe 
+ * @note The function is not thread-safe
  */
 char *
 tapi_file_create(size_t len, char *buf, te_bool random)
 {
     char *pathname = strdup(tapi_file_generate_pathname());
     FILE *f;
-    
+
     if (pathname == NULL)
         return NULL;
-        
+
     if (random)
         te_fill_buf(buf, len);
-    
+
     if ((f = fopen(pathname, "w")) == NULL)
     {
         ERROR("Cannot open file %s errno %d\n", pathname, errno);
         return NULL;
     }
-    
+
     if (fwrite((void *)buf, sizeof(char), len, f) < len)
     {
         fclose(f);
@@ -165,10 +165,10 @@ tapi_file_create(size_t len, char *buf, te_bool random)
  *
  * @return 0 (success) or -1 (failure)
  */
-static int 
+static int
 tapi_file_create_ta_gen(const char *ta,
-                        const char *lfile, 
-                        const char *rfile, 
+                        const char *lfile,
+                        const char *rfile,
                         const char *fmt, va_list ap)
 {
     FILE *f;
@@ -181,7 +181,7 @@ tapi_file_create_ta_gen(const char *ta,
     }
 
     vfprintf(f, fmt, ap);
-    
+
     if (fclose(f) < 0)
     {
         ERROR("fclose() failed: file %s errno=%d", lfile, errno);
@@ -210,8 +210,8 @@ tapi_file_create_ta_gen(const char *ta,
  *
  * @note the function is not thread-safe
  */
-int 
-tapi_file_create_ta(const char *ta, const char *filename, 
+int
+tapi_file_create_ta(const char *ta, const char *filename,
                     const char *fmt, ...)
 {
     char *pathname = tapi_file_generate_pathname();
@@ -281,7 +281,7 @@ tapi_file_copy_ta(const char *ta_src, const char *src,
     unlink(pathname);
     return 0;
 }
-                  
+
 /**
  * Read file content from the TA.
  *
@@ -293,16 +293,16 @@ tapi_file_copy_ta(const char *ta_src, const char *src,
  *
  * @note the function is not thread-safe
  */
-int 
+int
 tapi_file_read_ta(const char *ta, const char *filename, char **pbuf)
 {
     char *pathname = tapi_file_generate_pathname();
     int   rc;
     char *buf;
     FILE *f;
-    
+
     struct stat st;
-    
+
     if ((rc = rcf_ta_get_file(ta, 0, filename, pathname)) != 0)
     {
         ERROR("Cannot get file %s from TA %s; errno %d", filename, ta, rc);
@@ -319,7 +319,7 @@ tapi_file_read_ta(const char *ta, const char *filename, char **pbuf)
         ERROR("Out of memory");
         unlink(pathname);
         return -1;
-    } 
+    }
 
     if ((f = fopen(pathname, "r")) == NULL)
     {
@@ -337,9 +337,9 @@ tapi_file_read_ta(const char *ta, const char *filename, char **pbuf)
 
     fclose(f);
     unlink(pathname);
-    
+
     *pbuf = buf;
-    
+
     return 0;
 }
 
@@ -350,7 +350,7 @@ tapi_file_ta_unlink_fmt(const char *ta, const char *path_fmt, ...)
     va_list ap;
     char    path[RCF_MAX_PATH];
     int     rc, rc2;
-    
+
     va_start(ap, path_fmt);
     rc = vsnprintf(path, sizeof(path), path_fmt, ap);
     va_end(ap);

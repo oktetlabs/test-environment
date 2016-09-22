@@ -129,10 +129,10 @@ typedef struct tapi_cfg_net_stats {
  * @param ta            Test Agent to gather statistics on
  * @param ifname        Network interface to gather statistics of
  * @param stats         Resulted interface statistics structure
- * 
+ *
  * @return Status code
  */
-extern te_errno 
+extern te_errno
 tapi_cfg_stats_if_stats_get(const char          *ta,
                             const char          *ifname,
                             tapi_cfg_if_stats   *stats);
@@ -143,10 +143,10 @@ tapi_cfg_stats_if_stats_get(const char          *ta,
  * @param ta            Test Agent to gather statistics on
  * @param ifname        Network interface to gather statistics of
  * @param stats         Gathered interface statistics structure to print
- * 
+ *
  * @return Status code
  */
-te_errno 
+te_errno
 tapi_cfg_stats_if_stats_print(const char          *ta,
                               const char          *ifname,
                               tapi_cfg_if_stats   *stats);
@@ -157,10 +157,10 @@ tapi_cfg_stats_if_stats_print(const char          *ta,
  *
  * @param ta            Test Agent to gather statistics on
  * @param stats         Resulted host statistics structure
- * 
+ *
  * @return Status code
  */
-extern te_errno 
+extern te_errno
 tapi_cfg_stats_net_stats_get(const char           *ta,
                              tapi_cfg_net_stats   *stats);
 
@@ -170,10 +170,10 @@ tapi_cfg_stats_net_stats_get(const char           *ta,
  *
  * @param ta            Test Agent to gether statistics on
  * @param stats         Gathered host statistics structure to print
- * 
+ *
  * @return Status code
  */
-extern te_errno 
+extern te_errno
 tapi_cfg_stats_net_stats_print(const char           *ta,
                                tapi_cfg_net_stats   *stats);
 

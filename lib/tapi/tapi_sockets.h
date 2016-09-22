@@ -1,6 +1,6 @@
 
 /** @file
- * @brief Functions to opearate with socket 
+ * @brief Functions to opearate with socket
  *
  * Definition of test API for working with socket.
  *

@@ -74,7 +74,7 @@ tapi_cfg_tcp_timestamps_set(rcf_rpc_server *rpcs, int value, int *old_value)
 
     if (old_value != NULL)
     {
-        rc = cfg_get_instance_fmt(&val_type, old_value, 
+        rc = cfg_get_instance_fmt(&val_type, old_value,
                                   "/agent:%s/sys:/tcp_timestamps:",
                                   rpcs->ta);
         if (rc != 0)
@@ -100,7 +100,7 @@ tapi_cfg_tcp_timestamps_get(rcf_rpc_server *rpcs, int *value)
     cfg_val_type  val_type = CVT_INTEGER;
     te_errno      rc;
 
-    rc = cfg_get_instance_fmt(&val_type, value, 
+    rc = cfg_get_instance_fmt(&val_type, value,
                               "/agent:%s/sys:/tcp_timestamps:",
                               rpcs->ta);
     if (rc != 0)
@@ -109,14 +109,14 @@ tapi_cfg_tcp_timestamps_get(rcf_rpc_server *rpcs, int *value)
 }
 
 /* See description in tapi_proc.h */
-te_errno 
+te_errno
 tapi_cfg_if_rp_filter_get(rcf_rpc_server *rpcs, const char *ifname,
                           int *rp_filter)
 {
     cfg_val_type  val_type = CVT_INTEGER;
     te_errno      rc;
 
-    rc = cfg_get_instance_fmt(&val_type, rp_filter, 
+    rc = cfg_get_instance_fmt(&val_type, rp_filter,
                               "/agent:%s/interface:%s/rp_filter:",
                               rpcs->ta, ifname);
     if (rc != 0)

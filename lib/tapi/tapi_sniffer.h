@@ -37,7 +37,7 @@ extern "C" {
 #include "te_queue.h"
 #include "te_defs.h"
 
- /** 
+ /**
   * Sniffer identifier
   */
 typedef struct tapi_sniffer_id {
@@ -59,7 +59,7 @@ typedef struct sniffl_h_t sniffl_h_t;
 
 /**
  * Create and start new sniffer.
- * 
+ *
  * @param ta            Agent name
  * @param iface         Interface name
  * @param name          Sniffer name
@@ -79,7 +79,7 @@ extern tapi_sniffer_id * tapi_sniffer_add(const char *ta, const char *iface,
 
 /**
  * Create and start one or more new sniffers on the agent.
- * 
+ *
  * @param ta            Agent name
  * @param iface         Interface name
  * @c     NULL          Start sniffers on all interfaces expect loopback
@@ -100,30 +100,30 @@ extern te_errno tapi_sniffer_add_mult(const char *ta, const char *iface,
 
 /**
  * Stop and destroy the sniffer.
- * 
+ *
  * @param id            ID of the sniffer
  *
- * @return Status code 
+ * @return Status code
  * @retval 0            success
  */
 extern te_errno tapi_sniffer_del(tapi_sniffer_id *id);
 
 /**
  * Disable the sniffer.
- * 
+ *
  * @param id            ID of the sniffer
  *
- * @return Status code 
+ * @return Status code
  * @retval 0            success
  */
 extern te_errno tapi_sniffer_stop(tapi_sniffer_id *id);
 
 /**
  * Enable the sniffer.
- * 
+ *
  * @param id            ID of the sniffer
  *
- * @return Status code 
+ * @return Status code
  * @retval 0            success
  */
 extern te_errno tapi_sniffer_start(tapi_sniffer_id *id);
@@ -131,7 +131,7 @@ extern te_errno tapi_sniffer_start(tapi_sniffer_id *id);
 /**
  * Insert a mark packet into the capture file for a certain
  * sniffer.
- * 
+ *
  * @param ta             Agent name used to request mark for all sniffers.
  *                       It is not used if the ID not NULL
  * @c     NULL           The sniffer ID should not be NULL
@@ -142,8 +142,8 @@ extern te_errno tapi_sniffer_start(tapi_sniffer_id *id);
  * @param description    Mark description in human-readable form
  * @c     NULL           NULL may be used as description for empty
  *                       description string
- * 
- * @return Status code 
+ *
+ * @return Status code
  * @retval 0            success
  */
 extern te_errno tapi_sniffer_mark(const char *ta, tapi_sniffer_id *id,

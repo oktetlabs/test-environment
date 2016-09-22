@@ -134,7 +134,7 @@ tapi_cfg_net_get_net(cfg_handle net_handle, cfg_net_t *net)
         ERROR("cfg_find_pattern() failed %r", rc);
         return rc;
     }
-    
+
     net->n_nodes = n_nodes;
     if (n_nodes == 0)
     {
@@ -150,7 +150,7 @@ tapi_cfg_net_get_net(cfg_handle net_handle, cfg_net_t *net)
             return rc;
         }
     }
-    
+
     for (i = 0; i < net->n_nodes; ++i)
     {
         char           *node_oid;
@@ -284,7 +284,7 @@ tapi_cfg_net_register_net(const char *name, cfg_net_t *net, ...)
     {
         net->nodes = realloc(net->nodes, sizeof(*net->nodes) * node_num);
         node = &net->nodes[node_num - 1];
-        
+
         node->type = va_arg(ap, enum net_node_type);
 
         rc = cfg_add_instance_fmt(&node->handle, CFG_VAL(STRING, node_val),
@@ -425,7 +425,7 @@ tapi_cfg_net_find_net_by_node(const char *oid, char *net)
             ERROR("Failed(%x) to find nodes in the net '%s'", net_name);
             break;
         }
-        
+
         for (j = 0, rc = ESRCH; j < node_num; ++j, rc = ESRCH)
         {
             cfg_val_type  type;
@@ -485,7 +485,7 @@ tapi_cfg_net_get_nodes_values(const char *net_name,
         goto clean_all; \
     } while (0)
 
-/** 
+/**
  * Deallocates memory specified in "ptr_" prameter by using "func_" function
  * and then sets the variable to NULL.
  */
@@ -524,7 +524,7 @@ tapi_cfg_net_get_nodes_values(const char *net_name,
         VERB("Net/Node: %s", oid);
 
         val_type = CVT_INTEGER;
-        rc = cfg_get_instance_fmt(&val_type, &cfg_node_type, 
+        rc = cfg_get_instance_fmt(&val_type, &cfg_node_type,
                                   "%s/type:", oid);
         if (rc != 0)
             THROW_EXCEPTION("Error while getting type of node %s", oid);
@@ -540,9 +540,9 @@ tapi_cfg_net_get_nodes_values(const char *net_name,
 
         VERB("Node %s has expected type", oid);
 
-        /* 
+        /*
          * Processing of the node of specified type:
-         * Check if node value has format we are expecting and that 
+         * Check if node value has format we are expecting and that
          * agent name the same as specified.
          */
 
@@ -589,7 +589,7 @@ tapi_cfg_net_get_nodes_values(const char *net_name,
     }
 
 clean_all:
-    
+
     if (rc != 0)
     {
         tapi_cfg_net_free_nodes_values(ret_array);
@@ -615,7 +615,7 @@ void
 tapi_cfg_net_free_nodes_values(char **oids)
 {
     char **ptr = oids;
- 
+
     if (ptr == NULL)
         return;
 
@@ -681,7 +681,7 @@ tapi_cfg_net_get_switch_port(const char *ta_node, unsigned int *p_port)
         tapi_cfg_net_free_nodes_values(oids);
         return TE_EENV;
     }
-    
+
     /* Parse NUT OID and get port */
     nut_oid = cfg_convert_oid_str(oids[0]);
     if ((nut_oid == NULL) || !(nut_oid->inst) || (nut_oid->len != 3))
@@ -1025,7 +1025,7 @@ tapi_cfg_net_delete_all_ip4_addresses(void)
                 continue;
             }
 
-            /* 
+            /*
              * Do not delete addresses from interfaces used by default
              * route.
              */
@@ -1045,7 +1045,7 @@ tapi_cfg_net_delete_all_ip4_addresses(void)
                 break;
             }
 
-            if ((def_route_if != NULL) && 
+            if ((def_route_if != NULL) &&
                 strcmp(def_route_if, CFG_OID_GET_INST_NAME(oid, 2)) == 0)
             {
                 WARN("Do not remove any IPv4 addresses from %s, since "
@@ -1132,7 +1132,7 @@ tapi_cfg_net_assign_ip(unsigned int af, cfg_net_t *net,
 
     do { /* Fake loop */
 
-        /* 
+        /*
          * Get all information about this IPv4 subnet
          */
         rc = cfg_get_inst_name_type(net_hndl, CVT_ADDRESS,
@@ -1359,8 +1359,8 @@ tapi_cfg_net_unassign_ip(unsigned int af, cfg_net_t *net,
                 }
             }
         }
-        
-        /* 
+
+        /*
          * "/net/node/ip[4|6]_address" instance is deleted when we
          * unregister a network (with tapi_cfg_net_unregister_net()
          * function), so there is no need to do anything special here
@@ -1498,7 +1498,7 @@ tapi_cfg_net_all_check_mtu()
                 ERROR("Failed to get MTU of %s: %r", oid, rc);
                 goto cleanup;
             }
-            
+
             RING("%s/mtu: = %d", oid, mtu);
 
             /* Store MTU value of the first node in the network */
@@ -1527,7 +1527,7 @@ cleanup:
 
 /* See description in tapi_cfg_net.h */
 int
-tapi_cfg_net_assign_ip_one_end(unsigned int af, cfg_net_t *net, 
+tapi_cfg_net_assign_ip_one_end(unsigned int af, cfg_net_t *net,
                                tapi_cfg_net_assigned *assigned)
 {
     int                 rc;
@@ -1569,7 +1569,7 @@ tapi_cfg_net_assign_ip_one_end(unsigned int af, cfg_net_t *net,
 
     do { /* Fake loop */
 
-        /* 
+        /*
          * Get all information about this IPv4 subnet
          */
         rc = cfg_get_inst_name_type(net_hndl, CVT_ADDRESS,
@@ -1733,7 +1733,7 @@ tapi_cfg_net_delete_all(void)
  *
  * @return Status code.
  */
-te_errno 
+te_errno
 tapi_cfg_net_remove_empty(void)
 {
     unsigned int n_nets, n_nodes, i, j;
@@ -1750,40 +1750,40 @@ tapi_cfg_net_remove_empty(void)
 
         return rc;
     }
-    
+
     for (i = 0; i < n_nets && rc == 0; i++)
     {
         char *tmp;
-        
+
         if ((rc = cfg_get_inst_name(net_handles[i], &net_name)) != 0)
         {
             ERROR("Failed to get /net name by its handle");
             break;
         }
-            
-        if ((rc = cfg_find_pattern_fmt(&n_nodes, &node_handles, 
+
+        if ((rc = cfg_find_pattern_fmt(&n_nodes, &node_handles,
                                        "/net:%s/node:*", net_name)) != 0)
-        {                                   
+        {
             ERROR("Failed to get nodes of the net %s", net_name);
             break;
         }
-        
+
         for (j = 0; j < n_nodes; j++)
         {
-            if ((rc = cfg_get_instance(node_handles[j], NULL, 
+            if ((rc = cfg_get_instance(node_handles[j], NULL,
                                        &node_value)) != 0)
             {
                 ERROR("Failed to get /net/node value");
                 break;
             }
-        
+
             if ((tmp = strrchr(node_value, ':')) == NULL)
             {
                 ERROR("Unexpected /net/node value: %s", node_value);
                 rc = TE_RC(TE_TAPI, TE_EINVAL);
                 break;
             }
-        
+
             if (*(tmp + 1) == 0)
             {
                 if ((rc = cfg_del_instance(net_handles[i], TRUE)) != 0)
@@ -1793,16 +1793,16 @@ tapi_cfg_net_remove_empty(void)
             }
             free(node_value); node_value = NULL;
         }
-        
+
         free(net_name); net_name = NULL;
         free(node_handles); node_handles = NULL;
         free(node_value); node_value = NULL;
     }
-    
+
     free(net_handles);
     free(node_handles);
     free(net_name);
     free(node_value);
-    
+
     return rc;
 }

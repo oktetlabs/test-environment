@@ -293,7 +293,7 @@ tapi_sh_env_save_set_int(rcf_rpc_server *pco,
 
 /**
  * Rollback environment variable
- * 
+ *
  * @param pco            PCO handle
  * @param env_name       The environment variable name
  * @param existed        Did this variable exist in an environment or not
@@ -315,9 +315,9 @@ tapi_sh_env_rollback_int(rcf_rpc_server *pco, const char *env_name,
 /**
  * Get boolean environment variable on engine. The function stops the test
  * if the variable keeps unexpected value.
- * 
+ *
  * @param var_name  The variable name
- * 
+ *
  * @return Boolean value
  */
 static inline te_bool

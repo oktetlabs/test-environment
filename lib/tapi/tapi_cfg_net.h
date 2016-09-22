@@ -131,10 +131,10 @@ extern void tapi_cfg_net_free_nets(cfg_nets_t *nets);
  *
  * @param name  network name to assign
  * @param net   placeholder for a network data to be filled in
- * 
+ *
  * Other parameters are pairs of type:
  * - "const char *node_oid_str" - the value of '/net/node' instance
- *   to be added into a newly created network; 
+ *   to be added into a newly created network;
  * - "enum net_node_type node_type" - node type value of
  *   '/net/node/type' instance.
  * .
@@ -188,7 +188,7 @@ extern int tapi_cfg_net_find_net_by_node(const char *oid, char *net);
  * For the given network, it returns the list of values gathered on
  * the nodes of specified type.
  *
- * The function allocates memory under an array of pointers to the 
+ * The function allocates memory under an array of pointers to the
  * values.  The last element of this array is set to NULL.  Deallocate
  * this memory with tapi_cfg_net_free_nodes_values.
  *
@@ -196,9 +196,9 @@ extern int tapi_cfg_net_find_net_by_node(const char *oid, char *net);
  * @param node_type - type of the node to find
  * @param ta_name   - name of the agent or NULL if it does not matter
  * @param oids      - location for the list of values (OUT)
- * 
+ *
  * @retval Status of the operation
- * @retval TE_ENOENT  The network does not have any node of 
+ * @retval TE_ENOENT  The network does not have any node of
  *                 specified type attached
  *
  * @sa tapi_cfg_net_free_nodes_values
@@ -328,16 +328,16 @@ extern te_errno tapi_cfg_net_unassign_ip(unsigned int af, cfg_net_t *net,
 extern te_errno tapi_cfg_net_all_assign_ip(unsigned int af);
 
 /**
- * Dirty hack, must be removed after sockts_get_host_addr() 
+ * Dirty hack, must be removed after sockts_get_host_addr()
  * will be repaired.
  */
-extern int tapi_cfg_net_assign_ip_one_end(unsigned int af, cfg_net_t *net, 
+extern int tapi_cfg_net_assign_ip_one_end(unsigned int af, cfg_net_t *net,
                                           tapi_cfg_net_assigned *assigned);
 
 /**
  * Obtain information about subnet address and prefix length.
  *
- * @param assigned    subnet assignments handle 
+ * @param assigned    subnet assignments handle
  * @param addr        subnet address (OUT)
  * @param prefix_len  subnet prefix length (OUT)
  *

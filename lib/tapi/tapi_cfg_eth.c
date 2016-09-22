@@ -2,7 +2,7 @@
  * @brief Test API to configure ethernet interface.
  *
  * Definition of API to configure ethernet interface.
- * 
+ *
  * Copyright (C) 2004-20013 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
@@ -22,7 +22,7 @@
  * MA  02111-1307  USA
  *
  * @author Andrey A. Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
- * 
+ *
  * $Id$
  */
 
@@ -38,12 +38,12 @@
 
 /**
  * Get integer value of an interface field
- * 
+ *
  * @param ta        Test agent name
  * @param ifname    Interface name
  * @param field     Field name
  * @param val       The value location
- * 
+ *
  * @return Status code
  */
 static te_errno
@@ -90,12 +90,12 @@ tapi_eth_flags_get(const char *ta, const char *ifname, int *flags)
 
 /**
  * Set integer value of an interface field
- * 
+ *
  * @param ta        Test agent name
  * @param ifname    Interface name
  * @param field     Field name
  * @param val       The new value
- * 
+ *
  * @return Status code
  */
 static te_errno

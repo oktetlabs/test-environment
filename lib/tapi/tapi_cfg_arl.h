@@ -102,7 +102,7 @@ tapi_mac_next(uint8_t *mac)
 static inline te_bool
 tapi_mac_is_broadcast(const uint8_t *mac)
 {
-    return ((mac[0] && mac[1] && mac[2] && 
+    return ((mac[0] && mac[1] && mac[2] &&
              mac[3] && mac[4] && mac[5]) == 0xFF) ? TRUE : FALSE;
 }
 
@@ -171,7 +171,7 @@ extern int tapi_cfg_arl_add_entry(const char *ta,
 
 /**
  * Get ARL table entry from TA.
- * 
+ *
  * @param oid       - ARL table OID
  * @param p         - pointer to ARL entry
  *

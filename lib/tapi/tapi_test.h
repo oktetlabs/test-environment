@@ -76,8 +76,8 @@ extern "C" {
 #endif
 #endif
 
-/** 
- * Define empty list of test-specific variables 
+/**
+ * Define empty list of test-specific variables
  * if test does not care about them.
  */
 #ifndef TEST_START_VARS
@@ -93,7 +93,7 @@ extern "C" {
 #ifndef TEST_END_SPECIFIC
 #define TEST_END_SPECIFIC do { } while (0)
 #endif
-    
+
 /**
  * Template action to be done on jump in the test.
  */
@@ -548,7 +548,7 @@ cleanup_specific:                                                   \
     } while (0)
 
 /**
- * The macro to get parameter of type 'octet string' 
+ * The macro to get parameter of type 'octet string'
  *
  * @param var_name_  Variable whose name is the same as the name of
  *                   parameter we get the value
@@ -577,7 +577,7 @@ cleanup_specific:                                                   \
 #define TEST_LIST_PARAM_SEPARATOR   ','
 
 /**
- * The macro to get parameter of type 'char *[]', i.e. array of 
+ * The macro to get parameter of type 'char *[]', i.e. array of
  * string values
  *
  * @param var_name_  Variable whose name is the same as the name of
@@ -894,7 +894,7 @@ extern const char *print_octet_string(const uint8_t *oct_string,
  * Split parameter string into array of string, using specified separator.
  * This function creates a duplicate parameter string to avoid changing
  * the real parameter.
- * 
+ *
  * @param list      String to parse
  * @param sep       Separator to split string
  * @param array_p   Array to return
@@ -966,7 +966,7 @@ test_sleep_scale(void)
 
     value = getenv(var_name);
     if (value == NULL || *value == '\0')
-        return def_val; 
+        return def_val;
 
     scale = strtoul(value, (char **)&end, 10);
     if (*end != '\0' || scale >= TE_MAX_SCALE)
@@ -1010,7 +1010,7 @@ test_sleep_scale(void)
     } while (0)
 
 /**@} <!-- END te_ts_tapi_test_misc --> */
- 
+
 /**@} <!-- END te_ts_tapi_test --> */
 
 #ifdef __cplusplus

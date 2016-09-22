@@ -290,12 +290,12 @@ test_split_param_list(const char *list, char sep, char ***array_p)
         /* Allocate memory if necessary */
         if (length <= size)
         {
-            array = realloc(array, 
-                            (size + TEST_LIST_PARAM_CHUNK) * 
+            array = realloc(array,
+                            (size + TEST_LIST_PARAM_CHUNK) *
                             sizeof(char *));
             if (array == NULL)
                 return 0;
-            memset((char *)array + size, 0, 
+            memset((char *)array + size, 0,
                    TEST_LIST_PARAM_CHUNK * sizeof(char *));
             size += TEST_LIST_PARAM_CHUNK;
         }

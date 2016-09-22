@@ -60,11 +60,11 @@ extern "C" {
  * @param srv_addr      Address and port for VTund server to listen to
  *                      and for VTund client to connect to (if port is 0,
  *                      default VTund port is used)
- * @param ta_srv_if     Configurator handle of the created interface 
+ * @param ta_srv_if     Configurator handle of the created interface
  *                      on the Test Agent with VTund server
- * @param ta_clnt_if    Configurator handle of the created interface 
+ * @param ta_clnt_if    Configurator handle of the created interface
  *                      on the Test Agent with VTund client
- * 
+ *
  * @return Status code
  */
 extern te_errno tapi_cfg_vtund_create_tunnel(

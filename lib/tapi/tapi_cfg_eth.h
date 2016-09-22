@@ -2,7 +2,7 @@
  * @brief Test Environment
  *
  * A test eth configuration
- * 
+ *
  * Copyright (C) 2004-20013 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
@@ -22,7 +22,7 @@
  * MA  02111-1307  USA
  *
  * @author Andrey A. Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
- * 
+ *
  * $Id$
  */
 
@@ -35,11 +35,11 @@ extern "C" {
 
 /**
  * Get GRO value of an ethernet interface
- * 
+ *
  * @param ta        Test agent name
  * @param ifname    Interface name
  * @param gro       Location for the GRO value
- * 
+ *
  * @return Status code
  */
 extern te_errno tapi_eth_gro_get(const char *ta, const char *ifname,
@@ -47,11 +47,11 @@ extern te_errno tapi_eth_gro_get(const char *ta, const char *ifname,
 
 /**
  * Get GSO value of an ethernet interface
- * 
+ *
  * @param ta        Test agent name
  * @param ifname    Interface name
  * @param gso       Location for the GSO value
- * 
+ *
  * @return Status code
  */
 extern te_errno tapi_eth_gso_get(const char *ta, const char *ifname,
@@ -59,11 +59,11 @@ extern te_errno tapi_eth_gso_get(const char *ta, const char *ifname,
 
 /**
  * Get TSO value of an ethernet interface
- * 
+ *
  * @param ta        Test agent name
  * @param ifname    Interface name
  * @param tso       The TSO value location
- * 
+ *
  * @return Status code
  */
 extern te_errno tapi_eth_tso_get(const char *ta, const char *ifname,
@@ -71,11 +71,11 @@ extern te_errno tapi_eth_tso_get(const char *ta, const char *ifname,
 
 /**
  * Get flags value of an ethernet interface
- * 
+ *
  * @param ta        Test agent name
  * @param ifname    Interface name
  * @param flags     Location for the eth flags
- * 
+ *
  * @return Status code
  */
 extern te_errno tapi_eth_flags_get(const char *ta, const char *ifname,
@@ -83,11 +83,11 @@ extern te_errno tapi_eth_flags_get(const char *ta, const char *ifname,
 
 /**
  * Set GRO value of an ethernet interface
- * 
+ *
  * @param ta        Test agent name
  * @param ifname    Interface name
  * @param gro       A new GRO value
- * 
+ *
  * @return Status code
  */
 extern te_errno tapi_eth_gro_set(const char *ta, const char *ifname,
@@ -95,11 +95,11 @@ extern te_errno tapi_eth_gro_set(const char *ta, const char *ifname,
 
 /**
  * Set GSO value of an ethernet interface
- * 
+ *
  * @param ta        Test agent name
  * @param ifname    Interface name
  * @param gso       A new GSO value
- * 
+ *
  * @return Status code
  */
 extern te_errno tapi_eth_gso_set(const char *ta, const char *ifname,
@@ -107,11 +107,11 @@ extern te_errno tapi_eth_gso_set(const char *ta, const char *ifname,
 
 /**
  * Set TSO value of an ethernet interface
- * 
+ *
  * @param ta        Test agent name
  * @param ifname    Interface name
  * @param tso       The TSO value
- * 
+ *
  * @return Status code
  */
 extern te_errno tapi_eth_tso_set(const char *ta, const char *ifname,
@@ -119,11 +119,11 @@ extern te_errno tapi_eth_tso_set(const char *ta, const char *ifname,
 
 /**
  * Set flags value of an ethernet interface
- * 
+ *
  * @param ta        Test agent name
  * @param ifname    Interface name
  * @param flags     A new eth flags value
- * 
+ *
  * @return Status code
  */
 extern te_errno tapi_eth_flags_set(const char *ta, const char *ifname,
@@ -131,10 +131,10 @@ extern te_errno tapi_eth_flags_set(const char *ta, const char *ifname,
 
 /**
  * Reset an ethernet interface
- * 
+ *
  * @param ta        Test agent name
  * @param ifname    Interface name
- * 
+ *
  * @return Status code
  */
 extern te_errno tapi_eth_reset(const char *ta, const char *ifname);

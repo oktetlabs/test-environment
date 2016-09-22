@@ -46,7 +46,7 @@ extern "C" {
 /* Defult port for connection to conserver */
 #define TE_SERIAL_PARSER_PORT 3109
 
-/** 
+/**
  * Structure describes the parser identificator
  */
 typedef struct tapi_parser_id {
@@ -63,28 +63,28 @@ typedef struct tapi_parser_id {
 
 /**
  * Create a new empty Tester event
- * 
+ *
  * @param name          Event name
- * 
+ *
  * @return Status code
  */
 extern te_errno tapi_serial_tester_event_add(const char *name);
 
 /**
  * Remove a Tester event
- * 
+ *
  * @param name          Event name
  */
 extern void tapi_serial_tester_event_del(const char *name);
 
 /**
  * Add a new external handler for event
- * 
+ *
  * @param ev_name       Event name
  * @param h_name        Handler name
  * @param priority      Handler priority
  * @param path          Path to the handler
- * 
+ *
  * @return Status code
  */
 extern te_errno tapi_serial_handler_ext_add(const char *ev_name,
@@ -94,12 +94,12 @@ extern te_errno tapi_serial_handler_ext_add(const char *ev_name,
 
 /**
  * Add a new internal handler for event
- * 
+ *
  * @param ev_name       Event name
  * @param h_name        Handler name
  * @param priority      Handler priority
  * @param signo         Signal number
- * 
+ *
  * @return Status code
  */
 extern te_errno tapi_serial_handler_int_add(const char *ev_name,
@@ -108,7 +108,7 @@ extern te_errno tapi_serial_handler_int_add(const char *ev_name,
 
 /**
  * Remove handler
- * 
+ *
  * @param ev_name       Event name
  * @param h_name        Handler name
  */
@@ -119,7 +119,7 @@ extern void tapi_serial_handler_del(const char *ev_name,
  * Initialization of the parser id. The function calls the malloc. User
  * should call cleanup function (tapi_serial_id_cleanup()) after use.
  * By default conserver port value 3109 will be assigned.
- * 
+ *
  * @param agent     Agent name
  * @param c_name    Serial console name
  * @param name      The parser name
@@ -134,41 +134,41 @@ extern void tapi_serial_id_cleanup(tapi_parser_id *id);
 
 /**
  * Create and launch a new parser
- * 
+ *
  * @param id            Location of the parser id
- * 
+ *
  * @return Status code
  */
 extern te_errno tapi_serial_parser_add(tapi_parser_id *id);
 
 /**
  * Stop and remove parser
- * 
+ *
  * @param id            Location of the parser id
  */
 extern void tapi_serial_parser_del(tapi_parser_id *id);
 
 /**
  * Start a parser thread
- * 
+ *
  * @param id            Location of the parser id
- * 
+ *
  * @return Status code
  */
 extern te_errno tapi_serial_parser_enable(tapi_parser_id *id);
 
 /**
  * Stop a parser thread
- * 
+ *
  * @param id            Location of the parser id
- * 
+ *
  * @return Status code
  */
 extern te_errno tapi_serial_parser_disable(tapi_parser_id *id);
 
 /**
  * Enable logging of the serial console to main log
- * 
+ *
  * @param id            Location of the parser id
  * @param level         Level name of the message for logging(logger_defs.h)
  *                      Use NULL to no change the value.
@@ -178,19 +178,19 @@ extern te_errno tapi_serial_logging_enable(tapi_parser_id *id,
 
 /**
  * Disable logging of the serial console to main log
- * 
+ *
  * @param id            Location of the parser id
  */
 extern te_errno tapi_serial_logging_disable(tapi_parser_id *id);
 
 /**
  * Add parser event to the parser
- * 
+ *
  * @param id            Location of the parser id
  * @param name          The parser event name
  * @param t_name        The Tester event name. Use a name of one of the
  *                      events declarated in the Tester subtree.
- * 
+ *
  * @return Status code
  */
 extern te_errno tapi_serial_parser_event_add(tapi_parser_id *id,
@@ -199,7 +199,7 @@ extern te_errno tapi_serial_parser_event_add(tapi_parser_id *id,
 
 /**
  * Delete parser event
- * 
+ *
  * @param id            Location of the parser id
  * @param name          The parser event name
  */
@@ -208,11 +208,11 @@ extern void tapi_serial_parser_event_del(tapi_parser_id *id,
 
 /**
  * Add a pattern to the parser event
- * 
+ *
  * @param id            Location of the parser id
  * @param e_name        The parser event name
  * @param pattern       The pattern string
- * 
+ *
  * @return Index number of pattern or @c -1 in case of failure
  */
 extern int tapi_serial_parser_pattern_add(tapi_parser_id *id,
@@ -221,7 +221,7 @@ extern int tapi_serial_parser_pattern_add(tapi_parser_id *id,
 
 /**
  * Remove a pattern from the parser event
- * 
+ *
  * @param id            Location of the parser id
  * @param e_name        The parser event name
  * @param pat_i         Index of the pattern
@@ -231,9 +231,9 @@ extern void tapi_serial_parser_pattern_del(tapi_parser_id *id,
 
 /**
  * Reset status for each event of the parser
- * 
+ *
  * @param id            Location of the parser id
- * 
+ *
  * @return Status code
  */
 extern te_errno tapi_serial_parser_reset(tapi_parser_id *id);

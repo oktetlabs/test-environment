@@ -105,7 +105,7 @@ extern int tapi_cfg_switch_del_vlan(const char *ta_name, uint16_t vid);
  */
 extern int tapi_cfg_switch_vlan_add_port(const char *ta_name,
                                          uint16_t vid, unsigned int port);
-                                         
+
 /**
  * Delete port from VLAN on switch.
  *
@@ -184,7 +184,7 @@ extern int tapi_cfg_get_route_table(const char *ta, int addr_family,
                                     unsigned int *n);
 
 /**
- * Add a new route to some destination address with a lot of additional 
+ * Add a new route to some destination address with a lot of additional
  * route attributes
  *
  * @param ta           Test agent name
@@ -253,7 +253,7 @@ tapi_cfg_add_typed_route(const char *ta, int addr_family,
 
 
 /**
- * Changes attribute of the existing route. 
+ * Changes attribute of the existing route.
  *
  * @param ta           Test agent name
  * @param addr_family  Address family of destination and gateway addresses
@@ -428,15 +428,15 @@ tapi_cfg_del_route_via_gw(const char *ta, int addr_family,
  *
  * @retval 0    on success
  *
- * @note Currently the function supports only (IP -> IEEE 802.3 ethernet) 
+ * @note Currently the function supports only (IP -> IEEE 802.3 ethernet)
  * entries. In the future it might be extended with an additional parameter
  * hw_type to support different classes of link layer addresses.
  */
 extern te_errno tapi_cfg_get_neigh_entry(const char *ta,
-                                         const char *ifname, 
+                                         const char *ifname,
                                          const struct sockaddr *net_addr,
                                          void *ret_addr,
-                                         te_bool *is_static, 
+                                         te_bool *is_static,
                                          cs_neigh_entry_state *state);
 
 /**
@@ -452,12 +452,12 @@ extern te_errno tapi_cfg_get_neigh_entry(const char *ta,
  *
  * @retval 0  - on success
  *
- * @note Currently the function supports only (IP -> IEEE 802.3 ethernet) 
+ * @note Currently the function supports only (IP -> IEEE 802.3 ethernet)
  * entries. In the future it might be extended with an additional parameter
  * hw_type to support different classes of link layer addresses.
  */
 extern te_errno tapi_cfg_add_neigh_entry(const char *ta,
-                                         const char *ifname, 
+                                         const char *ifname,
                                          const struct sockaddr *net_addr,
                                          const void *link_addr,
                                          te_bool is_static);
@@ -473,12 +473,12 @@ extern te_errno tapi_cfg_add_neigh_entry(const char *ta,
  *
  * @retval 0  - on success
  *
- * @note Currently the function supports only (IP -> IEEE 802.3 ethernet) 
+ * @note Currently the function supports only (IP -> IEEE 802.3 ethernet)
  * entries. In the future it might be extended with an additional parameter
  * address_family to support different classes of link layer addresses.
  */
 extern te_errno tapi_cfg_del_neigh_entry(const char *ta,
-                                         const char *ifname, 
+                                         const char *ifname,
                                          const struct sockaddr *net_addr);
 
 /**
@@ -492,7 +492,7 @@ extern te_errno tapi_cfg_del_neigh_entry(const char *ta,
  *
  * @retval 0  - on success
  */
-extern te_errno tapi_cfg_del_neigh_dynamic(const char *ta, 
+extern te_errno tapi_cfg_del_neigh_dynamic(const char *ta,
                                            const char *ifname);
 /**@} <!-- END tapi_conf_neigh --> */
 
@@ -503,9 +503,9 @@ extern te_errno tapi_cfg_del_neigh_dynamic(const char *ta,
  */
 
 /**
- * Returns hardware address of specified interface on a particular 
+ * Returns hardware address of specified interface on a particular
  * test agent.
- * 
+ *
  * @param ta          Test agent name
  * @param ifname      Interface name whose hardware address is obtained
  * @param hwaddr      Hardware address - link-layer address (OUT)
@@ -542,7 +542,7 @@ extern te_errno tapi_cfg_set_bcast_hwaddr(const char *ta,
 /**
  * Returns broadcast hardware address of specified interface on
  * a particular test agent.
- * 
+ *
  * @param ta          Test agent name
  * @param ifname      Interface name whose hardware address is obtained
  * @param hwaddr      Hardware address - link-layer address (OUT)
@@ -585,10 +585,10 @@ extern te_errno tapi_cfg_set_hwaddr(const char *ta, const char *ifname,
  * all children of the parent has integer value. Zero value is considered
  * as the child is free. The child is marked as non-free by set of 1
  * as the child value.
- * 
+ *
  * @param parent_oid    Parent instance OID
  * @param entry         Location for entry handle
- * 
+ *
  * @return Status code.
  *
  * @sa tapi_cfg_free_entry
@@ -705,7 +705,7 @@ tapi_cfg_add_ip6_net(const struct sockaddr_in6 *ip6_net_addr,
  * @return Status code.
  *
  * @note Use #tapi_cfg_free_entry function to free allocated entry.
- * 
+ *
  * @sa tapi_cfg_free_entry, tapi_cfg_alloc_ip4_net
  */
 extern int tapi_cfg_alloc_net_addr(cfg_handle        net_pool_entry,
@@ -766,7 +766,7 @@ tapi_is_cfg_link(char *s)
 
 /**
  * Set the console log level
- * 
+ *
  * @param agent    Test agent name
  * @param level    Console log level (See printk(9))
  *

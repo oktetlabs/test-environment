@@ -142,7 +142,7 @@ tapi_cfg_base_if_get_link_addr(const char *ta, const char *dev,
     struct sockaddr *addr = NULL;
     int              rc;
 
-    snprintf(inst_name, sizeof(inst_name), 
+    snprintf(inst_name, sizeof(inst_name),
              "/agent:%s/interface:%s/link_addr:",
              ta, dev);
     rc = cfg_find_str(inst_name, &handle);
@@ -297,13 +297,13 @@ tapi_cfg_mac2str(const uint8_t *mac)
     static char macbuf[ETHER_ADDR_LEN * 3];
 
     int  i;
-    
+
     for (i = 0; i < ETHER_ADDR_LEN; i++)
     {
         sprintf(macbuf + 3 * i, "%2.2x:", mac[i]);
     }
     macbuf[ETHER_ADDR_LEN * 3 - 1] = '\0';
-    
+
     return macbuf;
 }
 
@@ -334,11 +334,11 @@ tapi_cfg_base_if_del_mcast_mac(const char *oid,
         cfg_handle     *addrs;
         unsigned int    addr_num;
         unsigned int    i;
-        
+
         if ((rc = cfg_find_pattern_fmt(&addr_num, &addrs,
                                        "%s/mcast_link_addr:*",
                                        oid)) != 0)
-        {    
+        {
             ERROR("Failed to get mcast_link_addr list for %s", oid);
             return rc;
         }
@@ -360,7 +360,7 @@ tapi_cfg_base_if_del_mcast_mac(const char *oid,
             }
         }
         free(addrs);
-        
+
         return rc;
     }
 }
@@ -469,7 +469,7 @@ tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *addr,
                 int rc2;
 
                 ERROR("Failed to set broadcast address: %r", rc);
-                rc2 = cfg_del_instance_fmt(TRUE, 
+                rc2 = cfg_del_instance_fmt(TRUE,
                                            "%s/net_addr:%s", oid,
                                            inet_ntop(addr->sa_family,
                                                      &SIN(addr)->sin_addr,
@@ -519,7 +519,7 @@ tapi_cfg_save_del_if_ip4_addresses(const char *ta,
     te_errno                    rc = 0;
 
     if (saved_count != NULL)
-        *saved_count = 0; 
+        *saved_count = 0;
     if (saved_addrs != NULL)
         *saved_addrs = NULL;
     if (saved_prefixes != NULL)
@@ -533,27 +533,27 @@ tapi_cfg_save_del_if_ip4_addresses(const char *ta,
               __FUNCTION__, (int)addr_to_save->sa_family);
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
-    
+
     if ((rc = cfg_find_pattern_fmt(&addr_num, &addrs,
                                    "/agent:%s/interface:%s/net_addr:*",
                                    ta, if_name)) != 0)
-    {    
-        ERROR("Failed to get net_addr list for /agent:%s/interface:%s/", 
+    {
+        ERROR("Failed to get net_addr list for /agent:%s/interface:%s/",
               ta, if_name);
         return rc;
     }
-    
+
     if (saved_addrs != NULL)
     {
         *saved_addrs = calloc(addr_num, sizeof(struct sockaddr));
         if (saved_addrs == NULL)
-            return TE_RC(TE_TAPI, TE_ENOMEM); 
+            return TE_RC(TE_TAPI, TE_ENOMEM);
 
         if (saved_prefixes != NULL)
         {
             *saved_prefixes = calloc(addr_num, sizeof(int));
             if (saved_prefixes == NULL)
-                return TE_RC(TE_TAPI, TE_ENOMEM); 
+                return TE_RC(TE_TAPI, TE_ENOMEM);
         }
 
         if (saved_broadcasts != NULL)
@@ -683,7 +683,7 @@ tapi_cfg_restore_if_ip4_addresses(const char *ta,
             ERROR("Failed to restore address: %r", rc);
             break;
         }
-    } 
+    }
 
     return rc;
 }
@@ -703,7 +703,7 @@ tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
         ERROR("Failed to add VLAN with VID=%d to %s", vid, if_name);
         return rc;
     }
-    
+
     if ((rc = cfg_get_instance_fmt(&val, vlan_ifname,
                          "/agent:%s/interface:%s/vlans:%d/ifname:",
                          ta, if_name, vid)) != 0)
@@ -775,14 +775,14 @@ do { \
         if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 0),
                                        "/agent:%s/interface:%s/status:",
                                         agent, interface)) != 0)
-            MTU_ERR("Failed to put down interface %s on %s: %r", 
+            MTU_ERR("Failed to put down interface %s on %s: %r",
                     interface, agent, rc);
         sleep(1);
 
         if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
                                        "/agent:%s/interface:%s/status:",
                                        agent, interface)) != 0)
-            MTU_ERR("Failed to put up interface %s on %s: %r", 
+            MTU_ERR("Failed to put up interface %s on %s: %r",
                     interface, agent, rc);
         if (fast)
             usleep(100000);

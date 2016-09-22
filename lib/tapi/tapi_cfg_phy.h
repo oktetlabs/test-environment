@@ -308,7 +308,7 @@ extern te_errno tapi_cfg_phy_is_mode_advertised(const char *ta,
  *                      TE_PHY_DUPLEX_FULL - full duplex
  * @param state         Mode state:
  *                      0 - the mode is not advertised
- *                      1 - the mode is advertised 
+ *                      1 - the mode is advertised
  *
  * @return Status code
  */

@@ -171,7 +171,7 @@ extern int tapi_cfg_base_if_set_bcast_mac(const char *oid,
  */
 extern int tapi_cfg_base_if_add_mcast_mac(const char *oid,
                                                 const uint8_t *mcast_mac);
-    
+
 
 /**
  * Delete multicast MAC address from a TA interface
@@ -186,7 +186,7 @@ extern int tapi_cfg_base_if_add_mcast_mac(const char *oid,
 
 extern int tapi_cfg_base_if_del_mcast_mac(const char *oid,
                                           const uint8_t *mcast_mac);
-    
+
 
 
 /**
@@ -197,7 +197,7 @@ extern int tapi_cfg_base_if_del_mcast_mac(const char *oid,
  * @param link_addr Location for link address
  *
  * @return Status code
- */ 
+ */
 extern int tapi_cfg_base_if_get_link_addr(const char *ta, const char *dev,
                                           struct sockaddr *link_addr);
 /**
@@ -270,7 +270,7 @@ tapi_cfg_base_if_add_net_addr(const char *ta, const char *ifname,
  *                      and  address 'INADDR_ANY'.
  *
  * @return Status code
- */ 
+ */
 extern te_errno tapi_cfg_del_if_ip4_addresses(const char *ta,
                                               const char *if_name,
                                               const struct sockaddr
@@ -304,7 +304,7 @@ extern te_errno tapi_cfg_del_if_ip4_addresses(const char *ta,
  *                          should be placed
  *
  * @return Status code
- */ 
+ */
 extern te_errno tapi_cfg_save_del_if_ip4_addresses(const char *ta,
                                                   const char *if_name,
                                                   const struct sockaddr
@@ -332,7 +332,7 @@ extern te_errno tapi_cfg_save_del_if_ip4_addresses(const char *ta,
  *                          should be placed
  *
  * @return Status code
- */ 
+ */
 extern te_errno tapi_cfg_restore_if_ip4_addresses(const char *ta,
                                                   const char *if_name,
                                                   struct sockaddr
@@ -492,11 +492,11 @@ tapi_cfg_base_if_add_get_vlan(const char *ta, const char *if_name,
 /**
  * It is the same function as @p tapi_cfg_base_if_get_mtu, but it is more
  * user-friendly to use it in tests.
- * 
+ *
  * @param agent     Agent name
  * @param interface Interface name
  * @param mtu       Location for MTU value
- * 
+ *
  * @return Status code
  */
 extern te_errno tapi_cfg_base_if_get_mtu_u(const char *agent,
@@ -504,13 +504,13 @@ extern te_errno tapi_cfg_base_if_get_mtu_u(const char *agent,
 
 /**
  * Set new MTU value.
- * 
+ *
  * @param agent     Agent name
  * @param interface Interface name
  * @param mtu       MTU value
  * @param old_mtu   Location for old MTU value or @c NULL
  * @param fast      Don't sleep long time after interface restart if @c TRUE
- * 
+ *
  * @return Status code
  */
 extern te_errno tapi_cfg_base_if_set_mtu_ext(const char *agent,
@@ -519,12 +519,12 @@ extern te_errno tapi_cfg_base_if_set_mtu_ext(const char *agent,
 
 /**
  * Set new MTU value.
- * 
+ *
  * @param agent     Agent name
  * @param interface Interface name
  * @param mtu       MTU value
  * @param old_mtu   Location for old MTU value or @c NULL
- * 
+ *
  * @return Status code
  */
 static inline te_errno

@@ -118,7 +118,7 @@ tapi_cfg_arl_get_table(const char *ta, te_bool sync, arl_table_t *p_table)
         free(oid);
         TAILQ_INSERT_TAIL(p_table, p, links);
     }
-    
+
     return 0;
 }
 
@@ -164,8 +164,8 @@ tapi_cfg_arl_add_entry(const char *ta,
     if (vlan_name == NULL)
         vlan_name = DEFAULT_VLAN_NAME;
 
-    /* 
-     * We should synchronize ARL entry subtree to make it 
+    /*
+     * We should synchronize ARL entry subtree to make it
      * available for Configurator
      */
     if ((rc = cfg_synchronize_fmt(TRUE, "/agent:%s/arl:", ta)) != 0)

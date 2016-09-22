@@ -59,7 +59,7 @@ typedef enum { session_no_state,
  * Start ACSE.
  *
  * @param ta            Test Agent name
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_start(char const *ta);
@@ -68,7 +68,7 @@ extern te_errno tapi_cfg_acse_start(char const *ta);
  * Stop ACSE.
  *
  * @param ta            Test Agent name
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_stop(char const *ta);
@@ -78,7 +78,7 @@ extern te_errno tapi_cfg_acse_stop(char const *ta);
  *
  * @param ta            Test Agent name
  * @param acs           ACS object name
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_add_acs(char const *ta, char const *acs);
@@ -89,7 +89,7 @@ extern te_errno tapi_cfg_acse_add_acs(char const *ta, char const *acs);
  * @param ta            Test Agent name
  * @param acs           ACS object name
  * @param url           ACS object url parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_set_acs_url(char const *ta,
@@ -102,7 +102,7 @@ extern te_errno tapi_cfg_acse_set_acs_url(char const *ta,
  * @param ta            Test Agent name
  * @param acs           ACS object name
  * @param url           ACS object url parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_get_acs_url(char const *ta,
@@ -115,7 +115,7 @@ extern te_errno tapi_cfg_acse_get_acs_url(char const *ta,
  * @param ta            Test Agent name
  * @param acs           ACS object name
  * @param cert          ACS object cert parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_set_acs_cert(char const *ta,
@@ -128,7 +128,7 @@ extern te_errno tapi_cfg_acse_set_acs_cert(char const *ta,
  * @param ta            Test Agent name
  * @param acs           ACS object name
  * @param cert          ACS object cert parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_get_acs_cert(char const *ta,
@@ -141,7 +141,7 @@ extern te_errno tapi_cfg_acse_get_acs_cert(char const *ta,
  * @param ta            Test Agent name
  * @param acs           ACS object name
  * @param user          ACS object user parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_set_acs_user(char const *ta,
@@ -154,7 +154,7 @@ extern te_errno tapi_cfg_acse_set_acs_user(char const *ta,
  * @param ta            Test Agent name
  * @param acs           ACS object name
  * @param user          ACS object user parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_get_acs_user(char const *ta,
@@ -167,7 +167,7 @@ extern te_errno tapi_cfg_acse_get_acs_user(char const *ta,
  * @param ta            Test Agent name
  * @param acs           ACS object name
  * @param pass          ACS object pass parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_set_acs_pass(char const *ta,
@@ -180,7 +180,7 @@ extern te_errno tapi_cfg_acse_set_acs_pass(char const *ta,
  * @param ta            Test Agent name
  * @param acs           ACS object name
  * @param pass          ACS object pass parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_get_acs_pass(char const *ta,
@@ -193,7 +193,7 @@ extern te_errno tapi_cfg_acse_get_acs_pass(char const *ta,
  * @param ta            Test Agent name
  * @param acs           ACS object name
  * @param enabled       ACS object enabled parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_set_acs_enabled(char const *ta,
@@ -206,7 +206,7 @@ extern te_errno tapi_cfg_acse_set_acs_enabled(char const *ta,
  * @param ta            Test Agent name
  * @param acs           ACS object name
  * @param enabled       ACS object enabled parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_get_acs_enabled(char const *ta,
@@ -219,7 +219,7 @@ extern te_errno tapi_cfg_acse_get_acs_enabled(char const *ta,
  * @param ta            Test Agent name
  * @param acs           ACS object name
  * @param ssl           ACS object ssl parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_set_acs_ssl(char const *ta,
@@ -232,7 +232,7 @@ extern te_errno tapi_cfg_acse_set_acs_ssl(char const *ta,
  * @param ta            Test Agent name
  * @param acs           ACS object name
  * @param ssl           ACS object ssl parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_get_acs_ssl(char const *ta,
@@ -245,7 +245,7 @@ extern te_errno tapi_cfg_acse_get_acs_ssl(char const *ta,
  * @param ta            Test Agent name
  * @param acs           ACS object name
  * @param port          ACS object port parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_set_acs_port(char const *ta,
@@ -258,7 +258,7 @@ extern te_errno tapi_cfg_acse_set_acs_port(char const *ta,
  * @param ta            Test Agent name
  * @param acs           ACS object name
  * @param port          ACS object port parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_get_acs_port(char const *ta,
@@ -276,7 +276,7 @@ extern te_errno tapi_cfg_acse_get_acs_port(char const *ta,
  * @param pass          ACS object pass parameter
  * @param ssl           ACS object ssl parameter
  * @param port          ACS object port parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_add_acs_with_params(char const *ta,
@@ -293,7 +293,7 @@ extern te_errno tapi_cfg_acse_add_acs_with_params(char const *ta,
  *
  * @param ta            Test Agent name
  * @param acs           ACS object name
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_del_acs(char const *ta, char const *acs);
@@ -304,7 +304,7 @@ extern te_errno tapi_cfg_acse_del_acs(char const *ta, char const *acs);
  * @param ta            Test Agent name
  * @param acs           ACS object name
  * @param cpe           CPE object name
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_add_cpe(char const *ta,
@@ -318,7 +318,7 @@ extern te_errno tapi_cfg_acse_add_cpe(char const *ta,
  * @param acs           ACS object name
  * @param cpe           CPE object name
  * @param url           CPE object url parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_set_cpe_url(char const *ta,
@@ -333,7 +333,7 @@ extern te_errno tapi_cfg_acse_set_cpe_url(char const *ta,
  * @param acs           ACS object name
  * @param cpe           CPE object name
  * @param url           CPE object url parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_get_cpe_url(char const *ta,
@@ -348,7 +348,7 @@ extern te_errno tapi_cfg_acse_get_cpe_url(char const *ta,
  * @param acs           ACS object name
  * @param cpe           CPE object name
  * @param cert          CPE object cert parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_set_cpe_cert(char const *ta,
@@ -363,7 +363,7 @@ extern te_errno tapi_cfg_acse_set_cpe_cert(char const *ta,
  * @param acs           ACS object name
  * @param cpe           CPE object name
  * @param cert          CPE object cert parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_get_cpe_cert(char const *ta,
@@ -378,7 +378,7 @@ extern te_errno tapi_cfg_acse_get_cpe_cert(char const *ta,
  * @param acs           ACS object name
  * @param cpe           CPE object name
  * @param user          CPE object user parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_set_cpe_user(char const *ta,
@@ -393,7 +393,7 @@ extern te_errno tapi_cfg_acse_set_cpe_user(char const *ta,
  * @param acs           ACS object name
  * @param cpe           CPE object name
  * @param user          CPE object user parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_get_cpe_user(char const *ta,
@@ -408,7 +408,7 @@ extern te_errno tapi_cfg_acse_get_cpe_user(char const *ta,
  * @param acs           ACS object name
  * @param cpe           CPE object name
  * @param pass          CPE object pass parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_set_cpe_pass(char const *ta,
@@ -423,7 +423,7 @@ extern te_errno tapi_cfg_acse_set_cpe_pass(char const *ta,
  * @param acs           ACS object name
  * @param cpe           CPE object name
  * @param pass          CPE object pass parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_get_cpe_pass(char const *ta,
@@ -438,7 +438,7 @@ extern te_errno tapi_cfg_acse_get_cpe_pass(char const *ta,
  * @param acs           ACS object name
  * @param cpe           CPE object name
  * @param url           CPE object url parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_set_cpe_ip_addr(
@@ -454,7 +454,7 @@ extern te_errno tapi_cfg_acse_set_cpe_ip_addr(
  * @param acs           ACS object name
  * @param cpe           CPE object name
  * @param url           CPE object url parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_get_cpe_ip_addr(
@@ -470,7 +470,7 @@ extern te_errno tapi_cfg_acse_get_cpe_ip_addr(
  * @param acs           ACS object name
  * @param cpe           CPE object name
  * @param enabled       CPE/session object enabled parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_set_session_enabled(char const *ta,
@@ -485,7 +485,7 @@ extern te_errno tapi_cfg_acse_set_session_enabled(char const *ta,
  * @param acs           ACS object name
  * @param cpe           CPE object name
  * @param enabled       CPE/session object enabled parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_get_session_enabled(char const *ta,
@@ -500,7 +500,7 @@ extern te_errno tapi_cfg_acse_get_session_enabled(char const *ta,
  * @param acs           ACS object name
  * @param cpe           CPE object name
  * @param hold_requests CPE/session object hold_requests parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_set_session_hold_requests(
@@ -516,7 +516,7 @@ extern te_errno tapi_cfg_acse_set_session_hold_requests(
  * @param acs           ACS object name
  * @param cpe           CPE object name
  * @param hold_requests CPE/session object hold_requests parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_get_session_hold_requests(
@@ -532,7 +532,7 @@ extern te_errno tapi_cfg_acse_get_session_hold_requests(
  * @param acs           ACS object name
  * @param cpe           CPE object name
  * @param target_state  CPE/session object target_state parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_set_session_target_state(
@@ -548,7 +548,7 @@ extern te_errno tapi_cfg_acse_set_session_target_state(
  * @param acs           ACS object name
  * @param cpe           CPE object name
  * @param target_state  CPE/session object target_state parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_get_session_target_state(
@@ -564,7 +564,7 @@ extern te_errno tapi_cfg_acse_get_session_target_state(
  * @param acs           ACS object name
  * @param cpe           CPE object name
  * @param state         CPE/session object state parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_get_session_state(
@@ -580,7 +580,7 @@ extern te_errno tapi_cfg_acse_get_session_state(
  * @param acs           ACS object name
  * @param cpe           CPE object name
  * @param manufacturer  CPE/device_id object manufacturer parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_get_device_id_manufacturer(
@@ -596,7 +596,7 @@ extern te_errno tapi_cfg_acse_get_device_id_manufacturer(
  * @param acs           ACS object name
  * @param cpe           CPE object name
  * @param oui           CPE/device_id object oui parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_get_device_id_oui(
@@ -612,7 +612,7 @@ extern te_errno tapi_cfg_acse_get_device_id_oui(
  * @param acs           ACS object name
  * @param cpe           CPE object name
  * @param product_class CPE/device_id object product_class parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_get_device_id_product_class(
@@ -628,7 +628,7 @@ extern te_errno tapi_cfg_acse_get_device_id_product_class(
  * @param acs           ACS object name
  * @param cpe           CPE object name
  * @param serial_number CPE/device_id object serial_number parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_get_device_id_serial_number(
@@ -647,7 +647,7 @@ extern te_errno tapi_cfg_acse_get_device_id_serial_number(
  * @param cert          CPE object cert parameter
  * @param user          CPE object user parameter
  * @param pass          CPE object pass parameter
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_add_cpe_with_params(
@@ -666,7 +666,7 @@ extern te_errno tapi_cfg_acse_add_cpe_with_params(
  * @param ta            Test Agent name
  * @param acs           ACS object name
  * @param cpe           CPE object name
- * 
+ *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_del_cpe(char const *ta,

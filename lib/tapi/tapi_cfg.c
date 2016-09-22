@@ -94,9 +94,9 @@ static int tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta,
 
 static int tapi_cfg_neigh_op(enum tapi_cfg_oper op, const char *ta,
                              const char *ifname,
-                             const struct sockaddr *net_addr, 
+                             const struct sockaddr *net_addr,
                              const void *link_addr,
-                             void *ret_addr, te_bool *is_static, 
+                             void *ret_addr, te_bool *is_static,
                              cs_neigh_entry_state *state);
 
 
@@ -118,7 +118,7 @@ tapi_cfg_get_son_mac(const char *father, const char *subid,
             rc, subid, father);
         return rc;
     }
-    
+
     type = CVT_ADDRESS;
     rc = cfg_get_instance(handle, &type, &p_addr);
     if (rc != 0)
@@ -177,7 +177,7 @@ static const char * const cfg_oid_ta_vlan_port_fmt =
 int
 tapi_cfg_switch_add_vlan(const char *ta_name, uint16_t vid)
 {
-    /* 
+    /*
      * Format string without specifiers + TA name + maximum length
      * of printed VID + '\0'
      */
@@ -186,7 +186,7 @@ tapi_cfg_switch_add_vlan(const char *ta_name, uint16_t vid)
     int         rc;
     cfg_handle  handle;
 
-    
+
     ENTRY("ta_name=%s vid=%u", ta_name, vid);
     /* Prepare OID */
     sprintf(oid, cfg_oid_ta_vlan_fmt, ta_name, vid);
@@ -242,11 +242,11 @@ tapi_cfg_switch_add_vlan(const char *ta_name, uint16_t vid)
 int
 tapi_cfg_switch_del_vlan(const char *ta_name, uint16_t vid)
 {
-    /* 
+    /*
      * Format string without specifiers + TA name + maximum length
      * of printed VID + '\0'
      */
-    char        oid[strlen(cfg_oid_ta_vlan_fmt) - 4 + 
+    char        oid[strlen(cfg_oid_ta_vlan_fmt) - 4 +
                     strlen(ta_name) + 5 + 1];
     int         rc;
     cfg_handle  handle;
@@ -287,7 +287,7 @@ int
 tapi_cfg_switch_vlan_add_port(const char *ta_name, uint16_t vid,
                               unsigned int port)
 {
-    /* 
+    /*
      * Format string without specifiers + TA name + maximum length
      * of printed VID + maximum length of printed port + \0'
      */
@@ -332,7 +332,7 @@ int
 tapi_cfg_switch_vlan_del_port(const char *ta_name, uint16_t vid,
                               unsigned int port)
 {
-    /* 
+    /*
      * Format string without specifiers + TA name + maximum length
      * of printed VID + maximum length of printed port + \0'
      */
@@ -369,7 +369,7 @@ tapi_cfg_switch_vlan_del_port(const char *ta_name, uint16_t vid,
  */
 
 /**
- * Parses instance name and converts its value into routing table entry 
+ * Parses instance name and converts its value into routing table entry
  * data structure.
  *
  * @param inst_name  Instance name that keeps route information
@@ -419,13 +419,13 @@ route_parse_inst_name(const char *inst_name, tapi_rt_entry_t *rt)
         rt->metric = atoi(ptr);
         rt->flags |= TAPI_RT_METRIC;
     }
-    
+
     if ((ptr = strstr(tmp, "tos=")) != NULL)
     {
         ptr += strlen("tos=");
         rt->metric = atoi(ptr);
         rt->flags |= TAPI_RT_TOS;
-    }       
+    }
 
     if ((ptr = strstr(tmp, "table=")) != NULL)
     {
@@ -652,16 +652,16 @@ tapi_cfg_add_blackhole(const char *ta, int addr_family,
         ERROR("%s() unknown address family value", __FUNCTION__);
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
-    
+
     if (prefix != netaddr_size * CHAR_BIT)
     {
         ERROR("%s() fails: Incorrect prefix value specified %d "
-              "(must be %d for blackhole routes)", 
+              "(must be %d for blackhole routes)",
               __FUNCTION__,
               prefix, netaddr_size);
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
-    if (inet_ntop(addr_family, dst_addr, dst_addr_str, 
+    if (inet_ntop(addr_family, dst_addr, dst_addr_str,
                   sizeof(dst_addr_str)) == NULL)
     {
         ERROR("%s() fails converting binary destination address "
@@ -744,7 +744,7 @@ tapi_cfg_modify_full_route(const char *ta, int addr_family,
 /* See the description in tapi_cfg.h */
 int
 tapi_cfg_del_route_tmp(const char *ta, int addr_family,
-                       const void *dst_addr, int prefix, 
+                       const void *dst_addr, int prefix,
                        const void *gw_addr, const char *dev,
                        const void *src_addr,
                        uint32_t flags, int metric, int tos,
@@ -767,7 +767,7 @@ tapi_cfg_del_route(cfg_handle *rt_hndl)
 
     if (*rt_hndl == CFG_HANDLE_INVALID)
         return 0;
-    
+
     rc = cfg_del_instance(*rt_hndl, FALSE);
     if (rc == 0)
     {
@@ -779,18 +779,18 @@ tapi_cfg_del_route(cfg_handle *rt_hndl)
 
 /* See the description in tapi_cfg.h */
 te_errno
-tapi_cfg_get_neigh_entry(const char *ta, const char *ifname, 
+tapi_cfg_get_neigh_entry(const char *ta, const char *ifname,
                          const struct sockaddr *net_addr,
-                         void *ret_addr, te_bool *is_static, 
+                         void *ret_addr, te_bool *is_static,
                          cs_neigh_entry_state *state)
 {
-    return tapi_cfg_neigh_op(OP_GET, ta, ifname, net_addr, NULL, 
+    return tapi_cfg_neigh_op(OP_GET, ta, ifname, net_addr, NULL,
                              ret_addr, is_static, state);
 }
 
 /* See the description in tapi_cfg.h */
 te_errno
-tapi_cfg_add_neigh_entry(const char *ta, const char *ifname, 
+tapi_cfg_add_neigh_entry(const char *ta, const char *ifname,
                          const struct sockaddr *net_addr,
                          const void *link_addr, te_bool is_static)
 {
@@ -800,10 +800,10 @@ tapi_cfg_add_neigh_entry(const char *ta, const char *ifname,
 
 /* See the description in tapi_cfg.h */
 te_errno
-tapi_cfg_del_neigh_entry(const char *ta, const char *ifname, 
+tapi_cfg_del_neigh_entry(const char *ta, const char *ifname,
                          const struct sockaddr *net_addr)
 {
-    return tapi_cfg_neigh_op(OP_DEL, ta, ifname, net_addr, NULL, 
+    return tapi_cfg_neigh_op(OP_DEL, ta, ifname, net_addr, NULL,
                              NULL, NULL, NULL);
 }
 
@@ -816,19 +816,19 @@ tapi_cfg_del_neigh_dynamic(const char *ta, const char *ifname)
     unsigned int    i;
     te_errno        rc;
     te_errno        result = 0;
-    
+
     if (ifname == NULL)
     {
         if ((rc = cfg_find_pattern_fmt(&num, &hndls,
-                                       "/agent:%s/interface:*", 
+                                       "/agent:%s/interface:*",
                                        ta)) != 0)
         {
             return rc;
         }
         for (i = 0; i < num; i++)
         {
-            char *name = NULL; 
-            
+            char *name = NULL;
+
             if ((rc = cfg_get_inst_name(hndls[i], &name)) != 0 ||
                 (rc = tapi_cfg_del_neigh_dynamic(ta, name)) != 0)
             {
@@ -837,16 +837,16 @@ tapi_cfg_del_neigh_dynamic(const char *ta, const char *ifname)
             free(name);
         }
         free(hndls);
-        
+
         return result;
     }
 
-    if ((rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s", 
+    if ((rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s",
                                   ta, ifname)) != 0)
         return rc;
 
     if ((rc = cfg_find_pattern_fmt(&num, &hndls,
-                                   "/agent:%s/interface:*/neigh_dynamic:*", 
+                                   "/agent:%s/interface:*/neigh_dynamic:*",
                                    ta)) != 0)
     {
         return rc;
@@ -867,10 +867,10 @@ tapi_cfg_del_neigh_dynamic(const char *ta, const char *ifname)
 
 /**
  * Perform specified operation with routing table
- * 
+ *
  * @param op            Operation
  * @param ta            Test agent
- * @param addr_family   Address family 
+ * @param addr_family   Address family
  * @param dst_addr      Destination address of the route
  * @param prefix        Prefix for dst_addr
  * @param gw_addr       Gateway address of the route
@@ -882,7 +882,7 @@ tapi_cfg_del_neigh_dynamic(const char *ta, const char *ifname)
  * @return Status code
  *
  * @retval 0  on success
- */                   
+ */
 static int
 tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
                   const void *dst_addr, int prefix, const void *gw_addr,
@@ -911,7 +911,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
         ERROR("%s() unknown address family value", __FUNCTION__);
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
-    
+
     if (prefix < 0 || prefix > (netaddr_size << 3))
     {
         ERROR("%s() fails: Incorrect prefix value specified %d",
@@ -928,7 +928,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
         return TE_RC(TE_TAPI, TE_ENOMEM);
     }
 
-    if (inet_ntop(addr_family, dst_addr, dst_addr_str_orig, 
+    if (inet_ntop(addr_family, dst_addr, dst_addr_str_orig,
                   sizeof(dst_addr_str_orig)) == NULL)
     {
         ERROR("%s() fails converting binary destination address "
@@ -937,12 +937,12 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
     }
 
     memcpy(dst_addr_copy, dst_addr, netaddr_size);
-    
+
     /* Check that dst_addr & netmask == dst_addr */
     for (i = 0; i < netaddr_size; i++)
     {
         diff = ((i + 1) << 3) - prefix;
-        
+
         if (diff < 0)
         {
             /* i-th byte is fully under the mask, so skip it */
@@ -952,7 +952,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
             mask = 0xff << diff;
         else
             mask = 0;
-        
+
         if ((dst_addr_copy[i] & mask) != dst_addr_copy[i])
         {
             dst_addr_copy[i] &= mask;
@@ -960,7 +960,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
     }
     if (memcmp(dst_addr, dst_addr_copy, netaddr_size) != 0)
     {
-        inet_ntop(addr_family, dst_addr_copy, dst_addr_str, 
+        inet_ntop(addr_family, dst_addr_copy, dst_addr_str,
                   sizeof(dst_addr_str));
 
         WARN("Destination address specified in the route is not "
@@ -970,7 +970,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
              prefix, dst_addr_str_orig, dst_addr_str, dst_addr_str);
     }
 
-    if (inet_ntop(addr_family, dst_addr_copy, dst_addr_str, 
+    if (inet_ntop(addr_family, dst_addr_copy, dst_addr_str,
                   sizeof(dst_addr_str)) == NULL)
     {
         ERROR("%s() fails converting binary destination address "
@@ -979,13 +979,13 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
         return TE_OS_RC(TE_TAPI, errno);
     }
     free(dst_addr_copy);
-    
+
 #define PUT_INTO_BUF(buf_, args...) \
     snprintf((buf_) + strlen(buf_), sizeof(buf_) - strlen(buf_), args)
 
     route_inst_name[0] = '\0';
     PUT_INTO_BUF(route_inst_name, "%s|%d", dst_addr_str, prefix);
-    
+
     if (metric > 0)
         PUT_INTO_BUF(route_inst_name, ",metric=%d", metric);
 
@@ -1004,24 +1004,24 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
     {
         te_sockaddr_set_netaddr(SA(&ss), gw_addr);
     }
- 
+
     if (src_addr != NULL)
     {
         te_sockaddr_set_netaddr(SA(&src), src_addr);
     }
-    
+
     switch (op)
     {
         case OP_MODIFY:
         {
-            
+
 /*
  * Macro makes local set for route attribute whose name specified
  * with 'field_' parameter.
  * Macro uses 'break' statement and is intended to be called inside
  * 'do {} while (FALSE)' brace.
  *
- * You may use this macro with trailing ';', which will just 
+ * You may use this macro with trailing ';', which will just
  * add empty statement, but do not worry about that.
  */
 #define CFG_RT_SET_LOCAL(field_) \
@@ -1036,7 +1036,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
                       field_, route_inst_name, ta, rc);         \
                 break;                                          \
             }
-            
+
             do {
                 if ((rc = cfg_set_instance_local_fmt(CFG_VAL(ADDRESS, &ss),
                                                      "/agent:%s/route:%s",
@@ -1082,7 +1082,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
                           __FUNCTION__, type, route_inst_name, ta, rc);
                     break;
                 }
-                
+
                 CFG_RT_SET_LOCAL(win);
                 CFG_RT_SET_LOCAL(mtu);
                 CFG_RT_SET_LOCAL(irtt);
@@ -1101,12 +1101,12 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
 
         case OP_ADD:
         {
-             
+
             rc = cfg_add_instance_local_fmt(&handle,
                                             CFG_VAL(ADDRESS, &ss),
                                             "/agent:%s/route:%s",
                                             ta, route_inst_name);
-             
+
             if (rc != 0)
             {
                 ERROR("%s() fails adding a new route %s on '%s' Agent "
@@ -1141,7 +1141,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
                           __FUNCTION__, dev, route_inst_name, ta, rc);
                     break;
                 }
-                
+
                 if ((src_addr != NULL) &&
                     ((rc = cfg_set_instance_local_fmt(
                                CFG_VAL(ADDRESS, &src),
@@ -1164,7 +1164,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
                           __FUNCTION__, type, route_inst_name, ta, rc);
                     break;
                 }
-                
+
                 CFG_RT_SET_LOCAL(win);
                 CFG_RT_SET_LOCAL(mtu);
                 CFG_RT_SET_LOCAL(irtt);
@@ -1213,7 +1213,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
 
 /**
  * Perform specified operation with neighbour cache.
- * 
+ *
  * @param op            Operation
  * @param ta            Test agent
  * @param ifname        Interface name
@@ -1225,11 +1225,11 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
  * @return Status code
  *
  * @retval 0  on success
- */                   
+ */
 static int
-tapi_cfg_neigh_op(enum tapi_cfg_oper op, const char *ta, 
+tapi_cfg_neigh_op(enum tapi_cfg_oper op, const char *ta,
                   const char *ifname, const struct sockaddr *net_addr,
-                  const void *link_addr, void *ret_addr, 
+                  const void *link_addr, void *ret_addr,
                   te_bool *is_static, cs_neigh_entry_state *state)
 {
     cfg_handle handle;
@@ -1238,8 +1238,8 @@ tapi_cfg_neigh_op(enum tapi_cfg_oper op, const char *ta,
 
     if (ta == NULL || net_addr == NULL || ifname == NULL)
         return TE_RC(TE_TAPI, TE_EINVAL);
-    
-    if (inet_ntop(net_addr->sa_family, 
+
+    if (inet_ntop(net_addr->sa_family,
                   te_sockaddr_get_netaddr(net_addr),
                   net_addr_str, sizeof(net_addr_str)) == NULL)
     {
@@ -1255,7 +1255,7 @@ tapi_cfg_neigh_op(enum tapi_cfg_oper op, const char *ta,
             struct sockaddr *lnk_addr = NULL;
 
             rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s/"
-                                           "neigh_static:%s", 
+                                           "neigh_static:%s",
                                      ta, ifname, net_addr_str);
             if (rc != 0)
                 break;
@@ -1264,10 +1264,10 @@ tapi_cfg_neigh_op(enum tapi_cfg_oper op, const char *ta,
                                       "/agent:%s/interface:%s/"
                                       "neigh_static:%s",
                                       ta, ifname, net_addr_str);
-                                      
+
             if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
             {
-                rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s", 
+                rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s",
                                          ta, ifname);
                 if (rc != 0)
                     break;
@@ -1276,14 +1276,14 @@ tapi_cfg_neigh_op(enum tapi_cfg_oper op, const char *ta,
                                           "/agent:%s/interface:%s/"
                                           "neigh_dynamic:%s",
                                           ta, ifname, net_addr_str);
-                if (rc == 0) 
+                if (rc == 0)
                 {
                     if (is_static != NULL)
                         *is_static = FALSE;
-                        
+
                     if (state != NULL)
                     {
-                        rc = cfg_get_instance_fmt(NULL, state, 
+                        rc = cfg_get_instance_fmt(NULL, state,
                                                   "/agent:%s/interface:%s/"
                                                   "neigh_dynamic:%s/state:",
                                                   ta, ifname, net_addr_str);
@@ -1328,37 +1328,37 @@ tapi_cfg_neigh_op(enum tapi_cfg_oper op, const char *ta,
             rc = cfg_add_instance_fmt(&handle,
                                       CFG_VAL(ADDRESS, &lnk_addr),
                                       "/agent:%s/interface:%s/neigh_%s:%s",
-                                      ta, ifname, 
+                                      ta, ifname,
                                       (*is_static) ? "static" :
                                                      "dynamic",
                                       net_addr_str);
-            /* Error is logged by CS */          
+            /* Error is logged by CS */
             break;
         }
-            
+
         case OP_DEL:
-            rc = cfg_find_fmt(&handle, 
+            rc = cfg_find_fmt(&handle,
                               "/agent:%s/interface:%s/neigh_static:%s",
                               ta, ifname, net_addr_str);
             if (rc == 0)
             {
                 rc = cfg_del_instance(handle, FALSE);
-                /* Error is logged by CS */                
+                /* Error is logged by CS */
             }
             else if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
             {
-                rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s", 
+                rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s",
                                          ta, ifname);
                 if (rc != 0)
                     break;
-                              
-                rc = cfg_find_fmt(&handle, 
+
+                rc = cfg_find_fmt(&handle,
                                   "/agent:%s/interface:%s/neigh_dynamic:%s",
                                   ta, ifname, net_addr_str);
                 if (rc == 0)
                 {
                     rc = cfg_del_instance(handle, FALSE);
-                    /* Error is logged by CS */                
+                    /* Error is logged by CS */
                 }
 
                 if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
@@ -1637,7 +1637,7 @@ tapi_cfg_alloc_entry(const char *parent_oid, cfg_handle *entry)
               __FUNCTION__, parent_oid, rc);
         return rc;
     }
-    
+
     return tapi_cfg_alloc_entry_by_handle(parent, entry);
 }
 
@@ -1717,7 +1717,7 @@ tapi_cfg_add_net(const char *net_pool, const struct sockaddr *net_addr,
         unsigned int        net_prefix;
         struct in_addr      net_mask;
 
-        rc = cfg_get_inst_name_type(net, CVT_ADDRESS, 
+        rc = cfg_get_inst_name_type(net, CVT_ADDRESS,
                                     (cfg_inst_val *)&net_sa);
         if (rc != 0)
         {
@@ -1752,9 +1752,9 @@ tapi_cfg_add_net(const char *net_pool, const struct sockaddr *net_addr,
             free(net_sa);
             return rc;
         }
-        
+
         /* Compare net from pool with net to be added */
-        net_mask.s_addr = htonl(PREFIX2MASK(net_prefix < prefix ? 
+        net_mask.s_addr = htonl(PREFIX2MASK(net_prefix < prefix ?
                                             net_prefix : prefix));
         if ((SIN(net_sa)->sin_addr.s_addr & net_mask.s_addr) ==
             (SIN(&addr)->sin_addr.s_addr & net_mask.s_addr))
@@ -1850,7 +1850,7 @@ tapi_cfg_insert_net_addr(cfg_handle        net_pool_entry,
         free(net_oid);
         return rc;
     }
-    
+
     rc = tapi_cfg_alloc_entry_by_handle(pool, &entry);
     if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
     {
@@ -1872,7 +1872,7 @@ tapi_cfg_insert_net_addr(cfg_handle        net_pool_entry,
         }
         return rc;
     }
-    
+
     /* No available entries */
 
     /* Get number of entries in the pool */
@@ -1991,7 +1991,7 @@ tapi_cfg_insert_net_addr(cfg_handle        net_pool_entry,
             free(net_oid);
             return TE_EINVAL;
         }
-        
+
         /* Check if the entry already exists */
         val_type = CVT_INTEGER;
         rc = cfg_get_instance_fmt(&val_type, &entry_state,
@@ -2046,7 +2046,7 @@ tapi_cfg_add_net_addr(cfg_handle net_pool_entry, struct sockaddr *add_addr,
 {
     te_errno         rc;
     struct sockaddr *addr = NULL;
-    
+
     rc = tapi_cfg_insert_net_addr(net_pool_entry, add_addr, p_entry, &addr);
     free(addr);
 

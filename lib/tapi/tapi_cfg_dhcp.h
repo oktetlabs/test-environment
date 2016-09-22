@@ -77,7 +77,7 @@ extern int tapi_cfg_dhcps_add_subnet(const char            *ta,
  * @param chaddr        Hardware address
  * @param client_id     Client identifier or NULL
  * @param client_id_len Client identifier length if ID is in binary
- *                      format or -1 if ID is a string 
+ *                      format or -1 if ID is a string
  * @param fixed_ip      Fixed IP address or NULL
  * @param next_server   Next server or NULL
  * @param filename      File name or NULL

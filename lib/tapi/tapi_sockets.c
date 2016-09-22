@@ -69,7 +69,7 @@ tapi_get_tcp_sock_state(struct rcf_rpc_server *pco,
     struct rpc_tcp_info tcpi;
 
     memset(&tcpi, 0, sizeof(struct tcp_info));
-    
+
     rpc_getsockopt_gen(pco, s, rpc_sockopt2level(RPC_TCP_INFO),
                        RPC_TCP_INFO, &tcpi, NULL, NULL, 0);
 

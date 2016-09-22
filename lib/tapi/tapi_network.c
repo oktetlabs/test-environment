@@ -119,7 +119,7 @@ tapi_network_setup(te_bool ipv6_supp)
             cfg_handle         *ip4_addrs;
             struct sockaddr    *ip4_addr = NULL;
             uint8_t             mac[ETHER_ADDR_LEN];
-            
+
             /* Get IPv4 address assigned to the node */
             rc = cfg_get_oid_str(net->nodes[j].handle, &node_oid);
             if (rc != 0)

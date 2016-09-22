@@ -40,7 +40,7 @@
  * Get tagged network address from Configurator.
  *
  * @param _addr   variable for address.
- * @param _tag    name in CS of address. 
+ * @param _tag    name in CS of address.
  */
 #define TEST_GET_TAG_ADDR(_addr, _tag) \
     do {                                                        \
@@ -57,7 +57,7 @@
  * Get name of tagged network interface from Configurator.
  *
  * @param _if     variable for interface name.
- * @param _tag    name in CS of interface. 
+ * @param _tag    name in CS of interface.
  */
 #define TEST_GET_TST_IF(_if, _tag)  \
     do {                                                                \

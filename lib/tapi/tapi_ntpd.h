@@ -68,7 +68,7 @@ tapi_ntpd_disable(rcf_rpc_server *rpcs)
  * ntpd daemon status.
  *
  * @param rpcs RPC server
- * 
+ *
  * @return @c TRUE if deaimon is enabled
  */
 static inline te_bool

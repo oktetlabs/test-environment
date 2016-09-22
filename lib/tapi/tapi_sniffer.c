@@ -55,10 +55,10 @@
 
 /**
  * Enable the sniffer and sync to get ssn from the Agent.
- * 
+ *
  * @param ta        Agent name
  * @param snif_id   The sniffer ID
- * 
+ *
  * @return Status code
  * @retval 0    succes
  */
@@ -70,7 +70,7 @@ sniffer_enable_sync(tapi_sniffer_id *snif_id)
     char            sn_oid[CFG_OID_MAX];
 
     rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
-                              TE_CFG_SNIF_FMT "/enable:", 
+                              TE_CFG_SNIF_FMT "/enable:",
                               snif_id->ta, snif_id->ifname,
                               snif_id->snifname);
     if (rc != 0)
@@ -101,14 +101,14 @@ sniffer_enable_sync(tapi_sniffer_id *snif_id)
 
 /**
  * Check sniffer name exists
- * 
+ *
  * @param ta        Agent name
  * @param iface     Interface name
  * @param name      Sniffer name
  * @c     NULL      Generate a new name
  * @param newname   Pointer to new name if incoming exists or NULL (OUT)
  * @c     NULL      If incoming name is correct
- * 
+ *
  * @retval 0        Success
  */
 static te_errno
@@ -309,7 +309,7 @@ tapi_sniffer_del(tapi_sniffer_id *id)
     if (id == NULL)
         return 0;
 
-    rc = cfg_del_instance_fmt(FALSE, TE_CFG_SNIF_FMT, id->ta, 
+    rc = cfg_del_instance_fmt(FALSE, TE_CFG_SNIF_FMT, id->ta,
                               id->ifname, id->snifname);
     if (rc != 0)
     {
@@ -331,7 +331,7 @@ tapi_sniffer_stop(tapi_sniffer_id *id)
     }
 
     return cfg_set_instance_fmt(CFG_VAL(INTEGER, 0),
-                                TE_CFG_SNIF_FMT "/enable:", 
+                                TE_CFG_SNIF_FMT "/enable:",
                                 id->ta, id->ifname, id->snifname);
 }
 
@@ -426,7 +426,7 @@ tapi_sniffer_mark(const char *ta, tapi_sniffer_id *id,
     if ((rc = ipc_send_message(log_client, LGR_SRV_NAME, mess,
                                nfl + sizeof(nfl_net))) != 0)
     {
-        ERROR("ipc_send_message() failed");        
+        ERROR("ipc_send_message() failed");
         ipc_close_client(log_client);
     }
     else if ((rc = ipc_close_client(log_client)) != 0)

@@ -92,7 +92,7 @@ extern te_errno tapi_allocate_port(struct rcf_rpc_server *pco,
  *
  * @param pco       RPC server to check that port is free
  * @param p_port    Location for allocated ports, pointer to array,
- *                  should have enough place for @p items. 
+ *                  should have enough place for @p items.
  * @param num       Number of ports requests, i.e. length of range.
  *
  * @return Status code.
@@ -112,7 +112,7 @@ extern te_errno tapi_allocate_port_htons(rcf_rpc_server *pco,
                                          uint16_t *p_port);
 
 /**
- * Generate new sockaddr basing on existing one (copy data and 
+ * Generate new sockaddr basing on existing one (copy data and
  * allocate new port).
  *
  * @param pco   RPC server to check that port is free
@@ -123,7 +123,7 @@ extern te_errno tapi_allocate_port_htons(rcf_rpc_server *pco,
  */
 static inline te_errno
 tapi_sockaddr_clone(rcf_rpc_server *pco,
-                    const struct sockaddr *src, 
+                    const struct sockaddr *src,
                     struct sockaddr_storage *dst)
 {
     memcpy(dst, src, te_sockaddr_get_size(src));
@@ -131,7 +131,7 @@ tapi_sockaddr_clone(rcf_rpc_server *pco,
 }
 
 /**
- * Obtain an exact copy of a given socket address. 
+ * Obtain an exact copy of a given socket address.
  *
  * @param src   existing sockaddr
  * @param dst   location for a clone
@@ -139,7 +139,7 @@ tapi_sockaddr_clone(rcf_rpc_server *pco,
  * @return Status code.
  */
 static inline void
-tapi_sockaddr_clone_exact(const struct sockaddr *src, 
+tapi_sockaddr_clone_exact(const struct sockaddr *src,
                           struct sockaddr_storage *dst)
 {
     memcpy(dst, src, te_sockaddr_get_size(src));

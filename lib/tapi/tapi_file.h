@@ -59,9 +59,9 @@ tapi_file_generate_name(void)
 {
     static int  num = 0;
     static char buf[RCF_MAX_PATH];
-    
+
     sprintf(buf, "te_tmp_%u_%u_%u", (uint32_t)time(NULL), getpid(), num++);
-    
+
     return buf;
 }
 
@@ -77,7 +77,7 @@ tapi_file_generate_pathname(void)
 {
     static char  pathname[RCF_MAX_PATH];
     static char *te_tmp;
-    
+
     if (te_tmp == NULL && (te_tmp = getenv("TE_TMP")) == NULL)
     {
         ERROR("TE_TMP is empty");
@@ -85,7 +85,7 @@ tapi_file_generate_pathname(void)
     }
 
     sprintf(pathname, "%s/%s", te_tmp, tapi_file_generate_name());
-    
+
     return pathname;
 }
 
@@ -98,7 +98,7 @@ tapi_file_generate_pathname(void)
  * @return name (memory is allocated) of the file or
  *         NULL in the case of failure
  *
- * @note The function is not thread-safe 
+ * @note The function is not thread-safe
  */
 extern char *tapi_file_create_pattern(size_t len, char c);
 
@@ -112,7 +112,7 @@ extern char *tapi_file_create_pattern(size_t len, char c);
  * @return name (memory is allocated) of the file or
  *         NULL in the case of failure
  *
- * @note The function is not thread-safe 
+ * @note The function is not thread-safe
  */
 extern char *tapi_file_create(size_t len, char *buf, te_bool random);
 
@@ -127,7 +127,7 @@ extern char *tapi_file_create(size_t len, char *buf, te_bool random);
  *
  * @note the function is not thread-safe
  */
-extern int tapi_file_create_ta(const char *ta, const char *filename, 
+extern int tapi_file_create_ta(const char *ta, const char *filename,
                                const char *fmt, ...);
 
 /**
@@ -160,7 +160,7 @@ extern int tapi_file_create_ta_r(const char *ta,
  *
  * @note the function is not thread-safe
  */
-extern int tapi_file_read_ta(const char *ta, const char *filename, 
+extern int tapi_file_read_ta(const char *ta, const char *filename,
                              char **pbuf);
 
 /**

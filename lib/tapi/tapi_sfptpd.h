@@ -68,7 +68,7 @@ tapi_sfptpd_disable(rcf_rpc_server *rpcs)
  * sfptpd daemon status.
  *
  * @param rpcs RPC server
- * 
+ *
  * @return @c TRUE if deaimon is enabled
  */
 static inline te_bool
