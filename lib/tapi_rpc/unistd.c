@@ -57,8 +57,10 @@
 #include "tapi_rpc_unistd.h"
 #include "tapi_rpc_misc.h"
 #include "tapi_test.h"
+#include "tapi_mem.h"
 #include "te_printf.h"
 #include "te_bufs.h"
+#include "te_dbuf.h"
 
 
 /** @name String buffers for snprintf() operations */
@@ -2934,6 +2936,60 @@ rpc_release_iov(rpc_iovec *iov, size_t iovcnt)
     for (i = 0; i < iovcnt; i++)
         free(iov[i].iov_base);
     memset(iov, 0, sizeof(*iov) * iovcnt);
+}
+
+/* See description in the tapi_rpc_unistd.h */
+void
+rpc_alloc_iov(rpc_iovec **iov, size_t iovcnt, size_t min, size_t max)
+{
+    *iov = tapi_calloc(iovcnt, sizeof(rpc_iovec));
+    rpc_make_iov(*iov, iovcnt, min, max);
+}
+
+/* See description in the tapi_rpc_unistd.h */
+void
+rpc_free_iov(rpc_iovec *iov, size_t iovcnt)
+{
+    rpc_release_iov(iov, iovcnt);
+    free(iov);
+}
+
+/* See description in the tapi_rpc_unistd.h */
+uint8_t *
+rpc_iov_append2dbuf(const rpc_iovec *iov, size_t iovcnt, te_dbuf *buf)
+{
+    size_t i;
+
+    for (i = 0; i < iovcnt; i++)
+    {
+        te_dbuf_append(buf, iov[i].iov_base, iov[i].iov_len);
+    }
+
+    return buf->ptr;
+}
+
+/* See description in the tapi_rpc_unistd.h */
+uint8_t *
+rpc_iov2dbuf(const rpc_iovec *iov, size_t iovcnt, te_dbuf *buf)
+{
+    te_dbuf_free(buf);
+
+    return rpc_iov_append2dbuf(iov, iovcnt, buf);
+}
+
+/* See description in the tapi_rpc_unistd.h */
+size_t
+rpc_iov_data_len(const rpc_iovec *iov, size_t iovcnt)
+{
+    size_t total_len = 0;
+    size_t i;
+
+    for (i = 0; i < iovcnt; i++)
+    {
+        total_len += iov[i].iov_len;
+    }
+
+    return total_len;
 }
 
 /* See description in tapi_rpc_unistd.h */

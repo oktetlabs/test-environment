@@ -48,7 +48,7 @@
 #include "tapi_jmp.h"
 
 #include "te_string.h"
-
+#include "te_dbuf.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -1258,6 +1258,59 @@ extern void rpc_make_iov(rpc_iovec *iov, size_t iovcnt, size_t min,
  * @param iovcnt    Vectors number.
  */
 extern void rpc_release_iov(rpc_iovec *iov, size_t iovcnt);
+
+/**
+ * Allocate array of IOV vectors and its elements, set buffer lengths.
+ *
+ * @param iov       Iov vectors array.
+ * @param iovcnt    Vectors number.
+ * @param min       Minimum buffer length.
+ * @param max       Maximum buffer length.
+ */
+extern void rpc_alloc_iov(rpc_iovec **iov, size_t iovcnt, size_t min,
+                          size_t max);
+
+/**
+ * Free buffers of IOV array and the array itself.
+ *
+ * @param iov       Iov vectors array.
+ * @param iovcnt    Vectors number.
+ */
+extern void rpc_free_iov(rpc_iovec *iov, size_t iovcnt);
+
+/**
+ * Append data from IOV array to te_dbuf.
+ *
+ * @param iov       IOV array.
+ * @param iovcnt    Number of vectors in array.
+ * @param buf       Dynamic buffer to append data to.
+ *
+ * @return Pointer to buffer with copied data.
+ */
+extern uint8_t *rpc_iov_append2dbuf(const rpc_iovec *iov, size_t iovcnt,
+                                    te_dbuf *buf);
+
+/**
+ * Copy data from IOV array to te_dbuf.
+ *
+ * @param iov       IOV array.
+ * @param iovcnt    Number of vectors in array.
+ * @param buf       Dynamic buffer to copy data to.
+ *
+ * @return Pointer to buffer with copied data.
+ */
+extern uint8_t *rpc_iov2dbuf(const rpc_iovec *iov, size_t iovcnt,
+                             te_dbuf *buf);
+
+/**
+ * Get length of data stored in IOV array.
+ *
+ * @param iov       IOV array.
+ * @param iovcnt    Number of vectors in array.
+ *
+ * @return Total length of data stored in vectors.
+ */
+extern size_t rpc_iov_data_len(const rpc_iovec *iov, size_t iovcnt);
 
 /**@} <!-- END te_lib_rpc_unistd --> */
 
