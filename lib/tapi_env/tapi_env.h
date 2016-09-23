@@ -106,7 +106,7 @@
 
 
 /**
- * Get network. Name of the variable must match name of the network 
+ * Get network. Name of the variable must match name of the network
  * in environment configuration string.
  *
  * @param net_      Pointer to tapi_env_net (OUT)
@@ -121,7 +121,7 @@
     } while (0)
 
 /**
- * Get named host from environment. Name of the variable must match 
+ * Get named host from environment. Name of the variable must match
  * name of the host in environment configuration string.
  *
  * @param host_     Pointer to tapi_env_host (OUT)
@@ -286,7 +286,7 @@ typedef enum {
     TAPI_ENV_ADDR_MCAST_ALL_HOSTS,  /**< Multicast all hosts group */
     TAPI_ENV_ADDR_BROADCAST,        /**< Broadcast */
     TAPI_ENV_ADDR_WILDCARD,         /**< Wildcard */
-    TAPI_ENV_ADDR_ALIEN,            /**< Address not assigned to any 
+    TAPI_ENV_ADDR_ALIEN,            /**< Address not assigned to any
                                          interface of the host */
     TAPI_ENV_ADDR_IP4MAPPED_UC,     /**< Unicast IPv4-mapped IPv6 address */
     TAPI_ENV_ADDR_LINKLOCAL,        /**< Link-local IPv6 address */
@@ -526,7 +526,7 @@ extern te_errno tapi_env_free(tapi_env *env);
 
 /**
  * Get handle of the net from environment by name.
- * 
+ *
  * @param env       Environment
  * @param name      Name of the net
  *
@@ -549,7 +549,7 @@ extern tapi_env_host * tapi_env_get_host(tapi_env *env, const char *name);
  *
  * RPC server is automatically closed and handle becomes not valid
  * when environment is freed.
- * 
+ *
  * @param env       Environment
  * @param name      Name of the PCO
  *

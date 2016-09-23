@@ -35,7 +35,7 @@
 #include <stdlib.h>
 #include <string.h>
 #endif
-#if HAVE_TIME_H 
+#if HAVE_TIME_H
 #include <time.h>
 #endif
 #if HAVE_ARPA_INET_H
@@ -188,7 +188,7 @@ tapi_env_allocate_addr(tapi_env_net *net, int af,
         return rc;
     }
     if (addrlen != NULL)
-        *addrlen = te_sockaddr_get_size_by_af(af); 
+        *addrlen = te_sockaddr_get_size_by_af(af);
 
     STAILQ_INSERT_TAIL(&net->net_addrs, handle, links);
 
@@ -265,7 +265,7 @@ tapi_env_get(const char *cfg, tapi_env *env)
               env->cfg_nets.n_nets, env->n_nets);
         return TE_EENV;
     }
-    
+
     rc = bind_env_to_cfg_nets(&env->ifs, &env->cfg_nets);
     if (rc != 0)
     {
@@ -355,14 +355,14 @@ tapi_env_free(tapi_env *env)
                 {
                     VERB("Destroy RPC Server (%s,%s)",
                          pco->rpcs->ta, pco->rpcs->name);
-                         
-                    if (pco->created && 
+
+                    if (pco->created &&
                         !rcf_rpc_server_has_children(pco->rpcs))
                     {
                         rc = rcf_rpc_server_destroy(pco->rpcs);
                         if (rc != 0)
                         {
-                            ERROR("rcf_rpc_server_destroy() failed: %r", 
+                            ERROR("rcf_rpc_server_destroy() failed: %r",
                                   rc);
                             TE_RC_UPDATE(result, rc);
                         }
@@ -495,7 +495,7 @@ tapi_env_free(tapi_env *env)
     }
 
     tapi_cfg_net_free_nets(&env->cfg_nets);
-    
+
     return result;
 }
 
@@ -792,7 +792,7 @@ prepare_nets(tapi_env_nets *nets, cfg_nets_t *cfg_nets)
             free(net_oid);
             continue;
         }
-        
+
         /* Get IPv4 subnet address */
         val_type = CVT_ADDRESS;
         rc = cfg_get_instance(ip_nets[0], &val_type, &env_net->ip4addr);
@@ -875,7 +875,7 @@ prepare_nets(tapi_env_nets *nets, cfg_nets_t *cfg_nets)
             free(net_oid);
             continue;
         }
-        
+
         /* Get IPv6 subnet address */
         val_type = CVT_ADDRESS;
         rc = cfg_get_instance(ip_nets[0], &val_type, &env_net->ip6addr);
@@ -965,7 +965,7 @@ prepare_hosts(tapi_env *env)
                  1, &host->ta);
         if (rc != 0)
             break;
-        
+
         /* Get name of the dynamic library with IUT */
         rc = cfg_find_fmt(&handle, "/local:%s/socklib:", host->ta);
         if (rc != 0)
@@ -1243,7 +1243,7 @@ prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
             else if (env_addr->type == TAPI_ENV_ADDR_ALIEN)
             {
                 static uint32_t alien_addr = 0;
-    
+
                 if (alien_addr == 0)
                 {
                     struct sockaddr *tmp;
@@ -1397,7 +1397,7 @@ add_address(tapi_env_addr *env_addr, cfg_nets_t *cfg_nets,
     }
 
     free(str);
-    
+
     return rc;
 }
 
@@ -1774,7 +1774,7 @@ prepare_pcos(tapi_env_hosts *hosts)
                             {
                                 rc = pco->rpcs->_errno;
                                 ERROR("Failed to set RPC server '%s' "
-                                      "dynamic library name '%s': %r", 
+                                      "dynamic library name '%s': %r",
                                       pco->rpcs->name,
                                       host->libname ? : "(NULL)", rc);
                                 break;
@@ -1789,7 +1789,7 @@ prepare_pcos(tapi_env_hosts *hosts)
                              pco->name, &(pco->rpcs));
                     if (rc != 0)
                     {
-                        ERROR("rcf_rpc_server_thread_create() failed: %r", 
+                        ERROR("rcf_rpc_server_thread_create() failed: %r",
                               rc);
                         break;
                     }
@@ -1837,7 +1837,7 @@ bind_env_to_cfg_nets(tapi_env_ifs *ifs, cfg_nets_t *cfg_nets)
         SLIST_REMOVE(&used_nodes, p, node_index, links);
         free(p);
     }
-    
+
     return rc;
 }
 
@@ -1922,7 +1922,7 @@ bind_host_if(tapi_env_if *iface, tapi_env_ifs *ifs,
                               cfg_nets->nets[i].nodes[j].handle,
                               cfg_nets->nets[p->net->i_net].
                                   nodes[p->i_node].handle) == 0);
-                /* 
+                /*
                  * If host is the same, it implies that names are
                  * specified. If both names are not specified, allow
                  * any binding.
@@ -1976,7 +1976,7 @@ node_value_get_ith_inst_name(cfg_handle node, unsigned int i, char **p_str)
     te_errno        rc;
     char           *str;
     cfg_val_type    val_type = CVT_STRING;
-    
+
     rc = cfg_get_instance(node, &val_type, &str);
     if (rc != 0)
     {
@@ -2028,7 +2028,7 @@ cmp_agent_names(cfg_handle node1, cfg_handle node2)
 
     free(agt1);
     free(agt2);
-    
+
     return retval;
 }
 
@@ -2047,15 +2047,15 @@ static te_errno
 node_mark_used(node_indexes *used_nodes, unsigned int net, unsigned int node)
 {
     node_index *p = calloc(1, sizeof(*p));
-    
+
     if (p == NULL)
         return TE_ENOMEM;
-        
+
     p->net = net;
     p->node = node;
-    
+
     SLIST_INSERT_HEAD(used_nodes, p, links);
-    
+
     return 0;
 }
 
@@ -2075,7 +2075,7 @@ node_unmark_used(node_indexes *used_nodes, unsigned int net, unsigned int node)
          (p != NULL) && ((net != p->net) || (node != p->node));
          p = SLIST_NEXT(p, links));
 
-    if (p != NULL)    
+    if (p != NULL)
         SLIST_REMOVE(used_nodes, p, node_index, links);
 }
 
@@ -2278,7 +2278,7 @@ tapi_env_get_net_host_addr(const tapi_env          *env,
          iface != (void *)&env->ifs &&
             (iface->net != net || iface->host != host);
          iface = iface->links.cqe_next);
-    
+
     if (iface == (void *)&env->ifs)
     {
         ERROR("Host '%s' does not belong to the net", host->name);

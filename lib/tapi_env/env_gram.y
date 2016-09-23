@@ -1,6 +1,6 @@
 %{
 #define TE_LOG_USER     "Env String Parser"
-    
+
 #include "te_config.h"
 
 #include <stdio.h>
@@ -48,10 +48,10 @@ env_cfg_parse(tapi_env *e, const char *cfg)
     curr_net  = NULL;
     curr_host_if = NULL;
     curr_proc = NULL;
-    
+
     mybuf = cfg;
     myindex = 0;
-    
+
     yyparse();
     yylex_destroy();
 
@@ -70,7 +70,7 @@ create_net(void)
         env->n_nets++;
         SLIST_INSERT_HEAD(&env->nets, p, links);
     }
-    
+
     return p;
 }
 
@@ -130,7 +130,7 @@ create_process(void)
 %token ADDRESS INTERFACE
 
 
-%union 
+%union
 {
     int   number;
     char *string;
@@ -162,7 +162,7 @@ nets:
 
 net:
     OBRACE hosts EBRACE
-    { 
+    {
         if (curr_net == NULL)
             (void)create_net();
         else
@@ -170,7 +170,7 @@ net:
     }
     |
     ENTITY_TYPE OBRACE hosts EBRACE
-    { 
+    {
         if (curr_net == NULL)
             curr_net = create_net();
         if (curr_net != NULL)
@@ -210,7 +210,7 @@ net:
     }
     ;
 
-hosts: 
+hosts:
     host
     |
     hosts COMMA host
