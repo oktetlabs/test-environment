@@ -8,7 +8,12 @@
 #
 # $Id: $
 
-. `dirname \`which $0\``/guess.sh
+TS_GUESS_SH="$(dirname "$(which "$0")")"/guess.sh
+if test -f "${TS_GUESS_SH}" ; then
+    . ${TS_GUESS_SH}
+else
+    . "${TE_BASE}"/scripts/guess.sh
+fi
 
 RUN_DIR="${PWD}"
 : ${OUTPUT_HTML:=false}
