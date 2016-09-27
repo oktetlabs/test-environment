@@ -1718,6 +1718,7 @@ prepare_pcos(tapi_env_hosts *hosts)
     te_bool             main_thread;
     cfg_val_type        val_type;
     int                 iut_errno_change_no_check = 0;
+    const char         *reuse_pco = getenv("TE_ENV_REUSE_PCO");
 
     val_type = CVT_INTEGER;
     rc = cfg_get_instance_fmt(&val_type, &iut_errno_change_no_check,
@@ -1744,9 +1745,18 @@ prepare_pcos(tapi_env_hosts *hosts)
             {
                 if (main_thread)
                 {
-                    if (rcf_rpc_server_get(host->ta, pco->name, NULL,
-                                           RCF_RPC_SERVER_GET_EXISTING,
-                                           &(pco->rpcs)) != 0)
+                    if (reuse_pco != NULL &&
+                        strcasecmp(reuse_pco, "yes") == 0)
+                        rc = rcf_rpc_server_get(host->ta, pco->name, NULL,
+                                            RCF_RPC_SERVER_GET_EXISTING |
+                                            RCF_RPC_SERVER_GET_REUSE,
+                                            &(pco->rpcs));
+                    else
+                        rc = rcf_rpc_server_get(host->ta, pco->name, NULL,
+                                                RCF_RPC_SERVER_GET_EXISTING,
+                                                &(pco->rpcs));
+
+                    if (rc != 0)
                     {
                         rc = rcf_rpc_server_create(host->ta, pco->name,
                                                    &(pco->rpcs));
