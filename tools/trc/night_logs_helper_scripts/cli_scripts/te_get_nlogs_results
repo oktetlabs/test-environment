@@ -847,9 +847,9 @@ sub process_logs
                 $loaded_logs->{$download_path} = 1;
                 parse_xml_log($download_path, $xml_log_fn,
                               $is_compromised);
-                free_tmp_files();
             }
 
+            free_tmp_files();
             return;
         }
     }
@@ -1094,6 +1094,12 @@ if (scalar(@log_paths) == 0)
 sub cleanup
 { 
     free_tmp_files; 
+}
+
+$SIG{USR1} = $SIG{INT} =  sub { print "Interrupted!\n"; exit 1; };
+
+END {
+    cleanup;
 }
 
 my $compromised_iters;
@@ -1415,8 +1421,6 @@ sub fix_tags
     $fixed_tags_cache{$saved_tags} = $tags_fixed;
     return $tags_fixed;
 }
-
-$SIG{USR1} = $SIG{INT} =  sub { print "Interrupted!\n"; cleanup; exit 1; };
 
 print "Processing night testing logs...\n";
 
