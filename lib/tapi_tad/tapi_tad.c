@@ -618,3 +618,26 @@ tapi_tad_socket_add_csap_layer(asn_value **csap_spec, int fd)
 
     return 0;
 }
+
+/* See the description in tapi_tad.h */
+te_errno
+tapi_tad_csap_get_no_match_pkts(const char *ta_name, int session,
+                                csap_handle_t csap_id, unsigned int *val)
+{
+    int         rc;
+    uint64_t    tmp;
+
+    ENTRY("TA=%s, SID=%d, CSAP=%d, location=0x%08x",
+          ta_name, session, csap_id, val);
+
+    rc = tapi_csap_param_get_llint(ta_name, session, csap_id,
+                                   CSAP_PARAM_NO_MATCH_PKTS, &tmp);
+    if (rc != 0)
+    {
+        RETURN_RC(rc);
+    }
+
+    *val = (unsigned int)tmp;
+
+    RETURN_RC(0);
+}

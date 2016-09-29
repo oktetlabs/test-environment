@@ -551,7 +551,7 @@ tad_recv_prepare(csap_p csap, asn_value *pattern, unsigned int num,
 
     my_ctx->status = 0;
     my_ctx->wait_pkts = num;
-    my_ctx->match_pkts = my_ctx->got_pkts = 0;
+    my_ctx->match_pkts = my_ctx->got_pkts = my_ctx->no_match_pkts = 0;
 
     if (timeout == TAD_TIMEOUT_INF)
     {
@@ -1254,6 +1254,8 @@ tad_recv_do(csap_p csap)
                             read_len, &no_report);
         if (TE_RC_GET_ERROR(rc) == TE_ETADNOTMATCH)
         {
+            context->no_match_pkts++;
+
             VERB(CSAP_LOG_FMT "received packet does not match",
                  CSAP_LOG_ARGS(csap));
             /* Nothing is owned by match routine */

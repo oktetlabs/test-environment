@@ -1262,6 +1262,16 @@ rcf_ch_csap_param(struct rcf_comm_connection *rcfc,
 
         SEND_ANSWER("0 %d", (int)status);
     }
+    else if (strcmp(param, CSAP_PARAM_NO_MATCH_PKTS) == 0)
+    {
+        unsigned int no_match_pkts;
+
+        no_match_pkts = csap_get_recv_context(csap)->no_match_pkts;
+
+        VERB("CSAP get_param, get number of unmatched pkts %u\n",
+             no_match_pkts);
+        SEND_ANSWER("0 %u", no_match_pkts);
+    }
     else if (strcmp(param, CSAP_PARAM_FIRST_PACKET_TIME) == 0)
     {
         VERB("CSAP get_param, get first pkt, %u.%u\n",

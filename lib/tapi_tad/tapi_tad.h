@@ -363,6 +363,21 @@ extern int tapi_tad_forward_all(const char *ta_name, int session,
 extern te_errno tapi_tad_socket_add_csap_layer(asn_value **csap_spec,
                                                int         fd);
 
+/**
+ * Get number of unmatched packets using a parameter of CSAP.
+ *
+ * @param ta_name   - name of the Test Agent
+ * @param session   - session identfier to be used
+ * @param csap_id   - CSAP handle
+ * @param val       - location for number of unmatched packets (OUT)
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_tad_csap_get_no_match_pkts(const char *ta_name,
+                                                int session,
+                                                csap_handle_t csap_id,
+                                                unsigned int *val);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
