@@ -688,12 +688,14 @@ if test "x$with_aggr" != "x" ; then
 fi
 
 AC_ARG_WITH([dpdk],
-            AS_HELP_STRING([--with-dpdk],
+            AS_HELP_STRING([--with-dpdk=RTE_SDK_BIN],
                            [specify location of the DPDK RTE SDK bulid]),
-            [ac_cv_with_dpdk=$withval],
-            [ac_cv_with_dpdk=])
+            [ac_cv_with_dpdk="$with_dpdk"],
+            [ac_cv_with_dpdk=no])
 
-if test "x$ac_cv_with_dpdk" != "x"; then
+if test x"$ac_cv_with_dpdk" != xno; then
+    test x"$ac_cv_with_dpdk" = xyes &&
+        ac_cv_with_dpdk="${TE_INSTALL}/${TE_PLATFORM}"
     # Add DPDK library just before system libraries
     DPDK_LIBS="$(find "${ac_cv_with_dpdk}/lib" \( -name librte_*.a -or -name libethdev.a \) -printf '%p ')"
     LIBS="-L${ac_cv_with_dpdk}/lib -Wl,-whole-archive ${DPDK_LIBS} -Wl,-no-whole-archive ${LIBS}"
