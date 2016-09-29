@@ -30,6 +30,7 @@ AM_CONDITIONAL(WINDOWS, test x$host != x${host%windows})
 
 TE_LIB_SET
 
+AC_ARG_WITH([rpcdefs])
 AM_CONDITIONAL(DIST_RPCDEFS, test -n "$with_rpcdefs")
 RPCDEFS=
 RPCDEFS_DIST_FILES=
