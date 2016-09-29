@@ -67,6 +67,69 @@ eval `echo ${PLATFORM}_LDFLAGS=\"$5\"`
 eval `echo ${PLATFORM}_LIBS=\"$6\"`
 ])
 
+dnl Declares an external component for a platform.
+dnl An external component is built before the platform itself,
+dnl so that TE libraries could make use of
+dnl
+dnl Parameters:
+dnl       extension name
+dnl       platform name; may be empty for host platform (name "default"
+dnl           is used for it); shouldn't contain '-'
+dnl       extension sources (absolute pathname or relative to TE_BASE/lib)
+dnl       source preparation script (always run on the engine side).
+dnl           The script is run in the sources directory as specified above.
+dnl           The following env variables are exported:
+dnl           - EXT_BUILDDIR: build directory path, as specified in the next
+dnl                           argument
+dnl       build directory (absolute or relative to source path)
+dnl       build script (may be run on the engine or agent side)
+dnl           The script is run in the build directory, as specified above.
+dnl           The following env variables are exported:
+dnl           - TE_PREFIX: the installation prefix of TE build
+dnl                        for the current platform
+dnl           - EXT_SOURCES: absolute path to the sources
+dnl       list of headers to copy to TE build tree
+dnl       list of libraries to copy to TE build tree
+dnl
+define([TE_PLATFORM_EXT],
+[
+[
+EXTNAME="$1"
+case "$EXTNAME" in
+     [^a-zA-Z]*)
+        TS_BS_CONF_ERR="extension name does not start with a letter" ;
+        break ;
+        ;;
+     *[^a-zA-Z0-9_]*)
+        TS_BS_CONF_ERR="extension name contain illegal characters" ;
+        break ;
+        ;;
+esac
+PLATFORM="$2"
+SOURCES="$3"
+if test -z "$PLATFORM" ; then
+    PLATFORM=${TE_HOST}
+fi
+if test -z "$SOURCES" ; then
+    SOURCES=${TE_BASE}/lib/${EXTNAME} ;
+elif test "${SOURCES:0:1}" != "/" ; then
+    SOURCES=${TE_BASE}/lib/$SOURCES ;
+fi
+if ! test -d "$SOURCES" ; then
+    TE_BS_CONF_ERR="source path for platform extension ${EXTNAME} does not exist or is not a directory" ;
+    break ;
+fi
+]
+EXTLIST="TE_BS_EXT_${PLATFORM}"
+declare "$EXTLIST"="${!EXTLIST} ${EXTNAME}"
+declare "${EXTLIST}_${EXTNAME}_SOURCES"="$SOURCES"
+declare "${EXTLIST}_${EXTNAME}_PREPARE"="$4"
+declare "${EXTLIST}_${EXTNAME}_BUILDDIR"="$5"
+declare "${EXTLIST}_${EXTNAME}_BUILD"="$6"
+declare "${EXTLIST}_${EXTNAME}_INSTALL_HEADERS"="$7"
+declare "${EXTLIST}_${EXTNAME}_INSTALL_LIBS"="$8"
+])
+
 dnl Specifies list of external static libraries that should be
 dnl loaded via http from the server specified in TE_EXT_LIBS
 dnl environment variable.
@@ -278,6 +341,72 @@ fi
 declare "TE_BS_TA_$1_PLATFORM"=$PLATFORM
 ]
 ])
+
+dnl Declares an external application for the agent host
+dnl An external component is built after the agent itself.
+dnl
+dnl Parameters:
+dnl       extension name
+dnl       TA type (as defined by TE_TA_TYPE macro)
+dnl       extension sources (absolute pathname or relative to TE_BASE/apps)
+dnl       source preparation script (always run on the engine side)
+dnl           The script is run in the sources directory as specified above.
+dnl           The following env variables are exported:
+dnl           - EXT_BUILDDIR: build directory path, as specified in the next
+dnl                           argument
+dnl       build directory (absolute or relative to source path)
+dnl       list of agent libraries to link the app with
+dnl           This is a list of entity names (i.e. without lib prefix and .a suffix),
+dnl           as in TE_TA_TYPE which is
+dnl           used to construct the value of TE_LDFLAGS variable (see below).
+dnl           Listing a library here won't per se create a build dependency and
+dnl           won't cause the library to be built              
+dnl       build script (may be run on the engine or agent side)
+dnl           The script is run in the build directory, as specified above.
+dnl           The following env variables are exported:
+dnl           - TE_PREFIX: the installation prefix of TE build
+dnl                        for the current platform
+dnl           - TE_CPPFLAGS: gcc preprocess flags to use TE-provided headers
+dnl           - TE_LDFLAGS: linker flags to use TE libraries
+dnl           - EXT_SOURCES: absolute path to the sources
+dnl       list of executables to copy to TA agent directory
+dnl
+define([TE_TA_APP],
+[
+[
+APPNAME="$1"
+case "$APPAME" in
+     [^a-zA-Z]*)
+        TS_BS_CONF_ERR="application name does not start with a letter" ;
+        break ;
+        ;;
+     *[^a-zA-Z0-9_]*)
+        TS_BS_CONF_ERR="application name contain illegal characters" ;
+        break ;
+        ;;
+esac
+TATYPE="$2"
+SOURCES="$3"
+if test -z "$SOURCES" ; then
+    SOURCES=${TE_BASE}/apps/${APPNAME} ;
+elif test "${SOURCES:0:1}" != "/" ; then
+    SOURCES=${TE_BASE}/apps/$SOURCES ;
+fi
+if ! test -d "$SOURCES" ; then
+    TE_BS_CONF_ERR="source path for agent extension ${APPNAME} does not exist or is not a directory" ;
+    break ;
+fi
+]
+TA_TYPE_APPS="TE_BS_TA_APP_${TATYPE}"
+declare "$TA_TYPE_APPS"="${!TA_TYPE_APPS} ${APPNAME}"
+declare "${TA_TYPE_APPS}_${APPNAME}_SOURCES"="$SOURCES"
+declare "${TA_TYPE_APPS}_${APPNAME}_PREPARE"="$4"
+declare "${TA_TYPE_APPS}_${APPNAME}_BUILDDIR"="$5"
+declare "${TA_TYPE_APPS}_${APPNAME}_LIBS"="$6"
+declare "${TA_TYPE_APPS}_${APPNAME}_BUILD"="$7"
+declare "${TA_TYPE_APPS}_${APPNAME}_INSTALL_BIN"="$8"
+])
+
 
 dnl Specifies additional parameters for test suite.
 dnl The path to test suite is specified in tester.conf file.

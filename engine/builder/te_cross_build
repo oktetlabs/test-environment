@@ -86,6 +86,59 @@ need_build_platform() {
     return 1
 }
 
+build_extension() {
+    local p="$1"
+    local srcdir="$2"
+    local prepare="$3"
+    local builddir="$4"
+    local build="$5"
+    local telibs="$6"
+    local expheaders="$7"
+    local explibs="$8"
+    local expbin="$9"
+    local telibflags
+    local l
+    local h
+    local b
+
+    shift
+    local tatype="$9"
+
+    telibflags="-L$PREFIX/$p/lib"
+    for l in $telibs; do
+        telibflags="$telibflags -l$l"
+    done
+
+    ( cd "$srcdir"; eval "export EXT_BUILDDIR=\"${builddir:-.}\"; $prepare" ) || exit 1
+    if test -n "$builddir"; then
+        ( cd "$srcdir"; mkdir -p "$builddir" ) || exit 1
+    fi
+    ( te_eval_or_ssh "$p" "cd $srcdir; cd ${builddir:-.};
+                      export TE_PREFIX=\"$PREFIX/$p\" ;
+                      export TE_CPPFLAGS=\"-I$PREFIX/$p/include\" ;
+                      export TE_LDFLAGS=\"$telibflags\" ;
+                      export EXT_SOURCES=\"$srcdir\" ;
+                      $build") || exit 1
+    test -n "$expheaders" && install -d "$PREFIX/$p/include"
+    for h in $expheaders; do
+        ( cd "$srcdir";
+          test -n "$builddir" && cd $builddir;
+          install "$h" "$PREFIX/$p/include" ) || exit 1
+    done
+    test -n "$explibs" && install -d "$PREFIX/$p/lib"
+    for l in $explibs; do
+        ( cd "$srcdir";
+          test -n "$builddir" && cd "$builddir";
+          install "$l" "$PREFIX/$p/lib" ) || exit 1
+    done
+    test -n "$expbin" && install -d "$PREFIX/agents/$tatype"
+    for b in $expbin; do
+        ( cd "$srcdir";
+          test -n "$builddir" && cd "$builddir";
+          install "$b" "$PREFIX/agents/$tatype" ) || exit 1
+    done
+}
+
 build_platform() {
     local p=$1
     local mode=$2
@@ -98,7 +151,22 @@ build_platform() {
     mkdir -p "platforms/${p}"
     fs_sanity_check "${p}" "platforms/${p}"
     if test "$mode" = "all" -o \
-        ! -f ${sbd}/platforms/${p}/include/Makefile ; then
+            ! -f ${sbd}/platforms/${p}/include/Makefile ; then
+        local pexts="TE_BS_EXT_${p}"
+        local pext
+
+        for pext in ${!pexts}; do
+             local pextsrc="TE_BS_EXT_${p}_${pext}_SOURCES"
+             local pextprep="TE_BS_EXT_${p}_${pext}_PREPARE"
+             local pextbuilddir="TE_BS_EXT_${p}_${pext}_BUILDDIR"
+             local pextbuild="TE_BS_EXT_${p}_${pext}_BUILD"
+             local pextinsth="TE_BS_EXT_${p}_${pext}_INSTALL_HEADERS"
+             local pextinstl="TE_BS_EXT_${p}_${pext}_INSTALL_LIBS"
+             build_extension "$p" "${!pextsrc}" "${!pextprep}" "${!pextbuilddir}" \
+                             "${!pextbuild}" "" \
+                             "${!pextinsth}" "${!pextinstl}" "" || exit 1
+        done
+
         ${TE_BASE}/engine/builder/te_configure_package INCLUDE include \
             "${p}_include" "${sbd}/platforms/${p}/include" \
             "$p" "${TE_BASE}/include" "$PREFIX" || exit 1
@@ -202,6 +270,21 @@ build_agent() {
         make ${BUILD_MAKEFLAGS} install || exit 1
     "
     res=$?; if test "$res" -ne "0" ; then exit $res; fi
+
+    local pexts="TE_BS_TA_APPS_${package}"
+    local pext
+
+    for pext in ${!pexts}; do
+         local pextsrc="TE_BS_TA_APP_${package}_${pext}_SOURCES"
+         local pextprep="TE_BS_TA_APP_${package}_${pext}_PREPARE"
+         local pextbuilddir="TE_BS_TA_APP_${package}_${pext}_BUILDDIR"
+         local pextbuild="TE_BS_TA_APP_${package}_${pext}_BUILD"
+         local pextlibs="TE_BS_TA_APP_${package}_${pext}_LIBS"
+         local pextinstb="TE_BS_TA_APP_${package}_${pext}_INSTALL_BIN"
+         build_extension "$PLATFORM" "${!pextsrc}" "${!pextprep}" "${!pextbuilddir}" \
+                         "${!pextbuild}" "${!pextlibs}" \
+                         "" "" "${!pextinstb}" "${package}" || exit 1
+    done
 }
 
 print_platform() {
