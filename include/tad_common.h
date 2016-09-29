@@ -56,6 +56,7 @@
 #define CSAP_PARAM_TOTAL_RECEIVED       "total_received"
 #define CSAP_PARAM_FIRST_PACKET_TIME    "first_pkt_time"
 #define CSAP_PARAM_LAST_PACKET_TIME     "last_pkt_time"
+#define CSAP_PARAM_NO_MATCH_PKTS        "no_match_pkts"
 
 /**
  * Type for CSAP handle, should have semantic unsigned integer,

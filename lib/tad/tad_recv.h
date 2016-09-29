@@ -144,6 +144,7 @@ typedef struct tad_recv_context {
     unsigned int    match_pkts; /**< Number of matched packets */
     unsigned int    got_pkts;   /**< Number of matched packets got via
                                      traffic receive get operation */
+    unsigned int    no_match_pkts;   /**< Number of unmatched packets */
 } tad_recv_context;
 
 
