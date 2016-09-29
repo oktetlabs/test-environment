@@ -393,16 +393,22 @@ build_platform_and_agent() {
     print_build_agent_start "$p" >&2
     (
         local plocalbuild="TE_BS_TA_${p}_LOCAL_BUILD"
+        local res
+
         if test "${!plocalbuild}" = "local"; then
             local pplatform="TE_BS_TA_${p}_PLATFORM"
             declare "${!pplatform}_SSH"=""
         fi
         acquire_shadow_build_directory
-        build_platform "$p" "$mode" || mode=all
-        if test "$AGENT_EXIST" = "yes" ; then
-            build_agent "$p" "$mode"
-        fi
+        (
+            build_platform "$p" "$mode" || mode=all
+            if test "$AGENT_EXIST" = "yes" ; then
+                build_agent "$p" "$mode"
+            fi
+        )
+        res=$?
         release_shadow_build_directory
+        exit $res
     ) 2> >( add_timestamps stderr >$p.2.log ) \
       1> >( add_timestamps stdout >$p.1.log ) &
     PIDS[$!]="$p"
