@@ -168,8 +168,6 @@ enum tad_eth_recv_mode {
     TAD_ETH_RECV_OUT   = 0x10,  /**< Outgoing of any type */
     /** Do not enter promiscuous mode even if TAD_ETH_RECV_OTHER is given */
     TAD_ETH_RECV_NO_PROMISC = 0x100,
-    /** Do not close socket after receiving packets */
-    TAD_ETH_RECV_KEEP_OPEN_SOCKET = 0x200,
 };
 
 /** Receive all packets */

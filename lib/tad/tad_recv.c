@@ -699,8 +699,7 @@ tad_recv_release(csap_p csap, tad_recv_context *context)
     assert(csap != NULL);
     assert(context != NULL);
 
-    if (~csap->state & CSAP_STATE_KEEP_OPEN_SOCKET)
-        rc = tad_recv_shutdown(csap);
+    rc = tad_recv_shutdown(csap);
 
     tad_recv_release_context(csap, context);
 
