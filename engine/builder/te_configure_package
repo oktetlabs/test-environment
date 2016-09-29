@@ -170,7 +170,9 @@ fi
 
 process_libs
 
-PARMS="--with-name=$PACKAGE `eval echo '$'${PLATFORM}'_PARMS'` `eval echo '$TE_BS_'${KIND}'_'${PKGNAME}'_PARMS'`"
+test $PACKAGE != $(basename "$PKGSRC") &&
+    PARMS="--with-name=$PACKAGE" || PARMS=
+PARMS="$PARMS `eval echo '$'${PLATFORM}'_PARMS'` `eval echo '$TE_BS_'${KIND}'_'${PKGNAME}'_PARMS'`"
 
 ADD_CPPFLAGS="`eval echo '$'${PLATFORM}'_CPPFLAGS'` `eval echo '$TE_BS_'${KIND}'_'${PKGNAME}'_CPPFLAGS'`"
 ADD_CFLAGS="`eval echo '$'${PLATFORM}'_CFLAGS'` `eval echo '$TE_BS_'${KIND}'_'${PKGNAME}'_CFLAGS'`"

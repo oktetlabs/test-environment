@@ -20,7 +20,7 @@ AC_PROG_INSTALL
 
 TE_LIB_SET
 
-AC_ARG_WITH([name],,)
+AC_ARG_WITH([name],,,[with_name=$PACKAGE_NAME])
 AC_SUBST([with_name])
 
 AC_CONFIG_HEADERS([upnp_cp_config.h])

@@ -142,8 +142,7 @@ AC_CHECK_FUNCS([gettimeofday inet_ntoa memset select socket strdup strtol])
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
 
-AC_ARG_WITH([name],,)
-
+AC_ARG_WITH([name],,,[with_name=$PACKAGE_NAME])
 AC_SUBST([with_name])
 
 TAD_LIBLIST=
