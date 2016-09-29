@@ -2594,10 +2594,9 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
     strcpy(msg.file, pattern);
     msg.handle = csap_id;
     msg.intparm = (mode == RCF_TRRECV_COUNT ? 0 :
-                  (TR_RESULTS |
-                   (mode == RCF_TRRECV_NO_PAYLOAD ?
-                       TR_NO_PAYLOAD : (mode == RCF_TRRECV_READ_ONE) ?
-                           TR_READ_ONE : 0)));
+                   (TR_RESULTS |
+                    (mode == RCF_TRRECV_NO_PAYLOAD ?
+                        TR_NO_PAYLOAD : 0)));
     msg.sid = session;
     msg.num = num;
     msg.timeout = timeout;

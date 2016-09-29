@@ -68,7 +68,6 @@ extern "C" {
 #define TR_POSTPONED            1
 #define TR_RESULTS              2
 #define TR_NO_PAYLOAD           4
-#define TR_READ_ONE             8
 /*@}*/
 
 
