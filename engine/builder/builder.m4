@@ -90,10 +90,11 @@ dnl                        for the current platform
 dnl           - EXT_SOURCES: absolute path to the sources
 dnl       list of headers to copy to TE build tree
 dnl       list of libraries to copy to TE build tree
+dnl       list of environment variables to export to the build script
+dnl       (this only matters for remote builds)
 dnl
 define([TE_PLATFORM_EXT],
-[
-[
+[[
 EXTNAME="$1"
 case "$EXTNAME" in
      [^a-zA-Z]*)
@@ -119,16 +120,20 @@ if ! test -d "$SOURCES" ; then
     TE_BS_CONF_ERR="source path for platform extension ${EXTNAME} does not exist or is not a directory" ;
     break ;
 fi
-]
+BUILDDIR="$5"
+if test -z "$BUILDDIR"; then
+   BUILDDIR="${TE_BUILD}/platforms/${PLATFORM}/lib/${EXTNAME}"
+fi
 EXTLIST="TE_BS_EXT_${PLATFORM}"
 declare "$EXTLIST"="${!EXTLIST} ${EXTNAME}"
 declare "${EXTLIST}_${EXTNAME}_SOURCES"="$SOURCES"
 declare "${EXTLIST}_${EXTNAME}_PREPARE"="$4"
-declare "${EXTLIST}_${EXTNAME}_BUILDDIR"="$5"
+declare "${EXTLIST}_${EXTNAME}_BUILDDIR"="${BUILDDIR}"
 declare "${EXTLIST}_${EXTNAME}_BUILD"="$6"
 declare "${EXTLIST}_${EXTNAME}_INSTALL_HEADERS"="$7"
 declare "${EXTLIST}_${EXTNAME}_INSTALL_LIBS"="$8"
-])
+declare "${EXTLIST}_${EXTNAME}_ENV_VARS"="$9"
+]])
 
 dnl Specifies list of external static libraries that should be
 dnl loaded via http from the server specified in TE_EXT_LIBS
@@ -360,7 +365,7 @@ dnl           This is a list of entity names (i.e. without lib prefix and .a suf
 dnl           as in TE_TA_TYPE which is
 dnl           used to construct the value of TE_LDFLAGS variable (see below).
 dnl           Listing a library here won't per se create a build dependency and
-dnl           won't cause the library to be built              
+dnl           won't cause the library to be built
 dnl       build script (may be run on the engine or agent side)
 dnl           The script is run in the build directory, as specified above.
 dnl           The following env variables are exported:
@@ -370,10 +375,11 @@ dnl           - TE_CPPFLAGS: gcc preprocess flags to use TE-provided headers
 dnl           - TE_LDFLAGS: linker flags to use TE libraries
 dnl           - EXT_SOURCES: absolute path to the sources
 dnl       list of executables to copy to TA agent directory
+dnl       list of environment variables to export to the build script
+dnl       (this only matters for remote builds)
 dnl
 define([TE_TA_APP],
-[
-[
+[[
 APPNAME="$1"
 case "$APPAME" in
      [^a-zA-Z]*)
@@ -396,16 +402,20 @@ if ! test -d "$SOURCES" ; then
     TE_BS_CONF_ERR="source path for agent extension ${APPNAME} does not exist or is not a directory" ;
     break ;
 fi
-]
-TA_TYPE_APPS="TE_BS_TA_APP_${TATYPE}"
+BUILDDIR="$5"
+if test -z "$BUILDDIR"; then
+   BUILDDIR="${TE_BUILD}/apps/${APPNAME}/${TATYPE}"
+fi
+TA_TYPE_APPS="TE_BS_TA_APPS_${TATYPE}"
 declare "$TA_TYPE_APPS"="${!TA_TYPE_APPS} ${APPNAME}"
 declare "${TA_TYPE_APPS}_${APPNAME}_SOURCES"="$SOURCES"
 declare "${TA_TYPE_APPS}_${APPNAME}_PREPARE"="$4"
-declare "${TA_TYPE_APPS}_${APPNAME}_BUILDDIR"="$5"
+declare "${TA_TYPE_APPS}_${APPNAME}_BUILDDIR"="$BUILDDIR"
 declare "${TA_TYPE_APPS}_${APPNAME}_LIBS"="$6"
 declare "${TA_TYPE_APPS}_${APPNAME}_BUILD"="$7"
 declare "${TA_TYPE_APPS}_${APPNAME}_INSTALL_BIN"="$8"
-])
+declare "${TA_TYPE_APPS}_${APPNAME}_ENV_VARS"="$9"
+]])
 
 
 dnl Specifies additional parameters for test suite.
