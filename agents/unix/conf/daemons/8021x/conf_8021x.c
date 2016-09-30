@@ -720,7 +720,9 @@ supp_update(supplicant *supp)
     fclose(conf);
 
     supp->changed = FALSE;
-    if (supp->started)
+    if (!supp->started)
+        supp->impl->stop(supp->ifname);
+    else
     {
         if (supp->impl == new_impl && supp->impl->reload != NULL)
             supp->impl->reload(supp->ifname);
