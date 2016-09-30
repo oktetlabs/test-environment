@@ -274,14 +274,14 @@ static te_errno
 system_with_timeout(const char *cmd, int timeout)
 {
     pid_t           pid;
-    int             fd;
+    int             fd = -1;
     char            buf[64] = { 0, };
     te_errno        rc;
     int             status;
     unsigned int    waitpid_tries = 0;
 
     pid = te_shell_cmd_inline(cmd, -1, NULL, &fd, NULL);
-    if (pid < 0)
+    if (pid < 0 || fd < 0)
     {
         rc = TE_OS_RC(TE_RCF_UNIX, errno);
         ERROR("te_shell_cmd() for the command <%s> failed", cmd);
