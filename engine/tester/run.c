@@ -817,7 +817,7 @@ test_params_hash(test_iter_arg *args, unsigned int n_args)
          * In any case this buffer is filled in for debugging purposes,
          * so there is no much need to care about it.
          */
-        if (len >= sizeof(buf))
+        if (len >= (int)sizeof(buf))
             len = sizeof(buf);
 
         if (i != 0)
