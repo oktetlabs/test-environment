@@ -8,8 +8,6 @@ AM_CPPFLAGS = -I$(top_srcdir) @TE_CPPFLAGS@ @TAD_CH_DEFS@ \
 AM_CFLAGS = @TE_CFLAGS@ $(TE_CFLAGS_VAR)
 
 if WITH_RTE_MBUF
-AM_CPPFLAGS += -I${RTE_SDK_BIN}/include
-AM_CFLAGS += -I${RTE_SDK_BIN}/include
 RTE_MBUF_SAP_H = tad_rte_mbuf_sap.h
 RTE_MBUF_SAP_S = tad_rte_mbuf_sap.c
 else

@@ -385,12 +385,8 @@ AC_ARG_WITH([socket],,
 
 AC_ARG_WITH([rte_mbuf],,
 [if test "${withval}" = yes; then
-   if [ test ! -z "${RTE_SDK_BIN}" ] && [ test -d "${RTE_SDK_BIN}" ]; then
-      proto_specific rte_mbuf;
-      AC_CONFIG_FILES([rte_mbuf/Makefile])
-   else
-      AC_MSG_ERROR([$RTE_SDK_BIN is not a valid RTE_SDK_BIN directory path])
-   fi
+   proto_specific rte_mbuf;
+   AC_CONFIG_FILES([rte_mbuf/Makefile])
  fi
 ], [w_rte_mbuf=false])
 
