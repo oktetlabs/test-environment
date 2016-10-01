@@ -117,8 +117,7 @@ startElementLGR(void           *ctx,
             uint32_t   str_len;
 
             memset(pmatch,0, sizeof(regmatch_t));
-            cmp_buffer = (regex_t *)malloc(sizeof(*cmp_buffer));
-            memset(cmp_buffer, 0, sizeof(cmp_buffer));
+            cmp_buffer = (regex_t *)calloc(1, sizeof(*cmp_buffer));
 
             val = (uint32_t)strtoul(atts[3], NULL, 0);
             if (regcomp(cmp_buffer, atts[1], REG_EXTENDED) != 0 )
