@@ -855,11 +855,7 @@ trc_diff_compare(trc_diff_sets  *sets,
  * Are two expected results equal?
  *
  * @param set1          The first set to compare
- * @param result1       Expected result for the first set
- * @param keys1         List of keys for the first set
  * @param set2          The second set to compare
- * @param result2       Expected result for the second set
- * @param keys1         List of keys for the second set
  * @param stats         Statistics to update or NULL
  *
  * @return
@@ -876,14 +872,8 @@ trc_diff_compare_iter(trc_diff_sets  *sets,
     const trc_diff_set *set1;
     const trc_diff_set *set2;
 
-    tqh_strings *keys1;
-    tqh_strings *keys2;
-
     te_bool is_exp1 = TRUE;
     te_bool is_exp2 = TRUE;
-
-    const trc_exp_result *result1;
-    const trc_exp_result *result2;
 
     trc_report_test_iter_data *iter_data1;
     trc_report_test_iter_data *iter_data2;
@@ -914,12 +904,6 @@ trc_diff_compare_iter(trc_diff_sets  *sets,
     {
         return -1;
     }
-
-    keys1 = &entry->keys[id1];
-    keys2 = &entry->keys[id2];
-
-    result1 = entry->results[id1];
-    result2 = entry->results[id2];
 
     iter_data1 = trc_db_iter_get_user_data(test_iter, set1->db_uid);
     iter_data2 = trc_db_iter_get_user_data(test_iter, set2->db_uid);
