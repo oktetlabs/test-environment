@@ -67,7 +67,7 @@ for p in ${2:-${TE_BS_PLATFORMS}} ; do
             pushd \"${sbd}/platforms/$p/\" >/dev/null
             for i in ${!libs} ; do
                 rm -rf \$i.tgz
-                wget ${TE_EXT_LIBS}/${!dir}/\$i.tgz
+                wget --no-verbose ${TE_EXT_LIBS}/${!dir}/\$i.tgz
                 if [ \$? -eq 0 ] ; then
                     echo \"./$p/\$i.tgz \\\\\" >>${TE_EXT_LIBS_FILE}
                     tar -tzf \$i.tgz |
