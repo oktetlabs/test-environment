@@ -1955,7 +1955,6 @@ trc_diff_stats_brief_report(FILE *f, const trc_diff_sets *sets,
 {
     trc_diff_set *ref_set = TAILQ_FIRST(sets);
     trc_diff_set *compare_set = NULL;
-    trc_diff_set *prev_set = NULL;
     tqh_strings  *ref_tags = NULL;
     int           ref_tags_count = 0;
 
@@ -2001,8 +2000,6 @@ trc_diff_stats_brief_report(FILE *f, const trc_diff_sets *sets,
                                          compare_set, ref_tags, TRUE,
                                          ~flags & TRC_DIFF_FLAGS_NO_POPUPS);
         fprintf(f, trc_diff_stats_brief_table_row_end);
-
-        prev_set = compare_set;
     }
 
     fprintf(f, trc_diff_stats_brief_table_end);
