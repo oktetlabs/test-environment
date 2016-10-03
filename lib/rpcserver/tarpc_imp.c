@@ -10384,15 +10384,14 @@ TARPC_FUNC_STATIC(send_flooder_iomux, {},
 /**
  * Copy data between one file descriptor and another.
  *
- * @param[in]  in       TA RPC input parameter.
- * @param[out] out      TA RPC output parameter.
+ * @param in        TA RPC input parameter.
  *
  * @return If the transfer was successful, the number of copied bytes is
  *         returned. On error, @c -1 is returned, and errno is set
  *         appropriately.
  */
 int64_t
-copy_fd2fd(tarpc_copy_fd2fd_in *in, tarpc_copy_fd2fd_out *out)
+copy_fd2fd(tarpc_copy_fd2fd_in *in)
 {
     /* Whether limited number of bytes to copy or not. */
     const te_bool partial_copy = (in->count != 0);
@@ -10497,5 +10496,5 @@ copy_fd2fd(tarpc_copy_fd2fd_in *in, tarpc_copy_fd2fd_out *out)
 
 TARPC_FUNC_STATIC(copy_fd2fd, {},
 {
-   MAKE_CALL(out->retval = func_ptr(in, out));
+   MAKE_CALL(out->retval = func_ptr(in));
 })
