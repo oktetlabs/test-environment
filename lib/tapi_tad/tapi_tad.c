@@ -267,11 +267,12 @@ tapi_csap_get_status(const char *ta_name, int ta_sid, csap_handle_t csap_id,
 /* Description in tapi_tad.h */
 te_errno
 tapi_tad_csap_create(const char *ta_name, int session,
-                     const char *stack_id, 
+                     const char *stack_id,
                      const asn_value *csap_spec, csap_handle_t *handle)
 {
     te_errno    rc;
     char        tmp_name[] = "/tmp/te_tapi_tad_csap_create.XXXXXX";
+    char       *stack_id_by_spec = NULL;
 
     if ((rc = te_make_tmp_file(tmp_name)) != 0)
         return TE_RC(TE_TAPI, rc);
@@ -284,7 +285,21 @@ tapi_tad_csap_create(const char *ta_name, int session,
         return rc;
     }
 
-    rc = rcf_ta_csap_create(ta_name, session, stack_id, tmp_name, handle);
+    if (stack_id == NULL)
+    {
+        stack_id_by_spec = ndn_csap_stack_by_spec(csap_spec);
+        if (stack_id_by_spec == NULL)
+        {
+            ERROR("%s(): ndn_csap_stack_by_spec() failed: %r",
+            __FUNCTION__, rc);
+            (void)unlink(tmp_name);
+            return rc;
+        }
+    }
+
+    rc = rcf_ta_csap_create(ta_name, session,
+                            (stack_id == NULL) ? stack_id_by_spec : stack_id,
+                            tmp_name, handle);
     if ((rc == 0) &&
         ((rc = cfg_synchronize_fmt(TRUE, "/agent:%s/csap:*",
                                    ta_name)) != 0))
@@ -293,6 +308,7 @@ tapi_tad_csap_create(const char *ta_name, int session,
               __FUNCTION__, ta_name, rc);
     }
 
+    free(stack_id_by_spec);
     unlink(tmp_name);
     if (rc != 0)
         ERROR("%s(): CSAP create failed with rc %r", __FUNCTION__, rc);

@@ -973,3 +973,52 @@ ndn_packet_to_template(const asn_value *pkt, asn_value **tmpl)
 
     return rc;
 }
+
+char *
+ndn_csap_stack_by_spec(const asn_value *csap_spec)
+{
+    unsigned int    n_layers;
+    unsigned int    i;
+    char           *stack_id = NULL;
+    size_t          stack_id_len = 1;
+    te_errno        rc;
+
+    n_layers = (unsigned)asn_get_length(csap_spec, "layers");
+
+    for (i = 0; i < n_layers; ++i)
+    {
+        asn_value      *gen_layer = NULL;
+        const char     *layer_choice = NULL;
+        size_t          layer_choice_len;
+        unsigned int    remove_one_symbol;
+
+        remove_one_symbol = (i == (n_layers - 1)) ? 1 : 0;
+
+        rc = asn_get_indexed(csap_spec, &gen_layer, i, "layers");
+        if ((rc != 0) || (gen_layer == NULL))
+            goto fail;
+
+        layer_choice = asn_get_choice_ptr(gen_layer);
+        layer_choice_len = strlen(layer_choice);
+
+        stack_id = realloc(stack_id, stack_id_len +
+                           layer_choice_len + 1 - remove_one_symbol);
+        if (stack_id == NULL)
+            goto fail;
+
+        if ((unsigned)sprintf(stack_id + stack_id_len - 1,
+                              (remove_one_symbol == 0) ? "%s." : "%s",
+                              layer_choice) !=
+                              (layer_choice_len + 1 - remove_one_symbol))
+            goto fail;
+
+        stack_id_len += (layer_choice_len + 1 - remove_one_symbol);
+    }
+
+    return stack_id;
+
+fail:
+    free(stack_id);
+
+    return NULL;
+}

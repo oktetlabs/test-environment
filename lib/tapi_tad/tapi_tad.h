@@ -127,18 +127,20 @@ extern int tapi_csap_param_get_timestamp(const char *ta_name, int ta_sid,
                                          struct timeval *p_timestamp);
 
 /**
- * Creates CSAP (communication service access point) on the Test Agent. 
+ * Creates CSAP (communication service access point) on the Test Agent.
  *
- * @param ta_name       Test Agent name                 
- * @param session       TA session or 0   
- * @param stack_id      protocol stack identifier
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
+ * @param stack_id      protocol stack identifier or @c NULL
  * @param csap_spec     ASN value of type CSAP-spec
  * @param handle        location for unique CSAP handle
+ *
+ * @note If @p stack_id is @c NULL, then it will be determined by @p csap_spec
  *
  * @return zero on success or error code
  */
 extern int tapi_tad_csap_create(const char *ta_name, int session,
-                                const char *stack_id, 
+                                const char *stack_id,
                                 const asn_value *csap_spec,
                                 csap_handle_t *handle);
 

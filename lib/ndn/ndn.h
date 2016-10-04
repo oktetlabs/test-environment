@@ -349,6 +349,17 @@ extern int ndn_get_timestamp(const asn_value *packet, struct timeval *ts);
 extern te_errno ndn_packet_to_template(const asn_value *pkt,
                                        asn_value **tmpl);
 
+/**
+ * Produce CSAP spec. ID by means of parsing ASN.1 representation
+ *
+ * @param csap_spec    ASN.1 CSAP spec.
+ *
+ * @note CSAP spec. ID is allocated from heap and should be freed by the caller
+ *
+ * @return CSAP spec. ID string or @c NULL on failure
+ */
+extern char *ndn_csap_stack_by_spec(const asn_value *csap_spec);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
