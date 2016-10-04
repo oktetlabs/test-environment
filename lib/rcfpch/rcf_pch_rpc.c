@@ -155,6 +155,24 @@ static struct rcf_comm_connection *conn_saved;
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 /**
+ * Check for a special RPC name that is not passed to the RPC server
+ * and must be treated differently from others.
+ * Currently the following RPCs are special:
+ * - rpc_is_op_done
+ * - rpc_is_alive
+ *
+ * @param rpc_name The name of rpc function
+ *
+ * @return @c TRUE iff the function is special
+ */
+static te_bool
+is_special_rpc(const char *rpc_name)
+{
+    return (strcmp(rpc_name, "rpc_is_op_done") == 0 ||
+            strcmp(rpc_name, "rpc_is_alive") == 0);
+}
+
+/**
  * Check a possibility of the current rpc call based on the previous rpc
  * call.
  *
@@ -172,7 +190,7 @@ check_rpc_call(rpcserver *rpcs, rcf_rpc_op op, const char *rpc_name)
         if (op != RCF_RPC_WAIT)
             return TRUE;
 
-        if (strncmp(rpcs->last_rpc_name, rpc_name, RCF_MAX_NAME) == 0)
+        if (strncmp(rpcs->last_rpc_name, rpc_name, RCF_MAX_NAME) != 0)
         {
             ERROR("RPC server %s cannot wait the function \"%s\", "
                   "the previous rpc call has wrong name \"%s\" "
@@ -234,6 +252,7 @@ call(rpcserver *rpcs, char *name, void *in, void *out)
         return TE_RC(TE_RCF_PCH, TE_EBUSY);
     }
 
+    assert (!is_special_rpc(name));
     if (!check_rpc_call(rpcs, in_arg->op, name))
     {
         /* Bug 8924: wrong call does not stop the execution, just logs
@@ -1472,20 +1491,24 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
         RETERR(TE_EBUSY);
     }
 
-    if (!check_rpc_call(rpcs, common_arg.op, rpc_name))
+    if (!is_special_rpc(rpc_name))
     {
-        /* Bug 8924: wrong call does not stop the execution, just logs
-         * the error message. This behaviour allows to collect statistics
-         * about rpc calls.
-         */
-        if (FALSE)
+        if (!check_rpc_call(rpcs, common_arg.op, rpc_name))
         {
-            pthread_mutex_unlock(&lock);
-            RETERR(TE_EBUSY);
+            /* Bug 8924: wrong call does not stop the execution, just logs
+             * the error message. This behaviour allows to collect statistics
+             * about rpc calls.
+             */
+            if (FALSE)
+            {
+                pthread_mutex_unlock(&lock);
+                RETERR(TE_EBUSY);
+            }
         }
+
+        rpcs->last_rpc_op = common_arg.op;
+        strncpy(rpcs->last_rpc_name, rpc_name, RCF_MAX_NAME);
     }
-    rpcs->last_rpc_op = common_arg.op;
-    strncpy(rpcs->last_rpc_name, rpc_name, RCF_MAX_NAME);
 
     rpcs->sent = time(NULL);
     rpcs->last_sid = sid;
@@ -1520,7 +1543,7 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
                                    &result);
         if (rc != 0)
         {
-            ERROR("Cannot encode rpc_op_is_done result");
+            ERROR("Cannot encode rpc_is_op_done result");
             RETERR(rc);
         }
 
