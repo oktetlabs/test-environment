@@ -403,7 +403,7 @@ typedef struct rpcserver_plugin_context {
 } rpcserver_plugin_context;
 
 /** The data of current RPC server plugin */
-static rpcserver_plugin_context plugin = {
+static __thread rpcserver_plugin_context plugin = {
     .enable = FALSE
 };
 
