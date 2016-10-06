@@ -566,3 +566,251 @@ TARPC_FUNC_STATIC(rte_mk_mbuf_from_template, {},
     MAKE_CALL(out->retval = func(in, out));
 }
 )
+
+/** Auxiliary description of storage for matching packets */
+struct rte_mbuf_tad_reply_opaque {
+    unsigned int    added;
+    tarpc_string   *pkt_nds_storage;
+};
+
+static te_errno
+rte_mbuf_store_matching_packets(void               *opaque,
+                                const asn_value    *pkt_nds)
+{
+    struct rte_mbuf_tad_reply_opaque   *desc;
+    size_t                              pkt_nds_str_len;
+    te_errno                            rc;
+
+    /* Remove the dummy PDU added by tad_recv_get_packets() */
+    rc = asn_remove_indexed((asn_value *)pkt_nds, -1, "pdus");
+    if (rc != 0)
+        return rc;
+
+    desc = (struct rte_mbuf_tad_reply_opaque *)opaque;
+
+    pkt_nds_str_len = asn_count_txt_len(pkt_nds, 0) + 1;
+
+    desc->pkt_nds_storage[desc->added].str = calloc(pkt_nds_str_len,
+                                                    sizeof(char));
+    if (desc->pkt_nds_storage[desc->added].str == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto fail;
+    }
+
+    if (asn_sprint_value(pkt_nds, desc->pkt_nds_storage[desc->added].str,
+                         pkt_nds_str_len, 0) <= 0)
+    {
+        rc = TE_ENOBUFS;
+        goto fail;
+    }
+
+    desc->added++;
+
+    return 0;
+
+fail:
+    free(desc->pkt_nds_storage[desc->added].str);
+
+    return rc;
+}
+
+static int
+rte_mbuf_match_pattern(tarpc_rte_mbuf_match_pattern_in  *in,
+                       tarpc_rte_mbuf_match_pattern_out *out)
+{
+    tad_reply_context                   reply_ctx;
+    csap_p                              csap_instance;
+    tad_reply_spec                     *reply_spec;
+    unsigned int                        i;
+    tad_recv_context                   *receiver;
+    struct rte_mbuf_tad_reply_opaque   *pkt_storage_desc;
+    te_errno                            rc;
+    struct rte_mbuf                    *m = NULL;
+    asn_value                          *pattern = NULL;
+    char                               *stack = NULL;
+    asn_value                          *csap_spec = NULL;
+    asn_value                          *rte_mbuf_layer = NULL;
+    struct rte_ring                    *ring = NULL;
+    te_bool                             csap_created = FALSE;
+    struct rte_mbuf                   **mbufs = NULL;
+    unsigned int                        got_pkts = 0;
+
+    memset(&reply_ctx, 0, sizeof(reply_ctx));
+
+    if (in->mbufs.mbufs_len == 0)
+    {
+        rc = TE_ENOENT;
+        goto out;
+    }
+
+    /*
+     * In order to obtain a dummy (but valid) mempool pointer to be set
+     * as a CSAP parameter, obtain the first mbuf pointer from the list
+     */
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+        m = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->mbufs.mbufs_val[0], ns);
+    });
+
+    if (m == NULL)
+    {
+        rc = TE_EINVAL;
+        goto out;
+    }
+
+    /*
+     * 1) Convert the traffic pattern to ASN.1 representation
+     * 2) Build up a string representation of CSAP's stack and
+     *    add the corresponding layers to CSAP
+     * 3) Add the bottom layer of type 'rtembuf' to CSAP
+     *    and store the layer's pointer to be used later
+     */
+    rc = rte_mbuf_nds_str2csap_layers_stack(in->pattern,
+                                            ndn_traffic_pattern,
+                                            &pattern, &stack,
+                                            &csap_spec,
+                                            &rte_mbuf_layer);
+    if (rc != 0)
+        goto out;
+
+    /* Configure 'rtembuf' layer and create a CSAP instance */
+    rc = rte_mbuf_config_init_csap(rte_mbuf_layer, in->mbufs.mbufs_len, m->pool,
+                                   csap_spec, stack, &ring, &csap_instance);
+    if (rc != 0)
+        goto out;
+
+    csap_created = TRUE;
+
+    /* Create a dummy reply context */
+    reply_ctx.spec = calloc(1, sizeof(tad_reply_spec));
+    if (reply_ctx.spec == NULL)
+        goto out;
+
+    reply_spec = (tad_reply_spec *)reply_ctx.spec;
+
+    reply_ctx.opaque = NULL;
+    reply_spec->opaque_size = 0;
+
+    /* Allocate a temporary array of mbuf pointers */
+    mbufs = calloc(in->mbufs.mbufs_len, sizeof(*mbufs));
+    if (mbufs == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto out;
+    }
+
+    /* Map PCH MEM indexes supplied by the caller to RTE mbuf pointers */
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+        for (i = 0; i < in->mbufs.mbufs_len; ++i)
+        {
+            mbufs[i] = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->mbufs.mbufs_val[i], ns);
+            if (mbufs[i] == NULL)
+            {
+                rc = TE_EINVAL;
+                goto out;
+            }
+        }
+    });
+
+    /* Shove RTE mbuf pointers into the ring to be inspected by the CSAP */
+    rc = rte_ring_enqueue_bulk(ring, (void **)mbufs, in->mbufs.mbufs_len);
+    neg_errno_h2rpc(&rc);
+    if (rc != 0)
+        goto out;
+
+    /* Shove the pattern into the CSAP */
+    rc = tad_recv_start_prepare(csap_instance, in->pattern, in->mbufs.mbufs_len,
+                                TAD_TIMEOUT_INF, RCF_CH_TRRECV_PACKETS, &reply_ctx);
+    if (rc != 0)
+        goto out;
+
+    /* "Receive" */
+    rc = tad_recv_do(csap_instance);
+    if (rc != 0)
+    {
+        if (rc != TE_RC(TE_TAD_CH, TE_EINTR))
+            goto out;
+        else
+            rc = 0;
+    }
+
+    receiver = csap_get_recv_context(csap_instance);
+
+    out->matched = receiver->match_pkts;
+
+    /*
+     * We return from the RPC if we are not asked to report
+     * the matching packets
+     */
+    if (out->matched == 0 || !(in->return_matching_pkts))
+        goto out;
+
+    /*
+     * To grab the matching packets from the CSAP queue we have to
+     * set up our custom structure for the TAD reply opaque data and use
+     * a special function as a callback for accessing the opaque data
+     */
+    reply_ctx.opaque = calloc(1, sizeof(struct rte_mbuf_tad_reply_opaque));
+    if (reply_ctx.opaque == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto out;
+    }
+
+    pkt_storage_desc = (struct rte_mbuf_tad_reply_opaque *)(reply_ctx.opaque);
+
+    /*
+     * Allocate an array of strings to store the matching packets
+     * NDS in textual representation
+     */
+    out->packets.packets_len = out->matched;
+    out->packets.packets_val = calloc(out->matched, sizeof(*out->packets.packets_val));
+    if (out->packets.packets_val == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto out;
+    }
+
+    pkt_storage_desc->pkt_nds_storage = out->packets.packets_val;
+
+    /* Set our custom callback to store the matching packets */
+    reply_spec->pkt = &rte_mbuf_store_matching_packets;
+
+    /* Grab the matching packets from the CSAP queue */
+    rc = tad_recv_get_packets(csap_instance, &reply_ctx, FALSE, &got_pkts);
+    if (rc != 0)
+        goto out;
+
+    if (out->matched != got_pkts)
+        rc = TE_ENOENT;
+
+out:
+    /* Free the reply context opaque data (if any) */
+    free(reply_ctx.opaque);
+
+    /* Free the temporary array of RTE mbuf pointers */
+    free(mbufs);
+
+    /* Destroy the dummy reply context */
+    free((void *)reply_ctx.spec);
+
+    /* Destroy CSAP instance (it will also free 'csap_spec', and it's unfair) */
+    if (csap_created)
+        (void)tad_csap_destroy(csap_instance);
+
+    /* Free RTE ring */
+    rte_ring_free(ring);
+
+    asn_free_value(rte_mbuf_layer);
+    free(stack);
+    asn_free_value(pattern);
+
+    return -TE_RC(TE_RPCS, rc);
+}
+
+TARPC_FUNC_STATIC(rte_mbuf_match_pattern, {},
+{
+    MAKE_CALL(out->retval = func(in, out));
+}
+)
+

@@ -64,6 +64,24 @@ extern int rpc_rte_mk_mbuf_from_template(rcf_rpc_server   *rpcs,
                                          rpc_rte_mbuf_p  **mbufs,
                                          unsigned int     *count);
 
+/**
+ * Match RTE mbuf(s) to a particular pattern
+ *
+ * @param[in]  pattern     ASN.1 traffic pattern
+ * @param[in]  mbufs       Array of RTE mbuf pointer(s)
+ * @param[in]  count       The number of RTE mbuf pointers in the array
+ * @param[out] packets     Location for the matching ASN.1 packets (optional)
+ * @param[out] matched     Location for the number of packets matched
+ *
+ * @return @c 0 on success; jumps out in case of failure
+ */
+extern int rpc_rte_mbuf_match_pattern(rcf_rpc_server     *rpcs,
+                                      const asn_value    *pattern,
+                                      rpc_rte_mbuf_p     *mbufs,
+                                      unsigned int        count,
+                                      asn_value        ***packets,
+                                      unsigned int       *matched);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf_ndn --> */
 
 #ifdef __cplusplus

@@ -584,6 +584,19 @@ struct tarpc_rte_mk_mbuf_from_template_out {
     tarpc_int               retval;
 };
 
+struct tarpc_rte_mbuf_match_pattern_in {
+    struct tarpc_in_arg     common;
+    string                  pattern<>;
+    tarpc_rte_mbuf          mbufs<>;
+    tarpc_bool              return_matching_pkts;
+};
+
+struct tarpc_rte_mbuf_match_pattern_out {
+    struct tarpc_out_arg    common;
+    unsigned int            matched;
+    tarpc_string            packets<>;
+    tarpc_int               retval;
+};
 
 /*
  * rte_eth_dev API
@@ -1312,6 +1325,7 @@ program dpdk
         RPC_DEF(rte_ring_dequeue_mbuf)
 
         RPC_DEF(rte_mk_mbuf_from_template)
+        RPC_DEF(rte_mbuf_match_pattern)
 
         RPC_DEF(rte_eth_dev_info_get)
         RPC_DEF(rte_eth_dev_configure)
