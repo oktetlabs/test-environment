@@ -951,8 +951,14 @@ tad_data_unit_convert_simple(const asn_value *ch_du_field,
                 }
                 else
                 {
-                    ERROR("not supported type of script");
-                    return TE_EOPNOTSUPP;
+                    location->du_type = TAD_DU_STRING;
+                    location->val_data.len = strlen(script) + 1;
+                    location->val_data.char_str = strdup(script);
+                    if (location->val_data.char_str == NULL)
+                    {
+                        ERROR("Failed to copy DU string value");
+                        return TE_ENOMEM;
+                    }
                 }
             }
             break;
