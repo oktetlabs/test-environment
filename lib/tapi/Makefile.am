@@ -30,6 +30,7 @@ include_HEADERS = \
 	tapi_file.h \
 	tapi_reqs.h \
 	tapi_gw.h \
+	tapi_route_gw.h \
 	tapi_sh_env.h \
 	tapi_cfg_acse.h \
 	tapi_sniffer.h \
@@ -75,6 +76,7 @@ libtapi_la_SOURCES = \
 	tapi_cfg_aggr.c \
 	tapi_cfg_ip_rule.c \
 	tapi_cfg_l2tp.c \
+	tapi_route_gw.c \
 	tapi_network.c
 
 install-exec-hook:
