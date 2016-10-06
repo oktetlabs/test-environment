@@ -2052,3 +2052,25 @@ tad_du_realloc(tad_data_unit_t *du, size_t size)
     du->val_data.len = size;
     return 0;
 }
+
+/* See description in 'tad_utils.h' */
+te_errno
+tad_du_get_string(tad_data_unit_t    *du,
+                  char              **string_value_out)
+{
+    if (du->du_type == TAD_DU_STRING)
+    {
+        char *string_value = strdup(du->val_data.char_str);
+
+        if (string_value == NULL)
+            return TE_ENOMEM;
+
+        *string_value_out = string_value;
+    }
+    else
+    {
+        return TE_EINVAL;
+    }
+
+    return 0;
+}

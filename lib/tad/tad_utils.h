@@ -430,6 +430,19 @@ extern te_errno tad_pthread_create(pthread_t *thread,
 
 extern te_errno tad_du_realloc(tad_data_unit_t *du, size_t size);
 
+/**
+ * An auxiliary tool to obtain a copy of a DU value of TAD_DU_STRING type
+ *
+ * @param   du                The DU to be examined
+ * @param   string_value_out  Location for a string copy to be obtained
+ *
+ * @note    @p string_value_out should be freed by the caller
+ *
+ * @return  Status code
+ */
+extern te_errno tad_du_get_string(tad_data_unit_t    *du,
+                                  char              **string_value_out);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
