@@ -393,3 +393,51 @@ tapi_tad_tmpl_ptrn_set_payload_plain(asn_value  **obj_spec,
 
     return TE_RC(TE_TAPI, rc);
 }
+
+/* See the description in tapi_ndn.h */
+asn_value *
+tapi_tad_mk_pattern_from_template(asn_value  *template)
+{
+    te_errno    err;
+    asn_value  *pattern = NULL;
+    asn_value  *pattern_unit = NULL;
+    asn_value  *pdus = NULL;
+    asn_value  *pdus_copy = NULL;
+
+    pattern = asn_init_value(ndn_traffic_pattern);
+    if (pattern == NULL)
+        goto fail;
+
+    pattern_unit = asn_init_value(ndn_traffic_pattern_unit);
+    if (pattern_unit == NULL)
+        goto fail;
+
+    err = asn_insert_indexed(pattern, pattern_unit, -1, "");
+    if (err != 0)
+    {
+        asn_free_value(pattern_unit);
+        goto fail;
+    }
+
+    err = asn_get_subvalue(template, &pdus, "pdus");
+    if (err != 0 || pdus == NULL)
+        goto fail;
+
+    pdus_copy = asn_copy_value(pdus);
+    if (pdus_copy == NULL)
+        goto fail;
+
+    err = asn_put_child_value(pattern_unit, pdus_copy, PRIVATE, NDN_PU_PDUS);
+    if (err != 0)
+    {
+        asn_free_value(pdus_copy);
+        goto fail;
+    }
+
+    return pattern;
+
+fail:
+    asn_free_value(pattern);
+
+    return NULL;
+}

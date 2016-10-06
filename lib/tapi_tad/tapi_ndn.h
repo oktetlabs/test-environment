@@ -131,6 +131,16 @@ extern te_errno tapi_tad_tmpl_ptrn_set_payload_plain(
                     const void  *payload,
                     size_t       length);
 
+/**
+ * Convert an ASN.1 template to a pattern containing
+ * the same set of PDUs as ones in the template
+ *
+ * @param template      ASN.1 template to be converted into a pattern
+ *
+ * @return ASN.1 value containing a pattern or @c NULL
+ */
+extern asn_value *tapi_tad_mk_pattern_from_template(asn_value *template);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
