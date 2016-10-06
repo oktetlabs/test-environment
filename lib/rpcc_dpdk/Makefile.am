@@ -14,6 +14,7 @@ include_HEADERS = \
 	tapi_rte_mbuf.h \
 	tapi_rpc_rte_ethdev.h \
 	tapi_rpc_rte_ring.h \
+	tapi_rpc_rte_mbuf_ndn.h \
 	tapi_rpc_rte.h
 
 lib_LTLIBRARIES = librpcc_dpdk.la
@@ -24,6 +25,7 @@ librpcc_dpdk_la_SOURCES = \
 	ethdev.c \
 	ring.c \
 	tapi_ethdev.c \
+	tapi_rpc_rte_mbuf_ndn.c \
 	eal.c
 
 
