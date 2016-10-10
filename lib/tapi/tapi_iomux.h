@@ -34,6 +34,7 @@
 #include "te_stdint.h"
 #include "rcf_rpc.h"
 #include "te_rpc_types.h"
+#include "te_queue.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -56,14 +57,19 @@ typedef enum {
     TAPI_IOMUX_DEFAULT          = 8,
 } tapi_iomux_type;
 
+/** Minimum supported iomux type value.  */
+#define TAPI_IOMUX_MIN TAPI_IOMUX_SELECT
+
+/** Maximum supported iomux type value.  */
+#define TAPI_IOMUX_MAX TAPI_IOMUX_EPOLL_PWAIT
+
 /**
- * Type of events passed to iomux_call and iomux_common_steps functions
- * and returned by them.
+ * Type of events used in iomux API.
  */
 typedef enum tapi_iomux_evt {
     EVT_NONE    = 0x000,           /**< None event */
     EVT_RD      = 0x001,           /**< Read event */
-    EVT_PRI     = 0x002,           /**< Read event */
+    EVT_PRI     = 0x002,           /**< Urgent data available for read */
     EVT_WR      = 0x004,           /**< Write event */
     EVT_RDWR    = EVT_RD | EVT_WR, /**< Read and write event */
     EVT_RD_NORM = 0x008,           /**< Normal data may be read */
@@ -97,19 +103,11 @@ typedef enum tapi_iomux_evt {
             BIT_MAP_ENTRY(EVT_HUP),     \
             BIT_MAP_ENTRY(EVT_RDHUP),   \
             BIT_MAP_ENTRY(EVT_NVAL)
+
 /**
  * tapi_iomux_event_rpc2str()
  */
 RPCBITMAP2STR(tapi_iomux_event, IOMUX_EVENT_MAPPING_LIST);
-
-/**
- * Structure for event request entry for iomux API.
- */
-typedef struct {
-    int fd;             /**< File descriptor */
-    uint16_t events;    /**< Requested events */
-    uint16_t revents;   /**< Returned events */
-} tapi_iomux_evt_fd;
 
 /**
  * Convert string name of iomux function to enum constant.
@@ -168,6 +166,208 @@ extern uint16_t tapi_iomux_poll_to_evt(short int poll_evt_mask);
  * @return event bitmask from #tapi_iomux_evt constants.
  */
 extern uint16_t tapi_iomux_epoll_to_evt(short int poll_evt_mask);
+
+
+/**
+ * Handle for a multiplexer context.
+ */
+struct tapi_iomux_handle;
+typedef struct tapi_iomux_handle tapi_iomux_handle;
+
+/**
+ * A file descriptor events.
+ */
+struct tapi_iomux_evt_fd;
+typedef struct tapi_iomux_evt_fd tapi_iomux_evt_fd;
+
+/**
+ * Function prototype to create a multiplexer.
+ *
+ * @param iomux     The multiplexer handle.
+ */
+typedef void (* tapi_iomux_method_create)(tapi_iomux_handle *iomux);
+
+/**
+ * Function prototype to add a file descriptor to a multiplexer set.
+ *
+ * @param iomux     The multiplexer handle.
+ * @param fd        The file descriptor to add to the multiplexer set.
+ * @param evt       Requested events.
+ */
+typedef void (* tapi_iomux_method_add)(tapi_iomux_handle *iomux, int fd,
+                                       tapi_iomux_evt evt);
+
+/**
+ * Function prototype to modify a file descriptor events.
+ *
+ * @param iomux     The multiplexer handle.
+ * @param fd        The file descriptor to modify events for.
+ * @param evt       New events.
+ */
+typedef void (* tapi_iomux_method_mod)(tapi_iomux_handle *iomux, int fd,
+                                       tapi_iomux_evt evt);
+
+/**
+ * Function prototype to delete a file descriptor from a multiplexer set.
+ *
+ * @param iomux     The multiplexer handle.
+ * @param fd        The file descriptor which should be deleted.
+ */
+typedef void (* tapi_iomux_method_del)(tapi_iomux_handle *iomux, int fd);
+
+/**
+ * Function prototype to perform a multiplexer call.
+ *
+ * @param iomux     The multiplexer handle.
+ * @param timeout   Timeout to block in the call in milliseconds.
+ * @param revts     Returned events.
+ *
+ * @return Events number or @c -1 in case of fail, actualy return code is
+ *         forwarded from the system multiplexer function call.
+ */
+typedef int (* tapi_iomux_method_call)(tapi_iomux_handle *iomux,
+                                       int timeout,
+                                       tapi_iomux_evt_fd **revts);
+
+/**
+ * Function prototype to destroy a multiplexer.
+ *
+ * @param iomux     The multiplexer handle.
+ */
+typedef void (* tapi_iomux_method_destroy)(tapi_iomux_handle *iomux);
+
+/**
+ * A multiplexer methods.
+ */
+typedef struct tapi_iomux_methods {
+    tapi_iomux_method_create  create;
+    tapi_iomux_method_add     add;
+    tapi_iomux_method_mod     mod;
+    tapi_iomux_method_del     del;
+    tapi_iomux_method_call    call;
+    tapi_iomux_method_destroy destroy;
+} tapi_iomux_methods;
+
+/**
+ * Context data for @c select() API.
+ */
+typedef struct tapi_iomux_select_context {
+    rpc_fd_set_p read_fds;  /**< RPC pointer to file descriptors set
+                                 watching for read events. */
+    rpc_fd_set_p write_fds; /**< RPC pointer to file descriptors set
+                                 watching for write events. */
+    rpc_fd_set_p exc_fds;   /**< RPC pointer to file descriptors set
+                                 watching for exception events. */
+} tapi_iomux_select_context;
+
+/**
+ * Context data for @c epoll() API.
+ */
+typedef struct tapi_iomux_epoll_context {
+    int epfd;   /**< Epoll file descriptor. */
+} tapi_iomux_epoll_context;
+
+/**
+ * A file descriptor events.
+ */
+struct tapi_iomux_evt_fd {
+    int            fd;      /**< A file descriptor. */
+    tapi_iomux_evt events;  /**< Requested events. */
+    tapi_iomux_evt revents; /**< Returned events. */
+};
+
+/**
+ * Events list for internal iomux API using.
+ */
+typedef struct tapi_iomux_evts_list {
+    tapi_iomux_evt_fd evt;
+    SLIST_ENTRY(tapi_iomux_evts_list)     tapi_iomux_evts_ent;
+} tapi_iomux_evts_list;
+SLIST_HEAD(tapi_iomux_evts_list_h, tapi_iomux_evts_list);
+typedef struct tapi_iomux_evts_list_h tapi_iomux_evts_list_h;
+
+/**
+ * Handle for a multiplexer context.
+ */
+struct tapi_iomux_handle {
+    rcf_rpc_server               *rpcs;    /**< RPC server handle. */
+    tapi_iomux_type               type;    /**< Multiplexor type. */
+    const tapi_iomux_methods     *methods; /**< Multiplexor methods. */
+    int                           fds_num; /**< File descriptors number in
+                                                the set. */
+    tapi_iomux_evts_list_h        evts;    /**< Events list. */
+    tapi_iomux_evt_fd            *revts;   /**< Pointer to the returned
+                                                events array. */
+    void                         *opaque;  /**< Opaque pointer for possible
+                                                extensions. */
+    union {
+        tapi_iomux_select_context select;  /**< 'select' API context. */
+        tapi_iomux_epoll_context  epoll;   /**< 'epoll' API context. */
+    };
+};
+
+/**
+ * Create a multiplexer.
+ *
+ * @param rpcs  RPC server handle.
+ * @param type  The multiplexer type.
+ *
+ * @return The multiplexer handle.
+ */
+extern tapi_iomux_handle * tapi_iomux_create(rcf_rpc_server *rpcs,
+                                             tapi_iomux_type type);
+
+/**
+ * Add a file descriptor to a multiplexer set.
+ *
+ * @param iomux     The multiplexer handle.
+ * @param fd        The file descriptor to add to the multiplexer set.
+ * @param evt       Requested events.
+ */
+extern void tapi_iomux_add(tapi_iomux_handle *iomux, int fd,
+                           tapi_iomux_evt evt);
+
+/**
+ * Modify a file descriptor events.
+ *
+ * @param iomux     The multiplexer handle.
+ * @param fd        The file descriptor to modify events for.
+ * @param evt       New events.
+ */
+extern void tapi_iomux_mod(tapi_iomux_handle *iomux, int fd,
+                           tapi_iomux_evt evt);
+
+/**
+ * Delete a file descriptor from a multiplexer set.
+ *
+ * @param iomux     The multiplexer handle.
+ * @param fd        The file descriptor which should be deleted.
+ */
+extern void tapi_iomux_del(tapi_iomux_handle *iomux, int fd);
+
+/**
+ * Perform a multiplexer call.
+ *
+ * @note The call can be done expecting a fail using @c RPC_AWAIT_IUT_ERROR
+ * as for usual RPC call, return code of the muxer call is forwarded and
+ * returned by the function.
+ *
+ * @param iomux     The multiplexer handle.
+ * @param timeout   Timeout to block in the call in milliseconds.
+ * @param revts     Returned events.
+ *
+ * @return Events number or @c -1 in case of fail, actualy return code is
+ *         forwarded from the system multiplexer function call.
+ */
+extern int tapi_iomux_call(tapi_iomux_handle *iomux, int timeout,
+                           tapi_iomux_evt_fd **revts);
+
+/**
+ * Destroy a multiplexer.
+ *
+ * @param iomux     The multiplexer handle.
+ */
+extern void tapi_iomux_destroy(tapi_iomux_handle *iomux);
 
 #ifdef __cplusplus
 } /* extern "C" */
