@@ -261,11 +261,20 @@ typedef struct tapi_iomux_select_context {
 } tapi_iomux_select_context;
 
 /**
+ * Context data for @c poll() API.
+ */
+typedef struct tapi_iomux_poll_context {
+    struct rpc_pollfd *fds;   /**< Poll file descriptors set. */
+} tapi_iomux_poll_context;
+
+/**
  * Context data for @c epoll() API.
  */
 typedef struct tapi_iomux_epoll_context {
-    int epfd;   /**< Epoll file descriptor. */
+    int epfd;                       /**< Epoll file descriptor. */
+    struct rpc_epoll_event *events; /**< Epoll events set. */
 } tapi_iomux_epoll_context;
+
 
 /**
  * A file descriptor events.
@@ -302,6 +311,7 @@ struct tapi_iomux_handle {
                                                 extensions. */
     union {
         tapi_iomux_select_context select;  /**< 'select' API context. */
+        tapi_iomux_poll_context   poll;    /**< 'poll' API context. */
         tapi_iomux_epoll_context  epoll;   /**< 'epoll' API context. */
     };
 };
@@ -349,8 +359,11 @@ extern void tapi_iomux_del(tapi_iomux_handle *iomux, int fd);
  * Perform a multiplexer call.
  *
  * @note The call can be done expecting a fail using @c RPC_AWAIT_IUT_ERROR
- * as for usual RPC call, return code of the muxer call is forwarded and
- * returned by the function.
+ *       as for usual RPC call, return code of the muxer call is forwarded
+ *       and returned by the function.
+ *
+ * @note This call can be executed in non-blocking mode using
+ *       @c RCF_RPC_CALL as usual RPC call.
  *
  * @param iomux     The multiplexer handle.
  * @param timeout   Timeout to block in the call in milliseconds.

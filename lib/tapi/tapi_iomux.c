@@ -392,8 +392,15 @@ static int
 tapi_iomux_select_add_events(tapi_iomux_handle *iomux)
 {
     tapi_iomux_evts_list *inst;
-    te_bool await_err = RPC_AWAITING_ERROR(iomux->rpcs);
-    int max_fd = 0;
+    te_bool               await_err = RPC_AWAITING_ERROR(iomux->rpcs);
+    rcf_rpc_op            op = iomux->rpcs->op;
+    int                   max_fd = 0;
+
+    if (op == RCF_RPC_WAIT)
+        return 0;
+
+    if (op == RCF_RPC_CALL)
+        iomux->rpcs->op = RCF_RPC_CALL_WAIT;
 
     /* RPCs are called inside @p tapi_iomux_select_add to prepare
      * events sets, it is not applicable to fail in that functions - this
@@ -409,6 +416,8 @@ tapi_iomux_select_add_events(tapi_iomux_handle *iomux)
 
     if (await_err)
         RPC_AWAIT_IUT_ERROR(iomux->rpcs);
+
+    iomux->rpcs->op = op;
 
     return max_fd;
 }
@@ -427,6 +436,9 @@ tapi_iomux_select_get_events(tapi_iomux_handle *iomux)
     tapi_iomux_evts_list *inst;
     tapi_iomux_evt_fd *evts;
     int i = 0;
+
+    if (iomux->rpcs->op == RCF_RPC_WAIT)
+        return NULL;
 
     evts = tapi_calloc(iomux->fds_num, sizeof(*evts));
 
@@ -565,9 +577,16 @@ static const tapi_iomux_methods tapi_iomux_methods_pselect =
 static struct rpc_pollfd *
 tapi_iomux_poll_create_events(tapi_iomux_handle *iomux)
 {
-    struct rpc_pollfd *fds = tapi_calloc(iomux->fds_num, sizeof(*fds));
+    struct rpc_pollfd *fds = NULL;
+    rcf_rpc_op op = iomux->rpcs->op;
     tapi_iomux_evts_list *inst;
     int i = 0;
+
+    if (op == RCF_RPC_WAIT)
+        return iomux->poll.fds;
+
+    fds = tapi_calloc(iomux->fds_num, sizeof(*fds));
+    iomux->poll.fds = fds;
 
     SLIST_FOREACH(inst, &iomux->evts, tapi_iomux_evts_ent)
     {
@@ -584,7 +603,7 @@ tapi_iomux_poll_create_events(tapi_iomux_handle *iomux)
  * them in the iomux context.
  *
  * @param iomux     The multiplexer handle.
- * @param fds       Poll events set.
+ * @param fds       Poll events set, it is freed after the conversion.
  * @param evts_num  Returned events number.
  *
  * @return Returned events array converted to the generic representation.
@@ -597,6 +616,15 @@ tapi_iomux_poll_get_events(tapi_iomux_handle *iomux, struct rpc_pollfd *fds,
     tapi_iomux_evt_fd *evts;
     int i_fds = -1;
     int i_evts = 0;
+
+    if (iomux->rpcs->op == RCF_RPC_WAIT)
+        return NULL;
+
+    if (evts_num <= 0)
+    {
+        free(fds);
+        return NULL;
+    }
 
     evts = tapi_calloc(evts_num, sizeof(*evts));
 
@@ -621,6 +649,8 @@ tapi_iomux_poll_get_events(tapi_iomux_handle *iomux, struct rpc_pollfd *fds,
         i_evts++;
     }
 
+    free(fds);
+
     return evts;
 }
 
@@ -644,9 +674,7 @@ tapi_iomux_poll_call(tapi_iomux_handle *iomux, int timeout,
 
     rc = rpc_poll(iomux->rpcs, fds, iomux->fds_num, timeout);
 
-    if (rc > 0)
-        *revts = tapi_iomux_poll_get_events(iomux, fds, rc);
-    free(fds);
+    *revts = tapi_iomux_poll_get_events(iomux, fds, rc);
 
     return rc;
 }
@@ -674,9 +702,7 @@ tapi_iomux_ppoll_call(tapi_iomux_handle *iomux, int timeout,
 
     rc = rpc_ppoll(iomux->rpcs, fds, iomux->fds_num, &tv, RPC_NULL);
 
-    if (rc > 0)
-        *revts = tapi_iomux_poll_get_events(iomux, fds, rc);
-    free(fds);
+    *revts = tapi_iomux_poll_get_events(iomux, fds, rc);
 
     return rc;
 }
@@ -857,24 +883,31 @@ static int
 tapi_iomux_epoll_call(tapi_iomux_handle *iomux, int timeout,
                        tapi_iomux_evt_fd **revts)
 {
-    struct rpc_epoll_event *events = tapi_calloc(iomux->fds_num,
-                                                 sizeof(*events));
     int rc;
+
+    if (iomux->rpcs->op != RCF_RPC_WAIT)
+        iomux->epoll.events = tapi_calloc(iomux->fds_num,
+                                          sizeof(*iomux->epoll.events));
 
     if (iomux->type == TAPI_IOMUX_EPOLL)
     {
-        rc = rpc_epoll_wait(iomux->rpcs, iomux->epoll.epfd, events,
-                            iomux->fds_num, timeout);
+        rc = rpc_epoll_wait(iomux->rpcs, iomux->epoll.epfd,
+                            iomux->epoll.events, iomux->fds_num, timeout);
     }
     else
     {
-        rc = rpc_epoll_pwait(iomux->rpcs, iomux->epoll.epfd, events,
-                             iomux->fds_num, timeout, RPC_NULL);
+        rc = rpc_epoll_pwait(iomux->rpcs, iomux->epoll.epfd,
+                             iomux->epoll.events, iomux->fds_num, timeout,
+                             RPC_NULL);
     }
 
+    if (iomux->rpcs->op == RCF_RPC_WAIT)
+        return rc;
+
     if (rc > 0)
-        *revts = tapi_iomux_epoll_get_events(iomux, events, rc);
-    free(events);
+        *revts = tapi_iomux_epoll_get_events(iomux, iomux->epoll.events,
+                                             rc);
+    free(iomux->epoll.events);
 
     return rc;
 }
