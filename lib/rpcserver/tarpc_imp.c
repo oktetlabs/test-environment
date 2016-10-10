@@ -6383,6 +6383,8 @@ recv_verify(tarpc_recv_verify_in *in, tarpc_recv_verify_out *out)
     char           *pattern_buf;
     int             rc;
 
+    int saved_errno = errno;
+
     out->retval = 0;
 
     RING("%s() started", __FUNCTION__);
@@ -6405,7 +6407,7 @@ recv_verify(tarpc_recv_verify_in *in, tarpc_recv_verify_out *out)
         {
             if (errno == EAGAIN)
             {
-                errno = 0;
+                errno = saved_errno;
                 RING("recv() returned -1(EGAIN) in recv_verify(), "
                      "no more data just now");
                 break;
