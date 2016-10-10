@@ -838,17 +838,8 @@ tapi_iomux_epoll_del(tapi_iomux_handle *iomux, int fd)
                      RPC_ERRNO(iomux->rpcs));
 }
 
-/**
- * Process returned events by @c epoll_wait() or @c epoll_pwait() call,
- * convert and save them in the iomux context.
- *
- * @param iomux     The multiplexer handle.
- * @param events    Returned epoll events array.
- * @param evts_num  The array length.
- *
- * @return Returned events array converted to the generic representation.
- */
-static tapi_iomux_evt_fd *
+/* See the description in tapi_iomux.h. */
+tapi_iomux_evt_fd *
 tapi_iomux_epoll_get_events(tapi_iomux_handle *iomux,
                             struct rpc_epoll_event *events, int evts_num)
 {

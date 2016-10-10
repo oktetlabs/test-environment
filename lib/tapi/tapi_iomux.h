@@ -414,6 +414,21 @@ extern int tapi_iomux_pcall(tapi_iomux_handle *iomux, int timeout,
  */
 extern void tapi_iomux_destroy(tapi_iomux_handle *iomux);
 
+/**
+ * Process returned events by @c epoll_wait() or @c epoll_pwait() call,
+ * convert and save them in the iomux context.
+ *
+ * @param iomux     The multiplexer handle.
+ * @param events    Returned epoll events array.
+ * @param evts_num  The array length.
+ *
+ * @return Returned events array converted to the generic representation.
+ */
+extern tapi_iomux_evt_fd * tapi_iomux_epoll_get_events(
+                                            tapi_iomux_handle *iomux,
+                                            struct rpc_epoll_event *events,
+                                            int evts_num);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
