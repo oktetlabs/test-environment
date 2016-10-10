@@ -523,7 +523,7 @@ tapi_iomux_pselect_call(tapi_iomux_handle *iomux, int timeout,
 
     rc = rpc_pselect(iomux->rpcs, max_fd, iomux->select.read_fds,
                      iomux->select.write_fds, iomux->select.exc_fds, &tv,
-                     RPC_NULL);
+                     iomux->sigmask);
 
     if (rc <= 0)
         return rc;
@@ -700,7 +700,7 @@ tapi_iomux_ppoll_call(tapi_iomux_handle *iomux, int timeout,
 
     fds = tapi_iomux_poll_create_events(iomux);
 
-    rc = rpc_ppoll(iomux->rpcs, fds, iomux->fds_num, &tv, RPC_NULL);
+    rc = rpc_ppoll(iomux->rpcs, fds, iomux->fds_num, &tv, iomux->sigmask);
 
     *revts = tapi_iomux_poll_get_events(iomux, fds, rc);
 
@@ -898,7 +898,7 @@ tapi_iomux_epoll_call(tapi_iomux_handle *iomux, int timeout,
     {
         rc = rpc_epoll_pwait(iomux->rpcs, iomux->epoll.epfd,
                              iomux->epoll.events, iomux->fds_num, timeout,
-                             RPC_NULL);
+                             iomux->sigmask);
     }
 
     if (iomux->rpcs->op == RCF_RPC_WAIT)
@@ -1045,4 +1045,20 @@ tapi_iomux_call(tapi_iomux_handle *iomux, int timeout,
     }
 
     return 0;
+}
+
+/* See the description in tapi_iomux.h. */
+void
+tapi_iomux_set_sigmask(tapi_iomux_handle *iomux, rpc_sigset_p sigmask)
+{
+    iomux->sigmask = sigmask;
+}
+
+/* See the description in tapi_iomux.h. */
+int
+tapi_iomux_pcall(tapi_iomux_handle *iomux, int timeout,
+                 rpc_sigset_p sigmask, tapi_iomux_evt_fd **revts)
+{
+    tapi_iomux_set_sigmask(iomux, sigmask);
+    return tapi_iomux_call(iomux, timeout, revts);
 }

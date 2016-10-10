@@ -307,6 +307,8 @@ struct tapi_iomux_handle {
     tapi_iomux_evts_list_h        evts;    /**< Events list. */
     tapi_iomux_evt_fd            *revts;   /**< Pointer to the returned
                                                 events array. */
+    rpc_sigset_p                  sigmask; /**< RPC pointer to a signal
+                                                mask. */
     void                         *opaque;  /**< Opaque pointer for possible
                                                 extensions. */
     union {
@@ -356,6 +358,19 @@ extern void tapi_iomux_mod(tapi_iomux_handle *iomux, int fd,
 extern void tapi_iomux_del(tapi_iomux_handle *iomux, int fd);
 
 /**
+ * Specify a signal mask for a multiplexer.
+ *
+ * @note This call makes sense for iomux types @c TAPI_IOMUX_PSELECT,
+ *       @c TAPI_IOMUX_PPOLL and @c TAPI_IOMUX_EPOLL_PWAIT, the signal mask
+ *       is ignored by other muxers.
+ *
+ * @param iomux     The multiplexer handle.
+ * @param sigmask   RPC pointer to the signal mask.
+ */
+extern void tapi_iomux_set_sigmask(tapi_iomux_handle *iomux,
+                                   rpc_sigset_p sigmask);
+
+/**
  * Perform a multiplexer call.
  *
  * @note The call can be done expecting a fail using @c RPC_AWAIT_IUT_ERROR
@@ -374,6 +389,23 @@ extern void tapi_iomux_del(tapi_iomux_handle *iomux, int fd);
  */
 extern int tapi_iomux_call(tapi_iomux_handle *iomux, int timeout,
                            tapi_iomux_evt_fd **revts);
+
+/**
+ * Perform a multiplexer call specifying a signal mask.
+ *
+ * @note See also @c tapi_iomux_call() description for details.
+ *
+ * @param iomux     The multiplexer handle.
+ * @param timeout   Timeout to block in the call in milliseconds.
+ * @param sigmask   Signal mask.
+ * @param revts     Returned events.
+ *
+ * @return Events number or @c -1 in case of fail, actualy return code is
+ *         forwarded from the system multiplexer function call.
+ */
+extern int tapi_iomux_pcall(tapi_iomux_handle *iomux, int timeout,
+                            rpc_sigset_p sigmask,
+                            tapi_iomux_evt_fd **revts);
 
 /**
  * Destroy a multiplexer.
