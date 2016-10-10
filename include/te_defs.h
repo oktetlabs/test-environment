@@ -220,6 +220,13 @@ typedef enum te_bool3 {
         (_p_tv)->tv_usec = (_us) % 1000000L;    \
     } while (0)
 
+/** Convert nanoseconds to struct timespec. */
+#define TE_NS2TS(_ns, _p_tv) \
+    do {                                        \
+        (_p_tv)->tv_sec = TE_NS2SEC(_ns);       \
+        (_p_tv)->tv_nsec = (_ns) % 1000000000L; \
+    } while (0)
+
 /**
  * Offset of the field in structure.
  *
