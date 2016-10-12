@@ -39,8 +39,9 @@ class Packages(object):
         fp = open(filename, 'r')
         for line in fp:
             line = line.strip()
-            if line.startswith('/** @page '):
-                line = line.replace('/** @page ', '', 1).strip()
+            if '* @page ' in line:
+                line = line.replace('/** @page ', '', 1).\
+                    replace('* @page ', '', 1).strip()
                 items = line.split(' ', 1)
                 if len(items) == 1:
                     return items[0], ''
