@@ -470,6 +470,47 @@ asn_free_value(asn_value *value)
 }
 
 
+/* See description in 'asn_usr.h' */
+asn_value *
+asn_find_child_choice_value(const asn_value    *container,
+                            asn_tag_value       tag_value)
+{
+    te_errno            err;
+    int                 num_children;
+    unsigned int        i;
+
+    if (container == NULL)
+        return NULL;
+
+    if (container->asn_type->syntax != SEQUENCE_OF)
+        return NULL;
+
+    num_children = asn_get_length(container, "");
+    if (num_children < 0)
+        return NULL;
+
+    for (i = 0; i < (unsigned int)num_children; ++i)
+    {
+        asn_value  *child;
+        asn_value  *child_choice_value;
+
+        err = asn_get_indexed(container, &child, i, "");
+        if (err != 0)
+            return NULL;
+
+        if (child->asn_type->syntax != CHOICE)
+            return NULL;
+
+        err = asn_get_choice_value(child, &child_choice_value, NULL, NULL);
+        if (err != 0)
+            return NULL;
+
+        if (asn_get_tag(child_choice_value) == tag_value)
+            return child_choice_value;
+    }
+
+    return NULL;
+}
 
 te_errno
 asn_free_child(asn_value *value,

@@ -497,6 +497,19 @@ extern asn_value *asn_decode(const void *data);
 
 
 /**
+ * Get the CHOICE ASN.1 value identified by the given tag value from a
+ * child ASN.1 value situated in the given SEQUENCE_OF ASN.1 container
+ *
+ * @param container   ASN.1 value of a SEQUENCE_OF type
+ * @param tag_value   ASN.1 tag value of ASN.1 child
+ *                    choice value to be discovered
+ *
+ * @return ASN.1 CHOICE value with the corresponding tag
+ */
+extern asn_value *asn_find_child_choice_value(const asn_value    *container,
+                                              asn_tag_value       tag_value);
+
+/**
  * Free one-level subvalue of constraint ASN value instance by tag.
  * For CHOICE syntax value tag is ignored.
  *
