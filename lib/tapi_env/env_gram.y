@@ -117,6 +117,7 @@ create_process(void)
         CIRCLEQ_INIT(&p->ifs);
         if (curr_host_if == NULL)
             curr_host_if = create_host_if();
+        p->net = curr_net;
         if (curr_host_if != NULL && curr_host_if->host != NULL)
             SLIST_INSERT_HEAD(&curr_host_if->host->processes, p, links);
     }

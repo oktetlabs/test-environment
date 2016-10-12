@@ -405,6 +405,7 @@ typedef struct tapi_env_process {
 
     tapi_env_pcos pcos; /**< Tail queue of PCOs in process */
     tapi_env_ifs  ifs;  /**< List of interfaces */
+    tapi_env_net *net;  /**< Network handle */
 
     unsigned int next_vif_index;    /**< Next virtual interface index */
 } tapi_env_process;

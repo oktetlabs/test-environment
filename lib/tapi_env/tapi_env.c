@@ -1719,6 +1719,7 @@ prepare_pcos(tapi_env_hosts *hosts)
     cfg_val_type        val_type;
     int                 iut_errno_change_no_check = 0;
     const char         *reuse_pco = getenv("TE_ENV_REUSE_PCO");
+    const char         *tst_with_lib = getenv("TE_ENV_TST_WITH_LIB");
 
     val_type = CVT_INTEGER;
     rc = cfg_get_instance_fmt(&val_type, &iut_errno_change_no_check,
@@ -1771,7 +1772,9 @@ prepare_pcos(tapi_env_hosts *hosts)
                         pco->created = FALSE;
 
                     main_thread = FALSE;
-                    if (pco->type == TAPI_ENV_IUT)
+                    if (pco->type == TAPI_ENV_IUT ||
+                        (tst_with_lib != NULL && proc->net &&
+                         proc->net->type == TAPI_ENV_IUT))
                     {
                         pco->rpcs->errno_change_check =
                             !iut_errno_change_no_check;
