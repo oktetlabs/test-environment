@@ -44,6 +44,7 @@
 
 #include "te_defs.h"
 #include "te_errno.h"
+#include "te_ipstack.h"
 
 #include "asn_usr.h"
 #include "ndn_ipstack.h"
@@ -70,6 +71,33 @@ extern "C" {
 
 /** The index of IPv4 header DU corresponding to 'h-checksum' PDU field */
 #define IP4_HDR_H_CKSUM_DU_INDEX 11
+
+/** The index of UDP header DU corresponding to 'length' PDU field */
+#define UDP_HDR_P_LEN_DU_INDEX 2
+
+/** The index of UDP header DU corresponding to 'checksum' PDU field */
+#define UDP_HDR_CKSUM_DU_INDEX 3
+
+/** The length of IP header field 'version' is 4 bits */
+#define IP_HDR_VERSION_LEN 4
+
+/** IPv4 version number */
+#define IP4_VERSION 4
+
+/** The offset (the number of 32-bit words) to the IPv4 source address */
+#define IP4_HDR_SRC_OFFSET 3
+
+/** The offset (the number of 32-bit words) to the IPv4 destination address */
+#define IP4_HDR_DST_OFFSET 4
+
+/** The offset (the number of 32-bit words) to the IPv6 source address */
+#define IP6_HDR_SRC_OFFSET 2
+
+/** The offset (the number of 32-bit words) to the IPv6 destination address */
+#define IP6_HDR_DST_OFFSET 6
+
+/** Length of IPv6 address (the number of 32-bit words) */
+#define IP6_HDR_SIN6_ADDR_LEN 4
 
 
 /*
@@ -622,6 +650,25 @@ extern te_errno tad_icmp6_match_do_cb(csap_p csap, unsigned int layer,
                                       void *ptrn_opaque,
                                       tad_recv_pkt *meta_pkt, tad_pkt *pdu,
                                       tad_pkt *sdu);
+
+/**
+ * An auxiliary tool to match L4 checksum (advanced mode)
+ *
+ * @param   csap                CSAP instance
+ * @param   pdu                 L4 header
+ * @param   meta_pkt            TAD meta packet
+ * @param   layer               The layer number
+ * @param   l4_proto            L4 protocol ID
+ * @param   cksum_script_val    The string value of 'checksum' DU
+ *
+ * @return  Status code
+ */
+te_errno tad_l4_match_cksum_advanced(csap_p          csap,
+                                     tad_pkt        *pdu,
+                                     tad_recv_pkt   *meta_pkt,
+                                     unsigned int    layer,
+                                     uint8_t         l4_proto,
+                                     const char     *cksum_script_val);
 
 #ifdef __cplusplus
 } /* extern "C" */

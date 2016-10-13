@@ -42,6 +42,9 @@
 /** The number of bytes in a 32-bit word */
 #define WORD_4BYTE 4
 
+/** The number of bits in a byte */
+#define BITS_PER_BYTE 8
+
 /**
  * Infinitive timeout to wait forever.
  *

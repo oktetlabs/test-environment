@@ -381,6 +381,7 @@ tad_udp_match_do_cb(csap_p           csap,
     tad_udp_proto_pdu_data *pkt_data = meta_pkt->layers[layer].opaque;
     te_errno                rc;
     unsigned int            bitoff = 0;
+    char                   *cksum_script_val = NULL;
 
     UNUSED(ptrn_pdu);
 
@@ -397,6 +398,25 @@ tad_udp_match_do_cb(csap_p           csap,
     assert(ptrn_data != NULL);
     assert(pkt_data != NULL);
 
+    /* Check whether an advanced checksum matching mode was requested */
+    rc = tad_du_get_string(&ptrn_data->hdr.dus[UDP_HDR_CKSUM_DU_INDEX],
+                           &cksum_script_val);
+    rc = (rc == TE_EINVAL) ? 0 : rc;
+    if (rc != 0)
+    {
+        rc = TE_RC(TE_TAD_CSAP, rc);
+        ERROR(CSAP_LOG_FMT "Failed to copy UDP 'checksum' DU string value: %r",
+              CSAP_LOG_ARGS(csap), rc);
+        return rc;
+    }
+
+    /*
+     * Clear the DU, so that it will not be considered in
+     * tad_bps_pkt_frag_match_do() matching path
+     */
+    if (cksum_script_val != NULL)
+        tad_data_unit_clear(&ptrn_data->hdr.dus[UDP_HDR_CKSUM_DU_INDEX]);
+
     rc = tad_bps_pkt_frag_match_do(&proto_data->hdr, &ptrn_data->hdr,
                                    &pkt_data->hdr, pdu, &bitoff);
     if (rc != 0)
@@ -404,6 +424,17 @@ tad_udp_match_do_cb(csap_p           csap,
         F_VERB(CSAP_LOG_FMT "Match PDU vs IPv4 header failed on bit "
                "offset %u: %r", CSAP_LOG_ARGS(csap), (unsigned)bitoff, rc);
         return rc;
+    }
+
+    if (cksum_script_val != NULL)
+    {
+        rc = tad_l4_match_cksum_advanced(csap, pdu, meta_pkt, layer,
+                                         IPPROTO_UDP, cksum_script_val);
+
+        free(cksum_script_val);
+
+        if (rc != 0)
+            return rc;
     }
 
     rc = tad_pkt_get_frag(sdu, pdu, bitoff >> 3,
