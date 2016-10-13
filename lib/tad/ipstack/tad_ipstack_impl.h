@@ -99,6 +99,9 @@ extern "C" {
 /** Length of IPv6 address (the number of 32-bit words) */
 #define IP6_HDR_SIN6_ADDR_LEN 4
 
+/** The index of TCP header DU corresponding to 'checksum' PDU field */
+#define TCP_HDR_CKSUM_DU_INDEX 7
+
 
 /*
  * TCP CSAP specific data
