@@ -42,11 +42,13 @@ extern "C" {
 #define SEND_COND_HW_OFFL_IP_CKCUM  (1U << 0)
 #define SEND_COND_HW_OFFL_L4_CKSUM  (1U << 1)
 #define SEND_COND_HW_OFFL_TSO       (1U << 2)
+#define SEND_COND_HW_OFFL_VLAN      (1U << 3)
 
 typedef struct send_transform {
     unsigned int                    hw_flags;
 
     uint16_t                        tso_segsz;
+    uint16_t                        vlan_tci;
 } send_transform;
 
 /**

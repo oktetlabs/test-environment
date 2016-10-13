@@ -40,6 +40,7 @@
 #include "rcf_rpc.h"
 #include "te_rpc_types.h"
 #include "tapi_rpc_rte.h"
+#include "tapi_ndn.h"
 
 #define TAPI_IPV6_VERSION 0x60
 #define TAPI_IPV6_VERSION_MASK 0xf0
@@ -236,6 +237,29 @@ extern rpc_rte_mbuf_p tapi_rte_mk_mbuf_tcp(rcf_rpc_server *rpcs,
 extern uint8_t *tapi_rte_get_mbuf_data(rcf_rpc_server *rpcs,
                                        rpc_rte_mbuf_p m, size_t offset,
                                        size_t *bytes_read);
+
+
+/**
+ * Produce mbuf(s) from template, set offloads and provide
+ * a pattern to capture resulting packets on the peer side
+ *
+ * @param mp        RTE mempool pointer
+ * @param template  ASN.1 traffic template
+ * @param transform A set of parameters describing certain trasformations
+ *                  which are required to affect the outgoing packets
+ * @param mbufs_out Location for RTE mbuf pointer(s)
+ * @param n_mbufs   Location for the number of mbufs prepared
+ * @param ptrn_out  Location for the pattern to be produced
+ *
+ * @note The function jumps out in case of error
+ */
+extern void tapi_rte_mk_mbuf_mk_ptrn_by_tmpl(rcf_rpc_server    *rpcs,
+                                             asn_value         *template,
+                                             rpc_rte_mempool_p  mp,
+                                             send_transform    *transform,
+                                             rpc_rte_mbuf_p   **mbufs_out,
+                                             unsigned int      *n_mbufs_out,
+                                             asn_value        **ptrn_out);
 
 #ifdef __cplusplus
 } /* extern "C" */

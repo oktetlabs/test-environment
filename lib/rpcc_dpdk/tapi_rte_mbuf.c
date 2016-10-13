@@ -45,8 +45,13 @@
 #include <arpa/inet.h>
 #endif
 
+#include "asn_impl.h"
+
+#include "ndn_ipstack.h"
+
 #include "tapi_rte_mbuf.h"
 #include "tapi_rpc_rte_mbuf.h"
+#include "tapi_rpc_rte_mbuf_ndn.h"
 #include "tapi_mem.h"
 #include "te_bufs.h"
 #include "te_defs.h"
@@ -308,4 +313,133 @@ tapi_rte_get_mbuf_data(rcf_rpc_server *rpcs,
                                                     data_buf, pkt_len - offset);
 
     return (data_buf);
+}
+
+/* See the description in 'tapi_rte_mbuf.h' */
+void
+tapi_rte_mk_mbuf_mk_ptrn_by_tmpl(rcf_rpc_server    *rpcs,
+                                 asn_value         *template,
+                                 rpc_rte_mempool_p  mp,
+                                 send_transform    *transform,
+                                 rpc_rte_mbuf_p   **mbufs_out,
+                                 unsigned int      *n_mbufs_out,
+                                 asn_value        **ptrn_out)
+{
+    te_errno        err = 0;
+    rpc_rte_mbuf_p *mbufs = NULL;
+    unsigned int    n_mbufs;
+    asn_value      *pattern_by_template;
+    asn_value     **packets_prepared = NULL;
+    unsigned int    n_packets_prepared = 0;
+    asn_value      *pattern;
+    unsigned int    i;
+
+    pattern_by_template = tapi_tad_mk_pattern_from_template(template);
+    err = (pattern_by_template == NULL) ? TE_ENOMEM : 0;
+    if (err != 0)
+        goto out;
+
+    TAPI_ON_JMP(err = TE_EFAULT; goto out);
+
+    (void)rpc_rte_mk_mbuf_from_template(rpcs, template, mp, &mbufs, &n_mbufs);
+
+    if (transform != NULL)
+    {
+        for (i = 0; i < n_mbufs; ++i)
+        {
+            uint64_t ol_flags = 0;
+
+            if (transform->hw_flags != 0)
+                ol_flags = rpc_rte_pktmbuf_get_flags(rpcs, mbufs[i]);
+
+            if ((transform->hw_flags & SEND_COND_HW_OFFL_VLAN) ==
+                SEND_COND_HW_OFFL_VLAN)
+            {
+                ol_flags |= (1UL << TARPC_PKT_TX_VLAN_PKT);
+
+                rpc_rte_pktmbuf_set_vlan_tci(rpcs, mbufs[i],
+                                             transform->vlan_tci);
+            }
+
+            if ((transform->hw_flags & SEND_COND_HW_OFFL_TSO) ==
+                SEND_COND_HW_OFFL_TSO)
+            {
+                struct tarpc_rte_pktmbuf_tx_offload     tx_offload;
+                asn_value                              *pdus;
+                asn_value                              *pdu_ip4;
+
+                memset(&tx_offload, 0, sizeof(tx_offload));
+
+                err = ((transform->tso_segsz == 0) ||
+                       ((transform->hw_flags &
+                         SEND_COND_HW_OFFL_L4_CKSUM) == 0)) ? TE_EINVAL : 0;
+                if (err != 0)
+                    TEST_FAIL("Incomplete TSO settings");
+
+                ol_flags |= ((1UL << TARPC_PKT_TX_TCP_SEG) |
+                             (1UL << TARPC_PKT_TX_TCP_CKSUM));
+
+                /*
+                 * According to DPDK guide, among other requirements
+                 * in case of TSO one should set IPv4 checksum to 0;
+                 * here we simply rely on an assumption that the initial
+                 * template was prepared in accordance with this principle;
+                 * we only add the flag to request IPv4 checksum offload
+                 */
+                err = asn_get_subvalue(template, &pdus, "pdus");
+                if (err != 0)
+                    goto out;
+
+                pdu_ip4 = asn_find_child_choice_value(pdus, TE_PROTO_IP4);
+                if (pdu_ip4 != NULL)
+                    ol_flags |= (1UL << TARPC_PKT_TX_IP_CKSUM);
+
+                rpc_rte_pktmbuf_get_tx_offload(rpcs, mbufs[i], &tx_offload);
+                tx_offload.tso_segsz = transform->tso_segsz;
+                rpc_rte_pktmbuf_set_tx_offload(rpcs, mbufs[i], &tx_offload);
+            }
+
+            if (transform->hw_flags != 0)
+                (void)rpc_rte_pktmbuf_set_flags(rpcs, mbufs[i], ol_flags);
+        }
+    }
+
+    (void)rpc_rte_mbuf_match_pattern(rpcs, pattern_by_template, mbufs, n_mbufs,
+                                     &packets_prepared, &n_packets_prepared);
+
+    if (n_packets_prepared == 0)
+        TEST_FAIL("Failed to convert the mbuf(s) to ASN.1 raw packets");
+
+    err = tapi_tad_packets_to_pattern(packets_prepared, n_packets_prepared,
+                                      transform, &pattern);
+    if (err != 0)
+        TEST_FAIL("Failed to produce a pattern from ASN.1 raw packets");
+
+    *mbufs_out = mbufs;
+    *n_mbufs_out = n_mbufs;
+    *ptrn_out = pattern;
+
+out:
+    asn_free_value(pattern_by_template);
+
+    if ((err != 0) && (mbufs != NULL))
+    {
+        for (i = 0; i < n_mbufs; ++i)
+            rpc_rte_pktmbuf_free(rpcs, mbufs[i]);
+
+        free(mbufs);
+    }
+
+    if (packets_prepared != NULL)
+    {
+        for (i = 0; i < n_packets_prepared; ++i)
+            asn_free_value(packets_prepared[i]);
+
+        free(packets_prepared);
+    }
+
+    if (err != 0)
+        TEST_FAIL("%s() failed, rc = %r", __func__, TE_RC(TE_TAPI, err));
+
+    TAPI_JMP_POP;
 }
