@@ -83,7 +83,7 @@ tad_rte_mbuf_sap_read(tad_rte_mbuf_sap   *sap,
     tad_seg = CIRCLEQ_FIRST(&pkt->segs);
     tad_seg_offset = 0;
 
-    for (m_seg = m; m_seg != NULL; m_seg = m->next)
+    for (m_seg = m; m_seg != NULL; m_seg = m_seg->next)
     {
         size_t bytes_copied = 0;
 
