@@ -68,6 +68,8 @@ extern "C" {
  */
 #define IP6_PSEUDO_HDR_LEN (IP6_ADDR_LEN * 2 + 8)
 
+/** The index of IPv4 header DU corresponding to 'h-checksum' PDU field */
+#define IP4_HDR_H_CKSUM_DU_INDEX 11
 
 
 /*

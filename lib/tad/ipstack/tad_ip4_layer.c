@@ -917,6 +917,7 @@ tad_ip4_match_do_cb(csap_p           csap,
     tad_ip4_proto_pdu_data *pkt_data = meta_pkt->layers[layer].opaque;
     te_errno                rc;
     unsigned int            bitoff = 0;
+    char                   *h_cksum_script_val = NULL;
 
     UNUSED(ptrn_pdu);
 
@@ -932,6 +933,25 @@ tad_ip4_match_do_cb(csap_p           csap,
     assert(proto_data != NULL);
     assert(ptrn_data != NULL);
     assert(pkt_data != NULL);
+
+    /* Check whether an advanced checksum matching mode was requested */
+    rc = tad_du_get_string(&ptrn_data->hdr.dus[IP4_HDR_H_CKSUM_DU_INDEX],
+                           &h_cksum_script_val);
+    rc = (rc == TE_EINVAL) ? 0 : rc;
+    if (rc != 0)
+    {
+        rc = TE_RC(TE_TAD_CSAP, rc);
+        ERROR(CSAP_LOG_FMT "Failed to copy 'h-checksum' DU string value: %r",
+              CSAP_LOG_ARGS(csap), rc);
+        return rc;
+    }
+
+    /*
+     * Clear the DU, so that it will not be considered in
+     * tad_bps_pkt_frag_match_do() matching path
+     */
+    if (h_cksum_script_val != NULL)
+        tad_data_unit_clear(&ptrn_data->hdr.dus[IP4_HDR_H_CKSUM_DU_INDEX]);
 
     rc = tad_bps_pkt_frag_match_do(&proto_data->hdr, &ptrn_data->hdr,
                                    &pkt_data->hdr, pdu, &bitoff);
@@ -963,6 +983,46 @@ tad_ip4_match_do_cb(csap_p           csap,
             F_VERB(CSAP_LOG_FMT "Match PDU vs IP options failed "
                    "on bit offset %u: %r", CSAP_LOG_ARGS(csap),
                    (unsigned)bitoff, rc);
+            return rc;
+        }
+    }
+
+    if (h_cksum_script_val != NULL)
+    {
+        uint8_t    *ip4_header_bin;
+        uint16_t    h_cksum;
+        te_bool     does_cksum_match;
+
+        ip4_header_bin = malloc(WORD_4BYTE * pkt_data->hdr.dus[1].val_i32);
+        if (ip4_header_bin == NULL)
+        {
+            free(h_cksum_script_val);
+
+            rc = TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+            ERROR(CSAP_LOG_FMT "Failed to allocate buffer for IPv4 header: %r",
+                  CSAP_LOG_ARGS(csap), rc);
+            return rc;
+        }
+
+        tad_pkt_read_bits(pdu, 0, WORD_32BIT * pkt_data->hdr.dus[1].val_i32,
+                          ip4_header_bin);
+
+        h_cksum = calculate_checksum((void *)ip4_header_bin,
+                                     WORD_4BYTE * pkt_data->hdr.dus[1].val_i32);
+
+        does_cksum_match = ((strcmp(h_cksum_script_val, "correct") == 0) ==
+                            (h_cksum == 0xffff));
+        if (!does_cksum_match)
+        {
+            rc = TE_RC(TE_TAD_CSAP, TE_ETADNOTMATCH);
+            F_VERB(CSAP_LOG_FMT "Match PDU vs IPv4 checksum failed: %r\n"
+                   "(the pattern unit expected the checksum to be %s)",
+                   CSAP_LOG_ARGS(csap), rc,
+                   (strcmp(h_cksum_script_val, "correct") == 0) ?
+                   "correct" : "incorrect");
+
+            free(h_cksum_script_val);
+
             return rc;
         }
     }

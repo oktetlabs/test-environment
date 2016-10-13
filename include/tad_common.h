@@ -36,6 +36,12 @@
 
 #include "te_stdint.h"
 
+/** The number of bits in a 32-bit word */
+#define WORD_32BIT 32
+
+/** The number of bytes in a 32-bit word */
+#define WORD_4BYTE 4
+
 /**
  * Infinitive timeout to wait forever.
  *
