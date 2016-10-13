@@ -52,6 +52,9 @@
 #include "te_defs.h"
 #include "tapi_test_log.h"
 #include "te_sockaddr.h"
+#include "tad_common.h"
+#include "te_ipstack.h"
+#include "tapi_test.h"
 
 static void
 tapi_perform_sockaddr_sanity_checks(const struct sockaddr *ip_dst_addr,
@@ -65,95 +68,6 @@ tapi_perform_sockaddr_sanity_checks(const struct sockaddr *ip_dst_addr,
     if (payload_len > (IP_MAXPACKET - ((ip_dst_addr->sa_family == AF_INET) ?
                                        sizeof(struct iphdr) : 0)))
         TEST_FAIL("The payload length of above permissible");
-}
-
-uint16_t
-tapi_calc_cksum(unsigned short *ptr, size_t nbytes)
-{
-    register long sum = 0;
-    uint16_t oddbyte;
-    register short answer;
-
-    while (nbytes > 1)
-    {
-        sum += *ptr++;
-        nbytes -= 2;
-    }
-
-    if (nbytes == 1)
-    {
-        oddbyte = 0;
-        *((u_char *)&oddbyte) = *(u_char *)ptr;
-        sum += oddbyte;
-    }
-
-    sum = (sum >> 16) + (sum & 0xffff);
-    sum = sum + (sum >> 16);
-    answer = (short)~sum;
-
-    return answer;
-}
-
-uint16_t tapi_calc_l4_cksum(const struct sockaddr *ip_dst_addr,
-                            const struct sockaddr *ip_src_addr,
-                            const uint8_t next_hdr,
-                            const uint8_t *datagram, const size_t datagram_len)
-{
-    uint8_t *pseudo_packet;
-    size_t pseudo_packet_len;
-    uint16_t cksum;
-
-    if (datagram == NULL)
-        TEST_FAIL("Incorrect datagram buffer");
-
-    tapi_perform_sockaddr_sanity_checks(ip_dst_addr, ip_src_addr, datagram_len);
-
-    pseudo_packet_len = ((ip_dst_addr->sa_family == AF_INET) ?
-                         sizeof(struct tapi_pseudo_header_ip) :
-                         sizeof(struct tapi_pseudo_header_ip6)) + datagram_len;
-
-    pseudo_packet = tapi_calloc(1, pseudo_packet_len);
-
-    if (ip_dst_addr->sa_family == AF_INET)
-    {
-        struct tapi_pseudo_header_ip *pseudo_ih;
-
-        pseudo_ih = (struct tapi_pseudo_header_ip *)pseudo_packet;
-
-        pseudo_ih->src_addr = CONST_SIN(ip_src_addr)->sin_addr.s_addr;
-        pseudo_ih->dst_addr = CONST_SIN(ip_dst_addr)->sin_addr.s_addr;
-        pseudo_ih->next_hdr = next_hdr;
-        pseudo_ih->data_len = htons(datagram_len);
-    }
-    else
-    {
-        struct tapi_pseudo_header_ip6 *pseudo_i6h;
-
-        pseudo_i6h = (struct tapi_pseudo_header_ip6 *)pseudo_packet;
-
-        memcpy(&pseudo_i6h->src_addr, &CONST_SIN6(ip_src_addr)->sin6_addr,
-               sizeof(struct in6_addr));
-
-        memcpy(&pseudo_i6h->dst_addr, &CONST_SIN6(ip_dst_addr)->sin6_addr,
-               sizeof(struct in6_addr));
-
-        pseudo_i6h->data_len = htonl(datagram_len);
-        pseudo_i6h->next_hdr = next_hdr;
-    }
-
-    memcpy(pseudo_packet + (pseudo_packet_len - datagram_len),
-           datagram, datagram_len);
-
-    /*
-     * We don't care about 16-bit word padding here and rely on
-     * tapi_calc_cksum() behaviour which keeps an eye on it by default
-     */
-
-    cksum = tapi_calc_cksum((unsigned short *)pseudo_packet, pseudo_packet_len);
-
-    free(pseudo_packet);
-
-    return (cksum == 0) ? 0xffff : cksum;
 }
 
 rpc_rte_mbuf_p
@@ -227,7 +141,7 @@ tapi_rte_mk_mbuf_ip(rcf_rpc_server *rpcs,
         ih->tot_len = htons(sizeof(*ih) + payload_len);
 
         if ((cksum_opt & TAPI_RTE_MBUF_CKSUM_GOOD_L3) != 0)
-            ih->check = tapi_calc_cksum((unsigned short *)ih, sizeof(*ih));
+            ih->check = calculate_checksum((void *)ih, sizeof(*ih));
         else if ((cksum_opt & TAPI_RTE_MBUF_CKSUM_RAND_L3) != 0)
             while (ih->check == 0)
                 ih->check = rand();
@@ -296,12 +210,17 @@ tapi_rte_mk_mbuf_udp(rcf_rpc_server *rpcs,
         te_fill_buf(datagram + header_len, payload_len);
 
     if ((cksum_opt & TAPI_RTE_MBUF_CKSUM_GOOD_L4) != 0)
-        uh->check = tapi_calc_l4_cksum(udp_dst_addr, udp_src_addr,
-                                       IPPROTO_UDP, datagram,
-                                       header_len + payload_len);
+    {
+        CHECK_RC(te_ipstack_calc_l4_cksum(udp_dst_addr, udp_src_addr,
+                                          IPPROTO_UDP, datagram,
+                                          header_len + payload_len,
+                                          &uh->check));
+    }
     else if ((cksum_opt & TAPI_RTE_MBUF_CKSUM_RAND_L4) != 0)
+    {
         while (uh->check == 0)
             uh->check = rand();
+    }
 
     m = tapi_rte_mk_mbuf_ip(rpcs, mp, eth_dst_addr, eth_src_addr,
                             udp_dst_addr, udp_src_addr, IPPROTO_UDP,
@@ -352,12 +271,17 @@ tapi_rte_mk_mbuf_tcp(rcf_rpc_server *rpcs,
         te_fill_buf(datagram + header_len, payload_len);
 
     if ((cksum_opt & TAPI_RTE_MBUF_CKSUM_GOOD_L4) != 0)
-        th->check = tapi_calc_l4_cksum(tcp_dst_addr, tcp_src_addr,
-                                       IPPROTO_UDP, datagram,
-                                       header_len + payload_len);
+    {
+        CHECK_RC(te_ipstack_calc_l4_cksum(tcp_dst_addr, tcp_src_addr,
+                                          IPPROTO_TCP, datagram,
+                                          header_len + payload_len,
+                                          &th->check));
+    }
     else if ((cksum_opt & TAPI_RTE_MBUF_CKSUM_RAND_L4) != 0)
+    {
         while (th->check == 0)
             th->check = rand();
+    }
 
     m = tapi_rte_mk_mbuf_ip(rpcs, mp, eth_dst_addr, eth_src_addr,
                             tcp_dst_addr, tcp_src_addr, IPPROTO_TCP,

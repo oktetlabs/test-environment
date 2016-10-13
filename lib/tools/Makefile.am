@@ -23,6 +23,7 @@ include_HEADERS = \
 	log_bufs.h \
 	te_sigmap.h \
 	te_dbuf.h \
+	te_ipstack.h \
 	te_concat.h
 
 if WINDOWS
@@ -63,6 +64,7 @@ libtools_la_SOURCES = \
 	te_string.c \
 	te_sigmap.c \
 	te_dbuf.c \
+	te_ipstack.c \
 	te_concat.c
 
 liblog_bufs_la_SOURCES = log_bufs.c

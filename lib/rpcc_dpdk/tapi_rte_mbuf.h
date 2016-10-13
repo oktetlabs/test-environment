@@ -48,23 +48,6 @@
 extern "C" {
 #endif
 
-struct tapi_pseudo_header_ip {
-    in_addr_t src_addr;
-    in_addr_t dst_addr;
-    uint8_t _pad0;
-    uint8_t next_hdr;
-    uint16_t data_len;
-};
-
-struct tapi_pseudo_header_ip6 {
-    struct in6_addr src_addr;
-    struct in6_addr dst_addr;
-    uint32_t data_len;
-    uint16_t _pad0;
-    uint8_t _pad1;
-    uint8_t next_hdr;
-};
-
 /** RTE mbuf SW checksum preparation modes */
 enum tapi_rte_mbuf_cksum_mode {
     /**
@@ -124,38 +107,6 @@ enum tapi_rte_mbuf_cksum {
     TAPI_RTE_MBUF_CKSUM_RAND_L3_ZERO_L4 = (TAPI_RTE_MBUF_CKSUM_RAND_L3 |
                                            TAPI_RTE_MBUF_CKSUM_ZERO_L4)
 };
-
-/**
- * Auxiliary function to calculate checksums
- *
- * @param ptr             Pointer to a buffer containing data
- * @param nbytes          Buffer length
- *
- * @return Checksum value
- */
-extern uint16_t tapi_calc_cksum(unsigned short *ptr, size_t nbytes);
-
-/**
- * Auxiliary function to calculate checksums for L4 datagrams (UDP, TCP)
- * using a so-called pseudo-header in accordance with principles of checksum
- * calculation defined by RFC 793 (in case of underlying IPv4 network)
- * and RFC 2460 (i.e., it takes into account pseudo-header composition
- * peculiarities brought by IPv6) but without taking into account any possible
- * IPv6 routing headers (i.e., it uses IPv6 DST address from the main header)
- *
- * @param ip_dst_addr     Destination IPv4/6 address
- * @param ip_src_addr     Source IPv4/6 address
- * @param next_hdr        L4 protocol ID (i.e., IPPROTO_UDP)
- * @param datagram        Buffer containing L4 header and L4 payload
- * @param datagram_len    Buffer length
- *
- * @return Checksum value; jumps out on error
- */
-extern uint16_t tapi_calc_l4_cksum(const struct sockaddr *ip_dst_addr,
-                                   const struct sockaddr *ip_src_addr,
-                                   const uint8_t next_hdr,
-                                   const uint8_t *datagram,
-                                   const size_t datagram_len);
 
 /**
  * Prepare an RTE mbuf with Ethernet frame containing particular data
