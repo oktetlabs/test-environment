@@ -205,6 +205,22 @@ tad_rte_mbuf_sap_write(tad_rte_mbuf_sap   *sap,
             memcpy(dst, tad_seg->data_ptr + bytes_copied, to_copy);
             bytes_copied += to_copy;
         }
+
+        /*
+         * For the sake of convenience we try to fill in 'l2_len', 'l3_len'
+         * and 'l4_len' fields of the mbuf being prepared; we rely here on
+         * an assumption that a header of an arbitrary layer occupies an
+         * individual TAD segment (the last segment is considered as payload)
+         */
+        if (CIRCLEQ_NEXT(tad_seg, links) != CIRCLEQ_END(&pkt->segs))
+        {
+            if (m->l2_len == 0)
+                m->l2_len = tad_seg->data_len;
+            else if (m->l3_len == 0)
+                m->l3_len = tad_seg->data_len;
+            else if (m->l4_len == 0)
+                m->l4_len = tad_seg->data_len;
+        }
     }
 
     /*
