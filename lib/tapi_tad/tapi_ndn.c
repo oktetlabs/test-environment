@@ -39,10 +39,17 @@
 #if HAVE_STRINGS_H
 #include <strings.h>
 #endif
+#if HAVE_NETINET_TCP_H
+#include <netinet/tcp.h>
+#endif
+#if HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
 
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "logger_api.h"
+#include "asn_impl.h"
 #include "ndn.h"
 #include "ndn_ipstack.h"
 
@@ -473,4 +480,501 @@ fail:
     asn_free_value(pattern);
 
     return NULL;
+}
+
+static te_errno
+tapi_tad_tso_seg_fix_ip4h(asn_value      *ip4_pdu,
+                          size_t          payload_len,
+                          size_t          seg_len,
+                          unsigned int    ipid_incr)
+{
+    te_errno    err = 0;
+    uint16_t    tot_len;
+    size_t      tot_len_size = sizeof(tot_len);
+    uint16_t    ip_id;
+    size_t      ip_id_size = sizeof(ip_id);
+
+    err = asn_read_value_field(ip4_pdu, &tot_len, &tot_len_size,
+                               "total-length.#plain");
+    if (err != 0)
+        goto out;
+
+    tot_len -= payload_len;
+    tot_len += seg_len;
+
+    err = asn_write_value_field(ip4_pdu, &tot_len, sizeof(tot_len),
+                                "total-length.#plain");
+    if (err != 0)
+        goto out;
+
+    err = asn_read_value_field(ip4_pdu, &ip_id, &ip_id_size, "ip-ident.#plain");
+    if (err != 0)
+        goto out;
+
+    ip_id += ipid_incr;
+
+    err = asn_write_value_field(ip4_pdu, &ip_id, sizeof(ip_id),
+                                "ip-ident.#plain");
+    if (err != 0)
+        goto out;
+
+out:
+    return TE_RC(TE_TAPI, err);
+}
+
+static te_errno
+tapi_tad_tso_seg_fix_ip6h(asn_value  *ip6_pdu,
+                          size_t      payload_len,
+                          size_t      seg_len)
+{
+    te_errno    err = 0;
+    uint16_t    ip6_p_len;
+    size_t      ip6_p_len_size = sizeof(ip6_p_len);
+
+    err = asn_read_value_field(ip6_pdu, &ip6_p_len, &ip6_p_len_size,
+                               "payload-length.#plain");
+    if (err != 0)
+        goto out;
+
+    ip6_p_len -= payload_len;
+    ip6_p_len += seg_len;
+
+    err = asn_write_value_field(ip6_pdu, &ip6_p_len, sizeof(ip6_p_len),
+                                "payload-length.#plain");
+    if (err != 0)
+        goto out;
+
+out:
+    return TE_RC(TE_TAPI, err);
+}
+
+static te_errno
+tapi_tad_tso_seg_fix_tcph(asn_value      *tcp_pdu,
+                          size_t          payload_len,
+                          size_t          seg_len,
+                          uint32_t        seg_offset)
+{
+    te_errno    err = 0;
+    uint32_t    seqn;
+    size_t      seqn_size = sizeof(seqn);
+
+    err = asn_read_value_field(tcp_pdu, &seqn, &seqn_size, "seqn.#plain");
+    if (err != 0)
+        goto out;
+
+    seqn += seg_offset;
+
+    err = asn_write_value_field(tcp_pdu, &seqn, sizeof(seqn), "seqn.#plain");
+    if (err != 0)
+        goto out;
+
+    if ((seg_offset + seg_len) != payload_len)
+    {
+        uint8_t     tcp_flags;
+        size_t      tcp_flags_size = sizeof(tcp_flags);
+
+        err = asn_read_value_field(tcp_pdu, &tcp_flags,
+                                   &tcp_flags_size, "flags.#plain");
+        if (err != 0)
+            goto out;
+
+        tcp_flags &= ~(TH_FIN | TH_PUSH);
+
+        err = asn_write_value_field(tcp_pdu, &tcp_flags,
+                                    sizeof(tcp_flags), "flags.#plain");
+        if (err != 0)
+            goto out;
+    }
+
+out:
+    return TE_RC(TE_TAPI, err);
+}
+
+static te_errno
+tapi_tad_set_cksum_script_correct(asn_value  *proto_pdu,
+                                  char       *du_cksum_label)
+{
+    te_errno    err = 0;
+    int         du_cksum_index = -1;
+    const char *rest_labels;
+    char       *du_cksum_label_choice = NULL;
+    size_t      du_cksum_label_choice_len;
+    char        choice_script_postfix[] = ".#script";
+
+    if (proto_pdu == NULL || du_cksum_label == NULL)
+    {
+        err = TE_EWRONGPTR;
+        goto out;
+    }
+
+    err = asn_child_named_index(proto_pdu->asn_type, du_cksum_label,
+                                &du_cksum_index, &rest_labels);
+    if (err == 0)
+    {
+        if (du_cksum_index != -1)
+        {
+            proto_pdu->txt_len = -1;
+            asn_free_value(proto_pdu->data.array[du_cksum_index]);
+            proto_pdu->data.array[du_cksum_index] = NULL;
+        }
+    }
+    else if (err != TE_EASNWRONGLABEL)
+    {
+        goto out;
+    }
+
+    du_cksum_label_choice_len = strlen(du_cksum_label) +
+                                strlen(choice_script_postfix);
+
+    du_cksum_label_choice = malloc(du_cksum_label_choice_len + 1);
+    if (du_cksum_label_choice == NULL)
+    {
+        err = TE_ENOMEM;
+        goto out;
+    }
+
+    if (snprintf(du_cksum_label_choice, du_cksum_label_choice_len + 1,
+                 "%s%s", du_cksum_label, choice_script_postfix) !=
+        (int)du_cksum_label_choice_len)
+    {
+        err = TE_ENOBUFS;
+        goto out;
+    }
+
+    err = asn_write_string(proto_pdu, "correct", du_cksum_label_choice);
+    if (err != 0)
+        goto out;
+
+out:
+    free(du_cksum_label_choice);
+
+    return TE_RC(TE_TAPI, err);
+}
+
+static te_errno
+tapi_tad_request_correct_cksums(uint32_t    hw_flags,
+                                asn_value  *ip4_pdu,
+                                asn_value  *tcp_pdu,
+                                asn_value  *udp_pdu)
+{
+    te_errno    err = 0;
+
+    if (((hw_flags & SEND_COND_HW_OFFL_IP_CKCUM) ==
+         SEND_COND_HW_OFFL_IP_CKCUM) && (ip4_pdu != NULL))
+    {
+        err = tapi_tad_set_cksum_script_correct(ip4_pdu, "h-checksum");
+        if (err != 0)
+            goto out;
+    }
+
+    if ((hw_flags & SEND_COND_HW_OFFL_L4_CKSUM) ==
+        SEND_COND_HW_OFFL_L4_CKSUM)
+    {
+        if (tcp_pdu != NULL)
+        {
+            err = tapi_tad_set_cksum_script_correct(tcp_pdu, "checksum");
+            if (err != 0)
+                goto out;
+        }
+
+        if (udp_pdu != NULL)
+        {
+            err = tapi_tad_set_cksum_script_correct(udp_pdu, "checksum");
+            if (err != 0)
+                goto out;
+        }
+    }
+
+out:
+    return TE_RC(TE_TAPI, err);
+}
+
+static te_errno
+tapi_tad_generate_pattern_unit(asn_value      *pdus,
+                               uint8_t        *payload_data,
+                               size_t          payload_len,
+                               size_t         *data_offset,
+                               send_transform *transform,
+                               te_bool         is_tso,
+                               asn_value    ***pattern_units,
+                               unsigned int   *n_pattern_units)
+{
+    te_errno        err = 0;
+    asn_value      *pattern_unit = NULL;
+    asn_value      *pdus_copy = NULL;
+    asn_value      *ip4_pdu = NULL;
+    asn_value      *ip6_pdu = NULL;
+    asn_value      *tcp_pdu = NULL;
+    asn_value      *udp_pdu = NULL;
+    size_t          seg_len;
+    asn_value     **pattern_units_new = *pattern_units;
+
+    if (pdus == NULL || payload_data == NULL || data_offset == NULL ||
+        n_pattern_units == NULL || (is_tso && (transform == NULL)))
+    {
+        err = TE_EINVAL;
+        goto out;
+    }
+
+    pattern_unit = asn_init_value(ndn_traffic_pattern_unit);
+    if (pattern_unit == NULL)
+    {
+        err = TE_ENOMEM;
+        goto out;
+    }
+
+    pdus_copy = asn_copy_value(pdus);
+    if (pdus_copy == NULL)
+    {
+        err = TE_ENOMEM;
+        goto out;
+    }
+
+    err = asn_put_child_value(pattern_unit, pdus_copy, PRIVATE, NDN_PU_PDUS);
+    if (err != 0)
+    {
+        asn_free_value(pdus_copy);
+        goto out;
+    }
+
+    ip4_pdu = asn_find_child_choice_value(pdus_copy, TE_PROTO_IP4);
+    ip6_pdu = asn_find_child_choice_value(pdus_copy, TE_PROTO_IP6);
+    tcp_pdu = asn_find_child_choice_value(pdus_copy, TE_PROTO_TCP);
+    udp_pdu = asn_find_child_choice_value(pdus_copy, TE_PROTO_UDP);
+
+    if (is_tso)
+    {
+        if (tcp_pdu == NULL)
+        {
+            err = TE_EINVAL;
+            goto out;
+        }
+
+        seg_len = MIN(payload_len - (*n_pattern_units * transform->tso_segsz),
+                      transform->tso_segsz);
+
+        if (ip4_pdu != NULL)
+        {
+            err = tapi_tad_tso_seg_fix_ip4h(ip4_pdu, payload_len, seg_len,
+                                            *n_pattern_units);
+            if (err != 0)
+                goto out;
+        }
+
+        if (ip6_pdu != NULL)
+        {
+            err = tapi_tad_tso_seg_fix_ip6h(ip6_pdu, payload_len, seg_len);
+            if (err != 0)
+                goto out;
+        }
+
+        err = tapi_tad_tso_seg_fix_tcph(tcp_pdu, payload_len, seg_len,
+                                        *n_pattern_units *
+                                        transform->tso_segsz);
+        if (err != 0)
+            goto out;
+    }
+
+    err = asn_write_value_field(pattern_unit, payload_data + *data_offset,
+                                (is_tso) ? seg_len : payload_len,
+                                "payload.#bytes");
+    if (err != 0)
+        goto out;
+
+    *data_offset += (is_tso) ? seg_len : payload_len;
+
+    if (transform != NULL)
+    {
+        err = tapi_tad_request_correct_cksums(transform->hw_flags,
+                                              ip4_pdu, tcp_pdu, udp_pdu);
+        if (err != 0)
+            goto out;
+    }
+
+    if (ip4_pdu != NULL)
+    {
+        err = asn_free_child(ip4_pdu, PRIVATE, NDN_TAG_IP4_OPTIONS);
+        err = (err == TE_EASNWRONGLABEL) ? 0 : err;
+        if (err != 0)
+            goto out;
+
+        err = asn_free_child(ip4_pdu, PRIVATE, NDN_TAG_IP4_PLD_CHECKSUM);
+        err = (err == TE_EASNWRONGLABEL) ? 0 : err;
+        if (err != 0)
+            goto out;
+    }
+
+    if (ip6_pdu != NULL)
+    {
+        err = asn_free_child(ip6_pdu, PRIVATE, NDN_TAG_IP6_PLD_CHECKSUM);
+        err = (err == TE_EASNWRONGLABEL) ? 0 : err;
+        if (err != 0)
+            goto out;
+    }
+
+    pattern_units_new = realloc(*pattern_units, (*n_pattern_units + 1) *
+                                 sizeof(**pattern_units));
+    if (pattern_units_new == NULL)
+    {
+        err = TE_ENOMEM;
+        goto out;
+    }
+
+    *pattern_units = pattern_units_new;
+    (*pattern_units)[*n_pattern_units] = pattern_unit;
+    (*n_pattern_units)++;
+
+out:
+    if ((err != 0) && (pattern_unit != NULL))
+        asn_free_value(pattern_unit);
+
+    return TE_RC(TE_TAPI, err);
+}
+
+static te_errno
+tapi_tad_packet_to_pattern_units(asn_value      *packet,
+                                 send_transform *transform,
+                                 asn_value    ***pattern_units_out,
+                                 unsigned int   *n_pattern_units_out)
+{
+    te_errno        err = 0;
+    asn_value      *pdus = NULL;
+    int             payload_len;
+    uint8_t        *payload_data = NULL;
+    asn_value      *tcp_pdu = NULL;
+    size_t          data_offset = 0;
+    asn_value     **pattern_units = NULL;
+    unsigned int    n_pattern_units = 0;
+
+    err = asn_get_subvalue(packet, &pdus, "pdus");
+    if (err != 0)
+        goto out;
+
+    payload_len = asn_get_length(packet, "payload.#bytes");
+    if (payload_len < 0)
+    {
+        err = TE_EINVAL;
+        goto out;
+    }
+
+    payload_data = malloc(payload_len);
+    if (payload_data == NULL)
+    {
+        err = TE_ENOMEM;
+        goto out;
+    }
+
+    err = asn_read_value_field(packet, (void *)payload_data,
+                               (size_t *)&payload_len, "payload.#bytes");
+    if (err != 0)
+        goto out;
+
+    tcp_pdu = asn_find_child_choice_value(pdus, TE_PROTO_TCP);
+    if ((tcp_pdu != NULL) && (transform != NULL) &&
+        ((transform->hw_flags & SEND_COND_HW_OFFL_TSO) ==
+        SEND_COND_HW_OFFL_TSO))
+    {
+        while (data_offset < (size_t)payload_len)
+        {
+            err = tapi_tad_generate_pattern_unit(pdus, payload_data,
+                                                 (size_t)payload_len,
+                                                 &data_offset, transform,
+                                                 TRUE, &pattern_units,
+                                                 &n_pattern_units);
+            if (err != 0)
+            {
+                unsigned int i;
+
+                for (i = 0; i < n_pattern_units; ++i)
+                    asn_free_value(pattern_units[i]);
+
+                free(pattern_units);
+
+                goto out;
+            }
+        }
+    }
+    else
+    {
+        err = tapi_tad_generate_pattern_unit(pdus, payload_data,
+                                             (size_t)payload_len, &data_offset,
+                                             transform, FALSE, &pattern_units,
+                                             &n_pattern_units);
+        if (err != 0)
+            goto out;
+    }
+
+    *pattern_units_out = pattern_units;
+    *n_pattern_units_out = n_pattern_units;
+
+out:
+    free(payload_data);
+
+    return TE_RC(TE_TAPI, err);
+}
+
+/* See the description in 'tapi_ndn.h' */
+te_errno
+tapi_tad_packets_to_pattern(asn_value         **packets,
+                            unsigned int        n_packets,
+                            send_transform     *transform,
+                            asn_value         **pattern_out)
+{
+    te_errno        err = 0;
+    asn_value      *pattern = NULL;
+    unsigned int    i;
+
+    if ((transform != NULL) &&
+        ((transform->hw_flags & SEND_COND_HW_OFFL_TSO) ==
+         SEND_COND_HW_OFFL_TSO) && (transform->tso_segsz == 0))
+    {
+        err = TE_EINVAL;
+        goto out;
+    }
+
+    pattern = asn_init_value(ndn_traffic_pattern);
+    if (pattern == NULL)
+    {
+        err = TE_ENOMEM;
+        goto out;
+    }
+
+    for (i = 0; i < n_packets; ++i)
+    {
+        asn_value  **pattern_units = NULL;
+        unsigned int n_pattern_units = 0;
+        unsigned int j;
+
+        err = tapi_tad_packet_to_pattern_units(packets[i], transform,
+                                               &pattern_units,
+                                               &n_pattern_units);
+        if (err != 0)
+            goto out;
+
+        for (j = 0; j < n_pattern_units; ++j)
+        {
+            err = asn_insert_indexed(pattern, pattern_units[j], -1, "");
+            if (err != 0)
+            {
+                unsigned int k;
+
+                for (k = j; k < n_pattern_units; ++k)
+                    asn_free_value(pattern_units[k]);
+
+                free(pattern_units);
+
+                goto out;
+            }
+        }
+
+        free(pattern_units);
+    }
+
+    *pattern_out = pattern;
+
+out:
+    if ((err != 0) && (pattern != NULL))
+        asn_free_value(pattern);
+
+    return TE_RC(TE_TAPI, err);
 }

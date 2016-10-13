@@ -38,6 +38,17 @@
 extern "C" {
 #endif
 
+/** Flags used to designate transformations which take place in hardware */
+#define SEND_COND_HW_OFFL_IP_CKCUM  (1U << 0)
+#define SEND_COND_HW_OFFL_L4_CKSUM  (1U << 1)
+#define SEND_COND_HW_OFFL_TSO       (1U << 2)
+
+typedef struct send_transform {
+    unsigned int                    hw_flags;
+
+    uint16_t                        tso_segsz;
+} send_transform;
+
 /**
  * Check ASN.1 value pointer. If it is NULL, initialize a new value of
  * specified type. All errors are logged inside the function. There is
@@ -140,6 +151,36 @@ extern te_errno tapi_tad_tmpl_ptrn_set_payload_plain(
  * @return ASN.1 value containing a pattern or @c NULL
  */
 extern asn_value *tapi_tad_mk_pattern_from_template(asn_value *template);
+
+/**
+ * Convert an array of ASN.1 'ndn_raw_packet'-s to a unified
+ * ASN.1 'ndn_traffic_pattern' carrying an exact sequence of
+ * 'ndn_traffic_pattern_unit'-s applicable to match definite
+ * packets which are to be received by the peer side in case
+ * if the initial 'ndn_raw_packet'-s are sent and (possibly)
+ * undergo some transformations (eg, HW offloads are active)
+ *
+ * @note The given set of possible transformations is only
+ *       considered with respect to all 'ndn_raw_packet'-s
+ *       in the array, i.e., some individual peculiarities
+ *       of the items cannot be taken into account, hence,
+ *       if one needs to process any of individual packets
+ *       independently, separate calls should be performed
+ *       (eg, if SEND_COND_HW_OFFL_TSO flag is present, it
+ *       means that TSO shall be done for all the packets)
+ *
+ * @param packets      An ASN.1 'ndn_raw_packet'-s to be processed
+ * @param n_packets    The number of items available within @p packets
+ * @param transform    A set of parameters describing some trasformations
+ *                     which are expected to affect the outgoing packets
+ * @param pattern_out  Location for the pattern which is to be produced
+ *
+ * @return Status code
+ */
+extern te_errno tapi_tad_packets_to_pattern(asn_value         **packets,
+                                            unsigned int        n_packets,
+                                            send_transform     *transform,
+                                            asn_value         **pattern_out);
 
 #ifdef __cplusplus
 } /* extern "C" */
