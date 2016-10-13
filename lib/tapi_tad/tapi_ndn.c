@@ -44,6 +44,7 @@
 #include "te_errno.h"
 #include "logger_api.h"
 #include "ndn.h"
+#include "ndn_ipstack.h"
 
 #include "tad_common.h"
 
