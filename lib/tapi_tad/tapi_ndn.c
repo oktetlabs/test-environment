@@ -403,6 +403,9 @@ tapi_tad_mk_pattern_from_template(asn_value  *template)
     asn_value  *pattern_unit = NULL;
     asn_value  *pdus = NULL;
     asn_value  *pdus_copy = NULL;
+    asn_value  *pdu_ip4;
+    asn_value  *pdu_tcp;
+    asn_value  *pdu_udp;
 
     pattern = asn_init_value(ndn_traffic_pattern);
     if (pattern == NULL)
@@ -432,6 +435,33 @@ tapi_tad_mk_pattern_from_template(asn_value  *template)
     {
         asn_free_value(pdus_copy);
         goto fail;
+    }
+
+    pdu_ip4 = asn_find_child_choice_value(pdus_copy, TE_PROTO_IP4);
+    if (pdu_ip4 != NULL)
+    {
+        err = asn_free_child(pdu_ip4, PRIVATE, NDN_TAG_IP4_H_CHECKSUM);
+        err = (err == TE_EASNWRONGLABEL) ? 0 : err;
+        if (err != 0)
+            goto fail;
+    }
+
+    pdu_tcp = asn_find_child_choice_value(pdus_copy, TE_PROTO_TCP);
+    if (pdu_tcp != NULL)
+    {
+        err = asn_free_child(pdu_tcp, PRIVATE, NDN_TAG_TCP_CHECKSUM);
+        err = (err == TE_EASNWRONGLABEL) ? 0 : err;
+        if (err != 0)
+            goto fail;
+    }
+
+    pdu_udp = asn_find_child_choice_value(pdus_copy, TE_PROTO_UDP);
+    if (pdu_udp != NULL)
+    {
+        err = asn_free_child(pdu_udp, PRIVATE, NDN_TAG_UDP_CHECKSUM);
+        err = (err == TE_EASNWRONGLABEL) ? 0 : err;
+        if (err != 0)
+            goto fail;
     }
 
     return pattern;
