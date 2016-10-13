@@ -45,6 +45,8 @@
 #include "logger_api.h"
 #include "ndn.h"
 
+#include "tad_common.h"
+
 #include "tapi_ndn.h"
 
 
