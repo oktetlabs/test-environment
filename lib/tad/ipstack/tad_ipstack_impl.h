@@ -505,6 +505,15 @@ extern te_errno tad_tcp_match_bin_cb(csap_p           csap,
                         tad_pkt         *sdu);
 
 /**
+ * Callback to release data prepared by confirm callback or packet match
+ *
+ * The function complies with csap_layer_release_opaque_cb_t prototype
+ */
+extern void tad_tcp_release_opaque_cb(csap_p          csap,
+                                      unsigned int    layer,
+                                      void           *opaque);
+
+/**
  * Callback for init 'ip6' CSAP layer.
  *
  * The function complies with csap_layer_init_cb_t prototype.

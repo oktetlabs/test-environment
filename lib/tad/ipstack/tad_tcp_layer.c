@@ -210,6 +210,16 @@ tad_tcp_option_len(const asn_value *opt_tmpl)
     return 0;
 }
 
+/* See description in 'tad_ipstack_impl.h' */
+void
+tad_tcp_release_opaque_cb(csap_p csap, unsigned int layer, void *opaque)
+{
+    UNUSED(csap);
+    UNUSED(layer);
+
+    free(opaque);
+}
+
 /* See description in tad_ipstack_impl.h */
 te_errno
 tad_tcp_confirm_tmpl_cb(csap_p csap, unsigned int layer,
@@ -357,6 +367,8 @@ tad_tcp_confirm_ptrn_cb(csap_p csap, unsigned int layer,
         }
     }
 
+    *p_opaque = NULL;
+
     tad_du_checksum = calloc(1, sizeof(*tad_du_checksum));
     if (tad_du_checksum == NULL)
     {
@@ -370,12 +382,16 @@ tad_tcp_confirm_ptrn_cb(csap_p csap, unsigned int layer,
                                tad_du_checksum);
     if (rc != 0)
     {
+        free(tad_du_checksum);
         ERROR("%s(): failed to convert TCP 'checksum' data unit %r",
               __FUNCTION__, rc);
         return TE_RC(TE_TAD_CSAP, rc);
     }
 
-    *p_opaque = tad_du_checksum;
+    if (tad_du_checksum->du_type != TAD_DU_STRING)
+        free(tad_du_checksum);
+    else
+        *p_opaque = tad_du_checksum;
 
     return 0;
 }
@@ -637,18 +653,19 @@ tad_tcp_match_bin_cb(csap_p           csap,
     data_ptr = data = tad_pkt_first_seg(pdu)->data_ptr;
     data_len = tad_pkt_first_seg(pdu)->data_len;
 
-    /* Check whether an advanced checksum matching mode was requested */
-    rc = tad_du_get_string(tad_du_checksum, &cksum_script_val);
-    rc = (rc == TE_EINVAL) ? 0 : rc;
-    if (rc != 0)
+    if (tad_du_checksum != NULL)
     {
-        rc = TE_RC(TE_TAD_CSAP, rc);
-        ERROR(CSAP_LOG_FMT "Failed to copy TCP 'checksum' DU string value: %r",
-              CSAP_LOG_ARGS(csap), rc);
-        return rc;
+        /* Check whether an advanced checksum matching mode was requested */
+        rc = tad_du_get_string(tad_du_checksum, &cksum_script_val);
+        rc = (rc == TE_EINVAL) ? 0 : rc;
+        if (rc != 0)
+        {
+            rc = TE_RC(TE_TAD_CSAP, rc);
+            ERROR(CSAP_LOG_FMT "Failed to copy TCP 'checksum' DU value: %r",
+                  CSAP_LOG_ARGS(csap), rc);
+            return rc;
+        }
     }
-
-    free(tad_du_checksum);
 
     if ((csap->state & CSAP_STATE_RESULTS) &&
         (tcp_header_pdu = meta_pkt->layers[layer].nds =
