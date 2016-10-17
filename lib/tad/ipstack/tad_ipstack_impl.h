@@ -102,6 +102,9 @@ extern "C" {
 /** The index of TCP header DU corresponding to 'checksum' PDU field */
 #define TCP_HDR_CKSUM_DU_INDEX 7
 
+/** The value used to verify checksum correctness */
+#define CKSUM_CMP_CORRECT 0xffff
+
 
 /*
  * TCP CSAP specific data
@@ -664,6 +667,22 @@ extern te_errno tad_icmp6_match_do_cb(csap_p csap, unsigned int layer,
                                       tad_pkt *sdu);
 
 /**
+ * A tool to interpret a result of an advanced checksum matching
+ *
+ * @param   csap                CSAP instance
+ * @param   cksum_str_code      The 'script' string code of 'checksum' DU
+ * @param   cksum               The calculated checksum value
+ * @param   layer               The layer number
+ *
+ * @return  Status code
+ */
+te_errno
+tad_does_cksum_match(csap_p              csap,
+                     tad_cksum_str_code  cksum_str_code,
+                     uint16_t            cksum,
+                     unsigned int        layer);
+
+/**
  * An auxiliary tool to match L4 checksum (advanced mode)
  *
  * @param   csap                CSAP instance
@@ -671,16 +690,16 @@ extern te_errno tad_icmp6_match_do_cb(csap_p csap, unsigned int layer,
  * @param   meta_pkt            TAD meta packet
  * @param   layer               The layer number
  * @param   l4_proto            L4 protocol ID
- * @param   cksum_script_val    The string value of 'checksum' DU
+ * @param   cksum_str_code      The 'script' string code of 'checksum' DU
  *
  * @return  Status code
  */
-te_errno tad_l4_match_cksum_advanced(csap_p          csap,
-                                     tad_pkt        *pdu,
-                                     tad_recv_pkt   *meta_pkt,
-                                     unsigned int    layer,
-                                     uint8_t         l4_proto,
-                                     const char     *cksum_script_val);
+te_errno tad_l4_match_cksum_advanced(csap_p              csap,
+                                     tad_pkt            *pdu,
+                                     tad_recv_pkt       *meta_pkt,
+                                     unsigned int        layer,
+                                     uint8_t             l4_proto,
+                                     tad_cksum_str_code  cksum_str_code);
 
 #ifdef __cplusplus
 } /* extern "C" */

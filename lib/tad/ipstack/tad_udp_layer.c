@@ -381,7 +381,8 @@ tad_udp_match_do_cb(csap_p           csap,
     tad_udp_proto_pdu_data *pkt_data = meta_pkt->layers[layer].opaque;
     te_errno                rc;
     unsigned int            bitoff = 0;
-    char                   *cksum_script_val = NULL;
+    tad_data_unit_t        *udp_hdr_cksum_du;
+    tad_cksum_str_code      cksum_str_code;
 
     UNUSED(ptrn_pdu);
 
@@ -399,23 +400,15 @@ tad_udp_match_do_cb(csap_p           csap,
     assert(pkt_data != NULL);
 
     /* Check whether an advanced checksum matching mode was requested */
-    rc = tad_du_get_string(&ptrn_data->hdr.dus[UDP_HDR_CKSUM_DU_INDEX],
-                           &cksum_script_val);
-    rc = (rc == TE_EINVAL) ? 0 : rc;
-    if (rc != 0)
-    {
-        rc = TE_RC(TE_TAD_CSAP, rc);
-        ERROR(CSAP_LOG_FMT "Failed to copy UDP 'checksum' DU string value: %r",
-              CSAP_LOG_ARGS(csap), rc);
-        return rc;
-    }
+    udp_hdr_cksum_du = &ptrn_data->hdr.dus[UDP_HDR_CKSUM_DU_INDEX];
+    cksum_str_code = tad_du_get_cksum_str_code(udp_hdr_cksum_du);
 
     /*
      * Clear the DU, so that it will not be considered in
      * tad_bps_pkt_frag_match_do() matching path
      */
-    if (cksum_script_val != NULL)
-        tad_data_unit_clear(&ptrn_data->hdr.dus[UDP_HDR_CKSUM_DU_INDEX]);
+    if (cksum_str_code != TAD_CKSUM_STR_CODE_NONE)
+        tad_data_unit_clear(udp_hdr_cksum_du);
 
     rc = tad_bps_pkt_frag_match_do(&proto_data->hdr, &ptrn_data->hdr,
                                    &pkt_data->hdr, pdu, &bitoff);
@@ -426,13 +419,10 @@ tad_udp_match_do_cb(csap_p           csap,
         return rc;
     }
 
-    if (cksum_script_val != NULL)
+    if (cksum_str_code != TAD_CKSUM_STR_CODE_NONE)
     {
         rc = tad_l4_match_cksum_advanced(csap, pdu, meta_pkt, layer,
-                                         IPPROTO_UDP, cksum_script_val);
-
-        free(cksum_script_val);
-
+                                         IPPROTO_UDP, cksum_str_code);
         if (rc != 0)
             return rc;
     }

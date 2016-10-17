@@ -62,6 +62,19 @@ extern "C" {
 /** Zero timeval */
 #define tad_tv_zero             ((struct timeval){ 0, 0 })
 
+/** 'string' choice value to denote that correct checksums will match only */
+#define TAD_CKSUM_STR_VAL_CORRECT   "correct"
+
+/** 'string' choice value to denote that incorrect checksums will match only */
+#define TAD_CKSUM_STR_VAL_INCORRECT "incorrect"
+
+/** 'string' choice numeric designations */
+typedef enum {
+    TAD_CKSUM_STR_CODE_NONE = 0,
+    TAD_CKSUM_STR_CODE_CORRECT,
+    TAD_CKSUM_STR_CODE_INCORRECT,
+} tad_cksum_str_code;
+
 /**
  * Convert text protocol label into integer tag.
  *
@@ -431,17 +444,16 @@ extern te_errno tad_pthread_create(pthread_t *thread,
 extern te_errno tad_du_realloc(tad_data_unit_t *du, size_t size);
 
 /**
- * An auxiliary tool to obtain a copy of a DU value of TAD_DU_STRING type
+ * An auxiliary tool to obtain a code of a DU value of @c TAD_DU_STRING type
  *
- * @param   du                The DU to be examined
- * @param   string_value_out  Location for a string copy to be obtained
+ * @param  du  The DU to be examined (may be @c NULL)
  *
- * @note    @p string_value_out should be freed by the caller
+ * @note If @p du is @c NULL or if it's type is different from
+ *       @c TAD_DU_STRING, then @c TAD_CKSUM_STR_CODE_NONE will be returned
  *
- * @return  Status code
+ * @return  The numeric code of the DU value
  */
-extern te_errno tad_du_get_string(tad_data_unit_t    *du,
-                                  char              **string_value_out);
+extern tad_cksum_str_code tad_du_get_cksum_str_code(tad_data_unit_t *du);
 
 #ifdef __cplusplus
 } /* extern "C" */

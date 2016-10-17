@@ -53,6 +53,7 @@
 #include "logger_api.h"
 #include "logger_ta_fast.h"
 
+#include "te_alloc.h"
 #include "tad_ipstack_impl.h"
 
 
@@ -369,14 +370,9 @@ tad_tcp_confirm_ptrn_cb(csap_p csap, unsigned int layer,
 
     *p_opaque = NULL;
 
-    tad_du_checksum = calloc(1, sizeof(*tad_du_checksum));
+    tad_du_checksum = TE_ALLOC(sizeof(*tad_du_checksum));
     if (tad_du_checksum == NULL)
-    {
-        rc = TE_ENOMEM;
-        ERROR("%s(): failed to allocate TCP 'checksum' TAD data unit %r",
-              __FUNCTION__, rc);
-        return TE_RC(TE_TAD_CSAP, rc);
-    }
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     rc = tad_data_unit_convert(layer_pdu, NDN_TAG_TCP_CHECKSUM,
                                tad_du_checksum);
@@ -642,30 +638,19 @@ tad_tcp_match_bin_cb(csap_p           csap,
     size_t              data_len;
     asn_value          *tcp_header_pdu = NULL;
     tad_data_unit_t    *tad_du_checksum = ptrn_opaque;
+    tad_cksum_str_code  cksum_str_code;
     te_errno            rc;
 
     uint8_t  tmp8;
     size_t   h_len = 0;
-    char    *cksum_script_val = NULL;
 
     assert(tad_pkt_seg_num(pdu) == 1);
     assert(tad_pkt_first_seg(pdu) != NULL);
     data_ptr = data = tad_pkt_first_seg(pdu)->data_ptr;
     data_len = tad_pkt_first_seg(pdu)->data_len;
 
-    if (tad_du_checksum != NULL)
-    {
-        /* Check whether an advanced checksum matching mode was requested */
-        rc = tad_du_get_string(tad_du_checksum, &cksum_script_val);
-        rc = (rc == TE_EINVAL) ? 0 : rc;
-        if (rc != 0)
-        {
-            rc = TE_RC(TE_TAD_CSAP, rc);
-            ERROR(CSAP_LOG_FMT "Failed to copy TCP 'checksum' DU value: %r",
-                  CSAP_LOG_ARGS(csap), rc);
-            return rc;
-        }
-    }
+    /* Check whether an advanced checksum matching mode was requested */
+    cksum_str_code = tad_du_get_cksum_str_code(tad_du_checksum);
 
     if ((csap->state & CSAP_STATE_RESULTS) &&
         (tcp_header_pdu = meta_pkt->layers[layer].nds =
@@ -709,10 +694,10 @@ tad_tcp_match_bin_cb(csap_p           csap,
 
     CHECK_FIELD("win-size", 2);
 
-    if (cksum_script_val == NULL)
-        CHECK_FIELD("checksum", 2);
-    else
+    if (cksum_str_code != TAD_CKSUM_STR_CODE_NONE)
         data += sizeof(uint16_t);   /* Skip the checksum field (2 bytes) */
+    else
+        CHECK_FIELD("checksum", 2);
 
     CHECK_FIELD("urg-p", 2);
 
@@ -818,13 +803,10 @@ tad_tcp_match_bin_cb(csap_p           csap,
     if (rc)
         goto cleanup;
 
-    if (cksum_script_val != NULL)
+    if (cksum_str_code != TAD_CKSUM_STR_CODE_NONE)
     {
         rc = tad_l4_match_cksum_advanced(csap, pdu, meta_pkt, layer,
-                                         IPPROTO_TCP, cksum_script_val);
-
-        free(cksum_script_val);
-
+                                         IPPROTO_TCP, cksum_str_code);
         if (rc != 0)
             return rc;
     }

@@ -2054,23 +2054,19 @@ tad_du_realloc(tad_data_unit_t *du, size_t size)
 }
 
 /* See description in 'tad_utils.h' */
-te_errno
-tad_du_get_string(tad_data_unit_t    *du,
-                  char              **string_value_out)
+tad_cksum_str_code
+tad_du_get_cksum_str_code(tad_data_unit_t *du)
 {
-    if (du->du_type == TAD_DU_STRING)
+    if ((du != NULL) && (du->du_type == TAD_DU_STRING))
     {
-        char *string_value = strdup(du->val_data.char_str);
-
-        if (string_value == NULL)
-            return TE_ENOMEM;
-
-        *string_value_out = string_value;
+        if (strcmp(du->val_data.char_str,
+                   TAD_CKSUM_STR_VAL_CORRECT) == 0)
+            return TAD_CKSUM_STR_CODE_CORRECT;
+        else
+            return TAD_CKSUM_STR_CODE_INCORRECT;
     }
     else
     {
-        return TE_EINVAL;
+        return TAD_CKSUM_STR_CODE_NONE;
     }
-
-    return 0;
 }
