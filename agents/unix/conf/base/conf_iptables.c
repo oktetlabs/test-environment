@@ -3,7 +3,7 @@
  *
  * Unix TA iptables support
  *
- * Copyright (C) 2004-2009 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2004-2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -23,8 +23,7 @@
  *
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
- *
- * $Id$
+ * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  */
 
 #define TE_LGR_USER     "TA iptables"
@@ -54,6 +53,14 @@
 #if __linux__
 
 #define IPTABLES_CMD_BUF_SIZE    1024
+
+/* iptables tools */
+#define IPTABLES_TOOL           "/sbin/iptables"
+#define IPTABLES_SAVE_TOOL      "/sbin/iptables-save"
+#define IPTABLES_RESTORE_TOOL   "/sbin/iptables-restore"
+
+/* iptables tool extra options */
+static char iptables_tool_options[RCF_MAX_VAL];
 
 /*
  * Methods
@@ -97,7 +104,6 @@ static te_errno iptables_cmd_get(unsigned int, const char *, char *,
 static te_errno iptables_cmd_set(unsigned int, const char *, const char *,
                                  const char *, const char *, const char *,
                                  const char *);
-
 
 
 /*
@@ -204,10 +210,11 @@ iptables_perif_chain_is_enabled(const char *ifname, const char *table,
     INFO("%s started, ifname=%s, table=%s", __FUNCTION__, ifname, table);
 
     snprintf(buf, IPTABLES_CMD_BUF_SIZE,
-             "/sbin/iptables -t %s -S %s | grep '^-A %s -%c %s -j %s_%s'",
-             table, chain, chain,
+             IPTABLES_TOOL " %s -t %s -S %s | grep '^-A %s -%c %s -j %s_%s'",
+             iptables_tool_options, table, chain, chain,
              iptables_is_chain_output(chain) ? 'o' : 'i',
              ifname, chain, ifname);
+    VERB("Invoke: %s", buf);
     if ((pid = te_shell_cmd(buf, -1, NULL, &out_fd, NULL)) < 0)
     {
         ERROR("failed to execute command line while getting: %s: "
@@ -260,11 +267,11 @@ iptables_perif_chain_set(const char *ifname,
 
     /* Add rule to jump to new chain */
     snprintf(cmd_buf, IPTABLES_CMD_BUF_SIZE,
-             "/sbin/iptables -t %s -%c %s -%c %s -j %s_%s",
-             table, (enable) ? 'I' : 'D', chain,
+             IPTABLES_TOOL " %s -t %s -%c %s -%c %s -j %s_%s",
+             iptables_tool_options, table, (enable ? 'I' : 'D'), chain,
              iptables_is_chain_output(chain) ? 'o' : 'i',
              ifname, chain, ifname);
-
+    VERB("Invoke: %s", cmd_buf);
     rc = ta_system(cmd_buf);
     if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
     {
@@ -305,8 +312,9 @@ iptables_chain_add(unsigned int  gid, const char *oid,
 
     /* Create new chain first */
     snprintf(cmd_buf, IPTABLES_CMD_BUF_SIZE,
-             "/sbin/iptables -t %s -N %s_%s",
-             table, chain, ifname);
+             IPTABLES_TOOL " %s -t %s -N %s_%s",
+             iptables_tool_options, table, chain, ifname);
+    VERB("Invoke: %s", cmd_buf);
     rc = ta_system(cmd_buf);
     if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
     {
@@ -369,8 +377,9 @@ iptables_chain_del(unsigned int  gid, const char *oid,
 
     /* Flush chain */
     snprintf(cmd_buf, IPTABLES_CMD_BUF_SIZE,
-             "/sbin/iptables -t %s -F %s_%s",
-             table, chain, ifname);
+             IPTABLES_TOOL " %s -t %s -F %s_%s",
+             iptables_tool_options, table, chain, ifname);
+    VERB("Invoke: %s", cmd_buf);
     rc = ta_system(cmd_buf);
     if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
     {
@@ -380,9 +389,9 @@ iptables_chain_del(unsigned int  gid, const char *oid,
 
     /* Remove all rules which refer to the current chain */
     snprintf(cmd_buf, IPTABLES_CMD_BUF_SIZE,
-             "/sbin/iptables-save | "
+             IPTABLES_SAVE_TOOL " | "
              "grep -v -- '-j %s_%s' | "
-             "/sbin/iptables-restore",
+             IPTABLES_RESTORE_TOOL,
              chain, ifname);
     rc = ta_system(cmd_buf);
     if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
@@ -394,8 +403,9 @@ iptables_chain_del(unsigned int  gid, const char *oid,
 
     /* Delete chain */
     snprintf(cmd_buf, IPTABLES_CMD_BUF_SIZE,
-             "/sbin/iptables -t %s -X %s_%s",
-             table, chain, ifname);
+             IPTABLES_TOOL " %s -t %s -X %s_%s",
+             iptables_tool_options, table, chain, ifname);
+    VERB("Invoke: %s", cmd_buf);
     rc = ta_system(cmd_buf);
     if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
     {
@@ -523,9 +533,10 @@ iptables_chain_list(unsigned int  gid, const char *oid, char **list,
     *list = NULL;
 
     snprintf(buf, IPTABLES_CMD_BUF_SIZE,
-             "/sbin/iptables -t %s -S | grep '^-N .*_%s' | "
+             IPTABLES_TOOL " %s -t %s -S | grep '^-N .*_%s' | "
              "sed -e 's/^-N //g' | sed -e 's/_%s$//g'",
-             table, ifname, ifname);
+             iptables_tool_options, table, ifname, ifname);
+    VERB("Invoke: %s", buf);
     if ((pid = te_shell_cmd(buf, -1, NULL, &out_fd, NULL)) < 0)
     {
         ERROR("failed to execute command line while getting: %s: "
@@ -628,10 +639,12 @@ iptables_rules_get(unsigned int  gid, const char *oid,
     *value = '\0';
 
     snprintf(buf, IPTABLES_CMD_BUF_SIZE,
-             "/sbin/iptables -t %s -S %s_%s | "
+             IPTABLES_TOOL " %s -t %s -S %s_%s | "
              "grep '^-A %s_%s ' | "
              "sed -e 's/^-A %s_%s //g'",
+             iptables_tool_options,
              table, chain, ifname, chain, ifname, chain, ifname);
+    VERB("Invoke: %s", buf);
     if ((pid = te_shell_cmd(buf, -1, NULL, &out_fd, NULL)) < 0)
     {
         ERROR("failed to execute command line while getting: %s: "
@@ -710,12 +723,14 @@ iptables_rules_set(unsigned int  gid, const char *oid,
 
     /* Flush the chain */
     snprintf(buf, IPTABLES_CMD_BUF_SIZE,
-             "/sbin/iptables -t %s -F %s_%s", table, chain, ifname);
+             IPTABLES_TOOL " %s -t %s -F %s_%s",
+             iptables_tool_options, table, chain, ifname);
+    VERB("Invoke: %s", buf);
     ta_system(buf);
 
     /* Open iptables-restore session, do not flush all chains */
     snprintf(buf, IPTABLES_CMD_BUF_SIZE,
-             "/sbin/iptables-restore -n");
+             IPTABLES_RESTORE_TOOL " -n");
     if ((pid = te_shell_cmd(buf, -1, &in_fd, NULL, NULL)) < 0)
     {
         ERROR("failed to execute command line while getting: %s: "
@@ -809,7 +824,8 @@ iptables_cmd_set(unsigned int  gid, const char *oid,
      * the parameter @c '-j' without target value. Second substitution takes
      * precedence.
      */
-    rc = te_string_append(&buf, "/sbin/iptables -t %s ", table);
+    rc = te_string_append(&buf, IPTABLES_TOOL " %s -t %s ",
+                          iptables_tool_options, table);
     if (rc)
     {
         te_string_free(&buf);
@@ -896,7 +912,7 @@ iptables_cmd_set(unsigned int  gid, const char *oid,
 
 #undef SKIP_SPACES
 
-    INFO("Execute cmd: '%s'", buf.ptr);
+    VERB("Invoke: %s", buf.ptr);
 
     rc = ta_system(buf.ptr);
     if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
@@ -940,6 +956,61 @@ iptables_cmd_get(unsigned int  gid, const char *oid,
 }
 
 /**
+ * Set the extra options for iptables tool.
+ *
+ * @param gid           Group identifier (unused).
+ * @param oid           Full object instance identifier.
+ * @param value         New value.
+ *
+ * @return Status code.
+ */
+static te_errno
+iptables_tool_opts_set(unsigned int gid, const char *oid, const char *value)
+{
+    UNUSED(gid);
+
+    INFO("%s, %s = %s", __FUNCTION__, oid, value);
+
+    if (strlen(value) >= RCF_MAX_VAL)
+    {
+        ERROR("A buffer to save the \"%s\" variable value is too small.",
+              oid);
+        return TE_RC(TE_TA_UNIX, TE_EOVERFLOW);
+    }
+    strcpy(iptables_tool_options, value);
+
+    return 0;
+}
+
+/**
+ * Get the extra options for iptables tool.
+ *
+ * @param gid           Group identifier (unused).
+ * @param oid           Full object instance identifier.
+ * @param value         Obtained value.
+ *
+ * @return Status code.
+ */
+static te_errno
+iptables_tool_opts_get(unsigned int gid, const char *oid, char *value)
+{
+    UNUSED(gid);
+
+    INFO("%s, %s = %s", __FUNCTION__, oid, iptables_tool_options);
+
+    strcpy(value, iptables_tool_options);
+
+    return 0;
+}
+
+/* iptables tool options Configurator node */
+RCF_PCH_CFG_NODE_RW(node_iptables_tool_opts, "iptables_tool_opts",
+                    NULL, NULL,
+                    iptables_tool_opts_get,
+                    iptables_tool_opts_set);
+
+
+/**
  * Initialize iptables subtree
  *
  * @return              Status code
@@ -947,6 +1018,7 @@ iptables_cmd_get(unsigned int  gid, const char *oid,
 extern te_errno
 ta_unix_conf_iptables_init(void)
 {
+    rcf_pch_add_node("/agent", &node_iptables_tool_opts);
     return rcf_pch_add_node("/agent/interface", &node_iptables);
 }
 
