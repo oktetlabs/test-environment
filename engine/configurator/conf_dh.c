@@ -3,7 +3,7 @@
  *
  * Support of dynamic history
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
+ * Copyright (C) 2003-2016 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -527,6 +527,12 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
             while (tmp != NULL &&
                    xmlStrcmp(tmp->name , (const xmlChar *)"instance") == 0)
             {
+                if (!xmlNodeCond(tmp))
+                {
+                    tmp = xmlNodeNext(tmp);
+                    continue;
+                }
+
                 if ((oid = (xmlChar *)xmlGetProp_exp(tmp, (xmlChar *)"oid"))
                         == NULL)
                     RETERR(TE_EINVAL, "Incorrect %s command format",
