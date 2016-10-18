@@ -60,6 +60,7 @@
 #include "tad_common.h"
 #include "te_ipstack.h"
 #include "tapi_test.h"
+#include "tapi_tcp.h"
 
 static void
 tapi_perform_sockaddr_sanity_checks(const struct sockaddr *ip_dst_addr,
@@ -242,7 +243,7 @@ tapi_rte_mk_mbuf_tcp(rcf_rpc_server *rpcs,
                      const uint8_t *eth_dst_addr, const uint8_t *eth_src_addr,
                      const struct sockaddr *tcp_dst_addr,
                      const struct sockaddr *tcp_src_addr,
-                     const tcp_seq th_seq, const tcp_seq th_ack,
+                     const uint32_t th_seq, const uint32_t th_ack,
                      const uint8_t th_off, const uint8_t th_flags,
                      const uint16_t th_win, const uint16_t th_urp,
                      const uint8_t *payload, const size_t payload_len,
@@ -260,15 +261,22 @@ tapi_rte_mk_mbuf_tcp(rcf_rpc_server *rpcs,
 
     th = (struct tcphdr *)datagram;
 
-    th->th_dport = te_sockaddr_get_port(tcp_dst_addr);
-    th->th_sport = te_sockaddr_get_port(tcp_src_addr);
-    th->th_seq = th_seq;
-    th->th_ack = th_ack;
-    th->th_off = ((th_off == 0) || (payload == NULL)) ?
-                 header_len / sizeof(uint32_t) : th_off;
-    th->th_flags = th_flags;
-    th->th_win = th_win;
-    th->th_urp = th_urp;
+    th->dest = te_sockaddr_get_port(tcp_dst_addr);
+    th->source = te_sockaddr_get_port(tcp_src_addr);
+    th->seq = th_seq;
+    th->ack_seq = th_ack;
+    th->doff = ((th_off == 0) || (payload == NULL)) ?
+               header_len / sizeof(uint32_t) : th_off;
+
+    th->fin = (th_flags & TCP_FIN_FLAG) ? 1 : 0;
+    th->syn = (th_flags & TCP_SYN_FLAG) ? 1 : 0;
+    th->rst = (th_flags & TCP_RST_FLAG) ? 1 : 0;
+    th->psh = (th_flags & TCP_PSH_FLAG) ? 1 : 0;
+    th->ack = (th_flags & TCP_ACK_FLAG) ? 1 : 0;
+    th->urg = (th_flags & TCP_URG_FLAG) ? 1 : 0;
+
+    th->window = th_win;
+    th->urg_ptr = th_urp;
 
     if (payload != NULL)
         memcpy(datagram + header_len, payload, payload_len);

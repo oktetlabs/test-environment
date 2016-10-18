@@ -56,6 +56,7 @@
 #include "tad_common.h"
 
 #include "tapi_ndn.h"
+#include "tapi_tcp.h"
 
 
 /* See the description in tapi_ndn.h */
@@ -578,7 +579,7 @@ tapi_tad_tso_seg_fix_tcph(asn_value      *tcp_pdu,
         if (err != 0)
             goto out;
 
-        tcp_flags &= ~(TH_FIN | TH_PUSH);
+        tcp_flags &= ~(TCP_FIN_FLAG | TCP_PSH_FLAG);
 
         err = asn_write_value_field(tcp_pdu, &tcp_flags,
                                     sizeof(tcp_flags), "flags.#plain");
