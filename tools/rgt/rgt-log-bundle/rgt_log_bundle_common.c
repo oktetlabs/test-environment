@@ -57,7 +57,7 @@ file2file(FILE *out_f, FILE *in_f,
     {
         bytes_read = (length > BUF_SIZE ? BUF_SIZE : length);
         bytes_read = fread(buf, 1, bytes_read, in_f);
-        if (bytes_read < 0)
+        if (ferror(in_f))
         {
             fprintf(stderr, "%s\n", "fread() failed");
             exit(1);
