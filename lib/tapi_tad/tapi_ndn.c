@@ -707,7 +707,7 @@ tapi_tad_generate_pattern_unit(asn_value      *pdus,
     asn_value      *ip6_pdu = NULL;
     asn_value      *tcp_pdu = NULL;
     asn_value      *udp_pdu = NULL;
-    size_t          seg_len;
+    size_t          seg_len = 0;
     asn_value     **pattern_units_new = *pattern_units;
 
     if (pdus == NULL || payload_data == NULL || data_offset == NULL ||
