@@ -89,7 +89,7 @@ extern int test_path_str_pos;
 %option noinput
 %option nounput
 %option noyywrap
-%option bison-bridge bison-locations
+%option bison-bridge
 %option prefix="test_path_"
 
 %x STR
