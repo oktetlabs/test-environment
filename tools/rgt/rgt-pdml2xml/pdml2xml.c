@@ -644,7 +644,6 @@ rgt_parse_pdml_file(const char *fname)
 {
     xmlParserCtxtPtr xml_ctxt;
     rgt_user_ctx     user_ctx;
-    int              ret       = 0;
 
     user_ctx.state = RGT_LOG_STATE_BASE;
 
@@ -661,11 +660,6 @@ rgt_parse_pdml_file(const char *fname)
     xml_ctxt->userData = (void *)&user_ctx;
 
     xmlParseDocument(xml_ctxt);
-
-    if (xml_ctxt->wellFormed)
-        ret = 0;
-    else
-        ret = xml_ctxt->errNo != 0 ? xml_ctxt->errNo : 1;
 
     xml_ctxt->sax = NULL;
     if (xml_ctxt->myDoc != NULL)
