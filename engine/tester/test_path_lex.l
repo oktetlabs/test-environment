@@ -81,6 +81,9 @@
 extern const char *test_path_str;
 extern int test_path_str_pos;
 
+#define YYSTYPE TEST_PATH_STYPE
+#define YYLTYPE TEST_PATH_LTYPE
+
 %}
 
 %option 8bit

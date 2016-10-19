@@ -194,7 +194,7 @@ test_path_new_arg_value(char *value)
 
 %pure-parser
 %locations
-%name-prefix="test_path_"
+%define api.prefix {test_path_}
 
 %union {
     char           *str;
