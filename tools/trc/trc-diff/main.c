@@ -739,11 +739,7 @@ main(int argc, char *argv[])
     /* Make sure that all sets with logs have db_uid allocated */
     TAILQ_FOREACH(diff_set, &ctx->sets, links)
     {
-        if ((diff_set->db_uid = trc_db_new_user(ctx->db)) < 0)
-        {
-            ERROR("trc_db_new_user() failed");
-            goto exit;
-        }
+        diff_set->db_uid = trc_db_new_user(ctx->db);
     }
 
     /* Parse logs for each diff set */
