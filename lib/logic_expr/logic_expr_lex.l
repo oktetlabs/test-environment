@@ -45,7 +45,6 @@ extern const char *logic_expr_int_str;
 extern int logic_expr_int_str_pos;
 
 #define YYSTYPE LOGIC_EXPR_INT_STYPE
-#define YYLTYPE LOGIC_EXPR_INT_LTYPE
 
 %}
 
@@ -55,7 +54,7 @@ extern int logic_expr_int_str_pos;
 %option noinput
 %option nounput
 %option noyywrap
-%option bison-bridge bison-locations
+%option bison-bridge
 %option prefix="logic_expr_int_"
 
 %%
