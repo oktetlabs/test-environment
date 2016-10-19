@@ -400,7 +400,14 @@ tapi_rte_mk_mbuf_mk_ptrn_by_tmpl(rcf_rpc_server    *rpcs,
 
                 pdu_ip4 = asn_find_child_choice_value(pdus, TE_PROTO_IP4);
                 if (pdu_ip4 != NULL)
+                {
                     ol_flags |= (1UL << TARPC_PKT_TX_IP_CKSUM);
+                    ol_flags |= (1UL << TARPC_PKT_TX_IPV4);
+                }
+                else
+                {
+                    ol_flags |= (1UL << TARPC_PKT_TX_IPV6);
+                }
 
                 rpc_rte_pktmbuf_get_tx_offload(rpcs, mbufs[i], &tx_offload);
                 tx_offload.tso_segsz = transform->tso_segsz;
