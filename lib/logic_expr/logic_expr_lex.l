@@ -44,8 +44,6 @@
 extern const char *logic_expr_int_str;
 extern int logic_expr_int_str_pos;
 
-#define YYSTYPE LOGIC_EXPR_INT_STYPE
-
 %}
 
 %option 8bit
