@@ -141,7 +141,7 @@ typedef struct rgt_gen_ctx {
 
     te_bool         single_node_match;    /**< Output HTML page only
                                                for specified log node */
-    const char     *match_tin;            /**< TIN of log node */
+    char           *match_tin;            /**< TIN of log node */
     uint32_t        match_depth;          /**< Depth of log node */
     uint32_t        match_seq;            /**< Sequential number of
                                                log node */
