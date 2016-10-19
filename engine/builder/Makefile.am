@@ -5,15 +5,6 @@ AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) $(TE_CPPFLAGS_VAR)
 AM_CFLAGS = @TE_CFLAGS@ $(TE_CFLAGS_VAR)
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir)
 
-bin_PROGRAMS = te_stdouterr 
-
-te_stdouterr_SOURCES = te_stdouterr.c
-te_stdouterr_LDADD = -llogger_ten -lipc -ltools @TE_LDADD@ -lpthread
-te_stdouterr_DEPENDENCIES = @TE_DEPENDENCIES@ \
-                            $(DESTDIR)/$(libdir)/liblogger_ten.a \
-                            $(DESTDIR)/$(libdir)/libipc.a \
-                            $(DESTDIR)/$(libdir)/libtools.a
-
 
 # Scripts to be installed by 'install-data' (required for TE build)
 # Test Suites are build on distcheck, therefore 'te_build_suite' and

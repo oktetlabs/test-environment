@@ -89,14 +89,9 @@ builder_build_test_suite(const char *suite, const char *sources)
         return te_rc_os2te(errno);
 #endif
     
-#if 0
-    sprintf(cmd, "te_stdouterr builder.log.%s.1 builder.log.%s.2 "
-                 "te_build_suite %s %s", suite, suite, suite, sources);
-#else
     sprintf(cmd, "te_build_suite %s \"%s\" "
                  ">builder.log.%s.1 2>builder.log.%s.2",
             suite, sources, suite, suite);
-#endif
     rc = system(cmd) == 0 ? 0 : TE_ESHCMD;
 
 #if HAVE_SIGNAL_H
