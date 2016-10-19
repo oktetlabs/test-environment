@@ -53,7 +53,7 @@ typedef struct gen_ctx_user {
 
 /* RGT format-specific options table */
 struct poptOption rgt_options_table[] = {
-    { "detailed-packets", 'P', POPT_ARG_NONE, &detailed_packets, NULL,
+    { "detailed-packets", 'P', POPT_ARG_NONE, &detailed_packets, 0,
       "Print more detailed packet dumps", NULL },
     POPT_TABLEEND
 };
