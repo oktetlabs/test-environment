@@ -42,6 +42,7 @@
 #include "te_errno.h"
 #include "logger_api.h"
 #include "ndn.h"
+#include "asn_impl.h"
 
 
 
@@ -134,4 +135,49 @@ ndn_csap_add_layer(asn_value       **csap_spec,
         *layer_spec = layer;
 
     return 0;
+}
+
+asn_value *
+ndn_csap_spec_by_traffic_template(const asn_value *tmpl)
+{
+    unsigned int    n_layers;
+    unsigned int    i;
+    asn_value      *csap_spec = NULL;
+    const asn_type *csap_label_type = NULL;
+    te_errno        rc;
+
+    n_layers = (unsigned)asn_get_length(tmpl, "pdus");
+
+    for (i = 0; i < n_layers; i++)
+    {
+        asn_value      *gen_layer = NULL;
+        const char     *layer_choice = NULL;
+
+        rc = asn_get_indexed(tmpl, &gen_layer, i, "pdus");
+        if (rc != 0)
+        {
+            ERROR("Cannot get layer %d from PDU, rc %r", i, rc);
+            return NULL;
+        }
+
+        layer_choice = asn_get_choice_ptr((const asn_value *)gen_layer);
+
+        rc = asn_impl_find_subtype(ndn_generic_csap_layer, layer_choice,
+                                   &csap_label_type);
+        if (rc != 0)
+        {
+            ERROR("Subtype for label '%s' not found, %r", layer_choice, rc);
+            return NULL;
+        }
+
+        rc = ndn_csap_add_layer(&csap_spec, csap_label_type, layer_choice,
+                                NULL);
+        if (rc != 0)
+        {
+            asn_free_value(csap_spec);
+            return NULL;
+        }
+    }
+
+    return csap_spec;
 }

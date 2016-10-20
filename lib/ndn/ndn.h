@@ -394,6 +394,16 @@ extern te_errno ndn_csap_add_layer(asn_value       **csap_spec,
                                    const char       *layer_choice,
                                    asn_value       **layer_spec);
 
+/**
+ * Create empty CSAP spec by template.
+ * User have to asn_free_value() got pointer.
+ *
+ * @param tmpl  Location for ASN value with template.
+ *
+ * @return CSAP spec on success, otherwise @b NULL is returned on error.
+ */
+extern asn_value * ndn_csap_spec_by_traffic_template(const asn_value *tmpl);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
