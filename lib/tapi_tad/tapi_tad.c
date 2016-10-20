@@ -641,7 +641,7 @@ tapi_tad_csap_get_no_match_pkts(const char *ta_name, int session,
                                 csap_handle_t csap_id, unsigned int *val)
 {
     int         rc;
-    uint64_t    tmp;
+    int64_t     tmp;
 
     ENTRY("TA=%s, SID=%d, CSAP=%d, location=0x%08x",
           ta_name, session, csap_id, val);
