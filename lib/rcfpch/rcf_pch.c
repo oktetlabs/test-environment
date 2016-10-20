@@ -1089,6 +1089,13 @@ rcf_pch_run(const char *confstr, const char *info)
                     }
                 }
 
+                if (strncmp(ptr, "seq-match", strlen("seq-match")) == 0)
+                {
+                    mode |= RCF_CH_TRRECV_PACKETS_SEQ_MATCH;
+                    ptr += strlen("seq-match");
+                    SKIP_SPACES(ptr);
+                }
+
                 if (*ptr != 0)
                     goto bad_protocol;
 

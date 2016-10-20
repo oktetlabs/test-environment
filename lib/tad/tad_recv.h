@@ -126,6 +126,8 @@ typedef struct tad_recv_pattern_data {
                                                  traffic pattern */
     unsigned int                n_units;    /**< Number of units in
                                                  the pattern */
+    unsigned int                cur_unit;   /**< Number of current
+                                                 processing unit in pattern */
     tad_recv_ptrn_unit_data    *units;      /**< Array with per-unit
                                                  unit data */
 } tad_recv_pattern_data;

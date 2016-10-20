@@ -366,7 +366,7 @@ te_errno
 tapi_tad_trrecv_start(const char *ta_name, int session,
                       csap_handle_t handle, const asn_value *pattern,
                       unsigned int timeout, unsigned int num,
-                      rcf_trrecv_mode mode)
+                      unsigned int mode)
 {
     te_errno    rc = 0;
     char        tmp_name[] = "/tmp/te_tapi_tad_trrecv_start.XXXXXX";

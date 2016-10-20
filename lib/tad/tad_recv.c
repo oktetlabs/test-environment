@@ -644,6 +644,8 @@ tad_recv_start_prepare(csap_p csap, const char *ptrn_str,
         csap->state |= CSAP_STATE_RESULTS;
         if (flags & RCF_CH_TRRECV_PACKETS_NO_PAYLOAD)
             csap->state |= CSAP_STATE_PACKETS_NO_PAYLOAD;
+        if (flags & RCF_CH_TRRECV_PACKETS_SEQ_MATCH)
+            csap->state |= CSAP_STATE_RECV_SEQ_MATCH;
     }
 
     csap->first_pkt = csap->last_pkt = tad_tv_zero;
@@ -1009,8 +1011,10 @@ static te_errno
 tad_recv_match(csap_p csap, tad_recv_pattern_data *ptrn_data,
                tad_recv_pkt *meta_pkt, size_t pkt_len, te_bool *no_report)
 {
-    unsigned int    unit = 0;
+    unsigned int    unit;
     te_errno        rc;
+
+    unit = (csap->state & CSAP_STATE_RECV_SEQ_MATCH) ? ptrn_data->cur_unit : 0;
 
     /* Create a packet with received data only for the bottom layer */
     rc = tad_pkt_get_frag(
@@ -1024,6 +1028,15 @@ tad_recv_match(csap_p csap, tad_recv_pattern_data *ptrn_data,
         return rc;
     }
 
+    if (ptrn_data->cur_unit == ptrn_data->n_units)
+    {
+        F_VERB(CSAP_LOG_FMT "The matching of pattern sequence is finished",
+               CSAP_LOG_ARGS(csap), unit, rc);
+        tad_recv_pkt_cleanup_upper(csap, meta_pkt);
+
+        return TE_ETADNOTMATCH;
+    }
+
     assert(ptrn_data->n_units > 0);
     do {
         rc = tad_recv_match_with_unit(csap, ptrn_data->units + unit,
@@ -1033,6 +1046,10 @@ tad_recv_match(csap_p csap, tad_recv_pattern_data *ptrn_data,
             case 0: /* received data matches to this pattern unit */
                 assert(no_report != NULL);
                 *no_report = ptrn_data->units[unit].no_report;
+
+                if (csap->state & CSAP_STATE_RECV_SEQ_MATCH)
+                    ptrn_data->cur_unit++;
+
             case TE_ETADLESSDATA:
                 F_VERB(CSAP_LOG_FMT "Match packet with unit #%u - %r",
                        CSAP_LOG_ARGS(csap), unit, rc);
@@ -1044,6 +1061,10 @@ tad_recv_match(csap_p csap, tad_recv_pattern_data *ptrn_data,
                        CSAP_LOG_ARGS(csap), unit, rc);
                 /* Nothing is owned by match routine */
                 tad_recv_pkt_cleanup_upper(csap, meta_pkt);
+
+                if (csap->state & CSAP_STATE_RECV_SEQ_MATCH)
+                    return rc;
+
                 continue;
 
             default:

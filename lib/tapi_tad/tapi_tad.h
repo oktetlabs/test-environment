@@ -195,8 +195,10 @@ extern int tapi_tad_trsend_start(const char *ta_name, int session,
  * @param num           Number of packets that needs to be captured;
  *                      if it is zero, the number of received packets
  *                      is not limited.
- * @param mode          Count received packets only or store packets
- *                      to get to the test side later
+ * @param mode          The flags allows to specify the receive mode.
+ *                      Count received packets only, store packets
+ *                      to get to the test side later or use pattern sequence
+ *                      matching.
  *
  * @return Zero on success or error code
  */
@@ -206,7 +208,7 @@ extern te_errno tapi_tad_trrecv_start(const char      *ta_name,
                                       const asn_value *pattern,
                                       unsigned int     timeout,
                                       unsigned int     num,
-                                      rcf_trrecv_mode  mode);
+                                      unsigned int     mode);
 
 
 /**

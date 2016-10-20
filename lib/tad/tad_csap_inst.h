@@ -143,6 +143,8 @@ enum {
     CSAP_STATE_RECV_DONE  = 0x0040, /**< Receive has been finished */
     CSAP_STATE_COMPLETE   = 0x0100, /**< Receive operation complete */
 
+    CSAP_STATE_RECV_SEQ_MATCH =     0x0200, /**< Pattern sequence matching */
+
     CSAP_STATE_PACKETS_NO_PAYLOAD = 0x0400, /**< Do not report payload of
                                                  received packets */
     CSAP_STATE_RESULTS    = 0x0800, /**< Receive results are required */

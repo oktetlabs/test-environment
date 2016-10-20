@@ -69,15 +69,19 @@ typedef enum rcf_call_mode {
     RCF_MODE_BLOCKING, /**< Used for blocking call */
 } rcf_call_mode_t;
 
+/** Bit mask for report flag of receiving mode */
+#define RCF_TRRECV_REPORT_MASK 0x3
+
 /**
  * List of modes that can be used while calling RCF traffic receive
  * operation.
  */
 typedef enum rcf_trrecv_mode {
-    RCF_TRRECV_COUNT,       /**< Count received packets only */
-    RCF_TRRECV_NO_PAYLOAD,  /**< Get packet headers only, do not get
-                                 payload */
-    RCF_TRRECV_PACKETS,     /**< Store packets to get from test later */
+    RCF_TRRECV_COUNT,              /**< Count received packets only */
+    RCF_TRRECV_NO_PAYLOAD,         /**< Get packet headers only, do not get
+                                        payload */
+    RCF_TRRECV_PACKETS,            /**< Store packets to get from test later */
+    RCF_TRRECV_SEQ_MATCH = 0x04,   /**< Pattern sequence matching */
 } rcf_trrecv_mode;
 
 /**
@@ -766,8 +770,10 @@ typedef void (*rcf_pkt_handler)(
  * @param num           Number of packets that needs to be captured;
  *                      if it is zero, the number of received packets
  *                      is not limited
- * @param mode          Count received packets only or store packets
- *                      to get to the test side later
+ * @param mode          The flags allows to specify the receive mode.
+ *                      Count received packets only, store packets
+ *                      to get to the test side later or use pattern sequence
+ *                      matching.
  *
  * @return error code
  *
@@ -790,7 +796,7 @@ extern te_errno rcf_ta_trrecv_start(const char      *ta_name,
                                     const char      *pattern,
                                     unsigned int     timeout,
                                     unsigned int     num,
-                                    rcf_trrecv_mode  mode);
+                                    unsigned int     mode);
 
 /**
  * Blocks the caller until all the traffic, which is being captured,
