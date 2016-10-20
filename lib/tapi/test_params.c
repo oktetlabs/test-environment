@@ -718,3 +718,28 @@ cleanup:
     return rc;
 }
 
+te_errno
+tapi_test_args2kvpairs(int argc, char *argv[],
+                       te_kvpair_h *args)
+{
+    int            i;
+    char          *ptr = NULL;
+    te_errno       rc;
+
+    for (i = 0; i < argc; i++)
+    {
+        ptr = strchr(argv[i], '=');
+        if (ptr == NULL)
+            return TE_EINVAL;
+
+        *ptr = '\0';
+
+        rc = te_kvpair_add(args, argv[i], "%s", (ptr + 1));
+        *ptr = '=';
+
+        if (rc != 0)
+            return rc;
+    }
+
+    return 0;
+}

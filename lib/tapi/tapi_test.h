@@ -58,6 +58,7 @@
 
 #include "te_tools.h"
 #include "te_param.h"
+#include "te_kvpair.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -932,6 +933,11 @@ tapi_asn_param_value_parse(char              *pwd,
 extern te_errno
 tapi_asn_params_get(int argc, char **argv, const char *conf_prefix,
                     const asn_type *conf_type, asn_value *conf_value);
+
+/** Add test arguments to the list of test parameters */
+extern te_errno tapi_test_args2kvpairs(int argc, char *argv[],
+                                       te_kvpair_h *args);
+
 /**@} <!-- END te_ts_tapi_test_param --> */
 
 /** @addtogroup te_ts_tapi_test_misc
