@@ -1,0 +1,249 @@
+/** @file
+ * @brief Substitution in NDN ASN.1 data units
+ *
+ * Implementation of API for environment and test parameters
+ * substitution in ASN.1 data units
+ *
+ *
+ * Copyright (C) 2016 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA  02111-1307  USA
+ *
+ *
+ * @author Denis Pryazhennikov <Denis.Pryazhennikov@oktetlabs.ru>
+ */
+
+#define TE_LGR_USER     "TAPI NDN SUBST"
+
+#include "te_config.h"
+
+#include "te_errno.h"
+#include "te_sockaddr.h"
+#include "tapi_ndn.h"
+#include "asn_impl.h"
+#include "ndn.h"
+
+
+static te_errno
+tapi_ndn_subst_tapi_env(asn_value *container, char *addr_params,
+                        tapi_env *env)
+{
+    const struct sockaddr     *addr     = NULL;
+    char                      *ptr      = NULL;
+    socklen_t                  addrlen;
+    te_errno                   rc;
+
+    if (env == NULL || container == NULL)
+    {
+        ERROR("%s(): env and container have to be specified",
+        __FUNCTION__);
+        return TE_EINVAL;
+    }
+
+    if (strcmp_start("addr.", addr_params) != 0)
+    {
+        ERROR("Expected parameter 'addr', but it is %s", addr_params);
+        return TE_EINVAL;
+    }
+
+    addr_params += strlen("addr.");
+    ptr = strchr(addr_params, '.');
+
+    if (ptr != NULL)
+        *ptr = '\0';
+
+    addr = tapi_env_get_addr(env, addr_params, &addrlen);
+    if (addr == NULL)
+    {
+        ERROR("'%s' is not found in environment addresses",
+              addr_params);
+        return TE_EINVAL;
+    }
+
+    if (ptr == NULL)
+    {
+        rc = asn_write_value_field(container, te_sockaddr_get_netaddr(addr),
+                                   te_netaddr_get_size(addr->sa_family),
+                                   "#plain");
+        if (rc != 0)
+        {
+            ERROR("rc from asn write %r\n", rc);
+            return rc;
+        }
+    }
+    else if (strcmp(ptr + 1, "port") == 0)
+    {
+        *ptr = '.';
+
+        if (strcmp(++ptr, "port") != 0)
+        {
+            ERROR("Expected parameter 'port', but it is %s", ptr);
+            return TE_EINVAL;
+        }
+
+        rc = asn_write_int32(container, ntohs(te_sockaddr_get_port(addr)),
+                             "#plain");
+        if (rc != 0)
+        {
+            ERROR("rc from asn write %r\n", rc);
+            return rc;
+        }
+    }
+    else
+    {
+        ERROR("%s(): Unexpected parameter: %s", __FUNCTION__, ptr);
+        return TE_EINVAL;
+    }
+
+    return 0;
+}
+
+static te_errno
+tapi_ndn_subst_test_param(asn_value *container, te_kvpair_h *params,
+                          const char *name_str)
+{
+    asn_value       *plain      = NULL;
+    const asn_type  *plain_type = NULL;
+    const char      *value_str  = NULL;
+    int              syms_parsed;
+    te_errno         rc;
+
+    if (value_str == NULL || container == NULL || params == NULL)
+    {
+        ERROR("%s(): params and container have to be specified",
+              __FUNCTION__);
+        return TE_EINVAL;
+    }
+
+    value_str = te_kvpairs_get(params, name_str);
+    if (value_str == NULL)
+        return TE_EINVAL;
+
+    rc = asn_get_child_type(container->asn_type, &plain_type, PRIVATE,
+                            NDN_DU_PLAIN);
+    if (rc != 0)
+        return rc;
+
+    rc = asn_parse_value_text(value_str, plain_type, &plain, &syms_parsed);
+    if ((rc != 0) || (syms_parsed != (int)strlen(value_str)))
+        return ((rc != 0) ? rc : TE_EINVAL);
+
+    rc = asn_put_child_value(container, plain, PRIVATE, NDN_DU_PLAIN);
+
+    return rc;
+}
+
+/* See description in tapi_test.h */
+te_errno
+tapi_ndn_subst_env(asn_value *value, te_kvpair_h *params,
+                   tapi_env *env)
+{
+    unsigned int    n_layers;
+    unsigned int    i;
+    char           *params_str = NULL;
+    char           *tmp_params = NULL;
+    te_errno        rc         = 0;
+
+    if (value == NULL)
+        return TE_EINVAL;
+
+    n_layers = (unsigned int)value->len;
+
+    for (i = 0; i < n_layers; i++)
+    {
+        asn_value     *cur_level        = NULL;
+        asn_value     *data_unit_choice = NULL;
+        asn_tag_value  tag_val;
+
+        if (value->syntax == CHOICE)
+            rc = asn_get_choice_value(value, &cur_level, NULL, NULL);
+        else
+            rc = asn_get_child_by_index(value, &cur_level, i);
+
+        if (rc != 0)
+            continue;
+
+        if (strncmp(asn_get_type(cur_level)->name, "DATA-UNIT",
+                                 strlen("DATA-UNIT")) == 0)
+        {
+            rc = asn_get_choice_value(cur_level, &data_unit_choice,
+                                      NULL, &tag_val);
+            if (rc != 0)
+                return rc;
+
+            if (tag_val == NDN_DU_ENV)
+            {
+                rc = asn_read_string(data_unit_choice, &params_str, "name");
+                if (rc != 0)
+                    return rc;
+
+                tmp_params = params_str;
+
+                if (strcmp_start("env.", tmp_params) == 0)
+                {
+                    tmp_params += strlen("env.");
+
+                    rc = asn_free_child_value(cur_level, PRIVATE, NDN_DU_ENV);
+                    if (rc != 0)
+                        goto cleanup;
+
+                    rc = tapi_ndn_subst_tapi_env(cur_level, tmp_params, env);
+                    if (rc != 0)
+                    {
+                        ERROR("Failed to substitution of env params");
+                        goto cleanup;
+                    }
+                }
+                else if (strcmp_start("param.", tmp_params) == 0)
+                {
+                    tmp_params += strlen("param.");
+
+                    rc = tapi_ndn_subst_test_param(cur_level, params,
+                                                   tmp_params);
+                    if (rc != 0)
+                    {
+                        ERROR("Failed to substitution of test params");
+                        goto cleanup;
+                    }
+                }
+                else
+                {
+                    rc = TE_EINVAL;
+                    ERROR("Failed to substitution: Unexpected parameter: %s",
+                          tmp_params);
+                    goto cleanup;
+                }
+cleanup:
+                free(params_str);
+
+                if (rc != 0)
+                    return rc;
+            }
+
+            continue;
+        }
+
+        rc = tapi_ndn_subst_env(cur_level, params, env);
+        if (rc != 0)
+        {
+            ERROR("Failed to substitution with rc = %r", rc);
+            return rc;
+        }
+    }
+
+    return 0;
+}

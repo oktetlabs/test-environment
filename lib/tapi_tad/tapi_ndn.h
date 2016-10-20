@@ -32,6 +32,8 @@
 #include "te_defs.h"
 #include "te_stdint.h"
 #include "asn_usr.h"
+#include "te_kvpair.h"
+#include "tapi_env.h"
 
 
 #ifdef __cplusplus
@@ -183,6 +185,21 @@ extern te_errno tapi_tad_packets_to_pattern(asn_value         **packets,
                                             unsigned int        n_packets,
                                             send_transform     *transform,
                                             asn_value         **pattern_out);
+
+/**
+ * The function iterates through ASN.1 value,
+ * find all data units with "#env" value choice
+ * and substitute it in accordance with @p params
+ * and @p env
+ *
+ * @param value     ASN value, which content should be substituted
+ * @param params    Key-value pairs with test parameters or @c NULL
+ * @param env       Environment or @c NULL
+ *
+ * @return Status code
+ */
+extern te_errno tapi_ndn_subst_env(asn_value *value, te_kvpair_h *params,
+                                   tapi_env *env);
 
 #ifdef __cplusplus
 } /* extern "C" */

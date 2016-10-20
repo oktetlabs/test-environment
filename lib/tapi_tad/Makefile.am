@@ -209,6 +209,7 @@ lib_LTLIBRARIES = libtapi_tad.la
 libtapi_tad_la_SOURCES = \
 	tapi_tad.c \
 	tapi_ndn.c \
+	tapi_ndn_subst.c \
 	$(EXTRA_SOURCES)
 
 
