@@ -39,6 +39,7 @@
 #include "asn_usr.h"
 #include "ndn_eth.h"
 #include "tapi_tad.h"
+#include "tapi_ndn.h"
 
 
 /**
@@ -228,5 +229,54 @@ typedef void (*tapi_eth_frame_callback)
 extern tapi_tad_trrecv_cb_data *tapi_eth_trrecv_cb_data(
                                     tapi_eth_frame_callback  callback,
                                     void                    *user_data);
+
+/**
+ * Set parameters of Ethernet layer in CSAP specification.
+ *
+ * @param csap_spec     Location of CSAP specification pointer.
+ * @param device        Interface name on TA host or NULL (have to
+ *                      be not-NULL, if it is the bottom layer)
+ * @param recv_mode     Receive mode (bit scale defined by elements of
+ *                      'enum tad_eth_recv_mode' in tad_common.h).
+ *                      Use TAD_ETH_RECV_DEF by default.
+ * @param remote_addr   Default remote MAC address, may be NULL - in this
+ *                      case frames will be sent only dst is specified in
+ *                      template, and frames from all src's will be
+ *                      catched.
+ * @param local_addr    Default local MAC address, may be NULL - in this
+ *                      case frames will be sent with src specifed in
+ *                      template or native for outgoing device (if not
+ *                      present in template), frames to all dst's will
+ *                      be caugth.
+ * @param len_type      Pointer to default EtherType.
+ *                      See description in IEEE 802.3.
+ *
+ * @retrun Status code.
+ */
+extern te_errno tapi_eth_set_csap_layer(asn_value       *eth_layer,
+                                        const char      *device,
+                                        unsigned int     recv_mode,
+                                        const uint8_t   *remote_addr,
+                                        const uint8_t   *local_addr,
+                                        const uint16_t  *len_type);
+
+/**
+ * Create Ethernet-based CSAP by traffic template and interface
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF session
+ * @param device        Interface name on TA host
+ * @param recv_mode     Receive mode for Ethernet CSAP on the Interface
+ * @param tmpl          Location of ASN.1 value with traffic template
+ * @param eth_csap      Identifier of created CSAP (OUT)
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_eth_based_csap_create_by_tmpl(const char      *ta_name,
+                                                   int              sid,
+                                                   const char      *device,
+                                                   unsigned int     recv_mode,
+                                                   const asn_value *tmpl,
+                                                   csap_handle_t   *eth_csap);
 
 #endif /* __TE_TAPI_ETH_H__ */

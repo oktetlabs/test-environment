@@ -70,30 +70,54 @@ tapi_eth_add_csap_layer(asn_value      **csap_spec,
                         te_bool3         tagged,
                         te_bool3         llc)
 {
+    asn_value  *layers;
     asn_value  *layer;
+
 
     UNUSED(tagged);
     UNUSED(llc);
 
-    CHECK_RC(tapi_tad_csap_add_layer(csap_spec, ndn_eth_csap, "#eth",
-                                     &layer));
+    CHECK_RC(asn_get_subvalue((const asn_value *)*csap_spec, &layers,
+                              "layers"));
+    layer = asn_find_child_choice_value((const asn_value *)layers,
+                                        TE_PROTO_ETH);
+    if (layer == NULL)
+        CHECK_RC(tapi_tad_csap_add_layer(csap_spec, ndn_eth_csap, "#eth",
+                                         &layer));
 
-    if (device != NULL)
-        CHECK_RC(asn_write_string(layer, device, "device-id.#plain"));
-    CHECK_RC(asn_write_int32(layer, recv_mode, "receive-mode"));
-
-    if (remote_addr != NULL)
-        CHECK_RC(asn_write_value_field(layer, remote_addr, ETHER_ADDR_LEN,
-                                       "remote-addr.#plain"));
-    if (local_addr != NULL)
-        CHECK_RC(asn_write_value_field(layer, local_addr, ETHER_ADDR_LEN,
-                                       "local-addr.#plain"));
-    if (len_type != NULL)
-        CHECK_RC(asn_write_int32(layer, *len_type, "ether-type.#plain"));
+    CHECK_RC(tapi_eth_set_csap_layer(layer, device, recv_mode, remote_addr,
+                                     local_addr, len_type));
 
     return 0;
 }
 
+/* See the description in tapi_eth.h */
+te_errno
+tapi_eth_set_csap_layer(asn_value       *eth_layer,
+                        const char      *device,
+                        unsigned int     recv_mode,
+                        const uint8_t   *remote_addr,
+                        const uint8_t   *local_addr,
+                        const uint16_t  *len_type)
+{
+    if (device != NULL)
+        CHECK_RC(asn_write_string(eth_layer, device, "device-id.#plain"));
+
+    CHECK_RC(asn_write_int32(eth_layer, recv_mode, "receive-mode"));
+
+    if (remote_addr != NULL)
+        CHECK_RC(asn_write_value_field(eth_layer, remote_addr, ETHER_ADDR_LEN,
+                                       "remote-addr.#plain"));
+    if (local_addr != NULL)
+        CHECK_RC(asn_write_value_field(eth_layer, local_addr, ETHER_ADDR_LEN,
+                                       "local-addr.#plain"));
+
+    if (len_type != NULL)
+        CHECK_RC(asn_write_int32(eth_layer, (int32_t)*len_type,
+                                 "ether-type.#plain"));
+
+    return 0;
+}
 
 /* See the description in tapi_eth.h */
 te_errno
@@ -230,6 +254,40 @@ tapi_eth_csap_create(const char *ta_name, int sid,
 
     rc = tapi_tad_csap_create(ta_name, sid, "eth", csap_spec, eth_csap);
 
+    asn_free_value(csap_spec);
+
+    return rc;
+}
+
+/* See the description in tapi_eth.h */
+te_errno
+tapi_eth_based_csap_create_by_tmpl(const char      *ta_name,
+                                   int              sid,
+                                   const char      *device,
+                                   unsigned int     recv_mode,
+                                   const asn_value *tmpl,
+                                   csap_handle_t   *eth_csap)
+{
+    asn_value *csap_spec;
+    te_errno   rc;
+
+    csap_spec = ndn_csap_spec_by_traffic_template(tmpl);
+    if (csap_spec == NULL)
+    {
+        rc = TE_RC(TE_TAPI, TE_EINVAL);
+        goto cleanup;
+    }
+
+    rc = tapi_eth_add_csap_layer(&csap_spec, device, recv_mode,
+                                 NULL, NULL, NULL, TE_BOOL3_ANY,
+                                 TE_BOOL3_ANY);
+    if (rc != 0)
+        goto cleanup;
+
+    rc = tapi_tad_csap_create(ta_name, sid, NULL, (const asn_value *)csap_spec,
+                              eth_csap);
+
+cleanup:
     asn_free_value(csap_spec);
 
     return rc;
