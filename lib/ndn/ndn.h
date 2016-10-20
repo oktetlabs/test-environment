@@ -360,6 +360,21 @@ extern te_errno ndn_packet_to_template(const asn_value *pkt,
  */
 extern char *ndn_csap_stack_by_spec(const asn_value *csap_spec);
 
+/**
+ * Check ASN.1 value pointer. If it is NULL, initialize a new value of
+ * specified type. All errors are logged inside the function. There is
+ * no necessity to log them after call.
+ *
+ * @param value     Location of ASN.1 value pointer
+ * @param type      ASN.1 type to which value should belong
+ *
+ * @return Status code.
+ *
+ * @todo Check that ASN.1 value belongs to @a type
+ */
+extern te_errno ndn_init_asn_value(asn_value **value,
+                                   const asn_type *type);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

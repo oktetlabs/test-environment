@@ -63,23 +63,7 @@
 te_errno
 tapi_tad_init_asn_value(asn_value **value, const asn_type *type)
 {
-    if (value == NULL)
-    {
-        ERROR("Location of ASN.1 value with CSAP specification have "
-              "to be provided");
-        return TE_RC(TE_TAPI, TE_EINVAL);
-    }
-    if (*value == NULL)
-    {
-        *value = asn_init_value(type);
-        if (*value == NULL)
-        {
-            ERROR("Failed to initialize ASN.1 value for CSAP "
-                  "specification");
-            return TE_RC(TE_TAPI, TE_ENOMEM);
-        }
-    }
-    return 0;
+    return ndn_init_asn_value(value, type);
 }
 
 /* See the description in tapi_ndn.h */

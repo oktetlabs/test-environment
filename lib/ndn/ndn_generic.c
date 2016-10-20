@@ -455,6 +455,28 @@ const asn_type * const  ndn_raw_packet = &ndn_raw_packet_s;
 
 
 
+/* See the description in ndn.h */
+te_errno
+ndn_init_asn_value(asn_value **value, const asn_type *type)
+{
+    if (value == NULL)
+    {
+        ERROR("Location of ASN.1 value with CSAP specification have "
+              "to be provided");
+        return TE_RC(TE_TAD_CSAP, TE_EINVAL);
+    }
+    if (*value == NULL)
+    {
+        *value = asn_init_value(type);
+        if (*value == NULL)
+        {
+            ERROR("Failed to initialize ASN.1 value for CSAP "
+                  "specification");
+            return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+        }
+    }
+    return 0;
+}
 
 /* See description in ndn.h */
 int
