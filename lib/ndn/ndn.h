@@ -375,6 +375,25 @@ extern char *ndn_csap_stack_by_spec(const asn_value *csap_spec);
 extern te_errno ndn_init_asn_value(asn_value **value,
                                    const asn_type *type);
 
+/**
+ * Add a new CSAP specification layer.
+ *
+ * @param csap_spec     Location of ASN.1 value with CSAP specification
+ *                      (if NULL pointer is stored in location, a new
+ *                      CSAP specification is initialized)
+ * @param layer_type    ASN.1 type of a new layer
+ * @param layer_choice  String name of a new layer as ASN.1 choice
+ *                      (including '#', e.g. "#eth")
+ * @param layer_spec    Location for a new ASN.1 value with layer
+ *                      specification (may be NULL)
+ *
+ * @return Status code.
+ */
+extern te_errno ndn_csap_add_layer(asn_value       **csap_spec,
+                                   const asn_type   *layer_type,
+                                   const char       *layer_choice,
+                                   asn_value       **layer_spec);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

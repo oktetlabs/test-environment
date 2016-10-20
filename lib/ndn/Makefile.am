@@ -60,6 +60,7 @@ libndn_la_SOURCES = \
 	ndn_iscsi.c \
 	ndn_socket.c \
 	ndn_kprobes.c \
+	ndn_csap.c \
 	ndn_flow.c
 
 

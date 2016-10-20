@@ -1,0 +1,137 @@
+/** @file
+ * @brief CSAP NDN.
+ *
+ * Implementation of functions for work with CSAP using NDN ASN.1 types
+ *
+ * Copyright (C) 2003-2016 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA  02111-1307  USA
+ *
+ * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+ * @author Denis Pryazhennikov <Denis.Pryazhennikov@oktetlabs.ru>
+ */
+
+#include "te_config.h"
+
+#if HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+#if HAVE_STRING_H
+#include <string.h>
+#endif
+#if HAVE_STRINGS_H
+#include <strings.h>
+#endif
+
+#define TE_LGR_USER "NDN CSAP"
+
+#include "te_errno.h"
+#include "logger_api.h"
+#include "ndn.h"
+
+
+
+/* See the description in ndn.h */
+te_errno
+ndn_csap_add_layer(asn_value       **csap_spec,
+                   const asn_type   *layer_type,
+                   const char       *layer_choice,
+                   asn_value       **layer_spec)
+{
+    te_errno    rc;
+    asn_value  *layers;
+    asn_value  *gen_layer;
+    asn_value  *layer;
+
+    if (layer_type == NULL || layer_choice == NULL)
+    {
+        ERROR("%s(): ASN.1 type of the layer have to be specified",
+              __FUNCTION__);
+        return TE_EINVAL;
+    }
+
+    rc = ndn_init_asn_value(csap_spec, ndn_csap_spec);
+    if (rc != 0)
+        return rc;
+
+    /*
+     * Get or create CSAP layers sequence
+     */
+    /* FIXME: Remove type cast */
+    rc = asn_get_child_value(*csap_spec, (const asn_value **)&layers,
+                             PRIVATE, NDN_CSAP_LAYERS);
+    if (rc == TE_EASNINCOMPLVAL)
+    {
+        layers = asn_init_value(ndn_csap_layers);
+        if (layers == NULL)
+        {
+            ERROR("Failed to initiaze ASN.1 value for CSAP layers "
+                  "sequence");
+            return TE_ENOMEM;
+        }
+        rc = asn_put_child_value(*csap_spec, layers,
+                                 PRIVATE, NDN_CSAP_LAYERS);
+        if (rc != 0)
+        {
+            ERROR("Failed to put 'layers' in ASN.1 value: %r", rc);
+            asn_free_value(layers);
+            return rc;
+        }
+    }
+    else if (rc != 0)
+    {
+        ERROR("Failed to get 'layers' from ASN.1 value: %r", rc);
+        return rc;
+    }
+
+    gen_layer = asn_init_value(ndn_generic_csap_layer);
+    if (gen_layer == NULL)
+    {
+        ERROR("Failed to initialize ASN.1 value for CSAP specification "
+              "generic layer");
+        return TE_ENOMEM;
+    }
+    rc = asn_insert_indexed(layers, gen_layer, -1, "");
+    if (rc != 0)
+    {
+        ERROR("Failed to add a new generic layer in CSAP specification: "
+              "%r", rc);
+        asn_free_value(gen_layer);
+        return rc;
+    }
+
+    layer = asn_init_value(layer_type);
+    if (layer == NULL)
+    {
+        ERROR("Failed to initialize ASN.1 value for CSAP specification "
+              "layer by type");
+        return TE_ENOMEM;
+    }
+    rc = asn_put_child_value_by_label(gen_layer, layer, layer_choice);
+    if (rc != 0)
+    {
+        ERROR("Failed to put layer as choice of generic CSAP "
+              "specification layer: %r", rc);
+        asn_free_value(layer);
+        return rc;
+    }
+
+    if (layer_spec != NULL)
+        *layer_spec = layer;
+
+    return 0;
+}
