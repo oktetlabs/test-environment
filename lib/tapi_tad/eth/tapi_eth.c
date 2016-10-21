@@ -70,20 +70,14 @@ tapi_eth_add_csap_layer(asn_value      **csap_spec,
                         te_bool3         tagged,
                         te_bool3         llc)
 {
-    asn_value  *layers;
     asn_value  *layer;
 
 
     UNUSED(tagged);
     UNUSED(llc);
 
-    CHECK_RC(asn_get_subvalue((const asn_value *)*csap_spec, &layers,
-                              "layers"));
-    layer = asn_find_child_choice_value((const asn_value *)layers,
-                                        TE_PROTO_ETH);
-    if (layer == NULL)
-        CHECK_RC(tapi_tad_csap_add_layer(csap_spec, ndn_eth_csap, "#eth",
-                                         &layer));
+    CHECK_RC(tapi_tad_csap_add_layer(csap_spec, ndn_eth_csap, "#eth",
+                                     &layer));
 
     CHECK_RC(tapi_eth_set_csap_layer(layer, device, recv_mode, remote_addr,
                                      local_addr, len_type));
