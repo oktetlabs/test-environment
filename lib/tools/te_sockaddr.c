@@ -69,6 +69,7 @@ extern const char *inet_ntop (int, const void *, char *, size_t);
 
 #include "logger_api.h"
 #include "te_sockaddr.h"
+#include "te_ethernet.h"
 
 
 /* See the description in te_sockaddr.h */
@@ -146,6 +147,9 @@ te_sockaddr_get_netaddr(const struct sockaddr *addr)
             return &(SIN6(addr)->sin6_addr);
             break;
 
+        case AF_LOCAL:
+            return (void *)(addr->sa_data);
+
         default:
             ERROR("%s(): Address family %d is not supported, "
                   "operation has no effect", __FUNCTION__, addr->sa_family);
@@ -168,6 +172,10 @@ te_sockaddr_set_netaddr(struct sockaddr *addr, const void *net_addr)
         case AF_INET6:
             memcpy(&(SIN6(addr)->sin6_addr), net_addr,
                    sizeof(SIN6(addr)->sin6_addr));
+            break;
+
+        case AF_LOCAL:
+            memcpy(addr->sa_data, net_addr, ETHER_ADDR_LEN);
             break;
 
         default:
@@ -264,6 +272,9 @@ te_sockaddr_is_multicast(const struct sockaddr *addr)
         case AF_INET6:
             return (IN6_IS_ADDR_MULTICAST(&(SIN6(addr)->sin6_addr)));
 
+        case AF_LOCAL:
+            return !!(addr->sa_data[0] & 1);
+
         default:
             ERROR("%s(): Address family %d is not supported, ",
                   "operation has no effect", __FUNCTION__, addr->sa_family);
@@ -284,6 +295,9 @@ te_netaddr_get_size(int af)
         case AF_INET6:
             return sizeof(struct in6_addr);
 
+        case AF_LOCAL:
+            return ETHER_ADDR_LEN;
+
         default:
             ERROR("%s(): Address family %d is not supported, "
                   "operation has no effect", __FUNCTION__, (int)af);
@@ -303,6 +317,9 @@ te_sockaddr_get_size_by_af(int af)
 
         case AF_INET6:
             return sizeof(struct sockaddr_in6);
+
+        case AF_LOCAL:
+            return sizeof(struct sockaddr);
 
         default:
             ERROR("%s(): Address family %d is not supported, "
@@ -454,6 +471,18 @@ te_sockaddrcmp(const struct sockaddr *a1, socklen_t a1len,
                 }
                 break;
             }
+
+            case AF_LOCAL:
+                if (a1len < (socklen_t)sizeof(struct sockaddr) ||
+                    a2len < (socklen_t)sizeof(struct sockaddr))
+                {
+                    ERROR("One of sockaddr structures is shorter "
+                          "than it should be");
+                    return -2;
+                }
+                if (memcmp(a1->sa_data, a2->sa_data, ETHER_ADDR_LEN) == 0)
+                    return 0;
+                break;
 
             default:
                 ERROR("Comparison of addresses with unsupported "
