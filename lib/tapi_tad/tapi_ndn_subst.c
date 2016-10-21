@@ -32,6 +32,7 @@
 #include "te_config.h"
 
 #include "te_errno.h"
+#include "logger_api.h"
 #include "te_sockaddr.h"
 #include "tapi_ndn.h"
 #include "asn_impl.h"
