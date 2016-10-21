@@ -40,7 +40,7 @@
 
 
 static te_errno
-tapi_ndn_subst_tapi_env(asn_value *container, char *addr_params,
+tapi_ndn_subst_tapi_env(asn_value *container, char *tapi_env_ref,
                         tapi_env *env)
 {
     const struct sockaddr     *addr     = NULL;
@@ -55,23 +55,23 @@ tapi_ndn_subst_tapi_env(asn_value *container, char *addr_params,
         return TE_EINVAL;
     }
 
-    if (strcmp_start("addr.", addr_params) != 0)
+    if (strcmp_start("addr.", tapi_env_ref) != 0)
     {
-        ERROR("Expected parameter 'addr', but it is %s", addr_params);
+        ERROR("Expected parameter 'addr', but it is %s", tapi_env_ref);
         return TE_EINVAL;
     }
 
-    addr_params += strlen("addr.");
-    ptr = strchr(addr_params, '.');
+    tapi_env_ref += strlen("addr.");
+    ptr = strchr(tapi_env_ref, '.');
 
     if (ptr != NULL)
         *ptr = '\0';
 
-    addr = tapi_env_get_addr(env, addr_params, &addrlen);
+    addr = tapi_env_get_addr(env, tapi_env_ref, &addrlen);
     if (addr == NULL)
     {
         ERROR("'%s' is not found in environment addresses",
-              addr_params);
+              tapi_env_ref);
         return TE_EINVAL;
     }
 
