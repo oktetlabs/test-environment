@@ -233,7 +233,7 @@ extern tapi_tad_trrecv_cb_data *tapi_eth_trrecv_cb_data(
 /**
  * Set parameters of Ethernet layer in CSAP specification.
  *
- * @param csap_spec     Location of CSAP specification pointer.
+ * @param csap_spec     CSAP specification pointer.
  * @param device        Interface name on TA host or NULL (have to
  *                      be not-NULL, if it is the bottom layer)
  * @param recv_mode     Receive mode (bit scale defined by elements of
@@ -253,7 +253,7 @@ extern tapi_tad_trrecv_cb_data *tapi_eth_trrecv_cb_data(
  *
  * @retrun Status code.
  */
-extern te_errno tapi_eth_set_csap_layer(asn_value       *eth_layer,
+extern te_errno tapi_eth_set_csap_layer(asn_value       *csap_spec,
                                         const char      *device,
                                         unsigned int     recv_mode,
                                         const uint8_t   *remote_addr,

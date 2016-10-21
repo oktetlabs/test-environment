@@ -70,16 +70,12 @@ tapi_eth_add_csap_layer(asn_value      **csap_spec,
                         te_bool3         tagged,
                         te_bool3         llc)
 {
-    asn_value  *layer;
-
-
     UNUSED(tagged);
     UNUSED(llc);
 
-    CHECK_RC(tapi_tad_csap_add_layer(csap_spec, ndn_eth_csap, "#eth",
-                                     &layer));
+    CHECK_RC(tapi_tad_csap_add_layer(csap_spec, ndn_eth_csap, "#eth", NULL));
 
-    CHECK_RC(tapi_eth_set_csap_layer(layer, device, recv_mode, remote_addr,
+    CHECK_RC(tapi_eth_set_csap_layer(*csap_spec, device, recv_mode, remote_addr,
                                      local_addr, len_type));
 
     return 0;
@@ -87,13 +83,20 @@ tapi_eth_add_csap_layer(asn_value      **csap_spec,
 
 /* See the description in tapi_eth.h */
 te_errno
-tapi_eth_set_csap_layer(asn_value       *eth_layer,
+tapi_eth_set_csap_layer(asn_value       *csap_spec,
                         const char      *device,
                         unsigned int     recv_mode,
                         const uint8_t   *remote_addr,
                         const uint8_t   *local_addr,
                         const uint16_t  *len_type)
 {
+    asn_value *layers;
+    asn_value *eth_layer;
+
+    CHECK_RC(asn_get_subvalue(csap_spec, &layers, "layers"));
+    CHECK_NOT_NULL(eth_layer = asn_find_child_choice_value(layers,
+                                                           TE_PROTO_ETH));
+
     if (device != NULL)
         CHECK_RC(asn_write_string(eth_layer, device, "device-id.#plain"));
 
@@ -272,9 +275,8 @@ tapi_eth_based_csap_create_by_tmpl(const char      *ta_name,
         goto cleanup;
     }
 
-    rc = tapi_eth_add_csap_layer(&csap_spec, device, recv_mode,
-                                 NULL, NULL, NULL, TE_BOOL3_ANY,
-                                 TE_BOOL3_ANY);
+    rc = tapi_eth_set_csap_layer(csap_spec, device, recv_mode,
+                                 NULL, NULL, NULL);
     if (rc != 0)
         goto cleanup;
 
