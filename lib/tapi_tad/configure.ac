@@ -86,6 +86,8 @@ if test "$with_snmp" = "yes" ; then
                      [#include<net-snmp/net-snmp-config.h>]) 
 fi
 
+AC_CHECK_HEADERS([tapi_env.h])
+
 AC_CONFIG_HEADERS([config.h])
 
 AC_CONFIG_FILES([Makefile])

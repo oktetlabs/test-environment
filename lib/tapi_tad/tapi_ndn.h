@@ -33,7 +33,6 @@
 #include "te_stdint.h"
 #include "asn_usr.h"
 #include "te_kvpair.h"
-#include "tapi_env.h"
 
 
 #ifdef __cplusplus
@@ -186,6 +185,10 @@ extern te_errno tapi_tad_packets_to_pattern(asn_value         **packets,
                                             send_transform     *transform,
                                             asn_value         **pattern_out);
 
+
+/* Forward to avoid inclusiong of tapi_env.h which may be missing */
+struct tapi_env;
+
 /**
  * The function iterates through ASN.1 value,
  * find all data units with "#env" value choice
@@ -199,7 +202,7 @@ extern te_errno tapi_tad_packets_to_pattern(asn_value         **packets,
  * @return Status code
  */
 extern te_errno tapi_ndn_subst_env(asn_value *value, te_kvpair_h *params,
-                                   tapi_env *env);
+                                   struct tapi_env *env);
 
 #ifdef __cplusplus
 } /* extern "C" */

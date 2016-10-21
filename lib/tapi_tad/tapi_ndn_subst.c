@@ -31,17 +31,24 @@
 
 #include "te_config.h"
 
+#include "config.h"
+
 #include "te_errno.h"
 #include "logger_api.h"
 #include "te_sockaddr.h"
 #include "tapi_ndn.h"
 #include "asn_impl.h"
 #include "ndn.h"
+#ifdef HAVE_TAPI_ENV_H
+#include "tapi_env.h"
+#endif
 
+
+#ifdef HAVE_TAPI_ENV_H
 
 static te_errno
 tapi_ndn_subst_tapi_env(asn_value *container, char *tapi_env_ref,
-                        tapi_env *env)
+                        struct tapi_env *env)
 {
     const struct sockaddr     *addr     = NULL;
     char                      *ptr      = NULL;
@@ -113,6 +120,22 @@ tapi_ndn_subst_tapi_env(asn_value *container, char *tapi_env_ref,
     return 0;
 }
 
+#else /* ndef HAVE_TAPI_ENV_H */
+
+static te_errno
+tapi_ndn_subst_tapi_env(asn_value *container, char *tapi_env_ref,
+                        struct tapi_env *env)
+{
+    UNUSED(container);
+    UNUSED(tapi_env_ref);
+    UNUSED(env);
+
+    ERROR("tapi_env support is compiled out");
+    return TE_EINVAL;
+}
+
+#endif /* ndef HAVE_TAPI_ENV_H */
+
 static te_errno
 tapi_ndn_subst_test_param(asn_value *container, te_kvpair_h *params,
                           const char *name_str)
@@ -151,7 +174,7 @@ tapi_ndn_subst_test_param(asn_value *container, te_kvpair_h *params,
 /* See description in tapi_test.h */
 te_errno
 tapi_ndn_subst_env(asn_value *value, te_kvpair_h *params,
-                   tapi_env *env)
+                   struct tapi_env *env)
 {
     unsigned int    n_layers;
     unsigned int    i;
