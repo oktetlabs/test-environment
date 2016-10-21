@@ -32,6 +32,7 @@
 #include "rcf_rpc.h"
 
 #include "tapi_rpc_rte.h"
+#include "te_kvpair.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -490,6 +491,22 @@ extern const char * tapi_rpc_rte_filter_type2str(
  */
 extern int rpc_rte_eth_dev_filter_supported(rcf_rpc_server *rpcs, uint8_t port_id,
                                             enum tarpc_rte_filter_type filter_type);
+
+/**
+ * Add ethdev MAC address to test parameters kvpairs
+ *
+ * @param rpcs        RPC server handle.
+ * @param port_id     Port identifier (port number)
+ * @param head        Head of the list
+ * @param name        Name that will be used as the key
+ *                    for MAC address
+ *
+ * @retrun Status code
+ */
+extern te_errno tapi_rpc_add_mac_as_octstring2kvpair(rcf_rpc_server *rpcs,
+                                                     uint8_t port_id,
+                                                     te_kvpair_h *head,
+                                                     const char *name);
 
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 

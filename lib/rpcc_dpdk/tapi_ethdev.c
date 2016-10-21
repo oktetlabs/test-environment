@@ -60,3 +60,21 @@ tapi_rpc_rte_eth_dev_configure_def(rcf_rpc_server *rpcs, uint8_t port_id,
     return rpc_rte_eth_dev_configure(rpcs, port_id, nb_rx_queue, nb_tx_queue,
                tapi_rpc_rte_eth_make_eth_conf(rpcs, port_id, &eth_conf));
 }
+
+/* See description in tapi_rpc_rte_ethdev.h */
+te_errno
+tapi_rpc_add_mac_as_octstring2kvpair(rcf_rpc_server *rpcs, uint8_t port_id,
+                                     te_kvpair_h *head, const char *name)
+{
+    struct tarpc_ether_addr     mac_addr;
+    te_errno                    rc;
+
+    rpc_rte_eth_macaddr_get(rpcs, port_id, &mac_addr);
+
+    rc = te_kvpair_add(head, name, "'%02x%02x%02x%02x%02x%02x'H",
+                       mac_addr.addr_bytes[0], mac_addr.addr_bytes[1],
+                       mac_addr.addr_bytes[2], mac_addr.addr_bytes[3],
+                       mac_addr.addr_bytes[4], mac_addr.addr_bytes[5]);
+
+    return rc;
+}
