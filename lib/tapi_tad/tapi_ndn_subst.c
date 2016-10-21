@@ -155,7 +155,10 @@ tapi_ndn_subst_test_param(asn_value *container, te_kvpair_h *params,
 
     value_str = te_kvpairs_get(params, name_str);
     if (value_str == NULL)
+    {
+        ERROR("%s(): key '%s' not found", __FUNCTION__, name_str);
         return TE_EINVAL;
+    }
 
     rc = asn_get_child_type(container->asn_type, &plain_type, PRIVATE,
                             NDN_DU_PLAIN);
