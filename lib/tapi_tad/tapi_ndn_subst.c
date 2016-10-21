@@ -146,7 +146,7 @@ tapi_ndn_subst_test_param(asn_value *container, te_kvpair_h *params,
     int              syms_parsed;
     te_errno         rc;
 
-    if (value_str == NULL || container == NULL || params == NULL)
+    if (container == NULL || params == NULL || name_str == NULL)
     {
         ERROR("%s(): params and container have to be specified",
               __FUNCTION__);
