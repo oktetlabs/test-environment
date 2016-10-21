@@ -32,12 +32,38 @@
 #include "te_defs.h"
 #include "te_stdint.h"
 #include "asn_usr.h"
+#include "ndn.h"
 #include "te_kvpair.h"
+#include "tapi_test.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * Get ndn_traffic_template ASN.1 type test parameter.
+ *
+ * @param _var_name  Variable whose name is the same as the name of
+ *                   parameter we get the value
+ */
+#define TEST_GET_NDN_TRAFFIC_TEMPLATE(_var_name) \
+    do {                                                        \
+        const char *_str_val;                                   \
+        int _parsed;                                            \
+                                                                \
+        _str_val = test_get_param(argc, argv, #_var_name);      \
+        if (_str_val == NULL)                                   \
+            TEST_STOP;                                          \
+                                                                \
+        CHECK_RC(asn_parse_value_text(_str_val,                 \
+                                      ndn_traffic_template,     \
+                                      &(_var_name),             \
+                                      &_parsed));               \
+        if (_str_val[_parsed] != '\0')                          \
+            TEST_FAIL("Trailing symbols after traffic "         \
+                      "template '%s'", &_str_val[_parsed]);     \
+    } while (0)
 
 /** Flags used to designate transformations which take place in hardware */
 #define SEND_COND_HW_OFFL_IP_CKCUM  (1U << 0)
