@@ -197,6 +197,28 @@ extern te_errno tapi_eth_csap_create(const char     *ta_name,
 
 
 /**
+ * Generate traffic by the given template, sniff the packets sent
+ * and produce a pattern by means of the packets sent taking into
+ * account possible transformations
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF session ID
+ * @param if_name       Interface name on TA host
+ * @param template      ASN.1 traffic template
+ * @param transform     A set of parameters describing some trasformations
+ *                      which are expected to affect the outgoing packets
+ * @param pattern_out   Location for the pattern which is to be produced
+ *
+ * @return Status code
+ */
+extern te_errno tapi_eth_gen_traffic_sniff_pattern(const char     *ta_name,
+                                                   int             sid,
+                                                   const char     *if_name,
+                                                   asn_value      *template,
+                                                   send_transform *transform,
+                                                   asn_value     **pattern_out);
+
+/**
  * Callback function for the tapi_eth_pkt_handler_data @a callback
  * parameter, it is called for each packet received by CSAP.
  *

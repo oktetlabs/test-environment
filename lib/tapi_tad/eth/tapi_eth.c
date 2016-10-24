@@ -59,6 +59,12 @@
 #include "tapi_test.h"
 
 
+struct tapi_eth_packet_storage {
+    asn_value     **packets_captured;
+    unsigned int    n_packets_captured;
+    te_errno        err;
+};
+
 /* See the description in tapi_eth.h */
 te_errno
 tapi_eth_add_csap_layer(asn_value      **csap_spec,
@@ -382,4 +388,139 @@ tapi_eth_trrecv_cb_data(tapi_eth_frame_callback  callback,
         free(cb_data);
 
     return res;
+}
+
+static void
+tapi_eth_store_packet_cb(asn_value *packet, void *user_data)
+{
+    struct tapi_eth_packet_storage *csap_sniff_storage = user_data;
+    asn_value                     **packets_captured;
+    unsigned int                    n_packets_captured;
+
+    if (csap_sniff_storage->err != 0)
+        return;
+
+    n_packets_captured = csap_sniff_storage->n_packets_captured;
+
+    packets_captured = realloc(csap_sniff_storage->packets_captured,
+                               n_packets_captured + 1);
+    if (packets_captured == NULL)
+    {
+        csap_sniff_storage->err = TE_ENOMEM;
+        return;
+    }
+
+    csap_sniff_storage->packets_captured = packets_captured;
+
+    packets_captured[n_packets_captured] = asn_copy_value(packet);
+    if (packets_captured[n_packets_captured] == NULL)
+    {
+        csap_sniff_storage->err = TE_ENOMEM;
+        return;
+    }
+
+    csap_sniff_storage->n_packets_captured++;
+}
+
+/* See the description in 'tapi_eth.h' */
+te_errno
+tapi_eth_gen_traffic_sniff_pattern(const char     *ta_name,
+                                   int             sid,
+                                   const char     *if_name,
+                                   asn_value      *template,
+                                   send_transform *transform,
+                                   asn_value     **pattern_out)
+{
+    te_errno                        err = 0;
+    csap_handle_t                   csap_xmit = CSAP_INVALID_HANDLE;
+    csap_handle_t                   csap_sniff = CSAP_INVALID_HANDLE;
+    asn_value                      *pattern_by_template = NULL;
+    tapi_tad_trrecv_cb_data         csap_packet_handler_data;
+    struct tapi_eth_packet_storage  csap_packets_storage;
+    asn_value                      *pattern;
+
+    err = tapi_eth_based_csap_create_by_tmpl(ta_name, sid, if_name,
+                                             TAD_ETH_RECV_NO, template,
+                                             &csap_xmit);
+    if (err != 0)
+        goto out;
+
+    err = tapi_eth_based_csap_create_by_tmpl(ta_name, sid, if_name,
+                                             TAD_ETH_RECV_OUT, template,
+                                             &csap_sniff);
+    if (err != 0)
+        goto out;
+
+    pattern_by_template = tapi_tad_mk_pattern_from_template(template);
+    if (pattern_by_template == NULL)
+    {
+        err = TE_ENOMEM;
+        goto out;
+    }
+
+    err = tapi_tad_trrecv_start(ta_name, sid, csap_sniff, pattern_by_template,
+                                TAD_TIMEOUT_INF, 0, RCF_TRRECV_PACKETS);
+    if (err != 0)
+        goto out;
+
+    err = tapi_tad_trsend_start(ta_name, sid, csap_xmit, template,
+                                RCF_MODE_BLOCKING);
+    if (err != 0)
+    {
+        (void)tapi_tad_trrecv_stop(ta_name, sid, csap_sniff, NULL, NULL);
+        goto out;
+    }
+
+    memset(&csap_packets_storage, 0, sizeof(csap_packets_storage));
+
+    csap_packet_handler_data.callback = tapi_eth_store_packet_cb;
+    csap_packet_handler_data.user_data = &csap_packets_storage;
+
+    err = tapi_tad_trrecv_stop(ta_name, sid, csap_sniff,
+                               &csap_packet_handler_data, NULL);
+    if (err != 0)
+        goto out;
+
+    err = csap_packets_storage.err;
+    if (err != 0)
+        goto out;
+
+    if (csap_packets_storage.n_packets_captured == 0)
+    {
+        err = TE_EFAIL;
+        goto out;
+    }
+
+    err = tapi_tad_packets_to_pattern(csap_packets_storage.packets_captured,
+                                      csap_packets_storage.n_packets_captured,
+                                      transform, &pattern);
+    if (err != 0)
+        goto out;
+
+    *pattern_out = pattern;
+
+out:
+    if (csap_packets_storage.packets_captured != NULL)
+    {
+        unsigned int i;
+
+        for (i = 0; i < csap_packets_storage.n_packets_captured; ++i)
+        {
+            if (csap_packets_storage.packets_captured[i] != NULL)
+                asn_free_value(csap_packets_storage.packets_captured[i]);
+        }
+
+        free(csap_packets_storage.packets_captured);
+    }
+
+    if (pattern_by_template != NULL)
+        asn_free_value(pattern_by_template);
+
+    if (csap_sniff != CSAP_INVALID_HANDLE)
+        (void)tapi_tad_csap_destroy(ta_name, sid, csap_sniff);
+
+    if (csap_xmit != CSAP_INVALID_HANDLE)
+        (void)tapi_tad_csap_destroy(ta_name, sid, csap_xmit);
+
+    return TE_RC(TE_TAPI, err);
 }
