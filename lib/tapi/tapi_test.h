@@ -491,6 +491,37 @@ cleanup_specific:                                                   \
 
 
 /**
+ * Obtain the value of an 'unsigned int' parameter
+ *
+ * @param _parameter    The name to denote both the
+ *                      target 'unsigned int' variable
+ *                      and the parameter of interest
+ */
+#define TEST_GET_UINT_PARAM(_parameter) \
+    do {                                                        \
+        const char     *str_val;                                \
+        unsigned long   ulint_val;                              \
+        char           *end_ptr;                                \
+                                                                \
+        str_val = test_get_param(argc, argv, #_parameter);      \
+        CHECK_NOT_NULL(str_val);                                \
+                                                                \
+        ulint_val = strtoul(str_val, &end_ptr, 0);              \
+        if ((end_ptr == str_val) || (*end_ptr != '\0'))         \
+            TEST_FAIL("Failed to convert '%s' to a number",     \
+                      #_parameter);                             \
+                                                                \
+        if (ulint_val > UINT_MAX)                               \
+            TEST_FAIL("'%s' parameter value is greater"         \
+                      " than %u and cannot be stored in"        \
+                      " an 'unsigned int' variable",            \
+                      #_parameter, UINT_MAX);                   \
+                                                                \
+        _parameter = (unsigned int)ulint_val;                   \
+    } while (0)
+
+
+/**
  * The macro to get parameters of type 'int64'
  *
  * @param var_name_  Variable whose name is the same as the name of
