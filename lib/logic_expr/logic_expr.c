@@ -685,11 +685,14 @@ and_chains_cmp(logic_expr *chain1,
 {
     logic_expr *p;
     logic_expr *q;
-    logic_expr *p_cur;
-    logic_expr *q_cur;
+    logic_expr *p_cur = NULL;
+    logic_expr *q_cur = NULL;
     int         rc = 0;
     te_bool     first_noeq = FALSE;
     te_bool     second_noeq = FALSE;
+
+    assert(chain1 != NULL);
+    assert(chain2 != NULL);
 
     p = chain1;
     q = chain2;
