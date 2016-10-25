@@ -65,6 +65,9 @@
 #include "logger_ta_fast.h"
 
 
+/** Name of the function to generate random number in TAD expression */
+#define TAD_EXPR_FUNC_RAND  "rand()"
+
 /**
  * Description see in tad_utils.h
  */
@@ -508,6 +511,13 @@ tad_int_expr_parse(const char *string, tad_int_expr_t **expr, int *syms)
         else
             goto parse_error;
     }
+    else if (strncmp(p, TAD_EXPR_FUNC_RAND, strlen(TAD_EXPR_FUNC_RAND)) == 0)
+    {
+        p += strlen(TAD_EXPR_FUNC_RAND);
+        (*expr)->n_type = TAD_EXPR_ARG_RAND;
+        (*expr)->arg_num = 0;
+        *syms = strlen(TAD_EXPR_FUNC_RAND);
+    }
     else
         goto parse_error;
 
@@ -529,7 +539,8 @@ static void
 tad_int_expr_free_subtree(tad_int_expr_t *expr)
 {
     if (expr->n_type != TAD_EXPR_CONSTANT &&
-        expr->n_type != TAD_EXPR_ARG_LINK)
+        expr->n_type != TAD_EXPR_ARG_LINK &&
+        expr->n_type != TAD_EXPR_ARG_RAND)
     {
         unsigned i;
 
@@ -604,6 +615,10 @@ tad_int_expr_calculate(const tad_int_expr_t *expr,
                 *result = args[ar_n].arg_int;
             }
             VERB("%s(): arg link result %d", __FUNCTION__, (int)(*result));
+            break;
+
+        case TAD_EXPR_ARG_RAND:
+            *result = rand();
             break;
 
         default:

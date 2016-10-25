@@ -82,6 +82,7 @@ typedef enum {
     TAD_EXPR_DIV,          /**< Binary division node */
     TAD_EXPR_MOD,          /**< Binary modulo */
     TAD_EXPR_U_MINUS,      /**< Unary minus node */
+    TAD_EXPR_ARG_RAND,     /**< Random integer value */
 } tad_expr_node_type;
 
 /**
