@@ -1292,7 +1292,10 @@ rpc_rte_eth_dev_socket_id(rcf_rpc_server *rpcs, uint8_t port_id)
 
     TAPI_RPC_LOG(rpcs, rte_eth_dev_socket_id, "%hhu", "%d",
                  in.port_id, out.retval);
-    RETVAL_INT(rte_eth_dev_socket_id, out.retval);
+
+    TAPI_RPC_OUT(rte_eth_dev_socket_id, out.retval < -1);
+
+    return (out.retval);
 }
 
 int
