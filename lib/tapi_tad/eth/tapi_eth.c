@@ -445,31 +445,40 @@ tapi_eth_gen_traffic_sniff_pattern(const char     *ta_name,
     if (err != 0)
         goto out;
 
-    err = tapi_eth_based_csap_create_by_tmpl(ta_name, sid, if_name,
-                                             TAD_ETH_RECV_OUT, template,
-                                             &csap_sniff);
-    if (err != 0)
-        goto out;
-
-    pattern_by_template = tapi_tad_mk_pattern_from_template(template);
-    if (pattern_by_template == NULL)
+    if (pattern_out != NULL)
     {
-        err = TE_ENOMEM;
-        goto out;
-    }
+        err = tapi_eth_based_csap_create_by_tmpl(ta_name, sid, if_name,
+                                                 TAD_ETH_RECV_OUT, template,
+                                                 &csap_sniff);
+        if (err != 0)
+            goto out;
 
-    err = tapi_tad_trrecv_start(ta_name, sid, csap_sniff, pattern_by_template,
-                                TAD_TIMEOUT_INF, 0, RCF_TRRECV_PACKETS);
-    if (err != 0)
-        goto out;
+        pattern_by_template = tapi_tad_mk_pattern_from_template(template);
+        if (pattern_by_template == NULL)
+        {
+            err = TE_ENOMEM;
+            goto out;
+        }
+
+        err = tapi_tad_trrecv_start(ta_name, sid, csap_sniff,
+                                    pattern_by_template,
+                                    TAD_TIMEOUT_INF, 0, RCF_TRRECV_PACKETS);
+        if (err != 0)
+            goto out;
+    }
 
     err = tapi_tad_trsend_start(ta_name, sid, csap_xmit, template,
                                 RCF_MODE_BLOCKING);
     if (err != 0)
     {
-        (void)tapi_tad_trrecv_stop(ta_name, sid, csap_sniff, NULL, NULL);
+        if (pattern_out != NULL)
+            (void)tapi_tad_trrecv_stop(ta_name, sid, csap_sniff, NULL, NULL);
+
         goto out;
     }
+
+    if (pattern_out == NULL)
+        goto out;
 
     memset(&csap_packets_storage, 0, sizeof(csap_packets_storage));
 

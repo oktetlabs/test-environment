@@ -208,6 +208,7 @@ extern te_errno tapi_eth_csap_create(const char     *ta_name,
  * @param transform     A set of parameters describing some trasformations
  *                      which are expected to affect the outgoing packets
  * @param pattern_out   Location for the pattern which is to be produced
+                        or @c NULL
  *
  * @return Status code
  */
