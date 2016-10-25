@@ -172,6 +172,18 @@ extern te_errno tapi_tad_tmpl_ptrn_set_payload_plain(
                     size_t       length);
 
 /**
+ * Free all the PDU fields of a choice denoted by a given DU tag
+ * (eg. NDN_DU_SCRIPT) from all the PDUs in a given PDU sequence
+ *
+ * @param pdus          ASN.1 value contining a PDU sequence
+ * @param du_tag        DU tag value to designate a DU choice
+ *
+ * @return Status code
+ */
+extern te_errno tapi_pdus_free_fields_by_du_tag(asn_value      *pdus,
+                                                asn_tag_value   du_tag);
+
+/**
  * Convert an ASN.1 template to a pattern containing
  * the same set of PDUs as ones in the template
  *

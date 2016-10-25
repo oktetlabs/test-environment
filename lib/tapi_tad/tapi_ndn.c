@@ -309,6 +309,63 @@ tapi_tad_tmpl_ptrn_set_payload_plain(asn_value  **obj_spec,
     return TE_RC(TE_TAPI, rc);
 }
 
+/* See the description in 'tapi_ndn.h' */
+te_errno
+tapi_pdus_free_fields_by_du_tag(asn_value      *pdus,
+                                asn_tag_value   du_tag)
+{
+    te_errno        err;
+    unsigned int    i;
+
+    if (pdus == NULL)
+    {
+        err = TE_EINVAL;
+        goto fail;
+    }
+
+    for (i = 0; i < (unsigned int)pdus->len; ++i)
+    {
+        asn_value      *pdu;
+        asn_value      *pdu_choice_val;
+        unsigned int    j;
+
+        err = asn_get_indexed(pdus, &pdu, i, "");
+        if (err != 0)
+            goto fail;
+
+        err = asn_get_choice_value(pdu, &pdu_choice_val, NULL, NULL);
+        if (err != 0)
+            goto fail;
+
+        for (j = 0; j < (unsigned int)pdu_choice_val->len; ++j)
+        {
+            asn_value      *pdu_field = pdu_choice_val->data.array[j];
+            asn_tag_value   pdu_field_sub_tag_value;
+
+            if (pdu_field == NULL)
+                continue;
+
+            err = asn_get_choice_value(pdu_field, NULL, NULL,
+                                       &pdu_field_sub_tag_value);
+            if (err != 0)
+                goto fail;
+
+            if (pdu_field_sub_tag_value == du_tag)
+            {
+                err = asn_free_child(pdu_choice_val, PRIVATE,
+                                     asn_get_tag(pdu_field));
+                if (err != 0)
+                    goto fail;
+            }
+        }
+    }
+
+    return 0;
+
+fail:
+    return TE_RC(TE_TAPI, err);
+}
+
 /* See the description in tapi_ndn.h */
 asn_value *
 tapi_tad_mk_pattern_from_template(asn_value  *template)
@@ -378,6 +435,10 @@ tapi_tad_mk_pattern_from_template(asn_value  *template)
         if (err != 0)
             goto fail;
     }
+
+    err = tapi_pdus_free_fields_by_du_tag(pdus_copy, NDN_DU_SCRIPT);
+    if (err != 0)
+        goto fail;
 
     return pattern;
 
