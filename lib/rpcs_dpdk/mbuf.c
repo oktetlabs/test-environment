@@ -51,7 +51,7 @@ tarpc_rte_pktmbuf_ol_flags2rpc(uint64_t rte)
     do {                                                            \
         uint64_t flag = _bit;                                       \
                                                                     \
-        if (rte & flag)                                             \
+        if ((rte & flag) && ((rte & flag) == flag))                 \
         {                                                           \
             rte &= ~flag;                                           \
             rpc |= (1UL << TARPC_##_bit);                           \
@@ -61,8 +61,21 @@ tarpc_rte_pktmbuf_ol_flags2rpc(uint64_t rte)
     RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_VLAN_PKT);
     RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_RSS_HASH);
     RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_FDIR);
-    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_L4_CKSUM_BAD);
-    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_IP_CKSUM_BAD);
+
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_IP_CKSUM_NONE);
+    if (~rpc & (1UL << TARPC_PKT_RX_IP_CKSUM_NONE))
+    {
+        RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_IP_CKSUM_BAD);
+        RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_IP_CKSUM_GOOD);
+    }
+
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_L4_CKSUM_NONE);
+    if (~rpc & (1UL << TARPC_PKT_RX_L4_CKSUM_NONE))
+    {
+        RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_L4_CKSUM_BAD);
+        RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_L4_CKSUM_GOOD);
+    }
+
     RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_EIP_CKSUM_BAD);
 #ifdef PKT_RX_OVERSIZE
     RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_OVERSIZE);
@@ -128,8 +141,21 @@ tarpc_rte_pktmbuf_ol_flags2rte(uint64_t rpc, uint64_t *rte)
     RTE_PKTMBUF_OL_FLAGS2RTE(PKT_RX_VLAN_PKT);
     RTE_PKTMBUF_OL_FLAGS2RTE(PKT_RX_RSS_HASH);
     RTE_PKTMBUF_OL_FLAGS2RTE(PKT_RX_FDIR);
-    RTE_PKTMBUF_OL_FLAGS2RTE(PKT_RX_L4_CKSUM_BAD);
-    RTE_PKTMBUF_OL_FLAGS2RTE(PKT_RX_IP_CKSUM_BAD);
+
+    RTE_PKTMBUF_OL_FLAGS2RTE(PKT_RX_IP_CKSUM_NONE);
+    if (~rte_tmp & PKT_RX_IP_CKSUM_NONE)
+    {
+        RTE_PKTMBUF_OL_FLAGS2RTE(PKT_RX_IP_CKSUM_BAD);
+        RTE_PKTMBUF_OL_FLAGS2RTE(PKT_RX_IP_CKSUM_GOOD);
+    }
+
+    RTE_PKTMBUF_OL_FLAGS2RTE(PKT_RX_L4_CKSUM_NONE);
+    if (~rte_tmp & PKT_RX_L4_CKSUM_NONE)
+    {
+        RTE_PKTMBUF_OL_FLAGS2RTE(PKT_RX_L4_CKSUM_BAD);
+        RTE_PKTMBUF_OL_FLAGS2RTE(PKT_RX_L4_CKSUM_GOOD);
+    }
+
     RTE_PKTMBUF_OL_FLAGS2RTE(PKT_RX_EIP_CKSUM_BAD);
 #ifdef PKT_RX_OVERSIZE
     RTE_PKTMBUF_OL_FLAGS2RTE(PKT_RX_OVERSIZE);
