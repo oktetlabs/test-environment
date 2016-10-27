@@ -1637,11 +1637,11 @@ tarpc_rte_reta_conf2str(te_log_buf *tlbp,
 
     for (cur_group = 0; cur_group < reta_size / RPC_RTE_RETA_GROUP_SIZE; cur_group++)
     {
-        te_log_buf_append(tlbp, " mask=%llu", reta_conf[cur_group].mask);
+        te_log_buf_append(tlbp, " mask=%llx", reta_conf[cur_group].mask);
         te_log_buf_append(tlbp, ", reta=");
 
         for (cur_entry = 0; cur_entry < RPC_RTE_RETA_GROUP_SIZE; cur_entry++)
-            te_log_buf_append(tlbp, "%hu", reta_conf[cur_group].reta[cur_entry]);
+            te_log_buf_append(tlbp, " %hu", reta_conf[cur_group].reta[cur_entry]);
 
     }
 
