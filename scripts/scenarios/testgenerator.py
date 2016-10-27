@@ -18,7 +18,6 @@ class TestGenerator(Generator):
                 c.write(group.objective)
             year = datetime.datetime.now().year
             c.write('', 'Copyright (C) %s Solarflare Communications Ltd.' % year)
-            c.write('', '$Id:$')
         self.write('')
 
     def _doxygen_values(self, values):
