@@ -10,6 +10,9 @@ pushd "$(dirname "$(which "$0")")" >/dev/null
 MYDIR="$(pwd -P)"
 popd >/dev/null
 
+: ${TS_SCRIPTS:=${MYDIR}}
+export TS_SCRIPTS
+
 if test -z "${CONFIG_SUB}" ; then
     if test -e "${TE_BASE}/auxdir/config.sub" ; then
         export CONFIG_SUB="${TE_BASE}/auxdir/config.sub"
