@@ -353,6 +353,19 @@ tapi_rte_mk_mbuf_mk_ptrn_by_tmpl(rcf_rpc_server    *rpcs,
 
     if (transform != NULL)
     {
+        asn_value      *pdus;
+        asn_value      *pdu_ip4;
+        asn_value      *pdu_ip6;
+        asn_value      *pdu_tcp;
+
+        err = asn_get_subvalue(template, &pdus, "pdus");
+        if (err != 0)
+            goto out;
+
+        pdu_ip4 = asn_find_child_choice_value(pdus, TE_PROTO_IP4);
+        pdu_ip6 = asn_find_child_choice_value(pdus, TE_PROTO_IP6);
+        pdu_tcp = asn_find_child_choice_value(pdus, TE_PROTO_TCP);
+
         for (i = 0; i < n_mbufs; ++i)
         {
             uint64_t ol_flags = 0;
@@ -369,12 +382,10 @@ tapi_rte_mk_mbuf_mk_ptrn_by_tmpl(rcf_rpc_server    *rpcs,
                                              transform->vlan_tci);
             }
 
-            if ((transform->hw_flags & SEND_COND_HW_OFFL_TSO) ==
-                SEND_COND_HW_OFFL_TSO)
+            if (((transform->hw_flags & SEND_COND_HW_OFFL_TSO) ==
+                 SEND_COND_HW_OFFL_TSO) && (pdu_tcp != NULL))
             {
-                struct tarpc_rte_pktmbuf_tx_offload     tx_offload;
-                asn_value                              *pdus;
-                asn_value                              *pdu_ip4;
+                struct tarpc_rte_pktmbuf_tx_offload tx_offload;
 
                 memset(&tx_offload, 0, sizeof(tx_offload));
 
@@ -394,17 +405,13 @@ tapi_rte_mk_mbuf_mk_ptrn_by_tmpl(rcf_rpc_server    *rpcs,
                  * template was prepared in accordance with this principle;
                  * we only add the flag to request IPv4 checksum offload
                  */
-                err = asn_get_subvalue(template, &pdus, "pdus");
-                if (err != 0)
-                    goto out;
-
-                pdu_ip4 = asn_find_child_choice_value(pdus, TE_PROTO_IP4);
                 if (pdu_ip4 != NULL)
                 {
                     ol_flags |= (1UL << TARPC_PKT_TX_IP_CKSUM);
                     ol_flags |= (1UL << TARPC_PKT_TX_IPV4);
                 }
-                else
+
+                if (pdu_ip6 != NULL)
                 {
                     ol_flags |= (1UL << TARPC_PKT_TX_IPV6);
                 }
