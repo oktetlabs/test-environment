@@ -439,6 +439,8 @@ tapi_eth_gen_traffic_sniff_pattern(const char     *ta_name,
     struct tapi_eth_packet_storage  csap_packets_storage;
     asn_value                      *pattern;
 
+    memset(&csap_packets_storage, 0, sizeof(csap_packets_storage));
+
     err = tapi_eth_based_csap_create_by_tmpl(ta_name, sid, if_name,
                                              TAD_ETH_RECV_NO, template,
                                              &csap_xmit);
@@ -479,8 +481,6 @@ tapi_eth_gen_traffic_sniff_pattern(const char     *ta_name,
 
     if (pattern_out == NULL)
         goto out;
-
-    memset(&csap_packets_storage, 0, sizeof(csap_packets_storage));
 
     csap_packet_handler_data.callback = tapi_eth_store_packet_cb;
     csap_packet_handler_data.user_data = &csap_packets_storage;
