@@ -403,7 +403,8 @@ tapi_eth_store_packet_cb(asn_value *packet, void *user_data)
     n_packets_captured = csap_sniff_storage->n_packets_captured;
 
     packets_captured = realloc(csap_sniff_storage->packets_captured,
-                               n_packets_captured + 1);
+                               (n_packets_captured + 1) *
+                               sizeof(*packets_captured));
     if (packets_captured == NULL)
     {
         csap_sniff_storage->err = TE_ENOMEM;
