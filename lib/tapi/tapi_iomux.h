@@ -103,7 +103,9 @@ typedef enum tapi_iomux_evt {
     EVT_RDHUP   = 0x400,           /**< Stream socket peer closed
                                         connection, or shut down
                                         writing half of connection. */
-    EVT_NVAL    = 0x800,           /**< Invalid request */
+    EVT_ET      = 0x800,           /**< Edge-triggered mode (makes
+                                        sense only for epoll). */
+    EVT_NVAL    = 0x1000,          /**< Invalid request */
 } tapi_iomux_evt;
 
 /** Define one entry in the list of maping entries */
@@ -123,6 +125,7 @@ typedef enum tapi_iomux_evt {
             BIT_MAP_ENTRY(EVT_ERR),     \
             BIT_MAP_ENTRY(EVT_HUP),     \
             BIT_MAP_ENTRY(EVT_RDHUP),   \
+            BIT_MAP_ENTRY(EVT_ET),      \
             BIT_MAP_ENTRY(EVT_NVAL)
 
 /**

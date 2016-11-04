@@ -147,6 +147,9 @@ tapi_iomux_evt_to_epoll(tapi_iomux_evt iomux_evt_mask)
     if (iomux_evt_mask & EVT_RDHUP)
         epoll_evts |= RPC_EPOLLRDHUP;
 
+    if (iomux_evt_mask & EVT_ET)
+        epoll_evts |= RPC_EPOLLET;
+
     return epoll_evts;
 }
 
@@ -245,6 +248,9 @@ tapi_iomux_epoll_to_evt(uint32_t epoll_evt_mask)
 
     if (epoll_evt_mask & RPC_EPOLLMSG)
         iomux_evts |= (EVT_EXC | EVT_NVAL);
+
+    if (epoll_evt_mask & RPC_EPOLLET)
+        iomux_evts |= EVT_ET;
 
     return iomux_evts;
 }
