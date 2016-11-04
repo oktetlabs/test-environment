@@ -481,16 +481,21 @@ static int
 tapi_iomux_select_call(tapi_iomux_handle *iomux, int timeout,
                        tapi_iomux_evt_fd **revts)
 {
-    struct tarpc_timeval tv;
+    struct tarpc_timeval  tv;
+    struct tarpc_timeval *tv_ptr = &tv;
+
     int max_fd = 0;
     int rc;
 
-    TE_US2TV(TE_MS2US(timeout), &tv);
+    if (timeout < 0)
+        tv_ptr = NULL;
+    else
+        TE_US2TV(TE_MS2US(timeout), &tv);
 
     max_fd = tapi_iomux_select_add_events(iomux);
 
     rc = rpc_select(iomux->rpcs, max_fd, iomux->select.read_fds,
-                    iomux->select.write_fds, iomux->select.exc_fds, &tv);
+                    iomux->select.write_fds, iomux->select.exc_fds, tv_ptr);
 
     if (rc <= 0)
         return rc;
@@ -513,16 +518,21 @@ static int
 tapi_iomux_pselect_call(tapi_iomux_handle *iomux, int timeout,
                         tapi_iomux_evt_fd **revts)
 {
-    struct tarpc_timespec tv;
+    struct tarpc_timespec  tv;
+    struct tarpc_timespec *tv_ptr = &tv;
+
     int max_fd = 0;
     int rc;
 
-    TE_NS2TS(TE_MS2NS(timeout), &tv);
+    if (timeout < 0)
+        tv_ptr = NULL;
+    else
+        TE_NS2TS(TE_MS2NS(timeout), &tv);
 
     max_fd = tapi_iomux_select_add_events(iomux);
 
     rc = rpc_pselect(iomux->rpcs, max_fd, iomux->select.read_fds,
-                     iomux->select.write_fds, iomux->select.exc_fds, &tv,
+                     iomux->select.write_fds, iomux->select.exc_fds, tv_ptr,
                      iomux->sigmask);
 
     if (rc <= 0)
@@ -692,15 +702,21 @@ static int
 tapi_iomux_ppoll_call(tapi_iomux_handle *iomux, int timeout,
                       tapi_iomux_evt_fd **revts)
 {
-    struct tarpc_timespec tv;
+    struct tarpc_timespec  tv;
+    struct tarpc_timespec *tv_ptr = &tv;
+
     struct rpc_pollfd *fds;
     int rc;
 
-    TE_NS2TS(TE_MS2NS(timeout), &tv);
+    if (timeout < 0)
+        tv_ptr = NULL;
+    else
+        TE_NS2TS(TE_MS2NS(timeout), &tv);
 
     fds = tapi_iomux_poll_create_events(iomux);
 
-    rc = rpc_ppoll(iomux->rpcs, fds, iomux->fds_num, &tv, iomux->sigmask);
+    rc = rpc_ppoll(iomux->rpcs, fds, iomux->fds_num, tv_ptr,
+                   iomux->sigmask);
 
     *revts = tapi_iomux_poll_get_events(iomux, fds, rc);
 
