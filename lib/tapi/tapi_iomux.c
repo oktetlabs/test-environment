@@ -37,7 +37,7 @@
 
 /* See the description in tapi_iomux.h. */
 short int
-tapi_iomux_evt_to_poll(uint16_t iomux_evt_mask)
+tapi_iomux_evt_to_poll(tapi_iomux_evt iomux_evt_mask)
 {
     short int poll_evts = 0;
 
@@ -97,64 +97,64 @@ tapi_iomux_evt_to_poll(uint16_t iomux_evt_mask)
 }
 
 /* See the description in tapi_iomux.h. */
-short int
-tapi_iomux_evt_to_epoll(uint16_t iomux_evt_mask)
+uint32_t
+tapi_iomux_evt_to_epoll(tapi_iomux_evt iomux_evt_mask)
 {
-    short int poll_evts = 0;
+    uint32_t epoll_evts = 0;
 
     if (iomux_evt_mask & EVT_RD)
-        poll_evts |= RPC_EPOLLIN;
+        epoll_evts |= RPC_EPOLLIN;
 
     if (iomux_evt_mask & EVT_PRI)
-        poll_evts |= RPC_EPOLLPRI;
+        epoll_evts |= RPC_EPOLLPRI;
 
     if (iomux_evt_mask & EVT_WR)
-        poll_evts |= RPC_EPOLLOUT;
+        epoll_evts |= RPC_EPOLLOUT;
 
     if (iomux_evt_mask & EVT_RD_NORM)
-        poll_evts |= RPC_EPOLLRDNORM;
+        epoll_evts |= RPC_EPOLLRDNORM;
 
     if (iomux_evt_mask & EVT_WR_NORM)
-        poll_evts |= RPC_EPOLLWRNORM;
+        epoll_evts |= RPC_EPOLLWRNORM;
 
     if (iomux_evt_mask & EVT_RD_BAND)
     {
-        poll_evts |= RPC_EPOLLPRI;
-        poll_evts |= RPC_EPOLLRDBAND;
+        epoll_evts |= RPC_EPOLLPRI;
+        epoll_evts |= RPC_EPOLLRDBAND;
     }
 
     if (iomux_evt_mask & EVT_WR_BAND)
     {
-        poll_evts |= RPC_EPOLLWRBAND;
+        epoll_evts |= RPC_EPOLLWRBAND;
     }
 
     if (iomux_evt_mask & EVT_EXC)
     {
-        poll_evts |= RPC_EPOLLERR;
-        poll_evts |= RPC_EPOLLHUP;
-        poll_evts |= RPC_EPOLLMSG;
+        epoll_evts |= RPC_EPOLLERR;
+        epoll_evts |= RPC_EPOLLHUP;
+        epoll_evts |= RPC_EPOLLMSG;
     }
 
     if (iomux_evt_mask & EVT_ERR)
-        poll_evts |= RPC_EPOLLERR;
+        epoll_evts |= RPC_EPOLLERR;
 
     if (iomux_evt_mask & EVT_HUP)
-        poll_evts |= RPC_EPOLLHUP;
+        epoll_evts |= RPC_EPOLLHUP;
 
     if (iomux_evt_mask & EVT_NVAL)
-        poll_evts |= RPC_EPOLLMSG;
+        epoll_evts |= RPC_EPOLLMSG;
 
     if (iomux_evt_mask & EVT_RDHUP)
-        poll_evts |= RPC_EPOLLRDHUP;
+        epoll_evts |= RPC_EPOLLRDHUP;
 
-    return poll_evts;
+    return epoll_evts;
 }
 
 /* See the description in tapi_iomux.h. */
-uint16_t
+tapi_iomux_evt
 tapi_iomux_poll_to_evt(short int poll_evt_mask)
 {
-    uint16_t iomux_evts = 0;
+    tapi_iomux_evt iomux_evts = 0;
 
     if (poll_evt_mask & RPC_POLLIN)
         iomux_evts |= EVT_RD;
@@ -202,48 +202,48 @@ tapi_iomux_poll_to_evt(short int poll_evt_mask)
 }
 
 /* See the description in tapi_iomux.h. */
-uint16_t
-tapi_iomux_epoll_to_evt(short int poll_evt_mask)
+tapi_iomux_evt
+tapi_iomux_epoll_to_evt(uint32_t epoll_evt_mask)
 {
-    uint16_t iomux_evts = 0;
+    tapi_iomux_evt iomux_evts = 0;
 
-    if (poll_evt_mask & RPC_EPOLLIN)
+    if (epoll_evt_mask & RPC_EPOLLIN)
         iomux_evts |= EVT_RD;
 
-    if (poll_evt_mask & RPC_EPOLLOUT)
+    if (epoll_evt_mask & RPC_EPOLLOUT)
         iomux_evts |= EVT_WR;
 
-    if (poll_evt_mask & RPC_EPOLLRDNORM)
+    if (epoll_evt_mask & RPC_EPOLLRDNORM)
     {
         iomux_evts |= EVT_RD_NORM;
         iomux_evts |= EVT_RD;
     }
 
-    if (poll_evt_mask & RPC_EPOLLWRNORM)
+    if (epoll_evt_mask & RPC_EPOLLWRNORM)
     {
         iomux_evts |= EVT_WR_NORM;
         iomux_evts |= EVT_WR;
     }
 
-    if (poll_evt_mask & RPC_EPOLLRDBAND)
+    if (epoll_evt_mask & RPC_EPOLLRDBAND)
         iomux_evts |= EVT_RD_BAND;
 
-    if (poll_evt_mask & RPC_EPOLLWRBAND)
+    if (epoll_evt_mask & RPC_EPOLLWRBAND)
         iomux_evts |= EVT_WR_BAND;
 
-    if (poll_evt_mask & RPC_EPOLLPRI)
+    if (epoll_evt_mask & RPC_EPOLLPRI)
         iomux_evts |= EVT_PRI;
 
-    if (poll_evt_mask & RPC_EPOLLERR)
+    if (epoll_evt_mask & RPC_EPOLLERR)
         iomux_evts |= (EVT_EXC | EVT_ERR);
 
-    if (poll_evt_mask & RPC_EPOLLHUP)
+    if (epoll_evt_mask & RPC_EPOLLHUP)
         iomux_evts |= (EVT_EXC | EVT_HUP);
 
-    if (poll_evt_mask & RPC_EPOLLRDHUP)
+    if (epoll_evt_mask & RPC_EPOLLRDHUP)
         iomux_evts |= EVT_RDHUP;
 
-    if (poll_evt_mask & RPC_EPOLLMSG)
+    if (epoll_evt_mask & RPC_EPOLLMSG)
         iomux_evts |= (EVT_EXC | EVT_NVAL);
 
     return iomux_evts;

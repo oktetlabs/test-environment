@@ -156,7 +156,7 @@ extern const char *tapi_iomux_call_en2str(tapi_iomux_type iomux_type);
  *
  * @return event bitmask from POLL* constants.
  */
-extern short int tapi_iomux_evt_to_poll(uint16_t iomux_evt_mask);
+extern short int tapi_iomux_evt_to_poll(tapi_iomux_evt iomux_evt_mask);
 
 /**
  * Convert bitmask constructed with constants from #tapi_iomux_evt type to
@@ -166,7 +166,7 @@ extern short int tapi_iomux_evt_to_poll(uint16_t iomux_evt_mask);
  *
  * @return event bitmask from EPOLL* constants.
  */
-extern short int tapi_iomux_evt_to_epoll(uint16_t iomux_evt_mask);
+extern uint32_t tapi_iomux_evt_to_epoll(tapi_iomux_evt iomux_evt_mask);
 
 /**
  * Convert bitmask constructed with standard POLL* macros from poll.h
@@ -176,7 +176,7 @@ extern short int tapi_iomux_evt_to_epoll(uint16_t iomux_evt_mask);
  *
  * @return event bitmask from #tapi_iomux_evt constants.
  */
-extern uint16_t tapi_iomux_poll_to_evt(short int poll_evt_mask);
+extern tapi_iomux_evt tapi_iomux_poll_to_evt(short int poll_evt_mask);
 
 /**
  * Convert bitmask constructed with standard EPOLL* macros from epoll.h
@@ -186,7 +186,7 @@ extern uint16_t tapi_iomux_poll_to_evt(short int poll_evt_mask);
  *
  * @return event bitmask from #tapi_iomux_evt constants.
  */
-extern uint16_t tapi_iomux_epoll_to_evt(short int poll_evt_mask);
+extern tapi_iomux_evt tapi_iomux_epoll_to_evt(uint32_t epoll_evt_mask);
 
 
 /**
