@@ -64,6 +64,27 @@ typedef enum {
 #define TAPI_IOMUX_MAX TAPI_IOMUX_EPOLL_PWAIT
 
 /**
+ * The list of values allowed for test parameter
+ * defining iomux function.
+ */
+#define TAPI_IOMUX_MAPPING_LIST \
+    { "select",      TAPI_IOMUX_SELECT },      \
+    { "pselect",     TAPI_IOMUX_PSELECT },     \
+    { "poll",        TAPI_IOMUX_POLL },        \
+    { "ppoll",       TAPI_IOMUX_PPOLL },       \
+    { "epoll",       TAPI_IOMUX_EPOLL },       \
+    { "epoll_pwait", TAPI_IOMUX_EPOLL_PWAIT }
+
+/**
+ * Get the value of parameter defining iomux function.
+ *
+ * @param var_name_  Name of the variable used to get the value of
+ *                   "var_name_" parameter.
+ */
+#define TEST_GET_TE_IOMUX_FUNC(var_name_) \
+    TEST_GET_ENUM_PARAM(var_name_, TAPI_IOMUX_MAPPING_LIST)
+
+/**
  * Type of events used in iomux API.
  */
 typedef enum tapi_iomux_evt {
