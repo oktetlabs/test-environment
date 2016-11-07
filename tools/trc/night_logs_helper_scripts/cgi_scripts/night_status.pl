@@ -215,7 +215,7 @@ sub fill_table
         $status = "NOT STARTED";
     }
 
-    if ($driver_unload =~ /Driver unload failer/ )
+    if ($driver_unload =~ /Driver unload failure/ )
     {
         $driver_unload = "FAILURE";
     }
