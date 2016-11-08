@@ -1077,13 +1077,15 @@ rte_pktmbuf_redist(tarpc_rte_pktmbuf_redist_in *in,
     out->m = in->m;
 
     /* Sanity checks */
-    if (m == NULL || m->pkt_len == 0 ||
-        in->seg_groups.seg_groups_len == 0 ||
-        in->seg_groups.seg_groups_val == NULL)
+    if (m == NULL || m->pkt_len == 0)
     {
         err = TE_RC(TE_RPCS, TE_EINVAL);
         goto out;
     }
+
+    if (in->seg_groups.seg_groups_len == 0 ||
+        in->seg_groups.seg_groups_val == NULL)
+        return (m->nb_segs);
 
     /* Calculate the total figures for the pattern */
     for (i = 0; i < in->seg_groups.seg_groups_len; ++i)
