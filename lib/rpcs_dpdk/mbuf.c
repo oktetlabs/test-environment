@@ -1119,10 +1119,10 @@ rte_pktmbuf_redist(tarpc_rte_pktmbuf_redist_in *in,
             data_count += pattern_sum_len;
         }
 
-        if ((nb_segs_new + nb_segs_to_add) >= (1 << (sizeof(m->nb_segs) * 8)))
+        if ((nb_segs_new + nb_segs_to_add) > UINT8_MAX)
         {
-            err = TE_RC(TE_RPCS, TE_EOVERFLOW);
-            goto out;
+            nb_segs_new = UINT8_MAX;
+            break;
         }
 
         nb_segs_new += nb_segs_to_add;
@@ -1172,8 +1172,11 @@ rte_pktmbuf_redist(tarpc_rte_pktmbuf_redist_in *in,
                      ++j)
                 {
                     uint8_t *dst;
-                    uint16_t to_copy = MIN((m->pkt_len - data_count),
-                             in->seg_groups.seg_groups_val[i].len);
+                    uint16_t to_copy = m->pkt_len - data_count;
+
+                    if ((k + 1) < UINT8_MAX)
+                        to_copy = MIN(to_copy,
+                                      in->seg_groups.seg_groups_val[i].len);
 
                     m_cur = new_segs[k++];
 
