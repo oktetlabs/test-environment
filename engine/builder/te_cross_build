@@ -98,6 +98,7 @@ install_extension_parts () {
             cd "$srcdir"
             test -n "$builddir" && cd "$builddir"
             cp -a $objlist "$destdir"
+            find -H "$destdir" -type l | xargs ${TE_BASE}/engine/builder/te_fixlink "$PWD" "$destdir"
         )
     fi
 }
@@ -133,13 +134,12 @@ build_extension() {
 
     (
         cd "$srcdir"; eval "export EXT_BUILDDIR=\"${builddir:-.}\"; $prepare"
-        if test -n "$builddir"; then
-            mkdir -p "$builddir"
-        fi
     ) || exit 1
 
     (
-        te_eval_or_ssh "$p" "cd $srcdir; cd ${builddir:-.};
+        te_eval_or_ssh "$p" "cd $srcdir ;
+                      test -n \"$builddir\" && mkdir -p \"$builddir\" ;
+                      cd ${builddir:-.} ;
                       export TE_PREFIX=\"$PREFIX/$p\" ;
                       export TE_CPPFLAGS=\"-I$PREFIX/$p/include\" ;
                       export TE_LDFLAGS=\"$telibflags\" ;
@@ -177,7 +177,8 @@ build_platform() {
              local pextinsth="TE_BS_EXT_${p}_${pext}_INSTALL_HEADERS"
              local pextinstl="TE_BS_EXT_${p}_${pext}_INSTALL_LIBS"
              local pextenv="TE_BS_EXT_${p}_${pext}_ENV_VARS"
-             build_extension "$p" "${!pextsrc}" "${!pextprep}" "${!pextbuilddir}" \
+             build_extension "$p" "${!pextsrc}" "${!pextprep}" \
+                             "${!pextbuilddir/#${TE_BUILD}/${sbd}}" \
                              "${!pextbuild}" "" \
                              "${!pextinsth}" "${!pextinstl}" "${!pextenv}" || exit 1
         done
@@ -298,7 +299,8 @@ build_agent() {
          local pextlibs="TE_BS_TA_APP_${package}_${pext}_LIBS"
          local pextinstb="TE_BS_TA_APP_${package}_${pext}_INSTALL_BIN"
          local pextenv="TE_BS_TA_APP_${package}_${pext}_ENV_VARS"
-         build_extension "$PLATFORM" "${!pextsrc}" "${!pextprep}" "${!pextbuilddir}" \
+         build_extension "$PLATFORM" "${!pextsrc}" "${!pextprep}" \
+                         "${!pextbuilddir/#${TE_BUILD}/${sbd}}" \
                          "${!pextbuild}" "${!pextlibs}" \
                          "" "" "${!pextinstb}" "${package}" "${!pextenv}" || exit 1
     done
@@ -396,6 +398,7 @@ release_shadow_build_directory() {
         rm -rf '${sbd}' >/dev/null
     " | tar -xzf -
     res=$?; if test "$res" -ne "0" ; then exit $res; fi
+    find . -type l | xargs ${TE_BASE}/engine/builder/te_fixlink "${sbd}" .
 }
 
 build_platform_and_agent() {
