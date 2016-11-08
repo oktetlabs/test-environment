@@ -87,17 +87,18 @@ need_build_platform() {
 }
 
 install_extension_parts () {
-    local srcdir="$1"
-    local builddir="$2"
-    local objlist="$3"
-    local destdir="$4"
+    local p="$1"
+    local srcdir="$2"
+    local builddir="$3"
+    local objlist="$4"
+    local destdir="$5"
 
     if test -n "$objlist"; then
         (
             mkdir -p "$destdir"
-            cd "$srcdir"
-            test -n "$builddir" && cd "$builddir"
-            cp -a $objlist "$destdir"
+            te_eval_or_ssh "$p" "cd '$srcdir';
+            test -n '$builddir' && cd '$builddir';
+            cp -a $objlist '$destdir'"
             find -H "$destdir" -type l | xargs ${TE_BASE}/engine/builder/te_fixlink "$PWD" "$destdir"
         )
     fi
@@ -147,9 +148,9 @@ build_extension() {
                       $exports
                       $build"
     ) || exit 1
-    install_extension_parts "$srcdir" "$builddir" "$expheaders" "$PREFIX/$p/include" || exit 1
-    install_extension_parts "$srcdir" "$builddir" "$explibs" "$PREFIX/$p/lib" || exit 1
-    install_extension_parts "$srcdir" "$builddir" "$expbin" "$PREFIX/agents/$tatype" || exit 1
+    install_extension_parts "$p" "$srcdir" "$builddir" "$expheaders" "$PREFIX/$p/include" || exit 1
+    install_extension_parts "$p" "$srcdir" "$builddir" "$explibs" "$PREFIX/$p/lib" || exit 1
+    install_extension_parts "$p" "$srcdir" "$builddir" "$expbin" "$PREFIX/agents/$tatype" || exit 1
 }
 
 build_platform() {
@@ -292,13 +293,13 @@ build_agent() {
     local pext
 
     for pext in ${!pexts}; do
-         local pextsrc="TE_BS_TA_APP_${package}_${pext}_SOURCES"
-         local pextprep="TE_BS_TA_APP_${package}_${pext}_PREPARE"
-         local pextbuilddir="TE_BS_TA_APP_${package}_${pext}_BUILDDIR"
-         local pextbuild="TE_BS_TA_APP_${package}_${pext}_BUILD"
-         local pextlibs="TE_BS_TA_APP_${package}_${pext}_LIBS"
-         local pextinstb="TE_BS_TA_APP_${package}_${pext}_INSTALL_BIN"
-         local pextenv="TE_BS_TA_APP_${package}_${pext}_ENV_VARS"
+         local pextsrc="TE_BS_TA_APPS_${package}_${pext}_SOURCES"
+         local pextprep="TE_BS_TA_APPS_${package}_${pext}_PREPARE"
+         local pextbuilddir="TE_BS_TA_APPS_${package}_${pext}_BUILDDIR"
+         local pextbuild="TE_BS_TA_APPS_${package}_${pext}_BUILD"
+         local pextlibs="TE_BS_TA_APPS_${package}_${pext}_LIBS"
+         local pextinstb="TE_BS_TA_APPS_${package}_${pext}_INSTALL_BIN"
+         local pextenv="TE_BS_TA_APPS_${package}_${pext}_ENV_VARS"
          build_extension "$PLATFORM" "${!pextsrc}" "${!pextprep}" \
                          "${!pextbuilddir/#${TE_BUILD}/${sbd}}" \
                          "${!pextbuild}" "${!pextlibs}" \
@@ -362,9 +363,10 @@ acquire_shadow_build_directory() {
         test -d '${sbd}' && rm -rf '${sbd}'
         mkdir -p '${sbd}/platforms/${p}' || exit 1
         mkdir -p '${sbd}/agents/${p}' || exit 1
+        mkdir -p '${sbd}/apps/${p}' || exit 1
     "
     res=$?; if test "$res" -ne "0" ; then exit $res; fi
-    for type in platforms agents; do
+    for type in platforms agents apps; do
         mkdir -p "${sbd}/${type}/${p}" || exit 1
         test -d "${type}/${p}" || continue
         cp -rp "${type}/${p}" "${sbd}/${type}"
@@ -391,10 +393,11 @@ release_shadow_build_directory() {
     # cleanup TE_BUILD
     rm -rf "platforms/${p}"
     rm -rf "agents/${p}"
+    rm -rf "apps/${p}"
 
     # return files from the SBD on agent host
     te_eval_or_ssh "${p}" "
-        tar -C '${sbd}' -czf - platforms/${p} agents/${p}
+        tar -C '${sbd}' -czf - platforms/${p} agents/${p} apps/${p}
         rm -rf '${sbd}' >/dev/null
     " | tar -xzf -
     res=$?; if test "$res" -ne "0" ; then exit $res; fi
