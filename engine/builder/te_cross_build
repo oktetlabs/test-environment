@@ -153,6 +153,7 @@ build_extension() {
 }
 
 build_platform() {
+    local res
     local p=$1
     local mode=$2
 
@@ -237,6 +238,7 @@ need_build_agent() {
 }
 
 build_agent() {
+    local res
     local package=$1
     local mode=$2
 
@@ -331,6 +333,8 @@ print_without_timestamps() {
 
 # Acquire shadow build directory on agent and TE host.
 acquire_shadow_build_directory() {
+    local res
+
     # get or create new name of shadow build directory
     if test ! -f "${p}.sbd"; then
         te_eval_or_ssh "${p}" "mktemp -d -u" >"${p}.sbd"
@@ -372,6 +376,8 @@ acquire_shadow_build_directory() {
 
 # Release shadow build directory on agent and TE host.
 release_shadow_build_directory() {
+    local res
+
     if test ! -f "${p}.sbd"; then
         return
     fi
