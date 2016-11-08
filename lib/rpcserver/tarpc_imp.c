@@ -580,19 +580,37 @@ _set_var_1_svc(tarpc_set_var_in *in, tarpc_set_var_out *out,
 void
 ta_rpc_execve(const char *name)
 {
-    const char   *argv[5];
+    const char   *argv[5] = {};
     api_func_ptr  func;
+    const char   *namesep = strrchr(name, '|');
+    char          exec_path[RCF_MAX_PATH] = {};
 
     int rc;
 
-    memset(argv, 0, sizeof(argv));
-    argv[0] = ta_execname;
-    argv[1] = "exec";
-    argv[2] = "rcf_pch_rpc_server_argv";
-    argv[3] = name;
+    if (namesep == NULL)
+    {
+        argv[0] = ta_execname;
+        argv[1] = "exec";
+        argv[2] = "rcf_pch_rpc_server_argv";
+        argv[3] = name;
+    }
+    else
+    {
+        rc = snprintf(exec_path, sizeof(exec_path),
+                      "%s/%.*s", ta_dir, (int)(namesep - name), name);
+        if (rc < 0 || (unsigned)rc >= sizeof(exec_path))
+        {
+            LOG_PRINT("Cannot form an executable name, rc=%d", rc);
+            exit(1);
+        }
+        argv[0] = exec_path;
+        argv[1] = name;
+    }
 
     VERB("execve() args: %s, %s, %s, %s",
-         argv[0], argv[1], argv[2], argv[3]);
+         argv[0], argv[1],
+         argv[2] == NULL ? "" : argv[2],
+         argv[3] == NULL ? "" : argv[3]);
     /* Call execve() */
     rc = tarpc_find_func(FALSE, "execve", (api_func *)&func);
     if (rc != 0)
@@ -602,11 +620,12 @@ ta_rpc_execve(const char *name)
         exit(1);
     }
 
-    rc = func((void *)ta_execname, argv, environ);
+    rc = func((void *)argv[0], argv, environ);
     if (rc != 0)
     {
         rc = errno;
         LOG_PRINT("execve() failed: errno=%d", rc);
+        exit(1);
     }
 
 }

@@ -311,6 +311,28 @@ rcf_rpc_server_fork_exec(rcf_rpc_server *rpcs, const char *name,
 }
 
 /**
+ * Fork-and-exec an external application RPC server 
+ *
+ * @param rpcs          existing RPC server handle
+ * @param appname       name of an application (without a directory)
+ * @param suffix        server name suffix
+ * @param p_new         location for new RPC server handle
+ *
+ * @return Status code
+ */
+static inline te_errno
+rcf_rpc_server_fork_exec_external(rcf_rpc_server *rpcs, const char *appname,
+                                  const char *suffix,
+                                  rcf_rpc_server **p_new)
+{
+    char name[RCF_MAX_NAME];
+
+    TE_SPRINTF(name, "%s|%s", appname, suffix);
+
+    return rcf_rpc_server_fork_exec(rpcs, name, p_new);
+}
+
+/**
  * Fork RPC server with non-default conditions.
  *
  * @param rpcs          existing RPC server handle
