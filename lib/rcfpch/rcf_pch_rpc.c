@@ -77,6 +77,32 @@
 #include "tarpc.h"
 
 #include "rpc_transport.h"
+#include "agentlib.h"
+#include "te_sleep.h"
+
+/** How long wait for a process termination, milliseconds. */
+#define WAITPID_TIMEOUT 10000
+
+/**
+ * Sleep in milliseconds between @c waitpid() calls waiting for a process
+ * termination.
+ */
+#define WAITPID_DELAY 1
+
+/**
+ * Macro-wrapper to call @c gettimeofday(). It reports error and returns
+ * from a function with TE errno code in case of fail.
+ */
+#define WAITPID_GETTIMEOFDAY(tv_) \
+do {                                                                       \
+    int rc_;                                                               \
+    if ((rc_ = gettimeofday((tv_), NULL)) != 0)                            \
+    {                                                                      \
+        ERROR("gettimeofday() failed, rc = %d, errno %s",                  \
+              rc_, strerror(errno));                                       \
+        return TE_RC(TE_RCF_PCH, TE_EFAIL);                                \
+    }                                                                      \
+} while (0)
 
 /** Data corresponding to one RPC server */
 typedef struct rpcserver {
@@ -403,18 +429,77 @@ join_thread_child(rpcserver *rpcs)
  * Call waitpid() on terminated children RPC server.
  *
  * @param rpcs    RPC server handle
+ *
+ * @return Status code
  */
-static void
+static te_errno
 waitpid_child(rpcserver *rpcs)
 {
+    struct timeval tv_start;
+    struct timeval tv_now;
+    pid_t   pid;
+    int     status;
+
     if (rpcs->tid > 0 || rpcs->father != NULL)
     {
         ERROR("The function %s is not applicable for threaded RPC server",
               __FUNCTION__);
-        return;
+        return TE_RC(TE_RCF_PCH, TE_EINVAL);
     }
 
-    return;
+    WAITPID_GETTIMEOFDAY(&tv_start);
+
+    while ((pid = ta_waitpid(rpcs->pid, &status, WNOHANG)) == 0)
+    {
+        WAITPID_GETTIMEOFDAY(&tv_now);
+        if (TIMEVAL_SUB(tv_now, tv_start) / 1000L > WAITPID_TIMEOUT)
+        {
+            ERROR("Child process with PID %d stay alive after %d ms",
+                  rpcs->pid, WAITPID_TIMEOUT);
+            return TE_RC(TE_RCF_PCH, TE_ETIME);
+        }
+
+        usleep(1000 * WAITPID_DELAY);
+    }
+
+    if (pid < 0 && errno == ECHILD)
+        return 0;
+
+    if (pid != rpcs->pid)
+    {
+        ERROR("waitpid() call returned unexpected value %d, errno %s", pid,
+              strerror(errno));
+        return TE_RC(TE_RCF_PCH, TE_EFAIL);
+    }
+
+    if (WIFEXITED(status))
+    {
+        if (WEXITSTATUS(status) != 0)
+        {
+            ERROR("Child process with PID %d exited with non-zero "
+                  "status %d", rpcs->pid, WEXITSTATUS(status));
+            return TE_RC(TE_RCF_PCH, TE_EFAIL);
+        }
+
+        return 0;
+    }
+
+    if (WIFSIGNALED(status))
+    {
+        ERROR("Child process with PID %d was killed by the signal %d",
+              pid, WTERMSIG(status));
+        return TE_RC(TE_RCF_PCH, TE_ERPCKILLED);
+    }
+
+    if (WCOREDUMP(status))
+    {
+        ERROR("Child process with PID %d core dumped", pid);
+        return TE_RC(TE_RCF_PCH, TE_ERPCDEAD);
+    }
+
+    ERROR("Child process with PID %d exited due to unknown reason", pid);
+
+    return TE_RC(TE_RCF_PCH, TE_ERPCDEAD);
 }
 
 /**
@@ -1302,7 +1387,7 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
             else
             {
                 rcf_ch_kill_process(rpcs->pid);
-                waitpid_child(rpcs);
+                rc = waitpid_child(rpcs);
             }
         }
         else
@@ -1312,7 +1397,7 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
             else
             {
                 rcf_ch_free_proc_data(rpcs->pid);
-                waitpid_child(rpcs);
+                rc = waitpid_child(rpcs);
             }
         }
     }
