@@ -41,6 +41,52 @@
 
 
 static const char *
+tarpc_rte_eth_stats2str(te_log_buf                 *tlbp,
+                        struct tarpc_rte_eth_stats *stats)
+{
+    te_log_buf_append(tlbp, "{ ipackets = %llu, opackets = %llu, "
+                      "ibytes = %llu, obytes = %llu, imissed = %llu, "
+                      "ierrors = %llu, oerrors = %llu, rx_nombuf = %llu }",
+                      stats->ipackets, stats->opackets, stats->ibytes,
+                      stats->obytes, stats->imissed, stats->ierrors,
+                      stats->oerrors, stats->rx_nombuf);
+
+    return te_log_buf_get(tlbp);
+}
+
+int
+rpc_rte_eth_stats_get(rcf_rpc_server             *rpcs,
+                      uint8_t                     port_id,
+                      struct tarpc_rte_eth_stats *stats)
+{
+    struct tarpc_rte_eth_stats_get_in   in;
+    struct tarpc_rte_eth_stats_get_out  out;
+    te_log_buf                         *tlbp;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (stats == NULL)
+        TEST_FAIL("Invalid %s() 'stats' argument", __func__);
+
+    in.port_id = port_id;
+
+    rcf_rpc_call(rpcs, "rte_eth_stats_get", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_stats_get, out.retval);
+
+    *stats = out.stats;
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_eth_stats_get, "%hhu",
+                 "stats = %s", in.port_id,
+                 tarpc_rte_eth_stats2str(tlbp, stats));
+    te_log_buf_free(tlbp);
+
+    RETVAL_ZERO_INT(rte_eth_stats_get, out.retval);
+}
+
+static const char *
 tarpc_rte_eth_rx_offloads2str(te_log_buf *tlbp, uint32_t rx_offloads)
 {
     const struct te_log_buf_bit2str rx_offloads2str[] = {

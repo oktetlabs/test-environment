@@ -606,6 +606,29 @@ struct tarpc_rte_mbuf_match_pattern_out {
  * rte_eth_dev API
  */
 
+struct tarpc_rte_eth_stats {
+    uint64_t                        ipackets;
+    uint64_t                        opackets;
+    uint64_t                        ibytes;
+    uint64_t                        obytes;
+    uint64_t                        imissed;
+    uint64_t                        ierrors;
+    uint64_t                        oerrors;
+    uint64_t                        rx_nombuf;
+};
+
+/** rte_eth_stats_get() */
+struct tarpc_rte_eth_stats_get_in {
+    struct tarpc_in_arg             common;
+    uint8_t                         port_id;
+};
+
+struct tarpc_rte_eth_stats_get_out {
+    struct tarpc_out_arg            common;
+    struct tarpc_rte_eth_stats      stats;
+    tarpc_int                       retval;
+};
+
 struct tarpc_rte_eth_dev_port_id_in {
     struct tarpc_in_arg             common;
     uint8_t                         port_id;
@@ -1331,6 +1354,7 @@ program dpdk
         RPC_DEF(rte_mk_mbuf_from_template)
         RPC_DEF(rte_mbuf_match_pattern)
 
+        RPC_DEF(rte_eth_stats_get)
         RPC_DEF(rte_eth_dev_info_get)
         RPC_DEF(rte_eth_dev_configure)
         RPC_DEF(rte_eth_dev_close)

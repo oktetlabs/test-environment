@@ -457,6 +457,25 @@ tarpc_eth_conf2rte(const struct tarpc_rte_eth_conf *rpc,
     return ret;
 }
 
+TARPC_FUNC(rte_eth_stats_get, {},
+{
+    struct rte_eth_stats stats;
+
+    MAKE_CALL(out->retval = func(in->port_id, &stats));
+
+    if (out->retval == 0)
+    {
+        out->stats.ipackets = stats.ipackets;
+        out->stats.opackets = stats.opackets;
+        out->stats.ibytes = stats.ibytes;
+        out->stats.obytes = stats.obytes;
+        out->stats.imissed = stats.imissed;
+        out->stats.ierrors = stats.ierrors;
+        out->stats.oerrors = stats.oerrors;
+        out->stats.rx_nombuf = stats.rx_nombuf;
+    }
+})
+
 TARPC_FUNC(rte_eth_dev_configure, {},
 {
     struct rte_eth_conf eth_conf;
