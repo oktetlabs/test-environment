@@ -6,11 +6,13 @@ use CGI;
 
 my $logs_path = "/home/tester-l5/private_html/night-testing/logs/";
 my $links_path = "/home/tester-l5/private_html/night-testing/";
-my $last_session;
+my $session_name;
+my $saved_params="";
 my @last_logs;
 my @tested_branches;
 my $cmd;
 my $cur_time;
+my $cgi = CGI->new;
 
 sub normalize_path
 {
@@ -105,21 +107,29 @@ sub get_ts_name {
     return "onload";
 }
 
-$cmd = "ls -lt ${logs_path} ".
-       "| grep '\\ssession_[0-9]*[.][0-9]*[.][0-9]*\$' | head -n1";
-
-$last_session = `$cmd`;
-if ($? != 0)
+if (defined($cgi->param('session')))
 {
-    exit(1);
+    $session_name = "session_".$cgi->param('session');
+    $saved_params = "&session=".$cgi->param('session');
 }
+else
+{
+    $cmd = "ls -lt ${logs_path} ".
+           "| grep '\\ssession_[0-9]*[.][0-9]*[.][0-9]*\$' | head -n1";
 
-$last_session =~ s/^.*\ssession_/session_/;
-$last_session =~ s/\s*$//;
+    $session_name = `$cmd`;
+    if ($? != 0)
+    {
+        exit(1);
+    }
+
+    $session_name =~ s/^.*\ssession_/session_/;
+    $session_name =~ s/\s*$//;
+}
 
 $cur_time = localtime();
 
-$cmd = "find ${logs_path}/${last_session} -mindepth 2 -maxdepth 2 ".
+$cmd = "find ${logs_path}/${session_name} -mindepth 2 -maxdepth 2 ".
        "| LC_ALL=C sort";
 @last_logs = `$cmd`;
 
@@ -127,7 +137,7 @@ sub put_table_head {
     my $branch = $_[0];
     my $debug = $_[1];
 print <<EOT;
-      <b>${last_session} ${cur_time} Branch: $branch $debug</b>
+      <b>${session_name} ${cur_time} Branch: $branch $debug</b>
         <table>
           <tr><th>Tags</th><th>Session</th><th>Driver load</th>.
           <th>Status</th><th>Driver unload</th><th>Run</th>.
@@ -282,7 +292,7 @@ sub fill_table_branch
     }
 }
 
-$cmd = "cat ${logs_path}/${last_session}/*/*/session.log ".
+$cmd = "cat ${logs_path}/${session_name}/*/*/session.log ".
        "| grep Branch: | LC_ALL=C sort | uniq | sed 's/Branch: //'";
 @tested_branches = `$cmd`;
 
@@ -306,7 +316,8 @@ print <<EOT;
               var cur_location = document.location.href;
 
               cur_location = cur_location.replace(new RegExp(/[?].*/), "");
-              cur_location = cur_location + "?autoreload_enabled=1";
+              cur_location = cur_location + "?autoreload_enabled=1" +
+                             "${saved_params}";
               document.location.href = cur_location;
           }
       }
@@ -338,7 +349,7 @@ foreach my $branch_name (@tested_branches)
 {
     $branch_name =~ s/\n//g;
     $cmd = "grep -A 1 -h ".
-           "$branch_name ${logs_path}/${last_session}/*/*/session.log ".
+           "$branch_name ${logs_path}/${session_name}/*/*/session.log ".
            "| grep DEBUG | head -n 1";
     my $debug = `$cmd`;
     put_table_head($branch_name, $debug);
@@ -347,7 +358,6 @@ foreach my $branch_name (@tested_branches)
 }
 
 my $autoreload_checked = "checked";
-my $cgi = CGI->new;
 
 if (defined($cgi->param('autoreload_enabled')))
 {
@@ -359,6 +369,10 @@ if (defined($cgi->param('autoreload_enabled')))
     {
         $autoreload_checked = "";
     }
+}
+elsif (defined($cgi->param('session')))
+{
+    $autoreload_checked = "";
 }
 
 print <<EOT;
