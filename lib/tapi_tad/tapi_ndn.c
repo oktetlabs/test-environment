@@ -944,3 +944,69 @@ out:
 
     return TE_RC(TE_TAPI, err);
 }
+
+/* See the description in 'tapi_ndn.h' */
+te_errno
+tapi_tad_concat_patterns(asn_value  *dst,
+                         asn_value  *src)
+{
+    te_errno        err = 0;
+    int             dst_nb_pus_old = -1;
+    int             dst_nb_pus_new;
+    int             src_nb_pus;
+    unsigned int    i;
+
+    if ((dst == NULL) || (src == NULL))
+    {
+        err = TE_EINVAL;
+        goto out;
+    }
+
+    dst_nb_pus_old = asn_get_length(dst, "");
+    src_nb_pus = asn_get_length(src, "");
+    if ((dst_nb_pus_old < 0) || (src_nb_pus < 0))
+    {
+        err = TE_EINVAL;
+        goto out;
+    }
+
+    for (i = 0; i < (unsigned int)src_nb_pus; ++i)
+    {
+        asn_value  *src_pu;
+        asn_value  *src_pu_copy;
+
+        err = asn_get_indexed(src, &src_pu, i, "");
+        if (err != 0)
+            goto out;
+
+        src_pu_copy = asn_copy_value(src_pu);
+        if (src_pu_copy == NULL)
+        {
+            err = TE_ENOMEM;
+            goto out;
+        }
+
+        err = asn_insert_indexed(dst, src_pu_copy, -1, "");
+        if (err != 0)
+        {
+            asn_free_value(src_pu_copy);
+            goto out;
+        }
+    }
+
+out:
+    if ((dst_nb_pus_old >= 0) && (err != 0))
+    {
+        dst_nb_pus_new = asn_get_length(dst, "");
+        if (dst_nb_pus_new > dst_nb_pus_old)
+        {
+            for (i = dst_nb_pus_new - 1; i >= (unsigned int)dst_nb_pus_old; --i)
+                (void)asn_remove_indexed(dst, i, "");
+        }
+    }
+
+    if (err == 0)
+        asn_free_value(src);
+
+    return TE_RC(TE_TAPI, err);
+}

@@ -223,6 +223,19 @@ extern te_errno tapi_tad_packets_to_pattern(asn_value         **packets,
                                             send_transform     *transform,
                                             asn_value         **pattern_out);
 
+/**
+ * Concatenate two traffic patterns
+ *
+ * @param dst           The first pattern to which @p src is to be appended
+ * @param src           The second pattern which is to be appended to @p dst
+ *
+ * @note @p src will be freed internally after successful concatenation only
+ *
+ * @return Status code
+ */
+extern te_errno tapi_tad_concat_patterns(asn_value  *dst,
+                                         asn_value  *src);
+
 
 /* Forward to avoid inclusiong of tapi_env.h which may be missing */
 struct tapi_env;
