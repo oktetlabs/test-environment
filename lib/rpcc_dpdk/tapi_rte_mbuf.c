@@ -357,6 +357,7 @@ tapi_rte_mk_mbuf_mk_ptrn_by_tmpl(rcf_rpc_server    *rpcs,
         asn_value      *pdu_ip4;
         asn_value      *pdu_ip6;
         asn_value      *pdu_tcp;
+        asn_value      *pdu_udp;
 
         err = asn_get_subvalue(template, &pdus, "pdus");
         if (err != 0)
@@ -365,6 +366,7 @@ tapi_rte_mk_mbuf_mk_ptrn_by_tmpl(rcf_rpc_server    *rpcs,
         pdu_ip4 = asn_find_child_choice_value(pdus, TE_PROTO_IP4);
         pdu_ip6 = asn_find_child_choice_value(pdus, TE_PROTO_IP6);
         pdu_tcp = asn_find_child_choice_value(pdus, TE_PROTO_TCP);
+        pdu_udp = asn_find_child_choice_value(pdus, TE_PROTO_UDP);
 
         for (i = 0; i < n_mbufs; ++i)
         {
@@ -382,43 +384,50 @@ tapi_rte_mk_mbuf_mk_ptrn_by_tmpl(rcf_rpc_server    *rpcs,
                                              transform->vlan_tci);
             }
 
+            if (pdu_ip4 != NULL)
+            {
+                ol_flags |= (1UL << TARPC_PKT_TX_IPV4);
+                if ((transform->hw_flags & SEND_COND_HW_OFFL_IP_CKCUM) ==
+                    SEND_COND_HW_OFFL_IP_CKCUM)
+                    ol_flags |= (1UL << TARPC_PKT_TX_IP_CKSUM);
+            }
+
+            if (pdu_ip6 != NULL)
+                ol_flags |= (1UL << TARPC_PKT_TX_IPV6);
+
+            if ((transform->hw_flags & SEND_COND_HW_OFFL_L4_CKSUM) ==
+                SEND_COND_HW_OFFL_L4_CKSUM)
+            {
+                if (pdu_tcp != NULL)
+                    ol_flags |= (1UL << TARPC_PKT_TX_TCP_CKSUM);
+
+                if (pdu_udp != NULL)
+                    ol_flags |= (1UL << TARPC_PKT_TX_UDP_CKSUM);
+            }
+            else
+            {
+                ol_flags |= (1UL << TARPC_PKT_TX_L4_NO_CKSUM);
+            }
+
             if (((transform->hw_flags & SEND_COND_HW_OFFL_TSO) ==
                  SEND_COND_HW_OFFL_TSO) && (pdu_tcp != NULL))
             {
                 struct tarpc_rte_pktmbuf_tx_offload tx_offload;
 
+                ol_flags |= (1UL << TARPC_PKT_TX_TCP_SEG);
+
                 memset(&tx_offload, 0, sizeof(tx_offload));
 
-                err = ((transform->tso_segsz == 0) ||
-                       ((transform->hw_flags &
-                         SEND_COND_HW_OFFL_L4_CKSUM) == 0)) ? TE_EINVAL : 0;
-                if (err != 0)
-                    TEST_FAIL("Incomplete TSO settings");
-
-                ol_flags |= ((1UL << TARPC_PKT_TX_TCP_SEG) |
-                             (1UL << TARPC_PKT_TX_TCP_CKSUM));
+                rpc_rte_pktmbuf_get_tx_offload(rpcs, mbufs[i], &tx_offload);
+                tx_offload.tso_segsz = transform->tso_segsz;
+                rpc_rte_pktmbuf_set_tx_offload(rpcs, mbufs[i], &tx_offload);
 
                 /*
                  * According to DPDK guide, among other requirements
                  * in case of TSO one should set IPv4 checksum to 0;
                  * here we simply rely on an assumption that the initial
-                 * template was prepared in accordance with this principle;
-                 * we only add the flag to request IPv4 checksum offload
+                 * template was prepared in accordance with this principle
                  */
-                if (pdu_ip4 != NULL)
-                {
-                    ol_flags |= (1UL << TARPC_PKT_TX_IP_CKSUM);
-                    ol_flags |= (1UL << TARPC_PKT_TX_IPV4);
-                }
-
-                if (pdu_ip6 != NULL)
-                {
-                    ol_flags |= (1UL << TARPC_PKT_TX_IPV6);
-                }
-
-                rpc_rte_pktmbuf_get_tx_offload(rpcs, mbufs[i], &tx_offload);
-                tx_offload.tso_segsz = transform->tso_segsz;
-                rpc_rte_pktmbuf_set_tx_offload(rpcs, mbufs[i], &tx_offload);
             }
 
             if (transform->hw_flags != 0)
