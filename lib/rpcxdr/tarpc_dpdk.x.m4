@@ -206,6 +206,17 @@ enum tarpc_pktmbuf_inner_l4_types {
     TARPC_RTE_PTYPE_INNER_L4__UNKNOWN
 };
 
+/** rte_mempool_in_use_count() */
+struct tarpc_rte_mempool_in_use_count_in {
+    struct tarpc_in_arg     common;
+    tarpc_rte_mempool       mp;
+};
+
+struct tarpc_rte_mempool_in_use_count_out {
+    struct tarpc_out_arg    common;
+    unsigned int            retval;
+};
+
 /** rte_pktmbuf_pool_create() */
 struct tarpc_rte_pktmbuf_pool_create_in {
     struct tarpc_in_arg     common;
@@ -1309,6 +1320,8 @@ program dpdk
     {
         RPC_DEF(rte_eal_init)
         RPC_DEF(rte_eal_process_type)
+
+        RPC_DEF(rte_mempool_in_use_count)
 
         RPC_DEF(rte_pktmbuf_pool_create)
         RPC_DEF(rte_pktmbuf_alloc)

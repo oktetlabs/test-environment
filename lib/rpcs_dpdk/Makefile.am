@@ -24,6 +24,7 @@ librpcs_dpdk_a_SOURCES = \
 	mbuf.c \
 	ethdev.c \
 	ring.c \
+	mempool.c \
 	rte_mbuf_ndn.c \
 	eal.c
 
