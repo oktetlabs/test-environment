@@ -1010,3 +1010,54 @@ out:
 
     return TE_RC(TE_TAPI, err);
 }
+
+/* See the description in 'tapi_ndn.h' */
+te_errno
+tapi_tad_aggregate_patterns(asn_value     **patterns,
+                            unsigned int    nb_patterns,
+                            asn_value     **pattern_out)
+{
+    te_errno        err = 0;
+    unsigned int    i;
+    asn_value      *agg = NULL;
+
+    if ((patterns == NULL) || (nb_patterns == 0) || (pattern_out == NULL))
+    {
+        err = TE_EINVAL;
+        goto out;
+    }
+
+    agg = asn_init_value(ndn_traffic_pattern);
+    if (agg == NULL)
+    {
+        err = TE_ENOMEM;
+        goto out;
+    }
+
+    for (i = 0; i < nb_patterns; ++i)
+    {
+        asn_value *pattern_copy;
+
+        pattern_copy = asn_copy_value(patterns[i]);
+        if (pattern_copy == NULL)
+        {
+            err = TE_ENOMEM;
+            goto out;
+        }
+
+        err = tapi_tad_concat_patterns(agg, pattern_copy);
+        if (err != 0)
+        {
+            asn_free_value(pattern_copy);
+            goto out;
+        }
+    }
+
+    *pattern_out = agg;
+
+out:
+    if ((err != 0) && (agg != NULL))
+        asn_free_value(agg);
+
+    return TE_RC(TE_TAPI, err);
+}

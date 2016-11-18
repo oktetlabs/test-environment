@@ -236,6 +236,23 @@ extern te_errno tapi_tad_packets_to_pattern(asn_value         **packets,
 extern te_errno tapi_tad_concat_patterns(asn_value  *dst,
                                          asn_value  *src);
 
+/**
+ * Aggregate the copies of pattern units from all the patterns within a given
+ * array to make a single pattern suitable for matching heterogeneous packets
+ *
+ * @param patterns      An array containing initial patterns to be aggregated
+ * @param nb_patterns   The number of patterns available in @p patterns array
+ * @param pattern_out   Location for the new pattern which is to be produced
+ *
+ * @note The function doesn't change or free the initial patterns;
+ *       @c tapi_tad_concat_patterns() is fed by copies internally
+ *
+ * @return Status code
+ */
+extern te_errno tapi_tad_aggregate_patterns(asn_value     **patterns,
+                                            unsigned int    nb_patterns,
+                                            asn_value     **pattern_out);
+
 
 /* Forward to avoid inclusiong of tapi_env.h which may be missing */
 struct tapi_env;
