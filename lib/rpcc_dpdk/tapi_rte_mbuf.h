@@ -249,7 +249,7 @@ extern uint8_t *tapi_rte_get_mbuf_data(rcf_rpc_server *rpcs,
  *                  which are required to affect the outgoing packets
  * @param mbufs_out Location for RTE mbuf pointer(s)
  * @param n_mbufs   Location for the number of mbufs prepared
- * @param ptrn_out  Location for the pattern to be produced
+ * @param ptrn_out  Location for the pattern to be produced or @c NULL
  *
  * @note The function jumps out in case of error
  */

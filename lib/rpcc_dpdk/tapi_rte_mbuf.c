@@ -435,6 +435,9 @@ tapi_rte_mk_mbuf_mk_ptrn_by_tmpl(rcf_rpc_server    *rpcs,
         }
     }
 
+    if (ptrn_out == NULL)
+        goto skip_pattern;
+
     (void)rpc_rte_mbuf_match_pattern(rpcs, pattern_by_template, mbufs, n_mbufs,
                                      &packets_prepared, &n_packets_prepared);
 
@@ -446,9 +449,11 @@ tapi_rte_mk_mbuf_mk_ptrn_by_tmpl(rcf_rpc_server    *rpcs,
     if (err != 0)
         TEST_FAIL("Failed to produce a pattern from ASN.1 raw packets");
 
+    *ptrn_out = pattern;
+
+skip_pattern:
     *mbufs_out = mbufs;
     *n_mbufs_out = n_mbufs;
-    *ptrn_out = pattern;
 
 out:
     asn_free_value(pattern_by_template);
