@@ -40,6 +40,7 @@ install_extension_parts () {
             mkdir -p "$destdir"
             te_eval_or_ssh "$PLATFORM" \
                            "cd '$SRCDIR';
+                            export EXT_SOURCES=\"\$PWD\";
                             test -n '$BUILDDIR' && cd '$BUILDDIR';
                             cp -a $objlist '$destdir'"
             find -H "$destdir" -type l | xargs ${SCRIPT_DIR}/te_fixlink "$PWD" "$destdir"

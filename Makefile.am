@@ -67,6 +67,9 @@ dist-hook:
 install-exec-hook:
 	export TE_EXT_LIBS_FILE="@TE_EXT_LIBS_FILE@" ; \
 	export TE_BASE="@TE_BASE@" ; \
+	"@TE_BASE@/engine/builder/te_build_ext_helper" --prefix="$(prefix)" \
+                                                   --tatype="$(TE_HOST)" \
+                                                   --mode=app || exit 1; \
 	pushd $(DESTDIR)/$(prefix) >/dev/null ; \
 	ln -sf $(TE_HOST)/bin/dispatcher.sh dispatcher.sh ; \
 	ln -sf $(TE_HOST)/bin/common_vars.sh common_vars.sh ; \

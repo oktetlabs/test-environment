@@ -185,6 +185,10 @@ for p in ${TE_BS_PLATFORMS} ; do
     ln -s ${TE_BUILD}/include platforms/${p}/include && \
     ln -s ${TE_BUILD}/lib platforms/${p}/lib || exit 1
 
+    "${TE_BASE}/engine/builder/te_build_ext_helper" --prefix="$prefix" \
+                                                    --platform="${p}" \
+                                                    --mode=lib || exit 1
+
     "${TE_BASE}/engine/builder/te_configure_package" INCLUDE include \
             include platforms/${p}/include ${TE_HOST} \
             "${TE_BASE}/include" "$prefix" || exit 1

@@ -1,0 +1,112 @@
+#!/bin/bash
+#
+# Test Environment Builder
+#
+# A helper to call te_build_ext based on builder.conf data
+# Essentially a stripped-down version of te_cross_build
+#
+# Copyright (C) 2016 Test Environment authors (see file AUTHORS in
+# the root directory of the distribution).
+#
+# Test Environment is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of
+# the License, or (at your option) any later version.
+#
+# Test Environment is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+# MA  02111-1307  USA
+#
+#
+# @author Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
+#
+
+
+. ${TE_BUILD}/builder.conf.processed
+
+SCRIPT_DIR=`dirname $0`
+. ${SCRIPT_DIR}/te_functions
+
+set -e
+
+for arg; do
+    case "$arg" in
+        --prefix=*)
+            PREFIX="${arg#--prefix=}"
+            ;;
+        --platform=*)
+            PLATFORM="${arg#--platform=}"
+            ;;
+        --tatype=*)
+            TATYPE="${arg#--tatype=}"
+            ;;
+        --mode=*)
+            MODE="${arg#--mode=}"
+            ;;
+        *)
+            echo "Invalid option '$arg'" >&2
+            exit 1
+            ;;
+    esac
+done
+
+case "$MODE" in
+    lib)
+        if test -z "$PLATFORM"; then
+            echo "No platform specified" >&2
+            exit 1
+        fi
+        PACKAGE="$PLATFORM"
+        PFX=EXT
+    ;;
+    app)
+        if test -z "$TATYPE"; then
+            echo "No agent type specified" >&2
+            exit 1
+        fi
+        if test "$TATYPE" = default; then
+            PLATFORM=default
+        elif test -z "$PLATFORM"; then
+            pplatform="TE_BS_TA_${TATYPE}_PLATFORM"
+            PLATFORM="${!pplatform}"
+        fi
+        PACKAGE="$TATYPE"
+        PFX=TA_APPS
+    ;;
+    *)
+        echo "Invalid mode '$mode'" >&2
+        exit 1
+        ;;
+esac
+
+pexts="TE_BS_${PFX}_${PACKAGE}"
+
+for pext in ${!pexts}; do
+    pextsrc="TE_BS_${PFX}_${PACKAGE}_${pext}_SOURCES"
+    pextprep="TE_BS_${PFX}_${PACKAGE}_${pext}_PREPARE"
+    pextbuilddir="TE_BS_${PFX}_${PACKAGE}_${pext}_BUILDDIR"
+    pextbuild="TE_BS_${PFX}_${PACKAGE}_${pext}_BUILD"
+    pextlibs="TE_BS_${PFX}_${PACKAGE}_${pext}_LIBS"
+    pextinstb="TE_BS_${PFX}_${PACKAGE}_${pext}_INSTALL_BIN"
+    pextinsth="TE_BS_${PFX}_${PACKAGE}_${pext}_INSTALL_HEADERS"
+    pextinstl="TE_BS_${PFX}_${PACKAGE}_${pext}_INSTALL_LIBS"
+    pextenv="TE_BS_${PFX}_${PACKAGE}_${pext}_ENV_VARS"
+
+    "${SCRIPT_DIR}"/te_build_ext --prefix="${PREFIX}" \
+                 --platform="${PLATFORM}" --srcdir="${!pextsrc}" \
+                 --prepare="${!pextprep}" \
+                 --builddir="${!pextbuilddir}" \
+                 --build="${!pextbuild}" \
+                 --telibs="${!pextlibs}" \
+                 --expheaders="${!pextinsth}" \
+                 --explibs="${!pextinstl}" \
+                 --expbin="${!pextinstb}" \
+                 --tatype="${PACKAGE}" \
+                 --envvars="${!pextenv}" || exit 1
+done
