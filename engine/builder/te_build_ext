@@ -1,0 +1,127 @@
+#! /bin/bash
+#
+# Test Environment Builder
+#
+# Script for building external components
+#
+# Copyright (C) 2016 Test Environment authors (see file AUTHORS in
+# the root directory of the distribution).
+#
+# Test Environment is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of
+# the License, or (at your option) any later version.
+#
+# Test Environment is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+# MA  02111-1307  USA
+#
+#
+# @author Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
+#
+
+SCRIPT_DIR=`dirname $0`
+. ${SCRIPT_DIR}/te_functions
+
+set -e
+
+install_extension_parts () {
+    local objlist="$1"
+    local destdir="$2"
+
+    if test -n "$objlist"; then
+        (
+            mkdir -p "$destdir"
+            te_eval_or_ssh "$PLATFORM" \
+                           "cd '$SRCDIR';
+                            test -n '$BUILDDIR' && cd '$BUILDDIR';
+                            cp -a $objlist '$destdir'"
+            find -H "$destdir" -type l | xargs ${SCRIPT_DIR}/te_fixlink "$PWD" "$destdir"
+        )
+    fi
+}
+
+for arg; do
+    case "$arg" in
+        --prefix=*)
+            PREFIX="${arg#--prefix=}"
+            ;;
+        --platform=*)
+            PLATFORM="${arg#--platform=}"
+            ;;
+        --srcdir=*)
+            SRCDIR="${arg#--srcdir=}"
+            ;;
+        --prepare=*)
+            PREPARE="${arg#--prepare=}"
+            ;;
+        --builddir=*)
+            BUILDDIR="${arg#--builddir=}"
+            ;;
+        --build=*)
+            BUILD="${arg#--build=}"
+            ;;
+        --telibs=*)
+            TELIBS="${TELIBS}${TELIBS:+ }${arg#--telibs=}"
+            ;;
+        --expheaders=*)
+            EXPHEADERS="${EXPHEADERS}${EXPHEADERS:+ }${arg#--expheaders=}"
+            ;;
+        --explibs=*)
+            EXPLIBS="${EXPLIBS}${EXPLIBS:+ }${arg#--explibs=}"
+            ;;
+        --expbin=*)
+            EXPBIN="${EXPBIN}${EXPBIN:+ }${arg#--expbin=}"
+            ;;
+        --tatype=*)
+            TATYPE="${arg#--tatype=}"
+            ;;
+        --envvars=*)
+            ENVVARS="${ENVVARS}${ENVVARS:+ }${arg#--envvars=}"
+            ;;
+        *)
+            echo "Invalid option '$arg'" >&2
+            exit 1
+            ;;
+    esac
+done
+
+declare telibflags
+declare l
+declare v
+declare exports
+
+telibflags="-L$PREFIX/$PLATFORM/lib"
+for l in $TELIBS; do
+    telibflags="$telibflags -l$l"
+done
+
+for v in $ENVVARS; do
+        exports="$exports export $v=\"${!v}\"; "
+done
+
+(
+    cd "$SRCDIR"; eval "export EXT_BUILDDIR=\"${BUILDDIR:-.}\"; $PREPARE"
+) || exit 1
+
+(
+        te_eval_or_ssh "$PLATFORM" "cd $SRCDIR ;
+                      test -n \"$BUILDDIR\" && mkdir -p \"$BUILDDIR\" ;
+                      cd ${BUILDDIR:-.} ;
+                      export TE_PREFIX=\"$PREFIX/$PLATFORM\" ;
+                      export TE_CPPFLAGS=\"-I$PREFIX/$PLATFORM/include\" ;
+                      export TE_LDFLAGS=\"$telibflags\" ;
+                      export EXT_SOURCES=\"$SRCDIR\" ;
+                      $exports
+                      $BUILD"
+) || exit 1
+install_extension_parts "$EXPHEADERS" "$PREFIX/$PLATFORM/include" || exit 1
+install_extension_parts "$EXPLIBS" "$PREFIX/$PLATFORM/lib" || exit 1
+install_extension_parts "$EXPBIN" "$PREFIX/agents/$TATYPE" || exit 1
+

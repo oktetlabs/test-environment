@@ -86,73 +86,6 @@ need_build_platform() {
     return 1
 }
 
-install_extension_parts () {
-    local p="$1"
-    local srcdir="$2"
-    local builddir="$3"
-    local objlist="$4"
-    local destdir="$5"
-
-    if test -n "$objlist"; then
-        (
-            mkdir -p "$destdir"
-            te_eval_or_ssh "$p" "cd '$srcdir';
-            test -n '$builddir' && cd '$builddir';
-            cp -a $objlist '$destdir'"
-            find -H "$destdir" -type l | xargs ${TE_BASE}/engine/builder/te_fixlink "$PWD" "$destdir"
-        )
-    fi
-}
-
-build_extension() {
-    local p="$1"
-    local srcdir="$2"
-    local prepare="$3"
-    local builddir="$4"
-    local build="$5"
-    local telibs="$6"
-    local expheaders="$7"
-    local explibs="$8"
-    local expbin="$9"
-    local telibflags
-    local l
-    local v
-    local exports
-
-    shift
-    local tatype="$9"
-    shift
-    local envvars="$9"
-
-    telibflags="-L$PREFIX/$p/lib"
-    for l in $telibs; do
-        telibflags="$telibflags -l$l"
-    done
-
-    for v in $envvars; do
-        exports="$exports export $v=\"${!v}\"; "
-    done
-
-    (
-        cd "$srcdir"; eval "export EXT_BUILDDIR=\"${builddir:-.}\"; $prepare"
-    ) || exit 1
-
-    (
-        te_eval_or_ssh "$p" "cd $srcdir ;
-                      test -n \"$builddir\" && mkdir -p \"$builddir\" ;
-                      cd ${builddir:-.} ;
-                      export TE_PREFIX=\"$PREFIX/$p\" ;
-                      export TE_CPPFLAGS=\"-I$PREFIX/$p/include\" ;
-                      export TE_LDFLAGS=\"$telibflags\" ;
-                      export EXT_SOURCES=\"$srcdir\" ;
-                      $exports
-                      $build"
-    ) || exit 1
-    install_extension_parts "$p" "$srcdir" "$builddir" "$expheaders" "$PREFIX/$p/include" || exit 1
-    install_extension_parts "$p" "$srcdir" "$builddir" "$explibs" "$PREFIX/$p/lib" || exit 1
-    install_extension_parts "$p" "$srcdir" "$builddir" "$expbin" "$PREFIX/agents/$tatype" || exit 1
-}
-
 build_platform() {
     local res
     local p=$1
@@ -178,10 +111,14 @@ build_platform() {
              local pextinsth="TE_BS_EXT_${p}_${pext}_INSTALL_HEADERS"
              local pextinstl="TE_BS_EXT_${p}_${pext}_INSTALL_LIBS"
              local pextenv="TE_BS_EXT_${p}_${pext}_ENV_VARS"
-             build_extension "$p" "${!pextsrc}" "${!pextprep}" \
-                             "${!pextbuilddir/#${TE_BUILD}/${sbd}}" \
-                             "${!pextbuild}" "" \
-                             "${!pextinsth}" "${!pextinstl}" "${!pextenv}" || exit 1
+             ${SCRIPT_DIR}/te_build_ext --prefix="$PREFIX" \
+                          --platform="$p" --srcdir="${!pextsrc}" \
+                          --prepare="${!pextprep}" \
+                          --builddir="${!pextbuilddir/#${TE_BUILD}/${sbd}}" \
+                          --build="${!pextbuild}" \
+                          --expheaders="${!pextinsth}" \
+                          --explibs="${!pextinstl}" \
+                          --envvars="${!pextenv}" || exit 1
         done
 
         ${TE_BASE}/engine/builder/te_configure_package INCLUDE include \
@@ -300,10 +237,14 @@ build_agent() {
          local pextlibs="TE_BS_TA_APPS_${package}_${pext}_LIBS"
          local pextinstb="TE_BS_TA_APPS_${package}_${pext}_INSTALL_BIN"
          local pextenv="TE_BS_TA_APPS_${package}_${pext}_ENV_VARS"
-         build_extension "$PLATFORM" "${!pextsrc}" "${!pextprep}" \
-                         "${!pextbuilddir/#${TE_BUILD}/${sbd}}" \
-                         "${!pextbuild}" "${!pextlibs}" \
-                         "" "" "${!pextinstb}" "${package}" "${!pextenv}" || exit 1
+         ${SCRIPT_DIR}/te_build_ext --prefix="$PREFIX" \
+                      --platform="$PLATFORM" --srcdir="${!pextsrc}" \
+                      --prepare="${!pextprep}" \
+                      --builddir="${!pextbuilddir/#${TE_BUILD}/${sbd}}" \
+                      --build="${!pextbuild}" --telibs="${!pextlibs}" \
+                      --expbin="${!pextinstb}" \
+                      --tatype="${package}" \
+                      --envvars="${!pextenv}" || exit 1
     done
 }
 
