@@ -1059,6 +1059,7 @@ rte_pktmbuf_redist(tarpc_rte_pktmbuf_redist_in *in,
                    tarpc_rte_pktmbuf_redist_out *out)
 {
     size_t data_count;
+    unsigned int nb_spare_objs;
     unsigned int i, j, k;
     unsigned int pattern_nb_segs = 0;
     size_t pattern_sum_len = 0;
@@ -1072,6 +1073,12 @@ rte_pktmbuf_redist(tarpc_rte_pktmbuf_redist_in *in,
     RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
         m = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->m, ns);
     });
+
+    /* Flush the local cache and get the number of spare objects */
+    if (m->pool->local_cache != NULL)
+        rte_mempool_cache_flush(m->pool->local_cache, m->pool);
+
+    nb_spare_objs = rte_mempool_avail_count(m->pool);
 
     /* Initialize out->m to the old pointer (for a possible roll-back) */
     out->m = in->m;
@@ -1119,6 +1126,12 @@ rte_pktmbuf_redist(tarpc_rte_pktmbuf_redist_in *in,
             data_count += pattern_sum_len;
         }
 
+        if ((nb_segs_new + nb_segs_to_add) > nb_spare_objs)
+        {
+            nb_segs_new = MIN(nb_spare_objs, UINT8_MAX);
+            break;
+        }
+
         if ((nb_segs_new + nb_segs_to_add) > UINT8_MAX)
         {
             nb_segs_new = UINT8_MAX;
@@ -1129,7 +1142,7 @@ rte_pktmbuf_redist(tarpc_rte_pktmbuf_redist_in *in,
     }
 
     /* Allocate an array of mbuf pointers for the new chain to be built */
-    new_segs = malloc(nb_segs_new * sizeof(*new_segs));
+    new_segs = calloc(nb_segs_new, sizeof(*new_segs));
     if (new_segs == NULL)
     {
         err = TE_RC(TE_RPCS, TE_ENOMEM);
@@ -1241,7 +1254,7 @@ out:
         free(new_segs);
     }
 
-    return (err != 0) ? (-err) : (nb_segs_new);
+    return (err != 0) ? ((err > 0) ? -err : err) : (nb_segs_new);
 }
 
 TARPC_FUNC_STATIC(rte_pktmbuf_redist, {},
