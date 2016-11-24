@@ -1487,3 +1487,15 @@ TARPC_FUNC(rte_eth_link_get_nowait, {},
     out->eth_link.link_autoneg = eth_link.link_autoneg;
     out->eth_link.link_status = eth_link.link_status;
 })
+
+TARPC_FUNC(rte_eth_link_get, {},
+{
+    struct rte_eth_link eth_link;
+
+    MAKE_CALL(func(in->port_id, &eth_link));
+
+    out->eth_link.link_speed = eth_link.link_speed;
+    out->eth_link.link_duplex = eth_link.link_duplex;
+    out->eth_link.link_autoneg = eth_link.link_autoneg;
+    out->eth_link.link_status = eth_link.link_status;
+})

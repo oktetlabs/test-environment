@@ -1423,6 +1423,13 @@ struct tarpc_rte_eth_link_get_nowait_out {
     struct tarpc_rte_eth_link             eth_link;
 };
 
+/** rte_eth_link_get() */
+typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_link_get_in;
+
+struct tarpc_rte_eth_link_get_out {
+    struct tarpc_out_arg                  common;
+    struct tarpc_rte_eth_link             eth_link;
+};
 
 program dpdk
 {
@@ -1525,5 +1532,6 @@ program dpdk
         RPC_DEF(rte_eth_dev_rss_hash_update)
         RPC_DEF(rte_eth_dev_rss_reta_update)
         RPC_DEF(rte_eth_link_get_nowait)
+        RPC_DEF(rte_eth_link_get)
     } = 1;
 } = 2;

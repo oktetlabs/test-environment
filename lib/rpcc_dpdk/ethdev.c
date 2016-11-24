@@ -2366,3 +2366,33 @@ rpc_rte_eth_link_get_nowait(rcf_rpc_server *rpcs, uint8_t port_id,
 
     RETVAL_VOID(rte_eth_link_get_nowait);
 }
+
+void
+rpc_rte_eth_link_get(rcf_rpc_server *rpcs,
+                     uint8_t port_id,
+                     struct tarpc_rte_eth_link *eth_link)
+{
+    tarpc_rte_eth_link_get_in   in;
+    tarpc_rte_eth_link_get_out  out;
+    te_log_buf                 *tlbp;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (eth_link == NULL)
+        TEST_FAIL("Invalid %s() 'eth_link' argument", __func__);
+
+    in.port_id = port_id;
+
+    rcf_rpc_call(rpcs, "rte_eth_link_get", &in, &out);
+
+    *eth_link = out.eth_link;
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_eth_link_get, "%hhu",
+                 "eth_link = %s", in.port_id,
+                 tarpc_rte_eth_link2str(tlbp, eth_link));
+    te_log_buf_free(tlbp);
+
+    RETVAL_VOID(rte_eth_link_get);
+}
