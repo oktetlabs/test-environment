@@ -1475,3 +1475,15 @@ TARPC_FUNC(rte_eth_dev_rss_reta_update,{},
     MAKE_CALL(out->retval = func(in->port_id, reta_conf_p, in->reta_size));
     neg_errno_h2rpc(&out->retval);
 })
+
+TARPC_FUNC(rte_eth_link_get_nowait, {},
+{
+    struct rte_eth_link eth_link;
+
+    MAKE_CALL(func(in->port_id, &eth_link));
+
+    out->eth_link.link_speed = eth_link.link_speed;
+    out->eth_link.link_duplex = eth_link.link_duplex;
+    out->eth_link.link_autoneg = eth_link.link_autoneg;
+    out->eth_link.link_status = eth_link.link_status;
+})

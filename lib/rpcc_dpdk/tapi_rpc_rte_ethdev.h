@@ -529,6 +529,12 @@ extern int rpc_rte_eth_dev_rss_hash_update(
     rcf_rpc_server *rpcs, uint8_t port_id,
     struct tarpc_rte_eth_rss_conf *rss_conf);
 
+/**
+ * @b rte_eth_link_get_nowait() RPC.
+ */
+extern void rpc_rte_eth_link_get_nowait(rcf_rpc_server *rpcs, uint8_t port_id,
+                                        struct tarpc_rte_eth_link *eth_link);
+
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 
 #ifdef __cplusplus

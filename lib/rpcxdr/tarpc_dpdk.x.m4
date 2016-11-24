@@ -1408,6 +1408,21 @@ struct tarpc_rte_eth_dev_rss_hash_update_in {
 
 typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_rss_hash_update_out;
 
+struct tarpc_rte_eth_link {
+    uint32_t   link_speed;
+    uint8_t    link_duplex;
+    uint8_t    link_autoneg;
+    uint8_t    link_status;
+};
+
+/** rte_eth_link_get_nowait() */
+typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_link_get_nowait_in;
+
+struct tarpc_rte_eth_link_get_nowait_out {
+    struct tarpc_out_arg                  common;
+    struct tarpc_rte_eth_link             eth_link;
+};
+
 
 program dpdk
 {
@@ -1509,5 +1524,6 @@ program dpdk
         RPC_DEF(rte_eth_dev_filter_ctrl)
         RPC_DEF(rte_eth_dev_rss_hash_update)
         RPC_DEF(rte_eth_dev_rss_reta_update)
+        RPC_DEF(rte_eth_link_get_nowait)
     } = 1;
 } = 2;

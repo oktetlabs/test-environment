@@ -2323,3 +2323,46 @@ check_ret:
     RETVAL_ZERO_INT(rte_eth_dev_rss_reta_update,
                     (rc) ? -rc : out.retval);
 }
+
+static const char *
+tarpc_rte_eth_link2str(te_log_buf                 *tlbp,
+                       struct tarpc_rte_eth_link *eth_link)
+{
+    te_log_buf_append(
+        tlbp, "{ link_speed = %llu, link_duplex = %s, "
+        "link_autoneg = %s, link_status = %s }", eth_link->link_speed,
+        (eth_link->link_duplex == 0) ? "HALF_DUPLEX" : "FULL_DUPLEX",
+        (eth_link->link_autoneg == 0) ? "FIXED" : "AUTONEG",
+        (eth_link->link_status == 0) ? "DOWN" : "UP");
+
+    return te_log_buf_get(tlbp);
+}
+
+void
+rpc_rte_eth_link_get_nowait(rcf_rpc_server *rpcs, uint8_t port_id,
+                            struct tarpc_rte_eth_link *eth_link)
+{
+    tarpc_rte_eth_link_get_nowait_in   in;
+    tarpc_rte_eth_link_get_nowait_out  out;
+    te_log_buf                        *tlbp;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (eth_link == NULL)
+        TEST_FAIL("Invalid %s() 'eth_link' argument", __func__);
+
+    in.port_id = port_id;
+
+    rcf_rpc_call(rpcs, "rte_eth_link_get_nowait", &in, &out);
+
+    *eth_link = out.eth_link;
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_eth_link_get_nowait, "%hhu",
+                 "eth_link = %s", in.port_id,
+                 tarpc_rte_eth_link2str(tlbp, eth_link));
+    te_log_buf_free(tlbp);
+
+    RETVAL_VOID(rte_eth_link_get_nowait);
+}
