@@ -1053,25 +1053,6 @@ TARPC_FUNC(rte_eth_dev_rss_reta_query,{},
     }
 })
 
-TARPC_FUNC(rte_eth_dev_rss_reta_update,{},
-{
-    struct rte_eth_rss_reta_entry64  reta_conf;
-    struct rte_eth_rss_reta_entry64 *reta_conf_p;
-
-    if (in->reta_conf.reta_conf_len == 0)
-        reta_conf_p = NULL;
-    else
-    {
-        reta_conf_p = &reta_conf;
-        reta_conf_p->mask = in->reta_conf.reta_conf_val->mask;
-
-        memcpy(reta_conf_p, in->reta_conf.reta_conf_val, sizeof(*reta_conf_p));
-    }
-
-    MAKE_CALL(out->retval = func(in->port_id, reta_conf_p, in->reta_size));
-    neg_errno_h2rpc(&out->retval);
-})
-
 TARPC_FUNC(rte_eth_dev_rss_hash_conf_get,{},
 {
     struct rte_eth_rss_conf  rss_conf;
@@ -1455,5 +1436,25 @@ TARPC_FUNC(rte_eth_dev_rss_hash_update,{},
         rss_conf_p->rss_key = NULL;
 
     MAKE_CALL(out->retval = func(in->port_id, rss_conf_p));
+    neg_errno_h2rpc(&out->retval);
+})
+
+TARPC_FUNC(rte_eth_dev_rss_reta_update,{},
+{
+    struct rte_eth_rss_reta_entry64 *reta_conf_p;
+
+    if (in->reta_conf.reta_conf_len == 0)
+    {
+        reta_conf_p = NULL;
+    }
+    else
+    {
+        reta_conf_p = calloc(in->reta_conf.reta_conf_len, sizeof(*reta_conf_p));
+
+        memcpy(reta_conf_p, in->reta_conf.reta_conf_val,
+               in->reta_conf.reta_conf_len * sizeof(*reta_conf_p));
+    }
+
+    MAKE_CALL(out->retval = func(in->port_id, reta_conf_p, in->reta_size));
     neg_errno_h2rpc(&out->retval);
 })

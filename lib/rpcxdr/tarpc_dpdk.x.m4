@@ -1508,5 +1508,6 @@ program dpdk
         RPC_DEF(rte_eth_dev_filter_supported)
         RPC_DEF(rte_eth_dev_filter_ctrl)
         RPC_DEF(rte_eth_dev_rss_hash_update)
+        RPC_DEF(rte_eth_dev_rss_reta_update)
     } = 1;
 } = 2;
