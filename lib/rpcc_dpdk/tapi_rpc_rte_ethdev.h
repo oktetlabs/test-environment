@@ -508,6 +508,17 @@ extern te_errno tapi_rpc_add_mac_as_octstring2kvpair(rcf_rpc_server *rpcs,
                                                      te_kvpair_h *head,
                                                      const char *name);
 
+/**
+ * @b rte_eth_dev_filter_ctrl() RPC.
+ *
+ * If failure is not expected, the function jumps out in the case of non-zero
+ * or negative return value.
+ */
+extern int rpc_rte_eth_dev_filter_ctrl(rcf_rpc_server *rpcs, uint8_t port_id,
+                                      enum tarpc_rte_filter_type filter_type,
+                                      enum tarpc_rte_filter_op filter_op,
+                                      void *arg);
+
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 
 #ifdef __cplusplus

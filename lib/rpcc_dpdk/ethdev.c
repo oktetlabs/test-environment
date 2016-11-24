@@ -1982,3 +1982,288 @@ int rpc_rte_eth_dev_filter_supported(rcf_rpc_server *rpcs, uint8_t port_id,
 
     RETVAL_ZERO_INT(rte_eth_dev_filter_supported, out.retval);
 }
+
+static const char *
+tarpc_rte_filter_op2str(enum tarpc_rte_filter_op filter_op)
+{
+    const char *op;
+
+    switch (filter_op)
+    {
+        case TARPC_RTE_ETH_FILTER_NOP:
+            op = "NOP";
+            break;
+        case TARPC_RTE_ETH_FILTER_ADD:
+            op = "ADD";
+            break;
+        case TARPC_RTE_ETH_FILTER_UPDATE:
+            op = "UPDATE";
+            break;
+        case TARPC_RTE_ETH_FILTER_DELETE:
+            op = "DELETE";
+            break;
+        case TARPC_RTE_ETH_FILTER_FLUSH:
+            op = "FLUSH";
+            break;
+        case TARPC_RTE_ETH_FILTER_GET:
+            op = "GET";
+            break;
+        case TARPC_RTE_ETH_FILTER_SET:
+            op = "SET";
+            break;
+        case TARPC_RTE_ETH_FILTER_INFO:
+            op = "INFO";
+            break;
+        case TARPC_RTE_ETH_FILTER_STATS:
+            op = "STATS";
+            break;
+        case TARPC_RTE_ETH_FILTER_OP_MAX:
+            op = "OP_MAX";
+            break;
+        default:
+            op = "<UNKNOWN>";
+            break;
+    }
+
+    return op;
+}
+
+static const char *
+tarpc_rte_eth_none_filter_arg2str(te_log_buf *tlbp, const void *filter_arg)
+{
+    UNUSED(tlbp);
+    UNUSED(filter_arg);
+
+    return ("<NULL>");
+}
+
+static const char *
+tarpc_rte_eth_unsupported_filter_arg2str(te_log_buf *tlbp, const void *filter_arg)
+{
+    UNUSED(tlbp);
+    UNUSED(filter_arg);
+
+    return ("<UNSUPPORTED_FILTER>");
+}
+
+static const char *
+tarpc_rte_ethtype_flags2str(te_log_buf *tlbp, uint16_t ethtype_flags)
+{
+    const struct te_log_buf_bit2str ethtype_flags2str[] = {
+#define TARPC_RTE_ETHTYPE_FLAGS_BIT2STR(_bit) \
+        { TARPC_RTE_ETHTYPE_FLAGS_##_bit##_BIT, #_bit }
+        TARPC_RTE_ETHTYPE_FLAGS_BIT2STR(MAC),
+        TARPC_RTE_ETHTYPE_FLAGS_BIT2STR(DROP),
+#undef TARPC_RTE_ETHTYPE_FLAGS_BIT2STR
+        { 0, NULL }
+    };
+
+    return te_bit_mask2log_buf(tlbp, ethtype_flags, ethtype_flags2str);
+}
+
+static const char *
+tarpc_rte_eth_ethertype_filter_arg2str(te_log_buf *tlbp, const void *filter_arg)
+{
+    struct tarpc_rte_eth_ethertype_filter *filter =
+        (struct tarpc_rte_eth_ethertype_filter *)filter_arg;
+
+    te_log_buf_append(tlbp, "{");
+
+    te_log_buf_append(tlbp, "mac_addr=");
+    te_ether_addr2log_buf(tlbp,
+        (uint8_t *)&filter->mac_addr.addr_bytes);
+
+    te_log_buf_append(tlbp, ", ether_type=%hu", filter->ether_type);
+
+    te_log_buf_append(tlbp, ", flags=");
+    tarpc_rte_ethtype_flags2str(tlbp, filter->flags);
+
+    te_log_buf_append(tlbp, ", queue=%hu", filter->queue);
+    te_log_buf_append(tlbp, "}");
+
+    return te_log_buf_get(tlbp);
+}
+
+static const char *
+tarpc_rte_ntuple_flags2str(te_log_buf *tlbp, uint16_t ntuple_flags)
+{
+    const struct te_log_buf_bit2str ntuple_flags2str[] = {
+#define TARPC_RTE_NTUPLE_FLAGS_BIT2STR(_bit) \
+        { TARPC_RTE_NTUPLE_FLAGS_##_bit##_BIT, #_bit }
+        TARPC_RTE_NTUPLE_FLAGS_BIT2STR(DST_IP),
+        TARPC_RTE_NTUPLE_FLAGS_BIT2STR(SRC_IP),
+        TARPC_RTE_NTUPLE_FLAGS_BIT2STR(DST_PORT),
+        TARPC_RTE_NTUPLE_FLAGS_BIT2STR(SRC_PORT),
+        TARPC_RTE_NTUPLE_FLAGS_BIT2STR(PROTO),
+        TARPC_RTE_NTUPLE_FLAGS_BIT2STR(TCP_FLAG),
+#undef TARPC_RTE_NTUPLE_FLAGS_BIT2STR
+        { 0, NULL }
+    };
+
+    return te_bit_mask2log_buf(tlbp, ntuple_flags, ntuple_flags2str);
+}
+
+static const char *
+tarpc_rte_tcp_flags2str(te_log_buf *tlbp, uint32_t tcp_flags)
+{
+    const struct te_log_buf_bit2str tcp_flags2str[] = {
+#define TARPC_RTE_TCP_FLAGS_BIT2STR(_bit) \
+        { TARPC_RTE_TCP_##_bit##_BIT, #_bit }
+        TARPC_RTE_TCP_FLAGS_BIT2STR(URG_FLAG),
+        TARPC_RTE_TCP_FLAGS_BIT2STR(ACK_FLAG),
+        TARPC_RTE_TCP_FLAGS_BIT2STR(PSH_FLAG),
+        TARPC_RTE_TCP_FLAGS_BIT2STR(RST_FLAG),
+        TARPC_RTE_TCP_FLAGS_BIT2STR(SYN_FLAG),
+        TARPC_RTE_TCP_FLAGS_BIT2STR(FIN_FLAG),
+        TARPC_RTE_TCP_FLAGS_BIT2STR(FLAG_ALL),
+#undef TARPC_RTE_TCP_FLAGS_BIT2STR
+        { 0, NULL }
+    };
+
+    return te_bit_mask2log_buf(tlbp, tcp_flags, tcp_flags2str);
+}
+
+static const char *
+tarpc_rte_eth_ntuple_filter_arg2str(te_log_buf *tlbp, const void *filter_arg)
+{
+    struct tarpc_rte_eth_ntuple_filter *filter;
+
+    filter = (struct tarpc_rte_eth_ntuple_filter *)filter_arg;
+
+    te_log_buf_append(tlbp, "{");
+    te_log_buf_append(tlbp, "flags=");
+    tarpc_rte_ntuple_flags2str(tlbp, filter->flags);
+    te_log_buf_append(tlbp, ", dst_ip=");
+    te_ip_addr2log_buf(tlbp, (const void *)&filter->dst_ip, INET_ADDRSTRLEN);
+    te_log_buf_append(tlbp, ", dst_ip_mask=");
+    te_ip_addr2log_buf(tlbp, (const void *)&filter->dst_ip_mask,
+                       INET_ADDRSTRLEN);
+    te_log_buf_append(tlbp, ", src_ip=");
+    te_ip_addr2log_buf(tlbp, (const void *)&filter->src_ip, INET_ADDRSTRLEN);
+    te_log_buf_append(tlbp, ", src_ip_mask=");
+    te_ip_addr2log_buf(tlbp, (const void *)&filter->src_ip_mask,
+                       INET_ADDRSTRLEN);
+
+    te_log_buf_append(tlbp, ", dst_port=%hu, dst_port_mask=%hu",
+                      ntohs(filter->dst_port), filter->dst_port_mask);
+    te_log_buf_append(tlbp, ", src_port=%hu, src_port_mask=%hu",
+                      ntohs(filter->dst_port), filter->dst_port_mask);
+    te_log_buf_append(tlbp,  ", proto=%hhu, proto_mask=%hhu",
+                      filter->proto, filter->proto_mask);
+
+    te_log_buf_append(tlbp, ", tcp_flags=");
+    tarpc_rte_tcp_flags2str(tlbp, filter->tcp_flags);
+    te_log_buf_append(tlbp, ", priority=%hhu, queue=%hu",
+                      filter->priority, filter->queue);
+    te_log_buf_append(tlbp, "}");
+
+    return te_log_buf_get(tlbp);
+}
+
+typedef const char * (*tarpc_rte_filter_arg2str)(te_log_buf *tlbp,
+                                                 const void *filter_arg);
+
+tarpc_rte_filter_arg2str tarpc_filter_arg2str[] = {
+#define TARPC_FILTER2STR(_type) tarpc_rte_eth_##_type##_filter_arg2str
+    TARPC_FILTER2STR(none),
+    TARPC_FILTER2STR(unsupported),
+    TARPC_FILTER2STR(ethertype),
+    TARPC_FILTER2STR(unsupported),
+    TARPC_FILTER2STR(unsupported),
+    TARPC_FILTER2STR(ntuple),
+    TARPC_FILTER2STR(unsupported),
+    TARPC_FILTER2STR(unsupported),
+    TARPC_FILTER2STR(unsupported),
+    TARPC_FILTER2STR(unsupported),
+    TARPC_FILTER2STR(unsupported),
+    NULL
+#undef TARPC_FILTER2STR
+};
+
+int rpc_rte_eth_dev_filter_ctrl(rcf_rpc_server *rpcs, uint8_t port_id,
+                                enum tarpc_rte_filter_type filter_type,
+                                enum tarpc_rte_filter_op filter_op,
+                                void *arg)
+{
+    tarpc_rte_eth_dev_filter_ctrl_in   in;
+    tarpc_rte_eth_dev_filter_ctrl_out  out;
+    te_log_buf                        *tlbp;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+    in.filter_type = filter_type;
+    in.filter_op = filter_op;
+
+    switch (filter_type)
+    {
+        case TARPC_RTE_ETH_FILTER_MACVLAN:
+            in.arg.arg_len = 0;
+            break;
+        case TARPC_RTE_ETH_FILTER_ETHERTYPE:
+            if (arg != NULL)
+            {
+                in.arg.arg_len = sizeof(struct tarpc_rte_eth_ethertype_filter);
+                in.arg.arg_val = malloc(in.arg.arg_len);
+                if (in.arg.arg_val == NULL)
+                {
+                    rpcs->_errno = TE_RC(TE_RPC, TE_ENOMEM);
+                    RETVAL_INT(rte_eth_dev_filter_ctrl, -rpcs->_errno);
+                }
+                memcpy(in.arg.arg_val, arg, in.arg.arg_len);
+            }
+            else
+            {
+                in.arg.arg_len = 0;
+            }
+
+            break;
+        case TARPC_RTE_ETH_FILTER_FLEXIBLE:
+            in.arg.arg_len = 0;
+            break;
+        case TARPC_RTE_ETH_FILTER_SYN:
+            in.arg.arg_len = 0;
+            break;
+        case TARPC_RTE_ETH_FILTER_NTUPLE:
+            if (arg != NULL)
+            {
+                in.arg.arg_len = sizeof(struct tarpc_rte_eth_ntuple_filter);
+                in.arg.arg_val = malloc(in.arg.arg_len);
+                if (in.arg.arg_val == NULL)
+                {
+                    rpcs->_errno = TE_RC(TE_RPC, TE_ENOMEM);
+                    RETVAL_INT(rte_eth_dev_filter_ctrl, -rpcs->_errno);
+                }
+                memcpy(in.arg.arg_val, arg, in.arg.arg_len);
+            }
+            else
+            {
+                in.arg.arg_len = 0;
+            }
+
+            break;
+        case TARPC_RTE_ETH_FILTER_TUNNEL:
+        case TARPC_RTE_ETH_FILTER_HASH:
+        case TARPC_RTE_ETH_FILTER_L2_TUNNEL:
+        default:
+            in.arg.arg_len = 0;
+            break;
+    }
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_filter_ctrl", &in, &out);
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_filter_ctrl,
+                                          out.retval);
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_filter_ctrl,
+                 "%hhu, %s, %s, filter_arg=%s", NEG_ERRNO_FMT,
+                 in.port_id, tapi_rpc_rte_filter_type2str(filter_type),
+                 tarpc_rte_filter_op2str(filter_op),
+                 (tarpc_filter_arg2str[filter_type] == NULL) ? "<NULL>" :
+                 tarpc_filter_arg2str[filter_type](tlbp, arg),
+                 NEG_ERRNO_ARGS(out.retval));
+    te_log_buf_free(tlbp);
+
+    RETVAL_ZERO_INT(rte_eth_dev_filter_ctrl, out.retval);
+}
