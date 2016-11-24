@@ -41,6 +41,10 @@
 #include <stdarg.h>
 #endif
 
+#if HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
+
 #if HAVE_PTHREAD_H
 #include <pthread.h>
 #else
@@ -50,7 +54,6 @@
 #include "te_defs.h"
 #include "logger_api.h"
 #include "log_bufs.h"
-
 
 /** The number of characters in a sinle log buffer. */
 #define LOG_BUF_LEN (1024 * 10)
@@ -246,6 +249,32 @@ te_ether_addr2log_buf(te_log_buf *buf, const uint8_t *mac_addr)
                           mac_addr[0], mac_addr[1],
                           mac_addr[2], mac_addr[3],
                           mac_addr[4], mac_addr[5]);
+
+    return te_log_buf_get(buf);
+}
+
+const char *
+te_ip_addr2log_buf(te_log_buf *buf, const void *ip_addr, int addr_str_len)
+{
+    char ip_addr_str[addr_str_len];
+    int  af;
+
+    switch (addr_str_len)
+    {
+        case INET_ADDRSTRLEN:
+            af = AF_INET;
+            break;
+        case INET6_ADDRSTRLEN:
+            af = AF_INET6;
+            break;
+        default:
+            af = AF_UNSPEC;
+            break;
+    }
+
+    inet_ntop(af, ip_addr, ip_addr_str, addr_str_len);
+
+    te_log_buf_append(buf, "%s", ip_addr_str);
 
     return te_log_buf_get(buf);
 }
