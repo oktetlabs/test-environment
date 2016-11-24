@@ -25,6 +25,7 @@ include_HEADERS = \
 	te_dbuf.h \
 	te_ipstack.h \
 	te_kvpair.h \
+	te_toeplitz.h \
 	te_concat.h
 
 if WINDOWS
@@ -46,7 +47,8 @@ install-exec-hook:
         fi
 
 EXTRA_DIST = te_shell_cmd.c te_log_fmt.c te_log_file.c log_bufs.c \
-             tq_string.c te_string.c logger_file.c te_log_kernel.c
+             tq_string.c te_string.c logger_file.c te_log_kernel.c \
+             te_toeplitz.c
 
 else
 
@@ -67,6 +69,7 @@ libtools_la_SOURCES = \
 	te_dbuf.c \
 	te_ipstack.c \
 	te_kvpair.c \
+	te_toeplitz.c \
 	te_concat.c
 
 liblog_bufs_la_SOURCES = log_bufs.c
