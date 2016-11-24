@@ -1399,6 +1399,16 @@ struct tarpc_rte_eth_dev_filter_ctrl_in {
 
 typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_filter_ctrl_out;
 
+/** rte_eth_dev_rss_hash_update() */
+struct tarpc_rte_eth_dev_rss_hash_update_in {
+    struct tarpc_in_arg                   common;
+    uint8_t                               port_id;
+    struct tarpc_rte_eth_rss_conf         rss_conf;
+};
+
+typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_rss_hash_update_out;
+
+
 program dpdk
 {
     version ver0
@@ -1497,5 +1507,6 @@ program dpdk
         RPC_DEF(rte_eth_dev_flow_ctrl_get)
         RPC_DEF(rte_eth_dev_filter_supported)
         RPC_DEF(rte_eth_dev_filter_ctrl)
+        RPC_DEF(rte_eth_dev_rss_hash_update)
     } = 1;
 } = 2;

@@ -1440,3 +1440,20 @@ TARPC_FUNC(rte_eth_dev_filter_ctrl,{},
 done:
     free(filter_arg);
 })
+
+TARPC_FUNC(rte_eth_dev_rss_hash_update,{},
+{
+    struct rte_eth_rss_conf  rss_conf;
+    struct rte_eth_rss_conf *rss_conf_p;
+
+    rss_conf_p = &rss_conf;
+    memset(rss_conf_p, 0, sizeof(*rss_conf_p));
+
+    if (in->rss_conf.rss_key_len != 0)
+        tarpc_eth_rss_conf2rte(&in->rss_conf, rss_conf_p);
+    else
+        rss_conf_p->rss_key = NULL;
+
+    MAKE_CALL(out->retval = func(in->port_id, rss_conf_p));
+    neg_errno_h2rpc(&out->retval);
+})

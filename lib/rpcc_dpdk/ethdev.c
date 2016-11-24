@@ -2267,3 +2267,51 @@ int rpc_rte_eth_dev_filter_ctrl(rcf_rpc_server *rpcs, uint8_t port_id,
 
     RETVAL_ZERO_INT(rte_eth_dev_filter_ctrl, out.retval);
 }
+
+int
+rpc_rte_eth_dev_rss_hash_update(rcf_rpc_server *rpcs, uint8_t port_id,
+                                struct tarpc_rte_eth_rss_conf *rss_conf)
+{
+    tarpc_rte_eth_dev_rss_hash_update_in   in;
+    tarpc_rte_eth_dev_rss_hash_update_out  out;
+    te_log_buf                            *tlbp;
+    te_errno                               rc = 0;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rss_conf == NULL)
+    {
+        rc = TE_RC(TE_RPC, TE_EINVAL);
+        goto check_ret;
+    }
+
+    if (rss_conf->rss_key_len != 0)
+    {
+        in.rss_conf.rss_key.rss_key_val = tapi_memdup(
+            rss_conf->rss_key.rss_key_val, rss_conf->rss_key_len);
+
+        in.rss_conf.rss_key.rss_key_len = rss_conf->rss_key_len;
+    }
+
+    in.rss_conf.rss_key_len = rss_conf->rss_key_len;
+    in.rss_conf.rss_hf = rss_conf->rss_hf;
+    in.port_id = port_id;
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_rss_hash_update", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_rss_hash_update,
+                                          out.retval);
+    tlbp = te_log_buf_alloc();
+
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_rss_hash_update,
+                 "%hhu, %s", NEG_ERRNO_FMT,
+                 in.port_id, (rss_conf == NULL) ? "NULL" :
+                 tarpc_rte_eth_rss_conf2str(tlbp, rss_conf),
+                 NEG_ERRNO_ARGS(out.retval));
+    te_log_buf_free(tlbp);
+
+check_ret:
+    RETVAL_ZERO_INT(rte_eth_dev_rss_hash_update,
+                    (rc) ? -rc : out.retval);
+}

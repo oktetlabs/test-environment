@@ -519,6 +519,16 @@ extern int rpc_rte_eth_dev_filter_ctrl(rcf_rpc_server *rpcs, uint8_t port_id,
                                       enum tarpc_rte_filter_op filter_op,
                                       void *arg);
 
+/**
+ * @b rte_eth_dev_rss_hash_update() RPC.
+ *
+ * If failure is not expected, the function jumps out in the case of non-zero
+ *  value.
+ */
+extern int rpc_rte_eth_dev_rss_hash_update(
+    rcf_rpc_server *rpcs, uint8_t port_id,
+    struct tarpc_rte_eth_rss_conf *rss_conf);
+
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 
 #ifdef __cplusplus
