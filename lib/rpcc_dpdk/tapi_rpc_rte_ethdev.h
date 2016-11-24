@@ -523,7 +523,7 @@ extern int rpc_rte_eth_dev_filter_ctrl(rcf_rpc_server *rpcs, uint8_t port_id,
  * @b rte_eth_dev_rss_hash_update() RPC.
  *
  * If failure is not expected, the function jumps out in the case of non-zero
- *  value.
+ * value.
  */
 extern int rpc_rte_eth_dev_rss_hash_update(
     rcf_rpc_server *rpcs, uint8_t port_id,

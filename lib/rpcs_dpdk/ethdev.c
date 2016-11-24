@@ -1061,9 +1061,23 @@ TARPC_FUNC(rte_eth_dev_rss_hash_conf_get,{},
     rss_conf_p = &rss_conf;
     rss_conf_p->rss_key = malloc(RPC_RSS_HASH_KEY_LEN_DEF);
 
+    if (rss_conf_p->rss_key == NULL)
+    {
+        out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
+        out->retval = -out->common._errno;
+        goto done;
+    }
+
     out->rss_conf.rss_key.rss_key_len = RPC_RSS_HASH_KEY_LEN_DEF;
     out->rss_conf.rss_key.rss_key_val = malloc(
         out->rss_conf.rss_key.rss_key_len);
+
+    if (out->rss_conf.rss_key.rss_key_val == NULL)
+    {
+        out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
+        out->retval = -out->common._errno;
+        goto done;
+    }
 
     MAKE_CALL(out->retval = func(in->port_id, rss_conf_p));
     neg_errno_h2rpc(&out->retval);
@@ -1078,6 +1092,9 @@ TARPC_FUNC(rte_eth_dev_rss_hash_conf_get,{},
 
         out->rss_conf.rss_hf = rss_conf_p->rss_hf;
     }
+
+done:
+    ;
 })
 
 static int
