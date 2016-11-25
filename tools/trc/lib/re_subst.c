@@ -482,10 +482,7 @@ trc_re_key_substs_buf(const char *name, const char *key)
     ssize_t              buf_size;
 
     if (keyn == NULL)
-    {
-        ERROR("%s(): Namespace '%s' not found", __FUNCTION__, name);
         return NULL;
-    }
 
     substs = &keyn->substs;
     buf_size = trc_re_substs_exec_buf_start(substs, key, NULL, 0);
