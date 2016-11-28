@@ -406,6 +406,96 @@ tarpc_eth_txmode2rte(const struct tarpc_rte_eth_txmode *rpc,
 }
 
 static int
+rte_rss_hf_rpc2h(tarpc_rss_hash_protos_t rpc, uint64_t *rte)
+{
+    *rte = 0;
+
+#define TARPC_RSS_HASH_PROTO2RTE_RSS_HF(_proto)                         \
+    do {                                                                \
+        tarpc_rss_hash_protos_t proto = 1ULL << TARPC_ETH_RSS_##_proto; \
+                                                                        \
+        if (rpc & proto)                                                \
+        {                                                               \
+            rpc &= ~proto;                                              \
+            *rte |= ETH_RSS_##_proto;                                   \
+        }                                                               \
+    } while (0)
+    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(IP);
+    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(TCP);
+    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(UDP);
+    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(SCTP);
+    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(TUNNEL);
+    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(IPV4);
+    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(FRAG_IPV4);
+    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(NONFRAG_IPV4_TCP);
+    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(NONFRAG_IPV4_UDP);
+    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(NONFRAG_IPV4_SCTP);
+    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(NONFRAG_IPV4_OTHER);
+    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(IPV6);
+    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(FRAG_IPV6);
+    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(NONFRAG_IPV6_TCP);
+    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(NONFRAG_IPV6_UDP);
+    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(NONFRAG_IPV6_SCTP);
+    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(NONFRAG_IPV6_OTHER);
+    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(L2_PAYLOAD);
+    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(IPV6_EX);
+    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(IPV6_TCP_EX);
+    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(IPV6_UDP_EX);
+    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(PORT);
+    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(VXLAN);
+    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(GENEVE);
+    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(NVGRE);
+#undef TARPC_RSS_HASH_PROTO2RTE_RSS_HF
+    return (rpc == 0);
+}
+
+tarpc_rss_hash_protos_t
+rte_rss_hf_h2rpc(uint64_t rte)
+{
+    tarpc_rss_hash_protos_t rpc = 0;
+#define RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(_hf)                       \
+    do {                                                            \
+        uint64_t hf = ETH_RSS_##_hf;                                \
+                                                                    \
+        if ((rte & hf) == hf)                                       \
+        {                                                           \
+            rte &= ~hf;                                             \
+            rpc |= (1ULL << TARPC_ETH_RSS_##_hf);                   \
+        }                                                           \
+    } while (0)
+    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(IP);
+    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(TCP);
+    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(UDP);
+    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(SCTP);
+    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(TUNNEL);
+    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(IPV4);
+    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(FRAG_IPV4);
+    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(NONFRAG_IPV4_TCP);
+    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(NONFRAG_IPV4_UDP);
+    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(NONFRAG_IPV4_SCTP);
+    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(NONFRAG_IPV4_OTHER);
+    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(IPV6);
+    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(FRAG_IPV6);
+    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(NONFRAG_IPV6_TCP);
+    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(NONFRAG_IPV6_UDP);
+    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(NONFRAG_IPV6_SCTP);
+    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(NONFRAG_IPV6_OTHER);
+    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(L2_PAYLOAD);
+    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(IPV6_EX);
+    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(IPV6_TCP_EX);
+    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(IPV6_UDP_EX);
+    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(PORT);
+    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(VXLAN);
+    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(GENEVE);
+    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(NVGRE);
+#undef RTE_RSS_HF2TARPC_RSS_HASH_PROTOS
+    if (rte != 0)
+        rpc = TARPC_RTE_ETH_RSS__UNKNOWN;
+
+    return rpc;
+}
+
+static int
 tarpc_eth_rss_conf2rte(const struct tarpc_rte_eth_rss_conf *rpc,
                        struct rte_eth_rss_conf *rte)
 {
@@ -414,8 +504,9 @@ tarpc_eth_rss_conf2rte(const struct tarpc_rte_eth_rss_conf *rpc,
     /* TODO Ideally it should be validated that it is not changed */
     rte->rss_key = rpc->rss_key.rss_key_val;
     rte->rss_key_len = rpc->rss_key_len;
-    /* TODO Do real mapping */
-    rte->rss_hf = rpc->rss_hf;
+
+    ret &= rte_rss_hf_rpc2h(rpc->rss_hf, &rte->rss_hf);
+
     return ret;
 }
 
@@ -1090,7 +1181,7 @@ TARPC_FUNC(rte_eth_dev_rss_hash_conf_get,{},
                rss_conf_p->rss_key,
                out->rss_conf.rss_key.rss_key_len);
 
-        out->rss_conf.rss_hf = rss_conf_p->rss_hf;
+        out->rss_conf.rss_hf = rte_rss_hf_h2rpc(rss_conf_p->rss_hf);
     }
 
 done:

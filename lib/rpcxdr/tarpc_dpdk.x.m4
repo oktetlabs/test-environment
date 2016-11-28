@@ -38,6 +38,9 @@ typedef tarpc_ptr    tarpc_rte_mbuf;
 /** Handle of the 'rte_ring' or 0 */
 typedef tarpc_ptr    tarpc_rte_ring;
 
+/** Bitmask of RSS hash protocols */
+typedef uint64_t     tarpc_rss_hash_protos_t;
+
 /* Just to make two-dimensional array of strings */
 struct tarpc_string {
     string  str<>;
@@ -702,7 +705,8 @@ enum tarpc_dev_tx_offload_bits {
 
 /** Flow types */
 enum tarpc_rte_eth_flow_types {
-    TARPC_RTE_ETH_FLOW_IPV4 = 0,
+    TARPC_RTE_ETH_FLOW_RAW = 0,
+    TARPC_RTE_ETH_FLOW_IPV4,
     TARPC_RTE_ETH_FLOW_FRAG_IPV4,
     TARPC_RTE_ETH_FLOW_NONFRAG_IPV4_TCP,
     TARPC_RTE_ETH_FLOW_NONFRAG_IPV4_UDP,
@@ -718,8 +722,45 @@ enum tarpc_rte_eth_flow_types {
     TARPC_RTE_ETH_FLOW_IPV6_EX,
     TARPC_RTE_ETH_FLOW_IPV6_TCP_EX,
     TARPC_RTE_ETH_FLOW_IPV6_UDP_EX,
+    TARPC_RTE_ETH_FLOW_PORT,
+    TARPC_RTE_ETH_FLOW_VXLAN,
+    TARPC_RTE_ETH_FLOW_GENEVE,
+    TARPC_RTE_ETH_FLOW_NVGRE,
+    TARPC_RTE_ETH_FLOW_MAX,
 
     TARPC_RTE_ETH_FLOW__UNKNOWN
+};
+
+/** RSS hash protocols */
+enum tarpc_rss_hash_protocols {
+    TARPC_ETH_RSS_IPV4,
+    TARPC_ETH_RSS_FRAG_IPV4,
+    TARPC_ETH_RSS_NONFRAG_IPV4_TCP,
+    TARPC_ETH_RSS_NONFRAG_IPV4_UDP,
+    TARPC_ETH_RSS_NONFRAG_IPV4_SCTP,
+    TARPC_ETH_RSS_NONFRAG_IPV4_OTHER,
+    TARPC_ETH_RSS_IPV6,
+    TARPC_ETH_RSS_FRAG_IPV6,
+    TARPC_ETH_RSS_NONFRAG_IPV6_TCP,
+    TARPC_ETH_RSS_NONFRAG_IPV6_UDP,
+    TARPC_ETH_RSS_NONFRAG_IPV6_SCTP,
+    TARPC_ETH_RSS_NONFRAG_IPV6_OTHER,
+    TARPC_ETH_RSS_L2_PAYLOAD,
+    TARPC_ETH_RSS_IPV6_EX,
+    TARPC_ETH_RSS_IPV6_TCP_EX,
+    TARPC_ETH_RSS_IPV6_UDP_EX,
+    TARPC_ETH_RSS_PORT,
+    TARPC_ETH_RSS_VXLAN,
+    TARPC_ETH_RSS_GENEVE,
+    TARPC_ETH_RSS_NVGRE,
+
+    TARPC_ETH_RSS_IP,
+    TARPC_ETH_RSS_TCP,
+    TARPC_ETH_RSS_UDP,
+    TARPC_ETH_RSS_SCTP,
+    TARPC_ETH_RSS_TUNNEL,
+
+    TARPC_RTE_ETH_RSS__UNKNOWN
 };
 
 /** Transmit queue flags */
@@ -853,7 +894,7 @@ struct tarpc_rte_eth_txmode {
 struct tarpc_rte_eth_rss_conf {
     uint8_t                             rss_key<>;
     uint8_t                             rss_key_len;
-    uint64_t                            rss_hf;
+    tarpc_rss_hash_protos_t             rss_hf;
 };
 
 struct tarpc_rte_eth_rx_adv_conf {

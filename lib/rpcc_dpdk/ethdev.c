@@ -493,6 +493,52 @@ tarpc_rte_eth_txmode2str(te_log_buf *tlbp,
 }
 
 static const char *
+tarpc_rss_hash_protos2str(te_log_buf *tlbp, tarpc_rss_hash_protos_t protos)
+{
+    te_bool             added = FALSE;
+
+#define TARPC_RSS_HASH_PROTO2STR(_proto)                                 \
+    do {                                                                 \
+        tarpc_rss_hash_protos_t proto = 1ULL << TARPC_ETH_RSS_##_proto;  \
+                                                                         \
+        if ((protos & proto) == proto)                                   \
+        {                                                                \
+            te_log_buf_append(tlbp, "%s%s", added ? "|" : "", #_proto);  \
+            added = TRUE;                                                \
+            protos &= ~(1ULL << TARPC_ETH_RSS_##_proto);                 \
+        }                                                                \
+    } while (0)
+    TARPC_RSS_HASH_PROTO2STR(IP);
+    TARPC_RSS_HASH_PROTO2STR(UDP);
+    TARPC_RSS_HASH_PROTO2STR(TCP);
+    TARPC_RSS_HASH_PROTO2STR(SCTP);
+    TARPC_RSS_HASH_PROTO2STR(TUNNEL);
+    TARPC_RSS_HASH_PROTO2STR(IPV4);
+    TARPC_RSS_HASH_PROTO2STR(FRAG_IPV4);
+    TARPC_RSS_HASH_PROTO2STR(NONFRAG_IPV4_TCP);
+    TARPC_RSS_HASH_PROTO2STR(NONFRAG_IPV4_UDP);
+    TARPC_RSS_HASH_PROTO2STR(NONFRAG_IPV4_SCTP);
+    TARPC_RSS_HASH_PROTO2STR(NONFRAG_IPV4_OTHER);
+    TARPC_RSS_HASH_PROTO2STR(IPV6);
+    TARPC_RSS_HASH_PROTO2STR(FRAG_IPV6);
+    TARPC_RSS_HASH_PROTO2STR(NONFRAG_IPV6_TCP);
+    TARPC_RSS_HASH_PROTO2STR(NONFRAG_IPV6_UDP);
+    TARPC_RSS_HASH_PROTO2STR(NONFRAG_IPV6_SCTP);
+    TARPC_RSS_HASH_PROTO2STR(NONFRAG_IPV6_OTHER);
+    TARPC_RSS_HASH_PROTO2STR(L2_PAYLOAD);
+    TARPC_RSS_HASH_PROTO2STR(IPV6_EX);
+    TARPC_RSS_HASH_PROTO2STR(IPV6_TCP_EX);
+    TARPC_RSS_HASH_PROTO2STR(IPV6_UDP_EX);
+    TARPC_RSS_HASH_PROTO2STR(PORT);
+    TARPC_RSS_HASH_PROTO2STR(VXLAN);
+    TARPC_RSS_HASH_PROTO2STR(GENEVE);
+    TARPC_RSS_HASH_PROTO2STR(NVGRE);
+#undef TARPC_RSS_HASH_PROTO2STR
+
+    return te_log_buf_get(tlbp);
+}
+
+static const char *
 tarpc_rte_eth_rss_conf2str(te_log_buf *tlbp,
                            const struct tarpc_rte_eth_rss_conf *rss_conf)
 {
@@ -504,8 +550,8 @@ tarpc_rte_eth_rss_conf2str(te_log_buf *tlbp,
                                    rss_conf->rss_key.rss_key_len);
     te_log_buf_append(tlbp, ", rss_key_len=%u",
                      (unsigned long long)rss_conf->rss_key_len);
-    te_log_buf_append(tlbp, ", rss_hf=%#llx",
-                     (unsigned long long)rss_conf->rss_hf);
+    te_log_buf_append(tlbp, ", rss_hf=");
+    tarpc_rss_hash_protos2str(tlbp, rss_conf->rss_hf);
 
     te_log_buf_append(tlbp, "}");
     return te_log_buf_get(tlbp);
