@@ -88,7 +88,7 @@ ta_DEPENDENCIES = @TE_DEPENDENCIES@ $(SYMTBL_LIBS) \
 
 if CFG_TR069
 ta_DEPENDENCIES += $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libacse_cwmp.a
-SYMTBL_OBJECTS += $(TE_BUILD)/lib/acse/acse_rpc.o 
+SYMTBL_OBJECTS += $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libacse_cwmp.a
 endif
 
 if GENERATE_SYMTBL
