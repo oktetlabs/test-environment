@@ -31,8 +31,8 @@
 #ifndef __TE_UPNP_H__
 #define __TE_UPNP_H__
 
-/** UPnP debug level. Than higher the more verbal. */
-#define UPNP_DEBUG 3
+/** UPnP debug level. The higher the more verbal. */
+#define UPNP_DEBUG 0
 #if UPNP_DEBUG
 # warning "UPNP_DEBUG is defined"
 /*
