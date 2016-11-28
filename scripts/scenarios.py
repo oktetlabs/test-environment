@@ -158,6 +158,8 @@ def implement():
         if not hasattr(test.test, 'objective'):
             continue
         tests.append(key)
+    if args.reference in tests:
+        tests = [args.reference]
 
     if len(tests) == 0:
         print('Unknown test reference, please try again')
