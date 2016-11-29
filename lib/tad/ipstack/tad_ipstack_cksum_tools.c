@@ -126,9 +126,51 @@ tad_l4_match_cksum_advanced(csap_p              csap,
     tad_pkt_read_bits(ip_pdu, 0, IP_HDR_VERSION_LEN, &ip_version);
 
     if (ip_version == IP4_VERSION)
+    {
+        uint16_t ip4_tot_len;
+
+        /*
+         * To avoid calculating wrong TCP checksum in a frame of a minimum
+         * length (eg. 64 bytes) which includes trailing zero bytes at the
+         * end, but does not count for them in IPv4 total length field, we
+         * count the extra bytes ab initio and fix 'l4_datagram_len' value
+         *
+         * (We suppose that 'ip_pdu->segs_len' is the whole IP packet length)
+         */
+        tad_pkt_read_bits(ip_pdu, IP4_HDR_TOTAL_LEN_OFFSET * BITS_PER_BYTE,
+                          sizeof(ip4_tot_len) * BITS_PER_BYTE,
+                          (uint8_t *)&ip4_tot_len);
+
+        ip4_tot_len = ntohs(ip4_tot_len);
+
+        if (ip_pdu->segs_len > ip4_tot_len)
+        {
+            size_t trailer_len = ip_pdu->segs_len - ip4_tot_len;
+            if (l4_datagram_len > trailer_len)
+            {
+                l4_datagram_len -= trailer_len;
+            }
+            else
+            {
+                free(l4_datagram_bin);
+                return TE_RC(TE_TAD_CSAP, TE_ETADNOTMATCH);
+            }
+        }
+
         tad_ip4_prepare_addresses(ip_pdu, &ip_dst_addr, &ip_src_addr);
+    }
     else
+    {
+        /*
+         * In a typical case of an Ethernet frame we have (at least)
+         * 14 bytes (Ethernet header length) + 40 bytes (IPv6 header
+         * length) = 54 bytes of L2-L3 header space, and addition of
+         * L4 header size covers the minimum frame length, hence, we
+         * don't consider zero trailer prior to checksum calculation
+         */
+
         tad_ip6_prepare_addresses(ip_pdu, &ip_dst_addr, &ip_src_addr);
+    }
 
     /* Calculate the checksum */
     rc = TE_RC(TE_TAD_CSAP, te_ipstack_calc_l4_cksum(SA(&ip_dst_addr),
