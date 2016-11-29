@@ -1472,6 +1472,53 @@ struct tarpc_rte_eth_link_get_out {
     struct tarpc_rte_eth_link             eth_link;
 };
 
+enum tarpc_rte_eth_xstats_name_size {
+    TARPC_RTE_ETH_XSTATS_NAME_SIZE = 64
+};
+
+struct tarpc_rte_eth_xstat {
+    uint64_t    id;
+    uint64_t    value;
+};
+
+struct tarpc_rte_eth_xstat_name {
+    char    name[TARPC_RTE_ETH_XSTATS_NAME_SIZE];
+};
+
+/** rte_eth_xstats_get_names() */
+struct tarpc_rte_eth_xstats_get_names_in {
+    struct tarpc_in_arg                     common;
+    uint8_t                                 port_id;
+    unsigned int                            size;
+};
+
+struct tarpc_rte_eth_xstats_get_names_out {
+    struct tarpc_out_arg                    common;
+    tarpc_int                               retval;
+    struct tarpc_rte_eth_xstat_name         xstats_names<>;
+};
+
+/** rte_eth_xstats_get() */
+struct tarpc_rte_eth_xstats_get_in {
+    struct tarpc_in_arg                     common;
+    uint8_t                                 port_id;
+    unsigned int                            n;
+};
+
+struct tarpc_rte_eth_xstats_get_out {
+    struct tarpc_out_arg                    common;
+    tarpc_int                               retval;
+    struct tarpc_rte_eth_xstat              xstats<>;
+};
+
+/** rte_eth_xstats_reset() */
+struct tarpc_rte_eth_xstats_reset_in {
+    struct tarpc_in_arg                     common;
+    uint8_t                                 port_id;
+};
+
+typedef struct tarpc_void_out tarpc_rte_eth_xstats_reset_out;
+
 program dpdk
 {
     version ver0
@@ -1526,6 +1573,9 @@ program dpdk
         RPC_DEF(rte_mbuf_match_pattern)
 
         RPC_DEF(rte_eth_stats_get)
+        RPC_DEF(rte_eth_xstats_get)
+        RPC_DEF(rte_eth_xstats_get_names)
+        RPC_DEF(rte_eth_xstats_reset)
         RPC_DEF(rte_eth_dev_info_get)
         RPC_DEF(rte_eth_dev_configure)
         RPC_DEF(rte_eth_dev_close)

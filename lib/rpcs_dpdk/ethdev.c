@@ -1530,6 +1530,82 @@ done:
     free(filter_arg);
 })
 
+TARPC_FUNC(rte_eth_xstats_get_names,{},
+{
+    struct rte_eth_xstat_name  *xstats_names = NULL;
+    int                         i;
+
+    if (in->size != 0)
+    {
+        xstats_names = calloc(in->size, sizeof(struct rte_eth_xstat_name));
+        out->xstats_names.xstats_names_val =
+            calloc(in->size, sizeof(struct tarpc_rte_eth_xstat_name));
+
+        if (xstats_names == NULL ||
+            out->xstats_names.xstats_names_val == NULL)
+        {
+            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
+            out->retval = -out->common._errno;
+            goto done;
+        }
+    }
+
+    MAKE_CALL(out->retval = func(in->port_id, xstats_names, in->size));
+
+    if (in->size != 0 && out->retval > 0 && out->retval <= in->size)
+    {
+        for (i = 0; i < in->size; i++)
+            strncpy(out->xstats_names.xstats_names_val[i].name,
+                    xstats_names[i].name, TARPC_RTE_ETH_XSTATS_NAME_SIZE);
+    }
+
+    out->xstats_names.xstats_names_len = in->size;
+
+done:
+    ;
+})
+
+TARPC_FUNC(rte_eth_xstats_get,{},
+{
+    struct rte_eth_xstat   *xstats = NULL;
+    int                     i;
+
+    if (in->n != 0)
+    {
+        xstats = malloc(sizeof(struct rte_eth_xstat) * in->n);
+        out->xstats.xstats_val =
+            malloc(sizeof(struct tarpc_rte_eth_xstat) * in->n);
+
+        if (xstats == NULL || out->xstats.xstats_val == NULL)
+        {
+            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
+            out->retval = -out->common._errno;
+            goto done;
+        }
+    }
+
+    MAKE_CALL(out->retval = func(in->port_id, xstats, in->n));
+
+    if (in->n != 0 && out->retval > 0 && out->retval <= in->n)
+    {
+        for (i = 0; i < in->n; i++)
+        {
+            out->xstats.xstats_val[i].id = xstats[i].id;
+            out->xstats.xstats_val[i].value = xstats[i].value;
+        }
+    }
+
+    out->xstats.xstats_len = in->n;
+
+done:
+    ;
+})
+
+TARPC_FUNC(rte_eth_xstats_reset,{},
+{
+    MAKE_CALL(func(in->port_id));
+})
+
 TARPC_FUNC(rte_eth_dev_rss_hash_update,{},
 {
     struct rte_eth_rss_conf  rss_conf;
