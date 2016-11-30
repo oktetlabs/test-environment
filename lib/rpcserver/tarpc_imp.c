@@ -580,16 +580,13 @@ _set_var_1_svc(tarpc_set_var_in *in, tarpc_set_var_out *out,
 void
 ta_rpc_execve(const char *name)
 {
-    const char   *argv[5];
+    const char   *argv[5] = {ta_execname,
+                             "exec",
+                             "rcf_pch_rpc_server_argv",
+                             name,
+                             NULL};
     api_func_ptr  func;
-
     int rc;
-
-    memset(argv, 0, sizeof(argv));
-    argv[0] = ta_execname;
-    argv[1] = "exec";
-    argv[2] = "rcf_pch_rpc_server_argv";
-    argv[3] = name;
 
     VERB("execve() args: %s, %s, %s, %s",
          argv[0], argv[1], argv[2], argv[3]);
