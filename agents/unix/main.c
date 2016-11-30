@@ -548,12 +548,10 @@ rcf_ch_call(struct rcf_comm_connection *handle,
     return -1;
 }
 
-
-/* See description in rcf_ch_api.h */
-int
-rcf_ch_start_process(pid_t *pid, 
-                    int priority, const char *rtn, te_bool do_exec,
-                    int argc, void **params)
+static int
+rcf_ch_start_ta_process(pid_t *pid,
+                        int priority, const char *rtn, te_bool do_exec,
+                        int argc, void **params)
 {
     void *addr = rcf_ch_symbol_addr(rtn, TRUE);
 
@@ -577,11 +575,11 @@ rcf_ch_start_process(pid_t *pid,
                 if (argc > 25)
                 {
                     ERROR("Too many arguments for %s, "
-                          "increase constant in %s %d", 
+                          "increase constant in %s %d",
                           __FILE__, __LINE__);
                     return TE_RC(TE_TA_UNIX, TE_E2BIG);
                 }
-                
+
                 logfork_delete_user(getpid(), thread_self());
                 memset(argv, 0, sizeof(argv));
                 argv[0] = ta_execname;
@@ -589,7 +587,7 @@ rcf_ch_start_process(pid_t *pid,
                 argv[2] = rtn;
                 memcpy(argv + 3, params, argc * sizeof(void *));
 
-                execve(ta_execname, (char * const *)argv, 
+                execve(ta_execname, (char * const *)argv,
                        (char * const *)environ);
 
                 assert(errno != 0);
@@ -604,7 +602,7 @@ rcf_ch_start_process(pid_t *pid,
                 exit(0);
             }
         }
-        else 
+        else
 #else
         if (do_exec)
         {
@@ -671,8 +669,8 @@ rcf_ch_start_process(pid_t *pid,
             logfork_register_user(rtn);
             /* FIXME */
             if (argc == 10)
-                execlp(rtn, rtn, 
-                   params[0], params[1], params[2], params[3], params[4], 
+                execlp(rtn, rtn,
+                   params[0], params[1], params[2], params[3], params[4],
                    params[5], params[6], params[7], params[8], params[9],
                    (const char *)NULL);
             exit(0);
@@ -682,7 +680,7 @@ rcf_ch_start_process(pid_t *pid,
             int rc = TE_OS_RC(TE_TA_UNIX, errno);
 
             ERROR("%s(): fork() failed", __FUNCTION__);
-            
+
             return rc;
         }
 #ifdef HAVE_SYS_RESOURCE_H
@@ -696,11 +694,81 @@ rcf_ch_start_process(pid_t *pid,
         WARN("Unable to set task priority, ignore it.");
 #endif
         store_pid(*pid);
-        
+
         return 0;
     }
-    
+
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
+}
+
+static int
+rcf_ch_start_ext_process(pid_t *pid,
+                         int priority, const char *provider,
+                         int argc, void **params)
+{
+    VERB("fork external process '%s'", provider);
+
+    if ((*pid = fork()) == 0)
+    {
+        char *argv[argc + 2];
+        int i;
+
+        /* Set the process group to allow killing all children */
+        setpgid(getpid(), getpid());
+
+        argv[0] = (char *)provider;
+        for (i = 0; i < argc; i++)
+            argv[i + 1] = params[i];
+        argv[argc + 1] = NULL;
+        execv(provider, argv);
+
+        assert(errno != 0);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    if (*pid > 0)
+    {
+#ifdef HAVE_SYS_RESOURCE_H
+        if (setpriority(PRIO_PROCESS, *pid, priority) != 0)
+        {
+            ERROR("setpriority() failed - continue", errno);
+            /* Continue with default priority */
+        }
+#else
+        UNUSED(priority);
+        WARN("Unable to set task priority, ignore it.");
+#endif
+        store_pid(*pid);
+        return 0;
+    }
+    else
+    {
+        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
+
+        ERROR("%s(): fork() failed: %r", __FUNCTION__, rc);
+
+        return rc;
+    }
+}
+
+/* See description in rcf_ch_api.h */
+int
+rcf_ch_start_process(pid_t *pid,
+                    int priority, const char *rtn, te_bool do_exec,
+                    int argc, void **params)
+{
+    const char *provider = rcf_pch_rpc_get_provider();
+
+    if (*provider != '\0' && strcmp(rtn, "rcf_pch_rpc_server_argv") == 0)
+    {
+        return rcf_ch_start_ext_process(pid, priority, provider,
+                                        argc, params);
+    }
+    else
+    {
+        return rcf_ch_start_ta_process(pid, priority, rtn, do_exec,
+                                       argc, params);
+    }
 }
 
 struct rcf_thread_parameter {

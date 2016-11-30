@@ -265,6 +265,11 @@ extern void rcf_pch_rpc_atfork(void);
  */
 extern void rcf_pch_rpc_shutdown(void);
 
+/**
+ * Get the name of RCF RPC provider application
+ */
+extern const char *rcf_pch_rpc_get_provider(void);
+
 /** @addtogroup rcf_pch
  * @{
  */

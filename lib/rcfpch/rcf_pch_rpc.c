@@ -104,6 +104,8 @@ do {                                                                       \
     }                                                                      \
 } while (0)
 
+
+
 /** Data corresponding to one RPC server */
 typedef struct rpcserver {
     struct rpcserver *next;   /**< Next server in the list */
@@ -138,6 +140,17 @@ static uint8_t   *rpc_buf;     /**< Buffer for receiving of RPC answers;
                                     may be used in dispatch thread
                                     context only */
 
+/**
+ * Name of the application to serve RPC requests.
+ * If empty, then TA itself is used
+ */
+static char rpc_server_provider[RCF_MAX_PATH];
+
+static te_errno rpcprovider_get(unsigned int, const char *, char *,
+                                const char *);
+static te_errno rpcprovider_set(unsigned int, const char *, const char *,
+                                const char *);
+
 static te_errno rpcserver_get(unsigned int, const char *, char *,
                               const char *);
 static te_errno rpcserver_set(unsigned int, const char *, const char *,
@@ -157,6 +170,12 @@ static te_errno rpcserver_finished_get(unsigned int, const char *, char *,
 static te_errno rpcserver_finished_set(unsigned int, const char *, char *,
                                        const char *);
 
+static rcf_pch_cfg_object node_rpcprovider =
+    { "rpcprovider", 0, NULL, NULL,
+      (rcf_ch_cfg_get)rpcprovider_get,
+      (rcf_ch_cfg_set)rpcprovider_set,
+      NULL, NULL, NULL, NULL, NULL};
+
 static rcf_pch_cfg_object node_rpcserver_finished =
     { "finished", 0, NULL, NULL,
       (rcf_ch_cfg_get)rpcserver_finished_get,
@@ -170,7 +189,7 @@ static rcf_pch_cfg_object node_rpcserver_dead =
       NULL, NULL, NULL, NULL, NULL};
 
 static rcf_pch_cfg_object node_rpcserver =
-    { "rpcserver", 0, &node_rpcserver_dead, NULL,
+    { "rpcserver", 0, &node_rpcserver_dead, &node_rpcprovider,
       (rcf_ch_cfg_get)rpcserver_get, (rcf_ch_cfg_set)rpcserver_set,
       (rcf_ch_cfg_add)rpcserver_add, (rcf_ch_cfg_del)rpcserver_del,
       (rcf_ch_cfg_list)rpcserver_list, NULL, NULL};
@@ -773,6 +792,7 @@ dispatch(void *arg)
     return NULL;
 }
 
+static const char *rpc_dir_path;
 
 /**
  * Initialize RCF RPC server structures and link RPC configuration
@@ -783,7 +803,8 @@ rcf_pch_rpc_init(const char *tmp_path)
 {
     pthread_t tid = 0;
 
-    if (rpc_transport_init(tmp_path) != 0)
+    rpc_dir_path = tmp_path;
+    if (rpc_transport_init(rpc_dir_path) != 0)
         return;
 
     if ((rpc_buf = malloc(RCF_RPC_HUGE_BUF_LEN)) == NULL)
@@ -874,6 +895,85 @@ rcf_pch_find_rpcserver(const char *name)
     }
     return NULL;
 }
+
+/* See the description in rcf_pch.h */
+const char *
+rcf_pch_rpc_get_provider(void)
+{
+    return rpc_server_provider;
+}
+
+/**
+ * Get RPC provider name
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         value location
+ * @param name          unused
+ *
+ * @return Status code (always 0)
+ */
+static te_errno
+rpcprovider_get(unsigned int gid, const char *oid, char *value,
+                const char *name)
+{
+    size_t dirlen = strlen(rpc_dir_path);
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(name);
+
+    if (strncmp(rpc_server_provider, rpc_dir_path, dirlen) == 0)
+        strcpy(value, rpc_server_provider + dirlen + 1);
+    else
+        strcpy(value, rpc_server_provider);
+    return 0;
+}
+
+/**
+ * Change RPC provider name.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         executable path 
+ *                      (empty or absolute or relative to TA dir)
+ * @param name          unused
+ *
+ * @return Status code
+ * @retval TE_EINVAL  the specified path is not executable
+ */
+
+static te_errno
+rpcprovider_set(unsigned int gid, const char *oid, const char *value,
+                const char *name)
+{
+    char checkpath[RCF_MAX_PATH + 1] = {};
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(name);
+
+    if (*value == '\0')
+    {
+        *rpc_server_provider = '\0';
+        return 0;
+    }
+
+    if (*value == '/')
+    {
+        strncpy(checkpath, value, sizeof(checkpath) - 1);
+    }
+    else
+    {
+        snprintf(checkpath, sizeof(checkpath), "%s/%s", rpc_dir_path, value);
+    }
+    if (access(checkpath, X_OK) != 0)
+            return TE_RC(TE_RCF_PCH, TE_EINVAL);
+    strcpy(rpc_server_provider, checkpath);
+
+    return 0;
+}
+
 
 /**
  * Get RPC server state.
