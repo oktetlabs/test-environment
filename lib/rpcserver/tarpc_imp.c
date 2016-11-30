@@ -7839,6 +7839,7 @@ TARPC_FUNC(socket_to_file, {},
 }
 )
 
+#if defined(ENABLE_FTP)
 /*-------------- ftp_open() ------------------------------*/
 
 TARPC_FUNC(ftp_open, {},
@@ -7860,6 +7861,7 @@ TARPC_FUNC(ftp_close, {},
     MAKE_CALL(out->ret = func(in->sock));
 }
 )
+#endif
 
 /*-------------- overfill_buffers() -----------------------------*/
 int
