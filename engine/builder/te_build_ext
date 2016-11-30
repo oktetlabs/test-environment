@@ -71,6 +71,9 @@ for arg; do
         --telibs=*)
             TELIBS="${TELIBS}${TELIBS:+ }${arg#--telibs=}"
             ;;
+        --includes=*)
+            TEINCLUDES="${TEINCLUDES}${TEINCLUDES:+ }${arg#--includes=}"
+            ;;
         --expheaders=*)
             EXPHEADERS="${EXPHEADERS}${EXPHEADERS:+ }${arg#--expheaders=}"
             ;;
@@ -95,6 +98,7 @@ done
 
 declare telibflags
 declare l
+declare inc
 declare v
 declare exports
 
@@ -102,6 +106,12 @@ telibflags="-L$PREFIX/$PLATFORM/lib"
 for l in $TELIBS; do
     telibflags="$telibflags -l$l"
 done
+
+tecppflags=""
+for inc in $TEINCLUDES; do
+    tecppflags="$tecppflags -I$PREFIX/$PLATFORM/include/$inc"
+done
+tecppflags="$tecppflags -I$PREFIX/$PLATFORM/include"
 
 for v in $ENVVARS; do
         exports="$exports export $v=\"${!v}\"; "
@@ -116,7 +126,7 @@ done
                       test -n \"$BUILDDIR\" && mkdir -p \"$BUILDDIR\" ;
                       cd ${BUILDDIR:-.} ;
                       export TE_PREFIX=\"$PREFIX/$PLATFORM\" ;
-                      export TE_CPPFLAGS=\"-I$PREFIX/$PLATFORM/include\" ;
+                      export TE_CPPFLAGS=\"$tecppflags\" ;
                       export TE_LDFLAGS=\"$telibflags\" ;
                       export EXT_SOURCES=\"$SRCDIR\" ;
                       $exports

@@ -237,11 +237,25 @@ build_agent() {
          local pextlibs="TE_BS_TA_APPS_${package}_${pext}_LIBS"
          local pextinstb="TE_BS_TA_APPS_${package}_${pext}_INSTALL_BIN"
          local pextenv="TE_BS_TA_APPS_${package}_${pext}_ENV_VARS"
+
+         local teincludes=""
+         local telib
+         for telib in ${!pextlibs}; do
+             local plibsrc="TE_BS_LIB_${PLATFORM}_${telib}_SOURCES"
+             local libsrc="${!plibsrc}"
+             # We assume that if a library is built several times, it may have
+             # a separate include subdirectory for each 'non-default' build
+             if test -n "$libsrc" -a "$libsrc" != "${TE_BASE}/lib/${telib}"; then
+                 teincludes="${teincludes} ${telib}"
+             fi
+         done
+
          ${SCRIPT_DIR}/te_build_ext --prefix="$PREFIX" \
                       --platform="$PLATFORM" --srcdir="${!pextsrc}" \
                       --prepare="${!pextprep}" \
                       --builddir="${!pextbuilddir/#${TE_BUILD}/${sbd}}" \
                       --build="${!pextbuild}" --telibs="${!pextlibs}" \
+                      --includes="${teincludes}" \
                       --expbin="${!pextinstb}" \
                       --tatype="${package}" \
                       --envvars="${!pextenv}" || exit 1

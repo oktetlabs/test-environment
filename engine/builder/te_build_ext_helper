@@ -87,6 +87,22 @@ esac
 
 pexts="TE_BS_${PFX}_${PACKAGE}"
 
+function construct_include_subdirs()
+{
+    local teincludes=""
+    local telib
+
+    for telib in $1; do
+        local plibsrc="TE_BS_LIB_${PLATFORM}_${telib}_SOURCES"
+        local libsrc="${!plibsrc}"
+        # We assume that if a library is built several times, it may have
+        # a separate include subdirectory for each 'non-default' build
+        if test -n "$libsrc" -a "$libsrc" != "${TE_BASE}/lib/${telib}"; then
+            echo "{$telib}"
+        fi
+    done
+}
+
 for pext in ${!pexts}; do
     pextsrc="TE_BS_${PFX}_${PACKAGE}_${pext}_SOURCES"
     pextprep="TE_BS_${PFX}_${PACKAGE}_${pext}_PREPARE"
@@ -98,12 +114,15 @@ for pext in ${!pexts}; do
     pextinstl="TE_BS_${PFX}_${PACKAGE}_${pext}_INSTALL_LIBS"
     pextenv="TE_BS_${PFX}_${PACKAGE}_${pext}_ENV_VARS"
 
+    teincludes="$(construct_include_subdirs "${!pextlibs}")"
+
     "${SCRIPT_DIR}"/te_build_ext --prefix="${PREFIX}" \
                  --platform="${PLATFORM}" --srcdir="${!pextsrc}" \
                  --prepare="${!pextprep}" \
                  --builddir="${!pextbuilddir}" \
                  --build="${!pextbuild}" \
                  --telibs="${!pextlibs}" \
+                 --includes="${teincludes}" \
                  --expheaders="${!pextinsth}" \
                  --explibs="${!pextinstl}" \
                  --expbin="${!pextinstb}" \
