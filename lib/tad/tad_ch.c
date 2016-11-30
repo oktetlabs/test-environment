@@ -188,7 +188,9 @@ rcf_ch_tad_init(void)
     CHECK_RC(csap_support_rte_mbuf_register());
 #endif
 
+#ifdef WITH_CS
     CHECK_RC(tad_agent_csap_init());
+#endif
 
 #undef CHECK_RC
 
@@ -210,7 +212,9 @@ rcf_ch_tad_shutdown(void)
     tad_is_initialized = FALSE;
 
 #ifndef TAD_DUMMY
+#if defined(WITH_CS)
     tad_agent_csap_fini();
+#endif
     csap_spt_destroy();
     csap_id_destroy();
 #endif

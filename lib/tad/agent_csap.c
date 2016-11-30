@@ -34,6 +34,8 @@
 #include "config.h"
 #endif
 
+#if defined(WITH_CS)
+
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -178,3 +180,5 @@ tad_agent_csap_fini(void)
 {
     return rcf_pch_del_node(&agent_csap);
 }
+
+#endif /* WITH_CS */

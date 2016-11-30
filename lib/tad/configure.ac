@@ -330,6 +330,14 @@ AC_ARG_WITH([static_libc],
             AS_HELP_STRING([--with-static-libc],
                            [enable static libc (default is YES)]))
 
+AC_ARG_WITH([cs],
+            AS_HELP_STRING([--without-cs],
+                           [disable Configurator support (default is ENABLED)]))
+if test x"$with_cs" != xno
+then
+    AC_DEFINE([WITH_CS], [], [Whether to enable Configurator support])
+fi
+
 AC_ARG_WITH([cli],, 
 [if test "${withval}" = yes; then
     w_cli=true;
