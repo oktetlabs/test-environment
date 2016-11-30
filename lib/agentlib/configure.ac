@@ -90,6 +90,16 @@ then
     AC_DEFINE([ENABLE_UPNP], [], [Whether to enable upnp support])
 fi
 
+AC_ARG_WITH([name],,,[with_name=$PACKAGE_NAME])
+AC_SUBST([with_name])
+
+if test "x$with_name" != "x$PACKAGE_NAME"
+then
+   AC_SUBST([include_subdir], [$with_name])
+else
+   AC_SUBST([include_subdir], [.])
+fi
+
 AC_CONFIG_HEADERS([agentlib_config.h])
 
 AC_CONFIG_FILES([Makefile])

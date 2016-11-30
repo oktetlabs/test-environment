@@ -425,6 +425,24 @@ AS_IF([test x"$with_tr069" != xno],
       [AC_DEFINE([WITH_TR069_SUPPORT], [], \
       [Whether to enable TR-069 support])])
 
+AC_ARG_WITH([agentlib],
+            AS_HELP_STRING([--with-agentlib],
+                           [the name of a Agentlib variant to use]),
+            [],
+            [with_agentlib=.])
+
+AC_SUBST([with_agentlib])
+
+AC_ARG_WITH([name],,,[with_name=$PACKAGE_NAME])
+AC_SUBST([with_name])
+
+if test "x$with_name" != "x$PACKAGE_NAME"
+then
+   AC_SUBST([include_subdir], [$with_name])
+else
+   AC_SUBST([include_subdir], [.])
+fi
+
 AC_CONFIG_HEADER([rpc_server_config.h])
 
 AC_SUBST([EXTRA_CPPFLAGS])
