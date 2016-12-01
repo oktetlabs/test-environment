@@ -493,6 +493,52 @@ tarpc_rte_eth_txmode2str(te_log_buf *tlbp,
 }
 
 static const char *
+tarpc_rss_hash_protos2str(te_log_buf *tlbp, tarpc_rss_hash_protos_t protos)
+{
+    te_bool             added = FALSE;
+
+#define TARPC_RSS_HASH_PROTO2STR(_proto)                                 \
+    do {                                                                 \
+        tarpc_rss_hash_protos_t proto = 1ULL << TARPC_ETH_RSS_##_proto;  \
+                                                                         \
+        if ((protos & proto) == proto)                                   \
+        {                                                                \
+            te_log_buf_append(tlbp, "%s%s", added ? "|" : "", #_proto);  \
+            added = TRUE;                                                \
+            protos &= ~(1ULL << TARPC_ETH_RSS_##_proto);                 \
+        }                                                                \
+    } while (0)
+    TARPC_RSS_HASH_PROTO2STR(IP);
+    TARPC_RSS_HASH_PROTO2STR(UDP);
+    TARPC_RSS_HASH_PROTO2STR(TCP);
+    TARPC_RSS_HASH_PROTO2STR(SCTP);
+    TARPC_RSS_HASH_PROTO2STR(TUNNEL);
+    TARPC_RSS_HASH_PROTO2STR(IPV4);
+    TARPC_RSS_HASH_PROTO2STR(FRAG_IPV4);
+    TARPC_RSS_HASH_PROTO2STR(NONFRAG_IPV4_TCP);
+    TARPC_RSS_HASH_PROTO2STR(NONFRAG_IPV4_UDP);
+    TARPC_RSS_HASH_PROTO2STR(NONFRAG_IPV4_SCTP);
+    TARPC_RSS_HASH_PROTO2STR(NONFRAG_IPV4_OTHER);
+    TARPC_RSS_HASH_PROTO2STR(IPV6);
+    TARPC_RSS_HASH_PROTO2STR(FRAG_IPV6);
+    TARPC_RSS_HASH_PROTO2STR(NONFRAG_IPV6_TCP);
+    TARPC_RSS_HASH_PROTO2STR(NONFRAG_IPV6_UDP);
+    TARPC_RSS_HASH_PROTO2STR(NONFRAG_IPV6_SCTP);
+    TARPC_RSS_HASH_PROTO2STR(NONFRAG_IPV6_OTHER);
+    TARPC_RSS_HASH_PROTO2STR(L2_PAYLOAD);
+    TARPC_RSS_HASH_PROTO2STR(IPV6_EX);
+    TARPC_RSS_HASH_PROTO2STR(IPV6_TCP_EX);
+    TARPC_RSS_HASH_PROTO2STR(IPV6_UDP_EX);
+    TARPC_RSS_HASH_PROTO2STR(PORT);
+    TARPC_RSS_HASH_PROTO2STR(VXLAN);
+    TARPC_RSS_HASH_PROTO2STR(GENEVE);
+    TARPC_RSS_HASH_PROTO2STR(NVGRE);
+#undef TARPC_RSS_HASH_PROTO2STR
+
+    return te_log_buf_get(tlbp);
+}
+
+static const char *
 tarpc_rte_eth_rss_conf2str(te_log_buf *tlbp,
                            const struct tarpc_rte_eth_rss_conf *rss_conf)
 {
@@ -504,8 +550,8 @@ tarpc_rte_eth_rss_conf2str(te_log_buf *tlbp,
                                    rss_conf->rss_key.rss_key_len);
     te_log_buf_append(tlbp, ", rss_key_len=%u",
                      (unsigned long long)rss_conf->rss_key_len);
-    te_log_buf_append(tlbp, ", rss_hf=%#llx",
-                     (unsigned long long)rss_conf->rss_hf);
+    te_log_buf_append(tlbp, ", rss_hf=");
+    tarpc_rss_hash_protos2str(tlbp, rss_conf->rss_hf);
 
     te_log_buf_append(tlbp, "}");
     return te_log_buf_get(tlbp);
@@ -1940,6 +1986,119 @@ int rpc_rte_eth_dev_filter_supported(rcf_rpc_server *rpcs, uint8_t port_id,
                  NEG_ERRNO_ARGS(out.retval));
 
     RETVAL_ZERO_INT(rte_eth_dev_filter_supported, out.retval);
+}
+
+int
+rpc_rte_eth_xstats_get_names(rcf_rpc_server *rpcs, uint8_t port_id,
+                             struct tarpc_rte_eth_xstat_name *xstats_names,
+                             unsigned int size)
+{
+    tarpc_rte_eth_xstats_get_names_in   in;
+    tarpc_rte_eth_xstats_get_names_out  out;
+    te_log_buf                         *tlbp;
+    int                                 i;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (size != 0 && xstats_names == NULL)
+    {
+        ERROR("%s(): No array of xstats names, but size is greater than 0",
+              __FUNCTION__);
+        RETVAL_ZERO_INT(rte_eth_xstats_get_names, -1);
+    }
+
+    in.port_id = port_id;
+    in.size = size;
+
+    rcf_rpc_call(rpcs, "rte_eth_xstats_get_names", &in, &out);
+
+    CHECK_RETVAL_VAR_ERR_COND(rte_eth_xstats_get_names,
+                              out.retval, FALSE,
+                              -TE_RC(TE_TAPI, TE_ECORRUPTED),
+                              (out.retval < 0));
+
+    tlbp = te_log_buf_alloc();
+    te_log_buf_append(tlbp, "{");
+    if (xstats_names != NULL && out.retval > 0 && out.retval <= size)
+    {
+        for (i = 0; i < out.retval; i++)
+        {
+            strncpy(xstats_names[i].name,
+                    out.xstats_names.xstats_names_val[i].name,
+                    TARPC_RTE_ETH_XSTATS_NAME_SIZE);
+
+            te_log_buf_append(tlbp, "%s%d=%s", (i == 0) ? "" : ", ", i,
+                              xstats_names[i].name);
+        }
+    }
+    te_log_buf_append(tlbp, "}");
+
+    TAPI_RPC_LOG(rpcs, rte_eth_xstats_get_names,
+                 "%hhu, %u", NEG_ERRNO_FMT " xstats_names=%s", in.port_id,
+                 size, NEG_ERRNO_ARGS(out.retval), te_log_buf_get(tlbp));
+    te_log_buf_free(tlbp);
+
+    RETVAL_INT(rte_eth_xstats_get_names, out.retval);
+}
+
+int
+rpc_rte_eth_xstats_get(rcf_rpc_server *rpcs, uint8_t port_id,
+                       struct tarpc_rte_eth_xstat *xstats,
+                       unsigned int n)
+{
+    tarpc_rte_eth_xstats_get_in     in;
+    tarpc_rte_eth_xstats_get_out    out;
+    int                             i;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (n != 0 && xstats == NULL)
+    {
+        ERROR("%s(): No array of xstats, but size is greater than 0",
+              __FUNCTION__);
+        RETVAL_ZERO_INT(rte_eth_xstats_get, -1);
+    }
+
+    in.port_id = port_id;
+    in.n = n;
+
+    rcf_rpc_call(rpcs, "rte_eth_xstats_get", &in, &out);
+
+    CHECK_RETVAL_VAR_ERR_COND(rpc_rte_eth_xstats_get,
+                              out.retval, FALSE,
+                              -TE_RC(TE_TAPI, TE_ECORRUPTED),
+                              (out.retval < 0));
+
+    if (xstats != NULL && out.retval > 0)
+    {
+        for (i = 0; i < out.retval; i++)
+            xstats[i] = out.xstats.xstats_val[i];
+    }
+
+    TAPI_RPC_LOG(rpcs, rte_eth_xstats_get,
+                 "%hhu, %u", NEG_ERRNO_FMT, in.port_id, n,
+                 NEG_ERRNO_ARGS(out.retval));
+
+    RETVAL_INT(rte_eth_xstats_get, out.retval);
+}
+
+void
+rpc_rte_eth_xstats_reset(rcf_rpc_server *rpcs, uint8_t port_id)
+{
+    tarpc_rte_eth_xstats_reset_in   in;
+    tarpc_rte_eth_xstats_reset_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+
+    rcf_rpc_call(rpcs, "rte_eth_xstats_reset", &in, &out);
+
+    TAPI_RPC_LOG(rpcs, rte_eth_xstats_reset, "%hhu", "", in.port_id);
+    RETVAL_VOID(rte_eth_xstats_reset);
 }
 
 static const char *

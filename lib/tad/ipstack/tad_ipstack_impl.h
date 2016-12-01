@@ -63,6 +63,9 @@ extern "C" {
 /** Size of IPv6 address in bytes */
 #define IP6_ADDR_LEN 16
 
+/** The offset to the total length field in IPv4 header, bytes */
+#define IP4_HDR_TOTAL_LEN_OFFSET 2
+
 /**
  * The length of IPv6 Pseudo Header used in calculation of
  * Upper-Layer checksums (see RFC 2460, section 8.1 for details)

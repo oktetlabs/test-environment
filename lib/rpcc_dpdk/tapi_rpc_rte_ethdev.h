@@ -541,6 +541,31 @@ extern void rpc_rte_eth_link_get_nowait(rcf_rpc_server *rpcs, uint8_t port_id,
 extern void rpc_rte_eth_link_get(rcf_rpc_server *rpcs, uint8_t port_id,
                                  struct tarpc_rte_eth_link *eth_link);
 
+/**
+ * @b rte_eth_xstats_get_names() RPC.
+ *
+ * If failure is not expected, the function jumps out in the case of
+ * negative return value.
+ */
+extern int rpc_rte_eth_xstats_get_names(rcf_rpc_server *rpcs, uint8_t port_id,
+                                        struct tarpc_rte_eth_xstat_name *xstats_names,
+                                        unsigned int size);
+
+/**
+ * @b rpc_rte_eth_xstats_get() RPC.
+ *
+ * If failure is not expected, the function jumps out in the case of
+ * negative return value.
+ */
+extern int rpc_rte_eth_xstats_get(rcf_rpc_server *rpcs, uint8_t port_id,
+                                  struct tarpc_rte_eth_xstat *xstats,
+                                  unsigned int n);
+
+/**
+ * @b rte_eth_xstats_reset() RPC
+ */
+extern void rpc_rte_eth_xstats_reset(rcf_rpc_server *rpcs, uint8_t port_id);
+
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 
 #ifdef __cplusplus
