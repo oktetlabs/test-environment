@@ -37,6 +37,7 @@
 #include "te_rpc_defs.h"
 #include "te_param.h"
 #include "logger_api.h"
+#include "te_string.h"
 #ifndef WINDOWS
 #include "tarpc.h"
 #endif
@@ -1103,6 +1104,18 @@ extern te_errno sockaddr_rpc2h(const tarpc_sa *rpc,
  */
 extern const char * sockaddr_h2str(const struct sockaddr *addr);
 
+/**
+ * Obtain string representation of sockaddr structure including processing
+ * of special case for @c TE_AF_TARPC_SA address family. Append it to
+ * supplied TE dynamic string.
+ *
+ * @param addr          Host sockaddr structure.
+ * @param str           TE dynamic string pointer.
+ *
+ * @return Pointer to string buffer.
+ */
+extern const char *sockaddr_h2str_append(const struct sockaddr *addr,
+                                         te_string *str);
 
 /**
  * Convert RPC address family to corresponding structure name.
@@ -1321,6 +1334,64 @@ extern void hwtstamp_config_data_rpc2h(tarpc_hwtstamp_config *rpc_hwdata,
 extern void hwtstamp_config_data_h2rpc(tarpc_hwtstamp_config *rpc_hwdata,
                                        caddr_t hwdata);
 #endif /* HAVE_LINUX_NET_TSTAMP_H */
+
+/**
+ * TA-independent ethernet protocols.
+ */
+typedef enum rpc_eth_proto {
+   RPC_ETH_P_UNKNOWN,
+   RPC_ETH_P_IP,
+   RPC_ETH_P_ARP,
+} rpc_eth_proto;
+
+/** Convert RPC Ethernet protocol to string */
+extern const char *eth_proto_rpc2str(rpc_eth_proto proto);
+
+/** Convert RPC ethernet protocol to native value */
+extern int eth_proto_rpc2h(rpc_eth_proto proto);
+
+/** Convert native ethernet protocol to RPC value */
+extern rpc_eth_proto eth_proto_h2rpc(unsigned int proto);
+
+/**
+ * TA-independent ARP hardware identifiers.
+ */
+typedef enum rpc_arp_hardware {
+   RPC_ARPHRD_UNKNOWN,
+   RPC_ARPHRD_ETHER,
+   RPC_ARPHRD_VOID,
+} rpc_arp_hardware;
+
+/** Convert RPC ARP hardware identifier to string */
+extern const char *arp_hardware_rpc2str(rpc_arp_hardware hardware);
+
+/** Convert RPC ARP hardware identifier to native value */
+extern unsigned int arp_hardware_rpc2h(rpc_arp_hardware hardware);
+
+/** Convert native ARP hardware identifier to RPC value */
+extern rpc_arp_hardware arp_hardware_h2rpc(unsigned int hardware);
+
+/**
+ * TA-independent packet types.
+ */
+typedef enum rpc_packet_type {
+   RPC_PACKET_UNKNOWN,
+   RPC_PACKET_BROADCAST,
+   RPC_PACKET_MULTICAST,
+   RPC_PACKET_OTHERHOST,
+   RPC_PACKET_OUTGOING,
+   RPC_PACKET_LOOPBACK,
+   RPC_PACKET_FASTROUTE,
+} rpc_packet_type;
+
+/** Convert RPC packet type to string */
+extern const char *packet_type_rpc2str(rpc_packet_type type);
+
+/** Convert RPC packet type to native value */
+extern unsigned int packet_type_rpc2h(rpc_packet_type type);
+
+/** Convert native packet type to RPC value */
+extern rpc_packet_type packet_type_h2rpc(unsigned int type);
 
 #ifdef __cplusplus
 } /* extern "C" */
