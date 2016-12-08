@@ -777,10 +777,20 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
                 break;
 
             case TRC_UPDATE_OPT_MATCHING_EXPR:
+#ifndef HAVE_LIBPERL
+                fprintf(stderr, "ERROR: libperl is missed. You cannot "
+                        "use --matching-expr.\n");
+                goto exit;
+#endif
                 perl_expr = poptGetOptArg(optCon);
                 break;
 
             case TRC_UPDATE_OPT_MATCHING_PERL:
+#ifndef HAVE_LIBPERL
+                fprintf(stderr, "ERROR: libperl is missed. You cannot "
+                        "use --matching-perl.\n");
+                goto exit;
+#endif
                 perl_script = poptGetOptArg(optCon);
                 break;
 
@@ -1560,9 +1570,6 @@ main(int argc, char **argv, char **envp)
     PERL_SYS_INIT3(&argc, &argv, &envp);
 #else
     UNUSED(envp);
-
-    fprintf(stderr, "WARNING: libperl is missed. You cannot use "
-            "--matching-expr and --matching-perl.\n");
 #endif
 
     TAILQ_INIT(&args_registered);
