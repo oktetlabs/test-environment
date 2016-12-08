@@ -155,25 +155,9 @@ struct tarpc_sun {
     uint8_t     path[108];  /**< Path to pipe file */
 };
 
-/** AF_PACKET-specific part of generic address */
-struct tarpc_ll {
-    tarpc_int   sll_protocol;
-    tarpc_int   sll_ifindex;
-    tarpc_int   sll_hatype;
-    tarpc_int   sll_pkttype;
-    tarpc_int   sll_halen;
-    uint8_t     sll_addr[8];
-};
-
-/**
- * Socket address family.
- * Values should correspond to values of
- * rpc_socket_addr_family enum.
- */
 enum tarpc_socket_addr_family {
     TARPC_AF_INET = 1,
     TARPC_AF_INET6 = 2,
-    TARPC_AF_PACKET = 3,
     TARPC_AF_LOCAL = 4,
     TARPC_AF_UNIX = 5,
     TARPC_AF_ETHER = 6,
@@ -192,8 +176,6 @@ union tarpc_sa_data switch (tarpc_socket_addr_family type) {
     case TARPC_AF_INET6:    struct tarpc_sin6   in6;    /**< IPv6 */
     case TARPC_AF_ETHER:    struct tarpc_local  local;  /**< HW address */
     case TARPC_AF_LOCAL:    struct tarpc_sun    un;     /**< UNIX socket */
-    case TARPC_AF_PACKET:   struct tarpc_ll     ll;     /**< Physical-layer
-                                                             address */
     default:                void;                       /**< Nothing by
                                                              default */
 };
