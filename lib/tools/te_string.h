@@ -65,7 +65,8 @@ static inline void
 te_string_reset(te_string *str)
 {
     str->len = 0;
-    *str->ptr = '\0';
+    if (str->ptr != NULL)
+        *str->ptr = '\0';
 }
 
 
