@@ -1,7 +1,7 @@
 /** @file
  * @brief Testing Results Comparator: common
  *
- * Routines to work with dynamically allocated strings.
+ * Routines to work with strings.
  *
  *
  * Copyright (C) 2005-2006 Test Environment authors (see file AUTHORS
@@ -44,8 +44,23 @@ void
 te_string_free(te_string *str)
 {
     str->len = str->size = 0;
-    free(str->ptr);
+    if (!str->ext_buf)
+        free(str->ptr);
     str->ptr = NULL;
+    str->ext_buf = FALSE;
+}
+
+/* See the description in te_string.h */
+void
+te_string_set_buf(te_string *str,
+                  char *buf, size_t size,
+                  size_t len)
+{
+    te_string_free(str);
+    str->ptr = buf;
+    str->size = size;
+    str->len = len;
+    str->ext_buf = TRUE;
 }
 
 te_errno
@@ -71,6 +86,7 @@ te_string_append_va(te_string *str, const char *fmt, va_list ap)
 
     if (str->ptr == NULL)
     {
+        assert(!str->ext_buf);
         str->ptr = malloc(TE_STRING_INIT_LEN);
         if (str->ptr == NULL)
         {
@@ -93,17 +109,27 @@ te_string_append_va(te_string *str, const char *fmt, va_list ap)
 
         if ((size_t)printed >= rest)
         {
-            /* We are going to extend buffer */
-            rest = printed + 1 /* '\0' */ + TE_STRING_EXTRA_LEN;
-            str->size = str->len + rest;
-            str->ptr = realloc(str->ptr, str->size);
-            if (str->ptr == NULL)
+            if (str->ext_buf)
             {
-                ERROR("%s(): Memory allocation failure", __FUNCTION__);
-                return TE_ENOMEM;
+                str->len = str->size - 1 /* '\0' */;
+                ERROR("%s(): Not enough space in supplied buffer",
+                      __FUNCTION__);
+                return TE_ENOBUFS;
             }
-            /* Print again */
-            again = TRUE;
+            else
+            {
+                /* We are going to extend buffer */
+                rest = printed + 1 /* '\0' */ + TE_STRING_EXTRA_LEN;
+                str->size = str->len + rest;
+                str->ptr = realloc(str->ptr, str->size);
+                if (str->ptr == NULL)
+                {
+                    ERROR("%s(): Memory allocation failure", __FUNCTION__);
+                    return TE_ENOMEM;
+                }
+                /* Print again */
+                again = TRUE;
+            }
         }
         else
         {
