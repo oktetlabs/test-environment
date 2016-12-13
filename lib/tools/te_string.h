@@ -1,7 +1,7 @@
 /** @file
  * @brief Testing Results Comparator: common
  *
- * Helper functions to work with dynamically strings.
+ * Helper functions to work with strings.
  *
  *
  * Copyright (C) 2006 Test Environment authors (see file AUTHORS
@@ -32,6 +32,7 @@
 #define __TE_STRING_H__
 
 #include "te_errno.h"
+#include "te_defs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,35 +45,43 @@ extern "C" {
 #define TE_STRING_EXTRA_LEN 0
 
 /**
- * Dynamically allocated string.
+ * TE string type.
  */
 typedef struct te_string {
-    char   *ptr;    /**< Pointer to the buffer */
-    size_t  size;   /**< Size of the buffer */
-    size_t  len;    /**< Length of the string */
+    char   *ptr;          /**< Pointer to the buffer */
+    size_t  size;         /**< Size of the buffer */
+    size_t  len;          /**< Length of the string */
+    te_bool ext_buf;      /**< If TRUE, buffer is supplied
+                               by user and should not be
+                               reallocated or freed. */
 } te_string;
 
 /** On-stack te_string initializer */
-#define TE_STRING_INIT  { NULL, 0, 0 }
-
+#define TE_STRING_INIT  { NULL, 0, 0, FALSE }
 
 /**
- * Reset dynamic string (mark its empty).
+ * Initialize TE string assigning buffer to it.
+ */
+#define TE_STRING_BUF_INIT(buf_)  { buf_, sizeof(buf_), 0, TRUE }
+
+/**
+ * Reset TE string (mark its empty).
  *
- * @param str           Dynamic string.
+ * @param str           TE string.
  */
 static inline void
 te_string_reset(te_string *str)
 {
     str->len = 0;
-    *str->ptr = '\0';
+    if (str->ptr != NULL)
+        *str->ptr = '\0';
 }
 
 
 /**
  * Append to the string results of the sprintf(fmt, ...);
  *
- * @param str           Dynamic string
+ * @param str           TE string
  * @param fmt           Format string
  * @param ...           Format string arguments
  *
@@ -83,7 +92,7 @@ extern te_errno te_string_append(te_string *str, const char *fmt, ...);
 /**
  * Append to the string results of the @b vsnprintf.
  *
- * @param str           Dynamic string
+ * @param str           TE string
  * @param fmt           Format string
  * @param ap            List of arguments
  *
@@ -96,17 +105,48 @@ extern te_errno te_string_append_va(te_string  *str,
 /**
  * Cut from the string specified number of characters.
  *
- * @param str           Dynamic string
+ * @param str           TE string
  * @param len           Number of characters to cut
  */
 extern void te_string_cut(te_string *str, size_t len);
 
 /**
- * Free dynamic string.
+ * Free TE string.
  *
- * @param str           Dynamic string
+ * @note It will not release buffer supplied by user with
+ *       te_string_set_buf().
+ *
+ * @param str           TE string
  */
 extern void te_string_free(te_string *str);
+
+/**
+ * Specify buffer to use in TE string instead
+ * of dynamically allocated one used by default
+ * (buffer may already contain some string).
+ *
+ * @param str       TE string.
+ * @param buf       Buffer.
+ * @param size      Number of bytes in buffer.
+ * @param len       Length of string already in buffer.
+ */
+extern void te_string_set_buf(te_string *str,
+                              char *buf, size_t size,
+                              size_t len);
+
+/**
+ * Specify buffer to use in TE string instead
+ * of dynamically allocated one used by default.
+ *
+ * @param str       TE string.
+ * @param buf       Buffer.
+ * @param size      Number of bytes in buffer.
+ */
+static inline void
+te_string_assign_buf(te_string *str, char *buf, size_t size)
+{
+    te_string_set_buf(str, buf, size, 0);
+}
 
 /**
  * Get string representation of raw data.
