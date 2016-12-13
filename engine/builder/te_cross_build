@@ -323,16 +323,29 @@ acquire_shadow_build_directory() {
         test -d '${sbd}' && rm -rf '${sbd}'
         mkdir -p '${sbd}/platforms/${p}' || exit 1
         mkdir -p '${sbd}/agents/${p}' || exit 1
-        mkdir -p '${sbd}/apps/${p}' || exit 1
     "
     res=$?; if test "$res" -ne "0" ; then exit $res; fi
-    for type in platforms agents apps; do
+    for type in platforms agents; do
         mkdir -p "${sbd}/${type}/${p}" || exit 1
         test -d "${type}/${p}" || continue
         cp -rp "${type}/${p}" "${sbd}/${type}"
         tar -C "${type}/${p}" -czf - . |
             te_eval_or_ssh "${p}" "
                 tar -C '${sbd}/${type}/${p}' -xzf -
+            "
+        res=$?; if test "$res" -ne "0" ; then exit $res; fi
+    done
+
+    local applist="TE_BS_TA_APPS_${p}"
+    local app
+    for app in ${!applist}; do
+        mkdir -p "${sbd}/apps/${app}/${p}" || exit 1
+        te_eval_or_ssh "${p}" "mkdir -p '${sbd}/apps/${app}/${p}'"
+        test -d "apps/${app}/${p}" || continue
+        cp -rp "apps/${app}/${p}" "${sbd}/apps/${app}"
+        tar -C "apps/${app}/${p}" -czf - . |
+            te_eval_or_ssh "${p}" "
+                tar -C '${sbd}/apps/${app}/${p}' -xzf -
             "
         res=$?; if test "$res" -ne "0" ; then exit $res; fi
     done
@@ -353,14 +366,23 @@ release_shadow_build_directory() {
     # remove files from the SBD on TE host
     rm -rf "${sbd}" || exit 1
 
+    local applist="TE_BS_TA_APPS_${p}"
+    local app
+
     # cleanup TE_BUILD
     rm -rf "platforms/${p}"
     rm -rf "agents/${p}"
-    rm -rf "apps/${p}"
+    for app in ${!applist}; do rm -rf apps/${app}/${p}; done
 
     # return files from the SBD on agent host
+    for app in ${!applist}; do
+        te_eval_or_ssh "${p}" "
+            tar -C '${sbd}' -czf - apps/${app}/${p}
+        " | tar -xzf -
+        res=$?; if test "$res" -ne "0" ; then exit $res; fi
+    done
     te_eval_or_ssh "${p}" "
-        tar -C '${sbd}' -czf - platforms/${p} agents/${p} apps/${p}
+        tar -C '${sbd}' -czf - platforms/${p} agents/${p}
         rm -rf '${sbd}' >/dev/null
     " | tar -xzf -
     res=$?; if test "$res" -ne "0" ; then exit $res; fi
