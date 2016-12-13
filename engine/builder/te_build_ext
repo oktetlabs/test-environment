@@ -89,6 +89,9 @@ for arg; do
         --envvars=*)
             ENVVARS="${ENVVARS}${ENVVARS:+ }${arg#--envvars=}"
             ;;
+        --tce)
+            TCE=1
+            ;;
         *)
             echo "Invalid option '$arg'" >&2
             exit 1
@@ -126,6 +129,7 @@ done
                       test -n \"$BUILDDIR\" && mkdir -p \"$BUILDDIR\" ;
                       cd ${BUILDDIR:-.} ;
                       export TE_PREFIX=\"$PREFIX/$PLATFORM\" ;
+                      export TE_DO_TCE=\"$TCE\"
                       export TE_CPPFLAGS=\"$tecppflags\" ;
                       export TE_LDFLAGS=\"$telibflags\" ;
                       export EXT_SOURCES=\"$SRCDIR\" ;

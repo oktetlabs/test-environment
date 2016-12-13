@@ -116,6 +116,11 @@ for pext in ${!pexts}; do
 
     teincludes="$(construct_include_subdirs "${!pextlibs}")"
 
+    if te_check_tce "${PLATFORM}" "${pext}"; then
+        enable_tce="--tce"
+    else
+        enable_tce=""
+    fi
     "${SCRIPT_DIR}"/te_build_ext --prefix="${PREFIX}" \
                  --platform="${PLATFORM}" --srcdir="${!pextsrc}" \
                  --prepare="${!pextprep}" \
@@ -127,5 +132,5 @@ for pext in ${!pexts}; do
                  --explibs="${!pextinstl}" \
                  --expbin="${!pextinstb}" \
                  --tatype="${PACKAGE}" \
-                 --envvars="${!pextenv}" || exit 1
+                 --envvars="${!pextenv}" $enable_tce || exit 1
 done

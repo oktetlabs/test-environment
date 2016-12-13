@@ -111,6 +111,9 @@ build_platform() {
              local pextinsth="TE_BS_EXT_${p}_${pext}_INSTALL_HEADERS"
              local pextinstl="TE_BS_EXT_${p}_${pext}_INSTALL_LIBS"
              local pextenv="TE_BS_EXT_${p}_${pext}_ENV_VARS"
+             local enable_tce=""
+
+             te_check_tce "${p}" "${pext}" && enable_tce="--tce"
              ${SCRIPT_DIR}/te_build_ext --prefix="$PREFIX" \
                           --platform="$p" --srcdir="${!pextsrc}" \
                           --prepare="${!pextprep}" \
@@ -118,7 +121,7 @@ build_platform() {
                           --build="${!pextbuild}" \
                           --expheaders="${!pextinsth}" \
                           --explibs="${!pextinstl}" \
-                          --envvars="${!pextenv}" || exit 1
+                          --envvars="${!pextenv}" $enable_tce || exit 1
         done
 
         ${TE_BASE}/engine/builder/te_configure_package INCLUDE include \
@@ -237,6 +240,7 @@ build_agent() {
          local pextlibs="TE_BS_TA_APPS_${package}_${pext}_LIBS"
          local pextinstb="TE_BS_TA_APPS_${package}_${pext}_INSTALL_BIN"
          local pextenv="TE_BS_TA_APPS_${package}_${pext}_ENV_VARS"
+         local enable_tce=""
 
          local teincludes=""
          local telib
@@ -249,6 +253,7 @@ build_agent() {
                  teincludes="${teincludes} ${telib}"
              fi
          done
+         te_check_tce "${PLATFORM}" "${pext}" && enable_tce="--tce"
 
          ${SCRIPT_DIR}/te_build_ext --prefix="$PREFIX" \
                       --platform="$PLATFORM" --srcdir="${!pextsrc}" \
@@ -258,7 +263,7 @@ build_agent() {
                       --includes="${teincludes}" \
                       --expbin="${!pextinstb}" \
                       --tatype="${package}" \
-                      --envvars="${!pextenv}" || exit 1
+                      --envvars="${!pextenv}" ${enable_tce} || exit 1
     done
 }
 
@@ -334,6 +339,9 @@ acquire_shadow_build_directory() {
 }
 
 # Release shadow build directory on agent and TE host.
+# Note that ${platform}.sbd file should not be deleted until
+# the end of tests, because TCE processing may depend on its
+# contents, see te_tce_process script
 release_shadow_build_directory() {
     local res
 

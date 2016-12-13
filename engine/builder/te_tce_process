@@ -28,16 +28,60 @@
 # $Id$
 #
 
-PARSER="`dirname $0`/../share/te_builder/nut.m4"
-cat "$PARSER" "$1" | m4 > "${TE_TMP}/nut.conf.processed"
-. "${TE_TMP}/nut.conf.processed"
+. "${TE_BUILD}/builder.conf.processed"
 
-for nut in $NUTS ; do
-    NUT_SOURCES="`eval echo '$NUT_'$nut'_SOURCES'`"
-    if test -z "$NUT_SOURCES" ; then continue; fi
-    find $NUT_SOURCES -name '*.da' -o -name '.*.da' -o -name '*.gcda' -o -name '.*.gcda' | xargs -n1 tce_gcov || exit 1
-    find $NUT_SOURCES -name '*.gcov' -o -name '.*.gcov' | sort | xargs -n1 tce_report >${TE_LOG_DIR}/tce_log_$nut.tce || exit 1
-    mkdir -p ${TE_LOG_DIR}/tce_log_${nut}_files
-    tce_summary -vSORTMODE=coverage -vDATADIR=${TE_LOG_DIR}/tce_log_${nut}_files ${TE_LOG_DIR}/tce_log_$nut.tce > ${TE_LOG_DIR}/tce_log_$nut.html
+SCRIPT_DIR=`dirname $0`
+. ${SCRIPT_DIR}/te_functions
+
+for platform in $TE_BS_PLATFORMS; do
+    tce_list="$*"
+    if test "$tce_list" = all; then
+        alltce="TE_BS_TCE_$platform"
+        tce_list="${!alltce}"
+    fi
+    fake_sbd=
+    if test -n "$tce_list" -a -f "${TE_BUILD}/${platform}.sbd"; then
+        # When shadow build directory is used, GCOV data files will be
+        # created in that directory, instead of the normal build directory.
+        # That's a limitation of GCC+GCOV which in principle can be
+        # circumvented by a combination of GCC scripts and environment
+        # variables, but it seems like this way is simpler and more reliable
+        sbd="$(cat "${TE_BUILD}/${platform}.sbd")"
+        if test "${sbd}" != "${TE_BUILD}"; then
+            te_eval_or_ssh "${platform}" "
+               sudo tar -C '${sbd}' -czf - .
+               sudo rm -rf '${sbd}' >/dev/null
+            " | tar -C "${TE_BUILD}" -xzf -
+            # The build directory may contain files with profilable code,
+            # e.g. headers with inline functions.
+            # If a shadow build directory has been used, it will be searched
+            # by gcov, so we create a local fake symlink to it
+            ln -s "${TE_BUILD}" "${sbd}"
+            fake_sbd=1
+        fi
+    fi
+    for tce in $tce_list ; do
+        srcvar="TE_BS_TCE_${platform}_${tce}_SOURCES"
+        if test -z "${!srcvar}"; then
+            echo "warning: TCE component $tce not defined for platform $platform" >&2
+            continue
+        fi
+        buildvar="TE_BS_TCE_${platform}_${tce}_BUILDDIR"
+        if ! test -d "${!buildvar}" ; then
+            echo "warning: TCE component $tce not built for platform $platform @ ${!buildvar}" >&2
+            continue
+        fi
+        find "${!buildvar}" -name '*.da' -o -name '.*.da' -o -name '*.gcda' -o -name '.*.gcda' | \
+            xargs -n1 tce_gcov || exit 1
+        find "${!buildvar}" -name '*.gcov' -o -name '.*.gcov' | sort | \
+            xargs -n1 tce_report >${TE_LOG_DIR}/tce_log_${platform}_${tce}.tce || exit 1
+        mkdir -p ${TE_LOG_DIR}/tce_log_${platform}_${tce}_files
+        excludevar="TE_BS_TCE_${platform}_${tce}_EXCLUDESRC"
+        tce_summary -vEXCLUDE="${!excludevar}" -vSORTMODE=coverage \
+                    -vDATADIR=${TE_LOG_DIR}/tce_log_${platform}_${tce}_files \
+                    ${TE_LOG_DIR}/tce_log_${platform}_${tce}.tce > \
+                    ${TE_LOG_DIR}/tce_log_${platform}_${tce}.html
+    done
+    test -n "$fake_sbd" && rm -f "$sbd"
 done
 

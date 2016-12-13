@@ -95,6 +95,10 @@ configure_package()
 
     local TE_CFLAGS_NAME="${PLATFORM}_CFLAGS_VAR"
     local TE_CPPFLAGS_NAME="${PLATFORM}_CPPFLAGS_VAR"
+
+    local enable_tce=""
+    te_check_tce "${PLATFORM}" "${PACKAGE}" && enable_tce="--enable-tce"
+
     te_eval_or_ssh "${PLATFORM}" "
         export TE_EXT_LIBS_FILE=\"$TE_EXT_LIBS_FILE\"
         TE_DEPENDENCIES='$DEPENDENCIES' \\
@@ -102,7 +106,7 @@ configure_package()
         CFLAGS= \\
         TE_CFLAGS_VAR='${!TE_CFLAGS_NAME}' \\
         TE_CPPFLAGS_VAR='${!TE_CPPFLAGS_NAME}' \\
-        ${PKGSRC}/configure -q --prefix=$PREFIX ${PARMS}
+        ${PKGSRC}/configure -q --prefix=$PREFIX ${PARMS} ${enable_tce}
     "
 }
 

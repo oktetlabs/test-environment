@@ -178,6 +178,25 @@ te_is_in_list() {
 }
 
 ##
+# Check whether a given component is eligible for TCE
+#
+# @param platform  Platform name
+# @param component Component name
+#
+# @return          @c 0 if TCE is supported
+#                  @c 1 otherwise
+te_check_tce() {
+    local tcevar="TE_BS_TCE_${1}_${2}_SOURCES"
+    if test -n "${!tcevar}"; then
+        if test "${TE_DO_TCE}" = all ||
+                te_is_in_list ${1} ${TE_DO_TCE}; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
+##
 # Recursively update Makefiles
 #
 # @param $1     Directory name
