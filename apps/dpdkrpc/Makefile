@@ -77,5 +77,9 @@ EXTRA_CFLAGS += $(WERROR_FLAGS)
 
 EXTRA_CFLAGS += $(TE_CPPFLAGS)
 EXTRA_LDFLAGS  += -Bstatic -whole-archive -export-dynamic $(TE_LDFLAGS) -no-whole-archive -Bdynamic -lpcap
+ifeq ($(TE_DO_TCE),1)
+EXTRA_CFLAGS  += --coverage
+EXTRA_LDFLAGS += -lgcov
+endif
 
 include $(RTE_SDK)/mk/rte.extapp.mk
