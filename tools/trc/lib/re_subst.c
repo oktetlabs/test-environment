@@ -482,7 +482,17 @@ trc_re_key_substs_buf(const char *name, const char *key)
     ssize_t              buf_size;
 
     if (keyn == NULL)
-        return NULL;
+    {
+        /*
+         * If no namespace with substitutions can be found, return
+         * exact copy of key.
+         */
+
+        if (key != NULL)
+            buf = strdup(key);
+
+        return buf;
+    }
 
     substs = &keyn->substs;
     buf_size = trc_re_substs_exec_buf_start(substs, key, NULL, 0);
