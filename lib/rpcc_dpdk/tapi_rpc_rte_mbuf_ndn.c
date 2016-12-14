@@ -70,7 +70,7 @@ rpc_rte_mk_mbuf_from_template(rcf_rpc_server   *rpcs,
     CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_mk_mbuf_from_template, out.retval);
 
     tlbp = te_log_buf_alloc();
-    TAPI_RPC_LOG(rpcs, rte_mk_mbuf_from_template, "\n%s\n" RPC_PTR_FMT,
+    TAPI_RPC_LOG(rpcs, rte_mk_mbuf_from_template, "\n%s,\n" RPC_PTR_FMT,
                  "%s, " NEG_ERRNO_FMT, in.template, RPC_PTR_VAL(in.mp),
                  rpc_rte_mbufs2str(tlbp, out.mbufs.mbufs_val,
                                    out.mbufs.mbufs_len, rpcs),
@@ -120,7 +120,7 @@ rpc_rte_mbuf_match_pattern(rcf_rpc_server     *rpcs,
 
     tlbp = te_log_buf_alloc();
     TAPI_RPC_LOG(rpcs, rte_mbuf_match_pattern,
-                 "\n%s\n%s", "%u, " NEG_ERRNO_FMT, in.pattern,
+                 "\n%s,\n%s", "%u, " NEG_ERRNO_FMT, in.pattern,
                  rpc_rte_mbufs2str(tlbp, in.mbufs.mbufs_val,
                                    in.mbufs.mbufs_len, rpcs),
                  out.matched, NEG_ERRNO_ARGS(out.retval));
