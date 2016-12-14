@@ -417,6 +417,114 @@ declare "${TA_TYPE_APPS}_${APPNAME}_INSTALL_BIN"="$8"
 declare "${TA_TYPE_APPS}_${APPNAME}_ENV_VARS"="$9"
 ]])
 
+dnl Specifies TCE-enabled components
+dnl Note that the macro just specifies the location of sources and
+dnl object files to be used by TCE processing tools.
+dnl It does *not* cause the component to be compiled with TCE-enabling options,
+dnl nor does it cause TCE reports to be generated
+dnl
+dnl Parameters
+dnl        Component name
+dnl        Component kind:
+dnl        - library
+dnl        - agent (TCE-ing agents is necessary when a TCE-ed library is statically
+dnl                 linked into it)
+dnl        - app
+dnl        Target platform (for libraries) or agent type (for agents and apps)
+dnl        Source directory (absolute or relative to TE_BASE/lib, TE_BASE/agents, TE_BASE/apps,
+dnl            depending on the kind of the entity). Default is the name of the component.
+dnl        Build directory (absolute or relative to TE_BUILD/platforms/PLATFORM/lib, TE_BUILD/agents/AGTYPE
+dnl            TE_BUILD/apps/AGTYPE depending on the kind of the entity).
+dnl            Default is the name of the component.
+dnl        Source pattern to exclude (a regexp)
+
+define([TE_TCE],
+[[
+COMPONENT="$1"
+KIND="$2"
+PLATFORM="$3"
+SOURCES="$4"
+BUILDDIR="$5"
+EXCLUDESRC="$6"
+
+case "$KIND" in
+     app)
+        # For applications and agents the argument is the agent type,
+        # and we need to infer the platform for the corresponding agent definition
+        AGTYPE="$PLATFORM"
+        AGENT_PLATFORM_VAR="TE_BS_TA_${AGTYPE}_PLATFORM"
+        PLATFORM="${!AGENT_PLATFORM_VAR}"
+        ;;
+     agent)
+        # Essentially, the same logic as in the previous branch,
+        # but for the agent its type is the name of the component,
+        # and the platform argument should normally left empty
+        AGTYPE="$COMPONENT"
+        if test -z "$PLATFORM"; then
+           AGENT_PLATFORM_VAR="TE_BS_TA_${AGTYPE}_PLATFORM"
+           PLATFORM="${!AGENT_PLATFORM_VAR}"
+        fi
+        ;;
+     library)
+        AGTYPE=""
+        if test -z "$PLATFORM"; then
+           PLATFORM="${TE_HOST}"
+        fi
+        ;;
+     *)
+        TE_BS_CONF_ERR="invalid kind of ${COMPONENT}: ${KIND}" ;
+        break ;
+        ;;
+esac
+if test -z "$PLATFORM"; then
+   TE_BS_CONF_ERR="TCE component ${COMPONENT} refers to undefined agent type ${AGTYPE}" ;
+   break ;
+fi
+if test -z "$SOURCES" ; then
+    SOURCES="$COMPONENT"
+fi
+if test "${SOURCES:0:1}" != "/" ; then
+   case "$KIND" in
+       library)
+         SOURCES=${TE_BASE}/lib/$SOURCES ;
+         ;;
+       agent)
+         SOURCES=${TE_BASE}/agents/$SOURCES ;
+         ;;
+       app)
+         SOURCES=${TE_BASE}/apps/$SOURCES ;
+         ;;
+  esac
+fi
+if ! test -d "$SOURCES" ; then
+    TE_BS_CONF_ERR="source path (${SOURCES}) for TCE component ${COMPONENT} does not exist or is not a directory" ;
+    break ;
+fi
+if test -z "$BUILDDIR"; then
+   BUILDDIR="${COMPONENT}"
+fi
+if test "${BUILDDIR:0:1}" != "/" ; then
+   case "$KIND" in
+       library)
+         BUILDDIR=${TE_BUILD}/platforms/${PLATFORM}/lib/${BUILDDIR} ;
+         ;;
+       agent)
+         BUILDDIR=${TE_BUILD}/agents/${BUILDDIR} ;
+         ;;
+       app)
+         BUILDDIR=${TE_BUILD}/apps/${BUILDDIR}/${AGTYPE} ;
+         ;;
+  esac
+fi
+
+TCELIST="TE_BS_TCE_${PLATFORM}"
+declare "$TCELIST"="${!TCELIST} ${COMPONENT}"
+declare "${TCELIST}_${COMPONENT}_KIND"="$KIND"
+declare "${TCELIST}_${COMPONENT}_AGTYPE"="$AGTYPE"
+declare "${TCELIST}_${COMPONENT}_SOURCES"="$SOURCES"
+declare "${TCELIST}_${COMPONENT}_BUILDDIR"="$BUILDDIR"
+declare "${TCELIST}_${COMPONENT}_EXCLUDESRC"="$EXCLUDESRC"
+]])
 
 dnl Specifies additional parameters for test suite.
 dnl The path to test suite is specified in tester.conf file.

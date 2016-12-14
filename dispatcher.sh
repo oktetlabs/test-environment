@@ -218,7 +218,8 @@ Generic options:
                                 (without by default)
   --vg-tester                   Run Tester under valgrind (without by default)
   --gdb-tester                  Run Tester under gdb.
-  --tce                         Do TCE processing
+  --tce                         Do TCE processing for all TCE-enabled components
+  --tce=<list>                  Do TCE processing for specific components (comma-separated) or `all'
 
  --sniff-not-feed-conf          Do not feed the sniffer configuration file
                                 to Configurator.
@@ -520,8 +521,8 @@ process_opts()
             --conf-nut=*) CONF_NUT_SET=1; CONF_NUT="${1#--conf-nut=}" ;;
             --force) TE_NO_PROMPT=yes ;;
 
-            --tce) DO_TCE=yes ;;
-            
+            --tce) TE_DO_TCE=all ;;
+            --tce=*) TE_DO_TCE="${1#--tce=}"; TE_DO_TCE="${TE_DO_TCE//,/ }" ;;
             --log-dir=*) TE_LOG_DIR="${1#--log-dir=}" ;;
             --log-online) LOG_ONLINE=yes ;;
 
@@ -880,6 +881,7 @@ elif test ! -d "${TE_BUILD}" ; then
     exit 1
 fi
 export TE_BUILD
+export TE_DO_TCE
 cd "${TE_BUILD}"
 
 export TE_LOG_DIR="${TE_LOG_DIR}"
@@ -1333,9 +1335,9 @@ if test -z ${TE_SNIFF_LOG_CONV_DISABLE} ; then
 fi
 myecho "done"
 
-if test ${START_OK} -ne 1 -a -n "${DO_TCE}" ; then
+if test ${START_OK} -ne 1 -a -n "${TE_DO_TCE}" ; then
     myecho "--->>> TCE processing"
-    te_tce_process "${CONF_NUT}"
+    te_tce_process ${TE_DO_TCE}
 fi
 
 # Run TRC, if any its option is provided

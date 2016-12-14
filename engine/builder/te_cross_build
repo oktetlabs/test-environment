@@ -111,6 +111,9 @@ build_platform() {
              local pextinsth="TE_BS_EXT_${p}_${pext}_INSTALL_HEADERS"
              local pextinstl="TE_BS_EXT_${p}_${pext}_INSTALL_LIBS"
              local pextenv="TE_BS_EXT_${p}_${pext}_ENV_VARS"
+             local enable_tce=""
+
+             te_check_tce "${p}" "${pext}" && enable_tce="--tce"
              ${SCRIPT_DIR}/te_build_ext --prefix="$PREFIX" \
                           --platform="$p" --srcdir="${!pextsrc}" \
                           --prepare="${!pextprep}" \
@@ -118,7 +121,7 @@ build_platform() {
                           --build="${!pextbuild}" \
                           --expheaders="${!pextinsth}" \
                           --explibs="${!pextinstl}" \
-                          --envvars="${!pextenv}" || exit 1
+                          --envvars="${!pextenv}" $enable_tce || exit 1
         done
 
         ${TE_BASE}/engine/builder/te_configure_package INCLUDE include \
@@ -237,6 +240,7 @@ build_agent() {
          local pextlibs="TE_BS_TA_APPS_${package}_${pext}_LIBS"
          local pextinstb="TE_BS_TA_APPS_${package}_${pext}_INSTALL_BIN"
          local pextenv="TE_BS_TA_APPS_${package}_${pext}_ENV_VARS"
+         local enable_tce=""
 
          local teincludes=""
          local telib
@@ -249,6 +253,7 @@ build_agent() {
                  teincludes="${teincludes} ${telib}"
              fi
          done
+         te_check_tce "${PLATFORM}" "${pext}" && enable_tce="--tce"
 
          ${SCRIPT_DIR}/te_build_ext --prefix="$PREFIX" \
                       --platform="$PLATFORM" --srcdir="${!pextsrc}" \
@@ -258,7 +263,7 @@ build_agent() {
                       --includes="${teincludes}" \
                       --expbin="${!pextinstb}" \
                       --tatype="${package}" \
-                      --envvars="${!pextenv}" || exit 1
+                      --envvars="${!pextenv}" ${enable_tce} || exit 1
     done
 }
 
@@ -318,10 +323,9 @@ acquire_shadow_build_directory() {
         test -d '${sbd}' && rm -rf '${sbd}'
         mkdir -p '${sbd}/platforms/${p}' || exit 1
         mkdir -p '${sbd}/agents/${p}' || exit 1
-        mkdir -p '${sbd}/apps/${p}' || exit 1
     "
     res=$?; if test "$res" -ne "0" ; then exit $res; fi
-    for type in platforms agents apps; do
+    for type in platforms agents; do
         mkdir -p "${sbd}/${type}/${p}" || exit 1
         test -d "${type}/${p}" || continue
         cp -rp "${type}/${p}" "${sbd}/${type}"
@@ -331,9 +335,26 @@ acquire_shadow_build_directory() {
             "
         res=$?; if test "$res" -ne "0" ; then exit $res; fi
     done
+
+    local applist="TE_BS_TA_APPS_${p}"
+    local app
+    for app in ${!applist}; do
+        mkdir -p "${sbd}/apps/${app}/${p}" || exit 1
+        te_eval_or_ssh "${p}" "mkdir -p '${sbd}/apps/${app}/${p}'"
+        test -d "apps/${app}/${p}" || continue
+        cp -rp "apps/${app}/${p}" "${sbd}/apps/${app}"
+        tar -C "apps/${app}/${p}" -czf - . |
+            te_eval_or_ssh "${p}" "
+                tar -C '${sbd}/apps/${app}/${p}' -xzf -
+            "
+        res=$?; if test "$res" -ne "0" ; then exit $res; fi
+    done
 }
 
 # Release shadow build directory on agent and TE host.
+# Note that ${platform}.sbd file should not be deleted until
+# the end of tests, because TCE processing may depend on its
+# contents, see te_tce_process script
 release_shadow_build_directory() {
     local res
 
@@ -345,14 +366,23 @@ release_shadow_build_directory() {
     # remove files from the SBD on TE host
     rm -rf "${sbd}" || exit 1
 
+    local applist="TE_BS_TA_APPS_${p}"
+    local app
+
     # cleanup TE_BUILD
     rm -rf "platforms/${p}"
     rm -rf "agents/${p}"
-    rm -rf "apps/${p}"
+    for app in ${!applist}; do rm -rf apps/${app}/${p}; done
 
     # return files from the SBD on agent host
+    for app in ${!applist}; do
+        te_eval_or_ssh "${p}" "
+            tar -C '${sbd}' -czf - apps/${app}/${p}
+        " | tar -xzf -
+        res=$?; if test "$res" -ne "0" ; then exit $res; fi
+    done
     te_eval_or_ssh "${p}" "
-        tar -C '${sbd}' -czf - platforms/${p} agents/${p} apps/${p}
+        tar -C '${sbd}' -czf - platforms/${p} agents/${p}
         rm -rf '${sbd}' >/dev/null
     " | tar -xzf -
     res=$?; if test "$res" -ne "0" ; then exit $res; fi

@@ -718,6 +718,16 @@ then
 fi
 AM_CONDITIONAL([GENERATE_SYMTBL], test x"$ac_cv_enable_generate_symtbl" != xno)
 
+AC_ARG_ENABLE([tce],
+              AS_HELP_STRING([--enable-tce],
+                             [enable TCE support (default is NO)]),
+              [ac_cv_enable_tce=$enableval], [ac_cv_enable_tce=no])
+AC_CACHE_CHECK([whether to enable TCE],
+               [ac_cv_enable_tce], [ac_cv_enable_tce=no])
+if test x"$ac_cv_enable_tce" != xno
+then
+    TE_CFLAGS="$TE_CFLAGS --coverage"
+fi
 
 AC_SUBST([TE_BASE])
 AC_SUBST([TE_BUILD])
