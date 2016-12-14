@@ -286,12 +286,12 @@
    
     <!-- PHY supported mode list
          Name: none -->
-    <object oid="/agent/interface/phy/modes" access="none"
+    <object oid="/agent/interface/phy/modes" access="read_only"
             type="none"/>
     
     <!-- PHY supported mode speed
          Name: integer equal PHY speed in Mbit/sec -->
-    <object oid="/agent/interface/phy/modes/speed" access="none"
+    <object oid="/agent/interface/phy/modes/speed" access="read_only"
             type="none"/>
     
     <!-- PHY supported mode duplex state
