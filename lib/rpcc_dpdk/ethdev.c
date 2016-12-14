@@ -2020,7 +2020,8 @@ rpc_rte_eth_xstats_get_names(rcf_rpc_server *rpcs, uint8_t port_id,
 
     tlbp = te_log_buf_alloc();
     te_log_buf_append(tlbp, "{");
-    if (xstats_names != NULL && out.retval > 0 && out.retval <= size)
+    if (xstats_names != NULL && out.retval > 0 &&
+        (unsigned int)out.retval <= size)
     {
         for (i = 0; i < out.retval; i++)
         {
