@@ -522,7 +522,7 @@ process_opts()
             --force) TE_NO_PROMPT=yes ;;
 
             --tce) TE_DO_TCE=all ;;
-            --tce=*) TE_DO_TCE="${1#--tce}"; TE_DO_TCE="${TE_DO_TCE//,/ }" ;;
+            --tce=*) TE_DO_TCE="${1#--tce=}"; TE_DO_TCE="${TE_DO_TCE//,/ }" ;;
             --log-dir=*) TE_LOG_DIR="${1#--log-dir=}" ;;
             --log-online) LOG_ONLINE=yes ;;
 
