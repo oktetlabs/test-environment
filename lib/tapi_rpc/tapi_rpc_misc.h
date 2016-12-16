@@ -70,6 +70,9 @@ extern "C" {
  * @{
  */
 
+/** Default read buffer size. */
+#define TAPI_READ_BUF_SIZE 4096
+
 /**
  * Try to search a given symbol in the current library used by
  * a given PCO with help of @b tarpc_find_func().
@@ -543,6 +546,42 @@ rpc_overfill_buffers(rcf_rpc_server *rpcs, int sock, uint64_t *sent)
 {
     return rpc_overfill_buffers_gen(rpcs, sock, sent, FUNC_DEFAULT_IOMUX);
 }
+
+/**
+ * Drain all data on a fd.
+ *
+ * @param rpcs      RPC server handle.
+ * @param fd        File descriptor or socket.
+ * @param size      Read buffer size, bytes.
+ * @param time2wait How long wait for data after read failure, milliseconds.
+ *                  If a negative value is set, then blocking @c recv() will
+ *                  be used to read data.
+ * @param read      Pointer for read data amount or @c NULL.
+ *
+ * @return The last return code of @c recv() function: @c -1 in the case of
+ * failure or @c 0 on success. In a common case @c -1 with @c RPC_EAGAIN
+ * should be considered as the correct behavior if the connection was not
+ * closed from the peer side.
+ */
+extern int rpc_drain_fd(rcf_rpc_server *rpcs, int fd, size_t size,
+                        int time2wait, uint64_t *read);
+
+/**
+ * Simplified call of @c rpc_drain_fd(). It executes the call with default
+ * @b size and @b time2wait parameters what is useful in a common case. Also
+ * it checks return code and errno.
+ *
+ * @param rpcs      RPC server handle.
+ * @param fd        File descriptor or socket.
+ * @param read      Pointer for read data amount or @c NULL.
+ *
+ * @return The last return code of @c recv() function. Actually it can be
+ * @c -1 with @c RPC_EAGAIN or @c 0, otherwise the functions reports a
+ * verdict and jumps to cleanup. Zero return code indicates that the
+ * connection was closed from the peer side.
+ */
+extern int rpc_drain_fd_simple(rcf_rpc_server *rpcs, int fd,
+                               uint64_t *read);
 
 /**
  * Overfill the buffers of the pipe.

@@ -10499,3 +10499,100 @@ TARPC_FUNC_STATIC(copy_fd2fd, {},
 {
    MAKE_CALL(out->retval = func_ptr(in));
 })
+
+/**
+ * Drain all data on a fd.
+ *
+ * @param use_libc  Use libc flag.
+ * @param fd        File descriptor or socket.
+ * @param size      Read buffer size, bytes.
+ * @param time2wait Time to wait for extra data, milliseconds. If a negative
+ *                  value is set, then blocking @c recv() will be used to
+ *                  read data.
+ * @param read      Read data amount.
+ *
+ * @return The last return code of @c recv() function: @c -1 in the case of
+ * failure or @c 0 on success.
+ */
+static int
+drain_fd(te_bool use_libc, int fd, size_t size, int time2wait,
+         uint64_t *read)
+{
+    api_func      recv_func;
+    iomux_funcs   iomux_f;
+    iomux_state   iomux_st;
+    iomux_return  iomux_ret;
+    iomux_func    iomux = get_default_iomux();
+    void         *buf = NULL;
+    int flags = MSG_DONTWAIT;
+    int num = 0;
+    int rc;
+
+    if (tarpc_find_func(use_libc, "recv", &recv_func) != 0)
+    {
+        ERROR("Failed to resolve recv function address");
+        return -1;
+    }
+
+    if (time2wait < 0)
+    {
+        flags = 0;
+    }
+    else if (time2wait > 0)
+    {
+        if (iomux_find_func(use_libc, &iomux, &iomux_f) != 0)
+        {
+            ERROR("Failed to resolve iomux function address");
+            return -1;
+        }
+
+        rc = iomux_create_state(iomux, &iomux_f, &iomux_st);
+        if (rc != 0)
+            return -1;
+        rc = iomux_add_fd(iomux, &iomux_f, &iomux_st, fd, POLLIN);
+        if (rc != 0)
+        {
+            iomux_close(iomux, &iomux_f, &iomux_st);
+            return -1;
+        }
+    }
+
+    if ((buf = TE_ALLOC(size)) == NULL)
+    {
+        if (time2wait > 0)
+            iomux_close(iomux, &iomux_f, &iomux_st);
+        return -1;
+    }
+
+    *read = 0;
+
+    do {
+        rc = recv_func(fd, buf, size, flags);
+        if (rc < 0)
+        {
+            if (errno != EAGAIN)
+                break;
+            if (time2wait <= 0)
+                break;
+
+            num = iomux_wait(iomux, &iomux_f, &iomux_st, &iomux_ret,
+                             time2wait);
+            if (num <= 0)
+                break;
+        }
+
+        if (rc > 0)
+            (*read) += rc;
+    } while (rc != 0);
+
+    if (time2wait > 0)
+        iomux_close(iomux, &iomux_f, &iomux_st);
+    free(buf);
+    return rc;
+}
+
+TARPC_FUNC_STATIC(drain_fd, {},
+{
+   MAKE_CALL(out->retval = func(in->common.use_libc, in->fd, in->size,
+                                in->time2wait, &out->read));
+})

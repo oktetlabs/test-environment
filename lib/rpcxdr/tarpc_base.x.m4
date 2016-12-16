@@ -4578,6 +4578,20 @@ struct tarpc_overfill_buffers_out {
     uint64_t    bytes;      /**< Number of sent bytes */
 };
 
+struct tarpc_drain_fd_in {
+    struct tarpc_in_arg common;
+    tarpc_int    fd;
+    tarpc_size_t size;
+    tarpc_int    time2wait;
+};
+
+struct tarpc_drain_fd_out {
+    struct tarpc_out_arg common;
+    tarpc_int   retval;
+    uint64_t    read;
+};
+
+
 /* iomux_splice() */
 struct tarpc_iomux_splice_in {
     struct tarpc_in_arg common;
@@ -5549,6 +5563,7 @@ program tarpc
 
         RPC_DEF(overfill_buffers)
         RPC_DEF(overfill_fd)
+        RPC_DEF(drain_fd)
 
         RPC_DEF(create_event)
         RPC_DEF(create_event_with_bit)
