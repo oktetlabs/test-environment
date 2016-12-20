@@ -177,6 +177,20 @@ do {                                                            \
 /**
  * Find memory identifier by memory address and namespace.
  *
+ * @param [in] mem  Memory address
+ * @param [in] ns   Namespace
+ * @param [out] id  RPC pointer identifier
+ *
+ * @return Status code
+ */
+extern te_errno rcf_pch_mem_index_ptr_to_mem_gen(void *mem,
+                                                 rpc_ptr_id_namespace ns,
+                                                 rpc_ptr *id);
+
+/**
+ * Find memory identifier by memory address and namespace. Reports an error
+ * if identifier is not found.
+ *
  * @param [in] mem          Memory address
  * @param [in] ns           Namespace
  * @param [in] caller_func  Name of function (for more detailed error messages)

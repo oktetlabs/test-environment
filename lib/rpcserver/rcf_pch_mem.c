@@ -503,15 +503,18 @@ rcf_pch_mem_index_mem_to_ptr(rpc_ptr id, rpc_ptr_id_namespace ns,
 }
 
 /* See description in rcf_pch_mem.h */
-rpc_ptr
-rcf_pch_mem_index_ptr_to_mem(void *mem, rpc_ptr_id_namespace ns,
-                             const char *caller_func, int caller_line)
+te_errno
+rcf_pch_mem_index_ptr_to_mem_gen(void *mem, rpc_ptr_id_namespace ns,
+                                 rpc_ptr *id)
 {
-    rpc_ptr             id = 0;
     rpc_ptr_id_index    index = 0;
+    te_errno            rc = 0;
 
     if (mem == NULL)
+    {
+        *id = 0;
         return 0;
+    }
 
     thread_mutex_lock(lock);
 
@@ -519,14 +522,28 @@ rcf_pch_mem_index_ptr_to_mem(void *mem, rpc_ptr_id_namespace ns,
         index++;
 
     if (index < ids_len)
-        id = RPC_PTR_ID_MAKE(ns, index);
+        *id = RPC_PTR_ID_MAKE(ns, index);
     else
-    {
-        ERROR("%s:%d: The memory pointer isn't found (%p, %d)",
-              caller_func, caller_line, mem, ns);
-    }
+        rc = TE_RC(TE_RCF_PCH, TE_ENOENT);
 
     thread_mutex_unlock(lock);
+
+    return rc;
+}
+
+/* See description in rcf_pch_mem.h */
+rpc_ptr
+rcf_pch_mem_index_ptr_to_mem(void *mem, rpc_ptr_id_namespace ns,
+                             const char *caller_func, int caller_line)
+{
+    rpc_ptr  id = 0;
+    te_errno rc;
+
+    rc = rcf_pch_mem_index_ptr_to_mem_gen(mem, ns, &id);
+    if (rc != 0)
+        ERROR("%s:%d: Cannot get RPC id for the memory pointer (%p, %u): "
+              "%r", caller_func, caller_line, mem, ns, rc);
+
     return id;
 }
 
