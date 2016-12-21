@@ -366,18 +366,23 @@ handler2name(void *handler)
         tmp = strdup(sym_name);
     else if ((tmp = calloc(1, 16)) != NULL)
     {
-        /* FIXME */
-        int id = rcf_pch_mem_get_id(handler);
+        rpc_ptr  id = 0;
+        te_errno rc;
 
-        if (id == 0)
+        rc = rcf_pch_mem_index_ptr_to_mem_gen(handler,
+                                              rcf_pch_mem_ns_generic(),
+                                              &id);
+        if (rc == TE_RC(TE_RCF_PCH, TE_ENOENT))
         {
             id = rcf_pch_mem_alloc(handler);
-            RING("Unknown signal handler 0x%x is registered as "
-                 "ID %d in RPC server memory", handler, id);
+            RING("Unknown signal handler %p is registered as "
+                 "ID %u in RPC server memory", handler, id);
         }
+        else if (rc != 0)
+            ERROR("Failed to get RPC pointer id for %p: %r", handler, rc);
 
         /* FIXME */
-        sprintf(tmp, "%d", id);
+        sprintf(tmp, "%u", id);
     }
 
     if (tmp == NULL)
