@@ -219,7 +219,7 @@ Generic options:
   --vg-tester                   Run Tester under valgrind (without by default)
   --gdb-tester                  Run Tester under gdb.
   --tce                         Do TCE processing for all TCE-enabled components
-  --tce=<list>                  Do TCE processing for specific components (comma-separated) or `all'
+  --tce=<list>                  Do TCE processing for specific components (comma-separated) or 'all'
 
  --sniff-not-feed-conf          Do not feed the sniffer configuration file
                                 to Configurator.
