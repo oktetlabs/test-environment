@@ -28,27 +28,13 @@ function open_filter_window()
     window.open("@@%s:DATADIR@@/misc/filter_conf.html", "parwin", "dependent,toolbar=no,menubar=no,status=no,width=400,height=300,screenX=300,screenY=100,scrollbars=no");
 }
 
-</script> 
-
-<script src="http://ajax.googleapis.com/ajax/libs/dojo/1.4/dojo/dojo.xd.js" type="text/javascript"></script>
-<script type="text/javascript">
-function set_node(node, str)
-{
-  if(dojo.isString(node))
-    node = dojo.byId(node);
-  if(!node) return;
-  node.style.display = str;
-}
 function toggle_node(node)
 {
-  if(dojo.isString(node))
-    node = dojo.byId(node);
-  if(!node) return;
-  set_node(node, (node.style.display != 'none') ? 'none' : 'block');
-}
-function hide_node(node)
-{
-  set_node(node, 'none');
+    if (typeof node == 'string')
+        node = document.getElementById(node);
+    if (!node)
+        return;
+    node.style.display = (node.style.display != 'none') ? 'none' : 'block';
 }
 </script>
 
