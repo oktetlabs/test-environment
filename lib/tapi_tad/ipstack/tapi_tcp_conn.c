@@ -1335,11 +1335,25 @@ tapi_tcp_recv_msg(tapi_tcp_handler_t handler, int timeout,
 
     if (msg != NULL)
     {
-        if (msg->data != NULL && buffer != NULL && (*len >= msg->len))
+        if (msg->data == NULL || buffer == NULL)
+        {
+            if (len != NULL)
+                *len = 0;
+        }
+        else if (*len >= msg->len)
         {
             memcpy(buffer, msg->data, msg->len);
             *len = msg->len;
         }
+        else
+        {
+            ERROR("TCP message has %"TE_PRINTF_SIZE_T"u bytes, but "
+                  "supplied buffer has size of only "
+                  "%"TE_PRINTF_SIZE_T"u bytes",
+                  msg->len, *len);
+            return TE_RC(TE_TAPI, TE_ENOBUFS);
+        }
+
         if (seqn_got != NULL)
             *seqn_got = msg->seqn;
         if (ackn_got != NULL)
