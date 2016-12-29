@@ -91,15 +91,17 @@
  * are not asked yet by TAPI user. 
  */
 typedef struct tapi_tcp_msg_queue_t {
-    CIRCLEQ_ENTRY(tapi_tcp_msg_queue_t) link;
+    CIRCLEQ_ENTRY(tapi_tcp_msg_queue_t) link;   /**< Queue link. */
 
-    uint8_t *data;
-    size_t   len;
+    uint8_t *data;          /**< Payload. */
+    size_t   len;           /**< Payload length. */
 
-    tapi_tcp_pos_t seqn;
-    tapi_tcp_pos_t ackn;
+    tapi_tcp_pos_t seqn;    /**< TCP SEQN. */
+    tapi_tcp_pos_t ackn;    /**< TCP ACKN. */
 
-    uint8_t flags;
+    te_bool unexp_seqn;     /**< Was TCP SEQN unexpected? */
+
+    uint8_t flags;          /**< TCP flags. */
 
 } tapi_tcp_msg_queue_t;
 
@@ -130,21 +132,18 @@ typedef struct tapi_tcp_connection_t {
     int window;
 
     tapi_tcp_pos_t seq_got;
-    tapi_tcp_pos_t seq_sent;
-
     tapi_tcp_pos_t ack_got;
-    tapi_tcp_pos_t last_syn_seqn_got;
-    tapi_tcp_pos_t ack_sent;
-
-    tapi_tcp_pos_t our_isn;
-    tapi_tcp_pos_t peer_isn;
-
     size_t         last_len_got;
-    size_t         last_len_sent;
     size_t         last_win_got;
+    tapi_tcp_pos_t peer_isn;
 
     te_bool        fin_got;
     te_bool        reset_got; 
+
+    tapi_tcp_pos_t seq_sent;
+    tapi_tcp_pos_t ack_sent;
+    tapi_tcp_pos_t our_isn;
+    size_t         last_len_sent;
 
     CIRCLEQ_HEAD(tapi_tcp_msg_queue_head, tapi_tcp_msg_queue_t) 
         *messages; 
@@ -467,8 +466,8 @@ conn_wait_msg(tapi_tcp_connection_t *conn_descr, unsigned int timeout)
             return rc;
         }
 
-        /* If seq is zero - no packets has been received yet. */
-        if (seq == 0 || seq + last_len == conn_descr->seq_got)
+        if (conn_descr->seq_got > seq ||
+            seq + last_len == conn_descr->seq_got)
             break;
 
         if (timeout <= duration)
@@ -658,24 +657,35 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
 
     pkt = calloc(1, sizeof(*pkt)); 
 
-    conn_descr->last_len_got = 0;
-
-    if (flags & TCP_SYN_FLAG) /* this is SYN or SYN-ACK */
+    if (conn_descr->seq_got + conn_descr->last_len_got == seq_got ||
+        (conn_descr->peer_isn == 0 && (flags & TCP_SYN_FLAG)))
     {
-        conn_descr->peer_isn = seq_got;
-        conn_descr->last_len_got = pkt->len = 1;
-        conn_descr->last_syn_seqn_got = seq_got;
+        conn_descr->last_len_got = 0;
+        conn_descr->seq_got = seq_got;
+
+        if (flags & TCP_SYN_FLAG) /* this is SYN or SYN-ACK */
+        {
+            conn_descr->peer_isn = seq_got;
+            conn_descr->last_len_got = pkt->len = 1;
+        }
+
+        if (flags & TCP_ACK_FLAG)
+            conn_descr->ack_got = ack_got;
+
+        if (flags & TCP_FIN_FLAG)
+        {
+            conn_descr->fin_got = TRUE;
+            conn_descr->last_len_got = pkt->len = 1;
+        }
+
+        if (data_len > 0)
+            conn_descr->last_len_got = data_len;
+
+        pkt->unexp_seqn = FALSE;
     }
-
-    conn_descr->seq_got = seq_got;
-
-    if (flags & TCP_ACK_FLAG)
-        conn_descr->ack_got = ack_got;
-
-    if (flags & TCP_FIN_FLAG)
+    else
     {
-        conn_descr->fin_got = TRUE;
-        conn_descr->last_len_got = pkt->len = 1;
+        pkt->unexp_seqn = TRUE;
     }
 
     if (flags & TCP_RST_FLAG)
@@ -690,7 +700,7 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
 
     if (data_len > 0)
     {
-        conn_descr->last_len_got = pkt->len = data_len;
+        pkt->len = data_len;
 
         pkt->data = malloc(pld_len = data_len);
         rc = asn_read_value_field(tcp_message, pkt->data, &pld_len,
@@ -713,8 +723,7 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
 
     INFO("%s(conn %d): seq got %u; len %d; ack %u, flags 0x%X",
          __FUNCTION__, conn_descr->id, seq_got, 
-         conn_descr->last_len_got, ack_got, 
-         flags);
+         data_len, ack_got, flags);
 }
 
 
@@ -1545,17 +1554,7 @@ conn_next_ack(tapi_tcp_connection_t *conn_descr)
          __FUNCTION__, conn_descr->id, 
          conn_descr->seq_got, conn_descr->last_len_got);
 
-    /* TODO this seems to be not quiet correct */
-    if (conn_descr->last_len_got > 0 ||
-        conn_descr->last_syn_seqn_got != conn_descr->seq_got - 1)
-        return conn_descr->seq_got + conn_descr->last_len_got;
-    else
-        /*
-         * To prevent ack of simple ack without data
-         * sent in answer to syn-ack - in this case it
-         * has incremented seqn
-         */
-        return conn_descr->seq_got - 1;
+    return conn_descr->seq_got + conn_descr->last_len_got;
 }
 
 static inline int
