@@ -33,6 +33,7 @@
 #include <netinet/in.h>
 
 #include "te_stdint.h"
+#include "te_dbuf.h"
 #include "tad_common.h"
 #include "asn_usr.h"
 #include "tapi_tad.h"
@@ -772,27 +773,73 @@ extern int tapi_tcp_send_template(tapi_tcp_handler_t handler,
 
 /**
  * Wait for next incoming TCP message in connection, if buffer is empty,
+ * or get oldest received message in buffer queue. Ignore packets
+ * having unexpected SEQN (such as retransmits) if requested.
+ *
+ * @param handler           TAPI handler of TCP connection.
+ * @param timeout           Timeout in milliseconds.
+ * @param ack_mode          Mode of sending ACK to the message, for this
+ *                          method valid values are TAPI_TCP_AUTO or
+ *                          TAPI_TCP_QUIET only.
+ * @param payload           Pointer to message payload buffer (OUT).
+ * @param len               Length of buffer / got payload (IN/OUT).
+ * @param seqn_got          Place for received SEQ number or NULL (OUT).
+ * @param ackn_got          Place for received ACK number or NULL (OUT).
+ * @param flags             Location for TCP flags or NULL (OUT).
+ * @param no_unexp_seqn     If TRUE, ignore packets with unexpected TCP SEQN.
+ *
+ * @return Status code
+ */
+extern int tapi_tcp_recv_msg_gen(tapi_tcp_handler_t handler,
+                                 int timeout,
+                                 tapi_tcp_protocol_mode_t ack_mode,
+                                 uint8_t *buffer, size_t *len,
+                                 tapi_tcp_pos_t *seqn_got,
+                                 tapi_tcp_pos_t *ackn_got,
+                                 uint8_t *flags,
+                                 te_bool no_unexp_seqn);
+
+/**
+ * Wait for next incoming TCP message in connection, if buffer is empty,
  * or get oldest received message in buffer queue.
  *
- * @param handler       TAPI handler of TCP connection;     
+ * @param handler       TAPI handler of TCP connection;
  * @param timeout       timeout in milliseconds;
  * @param ack_mode      mode of sending ACK to the message, for this
  *                      method valid values are 'AUTO' or 'QUIET' only;
  * @param payload       pointer to message payload buffer (OUT);
- * @param len           length of buffer/ got payload (IN/OUT);
+ * @param len           length of buffer / got payload (IN/OUT);
  * @param seqn_got      place for received SEQ number or NULL (OUT);
  * @param ackn_got      place for received ACK number or NULL (OUT);
- * @param flags         location for TCP flags (OUT);
+ * @param flags         location for TCP flags or NULL (OUT).
  *
  * @return Status code
  */
 extern int tapi_tcp_recv_msg(tapi_tcp_handler_t handler,
                              int timeout,
-                             tapi_tcp_protocol_mode_t ack_mode, 
-                             uint8_t *buffer, size_t *len, 
-                             tapi_tcp_pos_t *seqn_got, 
+                             tapi_tcp_protocol_mode_t ack_mode,
+                             uint8_t *buffer, size_t *len,
+                             tapi_tcp_pos_t *seqn_got,
                              tapi_tcp_pos_t *ackn_got,
                              uint8_t *flags);
+
+/**
+ * Read all received data from TCP connection.
+ *
+ * @param handler           TAPI handler of TCP connection.
+ * @param time2wait         How long to wait for the next message,
+ *                          milliseconds.
+ * @param ack_mode          Mode of sending ACKs, for this method
+ *                          valid values are TAPI_TCP_AUTO or
+ *                          TAPI_TCP_QUIET only.
+ * @param data              Dynamic buffer to which received data
+ *                          should be appended.
+ *
+ * @return Status code.
+ */
+extern int tapi_tcp_recv_data(tapi_tcp_handler_t handler, int time2wait,
+                              tapi_tcp_protocol_mode_t ack_mode,
+                              te_dbuf *data);
 
 /**
  * Send ACK via established TCP connection.

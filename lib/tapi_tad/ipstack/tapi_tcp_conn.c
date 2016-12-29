@@ -59,6 +59,7 @@
 #include <assert.h>
 
 #include "te_queue.h"
+#include "te_dbuf.h"
 #include "rcf_api.h"
 #include "conf_api.h"
 
@@ -1320,14 +1321,58 @@ tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *payload, size_t len,
     return rc;
 }
 
+/**
+ * Get next TCP message in queue (ignored messages will be
+ * released).
+ *
+ * @param conn_descr        TCP connection descriptor.
+ * @param timeout           Timeout (milliseconds).
+ * @param no_unexp_seqn     Ignore packets with unexpected TCP SEQN.
+ *
+ * @return TCP message or NULL.
+ */
+static tapi_tcp_msg_queue_t *
+conn_get_next_msg(tapi_tcp_connection_t *conn_descr,
+                  int timeout, te_bool no_unexp_seqn)
+{
+    tapi_tcp_msg_queue_t  *msg = NULL;
 
+    te_bool wait_done = FALSE;
+
+    while (TRUE)
+    {
+        msg = conn_get_oldest_msg(conn_descr);
+        if (msg == NULL)
+        {
+            if (wait_done)
+                break;
+
+            if (no_unexp_seqn)
+                conn_wait_msg(conn_descr, timeout);
+            else
+                conn_wait_packet(conn_descr, timeout, NULL);
+
+            wait_done = TRUE;
+            continue;
+        }
+
+        if (no_unexp_seqn && msg->unexp_seqn)
+            tapi_tcp_clear_msg(conn_descr);
+        else
+            return msg;
+    }
+
+    return NULL;
+}
+
+/* See description in tapi_tcp.h */
 int
-tapi_tcp_recv_msg(tapi_tcp_handler_t handler, int timeout,
-                  tapi_tcp_protocol_mode_t ack_mode, 
-                  uint8_t *buffer, size_t *len, 
-                  tapi_tcp_pos_t *seqn_got, 
-                  tapi_tcp_pos_t *ackn_got,
-                  uint8_t *flags)
+tapi_tcp_recv_msg_gen(tapi_tcp_handler_t handler, int timeout,
+                      tapi_tcp_protocol_mode_t ack_mode,
+                      uint8_t *buffer, size_t *len,
+                      tapi_tcp_pos_t *seqn_got,
+                      tapi_tcp_pos_t *ackn_got,
+                      uint8_t *flags, te_bool no_unexp_seqn)
 {
     tapi_tcp_msg_queue_t  *msg;
     tapi_tcp_connection_t *conn_descr;
@@ -1337,13 +1382,7 @@ tapi_tcp_recv_msg(tapi_tcp_handler_t handler, int timeout,
     if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
         return TE_RC(TE_TAPI, TE_EINVAL);
 
-    if ((msg = conn_get_oldest_msg(conn_descr)) == NULL)
-    {
-        VERB("%s(conn %d): wait for message, queue in TAPI is empty", 
-             __FUNCTION__, handler);
-        conn_wait_msg(conn_descr, timeout);
-        msg = conn_get_oldest_msg(conn_descr);
-    }
+    msg = conn_get_next_msg(conn_descr, timeout, no_unexp_seqn);
 
     if (msg != NULL)
     {
@@ -1382,7 +1421,7 @@ tapi_tcp_recv_msg(tapi_tcp_handler_t handler, int timeout,
                 INFO("%s(conn %d): do not send ACK to msg with zero len",
                      __FUNCTION__, handler);
             else
-                tapi_tcp_send_ack(handler, msg->seqn + msg->len);
+                conn_send_ack(conn_descr, msg->seqn + msg->len);
         }
         tapi_tcp_clear_msg(conn_descr);
     }
@@ -1390,6 +1429,52 @@ tapi_tcp_recv_msg(tapi_tcp_handler_t handler, int timeout,
     {
         WARN("%s(id %d) no message got", __FUNCTION__, handler);
         return TE_RC(TE_TAPI, TE_ETIMEDOUT);
+    }
+
+    return 0;
+}
+
+/* See description in tapi_tcp.h */
+int
+tapi_tcp_recv_msg(tapi_tcp_handler_t handler, int timeout,
+                  tapi_tcp_protocol_mode_t ack_mode,
+                  uint8_t *buffer, size_t *len,
+                  tapi_tcp_pos_t *seqn_got,
+                  tapi_tcp_pos_t *ackn_got,
+                  uint8_t *flags)
+{
+    return tapi_tcp_recv_msg_gen(handler, timeout, ack_mode,
+                                 buffer, len, seqn_got, ackn_got, flags,
+                                 FALSE);
+}
+
+/* See description in tapi_tcp.h */
+int
+tapi_tcp_recv_data(tapi_tcp_handler_t handler, int time2wait,
+                   tapi_tcp_protocol_mode_t ack_mode,
+                   te_dbuf *data)
+{
+    tapi_tcp_msg_queue_t  *msg = NULL;
+    tapi_tcp_connection_t *conn_descr = NULL;
+
+    tapi_tcp_conns_db_init();
+
+    if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    while (TRUE)
+    {
+        msg = conn_get_next_msg(conn_descr, time2wait, TRUE);
+        if (msg == NULL)
+            break;
+
+        if (msg->data != NULL)
+            te_dbuf_append(data, msg->data, msg->len);
+
+        if (ack_mode == TAPI_TCP_AUTO && msg->len > 0)
+            conn_send_ack(conn_descr, msg->seqn + msg->len);
+
+        tapi_tcp_clear_msg(conn_descr);
     }
 
     return 0;
