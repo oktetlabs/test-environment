@@ -164,6 +164,9 @@ static inline int conn_update_sent_seq(tapi_tcp_connection_t *conn_descr,
 
 static inline int conn_send_syn(tapi_tcp_connection_t *conn_descr);
 
+static int conn_send_ack(tapi_tcp_connection_t *conn_descr,
+                         tapi_tcp_pos_t ackn);
+
 static void tcp_conn_pkt_handler(const char *pkt_file, void *user_param);
 
 /* global fields */
@@ -1392,38 +1395,67 @@ tapi_tcp_recv_msg(tapi_tcp_handler_t handler, int timeout,
     return 0;
 }
 
-int
-tapi_tcp_send_ack(tapi_tcp_handler_t handler, tapi_tcp_pos_t ackn)
+/**
+ * Send ACK.
+ *
+ * @param conn_descr    TCP connection descriptor.
+ * @param ackn          ACK number.
+ *
+ * @return Status code.
+ */
+static int
+conn_send_ack(tapi_tcp_connection_t *conn_descr, tapi_tcp_pos_t ackn)
 {
-    tapi_tcp_connection_t *conn_descr = tapi_tcp_find_conn(handler);
-
     asn_value *ack_template = NULL;
-    int rc;
+    int        rc;
 
-    if (conn_descr == NULL)
-        return TE_RC(TE_TAPI, TE_EINVAL); 
-
-    rc = tapi_tcp_template(conn_next_seq(conn_descr), ackn, FALSE, TRUE, 
+    rc = tapi_tcp_template(conn_next_seq(conn_descr), ackn, FALSE, TRUE,
                            NULL, 0, &ack_template);
     if (rc != 0)
     {
         ERROR("%s: make ACK template error %r", __FUNCTION__, rc);
         return rc;
-    } 
+    }
 
     rc = tapi_tad_trsend_start(conn_descr->agt, conn_descr->snd_sid,
-                               conn_descr->snd_csap, 
+                               conn_descr->snd_csap,
                                ack_template, RCF_MODE_BLOCKING);
     if (rc != 0)
-    {
         ERROR("%s: send ACK %r", __FUNCTION__, rc);
-    }
     else
         conn_descr->ack_sent = ackn;
 
     return rc;
+}
 
+int
+tapi_tcp_send_ack(tapi_tcp_handler_t handler, tapi_tcp_pos_t ackn)
+{
+    tapi_tcp_connection_t *conn_descr;
 
+    tapi_tcp_conns_db_init();
+
+    if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    return conn_send_ack(conn_descr, ackn);
+}
+
+/* See description in tapi_tcp.h */
+int
+tapi_tcp_ack_all(tapi_tcp_handler_t handler)
+{
+    tapi_tcp_connection_t  *conn_descr;
+    tapi_tcp_pos_t          next_ackn;
+
+    tapi_tcp_conns_db_init();
+
+    if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    next_ackn = conn_next_ack(conn_descr);
+
+    return conn_send_ack(conn_descr, next_ackn);
 }
 
 size_t

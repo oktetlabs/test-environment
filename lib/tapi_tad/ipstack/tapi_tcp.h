@@ -805,6 +805,14 @@ extern int tapi_tcp_recv_msg(tapi_tcp_handler_t handler,
 extern int tapi_tcp_send_ack(tapi_tcp_handler_t handler, 
                              tapi_tcp_pos_t ackn);
 
+/**
+ * Send ACK to all data received from established TCP connection.
+ *
+ * @param handler       TAPI handler of TCP connection.
+ *
+ * @return Status code.
+ */
+extern int tapi_tcp_ack_all(tapi_tcp_handler_t handler);
 
 /**
  * Return last received SEQ number in established TCP connection.
