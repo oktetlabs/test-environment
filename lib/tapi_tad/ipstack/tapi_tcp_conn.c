@@ -969,24 +969,27 @@ tapi_tcp_wait_open(tapi_tcp_handler_t handler, int timeout)
         conn_descr->seq_sent = conn_descr->our_isn;
     }
 
-    /* Wait for SYN or SYN-ACK */
-    rc = conn_wait_msg(conn_descr, timeout);
-    if (rc == TE_ETIMEDOUT && !is_server)
+    /* Wait for SYN or SYN-ACK if it is not received yet. */
+    if (conn_descr->peer_isn == 0)
     {
-        INFO("%s(): re-send SYN", __FUNCTION__);
-        conn_send_syn(conn_descr);
         rc = conn_wait_msg(conn_descr, timeout);
-
-        if (rc == TE_ETIMEDOUT)
+        if (rc == TE_ETIMEDOUT && !is_server)
         {
-            INFO("%s(): re-send SYN again", __FUNCTION__);
+            INFO("%s(): re-send SYN", __FUNCTION__);
             conn_send_syn(conn_descr);
             rc = conn_wait_msg(conn_descr, timeout);
-        }
-    }
 
-    CHECK_ERROR("%s(): wait for SYN of SYN-ACK failed, rc %r",
-                __FUNCTION__, rc); 
+            if (rc == TE_ETIMEDOUT)
+            {
+                INFO("%s(): re-send SYN again", __FUNCTION__);
+                conn_send_syn(conn_descr);
+                rc = conn_wait_msg(conn_descr, timeout);
+            }
+        }
+
+        CHECK_ERROR("%s(): wait for SYN of SYN-ACK failed, rc %r",
+                    __FUNCTION__, rc); 
+    }
 
     msg = conn_get_oldest_msg(conn_descr);
     if (msg == NULL || conn_descr->peer_isn == 0)
