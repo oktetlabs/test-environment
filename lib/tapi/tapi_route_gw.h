@@ -148,10 +148,11 @@ typedef struct tapi_route_gateway {
  * @param gw_     Gateway structure.
  */
 #define TAPI_INIT_ROUTE_GATEWAY(gw_) \
-    tapi_route_gateway_init(&gw_, pco_iut->ta, pco_tst->ta, pco_gw->ta, \
+    CHECK_RC(tapi_route_gateway_init(                                   \
+                            &gw_, pco_iut->ta, pco_tst->ta, pco_gw->ta, \
                             iut_if, tst_if, gw_iut_if, gw_tst_if,       \
                             iut_addr, tst_addr,                         \
-                            gw_iut_addr, gw_tst_addr, alien_link_addr)
+                            gw_iut_addr, gw_tst_addr, alien_link_addr))
 
 /**
  * Update ARP table to set fake or actual MAC address.
@@ -163,14 +164,16 @@ typedef struct tapi_route_gateway {
  * @param addr_dest         Destination address.
  * @param link_addr_dest    New destination MAC or @c NULL.
  * @param is_static         If the new ARP row should be static.
+ *
+ * @return Status code.
  */
-extern void tapi_update_arp(const char *ta_src,
-                            const struct if_nameindex *iface_src,
-                            const char *ta_dest,
-                            const struct if_nameindex *iface_dest,
-                            const struct sockaddr *addr_dest,
-                            const struct sockaddr *link_addr_dest,
-                            te_bool is_static);
+extern te_errno tapi_update_arp(const char *ta_src,
+                                const struct if_nameindex *iface_src,
+                                const char *ta_dest,
+                                const struct if_nameindex *iface_dest,
+                                const struct sockaddr *addr_dest,
+                                const struct sockaddr *link_addr_dest,
+                                te_bool is_static);
 
 /**
  * Initialize gateway structure.
@@ -189,8 +192,10 @@ extern void tapi_update_arp(const char *ta_src,
  * @param gw_iut_addr       Network address on @p gw_iut_if.
  * @param gw_tst_addr       Network address on @p gw_tst_if.
  * @param alien_link_addr   Alien ethernet address.
+ *
+ * @return Status code.
  */
-extern void tapi_route_gateway_init(
+extern te_errno tapi_route_gateway_init(
                               tapi_route_gateway *gw,
                               const char *iut_ta,
                               const char *tst_ta,
@@ -209,71 +214,91 @@ extern void tapi_route_gateway_init(
  * Configure connection via gateway.
  *
  * @param gateway       Gateway description.
+ *
+ * @return Status code.
  */
-extern void tapi_route_gateway_configure(tapi_route_gateway *gw);
+extern te_errno tapi_route_gateway_configure(tapi_route_gateway *gw);
 
 /**
  * Enable or disable IPv4 forwarding on gateway.
  *
  * @param gateway       Gateway description.
+ *
+ * @return Status code.
  */
-extern void tapi_route_gateway_set_forwarding(tapi_route_gateway *gw,
+extern te_errno tapi_route_gateway_set_forwarding(tapi_route_gateway *gw,
                                               te_bool enabled);
 
 /**
  * Break connection from gateway to IUT.
  *
  * @param gateway       Gateway description.
+ *
+ * @return Status code.
  */
-extern void tapi_route_gateway_break_gw_iut(tapi_route_gateway *gw);
+extern te_errno tapi_route_gateway_break_gw_iut(tapi_route_gateway *gw);
 
 /**
  * Repair connection from gateway to IUT.
  *
  * @param gateway       Gateway description.
+ *
+ * @return Status code.
  */
-extern void tapi_route_gateway_repair_gw_iut(tapi_route_gateway *gw);
+extern te_errno tapi_route_gateway_repair_gw_iut(tapi_route_gateway *gw);
 
 /**
  * Break connection from gateway to Tester.
  *
  * @param gateway       Gateway description.
+ *
+ * @return Status code.
  */
-extern void tapi_route_gateway_break_gw_tst(tapi_route_gateway *gw);
+extern te_errno tapi_route_gateway_break_gw_tst(tapi_route_gateway *gw);
 
 /**
  * Repair connection from gateway to Tester.
  *
  * @param gateway       Gateway description.
+ *
+ * @return Status code.
  */
-extern void tapi_route_gateway_repair_gw_tst(tapi_route_gateway *gw);
+extern te_errno tapi_route_gateway_repair_gw_tst(tapi_route_gateway *gw);
 
 /**
  * Break connection from IUT to gateway.
  *
  * @param gateway       Gateway description.
+ *
+ * @return Status code.
  */
-extern void tapi_route_gateway_break_iut_gw(tapi_route_gateway *gw);
+extern te_errno tapi_route_gateway_break_iut_gw(tapi_route_gateway *gw);
 
 /**
  * Repair connection from IUT to gateway.
  *
  * @param gateway       Gateway description.
+ *
+ * @return Status code.
  */
-extern void tapi_route_gateway_repair_iut_gw(tapi_route_gateway *gw);
+extern te_errno tapi_route_gateway_repair_iut_gw(tapi_route_gateway *gw);
 
 /**
  * Break connection from Tester to gateway.
  *
  * @param gateway       Gateway description.
+ *
+ * @return Status code.
  */
-extern void tapi_route_gateway_break_tst_gw(tapi_route_gateway *gw);
+extern te_errno tapi_route_gateway_break_tst_gw(tapi_route_gateway *gw);
 
 /**
  * Repair connection from Tester to gateway.
  *
  * @param gateway       Gateway description.
+ *
+ * @return Status code.
  */
-extern void tapi_route_gateway_repair_tst_gw(tapi_route_gateway *gw);
+extern te_errno tapi_route_gateway_repair_tst_gw(tapi_route_gateway *gw);
 
 #endif /* !__TE_TAPI_ROUTE_GW_H__ */
