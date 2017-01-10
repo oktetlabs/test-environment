@@ -2749,6 +2749,20 @@ signal_registrar(int signum)
     sigaddset(&rpcs_received_signals, signum);
 }
 
+TARPC_FUNC_STANDALONE(signal_registrar_cleanup, {},
+{
+    int rpc_signum;
+    int native_signum;
+
+    for (rpc_signum = RPC_SIG_ZERO + 1; rpc_signum != RPC_SIGUNKNOWN;
+         rpc_signum++)
+    {
+        native_signum = signum_rpc2h(rpc_signum);
+
+        sigdelset(&rpcs_received_signals, native_signum);
+    }
+})
+
 /* Lastly received signal information */
 tarpc_siginfo_t last_siginfo;
 

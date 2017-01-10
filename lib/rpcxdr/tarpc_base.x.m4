@@ -3411,6 +3411,11 @@ struct tarpc_siginfo_received_out {
 
 typedef struct tarpc_siginfo_received_out tarpc_siginfo_received_out;
 
+/* signal_registrar_cleanup() */
+typedef struct tarpc_void_in tarpc_signal_registrar_cleanup_in;
+
+typedef struct tarpc_void_out tarpc_signal_registrar_cleanup_out;
+
 /* gethostbyname */
 
 struct tarpc_h_addr {
@@ -5496,6 +5501,7 @@ program tarpc
         RPC_DEF(sigsuspend)
         RPC_DEF(sigreceived) 
         RPC_DEF(siginfo_received) 
+        RPC_DEF(signal_registrar_cleanup)
 
         RPC_DEF(gethostbyname)
         RPC_DEF(gethostbyaddr)

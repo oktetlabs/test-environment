@@ -955,3 +955,18 @@ rpc_sigaltstack(rcf_rpc_server *rpcs, tarpc_stack_t *ss,
                  out.retval);
     RETVAL_INT(sigaltstack, out.retval);
 }
+
+void
+rpc_signal_registrar_cleanup(rcf_rpc_server *rpcs)
+{
+    tarpc_signal_registrar_cleanup_in  in;
+    tarpc_signal_registrar_cleanup_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    rcf_rpc_call(rpcs, "signal_registrar_cleanup", &in, &out);
+    TAPI_RPC_LOG(rpcs, signal_registrar_cleanup, "%s", "%s", "void", "void");
+
+    RETVAL_VOID(signal_registrar_cleanup);
+}

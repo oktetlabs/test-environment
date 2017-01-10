@@ -365,6 +365,14 @@ extern int rpc_ta_kill_death(rcf_rpc_server *rpcs, tarpc_pid_t pid);
 extern int rpc_siginterrupt(rcf_rpc_server *rpcs, rpc_signum signum,
                             int flag);
 
+/**
+ * Delete all of the signals from set of signals received
+ * by the @p rpcs process.
+ *
+ * @param rpcs  RPC server handle
+ */
+extern void rpc_signal_registrar_cleanup(rcf_rpc_server *rpcs);
+
 /**@} <!-- END te_lib_rpc_signal --> */
 
 #ifdef __cplusplus
