@@ -33,6 +33,8 @@
 #include <rte_eal.h>
 #include <rte_debug.h>
 
+#define TE_USE_SPECIFIC_ASPRINTF 1
+
 #include <ta_common.h>
 #include <rpc_server.h>
 
