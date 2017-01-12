@@ -141,6 +141,7 @@ const char *(*tce_get_conn_function)(void);
 static pthread_mutex_t rcf_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* See description in rcf_ch_api.h */
+extern void rcf_ch_lock(void);
 void
 rcf_ch_lock(void)
 {
@@ -154,6 +155,7 @@ rcf_ch_lock(void)
 }
 
 /* See description in rcf_ch_api.h */
+extern void rcf_ch_unlock(void);
 void
 rcf_ch_unlock(void)
 {
