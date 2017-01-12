@@ -82,7 +82,7 @@
 #include <sys/wait.h>
 #endif
 
-#if HAVE_SYS_UN_H
+#ifdef HAVE_SYS_UN_H
 #include <sys/un.h>
 #endif
 
@@ -94,17 +94,17 @@
 #include <sys/poll.h>
 #endif
 
-#if HAVE_STRUCT_EPOLL_EVENT
+#ifdef HAVE_STRUCT_EPOLL_EVENT
 #include <sys/epoll.h>
 #endif
 
 #ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
 #endif
-#if HAVE_SYS_SOCKIO_H
+#ifdef HAVE_SYS_SOCKIO_H
 #include <sys/sockio.h>
 #endif
-#if HAVE_SYS_FILIO_H
+#ifdef HAVE_SYS_FILIO_H
 #include <sys/filio.h>
 #endif
 
@@ -128,7 +128,7 @@
 #include <netdb.h>
 #endif
 
-#if HAVE_AIO_H
+#ifdef HAVE_AIO_H
 #include <aio.h>
 #endif
 
