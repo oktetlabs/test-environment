@@ -277,7 +277,7 @@ typedef int (*api_func_ptr)(void *param,...);
  * - return value is an integer.
  * .
  */
-typedef int (*api_func_void)();
+typedef int (*api_func_void)(void);
 /**
  * Type of RPC call function where
  * - the first argument is of integer type;
@@ -298,7 +298,7 @@ typedef void *(*api_func_ptr_ret_ptr)(void *param,...);
  * - return value is a pointer.
  * .
  */
-typedef void *(*api_func_void_ret_ptr)();
+typedef void *(*api_func_void_ret_ptr)(void);
 
 /**
  * Type of RPC call function where
