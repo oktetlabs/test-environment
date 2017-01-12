@@ -49,7 +49,7 @@ typedef rpc_ptr rcf_pch_mem_id;
 /**
  * Initialize RCF PCH memory mapping
  */
-extern void rcf_pch_mem_init();
+extern void rcf_pch_mem_init(void);
 
 /**
  * Assign the identifier to memory.
@@ -221,7 +221,7 @@ extern rpc_ptr rcf_pch_mem_index_ptr_to_mem(
  *
  * @return  namespace id
  */
-extern rpc_ptr_id_namespace rcf_pch_mem_ns_generic();
+extern rpc_ptr_id_namespace rcf_pch_mem_ns_generic(void);
 
 /**
  * Determine a namespace id by the string of namespace
