@@ -94,13 +94,13 @@ typedef te_errno (* rcf_argv_thr_rtn)(void *sem, int argc, char **argv);
  *
  * @return Status code
  */
-extern int rcf_ch_init();
+extern int rcf_ch_init(void);
 
 
 /**
  * Mutual exclusion lock access to data connection.
  */
-extern void rcf_ch_lock();
+extern void rcf_ch_lock(void);
 
 /**
  * Unlock access to data connection.
@@ -108,7 +108,7 @@ extern void rcf_ch_lock();
  * @attention To be asynchronous cancellation safe, unlock should work
  *            fine in not locked state.
  */
-extern void rcf_ch_unlock();
+extern void rcf_ch_unlock(void);
 
 /**
  * POSIX thread cancellation-unsafe lock access to data connection.
