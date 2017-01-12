@@ -31,23 +31,23 @@
 #ifndef __TE_DEFS_H__
 #define __TE_DEFS_H__
 
-#if HAVE_ASSERT_H
+#ifdef HAVE_ASSERT_H
 #include <assert.h>
 #endif
-#if HAVE_ERRNO_H
+#ifdef HAVE_ERRNO_H
 #include <errno.h>
 #endif
-#if HAVE_STDLIB_H
+#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #include <limits.h> /* For rand_range() */
 #endif
-#if HAVE_STRING_H
+#ifdef HAVE_STRING_H
 #include <string.h>
 #endif
-#if HAVE_STRINGS_H
+#ifdef HAVE_STRINGS_H
 #include <strings.h>
 #endif
-#if HAVE_UNISTD_H
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 
@@ -270,7 +270,7 @@ typedef enum te_bool3 {
 extern "C" {
 #endif
 
-#if HAVE_STDLIB_H
+#ifdef HAVE_STDLIB_H
 /**
  * Generate random number from the range.
  *
@@ -339,7 +339,7 @@ rand_range(int min, int max)
 }
 #endif
 
-#if HAVE_STRING_H || HAVE_STRINGS_H
+#if defined(HAVE_STRING_H) || defined(HAVE_STRINGS_H)
 /**
  * Check that string starts fro the specified substring.
  *
@@ -379,7 +379,7 @@ static inline int strcmp_null(const char *s1, const char *s2)
 
 #endif
 
-#if HAVE_STDLIB_H && HAVE_ERRNO_H
+#if defined(HAVE_STDLIB_H) && defined(HAVE_ERRNO_H)
 /**
  * Creates a temporary file base on template passed in @a tmp_name
  * parameter.
