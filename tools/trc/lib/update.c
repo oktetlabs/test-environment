@@ -120,6 +120,8 @@ trc_update_free_test_iter_data(trc_update_test_iter_data *data)
     trc_update_args_group      *args_group;
     trc_update_args_group      *args_group_tvar;
 
+    unsigned int i;
+
     if (data == NULL)
         return;
 
@@ -142,10 +144,10 @@ trc_update_free_test_iter_data(trc_update_test_iter_data *data)
         trc_update_args_group_free(args_group);
     }
 
-    for (data->args_n = 0; data->args_n < data->args_max; data->args_n++)
+    for (i = 0; i < data->args_n; i++)
     {
-        free(data->args[data->args_n].name);
-        free(data->args[data->args_n].value);
+        free(data->args[i].name);
+        free(data->args[i].value);
     }
     free(data->args);
     free(data->set_nums);
