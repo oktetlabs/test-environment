@@ -139,7 +139,7 @@ static pthread_mutex_t rcf_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* See description in rcf_ch_api.h */
 void
-rcf_ch_lock()
+rcf_ch_lock(void)
 {
     int rc = pthread_mutex_lock(&rcf_lock);
 
@@ -152,7 +152,7 @@ rcf_ch_lock()
 
 /* See description in rcf_ch_api.h */
 void
-rcf_ch_unlock()
+rcf_ch_unlock(void)
 {
     int rc;
 
