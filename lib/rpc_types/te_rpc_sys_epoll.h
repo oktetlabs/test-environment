@@ -113,7 +113,7 @@ RPCBITMAP2STR(epoll_event, EPOLL_EVENT_MAPPING_LIST)
 
 RPCBITMAP2STR(epoll_flags, EPOLL_FLAG_MAPPING_LIST)
 
-static inline char *
+static inline const char *
 rpc_epoll_ctl_op2str(int op)
 {
     switch (op) {
