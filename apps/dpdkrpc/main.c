@@ -51,7 +51,7 @@ char ta_dir[RCF_MAX_PATH];
  * @return Thread identifier
  */
 uint32_t
-thread_self()
+thread_self(void)
 {
     return (unsigned int)pthread_self();
 }
