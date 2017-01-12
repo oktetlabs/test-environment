@@ -33,6 +33,7 @@
 #include <rte_eal.h>
 #include <rte_debug.h>
 
+#include <ta_common.h>
 #include <rpc_server.h>
 
 DEFINE_LGR_ENTITY("DPDK/RPC");
