@@ -104,7 +104,7 @@
 #endif /* __QNX__ */
 
 /* Note: enable this for solaris if asprintf is not implemented */
-#if TE_USE_SPECIFIC_ASPRINTF
+#ifdef TE_USE_SPECIFIC_ASPRINTF
 static inline int
 te_vasprintf(char **strp, const char *fmt, va_list ap)
 {
