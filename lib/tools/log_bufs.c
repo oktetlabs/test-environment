@@ -79,16 +79,13 @@ static pthread_mutex_t te_log_buf_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /** Check that 'ptr_' is a valid log buffer */
 #define VALIDATE_LOG_BUF(ptr_) \
-    do {                                                            \
-        assert((ptr_)->used == TRUE);                               \
-        assert(((ptr_) >= te_log_bufs));                          \
-        assert(((ptr_) - te_log_bufs) /                           \
-                   sizeof(te_log_bufs[0]) <=                      \
-               sizeof(te_log_bufs) / sizeof(te_log_bufs[0]));   \
-        assert(((ptr_) - te_log_bufs) %                           \
-                   sizeof(te_log_bufs[0]) == 0);                  \
+    do {                                                                \
+        assert(((ptr_) >= te_log_bufs));                                \
+        assert(((uintptr_t)(ptr_) - (uintptr_t)te_log_bufs) %           \
+               sizeof(te_log_bufs[0]) == 0);                            \
+        assert((ptr_ - te_log_bufs) < LOG_BUF_NUM);                     \
+        assert((ptr_)->used == TRUE);                                   \
     } while (0)
-
 
 /* See description in log_bufs.h */
 te_log_buf *
