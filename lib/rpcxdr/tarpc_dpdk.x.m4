@@ -1554,8 +1554,6 @@ struct tarpc_rte_eth_dev_get_supported_ptypes_out {
     uint32_t                                ptypes<>;
 };
 
-typedef struct tarpc_void_out tarpc_rte_eth_xstats_reset_out;
-
 /** rte_eth_dev_set_mc_addr_list() */
 struct tarpc_rte_eth_dev_set_mc_addr_list_in {
     struct tarpc_in_arg                     common;
