@@ -1330,6 +1330,15 @@ struct tarpc_rte_eth_dev_flow_ctrl_get_out {
     struct tarpc_rte_eth_fc_conf           fc_conf;
 };
 
+/** rte_eth_dev_flow_ctrl_set() */
+struct tarpc_rte_eth_dev_flow_ctrl_set_in {
+    struct tarpc_in_arg                    common;
+    uint8_t                                port_id;
+    struct tarpc_rte_eth_fc_conf           fc_conf;
+};
+
+typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_flow_ctrl_set_out;
+
 enum tarpc_rte_filter_type {
     TARPC_RTE_ETH_FILTER_NONE = 0,
     TARPC_RTE_ETH_FILTER_MACVLAN,
@@ -1618,6 +1627,7 @@ program dpdk
         RPC_DEF(rte_eth_dev_rss_reta_query)
         RPC_DEF(rte_eth_dev_rss_hash_conf_get)
         RPC_DEF(rte_eth_dev_flow_ctrl_get)
+        RPC_DEF(rte_eth_dev_flow_ctrl_set)
         RPC_DEF(rte_eth_dev_filter_supported)
         RPC_DEF(rte_eth_dev_filter_ctrl)
         RPC_DEF(rte_eth_dev_rss_hash_update)

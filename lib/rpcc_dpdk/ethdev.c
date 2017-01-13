@@ -1869,8 +1869,8 @@ tarpc_rte_eth_fc_conf2str(te_log_buf *tlbp,
 {
     te_log_buf_append(tlbp, "{");
 
-    te_log_buf_append(tlbp, "high_water=%lu, low_water=%lu",
-                      ", pause_time=%hu, send_xon=%hu",
+    te_log_buf_append(tlbp, "high_water=%lu, low_water=%lu"
+                      ", pause_time=%hu, send_xon=%hu, ",
                       fc_conf->high_water, fc_conf->low_water,
                       fc_conf->pause_time, fc_conf->send_xon);
 
@@ -2555,4 +2555,38 @@ rpc_rte_eth_link_get(rcf_rpc_server *rpcs,
     te_log_buf_free(tlbp);
 
     RETVAL_VOID(rte_eth_link_get);
+}
+
+int rpc_rte_eth_dev_flow_ctrl_set(rcf_rpc_server *rpcs, uint8_t port_id,
+                                  struct tarpc_rte_eth_fc_conf *fc_conf)
+{
+    tarpc_rte_eth_dev_flow_ctrl_set_in   in;
+    tarpc_rte_eth_dev_flow_ctrl_set_out  out;
+    te_log_buf                          *tlbp;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (fc_conf == NULL)
+    {
+        ERROR("%s(): No flow control parameters", __FUNCTION__);
+        RETVAL_ZERO_INT(rte_eth_dev_flow_ctrl_set, -1);
+    }
+
+    in.port_id = port_id;
+    in.fc_conf = *fc_conf;
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_flow_ctrl_set", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_flow_ctrl_set,
+                                          out.retval);
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_flow_ctrl_set, "%hhu, %s",
+                 NEG_ERRNO_FMT, in.port_id,
+                 tarpc_rte_eth_fc_conf2str(tlbp, fc_conf),
+                 NEG_ERRNO_ARGS(out.retval));
+    te_log_buf_free(tlbp);
+
+    RETVAL_ZERO_INT(rte_eth_dev_flow_ctrl_set, out.retval);
 }

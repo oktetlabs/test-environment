@@ -1189,7 +1189,7 @@ done:
 })
 
 static int
-tarpc_rte_eth_fc_mode2rpc(const enum rte_eth_rx_mq_mode rte,
+tarpc_rte_eth_fc_mode2rpc(const enum rte_eth_fc_mode rte,
                           enum tarpc_rte_eth_fc_mode *rpc)
 {
     switch (rte)
@@ -1203,6 +1203,23 @@ tarpc_rte_eth_fc_mode2rpc(const enum rte_eth_rx_mq_mode rte,
     }
 
     return 1;
+}
+
+static int
+tarpc_rpc_eth_fc_mode2rte(const enum tarpc_rte_eth_fc_mode rpc,
+                          enum rte_eth_fc_mode *rte)
+{
+    switch (rpc)
+    {
+        CASE_TARPC2RTE(RTE_FC_NONE);
+        CASE_TARPC2RTE(RTE_FC_RX_PAUSE);
+        CASE_TARPC2RTE(RTE_FC_TX_PAUSE);
+        CASE_TARPC2RTE(RTE_FC_FULL);
+        default:
+            return 1;
+    }
+
+    return 0;
 }
 
 TARPC_FUNC(rte_eth_dev_flow_ctrl_get,{},
@@ -1233,6 +1250,31 @@ done:
     ;
 })
 
+TARPC_FUNC(rte_eth_dev_flow_ctrl_set,{},
+{
+    struct rte_eth_fc_conf  fc_conf;
+
+    if (tarpc_rpc_eth_fc_mode2rte(in->fc_conf.mode, &fc_conf.mode))
+    {
+        out->common._errno = TE_RC(TE_RPCS, TE_EINVAL);
+        out->retval = -out->common._errno;
+        goto done;
+    }
+
+    fc_conf.high_water = in->fc_conf.high_water;
+    fc_conf.low_water= in->fc_conf.low_water;
+    fc_conf.pause_time= in->fc_conf.pause_time;
+    fc_conf.send_xon = in->fc_conf.send_xon;
+    fc_conf.mac_ctrl_frame_fwd = in->fc_conf.mac_ctrl_frame_fwd;
+    fc_conf.autoneg = in->fc_conf.autoneg;
+
+    MAKE_CALL(out->retval = func(in->port_id, &fc_conf));
+
+    neg_errno_h2rpc(&out->retval);
+
+done:
+    ;
+})
 
 static int
 tarpc_rte_filter_type2rte(const enum tarpc_rte_filter_type rpc,

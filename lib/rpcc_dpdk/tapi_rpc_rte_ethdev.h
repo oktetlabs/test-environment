@@ -478,6 +478,12 @@ extern int rpc_rte_eth_dev_flow_ctrl_get(rcf_rpc_server *rpcs, uint8_t port_id,
                                          struct tarpc_rte_eth_fc_conf *fc_conf);
 
 /**
+ * @b rte_eth_dev_flow_ctrl_set() RPC
+ */
+extern int rpc_rte_eth_dev_flow_ctrl_set(rcf_rpc_server *rpcs, uint8_t port_id,
+                                         struct tarpc_rte_eth_fc_conf *fc_conf);
+
+/**
  * Convert filter type to string.
  */
 extern const char * tapi_rpc_rte_filter_type2str(
