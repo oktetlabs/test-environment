@@ -1219,7 +1219,7 @@ verify_backup(const char *backup, te_bool log, const char *msg)
     if (rc != 0)
     {
         if (msg != NULL)
-            ERROR("%s\n%Tf", msg, diff_file);
+            WARN("%s\n%Tf", msg, diff_file);
         else if (log)
         {
             if (cs_flags & CS_LOG_DIFF)
