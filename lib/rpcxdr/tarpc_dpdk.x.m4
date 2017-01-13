@@ -1554,6 +1554,17 @@ struct tarpc_rte_eth_dev_get_supported_ptypes_out {
     uint32_t                                ptypes<>;
 };
 
+typedef struct tarpc_void_out tarpc_rte_eth_xstats_reset_out;
+
+/** rte_eth_dev_set_mc_addr_list() */
+struct tarpc_rte_eth_dev_set_mc_addr_list_in {
+    struct tarpc_in_arg                     common;
+    uint8_t                                 port_id;
+    struct tarpc_ether_addr                 mc_addr_set<>;
+};
+
+typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_set_mc_addr_list_out;
+
 program dpdk
 {
     version ver0
@@ -1659,6 +1670,7 @@ program dpdk
         RPC_DEF(rte_eth_dev_rss_hash_update)
         RPC_DEF(rte_eth_dev_rss_reta_update)
         RPC_DEF(rte_eth_dev_get_supported_ptypes)
+        RPC_DEF(rte_eth_dev_set_mc_addr_list)
         RPC_DEF(rte_eth_link_get_nowait)
         RPC_DEF(rte_eth_link_get)
     } = 1;

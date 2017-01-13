@@ -2711,3 +2711,61 @@ rpc_rte_eth_dev_get_supported_ptypes(rcf_rpc_server *rpcs, uint8_t port_id,
 
     RETVAL_INT(rte_eth_dev_get_supported_ptypes, out.retval);
 }
+
+static const char *
+tarpc_ether_addr_list2str(te_log_buf              *tlbp,
+                          struct tarpc_ether_addr *mc_addr_set,
+                          uint32_t                 nb_mc_addr)
+{
+    unsigned int i;
+
+    te_log_buf_append(tlbp, "{");
+    for (i = 0; i < nb_mc_addr; i++)
+    {
+        if (i > 0)
+            te_log_buf_append(tlbp, ", ");
+        te_ether_addr2log_buf(tlbp, (uint8_t *)&mc_addr_set[i].addr_bytes);
+    }
+    te_log_buf_append(tlbp, "}");
+
+    return te_log_buf_get(tlbp);
+}
+
+int
+rpc_rte_eth_dev_set_mc_addr_list(rcf_rpc_server *rpcs,
+                                 uint8_t port_id,
+                                 struct tarpc_ether_addr *mc_addr_set,
+                                 uint32_t nb_mc_addr)
+{
+    tarpc_rte_eth_dev_set_mc_addr_list_in       in;
+    tarpc_rte_eth_dev_set_mc_addr_list_out      out;
+    te_log_buf                                 *tlbp;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (nb_mc_addr != 0 && mc_addr_set == NULL)
+    {
+        ERROR("%s(): No mc_addr_set, but size is greater than 0",
+              __FUNCTION__);
+        RETVAL_ZERO_INT(rte_eth_dev_set_mc_addr_list, -1);
+    }
+
+    in.port_id = port_id;
+    in.mc_addr_set.mc_addr_set_val = mc_addr_set;
+    in.mc_addr_set.mc_addr_set_len = nb_mc_addr;
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_set_mc_addr_list", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_set_mc_addr_list,
+                                          out.retval);
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_set_mc_addr_list,
+                 "%hhu, %s", NEG_ERRNO_FMT, in.port_id,
+                 tarpc_ether_addr_list2str(tlbp, mc_addr_set, nb_mc_addr),
+                 NEG_ERRNO_ARGS(out.retval));
+    te_log_buf_free(tlbp);
+
+    RETVAL_ZERO_INT(rte_eth_dev_set_mc_addr_list, out.retval);
+}

@@ -1865,3 +1865,28 @@ TARPC_FUNC(rte_eth_dev_get_supported_ptypes,{},
 done:
     ;
 })
+
+TARPC_FUNC(rte_eth_dev_set_mc_addr_list, {},
+{
+    struct ether_addr *mc_addr_set;
+    unsigned int i;
+
+    if (in->mc_addr_set.mc_addr_set_len == 0)
+    {
+        mc_addr_set = NULL;
+    }
+    else
+    {
+        mc_addr_set = malloc(in->mc_addr_set.mc_addr_set_len *
+                             sizeof(struct ether_addr));
+        for (i = 0; i < in->mc_addr_set.mc_addr_set_len; i++)
+            memcpy(mc_addr_set[i].addr_bytes,
+                   in->mc_addr_set.mc_addr_set_val[i].addr_bytes,
+                   sizeof(mc_addr_set[i].addr_bytes));
+    }
+
+    MAKE_CALL(func(in->port_id, mc_addr_set,
+                   in->mc_addr_set.mc_addr_set_len));
+
+    neg_errno_h2rpc(&out->retval);
+})

@@ -582,6 +582,14 @@ extern int rpc_rte_eth_dev_get_supported_ptypes(rcf_rpc_server *rpcs, uint8_t po
                                                 uint32_t ptype_mask, uint32_t *ptypes,
                                                 int num);
 
+/**
+ * @b rte_eth_dev_set_mc_addr_list() RPC
+ */
+extern int rpc_rte_eth_dev_set_mc_addr_list(rcf_rpc_server *rpcs,
+                                            uint8_t port_id,
+                                            struct tarpc_ether_addr *mc_addr_set,
+                                            uint32_t nb_mc_addr);
+
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 
 #ifdef __cplusplus
