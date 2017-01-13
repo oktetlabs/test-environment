@@ -672,6 +672,25 @@ cleanup_specific:                                                   \
     } while (0)
 
 /**
+ * The macro to get parameter of type 'octet string[]', i.e. array of
+ * octet strings
+ *
+ * @param var_name_     Variable whose name is the same as the name of
+ *                      parameter we get the value
+ * @param var_str_len_  Octet string lentgh
+ * @param var_list_len_ Variable for length of the list
+ */
+#define TEST_GET_OCTET_STRING_LIST_PARAM(var_name_, var_list_len_, var_str_len_) \
+    do {                                                                \
+        const char  *str_val_;                                          \
+                                                                        \
+        str_val_ = test_get_param(argc, argv, #var_name_);              \
+                                                                        \
+        test_octet_strings2list(str_val_, (var_str_len_),               \
+                                &(var_name_), &(var_list_len_));        \
+    } while (0)
+
+/**
  * The macro to get parameter of bit mask type.
  *
  * @param var_name_  Variable whose name is the same as the name of
@@ -968,6 +987,19 @@ tapi_asn_params_get(int argc, char **argv, const char *conf_prefix,
 /** Add test arguments to the list of test parameters */
 extern te_errno tapi_test_args2kvpairs(int argc, char *argv[],
                                        te_kvpair_h *args);
+
+/**
+ * Convert the string with several octet strings separated by commas
+ * to array of octet strings
+ *
+ * @param str           String with octet strings
+ * @param str_len       Octet string lentgh
+ * @param oct_str_list  Array with octet strings (OUT)
+ * @param list_len      Length of the array (OUT)
+ */
+extern void
+test_octet_strings2list(const char *str, unsigned int str_len,
+                        uint8_t ***oct_str_list, unsigned int *list_len);
 
 /**@} <!-- END te_ts_tapi_test_param --> */
 

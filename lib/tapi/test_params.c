@@ -743,3 +743,43 @@ tapi_test_args2kvpairs(int argc, char *argv[],
 
     return 0;
 }
+
+void
+test_octet_strings2list(const char *str, unsigned int str_len,
+                        uint8_t ***oct_str_list, unsigned int *list_len)
+{
+        char          **str_array;
+        unsigned int    i;
+        unsigned int    len;
+        unsigned char  *oct_str;
+        uint8_t       **list;
+
+        if (str == NULL)
+        {
+            TEST_STOP;
+        }
+
+        len = test_split_param_list(str,
+                                    TEST_LIST_PARAM_SEPARATOR,
+                                    &str_array);
+        if (len == 0 ||
+            (list = calloc(len, sizeof(uint8_t *))) == NULL)
+        {
+            TEST_STOP;
+        }
+        for (i = 0; i < len; i++)
+        {
+            oct_str = test_get_octet_string_param(str_array[i], str_len);
+            if (oct_str == NULL)
+            {
+                 TEST_FAIL("Test cannot get octet string from %s parameter",
+                           str_array[i]);
+            }
+            list[i] = oct_str;
+        }
+
+        *list_len = len;
+        *oct_str_list = list;
+
+        free(str_array);
+}
