@@ -1528,6 +1528,32 @@ struct tarpc_rte_eth_xstats_reset_in {
 
 typedef struct tarpc_void_out tarpc_rte_eth_xstats_reset_out;
 
+enum tarpc_rte_pktmbuf_types_masks {
+    TARPC_RTE_PTYPE_L2_MASK = 0x0000000f,
+    TARPC_RTE_PTYPE_L3_MASK = 0x000000f0,
+    TARPC_RTE_PTYPE_L4_MASK = 0x00000f00
+};
+
+enum tarpc_rte_pktmbuf_types_offsets {
+    TARPC_RTE_PTYPE_L2_OFFSET = 0,
+    TARPC_RTE_PTYPE_L3_OFFSET = 4,
+    TARPC_RTE_PTYPE_L4_OFFSET = 8
+};
+
+/** rte_eth_dev_get_supported_ptypes() */
+struct tarpc_rte_eth_dev_get_supported_ptypes_in {
+    struct tarpc_in_arg                     common;
+    uint8_t                                 port_id;
+    uint32_t                                ptype_mask;
+    int                                     num;
+};
+
+struct tarpc_rte_eth_dev_get_supported_ptypes_out {
+    struct tarpc_out_arg                    common;
+    tarpc_int                               retval;
+    uint32_t                                ptypes<>;
+};
+
 program dpdk
 {
     version ver0
@@ -1632,6 +1658,7 @@ program dpdk
         RPC_DEF(rte_eth_dev_filter_ctrl)
         RPC_DEF(rte_eth_dev_rss_hash_update)
         RPC_DEF(rte_eth_dev_rss_reta_update)
+        RPC_DEF(rte_eth_dev_get_supported_ptypes)
         RPC_DEF(rte_eth_link_get_nowait)
         RPC_DEF(rte_eth_link_get)
     } = 1;

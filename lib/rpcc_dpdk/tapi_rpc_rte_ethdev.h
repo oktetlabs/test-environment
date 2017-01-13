@@ -572,6 +572,16 @@ extern int rpc_rte_eth_xstats_get(rcf_rpc_server *rpcs, uint8_t port_id,
  */
 extern void rpc_rte_eth_xstats_reset(rcf_rpc_server *rpcs, uint8_t port_id);
 
+/**
+ * @b rte_eth_dev_get_supported_ptypes() RPC.
+ *
+ * If failure is not expected, the function jumps out in the case of
+ * negative return value.
+ */
+extern int rpc_rte_eth_dev_get_supported_ptypes(rcf_rpc_server *rpcs, uint8_t port_id,
+                                                uint32_t ptype_mask, uint32_t *ptypes,
+                                                int num);
+
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 
 #ifdef __cplusplus

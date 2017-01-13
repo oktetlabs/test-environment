@@ -2590,3 +2590,124 @@ int rpc_rte_eth_dev_flow_ctrl_set(rcf_rpc_server *rpcs, uint8_t port_id,
 
     RETVAL_ZERO_INT(rte_eth_dev_flow_ctrl_set, out.retval);
 }
+
+static void
+tapi_rpc_rte_packet_type_mask2str(te_log_buf *tlbp, uint32_t ptype_mask)
+{
+#define CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(_layer, _type) \
+    case TARPC_RTE_PTYPE_##_layer##_##_type << TARPC_RTE_PTYPE_##_layer##_OFFSET: \
+        te_log_buf_append(tlbp, "%s_%s", #_layer, #_type);                        \
+        break
+
+    switch (ptype_mask) {
+        case 0:
+            te_log_buf_append(tlbp, "NONE");
+            break;
+        case TARPC_RTE_PTYPE_L2_MASK:
+            te_log_buf_append(tlbp, "L2_ALL");
+            break;
+        case TARPC_RTE_PTYPE_L3_MASK:
+            te_log_buf_append(tlbp, "L3_ALL");
+            break;
+        case TARPC_RTE_PTYPE_L4_MASK:
+            te_log_buf_append(tlbp, "L4_ALL");
+            break;
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L2, ETHER);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L2, ETHER_TIMESYNC);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L2, ETHER_ARP);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L2, ETHER_LLDP);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L3, IPV4);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L3, IPV4_EXT);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L3, IPV4_EXT_UNKNOWN);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L3, IPV6);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L3, IPV6_EXT);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L3, IPV6_EXT_UNKNOWN);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L4, TCP);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L4, UDP);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L4, FRAG);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L4, SCTP);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L4, ICMP);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L4, NONFRAG);
+        default:
+            te_log_buf_append(tlbp, "UNKNOWN_TYPE");
+            break;
+    }
+
+#undef CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR
+}
+
+static void
+tarpc_rte_packet_type_mask_arg2str(te_log_buf  *tlbp, uint32_t ptype_mask)
+{
+    tapi_rpc_rte_packet_type_mask2str(tlbp, ptype_mask & TARPC_RTE_PTYPE_L2_MASK);
+    te_log_buf_append(tlbp, " | ");
+    tapi_rpc_rte_packet_type_mask2str(tlbp, ptype_mask & TARPC_RTE_PTYPE_L3_MASK);
+    te_log_buf_append(tlbp, " | ");
+    tapi_rpc_rte_packet_type_mask2str(tlbp, ptype_mask & TARPC_RTE_PTYPE_L4_MASK);
+}
+
+static void
+tarpc_rte_supported_ptypes2str(te_log_buf *tlbp, uint32_t *ptypes, int num)
+{
+    int i;
+
+    te_log_buf_append(tlbp, ": ");
+    tapi_rpc_rte_packet_type_mask2str(tlbp, ptypes[0]);
+    for (i = 1; i < num; i++)
+    {
+        te_log_buf_append(tlbp, " | ");
+        tapi_rpc_rte_packet_type_mask2str(tlbp, ptypes[i]);
+    }
+}
+
+int
+rpc_rte_eth_dev_get_supported_ptypes(rcf_rpc_server *rpcs, uint8_t port_id,
+                                     uint32_t ptype_mask, uint32_t *ptypes,
+                                     int num)
+{
+    tarpc_rte_eth_dev_get_supported_ptypes_in   in;
+    tarpc_rte_eth_dev_get_supported_ptypes_out  out;
+    te_log_buf                                 *tlbp_arg;
+    te_log_buf                                 *tlbp_ret;
+    int                                         i;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if ((num != 0) && (ptypes == NULL))
+    {
+        ERROR("%s(): No array of ptypes, but num is greater than 0", __FUNCTION__);
+        RETVAL_ZERO_INT(rte_eth_dev_get_supported_ptypes, -1);
+    }
+
+    in.port_id = port_id;
+    in.ptype_mask = ptype_mask;
+    in.num = num;
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_get_supported_ptypes", &in, &out);
+
+    CHECK_RETVAL_VAR_ERR_COND(rte_eth_dev_get_supported_ptypes,
+                              out.retval, FALSE,
+                              -TE_RC(TE_TAPI, TE_ECORRUPTED),
+                              (out.retval < 0));
+    tlbp_arg = te_log_buf_alloc();
+    tlbp_ret = te_log_buf_alloc();
+
+    tarpc_rte_packet_type_mask_arg2str(tlbp_arg, ptype_mask);
+
+    if (ptypes != NULL && out.retval > 0)
+    {
+        for (i = 0; i < MIN(num, out.retval); i++)
+            ptypes[i] = out.ptypes.ptypes_val[i];
+
+        tarpc_rte_supported_ptypes2str(tlbp_ret, ptypes, MIN(num, out.retval));
+    }
+
+    TAPI_RPC_LOG(rpcs, rpc_rte_eth_dev_get_supported_ptypes,
+                 "%hhu, %s", "%s%s", in.port_id, te_log_buf_get(tlbp_arg),
+                 NEG_ERRNO_ARGS(out.retval), te_log_buf_get(tlbp_ret));
+    te_log_buf_free(tlbp_arg);
+    te_log_buf_free(tlbp_ret);
+
+    RETVAL_INT(rte_eth_dev_get_supported_ptypes, out.retval);
+}

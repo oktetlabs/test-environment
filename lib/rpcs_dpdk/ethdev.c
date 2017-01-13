@@ -1708,3 +1708,160 @@ TARPC_FUNC(rte_eth_link_get, {},
     out->eth_link.link_autoneg = eth_link.link_autoneg;
     out->eth_link.link_status = eth_link.link_status;
 })
+
+static int
+tarpc_rte_pktmbuf_packet_type_mask2rte(uint32_t rpc_ptype_mask,
+                                       uint32_t *rte_ptype_mask)
+{
+    uint32_t rte_tmp = 0;
+
+#define RTE_PKTMBUF_PTYPE_MASK2RTE(_layer, _type) \
+    case (TARPC_RTE_PTYPE_##_layer##_##_type << TARPC_RTE_PTYPE_##_layer##_OFFSET): \
+        rte_tmp |= RTE_PTYPE_##_layer##_##_type;                                    \
+        break
+
+    switch (rpc_ptype_mask & TARPC_RTE_PTYPE_L2_MASK) {
+        case TARPC_RTE_PTYPE_L2_MASK:
+            rte_tmp |= RTE_PTYPE_L2_MASK;
+            break;
+        case TARPC_RTE_PTYPE_L2_UNKNOWN:
+            break;
+        RTE_PKTMBUF_PTYPE_MASK2RTE(L2, ETHER);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(L2, ETHER_TIMESYNC);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(L2, ETHER_ARP);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(L2, ETHER_LLDP);
+        default:
+            return (1);
+    }
+
+    switch (rpc_ptype_mask & TARPC_RTE_PTYPE_L3_MASK) {
+        case TARPC_RTE_PTYPE_L3_MASK:
+            rte_tmp |= RTE_PTYPE_L3_MASK;
+            break;
+        case TARPC_RTE_PTYPE_L3_UNKNOWN:
+            break;
+        RTE_PKTMBUF_PTYPE_MASK2RTE(L3, IPV4);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(L3, IPV4_EXT);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(L3, IPV4_EXT_UNKNOWN);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(L3, IPV6);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(L3, IPV6_EXT);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(L3, IPV6_EXT_UNKNOWN);
+        default:
+            return (1);
+    }
+
+    switch (rpc_ptype_mask & TARPC_RTE_PTYPE_L4_MASK) {
+        case TARPC_RTE_PTYPE_L4_MASK:
+            rte_tmp |= RTE_PTYPE_L4_MASK;
+            break;
+        case TARPC_RTE_PTYPE_L4_UNKNOWN:
+            break;
+        RTE_PKTMBUF_PTYPE_MASK2RTE(L4, TCP);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(L4, UDP);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(L4, FRAG);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(L4, SCTP);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(L4, ICMP);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(L4, NONFRAG);
+        default:
+            return (1);
+    }
+
+#undef RTE_PKTMBUF_PTYPE_MASK2RTE
+
+    *rte_ptype_mask = rte_tmp;
+
+    return (0);
+}
+
+static void
+tarpc_rte_pktmbuf_packet_type2rpc_mask(uint32_t *rpc_ptype_mask)
+{
+    uint32_t rpc_tmp = 0;
+
+#define RTE_PKTMBUF_PTYPE2RPC_MASK(_layer, _type) \
+    case RTE_PTYPE_##_layer##_##_type:                                                       \
+        rpc_tmp = (TARPC_RTE_PTYPE_##_layer##_##_type << TARPC_RTE_PTYPE_##_layer##_OFFSET); \
+        break
+
+    switch (*rpc_ptype_mask) {
+        case 0:
+            break;
+        case RTE_PTYPE_L2_MASK:
+            rpc_tmp = TARPC_RTE_PTYPE_L2_MASK;
+            break;
+        case RTE_PTYPE_L3_MASK:
+            rpc_tmp = TARPC_RTE_PTYPE_L3_MASK;
+            break;
+        case RTE_PTYPE_L4_MASK:
+            rpc_tmp = TARPC_RTE_PTYPE_L4_MASK;
+            break;
+        RTE_PKTMBUF_PTYPE2RPC_MASK(L2, ETHER);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(L2, ETHER_TIMESYNC);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(L2, ETHER_ARP);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(L2, ETHER_LLDP);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(L3, IPV4);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(L3, IPV4_EXT);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(L3, IPV4_EXT_UNKNOWN);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(L3, IPV6);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(L3, IPV6_EXT);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(L3, IPV6_EXT_UNKNOWN);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(L4, TCP);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(L4, UDP);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(L4, FRAG);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(L4, SCTP);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(L4, ICMP);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(L4, NONFRAG);
+        default:
+            rpc_tmp = (TARPC_RTE_PTYPE_L2__UNKNOWN << TARPC_RTE_PTYPE_L2_OFFSET)
+                      | (TARPC_RTE_PTYPE_L3__UNKNOWN << TARPC_RTE_PTYPE_L3_OFFSET)
+                      | (TARPC_RTE_PTYPE_L4__UNKNOWN << TARPC_RTE_PTYPE_L4_OFFSET);
+            break;
+    }
+
+#undef RTE_PKTMBUF_PTYPE2RPC_MASK
+
+    *rpc_ptype_mask = rpc_tmp;
+}
+
+TARPC_FUNC(rte_eth_dev_get_supported_ptypes,{},
+{
+    int         i;
+    uint32_t    ptype_mask;
+    uint32_t   *ptypes = NULL;
+
+    if (tarpc_rte_pktmbuf_packet_type_mask2rte(in->ptype_mask,
+                                               &ptype_mask))
+    {
+        out->common._errno = TE_RC(TE_RPCS, TE_EINVAL);
+        out->retval = -out->common._errno;
+        goto done;
+    }
+
+    if (in->num != 0)
+    {
+        ptypes = calloc(in->num, sizeof(uint32_t));
+        if (ptypes == NULL)
+        {
+            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
+            out->retval = -out->common._errno;
+            goto done;
+        }
+    }
+
+    MAKE_CALL(out->retval = func(in->port_id, ptype_mask,
+                                 ptypes, in->num));
+
+    neg_errno_h2rpc(&out->retval);
+
+    if (ptypes != NULL && out->retval > 0)
+    {
+        for (i = 0; i < MIN(in->num, out->retval); i++)
+            tarpc_rte_pktmbuf_packet_type2rpc_mask(ptypes + i);
+    }
+
+    out->ptypes.ptypes_val = ptypes;
+    out->ptypes.ptypes_len = in->num;
+
+done:
+    ;
+})
