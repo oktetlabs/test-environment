@@ -548,6 +548,18 @@ extern void rpc_rte_eth_link_get(rcf_rpc_server *rpcs, uint8_t port_id,
                                  struct tarpc_rte_eth_link *eth_link);
 
 /**
+ * @b rte_eth_stats_get() RPC
+ *
+ * @param port_id         The port identifier of the Ethernet device
+ * @param stats           Location for the responce containing stats
+ *
+ * @return @c 0 on success; jumps out on error (negative return code)
+ */
+extern int rpc_rte_eth_stats_get(rcf_rpc_server             *rpcs,
+                                 uint8_t                     port_id,
+                                 struct tarpc_rte_eth_stats *stats);
+
+/**
  * @b rte_eth_xstats_get_names() RPC.
  *
  * If failure is not expected, the function jumps out in the case of
