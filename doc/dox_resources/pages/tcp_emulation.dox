@@ -1,0 +1,81 @@
+/**
+
+@defgroup tcp_sock_emulation TCP socket emulation
+@ingroup net_traffic
+@{
+TCP socket emulation gives us full control over TCP behavior, so that we
+can choose when and how to respond to packets from a peer, send malformed
+packets to it, etc. Some use cases:
+
+  - Test TCP states which are usually hard to observe. For example, delay
+    reply to SYN to observe TCP_SYN_SENT state on peer.
+  - Send reordered packets and check that they are correctly processed by
+    a peer.
+  - Check what happens when overlapped TCP fragments are sent.
+
+TCP socket emulation API is defined in @path{lib/tapi_tad/ipstack/tapi_tcp.h}
+
+@section tcp_sock_emulation_init Creating and destroying TCP socket emulation
+
+TCP socket emulation can be created with @func{tapi_tcp_init_connection()},
+which returns handler of type tapi_tcp_handler_t.
+
+Emulated TCP connection may be established either actively or passively.
+
+Passive connection establishment:
+  -# Call @func{tapi_tcp_init_connection()} with mode=TAPI_TCP_SERVER.
+  -# Call non-blocking @func{connect()} from peer.
+  -# Call @func{tapi_tcp_wait_open()}.
+  -# Check than @func{connect()} on peer returns success.
+
+Active connection establishment:
+  -# Create listener socket on peer.
+  -# Call @func{tapi_tcp_init_connection()} with mode=TAPI_TCP_CLIENT.
+  -# Call @func{tapi_tcp_wait_open()}.
+  -# Call @func{accept()} on peer.
+
+TCP socket emulation can be destroyed with @func{tapi_tcp_destroy_connection()}.
+
+@section tcp_sock_emulation_recv Receiving
+
+  - @func{tapi_tcp_wait_msg()} - wait for new packet for a specified amount
+    of time. It ignores retransmits. When a packet is received, information
+    about the last received SEQN/ACKN, FIN, RST, etc. is updated.
+  - @func{tapi_tcp_recv_msg()} - retrieve payload and ACKN/SEQN of the next
+    TCP packet; send ACK to it if requested. If there is no packet in queue,
+    it waits for it for a specified amount of time.
+  - @func{tapi_tcp_recv_msg_gen()} - the same as @func{tapi_tcp_recv_msg()},
+    but it allows to filter out retransmits.
+  - @func{tapi_tcp_recv_data()} - append all payload data received from
+    peer to specified dynamic buffer.
+
+@section tcp_sock_emulation_send Sending
+
+  - @func{tapi_tcp_send_msg()} - send TCP packet with specified payload.
+  - @func{tapi_tcp_send_template()} - send TCP packet according to template
+    described in ASN. Template can be created with @func{tapi_tcp_conn_template()}.
+
+@subsection tcp_sock_emulation_send_spec Sending TCP packets with special flags
+
+  - @func{tapi_tcp_send_fin()} - send FIN.
+  - @func{tapi_tcp_send_fin_ack()} - send FIN-ACK.
+  - @func{tapi_tcp_send_rst()} - send RST.
+  - @func{tapi_tcp_send_ack()} - send ACK with specified ACKN.
+  - @func{tapi_tcp_ack_all()} - send ACK to all data received.
+
+@section tcp_sock_emulation_info Obtaining information about TCP connection
+
+  - @func{tapi_tcp_last_seqn_got()} - get last SEQN received from a peer.
+  - @func{tapi_tcp_last_ackn_got()} - get last ACKN received from a peer.
+  - @func{tapi_tcp_last_win_got()} - get last TCP window size received from
+    a peer.
+  - @func{tapi_tcp_fin_got()} - check whether FIN was received from a peer.
+  - @func{tapi_tcp_rst_got()} - check wheter RST was received from a peer.
+  - @func{tapi_tcp_last_seqn_sent()} - get last SEQN sent to a peer.
+  - @func{tapi_tcp_last_ackn_sent()} - get last ACKN sent to a peer.
+  - @func{tapi_tcp_next_seqn()} - next SEQN to be sent to a peer.
+  - @func{tapi_tcp_next_ackn()} - next ACKN to be sent to a peer.
+
+@} <!-- TCP socket emulation -->
+
+*/
