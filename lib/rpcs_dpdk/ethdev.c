@@ -1575,7 +1575,7 @@ done:
 TARPC_FUNC(rte_eth_xstats_get_names,{},
 {
     struct rte_eth_xstat_name  *xstats_names = NULL;
-    int                         i;
+    unsigned int                i;
 
     if (in->size != 0)
     {
@@ -1594,7 +1594,8 @@ TARPC_FUNC(rte_eth_xstats_get_names,{},
 
     MAKE_CALL(out->retval = func(in->port_id, xstats_names, in->size));
 
-    if (in->size != 0 && out->retval > 0 && out->retval <= in->size)
+    if (in->size != 0 && out->retval > 0 &&
+        (unsigned int)out->retval <= in->size)
     {
         for (i = 0; i < in->size; i++)
             strncpy(out->xstats_names.xstats_names_val[i].name,
@@ -1610,7 +1611,7 @@ done:
 TARPC_FUNC(rte_eth_xstats_get,{},
 {
     struct rte_eth_xstat   *xstats = NULL;
-    int                     i;
+    unsigned int            i;
 
     if (in->n != 0)
     {
@@ -1628,7 +1629,7 @@ TARPC_FUNC(rte_eth_xstats_get,{},
 
     MAKE_CALL(out->retval = func(in->port_id, xstats, in->n));
 
-    if (in->n != 0 && out->retval > 0 && out->retval <= in->n)
+    if (in->n != 0 && out->retval > 0 && (unsigned int)out->retval <= in->n)
     {
         for (i = 0; i < in->n; i++)
         {
