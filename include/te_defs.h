@@ -39,8 +39,8 @@
 #endif
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#include <limits.h> /* For rand_range() */
 #endif
+#include <limits.h>
 #ifdef HAVE_STRING_H
 #include <string.h>
 #endif
@@ -431,6 +431,26 @@ ptr_is_not_null(const void *ptr)
         return TRUE;
     return FALSE;
 }
+
+#ifdef __GNUC__
+/**
+ * Round up to nearest power of 2
+ *
+ * @param num     The number to round up
+ *
+ * @note If @p num is equal to @c 0 or @c ULLONG_MAX,
+         the result will be @c 2
+ *
+ * @return Upper power of 2 for @p num
+ */
+static inline unsigned long long
+te_round_up_pow2(unsigned long long num)
+{
+    unsigned long long n = ((num == 0) || (num == ULLONG_MAX)) ? 1 : num;
+
+    return (1 << (sizeof(num) * CHAR_BIT - __builtin_clzll(n)));
+}
+#endif
 
 /* Tests related part */
 /* fixme kostik: should be moved */

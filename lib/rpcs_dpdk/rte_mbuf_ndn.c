@@ -49,17 +49,7 @@
 #include "rpc_server.h"
 #include "rpcs_dpdk.h"
 #include "te_errno.h"
-
-static unsigned int
-upper_power_of_two(unsigned int num)
-{
-    unsigned int power = 1;
-
-    while(power < num)
-        power *= 2;
-
-    return (num < 2) ? 2 : power;
-}
+#include "te_defs.h"
 
 static te_errno
 rte_mbuf_csap_add_layer(asn_value       **csap_spec,
@@ -342,7 +332,7 @@ rte_mbuf_config_init_csap(asn_value          *rte_mbuf_layer,
 
     /* Allocate RTE ring and fill in 'rtembuf' layer settings */
     ring = rte_ring_create("mbuf_ring",
-                           upper_power_of_two(ring_num_entries_desired + 1),
+                           te_round_up_pow2(ring_num_entries_desired + 1),
                            mp->socket_id, 0);
     if (ring == NULL)
     {
