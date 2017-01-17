@@ -30,6 +30,8 @@
 
 #define TE_LGR_USER "Configurator object"
 
+#include "te_config.h"
+
 #include "conf_object.h"
 #include "logger_api.h"
 #include "te_sockaddr.h"

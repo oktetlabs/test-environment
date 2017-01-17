@@ -26,6 +26,8 @@
  * $Id$
  */
 
+#include "te_config.h"
+
 #include "conf_ip_rule.h"
 
 #include <arpa/inet.h>
