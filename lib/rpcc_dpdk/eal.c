@@ -167,7 +167,7 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
     if (rc == 0 && app_prefix != NULL)
     {
         append_arg(&my_argc, &my_argv, "--file-prefix");
-        append_arg(&my_argc, &my_argv, "%s_%s", app_prefix, rpcs->ta);
+        append_arg(&my_argc, &my_argv, "%s%s", app_prefix, rpcs->ta);
 
         free(app_prefix);
     }
