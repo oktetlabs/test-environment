@@ -38,59 +38,74 @@ install_extension_parts () {
     if test -n "$objlist"; then
         (
             mkdir -p "$destdir"
-            te_eval_or_ssh "$PLATFORM" \
-                           "cd '$SRCDIR';
+            te_eval_or_ssh "$platform" \
+                           "cd '$srcdir';
                             export EXT_SOURCES=\"\$PWD\";
-                            test -n '$BUILDDIR' && cd '$BUILDDIR';
+                            test -n '$builddir' && cd '$builddir';
                             cp -a $objlist '$destdir'"
             find -H "$destdir" -type l | xargs ${SCRIPT_DIR}/te_fixlink "$PWD" "$destdir"
         )
     fi
 }
 
+declare prefix=
+declare platform=
+declare srcdir=
+declare prepare=
+declare builddir=
+declare build=
+declare telibs=
+declare teincludes=
+declare expheaders=
+declare explibs=
+declare expbin=
+declare tatype=
+declare envvars=
+declare tce=
+
 for arg; do
     case "$arg" in
         --prefix=*)
-            PREFIX="${arg#--prefix=}"
+            prefix="${arg#--prefix=}"
             ;;
         --platform=*)
-            PLATFORM="${arg#--platform=}"
+            platform="${arg#--platform=}"
             ;;
         --srcdir=*)
-            SRCDIR="${arg#--srcdir=}"
+            srcdir="${arg#--srcdir=}"
             ;;
         --prepare=*)
-            PREPARE="${arg#--prepare=}"
+            prepare="${arg#--prepare=}"
             ;;
         --builddir=*)
-            BUILDDIR="${arg#--builddir=}"
+            builddir="${arg#--builddir=}"
             ;;
         --build=*)
-            BUILD="${arg#--build=}"
+            build="${arg#--build=}"
             ;;
         --telibs=*)
-            TELIBS="${TELIBS}${TELIBS:+ }${arg#--telibs=}"
+            telibs="${telibs}${telibs:+ }${arg#--telibs=}"
             ;;
         --includes=*)
-            TEINCLUDES="${TEINCLUDES}${TEINCLUDES:+ }${arg#--includes=}"
+            teincludes="${teincludes}${teincludes:+ }${arg#--includes=}"
             ;;
         --expheaders=*)
-            EXPHEADERS="${EXPHEADERS}${EXPHEADERS:+ }${arg#--expheaders=}"
+            expheaders="${expheaders}${expheaders:+ }${arg#--expheaders=}"
             ;;
         --explibs=*)
-            EXPLIBS="${EXPLIBS}${EXPLIBS:+ }${arg#--explibs=}"
+            explibs="${explibs}${explibs:+ }${arg#--explibs=}"
             ;;
         --expbin=*)
-            EXPBIN="${EXPBIN}${EXPBIN:+ }${arg#--expbin=}"
+            expbin="${expbin}${expbin:+ }${arg#--expbin=}"
             ;;
         --tatype=*)
-            TATYPE="${arg#--tatype=}"
+            tatype="${arg#--tatype=}"
             ;;
         --envvars=*)
-            ENVVARS="${ENVVARS}${ENVVARS:+ }${arg#--envvars=}"
+            envvars="${envvars}${envvars:+ }${arg#--envvars=}"
             ;;
         --tce)
-            TCE=1
+            tce=1
             ;;
         *)
             echo "Invalid option '$arg'" >&2
@@ -103,40 +118,40 @@ declare telibflags
 declare l
 declare inc
 declare v
-declare exports
+declare exports=
 
-telibflags="-L$PREFIX/$PLATFORM/lib"
-for l in $TELIBS; do
+telibflags="-L$prefix/$platform/lib"
+for l in $telibs; do
     telibflags="$telibflags -l$l"
 done
 
 tecppflags=""
-for inc in $TEINCLUDES; do
-    tecppflags="$tecppflags -I$PREFIX/$PLATFORM/include/$inc"
+for inc in $teincludes; do
+    tecppflags="$tecppflags -I$prefix/$platform/include/$inc"
 done
-tecppflags="$tecppflags -I$PREFIX/$PLATFORM/include"
+tecppflags="$tecppflags -I$prefix/$platform/include"
 
-for v in $ENVVARS; do
+for v in $envvars; do
         exports="$exports export $v=\"${!v}\"; "
 done
 
 (
-    cd "$SRCDIR"; eval "export EXT_BUILDDIR=\"${BUILDDIR:-.}\"; $PREPARE"
+    cd "$srcdir"; eval "export EXT_BUILDDIR=\"${builddir:-.}\"; $prepare"
 ) || exit 1
 
 (
-        te_eval_or_ssh "$PLATFORM" "cd $SRCDIR ;
-                      test -n \"$BUILDDIR\" && mkdir -p \"$BUILDDIR\" ;
-                      cd ${BUILDDIR:-.} ;
-                      export TE_PREFIX=\"$PREFIX/$PLATFORM\" ;
-                      export TE_DO_TCE=\"$TCE\"
+        te_eval_or_ssh "$platform" "cd $srcdir ;
+                      test -n \"$builddir\" && mkdir -p \"$builddir\" ;
+                      cd ${builddir:-.} ;
+                      export TE_PREFIX=\"$prefix/$platform\" ;
+                      export TE_DO_TCE=\"$tce\"
                       export TE_CPPFLAGS=\"$tecppflags\" ;
                       export TE_LDFLAGS=\"$telibflags\" ;
-                      export EXT_SOURCES=\"$SRCDIR\" ;
+                      export EXT_SOURCES=\"$srcdir\" ;
                       $exports
-                      $BUILD"
+                      $build"
 ) || exit 1
-install_extension_parts "$EXPHEADERS" "$PREFIX/$PLATFORM/include" || exit 1
-install_extension_parts "$EXPLIBS" "$PREFIX/$PLATFORM/lib" || exit 1
-install_extension_parts "$EXPBIN" "$PREFIX/agents/$TATYPE" || exit 1
+install_extension_parts "$expheaders" "$prefix/$platform/include" || exit 1
+install_extension_parts "$explibs" "$prefix/$platform/lib" || exit 1
+install_extension_parts "$expbin" "$prefix/agents/$tatype" || exit 1
 
