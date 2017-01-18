@@ -564,6 +564,17 @@ typedef enum {
 
 typedef int tapi_tcp_handler_t;
 
+/**
+ * Pass this as window parameter to tapi_tcp_init_connection()
+ * to use default window size.
+ */
+#define TAPI_TCP_DEF_WINDOW   0
+
+/**
+ * Pass this as window parameter to tapi_tcp_init_connection()
+ * to use zero window size.
+ */
+#define TAPI_TCP_ZERO_WINDOW -1
 
 /**
  * Initialize process for open TCP connection.
@@ -592,7 +603,9 @@ typedef int tapi_tcp_handler_t;
  * @param local_mac     local MAC address, may be fake;
  * @param remote_mac    remote MAC address, must be real address of peer
  *                      device;
- * @param window        default window size, or zero
+ * @param window        Window size, or zero (TAPI_TCP_DEF_WINDOW)
+ *                      to use default window size. To specify zero
+ *                      window size, pass TAPI_TCP_ZERO_WINDOW.
  * @param handler       TAPI handler of created TCP connection (OUT);
  *
  * @return Status code
@@ -957,7 +970,26 @@ extern tapi_tcp_pos_t tapi_tcp_next_ackn(tapi_tcp_handler_t handler);
 extern int tapi_tcp_update_sent_seq(tapi_tcp_handler_t handler,
                                     size_t new_sent_len);
 
+/**
+ * Get TCP window size currently advertised by TCP connection.
+ *
+ * @param handler     TAPI handler of TCP connection.
+ *
+ * @return TCP window size on success, negative value in case
+ *         of failure.
+ */
+extern int tapi_tcp_get_window(tapi_tcp_handler_t handler);
 
+/**
+ * Set TCP window size to be advertised by TCP connection.
+ *
+ * @param handler     TAPI handler of TCP connection.
+ * @param window      Window size.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_tcp_set_window(tapi_tcp_handler_t handler,
+                                    int window);
 
 typedef struct {
     csap_handle_t  tcp_hack_csap;

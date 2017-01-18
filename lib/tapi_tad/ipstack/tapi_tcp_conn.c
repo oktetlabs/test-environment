@@ -75,6 +75,11 @@
 #include "ndn_ipstack.h"
 #include "ndn_eth.h"
 
+/** Maximum TCP window size. */
+#define MAX_TCP_WINDOW 65535
+
+/** Default TCP window size. */
+#define DEF_TCP_WINDOW MAX_TCP_WINDOW
 
 #ifndef IFNAME_SIZE
 #define IFNAME_SIZE 256
@@ -525,6 +530,38 @@ conn_get_oldest_msg(tapi_tcp_connection_t *conn_descr)
 }
 
 /**
+ * Create TCP packet ASN template.
+ *
+ * @param conn_descr    Connection descriptor.
+ * @param seqn          TCP SEQN.
+ * @param ackn          TCP ACKN.
+ * @param syn_flag      Whether to set SYN flag.
+ * @param ack_flag      Whether to set ACK flag.
+ * @param data          Pointer to payload data or NULL.
+ * @param pld_len       Payload length.
+ * @param tmpl          Location for pointer to ASN value (OUT).
+ *
+ * @return Status code.
+ */
+static int
+create_tcp_template(tapi_tcp_connection_t *conn_descr,
+                    tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
+                    te_bool syn_flag, te_bool ack_flag,
+                    uint8_t *data, size_t pld_len,
+                    asn_value **tmpl)
+{
+    int rc;
+
+    rc = tapi_tcp_template(seqn, ackn, syn_flag, ack_flag,
+                           data, pld_len, tmpl);
+    if (rc != 0)
+        return rc;
+
+    return asn_write_int32(*tmpl, conn_descr->window,
+                           "pdus.0.#tcp.win-size.#plain");
+}
+
+/**
  * send SYN corresponding with connection descriptor. 
  * If SYN was sent already, seq_sent will re-write, and SYN re-sent. 
  */
@@ -546,8 +583,9 @@ conn_send_syn(tapi_tcp_connection_t *conn_descr)
     conn_descr->seq_sent = conn_descr->our_isn;
     conn_descr->last_len_sent = 0;
 
-    rc = tapi_tcp_template(conn_descr->our_isn, 0, TRUE, FALSE, 
-                           NULL, 0, &syn_template);
+    rc = create_tcp_template(conn_descr, conn_descr->our_isn, 0,
+                             TRUE, FALSE,
+                             NULL, 0, &syn_template);
     CHECK_ERROR("%s(): make syn template failed, rc %r",
                 __FUNCTION__, rc);
 
@@ -783,6 +821,20 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
     if (local_iface == NULL || local_mac == NULL || remote_mac == NULL)
         return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
 
+    if (window == TAPI_TCP_DEF_WINDOW)
+    {
+        window = DEF_TCP_WINDOW;
+    }
+    else if (window == TAPI_TCP_ZERO_WINDOW)
+    {
+        window = 0;
+    }
+    else if (window < 0 || window > MAX_TCP_WINDOW)
+    {
+        ERROR("Invalid TCP window size %d was specified", window);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
 #define CHECK_ERROR(msg_...)\
     do {                           \
         if (rc != 0)                 \
@@ -888,7 +940,8 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
     conn_descr->snd_sid = snd_sid;
     conn_descr->agt = agt;
     conn_descr->our_isn = rand();
-    conn_descr->window = ((window == 0) ? 1000 : window);
+    conn_descr->window = window;
+
     tapi_tcp_insert_conn(conn_descr); 
     *handler = conn_descr->id;
 
@@ -1003,10 +1056,10 @@ tapi_tcp_wait_open(tapi_tcp_handler_t handler, int timeout)
     /* Send ACK or SYN-ACK*/ 
 
     conn_descr->ack_sent = conn_next_ack(conn_descr);
-    rc = tapi_tcp_template(conn_next_seq(conn_descr),
-                           conn_descr->ack_sent,
-                           is_server,
-                           TRUE, NULL, 0, &syn_ack_template);
+    rc = create_tcp_template(conn_descr, conn_next_seq(conn_descr),
+                             conn_descr->ack_sent,
+                             is_server,
+                             TRUE, NULL, 0, &syn_ack_template);
     CHECK_ERROR("%s(): make SYN-ACK template failed, rc %r",
                 __FUNCTION__, rc);
 
@@ -1078,8 +1131,9 @@ tapi_tcp_send_fin_gen(tapi_tcp_handler_t handler, int timeout,
         new_ackn = conn_descr->ack_sent;
 
     INFO("%s(conn %d) new ack %u", __FUNCTION__, handler, new_ackn);
-    tapi_tcp_template(conn_next_seq(conn_descr), new_ackn, FALSE, TRUE, 
-                      NULL, 0, &fin_template);
+    create_tcp_template(conn_descr, conn_next_seq(conn_descr), new_ackn,
+                        FALSE, TRUE,
+                        NULL, 0, &fin_template);
 
     flags = TCP_FIN_FLAG | TCP_ACK_FLAG;
     rc = asn_write_int32(fin_template, flags, "pdus.0.#tcp.flags.#plain");
@@ -1165,8 +1219,8 @@ tapi_tcp_send_rst(tapi_tcp_handler_t handler)
     INFO("%s(conn %d) seq %d, new ack %u",
          __FUNCTION__, handler, conn_next_seq(conn_descr), new_ackn);
 
-    tapi_tcp_template(conn_next_seq(conn_descr), new_ackn, FALSE, TRUE, 
-                      NULL, 0, &rst_template);
+    create_tcp_template(conn_descr, conn_next_seq(conn_descr), new_ackn,
+                        FALSE, TRUE, NULL, 0, &rst_template);
 
     flags = TCP_RST_FLAG | TCP_ACK_FLAG;
     rc = asn_write_int32(rst_template, flags, "pdus.0.#tcp.flags.#plain");
@@ -1278,8 +1332,9 @@ tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *payload, size_t len,
             return TE_EINVAL;
     }
 
-    rc = tapi_tcp_template(new_seq, new_ack, FALSE, (new_ack != 0), 
-                           payload, len, &msg_template);
+    rc = create_tcp_template(conn_descr, new_seq, new_ack,
+                             FALSE, (new_ack != 0), payload, len,
+                             &msg_template);
     if (rc != 0)
     {
         ERROR("%s: make msg template error %r", __FUNCTION__, rc);
@@ -1497,8 +1552,8 @@ conn_send_ack(tapi_tcp_connection_t *conn_descr, tapi_tcp_pos_t ackn)
     asn_value *ack_template = NULL;
     int        rc;
 
-    rc = tapi_tcp_template(conn_next_seq(conn_descr), ackn, FALSE, TRUE,
-                           NULL, 0, &ack_template);
+    rc = create_tcp_template(conn_descr, conn_next_seq(conn_descr), ackn,
+                             FALSE, TRUE, NULL, 0, &ack_template);
     if (rc != 0)
     {
         ERROR("%s: make ACK template error %r", __FUNCTION__, rc);
@@ -1722,6 +1777,46 @@ tapi_tcp_update_sent_ack(tapi_tcp_handler_t handler, size_t ack)
     return conn_update_sent_ack(tapi_tcp_find_conn(handler), ack);
 }
 
+/* See description in tapi_tcp.h */
+int
+tapi_tcp_get_window(tapi_tcp_handler_t handler)
+{
+    tapi_tcp_connection_t *conn_descr;
+
+    tapi_tcp_conns_db_init();
+
+    if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
+    {
+        ERROR("TCP connection cannot be found");
+        return -1;
+    }
+
+    return conn_descr->window;
+}
+
+/* See description in tapi_tcp.h */
+te_errno
+tapi_tcp_set_window(tapi_tcp_handler_t handler, int window)
+{
+    tapi_tcp_connection_t *conn_descr;
+
+    tapi_tcp_conns_db_init();
+
+    if (window < 0 || window > MAX_TCP_WINDOW)
+    {
+        ERROR("Invalid TCP window size");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
+    {
+        ERROR("TCP connection cannot be found");
+        return TE_RC(TE_TAPI, TE_ENOENT);
+    }
+
+    conn_descr->window = window;
+    return 0;
+}
 
 int
 tapi_tcp_conn_template(tapi_tcp_handler_t handler,
@@ -1737,9 +1832,9 @@ tapi_tcp_conn_template(tapi_tcp_handler_t handler,
 
     ackn = conn_descr->ack_sent;
 
-    return tapi_tcp_template(conn_next_seq(conn_descr),
-                             ackn, FALSE, (ackn != 0), 
-                             payload, len, tmpl);
+    return create_tcp_template(conn_descr, conn_next_seq(conn_descr),
+                               ackn, FALSE, (ackn != 0),
+                               payload, len, tmpl);
 }
 
 csap_handle_t
