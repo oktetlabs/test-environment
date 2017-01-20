@@ -602,6 +602,23 @@ extern int rpc_rte_eth_dev_set_mc_addr_list(rcf_rpc_server *rpcs,
                                             struct tarpc_ether_addr *mc_addr_set,
                                             uint32_t nb_mc_addr);
 
+/**
+ * @b rte_eth_dev_fw_version_get() RPC
+ *
+ * @param[in]  port_id     The port identifier of the device
+ * @param[out] fw_version  A buffer to store FW version string
+ *                         (allocated and freed by the caller)
+ * @param[in]  fw_size     Buffer length
+ *
+ * @return @c 0 on success; positive length of unmodified
+ *         string, if it was truncated to fit the buffer;
+ *         jumps out on error (in case of negative value)
+ */
+extern int rpc_rte_eth_dev_fw_version_get(rcf_rpc_server *rpcs,
+                                          uint8_t         port_id,
+                                          char           *fw_version,
+                                          size_t          fw_size);
+
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 
 #ifdef __cplusplus

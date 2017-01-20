@@ -1891,3 +1891,15 @@ TARPC_FUNC(rte_eth_dev_set_mc_addr_list, {},
 
     neg_errno_h2rpc(&out->retval);
 })
+
+TARPC_FUNC(rte_eth_dev_fw_version_get,
+{
+    COPY_ARG_NOTNULL(fw_version);
+},
+{
+    MAKE_CALL(out->retval = func(in->port_id,
+                                 out->fw_version.fw_version_val,
+                                 out->fw_version.fw_version_len));
+
+    neg_errno_h2rpc(&out->retval);
+})

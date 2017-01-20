@@ -2769,3 +2769,40 @@ rpc_rte_eth_dev_set_mc_addr_list(rcf_rpc_server *rpcs,
 
     RETVAL_ZERO_INT(rte_eth_dev_set_mc_addr_list, out.retval);
 }
+
+int
+rpc_rte_eth_dev_fw_version_get(rcf_rpc_server *rpcs,
+                               uint8_t         port_id,
+                               char           *fw_version,
+                               size_t          fw_size)
+{
+    tarpc_rte_eth_dev_fw_version_get_in    in;
+    tarpc_rte_eth_dev_fw_version_get_out   out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if ((fw_version == NULL) || (fw_size == 0))
+    {
+        ERROR("%s(): no buffer specified", __FUNCTION__);
+        RETVAL_ZERO_INT(rte_eth_dev_fw_version_get, -EINVAL);
+    }
+
+    in.port_id = port_id;
+    in.fw_version.fw_version_val = tapi_memdup(fw_version, fw_size);
+    in.fw_version.fw_version_len = fw_size;
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_fw_version_get", &in, &out);
+
+    memcpy(fw_version, out.fw_version.fw_version_val, fw_size);
+
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_fw_version_get,
+                 "%hhu, %#x, %u", NEG_ERRNO_FMT "; fw_version: %s%s%s",
+                 in.port_id, in.fw_version.fw_version_val,
+                 in.fw_version.fw_version_len, NEG_ERRNO_ARGS(out.retval),
+                 (out.retval == 0) ? out.fw_version.fw_version_val : "N/A",
+                 (out.retval > 0) ? " (truncated data)" : "",
+                 (out.retval < 0) ? " (error occurred)" : "");
+
+    RETVAL_INT(rte_eth_dev_fw_version_get, out.retval);
+}

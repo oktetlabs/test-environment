@@ -1481,6 +1481,19 @@ struct tarpc_rte_eth_link_get_out {
     struct tarpc_rte_eth_link             eth_link;
 };
 
+/** rte_eth_dev_fw_version_get() */
+struct tarpc_rte_eth_dev_fw_version_get_in {
+    struct tarpc_in_arg     common;
+    uint8_t                 port_id;
+    char                    fw_version<>;
+};
+
+struct tarpc_rte_eth_dev_fw_version_get_out {
+    struct tarpc_out_arg    common;
+    char                    fw_version<>;
+    tarpc_int               retval;
+};
+
 enum tarpc_rte_eth_xstats_name_size {
     TARPC_RTE_ETH_XSTATS_NAME_SIZE = 64
 };
@@ -1671,5 +1684,6 @@ program dpdk
         RPC_DEF(rte_eth_dev_set_mc_addr_list)
         RPC_DEF(rte_eth_link_get_nowait)
         RPC_DEF(rte_eth_link_get)
+        RPC_DEF(rte_eth_dev_fw_version_get)
     } = 1;
 } = 2;
