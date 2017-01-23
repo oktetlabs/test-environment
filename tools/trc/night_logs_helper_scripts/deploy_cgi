@@ -2,67 +2,64 @@
 
 use strict;
 use warnings;
-use File::Spec;
+use Getopt::Long qw(GetOptions GetOptionsFromString);
 use File::Basename;
 
-my $cgi_path = "/usr/lib/cgi-bin/local/prj/sf/sapi-ts/history/";
-my $cli_path = "/home/tester-l5/night_logs_caches/";
-my $def_test = "sockapi-ts/sockopts/bindtodevice_dstunreach";
+my $cgi_path = "";
+my $cli_path = "";
+my $def_test = "";
 my $def_xml_log = "trc-log.bz2";
+my $user = "";
+my $group = "";
 my $def_group_logs_by_tags = "";
-my $user = "tester-l5";
-my $group = "www-data";
-my $install_night_status = 1;
+my $test_path_example = "";
+my $night_logs_http = "";
+my $night_logs_path = "";
+my $opts_parsed = 0;
 
-foreach my $arg (@ARGV)
+my %args_descr = ( "opts=s" => \&parse_opts,
+                   "help" => \&print_help);
+
+sub print_help
 {
-    if ($arg =~ m/^--cgi-path=(.+)$/)
-    {
-        $cgi_path = File::Spec->rel2abs($1)."/";
-    }
-    elsif ($arg =~ m/^--cli-path=(.+)$/)
-    {
-        $cli_path = File::Spec->rel2abs($1)."/";
-    }
-    elsif ($arg =~ m/^--user=(.+)$/)
-    {
-        $user = $1;
-    }
-    elsif ($arg =~ m/^--group=(.+)$/)
-    {
-        $group = $1;
-    }
-    elsif ($arg =~ m/^--def-test=(.+)$/)
-    {
-        $def_test = $1;
-    }
-    elsif ($arg =~ m/^--def-xml-log=(.+)$/)
-    {
-        $def_xml_log = $1;
-    }
-    elsif ($arg =~ m/^--def-logs-by-tags$/)
-    {
-        $def_group_logs_by_tags = "checked";
-    }
-    elsif ($arg =~ m/^--no-night-status$/)
-    {
-        $install_night_status = 0;
-    }
-    elsif ($arg =~ m/^--help$/)
-    {
-        print
-          "Deploying CGI scripts\n".
-          "--cgi_path=          Where to place CGI scripts\n".
-          "--cli_path=          Where auxiliary scripts will be stored\n".
-          "--user=              Name of user owning scripts\n".
-          "--group=             Name of group owning scripts\n".
-          "--def-test=          Default test provided as an example\n".
-          "--def-xml-log=       Default xml log filename\n".
-          "--def-logs-by-tags   Group logs by tags by default\n".
-          "--no-night-status    Do not install night_status.pl script\n";
+    print
+      "Deploying CGI scripts\n".
+      "--opts=path    Specify file with installation options\n";
 
-        exit(0);
+    exit(0);
+}
+
+sub parse_opts
+{
+    my ($name, $path) = @_;
+
+    my $opts_str;
+
+    $opts_str = `cat $path`;
+    if (length($opts_str) == 0)
+    {
+        print "Failed to read installation options\n";
+        exit(1);
     }
+
+    if (!eval($opts_str))
+    {
+        print "Failed to parse installation options\n";
+        exit(1);
+    }
+
+    $opts_parsed = 1;
+}
+
+if (!GetOptions(%args_descr))
+{
+    exit(1);
+}
+
+if ($opts_parsed == 0)
+{
+    print "Installation options were not specified\n";
+    exit(1);
 }
 
 if (system("mkdir -p $cli_path") != 0 ||
@@ -79,39 +76,26 @@ sub escape_path
     return $path;
 }
 
+my %defs = ( "#USE_LIB" => "use lib \"".escape_path($cli_path)."\";",
+             "CLI_PATH" => "\"".escape_path($cli_path)."\"",
+             "DEF_TEST" => escape_path($def_test),
+             "DEF_XML_LOG" => escape_path($def_xml_log),
+             "DEF_GROUP_LOGS_BY_TAGS" =>
+                          escape_path($def_group_logs_by_tags),
+             "TEST_PATH_EXAMPLE" => escape_path($test_path_example),
+             "NIGHT_LOGS_HTTP" => escape_path($night_logs_http),
+             "NIGHT_LOGS_PATH" => escape_path($night_logs_path));
+
 sub fix_script
 {
     my $script = $_[0];
 
-    if (system("sed -i 's/#USE_LIB/use lib \"".
-               escape_path($cli_path)."\";/g' $script") != 0)
+    foreach my $key (keys %defs)
     {
-        die "Failed to replace #USE_LIB in $script";
-    }
-
-    if (system("sed -i 's/CLI_PATH/\"".
-               escape_path($cli_path)."\"/g' $script") != 0)
-    {
-        die "Failed to replace CLI_PATH in $script";
-    }
-
-    if (system("sed -i 's/DEF_TEST/".escape_path(${def_test}).
-               "/g' $script") != 0)
-    {
-        die "Failed to replace DEF_TEST in $script";
-    }
-
-    if (system("sed -i 's/DEF_XML_LOG/".escape_path(${def_xml_log}).
-               "/g' $script") != 0)
-    {
-        die "Failed to replace DEF_XML_LOG in $script";
-    }
-
-    if (system("sed -i 's/DEF_GROUP_LOGS_BY_TAGS/".
-               escape_path(${def_group_logs_by_tags}).
-               "/g' $script") != 0)
-    {
-        die "Failed to replace DEF_GROUP_LOGS_BY_TAGS in $script";
+        if (system("sed -i 's/$key/".$defs{$key}."/g' $script") != 0)
+        {
+            die "Failed to replace $key in $script";
+        }
     }
 }
 
@@ -127,11 +111,6 @@ my %files = ( "$cgi_path" => [ "./cgi_scripts/form.html",
                   [ "./cli_scripts/night_logs_cgi_aux/aux_funcs.pm" ] );
 
 my $rc;
-
-if ($install_night_status > 0)
-{
-    push(@{$files{$cgi_path}}, "./cgi_scripts/night_status.pl");
-}
 
 foreach my $path (keys %files)
 {

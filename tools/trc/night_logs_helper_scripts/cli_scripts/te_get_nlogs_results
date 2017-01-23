@@ -29,7 +29,6 @@ my @log_paths;
 my $verbose = 0;
 my $night_results_fn = "night_results.html";
 my $tag_expr;
-my $use_remote_path = 1;
 my $include_compromised = 0;
 my $update_cache_path;
 my $cached_logs_path;
@@ -39,8 +38,6 @@ my $iters_with_err_only = 0;
 my $print_binary_report = 0;
 my $group_logs_by_tags = 0;
 
-my $tester_logs_dir = "testdir";
-my $default_cache_path = "/home/izbitsky/cached_v5_tot/";
 my $loaded_logs = {};
 my $one_xml_log_parsed = 0;
 
@@ -525,20 +522,6 @@ sub remove_extra_slashes
     return $str;
 }
 
-# We must reference HTML logs in https://oktetlans/~tester-l5/,
-# not in local file system.
-sub fix_html_log_path
-{
-    my $log_path = $_[0];
-
-    if ($log_path =~ s/\/home\/([^\/]*)\/$tester_logs_dir/~$1/)
-    {
-        $log_path = "https://oktetlabs.ru/".$log_path;
-    }
-
-    return $log_path;
-}
-
 # Caching already evaluated tags to speed up
 # tag filtering
 my %tags_eval_cache = ();
@@ -618,7 +601,6 @@ sub parse_xml_log
     my $cur_tags;
     my $cur_ts;
     my $skip_test = 0;
-    my $fixed_log_path = fix_html_log_path($download_path);
 
     my $date_parser = new Date::Manip::Date;
     my $first_date = 1;
@@ -723,7 +705,7 @@ sub parse_xml_log
                     $hashes{$1} = 1;
                 }
 
-                if ($fixed_log_path =~
+                if ($download_path =~
                             /.*([0-9]{2}[.][0-9]{2}[.][0-9]{2}).*/)
                 {
                     $date = $1." ".$cur_ts;
@@ -744,7 +726,7 @@ sub parse_xml_log
                                   verdicts => [],
                                   logs => [ {
                                     log => remove_extra_slashes(
-                                              $fixed_log_path.
+                                              $download_path.
                                               "/html/node_".$tin.".html"),
                                     tags => $cur_tags,
                                     date => $date,
@@ -932,42 +914,12 @@ foreach my $arg (@ARGV)
     {
         $cached_logs_path = $1."/";
     }
-    elsif ($arg =~ m/^--default-cache$/)
-    {
-        $cached_logs_path = $default_cache_path;
-    }
-    elsif ($arg =~ m/^--local-logs=(.*)$/ || $arg =~ m/^--local-logs$/)
-    {
-        my $tmp = $1;
-
-        $use_remote_path = 0;
-
-        if (defined($tmp) && length($tmp) > 0)
-        {
-            if (!($tmp =~ /^file:\/\//))
-            {
-                $tmp = "/home/tester-l5/$tester_logs_dir/night-testing/".$tmp;
-            }
-            else
-            {
-                $tmp =~ s/^file://;
-            }
-
-            push(@log_paths, $tmp);
-        }
-    }
     elsif ($arg =~ m/^--log-path=(.*)$/ || $arg =~ m/^-l(.*)$/)
     {
         my $tmp = $1;
 
-        $use_remote_path = 1;
-
         if (defined($tmp) && length($tmp) > 0)
         {
-            if (!($tmp =~ /^http[s]?:\/\//))
-            {
-                $tmp = "https://oktetlabs.ru/~tester-l5/night-testing/".$tmp;
-            }
             push(@log_paths, $tmp);
         }
     }
@@ -1056,7 +1008,6 @@ foreach my $arg (@ARGV)
               "--from=, -f              From which date to load\n".
               "--to=, -t                To which date to load\n".
               "--log-path=, -l          From where to load logs\n".
-              "--local-logs[=]          Get logs from tester-l5 home\n".
               "--cached-logs[=]         Get logs from Perl cache\n".
               "--update-cache=          Update cached results\n".
               "--out-file=              Where to save testing results\n".
@@ -1072,22 +1023,6 @@ foreach my $arg (@ARGV)
               "--verbose, -v            Log performed operations\n".
               "--help, -h               Display this message\n";
         exit(0);
-    }
-}
-
-if (scalar(@log_paths) == 0)
-{
-    if ($use_remote_path == 0)
-    {
-        push(@log_paths,
-             "/home/tester-l5/$tester_logs_dir/".
-             "night-testing/Linux-v5_tot/");
-    }
-    else
-    {
-        push(@log_paths,
-             "https://oktetlabs.ru/~tester-l5/".
-             "night-testing/Linux-v5_tot/");
     }
 }
 

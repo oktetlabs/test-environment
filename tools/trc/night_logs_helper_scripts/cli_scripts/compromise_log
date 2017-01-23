@@ -15,6 +15,7 @@ my $note;
 my @caches = load_caches_list();
 my %compromised_logs = ();
 my $undo = 0;
+my $night_logs_path = "NIGHT_LOGS_PATH";
 
 umask 0027;
 
@@ -109,7 +110,7 @@ foreach my $cache (@caches)
     }
 }
 
-$log =~ s/^.*night-testing/\/home\/tester-l5\/private_html\/night-testing/;
+$log =~ s/^.*night-testing/$night_logs_path/;
 if ($undo == 0)
 {
     open my $fh, ">", $log."/trc_compromised.js" or

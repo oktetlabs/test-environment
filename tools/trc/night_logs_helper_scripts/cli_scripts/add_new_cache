@@ -65,7 +65,7 @@ foreach my $arg (@ARGV)
 
         if (!($tmp =~ /^http[s]?:\/\//))
         {
-            $tmp = "https://oktetlabs.ru/~tester-l5/night-testing/".$tmp;
+            $tmp = "NIGHT_LOGS_HTTP".$tmp;
         }
         $log_path = $tmp;
         if (!($log_path =~ /\/\s*$/))
