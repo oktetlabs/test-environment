@@ -30,6 +30,7 @@
 #if HAVE_CONFIG_H
 #include "config.h"
 #endif
+#include "te_string.h"
 
 #ifdef ENABLE_8021X
 #include <stddef.h>
@@ -61,6 +62,7 @@ typedef enum {
     SP_TLS_KEY_PATH,        /**< EAP-TLS path to user private key file */
     SP_TLS_KEY_PASSWD,      /**< EAP-TLS password for user private key */
     SP_TLS_ROOT_CERT_PATH,  /**< EAP-TLS path to root certificate file */
+    SP_OPTSTR,              /**< wpa_supplicand option string */
     SP_MAX                  /**< Last value to determine the size of array */
 } supp_param_t;
 
@@ -332,9 +334,12 @@ wpa_supp_get(const char *ifname)
 static te_errno
 wpa_supp_start(const char *ifname, const char *conf_fname)
 {
-    char  buf[128];
+    supplicant *supp;
+    const char *optstr;
+    te_string   cmd = TE_STRING_INIT;
 
     RING("%s('%s', '%s')", __FUNCTION__, ifname, conf_fname);
+
     if (wpa_supp_get(ifname))
     {
         WARN("%s: wpa_supplicant on %s is already running, doing nothing",
@@ -342,23 +347,36 @@ wpa_supp_start(const char *ifname, const char *conf_fname)
         return 0;
     }
 
-    WARN("Starting wpa_supplicant on %s", ifname);
 
-    snprintf(buf, sizeof(buf),
-             "/sbin/wpa_supplicant -dd -i %s -c %s -B",
-             ifname, conf_fname);
-
-    if (ta_system(buf) != 0)
+    if ((supp = supp_find(ifname)) == NULL)
     {
-        ERROR("Command '%s' failed", buf);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    optstr = supp_get_param(supp, SP_OPTSTR);
+
+    RING("Starting wpa_supplicant, interface %s, "
+         "user options '%s'", ifname, optstr);
+
+    te_string_append(&cmd,
+                     "/sbin/wpa_supplicant -i %s -c %s %s -B",
+                     ifname, conf_fname, optstr);
+
+    if (ta_system(cmd.ptr) != 0)
+    {
+        ERROR("Command '%s' failed", cmd.ptr);
+        te_string_free(&cmd);
         return TE_ESHCMD;
     }
+
+    te_string_free(&cmd);
 
     if (!wpa_supp_get(ifname))
     {
         ERROR("Failed to start wpa_supplicant on %s", ifname);
         return TE_EFAIL;
     }
+
     return 0;
 }
 
@@ -373,7 +391,7 @@ wpa_supp_stop(const char *ifname)
         return 0;
     }
 
-    WARN("Stopping wpa_supplicant on %s", ifname);
+    RING("Stopping wpa_supplicant on %s", ifname);
 
     snprintf(buf, sizeof(buf), "/sbin/wpa_cli -i %s disconnect", ifname);
     if (ta_system(buf) != 0)
@@ -629,6 +647,7 @@ supp_create(const char *ifname)
         ns->params[i] = NULL;
 
     supp_set_param(ns, SP_NETWORK, "tester");
+    supp_set_param(ns, SP_OPTSTR, "");
 
     ns->next = supplicant_list;
     supplicant_list = ns;
@@ -959,6 +978,10 @@ DS_SUPP_PARAM_SET(ds_supp_psk_set, SP_PSK)
 DS_SUPP_PARAM_GET(ds_supp_auth_alg_get, SP_AUTH_ALG)
 DS_SUPP_PARAM_SET(ds_supp_auth_alg_set, SP_AUTH_ALG)
 
+/** User options for wpa_supplicant */
+DS_SUPP_PARAM_GET(ds_supp_optstr_get, SP_OPTSTR)
+DS_SUPP_PARAM_SET(ds_supp_optstr_set, SP_OPTSTR)
+
 RCF_PCH_CFG_NODE_RW(node_ds_supp_auth_alg, "auth_alg",
                     NULL, &node_ds_supp_eaptls,
                     ds_supp_auth_alg_get,
@@ -1027,8 +1050,13 @@ RCF_PCH_CFG_NODE_RW(node_ds_supp_identity, "identity",
                     ds_supp_identity_get,
                     ds_supp_identity_set);
 
+RCF_PCH_CFG_NODE_RW(node_ds_supp_optstr, "optstr",
+                    NULL, &node_ds_supp_identity,
+                    ds_supp_optstr_get,
+                    ds_supp_optstr_set);
+
 static rcf_pch_cfg_object node_ds_supplicant = {
-                    "supplicant", 0, &node_ds_supp_identity, NULL,
+                    "supplicant", 0, &node_ds_supp_optstr, NULL,
                     ds_supplicant_get, ds_supplicant_set,
                     NULL, NULL, NULL, ds_supplicant_commit, NULL };
 
