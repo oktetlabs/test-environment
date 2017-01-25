@@ -48,6 +48,7 @@
 #include "te_queue.h"
 #include "te_alloc.h"
 #include "logger_api.h"
+#include "logger_file.h"
 #include "te_trc.h"
 #include "trc_tools.h"
 #include "log_parse.h"
@@ -74,6 +75,9 @@
 #if HAVE_SYS_WAIT_H
 #include <sys/wait.h>
 #endif
+
+/** Where to print detailed logs. */
+#define TRC_UPDATE_LOG_FILE "trc_update_log.txt"
 
 DEFINE_LGR_ENTITY("TRC UPD");
 
@@ -1564,6 +1568,8 @@ main(int argc, char **argv, char **envp)
 {
     int     result = EXIT_FAILURE;
 
+    FILE *log_f = NULL;
+
 #ifdef HAVE_LIBPERL
     char   *perl_embed_params[] = { "", "-e", "0" };
 
@@ -1571,6 +1577,14 @@ main(int argc, char **argv, char **envp)
 #else
     UNUSED(envp);
 #endif
+
+    log_f = fopen(TRC_UPDATE_LOG_FILE, "w");
+    if (log_f == NULL)
+    {
+        perror("failed to open " TRC_UPDATE_LOG_FILE);
+        return EXIT_FAILURE;
+    }
+    te_log_message_file_out = log_f;
 
     TAILQ_INIT(&args_registered);
     trc_update_init_ctx(&ctx);
@@ -1681,6 +1695,13 @@ exit:
     free(perl_script);
     free(oth_prog);
     tq_strings_free(&args_registered, free);
+
+    if (log_f != NULL)
+        fclose(log_f);
+
+    if (result != EXIT_SUCCESS)
+        fprintf(stderr, "TRC Update failed. See %s for details\n",
+                TRC_UPDATE_LOG_FILE);
 
     return result;
 }
