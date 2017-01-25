@@ -1,9 +1,0 @@
-$cgi_path = "/usr/lib/cgi-bin/local/prj/tilgin/platform-ts/history/";
-$cli_path = "/home/tester-tilgin/night_logs_caches/";
-$user = "tester-tilgin";
-$group = "tester-tilgin";
-$def_test = "platform-ts/connections/create_ip6dynamic";
-$def_xml_log = "trc-log.bz2";
-$test_path_example = "platform-ts/connections/create_ip6dynamic";
-$night_logs_http = "https://oktetlabs.ru/~tester-tilgin/night-testing/";
-$night_logs_path = "/home/tester-tilgin/private_html/night-testing/";
