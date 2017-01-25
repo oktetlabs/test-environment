@@ -738,27 +738,9 @@ trc_update_ins_rule(trc_update_rule *rule,
     }
 
     if (next != NULL)
-    {
         TAILQ_INSERT_BEFORE(next, rule, links);
-#if 0
-        printf("The rule is %s\n",
-               rule->type == TRC_UPDATE_RULE_ENTRY ?
-               "entry" : "result");
-        printf("The next is %s\n",
-               next->type == TRC_UPDATE_RULE_ENTRY ?
-               "entry" : "result");
-#endif
-    }
     else
-    {
         TAILQ_INSERT_TAIL(rules, rule, links);
-
-#if 0
-        printf("The tail is %s\n",
-               rule->type == TRC_UPDATE_RULE_ENTRY ?
-               "entry" : "result");
-#endif
-    }
 
     return 0;
 }
@@ -1747,7 +1729,7 @@ save_test_rules_to_file(trc_update_tests_groups *updated_tests,
                                          BAD_CAST cmd);
     if (xml_cmd == NULL)
     {
-        ERROR("xmlEncodeEntitiesReentrant() failed\n");
+        ERROR("xmlEncodeEntitiesReentrant() failed");
         return TE_ENOMEM;
     }
 
@@ -5314,24 +5296,23 @@ logs_dump_str_read(FILE *f)
 
     if (logs_dump_read_uint32(f, &str_len) < 0)
     {
-        fprintf(stderr, "%s\n", "Failed to read string length");
+        ERROR("%s", "Failed to read string length");
         return NULL;
     }
 
     str = TE_ALLOC(str_len + 1);
     if (str == NULL)
     {
-        fprintf(stderr, "Out of memory trying to allocate %u bytes\n",
-                str_len + 1);
+        ERROR("Out of memory trying to allocate %u bytes",
+              str_len + 1);
         return NULL;
     }
     str[str_len] = '\0';
 
     if ((rc = fread(str, 1, str_len, f)) != str_len)
     {
-        fprintf(stderr,
-                "Failed to read string: %ld returned instead of %u\n",
-                (long int)rc, str_len);
+        ERROR("Failed to read string: %ld returned instead of %u",
+              (long int)rc, str_len);
         free(str);
         return NULL;
     }
@@ -5432,10 +5413,10 @@ trc_update_process_logs_dump(trc_update_ctx *ctx)
     do {                                                              \
         if (f != NULL)                                                \
         {                                                             \
-            fprintf(stderr, "Problem encountered at offset %llu\n",   \
-                    (long long unsigned int)ftello(f));               \
+            ERROR("Problem encountered at offset %llu",               \
+                  (long long unsigned int)ftello(f));                 \
         }                                                             \
-        fprintf(stderr, s_);                                          \
+        ERROR(s_);                                                    \
         rc = -1;                                                      \
         goto cleanup;                                                 \
     } while (0)
@@ -5443,10 +5424,10 @@ trc_update_process_logs_dump(trc_update_ctx *ctx)
 #define LOGS_DUMP_READ_TAG(tag_, exp_) \
     do {                                                                \
          if (logs_dump_read_uint32(f, &tag_) < 0)                       \
-              LOGS_DUMP_ERR("%s\n",                                     \
+              LOGS_DUMP_ERR("%s",                                       \
                             "Failed to read tag ID from logs dump");    \
          if (exp_ != LOGS_DUMP_TAG_UNDEF && tag_ != exp_)               \
-              LOGS_DUMP_ERR("Unexpected tag %u in logs dump\n", tag_);  \
+              LOGS_DUMP_ERR("Unexpected tag %u in logs dump", tag_);    \
     } while (0)
 
     FILE      *f = NULL;
@@ -5472,7 +5453,7 @@ trc_update_process_logs_dump(trc_update_ctx *ctx)
 
     f = fopen(ctx->logs_dump, "r");
     if (f == NULL)
-        LOGS_DUMP_ERR("Failed to open for reading '%s'\n", ctx->logs_dump);
+        LOGS_DUMP_ERR("Failed to open for reading '%s'", ctx->logs_dump);
 
     fseeko(f, 0LL, SEEK_END);
     file_len = ftello(f);
@@ -5494,7 +5475,7 @@ trc_update_process_logs_dump(trc_update_ctx *ctx)
         LOGS_DUMP_READ_TAG(tag_id, LOGS_DUMP_TAG_TEST);
         test_path = logs_dump_str_read(f);
         if (test_path == NULL)
-            LOGS_DUMP_ERR("%s\n", "Failed to read test name");
+            LOGS_DUMP_ERR("%s", "Failed to read test name");
 
         cur_group = NULL;
         TAILQ_FOREACH(group, &ctx->updated_tests, links)
@@ -5507,13 +5488,13 @@ trc_update_process_logs_dump(trc_update_ctx *ctx)
         }
 
         if (cur_group == NULL) /* Skip? */
-            LOGS_DUMP_ERR("Failed to find test %s in TRC DB\n", test_path);
+            LOGS_DUMP_ERR("Failed to find test %s in TRC DB", test_path);
 
         free(test_path);
         test_path = NULL;
 
         if (logs_dump_read_uint32(f, &iters_count) < 0)
-            LOGS_DUMP_ERR("%s\n",
+            LOGS_DUMP_ERR("%s",
                           "Failed to read number of iterations "
                           "from logs dump");
 
@@ -5525,23 +5506,23 @@ trc_update_process_logs_dump(trc_update_ctx *ctx)
 
             LOGS_DUMP_READ_TAG(tag_id, LOGS_DUMP_TAG_PARAMS);
             if (logs_dump_read_uint32(f, &params_count) < 0)
-                LOGS_DUMP_ERR("%s\n",
+                LOGS_DUMP_ERR("%s",
                               "Failed to read number of iterations "
                               "from logs dump");
 
             args = TE_ALLOC(params_count * sizeof(*args));
             if (args == NULL)
-                LOGS_DUMP_ERR("%s\n", "Failed to allocate arguments array");
+                LOGS_DUMP_ERR("%s", "Failed to allocate arguments array");
 
             for (j = 0; j < params_count; j++)
             {
                 args[j].variable = FALSE;
                 args[j].name = logs_dump_str_read(f);
                 if (args[j].name == NULL)
-                    LOGS_DUMP_ERR("%s\n", "Failed to read argument name");
+                    LOGS_DUMP_ERR("%s", "Failed to read argument name");
                 args[j].value = logs_dump_str_read(f);
                 if (args[j].value == NULL)
-                    LOGS_DUMP_ERR("%s\n", "Failed to read argument value");
+                    LOGS_DUMP_ERR("%s", "Failed to read argument value");
             }
 
             TAILQ_FOREACH(test_entry, &cur_group->tests, links)
@@ -5558,7 +5539,7 @@ trc_update_process_logs_dump(trc_update_ctx *ctx)
                     break;
             }
             if (!iter_found)
-                LOGS_DUMP_ERR("%s\n", "Failed to find iteration in TRC DB");
+                LOGS_DUMP_ERR("%s", "Failed to find iteration in TRC DB");
 
             for (j = 0; j < params_count; j++)
             {
@@ -5573,7 +5554,7 @@ trc_update_process_logs_dump(trc_update_ctx *ctx)
 
             LOGS_DUMP_READ_TAG(tag_id, LOGS_DUMP_TAG_RESULTS);
             if (logs_dump_read_uint32(f, &results_count) < 0)
-                LOGS_DUMP_ERR("%s\n",
+                LOGS_DUMP_ERR("%s",
                               "Failed to read number of iteration results "
                               "from logs dump");
 
@@ -5583,7 +5564,7 @@ trc_update_process_logs_dump(trc_update_ctx *ctx)
 
                 result = TE_ALLOC(sizeof(*result));
                 if (result == NULL)
-                    LOGS_DUMP_ERR("%s\n", "Out of memory");
+                    LOGS_DUMP_ERR("%s", "Out of memory");
                 TAILQ_INIT(&result->verdicts);
 
                 LOGS_DUMP_READ_TAG(tag_id, LOGS_DUMP_TAG_UNDEF);
@@ -5592,7 +5573,7 @@ trc_update_process_logs_dump(trc_update_ctx *ctx)
                     char *err_msg = logs_dump_str_read(f);
 
                     if (err_msg == NULL)
-                          LOGS_DUMP_ERR("%s\n",
+                          LOGS_DUMP_ERR("%s",
                                         "Failed to read error message");
                     free(err_msg);
                     LOGS_DUMP_READ_TAG(tag_id, LOGS_DUMP_TAG_STATUS);
@@ -5603,7 +5584,7 @@ trc_update_process_logs_dump(trc_update_ctx *ctx)
                     status = logs_dump_str_read(f);
                 
                     if (status == NULL)
-                        LOGS_DUMP_ERR("%s\n",
+                        LOGS_DUMP_ERR("%s",
                                       "Failed to read result status");
 
                     if (te_test_str2status(status, &result->status) != 0)
@@ -5616,11 +5597,11 @@ trc_update_process_logs_dump(trc_update_ctx *ctx)
                     status = NULL;
                 }
                 else
-                    LOGS_DUMP_ERR("%s\n", "Result status is missed");
+                    LOGS_DUMP_ERR("%s", "Result status is missed");
 
                 LOGS_DUMP_READ_TAG(tag_id, LOGS_DUMP_TAG_VERDICTS);
                 if (logs_dump_read_uint32(f, &verdicts_count) < 0)
-                    LOGS_DUMP_ERR("%s\n",
+                    LOGS_DUMP_ERR("%s",
                                   "Failed to read number of "
                                   "verdicts from logs dump");
 
@@ -5628,18 +5609,18 @@ trc_update_process_logs_dump(trc_update_ctx *ctx)
                 {
                     verdict = TE_ALLOC(sizeof(*verdict));
                     if (verdict == NULL)
-                        LOGS_DUMP_ERR("%s\n", "Out of memory");
+                        LOGS_DUMP_ERR("%s", "Out of memory");
 
                     verdict->str = logs_dump_str_read(f);
                     if (verdict->str == NULL)
-                        LOGS_DUMP_ERR("%s\n", "Failed to read verdict");
+                        LOGS_DUMP_ERR("%s", "Failed to read verdict");
                     TAILQ_INSERT_TAIL(&result->verdicts, verdict, links);
                     verdict = NULL;
                 }
 
                 LOGS_DUMP_READ_TAG(tag_id, LOGS_DUMP_TAG_LOGS);
                 if (logs_dump_read_uint32(f, &logs_count) < 0)
-                    LOGS_DUMP_ERR("%s\n",
+                    LOGS_DUMP_ERR("%s",
                                   "Failed to read number of logs "
                                   "from logs dump");
 
@@ -5647,19 +5628,19 @@ trc_update_process_logs_dump(trc_update_ctx *ctx)
                 {
                     log = logs_dump_str_read(f);
                     if (log == NULL)
-                        LOGS_DUMP_ERR("%s\n",
+                        LOGS_DUMP_ERR("%s",
                                       "Failed to read log path "
                                       "from logs dump");
 
                     date = logs_dump_str_read(f);
                     if (date == NULL)
-                        LOGS_DUMP_ERR("%s\n",
+                        LOGS_DUMP_ERR("%s",
                                       "Failed to read log date "
                                       "from logs dump");
 
                     tags_str = logs_dump_str_read(f);
                     if (tags_str == NULL)
-                        LOGS_DUMP_ERR("%s\n",
+                        LOGS_DUMP_ERR("%s",
                                       "Failed to read log tags "
                                       "from logs dump");
 
@@ -5668,7 +5649,7 @@ trc_update_process_logs_dump(trc_update_ctx *ctx)
                     if (ctx->flags & TRC_UPDATE_TAGS_GATHER)
                     {
                         if (trc_update_collect_tags(ctx) < 0)
-                            LOGS_DUMP_ERR("%s\n", "Failed to process tags");
+                            LOGS_DUMP_ERR("%s", "Failed to process tags");
                     }
 
                     if (ctx->flags & TRC_UPDATE_TAGS_BY_LOGS)
@@ -5678,7 +5659,7 @@ trc_update_process_logs_dump(trc_update_ctx *ctx)
                     logic_expr_parse(ctx->merge_str, &ctx->merge_expr);
 
                     if (trc_update_merge_result(ctx, iter, result) != 0)
-                        LOGS_DUMP_ERR("%s\n",
+                        LOGS_DUMP_ERR("%s",
                                       "Failed to process result "
                                       "from logs dump");
 
@@ -5922,8 +5903,7 @@ trc_update_process_logs(trc_update_ctx *gctx)
         tags_file = fopen(gctx->tags_gather_to, "w");
         if (tags_file == NULL)
         {
-            fprintf(stderr, "Failed to open %s\n",
-                    gctx->tags_gather_to);
+            ERROR("Failed to open %s", gctx->tags_gather_to);
             rc = -1;
             goto cleanup;
         }
@@ -5965,7 +5945,7 @@ trc_update_process_logs(trc_update_ctx *gctx)
         goto cleanup;
     }
 
-    printf("\nParsing logs...\n");
+    RING("Parsing logs...");
 
     do {
         log_cnt++;
@@ -6020,7 +6000,7 @@ trc_update_process_logs(trc_update_ctx *gctx)
     if (gctx->fake_log == NULL &&
         !(gctx->flags & TRC_UPDATE_LOG_WILDS))
     {
-        printf("Filling user data in TRC DB...\n");
+        RING("Filling user data in TRC DB...");
         trc_update_fill_db_user_data(gctx->db,
                                      &gctx->updated_tests,
                                      gctx->db_uid);
@@ -6032,7 +6012,7 @@ trc_update_process_logs(trc_update_ctx *gctx)
     if (gctx->flags & TRC_UPDATE_NO_EXP_ONLY)
         trc_update_cond_res_op(gctx, is_exp_only, RESULT_OP_CLEAR);
 
-    printf("Simplifying expected results...\n");
+    RING("Simplifying expected results...");
     CHECK_F_RC(trc_update_simplify_results(gctx->db_uid,
                                            &gctx->updated_tests,
                                            gctx->flags));
@@ -6044,16 +6024,16 @@ trc_update_process_logs(trc_update_ctx *gctx)
 
     if (gctx->rules_load_from != NULL)
     {
-        printf("Initializing updating rules structures...\n");
+        RING("Initializing updating rules structures...");
         trc_update_clear_rules(ctx.db_uid, &gctx->updated_tests);
 
-        printf("Loading updating rules...\n");
+        RING("Loading updating rules...");
         CHECK_F_RC(trc_update_load_rules(gctx->rules_load_from,
                                          &gctx->updated_tests,
                                          &gctx->global_rules,
                                          gctx->flags));
         
-        printf("Applying updating rules...\n");
+        RING("Applying updating rules...");
         CHECK_F_RC(trc_update_apply_rules(gctx->db_uid,
                                           &gctx->updated_tests,
                                           &gctx->global_rules,
@@ -6066,14 +6046,14 @@ trc_update_process_logs(trc_update_ctx *gctx)
         trc_update_clear_rules(ctx.db_uid, &gctx->updated_tests);
         trc_update_rules_free(&gctx->global_rules);
 
-        printf("Generating updating rules...\n");
+        RING("Generating updating rules...");
         CHECK_F_RC(trc_update_gen_rules(ctx.db_uid,
                                         &gctx->updated_tests,
                                         gctx->flags));
 
         if (gctx->flags & TRC_UPDATE_GEN_APPLY)
         {
-            printf("Applying updating rules...\n");
+            RING("Applying updating rules...");
             CHECK_F_RC(trc_update_apply_rules(
                                     gctx->db_uid,
                                     &gctx->updated_tests,
@@ -6085,7 +6065,7 @@ trc_update_process_logs(trc_update_ctx *gctx)
 
     if (gctx->rules_save_to != NULL)
     {
-        printf("Saving updating rules...\n");
+        RING("Saving updating rules...");
         CHECK_F_RC(save_test_rules_to_file(
                                     &gctx->updated_tests,
                                     gctx->rules_save_to,
@@ -6096,7 +6076,7 @@ trc_update_process_logs(trc_update_ctx *gctx)
         (gctx->flags & TRC_UPDATE_GEN_APPLY)) &&
         !(gctx->flags & TRC_UPDATE_NO_GEN_WILDS))
     {
-        printf("Generating wildcards...\n");
+        RING("Generating wildcards...");
         CHECK_F_RC(trc_update_generate_wilds_gen(gctx->db_uid,
                                                  &gctx->updated_tests,
                                                  gctx->flags));
@@ -6108,7 +6088,7 @@ trc_update_process_logs(trc_update_ctx *gctx)
             fprintf(tags_file, "%s\n", tqe_p->v);
     }
 
-    printf("Done.\n");
+    RING("Done.");
 
 cleanup:
     if (tags_file != NULL)
