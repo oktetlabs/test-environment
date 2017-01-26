@@ -1,6 +1,5 @@
 
-SUBDIRS = lib trc-log trc-report trc-diff trc-key trc-update \
-	  night_logs_helper_scripts .
+SUBDIRS = lib trc-log trc-report trc-diff trc-key trc-update .
 
 ACLOCAL_AMFLAGS = -I @TE_M4@
 

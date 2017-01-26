@@ -111,8 +111,6 @@ trc-report/Makefile
 trc-diff/Makefile
 trc-key/Makefile
 trc-update/Makefile
-night_logs_helper_scripts/Makefile
-night_logs_helper_scripts/cli_scripts/Makefile
 ])
 
 TE_APP_RESTORE
