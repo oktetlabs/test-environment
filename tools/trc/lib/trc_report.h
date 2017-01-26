@@ -67,7 +67,7 @@ typedef struct trc_report_stats {
  *
  * @return  Number of corresponding iterations or 0
  */
-extern inline unsigned int
+static inline unsigned int
 get_stats_by_status(const trc_report_stats *s, te_test_status status)
 {
     switch (status)
