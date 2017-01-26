@@ -2455,6 +2455,82 @@ sockaddr_rpc2h(const tarpc_sa *rpc,
     return 0;
 }
 
+/**
+ * Get string representation of physical layer address.
+ *
+ * @param addr      Address.
+ * @param addr_len  Address length.
+ * @param str       String to append string representation to.
+ */
+static void
+phys_addr2str(const uint8_t *addr, size_t addr_len, te_string *str)
+{
+    unsigned int i;
+
+    for (i = 0; i < addr_len; i++)
+    {
+        te_string_append(str, "%s%2.2x",
+                         (i > 0 ? ":" : ""), addr[i]);
+    }
+}
+
+/**
+ * Get string representation of native AF_PACKET address.
+ *
+ * @param addr      AF_PACKET address.
+ * @param str       String to append string representation to.
+ */
+static void
+af_packet_addr_h2str(const struct sockaddr *addr,
+                     te_string *str)
+{
+    const struct sockaddr_ll *sll = (const struct sockaddr_ll *)addr;
+
+    te_string_append(str, "protocol=%s ",
+                     eth_proto_rpc2str(
+                        eth_proto_h2rpc(ntohs(sll->sll_protocol))));
+    te_string_append(str, "ifindex=%d ", sll->sll_ifindex);
+    te_string_append(str, "hatype=%s ",
+                     arp_hardware_rpc2str(
+                        arp_hardware_h2rpc(sll->sll_hatype)));
+    te_string_append(str, "pkttype=%s ",
+                     packet_type_rpc2str(
+                        packet_type_h2rpc(sll->sll_pkttype)));
+    te_string_append(str, "halen=%u ",
+                     sll->sll_halen);
+
+    phys_addr2str(sll->sll_addr,
+                  MIN(sll->sll_halen, sizeof(sll->sll_addr)),
+                  str);
+}
+
+/**
+ * Get string representation of TARPC AF_PACKET address.
+ *
+ * @param res_sa    AF_PACKET address.
+ * @param str       String to append string representation to.
+ */
+static void
+af_packet_addr_tarpc2str(const tarpc_sa *rpc_sa,
+                         te_string *str)
+{
+    const struct tarpc_ll *ll = &rpc_sa->data.tarpc_sa_data_u.ll;
+
+    te_string_append(str, "protocol=%s ",
+                    eth_proto_rpc2str(ll->sll_protocol));
+    te_string_append(str, "ifindex=%d ", ll->sll_ifindex);
+    te_string_append(str, "hatype=%s ",
+                     arp_hardware_rpc2str( ll->sll_hatype));
+    te_string_append(str, "pkttype=%s ",
+                     packet_type_rpc2str(ll->sll_pkttype));
+    te_string_append(str, "halen=%u ",
+                     ll->sll_halen);
+
+    phys_addr2str(ll->sll_addr,
+                  MIN(ll->sll_halen, sizeof(ll->sll_addr)),
+                  str);
+}
+
 /** See the description in ta_rpc_sys_socket.h */
 const char *
 sockaddr_h2str(const struct sockaddr *addr)
@@ -2469,7 +2545,19 @@ sockaddr_h2str(const struct sockaddr *addr)
         return "(nil)";
 
     if (addr->sa_family != TE_AF_TARPC_SA)
-        return te_sockaddr2str(addr);
+    {
+#ifdef AF_PACKET
+        if (addr->sa_family == AF_PACKET)
+        {
+            af_packet_addr_h2str(addr, &str);
+            return buf;
+        }
+        else
+#endif
+        {
+            return te_sockaddr2str(addr);
+        }
+    }
 
     rpc_sa = (const tarpc_sa *)addr->sa_data;
     if (rpc_sa->flags & TARPC_SA_NOT_NULL)
@@ -2496,8 +2584,16 @@ sockaddr_h2str(const struct sockaddr *addr)
                     te_string_append(
                              &str, ":%2.2x",
                              rpc_sa->data.tarpc_sa_data_u.local.data[i]);
+               break;
+            }
+
+#ifdef AF_PACKET
+            case RPC_AF_PACKET:
+            {
+                af_packet_addr_tarpc2str(rpc_sa, &str);
                 break;
             }
+#endif
 
             case RPC_AF_INET:
             {
