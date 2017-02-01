@@ -47,7 +47,8 @@
 
 static int logs_opened = 0;
 static int logs_closed = 1;
-struct obstack *log_obstk = NULL;
+
+static struct obstack *log_obstk = NULL;
 
 static int postponed_process_test_start(node_info_t *node,
                                         msg_queue *verdicts);
@@ -114,146 +115,6 @@ print_ts(FILE *fd, uint32_t *ts)
     fprintf(fd, "%s %u ms", time_buf, ts[1] / 1000);
 
 #undef TIME_BUF_LEN
-}
-
-/**
- * Processes string with expanding XML special characters
- *
- * @param obstk     Obstack structure for string output
- * @param str       String to process and output
- * @param attr_val  Whether the string is an attribute value of some TAG?
- */
-static void
-fwrite_string(struct obstack *obstk, const char *str, te_bool attr_val)
-{
-    te_bool br_cntrl_start = TRUE;
-    int     i = 0;
-    
-    while (str[i] != '\0')
-    {
-        switch (str[i])
-        {
-            case '\r':
-                /* FALLTHROUGH */
-            case '\n':
-                /*
-                 * Skip \r after \n (or \n after \r) because it does not 
-                 * bring any formating, but just follows after \r (\n) 
-                 * on some systems.
-                 *
-                 * So that if we meet \r\n or \r\n we should 
-                 * output single <br/>
-                 *
-                 * In case of \r\r\r or \n\n\n -> <br/><br/><br/>
-                 * In case of \r\n\r or \n\r\r -> <br/><br/>
-                 * In case of \n\r\r\n or \r\n\n\r -> <br/><br/>
-                 *
-                 * If br_cntrl_start is TRUE, we output </BR>
-                 * just after we meet '\n' ('\r') checking that there 
-                 * was no '\r' ('\n') as the previous character.
-                 */
-                if (i > 0 && str[i - 1] != '\n' && str[i - 1] != '\r')
-                    br_cntrl_start = TRUE;
-
-/* Returns '\r' ('\n') when ch_ is '\n' ('\r') */
-#define BR_CTRL_INVERT(ch_) (((ch_) == '\n') ? '\r' : '\n')
-
-                if (br_cntrl_start && i > 0 && 
-                    str[i - 1] == BR_CTRL_INVERT(str[i]))
-                {
-                    /* Skip this character */
-                    br_cntrl_start = FALSE;
-                    break;
-                }
-#undef BR_CTRL_INVERT
-
-                br_cntrl_start = TRUE;
-
-                if (attr_val)
-                {
-                    /*
-                     * We want to pass new-lines through XML log report,
-                     * so we need to emphasise this explicitly, otherwise
-                     * XML parser will interpret '\n' as a "space" character
-                     * and change it to universal ' ' (space) character.
-                     */
-                    if (obstk != NULL)
-                        obstack_grow(log_obstk, "&#10;", 5);
-                    else
-                        fputs("&#10;", rgt_ctx.out_fd);
-                }
-                else
-                {
-                    if (obstk != NULL)
-                        obstack_grow(log_obstk, "<br/>", 5);
-                    else
-                        fputs("<br/>", rgt_ctx.out_fd);
-                }
-                break;
-
-            case '<':
-                if (obstk != NULL)
-                    obstack_grow(log_obstk, "&lt;", 4);
-                else
-                    fputs("&lt;", rgt_ctx.out_fd);
-                break;
-            
-            case '>':
-                if (obstk != NULL)
-                    obstack_grow(log_obstk, "&gt;", 4);
-                else
-                    fputs("&gt;", rgt_ctx.out_fd);
-                break;
-            
-            case '&':
-                if (obstk != NULL)
-                    obstack_grow(log_obstk, "&amp;", 5);
-                else
-                    fputs("&amp;", rgt_ctx.out_fd);
-                break;
-
-            case '\'':
-            case '\"':
-                if (attr_val)
-                {
-                    const char *val = str[i] == '\'' ? "&apos;" : "&quot;";
-                    /* 
-                     * Quote character only when we output 
-                     * attribute value.
-                     */
-                    if (obstk != NULL)
-                        obstack_grow(log_obstk, val, strlen(val));
-                    else
-                        fputs(val, rgt_ctx.out_fd);
-                    break;
-                }
-                /* FALLTHROUGH */
-                /* 
-                 * For non attribute output - process as ordinary 
-                 * prinable character 
-                 */
-
-            default:
-                if (str[i] == '\t' || isprint(str[i]))
-                {
-                    if (obstk != NULL)
-                        obstack_1grow(log_obstk, str[i]);
-                    else
-                        fputc(str[i], rgt_ctx.out_fd);
-                }
-                else
-                {
-                    if (obstk != NULL)
-                        obstack_printf(log_obstk, "&lt;0x%02x&gt;",
-                                       (unsigned char)str[i]);
-                    else
-                        fprintf(rgt_ctx.out_fd, "&lt;0x%02x&gt;",
-                                (unsigned char)str[i]);
-                }
-                break;
-        }
-        i++;
-    }
 }
 
 static void
@@ -324,7 +185,7 @@ print_params(node_info_t *node)
         {
             fprintf(rgt_ctx.out_fd, "<param name=\"%s\" value=\"",
                     prm->name);
-            fwrite_string(NULL, prm->val, TRUE);
+            write_xml_string(NULL, prm->val, TRUE);
             fprintf(rgt_ctx.out_fd, "\"/>\n");
             prm = prm->next;
         }
@@ -411,13 +272,13 @@ postponed_process_start_event(node_info_t *node, const char *node_name,
     if (node->descr.objective != NULL)
     {
         fputs("<objective>", rgt_ctx.out_fd);
-        fwrite_string(NULL, node->descr.objective, FALSE);
+        write_xml_string(NULL, node->descr.objective, FALSE);
         fputs("</objective>\n", rgt_ctx.out_fd);
     }
     if (node->descr.page != NULL)
     {
         fputs("<page>", rgt_ctx.out_fd);
-        fwrite_string(NULL, node->descr.page, FALSE);
+        write_xml_string(NULL, node->descr.page, FALSE);
         fputs("</page>\n", rgt_ctx.out_fd);
     }
     if (node->descr.authors)
@@ -437,7 +298,7 @@ postponed_process_start_event(node_info_t *node, const char *node_name,
 
             fputs("<author email=\"", rgt_ctx.out_fd);
             author += strlen("mailto:");
-            fwrite_string(NULL, author, TRUE);
+            write_xml_string(NULL, author, TRUE);
             fputs("\"/>", rgt_ctx.out_fd);
             author = ptr;
         } while (ptr != NULL);
@@ -602,7 +463,7 @@ output_regular_log_msg(log_msg *msg)
 
     if (msg->txt_msg != NULL)
     {
-        fwrite_string(log_obstk, msg->txt_msg, FALSE);
+        write_xml_string(log_obstk, msg->txt_msg, FALSE);
     }
     else
     {
@@ -621,7 +482,7 @@ output_regular_log_msg(log_msg *msg)
                 {
                     /* Too few arguments in the message */
                     /* Simply write the rest of format string to the log */
-                    fwrite_string(log_obstk, msg->fmt_str + i, FALSE);
+                    write_xml_string(log_obstk, msg->fmt_str + i, FALSE);
                     break;
                 }
                 
@@ -642,7 +503,7 @@ output_regular_log_msg(log_msg *msg)
                         else
                         {
                             c_buf[0] = (char)val;
-                            fwrite_string(log_obstk, c_buf, FALSE);
+                            write_xml_string(log_obstk, c_buf, FALSE);
                         }
                         
                         i++;
@@ -698,8 +559,8 @@ output_regular_log_msg(log_msg *msg)
                     
                     case 's':
                     {
-                        fwrite_string(log_obstk, (const char *)arg->val, 
-                                      FALSE);
+                        write_xml_string(log_obstk, (const char *)arg->val,
+                                         FALSE);
                         i++;
                         
                         continue;
@@ -716,10 +577,11 @@ output_regular_log_msg(log_msg *msg)
                         src = te_rc_mod2str(err);
                         if (strlen(src) > 0)
                         {
-                            fwrite_string(log_obstk, src, FALSE);
+                            write_xml_string(log_obstk, src, FALSE);
                             obstack_1grow(log_obstk, '-');
                         }
-                        fwrite_string(log_obstk, te_rc_err2str(err), FALSE);
+                        write_xml_string(log_obstk, te_rc_err2str(err),
+                                         FALSE);
                         i++;
                         
                         continue;
@@ -742,8 +604,8 @@ output_regular_log_msg(log_msg *msg)
                             /* Strart file tag */
                             obstack_printf(log_obstk,
                                            "<file name=\"%s\">", "TODO");
-                            fwrite_string(log_obstk,
-                                          (const char *)arg->val, FALSE);
+                            write_xml_string(log_obstk,
+                                             (const char *)arg->val, FALSE);
                             /* End file tag */
                             obstack_grow(log_obstk, "</file>",
                                          strlen("</file>"));

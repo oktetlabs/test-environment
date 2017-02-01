@@ -1,7 +1,7 @@
 /** @file 
- * @brief Test Environment: Raw read interface.
+ * @brief RGT core: I/O functions.
  *
- * read function for regular files that supports blocking mode.
+ * Auxiliary functions for I/O operations.
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -30,11 +30,14 @@
 #ifndef __TE_RGT_CORE_IO_H__
 #define __TE_RGT_CORE_IO_H__
 
+#include <stdio.h>
+#include <obstack.h>
+
 #if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 
-#include <stdio.h>
+#include "te_defs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -70,6 +73,17 @@ typedef enum rgt_io_mode {
  */
 extern size_t universal_read(FILE *fd, void *buf, size_t count,
                              rgt_io_mode_t io_mode);
+
+/**
+ * Output a string, encoding XML special characters.
+ *
+ * @param obstk     Obstack structure for string output (if NULL, it will
+ *                  be written to rgt_ctx.out_fd).
+ * @param str       String to process and output.
+ * @param attr_val  Whether the string is an attribute value of some TAG?
+ */
+extern void write_xml_string(struct obstack *obstk, const char *str,
+                             te_bool attr_val);
 
 #ifdef __cplusplus
 }
