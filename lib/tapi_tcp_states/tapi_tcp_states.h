@@ -83,7 +83,7 @@ typedef enum tsa_flags {
                                            see states like TCP_LAST_ACK) */
     TSA_MOVE_IGNORE_START_ERR = 0x40, /**< It has the same effect as
                                            TSA_MOVE_IGNORE_ERR but
-                                           only in tsa_sn_do_moves()
+                                           only in tsa_do_moves_str()
                                            when it's required to
                                            move to some starting
                                            state before performing
@@ -581,13 +581,6 @@ extern te_errno tsa_do_moves(tsa_session *ss, rpc_tcp_state stop_state,
  * but the sequence is given as a string).
  *
  * @param ss            Pointer to TSA session structure
- * @param n             Length of string s
- * @param s             String containing the sequence of TCP states. Its
- *                      syntax is TCP state[[delimeters]
- *                      [TCP state | timeout]]...TCP state. For example,
- *                      "TCP_CLOSE -> TCP_SYN_SENT -> timeout ->
- *                      TCP_CLOSE".
- * @param delims        String containing delimeters used in s
  * @param init_state    TCP state to be considered as initial in search
  *                      for the first transition actions (it is useful
  *                      when we work with TCP_LISTEN -> TCP_SYN_RECV ->
@@ -597,14 +590,19 @@ extern te_errno tsa_do_moves(tsa_session *ss, rpc_tcp_state stop_state,
  *                      to perform some actions in some interjacent state
  *                      and then resume transition)
  * @param flags         Flags defined in tsa_flags enum
+ * @param s             String containing the sequence of TCP states.
+ *                      For example, "TCP_CLOSE -> TCP_SYN_SENT -> timeout
+ *                      -> TCP_CLOSE". TCP states can be separated by
+ *                      spaces, '-', '>', ';', ':', ',' (including
+ *                      any combinations of these symbols).
  *
  * @return Non-negative status code or TSA_ESTOP if function stopped in
  *         specificed state.
  */
-extern te_errno tsa_sn_do_moves(tsa_session *ss, int n, const char *s,
-                                const char *delims,
-                                rpc_tcp_state init_state,
-                                rpc_tcp_state stop_state, uint32_t flags);
+extern te_errno tsa_do_moves_str(tsa_session *ss,
+                                 rpc_tcp_state init_state,
+                                 rpc_tcp_state stop_state,
+                                 uint32_t flags, const char *s);
 
 /**
  * Create IUT socket and TESTER socket or CSAP emulation (according to

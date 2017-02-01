@@ -65,6 +65,9 @@
 /** Maximum length of string containing name of TCP state */
 #define TCP_STATE_STR_LEN 20
 
+/** Delimeters used in string representation of TCP states sequence. */
+#define TSA_DELIMETERS " \t\r\n,;:->"
+
 /**
  * Paths used for achieving of a given initial state
  * when testing sequence doesn't begin in TCP_CLOSE.
@@ -1209,13 +1212,13 @@ tsa_do_moves(tsa_session *ss, rpc_tcp_state stop_state,
 
 /* See the tapi_tcp_states.h file for the description. */
 te_errno
-tsa_sn_do_moves(tsa_session *ss, int n, const char *s,
-                const char *delims, rpc_tcp_state init_state,
-                rpc_tcp_state stop_state, uint32_t flags)
+tsa_do_moves_str(tsa_session *ss,
+                 rpc_tcp_state init_state,
+                 rpc_tcp_state stop_state,
+                 uint32_t flags, const char *s)
 {
     const char     *p = NULL;
     const char     *q = NULL;
-    const char     *t;
     char            buff[TCP_STATE_STR_LEN];
     rpc_tcp_state   next_state = RPC_TCP_CLOSE;
     rpc_tcp_state   prev_state = RPC_TCP_CLOSE;
@@ -1225,6 +1228,8 @@ tsa_sn_do_moves(tsa_session *ss, int n, const char *s,
     te_errno        rc = 0;
     te_errno        rc_aux = 0;
 
+    const char *delims = TSA_DELIMETERS;
+
     if (init_state != RPC_TCP_UNKNOWN)
         prev_state = init_state;
     else
@@ -1232,7 +1237,7 @@ tsa_sn_do_moves(tsa_session *ss, int n, const char *s,
 
     ss->state.rem_path = s;
 
-    VERB("tsa_sn_do_moves call, pco_tst %p, pco_iut %p, "
+    VERB("tsa_do_moves_str() call, pco_tst %p, pco_iut %p, "
          "transition sequence %s, initial state %s", ss->config.pco_tst,
          ss->config.pco_iut, s, tcp_state_rpc2str(prev_state));
 
@@ -1248,16 +1253,17 @@ tsa_sn_do_moves(tsa_session *ss, int n, const char *s,
             return rc;
     }
 
-    for (p = s; (int) (p - s) < n; p++)
+    for (p = s; ; p++)
     {
-        t = strchr(delims, *p);
-        if (t == NULL && q == NULL)
-            q = p;
-
-        if ((t != NULL || *p == '\0') && q != NULL)
+        if (*p != '\0' && strchr(delims, *p) == NULL)
+        {
+            if (q == NULL)
+                q = p;
+        }
+        else if (q != NULL)
         {
             strncpy(buff, q, (int) (p - q));
-            buff[(int) (p - q)] = 0;
+            buff[(int) (p - q)] = '\0';
 
             ss->state.rem_path = p;
 
