@@ -161,14 +161,16 @@ typedef enum rgt_op_mode {
     RGT_OP_MODE_LIVE      = 0, /**< Live operation mode */
     RGT_OP_MODE_POSTPONED = 1, /**< Postponed operation mode */
     RGT_OP_MODE_INDEX     = 2, /**< Index operation mode */
+    RGT_OP_MODE_JUNIT     = 3, /**< JUnit operation mode */
     RGT_OP_MODE_DEFAULT   = RGT_OP_MODE_POSTPONED /**< Default operation
                                                        mode */
 } rgt_op_mode_t;
 
-/* Two modes of operation in string representation */
+/* Modes of operation in string representation */
 #define RGT_OP_MODE_LIVE_STR      "live"
 #define RGT_OP_MODE_POSTPONED_STR "postponed"
 #define RGT_OP_MODE_INDEX_STR     "index"
+#define RGT_OP_MODE_JUNIT_STR     "junit"
 
 /* Define default mode of operation */
 #define RGT_OP_MODE_DEFAULT_STR RGT_OP_MODE_POSTPONED_STR

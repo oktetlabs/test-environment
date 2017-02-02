@@ -80,6 +80,34 @@ typedef enum result_status {
     RES_STATUS_INCOMPLETE,
 } result_status_t;
 
+/**
+ * Get string representation of result status.
+ *
+ * @param status      Result status.
+ *
+ * @return String representation.
+ */
+static inline const char *
+result_status2str(result_status_t status)
+{
+#define RES_STATUS_CASE(val_) \
+        case RES_STATUS_ ## val_: return #val_
+
+    switch (status)
+    {
+        RES_STATUS_CASE(PASSED);
+        RES_STATUS_CASE(KILLED);
+        RES_STATUS_CASE(CORED);
+        RES_STATUS_CASE(SKIPPED);
+        RES_STATUS_CASE(FAKED);
+        RES_STATUS_CASE(FAILED);
+        RES_STATUS_CASE(EMPTY);
+        RES_STATUS_CASE(INCOMPLETE);
+    }
+
+    return "<UNKNOWN>";
+}
+
 /** Structure for keeping session/package/test result information */
 typedef struct result_info {
     enum result_status  status; /**< Result status */
@@ -172,6 +200,9 @@ typedef int (* f_process_ctrl_log_msg)(node_info_t *node,
 /* Type of callback function used for processing regular messages */
 typedef int (* f_process_reg_log_msg)(log_msg *);
 
+/* Type of callback function used for processing start and end of log. */
+typedef int (* f_process_log_root)(void);
+
 /** The set of generic control event types */
 enum ctrl_event_type {
     CTRL_EVT_START,  /**< Strart control message */
@@ -183,6 +214,7 @@ enum ctrl_event_type {
 /** External declarations of a set of message processing functions */
 extern f_process_ctrl_log_msg ctrl_msg_proc[CTRL_EVT_LAST][NT_LAST];
 extern f_process_reg_log_msg  reg_msg_proc;
+extern f_process_log_root     log_root_proc[CTRL_EVT_LAST];
 
 /** 
  * The list of events that can be generated from the flow tree 

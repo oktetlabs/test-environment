@@ -48,6 +48,7 @@
 #include "live_mode.h"
 #include "postponed_mode.h"
 #include "index_mode.h"
+#include "junit_mode.h"
 
 /*
  * Define PACKAGE, VERSION and TE_COPYRIGHT just for the case it's build
@@ -150,7 +151,7 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
         { "mode", 'm', POPT_ARG_STRING, NULL, 'm',
           "Mode of operation, can be "
           RGT_OP_MODE_LIVE_STR ", " RGT_OP_MODE_POSTPONED_STR
-          " or " RGT_OP_MODE_INDEX_STR ". "
+          ", " RGT_OP_MODE_INDEX_STR " or " RGT_OP_MODE_JUNIT_STR ". "
           "By default " RGT_OP_MODE_DEFAULT_STR " mode is used.", "MODE" },
 
         { "no-cntrl-msg", '\0', POPT_ARG_NONE, NULL, 'n',
@@ -209,12 +210,15 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
                      strcmp(ctx->op_mode_str,
                             RGT_OP_MODE_POSTPONED_STR) != 0 &&
                      strcmp(ctx->op_mode_str,
-                            RGT_OP_MODE_INDEX_STR) != 0))
+                            RGT_OP_MODE_INDEX_STR) != 0 &&
+                     strcmp(ctx->op_mode_str,
+                            RGT_OP_MODE_JUNIT_STR) != 0))
                 {
                     usage(optCon, 1, "Specify mode of operation",
                           RGT_OP_MODE_LIVE_STR ", "
-                          RGT_OP_MODE_POSTPONED_STR " or "
-                          RGT_OP_MODE_INDEX_STR);
+                          RGT_OP_MODE_POSTPONED_STR ", "
+                          RGT_OP_MODE_INDEX_STR " or "
+                          RGT_OP_MODE_JUNIT_STR);
                 }
 
                 if (strcmp(ctx->op_mode_str, RGT_OP_MODE_LIVE_STR) == 0)
@@ -222,8 +226,11 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
                 else if (strcmp(ctx->op_mode_str,
                                 RGT_OP_MODE_POSTPONED_STR) == 0)
                     ctx->op_mode = RGT_OP_MODE_POSTPONED;
-                else
+                else if (strcmp(ctx->op_mode_str,
+                                RGT_OP_MODE_INDEX_STR) == 0)
                     ctx->op_mode = RGT_OP_MODE_INDEX;
+                else
+                    ctx->op_mode = RGT_OP_MODE_JUNIT;
 
                 break;
 
@@ -278,8 +285,7 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
         exit(1);
     }
 
-    if (ctx->op_mode == RGT_OP_MODE_POSTPONED ||
-        ctx->op_mode == RGT_OP_MODE_INDEX)
+    if (ctx->op_mode != RGT_OP_MODE_LIVE)
     {
         fseeko(ctx->rawlog_fd, 0LL, SEEK_END);
         ctx->rawlog_size = ftello(ctx->rawlog_fd);
@@ -312,17 +318,26 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
     {
         case RGT_OP_MODE_LIVE:
             ctx->io_mode = RGT_IO_MODE_BLK;
-            live_mode_init(ctrl_msg_proc, &reg_msg_proc);
+            live_mode_init(ctrl_msg_proc, &reg_msg_proc,
+                           log_root_proc);
             break;
 
         case RGT_OP_MODE_POSTPONED:
             ctx->io_mode = RGT_IO_MODE_NBLK;
-            postponed_mode_init(ctrl_msg_proc, &reg_msg_proc);
+            postponed_mode_init(ctrl_msg_proc, &reg_msg_proc,
+                                log_root_proc);
             break;
 
         case RGT_OP_MODE_INDEX:
             ctx->io_mode = RGT_IO_MODE_NBLK;
-            index_mode_init(ctrl_msg_proc, &reg_msg_proc);
+            index_mode_init(ctrl_msg_proc, &reg_msg_proc,
+                            log_root_proc);
+            break;
+
+        case RGT_OP_MODE_JUNIT:
+            ctx->io_mode = RGT_IO_MODE_NBLK;
+            junit_mode_init(ctrl_msg_proc, &reg_msg_proc,
+                            log_root_proc);
             break;
 
         default:
@@ -412,6 +427,9 @@ main(int argc, char **argv)
 
     if (setjmp(rgt_mainjmp) == 0)
     {
+        if (log_root_proc[CTRL_EVT_START] != NULL)
+            log_root_proc[CTRL_EVT_START]();
+
         /* Log message processing loop */
         while (1)
         {
@@ -436,16 +454,18 @@ main(int argc, char **argv)
             rgt_core_process_log_msg(msg);
         }
 
-        if (rgt_ctx.op_mode == RGT_OP_MODE_POSTPONED)
+        if (rgt_ctx.op_mode == RGT_OP_MODE_POSTPONED ||
+            rgt_ctx.op_mode == RGT_OP_MODE_JUNIT)
         {
             if (rgt_ctx.proc_incomplete)
                 rgt_emulate_accurate_close(latest_ts);
 
             /* Process flow tree (call callback routines for each node) */
-            postponed_process_open();
             flow_tree_trace();
-            postponed_process_close();
         }
+
+        if (log_root_proc[CTRL_EVT_END] != NULL)
+            log_root_proc[CTRL_EVT_END]();
 
         /* Successful competion */
         free_resources(SIGINT);
@@ -513,7 +533,7 @@ rgt_update_progress_bar(rgt_gen_ctx_t *ctx)
 {
     off_t offset;
 
-    if (ctx->op_mode != RGT_OP_MODE_POSTPONED || !ctx->verb)
+    if (ctx->op_mode == RGT_OP_MODE_LIVE || !ctx->verb)
         return;
 
     offset = ftello(ctx->rawlog_fd);

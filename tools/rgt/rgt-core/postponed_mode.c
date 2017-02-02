@@ -68,12 +68,16 @@ static int postponed_process_branch_end(node_info_t *node,
                                         msg_queue *verdicts);
 static int postponed_process_regular_msg(log_msg *msg);
 
+static int postponed_process_open(void);
+static int postponed_process_close(void);
+
 static void output_regular_log_msg(log_msg *msg);
 
 void
 postponed_mode_init(f_process_ctrl_log_msg
                         ctrl_proc[CTRL_EVT_LAST][NT_LAST],
-                    f_process_reg_log_msg *reg_proc)
+                    f_process_reg_log_msg *reg_proc,
+                    f_process_log_root root_proc[CTRL_EVT_LAST])
 {
     ctrl_proc[CTRL_EVT_START][NT_SESSION] = postponed_process_sess_start;
     ctrl_proc[CTRL_EVT_END][NT_SESSION] = postponed_process_sess_end;
@@ -85,6 +89,9 @@ postponed_mode_init(f_process_ctrl_log_msg
     ctrl_proc[CTRL_EVT_END][NT_BRANCH] = postponed_process_branch_end;
     
     *reg_proc = postponed_process_regular_msg;
+
+    root_proc[CTRL_EVT_START] = postponed_process_open;
+    root_proc[CTRL_EVT_END] = postponed_process_close;
 }
 
 static void

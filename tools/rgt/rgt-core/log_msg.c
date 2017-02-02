@@ -46,6 +46,7 @@
 
 f_process_ctrl_log_msg ctrl_msg_proc[CTRL_EVT_LAST][NT_LAST];
 f_process_reg_log_msg  reg_msg_proc;
+f_process_log_root     log_root_proc[CTRL_EVT_LAST];
 
 /* External declaration */
 static node_info_t *create_node_by_msg(log_msg *msg, node_type_t type, 
@@ -200,7 +201,10 @@ rgt_process_tester_control_message(log_msg *msg)
 
     if (rgt_ctx.op_mode == RGT_OP_MODE_LIVE ||
         rgt_ctx.op_mode == RGT_OP_MODE_INDEX)
-        ctrl_msg_proc[evt_type][node->type](node, NULL);
+    {
+        if (ctrl_msg_proc[evt_type][node->type] != NULL)
+            ctrl_msg_proc[evt_type][node->type](node, NULL);
+    }
 
     return ESUCCESS;
 }
@@ -226,7 +230,8 @@ rgt_process_regular_message(log_msg *msg)
                                          msg->level, msg->timestamp,
                                          &msg->flags) == NFMODE_INCLUDE)
             {
-                reg_msg_proc(msg);
+                if (reg_msg_proc != NULL)
+                    reg_msg_proc(msg);
             }
         }
     }

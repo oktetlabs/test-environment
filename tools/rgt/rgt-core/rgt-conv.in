@@ -61,7 +61,7 @@ Usage: $prog_name [OPTION...] [<Raw Log file> [<Output file>]]
 
   OPTIONS:
   -m MODE, --mode=MODE     Specify mode of RGT operation.
-                           It can be live, postponed or index
+                           It can be live, postponed, index or junit
                            (postponed by default).
 
   --no-cntrl-msg           Process Tester control messages as ordinary.
@@ -99,17 +99,20 @@ EOF
 }
 
 #
-# Checks if operation mode is valid (should be one of "live", "postponed"
-# or "index")
+# Checks if operation mode is valid (should be one of "live", "postponed",
+# "index" or "junit")
 #
 check_op_mode () {
-    if [ -z "$1" ] || \
-       ( [ "$1" != "live" ] && [ "$1" != "postponed" ] &&
-         [ "$1" != "index" ] ) ; then
+    case "$1" in live|postponed|index|junit)
+        # Mode is ok.
+        ;;
+
+    *)
         usage
-        echo "Specify mode of operation: live, postponed or index"
+        echo "Specify mode of operation: live, postponed, index or junit"
         { (exit 1); exit 1; }
-    fi
+        ;;
+    esac
 }
 
 #

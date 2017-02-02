@@ -59,7 +59,8 @@ static te_bool first_message;
 /* See the description in index_mode.h */
 void
 index_mode_init(f_process_ctrl_log_msg ctrl_proc[CTRL_EVT_LAST][NT_LAST],
-               f_process_reg_log_msg  *reg_proc)
+                f_process_reg_log_msg  *reg_proc,
+                f_process_log_root root_proc[CTRL_EVT_LAST])
 {
     ctrl_proc[CTRL_EVT_START][NT_SESSION] = index_process_sess_start;
     ctrl_proc[CTRL_EVT_END][NT_SESSION] = index_process_sess_end;
@@ -71,6 +72,10 @@ index_mode_init(f_process_ctrl_log_msg ctrl_proc[CTRL_EVT_LAST][NT_LAST],
     ctrl_proc[CTRL_EVT_END][NT_BRANCH] = index_process_branch_end;
 
     *reg_proc = index_process_regular_msg;
+
+    root_proc[CTRL_EVT_START] = NULL;
+    root_proc[CTRL_EVT_END] = NULL;
+
     prev_rawlog_fpos = 0;
     first_message = TRUE;
 }

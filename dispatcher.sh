@@ -91,6 +91,8 @@ Generic options:
   --log-txt=<filename>          Name of the file with logs in text format
                                 to be generated (log.txt by default)
   --log-txt-detailed-packets    Include detailed packet dumps in text log.
+  --log-junit=<filename>        Name of the file with logs in JUnit format
+                                to be generated.
 
   --no-builder                  Do not build TE and TA
   --no-nuts-build               Do not build NUTs
@@ -386,6 +388,8 @@ RGT_LOG_TXT=log.txt
 RGT_LOG_HTML_PLAIN=
 # Name of the directory for structured HTML logs to be genetated
 RGT_LOG_HTML=
+# Name of the file with log in JUnit format to be generated
+RGT_LOG_JUNIT=
 
 TE_TESTER_SCRIPTS=
 export TE_TA_LIST_FILE=ta.list
@@ -486,6 +490,7 @@ process_opts()
             --log-html=*)       RGT_LOG_HTML="${1#--log-html=}" ;;
             --log-plain-html=*) RGT_LOG_HTML_PLAIN="${1#--log-plain-html=}" ;;
             --log-txt-detailed-packets) RGT_LOG_TXT_DETAILED_PACKETS=true ;;
+            --log-junit=*)      RGT_LOG_JUNIT="${1#--log-junit=}" ;;
 
             --gdb-tester)   GDB_TESTER=yes ;;
 
@@ -1326,6 +1331,10 @@ if test -n "${RGT_LOG_HTML}" ; then
         rgt-xml2html-multi ${RGT_X2HM_OPTS} "${LOG_XML_MERGED}" \
                            "${RGT_LOG_HTML}"
     fi
+fi
+if test -n "${RGT_LOG_JUNIT}" ; then
+    rgt-conv -m junit \
+        -f "${TE_LOG_RAW}" -o "${RGT_LOG_JUNIT}"
 fi
 
 if test -z ${TE_SNIFF_LOG_CONV_DISABLE} ; then

@@ -52,7 +52,8 @@ static int live_process_regular_msg(log_msg *msg);
 
 void
 live_mode_init(f_process_ctrl_log_msg ctrl_proc[CTRL_EVT_LAST][NT_LAST], 
-               f_process_reg_log_msg  *reg_proc)
+               f_process_reg_log_msg  *reg_proc,
+               f_process_log_root root_proc[CTRL_EVT_LAST])
 {
     ctrl_proc[CTRL_EVT_START][NT_SESSION] = live_process_sess_start;
     ctrl_proc[CTRL_EVT_END][NT_SESSION] = live_process_sess_end;
@@ -64,6 +65,9 @@ live_mode_init(f_process_ctrl_log_msg ctrl_proc[CTRL_EVT_LAST][NT_LAST],
     ctrl_proc[CTRL_EVT_END][NT_BRANCH] = live_process_branch_end;
 
     *reg_proc = live_process_regular_msg;
+
+    root_proc[CTRL_EVT_START] = NULL;
+    root_proc[CTRL_EVT_END] = NULL;
 }
 
 static void

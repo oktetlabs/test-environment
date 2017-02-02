@@ -35,9 +35,10 @@
 extern "C" {
 #endif
 
-void
-live_mode_init(f_process_ctrl_log_msg ctrl_proc[CTRL_EVT_LAST][NT_LAST], 
-               f_process_reg_log_msg  *reg_proc);
+extern void live_mode_init(f_process_ctrl_log_msg
+                                  ctrl_proc[CTRL_EVT_LAST][NT_LAST],
+                           f_process_reg_log_msg *reg_proc,
+                           f_process_log_root root_proc[CTRL_EVT_LAST]);
 
 #ifdef __cplusplus
 }

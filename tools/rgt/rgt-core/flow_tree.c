@@ -1436,9 +1436,12 @@ wrapper_process_regular_msg(gpointer data, gpointer user_data)
 
     UNUSED(user_data);
 
-    msg = log_msg_read(msg_ptr);
-    reg_msg_proc(msg);
-    free_log_msg(msg);
+    if (reg_msg_proc != NULL)
+    {
+        msg = log_msg_read(msg_ptr);
+        reg_msg_proc(msg);
+        free_log_msg(msg);
+    }
 }
 
 /**
@@ -1467,8 +1470,9 @@ flow_tree_wander(node_t *cur_node)
         if (duration_filter_res == NFMODE_INCLUDE)
 #endif
         {
-            ctrl_msg_proc[CTRL_EVT_START][cur_node->type](
-                cur_node->user_data, &cur_node->verdicts);
+            if (ctrl_msg_proc[CTRL_EVT_START][cur_node->type] != NULL)
+                ctrl_msg_proc[CTRL_EVT_START][cur_node->type](
+                    cur_node->user_data, &cur_node->verdicts);
         
             /* Output messages that belongs to the node */
             msg_queue_foreach(&cur_node->msg_att,
@@ -1487,8 +1491,9 @@ flow_tree_wander(node_t *cur_node)
             if (cur_node->fmode == NFMODE_INCLUDE &&
                 cur_node->user_data != NULL)
             {
-                ctrl_msg_proc[CTRL_EVT_START][NT_BRANCH](
-                    cur_node->user_data, &cur_node->verdicts);
+                if (ctrl_msg_proc[CTRL_EVT_START][NT_BRANCH] != NULL)
+                    ctrl_msg_proc[CTRL_EVT_START][NT_BRANCH](
+                        cur_node->user_data, &cur_node->verdicts);
             }
             
             flow_tree_wander(cur_node->branches[i].first_el);
@@ -1497,8 +1502,9 @@ flow_tree_wander(node_t *cur_node)
             if (cur_node->fmode == NFMODE_INCLUDE &&
                 cur_node->user_data != NULL)
             {
-                ctrl_msg_proc[CTRL_EVT_END][NT_BRANCH](
-                    cur_node->user_data, &cur_node->verdicts);
+                if (ctrl_msg_proc[CTRL_EVT_END][NT_BRANCH] != NULL)
+                    ctrl_msg_proc[CTRL_EVT_END][NT_BRANCH](
+                        cur_node->user_data, &cur_node->verdicts);
             }
         }
     }
@@ -1507,8 +1513,9 @@ flow_tree_wander(node_t *cur_node)
         cur_node->user_data != NULL &&
         duration_filter_res == NFMODE_INCLUDE)
     {
-        ctrl_msg_proc[CTRL_EVT_END][cur_node->type](
-            cur_node->user_data, &cur_node->verdicts);
+        if (ctrl_msg_proc[CTRL_EVT_END][cur_node->type] != NULL)
+            ctrl_msg_proc[CTRL_EVT_END][cur_node->type](
+                cur_node->user_data, &cur_node->verdicts);
     }
 
     /* Output messages that were after the node */
