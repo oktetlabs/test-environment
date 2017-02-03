@@ -27,10 +27,13 @@
  */
 
 #include "te_config.h"
+#include "te_ethernet.h"
 
 #include "log_bufs.h"
 #include "tapi_env.h"
 #include "tapi_rpc_internal.h"
+#include "tapi_rpc_rte_ethdev.h"
+#include "tapi_rpc_rte_mempool.h"
 
 #include "tarpc.h"
 
@@ -98,6 +101,118 @@ append_arg(int *argc_p, char ***argv_p, const char *fmt, ...)
     *argv_p = argv;
 }
 
+static te_errno
+tapi_reuse_eal(rcf_rpc_server *rpcs,
+               int             argc,
+               char           *argv[],
+               te_bool        *need_init,
+               char          **eal_args_out,
+               te_bool        *need_conf_instance)
+{
+    unsigned int                i;
+    size_t                      eal_args_len = 1;
+    char                       *eal_args = NULL;
+    char                       *eal_args_new;
+    char                       *eal_args_cfg = NULL;
+    cfg_val_type                val_type = CVT_STRING;
+    uint8_t                     dev_count;
+    te_errno                    rc = 0;
+
+    if ((argc <= 0) || (argv == NULL))
+    {
+        rc = TE_EINVAL;
+        goto out;
+    }
+
+    for (i = 0; i < (unsigned int)argc; ++i)
+    {
+        size_t arg_len = strlen(argv[i]);
+
+        eal_args_len += arg_len;
+
+        eal_args_new = realloc(eal_args, eal_args_len);
+        if (eal_args_new == NULL)
+        {
+            rc = TE_ENOMEM;
+            goto out;
+        }
+
+        eal_args = eal_args_new;
+
+        eal_args_new = strncat(eal_args, argv[i], arg_len);
+        if (eal_args_new == NULL)
+        {
+            rc = TE_ENOBUFS;
+            goto out;
+        }
+
+        eal_args = eal_args_new;
+    }
+
+    rc = cfg_get_instance_fmt(&val_type, &eal_args_cfg,
+                              "/local:%s/dpdk:/eal_args:%s",
+                              rpcs->ta, rpcs->name);
+    if (rc == TE_RC(TE_CS, TE_ENOENT))
+    {
+        *need_init = TRUE;
+        *eal_args_out = eal_args;
+        *need_conf_instance = TRUE;
+
+        rc = 0;
+        goto out;
+    }
+    else if (rc != 0)
+    {
+        goto out;
+    }
+
+    dev_count = rpc_rte_eth_dev_count(rpcs);
+
+    for (i = 0; i < dev_count; ++i)
+    {
+        if (rpc_rte_eth_dev_is_valid_port(rpcs, i))
+        {
+            rpc_rte_eth_dev_close(rpcs, i);
+
+            /* Repeal any changes possibly made by the previous iteration */
+            rc = rpc_rte_eth_dev_set_mtu(rpcs, i, ETHER_DATA_LEN);
+            if (rc != 0)
+                goto out;
+
+            /* TODO: reset mc addr. list taking device state into account */
+        }
+    }
+
+    rpc_rte_mempool_free_all(rpcs);
+
+    if (strcmp(eal_args, eal_args_cfg) != 0)
+    {
+        rc = rcf_rpc_server_restart(rpcs);
+        if (rc == 0)
+        {
+            *need_init = TRUE;
+            *eal_args_out = eal_args;
+            *need_conf_instance = FALSE;
+        }
+
+        goto out;
+    }
+
+    *need_init = FALSE;
+    *eal_args_out = NULL;
+    *need_conf_instance = FALSE;
+
+    free(eal_args);
+
+out:
+    free(eal_args_cfg);
+
+    if (rc != 0)
+        free(eal_args);
+
+    return rc;
+}
+
 te_errno
 tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
                   int argc, char **argv)
@@ -114,6 +229,9 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
     int                     mem_channels;
     int                     mem_amount = 0;
     char                   *app_prefix = NULL;
+    te_bool                 need_init = TRUE;
+    char                   *eal_args_new = NULL;
+    te_bool                 need_conf_instance = FALSE;
 
     if (env == NULL || rpcs == NULL)
         return TE_EINVAL;
@@ -175,10 +293,43 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
     /* Append arguments provided by caller */
     memcpy(&my_argv[my_argc], argv, argc * sizeof(*my_argv));
 
-    ret = rpc_rte_eal_init(rpcs, my_argc + argc, my_argv);
-    rc = (ret == 0) ? 0 : TE_EFAULT;
+    if (dpdk_reuse_rpcs())
+    {
+        rc = tapi_reuse_eal(rpcs, my_argc + argc, my_argv,
+                            &need_init, &eal_args_new,
+                            &need_conf_instance);
+        if (rc != 0)
+            goto cleanup;
+    }
+
+    if (need_init)
+    {
+        ret = rpc_rte_eal_init(rpcs, my_argc + argc, my_argv);
+
+        rc = (ret < 0) ? TE_EFAULT : 0;
+        if (rc != 0)
+            goto cleanup;
+
+        if (eal_args_new == NULL)
+            goto cleanup;
+
+        if (need_conf_instance)
+        {
+            rc = cfg_add_instance_fmt(NULL, CVT_STRING, eal_args_new,
+                                      "/local:%s/dpdk:/eal_args:%s",
+                                      rpcs->ta, rpcs->name);
+        }
+        else
+        {
+            rc = cfg_set_instance_fmt(CVT_STRING, eal_args_new,
+                                      "/local:%s/dpdk:/eal_args:%s",
+                                      rpcs->ta, rpcs->name);
+        }
+    }
 
 cleanup:
+    free(eal_args_new);
+
     for (i = 0; i < my_argc; ++i)
         free(my_argv[i]);
     free(my_argv);
