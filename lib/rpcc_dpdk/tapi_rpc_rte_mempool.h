@@ -51,6 +51,21 @@ extern "C" {
 extern unsigned int rpc_rte_mempool_in_use_count(rcf_rpc_server     *rpcs,
                                                  rpc_rte_mempool_p   mp);
 
+/**
+ * @b rte_mempool_free() RPC
+ *
+ * @param mp            Mempool to be freed
+ */
+extern void rpc_rte_mempool_free(rcf_rpc_server     *rpcs,
+                                 rpc_rte_mempool_p   mp);
+
+/**
+ * @b rte_mempool_free_all() RPC
+ * The function destroys ALL mempools by means of
+ * @b rte_mempool_walk() usage at RPC server side
+ */
+extern void rpc_rte_mempool_free_all(rcf_rpc_server *rpcs);
+
 /**@} <!-- END te_lib_rpc_rte_mempool --> */
 
 #ifdef __cplusplus

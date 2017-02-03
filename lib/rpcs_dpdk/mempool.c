@@ -49,3 +49,31 @@ TARPC_FUNC(rte_mempool_in_use_count, {},
     MAKE_CALL(out->retval = func(mp));
 }
 )
+
+static void
+rte_mempool_free_iterator(struct rte_mempool *mp,
+                          void               *arg)
+{
+    UNUSED(arg);
+
+    rte_mempool_free(mp);
+}
+
+TARPC_FUNC_STANDALONE(rte_mempool_free, {},
+{
+    if (in->free_all)
+    {
+        MAKE_CALL(rte_mempool_walk(rte_mempool_free_iterator, NULL));
+    }
+    else
+    {
+        struct rte_mempool *mp = NULL;
+
+        RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MEMPOOL, {
+            mp = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->mp, ns);
+        });
+
+        MAKE_CALL(rte_mempool_free(mp));
+    }
+}
+)

@@ -220,6 +220,15 @@ struct tarpc_rte_mempool_in_use_count_out {
     unsigned int            retval;
 };
 
+/** rte_mempool_free() */
+struct tarpc_rte_mempool_free_in {
+    struct tarpc_in_arg     common;
+    tarpc_bool              free_all;
+    tarpc_rte_mempool       mp;
+};
+
+typedef struct tarpc_void_out tarpc_rte_mempool_free_out;
+
 /** rte_pktmbuf_pool_create() */
 struct tarpc_rte_pktmbuf_pool_create_in {
     struct tarpc_in_arg     common;
@@ -1584,6 +1593,7 @@ program dpdk
         RPC_DEF(rte_eal_process_type)
 
         RPC_DEF(rte_mempool_in_use_count)
+        RPC_DEF(rte_mempool_free)
 
         RPC_DEF(rte_pktmbuf_pool_create)
         RPC_DEF(rte_pktmbuf_alloc)
