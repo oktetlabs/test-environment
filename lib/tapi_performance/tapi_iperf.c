@@ -278,7 +278,7 @@ get_report(const json_t *jrpt, tapi_iperf_report *report)
  * to release it's resources.
  *
  * @param[in]    mode       iperf tool mode.
- * @param[in]    ta         Test agent name.
+ * @param[in]    rpcs       RPC server handle.
  * @param[in]    options    iperf tool options.
  * @param[inout] app        iperf tool context.
  *
@@ -288,26 +288,14 @@ get_report(const json_t *jrpt, tapi_iperf_report *report)
  */
 static te_errno
 tapi_iperf_app_start(iperf_mode mode,
-                     const char *ta,
+                     rcf_rpc_server *rpcs,
                      const tapi_iperf_options *options,
                      tapi_iperf_app *app)
 {
-    char buf[sizeof(PCO_IPERF_SERVER_NAME) + 20]; /* 20 digits of number */
-    te_string pco_name = TE_STRING_BUF_INIT(buf);
     te_string cmd = TE_STRING_INIT;
-    rcf_rpc_server *rpcs = NULL;
     tarpc_pid_t pid = TAPI_IPERF_PID_INVALID;
     int stdout = -1;
     te_errno rc = 0;
-
-    CHECK_RC(te_string_append(&pco_name, "%s%u",
-                              (mode == IPERF_SERVER ? PCO_IPERF_SERVER_NAME
-                                                    : PCO_IPERF_CLIENT_NAME),
-                              app->index));
-
-    VERB("%s:%d: Start auxiliary RPC server \"%s\" on %s",
-         __FUNCTION__, __LINE__, pco_name.ptr, ta);
-    CHECK_RC(rcf_rpc_server_create(ta, pco_name.ptr, &rpcs));
 
     switch (mode)
     {
@@ -335,11 +323,10 @@ tapi_iperf_app_start(iperf_mode mode,
     {
         ERROR("%s:%d: Failed to run \"%s\"", __FUNCTION__, __LINE__, cmd.ptr);
         te_string_free(&cmd);
-        rcf_rpc_server_destroy(rpcs);
         rc = TE_EFAIL;
     }
 
-    return rc;
+    return TE_RC(TE_TAPI, rc);
 }
 
 /**
@@ -354,19 +341,13 @@ tapi_iperf_app_start(iperf_mode mode,
 static te_errno
 tapi_iperf_app_stop(tapi_iperf_app *app)
 {
-    te_errno rc;
-
     rpc_ta_kill_death(app->rpcs, app->pid);
     app->pid = TAPI_IPERF_PID_INVALID;
     if (app->stdout >= 0)
         RPC_CLOSE(app->rpcs, app->stdout);
-
-    VERB("%s:%d: Stop auxiliary RPC server \"%s\" on %s",
-         __FUNCTION__, __LINE__, app->rpcs->name, app->rpcs->ta);
-    rc = rcf_rpc_server_destroy(app->rpcs);
     app->rpcs = NULL;
 
-    return rc;
+    return 0;   /* Just to use it similarly to app_start function */
 }
 
 
@@ -376,18 +357,10 @@ tapi_iperf_server_start(rcf_rpc_server *rpcs,
                         const tapi_iperf_options *options,
                         tapi_iperf_server *server)
 {
-    static unsigned int server_num;
-    te_errno rc;
-
     ENTRY("Start iperf server on %s", rpcs->ta);
     assert(server != NULL);
 
-    server->app.index = server_num;
-    rc = tapi_iperf_app_start(IPERF_SERVER, rpcs->ta, options, &server->app);
-    if (rc == 0)
-        server_num++;
-
-    return TE_RC(TE_TAPI, rc);
+    return tapi_iperf_app_start(IPERF_SERVER, rpcs, options, &server->app);
 }
 
 /* See description in tapi_iperf.h. */
@@ -418,18 +391,10 @@ tapi_iperf_client_start(rcf_rpc_server *rpcs,
                         const tapi_iperf_options *options,
                         tapi_iperf_client *client)
 {
-    static unsigned int client_num;
-    te_errno rc = 0;
-
     ENTRY("Start iperf client on %s", rpcs->ta);
     assert(client != NULL);
 
-    client->app.index = client_num;
-    rc = tapi_iperf_app_start(IPERF_CLIENT, rpcs->ta, options, &client->app);
-    if (rc == 0)
-        client_num++;
-
-    return TE_RC(TE_TAPI, rc);
+    return tapi_iperf_app_start(IPERF_CLIENT, rpcs, options, &client->app);
 }
 
 /* See description in tapi_iperf.h. */

@@ -129,7 +129,6 @@ typedef struct tapi_iperf_app {
     rcf_rpc_server *rpcs;   /**< RPC server handle */
     tarpc_pid_t pid;        /**< PID */
     int stdout;             /**< File descriptor to read from stdout stream */
-    unsigned int index;     /**< Serial number of application */
     char *cmd;              /**< Command line string to run the application */
 } tapi_iperf_app;
 
@@ -145,29 +144,27 @@ typedef struct tapi_iperf_client {
 } tapi_iperf_client;
 
 /**
+ * On-stack iperf application context initializer.
+ */
+#define TAPI_IPERF_APP_INIT {           \
+    .rpcs = NULL,                       \
+    .pid = TAPI_IPERF_PID_INVALID,      \
+    .stdout = -1,                       \
+    .cmd = NULL                         \
+}
+
+/**
  * On-stack iperf server context initializer.
  */
 #define TAPI_IPERF_SERVER_INIT {        \
-    .app = {                            \
-        .rpcs = NULL,                   \
-        .pid = TAPI_IPERF_PID_INVALID,  \
-        .stdout = -1,                   \
-        .index = 0,                     \
-        .cmd = NULL                     \
-    }                                   \
+    .app = TAPI_IPERF_APP_INIT          \
 }
 
 /**
  * On-stack iperf client context initializer.
  */
 #define TAPI_IPERF_CLIENT_INIT {        \
-    .app = {                            \
-        .rpcs = NULL,                   \
-        .pid = TAPI_IPERF_PID_INVALID,  \
-        .stdout = -1,                   \
-        .index = 0,                     \
-        .cmd = NULL                     \
-    },                                  \
+    .app = TAPI_IPERF_APP_INIT,         \
     .report = TE_STRING_INIT            \
 }
 
