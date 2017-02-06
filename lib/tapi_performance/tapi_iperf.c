@@ -181,6 +181,19 @@ set_opt_time(te_string *cmd, const tapi_iperf_options *options)
 }
 
 /**
+ * Set option of number of parallel client streams in iperf tool format.
+ *
+ * @param cmd           Buffer contains a command to add option to.
+ * @param options       iperf tool options.
+ */
+static void
+set_opt_streams(te_string *cmd, const tapi_iperf_options *options)
+{
+    if (options->client.streams != TAPI_IPERF_OPT_STREAMS_DEFAULT)
+        CHECK_RC(te_string_append(cmd, " -P %"PRIu16, options->client.streams));
+}
+
+/**
  * Build command string to run iperf server.
  *
  * @param cmd           Buffer to put built command to.
@@ -217,7 +230,8 @@ build_iperf_client_cmd(te_string *cmd, const tapi_iperf_options *options)
         set_opt_protocol,
         set_opt_bandwidth,
         set_opt_bytes,
-        set_opt_time
+        set_opt_time,
+        set_opt_streams
     };
     size_t i;
 

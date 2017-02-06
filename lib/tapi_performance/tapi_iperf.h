@@ -46,6 +46,8 @@ extern "C" {
 #define TAPI_IPERF_OPT_TIME_DEFAULT         (0)
 /** Default bandwidth (1 Mbit/sec for UDP, unlimited for TCP, see iperf3 manual) */
 #define TAPI_IPERF_OPT_BANDWIDTH_DEFAULT    (0)
+/** Default number of parallel client streams to run */
+#define TAPI_IPERF_OPT_STREAMS_DEFAULT      (0)
 /** PID value of not started (stopped) server/client */
 #define TAPI_IPERF_PID_INVALID              (-1)
 
@@ -96,6 +98,9 @@ typedef struct tapi_iperf_options {
             uint32_t time;  /**< Time in seconds to transmit for,
                                  set to @ref TAPI_IPERF_OPT_TIME_DEFAULT
                                  to use default one */
+            uint16_t streams;       /**< Number of parallel client streams
+                                 to run; to use default one set it to
+                                 @ref TAPI_IPERF_OPT_STREAMS_DEFAULT */
         } client;           /**< Client specific options */
     };
 } tapi_iperf_options;
@@ -120,7 +125,8 @@ typedef struct tapi_iperf_options {
         .protocol = TAPI_IPERF_PROTOCOL_DEFAULT,        \
         .bandwidth = TAPI_IPERF_OPT_BANDWIDTH_DEFAULT,  \
         .bytes = TAPI_IPERF_OPT_BYTES_DEFAULT,          \
-        .time = TAPI_IPERF_OPT_TIME_DEFAULT             \
+        .time = TAPI_IPERF_OPT_TIME_DEFAULT,            \
+        .streams = TAPI_IPERF_OPT_STREAMS_DEFAULT       \
     }                                                   \
 }
 
