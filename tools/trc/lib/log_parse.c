@@ -566,7 +566,8 @@ trc_report_test_iter_stats_update(trc_report_stats     *stats,
         return TRUE;
     }
 
-    if (exp_result == NULL)
+    if (exp_result == NULL ||
+        exp_result == exp_defaults_get(TE_TEST_UNSPEC))
     {
         /* Expected result is unknown */
         is_expected = FALSE;
@@ -1058,6 +1059,16 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                     (app_ctx->flags & TRC_UPDATE_FAKE_LOG) &&
                     !(app_ctx->flags & TRC_UPDATE_PRINT_PATHS))
                     func_ptr = app_ctx->func_args_match;
+            }
+            else
+            {
+                /*
+                 * If this is not TRC Update tool, for unknown iterations
+                 * added to DB default expected result should be
+                 * TE_TEST_UNSPEC. This allows to detect such
+                 * iterations as new (not known to existing TRC DB) later.
+                 */
+                step_iter_flags |= STEP_ITER_CREATE_UNSPEC;
             }
 
             if (!trc_db_walker_step_iter(ctx->db_walker, entry->args_n,

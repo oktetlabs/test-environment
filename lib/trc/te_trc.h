@@ -244,7 +244,12 @@ typedef enum step_iter_flags {
                                              created by a tool */
     STEP_ITER_CREATE_NFOUND  = 0x8,     /**< Create iteration if it
                                              cannot be found in DB. */
-    STEP_ITER_SPLIT_RESULTS  = 0x10,    /**< For each result: split tag
+    STEP_ITER_CREATE_UNSPEC  = 0x10,    /**< If a new iteration is created
+                                             and expected results are
+                                             not known, set default expected
+                                             result to TE_TEST_UNSPEC,
+                                             not TE_TEST_PASSED. */
+    STEP_ITER_SPLIT_RESULTS  = 0x20,    /**< For each result: split tag
                                              expression of results in
                                              conjuncts, replace single
                                              result with its copies marked

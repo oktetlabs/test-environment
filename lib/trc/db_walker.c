@@ -684,11 +684,19 @@ trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
                         strdup(walker->db->filename);
 
                 if (iter_to_copy != NULL)
+                {
                    trc_db_test_iter_res_cpy(walker->iter,
                                             iter_to_copy);
+                }
                 else
-                    walker->iter->exp_default =
-                        exp_defaults_get(TE_TEST_PASSED);
+                {
+                    if (flags & STEP_ITER_CREATE_UNSPEC)
+                        walker->iter->exp_default =
+                            exp_defaults_get(TE_TEST_UNSPEC);
+                    else
+                        walker->iter->exp_default =
+                            exp_defaults_get(TE_TEST_PASSED);
+                }
             }
             else
             {
