@@ -1012,8 +1012,7 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
             trc_test                      *test;
             trc_test_iter                 *iter;
 
-            te_bool   step_force = TRUE;
-            uint32_t  step_match_flags = 0;
+            uint32_t  step_iter_flags = STEP_ITER_CREATE_NFOUND;
 
             test = trc_db_walker_get_test(ctx->db_walker);
             entry = TAILQ_FIRST(&ctx->iter_data->runs);
@@ -1038,7 +1037,7 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                 */
 
                 if (app_ctx->flags & TRC_UPDATE_MERGE_LOG)
-                    step_force = FALSE;
+                    step_iter_flags &= ~STEP_ITER_CREATE_NFOUND;
 
                 if ((app_ctx->flags & (TRC_UPDATE_FAKE_LOG |
                                        TRC_UPDATE_MERGE_LOG |
@@ -1051,8 +1050,8 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                     * script in TRC update
                     * process
                     */
-                    step_match_flags = ITER_NO_MATCH_WILD |
-                                       ITER_NO_MATCH_OLD;
+                    step_iter_flags |= STEP_ITER_NO_MATCH_WILD |
+                                       STEP_ITER_NO_MATCH_OLD;
                 }
 
                 if (test->type == TRC_TEST_SCRIPT &&
@@ -1062,18 +1061,8 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
             }
 
             if (!trc_db_walker_step_iter(ctx->db_walker, entry->args_n,
-                                         entry->args, step_force,
-                                         step_match_flags,
-                                         /* 
-                                          * Currently not used - 
-                                          * split results with complex
-                                          * tag expressions into
-                                          * results with simple ones
-                                          * obtaining "raw" TRC for
-                                          * TRC update parsing
-                                          * fake log
-                                          */
-                                         FALSE,
+                                         entry->args,
+                                         step_iter_flags,
                                          ctx->db_uid,
                                          func_ptr))
             {

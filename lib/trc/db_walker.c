@@ -565,9 +565,8 @@ trc_report_argument_compare (const void *arg1, const void *arg2)
 /* See the description in te_trc.h */
 te_bool
 trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
-                        trc_report_argument *args, te_bool force,
-                        uint32_t match_flags,
-                        te_bool split_results,
+                        trc_report_argument *args,
+                        uint32_t flags,
                         unsigned int db_uid,
                         func_args_match_ptr func_args_match)
 {
@@ -641,23 +640,23 @@ trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
             }
         }
 
-        if (match_flags == 0)
+        if ((flags & STEP_ITER_MATCH_FLAGS) == 0)
             walker->iter = iter;
         if (walker->iter == NULL &&
-            !(match_flags & ITER_NO_MATCH_OLD))
+            !(flags & STEP_ITER_NO_MATCH_OLD))
             walker->iter = old_exact_iter;
         if (walker->iter == NULL &&
-            !(match_flags & ITER_NO_MATCH_NEW))
+            !(flags & STEP_ITER_NO_MATCH_NEW))
             walker->iter = new_exact_iter;
         if (walker->iter == NULL &&
-            !(match_flags &
-              (ITER_NO_MATCH_WILD | ITER_NO_MATCH_OLD)))
+            !(flags &
+              (STEP_ITER_NO_MATCH_WILD | STEP_ITER_NO_MATCH_OLD)))
             walker->iter = wild_iter;
 
         /* nothing found */
         if (walker->iter == NULL)
         {
-            if (force)
+            if (flags & STEP_ITER_CREATE_NFOUND)
             {
                 VERB("Step iteration - force to create");
                 walker->iter = trc_db_new_test_iter(walker->test,
@@ -716,7 +715,7 @@ trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
 
     walker->is_iter = TRUE;
 
-    if (split_results && (walker->unknown == 0))
+    if ((flags & STEP_ITER_SPLIT_RESULTS) && (walker->unknown == 0))
         trc_db_test_iter_res_split(walker->iter);
 
     return (walker->unknown == 0);

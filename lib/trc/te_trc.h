@@ -233,16 +233,31 @@ typedef int (*func_args_match_ptr)(const void *,
                                    te_bool);
 
 /**
- * Iteration matching flags.
+ * Flags passed to trc_db_walker_step_iter() function.
  */
-typedef enum iter_match_flags {
-    ITER_NO_MATCH_OLD   = 0x1,     /**< Do not match to iterations from
-                                        existing TRC DB */
-    ITER_NO_MATCH_WILD  = 0x2,     /**< Do not match to wildcard
-                                        iterations */
-    ITER_NO_MATCH_NEW   = 0x4,     /**< Do not match to iterations
-                                        created by a tool */
-} iter_match_flags;
+typedef enum step_iter_flags {
+    STEP_ITER_NO_MATCH_OLD   = 0x1,     /**< Do not match to iterations
+                                             from existing TRC DB */
+    STEP_ITER_NO_MATCH_WILD  = 0x2,     /**< Do not match to wildcard
+                                             iterations */
+    STEP_ITER_NO_MATCH_NEW   = 0x4,     /**< Do not match to iterations
+                                             created by a tool */
+    STEP_ITER_CREATE_NFOUND  = 0x8,     /**< Create iteration if it
+                                             cannot be found in DB. */
+    STEP_ITER_SPLIT_RESULTS  = 0x10,    /**< For each result: split tag
+                                             expression of results in
+                                             conjuncts, replace single
+                                             result with its copies marked
+                                             by different conjuncts. */
+} step_iter_flags;
+
+/**
+ * Flags from step_iter_flags related to matching iterations to DB
+ * records.
+ */
+#define STEP_ITER_MATCH_FLAGS \
+    (STEP_ITER_NO_MATCH_OLD | STEP_ITER_NO_MATCH_WILD | \
+     STEP_ITER_NO_MATCH_NEW)
 
 /**
  * Move walker from the current position to the test iteration with
@@ -254,14 +269,7 @@ typedef enum iter_match_flags {
  * @param walker            Current walker position
  * @param n_args            Number of arguments
  * @param args              Test arguments
- * @param force             Force to create DB entry, if it does not
- *                          exist (if resources allocation fails, FALSE is
- *                          returned, else TRUE is returned)
- * @param match_flags       Matching flags
- * @param split_results     For each result: split tag expression of
- *                          results in conjuncts, replace single result
- *                          with its copies marked by different
- *                          conjuncts.
+ * @param flags             Flags (see step_iter_flags)
  * @param db_uid            TRC database user ID
  * @param func_args_match   Function to be used instead
  *                          @b test_iter_args_match() if required.
@@ -271,13 +279,10 @@ typedef enum iter_match_flags {
 extern te_bool trc_db_walker_step_iter(te_trc_db_walker *walker,
                                        unsigned int n_args,
                                        trc_report_argument *args,
-                                       te_bool force,
-                                       uint32_t match_flags,
-                                       te_bool split_results,
+                                       uint32_t flags,
                                        unsigned int db_uid,
                                        func_args_match_ptr
                                                 func_args_match);
-
 
 /**
  * Move walker one step back.

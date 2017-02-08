@@ -5528,13 +5528,13 @@ trc_update_process_logs_dump(trc_update_ctx *ctx)
             TAILQ_FOREACH(test_entry, &cur_group->tests, links)
             {
                 trc_db_walker_go_to_test(db_walker, test_entry->test);
-                iter_found = trc_db_walker_step_iter(db_walker,
-                                                     params_count, args,
-                                                     FALSE,
-                                                     (ITER_NO_MATCH_WILD |
-                                                      ITER_NO_MATCH_OLD),
-                                                     FALSE, ctx->db_uid,
-                                                     NULL);
+                iter_found = trc_db_walker_step_iter(
+                                                db_walker,
+                                                params_count, args,
+                                                (STEP_ITER_NO_MATCH_WILD |
+                                                 STEP_ITER_NO_MATCH_OLD),
+                                                ctx->db_uid,
+                                                NULL);
                 if (iter_found)
                     break;
             }
