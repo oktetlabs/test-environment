@@ -20,6 +20,27 @@ TCP socket emulation API is defined in @path{lib/tapi_tad/ipstack/tapi_tcp.h}
 TCP socket emulation can be created with @func{tapi_tcp_init_connection()},
 which returns handler of type tapi_tcp_handler_t.
 
+This function allows to specify local and remote IP and MAC addresses. It
+is important that local MAC address we use should not be assigned to any
+host in our network, including host on which we create TCP socket
+emulation. Otherwise Linux can disturb our connection by replying on
+packets from peer. For example, it can send RST to SYN sent from peer
+because it does not have any listener socket for that address and port
+and have no idea about our TCP socket emulation.
+
+For alien MAC address to work, we should create an ARP entry for local IP
+address we use associating it with this MAC address. This ARP entry can be
+created either on test host where peer socket resides, or on a gateway
+host via which our hosts are connected.
+
+@ref route_gw uses creating such ARP entry with alien MAC address to break
+network connection in a specified direction between two hosts connected via
+gateway host. So it can be easily used with TCP socket emulation:
+break connection from a host where tested socket resides to a host
+where TCP socket emulation should be created, and then use
+@func{tapi_tcp_init_connection()} passing to it the same alien MAC address
+as a local MAC.
+
 Emulated TCP connection may be established either actively or passively.
 
 Passive connection establishment:
@@ -75,6 +96,113 @@ TCP socket emulation can be destroyed with @func{tapi_tcp_destroy_connection()}.
   - @func{tapi_tcp_last_ackn_sent()} - get last ACKN sent to a peer.
   - @func{tapi_tcp_next_seqn()} - next SEQN to be sent to a peer.
   - @func{tapi_tcp_next_ackn()} - next ACKN to be sent to a peer.
+
+@section tcp_sock_emulation_example Example
+
+@code
+#include "tapi_tcp.h"
+#include "tapi_route_gw.h"
+
+/** Maximum time connection establishment can take, in milliseconds. */
+#define TCP_CONN_TIMEOUT 500
+
+/** Test packet size. */
+#define PKT_SIZE 1024
+
+int
+main(int argc, char *argv[])
+{
+    rcf_rpc_server *pco_iut = NULL;
+    rcf_rpc_server *pco_tst = NULL;
+
+    const struct sockaddr *iut_addr;
+    const struct sockaddr *tst_addr;
+
+    int                 iut_s = -1;
+    tapi_tcp_handler_t  csap_tst_s = -1;
+
+    const struct sockaddr      *alien_link_addr = NULL;
+    const struct sockaddr      *iut_lladdr = NULL;
+
+    const struct if_nameindex *iut_if = NULL;
+    const struct if_nameindex *tst_if = NULL;
+
+    char snd_buf[PKT_SIZE];
+    char rcv_buf[PKT_SIZE];
+
+    /* Preambule */
+    TEST_START;
+    TEST_GET_PCO(pco_iut);
+    TEST_GET_PCO(pco_tst);
+    TEST_GET_ADDR(pco_iut, iut_addr);
+    TEST_GET_ADDR(pco_tst, tst_addr);
+    TEST_GET_LINK_ADDR(iut_lladdr);
+    TEST_GET_LINK_ADDR(alien_link_addr);
+    TEST_GET_IF(iut_if);
+    TEST_GET_IF(tst_if);
+
+    /*
+     * Add ARP entry resolving @p tst_addr to @p alien_link_addr
+     * on IUT, so that Linux on Tester will not reply to
+     * packets sent to it.
+     */
+    CHECK_RC(tapi_update_arp(pco_iut->ta, iut_if, NULL, NULL,
+                             tst_addr, alien_link_addr, TRUE));
+
+    /*
+     * Create TCP socket emulation on Tester for passive connection
+     * establishment.
+     */
+    CHECK_RC(tapi_tcp_init_connection(pco_tst->ta, TAPI_TCP_SERVER,
+                                      tst_addr, iut_addr,
+                                      tst_if->if_name,
+                                      (uint8_t *)alien_link_addr->sa_data,
+                                      (uint8_t *)iut_lladdr->sa_data,
+                                      0, &csap_tst_s));
+
+    /* Create socket on IUT and establish TCP connection. */
+
+    iut_s = rpc_create_and_bind_socket(pco_iut, RPC_SOCK_STREAM,
+                                       RPC_PROTO_DEF, FALSE, FALSE,
+                                       iut_addr);
+
+    pco_iut->op = RCF_RPC_CALL;
+    rpc_connect(pco_iut, iut_s, tst_addr);
+
+    CHECK_RC(tapi_tcp_wait_open(csap_tst_s, TCP_CONN_TIMEOUT));
+
+    rpc_connect(pco_iut, iut_s, tst_addr);
+
+    te_fill_buf(snd_buf, PKT_SIZE);
+
+    /*
+     * Send some data from TCP socket emulation, receive and check it
+     * on peer socket.
+     */
+
+    CHECK_RC(tapi_tcp_send_msg(csap_tst_s, (uint8_t *)snd_buf, PKT_SIZE,
+                               TAPI_TCP_AUTO, 0,
+                               TAPI_TCP_AUTO, 0,
+                               NULL, 0));
+
+    rc = rpc_recv(pco_iut, iut_s, rcv_buf, PKT_SIZE, 0);
+    if (rc != PKT_SIZE ||
+        memcmp(snd_buf, rcv_buf, PKT_SIZE) != 0)
+        TEST_VERDICT("Received data does not match sent data");
+
+    TEST_SUCCESS;
+
+cleanup:
+
+    CLEANUP_RPC_CLOSE(pco_iut, iut_s);
+    CLEANUP_CHECK_RC(tapi_tcp_destroy_connection(csap_tst_s));
+    CLEANUP_CHECK_RC(tapi_update_arp(pco_iut->ta, iut_if,
+                                     pco_tst->ta, tst_if,
+                                     tst_addr, NULL, FALSE));
+
+    TEST_END;
+}
+@endcode
 
 @} <!-- TCP socket emulation -->
 
