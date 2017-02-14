@@ -517,18 +517,6 @@ extern te_errno tsa_repair_tst_iut_conn(tsa_session *ss);
 extern te_errno tsa_repair_iut_tst_conn(tsa_session *ss);
 
 /**
- * Turn on/off usage of breaking/repairing forwarding to control TCP
- * packets transition. It is useful in case of TSA_TST_SOCKET mode
- * to stay for a while in states like TCP_SYN_SENT or TCP_FIN_WAIT1.
- *
- * @param ss    Pointer to TSA session structure
- * @param on    Whether to turn forwarding operations on or off
- *
- * @return Status code.
- */
-extern te_errno tsa_set_forwarding_operations(tsa_session *ss, te_bool on);
-
-/**
  * Move from one TCP state to another one.
  *
  * @param ss            Pointer to TSA session structure

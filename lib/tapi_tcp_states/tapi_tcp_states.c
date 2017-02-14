@@ -724,17 +724,6 @@ tsa_set_start_tcp_state(tsa_session *ss, rpc_tcp_state state,
         break
 
     te_errno    rc = 0;
-    te_errno    rc_aux = 0;
-    uint32_t    saved_flags;
-
-    saved_flags = ss->config.flags;
-
-    if (flags & TSA_NO_CONNECTIVITY_CHANGE)
-    {
-        rc = tsa_set_forwarding_operations(ss, FALSE);
-        if (rc != 0)
-            return rc;
-    }
 
     switch(state)
     {
@@ -755,13 +744,6 @@ tsa_set_start_tcp_state(tsa_session *ss, rpc_tcp_state state,
 
         default:
             assert(0);
-    }
-
-    if (!(saved_flags & TSA_NO_CONNECTIVITY_CHANGE))
-    {
-        rc_aux = tsa_set_forwarding_operations(ss, TRUE);
-        if (rc_aux != 0)
-            rc = rc_aux;
     }
 
     return rc;
@@ -890,61 +872,6 @@ tsa_repair_iut_tst_conn(tsa_session *ss)
         return rc;
 
     ss->state.tst_alien_arp_added = FALSE;
-
-    return 0;
-}
-
-/* See the tapi_tcp_states.h file for the description. */
-te_errno
-tsa_set_forwarding_operations(tsa_session *ss, te_bool on)
-{
-    te_bool   changed = FALSE;
-    te_errno  rc = 0;
-
-    if (ss->state.tst_type != TSA_TST_SOCKET)
-        return 0;
-
-    ss->config.flags &= ~TSA_NO_CONNECTIVITY_CHANGE;
-
-    if (!on)
-    {
-        if (ss->state.sock.tst_gw_alien_arp_added)
-        {
-            if ((rc = tsa_tst_repair_forwarding(ss)) != 0)
-                return rc;
-
-            changed = TRUE;
-        }
-
-        if (ss->state.sock.iut_gw_alien_arp_added)
-        {
-            if ((rc = tsa_iut_repair_forwarding(ss)) != 0)
-                return rc;
-            changed = TRUE;
-        }
-    }
-    else
-    {
-        if (!(ss->state.sock.tst_gw_alien_arp_added))
-        {
-            if ((rc = tsa_tst_break_forwarding(ss)) != 0)
-                return rc;
-            changed = TRUE;
-        }
-
-        if (!(ss->state.sock.iut_gw_alien_arp_added))
-        {
-            if ((rc = tsa_iut_break_forwarding(ss)) != 0)
-                return rc;
-            changed = TRUE;
-        }
-    }
-
-    if (changed)
-        wait_forwarding_changes(ss);
-
-    if (!on)
-        ss->config.flags |= TSA_NO_CONNECTIVITY_CHANGE;
 
     return 0;
 }
@@ -1106,18 +1033,7 @@ tsa_do_moves(tsa_session *ss, rpc_tcp_state stop_state,
     rpc_tcp_state tcp_next = RPC_TCP_UNKNOWN;
     rpc_tcp_state tcp_cur;
     rpc_tcp_state tcp_init;
-    uint32_t      saved_flags;
     te_errno      rc = 0;
-    te_errno      rc_aux = 0;
-
-    saved_flags = ss->config.flags;
-
-    if (flags & TSA_NO_CONNECTIVITY_CHANGE)
-    {
-        rc = tsa_set_forwarding_operations(ss, FALSE);
-        if (rc != 0)
-            return rc;
-    }
 
     va_start(argptr, flags);
 
@@ -1156,13 +1072,6 @@ tsa_do_moves(tsa_session *ss, rpc_tcp_state stop_state,
 
     va_end(argptr);
 
-    if (!(saved_flags & TSA_NO_CONNECTIVITY_CHANGE))
-    {
-        rc_aux = tsa_set_forwarding_operations(ss, TRUE);
-        if (rc_aux != 0)
-            return rc_aux;
-    }
-
     return rc;
 }
 
@@ -1179,10 +1088,8 @@ tsa_do_moves_str(tsa_session *ss,
     rpc_tcp_state   next_state = RPC_TCP_CLOSE;
     rpc_tcp_state   prev_state = RPC_TCP_CLOSE;
     uint32_t        move_flags = flags;
-    uint32_t        saved_flags;
     te_bool         first_state = TRUE;
     te_errno        rc = 0;
-    te_errno        rc_aux = 0;
 
     const char *delims = TSA_DELIMETERS;
 
@@ -1199,15 +1106,6 @@ tsa_do_moves_str(tsa_session *ss,
 
     if (tsa_state_cur(ss) == stop_state)
         return TSA_ESTOP;
-
-    saved_flags = ss->config.flags;
-
-    if (flags & TSA_NO_CONNECTIVITY_CHANGE)
-    {
-        rc = tsa_set_forwarding_operations(ss, FALSE);
-        if (rc != 0)
-            return rc;
-    }
 
     for (p = s; ; p++)
     {
@@ -1295,12 +1193,6 @@ tsa_do_moves_str(tsa_session *ss,
     }
 
 exit:
-    if (!(saved_flags & TSA_NO_CONNECTIVITY_CHANGE))
-    {
-        rc_aux = tsa_set_forwarding_operations(ss, TRUE);
-        if (rc_aux != 0)
-            return rc_aux;
-    }
 
     return rc;
 }
