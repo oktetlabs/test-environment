@@ -120,15 +120,11 @@ iut_syn_ack_sock_handler(tsa_session *ss)
     te_errno rc = 0;
     te_errno rc_aux = 0;
 
-    RING_FORW("Unlocking packet forwarding from TESTER to IUT "
-              "and waiting for a while so that IUT socket will "
-              "receive SYN from TESTER");
-
-    rc = tsa_tst_repair_forwarding(ss);
+    rc = tsa_repair_tst_iut_conn(ss);
     if (rc != 0)
         return rc;
 
-    wait_forwarding_changes(ss);
+    wait_connectivity_changes(ss);
 
     /* Listener socket does not change its status when it sends SYN-ACK. */
     if (!(tsa_state_from(ss) == RPC_TCP_LISTEN &&
@@ -138,12 +134,10 @@ iut_syn_ack_sock_handler(tsa_session *ss)
         rc = iut_wait_change_gen(ss, MAX_CHANGE_TIMEOUT);
     }
 
-    RING_FORW("Restoring lock on packet forwarding from "
-              "TESTER to IUT");
-    rc_aux = tsa_tst_break_forwarding(ss);
+    rc_aux = tsa_break_tst_iut_conn(ss);
     if (rc_aux != 0)
         return rc_aux;
-    wait_forwarding_changes(ss);
+    wait_connectivity_changes(ss);
 
     return rc;
 }
@@ -162,20 +156,15 @@ tst_syn_ack_sock_handler(tsa_session *ss)
     te_errno rc = 0;
     te_errno rc_aux = 0;
 
-    RING_FORW("Unlocking forwarding from IUT to TESTER "
-              "and vice versa, waiting for termination of "
-              "connect() call on IUT (it should receive SYN-ACK "
-              "from TESTER)");
-
-    rc = tsa_iut_repair_forwarding(ss);
+    rc = tsa_repair_iut_tst_conn(ss);
     if (rc != 0)
         return rc;
 
-    rc = tsa_tst_repair_forwarding(ss);
+    rc = tsa_repair_tst_iut_conn(ss);
     if (rc != 0)
         return rc;
 
-    wait_forwarding_changes(ss);
+    wait_connectivity_changes(ss);
 
     RPC_AWAIT_ERROR(ss->config.pco_iut);
     if (rpc_connect(ss->config.pco_iut, ss->state.iut_s,
@@ -197,17 +186,15 @@ tst_syn_ack_sock_handler(tsa_session *ss)
             rc = RPC_ERRNO(ss->config.pco_tst);
     }
 
-    RING_FORW("Restoring locks on packet forwarding");
-
-    rc_aux = tsa_iut_break_forwarding(ss);
+    rc_aux = tsa_break_iut_tst_conn(ss);
     if (rc_aux != 0)
         return rc_aux;
 
-    rc_aux = tsa_tst_break_forwarding(ss);
+    rc_aux = tsa_break_tst_iut_conn(ss);
     if (rc_aux != 0)
         return rc_aux;
 
-    wait_forwarding_changes(ss);
+    wait_connectivity_changes(ss);
 
     return rc;
 }
@@ -226,24 +213,17 @@ iut_ack_sock_handler(tsa_session *ss)
     te_errno rc = 0;
     te_errno rc_aux = 0;
 
-    RING_FORW("Unlocking packet forwarding from TESTER to IUT "
-              "and waiting some time to let IUT socket receive "
-              "previously blocked packets from TESTER and change "
-              "the state");
-
-    rc_aux = tsa_tst_repair_forwarding(ss);
+    rc_aux = tsa_repair_tst_iut_conn(ss);
     if (rc_aux != 0)
         return rc_aux;
-    wait_forwarding_changes(ss);
+    wait_connectivity_changes(ss);
 
     rc = iut_wait_change_gen(ss, MAX_CHANGE_TIMEOUT);
 
-    RING_FORW("Restoring lock on packet forwarding from "
-              "TESTER to IUT");
-    rc_aux = tsa_tst_break_forwarding(ss);
+    rc_aux = tsa_break_tst_iut_conn(ss);
     if (rc_aux != 0)
         return rc_aux;
-    wait_forwarding_changes(ss);
+    wait_connectivity_changes(ss);
 
     return rc;
 }
@@ -263,20 +243,15 @@ tst_ack_sock_handler(tsa_session *ss)
     te_errno  rc_aux = 0;
     int       fdflags = 0;
 
-    RING_FORW("Unlocking forwarding from IUT to TESTER "
-              "and vice versa and wait some time so that TESTER "
-              "socket will receive previously blocked packets "
-              "from IUT and change its state and answer to them");
-
-    rc_aux = tsa_iut_repair_forwarding(ss);
+    rc_aux = tsa_repair_iut_tst_conn(ss);
     if (rc_aux != 0)
         return rc_aux;
 
-    rc_aux = tsa_tst_repair_forwarding(ss);
+    rc_aux = tsa_repair_tst_iut_conn(ss);
     if (rc_aux != 0)
         return rc_aux;
 
-    wait_forwarding_changes(ss);
+    wait_connectivity_changes(ss);
 
     if (ss->state.tst_wait_connect)
     {
@@ -377,22 +352,20 @@ tst_ack_sock_handler(tsa_session *ss)
         }
     }
 
-    if (!(ss->config.flags & TSA_NO_FORW_OPERATIONS))
+    if (!(ss->config.flags & TSA_NO_CONNECTIVITY_CHANGE))
         MSLEEP(SLEEP_MSEC);
 
-    RING_FORW("Restoring locks on packet forwarding");
-
-    rc_aux = tsa_iut_break_forwarding(ss);
+    rc_aux = tsa_break_iut_tst_conn(ss);
     if (rc_aux != 0)
         return rc_aux;
 
-    rc_aux = tsa_tst_break_forwarding(ss);
+    rc_aux = tsa_break_tst_iut_conn(ss);
     if (rc_aux != 0)
         return rc_aux;
 
-    wait_forwarding_changes(ss);
+    wait_connectivity_changes(ss);
 
-    if (ss->config.flags & TSA_NO_FORW_OPERATIONS ||
+    if (ss->config.flags & TSA_NO_CONNECTIVITY_CHANGE ||
         ss->state.tst_type != TSA_TST_SOCKET)
     {
         rc_aux = iut_wait_change_gen(ss, MAX_CHANGE_TIMEOUT);
@@ -480,8 +453,8 @@ tst_rst_sock_handler(tsa_session *ss)
 {
     rpc_tcp_state st;
 
-    te_bool   tst_forw_repaired = FALSE;
-    te_bool   iut_forw_repaired = FALSE;
+    te_bool   tst_conn_repaired = FALSE;
+    te_bool   iut_conn_repaired = FALSE;
     te_errno  rc = 0;
     te_errno  rc_aux = 0;
 
@@ -495,14 +468,11 @@ tst_rst_sock_handler(tsa_session *ss)
     if (tsa_state_cur(ss) != RPC_TCP_TIME_WAIT &&
         tsa_state_cur(ss) != RPC_TCP_CLOSE)
     {
-        RING_FORW("Unlocking packet forwarding "
-                  "from TESTER to IUT");
-
-        rc = tsa_tst_repair_forwarding(ss);
+        rc = tsa_repair_tst_iut_conn(ss);
         if (rc != 0)
             return rc;
-        wait_forwarding_changes(ss);
-        tst_forw_repaired = TRUE;
+        wait_connectivity_changes(ss);
+        tst_conn_repaired = TRUE;
 
         /* If we have tst_s socket with SO_LINGER set to 0,
          * close() on it will not try to finish TCP connection
@@ -536,15 +506,11 @@ tst_rst_sock_handler(tsa_session *ss)
         ss->state.sock.tst_s_aux = -1;
         ss->state.tst_wait_connect = FALSE;
 
-        RING("Unlocking packet forwarding from IUT to TESTER "
-             "and waiting for termination of connect() call "
-             "on IUT if necessary");
-
-        rc = tsa_iut_repair_forwarding(ss);
+        rc = tsa_repair_iut_tst_conn(ss);
         if (rc != 0)
             goto cleanup;
-        wait_forwarding_changes(ss);
-        iut_forw_repaired = TRUE;
+        wait_connectivity_changes(ss);
+        iut_conn_repaired = TRUE;
 
         rc = iut_wait_change_gen(ss, MAX_CHANGE_TIMEOUT);
     }
@@ -560,11 +526,11 @@ tst_rst_sock_handler(tsa_session *ss)
         if (rc != 0)
             goto cleanup;
 
-        rc = tsa_tst_repair_forwarding(ss);
+        rc = tsa_repair_tst_iut_conn(ss);
         if (rc != 0)
             goto cleanup;
-        wait_forwarding_changes(ss);
-        tst_forw_repaired = TRUE;
+        wait_connectivity_changes(ss);
+        tst_conn_repaired = TRUE;
 
         /*
          * We suppose that it is TCP_TIME_WAIT really,
@@ -591,22 +557,22 @@ tst_rst_sock_handler(tsa_session *ss)
 
 cleanup:
 
-    if (tst_forw_repaired)
+    if (tst_conn_repaired)
     {
-        rc_aux = tsa_tst_break_forwarding(ss);
+        rc_aux = tsa_break_tst_iut_conn(ss);
         if (rc_aux != 0)
             return rc_aux;
     }
 
-    if (iut_forw_repaired)
+    if (iut_conn_repaired)
     {
-        rc_aux = tsa_iut_break_forwarding(ss);
+        rc_aux = tsa_break_iut_tst_conn(ss);
         if (rc_aux != 0)
             return rc_aux;
     }
 
-    if (tst_forw_repaired || iut_forw_repaired)
-        wait_forwarding_changes(ss);
+    if (tst_conn_repaired || iut_conn_repaired)
+        wait_connectivity_changes(ss);
 
     return rc;
 }

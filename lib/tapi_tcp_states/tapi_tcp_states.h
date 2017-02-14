@@ -65,8 +65,8 @@ typedef enum tsa_flags {
                                            TESTER socket */
     TSA_TST_USE_REUSEADDR = 0x2,      /**< Set SO_REUSEADDR option on
                                            TESTER socket */
-    TSA_NO_FORW_OPERATIONS = 0x4,     /**< Do not use breaking/repairing
-                                           forwarding to control
+    TSA_NO_CONNECTIVITY_CHANGE = 0x4, /**< Do not use breaking/repairing
+                                           connection to control
                                            transmission of TCP packets */
     TSA_ACT_TIMEOUT = 0x8,            /**< Use time waiting to move from
                                            one TCP state to another if
@@ -78,7 +78,7 @@ typedef enum tsa_flags {
                                            expected TCP state when
                                            performing TCP states transition
                                            (it is useful when we don't use
-                                           forwarding operations in
+                                           beaking/repairing connection in
                                            TSA_TST_SOCKET mode and do not
                                            see states like TCP_LAST_ACK) */
     TSA_MOVE_IGNORE_START_ERR = 0x40, /**< It has the same effect as
@@ -120,6 +120,8 @@ typedef struct tsa_config {
                                              the IUT side */
     const struct if_nameindex  *tst_if; /**< Network interface on
                                              the TST side */
+    const struct if_nameindex  *gw_iut_if; /**< Network interface on
+                                                the gateway IUT side */
     const struct if_nameindex  *gw_tst_if; /**< Network interface on
                                                 the gateway TST side */
 
@@ -147,15 +149,7 @@ typedef struct tsa_state_sock {
                                              enabled */
     te_bool     ipv4_fw;                /**< Was forwarding configured
                                              previously? */
-    te_bool     iut_gw_alien_arp_added; /**< @c TRUE if forwarding from
-                                             @p pco_iut to @p pco_tst
-                                             is broken */
-    te_bool     tst_gw_alien_arp_added; /**< @c TRUE if forwarding from
-                                             @p pco_tst to @p pco_iut
-                                             is broken */
-    te_bool     no_forw_operations;     /**< Do not try to use forwarding
-                                             breaking/repairing to control
-                                             transmission of TCP packets */
+
     /**< Sending RST via CSAP */
     tapi_tcp_reset_hack_t rst_hack_c;   /**< TCP reset hack context */
     int                   sid;          /**< RCF session id */
@@ -166,13 +160,6 @@ typedef struct tsa_state_csap {
     /** Sockets */
     tapi_tcp_handler_t  csap_tst_s;     /**< Handler of CSAP implementation
                                              of TCP connection */
-    /**< Routing */
-    cfg_handle  iut_alien_ip_route;     /**< Handle of route for alien
-                                             IP address that was added on
-                                             @p pco_iut */
-    te_bool     iut_alien_addr_arp;     /**< @c TRUE if arp entry for alien
-                                             IP/ethernet addresses was added
-                                             on @p pco_iut */
 } tsa_state_csap;
 
 struct tsa_session;
@@ -246,6 +233,15 @@ typedef struct tsa_state {
                                              @p pco_tst */
     te_bool         close_listener;     /**< Close listener socket just
                                              after accepting connection */
+
+    te_bool     iut_alien_arp_added;    /**< @c TRUE if ARP for alien MAC
+                                             was added to break connection
+                                             from @p pco_tst to
+                                             @p pco_iut */
+    te_bool     tst_alien_arp_added;    /**< @c TRUE if ARP for alien MAC
+                                             was added to break connection
+                                             from @p pco_iut to
+                                             @p pco_tst */
 } tsa_state;
 
 /**< TSA session variables */
@@ -453,16 +449,16 @@ extern te_errno tsa_tst_set(tsa_session *ss, rcf_rpc_server *pco_tst,
                             const void *fake_link_addr);
 
 /**
- * Set tsa_session structure fields related to gateway,
- * add routes for forwarding. CFG_WAIT_CHANGES should be used
- * after calling this function.
+ * Set tsa_session structure fields related to gateway;
+ * configure routes via gateway.
+ * CFG_WAIT_CHANGES should be used after calling this function.
  *
  * @param ss                    Pointer to TSA session structure
  * @param pco_gw                RPC server on a gateway
  * @param gw_iut_addr           Gateway IUT address
  * @param gw_tst_addr           Gateway TST address
- * @param gw_tst_if             Gateway TST interface or @c NULL - required
- *                              for @c TSA_TST_GW_CSAP mode
+ * @param gw_iut_if             Gateway IUT interface.
+ * @param gw_tst_if             Gateway TST interface.
  * @param alien_link_addr       Invalid ethernet address
  *
  * @return Status code.
@@ -470,69 +466,55 @@ extern te_errno tsa_tst_set(tsa_session *ss, rcf_rpc_server *pco_tst,
 extern te_errno tsa_gw_set(tsa_session *ss, rcf_rpc_server *pco_gw,
                            const struct sockaddr *gw_iut_addr,
                            const struct sockaddr *gw_tst_addr,
+                           const struct if_nameindex *gw_iut_if,
                            const struct if_nameindex *gw_tst_if,
                            const void *alien_link_addr);
 
 /**
- * Break forwarding of TCP packets from @p pco_gw to @p pco_tst. Actually
- * it sets alien destination mac address for outgoing from gateway packets.
- * So linux on tester side ignores the packets, but CSAP can see and process
- * them.
- *
- * @param ss    Pointer to TSA session structure
- *
- * @return Status code.
- */
-extern te_errno tsa_gw_csap_break_forwarding(tsa_session *ss);
-
-/**
- * Repair forwarding of TCP packets from @p pco_gw to @p pco_tst.
- *
- * @param ss    Pointer to TSA session structure
- *
- * @return Status code.
- */
-extern te_errno tsa_gw_csap_repair_forwarding(tsa_session *ss);
-
-/**
- * Break forwarding of TCP packets from @p pco_tst to @p pco_iut.
+ * Break network connection from @p pco_tst to @p pco_iut by
+ * adding ARP table entry associating IUT IP address with
+ * alien MAC address.
  * CFG_WAIT_CHANGES should be used after calling this function.
  *
  * @param ss    Pointer to TSA session structure
  *
  * @return Status code.
  */
-extern te_errno tsa_tst_break_forwarding(tsa_session *ss);
+extern te_errno tsa_break_tst_iut_conn(tsa_session *ss);
 
 /**
- * Break forwarding of TCP packets from @p pco_iut to @p pco_tst.
+ * Break network connection from @p pco_iut to @p pco_tst by
+ * adding ARP table entry associating Tester IP address with
+ * alien MAC address.
  * CFG_WAIT_CHANGES should be used after calling this function.
  *
  * @param ss    Pointer to TSA session structure
  *
  * @return Status code.
  */
-extern te_errno tsa_iut_break_forwarding(tsa_session *ss);
+extern te_errno tsa_break_iut_tst_conn(tsa_session *ss);
 
 /**
- * Repair forwarding of TCP packets from @p pco_tst to @p pco_iut.
+ * Repair network connection from @p pco_tst to @p pco_iut
+ * by removing ARP table entry for alien MAC address.
  * CFG_WAIT_CHANGES should be used after calling this function.
  *
  * @param ss    Pointer to TSA session structure
  *
  * @return Status code.
  */
-extern te_errno tsa_tst_repair_forwarding(tsa_session *ss);
+extern te_errno tsa_repair_tst_iut_conn(tsa_session *ss);
 
 /**
- * Repair forwarding of TCP packets from @p pco_iut to @p pco_tst.
+ * Repair network connection from @p pco_iut to @p pco_tst
+ * by removing ARP table entry for alien MAC address.
  * CFG_WAIT_CHANGES should be used after calling this function.
  *
  * @param ss    Pointer to TSA session structure
  *
  * @return Status code.
  */
-extern te_errno tsa_iut_repair_forwarding(tsa_session *ss);
+extern te_errno tsa_repair_iut_tst_conn(tsa_session *ss);
 
 /**
  * Turn on/off usage of breaking/repairing forwarding to control TCP
@@ -619,8 +601,7 @@ extern te_errno tsa_do_moves_str(tsa_session *ss,
 extern te_errno tsa_create_session(tsa_session *ss, uint32_t flags);
 
 /**
- * Repair forwarding, close sockets.
- * Disable forwarding.
+ * Perform cleanup on TSA library context.
  *
  * @param ss    Pointer to TSA session structure
  *

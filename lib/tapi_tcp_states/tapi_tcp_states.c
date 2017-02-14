@@ -225,8 +225,6 @@ tsa_state_init(tsa_session *ss, tsa_tst_type tst_type)
     memset(ss, 0, sizeof(tsa_session));
 
     ss->state.tst_type = tst_type;
-    if (tst_type != TSA_TST_SOCKET)
-        ss->state.csap.iut_alien_ip_route = CFG_HANDLE_INVALID;
 
     if (tst_type == TSA_TST_SOCKET)
         tsa_set_sock_handlers(&ss->state.move_handlers);
@@ -279,11 +277,7 @@ tsa_tst_set(tsa_session *ss, rcf_rpc_server *pco_tst,
             const struct sockaddr *tst_addr,
             const void *alien_link_addr)
 {
-    rpc_socket_addr_family family;
-
     te_errno rc;
-
-    family = addr_family_h2rpc(ss->config.iut_addr->sa_family);
 
     ss->config.pco_tst = pco_tst;
     ss->config.tst_if = tst_if;
@@ -300,29 +294,9 @@ tsa_tst_set(tsa_session *ss, rcf_rpc_server *pco_tst,
 
     if (ss->state.tst_type == TSA_TST_CSAP)
     {
-        rc = tapi_cfg_add_neigh_entry(ss->config.pco_iut->ta,
-                                      ss->config.iut_if->if_name,
-                                      ss->config.tst_addr,
-                                      ss->config.alien_link_addr,
-                                      TRUE);
+        rc = tsa_break_iut_tst_conn(ss);
         if (rc != 0)
             return rc;
-
-        ss->state.csap.iut_alien_addr_arp = TRUE;
-
-        rc = tapi_cfg_add_route(ss->config.pco_iut->ta,
-                                addr_family_rpc2h(family),
-                                 te_sockaddr_get_netaddr(
-                                                ss->config.tst_addr),
-                                 32, NULL, ss->config.iut_if->if_name,
-                                 NULL, 0, 0, 0, 0, 0, 0,
-                                 &ss->state.csap.iut_alien_ip_route);
-
-        if (rc != 0)
-        {
-            ss->state.csap.iut_alien_ip_route = CFG_HANDLE_INVALID;
-            return rc;
-        }
     }
 
     return 0;
@@ -330,9 +304,9 @@ tsa_tst_set(tsa_session *ss, rcf_rpc_server *pco_tst,
 
 /* See description in tapi_tcp_states_internal.h */
 void
-wait_forwarding_changes(tsa_session *ss)
+wait_connectivity_changes(tsa_session *ss)
 {
-    if (ss->config.flags & TSA_NO_FORW_OPERATIONS)
+    if (ss->config.flags & TSA_NO_CONNECTIVITY_CHANGE)
         return;
 
     CFG_WAIT_CHANGES;
@@ -343,6 +317,7 @@ te_errno
 tsa_gw_set(tsa_session *ss, rcf_rpc_server *pco_gw,
            const struct sockaddr *gw_iut_addr,
            const struct sockaddr *gw_tst_addr,
+           const struct if_nameindex *gw_iut_if,
            const struct if_nameindex *gw_tst_if,
            const void *alien_link_addr)
 {
@@ -361,6 +336,7 @@ tsa_gw_set(tsa_session *ss, rcf_rpc_server *pco_gw,
     ss->config.pco_gw = pco_gw;
     ss->config.gw_iut_addr = gw_iut_addr;
     ss->config.gw_tst_addr = gw_tst_addr;
+    ss->config.gw_iut_if = gw_iut_if;
     ss->config.gw_tst_if = gw_tst_if;
     ss->config.alien_link_addr = alien_link_addr;
 
@@ -392,7 +368,7 @@ tsa_gw_set(tsa_session *ss, rcf_rpc_server *pco_gw,
             return rc;
         }
 
-        rc = tsa_gw_csap_break_forwarding(ss);
+        rc = tsa_break_iut_tst_conn(ss);
         if (rc != 0)
             return rc;
     }
@@ -593,14 +569,17 @@ tsa_destroy_session(tsa_session *ss)
 
     family = addr_family_h2rpc(ss->config.iut_addr->sa_family);
 
-    if (ss->state.tst_type == TSA_TST_SOCKET)
+    if (ss->state.iut_alien_arp_added)
     {
-        if ((rc_aux = tsa_iut_repair_forwarding(ss)) != 0)
+        if ((rc_aux = tsa_repair_tst_iut_conn(ss)) != 0)
             rc = rc_aux;
-        if ((rc_aux = tsa_tst_repair_forwarding(ss)) != 0)
-            rc = rc_aux;
-        wait_forwarding_changes(ss);
     }
+    if (ss->state.tst_alien_arp_added)
+    {
+        if ((rc_aux = tsa_repair_iut_tst_conn(ss)) != 0)
+            rc = rc_aux;
+    }
+    wait_connectivity_changes(ss);
 
     if (ss->state.iut_wait_connect)
     {
@@ -665,28 +644,6 @@ tsa_destroy_session(tsa_session *ss)
             }
         }
         ss->state.csap.csap_tst_s = -1;
-
-        if (ss->state.csap.iut_alien_addr_arp)
-        {
-            rc_aux = tapi_cfg_del_neigh_entry(ss->config.pco_iut->ta,
-                                              ss->config.iut_if->if_name,
-                                              ss->config.tst_addr);
-            if (rc_aux != 0)
-            {
-                ERROR("Deletion of neighbor entry failed");
-                rc = rc_aux;
-            }
-        }
-
-        if (ss->state.csap.iut_alien_ip_route != CFG_HANDLE_INVALID)
-        {
-            rc_aux = tapi_cfg_del_route(&ss->state.csap.iut_alien_ip_route);
-            if (rc_aux != 0)
-            {
-                ERROR("Deletion of IP route failed");
-                rc = rc_aux;
-            }
-        }
     }
 
     ss->state.iut_s = -1;
@@ -772,7 +729,7 @@ tsa_set_start_tcp_state(tsa_session *ss, rpc_tcp_state state,
 
     saved_flags = ss->config.flags;
 
-    if (flags & TSA_NO_FORW_OPERATIONS)
+    if (flags & TSA_NO_CONNECTIVITY_CHANGE)
     {
         rc = tsa_set_forwarding_operations(ss, FALSE);
         if (rc != 0)
@@ -800,7 +757,7 @@ tsa_set_start_tcp_state(tsa_session *ss, rpc_tcp_state state,
             assert(0);
     }
 
-    if (!(saved_flags & TSA_NO_FORW_OPERATIONS))
+    if (!(saved_flags & TSA_NO_CONNECTIVITY_CHANGE))
     {
         rc_aux = tsa_set_forwarding_operations(ss, TRUE);
         if (rc_aux != 0)
@@ -813,127 +770,126 @@ tsa_set_start_tcp_state(tsa_session *ss, rpc_tcp_state state,
 
 /* See the tapi_tcp_states.h file for the description. */
 te_errno
-tsa_gw_csap_break_forwarding(tsa_session *ss)
-{
-    struct sockaddr link_addr = {.sa_family = AF_LOCAL};
-
-    if (ss->state.tst_type != TSA_TST_GW_CSAP)
-    {
-        ERROR("%s: Invalid tsa tester type (%d) for this call",
-              __FUNCTION__, ss->state.tst_type);
-        return TE_RC(TE_TAPI, TE_EINVAL);
-    }
-
-    memcpy(link_addr.sa_data, ss->config.alien_link_addr, ETHER_ADDR_LEN);
-
-    return tapi_update_arp(ss->config.pco_gw->ta, ss->config.gw_tst_if,
-                           NULL, NULL,
-                           ss->config.tst_addr, &link_addr, TRUE);
-}
-
-/* See the tapi_tcp_states.h file for the description. */
-te_errno
-tsa_gw_csap_repair_forwarding(tsa_session *ss)
-{
-    if (ss->state.tst_type != TSA_TST_GW_CSAP)
-    {
-        ERROR("%s: Invalid tsa tester type (%d) for this call",
-              __FUNCTION__, ss->state.tst_type);
-        return TE_RC(TE_TAPI, TE_EINVAL);
-    }
-
-    return tapi_update_arp(ss->config.pco_gw->ta, ss->config.gw_tst_if,
-                           ss->config.pco_tst->ta, ss->config.tst_if,
-                           ss->config.tst_addr, NULL, FALSE);
-}
-
-/* See the tapi_tcp_states.h file for the description. */
-te_errno
-tsa_tst_break_forwarding(tsa_session *ss)
+tsa_break_tst_iut_conn(tsa_session *ss)
 {
     te_errno rc = 0;
 
-    if (ss->config.flags & TSA_NO_FORW_OPERATIONS)
+    if (ss->config.flags & TSA_NO_CONNECTIVITY_CHANGE)
         return 0;
 
-    rc = tapi_cfg_add_neigh_entry(ss->config.pco_tst->ta,
-                                  ss->config.tst_if->if_name,
-                                  ss->config.gw_tst_addr,
-                                  ss->config.alien_link_addr,
-                                  TRUE);
+    if (ss->state.iut_alien_arp_added)
+        return 0;
+
+    if (ss->state.tst_type == TSA_TST_SOCKET ||
+        ss->state.tst_type == TSA_TST_GW_CSAP)
+        rc = tapi_cfg_add_neigh_entry(ss->config.pco_gw->ta,
+                                      ss->config.gw_iut_if->if_name,
+                                      ss->config.iut_addr,
+                                      ss->config.alien_link_addr,
+                                      TRUE);
+    else
+        rc = tapi_cfg_add_neigh_entry(ss->config.pco_tst->ta,
+                                      ss->config.tst_if->if_name,
+                                      ss->config.iut_addr,
+                                      ss->config.alien_link_addr,
+                                      TRUE);
+
     if (rc != 0)
         return rc;
 
-    ss->state.sock.tst_gw_alien_arp_added = TRUE;
+    ss->state.iut_alien_arp_added = TRUE;
     return 0;
 }
 
 /* See the tapi_tcp_states.h file for the description. */
 te_errno
-tsa_iut_break_forwarding(tsa_session *ss)
+tsa_break_iut_tst_conn(tsa_session *ss)
 {
     te_errno rc = 0;
 
-    if (ss->config.flags & TSA_NO_FORW_OPERATIONS)
+    if (ss->config.flags & TSA_NO_CONNECTIVITY_CHANGE)
         return 0;
 
-    if (ss->state.sock.iut_gw_alien_arp_added)
+    if (ss->state.tst_alien_arp_added)
         return 0;
 
-    rc = tapi_cfg_add_neigh_entry(ss->config.pco_iut->ta,
-                                  ss->config.iut_if->if_name,
-                                  ss->config.gw_iut_addr,
-                                  ss->config.alien_link_addr,
-                                  TRUE);
+    if (ss->state.tst_type == TSA_TST_SOCKET ||
+        ss->state.tst_type == TSA_TST_GW_CSAP)
+        rc = tapi_cfg_add_neigh_entry(ss->config.pco_gw->ta,
+                                      ss->config.gw_tst_if->if_name,
+                                      ss->config.tst_addr,
+                                      ss->config.alien_link_addr,
+                                      TRUE);
+    else
+        rc = tapi_cfg_add_neigh_entry(ss->config.pco_iut->ta,
+                                      ss->config.iut_if->if_name,
+                                      ss->config.tst_addr,
+                                      ss->config.alien_link_addr,
+                                      TRUE);
+
     if (rc != 0)
         return rc;
 
-    ss->state.sock.iut_gw_alien_arp_added = TRUE;
+    ss->state.tst_alien_arp_added = TRUE;
     return 0;
 }
 
 /* See the tapi_tcp_states.h file for the description. */
 te_errno
-tsa_tst_repair_forwarding(tsa_session *ss)
+tsa_repair_tst_iut_conn(tsa_session *ss)
 {
     te_errno rc = 0;
 
-    if (ss->config.flags & TSA_NO_FORW_OPERATIONS)
+    if (ss->config.flags & TSA_NO_CONNECTIVITY_CHANGE)
         return 0;
 
-    if (!(ss->state.sock.tst_gw_alien_arp_added))
+    if (!(ss->state.iut_alien_arp_added))
         return 0;
 
-    rc = tapi_cfg_del_neigh_entry(ss->config.pco_tst->ta,
-                                  ss->config.tst_if->if_name,
-                                  ss->config.gw_tst_addr);
+    if (ss->state.tst_type == TSA_TST_SOCKET ||
+        ss->state.tst_type == TSA_TST_GW_CSAP)
+        rc = tapi_cfg_del_neigh_entry(ss->config.pco_gw->ta,
+                                      ss->config.gw_iut_if->if_name,
+                                      ss->config.iut_addr);
+    else
+        rc = tapi_cfg_del_neigh_entry(ss->config.pco_tst->ta,
+                                      ss->config.tst_if->if_name,
+                                      ss->config.iut_addr);
+
     if (rc != 0)
         return rc;
 
-    ss->state.sock.tst_gw_alien_arp_added = FALSE;
+    ss->state.iut_alien_arp_added = FALSE;
 
     return 0;
 }
 
 /* See the tapi_tcp_states.h file for the description. */
 te_errno
-tsa_iut_repair_forwarding(tsa_session *ss)
+tsa_repair_iut_tst_conn(tsa_session *ss)
 {
     te_errno rc = 0;
 
-    if (ss->config.flags & TSA_NO_FORW_OPERATIONS)
+    if (ss->config.flags & TSA_NO_CONNECTIVITY_CHANGE)
         return 0;
 
-    if (!(ss->state.sock.iut_gw_alien_arp_added))
+    if (!(ss->state.tst_alien_arp_added))
         return 0;
 
-    rc = tapi_cfg_del_neigh_entry(ss->config.pco_iut->ta,
-                                  ss->config.iut_if->if_name,
-                                  ss->config.gw_iut_addr);
+    if (ss->state.tst_type == TSA_TST_SOCKET ||
+        ss->state.tst_type == TSA_TST_GW_CSAP)
+        rc = tapi_cfg_del_neigh_entry(ss->config.pco_gw->ta,
+                                      ss->config.gw_tst_if->if_name,
+                                      ss->config.tst_addr);
+    else
+        rc = tapi_cfg_del_neigh_entry(ss->config.pco_iut->ta,
+                                      ss->config.iut_if->if_name,
+                                      ss->config.tst_addr);
+
     if (rc != 0)
         return rc;
 
-    ss->state.sock.iut_gw_alien_arp_added = FALSE;
+    ss->state.tst_alien_arp_added = FALSE;
 
     return 0;
 }
@@ -948,7 +904,7 @@ tsa_set_forwarding_operations(tsa_session *ss, te_bool on)
     if (ss->state.tst_type != TSA_TST_SOCKET)
         return 0;
 
-    ss->config.flags &= ~TSA_NO_FORW_OPERATIONS;
+    ss->config.flags &= ~TSA_NO_CONNECTIVITY_CHANGE;
 
     if (!on)
     {
@@ -988,7 +944,7 @@ tsa_set_forwarding_operations(tsa_session *ss, te_bool on)
         wait_forwarding_changes(ss);
 
     if (!on)
-        ss->config.flags |= TSA_NO_FORW_OPERATIONS;
+        ss->config.flags |= TSA_NO_CONNECTIVITY_CHANGE;
 
     return 0;
 }
@@ -1156,7 +1112,7 @@ tsa_do_moves(tsa_session *ss, rpc_tcp_state stop_state,
 
     saved_flags = ss->config.flags;
 
-    if (flags & TSA_NO_FORW_OPERATIONS)
+    if (flags & TSA_NO_CONNECTIVITY_CHANGE)
     {
         rc = tsa_set_forwarding_operations(ss, FALSE);
         if (rc != 0)
@@ -1200,7 +1156,7 @@ tsa_do_moves(tsa_session *ss, rpc_tcp_state stop_state,
 
     va_end(argptr);
 
-    if (!(saved_flags & TSA_NO_FORW_OPERATIONS))
+    if (!(saved_flags & TSA_NO_CONNECTIVITY_CHANGE))
     {
         rc_aux = tsa_set_forwarding_operations(ss, TRUE);
         if (rc_aux != 0)
@@ -1246,7 +1202,7 @@ tsa_do_moves_str(tsa_session *ss,
 
     saved_flags = ss->config.flags;
 
-    if (flags & TSA_NO_FORW_OPERATIONS)
+    if (flags & TSA_NO_CONNECTIVITY_CHANGE)
     {
         rc = tsa_set_forwarding_operations(ss, FALSE);
         if (rc != 0)
@@ -1339,7 +1295,7 @@ tsa_do_moves_str(tsa_session *ss,
     }
 
 exit:
-    if (!(saved_flags & TSA_NO_FORW_OPERATIONS))
+    if (!(saved_flags & TSA_NO_CONNECTIVITY_CHANGE))
     {
         rc_aux = tsa_set_forwarding_operations(ss, TRUE);
         if (rc_aux != 0)

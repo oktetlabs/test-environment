@@ -92,18 +92,11 @@ extern te_errno iut_wait_change_gen(tsa_session *ss, int timeout);
 extern te_errno iut_wait_change(tsa_session *ss);
 
 /**
- * Print log if forwarding operations are enabled.
- */
-#define RING_FORW(...) \
-    if (!(ss->config.flags & TSA_NO_FORW_OPERATIONS)) \
-        RING(__VA_ARGS__)
-
-/**
- * Wait for changes in forwarding if necessary.
+ * Wait for changes in connectivity if necessary.
  *
  * @param ss    Pointer to TSA session structure of current working session
  */
-extern void wait_forwarding_changes(tsa_session *ss);
+extern void wait_connectivity_changes(tsa_session *ss);
 
 enum {
 TSA_IUT = 0, /**< Open socket on the IUT side
