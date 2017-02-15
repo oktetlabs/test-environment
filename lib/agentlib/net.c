@@ -43,6 +43,9 @@
 #include "te_shell_cmd.h"
 #include "logger_api.h"
 
+/* Pathname of teamnl tool. */
+#define TEAMNL_PATHNAME "/usr/bin/teamnl"
+
 /* See description in agentliv.h */
 te_errno
 ta_vlan_get_parent(const char *ifname, char *parent)
@@ -181,20 +184,17 @@ ta_bond_get_slaves(const char *ifname, char slvs[][IFNAMSIZ],
     int    rc = 0;
     int    status;
 
-    memset(path, 0, sizeof(path));
-    memset(buf, 0, sizeof(path));
-    snprintf(path, sizeof(path), "/proc/net/bonding/%s", ifname);
+    TE_SPRINTF(path, "/proc/net/bonding/%s", ifname);
 
     FILE *proc_bond = fopen(path, "r");
     if (proc_bond == NULL && errno == ENOENT)
     {
         /* Set here path for logging purpose */
-        memset(buf, 0, sizeof(path));
-        snprintf(path, sizeof(path), "/usr/bin/teamnl %s ports", ifname);
+        TE_SPRINTF(path, "%s %s ports", TEAMNL_PATHNAME, ifname);
         TE_SPRINTF(buf,
-               "sudo /usr/bin/teamnl %s ports | "
+               "sudo %s %s ports | "
                "sed s/[0-9]*:\\ */Slave\\ Interface:\\ / "
-               "| sed 's/\\([0-9]\\):.*/\\1/'", ifname);
+               "| sed 's/\\([0-9]\\):.*/\\1/'", TEAMNL_PATHNAME, ifname);
         cmd_pid = te_shell_cmd(buf, -1, NULL, &out_fd, NULL);
         if (cmd_pid < 0)
         {
