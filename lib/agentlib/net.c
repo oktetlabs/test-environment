@@ -189,6 +189,13 @@ ta_bond_get_slaves(const char *ifname, char slvs[][IFNAMSIZ],
     FILE *proc_bond = fopen(path, "r");
     if (proc_bond == NULL && errno == ENOENT)
     {
+        /* Consider an interface is not bond if teamnl does not exist. */
+        if (access(TEAMNL_PATHNAME, X_OK) != 0)
+        {
+            *slaves_num = 0;
+            return 0;
+        }
+
         /* Set here path for logging purpose */
         TE_SPRINTF(path, "%s %s ports", TEAMNL_PATHNAME, ifname);
         TE_SPRINTF(buf,
