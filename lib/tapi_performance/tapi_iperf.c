@@ -111,17 +111,21 @@ set_opt_ipversion(te_string *cmd, const tapi_iperf_options *options)
 static void
 set_opt_protocol(te_string *cmd, const tapi_iperf_options *options)
 {
-    static const char *opt[] = {
-        [TAPI_IPERF_PROTOCOL_DEFAULT] = "",
-        [TAPI_IPERF_PROTOCOL_TCP] = "",
-        [TAPI_IPERF_PROTOCOL_UDP] = "-u"
-    };
-    int idx = options->client.protocol;
+    switch (options->client.protocol)
+    {
+        case RPC_PROTO_DEF:
+        case RPC_IPPROTO_TCP:
+            /* Do nothing for default value */
+            break;
 
-    if (0 <= idx && (size_t)idx <= TE_ARRAY_LEN(opt))
-        CHECK_RC(te_string_append(cmd, " %s", opt[idx]));
-    else
-        TEST_FAIL("Protocol value is unknown");
+        case RPC_IPPROTO_UDP:
+            CHECK_RC(te_string_append(cmd, " -u"));
+            break;
+
+        default:
+            TEST_FAIL("Protocol value \"%s\" is not supported",
+                      proto_rpc2str(options->client.protocol));
+    }
 }
 
 /**

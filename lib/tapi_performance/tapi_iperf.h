@@ -61,13 +61,6 @@ typedef enum tapi_iperf_format {
     TAPI_IPERF_FORMAT_MBYTES
 } tapi_iperf_format;
 
-/** Transport protocol */
-typedef enum tapi_iperf_protocol {
-    TAPI_IPERF_PROTOCOL_DEFAULT,
-    TAPI_IPERF_PROTOCOL_TCP,
-    TAPI_IPERF_PROTOCOL_UDP
-} tapi_iperf_protocol;
-
 /** Internet protocol version */
 typedef enum tapi_iperf_ipversion {
     TAPI_IPERF_IPVDEFAULT,
@@ -88,7 +81,7 @@ typedef struct tapi_iperf_options {
         struct {
             const char *host;       /**< Destination host (server) */
             tapi_iperf_ipversion ipversion; /**< IP version */
-            tapi_iperf_protocol protocol;   /**< Transport protocol */
+            rpc_socket_proto protocol;      /**< Transport protocol */
             uint64_t bandwidth;     /**< target bandwidth (bits/sec)
                                  set to @ref TAPI_IPERF_OPT_BANDWIDTH_DEFAULT
                                  to use default one */
@@ -122,7 +115,7 @@ typedef struct tapi_iperf_options {
     .client = {                                         \
         .host = NULL,                                   \
         .ipversion = TAPI_IPERF_IPVDEFAULT,             \
-        .protocol = TAPI_IPERF_PROTOCOL_DEFAULT,        \
+        .protocol = RPC_PROTO_DEF,                      \
         .bandwidth = TAPI_IPERF_OPT_BANDWIDTH_DEFAULT,  \
         .bytes = TAPI_IPERF_OPT_BYTES_DEFAULT,          \
         .time = TAPI_IPERF_OPT_TIME_DEFAULT,            \
