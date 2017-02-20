@@ -43,10 +43,6 @@
 
 /* Error message about wrong JSON format. */
 #define ERROR_INVALID_JSON_FORMAT   "invalid json format"
-/* Name of RPC Server for iperf server process. */
-#define PCO_IPERF_SERVER_NAME "pco_iperf_server"
-/* Name of RPC Server for iperf client process. */
-#define PCO_IPERF_CLIENT_NAME "pco_iperf_client"
 
 /** iperf tool work mode */
 typedef enum {
