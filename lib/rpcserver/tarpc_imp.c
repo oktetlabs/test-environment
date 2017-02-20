@@ -6239,8 +6239,7 @@ simple_receiver(tarpc_simple_receiver_in *in,
     if ((rc = iomux_add_fd(iomux, &iomux_f, &iomux_st,
                            in->s, POLLIN)))
     {
-        iomux_close(iomux, &iomux_f, &iomux_st);
-        return rc;
+        goto simple_receiver_exit;
     }
 
     for (start = now = time(NULL);
@@ -6259,8 +6258,8 @@ simple_receiver(tarpc_simple_receiver_in *in,
             else
                 ERROR("%s() returned more then one fd",
                       iomux2str(iomux));
-            free(buf);
-            return -1;
+            rc = -1;
+            goto simple_receiver_exit;
         }
         else if (rc == 0)
         {
@@ -6277,8 +6276,8 @@ simple_receiver(tarpc_simple_receiver_in *in,
         {
             ERROR("%s() returned strange event or socket",
                   iomux2str(iomux));
-            free(buf);
-            return -1;
+            rc = -1;
+            goto simple_receiver_exit;
         }
 
         len = recv_func(in->s, buf, MAX_PKT, 0);
@@ -6286,8 +6285,8 @@ simple_receiver(tarpc_simple_receiver_in *in,
         {
             ERROR("recv() failed in %s(): errno %r",
                   __FUNCTION__, TE_OS_RC(TE_TA_UNIX, errno));
-            free(buf);
-            return -1;
+            rc = -1;
+            goto simple_receiver_exit;
         }
         if (len == 0)
         {
@@ -6301,10 +6300,13 @@ simple_receiver(tarpc_simple_receiver_in *in,
         out->bytes += len;
     }
 
-    free(buf);
     RING("%s() stopped, received %llu bytes", __FUNCTION__, out->bytes);
 
-    return 0;
+simple_receiver_exit:
+    free(buf);
+    iomux_close(iomux, &iomux_f, &iomux_st);
+
+    return rc;
 }
 
 #undef MAX_PKT
