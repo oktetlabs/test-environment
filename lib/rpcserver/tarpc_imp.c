@@ -8154,6 +8154,7 @@ iomux_splice(tarpc_iomux_splice_in *in,
 
 iomux_splice_exit:
     iomux_close(iomux, &iomux_f, &iomux_st);
+    iomux_close(iomux, &iomux_f, &iomux_st_rd);
 
     return (ret > 0) ? 0 : ret;
 }
