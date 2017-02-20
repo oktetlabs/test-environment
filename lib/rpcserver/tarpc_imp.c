@@ -6354,8 +6354,7 @@ wait_readable(tarpc_wait_readable_in *in,
     if ((rc = iomux_add_fd(iomux, &iomux_f, &iomux_st,
                            in->s, POLLIN)))
     {
-        iomux_close(iomux, &iomux_f, &iomux_st);
-        return rc;
+        goto wait_readable_exit;
     }
 
     rc = iomux_wait(iomux, &iomux_f, &iomux_st, &iomux_ret,
@@ -6364,15 +6363,20 @@ wait_readable(tarpc_wait_readable_in *in,
     {
         ERROR("%s() failed in wait_readable(): errno %r",
               iomux2str(iomux), TE_OS_RC(TE_TA_UNIX, errno));
-        return -1;
+        rc = -1;
+        goto wait_readable_exit;
     }
     else if ((rc > 0) && (fd != in->s || !(events & POLLIN)))
     {
         ERROR("%s() waited for reading on the socket, "
               "returned %d, but returned incorrect socket or event",
               iomux2str(iomux), rc);
-        return -1;
+        rc = -1;
+        goto wait_readable_exit;
     }
+
+wait_readable_exit:
+    iomux_close(iomux, &iomux_f, &iomux_st);
 
     return rc;
 }
