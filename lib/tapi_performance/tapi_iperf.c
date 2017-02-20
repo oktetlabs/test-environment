@@ -41,6 +41,8 @@
 #include "tapi_test.h"
 
 
+/* Error message about wrong JSON format. */
+#define ERROR_INVALID_JSON_FORMAT   "invalid json format"
 /* Name of RPC Server for iperf server process. */
 #define PCO_IPERF_SERVER_NAME "pco_iperf_server"
 /* Name of RPC Server for iperf client process. */
@@ -288,6 +290,38 @@ get_report(const json_t *jrpt, tapi_iperf_report *report)
 }
 
 /**
+ * Get error message from the client report.
+ *
+ * @param client        Client context.
+ */
+static void
+get_client_error(tapi_iperf_client *client)
+{
+    const char *str = ERROR_INVALID_JSON_FORMAT;
+    json_t *jrpt = NULL;
+    json_error_t error;
+
+    /* Parse raw report */
+    jrpt = json_loads(client->report.ptr, 0, &error);
+    if (jrpt == NULL)
+    {
+        ERROR("json_loads fails with massage: \"%s\", position: %u",
+              error.text, error.position);
+    }
+    else if (json_is_object(jrpt))
+    {
+        str = json_string_value(json_object_get(jrpt, "error"));
+        if (str == NULL)
+            str = "report does not contain any errors";
+    }
+
+    te_string_append(&client->err, str);
+    /* Note, json_decref makes obtained json string invalid, so it must be
+     * called after string building. */
+    json_decref(jrpt);
+}
+
+/**
  * Start iperf application. Start auxiliary RPC server and initialize application
  * context. It is possible to start up to 65536 applications at the same time
  * on the same agent of the same mode. Be careful since function doesn't check
@@ -412,6 +446,8 @@ tapi_iperf_client_start(rcf_rpc_server *rpcs,
     ENTRY("Start iperf client on %s", rpcs->ta);
     assert(client != NULL);
 
+    te_string_reset(&client->report);
+    te_string_reset(&client->err);
     return tapi_iperf_app_start(IPERF_CLIENT, rpcs, options, &client->app);
 }
 
@@ -435,27 +471,45 @@ tapi_iperf_client_release(tapi_iperf_client *client)
 
     free(client->app.cmd);
     te_string_free(&client->report);
+    te_string_free(&client->err);
     return tapi_iperf_client_stop(client);
 }
 
 /* See description in tapi_iperf.h. */
-void
+te_errno
 tapi_iperf_client_wait(tapi_iperf_client *client, uint16_t timeout)
 {
     rpc_wait_status stat;
+    rcf_rpc_server *rpcs;
+    int rc;
 
     ENTRY("Wait until iperf client finishes the work, timeout is %u secs",
           timeout);
 
-    client->app.rpcs->timeout = TE_SEC2MS(timeout);
-    rpc_waitpid(client->app.rpcs, client->app.pid, &stat, 0);
+    rpcs = client->app.rpcs;
+    rpcs->timeout = TE_SEC2MS(timeout);
+    RPC_AWAIT_IUT_ERROR(rpcs);
+    rc = rpc_waitpid(rpcs, client->app.pid, &stat, 0);
+    if (rc != client->app.pid)
+    {
+        ERROR("waitpid() failed with errno %r", RPC_ERRNO(rpcs));
+        return TE_RC(TE_TAPI, TE_EFAIL);
+    }
     client->app.pid = TAPI_IPERF_PID_INVALID;
 
     /* Read tool output */
-    te_string_reset(&client->report);
-    CHECK_RC(tapi_rpc_append_fd_to_te_string(client->app.rpcs, client->app.stdout,
+    CHECK_RC(tapi_rpc_append_fd_to_te_string(rpcs, client->app.stdout,
                                              &client->report));
     INFO("iperf stdout:\n%s", client->report.ptr);
+
+    /* Check for errors */
+    if (stat.value != 0 || stat.flag != RPC_WAIT_STATUS_EXITED)
+    {
+        get_client_error(client);
+        return TE_RC(TE_TAPI, TE_EFAIL);
+    }
+
+    return 0;
 }
 
 /* See description in tapi_iperf.h. */
@@ -481,9 +535,12 @@ tapi_iperf_client_get_report(tapi_iperf_client *client,
     {
         ERROR("json_loads fails with massage: \"%s\", position: %u",
               error.text, error.position);
+        te_string_append(&client->err, ERROR_INVALID_JSON_FORMAT);
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
     rc = get_report(jrpt, report);
+    if (rc != 0)
+        te_string_append(&client->err, ERROR_INVALID_JSON_FORMAT);
 
     json_decref(jrpt);
     return rc;

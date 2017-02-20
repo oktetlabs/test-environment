@@ -140,6 +140,7 @@ typedef struct tapi_iperf_server {
 typedef struct tapi_iperf_client {
     tapi_iperf_app app;     /**< Application context */
     te_string report;       /**< Buffer to save a raw report */
+    te_string err;          /**< Error message */
 } tapi_iperf_client;
 
 /**
@@ -164,7 +165,8 @@ typedef struct tapi_iperf_client {
  */
 #define TAPI_IPERF_CLIENT_INIT {        \
     .app = TAPI_IPERF_APP_INIT,         \
-    .report = TE_STRING_INIT            \
+    .report = TE_STRING_INIT,           \
+    .err = TE_STRING_INIT               \
 }
 
 /** iperf report */
@@ -263,9 +265,11 @@ extern te_errno tapi_iperf_client_release(tapi_iperf_client *client);
  *                      big enough to finish iperf client normally (it depends
  *                      on both '--time' and '--bytes' iperf options),
  *                      otherwise the function will be failed.
+ *
+ * @return Status code.
  */
-extern void tapi_iperf_client_wait(tapi_iperf_client *client,
-                                   uint16_t timeout);
+extern te_errno tapi_iperf_client_wait(tapi_iperf_client *client,
+                                       uint16_t timeout);
 
 /**
  * Get client results.
