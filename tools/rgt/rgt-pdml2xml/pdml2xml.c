@@ -135,22 +135,38 @@ rgt_get_msg_ts(const char **atts, rgt_user_ctx *ctx)
     char   *str = NULL;
     char    tmp[RGT_TS_LEN];
 
+    /* Format: 1487659020.717247000 */
     str = (char *)rgt_get_attr_val("value", atts);
     assert(strlen(str) <= RGT_TS_LEN);
     memcpy(ctx->ts_val, str, strlen(str));
     /* Truncate the extra precision */
     ctx->ts_val[strlen(str) - 3] = '\0';
 
-    str = (char *)rgt_get_attr_val("show", atts);
-    assert(strlen(str) <= RGT_TS_LEN);
-    memcpy(tmp, str, strlen(str));
-    /* Truncate the extra precision */
-    tmp[strlen(str) - 6] = '\0';
+#define RGT_TS_LOG_FMT "hh:mm:ss uuuuuu"
 
+    /* Format: Feb 21, 2017 09:37:00.717247000 MSK */
+    str = (char *)rgt_get_attr_val("show", atts);
+    assert(strlen(str) < RGT_TS_LEN);
+    strncpy(tmp, str, sizeof(tmp));
+
+    /* Truncate timezone. */
     assert((str = strrchr(tmp, ' ')) != NULL);
-    snprintf(ctx->ts_str, RGT_TS_LEN, "%s ms", str + 1);
-    str = strchr(ctx->ts_str, '.');
+    *str = '\0';
+
+    /* Get timestamp without date. */
+    assert((str = strrchr(tmp, ' ')) != NULL);
+    str++;
+
+    /* Truncate extra zeros. */
+    str[strlen(RGT_TS_LOG_FMT)] = '\0';
+
+    snprintf(ctx->ts_str, RGT_TS_LEN, "%s us", str);
+
+    /* Replace '.' to ' '. */
+    assert((str = strrchr(ctx->ts_str, '.')) != NULL);
     *str = ' ';
+
+#undef RGT_TS_LOG_FMT
 }
 
 /* Pointer to current position indicator for the packet buffer. */
