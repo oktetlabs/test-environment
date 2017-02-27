@@ -9938,6 +9938,7 @@ vfork_pipe_exec(tarpc_vfork_pipe_exec_in *in)
 
     int pipefd[2];
     int pid;
+    int status;
     te_errno      rc;
     struct pollfd fds;
 
@@ -9995,34 +9996,55 @@ vfork_pipe_exec(tarpc_vfork_pipe_exec_in *in)
 
     if (pid > 0)
     {
+        rc = 0;
         write(pipefd[1], "Test message", 12);
+
+        /* If vfork() doesn't hang */
+        if (waitpid(pid, &status, 0) == -1)
+        {
+            errno = 0;
+        }
+        else if (WIFEXITED(status) == 0)
+        {
+            rc = -1;
+            goto cleanup;
+        }
+
         RING("Parent process is unblocked");
         if (global_var != 2)
         {
             ERROR("'global_var' was not changed from the child process");
-            return -1;
+            rc = -1;
+            goto cleanup;
         }
         if (stack_var != 2)
         {
             ERROR("'stack_var' was not changed from the child process");
-            return -1;
+            rc = -1;
+            goto cleanup;
         }
-        return 0;
+
+cleanup:
+        close(pipefd[0]);
+        close(pipefd[1]);
+
+        return rc;
     }
     else
     {
         sleep(1);
-        global_var = 2;
-        stack_var = 2;
         fds.fd = pipefd[0];
         fds.events = POLLIN;
         if (poll(&fds, 1, 1000) != 0)
         {
             ERROR("vfork() doesn't hang!");
-            return -1;
+            _exit(-1);
         }
         else
             RING("Parent process is still hanging");
+
+        global_var = 2;
+        stack_var = 2;
 
         if (in->use_exec)
         {
@@ -10035,9 +10057,9 @@ vfork_pipe_exec(tarpc_vfork_pipe_exec_in *in)
             {
                 ERROR("execve() failed with error %r",
                       TE_OS_RC(TE_TA_UNIX, errno));
-                return rc;
+                _exit(-1);
             }
-            return 0;
+            _exit(0);
         }
         else
         {
