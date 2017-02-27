@@ -113,6 +113,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
 {
     int   sid;
     char *val0 = NULL;
+    int   is_dead;
     int   rc, rc1;
 
     rcf_rpc_server *rpcs = NULL;
@@ -215,34 +216,21 @@ rcf_rpc_server_get(const char *ta, const char *name,
 
     if (rc == 0 && (flags & RCF_RPC_SERVER_GET_REUSE))
     {
-#ifdef RCF_RPC_CHECK_USABILITY
         /* Check that it is not dead */
-        tarpc_getpid_in  in;
-        tarpc_getpid_out out;
-
-        memset(&in, 0, sizeof(in));
-        memset(&out, 0, sizeof(out));
-
-        in.common.op = RCF_RPC_CALL_WAIT;
-        in.common.use_libc = FALSE;
-
-        if ((rc = rcf_ta_call_rpc(ta, sid, name, 1000, "getpid",
-                                  &in, &out)) != 0)
+        if ((rc = cfg_get_instance_fmt(NULL, &is_dead,
+                                       "/agent:%s/rpcserver:%s/dead:",
+                                       ta, name)) != 0)
         {
-            if ((flags & RCF_RPC_SERVER_GET_EXISTING))
-            {
-                if (TE_RC_GET_ERROR(rc) != TE_EBUSY)
-                    RETERR(rc, "RPC server %s is dead and cannot be used",
-                           name);
-            }
-            else
-            {
-                flags &= ~RCF_RPC_SERVER_GET_REUSE;
-                WARN("RPC server %s is not usable and "
-                     "will be restarted", name);
-            }
+            RETERR(rc, ": failed to get 'dead' status of RPC server %s",
+                   name);
         }
-#endif
+
+        if (is_dead != 0)
+        {
+            flags &= ~RCF_RPC_SERVER_GET_REUSE;
+            WARN("RPC server %s is not usable and "
+                 "will be restarted", name);
+        }
     }
 
     if (rc == 0 && !(flags & RCF_RPC_SERVER_GET_REUSE))

@@ -1487,7 +1487,10 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
             else
             {
                 rcf_ch_kill_process(rpcs->pid);
+                /* TE_ERPCKILLED is expected result */
                 rc = waitpid_child(rpcs);
+                if (rc == TE_RC(TE_RCF_PCH, TE_ERPCKILLED))
+                    rc = 0;
             }
         }
         else
@@ -1506,7 +1509,7 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
      * Request to deleted RPC server should be answered
      * to unblock TA for new RCF requests processing.
      */
-    if (rpcs->sent > 0)
+    if (rpcs->sent > 0 && rpcs->finished)
         rpc_error(rpcs, TE_ERPCDEAD);
 
     if (!soft_shutdown)
