@@ -94,6 +94,8 @@ typedef struct tapi_iperf_options {
             uint16_t streams;       /**< Number of parallel client streams
                                  to run; to use default one set it to
                                  @ref TAPI_IPERF_OPT_STREAMS_DEFAULT */
+            te_bool reverse;        /**< Whether run in reverse mode (server
+                                 sends, client receives), or not */
         } client;           /**< Client specific options */
     };
 } tapi_iperf_options;
@@ -119,7 +121,8 @@ typedef struct tapi_iperf_options {
         .bandwidth = TAPI_IPERF_OPT_BANDWIDTH_DEFAULT,  \
         .bytes = TAPI_IPERF_OPT_BYTES_DEFAULT,          \
         .time = TAPI_IPERF_OPT_TIME_DEFAULT,            \
-        .streams = TAPI_IPERF_OPT_STREAMS_DEFAULT       \
+        .streams = TAPI_IPERF_OPT_STREAMS_DEFAULT,      \
+        .reverse = FALSE                                \
     }                                                   \
 }
 
