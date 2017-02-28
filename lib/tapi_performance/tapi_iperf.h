@@ -128,6 +128,7 @@ typedef struct tapi_iperf_options {
 
 /** iperf application context (common for both server and client) */
 typedef struct tapi_iperf_app {
+    tapi_iperf_options opt; /**< Tool options */
     rcf_rpc_server *rpcs;   /**< RPC server handle */
     tarpc_pid_t pid;        /**< PID */
     int stdout;             /**< File descriptor to read from stdout stream */
@@ -149,27 +150,28 @@ typedef struct tapi_iperf_client {
 /**
  * On-stack iperf application context initializer.
  */
-#define TAPI_IPERF_APP_INIT {           \
-    .rpcs = NULL,                       \
-    .pid = TAPI_IPERF_PID_INVALID,      \
-    .stdout = -1,                       \
-    .cmd = NULL                         \
+#define TAPI_IPERF_APP_INIT(_opt_init) {    \
+    .opt = _opt_init,                       \
+    .rpcs = NULL,                           \
+    .pid = TAPI_IPERF_PID_INVALID,          \
+    .stdout = -1,                           \
+    .cmd = NULL                             \
 }
 
 /**
  * On-stack iperf server context initializer.
  */
-#define TAPI_IPERF_SERVER_INIT {        \
-    .app = TAPI_IPERF_APP_INIT          \
+#define TAPI_IPERF_SERVER_INIT {                            \
+    .app = TAPI_IPERF_APP_INIT(TAPI_IPERF_SERVER_OPT_INIT)  \
 }
 
 /**
  * On-stack iperf client context initializer.
  */
-#define TAPI_IPERF_CLIENT_INIT {        \
-    .app = TAPI_IPERF_APP_INIT,         \
-    .report = TE_STRING_INIT,           \
-    .err = TE_STRING_INIT               \
+#define TAPI_IPERF_CLIENT_INIT {                            \
+    .app = TAPI_IPERF_APP_INIT(TAPI_IPERF_CLIENT_OPT_INIT), \
+    .report = TE_STRING_INIT,                               \
+    .err = TE_STRING_INIT                                   \
 }
 
 /** iperf report */

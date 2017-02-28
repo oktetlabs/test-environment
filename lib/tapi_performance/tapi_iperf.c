@@ -261,12 +261,13 @@ build_iperf_client_cmd(te_string *cmd, const tapi_iperf_options *options)
  * Extract report from JSON object.
  *
  * @param[in]  jrpt         JSON object contains report data.
+ * @param[in]  reverse      Reverse mode.
  * @param[out] report       Report.
  *
  * @return Status code.
  */
 static te_errno
-get_report(const json_t *jrpt, tapi_iperf_report *report)
+get_report(const json_t *jrpt, te_bool reverse, tapi_iperf_report *report)
 {
     json_t *jend, *jsum, *jval;
 
@@ -281,7 +282,10 @@ get_report(const json_t *jrpt, tapi_iperf_report *report)
         ERROR("JSON object \"end\" is expected");
         return TE_EINVAL;
     }
-    jsum = json_object_get(jend, "sum_sent");   /* TCP test */
+    if (reverse)
+        jsum = json_object_get(jend, "sum_received");   /* TCP test */
+    else
+        jsum = json_object_get(jend, "sum_sent");       /* TCP test */
     if (jsum == NULL)
         jsum = json_object_get(jend, "sum");    /* UDP test */
     if (jsum == NULL || !json_is_object(jsum))
@@ -332,6 +336,40 @@ get_client_error(tapi_iperf_client *client)
 }
 
 /**
+ * Set application options. Set options should be free with @ref release_opts
+ * when they are no longer needed.
+ *
+ * @param[in]  mode         iperf tool mode.
+ * @param[in]  src          iperf tool options to copy from.
+ * @param[out] dst          iperf tool options to copy to.
+ *
+ * @sa release_opts
+ */
+static void
+set_opts(iperf_mode mode, const tapi_iperf_options *src,
+         tapi_iperf_options *dst)
+{
+    *dst = *src;
+    if (mode == IPERF_CLIENT)
+        dst->client.host = tapi_strdup(src->client.host);
+}
+
+/**
+ * Free application options set by @ref set_opts.
+ *
+ * @param mode              iperf tool mode.
+ * @param options           iperf tool options.
+ *
+ * @sa set_opts
+ */
+static void
+release_opts(iperf_mode mode, tapi_iperf_options *options)
+{
+    if (mode == IPERF_CLIENT)
+        free(options->client.host);
+}
+
+/**
  * Start iperf application. Start auxiliary RPC server and initialize application
  * context. It is possible to start up to 65536 applications at the same time
  * on the same agent of the same mode. Be careful since function doesn't check
@@ -359,6 +397,7 @@ tapi_iperf_app_start(iperf_mode mode,
     int stdout = -1;
     te_errno rc = 0;
 
+    set_opts(mode, options, &app->opt);
     switch (mode)
     {
         case IPERF_SERVER:
@@ -443,6 +482,7 @@ tapi_iperf_server_release(tapi_iperf_server *server)
 {
     ENTRY("Release iperf server");
 
+    release_opts(IPERF_SERVER, &server->app.opt);
     free(server->app.cmd);
     return tapi_iperf_server_stop(server);
 }
@@ -479,6 +519,7 @@ tapi_iperf_client_release(tapi_iperf_client *client)
 {
     ENTRY("Release iperf client");
 
+    release_opts(IPERF_CLIENT, &client->app.opt);
     free(client->app.cmd);
     te_string_free(&client->report);
     te_string_free(&client->err);
@@ -548,7 +589,7 @@ tapi_iperf_client_get_report(tapi_iperf_client *client,
         te_string_append(&client->err, ERROR_INVALID_JSON_FORMAT);
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
-    rc = get_report(jrpt, report);
+    rc = get_report(jrpt, client->app.opt.client.reverse, report);
     if (rc != 0)
         te_string_append(&client->err, ERROR_INVALID_JSON_FORMAT);
 
