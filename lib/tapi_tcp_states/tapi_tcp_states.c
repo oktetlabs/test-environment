@@ -764,9 +764,9 @@ tsa_break_tst_iut_conn(tsa_session *ss)
 
     if (ss->state.tst_type == TSA_TST_SOCKET ||
         ss->state.tst_type == TSA_TST_GW_CSAP)
-        rc = tapi_cfg_add_neigh_entry(ss->config.pco_gw->ta,
-                                      ss->config.gw_iut_if->if_name,
-                                      ss->config.iut_addr,
+        rc = tapi_cfg_add_neigh_entry(ss->config.pco_tst->ta,
+                                      ss->config.tst_if->if_name,
+                                      ss->config.gw_tst_addr,
                                       ss->config.alien_link_addr,
                                       TRUE);
     else
@@ -830,9 +830,9 @@ tsa_repair_tst_iut_conn(tsa_session *ss)
 
     if (ss->state.tst_type == TSA_TST_SOCKET ||
         ss->state.tst_type == TSA_TST_GW_CSAP)
-        rc = tapi_cfg_del_neigh_entry(ss->config.pco_gw->ta,
-                                      ss->config.gw_iut_if->if_name,
-                                      ss->config.iut_addr);
+        rc = tapi_cfg_del_neigh_entry(ss->config.pco_tst->ta,
+                                      ss->config.tst_if->if_name,
+                                      ss->config.gw_tst_addr);
     else
         rc = tapi_cfg_del_neigh_entry(ss->config.pco_tst->ta,
                                       ss->config.tst_if->if_name,
