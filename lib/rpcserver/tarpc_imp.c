@@ -6194,7 +6194,7 @@ TARPC_FUNC(simple_sender, {},
  *
  * @param in                input RPC argument
  *
- * @return number of received bytes or -1 in the case of failure
+ * @return 0 on success or -1 in the case of failure
  */
 int
 simple_receiver(tarpc_simple_receiver_in *in,
@@ -6235,7 +6235,10 @@ simple_receiver(tarpc_simple_receiver_in *in,
 
     /* Create iomux status and fill it with our fds. */
     if ((rc = iomux_create_state(iomux, &iomux_f, &iomux_st)) != 0)
+    {
+        free(buf);
         return rc;
+    }
     if ((rc = iomux_add_fd(iomux, &iomux_f, &iomux_st,
                            in->s, POLLIN)))
     {
@@ -6306,7 +6309,7 @@ simple_receiver_exit:
     free(buf);
     iomux_close(iomux, &iomux_f, &iomux_st);
 
-    return rc;
+    return (rc < 0) ? rc : 0;
 }
 
 #undef MAX_PKT
