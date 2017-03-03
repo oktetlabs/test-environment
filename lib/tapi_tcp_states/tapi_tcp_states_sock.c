@@ -38,6 +38,40 @@
 #include "tapi_tcp_states_internal.h"
 
 /**
+ * Configure network connectivity.
+ *
+ * @param ss          Pointer to TSA session structure.
+ * @param iut_tst     If @c TRUE, connection IUT->Tester should be
+ *                    working, otherwise it should be broken.
+ * @param tst_iut     If @c TRUE, connection Tester->IUT should be
+ *                    working, otherwise it should be broken.
+ *
+ * @return Status code.
+ */
+static te_errno
+tsa_set_connectivity(tsa_session *ss, te_bool iut_tst, te_bool tst_iut)
+{
+    te_errno rc = TE_EFAIL;
+
+    if (iut_tst)
+        rc = tsa_repair_iut_tst_conn(ss);
+    else
+        rc = tsa_break_iut_tst_conn(ss);
+
+    if (rc != 0)
+        return rc;
+
+    if (tst_iut)
+        rc = tsa_repair_tst_iut_conn(ss);
+    else
+        rc = tsa_break_tst_iut_conn(ss);
+
+    wait_connectivity_changes(ss);
+
+    return rc;
+}
+
+/**
  * Action to be done when SYN must be sent from socket on the IUT side
  * according to TCP specification.
  *
@@ -49,6 +83,10 @@ static te_errno
 iut_syn_sock_handler(tsa_session *ss)
 {
     te_errno rc = 0;
+
+    rc = tsa_set_connectivity(ss, FALSE, FALSE);
+    if (rc != 0)
+        return rc;
 
     RPC_AWAIT_ERROR(ss->config.pco_iut);
     if (rpc_connect(ss->config.pco_iut, ss->state.iut_s,
@@ -84,6 +122,10 @@ tst_syn_sock_handler(tsa_session *ss)
 {
     te_errno rc = 0;
 
+    rc = tsa_set_connectivity(ss, FALSE, FALSE);
+    if (rc != 0)
+        return rc;
+
     if (ss->state.sock.tst_s >= 0)
     {
         RPC_AWAIT_ERROR(ss->config.pco_tst);
@@ -118,13 +160,10 @@ static te_errno
 iut_syn_ack_sock_handler(tsa_session *ss)
 {
     te_errno rc = 0;
-    te_errno rc_aux = 0;
 
-    rc = tsa_repair_tst_iut_conn(ss);
+    rc = tsa_set_connectivity(ss, FALSE, TRUE);
     if (rc != 0)
         return rc;
-
-    wait_connectivity_changes(ss);
 
     /* Listener socket does not change its status when it sends SYN-ACK. */
     if (!(tsa_state_from(ss) == RPC_TCP_LISTEN &&
@@ -133,11 +172,6 @@ iut_syn_ack_sock_handler(tsa_session *ss)
     {
         rc = iut_wait_change_gen(ss, MAX_CHANGE_TIMEOUT);
     }
-
-    rc_aux = tsa_break_tst_iut_conn(ss);
-    if (rc_aux != 0)
-        return rc_aux;
-    wait_connectivity_changes(ss);
 
     return rc;
 }
@@ -154,17 +188,10 @@ static te_errno
 tst_syn_ack_sock_handler(tsa_session *ss)
 {
     te_errno rc = 0;
-    te_errno rc_aux = 0;
 
-    rc = tsa_repair_iut_tst_conn(ss);
+    rc = tsa_set_connectivity(ss, TRUE, TRUE);
     if (rc != 0)
         return rc;
-
-    rc = tsa_repair_tst_iut_conn(ss);
-    if (rc != 0)
-        return rc;
-
-    wait_connectivity_changes(ss);
 
     RPC_AWAIT_ERROR(ss->config.pco_iut);
     if (rpc_connect(ss->config.pco_iut, ss->state.iut_s,
@@ -186,16 +213,6 @@ tst_syn_ack_sock_handler(tsa_session *ss)
             rc = RPC_ERRNO(ss->config.pco_tst);
     }
 
-    rc_aux = tsa_break_iut_tst_conn(ss);
-    if (rc_aux != 0)
-        return rc_aux;
-
-    rc_aux = tsa_break_tst_iut_conn(ss);
-    if (rc_aux != 0)
-        return rc_aux;
-
-    wait_connectivity_changes(ss);
-
     return rc;
 }
 
@@ -211,19 +228,12 @@ static te_errno
 iut_ack_sock_handler(tsa_session *ss)
 {
     te_errno rc = 0;
-    te_errno rc_aux = 0;
 
-    rc_aux = tsa_repair_tst_iut_conn(ss);
-    if (rc_aux != 0)
-        return rc_aux;
-    wait_connectivity_changes(ss);
+    rc = tsa_set_connectivity(ss, FALSE, TRUE);
+    if (rc != 0)
+        return rc;
 
     rc = iut_wait_change_gen(ss, MAX_CHANGE_TIMEOUT);
-
-    rc_aux = tsa_break_tst_iut_conn(ss);
-    if (rc_aux != 0)
-        return rc_aux;
-    wait_connectivity_changes(ss);
 
     return rc;
 }
@@ -243,15 +253,9 @@ tst_ack_sock_handler(tsa_session *ss)
     te_errno  rc_aux = 0;
     int       fdflags = 0;
 
-    rc_aux = tsa_repair_iut_tst_conn(ss);
-    if (rc_aux != 0)
-        return rc_aux;
-
-    rc_aux = tsa_repair_tst_iut_conn(ss);
-    if (rc_aux != 0)
-        return rc_aux;
-
-    wait_connectivity_changes(ss);
+    rc = tsa_set_connectivity(ss, TRUE, TRUE);
+    if (rc != 0)
+        return rc;
 
     if (ss->state.tst_wait_connect)
     {
@@ -355,16 +359,6 @@ tst_ack_sock_handler(tsa_session *ss)
     if (!(ss->config.flags & TSA_NO_CONNECTIVITY_CHANGE))
         MSLEEP(SLEEP_MSEC);
 
-    rc_aux = tsa_break_iut_tst_conn(ss);
-    if (rc_aux != 0)
-        return rc_aux;
-
-    rc_aux = tsa_break_tst_iut_conn(ss);
-    if (rc_aux != 0)
-        return rc_aux;
-
-    wait_connectivity_changes(ss);
-
     if (ss->config.flags & TSA_NO_CONNECTIVITY_CHANGE ||
         ss->state.tst_type != TSA_TST_SOCKET)
     {
@@ -389,6 +383,10 @@ iut_fin_sock_handler(tsa_session *ss)
 {
     te_errno rc = 0;
 
+    rc = tsa_set_connectivity(ss, FALSE, FALSE);
+    if (rc != 0)
+        return rc;
+
     RPC_AWAIT_ERROR(ss->config.pco_iut);
     if (rpc_shutdown(ss->config.pco_iut, ss->state.iut_s,
                      RPC_SHUT_WR) < 0)
@@ -409,6 +407,10 @@ static te_errno
 tst_fin_sock_handler(tsa_session *ss)
 {
     te_errno rc = 0;
+
+    rc = tsa_set_connectivity(ss, FALSE, FALSE);
+    if (rc != 0)
+        return rc;
 
     RPC_AWAIT_ERROR(ss->config.pco_tst);
     if (rpc_shutdown(ss->config.pco_tst, ss->state.sock.tst_s,
@@ -437,6 +439,10 @@ tst_fin_ack_sock_handler(tsa_session *ss)
      * in one packet */
 
     UNUSED(ss);
+
+    ERROR("It is not possible to make Linux socket on Tester "
+          "to send FIN-ACK here; use TSA_TST_CSAP or TSA_TST_GW_CSAP mode");
+
     return TE_RC(TE_TAPI, TE_EFAIL);
 }
 
@@ -453,11 +459,7 @@ tst_rst_sock_handler(tsa_session *ss)
 {
     rpc_tcp_state st;
 
-    te_bool   tst_conn_repaired = FALSE;
-    te_bool   iut_conn_repaired = FALSE;
     te_errno  rc = 0;
-    te_errno  rc_aux = 0;
-
 
     /* We send packet with RST set having correct
      * sequence number and acknowledging all received
@@ -468,11 +470,10 @@ tst_rst_sock_handler(tsa_session *ss)
     if (tsa_state_cur(ss) != RPC_TCP_TIME_WAIT &&
         tsa_state_cur(ss) != RPC_TCP_CLOSE)
     {
-        rc = tsa_repair_tst_iut_conn(ss);
+
+        rc = tsa_set_connectivity(ss, FALSE, TRUE);
         if (rc != 0)
             return rc;
-        wait_connectivity_changes(ss);
-        tst_conn_repaired = TRUE;
 
         /* If we have tst_s socket with SO_LINGER set to 0,
          * close() on it will not try to finish TCP connection
@@ -489,7 +490,7 @@ tst_rst_sock_handler(tsa_session *ss)
         {
             rc = rcf_rpc_server_restart(ss->config.pco_tst);
             if (rc != 0)
-                goto cleanup;
+                return rc;
         }
         else
         {
@@ -497,8 +498,7 @@ tst_rst_sock_handler(tsa_session *ss)
             if (rpc_close(ss->config.pco_tst,
                           ss->state.sock.tst_s) < 0)
             {
-                rc = RPC_ERRNO(ss->config.pco_tst);
-                goto cleanup;
+                return RPC_ERRNO(ss->config.pco_tst);
             }
         }
 
@@ -506,11 +506,9 @@ tst_rst_sock_handler(tsa_session *ss)
         ss->state.sock.tst_s_aux = -1;
         ss->state.tst_wait_connect = FALSE;
 
-        rc = tsa_repair_iut_tst_conn(ss);
+        rc = tsa_set_connectivity(ss, TRUE, TRUE);
         if (rc != 0)
-            goto cleanup;
-        wait_connectivity_changes(ss);
-        iut_conn_repaired = TRUE;
+            return rc;
 
         rc = iut_wait_change_gen(ss, MAX_CHANGE_TIMEOUT);
     }
@@ -524,13 +522,11 @@ tst_rst_sock_handler(tsa_session *ss)
                       ss->state.sock.sid,
                       &ss->state.sock.rst_hack_c);
         if (rc != 0)
-            goto cleanup;
+            return rc;
 
-        rc = tsa_repair_tst_iut_conn(ss);
+        rc = tsa_set_connectivity(ss, FALSE, TRUE);
         if (rc != 0)
-            goto cleanup;
-        wait_connectivity_changes(ss);
-        tst_conn_repaired = TRUE;
+            return rc;
 
         /*
          * We suppose that it is TCP_TIME_WAIT really,
@@ -542,7 +538,7 @@ tst_rst_sock_handler(tsa_session *ss)
                                       &ss->state.sock.rst_hack_c,
                                       0, 2);
         if (rc != 0)
-            goto cleanup;
+            return rc;
 
         st = ss->state.state_to;
         /*
@@ -554,25 +550,6 @@ tst_rst_sock_handler(tsa_session *ss)
         rc = iut_wait_change_gen(ss, MAX_CHANGE_TIMEOUT);
         ss->state.state_to = st;
     }
-
-cleanup:
-
-    if (tst_conn_repaired)
-    {
-        rc_aux = tsa_break_tst_iut_conn(ss);
-        if (rc_aux != 0)
-            return rc_aux;
-    }
-
-    if (iut_conn_repaired)
-    {
-        rc_aux = tsa_break_iut_tst_conn(ss);
-        if (rc_aux != 0)
-            return rc_aux;
-    }
-
-    if (tst_conn_repaired || iut_conn_repaired)
-        wait_connectivity_changes(ss);
 
     return rc;
 }
