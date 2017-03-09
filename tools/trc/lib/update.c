@@ -2967,7 +2967,6 @@ trc_update_apply_rules(unsigned int db_uid,
                         SLIST_FOREACH(wild, rule->wilds, links)
                         {
                             assert(wild->args != NULL);
-                            assert(iter_data->args != NULL);
                             if (test_iter_args_match(
                                                 wild->args,
                                                 iter_data->args_n,
