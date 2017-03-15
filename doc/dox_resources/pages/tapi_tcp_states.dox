@@ -1,0 +1,194 @@
+/**
+
+@defgroup tapi_tcp_states TAPI for testing TCP states
+@ingroup net_traffic
+@{
+
+tapi_tcp_states (TSA) library can be used to test a TCP socket in various
+TCP states. It is used to check that every TCP state can be reached
+according to TCP states diagram, and to check what happens if we
+perform some actions while being in some TCP state.
+
+Its interface is defined in @path{lib/tapi_tcp_states/tapi_tcp_states.h}.
+
+@section tapi_tcp_states_how How it works
+
+In this library it is supposed that we have a TCP socket under test, which
+we move to a desired TCP state, and its TCP peer, which plays auxiliary
+role (such as sending some packets to move the socket under test to
+a desired state). The peer may be not an usual TCP socket, but its emulation
+with help of RAW sockets. Usually the socket under test and its peer reside
+on different hosts - the socket under test is on IUT, whereas the peer is
+on Tester. However both may be on the same host if we test loopback.
+
+Not all TCP states exist for a long time. Some of them usually take place
+only for a short time interval, until a peer replies to a packet which was
+sent to it by a socket under test. For example, a socket sends SYN to reach
+SYN_SENT state, and then quickly reaches ESTABLISHED state when SYN-ACK
+arrives from a peer.
+
+To make such a transient TCP state stable for a while, we can either break
+network connection from Tester to IUT, so that no reply is received from
+the peer, or use @ref tcp_sock_emulation instead of a normal socket on
+Tester, so that we can determine the exact moment when a reply is sent.
+
+@section tapi_tcp_states_init Initialization
+
+The library has three modes of operation:
+  - @c TSA_TST_SOCKET. A real socket is used on Tester, and there is a
+    gateway host connecting IUT and Tester, which is used to break
+    connection when necessary.
+  - @c TSA_TST_CSAP. @ref tcp_sock_emulation is used on Tester; for this
+    to work an ARP entry associating the peer address with an alien
+    (i.e. not belonging to any existing host in the network) MAC address is
+    created on IUT.
+  - @c TSA_TST_GW_CSAP. Again, @ref tcp_sock_emulation is used on Tester,
+    however there is a gateway host in the middle connecting IUT and Tester,
+    and an ARP entry is added on it. This mode is better than @c TSA_TST_CSAP
+    because it requires no ARP changes on IUT.
+
+To use the library, follow these steps:
+
+  -# Declare variable of type tsa_session, which
+     will be used to store the session context.
+  -# Specify the mode of operation to @func{tsa_state_init()}.
+  -# Use @func{tsa_iut_set()} and @func{tsa_tst_set()} to specify IUT
+     and Tester properties. If the selected mode of operation requires
+     a gateway, use @func{tsa_gw_set()} too.
+  -# Use CFG_WAIT_CHANGES macro to wait until configuration changes are made.
+  -# Call @func{tsa_create_session()} to create a socket under test on IUT
+     and its peer on Tester. The socket under test is initially in TCP_CLOSE
+     state.
+
+@section tapi_tcp_states_fini Finalization
+
+@func{tsa_destroy_session()} should be used to perform cleanup after using
+the library.
+
+@section tapi_tcp_states_use Usage
+
+The following functions can be used to perform transition to desired
+TCP state following a chosen path:
+
+  - @func{tsa_do_tcp_move()} can be used to move from the current TCP state
+    to one of the next states, according to the TCP state machine.
+  - @func{tsa_do_moves()} can be used to move from the current TCP state to
+    the desired one through specified intermediate states. This function
+    takes variable number of arguments, and intermediary and final TCP
+    states are specified as its last arguments. The final argument should
+    be @c RPC_TCP_UNKNOWN, it denotes end of the list of TCP states.
+  - @func{tsa_do_moves_str()} is similar to @func{tsa_do_moves()}, but
+    instead of variable number of arguments it takes string as it last
+    argument, which can describe desired TCP states sequence like
+    "TCP_CLOSE -> TCP_SYN_SENT -> TCP_ESTABLISHED -> TCP_FIN_WAIT1".
+
+The following functions can be used to obtain the socket under test and its
+peer, in order to perform some actions on them when the desired TCP state is
+reached:
+  - @func{tsa_iut_sock()} returns an IUT socket.
+  - @func{tsa_tst_sock()} returns either a real socket or a TCP socket
+    emulation ID on Tester, according to the chosen mode of operation.
+
+The following functions can be used to obtain information about the TCP
+state of a socket under test:
+  - @func{tsa_state_cur()} returns current TCP state.
+  - @func{tsa_state_from()} returns the latest state from which a transition
+    to the next state was attempted.
+  - @func{tsa_state_to()} returns the latest state to which a transition was
+    attempted.
+
+@section tapi_tcp_states_conn Changing network connectivity
+
+As a result of using the library, network connectivity can be broken in
+the following ways:
+
+  - If either @c TSA_TST_CSAP or @c TSA_TST_GW_CSAP modes are used, network
+    connection from IUT to Tester will be broken with the help of an ARP table
+    entry associating the Tester address with an alien MAC.
+  - If @c TSA_TST_SOCKET mode is used, then both IUT->Tester and Tester->IUT
+    connections may be broken in the same way, depending on the current TCP
+    state.
+
+The following functions can be used to repair or break again the network
+connectivity by changing the ARP table:
+  - @func{tsa_repair_tst_iut_conn()}
+  - @func{tsa_repair_iut_tst_conn()}
+  - @func{tsa_break_tst_iut_conn()}
+  - @func{tsa_break_iut_tst_conn()}
+
+After calling these functions CFG_WAIT_CHANGES macro should be used.
+
+@section tapi_tcp_states_example Example
+
+@code
+#include "tapi_tcp_states.h"
+
+int
+main(int argc, char *argv[])
+{
+    rcf_rpc_server *pco_iut = NULL;
+    rcf_rpc_server *pco_tst = NULL;
+    rcf_rpc_server *pco_gw = NULL;
+
+    const struct sockaddr *iut_addr = NULL;
+    const struct sockaddr *tst_addr = NULL;
+    const struct sockaddr *gw_iut_addr = NULL;
+    const struct sockaddr *gw_tst_addr = NULL;
+    const void            *alien_link_addr = NULL;
+
+    const struct if_nameindex *tst_if = NULL;
+    const struct if_nameindex *iut_if = NULL;
+    const struct if_nameindex *gw_tst_if = NULL;
+    const struct if_nameindex *gw_iut_if = NULL;
+
+    tsa_session ss;
+
+    TEST_START;
+    TEST_GET_PCO(pco_iut);
+    TEST_GET_PCO(pco_tst);
+    TEST_GET_PCO(pco_gw);
+    TEST_GET_ADDR_NO_PORT(gw_iut_addr);
+    TEST_GET_ADDR_NO_PORT(gw_tst_addr);
+    TEST_GET_IF(gw_iut_if);
+    TEST_GET_IF(gw_tst_if);
+    TEST_GET_ADDR(pco_iut, iut_addr);
+    TEST_GET_ADDR(pco_tst, tst_addr);
+    TEST_GET_LINK_ADDR(alien_link_addr);
+    TEST_GET_IF(tst_if);
+    TEST_GET_IF(iut_if);
+
+    CHECK_RC(tsa_state_init(&ss, TSA_TST_GW_CSAP));
+
+    CHECK_RC(tsa_iut_set(&ss, pco_iut, iut_if, iut_addr));
+    CHECK_RC(tsa_tst_set(&ss, pco_tst, tst_if, tst_addr,
+                         ((struct sockaddr *)
+                          alien_link_addr)->sa_data));
+    CHECK_RC(tsa_gw_set(&ss, pco_gw, gw_iut_addr, gw_tst_addr,
+                        gw_iut_if, gw_tst_if,
+                        ((struct sockaddr *)alien_link_addr)->
+                                                   sa_data));
+    CFG_WAIT_CHANGES;
+
+    CHECK_RC(tsa_create_session(&ss, 0));
+
+    /*- Check that TCP_FIN_WAIT2 can be reached according
+     * to TCP states diagram. */
+
+    CHECK_RC(tsa_do_moves_str(&ss, RPC_TCP_UNKNOWN, RPC_TCP_UNKNOWN,
+                              0, "TCP_CLOSE->TCP_SYN_SENT->"
+                              "TCP_ESTABLISHED->TCP_FIN_WAIT1->"
+                              "TCP_FIN_WAIT2"));
+
+    TEST_SUCCESS;
+
+cleanup:
+
+    CLEANUP_CHECK_RC(tsa_destroy_session(&ss));
+
+    TEST_END;
+}
+@endcode
+
+@} <!-- TAPI for testing TCP states -->
+
+*/
