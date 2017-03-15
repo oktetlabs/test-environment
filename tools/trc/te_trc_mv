@@ -6,12 +6,17 @@ use File::Temp qw/ tempfile /;
 
 my $trc_to_move = "tmp_trc_db.xml";
 my $conf_dir = "trc";
+my $conf_root = "trc.xml";
 
 foreach my $arg (@ARGV)
 {
     if ($arg =~ m/^--conf-dir=(.+)/)
     {
         $conf_dir = $1;
+    }
+    elsif ($arg =~ m/^--conf-root=(.+)/)
+    {
+        $conf_root = $1;
     }
     else
     {
@@ -131,7 +136,7 @@ sub test_find_replace
         print "Moving generated TRC XML to TRC DB...\n";
         $replace_mode = 0;
         $cur_file = {
-            'file' => "trc-sockapi-ts.xml",
+            'file' => $conf_root,
             'pos' => [],
         };
     }
