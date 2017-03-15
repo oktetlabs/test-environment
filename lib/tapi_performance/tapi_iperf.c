@@ -275,46 +275,57 @@ build_iperf_client_cmd(te_string *cmd, const tapi_iperf_options *options)
  * Extract report from JSON object.
  *
  * @param[in]  jrpt         JSON object contains report data.
- * @param[in]  reverse      Reverse mode.
  * @param[out] report       Report.
  *
  * @return Status code.
  */
 static te_errno
-get_report(const json_t *jrpt, te_bool reverse, tapi_iperf_report *report)
+get_report(const json_t *jrpt, tapi_iperf_report *report)
 {
-    json_t *jend, *jsum, *jval;
+    json_t *jend, *jsum, *jval, *jint;
+    tapi_iperf_report tmp_report;
+
+#define GET_REPORT_ERROR(_obj)                                  \
+    do {                                                        \
+        ERROR("%s: JSON %s is expected", __FUNCTION__, _obj);   \
+        return TE_RC(TE_TAPI, TE_EINVAL);                       \
+    } while (0)
 
     if (!json_is_object(jrpt))
-    {
-        ERROR("Invalid input data: JSON object is expected");
-        return TE_EINVAL;
-    }
-    jend = json_object_get(jrpt, "end");
-    if (jend == NULL || !json_is_object(jend))
-    {
-        ERROR("JSON object \"end\" is expected");
-        return TE_EINVAL;
-    }
-    if (reverse)
-        jsum = json_object_get(jend, "sum_received");   /* TCP test */
-    else
-        jsum = json_object_get(jend, "sum_sent");       /* TCP test */
-    if (jsum == NULL)
-        jsum = json_object_get(jend, "sum");    /* UDP test */
-    if (jsum == NULL || !json_is_object(jsum))
-    {
-        ERROR("JSON object \"sum\"/\"sum_sent\" is expected");
-        return TE_EINVAL;
-    }
-    report->bytes = json_integer_value(json_object_get(jsum, "bytes"));
-    jval = json_object_get(jsum, "seconds");
-    report->seconds = (json_is_integer(jval) ? json_integer_value(jval)
-                                             : json_real_value(jval));
-    report->bits_per_second =
-        json_real_value(json_object_get(jsum, "bits_per_second"));
+        GET_REPORT_ERROR("object");
 
+    jend = json_object_get(jrpt, "intervals");
+    if (!json_is_array(jend))
+        GET_REPORT_ERROR("array \"intervals\"");
+
+    jint = json_array_get(jend, json_array_size(jend) - 1);
+    jsum = json_object_get(jint, "sum");
+    if (!json_is_object(jsum))
+        GET_REPORT_ERROR("object \"sum\"");
+
+    jval = json_object_get(jsum, "bytes");
+    if (json_is_integer(jval))
+        tmp_report.bytes = json_integer_value(jval);
+    else
+        GET_REPORT_ERROR("value \"bytes\"");
+
+    jval = json_object_get(jsum, "seconds");
+    if (json_is_integer(jval))
+        tmp_report.seconds = json_integer_value(jval);
+    else if (json_is_real(jval))
+        tmp_report.seconds = json_real_value(jval);
+    else
+        GET_REPORT_ERROR("value \"seconds\"");
+
+    jval = json_object_get(jsum, "bits_per_second");
+    if (json_is_real(jval))
+        tmp_report.bits_per_second = json_real_value(jval);
+    else
+        GET_REPORT_ERROR("value \"bits_per_second\"");
+
+    *report = tmp_report;
     return 0;
+#undef GET_REPORT_ERROR
 }
 
 /**
@@ -603,7 +614,7 @@ tapi_iperf_client_get_report(tapi_iperf_client *client,
         te_string_append(&client->err, ERROR_INVALID_JSON_FORMAT);
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
-    rc = get_report(jrpt, client->app.opt.client.reverse, report);
+    rc = get_report(jrpt, report);
     if (rc != 0)
         te_string_append(&client->err, ERROR_INVALID_JSON_FORMAT);
 
