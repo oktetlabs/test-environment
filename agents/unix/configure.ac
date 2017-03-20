@@ -503,8 +503,8 @@ AC_ARG_ENABLE([vcm],
                              [enable VCM mgmt support (default is NO)]),
               [ac_cv_enable_vcm=$enableval], [ac_cv_enable_vcm=no])
 
-AM_CONDITIONAL(CFG_VCM, test -n "$ac_cv_enable_vcm")
-if test -n "$ac_cv_enable_vcm"; then
+AM_CONDITIONAL(CFG_VCM, test "x$ac_cv_enable_vcm" = "xyes")
+if test "x$ac_cv_enable_vcm" = "xyes" ; then
     AC_DEFINE([ENABLE_VCM_SUPPORT], [], [Whether to enable VCM support])
 fi    
 
