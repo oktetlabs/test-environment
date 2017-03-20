@@ -96,7 +96,7 @@ static char *log_ptr = log;
 void
 rpc_transport_log(char *str)
 {
-    log_ptr += sprintf(log_ptr, str);
+    log_ptr += sprintf(log_ptr, "%s", str);
 }
 
 /** Listening socket */
