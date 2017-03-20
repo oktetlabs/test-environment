@@ -1499,7 +1499,7 @@ rsrc_get(unsigned int gid, const char *oid, char *value, const char *id)
     for (tmp = rsrc_lst; tmp != NULL; tmp = tmp->next)
         if (strcmp(tmp->id, id) == 0)
         {
-            snprintf(value, RCF_MAX_VAL, tmp->name);
+            snprintf(value, RCF_MAX_VAL, "%s", tmp->name);
             return 0;
         }
             
