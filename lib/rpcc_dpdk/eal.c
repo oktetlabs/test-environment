@@ -226,6 +226,7 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
     int                     ret;
     int                     i;
     cfg_val_type            val_type;
+    char                   *dev_args = NULL;
     int                     mem_channels;
     int                     mem_amount = 0;
     char                   *app_prefix = NULL;
@@ -247,16 +248,37 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
     /* Use RPC server name as a program name */
     append_arg(&my_argc, &my_argv, "%s", rpcs->name);
 
+    /* Get device arguments to be specified in whitelist option */
+    val_type = CVT_STRING;
+    rc = cfg_get_instance_fmt(&val_type, &dev_args,
+                              "/local:%s/dpdk:/dev_args:", rpcs->ta);
+    if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
+    {
+        dev_args = NULL;
+    }
+    else if (rc != 0)
+    {
+        goto cleanup;
+    }
+    else if (dev_args[0] == '\0')
+    {
+        free(dev_args);
+        dev_args = NULL;
+    }
+
      /* Specify PCI whitelist or virtual device information */
     ps_ifs = &pco->process->ifs;
     for (p = ps_ifs->cqh_first; p != (void *)ps_ifs; p = p->ps_links.cqe_next)
     {
         if (p->rsrc_type == NET_NODE_RSRC_TYPE_PCI_FN)
         {
-            append_arg(&my_argc, &my_argv, "--pci-whitelist=%s",
-                       p->if_info.if_name);
+            append_arg(&my_argc, &my_argv, "--pci-whitelist=%s%s%s",
+                       p->if_info.if_name, (dev_args == NULL) ? "" : ",",
+                       (dev_args == NULL) ? "" : dev_args);
         }
     }
+
+    free(dev_args);
 
     /* Add memory channels information */
     val_type = CVT_INTEGER;
