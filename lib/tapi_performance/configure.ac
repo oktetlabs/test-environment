@@ -2,9 +2,9 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.61])
-AC_INIT([tapi_performance],[0.1],[Ivan.Melnikov@oktetlabs.ru])
+AC_INIT([tapi_performance],[0.2],[Ivan.Melnikov@oktetlabs.ru])
 
-AC_CONFIG_SRCDIR([tapi_iperf.h])
+AC_CONFIG_SRCDIR([tapi_performance.h])
 
 AC_CONFIG_AUX_DIR([../../auxdir])
 AC_CONFIG_MACRO_DIR([../../auxdir])

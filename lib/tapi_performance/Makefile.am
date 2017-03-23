@@ -10,10 +10,12 @@ AM_LDFLAGS = -L$(DESTDIR)/$(libdir) @JANSSON_LIBS@
 lib_LTLIBRARIES=libtapi_performance.la
 
 include_HEADERS= \
-	tapi_iperf.h
+        tapi_performance.h \
+        tapi_iperf3.h
 
 libtapi_performance_la_SOURCES= \
-	tapi_iperf.c
+        tapi_performance.c \
+        tapi_iperf3.c
 
 
 install-exec-hook:
