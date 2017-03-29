@@ -160,6 +160,7 @@ static asn_named_entry_t _ndn_generic_pdu_ne_array[] = {
     { "ppp",    &ndn_ppp_message_s,       {PRIVATE, TE_PROTO_PPP} },
     { "pppoe",  &ndn_pppoe_message_s,     {PRIVATE, TE_PROTO_PPPOE} },
     { "rtembuf",&ndn_rte_mbuf_pdu_s,      {PRIVATE, TE_PROTO_RTE_MBUF} },
+    { "void",   &asn_base_null_s,         {PRIVATE, 0} },
 };
 
 asn_type ndn_generic_pdu_s = {

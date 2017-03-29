@@ -159,6 +159,7 @@ Generic-CSAP-Level ::= CHOICE
 
 Generic-PDU ::= CHOICE 
 {
+    void NULL,      -- | fake PDU to be ignored
     eth Ethernet-Header, 
     ip4 IP-Header,
     tcp TCP-Header,
