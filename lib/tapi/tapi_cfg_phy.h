@@ -364,6 +364,44 @@ extern te_errno tapi_cfg_phy_advertise_one(const char *ta,
                                            int advert_speed,
                                            int advert_duplex);
 
+/**
+ * Get PHY link partner advertised pause frame use.
+ *
+ * NOTE: Output parameters are valid if function returns
+ * positive result only.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Interface name
+ * @param state         Pointer to the returned pause frame use value:
+ *                      TE_PHY_PAUSE_NONE               - no pause frame use
+ *                      TE_PHY_PAUSE_TX_ONLY            - transmit only
+ *                      TE_PHY_PAUSE_SYMMETRIC          - symmetric
+ *                      TE_PHY_PAUSE_SYMMETRIC_RX_ONLY  - symmetric or receive only
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_phy_pause_lp_adv_get(const char *ta,
+                                              const char *if_name,
+                                              int *state);
+
+/**
+ * Get PHY link partner advertised autonegotiation state.
+ *
+ * NOTE: Output parameters are valid if function returns
+ * positive result only.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Interface name
+ * @param state         Pointer to the returned autonegotiation state value:
+ *                      TE_PHY_AUTONEG_OFF      - autonegotiation OFF
+ *                      TE_PHY_AUTONEG_ON       - autonegotiation ON
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_phy_autoneg_lp_adv_get(const char *ta,
+                                                const char *if_name,
+                                                int *state);
+
 /**@} <!-- END tapi_conf_phy --> */
 
 #ifdef __cplusplus

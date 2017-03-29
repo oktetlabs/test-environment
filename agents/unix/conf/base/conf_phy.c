@@ -174,14 +174,26 @@ static te_errno phy_state_get(unsigned int, const char *, char *,
 
 static te_errno phy_commit(unsigned int, const cfg_oid *);
 
+static te_errno phy_pause_lp_adv_get(unsigned int, const char *, char *,
+                                     const char *);
+
+static te_errno phy_autoneg_lp_adv_get(unsigned int, const char *, char *,
+                                       const char *);
+
 /*
  * Nodes
  */
 
 static rcf_pch_cfg_object node_phy;
 
-RCF_PCH_CFG_NODE_RO(node_phy_state, "state", NULL, NULL,
-                    phy_state_get);
+RCF_PCH_CFG_NODE_RO(node_phy_autoneg_lp_adv, "autoneg_lp_adv", NULL, NULL,
+                    phy_autoneg_lp_adv_get);
+
+RCF_PCH_CFG_NODE_RO(node_phy_pause_lp_adv, "pause_lp_adv", NULL,
+                    &node_phy_autoneg_lp_adv, phy_pause_lp_adv_get);
+
+RCF_PCH_CFG_NODE_RO(node_phy_state, "state", NULL,
+                    &node_phy_pause_lp_adv, phy_state_get);
 
 static rcf_pch_cfg_object node_phy_modes_speed_duplex = {
     "duplex", 0, NULL, NULL,
@@ -1807,3 +1819,118 @@ ta_unix_conf_phy_init(void)
     return 0;
 }
 #endif /* __ANDROID__ */
+
+/**
+ * Get PHY link partner advertised autonegotiation state.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         location of value
+ * @param ifname        name of the interface
+ *
+ * @return              Status code
+ */
+static te_errno
+phy_autoneg_lp_adv_get(unsigned int gid, const char *oid, char *value,
+                       const char *ifname)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if defined __linux__
+    struct ethtool_cmd ecmd;
+    int                state;
+    int                rc = -1;
+
+    memset(&ecmd, 0, sizeof(ecmd));
+
+    if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
+    {
+        /*
+         * Check for option support
+         */
+        if (rc == EOPNOTSUPP)
+        {
+            snprintf(value, RCF_MAX_VAL, "%d", TE_PHY_AUTONEG_UNKNOWN);
+            return 0;
+        }
+        ERROR("failed to get link partner advertised autonegatiation "
+              "state");
+        return TE_OS_RC(TE_TA_UNIX, rc);
+    }
+
+    state = (ecmd.lp_advertising & ADVERTISED_Autoneg) ?
+            TE_PHY_AUTONEG_ON : TE_PHY_AUTONEG_OFF;
+
+    snprintf(value, RCF_MAX_VAL, "%d", state);
+
+#else
+    UNUSED(ifname);
+    snprintf(value, RCF_MAX_VAL, "%d", TE_PHY_AUTONEG_UNKNOWN);
+#endif /* __linux__ */
+
+    return 0;
+}
+
+/**
+ * Get PHY link partner advertised pause frame use.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         location of value
+ * @param ifname        name of the interface
+ *
+ * @return              Status code
+ */
+static te_errno
+phy_pause_lp_adv_get(unsigned int gid, const char *oid, char *value,
+                     const char *ifname)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if defined __linux__
+    struct ethtool_cmd ecmd;
+    int                state;
+    int                rc = -1;
+
+    memset(&ecmd, 0, sizeof(ecmd));
+
+    if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
+    {
+        /*
+         * Check for option support
+         */
+        if (rc == EOPNOTSUPP)
+        {
+            snprintf(value, RCF_MAX_VAL, "%d", TE_PHY_PAUSE_UNKNOWN);
+            return 0;
+        }
+        ERROR("failed to get link partner advertised pause frame use");
+        return TE_OS_RC(TE_TA_UNIX, rc);
+    }
+
+    if (ecmd.lp_advertising & ADVERTISED_Pause)
+    {
+        if (ecmd.lp_advertising & ADVERTISED_Asym_Pause)
+            state = TE_PHY_PAUSE_SYMMETRIC_RX_ONLY;
+        else
+            state = TE_PHY_PAUSE_SYMMETRIC;
+    }
+    else
+    {
+        if (ecmd.lp_advertising & ADVERTISED_Asym_Pause)
+            state = TE_PHY_PAUSE_TX_ONLY;
+        else
+            state = TE_PHY_PAUSE_NONE;
+    }
+
+    snprintf(value, RCF_MAX_VAL, "%d", state);
+
+#else
+    UNUSED(ifname);
+    snprintf(value, RCF_MAX_VAL, "%d", TE_PHY_PAUSE_UNKNOWN);
+#endif /* __linux__ */
+
+    return 0;
+}

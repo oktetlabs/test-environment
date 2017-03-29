@@ -251,7 +251,25 @@
                  1 - OFF -->
     <object oid="/agent/interface/phy/autoneg_oper" access="read_only"
             type="integer" volatile="true"/>
-   
+
+    <!-- Network interface link partner advertised autonegotiation state value
+         Name: none
+         Value:  off (0)
+                 on (1)
+                 unknown (2) -->
+    <object oid="/agent/interface/phy/autoneg_lp_adv" access="read_only"
+            type="integer" volatile="true"/>
+
+    <!-- Network interface link partner advertised pause frame use value
+         Name: none
+         Value: none (0)              - no pause frame use
+                Tx only (1)           - transmit only
+                symmetric (2)         - transmit and receive
+                symmetric Rx only (3) - transmit and receive OR receive only
+                unknown (4)           - not supported -->
+    <object oid="/agent/interface/phy/pause_lp_adv" access="read_only"
+            type="integer" volatile="true"/>
+
     <!-- Network interface duplex control; set value denied when autonegotiation
          state on
          Name: none

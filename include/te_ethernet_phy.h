@@ -76,4 +76,11 @@
 #define TE_PHY_SPEED_1000             (1000)    /* 1000 Mb/sec */
 #define TE_PHY_SPEED_10000            (10000)   /* 10000 Mb/sec */
 
+/* PHY pause frame use */
+#define TE_PHY_PAUSE_NONE                   (0)     /* No pause frame use */
+#define TE_PHY_PAUSE_TX_ONLY                (1)     /* Transmit only */
+#define TE_PHY_PAUSE_SYMMETRIC              (2)     /* Symmetric */
+#define TE_PHY_PAUSE_SYMMETRIC_RX_ONLY      (3)     /* Symmetric or receive only */
+#define TE_PHY_PAUSE_UNKNOWN                (4)     /* Unknown pause frame use */
+
 #endif /* __TE_ETHERNET_PHY_H__ */
