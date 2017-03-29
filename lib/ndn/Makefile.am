@@ -37,7 +37,8 @@ include_HEADERS = \
 	ndn_iscsi.h \
 	ndn_socket.h \
 	ndn_kprobes.h \
-	ndn_flow.h
+	ndn_flow.h \
+	ndn_rte_flow.h
 
 libndn_la_SOURCES = \
 	ndn_generic.c \
@@ -61,7 +62,8 @@ libndn_la_SOURCES = \
 	ndn_socket.c \
 	ndn_kprobes.c \
 	ndn_csap.c \
-	ndn_flow.c
+	ndn_flow.c \
+	ndn_rte_flow.c
 
 
 install-exec-hook:
