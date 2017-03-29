@@ -69,6 +69,7 @@ typedef enum {
     NDN_DU_INTERVALS,
     NDN_DU_ENV,
     NDN_DU_FUNC,
+    NDN_DU_RANGE,
 } ndn_data_unit_tags_t;
 
 /**
@@ -96,6 +97,15 @@ typedef enum {
     NDN_ENV_NAME,
     NDN_ENV_TYPE,
 } ndn_env_tags_t;
+
+/**
+ * ASN.1 tag values for entries in 'DATA-UNIT-range' type.
+ */
+typedef enum {
+    NDN_RANGE_FIRST,
+    NDN_RANGE_LAST,
+    NDN_RANGE_MASK,
+} ndn_range_tags_t;
 
 
 /**

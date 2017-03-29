@@ -46,6 +46,12 @@ DATA-UNIT { BaseFieldType } ::=  CHOICE
                 {int(0), string(1), ip-addr(2)}
     },
 
+    range       SEQUENCE {             -- | range for integer values and addresses
+        first BaseFieldType OPTIONAL,  -- | lower bound for an inclusive range
+        last BaseFieldType OPTIONAL,   -- | upper bound for an inclusive range
+        mask BaseFieldType OPTIONAL    -- | bit-mask applied to both 'first'
+    },                                 -- | and 'last'
+
     function    PrintableString 
             -- name of function (which name should be present
             -- in TA symbol table) for matching value (if used in  

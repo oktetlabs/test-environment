@@ -61,6 +61,47 @@
     };                                                                    \
     const asn_type * const ndn_data_unit_##id = &ndn_data_unit_##id##_s
 
+/**
+ * Macro for definition of C structures, presenting
+ * DATA-UNIT-range item and DATA-UNIT with it based ASN types.
+ *
+ * @param id            suffix, used to constract global constant names
+ * @param asn_t         base ASN type, constant of asn_type type
+ */
+#define NDN_DATA_UNIT_WITH_RANGE_TYPE(id, asn_t, asn_bt_txt_id)                   \
+    static asn_named_entry_t _ndn_data_unit_##id##_range_ne_array [] =            \
+    {                                                                             \
+      {"first",   &asn_t, {PRIVATE, NDN_RANGE_FIRST} },                           \
+      {"last",    &asn_t, {PRIVATE, NDN_RANGE_LAST} },                            \
+      {"mask",    &asn_t, {PRIVATE, NDN_RANGE_MASK} },                            \
+    };                                                                            \
+    asn_type ndn_data_unit_##id##_range_s =                                       \
+    {                                                                             \
+      "DATA-UNIT-range", {PRIVATE, NDN_DU_RANGE}, SEQUENCE,                       \
+      sizeof(_ndn_data_unit_##id##_range_ne_array)/                               \
+      sizeof(_ndn_data_unit_##id##_range_ne_array[0]),                            \
+      {_ndn_data_unit_##id##_range_ne_array}                                      \
+    };                                                                            \
+    static asn_named_entry_t _ndn_data_unit_##id##_ne_array [] =                  \
+    {                                                                             \
+      {"plain",     &asn_t,                         {PRIVATE, NDN_DU_PLAIN} },    \
+      {"script",    &asn_base_charstring_s,         {PRIVATE, NDN_DU_SCRIPT} },   \
+      {"enum",      &ndn_data_unit_enum_s,          {PRIVATE, NDN_DU_ENUM} },     \
+      {"mask",      &ndn_data_unit_mask_s,          {PRIVATE, NDN_DU_MASK} },     \
+      {"intervals", &ndn_data_unit_ints_s,          {PRIVATE, NDN_DU_INTERVALS} },\
+      {"env",       &ndn_data_unit_env_s,           {PRIVATE, NDN_DU_ENV} },      \
+      {"function",  &asn_base_charstring_s,         {PRIVATE, NDN_DU_FUNC} },     \
+      {"range",     &ndn_data_unit_##id##_range_s,  {PRIVATE, NDN_DU_RANGE} },    \
+    };                                                                            \
+    asn_type ndn_data_unit_##id##_s =                                             \
+    {                                                                             \
+      "DATA-UNIT ( " #asn_bt_txt_id " )", {PRIVATE, 1},                           \
+      CHOICE, sizeof(_ndn_data_unit_##id##_ne_array)/                             \
+              sizeof(_ndn_data_unit_##id##_ne_array[0]),                          \
+      {_ndn_data_unit_##id##_ne_array}                                            \
+    };                                                                            \
+    const asn_type * const ndn_data_unit_##id = &ndn_data_unit_##id##_s
+
 
 extern asn_type ndn_data_unit_ints_s;
 extern asn_type ndn_data_unit_enum_s;

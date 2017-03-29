@@ -51,7 +51,7 @@ asn_type ndn_eth_address_s = {
 
 const asn_type * const ndn_eth_address = &ndn_eth_address_s;
 
-NDN_DATA_UNIT_TYPE(eth_address, ndn_eth_address_s, Ethernet-Address);
+NDN_DATA_UNIT_WITH_RANGE_TYPE(eth_address, ndn_eth_address_s, Ethernet-Address);
 
 
 
