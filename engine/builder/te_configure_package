@@ -219,6 +219,10 @@ if test "x${KIND}" = "xINCLUDE" ; then
     ${SCRIPT_DIR}/te_create_inst_dirs ${DESTDIR}/${PREFIX}/.. ${PLATFORM}
 fi
 
+# This helps to avoid possible NFS problems during packages configuring if
+# test engine is located in NFS, see bug 9130 for details.
+sync
+
 configure_package
 
 # If the file 'Makefile' could not create or update fails,
