@@ -29,7 +29,8 @@ CPPFLAGS=${XML2_CFLAGS}
 AC_ARG_WITH([ext_scripts],,
             [TE_TRC_EXT_SCRIPTS="${withval}"],
             [TE_TRC_EXT_SCRIPTS=])
-AC_MSG_WARN(["TRC is compiled with external scripts: $TE_TRC_EXT_SCRIPTS"])
+test -z "$TE_TRC_EXT_SCRIPTS" ||
+    AC_MSG_WARN(["TRC is compiled with external scripts: $TE_TRC_EXT_SCRIPTS"])
 AC_SUBST([TE_TRC_EXT_SCRIPTS])
 AC_ARG_VAR([TE_TRC_EXT_SCRIPTS])
 export TE_TRC_EXT_SCRIPTS
