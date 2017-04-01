@@ -410,6 +410,7 @@ rte_mk_mbuf_from_template(tarpc_rte_mk_mbuf_from_template_in     *in,
     struct rte_ring        *ring = NULL;
     te_bool                 csap_created = FALSE;
     struct rte_mbuf       **mbufs = NULL;
+    unsigned int            ret;
 
     memset(&tu_data, 0, sizeof(tu_data));
     memset(&reply_ctx, 0, sizeof(reply_ctx));
@@ -516,11 +517,13 @@ rte_mk_mbuf_from_template(tarpc_rte_mk_mbuf_from_template_in     *in,
     }
 
     /* Pull out the resulting RTE mbuf pointers to the temporary array */
-    rc = rte_ring_dequeue_bulk(ring, (void **)mbufs, out->mbufs.mbufs_len,
-                               NULL);
-    neg_errno_h2rpc(&rc);
-    if (rc != 0)
+    ret = rte_ring_dequeue_bulk(ring, (void **)mbufs, out->mbufs.mbufs_len,
+                                NULL);
+    if (ret != out->mbufs.mbufs_len)
+    {
+        rc = TE_EFAULT;
         goto out;
+    }
 
     /* Map the RTE mbuf pointers to the corresponding PCH MEM indexes */
     RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
@@ -626,6 +629,7 @@ rte_mbuf_match_pattern(tarpc_rte_mbuf_match_pattern_in  *in,
     te_bool                             csap_created = FALSE;
     struct rte_mbuf                   **mbufs = NULL;
     unsigned int                        got_pkts = 0;
+    unsigned int                        ret;
 
     memset(&reply_ctx, 0, sizeof(reply_ctx));
 
@@ -704,10 +708,13 @@ rte_mbuf_match_pattern(tarpc_rte_mbuf_match_pattern_in  *in,
     });
 
     /* Shove RTE mbuf pointers into the ring to be inspected by the CSAP */
-    rc = rte_ring_enqueue_bulk(ring, (void **)mbufs, in->mbufs.mbufs_len, NULL);
-    neg_errno_h2rpc(&rc);
-    if (rc != 0)
+    ret = rte_ring_enqueue_bulk(ring, (void **)mbufs, in->mbufs.mbufs_len,
+                                NULL);
+    if (ret != in->mbufs.mbufs_len)
+    {
+        rc = TE_EFAULT;
         goto out;
+    }
 
     /* Shove the pattern into the CSAP */
     rc = tad_recv_start_prepare(csap_instance, in->pattern, in->mbufs.mbufs_len,
