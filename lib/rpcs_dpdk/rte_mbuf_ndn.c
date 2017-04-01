@@ -516,7 +516,8 @@ rte_mk_mbuf_from_template(tarpc_rte_mk_mbuf_from_template_in     *in,
     }
 
     /* Pull out the resulting RTE mbuf pointers to the temporary array */
-    rc = rte_ring_dequeue_bulk(ring, (void **)mbufs, out->mbufs.mbufs_len);
+    rc = rte_ring_dequeue_bulk(ring, (void **)mbufs, out->mbufs.mbufs_len,
+                               NULL);
     neg_errno_h2rpc(&rc);
     if (rc != 0)
         goto out;
@@ -703,7 +704,7 @@ rte_mbuf_match_pattern(tarpc_rte_mbuf_match_pattern_in  *in,
     });
 
     /* Shove RTE mbuf pointers into the ring to be inspected by the CSAP */
-    rc = rte_ring_enqueue_bulk(ring, (void **)mbufs, in->mbufs.mbufs_len);
+    rc = rte_ring_enqueue_bulk(ring, (void **)mbufs, in->mbufs.mbufs_len, NULL);
     neg_errno_h2rpc(&rc);
     if (rc != 0)
         goto out;
