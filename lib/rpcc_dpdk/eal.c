@@ -215,7 +215,7 @@ out:
 
 te_errno
 tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
-                  int argc, char **argv)
+                  int argc, const char **argv)
 {
     te_errno                rc;
     const tapi_env_pco     *pco;
@@ -313,11 +313,12 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
     }
 
     /* Append arguments provided by caller */
-    memcpy(&my_argv[my_argc], argv, argc * sizeof(*my_argv));
+    for (i = 0; i < argc; ++i)
+        append_arg(&my_argc, &my_argv, "%s", argv[i]);
 
     if (dpdk_reuse_rpcs())
     {
-        rc = tapi_reuse_eal(rpcs, my_argc + argc, my_argv,
+        rc = tapi_reuse_eal(rpcs, my_argc, my_argv,
                             &need_init, &eal_args_new,
                             &need_conf_instance);
         if (rc != 0)
@@ -326,7 +327,7 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
 
     if (need_init)
     {
-        ret = rpc_rte_eal_init(rpcs, my_argc + argc, my_argv);
+        ret = rpc_rte_eal_init(rpcs, my_argc, my_argv);
 
         rc = (ret < 0) ? TE_EFAULT : 0;
         if (rc != 0)

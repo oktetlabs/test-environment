@@ -63,7 +63,7 @@ extern int rpc_rte_eal_init(rcf_rpc_server *rpcs,
  * @return Status code.
  */
 extern te_errno tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
-                                  int argc, char **argv);
+                                  int argc, const char **argv);
 
 
 /** Map RTE EAL process type to string. */
