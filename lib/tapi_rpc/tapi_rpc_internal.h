@@ -224,7 +224,7 @@ do {                                                                    \
  * @param _error_val    value to be assigned in the case of error
  */
 #define CHECK_RETVAL_VAR(_func, _var, _cond, _error_val) \
-    CHECK_RETVAL_VAR_ERR_COND(_func, _var, _cond,_error_val,    \
+    CHECK_RETVAL_VAR_ERR_COND(_func, _var, _cond, _error_val,   \
                               ((_var) == (_error_val)))
 
 /**
