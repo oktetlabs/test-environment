@@ -353,7 +353,7 @@ write_bits(uint8_t *ptr, size_t off, myint_t value, size_t bits)
     size_t  off_byte = off >> 3;
     size_t  off_bit  = off & 7;
     size_t  space_bits = 8 - off_bit;
-    uint8_t mask = (~0 << space_bits);
+    uint8_t mask = (~0u << space_bits);
     int     left_bits = bits - space_bits;
     int     shift = (sizeof(myint_t) << 3) - off_bit - bits;
     myint_t tmp;
@@ -361,7 +361,7 @@ write_bits(uint8_t *ptr, size_t off, myint_t value, size_t bits)
     uint8_t read;
 
     if (left_bits < 0)
-        mask = mask | ~(~0 << -left_bits);
+        mask = mask | ~(~0u << -left_bits);
 
     if (shift == 0)
         tmp = value;
