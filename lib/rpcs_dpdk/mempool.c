@@ -38,6 +38,18 @@
 #include "rpcs_dpdk.h"
 #include "te_errno.h"
 
+TARPC_FUNC(rte_mempool_lookup, {},
+{
+    struct rte_mempool *mp;
+
+    MAKE_CALL(mp = func(in->name));
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MEMPOOL, {
+        out->retval = RCF_PCH_MEM_INDEX_ALLOC(mp, ns);
+    });
+}
+)
+
 TARPC_FUNC(rte_mempool_in_use_count, {},
 {
     struct rte_mempool *mp = NULL;

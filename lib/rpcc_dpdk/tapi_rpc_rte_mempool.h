@@ -42,6 +42,16 @@ extern "C" {
  */
 
 /**
+ * @b rte_mempool_lookup() RPC
+ *
+ * @param name          RTE mempool name
+ *
+ * @return RTE mempool pointer on success; jumps out when pointer is @c NULL
+ */
+extern rpc_rte_mempool_p rpc_rte_mempool_lookup(rcf_rpc_server *rpcs,
+                                                const char     *name);
+
+/**
  * @b rte_mempool_in_use_count() RPC
  *
  * @param mp            RTE mempool pointer

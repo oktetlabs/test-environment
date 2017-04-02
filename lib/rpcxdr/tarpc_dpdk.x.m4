@@ -209,6 +209,17 @@ enum tarpc_pktmbuf_inner_l4_types {
     TARPC_RTE_PTYPE_INNER_L4__UNKNOWN
 };
 
+/** rte_mempool_lookup() */
+struct tarpc_rte_mempool_lookup_in {
+    struct tarpc_in_arg     common;
+    string                  name<>;
+};
+
+struct tarpc_rte_mempool_lookup_out {
+    struct tarpc_out_arg    common;
+    tarpc_rte_mempool       retval;
+};
+
 /** rte_mempool_in_use_count() */
 struct tarpc_rte_mempool_in_use_count_in {
     struct tarpc_in_arg     common;
@@ -1592,6 +1603,7 @@ program dpdk
         RPC_DEF(rte_eal_init)
         RPC_DEF(rte_eal_process_type)
 
+        RPC_DEF(rte_mempool_lookup)
         RPC_DEF(rte_mempool_in_use_count)
         RPC_DEF(rte_mempool_free)
 
