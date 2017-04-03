@@ -36,6 +36,38 @@
 
 #define TE_CFG_TA_ETH_FMT "/agent:%s/interface:%s"
 
+te_errno
+tapi_eth_feature_get(const char *ta,
+                     const char *ifname,
+                     const char *feature_name,
+                     int        *feature_value_out)
+{
+    cfg_val_type type = CVT_INTEGER;
+
+    if ((ta == NULL) || (ifname == NULL) ||
+        (feature_name == NULL) || (feature_value_out == NULL))
+        return TE_EINVAL;
+
+    return cfg_get_instance_sync_fmt(&type, feature_value_out,
+                                     TE_CFG_TA_ETH_FMT "/feature:%s",
+                                     ta, ifname, feature_name);
+}
+
+te_errno
+tapi_eth_feature_set(const char *ta,
+                     const char *ifname,
+                     const char *feature_name,
+                     int         feature_value)
+{
+    if ((ta == NULL) || (ifname == NULL) ||
+        (feature_name == NULL))
+        return TE_EINVAL;
+
+    return cfg_set_instance_fmt(CFG_VAL(INTEGER, feature_value),
+                                TE_CFG_TA_ETH_FMT "/feature:%s",
+                                ta, ifname, feature_name);
+}
+
 /**
  * Get integer value of an interface field
  *

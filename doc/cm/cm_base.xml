@@ -333,6 +333,52 @@
     <object oid="/agent/interface/phy/reset" access="read_write"
             type="integer"/>
 
+    <!-- Ethernet interface GRO (OBSOLETE)
+         Name:  none
+         Value: 0 - disabled
+                1 - enabled -->
+    <object oid="/agent/interface/gro" access="read_write"
+            type="integer"/>
+
+    <!-- Network interface features
+         Name:  Feature name
+         Value: 0 - disabled
+                1 - enabled -->
+    <object oid="/agent/interface/feature" access="read_write"
+            type="integer"/>
+
+    <!-- The following four nodes are considered as legacy which is to get rid
+         of eventually; these should not be used in
+         the same session where the previous node is used because of possible
+         recovery issues -->
+
+    <!-- Ethernet interface GSO (OBSOLETE)
+         Name:  none
+         Value: 0 - disabled
+                1 - enabled -->
+    <object oid="/agent/interface/gso" access="read_write"
+            type="integer"/>
+
+    <!-- Ethernet interface TSO (OBSOLETE)
+         Name:  none
+         Value: 0 - disabled
+                1 - enabled -->
+    <object oid="/agent/interface/tso" access="read_write"
+            type="integer"/>
+
+    <!-- Ethernet interface flags (OBSOLETE)
+         Name:  none
+         Value: 0 - disabled
+                1 - enabled -->
+    <object oid="/agent/interface/flags" access="read_write"
+            type="integer"/>
+
+    <!-- Reset an ethernet interface (OBSOLETE)
+         Name: none
+         Value: any value means that reset is requested -->
+    <object oid="/agent/interface/reset" access="read_write"
+            type="integer" volatile="true"/>
+
     <!-- Summary network statistics.
          Name:  Agent network statistics -->
     <object oid="/agent/stats" access="read_only" 

@@ -34,6 +34,36 @@ extern "C" {
 #endif
 
 /**
+ * Get feature value of an ethernet interface
+ *
+ * @param ta                Test agent name
+ * @param ifname            Interface name
+ * @param feature_name      Feature name
+ * @param feature_value_out Location for the value
+ *
+ * @return Status code
+ */
+extern te_errno tapi_eth_feature_get(const char *ta,
+                                     const char *ifname,
+                                     const char *feature_name,
+                                     int        *feature_value_out);
+
+/**
+ * Set feature value of an ethernet interface
+ *
+ * @param ta            Test agent name
+ * @param ifname        Interface name
+ * @param feature_name  Feature name
+ * @param feature_value Location for the value
+ *
+ * @return Status code
+ */
+extern te_errno tapi_eth_feature_set(const char *ta,
+                                     const char *ifname,
+                                     const char *feature_name,
+                                     int         feature_value);
+
+/**
  * Get GRO value of an ethernet interface
  *
  * @param ta        Test agent name
