@@ -368,9 +368,6 @@ typedef struct tapi_env_if {
     tapi_env_net   *net;        /**< Net the interface belongs to */
     tapi_env_host  *host;       /**< Host the interface is belongs to */
 
-    CIRCLEQ_ENTRY(tapi_env_if)  ps_links;   /**< Links in the process list */
-    struct tapi_env_process    *ps; /**< Process the interface belongs to */
-
     unsigned int    i_node;     /**< Index of the associated node */
 
     enum net_node_rsrc_type rsrc_type;  /**< Type of the associated
@@ -394,6 +391,17 @@ typedef struct tapi_env_if {
 typedef CIRCLEQ_HEAD(tapi_env_ifs, tapi_env_if) tapi_env_ifs;
 
 
+/** Process interfaces */
+typedef struct tapi_env_ps_if {
+    STAILQ_ENTRY(tapi_env_ps_if) links; /**< Links */
+
+    tapi_env_if    *iface;          /**< Interface entry */
+} tapi_env_ps_if;
+
+/** List of process interfaces */
+typedef STAILQ_HEAD(tapi_env_ps_ifs, tapi_env_ps_if) tapi_env_ps_ifs;
+
+
 /* Forward */
 struct tapi_env_pco;
 /** List of PCOs */
@@ -403,11 +411,10 @@ typedef STAILQ_HEAD(tapi_env_pcos, tapi_env_pco) tapi_env_pcos;
 typedef struct tapi_env_process {
     SLIST_ENTRY(tapi_env_process)   links;  /**< Links */
 
-    tapi_env_pcos pcos; /**< Tail queue of PCOs in process */
-    tapi_env_ifs  ifs;  /**< List of interfaces */
-    tapi_env_net *net;  /**< Network handle */
+    tapi_env_pcos       pcos; /**< Tail queue of PCOs in process */
+    tapi_env_ps_ifs     ifs;  /**< List of process interfaces */
 
-    unsigned int next_vif_index;    /**< Next virtual interface index */
+    tapi_env_net *net;  /**< Network handle */
 } tapi_env_process;
 
 

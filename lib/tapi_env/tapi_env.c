@@ -328,6 +328,7 @@ tapi_env_free(tapi_env *env)
     tapi_env_host    *host;
     tapi_env_process *proc;
     tapi_env_pco     *pco;
+    tapi_env_ps_if   *ps_if;
     tapi_env_addr    *addr;
     tapi_env_net     *net;
     cfg_handle_tqe   *addr_hndl;
@@ -377,6 +378,12 @@ tapi_env_free(tapi_env *env)
                 STAILQ_REMOVE(&proc->pcos, pco, tapi_env_pco, links);
                 free(pco->name);
                 free(pco);
+            }
+            /* Destroy process interface references */
+            while ((ps_if = STAILQ_FIRST(&proc->ifs)) != NULL)
+            {
+                STAILQ_REMOVE(&proc->ifs, ps_if, tapi_env_ps_if, links);
+                free(ps_if);
             }
             SLIST_REMOVE(&host->processes, proc, tapi_env_process, links);
             free(proc);
@@ -1606,13 +1613,6 @@ prepare_interfaces_pci_fn(tapi_env_if *iface, cfg_net_node_t *node)
     char           *oid = NULL;
     char           *pci_oid = NULL;
 
-    if (iface->ps == NULL)
-    {
-        ERROR("PCI function interface '%s' must belong to some process",
-              iface->name);
-        return TE_EINVAL;
-    }
-
     val_type = CVT_STRING;
     rc = cfg_get_instance(node->handle, &val_type, &oid);
     if (rc != 0)
@@ -1642,8 +1642,6 @@ prepare_interfaces_pci_fn(tapi_env_if *iface, cfg_net_node_t *node)
     }
 
     free(pci_oid);
-
-    iface->if_info.if_index = iface->ps->next_vif_index++;
 
     return 0;
 }

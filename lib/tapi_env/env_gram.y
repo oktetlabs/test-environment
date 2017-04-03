@@ -114,7 +114,7 @@ create_process(void)
     if (p != NULL)
     {
         STAILQ_INIT(&p->pcos);
-        CIRCLEQ_INIT(&p->ifs);
+        STAILQ_INIT(&p->ifs);
         if (curr_host_if == NULL)
             curr_host_if = create_host_if();
         p->net = curr_net;
@@ -384,9 +384,14 @@ interface:
             free(curr_host_if->name);
             curr_host_if->name = name;
 
-            curr_host_if->ps = curr_proc;
             if (curr_proc != NULL)
-                CIRCLEQ_INSERT_TAIL(&curr_proc->ifs, curr_host_if, ps_links);
+            {
+                tapi_env_ps_if *ps_if = calloc(1, sizeof(*ps_if));
+
+                assert(ps_if != NULL);
+                ps_if->iface = curr_host_if;
+                STAILQ_INSERT_TAIL(&curr_proc->ifs, ps_if, links);
+            }
 
             name = NULL;
         }

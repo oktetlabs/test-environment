@@ -221,8 +221,7 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
     const tapi_env_pco     *pco;
     char                  **my_argv;
     int                     my_argc;
-    const tapi_env_ifs     *ps_ifs;
-    const tapi_env_if      *p;
+    const tapi_env_ps_if   *ps_if;
     int                     ret;
     int                     i;
     cfg_val_type            val_type;
@@ -267,13 +266,13 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
     }
 
      /* Specify PCI whitelist or virtual device information */
-    ps_ifs = &pco->process->ifs;
-    for (p = ps_ifs->cqh_first; p != (void *)ps_ifs; p = p->ps_links.cqe_next)
+    STAILQ_FOREACH(ps_if, &pco->process->ifs, links)
     {
-        if (p->rsrc_type == NET_NODE_RSRC_TYPE_PCI_FN)
+        if (ps_if->iface->rsrc_type == NET_NODE_RSRC_TYPE_PCI_FN)
         {
             append_arg(&my_argc, &my_argv, "--pci-whitelist=%s%s%s",
-                       p->if_info.if_name, (dev_args == NULL) ? "" : ",",
+                       ps_if->iface->if_info.if_name,
+                       (dev_args == NULL) ? "" : ",",
                        (dev_args == NULL) ? "" : dev_args);
         }
     }
