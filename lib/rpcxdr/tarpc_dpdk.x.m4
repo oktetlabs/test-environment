@@ -1596,6 +1596,78 @@ struct tarpc_rte_eth_dev_set_mc_addr_list_in {
 
 typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_set_mc_addr_list_out;
 
+/**
+ * rte_flow API
+ */
+
+/** Handle of the 'rte_flow_attr' or 0 */
+typedef tarpc_ptr    tarpc_rte_flow_attr;
+
+/** Handle of the 'rte_flow_item' or 0 */
+typedef tarpc_ptr    tarpc_rte_flow_item;
+
+/** Handle of the 'rte_flow_action' or 0 */
+typedef tarpc_ptr    tarpc_rte_flow_action;
+
+enum tarpc_rte_flow_error_type {
+    TARPC_RTE_FLOW_ERROR_TYPE_NONE = 0,
+    TARPC_RTE_FLOW_ERROR_TYPE_UNSPECIFIED,
+    TARPC_RTE_FLOW_ERROR_TYPE_HANDLE,
+    TARPC_RTE_FLOW_ERROR_TYPE_ATTR_GROUP,
+    TARPC_RTE_FLOW_ERROR_TYPE_ATTR_PRIORITY,
+    TARPC_RTE_FLOW_ERROR_TYPE_ATTR_INGRESS,
+    TARPC_RTE_FLOW_ERROR_TYPE_ATTR_EGRESS,
+    TARPC_RTE_FLOW_ERROR_TYPE_ATTR,
+    TARPC_RTE_FLOW_ERROR_TYPE_ITEM_NUM,
+    TARPC_RTE_FLOW_ERROR_TYPE_ITEM,
+    TARPC_RTE_FLOW_ERROR_TYPE_ACTION_NUM,
+    TARPC_RTE_FLOW_ERROR_TYPE_ACTION
+};
+
+struct tarpc_rte_flow_error {
+    enum tarpc_rte_flow_error_type  type;
+    string                          message<>;
+};
+
+/** rte_mk_flow_rule_from_str() */
+struct tarpc_rte_mk_flow_rule_from_str_in {
+    struct tarpc_in_arg             common;
+    string                          flow_rule<>;
+};
+
+struct tarpc_rte_mk_flow_rule_from_str_out {
+    struct tarpc_out_arg            common;
+    tarpc_int                       retval;
+    tarpc_rte_flow_attr             attr;
+    tarpc_rte_flow_item             pattern;
+    tarpc_rte_flow_action           actions;
+};
+
+/** rte_free_flow_rule() */
+struct tarpc_rte_free_flow_rule_in {
+    struct tarpc_in_arg             common;
+    tarpc_rte_flow_attr             attr;
+    tarpc_rte_flow_item             pattern;
+    tarpc_rte_flow_action           actions;
+};
+
+typedef struct tarpc_void_out tarpc_rte_free_flow_rule_out;
+
+/** rte_flow_validate() */
+struct tarpc_rte_flow_validate_in {
+    struct tarpc_in_arg             common;
+    uint8_t                         port_id;
+    tarpc_rte_flow_attr             attr;
+    tarpc_rte_flow_item             pattern;
+    tarpc_rte_flow_action           actions;
+};
+
+struct tarpc_rte_flow_validate_out {
+    struct tarpc_out_arg            common;
+    tarpc_int                       retval;
+    struct tarpc_rte_flow_error     error;
+};
+
 program dpdk
 {
     version ver0
@@ -1707,5 +1779,9 @@ program dpdk
         RPC_DEF(rte_eth_link_get_nowait)
         RPC_DEF(rte_eth_link_get)
         RPC_DEF(rte_eth_dev_fw_version_get)
+
+        RPC_DEF(rte_mk_flow_rule_from_str)
+        RPC_DEF(rte_free_flow_rule)
+        RPC_DEF(rte_flow_validate)
     } = 1;
 } = 2;

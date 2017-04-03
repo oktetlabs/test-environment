@@ -16,6 +16,7 @@ include_HEADERS = \
 	tapi_rpc_rte_ring.h \
 	tapi_rpc_rte_mempool.h \
 	tapi_rpc_rte_mbuf_ndn.h \
+	rte_flow_ndn.h \
 	tapi_rpc_rte.h
 
 lib_LTLIBRARIES = librpcc_dpdk.la
@@ -28,6 +29,7 @@ librpcc_dpdk_la_SOURCES = \
 	mempool.c \
 	tapi_ethdev.c \
 	tapi_rpc_rte_mbuf_ndn.c \
+	rte_flow_ndn.c \
 	eal.c
 
 

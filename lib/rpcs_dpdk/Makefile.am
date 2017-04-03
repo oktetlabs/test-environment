@@ -26,6 +26,7 @@ librpcs_dpdk_a_SOURCES = \
 	ring.c \
 	mempool.c \
 	rte_mbuf_ndn.c \
+	rte_flow_ndn.c \
 	eal.c
 
 
