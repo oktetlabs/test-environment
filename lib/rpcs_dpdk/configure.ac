@@ -30,6 +30,24 @@ AC_CONFIG_HEADERS([package.h])
 TA=unix
 AC_SUBST(TA)
 
+AC_COMPILE_IFELSE([
+AC_LANG_PROGRAM(
+[[
+#include "rte_config.h"
+#include "rte_ring.h"
+]],
+[[(void)rte_ring_enqueue_bulk(NULL, NULL, 0, NULL);]]
+)], [AC_DEFINE([HAVE_RTE_RING_ENQUEUE_BULK_ARG_FREE_SPACE], 1, [ ])], [])
+
+AC_COMPILE_IFELSE([
+AC_LANG_PROGRAM(
+[[
+#include "rte_config.h"
+#include "rte_ring.h"
+]],
+[[(void)rte_ring_dequeue_bulk(NULL, NULL, 0, NULL);]]
+)], [AC_DEFINE([HAVE_RTE_RING_DEQUEUE_BULK_ARG_AVAILABLE], 1, [ ])], [])
+
 AC_CONFIG_FILES([Makefile])
 
 TE_LIB_RESTORE
