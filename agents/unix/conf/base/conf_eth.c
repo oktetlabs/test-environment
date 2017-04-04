@@ -476,14 +476,15 @@ eth_feature_set_values(struct eth_if_context *if_context)
 /* 'commit' method implementation */
 static te_errno
 eth_feature_commit(unsigned int    gid,
-                   const cfg_oid  *oid,
-                   const char     *ifname)
+                   const cfg_oid  *oid)
 {
+    const char             *ifname;
     struct eth_if_context *if_context;
     te_errno                rc;
 
     UNUSED(gid);
-    UNUSED(oid);
+
+    ifname = CFG_OID_GET_INST_NAME(oid, 2);
 
     if_context = eth_feature_iface_context(ifname);
     if (if_context == NULL)
