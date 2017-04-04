@@ -73,6 +73,30 @@ typedef struct cfg_oid {
     (((cfg_inst_subid *)(_p->ids))[(_i)].name)
 
 /**
+ * Get sub-ID from object OID.
+ */
+static inline char *
+cfg_oid_object_subid(cfg_oid *oid, unsigned int i)
+{
+    if (oid->inst || i >= oid->len)
+        return NULL;
+
+    return ((cfg_object_subid *)(oid->ids))[i].subid;
+}
+
+/**
+ * Get sub-ID from instance OID.
+ */
+static inline char *
+cfg_oid_inst_subid(cfg_oid *oid, unsigned int i)
+{
+    if (!oid->inst || i >= oid->len)
+        return NULL;
+
+    return ((cfg_inst_subid *)(oid->ids))[i].subid;
+}
+
+/**
  * Allocate memory for object identifier or object instance identifier.
  *
  * @param length      number of identifier elements
