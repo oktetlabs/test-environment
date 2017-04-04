@@ -739,11 +739,14 @@ tapi_cfg_net_make_node_rsrc_name(enum net_node_rsrc_type rsrc_type,
 
 /* See description in tapi_cfg_net.h */
 te_errno
-tapi_cfg_net_reserve_all(void)
+tapi_cfg_net_foreach_node(tapi_cfg_net_node_cb *cb, void *cookie)
 {
     int             rc;
     cfg_nets_t      nets;
     unsigned int    i, j;
+
+    if (cb == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
 
     /* Get available networks configuration */
     rc = tapi_cfg_net_get_nets(&nets);
@@ -762,7 +765,6 @@ tapi_cfg_net_reserve_all(void)
             cfg_val_type    type;
             char           *oid_str;
             cfg_oid        *oid;
-            char           *rsrc_name;
 
             type = CVT_STRING;
             rc = cfg_get_instance(net->nodes[j].handle, &type, &oid_str);
@@ -781,38 +783,13 @@ tapi_cfg_net_reserve_all(void)
                 break;
             }
 
-            /*
-             * We should reserve resource only for OIDs that point to
-             * "agent" subtree. Apart from "agent" we may have some
-             * user-designed nodes, like "nut" subtree.
-             */
-            if (strcmp((((cfg_inst_subid *)(oid->ids))[1].subid),
-                       "agent") != 0)
-            {
-                cfg_free_oid(oid);
-                free(oid_str);
-                continue;
-            }
+            rc = cb(net, &net->nodes[j], oid_str, oid, cookie);
 
-            rsrc_name = tapi_cfg_net_make_node_rsrc_name(
-                            tapi_cfg_net_get_node_rsrc_type(&net->nodes[j]),
-                            oid);
-            if (rsrc_name != NULL)
-            {
-                rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, oid_str),
-                                          "/agent:%s/rsrc:%s",
-                                          CFG_OID_GET_INST_NAME(oid, 1),
-                                          rsrc_name);
-                if (rc != 0)
-                {
-                    ERROR("Failed to reserve resource '%s': %r", oid_str, rc);
-                    cfg_free_oid(oid);
-                    free(oid_str);
-                    break;
-                }
-            }
             cfg_free_oid(oid);
             free(oid_str);
+
+            if (rc != 0)
+                break;
         }
         if (rc != 0)
             break;
@@ -821,6 +798,50 @@ tapi_cfg_net_reserve_all(void)
     tapi_cfg_net_free_nets(&nets);
 
     return rc;
+}
+
+static tapi_cfg_net_node_cb tapi_cfg_net_node_reserve;
+static te_errno
+tapi_cfg_net_node_reserve(cfg_net_t *net, cfg_net_node_t *node,
+                          const char *oid_str, cfg_oid *oid, void *cookie)
+{
+    int     rc = 0;
+    char   *rsrc_name;
+
+    UNUSED(net);
+    UNUSED(cookie);
+
+    /*
+     * We should reserve resource only for OIDs that point to
+     * "agent" subtree. Apart from "agent" we may have some
+     * user-designed nodes, like "nut" subtree.
+     */
+    if (strcmp((((cfg_inst_subid *)(oid->ids))[1].subid), "agent") != 0)
+        return 0;
+
+    rsrc_name = tapi_cfg_net_make_node_rsrc_name(
+                    tapi_cfg_net_get_node_rsrc_type(node),
+                    oid);
+    if (rsrc_name != NULL)
+    {
+        rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, oid_str),
+                                  "/agent:%s/rsrc:%s",
+                                  CFG_OID_GET_INST_NAME(oid, 1),
+                                  rsrc_name);
+        if (rc != 0)
+            ERROR("Failed to reserve resource '%s': %r", oid_str, rc);
+
+        free(rsrc_name);
+    }
+
+    return rc;
+}
+
+/* See description in tapi_cfg_net.h */
+te_errno
+tapi_cfg_net_reserve_all(void)
+{
+    return tapi_cfg_net_foreach_node(tapi_cfg_net_node_reserve, NULL);
 }
 
 /* See description in tapi_cfg_net.h */
@@ -956,131 +977,91 @@ error:
 }
 
 
-/* See description in tapi_cfg_net.h */
-te_errno
-tapi_cfg_net_delete_all_ip4_addresses(void)
+static tapi_cfg_net_node_cb tapi_cfg_net_node_delete_all_ip4_addresses;
+static te_errno
+tapi_cfg_net_node_delete_all_ip4_addresses(cfg_net_t *net, cfg_net_node_t *node,
+                                           const char *oid_str, cfg_oid *oid,
+                                           void *cookie)
 {
     int                 rc;
-    cfg_nets_t          nets;
-    unsigned int        i, j;
+    cfg_val_type        type;
+    char                ta_type[RCF_MAX_NAME];
+    char               *def_route_if;
     struct sockaddr_in  dummy_ip4;
 
-    /* Get available networks configuration */
-    rc = tapi_cfg_net_get_nets(&nets);
-    if (rc != 0)
-    {
-        ERROR("Failed to get networks from Configurator: %r", rc);
-        return rc;
-    }
+    UNUSED(net);
+    UNUSED(node);
+    UNUSED(cookie);
 
     memset(&dummy_ip4, 0, sizeof(dummy_ip4));
     dummy_ip4.sin_family = AF_INET;
 
-    for (i = 0; i < nets.n_nets; ++i)
+    /* Do not delete addresses from Win32 hosts */
+    rc = rcf_ta_name2type(CFG_OID_GET_INST_NAME(oid, 1), ta_type);
+    if (rc != 0)
     {
-        cfg_net_t  *net = nets.nets + i;
-
-        for (j = 0; j < net->n_nodes; ++j)
-        {
-            cfg_val_type    type;
-            char           *oid_str;
-            cfg_oid        *oid;
-            char            ta_type[RCF_MAX_NAME];
-            char           *def_route_if;
-
-            type = CVT_STRING;
-            rc = cfg_get_instance(net->nodes[j].handle, &type, &oid_str);
-            if (rc != 0)
-            {
-                ERROR("Failed to get Configurator instance by handle "
-                      "0x%x: %r", net->nodes[j].handle, rc);
-                break;
-            }
-            oid = cfg_convert_oid_str(oid_str);
-            if (oid == NULL)
-            {
-                ERROR("Failed to convert OID '%s' to structure", oid_str);
-                free(oid_str);
-                rc = TE_RC(TE_TAPI, TE_EINVAL);
-                break;
-            }
-
-            /* Do not delete addresses from Win32 hosts */
-            rc = rcf_ta_name2type(CFG_OID_GET_INST_NAME(oid, 1), ta_type);
-            if (rc != 0)
-            {
-                ERROR("Failed to get type of TA '%s': %r",
-                      CFG_OID_GET_INST_NAME(oid, 1), rc);
-                cfg_free_oid(oid);
-                free(oid_str);
-                break;
-            }
-            if (strcmp(ta_type, "win32") == 0 ||
-                /* The following types have issues in /agent/route */
-                strcmp(ta_type, "freebsd6") == 0 ||
-                strcmp(ta_type, "netbsd") == 0)
-            {
-                cfg_free_oid(oid);
-                free(oid_str);
-                continue;
-            }
-
-            /*
-             * Do not delete addresses from interfaces used by default
-             * route.
-             */
-            rc = cfg_get_instance_fmt(&type, &def_route_if,
-                                      "/agent:%s/ip4_rt_default_if:",
-                                      CFG_OID_GET_INST_NAME(oid, 1));
-            if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
-            {
-                def_route_if = NULL;
-            }
-            else if (rc != 0)
-            {
-                ERROR("Failed to get /agent:%s/ip4_rt_default_if: %r",
-                      CFG_OID_GET_INST_NAME(oid, 1), rc);
-                cfg_free_oid(oid);
-                free(oid_str);
-                break;
-            }
-
-            if ((def_route_if != NULL) &&
-                strcmp(def_route_if, CFG_OID_GET_INST_NAME(oid, 2)) == 0)
-            {
-                WARN("Do not remove any IPv4 addresses from %s, since "
-                     "the interface is used by default route", oid_str);
-                free(def_route_if);
-                cfg_free_oid(oid);
-                free(oid_str);
-                continue;
-            }
-            free(def_route_if);
-
-            rc = tapi_cfg_del_if_ip4_addresses(
-                      CFG_OID_GET_INST_NAME(oid, 1),
-                      CFG_OID_GET_INST_NAME(oid, 2),
-                      SA(&dummy_ip4));
-            if (rc != 0)
-            {
-                ERROR("Failed to delete IPv4 addresses from %s: %r",
-                      oid_str, rc);
-                cfg_free_oid(oid);
-                free(oid_str);
-                break;
-            }
-            cfg_free_oid(oid);
-            free(oid_str);
-        }
-        if (rc != 0)
-            break;
+        ERROR("Failed to get type of TA '%s': %r",
+              CFG_OID_GET_INST_NAME(oid, 1), rc);
+        return rc;
+    }
+    if (strcmp(ta_type, "win32") == 0 ||
+        /* The following types have issues in /agent/route */
+        strcmp(ta_type, "freebsd6") == 0 ||
+        strcmp(ta_type, "netbsd") == 0)
+    {
+        return 0;
     }
 
-    tapi_cfg_net_free_nets(&nets);
+    /*
+     * Do not delete addresses from interfaces used by default
+     * route.
+     */
+    type = CVT_STRING;
+    rc = cfg_get_instance_fmt(&type, &def_route_if,
+                              "/agent:%s/ip4_rt_default_if:",
+                              CFG_OID_GET_INST_NAME(oid, 1));
+    if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
+    {
+        def_route_if = NULL;
+    }
+    else if (rc != 0)
+    {
+        ERROR("Failed to get /agent:%s/ip4_rt_default_if: %r",
+              CFG_OID_GET_INST_NAME(oid, 1), rc);
+        return rc;
+    }
 
-    return rc;
+    if ((def_route_if != NULL) &&
+        strcmp(def_route_if, CFG_OID_GET_INST_NAME(oid, 2)) == 0)
+    {
+        WARN("Do not remove any IPv4 addresses from %s, since "
+             "the interface is used by default route", oid_str);
+        free(def_route_if);
+        return 0;
+    }
+    free(def_route_if);
+
+    rc = tapi_cfg_del_if_ip4_addresses(
+              CFG_OID_GET_INST_NAME(oid, 1),
+              CFG_OID_GET_INST_NAME(oid, 2),
+              SA(&dummy_ip4));
+    if (rc != 0)
+    {
+        ERROR("Failed to delete IPv4 addresses from %s: %r",
+              oid_str, rc);
+        return rc;
+    }
+
+    return 0;
 }
 
+/* See description in tapi_cfg_net.h */
+te_errno
+tapi_cfg_net_delete_all_ip4_addresses(void)
+{
+    return tapi_cfg_net_foreach_node(tapi_cfg_net_node_delete_all_ip4_addresses,
+                                     NULL);
+}
 
 /* See description in tapi_cfg_net.h */
 int
@@ -1523,7 +1504,6 @@ cleanup:
 
     return rc;
 }
-
 
 /* See description in tapi_cfg_net.h */
 int

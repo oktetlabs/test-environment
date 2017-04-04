@@ -238,6 +238,34 @@ extern te_errno tapi_cfg_net_remove_empty(void);
 
 
 /**
+ * Prototype of the function to be called for each node.
+ *
+ * @param net           Network the node belongs to
+ * @param node          Node itself
+ * @param oid_str       Node OID value in string format
+ * @param oid           Parsed node OID
+ * @param cookie        Callback opaque data
+ *
+ * @return Status code.
+ *
+ * @note Iterator terminates if callback returns non zero.
+ */
+typedef te_errno tapi_cfg_net_node_cb(cfg_net_t *net, cfg_net_node_t *node,
+                                      const char *str, cfg_oid *oid,
+                                      void *cookie);
+
+/**
+ * Execute callback for each node.
+ *
+ * @param cb            Callback function
+ * @param cookie        Callback opaque data
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_net_foreach_node(tapi_cfg_net_node_cb *cb,
+                                          void *cookie);
+
+/**
  * Reserve resources for all interfaces mentioned in networks
  * configuration.
  *
