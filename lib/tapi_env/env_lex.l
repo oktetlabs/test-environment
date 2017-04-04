@@ -22,6 +22,7 @@ extern int myindex;
 
 %}
 
+%option noinput
 %option nounput
 %option noyywrap
 
