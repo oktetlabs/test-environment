@@ -252,7 +252,8 @@ TARPC_FUNC(rte_eth_dev_info_get, {},
     MAKE_CALL(func(in->port_id, &dev_info));
 
     /* pci_dev is not mapped/returned */
-    out->dev_info.driver_name = strdup(dev_info.driver_name);
+    out->dev_info.driver_name =
+        (dev_info.driver_name == NULL) ? NULL : strdup(dev_info.driver_name);
     out->dev_info.if_index = dev_info.if_index;
     out->dev_info.min_rx_bufsize = dev_info.min_rx_bufsize;
     out->dev_info.max_rx_pktlen = dev_info.max_rx_pktlen;
