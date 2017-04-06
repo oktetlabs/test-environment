@@ -85,6 +85,11 @@
 #include <linux/if_ether.h>
 #endif
 
+#if defined(USE_PF_PACKET) && defined(WITH_PACKET_MMAP_RX_RING)
+#include <poll.h>
+#include <sys/mman.h>
+#endif /* USE_PF_PACKET && WITH_PACKET_MMAP_RX_RING */
+
 #include "te_errno.h"
 #include "te_alloc.h"
 #include "logger_api.h"
@@ -117,6 +122,11 @@ typedef struct tad_eth_sap_data {
     int             in;         /**< Input socket (for receive) */
     int             out;        /**< Output socket (for send) */
     unsigned int    ifindex;    /**< Interface index */
+#ifdef WITH_PACKET_MMAP_RX_RING
+    struct tpacket_req  rx_ring_conf;       /**< Rx ring configuration */
+    char               *rx_ring;            /**< Rx ring base address */
+    unsigned int        rx_ring_frame_cur;  /**< Next frame to check */
+#endif /* WITH_PACKET_MMAP_RX_RING */
 #else
     pcap_t         *in;         /**< Input handle (for receive) */
     pcap_t         *out;        /**< Output handle (for send) */
@@ -757,6 +767,207 @@ tad_eth_sap_pkt_vlan_tag_valid(uint16_t    tp_vlan_tci,
 }
 #endif /* USE_PF_PACKET */
 
+#ifdef WITH_PACKET_MMAP_RX_RING
+#define ETH_SAP_PKT_RX_RING_NB_FRAMES_MIN   256
+#define ETH_SAP_PKT_RX_RING_NB_FRAMES_MAX   1024
+#define ETH_SAP_PKT_RX_RING_FRAME_LEN \
+    te_round_up_pow2(TPACKET2_HDRLEN + ETHER_HDR_LEN + TAD_VLAN_TAG_LEN + \
+                     UINT16_MAX + ETHER_CRC_LEN)
+
+static te_errno
+tad_eth_sap_pkt_rx_ring_setup(tad_eth_sap *sap)
+{
+    tad_eth_sap_data   *data;
+    csap_p              csap;
+    tad_recv_context   *rx_ctx;
+    unsigned int        nb_frames;
+    int                 version;
+    struct tpacket_req *tp;
+    te_errno            rc;
+
+    if (sap == NULL)
+        return TE_RC(TE_TAD_PF_PACKET, TE_EINVAL);
+
+    data = sap->data;
+    if (data == NULL)
+        return TE_RC(TE_TAD_PF_PACKET, TE_EINVAL);
+
+    tp = &data->rx_ring_conf;
+
+    csap = sap->csap;
+    if (csap == NULL)
+        return TE_RC(TE_TAD_PF_PACKET, TE_EINVAL);
+
+    rx_ctx = csap_get_recv_context(csap);
+    if (rx_ctx == NULL)
+        return TE_RC(TE_TAD_PF_PACKET, TE_EINVAL);
+
+    version = TPACKET_V2;
+    if (setsockopt(data->in, SOL_PACKET, PACKET_VERSION, &version,
+                   sizeof(version)) != 0)
+    {
+        rc = TE_OS_RC(TE_TAD_PF_PACKET, errno);
+        ERROR("%s(): setsockopt(PACKET_VERSION) failed: %r", rc);
+        return rc;
+    }
+
+    nb_frames = te_round_up_pow2(rx_ctx->ptrn_data.n_units);
+    nb_frames = MAX(nb_frames, ETH_SAP_PKT_RX_RING_NB_FRAMES_MIN);
+    nb_frames = MIN(nb_frames, ETH_SAP_PKT_RX_RING_NB_FRAMES_MAX);
+
+    tp->tp_frame_nr = nb_frames;
+    tp->tp_frame_size = ETH_SAP_PKT_RX_RING_FRAME_LEN;
+    tp->tp_block_size = tp->tp_frame_nr * tp->tp_frame_size;
+    tp->tp_block_nr = 1;
+
+    if (setsockopt(data->in, SOL_PACKET, PACKET_RX_RING,
+                   (void *)tp, sizeof(*tp)) != 0)
+    {
+        rc = TE_OS_RC(TE_TAD_PF_PACKET, errno);
+        ERROR("%s(): setsockopt(PACKET_RX_RING) failed: %r", rc);
+        return rc;
+    }
+
+    data->rx_ring = mmap(NULL, tp->tp_block_size * tp->tp_block_nr,
+                         PROT_READ | PROT_WRITE, MAP_SHARED | MAP_LOCKED,
+                         data->in, 0);
+    if (data->rx_ring == NULL)
+    {
+        rc = TE_OS_RC(TE_TAD_PF_PACKET, errno);
+        ERROR("%s(): mmap() failed: %r", rc);
+        return rc;
+    }
+
+    data->rx_ring_frame_cur = 0;
+
+    return 0;
+}
+
+static void
+tad_eth_sap_pkt_rx_ring_release(tad_eth_sap *sap)
+{
+    tad_eth_sap_data   *data;
+    struct tpacket_req *tp;
+
+    if (sap == NULL)
+        return;
+
+    data = sap->data;
+    if (data == NULL)
+        return;
+
+    tp = &data->rx_ring_conf;
+
+    if (munmap(data->rx_ring, tp->tp_block_size * tp->tp_block_nr) != 0)
+        ERROR("%s(): munmap() failed: %r", TE_OS_RC(TE_TAD_PF_PACKET, errno));
+}
+
+static te_errno
+tad_eth_sap_pkt_rx_ring_recv(tad_eth_sap        *sap,
+                             unsigned int        timeout,
+                             tad_pkt            *pkt,
+                             size_t             *pkt_len,
+                             struct sockaddr_ll *from)
+{
+    tad_eth_sap_data       *data;
+    struct tpacket_req     *tp;
+    struct tpacket2_hdr    *ph;
+    te_bool                 vlan_tag_valid;
+    size_t                  seg_len;
+    uint8_t                *seg_data = NULL;
+    size_t                  data_off;
+    tad_pkt_seg            *seg;
+
+    if ((sap == NULL) || (pkt == NULL) || (pkt_len == NULL) || (from == NULL))
+        return TE_RC(TE_TAD_CSAP, TE_EINVAL);
+
+    data = sap->data;
+    if ((data == NULL) || (data->rx_ring == NULL))
+        return TE_RC(TE_TAD_CSAP, TE_EINVAL);
+
+    tp = &data->rx_ring_conf;
+    if (tp->tp_frame_nr == 0)
+        return TE_RC(TE_TAD_CSAP, TE_EINVAL);
+
+    ph = (struct tpacket2_hdr *)((uint8_t *)data->rx_ring +
+                                 (data->rx_ring_frame_cur *
+                                  tp->tp_frame_size));
+
+    if ((ph->tp_status & TP_STATUS_USER) == 0)
+    {
+        struct pollfd   pollset;
+        int             ret_val;
+
+        pollset.fd = data->in;
+        pollset.events = POLLIN;
+        pollset.revents = 0;
+
+        ret_val = poll(&pollset, 1, TE_US2MS(timeout));
+        if (ret_val == 0)
+            return TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
+
+        if (ret_val < 0)
+            return TE_OS_RC(TE_TAD_CSAP, errno);
+    }
+
+    vlan_tag_valid = tad_eth_sap_pkt_vlan_tag_valid(ph->tp_vlan_tci,
+                                                    ph->tp_status);
+
+    seg_len = (vlan_tag_valid) ? ph->tp_len + TAD_VLAN_TAG_LEN : ph->tp_len;
+    seg_data = TE_ALLOC(seg_len);
+    if (seg_data == NULL)
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+
+    memcpy(seg_data, (uint8_t *)ph + ph->tp_mac, 2 * ETHER_ADDR_LEN);
+    data_off = 2 * ETHER_ADDR_LEN;
+
+    if (vlan_tag_valid)
+    {
+        struct tad_vlan_tag *tag;
+
+        tag = (struct tad_vlan_tag *)(seg_data + (2 * ETHER_ADDR_LEN));
+
+#ifdef TP_STATUS_VLAN_TPID_VALID
+        tag->vlan_tpid = htons((ph->tp_status & TP_STATUS_VLAN_TPID_VALID) ?
+                               ph->tp_vlan_tpid : ETH_P_8021Q);
+#else
+        tag->vlan_tpid = htons(ETH_P_8021Q);
+#endif
+        tag->vlan_tci = htons(ph->tp_vlan_tci);
+
+        data_off += TAD_VLAN_TAG_LEN;
+    }
+
+    memcpy(seg_data + data_off, (uint8_t *)ph + ph->tp_mac + (2 * ETHER_ADDR_LEN),
+           ph->tp_len - (2 * ETHER_ADDR_LEN));
+
+    /*
+     * It is not guaranteed that the TAD packet consists of exactly one
+     * segment, so it is reasonable to re-allocate the entire packet
+     */
+    tad_pkt_free_segs(pkt);
+    seg = tad_pkt_alloc_seg(seg_data, seg_len, (tad_pkt_seg_free)free);
+    if (seg == NULL)
+    {
+        free(seg_data);
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    }
+    tad_pkt_append_seg(pkt, seg);
+    *pkt_len = seg_len;
+
+    memcpy(from, (uint8_t *)ph + TPACKET_ALIGN(sizeof(*ph)), sizeof(*from));
+
+    /* Return the entry to the kernel */
+    ph->tp_status = 0;
+    __sync_synchronize();
+
+    /* Update the ring offset to point to the next entry */
+    data->rx_ring_frame_cur = (data->rx_ring_frame_cur + 1) % tp->tp_frame_nr;
+
+    return 0;
+}
+#endif /* WITH_PACKET_MMAP_RX_RING */
+
 /* See the description in tad_eth_sap.h */
 te_errno
 tad_eth_sap_recv_open(tad_eth_sap *sap, unsigned int mode)
@@ -796,6 +1007,14 @@ tad_eth_sap_recv_open(tad_eth_sap *sap, unsigned int mode)
         return rc;
     }
 
+#ifdef WITH_PACKET_MMAP_RX_RING
+    UNUSED(use_packet_auxdata);
+    UNUSED(buf_size);
+
+    rc = tad_eth_sap_pkt_rx_ring_setup(sap);
+    if (rc != 0)
+        goto error_exit;
+#else /* !WITH_PACKET_MMAP_RX_RING */
     use_packet_auxdata = 1;
     if (setsockopt(data->in, SOL_PACKET, PACKET_AUXDATA, &use_packet_auxdata,
                    sizeof(use_packet_auxdata)) != 0)
@@ -817,6 +1036,7 @@ tad_eth_sap_recv_open(tad_eth_sap *sap, unsigned int mode)
         ERROR("%s(): setsockopt(SO_RCVBUF) failed: %r", rc);
         goto error_exit;
     }
+#endif /* WITH_PACKET_MMAP_RX_RING */
 
     if ((mode & TAD_ETH_RECV_OTHER) && !(mode & TAD_ETH_RECV_NO_PROMISC))
     {
@@ -887,7 +1107,7 @@ error_exit:
 #endif
 }
 
-#ifdef USE_PF_PACKET
+#if defined(USE_PF_PACKET) && !defined(WITH_PACKET_MMAP_RX_RING)
 static int
 tad_eth_sap_parse_ancillary_data(int msg_flags, tad_pkt *pkt, size_t *pkt_len,
                                  void *cmsg_buf, size_t cmsg_buf_len)
@@ -967,7 +1187,7 @@ tad_eth_sap_parse_ancillary_data(int msg_flags, tad_pkt *pkt, size_t *pkt_len,
 
     return 0;
 }
-#endif
+#endif /* USE_PF_PACKET && !WITH_PACKET_MMAP_RX_RING */
 
 /* See the description in tad_eth_sap.h */
 te_errno
@@ -999,6 +1219,20 @@ tad_eth_sap_recv(tad_eth_sap *sap, unsigned int timeout,
     assert(data != NULL);
 
 #ifdef USE_PF_PACKET
+#ifdef WITH_PACKET_MMAP_RX_RING
+    UNUSED(data);
+    UNUSED(fromlen);
+    UNUSED(msg_flags);
+    UNUSED(cmsg_buf);
+    UNUSED(cmsg_buf_len);
+
+    memset(&from, 0, sizeof(from));
+
+    rc = tad_eth_sap_pkt_rx_ring_recv(sap, timeout, pkt, pkt_len, &from);
+    if (rc != 0)
+        return rc;
+
+#else /* !WITH_PACKET_MMAP_RX_RING */
     rc = tad_common_read_cb_sock(sap->csap, data->in, MSG_TRUNC, timeout,
                                  pkt, SA(&from), &fromlen, pkt_len,
                                  &msg_flags, &cmsg_buf, &cmsg_buf_len);
@@ -1009,6 +1243,7 @@ tad_eth_sap_recv(tad_eth_sap *sap, unsigned int timeout,
                                           &cmsg_buf, cmsg_buf_len);
     if (rc != 0)
         return rc;
+#endif /* WITH_PACKET_MMAP_RX_RING */
 
     switch (from.sll_pkttype)
     {
@@ -1113,6 +1348,9 @@ tad_eth_sap_recv_close(tad_eth_sap *sap)
     data = sap->data;
     assert(data != NULL);
 #ifdef USE_PF_PACKET
+#ifdef WITH_PACKET_MMAP_RX_RING
+    tad_eth_sap_pkt_rx_ring_release(sap);
+#endif /* WITH_PACKET_MMAP_RX_RING */
     return close_socket(&data->in);
 #else
     pcap_close(data->in);

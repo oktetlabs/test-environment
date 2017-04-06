@@ -411,6 +411,17 @@ AC_ARG_WITH([forw],,
  fi
 ], [w_forw=false])
 
+AC_ARG_WITH([packet_mmap_rx_ring],,
+[if test "${withval}" = yes; then
+   AC_CHECK_HEADERS([poll.h], [],
+                    AC_MSG_ERROR([Cannot find poll.h header]))
+   AC_CHECK_HEADERS([sys/mman.h], [],
+                    AC_MSG_ERROR([Cannot find sys/mman.h header]))
+   with_packet_mmap_rx_ring=yes
+   TAD_CH_DEFS="$TAD_CH_DEFS -DWITH_PACKET_MMAP_RX_RING"
+ fi],
+[with_packet_mmap_rx_ring=no])
+
 TA_TAD_LIBS=`${TE_BASE}/engine/builder/static_libs_check.pl \
              "${TA_TAD_LIBS}"`
 
@@ -421,6 +432,7 @@ AC_SUBST([TA_TAD_LIBS])
 
 AM_CONDITIONAL(TAD_DUMMY, test -z "$TAD_LIBLIST")
 AM_CONDITIONAL(WITH_RTE_MBUF, test "$with_rte_mbuf" = "yes")
+AM_CONDITIONAL(WITH_PACKET_MMAP_RX_RING, test "$with_packet_mmap_rx_ring" = "yes")
 
 if test x$w_snmp = xtrue; then 
     AC_MSG_CHECKING(for net-snmp library)
