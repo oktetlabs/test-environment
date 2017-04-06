@@ -36,7 +36,7 @@
 #include "tapi_iperf3.h"
 #include "tapi_rpc_stdio.h"
 #include "tapi_rpc_signal.h"
-#include "tapi_rpc_unistd.h"
+#include "tapi_rpc_misc.h"
 #include "tapi_rpcsock_macros.h"
 #include "tapi_test.h"
 #include "tapi_mem.h"
@@ -44,6 +44,8 @@
 
 /* Error message about wrong JSON format. */
 #define ERROR_INVALID_JSON_FORMAT   "invalid json format"
+/* Time to wait till data is ready to read from stdout */
+#define IPERF3_TIMEOUT_MS           (500)
 
 /* Prototype of function to set option in iperf3 tool format */
 typedef void (*set_opt_t)(te_string *, const tapi_iperf3_options *);
@@ -486,11 +488,10 @@ app_get_report(tapi_perf_app *app, tapi_perf_report *report)
     json_t *jrpt;
     te_errno rc;
 
-    /* Read tool output */
-    te_string_reset(&app->report);
     te_string_reset(&app->err);
-    CHECK_RC(tapi_rpc_append_fd_to_te_string(app->rpcs, app->stdout,
-                                             &app->report));
+    /* Read tool output */
+    rpc_read_fd2te_string(app->rpcs, app->stdout, IPERF3_TIMEOUT_MS, 0,
+                          &app->report);
     INFO("iperf3 stdout:\n%s", app->report.ptr);
 
     /* Check for available data */
