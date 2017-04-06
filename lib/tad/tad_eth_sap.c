@@ -741,6 +741,22 @@ tad_eth_sap_send_close(tad_eth_sap *sap)
 #endif
 }
 
+#ifdef USE_PF_PACKET
+static inline te_bool
+tad_eth_sap_pkt_vlan_tag_valid(uint16_t    tp_vlan_tci,
+                               uint32_t    tp_status)
+{
+#ifdef TP_STATUS_VLAN_VALID
+    return ((tp_vlan_tci != 0) || ((tp_status & TP_STATUS_VLAN_VALID) != 0));
+#else /* !TP_STATUS_VLAN_VALID */
+    UNUSED(tp_status);
+
+    /* This is not 100% correct check, but it's the only solution */
+    return (tp_vlan_tci != 0);
+#endif /* TP_STATUS_VLAN_VALID */
+}
+#endif /* USE_PF_PACKET */
+
 /* See the description in tad_eth_sap.h */
 te_errno
 tad_eth_sap_recv_open(tad_eth_sap *sap, unsigned int mode)
@@ -906,19 +922,7 @@ tad_eth_sap_parse_ancillary_data(int msg_flags, tad_pkt *pkt, size_t *pkt_len,
 
         aux = (struct tpacket_auxdata *)CMSG_DATA(cmsg);
 
-#ifdef TP_STATUS_VLAN_VALID
-        /*
-         * When binaries compiled with newer headers are run on older kernels
-         * one needs to check (aux->tp_vlan_tci == 0) and then check out the
-         * status field for TP_STATUS_VLAN_VALID in order to prevent skipping
-         * control information in certain cases
-         */
-        if ((aux->tp_vlan_tci == 0) &&
-            ((aux->tp_status & TP_STATUS_VLAN_VALID) == 0))
-#else
-        /* This is not 100% correct check, but it's the only solution */
-        if (aux->tp_vlan_tci == 0)
-#endif
+        if (!tad_eth_sap_pkt_vlan_tag_valid(aux->tp_vlan_tci, aux->tp_status))
             continue;
 
         cur_seg = CIRCLEQ_FIRST(&pkt->segs);
