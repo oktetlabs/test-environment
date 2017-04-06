@@ -207,7 +207,7 @@ build_server_cmd(te_string *cmd, const tapi_iperf3_options *options)
     size_t i;
 
     ENTRY("Build command to run iperf3 server");
-    CHECK_RC(te_string_append(cmd, "iperf3 -s -i0"));
+    CHECK_RC(te_string_append(cmd, "iperf3 -s -J -i0"));
     for (i = 0; i < TE_ARRAY_LEN(set_opt); i++)
         set_opt[i](cmd, options);
 }
@@ -471,6 +471,55 @@ app_fini(tapi_perf_app *app)
     app->opts = NULL;
 }
 
+/**
+ * Get iperf3 report. The function reads an application output.
+ *
+ * @param[in]  app          iperf3 tool context.
+ * @param[out] report       Report with results.
+ *
+ * @return Status code.
+ */
+static te_errno
+app_get_report(tapi_perf_app *app, tapi_perf_report *report)
+{
+    json_error_t error;
+    json_t *jrpt;
+    te_errno rc;
+
+    /* Read tool output */
+    te_string_reset(&app->report);
+    te_string_reset(&app->err);
+    CHECK_RC(tapi_rpc_append_fd_to_te_string(app->rpcs, app->stdout,
+                                             &app->report));
+    INFO("iperf3 stdout:\n%s", app->report.ptr);
+
+    /* Check for available data */
+    if (app->report.ptr == NULL || app->report.len == 0)
+    {
+        ERROR("There are no data in the report");
+        return TE_RC(TE_TAPI, TE_ENODATA);
+    }
+
+    /* Parse raw report */
+    jrpt = json_loads(app->report.ptr, 0, &error);
+    if (jrpt == NULL)
+    {
+        ERROR("json_loads fails with massage: \"%s\", position: %u",
+              error.text, error.position);
+        te_string_append(&app->err, ERROR_INVALID_JSON_FORMAT);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+    rc = get_report(jrpt, report);
+    if (rc != 0)
+    {
+        if (get_report_error(jrpt, &app->err) != 0)
+            te_string_append(&app->err, ERROR_INVALID_JSON_FORMAT);
+    }
+
+    json_decref(jrpt);
+    return rc;
+}
+
 
 /**
  * Start iperf3 server.
@@ -524,13 +573,9 @@ server_stop(tapi_perf_server *server)
 static te_errno
 server_get_report(tapi_perf_server *server, tapi_perf_report *report)
 {
-    UNUSED(server);
-    UNUSED(report);
-
     ENTRY("Get iperf3 server report");
 
-    ERROR("Not implemented yet");
-    return TE_RC(TE_TAPI, TE_ENOSYS);
+    return app_get_report(&server->app, report);
 }
 
 
@@ -630,44 +675,9 @@ client_wait(tapi_perf_client *client, uint16_t timeout)
 static te_errno
 client_get_report(tapi_perf_client *client, tapi_perf_report *report)
 {
-    json_error_t error;
-    json_t *jrpt;
-    te_errno rc;
-
     ENTRY("Get iperf3 client report");
 
-    /* Read tool output */
-    te_string_reset(&client->app.report);
-    te_string_reset(&client->app.err);
-    CHECK_RC(tapi_rpc_append_fd_to_te_string(client->app.rpcs,
-                    client->app.stdout, &client->app.report));
-    INFO("iperf3 client stdout:\n%s", client->app.report.ptr);
-
-    /* Check for available data */
-    if (client->app.report.ptr == NULL || client->app.report.len == 0)
-    {
-        ERROR("There are no data in the report");
-        return TE_RC(TE_TAPI, TE_ENODATA);
-    }
-
-    /* Parse raw report */
-    jrpt = json_loads(client->app.report.ptr, 0, &error);
-    if (jrpt == NULL)
-    {
-        ERROR("json_loads fails with massage: \"%s\", position: %u",
-              error.text, error.position);
-        te_string_append(&client->app.err, ERROR_INVALID_JSON_FORMAT);
-        return TE_RC(TE_TAPI, TE_EINVAL);
-    }
-    rc = get_report(jrpt, report);
-    if (rc != 0)
-    {
-        if (get_report_error(jrpt, &client->app.err) != 0)
-            te_string_append(&client->app.err, ERROR_INVALID_JSON_FORMAT);
-    }
-
-    json_decref(jrpt);
-    return rc;
+    return app_get_report(&client->app, report);
 }
 
 /**
