@@ -304,35 +304,49 @@ eth_feature_iface_context(const char *ifname)
 static te_errno
 eth_feature_list(unsigned int    gid,
                  const char     *oid_str,
-                 char          **list_out,
-                 const char     *ifname)
+                 char          **list_out)
 {
     te_errno                    rc;
+    cfg_oid                    *oid = NULL;
+    const char                 *ifname;
     struct eth_if_context     *if_context;
     te_string                   list_container = TE_STRING_INIT;
     unsigned int                i;
 
     UNUSED(gid);
-    UNUSED(oid_str);
+
+    oid = cfg_convert_oid_str(oid_str);
+    if (oid == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    ifname = CFG_OID_GET_INST_NAME(oid, 2);
 
     if_context = eth_feature_iface_context(ifname);
     if (if_context == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    {
+        rc = TE_ENOMEM;
+        goto fail;
+    }
 
     for (i = 0; i < if_context->nb_features; ++i)
     {
         rc = te_string_append(&list_container, "%s ",
                               if_context->features[i].name);
         if (rc != 0)
-        {
-            te_string_free(&list_container);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
+            goto fail;
     }
 
     *list_out = list_container.ptr;
 
+    free(oid);
+
     return 0;
+
+fail:
+    free(oid);
+    te_string_free(&list_container);
+
+    return TE_RC(TE_TA_UNIX, rc);
 }
 
 /* Determine the feature index by its name */
