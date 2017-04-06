@@ -2361,3 +2361,117 @@ rpc_drain_fd_simple(rcf_rpc_server *rpcs, int fd, uint64_t *read)
 
     return rc;
 }
+
+/* See the description in tapi_rpc_misc.h */
+int
+rpc_read_fd2te_dbuf_append(rcf_rpc_server *rpcs, int fd, int time2wait,
+                           size_t amount, te_dbuf *dbuf)
+{
+    tarpc_read_fd_in  in;
+    tarpc_read_fd_out out;
+    te_errno rc;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.fd = fd;
+    in.size = TAPI_READ_BUF_SIZE;
+    in.time2wait = time2wait;
+    in.amount = amount;
+
+    rcf_rpc_call(rpcs, "read_fd", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(read_fd, out.retval);
+
+    TAPI_RPC_LOG(rpcs, read_fd, "fd = %d, time2wait = %d, "
+                 "amount = %"TE_PRINTF_SIZE_T"u, buf = %p, "
+                 "read = %"TE_PRINTF_SIZE_T"u", "%d",
+                 fd, time2wait, amount, out.buf.buf_val, out.buf.buf_len,
+                 out.retval);
+
+    if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT)
+    {
+        if (out.buf.buf_val != NULL && out.buf.buf_len != 0)
+        {
+            rc = te_dbuf_append(dbuf, out.buf.buf_val, out.buf.buf_len);
+            if (rc != 0)
+            {
+                ERROR("Failed to save read data");
+                RETVAL_INT(read_fd, -1);
+            }
+        }
+    }
+
+    RETVAL_ZERO_INT(read_fd, out.retval);
+}
+
+/* See the description in tapi_rpc_misc.h */
+int
+rpc_read_fd2te_dbuf(rcf_rpc_server *rpcs, int fd, int time2wait,
+                    size_t amount, te_dbuf *dbuf)
+{
+    if (dbuf == NULL)
+        TEST_FAIL("Invalid argument");
+
+    te_dbuf_reset(dbuf);
+    return rpc_read_fd2te_dbuf_append(rpcs, fd, time2wait, amount, dbuf);
+}
+
+/* See the description in tapi_rpc_misc.h */
+int
+rpc_read_fd(rcf_rpc_server *rpcs, int fd, int time2wait,
+            size_t amount, void **buf, size_t *read)
+{
+    te_dbuf dbuf = TE_DBUF_INIT(0);
+    int rc;
+
+    if (buf == NULL || read == NULL)
+        TEST_FAIL("Invalid arguments");
+
+    rc = rpc_read_fd2te_dbuf_append(rpcs, fd, time2wait, amount, &dbuf);
+    *buf = dbuf.ptr;
+    *read = dbuf.len;
+
+    return rc;
+}
+
+/* See the description in tapi_rpc_misc.h */
+int
+rpc_read_fd2te_string_append(rcf_rpc_server *rpcs, int fd, int time2wait,
+                             size_t amount, te_string *testr)
+{
+    te_dbuf dbuf = TE_DBUF_INIT(0);
+    int rc;
+
+    dbuf.ptr = (uint8_t *)testr->ptr;
+    dbuf.size = testr->size;
+    dbuf.len = testr->len;
+
+    rc = rpc_read_fd2te_dbuf_append(rpcs, fd, time2wait, amount, &dbuf);
+    if (rc == 0)
+    {
+        if (te_dbuf_append(&dbuf, "", 1) != 0)  /* Add null-terminator */
+            rc = -1;
+    }
+
+    testr->ptr = (char *)dbuf.ptr;
+    testr->size = dbuf.size;
+    if (dbuf.len > 0 && rc == 0)
+        testr->len = dbuf.len - 1;  /* Ignore null terminator */
+    else
+        testr->len = dbuf.len;
+
+    return rc;
+}
+
+/* See the description in tapi_rpc_misc.h */
+int
+rpc_read_fd2te_string(rcf_rpc_server *rpcs, int fd, int time2wait,
+                      size_t amount, te_string *testr)
+{
+    if (testr == NULL)
+        TEST_FAIL("Invalid argument");
+
+    te_string_reset(testr);
+    return rpc_read_fd2te_string_append(rpcs, fd, time2wait, amount, testr);
+}

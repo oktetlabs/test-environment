@@ -59,6 +59,7 @@
 #include "te_rpc_sys_resource.h"
 #include "te_rpc_sys_systeminfo.h"
 #include "tapi_rpc_signal.h"
+#include "te_dbuf.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -594,6 +595,99 @@ extern int rpc_drain_fd_simple(rcf_rpc_server *rpcs, int fd,
  */
 extern int rpc_overfill_fd(rcf_rpc_server *rpcs, int write_end,
                            uint64_t *sent);
+
+/**
+ * Read all data on an fd and append it to @p dbuf.
+ *
+ * @param rpcs      RPC server handle.
+ * @param fd        File descriptor or socket.
+ * @param time2wait Time to wait for data, milliseconds. Negative value means
+                    an infinite timeout.
+ * @param amount    Number of bytes to read, if @c 0 then only @p time2wait
+ *                  limits it.
+ * @param dbuf      Buffer to append read data to.
+ *
+ * @return @c -1 in the case of failure or @c 0 on success (timeout is expired,
+ * @p amount bytes is read, EOF is got).
+ */
+extern int rpc_read_fd2te_dbuf_append(rcf_rpc_server *rpcs, int fd,
+                                int time2wait, size_t amount, te_dbuf *dbuf);
+
+/**
+ * Read all data from fd to @p dbuf.
+ *
+ * @note The function resets @p dbuf.
+ *
+ * @param use_libc  Use libc flag.
+ * @param fd        File descriptor or socket.
+ * @param time2wait Time to wait for data, milliseconds. Negative value means
+                    an infinite timeout.
+ * @param amount    Number of bytes to read, if @c 0 then only @p time2wait
+ *                  limits it.
+ * @param dbuf      Buffer to put read data to.
+ *
+ * @return @c -1 in the case of failure or @c 0 on success (timeout is expired,
+ * @p amount bytes is read, EOF is got).
+ */
+extern int rpc_read_fd2te_dbuf(rcf_rpc_server *rpcs, int fd, int time2wait,
+                               size_t amount, te_dbuf *dbuf);
+
+/**
+ * Read all data on an fd.
+ *
+ * @note @p buf should be freed with free(3) when it is no longer needed,
+ * independently on result.
+ *
+ * @param use_libc  Use libc flag.
+ * @param fd        File descriptor or socket.
+ * @param time2wait Time to wait for data, milliseconds. Negative value means
+                    an infinite timeout.
+ * @param amount    Number of bytes to read, if @c 0 then only @p time2wait
+ *                  limits it.
+ * @param buf       Pointer to buffer (it is allocated by the function).
+ * @param read      Number of read bytes.
+ *
+ * @return @c -1 in the case of failure or @c 0 on success (timeout is expired,
+ * @p amount bytes is read, EOF is got).
+ */
+extern int rpc_read_fd(rcf_rpc_server *rpcs, int fd, int time2wait,
+                       size_t amount, void **buf, size_t *read);
+
+/**
+ * Read all string data on an fd and append it to @p testr.
+ *
+ * @param rpcs      RPC server handle.
+ * @param fd        File descriptor or socket.
+ * @param time2wait Time to wait for data, milliseconds. Negative value means
+                    an infinite timeout.
+ * @param amount    Number of bytes to read, if @c 0 then only @p time2wait
+ *                  limits it.
+ * @param testr     Buffer to append read data to.
+ *
+ * @return @c -1 in the case of failure or @c 0 on success (timeout is expired,
+ * @p amount bytes is read, EOF is got).
+ */
+extern int rpc_read_fd2te_string_append(rcf_rpc_server *rpcs, int fd,
+                            int time2wait, size_t amount, te_string *testr);
+
+/**
+ * Read all string data from fd to @p testr.
+ *
+ * @note The function resets @p testr.
+ *
+ * @param use_libc  Use libc flag.
+ * @param fd        File descriptor or socket.
+ * @param time2wait Time to wait for data, milliseconds. Negative value means
+                    an infinite timeout.
+ * @param amount    Number of bytes to read, if @c 0 then only @p time2wait
+ *                  limits it.
+ * @param testr     Buffer to put read data to.
+ *
+ * @return @c -1 in the case of failure or @c 0 on success (timeout is expired,
+ * @p amount bytes is read, EOF is got).
+ */
+extern int rpc_read_fd2te_string(rcf_rpc_server *rpcs, int fd, int time2wait,
+                                 size_t amount, te_string *testr);
 
 /**
  * VM trasher to keep memory pressure on the

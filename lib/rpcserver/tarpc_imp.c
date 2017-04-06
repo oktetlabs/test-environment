@@ -80,6 +80,7 @@
 #include "te_defs.h"
 #include "te_queue.h"
 #include "te_tools.h"
+#include "te_dbuf.h"
 
 #include "agentlib.h"
 #include "iomux.h"
@@ -10549,6 +10550,123 @@ copy_fd2fd(tarpc_copy_fd2fd_in *in)
 TARPC_FUNC_STATIC(copy_fd2fd, {},
 {
    MAKE_CALL(out->retval = func_ptr(in));
+})
+
+/**
+ * Read all data on an fd.
+ *
+ * @param use_libc  Use libc flag.
+ * @param fd        File descriptor or socket.
+ * @param size      Intermediate read buffer size, bytes.
+ * @param time2wait Time to wait for data, milliseconds. Negative value means
+                    an infinite timeout.
+ * @param amount    Number of bytes to read, if @c 0 then only @p time2wait
+ *                  limits it.
+ * @param buf       Location of the buffer to read the data in; may be @c NULL
+ *                  to drop the read data.
+ * @param read      Location for the amount of data read.
+ *
+ * @return @c -1 in the case of failure or @c 0 on success (timeout is expired,
+ * @p amount bytes is read, EOF is got).
+ */
+static int
+read_fd(te_bool use_libc, int fd, size_t size, int time2wait, size_t amount,
+        void **buf, size_t *read)
+{
+    api_func      read_func;
+    iomux_funcs   iomux_f;
+    iomux_state   iomux_st;
+    iomux_return  iomux_ret;
+    iomux_func    iomux = get_default_iomux();
+    te_dbuf       dbuf = TE_DBUF_INIT(0);
+    uint64_t      size_to_read;
+    int num = 0;
+    int rc;
+
+    if (tarpc_find_func(use_libc, "read", &read_func) != 0)
+    {
+        ERROR("Failed to resolve read function address");
+        return -1;
+    }
+
+    if (iomux_find_func(use_libc, &iomux, &iomux_f) != 0)
+    {
+        ERROR("Failed to resolve iomux function address");
+        return -1;
+    }
+
+    rc = iomux_create_state(iomux, &iomux_f, &iomux_st);
+    if (rc != 0)
+        return -1;
+    rc = iomux_add_fd(iomux, &iomux_f, &iomux_st, fd, POLLIN);
+    if (rc != 0)
+    {
+        iomux_close(iomux, &iomux_f, &iomux_st);
+        return -1;
+    }
+
+    *read = 0;
+
+    do {
+        num = iomux_wait(iomux, &iomux_f, &iomux_st, &iomux_ret, time2wait);
+        if (num <= 0)
+        {
+            rc = num < 0 ? -1 : 0;
+            break;
+        }
+
+        /*
+         * Prepare the buffer to save the message. If buf == NULL, dbuf.len will
+         * not be changed, so here intermediate buffer memory will be allocated
+         * only once, i.e. size_to_read == 0 only at the first loop iteration
+         */
+        if (dbuf.size == dbuf.len)
+        {
+            size_to_read = amount > 0 && amount < size ? amount : size;
+            rc = te_dbuf_expand(&dbuf, size_to_read);
+            if (rc != 0)
+            {
+                rc = -1;
+                break;
+            }
+        }
+        else
+        {
+            size_to_read = dbuf.size - dbuf.len;
+            if (amount > 0 && amount < size_to_read)
+                size_to_read = amount;
+        }
+        /* Read data */
+        rc = read_func(fd, &dbuf.ptr[dbuf.len], size_to_read);
+        if (rc > 0)
+        {
+            (*read) += rc;
+            if (buf != NULL)
+                dbuf.len += rc;
+            if (amount > 0)
+            {
+                amount -= rc;
+                if (amount == 0)
+                    rc = 0;     /* Finish reading */
+            }
+        }
+    } while (rc > 0);
+
+    iomux_close(iomux, &iomux_f, &iomux_st);
+
+    if (buf != NULL)
+        *buf = dbuf.ptr;
+    else
+        te_dbuf_free(&dbuf);
+
+    return rc;
+}
+
+TARPC_FUNC_STATIC(read_fd, {},
+{
+   MAKE_CALL(out->retval = func(in->common.use_libc, in->fd, in->size,
+                                in->time2wait, in->amount,
+                                &out->buf.buf_val, &out->buf.buf_len));
 })
 
 /**

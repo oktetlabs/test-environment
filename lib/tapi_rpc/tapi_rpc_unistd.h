@@ -1325,6 +1325,8 @@ extern size_t rpc_iov_data_len(const rpc_iovec *iov, size_t iovcnt);
  *                      file descriptor.
  *
  * @return Status code.
+ *
+ * @deprecated Use @ref rpc_read_fd2te_string instead.
  */
 extern te_errno tapi_rpc_read_fd_to_te_string(rcf_rpc_server *rpcs,
                                               int             fd,
@@ -1339,6 +1341,8 @@ extern te_errno tapi_rpc_read_fd_to_te_string(rcf_rpc_server *rpcs,
  *                      file descriptor.
  *
  * @return Status code.
+ *
+ * @deprecated Use @ref rpc_read_fd2te_string_append instead.
  */
 extern te_errno tapi_rpc_append_fd_to_te_string(rcf_rpc_server *rpcs,
                                                 int             fd,
