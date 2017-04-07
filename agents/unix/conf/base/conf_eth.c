@@ -230,7 +230,10 @@ eth_feature_alloc_get(struct eth_if_context *if_context)
     te_errno rc = 0;
 
     rc = eth_feature_alloc_get_names(if_context);
-    if (rc != 0)
+    if ((rc == TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP)) ||
+        (rc == TE_RC(TE_TA_UNIX, TE_ENOENT)))
+        return 0;
+    else if (rc != 0)
         return rc;
 
     rc = eth_feature_get_values(if_context);
