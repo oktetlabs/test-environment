@@ -51,6 +51,8 @@
 #include "acse_epc.h"
 #include "acse_user.h"
 
+/* Timeout for ACSE EPC operations */
+#define ACSE_EPC_POLL_TIMEOUT_SEC       (10)
 
 static acse_epc_cwmp_data_t cwmp_msg;
 static acse_epc_config_data_t cfg_data;
@@ -143,11 +145,7 @@ acse_conf_call(acse_epc_config_data_t **user_cfg_result)
 {
     te_errno rc;
     acse_epc_config_data_t *cfg_res;
-#if 0
-    struct timespec epc_ts = {0, 300000000}; /* 300 ms */
-#else
-    struct timespec epc_ts = {2, 0}; /* 2 sec */
-#endif
+    struct timespec epc_ts = {ACSE_EPC_POLL_TIMEOUT_SEC, 0};
     struct pollfd   pfd = {0, POLLIN, 0};
     int             pollrc;
 
@@ -274,7 +272,7 @@ te_errno
 acse_cwmp_call(size_t *data_len, acse_epc_cwmp_data_t **cwmp_data)
 {
     te_errno rc;
-    struct timespec epc_ts = {5, 0}; /* 5 sec */
+    struct timespec epc_ts = {ACSE_EPC_POLL_TIMEOUT_SEC, 0};
     struct pollfd   pfd = {0, POLLIN, 0};
     int             pollrc;
 
