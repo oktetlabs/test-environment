@@ -593,6 +593,50 @@ extern te_bool rcf_rpc_server_has_children(rcf_rpc_server *rpcs);
     } while (0)
 
 /**
+ * Get RPC server handle, restart it if necessary. Don't fail.
+ *
+ * @param _ta     name of Test Agent
+ * @param _name   name of RCF RPC server
+ * @param _rpcs   variable for RPC server handle
+ */
+#define TEST_GET_RPCS_SAFE(_ta, _name, _rpcs) \
+    do {                                                               \
+        te_errno    rc = 0;                                            \
+        int         is_dead = 0;                                       \
+                                                                       \
+        if ((rc = rcf_rpc_server_get(_ta, _name, NULL,                 \
+                                     RCF_RPC_SERVER_GET_REUSE,         \
+                                     &(_rpcs))) != 0)                  \
+        {                                                              \
+            INFO("Couldn't get RPC server %s: %r", _name, rc);         \
+            _rpcs = NULL;                                              \
+            break;                                                     \
+        }                                                              \
+                                                                       \
+        /* Restart RPC server if it is dead */                         \
+        if ((rc = cfg_get_instance_fmt(NULL, &is_dead,                 \
+                                       "/agent:%s/rpcserver:%s/dead:", \
+                                       _ta, _name)) != 0)              \
+        {                                                              \
+            INFO("Couldn't get RPC server dead status %s: %r",         \
+                 _name, rc);                                           \
+            _rpcs = NULL;                                              \
+            break;                                                     \
+        }                                                              \
+                                                                       \
+        if (is_dead == 1)                                              \
+        {                                                              \
+            INFO("RPC server %s is dead, try to restart", _name);      \
+                                                                       \
+            if ((rc = rcf_rpc_server_restart(_rpcs)) != 0)             \
+            {                                                          \
+                INFO("Couldn't restart RPC server %s", _name);         \
+                _rpcs = NULL;                                          \
+            }                                                          \
+        }                                                              \
+    } while (0)
+
+/**
  * Free namespace cache
  *
  * @param [in]  rpcs    RPC server
