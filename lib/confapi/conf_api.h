@@ -176,6 +176,16 @@ extern te_errno cfg_register_object(const cfg_oid *oid,
                                     cfg_handle    *handle);
 
 /**
+ * The same function as cfg_register_object_str,
+ * but OID may be format string.
+ */
+extern te_errno cfg_register_object_fmt(cfg_obj_descr *descr,
+                                        cfg_handle *handle,
+                                        const char *oid_fmt, ...)
+                                        __attribute__((format(printf, 3, 4)));
+
+
+/**
  * Request Configurator to remove an object with a given id from
  * the data base of objects.
  *

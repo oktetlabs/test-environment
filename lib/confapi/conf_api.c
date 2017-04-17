@@ -224,6 +224,21 @@ cfg_register_object(const cfg_oid *oid, cfg_obj_descr *descr,
     return ret_val;
 }
 
+/* See description in conf_api.h */
+te_errno
+cfg_register_object_fmt(cfg_obj_descr *descr, cfg_handle *handle,
+                        const char *oid_fmt, ...)
+{
+    va_list ap;
+    char    oid[CFG_OID_MAX];
+
+    va_start(ap, oid_fmt);
+    vsnprintf(oid, sizeof(oid), oid_fmt, ap);
+    va_end(ap);
+
+    return cfg_register_object_str(oid, descr, handle);
+}
+
 /**
  * Obtain parameters configured for the object.
  *
