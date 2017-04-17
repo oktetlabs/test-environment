@@ -29,10 +29,24 @@
 #ifndef __TE_STR_H__
 #define __TE_STR_H__
 
+#include "te_defs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * Check for empty string.
+ *
+ * @param str           Byte string.
+ *
+ * @return @c TRUE if the string is @c NULL or zero-length; @c FALSE otherwise.
+ */
+static inline te_bool
+te_str_is_null_or_empty(const char *str)
+{
+    return (str == NULL || *str == '\0');
+}
 
 
 /*
