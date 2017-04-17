@@ -79,6 +79,7 @@
 #include "rpc_transport.h"
 #include "agentlib.h"
 #include "te_sleep.h"
+#include "te_alloc.h"
 
 /** How long wait for a process termination, milliseconds. */
 #define WAITPID_TIMEOUT 10000
@@ -127,6 +128,7 @@ typedef struct rpcserver {
     te_bool   finished;    /**< RPC server process (or thread) was
                                 terminated, waitpid() (pthread_join())
                                 was already  called (if required) */
+    char     *config;      /**< Opaque configuration string */
     time_t    sent;        /**< Time of the last request sending */
     te_bool   async_call;  /**< True if async call in progress */
     uint64_t  last_jobid;  /**< Last async call job id */
@@ -169,6 +171,10 @@ static te_errno rpcserver_finished_get(unsigned int, const char *, char *,
                                        const char *);
 static te_errno rpcserver_finished_set(unsigned int, const char *, char *,
                                        const char *);
+static te_errno rpcserver_config_get(unsigned int, const char *, char *,
+                                     const char *);
+static te_errno rpcserver_config_set(unsigned int, const char *, char *,
+                                     const char *);
 
 static rcf_pch_cfg_object node_rpcprovider =
     { "rpcprovider", 0, NULL, NULL,
@@ -176,8 +182,14 @@ static rcf_pch_cfg_object node_rpcprovider =
       (rcf_ch_cfg_set)rpcprovider_set,
       NULL, NULL, NULL, NULL, NULL};
 
+static rcf_pch_cfg_object node_rpcserver_config =
+    { "config", 0, NULL, NULL,
+      (rcf_ch_cfg_get)rpcserver_config_get,
+      (rcf_ch_cfg_set)rpcserver_config_set,
+      NULL, NULL, NULL, NULL, NULL};
+
 static rcf_pch_cfg_object node_rpcserver_finished =
-    { "finished", 0, NULL, NULL,
+    { "finished", 0, NULL, &node_rpcserver_config,
       (rcf_ch_cfg_get)rpcserver_finished_get,
       (rcf_ch_cfg_set)rpcserver_finished_set,
       NULL, NULL, NULL, NULL, NULL};
@@ -1145,6 +1157,65 @@ rpcserver_finished_set(unsigned int gid, const char *oid, char *value,
         /** If it is finished, it is dead */
         rpcs->dead = TRUE;
     }
+
+    pthread_mutex_unlock(&lock);
+
+    return 0;
+}
+
+static te_errno
+rpcserver_config_get(unsigned int gid, const char *oid, char *value,
+                     const char *name)
+{
+    rpcserver *rpcs;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    pthread_mutex_lock(&lock);
+
+    rpcs = rcf_pch_find_rpcserver(name);
+    if (rpcs == NULL)
+    {
+        pthread_mutex_unlock(&lock);
+        return TE_RC(TE_RCF_PCH, TE_ENOENT);
+    }
+
+    sprintf(value, "%s", (rpcs->config == NULL) ? "" : rpcs->config);
+
+    pthread_mutex_unlock(&lock);
+
+    return 0;
+}
+
+static te_errno
+rpcserver_config_set(unsigned int gid, const char *oid, char *value,
+                     const char *name)
+{
+    rpcserver *rpcs;
+    size_t len;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    pthread_mutex_lock(&lock);
+
+    rpcs = rcf_pch_find_rpcserver(name);
+    if (rpcs == NULL)
+    {
+        pthread_mutex_unlock(&lock);
+        return TE_RC(TE_RCF_PCH, TE_ENOENT);
+    }
+
+    free(rpcs->config);
+    len = strlen(value) + 1;
+    rpcs->config = TE_ALLOC(len);
+    if (rpcs->config == NULL)
+    {
+        pthread_mutex_unlock(&lock);
+        return TE_RC(TE_RCF_PCH, TE_ENOMEM);
+    }
+    strncpy(rpcs->config, value, len);
 
     pthread_mutex_unlock(&lock);
 

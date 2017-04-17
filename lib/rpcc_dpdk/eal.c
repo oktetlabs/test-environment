@@ -106,8 +106,7 @@ tapi_reuse_eal(rcf_rpc_server *rpcs,
                int             argc,
                char           *argv[],
                te_bool        *need_init,
-               char          **eal_args_out,
-               te_bool        *need_conf_instance)
+               char          **eal_args_out)
 {
     unsigned int                i;
     size_t                      eal_args_len = 1;
@@ -150,19 +149,15 @@ tapi_reuse_eal(rcf_rpc_server *rpcs,
     }
 
     rc = cfg_get_instance_fmt(&val_type, &eal_args_cfg,
-                              "/local:%s/dpdk:/eal_args:%s",
+                              "/agent:%s/rpcserver:%s/config:",
                               rpcs->ta, rpcs->name);
-    if (rc == TE_RC(TE_CS, TE_ENOENT))
+    if (rc != 0)
+        goto out;
+
+    if (strlen(eal_args_cfg) == 0)
     {
         *need_init = TRUE;
         *eal_args_out = eal_args;
-        *need_conf_instance = TRUE;
-
-        rc = 0;
-        goto out;
-    }
-    else if (rc != 0)
-    {
         goto out;
     }
 
@@ -192,7 +187,6 @@ tapi_reuse_eal(rcf_rpc_server *rpcs,
         {
             *need_init = TRUE;
             *eal_args_out = eal_args;
-            *need_conf_instance = FALSE;
         }
 
         goto out;
@@ -200,7 +194,6 @@ tapi_reuse_eal(rcf_rpc_server *rpcs,
 
     *need_init = FALSE;
     *eal_args_out = NULL;
-    *need_conf_instance = FALSE;
 
     free(eal_args);
 
@@ -231,7 +224,6 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
     char                   *app_prefix = NULL;
     te_bool                 need_init = TRUE;
     char                   *eal_args_new = NULL;
-    te_bool                 need_conf_instance = FALSE;
 
     if (env == NULL || rpcs == NULL)
         return TE_EINVAL;
@@ -318,8 +310,7 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
     if (dpdk_reuse_rpcs())
     {
         rc = tapi_reuse_eal(rpcs, my_argc, my_argv,
-                            &need_init, &eal_args_new,
-                            &need_conf_instance);
+                            &need_init, &eal_args_new);
         if (rc != 0)
             goto cleanup;
     }
@@ -335,18 +326,9 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
         if (eal_args_new == NULL)
             goto cleanup;
 
-        if (need_conf_instance)
-        {
-            rc = cfg_add_instance_fmt(NULL, CVT_STRING, eal_args_new,
-                                      "/local:%s/dpdk:/eal_args:%s",
-                                      rpcs->ta, rpcs->name);
-        }
-        else
-        {
-            rc = cfg_set_instance_fmt(CVT_STRING, eal_args_new,
-                                      "/local:%s/dpdk:/eal_args:%s",
-                                      rpcs->ta, rpcs->name);
-        }
+        rc = cfg_set_instance_fmt(CVT_STRING, eal_args_new,
+                                  "/agent:%s/rpcserver:%s/config:",
+                                  rpcs->ta, rpcs->name);
     }
 
 cleanup:

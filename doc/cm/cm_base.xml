@@ -690,6 +690,12 @@
     <object oid="/agent/rpcserver/finished"
             access="read_write" type="integer"/>
 
+    <!-- RPC server opaque configuration string.
+         Name: empty
+         Value: an arbitrary string -->
+    <object oid="/agent/rpcserver/config"
+            access="read_write" type="string" volatile="true"/>
+
     <!-- DNS server.
          Name:  empty
          Limit: 1 -->
