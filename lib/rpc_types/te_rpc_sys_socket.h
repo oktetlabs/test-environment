@@ -305,6 +305,7 @@ typedef enum rpc_socket_proto {
     RPC_PROTO_UNKNOWN,  /**< IP protocol unknown to RPC server sockets */
     RPC_PROTO_DEF,      /**< Default protocol (0) */
     RPC_IPPROTO_IP,     /**< IPv4 protocol */
+    RPC_IPPROTO_IPV6,   /**< IPv6 protocol */
     RPC_IPPROTO_ICMP,   /**< Internet Control Message Protocol */
     RPC_IPPROTO_TCP,    /**< Transmission Control Protocol */
     RPC_IPPROTO_UDP,    /**< User Datagram Protocol */
