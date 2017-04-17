@@ -96,6 +96,22 @@
 #define AGENT_BOID       "/agent"
 #define BOID_LEN         strlen("/agent")
 
+/*
+ * Common part for specific *_fmt functions.
+ * It assumes and provides some variables.
+ */
+#define _CFG_HANDLE_BY_FMT                      \
+    va_list    ap;                              \
+    int        rc;                              \
+    cfg_handle handle;                          \
+                                                \
+    va_start(ap, oid_fmt);                      \
+    rc = cfg_find_vfmt(&handle, oid_fmt, ap);   \
+    va_end(ap);                                 \
+    if (rc != 0)                                \
+        return rc;
+
+
 #ifdef HAVE_PTHREAD_H
 static pthread_mutex_t cfgl_lock = PTHREAD_MUTEX_INITIALIZER;
 #endif
@@ -660,6 +676,20 @@ cfg_find_str(const char *oid, cfg_handle *handle)
     return TE_RC(TE_CONF_API, ret_val);
 }
 
+/* See description in conf_api.h */
+te_errno
+cfg_find_fmt(cfg_handle *p_handle, const char *oid_fmt, ...)
+{
+    int     rc;
+    va_list ap;
+
+    va_start(ap, oid_fmt);
+    rc = cfg_find_vfmt(p_handle, oid_fmt, ap);
+    va_end(ap);
+
+    return rc;
+}
+
 /**
  * Find the object or object instance by its object identifier.
  *
@@ -846,6 +876,21 @@ cfg_find_pattern(const char *pattern, unsigned int *num, cfg_handle **set)
 #endif
     free(alloc_msg);
     return TE_RC(TE_CONF_API, ret_val);
+}
+
+/* See description in conf_api.h */
+te_errno
+cfg_find_pattern_fmt(unsigned int *p_num, cfg_handle **p_set,
+                     const char *ptrn_fmt, ...)
+{
+    va_list ap;
+    char    ptrn[CFG_OID_MAX];
+
+    va_start(ap, ptrn_fmt);
+    vsnprintf(ptrn, sizeof(ptrn), ptrn_fmt, ap);
+    va_end(ap);
+
+    return cfg_find_pattern(ptrn, p_num, p_set);
 }
 
 
@@ -1131,6 +1176,21 @@ cfg_add_instance_str(const char *oid, cfg_handle *handle,
     return TE_RC(TE_CONF_API, ret_val);
 }
 
+/* See description in conf_api.h */
+te_errno
+cfg_add_instance_fmt(cfg_handle *p_handle, cfg_val_type type,
+                     const void *val, const char *oid_fmt, ...)
+{
+    va_list ap;
+    char    oid[CFG_OID_MAX];
+
+    va_start(ap, oid_fmt);
+    vsnprintf(oid, sizeof(oid), oid_fmt, ap);
+    va_end(ap);
+
+    return cfg_add_instance_str(oid, p_handle, type, val);
+}
+
 te_errno
 cfg_add_instance_local(const cfg_oid *oid, cfg_handle *handle,
                        cfg_val_type type, ...)
@@ -1166,6 +1226,72 @@ cfg_add_instance_local_str(const char *oid, cfg_handle *handle,
     va_end(list);
 
     return TE_RC(TE_CONF_API, ret_val);
+}
+
+/* See description in conf_api.h */
+te_errno
+cfg_add_instance_local_fmt(cfg_handle *p_handle, cfg_val_type type,
+                           const void *val, const char *oid_fmt, ...)
+{
+    va_list ap;
+    char    oid[CFG_OID_MAX];
+
+    va_start(ap, oid_fmt);
+    vsnprintf(oid, sizeof(oid), oid_fmt, ap);
+    va_end(ap);
+
+    return cfg_add_instance_local_str(oid, p_handle, type, val);
+}
+
+/* See description in conf_api.h */
+te_errno
+cfg_add_instance_child_fmt(cfg_handle *p_handle, cfg_val_type type,
+                           const void *val, cfg_handle parent,
+                           const char *suboid_fmt, ...)
+{
+    va_list     ap;
+    int         rc;
+    char       *parent_oid;
+    char       *oid_fmt;
+    char       *oid;
+
+
+    if (suboid_fmt == NULL)
+        return TE_RC(TE_CONF_API, TE_EINVAL);
+
+    rc = cfg_get_oid_str(parent, &parent_oid);
+    if (rc != 0)
+        return rc;
+    assert(parent_oid != NULL);
+
+    oid_fmt = malloc(CFG_OID_MAX);
+    if (oid_fmt == NULL)
+    {
+        free(parent_oid);
+        return TE_RC(TE_CONF_API, TE_ENOMEM);
+    }
+    oid = malloc(CFG_OID_MAX);
+    if (oid == NULL)
+    {
+        free(oid_fmt);
+        free(parent_oid);
+        return TE_RC(TE_CONF_API, TE_ENOMEM);
+    }
+
+    snprintf(oid_fmt, CFG_OID_MAX, "%s%s", parent_oid, suboid_fmt);
+    free(parent_oid);
+
+    va_start(ap, suboid_fmt);
+    vsnprintf(oid, CFG_OID_MAX, oid_fmt, ap);
+    va_end(ap);
+
+    free(oid_fmt);
+
+    rc = cfg_add_instance_str(oid, p_handle, type, val);
+
+    free(oid);
+
+    return rc;
 }
 
 /*
@@ -1318,6 +1444,14 @@ cfg_del_instance(cfg_handle handle, te_bool with_children)
     return TE_RC(TE_CONF_API, ret_val);
 }
 
+/* See description in conf_api.h */
+te_errno
+cfg_del_instance_fmt(te_bool with_children, const char *oid_fmt, ...)
+{
+    _CFG_HANDLE_BY_FMT;
+    return cfg_del_instance(handle, with_children);
+}
+
 /**
  * Change object instance value locally or on the agent.
  *
@@ -1431,6 +1565,15 @@ cfg_set_instance(cfg_handle handle, cfg_val_type type, ...)
 
 /* See description in conf_api.h */
 te_errno
+cfg_set_instance_fmt(cfg_val_type type, const void *val,
+                     const char *oid_fmt, ...)
+{
+    _CFG_HANDLE_BY_FMT;
+    return cfg_set_instance(handle, type, val);
+}
+
+/* See description in conf_api.h */
+te_errno
 cfg_set_instance_local(cfg_handle handle, cfg_val_type type, ...)
 {
     int     ret_val;
@@ -1441,6 +1584,15 @@ cfg_set_instance_local(cfg_handle handle, cfg_val_type type, ...)
     va_end(list);
 
     return TE_RC(TE_CONF_API, ret_val);
+}
+
+/* See description in conf_api.h */
+te_errno
+cfg_set_instance_local_fmt(cfg_val_type type, const void *val,
+                           const char *oid_fmt, ...)
+{
+    _CFG_HANDLE_BY_FMT;
+    return cfg_set_instance_local(handle, type, val);
 }
 
 /* See description in conf_api.h */
@@ -1489,6 +1641,19 @@ cfg_commit(const char *oid)
     return TE_RC(TE_CONF_API, ret_val);
 }
 
+/* See description in conf_api.h */
+te_errno
+cfg_commit_fmt(const char *oid_fmt, ...)
+{
+    va_list ap;
+    char    oid[CFG_OID_MAX];
+
+    va_start(ap, oid_fmt);
+    vsnprintf(oid, sizeof(oid), oid_fmt, ap);
+    va_end(ap);
+
+    return cfg_commit(oid);
+}
 
 /**
  * Obtain value of the object instance. Memory for strings and
@@ -1615,6 +1780,14 @@ cfg_get_instance(cfg_handle handle, cfg_val_type *type, ...)
     return rc;
 }
 
+/* See description in conf_api.h */
+te_errno
+cfg_get_instance_fmt(cfg_val_type *p_type, void *val,
+                     const char *oid_fmt, ...)
+{
+    _CFG_HANDLE_BY_FMT;
+    return cfg_get_instance(handle, p_type, val);
+}
 
 /**
  * Obtain value of the object instance with synchronization with
@@ -1731,6 +1904,14 @@ cfg_get_instance_sync(cfg_handle handle, cfg_val_type *type, ...)
     return ret_val;
 }
 
+/* See description in conf_api.h */
+te_errno
+cfg_get_instance_sync_fmt(cfg_val_type *type, void *val,
+                          const char *oid_fmt, ...)
+{
+    _CFG_HANDLE_BY_FMT;
+    return cfg_get_instance_sync(handle, type, val);
+}
 
 /**
  * Synchronize Configurator database with managed objects.
@@ -1786,6 +1967,19 @@ cfg_synchronize(const char *oid, te_bool subtree)
     return TE_RC(TE_CONF_API, ret_val);
 }
 
+/* See description in conf_api.h */
+te_errno
+cfg_synchronize_fmt(te_bool subtree, const char *oid_fmt, ...)
+{
+    va_list ap;
+    char    oid[CFG_OID_MAX];
+
+    va_start(ap, oid_fmt);
+    vsnprintf(oid, sizeof(oid), oid_fmt, ap);
+    va_end(ap);
+
+    return cfg_synchronize(oid, subtree);
+}
 
 /**
  * Enumerate all instances of the object (enumeration is stopped if

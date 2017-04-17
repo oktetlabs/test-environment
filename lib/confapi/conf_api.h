@@ -80,23 +80,6 @@ extern "C" {
 #define CFG_VAL(_t, _v)     CVT_##_t, ((const void *)(long)(_v))
 
 
-/**
- * This macro MUST NOT be used out of the header.  It's very context
- * specific and used in inline functions defined in the header.  It
- * assumes and provides some variables.
- */
-#define _CFG_HANDLE_BY_FMT \
-    va_list    ap;                              \
-    int        rc;                              \
-    cfg_handle handle;                          \
-                                                \
-    va_start(ap, oid_fmt);                      \
-    rc = cfg_find_vfmt(&handle, oid_fmt, ap);   \
-    va_end(ap);                                 \
-    if (rc != 0)                                \
-        return rc;
-
-
 /** Constants for primary types */
 typedef enum {
     CVT_INTEGER,     /**< Value of the type 'int' */
@@ -300,18 +283,9 @@ cfg_find_vfmt(cfg_handle *p_handle, const char *oid_fmt, va_list ap)
 }
 
 /** The same function as cfg_find_str, but OID may be format string */
-static inline te_errno
-cfg_find_fmt(cfg_handle *p_handle, const char *oid_fmt, ...)
-{
-    int     rc;
-    va_list ap;
+extern te_errno cfg_find_fmt(cfg_handle *p_handle, const char *oid_fmt, ...)
+                             __attribute__((format(printf, 2, 3)));
 
-    va_start(ap, oid_fmt);
-    rc = cfg_find_vfmt(p_handle, oid_fmt, ap);
-    va_end(ap);
-
-    return rc;
-}
 
 /**
  * Find the object or object instance by its object identifier.
@@ -352,19 +326,9 @@ extern te_errno cfg_find_pattern(const char    *pattern,
                                  cfg_handle    **p_set);
 
 /** The same function as cfg_find_pattern, but OID may be format string */
-static inline te_errno
-cfg_find_pattern_fmt(unsigned int *p_num, cfg_handle **p_set,
-                     const char *ptrn_fmt, ...)
-{
-    va_list ap;
-    char    ptrn[CFG_OID_MAX];
-
-    va_start(ap, ptrn_fmt);
-    vsnprintf(ptrn, sizeof(ptrn), ptrn_fmt, ap);
-    va_end(ap);
-
-    return cfg_find_pattern(ptrn, p_num, p_set);
-}
+extern te_errno cfg_find_pattern_fmt(unsigned int *p_num, cfg_handle **p_set,
+                                     const char *ptrn_fmt, ...)
+                                     __attribute__((format(printf, 3, 4)));
 
 /**
  * Get handle of the oldest son of the object or object instance.
@@ -442,19 +406,10 @@ extern te_errno cfg_add_instance_str(const char *oid, cfg_handle *p_handle,
  * Use macro CFG_VAL() to make the second and the third arguments pair.
  * E.g. rc = cfg_add_instance_fmt(NULL, CFG_VAL(INTEGER, 1), "/hello:tom");
  */
-static inline te_errno
-cfg_add_instance_fmt(cfg_handle *p_handle, cfg_val_type type,
-                     const void *val, const char *oid_fmt, ...)
-{
-    va_list ap;
-    char    oid[CFG_OID_MAX];
+extern te_errno cfg_add_instance_fmt(cfg_handle *p_handle, cfg_val_type type,
+                                     const void *val, const char *oid_fmt, ...)
+                                     __attribute__((format(printf, 4, 5)));
 
-    va_start(ap, oid_fmt);
-    vsnprintf(oid, sizeof(oid), oid_fmt, ap);
-    va_end(ap);
-
-    return cfg_add_instance_str(oid, p_handle, type, val);
-}
 
 /**
  * Create an object instance locally. Commit should be called to
@@ -500,19 +455,11 @@ extern te_errno cfg_add_instance_local_str(const char   *oid,
  * E.g. rc = cfg_add_instance_local_fmt(NULL, CFG_VAL(INTEGER, 1),
  *                                      "/hello:tom");
  */
-static inline te_errno
-cfg_add_instance_local_fmt(cfg_handle *p_handle, cfg_val_type type,
-                           const void *val, const char *oid_fmt, ...)
-{
-    va_list ap;
-    char    oid[CFG_OID_MAX];
-
-    va_start(ap, oid_fmt);
-    vsnprintf(oid, sizeof(oid), oid_fmt, ap);
-    va_end(ap);
-
-    return cfg_add_instance_local_str(oid, p_handle, type, val);
-}
+extern te_errno cfg_add_instance_local_fmt(cfg_handle *p_handle,
+                                           cfg_val_type type,
+                                           const void *val,
+                                           const char *oid_fmt, ...)
+                                        __attribute__((format(printf, 4, 5)));
 
 /**
  * Add instance with the first part of OID specified by handle and
@@ -527,55 +474,12 @@ cfg_add_instance_local_fmt(cfg_handle *p_handle, cfg_val_type type,
  *
  * @return Status code
  */
-static inline te_errno
-cfg_add_instance_child_fmt(cfg_handle *p_handle, cfg_val_type type,
-                           const void *val, cfg_handle parent,
-                           const char *suboid_fmt, ...)
-{
-    va_list     ap;
-    int         rc;
-    char       *parent_oid;
-    char       *oid_fmt;
-    char       *oid;
-
-
-    if (suboid_fmt == NULL)
-        return TE_RC(TE_CONF_API, TE_EINVAL);
-
-    rc = cfg_get_oid_str(parent, &parent_oid);
-    if (rc != 0)
-        return rc;
-    assert(parent_oid != NULL);
-
-    oid_fmt = malloc(CFG_OID_MAX);
-    if (oid_fmt == NULL)
-    {
-        free(parent_oid);
-        return TE_RC(TE_CONF_API, TE_ENOMEM);
-    }
-    oid = malloc(CFG_OID_MAX);
-    if (oid == NULL)
-    {
-        free(oid_fmt);
-        free(parent_oid);
-        return TE_RC(TE_CONF_API, TE_ENOMEM);
-    }
-
-    snprintf(oid_fmt, CFG_OID_MAX, "%s%s", parent_oid, suboid_fmt);
-    free(parent_oid);
-
-    va_start(ap, suboid_fmt);
-    vsnprintf(oid, CFG_OID_MAX, oid_fmt, ap);
-    va_end(ap);
-
-    free(oid_fmt);
-
-    rc = cfg_add_instance_str(oid, p_handle, type, val);
-
-    free(oid);
-
-    return rc;
-}
+extern te_errno cfg_add_instance_child_fmt(cfg_handle *p_handle,
+                                           cfg_val_type type,
+                                           const void *val,
+                                           cfg_handle parent,
+                                           const char *suboid_fmt, ...)
+                                        __attribute__((format(printf, 5, 6)));
 
 /**
  * Delete an object instance.
@@ -588,12 +492,9 @@ cfg_add_instance_child_fmt(cfg_handle *p_handle, cfg_val_type type,
 extern te_errno cfg_del_instance(cfg_handle handle, te_bool with_children);
 
 /** Set instance by the OID. OID may be format string */
-static inline te_errno
-cfg_del_instance_fmt(te_bool with_children, const char *oid_fmt, ...)
-{
-    _CFG_HANDLE_BY_FMT;
-    return cfg_del_instance(handle, with_children);
-}
+extern te_errno cfg_del_instance_fmt(te_bool with_children,
+                                     const char *oid_fmt, ...)
+                                     __attribute__((format(printf, 2, 3)));
 
 /**
  * Change object instance value.
@@ -615,13 +516,9 @@ extern te_errno cfg_set_instance(cfg_handle handle, cfg_val_type type, ...);
  * Use macro CFG_VAL() to make the first and the second arguments pair.
  * E.g. rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1), "/hello:");
  */
-static inline te_errno
-cfg_set_instance_fmt(cfg_val_type type, const void *val,
-                     const char *oid_fmt, ...)
-{
-    _CFG_HANDLE_BY_FMT;
-    return cfg_set_instance(handle, type, val);
-}
+extern te_errno cfg_set_instance_fmt(cfg_val_type type, const void *val,
+                                     const char *oid_fmt, ...)
+                                     __attribute__((format(printf, 3, 4)));
 
 /**
  * Change object instance value locally. Commit should be called to
@@ -640,13 +537,9 @@ extern te_errno cfg_set_instance_local(cfg_handle handle,
                                        cfg_val_type type, ...);
 
 /** Set instance by the OID. OID may be format string */
-static inline te_errno
-cfg_set_instance_local_fmt(cfg_val_type type, const void *val,
-                           const char *oid_fmt, ...)
-{
-    _CFG_HANDLE_BY_FMT;
-    return cfg_set_instance_local(handle, type, val);
-}
+extern te_errno cfg_set_instance_local_fmt(cfg_val_type type, const void *val,
+                                           const char *oid_fmt, ...)
+                                        __attribute__((format(printf, 3, 4)));
 
 /**
  * Commit Configurator database changes to the Test Agent.
@@ -659,19 +552,8 @@ cfg_set_instance_local_fmt(cfg_val_type type, const void *val,
 extern te_errno cfg_commit(const char *oid);
 
 /** The same function as cfg_commit, but OID may be format string */
-static inline te_errno
-cfg_commit_fmt(const char *oid_fmt, ...)
-{
-    va_list ap;
-    char    oid[CFG_OID_MAX];
-
-    va_start(ap, oid_fmt);
-    vsnprintf(oid, sizeof(oid), oid_fmt, ap);
-    va_end(ap);
-
-    return cfg_commit(oid);
-}
-
+extern te_errno cfg_commit_fmt(const char *oid_fmt, ...)
+                               __attribute__((format(printf, 1, 2)));
 
 /**
  * Obtain value of the object instance. Memory for strings and
@@ -690,13 +572,9 @@ extern te_errno cfg_get_instance(cfg_handle handle,
                                  cfg_val_type *type, ...);
 
 /** Get instance by the OID. OID may be format string */
-static inline te_errno
-cfg_get_instance_fmt(cfg_val_type *p_type, void *val,
-                     const char *oid_fmt, ...)
-{
-    _CFG_HANDLE_BY_FMT;
-    return cfg_get_instance(handle, p_type, val);
-}
+extern te_errno cfg_get_instance_fmt(cfg_val_type *p_type, void *val,
+                                     const char *oid_fmt, ...)
+                                     __attribute__((format(printf, 3, 4)));
 
 /**
  * Obtain value of the object instance with synchronization with
@@ -716,13 +594,10 @@ extern te_errno cfg_get_instance_sync(cfg_handle handle,
                                       cfg_val_type *type, ...);
 
 /** Get instance by the OID. OID may be format string */
-static inline te_errno
-cfg_get_instance_sync_fmt(cfg_val_type *type, void *val,
-                          const char *oid_fmt, ...)
-{
-    _CFG_HANDLE_BY_FMT;
-    return cfg_get_instance_sync(handle, type, val);
-}
+extern te_errno cfg_get_instance_sync_fmt(cfg_val_type *type, void *val,
+                                          const char *oid_fmt, ...)
+                                          __attribute__((format(printf, 3, 4)));
+
 /**@}*/
 
 /** @defgroup confapi_base_sync Synchronization configuration tree with Test Agent
@@ -742,18 +617,9 @@ cfg_get_instance_sync_fmt(cfg_val_type *type, void *val,
 extern te_errno cfg_synchronize(const char *oid, te_bool subtree);
 
 /** The same function as cfg_synchronize, but OID may be format string */
-static inline te_errno
-cfg_synchronize_fmt(te_bool subtree, const char *oid_fmt, ...)
-{
-    va_list ap;
-    char    oid[CFG_OID_MAX];
+extern te_errno cfg_synchronize_fmt(te_bool subtree, const char *oid_fmt, ...)
+                                    __attribute__((format(printf, 2, 3)));
 
-    va_start(ap, oid_fmt);
-    vsnprintf(oid, sizeof(oid), oid_fmt, ap);
-    va_end(ap);
-
-    return cfg_synchronize(oid, subtree);
-}
 /**@}*/
 
 /** @addtogroup confapi_base_traverse
