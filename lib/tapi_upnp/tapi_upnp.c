@@ -31,31 +31,27 @@
 #define TE_LGR_USER     "TAPI UPnP"
 
 #include "te_config.h"
-
 #if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-
 #include "tapi_upnp.h"
-
-#include "te_concat.h"
-
+#include "te_str.h"
 
 
 /* See description in tapi_upnp.h. */
 char *
 tapi_upnp_get_st_uuid(const char *uuid)
 {
-    return te_concat("uuid:", uuid);
+    return te_str_concat("uuid:", uuid);
 }
 
 /* See description in tapi_upnp.h. */
 char *
 tapi_upnp_get_st_device_type(const char *domain, const char *device_type)
 {
-    char *urn = te_concat("urn:", domain);
-    char *device = te_concat(":device:", device_type);
-    char *st = te_concat(urn, device);
+    char *urn = te_str_concat("urn:", domain);
+    char *device = te_str_concat(":device:", device_type);
+    char *st = te_str_concat(urn, device);
 
     free(urn);
     free(device);
@@ -66,9 +62,9 @@ tapi_upnp_get_st_device_type(const char *domain, const char *device_type)
 char *
 tapi_upnp_get_st_service_type(const char *domain, const char *service_type)
 {
-    char *urn = te_concat("urn:", domain);
-    char *service = te_concat(":service:", service_type);
-    char *st = te_concat(urn, service);
+    char *urn = te_str_concat("urn:", domain);
+    char *service = te_str_concat(":service:", service_type);
+    char *st = te_str_concat(urn, service);
 
     free(urn);
     free(service);

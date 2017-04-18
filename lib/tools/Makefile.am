@@ -26,7 +26,6 @@ include_HEADERS = \
 	te_ipstack.h \
 	te_kvpair.h \
 	te_toeplitz.h \
-        te_concat.h \
         te_str.h
 
 if WINDOWS
