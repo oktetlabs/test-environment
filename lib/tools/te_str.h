@@ -73,6 +73,22 @@ extern char *te_str_upper(const char *src);
  */
 extern char *te_str_lower(const char *src);
 
+/**
+ * Concatenate two strings and put result to the newly allocated string.
+ * The function does not work with multibyte/wide strings.
+ *
+ * @note Return value should be freed with free(3) when it is no longer needed.
+ *
+ * @param first     First string to concatenate. May be @c NULL, in this
+ *                  case it will be interpreted as empty string, i.e. "".
+ * @param second    Second string to concatenate. May be @c NULL, in this
+ *                  case it will be interpreted as empty string, i.e. "".
+ *
+ * @return Concatenated string, or @c NULL if insufficient memory available
+ * to allocate a resulting string.
+ */
+extern char *te_str_concat(const char *first, const char *second);
+
 
 #ifdef __cplusplus
 } /* extern "C" */

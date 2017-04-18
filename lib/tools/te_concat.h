@@ -4,7 +4,7 @@
  * Function to concatenate the strings.
  *
  *
- * Copyright (C) 2016 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2016-2017 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * This library is free software; you can redistribute it and/or
@@ -24,13 +24,12 @@
  *
  *
  * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_CONCAT_H__
 #define __TE_CONCAT_H__
 
+#include "te_str.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,8 +48,14 @@ extern "C" {
  *
  * @return Concatenated string, or @c NULL if insufficient memory available
  *         to allocate a resulting string.
+ *
+ * @deprecated Use @ref te_str_concat instead.
  */
-extern char *te_concat(const char *first, const char *second);
+static inline char *
+te_concat(const char *first, const char *second)
+{
+    return te_str_concat(first, second);
+}
 
 
 #ifdef __cplusplus

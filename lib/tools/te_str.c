@@ -67,3 +67,30 @@ te_str_lower(const char *src)
 
     return res;
 }
+
+/* See description in te_str.h */
+char *
+te_str_concat(const char *first, const char *second)
+{
+    char *str;
+    size_t len1;
+    size_t len2;
+
+    if (first == NULL)
+        first = "";
+    if (second == NULL)
+        second = "";
+
+    len1 = strlen(first);
+    len2 = strlen(second);
+
+    str = malloc(len1 + len2 + 1);
+    if (str == NULL)
+        return NULL;
+
+    memcpy(str, first, len1);
+    memcpy(&str[len1], second, len2);
+    str[len1 + len2] = '\0';
+
+    return str;
+}
