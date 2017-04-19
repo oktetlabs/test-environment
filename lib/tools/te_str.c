@@ -47,6 +47,7 @@ te_str_upper(const char *src)
 
     for (dst = res; *src != '\0'; src++, dst++)
         *dst = toupper(*src);
+    *dst = '\0';
 
     return res;
 }
@@ -64,6 +65,7 @@ te_str_lower(const char *src)
 
     for (dst = res; *src != '\0'; src++, dst++)
         *dst = tolower(*src);
+    *dst = '\0';
 
     return res;
 }
