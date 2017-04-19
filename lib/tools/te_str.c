@@ -27,9 +27,8 @@
  */
 
 #include "te_config.h"
-#ifdef STDC_HEADERS
-#include <stdlib.h>
-#include <string.h>
+#include "te_defs.h"
+#ifdef HAVE_CTYPE_H
 #include <ctype.h>
 #endif
 
