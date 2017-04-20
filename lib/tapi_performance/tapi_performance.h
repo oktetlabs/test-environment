@@ -41,15 +41,47 @@ extern "C" {
 /**
  * Supported network throughput test tools list.
  */
-typedef enum tapi_perf_type {
+typedef enum tapi_perf_bench {
+    TAPI_PERF_IPERF,
     TAPI_PERF_IPERF3,
-} tapi_perf_type;
+} tapi_perf_bench;
 
-/** Network throughput test tool report. */
+/**
+ * The list of values allowed for parameter of type 'tapi_perf_bench'
+ */
+#define TAPI_PERF_BENCH_MAPPING_LIST    \
+    { "iperf",    TAPI_PERF_IPERF },    \
+    { "iperf3",   TAPI_PERF_IPERF3 }
+
+/**
+ * Get the value of parameter of type 'tapi_perf_bench'
+ *
+ * @param var_name_  Name of the variable used to get the value of
+ *                   "var_name_" parameter of type 'tapi_perf_bench' (OUT)
+ */
+#define TEST_GET_PERF_BENCH(var_name_) \
+    TEST_GET_ENUM_PARAM(var_name_, TAPI_PERF_BENCH_MAPPING_LIST)
+
+
+/**
+ * List of possible network throughput test tool errors.
+ */
+typedef enum tapi_perf_error {
+    TAPI_PERF_ERROR_FORMAT,     /**< Wrong report format. */
+    TAPI_PERF_ERROR_READ,       /**< Read failed. */
+    TAPI_PERF_ERROR_CONNECT,    /**< Connect failed. */
+    TAPI_PERF_ERROR_BIND,       /**< Bind failed. */
+    TAPI_PERF_ERROR_MAX,        /**< Not error, but elements number. */
+} tapi_perf_error;
+
+/**
+ * Network throughput test tool report.
+ */
 typedef struct tapi_perf_report {
     uint64_t bytes;         /**< Number of bytes was transmitted */
     double seconds;         /**< Number of seconds was expired during test */
     double bits_per_second; /**< Throughput */
+    uint32_t errors[TAPI_PERF_ERROR_MAX];  /**< Errors counters. */
 } tapi_perf_report;
 
 
@@ -169,22 +201,29 @@ typedef struct tapi_perf_client_methods {
 } tapi_perf_client_methods;
 
 
-/* Common part of options of any perf tool */
-#define TAPI_PERF_OPTS_COMMON \
-    tapi_perf_type type
-
-/** On-stack initializer of common part of perf tool options. */
-#define TAPI_PERF_OPTS_COMMON_INIT(_type)    \
-    .type = _type
-
-/** Network throughput test tool options */
+/**
+ * Network throughput test tool options
+ */
 typedef struct tapi_perf_opts {
-    TAPI_PERF_OPTS_COMMON;
+    char *host;             /**< Destination host (server) */
+    int port;               /**< Port to listen on/connect to */
+    rpc_socket_proto ipversion;     /**< IP version */
+    rpc_socket_proto protocol;      /**< Transport protocol */
+    int64_t bandwidth_bits; /**< Target bandwidth (bits/sec) */
+    int64_t num_bytes;      /**< Number of bytes to transmit (instead of time) */
+    int32_t duration_sec;   /**< Time in seconds to transmit for */
+    int32_t length;         /**< Length of buffer to read or write */
+    int16_t streams;        /**< Number of parallel client streams */
+    te_bool reverse;        /**< Whether run in reverse mode (server sends,
+                                 client receives), or not */
 } tapi_perf_opts;
 
-/** Network throughput test tool context (common for both server and client) */
+/**
+ * Network throughput test tool context (common for both server and client)
+ */
 typedef struct tapi_perf_app {
-    tapi_perf_opts *opts;   /**< Tool options */
+    tapi_perf_bench bench;  /**< Tool's sort */
+    tapi_perf_opts opts;    /**< Tool's options */
     rcf_rpc_server *rpcs;   /**< RPC server handle */
     tarpc_pid_t pid;        /**< PID */
     int stdout;             /**< File descriptor to read from stdout stream */
@@ -194,13 +233,17 @@ typedef struct tapi_perf_app {
     te_string err;          /**< Error message */
 } tapi_perf_app;
 
-/** Network throughput test server tool context */
+/**
+ * Network throughput test server tool context
+ */
 typedef struct tapi_perf_server {
     tapi_perf_app app;      /**< Tool context */
     const tapi_perf_server_methods *methods; /**< Methods to operate the tool */
 } tapi_perf_server;
 
-/** Network throughput test client tool context */
+/**
+ * Network throughput test client tool context
+ */
 typedef struct tapi_perf_client {
     tapi_perf_app app;      /**< Tool context */
     const tapi_perf_client_methods *methods; /**< Methods to operate the tool */
@@ -208,18 +251,27 @@ typedef struct tapi_perf_client {
 
 
 /**
+ * Initialize options with default values (from point of view of perf tool).
+ *
+ * @param opts             Network throughput test tool options.
+ */
+extern void tapi_perf_opts_init(tapi_perf_opts *opts);
+
+/**
  * Create server network throughput test tool proxy.
  *
- * @param type              Sort of tool, see @ref tapi_perf_type to get a list
+ * @param bench             Sort of tool, see @ref tapi_perf_bench to get a list
  *                          of supported tools.
- * @param options           Server tool specific options.
+ * @param options           Server tool specific options, may be @c NULL, to set
+ *                          them to default, further you can edit them using
+ *                          return value.
  *
  * @return Status code.
  *
  * @sa tapi_perf_server_destroy
  */
-extern tapi_perf_server *tapi_perf_server_create(tapi_perf_type type,
-                                                 const void *options);
+extern tapi_perf_server *tapi_perf_server_create(tapi_perf_bench bench,
+                                                 const tapi_perf_opts *options);
 
 /**
  * Destroy server network throughput test tool proxy.
@@ -269,16 +321,18 @@ extern te_errno tapi_perf_server_get_report(tapi_perf_server *server,
 /**
  * Create client network throughput test tool proxy.
  *
- * @param type              Sort of tool, see @ref tapi_perf_type to get a list
+ * @param bench             Sort of tool, see @ref tapi_perf_bench to get a list
  *                          of supported tools.
- * @param options           Client tool specific options.
+ * @param options           Client tool specific options, may be @c NULL, to set
+ *                          them to default, further you can edit them using
+ *                          return value.
  *
  * @return Status code.
  *
  * @sa tapi_perf_client_destroy
  */
-extern tapi_perf_client *tapi_perf_client_create(tapi_perf_type type,
-                                                 const void *options);
+extern tapi_perf_client *tapi_perf_client_create(tapi_perf_bench bench,
+                                                 const tapi_perf_opts *options);
 
 /**
  * Destroy client network throughput test tool proxy.
@@ -338,6 +392,50 @@ extern te_errno tapi_perf_client_wait(tapi_perf_client *client,
  */
 extern te_errno tapi_perf_client_get_report(tapi_perf_client *client,
                                             tapi_perf_report *report);
+
+/**
+ * Get error description.
+ *
+ * @param error             Error code.
+ *
+ * @return Error code string representation.
+ */
+extern const char *tapi_perf_error2str(tapi_perf_error error);
+
+/**
+ * Get string representation of @p bench.
+ *
+ * @param bench             Tool's sort.
+ *
+ * @return Tool's sort name.
+ */
+extern const char *tapi_perf_bench2str(tapi_perf_bench bench);
+
+/**
+ * Get server network throughput test tool name.
+ *
+ * @param server            Server context.
+ *
+ * @return Server tool name.
+ */
+static inline const char *
+tapi_perf_server_get_name(const tapi_perf_server *server)
+{
+    return tapi_perf_bench2str(server->app.bench);
+}
+
+/**
+ * Get client network throughput test tool name.
+ *
+ * @param client            Client context.
+ *
+ * @return Client tool name.
+ */
+static inline const char *
+tapi_perf_client_get_name(const tapi_perf_client *client)
+{
+    return tapi_perf_bench2str(client->app.bench);
+}
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -1,0 +1,89 @@
+/** @file
+ * @brief Auxiliary functions to performance TAPI
+ *
+ * Auxiliary functions for internal use in performance TAPI
+ *
+ *
+ * Copyright (C) 2017 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA  02111-1307  USA
+ *
+ *
+ * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
+ */
+
+#ifndef __PERFORMANCE_INTERNAL_H__
+#define __PERFORMANCE_INTERNAL_H__
+
+#include "tapi_performance.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ * Close perf application opened descriptors.
+ *
+ * @param app               Application context.
+ */
+extern void perf_app_close_descriptors(tapi_perf_app *app);
+
+/**
+ * Start perf application. Note, @b perf_app_stop should be called to stop the
+ * application.
+ *
+ * @param[in]    rpcs       RPC server handle.
+ * @param[in]    cmd        Command to execute (start) application. Note, in
+ *                          case of failure @p cmd will be free, just to make
+ *                          @ref client_start and @ref server_start simple.
+ * @param[inout] app        Application context.
+ *
+ * @return Status code.
+ *
+ * @sa perf_app_stop
+ */
+extern te_errno perf_app_start(rcf_rpc_server *rpcs, char *cmd,
+                               tapi_perf_app *app);
+
+/**
+ * Stop perf application.
+ *
+ * @param[inout] app        Application context.
+ *
+ * @return Status code.
+ *
+ * @sa perf_app_start
+ */
+extern te_errno perf_app_stop(tapi_perf_app *app);
+
+/**
+ * Wait while application finishes his work.
+ *
+ * @param app           Application context.
+ * @param timeout       Time to wait for application results (seconds).
+ *
+ * @return Status code.
+ * @retval 0            No errors.
+ * @retval TE_ESHCMD    Application returns non-zero exit code.
+ * @retval TE_EFAIL     Critical error, application should be stopped.
+ */
+extern te_errno perf_app_wait(tapi_perf_app *app, uint16_t timeout);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+#endif /* __PERFORMANCE_INTERNAL_H__ */
