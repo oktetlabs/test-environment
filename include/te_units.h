@@ -39,6 +39,31 @@
 extern "C" {
 #endif
 
+/*
+ * Decimal unit-convertion functions
+ * (International System of Units (SI))
+ */
+#define TE_UNITS_DEC_G2U(_val) ((_val) * 1000000000.)
+#define TE_UNITS_DEC_M2U(_val) ((_val) * 1000000.)
+#define TE_UNITS_DEC_K2U(_val) ((_val) * 1000.)
+
+#define TE_UNITS_DEC_U2G(_val) ((_val) / 1000000000.)
+#define TE_UNITS_DEC_U2M(_val) ((_val) / 1000000.)
+#define TE_UNITS_DEC_U2K(_val) ((_val) / 1000.)
+
+/*
+ * Binary unit-convertion functions
+ * (International Electrotechnical Commission (IEC))
+ */
+#define TE_UNITS_BIN_G2U(_val) ((_val) * 1024. * 1024. * 1024.)
+#define TE_UNITS_BIN_M2U(_val) ((_val) * 1024. * 1024.)
+#define TE_UNITS_BIN_K2U(_val) ((_val) * 1024.)
+
+#define TE_UNITS_BIN_U2G(_val) ((_val) / (1024. * 1024. * 1024.))
+#define TE_UNITS_BIN_U2M(_val) ((_val) / (1024. * 1024.))
+#define TE_UNITS_BIN_U2K(_val) ((_val) / 1024.)
+
+
 /**
  * Convert bytes to kilobytes.
  *
