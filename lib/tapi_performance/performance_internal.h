@@ -83,6 +83,29 @@ extern te_errno perf_app_stop(tapi_perf_app *app);
  */
 extern te_errno perf_app_wait(tapi_perf_app *app, uint16_t timeout);
 
+/**
+ * Check application report for errors. The function prints verdicts in case of
+ * errors are presents in the @p report.
+ *
+ * @param app               Application context.
+ * @param report            Application report.
+ * @param tag               Tag to print in verdict message.
+ *
+ * @return Status code. It returns non-zero code if there are errors in the
+ * report.
+ */
+extern te_errno perf_app_check_report(tapi_perf_app *app,
+                                      tapi_perf_report *report,
+                                      const char *tag);
+
+/**
+ * Dump application output (both stdout and stderr).
+ *
+ * @param app               Application context.
+ * @param tag               Tag to print in dump message.
+ */
+extern void perf_app_dump_output(tapi_perf_app *app, const char *tag);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

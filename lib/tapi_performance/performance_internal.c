@@ -31,6 +31,7 @@
 #include "tapi_rpc_signal.h"
 #include "tapi_rpc_unistd.h"
 #include "tapi_rpcsock_macros.h"
+#include "tapi_test_log.h"
 
 
 /* See description in performance_internal.h */
@@ -109,4 +110,34 @@ perf_app_wait(tapi_perf_app *app, uint16_t timeout)
         return TE_RC(TE_TAPI, TE_ESHCMD);
 
     return 0;
+}
+
+/* See description in performance_internal.h */
+te_errno
+perf_app_check_report(tapi_perf_app *app, tapi_perf_report *report,
+                      const char *tag)
+{
+    size_t i;
+    te_errno rc = 0;
+
+    for (i = 0; i < TE_ARRAY_LEN(report->errors); i++)
+    {
+        if (report->errors[i] > 0)
+        {
+            rc = TE_RC(TE_TAPI, TE_EFAIL);
+            ERROR_VERDICT("%s %s error: %s", tapi_perf_bench2str(app->bench),
+                          tag, tapi_perf_error2str(i));
+        }
+    }
+    return rc;
+}
+
+/* See description in performance_internal.h */
+void
+perf_app_dump_output(tapi_perf_app *app, const char *tag)
+{
+    RING("%s %s stdout:\n%s", tapi_perf_bench2str(app->bench),
+         tag, app->report.ptr);
+    RING("%s %s stderr:\n%s", tapi_perf_bench2str(app->bench),
+         tag, app->err.ptr);
 }

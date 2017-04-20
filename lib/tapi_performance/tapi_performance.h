@@ -307,7 +307,7 @@ extern te_errno tapi_perf_server_start(tapi_perf_server *server,
 extern te_errno tapi_perf_server_stop(tapi_perf_server *server);
 
 /**
- * Get server report. The function reads client output (stdout, stderr).
+ * Get server report. The function reads server output (stdout, stderr).
  *
  * @param[in]  server       Server context.
  * @param[out] report       Report with results.
@@ -317,6 +317,39 @@ extern te_errno tapi_perf_server_stop(tapi_perf_server *server);
 extern te_errno tapi_perf_server_get_report(tapi_perf_server *server,
                                             tapi_perf_report *report);
 
+/**
+ * Check server report for errors. The function prints verdicts in case of
+ * errors are presents in the @p report.
+ *
+ * @param server            Server context.
+ * @param report            Server report.
+ * @param tag               Tag to print in verdict message.
+ *
+ * @return Status code. It returns non-zero code if there are errors in the
+ * report.
+ */
+extern te_errno tapi_perf_server_check_report(tapi_perf_server *server,
+                                              tapi_perf_report *report,
+                                              const char *tag);
+
+/**
+ * Get server report and check it for errors. The function is a wrapper which
+ * calls @ref tapi_perf_server_get_report and @ref tapi_perf_server_check_report
+ *
+ * @param[in]  server           Server context.
+ * @param[in]  tag              Tag to print in both verdict and dump messages.
+ * @param[in]  dump_enabled     Enable/disable to dump to log a server output.
+ * @param[out] report           Report with results, it may be @c NULL if you
+ *                              don't care about results, but only errors.
+ *
+ * @return Status code.
+ *
+ * @sa tapi_perf_server_get_report, tapi_perf_server_check_report
+ */
+extern te_errno tapi_perf_server_get_check_report(tapi_perf_server *server,
+                                                  const char *tag,
+                                                  te_bool dump_enabled,
+                                                  tapi_perf_report *report);
 
 /**
  * Create client network throughput test tool proxy.
@@ -392,6 +425,40 @@ extern te_errno tapi_perf_client_wait(tapi_perf_client *client,
  */
 extern te_errno tapi_perf_client_get_report(tapi_perf_client *client,
                                             tapi_perf_report *report);
+
+/**
+ * Check client report for errors. The function prints verdicts in case of
+ * errors are presents in the @p report.
+ *
+ * @param client            Client context.
+ * @param report            Client report.
+ * @param tag               Tag to print in verdict message.
+ *
+ * @return Status code. It returns non-zero code if there are errors in the
+ * report.
+ */
+extern te_errno tapi_perf_client_check_report(tapi_perf_client *client,
+                                              tapi_perf_report *report,
+                                              const char *tag);
+
+/**
+ * Get client report and check it for errors. The function is a wrapper which
+ * calls @ref tapi_perf_client_get_report and @ref tapi_perf_client_check_report
+ *
+ * @param[in]  client           Client context.
+ * @param[in]  tag              Tag to print in both verdict and dump messages.
+ * @param[in]  dump_enabled     Enable/disable to dump to log a client output.
+ * @param[out] report           Report with results, it may be @c NULL if you
+ *                              don't care about results, but only errors.
+ *
+ * @return Status code.
+ *
+ * @sa tapi_perf_client_get_report, tapi_perf_client_check_report
+ */
+extern te_errno tapi_perf_client_get_check_report(tapi_perf_client *client,
+                                                  const char *tag,
+                                                  te_bool dump_enabled,
+                                                  tapi_perf_report *report);
 
 /**
  * Get error description.

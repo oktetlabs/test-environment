@@ -308,3 +308,65 @@ tapi_perf_bench2str(tapi_perf_bench bench)
 
     return names[bench];
 }
+
+/* See description in tapi_performance.h */
+te_errno
+tapi_perf_server_check_report(tapi_perf_server *server,
+                              tapi_perf_report *report,
+                              const char *tag)
+{
+    return perf_app_check_report(&server->app, report, tag);
+}
+
+/* See description in tapi_performance.h */
+te_errno
+tapi_perf_client_check_report(tapi_perf_client *client,
+                              tapi_perf_report *report,
+                              const char *tag)
+{
+    return perf_app_check_report(&client->app, report, tag);
+}
+
+/* See description in tapi_performance.h */
+te_errno
+tapi_perf_server_get_check_report(tapi_perf_server *server,
+                                  const char *tag,
+                                  te_bool dump_enabled,
+                                  tapi_perf_report *report)
+{
+    tapi_perf_report dummy_report;
+    tapi_perf_report *work_report;
+    te_errno rc_get;
+    te_errno rc_check;
+
+    work_report = (report != NULL ? report : &dummy_report);
+    rc_get = tapi_perf_server_get_report(server, work_report);
+
+    if (dump_enabled)
+        perf_app_dump_output(&server->app, tag);
+
+    rc_check = tapi_perf_server_check_report(server, work_report, tag);
+    return (rc_get != 0 ? rc_get : rc_check);
+}
+
+/* See description in tapi_performance.h */
+te_errno
+tapi_perf_client_get_check_report(tapi_perf_client *client,
+                                  const char *tag,
+                                  te_bool dump_enabled,
+                                  tapi_perf_report *report)
+{
+    tapi_perf_report dummy_report;
+    tapi_perf_report *work_report;
+    te_errno rc_get;
+    te_errno rc_check;
+
+    work_report = (report != NULL ? report : &dummy_report);
+    rc_get = tapi_perf_client_get_report(client, work_report);
+
+    if (dump_enabled)
+        perf_app_dump_output(&client->app, tag);
+
+    rc_check = tapi_perf_client_check_report(client, work_report, tag);
+    return (rc_get != 0 ? rc_get : rc_check);
+}
