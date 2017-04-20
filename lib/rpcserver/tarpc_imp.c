@@ -10571,7 +10571,7 @@ TARPC_FUNC_STATIC(copy_fd2fd, {},
  */
 static int
 read_fd(te_bool use_libc, int fd, size_t size, int time2wait, size_t amount,
-        void **buf, size_t *read)
+        uint8_t **buf, size_t *read)
 {
     api_func      read_func;
     iomux_funcs   iomux_f;
@@ -10579,7 +10579,7 @@ read_fd(te_bool use_libc, int fd, size_t size, int time2wait, size_t amount,
     iomux_return  iomux_ret;
     iomux_func    iomux = get_default_iomux();
     te_dbuf       dbuf = TE_DBUF_INIT(0);
-    uint64_t      size_to_read;
+    size_t        size_to_read;
     int num = 0;
     int rc;
 
@@ -10664,9 +10664,32 @@ read_fd(te_bool use_libc, int fd, size_t size, int time2wait, size_t amount,
 
 TARPC_FUNC_STATIC(read_fd, {},
 {
-   MAKE_CALL(out->retval = func(in->common.use_libc, in->fd, in->size,
-                                in->time2wait, in->amount,
-                                &out->buf.buf_val, &out->buf.buf_len));
+    size_t read;
+
+    if (in->amount > UINT_MAX)
+    {
+        ERROR("'amount' value passed to read_fd exceeds "
+              "the size of receive buffer");
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_EOVERFLOW);
+        out->retval = -1;
+    }
+    else
+    {
+        MAKE_CALL(out->retval = func(in->common.use_libc, in->fd, in->size,
+                                     in->time2wait, in->amount,
+                                     &out->buf.buf_val, &read));
+        if (read <= UINT_MAX)
+            out->buf.buf_len = read;
+        else
+        {
+            ERROR("receive buffer is too small to get the whole data");
+            free(out->buf.buf_val);
+            out->buf.buf_val = NULL;
+            out->buf.buf_len = 0;
+            out->common._errno = TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
+            out->retval = -1;
+        }
+    }
 })
 
 /**
