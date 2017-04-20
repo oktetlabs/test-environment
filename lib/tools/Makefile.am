@@ -26,7 +26,8 @@ include_HEADERS = \
 	te_ipstack.h \
 	te_kvpair.h \
 	te_toeplitz.h \
-        te_str.h
+        te_str.h \
+        te_time.h
 
 if WINDOWS
 
@@ -70,7 +71,8 @@ libtools_la_SOURCES = \
 	te_ipstack.c \
 	te_kvpair.c \
 	te_toeplitz.c \
-        te_str.c
+        te_str.c \
+        te_time.c
 
 liblog_bufs_la_SOURCES = log_bufs.c
 
