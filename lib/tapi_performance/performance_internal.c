@@ -105,10 +105,6 @@ perf_app_wait(tapi_perf_app *app, uint16_t timeout)
     }
     app->pid = -1;
 
-    /* Check for errors */
-    if (stat.value != 0 || stat.flag != RPC_WAIT_STATUS_EXITED)
-        return TE_RC(TE_TAPI, TE_ESHCMD);
-
     return 0;
 }
 
