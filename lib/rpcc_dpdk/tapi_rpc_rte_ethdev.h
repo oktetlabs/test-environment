@@ -565,14 +565,14 @@ extern int rpc_rte_eth_xstats_get_names(rcf_rpc_server *rpcs, uint8_t port_id,
                                         unsigned int size);
 
 /**
- * @b rpc_rte_eth_xstats_get() RPC.
+ * @b rpc_rte_eth_xstats_get_v22() RPC.
  *
  * If failure is not expected, the function jumps out in the case of
  * negative return value.
  */
-extern int rpc_rte_eth_xstats_get(rcf_rpc_server *rpcs, uint8_t port_id,
-                                  struct tarpc_rte_eth_xstat *xstats,
-                                  unsigned int n);
+extern int rpc_rte_eth_xstats_get_v22(rcf_rpc_server *rpcs, uint8_t port_id,
+                                      struct tarpc_rte_eth_xstat *xstats,
+                                      unsigned int n);
 
 /**
  * @b rte_eth_xstats_reset() RPC
