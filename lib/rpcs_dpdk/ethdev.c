@@ -1573,7 +1573,7 @@ done:
     free(filter_arg);
 })
 
-TARPC_FUNC(rte_eth_xstats_get_names,{},
+TARPC_FUNC(rte_eth_xstats_get_names_v1607,{},
 {
     struct rte_eth_xstat_name  *xstats_names = NULL;
     unsigned int                i;
