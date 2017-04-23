@@ -388,8 +388,8 @@ tapi_rte_mk_mbuf_mk_ptrn_by_tmpl(rcf_rpc_server    *rpcs,
             if (pdu_ip4 != NULL)
             {
                 ol_flags |= (1UL << TARPC_PKT_TX_IPV4);
-                if ((transform->hw_flags & SEND_COND_HW_OFFL_IP_CKCUM) ==
-                    SEND_COND_HW_OFFL_IP_CKCUM)
+                if ((transform->hw_flags & SEND_COND_HW_OFFL_IP_CKSUM) ==
+                    SEND_COND_HW_OFFL_IP_CKSUM)
                     ol_flags |= (1UL << TARPC_PKT_TX_IP_CKSUM);
             }
 

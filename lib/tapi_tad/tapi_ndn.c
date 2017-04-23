@@ -625,8 +625,8 @@ tapi_tad_request_correct_cksums(uint32_t    hw_flags,
 {
     te_errno    err = 0;
 
-    if (((hw_flags & SEND_COND_HW_OFFL_IP_CKCUM) ==
-         SEND_COND_HW_OFFL_IP_CKCUM) && (ip4_pdu != NULL))
+    if (((hw_flags & SEND_COND_HW_OFFL_IP_CKSUM) ==
+         SEND_COND_HW_OFFL_IP_CKSUM) && (ip4_pdu != NULL))
     {
         err = tapi_tad_set_cksum_script_correct(ip4_pdu, "h-checksum");
         if (err != 0)
