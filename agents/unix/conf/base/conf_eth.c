@@ -88,6 +88,7 @@ typedef struct eth_if_context {
     char                        ifname[IFNAMSIZ];
     struct eth_feature_entry   *features;
     unsigned int                nb_features;
+    te_bool                     valid;
 } eth_if_context;
 
 static SLIST_HEAD(eth_if_contexts, eth_if_context) if_contexts;
@@ -277,11 +278,7 @@ eth_feature_iface_context_add(const char *ifname)
     strncpy(if_context->ifname, ifname, IFNAMSIZ - 1);
 
     rc = eth_feature_alloc_get(if_context);
-    if (rc != 0)
-    {
-       free(if_context);
-       return NULL;
-    }
+    if_context->valid = (rc == 0);
 
     SLIST_INSERT_HEAD(&if_contexts, if_context, links);
 
@@ -331,7 +328,7 @@ eth_feature_list(unsigned int    gid,
         goto fail;
     }
 
-    for (i = 0; i < if_context->nb_features; ++i)
+    for (i = 0; if_context->valid && (i < if_context->nb_features); ++i)
     {
         rc = te_string_append(&list_container, "%s ",
                               if_context->features[i].name);
@@ -394,7 +391,7 @@ eth_feature_get(unsigned int    gid,
     }
 
     if_context = eth_feature_iface_context(ifname);
-    if (if_context == NULL)
+    if ((if_context == NULL) || !if_context->valid)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     rc = eth_feature_get_index_by_name(if_context,
@@ -434,7 +431,7 @@ eth_feature_set(unsigned int    gid,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     if_context = eth_feature_iface_context(ifname);
-    if (if_context == NULL)
+    if ((if_context == NULL) || !if_context->valid)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     rc = eth_feature_get_index_by_name(if_context,
@@ -504,7 +501,7 @@ eth_feature_commit(unsigned int    gid,
     ifname = CFG_OID_GET_INST_NAME(oid, 2);
 
     if_context = eth_feature_iface_context(ifname);
-    if (if_context == NULL)
+    if ((if_context == NULL) || !if_context->valid)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     rc = eth_feature_set_values(if_context);
