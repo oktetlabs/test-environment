@@ -104,6 +104,26 @@ rpc_server_sem_init(rcf_rpc_server *rpcs)
     return 0;
 }
 
+/**
+ * Get @c rpcserver_force_restart flag from Configurator. If the flag is
+ * @c TRUE, ignore errors returned when RPC server is destroyed and try to
+ * continue restart process. Delete operation may return non-zero value if
+ * @c ta_waitpid() returns non-zero status code, e.g. if the process is
+ * killed or segfaults.
+ */
+static te_bool
+cfg_get_force_restart_flag(void)
+{
+    const char *cfg_line = "/local:/rpcserver_force_restart:";
+    int         force_restart = 0;
+    te_errno    rc;
+
+    rc = cfg_get_instance_fmt(NULL, &force_restart, cfg_line);
+    if (rc != 0 && rc != TE_RC(TE_CS, TE_ENOENT))
+        ERROR("Failed to get '%s': %r", cfg_line, rc);
+
+    return force_restart != 0;
+}
 
 /* See description in rcf_rpc.h */
 te_errno
@@ -242,7 +262,9 @@ rcf_rpc_server_get(const char *ta, const char *name,
         if ((rc = cfg_del_instance_fmt(FALSE, "/agent:%s/rpcserver:%s",
                                        ta, name)) != 0)
         {
-            if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
+            te_bool force_restart = cfg_get_force_restart_flag();
+
+            if (TE_RC_GET_ERROR(rc) != TE_ENOENT && !force_restart)
                 RETERR(rc, "Failed to delete RPC server %s", name);
             else
             {
