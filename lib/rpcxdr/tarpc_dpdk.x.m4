@@ -1540,14 +1540,14 @@ struct tarpc_rte_eth_xstats_get_names_out {
     struct tarpc_rte_eth_xstat_name         xstats_names<>;
 };
 
-/** rte_eth_xstats_get_v22() */
-struct tarpc_rte_eth_xstats_get_v22_in {
+/** rte_eth_xstats_get() */
+struct tarpc_rte_eth_xstats_get_in {
     struct tarpc_in_arg                     common;
     uint8_t                                 port_id;
     unsigned int                            n;
 };
 
-struct tarpc_rte_eth_xstats_get_v22_out {
+struct tarpc_rte_eth_xstats_get_out {
     struct tarpc_out_arg                    common;
     tarpc_int                               retval;
     struct tarpc_rte_eth_xstat              xstats<>;
@@ -1724,7 +1724,7 @@ program dpdk
         RPC_DEF(rte_mbuf_match_pattern)
 
         RPC_DEF(rte_eth_stats_get)
-        RPC_DEF(rte_eth_xstats_get_v22)
+        RPC_DEF(rte_eth_xstats_get)
         RPC_DEF(rte_eth_xstats_get_names)
         RPC_DEF(rte_eth_xstats_reset)
         RPC_DEF(rte_eth_dev_info_get)

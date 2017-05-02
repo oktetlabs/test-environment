@@ -1609,7 +1609,7 @@ done:
     ;
 })
 
-TARPC_FUNC(rte_eth_xstats_get_v22,{},
+TARPC_FUNC(rte_eth_xstats_get,{},
 {
     struct rte_eth_xstat   *xstats = NULL;
     unsigned int            i;

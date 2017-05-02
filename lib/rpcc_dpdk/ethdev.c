@@ -2044,13 +2044,13 @@ rpc_rte_eth_xstats_get_names(rcf_rpc_server *rpcs, uint8_t port_id,
 }
 
 int
-rpc_rte_eth_xstats_get_v22(rcf_rpc_server *rpcs, uint8_t port_id,
-                           struct tarpc_rte_eth_xstat *xstats,
-                           unsigned int n)
+rpc_rte_eth_xstats_get(rcf_rpc_server *rpcs, uint8_t port_id,
+                       struct tarpc_rte_eth_xstat *xstats,
+                       unsigned int n)
 {
-    tarpc_rte_eth_xstats_get_v22_in     in;
-    tarpc_rte_eth_xstats_get_v22_out    out;
-    int                                 i;
+    tarpc_rte_eth_xstats_get_in     in;
+    tarpc_rte_eth_xstats_get_out    out;
+    int                             i;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -2059,15 +2059,15 @@ rpc_rte_eth_xstats_get_v22(rcf_rpc_server *rpcs, uint8_t port_id,
     {
         ERROR("%s(): No array of xstats, but size is greater than 0",
               __FUNCTION__);
-        RETVAL_ZERO_INT(rte_eth_xstats_get_v22, -1);
+        RETVAL_ZERO_INT(rte_eth_xstats_get, -1);
     }
 
     in.port_id = port_id;
     in.n = n;
 
-    rcf_rpc_call(rpcs, "rte_eth_xstats_get_v22", &in, &out);
+    rcf_rpc_call(rpcs, "rte_eth_xstats_get", &in, &out);
 
-    CHECK_RETVAL_VAR_ERR_COND(rpc_rte_eth_xstats_get_v22,
+    CHECK_RETVAL_VAR_ERR_COND(rpc_rte_eth_xstats_get,
                               out.retval, FALSE,
                               -TE_RC(TE_TAPI, TE_ECORRUPTED),
                               (out.retval < 0));
@@ -2078,11 +2078,11 @@ rpc_rte_eth_xstats_get_v22(rcf_rpc_server *rpcs, uint8_t port_id,
             xstats[i] = out.xstats.xstats_val[i];
     }
 
-    TAPI_RPC_LOG(rpcs, rte_eth_xstats_get_v22,
+    TAPI_RPC_LOG(rpcs, rte_eth_xstats_get,
                  "%hhu, %u", NEG_ERRNO_FMT, in.port_id, n,
                  NEG_ERRNO_ARGS(out.retval));
 
-    RETVAL_INT(rte_eth_xstats_get_v22, out.retval);
+    RETVAL_INT(rte_eth_xstats_get, out.retval);
 }
 
 void
