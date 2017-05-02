@@ -1989,14 +1989,14 @@ int rpc_rte_eth_dev_filter_supported(rcf_rpc_server *rpcs, uint8_t port_id,
 }
 
 int
-rpc_rte_eth_xstats_get_names_v1607(rcf_rpc_server *rpcs, uint8_t port_id,
-    struct tarpc_rte_eth_xstat_name *xstats_names,
-    unsigned int size)
+rpc_rte_eth_xstats_get_names(rcf_rpc_server *rpcs, uint8_t port_id,
+                             struct tarpc_rte_eth_xstat_name *xstats_names,
+                             unsigned int size)
 {
-    tarpc_rte_eth_xstats_get_names_v1607_in     in;
-    tarpc_rte_eth_xstats_get_names_v1607_out    out;
-    te_log_buf                                 *tlbp;
-    int                                         i;
+    tarpc_rte_eth_xstats_get_names_in   in;
+    tarpc_rte_eth_xstats_get_names_out  out;
+    te_log_buf                         *tlbp;
+    int                                 i;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -2005,15 +2005,15 @@ rpc_rte_eth_xstats_get_names_v1607(rcf_rpc_server *rpcs, uint8_t port_id,
     {
         ERROR("%s(): No array of xstats names, but size is greater than 0",
               __FUNCTION__);
-        RETVAL_ZERO_INT(rte_eth_xstats_get_names_v1607, -1);
+        RETVAL_ZERO_INT(rte_eth_xstats_get_names, -1);
     }
 
     in.port_id = port_id;
     in.size = size;
 
-    rcf_rpc_call(rpcs, "rte_eth_xstats_get_names_v1607", &in, &out);
+    rcf_rpc_call(rpcs, "rte_eth_xstats_get_names", &in, &out);
 
-    CHECK_RETVAL_VAR_ERR_COND(rte_eth_xstats_get_names_v1607,
+    CHECK_RETVAL_VAR_ERR_COND(rte_eth_xstats_get_names,
                               out.retval, FALSE,
                               -TE_RC(TE_TAPI, TE_ECORRUPTED),
                               (out.retval < 0));
@@ -2035,12 +2035,12 @@ rpc_rte_eth_xstats_get_names_v1607(rcf_rpc_server *rpcs, uint8_t port_id,
     }
     te_log_buf_append(tlbp, "}");
 
-    TAPI_RPC_LOG(rpcs, rte_eth_xstats_get_names_v1607,
+    TAPI_RPC_LOG(rpcs, rte_eth_xstats_get_names,
                  "%hhu, %u", NEG_ERRNO_FMT " xstats_names=%s", in.port_id,
                  size, NEG_ERRNO_ARGS(out.retval), te_log_buf_get(tlbp));
     te_log_buf_free(tlbp);
 
-    RETVAL_INT(rte_eth_xstats_get_names_v1607, out.retval);
+    RETVAL_INT(rte_eth_xstats_get_names, out.retval);
 }
 
 int

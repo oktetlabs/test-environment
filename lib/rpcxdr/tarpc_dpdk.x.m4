@@ -1527,14 +1527,14 @@ struct tarpc_rte_eth_xstat_name {
     char    name[TARPC_RTE_ETH_XSTATS_NAME_SIZE];
 };
 
-/** rte_eth_xstats_get_names_v1607() */
-struct tarpc_rte_eth_xstats_get_names_v1607_in {
+/** rte_eth_xstats_get_names() */
+struct tarpc_rte_eth_xstats_get_names_in {
     struct tarpc_in_arg                     common;
     uint8_t                                 port_id;
     unsigned int                            size;
 };
 
-struct tarpc_rte_eth_xstats_get_names_v1607_out {
+struct tarpc_rte_eth_xstats_get_names_out {
     struct tarpc_out_arg                    common;
     tarpc_int                               retval;
     struct tarpc_rte_eth_xstat_name         xstats_names<>;
@@ -1725,7 +1725,7 @@ program dpdk
 
         RPC_DEF(rte_eth_stats_get)
         RPC_DEF(rte_eth_xstats_get_v22)
-        RPC_DEF(rte_eth_xstats_get_names_v1607)
+        RPC_DEF(rte_eth_xstats_get_names)
         RPC_DEF(rte_eth_xstats_reset)
         RPC_DEF(rte_eth_dev_info_get)
         RPC_DEF(rte_eth_dev_configure)
