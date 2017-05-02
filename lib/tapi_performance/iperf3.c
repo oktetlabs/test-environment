@@ -339,33 +339,33 @@ app_get_report(tapi_perf_app *app, tapi_perf_report *report)
     json_t *jrpt;
     te_errno rc;
 
-    te_string_reset(&app->err);
+    te_string_reset(&app->stderr);
     /* Read tool output */
-    rpc_read_fd2te_string(app->rpcs, app->stdout, IPERF3_TIMEOUT_MS, 0,
-                          &app->report);
-    INFO("iperf3 stdout:\n%s", app->report.ptr);
+    rpc_read_fd2te_string(app->rpcs, app->fd_stdout, IPERF3_TIMEOUT_MS, 0,
+                          &app->stdout);
+    INFO("iperf3 stdout:\n%s", app->stdout.ptr);
 
     /* Check for available data */
-    if (app->report.ptr == NULL || app->report.len == 0)
+    if (app->stdout.ptr == NULL || app->stdout.len == 0)
     {
-        ERROR("There are no data in the report");
+        ERROR("There are no data in the output");
         return TE_RC(TE_TAPI, TE_ENODATA);
     }
 
     /* Parse raw report */
-    jrpt = json_loads(app->report.ptr, 0, &error);
+    jrpt = json_loads(app->stdout.ptr, 0, &error);
     if (jrpt == NULL)
     {
         ERROR("json_loads fails with massage: \"%s\", position: %u",
               error.text, error.position);
-        te_string_append(&app->err, ERROR_INVALID_JSON_FORMAT);
+        te_string_append(&app->stderr, ERROR_INVALID_JSON_FORMAT);
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
     rc = get_report(jrpt, report);
     if (rc != 0)
     {
-        if (get_report_error(jrpt, &app->err) != 0)
-            te_string_append(&app->err, ERROR_INVALID_JSON_FORMAT);
+        if (get_report_error(jrpt, &app->stderr) != 0)
+            te_string_append(&app->stderr, ERROR_INVALID_JSON_FORMAT);
     }
 
     json_decref(jrpt);

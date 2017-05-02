@@ -41,10 +41,10 @@ perf_app_close_descriptors(tapi_perf_app *app)
     if (app->rpcs == NULL)
         return;
 
-    if (app->stdout >= 0)
-        RPC_CLOSE(app->rpcs, app->stdout);
-    if (app->stderr >= 0)
-        RPC_CLOSE(app->rpcs, app->stderr);
+    if (app->fd_stdout >= 0)
+        RPC_CLOSE(app->rpcs, app->fd_stdout);
+    if (app->fd_stderr >= 0)
+        RPC_CLOSE(app->rpcs, app->fd_stderr);
 }
 
 /* See description in performance_internal.h */
@@ -67,8 +67,8 @@ perf_app_start(rcf_rpc_server *rpcs, char *cmd, tapi_perf_app *app)
     perf_app_close_descriptors(app);
     app->rpcs = rpcs;
     app->pid = pid;
-    app->stdout = stdout;
-    app->stderr = stderr;
+    app->fd_stdout = stdout;
+    app->fd_stderr = stderr;
     free(app->cmd);
     app->cmd = cmd;
 
@@ -133,7 +133,7 @@ void
 perf_app_dump_output(tapi_perf_app *app, const char *tag)
 {
     RING("%s %s stdout:\n%s", tapi_perf_bench2str(app->bench),
-         tag, app->report.ptr);
+         tag, app->stdout.ptr);
     RING("%s %s stderr:\n%s", tapi_perf_bench2str(app->bench),
-         tag, app->err.ptr);
+         tag, app->stderr.ptr);
 }

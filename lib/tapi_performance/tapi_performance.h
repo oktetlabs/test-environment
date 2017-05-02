@@ -226,11 +226,11 @@ typedef struct tapi_perf_app {
     tapi_perf_opts opts;    /**< Tool's options */
     rcf_rpc_server *rpcs;   /**< RPC server handle */
     tarpc_pid_t pid;        /**< PID */
-    int stdout;             /**< File descriptor to read from stdout stream */
-    int stderr;             /**< File descriptor to read from stderr stream */
+    int fd_stdout;          /**< File descriptor to read from stdout stream */
+    int fd_stderr;          /**< File descriptor to read from stderr stream */
     char *cmd;              /**< Command line string to run the application */
-    te_string report;       /**< Buffer to save a raw report */
-    te_string err;          /**< Error message */
+    te_string stdout;       /**< Buffer to save tool's stdout message */
+    te_string stderr;       /**< Buffer to save tool's stderr message */
 } tapi_perf_app;
 
 /**

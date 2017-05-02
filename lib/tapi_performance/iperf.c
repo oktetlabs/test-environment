@@ -273,20 +273,20 @@ app_get_error(tapi_perf_app *app, tapi_perf_report *report)
     size_t i;
 
     /* Read tool output */
-    rpc_read_fd2te_string(app->rpcs, app->stderr, IPERF_TIMEOUT_MS, 0,
-                          &app->err);
+    rpc_read_fd2te_string(app->rpcs, app->fd_stderr, IPERF_TIMEOUT_MS, 0,
+                          &app->stderr);
 
     /* Check for available data */
-    if (app->err.ptr == NULL || app->err.len == 0)
+    if (app->stderr.ptr == NULL || app->stderr.len == 0)
     {
         VERB("There is no error message");
         return;
     }
-    INFO("iperf stderr:\n%s", app->err.ptr);
+    INFO("iperf stderr:\n%s", app->stderr.ptr);
 
     for (i = 0; i < TE_ARRAY_LEN(errors); i++)
     {
-        const char *ptr = app->err.ptr;
+        const char *ptr = app->stderr.ptr;
 
         while ((ptr = strstr(ptr, errors[i].msg)) != NULL)
         {
@@ -320,16 +320,16 @@ app_get_report(tapi_perf_app *app, tapi_perf_report *report)
     app_get_error(app, report);
 
     /* Read tool output */
-    rpc_read_fd2te_string(app->rpcs, app->stdout, IPERF_TIMEOUT_MS, 0,
-                          &app->report);
+    rpc_read_fd2te_string(app->rpcs, app->fd_stdout, IPERF_TIMEOUT_MS, 0,
+                          &app->stdout);
 
     /* Check for available data */
-    if (app->report.ptr == NULL || app->report.len == 0)
+    if (app->stdout.ptr == NULL || app->stdout.len == 0)
     {
-        ERROR("There are no data in the report");
+        ERROR("There are no data in the output");
         return TE_RC(TE_TAPI, TE_ENODATA);
     }
-    INFO("iperf stdout:\n%s", app->report.ptr);
+    INFO("iperf stdout:\n%s", app->stdout.ptr);
 
 /* Find the first occurrence of the substring _pattern in the string _src */
 #define FIND_STRING(_dst, _src, _pattern)                           \
@@ -350,10 +350,10 @@ app_get_report(tapi_perf_app *app, tapi_perf_report *report)
      * [  4]  0.0- 5.1 sec  56.9 MBytes  94.1 Mbits/sec
      * [SUM] 0.0-60.3 sec 544 MBytes 75.6 Mbits/sec
      */
-    str = strstr(app->report.ptr, "SUM]");
+    str = strstr(app->stdout.ptr, "SUM]");
     if (str == NULL)
     {
-        FIND_STRING(str, app->report.ptr, "ID]");
+        FIND_STRING(str, app->stdout.ptr, "ID]");
         FIND_STRING(str, str, "[");  /* Line is below [ID] */
     }
     FIND_STRING(str, str, "]");

@@ -44,11 +44,11 @@ app_init(tapi_perf_app *app, const tapi_perf_opts *options)
 {
     app->rpcs = NULL;
     app->pid = -1;
-    app->stdout = -1;
-    app->stderr = -1;
+    app->fd_stdout = -1;
+    app->fd_stderr = -1;
     app->cmd = NULL;
-    app->report = (te_string)TE_STRING_INIT;
-    app->err = (te_string)TE_STRING_INIT;
+    app->stdout = (te_string)TE_STRING_INIT;
+    app->stderr = (te_string)TE_STRING_INIT;
 
     if (options == NULL)
         tapi_perf_opts_init(&app->opts);
@@ -70,8 +70,8 @@ app_fini(tapi_perf_app *app)
 {
     perf_app_close_descriptors(app);
     free(app->cmd);
-    te_string_free(&app->report);
-    te_string_free(&app->err);
+    te_string_free(&app->stdout);
+    te_string_free(&app->stderr);
     free(app->opts.host);
 }
 
