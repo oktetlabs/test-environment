@@ -2441,17 +2441,23 @@ rpc_read_fd2te_string_append(rcf_rpc_server *rpcs, int fd, int time2wait,
                              size_t amount, te_string *testr)
 {
     te_dbuf dbuf = TE_DBUF_INIT(0);
+    te_bool awaiting_error;
     int rc;
 
     dbuf.ptr = (uint8_t *)testr->ptr;
     dbuf.size = testr->size;
     dbuf.len = testr->len;
 
+    awaiting_error = RPC_AWAITING_ERROR(rpcs);
     rc = rpc_read_fd2te_dbuf_append(rpcs, fd, time2wait, amount, &dbuf);
     if (rc == 0)
     {
         if (te_dbuf_append(&dbuf, "", 1) != 0)  /* Add null-terminator */
+        {
             rc = -1;
+            if (!awaiting_error)
+                TAPI_JMP_DO(TE_EFAIL);
+        }
     }
 
     testr->ptr = (char *)dbuf.ptr;
