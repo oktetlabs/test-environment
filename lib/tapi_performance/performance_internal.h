@@ -81,7 +81,7 @@ extern te_errno perf_app_stop(tapi_perf_app *app);
  * @retval TE_ESHCMD    Application returns non-zero exit code.
  * @retval TE_EFAIL     Critical error, application should be stopped.
  */
-extern te_errno perf_app_wait(tapi_perf_app *app, uint16_t timeout);
+extern te_errno perf_app_wait(tapi_perf_app *app, int16_t timeout);
 
 /**
  * Check application report for errors. The function prints verdicts in case of

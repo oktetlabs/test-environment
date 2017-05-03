@@ -460,9 +460,9 @@ client_stop(tapi_perf_client *client)
  * @return Status code.
  */
 static te_errno
-client_wait(tapi_perf_client *client, uint16_t timeout)
+client_wait(tapi_perf_client *client, int16_t timeout)
 {
-    ENTRY("Wait until iperf3 client finishes his work, timeout is %u secs",
+    ENTRY("Wait until iperf3 client finishes his work, timeout is %d secs",
           timeout);
 
     return perf_app_wait(&client->app, timeout);

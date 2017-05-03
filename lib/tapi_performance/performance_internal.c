@@ -34,6 +34,32 @@
 #include "tapi_test_log.h"
 
 
+/*
+ * Get default timeout according to application options.
+ *
+ * @param opts          Application options.
+ *
+ * @return Timeout (seconds).
+ */
+static int16_t
+get_default_timeout(const tapi_perf_opts *opts)
+{
+    int64_t timeout_sec;
+
+    if (opts->num_bytes > 0)
+        timeout_sec = opts->num_bytes * 8 / 10000000;   /* Suppose 10Mbit/s */
+    else
+        timeout_sec = opts->duration_sec;
+
+    timeout_sec += 10;  /* Just in case of some delay */
+
+    if (timeout_sec > SHRT_MAX)
+        timeout_sec = SHRT_MAX;
+
+    return timeout_sec;
+}
+
+
 /* See description in performance_internal.h */
 void
 perf_app_close_descriptors(tapi_perf_app *app)
@@ -90,11 +116,13 @@ perf_app_stop(tapi_perf_app *app)
 
 /* See description in performance_internal.h */
 te_errno
-perf_app_wait(tapi_perf_app *app, uint16_t timeout)
+perf_app_wait(tapi_perf_app *app, int16_t timeout)
 {
     rpc_wait_status stat;
     tarpc_pid_t pid;
 
+    if (timeout == TAPI_PERF_TIMEOUT_DEFAULT)
+        timeout = get_default_timeout(&app->opts);
     app->rpcs->timeout = TE_SEC2MS(timeout);
     RPC_AWAIT_IUT_ERROR(app->rpcs);
     pid = rpc_waitpid(app->rpcs, app->pid, &stat, 0);

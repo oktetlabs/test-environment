@@ -251,7 +251,7 @@ tapi_perf_client_stop(tapi_perf_client *client)
 
 /* See description in tapi_performance.h */
 te_errno
-tapi_perf_client_wait(tapi_perf_client *client, uint16_t timeout)
+tapi_perf_client_wait(tapi_perf_client *client, int16_t timeout)
 {
     ENTRY("Wait for perf client");
 

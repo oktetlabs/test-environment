@@ -39,6 +39,12 @@ extern "C" {
 #endif
 
 /**
+ * Default timeout to client wait method.
+ * It means the real timeout will be calculated according to tool's options.
+ */
+#define TAPI_PERF_TIMEOUT_DEFAULT   (-1)
+
+/**
  * Supported network throughput test tools list.
  */
 typedef enum tapi_perf_bench {
@@ -171,12 +177,13 @@ typedef te_errno (* tapi_perf_client_method_stop)(tapi_perf_client *client);
  * @param timeout       Time to wait for client results (seconds). It MUST be
  *                      big enough to finish client normally (it depends
  *                      on client's options), otherwise the function will be
- *                      failed.
+ *                      failed. Use @ref TAPI_PERF_TIMEOUT_DEFAULT to coerce
+ *                      the function to calculate the required timeout value.
  *
  * @return Status code.
  */
 typedef te_errno (* tapi_perf_client_method_wait)(tapi_perf_client *client,
-                                                  uint16_t timeout);
+                                                  int16_t timeout);
 
 /**
  * Get client report. The function reads client output (stdout, stderr).
@@ -408,12 +415,13 @@ extern te_errno tapi_perf_client_stop(tapi_perf_client *client);
  * @param timeout       Time to wait for client results (seconds). It MUST be
  *                      big enough to finish client normally (it depends
  *                      on client's options), otherwise the function will be
- *                      failed.
+ *                      failed. Use @ref TAPI_PERF_TIMEOUT_DEFAULT to coerce
+ *                      the function to calculate the required timeout value.
  *
  * @return Status code.
  */
 extern te_errno tapi_perf_client_wait(tapi_perf_client *client,
-                                      uint16_t timeout);
+                                      int16_t timeout);
 
 /**
  * Get client report. The function reads client output (stdout, stderr).
