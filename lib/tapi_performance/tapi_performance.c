@@ -281,7 +281,7 @@ tapi_perf_client_get_report(tapi_perf_client *client, tapi_perf_report *report)
 const char *
 tapi_perf_error2str(tapi_perf_error error)
 {
-    static const char *errors[TAPI_PERF_ERROR_MAX] = {
+    static const char *errors[] = {
         [TAPI_PERF_ERROR_FORMAT] = "wrong report format",
         [TAPI_PERF_ERROR_READ] = "read failed",
         [TAPI_PERF_ERROR_CONNECT] = "connect failed",
@@ -289,8 +289,7 @@ tapi_perf_error2str(tapi_perf_error error)
         [TAPI_PERF_ERROR_BIND] = "bind failed",
     };
 
-    if (error >= TAPI_PERF_ERROR_MAX || errors[error] == NULL)
-        TEST_FAIL("Unknown error code");
+    assert(error < TE_ARRAY_LEN(errors) && errors[error] != NULL);
 
     return errors[error];
 }
@@ -304,8 +303,7 @@ tapi_perf_bench2str(tapi_perf_bench bench)
         [TAPI_PERF_IPERF3] = "iperf3"
     };
 
-    if (bench >= TE_ARRAY_LEN(names))
-        TEST_FAIL("Unknown tool");
+    assert(bench < TE_ARRAY_LEN(names) && names[bench] != NULL);
 
     return names[bench];
 }
