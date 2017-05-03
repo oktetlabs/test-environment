@@ -26,7 +26,6 @@
  * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  */
 #define TE_LGR_USER     "TAPI iperf3"
-#define TE_LOG_LEVEL    0x003f  /* FIXME remove after debugging */
 
 #include "te_config.h"
 #if HAVE_INTTYPES_H
@@ -40,13 +39,22 @@
 #include "performance_internal.h"
 
 
-/* Error message about wrong JSON format. */
-#define ERROR_INVALID_JSON_FORMAT   "invalid json format"
 /* Time to wait till data is ready to read from stdout */
 #define IPERF3_TIMEOUT_MS           (500)
 
 /* Prototype of function to set option in iperf3 tool format */
 typedef void (*set_opt_t)(te_string *, const tapi_perf_opts *);
+
+
+/* Map of error messages corresponding to them codes. */
+static tapi_perf_error_map errors[] = {
+    { TAPI_PERF_ERROR_CONNECT,
+        "unable to connect to server: Connection refused" },
+    { TAPI_PERF_ERROR_NOROUTE,
+        "unable to connect to server: No route to host" },
+    { TAPI_PERF_ERROR_BIND,
+        "unable to start listener for connections: Address already in use" }
+};
 
 
 /*
@@ -302,26 +310,40 @@ get_report(const json_t *jrpt, tapi_perf_report *report)
  * Get error message from the JSON report.
  *
  * @param[in]  jrpt         JSON object contains report data.
- * @param[out] err          Buffer to allocate error massage.
+ * @param[out] report       Report context.
  *
  * @return Status code.
  */
 static te_errno
-get_report_error(const json_t *jrpt, te_string *err)
+get_report_error(const json_t *jrpt, tapi_perf_report *report)
 {
     const char *str;
+    te_errno rc = 0;
+    size_t i;
 
     if (!json_is_object(jrpt))
     {
         ERROR("JSON object is expected");
+        report->errors[TAPI_PERF_ERROR_FORMAT]++;
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
     str = json_string_value(json_object_get(jrpt, "error"));
-    if (str != NULL)
-        te_string_append(err, str);
+    if (te_str_is_null_or_empty(str))
+        return 0;
 
-    return 0;
+    for (i = 0; i < TE_ARRAY_LEN(errors); i++)
+    {
+        const char *ptr = strstr(str, errors[i].msg);
+
+        if (ptr != NULL)
+        {
+            report->errors[errors[i].code]++;
+            rc = TE_RC(TE_TAPI, TE_EINVAL);
+        }
+    }
+
+    return rc;
 }
 
 /*
@@ -339,11 +361,11 @@ app_get_report(tapi_perf_app *app, tapi_perf_report *report)
     json_t *jrpt;
     te_errno rc;
 
-    te_string_reset(&app->stderr);
+    memset(report->errors, 0, sizeof(report->errors));
+
     /* Read tool output */
     rpc_read_fd2te_string(app->rpcs, app->fd_stdout, IPERF3_TIMEOUT_MS, 0,
                           &app->stdout);
-    INFO("iperf3 stdout:\n%s", app->stdout.ptr);
 
     /* Check for available data */
     if (app->stdout.ptr == NULL || app->stdout.len == 0)
@@ -351,6 +373,7 @@ app_get_report(tapi_perf_app *app, tapi_perf_report *report)
         ERROR("There are no data in the output");
         return TE_RC(TE_TAPI, TE_ENODATA);
     }
+    INFO("iperf3 stdout:\n%s", app->stdout.ptr);
 
     /* Parse raw report */
     jrpt = json_loads(app->stdout.ptr, 0, &error);
@@ -358,14 +381,16 @@ app_get_report(tapi_perf_app *app, tapi_perf_report *report)
     {
         ERROR("json_loads fails with massage: \"%s\", position: %u",
               error.text, error.position);
-        te_string_append(&app->stderr, ERROR_INVALID_JSON_FORMAT);
+        report->errors[TAPI_PERF_ERROR_FORMAT]++;
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
-    rc = get_report(jrpt, report);
-    if (rc != 0)
+
+    rc = get_report_error(jrpt, report);
+    if (rc == 0)
     {
-        if (get_report_error(jrpt, &app->stderr) != 0)
-            te_string_append(&app->stderr, ERROR_INVALID_JSON_FORMAT);
+        rc = get_report(jrpt, report);
+        if (rc != 0)
+            report->errors[TAPI_PERF_ERROR_FORMAT]++;
     }
 
     json_decref(jrpt);

@@ -281,10 +281,11 @@ tapi_perf_client_get_report(tapi_perf_client *client, tapi_perf_report *report)
 const char *
 tapi_perf_error2str(tapi_perf_error error)
 {
-    static const char *errors[] = {
+    static const char *errors[TAPI_PERF_ERROR_MAX] = {
         [TAPI_PERF_ERROR_FORMAT] = "wrong report format",
         [TAPI_PERF_ERROR_READ] = "read failed",
         [TAPI_PERF_ERROR_CONNECT] = "connect failed",
+        [TAPI_PERF_ERROR_NOROUTE] = "no route",
         [TAPI_PERF_ERROR_BIND] = "bind failed",
     };
 

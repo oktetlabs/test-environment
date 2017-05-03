@@ -35,6 +35,13 @@
 extern "C" {
 #endif
 
+/** Perf application error messages mapping. */
+typedef struct tapi_perf_error_map {
+    tapi_perf_error code;       /**< Error code. */
+    const char *msg;            /**< Error message. */
+} tapi_perf_error_map;
+
+
 /**
  * Close perf application opened descriptors.
  *

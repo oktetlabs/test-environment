@@ -47,14 +47,9 @@
 /* Prototype of function to set option in iperf tool format */
 typedef void (*set_opt_t)(te_string *, const tapi_perf_opts *);
 
-/* iperf error messages mapping. */
-typedef struct error_map {
-    tapi_perf_error code;       /* Error code. */
-    const char *msg;            /* Error message. */
-} error_map;
 
 /* Map of error messages corresponding to them codes. */
-static error_map errors[] = {
+static tapi_perf_error_map errors[] = {
     { TAPI_PERF_ERROR_READ ,    "read failed: Connection refused" },
     { TAPI_PERF_ERROR_CONNECT , "connect failed: Connection refused" },
     { TAPI_PERF_ERROR_BIND ,    "bind failed: Address already in use" }
