@@ -64,6 +64,67 @@ extern "C" {
 #define TE_UNITS_BIN_U2K(_val) ((_val) / 1024.)
 
 
+/** List of supported unit prefixes */
+typedef enum te_unit_prefix {
+    TE_UNIT_PREFIX_NONE,
+    TE_UNIT_PREFIX_KILO,
+    TE_UNIT_PREFIX_MEGA,
+    TE_UNIT_PREFIX_GIGA,
+} te_unit_prefix;
+
+/** Value-unit pair */
+typedef struct te_unit {
+    double value;           /**< Value */
+    te_unit_prefix unit;    /**< Unit prefix */
+} te_unit;
+
+
+/**
+ * Convert unit prefix to string.
+ *
+ * @param unit      Unit prefix.
+ *
+ * @return String representation of unit prefix, or @c NULL if prefix is unknown.
+ */
+extern const char *te_unit_prefix2str(te_unit_prefix unit);
+
+/**
+ * Convert plain value to value-unit.
+ *
+ * @param value             Value to convert.
+ *
+ * @return Converted value with unit prefix.
+ */
+extern te_unit te_unit_pack(double value);
+
+/**
+ * Convert value-unit to plain value.
+ *
+ * @param value             Value to convert.
+ *
+ * @return Plain value.
+ */
+extern double te_unit_unpack(te_unit value);
+
+/**
+ * Convert binary plain value to value-unit.
+ *
+ * @param value             Value to convert.
+ *
+ * @return Converted value with unit prefix.
+ */
+extern te_unit te_unit_bin_pack(double value);
+
+/**
+ * Convert value-unit to binary plain value.
+ *
+ * @param value             Value to convert.
+ *
+ * @return Plain value.
+ */
+extern double te_unit_bin_unpack(te_unit value);
+
+
 /**
  * Convert bytes to kilobytes.
  *

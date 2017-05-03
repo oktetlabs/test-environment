@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.59])
-AC_INIT([te-tools],[0.1],[Andrew.Rybchenko@oktetlabs.ru])
+AC_INIT([te-tools],[0.2],[Andrew.Rybchenko@oktetlabs.ru])
 
 AC_CONFIG_SRCDIR([te_tools.h])
 
@@ -50,6 +50,8 @@ if test x$host = x${host%windows} ; then
     AC_SEARCH_LIBS([sem_init], [pthread c_r semaphore rt], [],
                    AC_MSG_ERROR([No POSIX semaphores]))
 fi
+
+AC_SEARCH_LIBS([pow], [m])
 
 dnl
 dnl Obtaining network info about host name (and/or service)

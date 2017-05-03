@@ -27,7 +27,8 @@ include_HEADERS = \
 	te_kvpair.h \
 	te_toeplitz.h \
         te_str.h \
-        te_time.h
+        te_time.h \
+        te_units.h
 
 if WINDOWS
 
@@ -72,7 +73,8 @@ libtools_la_SOURCES = \
 	te_kvpair.c \
 	te_toeplitz.c \
         te_str.c \
-        te_time.c
+        te_time.c \
+        te_units.c
 
 liblog_bufs_la_SOURCES = log_bufs.c
 
