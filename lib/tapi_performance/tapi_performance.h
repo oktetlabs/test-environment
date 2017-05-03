@@ -513,6 +513,20 @@ tapi_perf_client_get_name(const tapi_perf_client *client)
     return tapi_perf_bench2str(client->app.bench);
 }
 
+/**
+ * Print a network throughput test tool report.
+ *
+ * @param server            Server context.
+ * @param client            Client context.
+ * @param report            Report.
+ * @param test_params       Test specific params; It should be represented in
+ *                          the form of comma-separated pairs "param=value".
+ */
+extern void tapi_perf_log_report(const tapi_perf_server *server,
+                                 const tapi_perf_client *client,
+                                 const tapi_perf_report *report,
+                                 const char *test_params);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

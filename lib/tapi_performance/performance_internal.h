@@ -113,6 +113,21 @@ extern te_errno perf_app_check_report(tapi_perf_app *app,
  */
 extern void perf_app_dump_output(tapi_perf_app *app, const char *tag);
 
+/**
+ * Get application options and results as a string of name-value pairs.
+ *
+ * @note Return value should be freed with free(3) when it is no longer needed.
+ *
+ * @param server            Server context.
+ * @param client            Client context.
+ * @param report            Report.
+ *
+ * @return Tuple of application options and results.
+ */
+extern char *perf_get_tool_tuple(const tapi_perf_server *server,
+                                 const tapi_perf_client *client,
+                                 const tapi_perf_report *report);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

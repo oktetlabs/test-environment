@@ -32,6 +32,8 @@
 #include "performance_internal.h"
 #include "iperf.h"
 #include "iperf3.h"
+#include "te_str.h"
+#include "te_time.h"
 
 
 /*
@@ -368,4 +370,22 @@ tapi_perf_client_get_check_report(tapi_perf_client *client,
 
     rc_check = tapi_perf_client_check_report(client, work_report, tag);
     return (rc_get != 0 ? rc_get : rc_check);
+}
+
+/* See description in tapi_performance.h */
+void
+tapi_perf_log_report(const tapi_perf_server *server,
+                     const tapi_perf_client *client,
+                     const tapi_perf_report *report,
+                     const char *test_params)
+{
+    char *report_name = te_str_upper(tapi_perf_server_get_name(server));
+    char *results = perf_get_tool_tuple(server, client, report);
+    char *date = te_time_current_date2str();
+
+    RING("%s_REPORT: date=%s, %s, %s", report_name, date, test_params, results);
+
+    free(date);
+    free(results);
+    free(report_name);
 }

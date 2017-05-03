@@ -25,13 +25,18 @@
  *
  * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  */
-
+#include "te_config.h"
+#if HAVE_INTTYPES_H
+#include <inttypes.h>
+#endif
 #include "performance_internal.h"
 #include "tapi_rpc_stdio.h"
 #include "tapi_rpc_signal.h"
 #include "tapi_rpc_unistd.h"
 #include "tapi_rpcsock_macros.h"
 #include "tapi_test_log.h"
+#include "tapi_test.h"
+#include "te_units.h"
 
 
 /*
@@ -164,4 +169,37 @@ perf_app_dump_output(tapi_perf_app *app, const char *tag)
          tag, app->stdout.ptr);
     RING("%s %s stderr:\n%s", tapi_perf_bench2str(app->bench),
          tag, app->stderr.ptr);
+}
+
+/* See description in performance_internal.h */
+char *
+perf_get_tool_tuple(const tapi_perf_server *server,
+                    const tapi_perf_client *client,
+                    const tapi_perf_report *report)
+{
+    te_unit bandwidth;
+    te_unit throughput;
+    te_string buf = TE_STRING_INIT;
+    const tapi_perf_opts *opts = &client->app.opts;
+
+    bandwidth = te_unit_pack(opts->bandwidth_bits);
+    throughput = te_unit_pack(report->bits_per_second);
+
+    CHECK_RC(te_string_append(&buf, "ip=%s, ", proto_rpc2str(opts->ipversion)));
+    CHECK_RC(te_string_append(&buf, "protocol=%s, ",
+                              proto_rpc2str(opts->protocol)));
+    CHECK_RC(te_string_append(&buf, "bandwidth=%.1f%sbits/sec, ",
+                              bandwidth.value, te_unit_prefix2str(bandwidth.unit)));
+    CHECK_RC(te_string_append(&buf, "num_bytes=%"PRId64", ", opts->num_bytes));
+    CHECK_RC(te_string_append(&buf, "duration=%"PRId32"sec, ", opts->duration_sec));
+    CHECK_RC(te_string_append(&buf, "length=%"PRId32"bytes, ", opts->length));
+    CHECK_RC(te_string_append(&buf, "num_streams=%"PRId16", ", opts->streams));
+    CHECK_RC(te_string_append(&buf, "res_num_bytes=%"PRIu64", ", report->bytes));
+    CHECK_RC(te_string_append(&buf, "res_time=%.1fsec, ", report->seconds));
+    CHECK_RC(te_string_append(&buf, "res_throughput=%.1f%sbits/sec, ",
+                              throughput.value, te_unit_prefix2str(throughput.unit)));
+    CHECK_RC(te_string_append(&buf, "server_cmd=\"%s\", ", server->app.cmd));
+    CHECK_RC(te_string_append(&buf, "client_cmd=\"%s\"", client->app.cmd));
+
+    return buf.ptr;
 }
