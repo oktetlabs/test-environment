@@ -1033,7 +1033,9 @@ fi
 
 if test "$RCF_CONSISTENCY_CHECKS_SIMPLE" = "yes" ; then
     if $PROFILE_BUILD "$TE_BASE/engine/builder/te_rcf_consistency_checks" --check ; then
-        echo "Simple RCF consistency check succeeded" >&2
+        if test -z "${QUIET}" ; then
+            echo "Simple RCF consistency check succeeded" >&2
+        fi
     else
         echo "Simple RCF consistency check failed" >&2
         exit 1
