@@ -79,6 +79,15 @@ typedef enum {
     NDN_TAG_VLAN_TAG_HEADER_ERIF_RC_LF,
     NDN_TAG_VLAN_TAG_HEADER_ERIF_RC_NCFI,
     NDN_TAG_VLAN_TAG_HEADER_ERIF_RD,
+    NDN_TAG_VLAN_DOUBLE_TAGGED,
+    NDN_TAG_VLAN_DOUBLE_TAG_HEADER,
+    NDN_TAG_VLAN_HEADER_TPID,
+    NDN_TAG_VLAN_HEADER_PCP,
+    NDN_TAG_VLAN_HEADER_DEI,
+    NDN_TAG_VLAN_HEADER_VID,
+    NDN_TAG_VLAN_HEADER,
+    NDN_TAG_VLAN_HEADER_OUTER,
+    NDN_TAG_VLAN_HEADER_INNER,
 
     NDN_TAG_802_3_ENCAP,
     NDN_TAG_ETHERNET2,
@@ -115,6 +124,8 @@ extern asn_value *ndn_eth_plain_to_packet(const ndn_eth_header_plain
 extern const asn_type * const ndn_eth_snap;
 extern const asn_type * const ndn_vlan_tagged;
 extern const asn_type * const ndn_vlan_tag_header;
+extern const asn_type * const ndn_vlan_header;
+extern const asn_type * const ndn_vlan_double_tag_header;
 
 extern const asn_type * const ndn_eth_header;
 extern const asn_type * const ndn_eth_csap;
@@ -125,6 +136,8 @@ extern asn_type ndn_eth_header_s;
 extern asn_type ndn_eth_csap_s;
 extern asn_type ndn_data_unit_eth_address_s;
 extern asn_type ndn_eth_address_s;
+extern asn_type ndn_vlan_header_s;
+extern asn_type ndn_vlan_double_tag_header_s;
 
 
 #ifdef __cplusplus

@@ -98,12 +98,53 @@ asn_type ndn_vlan_tag_header_s = {
 
 const asn_type * const ndn_vlan_tag_header = &ndn_vlan_tag_header_s;
 
+static asn_named_entry_t _ndn_vlan_header_ne_array[] = {
+    /** Tag protocol identifier field (TPID) */
+    { "tpid", &ndn_data_unit_int16_s,
+      { PRIVATE, NDN_TAG_VLAN_HEADER_TPID } },
+
+    /* Tag Control Information (TCI) */
+    /** Priority code point field (PCP) */
+    { "pcp", &ndn_data_unit_int3_s,
+      { PRIVATE, NDN_TAG_VLAN_HEADER_PCP } },
+    /** Drop eligible indicator field (DEI) */
+    { "dei", &ndn_data_unit_int1_s,
+      { PRIVATE, NDN_TAG_VLAN_HEADER_DEI } },
+    /** VLAN identifier field (VID) */
+    { "vid", &ndn_data_unit_int12_s,
+      { PRIVATE, NDN_TAG_VLAN_HEADER_VID } },
+};
+
+asn_type ndn_vlan_header_s = {
+    "IEEE-Std-802.1Q-Header", {PRIVATE, NDN_TAG_VLAN_HEADER},
+    SEQUENCE, TE_ARRAY_LEN(_ndn_vlan_header_ne_array),
+    { _ndn_vlan_header_ne_array }
+};
+
+const asn_type * const ndn_vlan_header = &ndn_vlan_header_s;
+
+static asn_named_entry_t _ndn_vlan_double_tag_header_ne_array[] = {
+    { "outer", &ndn_vlan_header_s,
+      { PRIVATE, NDN_TAG_VLAN_HEADER_OUTER } },
+    { "inner", &ndn_vlan_header_s,
+      { PRIVATE, NDN_TAG_VLAN_HEADER_INNER } },
+};
+
+asn_type ndn_vlan_double_tag_header_s = {
+    "IEEE-Std-802.1QinQ-Header", {PRIVATE, NDN_TAG_VLAN_DOUBLE_TAG_HEADER},
+    SEQUENCE, TE_ARRAY_LEN(_ndn_vlan_double_tag_header_ne_array),
+    { _ndn_vlan_double_tag_header_ne_array }
+};
+
+const asn_type * const ndn_vlan_double_tag_header = &ndn_vlan_double_tag_header_s;
 
 static asn_named_entry_t _ndn_tagged_ne_array[] = {
     { "untagged", &asn_base_null_s,
       { PRIVATE, NDN_TAG_ETH_UNTAGGED } },  /**< Frame is not tagged */
     { "tagged", &ndn_vlan_tag_header_s,
       { PRIVATE, NDN_TAG_VLAN_TAG_HEADER } },   /**< Frame is tagged */
+    { "double-tagged", &ndn_vlan_double_tag_header_s,
+      { PRIVATE, NDN_TAG_VLAN_DOUBLE_TAGGED } },   /**< Frame is double-tagged */
 };
 
 static asn_type ndn_vlan_tagged_s = {
