@@ -3302,10 +3302,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
         (family == AF_INET && ip_addr.ip4_addr.s_addr == 0) ||
         (family == AF_INET6 && memcmp(&ip_addr.ip6_addr,
                                       &zero_ip6_addr,
-                                      sizeof(zero_ip6_addr)) == 0) ||
-        (family == AF_INET &&
-         (IN_CLASSD(ntohl(ip_addr.ip4_addr.s_addr)) ||
-          IN_EXPERIMENTAL(ntohl(ip_addr.ip4_addr.s_addr)))))
+                                      sizeof(zero_ip6_addr)) == 0))
     {
         ERROR("%s(): Trying to add incorrect address %s",
               __FUNCTION__, addr);
