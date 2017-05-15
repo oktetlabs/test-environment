@@ -584,6 +584,25 @@ tarpc_rte_error_type2tarpc(const enum rte_flow_error_type rte,
     return 0;
 }
 
+static int
+tarpc_rte_error2tarpc(struct tarpc_rte_flow_error *tarpc_error,
+                      struct rte_flow_error *error)
+{
+    enum tarpc_rte_flow_error_type  tarpc_error_type;
+
+    if (tarpc_rte_error_type2tarpc(error->type, &tarpc_error_type) != 0)
+        return -1;
+
+    tarpc_error->type = tarpc_error_type;
+
+    if (error->message != NULL)
+        tarpc_error->message = strdup(error->message);
+    else
+        tarpc_error->message = strdup("");
+
+    return 0;
+}
+
 static void
 rte_free_flow_rule(struct rte_flow_attr *attr,
                    struct rte_flow_item *pattern,
@@ -669,7 +688,6 @@ TARPC_FUNC(rte_flow_validate, {},
     struct rte_flow_item           *pattern = NULL;
     struct rte_flow_action         *actions = NULL;
     struct rte_flow_error           error;
-    enum tarpc_rte_flow_error_type  tarpc_error_type;
 
     memset(&error, 0, sizeof(error));
 
@@ -682,18 +700,6 @@ TARPC_FUNC(rte_flow_validate, {},
     MAKE_CALL(out->retval = func(in->port_id, attr, pattern, actions, &error));
     neg_errno_h2rpc(&out->retval);
 
-    if (tarpc_rte_error_type2tarpc(error.type, &tarpc_error_type) != 0)
-    {
+    if (tarpc_rte_error2tarpc(&out->error, &error) != 0)
         out->retval = -TE_RC(TE_RPCS, TE_EINVAL);
-        goto out;
-    }
-
-    out->error.type = tarpc_error_type;
-    if (error.message != NULL)
-        out->error.message = strdup(error.message);
-    else
-        out->error.message = NULL;
-
-out:
-    ;
 })
